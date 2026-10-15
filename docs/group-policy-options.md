@@ -1,13 +1,15 @@
 # Group causal policy options: D01–D05 (packet G-B)
 
-Status: proposal — not approved. Gates D01–D05 (`docs/group-chat-tests.md:81-92`) stay open.
-Nothing here picks an option. Each option is a candidate oracle with executable tests. A
+Status: D01/D02 decided (U11: signed frontier, option A; U15 for the U9 flag threshold; see
+`docs/design/rotation-open-decisions.md` §0 and §6). D03, D04 and D05 are still open
+(`rotation-open-decisions.md` §6 Q5–Q9), so this model is kept (`docs/archive/models.md`).
+The options below were written as proposals and pick nothing themselves. Each option is a candidate oracle with executable tests. A
 `limitation` test passes by showing what an option cannot do. D06 (device succession, forks,
 revoked predecessors) belongs to rotation; see `docs/design/rotation-fork-revocation-options.md`.
 It is not repeated here.
 
-Model: `crates/group-sim/src/policy_candidates.rs` (23 tests). It is wired in through one
-`#[path]` `mod` line at `crates/group-sim/src/tests.rs:13-14`. It is test-only and is not a wire
+Model: `design-models:crates/group-sim/src/policy_candidates.rs` (23 tests). It is wired in through one
+`#[path]` `mod` line at `design-models:crates/group-sim/src/tests.rs:13-14`. It is test-only and is not a wire
 format, a production API or a storage design.
 
 ## 1. What the model is (verified in source/tests)

@@ -729,11 +729,14 @@ pub struct Want {
     pub calm: [(f32, f32, f32, f32); 2],
 }
 
+/// Fog is the call screen's field in the app (as Android and the playground default); `P2P_FIELD=clouds|none` in
+/// test-hooks builds compares the other texture or turns it off. With the software renderer (no wgpu) the shader draws
+/// nothing and the plain background shows.
 pub fn texture() -> Option<Texture> {
     match crate::test_env("P2P_FIELD").as_deref() {
-        Some("fog") => Some(Texture::Fog),
         Some("clouds") => Some(Texture::Clouds),
-        _ => None,
+        Some("none") => None,
+        _ => Some(Texture::Fog),
     }
 }
 

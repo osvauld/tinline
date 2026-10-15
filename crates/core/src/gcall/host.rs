@@ -211,8 +211,11 @@ impl HostEngine {
         self.st.fwd.k()
     }
 
-    pub fn is_limited(&self) -> bool {
-        self.st.limited
+    /// Every host forwards every speaker (Q2), so S is never full in a real call; tests of the
+    /// G6-D2 provisional slot shrink K by hand.
+    #[cfg(test)]
+    pub(crate) fn set_k_for_test(&mut self, k: usize) {
+        self.st.fwd.set_k(k);
     }
 
     /// `(gen, forwarded slots)` as last announced in `Active`.
@@ -229,6 +232,7 @@ impl HostEngine {
     }
 
     /// Datagrams dropped per DID (malformed, oversize, over rate).
+    #[cfg(test)]
     pub fn dropped(&self, did: &str) -> u64 {
         self.dropped.get(did).copied().unwrap_or(0)
     }
@@ -262,16 +266,18 @@ impl HostEngine {
         for d in gone {
             self.remove_part(&d);
         }
+        self.after_removal()
+    }
+
+    /// After someone left the Roster: the last one out ends the call for good (otherwise an empty
+    /// call stays announced forever, and "End" on a member only leaves it); else Roster + Active.
+    fn after_removal(&mut self) -> Vec<HostAction> {
+        if self.st.parts.is_empty() {
+            return self.end(EndReason::Ended, None);
+        }
         let mut out = self.roster_actions();
         out.extend(self.active_actions());
         out
-    }
-
-    /// The host user's "lower priority" for a participant (§6).
-    pub fn lower_priority(&mut self, did: &str, lowered: bool) {
-        if let Some(p) = self.st.parts.get(did) {
-            self.st.fwd.set_lowered(p.slot, lowered);
-        }
     }
 
     /// A control frame from `conn`. Members send only `Join` and `Leave`.
@@ -377,9 +383,7 @@ impl HostEngine {
             let next = self.next_backup(auth);
             return Ok(self.end(EndReason::HostLeaving, next));
         }
-        let mut out = self.roster_actions();
-        out.extend(self.active_actions());
-        Ok(out)
+        Ok(self.after_removal())
     }
 
     /// An upstream datagram from `conn`. Audio from a forwarded slot goes out at once to every
@@ -497,8 +501,10 @@ impl HostEngine {
             changed = true;
         }
         if changed {
-            out.extend(self.roster_actions());
-            out.extend(self.active_actions());
+            out.extend(self.after_removal());
+            if self.st.ended {
+                return out;
+            }
         }
         if now >= self.st.next_hb_ms {
             self.st.next_hb_ms = now + HEARTBEAT_MS;
@@ -537,7 +543,7 @@ impl HostEngine {
                 out.push(HostAction::Notice(HostNotice::Unlimited));
                 out.extend(self.active_actions());
             }
-            // Q2: on or off metered data mid-call, K follows (2 loudest vs every speaker).
+            // K follows the conditions if they ever differ by host state.
             _ if !self.st.limited && self.st.fwd.k() != cond.k() => {
                 self.st.fwd.set_k(cond.k());
                 out.extend(self.active_actions());

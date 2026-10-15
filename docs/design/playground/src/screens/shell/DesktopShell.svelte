@@ -5,8 +5,8 @@
   import { TAB_LISTS, SCREENS, GATE } from '../registry';
   import { TABS, TAB_ICON } from './TabIcon';
   import Icon from '../../lib/ui/Icon.svelte';
-  import Avatar from '../../lib/ui/Avatar.svelte';
   import Mark from '../../lib/brand/Mark.svelte';
+  import SideNames from '../names/SideNames.svelte';
   import EmptyLine from '../../lib/ui/EmptyLine.svelte';
   import TabPanel, { rememberScroll } from '../../lib/ui/TabPanel.svelte';
 
@@ -26,6 +26,7 @@
   import DesktopField from '../search/DesktopField.svelte';
   import SearchResults from '../search/SearchResults.svelte';
   import { ui } from '../search/state.svelte';
+  import { gx } from '../../lib/model/actions/groups.svelte';
   let activeOpt = $state('');
   const look = $derived(statusLook());
 
@@ -48,14 +49,11 @@
       {#each TABS as t (t)}
         <button type="button" class="nav press" aria-current={nav.tab === t ? 'page' : undefined} onclick={() => { ui.clear(); nav.setTab(t); }}>
           <Icon name={TAB_ICON[t]} size={20} /><span>{TAB_LISTS[t].title}</span>
-          {#if t === 'chats' && unread}<span class="t-badge">{unread}</span>{/if}
+          {#if t === 'chats' && unread}<span class="t-badge">{unread}</span>{:else if t === 'groups' && gx.invitations.length}<span class="t-badge" aria-label="{gx.invitations.length} invitations">{gx.invitations.length}</span>{/if}
         </button>
       {/each}
     </nav>
-    <button type="button" class="me press" onclick={() => nav.open({ name: 'settings' })}>
-      <Avatar name={db.account.name} hue={db.account.hue} person="me" size={36} />
-      <span><b>{db.account.name.split(' ')[0]}</b><small>Your account</small></span>
-    </button>
+    <SideNames />
   </aside>
   <section class="listpane">
     {#if ui.position === 'top'}<DesktopField active={activeOpt} />{/if}
@@ -104,8 +102,6 @@
   .nav:hover { background: var(--surface-2); }
   .nav[aria-current='page'] { color: var(--accent-ink); }
   .nav[aria-current='page']:hover { background: transparent; }
-  .me { margin-top: auto; display: flex; gap: 10px; align-items: center; border: 0; background: transparent; padding: 8px; border-radius: var(--r-ctl); cursor: pointer; text-align: start; }
-  .me span { display: grid; } .me small { color: var(--muted); font-size: var(--fs-sub); }
   .listpane { display: flex; flex-direction: column; min-width: 0; background: var(--surface); border-inline-end: 1px solid var(--hairline); }
   .listpane header { padding: 16px 20px 4px; } h1 { font-size: 24px; margin: 0; }
   .scroll { flex: 1; overflow: auto; }

@@ -1,0 +1,561 @@
+//! Lifecycle, sessions, dialing and the per-connection loop.
+
+use super::*;
+
+impl Inner {
+    // ---- lifecycle -------------------------------------------------------------------------
+
+    /// Opens the sealed chat store; called whenever the data key becomes available.
+    pub(crate) fn chat_open(self: &Arc<Self>) {
+        let (dek, phrase, did) = {
+            let s = self.shared.lock();
+            match (s.dek.as_ref(), s.me.as_ref()) {
+                (Some(d), Some(me)) => (**d, zeroize::Zeroizing::new(me.profile.mnemonic.clone()), me.id.did().to_string()),
+                _ => return,
+            }
+        };
+        if self.chat.lock().is_some() {
+            return;
+        }
+        // Nothing to open before the account has a directory (an uncommitted identity).
+        let dir = match self.shared.lock().acct.as_ref() {
+            Some(a) => a.store.dir().to_path_buf(),
+            None => return,
+        };
+        // A chat store that is not there yet starts from nothing: whatever this install wrote
+        // before under its writer ID (a lost or deleted store) is not in it, but contacts may hold
+        // it. Writing again from counter 0 under the same writer ID would hand them ops they take
+        // for ones they have and drop (P10), so a fresh store gets a fresh device ID, hence a
+        // fresh writer ID. Saved before the file exists: a crash in between only rotates again.
+        let path = dir.join("chat.redb");
+        if !path.exists()
+            && let Err(e) = self.new_device_id()
+        {
+            tracing::warn!("chat store: device id: {e}");
+            return;
+        }
+        // Keyed by the recovery phrase; a store from before that is re-keyed here (rekey.rs).
+        // The node before a restart may still hold the file for a moment: `open_waiting`.
+        let sealed = match crate::store::open_waiting(&path).and_then(|db| {
+            crate::rekey::open(
+                db,
+                crate::rekey::key_from_phrase(crate::rekey::Which::Chat, &phrase),
+                Some(crate::rekey::old_key(crate::rekey::Which::Chat, &dek)),
+            )
+        }) {
+            Ok(d) => d,
+            Err(e) => {
+                tracing::warn!("chat store: {e}");
+                return;
+            }
+        };
+        let store = ChatStore::new(sealed);
+        let value = match self.device_id() {
+            Ok(v) => v,
+            Err(e) => {
+                tracing::warn!("chat store: device id: {e}");
+                return;
+            }
+        };
+        self.search_open(&dir, &phrase);
+        let core = Arc::new(ChatCore {
+            store,
+            dir,
+            hub: OnceCell::new(),
+            shards: Default::default(),
+            sessions: Default::default(),
+            dialing: Default::default(),
+            downloading: Default::default(),
+            next_dl: AtomicU64::new(1),
+            pulling: Default::default(),
+            dial_sem: Arc::new(Semaphore::new(4)),
+            next_session: AtomicU64::new(1),
+            presence: crate::chat::presence::Presence::new(),
+            device_id: value,
+            wid: writer_id(&did, &value),
+            fail_writes: Default::default(),
+            clock_ms: Default::default(),
+            clock_wrong: Default::default(),
+        });
+        *self.chat.lock() = Some(core);
+        self.search_reconcile();
+    }
+
+    /// Gives this install a new device ID (`ProfileV2::device_id`) and saves the profile.
+    pub(super) fn new_device_id(&self) -> Result<(), Error> {
+        let mut s = self.shared.lock();
+        let Some(crate::store::Disk::V2(p)) = s.disk.as_ref() else { return Err(Error::NoIdentity) };
+        let mut p = p.clone();
+        p.device_id = Some(crate::store::new_device_id());
+        let disk = crate::store::Disk::V2(p);
+        s.acct.as_ref().ok_or(Error::NoIdentity)?.store.save_profile(&disk)?;
+        s.disk = Some(disk);
+        Ok(())
+    }
+
+    /// This install's device ID (`ProfileV2::device_id`, U16); made here once if the profile
+    /// has none yet.
+    pub(super) fn device_id(&self) -> Result<[u8; 32], Error> {
+        let mut s = self.shared.lock();
+        let Some(crate::store::Disk::V2(p)) = s.disk.as_ref() else { return Err(Error::NoIdentity) };
+        if let Some(i) = p.device_id_bytes() {
+            return Ok(i);
+        }
+        let mut p = p.clone();
+        p.device_id = Some(crate::store::new_device_id());
+        let disk = crate::store::Disk::V2(p.clone());
+        s.acct.as_ref().ok_or(Error::NoIdentity)?.store.save_profile(&disk)?;
+        s.disk = Some(disk);
+        p.device_id_bytes().ok_or(Error::NoIdentity)
+    }
+
+    pub(crate) async fn chat_close(self: &Arc<Self>) {
+        let core = self.chat.lock().take();
+        if let Some(core) = core {
+            core.close_all_sessions();
+            if let Some(h) = core.hub.get() {
+                h.shutdown().await;
+            }
+            // GL: the file goes now, whatever task still holds the core.
+            core.store.db.close();
+        }
+        self.search_close();
+    }
+
+    /// `chat_close` without waiting (for `Node`'s drop on a core thread): the store closes, the
+    /// blob store is left to its drop.
+    pub(crate) fn chat_close_now(&self) {
+        if let Some(core) = self.chat.lock().take() {
+            core.close_all_sessions();
+            core.store.db.close();
+        }
+        self.search_close();
+    }
+
+    pub(crate) fn chat_sessions_close(self: &Arc<Self>) {
+        if let Some(core) = self.chat.lock().clone() {
+            core.close_all_sessions();
+        }
+    }
+
+    pub(crate) fn chat_core(&self) -> Result<Arc<ChatCore>, Error> {
+        match self.chat.lock().clone() {
+            Some(c) => Ok(c),
+            None => match self.me() {
+                Err(e) => Err(e),
+                Ok(_) => Err(Error::Locked),
+            },
+        }
+    }
+
+    pub(crate) fn ev(&self) -> Option<Arc<dyn ChatEvents>> {
+        self.chat_events.lock().clone()
+    }
+
+    /// Called once the endpoint is up: reconnect to everyone we owe something, and keep trying.
+    pub(crate) fn chat_started(self: &Arc<Self>) {
+        let this = self.clone();
+        self.handle.spawn(async move {
+            if let Ok(me) = this.me() {
+                this.profile_download(me.id.did().into());
+                this.profile_apply_deletions(me.epoch, me.id.did());
+                let dids = this.shared.lock().state.contacts.iter().map(|c| c.did.clone()).collect::<Vec<_>>();
+                for did in dids { this.profile_apply_deletions(me.epoch, &did); }
+            }
+            // Everyone once at start: catches up what they wrote while we were away.
+            let dids: Vec<String> = this.shared.lock().state.contacts.iter().map(|c| c.did.clone()).collect();
+            for d in dids {
+                this.chat_kick(d);
+            }
+            let mut tick = tokio::time::interval(Duration::from_secs(30));
+            let mut n = 0u32;
+            loop {
+                tick.tick().await;
+                if this.shared.lock().endpoint.is_none() {
+                    break;
+                }
+                this.chat_kick_pending();
+                n += 1;
+                if n % 120 == 1
+                    && let Err(e) = this.chat_compact().await
+                {
+                    tracing::warn!("chat compaction: {e}");
+                }
+            }
+        });
+    }
+
+    /// Dials every contact we have unsent ops or wanted downloads for.
+    pub(crate) fn chat_kick_pending(self: &Arc<Self>) {
+        let Ok(core) = self.chat_core() else { return };
+        let Ok(me) = self.me() else { return };
+        let dids: Vec<String> = self.shared.lock().state.contacts.iter().map(|c| c.did.clone()).collect();
+        for did in dids {
+            let pair = pair_id(me.id.did(), &did);
+            self.profile_download(did.clone());
+            if self.profile_pending(&did) || core.store.pending_days(&pair).map(|d| !d.is_empty()).unwrap_or(false) || self.chat_wants(&core, &pair) {
+                self.chat_kick(did);
+            }
+        }
+    }
+
+    pub(super) fn chat_wants(&self, core: &ChatCore, pair: &str) -> bool {
+        core.store
+            .wanted_blobs()
+            .map(|v| v.iter().any(|(_, b)| b.pair == pair))
+            .unwrap_or(false)
+    }
+
+    pub(super) fn chat_session(&self, core: &ChatCore, did: &str) -> Option<Arc<Session>> {
+        core.sessions.lock().values().find(|s| s.did == did).cloned()
+    }
+
+    pub(crate) fn chat_sessions_of(&self, core: &ChatCore, did: &str) -> Vec<Arc<Session>> {
+        core.sessions.lock().values().filter(|s| s.did == did).cloned().collect()
+    }
+
+    /// Makes sure there is (or soon will be) a session with `did`, retrying with backoff while
+    /// there is something to send.
+    pub(crate) fn chat_kick(self: &Arc<Self>, did: String) {
+        let Ok(core) = self.chat_core() else { return };
+        if self.chat_session(&core, &did).is_some() || !core.dialing.lock().insert(did.clone()) {
+            return;
+        }
+        let this = self.clone();
+        self.handle.spawn(async move {
+            let mut delay = Duration::from_secs(2);
+            loop {
+                if this.chat_session(&core, &did).is_some() {
+                    break;
+                }
+                let Ok(me) = this.me() else { break };
+                if this.shared.lock().endpoint.is_none() || !this.chat_may_dial(&did) {
+                    break;
+                }
+                let permit = core.dial_sem.clone().acquire_owned().await;
+                let res = this.chat_dial(&core, &me, &did).await;
+                drop(permit);
+                match res {
+                    Ok(()) => break,
+                    Err(e) => tracing::debug!("chat dial {did}: {e}"),
+                }
+                let pair = pair_id(me.id.did(), &did);
+                let pending = this.profile_pending(&did) || core.store.pending_days(&pair).map(|d| !d.is_empty()).unwrap_or(false) || this.chat_wants(&core, &pair);
+                if !pending {
+                    break;
+                }
+                tokio::time::sleep(delay).await;
+                delay = (delay * 2).min(Duration::from_secs(60));
+            }
+            core.dialing.lock().remove(&did);
+        });
+    }
+
+    // ---- connections -------------------------------------------------------------------------
+
+    pub(super) fn auth_msg(&self, me: &Me, grant: proto::SignedGrant) -> ChatMsg {
+        let relay = self.endpoint().ok().and_then(|ep| relay_of(&ep));
+        match proto::call_hello(&me.id, me.attestation.clone(), grant, "chat".into()) {
+            Msg::CallHello { attestation, grant, .. } => ChatMsg::Auth { attestation, grant, relay },
+            _ => unreachable!(),
+        }
+    }
+
+    /// Verifies a peer's `Auth` like a call hello: attested device = the connection's key, a
+    /// token we issued them, and they are a contact. Returns their DID (blocked or not: the
+    /// caller answers a blocked one with our notice) and the token, which `chat_admit` checks.
+    pub(super) fn verify_auth(&self, me: &Me, auth: &ChatMsg, remote: [u8; 32]) -> Result<(String, Option<String>, proto::Grant), Error> {
+        let ChatMsg::Auth { attestation, grant, relay } = auth else { return Err(Error::Protocol("expected Auth".into())) };
+        let msg = Msg::CallHello { call_id: "chat".into(), attestation: attestation.clone(), grant: grant.clone(), relay: relay.clone(), devices: None, video: None };
+        let s = self.shared.lock();
+        let contacts = &s.state.contacts;
+        let who = proto::accept_hello(&me.id, &msg, remote, now(), &s.state.revoked, |did| contacts.iter().any(|c| c.did == did))?;
+        Ok((who.did, relay_hint(relay), who.grant))
+    }
+
+    /// P6: chat needs a message token of ours that was not taken back (a block's cut-off); a
+    /// call token does not open chat. Renews the token when it is close to expiry.
+    pub(super) fn chat_admit(self: &Arc<Self>, did: &str, grant: &proto::Grant) -> Result<(), Error> {
+        if self.token_check(did, grant, proto::Cap::Message).is_err() {
+            self.log(format!("chat refused: {did}: no valid message token"));
+            return Err(Error::Rejected("not accepted".into()));
+        }
+        self.renew_message_if_due(did, grant);
+        Ok(())
+    }
+
+    /// Whether we keep a session with `did` going: a contact that neither side blocks.
+    pub(super) fn chat_may_dial(&self, did: &str) -> bool {
+        let s = self.shared.lock();
+        s.state.contacts.iter().any(|c| c.did == did) && !s.state.blocked.contains(did) && !crate::block::blocked_me(&s.state, did)
+    }
+
+    pub(super) async fn chat_dial(self: &Arc<Self>, core: &Arc<ChatCore>, me: &Arc<Me>, did: &str) -> Result<(), Error> {
+        let ep = self.endpoint()?;
+        let contact = self
+            .shared
+            .lock()
+            .state
+            .contacts
+            .iter()
+            .find(|c| c.did == did)
+            .cloned()
+            .ok_or(Error::NotFound)?;
+        let mut last = Error::NotFound;
+        for cd in &contact.devices {
+            let addr = match addr_for(&cd.device, cd.relay.as_deref()) {
+                Ok(a) => a,
+                Err(e) => {
+                    last = e;
+                    continue;
+                }
+            };
+            let conn = match tokio::time::timeout(DIAL_TIMEOUT, crate::version::connect(&ep, addr, &crate::version::CHAT)).await {
+                Ok(Ok(c)) => c,
+                Ok(Err(e)) => {
+                    if matches!(e, Error::Protocol(_)) {
+                        self.log(format!("chat with {did}: {e}"));
+                    }
+                    last = e;
+                    continue;
+                }
+                Err(_) => {
+                    last = Error::Timeout;
+                    continue;
+                }
+            };
+            match self.chat_handshake(core, me, conn, true).await {
+                Ok(()) => return Ok(()),
+                Err(e) => last = e,
+            }
+        }
+        Err(last)
+    }
+
+    /// Opens (dialer) or accepts (listener) the stream, exchanges `Auth`, registers the session
+    /// and starts its task.
+    pub(super) async fn chat_handshake(self: &Arc<Self>, core: &Arc<ChatCore>, me: &Arc<Me>, conn: Connection, dialer: bool) -> Result<(), Error> {
+        let remote = *conn.remote_id().as_bytes();
+        let (send, recv) = if dialer { conn.open_bi().await } else { conn.accept_bi().await }.map_err(Error::net)?;
+        let mut writer = ChatWriter(send);
+        let mut reader = ChatReader::new(recv);
+        let (did, hint) = if dialer {
+            // We know who we are calling: present the grant they gave us.
+            let grant = {
+                let s = self.shared.lock();
+                let c = s.state.contacts.iter().find(|c| c.has_device(&remote));
+                c.map(|c| c.grant_from_them.clone())
+            };
+            let grant = grant.ok_or(Error::NotFound)?;
+            writer.send(&self.auth_msg(me, grant)).await?;
+            let reply = tokio::time::timeout(AUTH_TIMEOUT, reader.recv())
+                .await
+                .map_err(|_| Error::Timeout)??
+                .ok_or_else(|| Error::Protocol("peer closed".into()))?;
+            if let ChatMsg::Notice { notice } = &reply {
+                // They block us: their notice instead of their Auth.
+                let did = self.shared.lock().state.contacts.iter().find(|c| c.has_device(&remote)).map(|c| c.did.clone());
+                if let Some(did) = did
+                    && self.is_block_from(&did, notice)
+                {
+                    let _ = self.take_notice(notice);
+                    return Err(Error::Rejected(crate::BLOCKED.into()));
+                }
+                return Err(Error::Protocol("unexpected notice".into()));
+            }
+            let (did, hint, grant) = self.verify_auth(me, &reply, remote)?;
+            if self.shared.lock().state.blocked.contains(&did) {
+                return Err(Error::Rejected(crate::BLOCKED.into()));
+            }
+            self.chat_admit(&did, &grant)?;
+            (did, hint)
+        } else {
+            let first = tokio::time::timeout(AUTH_TIMEOUT, reader.recv())
+                .await
+                .map_err(|_| Error::Timeout)??
+                .ok_or_else(|| Error::Protocol("peer closed before auth".into()))?;
+            let (did, hint, grant) = self.verify_auth(me, &first, remote)?;
+            // A DID we block gets our notice instead of our Auth, then the connection ends.
+            if let Some(notice) = self.refusal_for(&did) {
+                self.log("chat refused: blocked");
+                writer.send(&ChatMsg::Notice { notice }).await?;
+                let _ = writer.0.finish();
+                let _ = tokio::time::timeout(Duration::from_secs(2), conn.closed()).await;
+                return Err(Error::Rejected(crate::BLOCKED.into()));
+            }
+            self.chat_admit(&did, &grant)?;
+            let grant = {
+                let s = self.shared.lock();
+                s.state.contacts.iter().find(|c| c.did == did).map(|c| c.grant_from_them.clone())
+            }
+            .ok_or(Error::NotFound)?;
+            writer.send(&self.auth_msg(me, grant)).await?;
+            (did, hint)
+        };
+        self.note_device(me.epoch, &did, remote, hint);
+        let (tx, rx) = mpsc::unbounded_channel();
+        let my_dev = me.device;
+        let sess = Arc::new(Session {
+            id: core.next_session.fetch_add(1, Ordering::Relaxed),
+            did: did.clone(),
+            device: remote,
+            epoch: me.epoch,
+            profile_vv: Default::default(),
+            dialer: if dialer { my_dev } else { remote },
+            tx,
+            peer_vv: Default::default(),
+            hist: Default::default(),
+            presence: crate::chat::presence::session_store(),
+        });
+        // One session per contact: if both sides dialled at once, the one dialled by the lower
+        // device key survives on both ends.
+        {
+            let mut map = core.sessions.lock();
+            if let Some(old) = map.get(&remote)
+                && old.dialer != sess.dialer
+                && old.dialer < sess.dialer
+            {
+                conn.close(0u32.into(), b"duplicate");
+                return Ok(());
+            }
+            if let Some(old) = map.insert(remote, sess.clone()) {
+                let _ = old.tx.send(Cmd::Close);
+            }
+        }
+        self.log(format!("chat session with {did} ({})", if dialer { "dialed" } else { "accepted" }));
+        let this = self.clone();
+        let core = core.clone();
+        self.handle.spawn(async move {
+            this.chat_run(core, sess, conn, reader, writer, rx).await;
+        });
+        Ok(())
+    }
+
+    pub(crate) async fn handle_chat_incoming(self: Arc<Self>, accepting: Accepting, chat: bool, permit: tokio::sync::OwnedSemaphorePermit) -> Result<(), Error> {
+        let conn = tokio::time::timeout(AUTH_TIMEOUT, accepting).await.map_err(|_| Error::Timeout)?.map_err(Error::net)?;
+        let remote = *conn.remote_id().as_bytes();
+        if chat {
+            let me = self.me()?;
+            let core = self.chat_core()?;
+            if !self.is_contact_device(&remote) {
+                // A new device of a contact is recognised by its Auth; strangers by nothing.
+                // Fall through to the handshake, which checks the proof.
+            }
+            let r = self.chat_handshake(&core, &me, conn.clone(), false).await;
+            drop(permit);
+            if r.is_err() {
+                conn.close(0u32.into(), b"not accepted");
+            }
+            return r;
+        }
+        drop(permit);
+        // Blobs: only devices we know as a contact's (or in an authenticated session).
+        let known = self.is_contact_device(&remote)
+            || self.is_own_device(&remote)
+            || self.chat_core().map(|c| c.sessions.lock().values().any(|s| s.device == remote)).unwrap_or(false);
+        if !known {
+            conn.close(0u32.into(), b"not accepted");
+            return Ok(());
+        }
+        let hub = self.chat_hub().await?;
+        use iroh::protocol::ProtocolHandler;
+        hub.protocol().accept(conn).await.map_err(|e| Error::Net(e.to_string()))
+    }
+
+    pub(super) async fn chat_run(
+        self: Arc<Self>,
+        core: Arc<ChatCore>,
+        sess: Arc<Session>,
+        conn: Connection,
+        mut reader: ChatReader,
+        mut writer: ChatWriter,
+        mut cmds: mpsc::UnboundedReceiver<Cmd>,
+    ) {
+        let reason: String = 'run: {
+            match self.chat_hello(&core, &sess) {
+                Ok(h) => {
+                    if let Err(e) = writer.send(&h).await {
+                        break 'run e.to_string();
+                    }
+                }
+                Err(e) => break 'run e.to_string(),
+            }
+            self.chat_resume_downloads(&core, &sess.did);
+            let mut heartbeat = tokio::time::interval(crate::chat::presence::HEARTBEAT);
+            loop {
+                tokio::select! {
+                    _ = heartbeat.tick() => {
+                        self.presence_send(&core, &conn);
+                        self.presence_update(&core, &sess.did);
+                    }
+                    d = conn.read_datagram() => match d {
+                        Ok(d) => self.presence_receive(&core, &sess, &d),
+                        Err(_) => break 'run "connection lost".into(),
+                    },
+                    m = reader.recv() => match m {
+                        Ok(Some(m)) => {
+                            if let Err(e) = self.chat_handle(&core, &sess, m, &mut writer).await {
+                                break 'run e.to_string();
+                            }
+                        }
+                        Ok(None) => break 'run "closed".into(),
+                        Err(e) => break 'run e.to_string(),
+                    },
+                    c = cmds.recv() => match c {
+                        Some(Cmd::Push(day)) => {
+                            if let Err(e) = self.chat_push(&core, &sess, &day, &mut writer).await {
+                                break 'run e.to_string();
+                            }
+                        }
+                        Some(Cmd::Ack(day)) => {
+                            let me = match self.me() { Ok(m) => m, Err(e) => break 'run e.to_string() };
+                            let pair = pair_id(me.id.did(), &sess.did);
+                            if let Ok(Some(meta)) = core.store.shard_meta(&pair, &day)
+                                && let Err(e) = writer.send(&ChatMsg::Ack { doc: doc_name(&pair, &day), vv: meta.vv }).await
+                            {
+                                break 'run e.to_string();
+                            }
+                        }
+                        Some(Cmd::History(before, limit)) => {
+                            if let Err(e) = writer.send(&ChatMsg::HistoryReq { before, limit }).await {
+                                break 'run e.to_string();
+                            }
+                        }
+                        Some(Cmd::Profile) => {
+                            if let Err(e) = self.chat_profile_send(&sess, &mut writer).await { break 'run e.to_string(); }
+                        }
+                        Some(Cmd::Close) | None => break 'run "closed locally".into(),
+                    },
+                    _ = conn.closed() => break 'run "connection lost".into(),
+                }
+            }
+        };
+        self.log(format!("chat session with {} ended: {reason}", sess.did));
+        {
+            let mut map = core.sessions.lock();
+            if map.get(&sess.device).is_some_and(|s| s.id == sess.id) {
+                map.remove(&sess.device);
+            }
+        }
+        sess.hist.lock().take();
+        self.presence_update(&core, &sess.did);
+        let _ = writer.0.finish();
+        let c2 = conn.clone();
+        tokio::spawn(async move {
+            let _ = tokio::time::timeout(Duration::from_millis(300), c2.closed()).await;
+            c2.close(0u32.into(), b"bye");
+        });
+        // Something left unsent: try again.
+        if let Ok(me) = self.me() {
+            let pair = pair_id(me.id.did(), &sess.did);
+            if (self.profile_pending(&sess.did) || core.store.pending_days(&pair).map(|d| !d.is_empty()).unwrap_or(false)) && self.shared.lock().endpoint.is_some() {
+                let this = self.clone();
+                let did = sess.did.clone();
+                self.handle.spawn(async move {
+                    tokio::time::sleep(Duration::from_secs(2)).await;
+                    this.chat_kick(did);
+                });
+            }
+        }
+    }
+}

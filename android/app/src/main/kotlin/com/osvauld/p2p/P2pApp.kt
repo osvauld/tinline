@@ -72,6 +72,9 @@ class P2pApp : Application(), NodeEvents {
     private val _history = MutableStateFlow<List<CallRecord>>(emptyList())
     /** The call log, newest first. Re-read on every call end (the core writes it before `Ended` fires). */
     val history: StateFlow<List<CallRecord>> = _history
+    private val _groupLog = MutableStateFlow<List<uniffi.p2pcore.GroupCallRecord>>(emptyList())
+    /** Group calls this device was in or missed, newest first (the core's group call log; local to this device). */
+    val groupLog: StateFlow<List<uniffi.p2pcore.GroupCallRecord>> = _groupLog
     private val _blocks = MutableStateFlow(Blocks())
     /** Contact blocking (Blocking.kt): who we block, who blocks us. Re-read on every contacts/chats change. */
     val blocks: StateFlow<Blocks> = _blocks
@@ -117,6 +120,13 @@ class P2pApp : Application(), NodeEvents {
         realChat = CoreChatSource(this).also { it.attach() }
         groups = GroupsController(NodeGroupApi { node }) { currentDid() }.also { it.attach(node) }
         groups.onPost = { m -> GroupNotifier.post(this, m, groups.list.value.firstOrNull { it.id == m.groupId }?.name) }
+        // Someone invited me (playground Notices "invite"): out of sight a notification; in front one knock, and the
+        // Groups tab shows its count. Follows Notifications › Groups.
+        groups.onInvitation = { i ->
+            if (!i.outgoing && i.state == uniffi.p2pcore.GroupInvitationState.PENDING && AlertPrefs.groups(this)) {
+                if (AppVisible.resumed) Cues.knock() else GroupNotifier.invitation(this, i)
+            }
+        }
         selectLastAccountIfNone()
         UnlockStore.migrateLegacy(this, currentDid())
         tryAutoUnlock()
@@ -132,6 +142,12 @@ class P2pApp : Application(), NodeEvents {
 
     fun refreshHistory() {
         try { _history.value = node.recentCalls(200u) } catch (e: Exception) { Log.w(TAG, "recentCalls: $e") }
+        refreshGroupLog()
+    }
+
+    /** Re-reads the group call log (the core writes a record before the `Ended` / `Left` event fires). */
+    fun refreshGroupLog() {
+        try { _groupLog.value = node.groupCallHistory(null) } catch (e: Exception) { Log.w(TAG, "groupCallHistory: $e") }
     }
 
     /** Re-reads availability and arms a timer for when a timed break ends (no polling). */
@@ -466,6 +482,7 @@ class P2pApp : Application(), NodeEvents {
         }
         override fun onRequestAccepted(contact: Contact) {
             testLog("accepted name=${contact.name} did=${contact.did}")
+            if (!AppVisible.resumed) Notifications.accepted(this@P2pApp, contact.did, contact.name)
             _contacts.value = node.contacts()
             refreshRequests()
             refreshBlocks()
@@ -537,7 +554,11 @@ class P2pApp : Application(), NodeEvents {
 data class IncomingSheet(val did: String, val name: String, val joined: Boolean, val theirs: Boolean)
 
 /** Whether an activity of ours is resumed (MainActivity sets it): cues play live, else the system notifies. */
-object AppVisible { @Volatile var resumed = false }
+object AppVisible {
+    @Volatile var resumed = false
+    /** The home app bar is on screen, so a ringing call shows there (RingHead). Only the top route is composed. */
+    @Volatile var ringHeadUp = false
+}
 
 fun testLog(msg: String) {
     if (BuildConfig.DEBUG) Log.i("P2PTEST", msg)

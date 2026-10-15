@@ -1,6 +1,7 @@
 //! Remembers a vault's data key for an account that has no passphrase, so the app opens straight
 //! to Home. One OS-keyring entry per account (named by its DID). With a passphrase the desktop
-//! asks for it at start and keeps nothing here.
+//! asks for it at start and keeps nothing here, unless the person turned on "Remember on this
+//! computer" (a separate, opt-in keyring entry per account, off by default; see [`set_remember`]).
 //!
 //! There is no plaintext fallback for new setups (security review S2): with no secure keyring the
 //! app requires a passphrase. An install that already keeps its key in the old `unlock.key` file
@@ -109,6 +110,12 @@ fn user(data: &Path, did: &str) -> String {
     format!("{LEGACY_USER}:{}:{did}", canon(data))
 }
 
+/// The opt-in entry of an account that HAS a passphrase ("Remember on this computer"). Separate from [`user`]
+/// so adding a passphrase still drops the automatic key, and never turns remembering on by itself.
+fn user_pp(data: &Path, did: &str) -> String {
+    format!("{LEGACY_USER}-pp:{}:{did}", canon(data))
+}
+
 fn file(data: &Path, did: &str) -> PathBuf {
     let id: String = did.strip_prefix("did:key:").unwrap_or(did).chars().filter(|c| c.is_ascii_alphanumeric()).collect();
     data.join(format!("unlock-{id}.key"))
@@ -165,6 +172,32 @@ pub fn clear(st: &dyn Store, data: &Path, did: &str) {
     }
 }
 
+/// Drops everything remembered for `did`, including an opt-in passphrase remember (the account was removed or unlinked).
+pub fn clear_all(st: &dyn Store, data: &Path, did: &str) {
+    clear(st, data, did);
+    st.delete(&user_pp(data, did));
+}
+
+/// Whether "Remember on this computer" is on for a passphrase-protected account.
+pub fn remembered(st: &dyn Store, data: &Path, did: &str) -> bool {
+    st.get(&user_pp(data, did)).and_then(|s| unhex(&s)).is_some()
+}
+
+/// Turns "Remember on this computer" on or off for the current, unlocked, passphrase-protected account. On stores the
+/// vault data key in the keyring (and nowhere else: with no keyring it fails and nothing is written); off deletes the entry.
+pub fn set_remember(st: &dyn Store, data: &Path, node: &Node, on: bool) -> Result<(), String> {
+    let Some(did) = current_did(node) else { return Ok(()) };
+    if !on {
+        st.delete(&user_pp(data, &did));
+        return Ok(());
+    }
+    if !node.has_passphrase() {
+        return Err("the account has no passphrase".into());
+    }
+    let key = node.unlock_key().ok_or("the account is locked")?;
+    st.set(&user_pp(data, &did), &hex(&key))
+}
+
 /// Where the key of `did` lives now, for Settings; `None` when nothing is stored.
 pub fn location(st: &dyn Store, data: &Path, did: &str) -> Option<Where> {
     if file(data, did).is_file() {
@@ -205,11 +238,17 @@ pub fn migrate_legacy(st: &dyn Store, data: &Path, node: &Node) {
 /// is now unlocked. A key that does not open the vault is kept (never delete the only copy on a
 /// guess); the key-lost screen offers restore.
 pub fn auto_unlock(st: &dyn Store, data: &Path, node: &Node) -> bool {
-    if node.lock_state() != LockState::Locked || node.has_passphrase() {
+    if node.lock_state() != LockState::Locked {
         return false;
     }
     let Some(did) = current_did(node) else { return false };
-    let Some(key) = load(st, data, &did) else { return false };
+    // With a passphrase only the opt-in entry may open it; without one, the automatic key (or old file).
+    let key = if node.has_passphrase() {
+        st.get(&user_pp(data, &did)).and_then(|s| unhex(&s))
+    } else {
+        load(st, data, &did)
+    };
+    let Some(key) = key else { return false };
     match node.unlock_with_key(key) {
         Ok(()) => true,
         Err(p2pcore::Error::WrongPassphrase) => {
@@ -229,6 +268,10 @@ pub fn sync(st: &dyn Store, data: &Path, node: &Node) -> Result<(), String> {
     let Some(did) = current_did(node) else { return Ok(()) };
     if node.has_passphrase() {
         clear(st, data, &did);
+        // The data key survives a passphrase change; refresh the opt-in entry anyway so it can never go stale.
+        if remembered(st, data, &did) {
+            return set_remember(st, data, node, true);
+        }
         return Ok(());
     }
     if file(data, &did).is_file() {

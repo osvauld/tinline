@@ -218,6 +218,23 @@ fn group_row(gid: &str, day: &str, i: &Item) -> DocRow {
     DocRow { src: group_src(gid), conv: gid.to_string(), day: day.to_string(), id: i.id.clone(), at: i.at, author: i.author.clone(), text: i.text.clone() }
 }
 
+/// A cursor is `{rev_at}/{h}`, both 16 hex digits.
+fn check_cursor(cursor: Option<&str>) -> Result<(), Error> {
+    if let Some(c) = cursor
+        && !c.split_once('/').is_some_and(|(r, h)| r.len() == 16 && h.len() == 16 && c.bytes().all(|b| b.is_ascii_hexdigit() || b == b'/'))
+    {
+        return Err(Error::Protocol("bad cursor".into()));
+    }
+    Ok(())
+}
+
+/// The heaviest term first (it drives the scan), then every term.
+fn scan_lookups(scan: &text::Term, terms: &[text::Term]) -> Vec<String> {
+    let mut lookups: Vec<String> = vec![scan.lookup()];
+    lookups.extend(terms.iter().map(|t| t.lookup()));
+    lookups
+}
+
 impl Inner {
     // ---- lifecycle -------------------------------------------------------------------------
 
@@ -469,14 +486,9 @@ impl Inner {
         let Some(scan) = terms.iter().max_by_key(|t| t.weight()) else {
             return Ok(SearchResults { names, messages: Vec::new(), next: None });
         };
-        if let Some(c) = cursor
-            && !c.split_once('/').is_some_and(|(r, h)| r.len() == 16 && h.len() == 16 && c.bytes().all(|b| b.is_ascii_hexdigit() || b == b'/'))
-        {
-            return Err(Error::Protocol("bad cursor".into()));
-        }
+        check_cursor(cursor)?;
         let limit = limit.clamp(1, MAX_LIMIT) as usize;
-        let mut lookups: Vec<String> = vec![scan.lookup()];
-        lookups.extend(terms.iter().map(|t| t.lookup()));
+        let lookups = scan_lookups(scan, &terms);
         let readable = self.search_readable(&me);
         let mut messages = Vec::new();
         let mut scan = ix.scan_all(&lookups, cursor)?;
@@ -514,11 +526,7 @@ impl Inner {
         let none = SearchResults { names: Vec::new(), messages: Vec::new(), next: None };
         let terms = text::query_terms(query);
         let Some(scan_term) = terms.iter().max_by_key(|t| t.weight()) else { return Ok(none) };
-        if let Some(c) = cursor
-            && !c.split_once('/').is_some_and(|(r, h)| r.len() == 16 && h.len() == 16 && c.bytes().all(|b| b.is_ascii_hexdigit() || b == b'/'))
-        {
-            return Err(Error::Protocol("bad cursor".into()));
-        }
+        check_cursor(cursor)?;
         let readable = self.search_readable(&me);
         let src = match kind {
             SearchConvKind::Dm if readable.contains(conv) => dm_src(&pair_id(me.id.did(), conv)),
@@ -526,8 +534,7 @@ impl Inner {
             _ => return Ok(none),
         };
         let limit = limit.clamp(1, MAX_LIMIT) as usize;
-        let mut lookups: Vec<String> = vec![scan_term.lookup()];
-        lookups.extend(terms.iter().map(|t| t.lookup()));
+        let lookups = scan_lookups(scan_term, &terms);
         let mut messages = Vec::new();
         let mut scan = ix.scan_in(&lookups, cursor, &src, drop_budget)?;
         let mut looked = 0;

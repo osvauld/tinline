@@ -6,6 +6,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /*
@@ -19,7 +20,7 @@ fun SettingsRoute(
     app: P2pApp, missing: List<Need>, onBack: () -> Unit, onMe: () -> Unit, onSwitchPick: (String) -> Unit,
     onCreateAccount: () -> Unit, onRestoreAccount: () -> Unit, onLinkAccount: () -> Unit,
     onDevices: () -> Unit, onPrivacy: () -> Unit, onNotifications: () -> Unit, onSounds: () -> Unit,
-    onAbout: () -> Unit, onDiagnostics: () -> Unit, onPreview: (String) -> Unit,
+    onVideo: () -> Unit, onStorage: () -> Unit, onAbout: () -> Unit, onDiagnostics: () -> Unit,
 ) {
     val ctx = LocalContext.current
     val store = remember(app) { ProfileBackend.of(app) }
@@ -31,37 +32,16 @@ fun SettingsRoute(
     }
     val fallback = profileFallbackName(app, acct)
     var adding by remember { mutableStateOf(false) }
-    val previewOn by PreviewFlags.enabled(ctx).collectAsState()
     SettingsLanding(store, fallback, list, permProblems(missing), onBack, onMe, onSwitchPick, { adding = true },
-        onDevices, onPrivacy, onNotifications, onSounds) {
-        // Not in the playground: the app's About (licences must stay reachable), the video offer, and debug-only tools.
+        onDevices, onPrivacy, onNotifications, onSounds, onVideo, onStorage, onAbout) {
+        // Not in the playground: the app's "Video in calls" offer, and debug-only tools.
         var video by remember { mutableStateOf(app.videoEnabled) }
-        var quality by remember { mutableStateOf(app.videoQualityPreference) }
         PfSec {
             PfCard {
                 act { PfAct("Video in calls", onClick = { video = !video; app.videoEnabled = video }, icon = Pg.Video, plain = true, role = androidx.compose.ui.semantics.Role.Switch,
                     sub = if (video) "You can turn your camera on in a call" else "Calls are voice only",
                     trailing = { PgSwitch(video, { video = it; app.videoEnabled = it }, "Video in calls") }) }
-                act { PfAct("Prefer HD", onClick = {
-                    quality = if (quality == VideoQualityPreference.PREFER_HD) VideoQualityPreference.AUTO else VideoQualityPreference.PREFER_HD
-                    app.videoQualityPreference = quality
-                }, icon = Pg.Video, plain = true, role = androidx.compose.ui.semantics.Role.Switch,
-                    sub = if (quality == VideoQualityPreference.PREFER_HD) "Aim for 720p; adapts to connection and device. Uses more battery. Next camera start"
-                        else "Auto · adapts for smooth calls. HD off",
-                    trailing = { PgSwitch(quality == VideoQualityPreference.PREFER_HD, { on ->
-                        quality = if (on) VideoQualityPreference.PREFER_HD else VideoQualityPreference.AUTO
-                        app.videoQualityPreference = quality
-                    }, "Prefer HD") }) }
-                act { PfAct("About Tinline", onClick = onAbout, icon = PgIcons.Info, chevron = true, sub = "Version, licences, terms, privacy") }
                 if (BuildConfig.DEBUG) act { PfAct("Diagnostics", onClick = onDiagnostics, chevron = true, sub = "Test tone and core version (debug builds)") }
-                if (PreviewFlags.available) act {
-                    PfAct(PreviewFlags.LABEL, plain = true, onClick = { PreviewFlags.set(ctx, previewOn != true) }, sub = "Debug builds only. Screens for features the core doesn’t have yet",
-                        trailing = { PgSwitch(previewOn == true, { PreviewFlags.set(ctx, it) }, PreviewFlags.LABEL) })
-                }
-                if (previewOn == true) {
-                    act { PfAct("People, requests & blocking (preview)", onClick = { onPreview("chats") }, chevron = true) }
-                    act { PfAct("Address changes (preview)", onClick = { onPreview("address") }, chevron = true) }
-                }
             }
         }
     }
@@ -78,6 +58,30 @@ fun SettingsRoute(
             PfActs { PBtn("Cancel", { adding = false }, variant = PVariant.Quiet) }
         }
     }
+}
+
+@Composable
+internal fun VideoSettingsRoute(app: P2pApp, onBack: () -> Unit) {
+    var quality by remember { mutableStateOf(app.videoQualityPreference) }
+    VideoSettingsPage(quality, { quality = it; app.videoQualityPreference = it }, onBack)
+}
+
+@Composable
+fun StorageRoute(app: P2pApp, onBack: () -> Unit) {
+    val ctx = LocalContext.current
+    var tick by remember { mutableIntStateOf(0) }
+    var cleared by remember { mutableStateOf(false) }
+    var download by remember { mutableStateOf(uniffi.p2pcore.PictureDownload.ALWAYS) }
+    val sizes by produceState<List<Long>>(listOf(0L, 0L, 0L, 0L), tick) {
+        value = withContext(Dispatchers.IO) {
+            val u = runCatching { app.node.storageUsage() }.getOrNull()
+            runCatching { download = app.node.pictureDownload() }
+            listOf(u?.pictures?.toLong() ?: 0L, u?.files?.toLong() ?: 0L, u?.messages?.toLong() ?: 0L, ChatMedia.size(ctx))
+        }
+    }
+    StoragePage(sizes[0], sizes[1], sizes[2], sizes[3], download, cleared,
+        { d -> download = d; app.scope.launch(Dispatchers.IO) { runCatching { app.node.setPictureDownload(d) } } },
+        { ChatMedia.clear(ctx); cleared = true; tick++ }, onBack)
 }
 
 @Composable

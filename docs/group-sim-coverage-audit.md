@@ -3,11 +3,11 @@
 Status: proposal — not approved
 
 Audit date 2026-10-10, branch `rot/ga` at `1b6e632` (clean). Read-only audit of
-`crates/group-sim/src/{lib,tests,authority,reachability,scheduler}.rs` against the claims in
-`crates/group-sim/README.md`, `docs/STATUS-group-chat.md` "Executable coverage" and the case IDs in
+`design-models:crates/group-sim/src/{lib,tests,authority,reachability,scheduler}.rs` against the claims in
+`design-models:crates/group-sim/README.md`, `docs/STATUS-group-chat.md` "Executable coverage" and the case IDs in
 `docs/group-chat-tests.md`. No source or test was changed.
 
-Notation: `T:` = `crates/group-sim/src/tests.rs`, `A:` = `authority.rs`, `R:` = `reachability.rs`,
+Notation: `T:` = `design-models:crates/group-sim/src/tests.rs`, `A:` = `authority.rs`, `R:` = `reachability.rs`,
 `S:` = `scheduler.rs`. A test "asserts" a claim only if removing the behavior would make an
 assertion fail. Where a check is listed as not exercised, that conclusion comes from reading the
 code. **No mutation runs were made.** The predicted surviving mutations in §5 are hypotheses for the
@@ -16,7 +16,7 @@ coordinator to run, not results.
 ## 1. Test run (verified)
 
 ```
-python3 scripts/buildlock.py --who group-GA -- env CARGO_TARGET_DIR=/home/abe/p2p_chat/.claude/worktree/endpoint-rotation-blocking/target cargo test -p group-sim 2>&1 | tee /tmp/claude-1000/group-GA.log
+python3 scripts/buildlock.py --who group-GA -- env CARGO_TARGET_DIR=/home/abe/p2p_chat/.claude/worktree/endpoint-rotation-blocking/target cargo test -p group-sim (design-models branch) 2>&1 | tee /tmp/claude-1000/group-GA.log
 test result: ok. 24 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 22.60s
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s   (doc-tests)
 ```

@@ -4,16 +4,10 @@
 use std::sync::{Arc, Mutex, mpsc};
 use std::time::Duration;
 
-use p2pcore::{CallInfo, CallState, LinkEvents, Node, NodeEvents, NodeStatus};
+use p2pcore::{LinkEvents, Node};
 
-struct Quiet;
-impl NodeEvents for Quiet {
-    fn on_status(&self, _: NodeStatus) {}
-    fn on_contacts_changed(&self) {}
-    fn on_incoming_call(&self, _: CallInfo) {}
-    fn on_call_state(&self, _: String, _: CallState) {}
-    fn on_log(&self, _: String) {}
-}
+mod support;
+use support::*;
 
 struct L(Mutex<mpsc::Sender<String>>);
 impl LinkEvents for L {
@@ -29,9 +23,8 @@ impl LinkEvents for L {
     fn on_unlinked(&self, _: String) {}
 }
 
-fn node(tag: &str) -> (Arc<Node>, mpsc::Receiver<String>, std::path::PathBuf) {
-    let dir = std::env::temp_dir().join(format!("p2pcore-expiry-{tag}-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&dir);
+fn node(tag: &str) -> (Arc<Node>, mpsc::Receiver<String>, TempDir) {
+    let dir = TempDir::new("expiry", tag);
     let (tx, rx) = mpsc::channel();
     let n = Node::new(dir.to_string_lossy().into(), Arc::new(Quiet)).unwrap();
     n.set_link_events(Arc::new(L(Mutex::new(tx))));
@@ -56,5 +49,5 @@ fn an_expired_qr_is_refused() {
     e.link_show_qr().unwrap();
     e.link_cancel();
     e.stop();
-    let _ = (std::fs::remove_dir_all(d1), std::fs::remove_dir_all(d2));
+    drop((d1, d2));
 }

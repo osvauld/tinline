@@ -23,11 +23,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.automirrored.rounded.Reply
-import androidx.compose.material.icons.automirrored.rounded.Send
-import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -428,7 +423,7 @@ fun ConversationScreen(
                         Modifier.fillMaxWidth().padding(start = 0.dp, end = 0.dp, top = 8.dp, bottom = 8.dp).border(1.dp, c.ln2, SmoothCornerShape(14.dp)).padding(16.dp),
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        Icon(Icons.Rounded.History, null, tint = c.ink2)
+                        Icon(PgIcons.Clock, null, tint = c.ink2)
                         Column(Modifier.weight(1f)) {
                             Text("Older messages are on $first’s phone", style = TinType.bodyM.copy(fontSize = 15.sp, fontWeight = FontWeight.SemiBold), color = c.ink)
                             Text("This phone keeps them from when you started using it. Earlier days load when you’re both online.", Modifier.padding(top = 4.dp), style = TinType.bodyM, color = c.ink2)
@@ -846,9 +841,9 @@ private fun FileRow(a: Attachment, out: Boolean, prog: Pair<Long, Long>?, link: 
                 Box(Modifier.fillMaxWidth(frac.coerceIn(0f, 1f)).fillMaxHeight().background(c.pr))
             }
         }
-        if (canDownload && a.state == TransferState.REMOTE) IconBtn(Icons.Rounded.Download, "Download ${a.name}", onDownload, tint = c.pr)
+        if (canDownload && a.state == TransferState.REMOTE) IconBtn(PgIcons.Download, "Download ${a.name}", onDownload, tint = c.pr)
         if (!ready && (a.state == TransferState.DOWNLOADING || asked)) IconBtn(PgIcons.X, "Cancel download of ${a.name}", onCancel, tint = c.ink2)
-        if (ready && canOpen) IconBtn(Icons.Rounded.SaveAlt, "Save ${a.name} to phone", onSave, tint = if (out) c.onPrc else c.ink2)
+        if (ready && canOpen) IconBtn(PgIcons.Save, "Save ${a.name} to phone", onSave, tint = if (out) c.onPrc else c.ink2)
     }
 }
 
@@ -867,7 +862,7 @@ private fun ActionsSheet(
         )
         SheetAction(PgIcons.Reply, "Reply", onClick = onReply)
         if (m.text.isNotBlank()) SheetAction(PgIcons.Copy, "Copy text", onClick = onCopy)
-        if (m.attachment?.let { it.state == TransferState.READY || m.outgoing } == true) SheetAction(Icons.Rounded.SaveAlt, "Save to phone", onClick = onSave)
+        if (m.attachment?.let { it.state == TransferState.READY || m.outgoing } == true) SheetAction(PgIcons.Save, "Save to phone", onClick = onSave)
         if (m.outgoing && m.attachment == null) SheetAction(PgIcons.Edit, "Edit", onClick = onEdit)
         if (m.outgoing) SheetAction(PgIcons.Trash, if (isSelf) "Delete on all your devices" else "Delete for both of you", color = c.er, onClick = onDelete)
         if (m.outgoing) Hint(if (isSelf) "Edits and deletes reach your other devices when they’re online." else "Edits and deletes reach $first’s phone the next time you’re both online.", Modifier.padding(start = 8.dp, top = 8.dp))
@@ -891,7 +886,7 @@ private fun AttachSheet(first: String, isSelf: Boolean, onDismiss: () -> Unit, o
     TinSheet(onDismiss) {
         Text(if (isSelf) "Save for yourself" else "Send to $first", Modifier.padding(start = 4.dp, bottom = 8.dp), style = TinType.titleM, color = c.ink)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            listOf(Triple(Icons.Rounded.PhotoLibrary, "Photos & videos", onPhotos), Triple(PgIcons.Camera, "Camera", onCamera), Triple(PgIcons.File, "File", onFile)).forEach { (icon, label, go) ->
+            listOf(Triple(PgIcons.Image, "Photos & videos", onPhotos), Triple(PgIcons.Camera, "Camera", onCamera), Triple(PgIcons.File, "File", onFile)).forEach { (icon, label, go) ->
                 Column(Modifier.weight(1f).clip(SmoothCornerShape(12.dp)).clickable(role = Role.Button, onClick = go).padding(vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Box(Modifier.size(60.dp).clip(SmoothCornerShape(18.dp)).background(c.prc), contentAlignment = Alignment.Center) { Icon(icon, null, tint = c.onPrc) }
                     Text(label, style = TinType.bodyM.copy(fontWeight = FontWeight.Medium), color = c.ink)
@@ -922,8 +917,8 @@ private fun PhotoViewer(m: Message, name: String, source: ChatSource, onClose: (
                 Text(if (m.outgoing) "You" else name, style = TinType.bodyL.copy(fontWeight = FontWeight.SemiBold), color = Color.White)
                 Text(viewerWhen(m.at.toLong(), System.currentTimeMillis()), style = TinType.caption, color = Color(0xFFA6B2AD))
             }
-            IconBtn(Icons.Rounded.Share, "Share", onShare, tint = Color.White)
-            IconBtn(Icons.Rounded.SaveAlt, "Save to phone", onSave, tint = Color.White)
+            IconBtn(PgIcons.Share, "Share", onShare, tint = Color.White)
+            IconBtn(PgIcons.Save, "Save to phone", onSave, tint = Color.White)
         }
         Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
             bmp?.let { Image(it, m.attachment?.name, Modifier.fillMaxSize(), contentScale = ContentScale.Fit) }
@@ -957,7 +952,7 @@ private fun VoiceBubble(m: Message, a: Attachment, ready: Boolean, out: Boolean,
         Box(
             Modifier.size(40.dp).clip(CircleShape).background(c.pr).clickable(enabled = remote, role = Role.Button) { onDownload() },
             contentAlignment = Alignment.Center,
-        ) { Icon(if (remote) Icons.Rounded.Download else Icons.Rounded.PlayArrow, if (remote) "Download voice message" else "Voice message loading", tint = c.onPr) }
+        ) { Icon(if (remote) PgIcons.Download else PgIcons.Play, if (remote) "Download voice message" else "Voice message loading", tint = c.onPr) }
         Text(formatMs(a.durationMs.toInt()), style = TinType.caption.copy(fontFamily = PlexMono, fontSize = 12.sp), color = if (out) c.onPrc else c.ink2)
     }
 }

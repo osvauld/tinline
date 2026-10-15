@@ -1,5 +1,5 @@
 //! Fresh arrivals must not be replayed into selection frames preceding their arrival.
-use super::*;
+use super::world::*;
 #[test]
 fn gcall_stall_fix_preserves_exact_frame_boundary_admission() {
     let (mut s, _) = base();

@@ -249,13 +249,13 @@ other agents' worktrees. Coordinate shared block/device-sync interfaces before
 changing them; no group CRDT changes in this task.
 
 Current progress: initial linking inventory and discovery-knowledge model are in
-`endpoint-rotation-device-audit.md` and `scripts/test_rotation_discovery_model.py`.
+`endpoint-rotation-device-audit.md` and `design-models:scripts/test_rotation_discovery_model.py`.
 Real-signature characterization tests are in
 `crates/proto/tests/rotation_identity_boundary.rs`. They characterize current
 attestation behavior, not a completed signed-succession protocol.
 
 Signed-succession candidate model added in
-`crates/proto/tests/rotation_succession_model.rs`. Command run:
+`design-models:crates/proto/tests/rotation_succession_model.rs`. Command run:
 
 ```
 python3 scripts/buildlock.py --who endpoint-rotation -- cargo test -p proto --test rotation_succession_model --test rotation_identity_boundary
@@ -274,8 +274,8 @@ only compares against the locally accepted head; disconnected replicas can still
 accept different owner-signed forks. No fork convergence, expiry, bounded history
 paging, live transport, or crash fault injection has been implemented yet.
 
-Multi-device behavioral model added in `scripts/test_rotation_network_model.py`.
-Executed `python3 scripts/test_rotation_network_model.py`: 10 tests passed,
+Multi-device behavioral model added in `design-models:scripts/test_rotation_network_model.py`.
+Executed `python3 design-models:scripts/test_rotation_network_model.py`: 10 tests passed,
 including 20 seeded schedules of 150 events each. Re-ran discovery model: 6 passed.
 Each device has its own contact directory, policy, rotation schedule, sessions,
 and reachability. Fixture: Alice phone/laptop, Bob phone/laptop, Carol phone.
@@ -295,7 +295,7 @@ prediction, transport relay behavior, history bounds, fork convergence, or trace
 shrinking yet. Policy sync is explicit, not a globally shared block list.
 
 Added signed queue composition in
-`crates/proto/tests/support/rotation_network.rs`, included by the succession tests.
+`design-models:crates/proto/tests/support/rotation_network.rs`, included by the succession tests.
 Five new scenarios use the exact strict-history verifier on delivery: independent
 peer directories, wrong signer and receiver-side block checks, bounded history
 pages/offline gaps, ideal atomic-commit crash boundaries, and cloned-device forks

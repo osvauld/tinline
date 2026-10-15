@@ -24,6 +24,9 @@ object ChatMedia {
 
     fun clear(ctx: Context) { dir(ctx).deleteRecursively(); File(ctx.cacheDir, "chat_out").deleteRecursively(); File(ctx.cacheDir, "chat_camera").deleteRecursively() }
 
+    /** Bytes of decrypted copies and scratch files (what [clear] removes). */
+    fun size(ctx: Context): Long = listOf(dir(ctx), File(ctx.cacheDir, "chat_out"), File(ctx.cacheDir, "chat_camera")).sumOf { d -> d.walkTopDown().filter { it.isFile }.sumOf { it.length() } }
+
     private fun safe(name: String) = name.replace(Regex("[^A-Za-z0-9._ -]"), "_").take(80).ifBlank { "file" }
 
     /** The decrypted copy of [m]'s attachment, made on first use. Blocking. */

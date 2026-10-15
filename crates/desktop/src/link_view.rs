@@ -153,12 +153,13 @@ impl App {
         let l = &self.link;
         let left = l.remaining();
         let live = l.qr.is_some() && left > 0;
-        let mut col = column![].spacing(14).align_x(Alignment::Center);
+        let mut col = column![].spacing(14).align_x(Alignment::Center).width(Fill);
         if live {
             let q = l.qr.as_ref().unwrap();
-            // Link.svelte `.qr`: 208 on white, 12 padding, radius 20, a --line border.
+            // Link.svelte `.qr`: 256 on a computer (a link ticket is dense; the phone camera reads it from arm's length), white,
+            // 12 padding, radius 20, a --line border.
             col = col
-                .push(container(canvas(super::QrView(q)).width(Length::Fixed(208.0)).height(Length::Fixed(208.0))).padding(12)
+                .push(container(canvas(super::QrView(q)).width(Length::Fixed(256.0)).height(Length::Fixed(256.0))).padding(12)
                     .style(move |_: &Theme| container::Style { background: Some(Color::WHITE.into()), border: Border { color: t.line, width: 1.0, radius: 20.0.into() }, ..Default::default() }))
                 .push(tx(format!("Expires in {} \u{b7} works once", mmss(left)), 13.0, t.ink2));
             if !existing {

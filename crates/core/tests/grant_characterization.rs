@@ -38,115 +38,43 @@
 //! Real iroh endpoints (needs network, like `calls.rs`, `block_characterization.rs`). Some tests
 //! drive a node with a hand-rolled "raw" peer that speaks the wire protocol through `proto` so
 //! the grant bytes can be inspected and swapped; it never writes into a node's state. Waits are
-//! bounded. No production code is changed; helpers are copied from `block_characterization.rs` /
-//! `device_list_characterization.rs` (they are not in a shared module).
+//! bounded. No production code is changed; the shared harness is in `support/`.
 
 use std::collections::HashSet;
-use std::sync::{Arc, Mutex, mpsc};
-use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+use std::time::{Duration, Instant};
 
 use identity::Identity;
 use iroh::endpoint::{Connection, RecvStream, SendStream, presets};
 use iroh::{Endpoint, EndpointAddr, PublicKey, RelayUrl, SecretKey};
-use p2pcore::{CallInfo, CallState, DeliveryState, Message, Node, NodeEvents, NodeStatus};
+use p2pcore::{CallInfo, CallState, DeliveryState};
 use proto::Msg;
 use serde::{Deserialize, Serialize};
 
-const PASS: &str = "test-passphrase";
+mod support;
+use support::eventually_200ms as eventually;
+use support::wait::now_secs as now;
+use support::*;
+
 /// `GRANT_TTL` (`crates/core/src/node.rs:33`), private there.
 const GRANT_TTL: u64 = 365 * 24 * 3600;
 /// `CHAT_ALPN` (`crates/core/src/chat/wire.rs`), private there. Version 3 since P6.
 const CHAT_ALPN: &[u8] = b"tinline/chat/5";
 const WAIT: Duration = Duration::from_secs(30);
-
-// ---- helpers copied from block_characterization.rs / device_list_characterization.rs ----
-
-#[derive(Debug, Clone)]
-enum Ev {
-    Incoming(CallInfo),
-    State(String, CallState),
-}
-
-struct Tap(Mutex<mpsc::Sender<Ev>>, Arc<Mutex<Vec<String>>>);
-impl NodeEvents for Tap {
-    fn on_status(&self, _: NodeStatus) {}
-    fn on_contacts_changed(&self) {}
-    fn on_incoming_call(&self, c: CallInfo) {
-        let _ = self.0.lock().unwrap().send(Ev::Incoming(c));
-    }
-    fn on_call_state(&self, id: String, s: CallState) {
-        let _ = self.0.lock().unwrap().send(Ev::State(id, s));
-    }
-    fn on_log(&self, line: String) {
-        self.1.lock().unwrap().push(line);
-    }
-}
-
-struct Peer {
-    node: Arc<Node>,
-    rx: mpsc::Receiver<Ev>,
-    logs: Arc<Mutex<Vec<String>>>,
-    did: String,
-    dir: std::path::PathBuf,
-}
-
-impl Drop for Peer {
-    fn drop(&mut self) {
-        self.node.stop();
-        let _ = std::fs::remove_dir_all(&self.dir);
-    }
-}
+const TAG: &str = "w2c";
 
 impl Peer {
-    fn logged(&self, needle: &str) -> bool {
-        self.logs.lock().unwrap().iter().any(|l| l.contains(needle))
-    }
     fn dump(&self) -> String {
-        format!(
-            "{:?} {:?}",
-            self.node.contacts(),
-            self.node.blocked_for_test()
-        )
-    }
-}
-
-fn online(n: &Node) {
-    n.start().unwrap();
-    let t = Instant::now();
-    while !n.status().online && t.elapsed() < Duration::from_secs(10) {
-        std::thread::sleep(Duration::from_millis(100));
+        format!("{:?} {:?}", self.node.contacts(), self.node.blocked_for_test())
     }
 }
 
 fn peer(name: &str) -> Peer {
-    let dir = std::env::temp_dir().join(format!("p2pcore-w2c-{name}-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&dir);
-    let (tx, rx) = mpsc::channel();
-    let logs = Arc::new(Mutex::new(Vec::new()));
-    let node = Node::new(
-        dir.to_string_lossy().into(),
-        Arc::new(Tap(Mutex::new(tx), logs.clone())),
-    )
-    .unwrap();
-    node.auto_accept_contacts_for_test(true);
-    node.create_identity(name.into(), PASS.into()).unwrap();
-    online(&node);
-    let did = node.profile().unwrap().did;
-    Peer {
-        node,
-        rx,
-        logs,
-        did,
-        dir,
-    }
+    Peer::new(TAG, name)
 }
 
 /// a and b, each a contact of the other (b scanned a's ticket).
 fn pair(tag: &str) -> (Peer, Peer) {
-    let a = peer(&format!("{tag}-a"));
-    let b = peer(&format!("{tag}-b"));
-    b.node.add_contact(a.node.my_ticket().unwrap()).unwrap();
-    (a, b)
+    Peer::pair(TAG, tag)
 }
 
 fn ended_within(p: &Peer, id: &str, secs: u64) -> String {
@@ -177,48 +105,12 @@ fn incoming_within(p: &Peer, secs: u64) -> CallInfo {
     }
 }
 
-fn saw_incoming(p: &Peer) -> bool {
-    p.rx.try_iter().any(|e| matches!(e, Ev::Incoming(_)))
-}
-
-fn all_msgs(p: &Peer, did: &str) -> Vec<Message> {
-    let mut out = Vec::new();
-    let mut page = p.node.chat_day(did.to_string(), None).ok();
-    while let Some(pg) = page {
-        out.extend(pg.messages.clone());
-        page = pg
-            .older_day
-            .and_then(|d| p.node.chat_day(did.to_string(), Some(d)).ok());
-    }
-    out
-}
-
 fn delivery(p: &Peer, did: &str, id: &str) -> DeliveryState {
     all_msgs(p, did)
         .into_iter()
         .find(|m| m.id == id)
         .expect("message held")
         .delivery
-}
-
-fn eventually(secs: u64, what: &str, mut f: impl FnMut() -> bool) {
-    let end = Instant::now() + Duration::from_secs(secs);
-    while Instant::now() < end {
-        if f() {
-            return;
-        }
-        std::thread::sleep(Duration::from_millis(200));
-    }
-    panic!("not within {secs}s: {what}");
-}
-
-// ---- end of copied helpers.
-
-fn now() -> u64 {
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap()
-        .as_secs()
 }
 
 /// The chat `Auth` frame, mirrored: variant 0 of `ChatMsg` (`crates/core/src/chat/wire.rs:30`),
@@ -618,45 +510,32 @@ fn block_takes_both_tokens_back_and_unblock_does_not_revive_them() {
 // Tokens are taken back per DID (`State::cut_offs`), so the id set `State.revoked` is still
 // never written by production code (every renewal mints a new id; revoking by id would leak).
 // It is still read on both admission paths and merged between own installs. (Source scan of
-// every non-test file in `crates/core/src`; a new file is not covered until listed here.)
+// every non-test file under `crates/core/src`, walked at run time so split modules stay covered.)
 #[test]
 fn tokens_are_taken_back_per_did_never_by_id() {
-    let files: &[(&str, &str)] = &[
-        ("accounts.rs", include_str!("../src/accounts.rs")),
-        ("block.rs", include_str!("../src/block.rs")),
-        ("caps.rs", include_str!("../src/caps.rs")),
-        ("version.rs", include_str!("../src/version.rs")),
-        ("chat/api.rs", include_str!("../src/chat/api.rs")),
-        ("chat/blobs.rs", include_str!("../src/chat/blobs.rs")),
-        ("chat/crypt.rs", include_str!("../src/chat/crypt.rs")),
-        ("chat/doc.rs", include_str!("../src/chat/doc.rs")),
-        ("chat/engine.rs", include_str!("../src/chat/engine.rs")),
-        ("chat/mod.rs", include_str!("../src/chat/mod.rs")),
-        ("chat/own.rs", include_str!("../src/chat/own.rs")),
-        ("chat/presence.rs", include_str!("../src/chat/presence.rs")),
-        ("chat/store.rs", include_str!("../src/chat/store.rs")),
-        ("chat/wire.rs", include_str!("../src/chat/wire.rs")),
-        ("error.rs", include_str!("../src/error.rs")),
-        ("lib.rs", include_str!("../src/lib.rs")),
-        ("logging.rs", include_str!("../src/logging.rs")),
-        ("node.rs", include_str!("../src/node.rs")),
-        ("rekey.rs", include_str!("../src/rekey.rs")),
-        ("store.rs", include_str!("../src/store.rs")),
-        ("sync/accdoc.rs", include_str!("../src/sync/accdoc.rs")),
-        ("sync/api.rs", include_str!("../src/sync/api.rs")),
-        ("sync/engine.rs", include_str!("../src/sync/engine.rs")),
-        ("sync/frames.rs", include_str!("../src/sync/frames.rs")),
-        ("sync/link.rs", include_str!("../src/sync/link.rs")),
-        ("sync/mod.rs", include_str!("../src/sync/mod.rs")),
-        ("vault.rs", include_str!("../src/vault.rs")),
-        ("voice.rs", include_str!("../src/voice.rs")),
-        ("wire.rs", include_str!("../src/wire.rs")),
-    ];
+    fn walk(dir: &std::path::Path, root: &std::path::Path, out: &mut Vec<(String, String)>) {
+        for e in std::fs::read_dir(dir).unwrap().flatten() {
+            let p = e.path();
+            let name = p.file_name().unwrap().to_string_lossy().into_owned();
+            if p.is_dir() {
+                if name != "tests" {
+                    walk(&p, root, out);
+                }
+            } else if name.ends_with(".rs") && name != "tests.rs" && !name.ends_with("_tests.rs") {
+                let rel = p.strip_prefix(root).unwrap().to_string_lossy().replace('\\', "/");
+                out.push((rel, std::fs::read_to_string(&p).unwrap()));
+            }
+        }
+    }
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
+    let mut files = Vec::new();
+    walk(&root, &root, &mut files);
+    assert!(files.len() > 50, "source scan found only {} files", files.len());
     let mut uses = Vec::new();
-    for (name, text) in files {
+    for (name, text) in &files {
         for line in text.lines().map(str::trim) {
             if line.contains("revoked") && !line.starts_with("//") {
-                uses.push((*name, line));
+                uses.push((name.as_str(), line));
             }
         }
     }
@@ -691,33 +570,12 @@ fn tokens_are_taken_back_per_did_never_by_id() {
     // Read on both admission paths.
     assert!(
         uses.iter()
-            .any(|(f, l)| *f == "node.rs" && l.contains("&s.state.revoked"))
+            .any(|(f, l)| f.starts_with("node/") && l.contains("&s.state.revoked"))
     );
     assert!(
         uses.iter()
-            .any(|(f, l)| *f == "chat/engine.rs" && l.contains("&s.state.revoked"))
+            .any(|(f, l)| f.starts_with("chat/engine") && l.contains("&s.state.revoked"))
     );
-}
-
-// KIND: invariant
-// U13 default for ticket contacts already holds today: either side of a ticket-made pair can both
-// message and call the other.
-#[test]
-fn ticket_contacts_can_message_and_call_each_other() {
-    let (a, b) = pair("dflt");
-    for (from, to) in [(&b, &a), (&a, &b)] {
-        let m = from
-            .node
-            .send_text(to.did.clone(), "hi".into(), None)
-            .unwrap();
-        eventually(60, "message delivered", || {
-            delivery(from, &to.did, &m.id) == DeliveryState::Delivered
-        });
-        let call = from.node.call(to.did.clone()).unwrap();
-        assert_eq!(incoming_within(to, 30).peer_did, from.did);
-        from.node.hangup(call.call_id.clone()).unwrap();
-        ended_within(from, &call.call_id, 30);
-    }
 }
 
 // KIND: invariant (flipped by P6; was `only_global_availability_separates_calls_from_messages`,

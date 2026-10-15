@@ -14,7 +14,8 @@
 import { emitFx, fxLog } from '../fx/bus';
 import { audio } from '../fx/audio';
 import { dur, setTimeScale } from '../fx/motion';
-import { db, person, chat, pushMessage } from '../model/store.svelte';
+import { db, person, chat, pushMessage, ownerOf } from '../model/store.svelte';
+import { switchTo } from '../model/actions/names.svelte';
 import type { CallRecord } from '../model/types';
 import { nav } from '../nav/router.svelte';
 import './cues';
@@ -65,6 +66,9 @@ class Call {
   elapsedS = $state(0);
   /** The one incoming call ringing over my active call (null = none). */
   waiting = $state<Waiting | null>(null);
+  /** An incoming call to one of my OTHER names (not the open one): its id. The call says "To Studio"; answering opens that name. */
+  to = $state<string | null>(null);
+  get toName() { return this.to ? db.others.find((o) => o.id === this.to)?.name ?? null : null; }
 
   #waitTimer = 0;
   #answerNext = false;      // End & answer: the waiting call is answered the moment it takes the slot
@@ -123,6 +127,9 @@ class Call {
   receive(id: string, video = false): boolean {
     // The account key is not on this device until it is unlocked: nothing can ring (and nothing is recorded).
     if (db.account.gate !== 'ready') return false;
+    // A name that is offline on this device has no endpoint running: its calls never arrive here.
+    const owner = ownerOf(id);
+    if (owner && !owner.online) return false;
     const r = this.refusal(id);
     if (r === 'busy') {
       // Over an answered call, with nothing waiting yet: ring quietly over it. Otherwise Busy, left as a missed call.
@@ -140,6 +147,7 @@ class Call {
   /* ---------- my actions ---------- */
   answer(withCamera = false) {
     if (this.phase !== 'incoming') return;
+    this.#openOwner();
     this.#leave(); vid.answerWith(withCamera);   // video: camera off unless asked
     this.phase = 'connecting'; this.view = 'full';
     this.#later(CALL_MS.connect, () => this.#connected());
@@ -241,6 +249,7 @@ class Call {
     this.#begin(w.peer, 'in');
     this.fading = false; this.ringing = false;
     if (answer) {
+      this.#openOwner();
       this.phase = 'connecting'; this.view = 'full';
       this.#later(CALL_MS.connect, () => this.#connected());
     } else {
@@ -253,9 +262,17 @@ class Call {
   #begin(id: string, dir: 'out' | 'in', video = false) {
     this.#clearTimers();
     vid.begin(video, video && dir === 'out');   // video: a call placed from the video button turns my camera on at connect
+    this.to = dir === 'in' ? (ownerOf(id)?.id ?? null) : null;
     this.peer = id; this.direction = dir; this.endReason = null; this.muted = false; this.speaker = video && dir === 'out' ? 'speaker' : 'earpiece';
     this.fading = false; this.elapsedS = 0; this.#connectedMono = 0; this.#recorded = false;
     this.startedAt = Date.now();
+  }
+  /** Answering a call to another name opens that name first, so the call, its record and the chat are that name's. */
+  #openOwner() {
+    if (!this.to) return;
+    const i = db.others.findIndex((o) => o.id === this.to);
+    this.to = null;
+    if (i >= 0) switchTo(i);
   }
   /** Leaving ringing: stop the loop that was playing for it. */
   #leave() {
@@ -295,7 +312,7 @@ class Call {
   #reset() {
     this.#clearTimers(); vid.reset();
     this.#answerNext = false;
-    this.phase = 'idle'; this.peer = null; this.direction = null; this.view = 'full'; this.fading = false;
+    this.phase = 'idle'; this.peer = null; this.direction = null; this.to = null; this.view = 'full'; this.fading = false;
     this.endReason = null; this.ringing = false; this.muted = false; this.speaker = 'earpiece'; this.elapsedS = 0;
   }
   /** The ONE record per call. Unread only for a missed incoming call (Proposed). */

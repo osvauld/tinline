@@ -8,7 +8,7 @@ leaves behind, and what receivers may acknowledge. G-STORAGE and G-RETIREMENT
 nothing here selects one. Every number (interval 10, validity 15, grace 3/100, overlap 3/100)
 is a **test-only fixture**, not a product default.
 
-Executable model: `crates/proto/tests/rotation_storage_contracts.rs` (13 tests).
+Executable model: `design-models:crates/proto/tests/rotation_storage_contracts.rs` (13 tests).
 `Claims`/`Permit`/`View` copied from `rotation_time_contracts.rs` @f3cf3ed (`View::live`
 omitted). The schedule fields and `fixture_key` are copied from C1 in the same way.
 
@@ -27,7 +27,7 @@ Process-crash coverage is not evidence of power-loss durability (same rule as
 | `account.json` writes go temp file, fsync, rename, then fsync the directory. Each file is atomic on its own | `crates/core/src/store.rs:560-579` |
 | The registry, `own_list`, contacts and blocks are in `account.redb`, which is a separate file from `account.json` | `crates/core/src/store.rs:10,212-223`; A1 `rotation-baseline-report.md:87-90,117-119` |
 | One endpoint is built per unlock and never rebound. The only key-replacement path today is restore-over-existing, which tombstones the old key | A1 `rotation-baseline-report.md:105,108` (`node.rs:1768-1816`, `node.rs:1273-1293`) |
-| The existing lifecycle fixture commits the whole successor in one ideal clone before install/notify. It crash-tests 5 coarse points and has no failure (non-crash) injection | `crates/proto/tests/support/rotation_permit_lifecycle.rs:1-2,91-125` |
+| The existing lifecycle fixture commits the whole successor in one ideal clone before install/notify. It crash-tests 5 coarse points and has no failure (non-crash) injection | `design-models:crates/proto/tests/support/rotation_permit_lifecycle.rs:1-2,91-125` |
 | The existing fixture says an unannounced draft may be replaced after a crash, and that overdue install must happen before going online | `rotation_permit_lifecycle.rs:110-118` |
 | C1 scheduler persistence is an ideal struct assignment, and the checkpoint frequency is left to C2/G-STORAGE | `docs/design/rotation-time-contract.md` §6 |
 | Group persistence vocabulary: durability boundary, "no storage ack before commit", idempotent resend from persisted originals, simulated vs real durability | `docs/group-chat-tests.md:97-109` (S01–S07), `docs/STATUS-group-chat.md:103-112` |

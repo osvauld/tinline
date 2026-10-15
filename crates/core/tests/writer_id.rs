@@ -6,34 +6,13 @@
 //! - `KIND: invariant`: holds and should keep holding.
 
 use std::sync::Arc;
-use std::time::{Duration, Instant};
+use p2pcore::{DeliveryState, Node};
 
-use p2pcore::{CallInfo, CallState, DeliveryState, Message, Node, NodeEvents, NodeStatus};
+mod support;
+use support::eventually_200ms as eventually;
+use support::*;
 
-const PASS: &str = "test-passphrase";
-
-struct Quiet;
-impl NodeEvents for Quiet {
-    fn on_status(&self, _: NodeStatus) {}
-    fn on_contacts_changed(&self) {}
-    fn on_incoming_call(&self, _: CallInfo) {}
-    fn on_call_state(&self, _: String, _: CallState) {}
-    fn on_log(&self, _: String) {}
-}
-
-struct Peer {
-    node: Arc<Node>,
-    did: String,
-    phrase: String,
-    dir: std::path::PathBuf,
-}
-
-impl Drop for Peer {
-    fn drop(&mut self) {
-        self.node.stop();
-        let _ = std::fs::remove_dir_all(&self.dir);
-    }
-}
+const TAG: &str = "p9";
 
 fn open(dir: &std::path::Path) -> Arc<Node> {
     let node = Node::new(dir.to_string_lossy().into(), Arc::new(Quiet)).unwrap();
@@ -41,53 +20,16 @@ fn open(dir: &std::path::Path) -> Arc<Node> {
     node
 }
 
-fn online(n: &Node) {
-    n.start().unwrap();
-    let t = Instant::now();
-    while !n.status().online && t.elapsed() < Duration::from_secs(10) {
-        std::thread::sleep(Duration::from_millis(100));
-    }
-}
-
 fn peer(name: &str) -> Peer {
-    let dir = std::env::temp_dir().join(format!("p2pcore-p9-{name}-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&dir);
-    let node = open(&dir);
-    let phrase = node.create_identity(name.into(), PASS.into()).unwrap();
-    online(&node);
-    let did = node.profile().unwrap().did;
-    Peer { node, did, phrase, dir }
+    Peer::new(TAG, name)
 }
 
 /// Drops the node and opens the same data directory again (a process restart).
 fn restart(p: &mut Peer) {
-    p.node.stop();
-    let old = std::mem::replace(&mut p.node, open(&p.dir));
-    drop(old);
+    p.reopen();
     // No pause: `chat_open` waits for a `chat.redb` the old node's tasks still hold (P10).
     p.node.unlock(PASS.into()).unwrap();
     online(&p.node);
-}
-
-fn eventually(secs: u64, what: &str, mut f: impl FnMut() -> bool) {
-    let end = Instant::now() + Duration::from_secs(secs);
-    while Instant::now() < end {
-        if f() {
-            return;
-        }
-        std::thread::sleep(Duration::from_millis(200));
-    }
-    panic!("timed out waiting for {what}");
-}
-
-fn all_msgs(p: &Peer, did: &str) -> Vec<Message> {
-    let mut out = Vec::new();
-    let mut page = p.node.chat_day(did.to_string(), None).ok();
-    while let Some(pg) = page {
-        out.extend(pg.messages.clone());
-        page = pg.older_day.and_then(|d| p.node.chat_day(did.to_string(), Some(d)).ok());
-    }
-    out
 }
 
 fn text_of(p: &Peer, did: &str, id: &str) -> Option<String> {

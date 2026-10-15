@@ -5,7 +5,9 @@ use std::time::{Duration, Instant};
 
 use p2pcore::{CallInfo, CallState, LinkEvents, Node, NodeEvents, NodeStatus};
 
-pub const PASS: &str = "test-passphrase";
+mod support;
+use support::{PASS, TempDir, online};
+use support::eventually_200ms as eventually;
 
 #[derive(Debug, Clone)]
 pub enum Ev {
@@ -63,33 +65,23 @@ pub struct Peer {
     pub rx: mpsc::Receiver<Ev>,
     pub lrx: mpsc::Receiver<LEv>,
     pub did: String,
-    pub dir: std::path::PathBuf,
+    pub dir: TempDir,
 }
 
 impl Drop for Peer {
     fn drop(&mut self) {
         self.node.stop();
-        let _ = std::fs::remove_dir_all(&self.dir);
     }
 }
 
 pub fn blank(name: &str) -> Peer {
-    let dir = std::env::temp_dir().join(format!("p2pcore-link-{name}-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&dir);
+    let dir = TempDir::new("link", name);
     let (tx, rx) = mpsc::channel();
     let (ltx, lrx) = mpsc::channel();
     let node = Node::new(dir.to_string_lossy().into(), Arc::new(Tap(Mutex::new(tx)))).unwrap();
     node.auto_accept_contacts_for_test(true);
     node.set_link_events(Arc::new(LTap(Mutex::new(ltx))));
     Peer { node, rx, lrx, did: String::new(), dir }
-}
-
-pub fn online(n: &Node) {
-    n.start().unwrap();
-    let t = Instant::now();
-    while !n.status().online && t.elapsed() < Duration::from_secs(10) {
-        std::thread::sleep(Duration::from_millis(100));
-    }
 }
 
 pub fn make_peer(name: &str) -> Peer {
@@ -112,17 +104,6 @@ pub fn wait_for<T>(p: &Peer, secs: u64, what: &str, mut f: impl FnMut(&LEv) -> O
             Err(_) => panic!("timed out waiting for {what}"),
         }
     }
-}
-
-pub fn eventually(secs: u64, what: &str, mut f: impl FnMut() -> bool) {
-    let end = Instant::now() + Duration::from_secs(secs);
-    while Instant::now() < end {
-        if f() {
-            return;
-        }
-        std::thread::sleep(Duration::from_millis(200));
-    }
-    panic!("timed out waiting for {what}");
 }
 
 pub fn expect<T>(p: &Peer, secs: u64, what: &str, mut f: impl FnMut(&Ev) -> Option<T>) -> T {
@@ -625,8 +606,7 @@ fn reading_on_one_device_clears_unread_on_the_other() {
 #[test]
 fn a_file_from_the_contact_reaches_the_other_device_through_ours_while_the_contact_is_offline() {
     let (a, b1, b2) = trio("c4");
-    let dir = std::env::temp_dir().join(format!("p2pcore-c4-{}", std::process::id()));
-    std::fs::create_dir_all(&dir).unwrap();
+    let dir = TempDir::created("c4", "src");
     let src = dir.join("pic.bin");
     let bytes: Vec<u8> = (0..300_000u32).map(|i| (i.wrapping_mul(31) % 251) as u8).collect();
     std::fs::write(&src, &bytes).unwrap();
@@ -644,7 +624,6 @@ fn a_file_from_the_contact_reaches_the_other_device_through_ours_while_the_conta
     let out = dir.join("out.bin");
     b2.node.save_attachment(a.did.clone(), m.id.clone(), out.to_string_lossy().into()).unwrap();
     assert_eq!(std::fs::read(&out).unwrap(), bytes);
-    let _ = std::fs::remove_dir_all(&dir);
 }
 
 // chat/5 + self/4: a photo's size and colour preview arrive with the message (before any download), at the

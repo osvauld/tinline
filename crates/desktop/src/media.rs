@@ -146,6 +146,19 @@ fn private_dir(p: &Path) -> std::io::Result<()> {
     std::fs::create_dir_all(p)
 }
 
+/// Bytes in the decrypted-copy cache (Settings > Storage).
+pub fn cache_bytes() -> u64 {
+    fn walk(p: &Path) -> u64 {
+        let Ok(rd) = std::fs::read_dir(p) else { return 0 };
+        rd.filter_map(|e| e.ok()).map(|e| match e.metadata() {
+            Ok(m) if m.is_dir() => walk(&e.path()),
+            Ok(m) => m.len(),
+            Err(_) => 0,
+        }).sum()
+    }
+    walk(&root())
+}
+
 /// Empties the cache; at start, and when the app quits.
 pub fn wipe(data: &Path) {
     let _ = std::fs::remove_dir_all(data.join("cache").join("media"));

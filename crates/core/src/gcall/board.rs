@@ -8,14 +8,6 @@ use proto::gcall::{self as w, CallStart, EndReason, HostRef};
 
 use super::*;
 
-/// §2.3 tie-break and §5 split order: `BLAKE3(call_id || host_ref)`.
-pub fn tie_hash(call_id: &str, r: &HostRef) -> [u8; 32] {
-    let mut h = blake3::Hasher::new();
-    h.update(call_id.as_bytes());
-    h.update(&serde_json::to_vec(r).expect("host refs serialize"));
-    *h.finalize().as_bytes()
-}
-
 /// §3.1 glare: the lower `BLAKE3(call_id)` wins.
 pub fn call_hash(call_id: &str) -> [u8; 32] {
     *blake3::hash(call_id.as_bytes()).as_bytes()
@@ -60,10 +52,11 @@ impl CallBoard {
             if have.host_ref == s.host_ref {
                 return Err(Refusal::Duplicate);
             }
-            // Split after redial (§5): the lower index in the previous backups wins.
+            // Split after redial (§5): the lower index in the previous backups wins; hosts
+            // outside that list fall back to the §2.3 tie-hash (`rank::tie_hash`).
             let order = self.prev.get(&s.call_id).map(|p| p.backups.clone()).unwrap_or_default();
             let idx = |r: &HostRef| order.iter().position(|b| b == r).unwrap_or(usize::MAX);
-            if (idx(&s.host_ref), tie_hash(&s.call_id, &s.host_ref)) >= (idx(&have.host_ref), tie_hash(&s.call_id, &have.host_ref)) {
+            if (idx(&s.host_ref), rank::tie_hash(&s.call_id, &s.host_ref)) >= (idx(&have.host_ref), rank::tie_hash(&s.call_id, &have.host_ref)) {
                 return Err(Refusal::Superseded);
             }
         }
@@ -117,11 +110,6 @@ impl CallBoard {
         self.starts.get(call_id)
     }
 
-    /// The CallStart of the generation before the current one (redial source).
-    pub fn previous(&self, call_id: &str) -> Option<&CallStart> {
-        self.prev.get(call_id)
-    }
-
     /// The generation this device may host on a first valid Join: it is a backup of the
     /// current CallStart.
     pub fn may_take(&self, call_id: &str) -> Option<u32> {
@@ -131,6 +119,7 @@ impl CallBoard {
     }
 
     /// The live call hosted by `host` (to follow an `End{superseded, next_host}`).
+    #[cfg(test)]
     pub fn hosted_by(&self, host: &HostRef) -> Option<&CallStart> {
         self.starts.values().find(|s| s.host_ref == *host)
     }

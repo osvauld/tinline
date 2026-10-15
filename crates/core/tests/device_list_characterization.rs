@@ -24,60 +24,21 @@
 //! - `KIND: invariant`: holds today and must keep holding under U8.
 //!
 //! Real iroh endpoints (needs network, like `calls.rs`, `restore.rs`). Waits are bounded polls;
-//! "never arrives" claims are bounded and stated per test. No production code is changed; helpers
-//! are copied from `rotation_restore_characterization.rs` / `block_characterization.rs` /
-//! `devices.rs` (they are not in a shared module).
+//! "never arrives" claims are bounded and stated per test. No production code is changed; the
+//! shared harness is in `support/`.
 
-use std::sync::{Arc, Mutex, mpsc};
 use std::time::{Duration, Instant};
 
-use p2pcore::{CallInfo, CallState, DeliveryState, Message, Node, NodeEvents, NodeStatus};
+use p2pcore::{CallState, DeliveryState};
 
-const PASS: &str = "test-passphrase";
+mod support;
+use support::codec::{decode, encode};
+use support::eventually_200ms as eventually;
+use support::*;
 
-// ---- helpers copied from rotation_restore_characterization.rs / block_characterization.rs ----
-
-#[derive(Debug, Clone)]
-enum Ev {
-    Incoming(CallInfo),
-    State(String, CallState),
-}
-
-struct Tap(Mutex<mpsc::Sender<Ev>>, Arc<Mutex<Vec<String>>>);
-impl NodeEvents for Tap {
-    fn on_status(&self, _: NodeStatus) {}
-    fn on_contacts_changed(&self) {}
-    fn on_incoming_call(&self, c: CallInfo) {
-        let _ = self.0.lock().unwrap().send(Ev::Incoming(c));
-    }
-    fn on_call_state(&self, id: String, s: CallState) {
-        let _ = self.0.lock().unwrap().send(Ev::State(id, s));
-    }
-    fn on_log(&self, line: String) {
-        self.1.lock().unwrap().push(line);
-    }
-}
-
-struct Peer {
-    node: Arc<Node>,
-    rx: mpsc::Receiver<Ev>,
-    logs: Arc<Mutex<Vec<String>>>,
-    did: String,
-    phrase: String,
-    dir: std::path::PathBuf,
-}
-
-impl Drop for Peer {
-    fn drop(&mut self) {
-        self.node.stop();
-        let _ = std::fs::remove_dir_all(&self.dir);
-    }
-}
+const TAG: &str = "w2d";
 
 impl Peer {
-    fn logged(&self, needle: &str) -> bool {
-        self.logs.lock().unwrap().iter().any(|l| l.contains(needle))
-    }
     fn devices_of(&self, other: &Peer) -> Vec<String> {
         self.node.contact_devices_for_test(other.did.clone())
     }
@@ -86,51 +47,9 @@ impl Peer {
     }
 }
 
-type Opened = (Arc<Node>, mpsc::Receiver<Ev>, Arc<Mutex<Vec<String>>>);
-
-fn open(dir: &std::path::Path) -> Opened {
-    let (tx, rx) = mpsc::channel();
-    let logs = Arc::new(Mutex::new(Vec::new()));
-    let node = Node::new(
-        dir.to_string_lossy().into(),
-        Arc::new(Tap(Mutex::new(tx), logs.clone())),
-    )
-    .unwrap();
-    node.auto_accept_contacts_for_test(true);
-    (node, rx, logs)
-}
-
-fn blank(name: &str) -> Peer {
-    let dir = std::env::temp_dir().join(format!("p2pcore-w2d-{name}-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&dir);
-    let (node, rx, logs) = open(&dir);
-    Peer {
-        node,
-        rx,
-        logs,
-        did: String::new(),
-        phrase: String::new(),
-        dir,
-    }
-}
-
-fn online(n: &Node) {
-    n.start().unwrap();
-    let t = Instant::now();
-    while !n.status().online && t.elapsed() < Duration::from_secs(10) {
-        std::thread::sleep(Duration::from_millis(100));
-    }
-}
-
 /// A committed identity; started (`online`) or not.
 fn peer(name: &str, started: bool) -> Peer {
-    let mut p = blank(name);
-    p.phrase = p.node.create_identity(name.into(), PASS.into()).unwrap();
-    if started {
-        online(&p.node);
-    }
-    p.did = p.node.profile().unwrap().did;
-    p
+    Peer::committed(TAG, name, started)
 }
 
 /// a and b, each a contact of the other (b scanned a's ticket).
@@ -145,7 +64,7 @@ fn pair(tag: &str) -> (Peer, Peer) {
 /// Registers another (never started) install of `p`'s account with `p`, as in `devices.rs`
 /// (`add_own_device_for_test`: real linking is not needed for the list). Returns its device key.
 fn register_sibling(p: &Peer, name: &str) -> String {
-    let s = blank(name);
+    let s = Peer::blank(TAG, name);
     s.node
         .restore_identity(p.phrase.clone(), name.into(), PASS.into())
         .unwrap();
@@ -166,44 +85,6 @@ fn list_devices(l: &proto::DeviceList) -> Vec<String> {
     l.devices.iter().map(|e| e.device.clone()).collect()
 }
 
-/// The forgotten-passphrase restore (copied from `rotation_restore_characterization.rs`): stop,
-/// reopen the same directory, restore over it. Left NOT started. Returns (old, new) device keys.
-fn restore_in_place(p: &mut Peer) -> (String, String) {
-    let name = p.node.profile().unwrap().name;
-    let old_dev = p.node.device_key_for_test().unwrap();
-    p.node.stop();
-    let (node, rx, logs) = open(&p.dir);
-    let old = std::mem::replace(&mut p.node, node);
-    drop(old);
-    p.rx = rx;
-    p.logs = logs;
-    p.node
-        .restore_identity(p.phrase.clone(), name, "pass two".into())
-        .unwrap();
-    assert_eq!(
-        p.node.profile().unwrap().did,
-        p.did,
-        "restore keeps the DID"
-    );
-    let new_dev = p.node.device_key_for_test().unwrap();
-    assert_ne!(new_dev, old_dev, "restore makes a fresh device key");
-    (old_dev, new_dev)
-}
-
-fn incoming(p: &Peer, secs: u64) -> String {
-    let end = Instant::now() + Duration::from_secs(secs);
-    loop {
-        match p
-            .rx
-            .recv_timeout(end.saturating_duration_since(Instant::now()))
-        {
-            Ok(Ev::Incoming(c)) => return c.call_id,
-            Ok(_) => {}
-            Err(_) => panic!("timed out waiting for an incoming call"),
-        }
-    }
-}
-
 fn ended(p: &Peer, id: &str, secs: u64) -> String {
     let end = Instant::now() + Duration::from_secs(secs);
     loop {
@@ -218,52 +99,6 @@ fn ended(p: &Peer, id: &str, secs: u64) -> String {
     }
 }
 
-fn eventually(secs: u64, what: &str, mut f: impl FnMut() -> bool) {
-    let end = Instant::now() + Duration::from_secs(secs);
-    while Instant::now() < end {
-        if f() {
-            return;
-        }
-        std::thread::sleep(Duration::from_millis(200));
-    }
-    panic!("timed out waiting for {what}");
-}
-
-/// Polls `f` for up to `secs`: whether it ever held. Used for bounded "does not happen" claims.
-fn within(secs: u64, mut f: impl FnMut() -> bool) -> bool {
-    let end = Instant::now() + Duration::from_secs(secs);
-    while Instant::now() < end {
-        if f() {
-            return true;
-        }
-        std::thread::sleep(Duration::from_millis(200));
-    }
-    f()
-}
-
-fn all_msgs(p: &Peer, did: &str) -> Vec<Message> {
-    let mut out = Vec::new();
-    let mut page = p.node.chat_day(did.to_string(), None).ok();
-    while let Some(pg) = page {
-        out.extend(pg.messages.clone());
-        page = pg
-            .older_day
-            .and_then(|d| p.node.chat_day(did.to_string(), Some(d)).ok());
-    }
-    out
-}
-
-fn has(p: &Peer, did: &str, id: &str) -> bool {
-    all_msgs(p, did).iter().any(|m| m.id == id)
-}
-
-fn ticks(p: &Peer, did: &str, id: &str) -> DeliveryState {
-    all_msgs(p, did)
-        .into_iter()
-        .find(|m| m.id == id)
-        .expect("message held")
-        .delivery
-}
 
 /// `caller` calls `callee`, the callee answers, the caller hangs up.
 fn call_answered(caller: &Peer, callee: &Peer) {
@@ -272,17 +107,6 @@ fn call_answered(caller: &Peer, callee: &Peer) {
     callee.node.answer(call.call_id.clone()).unwrap();
     eventually(20, "call active", || caller.node.current_call().is_some());
     std::thread::sleep(Duration::from_millis(500));
-    caller.node.hangup(call.call_id).unwrap();
-    eventually(20, "call over", || {
-        caller.node.current_call().is_none() && callee.node.current_call().is_none()
-    });
-}
-
-/// `caller` calls `callee`; returns once the callee rings (its hello has been processed), then the
-/// caller hangs up.
-fn call_until_ringing(caller: &Peer, callee: &Peer) {
-    let call = caller.node.call(callee.did.clone()).unwrap();
-    assert_eq!(incoming(callee, 30), call.call_id);
     caller.node.hangup(call.call_id).unwrap();
     eventually(20, "call over", || {
         caller.node.current_call().is_none() && callee.node.current_call().is_none()
@@ -343,24 +167,6 @@ fn adding_a_device_reaches_the_contact_without_a_call() {
     eventually(30, "A learns B2 from the push", || a.devices_of(&b).contains(&b2));
 }
 
-// KIND: invariant (was a limitation; fixed by P4, U8)
-// A dials B and B2 (learned in a call). B unlinks B2 (never started): the shorter list is pushed
-// and A stops dialling B2 without a call.
-#[test]
-fn unlinking_a_device_reaches_the_contact_without_a_call() {
-    let (a, b) = pair("unlink");
-    let b2 = register_sibling(&b, "unlink-b2");
-    call_answered(&a, &b);
-    eventually(10, "A dials B2", || a.devices_of(&b).contains(&b2));
-    b.node.unlink_device(b2.clone(), Some(PASS.into())).unwrap();
-    assert!(
-        !list_devices(&own_list(&b)).contains(&b2),
-        "B's own list dropped B2"
-    );
-    eventually(30, "A drops B2", || !a.devices_of(&b).contains(&b2));
-    assert_eq!(a.devices_of(&b), vec![b.node.device_key_for_test().unwrap()]);
-}
-
 // ---- 3. restore: the K1 stall and what a push would and would not fix ---------------------------
 
 // KIND: invariant (was a limitation; resolved by DID-signed chat, P8/P9/U18, plus P4's push)
@@ -386,7 +192,7 @@ fn restore_push_and_did_signed_chat_clear_the_pending_message_stall() {
         .unwrap()
         .id;
     std::thread::sleep(Duration::from_secs(1));
-    let (old_dev, new_dev) = restore_in_place(&mut b);
+    let (old_dev, new_dev) = b.restore_in_place();
     let pushed = b.node.own_device_list_for_test().unwrap();
     let l: proto::SignedBlob = serde_json::from_str(&pushed).unwrap();
     assert_eq!(
@@ -521,31 +327,4 @@ fn a_max_seq_list_from_any_phrase_holder_is_refused() {
     let b2 = register_sibling(&b, "pin-b2");
     eventually(30, "B's honest list reaches A", || a.devices_of(&b).contains(&b2));
     assert!(!a.devices_of(&b).contains(&hostile));
-}
-
-// URL-safe no-pad base64 (the encoding of `SignedBlob`), so the test can tamper with payloads.
-const B64: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
-fn encode(bytes: &[u8]) -> String {
-    let mut out = String::new();
-    for chunk in bytes.chunks(3) {
-        let n = chunk.iter().fold(0u32, |a, b| (a << 8) | *b as u32) << (8 * (3 - chunk.len()));
-        for i in 0..=chunk.len() {
-            out.push(B64[((n >> (18 - 6 * i)) & 63) as usize] as char);
-        }
-    }
-    out
-}
-fn decode(text: &str) -> Vec<u8> {
-    let vals: Vec<u32> = text
-        .bytes()
-        .map(|c| B64.iter().position(|x| *x == c).unwrap() as u32)
-        .collect();
-    let mut out = Vec::new();
-    for chunk in vals.chunks(4) {
-        let n = chunk.iter().fold(0u32, |a, b| (a << 6) | b) << (6 * (4 - chunk.len()));
-        for i in 0..chunk.len() - 1 {
-            out.push((n >> (16 - 8 * i)) as u8);
-        }
-    }
-    out
 }

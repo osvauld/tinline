@@ -10,117 +10,25 @@
 //! - `KIND: invariant`: the correct outcome; must keep holding.
 //! - `KIND: limitation`: today's accepted outcome, with the better one named in the comment.
 //!
-//! Real iroh endpoints (needs network, like `restore.rs`). Waits are bounded polls. Helpers are
-//! copied from `rotation_restore_characterization.rs` / `restore.rs` (no shared test module).
+//! Real iroh endpoints (needs network, like `restore.rs`). Waits are bounded polls. The shared
+//! harness is in `support/`.
 
-use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use p2pcore::{CallInfo, CallState, Message, Node, NodeEvents, NodeStatus};
+mod support;
+use support::eventually_200ms as eventually;
+use support::wait::now_secs as now;
+use support::*;
 
-const PASS: &str = "test-passphrase";
-
-struct Tap;
-impl NodeEvents for Tap {
-    fn on_status(&self, _: NodeStatus) {}
-    fn on_contacts_changed(&self) {}
-    fn on_incoming_call(&self, _: CallInfo) {}
-    fn on_call_state(&self, _: String, _: CallState) {}
-    fn on_log(&self, _: String) {}
-}
-
-struct Peer {
-    node: Arc<Node>,
-    did: String,
-    phrase: String,
-    dir: std::path::PathBuf,
-}
-
-impl Drop for Peer {
-    fn drop(&mut self) {
-        self.node.stop();
-        let _ = std::fs::remove_dir_all(&self.dir);
-    }
-}
-
-fn open(dir: &std::path::Path) -> Arc<Node> {
-    let node = Node::new(dir.to_string_lossy().into(), Arc::new(Tap)).unwrap();
-    node.auto_accept_contacts_for_test(true);
-    node
-}
-
-fn online(n: &Node) {
-    n.start().unwrap();
-    let t = Instant::now();
-    while !n.status().online && t.elapsed() < Duration::from_secs(10) {
-        std::thread::sleep(Duration::from_millis(100));
-    }
-}
+const TAG: &str = "p2";
 
 /// A committed identity (with a passphrase, so it is written at once); started or not.
 fn peer(name: &str, started: bool) -> Peer {
-    let dir = std::env::temp_dir().join(format!("p2pcore-p2-{name}-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&dir);
-    let node = open(&dir);
-    let phrase = node.create_identity(name.into(), PASS.into()).unwrap();
-    if started {
-        online(&node);
-    }
-    let did = node.profile().unwrap().did;
-    Peer { node, did, phrase, dir }
-}
-
-/// Stops the node and opens the same data directory again (locked).
-fn reopen(p: &mut Peer) {
-    p.node.stop();
-    let old = std::mem::replace(&mut p.node, open(&p.dir));
-    drop(old);
-}
-
-/// The forgotten-passphrase restore (`restore.rs`): reopen, then restore over the existing
-/// account with the phrase and the same name. Left NOT started. Returns (old, new) device keys.
-fn restore_in_place(p: &mut Peer) -> (String, String) {
-    let name = p.node.profile().unwrap().name;
-    let old_dev = p.node.device_key_for_test().unwrap();
-    reopen(p);
-    p.node.restore_identity(p.phrase.clone(), name, "pass two".into()).unwrap();
-    assert_eq!(p.node.profile().unwrap().did, p.did, "restore keeps the DID");
-    let new_dev = p.node.device_key_for_test().unwrap();
-    assert_ne!(new_dev, old_dev, "restore makes a fresh device key");
-    (old_dev, new_dev)
+    Peer::committed(TAG, name, started)
 }
 
 fn claim(ticket: &str) -> proto::InviteClaim {
     proto::ContactTicket::from_text(ticket).unwrap().verify(now()).unwrap()
-}
-
-fn now() -> u64 {
-    std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs()
-}
-
-fn eventually(secs: u64, what: &str, mut f: impl FnMut() -> bool) {
-    let end = Instant::now() + Duration::from_secs(secs);
-    while Instant::now() < end {
-        if f() {
-            return;
-        }
-        std::thread::sleep(Duration::from_millis(200));
-    }
-    panic!("timed out waiting for {what}");
-}
-
-fn all_msgs(p: &Peer, did: &str) -> Vec<Message> {
-    let mut out = Vec::new();
-    let mut page = p.node.chat_day(did.to_string(), None).ok();
-    while let Some(pg) = page {
-        out.extend(pg.messages.clone());
-        page = pg.older_day.and_then(|d| p.node.chat_day(did.to_string(), Some(d)).ok());
-    }
-    out
-}
-
-fn has(p: &Peer, did: &str, id: &str) -> bool {
-    all_msgs(p, did).iter().any(|m| m.id == id)
 }
 
 // KIND: invariant
@@ -133,8 +41,9 @@ fn after_restore_my_ticket_names_the_current_device_key_and_redeems() {
     let mut b = peer("new-b", true);
     let c = peer("new-c", true);
     let before = b.node.my_ticket().unwrap();
-    let (old_dev, new_dev) = restore_in_place(&mut b);
+    let (old_dev, new_dev) = b.restore_in_place();
     assert_eq!(claim(&before).device, old_dev);
+    assert_ne!(old_dev, new_dev, "a restore replaces the device key");
 
     let offline = b.node.my_ticket().unwrap();
     assert_ne!(offline, before, "the pre-restore ticket is not handed out again");
@@ -166,15 +75,15 @@ fn unchanged_device_key_keeps_the_cached_ticket() {
     let mut b = peer("same-b", true);
     let before = b.node.my_ticket().unwrap();
     let dev = b.node.device_key_for_test().unwrap();
-    reopen(&mut b);
+    b.reopen();
     b.node.unlock(PASS.into()).unwrap();
     assert_eq!(b.node.device_key_for_test().unwrap(), dev, "unlock keeps the device key");
     assert_eq!(b.node.my_ticket().unwrap(), before, "same key: same ticket");
 
-    restore_in_place(&mut b);
+    b.restore_in_place();
     let first = b.node.my_ticket().unwrap();
     assert_eq!(b.node.my_ticket().unwrap(), first, "re-issued once, then stable");
-    reopen(&mut b);
+    b.reopen();
     b.node.unlock("pass two".into()).unwrap();
     assert_eq!(b.node.my_ticket().unwrap(), first, "and it survives a restart");
 }
@@ -191,7 +100,7 @@ fn a_pre_restore_ticket_fails_without_creating_a_contact() {
     let mut b = peer("old-b", true);
     let c = peer("old-c", true);
     let before = b.node.my_ticket().unwrap();
-    restore_in_place(&mut b);
+    b.restore_in_place();
     online(&b.node);
     assert_ne!(b.node.my_ticket().unwrap(), before, "B hands out a different ticket now");
 

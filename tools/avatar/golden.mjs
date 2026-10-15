@@ -1,7 +1,7 @@
 // Checks the playground fingerprint port against the Rust golden file.
 //   node tools/avatar/golden.mjs   (exit 1 on any mismatch)
 import { readFileSync } from 'node:fs';
-import { artFromFingerprint, fingerprint, blake3Hash } from '../../docs/design/playground/src/lib/ui/fingerprint.ts';
+import { artFromFingerprint, fingerprint, blake3Hash, groupFingerprint } from '../../docs/design/playground/src/lib/ui/fingerprint.ts';
 
 // BLAKE3 test vector: hash("") = af1349b9...
 const empty = Buffer.from(blake3Hash([])).toString('hex');
@@ -11,10 +11,14 @@ const lines = readFileSync(new URL('../../crates/core/src/avatar_golden.txt', im
 let bad = 0, cases = 0, strokes = 0, i = 0;
 const fail = (m) => { if (bad++ < 10) console.error(m); };
 while (i < lines.length) {
-  const [, did, , small, , sw] = lines[i++].split(' ');
+  const head = lines[i++];
+  const isGroup = head.startsWith('group ');
+  // "did|group <id> small <bool> [tag x] sw <n>"; a group id may contain spaces.
+  const m = head.match(/^(?:did|group) (.*) small (true|false) sw (\S+)$/);
+  const did = m[1], small = m[2], sw = m[3];
   const fp = lines[i++].split(' ')[1];
   const col = lines[i++].split(' ');
-  const mine = fingerprint(did);
+  const mine = isGroup ? groupFingerprint(did) : fingerprint(did);
   if (!mine || Buffer.from(mine).toString('hex') !== fp) { fail(`fingerprint mismatch ${did}`); while (lines[i]?.startsWith('s ')) i++; continue; }
   const art = artFromFingerprint(mine, small === 'true');
   cases++;

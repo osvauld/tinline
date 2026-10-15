@@ -20,8 +20,10 @@ use signup::{AddUi, Gate, Gs};
 #[path = "link.rs"]
 mod link;
 
+#[cfg(any(test, feature = "test-hooks"))]
 #[path = "groups.rs"]
 mod groups;
+#[cfg(any(test, feature = "test-hooks"))]
 use groups::{GroupsUi, Gm};
 #[path = "group_live.rs"]
 mod group_live;
@@ -85,8 +87,9 @@ struct Settings {
     input: Option<String>,
     output: Option<String>,
     tone: bool,
-    /// The groups & privacy preview switch; None follows the build (on in debug/test-hooks).
+    /// The groups & privacy preview switch (tests and test-hooks only).
     #[serde(default)]
+    #[cfg(any(test, feature = "test-hooks"))]
     groups_preview: Option<bool>,
     /// Calls are audio only (no video offered or taken).
     #[serde(default)]
@@ -247,6 +250,8 @@ struct App {
     /// Running transitions (nav highlight, fades); see `crate::motion`.
     fx: crate::motion::Fx,
     recents: Vec<CallRecord>,
+    /// Group calls this device was in or missed (core `group_call_history`), newest first.
+    group_log: Vec<p2pcore::GroupCallRecord>,
     detail_calls: Vec<CallRecord>,
     avail: Availability,
     avail_open: bool,
@@ -267,6 +272,9 @@ struct App {
     file_key: bool,
     /// Whether the OS keyring can keep a key. When it cannot, a passphrase is required.
     keyring_ok: bool,
+    /// The "Remember on this computer" switch: Some(keyring available) once probed (None = still asking), and its state.
+    remember_avail: Option<bool>,
+    remember: bool,
     /// Every account on this device (clear data only), cached for `view`.
     accounts: Vec<AccountSummary>,
     acct_menu: bool,
@@ -357,6 +365,7 @@ struct App {
     link_joined: bool,
     unlinked: Option<UnlinkedInfo>,
     /// Groups, hosting, blocking and permissions preview on placeholder data.
+    #[cfg(any(test, feature = "test-hooks"))]
     groups: GroupsUi,
     /// Group chat on the core (G1): the Groups tab.
     live: GroupsLive,
@@ -424,6 +433,11 @@ enum Msg {
     RemoveGo(String),
     Removed(Result<String, String>),
     KeyringProbed(bool),
+    /// "Remember on this computer": (the keyring can keep a key, the current account has it on).
+    RememberProbed(bool, bool),
+    /// The switch on Unlock (applied after the unlock) or on Privacy > Passphrase (applied now).
+    Remember(bool),
+    RememberSet(Result<bool, String>),
     ToggleRestore,
     TogglePhraseShow,
     Devices((Vec<String>, Vec<String>)),
@@ -546,6 +560,7 @@ enum Msg {
     UnlinkedOk,
     /// Test-hooks: the window's pixels, written to P2P_SHOT.
     Shot(window::Screenshot),
+    #[cfg(any(test, feature = "test-hooks"))]
     Groups(Gm),
     Live(Lm),
     Video(Vm),
@@ -784,10 +799,14 @@ impl App {
         self.refresh_identity();
         self.refresh_accounts();
         self.refresh_linked();
-        let preview_on = self.groups.on;
-        self.groups.enable(preview_on, &self.profile_name);
+        #[cfg(any(test, feature = "test-hooks"))]
+        {
+            let preview_on = self.groups.on;
+            self.groups.enable(preview_on, &self.profile_name);
+        }
         self.reload_contacts();
         self.recents = self.node.recent_calls(RECENTS);
+        self.group_log = self.node.group_call_history(None).unwrap_or_default();
         self.avail = self.node.availability();
         self.name_edit = self.profile_name.clone();
         self.device_edit = self.device_label.clone();
@@ -801,6 +820,13 @@ impl App {
         }
         self.notice = None;
         self.screen = Screen::NameDevice;
+    }
+
+    /// Asks the keyring whether it can keep a key and whether "Remember on this computer" is on for the current account.
+    fn probe_remember(&self) -> Task<Msg> {
+        let data = INIT.get().unwrap().data.clone();
+        let did = keystore::current_did(&self.node).unwrap_or_default();
+        blocking(move || (keystore::available(keystore::system(), &data), keystore::remembered(keystore::system(), &data, &did)), |(ok, on)| Msg::RememberProbed(ok, on))
     }
 
     fn probe_keyring(&self) -> Task<Msg> {
@@ -821,7 +847,9 @@ impl App {
         let test_unlock = init.test_pass.clone().filter(|_| lock == LockState::Locked);
         let forced_dark = crate::test_env("P2P_DARK").map(|v| v == "1");
         settings.apply_alerts();
+        #[cfg(any(test, feature = "test-hooks"))]
         let preview_on = settings.groups_preview.unwrap_or(groups::PREVIEW_DEFAULT);
+        #[cfg(any(test, feature = "test-hooks"))]
         let me_name = node.profile().map(|p| p.name).unwrap_or_default();
         let mut app = App {
             win: None,
@@ -837,6 +865,7 @@ impl App {
             profiles: profile_ui::State::default(),
             fx: Default::default(),
             recents: node.recent_calls(RECENTS),
+            group_log: node.group_call_history(None).unwrap_or_default(),
             detail_calls: Vec::new(),
             avail: node.availability(),
             avail_open: false,
@@ -858,6 +887,8 @@ impl App {
             key_home: key_home(&node, node.has_passphrase()).0,
             file_key: key_home(&node, node.has_passphrase()).1,
             keyring_ok: true,
+            remember_avail: None,
+            remember: false,
             accounts: node.accounts(),
             acct_menu: false,
             switch_ask: None,
@@ -918,6 +949,7 @@ impl App {
             unlink_ask: None,
             link_joined: false,
             unlinked: None,
+            #[cfg(any(test, feature = "test-hooks"))]
             groups: GroupsUi::new(preview_on, &me_name),
             live: GroupsLive::default(),
             blocks: Default::default(),
@@ -946,6 +978,9 @@ impl App {
         }
         if app.screen == Screen::Onboarding {
             tasks.push(app.probe_keyring());
+        }
+        if app.screen == Screen::Unlock && app.has_pass && !app.demo {
+            tasks.push(app.probe_remember());
         }
         #[cfg(feature = "test-hooks")]
         if crate::test_env("P2P_CHAT_FAKE").is_some_and(|v| v == "1") {
@@ -1174,6 +1209,7 @@ impl App {
             return;
         }
         self.recents = self.node.recent_calls(RECENTS);
+        self.group_log = self.node.group_call_history(None).unwrap_or_default();
         self.avail = self.node.availability();
         self.refresh_detail_calls();
     }
@@ -1563,6 +1599,26 @@ impl App {
             }
             Msg::KeyringProbed(ok) if !self.demo => self.keyring_ok = ok,
             Msg::KeyringProbed(_) => {}
+            Msg::RememberProbed(ok, on) if !self.demo => {
+                self.remember_avail = Some(ok);
+                self.remember = ok && on;
+            }
+            Msg::RememberProbed(..) => {}
+            Msg::Remember(on) => {
+                self.remember = on;
+                // On the unlock screen the choice waits for the unlock; on the Passphrase page it applies now.
+                if self.screen != Screen::Unlock && self.lock == LockState::Unlocked && self.has_pass && !self.demo {
+                    let (node, data) = (self.node.clone(), INIT.get().unwrap().data.clone());
+                    return blocking(move || flow::apply_remember(keystore::system(), &data, &node, on).map(|_| on), Msg::RememberSet);
+                }
+            }
+            Msg::RememberSet(r) => match r {
+                Ok(on) => self.remember = on,
+                Err(_) => {
+                    self.remember = false;
+                    self.notice = Some("This computer\u{2019}s keyring wouldn\u{2019}t keep it, so Tinline will keep asking for your passphrase.".into());
+                }
+            },
             Msg::ToggleRestore => {
                 // Choose › Restore my account: the 24 words, in the sign-up card.
                 self.restore = true;
@@ -1650,7 +1706,16 @@ impl App {
                 self.notice = None;
                 let pass = take_secret(&mut self.pass_in);
                 let node = self.node.clone();
-                return blocking(move || node.unlock(pass).map_err(friendly), Msg::Unlocked);
+                let data = INIT.get().unwrap().data.clone();
+                let (remember, avail) = (self.remember, self.remember_avail == Some(true));
+                return blocking(move || {
+                    node.unlock(pass).map_err(friendly)?;
+                    // "Remember on this computer", applied only after a correct passphrase. A keyring failure never blocks the unlock.
+                    if avail {
+                        if let Err(e) = flow::apply_remember(keystore::system(), &data, &node, remember) { eprintln!("keystore: remember: {e}"); }
+                    }
+                    Ok(())
+                }, Msg::Unlocked);
             }
             Msg::Unlocked(r) => {
                 self.busy = false;
@@ -1949,6 +2014,7 @@ impl App {
                     Key::Named(Named::Escape) if self.call_ui.about => return self.update(Msg::CallUi(crate::call_ui::Action::CloseAbout)),
                     Key::Named(Named::Escape) if ringing => return self.update(Msg::Decline),
                     Key::Named(Named::Escape) if self.call.is_some() && !self.call_ui.minimized => return self.update(Msg::CallUi(crate::call_ui::Action::Minimize)),
+                    #[cfg(any(test, feature = "test-hooks"))]
                     Key::Named(Named::Escape) if self.groups.dialog.is_some() => return self.update_groups(Gm::Dismiss),
                     Key::Named(Named::Escape) if self.live.dialog.is_some() => return self.update_live(Lm::Dismiss),
                     Key::Named(Named::Escape) if self.call.is_none() && self.shell_search.active => return self.shell_search_update(shell_search::Action::Escape),
@@ -2187,7 +2253,10 @@ impl App {
                 Err(e) => self.notice = Some(format!("Could not call: {e}")),
             },
             Msg::Select(did) => {
-                self.groups.open = None;
+                #[cfg(any(test, feature = "test-hooks"))]
+                {
+                    self.groups.open = None;
+                }
                 self.live.close();
                 self.sel = Some(did);
                 self.chat.info = false;
@@ -2201,10 +2270,13 @@ impl App {
                 return self.open_chat(&did);
             }
             Msg::Home => {
-                self.groups.open = None;
+                #[cfg(any(test, feature = "test-hooks"))]
+                {
+                    self.groups.open = None;
+                    self.groups.dialog = None;
+                }
                 self.live.close();
                 self.live.dialog = None;
-                self.groups.dialog = None;
                 self.leave_chat();
                 self.sel = None;
                 self.detail = Detail::View;
@@ -2414,6 +2486,7 @@ impl App {
                 match r {
                     Ok(unlocked) => {
                         self.reset_account_state();
+                        self.remember_avail = None;
                         self.restore = false;
                         self.return_to = None;
                         self.screen = Screen::Home;
@@ -2421,6 +2494,7 @@ impl App {
                             return self.start_node();
                         }
                         self.screen = Screen::Unlock;
+                        return self.probe_remember();
                     }
                     Err(e) => self.notice = Some(e),
                 }
@@ -2466,6 +2540,7 @@ impl App {
                 });
             }
             Msg::Chat(m) => return self.update_chat(m),
+            #[cfg(any(test, feature = "test-hooks"))]
             Msg::Groups(m) => return self.update_groups(m),
             Msg::Live(m) => return self.update_live(m),
             m @ (Msg::LinkStartNew
@@ -2566,9 +2641,12 @@ impl App {
                             let group = self.live.list.iter().find(|s| s.id == m.group_id).map(|s| s.name.clone()).unwrap_or_else(|| "A group".into());
                             let who = m.author_name.split_whitespace().next().unwrap_or(&m.author_name).to_string();
                             notify(&group, &format!("{who}: {}", m.text), Target::Show);
+                            self.play_received();
                         }
-                        crate::GroupEv::Invitation(i) if !attended && !i.outgoing && i.state == p2pcore::GroupInvitationState::Pending => {
-                            notify("Tinline", &format!("{} invited you to {}", i.inviter_name.split_whitespace().next().unwrap_or(&i.inviter_name), i.group_name), Target::Show);
+                        // Away: "Book club · Priya invited you to the group". In front: one knock; the Groups tab counts it.
+                        crate::GroupEv::Invitation(i) if !i.outgoing && i.state == p2pcore::GroupInvitationState::Pending => {
+                            if attended { self.play_cue(crate::cues::knock()); }
+                            else { notify(&i.group_name, &format!("{} invited you to the group", i.inviter_name.split_whitespace().next().unwrap_or(&i.inviter_name)), Target::Show); }
                         }
                         _ => {}
                     }

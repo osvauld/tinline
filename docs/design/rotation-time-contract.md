@@ -8,21 +8,21 @@ resume, reboot and signed validity. G-TIME and G-RENEWAL
 side by side; nothing here selects a default. Every numeric value below is a
 **test-only fixture**, not a product default.
 
-Executable model: `crates/proto/tests/rotation_time_contracts.rs` (19 tests).
+Executable model: `design-models:crates/proto/tests/rotation_time_contracts.rs` (19 tests).
 Fixtures `Claims`/`Permit`/`View` are copied from
-`crates/proto/tests/rotation_permit_model.rs` @01ee106 (only change: `Serialize` on
+`design-models:crates/proto/tests/rotation_permit_model.rs` @01ee106 (only change: `Serialize` on
 `View`).
 
 ## 1. Verified in source/tests
 
 | Fact | Source |
 |---|---|
-| Existing overdue candidate: one successor on resume, next deadline = resume + interval | `crates/proto/tests/support/rotation_permit_lifecycle.rs:32-33`, `docs/design/rotation-agent-handoff.md:107` |
-| Existing lifecycle fixture uses a single explicit monotonic fake time; no wall clock, no reconfiguration | `crates/proto/tests/support/rotation_permit_lifecycle.rs:10-11,23-24` |
-| Python network model schedules on an aligned grid of a single global clock (`due = now // interval`) and notes "no wall-clock rollback in this model" | `scripts/test_rotation_network_model.py:103-105` |
-| Receivers reject `issued_at > now` with zero skew tolerance | `crates/proto/tests/rotation_permit_model.rs:82` |
-| Liveness requires `now < expires_at` (wall time at the receiver) | `crates/proto/tests/rotation_permit_model.rs:110` |
-| Claims require a changed replacement ID; same-ID re-signing is rejected | `crates/proto/tests/rotation_permit_model.rs:95` |
+| Existing overdue candidate: one successor on resume, next deadline = resume + interval | `design-models:crates/proto/tests/support/rotation_permit_lifecycle.rs:32-33`, `docs/design/rotation-agent-handoff.md:107` |
+| Existing lifecycle fixture uses a single explicit monotonic fake time; no wall clock, no reconfiguration | `design-models:crates/proto/tests/support/rotation_permit_lifecycle.rs:10-11,23-24` |
+| Python network model schedules on an aligned grid of a single global clock (`due = now // interval`) and notes "no wall-clock rollback in this model" | `design-models:scripts/test_rotation_network_model.py:103-105` |
+| Receivers reject `issued_at > now` with zero skew tolerance | `design-models:crates/proto/tests/rotation_permit_model.rs:82` |
+| Liveness requires `now < expires_at` (wall time at the receiver) | `design-models:crates/proto/tests/rotation_permit_model.rs:110` |
+| Claims require a changed replacement ID; same-ID re-signing is rejected | `design-models:crates/proto/tests/rotation_permit_model.rs:95` |
 | Required invariants: rotation without blocks, block does not reset deadline; wall clock cannot roll back generation or extend reachability indefinitely | `docs/design/endpoint-rotation-implementation-plan.md:78-80` |
 | Android cannot run timers while suspended; enforce overdue retirement on resume | `docs/design/endpoint-rotation-implementation-plan.md:157-159` |
 
@@ -88,7 +88,7 @@ Fixtures `Claims`/`Permit`/`View` are copied from
 - **L2 Wall-only scheduling breaks invariant 11.** A `last + interval` wall scheduler
   never rotates under repeated rollback; one rollback of 45 kept the old endpoint 55
   units (interval 10). The grid scheduler style of
-  `scripts/test_rotation_network_model.py:105` jumps generation 1 -> 6 on a forward
+  `design-models:scripts/test_rotation_network_model.py:105` jumps generation 1 -> 6 on a forward
   jump of 50 (numbers 2..=5 never had keys) and stalls 55 units after rollback.
 - **L3 Suspend-paused monotonic source.** If `elapsed` is fed by a clock that stops
   in suspend, a 3.5-interval sleep is not overdue on resume. Receivers still bound

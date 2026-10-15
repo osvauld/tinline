@@ -10,33 +10,15 @@
 //! Every test carries `// KIND: acceptance` and the decision it enforces.
 
 use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
-use p2pcore::{CallInfo, CallState, DeliveryState, Message, Node, NodeEvents, NodeStatus};
+use p2pcore::Node;
 
-const PASS: &str = "test-passphrase";
+mod support;
+use support::eventually_200ms as eventually;
+use support::*;
 
-struct Quiet;
-impl NodeEvents for Quiet {
-    fn on_status(&self, _: NodeStatus) {}
-    fn on_contacts_changed(&self) {}
-    fn on_incoming_call(&self, _: CallInfo) {}
-    fn on_call_state(&self, _: String, _: CallState) {}
-    fn on_log(&self, _: String) {}
-}
-
-struct Peer {
-    node: Arc<Node>,
-    did: String,
-    dir: std::path::PathBuf,
-}
-
-impl Drop for Peer {
-    fn drop(&mut self) {
-        self.node.stop();
-        let _ = std::fs::remove_dir_all(&self.dir);
-    }
-}
+const TAG: &str = "p10";
 
 fn open(dir: &std::path::Path) -> Arc<Node> {
     let node = Node::new(dir.to_string_lossy().into(), Arc::new(Quiet)).unwrap();
@@ -44,74 +26,22 @@ fn open(dir: &std::path::Path) -> Arc<Node> {
     node
 }
 
-fn online(n: &Node) {
-    n.start().unwrap();
-    let t = Instant::now();
-    while !n.status().online && t.elapsed() < Duration::from_secs(10) {
-        std::thread::sleep(Duration::from_millis(100));
-    }
-}
-
-fn peer(name: &str) -> Peer {
-    let dir = std::env::temp_dir().join(format!("p2pcore-p10-{name}-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&dir);
-    let node = open(&dir);
-    node.create_identity(name.into(), PASS.into()).unwrap();
-    online(&node);
-    let did = node.profile().unwrap().did;
-    Peer { node, did, dir }
-}
-
 /// a and b, each a contact of the other (b scanned a's ticket).
 fn pair(tag: &str) -> (Peer, Peer) {
-    let a = peer(&format!("{tag}-a"));
-    let b = peer(&format!("{tag}-b"));
-    b.node.add_contact(a.node.my_ticket().unwrap()).unwrap();
-    (a, b)
+    Peer::pair(TAG, tag)
 }
 
 /// Drops the node and opens the same data directory again at once (a process restart). No
 /// pause: the chat store must open even while the old node's tasks still hold `chat.redb`.
 fn restart(p: &mut Peer) {
-    p.node.stop();
-    let old = std::mem::replace(&mut p.node, open(&p.dir));
-    drop(old);
+    p.reopen();
     p.node.unlock(PASS.into()).unwrap();
     online(&p.node);
     eventually(10, "the chat store is open after the restart", || p.node.writer_id_for_test().is_some());
 }
 
-fn eventually(secs: u64, what: &str, mut f: impl FnMut() -> bool) {
-    let end = Instant::now() + Duration::from_secs(secs);
-    while Instant::now() < end {
-        if f() {
-            return;
-        }
-        std::thread::sleep(Duration::from_millis(200));
-    }
-    panic!("timed out waiting for {what}");
-}
-
-fn all_msgs(p: &Peer, did: &str) -> Vec<Message> {
-    let mut out = Vec::new();
-    let mut page = p.node.chat_day(did.to_string(), None).ok();
-    while let Some(pg) = page {
-        out.extend(pg.messages.clone());
-        page = pg.older_day.and_then(|d| p.node.chat_day(did.to_string(), Some(d)).ok());
-    }
-    out
-}
-
-fn holds(p: &Peer, did: &str, id: &str) -> bool {
-    all_msgs(p, did).iter().any(|m| m.id == id)
-}
-
 fn text_of(p: &Peer, did: &str, id: &str) -> Option<String> {
     all_msgs(p, did).into_iter().find(|m| m.id == id).map(|m| m.text)
-}
-
-fn delivered(p: &Peer, did: &str, id: &str) -> bool {
-    all_msgs(p, did).iter().any(|m| m.id == id && m.delivery == DeliveryState::Delivered)
 }
 
 fn send(p: &Peer, to: &Peer, text: &str) -> String {

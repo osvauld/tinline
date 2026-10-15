@@ -15,6 +15,8 @@ pub use profile::{AccountProfile, ProfileEvents};
 mod group;
 mod error;
 pub mod gcall;
+pub mod cues;
+mod licences;
 mod logging;
 mod node;
 mod recovery_key;
@@ -35,33 +37,33 @@ mod wire;
 
 pub use error::Error;
 
-/// Benchmark entry for the `search-bench` binary.
+/// Search internals the `search-bench` binary drives (it lives outside the lib so the
+/// benchmark code is not compiled into the app libraries). Not part of the uniffi API.
+#[cfg(feature = "bench")]
 #[doc(hidden)]
-pub fn search_bench(n: usize, dir: &std::path::Path) {
-    search::bench::run(n, dir)
-}
-
-/// Benchmark entry for `search-bench <n> <dir> live`: the send path with production timing.
-#[doc(hidden)]
-pub fn search_bench_live(n: usize, dir: &std::path::Path) {
-    search::bench::run_live(n, dir)
+pub mod search_bench_support {
+    pub use crate::search::index::{DocRow, Mark, Mode, PHASES, SearchIndex};
+    pub use crate::search::text;
+    pub use crate::chat::doc::{day_of, day_start};
 }
 
 pub use block::{BLOCKED, BlockNotice, BlockState, BlockedContact};
 pub use group::api::{GroupDelivery, GroupDetail, GroupEvents, GroupFlag, GroupHost, GroupInvitePeek, GroupItemKind, GroupMember, GroupMessage, GroupPage, GroupRemoval, GroupRole, GroupSummary};
 pub use group::requests::{ChatRequestState, GroupChatRequest, GroupRequestEvents};
 pub use group::calls::{GroupCall, GroupCallConditions, GroupCallDeviceClass, GroupCallEvent, GroupCallEventKind, GroupCallEvents, GroupCallHere, GroupCallThermal};
+pub use group::calllog::{GroupCallRecord, group_call_label};
 pub use group::invitations::{GroupInvitation, GroupInvitationEvents, GroupInvitationState};
 pub use caps::{CALLS_NOT_ALLOWED, ContactOrigin};
 pub use contact_req::{AddError, AddOutcome, CodePeek, ContactRequest, ContactRequestEvents, MyCode};
 pub use search::api::{HitRange, MessageHit, NameHit, SearchConvKind, SearchNameKind, SearchResults};
-pub use chat::api::{Attachment, AttachmentKind, Chat, ChatEvents, DayPage, DeliveryState, Message, TransferState};
+pub use chat::api::{Attachment, AttachmentKind, Chat, ChatEvents, DayPage, DeliveryState, Message, PictureDownload, StorageUsage, TransferState};
 pub use sync::{LinkEvents, LinkedDevice};
 pub use voice::{VoiceDecoder, VoiceInfo, VoiceRecorder};
 pub use recovery_key::{is_recovery_key, recovery_key_from_phrase, recovery_phrase_from_input};
 pub use store::CallRecord;
 pub use video_call::{Bytes, Pulled, VideoEvents, VideoFrame, VideoInfo, VideoStats};
 pub use node::{AccountSummary, Availability, CallInfo, CallState, CallStats, CardPeek, Contact, LockState, Node, NodeEvents, NodeStatus, ProfileInfo};
+pub use licences::{open_source_licences, OpenSourceLicence};
 
 #[uniffi::export]
 pub fn core_version() -> String {

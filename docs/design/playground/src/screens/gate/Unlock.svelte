@@ -5,7 +5,7 @@
   import Btn from './Btn.svelte';
   import Field from './Field.svelte';
   import StepShell from './StepShell.svelte';
-  import { gate, switchAccount } from '../../lib/model/actions/gate.svelte';
+  import { gate, switchAccount, canRemember, rememberCopy } from '../../lib/model/actions/gate.svelte';
   import Icon from '../../lib/ui/Icon.svelte';
   let pass = $state('');
   // Identities have one nickname: the whole of it. With other identities here it is the switcher (lab A, 2026-10-14).
@@ -18,17 +18,18 @@
 
 <StepShell title={nick ? 'Welcome back, ' + nick : 'Welcome back'} center anchor form onsubmit={submit}>
   {#snippet heading()}
-    {#if nick && db.parked.length}Welcome back, <button type="button" class="who press" aria-label="{nick}, switch identity" aria-haspopup="dialog" aria-expanded={openAs} onclick={() => (openAs = true)}>{nick}<Icon name="chev" size={20} /></button>{:else}{nick ? 'Welcome back, ' + nick : 'Welcome back'}{/if}
+    {#if nick && db.others.length}Welcome back, <button type="button" class="who press" aria-label="{nick}, switch identity" aria-haspopup="dialog" aria-expanded={openAs} onclick={() => (openAs = true)}>{nick}<Icon name="chev" size={20} /></button>{:else}{nick ? 'Welcome back, ' + nick : 'Welcome back'}{/if}
   {/snippet}
-  <div class="av"><Avatar name={db.account.name} hue={db.account.hue} size={72} /></div>
+  <div class="av"><Avatar name={db.account.name} hue={db.account.hue} person="me" size={72} /></div>
   <div class="fld">
     <Field label="Passphrase" secret bind:value={pass} autofocus autocomplete="current-password" disabled={gate.busy || lock > 0}
       error={lock > 0 ? null : gate.error} hint={gate.error ? 'Checking takes a second. It’s deliberately slow to stop guessing.' : undefined} reserve={4.25}>
       {#snippet extra()}{#if lock > 0}<p class="lock" role="status">Too many tries. You can try again in {mmss}.</p>{/if}{/snippet}
     </Field>
   </div>
-  {#if gate.isAndroid}
-    <label class="rem"><span>Remember on this phone<small>Skips the passphrase when Tinline restarts, using the phone’s secure key store.</small></span><Switch label="Remember on this phone" bind:checked={gate.remember} /></label>
+  {#if canRemember()}
+    {@const rc = rememberCopy()}
+    <label class="rem"><span>{rc.label}<small>{rc.sub}</small></span><Switch label={rc.label} bind:checked={gate.remember} /></label>
   {/if}
   {#snippet foot()}
     <Btn type="submit" enter busy={gate.busy} disabled={!pass || lock > 0}>{gate.busy ? 'Unlocking…' : 'Unlock'}</Btn>
@@ -41,9 +42,9 @@
   <button type="button" class="scrim" aria-label="Close" onclick={() => (openAs = false)}></button>
   <div class="sheet" role="dialog" aria-label="Open as">
     <p class="sh">Open as</p>
-    <button type="button" class="row cur press" onclick={() => (openAs = false)}><Avatar name={db.account.name} hue={db.account.hue} size={44} /><span><b>{db.account.name}</b><small>Asks for your passphrase</small></span><Icon name="check" size={18} /></button>
-    {#each db.parked as a, i (a.name + i)}
-      <button type="button" class="row press" onclick={() => { switchAccount(i); openAs = false; pass = ''; }}><Avatar name={a.name} hue={a.hue} size={44} /><span><b>{a.name}</b><small>Asks for your passphrase</small></span></button>
+    <button type="button" class="row cur press" onclick={() => (openAs = false)}><Avatar name={db.account.name} hue={db.account.hue} person="me" size={44} /><span><b>{db.account.name}</b><small>Asks for your passphrase</small></span><Icon name="check" size={18} /></button>
+    {#each db.others as a, i (a.id)}
+      <button type="button" class="row press" onclick={() => { switchAccount(i); openAs = false; pass = ''; }}><Avatar name={a.name} hue={a.hue} person={a.id} size={44} /><span><b>{a.name}</b><small>{a.remembered ? 'Opens right away' : 'Asks for your passphrase'}</small></span></button>
     {/each}
     <button type="button" class="row press" onclick={() => { openAs = false; gate.beginAdd(); }}><Icon name="plus" size={20} /><span><b class="plain">Add another name</b></span></button>
   </div>

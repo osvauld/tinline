@@ -1,0 +1,127 @@
+== File size buckets (all .rs/.kt/.py, raw lines) ==
+      0-300   files= 228  lines=  27708
+    300-500   files=  62  lines=  24457
+    500-800   files=  38  lines=  23617
+    800-1200  files=  30  lines=  29137
+   1200-      files=  26  lines=  51570
+  total files=384 lines=156489; files>=500: 94 holding 104324 lines (66%)
+
+== Per area: prod lines / test-file lines / inline-test lines / files>=500 / largest ==
+  area                      prod testfile  inline  test%  >=500  largest
+  crates/core              32242    17462    3431    39%     38  node.rs (3771)
+  crates/group-sim         22247     1124     168     5%     12  group_call.rs (3478)
+  crates/desktop           20010     1305    1475    12%     15  app.rs (2272)
+  android                  19250     1150       0     5%     10  GroupsLive.kt (1340)
+  crates/proto              2568    15633     404    86%     12  rotation_history_adversarial.rs (1964)
+  crates/video              4702     1017     453    23%      3  media.rs (1301)
+  scripts                   1423     3318       0    69%      1  test_rotation_linked_discovery_options.py (668)
+  crates/tin-icons          1753      157       0     8%      0  TinIcons.kt (426)
+  crates/audio               947      881       0    48%      2  lib.rs (897)
+  crates/gcall-bench         961        0       0     0%      0  host.rs (407)
+  crates/peer                934        0       0     0%      1  main.rs (934)
+  crates/identity            384      208       0    35%      0  identity.rs (119)
+  crates/storage             389        0     140    26%      0  store.rs (322)
+  crates/cryptography        180      164       0    47%      0  ecies.rs (61)
+  tools                        9        0       0     0%      0  mix_oracle.rs (9)
+  TOTAL                   107999    42419    6071    30%
+
+== Files with inline #[cfg(test)] blocks >= 100 lines (should move to own test file) ==
+    584 of  1726  crates/core/src/search/index.rs
+    411 of  1037  crates/core/src/voice.rs
+    370 of  1301  crates/video/src/media.rs
+    358 of   836  crates/core/src/group/state.rs
+    299 of   559  crates/core/src/gcall/rank.rs
+    284 of  1762  crates/desktop/src/groups_fake.rs
+    250 of   809  crates/proto/src/gcall.rs
+    229 of   972  crates/desktop/src/mark.rs
+    225 of   471  crates/desktop/src/blocks.rs
+    213 of   604  crates/core/src/group/doc.rs
+    197 of  1127  crates/core/src/video_call.rs
+    173 of   897  crates/core/src/store.rs
+    171 of   255  crates/core/src/search/find.rs
+    168 of   335  crates/group-sim/src/authority.rs
+    162 of   242  crates/desktop/src/flow.rs
+    127 of   218  crates/core/src/version.rs
+    120 of   392  crates/desktop/src/media.rs
+    119 of   294  crates/proto/src/gcall_status.rs
+    117 of   504  crates/core/src/caps.rs
+    105 of   391  crates/core/src/search/text.rs
+  -> 20 files, 4682 lines; all inline blocks: 50 files, 6071 lines
+
+== Largest 40 files ==
+   3771    crates/core/src/node.rs
+   3478    crates/group-sim/src/group_call.rs
+   3104    crates/group-sim/src/flags.rs
+   2802    crates/group-sim/src/multi_host.rs
+   2603    crates/group-sim/src/removal_rotation.rs
+   2304    crates/core/src/chat/engine.rs
+   2292    crates/group-sim/src/host_only.rs
+   2272    crates/desktop/src/app.rs
+   1993    crates/desktop/src/view.rs
+   1964  T crates/proto/tests/rotation_history_adversarial.rs
+   1945  T crates/proto/tests/rotation_fork_revocation.rs
+   1935    crates/group-sim/src/chat_request.rs
+   1872    crates/core/src/group/engine.rs
+   1793  T crates/proto/tests/rotation_storage_contracts.rs
+   1776    crates/group-sim/src/policy_candidates.rs
+   1762    crates/desktop/src/groups_fake.rs
+   1726    crates/core/src/search/index.rs
+   1480  T crates/proto/tests/rotation_visible_block.rs
+   1430    crates/group-sim/src/persistence.rs
+   1394    crates/core/src/gcall/net.rs
+   1391    crates/proto/src/lib.rs
+   1340    android/app/src/main/kotlin/com/osvauld/p2p/GroupsLive.kt
+   1306  T crates/proto/tests/rotation_history_paging.rs
+   1301  T crates/proto/tests/rotation_time_contracts.rs
+   1301    crates/video/src/media.rs
+   1235  T crates/proto/tests/capability_tokens.rs
+   1158    crates/desktop/src/groups_view.rs
+   1140    crates/desktop/src/group_live.rs
+   1137  T crates/proto/src/tests.rs
+   1127    crates/core/src/video_call.rs
+   1124  T crates/group-sim/src/tests.rs
+   1124  T crates/proto/tests/rotation_challenge_contracts.rs
+   1104  T crates/core/src/gcall/tests.rs
+   1055    crates/core/src/group/calls.rs
+   1049    crates/desktop/src/chat.rs
+   1037    crates/core/src/voice.rs
+   1006  T crates/proto/tests/rotation_device_list_push.rs
+    973    crates/desktop/src/group_live_view.rs
+    972    crates/desktop/src/mark.rs
+    952  T crates/core/src/chat/doc_tests.rs
+
+== Functions >= 80 lines ==
+  80-150: 104
+  150-300: 24
+  300-: 8
+  top 30:
+    999  crates/desktop/src/app.rs:1108  update_inner
+    905  crates/proto/tests/rotation_history_adversarial.rs:1061  malformed_frames_and_overlong_pages_are_rejected_before_signature_work
+    896  crates/group-sim/src/flags.rs:2210  forged_non_admin_host_only_wrong_group_and_non_member_flags_are_refused_unchanged
+    426  crates/desktop/src/chat.rs:558  update_chat_inner
+    415  crates/desktop/src/demo.rs:8  load_demo
+    317  crates/desktop/src/group_live.rs:570  step
+    310  crates/desktop/src/groups_fake.rs:1167  sample_state
+    305  crates/video/src/sim.rs:489  run
+    274  crates/desktop/src/group_live_view.rs:698  live_overlay
+    269  crates/desktop/src/link.rs:194  link_update
+    252  crates/core/src/group/state.rs:225  derive_meta
+    243  android/app/src/main/kotlin/com/osvauld/p2p/MainActivity.kt:102  Root
+    238  crates/desktop/src/view.rs:1363  settings_view
+    235  crates/desktop/src/view.rs:1050  detail_view
+    206  crates/group-sim/src/scheduler.rs:589  seeded_schedules_past_binding_lifetime_retire_routes_and_isolate_long_sleeper
+    205  crates/core/tests/accounts.rs:320  failed_migration_loses_nothing
+    202  scripts/e2e_chat.py:275  main
+    188  crates/core/src/node.rs:2863  run_outgoing
+    185  crates/group-sim/src/multi_host.rs:1730  host_permit_must_chain_to_an_admin_and_bind_the_device_else_members_refuse
+    183  crates/core/src/sync/engine.rs:480  self_loop
+    175  crates/desktop/src/groups_view.rs:953  groups_overlay
+    174  crates/core/src/bin/year-bench.rs:437  measure
+    171  crates/core/src/sync/accdoc.rs:194  read_into
+    171  android/app/src/main/kotlin/com/osvauld/p2p/GroupsLive.kt:119  dayOnly
+    168  crates/core/src/search/index.rs:595  maintain_segments
+    165  crates/desktop/src/view.rs:1661  video_call_view
+    164  crates/peer/src/main.rs:770  link_serve
+    162  crates/group-sim/src/group_call.rs:2526  gc_s06_forwarded_counts_match_section_4_and_hysteresis_prevents_flapping
+    161  crates/group-sim/src/chat_request.rs:624  receive
+    160  android/app/src/main/kotlin/com/osvauld/p2p/GroupsLive.kt:130  GroupsLiveTab

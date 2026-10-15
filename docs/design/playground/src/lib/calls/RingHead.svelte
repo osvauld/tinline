@@ -20,7 +20,7 @@
   const id = $derived(waiting ? waiting.peer : call.peer);
   const name = $derived(id ? displayName(id) : '');
   const hue = $derived((id && person(id)?.hue) || 0);
-  const sub = $derived(waiting ? 'Calling during your call' : vid.intent ? 'Incoming video call' : 'Incoming call');
+  const sub = $derived(waiting ? 'Calling during your call' : (vid.intent ? 'Incoming video call' : 'Incoming call') + (call.toName ? ` to ${call.toName}` : ''));
   const desktop = $derived(prefs.form === 'desktop');
 
   function fade(_n: Element) {

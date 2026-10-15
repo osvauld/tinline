@@ -13,8 +13,8 @@ It also uses U4 revised, U5 revised, U7 and section 9 Q5. The open U9 details in
 and D01/D02 (section 6) are modelled as candidates; none is selected. No production code was
 changed.
 
-- **Model and tests:** `crates/group-sim/src/flags.rs`. It is wired in at
-  `crates/group-sim/src/tests.rs:27-28`. Line numbers below refer to the W2-F commit.
+- **Model and tests:** `design-models:crates/group-sim/src/flags.rs`. It is wired in at
+  `design-models:crates/group-sim/src/tests.rs:27-28`. Line numbers below refer to the W2-F commit.
 - **Provenance:** the grant chain, posts, writer, board, endpoint notes, host records, signed
   ops and the link/host-sync/rotation machinery are copied from `multi_host.rs` @0924939
   (`flags.rs:1-30` lists the changes). No other file was edited.
@@ -106,9 +106,9 @@ A host has no extra authority: it verifies the same way.
 - Posts are uploaded only by their author (members do not relay their store).
 - Time is fake `u64`, and everything is in memory.
 
-## 2. Verified in tests (`cargo test -p group-sim`: 163 passed = 147 baseline + 16 new)
+## 2. Verified in tests (`cargo test -p group-sim (design-models branch)`: 163 passed = 147 baseline + 16 new)
 
-| Test (`crates/group-sim/src/flags.rs`) | KIND | What it shows |
+| Test (`design-models:crates/group-sim/src/flags.rs`) | KIND | What it shows |
 |---|---|---|
 | `three_flags_from_distinct_admins_remove_member_and_revoke_grant_everywhere` :2051 | invariant | After 2 flags no roster changes. After the 3rd, every device derives the identical state, including both hosts and carol once she is told. Carol is removed, her grant is revoked, and both hosts drop her endpoint. An Admit re-presenting her old grant is refused (`GrantRevoked`) with every device byte-identical. |
 | `same_admin_flagging_three_times_distinct_admins_vs_any_flags` :2105 | candidate-policy G-AUTHORITY | Alice flags 3 times from 2 devices. Under `DistinctAdmins`, nobody removes carol until bob and dave flag. Under `AnyFlags`, one admin removes her alone. |
@@ -130,7 +130,7 @@ A host has no extra authority: it verifies the same way.
 The run recorded in the report used:
 
 ```
-CARGO_TARGET_DIR=/home/abe/p2p_chat/.claude/worktree/endpoint-rotation-blocking/target python3 scripts/buildlock.py --who rotation-W2-F -- cargo test -p group-sim
+CARGO_TARGET_DIR=/home/abe/p2p_chat/.claude/worktree/endpoint-rotation-blocking/target python3 scripts/buildlock.py --who rotation-W2-F -- cargo test -p group-sim (design-models branch)
 ```
 
 ## 3. Section 10 Q8 in detail (verified, test :2965)

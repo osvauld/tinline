@@ -9,8 +9,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Switch
@@ -51,12 +49,9 @@ fun SettingsScreen(
     app: P2pApp, missing: List<Need>, onBack: () -> Unit, onBattery: () -> Unit, onPassphrase: () -> Unit, onPhrase: () -> Unit,
     onAbout: () -> Unit, onDiagnostics: () -> Unit, onSwitchPick: (String) -> Unit = {}, onCreateAccount: () -> Unit = {},
     onRestoreAccount: () -> Unit = {}, onDevices: () -> Unit = {}, onLinkDevice: () -> Unit = {}, onLinkAccount: () -> Unit = {},
-    /** Opens the PLACEHOLDER groups & privacy preview at a start screen (see [PRoute.parse]); debug builds only. */
-    onPreview: (String) -> Unit = {},
     onBlocked: () -> Unit = {},
 ) {
     val ctx = LocalContext.current
-    val previewOn by PreviewFlags.enabled(ctx).collectAsState()
     val avail by app.availability.collectAsState()
     val available = avail.available
     val c = Tin.c
@@ -85,7 +80,7 @@ fun SettingsScreen(
             val devVer by app.links.devicesVersion.collectAsState()
             val devCount by produceState(1, devVer) { value = withContext(Dispatchers.IO) { runCatching { app.node.linkedDevices().count { !it.removed } }.getOrDefault(1) } }
             ListItem("Linked devices", onClick = onDevices, icon = PgIcons.Devices, sub = if (devCount <= 1) "This phone only" else "$devCount devices")
-            ListItem("Link a device", onClick = onLinkDevice, icon = Icons.Rounded.AddLink, sub = "Use your account on another phone or computer")
+            ListItem("Link a device", onClick = onLinkDevice, icon = PgIcons.Link, sub = "Use your account on another phone or computer")
             SectionLabel("CALLS")
             ListItem("Available for calls", sub = if (available) "Your line is open" else "Calls won’t ring", icon = PgIcons.Phone,
                 trailing = { TinSwitch(available, { on -> scope.launch(Dispatchers.IO) { app.setAvailable(on) } }, "Available for calls") })
@@ -109,17 +104,9 @@ fun SettingsScreen(
             val blocks by app.blocks.collectAsState()
             ListItem("Blocked people", onClick = onBlocked, icon = PgIcons.Off,
                 sub = when (val n = blocks.list.size) { 0 -> "Nobody"; 1 -> "1 person"; else -> "$n people" })
-            if (previewOn == true) {
-                SectionLabel("PRIVACY · PREVIEW")
-                ListItem("People, requests & blocking", onClick = { onPreview("chats") }, icon = PgIcons.Users, sub = "Demo chats with Meera, Arjun, Priya · placeholder data")
-                ListItem("Blocked people (preview)", onClick = { onPreview("blocked") }, icon = PgIcons.Off, sub = "Placeholder data")
-                ListItem("Address changes", onClick = { onPreview("address") }, icon = PgIcons.Retry, sub = "Placeholder data")
-            }
             SectionLabel("ABOUT")
             ListItem("About Tinline", onClick = onAbout, icon = PgIcons.Info, sub = "Version, licences, terms, privacy")
-            if (BuildConfig.DEBUG) ListItem("Diagnostics", onClick = onDiagnostics, icon = Icons.Rounded.BugReport, sub = "Test tone and core version (debug builds)")
-            if (PreviewFlags.available) ListItem(PreviewFlags.LABEL, icon = Icons.Rounded.Science, sub = "Debug builds only. Screens for features the core doesn’t have yet",
-                trailing = { TinSwitch(previewOn == true, { PreviewFlags.set(ctx, it) }, PreviewFlags.LABEL) })
+            if (BuildConfig.DEBUG) ListItem("Diagnostics", onClick = onDiagnostics, icon = PgIcons.Bug, sub = "Test tone and core version (debug builds)")
         }
     }
     if (sheet) AccountSheet(app, onDismiss = { sheet = false }, onPick = { sheet = false; onSwitchPick(it) },
@@ -152,7 +139,7 @@ fun BatteryScreen(missing: List<Need>, onBack: () -> Unit, onFix: (Need) -> Unit
             SectionLabel("CHECKLIST")
             CheckRow(PgIcons.Battery, "Battery", if (Need.Battery in missing) "Optimised — Android may pause Tinline" else null, Need.Battery !in missing, "On") { onFix(Need.Battery) }
             CheckRow(PgIcons.Bell, "Notifications", null, Need.Notifications !in missing, "On") { onFix(Need.Notifications) }
-            CheckRow(Icons.Rounded.PhoneLocked, "Ring over lock screen", null, Need.FullScreen !in missing, "On") { onFix(Need.FullScreen) }
+            CheckRow(PgIcons.Lock, "Ring over lock screen", null, Need.FullScreen !in missing, "On") { onFix(Need.FullScreen) }
             CheckRow(PgIcons.Mic, "Microphone", null, Need.Mic !in missing, "Allowed") { onFix(Need.Mic) }
             Column(
                 Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp).fillMaxWidth().clip(SmoothCornerShape(14.dp)).background(c.sf2).padding(14.dp),
@@ -283,30 +270,61 @@ fun ChangePassphraseScreen(app: P2pApp, onBack: () -> Unit) {
 
 // ------------------------------------------------------------------ about
 
+/**
+ * About.svelte: the mark, "Tinline", the version, who makes it, the expandable open-source list and the source. Terms, Privacy and the
+ * website follow (Play requires the policy to be reachable in the app; not in the playground), then the emergency-calls note.
+ * [libs] is the core's list plus the Android-only libraries; the full licence texts stay one row away.
+ */
 @Composable
 fun AboutScreen(onBack: () -> Unit, onLicences: () -> Unit) {
     val c = Tin.c
     val ctx = LocalContext.current
-    val ext: @Composable () -> Unit = { Icon(Icons.Rounded.OpenInNew, null, tint = c.ink2) }
-    Page {
-        TopBar("About", onBack)
-        Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())) {
-            Column(Modifier.fillMaxWidth().padding(start = 24.dp, end = 24.dp, top = 16.dp, bottom = 8.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                AppIconBadge(88.dp)
-                Text("Tinline", Modifier.padding(top = 6.dp), style = TinType.titleL, color = c.ink)
-                Hint("Version ${BuildConfig.VERSION_NAME} · by Osvauld")
-                Text("Free and open source under the GPL. No ads, no tracking, no analytics.", Modifier.padding(top = 8.dp), style = TinType.bodyL.copy(fontSize = 15.sp, lineHeight = 22.sp),
-                    color = c.ink2, textAlign = TextAlign.Center)
+    val libs = remember { runCatching { uniffi.p2pcore.openSourceLicences().map { it.name to it.licence } }.getOrDefault(emptyList()) + ANDROID_LIBS }
+    var open by rememberSaveable { mutableStateOf(false) }
+    PfPage("About Tinline", onBack) {
+        Column(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 24.dp, bottom = 8.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            TinMark(56.dp)
+            Text("Tinline", Modifier.padding(top = 8.dp), style = PgType.title, color = c.ink)
+            Text("Version ${BuildConfig.VERSION_NAME}", style = PgType.sub.copy(fontFeatureSettings = "tnum"), color = c.ink2)
+            Text("Made by Osvauld", style = PgType.sub, color = c.ink2)
+        }
+        PfSec {
+            PfCard {
+                act {
+                    PfAct("Open-source licences", onClick = { open = !open }, icon = PgIcons.Licence, sub = "The libraries Tinline is built on", role = androidx.compose.ui.semantics.Role.Button,
+                        trailing = { Icon(if (open) PgIcons.Chevup else PgIcons.Chev, null, Modifier.size(18.dp), tint = c.ink2) })
+                }
+                if (open) act {
+                    Column(Modifier.fillMaxWidth().padding(start = 50.dp, end = 16.dp, top = 4.dp, bottom = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        libs.forEach { (n, l) ->
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                Text(n, Modifier.weight(1f), style = PgType.sub.copy(fontWeight = FontWeight.SemiBold), color = c.ink)
+                                Text(l, style = PgType.sub, color = c.ink2, textAlign = TextAlign.End)
+                            }
+                        }
+                    }
+                }
+                if (open) act { PfAct("Full licence texts", onClick = onLicences, icon = PgIcons.File, chevron = true) }
+                act { PfAct("Source code", onClick = { openUrl(ctx, URL_SOURCE) }, icon = PgIcons.Code, sub = "Tinline is open source", chevron = true) }
             }
-            ListItem("Source code", { openUrl(ctx, URL_SOURCE) }, sub = "GPL-3.0", icon = Icons.Rounded.Code, trailing = ext)
-            ListItem("Terms of Use", { openUrl(ctx, URL_TERMS) }, icon = PgIcons.File, trailing = ext)
-            ListItem("Privacy Policy", { openUrl(ctx, URL_PRIVACY) }, icon = Icons.Rounded.PrivacyTip, trailing = ext)
-            ListItem("Open-source licences", onLicences, icon = Icons.Rounded.Gavel)
-            ListItem("tinline.osvauld.com", { openUrl(ctx, URL_SITE) }, icon = Icons.Rounded.Language, trailing = ext)
-            Hint("Not for emergency calls.", Modifier.padding(horizontal = 20.dp, vertical = 16.dp))
+            PfNote("Tinline has no ads and no tracking. Your messages and calls go between your devices and the people you talk to.")
+        }
+        PfSec {
+            PfCard {
+                act { PfAct("Terms of Use", onClick = { openUrl(ctx, URL_TERMS) }, icon = PgIcons.File, chevron = true) }
+                act { PfAct("Privacy Policy", onClick = { openUrl(ctx, URL_PRIVACY) }, icon = PgIcons.Shield, chevron = true) }
+                act { PfAct("tinline.osvauld.com", onClick = { openUrl(ctx, URL_SITE) }, icon = PgIcons.Globe, chevron = true) }
+            }
+            PfNote("Not for emergency calls.")
         }
     }
 }
+
+/** The libraries only the Android app ships (the core's own are `openSourceLicences()`). */
+private val ANDROID_LIBS = listOf(
+    "ZXing and ZXing Android Embedded" to "Apache-2.0", "JNA" to "Apache-2.0 or LGPL-2.1+", "AndroidX and Jetpack Compose" to "Apache-2.0",
+    "libyuv (in CameraX)" to "BSD", "Figtree and IBM Plex Mono" to "SIL OFL 1.1",
+)
 
 @Composable
 fun LicencesScreen(onBack: () -> Unit) {

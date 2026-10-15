@@ -157,5 +157,5 @@ Where the code chose a detail the design left open, or differs from it:
 - **Search.** Group rows carry the real day; per-day watermarks are the day doc's vv; each
   `s/{src}/{doc}` index key stores a keyed tag of its day, so reconcile can drop the stale docs of
   one day without opening rows. Days with pending posts are always re-indexed.
-- **group-sim** (`crates/group-sim`) is a standalone model with its own record types; it does not
+- **group-sim** (`design-models:crates/group-sim`) is a standalone model with its own record types; it does not
   use the core docs and was not touched.

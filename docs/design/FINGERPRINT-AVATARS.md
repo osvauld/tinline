@@ -106,3 +106,14 @@ own branch; the lead merges.
   fill the inner shape. **Chosen: ring still dropped below 40 px, small stroke 3.4** (was 2.6). A {14/2}-with-no-extra avatar is still
   mostly a ring plus a small inner shape, which is its true drawing; it is told apart by hue and star count rather than by detail.
 - Not verified: desktop and Android were compiled (`cargo check -p desktop`, `compileDebugKotlin`) but not run or screenshotted.
+
+## Groups (decided 2026-10-14)
+
+- A group's mandala comes from its **group id** (`group::record::group_id` = BLAKE3(domain ‖ owner DID ‖ random 16-byte
+  nonce), made once at Genesis, permanent, known to every member): `fp = BLAKE3::derive_key("tinline/avatar/v1/group",
+  utf8(gid))`, then the same byte map and geometry as a person. Nothing new is shared or sent.
+- **One marker** tells a group from a person: the **rounded-square frame** (corner radius 28% of the size); people stay
+  circles. Inside, the same rules as people (no extra forced layer). Works at 28 px and without colour.
+- Playground: `lib/ui/fingerprint.ts` `groupFingerprint` / `groupAvatarArt`; lab `?lab=avatars` section 4.
+- Apps (to do): a core export like `group_avatar_art(gid, small)`; draw it in a rounded square wherever a group's avatar
+  shows (chat list, Groups tab, group header and info, group call rows in Calls), replacing the people icon.

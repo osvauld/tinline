@@ -8,24 +8,24 @@ All rotation additions are currently uncommitted; no implementation commit exist
 
 ### Implemented only as tests/models
 
-- `scripts/test_rotation_discovery_model.py`: idealized discovery knowledge,
+- `design-models:scripts/test_rotation_discovery_model.py`: idealized discovery knowledge,
   independent device intervals, stale updates, retained prediction secrets after
   unlink, and recovery cost of replacing discovery secrets.
-- `scripts/test_rotation_network_model.py`: five devices with separate local
+- `design-models:scripts/test_rotation_network_model.py`: five devices with separate local
   directories/policies, packet queue, sleep/resume, partitions, blocks and sessions.
 - `crates/proto/tests/rotation_identity_boundary.rs`: real-signature
   characterization of EXISTING attestation behavior.
-- `crates/proto/tests/rotation_succession_model.rs`: real DID signatures over a
+- `design-models:crates/proto/tests/rotation_succession_model.rs`: real DID signatures over a
   test-only strict predecessor-history candidate, scope and ordering checks.
-- `crates/proto/tests/support/rotation_network.rs`: that exact verifier composed
+- `design-models:crates/proto/tests/support/rotation_network.rs`: that exact verifier composed
   with peer directories, bounded queue/pages, ideal atomic durable snapshots,
   and divergent clone successors detected upon exchange.
 
 Commands actually executed and results:
 
 ```
-python3 scripts/test_rotation_discovery_model.py                 # 6 passed
-python3 scripts/test_rotation_network_model.py                   # 10 passed
+python3 design-models:scripts/test_rotation_discovery_model.py                 # 6 passed
+python3 design-models:scripts/test_rotation_network_model.py                   # 10 passed
 python3 scripts/buildlock.py --who endpoint-rotation -- cargo test -p proto --test rotation_succession_model --test rotation_identity_boundary
 # 15 passed: 5 identity + 10 succession/network
 ```

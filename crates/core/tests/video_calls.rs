@@ -8,7 +8,8 @@ use std::time::{Duration, Instant};
 
 use p2pcore::{CallInfo, CallState, Node, NodeEvents, NodeStatus, Pulled, VideoEvents, VideoInfo};
 
-const PASS: &str = "test-passphrase";
+mod support;
+use support::{PASS, TempDir, online};
 
 #[derive(Debug, Clone)]
 enum Ev {
@@ -41,32 +42,18 @@ struct Peer {
     node: Arc<Node>,
     rx: mpsc::Receiver<Ev>,
     did: String,
-    _dir: Dir,
-}
-
-struct Dir(std::path::PathBuf);
-
-impl Drop for Dir {
-    fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(&self.0);
-    }
+    _dir: TempDir,
 }
 
 fn peer(name: &str) -> Peer {
-    let p = std::env::temp_dir().join(format!("p2pcore-test-{name}-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&p);
-    let dir = Dir(p);
+    let dir = TempDir::new("test", name);
     let (tx, rx) = mpsc::channel();
     let tap = Arc::new(Tap(Mutex::new(tx)));
-    let node = Node::new(dir.0.to_string_lossy().into(), tap.clone()).unwrap();
+    let node = Node::new(dir.to_string_lossy().into(), tap.clone()).unwrap();
     node.auto_accept_contacts_for_test(true);
     node.set_video_events(tap);
     node.create_identity(name.into(), PASS.into()).unwrap();
-    node.start().unwrap();
-    let t = Instant::now();
-    while !node.status().online && t.elapsed() < Duration::from_secs(10) {
-        std::thread::sleep(Duration::from_millis(100));
-    }
+    online(&node);
     let did = node.profile().unwrap().did;
     Peer { node, rx, did, _dir: dir }
 }

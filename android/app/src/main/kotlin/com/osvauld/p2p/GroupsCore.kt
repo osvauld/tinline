@@ -25,7 +25,7 @@ import uniffi.p2pcore.GroupRole as CoreRole
  * Group chat on the core's real API (G1: crates/core/src/group/api.rs, docs/group-core.md).
  * [GroupsController] is what the screens in GroupsLive.kt read; every core call goes through [GroupApi]
  * so the flows are tested on the JVM with a stand-in (GroupsCoreTest). The placeholder preview
- * (GroupsSource.kt, FakeGroupsPrivacy.kt) stays only for the demo screens and the privacy preview.
+ * (GroupsSource.kt, FakeGroupsPrivacy.kt) lives in src/debug for the gallery only (docs/archive/ui-placeholders.md).
  *
  * Decisions (rotation-open-decisions.md §0): 3 admin flags remove a member (U9/U15) and the removed member
  * sees the signed flags; a post written before a removal still shows, marked (U11); only hosts know member
@@ -406,7 +406,10 @@ class GroupsController(private val api: GroupApi, private val me: () -> String?)
     fun declineInvitation(invitationId: String): Result<String> = runCatching { api.invitationDecline(invitationId) }
         .map { "Declined. ${firstName(it.inviterName.ifBlank { "They" })} sees that you declined." }.also { synchronized(this) { reloadInvitations() } }.mapError()
 
-    override fun onGroupInvitation(invitation: GroupInvitation) { synchronized(this) { reloadInvitations() } }
+    /** Set by the app: an invitation arrived or changed (notifications; called on a core thread). */
+    @Volatile var onInvitation: ((GroupInvitation) -> Unit)? = null
+
+    override fun onGroupInvitation(invitation: GroupInvitation) { synchronized(this) { reloadInvitations() }; onInvitation?.invoke(invitation) }
 
     fun flag(id: String, did: String) = act("Flag recorded. It is signed by you and the member can see it.") { api.flag(id, did) }
     fun setAdmin(id: String, did: String, admin: Boolean) = act(if (admin) "Made admin." else "No longer an admin.") { api.setAdmin(id, did, admin) }

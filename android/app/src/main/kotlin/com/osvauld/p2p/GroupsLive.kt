@@ -23,10 +23,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.Logout
-import androidx.compose.material.icons.automirrored.rounded.Reply
-import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.DropdownMenu
@@ -149,15 +145,11 @@ fun GroupsLiveTab(app: P2pApp, onOpen: (String) -> Unit, onNew: () -> Unit, onJo
     val done: (Result<String>) -> Unit = { r -> say(r.fold({ it }, { it.message ?: "Couldn’t do that" })) }
     LaunchedEffect(Unit) { withContext(Dispatchers.IO) { app.groups.refresh() } }
     // Group calls running in my groups, re-read when the core says something about calls changed.
-    var calls by remember { mutableStateOf<Map<String, LiveCall>>(emptyMap()) }
-    val callTick by app.groupCalls.here.collectAsState()
-    LaunchedEffect(active.map { it.id }, callTick) {
-        calls = withContext(Dispatchers.IO) {
-            active.mapNotNull { s ->
-                runCatching { app.node.groupCalls(s.id) }.getOrNull()?.firstOrNull()?.let { s.id to LiveCall(it.joined) }
-            }.toMap()
-        }
-    }
+    // The call UI keeps this current: Announced, Joined, Left and Ended all re-read or drop the group's call, so a
+    // call that ended never leaves a Join pill behind.
+    val gcs by app.groupCallUi.state.collectAsState()
+    LaunchedEffect(active.map { it.id }) { withContext(Dispatchers.IO) { active.forEach { app.groupCallUi.refreshLive(it.id) } } }
+    val calls: Map<String, LiveCall> = gcs.live.mapValues { LiveCall(it.value.joined) }.filterKeys { k -> active.any { it.id == k } }
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 96.dp)) {
         item(key = "new") {
             TopRow(GIcons.Plus, "New group", "You’ll be the owner") { creating = true }
@@ -272,7 +264,7 @@ fun GroupsLiveTab(app: P2pApp, onOpen: (String) -> Unit, onNew: () -> Unit, onJo
                         gone.forEach { s ->
                             key(s.id) {
                                 ListRow(onClick = { onOpen(s.id) }) {
-                                    GroupAvatar(0, 48.dp, dim = true)
+                                    GroupAvatar(0, 48.dp, dim = true, gid = s.id)
                                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                                         Text(s.name, Modifier.alpha(.72f), style = GType.bodyStrong, color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                         val at = s.last?.at?.toLong()
@@ -340,7 +332,7 @@ private fun GroupRow(s: GroupSummary, me: String, now: Long, call: LiveCall?, on
     val waiting = !s.hostedHere && !s.hostReachable
     val hot = s.unread > 0u
     ListRow(onClick) {
-        GroupAvatar(0, 48.dp)
+        GroupAvatar(0, 48.dp, gid = s.id)
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(s.name, Modifier.weight(1f), style = GType.bodyStrong, color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -432,6 +424,7 @@ fun GroupChatLive(app: P2pApp, id: String, onBack: () -> Unit, onInfo: () -> Uni
     val c = Tin.c
     val open by app.groups.open.collectAsState()
     val blocks by app.blocks.collectAsState()
+    val groupLog by app.groupLog.collectAsState()
     val exec = rememberRunner()
     LaunchedEffect(id) { withContext(Dispatchers.IO) { app.groups.open(id) } }
     DisposableEffect(id) { onDispose { app.groups.close(id) } }
@@ -454,7 +447,15 @@ fun GroupChatLive(app: P2pApp, id: String, onBack: () -> Unit, onInfo: () -> Uni
     var replyTo by remember(id) { mutableStateOf<String?>(null) }
     var sending by remember { mutableStateOf(false) }
     val list = rememberLazyListState()
-    LaunchedEffect(o.messages.size) { if (o.messages.isNotEmpty()) list.scrollToItem(o.messages.size - 1 + if (o.older != null) 1 else 0) }
+    // The thread: posts and this group's call log (MessageRow `.callrec`) merged by time, oldest first.
+    val rows = remember(o.messages, groupLog, id) {
+        val calls = groupLog.filter { it.groupId == id }.map { ThreadRow.Call(it) }
+        (o.messages.mapIndexed { i, m -> ThreadRow.Post(i, m) } + calls).sortedBy { it.at }.let { all ->
+            // Calls go before a post of the same second; posts keep their own order.
+            all.sortedWith(compareBy<ThreadRow> { it.at }.thenBy { if (it is ThreadRow.Call) 0 else 1 }.thenBy { (it as? ThreadRow.Post)?.i ?: 0 })
+        }
+    }
+    LaunchedEffect(rows.size) { if (rows.isNotEmpty()) list.scrollToItem(rows.size - 1 + if (o.older != null) 1 else 0) }
     val waiting = GroupText.waitingForHost(d)
     // Unread posts when the group opened: where "n new messages" goes (the count is cleared as it opens).
     val unreadAtOpen = remember(id) { app.groups.list.value.firstOrNull { it.id == id }?.unread?.toInt() ?: 0 }
@@ -469,9 +470,7 @@ fun GroupChatLive(app: P2pApp, id: String, onBack: () -> Unit, onInfo: () -> Uni
             Row(Modifier.weight(1f).heightIn(min = 44.dp).clip(SmoothCornerShape(12.dp)).clickable(onClick = onInfo).padding(start = 6.dp, end = 10.dp, top = 4.dp, bottom = 4.dp)
                 .semantics(mergeDescendants = true) { contentDescription = "${d.name}. ${GroupText.status(d)}. Group info" },
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Box(Modifier.size(36.dp).clip(CircleShape).background(c.sf2).alpha(if (GroupText.active(d.myRole)) 1f else .72f), contentAlignment = Alignment.Center) {
-                    Icon(PgIcons.Users, null, Modifier.size(18.dp), tint = c.accentInk)
-                }
+                GroupAvatar(0, 36.dp, dim = !GroupText.active(d.myRole), gid = d.id)
                 Column(Modifier.weight(1f)) {
                     Text(d.name, style = PgBodyText.copy(fontSize = 17.sp, lineHeight = 22.sp, fontWeight = FontWeight.SemiBold), color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(GroupText.status(d), style = PgBodyText.copy(fontSize = 13.sp, lineHeight = 18.sp), color = if (d.myRole == CoreRole.REMOVED) c.er else c.ink2, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -500,14 +499,19 @@ fun GroupChatLive(app: P2pApp, id: String, onBack: () -> Unit, onInfo: () -> Uni
                         TinButton("Show earlier messages", { exec({ app.groups.older(); Result.success("") }) {} }, style = BtnStyle.Text, fill = false, height = 40.dp)
                     }
                 }
-                if (o.messages.isEmpty()) item { Column(Modifier.fillMaxWidth()) { SysLine("No messages yet") } }
-                itemsIndexed(o.messages, key = { _, m -> m.id }) { i, m ->
-                    val prev = o.messages.getOrNull(i - 1)
-                    val newDay = prev == null || !sameDay(prev.at.toLong(), m.at.toLong())
+                if (rows.isEmpty()) item { Column(Modifier.fillMaxWidth()) { SysLine("No messages yet") } }
+                itemsIndexed(rows, key = { _, r -> r.key }) { k, row ->
+                    val prevAt = rows.getOrNull(k - 1)?.at
+                    val newDay = prevAt == null || !sameDay(prevAt, row.at)
                     Column(Modifier.fillMaxWidth()) {
-                        if (newDay) PgDayPill(dayLabel(m.at.toLong(), nowMs), Modifier.align(Alignment.CenterHorizontally).padding(vertical = 10.dp))
-                        if (m.id == dividerId) PgUnreadDivider(unreadAtOpen)
-                        GroupItemLive(app, o.messages, i, m, me, d, blocks.blockedByMe(m.authorDid), onRemoval, onReply = { replyTo = m.id }, top = if (newDay) 0.dp else null)
+                        if (newDay) PgDayPill(dayLabel(row.at, nowMs), Modifier.align(Alignment.CenterHorizontally).padding(vertical = 10.dp))
+                        when (row) {
+                            is ThreadRow.Call -> GroupCallPill(row.r, me, GroupText.active(d.myRole)) { app.groupCallUi.call(d.id, say) }
+                            is ThreadRow.Post -> {
+                                if (row.m.id == dividerId) PgUnreadDivider(unreadAtOpen)
+                                GroupItemLive(app, o.messages, row.i, row.m, me, d, blocks.blockedByMe(row.m.authorDid), onRemoval, onReply = { replyTo = row.m.id }, top = if (newDay) 0.dp else null)
+                            }
+                        }
                     }
                 }
             }
@@ -533,6 +537,34 @@ fun GroupChatLive(app: P2pApp, id: String, onBack: () -> Unit, onInfo: () -> Uni
                     }
                 }, onAttach = null)
             }
+        }
+    }
+}
+
+private sealed interface ThreadRow {
+    val at: Long
+    val key: String
+    data class Post(val i: Int, val m: GroupMessage) : ThreadRow { override val at get() = m.at.toLong(); override val key get() = m.id }
+    data class Call(val r: uniffi.p2pcore.GroupCallRecord) : ThreadRow { override val at get() = r.startedAt.toLong() * 1000; override val key get() = "call:" + r.callId }
+}
+
+/**
+ * MessageRow `.callrec` for a group call (32 tall pill, radius 16, surface, hairline): "Group call · 19 min · 4 people", or
+ * "Missed group call · 5 min" (calm, never red). On my side when I started it; tap = start or join a call in this group.
+ */
+@Composable
+private fun GroupCallPill(r: uniffi.p2pcore.GroupCallRecord, me: String, enabled: Boolean, onCall: () -> Unit) {
+    val c = Tin.c
+    val text = uniffi.p2pcore.groupCallLabel(r)
+    val time = java.time.Instant.ofEpochSecond(r.startedAt.toLong()).atZone(java.time.ZoneId.systemDefault()).toLocalTime().let { "%02d:%02d".format(it.hour, it.minute) }
+    Row(Modifier.fillMaxWidth().padding(top = 10.dp), horizontalArrangement = if (!r.missed && r.startedBy == me) Arrangement.End else Arrangement.Start) {
+        Row(Modifier.heightIn(min = 32.dp).clip(RoundedCornerShape(16.dp)).background(c.sf).border(1.dp, c.ln, RoundedCornerShape(16.dp))
+            .clickable(enabled = enabled, onClick = onCall).padding(horizontal = 12.dp)
+            .semantics(mergeDescendants = true) { contentDescription = "$text, $time. Start or join a call" },
+            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Icon(Pg.Phone, null, Modifier.size(16.dp), tint = c.ink2)
+            Text(text, style = PgBodyText.copy(fontSize = 13.sp, lineHeight = 18.sp, fontWeight = FontWeight.SemiBold), color = c.ink, maxLines = 1)
+            Text(time, style = PgBodyText.copy(fontSize = 11.sp, lineHeight = 14.sp, fontFeatureSettings = "tnum"), color = c.ink2)
         }
     }
 }
@@ -638,7 +670,7 @@ fun GroupInfoLive(app: P2pApp, id: String, onBack: () -> Unit, onLink: () -> Uni
     InfoPage(if (d.myRole == CoreRole.REMOVED) "Removed" else "Group info", onBack) {
         item(key = "hero") {
             Column(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                GroupAvatar(0, 72.dp, dim = !GroupText.active(d.myRole))
+                GroupAvatar(0, 72.dp, dim = !GroupText.active(d.myRole), gid = d.id)
                 Text(d.name, Modifier.padding(top = 12.dp).semantics { heading() }, style = GType.hero, color = c.ink, textAlign = TextAlign.Center)
                 Text(
                     when (d.myRole) {
@@ -897,15 +929,18 @@ private fun HostsSection(app: P2pApp, d: GroupDetail, admin: Boolean, name: (Str
 private fun CallHostsSection(app: P2pApp, d: GroupDetail, admin: Boolean, name: (String, String) -> String,
                              exec: (suspend () -> Result<String>, (Result<String>) -> Unit) -> Unit, done: (Result<String>) -> Unit) {
     val ready = d.callHosts.count { it.online || it.isMe }
-    val line = if (d.callHosts.isEmpty()) 0 else if (ready > 0) 1 else 2
+    // This phone is said in words, not listed as a row: "Stop hosting calls on this phone" below stands for it.
+    val onlyMe = d.amCallHost && d.callHosts.size == 1
+    val line = if (d.callHosts.isEmpty()) 0 else if (onlyMe) 3 else if (ready > 0) 1 else 2
     val dev = { h: uniffi.p2pcore.GroupHost -> if (h.isMe) "This device" else name(h.did, h.name) }
     InfoSec("Call hosts") {
         StatusLine(listOf(
             "This group has no call host. Nobody can start a call until an admin appoints one.",
             "${plural(ready.coerceAtLeast(1), "call host")} ready. Calls start through ${if (ready == 1) "it" else "them"}.",
             "No call host is available right now. A call can’t start until one is back.",
-        ), line, line == 1)
-        d.callHosts.forEach { h ->
+            "This phone carries the calls you start.",
+        ), line, line == 1 || line == 3)
+        d.callHosts.filter { !it.isMe }.forEach { h ->
             key("c" + h.did + h.deviceId) {
                 MRow {
                     Avatar(name(h.did, h.name), h.did, 40.dp)
@@ -1313,14 +1348,14 @@ fun JoinGroupLive(app: P2pApp, initial: String? = null, onBack: () -> Unit, onJo
                 TinButton("Paste", {
                     val cm = ctx.getSystemService(android.content.ClipboardManager::class.java)
                     cm?.primaryClip?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.coerceToText(ctx)?.toString()?.let { token = it.trim() }
-                }, Modifier.weight(1f), style = BtnStyle.Outlined, icon = Icons.Rounded.ContentPaste)
+                }, Modifier.weight(1f), style = BtnStyle.Outlined, icon = PgIcons.Paste)
                 TinButton("Scan", { scanning = true }, Modifier.weight(1f), style = BtnStyle.Outlined, icon = PgIcons.Scan)
             }
             peek?.let { p ->
                 CardBox(Modifier.fillMaxWidth(), radius = 20.dp) {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            GroupAvatar(tintOf(p.groupId), 44.dp, radius = 14.dp)
+                            GroupAvatar(tintOf(p.groupId), 44.dp, radius = 14.dp, gid = p.groupId)
                             Text(p.name, style = TinType.titleM, color = c.ink)
                         }
                         Text(p.issuerDid?.let { "Invited by ${nameOf(app, it, "someone who isn’t in your contacts")}" } ?: "A link for your own account", style = TinType.bodyM, color = c.ink2)
@@ -1381,7 +1416,7 @@ fun GroupTokenLive(app: P2pApp, id: String, onBack: () -> Unit) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 TinButton("Share", {
                     token?.let { tk -> runCatching { ctx.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, "Join $name on Tinline: $tk"), "Share group invite")) } }
-                }, Modifier.weight(1f), style = BtnStyle.Tonal, icon = Icons.Rounded.Share, enabled = token != null)
+                }, Modifier.weight(1f), style = BtnStyle.Tonal, icon = PgIcons.Share, enabled = token != null)
                 CopyButton(token, Modifier.weight(1f))
             }
         }

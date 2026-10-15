@@ -8,8 +8,8 @@ Inputs: `docs/design/rotation-author-key-trace.md` (D1, cited as `D1 §n`),
 `docs/design/rotation-baseline-report.md` (A1, `O1`–`O8`), `docs/group-sim-coverage-audit.md`
 (G-A), `docs/group-rotation-integration-contract.md` (cited as "contract item n"),
 `docs/group-chat-coordination-{request,response}.md`, `docs/group-chat.md`,
-`crates/group-sim/src/{reachability,authority,tests}.rs`,
-`crates/proto/tests/rotation_permit_model.rs`. B1 output (`rotation-history-policy-options.md`)
+`design-models:crates/group-sim/src/{reachability,authority,tests}.rs`,
+`design-models:crates/proto/tests/rotation_permit_model.rs`. B1 output (`rotation-history-policy-options.md`)
 did not exist at this commit. The checkpoint discussion therefore uses the B1 *packet* text
 (`docs/design/rotation-agent-packets.md:155-188`), not B1 results.
 
@@ -35,7 +35,7 @@ or revocation policy.
    per-message author signer, and the input to the Loro peer ID [D1 §1; src
    `crates/core/src/chat/doc.rs:33-40`]. Group-sim mirrors this coupling. The envelope's
    `device` is both the signing key and the peer-ID input, and the DID attestation names that
-   key [src `crates/group-sim/src/tests.rs:75`, `:77`, `:126`, `:138`, `:206`, `:213`].
+   key [src `design-models:crates/group-sim/src/tests.rs:75`, `:77`, `:126`, `:138`, `:206`, `:213`].
 2. Two author-key options are compared (§3):
    - **(i)** a separate long-lived author key per device path;
    - **(ii)** the author key rotates with the transport key, with a retained proof chain.
@@ -47,11 +47,11 @@ or revocation policy.
    retained historical keys (D1 Q5, Q6, Q9) are needed under **both** options.
 3. Under (ii), with today's attestation format, every group envelope would carry the
    transport EndpointId that signed it. The signer key *is* the endpoint
-   [src `group-sim/src/tests.rs:126`, `:135`]. That puts an endpoint into group-audience
+   [src `design-models:crates/group-sim/src/tests.rs:126`, `:135`]. That puts an endpoint into group-audience
    history. Unless the signing endpoint is itself group-audience, this conflicts with contract
    item 6. Option (i) avoids this structurally, because an author key is not an address.
 4. Group-sim's per-author `previous` chain requires the same signing key and `sequence + 1`
-   [src `group-sim/src/tests.rs:259-267`]. Under (ii), every rotation would end that chain.
+   [src `design-models:crates/group-sim/src/tests.rs:259-267`]. Under (ii), every rotation would end that chain.
    Either a cross-key continuity rule is needed, or each rotation starts a new chain at
    sequence 1 under a new peer. That is a **[GROUP]** decision.
 5. The mock `SuccessionAdapter` can be kept as the *shape* of the boundary. It is missing
@@ -59,7 +59,7 @@ or revocation policy.
    `generation`, permit ID, `issued_at`, an evidence/signature reference, revocation and fork
    status, live-possession status, an anchor reference in `Nomination`, and typed failure
    reasons. Its contract, "full verified ancestry since the nominated root"
-   [src `group-sim/src/reachability.rs:24-26`], conflicts with "bounded verification" (contract
+   [src `design-models:crates/group-sim/src/reachability.rs:24-26`], conflicts with "bounded verification" (contract
    item 1) once a nominated path has thousands of rotations. That needs **[GROUP]** agreement
    plus a **[USER: G-HISTORY]** decision.
 
@@ -78,14 +78,14 @@ or revocation policy.
 | F7 | Restore makes a **new** device secret and tombstones the old self entry | [src] `crates/core/src/node.rs:1248-1250`, `:1288-1293` |
 | F8 | Tombstoned dialer gets `Unlinked` and wipes itself | [D1 §6.5] `crates/core/src/sync/engine.rs:385-405` |
 | F9 | Attestations have no expiry/sequence; any mnemonic holder can attest any key | [A1 O8] `crates/proto/src/lib.rs:197-213` |
-| F10 | Group-sim envelope: `device` = signing key, peer bound to `(device, doc)`, attestation must name `device` and `author` | [src] `group-sim/src/tests.rs:19-20`, `:206`, `:213-219` |
-| F11 | Group-sim `previous` must have same `device` and `sequence + 1`; `key()` = `peer:sequence` must be unique | [src] `group-sim/src/tests.rs:259-273`, `:41-43` |
-| F12 | Group-sim peer range: update may only contain the envelope's own peer | [src] `group-sim/src/tests.rs:277-279` (untested per [G-A] §2 item 7) |
-| F13 | Mock `install` checks only `first.device_id`, owner and audience of each record; ordering/continuity delegated to adapter; mock ignores `Nomination` | [src] `group-sim/src/reachability.rs:39`, `:49-72`; [G-A] §3 row R:216 |
-| F14 | `retire_at` is "routing retirement time ONLY, not access-grant expiration" | [src] `group-sim/src/reachability.rs:19-20` |
-| F15 | Permit model `Claims` carries `version, owner, audience, previous_id, replacement_id, endpoint, predecessor, generation, issued_at, expires_at`; `live` requires `now < expires_at` and possession of `endpoint` | [src] `crates/proto/tests/rotation_permit_model.rs:18-29`, `:107-113` |
-| F16 | `PostAuthorization::allows_post(author_did, permit)` only; succession/hosting deliberately absent | [src] `group-sim/src/authority.rs:148-152` |
-| F17 | Group delegation chain cap `MAX_CHAIN = 8` | [src] `group-sim/src/authority.rs:8`, `:110` |
+| F10 | Group-sim envelope: `device` = signing key, peer bound to `(device, doc)`, attestation must name `device` and `author` | [src] `design-models:crates/group-sim/src/tests.rs:19-20`, `:206`, `:213-219` |
+| F11 | Group-sim `previous` must have same `device` and `sequence + 1`; `key()` = `peer:sequence` must be unique | [src] `design-models:crates/group-sim/src/tests.rs:259-273`, `:41-43` |
+| F12 | Group-sim peer range: update may only contain the envelope's own peer | [src] `design-models:crates/group-sim/src/tests.rs:277-279` (untested per [G-A] §2 item 7) |
+| F13 | Mock `install` checks only `first.device_id`, owner and audience of each record; ordering/continuity delegated to adapter; mock ignores `Nomination` | [src] `design-models:crates/group-sim/src/reachability.rs:39`, `:49-72`; [G-A] §3 row R:216 |
+| F14 | `retire_at` is "routing retirement time ONLY, not access-grant expiration" | [src] `design-models:crates/group-sim/src/reachability.rs:19-20` |
+| F15 | Permit model `Claims` carries `version, owner, audience, previous_id, replacement_id, endpoint, predecessor, generation, issued_at, expires_at`; `live` requires `now < expires_at` and possession of `endpoint` | [src] `design-models:crates/proto/tests/rotation_permit_model.rs:18-29`, `:107-113` |
+| F16 | `PostAuthorization::allows_post(author_did, permit)` only; succession/hosting deliberately absent | [src] `design-models:crates/group-sim/src/authority.rs:148-152` |
+| F17 | Group delegation chain cap `MAX_CHAIN = 8` | [src] `design-models:crates/group-sim/src/authority.rs:8`, `:110` |
 
 ---
 
@@ -443,4 +443,4 @@ not let anyone fetch a private record. **[GROUP]** plus **[USER: G-KEYS]**. Unde
 - No claim is made that either option gives device-compromise isolation under the shared
   mnemonic (F9).
 - Group-sim fields cited are test-only fixtures. They are not wire formats
-  (`group-sim/src/authority.rs:1`, `docs/group-rotation-integration-contract.md:49-50`).
+  (`design-models:crates/group-sim/src/authority.rs:1`, `docs/group-rotation-integration-contract.md:49-50`).

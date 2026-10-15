@@ -25,7 +25,7 @@
   <div class="alert {prefs.form}" class:waiting role="alert" aria-label={waiting ? `${name} is calling during your call` : `Incoming call from ${name}`} style:--strip="{pad}px" in:alertIn out:alertOut data-incoming-alert>
     <button type="button" class="open" aria-label="Open call from {name}" onclick={() => call.restore()}>
       <Avatar {name} {hue} person={id ?? undefined} size={44} />
-      <span class="tx"><b dir="auto">{name}</b><small>{waiting ? 'Calling during your call' : vid.intent ? 'Video call' : 'Incoming call'}</small></span>
+      <span class="tx"><b dir="auto">{name}</b><small>{waiting ? 'Calling during your call' : (vid.intent ? 'Video call' : 'Incoming call') + (call.toName ? ` to ${call.toName}` : '')}</small></span>
     </button>
     {#if waiting}
       <button type="button" class="b dec press" onclick={() => call.declineWaiting()}>Decline</button>

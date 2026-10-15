@@ -572,6 +572,16 @@ impl Ctl {
         retire(old);
     }
 
+    /// A group call someone else started rings like an incoming call (the same ring cue). Replaces what rings.
+    pub fn ring_group(&self) {
+        if !RING_CALLS.load(Ordering::Relaxed) {
+            return;
+        }
+        let out = self.devices.lock().unwrap().1.clone();
+        let old = self.ring.lock().unwrap().replace(start_ring(out, false));
+        retire(old);
+    }
+
     pub fn stop_ring(&self) {
         retire(self.ring.lock().unwrap().take());
     }

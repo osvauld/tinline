@@ -2,94 +2,27 @@
 //! day windows, a contact offline for more than the 7 days of a hello, closed (compacted) days,
 //! the shard cache (12 days), and how fast and how completely messages arrive.
 //!
-//! Real iroh endpoints (needs network, like `old_writer_delivery.rs`; the helpers are copied
-//! from there, the tests share no module). Time is injected per node with
+//! Real iroh endpoints (needs network, like `old_writer_delivery.rs`; the shared harness is in
+//! `support/`). Time is injected per node with
 //! `chat_clock_offset_for_test` (messages get that `at`; the live window, hello days and
 //! compaction use it), and `write_as_sibling_for_test` / `write_in_day_for_test` for ops filed
 //! under another writer ID or day.
 
 #![allow(dead_code)]
 
-use std::sync::{Arc, Mutex, mpsc};
+use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
-use p2pcore::{CallInfo, CallState, ChatEvents, Chat, DeliveryState, LinkEvents, Message, Node, NodeEvents, NodeStatus};
+use p2pcore::{Chat, ChatEvents, DeliveryState, Message};
 
-const PASS: &str = "test-passphrase";
+mod support;
+use support::all_msgs_oldest_first as all_msgs;
+use support::eventually_200ms as eventually;
+use support::*;
 
-#[derive(Debug, Clone)]
-enum Ev {
-    Incoming(CallInfo),
-    #[allow(dead_code)]
-    State(String, CallState),
-}
-
-struct Tap(Mutex<mpsc::Sender<Ev>>, Arc<Mutex<Vec<String>>>);
-impl NodeEvents for Tap {
-    fn on_status(&self, _: NodeStatus) {}
-    fn on_contacts_changed(&self) {}
-    fn on_incoming_call(&self, c: CallInfo) {
-        let _ = self.0.lock().unwrap().send(Ev::Incoming(c));
-    }
-    fn on_call_state(&self, id: String, s: CallState) {
-        let _ = self.0.lock().unwrap().send(Ev::State(id, s));
-    }
-    fn on_log(&self, line: String) {
-        self.1.lock().unwrap().push(line);
-    }
-}
-
-#[derive(Debug, Clone, PartialEq)]
-enum LEv {
-    Code(String),
-    Done(String),
-    Other,
-}
-
-struct LTap(Mutex<mpsc::Sender<LEv>>);
-impl LinkEvents for LTap {
-    fn on_link_code(&self, code: String, _: String) {
-        let _ = self.0.lock().unwrap().send(LEv::Code(code));
-    }
-    fn on_link_done(&self, did: String, _: String) {
-        let _ = self.0.lock().unwrap().send(LEv::Done(did));
-    }
-    fn on_link_failed(&self, _: String) {
-        let _ = self.0.lock().unwrap().send(LEv::Other);
-    }
-    fn on_devices_changed(&self) {
-        let _ = self.0.lock().unwrap().send(LEv::Other);
-    }
-    fn on_history_changed(&self) {
-        let _ = self.0.lock().unwrap().send(LEv::Other);
-    }
-    fn on_unlinked(&self, _: String) {
-        let _ = self.0.lock().unwrap().send(LEv::Other);
-    }
-}
-
-struct Peer {
-    node: Arc<Node>,
-    rx: mpsc::Receiver<Ev>,
-    lrx: mpsc::Receiver<LEv>,
-    logs: Arc<Mutex<Vec<String>>>,
-    did: String,
-    phrase: String,
-    dir: std::path::PathBuf,
-}
-
-impl Drop for Peer {
-    fn drop(&mut self) {
-        self.node.stop();
-        let _ = std::fs::remove_dir_all(&self.dir);
-    }
-}
+const TAG: &str = "shards";
 
 impl Peer {
-    fn logged(&self, needle: &str) -> bool {
-        self.logs.lock().unwrap().iter().any(|l| l.contains(needle))
-    }
-
     /// The log lines about refused batches.
     fn refusals(&self) -> Vec<String> {
         self.logs.lock().unwrap().iter().filter(|l| l.contains("rejected ")).cloned().collect()
@@ -101,55 +34,10 @@ impl Peer {
     }
 }
 
-type Opened = (Arc<Node>, mpsc::Receiver<Ev>, mpsc::Receiver<LEv>, Arc<Mutex<Vec<String>>>);
-
-fn open(dir: &std::path::Path) -> Opened {
-    let (tx, rx) = mpsc::channel();
-    let (ltx, lrx) = mpsc::channel();
-    let logs = Arc::new(Mutex::new(Vec::new()));
-    let node = Node::new(dir.to_string_lossy().into(), Arc::new(Tap(Mutex::new(tx), logs.clone()))).unwrap();
-    node.auto_accept_contacts_for_test(true);
-    node.set_link_events(Arc::new(LTap(Mutex::new(ltx))));
-    (node, rx, lrx, logs)
-}
-
-fn blank(name: &str) -> Peer {
-    let dir = std::env::temp_dir().join(format!("p2pcore-shards-{name}-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&dir);
-    let (node, rx, lrx, logs) = open(&dir);
-    Peer { node, rx, lrx, logs, did: String::new(), phrase: String::new(), dir }
-}
-
-fn online(n: &Node) {
-    n.start().unwrap();
-    let t = Instant::now();
-    while !n.status().online && t.elapsed() < Duration::from_secs(10) {
-        std::thread::sleep(Duration::from_millis(100));
-    }
-}
-
 /// A committed identity; started (`online`) or not.
 fn peer(name: &str, started: bool) -> Peer {
-    let mut p = blank(name);
-    p.phrase = p.node.create_identity(name.into(), PASS.into()).unwrap();
-    if started {
-        online(&p.node);
-    }
-    p.did = p.node.profile().unwrap().did;
-    p
+    Peer::committed_with(TAG, name, started, true)
 }
-
-fn eventually(secs: u64, what: &str, mut f: impl FnMut() -> bool) {
-    let end = Instant::now() + Duration::from_secs(secs);
-    while Instant::now() < end {
-        if f() {
-            return;
-        }
-        std::thread::sleep(Duration::from_millis(200));
-    }
-    panic!("timed out waiting for {what}");
-}
-
 
 const DAY: i64 = 86_400_000;
 const HOUR: i64 = 3_600_000;
@@ -182,16 +70,7 @@ fn noon_ago(n: i64) -> i64 {
     floor(now_ms()) - n * DAY + 12 * HOUR
 }
 
-/// Every message of the conversation, oldest first (the order the UI shows: day, then `(at, id)`).
-fn all_msgs(p: &Peer, did: &str) -> Vec<Message> {
-    let mut pages = Vec::new();
-    let mut page = p.node.chat_day(did.to_string(), None).ok();
-    while let Some(pg) = page {
-        pages.push(pg.messages.clone());
-        page = pg.older_day.and_then(|d| p.node.chat_day(did.to_string(), Some(d)).ok());
-    }
-    pages.into_iter().rev().flatten().collect()
-}
+
 
 fn find(p: &Peer, did: &str, id: &str) -> Option<Message> {
     all_msgs(p, did).into_iter().find(|m| m.id == id)
@@ -213,12 +92,7 @@ fn state(p: &Peer, did: &str) -> Vec<(String, String, bool)> {
 }
 
 fn restart(p: &mut Peer, pass: &str) {
-    p.node.stop();
-    let (node, rx, lrx, logs) = open(&p.dir);
-    drop(std::mem::replace(&mut p.node, node));
-    p.rx = rx;
-    p.lrx = lrx;
-    p.logs = logs;
+    p.reopen();
     p.node.unlock(pass.into()).unwrap();
 }
 

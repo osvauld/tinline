@@ -9,10 +9,10 @@
 //!
 //! Inputs are events with a millisecond timestamp (any monotonic clock); outputs are actions
 //! for the IO layer (send a control frame, send a datagram, close, dial). Membership and
-//! permits are asked through [`CallAuthority`], because real group membership is not in
-//! production yet. [`net`] runs the engines on iroh connections (unstable API on `Node`).
+//! permits are asked through [`CallAuthority`] (group chat provides it through
+//! `group::calldir::GroupCallDir`). [`net`] runs the engines on iroh connections (unstable API on `Node`).
 //!
-//! Spec gaps G1–G10 (§9) are settled as modelled in `crates/group-sim/src/group_call.rs`:
+//! Spec gaps G1–G10 (§9) are settled as modelled in `crates/group-sim/src/group_call.rs` on the `design-models` branch:
 //! G1 the CallStart travels with a call-host record (the wiring's job; here `host_permit_ok`);
 //! G2 Join carries the joiner's group note (`GroupCallMsg::Join.note`, checked by
 //! `endpoint_ok`); G3 the moving average uses datagrams inside the window only; G4 the

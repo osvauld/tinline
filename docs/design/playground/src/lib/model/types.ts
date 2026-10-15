@@ -44,7 +44,9 @@ export interface CallRecord {
   outcome: 'answered' | 'missed' | 'declined' | 'failed' | 'cancelled';
   durationS: number;
   direction: 'out' | 'in';
-  group?: boolean;         // a group call (step 6): shown "Group call · 12 min"; the pill joins / starts a call in this group
+  group?: boolean;         // a group call (step 6): shown "Group call · 12 min · 3 people"; the pill joins / starts a call in this group
+  /** Group calls: how many people were in it at most (me included when I was). Missed = it happened without me. */
+  people?: number;
 }
 
 export interface Message {
@@ -124,9 +126,19 @@ export interface Account {
   gate: 'onboarding' | 'locked' | 'ready';
 }
 
-/** An account on this install that is not the selected one. Only the selected account is online (battery); a parked
- *  account keeps its keys but makes and receives no calls until it is selected. */
-export interface ParkedAccount { name: string; hue: number; profile?: Profile }
+/** Another name (identity) on this install, beside the open one (2026-10-14: several names online at once).
+ *  Each name is its own address with its own contacts and chats; `data` holds them while another name is open.
+ *  online = its endpoint runs, so its calls and messages come through; offline = keys kept, nothing reaches it here.
+ *  Safe limits (Proposed): phone 3 online, desktop 5. */
+export interface OtherName {
+  id: Id;                  // stable per name (the avatar fingerprint reads it)
+  name: string;
+  hue: number;
+  profile?: Profile;
+  online: boolean;
+  remembered: boolean;     // opens without its passphrase (phone key store / desktop keyring)
+  data: { people: Person[]; chats: Chat[]; devices: Device[] };
+}
 
 export type FormFactor = 'android' | 'desktop';
 export type Theme = 'system' | 'light' | 'dark';

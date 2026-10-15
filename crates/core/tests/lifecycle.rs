@@ -13,49 +13,22 @@
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use p2pcore::{CallInfo, CallState, GroupInvitationState, GroupItemKind, LinkEvents, Node, NodeEvents, NodeStatus};
+use p2pcore::{GroupInvitationState, GroupItemKind, Node};
 
-const PASS: &str = "test-passphrase";
-const WAIT: u64 = 90;
+mod support;
+use support::*;
+
 const ROUNDS: usize = 6;
-
-struct Quiet;
-impl NodeEvents for Quiet {
-    fn on_status(&self, _: NodeStatus) {}
-    fn on_contacts_changed(&self) {}
-    fn on_incoming_call(&self, _: CallInfo) {}
-    fn on_call_state(&self, _: String, _: CallState) {}
-    fn on_log(&self, _: String) {}
-}
-
-struct NoLink;
-impl LinkEvents for NoLink {
-    fn on_link_code(&self, _: String, _: String) {}
-    fn on_link_done(&self, _: String, _: String) {}
-    fn on_link_failed(&self, _: String) {}
-    fn on_devices_changed(&self) {}
-    fn on_history_changed(&self) {}
-    fn on_unlinked(&self, _: String) {}
-}
 
 struct Peer {
     node: Arc<Node>,
     did: String,
-    dir: std::path::PathBuf,
+    dir: TempDir,
 }
 
 impl Drop for Peer {
     fn drop(&mut self) {
         self.node.stop();
-        let _ = std::fs::remove_dir_all(&self.dir);
-    }
-}
-
-fn online(n: &Node) {
-    n.start().unwrap();
-    let t = Instant::now();
-    while !n.status().online && t.elapsed() < Duration::from_secs(10) {
-        std::thread::sleep(Duration::from_millis(100));
     }
 }
 
@@ -67,24 +40,12 @@ fn new_node(dir: &std::path::Path) -> Arc<Node> {
 }
 
 fn peer(name: &str) -> Peer {
-    let dir = std::env::temp_dir().join(format!("p2pcore-gl-{name}-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&dir);
+    let dir = TempDir::new("gl", name);
     let node = new_node(&dir);
     node.create_identity(name.into(), PASS.into()).unwrap();
     online(&node);
     let did = node.profile().unwrap().did;
     Peer { node, did, dir }
-}
-
-fn eventually(secs: u64, what: &str, mut f: impl FnMut() -> bool) {
-    let end = Instant::now() + Duration::from_secs(secs);
-    while Instant::now() < end {
-        if f() {
-            return;
-        }
-        std::thread::sleep(Duration::from_millis(250));
-    }
-    panic!("timed out waiting for {what}");
 }
 
 fn contacts(a: &Peer, b: &Peer) {

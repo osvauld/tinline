@@ -4,8 +4,8 @@ Status: proposal — not approved
 
 Packet W2-H. It implements user decisions **U4 revised** and **U7**
 (`docs/design/rotation-open-decisions.md`, section 0), in simulation only. No production code
-was changed. Model and tests: `crates/group-sim/src/host_only.rs`, wired in with one `mod` line
-at `crates/group-sim/src/tests.rs:23-24`. Line numbers below refer to the W2-H commit.
+was changed. Model and tests: `design-models:crates/group-sim/src/host_only.rs`, wired in with one `mod` line
+at `design-models:crates/group-sim/src/tests.rs:23-24`. Line numbers below refer to the W2-H commit.
 
 The model sits alongside the existing group-sim fixtures and did not edit them. Those fixtures
 encoded the superseded design: device-key-signed envelopes with attestations, and members that
@@ -63,9 +63,9 @@ envelope remains only as a carrier (section 4).
   - Time is fake `u64`. Everything is in memory.
   - One static X25519 request key per DID. W2-Q's request-key rotation is not re-modelled.
 
-## 2. Verified in tests (`cargo test -p group-sim`, 16 new tests)
+## 2. Verified in tests (`cargo test -p group-sim (design-models branch)`, 16 new tests)
 
-| Test (`crates/group-sim/src/host_only.rs`) | KIND | What it shows |
+| Test (`design-models:crates/group-sim/src/host_only.rs`) | KIND | What it shows |
 |---|---|---|
 | `did_signed_posts_with_random_writer_ids_two_own_devices_converge` :1412 | invariant | Two devices of one DID write concurrently under distinct random writer IDs (each equal to its Loro peer ID). Every replica converges. The post JSON has exactly the 7 body fields plus `sig`, and verifies against the DID key alone. Writer IDs change with the RNG seed while the identities stay fixed. |
 | `members_receive_no_device_key_transport_key_or_endpoint_of_any_other_member` :1509 | invariant | A scan of every byte each member received, plus its replica state. It finds no identity device key, and no group or private transport key of any other device, including sibling devices and rotated-out keys. Positive controls: each member holds the host's current endpoint, and the host's bytes contain every member's endpoint. |
@@ -104,7 +104,7 @@ W2-H listed these tests without editing them. Packet R1b then removed or rewrote
 U4 revised (no device or transport key in content), U5 revised (visible blocking), U7 (only the
 host knows members' group endpoints) and U18 (no backward compatibility). The test names
 below are current; line numbers are no longer given because the files changed.
-`crates/group-sim/README.md` ("Superseded tests") has the same table.
+`design-models:crates/group-sim/README.md` ("Superseded tests") has the same table.
 
 **A. Content signed by a device key and carrying an attestation (U4 revised).** The `Envelope`
 fixture in `tests.rs` still has a `device` field, a device-derived Loro `peer` and an
@@ -159,7 +159,7 @@ DID-signed "blocked" answer the requester can tell apart from offline, unanswere
 `BlockReply::Drop` the requester sees `NoAnswer` at that layer. Neither is selected.
 
 The proto private-audience model `rotation_silent_block.rs` is now
-`crates/proto/tests/rotation_visible_block.rs`: one DID-signed notice, the same notice on every
+`design-models:crates/proto/tests/rotation_visible_block.rs`: one DID-signed notice, the same notice on every
 later attempt, and forged/misaddressed/replayed notices refused with the view unchanged.
 
 **C. Not superseded, as far as W2-H and R1b checked.**

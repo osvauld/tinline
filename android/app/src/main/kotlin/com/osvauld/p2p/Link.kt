@@ -25,8 +25,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
@@ -467,7 +465,7 @@ private fun LinkScanScreen(newDevice: Boolean, note: String?, nonce: Int, onBack
     TinlineTheme(dark = true) {
         Page(Modifier.background(Color(0xFF050807))) {
             TopBar(if (newDevice) "Scan instead" else "Scan the code", onBack) {
-                if (granted) IconBtn(if (torch) Icons.Rounded.FlashlightOn else Icons.Rounded.FlashlightOff, "Torch", { torch = !torch })
+                if (granted) IconBtn(if (torch) PgIcons.Torch else PgIcons.Torchoff, "Torch", { torch = !torch })
             }
             Box(Modifier.weight(1f).fillMaxWidth().padding(top = 8.dp)) {
                 key(nonce) { QrCameraBox(Modifier.fillMaxSize(), if (newDevice) "Point at the code on your other device" else "Point the camera at the QR code on your new device", torch, { granted = it }, onText) }
@@ -475,7 +473,7 @@ private fun LinkScanScreen(newDevice: Boolean, note: String?, nonce: Int, onBack
                     Modifier.align(Alignment.Center).padding(24.dp).clip(SmoothCornerShape(20.dp)).background(Color(0xE6101614)).padding(20.dp),
                     horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    Icon(Icons.Rounded.ErrorOutline, null, tint = Color(0xFFF2B8B5), modifier = Modifier.size(32.dp))
+                    Icon(PgIcons.Warning, null, tint = Color(0xFFF2B8B5), modifier = Modifier.size(32.dp))
                     Text(note, style = PgType.body, color = Color.White, textAlign = TextAlign.Center)
                     PBtn("Scan again", onRetry, variant = PVariant.Primary)
                 }
@@ -497,7 +495,7 @@ fun UnlinkedScreen(name: String, onOk: () -> Unit, onLinkAgain: () -> Unit) {
         GateHead(null, null)
         GateStep("This phone was unlinked", center = true, anchor = true,
             lead = "${name.ifBlank { "Your account" }} was removed from this phone by one of your other devices. Its contacts, chats and calls are deleted here. Your other devices are not affected.",
-            hero = { Box(Modifier.padding(top = 12.dp)) { IconDisc(Icons.Rounded.LinkOff, 72.dp, 32.dp, danger = true) } },
+            hero = { Box(Modifier.padding(top = 12.dp)) { IconDisc(PgIcons.Off, 72.dp, 32.dp, danger = true) } },
             foot = {
                 GBtn("OK", onOk)
                 GBtn("Link it again", onLinkAgain, kind = GKind.Text)

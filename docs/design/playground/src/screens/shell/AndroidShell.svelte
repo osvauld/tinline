@@ -16,8 +16,10 @@
   import SimKeyboard from '../../lib/sim/SimKeyboard.svelte';
   import SystemLayer from '../../lib/calls/SystemLayer.svelte';
   import PeopleLayers from '../people/PeopleLayers.svelte';
+  import NameSwitcher from '../names/NameSwitcher.svelte';
   import SearchDock from '../search/SearchDock.svelte';
   import { ui } from '../search/state.svelte';
+  import { gx } from '../../lib/model/actions/groups.svelte';
   const look = $derived(statusLook());
 
   /** Screens that draw their own header (with Back) instead of the shell's bare one. */
@@ -43,6 +45,7 @@
       <span class="acts">
         {#if !dock}<IconButton icon="search" label="Search" onclick={() => ui.openScreen()} />{/if}
         <IconButton icon="gear" label="Settings" onclick={() => nav.push({ name: 'settings' })} />
+        <NameSwitcher />
       </span>
     </header>
     <TabPanel key={top.tab}>
@@ -54,7 +57,7 @@
     <nav class="bar" aria-label="Main">
       {#each TABS as t (t)}
         <button type="button" class="tab press" aria-current={nav.tab === t ? 'page' : undefined} onclick={() => nav.setTab(t)}>
-          <span class="pill"><Icon name={TAB_ICON[t]} size={22} />{#if t === 'chats' && unread}<span class="dot">{unread}</span>{/if}</span>
+          <span class="pill"><Icon name={TAB_ICON[t]} size={22} />{#if t === 'chats' && unread}<span class="dot">{unread}</span>{:else if t === 'groups' && gx.invitations.length}<span class="dot" aria-label="{gx.invitations.length} invitations">{gx.invitations.length}</span>{/if}</span>
           <span class="lbl">{TAB_LISTS[t].title}</span>
         </button>
       {/each}
@@ -84,7 +87,7 @@
   .vp { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; }
   .appbar { display: flex; align-items: center; justify-content: space-between; min-height: 56px; padding: 4px 8px 0 12px; }
   .brand { display: inline-flex; align-items: center; gap: 8px; font-size: 19px; }
-  .acts { display: flex; }
+  .acts { display: flex; align-items: center; }
   .title { font-size: 28px; line-height: 34px; margin: 4px 16px 8px; }
   .body { flex: 1; min-height: 0; overflow: auto; }
   .screen { position: absolute; inset: 0; display: flex; flex-direction: column; background: var(--bg); }

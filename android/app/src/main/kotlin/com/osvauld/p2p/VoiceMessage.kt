@@ -72,15 +72,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.Send
-import androidx.compose.material.icons.rounded.Delete
-import androidx.compose.material.icons.rounded.KeyboardArrowUp
-import androidx.compose.material.icons.rounded.Lock
-import androidx.compose.material.icons.rounded.Mic
-import androidx.compose.material.icons.rounded.Pause
-import androidx.compose.material.icons.rounded.PlayArrow
-import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowLeft
 import uniffi.p2pcore.VoiceDecoder
 import uniffi.p2pcore.VoiceRecorder
 
@@ -459,7 +450,7 @@ fun VoiceBubbleContent(id: String, path: String, durationMs: Int, waveform: Byte
                 .semantics { contentDescription = if (playing) "Pause voice message" else "Play voice message" }
                 .pointerInput(id, path) { detectTapGestures { if (playing) VoicePlayer.pause() else VoicePlayer.play(ctx, id, path) } },
             contentAlignment = Alignment.Center,
-        ) { Icon(if (playing) Icons.Rounded.Pause else Icons.Rounded.PlayArrow, null, tint = c.onPr, modifier = Modifier.size(22.dp)) }
+        ) { Icon(if (playing) PgIcons.Pause else PgIcons.Play, null, tint = c.onPr, modifier = Modifier.size(22.dp)) }
         val barW = with(LocalDensity.current) { 3.dp.toPx() }
         val gap = with(LocalDensity.current) { 2.dp.toPx() }
         Canvas(

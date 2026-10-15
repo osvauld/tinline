@@ -115,6 +115,13 @@ object HomeScroll {
 fun HomeAppBar(look: MarkLook, showSearch: Boolean, onSearch: () -> Unit, onSettings: () -> Unit) {
     val c = Tin.c
     val ring by RingHead.ring.collectAsState()
+    // While this bar is on screen it carries a ringing call, so CallController keeps the system heads-up away. Leaving Home
+    // mid-ring posts the notification, so the call is never left without a way to answer it.
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    DisposableEffect(Unit) {
+        AppVisible.ringHeadUp = true
+        onDispose { AppVisible.ringHeadUp = false; P2pApp.get(ctx).calls.appLeftFront() }
+    }
     Box(Modifier.fillMaxWidth().heightIn(min = 56.dp)) {
         val a by animateFloatAsState(if (ring == null) 1f else 0f, tween(Motion.CROSSFADE), label = "brand")
         Row(
@@ -227,24 +234,26 @@ fun SearchDock(addLabel: String, onSearch: () -> Unit, onAdd: () -> Unit) {
 /** `.bar`: 4 equal tabs on the surface, a hairline above. Tab: 56 x 30 pill (radius 15) over a 12 sp 600 label. The active
  * indicator grows out from the icon's centre (scaleX .3 -> 1 with opacity, 200 ms), never a hard swap. */
 @Composable
-fun TinTabBar(tab: HomeTab, onTab: (HomeTab) -> Unit, chatBadge: Int, showGroups: Boolean = true) {
+fun TinTabBar(tab: HomeTab, onTab: (HomeTab) -> Unit, chatBadge: Int, showGroups: Boolean = true, groupBadge: Int = 0) {
     val c = Tin.c
     Column(Modifier.fillMaxWidth().background(c.sf)) {
         Box(Modifier.fillMaxWidth().height(1.dp).background(c.hairline))
-        Row(Modifier.fillMaxWidth().navigationBarsPadding().padding(top = 6.dp, bottom = 10.dp)) {
+        // The pill sits 4 dp lower inside each tab (top 2 + 5 instead of 6 + 1), so the badge at -4 stays inside the tab:
+        // the tab's press clip used to cut its top off.
+        Row(Modifier.fillMaxWidth().navigationBarsPadding().padding(top = 2.dp, bottom = 10.dp)) {
             listOf(HomeTab.Chats to PgIcons.Chat, HomeTab.Groups to PgIcons.Users, HomeTab.Calls to PgIcons.Phone, HomeTab.Contacts to PgIcons.Contact)
                 .filter { showGroups || it.first != HomeTab.Groups }
                 .forEach { (t, icon) ->
                     val on = t == tab
                     val p by animateFloatAsState(if (on) 1f else 0f, tween(Motion.INDICATOR, easing = Motion.EaseOut), label = "ind")
                     val fg by animateColorAsState(if (on) c.accentInk else c.ink2, tween(Motion.INDICATOR, easing = Motion.EaseOut), label = "tabfg")
-                    val badge = if (t == HomeTab.Chats) chatBadge else 0
+                    val badge = when (t) { HomeTab.Chats -> chatBadge; HomeTab.Groups -> groupBadge; else -> 0 }
                     Column(
                         Modifier.weight(1f).heightIn(min = 56.dp).pressable({ onTab(t) }, RoundedCornerShape(0.dp), wash = Color.Transparent, role = Role.Tab)
                             .semantics(mergeDescendants = true) { selected = on; if (badge > 0) stateDescription = "$badge unread" },
                         horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(2.dp),
                     ) {
-                        Box(Modifier.padding(top = 1.dp).size(56.dp, 30.dp), contentAlignment = Alignment.Center) {
+                        Box(Modifier.padding(top = 5.dp).size(56.dp, 30.dp), contentAlignment = Alignment.Center) {
                             Box(Modifier.matchParentSize().graphicsLayer { scaleX = 0.3f + 0.7f * p; alpha = p }.clip(RoundedCornerShape(15.dp)).background(c.accentSoft))
                             Icon(icon, null, tint = fg, modifier = Modifier.size(22.dp))
                             if (badge > 0) CountBadge(badge, Modifier.align(Alignment.TopEnd).offset(x = (-4).dp, y = (-4).dp))
@@ -266,7 +275,10 @@ fun CountBadge(n: Int, modifier: Modifier = Modifier, muted: Boolean = false) {
         .then(if (muted) Modifier.border(1.dp, c.ln, RoundedCornerShape(9.dp)) else Modifier.background(c.accent))
         .padding(horizontal = 5.dp)
     Box(m, contentAlignment = Alignment.Center) {
-        Text(if (n > 99) "99+" else "$n", style = TinFs.meta.copy(fontWeight = if (muted) FontWeight.SemiBold else FontWeight.Bold, lineHeight = 11.sp),
+        // Centred on the pill's middle, without the font's extra top padding (it sat low and looked off centre).
+        Text(if (n > 99) "99+" else "$n", style = TinFs.meta.copy(fontWeight = if (muted) FontWeight.SemiBold else FontWeight.Bold, lineHeight = 11.sp,
+                platformStyle = androidx.compose.ui.text.PlatformTextStyle(includeFontPadding = false),
+                lineHeightStyle = androidx.compose.ui.text.style.LineHeightStyle(androidx.compose.ui.text.style.LineHeightStyle.Alignment.Center, androidx.compose.ui.text.style.LineHeightStyle.Trim.Both)),
             color = if (muted) c.ink2 else c.onAccent)
     }
 }
@@ -286,8 +298,10 @@ fun FilterChip(label: String, on: Boolean, onClick: () -> Unit) {
 
 /** A group's avatar in lists: --surface-2 circle with the users glyph in --accent-ink (lib/ui/Avatar group). */
 @Composable
-fun ListGroupAvatar(size: Dp, alpha: Float = 1f) {
+fun ListGroupAvatar(size: Dp, alpha: Float = 1f, gid: String? = null) {
     val c = Tin.c
+    val art = androidx.compose.runtime.remember(gid, size) { FingerprintCache.ofGroup(gid, size.value) }
+    if (art != null) { GroupMandala(art, size, Modifier.alpha(alpha)); return }
     Box(Modifier.size(size).alpha(alpha).clip(CircleShape).background(c.sf2), contentAlignment = Alignment.Center) {
         Icon(PgIcons.Users, null, tint = c.accentInk, modifier = Modifier.size(size * 0.46f))
     }

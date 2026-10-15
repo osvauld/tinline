@@ -24,6 +24,9 @@ mod signup_view;
 mod link_view;
 #[path = "groups_view.rs"]
 mod groups_view;
+#[cfg(any(test, feature = "test-hooks"))]
+#[path = "groups_preview_view.rs"]
+mod groups_preview_view;
 #[path = "group_live_view.rs"]
 mod group_live_view;
 #[path = "shell_view.rs"]
@@ -220,9 +223,17 @@ impl App {
             }
         };
         let base = container(body).width(Fill).height(Fill).style(ui::plain(t.bg, 0.0));
-        match self.add_overlay(t).or_else(|| self.viewer_overlay(t)).or_else(|| self.delete_overlay(t)).or_else(|| self.new_chat_overlay(t)).or_else(|| self.live_overlay(t)).or_else(|| self.groups_overlay(t)) {
+        let overlay = self.add_overlay(t).or_else(|| self.viewer_overlay(t)).or_else(|| self.delete_overlay(t)).or_else(|| self.new_chat_overlay(t)).or_else(|| self.live_overlay(t));
+        #[cfg(any(test, feature = "test-hooks"))]
+        let overlay = overlay.or_else(|| self.groups_overlay(t));
+        let base: El = match overlay {
             Some(o) => iced::widget::stack![base, o].into(),
             None => base.into(),
+        };
+        // "Sam started a call in Weekend hike": a quiet banner over the app (not over a call screen).
+        match self.gcall_announce(t).filter(|_| matches!(self.screen, Screen::Home)) {
+            Some(a) => iced::widget::stack![base, a].into(),
+            None => base,
         }
     }
 
@@ -235,18 +246,22 @@ impl App {
     /// avatar 28, name 13/16 650 over "Incoming call" 11/14 muted, then Decline and Answer as 28 px circles in 32 px
     /// boxes. Tapping the caller opens the full incoming screen.
     pub(super) fn ring_head(&self, t: Tok) -> Option<El<'_>> {
+        if let Some(w) = self.ring_head_waiting(t) { return Some(w); }
         let c = self.incoming_card()?;
-        let name = c.info.peer_name.clone();
-        let who = button(row![self.profile_avatar(t, &name, &c.info.peer_did, 28.0),
-                column![semi(crate::fit::ellipsize(&name, ui::SANS_SEMI, 13.0, 88.0), 13.0, t.ink).line_height(lh(16.0)).wrapping(iced::widget::text::Wrapping::None),
-                    tx("Incoming call", 11.0, t.ink2).line_height(lh(14.0)).wrapping(iced::widget::text::Wrapping::None)]].spacing(8).align_y(Alignment::Center))
-            .padding(0).height(32).width(Fill).style(shell_view::wash(t, None, None, 14.0)).on_press(Msg::CallUi(crate::call_ui::Action::Restore));
+        Some(self.ring_row(t, &c.info.peer_name, &c.info.peer_did, "Incoming call", Msg::CallUi(crate::call_ui::Action::Restore), Msg::Decline, Msg::Answer))
+    }
+
+    fn ring_row(&self, t: Tok, name: &str, did: &str, sub: &str, open: Msg, decline: Msg, answer: Msg) -> El<'_> {
+        let who = button(row![self.profile_avatar(t, name, did, 28.0),
+                column![semi(crate::fit::ellipsize(name, ui::SANS_SEMI, 13.0, 88.0), 13.0, t.ink).line_height(lh(16.0)).wrapping(iced::widget::text::Wrapping::None),
+                    tx(sub.to_string(), 11.0, t.ink2).line_height(lh(14.0)).wrapping(iced::widget::text::Wrapping::None)]].spacing(8).align_y(Alignment::Center))
+            .padding(0).height(32).width(Fill).style(shell_view::wash(t, None, None, 14.0)).on_press(open);
         let rb = |hang: bool, bg: Color, fg: Color, msg: Msg| -> El<'_> {
             let icon: El = if hang { crate::ui::glyph(crate::pg_icons::STROKE, r#"<g transform="rotate(135 12 12)"><path d="M5 4h3.5l1.5 4.5-2.2 1.4a11 11 0 0 0 6.3 6.3l1.4-2.2L20 15.5V19a1.5 1.5 0 0 1-1.6 1.5A16 16 0 0 1 3.5 5.6 1.5 1.5 0 0 1 5 4z"/></g>"#, 16.0, fg) } else { crate::pg_icons::pgi("phone", 16.0, fg) };
             button(container(container(icon).center_x(28).center_y(28).style(ui::plain(bg, 14.0))).center_x(32).center_y(32))
                 .padding(0).width(32).height(32).style(|_: &Theme, _| button::Style::default()).on_press(msg).into()
         };
-        Some(row![who, rb(true, t.danger_btn, t.on_danger_btn, Msg::Decline), rb(false, t.accent, t.on_accent, Msg::Answer)].align_y(Alignment::Center).height(32).into())
+        row![who, rb(true, t.danger_btn, t.on_danger_btn, decline), rb(false, t.accent, t.on_accent, answer)].align_y(Alignment::Center).height(32).into()
     }
 
     // ---- shared pieces ----
@@ -816,7 +831,7 @@ impl App {
     fn calls_list(&self, t: Tok) -> El<'_> {
         use shell_view::wash;
         let known = |did: &str| self.contacts.iter().any(|c| c.did == did);
-        let mut list = column![];
+        let mut items: Vec<(u64, El<'_>)> = Vec::new();
         let mut any = false;
         for r in self.recents.iter().filter(|r| known(&r.peer_did)).take(RECENTS as usize) {
             any = true;
@@ -862,11 +877,36 @@ impl App {
             let back = iced::widget::tooltip(back, text(why).size(13), iced::widget::tooltip::Position::Left);
             let item = button(row![pf, row_, back].spacing(2).align_y(Alignment::Center)).padding(0).width(Fill).on_press(press)
                 .style(wash(t, sel.then_some(t.accent_soft), Some(if sel { t.accent_soft } else { t.surface2 }), 14.0));
-            list = list.push(item);
+            items.push((r.started_at, item.into()));
+        }
+        // Group calls (CallsList.svelte): the group's avatar opens its info; the row starts or joins a call there.
+        for r in &self.group_log {
+            let Some(g) = self.live.list.iter().find(|g| g.id == r.group_id && super::group_live::active(g.my_role)) else { continue };
+            any = true;
+            let gid = g.id.clone();
+            let sel = self.live.open.as_deref() == Some(gid.as_str());
+            // The group's own mandala in its rounded square (FINGERPRINT-AVATARS.md, Groups).
+            let face = ui::group_face(t, &gid, 48.0);
+            let pf = button(face).padding(Padding { top: 8.0, right: 0.0, bottom: 8.0, left: 8.0 })
+                .style(wash(t, None, None, 14.0)).on_press(Msg::Live(super::group_live::Lm::OpenInfo(gid.clone())));
+            let sub = row![crate::pg_icons::pgi("users", 15.0, t.ink2), tx(p2pcore::group_call_label(r.clone()), 13.0, t.ink2).line_height(lh(21.0))].spacing(5).align_y(Alignment::Center);
+            let press = if self.call.is_some() { Msg::CallUi(crate::call_ui::Action::Restore) } else { Msg::GCall(super::gcall::Gm::Call(gid.clone())) };
+            let row_ = button(row![column![semi(g.name.clone(), 15.0, t.ink).line_height(lh(21.0)).wrapping(iced::widget::text::Wrapping::None), sub].spacing(2).width(Fill),
+                    tx(chat_view::list_time(r.started_at * 1000), 11.0, t.ink2)].spacing(12).align_y(Alignment::Center))
+                .padding(Padding { top: 8.0, right: 8.0, bottom: 8.0, left: 12.0 }).height(68).width(Fill)
+                .style(wash(t, None, None, 14.0)).on_press(press.clone());
+            let back = button(container(crate::pg_icons::pgi("phone", 22.0, t.accent_ink)).center_x(44).center_y(44))
+                .padding(0).width(44).height(44).style(wash(t, None, Some(t.surface2), 22.0)).on_press(press.clone());
+            let back = iced::widget::tooltip(back, text("Start or join a call").size(13), iced::widget::tooltip::Position::Left);
+            let item = button(row![pf, row_, back].spacing(2).align_y(Alignment::Center)).padding(0).width(Fill).on_press(press)
+                .style(wash(t, sel.then_some(t.accent_soft), Some(if sel { t.accent_soft } else { t.surface2 }), 14.0));
+            items.push((r.started_at, item.into()));
         }
         if !any {
             return self.empty_quiet(t, "Calls you make and receive show up here.");
         }
+        items.sort_by(|a, b| b.0.cmp(&a.0));
+        let list = items.into_iter().fold(column![], |c, (_, e)| c.push(e));
         container(list).padding([0, 8]).width(Fill).into()
     }
 
@@ -977,7 +1017,7 @@ impl App {
     }
 
     fn home_view(&self, t: Tok) -> El<'_> {
-        if self.sel.is_none() && self.live.open.is_none() && self.groups.open.is_none() && self.offer.is_none() && self.notice.is_none() && self.problem().is_none() {
+        if self.sel.is_none() && self.live.open.is_none() && !self.preview_open() && self.offer.is_none() && self.notice.is_none() && self.problem().is_none() {
             return self.framed(t, self.detail_empty(t));
         }
         let mut main = column![].spacing(16);
@@ -990,6 +1030,7 @@ impl App {
         if let Some(pane) = self.live_pane(t) {
             return self.framed(t, pane);
         }
+        #[cfg(any(test, feature = "test-hooks"))]
         if let Some(pane) = self.preview_pane(t) {
             return self.framed(t, pane);
         }
@@ -1350,10 +1391,6 @@ impl App {
         }
         let profile = section(t, "Account", acct.into());
         let devices = self.linked_devices_page(t);
-        let mut camera_opts = opts(&self.video.devices);
-        if let Some(selected) = self.settings.camera_device.as_ref() {
-            if !camera_opts.contains(selected) { camera_opts.push(selected.clone()); }
-        }
         let calls = section(t,
             "Calls",
             column![
@@ -1366,21 +1403,6 @@ impl App {
                     "Video in calls",
                     "Your camera stays off until you turn it on in the call",
                     toggler(!self.settings.no_video).on_toggle(|on| Msg::Video(super::Vm::Enabled(on))).style(ui::toggle_style(t)).into(),
-                ),
-                line(t,
-                    "Prefer HD",
-                    "Aim for 720p; adapts to connection and device. Applies at next camera start",
-                    toggler(self.settings.prefer_hd).on_toggle(|on| Msg::Video(super::Vm::PreferHd(on))).style(ui::toggle_style(t)).into(),
-                ),
-                line(t,
-                    "Camera",
-                    "Selection applies from the next call",
-                    pick(camera_opts, sel(&self.settings.camera_device), |d| Msg::Video(super::Vm::SelectCamera(d))),
-                ),
-                line(t,
-                    "Find cameras",
-                    "List connected capture devices without starting video",
-                    pill(t, Kind::Quiet, None, "Refresh", Some(Msg::Video(super::Vm::ScanCameras))),
                 ),
             ]
             .spacing(12)
@@ -1479,23 +1501,10 @@ impl App {
             }
             c.into()
         };
-        let about = section(t,
-            "About",
-            column![
-                row![ui::logo(40.0, t), column![bold("Tinline", 18.0, t.ink), tx(format!("Version {} \u{b7} by Osvauld", env!("CARGO_PKG_VERSION")), 13.0, t.ink2)].spacing(2)].spacing(12).align_y(Alignment::Center),
-                tx("Free and open source under the GPL. No ads, no tracking, no analytics.", 14.0, t.ink2),
-                tx("Fonts: Figtree and IBM Plex Mono, SIL Open Font License 1.1. Icons: Lucide (ISC).", 13.0, t.ink2),
-                tx("Video: libaom (BSD-2-Clause, AOMedia Patent License 1.0) and rav1d (BSD-2-Clause); licence texts ship with the package.", 13.0, t.ink2),
-                tx("Not for emergency calls.", 13.0, t.ink2),
-            ]
-            .spacing(10)
-            .into(),
-        );
-        let quit = pill(t, Kind::Danger, Some(Icon::LogOut), "Quit Tinline", Some(Msg::Quit));
         // (tab, name) in nav order. Hosting lists the groups this computer hosts (the demo shows
         // the preview's placeholder page instead).
         let mut items: Vec<(u8, &str)> = vec![(0, "Account"), (1, "Linked devices"), (7, "Privacy"), (6, "Hosting")];
-        items.extend([(2, "Calls & availability"), (3, "Audio devices"), (4, "Security"), (5, "About")]);
+        items.extend([(2, "Calls & availability"), (3, "Audio devices"), (4, "Security")]);
         let mut nav = column![
             button(row![ui::icon(Icon::ArrowLeft, 18.0, t.ink2), semi("Back", 14.0, t.ink2)].spacing(8).align_y(Alignment::Center))
                 .padding([8, 12])
@@ -1521,12 +1530,13 @@ impl App {
             2 => calls,
             3 => audio,
             4 => section(t, "Security", security),
+            #[cfg(any(test, feature = "test-hooks"))]
             6 if self.demo && self.groups.on => self.hosting_page(t),
             6 => self.live_hosting_page(t),
             7 => self.privacy_page(t),
-            _ => column![about, quit].spacing(20).into(),
+            _ => Space::new().into(),
         };
-        let title_ = items.iter().find(|(i, _)| *i == self.settings_tab).map(|(_, n)| *n).unwrap_or("About");
+        let title_ = items.iter().find(|(i, _)| *i == self.settings_tab).map(|(_, n)| *n).unwrap_or("Account");
         let _ = (nav, title_); // Native-only content stays reachable without a second settings sidebar.
         let content = column![self.notice_bar(t), page].spacing(20);
         scroll(t, container(container(content).max_width(560).width(Fill)).padding(16).center_x(Fill).width(Fill)).height(Fill).into()
@@ -1784,31 +1794,44 @@ impl App {
         st.width(Fill).height(Fill).into()
     }
 
-    /// "Arjun is calling" over the call: no hold, so the choice is to refuse or to swap.
+    /// WaitingCard.svelte: someone else is calling during my call (core: Live::waiting). A calm card just above the
+    /// controls: avatar 40, "<name> is calling" over "during your call", Decline and End & answer as two equal 44 px
+    /// pills, and what End & answer does. No hold: End & answer ends this call.
     fn waiting_banner<'a>(&'a self, t: Tok, w: &p2pcore::CallInfo) -> El<'a> {
         let name = if w.peer_name.is_empty() { "Unknown".to_string() } else { w.peer_name.clone() };
-        ui::raised(
-            container(
-            row![
-                self.profile_avatar(t, &name, &w.peer_did, 44.0),
-                column![
-                    semi(format!("{name} is calling"), 16.0, t.ink),
-                    tx("Your call continues until you choose. Decline tells them you\u{2019}re busy.", 13.0, t.ink2),
-                ]
-                .spacing(2)
-                .width(Fill),
-                pill(t, Kind::Danger, Some(Icon::PhoneOff), "Decline", Some(Msg::DeclineWaiting)),
-                pill(t, Kind::Accept, Some(Icon::Phone), "End & answer", Some(Msg::EndAnswer)),
-            ]
-            .spacing(12)
-            .align_y(Alignment::Center),
-            )
-            .padding(14)
-            .width(Fill),
-            t,
-            ui::Depth::Pop,
-            ui::pop_surface(t, 14.0),
-        )
+        let current = self.call.as_ref().map(|c| c.info.peer_name.split_whitespace().next().unwrap_or("").to_string()).unwrap_or_default();
+        let pill_style = |bg: Color, hover: Color, fg: Color| move |_: &Theme, st: button::Status| button::Style {
+            background: Some(if matches!(st, button::Status::Hovered | button::Status::Pressed) { hover } else { bg }.into()),
+            text_color: fg,
+            border: Border { radius: 22.0.into(), ..Default::default() },
+            ..Default::default()
+        };
+        let dec_bg = ui::mix(t.surface, t.ink, 0.09);
+        let dec = button(container(semi("Decline", 13.0, t.ink)).center_x(Fill).center_y(44)).padding(0).width(Fill).height(44)
+            .style(pill_style(dec_bg, ui::mix(t.surface, t.ink, 0.15), t.ink)).on_press(Msg::DeclineWaiting);
+        let ans = button(container(semi("End & answer", 13.0, t.on_accent)).center_x(Fill).center_y(44)).padding(0).width(Fill).height(44)
+            .style(pill_style(t.accent, ui::mix(t.accent, Color::WHITE, 0.08), t.on_accent)).on_press(Msg::EndAnswer);
+        let who = row![
+            self.profile_avatar(t, &name, &w.peer_did, 40.0),
+            column![
+                container(semi(format!("{name} is calling"), 15.0, t.ink).line_height(lh(20.0)).wrapping(iced::widget::text::Wrapping::None)).clip(true).width(Fill),
+                tx("during your call", 13.0, t.ink2).line_height(lh(18.0)),
+            ].width(Fill),
+        ].spacing(12).align_y(Alignment::Center);
+        let hint = container(row![
+            tx("Ends your call with", 12.0, t.ink2).line_height(lh(16.0)).wrapping(iced::widget::text::Wrapping::None),
+            container(tx(current, 12.0, t.ink2).line_height(lh(16.0)).wrapping(iced::widget::text::Wrapping::None)).clip(true),
+        ].spacing(4)).center_x(Fill);
+        let card = container(column![who, row![dec, ans].spacing(8), hint].spacing(12))
+            .padding(Padding { top: 14.0, right: 14.0, bottom: 12.0, left: 14.0 }).width(Fill).max_width(360);
+        container(ui::raised(card, t, ui::Depth::Pop, ui::pop_surface(t, 22.0))).center_x(Fill).into()
+    }
+
+    /// RingHead.svelte (desktop), waiting form: while my call is minimised, the brand row turns into whoever is calling
+    /// during it ("Calling during your call"); Decline refuses, End & answer swaps. Same box as the incoming form.
+    pub(super) fn ring_head_waiting(&self, t: Tok) -> Option<El<'_>> {
+        let w = self.waiting.as_ref().filter(|_| self.call_ui.minimized)?;
+        Some(self.ring_row(t, &w.peer_name, &w.peer_did, "Calling during your call", Msg::CallUi(crate::call_ui::Action::Restore), Msg::DeclineWaiting, Msg::EndAnswer))
     }
 
     /// CallScreen.svelte after the end: the same screen (mark, avatar, name), the reason where the status was and the
@@ -1894,16 +1917,16 @@ impl canvas::Program<Msg> for QrView<'_> {
         frame.fill_rectangle(Point::ORIGIN, bounds.size(), Color::WHITE);
         let quiet = 1usize;
         let total = self.0.n + 2 * quiet;
-        let cell = (bounds.width.min(bounds.height) / total as f32).floor().max(1.0);
-        let off = (bounds.width.min(bounds.height) - cell * total as f32) / 2.0;
+        // The code fills its box: cells are fractional, and each edge is rounded to a whole pixel so neighbours meet with
+        // no seams. (Flooring the cell size left a dense link ticket at ~2/3 of the box.)
+        let side = bounds.width.min(bounds.height);
+        let cell = side / total as f32;
+        let edge = |i: usize| (i as f32 * cell).round();
         for y in 0..self.0.n {
             for x in 0..self.0.n {
                 if self.0.dark[y * self.0.n + x] {
-                    frame.fill_rectangle(
-                        Point::new(off + (x + quiet) as f32 * cell, off + (y + quiet) as f32 * cell),
-                        Size::new(cell, cell),
-                        Color::BLACK,
-                    );
+                    let (x0, y0) = (edge(x + quiet), edge(y + quiet));
+                    frame.fill_rectangle(Point::new(x0, y0), Size::new(edge(x + quiet + 1) - x0, edge(y + quiet + 1) - y0), Color::BLACK);
                 }
             }
         }

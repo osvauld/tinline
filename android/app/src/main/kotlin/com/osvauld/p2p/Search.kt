@@ -311,7 +311,7 @@ private fun NameTile(n: NameHit, q: String, me: String?, onClick: () -> Unit) {
             .padding(start = 4.dp, end = 4.dp, top = 6.dp),
         horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        if (n.kind == SearchNameKind.GROUP) ListGroupAvatar(48.dp) else Avatar(n.name, n.id, 48.dp)
+        if (n.kind == SearchNameKind.GROUP) ListGroupAvatar(48.dp, gid = n.id) else Avatar(n.name, n.id, 48.dp)
         Text(marked(n.name, nameRanges(n.name, q), c.ink), style = TinFs.sub.copy(fontSize = 12.sp, lineHeight = 15.sp), color = c.ink,
             textAlign = TextAlign.Center, maxLines = 2, overflow = TextOverflow.Ellipsis)
     }
@@ -328,7 +328,7 @@ private fun MessageRow(h: MessageHit, me: String?, onClick: () -> Unit) {
         Modifier.fillMaxWidth().height(64.dp).pressable(onClick, RoundedCornerShape(14.dp)).padding(horizontal = 8.dp, vertical = 11.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        if (h.kind == SearchConvKind.GROUP) ListGroupAvatar(44.dp) else Avatar(h.convName, h.conv, 44.dp)
+        if (h.kind == SearchConvKind.GROUP) ListGroupAvatar(44.dp, gid = h.conv) else Avatar(h.convName, h.conv, 44.dp)
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(h.convName, Modifier.weight(1f), style = TinFs.body.copy(fontWeight = FontWeight.SemiBold, lineHeight = 20.sp), color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)

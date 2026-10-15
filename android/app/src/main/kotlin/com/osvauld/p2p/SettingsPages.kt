@@ -62,6 +62,7 @@ fun SettingsLanding(
     store: ProfileStore, fallbackName: String, accounts: List<AccountRow>, problems: List<PermProblem>,
     onBack: () -> Unit, onMe: () -> Unit, onSwitch: (String) -> Unit, onAdd: () -> Unit,
     onDevices: () -> Unit, onPrivacy: () -> Unit, onNotifications: () -> Unit, onSounds: () -> Unit,
+    onVideo: () -> Unit = {}, onStorage: () -> Unit = {}, onAbout: () -> Unit = {},
     extra: @Composable ColumnScope.() -> Unit = {},
 ) {
     val c = Tin.c
@@ -124,6 +125,9 @@ fun SettingsLanding(
                 act { PfAct("Privacy", onClick = onPrivacy, icon = PgIcons.Shield, chevron = true) }
                 act { PfAct("Notifications", onClick = onNotifications, icon = PgIcons.Bell, chevron = true) }
                 act { PfAct("Sounds", onClick = onSounds, icon = PgIcons.Vol, chevron = true) }
+                act { PfAct("Video", onClick = onVideo, icon = PgIcons.Video, chevron = true) }
+                act { PfAct("Storage", onClick = onStorage, icon = PgIcons.Save, chevron = true) }
+                act { PfAct("About Tinline", onClick = onAbout, icon = PgIcons.Info, chevron = true) }
             }
         }
         extra()
@@ -201,15 +205,16 @@ fun NotificationsPage(missing: List<Need>, onBack: () -> Unit, fix: (Need) -> Un
     }
 }
 
-/**
- * Sounds.svelte, Quiet only. The call-sound palettes and their previews are the playground's WebAudio synth (Proposed; SCREENS-HANDOFF
- * "not to port as-is"), so they are not offered here; the app rings with the system ringtone.
- */
+/** Sounds.svelte: Quiet, and the call sound set with previews (the core renders the same cues as the desktop). */
 @Composable
 fun SoundsPage(onBack: () -> Unit) {
     val ctx = androidx.compose.ui.platform.LocalContext.current
     val prefs by AlertPrefs.flow(ctx).collectAsState()
     val quiet = prefs["quiet"] ?: false
+    var palette by remember { mutableStateOf(CallSounds.palette(ctx)) }
+    val sets = listOf(Triple("classic", "Classic chime", "A bright four-note chime."),
+        Triple("slack", "Slack \u2192 taut", "Two close notes beat like a loose string, then one pulls tight."),
+        Triple("triad", "Triad knock", "Three rising notes, like a knock."))
     PfPage("Sounds", onBack) {
         PfSec("Quiet", first = true) {
             PfCard {
@@ -218,6 +223,103 @@ fun SoundsPage(onBack: () -> Unit) {
                         trailing = { PgSwitch(quiet, { AlertPrefs.set(ctx, "quiet", it) }, "Quiet") })
                 }
             }
+        }
+        PfSec("Call sounds") {
+            PfCard {
+                sets.forEach { (k, label, sub) ->
+                    act { PfRadioRow(label, sub, palette == k, { palette = k; CallSounds.setPalette(ctx, k); CallSounds.preview(ctx, "ring") }, minHeight = 64.dp) }
+                }
+            }
+            Row(Modifier.fillMaxWidth().padding(start = 4.dp, end = 4.dp, top = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                listOf("ring" to "Ringtone", "connected" to "Connected", "ended" to "Call ended").forEach { (cue, label) ->
+                    PgChip(label, false, { CallSounds.preview(ctx, cue) }, icon = PgIcons.Vol)
+                }
+            }
+            PfNote(if (quiet) "Quiet is on, so previews are silent." else "Tap a sound to hear it. The choice applies to the next call.")
+        }
+    }
+}
+
+/** One choice among several (Settings radio rows): ring + dot, title, optional muted line. */
+@Composable
+fun PfRadioRow(title: String, sub: String?, on: Boolean, onClick: () -> Unit, minHeight: androidx.compose.ui.unit.Dp = 56.dp) =
+    PfAct(title, onClick = onClick, sub = sub, role = Role.RadioButton, minHeight = minHeight, leading = { PgRadio(on) })
+
+/**
+ * CallsVideo.svelte (Android form): "Sharper video" only; the phone picks its own cameras (Flip in a call). The preference is
+ * [VideoQualityPreference]; it applies when the camera next starts.
+ */
+@Composable
+internal fun VideoSettingsPage(quality: VideoQualityPreference, onQuality: (VideoQualityPreference) -> Unit, onBack: () -> Unit) {
+    val hd = quality == VideoQualityPreference.PREFER_HD
+    val set = { on: Boolean -> onQuality(if (on) VideoQualityPreference.PREFER_HD else VideoQualityPreference.AUTO) }
+    PfPage("Video", onBack) {
+        PfSec("Video quality", first = true) {
+            PfCard {
+                act {
+                    PfAct("Sharper video", onClick = { set(!hd) }, icon = PgIcons.Video, role = Role.Switch, plain = true,
+                        sub = if (hd) "Up to 540p when the connection allows. Uses more data and battery." else "Adjusts by itself for smooth calls.",
+                        trailing = { PgSwitch(hd, set, "Sharper video") })
+                }
+            }
+            PfNote("Changes apply the next time your camera starts.")
+        }
+    }
+}
+
+private fun fmtBytes(n: Long): String = when {
+    n >= 1_000_000_000L -> "%.1f GB".format(n / 1e9)
+    n >= 1_000_000L -> "${Math.round(n / 1e6)} MB"
+    n >= 1_000L -> "${Math.round(n / 1e3)} KB"
+    else -> "$n B"
+}
+
+/** Storage.svelte: what Tinline keeps here (one bar), when pictures download, and clearing the cache. */
+@Composable
+fun StoragePage(pictures: Long, files: Long, messages: Long, cache: Long, download: uniffi.p2pcore.PictureDownload, cleared: Boolean,
+                onDownload: (uniffi.p2pcore.PictureDownload) -> Unit, onClear: () -> Unit, onBack: () -> Unit) {
+    val c = Tin.c
+    val kinds = listOf(Triple("Pictures", pictures, c.accent), Triple("Files", files, c.thread), Triple("Messages", messages, c.ink2), Triple("Cache", cache, c.ln))
+    val total = kinds.sumOf { it.second }
+    PfPage("Storage", onBack) {
+        PfSec("On this phone", first = true) {
+            PfCard {
+                act {
+                    Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Text(fmtBytes(total), style = PgType.title, color = c.ink)
+                        Row(Modifier.fillMaxWidth().height(10.dp).clip(RoundedCornerShape(5.dp)).background(c.sf2), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                            kinds.filter { it.second > 0 }.forEach { (_, n, col) -> Box(Modifier.weight(n.toFloat()).fillMaxHeight().background(col)) }
+                        }
+                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            kinds.forEach { (label, n, col) ->
+                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Box(Modifier.size(10.dp).clip(RoundedCornerShape(3.dp)).background(col))
+                                    Text(label, Modifier.weight(1f), style = PgType.sub, color = c.ink)
+                                    Text(fmtBytes(n), style = PgType.sub.copy(fontFeatureSettings = "tnum"), color = c.ink2)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        PfSec("Download pictures") {
+            PfCard {
+                listOf(Triple(uniffi.p2pcore.PictureDownload.ALWAYS, "Always", "On Wi-Fi and mobile data"),
+                    Triple(uniffi.p2pcore.PictureDownload.WIFI, "On Wi-Fi", "On mobile data they wait for a tap"),
+                    Triple(uniffi.p2pcore.PictureDownload.TAP, "When I tap them", "Each shows a soft preview until then")).forEach { (d, label, sub) ->
+                    act { PfRadioRow(label, sub, download == d, { onDownload(d) }) }
+                }
+            }
+        }
+        PfSec {
+            PfCard {
+                act {
+                    PfAct("Clear cache", onClick = if (cache > 0) onClear else null, icon = PgIcons.Trash,
+                        sub = if (cache > 0) "${fmtBytes(cache)} of pictures and files you’ve opened. They’re prepared again when you open them." else if (cleared) "Cleared" else "Nothing to clear")
+                }
+            }
+            PfNote("To free more space, remove pictures or files from their chat.")
         }
     }
 }

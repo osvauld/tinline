@@ -13,9 +13,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -56,9 +53,8 @@ fun HomeScreen(
     /** Hoisted tab, so coming back from a chat or group lands on the same tab. Null keeps it local. */
     homeTab: MutableState<HomeTab>? = null,
     /** Opens a PLACEHOLDER preview screen (Settings › Developer). */
-    onPreview: (PRoute) -> Unit = {},
     /** The Groups tab (real groups, GroupsLive.kt). */
-    onGroup: (String) -> Unit = {}, onNewGroup: () -> Unit = {}, onJoinGroup: () -> Unit = {}, say: (String) -> Unit = {},
+    onGroup: (String) -> Unit = {}, onGroupInfo: (String) -> Unit = {}, onNewGroup: () -> Unit = {}, onJoinGroup: () -> Unit = {}, say: (String) -> Unit = {},
     /** Opens the full-screen search (Search.kt). */
     onSearch: () -> Unit = {},
 ) {
@@ -74,8 +70,13 @@ fun HomeScreen(
     val localTab = rememberSaveable { mutableStateOf(HomeTab.Chats) }
     var tab by (homeTab ?: localTab)
     val groupList by app.groups.list.collectAsState()
+    val groupLog by app.groupLog.collectAsState()
+    val groupCalls = remember(groupLog, groupList) {
+        GroupCallsUi(groupLog, groupList.filter { GroupText.active(it.myRole) }.associate { it.id to it.name }, onGroupInfo) { gid -> app.groupCallUi.call(gid, say) }
+    }
     val groupInvitations by app.groups.invitations.collectAsState()
-    val groupBadge = GroupText.badge(groupList, groupInvitations)
+    // Groups counts invitations waiting for me; unread group posts already count on Chats (as the playground / desktop).
+    val groupBadge = GroupText.pendingInvitations(groupInvitations).size
     val requestsIn by app.groups.incoming.collectAsState()
     val waitingIn by app.requestsIn.collectAsState()
     val waitingOut by app.requestsOut.collectAsState()
@@ -124,7 +125,7 @@ fun HomeScreen(
         firstRun = { FirstRunAdd(app, onScan = { onAdd(true) }, onPaste = onPaste) },
         groupsBody = { GroupsLiveTab(app, onGroup, onNewGroup, onJoinGroup, say, onChat) }, groupBadge = groupBadge,
         requestsBlock = { GroupRequestsBlock(app, onChat, say) },
-        onSearch = onSearch, history = history,
+        onSearch = onSearch, history = history, groupCalls = groupCalls,
         canCall = { did -> blocks.callGate(did, byDid.containsKey(did)) == CallGate.Ok && byDid.containsKey(did) },
         isBlocked = { did -> blocks.of(did).blockedByMe }, onGroup = onGroup, onNewGroup = onNewGroup, callLook = callPhase,
         waitingIn = waitingIn.filter { it.did !in hiddenRequests }, waitingOut = waitingOut,
@@ -140,12 +141,12 @@ fun HomeScreen(
 @Composable
 private fun TopBanner(online: Boolean, grace: Boolean, missing: List<Need>, onFix: (Need) -> Unit, available: Boolean, onTurnOn: () -> Unit) {
     when {
-        !online && !grace -> Banner(BannerKind.Error, Icons.Rounded.WifiOff, "You’re offline", "Your calls come through again once you’re back online.")
+        !online && !grace -> Banner(BannerKind.Error, PgIcons.Off, "You’re offline", "Your calls come through again once you’re back online.")
         Need.Mic in missing -> Banner(BannerKind.Error, PgIcons.Micoff, "Microphone is off", "People won’t hear you on calls.", "Allow") { onFix(Need.Mic) }
         Need.Notifications in missing -> Banner(BannerKind.Warn, PgIcons.Mute, "Calls won’t ring", "Notifications are off for Tinline.", "Turn on") { onFix(Need.Notifications) }
-        Need.Battery in missing -> Banner(BannerKind.Warn, Icons.Rounded.BatteryAlert, "Calls may be missed when idle", "Android is limiting Tinline in the background.", "Fix") { onFix(Need.Battery) }
-        Need.FullScreen in missing -> Banner(BannerKind.Warn, Icons.Rounded.PhoneLocked, "Calls won’t show on the lock screen", "Allow full-screen calls so Tinline rings like the phone app.", "Allow") { onFix(Need.FullScreen) }
-        !available -> Banner(BannerKind.Neutral, Icons.Rounded.PhoneDisabled, "You’re not available", "Calls won’t ring until you turn it back on.", "Turn on", onTurnOn)
+        Need.Battery in missing -> Banner(BannerKind.Warn, PgIcons.Battery, "Calls may be missed when idle", "Android is limiting Tinline in the background.", "Fix") { onFix(Need.Battery) }
+        Need.FullScreen in missing -> Banner(BannerKind.Warn, PgIcons.Lock, "Calls won’t show on the lock screen", "Allow full-screen calls so Tinline rings like the phone app.", "Allow") { onFix(Need.FullScreen) }
+        !available -> Banner(BannerKind.Neutral, PgIcons.Callend, "You’re not available", "Calls won’t ring until you turn it back on.", "Turn on", onTurnOn)
         // "Set a passphrase" slots in after this; it is a blocking screen today.
     }
 }
@@ -171,6 +172,8 @@ fun HomeContent(
     onSearch: () -> Unit = {},
     /** The call log for the Calls tab (newest first). */
     history: List<CallRecord> = emptyList(),
+    /** Group calls for the Calls tab (HomeLists.kt). */
+    groupCalls: GroupCallsUi? = null,
     canCall: (String) -> Boolean = { true },
     isBlocked: (String) -> Boolean = { false },
     onGroup: (String) -> Unit = {}, onNewGroup: () -> Unit = {},
@@ -201,7 +204,7 @@ fun HomeContent(
                             top = { Column { banner(); requestsBlock?.invoke() } }, empty = hero)
                         HomeTab.Groups -> groupsBody?.invoke()
                         HomeTab.Calls -> CallsTabBody(
-                            history, nameOf = { r -> byDid[r.peerDid]?.display() ?: r.peerName.ifBlank { "Unknown" } }, canCall = canCall, state = state,
+                            history, groupCalls = groupCalls, nameOf = { r -> byDid[r.peerDid]?.display() ?: r.peerName.ifBlank { "Unknown" } }, canCall = canCall, state = state,
                             onProfile = { did -> byDid[did]?.let(onContact) }, onCall = { did -> byDid[did]?.let(onCall) },
                             top = {
                                 Column {
@@ -221,13 +224,13 @@ fun HomeContent(
             }
         }
         if (dock) SearchDock(if (tab == HomeTab.Groups) "New group" else "New chat", onSearch, if (tab == HomeTab.Groups) onNewGroup else onNewChat)
-        TinTabBar(tab, onTab, chatBadge, showGroups = groupsBody != null)
+        TinTabBar(tab, onTab, chatBadge, showGroups = groupsBody != null, groupBadge = groupBadge)
     }
 }
 
 fun recentIcon(k: RecentCall.Kind): ImageVector = when (k) {
     RecentCall.Kind.Incoming -> PgIcons.CallIn
-    RecentCall.Kind.Missed -> Icons.Rounded.CallMissed
+    RecentCall.Kind.Missed -> PgIcons.CallIn
     else -> PgIcons.CallOut
 }
 
@@ -318,7 +321,7 @@ private fun FirstRunAdd(app: P2pApp, onScan: () -> Unit, onPaste: () -> Unit) {
         Lead("Show your code to a friend, or copy it and send it. Or scan theirs.", Modifier.widthIn(max = 320.dp), align = TextAlign.Center)
         MyCodeBlock(app, meName, qr = 220.dp, showNewCode = false)
         TinButton("Scan their code", onScan, icon = PgIcons.Scan)
-        TinButton("Paste their card", onPaste, style = BtnStyle.Outlined, icon = Icons.Rounded.ContentPaste)
+        TinButton("Paste their card", onPaste, style = BtnStyle.Outlined, icon = PgIcons.Paste)
         Row(
             Modifier.fillMaxWidth().clip(SmoothCornerShape(14.dp)).background(c.sf2).padding(horizontal = 14.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp),

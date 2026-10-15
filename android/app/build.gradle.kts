@@ -137,7 +137,8 @@ val cargoNdkBuild = tasks.register<RustExec>("cargoNdkBuild") {
     cmd.set(buildList {
         add("cargo"); add("ndk")
         rustAbis.forEach { add("-t"); add(it) }
-        addAll(listOf("-P", "28", "-o", jniOut.get().asFile.absolutePath, "build", "--locked", "-p", "p2pcore"))
+        // --lib: only libp2pcore.so is linked; without it cargo also builds the crate's bins (search-bench, year-bench), which is slow.
+        addAll(listOf("-P", "28", "-o", jniOut.get().asFile.absolutePath, "build", "--locked", "-p", "p2pcore", "--lib"))
         if (rustRelease) add("--release")
     })
     inputs.files(rustInputs).withPropertyName("rustSources").withPathSensitivity(PathSensitivity.RELATIVE)

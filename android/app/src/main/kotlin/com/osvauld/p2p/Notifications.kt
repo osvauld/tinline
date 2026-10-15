@@ -17,15 +17,23 @@ object Notifications {
     const val CH_ONGOING = "ongoing_calls"
     const val CH_MISSED = "missed"
     const val CH_LOCKED = "locked"
-    const val CH_MESSAGES = "messages"
+    // A channel's sound is fixed when it is created, so Tinline's own `received` tone needed new ids; the first-version channels
+    // ("messages", "groups", which used the system default sound) are deleted in createChannels.
+    const val CH_MESSAGES = "messages2"
     const val CH_REQUESTS = "requests"
-    const val CH_GROUPS = "groups"
+    const val CH_GROUPS = "groups2"
     const val EXTRA_REQUEST = "contact_request"
+    /** Open Home on the Groups tab (a group invitation). */
+    const val EXTRA_GROUPS = "open_groups"
+    /** Join this group's running call (the ringing notification's Join). */
+    const val EXTRA_GCALL_JOIN = "gcall_join"
+    const val EXTRA_GCALL_OPEN = "gcall_open"
     const val ID_SERVICE = 1
     const val ID_INCOMING = 2
     const val ID_MISSED = 3
     const val ID_LOCKED = 4
     const val ID_WAITING = 5
+    const val ID_GROUP_RING = 6
 
     private fun nm(c: Context) = c.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
@@ -48,11 +56,17 @@ object Notifications {
             setShowBadge(false)
         })
         n.createNotificationChannel(NotificationChannel(CH_MISSED, "Missed calls", NotificationManager.IMPORTANCE_DEFAULT))
+        listOf("messages", "groups").forEach { old -> if (n.getNotificationChannel(old) != null) n.deleteNotificationChannel(old) }
+        val tone = receivedTone(c)
+        val toneAttrs = android.media.AudioAttributes.Builder().setUsage(android.media.AudioAttributes.USAGE_NOTIFICATION)
+            .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION).build()
         n.createNotificationChannel(NotificationChannel(CH_MESSAGES, "Messages", NotificationManager.IMPORTANCE_HIGH).apply {
             description = "New messages from your contacts"
+            if (tone != null) setSound(tone, toneAttrs)
         })
         n.createNotificationChannel(NotificationChannel(CH_GROUPS, "Groups", NotificationManager.IMPORTANCE_DEFAULT).apply {
             description = "Posts in your groups and invitations to join one"
+            if (tone != null) setSound(tone, toneAttrs)
         })
         n.createNotificationChannel(NotificationChannel(CH_REQUESTS, "Contact requests", NotificationManager.IMPORTANCE_DEFAULT).apply {
             description = "When someone asks to add you as a contact"
@@ -62,6 +76,29 @@ object Notifications {
             setShowBadge(false)
         })
     }
+
+    /**
+     * Tinline's own `received` tone as a file the system can play for a channel: the core renders it (`toy_cue_pcm`), it is written once
+     * as a 16-bit mono WAV in files/tones and shared by FileProvider (SystemUI is granted read access). Null if anything fails, and the
+     * channel then keeps the system default sound.
+     */
+    private fun receivedTone(c: Context): android.net.Uri? = try {
+        val dir = java.io.File(c.filesDir, "tones").apply { mkdirs() }
+        val f = java.io.File(dir, "received.wav")
+        if (!f.exists() || f.length() < 100) {
+            val pcm = uniffi.p2pcore.toyCuePcm("received", 4.0) ?: return null   // a notification plays at the phone's volume: lift the desktop level
+            val data = java.nio.ByteBuffer.allocate(pcm.samples.size * 2).order(java.nio.ByteOrder.LITTLE_ENDIAN)
+            pcm.samples.forEach { data.putShort(it) }
+            val rate = pcm.rate.toInt()
+            val h = java.nio.ByteBuffer.allocate(44).order(java.nio.ByteOrder.LITTLE_ENDIAN)
+            h.put("RIFF".toByteArray()).putInt(36 + data.capacity()).put("WAVEfmt ".toByteArray()).putInt(16).putShort(1).putShort(1)
+                .putInt(rate).putInt(rate * 2).putShort(2).putShort(16).put("data".toByteArray()).putInt(data.capacity())
+            f.outputStream().use { it.write(h.array()); it.write(data.array()) }
+        }
+        val uri = androidx.core.content.FileProvider.getUriForFile(c, c.packageName + ".files", f)
+        c.grantUriPermission("com.android.systemui", uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        uri
+    } catch (e: Exception) { android.util.Log.w(P2pApp.TAG, "received tone: $e"); null }
 
     private fun flags() = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
 
@@ -91,6 +128,9 @@ object Notifications {
 
     /** The always-on foreground notification; text reflects call state, availability and connectivity. */
     fun service(c: Context, inCall: String?): Notification {
+        // A group call (no 1:1 call): its name as the title, the timer, Mute and Leave.
+        val app = P2pApp.instance
+        val groupCall = inCall != null && app.calls.ui.value == null && app.groupCalls.active
         val b = Notification.Builder(c, if (inCall != null) CH_ONGOING else CH_SERVICE)
             .setSmallIcon(R.drawable.ic_stat_tinline)
             .setOngoing(true)
@@ -99,7 +139,8 @@ object Notifications {
             .setContentTitle(inCall ?: idleTitle())
             .setContentText(if (inCall != null) "Tap to return to the call" else idleText())
             .setContentIntent(
-                if (inCall != null) activity(c, CallActivity::class.java, 10)
+                if (groupCall) activity(c, MainActivity::class.java, 13) { it.putExtra(EXTRA_GCALL_OPEN, true) }
+                else if (inCall != null) activity(c, CallActivity::class.java, 10)
                 else activity(c, MainActivity::class.java, 11))
         if (Build.VERSION.SDK_INT >= 31) b.setForegroundServiceBehavior(Notification.FOREGROUND_SERVICE_IMMEDIATE)
         if (inCall != null) {
@@ -113,7 +154,14 @@ object Notifications {
             } else {
                 b.addAction(Notification.Action.Builder(
                     Icon.createWithResource(c, android.R.drawable.ic_menu_close_clear_cancel),
-                    "End call", hangup).build())
+                    if (groupCall) "Leave" else "End call", hangup).build())
+            }
+            if (groupCall) {
+                val g = app.groupCallUi.state.value
+                g.sinceMs?.takeIf { g.connected }?.let { b.setWhen(it).setShowWhen(true).setUsesChronometer(true) }
+                b.addAction(Notification.Action.Builder(
+                    Icon.createWithResource(c, android.R.drawable.ic_lock_silent_mode),
+                    if (g.muted) "Unmute" else "Mute", service(c, CoreService.ACTION_GCALL_MUTE, 14)).build())
             }
             call?.activeSinceMs?.let { since ->
                 b.setWhen(since).setShowWhen(true).setUsesChronometer(true)
@@ -147,6 +195,30 @@ object Notifications {
         }
         try { nm(c).notify(ID_INCOMING, b.build()) } catch (e: SecurityException) { }
     }
+
+    /**
+     * A group call someone else started rings (up to 30 s): the group's name over "<First name> is calling the group",
+     * Join / Not now, on the calls channel (heads-up, no full-screen). Posted only while the app is not in front.
+     */
+    fun groupRing(c: Context, gid: String, group: String, by: String, ringMs: Long) {
+        if (!AlertPrefs.calls(c)) return
+        val b = Notification.Builder(c, CH_CALLS)
+            .setSmallIcon(R.drawable.ic_stat_tinline)
+            .setCategory(Notification.CATEGORY_CALL)
+            .setAutoCancel(true)
+            .setOnlyAlertOnce(true)
+            .setContentTitle(group)
+            .setContentText("$by is calling the group")
+            .setContentIntent(activity(c, MainActivity::class.java, 60) { it.putExtra(EXTRA_GROUPS, true) })
+            .setTimeoutAfter(ringMs)
+            .addAction(Notification.Action.Builder(Icon.createWithResource(c, android.R.drawable.sym_action_call), "Join",
+                activity(c, MainActivity::class.java, 61) { it.putExtra(EXTRA_GCALL_JOIN, gid) }).build())
+            .addAction(Notification.Action.Builder(Icon.createWithResource(c, android.R.drawable.ic_menu_close_clear_cancel), "Not now",
+                service(c, CoreService.ACTION_GCALL_NOT_NOW, 62)).build())
+        try { nm(c).notify(ID_GROUP_RING, b.build()) } catch (e: SecurityException) { }
+    }
+
+    fun cancelGroupRing(c: Context) = nm(c).cancel(ID_GROUP_RING)
 
     fun cancelIncoming(c: Context) = nm(c).cancel(ID_INCOMING)
 
@@ -189,9 +261,22 @@ object Notifications {
             .setSilent(AlertPrefs.quiet(c))
             .setSmallIcon(R.drawable.ic_stat_tinline)
             .setContentTitle("Contact request")
-            .setContentText("${name.ifBlank { "Someone" }} wants to add you as a contact")
+            .setContentText("${name.ifBlank { "Someone" }} would like to add you")
             .setAutoCancel(true)
             .setContentIntent(activity(c, MainActivity::class.java, 40 + (did.hashCode() and 0xfff)) { it.putExtra(EXTRA_REQUEST, did) })
+            .build()
+        try { nm(c).notify(2000 + (did.hashCode() and 0xffff), n) } catch (e: SecurityException) { }
+    }
+
+    /** They accepted my request while Tinline was out of sight: the line is open. A tap opens our chat. */
+    fun accepted(c: Context, did: String, name: String) {
+        val n = androidx.core.app.NotificationCompat.Builder(c, CH_REQUESTS)
+            .setSilent(AlertPrefs.quiet(c))
+            .setSmallIcon(R.drawable.ic_stat_tinline)
+            .setContentTitle(name.ifBlank { "Your contact" })
+            .setContentText("Accepted your request. Your line is open.")
+            .setAutoCancel(true)
+            .setContentIntent(activity(c, MainActivity::class.java, 60 + (did.hashCode() and 0xfff)) { it.putExtra(ChatNotifier.EXTRA_PEER, did) })
             .build()
         try { nm(c).notify(2000 + (did.hashCode() and 0xffff), n) } catch (e: SecurityException) { }
     }

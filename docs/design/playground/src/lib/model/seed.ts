@@ -1,6 +1,6 @@
 /* The one data set. Merged from refined/home.html, chat.html and groups.html, which had drifted
    (different spellings, times, unread counts, member counts). Every screen reads this through the store. */
-import type { Account, Chat, Device, Group, Message, Person, Profile } from './types';
+import type { Account, Chat, Device, Group, Message, OtherName, Person, Profile } from './types';
 import { clock, T } from './clock.svelte';
 
 const at = (h: number, m: number, daysAgo = 0) => {
@@ -68,6 +68,8 @@ export function seedChats(): Chat[] {
       // Older posts (additive, for search): earlier days, before the join line below.
       msg({ from: 'sam', at: at(18, 0, 8), text: 'Trail map and the parking details are in the shared folder.' }),
       msg({ from: 'priya', at: at(9, 30, 5), text: 'Anyone have a spare headlamp for Saturday? Mine died last time.' }),
+      msg({ from: 'sam', at: at(20, 10, 3), text: '', call: { kind: 'voice', outcome: 'answered', durationS: 1140, direction: 'in', group: true, people: 4 } }),
+      msg({ from: 'priya', at: at(19, 5, 2), text: '', call: { kind: 'voice', outcome: 'missed', durationS: 300, direction: 'in', group: true, people: 3 } }),
       msg({ from: 'kavya', at: at(9, 2), text: 'Kavya joined, invited by Priya', system: true }),
       msg({ from: 'sam', at: at(12, 30), text: 'Saturday 7am at the trailhead.' }),
       msg({ from: 'sam', at: at(12, 31), text: 'Bring rain jackets, the forecast says showers after 10.' }),
@@ -162,4 +164,41 @@ export function seedDevices(): Device[] {
     { id: 'pixel', name: 'Pixel 8', kind: 'phone', self: true, lastSeen: clock.ago(0) },
     { id: 'laptop', name: 'Work laptop', kind: 'desktop', self: false, lastSeen: clock.ago(3 * T.HOUR) },
   ];
+}
+
+/** Sample other names for the "names on this device" screens (Simulation drawer). Their ids never collide with the
+    open name's, so a call to "Studio" can be told apart. A name has its own contacts and chats; devices are shared. */
+export function seedOtherName(which: 'studio' | 'home'): OtherName {
+  const p = (id: string, name: string, hue: number, extra: Partial<Person> = {}): Person =>
+    ({ id, name, hue, online: true, callsAllowed: true, blocked: false, contact: true, ...extra });
+  const direct = (person: string, messages: Message[], unread = 0): Chat =>
+    ({ kind: 'direct', id: person, person, messages, unread, muted: false, draft: '' } as Chat);
+  if (which === 'studio') {
+    return {
+      id: 'name-studio', name: 'Studio', hue: 4, online: true, remembered: false,
+      profile: prof({ status: 'Client work, weekdays' }),
+      data: {
+        people: [
+          p('st-ines', 'Ines Duarte', 2, { profile: prof({ status: 'Reviewing the drawings' }) }),
+          p('st-rahul', 'Rahul (print shop)', 5, { online: false }),
+        ],
+        chats: [
+          direct('st-ines', [
+            msg({ from: 'st-ines', at: at(10, 12), text: 'Got the new plans, thank you' }),
+            msg({ from: 'st-ines', at: at(10, 14), text: 'Can we talk through the kitchen at four?' }),
+          ], 2),
+          direct('st-rahul', [msg({ from: 'me', at: at(9, 2, 1), text: 'Twenty copies on the heavy paper, please', delivery: 'delivered' })]),
+        ],
+        devices: seedDevices(),
+      },
+    };
+  }
+  return {
+    id: 'name-home', name: 'Home', hue: 1, online: true, remembered: true,
+    data: {
+      people: [p('hm-amma', 'Amma', 3)],
+      chats: [direct('hm-amma', [msg({ from: 'hm-amma', at: at(8, 30), text: 'Did you eat?' })], 1)],
+      devices: seedDevices(),
+    },
+  };
 }

@@ -1,7 +1,7 @@
 # Group chat — conceptual acceptance tests
 
 Status: **conceptual test specification; partial executable simulation now exists**.
-`crates/group-sim` implements the first insert-only slice (see its README for exact coverage
+`design-models:crates/group-sim` implements the first insert-only slice (see its README for exact coverage
 and limits). The cases below are not all executable or passing; G1 remains incomplete.
 Design: [group-chat.md](group-chat.md). Define the oracle before implementing the harness,
 then implement pure tests, persistence tests, real iroh tests and app tests in that order.

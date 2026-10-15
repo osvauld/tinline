@@ -1,5 +1,5 @@
 //! GA-I1: group calls wired into group chat, on real nodes over real iroh endpoints (needs
-//! network, like `group_core.rs` / `group_g2.rs`, whose helpers are copied here; the audio
+//! network, like `group_core.rs` / `group_g2.rs`, the shared harness is in `support/`; the audio
 //! helpers come from `gcall.rs`). Spec: `docs/design/group-call-spec.md` §2, §3, §5, §11;
 //! decisions U2, U7, U12, U21 (`rotation-open-decisions.md` §0).
 //!
@@ -21,24 +21,17 @@ use std::sync::{Arc, Mutex, mpsc};
 use std::time::{Duration, Instant};
 
 use p2pcore::gcall::{Class, ClientState, Cond, Thermal};
-use p2pcore::{CallInfo, CallState, GroupCallEvent, GroupCallEventKind, GroupCallEvents, GroupRole, Node, NodeEvents, NodeStatus};
+use p2pcore::{GroupCallEvent, GroupCallEventKind, GroupCallEvents, GroupRole, Node};
+
+mod support;
+use support::group::{Member, WAIT, members};
+use support::*;
 
 #[path = "support/group_call_capacity.rs"]
 mod capacity_tests;
 
-const PASS: &str = "test-passphrase";
-const WAIT: u64 = 90;
 const FREQ: [f32; 4] = [440.0, 620.0, 830.0, 1070.0];
 const AMP: f32 = 8_000.0;
-
-struct Quiet;
-impl NodeEvents for Quiet {
-    fn on_status(&self, _: NodeStatus) {}
-    fn on_contacts_changed(&self) {}
-    fn on_incoming_call(&self, _: CallInfo) {}
-    fn on_call_state(&self, _: String, _: CallState) {}
-    fn on_log(&self, _: String) {}
-}
 
 struct Tap(Mutex<mpsc::Sender<GroupCallEvent>>);
 impl GroupCallEvents for Tap {
@@ -52,7 +45,7 @@ struct Peer {
     rx: mpsc::Receiver<GroupCallEvent>,
     evs: Vec<GroupCallEvent>,
     did: String,
-    dir: std::path::PathBuf,
+    dir: TempDir,
     tone: audio::Tone,
     speaking: bool,
     rec: Vec<i16>,
@@ -61,7 +54,15 @@ struct Peer {
 impl Drop for Peer {
     fn drop(&mut self) {
         self.node.stop();
-        let _ = std::fs::remove_dir_all(&self.dir);
+    }
+}
+
+impl Member for Peer {
+    fn node(&self) -> &Arc<Node> {
+        &self.node
+    }
+    fn did(&self) -> &str {
+        &self.did
     }
 }
 
@@ -72,17 +73,8 @@ impl Peer {
     }
 }
 
-fn online(n: &Node) {
-    n.start().unwrap();
-    let t = Instant::now();
-    while !n.status().online && t.elapsed() < Duration::from_secs(10) {
-        std::thread::sleep(Duration::from_millis(100));
-    }
-}
-
 fn peer(name: &str, i: usize) -> Peer {
-    let dir = std::env::temp_dir().join(format!("p2pcore-gcall-group-{name}-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&dir);
+    let dir = TempDir::new("gcall-group", name);
     let node = Node::new(dir.to_string_lossy().into(), Arc::new(Quiet)).unwrap();
     let (tx, rx) = mpsc::channel();
     node.set_group_call_events(Arc::new(Tap(Mutex::new(tx))));
@@ -90,23 +82,6 @@ fn peer(name: &str, i: usize) -> Peer {
     online(&node);
     let did = node.profile().unwrap().did;
     Peer { node, rx, evs: vec![], did, dir, tone: audio::Tone::new(FREQ[i], AMP), speaking: false, rec: vec![] }
-}
-
-fn eventually(secs: u64, what: &str, mut f: impl FnMut() -> bool) {
-    let end = Instant::now() + Duration::from_secs(secs);
-    while Instant::now() < end {
-        if f() {
-            return;
-        }
-        std::thread::sleep(Duration::from_millis(250));
-    }
-    panic!("timed out waiting for {what}");
-}
-
-fn members(p: &Peer, g: &str) -> Vec<String> {
-    let mut m: Vec<String> = p.node.group_detail(g.into()).unwrap().members.into_iter().map(|m| m.did).collect();
-    m.sort();
-    m
 }
 
 /// Owner `o` (first chat host) creates a group and each of `ms` joins with an invite from `o`.
@@ -360,8 +335,7 @@ fn the_next_call_follows_a_rotated_call_host_and_a_revoked_call_host_hands_over(
 
 /// `peer`, with a second (spare) account on the same node, made first: the node runs `name`.
 fn peer_with_spare(name: &str, i: usize) -> (Peer, String) {
-    let dir = std::env::temp_dir().join(format!("p2pcore-gcall-group-{name}-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&dir);
+    let dir = TempDir::new("gcall-group", name);
     let node = Node::new(dir.to_string_lossy().into(), Arc::new(Quiet)).unwrap();
     let (tx, rx) = mpsc::channel();
     node.set_group_call_events(Arc::new(Tap(Mutex::new(tx))));
@@ -423,4 +397,43 @@ fn an_account_switch_leaves_the_call_and_a_locked_call_host_hands_over() {
     assert!(b.events().iter().any(|e| e.kind == GroupCallEventKind::Reconnecting && e.call_id == call));
     assert!(b.node.group_call_here().is_some_and(|h| h.in_call && h.call_id == call));
     eprintln!("total {:?}", t0.elapsed());
+}
+
+// KIND: acceptance — a call ends when the last participant leaves: the host (c, also a
+// participant) signs the End, every member (also one that never joined) hears `Ended` for the
+// group, `group_calls` is empty everywhere, and the leavers' own `Left` carries the group id
+// (the apps drop the call's Join / banner on it).
+#[test]
+fn both_participants_hang_up_and_every_member_sees_the_call_end() {
+    let t0 = Instant::now();
+    let mut o = peer("e-o", 0);
+    let mut a = peer("e-a", 1);
+    let mut b = peer("e-b", 2);
+    let mut c = peer("e-c", 3);
+    let g = group_with(&o, &[&a, &b, &c]);
+    call_hosts(&o, &c, &a, &g);
+    let call = start_call(&a, &g, &[&o, &c]);
+    for p in [&o, &b, &c] {
+        eventually(WAIT, "the CallStart reaches every member", || knows_call(p, &g, &call));
+    }
+    c.node.group_call_join(g.clone(), call.clone()).unwrap();
+    let cd = c.did.clone();
+    assert!(drive(&mut [&mut o, &mut a, &mut b, &mut c], 20_000, false, |ps| joined(ps[1], 1, &cd, 2) && joined(ps[3], 1, &cd, 2)), "a and c are in the call");
+    eprintln!("joined after {:?}", t0.elapsed());
+
+    a.node.group_call_leave();
+    c.node.group_call_leave();
+    for (n, p) in [("o", &o), ("a", &a), ("b", &b), ("c", &c)] {
+        eventually(WAIT, &format!("{n}: group_calls is empty"), || p.node.group_calls(g.clone()).unwrap().is_empty());
+    }
+    std::thread::sleep(Duration::from_secs(1));
+    for (n, p) in [("o", &mut o), ("b", &mut b), ("a", &mut a), ("c", &mut c)] {
+        let ev = p.events();
+        assert!(ev.iter().any(|e| e.kind == GroupCallEventKind::Ended && e.call_id == call && e.group_id == g), "{n} hears Ended for the group: {ev:?}");
+    }
+    for (n, p) in [("a", &mut a), ("c", &mut c)] {
+        let ev = p.events();
+        assert!(ev.iter().filter(|e| e.call_id == call).all(|e| e.group_id == g), "{n}: every event of the call names the group: {ev:?}");
+    }
+    assert!(a.node.group_call_here().is_none() && c.node.group_call_here().is_none());
 }

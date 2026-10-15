@@ -13,193 +13,30 @@
 //!
 //! Every test carries `// KIND: acceptance` and the decision it enforces.
 
-use std::sync::{Arc, Mutex, mpsc};
 use std::time::{Duration, Instant};
 
-use p2pcore::{CALLS_NOT_ALLOWED, CallInfo, CallState, ContactOrigin, DeliveryState, LinkEvents, Message, Node, NodeEvents, NodeStatus};
+use p2pcore::{CALLS_NOT_ALLOWED, ContactOrigin};
 
-const PASS: &str = "test-passphrase";
+mod support;
+use support::eventually_200ms as eventually;
+use support::*;
+
+const TAG: &str = "p6";
 /// A refusal must be quick: well under any dial timeout.
 const QUICK: Duration = Duration::from_secs(5);
 
-#[derive(Debug, Clone)]
-enum Ev {
-    Incoming(CallInfo),
-    State(String, CallState),
-}
-
-struct Tap(Mutex<mpsc::Sender<Ev>>, Arc<Mutex<Vec<String>>>);
-impl NodeEvents for Tap {
-    fn on_status(&self, _: NodeStatus) {}
-    fn on_contacts_changed(&self) {}
-    fn on_incoming_call(&self, c: CallInfo) {
-        let _ = self.0.lock().unwrap().send(Ev::Incoming(c));
-    }
-    fn on_call_state(&self, id: String, s: CallState) {
-        let _ = self.0.lock().unwrap().send(Ev::State(id, s));
-    }
-    fn on_log(&self, line: String) {
-        self.1.lock().unwrap().push(line);
-    }
-}
-
-#[derive(Debug, Clone)]
-enum LEv {
-    Code(String),
-    Done(String),
-    Other,
-}
-
-struct LTap(Mutex<mpsc::Sender<LEv>>);
-impl LinkEvents for LTap {
-    fn on_link_code(&self, code: String, _: String) {
-        let _ = self.0.lock().unwrap().send(LEv::Code(code));
-    }
-    fn on_link_done(&self, did: String, _: String) {
-        let _ = self.0.lock().unwrap().send(LEv::Done(did));
-    }
-    fn on_link_failed(&self, _: String) {
-        let _ = self.0.lock().unwrap().send(LEv::Other);
-    }
-    fn on_devices_changed(&self) {}
-    fn on_history_changed(&self) {}
-    fn on_unlinked(&self, _: String) {}
-}
-
-struct Peer {
-    node: Arc<Node>,
-    rx: mpsc::Receiver<Ev>,
-    lrx: mpsc::Receiver<LEv>,
-    logs: Arc<Mutex<Vec<String>>>,
-    did: String,
-    dir: std::path::PathBuf,
-}
-
-impl Drop for Peer {
-    fn drop(&mut self) {
-        self.node.stop();
-        let _ = std::fs::remove_dir_all(&self.dir);
-    }
-}
-
-impl Peer {
-    fn logged(&self, needle: &str) -> bool {
-        self.logs.lock().unwrap().iter().any(|l| l.contains(needle))
-    }
-}
-
-fn online(n: &Node) {
-    n.start().unwrap();
-    let t = Instant::now();
-    while !n.status().online && t.elapsed() < Duration::from_secs(10) {
-        std::thread::sleep(Duration::from_millis(100));
-    }
-}
-
-fn blank(name: &str) -> Peer {
-    let dir = std::env::temp_dir().join(format!("p2pcore-p6-{name}-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&dir);
-    let (tx, rx) = mpsc::channel();
-    let (ltx, lrx) = mpsc::channel();
-    let logs = Arc::new(Mutex::new(Vec::new()));
-    let node = Node::new(dir.to_string_lossy().into(), Arc::new(Tap(Mutex::new(tx), logs.clone()))).unwrap();
-    node.auto_accept_contacts_for_test(true);
-    node.set_link_events(Arc::new(LTap(Mutex::new(ltx))));
-    Peer { node, rx, lrx, logs, did: String::new(), dir }
-}
-
 fn peer(name: &str) -> Peer {
-    let mut p = blank(name);
-    p.node.create_identity(name.into(), PASS.into()).unwrap();
-    online(&p.node);
-    p.did = p.node.profile().unwrap().did;
-    p
+    Peer::new(TAG, name)
 }
 
 /// a and b, each a contact of the other (b scanned a's ticket).
 fn pair(tag: &str) -> (Peer, Peer) {
-    let a = peer(&format!("{tag}-a"));
-    let b = peer(&format!("{tag}-b"));
-    b.node.add_contact(a.node.my_ticket().unwrap()).unwrap();
-    (a, b)
+    Peer::pair(TAG, tag)
 }
 
 /// `e` (existing) links a fresh install; returns it committed and online.
 fn link_fresh(e: &Peer, name: &str) -> Peer {
-    let mut n = blank(name);
-    let qr = e.node.link_show_qr().unwrap();
-    n.node.link_new_scan(qr, "Pixel".into()).unwrap();
-    let code = |p: &Peer| loop {
-        if let LEv::Code(c) = p.lrx.recv_timeout(Duration::from_secs(30)).expect("link code") {
-            break c;
-        }
-    };
-    assert_eq!(code(e), code(&n));
-    e.node.link_approve(Some(PASS.into())).unwrap();
-    let did = loop {
-        if let LEv::Done(d) = n.lrx.recv_timeout(Duration::from_secs(30)).expect("link done") {
-            break d;
-        }
-    };
-    n.node.set_passphrase(None, "n-pass".into()).unwrap();
-    online(&n.node);
-    n.did = did;
-    n
-}
-
-fn eventually(secs: u64, what: &str, mut f: impl FnMut() -> bool) {
-    let end = Instant::now() + Duration::from_secs(secs);
-    while Instant::now() < end {
-        if f() {
-            return;
-        }
-        std::thread::sleep(Duration::from_millis(200));
-    }
-    panic!("timed out waiting for {what}");
-}
-
-fn ended_after(p: &Peer, id: &str, t0: Instant, secs: u64) -> (String, Duration) {
-    let end = Instant::now() + Duration::from_secs(secs);
-    loop {
-        match p.rx.recv_timeout(end.saturating_duration_since(Instant::now())) {
-            Ok(Ev::State(i, CallState::Ended { reason })) if i == id => return (reason, t0.elapsed()),
-            Ok(_) => {}
-            Err(_) => panic!("timed out waiting for call {id} to end"),
-        }
-    }
-}
-
-fn incoming(p: &Peer, secs: u64) -> String {
-    let end = Instant::now() + Duration::from_secs(secs);
-    loop {
-        match p.rx.recv_timeout(end.saturating_duration_since(Instant::now())) {
-            Ok(Ev::Incoming(c)) => return c.call_id,
-            Ok(_) => {}
-            Err(_) => panic!("timed out waiting for an incoming call"),
-        }
-    }
-}
-
-fn saw_incoming(p: &Peer) -> bool {
-    p.rx.try_iter().any(|e| matches!(e, Ev::Incoming(_)))
-}
-
-fn all_msgs(p: &Peer, did: &str) -> Vec<Message> {
-    let mut out = Vec::new();
-    let mut page = p.node.chat_day(did.to_string(), None).ok();
-    while let Some(pg) = page {
-        out.extend(pg.messages.clone());
-        page = pg.older_day.and_then(|d| p.node.chat_day(did.to_string(), Some(d)).ok());
-    }
-    out
-}
-
-fn holds(p: &Peer, did: &str, id: &str) -> bool {
-    all_msgs(p, did).iter().any(|m| m.id == id)
-}
-
-fn delivered(p: &Peer, did: &str, id: &str) -> bool {
-    all_msgs(p, did).iter().any(|m| m.id == id && m.delivery == DeliveryState::Delivered)
+    e.link_fresh(TAG, name, LinkAs::default())
 }
 
 /// `from` calls `to`; `to` rings; `from` hangs up and both settle.

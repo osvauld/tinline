@@ -80,7 +80,12 @@ impl App {
             let on = self.chat.tab == tab;
             let color = if on { t.accent_ink } else { t.ink2 };
             // DesktopShell `unread`: every chat's unread, 1:1 and group (no mute in the core yet).
-            let badge = if tab == SideTab::Chats { self.chat.unread_total() + self.live.list.iter().filter(|g| crate::app::group_live::active(g.my_role)).map(|g| g.unread).sum::<u32>() + self.live.pending_in().count() as u32 } else { 0 };
+            // Groups (DesktopShell): invitations waiting for me, so an invite shows on the tab the moment it arrives.
+            let badge = match tab {
+                SideTab::Chats => self.chat.unread_total() + self.live.list.iter().filter(|g| crate::app::group_live::active(g.my_role)).map(|g| g.unread).sum::<u32>() + self.live.pending_in().count() as u32,
+                SideTab::Groups => self.live.pending_invitations().count() as u32,
+                _ => 0,
+            };
             let mut caption = row![pgi(icon, 20.0, color), semi(label, 15.0, color).line_height(lh(21.0)).width(Fill)].spacing(12).height(44).align_y(Alignment::Center);
             if badge > 0 {
                 caption = caption.push(t_badge(t, badge, false));
@@ -164,7 +169,8 @@ impl App {
         let mut tiles = row![].spacing(2);
         if let Some(result) = result {
             for hit in &result.names {
-                tiles = tiles.push(button(column![avatar(t, &hit.name, &hit.id, 48.0),
+                let face: El = if hit.kind == p2pcore::SearchNameKind::Group { ui::group_face(t, &hit.id, 48.0) } else { avatar(t, &hit.name, &hit.id, 48.0) };
+                tiles = tiles.push(button(column![face,
                     container(tx(hit.name.clone(), 12.0, t.ink)).height(30).width(70).clip(true)]
                     .spacing(6).align_x(Alignment::Center)).width(78).height(92).padding([6, 4])
                     .style(ui::button_style(t, Kind::Ghost, 14.0)).on_press(Msg::ShellSearch(Action::OpenName(hit.clone()))));
@@ -182,7 +188,8 @@ impl App {
                     container(tx(hit.day.clone(), 11.0, t.ink2)).width(72)].spacing(8);
                 // Message results are deliberately read-only until the chat/group jump-and-highlight hook lands.
                 // Do not wire a misleading latest-message navigation as if it were an exact hit jump.
-                messages = messages.push(container(row![avatar(t, &hit.conv_name, &hit.conv, 44.0),
+                let face: El = if hit.kind == p2pcore::SearchConvKind::Group { ui::group_face(t, &hit.conv, 44.0) } else { avatar(t, &hit.conv_name, &hit.conv, 44.0) };
+                messages = messages.push(container(row![face,
                     column![title, container(rich_text(spans).size(13).wrapping(iced::widget::text::Wrapping::None)).height(18).width(Fill).clip(true)].spacing(2).width(Fill)]
                     .spacing(12).align_y(Alignment::Center)).height(64).padding([10, 8]).width(Fill));
             }

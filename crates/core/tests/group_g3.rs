@@ -1,52 +1,21 @@
 //! G3: inviting contacts directly, and short invite codes, on real nodes over real iroh endpoints
-//! (needs network, like `group_core.rs`, whose helpers are copied here). Protocol and choices:
+//! (needs network, like `group_core.rs`; the shared harness is in `support/`). Protocol and choices:
 //! `docs/group-core.md` (G3 sections).
 //!
 //! Every test carries `// KIND: acceptance (G3 stage N)` and what it enforces.
 #![allow(dead_code)]
 
-use std::sync::{Arc, Mutex, mpsc};
-use std::time::{Duration, Instant};
+use std::ops::Deref;
+use std::sync::{Arc, Mutex};
+use std::time::Duration;
 
-use p2pcore::{
-    CallInfo, CallState, GroupInvitation, GroupInvitationEvents, GroupInvitationState, GroupItemKind, GroupMessage, LinkEvents, Node, NodeEvents,
-    NodeStatus,
-};
+use p2pcore::{GroupInvitation, GroupInvitationEvents, GroupInvitationState, GroupItemKind, GroupMessage};
 
-const PASS: &str = "test-passphrase";
-const WAIT: u64 = 90;
+mod support;
+use support::group::*;
+use support::*;
 
-struct Quiet;
-impl NodeEvents for Quiet {
-    fn on_status(&self, _: NodeStatus) {}
-    fn on_contacts_changed(&self) {}
-    fn on_incoming_call(&self, _: CallInfo) {}
-    fn on_call_state(&self, _: String, _: CallState) {}
-    fn on_log(&self, _: String) {}
-}
-
-#[derive(Debug, Clone)]
-enum LEv {
-    Code(String),
-    Done(String),
-    Other,
-}
-
-struct LTap(Mutex<mpsc::Sender<LEv>>);
-impl LinkEvents for LTap {
-    fn on_link_code(&self, code: String, _: String) {
-        let _ = self.0.lock().unwrap().send(LEv::Code(code));
-    }
-    fn on_link_done(&self, did: String, _: String) {
-        let _ = self.0.lock().unwrap().send(LEv::Done(did));
-    }
-    fn on_link_failed(&self, _: String) {
-        let _ = self.0.lock().unwrap().send(LEv::Other);
-    }
-    fn on_devices_changed(&self) {}
-    fn on_history_changed(&self) {}
-    fn on_unlinked(&self, _: String) {}
-}
+const TAG: &str = "g3";
 
 struct ITap(Mutex<Vec<GroupInvitation>>);
 impl GroupInvitationEvents for ITap {
@@ -55,99 +24,41 @@ impl GroupInvitationEvents for ITap {
     }
 }
 
+/// A support peer that also records the group invitations its node is shown.
 struct Peer {
-    node: Arc<Node>,
-    lrx: mpsc::Receiver<LEv>,
+    base: support::Peer,
     inv: Arc<ITap>,
-    did: String,
-    dir: std::path::PathBuf,
 }
 
-impl Drop for Peer {
-    fn drop(&mut self) {
-        self.node.stop();
-        let _ = std::fs::remove_dir_all(&self.dir);
+impl Deref for Peer {
+    type Target = support::Peer;
+    fn deref(&self) -> &support::Peer {
+        &self.base
     }
 }
 
-fn online(n: &Node) {
-    n.start().unwrap();
-    let t = Instant::now();
-    while !n.status().online && t.elapsed() < Duration::from_secs(10) {
-        std::thread::sleep(Duration::from_millis(100));
+impl Member for Peer {
+    fn node(&self) -> &Arc<p2pcore::Node> {
+        &self.base.node
+    }
+    fn did(&self) -> &str {
+        &self.base.did
     }
 }
 
-fn blank(name: &str) -> Peer {
-    let dir = std::env::temp_dir().join(format!("p2pcore-g3-{name}-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&dir);
-    let (ltx, lrx) = mpsc::channel();
-    let node = Node::new(dir.to_string_lossy().into(), Arc::new(Quiet)).unwrap();
-    node.auto_accept_contacts_for_test(true);
-    node.set_link_events(Arc::new(LTap(Mutex::new(ltx))));
+fn wrap(base: support::Peer) -> Peer {
     let inv = Arc::new(ITap(Mutex::new(Vec::new())));
-    node.set_group_invitation_events(inv.clone());
-    Peer { node, lrx, inv, did: String::new(), dir }
+    base.node.set_group_invitation_events(inv.clone());
+    Peer { base, inv }
 }
 
 fn peer(name: &str) -> Peer {
-    let mut p = blank(name);
-    p.node.create_identity(name.into(), PASS.into()).unwrap();
-    online(&p.node);
-    p.did = p.node.profile().unwrap().did;
-    p
+    wrap(support::Peer::new(TAG, name))
 }
 
 /// `e` links a fresh install (same DID); returns it committed and online.
 fn link_fresh(e: &Peer, name: &str) -> Peer {
-    let mut n = blank(name);
-    let qr = e.node.link_show_qr().unwrap();
-    n.node.link_new_scan(qr, "Desk".into()).unwrap();
-    let code = |p: &Peer| loop {
-        if let LEv::Code(c) = p.lrx.recv_timeout(Duration::from_secs(30)).expect("link code") {
-            break c;
-        }
-    };
-    assert_eq!(code(e), code(&n));
-    e.node.link_approve(Some(PASS.into())).unwrap();
-    let did = loop {
-        if let LEv::Done(d) = n.lrx.recv_timeout(Duration::from_secs(30)).expect("link done") {
-            break d;
-        }
-    };
-    n.node.set_passphrase(None, "n-pass".into()).unwrap();
-    online(&n.node);
-    n.did = did;
-    n
-}
-
-/// `group_join`, unwrapped. GL: the product rides out transient network failures itself (the
-/// fetch retries within its deadline, the join re-dials every 2 s while it waits), so the test-side
-/// retry GF added is gone: any error here is a real failure.
-fn join(p: &Peer, link: String) -> String {
-    p.node.group_join(link).unwrap_or_else(|e| panic!("join: {e:?}"))
-}
-
-fn eventually(secs: u64, what: &str, mut f: impl FnMut() -> bool) {
-    let end = Instant::now() + Duration::from_secs(secs);
-    while Instant::now() < end {
-        if f() {
-            return;
-        }
-        std::thread::sleep(Duration::from_millis(250));
-    }
-    panic!("timed out waiting for {what}");
-}
-
-fn members(p: &Peer, g: &str) -> Vec<String> {
-    let mut m: Vec<String> = p.node.group_detail(g.into()).unwrap().members.into_iter().map(|m| m.did).collect();
-    m.sort();
-    m
-}
-
-fn sorted(mut v: Vec<String>) -> Vec<String> {
-    v.sort();
-    v
+    wrap(e.link_fresh(TAG, name, LinkAs { label: "Desk", ..LinkAs::default() }))
 }
 
 fn contacts(a: &Peer, b: &Peer) {

@@ -1,21 +1,13 @@
 //! Host conditions and the phone degrade policy (§2.4), as pure functions. Values are the §8
 //! recommendations (G6-D3).
 
-/// Q1: participant caps.
-pub const CAP_DESKTOP: usize = 12;
-pub const CAP_PHONE_WIFI: usize = 8;
-pub const CAP_PHONE_METERED: usize = 4;
-/// Q2 (decided 2026-10-14): speakers forwarded. Every speaker: each member hears everyone who is
-/// talking except themselves, so the host's set may hold all 12. Silent and muted members send
-/// only the level byte, so this costs bandwidth only while several people talk at once.
+/// Q1 (decided 2026-10-14): every host takes 12, phone and metered data included.
+pub const CAP: usize = proto::gcall::MAX_PARTICIPANTS;
+/// Q2 (decided 2026-10-14): speakers forwarded. Every speaker on every host: each member hears
+/// everyone who is talking except themselves, so the host's set may hold all 12. Silent and
+/// muted members send only the level byte, so this costs bandwidth only while several people
+/// talk at once. Only "hosting limited" (low battery or hot, §2.4) drops K to 1.
 pub const K_ALL: usize = proto::gcall::MAX_PARTICIPANTS;
-/// Q2: a phone host forwards the four loudest, a safety net so hosting never takes over the
-/// phone (it spends ~0.5 ms of CPU per forwarded packet; eight people all talking would be
-/// ~2800 packets/s at K = 12).
-pub const K_PHONE: usize = 4;
-/// Q2: a host on metered data forwards only the two loudest; every forwarded speaker costs its
-/// user N - 2 streams up.
-pub const K_METERED: usize = 2;
 /// §2.4 battery cutoffs (unplugged).
 pub const BATTERY_ADVERTISE_PCT: u8 = 30;
 pub const BATTERY_LIMIT_PCT: u8 = 15;
@@ -56,22 +48,13 @@ impl Cond {
     pub fn phone(battery: u8, plugged: bool) -> Self {
         Cond { class: Class::Phone, plugged, battery, ..Self::desktop() }
     }
-    /// Participant cap under these conditions (§2.4).
+    /// Participant cap under these conditions (§2.4): the same on every host.
     pub fn cap(&self) -> usize {
-        match (self.class, self.metered) {
-            (Class::Phone, true) => CAP_PHONE_METERED,
-            (Class::Phone, false) => CAP_PHONE_WIFI,
-            _ => CAP_DESKTOP,
-        }
+        CAP
     }
+    /// Speakers forwarded when not "hosting limited": every speaker on every host.
     pub fn k(&self) -> usize {
-        if self.metered {
-            K_METERED
-        } else if self.class == Class::Phone {
-            K_PHONE
-        } else {
-            K_ALL
-        }
+        K_ALL
     }
 }
 

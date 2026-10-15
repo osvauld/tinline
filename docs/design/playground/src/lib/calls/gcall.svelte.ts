@@ -9,7 +9,7 @@
      excluded), ties go to the starter's own device. A candidate may refuse (paused, busy, or a phone asked by
      someone else: Q11 "a phone hosts only calls its own user starts"); the starter then asks the next one.
      Nobody left: StartFailed, "No call host available".
-   - The host forwards the K loudest speakers (K = 3 on a desktop, 2 on a phone, 1 when limited); the screen
+   - The host forwards the K loudest speakers (K = every speaker on a desktop, 4 on a phone, 2 on metered data, 1 when limited; Q2 2026-10-14); the screen
      highlights those (hysteresis: a newcomer replaces one only if clearly louder for 200 ms).
    - Phone host caps: 8 people on Wi-Fi, 4 on mobile data; a desktop 12 (the launch cap). Over the cap: refused.
    - Host conditions (§2.4): battery < 30 % / thermal moderate / mobile data: stop advertising (running call goes on);
@@ -19,7 +19,10 @@
      answers: "Call ended — host lost" with Rejoin. A rotation due: End{host_rotating}, redial the same host.
    - 1:1 and group calls exclude each other: a 1:1 call arriving during a group call is turned away Busy (left as a
      missed call); placing or joining one while on the other is InCall.
-   - No ringing: a started call is a quiet notice ("Sam started a call · Join"), and a soft cue. */
+   - Ringing (decided 2026-10-15): when someone else starts a call in my group and I am on no line, it RINGS like an
+     incoming call (same ring cue) for up to 30 s, with Join / Not now. The ring stops when I join, tap Not now, the call
+     ends, or 30 s pass; then the quiet "Call in progress" banner / pill stays. Muted groups and blocked starters never ring
+     (they get the quiet notice). In a call, or on a 1:1 call, a started call is only the quiet notice and a soft cue. */
 import { emitFx } from '../fx/bus';
 import { dur } from '../fx/motion';
 import { db, person, chat, pushMessage, firstName, displayName, isGroup } from '../model/store.svelte';
@@ -39,6 +42,7 @@ export const GCALL_MS = {
   redialPlanned: 1200, // End{host_leaving}: redial at once
   redialCrash: 3000,   // 3 missed 1 s heartbeats
   redialRotate: 1400,
+  ring: 30000,         // a started group call rings this long (then the quiet banner stays)
   bannerHold: 9000,    // Proposed: how long the "started a call" banner / heads-up stays before it settles into the notification
   toast: 3200,
   endedHold: 900,
@@ -101,7 +105,7 @@ class GroupCall {
   forced = $state<Record<Id, boolean>>({});
   toast = $state<{ id: number; text: string } | null>(null);
   /** A quiet "started a call" notice for a call I am not in (banner, heads-up, then the notification). */
-  announce = $state<{ gid: Id; callId: string; by: Id; bannerOn: boolean; dismissed: boolean } | null>(null);
+  announce = $state<{ gid: Id; callId: string; by: Id; bannerOn: boolean; dismissed: boolean; ringing: boolean } | null>(null);
   /** A note for the host's own user (me hosting): battery low, limited, on mobile data. */
   hostNote = $state('');
   /** The roster as it was when my part ended, so the ended screen keeps its people (dimmed) instead of emptying. */
@@ -117,6 +121,7 @@ class GroupCall {
   #cand: Record<Id, number> = {};
   #uid = 0;
   #bannerTimer = 0;
+  #ringTimer = 0;
   #toastTimer = 0;
 
   constructor() {
@@ -169,7 +174,13 @@ class GroupCall {
     const c = this.cond(lc.hostId), cls = this.hostClass(lc.hostId);
     return cls === 'desktop' ? CAP.desktop : c.metered ? CAP.phoneMetered : CAP.phone;
   }
-  kFor(lc: LiveCall) { return lc.limited ? 1 : this.hostClass(lc.hostId) === 'desktop' ? 3 : 2; }
+  /** Q2 (decided 2026-10-14, core gcall/policy.rs): a desktop forwards every speaker (up to 12), a phone the 4 loudest,
+      a host on metered data the 2 loudest; a limited host 1. */
+  kFor(lc: LiveCall) {
+    if (lc.limited) return 1;
+    if (this.cond(lc.hostId).metered) return 2;
+    return this.hostClass(lc.hostId) === 'desktop' ? 12 : 4;
+  }
   /** Why a join cannot happen right now (null = fine). */
   joinBlock(gid: Id): 'none' | 'full' | 'limited' | 'inCall' | null {
     const lc = this.live[gid];
@@ -276,7 +287,7 @@ class GroupCall {
     this.#begin(gid, lc.callId);
     this.startedByMe = false;
     this.phase = 'connecting'; this.view = 'full';
-    if (this.announce?.gid === gid) this.announce = null;
+    this.#dropAnnounce(gid);
     this.#later(GCALL_MS.connect, () => {
       if (this.phase !== 'connecting') return;
       if (!this.live[gid]) { this.#finish('failed', 'cancelled'); return; }
@@ -308,7 +319,16 @@ class GroupCall {
   restore() { if (this.phase !== 'idle') this.view = 'full'; }
   /** Leave the ended / failed screen now. */
   dismiss() { if (this.phase === 'ended' || this.phase === 'failed') this.fading = true; this.#later(dur('callEnd'), () => this.#reset()); }
-  dismissAnnounce() { if (this.announce) this.announce.dismissed = true; }
+  dismissAnnounce() { this.stopRing(); if (this.announce) this.announce.dismissed = true; }
+  /** The ring ends (joined, Not now, call over, 30 s): the quiet banner / pill stays. */
+  stopRing() {
+    window.clearTimeout(this.#ringTimer);
+    const a = this.announce;
+    if (a?.ringing) { a.ringing = false; emitFx({ type: 'incoming', on: false }); }
+  }
+  /** "Not now": silence the ring and hand the card back to the quiet notice. */
+  notNow() { this.stopRing(); if (this.announce) { this.announce.dismissed = true; } }
+  #dropAnnounce(gid: Id) { if (this.announce?.gid === gid) { this.stopRing(); this.announce = null; } }
   muteHostNote() { this.hostNote = ''; }
 
   /* ---------- the simulated other side ---------- */
@@ -323,10 +343,22 @@ class GroupCall {
     this.live[gid] = { callId, by, startedAt: performance.now(), hostId, parts: [by], gen: 0, limited: false, everJoinedByMe: false };
     this.#note(gid, by);
     if (!this.holdsLine || this.groupId !== gid) {
-      this.announce = { gid, callId, by, bannerOn: true, dismissed: false };
+      this.stopRing();
+      const rings = !g.muted && !person(by)?.blocked && !this.holdsLine && !call.active && db.account.gate === 'ready';
+      this.announce = { gid, callId, by, bannerOn: true, dismissed: false, ringing: rings };
       window.clearTimeout(this.#bannerTimer);
-      this.#bannerTimer = window.setTimeout(() => { if (this.announce?.callId === callId) this.announce.bannerOn = false; }, GCALL_MS.bannerHold);
-      if (!g.muted && !this.holdsLine) emitFx({ type: 'gcall', cue: 'started' });
+      if (rings) {
+        // Rings like an incoming call; when the ring ends the banner settles after its usual hold.
+        emitFx({ type: 'incoming', on: true });
+        this.#ringTimer = window.setTimeout(() => {
+          if (this.announce?.callId !== callId) return;
+          this.stopRing();
+          this.#bannerTimer = window.setTimeout(() => { if (this.announce?.callId === callId) this.announce.bannerOn = false; }, GCALL_MS.bannerHold);
+        }, GCALL_MS.ring);
+      } else {
+        this.#bannerTimer = window.setTimeout(() => { if (this.announce?.callId === callId) this.announce.bannerOn = false; }, GCALL_MS.bannerHold);
+        if (!g.muted && !this.holdsLine) emitFx({ type: 'gcall', cue: 'started' });
+      }
     }
     return true;
   }
@@ -422,6 +454,8 @@ class GroupCall {
     if (this.phase === 'idle' || this.phase === 'ended' || this.phase === 'failed') return;
     const gid = this.groupId!, lc = this.live[gid];
     const seconds = this.#connectedMono ? Math.floor((performance.now() - this.#connectedMono) / 1000) : 0;
+    // Most people in it at once that this device saw (me included), for "Group call · 12 min · 3 people".
+    const people = Math.max(this.participants.length, lc?.parts.length ?? 1, 1);
     this.#clearTimers();
     const wasHost = lc?.hostId === 'me';
     if (lc && !mine) this.frozen = this.participants.map((p) => ({ ...p, speaking: false, level: 0 }));
@@ -429,7 +463,7 @@ class GroupCall {
       lc.parts = lc.parts.filter((x) => x !== 'me');
       if (!lc.parts.length) this.#worldEnd(gid, true);
     }
-    if (!this.#recorded && this.#connectedMono) { this.#recorded = true; this.#record(gid, lc?.by ?? 'me', seconds); }
+    if (!this.#recorded && this.#connectedMono) { this.#recorded = true; this.#record(gid, lc?.by ?? 'me', seconds, people); }
     this.endReason = reason; this.asking = '';
     this.phase = kind === 'failed' ? 'failed' : 'ended';
     emitFx({ type: kind === 'failed' ? 'failed' : 'end' });
@@ -444,11 +478,11 @@ class GroupCall {
     this.phase = 'idle'; this.groupId = null; this.callId = ''; this.view = 'full'; this.fading = false; this.endReason = null;
     this.muted = false; this.speaker = 'earpiece'; this.elapsedS = 0; this.asking = ''; this.loud = []; this.levels = {}; this.hostNote = ''; this.frozen = [];
   }
-  /** One record per call per device, written when my part ends: "Group call · 12 min". */
-  #record(gid: Id, by: Id, durationS: number) {
+  /** One record per call per device, written when my part ends: "Group call · 12 min · 3 people". */
+  #record(gid: Id, by: Id, durationS: number, people: number) {
     const g = chat(gid);
     if (!g) return;
-    pushMessage(g, { from: by, text: '', call: { kind: 'voice', outcome: 'answered', durationS, direction: by === 'me' ? 'out' : 'in', group: true } });
+    pushMessage(g, { from: by, text: '', call: { kind: 'voice', outcome: 'answered', durationS, direction: by === 'me' ? 'out' : 'in', group: true, people } });
   }
   #note(gid: Id, by: Id) {
     const g = chat(gid);
@@ -459,11 +493,12 @@ class GroupCall {
     const lc = this.live[gid];
     if (!lc) return;
     delete this.live[gid];
-    if (this.announce?.gid === gid) this.announce = null;
+    this.#dropAnnounce(gid);
     const g = chat(gid);
     if (g && !quiet && !lc.everJoinedByMe) {
+      // A call that happened without me: a call record too (the thread and the Calls tab), calm, not red.
       const s = Math.max(1, Math.round((performance.now() - lc.startedAt) / 1000));
-      pushMessage(g, { from: lc.by, text: `Call ended · ${s >= 60 ? Math.round(s / 60) + ' min' : s + ' s'}`, system: true });
+      pushMessage(g, { from: lc.by, text: '', call: { kind: 'voice', outcome: 'missed', durationS: s, direction: 'in', group: true, people: Math.max(lc.parts.length, 1) } });
     }
   }
   /** Host gone: everyone redials the backups. kind: planned (End{host_leaving}), crash (heartbeats), rotate (End{host_rotating}). */

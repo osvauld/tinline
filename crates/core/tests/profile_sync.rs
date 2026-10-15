@@ -1,38 +1,31 @@
 //! Production API acceptance tests. Network cases use real independent iroh endpoints.
-use p2pcore::{CallInfo, CallState, Error, Node, NodeEvents, NodeStatus};
+use p2pcore::{Error, Node};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-struct Events;
-impl NodeEvents for Events {
-    fn on_status(&self, _: NodeStatus) {}
-    fn on_contacts_changed(&self) {}
-    fn on_incoming_call(&self, _: CallInfo) {}
-    fn on_call_state(&self, _: String, _: CallState) {}
-    fn on_log(&self, _: String) {}
-}
+mod support;
+use support::{Quiet, TempDir};
+
 struct Peer {
     node: Arc<Node>,
-    dir: std::path::PathBuf,
+    _dir: TempDir,
     did: String,
     phrase: String,
 }
 impl Drop for Peer {
     fn drop(&mut self) {
         self.node.stop();
-        let _ = std::fs::remove_dir_all(&self.dir);
     }
 }
 fn peer(tag: &str) -> Peer {
-    let dir = std::env::temp_dir().join(format!("profile-sync-{tag}-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&dir);
-    let node = Node::new(dir.to_string_lossy().into(), Arc::new(Events)).unwrap();
+    let dir = TempDir::new("profile-sync", tag);
+    let node = Node::new(dir.to_string_lossy().into(), Arc::new(Quiet)).unwrap();
     node.auto_accept_contacts_for_test(true);
     let phrase = node.create_identity(tag.into(), "pass".into()).unwrap();
     let did = node.profile().unwrap().did;
     Peer {
         node,
-        dir,
+        _dir: dir,
         did,
         phrase,
     }

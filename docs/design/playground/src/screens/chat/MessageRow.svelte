@@ -44,12 +44,18 @@
   const callText = $derived.by(() => {
     if (!call) return '';
     const dur = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
-    if (call.group) return `Group call · ${call.durationS < 60 ? call.durationS + ' s' : Math.round(call.durationS / 60) + ' min'}`;
+    if (call.group) {
+      const len = call.durationS < 60 ? call.durationS + ' s' : Math.round(call.durationS / 60) + ' min';
+      const ppl = call.people && call.people > 1 ? ` · ${call.people} people` : '';
+      // Missed: short and calm (not red); the people count only for calls I was in.
+      return call.outcome === 'missed' ? `Missed group call · ${len}` : `Group call · ${len}${ppl}`;
+    }
     if (call.outcome === 'answered') return `${call.kind === 'video' ? 'Video' : 'Voice'} call · ${dur(call.durationS)}`;
     if (call.direction === 'in') return call.outcome === 'declined' ? `Declined ${kindWord} call` : `Missed ${kindWord} call`;
     return ({ missed: 'No answer', declined: 'Declined', cancelled: 'Cancelled call', failed: 'Call failed' } as Record<string, string>)[call.outcome] ?? 'Call';
   });
-  const callBad = $derived(!!call && call.outcome !== 'answered' && (call.direction === 'in' ? call.outcome !== 'declined' : false));
+  // A group call I wasn't in is not a failure: never red.
+  const callBad = $derived(!!call && !call.group && call.outcome !== 'answered' && (call.direction === 'in' ? call.outcome !== 'declined' : false));
 
   const f = $derived(m.file);
   const fstate = $derived(

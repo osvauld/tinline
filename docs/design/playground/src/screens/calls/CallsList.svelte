@@ -1,6 +1,8 @@
 <script lang="ts">
   /* Calls tab: every call record across chats, newest first. The row calls them (this is the Calls tab; the chat lives
-     in Chats); the avatar opens their profile. Someone I can't call: the row opens their profile, which says why. */
+     in Chats); the avatar opens their profile. Someone I can't call: the row opens their profile, which says why.
+     Group calls (2026-10-14) are here too: the group's avatar and name, "Group call · 12 min · 3 people" or "Missed group
+     call · 5 min" (calm, not red); the row starts or joins a call in that group, the avatar opens the group's info. */
   import Avatar from '../../lib/ui/Avatar.svelte';
   import Icon from '../../lib/ui/Icon.svelte';
   import EmptyLine from '../../lib/ui/EmptyLine.svelte';
@@ -9,13 +11,19 @@
   import { nav } from '../../lib/nav/router.svelte';
   import { prefs } from '../../lib/model/prefs.svelte';
   import { call, fmtShort } from '../../lib/calls/call.svelte';
-  import type { CallRecord, DirectChat, Message } from '../../lib/model/types';
+  import { gcall } from '../../lib/calls/gcall.svelte';
+  import type { CallRecord, Chat, DirectChat, Message } from '../../lib/model/types';
 
-  type Entry = { key: string; c: DirectChat; m: Message; r: CallRecord };
+  type Entry = { key: string; c: Chat; m: Message; r: CallRecord };
   const entries = $derived(
-    db.chats.flatMap((c) => (c.kind === 'direct' ? c.messages.filter((m) => m.call).map((m) => ({ key: c.id + ':' + m.id, c, m, r: m.call! })) : []))
+    db.chats.flatMap((c) => (c.kind === 'direct' || c.kind === 'group' ? c.messages.filter((m) => m.call).map((m) => ({ key: c.id + ':' + m.id, c, m, r: m.call! })) : []))
       .sort((a, b) => b.m.at - a.m.at || seq(b.m) - seq(a.m)) as Entry[]
   );
+  const len = (s: number) => (s < 60 ? s + ' s' : Math.round(s / 60) + ' min');
+  function groupWhat(r: CallRecord) {
+    const ppl = r.people && r.people > 1 ? ` · ${r.people} people` : '';
+    return r.outcome === 'missed' ? 'Missed group call · ' + len(r.durationS) : 'Group call · ' + len(r.durationS) + ppl;
+  }
 
   /** Records made within the same clock second keep their creation order (ids count up). */
   const seq = (m: Message) => Number(m.id.replace(/\D/g, '')) || 0;
@@ -38,6 +46,23 @@
 {:else}
   <ul class="list" role="list">
     {#each entries as e (e.key)}
+      {#if e.c.kind === 'group'}
+      {@const g = e.c}
+      <li class="item" class:sel={nav.openChat === g.id}>
+        <button type="button" class="pf press" aria-label="{chatTitle(g)}, group info" onclick={() => nav.push({ name: 'groupInfo', chat: g.id })}>
+          <Avatar name={chatTitle(g)} group />
+        </button>
+        <button type="button" class="row press" title="Start or join a call in {chatTitle(g)}" onclick={() => gcall.start(g.id)}
+          aria-label="{chatTitle(g)}, {groupWhat(e.r)}, {listStamp(e.m.at)}. Start or join a call">
+          <span class="mid">
+            <span class="name">{chatTitle(g)}</span>
+            <span class="sub"><Icon name="users" size={15} /><span>{groupWhat(e.r)}</span></span>
+          </span>
+          <span class="when">{listStamp(e.m.at)}</span>
+          <span class="back" aria-hidden="true"><Icon name="phone" size={22} /></span>
+        </button>
+      </li>
+      {:else if e.c.kind === 'direct'}
       {@const bad = missed(e.r)}
       <li class="item" class:sel={nav.openChat === e.c.id}>
         <button type="button" class="pf press" aria-label="{chatTitle(e.c)}’s profile" onclick={() => nav.push({ name: 'contact', person: e.c.person })}>
@@ -53,6 +78,7 @@
           <span class="back" class:dim={!callable(e.c)} aria-hidden="true"><Icon name="phone" size={22} /></span>
         </button>
       </li>
+      {/if}
     {/each}
   </ul>
 {/if}
