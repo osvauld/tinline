@@ -36,6 +36,8 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -187,24 +189,33 @@ fun PgAvatar(name: String, hue: Int, size: Dp, person: String? = null, modifier:
     }
 }
 
-/** A person's avatar that opens their photo full screen when tapped (only when a photo is ready; the mandala or initials
- *  don't open anything). Used on the contact page and my own profile. */
+/** Opens a ready photo or the identity's fingerprint geometry. Used on profiles and during signup. */
 @Composable
 fun ViewablePgAvatar(name: String, hue: Int, size: Dp, person: String?, modifier: Modifier = Modifier) {
     val view = rememberProfileView(person)
-    var open by remember { mutableStateOf(false) }
+    var open by remember(person) { mutableStateOf(false) }
     val image = view?.image
-    val tap = if (image != null) Modifier.clip(CircleShape).clickable(onClickLabel = "View photo", role = androidx.compose.ui.semantics.Role.Image) { open = true } else Modifier
-    PgAvatar(name, hue, size, person = person, modifier = modifier.then(tap))
-    if (open && image != null) ProfilePhotoViewer(name, image) { open = false }
+    val art = remember(person) { FingerprintCache.of(person, 280f) }
+    val viewable = image != null || art != null
+    // Keep the action outside PgAvatar's decorative, cleared semantics.
+    Box(modifier.then(if (viewable) Modifier.clip(CircleShape).clickable(
+        onClickLabel = if (image != null) "View photo" else "View identity geometry",
+        role = androidx.compose.ui.semantics.Role.Button,
+    ) { open = true }.semantics { contentDescription = name } else Modifier)) {
+        PgAvatar(name, hue, size, person = person)
+    }
+    if (open && viewable) ProfileAvatarViewer(name, image, person, hue) { open = false }
 }
 
-/** The photo, full screen on black, fit to the screen; the name at the top; tap anywhere, the close button or Back to go. */
+/** Full-screen photo or geometry; tap anywhere, the close button or Back to dismiss. */
 @Composable
-fun ProfilePhotoViewer(name: String, image: androidx.compose.ui.graphics.ImageBitmap, onClose: () -> Unit) {
+private fun ProfileAvatarViewer(name: String, image: androidx.compose.ui.graphics.ImageBitmap?, person: String?, hue: Int, onClose: () -> Unit) {
     androidx.compose.ui.window.Dialog(onDismissRequest = onClose, properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)) {
         Box(Modifier.fillMaxSize().background(Color.Black).clickable(onClickLabel = "Close", onClick = onClose)) {
-            Image(image, "$name’s photo", Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
+            if (image != null) Image(image, "$name’s photo", Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
+            else Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                PgAvatar(name, hue, 280.dp, person = person)
+            }
             androidx.compose.foundation.layout.Row(
                 Modifier.fillMaxSize().padding(horizontal = 8.dp, vertical = 12.dp), verticalAlignment = Alignment.Top,
             ) {

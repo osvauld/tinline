@@ -551,9 +551,13 @@ fun GateStep(
 ) {
     val c = Tin.c
     BoxWithConstraints(Modifier.fillMaxSize()) {
-        // Keyboard-driven layout change, not error-driven: keep the entire reserved message cell visible.
-        val keyboardOpen = WindowInsets.ime.getBottom(androidx.compose.ui.platform.LocalDensity.current) > 0
-        val anchorTop = if (keyboardOpen) 0.dp else minOf(maxHeight * 0.14f, 96.dp)
+        // Page already follows the animated IME inset. Derive the anchor from that same inset, not
+        // an open/closed switch (which used to snap the heading on the very first keyboard frame).
+        val density = androidx.compose.ui.platform.LocalDensity.current
+        val imeHeight = with(density) {
+            (WindowInsets.ime.getBottom(this) - WindowInsets.systemBars.getBottom(this)).coerceAtLeast(0).toDp()
+        }
+        val anchorTop = (minOf((maxHeight + imeHeight) * 0.14f, 96.dp) - imeHeight).coerceAtLeast(0.dp)
         Column(Modifier.fillMaxSize()) {
             Column(
                 Modifier.weight(1f).fillMaxWidth().let { if (fill) it else it.verticalScroll(rememberScrollState()) }
@@ -574,6 +578,9 @@ fun GateStep(
     }
 }
 
+/** Both panes exist during a transition; only the destination may request initial focus. */
+internal val LocalGatePaneActive = compositionLocalOf { true }
+
 /** The stage (Gate.svelte .stage): the step slides 36 px in the inline direction and fades; enter 200 / exit 140, cubic-out. */
 @Composable
 fun <T> GateStage(step: T, dir: Int, content: @Composable (T) -> Unit) {
@@ -581,14 +588,20 @@ fun <T> GateStage(step: T, dir: Int, content: @Composable (T) -> Unit) {
     val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     Page {
         AnimatedContent(step, Modifier.fillMaxSize(), transitionSpec = {
-            if (reduced) fadeIn(tween(0)) togetherWith fadeOut(tween(0))
+            val transition = if (reduced) fadeIn(tween(0)) togetherWith fadeOut(tween(0))
             else {
                 val sign = (if (rtl) -1 else 1) * dir
                 val px = 36
                 (fadeIn(tween(PgMotion.ENTER, easing = PgMotion.cubicOut)) + androidx.compose.animation.slideInHorizontally(tween(PgMotion.ENTER, easing = PgMotion.cubicOut)) { (sign * px * sysDensity).toInt() }) togetherWith
                     (fadeOut(tween(PgMotion.EXIT, easing = PgMotion.cubicOut)) + androidx.compose.animation.slideOutHorizontally(tween(PgMotion.EXIT, easing = PgMotion.cubicOut)) { (-sign * px * sysDensity).toInt() })
             }
-        }, label = "gate") { s -> Box(Modifier.fillMaxSize()) { content(s) } }
+            // IME insets own the vertical resize; don't put AnimatedContent's size spring on top of it.
+            transition.using(null)
+        }, label = "gate") { s ->
+            CompositionLocalProvider(LocalGatePaneActive provides (s == step)) {
+                Box(Modifier.fillMaxSize()) { content(s) }
+            }
+        }
     }
 }
 
