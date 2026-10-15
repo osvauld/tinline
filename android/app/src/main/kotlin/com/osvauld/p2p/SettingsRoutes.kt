@@ -6,6 +6,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /*
@@ -69,9 +70,27 @@ fun SettingsRoute(
 }
 
 @Composable
-fun VideoSettingsRoute(app: P2pApp, onBack: () -> Unit) {
+internal fun VideoSettingsRoute(app: P2pApp, onBack: () -> Unit) {
     var quality by remember { mutableStateOf(app.videoQualityPreference) }
     VideoSettingsPage(quality, { quality = it; app.videoQualityPreference = it }, onBack)
+}
+
+@Composable
+fun StorageRoute(app: P2pApp, onBack: () -> Unit) {
+    val ctx = LocalContext.current
+    var tick by remember { mutableIntStateOf(0) }
+    var cleared by remember { mutableStateOf(false) }
+    var download by remember { mutableStateOf(uniffi.p2pcore.PictureDownload.ALWAYS) }
+    val sizes by produceState<List<Long>>(listOf(0L, 0L, 0L, 0L), tick) {
+        value = withContext(Dispatchers.IO) {
+            val u = runCatching { app.node.storageUsage() }.getOrNull()
+            runCatching { download = app.node.pictureDownload() }
+            listOf(u?.pictures?.toLong() ?: 0L, u?.files?.toLong() ?: 0L, u?.messages?.toLong() ?: 0L, ChatMedia.size(ctx))
+        }
+    }
+    StoragePage(sizes[0], sizes[1], sizes[2], sizes[3], download, cleared,
+        { d -> download = d; app.scope.launch(Dispatchers.IO) { runCatching { app.node.setPictureDownload(d) } } },
+        { ChatMedia.clear(ctx); cleared = true; tick++ }, onBack)
 }
 
 @Composable
