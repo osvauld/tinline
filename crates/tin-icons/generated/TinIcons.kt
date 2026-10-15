@@ -272,6 +272,12 @@ object TinIcons {
         arrayOf("M5 12.5L9.5 17L19 7", "", ""),
         arrayOf("M5 12.5L9.5 17L19 7", "", ""),
     ))
+    /** `read` (kept). Read: their device signed that it was read. A second check beside the first. */
+    val Read = TinIcon("read", arrayOf(
+        arrayOf("M1.5 12.5L6 17L15.5 7M9 15.5L11 17.5L22.5 7", "", ""),
+        arrayOf("M1.5 12.5L6 17L15.5 7M9 15.5L11 17.5L22.5 7", "", ""),
+        arrayOf("M1.5 12.5L6 17L15.5 7M9 15.5L11 17.5L22.5 7", "", ""),
+    ))
     /** `search` (kept).  */
     val Search = TinIcon("search", arrayOf(
         arrayOf("M4 11C4 14.87 7.13 18 11 18C14.87 18 18 14.87 18 11C18 7.13 14.87 4 11 4C7.13 4 4 7.13 4 11ZM20 20L16 16", "", ""),
