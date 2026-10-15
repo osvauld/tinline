@@ -17,9 +17,11 @@ object Notifications {
     const val CH_ONGOING = "ongoing_calls"
     const val CH_MISSED = "missed"
     const val CH_LOCKED = "locked"
-    const val CH_MESSAGES = "messages"
+    // A channel's sound is fixed when it is created, so Tinline's own `received` tone needed new ids; the first-version channels
+    // ("messages", "groups", which used the system default sound) are deleted in createChannels.
+    const val CH_MESSAGES = "messages2"
     const val CH_REQUESTS = "requests"
-    const val CH_GROUPS = "groups"
+    const val CH_GROUPS = "groups2"
     const val EXTRA_REQUEST = "contact_request"
     /** Open Home on the Groups tab (a group invitation). */
     const val EXTRA_GROUPS = "open_groups"
@@ -54,11 +56,17 @@ object Notifications {
             setShowBadge(false)
         })
         n.createNotificationChannel(NotificationChannel(CH_MISSED, "Missed calls", NotificationManager.IMPORTANCE_DEFAULT))
+        listOf("messages", "groups").forEach { old -> if (n.getNotificationChannel(old) != null) n.deleteNotificationChannel(old) }
+        val tone = receivedTone(c)
+        val toneAttrs = android.media.AudioAttributes.Builder().setUsage(android.media.AudioAttributes.USAGE_NOTIFICATION)
+            .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION).build()
         n.createNotificationChannel(NotificationChannel(CH_MESSAGES, "Messages", NotificationManager.IMPORTANCE_HIGH).apply {
             description = "New messages from your contacts"
+            if (tone != null) setSound(tone, toneAttrs)
         })
         n.createNotificationChannel(NotificationChannel(CH_GROUPS, "Groups", NotificationManager.IMPORTANCE_DEFAULT).apply {
             description = "Posts in your groups and invitations to join one"
+            if (tone != null) setSound(tone, toneAttrs)
         })
         n.createNotificationChannel(NotificationChannel(CH_REQUESTS, "Contact requests", NotificationManager.IMPORTANCE_DEFAULT).apply {
             description = "When someone asks to add you as a contact"
@@ -68,6 +76,29 @@ object Notifications {
             setShowBadge(false)
         })
     }
+
+    /**
+     * Tinline's own `received` tone as a file the system can play for a channel: the core renders it (`toy_cue_pcm`), it is written once
+     * as a 16-bit mono WAV in files/tones and shared by FileProvider (SystemUI is granted read access). Null if anything fails, and the
+     * channel then keeps the system default sound.
+     */
+    private fun receivedTone(c: Context): android.net.Uri? = try {
+        val dir = java.io.File(c.filesDir, "tones").apply { mkdirs() }
+        val f = java.io.File(dir, "received.wav")
+        if (!f.exists() || f.length() < 100) {
+            val pcm = uniffi.p2pcore.toyCuePcm("received", 4.0) ?: return null   // a notification plays at the phone's volume: lift the desktop level
+            val data = java.nio.ByteBuffer.allocate(pcm.samples.size * 2).order(java.nio.ByteOrder.LITTLE_ENDIAN)
+            pcm.samples.forEach { data.putShort(it) }
+            val rate = pcm.rate.toInt()
+            val h = java.nio.ByteBuffer.allocate(44).order(java.nio.ByteOrder.LITTLE_ENDIAN)
+            h.put("RIFF".toByteArray()).putInt(36 + data.capacity()).put("WAVEfmt ".toByteArray()).putInt(16).putShort(1).putShort(1)
+                .putInt(rate).putInt(rate * 2).putShort(2).putShort(16).put("data".toByteArray()).putInt(data.capacity())
+            f.outputStream().use { it.write(h.array()); it.write(data.array()) }
+        }
+        val uri = androidx.core.content.FileProvider.getUriForFile(c, c.packageName + ".files", f)
+        c.grantUriPermission("com.android.systemui", uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        uri
+    } catch (e: Exception) { android.util.Log.w(P2pApp.TAG, "received tone: $e"); null }
 
     private fun flags() = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
 

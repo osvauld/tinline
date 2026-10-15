@@ -2622,6 +2622,7 @@ impl App {
                             let group = self.live.list.iter().find(|s| s.id == m.group_id).map(|s| s.name.clone()).unwrap_or_else(|| "A group".into());
                             let who = m.author_name.split_whitespace().next().unwrap_or(&m.author_name).to_string();
                             notify(&group, &format!("{who}: {}", m.text), Target::Show);
+                            self.play_received();
                         }
                         // Away: "Book club · Priya invited you to the group". In front: one knock; the Groups tab counts it.
                         crate::GroupEv::Invitation(i) if !i.outgoing && i.state == p2pcore::GroupInvitationState::Pending => {

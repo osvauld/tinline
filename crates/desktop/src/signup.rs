@@ -685,6 +685,19 @@ impl App {
         if let Some(s) = samples { self.play_cue(s); }
     }
 
+    /// The `received` cue for an incoming message or group post (audio.ts `received`; the playground plays it for any chat,
+    /// open or not). At most once per 2 s burst; Quiet is checked by the player, the Notifications switches and blocks by the callers.
+    pub(super) fn play_received(&self) {
+        static LAST: std::sync::Mutex<Option<std::time::Instant>> = std::sync::Mutex::new(None);
+        let mut last = LAST.lock().unwrap();
+        if last.is_some_and(|t| t.elapsed() < std::time::Duration::from_secs(2)) {
+            return;
+        }
+        *last = Some(std::time::Instant::now());
+        drop(last);
+        self.play_sound(crate::cues::cue("received"));
+    }
+
     pub(super) fn play_cue(&self, samples: Vec<f32>) {
         if self.demo && crate::test_env("P2P_SHOT").is_some() {
             return;

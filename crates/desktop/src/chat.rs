@@ -1097,9 +1097,10 @@ impl App {
                 if incoming && !attended && crate::app::NOTIFY_MESSAGES.load(std::sync::atomic::Ordering::Relaxed) {
                     notify(&self.chat_name(&peer), &preview_of(&m), Target::Chat(peer.clone()));
                 }
-                // audio.ts `received`: the can, tapped once, while the app is open.
-                if incoming && self.win.is_some() && self.focused {
-                    self.play_sound(crate::cues::cue("received"));
+                // audio.ts `received`: the can, tapped once, for a message in front of me and for one that raised a notification
+                // (the window away); Notifications > Messages and blocks apply, and Quiet is checked by the player.
+                if incoming && crate::app::NOTIFY_MESSAGES.load(std::sync::atomic::Ordering::Relaxed) && !self.blocks.blocked_by_me(&peer) {
+                    self.play_received();
                 }
                 self.chat.upsert(m);
                 if open && !incoming {
