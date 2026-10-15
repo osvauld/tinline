@@ -29,7 +29,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -197,13 +197,13 @@ fun PasteCardScreen(app: P2pApp, text: String, onChange: (String) -> Unit, onBac
             ) {
                 Column(Modifier.weight(1f)) {
                     Text("Looks like a Tinline card", style = TinType.bodyL.copy(fontSize = 15.sp, fontWeight = FontWeight.Bold), color = c.onPrc)
-                    Text(if (peek?.known == true) "Already a contact" else "Add ${peek?.name?.ifBlank { null } ?: "them"} · single use", style = TinType.bodyM, color = c.onPrc)
+                    Text(if (peek.known == true) "Already a contact" else "Add ${peek.name.ifBlank { null } ?: "them"} · single use", style = TinType.bodyM, color = c.onPrc)
                 }
                 Icon(PgIcons.Check, null, tint = c.onPrc)
             }
             Hint("Tip: a card is safest sent over an app you already trust. Anyone who gets it first could use it instead.")
         }
-        Column(Modifier.padding(start = 24.dp, end = 24.dp, bottom = 24.dp)) { TinButton("Add contact", { peek?.let { onAdd(it.ticket) } }, enabled = looks && peek?.known != true) }
+        Column(Modifier.padding(start = 24.dp, end = 24.dp, bottom = 24.dp)) { TinButton("Add contact", { peek?.let { onAdd(it.ticket) } }, enabled = looks && peek.known != true) }
     }
 }
 

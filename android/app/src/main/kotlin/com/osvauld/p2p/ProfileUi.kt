@@ -252,7 +252,7 @@ private fun ToolBtn(icon: ImageVector, iconSize: Dp, label: String?, alpha: Floa
     val src = remember { MutableInteractionSource() }
     Box(
         Modifier.width(44.dp).fillMaxHeight().press(src).clickable(src, ripple(bounded = false, radius = 22.dp), role = Role.Button, onClick = onClick)
-            .semantics { if (label != null) contentDescription = label else invisibleToUser() },
+            .semantics { if (label != null) contentDescription = label else hideFromAccessibility() },
         contentAlignment = Alignment.Center,
     ) { Icon(icon, null, Modifier.size(iconSize).graphicsLayer { this.alpha = alpha }, tint = Tin.c.ink2) }
 }

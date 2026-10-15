@@ -86,7 +86,7 @@ class CoreService : Service() {
                     .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "p2p:call").apply { acquire(4 * 3600_000L) }
             }
             if (wifi == null) {
-                val mode = if (Build.VERSION.SDK_INT >= 29) WifiManager.WIFI_MODE_FULL_LOW_LATENCY else WifiManager.WIFI_MODE_FULL_HIGH_PERF
+                @Suppress("DEPRECATION") val mode = if (Build.VERSION.SDK_INT >= 29) WifiManager.WIFI_MODE_FULL_LOW_LATENCY else WifiManager.WIFI_MODE_FULL_HIGH_PERF
                 wifi = (applicationContext.getSystemService(WIFI_SERVICE) as WifiManager)
                     .createWifiLock(mode, "p2p:call").apply { acquire() }
             }

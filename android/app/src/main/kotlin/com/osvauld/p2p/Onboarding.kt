@@ -131,7 +131,7 @@ fun OnboardingFlow(
     val scope = rememberCoroutineScope()
     val addState = remember { app.adding.value }
     val adding = addState != null
-    var step by rememberSaveable { mutableStateOf(when { forgot -> Step.Restore; adding -> if (addState!!.link) Step.LinkName else if (addState.restore) Step.Restore else Step.Name; else -> Step.Welcome }) }
+    var step by rememberSaveable { mutableStateOf(when { forgot -> Step.Restore; adding -> if (addState.link) Step.LinkName else if (addState.restore) Step.Restore else Step.Name; else -> Step.Welcome }) }
     var dir by remember { mutableIntStateOf(1) }
     var name by rememberSaveable { mutableStateOf(if (forgot) app.node.profile()?.name ?: "" else "") }
     var restoring by rememberSaveable { mutableStateOf(forgot || addState?.restore == true) }

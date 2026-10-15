@@ -155,7 +155,7 @@ class CallActivity : ComponentActivity() {
                             onAllowBtNames = if (allowed) null else ({ btLauncher.launch(android.Manifest.permission.BLUETOOTH_CONNECT) }),
                             onMessage = { openChat(u.info.peerDid) })
                     }
-                    showEnded && e != null -> EndedRoute(e, meName, onClose = { finish() }, onAgain = {
+                    showEnded -> EndedRoute(e, meName, onClose = { finish() }, onAgain = {
                         app.scope.launch { app.calls.place(e.peerDid) }
                     })
                 }
@@ -313,7 +313,7 @@ fun InCallScreen(ui: CallUi, meName: String, app: P2pApp, onCameraOn: () -> Unit
                 runCatching { app.node.videoStats()?.let {
                     if (initialFrames == null) initialFrames = it.framesSent
                     // Don't label cached dimensions from before this camera start as current HD.
-                    if (it.framesSent > (initialFrames ?: it.framesSent)) it.sendWidth.toInt() to it.sendHeight.toInt() else null
+                    if (it.framesSent > initialFrames) it.sendWidth.toInt() to it.sendHeight.toInt() else null
                 } }.getOrNull()
             }
             delay(1000)

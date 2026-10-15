@@ -47,7 +47,6 @@ object Perms {
         Need.Mic -> appDetails(c)
         Need.FullScreen -> if (Build.VERSION.SDK_INT >= 34)
             Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT, Uri.parse("package:${c.packageName}")) else null
-        else -> null
     }
 
     fun appDetails(c: Context): Intent =

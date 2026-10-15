@@ -438,7 +438,7 @@ internal class CallField(private var theme: FieldTheme, reduced: Boolean) {
         tau += dt / 1000.0 * sv[0] * (1.0 + sv[6] * e + 0.5 * vo)
         val fd = cfg.fade
         val inFade = fd != null && since >= fd[0]
-        val step = if (inFade && fd != null) -dt / fd[1] else dt / 400.0
+        val step = if (inFade) -dt / fd[1] else dt / 400.0
         fadeU = FieldMath.clamp(fadeU + step, 0.0, 1.0)
         val fade = FieldMath.smooth(fadeU)
         val h = halfExt()

@@ -32,7 +32,7 @@ fun qrBitmap(text: String, size: Int = 640, fg: Int = AColor.BLACK, bg: Int = AC
 @androidx.compose.runtime.Composable
 fun QrCameraBox(modifier: androidx.compose.ui.Modifier, caption: String, torch: Boolean, onGranted: (Boolean) -> Unit, onScanned: (String) -> Unit) {
     val ctx = androidx.compose.ui.platform.LocalContext.current
-    val owner = androidx.compose.ui.platform.LocalLifecycleOwner.current
+    val owner = androidx.lifecycle.compose.LocalLifecycleOwner.current
     var granted by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(Perms.granted(ctx, Manifest.permission.CAMERA)) }
     val ask = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.RequestPermission()) { granted = it }
     var view by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<com.journeyapps.barcodescanner.BarcodeView?>(null) }

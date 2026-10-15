@@ -429,7 +429,7 @@ fun GroupChatLive(app: P2pApp, id: String, onBack: () -> Unit, onInfo: () -> Uni
     LaunchedEffect(id) { withContext(Dispatchers.IO) { app.groups.open(id) } }
     DisposableEffect(id) { onDispose { app.groups.close(id) } }
     // In front of the user: its posts don't notify, and what was shown for it goes away.
-    val owner = androidx.compose.ui.platform.LocalLifecycleOwner.current
+    val owner = androidx.lifecycle.compose.LocalLifecycleOwner.current
     val ctx = androidx.compose.ui.platform.LocalContext.current
     DisposableEffect(owner, id) {
         val o = androidx.lifecycle.LifecycleEventObserver { _, ev ->

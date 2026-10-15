@@ -49,9 +49,10 @@ import androidx.compose.ui.unit.constrainHeight
 import androidx.compose.ui.unit.LayoutDirection
 import kotlin.math.ceil
 import kotlin.math.max
-import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalClipboard
+import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
@@ -119,7 +120,7 @@ fun ConversationScreen(
     val c = Tin.c
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
-    val clipboard = LocalClipboardManager.current
+    val clipboard = LocalClipboard.current
     val msgs = remember { mutableStateListOf<Message>() }
     var loaded by remember { mutableStateOf(false) }
     var olderDay by remember { mutableStateOf<String?>(null) }
@@ -457,7 +458,7 @@ fun ConversationScreen(
     if (am != null) ActionsSheet(
         am, first, isSelf, onDismiss = { actionsFor = null },
         onReply = { actionsFor = null; savedDraft.beginReply(am.id) },
-        onCopy = { actionsFor = null; clipboard.setText(AnnotatedString(am.text)); toast("Copied") },
+        onCopy = { actionsFor = null; scope.launch { clipboard.setClipEntry(ClipEntry(android.content.ClipData.newPlainText("message", am.text))) }; toast("Copied") },
         onEdit = { actionsFor = null; savedDraft.beginEdit(am.id, am.text) },
         onDelete = {
             actionsFor = null
@@ -673,7 +674,7 @@ private fun Bubble(
                 CompactTextBubble(if (big) AnnotatedString(m.text.trim()) else Emoji.styled(m.text), style, fg, label, tick, metaColor)
             } else {
                 // A photo's caption and time keep to the photo's width (the bubble is never wider than the photo).
-                val w = if (photo) Modifier.width(photoBox(a!!.width, a.height).first) else Modifier
+                val w = if (photo) Modifier.width(photoBox(a.width, a.height).first) else Modifier
                 if (m.text.isNotBlank()) Text(Emoji.styled(m.text), w.padding(horizontal = if (photo) 9.dp else 0.dp).padding(top = if (photo) 5.dp else 0.dp),
                     style = TinType.bodyL.copy(fontSize = 15.sp, lineHeight = 21.sp), color = fg)
                 Box(w) { Meta(label, tick, metaColor, if (photo) 7.dp else 0.dp, 0.dp) }
@@ -777,7 +778,7 @@ private fun PhotoBox(m: Message, a: Attachment, out: Boolean, pos: BubblePos, fi
             busy -> {
                 Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = .18f)))
                 Ring {
-                    CircularProgressIndicator({ frac ?: 0f }, Modifier.size(48.dp), color = Color.White, trackColor = Color.White.copy(alpha = .28f), strokeWidth = 3.dp)
+                    CircularProgressIndicator({ frac }, Modifier.size(48.dp), color = Color.White, trackColor = Color.White.copy(alpha = .28f), strokeWidth = 3.dp)
                     Icon(PgIcons.X, if (out) "Cancel sending" else "Cancel download", Modifier.size(18.dp), tint = Color.White)
                 }
             }

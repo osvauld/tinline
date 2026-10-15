@@ -133,7 +133,7 @@ class ProfilesController(private val app: P2pApp) : ProfileEvents, ProfileStore 
                 val againResult = runCatching { app.profileWork(ticket) { it.accountProfile(did) } }
                 if (againResult.isFailure) return@launch
                 val again = againResult.getOrNull()
-                if (again?.pictureHash != hash || again?.pictureReady != true) { if (session.accepts(ticket)) refresh(did); return@launch }
+                if (again?.pictureHash != hash || again.pictureReady != true) { if (session.accepts(ticket)) refresh(did); return@launch }
                 publish(ticket, did, request, ProfileView(fields, hash, true, image, broken = image == null))
             }
           } finally {
