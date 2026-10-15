@@ -12,6 +12,10 @@ thiserror.workspace = true
 base64.workspace = true
 cryptography.workspace = true
 
+[features]
+# The `signed::conformance` table, for other crates' tests.
+test-support = []
+
 [dev-dependencies]
 # Test fixtures only (deterministic device keys); production code goes through `cryptography`.
 ed25519-dalek.workspace = true

@@ -10,6 +10,9 @@
 //! loads them before calling and persists the results (`NewContact::redeemed_nonce`) after.
 
 pub mod profile;
+pub mod signed;
+
+pub use signed::{SecretKey, SignKey, Signable, Signed, Signer, SignerId};
 
 use std::collections::HashSet;
 
@@ -81,6 +84,8 @@ pub enum Error {
     TooManyDevices,
     #[error("device was removed from the account")]
     Tombstoned,
+    #[error("signed body too large")]
+    TooLarge,
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
