@@ -61,6 +61,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
 [dev-dependencies]
 # tests/video_calls.rs feeds a synthetic camera (`video::Pattern`).
 video = { path = "../video", default-features = false, features = ["net", "sim"] }
+proto = { workspace = true, features = ["test-support"] }
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
@@ -68,6 +69,3 @@ libc = "0.2"
 [target.'cfg(target_os = "android")'.dependencies]
 paranoid-android = "0.2"
 jni = { version = "0.21", default-features = false }
-
-[dev-dependencies]
-proto = { workspace = true, features = ["test-support"] }
