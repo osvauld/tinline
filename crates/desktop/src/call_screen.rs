@@ -95,7 +95,8 @@ impl App {
                 .push(at(controls, g.controls_top));
             // Waiting is overlaid, not inserted: the active avatar/status/controls stay still.
             if let Some(w) = &self.waiting {
-                layers = layers.push(at(container(self.waiting_banner(t, w)).padding([0, 20]), (g.controls_top - 110.0).max(56.0)));
+                // WaitingCard: bottom edge 22 px above the controls (150 px tall: 14 + 40 + 12 + 44 + 12 + 16 + 12).
+                layers = layers.push(at(container(self.waiting_banner(t, w)).padding([0, 20]), (g.controls_top - 22.0 - 150.0).max(56.0)));
             }
             if self.notice.is_some() {
                 layers = layers.push(at(container(self.notice_bar(t)).padding([0, 20]), 58.0));
@@ -193,12 +194,11 @@ impl App {
             .height(44).width(Fill).style(ui::plain(t.accent, 0.0)).into())
     }
 
-    /// The desktop frame: navigation | (strip over (list | pane)); the waiting card under the strip.
+    /// The desktop frame: navigation | (strip over (list | pane)); a waiting call turns the brand row into the caller (ring_head_waiting).
     pub(super) fn framed<'a>(&'a self, t: Tok, pane: El<'a>) -> El<'a> {
         let mut right = column![];
         if let Some(s) = self.call_strip(t) { right = right.push(s); }
         if let Some(s) = self.gcall_strip(t) { right = right.push(s); }
-        if self.call_ui.minimized && let Some(w) = &self.waiting { right = right.push(self.waiting_banner(t, w)); }
         right = right.push(row![self.list_pane(t), pane].height(Fill));
         row![self.shell_navigation(t), right.width(Fill).height(Fill)].height(Fill).into()
     }
