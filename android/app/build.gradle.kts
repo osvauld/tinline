@@ -96,6 +96,10 @@ require(rustAbis.isNotEmpty() && rustAbis.all { it in setOf("x86_64", "arm64-v8a
     "-Pabis must contain only x86_64 and/or arm64-v8a"
 }
 val rustRelease = (findProperty("rustRelease") as String? ?: "true").toBoolean()
+// Debug-only Rust entry points (`dev-tools`: video_bench for DebugReceiver). Off for release/bundle
+// tasks so the shipped libp2pcore.so does not carry them; -PdevTools=true|false overrides.
+val devTools = (findProperty("devTools") as String?)?.toBoolean()
+    ?: gradle.startParameter.taskNames.none { it.contains("release", ignoreCase = true) || it.contains("bundle", ignoreCase = true) }
 val profileDir = if (rustRelease) "release" else "debug"
 val jniOut = layout.buildDirectory.dir("rustJniLibs")
 val uniffiOut = layout.buildDirectory.dir("generated/uniffi/kotlin")
@@ -141,8 +145,10 @@ val cargoNdkBuild = tasks.register<RustExec>("cargoNdkBuild") {
         // --lib: only libp2pcore.so is linked; without it cargo also builds the crate's bins (search-bench, year-bench), which is slow.
         addAll(listOf("-P", "28", "-o", jniOut.get().asFile.absolutePath, "build", "--locked", "-p", "p2pcore", "--lib"))
         if (rustRelease) add("--release")
+        if (devTools) { add("--features"); add("dev-tools") }
     })
     inputs.files(rustInputs).withPropertyName("rustSources").withPathSensitivity(PathSensitivity.RELATIVE)
+    inputs.property("devTools", devTools)
     outputs.dir(jniOut)
     // Only libp2pcore is linked. cargo-ndk also copies stale .so files it finds in target/ (old
     // iroh dylibs), which would otherwise be packaged too.
