@@ -126,6 +126,10 @@ pub(super) struct ChatState {
     /// The core's receipt status per loaded message id (the bubble mark and its provenance).
     /// Missing = not read from the core yet: the mark's slot stays empty, never "delivered".
     pub receipts: HashMap<String, MessageReceiptStatus>,
+    /// The tick state last shown per message, and the one-shot transitions running (`ticks.rs`).
+    /// A message seen for the first time (page load, scroll-in) never animates.
+    pub tick_vis: HashMap<String, crate::ticks::Vis>,
+    pub tick_anims: HashMap<String, crate::ticks::Anim>,
     /// The next older day we hold, if any.
     pub older: Option<String>,
     pub loading: bool,
@@ -203,6 +207,8 @@ impl Default for ChatState {
             peer: None,
             msgs: Vec::new(),
             receipts: HashMap::new(),
+            tick_vis: HashMap::new(),
+            tick_anims: HashMap::new(),
             older: None,
             loading: false,
             fetching: false,
@@ -601,6 +607,8 @@ impl App {
         self.chat.reply = draft.reply;
         self.chat.msgs.clear();
         self.chat.receipts.clear();
+        self.chat.tick_vis.clear();
+        self.chat.tick_anims.clear();
         self.chat.older = None;
         self.chat.no_more = false;
         self.chat.fetching = false;
@@ -650,7 +658,56 @@ impl App {
 
     pub(super) fn update_chat(&mut self, m: Cm) -> Task<Msg> {
         let t = self.update_chat_inner(m);
+        self.sync_ticks();
         Task::batch([t, self.ensure_thumbs()])
+    }
+
+    /// What my message's tick shows: the core's `ReceiptTick` (Delivered/Read only from signed receipts),
+    /// or not delivered (a block). None = no mark (incoming, deleted, notes to self) or not read yet.
+    pub(super) fn tick_vis_of(&self, m: &ChatMsg) -> Option<crate::ticks::Vis> {
+        use crate::ticks::Vis;
+        use p2pcore::ReceiptTick as R;
+        if !m.outgoing || m.deleted {
+            return None;
+        }
+        if self.blocks.not_delivered(&m.peer_did, &m.id) {
+            return Some(Vis::Bad);
+        }
+        match self.chat.receipts.get(&m.id)?.tick {
+            R::OnlyHere => Some(Vis::Slack),
+            R::Waiting => Some(Vis::One),
+            R::Delivered => Some(Vis::Two),
+            R::Read => Some(Vis::Read),
+            R::None => None,
+        }
+    }
+
+    /// Starts a tick transition for every loaded message whose state changed since it was last shown.
+    pub(super) fn sync_ticks(&mut self) {
+        let now = std::time::Instant::now();
+        let mut next = HashMap::new();
+        for m in &self.chat.msgs {
+            if let Some(v) = self.tick_vis_of(m) {
+                next.insert(m.id.clone(), v);
+            }
+        }
+        for (id, v) in &next {
+            if let Some(old) = self.chat.tick_vis.get(id)
+                && old != v
+                && !crate::motion::reduced()
+            {
+                self.chat.tick_anims.insert(id.clone(), crate::ticks::Anim { from: *old, start: now });
+                self.fx.now = now;
+            }
+        }
+        self.chat.tick_anims.retain(|id, a| next.get(id).is_some_and(|v| crate::ticks::running(a, *v, now)));
+        self.chat.tick_vis = next;
+    }
+
+    /// A tick transition is playing (keeps the frame clock running).
+    pub(super) fn ticks_running(&self) -> bool {
+        let now = std::time::Instant::now();
+        self.chat.tick_anims.iter().any(|(id, a)| self.chat.tick_vis.get(id).is_some_and(|v| crate::ticks::running(a, *v, now)))
     }
 
     fn update_chat_inner(&mut self, m: Cm) -> Task<Msg> {
@@ -1137,6 +1194,7 @@ impl App {
     /// Core chat events, already on the UI loop.
     pub(super) fn on_chat_event(&mut self, ev: ChatEv) -> Task<Msg> {
         let t = self.on_chat_event_inner(ev);
+        self.sync_ticks();
         Task::batch([t, self.ensure_thumbs()])
     }
 

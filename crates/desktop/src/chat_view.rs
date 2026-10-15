@@ -569,16 +569,19 @@ impl App {
         meta = meta.push(tx(hhmm(m.at), 11.0, metac).line_height(lh(11.0)));
         meta_w += width(&hhmm(m.at), ui::SANS, 11.0);
         if m.outgoing && !m.deleted {
-            // The core decides the mark (`ReceiptTick`): check / read only from the contact's signed
-            // receipts, a clock until then. The slot is always reserved, so a mark arriving never moves text.
-            let tick: El = match self.chat.receipts.get(&m.id).map(|r| r.tick) {
-                Some(ReceiptTick::Read) => crate::pg_icons::pgi("read", 12.0, fg),
-                Some(ReceiptTick::Delivered) => crate::pg_icons::pgi("check", 12.0, metac),
-                Some(ReceiptTick::Waiting | ReceiptTick::OnlyHere) => crate::pg_icons::pgi("clock", 11.0, metac),
-                Some(ReceiptTick::None) | None => Space::new().width(12).height(11).into(),
+            // The receipt tick (ticks.rs): the mark's string, slack while waiting, pulled taut into one tick
+            // when it left, two when their device signed delivery, lavender when it signed read, red slack when
+            // not delivered. State from the core's `ReceiptTick`; the slot is always reserved (no layout shift).
+            let tw = 12.0 * crate::tin_ticks::VB_W / crate::tin_ticks::VB_H;
+            let tick: El = match self.tick_vis_of(m) {
+                Some(v) => {
+                    let inks = crate::ticks::Inks { meta: metac, read: t.tick_read, bad: t.tick_bad, bg };
+                    crate::ticks::glyph(v, self.chat.tick_anims.get(&m.id), inks, 12.0, self.fx.now)
+                }
+                None => Space::new().width(tw).height(12).into(),
             };
-            meta = meta.push(container(tick).width(13).height(11).center_x(13).center_y(11));
-            meta_w += 16.0;
+            meta = meta.push(container(tick).width(tw).height(12).center_x(tw).center_y(12));
+            meta_w += tw + 3.0;
         }
         let mut body = column![].spacing(0).width(Length::Shrink);
         let text_el: Option<El> = if m.deleted {
@@ -681,7 +684,9 @@ impl App {
     fn message_menu<'a>(&'a self, t: Tok, m: &'a ChatMsg, _name: &str) -> El<'a> {
         let item = |icon: &'static str, label_: &'static str, danger: bool, msg: Msg| {
             let c = if danger { t.danger } else { t.ink };
-            button(row![crate::pg_icons::pgi(icon, 20.0, if danger { t.danger } else { t.ink2 }), tx(label_, 14.0, c)].spacing(12).align_y(Alignment::Center))
+            // The row's content centred in its 44 px (a button lays out from the top otherwise, which left the
+            // items sitting high with a gap under the last one).
+            button(container(row![crate::pg_icons::pgi(icon, 20.0, if danger { t.danger } else { t.ink2 }), tx(label_, 14.0, c)].spacing(12).align_y(Alignment::Center)).height(Fill).center_y(Fill))
                 .padding([0, 14]).height(44).width(Fill)
                 .style(super::shell_view::wash(t, None, Some(t.surface2), 0.0))
                 .on_press(msg)

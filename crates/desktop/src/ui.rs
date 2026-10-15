@@ -71,6 +71,10 @@ pub struct Tok {
     pub on_danger_btn: Color,
     pub lav: Color,
     pub lav_ink: Color,
+    /// Receipt ticks (lab/ticks): read = lavender ink, not delivered = danger ink. Both >= 5:1 on the sent
+    /// bubble (light 7.1 / 5.75 on #CDEBE3, dark 7.57 / 5.62 on #0E4E43).
+    pub tick_read: Color,
+    pub tick_bad: Color,
     pub on_primary_c: Color,
     pub thread: Color,
     pub thread_text: Color,
@@ -117,6 +121,8 @@ pub const LIGHT: Tok = Tok {
     on_danger_btn: rgb(0xFFFFFF),
     lav: rgb(0xE1E4F7),
     lav_ink: rgb(0x374582),
+    tick_read: rgb(0x374582),
+    tick_bad: rgb(0xA12B23),
     on_primary_c: rgb(0x06352D),
     thread: rgb(0xC98A1E),
     thread_text: rgb(0x8A5A00),
@@ -163,6 +169,8 @@ pub const DARK: Tok = Tok {
     on_danger_btn: rgb(0xFFFFFF),
     lav: rgb(0x2F3A75),
     lav_ink: rgb(0xDFE3FF),
+    tick_read: rgb(0xDFE3FF),
+    tick_bad: rgb(0xF2B8B5),
     on_primary_c: rgb(0xBDEFE2),
     thread: rgb(0xE8B04A),
     thread_text: rgb(0xE8B04A),
