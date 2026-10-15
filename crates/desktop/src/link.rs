@@ -135,7 +135,7 @@ impl App {
     }
 
     fn handle_unlinked(&mut self, did: &str, by_self: bool) {
-        keystore::clear(keystore::system(), &INIT.get().unwrap().data, did);
+        keystore::clear_all(keystore::system(), &INIT.get().unwrap().data, did);
         let name = std::mem::take(&mut self.profile_name);
         self.unlinked = Some(UnlinkedInfo { name, by_self });
         self.call = None;

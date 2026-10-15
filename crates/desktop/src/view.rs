@@ -1384,10 +1384,6 @@ impl App {
         }
         let profile = section(t, "Account", acct.into());
         let devices = self.linked_devices_page(t);
-        let mut camera_opts = opts(&self.video.devices);
-        if let Some(selected) = self.settings.camera_device.as_ref() {
-            if !camera_opts.contains(selected) { camera_opts.push(selected.clone()); }
-        }
         let calls = section(t,
             "Calls",
             column![
@@ -1400,21 +1396,6 @@ impl App {
                     "Video in calls",
                     "Your camera stays off until you turn it on in the call",
                     toggler(!self.settings.no_video).on_toggle(|on| Msg::Video(super::Vm::Enabled(on))).style(ui::toggle_style(t)).into(),
-                ),
-                line(t,
-                    "Prefer HD",
-                    "Aim for 720p; adapts to connection and device. Applies at next camera start",
-                    toggler(self.settings.prefer_hd).on_toggle(|on| Msg::Video(super::Vm::PreferHd(on))).style(ui::toggle_style(t)).into(),
-                ),
-                line(t,
-                    "Camera",
-                    "Selection applies from the next call",
-                    pick(camera_opts, sel(&self.settings.camera_device), |d| Msg::Video(super::Vm::SelectCamera(d))),
-                ),
-                line(t,
-                    "Find cameras",
-                    "List connected capture devices without starting video",
-                    pill(t, Kind::Quiet, None, "Refresh", Some(Msg::Video(super::Vm::ScanCameras))),
                 ),
             ]
             .spacing(12)
@@ -1513,23 +1494,10 @@ impl App {
             }
             c.into()
         };
-        let about = section(t,
-            "About",
-            column![
-                row![ui::logo(40.0, t), column![bold("Tinline", 18.0, t.ink), tx(format!("Version {} \u{b7} by Osvauld", env!("CARGO_PKG_VERSION")), 13.0, t.ink2)].spacing(2)].spacing(12).align_y(Alignment::Center),
-                tx("Free and open source under the GPL. No ads, no tracking, no analytics.", 14.0, t.ink2),
-                tx("Fonts: Figtree and IBM Plex Mono, SIL Open Font License 1.1. Icons: Lucide (ISC).", 13.0, t.ink2),
-                tx("Video: libaom (BSD-2-Clause, AOMedia Patent License 1.0) and rav1d (BSD-2-Clause); licence texts ship with the package.", 13.0, t.ink2),
-                tx("Not for emergency calls.", 13.0, t.ink2),
-            ]
-            .spacing(10)
-            .into(),
-        );
-        let quit = pill(t, Kind::Danger, Some(Icon::LogOut), "Quit Tinline", Some(Msg::Quit));
         // (tab, name) in nav order. Hosting lists the groups this computer hosts (the demo shows
         // the preview's placeholder page instead).
         let mut items: Vec<(u8, &str)> = vec![(0, "Account"), (1, "Linked devices"), (7, "Privacy"), (6, "Hosting")];
-        items.extend([(2, "Calls & availability"), (3, "Audio devices"), (4, "Security"), (5, "About")]);
+        items.extend([(2, "Calls & availability"), (3, "Audio devices"), (4, "Security")]);
         let mut nav = column![
             button(row![ui::icon(Icon::ArrowLeft, 18.0, t.ink2), semi("Back", 14.0, t.ink2)].spacing(8).align_y(Alignment::Center))
                 .padding([8, 12])
@@ -1558,9 +1526,9 @@ impl App {
             6 if self.demo && self.groups.on => self.hosting_page(t),
             6 => self.live_hosting_page(t),
             7 => self.privacy_page(t),
-            _ => column![about, quit].spacing(20).into(),
+            _ => Space::new().into(),
         };
-        let title_ = items.iter().find(|(i, _)| *i == self.settings_tab).map(|(_, n)| *n).unwrap_or("About");
+        let title_ = items.iter().find(|(i, _)| *i == self.settings_tab).map(|(_, n)| *n).unwrap_or("Account");
         let _ = (nav, title_); // Native-only content stays reachable without a second settings sidebar.
         let content = column![self.notice_bar(t), page].spacing(20);
         scroll(t, container(container(content).max_width(560).width(Fill)).padding(16).center_x(Fill).width(Fill)).height(Fill).into()

@@ -112,6 +112,25 @@ pub type ShardRows = (Option<Vec<u8>>, Vec<Vec<u8>>);
 
 pub const DEFAULT_AUTO_DOWNLOAD: u64 = 10 * 1024 * 1024;
 
+/// Settings > Storage "Download pictures": when attachments under the size limit download by themselves.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, uniffi::Enum)]
+pub enum PictureDownload {
+    /// On Wi-Fi and on mobile data.
+    #[default]
+    Always,
+    /// Only while the connection is not metered; on mobile data they wait for a tap.
+    Wifi,
+    /// Nothing downloads until it is tapped.
+    Tap,
+}
+
+/// Whether the current connection is metered (the app reports it; the core cannot see the network type).
+static METERED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+pub fn set_metered(on: bool) {
+    METERED.store(on, std::sync::atomic::Ordering::Relaxed);
+}
+
 #[derive(Clone)]
 pub struct ChatStore {
     pub db: Sealed,
@@ -368,6 +387,39 @@ impl ChatStore {
 
     pub fn set_auto_download(&self, bytes: u64) -> Result<(), Error> {
         self.db.put("set/auto_download", &bytes.to_be_bytes()).map_err(io)
+    }
+
+    pub fn picture_download(&self) -> PictureDownload {
+        match self.db.get("set/dl_policy").ok().flatten().and_then(|b| b.first().copied()) {
+            Some(1) => PictureDownload::Wifi,
+            Some(2) => PictureDownload::Tap,
+            _ => PictureDownload::Always,
+        }
+    }
+
+    pub fn set_picture_download(&self, p: PictureDownload) -> Result<(), Error> {
+        let b = match p { PictureDownload::Always => 0u8, PictureDownload::Wifi => 1, PictureDownload::Tap => 2 };
+        self.db.put("set/dl_policy", &[b]).map_err(io)
+    }
+
+    /// The size limit in force right now: the stored limit, or 0 while the policy says wait.
+    pub fn effective_auto_download(&self) -> u64 {
+        match self.picture_download() {
+            PictureDownload::Tap => 0,
+            PictureDownload::Wifi if METERED.load(std::sync::atomic::Ordering::Relaxed) => 0,
+            _ => self.auto_download(),
+        }
+    }
+
+    /// Bytes of complete attachments held on this device: `(pictures, other files)`.
+    pub fn blob_usage(&self) -> Result<(u64, u64), Error> {
+        let (mut pictures, mut files) = (0u64, 0u64);
+        for (_, v) in self.db.scan("blob/").map_err(io)? {
+            let Ok(b) = serde_json::from_slice::<BlobInfo>(&v) else { continue };
+            if !b.ready { continue; }
+            if b.mime.starts_with("image/") { pictures += b.size } else { files += b.size }
+        }
+        Ok((pictures, files))
     }
 }
 

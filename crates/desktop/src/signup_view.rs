@@ -203,10 +203,21 @@ impl App {
         let field_ = stack![field_, column![Space::new().height(26), row![Space::new().width(Fill), eye].padding(Padding { right: 2.0, ..Padding::ZERO })]];
         // reserve 4.25 lines (18 px each) for the error and the hint
         let msgs = container(tx(hint.unwrap_or(""), 13.0, t.ink2).line_height(lh(18.0))).height(53).width(Fill);
+        // Remember on this computer (Unlock.svelte .rem): 56 tall, label with its line, the switch at the end. The space is kept
+        // while the keyring is being asked and when there is none (the switch is simply not offered), so nothing moves.
+        let remember: El = match self.remember_avail {
+            Some(true) => container(row![
+                    column![semi("Remember on this computer", 15.0, t.ink).line_height(lh(20.0)),
+                        tx("Skips the passphrase when Tinline starts, using this computer\u{2019}s keyring.", 13.0, t.ink2).line_height(lh(18.0))].spacing(2).width(Fill),
+                    super::profile_view::pg_switch(t, self.remember, Msg::Remember(!self.remember)),
+                ].spacing(16).align_y(Alignment::Center)).width(Fill).height(56).center_y(56).into(),
+            _ => Space::new().width(Fill).height(56).into(),
+        };
         let body = column![
             container(self.profile_avatar(t, &name, &me, 72.0)).padding(Padding { top: 12.0, ..Padding::ZERO }),
             self.welcome_title(t, &nick, others),
             column![field_, msgs].spacing(6).width(Fill),
+            remember,
         ].spacing(16).align_x(Alignment::Center).width(Fill);
         // "Open as": the identities on this computer, over the field (a menu, so nothing below moves).
         let body: El = if others && self.gate.open_as {

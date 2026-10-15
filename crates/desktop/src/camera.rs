@@ -91,6 +91,33 @@ pub fn devices() -> Vec<String> {
     }
 }
 
+/// A capture device as the Video settings page lists it: its node, a readable name and whether it sits on USB.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Info {
+    pub path: String,
+    pub label: String,
+    pub usb: bool,
+}
+
+/// Names the capture nodes (same set as [`devices`]); a node the driver does not name keeps its path.
+pub fn infos() -> Vec<Info> {
+    #[cfg(target_os = "linux")]
+    {
+        v4l::nodes()
+            .into_iter()
+            .map(|p| {
+                let (card, usb) = v4l::describe(&p);
+                let path = p.display().to_string();
+                Info { label: card.filter(|c| !c.is_empty()).unwrap_or_else(|| path.clone()), path, usb }
+            })
+            .collect()
+    }
+    #[cfg(not(target_os = "linux"))]
+    {
+        Vec::new()
+    }
+}
+
 /// An explicit selection never silently falls back to a different camera.
 pub fn find_selected(fake: Option<&str>, selected: Option<&str>) -> Option<Source> {
     if fake == Some("pattern") || selected.is_none() {
@@ -255,6 +282,14 @@ mod v4l {
 
     pub fn find() -> Option<PathBuf> {
         nodes().into_iter().next()
+    }
+
+    /// The driver's card name and whether the bus is USB.
+    pub fn describe(path: &Path) -> (Option<String>, bool) {
+        match Device::open(path).and_then(|d| d.capabilities()) {
+            Ok(c) => (Some(c.card().to_string()), c.bus_info().starts_with("usb")),
+            Err(_) => (None, false),
+        }
     }
 
     pub fn capture(

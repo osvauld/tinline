@@ -73,8 +73,14 @@ pub fn switch_to(st: &dyn Store, data: &Path, node: &Node, did: &str) -> Result<
 /// Removes a non-current account and the key remembered for it.
 pub fn remove(st: &dyn Store, data: &Path, node: &Node, did: &str) -> Result<(), Error> {
     node.remove_account(did.to_string())?;
-    keystore::clear(st, data, did);
+    keystore::clear_all(st, data, did);
     Ok(())
+}
+
+/// "Remember on this computer" for the current passphrase-protected account: the unlock screen applies the switch after a
+/// successful unlock, Privacy > Passphrase applies it at once. `Err` = no secure keyring (nothing was stored).
+pub fn apply_remember(st: &dyn Store, data: &Path, node: &Node, on: bool) -> Result<(), String> {
+    keystore::set_remember(st, data, node, on)
 }
 
 #[cfg(test)]

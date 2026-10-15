@@ -62,6 +62,7 @@ fun SettingsLanding(
     store: ProfileStore, fallbackName: String, accounts: List<AccountRow>, problems: List<PermProblem>,
     onBack: () -> Unit, onMe: () -> Unit, onSwitch: (String) -> Unit, onAdd: () -> Unit,
     onDevices: () -> Unit, onPrivacy: () -> Unit, onNotifications: () -> Unit, onSounds: () -> Unit,
+    onVideo: () -> Unit = {}, onStorage: () -> Unit = {}, onAbout: () -> Unit = {},
     extra: @Composable ColumnScope.() -> Unit = {},
 ) {
     val c = Tin.c
@@ -124,6 +125,8 @@ fun SettingsLanding(
                 act { PfAct("Privacy", onClick = onPrivacy, icon = PgIcons.Shield, chevron = true) }
                 act { PfAct("Notifications", onClick = onNotifications, icon = PgIcons.Bell, chevron = true) }
                 act { PfAct("Sounds", onClick = onSounds, icon = PgIcons.Vol, chevron = true) }
+                act { PfAct("Video", onClick = onVideo, icon = PgIcons.Video, chevron = true) }
+                act { PfAct("About Tinline", onClick = onAbout, icon = PgIcons.Info, chevron = true) }
             }
         }
         extra()
@@ -218,6 +221,33 @@ fun SoundsPage(onBack: () -> Unit) {
                         trailing = { PgSwitch(quiet, { AlertPrefs.set(ctx, "quiet", it) }, "Quiet") })
                 }
             }
+        }
+    }
+}
+
+/** One choice among several (Settings radio rows): ring + dot, title, optional muted line. */
+@Composable
+fun PfRadioRow(title: String, sub: String?, on: Boolean, onClick: () -> Unit, minHeight: Dp = 56.dp) =
+    PfAct(title, onClick = onClick, sub = sub, role = Role.RadioButton, minHeight = minHeight, leading = { PgRadio(on) })
+
+/**
+ * CallsVideo.svelte (Android form): "Sharper video" only; the phone picks its own cameras (Flip in a call). The preference is
+ * [VideoQualityPreference]; it applies when the camera next starts.
+ */
+@Composable
+fun VideoSettingsPage(quality: VideoQualityPreference, onQuality: (VideoQualityPreference) -> Unit, onBack: () -> Unit) {
+    val hd = quality == VideoQualityPreference.PREFER_HD
+    val set = { on: Boolean -> onQuality(if (on) VideoQualityPreference.PREFER_HD else VideoQualityPreference.AUTO) }
+    PfPage("Video", onBack) {
+        PfSec("Video quality", first = true) {
+            PfCard {
+                act {
+                    PfAct("Sharper video", onClick = { set(!hd) }, icon = PgIcons.Video, role = Role.Switch, plain = true,
+                        sub = if (hd) "Up to 540p when the connection allows. Uses more data and battery." else "Adjusts by itself for smooth calls.",
+                        trailing = { PgSwitch(hd, set, "Sharper video") })
+                }
+            }
+            PfNote("Changes apply the next time your camera starts.")
         }
     }
 }

@@ -15,6 +15,7 @@ pub use profile::{AccountProfile, ProfileEvents};
 mod group;
 mod error;
 pub mod gcall;
+mod licences;
 mod logging;
 mod node;
 mod recovery_key;
@@ -56,13 +57,14 @@ pub use group::invitations::{GroupInvitation, GroupInvitationEvents, GroupInvita
 pub use caps::{CALLS_NOT_ALLOWED, ContactOrigin};
 pub use contact_req::{AddError, AddOutcome, CodePeek, ContactRequest, ContactRequestEvents, MyCode};
 pub use search::api::{HitRange, MessageHit, NameHit, SearchConvKind, SearchNameKind, SearchResults};
-pub use chat::api::{Attachment, AttachmentKind, Chat, ChatEvents, DayPage, DeliveryState, Message, TransferState};
+pub use chat::api::{Attachment, AttachmentKind, Chat, ChatEvents, DayPage, DeliveryState, Message, PictureDownload, StorageUsage, TransferState};
 pub use sync::{LinkEvents, LinkedDevice};
 pub use voice::{VoiceDecoder, VoiceInfo, VoiceRecorder};
 pub use recovery_key::{is_recovery_key, recovery_key_from_phrase, recovery_phrase_from_input};
 pub use store::CallRecord;
 pub use video_call::{Bytes, Pulled, VideoEvents, VideoFrame, VideoInfo, VideoStats};
 pub use node::{AccountSummary, Availability, CallInfo, CallState, CallStats, CardPeek, Contact, LockState, Node, NodeEvents, NodeStatus, ProfileInfo};
+pub use licences::{open_source_licences, OpenSourceLicence};
 
 #[uniffi::export]
 pub fn core_version() -> String {

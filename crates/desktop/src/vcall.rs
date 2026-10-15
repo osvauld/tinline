@@ -23,7 +23,7 @@ pub(super) enum Vm {
     Enabled(bool),
     PreferHd(bool),
     ScanCameras,
-    Cameras(Vec<String>),
+    Cameras(Vec<camera::Info>),
     SelectCamera(String),
 }
 
@@ -41,7 +41,7 @@ pub(super) struct VideoUi {
     shown: u64,
     cost_ms: f32,
     pub send_size: Option<(u32, u32)>,
-    pub devices: Vec<String>,
+    pub devices: Vec<camera::Info>,
     initial_sent: u64,
     stats_tick: u32,
 }
@@ -103,7 +103,7 @@ impl App {
                 self.node.set_video_enabled(on);
                 self.save_settings();
             }
-            Vm::ScanCameras => return blocking(camera::devices, |d| Msg::Video(Vm::Cameras(d))),
+            Vm::ScanCameras => return blocking(camera::infos, |d| Msg::Video(Vm::Cameras(d))),
             Vm::Cameras(devices) => self.video.devices = devices,
             Vm::SelectCamera(device) => {
                 self.settings.camera_device = (device != super::DEFAULT_LABEL).then_some(device);
