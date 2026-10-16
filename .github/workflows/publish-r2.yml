@@ -61,7 +61,8 @@ jobs:
         run: |
           mkdir -p dist/deb "dist/repo/releases/$TAG" dist/repo/apt/pool
           gh release download "$TAG" --pattern 'tinline_*.deb' --dir dist/deb
-          gh release download "$TAG" --pattern "tinline-${TAG}-x86_64-linux.tar.gz" --dir "dist/repo/releases/$TAG"
+          gh release download "$TAG" --pattern "tinline-${TAG#v}-linux-x86_64.tar.gz" --dir "dist/repo/releases/$TAG"
+          gh release download "$TAG" --pattern "tinline-${TAG#v}-linux-x86_64.AppImage" --dir "dist/repo/releases/$TAG"
           gh release download "$TAG" --pattern "tinline-${TAG}.apk" --dir "dist/repo/releases/$TAG"
           aws s3 sync "s3://$R2_BUCKET/apt/pool/" dist/repo/apt/pool/ --endpoint-url "$R2_ENDPOINT"
           # Reject changes to any existing versioned object, including old .deb files.
@@ -82,7 +83,7 @@ jobs:
                   if path.read_bytes() != pathlib.Path('existing-object').read_bytes():
                       raise SystemExit(f'Refusing to overwrite immutable object: {key}')
           PY
-          (cd "dist/repo/releases/$TAG" && sha256sum *.apk *.tar.gz > SHA256SUMS)
+          (cd "dist/repo/releases/$TAG" && sha256sum *.apk *.tar.gz *.AppImage > SHA256SUMS)
       - name: Import APT signing key
         env:
           PRIVATE_KEY: ${{ secrets.APT_GPG_PRIVATE_KEY }}
