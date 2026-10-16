@@ -51,9 +51,11 @@ const INFO_OUTPUT_BUFFERS_CHANGED: isize = sys::AMEDIACODEC_INFO_OUTPUT_BUFFERS_
 
 /// Longest wait for a free input buffer; after it the frame is dropped.
 const INPUT_WAIT: Duration = Duration::from_millis(8);
-/// How long `encode` waits for the frame it just queued (a 720p hardware encode takes a few ms);
-/// whatever is not out by then comes with the next call.
-const ENCODE_BUDGET: Duration = Duration::from_millis(20);
+/// How long `encode` waits for the frame it just queued; whatever is not out comes with the next
+/// call. 0: on the Pixel 3a (c2.qti, 720p) a packet comes out ~28 ms after its input, so a 20 ms
+/// wait caught only half of them and made `encode` look like 20 ms of work (p50 20.3 ms vs 6.2 ms
+/// without, which is the NV12 copy) to the ladder's CPU gate; the cost is up to a frame of delay.
+const ENCODE_BUDGET: Duration = Duration::ZERO;
 const DECODE_BUDGET: Duration = Duration::from_millis(20);
 /// Longest single blocking dequeue, so the budget check runs often.
 const POLL: Duration = Duration::from_millis(4);
@@ -694,9 +696,13 @@ pub(crate) struct MediaCodecVp8Encoder {
     last_pts: Option<u64>,
     /// Next input frame index.
     frame: u64,
-    /// (pts, frame) of queued inputs whose packet has not come out yet.
-    queued: VecDeque<(u64, u64)>,
+    /// (pts, frame, queued at) of inputs whose packet has not come out yet.
+    queued: VecDeque<(u64, u64, Instant)>,
     key_pending: bool,
+    /// How long `encode` waits for the frame it just queued.
+    wait: Duration,
+    /// Queue-to-output time of the last packet.
+    pub(crate) last_latency: Option<Duration>,
     /// Frames dropped because the codec had no free input buffer.
     pub(crate) dropped: u64,
     cbr: bool,
@@ -735,6 +741,8 @@ impl MediaCodecVp8Encoder {
             frame: 0,
             queued: VecDeque::new(),
             key_pending: false,
+            wait: ENCODE_BUDGET,
+            last_latency: None,
             dropped: 0,
             cbr,
         })
@@ -746,6 +754,11 @@ impl MediaCodecVp8Encoder {
             "{} cbr={} layout={}({:?})",
             self.codec.name, self.cbr, self.layout.kind, self.layout
         )
+    }
+
+    /// How long `encode` waits for the frame it just queued (default `ENCODE_BUDGET`).
+    pub(crate) fn set_wait(&mut self, wait: Duration) {
+        self.wait = wait;
     }
 
     fn pts(&mut self) -> u64 {
@@ -800,12 +813,13 @@ impl MediaCodecVp8Encoder {
                     }
                     let data = data.to_vec();
                     drop(b);
-                    while self.queued.front().is_some_and(|&(p, _)| p < pts) {
+                    while self.queued.front().is_some_and(|&(p, _, _)| p < pts) {
                         self.queued.pop_front();
                     }
                     let frame = match self.queued.front() {
-                        Some(&(p, f)) if p == pts => {
+                        Some(&(p, f, at)) if p == pts => {
                             self.queued.pop_front();
+                            self.last_latency = Some(at.elapsed());
                             f
                         }
                         _ => self.frame.saturating_sub(1),
@@ -863,8 +877,8 @@ impl VideoEncoder for MediaCodecVp8Encoder {
         if self.queued.len() >= 64 {
             self.queued.pop_front();
         }
-        self.queued.push_back((pts, frame));
-        self.drain(&mut out, Some(pts), start + ENCODE_BUDGET)?;
+        self.queued.push_back((pts, frame, Instant::now()));
+        self.drain(&mut out, Some(pts), start + self.wait)?;
         Ok(out)
     }
 
@@ -1140,6 +1154,7 @@ mod selftest {
         seconds: u32,
         width: u32,
         height: u32,
+        wait_ms: i32,
     ) -> std::result::Result<String, String> {
         let (w, h, secs) = (
             width as usize,
@@ -1168,7 +1183,14 @@ mod selftest {
             ..Default::default()
         };
         let mut enc = MediaCodecVp8Encoder::new(&cfg).map_err(|e| format!("encoder: {e}"))?;
-        log(format!("encoder {}", enc.describe()));
+        if let Ok(ms) = u64::try_from(wait_ms) {
+            enc.set_wait(Duration::from_millis(ms));
+        }
+        log(format!(
+            "encoder {} wait_ms={}",
+            enc.describe(),
+            enc.wait.as_millis()
+        ));
 
         let mut pattern = video::Pattern::new(w, h);
         let src: Arc<Vec<I420>> =
@@ -1234,6 +1256,7 @@ mod selftest {
         }
         let mut outs: Vec<Out> = Vec::new();
         let mut enc_ms: Vec<Vec<f64>> = vec![Vec::new(); secs + 1];
+        let mut latency_ms: Vec<f64> = Vec::new();
         let mut kept: Vec<(u64, Vec<u8>)> = Vec::new();
         let (mut low_set, mut sync_set, mut high_set) = (false, false, false);
         let mut sync_req: Option<f64> = None;
@@ -1296,6 +1319,11 @@ mod selftest {
             let took = t.elapsed().as_secs_f64() * 1000.0;
             let at = t0.elapsed().as_secs_f64();
             enc_ms[(at as usize).min(secs)].push(took);
+            if !packets.is_empty()
+                && let Some(l) = enc.last_latency.take()
+            {
+                latency_ms.push(l.as_secs_f64() * 1000.0);
+            }
             for p in packets {
                 if p.key && sync_req.is_some() && sync_resp.is_none() {
                     sync_resp = Some(at);
@@ -1357,6 +1385,11 @@ mod selftest {
             all_ms.last().copied().unwrap_or(-1.0)
         ));
         log(format!(
+            "SUMMARY queue_to_packet_ms p50={:.1} p95={:.1} (input queued -> packet out)",
+            pct(&mut latency_ms, 0.5),
+            pct(&mut latency_ms, 0.95)
+        ));
+        log(format!(
             "SUMMARY phase_kbps 0-10s@2500={:.0} 10-15s@1000={:.0} 15-20s@1000(+sync)={:.0} 20-{secs}s@2500={:.0}",
             phase(0.0, 10.0),
             phase(10.0, 15.0),
@@ -1410,7 +1443,15 @@ mod selftest {
         let (mut n, mut sum, mut errors) = (0u32, (0.0, 0.0, 0.0), 0u32);
         for (frame, data) in kept {
             order.push_back(*frame);
-            match dec.decode(data) {
+            // Offline: when the (slow) software decoder is busy, retry instead of skipping.
+            let mut r = dec.decode(data);
+            for _ in 0..100 {
+                if !matches!(r, Err(Error::Decode(-11))) {
+                    break;
+                }
+                r = dec.decode(data);
+            }
+            match r {
                 Ok(pics) => {
                     for p in pics {
                         let f = order.pop_front().unwrap_or(0) as usize;
@@ -1443,13 +1484,15 @@ mod selftest {
 /// through `MediaCodecVp8Encoder` for `seconds` with the bitrate schedule 2.5 Mbps, 1.0 Mbps at
 /// 10 s, keyframe request at 15 s, 2.5 Mbps at 20 s; packets go to `MediaCodecVp8Decoder` on
 /// another thread and decoded pictures are compared with the source. Returns one line per
-/// second plus summary lines. Debug builds run it via DebugReceiver `mediacodec_vp8`.
+/// second plus summary lines. `wait_ms` < 0 = the encoder's default wait for its output;
+/// Debug builds run it via DebugReceiver `mediacodec_vp8`.
 #[cfg(feature = "dev-tools")]
 #[uniffi::export]
 pub fn mediacodec_vp8_selftest(
     seconds: u32,
     width: u32,
     height: u32,
+    wait_ms: i32,
 ) -> std::result::Result<String, crate::Error> {
-    selftest::run(seconds, width, height).map_err(crate::Error::Protocol)
+    selftest::run(seconds, width, height, wait_ms).map_err(crate::Error::Protocol)
 }
