@@ -111,9 +111,7 @@ impl Inner {
         });
         *slot = Some(core.clone());
         // Receipt intents committed before a stop are signed now (bounded; see M3).
-        if let Err(e) = core.member_receipts_pump() {
-            tracing::warn!("group receipts: {e}");
-        }
+        core.member_receipts_pump_and_push();
         self.search_reconcile_groups(&core);
         Ok(core)
     }

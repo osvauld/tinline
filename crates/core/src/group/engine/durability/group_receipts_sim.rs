@@ -930,3 +930,233 @@ fn receipt_count_and_bytes_per_post_by_group_size() {
         );
     }
 }
+
+// ---- over the group/4 receipt frames ----------------------------------------------------------
+// Sessions are real `Sess` values registered on each core; frames are postcard-encoded and
+// decoded like the wire does, then handed to the same handlers `group_read` calls. Members only
+// talk to the owner (the host), so member-to-member statements travel through its relay.
+
+struct Link {
+    host: usize,
+    member: usize,
+    /// On the host, for the member; frames the host sends to it.
+    at_host: Arc<Sess>,
+    to_member: mpsc::UnboundedReceiver<Out>,
+    /// On the member, for the host; frames the member sends.
+    at_member: Arc<Sess>,
+    to_host: mpsc::UnboundedReceiver<Out>,
+}
+
+fn open_sess(
+    core: &GroupCore,
+    gid: &str,
+    peer: &GroupCore,
+    hosting: bool,
+) -> (Arc<Sess>, mpsc::UnboundedReceiver<Out>) {
+    let (tx, rx) = mpsc::unbounded_channel();
+    let id = core.next.fetch_add(1, Ordering::SeqCst);
+    let s = Arc::new(Sess {
+        id,
+        gid: gid.into(),
+        did: peer.did.clone(),
+        dev: peer.dev,
+        hosting,
+        joining: false,
+        tx,
+        peer_vv: Default::default(),
+        peer_days: Default::default(),
+        inv_done: AtomicBool::new(false),
+        receipt_vv: Default::default(),
+        receipt_waiting: Default::default(),
+    });
+    core.sessions.lock().insert(id, s.clone());
+    (s, rx)
+}
+
+fn roundtrip(m: &GroupMsg) -> GroupMsg {
+    let bytes = cryptography::codec::to_bytes(m).unwrap();
+    assert!(bytes.len() <= crate::group::wire::MAX_FRAME);
+    cryptography::codec::from_bytes(&bytes, crate::group::wire::MAX_FRAME).unwrap()
+}
+
+fn deliver(core: &GroupCore, sess: &Sess, m: GroupMsg) {
+    match m {
+        GroupMsg::ReceiptHello { days } => core.on_receipt_hello(sess, days).unwrap(),
+        GroupMsg::Receipts { day, update } => {
+            core.on_receipts(sess, &day, &update).unwrap();
+        }
+        GroupMsg::ReceiptAck { day, vv } => core.on_receipt_ack(sess, &day, &vv).unwrap(),
+        other => panic!("unexpected frame {other:?}"),
+    }
+}
+
+impl Sim {
+    /// A session between the owner (host) and `member`, opened by hellos like `group_run`.
+    fn connect(&self, member: usize) -> Link {
+        let (h, m) = (&self.nodes[0], &self.nodes[member]);
+        let (at_host, to_member) = open_sess(h, &self.gid, m, true);
+        let (at_member, to_host) = open_sess(m, &self.gid, h, false);
+        let _ = at_host.tx.send(Out::Msg(h.receipt_hello(&self.gid)));
+        let _ = at_member.tx.send(Out::Msg(m.receipt_hello(&self.gid)));
+        Link {
+            host: 0,
+            member,
+            at_host,
+            to_member,
+            at_member,
+            to_host,
+        }
+    }
+
+    fn disconnect(&self, l: Link) {
+        self.nodes[l.host].sessions.lock().remove(&l.at_host.id);
+        self.nodes[l.member].sessions.lock().remove(&l.at_member.id);
+    }
+
+    /// Delivers queued frames until quiet. `fate(frame)` = how many copies arrive (0 = lost).
+    /// Returns the receipt frames seen.
+    fn flush(&self, links: &mut [Link], mut fate: impl FnMut(&GroupMsg) -> usize) -> usize {
+        let mut seen = 0;
+        loop {
+            let mut any = false;
+            for l in links.iter_mut() {
+                while let Ok(Out::Msg(m)) = l.to_member.try_recv() {
+                    any = true;
+                    seen += 1;
+                    let m = roundtrip(&m);
+                    for _ in 0..fate(&m) {
+                        deliver(&self.nodes[l.member], &l.at_member, m.clone());
+                    }
+                }
+                while let Ok(Out::Msg(m)) = l.to_host.try_recv() {
+                    any = true;
+                    seen += 1;
+                    let m = roundtrip(&m);
+                    for _ in 0..fate(&m) {
+                        deliver(&self.nodes[l.host], &l.at_host, m.clone());
+                    }
+                }
+            }
+            if !any {
+                return seen;
+            }
+        }
+    }
+}
+
+#[test]
+fn receipt_frames_through_the_host_reach_every_member_byte_identical() {
+    let mut sim = Sim::new(3);
+    let mut links: Vec<Link> = (1..4).map(|m| sim.connect(m)).collect();
+    sim.flush(&mut links, |_| 1);
+    let post = sim.post(0, "over the wire");
+    for n in 1..4 {
+        sim.day(0, n);
+        sim.nodes[n].member_receipts_pump_and_push();
+    }
+    assert!(sim.flush(&mut links, |_| 1) > 0);
+    let s = sim.status(0, &post);
+    assert_eq!((s.tick, s.delivered), (ReceiptTick::Delivered, 3));
+    // The host relayed each member's statement to the others, original bytes unchanged.
+    let sc = scope(&sim.gid, DAY);
+    let mine = sim.nodes[1].receipts.entries(&sc).unwrap();
+    assert_eq!(mine.len(), 3);
+    for e in &mine {
+        let here = sim.nodes[1]
+            .receipts
+            .ledger(&sc)
+            .unwrap()
+            .raw(&e.id)
+            .unwrap();
+        let signer = (1..4)
+            .find(|n| sim.nodes[*n].did == e.receipt.recipient)
+            .unwrap();
+        assert_eq!(
+            sim.nodes[signer]
+                .receipts
+                .ledger(&sc)
+                .unwrap()
+                .raw(&e.id)
+                .unwrap(),
+            here
+        );
+    }
+    for n in 1..4 {
+        sim.nodes[n].mark_read(&sim.gid).unwrap();
+        sim.nodes[n].member_receipts_pump_and_push();
+    }
+    sim.flush(&mut links, |_| 1);
+    assert_eq!(sim.status(0, &post).tick, ReceiptTick::Read);
+    let other = sim.status(2, &post);
+    assert_eq!(
+        (other.delivered, other.read),
+        (3, 3),
+        "members see everyone's reads"
+    );
+}
+
+#[test]
+fn lost_and_duplicate_receipt_frames_recover_by_ack_and_reconnect() {
+    let mut sim = Sim::new(2);
+    let mut links: Vec<Link> = (1..3).map(|m| sim.connect(m)).collect();
+    sim.flush(&mut links, |_| 1);
+    let post = sim.post(0, "lossy");
+    for n in 1..3 {
+        sim.day(0, n);
+    }
+    // Every frame arrives twice: idempotent.
+    sim.nodes[1].member_receipts_pump_and_push();
+    sim.flush(&mut links, |_| 2);
+    assert_eq!(sim.entries(0), 1);
+    assert_eq!(sim.entries(2), 1);
+    // Member 2's statement frame is lost on the way to the host.
+    sim.nodes[2].member_receipts_pump_and_push();
+    let mut lost = 0;
+    sim.flush(&mut links, |m| match m {
+        GroupMsg::Receipts { .. } if lost == 0 => {
+            lost += 1;
+            0
+        }
+        _ => 1,
+    });
+    assert_eq!(lost, 1);
+    assert_eq!(sim.status(0, &post).delivered, 1);
+    // The member's outbox still owes it (no host ack): a reconnect's hello catches up.
+    let l = links.remove(1);
+    sim.disconnect(l);
+    links.push(sim.connect(2));
+    sim.flush(&mut links, |_| 1);
+    let s = sim.status(0, &post);
+    assert_eq!((s.tick, s.delivered), (ReceiptTick::Delivered, 2));
+    assert_eq!(sim.entries(1), 2, "relayed on to the other member");
+    // Acknowledged: nothing is owed any more.
+    let group = crate::receipts::Conversation::Group(sim.gid.clone());
+    for n in 1..3 {
+        assert!(
+            sim.nodes[n]
+                .receipts
+                .outbox_days(&group, 8)
+                .unwrap()
+                .is_empty()
+        );
+    }
+}
+
+#[test]
+fn receipts_for_posts_not_yet_held_are_asked_again_after_the_posts_arrive() {
+    let mut sim = Sim::new(2);
+    let mut links: Vec<Link> = (1..3).map(|m| sim.connect(m)).collect();
+    sim.flush(&mut links, |_| 1);
+    let post = sim.post(0, "late post");
+    sim.day(0, 1);
+    sim.nodes[1].member_receipts_pump_and_push();
+    sim.flush(&mut links, |_| 1);
+    // Member 2 got the relayed statement before the post: not stored, remembered.
+    assert_eq!(sim.entries(2), 0);
+    assert!(!links[1].at_member.receipt_waiting.lock().is_empty());
+    sim.day(0, 2);
+    sim.nodes[2].receipts_rehello(&sim.gid);
+    sim.flush(&mut links, |_| 1);
+    assert!(sim.entries(2) >= 1);
+    assert_eq!(sim.status(2, &post).delivered, 1);
+}

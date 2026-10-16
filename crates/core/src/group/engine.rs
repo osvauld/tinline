@@ -1,4 +1,4 @@
-//! The group runtime: the group endpoint (U2, `tinline/group/3`), host and member sessions,
+//! The group runtime: the group endpoint (U2, `tinline/group/4`), host and member sessions,
 //! live relay, catch-up, day-doc sync and removal enforcement. Everything hangs off
 //! `Inner::group` (`GroupRt`).
 //!
@@ -46,7 +46,7 @@ mod documents;
 mod durability;
 mod history;
 mod lifecycle;
-// Import/export/status are driven by in-process tests until the group wire carries receipts.
+// The status aggregate has no app binding yet (UniFFI to be agreed with the UI lanes).
 #[allow(dead_code)]
 pub(crate) mod member_receipts;
 mod replication;
@@ -231,6 +231,12 @@ pub(crate) struct Sess {
     peer_days: Mutex<HashMap<String, VersionVector>>,
     /// The peer's inventory of day docs is complete (`GroupMsg::Days`, the empty page).
     inv_done: AtomicBool,
+    /// What the peer holds of each day's member receipt ledger (its `ReceiptHello`/`ReceiptAck`,
+    /// plus what we sent since).
+    receipt_vv: Mutex<HashMap<String, VersionVector>>,
+    /// Days whose receipts we refused as pending (posts/records we lacked): asked again
+    /// (`ReceiptHello`) after our docs advance.
+    receipt_waiting: Mutex<std::collections::BTreeSet<String>>,
 }
 
 pub(crate) enum Out {

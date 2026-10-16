@@ -2,9 +2,18 @@
 //! that accept posts or move the read cursor, the signing pump, policy-checked import, export
 //! for dissemination and the status aggregate. Rules: `group::member_receipts`.
 //!
-//! Not wired to the group wire (`tinline/group/3`) yet: `member_receipts_export` /
-//! `member_receipts_import` are what a receipts frame would carry (see the receipt roadmap,
-//! "Group message receipts"). Deterministic multi-node tests drive them in process.
+//! Wire (`tinline/group/4`, between members and hosts only, U7):
+//! - After a session's doc catch-up each side sends `ReceiptHello` (its ledger VV for the recent
+//!   days it holds plus its unacknowledged outbox days). The answer is `Receipts` for every day
+//!   where the other side lacks something; each import is answered by `ReceiptAck` (what we
+//!   hold now, authoritative for the sender, which also clears our outbox mark).
+//! - New statements (our pump, or fresh ones imported from a session) are pushed live to every
+//!   other session of the group. A relay re-exports the ledger's ORIGINAL native ops: every
+//!   statement keeps its signer's signed bytes, writer and counter byte for byte.
+//! - A frame refused as pending (posts/records we lack) is not stored; the day is remembered on
+//!   the session and asked again with `ReceiptHello` after our docs advance. Any other refusal
+//!   is logged; the session goes on (a receipt never breaks group sync).
+//! - Reconnect = a new session: hello again, so lost frames are recovered from VVs.
 
 use std::collections::BTreeMap;
 
@@ -21,6 +30,17 @@ use storage::Op;
 /// Provisional: newest posts one mark-read step can confirm (as in 1:1). Older ones stay
 /// without a read receipt (a hole, never a claim).
 pub(crate) const MAX_READ_POSTS: usize = 4096;
+/// Provisional: days one `ReceiptHello` lists.
+pub(crate) const MAX_RECEIPT_DAYS: usize = 64;
+/// Provisional per-frame native receipt budget (well under `MAX_FRAME`; as chat/6).
+pub(crate) const RECEIPT_BATCH: crate::group::doc::batching::BatchLimits =
+    crate::group::doc::batching::BatchLimits {
+        bytes: 256 * 1024,
+        operations: 64,
+        writers: 4096,
+    };
+/// Provisional: frames one send pass writes for a day; the rest follows the next trigger.
+pub(crate) const RECEIPT_FRAMES_PER_SEND: usize = 16;
 
 fn rio(e: ReceiptError) -> Error {
     Error::Io(format!("group receipts: {e}"))
@@ -189,6 +209,212 @@ impl GroupCore {
     /// Signs and commits pending receipt intents (bounded); failures stay queued.
     pub(crate) fn member_receipts_pump(&self) -> Result<Vec<Issued>, ReceiptError> {
         self.receipts.pump(&self.account)
+    }
+
+    /// `member_receipts_pump`, then the new statements go to every session of their group.
+    pub(crate) fn member_receipts_pump_and_push(&self) {
+        let issued = match self.member_receipts_pump() {
+            Ok(i) => i,
+            Err(e) => {
+                tracing::warn!("group receipts: {e}");
+                return;
+            }
+        };
+        let mut days = std::collections::BTreeSet::new();
+        for i in issued {
+            if let crate::receipts::Conversation::Group(gid) = &i.scope.conversation {
+                days.insert((gid.clone(), i.scope.day.clone()));
+            }
+        }
+        for (gid, day) in days {
+            self.receipts_push(&gid, &day, None);
+        }
+    }
+
+    // ---- wire ------------------------------------------------------------------------------
+
+    /// Our `ReceiptHello` for `gid`: recent held days plus unacknowledged outbox days.
+    pub(crate) fn receipt_hello(&self, gid: &str) -> GroupMsg {
+        let mut days = self.held_recent_days(gid);
+        let group = crate::receipts::Conversation::Group(gid.to_string());
+        for d in self
+            .receipts
+            .outbox_days(&group, MAX_RECEIPT_DAYS)
+            .unwrap_or_default()
+        {
+            if !days.contains(&d) {
+                days.push(d);
+            }
+        }
+        self.receipt_hello_for(gid, days)
+    }
+
+    fn receipt_hello_for(&self, gid: &str, days: Vec<String>) -> GroupMsg {
+        let days = days
+            .into_iter()
+            .filter(|d| self.store.shard_meta(gid, d).ok().flatten().is_some())
+            .take(MAX_RECEIPT_DAYS)
+            .filter_map(|d| Some((d.clone(), self.member_receipts_vv(gid, &d).ok()?.encode())))
+            .collect();
+        GroupMsg::ReceiptHello { days }
+    }
+
+    /// The other side's `ReceiptHello`: remember what it holds, and send what it lacks of those
+    /// days and of our outbox days.
+    pub(crate) fn on_receipt_hello(
+        &self,
+        sess: &Sess,
+        days: Vec<(String, Vec<u8>)>,
+    ) -> Result<(), Error> {
+        if days.len() > MAX_RECEIPT_DAYS {
+            return Err(Error::Protocol("too many receipt days".into()));
+        }
+        let mut todo = Vec::new();
+        for (d, vv) in days {
+            if !crate::group::doc::day_valid(&d) {
+                return Err(Error::Protocol("bad receipt day".into()));
+            }
+            let vv = decode_vv(&vv)?;
+            if self.store.shard_meta(&sess.gid, &d)?.is_none() {
+                continue;
+            }
+            // What they hold may complete our outbox.
+            self.receipts
+                .acknowledged(&scope(&sess.gid, &d), &vv)
+                .map_err(rio)?;
+            sess.receipt_vv.lock().insert(d.clone(), vv);
+            todo.push(d);
+        }
+        let group = crate::receipts::Conversation::Group(sess.gid.clone());
+        for d in self
+            .receipts
+            .outbox_days(&group, MAX_RECEIPT_DAYS)
+            .map_err(rio)?
+        {
+            if !todo.contains(&d) {
+                todo.push(d);
+            }
+        }
+        for d in todo {
+            self.receipts_send(sess, &d)?;
+        }
+        Ok(())
+    }
+
+    /// Sends `sess` what it lacks of one day's ledger (bounded frames per call).
+    pub(crate) fn receipts_send(&self, sess: &Sess, day: &str) -> Result<(), Error> {
+        if self.store.shard_meta(&sess.gid, day)?.is_none() {
+            return Ok(());
+        }
+        for _ in 0..RECEIPT_FRAMES_PER_SEND {
+            let theirs = sess.receipt_vv.lock().get(day).cloned().unwrap_or_default();
+            let Some(batch) = self
+                .member_receipts_export(&sess.gid, day, &theirs, RECEIPT_BATCH)
+                .map_err(rio)?
+            else {
+                return Ok(());
+            };
+            let _ = sess.tx.send(Out::Msg(GroupMsg::Receipts {
+                day: day.to_string(),
+                update: batch.update,
+            }));
+            sess.receipt_vv
+                .lock()
+                .entry(day.to_string())
+                .or_default()
+                .merge(&batch.frontier);
+            if !batch.more {
+                break;
+            }
+        }
+        Ok(())
+    }
+
+    /// New statements of one day to every session of `gid` except `from`.
+    pub(crate) fn receipts_push(&self, gid: &str, day: &str, from: Option<u64>) {
+        for s in self.sessions_of(gid) {
+            if Some(s.id) == from {
+                continue;
+            }
+            if let Err(e) = self.receipts_send(&s, day) {
+                tracing::warn!(
+                    "group {} receipts to {}: {e}",
+                    crate::group::short(gid),
+                    s.did
+                );
+            }
+        }
+    }
+
+    /// A `Receipts` frame: import under the member policy, answer `ReceiptAck`, relay fresh
+    /// statements to the other sessions. Returns the fresh statements.
+    pub(crate) fn on_receipts(
+        &self,
+        sess: &Sess,
+        day: &str,
+        update: &[u8],
+    ) -> Result<Vec<ReceiptEntry>, Error> {
+        if !crate::group::doc::day_valid(day) {
+            return Err(Error::Protocol("bad receipt day".into()));
+        }
+        // Evidence attaches to a day we hold; anything else waits for the day.
+        let fresh = if self.store.shard_meta(&sess.gid, day)?.is_none() {
+            sess.receipt_waiting.lock().insert(day.to_string());
+            vec![]
+        } else {
+            match self.member_receipts_import(&sess.gid, day, update) {
+                Ok(f) => f,
+                Err(e) => {
+                    let pending = matches!(&e, ReceiptError::Pending)
+                        || matches!(&e, ReceiptError::Policy(m) if m.starts_with(crate::group::member_receipts::PENDING_PREFIX));
+                    if pending {
+                        sess.receipt_waiting.lock().insert(day.to_string());
+                    }
+                    tracing::info!(
+                        "group {}: receipts of {day} from {} not stored: {e}",
+                        crate::group::short(&sess.gid),
+                        sess.did
+                    );
+                    vec![]
+                }
+            }
+        };
+        let vv = self.member_receipts_vv(&sess.gid, day).map_err(rio)?;
+        let _ = sess.tx.send(Out::Msg(GroupMsg::ReceiptAck {
+            day: day.to_string(),
+            vv: vv.encode(),
+        }));
+        if !fresh.is_empty() {
+            self.receipts_push(&sess.gid, day, Some(sess.id));
+        }
+        Ok(fresh)
+    }
+
+    /// A `ReceiptAck`: what the peer holds now (authoritative); may clear our outbox mark.
+    pub(crate) fn on_receipt_ack(&self, sess: &Sess, day: &str, vv: &[u8]) -> Result<(), Error> {
+        if !crate::group::doc::day_valid(day) {
+            return Err(Error::Protocol("bad receipt day".into()));
+        }
+        let vv = decode_vv(vv)?;
+        if self.store.shard_meta(&sess.gid, day)?.is_some() {
+            self.receipts
+                .acknowledged(&scope(&sess.gid, day), &vv)
+                .map_err(rio)?;
+        }
+        sess.receipt_vv.lock().insert(day.to_string(), vv);
+        Ok(())
+    }
+
+    /// After our docs of `gid` advanced: ask again for the days whose receipts waited.
+    pub(crate) fn receipts_rehello(&self, gid: &str) {
+        for s in self.sessions_of(gid) {
+            let days: Vec<String> = std::mem::take(&mut *s.receipt_waiting.lock())
+                .into_iter()
+                .collect();
+            if !days.is_empty() {
+                let _ = s.tx.send(Out::Msg(self.receipt_hello_for(gid, days)));
+            }
+        }
     }
 
     /// Imports a member receipt update for day `day` of `gid` (from any relay: the verdict

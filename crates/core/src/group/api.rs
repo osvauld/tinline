@@ -337,9 +337,7 @@ impl Node {
     pub fn group_mark_read(&self, group_id: String) -> Result<(), Error> {
         let core = self.inner.group_core()?;
         core.mark_read(&group_id)?;
-        if let Err(e) = core.member_receipts_pump() {
-            tracing::warn!("group receipts: {e}");
-        }
+        core.member_receipts_pump_and_push();
         Ok(())
     }
 

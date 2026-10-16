@@ -31,6 +31,8 @@ impl Inner {
             peer_vv: Mutex::new(theirs.vv),
             peer_days: Mutex::new(theirs.days),
             inv_done: AtomicBool::new(false),
+            receipt_vv: Default::default(),
+            receipt_waiting: Default::default(),
         });
         core.sessions.lock().insert(id, sess.clone());
         self.log(format!(
@@ -49,6 +51,8 @@ impl Inner {
         if !hosts.is_empty() {
             let _ = sess.tx.send(Out::Msg(GroupMsg::Hosts { hosts }));
         }
+        // Member receipts: after the docs, so the posts they cover arrive first.
+        let _ = sess.tx.send(Out::Msg(core.receipt_hello(&gid)));
         self.group_mail_on_session(&core, &sess);
         self.group_calls_on_session(&core, &sess);
         if let Some(ev) = self.group_ev() {
@@ -205,6 +209,20 @@ impl Inner {
                 }
                 GroupMsg::CodeAck { code, ok, reason } if !sess.hosting => {
                     self.group_code_ack_in(core, code, ok, reason);
+                }
+                GroupMsg::ReceiptHello { days } => {
+                    core.on_receipt_hello(sess, days)?;
+                }
+                GroupMsg::Receipts { day, update } => {
+                    if !core.on_receipts(sess, &day, &update)?.is_empty()
+                        && let Some(ev) = self.group_ev()
+                    {
+                        let g = sess.gid.clone();
+                        self.handle.spawn_blocking(move || ev.on_group_changed(g));
+                    }
+                }
+                GroupMsg::ReceiptAck { day, vv } => {
+                    core.on_receipt_ack(sess, &day, &vv)?;
                 }
                 _ => return Err(Error::Protocol("unexpected group frame".into())),
             }
