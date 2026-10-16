@@ -24,6 +24,7 @@
   import VideoTitle from './video/VideoTitle.svelte';
   import VideoNotice from './video/VideoNotice.svelte';
   import VIcon from './video/VIcon.svelte';
+  import EndGlyph from './EndGlyph.svelte';
   import { vid } from './video/video.svelte';
   import SignalBars from './SignalBars.svelte';
   import { link } from './link.svelte';
@@ -137,7 +138,7 @@
     <div class="controls" role="group" aria-label="Call controls" bind:this={ctlEl} class:two={!android && phase !== 'incoming'} class:compact={android && phase !== 'incoming'} class:three={incomingVideo} inert={idleHide}
       onpointerenter={() => { if (onvideo) vid.hold(); }} onpointerleave={() => { if (onvideo) vid.poke(); }} onfocusin={() => { if (onvideo) vid.hold(); }}>
       {#if phase === 'incoming'}
-        <div class="ctl"><button type="button" class="round end press" aria-label="Decline" onclick={() => call.decline()}><Icon name="phone" size={28} class="hang" /></button><span>Decline</span></div>
+        <div class="ctl"><button type="button" class="round end press" aria-label="Decline" onclick={() => call.decline()}><EndGlyph /></button><span>Decline</span></div>
         <div class="ctl"><button type="button" class="round ans press" aria-label="Answer" onclick={() => call.answer()}><Icon name="phone" size={28} /></button><span>Answer</span></div>
         {#if incomingVideo}
           <div class="ctl"><button type="button" class="round ans press" aria-label="Answer with camera" onclick={() => call.answer(true)}><VIcon name="video" size={28} /></button><span>With camera</span></div>
@@ -158,7 +159,7 @@
           </button><span>Camera</span>
         </div>
         <div class="ctl">
-          <button type="button" class="round end press" aria-label="End call" disabled={phase === 'ended' || phase === 'failed'} onclick={() => call.hangup()}><Icon name="phone" size={28} class="hang" /></button><span>End</span>
+          <button type="button" class="round end press" aria-label="End call" disabled={phase === 'ended' || phase === 'failed'} onclick={() => call.hangup()}><EndGlyph pressed={phase === 'ended'} /></button><span>End</span>
         </div>
           <div class="ctl" class:idle={!vid.camOn}>
             <button type="button" class="round tog press" aria-label="Flip camera" disabled={!vid.camOn} onclick={() => vid.flip()}><VIcon name="flip" size={26} /></button><span>Flip</span>
@@ -168,7 +169,7 @@
           </div>
         {:else}
         <div class="ctl">
-          <button type="button" class="round end press" aria-label="End call" disabled={phase === 'ended' || phase === 'failed'} onclick={() => call.hangup()}><Icon name="phone" size={28} class="hang" /></button><span>End</span>
+          <button type="button" class="round end press" aria-label="End call" disabled={phase === 'ended' || phase === 'failed'} onclick={() => call.hangup()}><EndGlyph pressed={phase === 'ended'} /></button><span>End</span>
         </div>
         <div class="ctl">
           <button type="button" class="round tog press" class:on={vid.camOn} aria-pressed={vid.camOn} aria-label="Camera" disabled={phase === 'ended' || phase === 'failed' || phase === 'outgoing' || phase === 'connecting'} onclick={() => vid.toggleCamera()}>

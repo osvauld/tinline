@@ -24,6 +24,8 @@ const labs: Record<string, () => Promise<{ default: any }>> = {
   accounts: () => import('./screens/lab/AccountsLab.svelte'),
   // `?lab=avatars`: one-nickname initials and avatars drawn from the identity's fingerprint.
   avatars: () => import('./screens/lab/AvatarLab.svelte'),
+  // `?lab=endcall`: the End button's glyph drawn from the logo, side by side with today's (lib/calls/EndGlyph.svelte).
+  endcall: () => import('./screens/lab/EndCallLab.svelte'),
 };
 const app = lab && labs[lab]
   ? mount((await labs[lab]()).default, { target: document.getElementById('app')! })

@@ -69,7 +69,7 @@
       <button type="button" aria-pressed={call.stripAt === 'bottom'} onclick={() => (call.stripAt = 'bottom')}>Strip at the bottom</button>
       <button type="button" aria-pressed={call.stripAt === 'top'} onclick={() => (call.stripAt = 'top')}>Strip at the top</button>
     </div>
-    <p class="note">Decided 2026-10-14 (in-call lab, <code>?lab=incall</code>): the strip sits at the bottom, under the tab bar or the composer, away from the ear and the proximity sensor; it has no End; while I type it slims to a thin line above the keyboard. The call screen has a Message button; ← goes back to where I was; in their chat the phone turns green (Return to call). Tapping a call in the Calls tab calls them.</p>
+    <p class="note">Proposed 2026-10-16: the strip moves back to the top, because at the bottom it stacked under the search dock and the tab bar. Still no End (2026-10-14, in-call lab <code>?lab=incall</code>), so nothing by the ear ends the call; while I type it slims to a thin line above the keyboard. The call screen has a Message button; ← goes back to where I was; in their chat the phone turns green (Return to call). Tapping a call in the Calls tab calls them.</p>
   {/if}
 
   <h4>Where {android ? 'the phone' : 'the window'} is</h4>

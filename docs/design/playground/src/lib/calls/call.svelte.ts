@@ -57,9 +57,10 @@ class Call {
   speaker = $state<'earpiece' | 'speaker'>('earpiece');
   /** 'full' = call screen; 'strip' = minimized strip. While incoming, 'strip' means the heads-up banner/card. */
   view = $state<'full' | 'strip'>('full');
-  /** Android: where the minimised call's strip sits. 'bottom' (proposed 2026-10-14) keeps End away from the top of the
-   *  phone, where the ear and the proximity sensor are when I come back to the chat mid-call. ?strip=top to compare. */
-  stripAt = $state<'top' | 'bottom'>(new URLSearchParams(location.search).get('strip') === 'top' ? 'top' : 'bottom');
+  /** Android: where the minimised call's strip sits. 'top' again (user, 2026-10-16): at the bottom it stacked with the
+   *  search dock and the tab bar. It still has no End, so nothing near the ear ends the call. ?strip=bottom to compare
+   *  with the 2026-10-14 choice. */
+  stripAt = $state<'top' | 'bottom'>(new URLSearchParams(location.search).get('strip') === 'bottom' ? 'bottom' : 'top');
   endReason = $state<string | null>(null);
   ringing = $state(false);          // outgoing: their device is ringing (vs. still reaching it)
   fading = $state(false);           // the ended/failed screen is leaving
