@@ -18,6 +18,7 @@ pub mod own;
 pub mod record;
 mod relay;
 pub mod requests;
+pub mod rotation;
 pub mod shard;
 pub mod state;
 pub mod store;

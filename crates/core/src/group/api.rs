@@ -20,6 +20,7 @@ use crate::node::{Inner, Node, now_ms};
 
 mod hooks;
 mod hosts;
+mod rotation;
 mod types;
 pub use types::*;
 
@@ -479,13 +480,6 @@ impl Node {
     /// This install's device ID for this account (hex): what an admin appoints as host.
     pub fn group_device_id(&self) -> Result<String, Error> {
         Ok(hex::encode(self.inner.group_core()?.dev))
-    }
-
-    /// On a host: when this device's group endpoint will rotate (unix ms), because of a removal
-    /// or a host revocation in a group it hosts (U12: 2 days after). `None` if none is pending.
-    pub fn group_endpoint_rotation_due(&self) -> Option<u64> {
-        let core = self.inner.group_core().ok()?;
-        self.inner.group_rotation_due(&core)
     }
 
     /// This device's group endpoint id, once it is up (`None` before any group).

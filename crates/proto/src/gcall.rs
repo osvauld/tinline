@@ -53,7 +53,6 @@ pub struct HostRef {
 pub enum EndReason {
     Ended,
     HostLeaving,
-    HostRotating,
     Removed,
     Superseded,
 }

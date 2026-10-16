@@ -64,8 +64,8 @@ impl Node {
         self.host_permit(group_id, did, device_id, true, HostKind::Chat)
     }
 
-    /// Admin: device `device_id` of `did` stops hosting. The remaining hosts rotate their group
-    /// endpoint after the U12 delay (§10 Q8).
+    /// Admin: device `device_id` of `did` stops hosting. No rotation follows (D11: rotation is
+    /// periodic only, `docs/rotation.md`).
     pub fn group_revoke_host(&self, group_id: String, did: String, device_id: String) -> Result<(), Error> {
         self.host_permit(group_id, did, device_id, false, HostKind::Chat)
     }

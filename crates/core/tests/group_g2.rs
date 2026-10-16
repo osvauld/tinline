@@ -1,7 +1,7 @@
 //! G2: group chat core, second slice, on real nodes over real iroh endpoints (needs network,
 //! like `group_core.rs`; the shared harness is in `support/`). Decisions: `rotation-open-decisions.md`
-//! §0 on `endpoint-rotation-blocking` (U3 chat requests through the host, U12 host rotation after
-//! a removal, U16 writer IDs) and P10 (writer counters never reused). Protocol: `docs/group-core.md`.
+//! §0 (U3 chat requests through the host, U16 writer IDs), D11 periodic host rotation
+//! (`docs/rotation.md`) and P10 (writer counters never reused). Protocol: `docs/group-core.md`.
 //!
 //! Every test carries `// KIND: acceptance (G2 stage N)` and the decision it enforces.
 #![allow(dead_code)]
@@ -9,7 +9,7 @@
 use std::sync::{Arc, mpsc};
 use std::time::Duration;
 
-use p2pcore::{GroupDelivery, GroupItemKind, GroupRole, Node};
+use p2pcore::{GroupDelivery, GroupItemKind, GroupRole, Node, RotationPolicy};
 
 mod support;
 use support::fs::find_files;
@@ -308,82 +308,95 @@ fn chat_requests_can_be_declined_and_blocked_senders_are_refused() {
     assert!(b.node.group_chat_request(g.clone(), c.did.clone()).is_err());
 }
 
-// ---- stage 4: host endpoint rotation after a removal / host revocation (U12) ---------------------
+// ---- stage 4: periodic host endpoint rotation (D11, docs/rotation.md) ----------------------------
 
-// KIND: acceptance (G2 stage 4) — U12: after a removal, the host rotates its group endpoint once
-// the delay (2 days; shortened here) has passed; remaining members, including one offline at the
-// time, are reconnected to the new endpoint by the host; the removed member never learns it.
+// KIND: acceptance (rotation, D11 + G-12) — a host rotates its group endpoint when its interval
+// is up (shortened here); online members follow at once; the host restarts in the middle of the
+// announce window and, after the restart, still tells a member that was offline the whole time
+// where it moved (the window is persisted), without rotating again.
 #[test]
-fn the_host_rotates_after_a_removal_and_only_remaining_members_follow() {
-    let o = peer("ro-o");
-    let a = peer("ro-a");
-    let m = peer("ro-m");
-    let b = peer("ro-b");
-    let c = peer("ro-c");
-    let g = group_with(&o, &[&a, &m, &b, &c]);
-    o.node.group_set_admin(g.clone(), a.did.clone(), true).unwrap();
-    eventually(WAIT, "a is admin", || a.node.group_detail(g.clone()).unwrap().my_role == GroupRole::Admin);
-    o.node.group_set_rotation_delay_for_test(25);
-    // GF: the host tells offline members it moved for as long as the rotation delay (2 days in
-    // production); with the delay shortened to 25 s that window closed before c came back under
-    // load. Keep it long here: what is tested is that c is told, not how fast it returns.
-    o.node.group_set_moved_window_for_test(600);
+fn host_rotates_on_interval_and_offline_member_is_reconnected_after_host_restart() {
+    let mut o = peer("ri-o");
+    let a = peer("ri-a");
+    let c = peer("ri-c");
+    let g = group_with(&o, &[&a, &c]);
     let old = o.node.group_endpoint_id().unwrap();
-    // c is offline across the rotation.
+    assert!(a.node.group_endpoint_rotation_due().is_none(), "members never rotate");
     c.node.stop();
-    for _ in 0..3 {
-        a.node.group_flag(g.clone(), m.did.clone()).unwrap();
-    }
-    eventually(WAIT, "m removed at the host", || !members(&o, &g).contains(&m.did));
-    // Not immediate.
-    assert_eq!(o.node.group_endpoint_id().unwrap(), old, "the rotation waits for the delay");
-    eventually(WAIT, "m knows it was removed", || m.node.group_detail(g.clone()).unwrap().my_role == GroupRole::Removed);
-    eventually(WAIT + 25, "the host rotated", || o.node.group_endpoint_id().is_some_and(|e| e != old));
+    o.node.group_set_rotation_policy_for_test(Some(RotationPolicy { interval_ms: 15_000, jitter_ms: 0, announce_ms: 600_000 }));
+    let due = o.node.group_endpoint_rotation_due().expect("a host has a deadline");
+    eventually(WAIT + 15, "the host rotated", || o.node.group_endpoint_id().is_some_and(|e| e != old));
+    assert!(now_ms() >= due);
+    // Back to the stored (default, days-long) policy: no second rotation during the test.
+    o.node.group_set_rotation_policy_for_test(None);
     let new = o.node.group_endpoint_id().unwrap();
-    for p in [&a, &b] {
-        eventually(WAIT, "remaining members learn the new endpoint", || p.node.group_known_endpoints_for_test(g.clone()) == vec![new.clone()]);
-    }
-    b.node.group_post(g.clone(), "after the rotation".into(), None).unwrap();
-    eventually(WAIT, "a gets it through the new endpoint", || has_post(&a, &g, &b.did, "after the rotation"));
+    assert!(o.node.group_endpoint_rotation_due().unwrap() > now_ms() + 24 * 3600 * 1000, "the next one counts from this one");
+    eventually(WAIT, "the online member follows", || a.node.group_known_endpoints_for_test(g.clone()) == vec![new.clone()]);
+
+    restart(&mut o, false);
+    eventually(WAIT, "the host is back on the new endpoint", || o.node.group_endpoint_id().as_ref() == Some(&new));
+    a.node.group_post(g.clone(), "after the rotation".into(), None).unwrap();
+    eventually(WAIT, "the host gets it at the new endpoint", || has_post(&o, &g, &a.did, "after the rotation"));
     online(&c.node);
-    eventually(WAIT, "the offline member is reconnected", || has_post(&c, &g, &b.did, "after the rotation"));
+    eventually(WAIT + 15, "the offline member is told after the host's restart", || has_post(&c, &g, &a.did, "after the rotation"));
     assert_eq!(c.node.group_known_endpoints_for_test(g.clone()), vec![new.clone()]);
-    std::thread::sleep(Duration::from_secs(3));
-    assert!(!m.node.group_known_endpoints_for_test(g.clone()).contains(&new), "the removed member never learns it");
-    // One rotation per removal: it stays put.
-    std::thread::sleep(Duration::from_secs(10));
-    assert_eq!(o.node.group_endpoint_id().unwrap(), new);
+    assert_eq!(o.node.group_endpoint_id().unwrap(), new, "the restart did not rotate again");
 }
 
-// KIND: acceptance (G2 stage 4) — §10 Q8: revoking a host makes the remaining hosts rotate the
-// same way; members follow.
+// KIND: acceptance (rotation, D11) — a removal by flags and a host revocation do not rotate or
+// reschedule anything: the deadline stays where the interval put it.
 #[test]
-fn a_host_revocation_rotates_the_remaining_hosts() {
-    let o = peer("rv-o");
-    let h = peer("rv-h");
-    let a = peer("rv-a");
-    let g = group_with(&o, &[&h, &a]);
-    assert!(!h.node.group_detail(g.clone()).unwrap().host_requested_here);
+fn a_flag_removal_or_host_revocation_does_not_rotate() {
+    let o = peer("nr-o");
+    let h = peer("nr-h");
+    let m = peer("nr-m");
+    let g = group_with(&o, &[&h, &m]);
     o.node.group_appoint_host(g.clone(), h.did.clone(), h.node.group_device_id().unwrap()).unwrap();
-    // G-UI: the appointed device is asked (and only it).
     eventually(WAIT, "h is asked to host", || h.node.group_detail(g.clone()).unwrap().host_requested_here);
-    assert!(!a.node.group_detail(g.clone()).unwrap().host_requested_here);
-    let req = o.node.group_detail(g.clone()).unwrap().host_requests;
-    assert!(req.len() == 1 && req[0].did == h.did && req[0].appointed_by.as_deref() == Some(o.did.as_str()));
     h.node.group_accept_host(g.clone(), true).unwrap();
-    eventually(WAIT, "a sees two hosts", || a.node.group_detail(g.clone()).unwrap().hosts.len() == 2);
-    let d = h.node.group_detail(g.clone()).unwrap();
-    assert!(!d.host_requested_here && d.host_requests.is_empty() && d.am_host);
-    o.node.group_set_rotation_delay_for_test(5);
-    o.node.group_set_moved_window_for_test(600); // GF: see the removal test above
+    eventually(WAIT, "o sees two hosts", || o.node.group_detail(g.clone()).unwrap().hosts.len() == 2);
     let old = o.node.group_endpoint_id().unwrap();
+    let due = o.node.group_endpoint_rotation_due().expect("a host has a deadline");
     o.node.group_revoke_host(g.clone(), h.did.clone(), h.node.group_device_id().unwrap()).unwrap();
-    eventually(WAIT + 5, "o rotated", || o.node.group_endpoint_id().is_some_and(|e| e != old));
-    let new = o.node.group_endpoint_id().unwrap();
-    eventually(WAIT, "a follows", || {
-        let k = a.node.group_known_endpoints_for_test(g.clone());
-        k.contains(&new) && !k.contains(&old)
-    });
-    a.node.group_post(g.clone(), "after the revocation".into(), None).unwrap();
-    eventually(WAIT, "o gets it", || has_post(&o, &g, &a.did, "after the revocation"));
+    for _ in 0..3 {
+        o.node.group_flag(g.clone(), m.did.clone()).unwrap();
+    }
+    eventually(WAIT, "m removed at the host", || !members(&o, &g).contains(&m.did));
+    eventually(WAIT, "h no longer hosts", || o.node.group_detail(g.clone()).unwrap().hosts.len() == 1);
+    std::thread::sleep(Duration::from_secs(5));
+    assert_eq!(o.node.group_endpoint_id().unwrap(), old, "no rotation");
+    assert_eq!(o.node.group_endpoint_rotation_due(), Some(due), "no reschedule");
+}
+
+// ---- D12: the removed member's upload window is local ---------------------------------------------
+
+// KIND: acceptance (D12, U11) — a removed member's pre-removal post is refused once the host's
+// local window (from when it learned of the removal; shortened here) has closed, even though the
+// removed DID still reaches the same host's group endpoint through another group they share.
+// (Inside the window it is accepted: `group_core.rs`
+// `an_offline_post_written_before_the_removal_is_delivered`, default window.)
+#[test]
+fn removed_member_upload_refused_after_the_window_even_with_a_shared_group() {
+    let o = peer("rw-o");
+    let m = peer("rw-m");
+    let b = peer("rw-b");
+    let g = group_with(&o, &[&m, &b]);
+    let shared = group_with(&o, &[&m]);
+    o.node.group_set_removed_upload_window_for_test(Some(3_000));
+    m.node.stop();
+    std::thread::sleep(Duration::from_secs(1));
+    m.node.group_post(g.clone(), "written before the removal".into(), None).unwrap();
+    for _ in 0..3 {
+        o.node.group_flag(g.clone(), m.did.clone()).unwrap();
+    }
+    eventually(WAIT, "o applied the removal", || !members(&o, &g).contains(&m.did));
+    std::thread::sleep(Duration::from_secs(5));
+    online(&m.node);
+    eventually(WAIT, "m learns it was removed", || m.node.group_detail(g.clone()).unwrap().my_role == GroupRole::Removed);
+    m.node.group_post(shared.clone(), "still here".into(), None).unwrap();
+    eventually(WAIT, "m still reaches the host through the shared group", || has_post(&o, &shared, &m.did, "still here"));
+    std::thread::sleep(Duration::from_secs(5));
+    for p in [&o, &b] {
+        assert!(!has_post(p, &g, &m.did, "written before the removal"), "refused after the window");
+    }
 }

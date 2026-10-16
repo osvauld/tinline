@@ -60,7 +60,7 @@ pub(super) struct Session {
     pub(super) call_id: String,
     pub(super) id: Identity,
     pub(super) cfg: Arc<GcallConfig>,
-    /// Calls run on the group endpoint (U2/U7), looked up at each dial: it may rotate (U12).
+    /// Calls run on the group endpoint (U2/U7), looked up at each dial: it may rotate (`docs/rotation.md`).
     pub(super) inner: std::sync::Weak<Inner>,
     pub(super) handle: tokio::runtime::Handle,
     /// Session clock: Unix ms at creation plus monotonic elapsed time.

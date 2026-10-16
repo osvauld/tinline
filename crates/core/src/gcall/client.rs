@@ -322,7 +322,7 @@ impl ClientEngine {
                 Ok(vec![ClientAction::Superseded { by }, ClientAction::Ended(ClientEnd::Superseded)])
             }
             // §5 planned exit: redial at once, no heartbeat wait.
-            (EndReason::HostLeaving | EndReason::HostRotating, Some(next)) => {
+            (EndReason::HostLeaving, Some(next)) => {
                 let mut c = vec![next.clone()];
                 c.extend(self.start.backups.iter().filter(|b| **b != next && **b != self.host).cloned());
                 Ok(self.redial(c, now, auth))

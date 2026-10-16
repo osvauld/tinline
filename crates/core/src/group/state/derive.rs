@@ -285,9 +285,6 @@ fn derive_items(cx: &Ctx, st: &mut GroupState, flags: &BTreeMap<String, Vec<&Ent
                 st.items.push(item(if *admin { ItemKind::AdminGranted } else { ItemKind::AdminRevoked }, member))
             }
             Body::HostPermit { host, active, .. } if cx.admin_as_of(&r.author, Some(&r.seen)) => {
-                if !*active {
-                    st.rotation_triggers.push(r.at);
-                }
                 st.items.push(item(if *active { ItemKind::HostAdded } else { ItemKind::HostRemoved }, host))
             }
             _ => {}
@@ -297,7 +294,6 @@ fn derive_items(cx: &Ctx, st: &mut GroupState, flags: &BTreeMap<String, Vec<&Ent
     for (did, f) in flags {
         if f.len() >= REMOVAL_FLAGS {
             let third = f[REMOVAL_FLAGS - 1];
-            st.rotation_triggers.push(third.rec.at);
             st.items.push(Item {
                 id: format!("removed-{}", third.id),
                 kind: ItemKind::Removed,

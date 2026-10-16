@@ -3,7 +3,7 @@
 //! Restore over an existing account keeps `account.redb` (and with it the cached `State.ticket`)
 //! but makes a fresh device key (`node.rs` `set_identity`). A cached ticket names the device key
 //! a joiner dials, so it must never outlive that key. See
-//! `docs/design/rotation-baseline-report.md` finding O1 and
+//! `docs/archive/rotation/rotation-baseline-report.md` finding O1 and
 //! `docs/design/rotation-open-decisions.md` section 5 bug 2.
 //!
 //! Every test carries one label:

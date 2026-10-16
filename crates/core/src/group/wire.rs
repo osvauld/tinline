@@ -8,7 +8,7 @@
 //!
 //! ```text
 //! member -> host  Hello { auth, group, vv, days, invite?, hosts, relay }
-//! host -> member  Moved { auth, group, hosts }       (own connection, after a rotation, U12)
+//! host -> member  Moved { auth, group, hosts }       (own connection, after a rotation)
 //! host -> member  Welcome { auth, vv, days, hosts }  | Removed { records, vv, update? } | Refused { reason }
 //! both            Update { doc, update } / Ack { doc, vv } / Hosts { hosts } / Mail { mail } / MailAck { id }
 //! both            Days { after, days }   (inventory of every day doc held, in pages; an empty page ends it)
@@ -34,7 +34,7 @@ pub const DAYS_PAGE: usize = 64;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum GroupMsg {
-    /// `relay`: the member's home relay, so a host that rotated can reach it again (U12).
+    /// `relay`: the member's home relay, so a host that rotated can reach it again (`docs/rotation.md`).
     /// `vv`: the meta doc's version vector; `days`: those of the day docs of the last `HELLO_DAYS`
     /// days we hold.
     Hello { auth: EndpointAuth, group: String, vv: Vec<u8>, days: Vec<(String, Vec<u8>)>, invite: Option<SignedInvite>, hosts: Vec<SignedHostAddr>, relay: Option<String> },
@@ -63,7 +63,7 @@ pub enum GroupMsg {
     /// Host -> sending member: the host holds that mail (the sender drops it from its outbox).
     MailAck { id: [u8; 16] },
     /// Host -> member, on a connection the host opens to the member's group endpoint after it
-    /// rotated its own (U12): "this is me now" (`auth` proves the new endpoint) plus the group's
+    /// rotated its own (`docs/rotation.md`): "this is me now" (`auth` proves the new endpoint) plus the group's
     /// DID-signed host addresses. The member checks the sender is an active host, keeps the
     /// addresses and dials. Only current members are told; a removed member never is.
     Moved { auth: EndpointAuth, group: String, hosts: Vec<SignedHostAddr> },

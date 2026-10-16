@@ -1,7 +1,7 @@
 //! GA-I1: group calls wired into group chat, on real nodes over real iroh endpoints (needs
 //! network, like `group_core.rs` / `group_g2.rs`, the shared harness is in `support/`; the audio
 //! helpers come from `gcall.rs`). Spec: `docs/design/group-call-spec.md` §2, §3, §5, §11;
-//! decisions U2, U7, U12, U21 (`rotation-open-decisions.md` §0).
+//! decisions U2, U7, U21, D11 (`rotation-open-decisions.md` §0).
 //!
 //! A group of the owner `o` (chat host) and three members; `c` is a desktop the owner allowed
 //! to host calls (`CallHostPermit`) and that accepted (`CallHostAccept`); `o` also hosts calls
@@ -13,8 +13,8 @@
 //!   endpoint and hears the others' tones; no plain member learns another member's group
 //!   endpoint (U7); a member removed by 3 flags is ejected at once and never sees a later call.
 //! - `the_next_call_follows_a_rotated_call_host_and_a_revoked_call_host_hands_over`: after a
-//!   removal the call host rotates its group endpoint (U12) and the next call reaches it at the
-//!   new one; revoking its call-host permit mid-call moves everyone to the backup (§5).
+//!   the call host rotates its group endpoint (D11, `group_rotate_now`) and the next call reaches
+//!   it at the new one; revoking its call-host permit mid-call moves everyone to the backup (§5).
 #![allow(dead_code)]
 
 use std::sync::{Arc, Mutex, mpsc};
@@ -276,8 +276,8 @@ fn a_member_starts_a_call_the_call_host_carries_it_and_a_removed_member_is_eject
     eprintln!("total {:?}", t0.elapsed());
 }
 
-// KIND: acceptance (GA-I1) — U12 + G6 §5: after a removal the call host rotates its group
-// endpoint; the next call reaches it at the new one; revoking its call-host permit mid-call
+// KIND: acceptance (GA-I1) — D11 + G6 §5: when the call host rotates its group endpoint, the
+// next call reaches it at the new one and a removed member never learns it; revoking its call-host permit mid-call
 // moves everyone to the backup at the next generation.
 #[test]
 fn the_next_call_follows_a_rotated_call_host_and_a_revoked_call_host_hands_over() {
@@ -288,15 +288,24 @@ fn the_next_call_follows_a_rotated_call_host_and_a_revoked_call_host_hands_over(
     let mut c = peer("r-c", 3);
     let g = group_with(&o, &[&a, &b, &c]);
     call_hosts(&o, &c, &a, &g);
-    for p in [&o, &c] {
-        p.node.group_set_rotation_delay_for_test(10);
-    }
     let (old_o, old_c) = (o.node.group_endpoint_id().unwrap(), c.node.group_endpoint_id().unwrap());
     for _ in 0..3 {
         o.node.group_flag(g.clone(), b.did.clone()).unwrap();
     }
-    eventually(WAIT + 10, "the chat host rotated", || o.node.group_endpoint_id().is_some_and(|e| e != old_o));
-    eventually(WAIT + 10, "the call host rotated", || c.node.group_endpoint_id().is_some_and(|e| e != old_c));
+    eventually(WAIT, "b removed at the host", || !members(&o, &g).contains(&b.did));
+    // D11: rotation is periodic; "change it now" stands in for the interval coming up. The chat
+    // host first, then the call host (which learns o's new endpoint through `Moved`).
+    o.node.group_rotate_now().unwrap();
+    assert_ne!(o.node.group_endpoint_id().unwrap(), old_o, "the chat host rotated");
+    eventually(WAIT, "c learns the chat host's new endpoint", || {
+        let k = c.node.group_known_endpoints_for_test(g.clone());
+        k.contains(&o.node.group_endpoint_id().unwrap()) && !k.contains(&old_o)
+    });
+    eventually(WAIT, "c is back in session with the chat host", || {
+        c.node.group_detail(g.clone()).unwrap().hosts.iter().any(|h| h.did == o.did && h.online)
+    });
+    c.node.group_rotate_now().unwrap();
+    assert_ne!(c.node.group_endpoint_id().unwrap(), old_c, "the call host rotated");
     let new_c = c.node.group_endpoint_id().unwrap();
     eventually(WAIT, "a learns the call host's new endpoint", || {
         let k = a.node.group_known_endpoints_for_test(g.clone());
