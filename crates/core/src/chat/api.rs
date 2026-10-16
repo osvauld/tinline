@@ -191,8 +191,10 @@ impl Node {
     /// Zeroes the local unread counter. Also signs a recipient read receipt for exactly the
     /// incoming versions this step marks read (`chat_message_receipts`); sending it to the
     /// contact is not wired yet (receipt exchange, roadmap M4).
+    /// Blocking (an old unread day may be read from its blob first).
     pub fn mark_read(&self, peer_did: String) -> Result<(), Error> {
-        self.inner.chat_mark_read(&peer_did)
+        let inner = self.inner.clone();
+        self.block_on(async move { inner.chat_mark_read(&peer_did).await })?
     }
 
     /// Encrypts the file at `path` (up to 2 GB) and sends a message carrying it. Blocks while

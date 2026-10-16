@@ -1190,3 +1190,40 @@ fn read_receipts_off_issues_delivered_only_and_never_backdates() {
     let row = sim.status(0, &second);
     assert!(row.members.iter().any(|m| m.receipts.did == sim.nodes[1].did && m.receipts.level == ReceiptLevel::Read));
 }
+
+#[test]
+fn reading_an_old_compacted_day_still_issues_read_receipts() {
+    let mut sim = Sim::new(1);
+    // A post ten days back (its day doc closed into one snapshot row on the reader).
+    let old_day = "2026-10-06";
+    let at = day_start(old_day).unwrap() + 3_600_000;
+    let id = sim.nodes[0].write_at(&sim.gid, Body::Post { text: "from last week".into(), reply_to: None }, at).unwrap().0.id;
+    let theirs = sim.nodes[1].doc_vv(&sim.gid, &DocId::Day(old_day.into()));
+    let update = {
+        let core = &sim.nodes[0];
+        let mut groups = core.groups.lock();
+        let Live { state, shards, .. } = groups.get_mut(&sim.gid).unwrap();
+        shards.get(&core.store, &sim.gid, core.wid, old_day, state).unwrap().doc.export_since(&theirs).unwrap()
+    };
+    sim.nodes[1].apply(&sim.gid, &DocId::Day(old_day.into()), &update, |_, _, _| Ok(())).unwrap();
+    {
+        let core = &sim.nodes[1];
+        let mut groups = core.groups.lock();
+        let live = groups.get_mut(&sim.gid).unwrap();
+        let snap = {
+            let Live { state, shards, .. } = &mut *live;
+            shards.get(&core.store, &sim.gid, core.wid, old_day, state).unwrap().doc.snapshot()
+        };
+        let mut sm = core.store.shard_meta(&sim.gid, old_day).unwrap().unwrap();
+        core.store.compact_shard(&sim.gid, old_day, &mut sm, &snap).unwrap();
+        assert!(sm.closed);
+        live.shards = Default::default();
+    }
+    assert_eq!(sim.pump(1), 1, "delivered");
+    sim.nodes[1].mark_read(&sim.gid, true).unwrap();
+    assert_eq!(sim.pump(1), 1, "the old post's read receipt");
+    let frame = sim.nodes[1].member_receipts_export(&sim.gid, old_day, &VersionVector::default(), LIMITS).unwrap().unwrap();
+    assert_eq!(sim.nodes[0].member_receipts_import(&sim.gid, old_day, &frame.update).unwrap().len(), 2);
+    let s = sim.nodes[0].member_receipt_status(&sim.gid, old_day, &id).unwrap();
+    assert_eq!((s.tick, s.read), (ReceiptTick::Read, 1));
+}
