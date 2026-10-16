@@ -51,6 +51,41 @@ Detail in [design/receipt-runtime-roadmap.md](design/receipt-runtime-roadmap.md)
       verified-flag rule (it survives a rotation through old-key succession links; a new install or
       restore still resets it).
 
+## Video (hw VP8 + adaptation landed 2026-10-16, dev 15ecc43)
+Design: [design/video-hw-vp8.md](design/video-hw-vp8.md), [design/video-adaptation.md](design/video-adaptation.md).
+Tested on devices: Pixel 3a -> laptop HD with no flicker; phone-started video calls no longer crash.
+- [ ] **HD keeps the 4:3 shape.** HD asks the camera for 16:9 (1280x720), normal mode for 4:3
+      (640x480), so a portrait picture turns narrower when HD is switched on. Ask for 4:3 in HD
+      (1280x960); the fit-not-crop path keeps it. Decision taken: 4:3 (lead's recommendation; confirm).
+- [ ] **Decide: does HD ignore the window size?** The desktop asks the phone for its drawn size, so
+      a portrait picture in a normal window gets 540x960 even on a perfect LAN. Options: keep (sends
+      what is shown), or with HD on, cap one rung higher / not at all.
+- [ ] **Desktop encodes VP8 (libvpx, software)** when the peer decodes VP8 in hardware and AV1 only
+      in software. The Pixel 3a decodes the laptop's AV1 in software and caps it at 15 fps.
+      `build_libvpx.py` builds decoder-only today; offer `encode: [vp8]` from the desktop.
+- [ ] **Show the codec and hardware acceleration** in the call: "VP8 · hardware" / "AV1 · software",
+      both directions (`VideoStats.send_codec`/`recv_codec` exist; add whether each is MediaCodec).
+- [ ] **Video stats in the signal-strength dialog** (both apps): send/receive size, fps, bitrate,
+      codec + hardware, path (direct/relay), queueing delay, the cap and its reason.
+- [ ] **Old HD-chip wording blames the connection.** The desktop "sharper video paused ... their
+      connection is weak" line shows for any reason (their screen, their decoder, CPU). Use the
+      core label's reason (`video_send_label`) or drop the line.
+- [ ] **Climb back after a real hide is slow:** after "not visible" (180p15) the sender steps up
+      one step at a time (5 s holds). Restore the step held before the hint, if the estimate allows.
+- [ ] **Label can stay on "slow network"** after recovery until back at HD (`last_step_reason`
+      is sticky).
+- [ ] **720p15 drifts to 540p30 near link capacity** (15 fps makes the delay signal noisy); 180p has
+      no fps floor; the real-AV1 loss scenario now holds 360p with p95 130 ms (was 91).
+- [ ] **Other callbacks may re-enter like `on_video_state` did** (the ART "detach while still
+      running code" abort): check NodeEvents calls fired from inside app calls.
+- [ ] **H.264 for phones without hardware VP8** (moto g52: hw H.264/HEVC only, sends software AV1 at
+      360p). Researched: hw MediaCodec on phones; desktop via Cisco's OpenH264 binary downloaded at
+      run time (user toggle, attribution). Read openh264.org/BINARY_LICENSE.txt first. Deferred.
+- [ ] Release packaging (deb, tarball, AppImage, CI) must build libvpx (`build_libvpx.py`, `VPX_DIR`,
+      `VPX_STATIC_REQUIRED=1`); sandbox the desktop libvpx; AV1 fallback if the VP8 encoder fails.
+- [ ] Device checks still open: moto on the new build; Android thermal/power-save hints; desktop
+      window resize/minimise hints; the 2-minute Pixel HD call with the new ladder (bounce gone?).
+
 ## Decisions still open
 - [ ] Delete the storage-attestation runtime? Nothing issues one. Recommendation: delete.
 - [ ] Remote unlink: lock the account instead of deleting its directory? Recommendation: lock.
