@@ -145,6 +145,8 @@ val cargoNdkBuild = tasks.register<RustExec>("cargoNdkBuild") {
         // --lib: only libp2pcore.so is linked; without it cargo also builds the crate's bins (search-bench, year-bench), which is slow.
         addAll(listOf("-P", "28", "-o", jniOut.get().asFile.absolutePath, "build", "--locked", "-p", "p2pcore", "--lib"))
         if (rustRelease) add("--release")
+        // Hardware VP8 (NDK AMediaCodec): every Android build.
+        add("--features"); add("mediacodec")
         if (devTools) { add("--features"); add("dev-tools") }
     })
     inputs.files(rustInputs).withPropertyName("rustSources").withPathSensitivity(PathSensitivity.RELATIVE)

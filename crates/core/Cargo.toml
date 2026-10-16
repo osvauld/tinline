@@ -29,6 +29,9 @@ dev-tools = ["video/sim", "proto/test-support"]
 # Benchmark binaries; app, Android and test builds skip them. `cargo build --release --features bench --bin search-bench`.
 # They drive the synthetic peers, so they need `dev-tools`.
 bench = ["dev-tools"]
+# Android hardware VP8 through the NDK AMediaCodec API (src/video_call/mediacodec.rs). The Android
+# build always passes it (android/app/build.gradle.kts); it has no effect on other targets.
+mediacodec = ["dep:ndk-sys"]
 
 [dependencies]
 proto.workspace = true
@@ -73,3 +76,4 @@ libc = "0.2"
 [target.'cfg(target_os = "android")'.dependencies]
 paranoid-android = "0.2"
 jni = { version = "0.21", default-features = false }
+ndk-sys = { version = "0.6", features = ["media"], optional = true }

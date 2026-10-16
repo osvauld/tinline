@@ -64,6 +64,8 @@ pub struct VideoFrame {
 mod api;
 mod ffi_bytes;
 mod frames;
+#[cfg(all(target_os = "android", feature = "mediacodec"))]
+mod mediacodec;
 mod pipes;
 
 pub use self::ffi_bytes::Bytes;
