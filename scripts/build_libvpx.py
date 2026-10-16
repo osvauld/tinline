@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
-"""Build a static, decoder-only, VP8-only libvpx for the desktop (linux host).
+"""Build a static, VP8-only (decoder + realtime encoder) libvpx for the desktop (linux host).
 
     scripts/build_libvpx.py
 
 Prints the install prefix (last stdout line); point the video crate (feature `vp8`) at it with
 `VPX_DIR_<triple>=<prefix>` or `VPX_DIR=<prefix>` (its build.rs then links `<prefix>/lib/libvpx.a`
-statically instead of the system libvpx). Android does not use libvpx: it decodes VP8 with
-MediaCodec (docs/design/video-hw-vp8.md).
+statically instead of the system libvpx). Android does not use libvpx: it codes VP8 with
+MediaCodec (docs/design/video-hw-vp8.md). The desktop decodes phones' hardware-encoded VP8 and
+encodes VP8 itself for peers with a hardware VP8 decoder.
 
 Source is the GitHub mirror's archive of the official release tag TAG (commit COMMIT on
 chromium.googlesource.com/webm/libvpx), pinned by SHA-256 (checked before extraction and on every
@@ -92,8 +93,8 @@ def main():
         str(src / "configure"),
         f"--prefix={prefix}",
         "--enable-static", "--disable-shared", "--enable-pic",
-        # Only what a call needs: the VP8 decoder (hardware encoders on the phones send it).
-        "--disable-vp9", "--disable-vp8-encoder", "--enable-vp8-decoder",
+        # Only what a call needs: the VP8 decoder and encoder (VP9 stays off).
+        "--disable-vp9", "--enable-vp8-encoder", "--enable-vp8-decoder",
         f"--size-limit={SIZE_LIMIT}",
         "--disable-examples", "--disable-tools", "--disable-docs", "--disable-unit-tests",
         "--disable-install-docs", "--disable-install-bins", "--disable-install-srcs",

@@ -42,7 +42,7 @@ fn main() {
     }
 }
 
-/// libvpx (VP8 decoder) for feature `vp8`, the same way as libaom: `VPX_DIR_<target>` or `VPX_DIR`
+/// libvpx (VP8 decoder and encoder) for feature `vp8`, the same way as libaom: `VPX_DIR_<target>` or `VPX_DIR`
 /// from scripts/build_libvpx.py links it statically; without it dev hosts use the system libvpx
 /// unless `VPX_STATIC_REQUIRED=1` (release packaging).
 fn vpx() {
@@ -52,9 +52,10 @@ fn vpx() {
     println!("cargo:rerun-if-env-changed=VPX_DIR");
     println!("cargo:rerun-if-env-changed=VPX_STATIC_REQUIRED");
     println!("cargo:rerun-if-changed=csrc/vpx_dec.c");
+    println!("cargo:rerun-if-changed=csrc/vpx_enc.c");
     let hint = format!("run scripts/build_libvpx.py and set {per_target} or VPX_DIR");
     let mut cc = cc::Build::new();
-    cc.file("csrc/vpx_dec.c").warnings(true);
+    cc.file("csrc/vpx_dec.c").file("csrc/vpx_enc.c").warnings(true);
     match std::env::var_os(&per_target).or_else(|| std::env::var_os("VPX_DIR")) {
         Some(dir) => {
             let dir = PathBuf::from(dir);
