@@ -68,9 +68,11 @@ impl Default for Link {
 
 /// What produces encoded frames in the simulation.
 pub trait SimCodec {
-    /// Encodes the frame captured at `index` at `width`x`height`; returns (payload, is_key).
-    /// A size change must produce a keyframe, as a real encoder re-created at the new size does.
-    fn encode(&mut self, index: u64, key: bool, bitrate_bps: u32, width: u32, height: u32) -> (Vec<u8>, bool);
+    /// Encodes the frame captured at `index` at `width`x`height`; returns (index of the frame the
+    /// output belongs to, payload, is_key), or nothing yet (a hardware encoder's output lags its
+    /// input). A size change must produce a keyframe, as a real encoder re-created at the new
+    /// size does.
+    fn encode(&mut self, index: u64, key: bool, bitrate_bps: u32, width: u32, height: u32) -> Option<(u64, Vec<u8>, bool)>;
     /// Decodes a frame on the receiver; `false` means the decoder rejected it.
     fn decode(&mut self, payload: &[u8]) -> bool;
 }
@@ -96,22 +98,17 @@ impl FakeCodec {
 
 const FAKE_HEADER: usize = 13;
 
-impl SimCodec for FakeCodec {
-    fn encode(&mut self, index: u64, key: bool, bitrate_bps: u32, width: u32, height: u32) -> (Vec<u8>, bool) {
-        let key = key || self.size != (width, height);
-        self.size = (width, height);
-        let px = width as f64 * height as f64;
-        let mean = (bitrate_bps as f64 / self.fps as f64).min(px * self.max_bpp) / 8.0;
-        let bpp = mean * 8.0 / px;
-        let size = if key { mean * (63.0 * bpp).clamp(2.5, 7.0) } else { mean * (0.7 + 0.6 * self.rng.f64()) };
-        let mut p = vec![0u8; (size as usize).max(FAKE_HEADER)];
-        p[0] = key as u8;
-        p[1..9].copy_from_slice(&index.to_be_bytes());
-        p[9..11].copy_from_slice(&(width as u16).to_be_bytes());
-        p[11..13].copy_from_slice(&(height as u16).to_be_bytes());
-        (p, key)
-    }
-    fn decode(&mut self, payload: &[u8]) -> bool {
+fn fake_payload(size: f64, key: bool, index: u64, width: u32, height: u32) -> Vec<u8> {
+    let mut p = vec![0u8; (size as usize).max(FAKE_HEADER)];
+    p[0] = key as u8;
+    p[1..9].copy_from_slice(&index.to_be_bytes());
+    p[9..11].copy_from_slice(&(width as u16).to_be_bytes());
+    p[11..13].copy_from_slice(&(height as u16).to_be_bytes());
+    p
+}
+
+impl FakeCodec {
+    fn check(&mut self, payload: &[u8]) -> bool {
         let size = (
             u16::from_be_bytes([payload[9], payload[10]]) as u32,
             u16::from_be_bytes([payload[11], payload[12]]) as u32,
@@ -120,6 +117,71 @@ impl SimCodec for FakeCodec {
             self.key_size = Some(size);
         }
         self.key_size == Some(size)
+    }
+}
+
+impl SimCodec for FakeCodec {
+    fn encode(&mut self, index: u64, key: bool, bitrate_bps: u32, width: u32, height: u32) -> Option<(u64, Vec<u8>, bool)> {
+        let key = key || self.size != (width, height);
+        self.size = (width, height);
+        let px = width as f64 * height as f64;
+        let mean = (bitrate_bps as f64 / self.fps as f64).min(px * self.max_bpp) / 8.0;
+        let bpp = mean * 8.0 / px;
+        let size = if key { mean * (63.0 * bpp).clamp(2.5, 7.0) } else { mean * (0.7 + 0.6 * self.rng.f64()) };
+        Some((index, fake_payload(size, key, index, width, height), key))
+    }
+    fn decode(&mut self, payload: &[u8]) -> bool {
+        self.check(payload)
+    }
+}
+
+/// Hardware-encoder-like codec (MediaCodec VP8): output lags input by `delay` frames, every
+/// input asked to be a keyframe becomes one (`request-sync` each time), keyframes are
+/// `key_ratio` x the mean delta, and the encoder is re-created on a size change (its queued
+/// frames are lost, the first output is a keyframe).
+pub struct HwCodec {
+    pub fps: u32,
+    pub key_ratio: f64,
+    pub delay: usize,
+    rng: Rng,
+    size: (u32, u32),
+    fifo: VecDeque<(u64, bool, u32)>,
+    dec: FakeCodec,
+}
+
+impl HwCodec {
+    pub fn new(fps: u32, seed: u64) -> Self {
+        Self {
+            fps,
+            key_ratio: 4.0,
+            delay: 2,
+            rng: Rng::new(seed),
+            size: (0, 0),
+            fifo: VecDeque::new(),
+            dec: FakeCodec::new(fps, seed),
+        }
+    }
+}
+
+impl SimCodec for HwCodec {
+    fn encode(&mut self, index: u64, key: bool, bitrate_bps: u32, width: u32, height: u32) -> Option<(u64, Vec<u8>, bool)> {
+        let new = self.size != (width, height);
+        if new {
+            self.fifo.clear();
+            self.size = (width, height);
+        }
+        self.fifo.push_back((index, key || new, bitrate_bps));
+        if self.fifo.len() <= self.delay {
+            return None;
+        }
+        let (i, key, bps) = self.fifo.pop_front()?;
+        let px = width as f64 * height as f64;
+        let mean = (bps as f64 / self.fps as f64).min(px * 0.3) / 8.0;
+        let size = if key { mean * self.key_ratio } else { mean * (0.7 + 0.6 * self.rng.f64()) };
+        Some((i, fake_payload(size, key, i, width, height), key))
+    }
+    fn decode(&mut self, payload: &[u8]) -> bool {
+        self.dec.check(payload)
     }
 }
 
@@ -157,7 +219,7 @@ impl Av1Codec {
 }
 
 impl SimCodec for Av1Codec {
-    fn encode(&mut self, _index: u64, key: bool, bitrate_bps: u32, width: u32, height: u32) -> (Vec<u8>, bool) {
+    fn encode(&mut self, index: u64, key: bool, bitrate_bps: u32, width: u32, height: u32) -> Option<(u64, Vec<u8>, bool)> {
         if self.size != (width, height) {
             self.enc = Self::encoder(width, height, self.fps, bitrate_bps);
             self.pattern = Pattern::new(width as usize, height as usize);
@@ -171,7 +233,7 @@ impl SimCodec for Av1Codec {
         let pic: I420 = self.pattern.next_frame();
         let p = self.enc.encode(&pic, key).unwrap();
         let p = p.into_iter().next().expect("realtime encoder emits one packet per frame");
-        (p.data, p.key)
+        Some((index, p.data, p.key))
     }
     fn decode(&mut self, payload: &[u8]) -> bool {
         let Ok(pics) = self.dec.decode(payload) else { return false };
@@ -294,6 +356,8 @@ pub struct Report {
     /// Resolution changes, and (time, width, height) of each new size at the encoder.
     pub switches: u64,
     pub sizes: Vec<(u64, u32, u32)>,
+    /// Capture times of the frames the encoder put out, in order.
+    pub encoded: Vec<u64>,
     pub sender_drops: u64,
     pub skipped: u64,
     pub keyframe_requests: u64,
@@ -354,9 +418,10 @@ impl Report {
             self.sizes.iter().map(|(t, _, h)| format!("{}p@{:.1}", h, *t as f64 / 1e6)).collect();
         let k = &self.key_causes;
         format!(
-            "shown {}/{} | latency p50 {:.0} p95 {:.0} max {:.0} ms | freezes {} ({:.1} s) | key {} (start {} rate {} cpu {} req {} backlog {} other {}) drops {} skipped {} req {} cam {} | decode err {} | {:.0} kbps wire, loss {:.1}% | sizes {}",
+            "shown {}/{} enc {} | latency p50 {:.0} p95 {:.0} max {:.0} ms | freezes {} ({:.1} s) | key {} (start {} rate {} cpu {} req {} backlog {} other {}) drops {} skipped {} req {} cam {} | decode err {} | {:.0} kbps wire, loss {:.1}% | switches {} sizes {}",
             self.shown.len(),
             self.captured,
+            self.encoded.len(),
             Self::pct(&l, 0.5),
             Self::pct(&l, 0.95),
             Self::pct(&l, 1.0),
@@ -376,6 +441,7 @@ impl Report {
             self.decode_errors,
             self.wire_bytes as f64 * 8.0 / (duration_us as f64 / 1e6) / 1000.0,
             100.0 * self.lost_packets as f64 / self.sent_packets.max(1) as f64,
+            self.sizes.len().saturating_sub(1),
             sizes.join(" "),
         )
     }
@@ -525,6 +591,8 @@ pub fn run(sc: &Scenario, codec: &mut dyn SimCodec) -> Report {
     let mut encoder_free = 0u64;
     let mut enc_rng = Rng::new(sc.seed ^ 0x5eed);
     let mut sizes: BTreeMap<u64, (u32, u32)> = BTreeMap::new();
+    // Frames given to the codec and not out yet: index -> capture time.
+    let mut in_codec: BTreeMap<u64, u64> = BTreeMap::new();
     let mut decode_busy_until = 0u64;
     let frame_us = 1_000_000 / sc.fps as u64;
     let mut next_capture = 0u64;
@@ -556,13 +624,19 @@ pub fn run(sc: &Scenario, codec: &mut dyn SimCodec) -> Report {
         }
         while encoding.front().is_some_and(|f| f.0 <= now) {
             let (_, capture, key, w, h, t) = encoding.pop_front().unwrap();
-            let (payload, is_key) = codec.encode(index, key, sender.bitrate(), w, h);
+            in_codec.insert(index, capture);
+            let out = codec.encode(index, key, sender.bitrate(), w, h);
             index += 1;
             if rep.sizes.last().is_none_or(|s| (s.1, s.2) != (w, h)) {
                 rep.sizes.push((now, w, h));
             }
             sizes.insert(capture, (w, h));
             sender.encode_time(now, t);
+            let Some((i, payload, is_key)) = out else { continue };
+            // Frames the codec dropped (a re-created encoder) never come out.
+            in_codec = in_codec.split_off(&i);
+            let capture = in_codec.remove(&i).expect("codec output for a frame it was given");
+            rep.encoded.push(capture);
             let outs = sender.frame(capture, is_key, &payload);
             apply(now, &outs, &mut tx, &mut |g| push(&mut evs, reset_at(now, link_free, &sc.link), Ev::ResetRx(g)));
         }

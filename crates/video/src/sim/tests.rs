@@ -324,3 +324,70 @@ fn slow_receiver() {
     let br = r.mean_bitrate(22 * S, sc.duration_us);
     assert!(br > 1_000_000.0, "bitrate {br}");
 }
+
+// --- Video adaptation (docs/design/video-adaptation.md, section 7) ---
+
+/// Laptop-class encoder (or a hardware one): 720p in ~9 ms, so only the link limits the ladder.
+fn fast() -> Device {
+    Device { base_us: 1_500, ns_per_px: 8, jitter: 0.2, slowdowns: vec![], spikes: (0.0, 0) }
+}
+
+/// Resolution switches at or after `from`.
+fn res_switches(r: &Report, from: u64) -> usize {
+    r.sizes.iter().skip(1).filter(|s| s.0 >= from).count()
+}
+
+fn sizes_line(r: &Report) -> String {
+    r.sizes.iter().map(|(t, _, h)| format!("{h}p@{:.1}", *t as f64 / 1e6)).collect::<Vec<_>>().join(" ")
+}
+
+#[test]
+fn adapt_fps_before_resolution() {
+    // Acceptance 1: 720p on 2 Mbps, then 700 kbps.
+    let sc = Scenario {
+        duration_us: 40 * S,
+        device: fast(),
+        link: Link { rate_changes: vec![(20 * S, 700_000)], ..Link::default() },
+        ..base()
+    };
+    let r = go("fps first", &sc);
+    println!("{:>10}  {}", "", sizes_line(&r));
+}
+
+#[test]
+fn adapt_no_bouncing_under_loss() {
+    // Acceptance 2: 1.5 Mbps, 3% random loss, 60 s.
+    let sc = Scenario {
+        duration_us: 60 * S,
+        device: fast(),
+        link: Link { rate_bps: 1_500_000, loss: 0.03, ..Link::default() },
+        ..base()
+    };
+    let r = go("no bounce", &sc);
+    println!("{:>10}  {} | after 10 s: {}", "", sizes_line(&r), res_switches(&r, 10 * S));
+}
+
+#[test]
+fn adapt_flapping_link() {
+    // Acceptance 6: 2 Mbps / 900 kbps, alternating every 8 s.
+    let changes = (1..10u64).map(|i| (i * 8 * S, if i % 2 == 1 { 900_000 } else { 2_000_000 })).collect();
+    let sc = Scenario { duration_us: 80 * S, device: fast(), link: Link { rate_changes: changes, ..Link::default() }, ..base() };
+    let r = go("flap link", &sc);
+    println!("{:>10}  {} | 20-80 s: {}", "", sizes_line(&r), res_switches(&r, 20 * S));
+}
+
+#[test]
+fn adapt_hw_keyframes() {
+    // Step 0 finding: hardware VP8 keyframes are 3-4x a delta and come out a few frames after
+    // they were asked for, so every frame in between asked again (2-5 keyframes per switch).
+    let sc = Scenario {
+        duration_us: 60 * S,
+        device: fast(),
+        link: Link { rate_bps: 1_800_000, delay_us: 5_000, jitter_us: 5_000, ..Link::default() },
+        ..base()
+    };
+    let mut codec = HwCodec::new(sc.fps, sc.seed);
+    let r = run(&sc, &mut codec);
+    println!("{:>10}: {}", "hw keys", r.summary(sc.duration_us));
+    println!("{:>10}  {} | after 10 s: {}", "", sizes_line(&r), res_switches(&r, 10 * S));
+}
