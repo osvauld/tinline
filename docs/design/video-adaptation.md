@@ -3,7 +3,9 @@
 Status: step 1 (`crates/video`: 2-D ladder, hints in `media`, keyframe fixes, sim) implemented
 2026-10-16 on `feature/video-adaptation`, with the deviations in section 10. Step 2 (`video::net` control v2 with the hint message,
 `VideoOffer.max_fps`, core `set_video_view` / `set_video_budget`, `VideoStats` fields, log lines,
-test 7) implemented 2026-10-16, see section 11; steps 3-4 open.
+test 7) implemented 2026-10-16, see section 11. Step 3 (apps: drawn size, render cost via
+`report_video_render_ms`, Android budget, honest label via `video_send_label`) implemented
+2026-10-16, see section 12; step 4 open.
 Builds on `docs/video.md` (ladder, rate control, transport) and `docs/design/video-hw-vp8.md`
 (codec negotiation).
 
@@ -346,3 +348,18 @@ Implemented as designed (control version 2, message 4, `VideoOffer.max_fps`, the
    reason `Cap` is reported as `hint` when the peer's hint binds, else `budget`.
 6. Our own budget cap reaches the ladder through `set_max` / `set_max_fps` (next rate update),
    the peer's offer through the same limits (`max_fps` 0 is read as 30, above 30 as 30).
+
+## 12. Step 3: apps
+
+1. **Core**: `report_video_render_ms(ms)` feeds a 2 s window; `run_policy` adds its p75 to the
+   decode p75 when it has >= 10 samples. `video_send_label(&VideoStats)` is the one label text
+   ("HD · 24 fps" at the top size; below it the binding cap, else the last step reason, else the
+   rate). Caveat: `last_step_reason` is sticky, so an unlimited sender that once stepped down for
+   `rate` keeps saying "slow network" until it is at the top size again.
+2. **Desktop**: the shader widget notes its contained size x scale each draw; the tick reports it.
+   Visible = drawn within the last second, so minimise and a hidden stage need no extra events.
+3. **Android**: `onSizeChanged` + lifecycle -> `setVideoView`; thermal listener + power-save
+   receiver -> `setVideoBudget`; `VideoIo.pull` -> `reportVideoRenderMs`. The Compose view crops to
+   fill, so its size understates the picture slightly; the next-rung rounding absorbs it.
+4. The HD chip still reads "HD" (its box is fixed); the honest text is the picture label, in a
+   fixed-width box on desktop and the existing one-line slot on Android.

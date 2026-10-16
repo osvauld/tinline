@@ -17,6 +17,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import uniffi.p2pcore.VideoBudget
 import uniffi.p2pcore.VideoEvents
 import uniffi.p2pcore.VideoInfo
 import java.util.concurrent.Executors
@@ -88,6 +89,35 @@ class CallVideo(private val app: P2pApp) : VideoEvents {
     fun reset() {
         _info.value = null; _problem.value = null; paused = false; _front.value = true; _hdCall.value = null; _hdNote.value = null
         rates.reset(); capturePreference = "-"; actualCapture = "-"
+    }
+
+    /** The remote picture's size in pixels and whether it is on screen; the core turns it into the peer's hint. */
+    fun setView(width: Int, height: Int, visible: Boolean) {
+        if (width <= 0 || height <= 0) return
+        analysisExec.execute { runCatching { app.node.setVideoView(width.toUInt(), height.toUInt(), visible) } }
+    }
+
+    /** Thermal status and battery saver, while a call with video is on screen; the core decides what they mean. */
+    fun watchBudget(): () -> Unit {
+        val pm = app.getSystemService(android.content.Context.POWER_SERVICE) as android.os.PowerManager
+        var thermal = pm.currentThermalStatus
+        fun push() {
+            val b = VideoBudget(thermal.coerceIn(0, 255).toUByte(), pm.isPowerSaveMode)
+            analysisExec.execute { runCatching { app.node.setVideoBudget(b) } }
+        }
+        val listener = android.os.PowerManager.OnThermalStatusChangedListener { thermal = it; push() }
+        pm.addThermalStatusListener(analysisExec, listener)
+        val receiver = object : android.content.BroadcastReceiver() {
+            override fun onReceive(c: android.content.Context?, i: android.content.Intent?) = push()
+        }
+        androidx.core.content.ContextCompat.registerReceiver(app, receiver,
+            android.content.IntentFilter(android.os.PowerManager.ACTION_POWER_SAVE_MODE_CHANGED),
+            androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED)
+        push()
+        return {
+            runCatching { pm.removeThermalStatusListener(listener) }
+            runCatching { app.unregisterReceiver(receiver) }
+        }
     }
 
     fun statsLine(r: RemoteRenderer?): String {

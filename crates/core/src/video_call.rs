@@ -143,11 +143,36 @@ pub trait VideoEvents: Send + Sync {
 pub(crate) struct NodeVideo {
     enabled: AtomicBool,
     events: Mutex<Option<Arc<dyn VideoEvents>>>,
+    /// Video state events go out on one thread of their own, in order (`emit_video`).
+    dispatch: Mutex<Option<std::sync::mpsc::Sender<(Arc<dyn VideoEvents>, VideoInfo)>>>,
 }
 
 impl Default for NodeVideo {
     fn default() -> Self {
-        Self { enabled: AtomicBool::new(true), events: Mutex::new(None) }
+        Self { enabled: AtomicBool::new(true), events: Mutex::new(None), dispatch: Mutex::new(None) }
+    }
+}
+
+impl NodeVideo {
+    /// Hands the event to the dispatch thread (started on first use; it ends with the node).
+    fn dispatch(&self, ev: Arc<dyn VideoEvents>, info: VideoInfo) {
+        let mut tx = self.dispatch.lock();
+        if tx.is_none() {
+            let (send, recv) = std::sync::mpsc::channel::<(Arc<dyn VideoEvents>, VideoInfo)>();
+            let spawned = std::thread::Builder::new().name("tl-video-events".into()).spawn(move || {
+                for (ev, info) in recv {
+                    ev.on_video_state(info);
+                }
+            });
+            if let Err(e) = spawned {
+                tracing::warn!("video events thread: {e}");
+                drop(tx);
+                ev.on_video_state(info);
+                return;
+            }
+            *tx = Some(send);
+        }
+        let _ = tx.as_ref().expect("dispatch sender").send((ev, info));
     }
 }
 
@@ -258,9 +283,13 @@ impl Inner {
     }
 
     pub(crate) fn emit_video(&self, call: &crate::node::Call) {
+        // Never call the app back from inside one of its own calls (`set_camera` lands here):
+        // on Android the callback runs on a thread JNA attached for it, a nested callback on it
+        // detached that thread while Kotlin still ran on it, and ART aborted the app (16 Oct 2026,
+        // phone-started video call cut at "Active"). The dispatch thread also keeps them in order.
         let ev = self.video.events.lock().clone();
         if let Some(ev) = ev {
-            ev.on_video_state(self.video_info(call));
+            self.video.dispatch(ev, self.video_info(call));
         }
     }
 

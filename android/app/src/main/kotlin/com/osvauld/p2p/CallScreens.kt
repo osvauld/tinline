@@ -57,6 +57,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import uniffi.p2pcore.CallInfo
 import uniffi.p2pcore.CallState
+import uniffi.p2pcore.videoSendLabel
 
 private fun ComponentActivity.showOverLock() {
     if (Build.VERSION.SDK_INT >= 27) { setShowWhenLocked(true); setTurnScreenOn(true) }
@@ -304,7 +305,12 @@ fun InCallScreen(ui: CallUi, meName: String, app: P2pApp, onCameraOn: () -> Unit
     val videoProblem by app.video.problem.collectAsState()
     val v = vi?.takeIf { active && it.negotiated && it.callId == ui.info.callId }
     val hdCall by app.video.hdCall.collectAsState()
-    val sendSize by produceState<Pair<Int, Int>?>(null, ui.info.callId, v?.localCamera, hdCall) {
+    val inVideo = v != null && (v.localCamera || v.remoteCamera)
+    DisposableEffect(inVideo, ui.info.callId) {
+        val stop = if (inVideo) app.video.watchBudget() else ({})
+        onDispose(stop)
+    }
+    val sendStats by produceState<Pair<Pair<Int, Int>, String>?>(null, ui.info.callId, v?.localCamera, hdCall) {
         value = null
         if (v?.localCamera != true) return@produceState
         var initialFrames: ULong? = null
@@ -313,13 +319,14 @@ fun InCallScreen(ui: CallUi, meName: String, app: P2pApp, onCameraOn: () -> Unit
                 runCatching { app.node.videoStats()?.let {
                     if (initialFrames == null) initialFrames = it.framesSent
                     // Don't label cached dimensions from before this camera start as current HD.
-                    if (it.framesSent > initialFrames) it.sendWidth.toInt() to it.sendHeight.toInt() else null
+                    if (it.framesSent > initialFrames) (it.sendWidth.toInt() to it.sendHeight.toInt()) to videoSendLabel(it) else null
                 } }.getOrNull()
             }
             delay(1000)
         }
     }
-    val sendResolution = sendSize?.let { videoResolutionLabel(it.first, it.second) }
+    val sendSize = sendStats?.first
+    val sendLabel = sendStats?.second?.takeIf { it.isNotEmpty() }
     val hdOn = effectivePreferHd(app.preferHdCapture, hdCall)
     val hdIsPaused = hdPaused(hdOn, sendSize?.first ?: 0, sendSize?.second ?: 0)
     // The ladder stepping below HD while HD is on: say so once, when it happens.
@@ -336,7 +343,7 @@ fun InCallScreen(ui: CallUi, meName: String, app: P2pApp, onCameraOn: () -> Unit
                 name = name, did = ui.info.peerDid, secs = secs, direct = s?.direct, bars = bars, reconnecting = s?.reconnecting == true,
                 muted = ui.muted, speaker = ui.speaker, localCamera = v.localCamera, remoteCamera = v.remoteCamera,
                 problem = if (ui.held) HELD else ui.micProblem ?: videoProblem,
-                videoQuality = if (v.localCamera) hdNote?.text ?: sendResolution?.let { "Sending $it" } ?: "Starting video…" else null,
+                videoQuality = if (v.localCamera) hdNote?.text ?: sendLabel ?: "Starting video…" else null,
                 hd = hdOn, hdPaused = hdIsPaused, onHd = { app.video.setHd(!hdOn, hdIsPaused) },
                 onMute = { calls.toggleMute() }, onSpeaker = { calls.toggleSpeaker() }, onCamera = onCamera,
                 onFlip = { app.video.flip() }, onEnd = { calls.hangup() }, onMinimise = onMinimise, onMessage = onMessage,
@@ -523,6 +530,21 @@ internal fun RemoteVideo(app: P2pApp, calls: CallController, modifier: Modifier)
         calls.renderer = r
         onDispose { r.stop(); if (calls.renderer === r) calls.renderer = null }
     }
+    // The picture's drawn size for the peer's sender; hidden while the screen is stopped.
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    var viewSize by remember { mutableStateOf(IntSize.Zero) }
+    var started by remember { mutableStateOf(lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED)) }
+    DisposableEffect(lifecycle) {
+        val o = androidx.lifecycle.LifecycleEventObserver { _, _ ->
+            started = lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED)
+        }
+        lifecycle.addObserver(o)
+        onDispose { lifecycle.removeObserver(o) }
+    }
+    LaunchedEffect(viewSize, started) { app.video.setView(viewSize.width, viewSize.height, started) }
+    val latestSize by rememberUpdatedState(viewSize)
+    DisposableEffect(Unit) { onDispose { app.video.setView(latestSize.width, latestSize.height, false) } }
+    val modifier = modifier.onSizeChanged { viewSize = it }
     val b = frame
     if (b == null) Box(modifier, contentAlignment = Alignment.Center) {
         Text("Connecting video…", style = TinType.bodyL, color = Color.White.copy(alpha = 0.7f))

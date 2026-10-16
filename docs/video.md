@@ -102,7 +102,7 @@ overuse=.. starved=.. queue=..ms | recv WxH@fps dec=..ms`; on every ladder step
 `video step 720p30 -> 720p15 reason=rate est=820kbps`; on every hint we send
 `video hint max=..px fps=.. reason=..`. The receiver also steers its frame-rate tier from the
 p75 decode time over 2 s (above 60% of the interval: a tier down; below 30% for 10 s: a tier up).
-Render cost is not counted yet (the apps measure it; step 3).
+The apps report the per-frame pull cost with `report_video_render_ms`; its p75 over 2 s is added to the decode p75 (needs >= 10 samples).
 
 ## Resolution ladder (`media::Ladder`, owned by `Sender`)
 
@@ -261,6 +261,8 @@ the sender sees it); after a decode error it skips to the next keyframe and requ
 | `pull_video_frame_rgba() -> Option<VideoFrame>` | the same frame as packed RGBA (`convert::i420_to_rgba`, on the caller's thread): iced `image::Handle::from_rgba`, Android `Bitmap` fallback (4x the bytes of I420 across the FFI) |
 | `video_info()`, `video_stats()` | state; frames/keyframes sent, send size, bitrate, encode ms, frames decoded, decode errors, received size; `send_fps`, `recv_fps` (last second), `send_cap {pixels, fps, reason}` (what the peer's hint, our budget and its offer allow), `ladder_steps` and `last_step_reason` (`rate`, `cpu`, `hint`, `budget`) |
 | `set_video_view(width_px, height_px, visible)` | the remote picture's drawn size in device pixels and whether it is on screen; call on layout changes. The core asks the peer for the next rung at or above it (min 320x180; hidden = 180p at 15 fps); a shrink holds 1 s, anything else goes at once. No-op without a call |
+| `report_video_render_ms(ms)` | the app's cost to pull and prepare one remote frame; call once per drawn frame |
+| `video_send_label(stats)` (free function) | the picture label from the stats, one text for every app: `HD · 24 fps`, `540p · slow network`, `540p · their screen`; empty before a frame was sent |
 | `set_video_budget(VideoBudget { thermal, power_save })` | Android thermal status (0-6) and battery saver. MODERATE (2): 15 fps up to 540p; SEVERE (3+): 15 fps up to 360p; power save: 24 fps up to 540p. Lowers the hint we send and caps our own ladder. No-op without a call |
 | `video_frame_handle() -> u64` | this node's handle for the direct (non-UniFFI) frame calls, see Frames across the FFI |
 
@@ -631,6 +633,14 @@ fast cores too). Cheapest capture: ask CameraX for a size whose aspect matches t
 
 ## Android app (capture, render, UI)
 
+**Adaptation (step 3):** `RemoteVideo` reports its `onSizeChanged` size with
+`setVideoView(w, h, started)` (visible = lifecycle STARTED; false again on dispose). The view
+crops to fill, so the reported size is the view, not the picture. `CallVideo.watchBudget`
+(registered while the call has video) feeds `PowerManager` thermal status and
+`ACTION_POWER_SAVE_MODE_CHANGED` / `isPowerSaveMode` to `setVideoBudget`; `VideoIo.pull` reports
+each frame's pull + bitmap time with `reportVideoRenderMs`. The line under the header uses
+`videoSendLabel(stats)`. No policy in Kotlin. Needs a phone to check the thermal and power-save paths.
+
 Files: `VideoIo.kt` (the only place frames cross the FFI), `CallVideo.kt` (state, CameraX,
 `RemoteRenderer`), `CallScreens.kt` (`VideoCallContent`), Settings "Video in calls".
 
@@ -708,6 +718,15 @@ CPU.
   the sender whether to encode a frame; not built).
 
 ## Desktop (iced, `crates/desktop`)
+
+**Adaptation (step 3):** `video_surface` records the remote picture's contained size times the
+window scale factor each time it is drawn; the 33 ms video tick reports it with
+`set_video_view(w, h, visible)` on the first draw and on every change. `visible` is false when
+the picture was not drawn for a second (stage hidden, call minimised to the strip, window
+minimised). The pull cost of each remote frame goes to `report_video_render_ms`. The picture
+label (top-left of the stage, fixed 220 px box) is `video_send_label` (`HD · 24 fps`,
+`540p · slow network`); the HD chip itself still reads "HD". No budget on desktop. Needs a
+two-instance run to see the hint arrive (resize the window, minimise it).
 
 **Camera: V4L2 directly through `linuxvideo`** (0BSD, pure Rust: `libc`, `bitflags`, `log`,
 `uoctl`; no bindgen, no libv4l, no C). Candidates:

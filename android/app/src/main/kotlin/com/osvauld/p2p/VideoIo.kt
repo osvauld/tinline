@@ -123,7 +123,13 @@ class VideoIo(private val node: () -> Node) {
      * The newest decoded frame as a bitmap, or null if none arrived since the last call. Two
      * bitmaps alternate, so the one returned last time stays intact while it is on screen.
      */
-    fun pull(): Bitmap? = if (jni) pullJni() else pullUniffi()
+    fun pull(): Bitmap? {
+        val t = System.nanoTime()
+        val b = if (jni) pullJni() else pullUniffi()
+        // The core adds this render cost (pull + bitmap) to the decode cost when it steers the frame rate.
+        if (b != null) runCatching { node().reportVideoRenderMs((System.nanoTime() - t) / 1e6f) }
+        return b
+    }
 
     private var rgba: ByteBuffer = ByteBuffer.allocateDirect(0)
     private val info = IntArray(3)
