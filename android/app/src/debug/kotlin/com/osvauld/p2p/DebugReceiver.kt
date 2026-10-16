@@ -68,6 +68,16 @@ class DebugReceiver : BroadcastReceiver() {
                 out.lines().filter { it.isNotBlank() }.forEach { testLog("video_bench $it") }
                 testLog("video_bench done")
             }
+            // MediaCodec VP8 self-test (Rust, no camera, no call): synthetic frames through the
+            // hardware encoder and decoder for `seconds` (30) at `w`x`h` (1280x720); one line per
+            // second plus SUMMARY lines. Own thread: it outlives the broadcast's time limit.
+            "mediacodec_vp8" -> Thread {
+                try {
+                    val out = uniffi.p2pcore.mediacodecVp8Selftest(i.getIntExtra("seconds", 30).toUInt(), i.getIntExtra("w", 1280).toUInt(), i.getIntExtra("h", 720).toUInt())
+                    out.lines().filter { it.isNotBlank() }.forEach { testLog("mediacodec_vp8 $it") }
+                } catch (e: Throwable) { testLog("mediacodec_vp8 error ${e.message}") }
+                testLog("mediacodec_vp8 done")
+            }.apply { name = "mediacodec-vp8-selftest" }.start()
             "stats" -> app.calls.logStats()
             // Call video: state and counters (also logged every second during a video call).
             "video_stats" -> testLog(app.video.statsLine(app.calls.renderer))
