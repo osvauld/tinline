@@ -376,6 +376,12 @@ fn send_label_says_why() {
     assert_eq!(video_send_label(&st(0, 0, 0, "none", "")), "");
     assert_eq!(video_send_label(&st(1280, 720, 24, "none", "")), "HD \u{b7} 24 fps");
     assert_eq!(video_send_label(&st(960, 540, 30, "none", "rate")), "540p \u{b7} slow network");
+    // A rate step down says "slow network" only while the rate is short of the next size up
+    // (720p from 1.3 Mbps); back above it, the plain label while the ladder waits to step up.
+    let back = VideoStats { bitrate_bps: 1_400_000, ..st(960, 540, 30, "none", "rate") };
+    assert_eq!(video_send_label(&back), "540p \u{b7} 30 fps");
+    let still = VideoStats { bitrate_bps: 1_200_000, ..st(960, 540, 30, "none", "rate") };
+    assert_eq!(video_send_label(&still), "540p \u{b7} slow network");
     assert_eq!(video_send_label(&st(960, 540, 30, "display", "rate")), "540p \u{b7} their screen");
     assert_eq!(video_send_label(&st(540, 960, 15, "none", "")), "540p \u{b7} 15 fps");
 }

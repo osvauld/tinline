@@ -57,7 +57,10 @@ pub fn video_send_label(stats: &VideoStats) -> String {
         "battery" => "battery saver",
         "user" => "their choice",
         _ => match stats.last_step_reason.as_str() {
-            "rate" => "slow network",
+            // Only while the rate is still short of the next size up: once it is back, the
+            // ladder is just waiting out its holds (the reason used to stick until HD).
+            "rate" if rate_short(stats) => "slow network",
+            "rate" => "",
             "cpu" => "busy device",
             "hint" => "their screen",
             "budget" => "battery saver",
@@ -69,6 +72,16 @@ pub fn video_send_label(stats: &VideoStats) -> String {
     } else {
         format!("{name} \u{b7} {why}")
     }
+}
+
+/// The send rate is below what the next size up needs (the ladder's step-up threshold at 30 fps).
+fn rate_short(stats: &VideoStats) -> bool {
+    let cfg = LadderConfig::default();
+    let short = stats.send_width.min(stats.send_height);
+    cfg.rungs
+        .iter()
+        .find(|r| r.height > short)
+        .is_some_and(|r| (stats.bitrate_bps as u64) * 100 < r.min_bps as u64 * cfg.up_margin_pct as u64)
 }
 
 /// The picture label for what I receive ("Their video \u{b7} 540p \u{b7} 24 fps"); empty before
