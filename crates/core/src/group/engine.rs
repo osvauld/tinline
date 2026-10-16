@@ -46,6 +46,9 @@ mod documents;
 mod durability;
 mod history;
 mod lifecycle;
+// Import/export/status are driven by in-process tests until the group wire carries receipts.
+#[allow(dead_code)]
+pub(crate) mod member_receipts;
 mod replication;
 mod rotation;
 mod sessions;
@@ -208,6 +211,8 @@ pub(crate) struct GroupCore {
     compacted: Mutex<Option<Instant>>,
     /// G3: invite codes (waiters for host answers, the wrong-code limiter).
     pub(crate) codes: super::code::CodeRt,
+    /// Member message receipts over this store (`member_receipts`), signed as `did`/`dev`.
+    pub(crate) receipts: Arc<crate::receipts::store::messages::MessageReceipts>,
 }
 
 pub(crate) struct Sess {

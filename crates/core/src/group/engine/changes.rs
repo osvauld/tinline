@@ -12,6 +12,10 @@ impl Inner {
         from: Option<u64>,
     ) {
         let gid = changed.gid.clone();
+        // Sign receipt intents the change committed (bounded; failures stay queued).
+        if let Err(e) = core.member_receipts_pump() {
+            tracing::warn!("group receipts: {e}");
+        }
         self.search_group(&gid, &changed.posts);
         // Order matters: the records first (a removed member gets the flags that removed it,
         // a new host's acceptance reaches others before its address), then enforcement, then

@@ -304,16 +304,20 @@ impl GroupCore {
         live.rederive(gid);
         // Posts that were waiting for meta records may show now.
         let (posts, mut new_items) = self.rejudge_pending(live, gid);
+        let receipt_ops = self.rejudged_ops(live, gid, &posts);
         if own_forward {
             // Borrowed writers don't appear under our core.wid. Persist the
             // validated frontier with the ops before issuing a cache receipt.
             live.meta.own_owed_meta = live.doc.vv().encode();
         }
         let doc = &live.doc;
-        if let Err(e) = self
-            .store
-            .append_meta(gid, &mut live.meta, update, || doc.snapshot())
-        {
+        if let Err(e) = self.store.append_meta_with(
+            gid,
+            &mut live.meta,
+            update,
+            || doc.snapshot(),
+            receipt_ops,
+        ) {
             live.restore_meta(gid, previous_doc, previous_meta, previous_entries);
             return Err(Reject::Persistence(e.to_string()));
         }
@@ -381,6 +385,7 @@ impl GroupCore {
     ) -> Result<Option<Changed>, Reject> {
         let previous_meta = live.meta.clone();
         let Live {
+            doc: meta_doc,
             entries,
             state,
             shards,
@@ -415,6 +420,7 @@ impl GroupCore {
             meta.owed_days.insert(day.to_string());
         }
         let mut shown = Vec::new();
+        let fresh_ids: Vec<String> = fresh.iter().map(|e| e.id.clone()).collect();
         for e in fresh {
             let vis = post_visible(state, &e.rec.author, &e.rec.seen);
             if vis == Vis::Pending {
@@ -429,9 +435,17 @@ impl GroupCore {
         if meta.newest_day.as_deref().is_none_or(|d| d < day) {
             meta.newest_day = Some(day.to_string());
         }
+        // Delivered receipts: posts this device accepted from the group. A batch one of our
+        // own devices forwarded adds none: that device accepted it and issues (as in 1:1).
+        let receipt_ops = if own_forward {
+            Vec::new()
+        } else {
+            let posts = Self::fresh_posts(shard, &fresh_ids);
+            self.delivered_ops(state, &meta_doc.seen(), gid, day, &posts)
+        };
         let vv = shard.doc.vv().encode();
         let doc = &shard.doc;
-        if let Err(e) = self.store.append_shard(
+        if let Err(e) = self.store.append_shard_with(
             gid,
             day,
             &mut shard.meta,
@@ -439,6 +453,7 @@ impl GroupCore {
             update,
             || doc.snapshot(),
             Some(meta),
+            receipt_ops,
         ) {
             *meta = previous_meta;
             // Never acknowledge or retain a day VV that exists only in memory.

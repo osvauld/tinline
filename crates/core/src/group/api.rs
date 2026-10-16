@@ -332,14 +332,15 @@ impl Node {
     }
 
     /// Everything up to now is read (for `unread`).
+    /// The cursor only moves forward; the step signs read receipts for the posts of others it
+    /// covers (`engine::member_receipts`).
     pub fn group_mark_read(&self, group_id: String) -> Result<(), Error> {
         let core = self.inner.group_core()?;
-        let mut groups = core.groups.lock();
-        let live = groups.get_mut(&group_id).ok_or(Error::NotFound)?;
-        let last_post = live.meta.last.as_ref().map_or(0, |b| b.at);
-        live.meta.read_upto = live.state.items.last().map_or(0, |i| i.at).max(last_post);
-        live.meta.unread = 0;
-        core.store.put_meta(&group_id, &live.meta)
+        core.mark_read(&group_id)?;
+        if let Err(e) = core.member_receipts_pump() {
+            tracing::warn!("group receipts: {e}");
+        }
+        Ok(())
     }
 
     /// Creates a group owned by us. This device becomes its first host (PROVISIONAL default:
