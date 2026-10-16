@@ -78,6 +78,13 @@ Tested on devices: Pixel 3a -> laptop HD with no flicker; phone-started video ca
       no fps floor; the real-AV1 loss scenario now holds 360p with p95 130 ms (was 91).
 - [ ] **Other callbacks may re-enter like `on_video_state` did** (the ART "detach while still
       running code" abort): check NodeEvents calls fired from inside app calls.
+- [ ] **Desktop AV1 hardware decode (VA-API)**, later: Iris Xe/Tiger Lake likely decodes AV1 on
+      the GPU (check `vainfo`). Saves CPU/battery; rav1d stays the fallback; runtime probe (drivers
+      differ per machine); same size caps as libvpx (the driver parses peer bytes). Decided
+      2026-10-16: after the easy wins (desktop VP8 encode, hardware-aware offer, indicator).
+- [ ] **Desktop hardware encode (VA-API VP9 or H.264)**, later: Tiger Lake has no AV1/VP8 encode,
+      so it needs a new codec; quality varies by driver; a second encoder for the ladder. Needs a
+      design note first.
 - [ ] **H.264 for phones without hardware VP8** (moto g52: hw H.264/HEVC only, sends software AV1 at
       360p). Researched: hw MediaCodec on phones; desktop via Cisco's OpenH264 binary downloaded at
       run time (user toggle, attribution). Read openh264.org/BINARY_LICENSE.txt first. Deferred.
