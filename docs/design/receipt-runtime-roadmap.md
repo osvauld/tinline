@@ -403,6 +403,12 @@ raise only `on_group_changed` (no per-message event yet).
   per member is acceptable ("messy is fine"). Optimize later — see TODO below.
 - **Order of work:** every group-receipt step is built with deterministic tests and
   simulations first, then validated on real nodes/apps.
+- **Group eligibility (confirmed 2026-10-16):** members as of the post's frontier who are
+  still members now; nobody eligible = one tick.
+- **Read receipts setting (2026-10-16):** per account, default on (`Node::set_read_receipts`,
+  Settings > Privacy on desktop/Android). Off: no read receipts issued (DM and group),
+  delivered still sent, others' reads still shown. PROVISIONAL defaults the user may change:
+  no reciprocity, no backdating (reads while off are never confirmed later).
 - **Delayed evidence (2026-10-16):** a late receipt from a removed device/member is accepted
   if it was signed while admitted; for groups "while admitted" is judged against the
   receipt's signed meta frontier (see "Group message receipts"). Late joiners do not send
@@ -423,9 +429,6 @@ raise only `on_group_changed` (no per-message event yet).
 
 - ~~Delayed evidence~~: decided 2026-10-16 (accepted if signed while admitted; group rule
   in "Group message receipts"). Still open: per-device revocation for groups (none exists).
-- Group eligibility for members removed after a post (implemented choice: they stop
-  blocking; their statements stay listed) and the "nobody eligible" mark (stays one tick).
-- Whether read receipts can be turned off (not asked yet).
 - How many durable replicas are required; shard finalization/revision authority.
 - Scoped freshness thresholds and upstream-outage/bypass behavior.
 
