@@ -287,76 +287,10 @@ pub fn data_dir() -> PathBuf {
     INIT.get().map(|i| i.data.clone()).unwrap_or_else(std::env::temp_dir)
 }
 
-/// The data directory before the rename to Tinline.
-fn legacy_data_dir() -> Option<PathBuf> {
-    directories::ProjectDirs::from("", "", "osvauld-p2p").map(|d| d.data_dir().to_path_buf())
-}
-
 fn default_data_dir() -> PathBuf {
-    let new = directories::ProjectDirs::from("com", "osvauld", "Tinline")
+    directories::ProjectDirs::from("com", "osvauld", "Tinline")
         .map(|d| d.data_dir().to_path_buf())
-        .unwrap_or_else(|| PathBuf::from("tinline"));
-    if let Some(old) = legacy_data_dir() {
-        match migrate_data_dir(&old, &new) {
-            Ok(true) => eprintln!("Tinline: moved {} to {}", old.display(), new.display()),
-            Ok(false) => {}
-            Err(e) => {
-                // Never run on a fresh empty directory while an identity sits in the old one:
-                // that would look like data loss. Keep using the old location instead.
-                eprintln!("Tinline: could not move {} to {}: {e}; using the old location", old.display(), new.display());
-                return old;
-            }
-        }
-    }
-    new
-}
-
-/// Whether a data root already holds an identity: the old single `profile.json`, or the account
-/// layout (`accounts/` directory or the `current` pointer) that core migrates it into.
-fn has_identity_files(root: &std::path::Path) -> bool {
-    root.join("profile.json").exists() || root.join("accounts").is_dir() || root.join("current").exists()
-}
-
-/// First start after the rename: moves the old data directory to the new one. Only when the old
-/// one has an identity and the new one has none, so an existing install never loses its keys and a
-/// new install never touches anything. Returns whether it moved.
-fn migrate_data_dir(old: &std::path::Path, new: &std::path::Path) -> std::io::Result<bool> {
-    if old == new || !has_identity_files(old) || has_identity_files(new) {
-        return Ok(false);
-    }
-    // An empty directory the new version created already is fine to replace; anything else is not.
-    if new.exists() && std::fs::read_dir(new)?.next().is_some() {
-        return Err(std::io::Error::other("the new directory is not empty"));
-    }
-    if let Some(parent) = new.parent() {
-        std::fs::create_dir_all(parent)?;
-    }
-    if new.exists() {
-        std::fs::remove_dir(new)?;
-    }
-    if std::fs::rename(old, new).is_ok() {
-        return Ok(true);
-    }
-    // Different filesystems: copy everything, and only then drop the old copy.
-    copy_dir(old, new).inspect_err(|_| {
-        let _ = std::fs::remove_dir_all(new);
-    })?;
-    std::fs::remove_dir_all(old)?;
-    Ok(true)
-}
-
-fn copy_dir(from: &std::path::Path, to: &std::path::Path) -> std::io::Result<()> {
-    std::fs::create_dir_all(to)?;
-    for e in std::fs::read_dir(from)? {
-        let e = e?;
-        let target = to.join(e.file_name());
-        if e.file_type()?.is_dir() {
-            copy_dir(&e.path(), &target)?;
-        } else {
-            std::fs::copy(e.path(), &target)?;
-        }
-    }
-    Ok(())
+        .unwrap_or_else(|| PathBuf::from("tinline"))
 }
 
 /// Lets scripts/desktop_e2e.py tell a test-hooks binary from a normal one.
@@ -510,6 +444,3 @@ fn main() -> Result<(), String> {
     });
     app::run().map_err(|e| e.to_string())
 }
-
-#[cfg(test)]
-mod migrate_tests;
