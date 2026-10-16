@@ -646,8 +646,8 @@ impl App {
             bubble = bubble.stroke(t.bub_in_line, 1.0);
         }
         if self.blocks.not_delivered(&m.peer_did, &m.id) && m.outgoing {
-            // .fail: under my message, danger, "Not delivered".
-            let note = container(tx(crate::blocks::not_delivered_text(name), 12.0, t.danger).line_height(lh(16.0))).align_right(Fill).padding(Padding { top: 3.0, right: 2.0, ..Padding::ZERO });
+            // .fail: under my message, the not-delivered ink (the tick's), "Not delivered".
+            let note = container(tx(crate::blocks::not_delivered_text(name), 12.0, t.tick_bad).line_height(lh(16.0))).align_right(Fill).padding(Padding { top: 3.0, right: 2.0, ..Padding::ZERO });
             return self.row_with_menu(t, m, name, bubble.into(), Some(note.into()));
         }
         self.row_with_menu(t, m, name, bubble.into(), None)

@@ -236,8 +236,9 @@ val TinColors.lav: Color get() = if (dark) Color(0xFF2F3A75) else Color(0xFFE1E4
 val TinColors.lavInk: Color get() = if (dark) Color(0xFFDFE3FF) else Color(0xFF374582)
 /** Receipt ticks (lab/ticks): read = lavender ink, not delivered = danger ink. On the sent bubble ([prc]):
  *  light read #374582 7.10 : 1 (OKLab ΔE 13.4 from the delivered ink), bad 5.75 : 1; dark read #B8B0FF 4.88 : 1
- *  (ΔE 14.8; the lav-ink token #DFE3FF looked near-white next to delivered), bad 5.62 : 1. */
+ *  (ΔE 14.8; the lav-ink token #DFE3FF looked near-white next to delivered), bad #FF6B6B 3.46 : 1 (user 2026-10-16: a
+ *  stronger red than the pale M3 error #F2B8B5); light bad stays the error ink (5.75 : 1). */
 val TinColors.tickRead: Color get() = if (dark) Color(0xFFB8B0FF) else lavInk
-val TinColors.tickBad: Color get() = er
+val TinColors.tickBad: Color get() = if (dark) Color(0xFFFF6B6B) else er
 val TinColors.gold: Color get() = if (dark) Color(0xFFE8B04A) else Color(0xFFC98A1E)
 val TinColors.goldInk: Color get() = if (dark) Color(0xFFE8B04A) else Color(0xFF845A10)
