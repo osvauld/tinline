@@ -87,6 +87,16 @@ pub fn video_recv_label(stats: &VideoStats) -> String {
     }
 }
 
+/// The codec of one direction for call details, from `VideoStats.{send,recv}_codec` and
+/// `{send,recv}_hardware`: "VP8 \u{b7} hardware", "AV1 \u{b7} software". Empty before the codec is decided.
+#[uniffi::export]
+pub fn video_codec_label(codec: String, hardware: bool) -> String {
+    if codec.is_empty() {
+        return String::new();
+    }
+    format!("{} \u{b7} {}", codec.to_uppercase(), if hardware { "hardware" } else { "software" })
+}
+
 /// A hint change that only shrinks the picture waits this long to be sure (window drags).
 const SHRINK_HOLD: Duration = Duration::from_secs(1);
 /// Decode cost above this % of the frame interval: one frame-rate tier down.

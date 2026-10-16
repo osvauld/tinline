@@ -55,6 +55,9 @@ pub(super) struct VideoUi {
     pub send_label: String,
     /// The label for what I receive ("Their video \u{b7} 540p \u{b7} 24 fps"), refreshed about once a second.
     pub recv_label: String,
+    /// Codec and hardware of each direction ("VP8 \u{b7} hardware"), for About this call; refreshed with `recv_label`.
+    pub send_codec: String,
+    pub recv_codec: String,
     recv_tick: u32,
     /// The last (width, height, visible) given to the core.
     view_sent: Option<(u32, u32, bool)>,
@@ -232,7 +235,12 @@ impl App {
     fn video_tick(&mut self) {
         if !self.demo {
             if self.video.recv_tick == 0 {
-                self.video.recv_label = self.node.video_stats().as_ref().map(p2pcore::video_recv_label).unwrap_or_default();
+                let stats = self.node.video_stats();
+                self.video.recv_label = stats.as_ref().map(p2pcore::video_recv_label).unwrap_or_default();
+                let codec = |c: &str, hw| p2pcore::video_codec_label(c.into(), hw);
+                (self.video.send_codec, self.video.recv_codec) = stats.as_ref().map_or_else(Default::default, |s| {
+                    (codec(&s.send_codec, s.send_hardware), codec(&s.recv_codec, s.recv_hardware))
+                });
             }
             self.video.recv_tick = (self.video.recv_tick + 1) % 30;
         }

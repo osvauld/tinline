@@ -63,9 +63,10 @@ Tested on devices: Pixel 3a -> laptop HD with no flicker; phone-started video ca
 - [x] **Desktop encodes VP8 (libvpx, software)** when the peer decodes VP8 in hardware (2026-10-16,
       branch feature/desktop-vp8-encode): `vpx::Vp8Encoder`, offer `hw_decode`/`hw_encode`, scoring
       `send_codec`. Pixel 3a <-> laptop on a device is still to be checked (design test 4).
-- [ ] **Show the codec and hardware acceleration** in the call: "VP8 · hardware" / "AV1 · software",
-      both directions. Core fields exist (`VideoStats.send_codec`/`recv_codec` and
-      `send_hardware`/`recv_hardware`); the UI in both apps is still to do.
+- [x] **Show the codec and hardware acceleration** in the call (2026-10-16): "About this call" in
+      both apps lists "Your video  VP8 · hardware" / "Their video  AV1 · software" while that
+      camera is on (rows reserved on a video call, blank when off). Text from core `video_codec_label`.
+      Not device-tested.
 - [ ] **Video stats in the signal-strength dialog** (both apps): send/receive size, fps, bitrate,
       codec + hardware, path (direct/relay), queueing delay, the cap and its reason.
 - [ ] **Old HD-chip wording blames the connection.** The desktop "sharper video paused ... their

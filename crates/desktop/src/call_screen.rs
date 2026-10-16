@@ -149,6 +149,14 @@ impl App {
                 content = content.push(container(tx(format!("{} ms round trip · {}% lost", st.rtt_ms, crate::call_ui::pct(self.call_ui.loss.pct())), 11.0, t.ink2))
                     .padding(Padding { top: 6.0, left: 34.0, ..Padding::ZERO }));
             }
+            // Codec per direction while that camera is on. Both rows stay on a video call (blank when off), so nothing moves.
+            if self.video.negotiated() {
+                for (who, on, what) in [("Your video", self.video.local_on(), &self.video.send_codec), ("Their video", self.video.remote_on(), &self.video.recv_codec)] {
+                    let what = if on { what.clone() } else { String::new() };
+                    content = content.push(container(row![container(tx(who, 11.0, t.ink2)).width(88), tx(what, 11.0, t.ink)].spacing(12))
+                        .padding(Padding { top: 6.0, left: 34.0, ..Padding::ZERO }).height(25));
+                }
+            }
             // Desktop keeps the real device selectors here, off the focus screen. No immediate-switch claim.
             for (title, devices, selected, on) in [
                 ("Microphone", &self.devices.0, &self.settings.input, Msg::InDev as fn(String) -> Msg),

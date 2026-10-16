@@ -75,7 +75,7 @@ pub use self::ffi_bytes::Bytes;
 #[cfg_attr(not(target_os = "android"), allow(unused_imports))]
 pub(crate) use self::frames::chroma_spans;
 pub(crate) use self::pipes::fit;
-pub use self::adapt::{VideoBudget, VideoSendCap, video_recv_label, video_send_label};
+pub use self::adapt::{VideoBudget, VideoSendCap, video_codec_label, video_recv_label, video_send_label};
 use self::frames::*;
 use self::pipes::*;
 

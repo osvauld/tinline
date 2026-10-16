@@ -388,3 +388,10 @@ fn recv_label_names_their_video() {
     assert_eq!(video_recv_label(&st(320, 180, 15)), "Their video \u{b7} 180p \u{b7} 15 fps");
     assert_eq!(video_recv_label(&st(960, 540, 0)), "Their video \u{b7} 540p");
 }
+
+#[test]
+fn codec_label_names_codec_and_hardware() {
+    assert_eq!(video_codec_label("vp8".into(), true), "VP8 \u{b7} hardware");
+    assert_eq!(video_codec_label("av1".into(), false), "AV1 \u{b7} software");
+    assert_eq!(video_codec_label(String::new(), true), "");
+}

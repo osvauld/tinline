@@ -57,6 +57,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import uniffi.p2pcore.CallInfo
 import uniffi.p2pcore.CallState
+import uniffi.p2pcore.videoCodecLabel
 import uniffi.p2pcore.videoRecvLabel
 import uniffi.p2pcore.videoSendLabel
 
@@ -337,6 +338,17 @@ fun InCallScreen(ui: CallUi, meName: String, app: P2pApp, onCameraOn: () -> Unit
             delay(1000)
         }
     }
+    // "VP8 · hardware" / "AV1 · software" per direction, for About this call.
+    val codecLabels by produceState<Pair<String, String>?>(null, ui.info.callId, v?.negotiated) {
+        value = null
+        if (v?.negotiated != true) return@produceState
+        while (true) {
+            value = withContext(Dispatchers.IO) {
+                runCatching { app.node.videoStats()?.let { videoCodecLabel(it.sendCodec, it.sendHardware) to videoCodecLabel(it.recvCodec, it.recvHardware) } }.getOrNull()
+            }
+            delay(1000)
+        }
+    }
     val sendSize = sendStats?.first
     val sendLabel = sendStats?.second?.takeIf { it.isNotEmpty() }
     val hdOn = effectivePreferHd(app.preferHdCapture, hdCall)
@@ -356,6 +368,7 @@ fun InCallScreen(ui: CallUi, meName: String, app: P2pApp, onCameraOn: () -> Unit
                 muted = ui.muted, speaker = ui.speaker, localCamera = v.localCamera, remoteCamera = v.remoteCamera,
                 problem = if (ui.held) HELD else ui.micProblem ?: videoProblem,
                 videoQuality = listOfNotNull(if (v.localCamera) hdNote?.text ?: sendLabel ?: "Starting video…" else null, recvLabel).joinToString("   ").ifEmpty { null },
+                sendCodec = codecLabels?.first.orEmpty(), recvCodec = codecLabels?.second.orEmpty(),
                 hd = hdOn, hdPaused = hdIsPaused, onHd = { app.video.setHd(!hdOn, hdIsPaused) },
                 onMute = { calls.toggleMute() }, onSpeaker = { calls.toggleSpeaker() }, onCamera = onCamera,
                 onFlip = { app.video.flip() }, onEnd = { calls.hangup() }, onMinimise = onMinimise, onMessage = onMessage,
@@ -470,7 +483,7 @@ fun VideoCallContent(
     routes: RouteState? = null, onRoute: (AudioRoute) -> Unit = {}, onAllowBtNames: (() -> Unit)? = null,
     onMessage: (() -> Unit)? = null,
     waitingCard: (@Composable (Modifier) -> Unit)? = null,
-    videoQuality: String? = null, hd: Boolean = false, hdPaused: Boolean = false, onHd: () -> Unit = {},
+    videoQuality: String? = null, sendCodec: String = "", recvCodec: String = "", hd: Boolean = false, hdPaused: Boolean = false, onHd: () -> Unit = {},
 ) {
     val c = Tin.c
     var info by remember { mutableStateOf(false) }
@@ -502,7 +515,8 @@ fun VideoCallContent(
             videoQuality?.let { Text(it, Modifier.padding(start = 52.dp), style = TinType.mono.copy(fontSize = 12.sp), color = Color.White.copy(alpha = 0.8f)) }
         }
         if (info) CallInfo(name, active = true, onDismiss = { info = false }, reconnecting = reconnecting, signal = bars ?: 0,
-            direct = direct, video = true)
+            direct = direct, video = true,
+            sendCodec = if (localCamera) sendCodec else "", recvCodec = if (remoteCamera) recvCodec else "")
         // Self-view: our camera (the front one mirrored), top right under the bar.
         if (localCamera) Box(Modifier.align(Alignment.TopEnd).statusBarsPadding().padding(top = 72.dp, end = 12.dp)
             .size(width = 104.dp, height = 140.dp).clip(SmoothCornerShape(16.dp)).background(Color.Black)

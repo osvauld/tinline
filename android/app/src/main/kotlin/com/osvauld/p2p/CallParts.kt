@@ -202,7 +202,8 @@ internal fun CallFocus(name: String, did: String, active: Boolean, ringing: Bool
  */
 @Composable
 internal fun CallInfo(name: String, active: Boolean, onDismiss: () -> Unit, reconnecting: Boolean = false,
-    signal: Int = 0, direct: Boolean? = null, rttMs: Int? = null, lossPct: Double? = null, video: Boolean = false) {
+    signal: Int = 0, direct: Boolean? = null, rttMs: Int? = null, lossPct: Double? = null, video: Boolean = false,
+    sendCodec: String = "", recvCodec: String = "") {
     val c = Tin.c
     val first = name.trim().substringBefore(' ')
     // An overlay in the call screen's own window (not a dialog window), so the system bar insets apply.
@@ -240,6 +241,13 @@ internal fun CallInfo(name: String, active: Boolean, onDismiss: () -> Unit, reco
                     }
                     if (up && rttMs != null) Text("$rttMs ms round trip · ${lossText(lossPct ?: 0.0)}% lost",
                         Modifier.padding(top = 6.dp, start = 34.dp), style = TinFs.meta, color = c.ink2)
+                    // Codec per direction while that camera is on. Both rows are always there on a video call
+                    // (blank when off), so the card never changes height.
+                    if (video) for ((who, what) in listOf("Your video" to sendCodec, "Their video" to recvCodec)) Row(
+                        Modifier.padding(top = 6.dp, start = 34.dp).heightIn(min = 19.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Text(who, Modifier.width(88.dp), style = TinFs.meta, color = c.ink2)
+                        Text(what, style = TinFs.meta, color = c.ink)
+                    }
                 } else Text(callPrivacy(false, name), Modifier.padding(top = 10.dp), style = p, color = c.ink2)
                 TinButton("Got it", onDismiss, Modifier.padding(top = 16.dp), height = 44.dp)
             }
