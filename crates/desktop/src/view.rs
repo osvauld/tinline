@@ -1277,6 +1277,20 @@ impl App {
             }
             _ => Space::new().into(),
         };
+        // The way back to the app (as on the voice screen); Esc does the same.
+        let minimize = iced::widget::tooltip(
+            button(container(ui::icon(Icon::ChevronDown, 24.0, t.ink)).center_x(44).center_y(44))
+                .padding(0)
+                .width(44)
+                .height(44)
+                .style(ui::button_style(t, Kind::Ghost, 999.0))
+                .on_press_maybe(active.then_some(Msg::CallUi(crate::call_ui::Action::Minimize))),
+            "Minimize call",
+            iced::widget::tooltip::Position::Bottom,
+        );
+        let top: El = row![minimize, container(top).center_x(Fill), Space::new().width(44)]
+            .align_y(Alignment::Center)
+            .into();
 
         let status: El = match (&c.state, incoming_ring) {
             (_, true) => tx("is calling you", 18.0, t.ink2).into(),
@@ -1375,7 +1389,7 @@ impl App {
         let hint = if incoming_ring {
             "Enter answers \u{b7} Esc declines"
         } else if active {
-            "End-to-end encrypted \u{b7} Ctrl M mute \u{b7} Ctrl E end"
+            "End-to-end encrypted \u{b7} Ctrl M mute \u{b7} Ctrl E end \u{b7} Esc minimizes"
         } else {
             "Ctrl E cancels"
         };

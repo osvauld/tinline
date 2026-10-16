@@ -454,9 +454,12 @@ fn main() -> Result<(), String> {
             }
             if let Some(v) = node.video_stats() {
                 tlog!(
-                    "VSTATS sent={} key={} send={}x{} kbps={} enc_ms={:.1} decoded={} errors={} recv={}x{}",
+                    "VSTATS sent={} key={} send={}x{} kbps={} enc_ms={:.1} decoded={} errors={} recv={}x{} \
+                     reports={} overuse={} starved={} drops={} q_ms={} q_base_ms={} delivered_kbps={} draining={}",
                     v.frames_sent, v.keyframes_sent, v.send_width, v.send_height, v.bitrate_bps / 1000,
-                    v.encode_ms, v.frames_decoded, v.decode_errors, v.recv_width, v.recv_height
+                    v.encode_ms, v.frames_decoded, v.decode_errors, v.recv_width, v.recv_height,
+                    v.rate_reports, v.rate_overuse, v.rate_starved, v.backlog_drops, v.last_queuing_us / 1000,
+                    v.queuing_offset_us / 1000, v.last_delivered_bps / 1000, v.draining
                 );
             }
         });

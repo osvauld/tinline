@@ -107,6 +107,11 @@ impl App {
                 }
             }
             Vm::Found(src) => {
+                // A chosen camera that is gone (unplugged, renumbered) is not swapped for another
+                // one (`camera::find_selected`), so say why the camera stays off.
+                if src.is_none() && self.settings.camera_device.is_some() {
+                    self.notice = Some("Your chosen camera isn't connected. Pick one in Settings \u{2192} Video.".into());
+                }
                 self.video.source = Some(src);
                 let intent = std::mem::take(&mut self.video_intent);
                 if self.video.has_camera()

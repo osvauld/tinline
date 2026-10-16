@@ -400,6 +400,23 @@ pub struct Sender {
     /// When set, every report with the encoder bitrate and rung after it (for tests).
     pub report_log: Option<Vec<(u64, RateReport, u32, usize)>>,
     pub drops: u64,
+    /// Why the rate went where it did (for call logs).
+    pub trace: RateTrace,
+}
+
+/// Receiver reports as the rate controller saw them, cumulative over the call (for call logs:
+/// a sender stuck at the floor shows which signal keeps cutting it).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct RateTrace {
+    pub reports: u64,
+    /// Reports whose queueing delay, less the learned baseline, was above `overuse_us`.
+    pub overuse: u64,
+    /// Reports that counted as starved (delivered well short of what we sent).
+    pub starved: u64,
+    /// The last report: raw queueing delay and delivered rate; the learned baseline.
+    pub last_queuing_us: u64,
+    pub last_delivered_bps: u32,
+    pub q_offset_us: u64,
 }
 
 impl Sender {
@@ -435,6 +452,7 @@ impl Sender {
             keyframes: 0,
             report_log: None,
             drops: 0,
+            trace: RateTrace::default(),
         }
     }
 
@@ -598,6 +616,11 @@ impl Sender {
             && sent - delivered >= self.cfg.starve_min_bps as u64;
         self.starved_n = if short { self.starved_n + 1 } else { 0 };
         let starved = self.starved_n >= self.cfg.starve_reports;
+        let t = &mut self.trace;
+        t.reports += 1;
+        t.overuse += (queuing_us > self.cfg.overuse_us) as u64;
+        t.starved += starved as u64;
+        (t.last_queuing_us, t.last_delivered_bps, t.q_offset_us) = (r.queuing_us, r.delivered_bps, self.q_offset);
         if self.settle_until.is_some() {
             self.settle_delivered.push(delivered);
         }

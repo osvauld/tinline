@@ -93,6 +93,17 @@ pub struct VideoStats {
     /// Complete validated AV1 payload received before decode/decoder-queue admission.
     pub received_payload_bytes: u64,
     pub frames_received: u64,
+    /// Receiver rate reports so far, and how many said "queueing" (delay above the overuse
+    /// threshold) or "starved"; restarts after a backlog. For call logs.
+    pub rate_reports: u64,
+    pub rate_overuse: u64,
+    pub rate_starved: u64,
+    pub backlog_drops: u64,
+    /// The last report's raw queueing delay and delivered rate, and the learned baseline.
+    pub last_queuing_us: u64,
+    pub last_delivered_bps: u32,
+    pub queuing_offset_us: u64,
+    pub draining: bool,
 }
 
 impl VideoStats {
