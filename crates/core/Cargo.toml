@@ -32,8 +32,9 @@ bench = ["dev-tools"]
 # Decode VP8 from phones' hardware encoders with libvpx (docs/design/video-hw-vp8.md). The linux
 # desktop enables it; Android uses `mediacodec` instead and never links libvpx.
 vp8 = ["video/vp8"]
-# Android: MediaCodec VP8 encoder/decoder (video_call/mediacodec.rs); the Android build enables it.
-mediacodec = []
+# Android hardware VP8 through the NDK AMediaCodec API (src/video_call/mediacodec.rs). The Android
+# build always passes it (android/app/build.gradle.kts); it has no effect on other targets.
+mediacodec = ["dep:ndk-sys"]
 
 [dependencies]
 proto.workspace = true
@@ -78,3 +79,4 @@ libc = "0.2"
 [target.'cfg(target_os = "android")'.dependencies]
 paranoid-android = "0.2"
 jni = { version = "0.21", default-features = false }
+ndk-sys = { version = "0.6", features = ["media"], optional = true }
