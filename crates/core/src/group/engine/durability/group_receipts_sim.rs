@@ -13,10 +13,11 @@ use crate::receipts::{Kind, Receipt, ReceiptError, receipt_id};
 use loro::{ExportMode, LoroDoc, LoroValue};
 
 const DAY: &str = "2026-10-16";
+/// The exporter's own ceilings (one frame holds every statement of these simulations).
 const LIMITS: BatchLimits = BatchLimits {
     bytes: crate::receipts::MAX_UPDATE_BYTES,
-    operations: 4096,
-    writers: 4096,
+    operations: crate::group::doc::batching::MAX_EXPORT_OPS,
+    writers: crate::group::doc::batching::MAX_EXPORT_WRITERS,
 };
 
 /// One device of one account, on its own sealed store.

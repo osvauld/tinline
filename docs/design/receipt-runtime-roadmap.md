@@ -422,7 +422,16 @@ raise only `on_group_changed` (no per-message event yet).
   Measurement: `receipt_count_and_bytes_per_post_by_group_size` (3/10/50 members, one post,
   everyone delivers and reads) prints statements and signed/frame bytes per post. Model:
   2*(N-1) statements per post per N-member group (plus duplicates from extra devices).
-  **Numbers pending** (test not yet run, ENOSPC). The `Receipt.messages` list already allows
+  Measured 2026-10-16 (`receipt_count_and_bytes_per_post_by_group_size`, debug test build):
+
+  | members | statements | signed bytes | per statement | full-day frame | one member's frame (delivered+read) |
+  |--------:|-----------:|-------------:|--------------:|---------------:|------------------------------------:|
+  | 3       | 4          | 1196         | 299           | 1626           | 824                                 |
+  | 10      | 18         | 6696         | 372           | 8554           | 970                                 |
+  | 50      | 98         | 76538        | 781           | 86556          | 1788                                |
+
+  Statements match 2*(N-1); bytes per statement grow with N, so per-post traffic grows
+  faster than linearly. The `Receipt.messages` list already allows
   one statement to cover up to 256 posts, so a range/batch receipt needs no format change.
 
 ## Decisions still open
