@@ -34,11 +34,10 @@ import kotlinx.coroutines.delay
 import uniffi.p2pcore.CallState
 
 /*
- * The minimised call (CallStrip.svelte / GroupCallStrip.svelte), decided 2026-10-14 in the in-call lab: at the BOTTOM
- * of the app, under the tab bar or the composer and above the system navigation, so nothing to tap sits by the ear and
- * the proximity sensor when I come back to the app mid-call. In flow: the app makes room for it. No End (in a chat it
- * would sit right under Send): ending is on the call screen and in the notification. While the keyboard is up it stays
- * (I may be writing to someone else) but slims to a 26 dp line above the keyboard.
+ * The minimised call (CallStrip.svelte / GroupCallStrip.svelte): at the TOP of the app, under the status bar (user,
+ * 2026-10-16: at the bottom it stacked with the search dock and the tab bar). In flow: the app makes room for it. No End
+ * (2026-10-14 in-call lab): it sits by the ear when I come back to the app mid-call, so ending is on the call screen and
+ * in the notification. While the keyboard is up it stays (I may be writing to someone else) but slims to a 26 dp line.
  */
 
 /** A 1:1 call I'm in, outside its call screen (an incoming call still ringing has its own screen). */
@@ -50,7 +49,7 @@ fun callStripOn(app: P2pApp): Boolean {
     return one || (g.active && g.minimized)
 }
 
-/** The strip(s) for the bottom of the app. The caller consumes the bottom insets for the content above while shown. */
+/** The strip(s) for the top of the app. The caller consumes the status bar inset for the content below while shown. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun CallStrips(app: P2pApp) {
@@ -60,9 +59,9 @@ fun CallStrips(app: P2pApp) {
     val slim = WindowInsets.isImeVisible
     val one = u?.takeIf { !(it.info.incoming && it.state is CallState.Ringing) && it.state !is CallState.Ended }
     val group = g.active && g.minimized
-    // The bottom insets are the strip's only while one shows (the app above gives them up then); with no call the
-    // screens keep their own navigation/keyboard padding, so it must not be counted here as well.
-    Column(Modifier.fillMaxWidth().then(if (one != null || group) Modifier.windowInsetsPadding(WindowInsets.navigationBars.union(WindowInsets.ime)) else Modifier)) {
+    // The status bar inset is the strip's only while one shows (the app below gives it up then); with no call the
+    // screens keep their own status bar padding, so it must not be counted here as well.
+    Column(Modifier.fillMaxWidth().then(if (one != null || group) Modifier.background(Tin.c.accent).windowInsetsPadding(WindowInsets.statusBars) else Modifier)) {
         AnimatedVisibility(one != null, enter = expandVertically(tween(160, delayMillis = 80)) + fadeIn(tween(160, delayMillis = 80)),
             exit = shrinkVertically(tween(160)) + fadeOut(tween(160))) {
             val c = one ?: return@AnimatedVisibility

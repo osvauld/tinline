@@ -87,8 +87,10 @@
   .st { display: inline-flex; }
   .gate { height: 100%; overflow: auto; background: var(--bg); }
   .win { position: relative; display: grid; grid-template-columns: 232px 380px 1fr; grid-template-rows: auto minmax(0, 1fr); height: 100%; background: var(--bg); }
-  .callstrip { grid-column: 2 / 4; grid-row: 1; min-width: 0; }
-  .side { grid-row: 1 / 3; }
+  /* The minimised call is the window's top bar, full width over the sidebar too (user, 2026-10-16: the same as the
+     phone's strip at the top). */
+  .callstrip { grid-column: 1 / 4; grid-row: 1; min-width: 0; }
+  .side { grid-row: 2; }
   .listpane, .detail { grid-row: 2; }
   .side { display: flex; flex-direction: column; gap: 8px; padding: 16px 12px; border-inline-end: 1px solid var(--hairline); }
   .brand { display: flex; align-items: center; gap: 8px; font-size: 19px; padding: 4px 8px 16px; }

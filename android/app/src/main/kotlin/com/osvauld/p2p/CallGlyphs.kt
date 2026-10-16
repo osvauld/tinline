@@ -15,11 +15,11 @@ internal object CallGlyphs {
             strokeLineWidth = 1.8f, strokeLineCap = StrokeCap.Round, strokeLineJoin = StrokeJoin.Round)
     }.build()
     private fun t(i: TinIcon): ImageVector = i.at(24.dp).all
-    // The Tinline line icons (crates/tin-icons): the mark answers, the dropped line ends. No handset.
+    // The Tinline line icons (crates/tin-icons): the mark answers; End is the phone can turned down (`hangup`).
     val Chev = t(TinIcons.Chev)
     val Info = t(TinIcons.Info)
     val Phone = t(TinIcons.Call)
-    val End = t(TinIcons.Callend)
+    val End = t(TinIcons.Hangup)
     val Mic = t(TinIcons.Mic)
     val MicOff = t(TinIcons.Micoff)
     val Speaker = t(TinIcons.Vol)

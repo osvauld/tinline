@@ -19,9 +19,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.ime
-import androidx.compose.foundation.layout.union
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
@@ -273,13 +271,14 @@ private fun Root(app: P2pApp) {
     val unlinkedName by app.unlinked.collectAsState()
     // The account went away (unlinked here or from another device): leave whatever screen was open.
     LaunchedEffect(has) { if (!has) home() }
-    // A minimised call's strip sits in flow at the bottom (CallStrip.kt), above the keyboard or the navigation bar, and
-    // takes those insets from the app above it; the group call screen lies over all.
+    // A minimised call's strip sits in flow at the top (CallStrip.kt), under the status bar, and takes that inset from
+    // the app below it; the group call screen lies over all.
     val stripOn = callStripOn(app)
     Box(Modifier.fillMaxSize()) {
     Column(Modifier.fillMaxSize()) {
+    CallStrips(app)
     Box(Modifier.weight(1f).fillMaxWidth()
-        .then(if (stripOn) Modifier.consumeWindowInsets(WindowInsets.navigationBars.union(WindowInsets.ime)) else Modifier)) {
+        .then(if (stripOn) Modifier.consumeWindowInsets(WindowInsets.statusBars) else Modifier)) {
     when {
         unlinkedName != null -> UnlinkedScreen(unlinkedName!!, onOk = { app.dismissUnlinked(); home() },
             onLinkAgain = { app.dismissUnlinked(); if (!app.node.hasIdentity()) onboarding = true else addAccount(false, link = true) })
@@ -450,7 +449,6 @@ private fun Root(app: P2pApp) {
     }
     androidx.compose.material3.SnackbarHost(snack, Modifier.align(androidx.compose.ui.Alignment.BottomCenter).navigationBarsPadding().padding(16.dp))
     }
-    CallStrips(app)
     }
     GroupCallLayer(app)
     }
