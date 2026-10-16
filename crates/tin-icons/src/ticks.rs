@@ -35,8 +35,12 @@ pub struct TickP {
     pub dx_small: f64,
 }
 
-/// tick-math.ts `PRESETS.crisp`.
-pub const CRISP: TickP = TickP { k1: [6.0, 12.0], k2: [19.5, 4.0], s: 7.5, psi: -35.0, sw: 2.1, dx: 5.0, gap: 1.0, dx_small: 6.0 };
+/// The lab's `PRESETS.crisp` string, tuned on 2026-10-16 after the 11–12 px review (the user's go-ahead): the lab
+/// values (K1 (6,12), sag 7.5, ψ −35°, dx 5) read as "//" with a small hook at 12 px, because the curve left K1
+/// heading down-LEFT. Now the short arm is longer (K1 up and left), the control point sits below the corner so the
+/// string leaves K1 down-right and turns tightly (sag 9.1, ψ −21°), and the second tick sits 6 units over (the slot
+/// is unchanged: 20 + max(dx, 6) = 26). Still one quadratic string, no Euler corner.
+pub const CRISP: TickP = TickP { k1: [4.5, 11.5], k2: [20.0, 4.5], s: 9.1, psi: -21.0, sw: 2.1, dx: 6.0, gap: 1.0, dx_small: 6.0 };
 /// Points per string; every state uses exactly this many.
 pub const N: usize = 40;
 /// Rest sag of the mark's slack string (MARK-MATH §2).
@@ -251,8 +255,13 @@ mod tests {
         let p = CRISP;
         let t = tick_pts(&p);
         assert_eq!(t.len(), N);
-        assert!((t[0][0] - 6.0).abs() < 1e-9 && (t[0][1] - 12.0).abs() < 1e-9);
-        assert!((t[N - 1][0] - 19.5).abs() < 1e-9 && (t[N - 1][1] - 4.0).abs() < 1e-9);
+        assert!((t[0][0] - p.k1[0]).abs() < 1e-9 && (t[0][1] - p.k1[1]).abs() < 1e-9);
+        assert!((t[N - 1][0] - p.k2[0]).abs() < 1e-9 && (t[N - 1][1] - p.k2[1]).abs() < 1e-9);
+        // It reads as a tick: it leaves K1 heading down-right (no hook back to the left), turns at a corner well
+        // below both ends, and the long arm rises to K2.
+        assert!(t[1][0] > t[0][0] && t[1][1] > t[0][1], "short arm starts down-right: {:?}", &t[..3]);
+        let low = t.iter().cloned().fold([0.0, f64::MIN], |a, q| if q[1] > a[1] { q } else { a });
+        assert!(low[1] > p.k1[1] + 3.0 && low[0] > p.k1[0] + 2.0 && low[0] < 12.0, "corner {low:?}");
         // The Bézier's true midpoint sags exactly s from the chord's midpoint, along ψ.
         let c = ctrl(&p);
         let mid = [(p.k1[0] + 2.0 * c[0] + p.k2[0]) / 4.0, (p.k1[1] + 2.0 * c[1] + p.k2[1]) / 4.0];
@@ -262,10 +271,11 @@ mod tests {
         let seg: Vec<f64> = t.windows(2).map(|w| (w[1][0] - w[0][0]).hypot(w[1][1] - w[0][1])).collect();
         let avg = seg.iter().sum::<f64>() / seg.len() as f64;
         assert!(seg.iter().all(|d| (d - avg).abs() / avg < 0.05), "{seg:?}");
-        // Lab values (tick-math.ts stringPts(PRESETS.crisp), node, 2026-10-15): first points and the end.
-        for (i, want) in [(1, [5.899, 12.509]), (6, [6.507, 14.776]), (20, [12.520, 10.952])] {
-            assert!((t[i][0] - want[0]).abs() < 2e-3 && (t[i][1] - want[1]).abs() < 2e-3, "{i}: {:?}", t[i]);
-        }
+        // The construction is the lab's (tick-math.ts stringPts); with the lab's crisp numbers it matched node to
+        // 3 decimals on 2026-10-15 (e.g. point 6 = (6.507, 14.776)). Keep that check on the formula itself.
+        let lab = TickP { k1: [6.0, 12.0], k2: [19.5, 4.0], s: 7.5, psi: -35.0, ..p };
+        let lt = tick_pts(&lab);
+        assert!((lt[6][0] - 6.507).abs() < 2e-3 && (lt[6][1] - 14.776).abs() < 2e-3, "{:?}", lt[6]);
         let s = slack_pts(&t);
         assert_eq!(s.len(), N);
         assert_eq!(s[0], t[0]);
