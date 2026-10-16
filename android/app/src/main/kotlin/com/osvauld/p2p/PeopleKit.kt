@@ -42,6 +42,7 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.rotate
@@ -58,6 +59,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
@@ -684,6 +686,7 @@ fun PfAct(
     enabled: Boolean = true, subColor: Color? = null, subBold: Boolean = false, minHeight: Dp = 60.dp, leading: (@Composable () -> Unit)? = null,
     titleStyle: TextStyle = PgType.bodyB, gap: Dp = 14.dp, padV: Dp = 8.dp, subMaxLines: Int = Int.MAX_VALUE, padH: Dp = 16.dp,
     shape: androidx.compose.ui.graphics.Shape? = null, role: Role = Role.Button, plain: Boolean = false, extraLines: (@Composable ColumnScope.() -> Unit)? = null,
+    subReserve: List<String> = emptyList(),
     trailing: (@Composable () -> Unit)? = null,
 ) {
     val c = Tin.c
@@ -700,8 +703,15 @@ fun PfAct(
         else if (icon != null) Icon(icon, null, Modifier.size(20.dp), tint = if (danger) c.er else c.ink2)
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
             Text(title, style = titleStyle, color = if (danger) c.er else c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            if (!sub.isNullOrEmpty()) Text(sub, style = PgType.sub.copy(fontWeight = if (subBold) FontWeight.SemiBold else FontWeight.Normal, fontFeatureSettings = "tnum"),
-                color = subColor ?: c.ink2, maxLines = subMaxLines, overflow = TextOverflow.Ellipsis)
+            if (!sub.isNullOrEmpty()) {
+                val subStyle = PgType.sub.copy(fontWeight = if (subBold) FontWeight.SemiBold else FontWeight.Normal, fontFeatureSettings = "tnum")
+                // No layout shift: [subReserve] lists every text this sub can switch to. They are laid out invisibly
+                // underneath, so the line keeps the height of the tallest variant at any width or font scale.
+                Box {
+                    subReserve.forEach { alt -> if (alt != sub) Text(alt, Modifier.alpha(0f).clearAndSetSemantics {}, style = subStyle, maxLines = subMaxLines) }
+                    Text(sub, style = subStyle, color = subColor ?: c.ink2, maxLines = subMaxLines, overflow = TextOverflow.Ellipsis)
+                }
+            }
             extraLines?.invoke(this)
         }
         trailing?.invoke()

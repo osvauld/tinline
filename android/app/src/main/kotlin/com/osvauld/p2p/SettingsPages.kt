@@ -346,7 +346,8 @@ fun PrivacyLanding(blockedN: Int, msgOnly: Int, hasPassphrase: Boolean, onBack: 
             PfCard {
                 act {
                     PfAct("Read receipts", onClick = { onReadReceipts(!readReceipts) }, icon = PgIcons.Check, role = Role.Switch, plain = true,
-                        sub = if (readReceipts) "People see when you’ve read their messages" else "Your reads stay with you",
+                        sub = if (readReceipts) READ_RECEIPTS_ON else READ_RECEIPTS_OFF,
+                        subReserve = listOf(READ_RECEIPTS_ON, READ_RECEIPTS_OFF), // both heights reserved: flipping moves nothing
                         trailing = { PgSwitch(readReceipts, onReadReceipts, "Read receipts") })
                 }
             }
@@ -354,6 +355,9 @@ fun PrivacyLanding(blockedN: Int, msgOnly: Int, hasPassphrase: Boolean, onBack: 
         }
     }
 }
+
+private const val READ_RECEIPTS_ON = "People see when you’ve read their messages"
+private const val READ_RECEIPTS_OFF = "Your reads stay with you"
 
 data class CallsRow(val did: String, val name: String, val allowed: Boolean)
 
