@@ -617,7 +617,7 @@ impl App {
         self.add_ui.answering = true;
         if self.demo {
             let name = self.add_ui.incoming.as_ref().map(|i| i.name.clone()).unwrap_or_default();
-            let c = p2pcore::Contact { did: did.clone(), name, device: String::new(), added_at: 0, alias: None, verified: false };
+            let c = p2pcore::Contact { did: did.clone(), name, device: String::new(), added_at: 0, alias: None, verified: false, lost_touch: false };
             return Task::done(Msg::RequestAnswered(did, Ok(c)));
         }
         let node = self.node.clone();
@@ -800,7 +800,7 @@ impl App {
             self.recents.clear();
             self.ticket = Some(CODE.into());
             self.qr = super::view::qr_of(CODE);
-            let tara = p2pcore::Contact { did: "did:key:z6MkTara".into(), name: "Tara Iyer".into(), device: "ab12".into(), added_at: 0, alias: None, verified: false };
+            let tara = p2pcore::Contact { did: "did:key:z6MkTara".into(), name: "Tara Iyer".into(), device: "ab12".into(), added_at: 0, alias: None, verified: false, lost_touch: false };
             let peek = p2pcore::CardPeek { ticket: "OSVC2:TARA".into(), name: "Tara Iyer".into(), did: tara.did.clone(), known: false };
             let req = p2pcore::ContactRequest { did: tara.did.clone(), name: "Tara Iyer".into(), at: 0, expires_at: 0 };
             self.ticket_exp = Some(1_792_400_000);

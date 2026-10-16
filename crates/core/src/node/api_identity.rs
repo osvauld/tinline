@@ -42,6 +42,7 @@ impl Node {
             group: Default::default(),
             caps: Default::default(),
             devlist: Default::default(),
+            rotation: Default::default(),
             profile_events: Default::default(),
             profile_downloads: Default::default(),
             profile_fetches: Arc::new(Semaphore::new(4)),

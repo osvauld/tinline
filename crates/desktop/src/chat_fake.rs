@@ -289,6 +289,7 @@ impl Fake {
             last_delivery: last.map(|m| m.delivery).unwrap_or(DeliveryState::Delivered),
             last_activity: last.map(|m| m.at).unwrap_or(0),
             unread: st.unread.get(peer).copied().unwrap_or(0),
+            last_id: last.map(|m| m.id.clone()),
         }
     }
 

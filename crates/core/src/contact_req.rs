@@ -273,7 +273,9 @@ impl Inner {
             return Err(Error::Rejected(crate::BLOCKED.into()));
         }
         // Checked again: the code may have expired since, or another device of ours added them.
-        let (welcome, new) = proto::accept_contact_hello_with(&me.id, me.device, &req.hello, req.device, now * 1000, &proto::Unrecorded, crate::node::GRANT_TTL, |d| {
+        // Under the key their ticket named: after a rotation, the previous one.
+        let on = req.on.unwrap_or(me.device);
+        let (welcome, new) = proto::accept_contact_hello_with(&me.id, on, &req.hello, req.device, now * 1000, &proto::Unrecorded, crate::node::GRANT_TTL, |d| {
             crate::caps::policy_for(&next, d, crate::caps::ContactOrigin::Ticket)
         })?;
         if new.did != did {
@@ -282,11 +284,15 @@ impl Inner {
         let calls_allowed = matches!(&welcome, Msg::ContactWelcome { call_grant_for_you: Some(_), .. });
         let stored = stored_contact(&new, req.relay.clone(), calls_allowed);
         let contact = Contact::from(&stored);
-        let out = WelcomeOut { welcome, device: req.device, relay: req.relay.clone(), until: now + WELCOME_GRACE };
+        let out = WelcomeOut { welcome, device: req.device, relay: req.relay.clone(), from: Some(on), until: now + WELCOME_GRACE };
         let apply = |st: &mut crate::store::State| {
             st.redeemed.insert(proto::redeemed_key(&new.did, &new.redeemed_nonce));
             st.contact_requests.remove(did);
             st.welcome_outbox.insert(did.to_string(), out.clone());
+            if on != me.device {
+                // They hold our previous key from the ticket: they are owed the new one.
+                st.list_outbox.insert(did.to_string());
+            }
             apply_contact(st, stored.clone(), new.device, false)
         };
         apply(&mut next)?;
@@ -370,15 +376,24 @@ impl Inner {
             let mut round = 0usize;
             loop {
                 let Ok(me) = this.me() else { break };
-                let Ok(ep) = this.endpoint() else { break };
                 let Some(out) = this.shared.lock().state.welcome_outbox.get(&did).cloned() else { break };
                 if now() > out.until {
                     this.welcome_done(&did, &out, me.epoch, "gave up delivering the welcome").await;
                     break;
                 }
+                // From the endpoint of the key the Welcome is made under (the joiner checks it).
+                let Some(ep) = this.endpoint_of(out.from.unwrap_or(me.device)) else {
+                    if this.endpoint().is_err() {
+                        break;
+                    }
+                    this.welcome_done(&did, &out, me.epoch, "gave up delivering the welcome: the address it was asked at has closed").await;
+                    break;
+                };
                 match this.deliver_welcome(&ep, &did, &out).await {
                     Ok(true) => {
                         this.welcome_done(&did, &out, me.epoch, "welcome delivered").await;
+                        // A list owed to them waited for this (`lists_kick`).
+                        this.lists_kick(did.clone());
                         break;
                     }
                     Ok(false) => {

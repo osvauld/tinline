@@ -65,6 +65,8 @@ fn registry(node: &Node, remote: [u8; 32]) {
             removed: false,
             last_seen: 0,
             relay: None,
+            links: Vec::new(),
+            rotated: false,
         });
 }
 

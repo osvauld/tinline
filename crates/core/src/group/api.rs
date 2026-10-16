@@ -333,14 +333,32 @@ impl Node {
     }
 
     /// Everything up to now is read (for `unread`).
+    /// Signed member receipts of MY posts with `at` in `[from_ms, to_ms]` (a loaded page): the
+    /// group tick (`Waiting` one tick, `Delivered` when every eligible member confirmed, `Read`
+    /// when every eligible member read) and n/N. Blocking. Re-read after `on_group_changed`.
+    pub fn group_receipts(&self, group_id: String, from_ms: u64, to_ms: u64) -> Result<Vec<crate::group::member_receipts::GroupReceiptStatus>, Error> {
+        let core = self.inner.group_core()?;
+        core.member_receipts_range(&group_id, from_ms as i64, to_ms as i64, true)
+    }
+
+    /// One post's member receipts (any author: members see everyone's), for its details.
+    /// `at_ms` is the post's `GroupMessage.at`. Blocking.
+    pub fn group_message_receipts(&self, group_id: String, message_id: String, at_ms: u64) -> Result<crate::group::member_receipts::GroupReceiptStatus, Error> {
+        let core = self.inner.group_core()?;
+        let at = at_ms as i64;
+        core.member_receipts_range(&group_id, at, at, false)?.into_iter().find(|s| s.message_id == message_id).ok_or(Error::NotFound)
+    }
+
+    /// The cursor only moves forward; the step signs read receipts for the posts of others it
+    /// covers (`engine::member_receipts`).
     pub fn group_mark_read(&self, group_id: String) -> Result<(), Error> {
         let core = self.inner.group_core()?;
-        let mut groups = core.groups.lock();
-        let live = groups.get_mut(&group_id).ok_or(Error::NotFound)?;
-        let last_post = live.meta.last.as_ref().map_or(0, |b| b.at);
-        live.meta.read_upto = live.state.items.last().map_or(0, |i| i.at).max(last_post);
-        live.meta.unread = 0;
-        core.store.put_meta(&group_id, &live.meta)
+        // The account's read-receipt setting lives with the chat settings. Unknown = off: never
+        // send a read confirmation the user may have turned off.
+        let reads = self.inner.chat_core().map(|c| c.store.read_receipts()).unwrap_or(false);
+        core.mark_read(&group_id, reads)?;
+        core.member_receipts_pump_and_push();
+        Ok(())
     }
 
     /// Creates a group owned by us. This device becomes its first host (PROVISIONAL default:

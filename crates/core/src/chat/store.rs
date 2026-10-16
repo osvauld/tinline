@@ -379,6 +379,17 @@ impl ChatStore {
         self.db.put("set/auto_download", &bytes.to_be_bytes()).map_err(Error::from)
     }
 
+    /// Settings > Privacy "Read receipts" (default on). Off: this account issues no read
+    /// receipts (DM and group); delivered receipts still go out and others' reads still show.
+    /// PROVISIONAL defaults (user may change): no reciprocity, no backdating when turned on.
+    pub fn read_receipts(&self) -> bool {
+        !matches!(self.db.get("set/read_receipts").ok().flatten().and_then(|b| b.first().copied()), Some(0))
+    }
+
+    pub fn set_read_receipts(&self, on: bool) -> Result<(), Error> {
+        self.db.put("set/read_receipts", &[u8::from(on)]).map_err(Error::from)
+    }
+
     pub fn picture_download(&self) -> PictureDownload {
         match self.db.get("set/dl_policy").ok().flatten().and_then(|b| b.first().copied()) {
             Some(1) => PictureDownload::Wifi,
@@ -423,3 +434,6 @@ impl ChatStore {
         self.db.put_op(&format!("mi/{pair}/{id}"), day.as_bytes()).map_err(Error::from)
     }
 }
+
+#[cfg(test)]
+mod read_receipts_tests;

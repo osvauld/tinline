@@ -64,6 +64,7 @@ fn device_list_forged_wrong_did_and_limits() {
         did: a.id.did().into(),
         seq: 1,
         devices: vec![],
+        links: vec![],
     };
     l.devices = (0..=MAX_LIST_DEVICES).map(|_| entry(dev())).collect();
     assert_eq!(
@@ -91,4 +92,35 @@ fn device_list_ordering() {
     assert_eq!(newer(&x, &y), x.sig() > y.sig());
     let junk = Signed::<DeviceList>::from_parts(vec![0xff; 3], [0; 64]);
     assert!(newer(&old, &junk) && !newer(&junk, &old));
+}
+
+// ---- succession (private endpoint rotation) ----------------------------------------
+
+#[test]
+fn succession_chain_leads_back_to_a_known_key_only_with_old_key_signatures() {
+    let (a, b) = (peer(), peer());
+    let (k0, k1, k2) = (new_device_secret(), new_device_secret(), new_device_secret());
+    let pk = |k: &[u8; 32]| cryptography::signature::public_key(k);
+    let did = a.id.did();
+    let l01 = sign_succession(&k0, did, pk(&k1));
+    let l12 = sign_succession(&k1, did, pk(&k2));
+    assert!(verify_succession(&l01, did));
+    assert!(!verify_succession(&l01, b.id.did()), "bound to the DID");
+    let blob = sign_device_list_with(&a.id, &[(pk(&k2), None)], &[l01.clone(), l12.clone()], 5);
+    let l = verify_device_list(&blob, did).unwrap();
+    let knows = |k: [u8; 32]| move |d: &[u8; 32]| *d == k;
+    // Two rotations while we were away: the chain still leads back.
+    assert!(succeeds(&l, &pk(&k2), knows(pk(&k0))));
+    assert!(succeeds(&l, &pk(&k2), knows(pk(&k1))));
+    // A key we never knew, or a link signed by the new key instead of the old one, is not one.
+    assert!(!succeeds(&l, &pk(&k2), knows(dev())));
+    let mut forged = l12.clone();
+    forged.sig = sign_succession(&k2, did, pk(&k2)).sig;
+    let blob = sign_device_list_with(&a.id, &[(pk(&k2), None)], &[l01, forged], 6);
+    let l = verify_device_list(&blob, did).unwrap();
+    assert!(!succeeds(&l, &pk(&k2), knows(pk(&k0))));
+    // Too many links, or a malformed one, do not decode.
+    let many: Vec<_> = (0..=MAX_LIST_LINKS).map(|_| sign_succession(&new_device_secret(), did, dev())).collect();
+    let list = DeviceList { did: did.into(), seq: 1, devices: vec![DeviceEntry { device: dev(), relay: None }], links: many };
+    assert_eq!(Signed::sign(&list, &a.id).err(), Some(Error::Decode));
 }

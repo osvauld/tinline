@@ -20,6 +20,7 @@ pub(crate) use tlog;
 mod app;
 mod geom;
 mod shaped;
+mod tallest;
 /// Contact blocking on the core's API: state the screens read, and the dialog copy.
 mod blocks;
 mod emoji;

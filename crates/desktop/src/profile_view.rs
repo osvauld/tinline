@@ -130,14 +130,32 @@ pub(super) fn icon_button<'a>(t: Tok, icon: &'static str, color: Color, on: Msg)
 /// `.pf-act`: 60px min, 8 16 padding, 14 gap, 20px muted icon, 600 15/20 title, 13/18 muted line.
 #[allow(clippy::too_many_arguments)]
 pub(super) fn pf_act<'a>(t: Tok, icon: Option<&'static str>, title: String, sub: Option<(String, Color, bool)>, end: Option<El<'a>>, on: Option<Msg>, danger: bool, r: Radius) -> El<'a> {
+    pf_act_el(t, icon, title, sub.map(|(s, c, strong)| pf_act_sub(s, c, strong)), end, on, danger, r)
+}
+
+/// The `.pf-act` line under the title: 13/18.
+fn pf_act_sub<'a>(s: String, c: Color, strong: bool) -> El<'a> {
+    text(s).size(13).color(c).font(if strong { ui::SANS_SEMI } else { ui::SANS }).line_height(lh(18.0)).into()
+}
+
+/// `pf_act` whose line switches between `variants` (`shown` picks one) but keeps the height of the tallest,
+/// so changing it moves nothing below (no layout shift at any width).
+#[allow(clippy::too_many_arguments)]
+pub(super) fn pf_act_reserved<'a>(t: Tok, icon: Option<&'static str>, title: String, variants: &[&'static str], shown: usize, c: Color, end: Option<El<'a>>, on: Option<Msg>, r: Radius) -> El<'a> {
+    let sub = crate::tallest::tallest(variants.iter().map(|v| pf_act_sub((*v).into(), c, false)).collect(), shown);
+    pf_act_el(t, icon, title, Some(sub.into()), end, on, false, r)
+}
+
+#[allow(clippy::too_many_arguments)]
+fn pf_act_el<'a>(t: Tok, icon: Option<&'static str>, title: String, sub: Option<El<'a>>, end: Option<El<'a>>, on: Option<Msg>, danger: bool, r: Radius) -> El<'a> {
     let ink = if danger { t.danger } else { t.ink };
     let mut row_ = row![].spacing(14).align_y(Alignment::Center);
     if let Some(i) = icon {
         row_ = row_.push(pgi(i, 20.0, if danger { t.danger } else { t.ink2 }));
     }
     let mut txt = column![semi(title, 15.0, ink).line_height(lh(20.0)).wrapping(iced::widget::text::Wrapping::None)].spacing(1).width(Fill);
-    if let Some((s, c, strong)) = sub {
-        txt = txt.push(text(s).size(13).color(c).font(if strong { ui::SANS_SEMI } else { ui::SANS }).line_height(lh(18.0)));
+    if let Some(s) = sub {
+        txt = txt.push(s);
     }
     row_ = row_.push(txt);
     if let Some(e) = end {
@@ -543,7 +561,8 @@ impl App {
         None
     }
 
-    /// privacy/Privacy.svelte: one row per area. Read receipts and online visibility aren't offered: the core has neither.
+    /// privacy/Privacy.svelte: one row per area, then the read-receipt switch (core account setting). Online
+    /// visibility isn't offered: the core has none.
     fn privacy_landing(&self, t: Tok) -> El<'_> {
         let blocked = self.blocks.list.len();
         let msg_only = self.contacts.iter().filter(|c| !self.blocks.blocked_by_me(&c.did) && !self.blocks.calls_allowed(&c.did)).count();
@@ -556,8 +575,15 @@ impl App {
         let rows: Vec<RowFn> = rows_.into_iter().map(|(icon, label, sub, id)| -> RowFn<'_> {
             Box::new(move |r| pf_act(t, Some(icon), label.into(), Some((sub, t.ink2, false)), Some(chevron(t)), Some(m(Action::Open(Page::Native(id)))), false, r))
         }).collect();
+        let reads = self.profiles.read_receipts.unwrap_or(true);
+        // Both lines are laid out and the taller one's height kept: flipping the switch moves nothing.
+        let receipts: Vec<RowFn> = vec![Box::new(move |r| pf_act_reserved(t, Some("check"), "Read receipts".into(),
+            &["People see when you\u{2019}ve read their messages", "Your reads stay with you"], if reads { 0 } else { 1 }, t.ink2,
+            Some(pg_switch(t, reads, m(Action::SetReadReceipts(!reads)))), None, r))];
         let c = pf_sec(16.0, column![pf_card(t, rows),
-            pf_note(t, "Your contacts see your name, picture and profile. Tinline doesn\u{2019}t hide who you talk to, and every device linked to your account can read your chats.")].into());
+            pf_note(t, "Your contacts see your name, picture and profile. Tinline doesn\u{2019}t hide who you talk to, and every device linked to your account can read your chats."),
+            container(pf_card(t, receipts)).padding(Padding { top: 24.0, ..Padding::ZERO }),
+            pf_note(t, "Delivered ticks still go out either way, and you still see when others read yours. Messages you read while this is off stay unconfirmed.")].into());
         self.pf_scroll(t, c, 40.0)
     }
 

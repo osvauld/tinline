@@ -405,7 +405,7 @@ impl Inner {
                     e.removed = false;
                     e.last_seen = now();
                 }
-                None => s.state.registry.push(OwnDevice { device: remote, attestation, label: linked.label.clone(), removed: false, last_seen: now(), relay }),
+                None => s.state.registry.push(OwnDevice { device: remote, attestation, label: linked.label.clone(), removed: false, last_seen: now(), relay, links: Vec::new(), rotated: false }),
             }
         }
         let _ = self.persist_for(Some(me.epoch));
@@ -487,6 +487,8 @@ impl Inner {
                 removed: r.removed,
                 last_seen: 0,
                 relay: if &device == e_dev { e_relay.clone() } else { None },
+                links: Vec::new(),
+                rotated: false,
             });
         }
         if !registry.iter().any(|e| &e.device == e_dev && !e.removed) {
@@ -502,7 +504,7 @@ impl Inner {
         let (vault, dek) = vault::seal(&secrets, None).map_err(|_| "rejected")?;
         let disk = Disk::V2(ProfileV2 { version: 2, name: me.profile.name.clone(), did: did.clone(), device_public: me.device, vault, device_id: Some(crate::store::new_device_id()), profile_name_pending: false, profile_inherited: true });
         registry.retain(|e| e.device != me.device);
-        registry.insert(0, OwnDevice { device: me.device, attestation: me.attestation.clone(), label: label.to_string(), removed: false, last_seen: now(), relay: None });
+        registry.insert(0, OwnDevice { device: me.device, attestation: me.attestation.clone(), label: label.to_string(), removed: false, last_seen: now(), relay: None, links: Vec::new(), rotated: false });
         let state = State { registry, ..State::default() };
         let me = {
             let mut s = self.shared.lock();

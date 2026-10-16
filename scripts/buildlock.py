@@ -178,13 +178,16 @@ def place_target():
 # would be faster still, but agents on different branches would overwrite each other's binaries.
 SCCACHE_DIR = CACHE / "sccache"
 SCCACHE_SIZE = "30G"
+RUSTC_SHIM = Path(__file__).resolve().parent / "sccache-rustc.sh"
 
 
 def share_compiles(env):
     """Points cargo at sccache when it is installed and the cache disk is mounted; else nothing."""
     if env.get("RUSTC_WRAPPER") or not shutil.which("sccache") or not os.path.ismount(CACHE):
         return
-    env["RUSTC_WRAPPER"] = "sccache"
+    # sccache through scripts/sccache-rustc.sh: a stable OUT_DIR for downloaded crates, else
+    # sccache misses every crate with a build script (and its dependents) in a second worktree.
+    env["RUSTC_WRAPPER"] = str(RUSTC_SHIM) if RUSTC_SHIM.exists() else "sccache"
     env.setdefault("SCCACHE_DIR", str(SCCACHE_DIR))
     env.setdefault("SCCACHE_CACHE_SIZE", SCCACHE_SIZE)
 

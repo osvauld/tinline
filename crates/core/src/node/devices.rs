@@ -43,6 +43,7 @@ impl Inner {
             self.persist_in_background(epoch);
             self.events.on_contacts_changed();
         }
+        self.touched(epoch, did);
     }
 
     /// A contact's signed `DeviceList` from a hello or an accept: kept if it verifies for that
@@ -102,6 +103,8 @@ impl Inner {
                         removed: false,
                         last_seen: now(),
                         relay,
+                        links: Vec::new(),
+                        rotated: false,
                     });
                     dirty = true;
                 }
@@ -115,6 +118,14 @@ impl Inner {
                 }
             }
             want.truncate(MAX_DEVICES);
+            // Each listed install's recent key changes (this one's first), so a contact that
+            // knew an older key keeps `verified` (packet F).
+            let links: Vec<proto::Succession> = want
+                .iter()
+                .filter_map(|(d, _)| st.registry.iter().find(|e| e.device == *d))
+                .flat_map(|e| e.links.iter().rev().cloned())
+                .take(proto::MAX_LIST_LINKS)
+                .collect();
             let same = st.own_list.as_ref().is_some_and(|b| {
                 proto::verify_device_list(b, me.id.did()).is_ok_and(|l| {
                     l.devices.len() == want.len()
@@ -122,6 +133,7 @@ impl Inner {
                             .iter()
                             .zip(&want)
                             .all(|(e, (d, r))| e.device == *d && &e.relay == r)
+                        && l.links == links
                 })
             });
             if !same {
@@ -130,7 +142,7 @@ impl Inner {
                     .as_ref()
                     .and_then(|b| proto::verify_device_list(b, me.id.did()).ok())
                     .map_or(0, |l| l.seq);
-                st.own_list = Some(proto::sign_device_list(&me.id, &want, now_ms().max(prev + 1)));
+                st.own_list = Some(proto::sign_device_list_with(&me.id, &want, &links, now_ms().max(prev + 1)));
                 dirty = true;
             }
             (st.own_list.clone(), dirty)
@@ -145,7 +157,8 @@ impl Inner {
 /// Replaces the contact's devices by `blob`'s if it verifies for their DID, is newer than the
 /// list we hold and its seq is not too far ahead of our clock (`proto::list_seq_in_bounds`,
 /// PROVISIONAL (coordinator)). Hints are kept for devices we knew; a device we did not know resets
-/// `verified`. Returns whether anything changed.
+/// `verified` unless the list's links show it is a rotated key of one we knew. Returns whether
+/// anything changed.
 pub(crate) fn merge_device_list(c: &mut StoredContact, blob: &proto::SignedDeviceList) -> bool {
     let Ok(list) = proto::verify_device_list(blob, &c.did) else {
         return false;
@@ -168,7 +181,10 @@ pub(crate) fn merge_device_list(c: &mut StoredContact, blob: &proto::SignedDevic
     if devices.is_empty() {
         return false;
     }
-    if devices.iter().any(|d| !c.has_device(&d.device)) {
+    // A device we did not know resets `verified`, unless the list proves it is a rotated key of
+    // an install we knew: a chain of links each signed by the previous key (packet F). A new
+    // install of the same DID (a link, a restore) has no such chain.
+    if devices.iter().any(|d| !c.has_device(&d.device) && !proto::succeeds(&list, &d.device, |k| c.has_device(k))) {
         c.verified = false;
     }
     c.devices = devices;

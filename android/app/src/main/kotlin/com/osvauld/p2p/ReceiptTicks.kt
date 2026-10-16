@@ -28,49 +28,38 @@ import uniffi.p2pcore.ReceiptTick
  * variant at every size). Geometry and the spring's morph curves are generated from Rust ([TinTicks],
  * crates/tin-icons/src/ticks.rs); this file only picks the visual state and plays the one-shot transition:
  * slack → one (pulled taut), one → two (the second string pulls out of the first), two → read (one pluck while the colour
- * eases to lavender), waiting → not delivered (colour ease only). Nothing loops; reduced motion shows the end state.
+ * eases to lavender), waiting → not delivered (colour ease only): those rules are core's (`p2pcore::receipts::ticks`).
+ * Nothing loops; reduced motion shows the end state.
  * The desktop's twin is crates/desktop/src/ticks.rs.
  */
-enum class TickVis { Slack, One, Two, Read, Bad }
+typealias TickVis = uniffi.p2pcore.TickVis
 
-/** The core decides Delivered/Read (`ReceiptTick`, signed receipts only); [notDelivered] = a block stopped it. */
-fun tickVisOf(tick: ReceiptTick?, notDelivered: Boolean): TickVis? = when {
-    notDelivered -> TickVis.Bad
-    tick == ReceiptTick.ONLY_HERE -> TickVis.Slack
-    tick == ReceiptTick.WAITING -> TickVis.One
-    tick == ReceiptTick.DELIVERED -> TickVis.Two
-    tick == ReceiptTick.READ -> TickVis.Read
-    else -> null
-}
-
-private fun TickVis.shape() = when (this) { TickVis.Slack, TickVis.Bad -> 0; TickVis.One -> 1; TickVis.Two, TickVis.Read -> 2 }
-private fun TickVis.tone() = when (this) { TickVis.Read -> 1; TickVis.Bad -> 2; else -> 0 }
+/** The core decides the mark (`ReceiptTick`, signed receipts only; [notDelivered] = a block stopped it): `tick_vis`. */
+fun tickVisOf(tick: ReceiptTick?, notDelivered: Boolean): TickVis? = uniffi.p2pcore.tickVis(tick, notDelivered)
 
 /** One frame: string 1 morph, string 2 morph + offset fraction (null = hidden), colour mix. */
 private data class TickPose(val k0: Float, val k1: Pair<Float, Float>?, val mix: Float)
 
-private fun restPose(v: TickVis) = when (v.shape()) {
-    0 -> TickPose(0f, null, 1f)
-    1 -> TickPose(1f, null, 1f)
-    else -> TickPose(1f, 1f to 1f, 1f)
-}
+private fun fromCore(p: uniffi.p2pcore.TickPose, mix: Float) = TickPose(p.k0, if (p.second) p.k1 to p.k1Offset else null, mix)
+
+private fun restPose(v: TickVis) = fromCore(uniffi.p2pcore.tickPose(v, v, null), 1f)
 
 private fun curve(c: FloatArray, secs: Float): Float? { val i = (secs * TinTicks.FRAME_HZ).toInt(); return if (i < c.size) c[i] else null }
 
-/** The transition from [from] to [to] at [secs]; null once settled. Same rules as the desktop's `ticks::pose`. */
+/**
+ * The transition from [from] to [to] at [secs]; null once settled. The rule (which curve, whether the ink eases, the shape
+ * per sample) is core's (`tick_transition` / `tick_pose`, shared with the desktop); the curves, colour ease and clock are ours.
+ */
 private fun tickPose(from: TickVis, to: TickVis, secs: Float): TickPose? {
-    val color = from.tone() != to.tone()
+    val tr = uniffi.p2pcore.tickTransition(from, to)
     val cs = PgMotion.OVERLAY_OPEN / 1000f
-    val mix = if (color) PgMotion.Out.transform((secs / cs).coerceAtMost(1f)) else 1f
-    var p = restPose(to).copy(mix = mix)
-    val shaped = when {
-        from.shape() == 0 && to.shape() == 1 -> curve(TinTicks.PULL, secs)?.also { p = p.copy(k0 = it) }
-        from.shape() == 1 && to.shape() == 2 -> curve(TinTicks.PULL, secs)?.also { p = p.copy(k1 = (0.5f + 0.5f * it) to maxOf(0f, it)) }
-        from.shape() == 0 && to.shape() == 2 -> curve(TinTicks.PULL, secs)?.also { p = p.copy(k0 = it, k1 = it to 1f) }
-        to == TickVis.Read && from == TickVis.Two -> curve(TinTicks.PLUCK, secs)?.also { p = p.copy(k0 = it, k1 = it to 1f) }
-        else -> null
+    val mix = if (tr.colour) PgMotion.Out.transform((secs / cs).coerceAtMost(1f)) else 1f
+    val x = when (tr.curve) {
+        uniffi.p2pcore.TickCurve.PULL -> curve(TinTicks.PULL, secs)
+        uniffi.p2pcore.TickCurve.PLUCK -> curve(TinTicks.PLUCK, secs)
+        uniffi.p2pcore.TickCurve.NONE -> null
     }
-    return if (shaped != null || (color && secs < cs)) p else null
+    return if (x != null || (tr.colour && secs < cs)) fromCore(uniffi.p2pcore.tickPose(from, to, x), mix) else null
 }
 
 /** The slot's width for a glyph [size] tall (two ticks wide, so nothing moves as the state advances). */
@@ -103,7 +92,7 @@ fun ReceiptTickGlyph(key: String, vis: TickVis, meta: Color, read: Color, bad: C
     }
     val f = from
     val pose = (if (f != null) tickPose(f, vis, secs) else null) ?: restPose(vis)
-    fun ink(v: TickVis) = when (v) { TickVis.Read -> read; TickVis.Bad -> bad; else -> meta }
+    fun ink(v: TickVis) = when (v) { TickVis.READ -> read; TickVis.BAD -> bad; else -> meta }
     val color = if (f != null) lerp(ink(f), ink(vis), pose.mix) else ink(vis)
     Canvas(Modifier.size(tickSlotWidth(size), size).semantics { contentDescription = label }) {
         val s = this.size.height / TinTicks.VB_H
@@ -127,9 +116,9 @@ fun ReceiptTickGlyph(key: String, vis: TickVis, meta: Color, read: Color, bad: C
 
 /** Screen-reader words per state (VOICE.md: how things are). */
 fun tickLabel(v: TickVis, first: String): String = when (v) {
-    TickVis.Slack -> "Waiting to send"
-    TickVis.One -> "Sent, waiting for $first’s device to confirm"
-    TickVis.Two -> "On $first’s device"
-    TickVis.Read -> "Read on $first’s device"
-    TickVis.Bad -> "Not delivered"
+    TickVis.SLACK -> "Waiting to send"
+    TickVis.ONE -> "Sent, waiting for $first’s device to confirm"
+    TickVis.TWO -> "On $first’s device"
+    TickVis.READ -> "Read on $first’s device"
+    TickVis.BAD -> "Not delivered"
 }

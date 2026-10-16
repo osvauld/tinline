@@ -1276,6 +1276,7 @@ impl App {
                 added_at: 0,
                 alias: None,
                 verified: false,
+                lost_touch: false,
             })
             .collect();
         self.refresh_undelivered();
@@ -2602,12 +2603,14 @@ impl App {
                         _ => {}
                     }
                 }
-                return self.update_live(match g {
+                let t = self.update_live(match g {
                     crate::GroupEv::Message(m) => Lm::Message(m),
                     crate::GroupEv::Changed(id) => Lm::Changed(id),
                     crate::GroupEv::Request(r) => Lm::RequestChanged(r),
                     crate::GroupEv::Invitation(i) => Lm::InvitationChanged(i),
-                })
+                });
+                // The chat list's group marks follow group changes.
+                return Task::batch([t, self.refresh_marks()]);
             }
             Ev::Link(l) => return self.link_event(l),
             Ev::Incoming(info) if self.call.as_ref().is_some_and(|c| c.state == CallState::Active && c.info.call_id != info.call_id) => {
@@ -2720,7 +2723,7 @@ impl App {
                 iced::Event::Window(window::Event::FilesHoveredLeft) => Some(Msg::Chat(Cm::DropHover(false))),
                 _ => None,
             }),
-            if self.fx.running() || self.ticks_running() { window::frames().map(Msg::Frame) } else { Subscription::none() },
+            if self.fx.running() || self.ticks_running() || self.live.ticks_running() { window::frames().map(Msg::Frame) } else { Subscription::none() },
             if self.video_ticking() {
                 iced::time::every(Duration::from_millis(33)).map(|_| Msg::Video(Vm::Tick))
             } else {
@@ -2743,5 +2746,5 @@ impl App {
 pub(super) const SELF_SUB: &str = "Saved items \u{b7} only on your devices";
 
 fn self_contact(did: &str) -> Contact {
-    Contact { did: did.to_string(), name: "You".into(), device: String::new(), added_at: 0, alias: None, verified: false }
+    Contact { did: did.to_string(), name: "You".into(), device: String::new(), added_at: 0, alias: None, verified: false, lost_touch: false }
 }

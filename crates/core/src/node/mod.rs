@@ -79,6 +79,7 @@ mod devices;
 mod lifecycle;
 mod outgoing;
 mod persist;
+mod rotation;
 mod run;
 mod testkit;
 mod types;
@@ -194,6 +195,8 @@ pub(crate) struct Inner {
     /// Token delivery (P6, `caps.rs`).
     pub(crate) caps: crate::caps::CapsRt,
     pub(crate) devlist: crate::devlist::DevlistRt,
+    /// Private endpoint rotation (`rotation.rs`).
+    pub(crate) rotation: rotation::RotationRt,
     pub(crate) profile_events: Mutex<Option<Arc<dyn crate::profile::ProfileEvents>>>,
     pub(crate) profile_downloads: Mutex<HashSet<(u64, String, String)>>,
     pub(crate) profile_fetches: Arc<Semaphore>,

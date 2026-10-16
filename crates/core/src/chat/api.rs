@@ -102,6 +102,8 @@ pub struct Chat {
     /// Unix ms of the last message, or 0.
     pub last_activity: u64,
     pub unread: u32,
+    /// The id of the last message (what the list's mark is for, `chat_list_marks`); `None` if none.
+    pub last_id: Option<String>,
 }
 
 /// One UTC day of a conversation, oldest message first.
@@ -191,8 +193,10 @@ impl Node {
     /// Zeroes the local unread counter. Also signs a recipient read receipt for exactly the
     /// incoming versions this step marks read (`chat_message_receipts`); sending it to the
     /// contact is not wired yet (receipt exchange, roadmap M4).
+    /// Blocking (an old unread day may be read from its blob first).
     pub fn mark_read(&self, peer_did: String) -> Result<(), Error> {
-        self.inner.chat_mark_read(&peer_did)
+        let inner = self.inner.clone();
+        self.block_on(async move { inner.chat_mark_read(&peer_did).await })?
     }
 
     /// Encrypts the file at `path` (up to 2 GB) and sends a message carrying it. Blocks while
@@ -261,6 +265,17 @@ impl Node {
 
     pub fn set_picture_download(&self, policy: PictureDownload) -> Result<(), Error> {
         self.inner.chat_core()?.store.set_picture_download(policy)
+    }
+
+    /// Settings > Privacy "Read receipts" (default on, per account on this device). Off: this
+    /// account sends no read receipts in chats and groups; delivered receipts still go, and
+    /// other people's reads still show. Reads made while off are never confirmed later.
+    pub fn read_receipts(&self) -> Result<bool, Error> {
+        Ok(self.inner.chat_core()?.store.read_receipts())
+    }
+
+    pub fn set_read_receipts(&self, on: bool) -> Result<(), Error> {
+        self.inner.chat_core()?.store.set_read_receipts(on)
     }
 
     /// Tells the core whether the connection is metered (mobile data), for `PictureDownload::Wifi`.

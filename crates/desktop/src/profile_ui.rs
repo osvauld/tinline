@@ -73,6 +73,8 @@ pub enum Action {
     Back,
     StorageLoaded(Option<StorageInfo>),
     SetDownload(p2pcore::PictureDownload),
+    /// Settings > Privacy: send read receipts (account setting in core, default on).
+    SetReadReceipts(bool),
     ClearCache,
     CacheCleared,
     /// About Tinline: expand or fold the licence list.
@@ -205,6 +207,8 @@ pub struct State {
     pub storage: Option<StorageInfo>,
     /// "Clear cache" was pressed since the page opened.
     pub cache_cleared: bool,
+    /// Settings > Privacy: the read-receipt switch as last read from core (None until read).
+    pub read_receipts: Option<bool>,
     /// About Tinline: the open-source licence list is expanded.
     pub licences_open: bool,
     pub history: Vec<Page>,
@@ -591,6 +595,10 @@ impl App {
                 if page == Page::Native(24) && self.remember_avail.is_none() {
                     return Task::batch([self.refresh_profiles(), self.probe_remember()]);
                 }
+                if page == Page::Native(7) {
+                    // One small row read; the switch shows what core will do.
+                    self.profiles.read_receipts = self.node.read_receipts().ok();
+                }
                 if page == Page::Storage {
                     self.profiles.cache_cleared = false;
                     return Task::batch([self.refresh_profiles(), self.measure_storage()]);
@@ -605,6 +613,11 @@ impl App {
                 if let Some(i) = self.profiles.storage.as_mut() { i.download = p; }
                 let node = self.node.clone();
                 return blocking(move || node.set_picture_download(p).map_err(s), Msg::Done);
+            }
+            Action::SetReadReceipts(on) => {
+                self.profiles.read_receipts = Some(on);
+                let node = self.node.clone();
+                return blocking(move || node.set_read_receipts(on).map_err(s), Msg::Done);
             }
             Action::ClearCache => {
                 return blocking(|| { crate::media::wipe_now(); }, |_| Msg::Profile(Action::CacheCleared));

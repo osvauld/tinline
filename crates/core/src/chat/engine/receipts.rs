@@ -20,6 +20,7 @@
 use super::*;
 use crate::receipts::store::messages::{VersionEvidence, dm_version};
 use crate::receipts::{Conversation, Kind, ReceiptError, Scope, api};
+use std::collections::BTreeMap;
 
 /// Provisional: newest read versions one mark-read step can cover. Older
 /// versions beyond it stay without a read receipt (a hole, never a claim).
@@ -31,6 +32,39 @@ const RECEIPT_BATCH: crate::group::doc::batching::BatchLimits =
     crate::group::doc::batching::BatchLimits { bytes: 256 * 1024, operations: 64, writers: 4096 };
 /// Provisional: frames one send pass writes for a day; the rest follows the next trigger.
 const RECEIPT_FRAMES_PER_SEND: usize = 16;
+
+/// Provisional: closed days one mark-read step loads from their blobs (newest first).
+pub(crate) const MAX_CLOSED_READ_DAYS: usize = 64;
+
+/// Messages of closed days loaded for a read step, by day.
+pub(crate) type ClosedDays = BTreeMap<String, BTreeMap<String, MsgRec>>;
+
+/// The shard days a read step `(from, to]` may touch: a version's `at` may sit up to an hour
+/// outside its shard's day (one day of margin).
+fn read_day_range(from: i64, to: i64) -> (String, String) {
+    (day_of(from.saturating_sub(DAY_MS).max(0)), day_of(to.saturating_add(DAY_MS)))
+}
+
+/// The exact incoming, undeleted versions a read step `(from, to]` covers, newest
+/// `MAX_READ_VERSIONS` only (older ones stay a hole), by day.
+pub(crate) fn read_versions(pair: &str, me: &str, from: i64, to: i64, days: &[(String, BTreeMap<String, MsgRec>)]) -> BTreeMap<String, Vec<[u8; 32]>> {
+    let mut found: Vec<(i64, String, [u8; 32])> = Vec::new();
+    for (day, msgs) in days {
+        let doc = doc_name(pair, day);
+        for r in msgs.values() {
+            if r.author != me && !r.deleted && r.at > from && r.at <= to {
+                found.push((r.at, day.clone(), dm_version(&doc, r)));
+            }
+        }
+    }
+    found.sort_by(|a, b| b.0.cmp(&a.0));
+    found.truncate(MAX_READ_VERSIONS);
+    let mut by_day: BTreeMap<String, Vec<[u8; 32]>> = BTreeMap::new();
+    for (_, day, v) in found {
+        by_day.entry(day).or_default().push(v);
+    }
+    by_day
+}
 
 fn rio(e: ReceiptError) -> Error {
     Error::Io(format!("receipts: {e}"))
@@ -74,37 +108,67 @@ impl Inner {
 
     /// Ops for a local mark-read step from `from` (exclusive) to `to`
     /// (inclusive), both author-clock ms as in `ConvMeta::read_upto`.
-    pub(crate) fn chat_read_intent(core: &ChatCore, me: &Me, pair: &str, from: i64, to: i64) -> Result<Vec<Op>, Error> {
-        if to <= from {
+    /// Nothing while the account's read-receipt setting is off: the cursor still moves, so
+    /// turning it on later confirms only reads from then on (no backdating).
+    /// `closed`: the messages of closed days (older than 8 days, held only as a snapshot blob)
+    /// that `chat_closed_for_read` loaded before the step; without them those days are skipped.
+    pub(crate) fn chat_read_intent(core: &ChatCore, me: &Me, pair: &str, from: i64, to: i64, closed: &ClosedDays) -> Result<Vec<Op>, Error> {
+        if to <= from || !core.store.read_receipts() {
             return Ok(vec![]);
         }
-        // A version's `at` may sit up to an hour outside its shard's day.
-        let lo = day_of(from.saturating_sub(DAY_MS).max(0));
-        let hi = day_of(to.saturating_add(DAY_MS));
-        let mut found: Vec<(i64, String, [u8; 32])> = Vec::new();
+        let (lo, hi) = read_day_range(from, to);
+        let mut days: Vec<(String, BTreeMap<String, MsgRec>)> = Vec::new();
         for day in core.store.shard_days(pair)? {
             if day < lo || day > hi {
                 continue;
             }
-            let Some(msgs) = Self::chat_stored_messages(core, pair, &day)? else { continue };
-            let doc = doc_name(pair, &day);
-            for r in msgs.values() {
-                if r.author != me.id.did() && !r.deleted && r.at > from && r.at <= to {
-                    found.push((r.at, day.clone(), dm_version(&doc, r)));
+            match Self::chat_stored_messages(core, pair, &day)? {
+                Some(msgs) => days.push((day, msgs)),
+                None => {
+                    if let Some(msgs) = closed.get(&day) {
+                        days.push((day, msgs.clone()));
+                    }
                 }
             }
         }
-        found.sort_by(|a, b| b.0.cmp(&a.0));
-        found.truncate(MAX_READ_VERSIONS);
-        let mut by_day: std::collections::BTreeMap<String, Vec<[u8; 32]>> = Default::default();
-        for (_, day, v) in found {
-            by_day.entry(day).or_default().push(v);
-        }
+        let by_day = read_versions(pair, me.id.did(), from, to, &days);
         let mut ops = Vec::new();
         for (day, vs) in by_day {
             ops.extend(core.receipts.intent_ops(Kind::Read, &dm_scope(pair, &day), vs).map_err(rio)?);
         }
         Ok(ops)
+    }
+
+    /// Before a mark-read step: the closed days in its range (newest first, bounded), loaded from
+    /// their snapshot blobs, so reading an old unread message still issues its read receipt.
+    /// Nothing when read receipts are off or nothing is unread. A day that fails to load is skipped
+    /// (logged); its messages stay without a read receipt.
+    pub(crate) async fn chat_closed_for_read(self: &Arc<Self>, core: &Arc<ChatCore>, pair: &str, from: i64, to: i64) -> ClosedDays {
+        let mut out = ClosedDays::new();
+        if to <= from || !core.store.read_receipts() {
+            return out;
+        }
+        let (lo, hi) = read_day_range(from, to);
+        let Ok(mut days) = core.store.shard_days(pair) else { return out };
+        days.retain(|d| *d >= lo && *d <= hi);
+        let mut seen = 0usize;
+        for day in days.into_iter().rev() {
+            if out.len() >= MAX_CLOSED_READ_DAYS || seen >= MAX_READ_VERSIONS {
+                break;
+            }
+            let closed = core.store.shard_meta(pair, &day).ok().flatten().is_some_and(|m| m.closed.is_some());
+            if !closed || core.store.shard_rows(pair, &day).map(|r| r.0.is_some()).unwrap_or(true) {
+                continue;
+            }
+            match self.chat_load_shard(core, pair, &day).await.and_then(|s| s.messages().map_err(|e| Error::Io(e.to_string()))) {
+                Ok(msgs) => {
+                    seen += msgs.len();
+                    out.insert(day, msgs);
+                }
+                Err(e) => tracing::warn!("chat receipts: closed day {day} not loaded for read: {e}"),
+            }
+        }
+        out
     }
 
     /// Signs/commits pending receipt intents (bounded); failures stay queued.

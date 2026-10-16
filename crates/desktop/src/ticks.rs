@@ -20,20 +20,9 @@ use std::time::Instant;
 use crate::motion::{dur, Ease};
 use crate::tin_ticks as g;
 
-/// What a bubble shows. The core decides Delivered/Read (`ReceiptTick`); `Bad` = not delivered (blocked).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum Vis {
-    /// Waiting to send / waiting for a host: the slack string.
-    Slack,
-    /// Left this device (1:1: sent, not confirmed yet; groups: a host has it).
-    One,
-    /// The recipient's device signed that it holds it.
-    Two,
-    /// The recipient's device signed that it was read.
-    Read,
-    /// Not delivered: the slack string in the danger colour.
-    Bad,
-}
+/// What a bubble shows, and the state-change rules: decided in core (`p2pcore::tick_vis`,
+/// `tick_transition`, `tick_pose`) so desktop and Android play the same morphs.
+pub use p2pcore::TickVis as Vis;
 
 #[derive(Debug, Clone, Copy)]
 pub struct Anim {
@@ -50,20 +39,11 @@ pub struct Inks {
     pub bg: Color,
 }
 
-impl Vis {
-    fn shape(self) -> u8 {
-        match self {
-            Vis::Slack | Vis::Bad => 0,
-            Vis::One => 1,
-            Vis::Two | Vis::Read => 2,
-        }
-    }
-    fn ink(self, i: &Inks) -> Color {
-        match self {
-            Vis::Read => i.read,
-            Vis::Bad => i.bad,
-            _ => i.meta,
-        }
+fn ink(v: Vis, i: &Inks) -> Color {
+    match v {
+        Vis::Read => i.read,
+        Vis::Bad => i.bad,
+        _ => i.meta,
     }
 }
 
@@ -80,43 +60,28 @@ fn curve(c: &[f32], secs: f32) -> Option<f32> {
     (i < c.len()).then(|| c[i])
 }
 
-fn rest(to: Vis) -> Pose {
-    match to.shape() {
-        0 => Pose { k0: 0.0, k1: None, mix: 1.0 },
-        1 => Pose { k0: 1.0, k1: None, mix: 1.0 },
-        _ => Pose { k0: 1.0, k1: Some((1.0, 1.0)), mix: 1.0 },
-    }
+fn from_core(p: p2pcore::TickPose, mix: f32) -> Pose {
+    Pose { k0: p.k0, k1: p.second.then_some((p.k1, p.k1_offset)), mix }
 }
 
-/// The transition from `from` to `to`, `secs` after it started; None once it has settled.
+fn rest(to: Vis) -> Pose {
+    from_core(p2pcore::tick_pose(to, to, None), 1.0)
+}
+
+/// The transition from `from` to `to`, `secs` after it started; None once it has settled. The rule
+/// (which curve, whether the ink eases, the shape per sample) is core's; the curves, the colour ease
+/// and the clock are ours.
 fn pose(from: Vis, to: Vis, secs: f32) -> Option<Pose> {
-    let tone = |v: Vis| match v {
-        Vis::Read => 1,
-        Vis::Bad => 2,
-        _ => 0,
-    };
-    let color = tone(from) != tone(to);
+    let tr = p2pcore::tick_transition(from, to);
     let cms = dur::OVERLAY_OPEN / 1000.0;
-    let mix = if color { Ease::Out.apply((secs / cms).min(1.0)) } else { 1.0 };
-    let color_running = color && secs < cms;
-    let mut p = rest(to);
-    p.mix = mix;
-    let shaped = match (from.shape(), to.shape()) {
-        (0, 1) => curve(g::PULL, secs).map(|x| p.k0 = x),
-        // The second string pulls out of the first as it goes taut.
-        (1, 2) => curve(g::PULL, secs).map(|x| p.k1 = Some((0.5 + 0.5 * x, x.max(0.0)))),
-        // Straight from waiting: both pull taut together.
-        (0, 2) => curve(g::PULL, secs).map(|x| {
-            p.k0 = x;
-            p.k1 = Some((x, 1.0));
-        }),
-        (2, 2) if to == Vis::Read && from != Vis::Read => curve(g::PLUCK, secs).map(|x| {
-            p.k0 = x;
-            p.k1 = Some((x, 1.0));
-        }),
-        _ => None,
+    let mix = if tr.colour { Ease::Out.apply((secs / cms).min(1.0)) } else { 1.0 };
+    let color_running = tr.colour && secs < cms;
+    let x = match tr.curve {
+        p2pcore::TickCurve::Pull => curve(g::PULL, secs),
+        p2pcore::TickCurve::Pluck => curve(g::PLUCK, secs),
+        p2pcore::TickCurve::None => None,
     };
-    (shaped.is_some() || color_running).then_some(p)
+    (x.is_some() || color_running).then(|| from_core(p2pcore::tick_pose(from, to, x), mix))
 }
 
 /// Seconds into a transition. Test-hooks `P2P_TICK_AT_MS=n` freezes every transition at n ms (mid-morph screenshots).
@@ -192,14 +157,14 @@ pub fn glyph<'a, M: 'a>(to: Vis, anim: Option<&Anim>, inks: Inks, size: f32, now
     let live = anim.filter(|_| !crate::motion::reduced()).and_then(|a| pose(a.from, to, elapsed(a, now)).map(|p| (a.from, p)));
     let handle = match live {
         Some((from, p)) => {
-            let ink = mix(from.ink(&inks), to.ink(&inks), p.mix);
+            let ink = mix(ink(from, &inks), ink(to, &inks), p.mix);
             render(&markup(&p, ink, inks.bg), pw, ph, ink.a)
         }
         None => {
             // Settled states are cached (a handful per theme/scale).
             type Key = (Vis, u32, u32, [u8; 8]);
             static CACHE: OnceLock<Mutex<HashMap<Key, image::Handle>>> = OnceLock::new();
-            let ink = to.ink(&inks);
+            let ink = ink(to, &inks);
             let q = |c: Color| [c.r, c.g, c.b, c.a].map(|v| (v.clamp(0.0, 1.0) * 255.0) as u8);
             let (a, b) = (q(ink), q(inks.bg));
             let key = (to, pw, ph, [a[0], a[1], a[2], a[3], b[0], b[1], b[2], b[3]]);

@@ -4,6 +4,7 @@ use super::*;
 
 mod bounded_exports;
 mod content_adapter;
+mod group_receipts_sim;
 mod history_inventory;
 mod loro_ranges;
 mod metadata_obligations;
@@ -83,9 +84,11 @@ fn receiver() -> GroupCore {
     let account = identity::generate().0;
     let did = account.did().to_string();
     let dev = [2; 32];
+    let store = GroupStore::in_memory("synthetic durability fixture");
+    let receipts = member_receipts::controller(&store, &did, dev);
     GroupCore {
         epoch: 0,
-        store: GroupStore::in_memory("synthetic durability fixture"),
+        store,
         account,
         did: did.clone(),
         dev,
@@ -107,6 +110,7 @@ fn receiver() -> GroupCore {
         announcing: Default::default(),
         compacted: Default::default(),
         codes: Default::default(),
+        receipts,
     }
 }
 

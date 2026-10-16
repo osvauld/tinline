@@ -59,6 +59,8 @@ fn session(id: u64, gid: &str, did: &str) -> (Arc<Sess>, mpsc::UnboundedReceiver
             peer_vv: Default::default(),
             peer_days: Default::default(),
             inv_done: AtomicBool::new(false),
+            receipt_vv: Default::default(),
+            receipt_waiting: Default::default(),
         }),
         rx,
     )

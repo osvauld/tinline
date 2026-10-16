@@ -198,6 +198,8 @@ pub(crate) fn apply_contact(st: &mut State, stored: StoredContact, device: [u8; 
     if !lift_block && st.blocked.contains(&stored.did) {
         return Err(Error::Rejected(REFUSED.into()));
     }
+    // A fresh ticket swap is how two sides that lost touch find each other again.
+    st.lost_touch.remove(&stored.did);
     match st.contacts.iter_mut().find(|c| c.did == stored.did) {
         Some(existing) => {
             existing.name = stored.name;

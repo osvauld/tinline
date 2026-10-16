@@ -10,8 +10,10 @@ close code 426 like the other superseded versions).
 
 - **Identity**: osvauld `Identity` (BIP39). `did:key:z…` over its ed25519 signing key. The person.
 - **Device key**: random per-install ed25519 key. Its public half is the iroh
-  `EndpointId`. The QUIC/TLS handshake proves the peer holds it; the transport passes that
-  as `remote_device` into every check below. Text form: base64url (no pad).
+  `EndpointId` (the private endpoint). The QUIC/TLS handshake proves the peer holds it; the
+  transport passes that as `remote_device` into every check below. Text form: base64url (no pad).
+  It is not permanent: each install rotates it periodically (`docs/rotation.md` "Private
+  endpoint"); the DID, the install's device ID and writer ID stay.
 - **Attestation** `{did, device, iat}`, signed by the DID: "this device is mine".
   Several devices per DID are fine; each has its own attestation.
 
@@ -170,10 +172,14 @@ Design: `docs/design/device-linking.md`. Implemented in `crates/proto` (`DeviceL
 
 ### DeviceList
 
-`DeviceList { did, seq, devices: [{ device, relay? }] }`, a `Signed<DeviceList>` under domain
-`osvauld/p2p/devices/v1\0`, signed by the DID. `seq` is unix ms chosen by the signer.
+`DeviceList { did, seq, devices: [{ device, relay? }], links: [{ from, to, sig }] }`, a
+`Signed<DeviceList>` under domain `osvauld/p2p/devices/v1\0`, signed by the DID. `seq` is unix ms
+chosen by the signer. `links` (at most 16, `MAX_LIST_LINKS`) are succession links of the listed
+installs' recent key rotations: `sig` is Ed25519 by the old key `from` over `[did, to]` under
+`tinline/device-succession/v1` (`sign_succession` / `verify_succession`). `succeeds(list, device,
+known)` says whether a chain of good links leads from `device` back to a key the receiver knew.
 `verify_device_list(blob, expected_did)`: signature by the DID in the payload, DID equals the
-expected one, 1..=8 devices, no duplicates. A relay hint failing the syntactic
+expected one, 1..=8 devices, no duplicates, well-formed links. A relay hint failing the syntactic
 check (`https://`, at most 200 chars, no whitespace or control characters; the core also parses
 it as a relay URL) is dropped and the device kept, like a bad hint in a hello.
 `newer(a, b)`: higher `seq` wins; on equal `seq` the lexicographically larger signature wins,
@@ -181,7 +187,8 @@ so every receiver converges on the same list. Carried in optional `devices` fiel
 `CallHello` and `Accept` (omitted from the wire when absent).
 
 Pushed (P4, decision U8): whenever the install's set of device keys changes (a device linked,
-unlinked, seen via own-device sync, or this install restored with a new key) it re-signs the list
+unlinked, seen via own-device sync, this install restored with a new key, or a private endpoint
+rotation, `docs/rotation.md`) it re-signs the list
 and sends `Devices { list }` as the first message of a connection on the calls ALPN to every
 contact it neither blocks nor is blocked by; answered `DevicesTaken` (whether or not the list was
 kept) or, by a receiver that blocks the sender, with its `Notice`. Queued per contact
@@ -208,7 +215,8 @@ Our own entry carries our current relay; others carry the last hint we know.
 
 **Receiving a list** (in a `CallHello` or an `Accept`): `verify_device_list(blob, contact_did)`;
 if it is `newer` than the stored one, the contact's devices are replaced (relay hints kept for
-devices we already knew), `verified` is reset if the list holds a device not in the previous set,
+devices we already knew), `verified` is reset if the list holds a device not in the previous set
+that is not a rotated key of one in it (`succeeds` over the list's links),
 the state is persisted (epoch fenced) and the UI hears `on_contacts_changed`. Older, equal,
 forged or other-DID lists change nothing. Once a contact has a list, `note_device` no longer
 adds devices: a device missing from the list that dials with a valid attestation is accepted for
@@ -319,7 +327,7 @@ sealed in `account.redb` under `sync/account`, with maps:
 
 | map | entry | merge |
 |---|---|---|
-| `devices/<device>` | `{att, label, removed, relay}` | field LWW; `removed` is sticky (OR) |
+| `devices/<device>` | `{att, label, removed, relay, links, rotated}` | field LWW; `removed` and `rotated` are sticky (OR); `links`: the longer copy, never our own entry's |
 | `contacts/<did>` | `{rec, alias, verified, calls}`; `rec` = name, devices, device_list, grant, call_grant, added_at | alias/verified/calls LWW; `rec`: name LWW, newer signed device list wins (S4 reset applies), each token slot: the one that outlives (a later re-add without a call token clears it), max added_at |
 | `cutoffs/<did>` | our token cut-offs for `<did>` (JSON) | max per field |
 | `sent/<did>` | our latest signed block/unblock notice to `<did>` (`Signed<BlockNotice>`, base64url) | verified on read; highest `at` wins; `<did>` is blocked iff that notice is a block (see "Blocking") |
@@ -337,7 +345,9 @@ the name. On the first open it is seeded from the local call log.
 | `calls/<call_id>` | CallRecord JSON | one record per call; better rank wins (answered beats `*_elsewhere`, then duration, then content), newest 500 kept; calls with blocked contacts are kept |
 
 `verified` is stored with the contact's device-list `seq`; it counts only against a device set at
-least as new as the receiver's (S4). Never synced: device secret, DEK, passphrase,
+least as new as the receiver's (S4). Registry entries also carry `links` (the install's succession
+links, JSON) and `rotated` (`"1"`: a key the install rotated away from; a tombstone like
+`removed`, never taken back, not shown as an unlinked device). Never synced: device secret, DEK, passphrase,
 current ticket, `last_seen`, in-flight calls. Availability now syncs in the separate account
 profile document, not the `account` map (below). `State` stays the working copy: every persist flushes
 into the doc (`write_from`) and every received batch is imported and merged back (`read_into`) under
@@ -412,6 +422,12 @@ This requests cooperative cache deletion, not remote erasure. Full APIs/bounds/t
 moved from bincode 1 to postcard 1 (`cryptography::codec`): chat `tinline/chat/7`, own-device sync
 `tinline/self/5`, group `tinline/group/3`. `chat/6` and `self/4` are refused with code 426: **update the
 app and wipe its data**.
+
+**Group member receipts (2026-10-16, `feature/group-receipts`, not merged).** Group ALPN
+`tinline/group/4` = `/3` plus `GroupMsg::{ReceiptHello, Receipts, ReceiptAck}` (member <->
+host only; hosts relay the original native ledger ops). No compatibility with `/3` (user,
+2026-10-16: no backward compatibility): a `/3` peer fails at connect. No data wipe (new rows
+only). Details: `docs/design/receipt-runtime-roadmap.md`, "Group message receipts".
 
 **Signed receipts (2026-10-15, `feature/receipt-runtime`, not merged).** Chat ALPN
 `tinline/chat/6` adds `ChatMsg::{ReceiptHello, Receipts, ReceiptAck}` (`docs/chat.md` section

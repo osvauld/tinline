@@ -65,7 +65,7 @@ days/{gid}/{day}                   empty       day index for paging / history li
   sealed rows does not re-verify (AES-GCM binds each row to its path). Snapshots verify once at
   import.
 
-## 4. Sync (ALPN `tinline/group/3`)
+## 4. Sync (ALPN `tinline/group/4`)
 
 - `Hello`/`Welcome` carry `meta_vv` and `days: [(day, vv)]` for the last `HELLO_DAYS` (7).
 - `Update { doc: Meta | Day(day), update }`, `Ack { doc, vv }`. Meta updates are sent before

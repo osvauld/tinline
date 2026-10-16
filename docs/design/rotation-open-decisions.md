@@ -235,14 +235,29 @@ upload once 2 days (`REMOVED_UPLOAD_WINDOW_MS`) have passed. Never a record's `a
 when the removed DID shares another group with the same host. Replaces U12/U15's "rotation is
 the cut-off"; answers U11's open part and §13 Q1, Q4.
 
+**Private rotation (packet F, user 2026-10-16; implemented, `docs/rotation.md` "Private
+endpoint").** The private endpoint (the device key) rotates periodically on the one
+`RotationPolicy`, per install; the old address answers for 1 day (`PRIVATE_OVERLAP_MS`) only to
+point non-blocked contacts at the new one; the new address goes out by the DID-signed device-list
+push (persisted outbox, announce window 7 days); "lost touch" when that window ends undelivered,
+fixed by a fresh ticket swap. `verified` survives a key change through succession links signed by
+the old key (a new install still resets it). Status of the U-items:
+- U1: implemented for the private audience (direct note = device-list push, overlap, lost touch).
+  Not implemented: recovery through a shared group's host when both rotated apart.
+- U2: implemented as "private endpoint = device key" plus the separate group endpoint (G-side
+  already shipped). Battery cost of two endpoints on Android still unmeasured.
+- U5 revised: implemented: a blocked contact (either direction) is never sent the new list and is
+  refused at its hello on the old address; blocking triggers nothing.
+- U8: implemented: a rotation re-signs and pushes the list like any other device-set change.
+
 ## Still open
 
 Rotation:
 - `RotationPolicy::MIN_INTERVAL_MS` (provisional 1 day) and any maximum.
-- Private (1:1) endpoint rotation — next packet: grace window (§3b Q2, §15 Q6), the verified
-  flag surviving a key change (§4 Q1, §12 Q5, §15 Q8), "lost contact" detection (§15 Q7),
-  rotating while unlocked (§3 Q3), Android resume hooks (§3 Q2), clocks (§2 Q5–Q8).
-  Backlog tests: `docs/design/rotation-acceptance-checklist.md`.
+- Private rotation leftovers (`docs/rotation.md` "Open (private)"): recovery via a shared group's
+  host (U1 group path), the one-sided `lost_touch` case, rotating while locked (§3 Q3), Android
+  resume hooks (§3 Q2), clocks (§2 Q5–Q8). The Settings control and the "lost touch" UI are not
+  built. Backlog tests: `docs/design/rotation-acceptance-checklist.md`.
 - Rotation notes: forks and history (§1 Q3–Q5, §7 Q18–Q22, §12 Q2–Q3).
 
 Groups and blocking (unchanged by this shrink; numbering as in the archived digest):

@@ -58,8 +58,14 @@ pub struct Contact {
     /// Local-only name we gave them; show it in preference to `name` (what they call
     /// themselves). Also what `CallInfo.peer_name` carries when set.
     pub alias: Option<String>,
-    /// We confirmed their safety number in person; reset if their device changes.
+    /// We confirmed their safety number in person; reset when a device of theirs appears that
+    /// is not a rotated key of one we knew (a new install).
     pub verified: bool,
+    /// Neither side can reach the other any more: our rotation note never reached them during
+    /// its whole announce window (both moved while apart). The fix is a fresh ticket/QR swap;
+    /// any session with them clears it.
+    #[uniffi(default = false)]
+    pub lost_touch: bool,
 }
 
 /// What a contact card found in some text says, before anyone is dialled: for "Add <name>?"

@@ -52,7 +52,7 @@ impl App {
             .iter()
             .map(|(id, name, hue)| {
                 ui::pin_hue(&pg_did(id), *hue);
-                Contact { did: pg_did(id), name: name.to_string(), device: "pg".into(), added_at: now - 86400 * 30, alias: None, verified: *id == "arjun" }
+                Contact { did: pg_did(id), name: name.to_string(), device: "pg".into(), added_at: now - 86400 * 30, alias: None, verified: *id == "arjun", lost_touch: false }
             })
             .collect();
         let cache = |v: serde_json::Value| profile_ui::Cached { fields: fields(v), ..Default::default() };
@@ -74,6 +74,7 @@ impl App {
             last_delivery: delivery,
             last_activity: at,
             unread,
+            last_id: Some(format!("pg-last-{id}")),
         };
         self.chat.chats = vec![
             chat("arjun", "I have the landlord\u{2019}s numbers now", false, DeliveryState::Delivered, at(12, 41, 0), 2),

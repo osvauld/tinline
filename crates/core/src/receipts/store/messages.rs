@@ -58,12 +58,43 @@ fn conversation_prefix(c: &Conversation) -> String {
     }
 }
 
+/// Intent row, format 1 (DM): no conversation context.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 struct Intent {
     version: u8,
     kind: Kind,
     scope: Scope,
     messages: Vec<[u8; 32]>,
+}
+/// Intent row, format 2 (group): adds the issuer's meta-doc frontier at the
+/// moment the source state was accepted. It is signed into the receipt's
+/// `metadata` and is what group admission judges ("signed while admitted").
+/// Both formats are live; the first byte (`version`) selects the shape.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+struct ContextIntent {
+    version: u8,
+    kind: Kind,
+    scope: Scope,
+    messages: Vec<[u8; 32]>,
+    metadata: Vec<(u64, i32)>,
+}
+fn decode_intent(raw: &[u8]) -> Result<ContextIntent, ReceiptError> {
+    match raw.first() {
+        Some(1) => {
+            let i: Intent = cryptography::codec::from_bytes(raw, MAX_INTENT_BYTES)
+                .map_err(|_| ReceiptError::Encoding)?;
+            Ok(ContextIntent {
+                version: 1,
+                kind: i.kind,
+                scope: i.scope,
+                messages: i.messages,
+                metadata: vec![],
+            })
+        }
+        Some(2) => cryptography::codec::from_bytes(raw, MAX_INTENT_BYTES)
+            .map_err(|_| ReceiptError::Encoding),
+        _ => Err(ReceiptError::Bounds),
+    }
 }
 
 /// One committed receipt the pump issued (for logs/tests; not a UI event).
@@ -154,7 +185,28 @@ impl MessageReceipts {
         scope: &Scope,
         messages: impl IntoIterator<Item = [u8; 32]>,
     ) -> Result<Vec<storage::Op>, ReceiptError> {
+        self.intent_ops_in_context(kind, scope, messages, &[])
+    }
+
+    /// `intent_ops` with the conversation context to sign: a group receipt
+    /// carries the issuer's meta frontier at acceptance (non-empty); a DM
+    /// receipt carries none. Checked here so no row can poison the queue.
+    pub(crate) fn intent_ops_in_context(
+        &self,
+        kind: Kind,
+        scope: &Scope,
+        messages: impl IntoIterator<Item = [u8; 32]>,
+        metadata: &[(u64, i32)],
+    ) -> Result<Vec<storage::Op>, ReceiptError> {
         if kind == Kind::Call || !scope.valid() {
+            return Err(ReceiptError::Bounds);
+        }
+        let group = matches!(scope.conversation, Conversation::Group(_));
+        if group == metadata.is_empty()
+            || metadata.len() > MAX_CONTEXT_WRITERS
+            || !metadata.iter().all(|(_, end)| *end > 0)
+            || !metadata.windows(2).all(|w| w[0].0 < w[1].0)
+        {
             return Err(ReceiptError::Bounds);
         }
         let mut all: Vec<[u8; 32]> = messages.into_iter().collect();
@@ -162,13 +214,23 @@ impl MessageReceipts {
         all.dedup();
         let mut ops = Vec::new();
         for chunk in all.chunks(MAX_INTENT_DIGESTS) {
-            let row = Intent {
-                version: 1,
-                kind,
-                scope: scope.clone(),
-                messages: chunk.to_vec(),
-            };
-            let bytes = cryptography::codec::to_bytes(&row).map_err(|_| ReceiptError::Encoding)?;
+            let bytes = if group {
+                cryptography::codec::to_bytes(&ContextIntent {
+                    version: 2,
+                    kind,
+                    scope: scope.clone(),
+                    messages: chunk.to_vec(),
+                    metadata: metadata.to_vec(),
+                })
+            } else {
+                cryptography::codec::to_bytes(&Intent {
+                    version: 1,
+                    kind,
+                    scope: scope.clone(),
+                    messages: chunk.to_vec(),
+                })
+            }
+            .map_err(|_| ReceiptError::Encoding)?;
             if bytes.len() > MAX_INTENT_BYTES {
                 return Err(ReceiptError::Bounds);
             }
@@ -252,9 +314,8 @@ impl MessageReceipts {
         if raw.len() > MAX_INTENT_BYTES {
             return Err(io("receipt intent too large"));
         }
-        let intent: Intent =
-            cryptography::codec::from_bytes(&raw, MAX_INTENT_BYTES).map_err(|_| ReceiptError::Encoding)?;
-        if intent.version != 1 || intent.kind == Kind::Call {
+        let intent = decode_intent(&raw)?;
+        if intent.kind == Kind::Call {
             return Err(ReceiptError::Bounds);
         }
         let ledger = self.ledger(&intent.scope)?;
@@ -280,7 +341,7 @@ impl MessageReceipts {
                 recipient: self.me.clone(),
                 device: self.device,
                 messages: chunk.to_vec(),
-                metadata: vec![],
+                metadata: intent.metadata.clone(),
                 call: None,
             };
             // Outbox marker rides in every issuing commit (idempotent put); the
@@ -372,6 +433,30 @@ impl MessageReceipts {
             Ok(())
         })?;
         Ok(committed.entries)
+    }
+
+    /// Imports a receipt update under caller policy `admit` (asked with the
+    /// statements new to this ledger, before anything commits). Call claims are
+    /// always refused. Group ingest uses this with its member admission rule.
+    pub(crate) fn import_checked(
+        &self,
+        scope: &Scope,
+        update: &[u8],
+        admit: impl FnOnce(&[Entry]) -> Result<(), String>,
+    ) -> Result<Vec<Entry>, ReceiptError> {
+        let ledger = self.ledger(scope)?;
+        let committed = ledger.apply_remote(update, |fresh| {
+            for e in fresh {
+                valid_kind(e)?;
+            }
+            admit(fresh)
+        })?;
+        Ok(committed.entries)
+    }
+
+    /// Every committed statement of one scope (a group day's aggregation input).
+    pub(crate) fn entries(&self, scope: &Scope) -> Result<Vec<Entry>, ReceiptError> {
+        self.ledger(scope)?.entries()
     }
 
     /// Committed native frontier of one scope's receipt ledger.

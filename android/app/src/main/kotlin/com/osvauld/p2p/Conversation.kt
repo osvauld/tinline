@@ -684,7 +684,7 @@ private fun Bubble(
                 m.editedAt != null -> "edited · $at"
                 else -> at
             }
-            val metaColor = if (notDelivered != null) c.er else if (tick == Tick.Clock) c.threadText else if (out) c.onPrc else c.ink2
+            val metaColor = if (notDelivered != null) c.tickBadText else if (tick == Tick.Clock) c.threadText else if (out) c.onPrc else c.ink2
             if (a == null && m.text.isNotBlank()) {
                 // Only a few emojis: big, like the other chat apps; emojis in text: a bit larger.
                 val big = Emoji.isBig(m.text)

@@ -73,7 +73,8 @@ import uniffi.p2pcore.GroupRole as CoreRole
 
 /** A DID as the user knows it: their contact name, else what the group calls them. */
 private fun nameOf(app: P2pApp, did: String, fallback: String): String {
-    if (did == app.currentDid()) return "You"
+    // Per row while composing: the cached DID, never a core call on the main thread.
+    if (did == app.groups.myDid) return "You"
     app.contacts.value.firstOrNull { it.did == did }?.let { return it.display() }
     return fallback.ifBlank { "Someone" }
 }
@@ -509,7 +510,7 @@ fun GroupChatLive(app: P2pApp, id: String, onBack: () -> Unit, onInfo: () -> Uni
                             is ThreadRow.Call -> GroupCallPill(row.r, me, GroupText.active(d.myRole)) { app.groupCallUi.call(d.id, say) }
                             is ThreadRow.Post -> {
                                 if (row.m.id == dividerId) PgUnreadDivider(unreadAtOpen)
-                                GroupItemLive(app, o.messages, row.i, row.m, me, d, blocks.blockedByMe(row.m.authorDid), onRemoval, onReply = { replyTo = row.m.id }, top = if (newDay) 0.dp else null)
+                                GroupItemLive(app, o.messages, row.i, row.m, me, d, blocks.blockedByMe(row.m.authorDid), onRemoval, onReply = { replyTo = row.m.id }, top = if (newDay) 0.dp else null, receipt = o.receipts[row.m.id])
                             }
                         }
                     }
@@ -579,6 +580,7 @@ private fun GroupCallPill(r: uniffi.p2pcore.GroupCallRecord, me: String, enabled
 private fun ColumnScope.GroupItemLive(
     app: P2pApp, all: List<GroupMessage>, i: Int, m: GroupMessage, me: String, d: GroupDetail, authorBlocked: Boolean,
     onRemoval: () -> Unit, onReply: () -> Unit, top: androidx.compose.ui.unit.Dp? = null,
+    receipt: uniffi.p2pcore.GroupReceiptStatus? = null,
 ) {
     val c = Tin.c
     if (m.kind == GroupItemKind.REMOVED && m.subjectDid == me) {
@@ -621,13 +623,22 @@ private fun ColumnScope.GroupItemLive(
     val qWho = qr?.let { if (it.outgoing) "You" else firstName(nameOf(app, it.authorDid, it.authorName)) }
     val qColor = if (qr?.outgoing == true) c.accentInk else qr?.let { authorColor(it.authorDid) } ?: c.accentInk
     val quote: (@Composable () -> Unit)? = if (m.replyTo == null) null else ({ PgQuote(qWho, qColor, qr?.text ?: "Original message unavailable", null) })
-    // Waiting for a host = the slack string; a host has it = one tick. Host storage is never members' delivery/read.
-    val tick = if (!m.outgoing) null else if (m.delivery == CoreDelivery.WAITING) MetaReceipt(TickVis.Slack, m.id, "Waiting for a host") else MetaReceipt(TickVis.One, m.id, "A host has it")
+    // Waiting for a host = the slack string; sent = one tick; every eligible member signed delivered = two ticks; every one
+    // read = the read ink (core's GroupReceiptStatus). Host storage is never members' delivery/read.
+    val lines = receipt?.takeIf { it.eligible > 0u }?.let { groupReceiptLines(it) }
+    val tick = if (!m.outgoing) null else if (m.delivery == CoreDelivery.WAITING) MetaReceipt(TickVis.SLACK, m.id, "Waiting for a host")
+        else {
+            val vis = receipt?.let { tickVisOf(it.tick, false) } ?: TickVis.ONE
+            MetaReceipt(vis, m.id, lines?.take(2)?.joinToString(", ") ?: "Sent")
+        }
+    // No details view for group posts yet: a tap on my post shows the n/N lines and who under it (asked for, so it may move).
+    var info by remember(m.id) { mutableStateOf(false) }
     val meta = BubbleMeta(msClock(m.at.toLong()), receipt = tick)
     Column(Modifier.padding(top = top ?: gapAbove(pos)).fillMaxWidth(), horizontalAlignment = if (m.outgoing) Alignment.End else Alignment.Start) {
         Box(Modifier.fillMaxWidth(.78f), contentAlignment = if (m.outgoing) Alignment.CenterEnd else Alignment.CenterStart) {
             PgTextBubble(androidx.compose.ui.text.AnnotatedString(m.text), pos, m.outgoing, meta,
-                Modifier.combinedClickable(enabled = GroupText.active(d.myRole), onLongClickLabel = "Reply", onLongClick = onReply, onClick = {}),
+                Modifier.combinedClickable(enabled = GroupText.active(d.myRole) || lines != null, onLongClickLabel = "Reply", onLongClick = onReply,
+                    onClickLabel = if (lines != null) "Who has it" else null, onClick = { if (lines != null) info = !info }),
                 sender = if (m.outgoing || p) null else firstName(name) + if (m.beforeRemoval) " · removed" else "",
                 senderColor = if (m.beforeRemoval) c.ink2 else authorColor(m.authorDid), quote = quote)
         }
@@ -636,7 +647,22 @@ private fun ColumnScope.GroupItemLive(
             Text("Waiting for a host", style = PgBodyText.copy(fontSize = 12.sp, lineHeight = 16.sp, fontWeight = FontWeight.SemiBold), color = c.goldInk)
         }
         if (m.beforeRemoval) Text("Written before ${firstName(name)} was removed", Modifier.padding(top = 3.dp), style = PgBodyText.copy(fontSize = 11.sp), color = c.ink2)
+        if (info && lines != null) Text(lines.joinToString("\n"), Modifier.padding(top = 3.dp, end = 2.dp), style = PgBodyText.copy(fontSize = 12.sp, lineHeight = 16.sp), color = c.ink2,
+            textAlign = androidx.compose.ui.text.style.TextAlign.End)
     }
+}
+
+/** "Delivered n/N", "Read n/N", then who (eligible members by level; kept statements of people no longer counted). Same words as desktop. */
+private fun groupReceiptLines(r: uniffi.p2pcore.GroupReceiptStatus): List<String> {
+    fun who(m: uniffi.p2pcore.GroupMemberReceipts) = if (m.name.isEmpty()) "Someone" else firstName(m.name)
+    val out = mutableListOf("Delivered ${r.delivered}/${r.eligible}", "Read ${r.read}/${r.eligible}")
+    for ((label, want) in listOf("Read" to uniffi.p2pcore.ReceiptLevel.READ, "On their device" to uniffi.p2pcore.ReceiptLevel.DELIVERED, "Not yet" to uniffi.p2pcore.ReceiptLevel.UNCONFIRMED)) {
+        val n = r.members.filter { it.eligible && it.receipts.level == want }.map { who(it) }
+        if (n.isNotEmpty()) out += "$label: ${n.joinToString(", ")}"
+    }
+    val gone = r.members.filter { !it.eligible }.map { who(it) }
+    if (gone.isNotEmpty()) out += "Also confirmed: ${gone.joinToString(", ")}"
+    return out
 }
 
 // ------------------------------------------------------------------ group info (playground screens/groups/GroupInfo.svelte)

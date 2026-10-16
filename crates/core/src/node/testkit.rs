@@ -42,7 +42,7 @@ impl Node {
                     e.attestation = attestation;
                     e.removed = false;
                 }
-                None => reg.push(OwnDevice { device, attestation, label: String::new(), removed: false, last_seen: now(), relay: None }),
+                None => reg.push(OwnDevice { device, attestation, label: String::new(), removed: false, last_seen: now(), relay: None, links: Vec::new(), rotated: false }),
             }
         }
         self.inner.persist_for(Some(me.epoch))?;
