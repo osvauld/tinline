@@ -277,6 +277,33 @@ impl Inner {
         }
     }
 
+    /// The status of one stored version: committed recipient evidence plus the
+    /// display tick. The tick's only legacy input is "this device still owes it"
+    /// (`DeliveryState::Pending`); an unsigned transport ack never becomes Delivered.
+    fn chat_receipt_status(core: &ChatCore, me: &Me, did: &str, pair: &str, day: &str, rec: &MsgRec) -> Result<api::MessageReceiptStatus, Error> {
+        let version = dm_version(&doc_name(pair, day), rec);
+        let mut recipients = Vec::new();
+        let outgoing = rec.author == me.id.did();
+        if did != me.id.did() {
+            // Our message: the contact confirms it. Theirs: our own account's
+            // statements (what this account told, or will tell, the author).
+            let recipient = if outgoing { did.to_string() } else { me.id.did().to_string() };
+            let ev: VersionEvidence = core.receipts.evidence(&dm_scope(pair, day), &version, |d| d == recipient).map_err(rio)?;
+            recipients.push(api::recipient(&recipient, &ev));
+        }
+        let tick = if !outgoing || did == me.id.did() || rec.deleted {
+            api::ReceiptTick::None
+        } else {
+            match recipients.first().map(|r| r.level) {
+                Some(api::ReceiptLevel::Read) => api::ReceiptTick::Read,
+                Some(api::ReceiptLevel::Delivered) => api::ReceiptTick::Delivered,
+                _ if Self::chat_delivery(core, pair, day, &rec.id) == DeliveryState::Pending => api::ReceiptTick::OnlyHere,
+                _ => api::ReceiptTick::Waiting,
+            }
+        };
+        Ok(api::MessageReceiptStatus { message_id: rec.id.clone(), version: hex::encode(version), tick, recipients })
+    }
+
     /// Recipient evidence for every message of one day page (one shard and one ledger
     /// read), in the page's order. For list rendering instead of one call per row.
     pub(crate) async fn chat_day_receipts(self: &Arc<Self>, did: &str, day: &str) -> Result<Vec<api::MessageReceiptStatus>, Error> {
@@ -296,20 +323,7 @@ impl Inner {
             shard.messages().map_err(|e| Error::Io(e.to_string()))?.into_values().collect()
         };
         recs.sort_by(|a, b| a.order().cmp(&b.order()));
-        let doc = doc_name(&pair, day);
-        let scope = dm_scope(&pair, day);
-        let mut out = Vec::new();
-        for rec in recs {
-            let version = dm_version(&doc, &rec);
-            let mut recipients = Vec::new();
-            if did != me.id.did() {
-                let recipient = if rec.author == me.id.did() { did.to_string() } else { me.id.did().to_string() };
-                let ev = core.receipts.evidence(&scope, &version, |d| d == recipient).map_err(rio)?;
-                recipients.push(api::recipient(&recipient, &ev));
-            }
-            out.push(api::MessageReceiptStatus { message_id: rec.id.clone(), version: hex::encode(version), recipients });
-        }
-        Ok(out)
+        recs.iter().map(|rec| Self::chat_receipt_status(&core, &me, did, &pair, day, rec)).collect()
     }
 
     /// Recipient evidence for the version of `id` this device shows.
@@ -324,15 +338,26 @@ impl Inner {
             let shard = shards.get(&(pair.clone(), day.clone())).ok_or(Error::NotFound)?;
             shard.messages().map_err(|e| Error::Io(e.to_string()))?.remove(id).ok_or(Error::NotFound)?
         };
-        let version = dm_version(&doc_name(&pair, &day), &rec);
-        let mut recipients = Vec::new();
-        if did != me.id.did() {
-            // Our message: the contact confirms it. Theirs: our own account's
-            // statements (what this account told, or will tell, the author).
-            let recipient = if rec.author == me.id.did() { did.to_string() } else { me.id.did().to_string() };
-            let ev: VersionEvidence = core.receipts.evidence(&dm_scope(&pair, &day), &version, |d| d == recipient).map_err(rio)?;
-            recipients.push(api::recipient(&recipient, &ev));
+        Self::chat_receipt_status(&core, &me, did, &pair, &day, &rec)
+    }
+
+    /// The status of each conversation's last message, when it is ours (the chat
+    /// list's tick). Reads stored rows only; never a cached doc ahead of the store.
+    pub(crate) fn chat_list_receipts(&self) -> Result<Vec<api::ChatReceiptRow>, Error> {
+        let me = self.me()?;
+        let core = self.chat_core()?;
+        let dids: Vec<String> = self.shared.lock().state.contacts.iter().map(|c| c.did.clone()).collect();
+        let mut out = Vec::new();
+        for did in dids {
+            let pair = pair_id(me.id.did(), &did);
+            let Some(last) = core.store.conv(&pair)?.and_then(|c| c.last) else { continue };
+            if !last.outgoing {
+                continue;
+            }
+            let Some(day) = core.store.mi(&pair, &last.id)? else { continue };
+            let Some(rec) = Self::chat_stored_messages(&core, &pair, &day)?.and_then(|mut m| m.remove(&last.id)) else { continue };
+            out.push(api::ChatReceiptRow { peer_did: did.clone(), status: Self::chat_receipt_status(&core, &me, &did, &pair, &day, &rec)? });
         }
-        Ok(api::MessageReceiptStatus { message_id: id.to_string(), version: hex::encode(version), recipients })
+        Ok(out)
     }
 }

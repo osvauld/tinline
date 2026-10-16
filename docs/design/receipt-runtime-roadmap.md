@@ -60,6 +60,13 @@ Completion requires M3 runtime issuance and M4 authenticated replication **plus*
   separate deliverables; physical-device installation/testing still requires
   explicit authorization and the device lock.
 
+**1:1 display progress (2026-10-15, branch).** Core `ReceiptTick` drives both apps' bubble
+mark (clock / check = signed Delivered / double check = signed Read) and the message
+menu shows signer and device; see [status display](message-receipt-ui-handoff.md).
+Desktop demonstrated with real nodes (p2p-desktop vs p2p-peer, screenshots outside Git);
+Android built (`scripts/build_android.py --abis x86_64 --debug-rust`) and its 133 unit tests
+pass, but no emulator/phone run yet. Groups: not built.
+
 This is a cross-M3/M4 product gate. Do not label signed delivery/read support
 shipped, or its UI complete, until the real receipt-backed app path is demonstrated.
 
@@ -303,6 +310,16 @@ acceptance tests. No root-only erasure or receipt deletion is currently authoriz
   recipient-signed shard confirmations once shards exist (M7 and
   [message receipt auditability](message-receipt-auditability.md)), not by
   deleting individual message receipts.
+- **Group receipts, first version (2026-10-15):** one signed receipt per message
+  per member is acceptable ("messy is fine"). Optimize later — see TODO below.
+- **Order of work:** every group-receipt step is built with deterministic tests and
+  simulations first, then validated on real nodes/apps.
+
+## TODO (deferred by user)
+
+- Group receipts: batch delivered/read confirmations (one signature per member per
+  sync or range instead of per message), then shard-level confirmations (M7).
+  Measure receipt traffic/storage in the simulation before choosing the batching.
 
 ## Decisions still open
 

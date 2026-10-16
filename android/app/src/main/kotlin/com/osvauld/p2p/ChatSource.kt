@@ -12,6 +12,7 @@ import uniffi.p2pcore.ChatEvents
 import uniffi.p2pcore.DayPage
 import uniffi.p2pcore.DeliveryState
 import uniffi.p2pcore.Message
+import uniffi.p2pcore.MessageReceiptStatus
 
 /** What the core pushes while a conversation or the chat list is on screen. */
 sealed interface ChatEvent {
@@ -56,6 +57,10 @@ interface ChatSource {
     /** Stops a download (also one waiting to retry or failed); the attachment is REMOTE again. */
     fun cancel(peerDid: String, messageId: String)
     fun save(peerDid: String, messageId: String, destPath: String)
+    /** The core's recipient-signed status of one message (its `ReceiptTick` and proofs); null when unknown. */
+    fun receipts(peerDid: String, messageId: String): MessageReceiptStatus? = null
+    /** [receipts] for every message of one UTC day page. */
+    fun dayReceipts(peerDid: String, day: String): List<MessageReceiptStatus> = emptyList()
 }
 
 /** Where the app gets its [ChatSource]. Release builds never set [override]; the debug gallery does. */
@@ -123,4 +128,6 @@ class CoreChatSource(private val app: P2pApp) : ChatSource, ChatEvents {
     override fun download(peerDid: String, messageId: String) = node.downloadAttachment(peerDid, messageId)
     override fun cancel(peerDid: String, messageId: String) = node.cancelDownload(peerDid, messageId)
     override fun save(peerDid: String, messageId: String, destPath: String) = node.saveAttachment(peerDid, messageId, destPath)
+    override fun receipts(peerDid: String, messageId: String) = node.chatMessageReceipts(peerDid, messageId)
+    override fun dayReceipts(peerDid: String, day: String) = node.chatDayReceipts(peerDid, day)
 }

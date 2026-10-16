@@ -73,6 +73,9 @@ import kotlinx.coroutines.flow.first
 import uniffi.p2pcore.Attachment
 import uniffi.p2pcore.AttachmentKind
 import uniffi.p2pcore.DeliveryState
+import uniffi.p2pcore.MessageReceiptStatus
+import uniffi.p2pcore.ReceiptProofKind
+import uniffi.p2pcore.ReceiptTick
 import uniffi.p2pcore.Message
 import uniffi.p2pcore.TransferState
 import java.io.File
@@ -154,6 +157,19 @@ fun ConversationScreen(
     // Ids of our pending messages that won't arrive because they blocked us.
     val undelivered = remember { mutableStateListOf<String>() }
 
+    // The core's recipient-signed status per message id (mark + provenance). Missing = not read yet: the mark's
+    // slot stays reserved and empty, never "delivered".
+    val receipts = remember(peerDid) { mutableStateMapOf<String, MessageReceiptStatus>() }
+    fun loadReceipt(id: String) {
+        scope.launch(Dispatchers.IO) {
+            runCatching { source.receipts(peerDid, id) }.getOrNull()?.let { st -> withContext(Dispatchers.Main) { receipts[st.messageId] = st } }
+        }
+    }
+    suspend fun loadDayReceipts(day: String) {
+        val list = withContext(Dispatchers.IO) { runCatching { source.dayReceipts(peerDid, day) }.getOrDefault(emptyList()) }
+        list.forEach { receipts[it.messageId] = it }
+    }
+
     fun toast(t: String) = Toast.makeText(ctx, t, Toast.LENGTH_SHORT).show()
     fun upsert(m: Message) {
         val i = msgs.indexOfFirst { it.id == m.id }
@@ -163,16 +179,17 @@ fun ConversationScreen(
     LaunchedEffect(Unit) { while (true) { delay(15_000); nowMs = System.currentTimeMillis() } }
     LaunchedEffect(peerDid) {
         withContext(Dispatchers.IO) {
-            runCatching { source.day(peerDid, null) }.onSuccess { p -> withContext(Dispatchers.Main) { p.messages.forEach(::upsert); olderDay = p.olderDay } }
+            runCatching { source.day(peerDid, null) }.onSuccess { p -> withContext(Dispatchers.Main) { p.messages.forEach(::upsert); olderDay = p.olderDay; loadDayReceipts(p.day) } }
         }
         loaded = true
     }
     LaunchedEffect(peerDid) {
         source.events.collect { e ->
             when (e) {
-                is ChatEvent.Added -> if (e.message.peerDid == peerDid) upsert(e.message)
-                is ChatEvent.Changed -> if (e.message.peerDid == peerDid) upsert(e.message)
-                is ChatEvent.Delivery -> if (e.peerDid == peerDid) msgs.indexOfFirst { it.id == e.messageId }.takeIf { it >= 0 }?.let { msgs[it] = msgs[it].copy(delivery = e.delivery) }
+                is ChatEvent.Added -> if (e.message.peerDid == peerDid) { upsert(e.message); if (e.message.outgoing) loadReceipt(e.message.id) }
+                // Also raised when the contact's signed receipts for the shown version were committed.
+                is ChatEvent.Changed -> if (e.message.peerDid == peerDid) { upsert(e.message); if (e.message.outgoing) loadReceipt(e.message.id) }
+                is ChatEvent.Delivery -> if (e.peerDid == peerDid) msgs.indexOfFirst { it.id == e.messageId }.takeIf { it >= 0 }?.let { msgs[it] = msgs[it].copy(delivery = e.delivery); loadReceipt(e.messageId) }
                 is ChatEvent.Progress -> if (e.peerDid == peerDid) {
                     if (e.done >= e.total) progress.remove(e.hash) else progress[e.hash] = e.done to e.total
                 }
@@ -235,12 +252,12 @@ fun ConversationScreen(
         withContext(Dispatchers.IO) {
             val od = olderDay
             if (od != null) {
-                runCatching { source.day(peerDid, od) }.onSuccess { p -> withContext(Dispatchers.Main) { p.messages.forEach(::upsert); olderDay = p.olderDay } }
+                runCatching { source.day(peerDid, od) }.onSuccess { p -> withContext(Dispatchers.Main) { p.messages.forEach(::upsert); olderDay = p.olderDay; loadDayReceipts(p.day) } }
             } else if (msgs.isNotEmpty() && link != Link.Offline) {
                 val oldest = Instant.ofEpochMilli(msgs.first().at.toLong()).atZone(ZoneOffset.UTC).toLocalDate().toString()
                 if (fetched.add(oldest)) runCatching { source.fetchOlder(peerDid, oldest) }.onSuccess { n ->
                     if (n == 0) noOlder = true
-                    if (n > 0) runCatching { source.day(peerDid, oldest) }.onSuccess { p -> withContext(Dispatchers.Main) { olderDay = p.olderDay; p.messages.forEach(::upsert) } }
+                    if (n > 0) runCatching { source.day(peerDid, oldest) }.onSuccess { p -> withContext(Dispatchers.Main) { olderDay = p.olderDay; p.messages.forEach(::upsert); loadDayReceipts(p.day) } }
                 }
             }
         }
@@ -250,6 +267,7 @@ fun ConversationScreen(
         if (hit.day.isNotBlank()) {
             val page = withContext(Dispatchers.IO) { source.day(peerDid, hit.day) }
             page.messages.forEach(::upsert)
+            loadDayReceipts(page.day)
         }
         val index = withTimeout(2000) {
             snapshotFlow { currentRows.value.indexOfFirst { it is ConvRow.Msg && it.m.id == hit.id } }
@@ -318,6 +336,7 @@ fun ConversationScreen(
                 val result = withContext(Dispatchers.IO) { runCatching { if (edit != null) source.edit(peerDid, edit, text) else source.sendText(peerDid, text, reply) } }
                 result.onSuccess { m ->
                     upsert(m)
+                    loadReceipt(m.id)
                     if (draft == originalDraft && editing == edit && replying == reply) savedDraft.sent()
                     if (edit == null) { TinFx.messageSent(); Cues.sent() }
                     listState.scrollToItem(0)
@@ -404,7 +423,7 @@ fun ConversationScreen(
                         is ConvRow.Unread -> PgUnreadDivider(r.n)
                         is ConvRow.Call -> CallPill(r.r, enabled = block?.callGate ?: CallGate.Ok == CallGate.Ok, onCall)
                         is ConvRow.Msg -> Bubble(
-                            r.m, r.pos, name, link, online, nowMs, progress, requested, byId, source,
+                            r.m, r.pos, name, link, online, nowMs, progress, requested, byId, source, receipts[r.m.id],
                             notDelivered = if (r.m.id in undelivered) BlockCopy.notDelivered(name) else null,
                             selected = actionsFor == r.m.id || foundId == r.m.id,
                             findQuery = if (find.open && find.hits.any { it.id == r.m.id }) find.q else "", findCurrent = find.current?.id == r.m.id,
@@ -456,13 +475,13 @@ fun ConversationScreen(
     }
     val am = actionsFor?.let { byId[it] }
     if (am != null) ActionsSheet(
-        am, first, isSelf, onDismiss = { actionsFor = null },
+        am, first, isSelf, receipts[am.id], name, onDismiss = { actionsFor = null },
         onReply = { actionsFor = null; savedDraft.beginReply(am.id) },
         onCopy = { actionsFor = null; scope.launch { clipboard.setClipEntry(ClipEntry(android.content.ClipData.newPlainText("message", am.text))) }; toast("Copied") },
         onEdit = { actionsFor = null; savedDraft.beginEdit(am.id, am.text) },
         onDelete = {
             actionsFor = null
-            scope.launch(Dispatchers.IO) { runCatching { source.delete(peerDid, am.id) }.onSuccess { m -> withContext(Dispatchers.Main) { upsert(m) } }.onFailure { withContext(Dispatchers.Main) { toast("Couldn’t delete that message.") } } }
+            scope.launch(Dispatchers.IO) { runCatching { source.delete(peerDid, am.id) }.onSuccess { m -> withContext(Dispatchers.Main) { upsert(m); loadReceipt(m.id) } }.onFailure { withContext(Dispatchers.Main) { toast("Couldn’t delete that message.") } } }
         },
         onSave = { actionsFor = null; saveToPhone(am) },
     )
@@ -573,7 +592,7 @@ private fun BannerLine(text: String) =
 @Composable
 private fun Bubble(
     m: Message, pos: BubblePos, name: String, link: Link, online: Boolean, nowMs: Long, progress: Map<String, Pair<Long, Long>>, requested: List<String>,
-    byId: Map<String, Message>, source: ChatSource, notDelivered: String? = null, selected: Boolean,
+    byId: Map<String, Message>, source: ChatSource, receipt: MessageReceiptStatus?, notDelivered: String? = null, selected: Boolean,
     onLong: () -> Unit, onReply: () -> Unit, onDownload: () -> Unit, onCancel: () -> Unit, onOpenPhoto: () -> Unit, onSaveFile: () -> Unit,
     onOpenFile: () -> Unit, broken: Boolean, onBroken: () -> Unit,
     findQuery: String = "", findCurrent: Boolean = false,
@@ -615,9 +634,7 @@ private fun Bubble(
         }
         val a = m.attachment
         if (a == null && notDelivered == null) {
-            val meta = BubbleMeta(msClock(m.at.toLong()), m.editedAt != null,
-                if (!out) MetaTick.None else if (m.delivery == DeliveryState.DELIVERED) MetaTick.Delivered else MetaTick.Pending,
-                if (out && tickOf(m, link, online, nowMs) == Tick.Clock) "Waiting until you are both online" else null)
+            val meta = BubbleMeta(msClock(m.at.toLong()), m.editedAt != null, receiptMark(m, receipt, false, first))
             PgTextBubble(
                 ChatFind.marked(Emoji.styled(m.text), findQuery, findCurrent, c.thread), pos, out, meta,
                 Modifier.widthIn(max = bubbleMaxWidth).combinedClickable(onClick = {}, onLongClick = onLong)
@@ -629,7 +646,8 @@ private fun Bubble(
         }
         val photo = a != null && a.isImage() && !broken
         val prog = a?.let { progress[it.hash] }
-        val tick = if (out) tickOf(m, link, online, nowMs) else null
+        val tick = if (out && receipt != null && receipt.tick != ReceiptTick.NONE) tickOf(m, receipt.tick, link, online, nowMs) else null
+        val mark = receiptMark(m, receipt, notDelivered != null, first)
         val bg = if (out) c.prc else c.bubIn
         val fg = if (out) c.onPrc else c.ink
         Column(
@@ -671,13 +689,13 @@ private fun Bubble(
                 // Only a few emojis: big, like the other chat apps; emojis in text: a bit larger.
                 val big = Emoji.isBig(m.text)
                 val style = if (big) TinType.bodyL.copy(fontSize = 38.sp, lineHeight = 46.sp) else TinType.bodyL.copy(fontSize = 15.sp, lineHeight = 21.sp)
-                CompactTextBubble(if (big) AnnotatedString(m.text.trim()) else Emoji.styled(m.text), style, fg, label, tick, metaColor)
+                CompactTextBubble(if (big) AnnotatedString(m.text.trim()) else Emoji.styled(m.text), style, fg, label, mark, metaColor)
             } else {
                 // A photo's caption and time keep to the photo's width (the bubble is never wider than the photo).
                 val w = if (photo) Modifier.width(photoBox(a.width, a.height).first) else Modifier
                 if (m.text.isNotBlank()) Text(Emoji.styled(m.text), w.padding(horizontal = if (photo) 9.dp else 0.dp).padding(top = if (photo) 5.dp else 0.dp),
                     style = TinType.bodyL.copy(fontSize = 15.sp, lineHeight = 21.sp), color = fg)
-                Box(w) { Meta(label, tick, metaColor, if (photo) 7.dp else 0.dp, 0.dp) }
+                Box(w) { Meta(label, mark, metaColor, if (photo) 7.dp else 0.dp, 0.dp) }
             }
         }
     }
@@ -686,16 +704,15 @@ private fun Bubble(
 /** Reserve the last line's trailing space for time/ticks, without squeezing the message.
  * RTL uses a separate metadata row until bidi-aware trailing placement is supported. */
 @Composable
-private fun CompactTextBubble(text: AnnotatedString, style: TextStyle, color: Color, label: String, tick: Tick?, metaColor: Color) {
+private fun CompactTextBubble(text: AnnotatedString, style: TextStyle, color: Color, label: String, mark: MetaReceipt?, metaColor: Color) {
     val measurer = rememberTextMeasurer()
     val metaStyle = TinType.caption.copy(fontSize = 11.sp, lineHeight = 14.sp, fontWeight = FontWeight.Normal)
-    val tickColor = Tin.c.pr
     SubcomposeLayout { constraints ->
         val loose = constraints.copy(minWidth = 0, minHeight = 0)
         val meta = subcompose("meta") {
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(label, style = metaStyle, color = metaColor)
-                if (tick != null) TickIcon(tick, if (tick == Tick.Two) tickColor else metaColor)
+                ReceiptMark(mark, metaColor)
             }
         }.single().measure(loose)
         val result = measurer.measure(text, style = style, constraints = loose)
@@ -717,16 +734,31 @@ private fun CompactTextBubble(text: AnnotatedString, style: TextStyle, color: Co
     }
 }
 
+/** My message's receipt mark for the bubble meta (ReceiptTicks.kt): the core's `ReceiptTick`, or not delivered. */
+private fun receiptMark(m: Message, receipt: MessageReceiptStatus?, notDelivered: Boolean, first: String): MetaReceipt? {
+    if (!m.outgoing || receipt?.tick == ReceiptTick.NONE) return null
+    val vis = tickVisOf(receipt?.tick, notDelivered)
+    return MetaReceipt(vis, m.id, vis?.let { tickLabel(it, first) } ?: "")
+}
+
+@Composable
+private fun ReceiptMark(mark: MetaReceipt?, metaColor: Color) {
+    if (mark == null || (mark.vis == null && !mark.reserve)) return
+    Box(Modifier.size(tickSlotWidth(12.dp), 12.dp), contentAlignment = Alignment.Center) {
+        mark.vis?.let { ReceiptTickGlyph(mark.key, it, metaColor, Tin.c.tickRead, Tin.c.tickBad, Tin.c.prc, mark.label) }
+    }
+}
+
 private fun Modifier.drawLeftBar(color: Color) = drawBehind { drawRect(color, size = androidx.compose.ui.geometry.Size(3.dp.toPx(), size.height)) }
 
 @Composable
-private fun Meta(text: String, tick: Tick?, color: Color, hPad: androidx.compose.ui.unit.Dp?, bPad: androidx.compose.ui.unit.Dp = 0.dp) {
+private fun Meta(text: String, mark: MetaReceipt?, color: Color, hPad: androidx.compose.ui.unit.Dp?, bPad: androidx.compose.ui.unit.Dp = 0.dp) {
     Row(
         Modifier.fillMaxWidth().padding(top = 4.dp, start = hPad ?: 0.dp, end = hPad ?: 0.dp, bottom = bPad),
         horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.End), verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(text, style = TinType.caption.copy(fontSize = 11.sp, lineHeight = 14.sp, fontWeight = FontWeight.Normal), color = color)
-        if (tick != null) TickIcon(tick, if (tick == Tick.Two) Tin.c.pr else color)
+        ReceiptMark(mark, color)
     }
 }
 
@@ -852,15 +884,28 @@ private fun FileRow(a: Attachment, out: Boolean, prog: Pair<Long, Long>?, link: 
 
 @Composable
 private fun ActionsSheet(
-    m: Message, first: String, isSelf: Boolean, onDismiss: () -> Unit, onReply: () -> Unit, onCopy: () -> Unit, onEdit: () -> Unit, onDelete: () -> Unit, onSave: () -> Unit,
+    m: Message, first: String, isSelf: Boolean, receipt: MessageReceiptStatus?, name: String, onDismiss: () -> Unit, onReply: () -> Unit, onCopy: () -> Unit, onEdit: () -> Unit, onDelete: () -> Unit, onSave: () -> Unit,
 ) {
     val c = Tin.c
     val at = msClock(m.at.toLong())
     TinSheet(onDismiss) {
+        // Only the core's signed receipts say "on" or "read on" their device; a signature is the device's claim, not a person's attention.
         Hint(
-            if (isSelf) "Saved $at · on your devices" else if (!m.outgoing) "Received $at" else if (m.delivery == DeliveryState.DELIVERED) "Sent $at · on $first’s phone" else "Sent $at · only on this phone so far",
-            Modifier.padding(start = 8.dp, bottom = 8.dp),
+            if (isSelf) "Saved $at · on your devices" else if (!m.outgoing) "Received $at" else when (receipt?.tick) {
+                ReceiptTick.READ -> "Sent $at · read on $first’s device"
+                ReceiptTick.DELIVERED -> "Sent $at · on $first’s device"
+                ReceiptTick.ONLY_HERE -> "Sent $at · only on this phone so far"
+                else -> "Sent $at · waiting for $first’s device to confirm"
+            },
+            Modifier.padding(start = 8.dp, bottom = if (m.outgoing && !isSelf && receipt?.recipients?.any { it.proofs.isNotEmpty() } == true) 2.dp else 8.dp),
         )
+        if (m.outgoing && !isSelf) receipt?.recipients?.forEach { r ->
+            r.proofs.forEach { p ->
+                val what = if (p.kind == ReceiptProofKind.READ) "Read" else "Delivered"
+                Hint("$what · signed by ${firstName(name)} · device ${p.signerDevice.take(8)}", Modifier.padding(start = 8.dp, bottom = 2.dp))
+            }
+        }
+        if (m.outgoing && !isSelf && receipt?.recipients?.any { it.proofs.isNotEmpty() } == true) Spacer(Modifier.height(6.dp))
         SheetAction(PgIcons.Reply, "Reply", onClick = onReply)
         if (m.text.isNotBlank()) SheetAction(PgIcons.Copy, "Copy text", onClick = onCopy)
         if (m.attachment?.let { it.state == TransferState.READY || m.outgoing } == true) SheetAction(PgIcons.Save, "Save to phone", onClick = onSave)

@@ -1,16 +1,10 @@
 package com.osvauld.p2p
 
-import androidx.compose.foundation.layout.size
-import androidx.compose.material3.Icon
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
 import uniffi.p2pcore.Attachment
 import uniffi.p2pcore.AttachmentKind
 import uniffi.p2pcore.DeliveryState
 import uniffi.p2pcore.Message
+import uniffi.p2pcore.ReceiptTick
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -19,29 +13,26 @@ import java.time.format.TextStyle
 import java.time.temporal.ChronoUnit
 import java.util.Locale
 
-/** Honest ticks: one = saved on this phone, two = their phone has it, clock = waiting until you are both online. */
-enum class Tick { One, Two, Clock }
+/**
+ * Honest status of a message we sent, for words and the chat list ("Waiting"). The bubble draws the receipt tick
+ * itself (ReceiptTicks.kt). [Two] and [Read] come only from the contact's signed receipts (core `ReceiptTick`);
+ * [One] = sent or saved here, not confirmed yet; [Clock] = it cannot go out now (waiting until you are both online).
+ */
+enum class Tick { One, Two, Read, Clock }
 
 /**
- * The tick for a message we sent. A clock only when we know sending cannot happen now: the link is
- * [Link.Offline], or we have no signal at all and this phone is offline or the message has sat a while.
+ * The tick for a message we sent. [receipt] is the core's decision; the link only says whether a message still on
+ * this phone can go out now (a clock when the link is [Link.Offline], or with no signal at all and this phone
+ * offline or the message has sat a while).
  */
-fun tickOf(m: Message, link: Link, online: Boolean, nowMs: Long): Tick = when {
-    m.delivery == DeliveryState.DELIVERED -> Tick.Two
-    link == Link.Offline -> Tick.Clock
-    link == Link.Unknown && (!online || nowMs - m.at.toLong() > 30_000) -> Tick.Clock
+fun tickOf(m: Message, receipt: ReceiptTick?, link: Link, online: Boolean, nowMs: Long): Tick = when {
+    receipt == ReceiptTick.READ -> Tick.Read
+    receipt == ReceiptTick.DELIVERED -> Tick.Two
+    m.delivery == DeliveryState.PENDING && link == Link.Offline -> Tick.Clock
+    m.delivery == DeliveryState.PENDING && link == Link.Unknown && (!online || nowMs - m.at.toLong() > 30_000) -> Tick.Clock
     else -> Tick.One
 }
 
-@Composable
-fun TickIcon(t: Tick, tint: Color, size: Dp = 15.dp) {
-    val (icon, desc) = when (t) {
-        Tick.One -> PgIcons.Check to "Saved on your phone"
-        Tick.Two -> PgIcons.Check to "On their phone"
-        Tick.Clock -> PgIcons.Clock to "Waiting until you are both online"
-    }
-    Icon(icon, desc, tint = tint, modifier = Modifier.size(size))
-}
 
 private val HM = DateTimeFormatter.ofPattern("HH:mm")
 private val DM = DateTimeFormatter.ofPattern("d MMM", Locale.getDefault())

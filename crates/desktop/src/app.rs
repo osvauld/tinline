@@ -341,6 +341,8 @@ struct App {
     devices: (Vec<String>, Vec<String>),
     name_edit: String,
     ticks: u32,
+    /// Test-hooks `P2P_SHOT_EVERY`: screenshots written so far.
+    shots: u32,
     fetching: bool,
     chat: ChatState,
     /// The window has keyboard focus (false with no window).
@@ -554,6 +556,8 @@ enum Msg {
     UnlinkedOk,
     /// Test-hooks: the window's pixels, written to P2P_SHOT.
     Shot(window::Screenshot),
+    /// Test-hooks: `P2P_SHOT_EVERY=dir` writes the window to dir/NNN.png twice a second (demos of live state).
+    ShotEvery,
     #[cfg(any(test, feature = "test-hooks"))]
     Groups(Gm),
     Live(Lm),
@@ -928,6 +932,7 @@ impl App {
             devices: (Vec::new(), Vec::new()),
             name_edit: node.profile().map(|p| p.name).unwrap_or_default(),
             ticks: 0,
+            shots: 0,
             fetching: false,
             chat: ChatState::default(),
             focused: false,
@@ -2503,7 +2508,23 @@ impl App {
             | Msg::Unlinked(_)
             | Msg::UnlinkedOk) => return self.link_update(m),
             Msg::Video(m) => return self.video_update(m),
+            Msg::ShotEvery => {
+                if let Some(id) = self.win {
+                    return window::screenshot(id).map(Msg::Shot);
+                }
+            }
             Msg::Shot(shot) => {
+                if let Some(dir) = crate::test_env("P2P_SHOT_EVERY") {
+                    self.shots += 1;
+                    let path = format!("{dir}/{:03}.png", self.shots);
+                    if let Ok(f) = std::fs::File::create(&path) {
+                        let mut enc = png::Encoder::new(std::io::BufWriter::new(f), shot.size.width, shot.size.height);
+                        enc.set_color(png::ColorType::Rgba);
+                        enc.set_depth(png::BitDepth::Eight);
+                        let _ = enc.write_header().and_then(|mut w| w.write_image_data(&shot.rgba));
+                    }
+                    return Task::none();
+                }
                 if let Some(path) = crate::test_env("P2P_SHOT") {
                     let mut ok = false;
                     if let Ok(f) = std::fs::File::create(&path) {
@@ -2686,6 +2707,7 @@ impl App {
         Subscription::batch([
             Subscription::run(events),
             iced::time::every(Duration::from_secs(1)).map(|_| Msg::Tick),
+            if crate::test_env("P2P_SHOT_EVERY").is_some() { iced::time::every(Duration::from_millis(500)).map(|_| Msg::ShotEvery) } else { Subscription::none() },
             window::close_requests().map(Msg::CloseReq),
             window::close_events().map(Msg::Closed),
             system::theme_changes().map(Msg::Theme),
@@ -2698,7 +2720,7 @@ impl App {
                 iced::Event::Window(window::Event::FilesHoveredLeft) => Some(Msg::Chat(Cm::DropHover(false))),
                 _ => None,
             }),
-            if self.fx.running() { window::frames().map(Msg::Frame) } else { Subscription::none() },
+            if self.fx.running() || self.ticks_running() { window::frames().map(Msg::Frame) } else { Subscription::none() },
             if self.video_ticking() {
                 iced::time::every(Duration::from_millis(33)).map(|_| Msg::Video(Vm::Tick))
             } else {

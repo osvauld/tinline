@@ -19,6 +19,8 @@ import uniffi.p2pcore.Chat
 import uniffi.p2pcore.DayPage
 import uniffi.p2pcore.DeliveryState
 import uniffi.p2pcore.Message
+import uniffi.p2pcore.MessageReceiptStatus
+import uniffi.p2pcore.ReceiptTick
 import uniffi.p2pcore.TransferState
 import java.io.File
 import java.time.LocalDate
@@ -169,6 +171,35 @@ class FakeChatSource(private val app: P2pApp? = null, files: Boolean = false) : 
         app?.let { ChatNotifier.incoming(it, m) }
     }
 
+    /** Preview-only receipt marks (the fake has no signatures; the real ones come from the core's verified ledger):
+     *  pending = waiting to send; seeded delivered messages alternate delivered / read; a message sent here steps
+     *  waiting -> one -> delivered -> read a couple of seconds apart, so the gallery shows each transition. */
+    private val fakeTicks = java.util.concurrent.ConcurrentHashMap<String, ReceiptTick>()
+
+    override fun receipts(peerDid: String, messageId: String): MessageReceiptStatus? =
+        msgs[peerDid]?.firstOrNull { it.id == messageId }?.let(::fakeReceipt)
+
+    override fun dayReceipts(peerDid: String, day: String): List<MessageReceiptStatus> = (msgs[peerDid] ?: emptyList()).map(::fakeReceipt)
+
+    private fun fakeReceipt(m: Message): MessageReceiptStatus {
+        val tick = when {
+            !m.outgoing || m.deleted -> ReceiptTick.NONE
+            m.delivery == DeliveryState.PENDING -> ReceiptTick.ONLY_HERE
+            else -> fakeTicks[m.id] ?: if (m.id.hashCode() % 2 == 0) ReceiptTick.READ else ReceiptTick.DELIVERED
+        }
+        return MessageReceiptStatus(m.id, "", tick, emptyList())
+    }
+
+    private fun stepTicks(m: Message) {
+        scope.launch {
+            for (t in listOf(ReceiptTick.WAITING, ReceiptTick.DELIVERED, ReceiptTick.READ)) {
+                fakeTicks[m.id] = t
+                _events.tryEmit(ChatEvent.Changed(find(m.peerDid, m.id)))
+                delay(2500)
+            }
+        }
+    }
+
     override fun refresh() { rebuild() }
     override fun day(peerDid: String, day: String?) = DayPage("today", (msgs[peerDid] ?: emptyList<Message>()).sortedBy { it.at }, null)
     override fun fetchOlder(peerDid: String, beforeDay: String) = 0
@@ -179,7 +210,10 @@ class FakeChatSource(private val app: P2pApp? = null, files: Boolean = false) : 
             if (_links.value[m.peerDid] == Link.Offline) return@launch
             val d = find(m.peerDid, m.id).copy(delivery = DeliveryState.DELIVERED)
             put(d)
+            fakeTicks[m.id] = ReceiptTick.WAITING
             _events.tryEmit(ChatEvent.Delivery(m.peerDid, m.id, DeliveryState.DELIVERED))
+            delay(2500)
+            stepTicks(d)
         }
     }
 

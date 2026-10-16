@@ -74,10 +74,11 @@ evidence. `ReceiptLevel` never reads them. Apps must not merge the two; see hand
 
 ## Not done (honest)
 
-- **Desktop and Android displays.** Not edited: `chat_view.rs` / `Conversation.kt` are
-  actively owned by other lanes (ds-chat, chat-media-ui, parity-desktop, wave2). Handoff:
-  [message-receipt-ui-handoff.md](message-receipt-ui-handoff.md). The product gate is
-  therefore NOT met.
+- **Desktop and Android displays** were added afterwards
+  ([status display](message-receipt-ui-handoff.md)). Desktop was demonstrated against a
+  real p2p-peer (Waiting -> Delivered -> Read screenshots, outside Git); Android was
+  built and unit-tested but not run on an emulator or phone. The 1:1 product gate is
+  therefore met on desktop only; Android needs a device/emulator demonstration.
 - Group message receipts: no issuance, exchange or visibility yet (needs group store
   transaction seam, member admission at first acceptance, group/2 frames via hosts).
 - Own-device replication of receipt ledgers (a laptop does not see receipts its phone

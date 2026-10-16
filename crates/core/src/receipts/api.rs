@@ -52,6 +52,30 @@ pub struct RecipientReceipts {
     pub proofs: Vec<ReceiptProof>,
 }
 
+/// What an outgoing message's status mark should say, decided in core so both
+/// apps agree. Only `Delivered`/`Read` come from recipient-signed statements.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, uniffi::Enum)]
+pub enum ReceiptTick {
+    /// No mark: incoming, deleted, or a note to yourself.
+    None,
+    /// Still only on this device (it has not gone out yet).
+    OnlyHere,
+    /// Sent; the recipient's device has not confirmed this version yet. Must
+    /// not look delivered, whatever the unsigned transport ack says.
+    Waiting,
+    /// A device of the recipient signed that it holds this version.
+    Delivered,
+    /// A device of the recipient signed that it marked this version read.
+    Read,
+}
+
+/// The chat list's mark for a conversation whose last message is ours.
+#[derive(Debug, Clone, PartialEq, Eq, uniffi::Record)]
+pub struct ChatReceiptRow {
+    pub peer_did: String,
+    pub status: MessageReceiptStatus,
+}
+
 /// Recipient evidence for the version of a message this device shows. An
 /// edited/deleted message is a new version: earlier receipts do not carry over.
 #[derive(Debug, Clone, PartialEq, Eq, uniffi::Record)]
@@ -59,6 +83,8 @@ pub struct MessageReceiptStatus {
     pub message_id: String,
     /// Hex digest of the exact signed version the statements must cover.
     pub version: String,
+    /// The mark to draw for this message (see `ReceiptTick`).
+    pub tick: ReceiptTick,
     /// One row per recipient account; empty for "You" (notes to self).
     pub recipients: Vec<RecipientReceipts>,
 }
@@ -111,6 +137,12 @@ impl Node {
     ) -> Result<MessageReceiptStatus, Error> {
         let inner = self.inner.clone();
         self.block_on(async move { inner.chat_message_receipts(&peer_did, &message_id).await })?
+    }
+
+    /// The mark for every conversation whose last message is ours (the chat list).
+    /// Blocking. Re-read after `on_chat_changed` / `on_delivery_changed` / `on_message_changed`.
+    pub fn chat_list_receipts(&self) -> Result<Vec<ChatReceiptRow>, Error> {
+        self.inner.chat_list_receipts()
     }
 
     /// `chat_message_receipts` for every message of one UTC day page, oldest first (as

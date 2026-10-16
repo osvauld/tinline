@@ -424,11 +424,16 @@ impl App {
         let mut meta = row![tx(hhmm(m.at), 11.0, metac).line_height(lh(11.0))].spacing(3).align_y(Alignment::Center);
         let mut meta_w = crate::fit::width(&hhmm(m.at), ui::SANS, 11.0);
         if m.outgoing {
-            meta = meta.push(container(match m.delivery {
-                GroupDelivery::Delivered => crate::pg_icons::pgi("check", 12.0, metac),
-                GroupDelivery::Waiting => crate::pg_icons::pgi("clock", 11.0, metac),
-            }).width(13).height(11).center_x(13).center_y(11));
-            meta_w += 16.0;
+            // Receipt ticks (ticks.rs): waiting for a host = the slack string, a host has it = one tick.
+            // Host storage is never shown as members' delivery/read. No transition yet in groups.
+            let v = match m.delivery {
+                GroupDelivery::Delivered => crate::ticks::Vis::One,
+                GroupDelivery::Waiting => crate::ticks::Vis::Slack,
+            };
+            let tw = 12.0 * crate::tin_ticks::VB_W / crate::tin_ticks::VB_H;
+            let inks = crate::ticks::Inks { meta: metac, read: t.tick_read, bad: t.tick_bad, bg };
+            meta = meta.push(container(crate::ticks::glyph(v, None, inks, 12.0, self.fx.now)).width(tw).height(12).center_x(tw).center_y(12));
+            meta_w += tw + 3.0;
         }
         let te = message_body(&m.text, fg);
         let (lines, last) = live_wrap(&m.text, inner);

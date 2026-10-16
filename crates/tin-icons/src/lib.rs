@@ -11,6 +11,7 @@ pub mod emit;
 pub mod icons;
 pub mod path;
 pub mod shape;
+pub mod ticks;
 
 #[cfg(test)]
 mod tests;

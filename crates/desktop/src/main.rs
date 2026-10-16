@@ -40,6 +40,12 @@ mod pg_icons;
 #[path = "../../tin-icons/generated/tin_icons.rs"]
 #[allow(dead_code)]
 mod tin_icons;
+/// Receipt-tick geometry and spring curves, generated from the string model (crates/tin-icons/src/ticks.rs).
+#[path = "../../tin-icons/generated/tin_ticks.rs"]
+#[allow(dead_code)]
+mod tin_ticks;
+/// Receipt ticks drawn as the mark's string, with their one-shot transitions.
+mod ticks;
 /// CSS-like text ellipsis by measurement.
 mod fit;
 mod call_field;

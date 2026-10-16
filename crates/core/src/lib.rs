@@ -65,7 +65,7 @@ pub use group::invitations::{GroupInvitation, GroupInvitationEvents, GroupInvita
 pub use caps::{CALLS_NOT_ALLOWED, ContactOrigin};
 pub use contact_req::{AddError, AddOutcome, CodePeek, ContactRequest, ContactRequestEvents, MyCode};
 pub use search::api::{HitRange, MessageHit, NameHit, SearchConvKind, SearchNameKind, SearchResults};
-pub use receipts::api::{MessageReceiptStatus, ReceiptLevel, ReceiptProof, ReceiptProofKind, RecipientReceipts};
+pub use receipts::api::{ChatReceiptRow, ReceiptTick, MessageReceiptStatus, ReceiptLevel, ReceiptProof, ReceiptProofKind, RecipientReceipts};
 pub use chat::api::{Attachment, AttachmentKind, Chat, ChatEvents, DayPage, DeliveryState, Message, PictureDownload, StorageUsage, TransferState};
 pub use sync::{LinkEvents, LinkedDevice};
 pub use voice::{VoiceDecoder, VoiceInfo, VoiceRecorder};
