@@ -121,6 +121,13 @@ Codes are reusable for a week, so nobody becomes a contact without the owner's y
 3. A answers `Ringing`, then `Accept { renewed_grant }` / `Decline` / `Busy`.
    Either side ends with `Hangup`. `renewed_grant` is a fresh call token for B.
 
+Video is offered in the same messages: `CallHello.video` / `Accept.video` =
+`Option<VideoOffer { max_pixels, decode, encode }>` (codec lists of `"av1"` / `"vp8"`, best first;
+`decode` always has `av1`). Both present = video. Each direction's codec is
+`send_codec(sender, receiver)`: the first of the sender's `encode` the receiver decodes, else AV1;
+both ends compute it from the two offers, with no further message. Details: `docs/video.md`
+("Call protocol") and `docs/design/video-hw-vp8.md`.
+
 ## Tokens (P6; decisions U13, U15)
 
 Every statement a DID hands out (tokens, group invites, picture deletion permits) is an
