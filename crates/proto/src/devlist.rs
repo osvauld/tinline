@@ -14,12 +14,29 @@ pub struct DeviceEntry {
     pub relay: Option<String>,
 }
 
+/// Most succession links one list carries (`DeviceList::links`).
+pub const MAX_LIST_LINKS: usize = 16;
+
+/// "The install whose device key was `from` now has `to`" (private endpoint rotation): signed by
+/// the `from` key itself, so only the holder of the old key can make one. A new install of the
+/// same DID (a link, a restore) has no such link.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct Succession {
+    pub from: [u8; 32],
+    pub to: [u8; 32],
+    /// Ed25519 by `from` over `[did, to]` under `DEVICE_SUCCESSION`.
+    pub sig: Vec<u8>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct DeviceList {
     pub did: String,
     /// Unix ms chosen by the signer; higher wins (see `newer`).
     pub seq: u64,
     pub devices: Vec<DeviceEntry>,
+    /// Recent key changes of the listed installs, so a contact that knew an old key can tell a
+    /// rotated install from a new one (`succeeds`).
+    pub links: Vec<Succession>,
 }
 
 /// Longest relay hint kept (`valid_relay_hint`); longer lists do not decode.
@@ -27,7 +44,7 @@ const MAX_RELAY_HINT: usize = 200;
 
 impl Signable for DeviceList {
     const DOMAIN: domains::Domain = domains::DEVICES;
-    const MAX_BODY: usize = 128 + MAX_LIST_DEVICES * (32 + 4 + MAX_RELAY_HINT);
+    const MAX_BODY: usize = 128 + MAX_LIST_DEVICES * (32 + 4 + MAX_RELAY_HINT) + MAX_LIST_LINKS * (32 + 32 + 1 + 64);
     fn signer(&self) -> Signer<'_> {
         Signer::Did(&self.did)
     }
@@ -40,6 +57,11 @@ impl Signable for DeviceList {
         }
         let mut seen = HashSet::new();
         if !self.devices.iter().all(|e| seen.insert(e.device)) {
+            return Err(Error::Decode);
+        }
+        if self.links.len() > MAX_LIST_LINKS
+            || self.links.iter().any(|l| l.sig.len() != 64 || l.from == l.to)
+        {
             return Err(Error::Decode);
         }
         Ok(())
@@ -62,7 +84,18 @@ pub fn sign_device_list(
     devices: &[([u8; 32], Option<String>)],
     seq: u64,
 ) -> SignedDeviceList {
+    sign_device_list_with(id, devices, &[], seq)
+}
+
+/// `sign_device_list` carrying succession `links` (callers keep at most `MAX_LIST_LINKS`).
+pub fn sign_device_list_with(
+    id: &Identity,
+    devices: &[([u8; 32], Option<String>)],
+    links: &[Succession],
+    seq: u64,
+) -> SignedDeviceList {
     let claim = DeviceList {
+        links: links.to_vec(),
         did: id.did().to_string(),
         seq,
         devices: devices
@@ -84,6 +117,38 @@ pub fn verify_device_list(blob: &SignedDeviceList, expected_did: &str) -> Result
         }
     }
     Ok(list)
+}
+
+/// The link "`from` is now `to`" for `did`, signed with the old key's secret.
+pub fn sign_succession(from_secret: &[u8; 32], did: &str, to: [u8; 32]) -> Succession {
+    let from = cryptography::signature::public_key(from_secret);
+    let sig = crate::signed::sign_detached(&SecretKey(from_secret), domains::DEVICE_SUCCESSION, &[did.as_bytes(), &to]);
+    Succession { from, to, sig: sig.to_vec() }
+}
+
+/// Whether `link` is a good succession link for `did`.
+pub fn verify_succession(link: &Succession, did: &str) -> bool {
+    let Ok(sig) = <[u8; 64]>::try_from(link.sig.as_slice()) else {
+        return false;
+    };
+    link.from != link.to
+        && crate::signed::verify_detached(Signer::Key(&link.from), domains::DEVICE_SUCCESSION, &[did.as_bytes(), &link.to], &sig).is_ok()
+}
+
+/// Whether `device` in `list` (already verified for its DID) is a rotated key of an install
+/// whose earlier key `known` says we knew: a chain of good links leads back to it.
+pub fn succeeds(list: &DeviceList, device: &[u8; 32], known: impl Fn(&[u8; 32]) -> bool) -> bool {
+    let mut cur = *device;
+    for _ in 0..list.links.len() {
+        let Some(link) = list.links.iter().find(|l| l.to == cur && verify_succession(l, &list.did)) else {
+            return false;
+        };
+        if known(&link.from) {
+            return true;
+        }
+        cur = link.from;
+    }
+    false
 }
 
 /// PROVISIONAL (coordinator): a receiver refuses a device list whose `seq` (unix ms chosen by the

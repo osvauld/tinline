@@ -277,6 +277,7 @@ fn unchecked_blob(id: &identity::Identity, devices: &[[u8; 32]], seq: u64) -> St
                 relay: None,
             })
             .collect(),
+        links: Vec::new(),
     };
     let body = cryptography::codec::to_bytes(&list).unwrap();
     let sig = id.sign(&cryptography::sign::input(

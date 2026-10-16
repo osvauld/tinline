@@ -13,6 +13,8 @@ pub const INVITE_V2: Domain = b"osvauld/p2p/invite/v2\0";
 pub const GRANT: Domain = b"osvauld/p2p/grant/v1\0";
 pub const BIND: Domain = b"osvauld/p2p/bind/v1\0";
 pub const DEVICES: Domain = b"osvauld/p2p/devices/v1\0";
+/// An install's old device key naming its next one (private endpoint rotation, packet F).
+pub const DEVICE_SUCCESSION: Domain = b"tinline/device-succession/v1";
 pub const BLOCK: Domain = b"osvauld/p2p/block/v1\0";
 pub const GCALL_START: Domain = b"tinline/gcall/start/v1";
 pub const GCALL_JOIN: Domain = b"tinline/gcall/join/v1";
@@ -66,6 +68,7 @@ pub const ALL: &[Domain] = &[
     GRANT,
     BIND,
     DEVICES,
+    DEVICE_SUCCESSION,
     BLOCK,
     GCALL_START,
     GCALL_JOIN,
