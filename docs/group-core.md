@@ -4,8 +4,8 @@ Code: `crates/core/src/group/` (`record.rs`, `doc.rs`, `state.rs`, `store.rs`, `
 `engine.rs`, `api.rs`; G2: `own.rs`, `mail.rs`, `requests.rs`; G3: `invitations.rs`, `code.rs`).
 Acceptance tests on real nodes: `crates/core/tests/group_core.rs` (G1), `crates/core/tests/group_g2.rs`
 (G2) and `crates/core/tests/group_g3.rs` (G3).
-Decisions: `endpoint-rotation-blocking:docs/design/rotation-open-decisions.md` §0 (U2, U4 revised,
-U7, U9/U15, U10, U11, U12, U14, U16, multiple hosts §9 Q5). Choices marked **PROVISIONAL** were
+Decisions: `docs/design/rotation-open-decisions.md` (U2, U4 revised,
+U7, U9/U15, U10, U11, U14, U16, D11 periodic rotation, D12 removal upload window, multiple hosts §9 Q5). Choices marked **PROVISIONAL** were
 made by the coordinator's rule ("most conservative option that keeps the feature working") while
 the user was away; each is listed at the end.
 
@@ -99,7 +99,7 @@ the user was away; each is listed at the end.
   (`group.redb`) seals every row (AES-GCM, `storage::Sealed`) under
   `BLAKE3-derive-key("tinline/group-store/v2", recovery phrase)`, like the chat store.
 
-## Removal (U9, U11, U12 "refusal is immediate")
+## Removal (U9, U11, D12; "refusal is immediate")
 
 1. Admins flag (`group_flag`). When a host derives that a member reached 3 counted flags, it
    first relays the records (so the member's own replica holds the flags), then sends that
@@ -109,13 +109,17 @@ the user was away; each is listed at the end.
 2. From then on the host answers that DID's every `Hello` with `Removed`, carrying also what the
    member lacks of the causal past of the removing flags (so even a member that was offline
    derives its removal from verified records in its own replica), and sends it nothing newer. It accepts one upload per connection of that DID's own **posts whose signed frontier
-   predates the removal** (U11 option A), refusing the batch otherwise
+   predates the removal** (U11 option A), and only for 2 days (`REMOVED_UPLOAD_WINDOW_MS`, D12)
+   after this host first derived the removal (`rm_seen/{gid}/{did}`, local clock; never a
+   record's `at`), refusing the batch otherwise (`removed_member_upload_refused_after_the_window_even_with_a_shared_group`,
    (`the_host_refuses_a_removed_member_that_ignores_its_removal`,
    `an_offline_post_written_before_the_removal_is_delivered`).
 3. The removed member's app disables posting (`group_post` → `Rejected("removed")`), stops
    dialing once a host acknowledged its last own op, and keeps its history (read-only).
-4. Hosts rotate their group endpoint 2 days after the removal (U12, G2; see Rotation). The
-   host also drops the removed DID's directory entries at once (U9).
+4. The host drops the removed DID's directory entries at once (U9). A removal does **not**
+   rotate the group endpoint (D11: rotation is periodic only; see Rotation). Authorization is by
+   DID, so the window in 2. holds even if the removed DID still reaches this host's group
+   endpoint through another group they share.
 
 ## Devices (stage 3)
 
@@ -175,22 +179,20 @@ group, sender and recipient (a host cannot re-wrap a body under another envelope
   notice). The shipped app also refuses locally to ask someone it blocks, someone who blocks it,
   or an existing contact.
 
-## Rotation (G2 stage 4, U12, §10 Q8)
+## Rotation (periodic, D11; `docs/rotation.md`)
 
-A host's rotation triggers are derived from signed records: each removal (the `at` of its 3rd
-counted flag) and each counted host revocation (`HostPermit{active: false}`). When a trigger in a
-group this device hosts is newer than its group endpoint key (`ep/made`) and the delay (2 days,
-`ROTATION_DELAY_MS`; `group_set_rotation_delay_for_test`) has passed, the device makes a new key,
-closes the old endpoint (every session ends; whoever knew only the old one, the removed member,
-cannot reach it) and binds the new one. It then opens a connection to every current member
-device in its directory (each member's `Hello` now carries its home relay) and sends `Moved{auth,
-group, hosts}`: `auth` proves the new endpoint, `hosts` are the DID-signed host addresses. The
-member keeps them only from an active host whose address names the connection's endpoint, and
-dials. Members offline at the time are retried with backoff (2 s doubling to 30 s) for the delay
-period. Removed DIDs (and non-members) are never told; their directory entries are dropped at the
-removal. Other hosts learn the new address from the host's next `Hello`. Every member derives the
-deadline from the same signed records ("announced" by the removal itself);
-`group_endpoint_rotation_due()` shows it on a host.
+Every device that hosts a group's chat or calls rotates its group endpoint periodically: `made +
+interval + jitter` (`RotationPolicy`: 7 days, up to 1 day of jitter, per device, settable with
+`set_group_rotation_policy`). Removals, flags, host revocations and blocking never trigger or
+move it. The rebind is crash-safe (staged key, bind new, promote, then close old) and the
+announce window (`ep/announce`, 7 days) survives a restart. The rotated host opens a connection
+to every current member device in its directory (each member's `Hello` carries its home relay)
+and sends `Moved{auth, group, hosts}`: `auth` proves the new endpoint, `hosts` are the
+DID-signed host addresses. The member keeps them only from an active host whose address names
+the connection's endpoint, and dials. Members offline at the time are retried with backoff (2 s
+doubling to 30 s) for the announce window. Removed DIDs (and non-members) are never told. Other
+hosts learn the new address from the host's next `Hello`. `group_endpoint_rotation_due()` shows
+the deadline on a host; `group_rotate_now()` rotates at once.
 
 ## Inviting contacts directly (G3, `invitations.rs`)
 
@@ -249,7 +251,7 @@ sync, direct invitations).
   through `redeem_invite` (`proto::issued`; expiries in unix ms).
 - As before, a link reveals ONE host's group endpoint to whoever holds it (and anyone who fetches
   with it learns all active hosts' endpoints, as the old token carried them). A link names one
-  host: if that host is offline (or rotated its endpoint, U12), the link does not work; ask for a
+  host: if that host is offline (or rotated its endpoint), the link does not work; ask for a
   new one (PROVISIONAL).
 
 ## Group calls (GA-I1, U21)
@@ -265,8 +267,8 @@ Code: `calldir.rs`, `calls.rs`; spec `docs/design/group-call-spec.md` §11 (GA-I
 - **Control through the chat hosts:** `GroupMsg::CallHostStatus` (every 30 s and on change),
   `CallHostRequest` / `CallHostRefusal` (the starter's pick, §2.3), `CallStart{start, hosts}`,
   `CallEnd`. Hosts verify and relay; removed and joining members never get them.
-- Call hosts rotate after a removal too (half a delay after chat hosts when they host no
-  chat); rotation waits for a running call (≤ 1 h).
+- Call hosts rotate on their own periodic schedule like chat hosts; a due rotation waits for
+  a running call (≤ 1 h).
 - API: `group_call_start/join/leave/set_muted`, `group_calls`, `group_call_hosting_enable`,
   `set_group_call_events`, `group_appoint_call_host` / `group_revoke_call_host` /
   `group_accept_call_host`, `GroupDetail.{am_call_host, call_hosts, call_host_requests,
@@ -287,7 +289,9 @@ our DID; apps no longer show it: own-device sync covers linked devices),
 refusal), `group_post(id, text, reply_to)`, `group_flag(id, did)`, `group_set_admin(id, did,
 admin)` (owner), `group_leave(id)`, `group_appoint_host(id, did, device_id)` /
 `group_revoke_host(...)` (admins), `group_accept_host(id, accept)` (this device),
-`group_device_id()`, `group_endpoint_id()`, (G2) `group_endpoint_rotation_due() -> Option<u64>`.
+`group_device_id()`, `group_endpoint_id()`, `group_endpoint_rotation_due() -> Option<u64>`,
+`group_rotation_policy() -> RotationPolicy`, `set_group_rotation_policy(policy)`,
+`group_rotate_now()` (`docs/rotation.md`).
 `GroupDetail` (G2) also has `host_requests` (devices an admin appointed that have not answered,
 with `appointed_by`) and `host_requested_here` (an admin appointed THIS device: show "host this
 group?" and answer with `group_accept_host(id, true|false)`; a later `HostAccept{false}` ends the
@@ -298,8 +302,9 @@ Chat requests (G2, `requests.rs`): `set_group_request_events(GroupRequestEvents{
 `GroupChatRequest{id, group_id, group_name, peer_did, peer_name, outgoing, state:
 ChatRequestState{Pending, Accepted, Declined, Blocked}, at, contact_added}`.
 Test hooks: `group_known_endpoints_for_test`, `group_directory_for_test`,
-`group_dial_only_for_test`, `group_ignore_removal_for_test`, (G2)
-`group_set_rotation_delay_for_test(secs)`, `group_skip_request_checks_for_test`,
+`group_dial_only_for_test`, `group_ignore_removal_for_test`, (dev-tools builds only)
+`group_set_rotation_policy_for_test(policy)` and `group_set_removed_upload_window_for_test(ms)`,
+`group_skip_request_checks_for_test`,
 `group_relayed_mail_count_for_test`, `group_relayed_mail_contains_for_test`.
 
 Delivery of our own posts: `Waiting` until some host acknowledged holding it ("Waiting for a
@@ -329,8 +334,8 @@ delivered}`. Test hook: `group_guess_codes_for_test(link, n)`.
 8. Inert records (a non-admin's flag, a stranger's post) are kept, not refused (§6 Q10).
 9. Membership is per DID; a member's other device learns the group by own-device sync (G2) or
    joins with a device token.
-10. A removed member's upload of pre-removal posts is accepted without a count cap until hosts
-    rotate (U15); the rotation (G2) closes that window after 2 days.
+10. A removed member's upload of pre-removal posts is accepted without a count cap for 2 days
+    after each host first learned of the removal (D12, local clock; U15).
 11. (G2) The group store has its own device ID; a fresh store gets a fresh one (P10 for groups).
 12. (G2) Chat requests: mail kept 7 days at hosts (max 64 per recipient); the acceptance ticket
     is good 7 days; request state is per device (not synced to own devices; another device of the
@@ -338,10 +343,9 @@ delivered}`. Test hook: `group_guess_codes_for_test(link, n)`.
     sender is told `Blocked`; existing contacts cannot be requested; asking again while pending
     returns the pending request. A DID with a pending request ticket that scans our normal QR
     also gets message-only tokens.
-13. (G2) Rotation deadline = trigger record's `at` (the flagger's / revoker's clock) + 2 days;
-    a host revocation rotates the remaining hosts only (members' own group endpoints, which the
-    revoked host knew, do not rotate: U1 member notes are a later slice). Members offline longer
-    than the delay after a rotation need a fresh token (device sync or invite).
+13. Rotation is periodic per hosting device (D11, `docs/rotation.md`); members' own group
+    endpoints do not rotate. Members offline longer than the announce window (7 days) after a
+    rotation need a fresh token (device sync or invite).
 
 14. (G3) A direct invitation is the same bearer invite as a link (not bound to the invitee); the
     invitee could pass it on. Rows are forgotten 7 days after expiry. A refused delivery (`Reject`:
@@ -352,10 +356,11 @@ delivered}`. Test hook: `group_guess_codes_for_test(link, n)`.
 
 ## Left (later slices)
 
-- Member group endpoint rotation and notes to hosts (U1); periodic host rotation (only removal
-  and revocation trigger one today).
+- Member group endpoint rotation and notes to hosts (U1); private (1:1) endpoint rotation is the
+  next packet (`docs/rotation.md`).
 - The group endpoint is one per install for all groups: a removed member that shares another
-  group hosted by the same device learns the rotated endpoint through that group.
+  group hosted by the same device learns the rotated endpoint through that group (harmless for
+  enforcement: refusal and the upload window are by DID).
 - Group-call UI and platform condition feeders (GA-I1 wired the core), files/voice in groups, edits/deletes of posts, mute, group rename/photo,
   "who can invite" setting, readmission after removal, host-side limits (max hosts, upload caps).
 - `blocking_acceptance.rs::personal_block_does_not_change_group_membership` (P5's file) still

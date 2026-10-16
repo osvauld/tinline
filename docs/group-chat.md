@@ -3,7 +3,7 @@
 Status: **design, not implemented**. This is the agreed direction for group chat v1;
 1:1 chat remains unchanged. See [chat.md](chat.md) for the existing implementation.
 Rotation integration constraints are tracked in
-[group-rotation-integration-contract.md](group-rotation-integration-contract.md); succession
+[group-rotation-integration-contract.md](archive/rotation/group-rotation-integration-contract.md); succession
 and delegation remain separate, provisional contracts.
 
 ## 1. Decisions and boundaries

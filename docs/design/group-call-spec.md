@@ -41,7 +41,7 @@ Markers used below:
 
 - Each participant has exactly one QUIC connection, to H. Participants dial from their
   **group** endpoint (U2) and never from their private endpoint. H's group endpoint comes from
-  its signed host record (`docs/group-multi-host-model.md` §1). No member learns another
+  its signed host record (`docs/archive/rotation/group-multi-host-model.md` §1). No member learns another
   member's endpoint or device ID, which keeps U7. [P]
 - H never decodes, mixes or re-encodes. It forwards each Opus datagram's bytes unchanged,
   apart from adding a slot byte (§1.2). [P, U21]
@@ -138,7 +138,7 @@ with chat datagrams. Each connection carries:
 - Only a device that holds a valid **`host_call`** permit can host. This is a capability
   separate from chat hosting (`docs/group-chat.md` §4 capability list; U21).
 - The permit is the multi-host model's host-permit leaf with the `Host` capability narrowed
-  to `CallHost` (`multi_host.rs` `MGrant`; `docs/group-multi-host-model.md` §1). Its holder
+  to `CallHost` (`multi_host.rs` `MGrant`; `docs/archive/rotation/group-multi-host-model.md` §1). Its holder
   must also have enabled call hosting locally.
 - The permit is required because hosting exposes the host's group endpoint to every
   participant. Only permitted hosts have an endpoint that members are allowed to know (U7).
@@ -236,7 +236,7 @@ contain no device or transport keys (U4 revised).
 | `Join` | joiner DID | `host_gen`, `issued_ms`, `nonce` |
 | `Roster` | host DID | `host_gen`, `epoch` u32 (increments on each change), `entries: [(slot u8, did, Join)]` |
 | `Leave` | member DID | `host_gen`, `issued_ms` |
-| `End` | host DID | `host_gen`, `reason` (`ended`\|`host_leaving`\|`host_rotating`\|`removed`\|`superseded`), `next_host` optional |
+| `End` | host DID | `host_gen`, `reason` (`ended`\|`host_leaving`\|`removed`\|`superseded`), `next_host` optional |
 | `Heartbeat` | — (unsigned, on the authenticated stream) | `epoch`, once per second from H |
 
 How the control messages fit together:
@@ -371,7 +371,7 @@ the whole table (Q3).
 | **Split after redial** (some clients reached backup 0, others backup 1) | The two `CallStart`s for the same `call_id` and `host_gen` are relayed via the chat hosts, and members carry both | The backup with the lower index wins. The other sends `End{superseded, next_host}`. |
 | **Planned host exit** (degrade or user) | `End{host_leaving, next_host}` | The same redial, without waiting for the heartbeat timeout. |
 | **Member drop** | H sees 5 s with no control or datagrams | H removes the slot and sends a new `Roster`. A rejoin is a fresh `Join` and may get a new slot. |
-| **U12 host rotation due during the call** | The host knows its own deadline | The host defers rotation until the call ends, by at most 1 h (Q12). Then it sends `End{host_rotating, next_host: self}`. Its new record has already been pushed (multi-host `rotate_host`), and members redial its new endpoint with `host_gen + 1`. Join refusal of the removed member was already immediate, so the deferral only lengthens the U11 backdated-upload window by ≤ 1 h. |
+| **Periodic host rotation due during the call** (`docs/rotation.md`) | The host knows its own deadline | The host defers rotation until the call ends, by at most 1 h (Q12). Then it rotates: the old endpoint closes and members detect host loss (missed heartbeats) and redial the backups. No `End` reason is sent for it (the former `host_rotating` was never emitted and was removed). |
 | **Periodic group-endpoint rotation by H** | Local | Deferred while hosting. Same 1 h cap and the same end-and-redial if the cap is reached. |
 | **Member group-endpoint rotation** | Local | Deferred while in a call. If it is forced, the member sends its rotation note to the chat hosts, `Leave`s, and re-`Join`s from the new endpoint. Rotation of the private endpoint does not affect the call (U2). |
 | **Path change** (Wi-Fi to mobile) | QUIC/iroh path migration [A] | No control action. On a phone host, the §2.4 metered rule applies. |
@@ -444,7 +444,7 @@ reusing `multi_host.rs` fixtures). Each refusal case asserts byte-identical stat
 | GC-S08 | Host dropped; `backups[0]` up, or down | Redial to b0 with `host_gen + 1`, or else b1; the split case resolves to b0 |
 | GC-S09 | Member removed mid-call (honest H, then rogue H) | Honest H ejects at once and re-rosters; rogue H keeps them (limitation) |
 | GC-S10 | Personal block between two participants | Membership unchanged; the blocker's mix excludes the blocked slot; H learns nothing |
-| GC-S11 | U12 deadline during a call | Rotation deferred ≤ cap; `End{host_rotating}`; members redial the new endpoint |
+| GC-S11 | Rotation deadline during a call | Rotation deferred ≤ 1 h; then host loss; members redial the backups |
 | GC-S12 | Member rotation during a call, deferred and forced | Deferred, or a clean Leave and re-Join; the call continues |
 | GC-S13 | Flood: oversize datagrams, > 60 pps, Join spam | Bounded; other members unaffected |
 | GC-S14 | U7 audit over the whole call lifecycle | No member ever holds another member's endpoint or device key; the roster holds DIDs and slots only |
@@ -609,7 +609,7 @@ the real engines), `cargo test -p group-sim (design-models branch) group_call` (
   Off while a phone host is limited (K = 1). Consequence: a loud 200 ms burst does displace a
   speaker (it meets the "6 dB for 200 ms" rule); without D2 it never did.
 - **Redial.** A backup that cannot be reached is skipped at once; one that does not answer is
-  given `ANSWER_TIMEOUT_MS` (5 s). `End{host_leaving|host_rotating}` tries `next_host` first,
+  given `ANSWER_TIMEOUT_MS` (5 s). `End{host_leaving}` tries `next_host` first,
   then the other backups.
 - **Small rules.** A replacement Join from the same DID keeps its slot; a Leave older than the
   participant's Join is refused; the control rate (10/s) counts every frame on a connection,

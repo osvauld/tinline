@@ -11,7 +11,7 @@ Documents there:
 
 - `docs/group-chat.md`: member-hosted relay/cache design.
 - `docs/group-chat-tests.md`: 63 conceptual cases; no executable passing claims.
-- `docs/endpoint-rotation-coordination.md`: your earlier coordination note, reviewed.
+- `docs/archive/rotation/endpoint-rotation-coordination.md`: your earlier coordination note, reviewed.
 
 No group implementation has started. We intend pure fixture/validator/simulator tests first,
 then persistence and authenticated iroh wiring. Multiple hosts can be desktop, headless or

@@ -53,7 +53,7 @@ cause of the restore problems (a restore changes the device key; the DID never c
 ## Not in phase 1
 
 Signing of other records by the device key (account doc, own-device sync, attestations; see
-`rotation-author-key-trace.md` R3–R5) beyond chat messages: later packet.
+`docs/archive/rotation/rotation-author-key-trace.md` R3–R5) beyond chat messages: later packet.
 Ticks regression and verified flag after restore (section 5 bugs 4, 5).
 
 ## Progress (coordinator)

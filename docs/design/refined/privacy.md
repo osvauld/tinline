@@ -5,7 +5,7 @@ Prototype: [`privacy.html`](./privacy.html) (interactive, simulated data, no net
 scenario control live in the Simulation drawer, closed by default.
 Sources: `groups/AndroidPrivacy.dc.html`, `groups/AndroidBlocking.dc.html`, and the decisions in
 `endpoint-rotation-blocking:docs/design/rotation-open-decisions.md` section 0 (U1-U24),
-`endpoint-rotation-blocking.md`, `rotation-time-contract.md`, `rotation-storage-failure-contract.md`.
+`docs/archive/rotation/` (`endpoint-rotation-blocking.md`, `rotation-time-contract.md`, `rotation-storage-failure-contract.md`).
 Items marked **Proposed** are design ideas, not agreed protocol behaviour.
 
 ## 1. Principles
