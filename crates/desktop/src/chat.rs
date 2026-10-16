@@ -665,21 +665,11 @@ impl App {
     /// What my message's tick shows: the core's `ReceiptTick` (Delivered/Read only from signed receipts),
     /// or not delivered (a block). None = no mark (incoming, deleted, notes to self) or not read yet.
     pub(super) fn tick_vis_of(&self, m: &ChatMsg) -> Option<crate::ticks::Vis> {
-        use crate::ticks::Vis;
-        use p2pcore::ReceiptTick as R;
         if !m.outgoing || m.deleted {
             return None;
         }
-        if self.blocks.not_delivered(&m.peer_did, &m.id) {
-            return Some(Vis::Bad);
-        }
-        match self.chat.receipts.get(&m.id)?.tick {
-            R::OnlyHere => Some(Vis::Slack),
-            R::Waiting => Some(Vis::One),
-            R::Delivered => Some(Vis::Two),
-            R::Read => Some(Vis::Read),
-            R::None => None,
-        }
+        let tick = self.chat.receipts.get(&m.id).map(|r| r.tick);
+        p2pcore::tick_vis(tick, self.blocks.not_delivered(&m.peer_did, &m.id))
     }
 
     /// Starts a tick transition for every loaded message whose state changed since it was last shown.

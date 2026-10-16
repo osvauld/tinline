@@ -622,7 +622,7 @@ private fun ColumnScope.GroupItemLive(
     val qColor = if (qr?.outgoing == true) c.accentInk else qr?.let { authorColor(it.authorDid) } ?: c.accentInk
     val quote: (@Composable () -> Unit)? = if (m.replyTo == null) null else ({ PgQuote(qWho, qColor, qr?.text ?: "Original message unavailable", null) })
     // Waiting for a host = the slack string; a host has it = one tick. Host storage is never members' delivery/read.
-    val tick = if (!m.outgoing) null else if (m.delivery == CoreDelivery.WAITING) MetaReceipt(TickVis.Slack, m.id, "Waiting for a host") else MetaReceipt(TickVis.One, m.id, "A host has it")
+    val tick = if (!m.outgoing) null else if (m.delivery == CoreDelivery.WAITING) MetaReceipt(TickVis.SLACK, m.id, "Waiting for a host") else MetaReceipt(TickVis.ONE, m.id, "A host has it")
     val meta = BubbleMeta(msClock(m.at.toLong()), receipt = tick)
     Column(Modifier.padding(top = top ?: gapAbove(pos)).fillMaxWidth(), horizontalAlignment = if (m.outgoing) Alignment.End else Alignment.Start) {
         Box(Modifier.fillMaxWidth(.78f), contentAlignment = if (m.outgoing) Alignment.CenterEnd else Alignment.CenterStart) {
