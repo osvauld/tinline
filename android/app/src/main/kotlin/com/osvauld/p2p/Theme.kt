@@ -234,9 +234,10 @@ val TinColors.onAccentFill: Color get() = onAccent
 val TinColors.onDangerBtn: Color get() = Color.White
 val TinColors.lav: Color get() = if (dark) Color(0xFF2F3A75) else Color(0xFFE1E4F7)
 val TinColors.lavInk: Color get() = if (dark) Color(0xFFDFE3FF) else Color(0xFF374582)
-/** Receipt ticks (lab/ticks): read = lavender ink, not delivered = danger ink. On the sent bubble ([prc]) these are
- *  7.1 / 5.75 : 1 in light and 7.57 / 5.62 : 1 in dark (WCAG), all above 3 : 1. */
-val TinColors.tickRead: Color get() = lavInk
+/** Receipt ticks (lab/ticks): read = lavender ink, not delivered = danger ink. On the sent bubble ([prc]):
+ *  light read #374582 7.10 : 1 (OKLab ΔE 13.4 from the delivered ink), bad 5.75 : 1; dark read #B8B0FF 4.88 : 1
+ *  (ΔE 14.8; the lav-ink token #DFE3FF looked near-white next to delivered), bad 5.62 : 1. */
+val TinColors.tickRead: Color get() = if (dark) Color(0xFFB8B0FF) else lavInk
 val TinColors.tickBad: Color get() = er
 val TinColors.gold: Color get() = if (dark) Color(0xFFE8B04A) else Color(0xFFC98A1E)
 val TinColors.goldInk: Color get() = if (dark) Color(0xFFE8B04A) else Color(0xFF845A10)

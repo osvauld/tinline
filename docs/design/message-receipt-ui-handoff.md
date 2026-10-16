@@ -10,19 +10,23 @@ provenance in the message menu / action sheet. Group receipts are not built.
   Read }`. `Delivered`/`Read` come only from committed recipient-signed statements for the exact shown
   version; the legacy transport ack can at most move `OnlyHere` to `Waiting`.
 - **Ticks are the mark's string** (user pick from `?lab=ticks`, branch lab/ticks, preset "crisp",
-  STRING variant at every size): K1 (6,12), K2 (19.5,4), sag 7.5, swing -35 deg, stroke 2.1, second
-  tick dx 5, knot gap 1, slot `20 + max(dx, 6)` = 26 units wide on the 24 grid. Geometry (40-point
-  polylines for the slack and the taut string) and the morph curves (the mark's own spring, sampled at
-  120 Hz: pull `1 - s/s0`, pluck `1 - 2s/s0`) are generated from Rust: `crates/tin-icons/src/ticks.rs`
-  -> `generated/tin_ticks.rs` (iced) and `generated/TinTicks.kt` (Compose). Checked against the lab in
-  node: tick points identical to 3 decimals, pluck identical, pull within 0.005.
+  STRING variant at every size), **tuned 2026-10-16** after the 11-12 px review: the lab values (K1
+  (6,12), sag 7.5, swing -35 deg, dx 5) read as "//" with a small hook. Now K1 (4.5,11.5), K2 (20,4.5),
+  sag 9.1, swing -21 deg (the string leaves K1 down-right and turns tightly), stroke 2.1, second tick
+  dx 6, knot gap 1; slot `20 + max(dx, 6)` = 26 units wide on the 24 grid (unchanged). Geometry
+  (40-point polylines for the slack and the taut string) and the morph curves (the mark's own spring,
+  sampled at 120 Hz: pull `1 - s/s0`, pluck `1 - 2s/s0`) are generated from Rust:
+  `crates/tin-icons/src/ticks.rs` -> `generated/tin_ticks.rs` (iced) and `generated/TinTicks.kt`
+  (Compose). The construction matched the lab in node (tick points to 3 decimals with the lab's numbers,
+  pluck identical, pull within 0.005).
 - States: OnlyHere = slack string (waiting to send), Waiting = one tick (left your device), Delivered
   = two ticks, Read = two ticks in lavender ink, Not delivered (blocked) = slack string in the danger
   ink. Groups: waiting for a host = slack, a host has it = one tick (no member delivery/read yet).
 - Tokens: desktop `Tok.tick_read` / `tick_bad`, Android `TinColors.tickRead` / `tickBad`. Light: read
-  #374582, bad #A12B23 on the sent bubble #CDEBE3 = 7.10 / 5.75 : 1. Dark: read #DFE3FF, bad #F2B8B5
-  on #0E4E43 = 7.57 / 5.62 : 1 (WCAG). The dark danger ink already clears 3:1, so no stronger tint
-  was needed; it does read as pink, which is the token's hue.
+  #374582, bad #A12B23 on the sent bubble #CDEBE3 = 7.10 / 5.75 : 1 (read OKLab dE 13.4 from the
+  delivered ink). Dark: read #B8B0FF (a real lavender; the --lav-ink #DFE3FF read as near-white next to
+  delivered #8FC9B9), bad #F2B8B5 on #0E4E43 = 4.88 / 5.62 : 1 (WCAG), read dE 14.8. The dark danger ink
+  already clears 3:1, so no stronger tint was needed; it reads pink, which is the token's hue.
 - Transitions, one shot, only when the state of a message already on screen changes (never on page
   load or scroll-in): slack -> one = pull; one -> two = the second string pulls out of the first;
   two -> read = one pluck + colour ease (240 ms, ease-out); waiting -> not delivered = colour ease;
