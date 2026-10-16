@@ -722,6 +722,10 @@ fn serve(node: &Node) -> Result<(), String> {
                 node.mark_read(find(node, who)?).map_err(|e| e.to_string())?;
                 Ok("OK".into())
             }
+            ["block", who] => {
+                node.block(find(node, who)?).map_err(|e| e.to_string())?;
+                Ok("BLOCKED".into())
+            }
             ["remove", who] => {
                 node.remove_contact(find(node, who)?).map_err(|e| e.to_string())?;
                 Ok("REMOVED".into())
