@@ -130,6 +130,9 @@ pub(super) struct ChatState {
     /// A message seen for the first time (page load, scroll-in) never animates.
     pub tick_vis: HashMap<String, crate::ticks::Vis>,
     pub tick_anims: HashMap<String, crate::ticks::Anim>,
+    /// The chat list's mark per conversation whose last message is mine (core `chat_list_marks`):
+    /// `(group, conversation id)` -> (message id, tick). Missing = not read yet (slot stays empty).
+    pub marks: HashMap<(bool, String), (String, crate::ticks::Vis)>,
     /// The next older day we hold, if any.
     pub older: Option<String>,
     pub loading: bool,
@@ -209,6 +212,7 @@ impl Default for ChatState {
             receipts: HashMap::new(),
             tick_vis: HashMap::new(),
             tick_anims: HashMap::new(),
+            marks: HashMap::new(),
             older: None,
             loading: false,
             fetching: false,
@@ -245,6 +249,8 @@ pub(super) enum Cm {
     /// A contact's presence, read when its conversation opened.
     Presence(String, bool),
     Chats(Result<Vec<Chat>, String>),
+    /// The chat list's marks (DMs and groups) from the core.
+    Marks(Vec<p2pcore::ListMark>),
     /// peer, whether the page goes in front of what is loaded
     Day(String, bool, Result<DayPage, String>),
     /// Receipt statuses read from the core for messages of this peer.
@@ -553,7 +559,23 @@ impl App {
             return Task::none();
         }
         let (src, contacts) = (self.src(), self.contacts.clone());
-        blocking(move || src.chats(contacts).map_err(s), |r| Msg::Chat(Cm::Chats(r)))
+        Task::batch([blocking(move || src.chats(contacts).map_err(s), |r| Msg::Chat(Cm::Chats(r))), self.refresh_marks()])
+    }
+
+    /// Re-reads the chat list's marks (my last message's tick per DM and group). Off the UI loop.
+    pub(super) fn refresh_marks(&self) -> Task<Msg> {
+        if !self.chat_io() {
+            return Task::none();
+        }
+        let node = self.node.clone();
+        blocking(move || node.chat_list_marks().unwrap_or_default(), |v| Msg::Chat(Cm::Marks(v)))
+    }
+
+    /// The list mark for a conversation whose last message (`last_id`) is mine: `Some(None)` keeps
+    /// the slot (nothing read yet, so nothing moves when it arrives), `None` = no slot.
+    pub(super) fn list_mark(&self, group: bool, id: &str, last_id: Option<&str>) -> Option<Option<crate::ticks::Vis>> {
+        let last_id = last_id?;
+        Some(self.chat.marks.get(&(group, id.to_string())).filter(|(m, _)| m == last_id).map(|(_, v)| *v))
     }
 
     fn load_day(&self, peer: String, day: Option<String>, prepend: bool) -> Task<Msg> {
@@ -711,6 +733,9 @@ impl App {
                 if t == SideTab::Groups {
                     return self.update_live(super::group_live::Lm::Reload);
                 }
+            }
+            Cm::Marks(v) => {
+                self.chat.marks = v.into_iter().map(|m| ((m.group, m.conversation_id), (m.message_id, m.mark))).collect();
             }
             Cm::Chats(r) => {
                 // An erroring API is the empty state, not a banner.
@@ -1185,7 +1210,7 @@ impl App {
     pub(super) fn on_chat_event(&mut self, ev: ChatEv) -> Task<Msg> {
         let t = self.on_chat_event_inner(ev);
         self.sync_ticks();
-        Task::batch([t, self.ensure_thumbs()])
+        Task::batch([t, self.ensure_thumbs(), self.refresh_marks()])
     }
 
     fn on_chat_event_inner(&mut self, ev: ChatEv) -> Task<Msg> {

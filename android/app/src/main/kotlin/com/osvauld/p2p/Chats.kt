@@ -57,11 +57,19 @@ fun chatRows(chats: List<Chat>, contacts: List<Contact>, links: Map<String, Link
     }
 }
 
+/** The chat list's marks (DM and group) onto the rows: a row whose last message is mine keeps the mark's slot. */
+fun withMarks(rows: List<ChatRowUi>, marks: Map<Pair<Boolean, String>, uniffi.p2pcore.ListMark>, myDid: String?): List<ChatRowUi> = rows.map { r ->
+    val slot = r.mine && r.did != myDid
+    val m = marks[r.group to r.did]?.takeIf { slot }
+    r.copy(mark = m?.mark, markSlot = slot, markKey = m?.messageId ?: r.did)
+}
+
 /** Active groups as Chats rows (the playground's Chats tab lists 1:1 and group conversations together, newest first). */
 fun groupChatRows(list: List<uniffi.p2pcore.GroupSummary>, me: String, nowMs: Long): List<ChatRowUi> =
     list.filter { GroupText.active(it.myRole) }.map { s ->
         val at = s.last?.at?.toLong() ?: 0L
-        ChatRowUi(s.id, s.name, GroupText.preview(s, me), if (at > 0) listTime(at, nowMs) else "", false, Tick.Two, s.unread.toInt(), group = true, atMs = at)
+        val mine = s.last?.let { it.outgoing && it.kind == uniffi.p2pcore.GroupItemKind.POST } == true
+        ChatRowUi(s.id, s.name, GroupText.preview(s, me), if (at > 0) listTime(at, nowMs) else "", mine, Tick.Two, s.unread.toInt(), group = true, atMs = at)
     }
 
 /** "New chat": pick a contact, or add one. */

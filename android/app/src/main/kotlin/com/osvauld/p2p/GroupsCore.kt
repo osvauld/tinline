@@ -319,6 +319,9 @@ class GroupsController(private val api: GroupApi, private val me: () -> String?)
     private val _list = MutableStateFlow<List<GroupSummary>>(emptyList())
     val list: StateFlow<List<GroupSummary>> = _list
     private val _open = MutableStateFlow<OpenGroup?>(null)
+    /** Bumped on every group change (receipts included): what the chat list's marks re-read on. */
+    private val _changes = MutableStateFlow(0L)
+    val changes: StateFlow<Long> = _changes
     val open: StateFlow<OpenGroup?> = _open
     @Volatile var myDevice: String = ""
         private set
@@ -495,6 +498,7 @@ class GroupsController(private val api: GroupApi, private val me: () -> String?)
     }
 
     override fun onGroupChanged(groupId: String) {
+        _changes.value = _changes.value + 1
         synchronized(this) {
             _list.value = try { api.groups() } catch (e: Exception) { _list.value }
             if (_open.value?.id == groupId) { reloadOpen(); reloadInvitations() }

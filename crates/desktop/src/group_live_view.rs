@@ -98,7 +98,10 @@ impl App {
             let pv = if in_call { Preview::Plain("You\u{2019}re in the call".into(), Some(t.accent_ink)) }
                 else if self.gcall.live.contains_key(&s.id) { Preview::Plain("Call in progress".into(), Some(t.accent_ink)) }
                 else if !s.hosted_here && !s.host_reachable { Preview::Waiting(text) } else { Preview::Plain(text, None) };
-            rows = rows.push(self.pg_chat_row(t, sel, face(&s.id), s.name.clone(), at, s.unread, false, pv, l(Lm::Open(s.id.clone()))));
+            let mark = if matches!(pv, Preview::Plain(_, None)) {
+                self.list_mark(true, &s.id, s.last.as_ref().filter(|m| m.outgoing && m.kind == GroupItemKind::Post).map(|m| m.id.as_str()))
+            } else { None };
+            rows = rows.push(self.pg_chat_row(t, sel, face(&s.id), s.name.clone(), at, s.unread, false, pv, l(Lm::Open(s.id.clone())), mark));
         }
         col = col.push(container(rows).padding([0, 8]));
         if !gone.is_empty() {

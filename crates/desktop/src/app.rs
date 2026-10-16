@@ -2602,12 +2602,14 @@ impl App {
                         _ => {}
                     }
                 }
-                return self.update_live(match g {
+                let t = self.update_live(match g {
                     crate::GroupEv::Message(m) => Lm::Message(m),
                     crate::GroupEv::Changed(id) => Lm::Changed(id),
                     crate::GroupEv::Request(r) => Lm::RequestChanged(r),
                     crate::GroupEv::Invitation(i) => Lm::InvitationChanged(i),
-                })
+                });
+                // The chat list's group marks follow group changes.
+                return Task::batch([t, self.refresh_marks()]);
             }
             Ev::Link(l) => return self.link_event(l),
             Ev::Incoming(info) if self.call.as_ref().is_some_and(|c| c.state == CallState::Active && c.info.call_id != info.call_id) => {
