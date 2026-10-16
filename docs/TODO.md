@@ -25,6 +25,27 @@ Open work after the 2026-10-16 refactor and rotation landing (dev 990c0d6). Deta
 - [ ] QR screen re-renders after a rotation (`my_ticket()` returns the new address).
 - [ ] Optional: neutral names for the policy API (it is still called `group_*`).
 
+## Receipts (group receipts landed 2026-10-16, dev 12a5fec)
+Detail in [design/receipt-runtime-roadmap.md](design/receipt-runtime-roadmap.md).
+- [ ] Phone check on dev: group open no longer stalls (~0.75 s `Choreographer: Skipped` before the
+      fix) and Privacy > Read receipts no longer changes height. If a stall remains, take a Perfetto
+      trace of one group open.
+- [ ] Re-run the Android unit tests and the full core integration tests on dev (only receipts/chat/
+      group-receipts/tick/rotation ran after the last dev merge).
+- [ ] Real two-device network test of `tinline/group/4` receipt frames (so far in-process only, plus
+      three headless peers).
+- [ ] Receipt size grows with group size (299 B at 3 members, 781 B at 50 per statement): find out
+      why (likely the signed meta frontier) before choosing batching. Then batching, then shards (M7).
+- [ ] Cache the group receipt status per (group, day) if group opens still feel slow (it verifies
+      every signature per call).
+- [ ] Contact device names: other people's devices show a short id ("dbebb7e4").
+- [ ] Own-device receipt ledger sharing outside the group host relay.
+- [ ] `p2p-peer chat-serve` group commands (gcreate/gjoin/gpost/greceipts…) sit uncommitted in the
+      receipt-runtime worktree: commit as test tooling or drop.
+- [ ] Decisions still open: per-device removal in groups; a proper group message details view (today a
+      desktop tooltip and Android tap line); the not-delivered mark looks like a small smile at 12 px.
+- [ ] Pre-existing: the chat jumps when the "X is offline" banner disappears.
+
 ## Whitepaper
 - [ ] Group and 1:1 rotation are now built: change their tags from "designed" to "shipped". Add the
       verified-flag rule (it survives a rotation through old-key succession links; a new install or
