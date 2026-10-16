@@ -169,7 +169,32 @@ impl Node {
 
     pub fn video_stats(&self) -> Option<VideoStats> {
         let call = self.inner.current_video_call()?;
-        let s = call.video.pipe.stats.lock().clone();
+        let pipe = &call.video.pipe;
+        let mut s = pipe.stats.lock().clone();
+        let hint = pipe.send.lock().clone().and_then(|t| t.with_sender(|s| s.hint()));
+        s.send_cap = pipe.policy.lock().send_cap(hint).0;
         Some(s)
+    }
+
+    /// Where and how big the remote picture is drawn (device pixels), and whether it is on
+    /// screen. Call on every layout change; the core rounds it to a ladder rung, holds a
+    /// shrink for a second and tells the peer's sender (`docs/design/video-adaptation.md`).
+    /// Hidden: the peer sends 180p at 15 fps. Ignored without a call.
+    pub fn set_video_view(&self, width_px: u32, height_px: u32, visible: bool) {
+        let Some(call) = self.inner.current_video_call() else { return };
+        let pipe = &call.video.pipe;
+        pipe.policy.lock().set_view(width_px, height_px, visible);
+        adapt::push_hint(pipe, Instant::now());
+    }
+
+    /// The device's thermal and battery state. Lowers what we ask the peer to send and what we
+    /// send ourselves (MODERATE: 15 fps up to 540p, SEVERE: 15 fps up to 360p, battery saver:
+    /// 24 fps up to 540p). Ignored without a call.
+    pub fn set_video_budget(&self, budget: VideoBudget) {
+        let Some(call) = self.inner.current_video_call() else { return };
+        let pipe = &call.video.pipe;
+        pipe.policy.lock().budget = budget;
+        adapt::apply_own_caps(pipe);
+        adapt::push_hint(pipe, Instant::now());
     }
 }

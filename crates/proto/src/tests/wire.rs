@@ -26,6 +26,7 @@ fn frame_roundtrip_all_variants() {
             devices: None,
             video: Some(VideoOffer {
                 max_pixels: 1280 * 720,
+                max_fps: 30,
                 decode: vec![VideoCodec::Av1, VideoCodec::Vp8],
                 encode: vec![VideoCodec::Vp8, VideoCodec::Av1],
             }),
@@ -292,6 +293,7 @@ fn every_signable_passes_the_envelope_table() {
 fn offer(decode: &[VideoCodec], encode: &[VideoCodec]) -> VideoOffer {
     VideoOffer {
         max_pixels: 1280 * 720,
+        max_fps: 30,
         decode: decode.to_vec(),
         encode: encode.to_vec(),
     }
@@ -334,12 +336,12 @@ fn video_offer_json_shape() {
     let j = serde_json::to_string(&o).unwrap();
     assert_eq!(
         j,
-        r#"{"max_pixels":921600,"decode":["av1","vp8"],"encode":["av1"]}"#
+        r#"{"max_pixels":921600,"max_fps":30,"decode":["av1","vp8"],"encode":["av1"]}"#
     );
     assert_eq!(serde_json::from_str::<VideoOffer>(&j).unwrap(), o);
     // Unknown codecs are not part of the pre-release wire; they fail to parse.
     assert!(
-        serde_json::from_str::<VideoOffer>(r#"{"max_pixels":1,"decode":["h264"],"encode":[]}"#)
+        serde_json::from_str::<VideoOffer>(r#"{"max_pixels":1,"max_fps":30,"decode":["h264"],"encode":[]}"#)
             .is_err()
     );
 }

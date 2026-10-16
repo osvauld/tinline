@@ -97,6 +97,13 @@ Frame 0 of a group is a keyframe. Receiver caps frame size (`max_frame`, default
 No resolution field: the size only changes at a keyframe, whose AV1 sequence header carries
 it, and rav1d follows it with the same decoder instance.
 
+Logs (`p2pcore::video_call`, info): once a second `video send WxH@fps kbps cap=.. key=..
+overuse=.. starved=.. queue=..ms | recv WxH@fps dec=..ms`; on every ladder step
+`video step 720p30 -> 720p15 reason=rate est=820kbps`; on every hint we send
+`video hint max=..px fps=.. reason=..`. The receiver also steers its frame-rate tier from the
+p75 decode time over 2 s (above 60% of the interval: a tier down; below 30% for 10 s: a tier up).
+Render cost is not counted yet (the apps measure it; step 3).
+
 ## Resolution ladder (`media::Ladder`, owned by `Sender`)
 
 **Since 2026-10-16 (`feature/video-adaptation`) the ladder is two-dimensional**: steps
@@ -155,9 +162,14 @@ Runs `media::Sender`/`Receiver` over the call's iroh `Connection` (audio stays o
   has read per group every 10 ms; this also counts the bottleneck queue and a receiver that
   stopped reading. `Sender::feedback` runs every 10 ms on that.
 - **Control stream** (one bi stream, opened by the receiver; the sender's half is unused):
-  version byte `1`, then messages, big-endian: `1 [delivered_bps u32][queuing_us u64]` rate
+  version byte `2`, then messages, big-endian: `1 [delivered_bps u32][queuing_us u64]` rate
   report (every 50 ms; delivered over the last 100 ms), `2` keyframe request (explicit or receiver stall), `3 [group u64]
-  [offset u64]` ack. Unknown type ends the session.
+  [offset u64]` ack, `4 [max_pixels u32][max_fps u8][reason u8]` hint (what the receiver can
+  use: the drawn size rounded up to a rung, `0` = not shown; the frame rate it decodes and
+  draws, `0` = no limit; reason 0 none, 1 display, 2 decode, 3 thermal, 4 battery, 5 user; sent
+  when set and on every change; an unknown reason or `max_fps` > 120 ends the session).
+  Unknown type ends the session; there is no v1 compatibility (pre-release).
+  See `docs/design/video-adaptation.md`.
 - **Peer-controlled bytes, bounded**: frame > `max_frame` -> that stream is stopped and a
   keyframe requested; group id >= 2^48 or not newer than the newest seen (duplicate, late
   stale group) -> stream stopped before anything is buffered; streams of groups older than
@@ -197,9 +209,10 @@ Runs `media::Sender`/`Receiver` over the call's iroh `Connection` (audio stays o
 ## Call protocol and core API (`crates/core/src/video_call.rs`)
 
 **Negotiation** (`proto::Msg`, JSON on the call's control stream):
-- `CallHello.video` / `Accept.video`: `Option<VideoOffer { max_pixels, decode, encode }>`.
+- `CallHello.video` / `Accept.video`: `Option<VideoOffer { max_pixels, max_fps, decode, encode }>`.
   Presence = "this device does video in this call"; `max_pixels` = largest picture it wants to
-  receive (today 1280x720); `decode`/`encode` = its codecs, best first (`decode` always has
+  receive (today 1280x720); `max_fps` = highest frame rate it decodes and shows (30; the
+  peer's ladder stays at or below it); `decode`/`encode` = its codecs, best first (`decode` always has
   AV1; `encode` has VP8 only with a hardware encoder). Each direction uses
   `proto::send_codec(sender, receiver)`, computed by both ends (`video_call/codecs.rs` builds
   the offer and picks the encoder/decoder; `VideoStats.send_codec`/`recv_codec` log them). The callee answers with an offer only if the hello had one and video is
@@ -246,7 +259,9 @@ the sender sees it); after a decode error it skips to the next keyframe and requ
 | `push_video_frame_rgba(width, height, rotation, rgba)`, `push_video_frame_yuyv(width, height, rotation, stride, yuyv)` | desktop cameras: packed RGBA / YUY2 (even width), converted on the encoder thread |
 | `pull_video_frame() -> Option<VideoFrame { width, height, data, seq }>` | newest decoded upright I420 frame not pulled yet; poll on the display clock |
 | `pull_video_frame_rgba() -> Option<VideoFrame>` | the same frame as packed RGBA (`convert::i420_to_rgba`, on the caller's thread): iced `image::Handle::from_rgba`, Android `Bitmap` fallback (4x the bytes of I420 across the FFI) |
-| `video_info()`, `video_stats()` | state; frames/keyframes sent, send size, bitrate, encode ms, frames decoded, decode errors, received size |
+| `video_info()`, `video_stats()` | state; frames/keyframes sent, send size, bitrate, encode ms, frames decoded, decode errors, received size; `send_fps`, `recv_fps` (last second), `send_cap {pixels, fps, reason}` (what the peer's hint, our budget and its offer allow), `ladder_steps` and `last_step_reason` (`rate`, `cpu`, `hint`, `budget`) |
+| `set_video_view(width_px, height_px, visible)` | the remote picture's drawn size in device pixels and whether it is on screen; call on layout changes. The core asks the peer for the next rung at or above it (min 320x180; hidden = 180p at 15 fps); a shrink holds 1 s, anything else goes at once. No-op without a call |
+| `set_video_budget(VideoBudget { thermal, power_save })` | Android thermal status (0-6) and battery saver. MODERATE (2): 15 fps up to 540p; SEVERE (3+): 15 fps up to 360p; power save: 24 fps up to 540p. Lowers the hint we send and caps our own ladder. No-op without a call |
 | `video_frame_handle() -> u64` | this node's handle for the direct (non-UniFFI) frame calls, see Frames across the FFI |
 
 Rust-only (not exported): `push_video_planes(.., y: &[u8], .., u: &[u8], v: &[u8], ..)` =

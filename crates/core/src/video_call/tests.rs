@@ -230,3 +230,108 @@ fn vp8_frames_decode_on_the_receive_path() {
     let out = pipe.output.lock().take().unwrap();
     assert_eq!((out.width, out.height, out.seq), (96, 64, 8));
 }
+
+mod adapt_policy {
+    use super::*;
+    use std::time::Duration;
+    use video::media::{Hint, HintReason};
+
+    fn px(w: u32, h: u32) -> u32 {
+        w * h
+    }
+
+    #[test]
+    fn nothing_known_says_nothing() {
+        let mut p = adapt::Policy::default();
+        assert_eq!(p.update(Instant::now()), None);
+    }
+
+    #[test]
+    fn drawn_size_rounds_up_to_a_rung() {
+        let mut p = adapt::Policy::default();
+        let t = Instant::now();
+        for (w, h, want) in [(100, 60, px(320, 180)), (320, 180, px(320, 180)), (321, 180, px(640, 360)), (900, 500, px(960, 540)), (1920, 1080, u32::MAX)] {
+            let mut p2 = adapt::Policy::default();
+            p2.set_view(w, h, true);
+            let h = p2.update(t).unwrap_or_else(|| Hint { max_pixels: u32::MAX, max_fps: 0, reason: HintReason::None });
+            assert_eq!(h.max_pixels, want);
+        }
+        p.set_view(0, 0, false);
+        assert_eq!(p.update(t).unwrap().max_pixels, 0);
+    }
+
+    #[test]
+    fn shrinking_holds_a_second_growing_goes_at_once() {
+        let mut p = adapt::Policy::default();
+        let t = Instant::now();
+        p.set_view(1280, 720, true);
+        assert_eq!(p.update(t).unwrap().max_pixels, px(1280, 720));
+        p.set_view(640, 360, true);
+        assert_eq!(p.update(t + Duration::from_millis(100)), None);
+        p.set_view(641, 361, true); // another rung: the wait restarts
+        p.set_view(640, 360, true);
+        assert_eq!(p.update(t + Duration::from_millis(600)), None);
+        assert_eq!(p.update(t + Duration::from_millis(1700)).unwrap().max_pixels, px(640, 360));
+        p.set_view(1280, 720, true);
+        assert_eq!(p.update(t + Duration::from_millis(1800)).unwrap().max_pixels, px(1280, 720));
+        // The same rung again is not news.
+        p.set_view(1200, 700, true);
+        assert_eq!(p.update(t + Duration::from_millis(1900)), None);
+    }
+
+    #[test]
+    fn budget_caps_size_and_rate() {
+        let mut p = adapt::Policy::default();
+        let t = Instant::now();
+        p.set_view(1280, 720, true);
+        p.update(t);
+        p.budget = VideoBudget { thermal: 2, power_save: false };
+        let h = p.update(t).unwrap();
+        assert_eq!((h.max_pixels, h.max_fps, h.reason), (px(960, 540), 15, HintReason::Thermal));
+        p.budget = VideoBudget { thermal: 3, power_save: true };
+        let h = p.update(t).unwrap();
+        assert_eq!((h.max_pixels, h.max_fps, h.reason), (px(640, 360), 15, HintReason::Thermal));
+        p.budget = VideoBudget { thermal: 0, power_save: true };
+        let h = p.update(t).unwrap();
+        assert_eq!((h.max_pixels, h.max_fps, h.reason), (px(960, 540), 24, HintReason::PowerSave));
+        // Our own ladder follows the budget.
+        assert_eq!(p.own_caps(), (2, 24));
+        p.budget = VideoBudget::default();
+        assert_eq!(p.own_caps(), (3, u32::MAX));
+    }
+
+    #[test]
+    fn decode_cost_steers_the_rate_tier() {
+        let mut p = adapt::Policy::default();
+        let t = Instant::now();
+        p.set_view(1280, 720, true);
+        p.update(t);
+        // 25 ms is 75% of a 33 ms interval: down to 24, then (60 ms is 144% of 41) to 15.
+        assert!(p.observe_decode(t, 25.0, 30));
+        assert_eq!(p.update(t).unwrap().max_fps, 24);
+        assert!(p.observe_decode(t, 30.0, 30));
+        let h = p.update(t).unwrap();
+        assert_eq!((h.max_fps, h.reason), (15, HintReason::DecodeSlow));
+        // Too few samples say nothing; cheap decoding must hold 10 s before a tier up.
+        assert!(!p.observe_decode(t, 100.0, 3));
+        assert!(!p.observe_decode(t, 5.0, 30));
+        assert!(!p.observe_decode(t + Duration::from_secs(9), 5.0, 30));
+        assert!(p.observe_decode(t + Duration::from_secs(10), 5.0, 30));
+        assert_eq!(p.update(t).unwrap().max_fps, 24);
+    }
+
+    #[test]
+    fn send_cap_names_what_binds() {
+        let mut p = adapt::Policy::default();
+        let (cap, src) = p.send_cap(None);
+        assert_eq!((cap.pixels, cap.fps, cap.reason.as_str(), src), (px(1280, 720), 30, "none", ""));
+        let hint = Hint { max_pixels: px(320, 180), max_fps: 15, reason: HintReason::Thermal };
+        let (cap, src) = p.send_cap(Some(hint));
+        assert_eq!((cap.pixels, cap.fps, cap.reason.as_str(), src), (px(320, 180), 15, "thermal", "hint"));
+        let hidden = Hint { max_pixels: 0, max_fps: 0, reason: HintReason::DisplaySize };
+        assert_eq!(p.send_cap(Some(hidden)).0.fps, 15);
+        p.budget = VideoBudget { thermal: 0, power_save: true };
+        let (cap, src) = p.send_cap(None);
+        assert_eq!((cap.pixels, cap.fps, cap.reason.as_str(), src), (px(960, 540), 24, "battery", "budget"));
+    }
+}

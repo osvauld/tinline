@@ -145,6 +145,9 @@ pub struct VideoOffer {
     /// Largest picture (width x height) this device wants to receive; the peer's sender keeps
     /// its resolution ladder at or below it.
     pub max_pixels: u32,
+    /// Highest frame rate this device decodes and shows (30 today); the peer's sender keeps
+    /// its ladder at or below it.
+    pub max_fps: u8,
     /// Codecs it decodes, best first; always contains `Av1`.
     pub decode: Vec<VideoCodec>,
     /// Codecs it encodes, best first; `Vp8` only with a hardware VP8 encoder.

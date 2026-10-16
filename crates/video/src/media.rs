@@ -593,6 +593,18 @@ pub enum HintReason {
 }
 
 impl HintReason {
+    /// For logs and the chip.
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::None => "none",
+            Self::DisplaySize => "display",
+            Self::DecodeSlow => "decode",
+            Self::Thermal => "thermal",
+            Self::PowerSave => "battery",
+            Self::User => "user",
+        }
+    }
+
     pub fn from_u8(v: u8) -> Option<Self> {
         Some(match v {
             0 => Self::None,

@@ -72,7 +72,7 @@ pub use sync::{LinkEvents, LinkedDevice};
 pub use voice::{VoiceDecoder, VoiceInfo, VoiceRecorder};
 pub use recovery_key::{is_recovery_key, recovery_key_from_phrase, recovery_phrase_from_input};
 pub use store::CallRecord;
-pub use video_call::{Bytes, Pulled, VideoEvents, VideoFrame, VideoInfo, VideoStats};
+pub use video_call::{Bytes, Pulled, VideoBudget, VideoEvents, VideoFrame, VideoInfo, VideoSendCap, VideoStats};
 pub use node::{AccountSummary, Availability, CallInfo, CallState, CallStats, CardPeek, Contact, LockState, Node, NodeEvents, NodeStatus, ProfileInfo};
 pub use licences::{open_source_licences, OpenSourceLicence};
 

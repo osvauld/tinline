@@ -13,9 +13,9 @@ pub(super) fn max_rung(ladder: &LadderConfig, max_pixels: u32) -> usize {
         .min(ladder.max_rung)
 }
 
-pub(super) async fn run_send(conn: Connection, pipe: Arc<Pipe>, peer_max_pixels: u32, codec: VideoCodec) {
+pub(super) async fn run_send(conn: Connection, pipe: Arc<Pipe>, codec: VideoCodec) {
     let mut cfg = SenderConfig::default();
-    cfg.ladder.max_rung = max_rung(&cfg.ladder, peer_max_pixels);
+    (cfg.ladder.max_rung, cfg.ladder.max_fps) = pipe.policy.lock().own_caps();
     let send = match VideoSend::accept(conn, cfg).await {
         Ok(s) => s,
         Err(e) => {
@@ -23,6 +23,10 @@ pub(super) async fn run_send(conn: Connection, pipe: Arc<Pipe>, peer_max_pixels:
             return;
         }
     };
+    let send = Arc::new(send);
+    *pipe.send.lock() = Some(send.clone());
+    // A budget set while the sender was starting.
+    adapt::apply_own_caps(&pipe);
     let spawned = std::thread::Builder::new()
         .name("tl-video-enc".into())
         .spawn(move || encode_loop(pipe, send, codec));
@@ -31,7 +35,7 @@ pub(super) async fn run_send(conn: Connection, pipe: Arc<Pipe>, peer_max_pixels:
     }
 }
 
-pub(super) fn encode_loop(pipe: Arc<Pipe>, send: VideoSend, codec: VideoCodec) {
+pub(super) fn encode_loop(pipe: Arc<Pipe>, send: Arc<VideoSend>, codec: VideoCodec) {
     video::cpu::pin_to_fast_cores();
     let epoch = Instant::now();
     let mut enc: Option<(Box<dyn VideoEncoder>, usize, usize)> = None;
@@ -134,6 +138,9 @@ pub(super) async fn run_recv(conn: Connection, pipe: Arc<Pipe>, codec: VideoCode
             return;
         }
     };
+    if let Some(h) = pipe.hint_slot.lock().take() {
+        recv.set_hint(h);
+    }
     // Small: a decoder that falls behind stops the reading, which the sender sees as backlog.
     let (tx, rx) = mpsc::channel::<Frame>(2);
     let dec_pipe = pipe.clone();
@@ -159,6 +166,11 @@ pub(super) async fn run_recv(conn: Connection, pipe: Arc<Pipe>, codec: VideoCode
                 }
             },
             _ = pipe.key_wanted.notified() => recv.request_keyframe(),
+            _ = pipe.hint_changed.notified() => {
+                if let Some(h) = pipe.hint_slot.lock().take() {
+                    recv.set_hint(h);
+                }
+            }
         }
     }
 }
@@ -178,7 +190,16 @@ pub(super) fn decode_loop(pipe: Arc<Pipe>, mut rx: mpsc::Receiver<Frame>, codec:
         if broken && f.index != 0 {
             continue;
         }
-        match dec.decode(&f.payload) {
+        let t = Instant::now();
+        let decoded = dec.decode(&f.payload);
+        {
+            let mut d = pipe.decode_ms.lock();
+            d.push_back((t, t.elapsed().as_secs_f32() * 1000.0));
+            while d.len() > 240 {
+                d.pop_front();
+            }
+        }
+        match decoded {
             Ok(pics) => {
                 broken = false;
                 for p in pics {

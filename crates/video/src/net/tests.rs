@@ -335,6 +335,7 @@ fn control_round_trip() {
         Control::Report(RateReport { delivered_bps: 123_456, queuing_us: 7_890 }),
         Control::Keyframe,
         Control::Ack { group: 42, offset: 1 << 40 },
+        Control::Hint(Hint { max_pixels: 640 * 360, max_fps: 15, reason: HintReason::Thermal }),
     ];
     let mut b = Vec::new();
     for m in &msgs {
@@ -351,4 +352,36 @@ fn control_round_trip() {
     assert!(Control::decode(&b[..5]).unwrap().is_none());
     assert!(Control::decode(&[1, 0, 0]).unwrap().is_none());
     assert!(Control::decode(&[9]).is_err());
+    // Bad hint values are protocol errors.
+    assert!(Control::decode(&[4, 0, 0, 0, 1, 15, 9]).is_err());
+    assert!(Control::decode(&[4, 0, 0, 0, 1, 200, 0]).is_err());
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn net_hint_round_trip() {
+    let p = pair().await;
+    let (tx, mut rx) = video(&p, RecvConfig::default()).await;
+    let h = Hint { max_pixels: 640 * 360, max_fps: 15, reason: HintReason::DisplaySize };
+    rx.set_hint(h);
+    let send = spawn_sender(tx.clone(), 400, Duration::from_millis(5), 60, no_lag);
+    for _ in 0..100 {
+        if tx.with_sender(|s| s.hint()) == Some(h) {
+            break;
+        }
+        let _ = tokio::time::timeout(Duration::from_millis(100), rx.recv()).await;
+    }
+    assert_eq!(tx.with_sender(|s| s.hint()), Some(h));
+    // A change goes through; the same hint again doesn't.
+    let h2 = Hint { max_pixels: 0, max_fps: 0, reason: HintReason::DisplaySize };
+    rx.set_hint(h2);
+    rx.set_hint(h2);
+    for _ in 0..100 {
+        if tx.with_sender(|s| s.hint()) == Some(h2) {
+            break;
+        }
+        let _ = tokio::time::timeout(Duration::from_millis(100), rx.recv()).await;
+    }
+    assert_eq!(tx.with_sender(|s| s.hint()), Some(h2));
+    assert_eq!((tx.stats().hints, rx.stats().hints), (2, 2));
+    send.abort();
 }

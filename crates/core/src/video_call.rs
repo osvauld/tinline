@@ -16,6 +16,7 @@
 
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, Ordering};
+use std::collections::VecDeque;
 use std::time::Instant;
 
 use iroh::endpoint::Connection;
@@ -24,7 +25,7 @@ use proto::{VideoCodec, VideoOffer, send_codec};
 use tokio::sync::{Notify, mpsc, watch};
 use tokio::task::JoinHandle;
 use video::convert::{self, Prepare, Range, RgbLayout, Rotation, Yuv420};
-use video::media::{Frame, LadderConfig, SenderConfig};
+use video::media::{Frame, Hint, LadderConfig, SenderConfig};
 use video::net::{RecvConfig, VideoRecv, VideoSend};
 use video::{EncoderConfig, I420, VideoEncoder};
 
@@ -60,6 +61,7 @@ pub struct VideoFrame {
     pub seq: u64,
 }
 
+mod adapt;
 mod api;
 mod codecs;
 mod ffi_bytes;
@@ -73,6 +75,7 @@ pub use self::ffi_bytes::Bytes;
 #[cfg_attr(not(target_os = "android"), allow(unused_imports))]
 pub(crate) use self::frames::chroma_spans;
 pub(crate) use self::pipes::fit;
+pub use self::adapt::{VideoBudget, VideoSendCap};
 use self::frames::*;
 use self::pipes::*;
 
@@ -110,6 +113,14 @@ pub struct VideoStats {
     /// Codec of each direction for this call ("av1" or "vp8"), empty before video is decided.
     pub send_codec: String,
     pub recv_codec: String,
+    /// Frames per second sent and decoded, measured over the last second.
+    pub send_fps: u32,
+    pub recv_fps: u32,
+    /// What caps our sending now (the peer's hint, our own budget, the peer's offer).
+    pub send_cap: VideoSendCap,
+    /// Ladder steps so far, and the reason of the last: "rate", "cpu", "hint" or "budget".
+    pub ladder_steps: u64,
+    pub last_step_reason: String,
 }
 
 impl VideoStats {
@@ -153,6 +164,15 @@ struct Pipe {
     /// The decoder failed: ask the sender for a keyframe.
     key_wanted: Notify,
     stats: Mutex<VideoStats>,
+    /// Drawn size, budget and decode cost (`adapt`), turned into hints for the peer.
+    policy: Mutex<adapt::Policy>,
+    /// The newest hint for the receive task, and the wake for it.
+    hint_slot: Mutex<Option<Hint>>,
+    hint_changed: Notify,
+    /// Our sender, once running (caps, steps and the peer's hint are read from it).
+    send: Mutex<Option<Arc<VideoSend>>>,
+    /// (when, ms) of recent decodes.
+    decode_ms: Mutex<VecDeque<(Instant, f32)>>,
 }
 
 /// One call's video.
@@ -221,7 +241,7 @@ impl Inner {
     pub(crate) fn video_offer(&self) -> Option<VideoOffer> {
         self.video.enabled.load(Ordering::SeqCst).then(|| {
             let (decode, encode) = codecs::local_offer_codecs();
-            VideoOffer { max_pixels: MAX_PIXELS, decode, encode }
+            VideoOffer { max_pixels: MAX_PIXELS, max_fps: FPS as u8, decode, encode }
         })
     }
 
@@ -258,11 +278,17 @@ impl Inner {
             }
             tracing::info!("video codecs: send {} recv {}", tx.as_str(), rx.as_str());
             v.peer_max_pixels.store(peer.max_pixels, Ordering::SeqCst);
+            {
+                let mut pol = v.pipe.policy.lock();
+                let max_fps = if peer.max_fps == 0 { FPS } else { (peer.max_fps as u32).min(FPS) };
+                pol.peer = (pipes::max_rung(&LadderConfig::default(), peer.max_pixels), max_fps);
+            }
             v.negotiated.store(true, Ordering::SeqCst);
             let pipe = v.pipe.clone();
-            let send = self.handle.spawn(run_send(conn.clone(), pipe.clone(), peer.max_pixels, tx));
+            let send = self.handle.spawn(run_send(conn.clone(), pipe.clone(), tx));
             let recv = self.handle.spawn(run_recv(conn.clone(), pipe, rx));
-            v.tasks.lock().extend([send, recv]);
+            let policy = self.handle.spawn(adapt::run_policy(v.pipe.clone()));
+            v.tasks.lock().extend([send, recv, policy]);
             if v.pipe.stop.load(Ordering::SeqCst) {
                 // Ended meanwhile.
                 v.stop();

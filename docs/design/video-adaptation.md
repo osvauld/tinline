@@ -1,7 +1,9 @@
 # Video adaptation: variable frame rate, steadier resolution, receiver hints
 
 Status: step 1 (`crates/video`: 2-D ladder, hints in `media`, keyframe fixes, sim) implemented
-2026-10-16 on `feature/video-adaptation`, with the deviations in section 10; steps 2-4 open.
+2026-10-16 on `feature/video-adaptation`, with the deviations in section 10. Step 2 (`video::net` control v2 with the hint message,
+`VideoOffer.max_fps`, core `set_video_view` / `set_video_budget`, `VideoStats` fields, log lines,
+test 7) implemented 2026-10-16, see section 11; steps 3-4 open.
 Builds on `docs/video.md` (ladder, rate control, transport) and `docs/design/video-hw-vp8.md`
 (codec negotiation).
 
@@ -320,3 +322,27 @@ Open issues:
    self-test has its own loop (step 4, `fps=15`). The `net` v2 message, `VideoOffer.max_fps`,
    `VideoStats` and the app APIs are steps 2-3; `Ladder::take_steps` is there for the
    `video step` log line.
+
+## 11. Step 2: core and transport
+
+Implemented as designed (control version 2, message 4, `VideoOffer.max_fps`, the two core calls,
+`VideoStats.send_fps/recv_fps/send_cap/ladder_steps/last_step_reason`, the logs, test 7 as
+`receiver_hints_cap_the_sender`). Details and deviations:
+
+1. **Hysteresis**: the hint is quantised to a rung, so resizes inside a rung send nothing; a
+   change that only shrinks the picture (display reason, same fps) must hold for 1 s (checked on
+   each call and by the 1 s policy tick); growing, hiding, budget and decode changes go at once.
+2. **Decode rule uses decode time only** (`decode_loop` p75 over 2 s, >= 10 samples). The render
+   cost (`VRENDER cost_ms`, Android pull + draw) is measured by the apps, not the core: left as
+   a TODO in `adapt::run_policy` for step 3 (an API such as `report_video_render_ms`).
+3. **No initial hint** until the app calls `set_video_view` / `set_video_budget` (or decode cost
+   steers): with nothing known there is nothing to say. Step 3 must call `set_video_view` when
+   the call screen first lays out.
+4. **`send_cap`** is computed when `video_stats()` is read, from the peer's hint (as the sender
+   received it), our budget and the offers: `pixels` is the largest allowed rung's pixel count
+   (the top rung when nothing caps), `fps` the highest allowed rate (30 uncapped), `reason` the
+   binding source ("none", "display", "decode", "thermal", "battery", "user").
+5. **`send_fps` / `recv_fps`** are frames sent / decoded per second from a 1 s tick; ladder step
+   reason `Cap` is reported as `hint` when the peer's hint binds, else `budget`.
+6. Our own budget cap reaches the ladder through `set_max` / `set_max_fps` (next rate update),
+   the peer's offer through the same limits (`max_fps` 0 is read as 30, above 30 as 30).

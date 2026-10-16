@@ -13,7 +13,8 @@
 //!
 //! Control stream (receiver -> sender), after a version byte: `1 [delivered_bps u32]
 //! [queuing_us u64]` rate report, `2` keyframe request, `3 [group u64][offset u64]` ack (stream
-//! bytes read, header included). All big-endian. The other direction is unused.
+//! bytes read, header included), `4 [max_pixels u32][max_fps u8][reason u8]` hint (what is worth
+//! sending; sent when set and on every change). Version 2. All big-endian. The other direction is unused.
 //!
 //! The video layer owns `accept_uni` and (for the sender) the next `accept_bi` on the call's
 //! connection.
@@ -28,9 +29,11 @@ use iroh::endpoint::{Connection, ConnectionError, ReadError, RecvStream, SendStr
 use tokio::sync::{mpsc, oneshot};
 use tokio::task::JoinHandle;
 
-use crate::media::{Frame, Out, RateReport, Receiver, ReceiverConfig, Sender, SenderConfig};
+use crate::media::{Frame, Hint, HintReason, Out, RateReport, Receiver, ReceiverConfig, Sender, SenderConfig};
 
-pub const CONTROL_VERSION: u8 = 1;
+pub const CONTROL_VERSION: u8 = 2;
+/// A hint's `max_fps` above this is garbage.
+const MAX_HINT_FPS: u8 = 120;
 /// Group ids above this are garbage (and would overflow the receiver's arithmetic).
 pub const MAX_GROUP_ID: u64 = 1 << 48;
 const TICK: Duration = Duration::from_millis(10);
@@ -59,6 +62,7 @@ pub enum Control {
     Keyframe,
     /// `offset` bytes of `group`'s stream have been read.
     Ack { group: u64, offset: u64 },
+    Hint(Hint),
 }
 
 impl Control {
@@ -75,6 +79,12 @@ impl Control {
                 out.extend_from_slice(&group.to_be_bytes());
                 out.extend_from_slice(&offset.to_be_bytes());
             }
+            Control::Hint(h) => {
+                out.push(4);
+                out.extend_from_slice(&h.max_pixels.to_be_bytes());
+                out.push(h.max_fps);
+                out.push(h.reason as u8);
+            }
         }
     }
 
@@ -85,6 +95,7 @@ impl Control {
             1 => 13,
             2 => 1,
             3 => 17,
+            4 => 7,
             _ => return Err(NetError::Protocol("unknown control message")),
         };
         if buf.len() < len {
@@ -97,7 +108,15 @@ impl Control {
                 queuing_us: u64_at(5),
             }),
             2 => Control::Keyframe,
-            _ => Control::Ack { group: u64_at(1), offset: u64_at(9) },
+            3 => Control::Ack { group: u64_at(1), offset: u64_at(9) },
+            _ => {
+                let max_fps = buf[5];
+                let reason = HintReason::from_u8(buf[6]).ok_or(NetError::Protocol("hint reason"))?;
+                if max_fps > MAX_HINT_FPS {
+                    return Err(NetError::Protocol("hint fps"));
+                }
+                Control::Hint(Hint { max_pixels: u32::from_be_bytes(buf[1..5].try_into().unwrap()), max_fps, reason })
+            }
         };
         Ok(Some((msg, len)))
     }
@@ -118,6 +137,7 @@ pub struct SendStats {
     pub resets: u64,
     pub reports: u64,
     pub keyframe_requests: u64,
+    pub hints: u64,
 }
 
 struct GroupTx {
@@ -243,6 +263,10 @@ impl SendState {
                 if let Some(g) = self.groups.get_mut(&group) {
                     g.acked = g.acked.max(offset.min(g.written));
                 }
+            }
+            Control::Hint(h) => {
+                self.stats.hints += 1;
+                self.tx.set_hint(h);
             }
         }
     }
@@ -454,6 +478,8 @@ pub struct RecvStats {
     pub bytes: u64,
     pub reports: u64,
     pub keyframe_requests: u64,
+    /// Hints sent.
+    pub hints: u64,
     /// Streams of older groups refused or stopped because a newer group is playing.
     pub stale_streams: u64,
     /// Streams refused for bad data (garbage header, oversized frame).
@@ -547,6 +573,16 @@ impl VideoRecv {
                 },
                 _ = self.tick.tick() => {}
             }
+        }
+    }
+
+    /// What is worth sending now (drawn size, decode cost, thermal). Goes to the sender at once
+    /// if it changed.
+    pub fn set_hint(&mut self, hint: Hint) {
+        self.rx.set_hint(hint);
+        if let Some(h) = self.rx.take_hint() {
+            self.stats.hints += 1;
+            self.send_ctrl(Control::Hint(h));
         }
     }
 

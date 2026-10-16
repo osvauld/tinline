@@ -6,7 +6,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, mpsc};
 use std::time::{Duration, Instant};
 
-use p2pcore::{CallInfo, CallState, Node, NodeEvents, NodeStatus, Pulled, VideoEvents, VideoInfo};
+use p2pcore::{CallInfo, CallState, Node, NodeEvents, NodeStatus, Pulled, VideoBudget, VideoEvents, VideoInfo};
 
 mod support;
 use support::{PASS, TempDir, online};
@@ -305,4 +305,52 @@ fn video_refused_call_stays_audio_only() {
         _ => None,
     });
     assert_eq!(reason, "hangup_remote");
+}
+
+/// Polls `p`'s stats until `f` holds (up to `secs`); returns the stats that satisfied it.
+fn stats_when(p: &Peer, secs: u64, what: &str, f: impl Fn(&p2pcore::VideoStats) -> bool) -> p2pcore::VideoStats {
+    let end = Instant::now() + Duration::from_secs(secs);
+    loop {
+        let s = p.node.video_stats().unwrap();
+        if f(&s) {
+            return s;
+        }
+        assert!(Instant::now() < end, "timed out waiting for {what}: {s:?}");
+        std::thread::sleep(Duration::from_millis(50));
+    }
+}
+
+/// Receiver hints (docs/design/video-adaptation.md, test 7): b draws a's picture small, then
+/// reports a thermal state; a's sender is capped within a second and sends at most 16 fps
+/// within two more.
+#[test]
+fn receiver_hints_cap_the_sender() {
+    let (a, b) = pair("vhint");
+    connect(&a, &b);
+    for p in [&a, &b] {
+        video_ev(p, "negotiated", |v| v.negotiated);
+    }
+    a.node.set_camera(true).unwrap();
+    video_ev(&b, "remote camera on", |v| v.remote_camera);
+    let cam = Camera::start(a.node.clone(), false);
+    // Uncapped first: 30 fps, the top rung.
+    let s = stats_when(&a, 10, "sending", |s| s.send_fps >= 20);
+    assert_eq!((s.send_cap.pixels, s.send_cap.fps, s.send_cap.reason.as_str()), (1280 * 720, 30, "none"), "{s:?}");
+
+    b.node.set_video_view(320, 180, true);
+    let s = stats_when(&a, 1, "display cap", |s| s.send_cap.pixels == 320 * 180);
+    assert_eq!(s.send_cap.reason, "display", "{s:?}");
+
+    b.node.set_video_budget(VideoBudget { thermal: 2, power_save: false });
+    let s = stats_when(&a, 1, "thermal cap", |s| s.send_cap.fps == 15);
+    assert_eq!((s.send_cap.pixels, s.send_cap.reason.as_str()), (320 * 180, "thermal"), "{s:?}");
+    let s = stats_when(&a, 2, "<= 16 fps", |s| s.send_fps > 0 && s.send_fps <= 16);
+    assert!(s.send_width <= 320 && s.send_height <= 180, "{s:?}");
+    println!("{s:?}");
+
+    // Lifting the budget and showing the picture big lifts the cap again.
+    b.node.set_video_budget(VideoBudget::default());
+    b.node.set_video_view(1280, 720, true);
+    stats_when(&a, 1, "cap lifted", |s| s.send_cap.pixels == 1280 * 720 && s.send_cap.fps == 30);
+    cam.stop();
 }
