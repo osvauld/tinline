@@ -50,6 +50,12 @@ pub struct Link {
     pub rate_changes: Vec<(u64, u64)>,
     /// `(from, to)`: everything sent in this window is lost.
     pub outages: Vec<(u64, u64)>,
+    /// Wi-Fi delay spikes (retries, airtime contention): `(from, to, extra_us)`, packets that
+    /// leave the bottleneck (or the receiver, for the return path) in `[from, to)` take
+    /// 60-100% of `extra_us` longer, both directions, nothing lost, and the radio keeps
+    /// packets in order, so the spike starts with a stall and ends with a burst. With any
+    /// spike set, forward and return packets are delivered in order.
+    pub spikes: Vec<(u64, u64, u64)>,
 }
 
 impl Default for Link {
@@ -62,8 +68,30 @@ impl Default for Link {
             queue_bytes: 64 * 1024,
             rate_changes: vec![],
             outages: vec![],
+            spikes: vec![],
         }
     }
+}
+
+impl Link {
+    /// Extra delay of a packet leaving at `t` (see `spikes`).
+    fn spike_us(&self, t: u64, rng: &mut Rng) -> u64 {
+        match self.spikes.iter().find(|s| t >= s.0 && t < s.1) {
+            Some(&(_, _, extra)) => (extra as f64 * (0.6 + 0.4 * rng.f64())) as u64,
+            None => 0,
+        }
+    }
+}
+
+/// Delivery time on a path with `spikes`: `at` plus the spike's extra delay, never before
+/// the previous packet on that path (`last`). Without spikes, `at` unchanged.
+fn spiked(link: &Link, sent: u64, at: u64, last: &mut u64, rng: &mut Rng) -> u64 {
+    if link.spikes.is_empty() {
+        return at;
+    }
+    let t = (at + link.spike_us(sent, rng)).max(*last);
+    *last = t;
+    t
 }
 
 /// What produces encoded frames in the simulation.
@@ -610,6 +638,10 @@ pub fn run(sc: &Scenario, codec: &mut dyn SimCodec) -> Report {
     // Link state.
     let mut rate = sc.link.rate_bps;
     let mut link_free = 0u64;
+    // Delay spikes: their own RNG (other scenarios keep their numbers), and the last delivery
+    // time per path: data, QUIC acks, and the receiver app's messages.
+    let mut spike_rng = Rng::new(sc.seed ^ 0x5b1e);
+    let (mut fwd_last, mut ack_last, mut back_last) = (0u64, 0u64, 0u64);
     // Receiver-side QUIC state, what the app hasn't read yet, and what it has (read, acked).
     let mut rx: BTreeMap<u64, RxStream> = BTreeMap::new();
     let mut app_buf: VecDeque<AppEv> = VecDeque::new();
@@ -654,7 +686,8 @@ pub fn run(sc: &Scenario, codec: &mut dyn SimCodec) -> Report {
             at > now
         });
         if let Some(h) = receiver.take_hint() {
-            push(&mut evs, now + sc.link.delay_us, Ev::Hint(h));
+            let at = spiked(&sc.link, now, now + sc.link.delay_us, &mut back_last, &mut spike_rng);
+            push(&mut evs, at, Ev::Hint(h));
         }
 
         // Camera + encoder.
@@ -689,7 +722,9 @@ pub fn run(sc: &Scenario, codec: &mut dyn SimCodec) -> Report {
             let capture = in_codec.remove(&i).expect("codec output for a frame it was given");
             rep.encoded.push(capture);
             let outs = sender.frame(capture, is_key, &payload);
-            apply(now, &outs, &mut tx, &mut |g| push(&mut evs, reset_at(now, link_free, &sc.link), Ev::ResetRx(g)));
+            apply(now, &outs, &mut tx, &mut |g| {
+                push(&mut evs, reset_at(now, link_free, &sc.link).max(fwd_last), Ev::ResetRx(g))
+            });
         }
 
         // Sender feedback: per-group backlog and the congestion controller's rate.
@@ -700,7 +735,9 @@ pub fn run(sc: &Scenario, codec: &mut dyn SimCodec) -> Report {
                 Backlog::Unacked => tx.iter_mut().map(|(g, s)| (*g, s.unacked_by(horizon))).collect(),
             };
             let outs = sender.feedback(&unsent);
-            apply(now, &outs, &mut tx, &mut |g| push(&mut evs, reset_at(now, link_free, &sc.link), Ev::ResetRx(g)));
+            apply(now, &outs, &mut tx, &mut |g| {
+                push(&mut evs, reset_at(now, link_free, &sc.link).max(fwd_last), Ev::ResetRx(g))
+            });
             rep.bitrate.push((now, sender.bitrate()));
             rep.wire.push((now, rep.wire_bytes));
             rep.steps.extend(sender.ladder_mut().take_steps());
@@ -731,7 +768,7 @@ pub fn run(sc: &Scenario, codec: &mut dyn SimCodec) -> Report {
                 link_free = depart;
             }
             let jitter = if sc.link.jitter_us > 0 { rng.next_u64() % sc.link.jitter_us } else { 0 };
-            let arrive = depart + sc.link.delay_us + jitter;
+            let arrive = spiked(&sc.link, depart, depart + sc.link.delay_us + jitter, &mut fwd_last, &mut spike_rng);
             if dropped {
                 rep.lost_packets += 1;
                 // Found lost once a later packet is acked (below), or else at the probe timeout:
@@ -740,7 +777,8 @@ pub fn run(sc: &Scenario, codec: &mut dyn SimCodec) -> Report {
                 lost_wait.push((p, pto));
             } else {
                 push(&mut evs, arrive, Ev::Arrive(p.clone()));
-                push(&mut evs, arrive + sc.link.delay_us, Ev::Ack(p));
+                let acked = spiked(&sc.link, arrive, arrive + sc.link.delay_us, &mut ack_last, &mut spike_rng);
+                push(&mut evs, acked, Ev::Ack(p));
             }
         }
 
@@ -893,7 +931,8 @@ pub fn run(sc: &Scenario, codec: &mut dyn SimCodec) -> Report {
                 for (g, (read, acked)) in app_read.iter_mut() {
                     if *read > *acked {
                         *acked = *read;
-                        push(&mut evs, now + sc.link.delay_us, Ev::AppAck(*g, *read));
+                        let at = spiked(&sc.link, now, now + sc.link.delay_us, &mut back_last, &mut spike_rng);
+                        push(&mut evs, at, Ev::AppAck(*g, *read));
                     }
                 }
                 if let Some(&newest) = app_read.keys().next_back() {
@@ -902,12 +941,14 @@ pub fn run(sc: &Scenario, codec: &mut dyn SimCodec) -> Report {
                 next_app_ack = now + APP_ACK_US;
             }
             if let Some(r) = receiver.report(rnow) {
-                push(&mut evs, now + sc.link.delay_us, Ev::Report(r));
+                let at = spiked(&sc.link, now, now + sc.link.delay_us, &mut back_last, &mut spike_rng);
+                push(&mut evs, at, Ev::Report(r));
             }
             if now >= next_keycheck {
                 if receiver.wants_keyframe(rnow) {
                     rep.keyframe_requests += 1;
-                    push(&mut evs, now + sc.link.delay_us, Ev::KeyReq);
+                    let at = spiked(&sc.link, now, now + sc.link.delay_us, &mut back_last, &mut spike_rng);
+                    push(&mut evs, at, Ev::KeyReq);
                 }
                 next_keycheck = now + 50_000;
             }
@@ -923,7 +964,8 @@ pub fn run(sc: &Scenario, codec: &mut dyn SimCodec) -> Report {
     rep
 }
 
-/// RESET_STREAM goes out in a packet behind whatever already sits in the bottleneck buffer.
+/// RESET_STREAM goes out in a packet behind whatever already sits in the bottleneck buffer
+/// (and, with delay spikes, behind the packets held in the radio: callers take the max).
 fn reset_at(now: u64, link_free: u64, link: &Link) -> u64 {
     link_free.max(now) + link.delay_us
 }
