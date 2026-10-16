@@ -240,5 +240,8 @@ val TinColors.lavInk: Color get() = if (dark) Color(0xFFDFE3FF) else Color(0xFF3
  *  stronger red than the pale M3 error #F2B8B5); light bad stays the error ink (5.75 : 1). */
 val TinColors.tickRead: Color get() = if (dark) Color(0xFFB8B0FF) else lavInk
 val TinColors.tickBad: Color get() = if (dark) Color(0xFFFF6B6B) else er
+/** The small "Not delivered" label in the bubble meta (11 sp text needs 4.5 : 1): dark #FF9A9A 4.72 : 1 on [prc] #0E4E43
+ *  (user 2026-10-16, 1a; the tick keeps [tickBad]); light the error ink (5.75 : 1). */
+val TinColors.tickBadText: Color get() = if (dark) Color(0xFFFF9A9A) else er
 val TinColors.gold: Color get() = if (dark) Color(0xFFE8B04A) else Color(0xFFC98A1E)
 val TinColors.goldInk: Color get() = if (dark) Color(0xFFE8B04A) else Color(0xFF845A10)
