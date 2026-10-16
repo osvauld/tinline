@@ -115,7 +115,11 @@ impl App {
                 Preview::Plain(r.preview.clone(), None)
             };
             let face = self.profile_avatar(t, &name, &r.peer_did, 48.0);
-            items.push((r.last_activity, self.pg_chat_row(t, sel, face, name, r.last_activity, r.unread, false, pv, Msg::Select(r.peer_did.clone()))));
+            // The mark of my last message (its slot kept from the start: the row's last_outgoing is known now).
+            let mark = if r.last_outgoing && matches!(pv, Preview::Plain(..)) && !me {
+                self.list_mark(false, &r.peer_did, r.last_id.as_deref())
+            } else { None };
+            items.push((r.last_activity, self.pg_chat_row(t, sel, face, name, r.last_activity, r.unread, false, pv, Msg::Select(r.peer_did.clone()), mark)));
         }
         for s in &self.live.list {
             if !super::super::group_live::active(s.my_role) || (!q.is_empty() && !s.name.to_lowercase().contains(q)) || (unread_only && s.unread == 0) {
@@ -126,7 +130,10 @@ impl App {
             let text = super::super::group_live::preview(s, &self.live.me);
             let pv = if s.last.as_ref().is_some_and(|m| m.outgoing && m.delivery == p2pcore::GroupDelivery::Waiting) { Preview::Waiting(text) } else { Preview::Plain(text, None) };
             let face = ui::group_face(t, &s.id, 48.0);
-            items.push((at, self.pg_chat_row(t, sel, face, s.name.clone(), at, s.unread, false, pv, Msg::Live(super::super::group_live::Lm::Open(s.id.clone())))));
+            let mark = if matches!(pv, Preview::Plain(..)) {
+                self.list_mark(true, &s.id, s.last.as_ref().filter(|m| m.outgoing && m.kind == p2pcore::GroupItemKind::Post).map(|m| m.id.as_str()))
+            } else { None };
+            items.push((at, self.pg_chat_row(t, sel, face, s.name.clone(), at, s.unread, false, pv, Msg::Live(super::super::group_live::Lm::Open(s.id.clone())), mark)));
         }
         #[cfg(any(test, feature = "test-hooks"))]
         items.extend(self.preview_rows(t, q));
@@ -148,7 +155,8 @@ impl App {
 
     /// One ChatsList row. `when` is listStamp(); the stamp turns accent-ink bold while unread.
     #[allow(clippy::too_many_arguments)]
-    pub(super) fn pg_chat_row<'a>(&self, t: Tok, sel: bool, face: El<'a>, title: String, at: u64, unread: u32, muted: bool, pv: Preview, on: Msg) -> El<'a> {
+    /// `mark`: my last message's tick before the preview (`Some(None)` keeps its slot empty until read).
+    pub(super) fn pg_chat_row<'a>(&self, t: Tok, sel: bool, face: El<'a>, title: String, at: u64, unread: u32, muted: bool, pv: Preview, on: Msg, mark: Option<Option<crate::ticks::Vis>>) -> El<'a> {
         use crate::fit::{ellipsize, width};
         // 380 pane - 2x8 list margin - 2x8 row padding - 48 avatar - 12 gap = the text column.
         const MID: f32 = 380.0 - 1.0 - 16.0 - 16.0 - 48.0 - 12.0;
@@ -160,7 +168,17 @@ impl App {
         let top = row![semi(name, 15.0, t.ink).line_height(lh(21.0)).width(Fill).wrapping(iced::widget::text::Wrapping::None),
             text(stamp).size(11).font(stamp_font).line_height(lh(21.0)).color(if hot { t.accent_ink } else { t.ink2 })].spacing(8).align_y(Alignment::Center);
         let badge_w = if unread > 0 { width(&unread.min(99).to_string(), ui::SANS_BOLD, 11.0).max(8.0) + 10.0 + 8.0 } else { 0.0 };
-        let room = MID - badge_w;
+        // The list mark: the conversation's tick component at 12 px, in a fixed slot (no layout shift).
+        let mark_w = 12.0 * crate::tin_ticks::VB_W / crate::tin_ticks::VB_H;
+        let mark_el: Option<El<'a>> = mark.map(|v| {
+            let inks = crate::ticks::Inks { meta: t.ink2, read: t.tick_read, bad: t.tick_bad, bg: if sel { t.accent_soft } else { t.bg } };
+            let g: El<'a> = match v {
+                Some(v) => crate::ticks::glyph(v, None, inks, 12.0, self.fx.now),
+                None => Space::new().width(mark_w).height(12).into(),
+            };
+            container(g).width(mark_w + 4.0).height(21).center_y(21).into()
+        });
+        let room = MID - badge_w - if mark_el.is_some() { mark_w + 4.0 } else { 0.0 };
         let line: El = match pv {
             Preview::Plain(s, color) => text(ellipsize(&s, ui::SANS, 13.0, room)).size(13).line_height(lh(21.0)).color(color.unwrap_or(t.ink2)).wrapping(iced::widget::text::Wrapping::None).into(),
             Preview::Draft(s) => {
@@ -175,6 +193,10 @@ impl App {
                 row![crate::pg_icons::pgi("clock", 13.0, t.gold_ink), Space::new().width(3), semi("Waiting", 13.0, t.gold_ink).line_height(lh(21.0)),
                     tx(rest, 13.0, t.ink2).line_height(lh(21.0)).wrapping(iced::widget::text::Wrapping::None)].align_y(Alignment::Center).into()
             }
+        };
+        let line: El<'a> = match mark_el {
+            Some(m) => row![m, line].align_y(Alignment::Center).into(),
+            None => line,
         };
         let mut bot = row![container(line).width(Fill).clip(true)].spacing(8).align_y(Alignment::Center);
         if unread > 0 {
@@ -646,8 +668,8 @@ impl App {
             bubble = bubble.stroke(t.bub_in_line, 1.0);
         }
         if self.blocks.not_delivered(&m.peer_did, &m.id) && m.outgoing {
-            // .fail: under my message, danger, "Not delivered".
-            let note = container(tx(crate::blocks::not_delivered_text(name), 12.0, t.danger).line_height(lh(16.0))).align_right(Fill).padding(Padding { top: 3.0, right: 2.0, ..Padding::ZERO });
+            // .fail: under my message, the not-delivered ink (the tick's), "Not delivered".
+            let note = container(tx(crate::blocks::not_delivered_text(name), 12.0, t.tick_bad).line_height(lh(16.0))).align_right(Fill).padding(Padding { top: 3.0, right: 2.0, ..Padding::ZERO });
             return self.row_with_menu(t, m, name, bubble.into(), Some(note.into()));
         }
         self.row_with_menu(t, m, name, bubble.into(), None)

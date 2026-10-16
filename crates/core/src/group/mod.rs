@@ -13,6 +13,10 @@ pub mod doc;
 pub mod code;
 pub mod engine;
 pub mod invitations;
+// Step 1 of group receipts: policy/aggregate used by the engine glue and tests; the group wire
+// and the app binding follow separately (receipt roadmap).
+#[allow(dead_code)]
+pub(crate) mod member_receipts;
 pub mod mail;
 pub mod own;
 pub mod record;

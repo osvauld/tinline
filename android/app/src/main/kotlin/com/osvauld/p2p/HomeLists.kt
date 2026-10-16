@@ -96,6 +96,13 @@ fun ChatListRow(r: ChatRowUi, draft: String?, selected: Boolean = false, onClick
                 }
                 Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
                     if (r.tick == Tick.Clock && draft.isNullOrBlank() && !r.alert) Icon(PgIcons.Clock, null, tint = c.threadText, modifier = Modifier.size(13.dp))
+                    // My last message's tick: the conversation's glyph at 12 dp in a slot kept from the start (no shift).
+                    else if (r.markSlot && draft.isNullOrBlank() && !r.alert) Box(Modifier.size(tickSlotWidth(12.dp), 12.dp)) {
+                        r.mark?.let { v ->
+                            ReceiptTickGlyph(r.markKey, v, c.ink2, c.tickRead, c.tickBad, if (selected) c.accentSoft else c.bg,
+                                if (r.group) listTickLabel(v) else tickLabel(v, firstName(r.name)))
+                        }
+                    }
                     Text(text, style = TinFs.sub.copy(lineHeight = 21.sp), color = c.ink2, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
                 Box(Modifier.width(32.dp).height(18.dp), contentAlignment = Alignment.CenterEnd) { if (hot) CountBadge(r.unread) }
@@ -357,4 +364,13 @@ fun ContactsTabBody(
             Text(t, Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 14.dp).heightIn(min = 19.dp), style = TinFs.sub.copy(lineHeight = 19.sp), color = c.ink2, textAlign = TextAlign.Center)
         }
     }
+}
+
+/** A group row's mark in words (screen reader). */
+private fun listTickLabel(v: TickVis): String = when (v) {
+    TickVis.SLACK -> "Waiting to send"
+    TickVis.ONE -> "Sent"
+    TickVis.TWO -> "Delivered to everyone"
+    TickVis.READ -> "Read by everyone"
+    TickVis.BAD -> "Not delivered"
 }

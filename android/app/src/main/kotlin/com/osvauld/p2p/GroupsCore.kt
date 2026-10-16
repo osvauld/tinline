@@ -3,6 +3,7 @@ package com.osvauld.p2p
 import android.util.Log
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
 import uniffi.p2pcore.ChatRequestState
 import uniffi.p2pcore.GroupChatRequest
 import uniffi.p2pcore.GroupDetail
@@ -15,6 +16,7 @@ import uniffi.p2pcore.GroupInvitePeek
 import uniffi.p2pcore.GroupItemKind
 import uniffi.p2pcore.GroupMessage
 import uniffi.p2pcore.GroupPage
+import uniffi.p2pcore.GroupReceiptStatus
 import uniffi.p2pcore.GroupSummary
 import uniffi.p2pcore.Node
 import uniffi.p2pcore.GroupDelivery as CoreDelivery
@@ -41,6 +43,8 @@ interface GroupApi {
     fun detail(id: String): GroupDetail
     fun messages(id: String, before: String?, limit: Int): GroupPage
     fun markRead(id: String)
+    /** Signed member receipts of my posts with `at` in [fromMs, toMs] (the group tick and n/N). */
+    fun receipts(id: String, fromMs: ULong, toMs: ULong): List<GroupReceiptStatus> = emptyList()
     fun create(name: String): String
     fun invite(id: String): String
     /** Fetches from the host the link names: network, IO threads only. */
@@ -79,6 +83,7 @@ class NodeGroupApi(private val node: () -> Node) : GroupApi {
     override fun detail(id: String) = node().groupDetail(id)
     override fun messages(id: String, before: String?, limit: Int) = node().groupMessages(id, before, limit.toUInt())
     override fun markRead(id: String) = node().groupMarkRead(id)
+    override fun receipts(id: String, fromMs: ULong, toMs: ULong) = node().groupReceipts(id, fromMs, toMs)
     override fun create(name: String) = node().groupCreate(name)
     override fun invite(id: String) = node().groupInvite(id)
     override fun peek(token: String) = node().groupPeekInvite(token)
@@ -114,7 +119,9 @@ data class InviteCandidate(val did: String, val name: String)
 data class PickRow(val did: String, val name: String, val why: String?, val invited: GroupInvitation?)
 
 /** The group on screen: its detail and the loaded window of messages (oldest first). */
-data class OpenGroup(val id: String, val detail: GroupDetail, val messages: List<GroupMessage>, val older: String?)
+data class OpenGroup(val id: String, val detail: GroupDetail, val messages: List<GroupMessage>, val older: String?,
+                     /** Signed member receipts of my loaded posts, by message id. */
+                     val receipts: Map<String, GroupReceiptStatus> = emptyMap())
 
 /** What a member's sheet offers us, in order. */
 sealed interface MemberAction {
@@ -313,13 +320,18 @@ class GroupsController(private val api: GroupApi, private val me: () -> String?)
     private val _list = MutableStateFlow<List<GroupSummary>>(emptyList())
     val list: StateFlow<List<GroupSummary>> = _list
     private val _open = MutableStateFlow<OpenGroup?>(null)
+    /** Bumped on every group change (receipts included): what the chat list's marks re-read on. */
+    private val _changes = MutableStateFlow(0L)
+    val changes: StateFlow<Long> = _changes
     val open: StateFlow<OpenGroup?> = _open
     @Volatile var myDevice: String = ""
         private set
 
+    /** Read during composition: [me] must be cheap (a cached value, not a core call). */
     val myDid get() = me().orEmpty()
 
     @Synchronized fun refresh() {
+        offMain("GroupsController.refresh")
         // A node without groups (or locked) answers with an error: an empty list.
         _list.value = try { api.groups() } catch (e: Exception) { emptyList() }
         if (myDevice.isEmpty()) myDevice = try { api.deviceId() } catch (_: Exception) { "" }
@@ -328,7 +340,16 @@ class GroupsController(private val api: GroupApi, private val me: () -> String?)
         reloadInvitations()
     }
 
+    /** The group a screen shows (set by [open], cleared by [close]); read without the monitor. */
+    @Volatile private var shown: String? = null
+
+    /**
+     * Blocking, off the main thread only: marks read (the core signs read receipts) and loads the page with
+     * its receipt statuses (verifies every receipt signature of the days in range).
+     */
     @Synchronized fun open(id: String) {
+        offMain("GroupsController.open")
+        shown = id
         _open.value = null
         try { api.markRead(id) } catch (_: Exception) {}
         load(id, GroupText.PAGE)
@@ -336,14 +357,32 @@ class GroupsController(private val api: GroupApi, private val me: () -> String?)
         reloadInvitations()
     }
 
-    @Synchronized fun close(id: String) { if (_open.value?.id == id) _open.value = null }
+    /**
+     * The chat screen went away. Called on the main thread (onDispose), so it must never take the monitor:
+     * [open], [refresh] and the core's group events hold it across markRead and receipt verification
+     * (most of a second on a phone), and the UI thread would freeze waiting. Lock-free instead: [load]
+     * re-checks [shown] after publishing, so a page that finishes after this is dropped.
+     */
+    fun close(id: String) {
+        if (shown == id) shown = null
+        _open.update { if (it?.id == id) null else it }
+    }
 
     private fun load(id: String, want: Int) {
         _open.value = try {
             val d = api.detail(id)
             val p = api.messages(id, null, want)
-            OpenGroup(id, d, p.messages, p.older)
+            OpenGroup(id, d, p.messages, p.older, receiptsOf(id, p.messages))
         } catch (e: Exception) { null }
+        // A close() that ran meanwhile wins (it clears [shown] before it clears [_open]).
+        if (shown != id) _open.update { if (it?.id == id) null else it }
+    }
+
+    /** One core read per day doc in the range of my loaded posts; none if it fails (ticks stay one). */
+    private fun receiptsOf(id: String, messages: List<GroupMessage>): Map<String, GroupReceiptStatus> {
+        val mine = messages.filter { it.outgoing }
+        if (mine.isEmpty()) return emptyMap()
+        return try { api.receipts(id, mine.minOf { it.at }, mine.maxOf { it.at }).associateBy { it.messageId } } catch (e: Exception) { emptyMap() }
     }
 
     private fun reloadOpen() { _open.value?.let { load(it.id, maxOf(it.messages.size, GroupText.PAGE)) } }
@@ -352,8 +391,10 @@ class GroupsController(private val api: GroupApi, private val me: () -> String?)
         val o = _open.value ?: return
         val before = o.older ?: return
         val p = try { api.messages(o.id, before, GroupText.PAGE) } catch (e: Exception) { return }
-        val have = o.messages.map { it.id }.toSet()
-        _open.value = o.copy(messages = p.messages.filter { it.id !in have } + o.messages, older = p.older)
+        _open.update { cur ->
+            if (cur?.id != o.id) cur
+            else cur.messages.map { it.id }.toSet().let { have -> cur.copy(messages = p.messages.filter { it.id !in have } + cur.messages, older = p.older) }
+        }
     }
 
     fun peek(token: String): GroupInvitePeek? = if (token.isBlank()) null else try { api.peek(token.trim()) } catch (_: Exception) { null }
@@ -362,7 +403,7 @@ class GroupsController(private val api: GroupApi, private val me: () -> String?)
         val t = text.trim()
         if (t.isEmpty()) return Result.failure(IllegalArgumentException("Type a message first."))
         return runCatching { api.post(id, t, replyTo) }.onSuccess { m -> synchronized(this) {
-            _open.value?.let { o -> if (o.id == id) _open.value = o.copy(messages = upsertGroupMessage(o.messages, m)) }
+            _open.update { o -> if (o?.id == id) o.copy(messages = upsertGroupMessage(o.messages, m)) else o }
             _list.value = try { api.groups() } catch (e: Exception) { _list.value }
         } }.mapError()
     }
@@ -470,18 +511,15 @@ class GroupsController(private val api: GroupApi, private val me: () -> String?)
 
     override fun onGroupMessage(message: GroupMessage) {
         onPost?.invoke(message)
-        synchronized(this) {
-            _open.value?.let { o ->
-                if (o.id == message.groupId) {
-                    _open.value = o.copy(messages = upsertGroupMessage(o.messages, message))
-                    try { api.markRead(o.id) } catch (_: Exception) {}
-                }
-            }
-            _list.value = try { api.groups() } catch (e: Exception) { _list.value }
-        }
+        val gid = message.groupId
+        _open.update { o -> if (o?.id == gid) o.copy(messages = upsertGroupMessage(o.messages, message)) else o }
+        // On screen: read now. Outside the monitor: markRead is a blocking core call (it signs read receipts).
+        if (shown == gid && _open.value?.id == gid) try { api.markRead(gid) } catch (_: Exception) {}
+        synchronized(this) { _list.value = try { api.groups() } catch (e: Exception) { _list.value } }
     }
 
     override fun onGroupChanged(groupId: String) {
+        _changes.value = _changes.value + 1
         synchronized(this) {
             _list.value = try { api.groups() } catch (e: Exception) { _list.value }
             if (_open.value?.id == groupId) { reloadOpen(); reloadInvitations() }
@@ -491,6 +529,15 @@ class GroupsController(private val api: GroupApi, private val me: () -> String?)
     fun attach(node: Node) {
         try { node.setGroupEvents(this); node.setGroupRequestEvents(this); node.setGroupInvitationEvents(this) } catch (e: Exception) { Log.w(P2pApp.TAG, "setGroupEvents: $e") }
     }
+}
+
+/**
+ * StrictMode-style guard for the blocking group calls: logs (with the stack) when one runs on the main
+ * thread, where it froze the group screen for most of a second. Silent off Android (unit tests).
+ */
+internal fun offMain(what: String) {
+    val main = runCatching { android.os.Looper.getMainLooper()?.isCurrentThread == true }.getOrDefault(false)
+    if (main) runCatching { Log.e(P2pApp.TAG, "$what on the main thread: move it to Dispatchers.IO", Throwable(what)) }
 }
 
 /** Group invite links (G3): `tinline://g/<code>`; the bare code is accepted too. */

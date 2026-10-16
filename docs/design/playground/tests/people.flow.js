@@ -252,7 +252,8 @@ const smallTargets = (p, sel) => p.evaluate((sel) => [...document.querySelectorA
     {
       const p = await open(b, 'android', 'privacy');
       ok('privacy: lists the four areas', (await p.locator('[data-privacy-row]').count()) === 4);
-      ok('privacy: read receipts and online visibility are not offered', !/read receipt|last seen|online status/i.test(await p.locator('[data-privacy]').innerText()));
+      ok('privacy: online visibility is not offered', !/last seen|online status/i.test(await p.locator('[data-privacy]').innerText()));
+      ok('privacy: read receipts switch is offered', (await p.locator('[data-privacy-receipts]').count()) === 1);
       ok('privacy: no anonymity promise', /doesn.t hide who you talk to/.test(await p.locator('[data-privacy-note]').innerText()));
       await shot(p, 'android-privacy-light');
       await p.locator('[data-privacy-row=blocked]').click(); await wait(p, 500);

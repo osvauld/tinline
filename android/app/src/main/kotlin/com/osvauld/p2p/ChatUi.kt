@@ -100,4 +100,11 @@ data class ChatRowUi(
     val group: Boolean = false,
     /** Last activity, unix ms: the list's sort key. */
     val atMs: Long = 0,
+    /** My last message's tick (core `chat_list_marks`); null until read. [markSlot] keeps its room from the start. */
+    val mark: TickVis? = null,
+    val markSlot: Boolean = false,
+    /** Identifies the marked message (the glyph animates only when the same message's state changes). */
+    val markKey: String = "",
+    /** The last message's id: a mark shows only if it is for exactly this message. */
+    val lastId: String? = null,
 )

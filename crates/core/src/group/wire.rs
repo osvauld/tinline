@@ -1,4 +1,4 @@
-//! Frames of `tinline/group/3` on the group endpoint (U2): u32 BE length + postcard (`cryptography::codec`) of `GroupMsg`
+//! Frames of `tinline/group/4` on the group endpoint (U2): u32 BE length + postcard (`cryptography::codec`) of `GroupMsg`
 //! on one bidirectional stream opened by the dialer. Dialers are members (or hosts acting as
 //! members towards another host); the acceptor is always a host (U7).
 //!
@@ -15,7 +15,11 @@
 //! member -> host  Code { code, invite?, expires } / RevokeCode { code }  -> CodeAck { code, ok, reason }
 //! anyone -> host  Fetch { code }  (first frame, G3)   -> Fetched { token } | Refused { reason }
 //! both            CallHostStatus / CallStart / CallEnd / CallHostRequest / CallHostRefusal (GA-I1)
+//! both            ReceiptHello { days } / Receipts { day, update } / ReceiptAck { day, vv }  (member receipts)
 //! ```
+//!
+//! group/4 = group/3 plus the member receipt frames (no compatibility with group/3 peers: the
+//! ALPN differs, so an old peer fails at connect instead of mid-session).
 
 use iroh::endpoint::{RecvStream, SendStream};
 use serde::{Deserialize, Serialize};
@@ -24,7 +28,7 @@ use super::doc::DocId;
 use super::record::{EndpointAuth, InviteToken, SignedHostAddr, SignedInvite};
 use crate::Error;
 
-pub const GROUP_ALPN: &[u8] = b"tinline/group/3";
+pub const GROUP_ALPN: &[u8] = b"tinline/group/4";
 pub const MAX_FRAME: usize = 16 * 1024 * 1024;
 /// `Hello` and `Welcome` list the day docs of this many recent days (as 1:1 chat does).
 pub const HELLO_DAYS: i64 = 7;
@@ -108,6 +112,17 @@ pub enum GroupMsg {
     CallHostRefusal {
         refusal: proto::gcall::SignedHostRefusal,
     },
+    // ---- member message receipts (`engine::member_receipts`, as chat/6 does for 1:1) --------
+    /// Both, after the session's catch-up: our receipt-ledger version vector per day (recent
+    /// days we hold, plus days with statements of ours no host acknowledged yet). The other
+    /// side answers with `Receipts` for what we lack.
+    ReceiptHello { days: Vec<(String, Vec<u8>)> },
+    /// Original native receipt-ledger ops of one day (bounded; every statement keeps its
+    /// signer's exact signed bytes and writer, whoever relays it). Pushed live too.
+    Receipts { day: String, update: Vec<u8> },
+    /// What we hold of that day's ledger after the import (authoritative for the sender; a
+    /// refused frame is sent again on the next trigger).
+    ReceiptAck { day: String, vv: Vec<u8> },
 }
 
 pub struct Writer(pub SendStream);

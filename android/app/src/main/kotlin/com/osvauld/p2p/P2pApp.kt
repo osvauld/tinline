@@ -118,7 +118,8 @@ class P2pApp : Application(), NodeEvents {
         node.setContactRequestEvents(requestEvents)
         hostConditions = HostConditions(this).also { it.start() }
         realChat = CoreChatSource(this).also { it.attach() }
-        groups = GroupsController(NodeGroupApi { node }) { currentDid() }.also { it.attach(node) }
+        // The cached DID: the group screens read it per row while composing (a core call there stalled the UI).
+        groups = GroupsController(NodeGroupApi { node }) { _accountDid.value ?: currentDid() }.also { it.attach(node) }
         groups.onPost = { m -> GroupNotifier.post(this, m, groups.list.value.firstOrNull { it.id == m.groupId }?.name) }
         // Someone invited me (playground Notices "invite"): out of sight a notification; in front one knock, and the
         // Groups tab shows its count. Follows Notifications › Groups.

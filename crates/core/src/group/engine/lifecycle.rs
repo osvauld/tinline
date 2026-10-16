@@ -85,6 +85,7 @@ impl Inner {
                 },
             );
         }
+        let receipts = member_receipts::controller(&store, &did, dev);
         let core = Arc::new(GroupCore {
             epoch,
             store,
@@ -109,8 +110,11 @@ impl Inner {
             announcing: Default::default(),
             compacted: Default::default(),
             codes: Default::default(),
+            receipts,
         });
         *slot = Some(core.clone());
+        // Receipt intents committed before a stop are signed now (bounded; see M3).
+        core.member_receipts_pump_and_push();
         self.search_reconcile_groups(&core);
         Ok(core)
     }

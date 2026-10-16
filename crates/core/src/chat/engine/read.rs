@@ -69,6 +69,7 @@ impl Inner {
             crate::block::known_name(&s.state, &conv.peer_did)?
         };
         let pair = pair_id(me.id.did(), &conv.peer_did);
+        let last_id = conv.last.as_ref().map(|l| l.id.clone());
         let (last_outgoing, last_delivery, last_activity, preview) = match &conv.last {
             Some(l) => {
                 let delivery = match core.store.mi(&pair, &l.id).ok().flatten() {
@@ -79,7 +80,7 @@ impl Inner {
             }
             None => (false, DeliveryState::Delivered, 0, String::new()),
         };
-        Some(Chat { peer_did: conv.peer_did.clone(), peer_name: name, preview, last_outgoing, last_delivery, last_activity, unread: conv.unread })
+        Some(Chat { peer_did: conv.peer_did.clone(), peer_name: name, preview, last_outgoing, last_delivery, last_activity, unread: conv.unread, last_id })
     }
 
     pub(crate) fn chat_list(&self) -> Result<Vec<Chat>, Error> {
@@ -145,10 +146,16 @@ impl Inner {
 
     /// Everything incoming up to now is read: unread goes to 0 and the cursor moves to the newest
     /// incoming message, which our other devices pick up (their unread clears too).
-    pub(crate) fn chat_mark_read(&self, did: &str) -> Result<(), Error> {
+    /// Async: closed days in the step's range are loaded from their blobs first, so old unread
+    /// messages get their read receipts too (`chat_closed_for_read`).
+    pub(crate) async fn chat_mark_read(self: &Arc<Self>, did: &str) -> Result<(), Error> {
         let me = self.me()?;
         let core = self.chat_core()?;
         let pair = pair_id(me.id.did(), did);
+        let closed = match core.store.conv(&pair)? {
+            Some(c) if c.unread > 0 || c.read_upto < c.last_in => self.chat_closed_for_read(&core, &pair, c.read_upto, c.read_upto.max(c.last_in)).await,
+            _ => Default::default(),
+        };
         if let Some(mut conv) = core.store.conv(&pair)?
             && (conv.unread > 0 || conv.read_upto < conv.last_in)
         {
@@ -157,7 +164,7 @@ impl Inner {
             conv.read_upto = conv.read_upto.max(conv.last_in);
             // Signed read receipt obligation for exactly what this step marks read, atomic
             // with the cursor. If it cannot be computed the read stays local (unconfirmed).
-            let mut ops = match Self::chat_read_intent(&core, &me, &pair, from, conv.read_upto) {
+            let mut ops = match Self::chat_read_intent(&core, &me, &pair, from, conv.read_upto, &closed) {
                 Ok(o) => o,
                 Err(e) => {
                     tracing::warn!("chat receipts: read intent: {e}");

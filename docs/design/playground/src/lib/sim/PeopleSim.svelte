@@ -64,7 +64,7 @@
       <li>“Someone scanned my code” request cards (accept or Not now). Whether a decline is told to the other person is undecided; the app says nothing about it.</li>
       <li>A default for “New contacts can call me” (off). The core only has the per-contact Allow calls.</li>
       <li>Unblock copy: you both add each other again before messaging. Follows U20 (their app deleted my contact entry); the exact re-add flow is not designed.</li>
-      <li>Not offered because the core has neither: read receipts and online visibility.</li>
+      <li>Read receipts: a core account setting, default on (no reciprocity, no backdating when turned back on). Online visibility is not offered: the core has none.</li>
       <li>Device names, six-digit confirmation, 5-minute code, “not seen for 30+ days” nudge, passphrase to unlink and to approve (devices study P9, E4, E5).</li>
       <li>Recovery phrase view: behind the passphrase, hidden by default, hides after 30 s or when the app leaves the foreground, no copy button.</li>
       <li>Passphrase is per device. Changing it here does not change other devices&rsquo;.</li>

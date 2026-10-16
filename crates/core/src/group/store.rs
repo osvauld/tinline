@@ -28,6 +28,8 @@
 //! seen/{mail id}                u64        mail we already handled (recipient side)
 //! rm_seen/{gid}/{did}           u64 BE     when we first derived that member's removal (local ms)
 //! clog/{gid}/{call id}          GroupCallRecord  the group call log (calllog.rs), local to this device
+//! receipts/group/{gid}/{day}/…  member receipt ledgers (`crate::receipts::store`, never removed)
+//! receipt-runtime/messages/v1/… receipt issuance intents and outbox (`receipts::store::messages`)
 //! ```
 
 use serde::{Deserialize, Serialize};
@@ -211,11 +213,22 @@ impl GroupStore {
     }
 
     pub fn put_meta(&self, gid: &str, m: &GroupMeta) -> Result<(), Error> {
+        self.put_meta_with(gid, m, Vec::new())
+    }
+
+    /// `put_meta` plus caller-owned ops (receipt issuance intents of a read-cursor move) in the
+    /// same transaction.
+    pub(crate) fn put_meta_with(&self, gid: &str, m: &GroupMeta, extra: Vec<Op>) -> Result<(), Error> {
         #[cfg(test)]
         if self.fail_next_meta_write.swap(false, std::sync::atomic::Ordering::SeqCst) {
             return Err(Error::Io("injected group metadata write failure".into()));
         }
-        self.db.put(&format!("grp/{gid}"), &json(m)).map_err(io)
+        if extra.is_empty() {
+            return self.db.put(&format!("grp/{gid}"), &json(m)).map_err(io);
+        }
+        let mut ops = vec![self.db.put_op(&format!("grp/{gid}"), &json(m)).map_err(io)?];
+        ops.extend(extra);
+        self.db.apply(&ops).map_err(io)
     }
 
     /// `(snapshot, updates)` of a group's meta doc.
@@ -232,6 +245,12 @@ impl GroupStore {
     /// Appends an accepted meta update (or, every so often, replaces everything by
     /// `snapshot()`), and writes the group meta in the same transaction.
     pub fn append_meta(&self, gid: &str, meta: &mut GroupMeta, update: &[u8], snapshot: impl FnOnce() -> Vec<u8>) -> Result<(), Error> {
+        self.append_meta_with(gid, meta, update, snapshot, Vec::new())
+    }
+
+    /// `append_meta` plus caller-owned ops (receipt issuance intents for posts the update made
+    /// show) in the same transaction.
+    pub(crate) fn append_meta_with(&self, gid: &str, meta: &mut GroupMeta, update: &[u8], snapshot: impl FnOnce() -> Vec<u8>, extra: Vec<Op>) -> Result<(), Error> {
         let mut ops: Vec<Op> = Vec::new();
         if meta.n_updates + 1 >= UPDATES_BEFORE_SNAPSHOT {
             ops.push(Op::DeletePrefix(format!("meta/{gid}/u/")));
@@ -243,6 +262,7 @@ impl GroupStore {
             meta.n_updates += 1;
         }
         ops.push(self.db.put_op(&format!("grp/{gid}"), &json(meta)).map_err(io)?);
+        ops.extend(extra);
         self.apply_append(&ops)
     }
 
@@ -275,6 +295,13 @@ impl GroupStore {
     /// meta, in one transaction.
     #[allow(clippy::too_many_arguments)]
     pub fn append_shard(&self, gid: &str, day: &str, sm: &mut ShardMeta, vv: Vec<u8>, update: &[u8], snapshot: impl FnOnce() -> Vec<u8>, group: Option<&GroupMeta>) -> Result<(), Error> {
+        self.append_shard_with(gid, day, sm, vv, update, snapshot, group, Vec::new())
+    }
+
+    /// `append_shard` plus caller-owned ops (receipt issuance intents for the posts the update
+    /// made durable) in the same transaction: the receipt seam of the group store.
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn append_shard_with(&self, gid: &str, day: &str, sm: &mut ShardMeta, vv: Vec<u8>, update: &[u8], snapshot: impl FnOnce() -> Vec<u8>, group: Option<&GroupMeta>, extra: Vec<Op>) -> Result<(), Error> {
         let mut ops: Vec<Op> = Vec::new();
         if sm.n_updates + 1 >= UPDATES_BEFORE_SNAPSHOT {
             ops.push(Op::DeletePrefix(format!("shard/{gid}/{day}/u/")));
@@ -295,6 +322,7 @@ impl GroupStore {
         if let Some(g) = group {
             ops.push(self.db.put_op(&format!("grp/{gid}"), &json(g)).map_err(io)?);
         }
+        ops.extend(extra);
         self.apply_append(&ops)
     }
 

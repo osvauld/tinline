@@ -150,7 +150,7 @@ class FakeChatSource(private val app: P2pApp? = null, files: Boolean = false) : 
     private fun rebuild() {
         _chats.value = names.map { (d, n) ->
             val last = msgs[d]?.maxWithOrNull(compareBy({ it.at }, { it.id }))
-            Chat(d, n, last?.let(::previewOf) ?: "", last?.outgoing ?: false, last?.delivery ?: DeliveryState.DELIVERED, last?.at ?: 0UL, (unread[d] ?: 0).toUInt())
+            Chat(d, n, last?.let(::previewOf) ?: "", last?.outgoing ?: false, last?.delivery ?: DeliveryState.DELIVERED, last?.at ?: 0UL, (unread[d] ?: 0).toUInt(), last?.id)
         }.sortedByDescending { it.lastActivity }
     }
 
