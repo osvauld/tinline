@@ -130,13 +130,22 @@ async fn run_real(sc: &Scenario) -> (Real, Path) {
             }
             // Size, rate and keyframe in one go: a ladder switch in between would encode a
             // keyframe at the old size and then another one at the new size.
-            let (w, h, bps, want_key) =
-                tx2.with_sender(|s| (s.resolution().0, s.resolution().1, s.bitrate(), s.wants_keyframe()));
+            // Frames beyond the ladder's frame-rate tier are skipped.
+            let look = tx2.with_sender(|s| {
+                let (w, h) = s.resolution();
+                s.take_frame(now).then(|| (w, h, s.encoder_bitrate(), s.poll_keyframe(now)))
+            });
+            let Some((w, h, bps, want_key)) = look else {
+                captured += 1;
+                continue;
+            };
             if sizes.last().is_none_or(|s| (s.1, s.2) != (w, h)) {
                 sizes.push((now, w, h));
             }
-            let (payload, key) = codec.encode(captured, want_key, bps, w, h);
-            tx2.send(now, key, &payload).unwrap();
+            // FakeCodec puts out every frame at once (output index == input).
+            if let Some((_, payload, key)) = codec.encode(captured, want_key, bps, w, h) {
+                tx2.send(now, key, &payload).unwrap();
+            }
             // Encode time is modelled (as in the sim), not spent; known once the frame is done.
             let t = device.encode_us(now, w, h, &mut enc_rng);
             tx2.with_sender(|s| s.encode_time(now, t));

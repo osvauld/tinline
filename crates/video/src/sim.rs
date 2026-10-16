@@ -9,7 +9,7 @@
 
 use std::collections::{BTreeMap, VecDeque};
 
-use crate::media::{KeyCauses, Out, RateReport, Receiver, ReceiverConfig, Sender, SenderConfig};
+use crate::media::{Hint, KeyCauses, Out, RateReport, Receiver, ReceiverConfig, Sender, SenderConfig};
 use crate::{Decoder, EncoderConfig, I420, Pattern, VideoEncoder};
 
 const TICK_US: u64 = 250;
@@ -314,6 +314,9 @@ pub struct Scenario {
     pub sender: SenderConfig,
     pub receiver: ReceiverConfig,
     pub backlog: Backlog,
+    /// `(at, hint)`: the receiving app sets this hint at `at` (it reaches the sender a one-way
+    /// delay later).
+    pub hints: Vec<(u64, Hint)>,
     pub seed: u64,
 }
 
@@ -330,6 +333,7 @@ impl Default for Scenario {
             sender: SenderConfig::default(),
             receiver: ReceiverConfig::default(),
             backlog: Backlog::Unacked,
+            hints: vec![],
             seed: 7,
         }
     }
@@ -356,6 +360,12 @@ pub struct Report {
     /// Resolution changes, and (time, width, height) of each new size at the encoder.
     pub switches: u64,
     pub sizes: Vec<(u64, u32, u32)>,
+    /// (time, frames per second) of each new frame-rate tier.
+    pub fps: Vec<(u64, u32)>,
+    /// Camera frames skipped for the frame-rate tier.
+    pub fps_skips: u64,
+    /// Every ladder step.
+    pub steps: Vec<crate::media::Step>,
     /// Capture times of the frames the encoder put out, in order.
     pub encoded: Vec<u64>,
     pub sender_drops: u64,
@@ -366,6 +376,8 @@ pub struct Report {
     pub sent_packets: u64,
     /// (time, encoder bitrate) every feedback.
     pub bitrate: Vec<(u64, u32)>,
+    /// (time, wire bytes sent so far) every feedback.
+    pub wire: Vec<(u64, u64)>,
     /// (time, bytes in the bottleneck buffer) every feedback.
     pub queue: Vec<(u64, usize)>,
     /// (arrival at the sender, report).
@@ -405,10 +417,31 @@ impl Report {
         out
     }
 
+    /// Wire rate (bps, packet overhead included) over `[from, to)`.
+    pub fn wire_bps(&self, from: u64, to: u64) -> f64 {
+        let at = |t: u64| self.wire.iter().rev().find(|w| w.0 <= t).map_or(0, |w| w.1);
+        (at(to) - at(from)) as f64 * 8.0 / ((to - from) as f64 / 1e6)
+    }
+
+    /// Frames encoded from captures in `[from, to)`.
+    pub fn encoded_in(&self, from: u64, to: u64) -> usize {
+        self.encoded.iter().filter(|&&c| c >= from && c < to).count()
+    }
+
     pub fn mean_bitrate(&self, from: u64, to: u64) -> f64 {
         let v: Vec<f64> =
             self.bitrate.iter().filter(|(t, _)| *t >= from && *t < to).map(|(_, b)| *b as f64).collect();
         v.iter().sum::<f64>() / v.len().max(1) as f64
+    }
+
+    /// The ladder steps, one per line.
+    pub fn steps_text(&self) -> String {
+        let f = |s: (u32, u32, u32)| format!("{}p{}", s.1, s.2);
+        self.steps
+            .iter()
+            .map(|s| format!("  {:7.3}s {} -> {} {:?} est {} kbps", s.at_us as f64 / 1e6, f(s.from), f(s.to), s.reason, s.bps / 1000))
+            .collect::<Vec<_>>()
+            .join("\n")
     }
 
     pub fn summary(&self, duration_us: u64) -> String {
@@ -416,9 +449,10 @@ impl Report {
         let f = self.freezes(250_000, 1_000_000, duration_us);
         let sizes: Vec<String> =
             self.sizes.iter().map(|(t, _, h)| format!("{}p@{:.1}", h, *t as f64 / 1e6)).collect();
+        let fps: Vec<String> = self.fps.iter().map(|(t, f)| format!("{f}@{:.1}", *t as f64 / 1e6)).collect();
         let k = &self.key_causes;
         format!(
-            "shown {}/{} enc {} | latency p50 {:.0} p95 {:.0} max {:.0} ms | freezes {} ({:.1} s) | key {} (start {} rate {} cpu {} req {} backlog {} other {}) drops {} skipped {} req {} cam {} | decode err {} | {:.0} kbps wire, loss {:.1}% | switches {} sizes {}",
+            "shown {}/{} enc {} | latency p50 {:.0} p95 {:.0} max {:.0} ms | freezes {} ({:.1} s) | key {} (start {} rate {} cpu {} req {} backlog {} other {}) drops {} skipped {} req {} cam {} | decode err {} | {:.0} kbps wire, loss {:.1}% | switches {} sizes {} | fps {}",
             self.shown.len(),
             self.captured,
             self.encoded.len(),
@@ -443,6 +477,7 @@ impl Report {
             100.0 * self.lost_packets as f64 / self.sent_packets.max(1) as f64,
             self.sizes.len().saturating_sub(1),
             sizes.join(" "),
+            fps.join(" "),
         )
     }
 }
@@ -535,6 +570,8 @@ enum Ev {
     Report(RateReport),
     /// The receiver app's ack of `offset` bytes of a group reaches the sender.
     AppAck(u64, usize),
+    /// The receiver's hint reaches the sender.
+    Hint(Hint),
 }
 
 /// What QUIC has received for the app, in order, until `VideoRecv` reads it.
@@ -565,6 +602,7 @@ pub fn run(sc: &Scenario, codec: &mut dyn SimCodec) -> Report {
     let mut inflight = 0usize;
     let mut srtt = (2 * sc.link.delay_us) as f64;
     let mut rttvar = srtt / 2.0;
+    let mut hints = sc.hints.clone();
     // Dropped packets the sender doesn't know about yet: (packet, probe timeout).
     let mut lost_wait: Vec<(Pkt, u64)> = Vec::new();
     let mut recovery_start = 0u64;
@@ -608,24 +646,37 @@ pub fn run(sc: &Scenario, codec: &mut dyn SimCodec) -> Report {
             }
         }
 
+        // The receiving app's hints.
+        hints.retain(|&(at, h)| {
+            if at <= now {
+                receiver.set_hint(h);
+            }
+            at > now
+        });
+        if let Some(h) = receiver.take_hint() {
+            push(&mut evs, now + sc.link.delay_us, Ev::Hint(h));
+        }
+
         // Camera + encoder.
         if now >= next_capture {
             rep.captured += 1;
             next_capture += frame_us;
             if encoding.len() >= 2 {
                 rep.camera_drops += 1;
-            } else {
+            } else if sender.take_frame(now) {
                 // The camera frame is scaled to the size the sender wants when captured.
                 let (w, h) = sender.resolution();
                 let t = sc.device.encode_us(now, w, h, &mut enc_rng);
                 encoder_free = encoder_free.max(now) + t;
-                encoding.push_back((encoder_free, now, sender.wants_keyframe(), w, h, t));
+                encoding.push_back((encoder_free, now, sender.poll_keyframe(now), w, h, t));
+            } else {
+                rep.fps_skips += 1;
             }
         }
         while encoding.front().is_some_and(|f| f.0 <= now) {
             let (_, capture, key, w, h, t) = encoding.pop_front().unwrap();
             in_codec.insert(index, capture);
-            let out = codec.encode(index, key, sender.bitrate(), w, h);
+            let out = codec.encode(index, key, sender.encoder_bitrate(), w, h);
             index += 1;
             if rep.sizes.last().is_none_or(|s| (s.1, s.2) != (w, h)) {
                 rep.sizes.push((now, w, h));
@@ -651,6 +702,11 @@ pub fn run(sc: &Scenario, codec: &mut dyn SimCodec) -> Report {
             let outs = sender.feedback(&unsent);
             apply(now, &outs, &mut tx, &mut |g| push(&mut evs, reset_at(now, link_free, &sc.link), Ev::ResetRx(g)));
             rep.bitrate.push((now, sender.bitrate()));
+            rep.wire.push((now, rep.wire_bytes));
+            rep.steps.extend(sender.ladder_mut().take_steps());
+            if rep.fps.last().is_none_or(|f| f.1 != sender.fps()) {
+                rep.fps.push((now, sender.fps()));
+            }
             rep.queue.push((now, (link_free.saturating_sub(now) * rate / 8 / 1_000_000) as usize));
             // Forget streams that are reset, or fully sent, FIN'd and acked.
             tx.retain(|_, s| !(s.unacked == 0 && (s.reset || (s.fin_sent && s.unsent() == 0))));
@@ -783,6 +839,7 @@ pub fn run(sc: &Scenario, codec: &mut dyn SimCodec) -> Report {
                     app_buf.push_back(AppEv::Reset(g));
                 }
                 Ev::KeyReq => sender.request_keyframe(),
+                Ev::Hint(h) => sender.set_hint(h),
                 Ev::AppAck(g, off) => {
                     if let Some(s) = tx.get_mut(&g) {
                         s.app_acked = s.app_acked.max(off);

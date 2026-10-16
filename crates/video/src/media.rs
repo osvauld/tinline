@@ -104,27 +104,43 @@ impl Rung {
     }
 }
 
+/// How long a block lasts: `first_us`, doubling with every further block up to `max_us`, and
+/// back to `first_us` once `forget_us` has passed since the last one.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Backoff {
+    pub first_us: u64,
+    pub max_us: u64,
+    pub forget_us: u64,
+}
+
 #[derive(Clone, Debug)]
 pub struct LadderConfig {
     /// Smallest first.
     pub rungs: Vec<Rung>,
+    /// Frame-rate tiers, lowest first (tiers above the capture rate are dropped). At `f` fps a
+    /// rung's floor is `min_bps x (0.4 + 0.6 x f / 30)`: fewer frames need fewer bits, but not
+    /// proportionally fewer, since each frame gets sharper.
+    pub tiers: Vec<u32>,
     /// Highest rung index allowed (device or peer capability).
     pub max_rung: usize,
-    /// Step up once the bitrate is this % of the next rung's `min_bps`...
+    /// Highest frame rate allowed (device or peer capability, `VideoOffer.max_fps`).
+    pub max_fps: u32,
+    /// Step up once the bitrate is this % of the next step's floor...
     pub up_margin_pct: u32,
     /// ...for this long without a break,
     pub up_hold_us: u64,
     /// and no sooner than this after stepping down.
     pub up_after_down_us: u64,
-    /// Median encode time over a second above this % of the frame interval: too slow for the
-    /// rung. Stepping up needs the p75 scaled to the bigger picture to fit it.
+    /// Median encode time over a second above this % of the current tier's frame interval: too
+    /// slow for the step. Stepping up needs the p75, scaled to the bigger picture, to fit the
+    /// new step's budget.
     pub encode_budget_pct: u32,
-    /// After stepping down for encode time, the rung stays out of reach this long, doubling
-    /// with every further step down for encode time up to `cpu_block_max_us`...
-    pub cpu_block_us: u64,
-    pub cpu_block_max_us: u64,
-    /// ...and back to `cpu_block_us` after this long without one.
-    pub cpu_forget_us: u64,
+    /// After a step down for encode time, the step left (and all above it) stays out of reach.
+    pub cpu_block: Backoff,
+    /// A step up that a step down for the bitrate undoes within this long...
+    pub flap_window_us: u64,
+    /// ...is blocked (with the steps above it) for this long.
+    pub flap_block: Backoff,
 }
 
 impl Default for LadderConfig {
@@ -137,14 +153,16 @@ impl Default for LadderConfig {
                 r(960, 540, 600_000, 2_000_000),
                 r(1280, 720, 1_000_000, 3_000_000),
             ],
+            tiers: vec![15, 24, 30],
             max_rung: 3,
+            max_fps: 30,
             up_margin_pct: 130,
-            up_hold_us: 2_500_000,
-            up_after_down_us: 4_000_000,
+            up_hold_us: 5_000_000,
+            up_after_down_us: 10_000_000,
             encode_budget_pct: 60,
-            cpu_block_us: 5_000_000,
-            cpu_block_max_us: 30_000_000,
-            cpu_forget_us: 60_000_000,
+            cpu_block: Backoff { first_us: 5_000_000, max_us: 30_000_000, forget_us: 60_000_000 },
+            flap_window_us: 20_000_000,
+            flap_block: Backoff { first_us: 30_000_000, max_us: 120_000_000, forget_us: 300_000_000 },
         }
     }
 }
@@ -157,58 +175,201 @@ const BASELINE_PROBE_US: u64 = 5_000_000;
 const MAX_Q_OFFSET_US: u64 = 100_000;
 /// After a decrease, the second look comes this much later (three more reports).
 const SETTLE_US: u64 = RATE_WINDOW_US + REPORT_US;
+/// A keyframe asked of the encoder isn't asked again for this long (a hardware encoder's output
+/// lags its input by a few frames; asking on each of them gave 2-5 keyframes per switch).
+const KEY_ASK_US: u64 = 500_000;
+/// A keyframe request from the receiver or transport within this long of sending a keyframe is
+/// for that keyframe, still on its way (about an RTT + 200 ms on a LAN; this layer has no RTT,
+/// `video::net` could pass its srtt). Longer swallowed real requests (a decode error right
+/// after a keyframe).
+const KEY_DEDUPE_US: u64 = 250_000;
+/// After a keyframe, the queueing its own burst causes (its size at the current rate, at most
+/// `KEY_ALLOWANCE_MAX_US`, falling to nothing over this long) is not overuse.
+const KEY_GRACE_US: u64 = 1_000_000;
+const KEY_ALLOWANCE_MAX_US: u64 = 200_000;
+/// A step down within this long of a starved report is for a link that got slower, not a flap.
+const REAL_DROP_US: u64 = 1_000_000;
 
-/// Encode times kept (about a second of video); a step down for encode time needs a full window.
-const ENCODE_WINDOW: usize = 30;
+/// Encode times are kept over this long; a step down for encode time needs a full window (a
+/// second's worth of frames at the current tier).
+const ENCODE_WINDOW_US: u64 = 1_000_000;
 /// Samples needed before encode time is trusted for a step up.
 const ENCODE_MIN: usize = 10;
 /// Frames ignored after a new encoder (start, size change): libaom's first frames are slower,
 /// and so is a machine that is just starting the call.
 const ENCODE_WARMUP: u32 = 15;
 
-/// Picks the resolution from the bitrate and the measured encode time. Steps down at once,
-/// up one rung at a time and only after the bitrate has held above the next rung's threshold.
+/// Why the ladder last stepped.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum StepReason {
+    /// The bitrate estimate.
+    Rate,
+    /// Encode time.
+    Cpu,
+    /// A cap: the peer's hint or the device's own limit.
+    Cap,
+}
+
+/// One ladder step, for logs (`video step 720p30 -> 720p15 reason=rate`).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Step {
+    pub at_us: u64,
+    /// (width, height, fps) before and after.
+    pub from: (u32, u32, u32),
+    pub to: (u32, u32, u32),
+    pub reason: StepReason,
+    /// The bitrate estimate the ladder last saw.
+    pub bps: u32,
+}
+
+/// Steps kept for [`Ladder::take_steps`] if nobody takes them.
+const STEP_LOG: usize = 64;
+
+#[derive(Clone, Copy, Debug, Default)]
+struct Block {
+    len: u64,
+    last: u64,
+    /// Steps above this are blocked until the time.
+    cap: Option<(usize, u64)>,
+}
+
+impl Block {
+    fn apply(&mut self, b: &Backoff, now_us: u64, cap: usize) {
+        self.len = if self.len == 0 || now_us.saturating_sub(self.last) > b.forget_us {
+            b.first_us
+        } else {
+            (self.len * 2).min(b.max_us)
+        };
+        self.last = now_us;
+        self.cap = Some((cap, now_us + self.len));
+    }
+
+    fn allows(&self, now_us: u64, step: usize) -> bool {
+        !matches!(self.cap, Some((c, until)) if now_us < until && step > c)
+    }
+}
+
+/// Picks resolution and frame rate from the bitrate and the measured encode time, over steps
+/// `(rung, tier)` ordered frame rate first: 180p15 < 180p24 < 180p30 < 360p15 < ... < 720p30.
+/// Steps down at once, to the highest step whose floor the bitrate covers (a frame-rate step
+/// needs no keyframe); up one step at a time after the bitrate has held above the next step's
+/// threshold. A step up in resolution lands at the highest tier the bitrate and encoder allow
+/// at the new size, so a better picture never comes with a lower frame rate.
 pub struct Ladder {
     cfg: LadderConfig,
-    frame_us: u64,
     cur: usize,
     above_since: Option<u64>,
     last_down_us: Option<u64>,
-    /// Encode times (us) at the current rung, after the first `warmup` frames.
-    encode: std::collections::VecDeque<u64>,
+    /// (time, encode time us) over the last `ENCODE_WINDOW_US` at the current rung, after the
+    /// first `warmup` frames.
+    encode: std::collections::VecDeque<(u64, u64)>,
     warmup: u32,
-    /// Rungs above this are blocked until the time, for being too slow to encode.
-    cpu_cap: Option<(usize, u64)>,
-    /// Current block length and when it was last applied.
-    cpu_block: (u64, u64),
+    /// Caps from the peer's hint: highest rung, highest fps.
+    hint_rung: usize,
+    hint_fps: u32,
+    cpu: Block,
+    flap: Block,
+    /// Steps up taken within `flap_window_us`: (step, time, whether it changed the size).
+    ups: Vec<(usize, u64, bool)>,
+    /// Resolution changes, and frame-rate-only steps.
     pub switches: u64,
+    pub fps_steps: u64,
+    pub last_reason: Option<StepReason>,
+    steps_log: std::collections::VecDeque<Step>,
+    last_bps: u32,
+    /// Set by the sender while the link has just been seen to get much slower (starved): a
+    /// step down then is a real change, not a flap.
+    pub real_drop: bool,
 }
 
 impl Ladder {
-    pub fn new(cfg: LadderConfig, fps: u32, start_bps: u32) -> Self {
+    /// `fps` is the capture rate: no tier above it.
+    pub fn new(mut cfg: LadderConfig, fps: u32, start_bps: u32) -> Self {
         assert!(!cfg.rungs.is_empty());
+        let fps = fps.max(1);
+        cfg.tiers.retain(|&t| t > 0 && t <= fps);
+        cfg.tiers.sort_unstable();
+        if cfg.tiers.is_empty() {
+            cfg.tiers.push(fps);
+        }
         let mut l = Self {
             cfg,
-            frame_us: 1_000_000 / fps.max(1) as u64,
             cur: 0,
             above_since: None,
             last_down_us: None,
             encode: Default::default(),
             warmup: ENCODE_WARMUP,
-            cpu_cap: None,
-            cpu_block: (0, 0),
+            hint_rung: usize::MAX,
+            hint_fps: u32::MAX,
+            cpu: Block::default(),
+            flap: Block::default(),
+            ups: Vec::new(),
             switches: 0,
+            fps_steps: 0,
+            last_reason: None,
+            steps_log: Default::default(),
+            last_bps: start_bps,
+            real_drop: false,
         };
-        l.cur = l.fit(start_bps);
+        l.cur = l.start(start_bps);
         l
     }
 
-    pub fn rung(&self) -> Rung {
-        self.cfg.rungs[self.cur]
+    /// The highest rung whose floor `bps` covers at the highest allowed frame rate: a call
+    /// starts at full frame rate (the frame rate goes down first, but the start isn't a step
+    /// down; and keyframes at a lower tier are bigger).
+    fn start(&self, bps: u32) -> usize {
+        let nt = self.nt();
+        let top = (0..nt).rev().find(|&t| self.capped(t)).unwrap_or(0);
+        (0..self.cfg.rungs.len())
+            .rev()
+            .map(|r| r * nt + top)
+            .find(|&k| self.capped(k) && self.floor(k) <= bps as u64)
+            .unwrap_or(top)
     }
 
+    fn nt(&self) -> usize {
+        self.cfg.tiers.len()
+    }
+
+    fn rung_of(&self, k: usize) -> usize {
+        k / self.nt()
+    }
+
+    fn fps_of(&self, k: usize) -> u32 {
+        self.cfg.tiers[k % self.nt()]
+    }
+
+    fn pixels_of(&self, k: usize) -> u64 {
+        self.cfg.rungs[self.rung_of(k)].pixels()
+    }
+
+    /// Lowest bitrate step `k` holds.
+    fn floor(&self, k: usize) -> u64 {
+        self.cfg.rungs[self.rung_of(k)].min_bps as u64 * (20 + self.fps_of(k) as u64) / 50
+    }
+
+    fn budget_us(&self, k: usize) -> u64 {
+        1_000_000 * self.cfg.encode_budget_pct as u64 / (100 * self.fps_of(k) as u64)
+    }
+
+    pub fn rung(&self) -> Rung {
+        self.cfg.rungs[self.rung_of(self.cur)]
+    }
+
+    /// Rung index (resolution).
     pub fn index(&self) -> usize {
-        self.cur
+        self.rung_of(self.cur)
+    }
+
+    /// Frame rate of the current tier.
+    pub fn fps(&self) -> u32 {
+        self.fps_of(self.cur)
+    }
+
+    /// Time between encoded frames at the current tier.
+    pub fn frame_interval_us(&self) -> u64 {
+        1_000_000 / self.fps() as u64
     }
 
     /// Highest rung index the peer or device can take.
@@ -216,18 +377,34 @@ impl Ladder {
         self.cfg.max_rung = max;
     }
 
-    fn max(&self, now_us: u64) -> usize {
-        let cap = match self.cpu_cap {
-            Some((r, until)) if now_us < until => r,
-            _ => usize::MAX,
-        };
-        self.cfg.max_rung.min(cap).min(self.cfg.rungs.len() - 1)
+    /// Highest frame rate the peer or device can take.
+    pub fn set_max_fps(&mut self, fps: u32) {
+        self.cfg.max_fps = fps;
     }
 
-    /// Highest rung whose floor `bps` covers (ignoring caps).
-    fn fit(&self, bps: u32) -> usize {
-        let top = self.cfg.max_rung.min(self.cfg.rungs.len() - 1);
-        (0..=top).rev().find(|&i| self.cfg.rungs[i].min_bps <= bps).unwrap_or(0)
+    /// The peer's hint (see [`Hint`]): the highest rung at or below `max_pixels` (`0`: not
+    /// shown, keep the lowest rung at the lowest tier), at most `max_fps` (`0`: no limit). A
+    /// cap below the current step applies at the next [`Self::update`]; a raised one goes
+    /// through the normal rules for stepping up.
+    pub fn set_hint(&mut self, max_pixels: u32, max_fps: u8) {
+        if max_pixels == 0 {
+            (self.hint_rung, self.hint_fps) = (0, self.cfg.tiers[0]);
+            return;
+        }
+        self.hint_rung = self.cfg.rungs.iter().rposition(|r| r.pixels() <= max_pixels as u64).unwrap_or(0);
+        self.hint_fps = if max_fps == 0 { u32::MAX } else { max_fps as u32 };
+    }
+
+    /// Allowed by the caps (device, peer, hint). The lowest tier is always allowed.
+    fn capped(&self, k: usize) -> bool {
+        let max_rung = self.cfg.max_rung.min(self.hint_rung);
+        let max_fps = self.cfg.max_fps.min(self.hint_fps);
+        self.rung_of(k) <= max_rung && (self.fps_of(k) <= max_fps || k.is_multiple_of(self.nt()))
+    }
+
+    /// Highest allowed step at or below `to` whose floor `bps` covers.
+    fn fit_below(&self, to: usize, bps: u32) -> usize {
+        (0..=to).rev().find(|&k| self.capped(k) && self.floor(k) <= bps as u64).unwrap_or(0)
     }
 
     /// `pct` percentile of the encode times, given at least `min` of them.
@@ -235,95 +412,197 @@ impl Ladder {
         if self.encode.len() < min {
             return None;
         }
-        let mut v: Vec<u64> = self.encode.iter().copied().collect();
+        let mut v: Vec<u64> = self.encode.iter().map(|e| e.1).collect();
         v.sort_unstable();
         Some(v[(v.len() - 1) * pct / 100])
     }
 
-    fn budget_us(&self) -> u64 {
-        self.frame_us * self.cfg.encode_budget_pct as u64 / 100
+    /// Steps taken since the last call (at most the last 64).
+    pub fn take_steps(&mut self) -> Vec<Step> {
+        self.steps_log.drain(..).collect()
     }
 
-    fn set(&mut self, now_us: u64, to: usize) {
-        if to < self.cur {
-            self.last_down_us = Some(now_us);
+    fn describe(&self, k: usize) -> (u32, u32, u32) {
+        let r = self.cfg.rungs[self.rung_of(k)];
+        (r.width, r.height, self.fps_of(k))
+    }
+
+    fn set(&mut self, now_us: u64, to: usize, why: StepReason) {
+        let resized = self.rung_of(to) != self.rung_of(self.cur);
+        if self.steps_log.len() >= STEP_LOG {
+            self.steps_log.pop_front();
         }
+        let step = Step { at_us: now_us, from: self.describe(self.cur), to: self.describe(to), reason: why, bps: self.last_bps };
+        self.steps_log.push_back(step);
+        if to < self.cur {
+            if why != StepReason::Cap {
+                self.last_down_us = Some(now_us);
+            }
+            self.ups.retain(|u| u.0 <= to);
+        } else {
+            self.ups.push((to, now_us, resized));
+        }
+        let window = self.cfg.flap_window_us;
+        self.ups.retain(|u| now_us.saturating_sub(u.1) <= window);
         self.cur = to;
         self.above_since = None;
-        self.encode.clear();
-        self.warmup = ENCODE_WARMUP;
-        self.switches += 1;
+        self.last_reason = Some(why);
+        if resized {
+            self.encode.clear();
+            self.warmup = ENCODE_WARMUP;
+            self.switches += 1;
+        } else {
+            self.fps_steps += 1;
+        }
     }
 
-    /// One frame took `us` to encode. Returns true if the rung changed.
+    /// One frame took `us` to encode. Returns true if the step changed.
     pub fn encode_time(&mut self, now_us: u64, us: u64) -> bool {
         if self.warmup > 0 {
             self.warmup -= 1;
             return false;
         }
-        self.encode.push_back(us);
-        if self.encode.len() > ENCODE_WINDOW {
+        self.encode.push_back((now_us, us));
+        while self.encode.front().is_some_and(|e| now_us.saturating_sub(e.0) > ENCODE_WINDOW_US) {
             self.encode.pop_front();
         }
         // Sustained: half the frames of the last second were too slow (a busy machine preempting
-        // the odd frame isn't helped by a smaller picture).
-        if self.cur > 0 && self.encode_pct(50, ENCODE_WINDOW).is_some_and(|p| p > self.budget_us()) {
-            let (block, last) = self.cpu_block;
-            let block = if block == 0 || now_us.saturating_sub(last) > self.cfg.cpu_forget_us {
-                self.cfg.cpu_block_us
-            } else {
-                (block * 2).min(self.cfg.cpu_block_max_us)
-            };
-            self.cpu_block = (block, now_us);
-            self.cpu_cap = Some((self.cur - 1, now_us + block));
-            self.set(now_us, self.cur - 1);
-            return true;
+        // the odd frame isn't helped by a smaller picture). A second's worth of frames at the
+        // current tier, so 15 fps reacts as fast as 30.
+        let full = (ENCODE_WINDOW_US * self.fps() as u64 / 1_000_000) as usize;
+        let cur = self.cur;
+        let Some(median) = self.encode_pct(50, full) else { return false };
+        if cur == 0 || median <= self.budget_us(cur) {
+            return false;
         }
-        false
+        // The highest step below that the encoder keeps up with: a lower frame rate first.
+        let px = self.pixels_of(cur);
+        let to = (0..cur)
+            .rev()
+            .find(|&k| self.capped(k) && median * self.pixels_of(k) / px <= self.budget_us(k))
+            .unwrap_or(0);
+        self.cpu.apply(&self.cfg.cpu_block, now_us, cur - 1);
+        self.set(now_us, to, StepReason::Cpu);
+        true
     }
 
-    /// Re-evaluates for the current target bitrate. Returns true if the rung changed.
+    /// Re-evaluates for the current target bitrate. Returns true if the step changed.
     pub fn update(&mut self, now_us: u64, bps: u32) -> bool {
         self.update_held(now_us, bps, false)
     }
 
-    /// [`Self::update`], but with `hold` nothing changes yet.
+    /// [`Self::update`], but with `hold` only a lowered cap applies yet.
     pub fn update_held(&mut self, now_us: u64, bps: u32, hold: bool) -> bool {
-        if hold {
-            return false;
-        }
-        let max = self.max(now_us);
-        let down = self.fit(bps).min(max);
-        if down < self.cur {
-            self.set(now_us, down);
+        self.last_bps = bps;
+        if !self.capped(self.cur) {
+            let to = self.fit_below(self.cur, bps);
+            self.set(now_us, to, StepReason::Cap);
             return true;
         }
         if hold {
             return false;
         }
-        let next = self.cur + 1;
-        if next > max {
+        let down = self.fit_below(self.cur, bps);
+        if down < self.cur {
+            // A step up undone this soon: that step (and those above) waits a while. A new size
+            // given up again blocks its whole rung: landing at a lower tier of it would be the
+            // same keyframe again.
+            let window = self.cfg.flap_window_us;
+            let undone = self.ups.iter().filter(|u| u.0 > down && now_us - u.1 <= window).min_by_key(|u| u.0);
+            if let Some(&(b, _, resized)) = undone.filter(|_| !self.real_drop) {
+                let left = resized && self.rung_of(down) < self.rung_of(b);
+                let first = if left { self.rung_of(b) * self.nt() } else { b };
+                self.flap.apply(&self.cfg.flap_block, now_us, first - 1);
+            }
+            self.set(now_us, down, StepReason::Rate);
+            return true;
+        }
+        let Some(next) = self.next_up(now_us, bps) else {
             self.above_since = None;
             return false;
-        }
-        let r = self.cfg.rungs[next];
-        let above = bps as u64 * 100 >= r.min_bps as u64 * self.cfg.up_margin_pct as u64;
-        // Would the bigger picture still encode in time? Assume time grows with pixels.
-        let fast = match self.encode_pct(75, ENCODE_MIN) {
-            Some(p) => p * r.pixels() / self.rung().pixels() <= self.budget_us(),
-            None => false,
         };
-        if !(above && fast) {
-            self.above_since = None;
-            return false;
-        }
         let since = *self.above_since.get_or_insert(now_us);
         let settled = self.last_down_us.is_none_or(|t| now_us - t >= self.cfg.up_after_down_us);
         if now_us - since >= self.cfg.up_hold_us && settled {
-            self.set(now_us, next);
+            self.set(now_us, next, StepReason::Rate);
             return true;
         }
         false
+    }
+
+    /// The step to go up to if the bitrate and encode time allow it now: the next tier at this
+    /// rung, or else the next rung at the highest tier that fits. A new size needs the bitrate
+    /// for it at the current frame rate: going down trades frame rate for size, going up never
+    /// does for the bitrate (at a lower tier every frame, and the keyframe, is bigger and the
+    /// delay signal noisier; 540p30 -> 720p15 at 1 Mbps fell back within 3 s under 3% loss).
+    /// Only a slow encoder may land a new size at a lower tier (D1: size before frame rate).
+    fn next_up(&self, now_us: u64, bps: u32) -> Option<usize> {
+        let (nt, cur) = (self.nt(), self.cur);
+        let px = self.pixels_of(cur);
+        let p75 = self.encode_pct(75, ENCODE_MIN);
+        let ok = |k: usize| {
+            let rate_at = if self.rung_of(k) > self.rung_of(cur) && k % nt < cur % nt {
+                self.rung_of(k) * nt + cur % nt
+            } else {
+                k
+            };
+            self.capped(k)
+                && self.cpu.allows(now_us, k)
+                && self.flap.allows(now_us, k)
+                && bps as u64 * 100 >= self.floor(rate_at) * self.cfg.up_margin_pct as u64
+                // Would it still encode in time? Assume time grows with pixels.
+                && p75.is_some_and(|p| p * self.pixels_of(k) / px <= self.budget_us(k))
+        };
+        let r = self.rung_of(cur);
+        if let Some(k) = (cur + 1..(r + 1) * nt).find(|&k| self.capped(k)) {
+            return ok(k).then_some(k);
+        }
+        if r + 1 >= self.cfg.rungs.len() {
+            return None;
+        }
+        ((r + 1) * nt..(r + 2) * nt).rev().find(|&k| ok(k))
+    }
+}
+
+/// Receiver -> sender: what is worth sending now (`video::net` message 4). See
+/// docs/design/video-adaptation.md.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Hint {
+    /// Largest picture worth sending (the drawn size, rounded up to a rung); `0`: not shown.
+    pub max_pixels: u32,
+    /// Frames per second the receiver can decode and show; `0`: no limit.
+    pub max_fps: u8,
+    /// For the sender's chip and logs only.
+    pub reason: HintReason,
+}
+
+impl Hint {
+    pub const NONE: Hint = Hint { max_pixels: u32::MAX, max_fps: 0, reason: HintReason::None };
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[repr(u8)]
+pub enum HintReason {
+    #[default]
+    None = 0,
+    DisplaySize = 1,
+    DecodeSlow = 2,
+    Thermal = 3,
+    PowerSave = 4,
+    User = 5,
+}
+
+impl HintReason {
+    pub fn from_u8(v: u8) -> Option<Self> {
+        Some(match v {
+            0 => Self::None,
+            1 => Self::DisplaySize,
+            2 => Self::DecodeSlow,
+            3 => Self::Thermal,
+            4 => Self::PowerSave,
+            5 => Self::User,
+            _ => return None,
+        })
     }
 }
 
@@ -336,6 +615,8 @@ pub struct KeyCauses {
     pub rate: u64,
     /// Ladder step down for encode time.
     pub cpu: u64,
+    /// Resolution change for a cap (the peer's hint).
+    pub hint: u64,
     /// Asked for by the receiver (stall, decode error) or the transport.
     pub request: u64,
     /// The sender reset a group that fell behind.
@@ -348,6 +629,7 @@ pub struct KeyCauses {
 enum KeyCause {
     Rate,
     Cpu,
+    Hint,
     Request,
     Backlog,
 }
@@ -362,6 +644,15 @@ pub struct Sender {
     want_key: bool,
     key_cause: Option<KeyCause>,
     pub key_causes: KeyCauses,
+    /// When the encoder was last asked for a keyframe (`poll_keyframe`'s clock).
+    key_asked_us: Option<u64>,
+    /// When the last keyframe was sent, and until when queueing up to the allowance is its own
+    /// burst rather than overuse.
+    last_key_us: Option<u64>,
+    key_grace: Option<(u64, u64)>,
+    /// Capture time from which the next frame is taken (`take_frame`).
+    next_take_us: Option<u64>,
+    hint: Option<Hint>,
     /// Estimate of what the path carries; drives the ladder.
     bitrate: u32,
     last_decrease_us: u64,
@@ -394,6 +685,8 @@ pub struct Sender {
     /// own rate jumps back up ahead of what the receiver has seen yet.
     starve_after_us: u64,
     starved_n: u32,
+    /// Last report that counted as starved.
+    starved_us: Option<u64>,
     ladder: Ladder,
     now_us: u64,
     pub keyframes: u64,
@@ -431,6 +724,11 @@ impl Sender {
             want_key: true,
             key_cause: None,
             key_causes: KeyCauses::default(),
+            key_asked_us: None,
+            last_key_us: None,
+            key_grace: None,
+            next_take_us: None,
+            hint: None,
             bitrate,
             last_decrease_us: 0,
             drain: None,
@@ -447,6 +745,7 @@ impl Sender {
             last_report_us: None,
             starve_after_us: 0,
             starved_n: 0,
+            starved_us: None,
             ladder,
             now_us: 0,
             keyframes: 0,
@@ -456,9 +755,67 @@ impl Sender {
         }
     }
 
-    /// Encoder target to use for the next frame.
+    /// Target bitrate on the wire (what stats report).
     pub fn bitrate(&self) -> u32 {
         self.drain.map_or(self.bitrate, |d| d.min(self.bitrate))
+    }
+
+    /// Bitrate to configure the encoder with. The encoder stays configured at the capture rate
+    /// (changing its frame rate re-creates it, a keyframe; MediaCodec can't at all) and budgets
+    /// `bitrate / capture fps` per frame, so at a lower tier it gets `bitrate x capture / tier`:
+    /// the right per-frame budget, and the target on the wire since only the tier's frames are
+    /// encoded. Not while a keyframe is due: encoders size it as a multiple of the per-frame
+    /// budget, and at 24 fps a 720p keyframe came out twice the 30 fps one (~55 KB, 220 ms of
+    /// queue on a 2 Mbps link) for no better picture.
+    pub fn encoder_bitrate(&self) -> u32 {
+        if self.wants_keyframe() {
+            return self.bitrate();
+        }
+        let fps = self.ladder.fps().max(1) as u64;
+        (self.bitrate() as u64 * self.cfg.fps.max(1) as u64 / fps).min(u32::MAX as u64) as u32
+    }
+
+    /// Frames per second to encode now (the ladder's tier).
+    pub fn fps(&self) -> u32 {
+        self.ladder.fps()
+    }
+
+    /// Time between encoded frames at the current tier.
+    pub fn frame_interval_us(&self) -> u64 {
+        self.ladder.frame_interval_us()
+    }
+
+    /// Whether to encode the frame captured at `capture_us` (camera clock, rising): the camera
+    /// keeps capturing at its own rate and the encoder skips frames to the tier's rate, on
+    /// average exactly (24 of 30 at 24 fps, not every other one).
+    pub fn take_frame(&mut self, capture_us: u64) -> bool {
+        let iv = self.frame_interval_us();
+        // A little early is fine: camera timestamps jitter by a few ms.
+        let slack = iv / 6;
+        if let Some(due) = self.next_take_us
+            && capture_us + slack < due
+            && due <= capture_us + 2 * iv
+        {
+            return false;
+        }
+        let due = self.next_take_us.unwrap_or(capture_us);
+        // Behind by more than a frame (a pause, a slow encoder): restart the schedule here.
+        let base = if capture_us >= due + iv || due > capture_us + 2 * iv { capture_us } else { due };
+        self.next_take_us = Some(base + iv);
+        true
+    }
+
+    /// The receiver's hint (from `video::net`, or the simulation). A lower cap applies at once
+    /// (a frame-rate step without a keyframe), a raised one through the ladder's rules for
+    /// stepping up.
+    pub fn set_hint(&mut self, hint: Hint) {
+        self.hint = Some(hint);
+        self.ladder.set_hint(hint.max_pixels, hint.max_fps);
+        self.relayer();
+    }
+
+    pub fn hint(&self) -> Option<Hint> {
+        self.hint
     }
 
     /// Whether a standing queue is being drained.
@@ -477,10 +834,16 @@ impl Sender {
         &self.ladder
     }
 
+    pub fn ladder_mut(&mut self) -> &mut Ladder {
+        &mut self.ladder
+    }
+
     /// The encoder took `us` for the last frame.
     pub fn encode_time(&mut self, now_us: u64, us: u64) {
         self.now_us = self.now_us.max(now_us);
-        if self.ladder.encode_time(now_us, us) {
+        let rung = self.ladder.index();
+        // Only a new size needs a keyframe; a frame-rate step is just fewer frames.
+        if self.ladder.encode_time(now_us, us) && self.ladder.index() != rung {
             self.want(KeyCause::Cpu);
         }
         self.relayer();
@@ -498,8 +861,12 @@ impl Sender {
         // keyframe each), and a stream stalled ~100 ms on a tail loss (two starved reports)
         // went straight to 180p. Not forever if reports stop coming.
         let settling = self.settle_until.is_some_and(|t| self.now_us < t + RATE_WINDOW_US);
-        if self.ladder.update_held(self.now_us, self.bitrate, settling) {
-            self.want(KeyCause::Rate);
+        let rung = self.ladder.index();
+        // A link that starved just now got slower for real: stepping down isn't a flap.
+        self.ladder.real_drop = self.starved_us.is_some_and(|t| self.now_us.saturating_sub(t) < REAL_DROP_US);
+        if self.ladder.update_held(self.now_us, self.bitrate, settling) && self.ladder.index() != rung {
+            let cap = self.ladder.last_reason == Some(StepReason::Cap);
+            self.want(if cap { KeyCause::Hint } else { KeyCause::Rate });
         }
         self.bitrate = self.bitrate.min(self.ladder.rung().max_bps);
     }
@@ -509,8 +876,27 @@ impl Sender {
         self.want_key || self.current.is_none()
     }
 
-    /// The receiver asked for a keyframe (it stalled or just joined).
+    /// Whether to ask the encoder for a keyframe with the frame captured at `now_us` (any
+    /// rising clock). Like [`Self::wants_keyframe`], but once asked not again for
+    /// `KEY_ASK_US` while the keyframe is on its way out of the encoder: a hardware encoder's
+    /// output lags its input, and asking with every frame meanwhile made one keyframe each.
+    pub fn poll_keyframe(&mut self, now_us: u64) -> bool {
+        if !self.wants_keyframe() {
+            return false;
+        }
+        if self.key_asked_us.is_some_and(|t| now_us >= t && now_us - t < KEY_ASK_US) {
+            return false;
+        }
+        self.key_asked_us = Some(now_us);
+        true
+    }
+
+    /// The receiver asked for a keyframe (it stalled or just joined). Ignored within
+    /// `KEY_DEDUPE_US` of sending one: that keyframe is still on its way.
     pub fn request_keyframe(&mut self) {
+        if self.last_key_us.is_some_and(|t| self.now_us.saturating_sub(t) < KEY_DEDUPE_US) && self.current.is_some() {
+            return;
+        }
         self.want(KeyCause::Request);
     }
 
@@ -523,6 +909,7 @@ impl Sender {
                 _ if self.keyframes == 0 => c.start += 1,
                 Some(KeyCause::Rate) => c.rate += 1,
                 Some(KeyCause::Cpu) => c.cpu += 1,
+                Some(KeyCause::Hint) => c.hint += 1,
                 Some(KeyCause::Request) => c.request += 1,
                 Some(KeyCause::Backlog) => c.backlog += 1,
                 None if self.current.is_none() => c.start += 1,
@@ -536,7 +923,14 @@ impl Sender {
             self.next_group += 1;
             self.current = Some(g);
             self.want_key = false;
+            self.key_asked_us = None;
             self.keyframes += 1;
+            // Its burst queues for about its size at our rate: not a sign of a slower link.
+            let now = self.now_us;
+            let burst = (payload.len() as u64 * 8 * 1_000_000 / self.bitrate().max(1) as u64).min(KEY_ALLOWANCE_MAX_US);
+            let carry = self.key_allowance(now);
+            self.key_grace = Some((now + KEY_GRACE_US, (carry + burst).min(KEY_ALLOWANCE_MAX_US)));
+            self.last_key_us = Some(now);
             out.push(Out::Open { group: g });
             out.push(Out::Write { group: g, data: g.to_be_bytes().to_vec() });
         }
@@ -562,6 +956,15 @@ impl Sender {
         let (br, rung) = (self.bitrate(), self.ladder.index());
         if let Some(log) = &mut self.report_log {
             log.push((now_us, r.clone(), br, rung));
+        }
+    }
+
+    /// Queueing the last keyframe's own burst explains: its size at our rate right after it,
+    /// down to nothing over `KEY_GRACE_US` (the burst drains; a queue that stays is ours).
+    fn key_allowance(&self, now_us: u64) -> u64 {
+        match self.key_grace {
+            Some((until, a)) if now_us < until => a * (until - now_us) / KEY_GRACE_US,
+            _ => 0,
         }
     }
 
@@ -608,6 +1011,9 @@ impl Sender {
         self.delivering = delivered > 0;
         let queuing_us = self.queuing(now_us, r.queuing_us);
         self.queuing_us = queuing_us;
+        // After a keyframe, the queueing its own burst causes is not overuse.
+        let underuse_us = self.cfg.underuse_us;
+        let overuse_us = self.cfg.overuse_us + self.key_allowance(now_us);
         let stuck = self.drain.is_some() && sent * 2 >= delivered;
         self.drain_stuck_since = if stuck { self.drain_stuck_since.or(Some(now_us)) } else { None };
         let short = now_us >= self.starve_after_us
@@ -616,9 +1022,12 @@ impl Sender {
             && sent - delivered >= self.cfg.starve_min_bps as u64;
         self.starved_n = if short { self.starved_n + 1 } else { 0 };
         let starved = self.starved_n >= self.cfg.starve_reports;
+        if starved {
+            self.starved_us = Some(now_us);
+        }
         let t = &mut self.trace;
         t.reports += 1;
-        t.overuse += (queuing_us > self.cfg.overuse_us) as u64;
+        t.overuse += (queuing_us > overuse_us) as u64;
         t.starved += starved as u64;
         (t.last_queuing_us, t.last_delivered_bps, t.q_offset_us) = (r.queuing_us, r.delivered_bps, self.q_offset);
         if self.settle_until.is_some() {
@@ -633,7 +1042,7 @@ impl Sender {
             v.sort_unstable();
             (v.get(v.len().saturating_sub(1) / 2).copied().unwrap_or(delivered) * 85 / 100) as u32
         };
-        if queuing_us > self.cfg.overuse_us || starved {
+        if queuing_us > overuse_us || starved {
             // A queue is building: send no faster than what actually gets through, and below it
             // until the queue is gone (each 100 ms of it delays every frame). One rate window
             // after a decrease, look again: the first delivered rate still held bytes from
@@ -655,33 +1064,39 @@ impl Sender {
                 }
                 self.last_decrease_us = now_us;
             }
-            // Starved: the queue is bigger than the delay shows yet, drain as fast as allowed.
-            let queue_pct = if starved { 100 } else { queuing_us * 100 / self.cfg.drain_us.max(1) };
-            let pct = 100u64.saturating_sub(queue_pct).max(self.cfg.drain_pct as u64);
-            if pct < 100 {
-                // Not below `drain_pct` of the floor: with a receiver that is slow to decode,
-                // what gets through follows what we send and the drain would spiral to nothing.
-                let floor = self.cfg.min_bps as u64 * self.cfg.drain_pct as u64 / 100;
-                let d = (delivered * pct / 100).max(floor) as u32;
-                self.drain = Some(self.drain.map_or(d, |old| old.min(d)));
-            }
+            self.start_drain(delivered, queuing_us, starved);
             return;
         }
+
         if second_look {
             // The queue was gone a rate window later: a blip, keep no more of the cut than the
             // delivered rate asks for.
             self.bitrate = self.bitrate.max(self.pre_cut.min(settled));
             self.settle_until = None;
         }
-        if queuing_us < self.cfg.underuse_us && self.drain.take().is_some() {
+        if queuing_us < underuse_us && self.drain.take().is_some() {
             self.starve_after_us = now_us + STARVE_QUIET_US;
         }
-        if self.drain.is_none() && queuing_us < self.cfg.underuse_us && now_us - self.last_decrease_us > 500_000 {
+        if self.drain.is_none() && queuing_us < underuse_us && now_us - self.last_decrease_us > 500_000 {
             // Path is empty: +8% per 100 ms, never far above what was delivered.
             let cap = (delivered * 3 / 2).max(self.cfg.min_bps as u64) as u32;
             let dt = self.sent_prev.1.min(200_000);
             let up = self.bitrate + (self.bitrate as u64 * 8 * dt / 100 / 100_000) as u32;
             self.bitrate = up.min(self.bitrate.max(cap)).min(self.cfg.max_bps);
+        }
+    }
+
+    /// Sends below the delivered rate until a queue of `queuing_us` is gone.
+    fn start_drain(&mut self, delivered: u64, queuing_us: u64, starved: bool) {
+        // Starved: the queue is bigger than the delay shows yet, drain as fast as allowed.
+        let queue_pct = if starved { 100 } else { queuing_us * 100 / self.cfg.drain_us.max(1) };
+        let pct = 100u64.saturating_sub(queue_pct).max(self.cfg.drain_pct as u64);
+        if pct < 100 {
+            // Not below `drain_pct` of the floor: with a receiver that is slow to decode,
+            // what gets through follows what we send and the drain would spiral to nothing.
+            let floor = self.cfg.min_bps as u64 * self.cfg.drain_pct as u64 / 100;
+            let d = (delivered * pct / 100).max(floor) as u32;
+            self.drain = Some(self.drain.map_or(d, |old| old.min(d)));
         }
     }
 
@@ -795,6 +1210,9 @@ pub struct Receiver {
     last_report_us: u64,
     /// (arrival - capture) of recent frames, for the queueing baseline.
     transit: std::collections::VecDeque<(u64, i64)>,
+    /// What the app last said is worth receiving, and whether the sender has it yet.
+    hint: Option<Hint>,
+    hint_pending: bool,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -814,7 +1232,27 @@ impl Receiver {
             arrivals: Default::default(),
             last_report_us: 0,
             transit: Default::default(),
+            hint: None,
+            hint_pending: false,
         }
+    }
+
+    /// What is worth receiving now (drawn size, decode capacity, thermal state). Goes to the
+    /// sender through [`Self::take_hint`] once, and again on every change.
+    pub fn set_hint(&mut self, hint: Hint) {
+        if self.hint != Some(hint) {
+            self.hint = Some(hint);
+            self.hint_pending = true;
+        }
+    }
+
+    pub fn hint(&self) -> Option<Hint> {
+        self.hint
+    }
+
+    /// A hint to send to the sender, if it hasn't had this one.
+    pub fn take_hint(&mut self) -> Option<Hint> {
+        std::mem::take(&mut self.hint_pending).then_some(self.hint).flatten()
     }
 
     pub fn on_data(&mut self, now_us: u64, group: u64, data: &[u8]) -> Result<(), RecvError> {
@@ -1119,9 +1557,14 @@ mod tests {
         l
     }
 
-    /// Encode times of `us` at 30 fps from `*t` while the rung is `rung`; returns when it changed.
-    fn encode_at(l: &mut Ladder, t: &mut u64, rung: usize, us: u64) -> u64 {
-        while l.index() == rung {
+    /// (rung index, fps).
+    fn at(l: &Ladder) -> (usize, u32) {
+        (l.index(), l.fps())
+    }
+
+    /// Encode times of `us` at 30 fps from `*t` while the step is `step`; returns when it changed.
+    fn encode_at(l: &mut Ladder, t: &mut u64, step: usize, us: u64) -> u64 {
+        while l.cur == step {
             l.encode_time(*t, us);
             l.update(*t, 5_000_000);
             *t += 33 * MS;
@@ -1130,50 +1573,85 @@ mod tests {
     }
 
     /// Feeds three fast encode times (30 fps) and `bps` every 100 ms over `[from, to)`; returns
-    /// switches.
+    /// steps.
     fn hold(l: &mut Ladder, from: u64, to: u64, bps: u32) -> u64 {
-        let mut switches = 0;
+        let mut steps = 0;
         let mut t = from;
         while t < to {
             for _ in 0..3 {
                 l.encode_time(t, 3 * MS);
             }
-            switches += l.update(t, bps) as u64;
+            steps += l.update(t, bps) as u64;
             t += 100 * MS;
         }
-        switches
+        steps
     }
 
     #[test]
-    fn ladder_starts_at_the_rung_the_start_rate_covers() {
-        assert_eq!(ladder(500_000).index(), 1);
-        assert_eq!(ladder(100_000).index(), 0);
-        assert_eq!(ladder(5_000_000).index(), 3);
+    fn ladder_starts_at_the_step_the_start_rate_covers() {
+        // At full frame rate: 500 kbps would cover 540p15 (420 kbps), but a call starts at 30.
+        assert_eq!(at(&ladder(500_000)), (1, 30));
+        assert_eq!(at(&ladder(300_000)), (1, 30));
+        assert_eq!(at(&ladder(100_000)), (0, 30));
+        assert_eq!(at(&ladder(5_000_000)), (3, 30));
     }
 
     #[test]
-    fn ladder_steps_down_at_once_and_skips_rungs() {
+    fn ladder_floors_scale_with_frame_rate() {
+        let l = ladder(0);
+        // 720p: 1 Mbps at 30 fps, 88% at 24, 70% at 15.
+        let k = |rung: usize, tier: usize| rung * 3 + tier;
+        assert_eq!((l.floor(k(3, 2)), l.floor(k(3, 1)), l.floor(k(3, 0))), (1_000_000, 880_000, 700_000));
+        // The step order is also the floor order.
+        assert!((1..4 * 3).all(|i| l.floor(i) >= l.floor(i - 1)));
+    }
+
+    #[test]
+    fn ladder_steps_down_at_once_frame_rate_first() {
         let mut l = ladder(5_000_000);
+        // 900 kbps: 720p24 (880 kbps), a frame-rate step.
+        assert!(l.update(0, 900_000));
+        assert_eq!((at(&l), l.switches, l.fps_steps), ((3, 24), 0, 1));
+        // 200 kbps skips to 360p15 (175 kbps), 150 kbps to the bottom rung.
         assert!(l.update(0, 200_000));
+        assert_eq!(at(&l), (1, 15));
+        assert!(l.update(0, 150_000));
         assert_eq!((l.rung().width, l.rung().height), (320, 180));
     }
 
     #[test]
     fn ladder_steps_up_only_after_hold() {
         let mut l = ladder(300_000);
-        assert_eq!(l.index(), 1);
-        // 700 kbps is above 540p's floor but not its 130% up threshold: stays.
+        assert_eq!(at(&l), (1, 30));
+        // 700 kbps is above 540p30's floor (600k), and would hold 540p24 on the way down, but
+        // a new size needs its 130% up threshold at the current 30 fps (780k): stays.
         assert_eq!(hold(&mut l, 0, 10_000 * MS, 700_000), 0);
-        // 800 kbps clears it; steps up after the 2.5 s hold, not before.
-        assert_eq!(hold(&mut l, 10_000 * MS, 12_400 * MS, 800_000), 0);
-        assert_eq!(hold(&mut l, 12_400 * MS, 12_700 * MS, 800_000), 1);
-        assert_eq!(l.index(), 2);
+        // 800 kbps clears it; steps up after the 5 s hold, not before.
+        assert_eq!(hold(&mut l, 10_000 * MS, 14_900 * MS, 800_000), 0);
+        assert_eq!(hold(&mut l, 14_900 * MS, 15_200 * MS, 800_000), 1);
+        assert_eq!(at(&l), (2, 30));
         // A dip below the threshold restarts the hold.
         let mut l = ladder(300_000);
         hold(&mut l, 0, 2_000 * MS, 800_000);
-        hold(&mut l, 2_000 * MS, 2_100 * MS, 500_000);
-        assert_eq!(hold(&mut l, 2_100 * MS, 4_500 * MS, 800_000), 0);
-        assert_eq!(hold(&mut l, 4_500 * MS, 4_700 * MS, 800_000), 1);
+        hold(&mut l, 2_000 * MS, 2_100 * MS, 700_000);
+        assert_eq!(hold(&mut l, 2_100 * MS, 7_000 * MS, 800_000), 0);
+        assert_eq!(hold(&mut l, 7_000 * MS, 7_200 * MS, 800_000), 1);
+    }
+
+    #[test]
+    fn ladder_resolution_step_up_keeps_the_frame_rate_it_can() {
+        // 360p30 with plenty of rate: the next rung at 30 fps, not at 15.
+        let mut l = ladder(300_000);
+        assert_eq!(hold(&mut l, 0, 5_200 * MS, 2_000_000), 1);
+        assert_eq!(at(&l), (2, 30));
+        // At 15 fps the tiers come back one at a time (10 s after the step down).
+        let mut l = ladder(5_000_000);
+        assert!(l.update(0, 450_000));
+        assert_eq!(at(&l), (2, 15));
+        assert_eq!(hold(&mut l, 0, 10_200 * MS, 2_000_000), 1);
+        assert_eq!(at(&l), (2, 24));
+        // A slow encoder may land a new size at a lower tier: 360p at 9 ms predicts 540p at
+        // ~20 ms, over 30 fps's 20 ms... (see ladder_predicts_encode_time_before_stepping_up)
     }
 
     #[test]
@@ -1181,64 +1659,104 @@ mod tests {
         let mut l = ladder(300_000);
         hold(&mut l, 0, 1_000 * MS, 300_000);
         assert!(l.update(1_000 * MS, 100_000));
-        // The rate recovers at once, but no step up within 4 s of the step down.
-        assert_eq!(hold(&mut l, 1_100 * MS, 5_000 * MS, 400_000), 0);
-        assert_eq!(hold(&mut l, 5_000 * MS, 5_200 * MS, 400_000), 1);
-        assert_eq!(l.index(), 1);
+        assert_eq!(at(&l), (0, 30));
+        // The rate recovers at once, but no step up within 10 s of the step down.
+        assert_eq!(hold(&mut l, 1_100 * MS, 11_000 * MS, 400_000), 0);
+        assert_eq!(hold(&mut l, 11_000 * MS, 11_200 * MS, 400_000), 1);
+        assert_eq!(at(&l), (1, 30));
     }
 
     #[test]
     fn ladder_does_not_flap_around_a_floor() {
-        // Bitrate wobbling around 360p's floor: one step down, nothing else.
+        // Bitrate wobbling around 360p's floor: one frame-rate step down, the size stays.
         let mut l = ladder(300_000);
-        let mut switches = 0;
+        let mut steps = 0;
         for i in 0..300u64 {
             let bps = if i % 7 < 3 { 215_000 } else { 285_000 };
             l.encode_time(i * 100 * MS, 3 * MS);
-            switches += l.update(i * 100 * MS, bps) as u64;
+            steps += l.update(i * 100 * MS, bps) as u64;
         }
-        assert_eq!(switches, 1);
-        assert_eq!(l.index(), 0);
+        assert_eq!(steps, 1);
+        assert_eq!((at(&l), l.switches), ((1, 15), 0));
     }
 
     #[test]
-    fn ladder_steps_down_when_encoding_is_too_slow() {
+    fn ladder_flap_block() {
+        // 540p30 -> 720p30, undone by the rate 3 s later: 720p30 is blocked 30 s (then the
+        // 5 s hold), where the plain rules would have gone back up after 10 s.
+        let mut l = ladder(650_000);
+        assert_eq!(at(&l), (2, 30));
+        assert_eq!(hold(&mut l, 0, 5_100 * MS, 2_000_000), 1);
+        assert_eq!(at(&l), (3, 30));
+        assert!(l.update(8_000 * MS, 650_000));
+        assert_eq!(at(&l), (2, 30));
+        assert_eq!(hold(&mut l, 8_000 * MS, 42_900 * MS, 2_000_000), 0);
+        assert_eq!(hold(&mut l, 42_900 * MS, 43_100 * MS, 2_000_000), 1);
+        assert_eq!(at(&l), (3, 30));
+        // Again: 60 s.
+        assert!(l.update(45_000 * MS, 650_000));
+        assert_eq!(hold(&mut l, 45_000 * MS, 109_900 * MS, 2_000_000), 0);
+        assert_eq!(hold(&mut l, 109_900 * MS, 110_100 * MS, 2_000_000), 1);
+        // A step up that holds longer than 20 s isn't a flap: back to the plain 10 s.
+        assert!(l.update(140_000 * MS, 650_000));
+        assert_eq!(hold(&mut l, 140_000 * MS, 149_900 * MS, 2_000_000), 0);
+        assert_eq!(hold(&mut l, 149_900 * MS, 150_100 * MS, 2_000_000), 1);
+        // A link that really got slower (the sender saw it starve) isn't a flap either.
+        l.real_drop = true;
+        assert!(l.update(152_000 * MS, 650_000));
+        l.real_drop = false;
+        assert_eq!(hold(&mut l, 152_000 * MS, 161_900 * MS, 2_000_000), 0);
+        assert_eq!(hold(&mut l, 161_900 * MS, 162_100 * MS, 2_000_000), 1);
+    }
+
+    #[test]
+    fn ladder_drops_frame_rate_when_encoding_is_too_slow() {
         let mut l = Ladder::new(LadderConfig::default(), 30, 5_000_000);
-        assert_eq!(l.index(), 3);
+        assert_eq!(at(&l), (3, 30));
         // 30 fps: budget is 60% of 33.3 ms = 20 ms. 25 ms frames: down after the encoder's
-        // warm-up and a full second of them.
+        // warm-up and a full second of them, to 24 fps (25 ms budget), same size.
         let mut t = 0;
-        while l.index() == 3 {
-            l.encode_time(t, 25 * MS);
-            t += 33 * MS;
-        }
-        assert_eq!(t, (ENCODE_WARMUP as usize + ENCODE_WINDOW) as u64 * 33 * MS);
-        assert_eq!(l.index(), 2);
-        // Fast again (throttling ended): 720p stays blocked for 5 s, then returns after the hold.
-        let down = t;
-        encode_at(&mut l, &mut t, 2, 6 * MS);
-        assert!(t - down > 7_400 * MS && t - down < 8_500 * MS, "back up after {} ms", (t - down) / MS);
-        assert_eq!(l.index(), 3);
+        let start = l.cur;
+        encode_at(&mut l, &mut t, start, 25 * MS);
+        assert_eq!(t, (ENCODE_WARMUP as u64 + 30) * 33 * MS);
+        assert_eq!((at(&l), l.switches), ((3, 24), 0));
+        // Fast again (throttling ended): 720p30 stays blocked 5 s, and no step up within 10 s of
+        // the step down.
+        let (down, step) = (t, l.cur);
+        encode_at(&mut l, &mut t, step, 6 * MS);
+        assert!(t - down > 9_900 * MS && t - down < 10_500 * MS, "back up after {} ms", (t - down) / MS);
+        assert_eq!(at(&l), (3, 30));
+    }
+
+    #[test]
+    fn ladder_drops_size_when_even_15_fps_is_too_slow() {
+        let mut l = Ladder::new(LadderConfig::default(), 30, 5_000_000);
+        let mut t = 0;
+        let start = l.cur;
+        // 45 ms at 720p: over 15 fps's 40 ms; 540p would take ~25 ms, which fits 15 fps only.
+        encode_at(&mut l, &mut t, start, 45 * MS);
+        assert_eq!((at(&l), l.switches), ((2, 15), 1));
     }
 
     #[test]
     fn ladder_cpu_block_backs_off() {
-        // A device that is too slow for 720p every time it gets there: blocked 5, 10, 20, 30 s.
+        // A device that is too slow for 720p30 every time it gets there: blocked 5, 10, 20, 30 s;
+        // back up after the block and the 5 s hold, at the earliest 10 s after the step down.
         let mut l = Ladder::new(LadderConfig::default(), 30, 5_000_000);
+        let top = l.cur;
         let mut t = 0;
         let mut blocks = vec![];
         for _ in 0..5 {
-            let down = encode_at(&mut l, &mut t, 3, 25 * MS);
-            let up = encode_at(&mut l, &mut t, 2, 6 * MS);
+            let down = encode_at(&mut l, &mut t, top, 25 * MS);
+            let up = encode_at(&mut l, &mut t, top - 1, 6 * MS);
             blocks.push((up - down) / 1_000_000);
         }
-        // Block + 2.5 s hold.
-        assert_eq!(blocks, vec![7, 12, 22, 32, 32]);
+        assert_eq!(blocks, vec![10, 15, 25, 35, 35]);
         // A minute without trouble: back to 5 s.
         encode_at_for(&mut l, &mut t, 70_000 * MS);
-        let down = encode_at(&mut l, &mut t, 3, 25 * MS);
-        let up = encode_at(&mut l, &mut t, 2, 6 * MS);
-        assert_eq!((up - down) / 1_000_000, 7);
+        let down = encode_at(&mut l, &mut t, top, 25 * MS);
+        let up = encode_at(&mut l, &mut t, top - 1, 6 * MS);
+        assert_eq!((up - down) / 1_000_000, 10);
     }
 
     fn encode_at_for(l: &mut Ladder, t: &mut u64, us: u64) {
@@ -1260,28 +1778,27 @@ mod tests {
             l.update(t, 5_000_000);
             t += 33 * MS;
         }
-        assert_eq!((l.index(), l.switches), (3, 0));
+        assert_eq!((at(&l), l.switches, l.fps_steps), ((3, 30), 0, 0));
     }
 
     #[test]
     fn ladder_predicts_encode_time_before_stepping_up() {
-        let mut l = ladder(800_000);
-        assert_eq!(l.index(), 2);
-        // 540p at 12 ms predicts 720p at ~21 ms, over the 20 ms budget: stays, on any link.
-        let mut t = 0;
-        for _ in 0..1800 {
-            l.encode_time(t, 12 * MS);
-            l.update(t, 5_000_000);
-            t += 33 * MS;
-        }
-        assert_eq!((l.index(), l.switches), (2, 0));
-        // 8 ms (~14 ms at 720p) fits.
-        for _ in 0..150 {
-            l.encode_time(t, 8 * MS);
-            l.update(t, 5_000_000);
-            t += 33 * MS;
-        }
-        assert_eq!(l.index(), 3);
+        // Encode time grows with pixels: `us_540` at 540p.
+        let run = |us_540: u64| {
+            let mut l = ladder(650_000);
+            assert_eq!(at(&l), (2, 30));
+            let mut t = 0;
+            for _ in 0..1800 {
+                l.encode_time(t, us_540 * l.rung().pixels() / (960 * 540));
+                l.update(t, 5_000_000);
+                t += 33 * MS;
+            }
+            (at(&l), l.switches + l.fps_steps)
+        };
+        // 540p at 12 ms predicts 720p at ~21 ms: over 30 fps's 20 ms, within 24 fps's 25 ms.
+        assert_eq!(run(12 * MS), ((3, 24), 1));
+        // 8 ms (~14 ms at 720p) fits 30 fps.
+        assert_eq!(run(8 * MS), ((3, 30), 1));
     }
 
     #[test]
@@ -1289,13 +1806,34 @@ mod tests {
         let mut l = ladder(5_000_000);
         l.set_max(1);
         assert!(l.update(0, 5_000_000));
-        assert_eq!(l.index(), 1);
+        assert_eq!(at(&l), (1, 30));
         assert_eq!(hold(&mut l, 0, 60_000 * MS, 5_000_000), 0);
     }
 
     #[test]
+    fn ladder_hint_caps() {
+        let mut l = ladder(5_000_000);
+        // An fps cap applies at once, even while the rate is being looked at again.
+        l.set_hint(u32::MAX, 15);
+        assert!(l.update_held(0, 5_000_000, true));
+        assert_eq!((at(&l), l.last_reason), ((3, 15), Some(StepReason::Cap)));
+        // Not shown: the bottom rung at the bottom tier, and not a step "down" for the rules.
+        l.set_hint(0, 0);
+        assert!(l.update(0, 5_000_000));
+        assert_eq!(at(&l), (0, 15));
+        // A 640x360 picture: up to 360p30 a step every 5 s (no extra wait after a cap).
+        l.set_hint(640 * 360, 0);
+        assert_eq!(hold(&mut l, 0, 4_900 * MS, 5_000_000), 0);
+        // (The first step waits for 25 encode times at the new size: warm-up and the minimum.)
+        let n = hold(&mut l, 4_900 * MS, 16_500 * MS, 5_000_000);
+        assert_eq!(n, 3, "{:?}", l.take_steps());
+        assert_eq!(at(&l), (1, 30));
+        assert_eq!(hold(&mut l, 5_100 * MS, 60_000 * MS, 5_000_000), 0);
+    }
+
+    #[test]
     fn sender_resolution_change_forces_keyframe() {
-        let mut tx = Sender::new(SenderConfig { start_bps: 800_000, ..Default::default() });
+        let mut tx = Sender::new(SenderConfig { start_bps: 650_000, ..Default::default() });
         assert_eq!(tx.resolution(), (960, 540));
         tx.frame(0, true, b"k");
         assert!(!tx.wants_keyframe());
@@ -1313,5 +1851,102 @@ mod tests {
         assert!(tx.bitrate() <= 1_200_000);
         let outs = tx.frame(33_000, true, b"k2");
         assert_eq!(outs[..2], [Out::Finish { group: 0 }, Out::Open { group: 1 }]);
+    }
+
+    #[test]
+    fn sender_frame_rate_step_needs_no_keyframe() {
+        let mut tx = Sender::new(SenderConfig { start_bps: 1_500_000, ..Default::default() });
+        assert_eq!((tx.resolution(), tx.fps()), ((1280, 720), 30));
+        tx.frame(0, true, b"k");
+        // Settles at 85% of 1.1 Mbps = 935 kbps: 720p24.
+        for i in 0..4 {
+            tx.on_report(1_000_000 + i * 50_000, &RateReport { delivered_bps: 1_100_000, queuing_us: 100_000 });
+        }
+        assert_eq!((tx.resolution(), tx.fps()), ((1280, 720), 24));
+        assert!(!tx.wants_keyframe());
+        // The encoder (configured for 30 fps) gets the per-frame budget of 24 fps.
+        assert_eq!(tx.encoder_bitrate() as u64, tx.bitrate() as u64 * 30 / 24);
+    }
+
+    #[test]
+    fn sender_takes_frames_at_the_tier_rate() {
+        let count = |hint_fps: u8| {
+            let mut tx = Sender::new(SenderConfig { start_bps: 1_500_000, ..Default::default() });
+            tx.set_hint(Hint { max_pixels: u32::MAX, max_fps: hint_fps, reason: HintReason::DecodeSlow });
+            // Camera at 30 fps with +-3 ms of timestamp jitter, 10 s.
+            (0..300u64).filter(|i| tx.take_frame(10_000 + i * 33_333 + (i * 37 % 7) * 1_000 - 3_000)).count()
+        };
+        assert_eq!(count(0), 300);
+        assert!((239..=241).contains(&count(24)), "{}", count(24));
+        assert!((149..=151).contains(&count(15)), "{}", count(15));
+    }
+
+    #[test]
+    fn sender_hint_caps() {
+        let mut tx = Sender::new(SenderConfig { start_bps: 1_500_000, ..Default::default() });
+        tx.frame(0, true, b"k");
+        // A frame-rate cap: no keyframe.
+        tx.set_hint(Hint { max_pixels: u32::MAX, max_fps: 15, reason: HintReason::Thermal });
+        assert_eq!((tx.resolution(), tx.fps(), tx.wants_keyframe()), ((1280, 720), 15, false));
+        // A size cap: a keyframe at the new size.
+        tx.set_hint(Hint { max_pixels: 640 * 360, max_fps: 0, reason: HintReason::DisplaySize });
+        assert_eq!((tx.resolution(), tx.fps(), tx.wants_keyframe()), ((640, 360), 30, true));
+        tx.frame(10_000, true, b"k");
+        assert_eq!(tx.key_causes.hint, 1);
+        // Hidden: 180p15 (D4).
+        tx.set_hint(Hint { max_pixels: 0, max_fps: 0, reason: HintReason::DisplaySize });
+        assert_eq!((tx.resolution(), tx.fps()), ((320, 180), 15));
+    }
+
+    #[test]
+    fn receiver_sends_each_hint_once() {
+        let mut rx = Receiver::new(ReceiverConfig::default());
+        assert_eq!(rx.take_hint(), None);
+        let h = Hint { max_pixels: 640 * 360, max_fps: 24, reason: HintReason::DisplaySize };
+        rx.set_hint(h);
+        assert_eq!(rx.take_hint(), Some(h));
+        assert_eq!(rx.take_hint(), None);
+        rx.set_hint(h);
+        assert_eq!(rx.take_hint(), None, "unchanged");
+        rx.set_hint(Hint { max_fps: 15, ..h });
+        assert_eq!(rx.take_hint().map(|h| h.max_fps), Some(15));
+        assert_eq!(HintReason::from_u8(3), Some(HintReason::Thermal));
+        assert_eq!(HintReason::from_u8(9), None);
+    }
+
+    #[test]
+    fn keyframe_asked_once_while_the_encoder_lags() {
+        let mut tx = Sender::new(SenderConfig::default());
+        assert!(tx.poll_keyframe(0));
+        // The encoder's output lags: the next frames aren't asked again...
+        assert!(!tx.poll_keyframe(33_000));
+        assert!(!tx.poll_keyframe(66_000));
+        // ...unless the keyframe never came.
+        assert!(tx.poll_keyframe(600_000));
+        tx.encode_time(600_000, 1_000);
+        tx.frame(600_000, true, b"k");
+        assert!(!tx.poll_keyframe(633_000));
+        // A request right after the keyframe is for that keyframe; later ones count.
+        tx.encode_time(700_000, 1_000);
+        tx.request_keyframe();
+        assert!(!tx.wants_keyframe());
+        tx.encode_time(900_000, 1_000);
+        tx.request_keyframe();
+        assert!(tx.poll_keyframe(900_000));
+    }
+
+    #[test]
+    fn keyframe_burst_is_not_overuse() {
+        let mut tx = Sender::new(SenderConfig { start_bps: 1_000_000, ..Default::default() });
+        tx.encode_time(2_000_000, 1_000);
+        // 12 KB at 1 Mbps queues ~96 ms behind it.
+        tx.frame(2_000_000, true, &[0; 12_000]);
+        let r = RateReport { delivered_bps: 1_000_000, queuing_us: 90_000 };
+        tx.on_report(2_050_000, &r);
+        assert!(!tx.draining());
+        assert_eq!(tx.trace.overuse, 0);
+        // Half a second later the burst has drained: a queue that stays is overuse.
+        tx.on_report(2_500_000, &r);
+        assert!(tx.draining());
     }
 }

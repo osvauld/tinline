@@ -1,7 +1,9 @@
 # Video adaptation: variable frame rate, steadier resolution, receiver hints
 
-Status: design, 2026-10-16. Builds on `docs/video.md` (ladder, rate control, transport) and
-`docs/design/video-hw-vp8.md` (codec negotiation). Nothing here is implemented yet.
+Status: step 1 (`crates/video`: 2-D ladder, hints in `media`, keyframe fixes, sim) implemented
+2026-10-16 on `feature/video-adaptation`, with the deviations in section 10; steps 2-4 open.
+Builds on `docs/video.md` (ladder, rate control, transport) and `docs/design/video-hw-vp8.md`
+(codec negotiation).
 
 ## Problem
 
@@ -144,6 +146,32 @@ check to need a third report when the previous report delivered normally; (b) wa
 encoder's keyframe budget capped (MediaCodec has no direct knob: request the keyframe at a
 lower bitrate parameter and restore it a frame later).
 
+**Step 0 result: (b).** On the Pixel `rate_starved` stays ~0, while every step up moves
+`rate_overuse` 11 -> 24 within a second, `keyframes_sent` by 2-5 (8-12 KB each against 2.5 KB
+deltas at 720p) and the step down follows 0.8 s later. Fixed in `media::Sender` (step 1):
+
+- **One keyframe per switch.** `wants_keyframe()` stays true until a keyframe comes out of the
+  encoder, and MediaCodec's output lags its input by a few frames, so the encoder loop asked
+  (`request-sync`) again with each of them. `Sender::poll_keyframe(now)` asks once and not again
+  for 500 ms unless the keyframe never came; a receiver/transport request within 250 ms of a
+  sent keyframe is for that keyframe and is ignored (`KEY_DEDUPE_US`; this layer has no RTT,
+  500 ms swallowed a real request in `net_keyframe_request_starts_group`).
+- **Overuse grace.** For a second after a keyframe the queueing its own burst explains (its
+  size at our rate, at most 200 ms, falling linearly to 0 over the second) is not overuse.
+  A flat allowance hid a standing queue for the whole second (p95 277 ms after a 720p step).
+- **Keyframes sized for 30 fps.** `encoder_bitrate()` (section 3) is the unscaled target while
+  a keyframe is due: encoders size it from the per-frame budget, and at 24 fps the 720p
+  keyframe came out ~55 KB (220 ms on 2 Mbps) instead of ~26 KB.
+- **Flap block** as designed, plus: a step down within 1 s of a starved report is a link that
+  got slower, not a flap (section 10).
+
+Sim (`adapt_hw_keyframes`: `sim::HwCodec`, output 2 frames late, every requested input a
+keyframe 4x the mean delta; fast encoder, 1.8 Mbps, 5 ms +-5 ms): before 30 keyframes (20
+"other": asked again while the first was in the encoder), 720p at 7.5 s -> 180p 0.6 s later,
+6 resolution switches after 10 s, p95 193 ms; after 3 keyframes (start + 2 steps), 360p ->
+540p -> 720p at 12 s and stays, 0 switches down, p95 176 ms (p50 ~120 ms is the codec's 2-frame
+lag).
+
 ## 7. Acceptance tests
 
 Deterministic, in `crates/video` (sim, `--release`), unless noted. Baselines first: run each
@@ -170,6 +198,43 @@ scenario on today's code and record shown/latency/switches, so the change is mea
    within 15% of target, PSNR-Y higher than at 30 fps.
 9. **Real call** (device, manual, after merge): Pixel -> laptop HD for 2 min on the LAN:
    <= 2 resolution switches after the first 10 s in the log; the chip shows the fps.
+
+### Results (step 1, `cargo test -p video --release sim -- --nocapture`)
+
+Baseline = `feature/hw-vp8` controller on the same sim (codec trait change only; its numbers
+match the V11 table in `docs/video.md`). Latency p50 / p95 / max ms over the run, frozen
+(> 250 ms gaps), keyframes (rate / cpu / other causes), resolution sizes over time. New
+scenarios use a fast encoder (720p in ~9 ms) unless noted; old ones the phone model.
+
+| Scenario | baseline | step 1 |
+|---|---|---|
+| 1. 2 M -> 700 k at 20 s | 62/116/420, 0 s, keys 4; 360 -> 540 (3.6) -> 720 (6.9) -> **360p** (20.3) | 67/108/348, 0 s, keys 4; 360 -> 540 (6.1) -> 720 (11.9) -> **540p24** (20.3) |
+| 1b. 2 M -> 1 M at 20 s (new) | - | 64/120/285, 0 s; 720p30 -> **720p15** at 20.4 s (no keyframe), 540p30 at 24.2 s (open issue 2) |
+| 2. 1.5 M, 3% loss, 60 s | 56/119/200, keys 4; 540 (5.4) -> 720 (39.8) -> 540 (40.1): **2 after 10 s** | 57/120/206, keys 2; 540p at 6.3 s, stays: **0 after 10 s** |
+| 3. size hint 640x360 5-25 s, 3 M | - (no hints) | 44/60/138; 360p while hinted, 540p 30.0 s, 720p 35.9 s; 0 hint keyframes |
+| 4. fps hint 15 at 15 s, 3 M | - (no hints) | 66/90/138; <= 16 frames/s from 200 ms after, wire <= target, 0 keyframes, 720p kept |
+| 5. slow device (unpinned) | 56/63/72, **360p30** throughout | 77/112/155; **540p15** at 6.1 s, **540p24** from 12.7 s, 1 switch |
+| 6. 2 M / 900 k every 8 s, 80 s | 64/134/294, keys 12; **7 switches in 20-80 s** | 68/122/261, keys 4; 720 (21.6) -> 540 (25.4), then 540p at 15-24 fps: **1 in 20-80 s** |
+| hw keyframes (section 6), 1.8 M | 110/193/554, keys 30 (other 20); 6 after 10 s | 121/176/210, keys 3 (other 0); 720p from 12 s, 0 down |
+| clean 2 M | 68/105/146, keys 2; 540p | 70/108/158, keys 3; 540p30 -> **720p24** (12.0) |
+| 3% loss, 2 M | 61/125/245; 540p | 62/131/234; 540p, 24 fps from 25 s |
+| 2 M -> 300 k | 61/110/610; 540 -> 180 (10.3) | 59/111/638; 540 -> 360p24 (10.3) -> 360p15 -> 180p (13.9) |
+| 500 ms outage | 66/103/170, 0.6 s | 68/109/181, 0.6 s; 720p24 from 16.4 s |
+| relay 75 +-20 ms, 1.5 M | 133/183/238 | 134/197/256 |
+| 2 M -> 200 k -> 2 M, 40 s | 57/99/963, 0.3 s; 540 (26.6 s) | 55/127/1006, 0.3 s; 360 (25.9) -> 540 (31.8) -> 720p24 (37.6, ~190 ms for 1 s) |
+| busy desktop, 50 s | 69/102/146, keys 3; 720p30 (7.8) | 70/108/208, keys 3; 720p30 (12.0) |
+| throttles 2x at 15 s | 58/81/182; 540 -> **360p** (15.7) | 69/95/158; 720p24 -> **720p15** (15.5, no keyframe) -> 540p (16.6) |
+| slow start | 70/106/143; 540p (4.2) | 71/112/164; 540p (6.8) -> 720p24 (12.7) |
+| receiver clock 0.5% fast | 48/87/140, 958 kbps (30 s) | 46/72/138, 940 kbps (40 s run: the climb back from 180p is slower) |
+| slow receiver (25 fps decode 5-15 s) | 54/395/475, backlog 3 | 78/213/333, backlog 0; 540p15 6.8 s -> 540p24 16.8 s |
+| real AV1, 2% loss + outage | 41/91/178, 0.7 s; 360 -> 540 -> 180 -> 360 | 50/130/224, 0.6 s; 360p throughout |
+| real AV1, 2 M -> 200 k -> 2 M | 49/1459/2017, 1.7 s | 44/1317/1758, 1.1 s |
+
+Fewer frames are shown where the tier is lower (that is the point); "freezes" count gaps over
+250 ms, which 15 fps (67 ms) never makes on its own. Costs: the phone model now takes 720p24
+where it stayed at 540p30 (its 720p encode time fits 24 fps's budget, not 30's): p95 +3-6 ms on
+a clean link and a ~190 ms bump for a second when it steps up near a link's capacity; the
+climb back after a drop is slower (10 s after a step down, 5 s holds).
 
 ## 8. Decisions
 
@@ -201,3 +266,57 @@ trick, confirmed by the Pixel self-test.** The options are kept below for the re
 
 Branch: `feature/video-adaptation` off `feature/hw-vp8` (it needs the VP8 encoder path).
 Merge order: hw-vp8 to dev first (pending the user's OK), then this.
+
+## 10. Step 1: where the implementation differs from sections 2-3, and why
+
+1. **A call starts at 30 fps** (the highest rung whose 30 fps floor the start rate covers:
+   360p30 at 500 kbps, as before), not at the first step the start rate covers (540p15). The
+   start isn't a step down, and starting every call at 15 fps cost a second of motion.
+2. **A new size needs its bitrate at the current frame rate.** Going down is fps first;
+   going up, 540p30 -> 720p needs 720p30's 1.3 Mbps, not 720p15's 910 kbps. Measured: landing
+   at 720p15 from 540p30 at ~1 Mbps fell back to 540p within 3 s under 3% loss (every frame, and
+   the keyframe, is twice the size at 15 fps and the delay signal is noisier), 6 switches after
+   10 s instead of 0. The two directions now have a hysteresis band instead of a bounce.
+3. **A resolution step up lands at the highest tier the bitrate and the encoder allow** (one
+   rung at a time), not always at the new rung's lowest tier: 360p30 -> 540p30, not 540p15.
+   Only a slow encoder lands lower (the slow device: 360p30 -> 540p15; D1: size before fps).
+4. **Every step up checks the encode-time prediction**, fps steps too (against the new tier's
+   budget, pixel ratio 1). Without it 540p24 -> 540p30 on the slow device would step straight
+   back down for CPU and flap on the CPU block.
+5. **CPU and flap blocks are one mechanism (`Backoff`) with two settings**: CPU keeps 5 s
+   doubling to 30 s, forgotten after 60 s (its tests and the busy-desktop results depend on
+   it); flap is 30 s doubling to 2 min, forgotten after 5 min. A step down for CPU blocks the
+   step left and all above; it doesn't count as a flap. A step down for a cap (hint) is
+   neither, and doesn't start the 10 s wait.
+6. **Flap block scope**: the lowest step up taken in the last 20 s that a step down undoes;
+   if that step changed the size and the step down leaves the rung, the whole rung is blocked
+   (landing at 720p24 inside a 720p30 block is the same keyframe again). **A step down within
+   1 s of a starved report is not a flap** (`Ladder::real_drop`): the link really got slower
+   (2 M -> 200 k 4 s after a step up blocked 540p for 30 s, recovery at ~45 s instead of ~32 s).
+   Step 0 found the bounce is overuse after keyframes, not starvation, so this keeps the block
+   for the bounce.
+7. **The CPU step down goes to the highest lower step whose predicted encode time fits its
+   budget** (one or more steps, fps first), not always one rung.
+8. **Keyframe bitrate unscaled, overuse allowance decays, dedupe 250 ms**: section 6.
+9. **Tried and dropped**: scaling `overuse_us` / `underuse_us` by 30 / tier (to absorb the
+   bigger frames' delay spread at 15 fps). It kept 1 Mbps at 720p15 but raised p95 by 20-50 ms
+   in most scenarios (clean 141, throttled 151, flapping link 178).
+
+**Acceptance 1 as written can't hold at 700 kbps**: the estimate is 85% of what's delivered
+(~600 kbps), below 720p15's 700 kbps floor, so the step is 720p30 -> 540p24 (one keyframe);
+"resolution >= 540p" and "p95 no worse" hold. 1b (1 Mbps) shows the 720p15 step.
+
+Open issues:
+
+1. The phone model goes to 720p24 on a clean 2 Mbps link (point 3 + D1). If the user prefers
+   540p30 there, a knob that keeps a step up at the current tier for CPU as well (as for the
+   bitrate) gives the old behaviour; the slow device would then stay at 360p30.
+2. At 15 fps on a link near the rate (720p15 on 1 Mbps) the estimate drifts down (delay signal
+   noise from ~50 ms frames); 540p30 4 s later. Wants a receiver-side fix (queueing over the
+   last N frames, or per-packet arrival timing), not thresholds.
+3. 180p has no floor, so the bottom rung never drops frame rate for the bitrate (only for caps
+   / hidden).
+4. `poll_keyframe` and `encoder_bitrate` are used by `pipes.rs` and the sim; `mediacodec.rs`'s
+   self-test has its own loop (step 4, `fps=15`). The `net` v2 message, `VideoOffer.max_fps`,
+   `VideoStats` and the app APIs are steps 2-3; `Ladder::take_steps` is there for the
+   `video step` log line.

@@ -99,6 +99,14 @@ it, and rav1d follows it with the same decoder instance.
 
 ## Resolution ladder (`media::Ladder`, owned by `Sender`)
 
+**Since 2026-10-16 (`feature/video-adaptation`) the ladder is two-dimensional**: steps
+(rung, frame rate 15 / 24 / 30), frame rate first on the way down, a rung's floor scaled by
+`0.4 + 0.6 x fps / 30`, 5 s holds and 10 s after a step down, a flap block, receiver hints
+(`media::Hint`), frame skipping (`Sender::take_frame`) with the encoder bitrate scaled to the
+tier (`Sender::encoder_bitrate`), and one keyframe per switch (`Sender::poll_keyframe`). See
+`docs/design/video-adaptation.md` (sections 2, 3, 6, 7 results and 10 deviations); the rules
+below are the 30 fps-only ladder they extend.
+
 | rung | floor (`min_bps`) | up when bitrate >= (130% of floor) | ceiling (`max_bps`) |
 |---|---|---|---|
 | 320x180 | - | - | 500 kbps |

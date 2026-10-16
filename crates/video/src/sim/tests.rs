@@ -26,6 +26,9 @@ fn go(name: &str, sc: &Scenario) -> Report {
     let mut codec = FakeCodec::new(sc.fps, sc.seed);
     let r = run(sc, &mut codec);
     println!("{name:>10}: {}", r.summary(sc.duration_us));
+    if std::env::var_os("SIM_STEPS").is_some() {
+        println!("{}", r.steps_text());
+    }
     r
 }
 
@@ -83,9 +86,11 @@ fn clean_link() {
     let r = go("clean", &sc);
     assert_eq!(r.decode_errors, 0);
     assert_eq!(r.keyframes, 1 + r.switches, "keyframes only for resolution changes");
-    assert!(r.switches <= 1, "{:?}", r.sizes);
-    assert!(r.shown.len() as u64 >= r.captured - 3, "every frame shown");
-    // 960x540 takes ~11 ms to encode on the phone model.
+    // 360p -> 540p30 -> 720p24: 720p takes ~18.5 ms to encode on the phone model, over 30 fps's
+    // 20 ms budget at the p75 but within 24 fps's 25 ms (size before frame rate, D1).
+    assert!(r.switches <= 2, "{:?}", r.sizes);
+    assert_eq!(shown_height(&r, 15 * S, sc.duration_us), (720, true));
+    assert!(r.shown.len() >= r.encoded.len() - 3, "every frame shown");
     assert!(p95(&r, 2 * S, sc.duration_us) < 120.0, "p95 {}", p95(&r, 2 * S, sc.duration_us));
     assert!(r.freezes(250_000, S, sc.duration_us).is_empty());
     assert!(r.mean_bitrate(20 * S, 30 * S) > 1_000_000.0, "ramps up to use a 2 Mbps link");
@@ -178,7 +183,17 @@ fn real_av1_under_loss_and_outage() {
     let r = run(&sc, &mut codec);
     println!("{:>10}: {}", "av1", r.summary(sc.duration_us));
     assert_eq!(r.decode_errors, 0);
-    assert!(r.shown.len() as u64 > r.captured * 8 / 10);
+    assert!(r.shown.len() > r.encoded.len() * 8 / 10);
+}
+
+/// Smallest height shown in `[from, to)`.
+fn min_height(r: &Report, from: u64, to: u64) -> u32 {
+    r.shown.iter().filter(|s| s.at_us >= from && s.at_us < to).map(|s| s.height).min().unwrap()
+}
+
+/// Frame rate (tier) at `t`.
+fn fps_at(r: &Report, t: u64) -> u32 {
+    r.fps.iter().rev().find(|f| f.0 <= t).map_or(30, |f| f.1)
 }
 
 /// Height shown at the end of `[from, to)`, and whether every frame shown there had it.
@@ -204,27 +219,35 @@ fn ladder_follows_bandwidth_dip() {
     let down = r.sizes.iter().find(|s| s.0 >= 10 * S && s.2 == 180).expect("steps down");
     assert!(down.0 < 11 * S, "180p at {} ms", down.0 / 1000);
     assert_eq!(shown_height(&r, 12 * S, 20 * S), (180, true));
-    // Back up after recovery, one rung at a time, without flapping.
-    assert_eq!(shown_height(&r, 35 * S, 40 * S), (540, true));
-    assert!(r.switches <= 4, "{} switches: {:?}", r.switches, r.sizes);
+    // Back up after recovery, one rung at a time (10 s after the step down, 5 s holds), without
+    // flapping: 360p at ~26 s, 540p at ~32 s, then (the phone model) 720p24 at ~38 s. The drop
+    // starved the link, so it isn't a flap: no block.
+    assert!(min_height(&r, 33 * S, 40 * S) >= 540, "{:?}", r.sizes);
+    assert!(r.switches <= 5, "{} switches: {:?}", r.switches, r.sizes);
     assert!(p95(&r, 21 * S, 40 * S) < 120.0, "p95 {}", p95(&r, 21 * S, 40 * S));
     // The queue built in the ~150 ms before the drop shows drains within about a second.
     assert!(p95(&r, 0, 40 * S) < 150.0, "p95 {}", p95(&r, 0, 40 * S));
-    assert!(Report::pct(&r.latencies_ms(11_500_000, 40 * S), 1.0) < 150.0);
+    // (Up to 37 s: the 720p24 step near the link's capacity costs ~190 ms for a second.)
+    assert!(Report::pct(&r.latencies_ms(11_500_000, 37 * S), 1.0) < 150.0);
     let f: u64 = r.freezes(250_000, S, 40 * S).iter().map(|f| f.1).sum();
     assert!(f < 500_000, "frozen {} ms", f / 1000);
 }
 
 #[test]
 fn ladder_slow_device_stays_low() {
-    // Codec on the little cores: 640x360 takes ~12 ms, 960x540 would take ~21 ms (budget 20).
+    // Codec on the little cores: 640x360 takes ~12 ms, 960x540 ~21 ms: over 30 fps's 20 ms
+    // budget, within 24 fps's 25 ms. Acceptance 5: the bigger picture at a lower frame rate
+    // (was 360p30 throughout): 540p15 (predicted from 360p) at ~6 s, then 540p24 once 540p's
+    // own encode times show it fits.
     let sc = Scenario { device: Device::phone_unpinned(), ..base() };
     let r = go("slow dev", &sc);
     println!("{:>10}  sizes {:?}", "", r.sizes);
     assert_eq!(r.decode_errors, 0);
-    assert_eq!(shown_height(&r, 2 * S, sc.duration_us), (360, true));
-    assert_eq!(r.switches, 0);
+    assert_eq!(shown_height(&r, 8 * S, sc.duration_us), (540, true));
+    assert_eq!(r.switches, 1);
+    assert_eq!(fps_at(&r, sc.duration_us), 24);
     assert_eq!(r.camera_drops, 0);
+    assert!(p95(&r, 2 * S, sc.duration_us) < 130.0, "p95 {}", p95(&r, 2 * S, sc.duration_us));
 }
 
 #[test]
@@ -237,11 +260,14 @@ fn ladder_steps_down_when_throttled() {
     let r = go("throttled", &sc);
     println!("{:>10}  sizes {:?}", "", r.sizes);
     assert_eq!(r.decode_errors, 0);
-    assert_eq!(shown_height(&r, 12 * S, 15 * S), (540, true));
-    let down = r.sizes.iter().find(|s| s.0 >= 15 * S).expect("steps down");
-    assert!(down.0 < 16 * S && down.2 == 360, "{down:?}");
-    assert_eq!(shown_height(&r, 16 * S, sc.duration_us), (360, true));
-    assert!(r.switches <= 2, "{:?}", r.sizes);
+    // 720p24 before (see clean_link); at 2x slower the frame rate goes first, within a second
+    // and without a keyframe; then 540p (was: 540p -> 360p at 15.7 s, and stayed).
+    assert_eq!(shown_height(&r, 13 * S, 15 * S), (720, true));
+    let first = r.steps.iter().find(|s| s.at_us >= 15 * S).expect("steps down");
+    assert!(first.at_us < 16 * S && first.to.0 == 1280 && first.to.2 < 24, "{first:?}");
+    assert!(min_height(&r, 15 * S, sc.duration_us) >= 540, "{:?}", r.sizes);
+    assert_eq!(r.key_causes.cpu + r.key_causes.rate, r.switches);
+    assert!(r.switches <= 3, "{:?}", r.sizes);
 }
 
 #[test]
@@ -279,7 +305,8 @@ fn slow_start() {
     assert_eq!(r.decode_errors, 0);
     let at540 = r.sizes.iter().find(|s| s.2 == 540).expect("reaches 540p");
     assert!(at540.0 < 10 * S, "540p only at {} ms", at540.0 / 1000);
-    assert_eq!(shown_height(&r, 12 * S, sc.duration_us), (540, true));
+    // (Then 720p24, see clean_link.)
+    assert!(min_height(&r, 12 * S, sc.duration_us) >= 540, "{:?}", r.sizes);
 }
 
 #[test]
@@ -301,12 +328,14 @@ fn busy_desktop_steady_call() {
 fn receiver_clock_drift() {
     // The receiver's clock runs 0.5% fast (a VM, an emulator): the queueing delay measured
     // against the 10 s minimum reads ~50 ms with no queue at all.
-    let sc = Scenario { receiver_clock_ppm: 5_000, ..base() };
+    // 40 s (was 30): back up from 180p takes longer with the 10 s wait after a step down and the
+    // 5 s holds (180p 10 s -> 360p 20 s -> 540p 29 s).
+    let sc = Scenario { duration_us: 40 * S, receiver_clock_ppm: 5_000, ..base() };
     let r = go("drift", &sc);
     trace(&r, 6 * S, 30 * S);
     println!("{:>10}  sizes {:?}", "", r.sizes);
     assert_eq!(r.decode_errors, 0);
-    let br = r.mean_bitrate(20 * S, sc.duration_us);
+    let br = r.mean_bitrate(30 * S, sc.duration_us);
     assert!(br > 1_000_000.0, "stuck at {br}");
 }
 
@@ -352,6 +381,39 @@ fn adapt_fps_before_resolution() {
     };
     let r = go("fps first", &sc);
     println!("{:>10}  {}", "", sizes_line(&r));
+    assert_eq!(r.decode_errors, 0);
+    assert_eq!(shown_height(&r, 15 * S, 20 * S), (720, true));
+    // 700 kbps delivers ~600 kbps of estimate (85%): under 720p15's 700 kbps floor, so one
+    // resolution step, to 540p24, not 360p30 (was: 720p -> 360p).
+    assert!(min_height(&r, 7 * S, sc.duration_us) >= 540, "{}", sizes_line(&r));
+    // Baseline: p95 116 ms, no freezes.
+    assert!(p95(&r, 0, sc.duration_us) <= 116.0, "p95 {}", p95(&r, 0, sc.duration_us));
+    assert!(r.freezes(250_000, S, sc.duration_us).is_empty());
+    assert_eq!(r.keyframes, 1 + r.switches, "no keyframes for frame-rate steps");
+}
+
+#[test]
+fn adapt_fps_before_resolution_1mbps() {
+    // Acceptance 1 where the estimate covers 720p15 (a 1 Mbps link): the size stays.
+    let sc = Scenario {
+        duration_us: 40 * S,
+        device: fast(),
+        link: Link { rate_changes: vec![(20 * S, 1_000_000)], ..Link::default() },
+        ..base()
+    };
+    let r = go("fps 1M", &sc);
+    println!("{:>10}  {}", "", sizes_line(&r));
+    assert_eq!(r.decode_errors, 0);
+    // The first step is a frame-rate one, within the second look, without a keyframe.
+    let step = r.steps.iter().find(|s| s.at_us >= 20 * S).expect("steps down");
+    assert!(step.at_us < 20_500_000 && step.to.0 == 1280 && step.to.2 < 30, "{step:?}");
+    assert_eq!(shown_height(&r, 15 * S, 20_600_000), (720, true));
+    // Open issue: at 720p15 each frame is ~50 ms on a 1 Mbps link, the delay signal is noisier,
+    // and the estimate drifts below 720p15's floor (540p30 at ~24 s). Still >= 540p.
+    assert!(min_height(&r, 7 * S, sc.duration_us) >= 540, "{}", sizes_line(&r));
+    assert_eq!(r.keyframes, 1 + r.switches, "no keyframes for frame-rate steps");
+    assert!(p95(&r, 0, sc.duration_us) <= 125.0, "p95 {}", p95(&r, 0, sc.duration_us));
+    assert!(r.freezes(250_000, S, sc.duration_us).is_empty());
 }
 
 #[test]
@@ -365,6 +427,10 @@ fn adapt_no_bouncing_under_loss() {
     };
     let r = go("no bounce", &sc);
     println!("{:>10}  {} | after 10 s: {}", "", sizes_line(&r), res_switches(&r, 10 * S));
+    assert_eq!(r.decode_errors, 0);
+    // Baseline: 2 after 10 s (540p -> 720p at 39.8 s -> 540p 0.3 s later).
+    assert!(res_switches(&r, 10 * S) <= 1, "{}", sizes_line(&r));
+    assert!(p95(&r, 2 * S, sc.duration_us) < 130.0);
 }
 
 #[test]
@@ -374,6 +440,67 @@ fn adapt_flapping_link() {
     let sc = Scenario { duration_us: 80 * S, device: fast(), link: Link { rate_changes: changes, ..Link::default() }, ..base() };
     let r = go("flap link", &sc);
     println!("{:>10}  {} | 20-80 s: {}", "", sizes_line(&r), res_switches(&r, 20 * S));
+    assert_eq!(r.decode_errors, 0);
+    // Baseline: 7 in 20-80 s (540p <-> 720p every 8-16 s). Now 900 kbps holds 720p15 / 540p at
+    // a lower tier, and a step up undone within 20 s is blocked.
+    assert!(res_switches(&r, 20 * S) <= 2, "{}", sizes_line(&r));
+    assert!(p95(&r, 0, sc.duration_us) <= 134.0, "p95 {}", p95(&r, 0, sc.duration_us));
+}
+
+/// A fast device on a 3 Mbps link with `hints` from the receiving app.
+fn hinted(name: &str, hints: Vec<(u64, Hint)>) -> Report {
+    let sc = Scenario {
+        duration_us: 50 * S,
+        device: fast(),
+        link: Link { rate_bps: 3_000_000, ..Link::default() },
+        hints,
+        ..base()
+    };
+    let r = go(name, &sc);
+    println!("{:>10}  {}", "", sizes_line(&r));
+    if std::env::var_os("SIM_STEPS").is_none() {
+        println!("{}", r.steps_text());
+    }
+    assert_eq!(r.decode_errors, 0);
+    r
+}
+
+#[test]
+fn adapt_drawn_size_hint() {
+    // Acceptance 3: the picture is drawn 640x360 from 5 s to 25 s.
+    use crate::media::HintReason;
+    let small = Hint { max_pixels: 640 * 360, max_fps: 0, reason: HintReason::DisplaySize };
+    let r = hinted("size hint", vec![(5 * S, small), (25 * S, Hint::NONE)]);
+    // Nothing above 360p while it lasts (from the next keyframe: here it was 360p already).
+    let max = r.shown.iter().filter(|s| s.at_us >= 5_300_000 && s.at_us < 25 * S).map(|s| s.height).max();
+    assert_eq!(max, Some(360));
+    // After the lift: a rung at a time with the 5 s hold, 720p by 45 s.
+    let ups: Vec<_> = r.steps.iter().filter(|s| s.at_us >= 25 * S).collect();
+    assert!(ups.iter().all(|s| s.to.1 > s.from.1 || s.to.2 > s.from.2), "{ups:?}");
+    assert!(ups.windows(2).all(|w| w[1].at_us - w[0].at_us >= 5 * S), "{ups:?}");
+    let at720 = r.sizes.iter().find(|s| s.0 >= 25 * S && s.2 == 720).expect("720p");
+    assert!(at720.0 < 45 * S, "{}", sizes_line(&r));
+    assert_eq!(r.key_causes.hint, 0);
+}
+
+#[test]
+fn adapt_fps_hint() {
+    // Acceptance 4: the receiver can only show 15 fps from 15 s (at 720p30 by then).
+    use crate::media::HintReason;
+    let slow = Hint { max_pixels: u32::MAX, max_fps: 15, reason: HintReason::DecodeSlow };
+    let r = hinted("fps hint", vec![(15 * S, slow)]);
+    assert_eq!(shown_height(&r, 14 * S, 15 * S), (720, true));
+    assert_eq!(fps_at(&r, 14 * S), 30);
+    // <= 16 frames a second within 200 ms of the hint (it arrives after the 20 ms one-way delay).
+    let n = r.encoded_in(15_200_000, 16_200_000);
+    assert!(n <= 16, "{n} frames");
+    assert!((14..=16).contains(&r.encoded_in(20 * S, 21 * S)));
+    // On the wire no more than the target, no keyframe for it, the size stays.
+    let (wire, target) = (r.wire_bps(20 * S, 50 * S), r.mean_bitrate(20 * S, 50 * S));
+    assert!(wire <= target * 1.05, "wire {wire:.0} target {target:.0}");
+    assert_eq!(r.keyframes, 1 + r.switches);
+    assert_eq!(r.key_causes.hint, 0);
+    assert_eq!(shown_height(&r, 16 * S, 50 * S), (720, true));
 }
 
 #[test]
@@ -390,4 +517,27 @@ fn adapt_hw_keyframes() {
     let r = run(&sc, &mut codec);
     println!("{:>10}: {}", "hw keys", r.summary(sc.duration_us));
     println!("{:>10}  {} | after 10 s: {}", "", sizes_line(&r), res_switches(&r, 10 * S));
+    assert_eq!(r.decode_errors, 0);
+    // Baseline: 30 keyframes (20 nobody asked for: asked again while the first was in the
+    // encoder), 720p at 7.5 s -> 180p 0.6 s later, 6 switches after 10 s.
+    assert_eq!(r.key_causes.other, 0, "one keyframe per switch");
+    assert_eq!(r.keyframes, 1 + r.switches);
+    let top = r.sizes.iter().position(|s| s.2 == 720).expect("reaches 720p");
+    assert_eq!(top, r.sizes.len() - 1, "stays at 720p: {}", sizes_line(&r));
+}
+
+/// Latency per second of the bandwidth-dip run (`--ignored`), for looking into a scenario.
+#[test]
+#[ignore]
+fn debug_latency_by_second() {
+    let sc = Scenario {
+        duration_us: 40 * S,
+        link: Link { rate_changes: vec![(10 * S, 200_000), (20 * S, 2_000_000)], ..Link::default() },
+        ..base()
+    };
+    let r = go("ladder dip", &sc);
+    for s in 0..40 {
+        let l = r.latencies_ms(s * S, (s + 1) * S);
+        println!("{s:3}s n {:3} p50 {:5.0} p95 {:5.0}", l.len(), Report::pct(&l, 0.5), Report::pct(&l, 0.95));
+    }
 }

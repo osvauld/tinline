@@ -55,9 +55,16 @@ pub(super) fn encode_loop(pipe: Arc<Pipe>, send: VideoSend, codec: VideoCodec) {
         }
         let capture_us = input.at.saturating_duration_since(epoch).as_micros() as u64;
         // One look at the sender: a ladder step in between would otherwise give a keyframe at
-        // the old size and another at the new one.
-        let ((rw, rh), bitrate, wants_key, trace) =
-            send.with_sender(|s| (s.resolution(), s.bitrate(), s.wants_keyframe(), (s.trace, s.drops, s.draining())));
+        // the old size and another at the new one. Frames beyond the ladder's frame-rate tier
+        // are skipped (the slot is latest-wins, so skipping is free); the encoder stays at
+        // `FPS` and gets the bitrate scaled to the tier (`encoder_bitrate`).
+        let look = send.with_sender(|s| {
+            s.take_frame(capture_us).then(|| {
+                let look = (s.resolution(), s.encoder_bitrate(), s.poll_keyframe(capture_us));
+                (look, s.bitrate(), (s.trace, s.drops, s.draining()))
+            })
+        });
+        let Some((((rw, rh), bitrate, wants_key), target_bps, trace)) = look else { continue };
         let pic = match input.prepare(rw as usize, rh as usize) {
             Ok(p) => p,
             Err(e) => {
@@ -110,7 +117,7 @@ pub(super) fn encode_loop(pipe: Arc<Pipe>, send: VideoSend, codec: VideoCodec) {
         send.encode_time(took.as_micros() as u64);
         st.send_width = w as u32;
         st.send_height = h as u32;
-        st.bitrate_bps = rate;
+        st.bitrate_bps = target_bps;
         st.encode_ms = took.as_secs_f32() * 1000.0;
         let (t, drops, draining) = trace;
         (st.rate_reports, st.rate_overuse, st.rate_starved, st.backlog_drops) = (t.reports, t.overuse, t.starved, drops);
