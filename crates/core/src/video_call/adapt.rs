@@ -119,6 +119,16 @@ const DECODE_LOW_PCT: f32 = 30.0;
 const DECODE_UP_AFTER: Duration = Duration::from_secs(10);
 /// Decode times needed in the window before they steer anything.
 const DECODE_MIN_SAMPLES: usize = 10;
+/// Hardware decoder: frames received in the last 2 s needed before "behind" means anything.
+const HW_MIN_RECEIVED: u64 = 20;
+/// ...and it is behind when it decoded fewer than this % of them.
+const HW_KEEP_UP_PCT: u64 = 80;
+
+/// A hardware decoder is behind when, over the last 2 s, it delivered under 80% of the frames
+/// it was given (the 2-slot channel then fills and the reader stops).
+pub(super) fn hw_behind(received: u64, decoded: u64) -> bool {
+    received >= HW_MIN_RECEIVED && decoded * 100 < received * HW_KEEP_UP_PCT
+}
 
 /// Pixel cap of a budget: (pixels, fps), `u32::MAX` / `0` for no cap, and why.
 pub(super) fn budget_caps(b: VideoBudget, rungs: &[video::media::Rung]) -> (u32, u8, HintReason) {
@@ -285,6 +295,14 @@ impl Policy {
         false
     }
 
+    /// Hardware (asynchronous) decoders: the wall time of `decode` is pipeline latency, not CPU
+    /// work, so it says nothing about cost. Judge by throughput (`behind`, see `hw_behind`: counts
+    /// as 100% of the interval) and by the render cost, which is real CPU in both cases.
+    pub(super) fn observe_decode_hw(&mut self, now: Instant, behind: bool, render_ms: f32, n: usize) -> bool {
+        let interval_ms = 1000.0 / self.decode_fps as f32;
+        self.observe_decode(now, if behind { interval_ms } else { render_ms }, n)
+    }
+
     /// Our own ladder caps: (highest rung, highest fps) from the peer's offer and the budget.
     pub(super) fn own_caps(&self) -> (usize, u32) {
         let (bp, bf, _) = budget_caps(self.budget, &self.ladder.rungs);
@@ -378,6 +396,8 @@ pub(super) async fn run_policy(pipe: Arc<Pipe>) {
     let mut tick = tokio::time::interval(Duration::from_secs(1));
     tick.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
     let (mut last, mut last_sent, mut last_dec) = (Instant::now(), 0u64, 0u64);
+    // (received, decoded) frames per tick, last two ticks: the hardware decoder's throughput.
+    let (mut last_rx, mut hist) = (0u64, std::collections::VecDeque::<(u64, u64)>::new());
     loop {
         tick.tick().await;
         if pipe.stop.load(Ordering::SeqCst) {
@@ -409,8 +429,26 @@ pub(super) async fn run_policy(pipe: Arc<Pipe>) {
         let p75 = dec + if rn >= DECODE_MIN_SAMPLES { render } else { 0.0 };
         {
             let mut pol = pipe.policy.lock();
-            if pol.observe_decode(now, p75, n) {
-                tracing::info!(target: "p2pcore::video_call", "video decode+render cost p75={p75:.1}ms (decode {dec:.1}, render {render:.1}): frame rate tier {}", pol.decode_fps);
+            let (rx_total, dec_total, hw) = {
+                let st = pipe.stats.lock();
+                (st.frames_received, st.frames_decoded, st.recv_hardware)
+            };
+            hist.push_back((rx_total - last_rx, dec_total - last_dec));
+            last_rx = rx_total;
+            if hist.len() > 2 {
+                hist.pop_front();
+            }
+            let (rx2, dec2) = hist.iter().fold((0, 0), |a, e| (a.0 + e.0, a.1 + e.1));
+            let changed = if hw {
+                // Hardware: latency is not cost; judge by throughput (+ render).
+                let behind = hw_behind(rx2, dec2);
+                let r = if rn >= DECODE_MIN_SAMPLES { render } else { 0.0 };
+                pol.observe_decode_hw(now, behind, r, DECODE_MIN_SAMPLES.max(n))
+            } else {
+                pol.observe_decode(now, p75, n)
+            };
+            if changed {
+                tracing::info!(target: "p2pcore::video_call", "video decode+render cost p75={p75:.1}ms (decode {dec:.1}, render {render:.1}, hw={hw}, recv/dec {rx2}/{dec2}): frame rate tier {}", pol.decode_fps);
             }
         }
         push_hint(&pipe, now);

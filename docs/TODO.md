@@ -54,6 +54,7 @@ Detail in [design/receipt-runtime-roadmap.md](design/receipt-runtime-roadmap.md)
 ## Video (hw VP8 + adaptation landed 2026-10-16, dev 15ecc43)
 Design: [design/video-hw-vp8.md](design/video-hw-vp8.md), [design/video-adaptation.md](design/video-adaptation.md).
 Tested on devices: Pixel 3a -> laptop HD with no flicker; phone-started video calls no longer crash.
+- [x] **Decode-cost policy no longer throttles hardware decoders** (2026-10-16): wall-clock decode latency of MediaCodec (25 ms at 720p, ~3% CPU) pushed a Pixel receiver to 15 fps. With `recv_hardware` the policy judges throughput (decoded vs received over 2 s) plus render cost; software unchanged. docs/video.md.
 - [ ] **HD keeps the 4:3 shape.** HD asks the camera for 16:9 (1280x720), normal mode for 4:3
       (640x480), so a portrait picture turns narrower when HD is switched on. Ask for 4:3 in HD
       (1280x960); the fit-not-crop path keeps it. Decision taken: 4:3 (lead's recommendation; confirm).
