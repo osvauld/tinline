@@ -1,10 +1,12 @@
-//! AV1 video codec for the call path (spike).
+//! Video codecs for the call path.
 //!
 //! Pure and synchronous like `audio`: no I/O. The caller feeds I420 frames to a
-//! [`VideoEncoder`] and ships the returned [`Packet`]s; [`Decoder`] turns received packets back
-//! into I420. Encoders: [`aom::AomEncoder`] (libaom realtime) and [`Encoder`] (rav1e, kept for
-//! comparison: it holds ~4 frames and is too slow for calls). Decoder: rav1d (Rust port of
-//! dav1d), which is the side that parses peer-controlled bytes.
+//! [`VideoEncoder`] and ships the returned [`Packet`]s; a [`VideoDecoder`] turns received packets
+//! back into I420. AV1 is the default: encoders [`aom::AomEncoder`] (libaom realtime) and
+//! [`Encoder`] (rav1e, kept for comparison: it holds ~4 frames and is too slow for calls);
+//! decoder [`Decoder`], rav1d (Rust port of dav1d), which is the side that parses
+//! peer-controlled bytes. VP8 comes from phones' hardware encoders (`docs/design/video-hw-vp8.md`);
+//! the desktop decodes it with [`vpx::Vp8Decoder`] (feature `vp8`, libvpx).
 
 use std::ffi::c_int;
 use std::mem::MaybeUninit;
@@ -30,14 +32,23 @@ pub mod media;
 pub mod net;
 #[cfg(any(test, feature = "sim"))]
 pub mod sim;
+#[cfg(feature = "vp8")]
+pub mod vpx;
 #[cfg(any(test, feature = "sim"))]
 pub mod y4m;
 
-/// Anything that turns camera frames into AV1 packets.
+/// Anything that turns camera frames into packets of one codec.
 pub trait VideoEncoder: Send {
     /// Encodes one frame; `key` forces a keyframe (after loss or for a new subscriber).
     fn encode(&mut self, pic: &I420, key: bool) -> Result<Vec<Packet>>;
     fn set_bitrate(&mut self, bps: u32) -> Result<()>;
+}
+
+/// Anything that turns received packets of one codec back into pictures.
+pub trait VideoDecoder: Send {
+    /// Feeds one packet and returns the pictures it completed (normally exactly one). Never
+    /// panics on peer bytes; a picture above the decoder's `max_pixels` is an error.
+    fn decode(&mut self, packet: &[u8]) -> Result<Vec<I420>>;
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -52,6 +63,8 @@ pub enum Error {
     Unsupported(i32, u32),
     #[error("frame is {0} bytes, expected {1}")]
     BadFrame(usize, usize),
+    #[error("picture {0}x{1} is over the size limit")]
+    TooLarge(u32, u32),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -127,7 +140,7 @@ impl Default for EncoderConfig {
     }
 }
 
-/// One encoded frame: a temporal unit of AV1 OBUs.
+/// One encoded frame (AV1: a temporal unit of OBUs; VP8: one frame).
 #[derive(Clone, Debug)]
 pub struct Packet {
     pub data: Vec<u8>,
@@ -169,6 +182,12 @@ impl Decoder {
 
     /// Feeds one packet and returns the pictures it completed (normally exactly one).
     pub fn decode(&mut self, packet: &[u8]) -> Result<Vec<I420>> {
+        VideoDecoder::decode(self, packet)
+    }
+}
+
+impl VideoDecoder for Decoder {
+    fn decode(&mut self, packet: &[u8]) -> Result<Vec<I420>> {
         let mut data = Dav1dData {
             data: None,
             sz: 0,
@@ -199,7 +218,9 @@ impl Decoder {
         }
         Ok(out)
     }
+}
 
+impl Decoder {
     fn pictures(&mut self, out: &mut Vec<I420>) -> Result<()> {
         loop {
             let mut pic = MaybeUninit::<Dav1dPicture>::zeroed();
