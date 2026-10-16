@@ -69,6 +69,7 @@ impl Inner {
             crate::block::known_name(&s.state, &conv.peer_did)?
         };
         let pair = pair_id(me.id.did(), &conv.peer_did);
+        let last_id = conv.last.as_ref().map(|l| l.id.clone());
         let (last_outgoing, last_delivery, last_activity, preview) = match &conv.last {
             Some(l) => {
                 let delivery = match core.store.mi(&pair, &l.id).ok().flatten() {
@@ -79,7 +80,7 @@ impl Inner {
             }
             None => (false, DeliveryState::Delivered, 0, String::new()),
         };
-        Some(Chat { peer_did: conv.peer_did.clone(), peer_name: name, preview, last_outgoing, last_delivery, last_activity, unread: conv.unread })
+        Some(Chat { peer_did: conv.peer_did.clone(), peer_name: name, preview, last_outgoing, last_delivery, last_activity, unread: conv.unread, last_id })
     }
 
     pub(crate) fn chat_list(&self) -> Result<Vec<Chat>, Error> {

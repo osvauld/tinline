@@ -117,7 +117,7 @@ impl App {
             let face = self.profile_avatar(t, &name, &r.peer_did, 48.0);
             // The mark of my last message (its slot kept from the start: the row's last_outgoing is known now).
             let mark = if r.last_outgoing && matches!(pv, Preview::Plain(..)) && !me {
-                Some(self.chat.marks.get(&(false, r.peer_did.clone())).map(|(_, v)| *v))
+                self.list_mark(false, &r.peer_did, r.last_id.as_deref())
             } else { None };
             items.push((r.last_activity, self.pg_chat_row(t, sel, face, name, r.last_activity, r.unread, false, pv, Msg::Select(r.peer_did.clone()), mark)));
         }

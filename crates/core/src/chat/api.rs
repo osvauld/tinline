@@ -102,6 +102,8 @@ pub struct Chat {
     /// Unix ms of the last message, or 0.
     pub last_activity: u64,
     pub unread: u32,
+    /// The id of the last message (what the list's mark is for, `chat_list_marks`); `None` if none.
+    pub last_id: Option<String>,
 }
 
 /// One UTC day of a conversation, oldest message first.

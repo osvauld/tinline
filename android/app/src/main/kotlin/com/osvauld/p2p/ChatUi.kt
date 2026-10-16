@@ -105,4 +105,6 @@ data class ChatRowUi(
     val markSlot: Boolean = false,
     /** Identifies the marked message (the glyph animates only when the same message's state changes). */
     val markKey: String = "",
+    /** The last message's id: a mark shows only if it is for exactly this message. */
+    val lastId: String? = null,
 )

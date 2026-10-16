@@ -74,6 +74,7 @@ impl App {
             last_delivery: delivery,
             last_activity: at,
             unread,
+            last_id: Some(format!("pg-last-{id}")),
         };
         self.chat.chats = vec![
             chat("arjun", "I have the landlord\u{2019}s numbers now", false, DeliveryState::Delivered, at(12, 41, 0), 2),
