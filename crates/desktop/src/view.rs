@@ -1430,7 +1430,7 @@ impl App {
     fn video_stage<'a>(&'a self, t: Tok, peer: &p2pcore::CallInfo) -> El<'a> {
         let v = &self.video;
         let main: El = match (&v.remote, v.remote_on()) {
-            (Some(h), true) => image(h.clone()).content_fit(ContentFit::Contain).width(Fill).height(Fill).into(),
+            (Some(p), true) => crate::video_surface::surface(p.clone()),
             (_, on) => column![
                 self.profile_avatar(t, &peer.peer_name, &peer.peer_did, 112.0),
                 tx(if on { "Video is starting\u{2026}" } else { "Camera off" }, 15.0, t.ink2),

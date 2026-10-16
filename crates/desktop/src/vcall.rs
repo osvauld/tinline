@@ -12,6 +12,7 @@ use p2pcore::{CallState, VideoInfo};
 use super::{blocking, App, Msg};
 use crate::camera::{self, Camera, Source};
 use crate::frames::{self, Rgba};
+use crate::video_surface::Picture;
 use crate::{Ev, INIT};
 
 #[derive(Debug, Clone)]
@@ -38,8 +39,8 @@ pub(super) struct VideoUi {
     /// Newest self-view picture, written by the capture thread.
     slot: Arc<Mutex<Option<Rgba>>>,
     pub local: Option<Handle>,
-    pub remote: Option<Handle>,
-    /// Remote frames shown and the UI-thread cost per frame (pull + RGBA + handle), smoothed.
+    pub remote: Option<Arc<Picture>>,
+    /// Remote frames shown and the UI-thread cost per frame (pull), smoothed.
     shown: u64,
     cost_ms: f32,
     pub send_size: Option<(u32, u32)>,
@@ -241,7 +242,8 @@ impl App {
         }
         let t = Instant::now();
         if let Some(r) = frames::pull(&self.node) {
-            self.video.remote = Some(Handle::from_rgba(r.width, r.height, r.data));
+            let r = Arc::new(r);
+            self.video.remote = Some(r.clone());
             let ms = t.elapsed().as_secs_f32() * 1e3;
             let v = &mut self.video;
             v.cost_ms = if v.shown == 0 {
