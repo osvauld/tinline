@@ -71,6 +71,22 @@ pub fn video_send_label(stats: &VideoStats) -> String {
     }
 }
 
+/// The picture label for what I receive ("Their video \u{b7} 540p \u{b7} 24 fps"); empty before
+/// the first decoded frame. Both apps show it on the remote picture.
+#[uniffi::export]
+pub fn video_recv_label(stats: &VideoStats) -> String {
+    let (w, h) = (stats.recv_width, stats.recv_height);
+    if w == 0 || h == 0 {
+        return String::new();
+    }
+    let name = if w.max(h) >= 1280 && w.min(h) >= 720 { "HD".to_string() } else { format!("{}p", w.min(h)) };
+    if stats.recv_fps > 0 {
+        format!("Their video \u{b7} {name} \u{b7} {} fps", stats.recv_fps)
+    } else {
+        format!("Their video \u{b7} {name}")
+    }
+}
+
 /// A hint change that only shrinks the picture waits this long to be sure (window drags).
 const SHRINK_HOLD: Duration = Duration::from_secs(1);
 /// Decode cost above this % of the frame interval: one frame-rate tier down.

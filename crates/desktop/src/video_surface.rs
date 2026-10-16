@@ -64,17 +64,18 @@ fn note_drawn(bounds: Rectangle, w: u32, h: u32) {
     DRAWN_AT.store(now_ms(), Relaxed);
 }
 
-/// The remote picture's drawn size in physical pixels and whether it is on screen: `None`
-/// until it was first drawn; not visible when it has not been drawn for a second (call screen
-/// not showing the stage, window minimised or closed).
+/// The remote picture's last drawn size in physical pixels, and visible: `None` until it was
+/// first drawn. Always visible while it has a size: "not drawn for a while" is not "hidden".
+/// The compositor stops redrawing a covered window (Wayland frame callbacks), and treating that
+/// as hidden told the phone to drop to 180p15 whenever another window was in front, then climb
+/// back a step at a time (16 Oct 2026). The call ending resets it (`forget_drawn`).
 pub fn drawn() -> Option<(u32, u32, bool)> {
     use std::sync::atomic::Ordering::Relaxed;
-    let at = DRAWN_AT.load(Relaxed);
-    if at == 0 {
+    if DRAWN_AT.load(Relaxed) == 0 {
         return None;
     }
     let d = DRAWN.load(Relaxed);
-    Some(((d >> 32) as u32, d as u32, now_ms().saturating_sub(at) < 1000))
+    Some(((d >> 32) as u32, d as u32, true))
 }
 
 /// Forget the last layout (a new call starts without a stale picture size).

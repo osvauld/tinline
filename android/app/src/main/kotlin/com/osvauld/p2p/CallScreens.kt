@@ -57,6 +57,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import uniffi.p2pcore.CallInfo
 import uniffi.p2pcore.CallState
+import uniffi.p2pcore.videoRecvLabel
 import uniffi.p2pcore.videoSendLabel
 
 private fun ComponentActivity.showOverLock() {
@@ -325,6 +326,17 @@ fun InCallScreen(ui: CallUi, meName: String, app: P2pApp, onCameraOn: () -> Unit
             delay(1000)
         }
     }
+    // What I receive ("Their video · 540p · 24 fps"), whether or not my camera is on.
+    val recvLabel by produceState<String?>(null, ui.info.callId, v?.negotiated) {
+        value = null
+        if (v?.negotiated != true) return@produceState
+        while (true) {
+            value = withContext(Dispatchers.IO) {
+                runCatching { app.node.videoStats()?.let { videoRecvLabel(it) } }.getOrNull()
+            }?.takeIf { it.isNotEmpty() }
+            delay(1000)
+        }
+    }
     val sendSize = sendStats?.first
     val sendLabel = sendStats?.second?.takeIf { it.isNotEmpty() }
     val hdOn = effectivePreferHd(app.preferHdCapture, hdCall)
@@ -343,7 +355,7 @@ fun InCallScreen(ui: CallUi, meName: String, app: P2pApp, onCameraOn: () -> Unit
                 name = name, did = ui.info.peerDid, secs = secs, direct = s?.direct, bars = bars, reconnecting = s?.reconnecting == true,
                 muted = ui.muted, speaker = ui.speaker, localCamera = v.localCamera, remoteCamera = v.remoteCamera,
                 problem = if (ui.held) HELD else ui.micProblem ?: videoProblem,
-                videoQuality = if (v.localCamera) hdNote?.text ?: sendLabel ?: "Starting video…" else null,
+                videoQuality = listOfNotNull(if (v.localCamera) hdNote?.text ?: sendLabel ?: "Starting video…" else null, recvLabel).joinToString("   ").ifEmpty { null },
                 hd = hdOn, hdPaused = hdIsPaused, onHd = { app.video.setHd(!hdOn, hdIsPaused) },
                 onMute = { calls.toggleMute() }, onSpeaker = { calls.toggleSpeaker() }, onCamera = onCamera,
                 onFlip = { app.video.flip() }, onEnd = { calls.hangup() }, onMinimise = onMinimise, onMessage = onMessage,

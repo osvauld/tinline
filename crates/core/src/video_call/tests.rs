@@ -352,3 +352,12 @@ fn send_label_says_why() {
     assert_eq!(video_send_label(&st(960, 540, 30, "display", "rate")), "540p \u{b7} their screen");
     assert_eq!(video_send_label(&st(540, 960, 15, "none", "")), "540p \u{b7} 15 fps");
 }
+
+#[test]
+fn recv_label_names_their_video() {
+    let st = |w, h, fps| VideoStats { recv_width: w, recv_height: h, recv_fps: fps, ..Default::default() };
+    assert_eq!(video_recv_label(&st(0, 0, 0)), "");
+    assert_eq!(video_recv_label(&st(720, 1280, 30)), "Their video \u{b7} HD \u{b7} 30 fps");
+    assert_eq!(video_recv_label(&st(320, 180, 15)), "Their video \u{b7} 180p \u{b7} 15 fps");
+    assert_eq!(video_recv_label(&st(960, 540, 0)), "Their video \u{b7} 540p");
+}

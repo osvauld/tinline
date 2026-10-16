@@ -1440,6 +1440,10 @@ impl App {
             .into(),
         };
         let mut st = stack![container(main).center_x(Fill).center_y(Fill).style(ui::plain(t.surface2, 16.0))];
+        if v.remote.is_some() && !v.recv_label.is_empty() {
+            // What I receive, on the remote picture's bottom-start corner; a fixed box like the label above.
+            st = st.push(container(container(tx(v.recv_label.clone(), 13.0, t.ink)).width(260).height(18).clip(true)).padding(14).align_bottom(Fill));
+        }
         if v.local_on() {
             // The chip's short line borrows the picture label for 2.6 s; the label's box does not change.
             let label = v.hd_line().map(str::to_string).unwrap_or_else(|| {
