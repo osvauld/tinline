@@ -151,7 +151,11 @@ impl GroupCore {
             .map_or(0, |i| i.at)
             .max(last_post)
             .max(old);
-        let read = if read_receipts { self.read_ops(live, gid, old, new) } else { Ok(Vec::new()) };
+        let read = if read_receipts {
+            self.read_ops(live, gid, old, new)
+        } else {
+            Ok(Vec::new())
+        };
         let extra = read.unwrap_or_else(|e| {
             tracing::warn!("group {}: no read intent: {e}", crate::group::short(gid));
             Vec::new()

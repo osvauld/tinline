@@ -251,7 +251,11 @@ pub(crate) fn aggregate(
             ReceiptLevel::Delivered => delivered += 1,
             ReceiptLevel::Unconfirmed => {}
         }
-        let name = st.members.get(did).map(|m| m.name.clone()).unwrap_or_default();
+        let name = st
+            .members
+            .get(did)
+            .map(|m| m.name.clone())
+            .unwrap_or_default();
         members.push(GroupMemberReceipts {
             receipts: r,
             name,
@@ -262,7 +266,11 @@ pub(crate) fn aggregate(
         if !counted.contains(did) {
             members.push(GroupMemberReceipts {
                 receipts: recipient(did, ev),
-                name: st.members.get(did).map(|m| m.name.clone()).unwrap_or_default(),
+                name: st
+                    .members
+                    .get(did)
+                    .map(|m| m.name.clone())
+                    .unwrap_or_default(),
                 eligible: false,
             });
         }
