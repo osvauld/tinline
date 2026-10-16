@@ -53,11 +53,6 @@ pub fn hd_line(on: bool, paused: bool) -> &'static str {
     }
 }
 
-pub fn sending_label(w: u32, h: u32) -> String {
-    let hd = w.max(h) >= 1280 && w.min(h) >= 720;
-    format!("Sending {}{w}×{h}", if hd { "HD · " } else { "" })
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -85,14 +80,6 @@ mod tests {
         assert!(hd_paused(true, Some((540, 960))));
         assert!(!hd_paused(false, Some((320, 180))));
         assert_eq!(hd_line(true, true), "HD paused \u{b7} weak connection");
-    }
-
-    #[test]
-    fn hd_label_uses_actual_dimensions_not_capture_preference() {
-        assert_eq!(sending_label(1280, 720), "Sending HD · 1280×720");
-        assert_eq!(sending_label(720, 1280), "Sending HD · 720×1280");
-        assert_eq!(sending_label(640, 480), "Sending 640×480");
-        assert_eq!(sending_label(960, 540), "Sending 960×540");
     }
 }
 

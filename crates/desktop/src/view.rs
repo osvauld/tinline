@@ -1443,9 +1443,10 @@ impl App {
         if v.local_on() {
             // The chip's short line borrows the picture label for 2.6 s; the label's box does not change.
             let label = v.hd_line().map(str::to_string).unwrap_or_else(|| {
-                v.send_size.map_or_else(|| "Starting video\u{2026}".to_string(), |(w, h)| crate::camera::sending_label(w, h))
+                if v.send_size.is_none() || v.send_label.is_empty() { "Starting video\u{2026}".to_string() } else { v.send_label.clone() }
             });
-            st = st.push(container(tx(label, 13.0, t.ink)).padding(14));
+            // A fixed-width box: the words change, nothing around them moves.
+            st = st.push(container(container(tx(label, 13.0, t.ink)).width(220).height(18).clip(true)).padding(14));
             // My picture, with the HD chip on its top-start corner (it is about what I send).
             let hd = v.hd_on(self.settings.prefer_hd);
             let paused = crate::camera::hd_paused(hd, v.send_size);

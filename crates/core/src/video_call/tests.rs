@@ -335,3 +335,20 @@ mod adapt_policy {
         assert_eq!((cap.pixels, cap.fps, cap.reason.as_str(), src), (px(960, 540), 24, "battery", "budget"));
     }
 }
+
+#[test]
+fn send_label_says_why() {
+    let st = |w, h, fps, cap: &str, step: &str| VideoStats {
+        send_width: w,
+        send_height: h,
+        send_fps: fps,
+        send_cap: VideoSendCap { reason: cap.into(), ..Default::default() },
+        last_step_reason: step.into(),
+        ..Default::default()
+    };
+    assert_eq!(video_send_label(&st(0, 0, 0, "none", "")), "");
+    assert_eq!(video_send_label(&st(1280, 720, 24, "none", "")), "HD \u{b7} 24 fps");
+    assert_eq!(video_send_label(&st(960, 540, 30, "none", "rate")), "540p \u{b7} slow network");
+    assert_eq!(video_send_label(&st(960, 540, 30, "display", "rate")), "540p \u{b7} their screen");
+    assert_eq!(video_send_label(&st(540, 960, 15, "none", "")), "540p \u{b7} 15 fps");
+}

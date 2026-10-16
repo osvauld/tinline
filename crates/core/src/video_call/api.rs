@@ -187,6 +187,20 @@ impl Node {
         adapt::push_hint(pipe, Instant::now());
     }
 
+    /// How long the app spent pulling and drawing one remote frame (ms). Call once per drawn
+    /// frame; the core adds its p75 (2 s) to the decode cost when steering the frame rate.
+    /// Ignored without a call.
+    pub fn report_video_render_ms(&self, ms: f32) {
+        let Some(call) = self.inner.current_video_call() else { return };
+        if ms.is_finite() && ms >= 0.0 {
+            let mut r = call.video.pipe.render_ms.lock();
+            r.push_back((Instant::now(), ms));
+            if r.len() > 240 {
+                r.pop_front();
+            }
+        }
+    }
+
     /// The device's thermal and battery state. Lowers what we ask the peer to send and what we
     /// send ourselves (MODERATE: 15 fps up to 540p, SEVERE: 15 fps up to 360p, battery saver:
     /// 24 fps up to 540p). Ignored without a call.

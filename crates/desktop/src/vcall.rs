@@ -51,6 +51,10 @@ pub(super) struct VideoUi {
     /// The chip's short line and when it was said (shown 2.6 s in the picture label).
     pub hd_note: Option<(&'static str, Instant)>,
     was_paused: bool,
+    /// The picture label for what I send ("HD \u{b7} 24 fps"), from the core, refreshed about once a second.
+    pub send_label: String,
+    /// The last (width, height, visible) given to the core.
+    view_sent: Option<(u32, u32, bool)>,
     stats_tick: u32,
 }
 
@@ -225,7 +229,9 @@ impl App {
     fn video_tick(&mut self) {
         if self.video.local_on() && !self.demo {
             if self.video.stats_tick == 0 {
-                self.video.send_size = self.node.video_stats().and_then(|s| {
+                let stats = self.node.video_stats();
+                self.video.send_label = stats.as_ref().map(p2pcore::video_send_label).unwrap_or_default();
+                self.video.send_size = stats.and_then(|s| {
                     (s.frames_sent > self.video.initial_sent
                         && s.send_width > 0
                         && s.send_height > 0)
@@ -240,11 +246,20 @@ impl App {
             }
             self.video.was_paused = paused;
         }
+        // The remote picture's drawn size, on first layout and when it changes (the core rounds
+        // it to a ladder rung and holds a shrink for a second).
+        if let Some(d) = crate::video_surface::drawn()
+            && self.video.view_sent != Some(d)
+        {
+            self.video.view_sent = Some(d);
+            self.node.set_video_view(d.0, d.1, d.2);
+        }
         let t = Instant::now();
         if let Some(r) = frames::pull(&self.node) {
             let r = Arc::new(r);
             self.video.remote = Some(r.clone());
             let ms = t.elapsed().as_secs_f32() * 1e3;
+            self.node.report_video_render_ms(ms);
             let v = &mut self.video;
             v.cost_ms = if v.shown == 0 {
                 ms
@@ -270,6 +285,7 @@ impl App {
     /// The call ended: camera off, pictures gone.
     pub(super) fn video_reset(&mut self) {
         self.video = VideoUi::default();
+        crate::video_surface::forget_drawn();
     }
 
     /// Test hook P2P_AUTO_CALL=<contact name>: call them once online.

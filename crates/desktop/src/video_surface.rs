@@ -45,6 +45,43 @@ impl Picture {
     }
 }
 
+/// Where the remote picture was last laid out: (physical width << 32 | height, ms since `EPOCH`).
+/// Written when the widget is drawn, read by the UI tick that reports the view to the core.
+static DRAWN: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+static DRAWN_AT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+static EPOCH: std::sync::OnceLock<std::time::Instant> = std::sync::OnceLock::new();
+
+fn now_ms() -> u64 {
+    EPOCH.get_or_init(std::time::Instant::now).elapsed().as_millis() as u64 + 1
+}
+
+/// The picture's box inside the widget (contain), in physical pixels.
+fn note_drawn(bounds: Rectangle, w: u32, h: u32) {
+    use std::sync::atomic::Ordering::Relaxed;
+    let s = (bounds.width / w.max(1) as f32).min(bounds.height / h.max(1) as f32) * crate::ui::scale();
+    let (pw, ph) = ((w as f32 * s).round() as u64, (h as f32 * s).round() as u64);
+    DRAWN.store(pw << 32 | ph, Relaxed);
+    DRAWN_AT.store(now_ms(), Relaxed);
+}
+
+/// The remote picture's drawn size in physical pixels and whether it is on screen: `None`
+/// until it was first drawn; not visible when it has not been drawn for a second (call screen
+/// not showing the stage, window minimised or closed).
+pub fn drawn() -> Option<(u32, u32, bool)> {
+    use std::sync::atomic::Ordering::Relaxed;
+    let at = DRAWN_AT.load(Relaxed);
+    if at == 0 {
+        return None;
+    }
+    let d = DRAWN.load(Relaxed);
+    Some(((d >> 32) as u32, d as u32, now_ms().saturating_sub(at) < 1000))
+}
+
+/// Forget the last layout (a new call starts without a stale picture size).
+pub fn forget_drawn() {
+    DRAWN_AT.store(0, std::sync::atomic::Ordering::Relaxed);
+}
+
 struct Prog {
     pic: Arc<Picture>,
 }
@@ -53,7 +90,8 @@ impl<M> shader::Program<M> for Prog {
     type State = ();
     type Primitive = Draw;
 
-    fn draw(&self, _: &(), _: mouse::Cursor, _: Rectangle) -> Draw {
+    fn draw(&self, _: &(), _: mouse::Cursor, bounds: Rectangle) -> Draw {
+        note_drawn(bounds, self.pic.width, self.pic.height);
         Draw { pic: self.pic.clone() }
     }
 }

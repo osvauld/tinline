@@ -29,6 +29,48 @@ pub struct VideoSendCap {
     pub reason: String,
 }
 
+/// The picture label for what we send, from the stats (one text for every app): "HD · 24 fps"
+/// while the top size is sent; below it, why ("540p · slow network", "540p · their screen"), else
+/// the rate. Empty before a frame was sent.
+#[uniffi::export]
+pub fn video_send_label(stats: &VideoStats) -> String {
+    let (w, h) = (stats.send_width, stats.send_height);
+    if w == 0 || h == 0 {
+        return String::new();
+    }
+    let hd = w.max(h) >= 1280 && w.min(h) >= 720;
+    let name = if hd { "HD".to_string() } else { format!("{}p", w.min(h)) };
+    let fps = || {
+        if stats.send_fps > 0 {
+            format!(" \u{b7} {} fps", stats.send_fps)
+        } else {
+            String::new()
+        }
+    };
+    if hd {
+        return format!("{name}{}", fps());
+    }
+    let why = match stats.send_cap.reason.as_str() {
+        "display" => "their screen",
+        "decode" => "their device",
+        "thermal" => "warm device",
+        "battery" => "battery saver",
+        "user" => "their choice",
+        _ => match stats.last_step_reason.as_str() {
+            "rate" => "slow network",
+            "cpu" => "busy device",
+            "hint" => "their screen",
+            "budget" => "battery saver",
+            _ => "",
+        },
+    };
+    if why.is_empty() {
+        format!("{name}{}", fps())
+    } else {
+        format!("{name} \u{b7} {why}")
+    }
+}
+
 /// A hint change that only shrinks the picture waits this long to be sure (window drags).
 const SHRINK_HOLD: Duration = Duration::from_secs(1);
 /// Decode cost above this % of the frame interval: one frame-rate tier down.
@@ -305,9 +347,9 @@ pub(super) async fn run_policy(pipe: Arc<Pipe>) {
         let now = Instant::now();
         let secs = now.duration_since(last).as_secs_f32().max(0.001);
         last = now;
-        // Decode cost, p75 over the last 2 s.
-        let (p75, n) = {
-            let mut d = pipe.decode_ms.lock();
+        // Decode + render cost, p75 of each over the last 2 s (render is reported by the app).
+        let p75_of = |q: &Mutex<VecDeque<(Instant, f32)>>| {
+            let mut d = q.lock();
             while d
                 .front()
                 .is_some_and(|e| now.duration_since(e.0) > Duration::from_secs(2))
@@ -323,12 +365,13 @@ pub(super) async fn run_policy(pipe: Arc<Pipe>) {
                 v.len(),
             )
         };
-        // TODO(video-adaptation step 3): the render cost (pull + RGBA + handle) is measured by
-        // the app; add it here once the apps report it. Decode time alone is used for now.
+        let (dec, n) = p75_of(&pipe.decode_ms);
+        let (render, rn) = p75_of(&pipe.render_ms);
+        let p75 = dec + if rn >= DECODE_MIN_SAMPLES { render } else { 0.0 };
         {
             let mut pol = pipe.policy.lock();
             if pol.observe_decode(now, p75, n) {
-                tracing::info!(target: "p2pcore::video_call", "video decode cost p75={p75:.1}ms: frame rate tier {}", pol.decode_fps);
+                tracing::info!(target: "p2pcore::video_call", "video decode+render cost p75={p75:.1}ms (decode {dec:.1}, render {render:.1}): frame rate tier {}", pol.decode_fps);
             }
         }
         push_hint(&pipe, now);

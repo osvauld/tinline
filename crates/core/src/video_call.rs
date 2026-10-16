@@ -75,7 +75,7 @@ pub use self::ffi_bytes::Bytes;
 #[cfg_attr(not(target_os = "android"), allow(unused_imports))]
 pub(crate) use self::frames::chroma_spans;
 pub(crate) use self::pipes::fit;
-pub use self::adapt::{VideoBudget, VideoSendCap};
+pub use self::adapt::{VideoBudget, VideoSendCap, video_send_label};
 use self::frames::*;
 use self::pipes::*;
 
@@ -173,6 +173,8 @@ struct Pipe {
     send: Mutex<Option<Arc<VideoSend>>>,
     /// (when, ms) of recent decodes.
     decode_ms: Mutex<VecDeque<(Instant, f32)>>,
+    /// (when, ms) of recent frame pulls + draws, reported by the app (`report_video_render_ms`).
+    render_ms: Mutex<VecDeque<(Instant, f32)>>,
 }
 
 /// One call's video.
