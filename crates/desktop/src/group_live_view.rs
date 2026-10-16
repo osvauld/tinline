@@ -424,15 +424,22 @@ impl App {
         let mut meta = row![tx(hhmm(m.at), 11.0, metac).line_height(lh(11.0))].spacing(3).align_y(Alignment::Center);
         let mut meta_w = crate::fit::width(&hhmm(m.at), ui::SANS, 11.0);
         if m.outgoing {
-            // Receipt ticks (ticks.rs): waiting for a host = the slack string, a host has it = one tick.
+            // Receipt ticks (ticks.rs): waiting for a host = the slack string; sent = one tick; every eligible
+            // member signed delivered = two ticks; every one read = the read ink (core's `GroupReceiptStatus`).
             // Host storage is never shown as members' delivery/read. No transition yet in groups.
+            let st = self.live.receipts.get(&m.id);
             let v = match m.delivery {
-                GroupDelivery::Delivered => crate::ticks::Vis::One,
                 GroupDelivery::Waiting => crate::ticks::Vis::Slack,
+                GroupDelivery::Delivered => st.and_then(|r| p2pcore::tick_vis(Some(r.tick), false)).unwrap_or(crate::ticks::Vis::One),
             };
             let tw = 12.0 * crate::tin_ticks::VB_W / crate::tin_ticks::VB_H;
             let inks = crate::ticks::Inks { meta: metac, read: t.tick_read, bad: t.tick_bad, bg };
-            meta = meta.push(container(crate::ticks::glyph(v, None, inks, 12.0, self.fx.now)).width(tw).height(12).center_x(tw).center_y(12));
+            let glyph: El = container(crate::ticks::glyph(v, None, inks, 12.0, self.fx.now)).width(tw).height(12).center_x(tw).center_y(12).into();
+            // No details view for group posts yet: the n/N lines and who sit in the tick's tooltip (no layout shift).
+            meta = meta.push(match st.filter(|r| r.eligible > 0) {
+                Some(r) => El::from(iced::widget::tooltip(glyph, iced::widget::text(group_receipt_lines(r).join("\n")).size(13), iced::widget::tooltip::Position::Top)),
+                None => glyph,
+            });
             meta_w += tw + 3.0;
         }
         let te = message_body(&m.text, fg);
@@ -1340,4 +1347,24 @@ fn live_wrap(s: &str, max: f32) -> (usize, f32) {
         }
     }
     (lines.max(1), cur)
+}
+
+/// "Delivered n/N", "Read n/N", then who: eligible members by their level, and kept statements of
+/// people no longer counted. A statement is a device's signed claim ("on their device").
+pub(super) fn group_receipt_lines(r: &p2pcore::GroupReceiptStatus) -> Vec<String> {
+    use p2pcore::ReceiptLevel as L;
+    let who = |m: &p2pcore::GroupMemberReceipts| if m.name.is_empty() { "Someone".to_string() } else { first_name(&m.name).to_string() };
+    let names = |want: L| -> Vec<String> { r.members.iter().filter(|m| m.eligible && m.receipts.level == want).map(who).collect() };
+    let mut out = vec![format!("Delivered {}/{}", r.delivered, r.eligible), format!("Read {}/{}", r.read, r.eligible)];
+    for (label, want) in [("Read", L::Read), ("On their device", L::Delivered), ("Not yet", L::Unconfirmed)] {
+        let n = names(want);
+        if !n.is_empty() {
+            out.push(format!("{label}: {}", n.join(", ")));
+        }
+    }
+    let gone: Vec<String> = r.members.iter().filter(|m| !m.eligible).map(who).collect();
+    if !gone.is_empty() {
+        out.push(format!("Also confirmed: {}", gone.join(", ")));
+    }
+    out
 }

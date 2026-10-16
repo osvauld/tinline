@@ -33,6 +33,10 @@ pub trait GroupApi {
     fn group_detail(&self, id: String) -> Result<GroupDetail, Error>;
     fn group_messages(&self, id: String, before: Option<String>, limit: u32) -> Result<GroupPage, Error>;
     fn group_mark_read(&self, id: String) -> Result<(), Error>;
+    /// Signed member receipts of my posts in `[from_ms, to_ms]` (the group tick and n/N). Default for test fakes.
+    fn group_receipts(&self, _id: String, _from_ms: u64, _to_ms: u64) -> Result<Vec<p2pcore::GroupReceiptStatus>, Error> {
+        Ok(Vec::new())
+    }
     fn group_create(&self, name: String) -> Result<String, Error>;
     fn group_invite(&self, id: String) -> Result<String, Error>;
     /// Network (fetches from the link's host): only from a job.
@@ -84,6 +88,9 @@ impl GroupApi for Node {
     }
     fn group_mark_read(&self, id: String) -> Result<(), Error> {
         Node::group_mark_read(self, id)
+    }
+    fn group_receipts(&self, id: String, from_ms: u64, to_ms: u64) -> Result<Vec<p2pcore::GroupReceiptStatus>, Error> {
+        Node::group_receipts(self, id, from_ms, to_ms)
     }
     fn group_create(&self, name: String) -> Result<String, Error> {
         Node::group_create(self, name)
@@ -444,6 +451,8 @@ pub(super) struct GroupsLive {
     /// Oldest first.
     pub msgs: Vec<GroupMessage>,
     pub older: Option<String>,
+    /// Signed member receipts of my loaded posts, by message id (the group tick and n/N).
+    pub receipts: std::collections::HashMap<String, p2pcore::GroupReceiptStatus>,
     pub input: String,
     pub reply: Option<String>,
     /// The members pane beside the chat (on by default).
@@ -1090,9 +1099,22 @@ impl GroupsLive {
             }
         }
         let want = (self.msgs.len() as u32).max(PAGE);
-        if let Ok(p) = api.group_messages(gid, None, want) {
+        if let Ok(p) = api.group_messages(gid.clone(), None, want) {
             self.msgs = p.messages;
             self.older = p.older;
+        }
+        self.reload_receipts(api, gid);
+    }
+
+    /// The member receipts of my posts in the loaded window (one core read per day doc).
+    fn reload_receipts(&mut self, api: &dyn GroupApi, gid: String) {
+        let mine = self.msgs.iter().filter(|m| m.outgoing);
+        let (lo, hi) = mine.fold((u64::MAX, 0u64), |(lo, hi), m| (lo.min(m.at), hi.max(m.at)));
+        self.receipts.clear();
+        if lo <= hi
+            && let Ok(list) = api.group_receipts(gid, lo, hi)
+        {
+            self.receipts = list.into_iter().map(|r| (r.message_id.clone(), r)).collect();
         }
     }
 }

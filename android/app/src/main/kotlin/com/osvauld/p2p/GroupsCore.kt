@@ -15,6 +15,7 @@ import uniffi.p2pcore.GroupInvitePeek
 import uniffi.p2pcore.GroupItemKind
 import uniffi.p2pcore.GroupMessage
 import uniffi.p2pcore.GroupPage
+import uniffi.p2pcore.GroupReceiptStatus
 import uniffi.p2pcore.GroupSummary
 import uniffi.p2pcore.Node
 import uniffi.p2pcore.GroupDelivery as CoreDelivery
@@ -41,6 +42,8 @@ interface GroupApi {
     fun detail(id: String): GroupDetail
     fun messages(id: String, before: String?, limit: Int): GroupPage
     fun markRead(id: String)
+    /** Signed member receipts of my posts with `at` in [fromMs, toMs] (the group tick and n/N). */
+    fun receipts(id: String, fromMs: ULong, toMs: ULong): List<GroupReceiptStatus> = emptyList()
     fun create(name: String): String
     fun invite(id: String): String
     /** Fetches from the host the link names: network, IO threads only. */
@@ -79,6 +82,7 @@ class NodeGroupApi(private val node: () -> Node) : GroupApi {
     override fun detail(id: String) = node().groupDetail(id)
     override fun messages(id: String, before: String?, limit: Int) = node().groupMessages(id, before, limit.toUInt())
     override fun markRead(id: String) = node().groupMarkRead(id)
+    override fun receipts(id: String, fromMs: ULong, toMs: ULong) = node().groupReceipts(id, fromMs, toMs)
     override fun create(name: String) = node().groupCreate(name)
     override fun invite(id: String) = node().groupInvite(id)
     override fun peek(token: String) = node().groupPeekInvite(token)
@@ -114,7 +118,9 @@ data class InviteCandidate(val did: String, val name: String)
 data class PickRow(val did: String, val name: String, val why: String?, val invited: GroupInvitation?)
 
 /** The group on screen: its detail and the loaded window of messages (oldest first). */
-data class OpenGroup(val id: String, val detail: GroupDetail, val messages: List<GroupMessage>, val older: String?)
+data class OpenGroup(val id: String, val detail: GroupDetail, val messages: List<GroupMessage>, val older: String?,
+                     /** Signed member receipts of my loaded posts, by message id. */
+                     val receipts: Map<String, GroupReceiptStatus> = emptyMap())
 
 /** What a member's sheet offers us, in order. */
 sealed interface MemberAction {
@@ -342,8 +348,15 @@ class GroupsController(private val api: GroupApi, private val me: () -> String?)
         _open.value = try {
             val d = api.detail(id)
             val p = api.messages(id, null, want)
-            OpenGroup(id, d, p.messages, p.older)
+            OpenGroup(id, d, p.messages, p.older, receiptsOf(id, p.messages))
         } catch (e: Exception) { null }
+    }
+
+    /** One core read per day doc in the range of my loaded posts; none if it fails (ticks stay one). */
+    private fun receiptsOf(id: String, messages: List<GroupMessage>): Map<String, GroupReceiptStatus> {
+        val mine = messages.filter { it.outgoing }
+        if (mine.isEmpty()) return emptyMap()
+        return try { api.receipts(id, mine.minOf { it.at }, mine.maxOf { it.at }).associateBy { it.messageId } } catch (e: Exception) { emptyMap() }
     }
 
     private fun reloadOpen() { _open.value?.let { load(it.id, maxOf(it.messages.size, GroupText.PAGE)) } }
