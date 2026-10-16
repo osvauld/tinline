@@ -68,6 +68,7 @@ pub use contact_req::{AddError, AddOutcome, CodePeek, ContactRequest, ContactReq
 pub use search::api::{HitRange, MessageHit, NameHit, SearchConvKind, SearchNameKind, SearchResults};
 pub use receipts::api::{ChatReceiptRow, ReceiptTick, MessageReceiptStatus, ReceiptLevel, ReceiptProof, ReceiptProofKind, RecipientReceipts};
 pub use group::member_receipts::{GroupMemberReceipts, GroupReceiptStatus};
+pub use receipts::list::ListMark;
 pub use receipts::ticks::{TickCurve, TickPose, TickTransition, TickVis, tick_pose, tick_transition, tick_vis};
 pub use chat::api::{Attachment, AttachmentKind, Chat, ChatEvents, DayPage, DeliveryState, Message, PictureDownload, StorageUsage, TransferState};
 pub use sync::{LinkEvents, LinkedDevice};

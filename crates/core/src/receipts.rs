@@ -13,6 +13,7 @@ pub(crate) mod evidence;
 pub(crate) mod participation;
 pub(crate) mod store;
 pub(crate) mod ticks;
+pub(crate) mod list;
 // Provisional budgets indexed in docs/design/sync-receipt-limits.md.
 pub(crate) const MAX_MESSAGES: usize = 256;
 pub(crate) const MAX_CONTEXT_WRITERS: usize = 1024;
