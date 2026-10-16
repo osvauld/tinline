@@ -23,6 +23,8 @@ export const pp = $state({
   notif: { messages: true, calls: true, groups: true },
   /** PROPOSED: what a new contact may do before I say. The core only has the per-contact Allow calls. */
   newContactsCall: false,
+  /** Privacy > Read receipts (core account setting, default on; no reciprocity, no backdating). */
+  readReceipts: true,
   /** People who scanned my code or sent me a request and wait for my answer. */
   requests: [] as Request[],
   /** How a contact came: I scanned / pasted their code, or `them`: they used MY code (core adds them with no
@@ -47,7 +49,7 @@ export function resetPeopleState() {
   pp.dialog = null; pp.addTab = 'code';
   pp.perms.notifications = 'granted'; pp.perms.microphone = 'granted'; pp.perms.camera = 'granted'; pp.perms.battery = 'ok';
   pp.notif.messages = true; pp.notif.calls = true; pp.notif.groups = true;
-  pp.newContactsCall = false; pp.requests = []; pp.sent = []; pp.incoming = null; pp.how = {}; pp.addedAt = {}; pp.myCode = MY_CODE; pp.myCodeExp = clock.now + CODE_DAYS * T.DAY;
+  pp.newContactsCall = false; pp.readReceipts = true; pp.requests = []; pp.sent = []; pp.incoming = null; pp.how = {}; pp.addedAt = {}; pp.myCode = MY_CODE; pp.myCodeExp = clock.now + CODE_DAYS * T.DAY;
   link.reset(); linkSim.failure = 'none'; linkSim.name = 'Tablet';
 }
 

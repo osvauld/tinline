@@ -543,7 +543,8 @@ impl App {
         None
     }
 
-    /// privacy/Privacy.svelte: one row per area. Read receipts and online visibility aren't offered: the core has neither.
+    /// privacy/Privacy.svelte: one row per area, then the read-receipt switch (core account setting). Online
+    /// visibility isn't offered: the core has none.
     fn privacy_landing(&self, t: Tok) -> El<'_> {
         let blocked = self.blocks.list.len();
         let msg_only = self.contacts.iter().filter(|c| !self.blocks.blocked_by_me(&c.did) && !self.blocks.calls_allowed(&c.did)).count();
@@ -556,8 +557,14 @@ impl App {
         let rows: Vec<RowFn> = rows_.into_iter().map(|(icon, label, sub, id)| -> RowFn<'_> {
             Box::new(move |r| pf_act(t, Some(icon), label.into(), Some((sub, t.ink2, false)), Some(chevron(t)), Some(m(Action::Open(Page::Native(id)))), false, r))
         }).collect();
+        let reads = self.profiles.read_receipts.unwrap_or(true);
+        let receipts: Vec<RowFn> = vec![Box::new(move |r| pf_act(t, Some("check"), "Read receipts".into(),
+            Some((if reads { "People see when you\u{2019}ve read their messages" } else { "Your reads stay with you" }.into(), t.ink2, false)),
+            Some(pg_switch(t, reads, m(Action::SetReadReceipts(!reads)))), None, false, r))];
         let c = pf_sec(16.0, column![pf_card(t, rows),
-            pf_note(t, "Your contacts see your name, picture and profile. Tinline doesn\u{2019}t hide who you talk to, and every device linked to your account can read your chats.")].into());
+            pf_note(t, "Your contacts see your name, picture and profile. Tinline doesn\u{2019}t hide who you talk to, and every device linked to your account can read your chats."),
+            container(pf_card(t, receipts)).padding(Padding { top: 24.0, ..Padding::ZERO }),
+            pf_note(t, "Delivered ticks still go out either way, and you still see when others read yours. Messages you read while this is off stay unconfirmed.")].into());
         self.pf_scroll(t, c, 40.0)
     }
 

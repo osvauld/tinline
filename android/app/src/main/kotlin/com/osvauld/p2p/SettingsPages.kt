@@ -326,7 +326,8 @@ fun StoragePage(pictures: Long, files: Long, messages: Long, cache: Long, downlo
 
 /** Privacy.svelte landing. */
 @Composable
-fun PrivacyLanding(blockedN: Int, msgOnly: Int, hasPassphrase: Boolean, onBack: () -> Unit, onBlocked: () -> Unit, onCalls: () -> Unit, onPhrase: () -> Unit, onPassphrase: () -> Unit) {
+fun PrivacyLanding(blockedN: Int, msgOnly: Int, hasPassphrase: Boolean, onBack: () -> Unit, onBlocked: () -> Unit, onCalls: () -> Unit, onPhrase: () -> Unit, onPassphrase: () -> Unit,
+                   readReceipts: Boolean = true, onReadReceipts: (Boolean) -> Unit = {}) {
     PfPage("Privacy", onBack) {
         PfSec(first = true) {
             PfCard {
@@ -339,6 +340,17 @@ fun PrivacyLanding(blockedN: Int, msgOnly: Int, hasPassphrase: Boolean, onBack: 
                 act { PfAct("Passphrase", onClick = onPassphrase, icon = PgIcons.Lock, chevron = true, sub = "Protects Tinline on this device") }
             }
             PfNote("Your contacts see your name, picture and profile. Tinline doesn’t hide who you talk to, and every device linked to your account can read your chats.")
+        }
+        // Core account setting (default on). Same words as desktop.
+        PfSec {
+            PfCard {
+                act {
+                    PfAct("Read receipts", onClick = { onReadReceipts(!readReceipts) }, icon = PgIcons.Check, role = Role.Switch, plain = true,
+                        sub = if (readReceipts) "People see when you’ve read their messages" else "Your reads stay with you",
+                        trailing = { PgSwitch(readReceipts, onReadReceipts, "Read receipts") })
+                }
+            }
+            PfNote("Delivered ticks still go out either way, and you still see when others read yours. Messages you read while this is off stay unconfirmed.")
         }
     }
 }

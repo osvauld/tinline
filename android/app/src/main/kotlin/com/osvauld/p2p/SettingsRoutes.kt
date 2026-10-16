@@ -125,7 +125,12 @@ fun PrivacyRoute(app: P2pApp, onBack: () -> Unit, onBlocked: () -> Unit, onCalls
         if (app.profiles.session.accepts(ticket) && result != null) value = result
     }
     val msgOnly = contacts.count { blocks.of(it.did).blockedByMe.not() && !blocks.callsAllowed(it.did) }
-    PrivacyLanding(blocks.list.size, msgOnly, hasPass, onBack, onBlocked, onCalls, onPhrase, onPassphrase)
+    var reads by remember(acct) { mutableStateOf(true) }
+    LaunchedEffect(acct) {
+        withContext(Dispatchers.IO) { runCatching { app.node.readReceipts() }.getOrNull() }?.let { reads = it }
+    }
+    PrivacyLanding(blocks.list.size, msgOnly, hasPass, onBack, onBlocked, onCalls, onPhrase, onPassphrase, reads,
+        { on -> reads = on; app.scope.launch(Dispatchers.IO) { runCatching { app.node.setReadReceipts(on) } } })
 }
 
 @Composable
