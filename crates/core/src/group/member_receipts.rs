@@ -176,18 +176,20 @@ pub(crate) fn eligible(st: &GroupState, post: &PostRef) -> BTreeSet<String> {
 }
 
 /// One account's statements on a post and whether it counts for the mark.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct MemberReceipts {
+#[derive(Debug, Clone, PartialEq, Eq, uniffi::Record)]
+pub struct GroupMemberReceipts {
     pub receipts: RecipientReceipts,
+    /// The name the member gave the group ("" for someone no longer a member).
+    pub name: String,
     /// Counts for the mark (eligible). A non-eligible row holds kept statements of a member
     /// removed or gone since, shown in details only.
     pub eligible: bool,
 }
 
-/// What a group post's status says: the sender's mark and the per-member details. Proposed
-/// app DTO (not exported over UniFFI yet: the binding is agreed with the UI lanes).
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct GroupReceiptStatus {
+/// What a group post's status says: the sender's mark and the per-member details (UniFFI:
+/// `Node::group_receipts` / `group_message_receipts`).
+#[derive(Debug, Clone, PartialEq, Eq, uniffi::Record)]
+pub struct GroupReceiptStatus {
     pub message_id: String,
     /// Hex `group_version` digest the statements cover.
     pub version: String,
@@ -202,7 +204,7 @@ pub(crate) struct GroupReceiptStatus {
     /// Eligible members with a read statement.
     pub read: u32,
     /// Eligible members first (by DID), then other signers with kept statements.
-    pub members: Vec<MemberReceipts>,
+    pub members: Vec<GroupMemberReceipts>,
 }
 
 /// Aggregates the committed statements `entries` (of the post's day ledger) for `post`, whose
@@ -249,15 +251,18 @@ pub(crate) fn aggregate(
             ReceiptLevel::Delivered => delivered += 1,
             ReceiptLevel::Unconfirmed => {}
         }
-        members.push(MemberReceipts {
+        let name = st.members.get(did).map(|m| m.name.clone()).unwrap_or_default();
+        members.push(GroupMemberReceipts {
             receipts: r,
+            name,
             eligible: true,
         });
     }
     for (did, ev) in &by {
         if !counted.contains(did) {
-            members.push(MemberReceipts {
+            members.push(GroupMemberReceipts {
                 receipts: recipient(did, ev),
+                name: st.members.get(did).map(|m| m.name.clone()).unwrap_or_default(),
                 eligible: false,
             });
         }

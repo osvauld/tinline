@@ -332,6 +332,22 @@ impl Node {
     }
 
     /// Everything up to now is read (for `unread`).
+    /// Signed member receipts of MY posts with `at` in `[from_ms, to_ms]` (a loaded page): the
+    /// group tick (`Waiting` one tick, `Delivered` when every eligible member confirmed, `Read`
+    /// when every eligible member read) and n/N. Blocking. Re-read after `on_group_changed`.
+    pub fn group_receipts(&self, group_id: String, from_ms: u64, to_ms: u64) -> Result<Vec<crate::group::member_receipts::GroupReceiptStatus>, Error> {
+        let core = self.inner.group_core()?;
+        core.member_receipts_range(&group_id, from_ms as i64, to_ms as i64, true)
+    }
+
+    /// One post's member receipts (any author: members see everyone's), for its details.
+    /// `at_ms` is the post's `GroupMessage.at`. Blocking.
+    pub fn group_message_receipts(&self, group_id: String, message_id: String, at_ms: u64) -> Result<crate::group::member_receipts::GroupReceiptStatus, Error> {
+        let core = self.inner.group_core()?;
+        let at = at_ms as i64;
+        core.member_receipts_range(&group_id, at, at, false)?.into_iter().find(|s| s.message_id == message_id).ok_or(Error::NotFound)
+    }
+
     /// The cursor only moves forward; the step signs read receipts for the posts of others it
     /// covers (`engine::member_receipts`).
     pub fn group_mark_read(&self, group_id: String) -> Result<(), Error> {

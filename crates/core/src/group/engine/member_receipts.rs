@@ -484,7 +484,7 @@ impl GroupCore {
         day: &str,
         post_id: &str,
     ) -> Result<GroupReceiptStatus, Error> {
-        let mut out = self.member_day_receipts_where(gid, day, |id| id == post_id)?;
+        let mut out = self.member_day_receipts_where(gid, day, |e| e.id == post_id)?;
         out.pop().ok_or(Error::NotFound)
     }
 
@@ -497,11 +497,38 @@ impl GroupCore {
         self.member_day_receipts_where(gid, day, |_| true)
     }
 
+    /// Statuses of the visible posts with `at` in `[from, to]` (author clock ms), only ours if
+    /// `mine`: one ledger read per day doc in the range (a page's ticks).
+    pub(crate) fn member_receipts_range(
+        &self,
+        gid: &str,
+        from: i64,
+        to: i64,
+        mine: bool,
+    ) -> Result<Vec<GroupReceiptStatus>, Error> {
+        if to < from {
+            return Ok(Vec::new());
+        }
+        // A post's `at` may sit up to an hour outside its day doc's day.
+        let lo = day_of(from.saturating_sub(crate::chat::doc::HOUR_MS).max(0));
+        let hi = day_of(to.saturating_add(crate::chat::doc::HOUR_MS));
+        let mut out = Vec::new();
+        for day in self.store.days(gid)? {
+            if day < lo || day > hi {
+                continue;
+            }
+            out.extend(self.member_day_receipts_where(gid, &day, |e| {
+                e.rec.at >= from && e.rec.at <= to && (!mine || e.rec.author == self.did)
+            })?);
+        }
+        Ok(out)
+    }
+
     fn member_day_receipts_where(
         &self,
         gid: &str,
         day: &str,
-        want: impl Fn(&str) -> bool,
+        want: impl Fn(&Entry) -> bool,
     ) -> Result<Vec<GroupReceiptStatus>, Error> {
         if !crate::group::doc::day_valid(day) {
             return Err(Error::Protocol("bad day".into()));
@@ -517,7 +544,7 @@ impl GroupCore {
         Ok(shard
             .rows
             .iter()
-            .filter(|r| r.vis == Vis::Visible && want(&r.entry.id))
+            .filter(|r| r.vis == Vis::Visible && want(&r.entry))
             .filter_map(|r| post_of(shard, r))
             .map(|(p, d)| aggregate(state, &self.did, &p, &d, &entries))
             .collect())
