@@ -55,7 +55,8 @@ pub(super) fn encode_loop(pipe: Arc<Pipe>, send: VideoSend) {
         let capture_us = input.at.saturating_duration_since(epoch).as_micros() as u64;
         // One look at the sender: a ladder step in between would otherwise give a keyframe at
         // the old size and another at the new one.
-        let ((rw, rh), bitrate, wants_key) = send.with_sender(|s| (s.resolution(), s.bitrate(), s.wants_keyframe()));
+        let ((rw, rh), bitrate, wants_key, trace) =
+            send.with_sender(|s| (s.resolution(), s.bitrate(), s.wants_keyframe(), (s.trace, s.drops, s.draining())));
         let pic = match input.prepare(rw as usize, rh as usize) {
             Ok(p) => p,
             Err(e) => {
@@ -110,6 +111,10 @@ pub(super) fn encode_loop(pipe: Arc<Pipe>, send: VideoSend) {
         st.send_height = h as u32;
         st.bitrate_bps = rate;
         st.encode_ms = took.as_secs_f32() * 1000.0;
+        let (t, drops, draining) = trace;
+        (st.rate_reports, st.rate_overuse, st.rate_starved, st.backlog_drops) = (t.reports, t.overuse, t.starved, drops);
+        (st.last_queuing_us, st.last_delivered_bps, st.queuing_offset_us) = (t.last_queuing_us, t.last_delivered_bps, t.q_offset_us);
+        st.draining = draining;
     }
 }
 

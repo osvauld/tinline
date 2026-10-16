@@ -72,7 +72,8 @@ impl App {
                 row![
                     self.round_btn(t, Kind::Quiet, if muted { Icon::MicOff } else { Icon::Mic }, if muted { "Muted" } else { "Mute" }, active.then_some(Msg::ToggleMute), muted),
                     self.round_btn(t, Kind::End, Icon::PhoneOff, "End", Some(Msg::Hangup), false),
-                    self.round_btn(t, Kind::Quiet, if self.video.local_on() { Icon::Video } else { Icon::VideoOff }, "Camera",
+                    self.round_btn(t, Kind::Quiet, if self.video.local_on() { Icon::Video } else { Icon::VideoOff },
+                        if matches!(self.video.source, Some(None)) { "No camera" } else { "Camera" },
                         (active && self.video.negotiated() && self.video.has_camera()).then_some(Msg::Video(super::super::Vm::ToggleCamera)), self.video.local_on()),
                 ].spacing(56).into()
             };

@@ -101,7 +101,10 @@ class CallVideo(private val app: P2pApp) : VideoEvents {
         val rateLine = "target_kbps=${s?.bitrateBps?.div(1000u)} " +
             "admitted_payload_kbps=${value(measured?.admittedPayloadKbps)} received_payload_kbps=${value(measured?.receivedPayloadKbps)} " +
             "admitted_fps=${value(measured?.admittedFps)} received_fps=${value(measured?.receivedFps)} decoded_fps=${value(measured?.decodedFps)} " +
-            "capture_pref=$capturePreference capture_actual=$actualCapture "
+            "capture_pref=$capturePreference capture_actual=$actualCapture " +
+            "reports=${s?.rateReports} overuse=${s?.rateOveruse} starved=${s?.rateStarved} drops=${s?.backlogDrops} " +
+            "q_ms=${s?.lastQueuingUs?.div(1000u)} q_base_ms=${s?.queuingOffsetUs?.div(1000u)} " +
+            "delivered_kbps=${s?.lastDeliveredBps?.div(1000u)} draining=${s?.draining} "
         return "video_stats negotiated=${i?.negotiated} local=${i?.localCamera} remote=${i?.remoteCamera} " +
             "sent=${s?.framesSent} keys=${s?.keyframesSent} send=${s?.sendWidth}x${s?.sendHeight} kbps=${s?.bitrateBps?.div(1000u)} " +
             rateLine + "admitted_payload_bytes=${s?.admittedPayloadBytes} received_payload_bytes=${s?.receivedPayloadBytes} received=${s?.framesReceived} " +

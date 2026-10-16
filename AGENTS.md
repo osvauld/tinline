@@ -21,6 +21,10 @@ app, and a Kotlin/Compose Android app. The Svelte playground under
 
 - Heavy local builds/tests must use the shared build queue:
   `python3 scripts/buildlock.py --who <unique-agent-name> -- <command>`.
+- All build output and caches live on the cache disk `/home/abe/build-cache`: buildlock
+  symlinks each checkout's `target/` there and shares compiled crates between worktrees via
+  sccache (`/home/abe/build-cache/sccache`). Don't set `RUSTC_WRAPPER`/`CARGO_TARGET_DIR`
+  yourself or point several worktrees at one `target/` (branches overwrite each other's binaries).
 - Inspect `python3 scripts/buildlock.py --status` before starting work. Do not
   bypass admission, launch duplicate jobs after a timeout, or terminate another
   agent's processes. Use the existing device lock for emulator/phone operations.
