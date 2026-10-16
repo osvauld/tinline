@@ -346,22 +346,32 @@ What exists (all in `crates/core`):
   "device admitted" = "its DID admitted"; a hostile linked device holding the account key is
   not distinguishable (shared-mnemonic limit).
 
-Wire (NOT done; needs the user's OK, it is a protocol change): mirror chat/6 on
-`tinline/group/3` behind a Hello capability doc (e.g. `cap/member-receipts/v1`, as
-`cap/group-receipts/v1` does for host proofs) so old peers never see the new frames:
-`ReceiptHello { days: [(day, vv)] }`, `Receipts { day, update }` (bounded native ledger ops
-from `member_receipts_export`), `ReceiptAck { day, vv }`; members <-> hosts, hosts relay the
-original ops byte-for-byte (any relay works: the verdict depends only on the statements and
-records). Without the capability nothing is sent; no protocol version bump is proposed.
+Wire (2026-10-16, user: "we dont need backward compatibility"): **`tinline/group/4`** =
+`/3` plus `ReceiptHello { days: [(day, vv)] }`, `Receipts { day, update }`,
+`ReceiptAck { day, vv }`, no capability gate, no compatibility with `/3` (different ALPN, an old
+peer fails at connect). Scheduling (`engine/member_receipts.rs`): each session sends
+`ReceiptHello` after its doc catch-up (recent held days + unacknowledged outbox days); the
+answer is `Receipts` for what the peer lacks (bounded: 256 KiB / 64 ops per frame, 16 frames per
+pass, 64 days per hello); every import is answered by `ReceiptAck` (authoritative VV, clears
+the sender's outbox mark). New statements from our pump (`group_after`, `group_mark_read`,
+core open) and fresh imported ones are pushed live to every other session of the group; a host
+re-exports the ledger's original native ops, so every statement keeps its signer's bytes,
+writer and counter. A frame refused as pending is not stored; its day is remembered on the
+session and asked again (`ReceiptHello`) after our docs advance. A refused frame never closes
+the session. Lost frames: recovered by the next ack/hello (reconnect = new session = hello).
 
-Tests (written, **not yet run**: ENOSPC on `/home/abe/build-cache` while compiling):
+Tests (written, **not yet run**: first ENOSPC, then the user paused all builds):
 `group::member_receipts::tests` (3 pure cases) and
 `group::engine::durability::group_receipts_sim` (10 cases over real in-process GroupCores:
 waiting -> delivered -> read; partial; duplicate frames/posts/relays; reordered and lost
 frames then catch-up; forged/unsigned/wrong-group/foreign-writer/non-member/own-post
 refused; late joiner; removed member's late pre-removal statement accepted and post-removal
 or stale-frontier ones refused, leave/removal not blocking; pending posts and unknown
-frontiers; one device per account; reopen of intents/ledgers/kept statements; size table).
+frontiers; one device per account; reopen of intents/ledgers/kept statements; size table)
+plus 3 cases over the group/4 frames (real `Sess` queues, postcard round trip, the handlers
+`group_read` calls; members only via the host): host relay byte-identical to all members;
+duplicate frames, a lost frame recovered by reconnect hello and outbox ack; a statement for a
+post not yet held asked again after the post arrives. Not a network (iroh) test.
 
 ```sh
 CARGO_BUILD_JOBS=2 python3 scripts/buildlock.py --who group-receipts -- \
@@ -371,8 +381,9 @@ CARGO_BUILD_JOBS=2 python3 scripts/buildlock.py --who group-receipts -- \
 Then the existing owned regression (`receipts:: chat:: version:: group::` filters above) must
 be re-run: the store seam and `apply_day`/`apply_meta` transactions changed.
 
-Not done: wire frames and scheduling, post-commit app events for new statements, UniFFI
-binding, app ticks/details, own-device replication of ledgers, batching, shards.
+Not done: real-network (iroh, two-node `Node`) receipt test, UniFFI binding, app ticks/
+details, own-device replication of ledgers beyond the host relay, batching, shards. Imports
+raise only `on_group_changed` (no per-message event yet).
 
 ## Product decisions (user, 2026-10-15)
 

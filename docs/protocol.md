@@ -406,6 +406,12 @@ moved from bincode 1 to postcard 1 (`cryptography::codec`): chat `tinline/chat/7
 `tinline/self/5`, group `tinline/group/3`. `chat/6` and `self/4` are refused with code 426: **update the
 app and wipe its data**.
 
+**Group member receipts (2026-10-16, `feature/group-receipts`, not merged).** Group ALPN
+`tinline/group/4` = `/3` plus `GroupMsg::{ReceiptHello, Receipts, ReceiptAck}` (member <->
+host only; hosts relay the original native ledger ops). No compatibility with `/3` (user,
+2026-10-16: no backward compatibility): a `/3` peer fails at connect. No data wipe (new rows
+only). Details: `docs/design/receipt-runtime-roadmap.md`, "Group message receipts".
+
 **Signed receipts (2026-10-15, `feature/receipt-runtime`, not merged).** Chat ALPN
 `tinline/chat/6` adds `ChatMsg::{ReceiptHello, Receipts, ReceiptAck}` (`docs/chat.md` section
 9). A `/5` app cannot decode them, so `/5` is refused with code 426: **update the app, no data
