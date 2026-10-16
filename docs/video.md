@@ -105,6 +105,7 @@ overuse=.. starved=.. queue=..ms | recv WxH@fps dec=..ms`; on every ladder step
 `video hint max=..px fps=.. reason=..`. The receiver also steers its frame-rate tier from the
 p75 decode time over 2 s (above 60% of the interval: a tier down; below 30% for 10 s: a tier up).
 The apps report the per-frame pull cost with `report_video_render_ms`; its p75 over 2 s is added to the decode p75 (needs >= 10 samples).
+That rule is for software decoders, where wall time of `decode` is CPU work. A hardware MediaCodec decoder's wall time is pipeline latency (a Pixel 3a: 12 ms at 360p, 25 ms at 720p, with the decoder thread at ~3% CPU), so with `recv_hardware` the policy ignores it and judges throughput instead: the decoder is "behind" when, over the last 2 s, it delivered under 80% of the frames it received (>= 20 received); that counts as 100% of the interval (a tier down), otherwise only the render cost counts, with the same 60% / 30% thresholds and 10 s hold before a tier up.
 
 ## Resolution ladder (`media::Ladder`, owned by `Sender`)
 

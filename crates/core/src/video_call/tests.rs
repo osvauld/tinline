@@ -347,6 +347,47 @@ mod adapt_policy {
         assert_eq!(p.update(t).unwrap().max_fps, 24);
     }
 
+    /// One second per step: (received, decoded) frames per tick feed `hw_behind` as the run loop does.
+    fn run_hw(ticks: &[(u64, u64)], decode_ms: f32, render_ms: f32) -> adapt::Policy {
+        let mut p = adapt::Policy::default();
+        let t = Instant::now();
+        p.set_view(1280, 720, true);
+        p.update(t);
+        let mut hist: Vec<(u64, u64)> = Vec::new();
+        for (i, &tick) in ticks.iter().enumerate() {
+            hist.push(tick);
+            let w = &hist[hist.len().saturating_sub(2)..];
+            let (rx, dec) = w.iter().fold((0, 0), |a, e| (a.0 + e.0, a.1 + e.1));
+            // The hardware path ignores `decode_ms` (pipeline latency).
+            let _ = decode_ms;
+            p.observe_decode_hw(t + Duration::from_secs(i as u64), adapt::hw_behind(rx, dec), render_ms, 30);
+        }
+        p
+    }
+
+    #[test]
+    fn hardware_decoder_judged_by_throughput_not_latency() {
+        // 25 ms latency per frame (76% of a 33 ms interval: software would drop) but 30 in, 30 out.
+        let mut p = run_hw(&[(30, 30); 20], 25.0, 4.0);
+        assert_eq!(p.update(Instant::now()).map(|h| h.max_fps).unwrap_or(30), 30);
+        // The same latency through the software rule does drop.
+        let mut s = adapt::Policy::default();
+        s.set_view(1280, 720, true);
+        s.update(Instant::now());
+        assert!(s.observe_decode(Instant::now(), 25.0 + 4.0, 30));
+    }
+
+    #[test]
+    fn hardware_decoder_that_falls_behind_drops_the_tier() {
+        // 30 in, 20 out per second, backlog building: down to 24 then 15.
+        let mut p = run_hw(&[(30, 20); 3], 10.0, 2.0);
+        assert_eq!(p.update(Instant::now()).unwrap().max_fps, 15);
+        assert!(adapt::hw_behind(60, 40) && !adapt::hw_behind(60, 50) && !adapt::hw_behind(10, 0));
+        // Render cost still counts when throughput is fine: 25 ms of drawing is 75% of 33 ms.
+        let mut p2 = run_hw(&[(30, 30); 2], 5.0, 25.0);
+        assert_eq!(p2.update(Instant::now()).unwrap().max_fps, 24);
+    }
+
     #[test]
     fn send_cap_names_what_binds() {
         let mut p = adapt::Policy::default();
