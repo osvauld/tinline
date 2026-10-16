@@ -10,11 +10,20 @@
 
   type Row = { v: EndVariant | 'headset'; title: string; line: string };
   const ROWS: Row[] = [
+    { v: 'xcut', title: 'X, one line cut', line: 'The swirl X, one line cut where the other crosses it. Pressing End lets the cut line go slack: it sags and its halves fall back from the cut.' },
+    { v: 'snip', title: 'The line, cut (sagging)', line: 'Only the logo\'s sagging line, cut at the bottom, the ends drooping. Pressing End lets them fall.' },
+    { v: 'xsag', title: 'X, sagging', line: 'An X of two curved strokes that both sag, like two crossed strings. Pressing End lets them sag further.' },
+    { v: 'xswirl', title: 'X, swirl', line: 'An X of two curved strokes bowing the same way round the centre. Pressing End pulls them nearly straight.' },
+    { v: 'cutline', title: 'The line, cut (tight)', line: 'Only a tight line, cut in the middle, the ends dipping. Pressing End lets them fall.' },
+    { v: 'curvy', title: 'Curvy scissors', line: 'Scissors drawn soft: leaf blades, oval handles. Pressing End snips them shut.' },
+    { v: 'swoosh', title: 'Swoosh', line: 'A tapered curved stroke through the sagging line, which parts where it crosses. Pressing End follows through.' },
+    { v: 'scissors', title: 'Scissors', line: 'Just scissors, open. Pressing End snips them shut.' },
+    { v: 'knife', title: 'Knife', line: 'Just a kitchen knife. Pressing End brings it down in a short chop.' },
     { v: 'slack', title: 'A. The line lets go', line: 'The logo, its line tight while the call is up. Pressing End lets it go slack and swing, the same motion the home logo makes when a call ends.' },
     { v: 'cut', title: 'B. The line is cut', line: 'The logo with its line cut in the middle, each end dipping. Pressing End opens the cut and the ends drop. Reads as "line down" when still.' },
     { v: 'slash', title: 'C. The logo, off', line: 'The logo with the 45° slash that mic off and camera off use. Consistent, but reads closer to "mute calls" than to "hang up".' },
-    { v: 'headset', title: 'Today in the apps', line: '`callend`: cans apart, strings dropped. Reads as a headset. Reference.' },
-    { v: 'phone', title: 'Today in the playground', line: 'A handset tipped down. Everyone knows it, but it is not ours. Reference.' },
+    { v: 'headset', title: 'Before', line: '`callend`: cans apart, strings dropped. Read as a headset; still used for "calls off". Reference.' },
+    { v: 'phone', title: 'Today (hangup)', line: 'The phone can turned down: the apps\' End since 2026-10-16 (`hangup`). Reference.' },
   ];
 
   let theme = $state<'light' | 'dark'>(new URLSearchParams(location.search).get('theme') === 'dark' ? 'dark' : 'light');
@@ -40,8 +49,8 @@
 
 <main>
   <header>
-    <h1>End call: drawn from the logo</h1>
-    <p>Press any red button to see what it does. The apps' End glyph reads as a headset; A–C draw it from the logo instead.</p>
+    <h1>End call</h1>
+    <p>Press any red button to see what it does. The line, cut, first; the other studies and today's glyphs below for comparison.</p>
     <div class="bar">
       <div class="seg">
         <button type="button" aria-pressed={theme === 'light'} onclick={() => (theme = 'light')}>Light</button>
@@ -125,7 +134,7 @@
   .round.end:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
   .round :global(.hang) { transform: rotate(135deg); }
   .pill { display: inline-flex; align-items: center; gap: 8px; block-size: 36px; padding-inline: 12px 16px; border-radius: 18px; background: var(--danger-btn); color: var(--on-danger-btn); font-size: 13px; }
-  .bare { display: grid; place-items: center; inline-size: 36px; block-size: 36px; color: var(--ink); }
+  .bare { --eg-bg: var(--surface); display: grid; place-items: center; inline-size: 36px; block-size: 36px; color: var(--ink); }
   .i { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; }
   .i :global(.f) { fill: currentColor; stroke: none; }
 </style>

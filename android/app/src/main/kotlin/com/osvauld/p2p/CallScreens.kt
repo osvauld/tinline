@@ -137,9 +137,22 @@ class CallActivity : ComponentActivity() {
                 var seen by remember { mutableStateOf(false) }
                 if (ui != null) seen = true
                 val e = ended
+                // My own End: its glyph plays, and the call screen stays END_HOLD_MS after the call goes so it is seen
+                // (the hang-up itself is sent at once). `last` is the call as it was.
+                var last by remember { mutableStateOf<CallUi?>(null) }
+                if (ui != null) last = ui
+                val tap by app.calls.endTapMs.collectAsState()
+                var tick by remember { mutableLongStateOf(0L) }
+                // Re-read the clock when the tap, the call or the hold's end changes.
+                val sinceTap = remember(tap, ui, tick) { System.currentTimeMillis() - tap }
+                // End pressed during this call (a tap from an earlier call is older than this call's first sight).
+                val callSeenAt = remember(last?.info?.callId) { System.currentTimeMillis() }
+                val ending = tap >= callSeenAt
+                val holding = ui == null && last != null && ending && sinceTap < END_HOLD_MS
+                LaunchedEffect(tap, ui == null) { if (holding) { delay(END_HOLD_MS - sinceTap); tick++ } }
                 // An outgoing call that fails at once is already over when this screen opens: still show why.
                 val showEnded = ui == null && e != null && (seen || System.currentTimeMillis() - e.atMs < 10_000)
-                LaunchedEffect(ui, seen, showEnded) { if (ui == null && seen && !showEnded) finish() }
+                LaunchedEffect(ui, seen, showEnded, holding) { if (ui == null && seen && !showEnded && !holding) finish() }
                 // Opened with nothing to show (no call, and no recent ended call): do not sit there blank.
                 LaunchedEffect(Unit) {
                     delay(1500)
@@ -151,11 +164,12 @@ class CallActivity : ComponentActivity() {
                     // Their call arrived while ours was open (ours yielded): ring it here.
                     u != null && u.info.incoming && u.state is CallState.Ringing ->
                         IncomingContent(u.info.peerName, u.info.peerDid, onDecline = { app.calls.decline() }, onAnswer = { answerWithMic() })
-                    u != null -> {
+                    u != null || holding -> {
+                        val shown = u ?: last!!
                         val allowed by btAllowed
-                        InCallScreen(u, meName, app, onCameraOn = cameraOn, onMinimise = { finish() },
+                        InCallScreen(shown, meName, app, onCameraOn = cameraOn, onMinimise = { finish() },
                             onAllowBtNames = if (allowed) null else ({ btLauncher.launch(android.Manifest.permission.BLUETOOTH_CONNECT) }),
-                            onMessage = { openChat(u.info.peerDid) })
+                            onMessage = { openChat(shown.info.peerDid) }, ending = ending)
                     }
                     showEnded -> EndedRoute(e, meName, onClose = { finish() }, onAgain = {
                         app.scope.launch { app.calls.place(e.peerDid) }
@@ -292,7 +306,9 @@ private fun WaitingPill(label: String, rest: Color, wash: Color, fg: Color, desc
 
 @Composable
 fun InCallScreen(ui: CallUi, meName: String, app: P2pApp, onCameraOn: () -> Unit, onMinimise: () -> Unit,
-    onAllowBtNames: (() -> Unit)? = null, onMessage: (() -> Unit)? = null) {
+    onAllowBtNames: (() -> Unit)? = null, onMessage: (() -> Unit)? = null,
+    /** I pressed End: End's glyph plays (HangupGlyph.kt) while the screen holds. */
+    ending: Boolean = false) {
     val calls = app.calls
     val waiting by calls.waiting.collectAsState()
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
@@ -363,6 +379,7 @@ fun InCallScreen(ui: CallUi, meName: String, app: P2pApp, onCameraOn: () -> Unit
                 selfView = { m -> SelfView(app, front, m) },
                 routes = ui.routes, onRoute = { calls.selectRoute(it) }, onAllowBtNames = onAllowBtNames,
                 waitingCard = { m -> WaitingCard(waiting, name, onDecline = { calls.declineWaiting() }, onEndAnswer = { calls.endAndAnswer() }, modifier = m) },
+                ending = ending,
             )
         }
     } else InCallContent(
@@ -375,6 +392,7 @@ fun InCallScreen(ui: CallUi, meName: String, app: P2pApp, onCameraOn: () -> Unit
         routes = ui.routes, onRoute = { calls.selectRoute(it) }, onAllowBtNames = onAllowBtNames, onMessage = onMessage,
         waiting = waiting != null,
         waitingCard = { m -> WaitingCard(waiting, name, onDecline = { calls.declineWaiting() }, onEndAnswer = { calls.endAndAnswer() }, modifier = m) },
+        ending = ending,
     )
 }
 
@@ -397,6 +415,8 @@ fun InCallContent(
     waiting: Boolean = false,
     /** The call-waiting card, placed just above the controls (it grows upward; nothing else moves). */
     waitingCard: (@Composable (Modifier) -> Unit)? = null,
+    /** I pressed End (HangupGlyph.kt). */
+    ending: Boolean = false,
 ) {
     var routeSheet by remember { mutableStateOf(startWithSheet) }
     var info by remember { mutableStateOf(startWithInfo) }
@@ -405,7 +425,7 @@ fun InCallContent(
         CallFocus(name.ifBlank { "Unknown" }, did, active, ringing, secs, reconnecting, micProblem,
             onMinimise = onMinimise, onInfo = { info = true }, signal = bars ?: 0, direct = direct, onMessage = onMessage, waiting = waiting, muted = muted, waitingCard = waitingCard) {
             CallControls(muted, speaker, camera = false, onMute, { if (routes?.hasHeadset == true) routeSheet = true else onSpeaker() },
-                onCamera, onFlip = null, onEnd, caption, icon)
+                onCamera, onFlip = null, onEnd, caption, icon, ending = ending)
         }
         if (info) CallInfo(name, active, onDismiss = { info = false }, reconnecting = reconnecting, signal = bars ?: 0,
             direct = direct, rttMs = rttMs, lossPct = lossPct)
@@ -471,6 +491,8 @@ fun VideoCallContent(
     onMessage: (() -> Unit)? = null,
     waitingCard: (@Composable (Modifier) -> Unit)? = null,
     videoQuality: String? = null, hd: Boolean = false, hdPaused: Boolean = false, onHd: () -> Unit = {},
+    /** I pressed End (HangupGlyph.kt). */
+    ending: Boolean = false,
 ) {
     val c = Tin.c
     var info by remember { mutableStateOf(false) }
@@ -520,7 +542,7 @@ fun VideoCallContent(
                 style = TinType.bodyM, color = c.er, maxLines = 2, textAlign = TextAlign.Center)
             Box(Modifier.padding(horizontal = 20.dp)) {
                 CallControls(muted, speaker, localCamera, onMute, { if (routes?.hasHeadset == true) routeSheet = true else onSpeaker() },
-                    onCamera, onFlip, onEnd, caption, icon)
+                    onCamera, onFlip, onEnd, caption, icon, ending = ending)
             }
         }
         // WaitingCard: 22 dp above the controls bar, growing upward.

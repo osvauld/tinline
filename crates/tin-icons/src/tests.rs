@@ -122,7 +122,7 @@ fn small_tiers_shrink_only_the_mouths() {
 #[test]
 fn every_talking_icon_comes_from_the_mark_and_retired_ones_say_why() {
     let set = all(Tier::S24);
-    for name in ["call", "callend", "phone", "mic", "vol", "video", "link", "chat", "send", "users", "bell"] {
+    for name in ["call", "callend", "hangup", "hangup-go", "phone", "mic", "vol", "video", "link", "chat", "send", "users", "bell"] {
         assert_eq!(set.iter().find(|i| i.name == name).unwrap().kind, Kind::Mark, "{name}");
     }
     for i in set.iter().filter(|i| i.kind == Kind::Retire) {
@@ -153,4 +153,32 @@ mod generated_rs {
         assert!(get("nope", 24.0).is_none());
         assert_eq!(NAMES.len(), crate::icons::all(crate::icons::Tier::S24).len());
     }
+}
+
+/// `hangup`: the quartic's root is where the two strings really meet, and the cut leaves the stroke plus the clearance
+/// on each side of the whole string.
+#[test]
+fn hangup_cut_sits_at_the_exact_crossing() {
+    use crate::cut::*;
+    let (u, v) = crossing();
+    let (p, q) = (whole().at(u), crossed(SAG).at(v));
+    assert!((p[0] - q[0]).hypot(p[1] - q[1]) < 1e-9, "{p:?} vs {q:?}");
+    for pressed in [false, true] {
+        let [w, a, b] = glyph(pressed);
+        // Each cut end is clear of the whole string by at least the clearance (distance to its sampled curve).
+        let clear = if pressed { CLEAR_GO } else { CLEAR };
+        for end in [a.b, b.a] {
+            let d = (0..=2000).map(|i| { let s = w.at(i as f64 / 2000.0); (s[0] - end[0]).hypot(s[1] - end[1]) }).fold(f64::MAX, f64::min);
+            assert!(d > clear * 0.6, "pressed={pressed}: end {end:?} only {d:.2} from the whole string");
+        }
+    }
+}
+
+/// Pressing End moves only the cut string: the whole one is the same path in both glyphs.
+#[test]
+fn hangup_go_moves_only_the_cut_string() {
+    let [w0, a0, _] = crate::cut::glyph(false);
+    let [w1, a1, _] = crate::cut::glyph(true);
+    assert_eq!(w0.d(), w1.d());
+    assert_ne!(a0.d(), a1.d());
 }

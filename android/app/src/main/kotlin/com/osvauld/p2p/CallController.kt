@@ -279,8 +279,12 @@ class CallController(private val app: P2pApp) {
         }
     }
 
+    /** When I last pressed End (ms): the call screen plays End's glyph and stays [END_HOLD_MS] after the call goes. */
+    val endTapMs = MutableStateFlow(0L)
+
     fun hangup() {
         val c = _ui.value ?: return
+        endTapMs.value = System.currentTimeMillis()
         localEnd = DisconnectCause.LOCAL
         app.scope.launch { try { app.node.hangup(c.info.callId) } catch (e: Exception) { Log.w("Call", "hangup: $e") } }
     }

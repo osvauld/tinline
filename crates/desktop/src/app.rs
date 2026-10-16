@@ -261,6 +261,8 @@ struct App {
     settings_tab: u8,
     safety: Option<String>,
     ended: Option<EndedView>,
+    /// When I pressed End on the current call: End's glyph lets go (hangup.rs) and the call screen holds a moment.
+    end_tap: Option<Instant>,
     screen: Screen,
     name_in: String,
     pass_in: Zeroizing<String>,
@@ -506,6 +508,8 @@ enum Msg {
     CloseEnded,
     /// The ended call's hold ran out (only closes the ended view it was started for).
     EndedHoldDone(Option<Instant>),
+    /// My own End's hold ran out: finish ending that call (hangup::HOLD).
+    EndHeld(String, CallState),
     #[allow(dead_code, reason = "unwired by the UI port (b57ee23); UI owner to decide: wire back or delete")]
     CallAgain(String),
     CopySafety,
@@ -872,6 +876,7 @@ impl App {
             settings_tab: 0,
             safety: None,
             ended: None,
+            end_tap: None,
             screen: match lock {
                 LockState::NoIdentity => Screen::Onboarding,
                 LockState::Locked if test_unlock.is_none() => Screen::Unlock,
@@ -1152,6 +1157,13 @@ impl App {
                 }
             }
             CallState::Ended { reason } => {
+                // My own End: the call screen stays until hangup::HOLD after the press, so End's glyph is seen (the
+                // call itself is already over); then this runs again with the tap cleared.
+                if let Some(left) = self.end_tap.map(|t| crate::hangup::HOLD.saturating_sub(t.elapsed())).filter(|l| !l.is_zero()) {
+                    let (id, st) = (id.to_string(), CallState::Ended { reason });
+                    return Task::perform(tokio::time::sleep(left), move |_| Msg::EndHeld(id, st));
+                }
+                self.end_tap = None;
                 let who = c.info.peer_name.clone();
                 let (direct, secs) = c.stats.as_ref().map(|s| (s.direct, s.secs)).unwrap_or((false, 0));
                 let did = c.info.peer_did.clone();
@@ -2283,6 +2295,10 @@ impl App {
             Msg::EndedHoldDone(at) => {
                 if self.ended.as_ref().map(|e| e.at) == at { self.ended = None; }
             }
+            Msg::EndHeld(id, state) => {
+                self.end_tap = None;
+                return self.apply_call_state(&id, state);
+            }
             // The contact, the chat and the call history stay (U19, U24); only the state changes.
             Msg::Block(did) => {
                 self.detail = Detail::View;
@@ -2334,7 +2350,9 @@ impl App {
                 }
             }
             Msg::Hangup => {
-                if let Some(c) = &self.call {
+                // Pressed again during the hold: the call is already over.
+                if let Some(c) = self.call.as_ref().filter(|c| !matches!(c.state, CallState::Ended { .. })) {
+                    self.end_tap.get_or_insert_with(Instant::now);
                     let (node, id) = (self.node.clone(), c.info.call_id.clone());
                     return blocking(move || node.hangup(id).map_err(s), Msg::Done);
                 }
@@ -2723,7 +2741,7 @@ impl App {
                 iced::Event::Window(window::Event::FilesHoveredLeft) => Some(Msg::Chat(Cm::DropHover(false))),
                 _ => None,
             }),
-            if self.fx.running() || self.ticks_running() || self.live.ticks_running() { window::frames().map(Msg::Frame) } else { Subscription::none() },
+            if self.fx.running() || self.ticks_running() || self.live.ticks_running() || crate::hangup::running(self.end_tap) { window::frames().map(Msg::Frame) } else { Subscription::none() },
             if self.video_ticking() {
                 iced::time::every(Duration::from_millis(33)).map(|_| Msg::Video(Vm::Tick))
             } else {

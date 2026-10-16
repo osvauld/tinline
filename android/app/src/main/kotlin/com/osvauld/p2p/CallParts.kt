@@ -95,7 +95,9 @@ private fun CallTopButton(icon: ImageVector, label: String, onClick: () -> Unit)
 internal fun CallControls(muted: Boolean, speaker: Boolean, camera: Boolean, onMute: () -> Unit,
     onSpeaker: () -> Unit, onCamera: (() -> Unit)?, onFlip: (() -> Unit)?, onEnd: () -> Unit,
     /** With a headset connected the speaker slot becomes the route picker: its name and icon. */
-    routeCaption: String = "Speaker", routeIcon: ImageVector = CallGlyphs.Speaker) {
+    routeCaption: String = "Speaker", routeIcon: ImageVector = CallGlyphs.Speaker,
+    /** I pressed End: its glyph plays the cut string letting go (HangupGlyph.kt). */
+    ending: Boolean = false) {
     val c = Tin.c
     val fill = if (c.dark) lerp(c.sf, c.ink, .14f) else c.sf
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -103,7 +105,8 @@ internal fun CallControls(muted: Boolean, speaker: Boolean, camera: Boolean, onM
             if (muted) c.ink else fill, if (muted) c.bg else c.ink, onMute, selected = muted)
         CallControl("Camera", "Camera", if (camera) CallGlyphs.Video else CallGlyphs.VideoOff,
             if (camera) c.ink else fill, if (camera) c.bg else c.ink, onCamera ?: {}, enabled = onCamera != null, selected = camera)
-        CallControl("End call", "End", CallGlyphs.End, c.callButtonEnd, Color.White, onEnd)
+        CallControl("End call", "End", CallGlyphs.End, c.callButtonEnd, Color.White, onEnd,
+            glyph = { HangupGlyph(ending, Color.White, Modifier.size(28.dp)) })
         CallControl("Flip camera", "Flip", CallGlyphs.Flip, fill, c.ink, onFlip ?: {}, enabled = camera && onFlip != null)
         CallControl(if (routeCaption == "Speaker") "Speaker" else "Audio: $routeCaption", routeCaption, routeIcon, if (speaker) c.ink else fill,
             if (speaker) c.bg else c.ink, onSpeaker, selected = speaker)
@@ -112,7 +115,7 @@ internal fun CallControls(muted: Boolean, speaker: Boolean, camera: Boolean, onM
 
 @Composable
 private fun RowScope.CallControl(label: String, caption: String, icon: ImageVector, bg: Color, fg: Color,
-    onClick: () -> Unit, enabled: Boolean = true, selected: Boolean? = null) {
+    onClick: () -> Unit, enabled: Boolean = true, selected: Boolean? = null, glyph: (@Composable () -> Unit)? = null) {
     Column(Modifier.weight(1f).alpha(if (enabled) 1f else .38f), horizontalAlignment = Alignment.CenterHorizontally) {
         BoxWithConstraints(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
             val diameter = maxWidth.coerceAtMost(56.dp).coerceAtLeast(44.dp)
@@ -121,7 +124,7 @@ private fun RowScope.CallControl(label: String, caption: String, icon: ImageVect
                     contentDescription = label
                     if (selected != null) toggleableState = ToggleableState(selected)
                 }, contentAlignment = Alignment.Center) {
-                Icon(icon, null, tint = fg, modifier = Modifier.size(26.dp))
+                if (glyph != null) glyph() else Icon(icon, null, tint = fg, modifier = Modifier.size(26.dp))
             }
         }
         Text(caption, Modifier.padding(top = 8.dp).heightIn(min = 18.dp), style = TinType.bodyM.copy(fontSize = 13.sp, lineHeight = 18.sp),

@@ -101,7 +101,7 @@ import androidx.compose.ui.unit.Dp\nimport androidx.compose.ui.unit.dp\n\n\
 /** One icon at one size tier. [all] is the whole glyph in one colour; [body] and [string] split it so the string can be gold. */\n\
 class TinGlyph(val all: ImageVector, val body: ImageVector, val string: ImageVector?)\n\n\
 /** A Tinline line icon (crates/tin-icons). Tiers are designed for 16, 20 and 24 dp; [at] picks the nearest. */\n\
-class TinIcon internal constructor(private val name: String, private val tiers: Array<Array<String>>) {{\n\
+class TinIcon internal constructor(private val name: String, internal val tiers: Array<Array<String>>) {{\n\
     private val cache = arrayOfNulls<TinGlyph>(3)\n\n\
     fun at(size: Dp): TinGlyph {{\n\
         val t = when {{ size.value < 18f -> 0; size.value < 22f -> 1; else -> 2 }}\n\

@@ -6,6 +6,7 @@
 //! sheet. Run `cargo run -p tin-icons --bin tin-icons-gen` after changing an icon; a test fails if the
 //! generated files are stale.
 
+pub mod cut;
 pub mod draw;
 pub mod emit;
 pub mod icons;
