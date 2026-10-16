@@ -263,6 +263,17 @@ impl Node {
         self.inner.chat_core()?.store.set_picture_download(policy)
     }
 
+    /// Settings > Privacy "Read receipts" (default on, per account on this device). Off: this
+    /// account sends no read receipts in chats and groups; delivered receipts still go, and
+    /// other people's reads still show. Reads made while off are never confirmed later.
+    pub fn read_receipts(&self) -> Result<bool, Error> {
+        Ok(self.inner.chat_core()?.store.read_receipts())
+    }
+
+    pub fn set_read_receipts(&self, on: bool) -> Result<(), Error> {
+        self.inner.chat_core()?.store.set_read_receipts(on)
+    }
+
     /// Tells the core whether the connection is metered (mobile data), for `PictureDownload::Wifi`.
     /// Process-wide; the app calls it when the network changes.
     pub fn set_connection_metered(&self, metered: bool) {

@@ -136,8 +136,10 @@ impl GroupCore {
 
     /// Moves our read cursor to the newest line (monotonic) and, in the same transaction,
     /// records read intents for the visible posts of others in (old cursor, new cursor] that
-    /// we were a member for. Call `member_receipts_pump` after it.
-    pub(crate) fn mark_read(&self, gid: &str) -> Result<(), Error> {
+    /// we were a member for. With `read_receipts` off (the account setting) the cursor moves
+    /// and nothing is recorded: turning it on later never confirms those reads (no backdating).
+    /// Call `member_receipts_pump` after it.
+    pub(crate) fn mark_read(&self, gid: &str, read_receipts: bool) -> Result<(), Error> {
         let mut groups = self.groups.lock();
         let live = groups.get_mut(gid).ok_or(Error::NotFound)?;
         let old = live.meta.read_upto;
@@ -149,7 +151,8 @@ impl GroupCore {
             .map_or(0, |i| i.at)
             .max(last_post)
             .max(old);
-        let extra = self.read_ops(live, gid, old, new).unwrap_or_else(|e| {
+        let read = if read_receipts { self.read_ops(live, gid, old, new) } else { Ok(Vec::new()) };
+        let extra = read.unwrap_or_else(|e| {
             tracing::warn!("group {}: no read intent: {e}", crate::group::short(gid));
             Vec::new()
         });

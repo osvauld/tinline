@@ -74,8 +74,10 @@ impl Inner {
 
     /// Ops for a local mark-read step from `from` (exclusive) to `to`
     /// (inclusive), both author-clock ms as in `ConvMeta::read_upto`.
+    /// Nothing while the account's read-receipt setting is off: the cursor still moves, so
+    /// turning it on later confirms only reads from then on (no backdating).
     pub(crate) fn chat_read_intent(core: &ChatCore, me: &Me, pair: &str, from: i64, to: i64) -> Result<Vec<Op>, Error> {
-        if to <= from {
+        if to <= from || !core.store.read_receipts() {
             return Ok(vec![]);
         }
         // A version's `at` may sit up to an hour outside its shard's day.

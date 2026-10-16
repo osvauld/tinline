@@ -221,7 +221,7 @@ impl Sim {
     }
 
     fn read(&self, n: usize) -> usize {
-        self.nodes[n].mark_read(&self.gid).unwrap();
+        self.nodes[n].mark_read(&self.gid, true).unwrap();
         self.pump(n)
     }
 
@@ -789,7 +789,7 @@ fn one_device_of_a_member_account_counts_for_the_account() {
     sim.receipts(0, third).unwrap_err();
     sim.day(0, third);
     sim.receipts(0, third).unwrap();
-    sim.nodes[third].mark_read(&sim.gid).unwrap();
+    sim.nodes[third].mark_read(&sim.gid, true).unwrap();
     assert_eq!(sim.pump(third), 1, "read was not covered yet");
 }
 
@@ -1082,7 +1082,7 @@ fn receipt_frames_through_the_host_reach_every_member_byte_identical() {
         );
     }
     for n in 1..4 {
-        sim.nodes[n].mark_read(&sim.gid).unwrap();
+        sim.nodes[n].mark_read(&sim.gid, true).unwrap();
         sim.nodes[n].member_receipts_pump_and_push();
     }
     sim.flush(&mut links, |_| 1);
@@ -1159,4 +1159,34 @@ fn receipts_for_posts_not_yet_held_are_asked_again_after_the_posts_arrive() {
     sim.flush(&mut links, |_| 1);
     assert!(sim.entries(2) >= 1);
     assert_eq!(sim.status(2, &post).delivered, 1);
+}
+
+#[test]
+fn read_receipts_off_issues_delivered_only_and_never_backdates() {
+    let mut sim = Sim::new(2);
+    let first = sim.post(0, "read while off");
+    for n in 1..3 {
+        sim.day(0, n);
+    }
+    // Member 1 has read receipts off: delivered still goes out, the read stays local.
+    sim.nodes[1].mark_read(&sim.gid, false).unwrap();
+    assert_eq!(sim.pump(1), 1, "only the delivered statement");
+    sim.receipts(1, 0).unwrap();
+    // It still sees other members' reads (no reciprocity).
+    assert_eq!(sim.read(2), 2, "member 2 delivers and reads");
+    sim.receipts(2, 0).unwrap();
+    sim.receipts(0, 1).unwrap();
+    let theirs = sim.status(1, &first);
+    assert_eq!((theirs.delivered, theirs.read), (2, 1));
+    let s = sim.status(0, &first);
+    assert_eq!((s.tick, s.delivered, s.read), (ReceiptTick::Delivered, 2, 1));
+    // Turned back on: the post read while off is never confirmed; only new reads count.
+    let second = sim.post(0, "read after on");
+    sim.day(0, 1);
+    sim.nodes[1].mark_read(&sim.gid, true).unwrap();
+    assert_eq!(sim.pump(1), 2, "delivered and read of the new post only");
+    sim.receipts(1, 0).unwrap();
+    assert_eq!(sim.status(0, &first).read, 1);
+    let row = sim.status(0, &second);
+    assert!(row.members.iter().any(|m| m.receipts.did == sim.nodes[1].did && m.receipts.level == ReceiptLevel::Read));
 }

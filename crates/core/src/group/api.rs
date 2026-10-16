@@ -336,7 +336,10 @@ impl Node {
     /// covers (`engine::member_receipts`).
     pub fn group_mark_read(&self, group_id: String) -> Result<(), Error> {
         let core = self.inner.group_core()?;
-        core.mark_read(&group_id)?;
+        // The account's read-receipt setting lives with the chat settings. Unknown = off: never
+        // send a read confirmation the user may have turned off.
+        let reads = self.inner.chat_core().map(|c| c.store.read_receipts()).unwrap_or(false);
+        core.mark_read(&group_id, reads)?;
         core.member_receipts_pump_and_push();
         Ok(())
     }
