@@ -1,8 +1,8 @@
 //! K1: characterization of what a restore-over-existing (forgotten passphrase) does today, given
 //! that it replaces this install's device key (`node.rs` `set_identity`: a fresh
 //! `new_device_secret()`, the old registry entry marked `removed`) while keeping `account.redb`
-//! and `chat.redb`. See `docs/design/rotation-baseline-report.md` §4 (O1–O6) and
-//! `docs/design/rotation-author-key-trace.md` §2–§7.
+//! and `chat.redb`. See `docs/archive/rotation/rotation-baseline-report.md` §4 (O1–O6) and
+//! `docs/archive/rotation/rotation-author-key-trace.md` §2–§7.
 //!
 //! Every test carries one label:
 //! - `KIND: limitation`: asserts today's (wrong) outcome; the comment names the expected-correct

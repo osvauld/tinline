@@ -1,45 +1,60 @@
-//! Group endpoint rotation and authenticated moved-host announcements.
+//! Group endpoint rotation (crash-safe rebind) and authenticated moved-host announcements
+//! (`docs/rotation.md`).
 
+use super::lifecycle::bind_group_endpoint;
 use super::*;
+use crate::group::rotation::{RotationPolicy, draw_jitter, rotation_due};
+use crate::group::store::EpState;
+
+/// Clears `GroupCore::rotating` when the rotation ends, however it ends.
+struct Rotating<'a>(&'a AtomicBool);
+
+impl Drop for Rotating<'_> {
+    fn drop(&mut self) {
+        self.0.store(false, Ordering::SeqCst);
+    }
+}
 
 impl Inner {
-    // ---- endpoint rotation (U12) ---------------------------------------------------------------
+    // ---- endpoint rotation ---------------------------------------------------------------------
 
-    /// When this device's group endpoint is due to rotate: the earliest trigger (removal or
-    /// host revocation) in a group we host that happened after the key was made, plus the
-    /// delay. `None` if nothing is pending.
-    pub(crate) fn group_rotation_due(&self, core: &GroupCore) -> Option<u64> {
-        let made = core.store.endpoint_made();
-        let delay = self.group.rotation_delay();
-        core.groups
+    /// The rotation policy in force: the stored one (a test may override it in memory).
+    pub(crate) fn group_rotation_policy(&self, core: &GroupCore) -> Result<RotationPolicy, Error> {
+        #[cfg(any(test, feature = "dev-tools"))]
+        if let Some(p) = *self.group.rotation_policy_for_test.lock() {
+            return Ok(p);
+        }
+        core.store.rotation_policy()
+    }
+
+    /// The current endpoint key and schedule (the first key is made here).
+    pub(super) fn group_ep_state(&self, core: &GroupCore) -> Result<EpState, Error> {
+        let policy = self.group_rotation_policy(core)?;
+        core.store
+            .ep_state_or_init(now_ms(), draw_jitter(policy.jitter_ms))
+    }
+
+    /// When this device's group endpoint is due to rotate (periodic only, D11: no removal,
+    /// flag, revocation or block moves it). `None` while it hosts no chat and no calls, or
+    /// before it has a key.
+    pub(crate) fn group_rotation_due(&self, core: &GroupCore) -> Result<Option<u64>, Error> {
+        let Some(ep) = core.store.ep_state()? else {
+            return Ok(None);
+        };
+        let hosting = core
+            .groups
             .lock()
             .values()
-            .filter(|l| hosts_or_calls(&l.state, &core.did, &core.dev))
-            .flat_map(|l| {
-                // A call host that does not host chat moves half a delay after the chat hosts:
-                // it learns their new endpoints through their `Moved` at its old one, then
-                // shows its own new address in its next Hello (GA-I1). Both at once would leave
-                // each knowing only the other's closed endpoint.
-                let extra = if l.state.is_host(&core.did, &core.dev) {
-                    0
-                } else {
-                    delay / 2
-                };
-                l.state
-                    .rotation_triggers
-                    .iter()
-                    .filter(|t| **t > 0 && **t as u64 > made)
-                    .map(move |t| *t as u64 + delay + extra)
-                    .collect::<Vec<_>>()
-            })
-            .min()
+            .any(|l| hosts_or_calls(&l.state, &core.did, &core.dev));
+        let policy = self.group_rotation_policy(core)?;
+        Ok(rotation_due(ep.made, &policy, ep.jitter, now_ms(), hosting))
     }
 
     pub(super) async fn group_rotation_tick(
         self: &Arc<Self>,
         core: &Arc<GroupCore>,
     ) -> Result<(), Error> {
-        let Some(due) = self.group_rotation_due(core) else {
+        let Some(due) = self.group_rotation_due(core)? else {
             return Ok(());
         };
         if due > now_ms() || core.ep_id.lock().is_none() {
@@ -53,59 +68,130 @@ impl Inner {
         self.group_rotate(core).await
     }
 
-    /// New group endpoint key; the old endpoint closes (every session with it ends, and whoever
-    /// knew only it, a removed member, can no longer reach us). Then we tell the members we
-    /// host where we are now, and dial the other hosts from the new endpoint.
+    /// A new group endpoint key, crash-safe: the next key is staged, bound while the old
+    /// endpoint keeps serving, promoted in one transaction, and only then swapped in and the
+    /// old endpoint closed (every session with it ends; whoever knew only it can no longer
+    /// reach us). Any failure before the swap leaves the old endpoint serving; the next tick
+    /// tries again. Then we tell the members we host where we are now.
     pub(crate) async fn group_rotate(self: &Arc<Self>, core: &Arc<GroupCore>) -> Result<(), Error> {
-        core.store.rotate_endpoint_secret(now_ms())?;
-        let old = core.ep.lock().await.take();
-        *core.ep_id.lock() = None;
-        {
+        if core.rotating.swap(true, Ordering::SeqCst) {
+            return Ok(());
+        }
+        let _running = Rotating(&core.rotating);
+        if core.ep_id.lock().is_none() {
+            return Err(Error::NotStarted);
+        }
+        let policy = self.group_rotation_policy(core)?;
+        let next = core.store.ep_stage()?;
+        let new = match bind_group_endpoint(&next).await {
+            Ok(ep) => ep,
+            Err(e) => {
+                let _ = core.store.ep_discard_pending();
+                return Err(e);
+            }
+        };
+        drop(next);
+        let now = now_ms();
+        let announce_until = now.saturating_add(policy.announce_ms);
+        let promoted = core
+            .store
+            .ep_promote(now, announce_until, draw_jitter(policy.jitter_ms));
+        let old = {
+            let mut slot = core.ep.lock().await;
+            if let Err(e) = promoted.and(if core.closed() {
+                Err(Error::Locked)
+            } else {
+                Ok(())
+            }) {
+                drop(slot);
+                let _ = core.store.ep_discard_pending();
+                let _ = tokio::time::timeout(Duration::from_secs(3), new.close()).await;
+                return Err(e);
+            }
+            let old = slot.replace(new.clone());
+            *core.ep_id.lock() = Some(new.clone());
+            // Sessions on the old endpoint end; nothing hands out its address any more.
+            core.my_addr.lock().clear();
             let mut ss = core.sessions.lock();
             for s in ss.values() {
                 let _ = s.tx.send(Out::Close);
             }
             ss.clear();
-        }
-        core.my_addr.lock().clear();
-        if let Some(ep) = old {
-            let _ = tokio::time::timeout(Duration::from_secs(3), ep.close()).await;
-        }
-        let ep = self.group_bind(core).await?;
-        self.group_relay_ready().await;
-        self.log(format!("group endpoint rotated to {}", ep.id()));
-        let hosted: Vec<(String, bool)> = core
+            old
+        };
+        self.group_serve(core, &new);
+        let hosted: Vec<String> = core
             .groups
             .lock()
             .iter()
             .filter(|(_, l)| hosts_or_calls(&l.state, &core.did, &core.dev))
-            .map(|(g, l)| (g.clone(), l.state.is_host(&core.did, &core.dev)))
+            .map(|(g, _)| g.clone())
             .collect();
-        for (gid, chat_host) in hosted {
-            let _ = self.group_my_addr(core, &gid);
-            // A call host that does not host chat has no member directory: its new address
-            // reaches the members through the chat hosts (its next Hello, relayed as `Hosts`).
-            if chat_host && core.moving.lock().insert(gid.clone()) {
-                let (this, core) = (self.clone(), core.clone());
-                self.handle
-                    .spawn(async move { this.group_tell_moved(core, gid).await });
-            }
+        // Our new address is in every Hello from now on (the dial loop runs concurrently with
+        // `group_rotate_now`); signed again below once the relay is known.
+        for gid in &hosted {
+            let _ = self.group_my_addr(core, gid);
         }
+        if let Some(ep) = old {
+            let _ = tokio::time::timeout(Duration::from_secs(3), ep.close()).await;
+        }
+        self.group_relay_ready().await;
+        self.log(format!("group endpoint rotated to {}", new.id()));
+        for gid in &hosted {
+            let _ = self.group_my_addr(core, gid);
+        }
+        self.group_announce_moved(core, Duration::ZERO);
         core.backoff.lock().clear();
         core.kick.notify_waiters();
         Ok(())
     }
 
-    /// Dials every current member device in our directory that has no session with us yet and
-    /// hands it our new address (`Moved`), with backoff, until all are back, the endpoint
-    /// changes again, or the delay period has passed (PROVISIONAL: members offline longer must
-    /// get a fresh token).
-    pub(super) async fn group_tell_moved(self: Arc<Self>, core: Arc<GroupCore>, gid: String) {
+    /// Starts the `Moved` campaign of the current endpoint if its announce window (persisted,
+    /// so it resumes after a restart) is still open and none runs for it yet.
+    pub(super) fn group_announce_moved(
+        self: &Arc<Self>,
+        core: &Arc<GroupCore>,
+        first_wait: Duration,
+    ) {
         let Some(ep) = core.ep_id.lock().clone() else {
-            core.moving.lock().remove(&gid);
             return;
         };
-        let end = Instant::now() + Duration::from_millis(self.group.moved_window());
+        let until = match core.store.ep_state() {
+            Ok(Some(s)) => s.announce_until,
+            Ok(None) => return,
+            Err(e) => {
+                tracing::warn!("group endpoint state: {e}");
+                return;
+            }
+        };
+        if until <= now_ms() {
+            return;
+        }
+        {
+            let mut running = core.announcing.lock();
+            if running.as_ref() == Some(&ep.id()) {
+                return;
+            }
+            *running = Some(ep.id());
+        }
+        let (this, core) = (self.clone(), core.clone());
+        self.handle.spawn(async move {
+            tokio::time::sleep(first_wait).await;
+            this.group_tell_moved(&core, &ep, until).await;
+            let mut running = core.announcing.lock();
+            if running.as_ref() == Some(&ep.id()) {
+                *running = None;
+            }
+        });
+    }
+
+    /// Dials every current member device in the directories of the groups whose chat we host
+    /// that has no session with us yet and hands it our new address (`Moved`), with backoff,
+    /// until all are back, the endpoint changes again, or `until` (unix ms) has passed
+    /// (PROVISIONAL: members offline longer must get a fresh token). A call host that does not
+    /// host chat has no member directory: its new address reaches the members through the chat
+    /// hosts (its next Hello, relayed as `Hosts`).
+    async fn group_tell_moved(&self, core: &Arc<GroupCore>, ep: &Endpoint, until: u64) {
         let mut wait = 2u64;
         loop {
             let same = core
@@ -113,49 +199,23 @@ impl Inner {
                 .lock()
                 .as_ref()
                 .is_some_and(|e| e.id() == ep.id());
-            if core.closed() || !same || Instant::now() > end {
+            if core.closed() || !same || now_ms() > until {
                 break;
             }
-            let targets = {
-                let groups = core.groups.lock();
-                let Some(l) = groups.get(&gid) else { break };
-                if !l.state.is_host(&core.did, &core.dev) {
-                    break;
-                }
-                let dir = core.store.dir(&gid).unwrap_or_default();
-                let t: Vec<(String, DirEntry)> = dir
-                    .into_iter()
-                    .filter(|(k, _)| {
-                        let Some((did, dev)) = k.rsplit_once('/') else {
-                            return false;
-                        };
-                        let Some(dev) = hex::decode(dev)
-                            .ok()
-                            .and_then(|b| <[u8; 32]>::try_from(b).ok())
-                        else {
-                            return false;
-                        };
-                        l.state.is_member(did)
-                            && !l.state.is_removed(did)
-                            && !(did == core.did && dev == core.dev)
-                            && !core.has_session(&gid, did, &dev)
-                    })
-                    .collect();
-                t
-            };
+            let targets = self.group_moved_targets(core);
             if targets.is_empty() {
                 break;
             }
-            let hosts = core.host_addrs(&gid);
             let auth = endpoint_auth(&core.account, core.dev, *ep.id().as_bytes());
-            for (_, d) in targets {
+            for (gid, d) in targets {
                 let Ok(key) = d.endpoint.parse::<iroh::PublicKey>() else {
                     continue;
                 };
                 let Ok(addr) = addr_for(key.as_bytes(), d.relay.as_deref()) else {
                     continue;
                 };
-                let (ep, auth, gid, hosts) = (ep.clone(), auth.clone(), gid.clone(), hosts.clone());
+                let hosts = core.host_addrs(&gid);
+                let (ep, auth) = (ep.clone(), auth.clone());
                 tokio::spawn(async move {
                     let res: Result<(), Error> = async {
                         let conn = tokio::time::timeout(DIAL_TIMEOUT, ep.connect(addr, GROUP_ALPN))
@@ -184,7 +244,37 @@ impl Inner {
             tokio::time::sleep(Duration::from_secs(wait)).await;
             wait = (wait * 2).min(30);
         }
-        core.moving.lock().remove(&gid);
+    }
+
+    /// `(group, member device)` pairs to tell we moved: current members of groups whose chat
+    /// we host, in our directory, without a session with us.
+    fn group_moved_targets(&self, core: &GroupCore) -> Vec<(String, DirEntry)> {
+        let groups = core.groups.lock();
+        let mut out = Vec::new();
+        for (gid, l) in groups.iter() {
+            if !l.state.is_host(&core.did, &core.dev) {
+                continue;
+            }
+            for (k, d) in core.store.dir(gid).unwrap_or_default() {
+                let Some((did, dev)) = k.rsplit_once('/') else {
+                    continue;
+                };
+                let Some(dev) = hex::decode(dev)
+                    .ok()
+                    .and_then(|b| <[u8; 32]>::try_from(b).ok())
+                else {
+                    continue;
+                };
+                if l.state.is_member(did)
+                    && !l.state.is_removed(did)
+                    && !(did == core.did && dev == core.dev)
+                    && !core.has_session(gid, did, &dev)
+                {
+                    out.push((gid.clone(), d));
+                }
+            }
+        }
+        out
     }
 
     /// Member side: a host says it moved. Kept only from an active host proving its endpoint.
@@ -221,7 +311,7 @@ impl Inner {
             .remove(&(gid.to_string(), host_key(&auth.did, &auth.dev)));
         self.log(format!(
             "group {}: host {} moved",
-            crate::group::short(&gid),
+            crate::group::short(gid),
             auth.did
         ));
         core.kick.notify_waiters();

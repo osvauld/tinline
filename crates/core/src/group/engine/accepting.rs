@@ -192,8 +192,9 @@ impl Inner {
     }
 
     /// A removed member may upload only its own posts whose signed frontier predates its removal
-    /// (U11 option A); anything else is refused and nothing new is sent to it. It sends one
-    /// `Update` per day doc it owes and finishes; each is answered by an `Ack` of that doc.
+    /// (U11 option A), and only for `REMOVED_UPLOAD_WINDOW_MS` after this host first learned of
+    /// the removal (D12, local clock); anything else is refused and nothing new is sent to it.
+    /// It sends one `Update` per day doc it owes and finishes; each is answered by an `Ack`.
     pub(super) async fn group_removed_upload(
         self: &Arc<Self>,
         core: &Arc<GroupCore>,
@@ -205,6 +206,17 @@ impl Inner {
         while let Ok(Ok(Some(GroupMsg::Update { doc, update }))) =
             tokio::time::timeout(REMOVED_UPLOAD_WAIT, reader.recv()).await
         {
+            if !self.group_removed_upload_open(core, gid, did) {
+                self.log(format!(
+                    "group {gid}: a removed member's upload window has closed"
+                ));
+                let _ = writer
+                    .send(&GroupMsg::Refused {
+                        reason: "removed: the upload window has closed".into(),
+                    })
+                    .await;
+                return;
+            }
             let did_owned = did.to_string();
             let res = core.apply(gid, &doc, &update, move |state, entries, fresh| {
                 let flag_entries: Vec<&Entry> = state
@@ -254,5 +266,31 @@ impl Inner {
                 }
             }
         }
+    }
+
+    /// D12: the removed member's upload window is still open here. A removal we never recorded
+    /// (the write failed) starts its window now.
+    fn group_removed_upload_open(&self, core: &GroupCore, gid: &str, did: &str) -> bool {
+        let now = now_ms();
+        let seen = match core.store.removal_seen(gid, did) {
+            Ok(Some(t)) => t,
+            Ok(None) => {
+                let _ = core.store.note_removal_seen(gid, did, now);
+                now
+            }
+            Err(e) => {
+                tracing::warn!("group {gid}: removal time: {e}");
+                return false;
+            }
+        };
+        #[cfg(any(test, feature = "dev-tools"))]
+        let window = self
+            .group
+            .removed_upload_window_for_test
+            .lock()
+            .unwrap_or(REMOVED_UPLOAD_WINDOW_MS);
+        #[cfg(not(any(test, feature = "dev-tools")))]
+        let window = REMOVED_UPLOAD_WINDOW_MS;
+        now <= seen.saturating_add(window)
     }
 }

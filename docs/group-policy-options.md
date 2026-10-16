@@ -5,7 +5,7 @@ Status: D01/D02 decided (U11: signed frontier, option A; U15 for the U9 flag thr
 (`rotation-open-decisions.md` §6 Q5–Q9), so this model is kept (`docs/archive/models.md`).
 The options below were written as proposals and pick nothing themselves. Each option is a candidate oracle with executable tests. A
 `limitation` test passes by showing what an option cannot do. D06 (device succession, forks,
-revoked predecessors) belongs to rotation; see `docs/design/rotation-fork-revocation-options.md`.
+revoked predecessors) belongs to rotation; see `docs/archive/rotation/rotation-fork-revocation-options.md`.
 It is not repeated here.
 
 Model: `design-models:crates/group-sim/src/policy_candidates.rs` (23 tests). It is wired in through one

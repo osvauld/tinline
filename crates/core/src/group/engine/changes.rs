@@ -308,6 +308,10 @@ impl Inner {
             .get(gid)
             .map(|l| l.state.removed.keys().cloned().collect())
             .unwrap_or_default();
+        // D12: the removed member's upload window starts when we first learn of the removal.
+        if let Err(e) = core.store.sync_removals_seen(gid, &gone, now_ms()) {
+            tracing::warn!("group {}: removal times: {e}", crate::group::short(gid));
+        }
         for did in gone {
             let _ = core.store.drop_dir(gid, &did);
         }

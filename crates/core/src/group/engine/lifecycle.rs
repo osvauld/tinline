@@ -55,6 +55,8 @@ impl Inner {
         let path = dir.join("group.redb");
         let existed = path.exists();
         let store = GroupStore::open(path, &me.profile.mnemonic)?;
+        // A key staged by a rotation that never finished never becomes current (rotation.md).
+        store.ep_discard_pending()?;
         let dev = store.device_id(if existed { profile_dev } else { None })?;
         let did = me.id.did().to_string();
         let wid = writer_id(&did, &dev);
@@ -104,7 +106,8 @@ impl Inner {
             kick: Notify::new(),
             closed: AtomicBool::new(false),
             loops: AtomicBool::new(false),
-            moving: Default::default(),
+            rotating: AtomicBool::new(false),
+            announcing: Default::default(),
             compacted: Default::default(),
             codes: Default::default(),
             receipts,
@@ -169,6 +172,8 @@ impl Inner {
     ) -> Result<Endpoint, Error> {
         let ep = self.group_bind(core).await?;
         if !core.loops.swap(true, Ordering::SeqCst) {
+            // A rotation's `Moved` campaign survives a restart (`ep/announce`).
+            self.group_announce_moved(core, RESUME_ANNOUNCE_WAIT);
             let (this, c) = (self.clone(), core.clone());
             self.handle
                 .spawn(async move { this.group_dial_loop(c).await });
@@ -176,8 +181,7 @@ impl Inner {
         Ok(ep)
     }
 
-    /// Binds the group endpoint if it is not bound, with its accept loop (not the dial loop:
-    /// the rotation, which runs inside the dial loop, rebinds through here).
+    /// Binds the group endpoint if it is not bound, with its accept loop (not the dial loop).
     pub(super) async fn group_bind(
         self: &Arc<Self>,
         core: &Arc<GroupCore>,
@@ -192,28 +196,21 @@ impl Inner {
         if core.closed() {
             return Err(Error::Locked);
         }
-        let transport = QuicTransportConfig::builder()
-            .keep_alive_interval(Duration::from_secs(5))
-            .max_idle_timeout(Some(
-                Duration::from_secs(20).try_into().expect("small timeout"),
-            ))
-            .build();
-        let mut builder = Endpoint::builder(presets::N0)
-            .secret_key(SecretKey::from_bytes(&core.store.endpoint_secret()?))
-            .alpns(vec![GROUP_ALPN.to_vec(), proto::gcall::GCALL_ALPN.to_vec()])
-            .transport_config(transport);
-        if std::env::var_os("P2P_RELAY_ONLY").is_some() {
-            builder = builder.clear_ip_transports();
-        }
-        let ep = builder.bind().await.map_err(Error::net)?;
+        let secret = self.group_ep_state(core)?.secret;
+        let ep = bind_group_endpoint(&secret).await?;
         *slot = Some(ep.clone());
         *core.ep_id.lock() = Some(ep.clone());
         drop(slot);
         self.log(format!("group endpoint {} bound", ep.id()));
+        self.group_serve(core, &ep);
+        Ok(ep)
+    }
+
+    /// Starts the accept loop of a freshly bound group endpoint.
+    pub(super) fn group_serve(self: &Arc<Self>, core: &Arc<GroupCore>, ep: &Endpoint) {
         let (this, c, e) = (self.clone(), core.clone(), ep.clone());
         self.handle
             .spawn(async move { this.group_accept_loop(c, e).await });
-        Ok(ep)
     }
 
     /// Waits (up to 5 s) for the group endpoint to know its home relay, so the addresses we
@@ -254,7 +251,9 @@ impl Inner {
         let relay = relay_of(&ep);
         let mut cache = core.my_addr.lock();
         if let Some(s) = cache.get(gid)
-            && s.open().ok().is_some_and(|a| a.relay == relay)
+            && s.open()
+                .ok()
+                .is_some_and(|a| a.relay == relay && a.endpoint == *ep.id().as_bytes())
         {
             return Some(s.clone());
         }
@@ -274,4 +273,22 @@ impl Inner {
     pub(super) fn group_ev(&self) -> Option<Arc<dyn GroupEvents>> {
         self.group.events.lock().clone()
     }
+}
+
+/// A group endpoint under `secret` (not yet installed in the core).
+pub(super) async fn bind_group_endpoint(secret: &[u8; 32]) -> Result<Endpoint, Error> {
+    let transport = QuicTransportConfig::builder()
+        .keep_alive_interval(Duration::from_secs(5))
+        .max_idle_timeout(Some(
+            Duration::from_secs(20).try_into().expect("small timeout"),
+        ))
+        .build();
+    let mut builder = Endpoint::builder(presets::N0)
+        .secret_key(SecretKey::from_bytes(secret))
+        .alpns(vec![GROUP_ALPN.to_vec(), proto::gcall::GCALL_ALPN.to_vec()])
+        .transport_config(transport);
+    if std::env::var_os("P2P_RELAY_ONLY").is_some() {
+        builder = builder.clear_ip_transports();
+    }
+    builder.bind().await.map_err(Error::net)
 }

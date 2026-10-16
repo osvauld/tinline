@@ -1,6 +1,6 @@
 //! The group-call [`CallDirectory`] over group chat's derived state (GA-I1, G6 §3.2). Read
 //! only: every answer comes from the current `GroupState` (records every device verifies, U10),
-//! the group store's DID-signed host addresses (newest wins, so a U12 rotation is followed) and,
+//! the group store's DID-signed host addresses (newest wins, so a rotation is followed) and,
 //! on a chat host, its member directory (U7).
 //!
 //! - `is_member`: a member, not removed (3 counted flags).

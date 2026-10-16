@@ -75,6 +75,9 @@ pub(crate) fn own_content_core_for_test(
 const HELLO_TIMEOUT: Duration = Duration::from_secs(15);
 /// How long a host waits for a removed member's pre-removal upload (U11).
 const REMOVED_UPLOAD_WAIT: Duration = Duration::from_secs(10);
+/// D12: a removed member may upload its pre-removal posts for this long after this host first
+/// learned of the removal (local clock, `rm_seen`).
+pub const REMOVED_UPLOAD_WINDOW_MS: u64 = 2 * 24 * 3600 * 1000;
 const TICK: Duration = Duration::from_secs(2);
 const MAX_HELLO_DAYS: usize = 64;
 const COMPACT_EVERY: Duration = Duration::from_secs(3600);
@@ -93,15 +96,15 @@ pub(crate) struct GroupRt {
     pub(crate) req_events: Mutex<Option<Arc<dyn super::requests::GroupRequestEvents>>>,
     /// Test knob: a modified app that skips its own chat-request checks.
     pub(crate) skip_request_checks: AtomicBool,
-    /// Delay between a removal / host revocation and the hosts' endpoint rotation, ms (U12:
-    /// 2 days; 0 = that default). Test knob.
-    pub(crate) rotation_delay_ms: AtomicU64,
+    /// Test knob: a rotation policy used instead of the stored one, unchecked (seconds-long
+    /// intervals), in memory only.
+    #[cfg(any(test, feature = "dev-tools"))]
+    pub(crate) rotation_policy_for_test: Mutex<Option<super::rotation::RotationPolicy>>,
+    /// Test knob: the removed-upload window, ms, instead of `REMOVED_UPLOAD_WINDOW_MS`.
+    #[cfg(any(test, feature = "dev-tools"))]
+    pub(crate) removed_upload_window_for_test: Mutex<Option<u64>>,
     /// Group calls over this runtime (GA-I1, `calls.rs`).
     pub(crate) calls: super::calls::GroupCalls,
-    /// How long a host that rotated keeps telling offline members it moved, ms (0 = the rotation
-    /// delay, as in production). Test knob: a shortened rotation delay would otherwise shrink
-    /// this window to seconds, and a member that comes back a little later is never told.
-    pub(crate) moved_window_ms: AtomicU64,
     /// G3: invitation events and the DIDs with an invitation delivery task running.
     pub(crate) inv_events: Mutex<Option<Arc<dyn super::invitations::GroupInvitationEvents>>>,
     pub(crate) inv_delivering: Mutex<HashSet<String>>,
@@ -124,26 +127,11 @@ pub(crate) fn injected(n: &std::sync::atomic::AtomicU32) -> bool {
     n.try_update(Ordering::SeqCst, Ordering::SeqCst, |v| v.checked_sub(1)).is_ok()
 }
 
-/// U12: hosts rotate their group endpoint this long after a removal or a host revocation.
-pub const ROTATION_DELAY_MS: u64 = 2 * 24 * 3600 * 1000;
 /// G6 §5 / Q12: a due rotation waits for a running group call, at most this long.
 pub const CALL_ROTATION_DEFER_MS: u64 = 3600 * 1000;
-
-impl GroupRt {
-    pub(crate) fn rotation_delay(&self) -> u64 {
-        match self.rotation_delay_ms.load(Ordering::SeqCst) {
-            0 => ROTATION_DELAY_MS,
-            v => v,
-        }
-    }
-
-    pub(crate) fn moved_window(&self) -> u64 {
-        match self.moved_window_ms.load(Ordering::SeqCst) {
-            0 => self.rotation_delay(),
-            v => v,
-        }
-    }
-}
+/// After a restart inside a rotation's announce window, members that were online have this
+/// long to come back on their own before the `Moved` campaign resumes dialing them.
+const RESUME_ANNOUNCE_WAIT: Duration = Duration::from_secs(10);
 
 /// One group in memory: the meta doc, what it means, our local state and the day docs held.
 pub(crate) struct Live {
@@ -205,8 +193,10 @@ pub(crate) struct GroupCore {
     kick: Notify,
     closed: AtomicBool,
     loops: AtomicBool,
-    /// Groups whose members we are still telling about our new endpoint (U12).
-    moving: Mutex<HashSet<String>>,
+    /// A rotation is running (the dial loop's tick or `group_rotate_now`): one at a time.
+    rotating: AtomicBool,
+    /// The endpoint whose `Moved` campaign is running (until the persisted `ep/announce`).
+    announcing: Mutex<Option<iroh::PublicKey>>,
     /// When day docs were last compacted (hourly, and once after open).
     compacted: Mutex<Option<Instant>>,
     /// G3: invite codes (waiters for host answers, the wrong-code limiter).

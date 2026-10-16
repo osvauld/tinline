@@ -282,3 +282,25 @@ fn accepting_an_invitation_rides_out_failed_dials() {
     assert_eq!(r.state, GroupInvitationState::Joined);
     assert!(t.elapsed() < Duration::from_secs(45), "joined well inside the deadline: {:?}", t.elapsed());
 }
+
+// KIND: acceptance (D11; was `rotation_acceptance.rs`) — rotation is periodic and never implicit:
+// a restart keeps the private endpoint (the device key), the DID and the writer ID, and the
+// contact keeps reaching us. Private-endpoint rotation is the next packet (`docs/rotation.md`).
+#[test]
+fn endpoint_is_stable_without_a_due_rotation() {
+    let (mut a, b) = support::Peer::pair("r1a-rot", "stable");
+    let (dev, wid) = (a.node.device_key_for_test().unwrap(), a.node.writer_id_for_test());
+    assert_eq!(b.node.contact_devices_for_test(a.did.clone()), vec![dev.clone()]);
+    a.reopen();
+    // As in writer_id.rs: `chat_open` does not retry while the old tasks still hold chat.redb.
+    std::thread::sleep(Duration::from_secs(2));
+    a.node.unlock(a.pass.clone()).unwrap();
+    online(&a.node);
+    assert_eq!(a.node.device_key_for_test().unwrap(), dev);
+    assert_eq!(a.node.profile().unwrap().did, a.did);
+    eventually_200ms(20, "chat store open", || a.node.writer_id_for_test().is_some());
+    assert_eq!(a.node.writer_id_for_test(), wid);
+    let m = b.node.send_text(a.did.clone(), "after restart".into(), None).unwrap().id;
+    eventually_200ms(60, "it arrives", || holds(&a, &b.did, &m));
+    eventually_200ms(30, "it is delivered", || delivered(&b, &a.did, &m));
+}

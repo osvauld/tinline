@@ -24,17 +24,6 @@ impl Node {
         }
     }
 
-    /// The U12 rotation delay in seconds (default 2 days).
-    pub fn group_set_rotation_delay_for_test(&self, secs: u64) {
-        self.inner.group.rotation_delay_ms.store(secs.max(1) * 1000, std::sync::atomic::Ordering::SeqCst);
-    }
-
-    /// How long a rotated host keeps telling offline members it moved, in seconds (default: the
-    /// rotation delay).
-    pub fn group_set_moved_window_for_test(&self, secs: u64) {
-        self.inner.group.moved_window_ms.store(secs.max(1) * 1000, std::sync::atomic::Ordering::SeqCst);
-    }
-
     /// The next `n` invite fetches (one network attempt each) fail as if the connection was lost.
     pub fn group_fail_next_fetches_for_test(&self, n: u32) {
         self.inner.group.fail_fetches.store(n, std::sync::atomic::Ordering::SeqCst);
@@ -106,5 +95,24 @@ impl Node {
     /// Behave like a modified app that ignores its own removal (keeps posting and dialing).
     pub fn group_ignore_removal_for_test(&self, ignore: bool) {
         self.inner.group.ignore_removal.store(ignore, std::sync::atomic::Ordering::SeqCst);
+    }
+}
+
+/// Test hooks that release builds do not have (Rust only: not exported through uniffi).
+#[cfg(any(test, feature = "dev-tools"))]
+impl Node {
+    /// Uses `policy` (unchecked: seconds-long intervals) instead of the stored rotation policy,
+    /// in memory only; `None` goes back to the stored one. Not in release builds.
+    pub fn group_set_rotation_policy_for_test(&self, policy: Option<crate::group::rotation::RotationPolicy>) {
+        *self.inner.group.rotation_policy_for_test.lock() = policy;
+        if let Ok(c) = self.inner.group_core() {
+            c.kick_pub();
+        }
+    }
+
+    /// The window a removed member's pre-removal upload is accepted in, ms, instead of
+    /// `REMOVED_UPLOAD_WINDOW_MS` (2 days); `None` goes back to it. Not in release builds.
+    pub fn group_set_removed_upload_window_for_test(&self, ms: Option<u64>) {
+        *self.inner.group.removed_upload_window_for_test.lock() = ms;
     }
 }

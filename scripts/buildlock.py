@@ -18,11 +18,16 @@ Three kinds of slot:
 Admission waits on CPU and memory pressure (/proc/pressure), not load average: the load average
 counts the emulator and threads blocked on disk and stays high while the cores sit idle.
 Compiling still takes the same lock file as older copies of this script, so they interoperate.
+
+Build output lives on the cache disk (~/build-cache): each checkout's target/ is a symlink to its
+own dir there, and with sccache installed every cargo/gradle build through this script shares
+compiled crates via ~/build-cache/sccache (`sccache --show-stats` to check hits).
 """
 import argparse
 import fcntl
 import json
 import os
+import shutil
 import subprocess
 import sys
 import time
@@ -163,6 +168,22 @@ def place_target():
     print(f"buildlock: target/ -> {real}", file=sys.stderr, flush=True)
 
 
+# Compiled crates are shared between worktrees through sccache, its cache on the same disk: a fresh
+# worktree otherwise rebuilds all ~600 dependencies (15+ min in release). One target/ for everyone
+# would be faster still, but agents on different branches would overwrite each other's binaries.
+SCCACHE_DIR = CACHE / "sccache"
+SCCACHE_SIZE = "30G"
+
+
+def share_compiles(env):
+    """Points cargo at sccache when it is installed and the cache disk is mounted; else nothing."""
+    if env.get("RUSTC_WRAPPER") or not shutil.which("sccache") or not os.path.ismount(CACHE):
+        return
+    env["RUSTC_WRAPPER"] = "sccache"
+    env.setdefault("SCCACHE_DIR", str(SCCACHE_DIR))
+    env.setdefault("SCCACHE_CACHE_SIZE", SCCACHE_SIZE)
+
+
 def compile_step(cmd):
     """For a plain `cargo test ...`, the same command with --no-run and without the test args."""
     if len(cmd) < 2 or Path(cmd[0]).name != "cargo":
@@ -212,6 +233,7 @@ def main():
     # Leave two cores for the emulator, running tests and the desktop.
     env.setdefault("CARGO_BUILD_JOBS", str(max(1, os.cpu_count() - 2)))
     place_target()
+    share_compiles(env)
 
     if not (a.run or a.device):
         pre = compile_step(cmd)

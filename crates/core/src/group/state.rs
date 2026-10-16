@@ -128,9 +128,6 @@ pub struct GroupState {
     pub items: Vec<Item>,
     /// What `post_visible` needs: per-DID join/leave and flag positions.
     pub pos: Positions,
-    /// When something happened that makes hosts rotate their group endpoint (U12): each
-    /// removal (its 3rd counted flag's `at`) and each counted host revocation (`at`). Unix ms.
-    pub rotation_triggers: Vec<i64>,
 }
 
 /// Per-DID positions in the meta doc, so a post is judged against its `seen` in

@@ -6,7 +6,7 @@ Scope: the durability boundary of a group replica (host or member) that ingests 
 envelopes, what a crash or step failure leaves behind, what a `StoredAck` means, and how restart,
 corruption, eviction, pending queues and export behave. Cases are from
 `docs/group-chat-tests.md:97-110` (§4). The vocabulary matches C2
-(`docs/design/rotation-storage-failure-contract.md` §4, lines 110-114).
+(`docs/archive/rotation/rotation-storage-failure-contract.md` §4, lines 110-114).
 
 Executable model: `design-models:crates/group-sim/src/persistence.rs` (15 tests), wired in through one
 `#[path]`+`mod` pair in `design-models:crates/group-sim/src/tests.rs`. It reuses the existing fixtures

@@ -16,12 +16,17 @@
 //! ack/{gid}/{did}/{dev}         bytes      the meta version vector that host acknowledged holding
 //! ackd/{gid}/{day}/{did}/{dev}  bytes      the same for one day doc (delivery state of our posts)
 //! ep/secret                     32 bytes   this account's group endpoint key on this install
-//! ep/made                       u64 BE     when that key was made (unix ms; rotation, U12)
+//! ep/made                       u64 BE     when that key became current (unix ms; rotation)
+//! ep/announce                   u64 BE     until when a rotated host tells members it moved
+//! ep/jitter                     u64 BE     the rotation jitter drawn for this key, ms
+//! ep/pending                    32 bytes   a staged next key, not current yet (endpoint.rs)
+//! ep/policy                     json       this device's RotationPolicy (default if absent)
 //! dev/id                        32 bytes   this store's device ID (U16 device value, G2 stage 1)
 //! req/{id}                      ReqRow     a 1:1 chat request we sent or got (U3)
 //! out/{gid}/{mail id}           bytes      sealed mail of ours not yet taken by a host
 //! mail/{gid}/{to}/{mail id}     bytes      host side: (expiry ms, sealed mail) to deliver
 //! seen/{mail id}                u64        mail we already handled (recipient side)
+//! rm_seen/{gid}/{did}           u64 BE     when we first derived that member's removal (local ms)
 //! clog/{gid}/{call id}          GroupCallRecord  the group call log (calllog.rs), local to this device
 //! receipts/group/{gid}/{day}/…  member receipt ledgers (`crate::receipts::store`, never removed)
 //! receipt-runtime/messages/v1/… receipt issuance intents and outbox (`receipts::store::messages`)
@@ -33,7 +38,10 @@ use storage::{Op, Sealed, StorageError, Store};
 use super::record::SignedHostAddr;
 use crate::Error;
 
+mod endpoint;
 mod receipts;
+mod removal;
+pub(crate) use endpoint::EpState;
 pub(crate) use receipts::StoredAttestation;
 
 const STORE_DOMAIN: &str = "tinline/group-store/v2";
@@ -399,18 +407,9 @@ impl GroupStore {
                 Op::DeletePrefix(format!("out/{gid}/")),
                 Op::DeletePrefix(format!("mail/{gid}/")),
                 Op::DeletePrefix(format!("clog/{gid}/")),
+                Op::DeletePrefix(format!("rm_seen/{gid}/")),
             ])
             .map_err(io)
-    }
-
-    /// This account's group endpoint key on this install (made once).
-    pub fn endpoint_secret(&self) -> Result<[u8; 32], Error> {
-        if let Some(b) = self.db.get("ep/secret").map_err(io)?
-            && let Ok(k) = <[u8; 32]>::try_from(b.as_slice())
-        {
-            return Ok(k);
-        }
-        self.rotate_endpoint_secret(crate::node::now_ms())
     }
 
     /// This store's device ID: the group writer ID is `writer_id(DID, this)` (U16). A store
@@ -426,18 +425,6 @@ impl GroupStore {
         }
         let k = adopt.unwrap_or_else(crate::chat::doc::new_device_value);
         self.db.put("dev/id", &k).map_err(io)?;
-        Ok(k)
-    }
-
-    /// When the endpoint key was made (unix ms; 0 = unknown, before rotation existed).
-    pub fn endpoint_made(&self) -> u64 {
-        self.db.get("ep/made").ok().flatten().and_then(|b| <[u8; 8]>::try_from(b.as_slice()).ok()).map(u64::from_be_bytes).unwrap_or(0)
-    }
-
-    /// Replaces the endpoint key (U12 rotation); returns the new one.
-    pub fn rotate_endpoint_secret(&self, made_ms: u64) -> Result<[u8; 32], Error> {
-        let k = proto::new_device_secret();
-        self.db.apply(&[self.db.put_op("ep/secret", &k).map_err(io)?, self.db.put_op("ep/made", &made_ms.to_be_bytes()).map_err(io)?]).map_err(io)?;
         Ok(k)
     }
 
