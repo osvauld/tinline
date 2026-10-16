@@ -222,6 +222,9 @@ fn video_both_ways() {
         let s = p.node.video_stats().unwrap();
         assert_eq!(s.decode_errors, 0, "{s:?}");
         assert!(s.frames_sent >= 60 && s.keyframes_sent >= 1, "{s:?}");
+        // Two desktops: AV1 both ways (quality per bit), all in software.
+        assert_eq!((s.send_codec.as_str(), s.recv_codec.as_str()), ("av1", "av1"), "{s:?}");
+        assert!(!s.send_hardware && !s.recv_hardware, "{s:?}");
         println!("{s:?}");
     }
     for c in cams {

@@ -195,13 +195,40 @@ fn peer_cap_limits_the_ladder() {
 
 #[test]
 fn offer_has_av1_and_vp8_only_where_built_in() {
-    let (decode, encode) = codecs::local_offer_codecs();
-    assert_eq!(decode[0], VideoCodec::Av1);
-    assert_eq!(decode.contains(&VideoCodec::Vp8), cfg!(feature = "vp8"));
-    // Hosts have no hardware VP8 encoder: they always send AV1.
-    assert_eq!(encode, vec![VideoCodec::Av1]);
-    assert!(codecs::new_encoder(VideoCodec::Vp8, &EncoderConfig::default()).is_err());
+    let c = codecs::local_offer_codecs();
+    assert_eq!(c.decode[0], VideoCodec::Av1);
+    assert_eq!(c.decode.contains(&VideoCodec::Vp8), cfg!(feature = "vp8"));
+    // Hosts encode VP8 in software (libvpx) when built with it, after AV1: only a receiver
+    // with a hardware VP8 decoder makes `send_codec` pick it. Nothing on a host is hardware.
+    let want = if cfg!(feature = "vp8") { vec![VideoCodec::Av1, VideoCodec::Vp8] } else { vec![VideoCodec::Av1] };
+    assert_eq!(c.encode, want);
+    assert!(c.hw_decode.is_empty() && c.hw_encode.is_empty());
+    assert_eq!(codecs::new_encoder(VideoCodec::Vp8, &EncoderConfig::default()).is_ok(), cfg!(feature = "vp8"));
     assert_eq!(codecs::new_decoder(VideoCodec::Vp8, MAX_PIXELS).is_ok(), cfg!(feature = "vp8"));
+}
+
+/// The desktop's VP8 send path end to end without a network: `codecs::new_encoder(Vp8)` output
+/// goes through the receive loop's VP8 decoder (design doc acceptance test 3).
+#[cfg(feature = "vp8")]
+#[test]
+fn desktop_vp8_encoder_feeds_the_vp8_receive_path() {
+    let (w, h) = (320, 240);
+    let cfg = EncoderConfig { width: w, height: h, keyint: 300, ..Default::default() };
+    let mut enc = codecs::new_encoder(VideoCodec::Vp8, &cfg).unwrap();
+    let mut cam = video::Pattern::new(w, h);
+    let pipe = Arc::new(Pipe::default());
+    let (tx, rx) = mpsc::channel(32);
+    for i in 0..20u32 {
+        let pkts = enc.encode(&cam.next_frame(), false).unwrap();
+        assert_eq!(pkts.len(), 1);
+        assert_eq!(pkts[0].key, i == 0);
+        tx.try_send(Frame { group: 0, index: i, capture_us: 0, payload: pkts[0].data.clone() }).unwrap();
+    }
+    drop(tx);
+    decode_loop(pipe.clone(), rx, VideoCodec::Vp8);
+    let st = pipe.stats.lock().clone();
+    assert_eq!((st.frames_decoded, st.decode_errors), (20, 0));
+    assert_eq!((st.recv_width, st.recv_height), (w as u32, h as u32));
 }
 
 /// The receive path with the negotiated codec VP8: frames from the video crate's libvpx fixture

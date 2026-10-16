@@ -113,6 +113,10 @@ pub struct VideoStats {
     /// Codec of each direction for this call ("av1" or "vp8"), empty before video is decided.
     pub send_codec: String,
     pub recv_codec: String,
+    /// Whether the encoder we send with / the decoder we receive with is a hardware codec
+    /// (MediaCodec hardware; libaom, rav1d and libvpx are software). False before video is decided.
+    pub send_hardware: bool,
+    pub recv_hardware: bool,
     /// Frames per second sent and decoded, measured over the last second.
     pub send_fps: u32,
     pub recv_fps: u32,
@@ -267,8 +271,15 @@ impl Inner {
     /// Our offer, when video is enabled on this node.
     pub(crate) fn video_offer(&self) -> Option<VideoOffer> {
         self.video.enabled.load(Ordering::SeqCst).then(|| {
-            let (decode, encode) = codecs::local_offer_codecs();
-            VideoOffer { max_pixels: MAX_PIXELS, max_fps: FPS as u8, decode, encode }
+            let c = codecs::local_offer_codecs();
+            VideoOffer {
+                max_pixels: MAX_PIXELS,
+                max_fps: FPS as u8,
+                decode: c.decode,
+                encode: c.encode,
+                hw_decode: c.hw_decode,
+                hw_encode: c.hw_encode,
+            }
         })
     }
 
@@ -306,6 +317,8 @@ impl Inner {
                 let mut st = v.pipe.stats.lock();
                 st.send_codec = tx.as_str().into();
                 st.recv_codec = rx.as_str().into();
+                st.send_hardware = ours.hw_encode.contains(&tx);
+                st.recv_hardware = ours.hw_decode.contains(&rx);
             }
             tracing::info!("video codecs: send {} recv {}", tx.as_str(), rx.as_str());
             v.peer_max_pixels.store(peer.max_pixels, Ordering::SeqCst);

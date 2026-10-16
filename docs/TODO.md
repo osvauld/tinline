@@ -60,11 +60,12 @@ Tested on devices: Pixel 3a -> laptop HD with no flicker; phone-started video ca
 - [ ] **Decide: does HD ignore the window size?** The desktop asks the phone for its drawn size, so
       a portrait picture in a normal window gets 540x960 even on a perfect LAN. Options: keep (sends
       what is shown), or with HD on, cap one rung higher / not at all.
-- [ ] **Desktop encodes VP8 (libvpx, software)** when the peer decodes VP8 in hardware and AV1 only
-      in software. The Pixel 3a decodes the laptop's AV1 in software and caps it at 15 fps.
-      `build_libvpx.py` builds decoder-only today; offer `encode: [vp8]` from the desktop.
+- [x] **Desktop encodes VP8 (libvpx, software)** when the peer decodes VP8 in hardware (2026-10-16,
+      branch feature/desktop-vp8-encode): `vpx::Vp8Encoder`, offer `hw_decode`/`hw_encode`, scoring
+      `send_codec`. Pixel 3a <-> laptop on a device is still to be checked (design test 4).
 - [ ] **Show the codec and hardware acceleration** in the call: "VP8 · hardware" / "AV1 · software",
-      both directions (`VideoStats.send_codec`/`recv_codec` exist; add whether each is MediaCodec).
+      both directions. Core fields exist (`VideoStats.send_codec`/`recv_codec` and
+      `send_hardware`/`recv_hardware`); the UI in both apps is still to do.
 - [ ] **Video stats in the signal-strength dialog** (both apps): send/receive size, fps, bitrate,
       codec + hardware, path (direct/relay), queueing delay, the cap and its reason.
 - [ ] **Old HD-chip wording blames the connection.** The desktop "sharper video paused ... their

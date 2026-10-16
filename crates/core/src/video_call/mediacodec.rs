@@ -684,6 +684,18 @@ pub(crate) fn hardware_vp8_encoder() -> bool {
     hardware_encoder_name().is_some()
 }
 
+/// True iff the VP8 decoder `MediaCodecVp8Decoder` gets by default (the framework's pick for the
+/// type) is a hardware one (cached once per process). A phone with only the software decoder
+/// still decodes VP8, so it offers `decode: vp8` but not `hw_decode`.
+pub(crate) fn hardware_vp8_decoder() -> bool {
+    static HW: OnceLock<bool> = OnceLock::new();
+    *HW.get_or_init(|| {
+        let name = Codec::decoder_by_type(MIME).map(|c| c.name.clone());
+        tracing::info!("default vp8 decoder: {:?}", name);
+        name.is_some_and(|n| is_hardware_name(&n))
+    })
+}
+
 // ---- encoder ----
 
 /// The hardware VP8 encoder (see the module docs). Errors from `new` mean "use AV1".
