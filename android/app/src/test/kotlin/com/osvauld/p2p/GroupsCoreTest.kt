@@ -55,7 +55,9 @@ class GroupsCoreTest {
             val start = maxOf(0, end - limit)
             return GroupPage(all.subList(start, end).toList(), if (start > 0) all[start].id else null)
         }
-        override fun markRead(id: String) { marked += id }
+        /** Holds markRead (the slow, receipt-signing core call) until opened. */
+        var markGate: java.util.concurrent.CountDownLatch? = null
+        override fun markRead(id: String) { markGate?.await(); synchronized(marked) { marked += id } }
         override fun create(name: String) = "new"
         override fun invite(id: String) = "tinline://g/$id"
         override fun peek(token: String) = if (token.startsWith("tinline://g/")) GroupInvitePeek("g", "Hike", "did:key:sam", "did:key:sam", 1uL, 1u) else null
@@ -320,5 +322,31 @@ class GroupsCoreTest {
         val ask = GroupHost(me, "Me", "aa", "did:key:sam", true, true)
         assertEquals("sam", GroupText.hostAsker(detail(CoreRole.MEMBER, ms, hostRequests = listOf(ask))))
         assertNull(GroupText.hostAsker(detail(CoreRole.REMOVED, ms, hostRequests = listOf(ask))))
+    }
+
+    /**
+     * The main thread closes the chat (onDispose) while open() is still inside markRead holding the
+     * controller's monitor: close must not wait for it (it froze the phone ~0.75 s per group open), and the
+     * page that finishes afterwards must not come back for a screen that is gone. Nor is a closed group
+     * marked read by a message arriving later.
+     */
+    @Test fun closingNeverWaitsForAnOpenInFlight() {
+        val api = FakeApi()
+        api.details["g"] = detail(CoreRole.MEMBER, listOf(member("did:key:sam", owner = true), member(me)))
+        api.msgs["g"] = mutableListOf(msg("1", 10))
+        val gate = java.util.concurrent.CountDownLatch(1)
+        api.markGate = gate
+        val ctl = GroupsController(api) { me }
+        val opening = Thread { ctl.open("g") }.apply { start() }
+        while (opening.state != Thread.State.WAITING) Thread.sleep(1)
+        val t0 = System.nanoTime()
+        ctl.close("g")
+        assertTrue("close waited for open", System.nanoTime() - t0 < 200_000_000L)
+        gate.countDown()
+        opening.join(5_000)
+        assertNull(ctl.open.value)
+        api.markGate = null
+        ctl.onGroupMessage(msg("2", 20))
+        assertEquals(listOf("g"), synchronized(api.marked) { api.marked.toList() })
     }
 }

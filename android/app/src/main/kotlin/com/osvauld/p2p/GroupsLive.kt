@@ -73,7 +73,8 @@ import uniffi.p2pcore.GroupRole as CoreRole
 
 /** A DID as the user knows it: their contact name, else what the group calls them. */
 private fun nameOf(app: P2pApp, did: String, fallback: String): String {
-    if (did == app.currentDid()) return "You"
+    // Per row while composing: the cached DID, never a core call on the main thread.
+    if (did == app.groups.myDid) return "You"
     app.contacts.value.firstOrNull { it.did == did }?.let { return it.display() }
     return fallback.ifBlank { "Someone" }
 }
