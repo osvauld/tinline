@@ -284,7 +284,11 @@ impl App {
                 };
                 self.call = Some(CallView { info: info(true), state: CallState::Active, answered: true, stats: Some(stats(true, 252, 38, false)) });
                 self.video.info = Some(p2pcore::VideoInfo { call_id: info(true).call_id, negotiated: true, local_camera: true, remote_camera: true });
-                self.video.remote = Some(pic(640, 360, 0));
+                // A flat I420 picture: luma ramps left to right, chroma off-centre.
+                let (w, h) = (640usize, 360usize);
+                let mut d: Vec<u8> = (0..w * h).map(|i| 40 + (i % w * 150 / w) as u8).collect();
+                d.resize(w * h + w * h / 2, 150);
+                self.video.remote = crate::video_surface::Picture::new(w as u32, h as u32, d).map(Arc::new);
                 self.video.local = Some(pic(320, 180, 30));
                 self.settings.prefer_hd = name != "incall-video";
                 self.video.send_size = Some(if name == "incall-video-hd-paused" { (960, 540) } else if self.settings.prefer_hd { (1280, 720) } else { (640, 480) });

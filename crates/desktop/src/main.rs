@@ -54,6 +54,7 @@ mod raise;
 mod media;
 mod camera;
 mod frames;
+mod video_surface;
 mod reason;
 mod single;
 mod tray;

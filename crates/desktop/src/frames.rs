@@ -1,7 +1,8 @@
 //! Video frames in and out of the core: camera buffers -> I420 for `push_video_frame`, decoded
-//! I420 -> RGBA for iced images, and the mirrored self-view. Everything per-frame lives here, so
+//! I420 for the video surface, and the mirrored self-view. Everything per-frame lives here, so
 //! switching to the core's RGBA/YUYV entry points is one module.
 
+use crate::video_surface::Picture;
 use p2pcore::Node;
 use video::convert::{self, Range, Yuv420};
 use video::I420;
@@ -106,15 +107,10 @@ pub fn push(node: &Node, pic: I420) -> bool {
     node.push_video_frame(pic.width as u32, pic.height as u32, 0, pic.data)
 }
 
-/// The peer's newest decoded frame as RGBA, if there is a new one.
-pub fn pull(node: &Node) -> Option<Rgba> {
+/// The peer's newest decoded frame, if there is a new one. Left as I420: the GPU converts it (`video_surface`).
+pub fn pull(node: &Node) -> Option<Picture> {
     let f = node.pull_video_frame()?;
-    let pic = I420 {
-        width: f.width as usize,
-        height: f.height as usize,
-        data: f.data.into_inner(),
-    };
-    (pic.data.len() == I420::len(pic.width, pic.height)).then(|| rgba(&pic))
+    Picture::new(f.width, f.height, f.data.into_inner())
 }
 
 #[cfg(test)]
