@@ -65,7 +65,7 @@ mark (clock / check = signed Delivered / double check = signed Read) and the mes
 menu shows signer and device; see [status display](message-receipt-ui-handoff.md).
 Desktop demonstrated with real nodes (p2p-desktop vs p2p-peer, screenshots outside Git);
 Android built (`scripts/build_android.py --abis x86_64 --debug-rust`) and its 133 unit tests
-pass, but no emulator/phone run yet. Groups: not built.
+pass, but no emulator/phone run yet. Groups: core step 1 only (see below), no display.
 
 This is a cross-M3/M4 product gate. Do not label signed delivery/read support
 shipped, or its UI complete, until the real receipt-backed app path is demonstrated.
@@ -181,8 +181,8 @@ intents in the transaction that accepts contact batches/history snapshots, and e
 intents in the `mark_read` cursor transaction; `MessageReceipts::pump` signs/commits them
 with intent completion atomically; `chat_message_receipts` / `chat_day_receipts`
 (additive UniFFI) project committed evidence per exact version (`dm_version`). Own-device
-cursor moves and legacy ticks issue/project nothing. Group message receipts: **not
-started** (needs a group-store transaction seam and member admission). App displays: **not
+cursor moves and legacy ticks issue/project nothing. Group message receipts: **step 1
+in progress** (core + in-process simulation only, see "Group message receipts" below). App displays: **not
 built**; [UI handoff](message-receipt-ui-handoff.md) because the UI files are owned by
 active lanes. Validation (queued, `CARGO_BUILD_JOBS=2`, `--who receipt-runtime-m3`):
 
@@ -296,6 +296,84 @@ operational packaging checks. Physical-device checks need explicit authorization
 Gate: selected finalization/retention/replica policy and audit/recovery/rollover
 acceptance tests. No root-only erasure or receipt deletion is currently authorized.
 
+## Group message receipts (step 1, branch `feature/group-receipts`, 2026-10-16)
+
+Status: **core code written; tests written but NOT yet run** (the shared build disk hit
+ENOSPC while compiling the test binary; see below). No wire frame, no app UI, no device run.
+Nothing here is production integration: the multi-node cases are in-process simulations.
+
+What exists (all in `crates/core`):
+
+- **Format.** The shared signed `receipts::Receipt` (DID-signed, `Delivered`/`Read`), one
+  ledger per `(Group(gid), UTC day of the post's day doc)`, covering exact
+  `group_version(stored SignedRecord bytes)` digests. `metadata` = the issuer's meta-doc
+  frontier when it accepted the post (delivered) or moved its read cursor (read), signed.
+  One statement per member device per kind per pump (<=256 posts each); batching is the TODO.
+- **Store seam.** `GroupStore::{append_shard_with, append_meta_with, put_meta_with}` add
+  caller ops to the existing transactions. Ledgers and intents live in `group.redb`
+  (`receipts/group/{gid}/{day}/…`, `receipt-runtime/messages/v1/…`); `GroupCore.receipts` is
+  the one `MessageReceipts` controller of that store. Group intents use intent format 2
+  (adds the frontier); DM intents keep format 1.
+- **Issuance.** `apply_day` records a delivered intent for fresh visible posts of others in
+  the transaction that stores them (not for batches our own device forwarded: that device
+  issues); `apply_meta` does the same for pending posts a meta update made visible;
+  `GroupCore::mark_read` (behind `group_mark_read`) moves a now **monotonic** cursor and records
+  read intents for (old, new] in the same transaction (newest 4096). The pump runs in
+  `group_after`, after `group_mark_read` and at core open.
+- **Admission on ingest** (`group::member_receipts::check`, every device the same verdict in
+  every delivery order): issuer DID admitted (member, not removed/left) as of the receipt's
+  signed frontier; every covered post held, visible, not the issuer's own, its frontier inside
+  the receipt frontier, and the issuer a member as of the post's frontier (late joiners cannot
+  confirm earlier posts). Missing meta records/posts give a `pending: ` refusal (nothing
+  stored; the next catch-up retries). Accepted statements are never re-judged or removed.
+- **Aggregate** (`GroupCore::member_receipt_status` / `member_day_receipts` ->
+  `GroupReceiptStatus { tick, eligible, delivered, read, members[{receipts, eligible}] }`):
+  tick `Waiting` (one tick) -> `Delivered` when every eligible member has delivered or read ->
+  `Read` when every eligible member read; `None` for posts of others. Nobody eligible stays
+  `Waiting`. Per-member rows reuse `RecipientReceipts`/`ReceiptProof`. Rust-only DTO for now
+  (UniFFI binding to be agreed with the UI lanes).
+- **Eligibility (decision taken here, 2026-10-16; user may revise):** members who were
+  members as of the post's signed frontier, excluding the author, AND are still members now.
+  A member removed or gone after the post stops blocking the mark; its statements are kept and
+  listed with `eligible = false`. A late joiner never counts for earlier posts.
+- **Clock for "signed while admitted":** the receipt's signed meta-doc frontier (causal, U11
+  style), never a wall clock. Proves: the signer claims it had seen exactly those records; a
+  statement whose frontier includes the signer's removal/leave is refused; a statement can
+  never cover a post whose author had seen the removal (post frontier must be inside the
+  receipt frontier). Does NOT prove: that a removed member did not withhold meta updates to
+  keep signing with a stale frontier for posts concurrent with its removal (same limit as
+  posts). Device level: group core admits per DID (no group device revocation exists), so
+  "device admitted" = "its DID admitted"; a hostile linked device holding the account key is
+  not distinguishable (shared-mnemonic limit).
+
+Wire (NOT done; needs the user's OK, it is a protocol change): mirror chat/6 on
+`tinline/group/3` behind a Hello capability doc (e.g. `cap/member-receipts/v1`, as
+`cap/group-receipts/v1` does for host proofs) so old peers never see the new frames:
+`ReceiptHello { days: [(day, vv)] }`, `Receipts { day, update }` (bounded native ledger ops
+from `member_receipts_export`), `ReceiptAck { day, vv }`; members <-> hosts, hosts relay the
+original ops byte-for-byte (any relay works: the verdict depends only on the statements and
+records). Without the capability nothing is sent; no protocol version bump is proposed.
+
+Tests (written, **not yet run**: ENOSPC on `/home/abe/build-cache` while compiling):
+`group::member_receipts::tests` (3 pure cases) and
+`group::engine::durability::group_receipts_sim` (10 cases over real in-process GroupCores:
+waiting -> delivered -> read; partial; duplicate frames/posts/relays; reordered and lost
+frames then catch-up; forged/unsigned/wrong-group/foreign-writer/non-member/own-post
+refused; late joiner; removed member's late pre-removal statement accepted and post-removal
+or stale-frontier ones refused, leave/removal not blocking; pending posts and unknown
+frontiers; one device per account; reopen of intents/ledgers/kept statements; size table).
+
+```sh
+CARGO_BUILD_JOBS=2 python3 scripts/buildlock.py --who group-receipts -- \
+  cargo test --offline --locked -p p2pcore --lib -- group::member_receipts:: \
+  group::engine::durability::group_receipts_sim:: --test-threads=1 --nocapture
+```
+Then the existing owned regression (`receipts:: chat:: version:: group::` filters above) must
+be re-run: the store seam and `apply_day`/`apply_meta` transactions changed.
+
+Not done: wire frames and scheduling, post-commit app events for new statements, UniFFI
+binding, app ticks/details, own-device replication of ledgers, batching, shards.
+
 ## Product decisions (user, 2026-10-15)
 
 - **Delivery:** a receipt from any one admitted device of the recipient account
@@ -314,17 +392,29 @@ acceptance tests. No root-only erasure or receipt deletion is currently authoriz
   per member is acceptable ("messy is fine"). Optimize later — see TODO below.
 - **Order of work:** every group-receipt step is built with deterministic tests and
   simulations first, then validated on real nodes/apps.
+- **Delayed evidence (2026-10-16):** a late receipt from a removed device/member is accepted
+  if it was signed while admitted; for groups "while admitted" is judged against the
+  receipt's signed meta frontier (see "Group message receipts"). Late joiners do not send
+  receipts for posts from before they joined; no group-size cap for now.
 
 ## TODO (deferred by user)
 
 - Group receipts: batch delivered/read confirmations (one signature per member per
   sync or range instead of per message), then shard-level confirmations (M7).
   Measure receipt traffic/storage in the simulation before choosing the batching.
+  Measurement: `receipt_count_and_bytes_per_post_by_group_size` (3/10/50 members, one post,
+  everyone delivers and reads) prints statements and signed/frame bytes per post. Model:
+  2*(N-1) statements per post per N-member group (plus duplicates from extra devices).
+  **Numbers pending** (test not yet run, ENOSPC). The `Receipt.messages` list already allows
+  one statement to cover up to 256 posts, so a range/batch receipt needs no format change.
 
 ## Decisions still open
 
-- Delayed evidence: whether a receipt signed by a since-removed device that only
-  arrives after its removal is accepted (needs a signed-while-admitted rule).
+- ~~Delayed evidence~~: decided 2026-10-16 (accepted if signed while admitted; group rule
+  in "Group message receipts"). Still open: per-device revocation for groups (none exists).
+- Group eligibility for members removed after a post (implemented choice: they stop
+  blocking; their statements stay listed) and the "nobody eligible" mark (stays one tick).
+- Whether read receipts can be turned off (not asked yet).
 - How many durable replicas are required; shard finalization/revision authority.
 - Scoped freshness thresholds and upstream-outage/bypass behavior.
 
