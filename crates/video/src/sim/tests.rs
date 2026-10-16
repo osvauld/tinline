@@ -34,10 +34,13 @@ fn go(name: &str, sc: &Scenario) -> Report {
 
 /// With `SIM_TRACE=1`: every 100 ms of `[from, to)`, the encoder bitrate, bottleneck queue,
 /// last report and the latency of frames shown.
+/// `SIM_FROM=<s> SIM_TO=<s>` replace the window.
 fn trace(r: &Report, from: u64, to: u64) {
     if std::env::var_os("SIM_TRACE").is_none() {
         return;
     }
+    let secs = |k: &str| std::env::var(k).ok().and_then(|v| v.parse::<f64>().ok()).map(|s| (s * 1e6) as u64);
+    let (from, to) = (secs("SIM_FROM").unwrap_or(from), secs("SIM_TO").unwrap_or(to));
     if std::env::var("SIM_TRACE").is_ok_and(|v| v == "reports") {
         for (at, rp) in r.reports.iter().filter(|x| x.0 >= from && x.0 < to) {
             let br = r.bitrate.iter().rev().find(|x| x.0 <= *at).map_or(0, |x| x.1);
@@ -540,4 +543,107 @@ fn debug_latency_by_second() {
         let l = r.latencies_ms(s * S, (s + 1) * S);
         println!("{s:3}s n {:3} p50 {:5.0} p95 {:5.0}", l.len(), Report::pct(&l, 0.5), Report::pct(&l, 0.95));
     }
+}
+
+// --- Home Wi-Fi: short delay spikes on a fast link (docs/video.md, "Wi-Fi delay spikes") ---
+
+/// Pixel 3a <-> laptop on one 2.4 GHz router (real call, 2026-10-16): RTT 7-15 ms, about 0 loss,
+/// plenty of capacity, and now and then a second with the RTT at 40-130 ms. Each spike here is
+/// 1 s, `extra` ms more one way (both directions, in order, nothing lost).
+fn wifi(duration_us: u64, spikes: &[(u64, u64)]) -> Scenario {
+    let spikes = spikes.iter().map(|&(at, extra_ms)| (at, at + S, extra_ms * 1_000)).collect();
+    Scenario {
+        duration_us,
+        link: Link {
+            rate_bps: 20_000_000,
+            delay_us: 4_000,
+            jitter_us: 4_000,
+            queue_bytes: 512 * 1024,
+            spikes,
+            ..Link::default()
+        },
+        ..base()
+    }
+}
+
+/// Share of the frames shown in `[from, to)` at `min` lines or more.
+fn share_at_least(r: &Report, min: u32, from: u64, to: u64) -> f64 {
+    let v: Vec<u32> = r.shown.iter().filter(|s| s.at_us >= from && s.at_us < to).map(|s| s.height).collect();
+    v.iter().filter(|&&h| h >= min).count() as f64 / v.len().max(1) as f64
+}
+
+fn wifi_line(name: &str, r: &Report, from: u64, to: u64) {
+    println!(
+        "{:>10}  from {} s: mean {:.0} kbps, >= 540p {:.0}% of frames, lowest {}p, p95 {:.0} ms, steps:\n{}",
+        name,
+        from / S,
+        r.mean_bitrate(from, to) / 1000.0,
+        100.0 * share_at_least(r, 540, from, to),
+        min_height(r, from, to),
+        p95(r, from, to),
+        r.steps_text()
+    );
+}
+
+#[test]
+fn wifi_delay_spikes() {
+    // Spikes like the real call's 43 / 57 / 82 / 127 ms RTT seconds, 20-25 s apart.
+    let sc = wifi(90 * S, &[(8 * S, 60), (30 * S, 45), (52 * S, 130), (75 * S, 85)]);
+    let r = go("wifi", &sc);
+    wifi_line("", &r, 5 * S, sc.duration_us);
+    trace(&r, 51_800_000, 54 * S);
+    assert_eq!(r.decode_errors, 0);
+    // A second of extra delay with nothing lost and the link idle is not a slower link: keep
+    // the rate and the picture.
+    assert!(r.mean_bitrate(5 * S, sc.duration_us) >= 1_600_000.0, "{:.0} bps", r.mean_bitrate(5 * S, sc.duration_us));
+    assert!(share_at_least(&r, 540, 5 * S, sc.duration_us) >= 0.9);
+    assert!(min_height(&r, 5 * S, sc.duration_us) >= 360, "{}", sizes_line(&r));
+    assert!(r.freezes(250_000, S, sc.duration_us).is_empty());
+}
+
+/// The Wi-Fi spikes on an uplink of `rate_bps` (128 KB buffer); latency between the spikes.
+fn wifi_capped(name: &str, rate_bps: u64) -> (Report, Vec<f64>) {
+    let mut sc = wifi(90 * S, &[(8 * S, 60), (30 * S, 45), (52 * S, 130), (75 * S, 85)]);
+    sc.link.rate_bps = rate_bps;
+    sc.link.queue_bytes = 128 * 1024;
+    let r = go(name, &sc);
+    wifi_line("", &r, 5 * S, sc.duration_us);
+    trace(&r, 51_900_000, 53_500_000);
+    let mut calm: Vec<f64> =
+        [(12, 29), (35, 51), (57, 74), (80, 90)].iter().flat_map(|&(a, b)| r.latencies_ms(a * S, b * S)).collect();
+    calm.sort_by(|a, b| a.partial_cmp(b).unwrap());
+    println!("{:>10}  between spikes p95 {:.0} ms max {:.0}", "", Report::pct(&calm, 0.95), Report::pct(&calm, 1.0));
+    (r, calm)
+}
+
+#[test]
+fn wifi_delay_spikes_near_capacity() {
+    // The same spikes on an uplink only a little above the top rate (the real call's 2 Mbps
+    // seconds ran at 20-65 ms RTT, its 500 kbps ones at 7-11 ms: maybe not 20 Mbps): the spikes
+    // still cost nothing, and no queue of ours stands between them.
+    let (r, calm) = wifi_capped("wifi 2.4M", 2_400_000);
+    assert_eq!(r.decode_errors, 0);
+    assert!(Report::pct(&calm, 0.95) < 120.0);
+    assert!(min_height(&r, 7 * S, 90 * S) >= 540, "{}", sizes_line(&r));
+    // Below the top rate the link is full when a spike comes: no burst shows above the old rate,
+    // so it is a slower link to the controller (the old rules, down to 180p at 52.9 s). The rate
+    // still settles under the link.
+    let (r, calm) = wifi_capped("wifi 1.6M", 1_600_000);
+    assert_eq!(r.decode_errors, 0);
+    assert!(Report::pct(&calm, 0.95) < 120.0);
+    assert!(r.mean_bitrate(10 * S, 90 * S) < 1_600_000.0);
+}
+
+#[test]
+fn real_av1_wifi_delay_spikes() {
+    // The same with real libaom packets decoded by rav1d.
+    let sc = wifi(30 * S, &[(8 * S, 85), (20 * S, 130)]);
+    let mut codec = Av1Codec::new(640, 360, sc.fps, sc.sender.start_bps);
+    let r = run(&sc, &mut codec);
+    println!("{:>10}: {}", "av1 wifi", r.summary(sc.duration_us));
+    wifi_line("", &r, 5 * S, sc.duration_us);
+    trace(&r, 7_900_000, 9_500_000);
+    assert_eq!(r.decode_errors, 0);
+    assert!(min_height(&r, 5 * S, sc.duration_us) >= 360, "{}", sizes_line(&r));
+    assert!(share_at_least(&r, 540, 5 * S, sc.duration_us) >= 0.8);
 }

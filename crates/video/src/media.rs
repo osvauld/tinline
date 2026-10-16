@@ -189,6 +189,25 @@ const KEY_GRACE_US: u64 = 1_000_000;
 const KEY_ALLOWANCE_MAX_US: u64 = 200_000;
 /// A step down within this long of a starved report is for a link that got slower, not a flap.
 const REAL_DROP_US: u64 = 1_000_000;
+/// Inside a Wi-Fi spike the delay is growing (a queue of ours) when it passes this % of its
+/// lowest so far plus `GROW_US`. A spike's per-frame delay varies 60-100% of its height.
+const GROW_PCT: u64 = 150;
+const GROW_US: u64 = 20_000;
+/// The backlog is the queue in the path, on its way out, while a report within this long
+/// showed bytes arriving (a Wi-Fi stall delivers nothing for 50-150 ms, then all of it).
+const DELIVERING_US: u64 = 500_000;
+/// `Sender::stall_was_spike`: settle reports at this % of the rate before the episode, a burst
+/// at this %, a stall this recent.
+const SPIKE_NEAR_PCT: u64 = 75;
+const SPIKE_BURST_PCT: u64 = 110;
+const SPIKE_GAP_PCT: u64 = 10;
+const STALL_RECENT_US: u64 = 500_000;
+/// After a stall found to be a spike: no starvation verdicts and no further cuts for flat delay
+/// for this long (the real call's spikes lasted about a second, and the reports come late).
+const SPIKE_HOLD_US: u64 = 1_500_000;
+/// ...while the drain stays at or above this % of the rate before the episode: a queue of ours
+/// at the link's capacity drains well before that.
+const SPIKE_DRAIN_PCT: u64 = 70;
 
 /// Encode times are kept over this long; a step down for encode time needs a full window (a
 /// second's worth of frames at the current tier).
@@ -670,8 +689,13 @@ pub struct Sender {
     last_decrease_us: u64,
     /// A queue is standing in the path: send well below the delivered rate until it is gone.
     drain: Option<u32>,
-    /// Last report showed bytes getting through.
+    episode: Option<Episode>,
+    spike: Option<Spike>,
+    /// Last report that delivered under half of the estimate (a stall, or a slower link).
+    stall_us: Option<u64>,
+    /// A report within `DELIVERING_US` showed bytes getting through.
     delivering: bool,
+    last_delivered_us: Option<u64>,
     /// Since when we have been draining while still sending at least half of what gets
     /// through: a drain that deep queueing doesn't make deeper means the queue is not in the
     /// network (a receiver that decodes slower than we send), so a lower rate can't empty it.
@@ -709,6 +733,26 @@ pub struct Sender {
     pub trace: RateTrace,
 }
 
+/// From the first overuse report until the queueing delay is under `underuse_us` again.
+#[derive(Clone, Copy, Debug)]
+struct Episode {
+    /// The estimate when it began.
+    pre: u32,
+    /// Second looks taken in it, and whether the first was put off (see `stall_was_spike`).
+    looks: u32,
+    put_off: bool,
+}
+
+/// A Wi-Fi spike under way (see `Sender::stall_was_spike`).
+#[derive(Clone, Copy, Debug)]
+struct Spike {
+    until_us: u64,
+    /// Lowest queueing delay since; more than `GROW_PCT` of it is a queue of ours.
+    low_q: u64,
+    /// The drain goes no lower.
+    floor: u32,
+}
+
 /// Receiver reports as the rate controller saw them, cumulative over the call (for call logs:
 /// a sender stuck at the floor shows which signal keeps cutting it).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -718,6 +762,10 @@ pub struct RateTrace {
     pub overuse: u64,
     /// Reports that counted as starved (delivered well short of what we sent).
     pub starved: u64,
+    /// Cuts the second look found were for a Wi-Fi stall (see `Sender::stall_was_spike`), and
+    /// overuse reports held through the spike after one.
+    pub spikes: u64,
+    pub held: u64,
     /// The last report: raw queueing delay and delivered rate; the learned baseline.
     pub last_queuing_us: u64,
     pub last_delivered_bps: u32,
@@ -744,7 +792,11 @@ impl Sender {
             bitrate,
             last_decrease_us: 0,
             drain: None,
+            episode: None,
+            spike: None,
+            stall_us: None,
             delivering: false,
+            last_delivered_us: None,
             drain_stuck_since: None,
             queuing_us: 0,
             q_offset: 0,
@@ -1020,7 +1072,13 @@ impl Sender {
     fn rate(&mut self, now_us: u64, r: &RateReport) {
         let delivered = r.delivered_bps as u64;
         let sent = self.sent_bps(now_us).unwrap_or(0);
-        self.delivering = delivered > 0;
+        if delivered > 0 {
+            self.last_delivered_us = Some(now_us);
+        }
+        self.delivering = self.last_delivered_us.is_some_and(|t| now_us - t < DELIVERING_US);
+        if delivered * 2 < self.bitrate as u64 {
+            self.stall_us = Some(now_us);
+        }
         let queuing_us = self.queuing(now_us, r.queuing_us);
         self.queuing_us = queuing_us;
         // After a keyframe, the queueing its own burst causes is not overuse.
@@ -1037,6 +1095,10 @@ impl Sender {
         if starved {
             self.starved_us = Some(now_us);
         }
+        let over = queuing_us > overuse_us || starved;
+        if over && self.episode.is_none() {
+            self.episode = Some(Episode { pre: self.bitrate, looks: 0, put_off: false });
+        }
         let t = &mut self.trace;
         t.reports += 1;
         t.overuse += (queuing_us > overuse_us) as u64;
@@ -1045,16 +1107,53 @@ impl Sender {
         if self.settle_until.is_some() {
             self.settle_delivered.push(delivered);
         }
-        let second_look = self.settle_until.is_some_and(|t| now_us >= t);
+        let mut second_look = self.settle_until.is_some_and(|t| now_us >= t);
         // At the second look: the median of what got through in the reports since the first (a
         // 100 ms window holds three or four packets at 300 kbps, so one report is +-30%, and a
         // stream stalled on a lost packet reads low in one).
-        let settled = {
+        let median = {
             let v = &mut self.settle_delivered;
             v.sort_unstable();
-            (v.get(v.len().saturating_sub(1) / 2).copied().unwrap_or(delivered) * 85 / 100) as u32
+            v.get(v.len().saturating_sub(1) / 2).copied().unwrap_or(delivered)
         };
-        if queuing_us > overuse_us || starved {
+        let settled = (median * 85 / 100) as u32;
+        if second_look && self.put_off_look(now_us) {
+            second_look = false;
+        }
+        if second_look && self.stall_was_spike(now_us) {
+            // The cut was for a Wi-Fi stall, not a slower link: keep 15% of it, drop the drain
+            // (there's no queue of ours), and hold through the rest of the spike.
+            let pre = self.episode.map_or(self.pre_cut, |ep| ep.pre);
+            self.settle_until = None;
+            second_look = false;
+            self.bitrate = self.bitrate.max(pre * 85 / 100).max(self.cfg.min_bps);
+            self.drain = None;
+            self.starved_n = 0;
+            self.starved_us = None;
+            self.starve_after_us = self.starve_after_us.max(now_us + SPIKE_HOLD_US);
+            self.spike = Some(Spike {
+                until_us: now_us + SPIKE_HOLD_US,
+                low_q: queuing_us,
+                floor: (pre as u64 * SPIKE_DRAIN_PCT / 100) as u32,
+            });
+            self.trace.spikes += 1;
+        }
+        if over {
+            // Inside a spike (see above), more delay that doesn't grow is still the spike: a
+            // drain no lower than the floor, no further cut. Growing delay is a queue we feed.
+            if let Some(sp) = &mut self.spike
+                && !starved
+                && now_us < sp.until_us
+                && queuing_us <= sp.low_q * GROW_PCT / 100 + GROW_US
+            {
+                sp.low_q = sp.low_q.min(queuing_us);
+                let floor = sp.floor;
+                self.trace.held += 1;
+                self.start_drain(delivered, queuing_us, false);
+                self.drain = self.drain.map(|d| d.max(floor));
+                return;
+            }
+            self.spike = None;
             // A queue is building: send no faster than what actually gets through, and below it
             // until the queue is gone (each 100 ms of it delays every frame). One rate window
             // after a decrease, look again: the first delivered rate still held bytes from
@@ -1086,6 +1185,10 @@ impl Sender {
             self.bitrate = self.bitrate.max(self.pre_cut.min(settled));
             self.settle_until = None;
         }
+        if queuing_us < underuse_us {
+            self.episode = None;
+            self.spike = None;
+        }
         if queuing_us < underuse_us && self.drain.take().is_some() {
             self.starve_after_us = now_us + STARVE_QUIET_US;
         }
@@ -1096,6 +1199,42 @@ impl Sender {
             let up = self.bitrate + (self.bitrate as u64 * 8 * dt / 100 / 100_000) as u32;
             self.bitrate = up.min(self.bitrate.max(cap)).min(self.cfg.max_bps);
         }
+    }
+
+    /// At an overuse episode's first second look: was its cut for a Wi-Fi stall rather than a
+    /// slower link? The reports since the cut carried the rate from before the episode (two of
+    /// them at 75% or more of it), and either one shortly before delivered under half of the
+    /// estimate (the stall: a spike begins with 50-150 ms of nothing) or one since delivered
+    /// over 110% of it and `starve_min_bps` more (the burst after). A link that got slower, or one we fill to its
+    /// capacity, delivers steadily at its rate: no stall, no burst above it.
+    /// The first second look comes once more `SETTLE_US` later when a report since the cut
+    /// delivered next to nothing (under `SPIKE_GAP_PCT` of the rate before): the stall is still
+    /// on and its burst still to come (a 130 ms spike on a link near our rate, a tail loss
+    /// waiting for its probe timeout). The ladder waits with it; the drain doesn't.
+    fn put_off_look(&mut self, now_us: u64) -> bool {
+        let Some(ep) = &mut self.episode else { return false };
+        let gap = self.settle_delivered.iter().any(|&d| d * 100 < ep.pre as u64 * SPIKE_GAP_PCT);
+        if ep.looks > 0 || ep.put_off || !gap {
+            return false;
+        }
+        ep.put_off = true;
+        self.settle_until = Some(now_us + SETTLE_US);
+        true
+    }
+
+    fn stall_was_spike(&mut self, now_us: u64) -> bool {
+        let Some(ep) = &mut self.episode else { return false };
+        ep.looks += 1;
+        if ep.looks > 1 {
+            return false;
+        }
+        let pre = ep.pre as u64;
+        let near = self.settle_delivered.iter().filter(|&&d| d * 100 >= pre * SPIKE_NEAR_PCT).count();
+        // By `starve_min_bps` too: at a few hundred kbps one report is +-30% (3-4 packets).
+        let excess = self.cfg.starve_min_bps as u64;
+        let burst = self.settle_delivered.iter().any(|&d| d * 100 >= pre * SPIKE_BURST_PCT && d >= pre + excess);
+        let stalled = self.stall_us.is_some_and(|t| now_us - t < STALL_RECENT_US);
+        near >= 2 && (stalled || burst)
     }
 
     /// Sends below the delivered rate until a queue of `queuing_us` is gone.
@@ -1526,6 +1665,37 @@ mod tests {
     }
 
     #[test]
+    fn wifi_stall_is_not_a_slower_link() {
+        // Real call (Pixel 3a <-> laptop, one 2.4 GHz router): a second of +40-130 ms delay,
+        // starting with a stall and a burst, collapsed 2 Mbps to ~100 kbps and 180p.
+        let mut tx = Sender::new(SenderConfig { start_bps: 2_000_000, ..Default::default() });
+        tx.frame(0, true, b"k");
+        reports(&mut tx, 0, 2_000 * MS, 2_000_000, RateReport { delivered_bps: 2_000_000, queuing_us: 5_000 });
+        assert_eq!((tx.bitrate(), tx.resolution()), (2_000_000, (1280, 720)));
+        // The stall: next to nothing arrives, which looks like a starved link.
+        reports(&mut tx, 2_000 * MS, 2_100 * MS, 2_000_000, RateReport { delivered_bps: 100_000, queuing_us: 5_000 });
+        assert!(tx.draining());
+        // The burst: what was held arrives late, faster than we send.
+        let burst = RateReport { delivered_bps: 2_600_000, queuing_us: 90_000 };
+        reports(&mut tx, 2_100 * MS, 2_300 * MS, 2_000_000, burst);
+        assert_eq!(tx.trace.spikes, 1);
+        // The cut is taken back to 15%; the delay is still up, so a drain, but no deeper than 70%
+        // of the rate before (1.4 Mbps).
+        assert!((1_400_000..=1_700_000).contains(&tx.bitrate()), "{}", tx.bitrate());
+        assert_eq!(tx.resolution(), (1280, 720), "the ladder never stepped");
+        // The rest of the spike: the delay stays up, the link carries what we send.
+        let flat = RateReport { delivered_bps: 1_700_000, queuing_us: 100_000 };
+        reports(&mut tx, 2_300 * MS, 3_100 * MS, 1_700_000, flat);
+        assert!(tx.trace.held > 0);
+        assert!(tx.bitrate() >= 1_400_000, "the drain stops at 70% of the rate before: {}", tx.bitrate());
+        assert_eq!(tx.resolution(), (1280, 720));
+        // Delay back to normal: the drain ends and the rate climbs from 1.7 Mbps.
+        reports(&mut tx, 3_100 * MS, 4_500 * MS, 1_700_000, RateReport { delivered_bps: 1_700_000, queuing_us: 5_000 });
+        assert!(!tx.draining());
+        assert!(tx.bitrate() > 1_700_000, "{}", tx.bitrate());
+    }
+
+    #[test]
     fn short_delivery_gaps_are_not_starvation() {
         let mut tx = Sender::new(SenderConfig { start_bps: 1_000_000, ..Default::default() });
         tx.frame(0, true, b"k");
@@ -1553,8 +1723,12 @@ mod tests {
         assert!(tx.draining());
         // 50 KB unacked (the queue in the path), but the receiver is getting data: let it drain.
         assert!(tx.feedback(&BTreeMap::from([(0, 50_000)])).is_empty());
-        // Nothing gets through any more: that is a stall, reset.
+        // A report with nothing delivered is a Wi-Fi stall as often as not (50-150 ms, then a
+        // burst): no reset yet.
         tx.on_report(1_050_000, &RateReport { delivered_bps: 0, queuing_us: 600_000 });
+        assert!(tx.feedback(&BTreeMap::from([(0, 50_000)])).is_empty());
+        // Nothing for half a second: the receiver stalled, reset.
+        tx.on_report(1_500_000, &RateReport { delivered_bps: 0, queuing_us: 600_000 });
         assert_eq!(tx.feedback(&BTreeMap::from([(0, 50_000)])), vec![Out::Reset { group: 0 }]);
     }
 
