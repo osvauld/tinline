@@ -2720,7 +2720,7 @@ impl App {
                 iced::Event::Window(window::Event::FilesHoveredLeft) => Some(Msg::Chat(Cm::DropHover(false))),
                 _ => None,
             }),
-            if self.fx.running() || self.ticks_running() { window::frames().map(Msg::Frame) } else { Subscription::none() },
+            if self.fx.running() || self.ticks_running() || self.live.ticks_running() { window::frames().map(Msg::Frame) } else { Subscription::none() },
             if self.video_ticking() {
                 iced::time::every(Duration::from_millis(33)).map(|_| Msg::Video(Vm::Tick))
             } else {

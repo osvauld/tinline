@@ -453,6 +453,10 @@ pub(super) struct GroupsLive {
     pub older: Option<String>,
     /// Signed member receipts of my loaded posts, by message id (the group tick and n/N).
     pub receipts: std::collections::HashMap<String, p2pcore::GroupReceiptStatus>,
+    /// The tick each of my loaded posts showed last, and the one-shot transitions playing (as 1:1's
+    /// `ChatState::{tick_vis, tick_anims}`; the rule is core's `tick_transition`).
+    pub tick_vis: std::collections::HashMap<String, crate::ticks::Vis>,
+    pub tick_anims: std::collections::HashMap<String, crate::ticks::Anim>,
     pub input: String,
     pub reply: Option<String>,
     /// The members pane beside the chat (on by default).
@@ -647,6 +651,7 @@ impl GroupsLive {
             Lm::Message(msg) => {
                 if self.open.as_deref() == Some(msg.group_id.as_str()) {
                     upsert(&mut self.msgs, msg);
+                    self.sync_ticks();
                     let _ = api.group_mark_read(self.open.clone().unwrap_or_default());
                 }
                 self.reload_list(api);
@@ -666,6 +671,9 @@ impl GroupsLive {
                 self.reply = None;
                 self.msgs.clear();
                 self.older = None;
+                // A newly opened group shows its ticks as they are (no transition on first render).
+                self.tick_vis.clear();
+                self.tick_anims.clear();
                 self.reload_open(api);
                 let _ = api.group_mark_read(gid);
                 self.reload_list(api);
@@ -700,6 +708,7 @@ impl GroupsLive {
                     Ok(msg) => {
                         if self.open.as_deref() == Some(msg.group_id.as_str()) {
                             upsert(&mut self.msgs, msg);
+                            self.sync_ticks();
                         }
                         self.reload_list(api);
                     }
@@ -720,6 +729,8 @@ impl GroupsLive {
                         all.append(&mut self.msgs);
                         self.msgs = all;
                         self.older = p.older;
+                        // Scrolled-in posts get their ticks without a transition.
+                        self.reload_receipts(api, gid_for_receipts(&self.open));
                     }
                     Err(e) => out.notice = Some(gerr(e)),
                 }
@@ -1052,6 +1063,9 @@ impl GroupsLive {
         self.menu = None;
         self.reply = None;
         self.input.clear();
+        self.receipts.clear();
+        self.tick_vis.clear();
+        self.tick_anims.clear();
     }
 
     pub fn reload(&mut self, api: &dyn GroupApi) {
@@ -1116,6 +1130,47 @@ impl GroupsLive {
         {
             self.receipts = list.into_iter().map(|r| (r.message_id.clone(), r)).collect();
         }
+        self.sync_ticks();
+    }
+
+    /// My post's tick: waiting for a host = slack; otherwise the core's group `ReceiptTick` (one
+    /// tick until every eligible member delivered, two, then read). None for others' posts.
+    pub(super) fn tick_vis_of(&self, m: &GroupMessage) -> Option<crate::ticks::Vis> {
+        if !m.outgoing || m.kind != GroupItemKind::Post {
+            return None;
+        }
+        Some(match m.delivery {
+            GroupDelivery::Waiting => crate::ticks::Vis::Slack,
+            GroupDelivery::Delivered => self
+                .receipts
+                .get(&m.id)
+                .and_then(|r| p2pcore::tick_vis(Some(r.tick), false))
+                .unwrap_or(crate::ticks::Vis::One),
+        })
+    }
+
+    /// Starts a one-shot transition for every loaded post whose tick changed since it was last shown;
+    /// a post seen for the first time (open, scroll-in, new) starts settled. Same as 1:1's `sync_ticks`.
+    pub(super) fn sync_ticks(&mut self) {
+        let now = std::time::Instant::now();
+        let next: std::collections::HashMap<String, crate::ticks::Vis> =
+            self.msgs.iter().filter_map(|m| self.tick_vis_of(m).map(|v| (m.id.clone(), v))).collect();
+        for (id, v) in &next {
+            if let Some(old) = self.tick_vis.get(id)
+                && old != v
+                && !crate::motion::reduced()
+            {
+                self.tick_anims.insert(id.clone(), crate::ticks::Anim { from: *old, start: now });
+            }
+        }
+        self.tick_anims.retain(|id, a| next.get(id).is_some_and(|v| crate::ticks::running(a, *v, now)));
+        self.tick_vis = next;
+    }
+
+    /// A group tick transition is playing (keeps the frame clock running).
+    pub(super) fn ticks_running(&self) -> bool {
+        let now = std::time::Instant::now();
+        self.tick_anims.iter().any(|(id, a)| self.tick_vis.get(id).is_some_and(|v| crate::ticks::running(a, *v, now)))
     }
 }
 
@@ -1262,3 +1317,7 @@ impl super::App {
 #[cfg(test)]
 #[path = "group_live_tests.rs"]
 mod tests;
+
+fn gid_for_receipts(open: &Option<String>) -> String {
+    open.clone().unwrap_or_default()
+}

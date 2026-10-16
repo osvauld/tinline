@@ -426,15 +426,12 @@ impl App {
         if m.outgoing {
             // Receipt ticks (ticks.rs): waiting for a host = the slack string; sent = one tick; every eligible
             // member signed delivered = two ticks; every one read = the read ink (core's `GroupReceiptStatus`).
-            // Host storage is never shown as members' delivery/read. No transition yet in groups.
+            // Host storage is never shown as members' delivery/read. One-shot transitions as in 1:1 (core's rule).
             let st = self.live.receipts.get(&m.id);
-            let v = match m.delivery {
-                GroupDelivery::Waiting => crate::ticks::Vis::Slack,
-                GroupDelivery::Delivered => st.and_then(|r| p2pcore::tick_vis(Some(r.tick), false)).unwrap_or(crate::ticks::Vis::One),
-            };
+            let v = self.live.tick_vis_of(m).unwrap_or(crate::ticks::Vis::One);
             let tw = 12.0 * crate::tin_ticks::VB_W / crate::tin_ticks::VB_H;
             let inks = crate::ticks::Inks { meta: metac, read: t.tick_read, bad: t.tick_bad, bg };
-            let glyph: El = container(crate::ticks::glyph(v, None, inks, 12.0, self.fx.now)).width(tw).height(12).center_x(tw).center_y(12).into();
+            let glyph: El = container(crate::ticks::glyph(v, self.live.tick_anims.get(&m.id), inks, 12.0, self.fx.now)).width(tw).height(12).center_x(tw).center_y(12).into();
             // No details view for group posts yet: the n/N lines and who sit in the tick's tooltip (no layout shift).
             meta = meta.push(match st.filter(|r| r.eligible > 0) {
                 Some(r) => El::from(iced::widget::tooltip(glyph, iced::widget::text(group_receipt_lines(r).join("\n")).size(13), iced::widget::tooltip::Position::Top)),
