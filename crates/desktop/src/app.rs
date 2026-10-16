@@ -1276,6 +1276,7 @@ impl App {
                 added_at: 0,
                 alias: None,
                 verified: false,
+                lost_touch: false,
             })
             .collect();
         self.refresh_undelivered();
@@ -2743,5 +2744,5 @@ impl App {
 pub(super) const SELF_SUB: &str = "Saved items \u{b7} only on your devices";
 
 fn self_contact(did: &str) -> Contact {
-    Contact { did: did.to_string(), name: "You".into(), device: String::new(), added_at: 0, alias: None, verified: false }
+    Contact { did: did.to_string(), name: "You".into(), device: String::new(), added_at: 0, alias: None, verified: false, lost_touch: false }
 }

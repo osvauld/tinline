@@ -180,6 +180,14 @@ pub struct OwnDevice {
     /// The relay it was last known on (our own entry is refreshed from the endpoint).
     #[serde(default)]
     pub relay: Option<String>,
+    /// The install's recent key changes ending at `device` (oldest first, at most
+    /// `node::KEPT_LINKS`), carried in our device list so contacts keep `verified`.
+    #[serde(default)]
+    pub links: Vec<proto::Succession>,
+    /// This key was rotated away (private endpoint rotation): a tombstone like `removed`, but
+    /// the install lives on under a newer key, so it is not shown as unlinked.
+    #[serde(default)]
+    pub rotated: bool,
 }
 
 /// "Not now": calls are turned away (and not shown) until `until`, or until switched back on.
@@ -251,6 +259,55 @@ pub struct State {
     /// Welcomes for accepted requests still to be delivered, by joiner DID (retried like
     /// `notice_outbox`). Local: the device that accepted dials.
     pub welcome_outbox: BTreeMap<String, WelcomeOut>,
+    /// This install's private endpoint schedule (`node::rotation`). Local.
+    pub private_ep: PrivateEp,
+    /// The previous private endpoint key, answering for `PRIVATE_OVERLAP_MS` after a rotation
+    /// so contacts that still dial it learn the new one. Local; sealed like the rest.
+    pub overlap: Option<OverlapKey>,
+    /// Contacts we lost touch with: our rotation note never reached any of their devices during
+    /// the whole announce window (`node::rotation`). Cleared by any authenticated session with
+    /// them or a fresh ticket swap. Local.
+    pub lost_touch: BTreeSet<String>,
+}
+
+/// See `State::private_ep`. `made == 0`: not scheduled yet (set on the first start).
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct PrivateEp {
+    /// When the current key became current (unix ms, local clock).
+    pub made: u64,
+    /// The random extra delay drawn for the current key, ms.
+    pub jitter: u64,
+    /// Until when contacts still owed our rotation note are tried (unix ms; 0 = no window).
+    pub announce_until: u64,
+    /// A rotation whose new key may or may not have been promoted when we stopped: resolved on
+    /// the next unlock by comparing with the key the vault holds.
+    pub pending: Option<PendingRotation>,
+}
+
+/// See `PrivateEp::pending`. Public data only: the new secret lives in the vault once promoted.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PendingRotation {
+    pub old: [u8; 32],
+    pub new: [u8; 32],
+    /// `old` naming `new`, signed by `old`.
+    pub link: proto::Succession,
+    /// When it was staged (unix ms).
+    pub at: u64,
+}
+
+/// See `State::overlap`.
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct OverlapKey {
+    pub secret: [u8; 32],
+    /// Closes at (unix ms).
+    pub until: u64,
+}
+
+impl std::fmt::Debug for OverlapKey {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("OverlapKey").field("until", &self.until).finish_non_exhaustive()
+    }
 }
 
 /// See `State::contact_requests`.
@@ -268,6 +325,10 @@ pub struct HeldRequest {
     pub exp: u64,
     /// When it first arrived (unix ms).
     pub at: u64,
+    /// Our device key the hello was addressed to (its ticket names it); the Welcome is made
+    /// and sent under that key. `None`: the current one.
+    #[serde(default)]
+    pub on: Option<[u8; 32]>,
 }
 
 /// See `State::sent_requests`.
@@ -293,6 +354,10 @@ pub struct WelcomeOut {
     pub welcome: proto::Msg,
     pub device: [u8; 32],
     pub relay: Option<String>,
+    /// Our key the Welcome is made under (`HeldRequest::on`): it is dialled from the endpoint
+    /// of that key, so after a rotation only while the old one still overlaps.
+    #[serde(default)]
+    pub from: Option<[u8; 32]>,
     /// Give up after this (unix seconds).
     pub until: u64,
 }

@@ -115,6 +115,8 @@ pub(crate) fn ensure_self_registered(
                 removed: false,
                 last_seen: now(),
                 relay: None,
+                links: Vec::new(),
+                rotated: false,
             },
         );
     }

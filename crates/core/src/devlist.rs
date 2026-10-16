@@ -161,7 +161,8 @@ impl Inner {
                         break;
                     }
                     let st = &mut s.state;
-                    if !st.list_outbox.contains(&did) {
+                    // Not before they hold us as a contact: an undelivered Welcome kicks this again.
+                    if !st.list_outbox.contains(&did) || st.welcome_outbox.contains_key(&did) {
                         break;
                     }
                     let blocked = st.blocked.contains(&did) || crate::block::blocked_me(st, &did);
@@ -197,6 +198,7 @@ impl Inner {
                     let _ = this.persist_async(me.epoch).await;
                     if matches!(o, Outcome::Taken) {
                         this.log(format!("device list delivered to {did}"));
+                        this.touched(me.epoch, &did);
                     }
                     if done {
                         break;
@@ -233,6 +235,33 @@ impl Inner {
             // Not (or no longer) their contact: nothing to retry. PROVISIONAL (coordinator).
             Some(Msg::Reject { .. }) => Ok(Outcome::Final),
             other => Err(Error::Protocol(format!("device list not taken: {other:?}"))),
+        }
+    }
+
+    /// Before another exchange with `did` on `device` (a chat dial): if they are owed our list,
+    /// deliver it first, so a contact that has not heard of our rotated key yet learns it from the
+    /// list (and keeps `verified`) rather than meet the new key unannounced. One attempt.
+    pub(crate) async fn list_before(self: &Arc<Self>, ep: &iroh::Endpoint, did: &str, device: [u8; 32], relay: Option<&str>) {
+        let Ok(me) = self.me() else { return };
+        let owed = {
+            let s = self.shared.lock();
+            s.state.list_outbox.contains(did) && !s.state.welcome_outbox.contains_key(did)
+        };
+        if !owed {
+            return;
+        }
+        let Some(list) = self.my_device_list(&me) else { return };
+        let Ok(o) = self.deliver_list(ep, did, device, relay, &list).await else { return };
+        {
+            let mut s = self.shared.lock();
+            if s.epoch == me.epoch && (matches!(o, Outcome::Final) || s.state.own_list.as_ref() == Some(&list)) {
+                s.state.list_outbox.remove(did);
+            }
+        }
+        self.persist_in_background(me.epoch);
+        if matches!(o, Outcome::Taken) {
+            self.log(format!("device list delivered to {did}"));
+            self.touched(me.epoch, did);
         }
     }
 

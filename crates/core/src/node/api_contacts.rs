@@ -25,7 +25,11 @@ impl Node {
 
     pub fn contacts(&self) -> Vec<Contact> {
         let s = self.inner.shared.lock();
-        s.state.contacts.iter().map(Contact::from).collect()
+        s.state
+            .contacts
+            .iter()
+            .map(|c| Contact { lost_touch: s.state.lost_touch.contains(&c.did), ..Contact::from(c) })
+            .collect()
     }
 
     /// Sets the name only we see for `did`; `None` or blank clears it. Trimmed, stripped of
@@ -112,6 +116,7 @@ impl From<&StoredContact> for Contact {
             added_at: c.added_at,
             alias: c.alias.clone(),
             verified: c.verified,
+            lost_touch: false,
         }
     }
 }

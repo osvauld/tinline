@@ -26,7 +26,7 @@ impl Inner {
     /// the test switch, answered with a `Welcome` at once. Either way the outcome is durable in
     /// one write before the joiner hears anything. Blocking: runs on the blocking pool. If the
     /// write fails nothing changes in memory either, and the joiner can retry.
-    pub(super) fn accept_hello(&self, me: &Me, hello: &Msg, remote: [u8; 32], hint: Option<String>) -> Result<Hello, HelloError> {
+    pub(super) fn accept_hello(&self, me: &Me, hello: &Msg, remote: [u8; 32], hint: Option<String>, on: [u8; 32]) -> Result<Hello, HelloError> {
         let _w = self.writing.lock();
         let (mut next, backing) = {
             let s = self.shared.lock();
@@ -39,7 +39,7 @@ impl Inner {
         // Which ticket nonces may still add this joiner (live tickets, one-time request tickets)
         // is the `Tickets` store's call.
         let tickets = crate::store::Tickets { st: &next, now };
-        let (welcome, new) = proto::accept_contact_hello_with(&me.id, me.device, hello, remote, now * 1000, &tickets, GRANT_TTL, |did| {
+        let (welcome, new) = proto::accept_contact_hello_with(&me.id, on, hello, remote, now * 1000, &tickets, GRANT_TTL, |did| {
             // A DID we accepted a group chat request from gets message-only tokens (U3, P6).
             let origin = if next.req_tickets.values().any(|t| t.did == did && t.exp >= now) {
                 crate::caps::ContactOrigin::GroupRequest
@@ -66,6 +66,7 @@ impl Inner {
                 name: proto::sanitize_name(&new.name),
                 nonce: new.redeemed_nonce.clone(),
                 exp,
+                on: Some(on),
                 // A replayed or repeated hello stays one request, first arrival first.
                 at: next.contact_requests.get(&new.did).map_or_else(now_ms, |r| r.at),
             };
@@ -115,12 +116,29 @@ impl Inner {
     pub(crate) async fn handle_incoming(
         self: Arc<Self>,
         incoming: iroh::endpoint::Accepting,
-        mut permit: OwnedSemaphorePermit,
+        permit: OwnedSemaphorePermit,
         reserved: bool,
     ) -> Result<(), Error> {
+        let started = tokio::time::Instant::now();
+        let conn = tokio::time::timeout(HELLO_TIMEOUT, incoming).await.map_err(|_| Error::Timeout)?.map_err(Error::net)?;
+        let on = self.me()?.device;
+        self.handle_incoming_conn(conn, permit, reserved, on, started).await
+    }
+
+    /// `handle_incoming` once the connection is up. `on`: the key of the endpoint it reached
+    /// (ours, or the previous one while it overlaps after a rotation: a hello on an old ticket
+    /// is answered under the key the ticket names). `started`: when the deadline to the hello
+    /// began.
+    pub(crate) async fn handle_incoming_conn(
+        self: Arc<Self>,
+        conn: Connection,
+        mut permit: OwnedSemaphorePermit,
+        reserved: bool,
+        on: [u8; 32],
+        started: tokio::time::Instant,
+    ) -> Result<(), Error> {
         // One deadline for the whole way to the hello.
-        let (conn, remote, mut ctrl, first) = tokio::time::timeout(HELLO_TIMEOUT, async {
-            let conn = incoming.await.map_err(Error::net)?;
+        let (conn, remote, mut ctrl, first) = tokio::time::timeout(HELLO_TIMEOUT.saturating_sub(started.elapsed()), async {
             let remote = *conn.remote_id().as_bytes();
             if reserved && !self.is_contact_device(&remote) {
                 // A stranger in a contact's slot: it may stay only if the general pool has room.
@@ -148,7 +166,7 @@ impl Inner {
                 let Msg::ContactHello { relay: hint, .. } = &hello else { unreachable!() };
                 let hint = relay_hint(hint);
                 let (this, me2, hello2) = (self.clone(), me.clone(), hello.clone());
-                let accepted = tokio::task::spawn_blocking(move || this.accept_hello(&me2, &hello2, remote, hint))
+                let accepted = tokio::task::spawn_blocking(move || this.accept_hello(&me2, &hello2, remote, hint, on))
                     .await
                     .map_err(|_| Error::Io("contact task failed".into()))?;
                 match accepted {
@@ -160,6 +178,10 @@ impl Inner {
                         drop(permit);
                         self.log(format!("contact {} added us", contact.name));
                         self.list_for_new_contact(&contact.did);
+                        if on != me.device {
+                            // They redeemed a ticket naming our previous key: tell them the new one.
+                            self.owe_list(&contact.did);
+                        }
                         // Let the joiner read the welcome and close first.
                         let _ = tokio::time::timeout(Duration::from_secs(5), conn.closed()).await;
                     }

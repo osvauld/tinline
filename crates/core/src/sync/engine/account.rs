@@ -305,6 +305,8 @@ impl Inner {
                         removed: false,
                         last_seen: t,
                         relay,
+                        links: Vec::new(),
+                        rotated: false,
                     });
                     true
                 }
