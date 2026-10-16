@@ -20,14 +20,13 @@ use std::time::Instant;
 
 use iroh::endpoint::Connection;
 use parking_lot::{Condvar, Mutex};
-use proto::{VideoCodec, VideoOffer};
+use proto::{VideoCodec, VideoOffer, send_codec};
 use tokio::sync::{Notify, mpsc, watch};
 use tokio::task::JoinHandle;
-use video::aom::AomEncoder;
 use video::convert::{self, Prepare, Range, RgbLayout, Rotation, Yuv420};
 use video::media::{Frame, LadderConfig, SenderConfig};
 use video::net::{RecvConfig, VideoRecv, VideoSend};
-use video::{Decoder, EncoderConfig, I420, VideoEncoder};
+use video::{EncoderConfig, I420, VideoEncoder};
 
 use crate::node::{CallState, Inner, Node};
 use crate::Error;
@@ -62,8 +61,12 @@ pub struct VideoFrame {
 }
 
 mod api;
+mod codecs;
 mod ffi_bytes;
 mod frames;
+// The Android MediaCodec VP8 encoder/decoder (`codecs` names what it must provide).
+#[cfg(all(target_os = "android", feature = "mediacodec"))]
+mod mediacodec;
 mod pipes;
 
 pub use self::ffi_bytes::Bytes;
@@ -104,6 +107,9 @@ pub struct VideoStats {
     pub last_delivered_bps: u32,
     pub queuing_offset_us: u64,
     pub draining: bool,
+    /// Codec of each direction for this call ("av1" or "vp8"), empty before video is decided.
+    pub send_codec: String,
+    pub recv_codec: String,
 }
 
 impl VideoStats {
@@ -155,6 +161,8 @@ pub(crate) struct CallVideo {
     negotiated: AtomicBool,
     /// What the peer offered in its hello (callee side), until we answer.
     pub(crate) peer_offer: Mutex<Option<VideoOffer>>,
+    /// Codecs of (our sender, our receiver), once video is decided.
+    codecs: Mutex<Option<(VideoCodec, VideoCodec)>>,
     camera: watch::Sender<bool>,
     remote_camera: AtomicBool,
     peer_max_pixels: AtomicU32,
@@ -167,6 +175,7 @@ impl Default for CallVideo {
         Self {
             negotiated: AtomicBool::new(false),
             peer_offer: Mutex::new(None),
+            codecs: Mutex::new(None),
             camera: watch::channel(false).0,
             remote_camera: AtomicBool::new(false),
             peer_max_pixels: AtomicU32::new(0),
@@ -210,10 +219,9 @@ impl Drop for CallVideo {
 impl Inner {
     /// Our offer, when video is enabled on this node.
     pub(crate) fn video_offer(&self) -> Option<VideoOffer> {
-        self.video.enabled.load(Ordering::SeqCst).then(|| VideoOffer {
-            max_pixels: MAX_PIXELS,
-            decode: vec![VideoCodec::Av1],
-            encode: vec![VideoCodec::Av1],
+        self.video.enabled.load(Ordering::SeqCst).then(|| {
+            let (decode, encode) = codecs::local_offer_codecs();
+            VideoOffer { max_pixels: MAX_PIXELS, decode, encode }
         })
     }
 
@@ -238,13 +246,22 @@ impl Inner {
     /// either way the UI hears whether there is video.
     pub(crate) fn video_decided(&self, call: &Arc<crate::node::Call>, conn: &Connection, ours: Option<VideoOffer>, theirs: Option<VideoOffer>) {
         let offered = ours.is_some();
-        if let (Some(_), Some(peer)) = (ours, theirs) {
+        if let (Some(ours), Some(peer)) = (ours, theirs) {
             let v = &call.video;
+            // Each end computes both directions from both offers: no extra message.
+            let (tx, rx) = (send_codec(&ours, &peer), send_codec(&peer, &ours));
+            *v.codecs.lock() = Some((tx, rx));
+            {
+                let mut st = v.pipe.stats.lock();
+                st.send_codec = tx.as_str().into();
+                st.recv_codec = rx.as_str().into();
+            }
+            tracing::info!("video codecs: send {} recv {}", tx.as_str(), rx.as_str());
             v.peer_max_pixels.store(peer.max_pixels, Ordering::SeqCst);
             v.negotiated.store(true, Ordering::SeqCst);
             let pipe = v.pipe.clone();
-            let send = self.handle.spawn(run_send(conn.clone(), pipe.clone(), peer.max_pixels));
-            let recv = self.handle.spawn(run_recv(conn.clone(), pipe));
+            let send = self.handle.spawn(run_send(conn.clone(), pipe.clone(), peer.max_pixels, tx));
+            let recv = self.handle.spawn(run_recv(conn.clone(), pipe, rx));
             v.tasks.lock().extend([send, recv]);
             if v.pipe.stop.load(Ordering::SeqCst) {
                 // Ended meanwhile.

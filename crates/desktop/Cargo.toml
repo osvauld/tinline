@@ -40,6 +40,8 @@ zeroize = "1"
 rtrb = "0.4"
 
 [target.'cfg(target_os = "linux")'.dependencies]
+# libvpx VP8 decoder: phones with a hardware VP8 encoder send VP8 (docs/design/video-hw-vp8.md).
+p2pcore = { path = "../core", features = ["vp8"] }
 zbus-secret-service-keyring-store = { version = "1", features = ["crypto-rust"] }
 # V4L2 camera capture: pure Rust (no bindgen/libv4l), 0BSD.
 linuxvideo = "0.3"
