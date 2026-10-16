@@ -19,6 +19,9 @@ CACHE = Path.home() / "build-cache"
 SCCACHE_DIR = CACHE / "sccache"
 SIZE = 30 * 1024**3
 
+# sccache with a stable OUT_DIR for downloaded crates (see the script).
+SHIM = Path(__file__).resolve().parent / "sccache-rustc.sh"
+
 CARGO_CONFIG = Path.home() / ".cargo" / "config.toml"
 SCCACHE_CONFIG = Path.home() / ".config" / "sccache" / "config"
 
@@ -26,7 +29,7 @@ SCCACHE_CONFIG = Path.home() / ".config" / "sccache" / "config"
 def cargo_text(sccache):
     return ("# Every cargo build on this machine shares compiled crates through sccache; its cache is on\n"
             f"# {CACHE} ({SCCACHE_CONFIG}). Remove this line to turn it off.\n"
-            f'[build]\nrustc-wrapper = "{sccache}"\n')
+            f'[build]\nrustc-wrapper = "{SHIM}"\n')
 
 
 def sccache_text():
