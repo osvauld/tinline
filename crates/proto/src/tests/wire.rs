@@ -29,6 +29,8 @@ fn frame_roundtrip_all_variants() {
                 max_fps: 30,
                 decode: vec![VideoCodec::Av1, VideoCodec::Vp8],
                 encode: vec![VideoCodec::Vp8, VideoCodec::Av1],
+                hw_decode: vec![VideoCodec::Vp8],
+                hw_encode: vec![VideoCodec::Vp8],
             }),
         },
         Msg::Video { camera: true },
@@ -290,58 +292,63 @@ fn every_signable_passes_the_envelope_table() {
     );
 }
 
-fn offer(decode: &[VideoCodec], encode: &[VideoCodec]) -> VideoOffer {
+fn offer(decode: &[VideoCodec], encode: &[VideoCodec], hw_decode: &[VideoCodec], hw_encode: &[VideoCodec]) -> VideoOffer {
     VideoOffer {
         max_pixels: 1280 * 720,
         max_fps: 30,
         decode: decode.to_vec(),
         encode: encode.to_vec(),
+        hw_decode: hw_decode.to_vec(),
+        hw_encode: hw_encode.to_vec(),
     }
 }
 
 #[test]
 fn send_codec_table() {
     use VideoCodec::{Av1, Vp8};
-    // Phone with a hardware VP8 encoder, desktop with libvpx (decode only), phone without one.
-    let phone = offer(&[Av1, Vp8], &[Vp8, Av1]);
-    let desktop = offer(&[Av1, Vp8], &[Av1]);
-    let old_phone = offer(&[Av1, Vp8], &[Av1]);
-    let av1_only = offer(&[Av1], &[Av1]);
+    // Pixel-class phone: VP8 in hardware both ways. Desktop: libaom and libvpx in software.
+    // Soft phone: a software VP8 decoder only. AV1-only: nothing else.
+    let pixel = offer(&[Av1, Vp8], &[Vp8, Av1], &[Vp8], &[Vp8]);
+    let desktop = offer(&[Av1, Vp8], &[Av1, Vp8], &[], &[]);
+    let soft_phone = offer(&[Av1, Vp8], &[Av1], &[], &[]);
+    let hw_dec_only = offer(&[Av1, Vp8], &[Av1], &[Vp8], &[]);
+    let av1_only = offer(&[Av1], &[Av1], &[], &[]);
     let cases = [
-        (&phone, &phone, Vp8),
-        (&phone, &desktop, Vp8),
-        (&desktop, &phone, Av1),
-        (&phone, &old_phone, Vp8),
-        (&old_phone, &phone, Av1),
-        (&phone, &av1_only, Av1),
-        (&av1_only, &phone, Av1),
-        (&av1_only, &av1_only, Av1),
         (&desktop, &desktop, Av1),
+        (&pixel, &desktop, Vp8),
+        (&desktop, &pixel, Vp8),
+        (&pixel, &pixel, Vp8),
+        (&desktop, &soft_phone, Av1),
+        (&soft_phone, &desktop, Av1),
+        (&pixel, &soft_phone, Vp8), // the sender's hardware encoder alone is enough
+        (&soft_phone, &pixel, Av1), // soft phone only encodes AV1: no VP8 candidate
+        (&desktop, &hw_dec_only, Vp8),
+        (&pixel, &av1_only, Av1),
+        (&av1_only, &pixel, Av1),
+        (&av1_only, &av1_only, Av1),
     ];
     for (i, (s, r, want)) in cases.into_iter().enumerate() {
         assert_eq!(send_codec(s, r), want, "case {i}");
     }
-    // The sender's order wins; an empty or odd offer falls back to AV1.
-    assert_eq!(
-        send_codec(&offer(&[Av1], &[Av1, Vp8]), &offer(&[Vp8, Av1], &[])),
-        Av1
-    );
-    assert_eq!(send_codec(&offer(&[], &[]), &offer(&[], &[])), Av1);
-    assert_eq!(send_codec(&offer(&[Av1], &[Vp8]), &offer(&[Av1], &[])), Av1);
+    // Ties go to the sender's encode order; an empty or odd offer falls back to AV1.
+    assert_eq!(send_codec(&offer(&[Av1, Vp8], &[Av1, Vp8], &[], &[]), &offer(&[Vp8, Av1], &[], &[], &[])), Av1);
+    assert_eq!(send_codec(&offer(&[Av1, Vp8], &[Vp8, Av1], &[], &[]), &offer(&[Av1, Vp8], &[], &[], &[])), Vp8);
+    assert_eq!(send_codec(&offer(&[], &[], &[], &[]), &offer(&[], &[], &[], &[])), Av1);
+    assert_eq!(send_codec(&offer(&[Av1], &[Vp8], &[], &[Vp8]), &offer(&[Av1], &[], &[], &[])), Av1);
 }
 
 #[test]
 fn video_offer_json_shape() {
-    let o = offer(&[VideoCodec::Av1, VideoCodec::Vp8], &[VideoCodec::Av1]);
+    let o = offer(&[VideoCodec::Av1, VideoCodec::Vp8], &[VideoCodec::Av1, VideoCodec::Vp8], &[VideoCodec::Vp8], &[]);
     let j = serde_json::to_string(&o).unwrap();
     assert_eq!(
         j,
-        r#"{"max_pixels":921600,"max_fps":30,"decode":["av1","vp8"],"encode":["av1"]}"#
+        r#"{"max_pixels":921600,"max_fps":30,"decode":["av1","vp8"],"encode":["av1","vp8"],"hw_decode":["vp8"],"hw_encode":[]}"#
     );
     assert_eq!(serde_json::from_str::<VideoOffer>(&j).unwrap(), o);
     // Unknown codecs are not part of the pre-release wire; they fail to parse.
     assert!(
-        serde_json::from_str::<VideoOffer>(r#"{"max_pixels":1,"max_fps":30,"decode":["h264"],"encode":[]}"#)
+        serde_json::from_str::<VideoOffer>(r#"{"max_pixels":1,"max_fps":30,"decode":["h264"],"encode":[],"hw_decode":[],"hw_encode":[]}"#)
             .is_err()
     );
 }

@@ -150,20 +150,29 @@ pub struct VideoOffer {
     pub max_fps: u8,
     /// Codecs it decodes, best first; always contains `Av1`.
     pub decode: Vec<VideoCodec>,
-    /// Codecs it encodes, best first; `Vp8` only with a hardware VP8 encoder.
+    /// Codecs it encodes, best first; always contains `Av1`.
     pub encode: Vec<VideoCodec>,
+    /// The subset of `decode` this device decodes in hardware (MediaCodec hardware codec).
+    pub hw_decode: Vec<VideoCodec>,
+    /// The subset of `encode` this device encodes in hardware.
+    pub hw_encode: Vec<VideoCodec>,
 }
 
-/// The codec `sender` sends to `receiver`: the first of the sender's `encode` that the receiver
-/// decodes, else AV1 (which every device decodes and encodes). Both ends know both offers, so
-/// each computes both directions without another message.
+/// The codec `sender` sends to `receiver`. Candidates are the sender's `encode` that the receiver
+/// `decode`s; each scores one point if the sender encodes it in hardware and one if the receiver
+/// decodes it in hardware. The highest score wins, ties go to the sender's `encode` order, and
+/// no candidate means AV1 (which every device decodes and encodes). Either end's hardware makes
+/// a codec cheap enough for a phone; with none on either side AV1 stays (better quality per
+/// bit). Both ends know both offers, so each computes both directions without another message.
 pub fn send_codec(sender: &VideoOffer, receiver: &VideoOffer) -> VideoCodec {
-    sender
-        .encode
-        .iter()
-        .copied()
-        .find(|c| receiver.decode.contains(c))
-        .unwrap_or(VideoCodec::Av1)
+    let mut best: Option<(u8, VideoCodec)> = None;
+    for &c in sender.encode.iter().filter(|c| receiver.decode.contains(c)) {
+        let score = sender.hw_encode.contains(&c) as u8 + receiver.hw_decode.contains(&c) as u8;
+        if best.is_none_or(|(s, _)| score > s) {
+            best = Some((score, c));
+        }
+    }
+    best.map_or(VideoCodec::Av1, |(_, c)| c)
 }
 
 /// The `Reject` reason a contact gets when it calls without being allowed to (no call token, or
