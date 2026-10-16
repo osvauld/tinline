@@ -1,7 +1,7 @@
 # GitHub release builds
 
 `.github/workflows/release.yml` builds Linux x86_64 tarballs, a Debian package,
-and a signed universal Android release APK (arm64-v8a + x86_64). Tag builds
+an AppImage, and a signed universal Android release APK (arm64-v8a + x86_64). Tag builds
 create a **draft** GitHub release only after both platform jobs succeed. Manual
 runs produce Actions artifacts without creating a GitHub release.
 
@@ -59,6 +59,9 @@ launch, chat and calls on a clean Ubuntu 24.04 VM, and install the APK on a real
 phone. The workflow installs the Debian package on the build runner, but this is
 **not** a clean-system or GUI functional test. Older Debian/Ubuntu versions are
 not promised compatible; build against an older baseline separately if needed.
+The AppImage is extracted and dependency-checked in CI without FUSE; test GUI
+launch, portals, keyring and calls on clean X11/Wayland desktops separately.
+See [Linux packaging](../packaging/linux/README.md#appimage) for local builds.
 The Ubuntu-built tarball must also be tested on current Arch before publishing
 `tinline-bin` to AUR. Resolve all dynamic dependencies and replace the AUR checksum
 placeholder with a real checksum, then regenerate `.SRCINFO`.

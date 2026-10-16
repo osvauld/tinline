@@ -344,7 +344,7 @@ The `/3` to `/4` profile upgrade keeps that data.
 - **Writer ID (U16).** A device writes every chat doc under `writer_id(DID, device ID)` as the Loro
   peer id, always. The device ID is random per install (`device_id` in `account.json`: new on
   create, link and restore, and when the chat store is created afresh (P10); kept when only the
-  device key changes). All replicas keep the
+  device key changes, as on every private endpoint rotation, `docs/rotation.md`). All replicas keep the
   sender's number.
 - **Every op proven (U18).** `apply_remote` splits the new ops of a batch into spans (per peer id,
   consecutive ops on one message, ending with the writer's own version key); an op outside such

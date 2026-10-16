@@ -52,14 +52,31 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y build-essential pkg-config cmake meson ninja-build clang libclang-dev \
             libgtk-3-dev libasound2-dev libssl-dev libdbus-1-dev libabsl-dev \
-            libxkbcommon-dev libxcb1-dev dpkg-dev desktop-file-utils nasm
+            libxkbcommon-dev libxkbcommon-x11-0 libxcb1-dev libwayland-client0 \
+            libwayland-cursor0 libwayland-egl1 libx11-xcb1 libxcursor1 libxi6 libxrandr2 \
+            dpkg-dev desktop-file-utils nasm curl
       - name: Install Rust
         run: rustup toolchain install stable --profile minimal && rustup default stable
-      - name: Build tarball and Debian package
+      - name: Build tarball, Debian package and AppImage
         run: |
           desktop-file-validate packaging/linux/tinline.desktop
           ./scripts/package_linux_tarball.sh
           ./scripts/package_deb.sh
+          ./scripts/package_appimage.sh
+      - name: Inspect AppImage without FUSE
+        run: |
+          IMAGE="$(realpath dist/releases/v${VERSION}/*.AppImage)"
+          (cd "$(dirname "$IMAGE")" && sha256sum --check "$(basename "$IMAGE").sha256")
+          WORK="$(mktemp -d)"
+          trap 'rm -rf "$WORK"' EXIT
+          cd "$WORK"
+          "$IMAGE" --appimage-extract
+          test -x squashfs-root/AppRun
+          test -x squashfs-root/usr/bin/tinline
+          test -f squashfs-root/usr/share/doc/tinline/copyright
+          LD_LIBRARY_PATH="$WORK/squashfs-root/usr/lib" ldd squashfs-root/usr/bin/tinline | tee "$WORK/libraries.txt"
+          ! grep -q 'not found' "$WORK/libraries.txt"
+          ! grep -q 'libaom' "$WORK/libraries.txt"
       - name: Inspect and install Debian package on build runner
         run: |
           dpkg-deb --info dist/deb/*.deb
@@ -166,7 +183,7 @@ jobs:
             }
           else
             gh release create "$TAG" --verify-tag --draft --title "Tinline $TAG" \
-              --notes 'Candidate Linux tarball, Debian package, and signed Android APK. Test before publishing. Linux build baseline: Ubuntu 24.04; older distros are not verified.'
+              --notes 'Candidate Linux tarball, Debian package, AppImage, and signed Android APK. Test before publishing. Linux build baseline: Ubuntu 24.04; older distros are not verified.'
           fi
           mapfile -d '' files < <(find artifacts -type f -print0)
           gh release upload "$TAG" "${files[@]}" --clobber

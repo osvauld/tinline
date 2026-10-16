@@ -11,6 +11,9 @@ Ignored tests with a real body: none. The one remaining test in the file,
 
 When the rotation feature is built, write each item below as a real test.
 
+Packet F (private rotation, 2026-10-16) covers the items marked `[x]` in
+`crates/core/tests/private_rotation.rs` (test name after the arrow); `[~]` is covered in part.
+
 - [ ] `private_endpoint_is_what_contacts_dial_and_differs_from_the_group_endpoint`
   - Spec: U2 — two endpoints per device: the private one is what tickets and contacts dial; the group one is distinct and never appears in 1:1 state; same DID.
   - Blocked on: two endpoints per device (U2)
@@ -19,15 +22,15 @@ When the rotation feature is built, write each item below as a real test.
   - Spec: U2 + U7 — group traffic never reveals a member's private endpoint.
   - Blocked on: group chat API + two endpoints (U2, U7)
   - Cites: `docs/design/rotation-open-decisions.md` U2, U7
-- [ ] `rotation_follows_the_configured_interval`
+- [~] `rotation_follows_the_configured_interval` → unit tests of `rotation_due` (group/rotation/tests.rs); no clock-driven integration test
   - Spec: U1 (periodic, configurable rotation; Settings shows interval, last/next change) + U5 revised (nothing else triggers it).
   - Blocked on: rotation scheduler + clock hook
   - Cites: `docs/design/rotation-open-decisions.md` U1, U5
-- [ ] `online_contact_switches_to_the_new_endpoint_without_user_action`
+- [x] `online_contact_switches_to_the_new_endpoint_without_user_action` → a_contact_follows_a_rotation
   - Spec: U1 + U8 — after a rotation an online contact receives the DID-signed note and keeps chatting and calling over the new endpoint without user action; Settings counts it as told; DID and writer ID unchanged.
   - Blocked on: forced rotation + rotation status
   - Cites: `docs/design/rotation-open-decisions.md` U1, U8
-- [ ] `offline_contact_catches_up_when_it_comes_back`
+- [x] `offline_contact_catches_up_when_it_comes_back` → an_offline_contact_reconnects_through_the_overlap, an_offline_longer_contact_reconnects_when_we_dial_them
   - Spec: U1 — a contact offline during the rotation catches up when it comes back (the side whose address is still live retries), before the old endpoint is retired or after.
   - Blocked on: forced rotation
   - Cites: `docs/design/rotation-open-decisions.md` U1
@@ -35,11 +38,11 @@ When the rotation feature is built, write each item below as a real test.
   - Spec: U1 — the rotating side was the one offline: it rotated, could not tell the contact, went offline; when it comes back it tells the contact (whose address is still live).
   - Blocked on: forced rotation
   - Cites: `docs/design/rotation-open-decisions.md` U1
-- [ ] `old_endpoint_stops_accepting_after_the_grace_window`
+- [~] `old_endpoint_stops_accepting_after_the_grace_window` → an_offline_longer_contact_reconnects_when_we_dial_them (the old endpoint closes; refusal itself not probed)
   - Spec: U1 — the superseded endpoint keeps accepting during the grace window, then stops.
   - Blocked on: forced rotation + grace window
   - Cites: `docs/design/rotation-open-decisions.md` U1
-- [ ] `blocked_contact_does_not_learn_the_new_endpoint_and_loses_reach`
+- [x] `blocked_contact_does_not_learn_the_new_endpoint_and_loses_reach` → a_blocked_contact_never_learns_the_new_address
   - Spec: U5 revised + U1 + U8 — a blocked contact is excluded from the rotation note, never learns the new endpoint and loses reach once the old one is retired; the block itself did not rotate; "told N of M" counts unblocked contacts only.
   - Blocked on: visible block + forced rotation
   - Cites: `docs/design/rotation-open-decisions.md` U5, U1, U8
@@ -47,19 +50,19 @@ When the rotation feature is built, write each item below as a real test.
   - Spec: U5 revised / 8b Q5 + U8 — on unblock the contact is sent the CURRENT private endpoint (rotated during the block) and can reach us again.
   - Blocked on: visible block + unblock + forced rotation
   - Cites: `docs/design/rotation-open-decisions.md` U5, 8b Q5, U8
-- [ ] `linked_devices_rotate_independently_and_contacts_reach_both`
+- [~] `linked_devices_rotate_independently_and_contacts_reach_both` → a_linked_device_follows (one install rotates; contacts reaching both not asserted)
   - Spec: U2 + U8 — linked devices rotate independently; a contact holds the current private endpoint of each and reaches both (calls ring both, messages reach both).
   - Blocked on: forced rotation + device-list push (P4)
   - Cites: `docs/design/rotation-open-decisions.md` U2, U8
-- [ ] `restart_mid_rotation_leaves_a_consistent_reachable_state`
+- [x] `restart_mid_rotation_leaves_a_consistent_reachable_state` → a_restart_mid_rotation_keeps_one_key
   - Spec: U1 + U8 (storage ordering, section 3b) — a crash after any rotation step leaves one consistent state after restart: the current endpoint is either the old or the new one (never a third), the contact reaches it without user action, and DID/writer ID are unchanged.
   - Blocked on: forced rotation + crash injection
   - Cites: `docs/design/rotation-open-decisions.md` U1, U8, section 3b
-- [ ] `both_rotated_apart_without_a_shared_group_reports_lost_contact`
+- [x] `both_rotated_apart_without_a_shared_group_reports_lost_contact` → both_rotating_apart_lose_touch_until_a_ticket_swap
   - Spec: U1 — both sides rotated while apart, no shared group: each reports "lost contact" (not a silent hang, not "offline").
   - Blocked on: forced rotation + lost-contact state
   - Cites: `docs/design/rotation-open-decisions.md` U1
-- [ ] `readding_by_fresh_ticket_restores_the_same_contact_with_history`
+- [~] `readding_by_fresh_ticket_restores_the_same_contact_with_history` → both_rotating_apart_lose_touch_until_a_ticket_swap (same contact, messaging works; history and verification not asserted)
   - Spec: U1 (manual re-share) — after "lost contact", scanning a fresh ticket/QR restores the SAME contact (one entry, same DID) with its history and verification, and both directions work.
   - Blocked on: forced rotation + lost-contact state
   - Cites: `docs/design/rotation-open-decisions.md` U1

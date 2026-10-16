@@ -25,7 +25,7 @@ Environment **variables** (not secrets):
 R2 credentials configured as secrets for bucket/endpoint must be moved to
 variables or the workflow adapted. Android secrets remain unchanged. Enable
 required reviewers if supported, and allow only reviewed release branches/tags.
-R2 hosting is public: APKs and tarballs become downloadable immediately on upload.
+R2 hosting is public: APKs, tarballs and AppImages become downloadable immediately on upload.
 
 ## Create an APT key locally
 
@@ -49,7 +49,7 @@ as `https://repo.osvauld.com/tinline.gpg` automatically.
 1. Complete builds and test installation, chat, calls and Android updates.
 2. Tag the approved commit; let Release builds create its draft with all assets.
 3. Publish the draft on GitHub, then approve the R2 job if required.
-4. Verify the public key, APK, tarball and APT InRelease URLs over HTTPS.
+4. Verify the public key, APK, tarball, AppImage and APT InRelease URLs over HTTPS.
 5. Test `apt update` and installation on a clean Ubuntu 24.04 machine.
 
 Bucket layout:
@@ -57,7 +57,8 @@ Bucket layout:
 ```text
 tinline.gpg
 releases/v0.1.0/tinline-v0.1.0.apk
-releases/v0.1.0/tinline-v0.1.0-x86_64-linux.tar.gz
+releases/v0.1.0/tinline-0.1.0-linux-x86_64.tar.gz
+releases/v0.1.0/tinline-0.1.0-linux-x86_64.AppImage
 releases/v0.1.0/SHA256SUMS
 apt/pool/main/t/tinline/tinline_0.1.0_amd64.deb
 apt/dists/stable/InRelease

@@ -52,6 +52,13 @@ impl Inner {
     pub(crate) async fn close_endpoint(&self) {
         // G1: the group endpoint goes down with the private one (stop, lock, account switch).
         self.group_close().await;
+        // The previous private endpoint, if it still overlaps, goes too (it comes back on the
+        // next start while its overlap lasts).
+        let overlap = self.rotation.overlap.lock().take();
+        if let Some(ep) = overlap {
+            let gate = self.closing.clone().lock_owned().await;
+            let _ = tokio::time::timeout(close_wait(), self.close_fully(ep, gate)).await;
+        }
         let ep = self.shared.lock().endpoint.take();
         if let Some(ep) = ep {
             let gate = self.closing.clone().lock_owned().await;
@@ -141,35 +148,7 @@ impl Inner {
         if tokio::time::timeout(CLOSING_MAX, self.closing.lock()).await.is_err() {
             self.log("previous endpoint still closing; starting anyway");
         }
-        let transport = QuicTransportConfig::builder()
-            // Keeps a ringing call and NAT bindings alive; the relay link has its own pings.
-            .keep_alive_interval(Duration::from_secs(5))
-            .max_idle_timeout(Some(Duration::from_secs(20).try_into().expect("small timeout")))
-            // Only call video uses uni streams (one per group, `video::net`): bounds what a peer
-            // can open at once. `VideoRecv` lowers it per connection, but can't take back credit
-            // granted at the handshake.
-            .max_concurrent_uni_streams(16u32.into())
-            .build();
-        let mut alpns = vec![
-            proto::ALPN.to_vec(),
-            crate::chat::wire::CHAT_ALPN.to_vec(),
-            iroh_blobs::ALPN.to_vec(),
-            proto::SELF_ALPN.to_vec(),
-            proto::link::LINK_ALPN.to_vec(),
-        ];
-        // Superseded versions (P9c): listed only so an old app is refused with a clear reason.
-        alpns.extend(crate::version::old_alpns());
-        let mut builder = Endpoint::builder(presets::N0)
-            .secret_key(SecretKey::from_bytes(&me.profile.device_secret))
-            .alpns(alpns)
-            .transport_config(transport);
-        // Test knob: no UDP of our own, so every packet goes through the relay — the path a
-        // call takes when hole punching fails.
-        if std::env::var_os("P2P_RELAY_ONLY").is_some() {
-            builder = builder.clear_ip_transports();
-            self.log("relay-only mode");
-        }
-        let ep = builder.bind().await.map_err(Error::net)?;
+        let ep = self.bind_private(&me.profile.device_secret).await?;
         // Locked meanwhile (cannot happen under the lifecycle lock, but an endpoint must never
         // outlive the secrets it was made from).
         if self.me().is_err() {
@@ -202,22 +181,70 @@ impl Inner {
         self.welcomes_started();
         self.group_started();
         self.tokens_started();
+        // Before the list is signed: a rotation a stop interrupted is completed or dropped here.
+        self.private_rotation_started().await;
         // After a restore (new device key) or a change made while we were offline: tell contacts.
         self.devices_changed();
         self.lists_started();
         self.group_invites_started();
         self.sync_kick();
 
-        let this = self.clone();
-        let watch_ep = ep.clone();
-        self.handle.spawn(async move {
-            let mut addrs = watch_ep.watch_addr().stream();
-            use n0_future::StreamExt;
-            while let Some(_addr) = addrs.next().await {
-                this.emit_status();
-            }
-        });
+        self.serve_private(ep, true);
+        Ok(())
+    }
 
+    /// Binds a private endpoint on `secret` (the device key, or the previous one while it
+    /// overlaps after a rotation).
+    pub(crate) async fn bind_private(&self, secret: &[u8; 32]) -> Result<Endpoint, Error> {
+        let transport = QuicTransportConfig::builder()
+            // Keeps a ringing call and NAT bindings alive; the relay link has its own pings.
+            .keep_alive_interval(Duration::from_secs(5))
+            .max_idle_timeout(Some(Duration::from_secs(20).try_into().expect("small timeout")))
+            // Only call video uses uni streams (one per group, `video::net`): bounds what a peer
+            // can open at once. `VideoRecv` lowers it per connection, but can't take back credit
+            // granted at the handshake.
+            .max_concurrent_uni_streams(16u32.into())
+            .build();
+        let mut alpns = vec![
+            proto::ALPN.to_vec(),
+            crate::chat::wire::CHAT_ALPN.to_vec(),
+            iroh_blobs::ALPN.to_vec(),
+            proto::SELF_ALPN.to_vec(),
+            proto::link::LINK_ALPN.to_vec(),
+        ];
+        // Superseded versions (P9c): listed only so an old app is refused with a clear reason.
+        alpns.extend(crate::version::old_alpns());
+        let mut builder = Endpoint::builder(presets::N0)
+            .secret_key(SecretKey::from_bytes(secret))
+            .alpns(alpns)
+            .transport_config(transport);
+        // Test knob: no UDP of our own, so every packet goes through the relay — the path a
+        // call takes when hole punching fails.
+        if std::env::var_os("P2P_RELAY_ONLY").is_some() {
+            builder = builder.clear_ip_transports();
+            self.log("relay-only mode");
+        }
+        let ep = builder.bind().await.map_err(Error::net)?;
+        Ok(ep)
+    }
+
+    /// Accepts on `ep` until it closes. A connection to an endpoint that is no longer the
+    /// current one (the previous key, overlapping after a rotation) goes to `overlap_incoming`.
+    pub(crate) fn serve_private(self: &Arc<Self>, ep: Endpoint, current: bool) {
+        if current {
+            let this = self.clone();
+            let watch_ep = ep.clone();
+            self.handle.spawn(async move {
+                let mut addrs = watch_ep.watch_addr().stream();
+                use n0_future::StreamExt;
+                while let Some(_addr) = addrs.next().await {
+                    // Only while it is the current one (not after a rotation made it the previous).
+                    if this.endpoint().is_ok_and(|e| e.id() == watch_ep.id()) {
+                        this.emit_status();
+                    }
+                }
+            });
+        }
         let this = self.clone();
         self.handle.spawn(async move {
             let id = ep.id();
@@ -255,6 +282,12 @@ impl Inner {
                         }
                         return;
                     }
+                    if this.endpoint().map(|e| e.id()).ok() != Some(id) {
+                        if let Err(e) = this.clone().overlap_incoming(accepting, alpn, *id.as_bytes(), permit, reserved).await {
+                            tracing::debug!("incoming on the previous endpoint: {e}");
+                        }
+                        return;
+                    }
                     if alpn.as_slice() == proto::SELF_ALPN {
                         drop(permit);
                         if let Err(e) = this.clone().handle_self_incoming(accepting).await {
@@ -283,7 +316,6 @@ impl Inner {
             }
             this.log(format!("endpoint {id} closed"));
         });
-        Ok(())
     }
 
     pub(crate) async fn ticket(self: &Arc<Self>) -> Result<String, Error> {

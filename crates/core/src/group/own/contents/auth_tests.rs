@@ -65,6 +65,8 @@ fn group_content_admission_requires_current_epoch_and_nonremoved_own_device() {
             removed: false,
             last_seen: 0,
             relay: None,
+            links: Vec::new(),
+            rotated: false,
         });
     node.inner.own_group_admit(me.epoch, &remote).unwrap();
     node.inner

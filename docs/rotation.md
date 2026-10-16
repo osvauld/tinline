@@ -8,8 +8,8 @@ What rotates today, when, and how it survives a crash. Decisions: D11 and D12 in
 - **The group endpoint of a hosting device.** One group endpoint per install and account
   (`ep/secret` in `group.redb`), used by every group this device belongs to. A device that hosts
   any group's chat or calls rotates it. Members do not rotate theirs.
-- **Not yet: the private (1:1) endpoint** (the device key). That is the next packet; see
-  "Next" below.
+- **The private (1:1) endpoint of every install** (its device key; packet F, below). Each linked
+  device rotates its own, on its own timer, on the same policy.
 
 ## When (D11: periodic only)
 
@@ -95,8 +95,92 @@ host's group endpoint through another group they share.
 - A dial in flight on the old endpoint at the swap can wait out the idle timeout (~20 s) before
   it retries on the new one.
 
-## Next
+## Private endpoint (packet F, decided 2026-10-16)
 
-- Private (1:1) endpoint rotation on the same `RotationPolicy` shape: rotation notes to
-  unblocked contacts through the device-list push, the verified flag bound to the DID, ticket
-  refresh, and "lost contact" detection. Backlog: `docs/design/rotation-acceptance-checklist.md`.
+The private endpoint key is the install's device key (iroh `EndpointId`, attested by the DID).
+Rotating it changes nothing identity-derived: the DID, the sealed stores (keyed by the phrase), the
+vault's data key (a remembered `unlock_key` stays valid), the writer ID (install `device_id`,
+U16), author proofs and per-DID tokens all stay. Own-device Loro docs get a new Loro peer id per
+key (harmless). Code: `crates/core/src/node/rotation.rs`.
+
+**When.** The same `RotationPolicy` as the group endpoint (`set_group_rotation_policy` stores the
+one setting for both; no second store): `due = made + interval + jitter` with `made`/`jitter` in
+the sealed state (`State::private_ep`), checked every 2 s while started. Every install, hosting or
+not. Nothing else moves it: not blocking, unlinking, removals or anything else. A 1:1 call in
+progress defers it by at most 1 h (`CALL_ROTATION_DEFER_MS`). `private_rotate_now()` for tests and
+Settings; `private_endpoint_rotation_due()`.
+
+**How (crash-safe), under the lifecycle lock:**
+
+1. Stage: a fresh key in memory only; the sealed state gets `private_ep.pending` (old and new
+   public keys, the succession link) and the overlap key (the current secret).
+2. Bind the new endpoint while the old one serves.
+3. Promote: the vault (resealed with the same data key) and `account.json` get the new key in one
+   atomic file write; `Me` and the node's endpoint are swapped in memory at the same moment.
+4. Complete: the old key becomes a `rotated` registry tombstone (also `removed`, so nothing dials
+   it; `linked_devices` hides it), the install's entry under the new key carries the succession
+   links, `made`/`jitter`/`announce_until` restart from the promote, the shown ticket is retired.
+5. The old endpoint overlaps for `PRIVATE_OVERLAP_MS` (1 day; `node/rotation.rs`), then closes.
+   The overlap survives a restart while it lasts (the old secret is in the sealed state until then).
+6. Announce: the re-signed device list goes to every contact we neither block nor are blocked by
+   (`devlist.rs` outbox, persisted, retried with backoff and after every start); our own installs
+   learn the new key through the account doc on the next self-sync.
+
+A crash before the promote leaves the old key (the staged one was never on disk; the next start
+drops `pending`); after it, the new key, and the next start completes step 4 from `pending`.
+
+**Overlap.** A connection to the old endpoint from a device of a contact we may tell gets our list
+pushed from the new endpoint and is closed (`moved`); from one of our own installs, a self-sync
+from the new endpoint. Anyone else is handled as on the current endpoint: a DID we block is
+refused at its hello exactly as before (and never told the new key); a hello on a ticket naming
+the old key is answered under that key (`HeldRequest::on`), and the Welcome for a held request is
+sent from the endpoint of the key it was made under while that endpoint is open.
+
+**Verified.** `verified` survives a rotation: every install keeps its last `KEPT_LINKS` (4)
+succession links `{from, to, sig}` (signed by the old key, domain `DEVICE_SUCCESSION`), our
+device list carries them (`DeviceList::links`, at most 16), and a contact keeps `verified` when
+every unknown device in a new list has a chain of links back to a key it knew
+(`proto::succeeds`). A new install (link, restore) has no such chain and still resets it.
+Before a chat dial to a contact still owed our list, the list is delivered first
+(`list_before`), so the contact meets the new key through the list.
+
+**Tickets.** The next `my_ticket()` after a rotation names the new key. An older ticket keeps
+working while the key it names answers (the overlap day): its hello reaches the old endpoint and
+is answered under that key, and the new contact is then sent our list. After the overlap an old
+ticket cannot reach us (the joiner sees "could not reach"); they need a fresh ticket or QR.
+
+**Lost touch.** When a rotation's announce window (`announce_ms`, 7 days) ends, every contact the
+list never reached (still in `list_outbox`: every attempt to all of their known devices failed
+for the whole window) is marked `lost_touch` (sealed state, local) and background tries stop.
+Any authenticated exchange with them (a session, a call, a delivered list) or a fresh ticket swap
+clears it. `Contact.lost_touch` (UniFFI) carries it to the apps. The fix is a fresh ticket/QR swap;
+there is no discovery service.
+
+| Value | Default | Where |
+|---|---|---|
+| interval / jitter / announce | 7 d / ≤ 1 d / 7 d | `RotationPolicy::DEFAULT` (shared with groups) |
+| overlap of the old private endpoint | 1 day | `PRIVATE_OVERLAP_MS`, `node/rotation.rs` |
+| succession links kept per install | 4 | `KEPT_LINKS`, `node/rotation.rs` |
+| links per device list | 16 | `proto::MAX_LIST_LINKS` |
+
+### What the apps need (not built)
+
+- Contact list / chat header: `Contact.lost_touch` → "Lost touch: swap codes again" with the
+  QR/ticket share and scan actions; refresh on `on_contacts_changed`.
+- Settings › Privacy: the interval choice (and jitter) at or above `MIN_INTERVAL_MS`, through
+  `group_rotation_policy` / `set_group_rotation_policy` (one setting for both endpoints); the next
+  change from `private_endpoint_rotation_due()`; a "change it now" button for
+  `private_rotate_now()`.
+- Re-render the shown QR after a rotation (`my_ticket()` returns a new one).
+
+### Open (private)
+
+- Both sides rotated while apart but share a group: no recovery through the group host yet (U1
+  group path); they are marked `lost_touch` like any other pair.
+- We did not rotate, they did, and their note never reached us within their window: we are not
+  marked `lost_touch` (only the side whose note failed is). Their next dial to us still heals it.
+- A contact offline for longer than about `KEPT_LINKS` intervals (a month) misses links and sees a
+  new install: `verified` resets.
+- A chat dial to a contact that is owed our list costs one extra dial attempt per device first.
+- Rotating while unlocked only (a locked node does not run the schedule); Android resume hooks
+  and clock jumps (§2 Q5–Q8, §3 Q2–Q3 of the archived digest) are unchanged.

@@ -26,6 +26,7 @@ impl App {
             added_at: now - 86400 * 30,
             alias: alias.map(str::to_string),
             verified,
+            lost_touch: false,
         };
         let rec = |c: &str, name: &str, incoming: bool, ago: u64, secs: u32, reason: &str, direct: bool, missed: bool| CallRecord {
             call_id: format!("{c}{ago}"),

@@ -19,9 +19,10 @@ Admission waits on CPU and memory pressure (/proc/pressure), not load average: t
 counts the emulator and threads blocked on disk and stays high while the cores sit idle.
 Compiling still takes the same lock file as older copies of this script, so they interoperate.
 
-Build output lives on the cache disk (~/build-cache): each checkout's target/ is a symlink to its
-own dir there, and with sccache installed every cargo/gradle build through this script shares
-compiled crates via ~/build-cache/sccache (`sccache --show-stats` to check hits).
+Build output lives on the cache disk (~/build-cache): each checkout's target/, android/build and
+android/app/build are symlinks to its own dirs there, Gradle's caches are ~/build-cache/gradle
+(GRADLE_USER_HOME), and with sccache installed every cargo/gradle build through this script
+shares compiled crates via ~/build-cache/sccache (`sccache --show-stats` to check hits).
 """
 import argparse
 import fcntl
@@ -158,14 +159,18 @@ def place_target():
                                             stderr=subprocess.DEVNULL).strip())
     except (OSError, subprocess.CalledProcessError):
         return
-    t = root / "target"
-    if t.exists() or t.is_symlink() or not os.path.ismount(CACHE) or not (root / "Cargo.toml").exists():
+    if not os.path.ismount(CACHE) or not (root / "Cargo.toml").exists():
         return
     name = root.name if root.parent.name in ("worktrees", "worktree") else "main"
-    real = CACHE / "p2p_chat" / name / "target"
-    real.mkdir(parents=True, exist_ok=True)
-    t.symlink_to(real)
-    print(f"buildlock: target/ -> {real}", file=sys.stderr, flush=True)
+    # Gradle's output too (~2 GB per checkout); its parent must exist for the link.
+    for rel in ("target", "android/build", "android/app/build"):
+        t = root / rel
+        if t.exists() or t.is_symlink() or not t.parent.is_dir():
+            continue
+        real = CACHE / "p2p_chat" / name / rel
+        real.mkdir(parents=True, exist_ok=True)
+        t.symlink_to(real)
+        print(f"buildlock: {rel}/ -> {real}", file=sys.stderr, flush=True)
 
 
 # Compiled crates are shared between worktrees through sccache, its cache on the same disk: a fresh
@@ -173,15 +178,29 @@ def place_target():
 # would be faster still, but agents on different branches would overwrite each other's binaries.
 SCCACHE_DIR = CACHE / "sccache"
 SCCACHE_SIZE = "30G"
+RUSTC_SHIM = Path(__file__).resolve().parent / "sccache-rustc.sh"
 
 
 def share_compiles(env):
     """Points cargo at sccache when it is installed and the cache disk is mounted; else nothing."""
     if env.get("RUSTC_WRAPPER") or not shutil.which("sccache") or not os.path.ismount(CACHE):
         return
-    env["RUSTC_WRAPPER"] = "sccache"
+    # sccache through scripts/sccache-rustc.sh: a stable OUT_DIR for downloaded crates, else
+    # sccache misses every crate with a build script (and its dependents) in a second worktree.
+    env["RUSTC_WRAPPER"] = str(RUSTC_SHIM) if RUSTC_SHIM.exists() else "sccache"
     env.setdefault("SCCACHE_DIR", str(SCCACHE_DIR))
     env.setdefault("SCCACHE_CACHE_SIZE", SCCACHE_SIZE)
+
+
+# Gradle's downloads and caches (3+ GB) go there too. A different GRADLE_USER_HOME starts its own
+# daemons, so Android Studio (on ~/.gradle) and these builds don't share one.
+GRADLE_HOME = CACHE / "gradle"
+
+
+def share_gradle(env):
+    if env.get("GRADLE_USER_HOME") or not GRADLE_HOME.is_dir():
+        return
+    env["GRADLE_USER_HOME"] = str(GRADLE_HOME)
 
 
 def compile_step(cmd):
@@ -234,6 +253,7 @@ def main():
     env.setdefault("CARGO_BUILD_JOBS", str(max(1, os.cpu_count() - 2)))
     place_target()
     share_compiles(env)
+    share_gradle(env)
 
     if not (a.run or a.device):
         pre = compile_step(cmd)

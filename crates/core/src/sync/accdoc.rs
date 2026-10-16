@@ -2,7 +2,7 @@
 //! between it and the working copy (`State`). The call log is its own doc (`callsdoc.rs`).
 //!
 //! ```text
-//! devices/<device_text>  { att, label, removed, relay }   the registry
+//! devices/<device_text>  { att, label, removed, relay, links, rotated }   the registry
 //! contacts/<did>         { rec, alias, verified, calls }  rec = name, devices, device_list, grant,
 //!                                                          call_grant, added_at; calls = we let them call
 //! cutoffs/<did>          our token cut-offs for <did> (JSON `CutOffs`; per field, max wins)
@@ -129,11 +129,17 @@ impl AccDoc {
             set_str(&m, "att", &serde_json::to_string(&e.attestation).map_err(io)?)?;
             set_str(&m, "label", &e.label)?;
             set_str(&m, "relay", e.relay.as_deref().unwrap_or(""))?;
+            if !e.links.is_empty() {
+                set_str(&m, "links", &serde_json::to_string(&e.links).map_err(io)?)?;
+            }
             // A tombstone is never taken back.
             if e.removed {
                 set_str(&m, "removed", "1")?;
             } else if !has_key(&m, "removed") {
                 set_str(&m, "removed", "0")?;
+            }
+            if e.rotated {
+                set_str(&m, "rotated", "1")?;
             }
         }
 
@@ -216,6 +222,13 @@ impl AccDoc {
             }
             let label = field(m, "label").and_then(text).unwrap_or_default();
             let removed = field(m, "removed").and_then(text).is_some_and(|t| t == "1");
+            let rotated = field(m, "rotated").and_then(text).is_some_and(|t| t == "1");
+            // Links ending at this device, each signed by the key before (checked by contacts).
+            let links: Vec<proto::Succession> = field(m, "links")
+                .and_then(text)
+                .and_then(|t| serde_json::from_str(&t).ok())
+                .filter(|l: &Vec<proto::Succession>| l.last().is_some_and(|x| x.to == device))
+                .unwrap_or_default();
             let relay = field(m, "relay").and_then(text).filter(|r| !r.is_empty() && proto::valid_relay_hint(r));
             match st.registry.iter_mut().find(|e| e.device == device) {
                 Some(e) => {
@@ -233,6 +246,10 @@ impl AccDoc {
                         }
                     }
                     e.removed |= removed;
+                    e.rotated |= rotated;
+                    if device != ctx.me_device && e.links.len() < links.len() {
+                        e.links = links;
+                    }
                 }
                 None => st.registry.push(OwnDevice {
                     device,
@@ -241,6 +258,8 @@ impl AccDoc {
                     removed,
                     last_seen: 0,
                     relay: if device == ctx.me_device { None } else { relay },
+                    links,
+                    rotated,
                 }),
             }
         }

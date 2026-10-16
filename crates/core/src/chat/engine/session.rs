@@ -310,6 +310,7 @@ impl Inner {
                     continue;
                 }
             };
+            self.list_before(&ep, did, cd.device, cd.relay.as_deref()).await;
             let conn = match tokio::time::timeout(DIAL_TIMEOUT, crate::version::connect(&ep, addr, &crate::version::CHAT)).await {
                 Ok(Ok(c)) => c,
                 Ok(Err(e)) => {
@@ -434,6 +435,11 @@ impl Inner {
 
     pub(crate) async fn handle_chat_incoming(self: Arc<Self>, accepting: Accepting, chat: bool, permit: tokio::sync::OwnedSemaphorePermit) -> Result<(), Error> {
         let conn = tokio::time::timeout(AUTH_TIMEOUT, accepting).await.map_err(|_| Error::Timeout)?.map_err(Error::net)?;
+        self.handle_chat_conn(conn, chat, permit).await
+    }
+
+    /// `handle_chat_incoming` once the connection is up.
+    pub(crate) async fn handle_chat_conn(self: Arc<Self>, conn: Connection, chat: bool, permit: tokio::sync::OwnedSemaphorePermit) -> Result<(), Error> {
         let remote = *conn.remote_id().as_bytes();
         if chat {
             let me = self.me()?;

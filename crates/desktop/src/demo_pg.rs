@@ -52,7 +52,7 @@ impl App {
             .iter()
             .map(|(id, name, hue)| {
                 ui::pin_hue(&pg_did(id), *hue);
-                Contact { did: pg_did(id), name: name.to_string(), device: "pg".into(), added_at: now - 86400 * 30, alias: None, verified: *id == "arjun" }
+                Contact { did: pg_did(id), name: name.to_string(), device: "pg".into(), added_at: now - 86400 * 30, alias: None, verified: *id == "arjun", lost_touch: false }
             })
             .collect();
         let cache = |v: serde_json::Value| profile_ui::Cached { fields: fields(v), ..Default::default() };

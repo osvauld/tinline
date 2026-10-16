@@ -132,6 +132,8 @@ impl Node {
             .state
             .registry
             .iter()
+            // A key this install (or a sibling) rotated away from is not an unlinked device.
+            .filter(|e| !e.rotated)
             .map(|e| LinkedDevice {
                 device: proto::device_to_text(&e.device),
                 label: e.label.clone(),
