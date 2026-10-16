@@ -120,12 +120,47 @@ pub enum Msg {
     },
 }
 
-/// What a device can take in a video call. Its presence means AV1 decoding (`video` crate).
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+/// A video codec of the call path (`docs/design/video-hw-vp8.md`).
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[serde(rename_all = "lowercase")]
+pub enum VideoCodec {
+    /// libaom realtime encoder, rav1d decoder: every device, the default and the fallback.
+    Av1,
+    /// Hardware encoders (Android MediaCodec); decoded by MediaCodec or libvpx (desktop).
+    Vp8,
+}
+
+impl VideoCodec {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Av1 => "av1",
+            Self::Vp8 => "vp8",
+        }
+    }
+}
+
+/// What a device can do in a video call (`docs/video.md`, `docs/design/video-hw-vp8.md`).
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct VideoOffer {
     /// Largest picture (width x height) this device wants to receive; the peer's sender keeps
     /// its resolution ladder at or below it.
     pub max_pixels: u32,
+    /// Codecs it decodes, best first; always contains `Av1`.
+    pub decode: Vec<VideoCodec>,
+    /// Codecs it encodes, best first; `Vp8` only with a hardware VP8 encoder.
+    pub encode: Vec<VideoCodec>,
+}
+
+/// The codec `sender` sends to `receiver`: the first of the sender's `encode` that the receiver
+/// decodes, else AV1 (which every device decodes and encodes). Both ends know both offers, so
+/// each computes both directions without another message.
+pub fn send_codec(sender: &VideoOffer, receiver: &VideoOffer) -> VideoCodec {
+    sender
+        .encode
+        .iter()
+        .copied()
+        .find(|c| receiver.decode.contains(c))
+        .unwrap_or(VideoCodec::Av1)
 }
 
 /// The `Reject` reason a contact gets when it calls without being allowed to (no call token, or

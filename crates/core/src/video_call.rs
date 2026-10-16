@@ -20,7 +20,7 @@ use std::time::Instant;
 
 use iroh::endpoint::Connection;
 use parking_lot::{Condvar, Mutex};
-use proto::VideoOffer;
+use proto::{VideoCodec, VideoOffer};
 use tokio::sync::{Notify, mpsc, watch};
 use tokio::task::JoinHandle;
 use video::aom::AomEncoder;
@@ -210,7 +210,11 @@ impl Drop for CallVideo {
 impl Inner {
     /// Our offer, when video is enabled on this node.
     pub(crate) fn video_offer(&self) -> Option<VideoOffer> {
-        self.video.enabled.load(Ordering::SeqCst).then_some(VideoOffer { max_pixels: MAX_PIXELS })
+        self.video.enabled.load(Ordering::SeqCst).then(|| VideoOffer {
+            max_pixels: MAX_PIXELS,
+            decode: vec![VideoCodec::Av1],
+            encode: vec![VideoCodec::Av1],
+        })
     }
 
     fn video_info(&self, call: &crate::node::Call) -> VideoInfo {
@@ -233,6 +237,7 @@ impl Inner {
     /// The call went active. With both offers present the video streams start on `conn`;
     /// either way the UI hears whether there is video.
     pub(crate) fn video_decided(&self, call: &Arc<crate::node::Call>, conn: &Connection, ours: Option<VideoOffer>, theirs: Option<VideoOffer>) {
+        let offered = ours.is_some();
         if let (Some(_), Some(peer)) = (ours, theirs) {
             let v = &call.video;
             v.peer_max_pixels.store(peer.max_pixels, Ordering::SeqCst);
@@ -246,7 +251,7 @@ impl Inner {
                 v.stop();
             }
         }
-        if ours.is_some() {
+        if offered {
             self.emit_video(call);
         }
     }

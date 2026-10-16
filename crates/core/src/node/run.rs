@@ -13,7 +13,7 @@ impl Inner {
         permit: OwnedSemaphorePermit,
     ) -> Result<(), Error> {
         let Msg::CallHello { call_id, relay: hint, devices: list, video, .. } = &hello else { unreachable!() };
-        let (call_id, hint, list, video) = (call_id.clone(), relay_hint(hint), list.clone(), *video);
+        let (call_id, hint, list, video) = (call_id.clone(), relay_hint(hint), list.clone(), video.clone());
         // It reaches the UI and logs: keep it to what we ourselves generate.
         if call_id.is_empty() || call_id.len() > 64 || !call_id.bytes().all(|b| b.is_ascii_alphanumeric()) {
             ctrl.send(&Msg::Reject { reason: REFUSED.into() }).await?;
@@ -215,9 +215,9 @@ impl Inner {
                         let renewed = incoming_from.as_deref().map(|did| self.fresh_token(&me, did, proto::Cap::Call));
                         let devices = self.my_device_list(&me);
                         // Video only if they offered it and we take it.
-                        let theirs = *call.video.peer_offer.lock();
-                        let video = theirs.and(self.video_offer());
-                        if let Err(e) = ctrl.send(&Msg::Accept { renewed_grant: renewed, devices, video }).await {
+                        let theirs = call.video.peer_offer.lock().clone();
+                        let video = theirs.as_ref().and_then(|_| self.video_offer());
+                        if let Err(e) = ctrl.send(&Msg::Accept { renewed_grant: renewed, devices, video: video.clone() }).await {
                             self.log(format!("connection lost: {e}"));
                             break lost(false);
                         }
