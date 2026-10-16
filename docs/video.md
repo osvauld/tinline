@@ -463,6 +463,19 @@ device's measured encode time allow.
   growing 7 ms per frame.
 - The drain ends when queueing < 15 ms; the ramp (+8% per 100 ms, at most 1.5 x delivered)
   starts 500 ms after the last decrease.
+- **Wi-Fi spikes** (2026-10-16, `Sender::stall_was_spike`): at an overuse episode's first
+  second look the cut is taken back to 85% of the rate before the episode when two reports
+  since carried >= 75% of that rate and either a report within 500 ms delivered < 50% of the
+  estimate (the stall a spike starts with) or one since delivered > 110% of the old rate and
+  300 kbps more (the burst after). For 1.5 s after (`SPIKE_HOLD_US`) overuse whose delay doesn't
+  grow past 150% of its lowest + 20 ms is held: no cut, drain no lower than 70% of the old rate,
+  no starvation verdicts. Growing delay, starvation or the end of the hold go back to the rules
+  above. While a report since the cut delivered < 10% of the old rate (the burst still to come:
+  a 130 ms spike, a tail loss waiting for its PTO), the first second look is put off once by
+  150 ms; the ladder waits with it, the drain doesn't. See Wi-Fi delay spikes below.
+- **Backlog reset** needs nothing delivered for 500 ms (`DELIVERING_US`), not one empty report:
+  a Wi-Fi stall delivers nothing for 50-150 ms, then everything, and the reset (a keyframe into
+  the queue, rate halved) made the real call's 2 Mbps -> 500 kbps in one step.
 - **No backlog reset while draining** (and the last report showed bytes arriving, and not
   stale, above): with `video::net`'s ack-based backlog the queue in the path counts as backlog, and resetting
   the group can't pull bytes back out of the network; it only threw away frames and sent
@@ -591,6 +604,65 @@ keyframe waits for the second look behind 540p frames).
 The first version used the congestion window for the bitrate; the simulation showed
 bufferbloat (p50 256 ms on a clean link, 1.5 s after a bandwidth drop), which is why rate
 control is delay-based.
+
+### Wi-Fi delay spikes (2026-10-16, `fix/wifi-spike-estimator`)
+
+**The trace** (real call, Pixel 3a <-> Tiger Lake laptop on one 2.4 GHz home router, direct
+path; per-second app stats, no per-report log). Neither CPU busy (laptop's busiest thread ~32%,
+Pixel <= 23%), 1 packet lost in 2 min. RTT 7-15 ms at 500 kbps; seconds at 40-65 ms every 10-30 s,
+peaks 82 and 127 ms, sometimes 2-3 s in a row; single 100 ms windows delivering 0-184 kbps,
+then a burst (up to 2.5 Mbps while sending 2 Mbps); one report of 522 ms queueing. While the Pixel
+sent 2 Mbps its RTT sat at 20-65 ms (7-11 ms at 500 kbps), so its uplink may at times be only a
+little above 2 Mbps. Each spike took the sender to 180p and 10-20 s to climb back:
+
+| when | sender | estimate | rule |
+|---|---|---|---|
+| 21:12:30 | Pixel | 2000 -> 500 kbps | two backlog resets (drops 0 -> 2), each halving: an empty report ended the "no reset while draining" exemption |
+| 21:12:31 / 21:12:48 / 21:13:38 | Pixel | -> 354 / 109 / 154 kbps | overuse (q 165 ms; or 3-6 overuse reports): drain and estimate cut to the delivered rate, which follows our own rate |
+| 21:14:07-10 | Pixel | 500 -> 100 kbps | drops 4 -> 8 with nothing delivered, RTT 127 ms |
+| 15:43:00-01 UTC | laptop | 2000 -> 663 -> 350 | starvation at 720p15 (1-2 frames per 100 ms window) |
+| 15:44:04-08 UTC | laptop | -> 432 -> 155 | 12 overuse reports, then a backlog reset; also one `reason=cpu` step at ~32% CPU (not looked into) |
+
+**Sim model**: `Link::spikes` `(from, to, extra_us)`: packets leaving in the window take 60-100%
+of `extra_us` longer, both directions, in order, nothing lost (a stall, a second of delay, a
+burst). Scenario `wifi`: 20 Mbps, 4 ms +- 4 ms one way, 512 KB buffer, 1 s spikes of 60, 45, 130
+and 85 ms at 8, 30, 52 and 75 s, 90 s, phone model; the same at 2.4 Mbps and 1.6 Mbps (128 KB
+buffer) and with real AV1 (30 s, 85 ms at 8 s, 130 ms at 20 s). From 5 s: mean target rate,
+share of frames shown at >= 540p, lowest size; latency p50 / p95 / max over the run.
+
+| Scenario | before | after |
+|---|---|---|
+| wifi, 20 Mbps | 22/35/172; 1540 kbps, 53% >= 540p; 360p at 8.7 s (est 357 kbps) until 43.7 s, 720p24 -> 540p at 52.8 s | 32/38/216; **1955 kbps, 98%**, 720p24 from 12 s, no step down |
+| wifi, 2.4 Mbps | 34/79/199; 1209 kbps, 48%; 360p at 9.1 s, 180p at 52.8 and 75.8 s (est 100-132 kbps) | 64/92/193; **1827 kbps, 98%**, 720p24 from 14 s; between spikes p95 86 ms, max 163 (was 69 / 155) |
+| wifi, 1.6 Mbps (new) | not measured (same rules apply) | 50/108/197; 1176 kbps, 66%, 180p at 52.9 s (the old rules: see below); between spikes p95 101 ms |
+| real AV1, wifi | 14/95/184; 578 kbps, 11%, 180p at 8.8 and 21.3 s | 28/104/184; **1879 kbps, 95%**, 720p24 from 12 s, 0 decode errors |
+
+Every other scenario (latency p50 / p95 / max, frozen, wire kbps, keyframes, sizes; before = this
+branch's base):
+
+| Scenario | before | after |
+|---|---|---|
+| clean 2 Mbps; 2 M -> 300 k; deep buffer; 500 ms outage; relay; 2 M -> 200 k -> 2 M; drift; slow receiver; slow start; size hint; hw keyframes; 2 M -> 700 k; real AV1 2 M -> 200 k -> 2 M | (each its own numbers) | unchanged, same numbers |
+| 2 M -> 1 M (1b) | 64/120/285, 1265 kbps; 540p at 24.3 s | 64/115/285, 1278 kbps; 540p at 21.5 s |
+| 3% loss, 2 Mbps | 62/131/234, 1249 kbps | 58/122/221, 1191 kbps |
+| 1.5 M, 3% loss, 60 s | 57/120/206, 1083 kbps, 0 switches after 10 s | 59/122/204, 1133 kbps, 0 |
+| busy desktop | 70/108/208, 1662 kbps, 720p at 12.0 s | 70/109/221, 1655 kbps, 720p at 13.3 s |
+| 2 M / 900 k flapping | 68/122/261, 1184 kbps | 68/122/261, 1187 kbps |
+| throttled 2x | 69/95/158 | 69/96/158 |
+| slow device | 77/112/155 | 78/107/152 |
+| fps hint | 66/90/138, 1921 kbps | 64/89/138, 1905 kbps |
+| real AV1, 2% loss + outage | 50/130/224, 0.6 s, 360p | 48/124/224, 0.6 s, 540p from 11.7 s |
+
+Trade-offs: on a fast link the spike's own delay is now sent through (p50 22 -> 32 ms at 20 Mbps:
+2 Mbps at 720p instead of 360p); near the link's capacity (2.4 Mbps) a spike adds ~20 ms to p95
+between spikes (a queue of ours drains at 70% instead of 25%). Below the top rate (1.6 Mbps) the
+link is full when the spike comes, so no burst above the old rate shows and the stall reads as a
+slower link: the old rules, down to 180p for 10 s. Telling those apart needs more than the delivered
+rate (per-packet arrival timing). Loss and keyframe bursts sometimes match the spike signature
+too (3% loss: 10-20 a minute); their numbers above stay within noise.
+
+Run: `cargo test -p video --release --lib sim:: -- --nocapture` (`SIM_TRACE=reports SIM_FROM=<s>
+SIM_TO=<s>` prints the reports in a window).
 
 ## Capture/render conversion (`video::convert`)
 

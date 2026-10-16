@@ -74,8 +74,20 @@ Tested on devices: Pixel 3a -> laptop HD with no flicker; phone-started video ca
       core label's reason (`video_send_label`) or drop the line.
 - [ ] **Climb back after a real hide is slow:** after "not visible" (180p15) the sender steps up
       one step at a time (5 s holds). Restore the step held before the hint, if the estimate allows.
-- [ ] **Label can stay on "slow network"** after recovery until back at HD (`last_step_reason`
-      is sticky).
+- [x] **Label can stay on "slow network"** after recovery (2026-10-16, fix/wifi-spike-estimator):
+      "slow network" only while the send rate is below the next size's step-up threshold.
+- [x] **Wi-Fi delay spikes collapse the rate to 180p** (2026-10-16, fix/wifi-spike-estimator): a
+      stall followed by a burst is taken back at the second look and the rest of the spike held;
+      sim `wifi_delay_spikes*` (docs/video.md, Wi-Fi delay spikes). Device check open: a 2-minute
+      Pixel <-> laptop call on the 2.4 GHz router, expect no step below 540p on a spike and
+      `rate` steps only with real slowdowns (logs don't show `RateTrace.spikes`/`held` yet).
+- [ ] **A spike on a full link still reads as a slower link** (sim `wifi 1.6M`: 180p for 10 s): no
+      burst above the old rate shows. Needs per-packet arrival timing (transport-wide feedback).
+- [ ] **Starvation at 15 fps** (laptop log: 2 Mbps -> 350 kbps at 720p15, 1-2 frames per 100 ms
+      window): not modelled in the sim; the spike rule may cover it, unverified.
+- [ ] **Laptop `reason=cpu` step at ~32% CPU** (real call 15:44:04 UTC, 540p15 -> 360p24): look
+      at the desktop encode-time samples (libvpx VP8) before tuning anything.
+- [ ] Log `RateTrace.spikes` / `held` in the per-second `video send` line (pipes.rs).
 - [ ] **720p15 drifts to 540p30 near link capacity** (15 fps makes the delay signal noisy); 180p has
       no fps floor; the real-AV1 loss scenario now holds 360p with p95 130 ms (was 91).
 - [ ] **Other callbacks may re-enter like `on_video_state` did** (the ART "detach while still
