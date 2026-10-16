@@ -192,3 +192,41 @@ fn peer_cap_limits_the_ladder() {
     assert_eq!(max_rung(&l, 640 * 360), 1);
     assert_eq!(max_rung(&l, 1), 0);
 }
+
+#[test]
+fn offer_has_av1_and_vp8_only_where_built_in() {
+    let (decode, encode) = codecs::local_offer_codecs();
+    assert_eq!(decode[0], VideoCodec::Av1);
+    assert_eq!(decode.contains(&VideoCodec::Vp8), cfg!(feature = "vp8"));
+    // Hosts have no hardware VP8 encoder: they always send AV1.
+    assert_eq!(encode, vec![VideoCodec::Av1]);
+    assert!(codecs::new_encoder(VideoCodec::Vp8, &EncoderConfig::default()).is_err());
+    assert_eq!(codecs::new_decoder(VideoCodec::Vp8, MAX_PIXELS).is_ok(), cfg!(feature = "vp8"));
+}
+
+/// The receive path with the negotiated codec VP8: frames from the video crate's libvpx fixture
+/// (see `video::vpx` tests for how it was made) come out as pictures and stats.
+#[cfg(feature = "vp8")]
+#[test]
+fn vp8_frames_decode_on_the_receive_path() {
+    const IVF: &[u8] = include_bytes!("../../../video/testdata/vp8_96x64.ivf");
+    let mut payloads = Vec::new();
+    let mut at = 32;
+    while at + 12 <= IVF.len() {
+        let n = u32::from_le_bytes(IVF[at..at + 4].try_into().unwrap()) as usize;
+        payloads.push(IVF[at + 12..at + 12 + n].to_vec());
+        at += 12 + n;
+    }
+    let pipe = Arc::new(Pipe::default());
+    let (tx, rx) = mpsc::channel(payloads.len());
+    for (i, payload) in payloads.into_iter().enumerate() {
+        tx.try_send(Frame { group: 0, index: i as u32, capture_us: 0, payload }).unwrap();
+    }
+    drop(tx);
+    decode_loop(pipe.clone(), rx, VideoCodec::Vp8);
+    let st = pipe.stats.lock().clone();
+    assert_eq!((st.frames_decoded, st.decode_errors), (8, 0));
+    assert_eq!((st.recv_width, st.recv_height), (96, 64));
+    let out = pipe.output.lock().take().unwrap();
+    assert_eq!((out.width, out.height, out.seq), (96, 64, 8));
+}

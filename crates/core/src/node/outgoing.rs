@@ -155,7 +155,7 @@ impl Inner {
         mut cmds: mpsc::UnboundedReceiver<Cmd>,
     ) {
         let offer = self.video_offer();
-        let (mut legs, mut ev_rx) = self.spawn_legs(&ep, &me, &contact, &call, offer);
+        let (mut legs, mut ev_rx) = self.spawn_legs(&ep, &me, &contact, &call, offer.clone());
         // What each leg is doing, to decide the end when none is left.
         #[derive(Clone, Copy, PartialEq)]
         enum LegPhase {
@@ -232,7 +232,8 @@ impl Inner {
                             let datagrams = self.start_media(&call, &conn);
                             self.set_state(&call, CallState::Active);
                             // An answer may only take video we offered.
-                            self.video_decided(&call, &conn, offer, video.filter(|_| offer.is_some()));
+                            let theirs = video.filter(|_| offer.is_some());
+                            self.video_decided(&call, &conn, offer, theirs);
                             self.clone().run_call(call, conn, *ctrl, cmds, None, Some(datagrams)).await;
                             return;
                         }
@@ -334,7 +335,7 @@ impl Inner {
                     if let Msg::CallHello { relay, devices, video, .. } = &mut hello {
                         *relay = relay_of(ep);
                         *devices = list.clone();
-                        *video = offer;
+                        *video = offer.clone();
                     }
                     hello
                 },

@@ -26,6 +26,13 @@ capture settings, not the new opt-in preference.
 - **Codec: AV1.** Encoder = libaom in realtime mode (C, through `csrc/aom_rt.c`); decoder =
   rav1d (Rust port of dav1d). The decoder is the side that parses peer-controlled bytes, so it
   is the memory-safe one; the encoder only ever sees our own camera frames.
+- **Hardware VP8 for 1:1 calls** (decided 2026-10-16, [design](design/video-hw-vp8.md)): an
+  Android phone with a hardware VP8 encoder sends VP8 when the peer decodes it (the offer's
+  codec lists, `proto::send_codec`); phones decode VP8 with MediaCodec, the Linux desktop with
+  libvpx (static, decoder-only, `scripts/build_libvpx.py`, video feature `vp8`; peer keyframes
+  above `max_pixels` are refused before libvpx parses them). AV1 stays the default and the
+  fallback; the desktop never encodes VP8. Follow-up before release: sandbox the desktop
+  libvpx decoder (C parsing peer bytes, unlike rav1d).
 - **rav1e rejected for calls**: built for offline encoding. Even at speed 10 with low latency
   it holds 4 frames (~130 ms) before the first packet (lookahead is structural) and is ~20-40x
   slower than libaom RT. Kept in the crate only for comparison (`rav1e_holds_frames_back`).
@@ -182,9 +189,12 @@ Runs `media::Sender`/`Receiver` over the call's iroh `Connection` (audio stays o
 ## Call protocol and core API (`crates/core/src/video_call.rs`)
 
 **Negotiation** (`proto::Msg`, JSON on the call's control stream):
-- `CallHello.video` / `Accept.video`: `Option<VideoOffer { max_pixels }>`. Presence = "this
-  device does AV1 video in this call"; `max_pixels` = largest picture it wants to receive
-  (today 1280x720). The callee answers with an offer only if the hello had one and video is
+- `CallHello.video` / `Accept.video`: `Option<VideoOffer { max_pixels, decode, encode }>`.
+  Presence = "this device does video in this call"; `max_pixels` = largest picture it wants to
+  receive (today 1280x720); `decode`/`encode` = its codecs, best first (`decode` always has
+  AV1; `encode` has VP8 only with a hardware encoder). Each direction uses
+  `proto::send_codec(sender, receiver)`, computed by both ends (`video_call/codecs.rs` builds
+  the offer and picks the encoder/decoder; `VideoStats.send_codec`/`recv_codec` log them). The callee answers with an offer only if the hello had one and video is
   enabled on it (`set_video_enabled`, default on); the caller ignores an offer it didn't ask
   for. Both present = video negotiated, else the call is audio only (nothing else changes).
 - The sender caps its ladder (`LadderConfig::max_rung`) at the highest rung within the peer's

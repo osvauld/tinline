@@ -26,6 +26,8 @@ fn frame_roundtrip_all_variants() {
             devices: None,
             video: Some(VideoOffer {
                 max_pixels: 1280 * 720,
+                decode: vec![VideoCodec::Av1, VideoCodec::Vp8],
+                encode: vec![VideoCodec::Vp8, VideoCodec::Av1],
             }),
         },
         Msg::Video { camera: true },
@@ -284,5 +286,60 @@ fn every_signable_passes_the_envelope_table() {
         },
         x,
         y,
+    );
+}
+
+fn offer(decode: &[VideoCodec], encode: &[VideoCodec]) -> VideoOffer {
+    VideoOffer {
+        max_pixels: 1280 * 720,
+        decode: decode.to_vec(),
+        encode: encode.to_vec(),
+    }
+}
+
+#[test]
+fn send_codec_table() {
+    use VideoCodec::{Av1, Vp8};
+    // Phone with a hardware VP8 encoder, desktop with libvpx (decode only), phone without one.
+    let phone = offer(&[Av1, Vp8], &[Vp8, Av1]);
+    let desktop = offer(&[Av1, Vp8], &[Av1]);
+    let old_phone = offer(&[Av1, Vp8], &[Av1]);
+    let av1_only = offer(&[Av1], &[Av1]);
+    let cases = [
+        (&phone, &phone, Vp8),
+        (&phone, &desktop, Vp8),
+        (&desktop, &phone, Av1),
+        (&phone, &old_phone, Vp8),
+        (&old_phone, &phone, Av1),
+        (&phone, &av1_only, Av1),
+        (&av1_only, &phone, Av1),
+        (&av1_only, &av1_only, Av1),
+        (&desktop, &desktop, Av1),
+    ];
+    for (i, (s, r, want)) in cases.into_iter().enumerate() {
+        assert_eq!(send_codec(s, r), want, "case {i}");
+    }
+    // The sender's order wins; an empty or odd offer falls back to AV1.
+    assert_eq!(
+        send_codec(&offer(&[Av1], &[Av1, Vp8]), &offer(&[Vp8, Av1], &[])),
+        Av1
+    );
+    assert_eq!(send_codec(&offer(&[], &[]), &offer(&[], &[])), Av1);
+    assert_eq!(send_codec(&offer(&[Av1], &[Vp8]), &offer(&[Av1], &[])), Av1);
+}
+
+#[test]
+fn video_offer_json_shape() {
+    let o = offer(&[VideoCodec::Av1, VideoCodec::Vp8], &[VideoCodec::Av1]);
+    let j = serde_json::to_string(&o).unwrap();
+    assert_eq!(
+        j,
+        r#"{"max_pixels":921600,"decode":["av1","vp8"],"encode":["av1"]}"#
+    );
+    assert_eq!(serde_json::from_str::<VideoOffer>(&j).unwrap(), o);
+    // Unknown codecs are not part of the pre-release wire; they fail to parse.
+    assert!(
+        serde_json::from_str::<VideoOffer>(r#"{"max_pixels":1,"decode":["h264"],"encode":[]}"#)
+            .is_err()
     );
 }

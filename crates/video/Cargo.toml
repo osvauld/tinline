@@ -11,6 +11,11 @@ rav1e = ["dep:rav1e"]
 # iroh transport (crate::net); same dependency versions as crates/core.
 net = ["dep:iroh", "dep:tokio", "dep:bytes"]
 
+# libvpx VP8 decoder (`vpx::Vp8Decoder`, csrc/vpx_dec.c): the desktop enables it, Android
+# decodes VP8 with MediaCodec. Static from scripts/build_libvpx.py (`VPX_DIR`), else the system
+# libvpx (pkg-config vpx) on dev hosts.
+vp8 = []
+
 # Simulated link, y4m reader, codec bench, synthetic `Pattern` camera and `psnr_y`: dev/test
 # tooling, kept out of release libraries (unit tests always have it).
 sim = []

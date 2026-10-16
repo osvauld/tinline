@@ -1,6 +1,7 @@
 //! The send and receive tasks and codec threads of one call.
 
 use super::*;
+use super::codecs::{new_decoder, new_encoder};
 
 /// Ladder rung cap for a peer that takes at most `max_pixels`.
 pub(super) fn max_rung(ladder: &LadderConfig, max_pixels: u32) -> usize {
@@ -12,7 +13,7 @@ pub(super) fn max_rung(ladder: &LadderConfig, max_pixels: u32) -> usize {
         .min(ladder.max_rung)
 }
 
-pub(super) async fn run_send(conn: Connection, pipe: Arc<Pipe>, peer_max_pixels: u32) {
+pub(super) async fn run_send(conn: Connection, pipe: Arc<Pipe>, peer_max_pixels: u32, codec: VideoCodec) {
     let mut cfg = SenderConfig::default();
     cfg.ladder.max_rung = max_rung(&cfg.ladder, peer_max_pixels);
     let send = match VideoSend::accept(conn, cfg).await {
@@ -24,16 +25,16 @@ pub(super) async fn run_send(conn: Connection, pipe: Arc<Pipe>, peer_max_pixels:
     };
     let spawned = std::thread::Builder::new()
         .name("tl-video-enc".into())
-        .spawn(move || encode_loop(pipe, send));
+        .spawn(move || encode_loop(pipe, send, codec));
     if let Err(e) = spawned {
         tracing::warn!("video encoder thread: {e}");
     }
 }
 
-pub(super) fn encode_loop(pipe: Arc<Pipe>, send: VideoSend) {
+pub(super) fn encode_loop(pipe: Arc<Pipe>, send: VideoSend, codec: VideoCodec) {
     video::cpu::pin_to_fast_cores();
     let epoch = Instant::now();
-    let mut enc: Option<(AomEncoder, usize, usize)> = None;
+    let mut enc: Option<(Box<dyn VideoEncoder>, usize, usize)> = None;
     let mut rate = 0;
     loop {
         let input = {
@@ -75,7 +76,7 @@ pub(super) fn encode_loop(pipe: Arc<Pipe>, send: VideoSend) {
                 threads: ENCODER_THREADS,
                 ..Default::default()
             };
-            match AomEncoder::new(&cfg) {
+            match new_encoder(codec, &cfg) {
                 Ok(e) => enc = Some((e, w, h)),
                 Err(e) => {
                     tracing::warn!("video encoder: {e}");
@@ -118,7 +119,7 @@ pub(super) fn encode_loop(pipe: Arc<Pipe>, send: VideoSend) {
     }
 }
 
-pub(super) async fn run_recv(conn: Connection, pipe: Arc<Pipe>) {
+pub(super) async fn run_recv(conn: Connection, pipe: Arc<Pipe>, codec: VideoCodec) {
     let mut recv = match VideoRecv::new(conn, RecvConfig::default()).await {
         Ok(r) => r,
         Err(e) => {
@@ -131,7 +132,7 @@ pub(super) async fn run_recv(conn: Connection, pipe: Arc<Pipe>) {
     let dec_pipe = pipe.clone();
     let spawned = std::thread::Builder::new()
         .name("tl-video-dec".into())
-        .spawn(move || decode_loop(dec_pipe, rx));
+        .spawn(move || decode_loop(dec_pipe, rx, codec));
     if let Err(e) = spawned {
         tracing::warn!("video decoder thread: {e}");
         return;
@@ -155,9 +156,9 @@ pub(super) async fn run_recv(conn: Connection, pipe: Arc<Pipe>) {
     }
 }
 
-pub(super) fn decode_loop(pipe: Arc<Pipe>, mut rx: mpsc::Receiver<Frame>) {
+pub(super) fn decode_loop(pipe: Arc<Pipe>, mut rx: mpsc::Receiver<Frame>, codec: VideoCodec) {
     video::cpu::pin_to_fast_cores();
-    let mut dec = match Decoder::new(DECODER_THREADS, MAX_PIXELS) {
+    let mut dec = match new_decoder(codec, MAX_PIXELS) {
         Ok(d) => d,
         Err(e) => {
             tracing::warn!("video decoder: {e}");
