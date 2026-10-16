@@ -65,13 +65,13 @@ impl App {
             let muted = self.ctl.muted.load(Ordering::Relaxed);
             let controls: El = if incoming {
                 row![
-                    self.round_btn(t, Kind::End, Icon::PhoneOff, "Decline", Some(Msg::Decline), false),
+                    self.round_btn(t, Kind::End, Icon::Hangup, "Decline", Some(Msg::Decline), false),
                     self.round_btn(t, Kind::Accept, Icon::Phone, "Answer", Some(Msg::Answer), false),
                 ].spacing(36).into()
             } else {
                 row![
                     self.round_btn(t, Kind::Quiet, if muted { Icon::MicOff } else { Icon::Mic }, if muted { "Muted" } else { "Mute" }, active.then_some(Msg::ToggleMute), muted),
-                    self.round_btn(t, Kind::End, Icon::PhoneOff, "End", Some(Msg::Hangup), false),
+                    self.round_btn(t, Kind::End, Icon::Hangup, "End", Some(Msg::Hangup), false),
                     self.round_btn(t, Kind::Quiet, if self.video.local_on() { Icon::Video } else { Icon::VideoOff },
                         if matches!(self.video.source, Some(None)) { "No camera" } else { "Camera" },
                         (active && self.video.negotiated() && self.video.has_camera()).then_some(Msg::Video(super::super::Vm::ToggleCamera)), self.video.local_on()),
@@ -183,7 +183,7 @@ impl App {
         stack![scrim, container(card).center_x(Fill).align_bottom(Fill).padding(24)].into()
     }
 
-    /// CallStrip.svelte: a minimised call, 44 px across the top of the list and detail columns (in flow, so the
+    /// CallStrip.svelte: a minimised call, 44 px across the top of the window (in flow, so the
     /// app below moves down with it): accent, phone 18, the name 15/650, the timer (or status) 13 tabular at the end,
     /// and End as a 32 px danger pill. Tapping the strip returns to the call.
     pub(super) fn call_strip(&self, t: Tok) -> Option<El<'_>> {
@@ -203,12 +203,13 @@ impl App {
             .height(44).width(Fill).style(ui::plain(t.accent, 0.0)).into())
     }
 
-    /// The desktop frame: navigation | (strip over (list | pane)); a waiting call turns the brand row into the caller (ring_head_waiting).
+    /// The desktop frame: strip over (navigation | list | pane). The minimised call is the window's top bar, full width
+    /// over the navigation too, like the phone's strip at the top (DesktopShell.svelte `.callstrip`, 2026-10-16); a
+    /// waiting call turns the brand row into the caller (ring_head_waiting).
     pub(super) fn framed<'a>(&'a self, t: Tok, pane: El<'a>) -> El<'a> {
-        let mut right = column![];
-        if let Some(s) = self.call_strip(t) { right = right.push(s); }
-        if let Some(s) = self.gcall_strip(t) { right = right.push(s); }
-        right = right.push(row![self.list_pane(t), pane].height(Fill));
-        row![self.shell_navigation(t), right.width(Fill).height(Fill)].height(Fill).into()
+        let mut col = column![];
+        if let Some(s) = self.call_strip(t) { col = col.push(s); }
+        if let Some(s) = self.gcall_strip(t) { col = col.push(s); }
+        col.push(row![self.shell_navigation(t), self.list_pane(t), pane].height(Fill)).width(Fill).height(Fill).into()
     }
 }

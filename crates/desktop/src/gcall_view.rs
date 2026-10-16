@@ -115,7 +115,7 @@ impl App {
         let host = container(host).center_x(Fill).padding(Padding { top: 4.0, bottom: 12.0, ..Padding::ZERO });
         let ctl = row![
             self.round_btn(t, Kind::Quiet, if g.muted { Icon::MicOff } else { Icon::Mic }, if g.muted { "Muted" } else { "Mute" }, connected.then_some(gm(Gm::Mute)), g.muted),
-            self.round_btn(t, Kind::End, Icon::PhoneOff, "Leave", live.then_some(gm(Gm::Leave)), false),
+            self.round_btn(t, Kind::End, Icon::Hangup, "Leave", live.then_some(gm(Gm::Leave)), false),
         ].spacing(56);
         let content = column![top, head, stage.height(Fill), host, container(ctl).center_x(Fill)]
             .padding(Padding { top: 8.0, right: 20.0, bottom: 36.0, left: 20.0 }).width(Fill).height(Fill);

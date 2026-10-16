@@ -219,6 +219,8 @@ pub fn alpha(c: Color, a: f32) -> Color {
 pub enum Icon {
     Phone,
     PhoneOff,
+    /// End, Decline, Leave (tin `hangup`).
+    Hangup,
     Mic,
     MicOff,
     UserPlus,
@@ -278,7 +280,7 @@ impl Icon {
             Icon::Devices => r#"<path d="M3 6h13v9H3zM1 18h17M18 9h4v9h-4z"#,
             Icon::Volume => r#"<path d="M4 9v6h4l5 4V5L8 9zM16.5 9a4 4 0 0 1 0 6"/>"#,
             Icon::Phone => r#"<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>"#,
-            Icon::PhoneOff => r#"<path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.42 19.42 0 0 1-3.33-2.67m-2.67-3.34a19.79 19.79 0 0 1-3.07-8.63A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91"/><path d="M22 2 2 22"/>"#,
+            Icon::PhoneOff | Icon::Hangup => r#"<path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.42 19.42 0 0 1-3.33-2.67m-2.67-3.34a19.79 19.79 0 0 1-3.07-8.63A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91"/><path d="M22 2 2 22"/>"#,
             Icon::Mic => r#"<path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/>"#,
             Icon::MicOff => r#"<path d="M2 2l20 20"/><path d="M18.89 13.23A7.12 7.12 0 0 0 19 12v-2"/><path d="M5 10v2a7 7 0 0 0 12 5"/><path d="M15 9.34V5a3 3 0 0 0-5.68-1.33"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12"/><path d="M12 19v3"/>"#,
             Icon::UserPlus => r#"<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6"/><path d="M22 11h-6"/>"#,
@@ -417,7 +419,7 @@ pub const STROKE: &str = r##"fill="none" stroke="#000" stroke-width="1.75" strok
 /// An icon of `size` px in `color`: the tin icon of the same meaning when there is one (crates/tin-icons).
 pub fn icon<'a, M: 'a>(i: Icon, size: f32, color: Color) -> Element<'a, M> {
     let tin = match i {
-        Icon::Phone => Some("phone"), Icon::PhoneOff => Some("callend"), Icon::Mic => Some("mic"), Icon::MicOff => Some("micoff"), Icon::UserPlus => Some("userplus"),
+        Icon::Phone => Some("phone"), Icon::PhoneOff => Some("callend"), Icon::Hangup => Some("hangup"), Icon::Mic => Some("mic"), Icon::MicOff => Some("micoff"), Icon::UserPlus => Some("userplus"),
         Icon::Sliders => Some("sliders"), Icon::ArrowLeft | Icon::ChevronLeft => Some("back"), Icon::Copy => Some("copy"), Icon::Check => Some("check"),
         Icon::X => Some("x"), Icon::Lock => Some("lock"), Icon::ChevronRight => Some("chevr"), Icon::ChevronDown => Some("chev"), Icon::Info => Some("info"),
         Icon::Pencil => Some("edit"), Icon::Trash => Some("trash"), Icon::Incoming => Some("call-in"), Icon::Outgoing => Some("call-out"),
