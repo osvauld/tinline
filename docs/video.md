@@ -45,7 +45,8 @@ capture settings, not the new opt-in preference.
   groups to members (MoQ is relay-shaped), same wire format.
 - **Rate control: delay-based at the app layer** (GCC idea). The receiver reports delivered
   rate (sliding 100 ms) + queueing delay (least delayed frame of the last 100 ms, arrival
-  minus capture time, above its 10 s minimum; the clock offset cancels) every 50 ms. The
+  minus the sender's stamp, taken when the frame is handed to the transport, above its 10 s
+  minimum; the clock offset cancels) every 50 ms. The
   sender backs off to 85% of delivered when queueing > 40 ms or the link is *starved*
   (delivered < 50% of the delta frames we sent, two reports in a row), takes a second look
   150 ms later (median delivered; the ladder waits for it), then **drains** the standing
@@ -94,7 +95,8 @@ capture settings, not the new opt-in preference.
 
 ## Wire format (per group stream)
 
-`[group: u64 BE]`, then frames `[len: u32 BE][capture_us: u64 BE][AV1 temporal unit]`.
+`[group: u64 BE]`, then frames `[len: u32 BE][stamp_us: u64 BE][AV1 temporal unit]` (`stamp_us`:
+sender clock, when the frame was handed to the transport; until 2026-10-17 the capture time).
 Frame 0 of a group is a keyframe. Receiver caps frame size (`max_frame`, default 1 MiB).
 No resolution field: the size only changes at a keyframe, whose AV1 sequence header carries
 it, and rav1d follows it with the same decoder instance.
@@ -152,8 +154,8 @@ below are the 30 fps-only ladder they extend.
 
 Runs `media::Sender`/`Receiver` over the call's iroh `Connection` (audio stays on datagrams).
 
-- **`VideoSend`** (`accept(conn, cfg)` waits for the receiver's control stream): `send(capture_us,
-  key, payload)` never blocks; the encoder loop reads `bitrate()` / `wants_keyframe()`. Each
+- **`VideoSend`** (`accept(conn, cfg)` waits for the receiver's control stream): `send(stamp_us,
+  key, payload)` (stamp taken right before the call) never blocks; the encoder loop reads `bitrate()` / `wants_keyframe()`. Each
   `Out::Open` is a task: `open_uni`, `set_priority(group)` (newest first), writes, `finish`,
   `reset` on `Out::Reset` (also after finish, while QUIC may still be sending it).
 - **`VideoRecv`** (`new(conn, cfg)` opens the control stream): `recv()` yields frames in decode
@@ -785,6 +787,94 @@ Wi-Fi spikes, slow device/receiver/start, hints, hw keyframes: within noise.
   together with the rate at the floor.
 
 Run: `cargo test -p video --release --lib sim:: -- --nocapture`; `SIM_MATRIX=1` per-seed lines.
+
+### A busy sender is not a queue (2026-10-17, `fix/laptop-to-phone`)
+
+**The call** (after the rules above): Pixel 3a <-> Tiger Lake laptop, home 2.4 GHz Wi-Fi, VP8
+both ways. Pixel -> laptop (hardware encoder): 540p, 1.9 Mbps, overuse count flat. Laptop ->
+Pixel (libvpx): 180p for 75 of 80 s, ~250 kbps, an overuse report every ~5 s (69 -> 88 in 30
+s), queue readings 40-60 ms, no drops; each cycle climbed to the 180p ceiling (500 kbps) and was
+cut to 115-280.
+
+**Cause** (laptop log, per second): the seconds with overuse are the seconds the laptop *sent*
+fewer frames (18-20 fps instead of 26-30; corr(fps, overuse) -0.37, corr(fps, queue) -0.47) and
+its own decode+render p75 rose to 9-16 ms (5-7 ms otherwise; corr with fps -0.61): the laptop was
+busy, and its camera -> encode -> send path ran tens of ms late. The receiver measured queueing
+from the **capture** time, so that lateness read as a queue in the path. The phone's hardware
+encoder takes a steady ~3 ms, so the other direction never saw it. The phone's receive side
+can't be ruled out from these logs (no per-frame timing there; see below), but the sender-side
+correlation is direct. Capture stamps also read each step up's longer encode as a queue.
+
+**Changes**:
+- Frames are stamped when handed to the transport (`encode_loop` -> `VideoSend::send`), as GCC's
+  abs-send-time does. Encode time is the ladder's CPU rule's business, not the rate's.
+- Ladder: dips below the next step's threshold adding up to <= 25% of the 5 s hold
+  (`up_dip_pct`) no longer restart it (a burst's 50% cut every few seconds kept 180p forever).
+- Debug log `video timing` once a second (`RUST_LOG=p2pcore=debug`): encode p50/p90/max,
+  capture -> send p50/p90/max, frames, camera frames replaced before encoding, receive waits on
+  the decoder > 5 ms (count, max; arrivals are stamped late while it waits).
+- Sim: `Device::busy` (every frame up to N ms slower for a while), `Scenario::stamp_capture` /
+  `SIM_STAMP_CAPTURE=1` (the old stamps), `SIM_UP_DIP=<pct>`.
+
+`busy_sender_is_not_a_queue` (10 Mbps LAN, `busy_desktop` encoder, busy 0.5-2 s every 2-7 s with
+frames 20-60 ms late; 90 s, three seeds):
+
+| | kbps | >= 540p | >= 360p | p50 / p95 ms | overuse reports / run |
+|---|---|---|---|---|---|
+| capture stamps (before) | 414 | 1% | 20% | 12 / 70 | 162-284 |
+| send stamps, no dip rule | 1124 | 30% | 55% | 18 / 85 | 0 |
+| send stamps + dip rule | **1814** | **78%** | **100%** | 26 / 99 | 0 |
+
+(Without the dip rule two seeds stayed at 180-360p: busy periods also trip the CPU rule.)
+
+Network matrix and existing scenarios (before = 1d949e1, same worker; kbps, >= 540p / >= 360p,
+p50 / p95 ms, freezes (s)):
+
+| Scenario | before | after |
+|---|---|---|
+| lan | 1513, 76% / 100%, 40 / 236, 25.0 (14.5) | 1477, 68% / 100%, 40 / 243, 25.7 (14.7) |
+| cafe | 1494, 76% / 100%, 50 / 146, 20.0 (15.4) | 1530, 89% / 100%, 55 / 132, 18.3 (16.6) |
+| lte | 1403, 86% / 100%, 77 / 144, 7.3 (7.0) | 1550, 86% / 100%, 79 / 147, 6.3 (7.4) |
+| relay | 425, 0% / 38%, 156 / 597, 44.7 (18.5) | 406, 0% / 35%, 156 / 568, 40.0 (18.3) |
+| weak | 552, 0% / 100%, 74 / 126, 0 | 557, 0% / 96%, 74 / 131, 0 |
+| step / 20-90 s | 711, 63 / 113; 539, 67 / 114 | 712, 63 / 114; 540, 67 / 116 |
+| step+stall / 20-90 s | 722, 36% 540p, 70 / 117, 1.7 (1.4); 530 | 733, 10% 540p, 62 / 120, 1.7 (1.5); 540 |
+| lan seeds sw / hw (120 s, 6 seeds) | 1406 / 1106 kbps, 69% / 42% >= 540p, frozen 17.8 / 16.1 s | 1489 / 1516, 78% / 78%, 19.4 / 17.8 s |
+| clean 2 Mbps | 1559 kbps wire, 70 / 108 | 1681, 78 / 122 |
+| wifi 1.6 M (calm p95) | 1205 kbps, 102 ms | 1322, 120 ms |
+| 2 M -> 300 k (worst after 11.5 s) | 59 / 112, max 638 | 64 / 134, max 1220 (drained by 11.8 s) |
+| 2 M -> 200 k -> 2 M | 55 / 114, max 1006, 0.3 s frozen | 56 / 568, max 1912, 1.6 s frozen |
+
+**Trade-off**: the capture stamps' encode time (+6 ms at 540p, +13 at 720p after a step up)
+kept the rate ~20% under the sims' 2 Mbps links, which equal our `max_bps`. Without it the rate
+runs at ~1.9 Mbps, and a sudden drop to 200-300 kbps finds ~2x as much in flight (detected
+~150 ms after the drop either way): 1-2 s of stale video instead of 0.6-1 s. On links with
+headroom above 2 Mbps (most LANs) nothing changes. If that matters more than the busy-sender
+case, the fix is a deliberate margin (e.g. a lower ramp near the last overuse rate), not encode
+time in the delay signal; the relaxed assertions carry the numbers.
+
+**Other findings**:
+- 500 kbps at 180p is the rung's `max_bps`: the estimate is clamped to it. Stepping to 360p30
+  needs 325 kbps (130% of its 250 kbps floor) held 5 s, and 10 s after the last step down.
+- The `cpu` step at 360p (360p24 -> 360p15, the second of the call): at 30 fps the CPU rule
+  needs 30 encode samples in a second, and the laptop sent 10-22 fps then, so it could only
+  fire once the rate rule had moved to 24 fps; it then saw a median over 25 ms (60% of 24 fps's
+  frame time). libvpx speed 6 (`cpu-used -6` is fixed speed 6, not automatic) at 360p should
+  take a few ms on that CPU; together with its 540p decode at 5-15 ms (~2 ms expected) the
+  laptop was starved of CPU then. Wall-clock encode time counts preemption, which is right
+  for "can this machine keep up", so nothing changed there; the `video timing` line shows it.
+- libvpx at 180p delivered ~50% of a 100-180 kbps target (Pixel received 40-60 kbps), and the
+  normal ramp is capped at 1.5x delivered, so the estimate sat at 100 kbps for up to 6 s
+  (GCC does the same: no evidence the link carries more). Left as is.
+- The VP8 decoder on Android (`c2.qti.vp8.decoder`) waits up to 20 ms for each picture; while
+  the 2-frame decoder channel is full `run_recv` doesn't read the network, so arrivals are
+  stamped late. Not visible in these logs; `recv_wait` in the timing line measures it.
+
+**Next device call**, capture with `RUST_LOG=info,p2pcore=debug` on the laptop and logcat for
+`p2pcore` debug on the phone: `video timing` lines both sides (a laptop `capture->send p90`
+under ~15 ms and phone `recv_wait>5ms` near 0 confirm both sides are clean), `video send`
+overuse counts both ways, the CPU governor/power profile and `top -H` of the laptop during the
+call (what else is busy: camera MJPEG decode on the camera thread, UI), and router ping.
 
 ## Capture/render conversion (`video::convert`)
 
