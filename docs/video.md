@@ -1158,8 +1158,9 @@ Files: `VideoIo.kt` (the only place frames cross the FFI), `CallVideo.kt` (state
   (false)`, so the peer sees the avatar rather than a frozen picture) and `onStart` turns it
   back on. So `CoreService` needs no `camera` foreground-service type (Android 14 requires it
   only for capture from the background, which we don't do).
-- **Audio route**: turning the camera on moves audio to the speaker (a video call is held
-  away from the ear; that also releases the proximity wake lock).
+- **Audio route**: a video call (`CallInfo.video`, either side pressed Video) starts on the
+  loudspeaker, and turning the camera on in a voice call moves audio there too (a video call is held
+  away from the ear; that also releases the proximity wake lock). A headset always wins.
 - **Debug hooks** (`DebugReceiver`): `video_stats`, `camera on=1|0`, `flip`, `video_enabled
   on=1|0`, `callscreen`, `video_path jni=1|0` (frames through `VideoJni` or UniFFI),
   `video_io_bench n=200` (push cost per path without a call); during a video call

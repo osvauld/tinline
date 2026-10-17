@@ -320,7 +320,9 @@ class CallController(private val app: P2pApp) {
         localEnd = null
         val id = info.callId
         val s = CallSession(
-            app.scope, app, audio, info.peerName.ifBlank { "Tinline call" }, info.incoming, preferSpeaker = false,
+            app.scope, app, audio, info.peerName.ifBlank { "Tinline call" }, info.incoming,
+            // A video call (either side pressed Video) starts on the loudspeaker; a headset still wins.
+            preferSpeaker = info.video,
             onAnswer = { systemAnswer(id) }, onDisconnect = { systemDisconnect(id) }, onSystemMute = { systemMute(id, it) },
         )
         session = s
