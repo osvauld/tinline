@@ -127,8 +127,10 @@ pub struct LadderConfig {
     pub max_fps: u32,
     /// Step up once the bitrate is this % of the next step's floor...
     pub up_margin_pct: u32,
-    /// ...for this long without a break,
+    /// ...for this long, below it for no more than `up_dip_pct` % of that in all (a delay burst
+    /// every few seconds cuts the rate for a few hundred ms; that is no reason never to step up),
     pub up_hold_us: u64,
+    pub up_dip_pct: u32,
     /// and no sooner than this after stepping down.
     pub up_after_down_us: u64,
     /// Median encode time over a second above this % of the current tier's frame interval: too
@@ -158,6 +160,7 @@ impl Default for LadderConfig {
             max_fps: 30,
             up_margin_pct: 130,
             up_hold_us: 5_000_000,
+            up_dip_pct: 25,
             up_after_down_us: 10_000_000,
             encode_budget_pct: 60,
             cpu_block: Backoff { first_us: 5_000_000, max_us: 30_000_000, forget_us: 60_000_000 },
@@ -303,6 +306,9 @@ pub struct Ladder {
     cfg: LadderConfig,
     cur: usize,
     above_since: Option<u64>,
+    /// Time spent below the next step's threshold since `above_since`, and the last look.
+    dip_us: u64,
+    last_look_us: u64,
     last_down_us: Option<u64>,
     /// (time, encode time us) over the last `ENCODE_WINDOW_US` at the current rung, after the
     /// first `warmup` frames.
@@ -340,6 +346,8 @@ impl Ladder {
             cfg,
             cur: 0,
             above_since: None,
+            dip_us: 0,
+            last_look_us: 0,
             last_down_us: None,
             encode: Default::default(),
             warmup: ENCODE_WARMUP,
@@ -493,6 +501,7 @@ impl Ladder {
         self.ups.retain(|u| now_us.saturating_sub(u.1) <= window);
         self.cur = to;
         self.above_since = None;
+        self.dip_us = 0;
         self.last_reason = Some(why);
         if resized {
             self.encode.clear();
@@ -564,8 +573,17 @@ impl Ladder {
             self.set(now_us, down, StepReason::Rate);
             return true;
         }
+        let dt = now_us.saturating_sub(self.last_look_us);
+        self.last_look_us = now_us;
         let Some(next) = self.next_up(now_us, bps) else {
-            self.above_since = None;
+            // A dip: the hold goes on unless the dips add up to too much of it.
+            if self.above_since.is_some() {
+                self.dip_us += dt;
+                if self.dip_us * 100 > self.cfg.up_hold_us * self.cfg.up_dip_pct as u64 {
+                    self.above_since = None;
+                    self.dip_us = 0;
+                }
+            }
             return false;
         };
         let since = *self.above_since.get_or_insert(now_us);
@@ -2030,12 +2048,19 @@ mod tests {
         assert_eq!(hold(&mut l, 10_000 * MS, 14_900 * MS, 800_000), 0);
         assert_eq!(hold(&mut l, 14_900 * MS, 15_200 * MS, 800_000), 1);
         assert_eq!(at(&l), (2, 30));
-        // A dip below the threshold restarts the hold.
+        // A short dip below the threshold (a delay burst's cut) doesn't restart the hold...
         let mut l = ladder(300_000);
         hold(&mut l, 0, 2_000 * MS, 800_000);
-        hold(&mut l, 2_000 * MS, 2_100 * MS, 700_000);
-        assert_eq!(hold(&mut l, 2_100 * MS, 7_000 * MS, 800_000), 0);
-        assert_eq!(hold(&mut l, 7_000 * MS, 7_200 * MS, 800_000), 1);
+        hold(&mut l, 2_000 * MS, 2_400 * MS, 700_000);
+        assert_eq!(hold(&mut l, 2_400 * MS, 5_200 * MS, 800_000), 1);
+        // ...dips adding up to more than 25% of it do.
+        let mut l = ladder(300_000);
+        hold(&mut l, 0, 2_000 * MS, 800_000);
+        hold(&mut l, 2_000 * MS, 2_800 * MS, 700_000);
+        hold(&mut l, 2_800 * MS, 3_500 * MS, 800_000);
+        hold(&mut l, 3_500 * MS, 4_200 * MS, 700_000);
+        assert_eq!(hold(&mut l, 4_200 * MS, 9_000 * MS, 800_000), 0);
+        assert_eq!(hold(&mut l, 9_000 * MS, 9_400 * MS, 800_000), 1);
     }
 
     #[test]
