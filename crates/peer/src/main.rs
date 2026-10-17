@@ -901,7 +901,9 @@ fn link_serve(node: &Arc<Node>, o: &Opts, rx: mpsc::Receiver<Event>) -> Result<(
             }
             ["online", who] => {
                 let did = find(node, who)?;
-                node.watch_presence(did.clone());
+                // Presence is consent-based: being active with the contact (typing) dials it and
+                // sends ours; theirs shows only while they are active with us too.
+                node.chat_typing(did.clone());
                 Ok(format!("ONLINE {}", node.contact_online(did)))
             }
             ["chats"] => {

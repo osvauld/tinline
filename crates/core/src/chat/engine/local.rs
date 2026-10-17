@@ -118,11 +118,10 @@ impl Inner {
         if self.is_self_did(did) {
             return;
         }
-        let sessions = self.chat_sessions_of(core, did);
-        if sessions.is_empty() {
-            self.chat_kick(did.to_string());
-        }
-        for s in sessions {
+        // Writing is local activity: the session stays open and carries our presence.
+        core.mark_active(did, None);
+        self.chat_wake(core, did);
+        for s in self.chat_sessions_of(core, did) {
             let _ = s.tx.send(Cmd::Push(day.to_string()));
         }
     }

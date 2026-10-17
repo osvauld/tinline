@@ -7,17 +7,16 @@
 //! Datagrams, not a `ChatMsg` variant: an older app neither reads them nor breaks on them (it
 //! just shows the contact as not connected).
 //!
-//! Sessions are not held open (decided 2026-10-17): one with no `ChatMsg` traffic for
-//! `wire::idle_close()` closes, unless a side wants it kept. The second datagram kind,
-//! `tk1` + one byte (1 = keep, 0 = no need), says so on every heartbeat and whenever it changes:
-//! the sender is watching the conversation, has something pending for this contact, or is in a
-//! call with them. It expires after `KEEP_TTL` without a refresh. Older apps ignore it (no `tp1`
-//! prefix) and never close idle sessions themselves. Presence is therefore known only while a
-//! session is up, which in practice means while the conversation is open.
+//! Consent-based (decided 2026-10-17): we send presence on a session only while the user here
+//! is active with that contact (typed in the conversation, `Node::chat_typing`, or wrote to it
+//! within `wire::idle_close()`). A contact who dials only to deliver a message therefore learns
+//! nothing beyond that delivery, and "not online" means unknown, not away. Sessions with no
+//! `ChatMsg` traffic and none of our own reasons to stay close after the idle time; a contact
+//! cannot ask us to keep one open. (An older `tk1` keep datagram from a peer is ignored: no
+//! `tp1` prefix.)
 
 use std::collections::HashSet;
-use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use bytes::Bytes;
 use iroh::endpoint::Connection;
@@ -32,10 +31,6 @@ pub(crate) const HEARTBEAT: Duration = Duration::from_secs(8);
 /// clock skew presence tolerates.
 pub(crate) const TIMEOUT_MS: i64 = 30_000;
 const MAGIC: &[u8] = b"tp1";
-/// The keep datagram: `KEEP_MAGIC` + 1 byte.
-const KEEP_MAGIC: &[u8] = b"tk1";
-/// A keep request not refreshed within this lapses (a few lost heartbeats).
-const KEEP_TTL: Duration = Duration::from_secs(30);
 const KEY: &str = "online";
 /// Our one key encodes to a few dozen bytes; anything much bigger is not presence.
 const MAX_DATAGRAM: usize = 512;
@@ -66,30 +61,20 @@ pub(crate) fn parse(d: &[u8]) -> Option<&[u8]> {
 }
 
 impl Inner {
-    /// Refreshes our entry and sends it on `conn`, with our keep request for this session. Best
-    /// effort: a lost datagram is replaced by the next heartbeat.
-    pub(crate) fn presence_send(&self, core: &ChatCore, sess: &Session, conn: &Connection) {
+    /// Refreshes our entry and sends it on `conn`, but only while the user here is active
+    /// with `did` (the consent rule above); otherwise sends nothing. Best effort: a lost
+    /// datagram is replaced by the next heartbeat.
+    pub(crate) fn presence_send(&self, core: &ChatCore, did: &str, conn: &Connection) {
+        if !core.locally_active(did) {
+            return;
+        }
         core.presence.local.set(KEY, true);
         let mut d = MAGIC.to_vec();
         d.extend_from_slice(&core.presence.local.encode(KEY));
         let _ = conn.send_datagram(Bytes::from(d));
-        self.keep_send(core, sess, conn);
-    }
-
-    /// Tells the contact device whether we want this session kept open.
-    pub(crate) fn keep_send(&self, core: &ChatCore, sess: &Session, conn: &Connection) {
-        let keep = self.chat_keep_local(core, &sess.did);
-        let mut d = KEEP_MAGIC.to_vec();
-        d.push(keep as u8);
-        let _ = conn.send_datagram(Bytes::from(d));
     }
 
     pub(crate) fn presence_receive(&self, core: &ChatCore, sess: &Session, d: &[u8]) {
-        if let Some(rest) = d.strip_prefix(KEEP_MAGIC) {
-            let keep = rest.first().is_some_and(|b| *b == 1);
-            *sess.peer_keep.lock() = keep.then(|| Instant::now() + KEEP_TTL);
-            return;
-        }
         let Some(payload) = parse(d) else { return };
         if sess.presence.apply(payload).is_ok() {
             self.presence_update(core, &sess.did);
@@ -114,28 +99,5 @@ impl Inner {
 
     pub(crate) fn presence_of(&self, did: &str) -> bool {
         self.chat_core().is_ok_and(|core| core.presence.online.lock().contains(did))
-    }
-
-    /// Opening a conversation: make sure a session is up (or being dialled), so presence is
-    /// known rather than "no session yet", and keep it up until `presence_unwatch`.
-    pub(crate) fn presence_watch(self: &Arc<Self>, did: &str) {
-        let Ok(core) = self.chat_core() else { return };
-        core.watched.lock().insert(did.to_string());
-        for s in self.chat_sessions_of(&core, did) {
-            s.cmd(super::engine::Cmd::Keep);
-        }
-        self.chat_kick(did.to_string());
-    }
-
-    /// The conversation closed: the session may idle out again (and the contact device is told
-    /// at once that we no longer need it).
-    pub(crate) fn presence_unwatch(&self, did: &str) {
-        let Ok(core) = self.chat_core() else { return };
-        if !core.watched.lock().remove(did) {
-            return;
-        }
-        for s in self.chat_sessions_of(&core, did) {
-            s.cmd(super::engine::Cmd::Keep);
-        }
     }
 }
