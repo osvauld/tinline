@@ -14,7 +14,11 @@
 //! Control stream (receiver -> sender), after a version byte: `1 [delivered_bps u32]
 //! [queuing_us u64]` rate report, `2` keyframe request, `3 [group u64][offset u64]` ack (stream
 //! bytes read, header included), `4 [max_pixels u32][max_fps u8][reason u8]` hint (what is worth
-//! sending; sent when set and on every change). Version 2. All big-endian. The other direction is unused.
+//! sending; sent when set and on every change), `5 [max_pixels u32][max_fps u8][reason u8][flags u8]`
+//! the same hint with flags (bit 0: [`Hint::room`]; other bits are ignored), sent instead of 4
+//! only while a flag is set and only to a peer that reads it ([`RecvConfig::hint_flags`], from its
+//! `VideoOffer.hint_flags`): an older sender never sees it. Version 2. All big-endian. The other
+//! direction is unused.
 //!
 //! The video layer owns `accept_uni` and (for the sender) the next `accept_bi` on the call's
 //! connection.
@@ -34,6 +38,8 @@ use crate::media::{Frame, Hint, HintReason, Out, RateReport, Receiver, ReceiverC
 pub const CONTROL_VERSION: u8 = 2;
 /// A hint's `max_fps` above this is garbage.
 const MAX_HINT_FPS: u8 = 120;
+/// Hint flag (message 5): [`Hint::room`].
+const HINT_ROOM: u8 = 1;
 /// Group ids above this are garbage (and would overflow the receiver's arithmetic).
 pub const MAX_GROUP_ID: u64 = 1 << 48;
 const TICK: Duration = Duration::from_millis(10);
@@ -80,10 +86,14 @@ impl Control {
                 out.extend_from_slice(&offset.to_be_bytes());
             }
             Control::Hint(h) => {
-                out.push(4);
+                // Canonical: 4 when no flag is set (an older sender reads it), 5 otherwise.
+                out.push(if h.room { 5 } else { 4 });
                 out.extend_from_slice(&h.max_pixels.to_be_bytes());
                 out.push(h.max_fps);
                 out.push(h.reason as u8);
+                if h.room {
+                    out.push(HINT_ROOM);
+                }
             }
         }
     }
@@ -96,6 +106,7 @@ impl Control {
             2 => 1,
             3 => 17,
             4 => 7,
+            5 => 8,
             _ => return Err(NetError::Protocol("unknown control message")),
         };
         if buf.len() < len {
@@ -115,7 +126,9 @@ impl Control {
                 if max_fps > MAX_HINT_FPS {
                     return Err(NetError::Protocol("hint fps"));
                 }
-                Control::Hint(Hint { max_pixels: u32::from_be_bytes(buf[1..5].try_into().unwrap()), max_fps, reason })
+                // Flags this version doesn't know are ignored.
+                let room = t == 5 && buf[7] & HINT_ROOM != 0;
+                Control::Hint(Hint { max_pixels: u32::from_be_bytes(buf[1..5].try_into().unwrap()), max_fps, reason, room })
             }
         };
         Ok(Some((msg, len)))
@@ -468,11 +481,14 @@ pub struct RecvConfig {
     /// Bytes buffered across those groups (frames of the playing group are kept until the
     /// next group starts); more is a protocol error.
     pub max_buffered: u64,
+    /// The peer's sender reads hint flags (control message 5; its `VideoOffer.hint_flags`).
+    /// Without it [`Hint::room`] is dropped and hints go as message 4.
+    pub hint_flags: bool,
 }
 
 impl Default for RecvConfig {
     fn default() -> Self {
-        Self { media: ReceiverConfig::default(), max_streams: 8, max_groups: 16, max_buffered: 32 << 20 }
+        Self { media: ReceiverConfig::default(), max_streams: 8, max_groups: 16, max_buffered: 32 << 20, hint_flags: false }
     }
 }
 
@@ -582,7 +598,9 @@ impl VideoRecv {
 
     /// What is worth sending now (drawn size, decode cost, thermal). Goes to the sender at once
     /// if it changed.
-    pub fn set_hint(&mut self, hint: Hint) {
+    pub fn set_hint(&mut self, mut hint: Hint) {
+        // An older sender would take message 5 for a protocol error.
+        hint.room &= self.cfg.hint_flags;
         self.rx.set_hint(hint);
         if let Some(h) = self.rx.take_hint() {
             self.stats.hints += 1;

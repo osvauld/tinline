@@ -276,7 +276,7 @@ impl App {
                     stats: Some(stats(direct, 252, if name == "incall-weak-about" { 520 } else if direct { 38 } else { 140 }, name.starts_with("reconnecting"))),
                 });
             }
-            "incall-video" | "incall-video-hd" | "incall-video-hd-paused" | "incall-video-hd-note" => {
+            "incall-video" | "incall-video-hd" | "incall-video-hd-paused" | "incall-video-hd-note" | "incall-video-hd-suggest" => {
                 // A video call with both cameras on and synthetic pictures; the HD chip's three looks and its line.
                 let pic = |w: u32, h: u32, k: u8| {
                     let mut d = Vec::with_capacity((w * h * 4) as usize);
@@ -291,10 +291,16 @@ impl App {
                 d.resize(w * h + w * h / 2, 150);
                 self.video.remote = crate::video_surface::Picture::new(w as u32, h as u32, d).map(Arc::new);
                 self.video.local = Some(pic(320, 180, 30));
-                self.settings.prefer_hd = name != "incall-video";
+                self.settings.prefer_hd = name != "incall-video" && name != "incall-video-hd-suggest";
                 self.video.send_size = Some(if name == "incall-video-hd-paused" { (960, 540) } else if self.settings.prefer_hd { (1280, 720) } else { (640, 480) });
                 if name == "incall-video-hd-note" {
-                    self.video.hd_note = Some(("Sharper video on", Instant::now() + Duration::from_secs(3600)));
+                    self.video.hd_note = Some(("Sharper video on".into(), Instant::now() + Duration::from_secs(3600), Duration::from_millis(2600)));
+                }
+                if name == "incall-video-hd-suggest" {
+                    // The longest form: a peer name cut to 12 characters.
+                    let stats = p2pcore::VideoStats { hd_suggest: "peer".into(), ..Default::default() };
+                    let line = p2pcore::video_hd_suggestion(&stats, false, Default::default(), "Bartholomew Quince".into());
+                    self.video.hd_note = Some((line, Instant::now() + Duration::from_secs(3600), Duration::from_millis(6000)));
                 }
             }
             "ended" | "unreachable" => {

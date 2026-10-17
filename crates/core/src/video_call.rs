@@ -66,6 +66,7 @@ mod api;
 mod codecs;
 mod ffi_bytes;
 mod frames;
+mod hd;
 // The Android MediaCodec VP8 encoder/decoder (`codecs` names what it must provide).
 #[cfg(all(target_os = "android", feature = "mediacodec"))]
 mod mediacodec;
@@ -76,6 +77,7 @@ pub use self::ffi_bytes::Bytes;
 pub(crate) use self::frames::chroma_spans;
 pub(crate) use self::pipes::fit;
 pub use self::adapt::{VideoBudget, VideoSendCap, video_codec_label, video_recv_label, video_send_label};
+pub use self::hd::{HdSuggestMemory, video_hd_suggest_after_call, video_hd_suggest_allowed, video_hd_suggestion};
 use self::frames::*;
 use self::pipes::*;
 
@@ -125,6 +127,11 @@ pub struct VideoStats {
     /// Ladder steps so far, and the reason of the last: "rate", "cpu", "hint" or "budget".
     pub ladder_steps: u64,
     pub last_step_reason: String,
+    /// Sharper video could be suggested (`video_call::hd`, docs/video.md "Suggesting sharper
+    /// video"): "" no, "line" my line, encoder and the peer's screen have room for more than my
+    /// HD-off capture gives, "peer" that and the peer's side has room too. Show it with
+    /// `video_hd_suggestion`.
+    pub hd_suggest: String,
 }
 
 impl VideoStats {
@@ -296,6 +303,7 @@ impl Inner {
                 encode: c.encode,
                 hw_decode: c.hw_decode,
                 hw_encode: c.hw_encode,
+                hint_flags: true,
             }
         })
     }
@@ -347,7 +355,7 @@ impl Inner {
             v.negotiated.store(true, Ordering::SeqCst);
             let pipe = v.pipe.clone();
             let send = self.handle.spawn(run_send(conn.clone(), pipe.clone(), tx));
-            let recv = self.handle.spawn(run_recv(conn.clone(), pipe, rx));
+            let recv = self.handle.spawn(run_recv(conn.clone(), pipe, rx, peer.hint_flags));
             let policy = self.handle.spawn(adapt::run_policy(v.pipe.clone()));
             v.tasks.lock().extend([send, recv, policy]);
             if v.pipe.stop.load(Ordering::SeqCst) {

@@ -289,7 +289,7 @@ mod adapt_policy {
         ] {
             let mut p2 = adapt::Policy::default();
             p2.set_view(w, h, true);
-            let h = p2.update(t).unwrap_or_else(|| Hint { max_pixels: u32::MAX, max_fps: 0, reason: HintReason::None });
+            let h = p2.update(t).unwrap_or_else(|| Hint { max_pixels: u32::MAX, max_fps: 0, reason: HintReason::None, room: false });
             assert_eq!(h.max_pixels, want);
         }
         p.set_view(0, 0, false);
@@ -403,14 +403,62 @@ mod adapt_policy {
         let mut p = adapt::Policy::default();
         let (cap, src) = p.send_cap(None);
         assert_eq!((cap.pixels, cap.fps, cap.reason.as_str(), src), (px(1280, 720), 30, "none", ""));
-        let hint = Hint { max_pixels: px(320, 180), max_fps: 15, reason: HintReason::Thermal };
+        let hint = Hint { max_pixels: px(320, 180), max_fps: 15, reason: HintReason::Thermal, room: false };
         let (cap, src) = p.send_cap(Some(hint));
         assert_eq!((cap.pixels, cap.fps, cap.reason.as_str(), src), (px(320, 180), 15, "thermal", "hint"));
-        let hidden = Hint { max_pixels: 0, max_fps: 0, reason: HintReason::DisplaySize };
+        let hidden = Hint { max_pixels: 0, max_fps: 0, reason: HintReason::DisplaySize, room: false };
         assert_eq!(p.send_cap(Some(hidden)).0.fps, 15);
         p.budget = VideoBudget { thermal: 0, power_save: true };
         let (cap, src) = p.send_cap(None);
         assert_eq!((cap.pixels, cap.fps, cap.reason.as_str(), src), (px(960, 540), 24, "battery", "budget"));
+    }
+
+    /// The sharper-video rules through the policy, one call per second: the receiver's room flag
+    /// rides on the hint (sent once when it changes), the suggestion follows my sending rule and
+    /// the peer's flag, and HD on or battery saver stop them.
+    #[test]
+    fn video_call_hd_room_through_the_policy() {
+        let send = hd::SendSample {
+            frames: 30,
+            send_px: px(640, 480) as u64,
+            rung_px: px(1280, 720) as u64,
+            cap_px: px(1280, 720) as u64,
+            rate_bps: 2_000_000,
+            encode_p75_us: Some(6_000),
+            fps: 30,
+            ..Default::default()
+        };
+        let recv = hd::RecvSample { frames: 30, recv_px: px(640, 480) as u64, cost_ms: 4.0, cost_n: 60, ..Default::default() };
+        let t = Instant::now();
+        let mut p = adapt::Policy::default();
+        // A full-screen phone picture: beyond every rung, so no hint at all until the flag.
+        p.set_view(1080, 2340, true);
+        assert_eq!(p.update(t), None);
+        for i in 1..hd::ROOM_SECS {
+            p.observe_room(send, recv, false);
+            assert_eq!((p.suggest, p.update(t)), ("", None), "second {i}");
+        }
+        p.observe_room(send, recv, false);
+        assert_eq!(p.suggest, "line");
+        assert!(p.update(t).unwrap().room, "the flag goes to the peer at once");
+        p.observe_room(send, recv, true);
+        assert_eq!((p.suggest, p.update(t)), ("peer", None));
+        // HD on: never.
+        p.hd_on = true;
+        p.observe_room(send, recv, true);
+        assert_eq!(p.suggest, "");
+        // Battery saver caps my hint: the room flag goes, with the cap.
+        p.budget = VideoBudget { thermal: 0, power_save: true };
+        p.observe_room(send, recv, true);
+        let h = p.update(t).unwrap();
+        assert!(!h.room && h.reason == HintReason::PowerSave);
+        // Hidden: no room either.
+        let mut q = adapt::Policy::default();
+        q.set_view(1080, 2340, false);
+        for _ in 0..30 {
+            q.observe_room(send, recv, false);
+        }
+        assert!(!q.wanted().room);
     }
 }
 

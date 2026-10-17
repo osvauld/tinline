@@ -215,6 +215,18 @@ same steps.
   - The "Video paused, audio continues" chip has a fixed width.
   - Minimised on Android: a small floating tile plus the strip. On desktop: the strip only.
   - Calling back from a video-call record starts a video call.
+  - **Sharper video suggestion** (2026-10-17; rule and copy: `docs/video.md` "Suggesting sharper
+    video"). Why: HD stays off by default, but people should learn it exists when their call could
+    carry it, without anything switching by itself. It reuses the HD chip's short line (the one
+    `hdLine()` drives): same slot, same type, so nothing moves when it appears; the line is one
+    line, cut with an ellipsis, never wrapped. Shown once per call for 6 s (the chip's own echo is
+    2.6 s: a suggestion asks for a decision, so it gets time to be read and reached), never over a
+    line that is still showing. The text comes from the core (`video_hd_suggestion`), so both apps
+    say the same words; apps only keep "shown this call" and store `HdSuggestMemory`.
+    Compose: `CallVideo.hdTick` from the 1 s send-stats loop, `HdNote.ms` drives the timeout,
+    `Text(maxLines = 1, overflow = Ellipsis)`. Iced: `VideoUi::say(line, HD_SUGGEST)`, the label
+    box is a fixed 300 px `container(..).width(300).height(18).clip(true)` (fits a 12-character
+    name). Android only: the once-per-call mobile-data note with HD on (`HD_METERED_LINE`).
 - **Outside the app** (`SystemLayer.svelte`, `LockScreen`, `HeadsUp`, `Shade`, `Notices`,
   `DesktopSystem`):
   - The lock screen shows the caller's name, using a full-screen intent.

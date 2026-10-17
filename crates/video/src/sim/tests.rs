@@ -501,7 +501,7 @@ fn hinted(name: &str, hints: Vec<(u64, Hint)>) -> Report {
 fn adapt_drawn_size_hint() {
     // Acceptance 3: the picture is drawn 640x360 from 5 s to 25 s.
     use crate::media::HintReason;
-    let small = Hint { max_pixels: 640 * 360, max_fps: 0, reason: HintReason::DisplaySize };
+    let small = Hint { max_pixels: 640 * 360, max_fps: 0, reason: HintReason::DisplaySize, room: false };
     let r = hinted("size hint", vec![(5 * S, small), (25 * S, Hint::NONE)]);
     // Nothing above 360p while it lasts (from the next keyframe, the hint's, about 0.3 s after it is set).
     let max = r.shown.iter().filter(|s| s.at_us >= 5_300_000 && s.at_us < 25 * S).map(|s| s.height).max();
@@ -522,7 +522,7 @@ fn adapt_drawn_size_hint() {
 fn adapt_fps_hint() {
     // Acceptance 4: the receiver can only show 15 fps from 15 s (at 720p30 by then).
     use crate::media::HintReason;
-    let slow = Hint { max_pixels: u32::MAX, max_fps: 15, reason: HintReason::DecodeSlow };
+    let slow = Hint { max_pixels: u32::MAX, max_fps: 15, reason: HintReason::DecodeSlow, room: false };
     let r = hinted("fps hint", vec![(15 * S, slow)]);
     assert_eq!(shown_height(&r, 14 * S, 15 * S), (720, true));
     assert_eq!(fps_at(&r, 14 * S), 30);

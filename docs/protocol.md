@@ -124,8 +124,10 @@ Codes are reusable for a week, so nobody becomes a contact without the owner's y
    Either side ends with `Hangup`. `renewed_grant` is a fresh call token for B.
 
 Video is offered in the same messages: `CallHello.video` / `Accept.video` =
-`Option<VideoOffer { max_pixels, decode, encode }>` (codec lists of `"av1"` / `"vp8"`, best first;
-`decode` always has `av1`). Both present = video. Each direction's codec is
+`Option<VideoOffer { max_pixels, max_fps, decode, encode, hw_decode, hw_encode, hint_flags }>` (codec
+lists of `"av1"` / `"vp8"`, best first; `decode` always has `av1`; `hint_flags` optional, absent =
+false: the device's video sender reads the receiver's hint flags, video control message 5).
+Both present = video. Each direction's codec is
 `send_codec(sender, receiver)`: the first of the sender's `encode` the receiver decodes, else AV1;
 both ends compute it from the two offers, with no further message. Details: `docs/video.md`
 ("Call protocol") and `docs/design/video-hw-vp8.md`.
