@@ -204,6 +204,23 @@ struct Pipe {
     decode_ms: Mutex<VecDeque<(Instant, f32)>>,
     /// (when, ms) of recent frame pulls + draws, reported by the app (`report_video_render_ms`).
     render_ms: Mutex<VecDeque<(Instant, f32)>>,
+    /// This second's send/receive pipeline timings, for the per-second debug log.
+    timing: Mutex<Timing>,
+}
+
+/// Where a frame's time goes on this device (debug log `video timing`, once a second): what the
+/// rate control must not mistake for the network.
+#[derive(Default)]
+struct Timing {
+    /// Encode time, and camera push -> handed to the transport, per frame sent (us).
+    encode_us: Vec<u32>,
+    lag_us: Vec<u32>,
+    /// Camera frames replaced in the input slot before the encoder took them.
+    replaced: u64,
+    /// Longest wait to hand a received frame to the decoder (the network isn't read meanwhile,
+    /// so arrival times stamped after it are late by that much), and how many waited > 5 ms.
+    recv_wait_max_us: u32,
+    recv_waits: u32,
 }
 
 /// One call's video.
@@ -367,7 +384,9 @@ impl Inner {
             return false;
         }
         let input = Input { width: width as usize, height: height as usize, src, rotation, at: Instant::now() };
-        *v.pipe.input.lock() = Some(input);
+        if v.pipe.input.lock().replace(input).is_some() {
+            v.pipe.timing.lock().replaced += 1;
+        }
         v.pipe.wake.notify_one();
         true
     }

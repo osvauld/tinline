@@ -28,8 +28,9 @@ unsafe extern "C" {
     fn tl_vpx_enc_free(e: *mut Raw);
 }
 
-/// libvpx realtime `cpu-used` for VP8 (negative = realtime with automatic speed adaption; 6 is
-/// the usual WebRTC-class setting). The config's `speed` is libaom's scale and does not apply.
+/// libvpx realtime `cpu-used` for VP8: negative = this speed, fixed (`-cpu_used`); positive =
+/// libvpx picks the speed from its measured encode time (`vp8_auto_select_speed`). -6 is
+/// WebRTC's desktop setting. The config's `speed` is libaom's scale and does not apply.
 const CPU_USED: c_int = -6;
 
 /// Realtime VP8 encoder: CBR, error resilient, no lookahead, one packet per frame.

@@ -372,14 +372,16 @@ impl VideoSend {
         self.state.lock().unwrap_or_else(|e| e.into_inner())
     }
 
-    /// One encoded frame. Never blocks: a slow link shows up as resets and a lower bitrate.
-    pub fn send(&self, capture_us: u64, key: bool, payload: &[u8]) -> Result<(), NetError> {
+    /// One encoded frame, handed over at `stamp_us` (a rising clock of the caller's: take it
+    /// right before this call, not at capture; see [`Sender::frame`]). Never blocks: a slow link
+    /// shows up as resets and a lower bitrate.
+    pub fn send(&self, stamp_us: u64, key: bool, payload: &[u8]) -> Result<(), NetError> {
         let mut st = self.lock();
         if st.closed {
             return Err(NetError::Closed);
         }
         st.stats.frames += 1;
-        let outs = st.tx.frame(capture_us, key, payload);
+        let outs = st.tx.frame(stamp_us, key, payload);
         st.apply(outs);
         Ok(())
     }

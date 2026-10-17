@@ -110,9 +110,19 @@ pub(super) fn encode_loop(pipe: Arc<Pipe>, send: Arc<VideoSend>, codec: VideoCod
             }
         };
         let took = t.elapsed();
+        // Stamped when handed to the transport, not at capture: the receiver measures queueing
+        // from it, and a busy machine's slow encode is not a queue in the path.
+        let sent_us = epoch.elapsed().as_micros() as u64;
+        {
+            let mut tm = pipe.timing.lock();
+            if tm.encode_us.len() < 240 {
+                tm.encode_us.push(took.as_micros().min(u32::MAX as u128) as u32);
+                tm.lag_us.push(sent_us.saturating_sub(capture_us).min(u32::MAX as u64) as u32);
+            }
+        }
         let mut st = pipe.stats.lock();
         for p in packets {
-            if send.send(capture_us, p.key, &p.data).is_err() {
+            if send.send(sent_us, p.key, &p.data).is_err() {
                 return;
             }
             st.record_admitted(p.data.len());
@@ -156,8 +166,15 @@ pub(super) async fn run_recv(conn: Connection, pipe: Arc<Pipe>, codec: VideoCode
             f = recv.recv() => match f {
                 Ok(f) => {
                     pipe.stats.lock().record_received(f.payload.len());
+                    let t = Instant::now();
                     if tx.send(f).await.is_err() {
                         return;
+                    }
+                    let waited = t.elapsed().as_micros().min(u32::MAX as u128) as u32;
+                    if waited > 5_000 {
+                        let mut tm = pipe.timing.lock();
+                        tm.recv_waits += 1;
+                        tm.recv_wait_max_us = tm.recv_wait_max_us.max(waited);
                     }
                 }
                 Err(e) => {

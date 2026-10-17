@@ -6,7 +6,8 @@ use super::*;
 const S: u64 = 1_000_000;
 
 /// Defaults. Overrides for experiments: `SIM_BACKLOG=unsent` (QUIC-unsent backlog model),
-/// `SIM_DRAIN=<pct>`, `SIM_STARVE=<pct>` (100 / 0 turn them off).
+/// `SIM_DRAIN=<pct>`, `SIM_STARVE=<pct>` (100 / 0 turn them off), `SIM_UP_DIP=<pct>` (0: any dip
+/// restarts the ladder's step-up hold), `SIM_STAMP_CAPTURE=1` (frames stamped at capture).
 fn base() -> Scenario {
     let mut sc = Scenario::default();
     if std::env::var("SIM_BACKLOG").is_ok_and(|v| v == "unsent") {
@@ -18,6 +19,12 @@ fn base() -> Scenario {
     }
     if let Some(v) = knob("SIM_STARVE") {
         sc.sender.starve_pct = v;
+    }
+    if let Some(v) = knob("SIM_UP_DIP") {
+        sc.sender.ladder.up_dip_pct = v;
+    }
+    if std::env::var_os("SIM_STAMP_CAPTURE").is_some() {
+        sc.stamp_capture = true;
     }
     sc
 }
@@ -94,7 +101,9 @@ fn clean_link() {
     assert!(r.switches <= 2, "{:?}", r.sizes);
     assert_eq!(shown_height(&r, 15 * S, sc.duration_us), (720, true));
     assert!(r.shown.len() >= r.encoded.len() - 3, "every frame shown");
-    assert!(p95(&r, 2 * S, sc.duration_us) < 120.0, "p95 {}", p95(&r, 2 * S, sc.duration_us));
+    // 122 ms (was 108 with frames stamped at capture: each step up's longer encode read as a
+    // queue and held the rate ~20% under this 2 Mbps link; now it runs at ~1.9 Mbps).
+    assert!(p95(&r, 2 * S, sc.duration_us) < 130.0, "p95 {}", p95(&r, 2 * S, sc.duration_us));
     assert!(r.freezes(250_000, S, sc.duration_us).is_empty());
     assert!(r.mean_bitrate(20 * S, 30 * S) > 1_000_000.0, "ramps up to use a 2 Mbps link");
 }
@@ -124,7 +133,9 @@ fn bandwidth_drop() {
     assert!(p95(&r, 0, 30 * S) < 200.0, "p95 {}", p95(&r, 0, 30 * S));
     // Worst frame after the drain (was < 150 ms): the queueing delay is the least delayed frame
     // of the last 100 ms, so the ramp's sawtooth at 300 kbps is seen a frame later (~152 ms).
-    assert!(Report::pct(&r.latencies_ms(11_500_000, 30 * S), 1.0) < 165.0);
+    // The drain ends at ~11.8 s (was ~10.9 s with capture stamps, which held the rate at ~1.6
+    // instead of ~1.9 Mbps on this 2 Mbps link: more is in flight when it drops).
+    assert!(Report::pct(&r.latencies_ms(12 * S, 30 * S), 1.0) < 165.0);
     let f: u64 = r.freezes(250_000, 10 * S, 30 * S).iter().map(|f| f.1).sum();
     assert!(f < 300_000, "frozen {} ms after the drop", f / 1000);
 }
@@ -145,7 +156,9 @@ fn deep_buffer_drop() {
     assert!(p95(&r, 0, 30 * S) < 200.0, "p95 {}", p95(&r, 0, 30 * S));
     // Worst frame after the drain (was < 150 ms): the queueing delay is the least delayed frame
     // of the last 100 ms, so the ramp's sawtooth at 300 kbps is seen a frame later (~152 ms).
-    assert!(Report::pct(&r.latencies_ms(11_500_000, 30 * S), 1.0) < 165.0);
+    // The drain ends at ~11.8 s (was ~10.9 s with capture stamps, which held the rate at ~1.6
+    // instead of ~1.9 Mbps on this 2 Mbps link: more is in flight when it drops).
+    assert!(Report::pct(&r.latencies_ms(12 * S, 30 * S), 1.0) < 165.0);
 }
 
 #[test]
@@ -221,19 +234,24 @@ fn ladder_follows_bandwidth_dip() {
     // Down to 320x180 within a second of the drop, and stays there while it lasts.
     let down = r.sizes.iter().find(|s| s.0 >= 10 * S && s.2 == 180).expect("steps down");
     assert!(down.0 < 11 * S, "180p at {} ms", down.0 / 1000);
-    assert_eq!(shown_height(&r, 12 * S, 20 * S), (180, true));
+    // (From 13 s: the frames queued before the drop are shown until ~12.4 s, see below.)
+    assert_eq!(shown_height(&r, 13 * S, 20 * S), (180, true));
     // Back up after recovery, one rung at a time (10 s after the step down, 5 s holds), without
     // flapping: 360p at ~26 s, 540p at ~32 s, then (the phone model) 720p24 at ~38 s. The drop
     // starved the link, so it isn't a flap: no block.
     assert!(min_height(&r, 33 * S, 40 * S) >= 540, "{:?}", r.sizes);
     assert!(r.switches <= 5, "{} switches: {:?}", r.switches, r.sizes);
     assert!(p95(&r, 21 * S, 40 * S) < 120.0, "p95 {}", p95(&r, 21 * S, 40 * S));
-    // The queue built in the ~150 ms before the drop shows drains within about a second.
-    assert!(p95(&r, 0, 40 * S) < 150.0, "p95 {}", p95(&r, 0, 40 * S));
+    // The queue built in the ~150 ms before the drop shows drains within about two seconds at
+    // 200 kbps: p95 568 ms over the run and 1.6 s frozen (was 114 ms and 0.3 s with frames stamped
+    // at capture, whose encode-time "queue" after each step up held the rate at ~1.6 instead of
+    // ~1.9 Mbps on this 2 Mbps link; the trade-off is in docs/video.md).
+    assert!(p95(&r, 0, 40 * S) < 650.0, "p95 {}", p95(&r, 0, 40 * S));
     // (Up to 37 s: the 720p24 step near the link's capacity costs ~190 ms for a second.)
-    assert!(Report::pct(&r.latencies_ms(11_500_000, 37 * S), 1.0) < 150.0);
+    let worst = Report::pct(&r.latencies_ms(13 * S, 37 * S), 1.0);
+    assert!(worst < 150.0, "{worst}");
     let f: u64 = r.freezes(250_000, S, 40 * S).iter().map(|f| f.1).sum();
-    assert!(f < 500_000, "frozen {} ms", f / 1000);
+    assert!(f < 2_000_000, "frozen {} ms", f / 1000);
 }
 
 #[test]
@@ -361,7 +379,7 @@ fn slow_receiver() {
 
 /// Laptop-class encoder (or a hardware one): 720p in ~9 ms, so only the link limits the ladder.
 fn fast() -> Device {
-    Device { base_us: 1_500, ns_per_px: 8, jitter: 0.2, slowdowns: vec![], spikes: (0.0, 0) }
+    Device { base_us: 1_500, ns_per_px: 8, jitter: 0.2, slowdowns: vec![], spikes: (0.0, 0), busy: vec![] }
 }
 
 /// Resolution switches at or after `from`.
@@ -630,7 +648,8 @@ fn wifi_delay_spikes_near_capacity() {
     // still settles under the link.
     let (r, calm) = wifi_capped("wifi 1.6M", 1_600_000);
     assert_eq!(r.decode_errors, 0);
-    assert!(Report::pct(&calm, 0.95) < 120.0);
+    // 120 ms (was 102 with capture stamps, at 1205 instead of 1322 kbps).
+    assert!(Report::pct(&calm, 0.95) < 130.0, "{}", Report::pct(&calm, 0.95));
     assert!(r.mean_bitrate(10 * S, 90 * S) < 1_600_000.0);
 }
 
@@ -1059,4 +1078,47 @@ fn network_matrix() {
             _ => {}
         }
     }
+}
+
+/// The 2026-10-17 laptop -> phone call: a clean home LAN, a software encoder on a laptop that is
+/// busy now and then (every 2-7 s, for 0.5-2 s, each frame 20-60 ms late, so fewer of them).
+/// Stamped at capture, that lateness read as a queue: an overuse every ~5 s, 180p for 75 of 80 s.
+fn busy_sender(seed: u64, stamp_capture: bool) -> Scenario {
+    let mut rng = Rng::new(seed ^ 0xb5);
+    let busy = burst_train(&mut rng, 3 * S, MATRIX_US, (2 * S, 7 * S), (500_000, 2 * S), (40_000, 60_000));
+    let link = Link { rate_bps: 10_000_000, delay_us: 3_000, jitter_us: 3_000, queue_bytes: 256 * 1024, ..Link::default() };
+    Scenario {
+        duration_us: MATRIX_US,
+        link,
+        device: Device { busy, ..Device::busy_desktop() },
+        stamp_capture,
+        seed,
+        ..base()
+    }
+}
+
+#[test]
+fn busy_sender_is_not_a_queue() {
+    let seeds = [3, 7, 11];
+    let mut rows = [[0.0; 7]; 2];
+    for (i, capture) in [true, false].into_iter().enumerate() {
+        for seed in seeds {
+            let sc = busy_sender(seed, capture);
+            let r = run(&sc, &mut FakeCodec::new(sc.fps, seed));
+            assert_eq!(r.decode_errors, 0);
+            let row = matrix_row(&r, 0, sc.duration_us);
+            if std::env::var_os("SIM_MATRIX").is_some() {
+                println!("{}  overuse {} cam drops {}", matrix_line(&format!("busy/{seed}"), &row), r.reports.iter().filter(|x| x.1.queuing_us > 40_000).count(), r.camera_drops);
+                println!("{:>12}  {}", "", sizes_line(&r));
+            }
+            for k in 0..7 {
+                rows[i][k] += row[k] / seeds.len() as f64;
+            }
+        }
+    }
+    println!("{}", matrix_line("busy, capture stamp", &rows[0]));
+    println!("{}", matrix_line("busy, send stamp", &rows[1]));
+    // The link carries 10 Mbps: the busy machine costs frames, not the rate.
+    assert!(rows[1][0] > 1_200.0 && rows[1][1] > 50.0, "{:?}", rows[1]);
+    assert!(rows[1][0] > rows[0][0] * 1.3, "{:?} vs {:?}", rows[1], rows[0]);
 }

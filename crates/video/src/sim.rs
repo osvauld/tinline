@@ -299,25 +299,29 @@ pub struct Device {
     /// `(probability, us)`: a frame now and then takes this much longer (a busy machine
     /// preempting the encoder thread).
     pub spikes: (f64, u64),
+    /// `(from, to, us)`: every frame in `[from, to)` takes up to `us` longer (half to all of it:
+    /// a machine busy for a while, the 2026-10-17 laptop's 40-60 ms late frames for a second or
+    /// two every few seconds).
+    pub busy: Vec<(u64, u64, u64)>,
 }
 
 impl Device {
     /// moto g52 (Snapdragon 680), codec pinned to the A73 cores: 3.1 ms at 320x180, 6.3 at
     /// 640x360, 11.4 at 960x540, 18.5 at 720p.
     pub fn phone() -> Self {
-        Self { base_us: 2_100, ns_per_px: 18, jitter: 0.2, slowdowns: vec![], spikes: (0.0, 0) }
+        Self { base_us: 2_100, ns_per_px: 18, jitter: 0.2, slowdowns: vec![], spikes: (0.0, 0), busy: vec![] }
     }
 
     /// The same phone with the codec on the A53 cores: 6.7 / 14.8 / 22.6 / 33.3 ms.
     pub fn phone_unpinned() -> Self {
-        Self { base_us: 4_900, ns_per_px: 31, jitter: 0.2, slowdowns: vec![], spikes: (0.0, 0) }
+        Self { base_us: 4_900, ns_per_px: 31, jitter: 0.2, slowdowns: vec![], spikes: (0.0, 0), busy: vec![] }
     }
 
     /// Laptop (i7-1165G7, 2 encoder threads) sharing the machine with builds, a second call end
     /// and two UIs: 4.3 ms at 640x360, 7.7 at 960x540, 12.6 at 720p, +-50%, and one frame in 15
     /// preempted for another 15-45 ms.
     pub fn busy_desktop() -> Self {
-        Self { base_us: 1_500, ns_per_px: 12, jitter: 0.5, slowdowns: vec![], spikes: (1.0 / 15.0, 30_000) }
+        Self { base_us: 1_500, ns_per_px: 12, jitter: 0.5, slowdowns: vec![], spikes: (1.0 / 15.0, 30_000), busy: vec![] }
     }
 
     pub(crate) fn encode_us(&self, now_us: u64, width: u32, height: u32, rng: &mut Rng) -> u64 {
@@ -325,7 +329,11 @@ impl Device {
         let slow: f64 = self.slowdowns.iter().filter(|s| s.0 <= now_us).map(|s| s.1).product();
         let t = (t * slow * (1.0 + self.jitter * (2.0 * rng.f64() - 1.0))) as u64;
         let (p, us) = self.spikes;
-        if p > 0.0 && rng.f64() < p { t + us / 2 + (rng.f64() * us as f64) as u64 } else { t }
+        let t = if p > 0.0 && rng.f64() < p { t + us / 2 + (rng.f64() * us as f64) as u64 } else { t };
+        match self.busy.iter().find(|b| b.0 <= now_us && now_us < b.1) {
+            Some(&(_, _, us)) => t + us / 2 + (rng.f64() * (us / 2) as f64) as u64,
+            None => t,
+        }
     }
 }
 
@@ -352,6 +360,9 @@ pub struct Scenario {
     pub decode_changes: Vec<(u64, u64)>,
     /// The receiver's clock runs this many ppm fast: every frame's (arrival - capture) grows.
     pub receiver_clock_ppm: u64,
+    /// Frames carry their capture time instead of the time they leave the encoder (what
+    /// `video_call` did before 2026-10-17: encode time counted as queueing).
+    pub stamp_capture: bool,
     pub sender: SenderConfig,
     pub receiver: ReceiverConfig,
     pub backlog: Backlog,
@@ -371,6 +382,7 @@ impl Default for Scenario {
             decode_us: 2_000,
             decode_changes: vec![],
             receiver_clock_ppm: 0,
+            stamp_capture: false,
             sender: SenderConfig::default(),
             receiver: ReceiverConfig::default(),
             backlog: Backlog::Unacked,
@@ -676,6 +688,8 @@ pub fn run(sc: &Scenario, codec: &mut dyn SimCodec) -> Report {
     let mut sizes: BTreeMap<u64, (u32, u32)> = BTreeMap::new();
     // Frames given to the codec and not out yet: index -> capture time.
     let mut in_codec: BTreeMap<u64, u64> = BTreeMap::new();
+    // The stamp each frame went out with -> its capture time.
+    let mut stamps: BTreeMap<u64, u64> = BTreeMap::new();
     let mut decode_busy_until = 0u64;
     let frame_us = 1_000_000 / sc.fps as u64;
     let mut next_capture = 0u64;
@@ -720,7 +734,7 @@ pub fn run(sc: &Scenario, codec: &mut dyn SimCodec) -> Report {
             }
         }
         while encoding.front().is_some_and(|f| f.0 <= now) {
-            let (_, capture, key, w, h, t) = encoding.pop_front().unwrap();
+            let (done, capture, key, w, h, t) = encoding.pop_front().unwrap();
             in_codec.insert(index, capture);
             let out = codec.encode(index, key, sender.encoder_bitrate(), w, h);
             index += 1;
@@ -734,7 +748,10 @@ pub fn run(sc: &Scenario, codec: &mut dyn SimCodec) -> Report {
             in_codec = in_codec.split_off(&i);
             let capture = in_codec.remove(&i).expect("codec output for a frame it was given");
             rep.encoded.push(capture);
-            let outs = sender.frame(capture, is_key, &payload);
+            // The encoder runs one frame at a time, so `done` rises (and is unique).
+            let stamp = if sc.stamp_capture { capture } else { done };
+            stamps.insert(stamp, capture);
+            let outs = sender.frame(stamp, is_key, &payload);
             apply(now, &outs, &mut tx, &mut |g| {
                 push(&mut evs, reset_at(now, link_free, &sc.link).max(fwd_last), Ev::ResetRx(g))
             });
@@ -917,9 +934,11 @@ pub fn run(sc: &Scenario, codec: &mut dyn SimCodec) -> Report {
             let decode_us = sc.decode_changes.iter().rev().find(|c| c.0 <= now).map_or(sc.decode_us, |c| c.1);
             decode_busy_until = now + decode_us;
             // Older entries are frames that were never shown.
-            let (width, height) = sizes.remove(&f.capture_us).unwrap_or_default();
-            sizes = sizes.split_off(&f.capture_us);
-            rep.shown.push(Shown { at_us: decode_busy_until, capture_us: f.capture_us, width, height });
+            let capture = stamps.remove(&f.capture_us).unwrap_or(f.capture_us);
+            stamps = stamps.split_off(&f.capture_us);
+            let (width, height) = sizes.remove(&capture).unwrap_or_default();
+            sizes = sizes.split_off(&capture);
+            rep.shown.push(Shown { at_us: decode_busy_until, capture_us: capture, width, height });
         }
         // Receiver app (`VideoRecv::recv`): reads from QUIC only while the decoder queue has
         // room, so a slow decoder backs up into the link; acks, reports and keyframe requests

@@ -473,6 +473,20 @@ pub(super) async fn run_policy(pipe: Arc<Pipe>) {
             st.ladder_steps += 1;
             st.last_step_reason = why.into();
         }
+        let mut tm = std::mem::take(&mut *pipe.timing.lock());
+        if tm.encode_us.len() + tm.recv_waits as usize > 0 {
+            let ms = |v: &mut Vec<u32>, p: usize| {
+                v.sort_unstable();
+                v.get(v.len().saturating_sub(1) * p / 100).map_or(0.0, |&x| x as f32 / 1000.0)
+            };
+            tracing::debug!(
+                target: "p2pcore::video_call",
+                "video timing enc p50/p90/max={:.1}/{:.1}/{:.1}ms capture->send p50/p90/max={:.1}/{:.1}/{:.1}ms frames={} replaced={} recv_wait>5ms={} max={:.1}ms",
+                ms(&mut tm.encode_us, 50), ms(&mut tm.encode_us, 90), ms(&mut tm.encode_us, 100),
+                ms(&mut tm.lag_us, 50), ms(&mut tm.lag_us, 90), ms(&mut tm.lag_us, 100),
+                tm.encode_us.len(), tm.replaced, tm.recv_waits, tm.recv_wait_max_us as f32 / 1000.0,
+            );
+        }
         st.send_fps = ((st.frames_sent - last_sent) as f32 / secs).round() as u32;
         st.recv_fps = ((st.frames_decoded - last_dec) as f32 / secs).round() as u32;
         (last_sent, last_dec) = (st.frames_sent, st.frames_decoded);

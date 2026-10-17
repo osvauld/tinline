@@ -6,14 +6,17 @@
 //! transport sends the newest group first. When the link can't keep up the sender gives up on
 //! the stale group (stream reset), forces a keyframe and lowers the bitrate.
 //!
-//! Stream layout: `[group: u64 BE]` then frames `[len: u32 BE][capture_us: u64 BE][payload]`.
+//! Stream layout: `[group: u64 BE]` then frames `[len: u32 BE][stamp_us: u64 BE][payload]`;
+//! `stamp_us` is when the frame was handed to the transport (sender clock; see below).
 //! The transport is told what to do through [`Out`] and reports back with plain method calls,
 //! so the same code runs on iroh and in [`crate::sim`].
 //!
 //! Rate control is delay-based (the idea behind WebRTC's GCC), done at this layer so it needs
-//! nothing from the transport: the receiver compares each frame's arrival time with its capture
-//! time. The clock offset between the devices cancels out, so a *rise* over the recent minimum
-//! is queueing delay. It sends a [`RateReport`] every 50 ms; the sender backs off to the
+//! nothing from the transport: the receiver compares each frame's arrival time with the time the
+//! sender handed it to the transport. The clock offset between the devices cancels out, so a
+//! *rise* over the recent minimum is queueing delay. Not the capture time: then the sender's own
+//! camera -> encoder time counts as delay, and a software encoder on a busy machine (40-60 ms
+//! late for seconds at a time, 2026-10-17 laptop -> phone call) reads as a queue in the path. It sends a [`RateReport`] every 50 ms; the sender backs off to the
 //! delivered rate as soon as a queue builds (or far less gets through than it sends), drains
 //! that queue below the delivered rate, and only ramps up while the path is empty. A
 //! loss-based congestion controller alone fills the bottleneck buffer first (bufferbloat), which
@@ -1065,8 +1068,10 @@ impl Sender {
         self.want(KeyCause::Request);
     }
 
-    /// One encoded frame. Delta frames with no open group are dropped (they can't be decoded).
-    pub fn frame(&mut self, capture_us: u64, key: bool, payload: &[u8]) -> Vec<Out> {
+    /// One encoded frame, handed to the transport at `stamp_us` (any rising sender clock; the
+    /// receiver measures queueing from it, so not the capture time). Delta frames with no open
+    /// group are dropped (they can't be decoded).
+    pub fn frame(&mut self, stamp_us: u64, key: bool, payload: &[u8]) -> Vec<Out> {
         let mut out = Vec::new();
         if key {
             let c = &mut self.key_causes;
@@ -1107,7 +1112,7 @@ impl Sender {
         }
         let mut data = Vec::with_capacity(FRAME_HEADER + payload.len());
         data.extend_from_slice(&(payload.len() as u32).to_be_bytes());
-        data.extend_from_slice(&capture_us.to_be_bytes());
+        data.extend_from_slice(&stamp_us.to_be_bytes());
         data.extend_from_slice(payload);
         out.push(Out::Write { group: g, data });
         out
@@ -1490,6 +1495,7 @@ pub struct Frame {
     pub group: u64,
     /// Index inside the group; 0 is the keyframe.
     pub index: u32,
+    /// The sender's stamp (`Sender::frame`): when it was handed to the transport.
     pub capture_us: u64,
     pub payload: Vec<u8>,
 }
@@ -1499,8 +1505,8 @@ pub struct Frame {
 pub struct RateReport {
     /// Video bytes received over the window, as a rate.
     pub delivered_bps: u32,
-    /// (arrival - capture) above the minimum of the last 10 s, for the least delayed frame
-    /// that arrived in the rate window (the latest frame if none did).
+    /// (arrival - sender's stamp) above the minimum of the last 10 s, for the least delayed
+    /// frame that arrived in the rate window (the latest frame if none did).
     pub queuing_us: u64,
 }
 
