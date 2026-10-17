@@ -199,23 +199,12 @@ fun ConversationScreen(
     // Reading: the open conversation never raises a notification, and its unread count is cleared.
     val owner = LocalLifecycleOwner.current
     DisposableEffect(owner, peerDid) {
-        // Presence only while the conversation is on screen: watching keeps the core's session with them open;
-        // leaving (or the app going to the background) lets it close after a minute idle.
         val o = LifecycleEventObserver { _, ev ->
-            if (ev == Lifecycle.Event.ON_RESUME) {
-                OpenChat.peer = peerDid; ChatNotifier.cancel(ctx, peerDid)
-                if (!isSelf) scope.launch(Dispatchers.IO) { runCatching { source.watchPresence(peerDid) } }
-            }
-            if (ev == Lifecycle.Event.ON_PAUSE) {
-                if (OpenChat.peer == peerDid) OpenChat.peer = null
-                if (!isSelf) source.unwatchPresence(peerDid)
-            }
+            if (ev == Lifecycle.Event.ON_RESUME) { OpenChat.peer = peerDid; ChatNotifier.cancel(ctx, peerDid) }
+            if (ev == Lifecycle.Event.ON_PAUSE && OpenChat.peer == peerDid) OpenChat.peer = null
         }
         owner.lifecycle.addObserver(o)
-        onDispose {
-            owner.lifecycle.removeObserver(o); if (OpenChat.peer == peerDid) OpenChat.peer = null
-            if (!isSelf) source.unwatchPresence(peerDid)
-        }
+        onDispose { owner.lifecycle.removeObserver(o); if (OpenChat.peer == peerDid) OpenChat.peer = null }
     }
     LaunchedEffect(peerDid, msgs.size) {
         withContext(Dispatchers.IO) { runCatching { source.markRead(peerDid); source.refresh() } }
@@ -465,7 +454,8 @@ fun ConversationScreen(
             }
             if (composerState != ComposerState.Open) BlockedFooter(name, composerState, onUnblock, onAddContact)
             else Composer(
-                draft, { draft = it }, editing != null, replying?.let { byId[it] }?.let { ComposerBanner("Replying to ${if (it.outgoing) "yourself" else first}", ChatNotifier.previewOf(it)) },
+                // Typing is the wake point (consent-based links, 2026-10-17): the core dials them ahead of the send.
+                draft, { if (it.isNotEmpty() && it != draft && !isSelf) source.typing(peerDid); draft = it }, editing != null, replying?.let { byId[it] }?.let { ComposerBanner("Replying to ${if (it.outgoing) "yourself" else first}", ChatNotifier.previewOf(it)) },
                 editing?.let { byId[it] }?.let { ComposerBanner("Editing message", it.text) },
                 onCancelBanner = { savedDraft.cancel() },
                 onAttach = { attachOpen = true }, onSend = ::send,
@@ -517,12 +507,16 @@ private fun ConvHeader(name: String, peerDid: String, link: Link, onBack: () -> 
             blockState == ComposerState.BlockedMe -> "Blocked you"
             blockState == ComposerState.NotContact -> "Not in your contacts"
             !online -> "Waiting for connection"
-            else -> (if (link == Link.Connected || link == Link.Relayed) "Online" else "Offline") + if (callGate == CallGate.NotAllowed) " · messages only" else ""
+            // Presence is shown only while they're active with me (consent-based, 2026-10-17): otherwise it's unknown,
+            // so no word rather than a false "Offline". The line keeps its height (no layout shift).
+            link == Link.Connected || link == Link.Relayed -> "Online" + if (callGate == CallGate.NotAllowed) " · messages only" else ""
+            callGate == CallGate.NotAllowed -> "Messages only"
+            else -> ""
         }
         val statusColor = if (blockState == ComposerState.BlockedByMe || blockState == ComposerState.BlockedMe) c.er else c.ink2
         Row(Modifier.weight(1f).heightIn(min = 44.dp).clip(SmoothCornerShape(12.dp)).then(if (onInfo != null) Modifier.clickable(onClick = onInfo) else Modifier)
             .padding(start = 6.dp, end = 10.dp, top = 4.dp, bottom = 4.dp)
-            .semantics(mergeDescendants = true) { contentDescription = "$name. $status. Chat details" },
+            .semantics(mergeDescendants = true) { contentDescription = "$name. ${if (status.isNotEmpty()) "$status. " else ""}Chat details" },
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Avatar(name, peerDid, 36.dp)
             Column(Modifier.weight(1f)) {
