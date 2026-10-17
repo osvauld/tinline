@@ -208,6 +208,23 @@ const SPIKE_HOLD_US: u64 = 1_500_000;
 /// ...while the drain stays at or above this % of the rate before the episode: a queue of ours
 /// at the link's capacity drains well before that.
 const SPIKE_DRAIN_PCT: u64 = 70;
+/// A report delivering under this % of the estimate got next to nothing through, and one
+/// arriving this long after the previous was held up: a stall (Wi-Fi retries, a delay burst),
+/// not a slower link, which still delivers its rate.
+const GAP_PCT: u64 = 1;
+const REPORT_GAP_US: u64 = 150_000;
+/// An overuse episode with a stall in it (or just before) cuts the estimate and the drain no
+/// lower than this % of the rate before: nothing getting through says nothing about capacity.
+const STALL_KEEP_PCT: u64 = 50;
+/// Below the remembered good rate the path carried, the ramp climbs this % per 100 ms (the
+/// normal ramp is 8%) and this soon after the last decrease (normally 500 ms).
+const RECOVER_PCT: u64 = 25;
+const RECOVER_AFTER_US: u64 = 200_000;
+/// Below this rate the ramp's cap looks at the delivered rate over this long.
+const RECENT_US: u64 = 500_000;
+const LOW_RATE_BPS: u32 = 400_000;
+/// Delivered above this % of what we sent: a queue in the path is draining at the link's rate.
+const DRAINING_PCT: u64 = 110;
 
 /// Encode times are kept over this long; a step down for encode time needs a full window (a
 /// second's worth of frames at the current tier).
@@ -457,7 +474,10 @@ impl Ladder {
             if why != StepReason::Cap {
                 self.last_down_us = Some(now_us);
             }
-            self.ups.retain(|u| u.0 <= to);
+            // A rung entered in the window and still held (a frame-rate step down inside it) is
+            // undone when it is left: that block covers the whole rung.
+            let nt = self.nt();
+            self.ups.retain(|u| u.0 <= to || (u.2 && u.0 / nt == to / nt));
         } else {
             self.ups.push((to, now_us, resized));
         }
@@ -693,6 +713,25 @@ pub struct Sender {
     spike: Option<Spike>,
     /// Last report that delivered under half of the estimate (a stall, or a slower link).
     stall_us: Option<u64>,
+    /// Last report that got next to nothing through, or came late (see `GAP_PCT`).
+    gap_us: Option<u64>,
+    /// Last report with an empty path that carried at least half the estimate.
+    healthy_us: Option<u64>,
+    /// The rate the path last carried with no queue; lowered when an overuse episode without a
+    /// stall shows the capacity is less. After a stall the ramp climbs back to it fast
+    /// (`RECOVER_PCT`).
+    good: u32,
+    /// A backlog reset was made in the current stall.
+    stall_reset: bool,
+    /// The last report got next to nothing through.
+    empty_prev: bool,
+    /// (time, delivered) of the reports of the last `RECENT_US`.
+    recent_delivered: std::collections::VecDeque<(u64, u64)>,
+    /// The last overuse episode had a stall in it: climb back to `good` fast.
+    recover: bool,
+    /// Queueing delay at the last cut: an episode cuts again only when it grows past this (a
+    /// queue we feed), not while it stays flat (a delay burst, or our drain at work).
+    cut_q: u64,
     /// A report within `DELIVERING_US` showed bytes getting through.
     delivering: bool,
     last_delivered_us: Option<u64>,
@@ -741,6 +780,11 @@ struct Episode {
     /// Second looks taken in it, and whether the first was put off (see `stall_was_spike`).
     looks: u32,
     put_off: bool,
+    /// A stall came with it (see `GAP_PCT`): its cuts keep `STALL_KEEP_PCT` of `pre`, and it is
+    /// no evidence about capacity.
+    stall: bool,
+    /// Cuts taken in it (the second look not counted).
+    cuts: u32,
 }
 
 /// A Wi-Fi spike under way (see `Sender::stall_was_spike`).
@@ -795,6 +839,14 @@ impl Sender {
             episode: None,
             spike: None,
             stall_us: None,
+            gap_us: None,
+            healthy_us: None,
+            good: 0,
+            stall_reset: false,
+            empty_prev: false,
+            recent_delivered: Default::default(),
+            recover: false,
+            cut_q: 0,
             delivering: false,
             last_delivered_us: None,
             drain_stuck_since: None,
@@ -1071,7 +1123,23 @@ impl Sender {
 
     fn rate(&mut self, now_us: u64, r: &RateReport) {
         let delivered = r.delivered_bps as u64;
+        let late = self.last_report_us.is_some_and(|t| now_us.saturating_sub(t) > REPORT_GAP_US);
         let sent = self.sent_bps(now_us).unwrap_or(0);
+        // Two empty reports in a row (a lost packet holds a stream up for about an RTT, which
+        // empties one), or one held up itself.
+        let empty = delivered * 100 < self.bitrate as u64 * GAP_PCT;
+        if late || (empty && self.empty_prev) {
+            self.gap_us = Some(now_us);
+        }
+        if !empty && !late {
+            self.stall_reset = false;
+        }
+        self.empty_prev = empty;
+        let gap_recent = self.gap_us.is_some_and(|t| now_us - t < STALL_RECENT_US);
+        self.recent_delivered.push_back((now_us, delivered));
+        while self.recent_delivered.front().is_some_and(|d| now_us - d.0 > RECENT_US) {
+            self.recent_delivered.pop_front();
+        }
         if delivered > 0 {
             self.last_delivered_us = Some(now_us);
         }
@@ -1097,8 +1165,16 @@ impl Sender {
         }
         let over = queuing_us > overuse_us || starved;
         if over && self.episode.is_none() {
-            self.episode = Some(Episode { pre: self.bitrate, looks: 0, put_off: false });
+            let pre = self.bitrate;
+            self.episode = Some(Episode { pre, looks: 0, put_off: false, stall: gap_recent, cuts: 0 });
         }
+        if let Some(ep) = &mut self.episode
+            && gap_recent
+        {
+            ep.stall = true;
+        }
+        // A cut in a stall keeps half the rate before.
+        let keep = self.episode.filter(|ep| ep.stall).map_or(0, |ep| (ep.pre as u64 * STALL_KEEP_PCT / 100) as u32);
         let t = &mut self.trace;
         t.reports += 1;
         t.overuse += (queuing_us > overuse_us) as u64;
@@ -1158,46 +1234,92 @@ impl Sender {
             // until the queue is gone (each 100 ms of it delays every frame). One rate window
             // after a decrease, look again: the first delivered rate still held bytes from
             // before a drop, and the ladder waits for this one.
-            if second_look || now_us - self.last_decrease_us > 200_000 || self.last_decrease_us == 0 {
+            // Later cuts in the episode only while the delay grows or the link delivers more
+            // than we send (a queue of ours draining at the link's rate): otherwise delivered
+            // just follows our own lowered rate, and cutting to it again and again under a flat
+            // delay (a Wi-Fi delay burst) took 1.4 Mbps to 200 kbps in a second.
+            let cuts = self.episode.map_or(0, |ep| ep.cuts);
+            let growing = starved || queuing_us > self.cut_q + GROW_US || delivered * 100 > sent * DRAINING_PCT;
+            let due = now_us - self.last_decrease_us > 200_000 || self.last_decrease_us == 0;
+            let cut = second_look || (due && (cuts == 0 || growing));
+            if cut {
                 let target = (delivered * 85 / 100) as u32;
                 if second_look {
                     // Replaces the first cut, which may have been too deep as well (a gap in
                     // what the encoder sent).
-                    self.bitrate = self.pre_cut.min(settled).max(self.cfg.min_bps);
+                    self.bitrate = self.pre_cut.min(settled).max(keep).max(self.cfg.min_bps);
                     self.settle_until = None;
+                    // Queueing while delivering: the path carries no more than this.
+                    if keep == 0 {
+                        self.good = self.good.min((median as u32).max(self.cfg.min_bps));
+                    }
                 } else {
                     if self.settle_until.is_none() {
                         self.pre_cut = self.bitrate;
                         self.settle_until = Some(now_us + SETTLE_US);
                         self.settle_delivered.clear();
                     }
-                    self.bitrate = self.bitrate.min(target).max(self.cfg.min_bps);
+                    self.bitrate = self.bitrate.min(target.max(keep)).max(self.cfg.min_bps);
+                    if let Some(ep) = &mut self.episode {
+                        ep.cuts += 1;
+                    }
                 }
+                self.cut_q = queuing_us;
                 self.last_decrease_us = now_us;
             }
-            self.start_drain(delivered, queuing_us, starved);
+            if cut || growing || self.drain.is_none() {
+                self.start_drain(delivered, queuing_us, starved);
+            }
+            if keep > 0 && !starved {
+                self.drain = self.drain.map(|d| d.max(keep));
+            }
             return;
         }
 
         if second_look {
             // The queue was gone a rate window later: a blip, keep no more of the cut than the
             // delivered rate asks for.
-            self.bitrate = self.bitrate.max(self.pre_cut.min(settled));
+            self.bitrate = self.bitrate.max(self.pre_cut.min(settled)).max(keep);
             self.settle_until = None;
         }
         if queuing_us < underuse_us {
-            self.episode = None;
+            if let Some(ep) = self.episode.take() {
+                self.recover = ep.stall;
+            }
             self.spike = None;
         }
         if queuing_us < underuse_us && self.drain.take().is_some() {
             self.starve_after_us = now_us + STARVE_QUIET_US;
         }
-        if self.drain.is_none() && queuing_us < underuse_us && now_us - self.last_decrease_us > 500_000 {
-            // Path is empty: +8% per 100 ms, never far above what was delivered.
-            let cap = (delivered * 3 / 2).max(self.cfg.min_bps as u64) as u32;
-            let dt = self.sent_prev.1.min(200_000);
+        let path_ok = self.drain.is_none() && queuing_us < underuse_us;
+        if path_ok && delivered * 2 >= self.bitrate as u64 {
+            self.healthy_us = Some(now_us);
+        }
+        let since_cut = now_us - self.last_decrease_us;
+        let dt = self.sent_prev.1.min(200_000);
+        if self.bitrate >= self.good {
+            self.recover = false;
+        }
+        if path_ok && self.recover && since_cut > RECOVER_AFTER_US {
+            // Back toward the rate the path carried before a stall or a delay burst: fast, and
+            // not held to what was delivered (that followed our own lowered rate).
+            let up = self.bitrate + (self.bitrate as u64 * RECOVER_PCT * dt / 100 / 100_000) as u32;
+            self.bitrate = up.min(self.good).min(self.cfg.max_bps);
+        } else if path_ok && since_cut > 500_000 {
+            // Path is empty: +8% per 100 ms, never far above what was delivered (at low rates
+            // the most of the last half second: at 100-200 kbps a 100 ms window holds one or two
+            // packets, and the latest alone held the real call's climb to ~10 kbps a second).
+            let top = if self.bitrate < LOW_RATE_BPS {
+                self.recent_delivered.iter().map(|d| d.1).max().unwrap_or(delivered).max(delivered)
+            } else {
+                delivered
+            };
+            let cap = (top * 3 / 2).max(self.cfg.min_bps as u64) as u32;
             let up = self.bitrate + (self.bitrate as u64 * 8 * dt / 100 / 100_000) as u32;
             self.bitrate = up.min(self.bitrate.max(cap)).min(self.cfg.max_bps);
+        }
+        if path_ok && self.episode.is_none() {
+            self.good = self.good.max(self.bitrate);
         }
     }
 
@@ -1269,11 +1391,20 @@ impl Sender {
         let backlog_us = backlog as u64 * 8 * 1_000_000 / (self.bitrate.max(1) as u64);
         // While draining, the backlog is the queue in the path, already on its way out.
         let draining = self.drain.is_some() && self.delivering;
+        // A stall: reports late or getting nothing through, after a healthy one. Nothing is
+        // acked because nothing moves; it all comes out in a burst when the stall ends.
+        let now = self.now_us;
+        let quiet = self.empty_prev
+            || self.last_report_us.is_some_and(|t| now.saturating_sub(t) > REPORT_GAP_US)
+            || self.gap_us.is_some_and(|t| now.saturating_sub(t) < REPORT_GAP_US);
+        let stall_for = self.healthy_us.filter(|_| quiet).map(|t| now.saturating_sub(t));
+        // One reset per stall: the next keyframe would queue behind the same stall.
+        let again = quiet && self.stall_reset;
         // Frames wait in a queue our rate doesn't drain (a slow decoder): a lower bitrate can't
         // help, only a keyframe the receiver can jump to.
         let stuck = self.drain_stuck_since.is_some_and(|t| self.now_us.saturating_sub(t) > self.cfg.drain_us);
         let stale = stuck && self.queuing_us > self.cfg.max_backlog_us;
-        if (backlog_us > self.cfg.max_backlog_us && !draining) || stale {
+        if (backlog_us > self.cfg.max_backlog_us && !draining && !again) || stale {
             // Behind: abandon the current group, restart from a keyframe at a lower rate.
             if let Some(g) = self.current.take() {
                 out.push(Out::Reset { group: g });
@@ -1283,6 +1414,9 @@ impl Sender {
             if stale {
                 self.drain_stuck_since = None;
                 self.queuing_us = 0;
+            } else if stall_for.is_some() {
+                // A stall says nothing about capacity: the rate rules see the reports.
+                self.stall_reset = true;
             } else {
                 self.bitrate = (self.bitrate / 2).max(self.cfg.min_bps);
                 self.settle_until = None;
@@ -1693,6 +1827,47 @@ mod tests {
         reports(&mut tx, 3_100 * MS, 4_500 * MS, 1_700_000, RateReport { delivered_bps: 1_700_000, queuing_us: 5_000 });
         assert!(!tx.draining());
         assert!(tx.bitrate() > 1_700_000, "{}", tx.bitrate());
+    }
+
+    #[test]
+    fn delay_burst_is_not_a_slower_link() {
+        // Real call (Pixel 3a <-> laptop, home LAN, 2026-10-17): a few delay bursts a minute
+        // (nothing for a few hundred ms, then everything late) held both ends at 100-190 kbps.
+        let mut tx = Sender::new(SenderConfig { start_bps: 1_500_000, ..Default::default() });
+        tx.frame(0, true, b"k");
+        reports(&mut tx, 0, 2_000 * MS, 1_500_000, RateReport { delivered_bps: 1_500_000, queuing_us: 5_000 });
+        let (rate, size) = (tx.bitrate(), tx.resolution());
+        // Nothing gets through for 300 ms; the backlog reset doesn't halve the rate.
+        reports(&mut tx, 2_000 * MS, 2_300 * MS, rate as u64, RateReport { delivered_bps: 0, queuing_us: 5_000 });
+        tx.feedback(&BTreeMap::from([(0, 200_000)]));
+        assert_eq!(tx.drops, 1);
+        assert!(tx.feedback(&BTreeMap::from([(0, 200_000)])).is_empty(), "one reset per stall");
+        // Then it all arrives, late.
+        let late = RateReport { delivered_bps: rate, queuing_us: 250_000 };
+        reports(&mut tx, 2_300 * MS, 2_700 * MS, rate as u64 / 2, late);
+        assert!(tx.bitrate() >= rate / 2, "a stall keeps half the rate: {}", tx.bitrate());
+        // The delay is back to normal: back to the rate before within a second.
+        let ok = RateReport { delivered_bps: rate / 2, queuing_us: 5_000 };
+        reports(&mut tx, 2_700 * MS, 3_700 * MS, rate as u64 / 2, ok);
+        assert!(tx.bitrate() >= rate * 9 / 10, "{} of {rate}", tx.bitrate());
+        assert_eq!(tx.resolution(), size);
+    }
+
+    #[test]
+    fn slower_link_is_not_remembered() {
+        // A queue that builds while the link delivers steadily is the link's capacity: the
+        // ramp after it is the normal one, not the fast climb back after a stall.
+        let mut tx = Sender::new(SenderConfig { start_bps: 1_500_000, ..Default::default() });
+        tx.frame(0, true, b"k");
+        reports(&mut tx, 0, 2_000 * MS, 1_500_000, RateReport { delivered_bps: 1_500_000, queuing_us: 5_000 });
+        for i in 0..10u64 {
+            let r = RateReport { delivered_bps: 500_000, queuing_us: 50_000 + i * 15_000 };
+            reports(&mut tx, (2_000 + i * 50) * MS, (2_050 + i * 50) * MS, 500_000, r);
+        }
+        assert!(tx.bitrate() < 500_000);
+        let ok = RateReport { delivered_bps: 450_000, queuing_us: 5_000 };
+        reports(&mut tx, 2_500 * MS, 3_500 * MS, 450_000, ok);
+        assert!(tx.bitrate() < 800_000, "{}", tx.bitrate());
     }
 
     #[test]
