@@ -210,7 +210,7 @@ impl Inner {
         ));
         let r = self
             .clone()
-            .self_loop(&me, remote, &acked, &dirty, &mut reader, &mut writer)
+            .self_loop(&me, &conn, remote, &acked, &dirty, &mut reader, &mut writer)
             .await;
         self.drop_session(remote, &conn);
         conn.close(0u32.into(), b"done");
@@ -227,6 +227,7 @@ impl Inner {
     pub(super) async fn self_loop(
         self: Arc<Self>,
         me: &Arc<Me>,
+        conn: &Connection,
         remote: [u8; 32],
         acked: &Acked,
         dirty: &Dirty,
@@ -274,10 +275,37 @@ impl Inner {
         let mut sent_cache: Option<VersionVector> = None;
         let mut peer = PeerChat::default();
         let mut changes = self.sync_tx.subscribe();
+        // Idle = no stream data either way (QUIC acks and keep-alives do not count): then the
+        // session closes cleanly and this device is in sync up to what the session saw.
+        let traffic = |c: &Connection| {
+            let st = c.stats();
+            st.frame_tx.stream + st.frame_rx.stream
+        };
+        let mut seen = traffic(conn);
+        let mut active = Instant::now();
+        let mut idle = tokio::time::interval(crate::wire::idle_check());
         loop {
             tokio::select! {
+                _ = idle.tick() => {
+                    let t = traffic(conn);
+                    if t != seen {
+                        seen = t;
+                        active = Instant::now();
+                    } else if active.elapsed() >= crate::wire::idle_close() && !changes.has_changed().unwrap_or(true) {
+                        self.selfsync_settled(remote, &changes);
+                        writer.finish();
+                        let _ = tokio::time::timeout(Duration::from_millis(300), conn.closed()).await;
+                        self.log(format!("own-device sync with {} closed: idle", proto::device_to_text(&remote)));
+                        return Ok(());
+                    }
+                }
                 m = reader.recv::<SelfMsg>() => {
-                    let Some(m) = m? else { return Ok(()) };
+                    let Some(m) = m? else {
+                        // The other device closed (idle on its side): in sync, unless a change
+                        // of ours is still unseen.
+                        self.selfsync_settled(remote, &changes);
+                        return Ok(());
+                    };
                     let mut full = false;
                     match m {
                         SelfMsg::Hello { docs } => {
