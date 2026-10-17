@@ -446,6 +446,10 @@ fun DiagnosticsScreen(app: P2pApp, onBack: () -> Unit) {
         ListItem("Test tone", sub = "Send a 440 Hz tone instead of the microphone", trailing = {
             TinSwitch(tone, { tone = it; app.testToneHz = if (it) 440f else null; app.node.setTestTone(app.testToneHz) }, "Test tone")
         })
+        // The call/notification transitions ([CallTrace]): short call ids and states only.
+        ListItem("Copy call log", sub = "Recent call and notification changes, no names", onClick = {
+            copyToClipboard(app, "Tinline call log", CallTrace.dump().ifEmpty { "(empty)" })
+        })
         Hint("p2pcore ${uniffi.p2pcore.coreVersion()}", Modifier.padding(horizontal = 20.dp, vertical = 8.dp))
     }
 }
