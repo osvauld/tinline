@@ -174,6 +174,12 @@ impl Inner {
             ops.push(core.store.conv_op(&pair, &conv)?);
             core.store.db.apply(&ops)?;
             self.selfsync_dirty(READ_MARK);
+            // Sending a read receipt is activity towards the contact (2026-10-17); delivered
+            // receipts are automatic and are not.
+            if !self.is_self_did(did) {
+                core.mark_active(did, None);
+                self.chat_wake(&core, did);
+            }
             self.chat_receipts_pump();
             if let (Some(ev), Some(c)) = (self.ev(), self.chat_api_chat(&core, &me, &conv)) {
                 ev.on_chat_changed(c);

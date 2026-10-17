@@ -65,6 +65,10 @@ impl Inner {
     /// with `did` (the consent rule above); otherwise sends nothing. Best effort: a lost
     /// datagram is replaced by the next heartbeat.
     pub(crate) fn presence_send(&self, core: &ChatCore, did: &str, conn: &Connection) {
+        // A live call counts as activity: keep the window fresh while it lasts.
+        if self.in_call_with(did) {
+            core.mark_active(did, None);
+        }
         if !core.locally_active(did) {
             return;
         }

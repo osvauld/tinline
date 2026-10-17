@@ -89,8 +89,9 @@ online at the same time**. With the always-on service that is usually seconds; w
   comes from the relay registration: whoever has something to send dials. A link to a contact
   opens or stays open only because of my own action or a real need; a contact can never hold my
   link open or learn I am online without my action. A session with no `ChatMsg` either way for
-  60 s (`wire::IDLE_CLOSE`) closes cleanly unless this side has its own reason: I typed or wrote
-  to that contact within those 60 s, something is pending for them (outbox, wanted download,
+  60 s (`wire::IDLE_CLOSE`) closes cleanly unless this side has its own reason: I typed, wrote, or sent
+  a read receipt to that contact within those 60 s (a live 1:1 call counts too; an automatic
+  delivered receipt does not), something is pending for them (outbox, wanted download,
   owed receipt, profile push), or a 1:1 call with them is live (`docs/protocol.md` "Session
   lifetime"). **Typing is the wake point:** the composer calls `chat_typing(did)` on each
   non-empty edit (local only, throttled in the core), which dials ahead of the send. Opening a
@@ -98,8 +99,8 @@ online at the same time**. With the always-on service that is usually seconds; w
   with something pending. A contact who wrote while we were away redials us (its backoff reaches
   60 s, so catch-up after coming back can take up to about a minute). Own devices follow the same
   idle rule (section 8).
-- **Presence** is sent only while I am active with that contact (typed or wrote within the idle
-  time), so a contact who dials to deliver learns nothing more. "Online" in the conversation
+- **Presence** is sent only while I am active with that contact (typed, wrote, sent a read receipt, or
+  was in a live call with them, within the idle time), so a contact who dials to deliver learns nothing more. "Online" in the conversation
   header means "they are active with me now"; otherwise the header shows no presence word
   (unknown, not "offline"). Chat and contact lists show no online dots.
 

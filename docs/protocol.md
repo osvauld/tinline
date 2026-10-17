@@ -530,7 +530,9 @@ this side has:
 
 - recent local activity with that contact: the user typed in the conversation
   (`Node::chat_typing(did)`) or wrote to it (send, edit, delete, file, voice) within the idle
-  time;
+  time; a live 1:1 call with that DID and sending a read receipt for their messages
+  (`mark_read`) count as activity too, an automatic delivered receipt does not (user decision
+  2026-10-17);
 - something pending for that contact: unsent outbox days, wanted blob downloads, owed
   receipts, a pending profile push (the `chat_kick_pending` conditions);
 - a live 1:1 call with that DID.
@@ -557,8 +559,8 @@ and are not affected.
 
 Whether a contact is active with us right now. Each device keeps a Loro `EphemeralStore` with one
 key (`online`), refreshed every 8 s, and sends it as a QUIC datagram on a chat session **only
-while the user here is active with that contact** (typed or wrote to it within the idle time,
-see "Session lifetime"): `b"tp1"` + `EphemeralStore::encode`, at most 512 bytes. Otherwise it
+while the user here is active with that contact** (typed, wrote to it, sent a read receipt for it, or has a live 1:1 call with it, within the idle
+time; see "Session lifetime"): `b"tp1"` + `EphemeralStore::encode`, at most 512 bytes. Otherwise it
 sends none, so a contact who dials to deliver a message learns nothing beyond the delivery
 itself. The receiver applies it into a store belonging to that session only, so a contact speaks
 only for its own device. An entry not refreshed within 30 s expires (the store compares the

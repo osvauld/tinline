@@ -186,6 +186,44 @@ fn presence_shows_only_while_active_with_the_contact() {
     });
 }
 
+// KIND: acceptance (user 2026-10-17, final: sending a read receipt is activity: B reading A's
+// message makes B online for A; B's automatic delivered receipt alone does not)
+#[test]
+fn a_read_receipt_is_activity_but_a_delivered_receipt_is_not() {
+    let (a, b) = settled_pair("read-activity");
+    let id = a.node.send_text(b.did.clone(), "read me".into(), None).unwrap().id;
+    eventually(60, "B holds the message", || holds(&b, &a.did, &id));
+    eventually(60, "A sees it delivered", || delivered(&a, &b.did, &id));
+    // B's delivered receipt went out; B stayed passive, so A never saw B online. Wait out the
+    // sessions (A was active, so they close after the idle time).
+    let mut a_sees_b = false;
+    let stop = std::time::Instant::now() + Duration::from_secs(30);
+    while !both_closed(&a, &b) && std::time::Instant::now() < stop {
+        a_sees_b |= a.node.contact_online(b.did.clone());
+        std::thread::sleep(Duration::from_millis(100));
+    }
+    assert!(both_closed(&a, &b), "sessions closed");
+    assert!(!a_sees_b, "a delivered receipt is not activity: A never saw B online");
+    // B reads: that is activity, so B dials if needed and A sees B online.
+    b.node.mark_read(a.did.clone()).unwrap();
+    eventually(30, "A sees B after B read", || a.node.contact_online(b.did.clone()));
+}
+
+// KIND: acceptance (user 2026-10-17, final: a live 1:1 call with the contact is activity: each
+// side is online for the other during the call without anyone typing or writing)
+#[test]
+fn a_live_call_counts_as_activity_for_presence() {
+    let (a, b) = settled_pair("call-activity");
+    assert!(!a.node.contact_online(b.did.clone()) && !b.node.contact_online(a.did.clone()));
+    let call = b.node.call(a.did.clone()).unwrap();
+    let inc = incoming(&a, 40);
+    a.node.answer(inc).unwrap();
+    eventually(60, "both see each other online during the call", || {
+        a.node.contact_online(b.did.clone()) && b.node.contact_online(a.did.clone())
+    });
+    b.node.hangup(call.call_id).unwrap();
+}
+
 // KIND: acceptance (user 2026-10-17: delivery is sender-driven; a pending outbox redials until
 // the message is delivered, then the session idles out)
 #[test]

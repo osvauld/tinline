@@ -215,10 +215,14 @@ impl Inner {
         if core.locally_active(did) {
             return true;
         }
-        if self.live.lock().call.as_ref().is_some_and(|c| c.info.peer_did == did) {
+        if self.in_call_with(did) {
             return true;
         }
         self.me().is_ok_and(|me| self.chat_needs_session(core, &me, did))
+    }
+
+    pub(crate) fn in_call_with(&self, did: &str) -> bool {
+        self.live.lock().call.as_ref().is_some_and(|c| c.info.peer_did == did)
     }
 
     /// The user is typing to `did` (`Node::chat_typing`): local activity, and a session dialled
@@ -232,6 +236,17 @@ impl Inner {
         if !core.mark_active(did, Some(crate::wire::typing_throttle())) {
             return;
         }
+        self.chat_wake(&core, did);
+    }
+
+    /// A live 1:1 call with `did` is activity towards it (2026-10-17): our presence goes to it
+    /// while the call is live and for the idle window after.
+    pub(crate) fn chat_call_activity(self: &Arc<Self>, did: &str) {
+        if self.is_self_did(did) {
+            return;
+        }
+        let Ok(core) = self.chat_core() else { return };
+        core.mark_active(did, None);
         self.chat_wake(&core, did);
     }
 
