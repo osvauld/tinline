@@ -56,6 +56,9 @@ pub struct Link {
     /// packets in order, so the spike starts with a stall and ends with a burst. With any
     /// spike set, forward and return packets are delivered in order.
     pub spikes: Vec<(u64, u64, u64)>,
+    /// Loss probability per packet sent during a spike of 50 ms or more (busy airtime: the
+    /// radio's retries run out).
+    pub spike_loss: f64,
 }
 
 impl Default for Link {
@@ -69,11 +72,16 @@ impl Default for Link {
             rate_changes: vec![],
             outages: vec![],
             spikes: vec![],
+            spike_loss: 0.0,
         }
     }
 }
 
 impl Link {
+    fn in_lossy_spike(&self, t: u64) -> bool {
+        self.spikes.iter().any(|s| t >= s.0 && t < s.1 && s.2 >= 50_000)
+    }
+
     /// Extra delay of a packet leaving at `t` (see `spikes`).
     fn spike_us(&self, t: u64, rng: &mut Rng) -> u64 {
         match self.spikes.iter().find(|s| t >= s.0 && t < s.1) {
@@ -171,6 +179,9 @@ pub struct HwCodec {
     pub fps: u32,
     pub key_ratio: f64,
     pub delay: usize,
+    /// Smallest keyframe in bytes: a hardware encoder can't make one much smaller however low
+    /// the target (Pixel 3a VP8 at 25 kbps, 180x240: 1.5-4 KB, over a second of the target).
+    pub key_min: usize,
     rng: Rng,
     size: (u32, u32),
     fifo: VecDeque<(u64, bool, u32)>,
@@ -183,6 +194,7 @@ impl HwCodec {
             fps,
             key_ratio: 4.0,
             delay: 2,
+            key_min: 0,
             rng: Rng::new(seed),
             size: (0, 0),
             fifo: VecDeque::new(),
@@ -205,7 +217,8 @@ impl SimCodec for HwCodec {
         let (i, key, bps) = self.fifo.pop_front()?;
         let px = width as f64 * height as f64;
         let mean = (bps as f64 / self.fps as f64).min(px * 0.3) / 8.0;
-        let size = if key { mean * self.key_ratio } else { mean * (0.7 + 0.6 * self.rng.f64()) };
+        let size =
+            if key { (mean * self.key_ratio).max(self.key_min as f64) } else { mean * (0.7 + 0.6 * self.rng.f64()) };
         Some((i, fake_payload(size, key, i, width, height), key))
     }
     fn decode(&mut self, payload: &[u8]) -> bool {
@@ -762,7 +775,10 @@ pub fn run(sc: &Scenario, codec: &mut dyn SimCodec) -> Report {
             pace_next = now + (size as f64 * srtt / (1.25 * cwnd)) as u64;
             let in_outage = sc.link.outages.iter().any(|&(a, b)| now >= a && now < b);
             let queued = link_free.saturating_sub(now) * rate / 8 / 1_000_000;
-            let dropped = in_outage || queued as usize + size > sc.link.queue_bytes || rng.f64() < sc.link.loss;
+            let spike_lost =
+                sc.link.spike_loss > 0.0 && sc.link.in_lossy_spike(now) && spike_rng.f64() < sc.link.spike_loss;
+            let dropped =
+                in_outage || queued as usize + size > sc.link.queue_bytes || rng.f64() < sc.link.loss || spike_lost;
             let depart = link_free.max(now) + size as u64 * 8 * 1_000_000 / rate.max(1);
             if !(in_outage || queued as usize + size > sc.link.queue_bytes) {
                 link_free = depart;

@@ -647,3 +647,210 @@ fn real_av1_wifi_delay_spikes() {
     assert!(min_height(&r, 5 * S, sc.duration_us) >= 360, "{}", sizes_line(&r));
     assert!(share_at_least(&r, 540, 5 * S, sc.duration_us) >= 0.8);
 }
+
+// --- Home LAN with delay bursts (docs/video.md, "Delay bursts on a fast LAN") ---
+
+/// Pixel 3a <-> laptop on one home router (real call, 2026-10-17): plenty of capacity, RTT
+/// 5-10 ms with no call but 10-40 ms during it, and every few seconds a burst of 100 ms to ~1 s
+/// of extra delay with some loss (router ping over 150 s: 5% lost, 42 of 285 replies > 100 ms,
+/// max 1023 ms). One burst lands in the first second of the call. Deterministic per `seed`.
+fn lan_bursts(duration_us: u64, rate_bps: u64, seed: u64) -> Scenario {
+    let mut rng = Rng::new(seed);
+    let mut spikes = Vec::new();
+    let mut t = 700_000;
+    let mut n = 0;
+    while t < duration_us {
+        let len = 300_000 + (rng.f64() * 900_000.0) as u64;
+        // Mostly 100-300 ms, every fifth up to 600 ms.
+        let extra = if n % 5 == 4 {
+            300_000 + (rng.f64() * 300_000.0) as u64
+        } else {
+            100_000 + (rng.f64() * 200_000.0) as u64
+        };
+        spikes.push((t, t + len, extra));
+        let next = t + len + 2 * S + (rng.f64() * 5.0 * S as f64) as u64;
+        // In between, stretches of 10-25 ms more one way (the 15-40 ms ping seconds), no loss.
+        let mut u = t + len + 300_000;
+        while u + 500_000 < next {
+            let l = (500_000 + (rng.f64() * 1_500_000.0) as u64).min(next - u - 200_000);
+            spikes.push((u, u + l, 10_000 + (rng.f64() * 15_000.0) as u64));
+            u += l + 300_000 + (rng.f64() * 1_500_000.0) as u64;
+        }
+        t = next;
+        n += 1;
+    }
+    Scenario {
+        duration_us,
+        link: Link {
+            rate_bps,
+            delay_us: 3_000,
+            jitter_us: 6_000,
+            queue_bytes: 512 * 1024,
+            spikes,
+            spike_loss: 0.05,
+            ..Link::default()
+        },
+        ..base()
+    }
+}
+
+/// Median time from a burst's end (spikes of 50 ms or more) until the target is back at 80% of what it was 0.5 s before
+/// the burst (bursts that found it at >= 300 kbps; not back by the next burst: that gap), and
+/// how many bursts it came back from at all.
+fn burst_recovery(r: &Report, sc: &Scenario) -> (f64, usize, usize) {
+    let at = |t: u64| r.bitrate.iter().rev().find(|x| x.0 <= t).map_or(0, |x| x.1);
+    let spikes: Vec<_> = sc.link.spikes.iter().filter(|s| s.2 >= 50_000).collect();
+    let mut times = Vec::new();
+    let mut back = 0;
+    for (i, s) in spikes.iter().enumerate() {
+        let pre = at(s.0.saturating_sub(500_000));
+        if s.0 < 2 * S || pre < 300_000 {
+            continue;
+        }
+        let next = spikes.get(i + 1).map_or(sc.duration_us, |n| n.0);
+        let t = r.bitrate.iter().find(|x| x.0 >= s.1 && x.0 < next && x.1 as u64 * 10 >= pre as u64 * 8).map(|x| x.0);
+        if t.is_some() {
+            back += 1;
+        }
+        times.push(t.unwrap_or(next) - s.1);
+    }
+    times.sort_unstable();
+    let med = times.get(times.len().saturating_sub(1) / 2).copied().unwrap_or(0);
+    (med as f64 / 1e6, back, times.len())
+}
+
+fn lan_line(name: &str, r: &Report, sc: &Scenario) {
+    let d = sc.duration_us;
+    if std::env::var_os("SIM_TRACE").is_some() {
+        let b: Vec<String> = sc
+            .link
+            .spikes
+            .iter()
+            .filter(|s| s.2 >= 50_000)
+            .map(|s| format!("{:.2}-{:.2}s +{}ms", s.0 as f64 / 1e6, s.1 as f64 / 1e6, s.2 / 1000))
+            .collect();
+        println!("{:>10}  bursts: {}", "", b.join(", "));
+    }
+    let (rec, back, n) = burst_recovery(r, sc);
+    let first540 = r.sizes.iter().find(|s| s.2 >= 540).map_or(f64::NAN, |s| s.0 as f64 / 1e6);
+    println!(
+        "{:>10}  from 5 s: mean {:.0} kbps, >= 360p {:.0}%, >= 540p {:.0}%, first 540p {:.1} s, under 150 kbps {:.0}% of the time; recovery median {:.1} s ({back}/{n} bursts); p95 {:.0} ms; drops {}, keys {:?}",
+        name,
+        r.mean_bitrate(5 * S, d) / 1000.0,
+        100.0 * share_at_least(r, 360, 5 * S, d),
+        100.0 * share_at_least(r, 540, 5 * S, d),
+        first540,
+        100.0 * r.bitrate.iter().filter(|x| x.0 >= 5 * S && x.1 < 150_000).count() as f64
+            / r.bitrate.iter().filter(|x| x.0 >= 5 * S).count().max(1) as f64,
+        rec,
+        p95(r, 5 * S, d),
+        r.sender_drops,
+        r.key_causes,
+    );
+}
+
+#[test]
+fn lan_delay_bursts() {
+    // Laptop sender (software encoder): the rate gets back to where it was within seconds of a
+    // burst instead of creeping up from the floor.
+    let sc = lan_bursts(120 * S, 10_000_000, 11);
+    let r = go("lan burst", &sc);
+    lan_line("", &r, &sc);
+    trace(&r, 0, 10 * S);
+    println!("{}", r.steps_text());
+    assert_eq!(r.decode_errors, 0);
+}
+
+#[test]
+fn lan_delay_bursts_hw() {
+    // Pixel sender: hardware VP8 (output lags 2 frames, keyframes 4x a delta and never under
+    // 2.5 KB).
+    let sc = lan_bursts(120 * S, 10_000_000, 11);
+    let mut codec = HwCodec::new(sc.fps, sc.seed);
+    codec.key_min = 2_500;
+    let r = run(&sc, &mut codec);
+    println!("{:>10}: {}", "lan hw", r.summary(sc.duration_us));
+    lan_line("", &r, &sc);
+    trace(&r, 0, 10 * S);
+    println!("{}", r.steps_text());
+    assert_eq!(r.decode_errors, 0);
+}
+
+#[test]
+fn lan_delay_bursts_slow_link() {
+    // The same bursts on a link that really is slow (600 kbps): the rate still settles under it.
+    let mut sc = lan_bursts(90 * S, 600_000, 11);
+    sc.link.queue_bytes = 64 * 1024;
+    let r = go("lan 600k", &sc);
+    lan_line("", &r, &sc);
+    assert_eq!(r.decode_errors, 0);
+    assert!(r.mean_bitrate(10 * S, sc.duration_us) < 550_000.0, "{:.0}", r.mean_bitrate(10 * S, sc.duration_us));
+    assert!(r.wire_bps(10 * S, sc.duration_us) < 600_000.0);
+}
+
+#[test]
+fn lan_delay_bursts_seeds() {
+    // The burst pattern and the link's randomness vary a lot from one seed to the next: the
+    // same scenario over six seeds, software and hardware encoder, averaged.
+    let mut rows = Vec::new();
+    for hw in [false, true] {
+        for seed in [3, 5, 7, 11, 13, 17] {
+            let sc = lan_bursts(120 * S, 10_000_000, seed);
+            let r = if hw {
+                let mut codec = HwCodec::new(sc.fps, seed);
+                codec.key_min = 2_500;
+                run(&sc, &mut codec)
+            } else {
+                run(&sc, &mut FakeCodec::new(sc.fps, seed))
+            };
+            assert_eq!(r.decode_errors, 0);
+            let d = sc.duration_us;
+            let low = r.bitrate.iter().filter(|x| x.0 >= 5 * S && x.1 < 150_000).count() as f64
+                / r.bitrate.iter().filter(|x| x.0 >= 5 * S).count().max(1) as f64;
+            let frozen: u64 = r.freezes(250_000, S, d).iter().map(|f| f.1).sum();
+            let row = (
+                r.mean_bitrate(5 * S, d) / 1000.0,
+                share_at_least(&r, 540, 5 * S, d) * 100.0,
+                low * 100.0,
+                p95(&r, 5 * S, d),
+                frozen as f64 / 1e6,
+                r.keyframes as f64,
+                burst_recovery(&r, &sc).0,
+            );
+            println!(
+                "{:>10}  {} seed {seed:2}: {:5.0} kbps, >= 540p {:3.0}%, < 150 kbps {:2.0}%, p95 {:4.0} ms, frozen {:4.1} s, keys {:2}, recovery {:.1} s",
+                "lan seeds",
+                if hw { "hw" } else { "sw" },
+                row.0,
+                row.1,
+                row.2,
+                row.3,
+                row.4,
+                row.5,
+                row.6
+            );
+            rows.push((hw, row));
+        }
+    }
+    for hw in [false, true] {
+        let v: Vec<_> = rows.iter().filter(|r| r.0 == hw).map(|r| r.1).collect();
+        let n = v.len() as f64;
+        let m = |f: fn(&(f64, f64, f64, f64, f64, f64, f64)) -> f64| v.iter().map(f).sum::<f64>() / n;
+        println!(
+            "{:>10}  {} mean: {:.0} kbps, >= 540p {:.0}%, < 150 kbps {:.1}%, p95 {:.0} ms, frozen {:.1} s, keys {:.1}, recovery {:.1} s",
+            "lan seeds",
+            if hw { "hw" } else { "sw" },
+            m(|r| r.0),
+            m(|r| r.1),
+            m(|r| r.2),
+            m(|r| r.3),
+            m(|r| r.4),
+            m(|r| r.5),
+            m(|r| r.6)
+        );
+        // Was (b83e596): ~400 kbps, 2% of frames at >= 540p, 18-19% of the time under 150 kbps.
+        assert!(m(|r| r.0) > 1_000.0, "mean {:.0} kbps", m(|r| r.0));
+        assert!(m(|r| r.1) > 40.0, ">= 540p {:.0}%", m(|r| r.1));
+        assert!(m(|r| r.2) < 5.0, "under 150 kbps {:.1}%", m(|r| r.2));
+    }
+}
