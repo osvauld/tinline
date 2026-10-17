@@ -130,6 +130,8 @@ below are the 30 fps-only ladder they extend.
 - **Down at once**, skipping rungs, as soon as the target bitrate falls below the floor.
 - **Up one rung at a time**, after the bitrate has stayed above the up threshold for 2.5 s
   without a break, and not within 4 s of a step down.
+  (Now 5 s and 10 s; at the call start 1 s on the delivered rate, see "Best case first: the
+  call start" below.)
 - **Encode time**: the app reports each frame's encode time (`Sender::encode_time`). The
   first 15 frames after a new encoder (start, size change) are ignored (libaom's first
   frames are slower, and so is a machine that is just setting up the call). If the
@@ -875,6 +877,101 @@ time in the delay signal; the relaxed assertions carry the numbers.
 under ~15 ms and phone `recv_wait>5ms` near 0 confirm both sides are clean), `video send`
 overuse counts both ways, the CPU governor/power profile and `top -H` of the laptop during the
 call (what else is busy: camera MJPEG decode on the camera thread, UI), and router ping.
+
+### Best case first: the call start (2026-10-17, `fix/fast-start`)
+
+**The call** (after the fixes above): Pixel 3a <-> laptop, healthy home Wi-Fi (router ping avg
+18 ms, 0% loss). Both directions held the top allowed size the whole call with no step down, but
+the start was slow. Laptop log: codecs at 05:03:08, but its camera only started sending at
+~05:03:23.7 (`video send 0x0@0` until then), so the "21 s at 360p" was mostly no video; from the
+first frame: estimate 1118 kbps after 1 s and at the 360p ceiling (1200) after 2 s, 540p at
++6.7 s, 2000 kbps at +7.7 s, 720p at +12.7 s. Pixel (sending from 10:33:09.3): 1200 kbps after
+3 s, 540p (its top: the laptop's 540p hint) at +7 s.
+
+**What holds the start** (sim `clean_start` reproduces it: 540p at 6.1 s, 720p at 11.9 s):
+- Start rate 500 kbps and the ramp (+8% per 100 ms from 0.5 s, at most 1.5x delivered): the
+  540p threshold (780 kbps) is reached ~1.1 s in, 1.3 Mbps ~0.2 s after the step to 540p (the
+  estimate is clamped to the rung's ceiling, 1.2 Mbps at 360p). ~1 s in all; not the cause.
+- Encoder warm-up: a step up needs the p75 of 10 encode times after 15 ignored frames (~0.8 s
+  per rung); the hold only starts once it has them. ~0.8 s per step.
+- **The 5 s step-up hold**, once per rung: 10 s of the 12. The 10 s after a step down and the
+  flap block never applied (no step down).
+- The 130% margin needs 780 kbps / 1.3 Mbps, which the link carried within a second.
+
+**Rule** (`LadderConfig::up_fast_hold_us`, `Ladder::proven_bps`): the long hold guards against an
+estimate that ran ahead of the link (the ramp may be 1.5x what got through). Delivered bytes with
+a flat delay are the link's own answer. So until the path has shown a limit, a step up needs only
+**1 s** when the **median delivered rate of the last 0.5 s** (measured at the receiver, keyframe
+bursts damped by the median) covers the next step's threshold, with the path empty for that whole
+second (no overuse episode, drain or spike, queueing < 15 ms; any dip restarts it). The normal
+rules (estimate, encode-time check, 5 s hold with dips) still apply too. The start phase ends for
+good at the first rate or CPU step down or the first overuse episode without a stall (one whose
+second look sets the good rate: capacity seen); a cap (hint) step down doesn't end it.
+
+**Why it is safe on weak links**: the rate it trusts is what arrived, not what we sent or
+estimated. A 650 kbps link never delivers 780 kbps, so it never steps fast; on a link just above
+a threshold the ramp overshoots, the delay rises above 15 ms within ~0.2 s and the hold restarts,
+and the first overuse episode ends the start phase. Only the ladder changes: the rate controller,
+start rate and ramp are as before.
+
+`clean_start` (10 Mbps, 256 KB buffer, three seeds x software / hardware encoder; RTT 5 ms, 40 ms,
+and 10 ms with a 200-400 ms window of +300 ms delay every 4-8 s):
+
+| | 540p at | 720p at | first 10 s p95 (sw / hw) |
+|---|---|---|---|
+| RTT 5 / 40 ms, before | 6.1 s | 11.9 s | 19-38 / 86-106 ms |
+| RTT 5 / 40 ms, after | **2.2-2.6 s** | **4.0-4.4 s** | 23-42 / 90-108 ms, no freezes |
+| with bursts, before | 6.1 s | 11.9-22.6 s, one seed never | 23-260 ms |
+| with bursts, after | 3.2-4.1 s | **5.0-5.9 s** | 98-411 ms, 2-4 freezes (as before) |
+
+Links near the thresholds (20 ms RTT, 64 KB buffer, first 10 s, three seeds): 650 kbps and
+1 Mbps identical to before (360p; 540p at 6.1 s, p95 82-127 ms, no freezes): the first overuse
+episode ends the start phase before a fast step. 1.5 Mbps: one seed of three steps to 540p at
+4.1 s instead of 6.1 (p95 120 -> 103 ms, max 165 -> 164), the others identical.
+
+Network matrix, 16 seeds (`SIM_MATRIX_SEEDS=16`; before = `SIM_FAST_HOLD=0`, the controller of
+ad86216):
+
+| Scenario | before | after |
+|---|---|---|
+| lan | 1498 kbps, 77% / 99%, 41 / 274 ms, 25.1 (13.9 s) | 1459, 73% / 96%, 41 / 287, 24.8 (13.8 s) |
+| cafe | 1520, 84% / 99%, 55 / 150, 18.1 (15.6 s) | 1554, 88% / 99%, 56 / 171, 18.2 (15.4 s) |
+| lte | 1537, 87% / 99%, 78 / 148, 6.6 (7.0 s) | 1552, 90% / 99%, 79 / 146, 6.7 (7.1 s) |
+| relay, weak | unchanged | unchanged |
+| step / 20-90 s | 711, 64 / 114; 538, 68 / 116 | 746, 63 / 115; 540, 66 / 116 |
+| step+stall / 20-90 s | 729, 62 / 119, 2.0 (1.4 s); 538 | 759, 65 / 119, 2.0 (1.2 s); 535 |
+
+These runs are chaotic (one different early decision changes the rest of the call): cafe's mean
+p95 is pulled by two seeds (428 and 246 ms after, 118 and 120 before), while two others went the
+other way (250 -> 119, 170 -> 134); the per-seed median is the same (~140 ms). The slow seconds
+are burst responses in both runs, larger or smaller depending on the rate the burst finds.
+
+Existing scenarios (p50 / p95 / max ms, wire kbps): most only start 3-4 s earlier at each size
+(clean, Wi-Fi, busy desktop, hints, slow start, slow device, hw keyframes: same or better). The
+cost is where a scenario's drop comes at 10 s: it now finds the call at 720p24 / ~1.9 Mbps on the
+2 Mbps link instead of 540p, so more is in flight (the trade-off of the section above):
+
+| Scenario | before | after |
+|---|---|---|
+| clean 2 Mbps | 78 / 122 / 161, 1681 | 84 / 128 / 183, 1769 |
+| 2 M -> 300 k at 10 s (deep buffer) | 64 / 134 / 1220 | 70 / 167 / 1026 |
+| 2 M -> 200 k -> 2 M | 56 / 568 / 1912, 1.6 s frozen | 60 / 238 / 1597, 1.7 s |
+| 2 M / 900 k flapping | 65 / 126 / 302, 0 frozen | 70 / 122 / 846, 2 freezes (0.5 s) |
+| slow receiver (25 fps decode 5-15 s) | 80 / 213 / 333, 540p from 6.1 s | 52 / 418 / 484, 360p 7 s, 180p 9-22 s |
+| 500 ms outage | 78 / 130 / 276, 0.9 s | 83 / 129 / 183, 0.7 s |
+| 1 Mbps from 20 s | 67 / 118 / 216 | 75 / 129 / 212, stays 720p15 (was 540p from 29 s) |
+
+The slow receiver is the largest change: the decoder slows at 5 s while the call already sends
+2 Mbps at 540p (before: 1.2 Mbps at 360p), so its queue builds faster; it recovers as before
+(p95 after 18 s < 120 ms, > 1 Mbps from 22 s). Assertions relaxed with the numbers:
+`outage_500ms`, `adapt_fps_before_resolution_1mbps`, `ladder_follows_bandwidth_dip`,
+`adapt_drawn_size_hint` (after the hint is lifted at 25 s the fast hold applies too, since no
+limit has shown: 720p at 27.9 s, was 35.9 s; one keyframe for the hint, which finds it at 540p).
+
+**Limits**: sim only; the real start also waits for the camera and the peer's hint. A link whose
+capacity drops right after the fast step-up is handled by the normal step-down rules (and ends the
+start phase). Phones whose encoder can't take the next size are still held by the encode-time check.
+`SIM_FAST_HOLD=<ms>` (0: off) and `SIM_MATRIX_SEEDS=<n>` for experiments.
 
 ## Capture/render conversion (`video::convert`)
 
