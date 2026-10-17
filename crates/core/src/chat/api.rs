@@ -179,15 +179,22 @@ impl Node {
         self.block_on(async move { inner.chat_edit(&peer_did, &message_id, None).await })?
     }
 
-    /// Whether the contact is reachable right now (see `ChatEvents::on_presence_changed`).
+    /// Whether a session with the contact is up and it reports itself online (see
+    /// `ChatEvents::on_presence_changed`). Sessions close after a minute idle unless the
+    /// conversation is watched, so this is meaningful only inside an open conversation.
     pub fn contact_online(&self, peer_did: String) -> bool {
         self.inner.presence_of(&peer_did)
     }
 
     /// A conversation was opened: connect to the contact if we are not already, so its
-    /// presence is known.
+    /// presence is known, and keep that session open until `unwatch_presence`.
     pub fn watch_presence(&self, peer_did: String) {
         self.inner.presence_watch(&peer_did);
+    }
+
+    /// The conversation was closed (or left the screen): its session may close once idle.
+    pub fn unwatch_presence(&self, peer_did: String) {
+        self.inner.presence_unwatch(&peer_did);
     }
 
     /// Zeroes the local unread counter. Also signs a recipient read receipt for exactly the

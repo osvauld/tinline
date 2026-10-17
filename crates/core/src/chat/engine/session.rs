@@ -2,6 +2,9 @@
 
 use super::*;
 
+/// The end reason of a session closed for being idle (`wire::idle_close`).
+const IDLE: &str = "idle";
+
 impl Inner {
     // ---- lifecycle -------------------------------------------------------------------------
 
@@ -69,6 +72,7 @@ impl Inner {
             dial_sem: Arc::new(Semaphore::new(4)),
             next_session: AtomicU64::new(1),
             presence: crate::chat::presence::Presence::new(),
+            watched: Default::default(),
             device_id: value,
             wid: writer_id(&did, &value),
             fail_writes: Default::default(),
@@ -153,6 +157,8 @@ impl Inner {
     }
 
     /// Called once the endpoint is up: reconnect to everyone we owe something, and keep trying.
+    /// Not to everyone (2026-10-17): delivery is sender-driven, so a contact who wrote while we
+    /// were away dials us; we dial only contacts we have something pending for.
     pub(crate) fn chat_started(self: &Arc<Self>) {
         let this = self.clone();
         self.handle.spawn(async move {
@@ -162,11 +168,7 @@ impl Inner {
                 let dids = this.shared.lock().state.contacts.iter().map(|c| c.did.clone()).collect::<Vec<_>>();
                 for did in dids { this.profile_apply_deletions(me.epoch, &did); }
             }
-            // Everyone once at start: catches up what they wrote while we were away.
-            let dids: Vec<String> = this.shared.lock().state.contacts.iter().map(|c| c.did.clone()).collect();
-            for d in dids {
-                this.chat_kick(d);
-            }
+            this.chat_kick_pending();
             let mut tick = tokio::time::interval(Duration::from_secs(30));
             let mut n = 0u32;
             loop {
@@ -185,18 +187,42 @@ impl Inner {
         });
     }
 
-    /// Dials every contact we have unsent ops or wanted downloads for.
+    /// Dials every contact we have something pending for (`chat_needs_session`) or whose conversation
+    /// is open here (so its presence shows once they are reachable).
     pub(crate) fn chat_kick_pending(self: &Arc<Self>) {
         let Ok(core) = self.chat_core() else { return };
         let Ok(me) = self.me() else { return };
         let dids: Vec<String> = self.shared.lock().state.contacts.iter().map(|c| c.did.clone()).collect();
         for did in dids {
-            let pair = pair_id(me.id.did(), &did);
             self.profile_download(did.clone());
-            if self.profile_pending(&did) || core.store.pending_days(&pair).map(|d| !d.is_empty()).unwrap_or(false) || self.chat_wants(&core, &pair) || Self::chat_receipts_owed(&core, &pair) {
+            if self.chat_needs_session(&core, &me, &did) || core.watched.lock().contains(&did) {
                 self.chat_kick(did);
             }
         }
+    }
+
+    /// Something for `did` that needs a session: unsent ops or profile, wanted downloads, owed
+    /// receipts.
+    pub(super) fn chat_needs_session(&self, core: &ChatCore, me: &Me, did: &str) -> bool {
+        let pair = pair_id(me.id.did(), did);
+        self.profile_pending(did) || core.store.pending_days(&pair).map(|d| !d.is_empty()).unwrap_or(false) || self.chat_wants(core, &pair) || Self::chat_receipts_owed(core, &pair)
+    }
+
+    /// Whether we want a session with `did` kept open past the idle close: its conversation is
+    /// open here, something is pending for it, or a 1:1 call with it is live.
+    pub(crate) fn chat_keep_local(&self, core: &ChatCore, did: &str) -> bool {
+        if core.watched.lock().contains(did) {
+            return true;
+        }
+        if self.live.lock().call.as_ref().is_some_and(|c| c.info.peer_did == did) {
+            return true;
+        }
+        self.me().is_ok_and(|me| self.chat_needs_session(core, &me, did))
+    }
+
+    /// Whether `sess` stays open although idle: we want it, or the contact device asked us to.
+    fn chat_keep(&self, core: &ChatCore, sess: &Session) -> bool {
+        self.chat_keep_local(core, &sess.did) || sess.peer_keep.lock().is_some_and(|until| std::time::Instant::now() < until)
     }
 
     pub(super) fn chat_wants(&self, core: &ChatCore, pair: &str) -> bool {
@@ -408,6 +434,7 @@ impl Inner {
             receipt_vv: Default::default(),
             hist: Default::default(),
             presence: crate::chat::presence::session_store(),
+            peer_keep: Default::default(),
         });
         // One session per contact: if both sides dialled at once, the one dialled by the lower
         // device key survives on both ends.
@@ -497,11 +524,19 @@ impl Inner {
             }
             self.chat_resume_downloads(&core, &sess.did);
             let mut heartbeat = tokio::time::interval(crate::chat::presence::HEARTBEAT);
+            // Idle = no ChatMsg either way; presence and keep datagrams do not count.
+            let mut active = std::time::Instant::now();
+            let mut idle = tokio::time::interval(crate::wire::idle_check());
             loop {
                 tokio::select! {
                     _ = heartbeat.tick() => {
-                        self.presence_send(&core, &conn);
+                        self.presence_send(&core, &sess, &conn);
                         self.presence_update(&core, &sess.did);
+                    }
+                    _ = idle.tick() => {
+                        if active.elapsed() >= crate::wire::idle_close() && !self.chat_keep(&core, &sess) {
+                            break 'run IDLE.into();
+                        }
                     }
                     d = conn.read_datagram() => match d {
                         Ok(d) => self.presence_receive(&core, &sess, &d),
@@ -509,6 +544,7 @@ impl Inner {
                     },
                     m = reader.recv() => match m {
                         Ok(Some(m)) => {
+                            active = std::time::Instant::now();
                             if let Err(e) = self.chat_handle(&core, &sess, m, &mut writer).await {
                                 break 'run e.to_string();
                             }
@@ -517,12 +553,15 @@ impl Inner {
                         Err(e) => break 'run e.to_string(),
                     },
                     c = cmds.recv() => match c {
+                        Some(Cmd::Keep) => self.keep_send(&core, &sess, &conn),
                         Some(Cmd::Push(day)) => {
+                            active = std::time::Instant::now();
                             if let Err(e) = self.chat_push(&core, &sess, &day, &mut writer).await {
                                 break 'run e.to_string();
                             }
                         }
                         Some(Cmd::Ack(day)) => {
+                            active = std::time::Instant::now();
                             let me = match self.me() { Ok(m) => m, Err(e) => break 'run e.to_string() };
                             let pair = pair_id(me.id.did(), &sess.did);
                             if let Ok(Some(meta)) = core.store.shard_meta(&pair, &day)
@@ -532,14 +571,17 @@ impl Inner {
                             }
                         }
                         Some(Cmd::History(before, limit)) => {
+                            active = std::time::Instant::now();
                             if let Err(e) = writer.send(&ChatMsg::HistoryReq { before, limit }).await {
                                 break 'run e.to_string();
                             }
                         }
                         Some(Cmd::Profile) => {
+                            active = std::time::Instant::now();
                             if let Err(e) = self.chat_profile_send(&sess, &mut writer).await { break 'run e.to_string(); }
                         }
                         Some(Cmd::Receipts(day)) => {
+                            active = std::time::Instant::now();
                             if let Err(e) = self.chat_receipt_send(&core, &sess, &day, &mut writer).await { break 'run e.to_string(); }
                         }
                         Some(Cmd::Close) | None => break 'run "closed locally".into(),
@@ -563,10 +605,12 @@ impl Inner {
             let _ = tokio::time::timeout(Duration::from_millis(300), c2.closed()).await;
             c2.close(0u32.into(), b"bye");
         });
-        // Something left unsent: try again.
+        // Something left unsent, or the conversation is open here: try again (once per end; the
+        // dial keeps retrying only while something is pending). Never after an idle close.
         if let Ok(me) = self.me() {
             let pair = pair_id(me.id.did(), &sess.did);
-            if (self.profile_pending(&sess.did) || core.store.pending_days(&pair).map(|d| !d.is_empty()).unwrap_or(false)) && self.shared.lock().endpoint.is_some() {
+            let watched = reason != IDLE && core.watched.lock().contains(&sess.did);
+            if (watched || self.profile_pending(&sess.did) || core.store.pending_days(&pair).map(|d| !d.is_empty()).unwrap_or(false)) && self.shared.lock().endpoint.is_some() {
                 let this = self.clone();
                 let did = sess.did.clone();
                 self.handle.spawn(async move {

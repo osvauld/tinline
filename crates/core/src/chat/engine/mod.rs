@@ -78,6 +78,9 @@ pub struct ChatCore {
     dial_sem: Arc<Semaphore>,
     next_session: AtomicU64,
     pub(crate) presence: crate::chat::presence::Presence,
+    /// Contacts whose conversation is open on this device (`watch_presence` until
+    /// `unwatch_presence`): their sessions stay up past the idle close.
+    pub(crate) watched: Mutex<HashSet<String>>,
     /// Signed recipient delivered/read receipts over this store (M3).
     pub(crate) receipts: Arc<crate::receipts::store::messages::MessageReceipts>,
     /// This install's device ID (U16; `ProfileV2::device_id`): what every version we write
@@ -111,6 +114,9 @@ pub enum Cmd {
     Profile,
     /// Send the receipt-ledger ops of this day the contact device lacks (chat/6).
     Receipts(String),
+    /// Tell the contact device now whether we want this session kept open (a keep datagram,
+    /// `presence.rs`); sent on every heartbeat too.
+    Keep,
     Close,
 }
 
@@ -129,6 +135,16 @@ pub struct Session {
     hist: Mutex<Option<oneshot::Sender<Vec<HistDay>>>>,
     /// What this contact device last said about itself (presence).
     pub(crate) presence: loro::awareness::EphemeralStore,
+    /// Until when the contact device asked us to keep this session open (its keep datagram:
+    /// it is watching the conversation or has something for us). `None`: it did not ask.
+    pub(crate) peer_keep: Mutex<Option<std::time::Instant>>,
+}
+
+impl Session {
+    /// Hands `cmd` to the session's loop (dropped if it has ended).
+    pub(crate) fn cmd(&self, cmd: Cmd) {
+        let _ = self.tx.send(cmd);
+    }
 }
 
 /// `dm/{pair}/{day}` -> day, if it names the conversation `pair`. A contact's session can only
