@@ -115,4 +115,22 @@ class VideoQualityTest {
         meter.reset()
         assertNull(meter.sample(2_000_000_000, snap()))
     }
+
+    @Test fun hdMeteredNoteOncePerCallOnlyWhileSendingHd() {
+        assertTrue(hdMeteredNow(hdOn = true, sending = true, metered = true, saidThisCall = false))
+        assertFalse(hdMeteredNow(hdOn = true, sending = true, metered = true, saidThisCall = true))
+        assertFalse(hdMeteredNow(hdOn = false, sending = true, metered = true, saidThisCall = false))
+        assertFalse(hdMeteredNow(hdOn = true, sending = false, metered = true, saidThisCall = false))
+        assertFalse(hdMeteredNow(hdOn = true, sending = true, metered = false, saidThisCall = false))
+        assertEquals("On mobile data, HD uses more \u00b7 tap HD", HD_METERED_LINE)
+    }
+
+    @Test fun hdSuggestionOncePerCallAndNeverOverAnotherLine() {
+        val line = "Room for sharper video \u00b7 tap HD"
+        assertTrue(hdSuggestNow(line, shownThisCall = false, otherLineShowing = false))
+        assertFalse(hdSuggestNow(line, shownThisCall = true, otherLineShowing = false))
+        assertFalse(hdSuggestNow(line, shownThisCall = false, otherLineShowing = true))
+        assertFalse(hdSuggestNow("", shownThisCall = false, otherLineShowing = false))
+        assertTrue(HD_SUGGEST_MS > HD_NOTE_MS)
+    }
 }

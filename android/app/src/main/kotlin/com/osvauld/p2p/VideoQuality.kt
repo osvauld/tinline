@@ -38,6 +38,32 @@ internal fun hdLine(on: Boolean, paused: Boolean): String = when {
     else -> "Sharper video on"
 }
 
+/**
+ * How long a sharper-video suggestion or the mobile-data note stays in the short line (ms): longer than the chip's
+ * 2.6 s echo, since it asks the person to decide something and they need time to read it and reach the chip.
+ */
+internal const val HD_SUGGEST_MS = 6000L
+
+/** The chip's own echo of a tap (ms). */
+internal const val HD_NOTE_MS = 2600L
+
+/** Sharper video is on while the phone is on mobile data: said once per call, calmly; the chip turns it off. */
+internal const val HD_METERED_LINE = "On mobile data, HD uses more \u00b7 tap HD"
+
+/**
+ * Whether to say [HD_METERED_LINE] now: HD on, my camera sending, the active network metered, not said yet in this
+ * call. No metered exception exists for the suggestions themselves (the core's rule ignores the network type).
+ */
+internal fun hdMeteredNow(hdOn: Boolean, sending: Boolean, metered: Boolean, saidThisCall: Boolean): Boolean =
+    hdOn && sending && metered && !saidThisCall
+
+/**
+ * Whether to show the core's suggestion line now ([uniffi.p2pcore.videoHdSuggestion], "" = none): at most once per
+ * call, and never over another line that is still showing (the chip's echo wins; the suggestion waits a second).
+ */
+internal fun hdSuggestNow(line: String, shownThisCall: Boolean, otherLineShowing: Boolean): Boolean =
+    line.isNotEmpty() && !shownThisCall && !otherLineShowing
+
 /** Actual encoded/decoded dimensions, not a capture preference or a bitrate-based guess. */
 internal fun videoResolutionLabel(width: Int, height: Int): String? {
     if (width <= 0 || height <= 0) return null
