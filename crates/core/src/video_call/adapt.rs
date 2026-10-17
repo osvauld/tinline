@@ -199,12 +199,18 @@ impl Policy {
             Some((_, _, false)) => 0,
             Some((w, h, true)) => {
                 let need = w as u64 * h as u64;
-                // The next rung at or above the drawn size, never below the lowest.
-                self.ladder
-                    .rungs
+                // One rung above the rung that covers the drawn size: a picture drawn at 540p
+                // is sent at 720p (sharper when scaled; covers a portrait full-screen
+                // picture that falls between two rungs). The top rung stays the top; a
+                // drawn size beyond every rung is unlimited.
+                let rungs = &self.ladder.rungs;
+                rungs
                     .iter()
-                    .find(|r| r.width as u64 * r.height as u64 >= need)
-                    .map_or(u32::MAX, |r| r.width * r.height)
+                    .position(|r| r.width as u64 * r.height as u64 >= need)
+                    .map_or(u32::MAX, |i| {
+                        let r = &rungs[(i + 1).min(rungs.len() - 1)];
+                        r.width * r.height
+                    })
             }
         };
         if disp == 0 {

@@ -170,7 +170,7 @@ Runs `media::Sender`/`Receiver` over the call's iroh `Connection` (audio stays o
   version byte `2`, then messages, big-endian: `1 [delivered_bps u32][queuing_us u64]` rate
   report (every 50 ms; delivered over the last 100 ms), `2` keyframe request (explicit or receiver stall), `3 [group u64]
   [offset u64]` ack, `4 [max_pixels u32][max_fps u8][reason u8]` hint (what the receiver can
-  use: the drawn size rounded up to a rung, `0` = not shown; the frame rate it decodes and
+  use: one rung above the rung that covers the drawn size, `0` = not shown; the frame rate it decodes and
   draws, `0` = no limit; reason 0 none, 1 display, 2 decode, 3 thermal, 4 battery, 5 user; sent
   when set and on every change; an unknown reason or `max_fps` > 120 ends the session).
   Unknown type ends the session; there is no v1 compatibility (pre-release).
@@ -270,7 +270,7 @@ the sender sees it); after a decode error it skips to the next keyframe and requ
 | `pull_video_frame() -> Option<VideoFrame { width, height, data, seq }>` | newest decoded upright I420 frame not pulled yet; poll on the display clock |
 | `pull_video_frame_rgba() -> Option<VideoFrame>` | the same frame as packed RGBA (`convert::i420_to_rgba`, on the caller's thread): iced `image::Handle::from_rgba`, Android `Bitmap` fallback (4x the bytes of I420 across the FFI) |
 | `video_info()`, `video_stats()` | state; frames/keyframes sent, send size, bitrate, encode ms, frames decoded, decode errors, received size; `send_fps`, `recv_fps` (last second), `send_cap {pixels, fps, reason}` (what the peer's hint, our budget and its offer allow), `ladder_steps` and `last_step_reason` (`rate`, `cpu`, `hint`, `budget`) |
-| `set_video_view(width_px, height_px, visible)` | the remote picture's drawn size in device pixels and whether it is on screen; call on layout changes. The core asks the peer for the next rung at or above it (min 320x180; hidden = 180p at 15 fps); a shrink holds 1 s, anything else goes at once. No-op without a call |
+| `set_video_view(width_px, height_px, visible)` | the remote picture's drawn size in device pixels and whether it is on screen; call on layout changes. The core asks the peer for one rung above the rung that covers it (so ~540p drawn asks for 720p; the top rung is the cap; hidden = 180p at 15 fps); a shrink holds 1 s, anything else goes at once. No-op without a call |
 | `report_video_render_ms(ms)` | the app's cost to pull and prepare one remote frame; call once per drawn frame |
 | `video_send_label(stats)` (free function) | the picture label from the stats, one text for every app: `HD · 24 fps`, `540p · slow network`, `540p · their screen`; empty before a frame was sent |
 | `set_video_budget(VideoBudget { thermal, power_save })` | Android thermal status (0-6) and battery saver. MODERATE (2): 15 fps up to 540p; SEVERE (3+): 15 fps up to 360p; power save: 24 fps up to 540p. Lowers the hint we send and caps our own ladder. No-op without a call |

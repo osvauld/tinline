@@ -177,7 +177,7 @@ impl Node {
     }
 
     /// Where and how big the remote picture is drawn (device pixels), and whether it is on
-    /// screen. Call on every layout change; the core rounds it to a ladder rung, holds a
+    /// screen. Call on every layout change; the core asks for one ladder rung above the one that covers it, holds a
     /// shrink for a second and tells the peer's sender (`docs/design/video-adaptation.md`).
     /// Hidden: the peer sends 180p at 15 fps. Ignored without a call.
     pub fn set_video_view(&self, width_px: u32, height_px: u32, visible: bool) {
