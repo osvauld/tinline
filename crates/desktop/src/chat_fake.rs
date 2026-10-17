@@ -432,6 +432,8 @@ impl Fake {
 
     pub fn watch_presence(&self, _peer: String) {}
 
+    pub fn unwatch_presence(&self, _peer: String) {}
+
     pub fn mark_read(&self, peer: String) -> Result<(), Error> {
         self.with(&peer, |st, p| st.unread.insert(p.to_string(), 0));
         Ok(())
