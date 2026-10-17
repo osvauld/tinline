@@ -172,8 +172,19 @@ impl Node {
         let pipe = &call.video.pipe;
         let mut s = pipe.stats.lock().clone();
         let hint = pipe.send.lock().clone().and_then(|t| t.with_sender(|s| s.hint()));
-        s.send_cap = pipe.policy.lock().send_cap(hint).0;
+        let pol = pipe.policy.lock();
+        s.send_cap = pol.send_cap(hint).0;
+        s.hd_suggest = pol.suggest.into();
         Some(s)
+    }
+
+    /// Sharper video (the HD capture) is on for this call: the app's per-call choice, else its
+    /// setting. Call when the call's video starts and on every change. With it off the core
+    /// works out whether sharper video could be suggested (`VideoStats::hd_suggest`); with it on
+    /// it never suggests. Ignored without a call.
+    pub fn set_video_hd(&self, on: bool) {
+        let Some(call) = self.inner.current_video_call() else { return };
+        call.video.pipe.policy.lock().hd_on = on;
     }
 
     /// Where and how big the remote picture is drawn (device pixels), and whether it is on
