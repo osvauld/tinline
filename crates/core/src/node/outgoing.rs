@@ -88,7 +88,7 @@ impl Inner {
         }
     }
 
-    pub(crate) fn start_call(self: Arc<Self>, did: String) -> Result<CallInfo, Error> {
+    pub(crate) fn start_call(self: Arc<Self>, did: String, video: bool) -> Result<CallInfo, Error> {
         let me = self.me()?;
         let ep = self.endpoint()?;
         let (contact, held_name) = {
@@ -109,6 +109,7 @@ impl Inner {
             peer_did: did,
             peer_name: contact.as_ref().map(display_name).or(held_name.clone()).unwrap_or_default(),
             incoming: false,
+            video,
         };
         let contact = match (contact, held_name) {
             (Some(c), None) => c,
@@ -332,10 +333,11 @@ impl Inner {
                         contact.call_grant_from_them.clone().unwrap_or_else(|| contact.grant_from_them.clone()),
                         call.info.call_id.clone(),
                     );
-                    if let Msg::CallHello { relay, devices, video, .. } = &mut hello {
+                    if let Msg::CallHello { relay, devices, video, camera, .. } = &mut hello {
                         *relay = relay_of(ep);
                         *devices = list.clone();
                         *video = offer.clone();
+                        *camera = call.info.video && offer.is_some();
                     }
                     hello
                 },

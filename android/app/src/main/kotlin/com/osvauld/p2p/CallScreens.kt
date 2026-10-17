@@ -164,7 +164,7 @@ class CallActivity : ComponentActivity() {
                 when {
                     // Their call arrived while ours was open (ours yielded): ring it here.
                     u != null && u.info.incoming && u.state is CallState.Ringing ->
-                        IncomingContent(u.info.peerName, u.info.peerDid, onDecline = { app.calls.decline() }, onAnswer = { answerWithMic() })
+                        IncomingContent(u.info.peerName, u.info.peerDid, onDecline = { app.calls.decline() }, onAnswer = { answerWithMic() }, video = u.info.video)
                     u != null || holding -> {
                         val shown = u ?: last!!
                         val allowed by btAllowed
@@ -213,7 +213,7 @@ class IncomingCallActivity : ComponentActivity() {
                         startActivity(Intent(this@IncomingCallActivity, CallActivity::class.java)); finish()
                     }
                 }
-                if (u != null) IncomingContent(u.info.peerName, u.info.peerDid, onDecline = { app.calls.decline(); finish() }, onAnswer = { answerWithMic() })
+                if (u != null) IncomingContent(u.info.peerName, u.info.peerDid, onDecline = { app.calls.decline(); finish() }, onAnswer = { answerWithMic() }, video = u.info.video)
             }
         }
     }
@@ -222,10 +222,10 @@ class IncomingCallActivity : ComponentActivity() {
 // ------------------------------------------------------------------ incoming (always dark)
 
 @Composable
-fun IncomingContent(name: String, did: String, onDecline: () -> Unit, onAnswer: () -> Unit) {
+fun IncomingContent(name: String, did: String, onDecline: () -> Unit, onAnswer: () -> Unit, video: Boolean = false) {
     val c = Tin.c
     val who = name.ifBlank { "Unknown" }
-    CallFocus(who, did, active = false, ringing = true, incoming = true) {
+    CallFocus(who, did, active = false, ringing = true, incoming = true, video = video) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(36.dp, Alignment.CenterHorizontally)) {
             LabeledRound("Decline") { RoundBtn(CallGlyphs.End, "Decline", c.callButtonEnd, Color.White, onDecline, size = 64.dp) }
             LabeledRound("Answer") { RoundBtn(CallGlyphs.Phone, "Answer", c.callButtonAnswer, Color.White, onAnswer, size = 64.dp) }

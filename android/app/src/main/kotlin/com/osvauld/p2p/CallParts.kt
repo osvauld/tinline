@@ -139,7 +139,7 @@ private fun RowScope.CallControl(label: String, caption: String, icon: ImageVect
  */
 @Composable
 internal fun CallFocus(name: String, did: String, active: Boolean, ringing: Boolean, secs: Long = 0,
-    reconnecting: Boolean = false, problem: String? = null, incoming: Boolean = false,
+    reconnecting: Boolean = false, problem: String? = null, incoming: Boolean = false, video: Boolean = false,
     onMinimise: (() -> Unit)? = null, onInfo: (() -> Unit)? = null, signal: Int = 0, direct: Boolean? = null,
     onMessage: (() -> Unit)? = null, waiting: Boolean = false, muted: Boolean = false,
     waitingCard: (@Composable (Modifier) -> Unit)? = null, controls: @Composable () -> Unit) {
@@ -175,7 +175,7 @@ internal fun CallFocus(name: String, did: String, active: Boolean, ringing: Bool
                         style = TinType.h1.copy(fontSize = 28.sp, lineHeight = 34.sp, fontWeight = FontWeight.SemiBold),
                         color = c.ink, textAlign = TextAlign.Center, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Box(Modifier.padding(top = 6.dp).heightIn(min = 30.dp), contentAlignment = Alignment.Center) {
-                        Text(if (incoming) "Tinline voice call" else callStatus(active, ringing, reconnecting, secs),
+                        Text(if (incoming) (if (video) "Tinline video call" else "Tinline voice call") else callStatus(active, ringing, reconnecting, secs),
                             style = TinType.bodyL.copy(fontSize = if (active && !reconnecting) 20.sp else 17.sp, lineHeight = 30.sp,
                                 fontWeight = FontWeight.Medium, fontFeatureSettings = "tnum"), color = c.ink, maxLines = 1)
                     }

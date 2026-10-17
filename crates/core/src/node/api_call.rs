@@ -6,7 +6,13 @@ use super::*;
 impl Node {
     /// Starts calling `did`; progress arrives through `on_call_state`.
     pub fn call(&self, did: String) -> Result<CallInfo, Error> {
-        self.inner.clone().start_call(did)
+        self.inner.clone().start_call(did, false)
+    }
+
+    /// `call`, as a video call: the callee rings as one and both logs say video. The app still
+    /// turns its camera on (`set_camera`) once video is negotiated.
+    pub fn video_call(&self, did: String) -> Result<CallInfo, Error> {
+        self.inner.clone().start_call(did, true)
     }
 
     pub fn answer(&self, call_id: String) -> Result<(), Error> {

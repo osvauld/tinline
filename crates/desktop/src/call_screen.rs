@@ -25,7 +25,7 @@ impl App {
             let active = c.state == CallState::Active;
             let reconnecting = active && c.stats.as_ref().is_some_and(|s| s.reconnecting);
             let secs = c.stats.as_ref().map_or(0, |s| s.secs);
-            let status = if incoming { "Incoming call".to_string() }
+            let status = if incoming { if c.info.video { "Incoming video call" } else { "Incoming call" }.to_string() }
                 else if reconnecting { "Reconnecting…".into() }
                 else { match c.state {
                     CallState::Dialing => "Calling…".into(),

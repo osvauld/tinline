@@ -266,7 +266,7 @@ impl Inner {
     /// caller answers a blocked one with our notice) and the token, which `chat_admit` checks.
     pub(super) fn verify_auth(&self, me: &Me, auth: &ChatMsg, remote: [u8; 32]) -> Result<(String, Option<String>, proto::Grant), Error> {
         let ChatMsg::Auth { attestation, grant, relay } = auth else { return Err(Error::Protocol("expected Auth".into())) };
-        let msg = Msg::CallHello { call_id: "chat".into(), attestation: attestation.clone(), grant: grant.clone(), relay: relay.clone(), devices: None, video: None };
+        let msg = Msg::CallHello { call_id: "chat".into(), attestation: attestation.clone(), grant: grant.clone(), relay: relay.clone(), devices: None, video: None, camera: false };
         let s = self.shared.lock();
         let contacts = &s.state.contacts;
         let who = proto::accept_hello(&me.id, &msg, remote, crate::node::now_ms(), |did| contacts.iter().any(|c| c.did == did))?;

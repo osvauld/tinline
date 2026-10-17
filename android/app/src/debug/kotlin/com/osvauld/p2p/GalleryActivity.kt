@@ -47,7 +47,7 @@ class GalleryActivity : ComponentActivity() {
         val strip = which.endsWith("+strip")
         val frame = strip || which.endsWith("+frame")
         val base = which.removeSuffix("+strip").removeSuffix("+frame")
-        if (strip) app.calls.showForGallery(CallUi(uniffi.p2pcore.CallInfo("gallery", FakeChatSource.did("arjun"), arjun.name, false), uniffi.p2pcore.CallState.Active,
+        if (strip) app.calls.showForGallery(CallUi(uniffi.p2pcore.CallInfo("gallery", FakeChatSource.did("arjun"), arjun.name, false, false), uniffi.p2pcore.CallState.Active,
             activeSinceMs = System.currentTimeMillis() - 15_000))
         setContent { TinlineTheme(dark) {
             if (!frame && base != "gcall_strip") Gallery(base, app, this)
@@ -229,7 +229,7 @@ private fun Gallery(which: String, app: P2pApp, act: ComponentActivity) {
             }
             // A finished call yesterday evening, shown as a pill among the messages.
             val yesterday = (System.currentTimeMillis() / 1000 - 86400).let { it - it % 86400 + 16 * 3600 }
-            val calls = if (which == "conv") listOf(uniffi.p2pcore.CallRecord("g-call", did, name, false, yesterday.toULong(), 742u, "hangup_local", true, false)) else emptyList()
+            val calls = if (which == "conv") listOf(uniffi.p2pcore.CallRecord("g-call", did, name, false, yesterday.toULong(), 742u, "hangup_local", true, false, false)) else emptyList()
             ConversationScreen(fake, did, name, true, none, none, preview, addedAtSecs = System.currentTimeMillis() / 1000 - (if (which == "conv_new") 0 else 30 * 86400),
                 calls = calls, onVideo = none)
         } else HomeContent(contacts, true, false, emptyList(), {}, {}, none, {}, {}, none, emptyList(), null)

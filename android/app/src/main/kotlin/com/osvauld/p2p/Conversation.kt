@@ -547,8 +547,8 @@ private fun CallPill(r: uniffi.p2pcore.CallRecord, enabled: Boolean, onCall: () 
     val answered = r.durationSecs > 0u
     val d = r.durationSecs.toLong()
     val text = when {
-        answered -> "Voice call · ${d / 60}:${"%02d".format(d % 60)}"
-        r.incoming -> if (r.reason == "declined_local") "Declined voice call" else "Missed voice call"
+        answered -> "${if (r.video) "Video" else "Voice"} call · ${d / 60}:${"%02d".format(d % 60)}"
+        r.incoming -> "${if (r.reason == "declined_local") "Declined" else "Missed"} ${if (r.video) "video" else "voice"} call"
         else -> when (r.reason) { "no_answer" -> "No answer"; "declined" -> "Declined"; "cancelled", "hangup_local" -> "Cancelled call"; else -> "Call failed" }
     }
     val bad = !answered && r.incoming && r.reason != "declined_local"
@@ -558,7 +558,7 @@ private fun CallPill(r: uniffi.p2pcore.CallRecord, enabled: Boolean, onCall: () 
             .clickable(enabled = enabled, onClick = onCall).padding(horizontal = 12.dp)
             .semantics(mergeDescendants = true) { contentDescription = "$text, $time. Call back" },
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            Icon(Pg.Phone, null, Modifier.size(16.dp), tint = if (bad) c.er else c.ink2)
+            Icon(if (r.video) Pg.Video else Pg.Phone, null, Modifier.size(16.dp), tint = if (bad) c.er else c.ink2)
             Text(text, style = PgBodyText.copy(fontSize = 13.sp, lineHeight = 18.sp, fontWeight = FontWeight.SemiBold), color = if (bad) c.er else c.ink, maxLines = 1)
             Text(time, style = PgBodyText.copy(fontSize = 11.sp, lineHeight = 14.sp, fontFeatureSettings = "tnum"), color = c.ink2)
         }

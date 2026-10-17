@@ -80,6 +80,11 @@ pub enum Error {
 
 pub type Result<T> = std::result::Result<T, Error>;
 
+/// `skip_serializing_if` for flags that default to false (old peers never see them).
+fn is_false(b: &bool) -> bool {
+    !*b
+}
+
 fn enc(bytes: impl AsRef<[u8]>) -> String {
     URL_SAFE_NO_PAD.encode(bytes)
 }

@@ -236,7 +236,7 @@ impl App {
     pub(super) fn ring_head(&self, t: Tok) -> Option<El<'_>> {
         if let Some(w) = self.ring_head_waiting(t) { return Some(w); }
         let c = self.incoming_card()?;
-        Some(self.ring_row(t, &c.info.peer_name, &c.info.peer_did, "Incoming call", Msg::CallUi(crate::call_ui::Action::Restore), Msg::Decline, Msg::Answer))
+        Some(self.ring_row(t, &c.info.peer_name, &c.info.peer_did, if c.info.video { "Incoming video call" } else { "Incoming call" }, Msg::CallUi(crate::call_ui::Action::Restore), Msg::Decline, Msg::Answer))
     }
 
     fn ring_row(&self, t: Tok, name: &str, did: &str, sub: &str, open: Msg, decline: Msg, answer: Msg) -> El<'_> {

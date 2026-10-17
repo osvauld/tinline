@@ -240,6 +240,8 @@ pub(crate) struct CallVideo {
     codecs: Mutex<Option<(VideoCodec, VideoCodec)>>,
     camera: watch::Sender<bool>,
     remote_camera: AtomicBool,
+    /// Either camera was on while video ran: the call log calls it a video call.
+    seen: AtomicBool,
     peer_max_pixels: AtomicU32,
     pipe: Arc<Pipe>,
     tasks: Mutex<Vec<JoinHandle<()>>>,
@@ -253,6 +255,7 @@ impl Default for CallVideo {
             codecs: Mutex::new(None),
             camera: watch::channel(false).0,
             remote_camera: AtomicBool::new(false),
+            seen: AtomicBool::new(false),
             peer_max_pixels: AtomicU32::new(0),
             pipe: Arc::default(),
             tasks: Mutex::new(Vec::new()),
@@ -272,6 +275,15 @@ impl CallVideo {
 
     pub(crate) fn camera(&self) -> bool {
         *self.camera.borrow()
+    }
+
+    pub(crate) fn saw_camera(&self) {
+        self.seen.store(true, Ordering::SeqCst);
+    }
+
+    /// Either camera was on at some point while video ran.
+    pub(crate) fn camera_seen(&self) -> bool {
+        self.seen.load(Ordering::SeqCst)
     }
 
     /// Ends the codec threads and the streams. Idempotent.
@@ -373,6 +385,9 @@ impl Inner {
         let v = &call.video;
         if !v.negotiated() || v.remote_camera.swap(on, Ordering::SeqCst) == on {
             return;
+        }
+        if on {
+            v.saw_camera();
         }
         if !on {
             v.pipe.output.lock().take();

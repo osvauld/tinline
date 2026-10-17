@@ -12,8 +12,9 @@ impl Inner {
         me: &Me,
         permit: OwnedSemaphorePermit,
     ) -> Result<(), Error> {
-        let Msg::CallHello { call_id, relay: hint, devices: list, video, .. } = &hello else { unreachable!() };
+        let Msg::CallHello { call_id, relay: hint, devices: list, video, camera, .. } = &hello else { unreachable!() };
         let (call_id, hint, list, video) = (call_id.clone(), relay_hint(hint), list.clone(), video.clone());
+        let video_call = *camera && video.is_some();
         // It reaches the UI and logs: keep it to what we ourselves generate.
         if call_id.is_empty() || call_id.len() > 64 || !call_id.bytes().all(|b| b.is_ascii_alphanumeric()) {
             ctrl.send(&Msg::Reject { reason: REFUSED.into() }).await?;
@@ -74,13 +75,13 @@ impl Inner {
         if !self.availability().available {
             // Same answer as any other refusal: the caller must not learn we are "away".
             self.log("incoming call turned away: unavailable");
-            self.log_refused(me.epoch, &call_id, &caller.did, &name, "unavailable", false);
+            self.log_refused(me.epoch, &call_id, &caller.did, &name, "unavailable", false, video_call);
             ctrl.send(&Msg::Reject { reason: REFUSED.into() }).await?;
             ctrl.finish();
             let _ = tokio::time::timeout(LINGER, conn.closed()).await;
             return Ok(());
         }
-        let info = CallInfo { call_id, peer_did: caller.did.clone(), peer_name: name, incoming: true };
+        let info = CallInfo { call_id, peer_did: caller.did.clone(), peer_name: name, incoming: true, video: video_call };
         self.yield_on_glare(&caller.did, me.device, remote);
         let (call, cmds) = match self.begin_call(info.clone(), CallState::Ringing, false, me.epoch) {
             Ok(c) => c,
@@ -91,7 +92,7 @@ impl Inner {
                     c
                 }
                 Err(_) => {
-                    self.log_refused(me.epoch, &info.call_id, &info.peer_did, &info.peer_name, "busy", true);
+                    self.log_refused(me.epoch, &info.call_id, &info.peer_did, &info.peer_name, "busy", true, info.video);
                     ctrl.send(&Msg::Busy).await?;
                     ctrl.finish();
                     let _ = tokio::time::timeout(LINGER, conn.closed()).await;
@@ -257,6 +258,9 @@ impl Inner {
                 }
                 r = camera.changed(), if active && call.video.negotiated() => {
                     let on = *camera.borrow_and_update();
+                    if on {
+                        call.video.saw_camera();
+                    }
                     if r.is_ok() && let Err(e) = ctrl.send(&Msg::Video { camera: on }).await {
                         self.log(format!("connection lost: {e}"));
                         break lost(active);

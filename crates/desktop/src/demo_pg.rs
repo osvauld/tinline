@@ -124,7 +124,7 @@ impl App {
         // seed.ts call messages: Sana missed (in), Arjun 12:22 out, Meera couldn't connect (out).
         let rec = |id: &str, name: &str, incoming: bool, at_ms: u64, secs: u32, reason: &str, missed: bool| p2pcore::CallRecord {
             call_id: format!("pg-{id}"), peer_did: pg_did(id), peer_name: name.into(), incoming,
-            started_at: at_ms / 1000, duration_secs: secs, reason: reason.into(), direct: true, missed,
+            started_at: at_ms / 1000, duration_secs: secs, reason: reason.into(), direct: true, missed, video: false,
         };
         self.recents = vec![
             rec("sana", "Sana Rao", true, at(9, 2, 0), 0, "no_answer", true),

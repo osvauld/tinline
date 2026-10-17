@@ -1343,8 +1343,8 @@ impl App {
         }
         self.notice = None;
         self.ended = None;
-        let node = self.node.clone();
-        blocking(move || node.call(did).map_err(s), Msg::CallStarted)
+        let (node, video) = (self.node.clone(), self.video_intent);
+        blocking(move || if video { node.video_call(did) } else { node.call(did) }.map_err(s), Msg::CallStarted)
     }
 
     fn update(&mut self, msg: Msg) -> Task<Msg> {

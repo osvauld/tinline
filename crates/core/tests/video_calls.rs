@@ -358,3 +358,61 @@ fn receiver_hints_cap_the_sender() {
     stats_when(&a, 1, "cap lifted", |s| s.send_cap.pixels == 1280 * 720 && s.send_cap.fps == 30);
     cam.stop();
 }
+
+/// The call's log entry on `p` once it is written (it lands as the call ends).
+fn logged(p: &Peer, id: &str) -> p2pcore::CallRecord {
+    let end = Instant::now() + Duration::from_secs(10);
+    loop {
+        if let Some(r) = p.node.recent_calls(50).into_iter().find(|r| r.call_id == id) {
+            return r;
+        }
+        assert!(Instant::now() < end, "no log entry for {id}");
+        std::thread::sleep(Duration::from_millis(50));
+    }
+}
+
+/// What makes a call a video call: dialled as one (the callee rings "video call" and both logs say
+/// video, even when it is declined), or a camera on while it was active; neither = voice.
+#[test]
+fn call_kind_reaches_the_ring_and_both_logs() {
+    let (a, b) = pair("vkind");
+    let ring = |a: &Peer| {
+        expect(a, 40, "incoming", |e| match e {
+            Ev::Incoming(c) => Some(c.clone()),
+            _ => None,
+        })
+    };
+    let ended = |p: &Peer, id: &str| {
+        expect(p, 15, "ended", |e| matches!(e, Ev::State(i, CallState::Ended { .. }) if i == id).then_some(()))
+    };
+
+    // Dialled as video, declined: never active, still a video call on both sides.
+    let call = b.node.video_call(a.did.clone()).unwrap();
+    assert!(call.video);
+    let inc = ring(&a);
+    assert!(inc.video, "the callee rings it as a video call");
+    a.node.decline(inc.call_id.clone()).unwrap();
+    ended(&b, &call.call_id);
+    assert!(logged(&a, &call.call_id).video && logged(&b, &call.call_id).video);
+
+    // A voice call whose caller turns the camera on mid-call: video in both logs.
+    let call = b.node.call(a.did.clone()).unwrap();
+    let inc = ring(&a);
+    assert!(!inc.video);
+    a.node.answer(inc.call_id).unwrap();
+    for p in [&a, &b] {
+        expect(p, 20, "active", |e| matches!(e, Ev::State(_, CallState::Active)).then_some(()));
+    }
+    video_ev(&a, "video decided", |v| v.negotiated);
+    b.node.set_camera(true).unwrap();
+    video_ev(&a, "b's camera on", |v| v.remote_camera);
+    b.node.hangup(call.call_id.clone()).unwrap();
+    ended(&a, &call.call_id);
+    assert!(logged(&a, &call.call_id).video && logged(&b, &call.call_id).video);
+
+    // Voice throughout: voice in both logs.
+    let id = connect(&a, &b);
+    b.node.hangup(id.clone()).unwrap();
+    ended(&a, &id);
+    assert!(!logged(&a, &id).video && !logged(&b, &id).video);
+}

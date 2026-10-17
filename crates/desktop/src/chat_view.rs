@@ -528,12 +528,13 @@ impl App {
     fn call_pill<'a>(&'a self, t: Tok, r: &p2pcore::CallRecord) -> El<'a> {
         let answered = r.duration_secs > 0;
         let d = r.duration_secs;
-        let txt = if answered { format!("Voice call \u{b7} {}:{:02}", d / 60, d % 60) }
-            else if r.incoming { if r.reason == "declined_local" { "Declined voice call".into() } else { "Missed voice call".into() } }
+        let kind = if r.video { "video" } else { "voice" };
+        let txt = if answered { format!("{} call \u{b7} {}:{:02}", if r.video { "Video" } else { "Voice" }, d / 60, d % 60) }
+            else if r.incoming { if r.reason == "declined_local" { format!("Declined {kind} call") } else { format!("Missed {kind} call") } }
             else { match r.reason.as_str() { "no_answer" => "No answer", "declined" => "Declined", "cancelled" | "hangup_local" => "Cancelled call", _ => "Call failed" }.into() };
         let bad = !answered && r.incoming && r.reason != "declined_local";
         let ink = if bad { t.danger } else { t.ink };
-        let pill = button(row![crate::pg_icons::pgi("phone", 16.0, if bad { t.danger } else { t.ink2 }), semi(txt, 13.0, ink).line_height(lh(18.0)),
+        let pill = button(row![crate::pg_icons::pgi(if r.video { "video" } else { "phone" }, 16.0, if bad { t.danger } else { t.ink2 }), semi(txt, 13.0, ink).line_height(lh(18.0)),
                 tx(hhmm(r.started_at * 1000), 11.0, t.ink2).line_height(lh(18.0))].spacing(6).height(Fill).align_y(Alignment::Center))
             .padding([0, 12]).height(32)
             .style(move |_: &Theme, st| button::Style {

@@ -43,6 +43,7 @@ fn record(i: &str) -> CallRecord {
         reason: "hangup_local".into(),
         direct: false,
         missed: false,
+        video: false,
     }
 }
 
@@ -72,7 +73,7 @@ fn stale_session_cannot_write_into_next_account() {
 
     // Everything a task of A might still do.
     inner.log_call(epoch_a, record("stale"));
-    inner.log_refused(epoch_a, "stale2", "did:key:x", "x", "busy", true);
+    inner.log_refused(epoch_a, "stale2", "did:key:x", "x", "busy", true, false);
     inner.note_device(epoch_a, x.did(), [9; 32], Some("https://relay.example/".into()));
     inner.renew_grant(epoch_a, x.did(), proto::issue_grant(&x, &b, now(), 100_000));
     assert!(matches!(inner.persist_for(Some(epoch_a)), Err(Error::Locked)));

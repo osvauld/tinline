@@ -38,6 +38,7 @@ impl App {
             reason: reason.into(),
             direct,
             missed,
+            video: false,
         };
         self.profile_name = "Maya Fernandes".into();
         self.device_label = "Work desktop".into();
@@ -87,6 +88,7 @@ impl App {
             peer_did: arjun.clone(),
             peer_name: "Arjun Oommen".into(),
             incoming,
+            video: false,
         };
         let stats = |direct: bool, secs: u32, rtt: u32, reconnecting: bool| CallStats {
             call_id: "demo".into(),

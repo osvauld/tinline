@@ -130,7 +130,10 @@ false: the device's video sender reads the receiver's hint flags, video control 
 Both present = video. Each direction's codec is
 `send_codec(sender, receiver)`: the first of the sender's `encode` the receiver decodes, else AV1;
 both ends compute it from the two offers, with no further message. Details: `docs/video.md`
-("Call protocol") and `docs/design/video-hw-vp8.md`.
+("Call protocol") and `docs/design/video-hw-vp8.md`. `CallHello.camera` (absent = false) says the
+caller pressed Video and calls with its camera on: the callee rings it as a video call
+(`CallInfo.video`). Either camera can still go on in any call; the call log's `CallRecord.video` is
+true if the call was placed as video or a camera was on while it was active.
 
 ## Tokens (P6; decisions U13, U15)
 

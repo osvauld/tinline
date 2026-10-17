@@ -300,6 +300,12 @@ Runs `media::Sender`/`Receiver` over the call's iroh `Connection` (audio stays o
   `send_hardware`/`recv_hardware` (bool, false until video is decided). The callee answers with an offer only if the hello had one and video is
   enabled on it (`set_video_enabled`, default on); the caller ignores an offer it didn't ask
   for. Both present = video negotiated, else the call is audio only (nothing else changes).
+- `CallHello.camera`: the caller placed a video call (`Node::video_call`; `call` sends false),
+  only set with `video`. The callee's `CallInfo.video` is true, so its ring, notification and log
+  say "video call". It changes no negotiation, and the callee's camera still starts off. The app
+  that placed it turns its own camera on once video is negotiated, as before.
+- Call log: `CallRecord.video` = placed as video, or either camera was on while the call was active
+  (`CallVideo.seen`, set when we send `Msg::Video { camera: true }` or receive it).
 - The sender caps its ladder (`LadderConfig::max_rung`) at the highest rung within the peer's
   `max_pixels`.
 - Mid-call `Msg::Video { camera: bool }`, only once video is negotiated: sent when the call

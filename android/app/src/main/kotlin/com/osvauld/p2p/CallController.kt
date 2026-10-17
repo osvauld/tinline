@@ -201,9 +201,10 @@ class CallController(private val app: P2pApp) {
 
     fun place(did: String): Result<CallInfo> = runCatching {
         if (!Perms.granted(app, Manifest.permission.RECORD_AUDIO)) throw MicPermissionNeeded()
+        val video = app.video.wantCamera
         app.video.reset()
         synchronized(lock) { early.clear(); placing = true }
-        val info = try { app.node.call(did) } catch (e: Throwable) {
+        val info = try { if (video) app.node.videoCall(did) else app.node.call(did) } catch (e: Throwable) {
             synchronized(lock) { placing = false; early.clear() }
             throw e
         }
