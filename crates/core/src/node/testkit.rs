@@ -13,6 +13,20 @@ impl Node {
 }
 
 impl Node {
+    /// For tests: how many chat sessions with `did` are up right now.
+    #[doc(hidden)]
+    pub fn chat_sessions_for_test(&self, did: String) -> u32 {
+        self.inner.chat_core().map_or(0, |core| self.inner.chat_sessions_of(&core, &did).len() as u32)
+    }
+
+    /// For tests: how many own-device sync sessions are up right now.
+    #[doc(hidden)]
+    pub fn own_sessions_for_test(&self) -> u32 {
+        self.inner.selfsync.sessions.lock().len() as u32
+    }
+}
+
+impl Node {
     /// For tests: this install's attestation as JSON, to register it with another install of
     /// the same phrase (`add_own_device_for_test`).
     #[doc(hidden)]
