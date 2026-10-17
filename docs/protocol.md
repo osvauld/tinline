@@ -515,49 +515,61 @@ Design and rules: docs/chat.md section 7 "Signatures and writer IDs".
   every span's author is the session's DID. Every touched message must end as one of the proven
   versions. Nothing else is consulted (no device keys, device lists or remembered writer IDs).
 
-## Session lifetime (decision 2026-10-17)
+## Session lifetime (decision 2026-10-17: consent-based links)
 
-Tinline does not hold peer connections open. Reachability comes from the relay registration: a
-peer that needs us redials. A chat session closes after 60 s with no `ChatMsg` either way
-(`wire::IDLE_CLOSE`; presence and keep datagrams do not count), the same way as a local
+Tinline does not hold peer connections open, and links are consent-based: a link to a contact
+opens or stays open only because of this side's own action or a real need. A contact can never
+hold our link open or learn we are online without our action. Reachability comes from the relay
+registration: a peer that needs us redials.
+
+A chat session closes after 60 s with no `ChatMsg` either way and none of this side's reasons
+below (`wire::IDLE_CLOSE`; presence datagrams do not count), the same way as a local
 `Cmd::Close`: the stream is finished, then the connection closed, so the other side sees a normal
-end and does not retry because of it. A session stays open while either side wants it:
+end and does not retry because of it. Each side decides only for itself; it stays open while
+this side has:
 
-- the conversation is being watched on this device (`Node::watch_presence(did)` until
-  `Node::unwatch_presence(did)`; the apps call these when the conversation opens and closes or
-  leaves the screen);
-- something is pending for that contact: unsent outbox days, wanted blob downloads, owed
+- recent local activity with that contact: the user typed in the conversation
+  (`Node::chat_typing(did)`) or wrote to it (send, edit, delete, file, voice) within the idle
+  time;
+- something pending for that contact: unsent outbox days, wanted blob downloads, owed
   receipts, a pending profile push (the `chat_kick_pending` conditions);
-- a 1:1 call with that DID is live.
+- a live 1:1 call with that DID.
 
-The other side learns of the first two through the keep datagram (see Presence). At start a
-device dials only contacts with something pending (no longer every contact); the 30 s tick
-dials contacts with something pending or a watched conversation. Delivery stays sender-driven:
-a contact who wrote while we were away dials us when we are back (its retry backs off up to
-60 s). Own devices follow the same rule (see "Own-device sync"). Group call hosting and active
-calls keep their own connections and are not affected.
+ChatMsg traffic from the contact is real activity too (the idle timer counts it), but nothing a
+contact sends can ask us to keep a session: the `tk1` "keep" datagram tried earlier the same day
+was removed; one from an older build is ignored.
 
-## Presence (on `tinline/chat/4`; keep datagram added 2026-10-17)
+**Typing is the wake point.** The apps call `Node::chat_typing(did)` on each non-empty composer
+edit. It is local only (no typing indicator goes to the contact), cheap and non-blocking, and
+throttled in the core to one activity mark per contact every 3 s (`wire::typing_throttle`). It
+dials the contact ahead of the send if no session is up, or sends our presence at once on the
+one that is. **Opening a conversation connects nothing**; there is no "watch". Sending a message
+dials as before.
 
-Whether a contact is reachable right now. Each device keeps a Loro `EphemeralStore` with one key
-(`online`), refreshed every 8 s, and sends it on every chat session as a QUIC datagram: `b"tp1"` +
-`EphemeralStore::encode`, at most 512 bytes. The receiver applies it into a store belonging to that
-session only, so a contact speaks only for its own device. An entry not refreshed within 30 s
-expires (the store compares the sender's timestamp with our clock, so this also bounds the clock
-skew presence tolerates); a closed session drops its store at once. A contact is online while any
-of its devices has a live entry: `ChatEvents::on_presence_changed(did, online)`,
-`Node::contact_online(did)`. Opening a conversation calls `Node::watch_presence(did)`, which dials
-the contact if there is no session and keeps that session open; closing it calls
-`Node::unwatch_presence(did)`. Nothing is stored or retried.
+At start a device dials only contacts with something pending (no longer every contact); the 30 s
+tick dials only contacts with something pending. Delivery stays sender-driven: a contact who
+wrote while we were away dials us when we are back (its retry backs off up to 60 s). Sessions a
+contact opens to deliver are accepted as usual and close on idle. Own devices follow the same
+idle rule (see "Own-device sync"). Group call hosting and active calls keep their own connections
+and are not affected.
 
-Presence is known only while a session is up, and sessions close when idle, so it is shown only
-inside an open conversation; contact and chat lists show no online state.
+## Presence (on `tinline/chat/4`; consent-based since 2026-10-17)
 
-Keep datagram: `b"tk1"` + one byte, `1` = "keep this session open" (the sender watches the
-conversation, has something pending for this contact, or is in a call with them), `0` = no need.
-Sent with every presence heartbeat and at once when watching starts or stops. A `1` lapses after
-30 s without a refresh. Older apps ignore it (it lacks the `tp1` prefix) and never close idle
-sessions themselves, so mixing versions only means the newer side may close sooner.
+Whether a contact is active with us right now. Each device keeps a Loro `EphemeralStore` with one
+key (`online`), refreshed every 8 s, and sends it as a QUIC datagram on a chat session **only
+while the user here is active with that contact** (typed or wrote to it within the idle time,
+see "Session lifetime"): `b"tp1"` + `EphemeralStore::encode`, at most 512 bytes. Otherwise it
+sends none, so a contact who dials to deliver a message learns nothing beyond the delivery
+itself. The receiver applies it into a store belonging to that session only, so a contact speaks
+only for its own device. An entry not refreshed within 30 s expires (the store compares the
+sender's timestamp with our clock, so this also bounds the clock skew presence tolerates); a
+closed session drops its store at once. A contact is online while any of its devices has a live
+entry: `ChatEvents::on_presence_changed(did, online)`, `Node::contact_online(did)`. Nothing is
+stored or retried.
+
+So "online" means "they are active with me now"; its absence means unknown, never "offline".
+The conversation header shows "Online" or nothing, there is no "they're offline" strip, and chat
+and contact lists show no online state.
 
 Datagrams rather than a `ChatMsg` variant: an older app never reads them and keeps working (it
 just shows the contact as not connected), where an unknown `ChatMsg` variant would fail to decode
