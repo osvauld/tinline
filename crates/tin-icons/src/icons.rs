@@ -95,13 +95,6 @@ fn mirrored(parts: &[Part]) -> Vec<Part> {
     parts.iter().map(|q| Part { role: q.role, path: q.path.transformed(m) }).collect()
 }
 
-/// Turned `deg` clockwise about the grid's centre.
-fn rotated(parts: &[Part], deg: f64) -> Vec<Part> {
-    let c = kurbo::Vec2::new(GRID / 2.0, GRID / 2.0);
-    let m = Affine::translate(c) * Affine::rotate(deg.to_radians()) * Affine::translate(-c);
-    parts.iter().map(|q| Part { role: q.role, path: q.path.transformed(m) }).collect()
-}
-
 const CAN_B: f64 = 4.4;
 const CAN_L: f64 = 3.6;
 const OFF: &str = "M3.5 3.5L20.5 20.5";
@@ -135,6 +128,10 @@ fn ends() -> Vec<Part> {
 fn phone(mu: f64) -> Vec<Part> {
     vec![line(can_side(8.6, 8.6, CAN_B, CAN_L, 1.0)), fill(mouth_v(8.6, 8.6, CAN_B, mu)), string("M8.6 8.6Q15 22 21.5 14.5")]
 }
+/// `hangup` / `hangup-go`: the swirl X of two strings, one cut where the other crosses it (crate::cut).
+fn cut_x(pressed: bool) -> Vec<Part> {
+    crate::cut::glyph(pressed).iter().map(|q| string(q.d())).collect()
+}
 fn with(mut v: Vec<Part>, more: impl IntoIterator<Item = Part>) -> Vec<Part> {
     v.extend(more);
     v
@@ -153,8 +150,10 @@ pub fn all(t: Tier) -> Vec<Icon> {
           with(can_pair(6.8, 8.5, mu), [string("M6.8 8.5Q10 12.5 9.6 19.5"), string("M17.2 8.5Q14 12.5 14.4 19.5")])),
         i("phone", Mark, "One can, the string running off to someone. Small inline places: call history, menus.",
           phone(mu)),
-        i("hangup", Mark, "End, Decline, Leave: the phone can turned 135°, its string falling away (the playground's End, chosen 2026-10-16).",
-          rotated(&phone(mu), 135.0)),
+        i("hangup", Mark, "End, Decline, Leave: two strings crossed as a swirl X, one cut where the other crosses it (2026-10-16).",
+          cut_x(false)),
+        i("hangup-go", Mark, "`hangup` once End is pressed: the cut string goes slack and its halves fall back. The apps morph to it.",
+          cut_x(true)),
         i("call-in", Kept, "Direction arrow for call history.", vec![line("M17 7L7 17M15 17H7V9")]),
         i("call-out", Kept, "Direction arrow for call history.", vec![line("M7 17L17 7M9 7h8v8")]),
         i("mic", Mark, "A standing can on a stand.", mic(mu)),

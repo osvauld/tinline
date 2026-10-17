@@ -1214,11 +1214,25 @@ impl App {
     }
 
     fn round_btn<'a>(&self, t: Tok, kind: Kind, icon: Icon, text_: &str, on: Option<Msg>, active: bool) -> El<'a> {
-        let fg = match kind {
+        let fg = Self::round_fg(t, kind, active);
+        self.round_btn_with(t, kind, ui::icon(icon, 28.0, fg), text_, on, active)
+    }
+
+    fn round_fg(t: Tok, kind: Kind, active: bool) -> Color {
+        match kind {
             Kind::Accept | Kind::End => Color::WHITE,
             _ if active => t.bg,
             _ => t.ink,
-        };
+        }
+    }
+
+    /// End: its glyph lets go once I press it (hangup.rs).
+    pub(super) fn end_btn<'a>(&self, t: Tok, text_: &str, on: Option<Msg>) -> El<'a> {
+        let p = crate::hangup::progress(self.end_tap, crate::mark::reduced_motion());
+        self.round_btn_with(t, Kind::End, crate::hangup::view(p, 28.0, Self::round_fg(t, Kind::End, false)), text_, on, false)
+    }
+
+    fn round_btn_with<'a>(&self, t: Tok, kind: Kind, glyph: El<'a>, text_: &str, on: Option<Msg>, active: bool) -> El<'a> {
         let style = ui::button_style(t, if active { Kind::Primary } else { kind }, 999.0);
         // Lift: the round call buttons sit above the surface. The fill under the button is its own.
         let fill = match if active { Kind::Primary } else { kind } {
@@ -1229,7 +1243,7 @@ impl App {
             _ => t.surface,
         };
         let enabled = on.is_some();
-        let circle = button(container(ui::icon(icon, 28.0, fg)).center_x(64).center_y(64))
+        let circle = button(container(glyph).center_x(64).center_y(64))
             .padding(0)
             .width(64)
             .height(64)
