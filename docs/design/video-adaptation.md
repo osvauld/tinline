@@ -258,6 +258,16 @@ trick, confirmed by the Pixel self-test.** The options are kept below for the re
 - **D5 hardware encoder at low fps**: bitrate-scaling trick (recommended, no keyframe) vs
   reconfigure per tier; the Pixel self-test (test 8) settles it.
 
+- **D6 sharper video stays opt-in, suggested** (decided 2026-10-17, `feature/hd-suggest`): HD
+  is off by default; when the call has room the screen suggests it once and the person
+  decides (chip). Both directions: my line has room ("Room for sharper video · tap HD"), and
+  the peer's side has room too ("Ana could see you sharper · tap HD"). No exception on mobile
+  data; on a metered network with HD on, Android says so once. The receiver's side travels as
+  a flag on the hint (message 5, `Hint::room`), gated by `VideoOffer.hint_flags` so an older
+  sender never gets it; a new message rather than a new `Msg` because, like the hint, it is
+  about what the media can carry and the sender's rule needs it next to the ladder. Rule,
+  thresholds and stop rule: docs/video.md "Suggesting sharper video".
+
 ## 9. Plan (Sonnet helpers, one per step, buildlock `--who vfr-<step>`; lead merges)
 
 | step | what | owner | est. |
