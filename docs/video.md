@@ -474,6 +474,10 @@ device's measured encode time allow.
   above. While a report since the cut delivered < 10% of the old rate (the burst still to come:
   a 130 ms spike, a tail loss waiting for its PTO), the first second look is put off once by
   150 ms; the ladder waits with it, the drain doesn't. See Wi-Fi delay spikes below.
+- **Delay bursts / stalls** (2026-10-17, `fix/rate-recovery`): nothing delivered for 1.5 RTT is a
+  stall, not capacity: cuts keep 50% of the old rate while it is fresh, a fast climb back to the
+  good rate after, one backlog reset per stall without halving, no further cuts under a flat
+  delay. See "Delay bursts vs capacity drops" below.
 - **Backlog reset** needs nothing delivered for 500 ms (`DELIVERING_US`), not one empty report:
   a Wi-Fi stall delivers nothing for 50-150 ms, then everything, and the reset (a keyframe into
   the queue, rate halved) made the real call's 2 Mbps -> 500 kbps in one step.
@@ -664,6 +668,123 @@ too (3% loss: 10-20 a minute); their numbers above stay within noise.
 
 Run: `cargo test -p video --release --lib sim:: -- --nocapture` (`SIM_TRACE=reports SIM_FROM=<s>
 SIM_TO=<s>` prints the reports in a window).
+
+### Delay bursts vs capacity drops (2026-10-17, `fix/rate-recovery`)
+
+**The call**: Pixel 3a <-> laptop, same home router, direct path. Both directions sat at
+180p / 100-190 kbps for the whole call (the day before, same pair: 1-2 Mbps at 540p). Router
+ping during the call: 5% lost, 42 of 285 replies over 100 ms, max 1023 ms (2.5-5.6 ms and no
+loss without a call); audio on the same connection: RTT 8-48 ms. A working LAN with delay
+bursts, not a 150 kbps link. Laptop log per second: 500 kbps -> 100 at 1 s (`overuse=1
+drops=1`), then 100, 103, 28, 25, ... and later +10 kbps/s climbs knocked back to 100 with each
+backlog reset (`drops` and `key` going up together, 01:39:27-31: four in four seconds with no
+overuse report). Pixel: 500 -> 100 -> 25 kbps in 2 s, `draining=true`, `delivered_kbps=0` and
+`q_ms` 469-756 for seconds.
+
+**Why** (all present before 068fd7e; that commit's spike rule only fires at rates where a
+burst shows above `starve_min_bps`):
+- A burst delivers nothing for a while, so nothing is acked and the backlog passes 300 ms at
+  our rate: a **backlog reset halved the rate** (and sent a keyframe into the same stall).
+- **Overuse cut to 85% of delivered**, which was 0 in the stall, or followed our own drain;
+  **every 200 ms again** while the delay stayed flat, so 1.4 Mbps fell to 200 kbps in a second.
+- The **drain** went to its floor, 25 kbps, with nothing getting through.
+- The **ramp back** needed < 15 ms queueing (the call's RTT sat at 15-40 ms between bursts) and
+  was capped at 1.5x the last 100 ms delivered window, which at 100-200 kbps is one or two
+  packets: ~10 kbps a second. A burst every few seconds kept it at the floor; and with
+  `up_after_down_us` (10 s) + `up_hold_us` (5 s) the ladder never got back above 180p.
+
+**Principle**: a link that got slower still delivers, at its rate, while the delay grows. A
+transient burst delivers *nothing* for longer than loss recovery explains, then everything
+late. Nothing getting through is no evidence about capacity; a queue that builds while the link
+delivers steadily is.
+
+**Rules** (`media::Sender`):
+- **Stall**: reports with < 1% of the estimate delivered for 1.5 round trips (at least 140 ms),
+  or a report that late. The RTT comes from the transport (`Sender::set_rtt`: `video::net`
+  passes the path RTT, the sim its srtt), the lowest of the last 5-10 s (a burst inflates the
+  smoothed RTT just when this needs the path's own). On a 250 ms relay a lost packet's
+  retransmission is not a stall.
+- An overuse episode with a stall in it (or within 500 ms before) cuts the estimate and the
+  drain to no less than **50% of the rate before**, and doesn't lower the remembered good rate.
+  Only while the stall is fresh: 1 s (or two round trips) after its last empty report, a queue
+  still standing is ours and the episode goes back to the normal rules (a 5 Mbps -> 600 kbps
+  drop that came with a stall had stayed at ~2 Mbps with ~1 s of queue).
+- When the episode ends, the ramp climbs back to the **good rate** (the rate the path last
+  carried with no queue) at **+25% per smoothed round trip** (at least 100 ms), starting a round
+  trip after the last cut. An episode without a stall sets the good rate to its median delivered
+  rate (capacity) and the ramp is the normal one.
+- **Backlog reset while the path is quiet** (an empty or late report) after a healthy one: one
+  per stall, no rate halving.
+- **Later cuts in an episode** only while the delay grows (by 20 ms since the last cut), the
+  link is starved, or it delivers > 110% of what we send (our queue draining at its rate). A
+  flat delay keeps the drain instead of chasing our own lowered delivered rate.
+- Below 400 kbps the normal ramp's cap uses the most delivered in the last 0.5 s.
+- Ladder: leaving a rung entered within the flap window through a frame-rate step inside it
+  now blocks the whole rung (the cut now comes in steps; `adapt_flapping_link`).
+
+**Sim**: `Link::spike_loss` (loss during spikes of >= 50 ms), `HwCodec::key_min` (hardware
+keyframes don't shrink with the target; Pixel VP8 at 25 kbps made 1.5-4 KB ones),
+`network_matrix` (`SIM_MATRIX=<name>`, `SIM_MATRIX_SEED=<n>`, `SIM_MATRIX_NOCHECK=1`). Each
+matrix scenario runs 90 s from call start (so the start is included), three seeds averaged;
+fake codec, phone encode model:
+
+1. **lan**: 10 Mbps, 3 ms +-6 ms one way, a 100-600 ms burst every 2-7 s (one in the first
+   second) with 5% loss, 10-25 ms stretches in between. The best case.
+2. **cafe**: 2-6 Mbps changing every 3-8 s, 8 ms +-10, 2% loss, a 100-1000 ms burst every
+   3-10 s (5% loss in it).
+3. **lte**: 30 ms +-10 one way, 1-8 Mbps changing every 2-5 s, 384 KB buffer (0.4 s at 8 Mbps,
+   3 s at 1 Mbps), 0.5% loss, a 1-1.7 s handover stall every 15-30 s.
+4. **relay**: 120 ms +-20 one way (RTT ~250 ms), 3 Mbps, 0.5% loss, a 100-600 ms burst every
+   3-8 s (3% loss in it).
+5. **weak**: a steady 650 kbps, 20 ms +-15, 0.5% loss, 64 KB buffer.
+6. **step**: 5 Mbps, then 600 kbps from 15 s on (row 2: 20-90 s). **step+stall**: the same drop
+   arriving with a 300 ms window of 800 ms delay and 5% loss.
+
+Mean target kbps, % of frames >= 540p / >= 360p, latency p50 / p95 ms, freezes (> 250 ms) per
+run and seconds frozen; before = b83e596:
+
+| Scenario | before | after |
+|---|---|---|
+| lan | 411 kbps, 0% / 24%, 26 / 315 ms, 22.0 (10.8 s) | **1513 kbps, 76% / 100%**, 40 / 236 ms, 25.0 (14.5 s) |
+| cafe | 478 kbps, 0% / 24%, 27 / 134 ms, 18.3 (12.1 s) | **1494 kbps, 76% / 100%**, 50 / 146 ms, 20.0 (15.4 s) |
+| lte | 877 kbps, 9% / 62%, 56 / 94 ms, 5.0 (5.8 s) | **1403 kbps, 86% / 100%**, 77 / 144 ms, 7.3 (7.0 s) |
+| relay | 374 kbps, 0% / 36%, 153 / 506 ms, 37.7 (16.8 s) | 425 kbps, 0% / 38%, 156 / **597** ms, 44.7 (18.5 s) |
+| weak | 533 kbps, 0% / 100%, 72 / 129 ms, 0 | 552 kbps, 0% / 100%, 74 / 126 ms, 0 |
+| step | 711 kbps, 11% / 100%, 62 / 115 ms, 0 | 711 kbps, 11% / 100%, 63 / 113 ms, 0 |
+| step, 20-90 s | 539 kbps, 66 / 116 ms, 0 | 539 kbps, 67 / 114 ms, 0 |
+| step+stall | 721 kbps, 11% / 100%, 63 / 113 ms, 1.0 (0.9 s) | 722 kbps, 36% / 100%, 70 / 117 ms, 1.7 (1.4 s) |
+| step+stall, 20-90 s | 539 kbps, 66 / 116 ms, 0 | 530 kbps, 76 / 117 ms, 0 |
+
+`lan_delay_bursts_seeds` (120 s, six seeds, software / hardware encoder): 400 / 399 kbps ->
+1406 / 1106 kbps; >= 540p 2% / 2% -> 69% / 42%; time under 150 kbps 18.9% / 18.2% -> 1.7% /
+2.1%; median time back to 80% of the pre-burst rate 2.2 / 2.0 s -> 0.9 / 0.8 s; frozen 12.8 /
+12.0 s -> 17.8 / 16.1 s.
+
+Existing scenarios (p50 / p95 / max ms, wire kbps; unchanged ones left out): 3% loss 58/122/221
+-> 60/129/221, 1191 -> 1253 kbps; 1.5 M 3% loss 59/122/204 -> 59/125/219; 500 ms outage
+68/109/181 -> 71/114/287; real AV1 2% loss + outage 48/124/224 -> 51/164/331 (0.6 -> 0.8 s
+frozen); wifi 1.6 M 50/108/197 -> 65/112/246, 1228 -> 1323 kbps, keys 8 -> 3; wifi 2.4 M
+64/92/193 -> 66/93/199, 1864 -> 1923 kbps; 2 M / 900 k flapping 68/122/261 -> 65/121/309,
+1187 -> 1264 kbps; throttled 69/96/158 -> 71/108/158; ladder dip 55/127/1006 -> 55/114/1006;
+drift 46/72/138 -> 46/56/138. Clean, 2 M -> 300 k, deep buffer, relay 1.5 M, real AV1 switch and
+Wi-Fi spikes, slow device/receiver/start, hints, hw keyframes: within noise.
+
+**Trade-offs** (no one rule serves all):
+- More rate means more data in flight when a burst comes: on the burst scenarios freezes go up
+  (~3-5 s per 90-120 s) and p50 by 10-20 ms, for 3-4x the rate and 540p instead of 180p.
+- **Relay (RTT 250 ms)**: little gain (+14% rate) for +90 ms p95 and +7 freezes. The bottleneck
+  there is QUIC's congestion window (about 1 Mbps at that RTT with loss), not the link, and the
+  bursts' losses take an inflated round trip to repair. Each rule costs a little there
+  (ablation, each rule off alone: p95 620 -> 539-620 ms, the stall floor the most); pacing the
+  climb by the smoothed RTT got back a little (620 -> ~590 ms). Telling a burst loss from capacity at high RTT
+  needs per-packet timing (QUIC ack times in `net`), not the 100 ms delivered rate.
+- Outages that really lose packets (the 500 ms outage, real AV1 loss + outage) are stalls too:
+  draining at 50% instead of 25% costs ~40-100 ms on the worst frames after one.
+- LTE: p95 94 -> 144 ms at 1.6x the rate (a bigger buffer filled a little at each step up).
+- Not device-validated: the next real call should show `overuse`/`drops` no longer climbing
+  together with the rate at the floor.
+
+Run: `cargo test -p video --release --lib sim:: -- --nocapture`; `SIM_MATRIX=1` per-seed lines.
 
 ## Capture/render conversion (`video::convert`)
 
