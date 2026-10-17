@@ -1,6 +1,8 @@
-//! Sessions are not held open (decision 2026-10-17): a chat or own-device session with no
-//! traffic for the idle time closes cleanly on both sides, unless the conversation is watched,
-//! something is pending, or a 1:1 call is live; whoever has something to send redials.
+//! Sessions are not held open, and links are consent-based (decision 2026-10-17): a chat or
+//! own-device session with no traffic for the idle time closes cleanly, unless this side has its
+//! own reason (the user typed or wrote to that contact within the idle time, something is
+//! pending, or a 1:1 call is live); whoever has something to send redials. Typing dials ahead;
+//! opening a conversation does not. Presence is sent only while active with that contact.
 //!
 //! Real iroh endpoints (needs network, like `link.rs`). The idle time is shortened for the whole
 //! binary with `P2P_IDLE_CLOSE_MS` (the production value is 60 s, `wire::IDLE_CLOSE`).
@@ -43,7 +45,13 @@ fn opened(p: &Peer, did: &str) -> usize {
 }
 
 fn idle_ended(p: &Peer, did: &str) -> bool {
-    p.logged(&format!("chat session with {did} ended: idle"))
+    idle_ends(p, did) > 0
+}
+
+/// How many chat sessions with `did` this peer closed for idleness.
+fn idle_ends(p: &Peer, did: &str) -> usize {
+    let needle = format!("chat session with {did} ended: idle");
+    p.logs.lock().unwrap().iter().filter(|l| l.contains(&needle)).count()
 }
 
 /// A pair whose first sessions (contact exchange, profiles, receipts) have settled and closed.
@@ -63,7 +71,7 @@ fn settled_pair(tag: &str) -> (Peer, Peer) {
 }
 
 // KIND: acceptance (user 2026-10-17: a session closes after the idle time with nothing pending
-// and nothing watched; the peer sees a normal close and neither side redials because of it)
+// and no recent activity; the peer sees a normal close and neither side redials because of it)
 #[test]
 fn a_message_dials_a_session_that_closes_when_idle_and_nobody_redials() {
     let (a, b) = settled_pair("msg");
@@ -96,33 +104,86 @@ fn a_message_dials_a_session_that_closes_when_idle_and_nobody_redials() {
     );
 }
 
-// KIND: acceptance (user 2026-10-17: an open conversation keeps its session; closing it lets
-// the idle close happen; presence is known only while the session is up)
+// KIND: acceptance (user 2026-10-17: typing is the wake point: it dials the contact ahead of
+// the send; with no further activity the session closes after the idle time, nobody redials)
 #[test]
-fn watching_keeps_the_session_open_and_unwatching_lets_it_close() {
-    let (a, b) = settled_pair("watch");
-    a.node.watch_presence(b.did.clone());
-    eventually(60, "A sees B online", || {
-        a.node.contact_online(b.did.clone())
-    });
-    // Well past the idle time: B keeps it too (A's keep datagram), so it never drops.
-    assert!(
-        !within(4 * IDLE_MS / 1000, || sessions(&a, &b.did) == 0
-            || sessions(&b, &a.did) == 0),
-        "a watched conversation keeps its session on both sides"
-    );
-    assert!(a.node.contact_online(b.did.clone()));
-    a.node.unwatch_presence(b.did.clone());
-    eventually(30, "closed once unwatched", || both_closed(&a, &b));
-    eventually(10, "presence unknown again", || {
-        !a.node.contact_online(b.did.clone())
-    });
+fn typing_dials_ahead_and_the_session_closes_after_idle() {
+    let (a, b) = settled_pair("typing");
+    let n = opened(&a, &b.did);
+    let ends = idle_ends(&a, &b.did) + idle_ends(&b, &a.did);
+    a.node.chat_typing(b.did.clone());
+    eventually(30, "typing dials B", || sessions(&a, &b.did) > 0);
+    assert_eq!(opened(&a, &b.did), n + 1, "one session");
+    // Many keystrokes: throttled, no further dial while the session is up.
+    for _ in 0..50 {
+        a.node.chat_typing(b.did.clone());
+    }
+    eventually(30, "closed after idle", || both_closed(&a, &b));
+    assert!(idle_ends(&a, &b.did) + idle_ends(&b, &a.did) > ends, "closed for idleness");
     let n = opened(&a, &b.did);
     assert!(
-        !within(4 * IDLE_MS / 1000, || sessions(&a, &b.did) > 0),
-        "no redial after unwatch"
+        !within(4 * IDLE_MS / 1000, || sessions(&a, &b.did) > 0 || sessions(&b, &a.did) > 0),
+        "no redial once idle"
     );
     assert_eq!(opened(&a, &b.did), n);
+}
+
+// KIND: acceptance (user 2026-10-17: a contact can never hold my link open: B keeps typing to
+// A (local activity on B only, no messages), A is idle, so A's side closes after the idle time
+// each time; B's typing dials again, which is B's own action)
+#[test]
+fn a_contact_cannot_keep_my_session_open() {
+    let (a, b) = settled_pair("peer-keep");
+    let ends = idle_ends(&a, &b.did);
+    let stop = std::time::Instant::now() + Duration::from_millis(5 * IDLE_MS);
+    let mut up = false;
+    while std::time::Instant::now() < stop {
+        b.node.chat_typing(a.did.clone());
+        up |= sessions(&a, &b.did) > 0;
+        std::thread::sleep(Duration::from_millis(100));
+    }
+    assert!(up, "B's typing dialled A");
+    assert!(idle_ends(&a, &b.did) > ends, "A closed its idle side although B stayed active");
+    // B stops: everything closes.
+    eventually(30, "both closed", || both_closed(&a, &b));
+}
+
+// KIND: acceptance (user 2026-10-17: presence needs consent: while A is idle, B does not see A
+// online even over the session B dialled to deliver; once A types, B does. B is active (it
+// wrote), so A sees B)
+#[test]
+fn presence_shows_only_while_active_with_the_contact() {
+    let (a, b) = settled_pair("presence");
+    let id = b
+        .node
+        .send_text(a.did.clone(), "are you there".into(), None)
+        .unwrap()
+        .id;
+    let mut session = false;
+    let mut b_sees_a = false;
+    let mut a_sees_b = false;
+    let stop = std::time::Instant::now() + Duration::from_secs(15);
+    while std::time::Instant::now() < stop && !(holds(&a, &b.did, &id) && delivered(&b, &a.did, &id) && a_sees_b) {
+        session |= sessions(&a, &b.did) > 0;
+        b_sees_a |= b.node.contact_online(a.did.clone());
+        a_sees_b |= a.node.contact_online(b.did.clone());
+        std::thread::sleep(Duration::from_millis(100));
+    }
+    assert!(holds(&a, &b.did, &id) && delivered(&b, &a.did, &id), "delivered");
+    assert!(session, "a session carried the delivery");
+    assert!(a_sees_b, "A sees B, who is active with A");
+    // Until the delivery session closes.
+    let stop = std::time::Instant::now() + Duration::from_secs(30);
+    while (sessions(&a, &b.did) > 0 || sessions(&b, &a.did) > 0) && std::time::Instant::now() < stop {
+        b_sees_a |= b.node.contact_online(a.did.clone());
+        std::thread::sleep(Duration::from_millis(100));
+    }
+    assert!(!b_sees_a, "idle A sent no presence");
+    // A types: B sees A online.
+    eventually(30, "B sees A after A types", || {
+        a.node.chat_typing(b.did.clone());
+        b.node.contact_online(a.did.clone())
+    });
 }
 
 // KIND: acceptance (user 2026-10-17: delivery is sender-driven; a pending outbox redials until
