@@ -854,3 +854,209 @@ fn lan_delay_bursts_seeds() {
         assert!(m(|r| r.2) < 5.0, "under 150 kbps {:.1}%", m(|r| r.2));
     }
 }
+
+// --- Network matrix (docs/video.md, "Delay bursts vs capacity drops") ---
+//
+// The home LAN is the best case real users will see. Each scenario starts with the call, runs
+// 90 s and is averaged over three seeds; `SIM_MATRIX=<name>` runs one.
+
+/// Delay bursts at random: every `gap` (us, lo..hi) a burst `len` long (lo..hi) of `extra` one-way
+/// delay (lo..hi), the first at `first`.
+fn burst_train(
+    rng: &mut Rng,
+    first: u64,
+    end: u64,
+    gap: (u64, u64),
+    len: (u64, u64),
+    extra: (u64, u64),
+) -> Vec<(u64, u64, u64)> {
+    let pick = |rng: &mut Rng, (lo, hi): (u64, u64)| lo + (rng.f64() * (hi - lo) as f64) as u64;
+    let mut v = Vec::new();
+    let mut t = first;
+    while t < end {
+        let l = pick(rng, len);
+        v.push((t, t + l, pick(rng, extra)));
+        t += l + pick(rng, gap);
+    }
+    v
+}
+
+/// Bottleneck rate changing every `every` (lo..hi) to a uniform pick in `rate` (lo..hi).
+fn rate_walk(rng: &mut Rng, end: u64, every: (u64, u64), rate: (u64, u64)) -> Vec<(u64, u64)> {
+    let pick = |rng: &mut Rng, (lo, hi): (u64, u64)| lo + (rng.f64() * (hi - lo) as f64) as u64;
+    let mut v = Vec::new();
+    let mut t = pick(rng, every);
+    while t < end {
+        v.push((t, pick(rng, rate)));
+        t += pick(rng, every);
+    }
+    v
+}
+
+const MATRIX_US: u64 = 90 * S;
+
+fn matrix_scenario(name: &str, seed: u64) -> Scenario {
+    let mut rng = Rng::new(seed ^ 0x6d61);
+    let d = MATRIX_US;
+    let ms = 1_000;
+    let link = match name {
+        // 1. Home LAN (the best case): see `lan_bursts`.
+        "lan" => return lan_bursts(d, 10_000_000, seed),
+        // 2. Busy / cafe Wi-Fi: 2-6 Mbps, changing every 3-8 s; a 100-1000 ms burst every
+        //    3-10 s; 2% loss, 5% in the bursts.
+        "cafe" => Link {
+            rate_bps: 4_000_000,
+            delay_us: 8 * ms,
+            jitter_us: 10 * ms,
+            loss: 0.02,
+            queue_bytes: 256 * 1024,
+            rate_changes: rate_walk(&mut rng, d, (3 * S, 8 * S), (2_000_000, 6_000_000)),
+            spikes: burst_train(&mut rng, 800 * ms, d, (3 * S, 10 * S), (200 * ms, 1_000 * ms), (100 * ms, 1_000 * ms)),
+            spike_loss: 0.05,
+            ..Link::default()
+        },
+        // 3. 4G/LTE: RTT 60-80 ms, 1-8 Mbps changing every 2-5 s, a 384 KB buffer (0.4 s at
+        //    8 Mbps, 3 s at 1 Mbps), a 1-1.7 s handover stall every 15-30 s.
+        "lte" => Link {
+            rate_bps: 4_000_000,
+            delay_us: 30 * ms,
+            jitter_us: 10 * ms,
+            loss: 0.005,
+            queue_bytes: 384 * 1024,
+            rate_changes: rate_walk(&mut rng, d, (2 * S, 5 * S), (1_000_000, 8_000_000)),
+            spikes: burst_train(&mut rng, 6 * S, d, (15 * S, 30 * S), (200 * ms, 400 * ms), (1_000 * ms, 1_700 * ms)),
+            spike_loss: 0.05,
+            ..Link::default()
+        },
+        // 4. Relayed (India <-> EU): RTT ~250 ms +-40, 3 Mbps, a 100-600 ms burst every 3-8 s.
+        "relay" => Link {
+            rate_bps: 3_000_000,
+            delay_us: 120 * ms,
+            jitter_us: 20 * ms,
+            loss: 0.005,
+            queue_bytes: 256 * 1024,
+            spikes: burst_train(&mut rng, 900 * ms, d, (3 * S, 8 * S), (300 * ms, 1_000 * ms), (100 * ms, 600 * ms)),
+            spike_loss: 0.03,
+            ..Link::default()
+        },
+        // 5. Weak link: a steady 650 kbps, 20 ms +-15 ms, 0.5% loss.
+        "weak" => Link {
+            rate_bps: 650_000,
+            delay_us: 20 * ms,
+            jitter_us: 15 * ms,
+            loss: 0.005,
+            queue_bytes: 64 * 1024,
+            ..Link::default()
+        },
+        // 6. A real step down: 5 Mbps, then 600 kbps from 15 s on.
+        "step" => Link {
+            rate_bps: 5_000_000,
+            delay_us: 15 * ms,
+            jitter_us: 5 * ms,
+            queue_bytes: 128 * 1024,
+            rate_changes: vec![(15 * S, 600_000)],
+            ..Link::default()
+        },
+        // 6b. The same drop arriving with a stall (a handover to a worse cell): the stall must
+        //     not make the old rate look like the path's.
+        "step+stall" => Link {
+            rate_bps: 5_000_000,
+            delay_us: 15 * ms,
+            jitter_us: 5 * ms,
+            queue_bytes: 128 * 1024,
+            rate_changes: vec![(15 * S, 600_000)],
+            spikes: vec![(15 * S, 15 * S + 300 * ms, 800 * ms)],
+            spike_loss: 0.05,
+            ..Link::default()
+        },
+        _ => panic!("{name}"),
+    };
+    Scenario { duration_us: d, link, seed, ..base() }
+}
+
+/// (mean target kbps, % frames >= 540p, % >= 360p, p50 ms, p95 ms, freezes, frozen s) over
+/// `[from, to)`.
+fn matrix_row(r: &Report, from: u64, to: u64) -> [f64; 7] {
+    let l = r.latencies_ms(from, to);
+    let f = r.freezes(250_000, from.max(S), to);
+    [
+        r.mean_bitrate(from, to) / 1000.0,
+        100.0 * share_at_least(r, 540, from, to),
+        100.0 * share_at_least(r, 360, from, to),
+        Report::pct(&l, 0.5),
+        Report::pct(&l, 0.95),
+        f.len() as f64,
+        f.iter().map(|x| x.1).sum::<u64>() as f64 / 1e6,
+    ]
+}
+
+fn matrix_line(name: &str, v: &[f64; 7]) -> String {
+    format!(
+        "{name:>12}: {:5.0} kbps, >= 540p {:3.0}%, >= 360p {:3.0}%, p50 {:4.0} ms, p95 {:5.0} ms, freezes {:4.1} ({:4.1} s)",
+        v[0], v[1], v[2], v[3], v[4], v[5], v[6]
+    )
+}
+
+/// Runs scenario `name` over three seeds; returns the mean row over the call and, for "step",
+/// over 20-90 s (after the drop) as well.
+fn matrix_run(name: &str) -> ([f64; 7], [f64; 7]) {
+    let seeds = [3, 7, 11];
+    let (mut all, mut after) = ([0.0; 7], [0.0; 7]);
+    for seed in seeds {
+        let sc = matrix_scenario(name, seed);
+        let r = run(&sc, &mut FakeCodec::new(sc.fps, seed));
+        assert_eq!(r.decode_errors, 0, "{name} seed {seed}");
+        let a = matrix_row(&r, 0, sc.duration_us);
+        let b = matrix_row(&r, 20 * S, sc.duration_us);
+        if std::env::var_os("SIM_MATRIX").is_some() {
+            println!("{}", matrix_line(&format!("{name}/{seed}"), &a));
+            println!("{:>12}  {}", "", sizes_line(&r));
+        }
+        if std::env::var("SIM_MATRIX_SEED").is_ok_and(|v| v == seed.to_string()) {
+            let b: Vec<String> = sc
+                .link
+                .spikes
+                .iter()
+                .map(|s| format!("{:.2}-{:.2}s +{}ms", s.0 as f64 / 1e6, s.1 as f64 / 1e6, s.2 / 1000))
+                .collect();
+            println!("bursts: {}", b.join(", "));
+            println!("rate changes: {:?}", sc.link.rate_changes);
+            trace(&r, 0, 10 * S);
+        }
+        for i in 0..7 {
+            all[i] += a[i] / seeds.len() as f64;
+            after[i] += b[i] / seeds.len() as f64;
+        }
+    }
+    println!("{}", matrix_line(name, &all));
+    if name.starts_with("step") {
+        println!("{}", matrix_line(&format!("{name} 20-90s"), &after));
+    }
+    (all, after)
+}
+
+#[test]
+fn network_matrix() {
+    let only = std::env::var("SIM_MATRIX").ok();
+    for name in ["lan", "cafe", "lte", "relay", "weak", "step", "step+stall"] {
+        if only.as_deref().is_some_and(|o| !o.is_empty() && o != "1" && o != name) {
+            continue;
+        }
+        let (all, after) = matrix_run(name);
+        // [kbps, % >= 540p, % >= 360p, p50, p95, freezes, frozen s]. `SIM_MATRIX_NOCHECK=1`
+        // prints without checking (for the numbers of an older controller).
+        if std::env::var_os("SIM_MATRIX_NOCHECK").is_some() {
+            continue;
+        }
+        match name {
+            // Was (b83e596): 411 / 478 / 877 kbps.
+            "lan" | "cafe" | "lte" => assert!(all[0] > 1_000.0, "{name}: {all:?}"),
+            // The trade-off (docs/video.md): a little more rate, more delay. Was 374 kbps, p95 506.
+            "relay" => assert!(all[4] < 800.0, "{all:?}"),
+            "weak" => assert!(all[0] < 650.0 && all[4] < 200.0 && all[5] == 0.0, "{all:?}"),
+            // Down fast and stays down: under the 600 kbps link, no queue, no freezes.
+            "step" | "step+stall" => assert!(after[0] < 600.0 && after[4] < 150.0 && after[5] == 0.0, "{after:?}"),
+            _ => {}
+        }
+    }
+}
