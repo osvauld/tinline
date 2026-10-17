@@ -239,6 +239,7 @@ fn frames() -> Vec<(&'static str, Vec<u8>)> {
                     encode: vec![VideoCodec::Vp8, VideoCodec::Av1],
                     hw_decode: vec![VideoCodec::Vp8],
                     hw_encode: vec![VideoCodec::Vp8],
+                    hint_flags: false,
                 }),
             }),
         ),
