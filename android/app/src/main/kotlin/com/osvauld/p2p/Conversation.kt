@@ -199,15 +199,23 @@ fun ConversationScreen(
     // Reading: the open conversation never raises a notification, and its unread count is cleared.
     val owner = LocalLifecycleOwner.current
     DisposableEffect(owner, peerDid) {
+        // Presence only while the conversation is on screen: watching keeps the core's session with them open;
+        // leaving (or the app going to the background) lets it close after a minute idle.
         val o = LifecycleEventObserver { _, ev ->
-            if (ev == Lifecycle.Event.ON_RESUME) { OpenChat.peer = peerDid; ChatNotifier.cancel(ctx, peerDid) }
-            if (ev == Lifecycle.Event.ON_PAUSE && OpenChat.peer == peerDid) OpenChat.peer = null
+            if (ev == Lifecycle.Event.ON_RESUME) {
+                OpenChat.peer = peerDid; ChatNotifier.cancel(ctx, peerDid)
+                if (!isSelf) scope.launch(Dispatchers.IO) { runCatching { source.watchPresence(peerDid) } }
+            }
+            if (ev == Lifecycle.Event.ON_PAUSE) {
+                if (OpenChat.peer == peerDid) OpenChat.peer = null
+                if (!isSelf) source.unwatchPresence(peerDid)
+            }
         }
         owner.lifecycle.addObserver(o)
-        onDispose { owner.lifecycle.removeObserver(o); if (OpenChat.peer == peerDid) OpenChat.peer = null }
-    }
-    LaunchedEffect(peerDid) {
-        if (!isSelf) withContext(Dispatchers.IO) { runCatching { source.watchPresence(peerDid) } }
+        onDispose {
+            owner.lifecycle.removeObserver(o); if (OpenChat.peer == peerDid) OpenChat.peer = null
+            if (!isSelf) source.unwatchPresence(peerDid)
+        }
     }
     LaunchedEffect(peerDid, msgs.size) {
         withContext(Dispatchers.IO) { runCatching { source.markRead(peerDid); source.refresh() } }

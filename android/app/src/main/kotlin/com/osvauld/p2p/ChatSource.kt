@@ -1,6 +1,7 @@
 package com.osvauld.p2p
 
 import android.util.Log
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -49,8 +50,10 @@ interface ChatSource {
     fun edit(peerDid: String, messageId: String, text: String): Message
     fun delete(peerDid: String, messageId: String): Message
     fun markRead(peerDid: String)
-    /** A conversation opened: connect so the contact's presence is known. */
+    /** A conversation opened: connect so the contact's presence is known, and keep that session open. */
     fun watchPresence(peerDid: String) {}
+    /** The conversation closed or left the screen: the core may close the session once it is idle (a minute). Non-blocking. */
+    fun unwatchPresence(peerDid: String) {}
     fun sendFile(peerDid: String, path: String, mime: String, text: String?): Message
     fun sendVoice(peerDid: String, path: String, durationMs: Int, waveform: ByteArray): Message
     fun download(peerDid: String, messageId: String)
@@ -121,6 +124,11 @@ class CoreChatSource(private val app: P2pApp) : ChatSource, ChatEvents {
     override fun watchPresence(peerDid: String) {
         try { node.watchPresence(peerDid) } catch (e: Exception) { Log.d(P2pApp.TAG, "watchPresence: $e") }
         if (node.contactOnline(peerDid)) _links.update { it + (peerDid to Link.Connected) }
+    }
+    override fun unwatchPresence(peerDid: String) {
+        app.scope.launch(Dispatchers.IO) {
+            try { node.unwatchPresence(peerDid) } catch (e: Exception) { Log.d(P2pApp.TAG, "unwatchPresence: $e") }
+        }
     }
     override fun sendFile(peerDid: String, path: String, mime: String, text: String?) = node.sendFile(peerDid, path, mime, text)
     override fun sendVoice(peerDid: String, path: String, durationMs: Int, waveform: ByteArray) =
