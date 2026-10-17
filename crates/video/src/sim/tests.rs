@@ -107,7 +107,8 @@ fn clean_link() {
     assert!(r.shown.len() >= r.encoded.len() - 3, "every frame shown");
     // 122 ms (was 108 with frames stamped at capture: each step up's longer encode read as a
     // queue and held the rate ~20% under this 2 Mbps link; now it runs at ~1.9 Mbps).
-    assert!(p95(&r, 2 * S, sc.duration_us) < 130.0, "p95 {}", p95(&r, 2 * S, sc.duration_us));
+    // 131 ms with the sender cap at 3 Mbps (was 128): it now probes past this 2 Mbps link.
+    assert!(p95(&r, 2 * S, sc.duration_us) < 135.0, "p95 {}", p95(&r, 2 * S, sc.duration_us));
     assert!(r.freezes(250_000, S, sc.duration_us).is_empty());
     assert!(r.mean_bitrate(20 * S, 30 * S) > 1_000_000.0, "ramps up to use a 2 Mbps link");
 }
@@ -414,8 +415,9 @@ fn adapt_fps_before_resolution() {
     // 700 kbps delivers ~600 kbps of estimate (85%): under 720p15's 700 kbps floor, so one
     // resolution step, to 540p24, not 360p30 (was: 720p -> 360p).
     assert!(min_height(&r, 7 * S, sc.duration_us) >= 540, "{}", sizes_line(&r));
-    // Baseline: p95 116 ms, no freezes.
-    assert!(p95(&r, 0, sc.duration_us) <= 116.0, "p95 {}", p95(&r, 0, sc.duration_us));
+    // Baseline: p95 116 ms, no freezes (128 ms with the sender cap at 3 Mbps: the 2 Mbps phase
+    // of this link is now probed past its capacity).
+    assert!(p95(&r, 0, sc.duration_us) <= 130.0, "p95 {}", p95(&r, 0, sc.duration_us));
     assert!(r.freezes(250_000, S, sc.duration_us).is_empty());
     assert_eq!(r.keyframes, 1 + r.switches, "no keyframes for frame-rate steps");
 }

@@ -143,7 +143,8 @@ below are the 30 fps-only ladder they extend.
   the pixel ratio to fit the budget, so a device that can't encode the next rung never
   tries it (phone pinned: 540p ~13 ms -> 720p predicted ~24 ms, so it stays at 540p;
   unpinned it stays at 360p).
-- **Ceiling**: the encoder bitrate is clamped to the rung's `max_bps`; without it a step
+- **Ceiling**: the encoder bitrate is clamped to the rung's `max_bps` (and, overall, to
+  `SenderConfig::max_bps`, 3 Mbps: see "The overall cap is 3 Mbps"); without it a step
   down for CPU sends a keyframe sized for the old bitrate, which flooded the link in the
   simulation and dropped a further rung.
 - `LadderConfig::max_rung` / `Sender::set_max_rung`: device or peer capability.
@@ -453,11 +454,11 @@ device's measured encode time allow.
   encoder, a retransmission) is not a queue. Costs about a frame of reaction to a slow
   build-up (worst frame after the 300 kbps drop 152 ms, was < 150).
 - **Learned baseline** (sender): a queueing delay that hasn't been under `underuse_us` for 5 s
-  while the estimate is below half of `max_bps` is not a queue we cause (every cut drains
+  while the estimate is at or below 1 Mbps (`BASELINE_MAX_BPS`) is not a queue we cause (every cut drains
   the path within a second or two): its minimum over those 5 s joins a baseline that is
   subtracted from reports (at most 100 ms; any lower report lowers it). Without it a
   receiver clock running 0.5% fast (a VM, the emulator) reads ~50 ms of queueing forever and
-  the call sat at 180p / the floor. Not above half of `max_bps`: there a delay between the
+  the call sat at 180p / the floor. Not above 1 Mbps: there a delay between the
   thresholds is our own standing queue at the link's capacity, and learning it let it grow
   (2 Mbps -> 300 kbps drop: max 814 ms).
 - **Stale queue reset**: draining for more than `drain_us` while still sending at least half
@@ -877,6 +878,28 @@ time in the delay signal; the relaxed assertions carry the numbers.
 under ~15 ms and phone `recv_wait>5ms` near 0 confirm both sides are clean), `video send`
 overuse counts both ways, the CPU governor/power profile and `top -H` of the laptop during the
 call (what else is busy: camera MJPEG decode on the camera thread, UI), and router ping.
+
+### The overall cap is 3 Mbps (2026-10-17, `fix/cap-3mbps`)
+
+`SenderConfig::max_bps` was 2 Mbps, so 720p (rung ceiling 3 Mbps) never reached its own
+ceiling: a real Pixel 3a <-> laptop LAN call got 720p30 both ways in 5-7 s and then sat
+exactly at 2000 kbps with no overuse. The cap is now 3 Mbps, for sharper 720p with motion.
+
+- **One rule moved with the cap and was pinned back.** The learned queue baseline applied
+  while the estimate was `<= max_bps / 2`, i.e. 1 Mbps. It is now the constant
+  `BASELINE_MAX_BPS` = 1 Mbps, so every link under 2 Mbps behaves exactly as before (the
+  baseline's reason, "above this, a delay between the thresholds is our own standing queue
+  at the link's capacity", is about the link, not about our cap). The other two `max_bps`
+  uses are plain clamps on the ramp and need no change.
+- **Links at or under 2 Mbps**: no scenario switches rungs differently; the sender can now probe above a 2 Mbps link (it was
+  held at the link's capacity by the cap), and the cost is queueing that the drain rules then
+  remove: p95 on "clean 2 Mbps" 128 -> 131 ms, on "fps first" 116 -> 128 ms, "wifi 2.4 M"
+  95 -> 121 ms. 2 M -> 300 k, flapping, slow receiver, 3% loss, relay path, weak and the
+  500 ms outage: identical or within 3 ms of p95; matrix `step` 747 -> 851 kbps at p95
+  114 -> 115 ms (the 2 Mbps first phase runs closer to the link).
+- **Links with headroom** (the sim's `lan`/`cafe`/`lte` mixes, with delay bursts) now use it:
+  mean rate lan 1435 -> 1907 kbps, cafe 1510 -> 1828, lte 1607 -> 1675; p95 lan 205 -> 333 ms
+  (more in flight when a burst hits, same freezes), cafe 186 -> 176, lte 150 -> 157.
 
 ### Best case first: the call start (2026-10-17, `fix/fast-start`)
 

@@ -75,7 +75,7 @@ impl Default for SenderConfig {
         Self {
             fps: 30,
             min_bps: 100_000,
-            max_bps: 2_000_000,
+            max_bps: 3_000_000,
             start_bps: 500_000,
             max_backlog_us: 300_000,
             overuse_us: 40_000,
@@ -185,6 +185,9 @@ const STARVE_START_US: u64 = 1_000_000;
 /// See `Sender::queuing`.
 const BASELINE_PROBE_US: u64 = 5_000_000;
 const MAX_Q_OFFSET_US: u64 = 100_000;
+/// The queue baseline is learned only at or below this rate (1 Mbps, half the old 2 Mbps cap;
+/// an absolute value so raising `max_bps` doesn't change behaviour on links under 2 Mbps).
+const BASELINE_MAX_BPS: u32 = 1_000_000;
 /// After a decrease, the second look comes this much later (three more reports).
 const SETTLE_US: u64 = RATE_WINDOW_US + REPORT_US;
 /// A keyframe asked of the encoder isn't asked again for this long (a hardware encoder's output
@@ -1203,9 +1206,9 @@ impl Sender {
     fn queuing(&mut self, now_us: u64, q: u64) -> u64 {
         self.q_offset = self.q_offset.min(q);
         let above = q - self.q_offset;
-        // Only below half the top rate: higher up, a delay that stays between the thresholds is
+        // Only at or below 1 Mbps: higher up, a delay that stays between the thresholds is
         // usually our own standing queue at the link's capacity, and learning it lets it grow.
-        if above < self.cfg.underuse_us || self.bitrate > self.cfg.max_bps / 2 {
+        if above < self.cfg.underuse_us || self.bitrate > BASELINE_MAX_BPS {
             self.high_q = None;
         } else {
             let (since, low) = self.high_q.get_or_insert((now_us, above));
@@ -1909,7 +1912,9 @@ mod tests {
     fn wifi_stall_is_not_a_slower_link() {
         // Real call (Pixel 3a <-> laptop, one 2.4 GHz router): a second of +40-130 ms delay,
         // starting with a stall and a burst, collapsed 2 Mbps to ~100 kbps and 180p.
-        let mut tx = Sender::new(SenderConfig { start_bps: 2_000_000, ..Default::default() });
+        // The real call's sender was capped at 2 Mbps (now 3): pinned, so the numbers below stay the
+        // call's own.
+        let mut tx = Sender::new(SenderConfig { start_bps: 2_000_000, max_bps: 2_000_000, ..Default::default() });
         tx.frame(0, true, b"k");
         reports(&mut tx, 0, 2_000 * MS, 2_000_000, RateReport { delivered_bps: 2_000_000, queuing_us: 5_000 });
         assert_eq!((tx.bitrate(), tx.resolution()), (2_000_000, (1280, 720)));
