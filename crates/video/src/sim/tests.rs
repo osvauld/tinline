@@ -7,7 +7,8 @@ const S: u64 = 1_000_000;
 
 /// Defaults. Overrides for experiments: `SIM_BACKLOG=unsent` (QUIC-unsent backlog model),
 /// `SIM_DRAIN=<pct>`, `SIM_STARVE=<pct>` (100 / 0 turn them off), `SIM_UP_DIP=<pct>` (0: any dip
-/// restarts the ladder's step-up hold), `SIM_STAMP_CAPTURE=1` (frames stamped at capture).
+/// restarts the ladder's step-up hold), `SIM_STAMP_CAPTURE=1` (frames stamped at capture),
+/// `SIM_FAST_HOLD=<ms>` (the start's fast step-up hold; 0: off, the controller before it).
 fn base() -> Scenario {
     let mut sc = Scenario::default();
     if std::env::var("SIM_BACKLOG").is_ok_and(|v| v == "unsent") {
@@ -25,6 +26,9 @@ fn base() -> Scenario {
     }
     if std::env::var_os("SIM_STAMP_CAPTURE").is_some() {
         sc.stamp_capture = true;
+    }
+    if let Some(v) = knob("SIM_FAST_HOLD") {
+        sc.sender.ladder.up_fast_hold_us = if v == 0 { u64::MAX } else { v as u64 * 1_000 };
     }
     sc
 }
@@ -171,7 +175,9 @@ fn outage_500ms() {
     assert_eq!(r.decode_errors, 0);
     let f: u64 = r.freezes(250_000, 9 * S, 30 * S).iter().map(|f| f.1).sum();
     assert!(f < 1_500_000, "frozen {} ms for a 500 ms outage", f / 1000);
-    assert!(p95(&r, 13 * S, 30 * S) < 120.0, "back to low latency, p95 {}", p95(&r, 13 * S, 30 * S));
+    // 720p24 from 8 s since the fast start (was 12 s): ~1.9 Mbps on this 2 Mbps link, p95 ~125 ms
+    // as on the clean link (was < 120; over the run 130 -> 129 ms, frozen 0.9 -> 0.7 s).
+    assert!(p95(&r, 13 * S, 30 * S) < 135.0, "back to low latency, p95 {}", p95(&r, 13 * S, 30 * S));
 }
 
 #[test]
@@ -230,7 +236,7 @@ fn ladder_follows_bandwidth_dip() {
     trace(&r, 9_800_000, 14 * S);
     println!("{:>10}  sizes {:?}", "", r.sizes);
     assert_eq!(r.decode_errors, 0);
-    assert_eq!(shown_height(&r, 8 * S, 10 * S), (540, true), "uses the 2 Mbps link");
+    assert!(min_height(&r, 8 * S, 10 * S) >= 540, "uses the 2 Mbps link: {:?}", r.sizes);
     // Down to 320x180 within a second of the drop, and stays there while it lasts.
     let down = r.sizes.iter().find(|s| s.0 >= 10 * S && s.2 == 180).expect("steps down");
     assert!(down.0 < 11 * S, "180p at {} ms", down.0 / 1000);
@@ -240,7 +246,8 @@ fn ladder_follows_bandwidth_dip() {
     // flapping: 360p at ~26 s, 540p at ~32 s, then (the phone model) 720p24 at ~38 s. The drop
     // starved the link, so it isn't a flap: no block.
     assert!(min_height(&r, 33 * S, 40 * S) >= 540, "{:?}", r.sizes);
-    assert!(r.switches <= 5, "{} switches: {:?}", r.switches, r.sizes);
+    // (6: since the fast start it reaches 540p at 2.4 s and 720p24 at 8.2 s before the drop.)
+    assert!(r.switches <= 6, "{} switches: {:?}", r.switches, r.sizes);
     assert!(p95(&r, 21 * S, 40 * S) < 120.0, "p95 {}", p95(&r, 21 * S, 40 * S));
     // The queue built in the ~150 ms before the drop shows drains within about two seconds at
     // 200 kbps: p95 568 ms over the run and 1.6 s frozen (was 114 ms and 0.3 s with frames stamped
@@ -433,7 +440,9 @@ fn adapt_fps_before_resolution_1mbps() {
     // and the estimate drifts below 720p15's floor (540p30 at ~24 s). Still >= 540p.
     assert!(min_height(&r, 7 * S, sc.duration_us) >= 540, "{}", sizes_line(&r));
     assert_eq!(r.keyframes, 1 + r.switches, "no keyframes for frame-rate steps");
-    assert!(p95(&r, 0, sc.duration_us) <= 125.0, "p95 {}", p95(&r, 0, sc.duration_us));
+    // 129 ms (was 118): since the fast start it runs 720p30 near this 2 Mbps link's capacity
+    // from 8 s instead of 12 s, and stays at 720p15 after the drop (was 540p30 from 29 s).
+    assert!(p95(&r, 0, sc.duration_us) <= 135.0, "p95 {}", p95(&r, 0, sc.duration_us));
     assert!(r.freezes(250_000, S, sc.duration_us).is_empty());
 }
 
@@ -492,16 +501,19 @@ fn adapt_drawn_size_hint() {
     use crate::media::HintReason;
     let small = Hint { max_pixels: 640 * 360, max_fps: 0, reason: HintReason::DisplaySize };
     let r = hinted("size hint", vec![(5 * S, small), (25 * S, Hint::NONE)]);
-    // Nothing above 360p while it lasts (from the next keyframe: here it was 360p already).
+    // Nothing above 360p while it lasts (from the next keyframe, the hint's, about 0.3 s after it is set).
     let max = r.shown.iter().filter(|s| s.at_us >= 5_300_000 && s.at_us < 25 * S).map(|s| s.height).max();
     assert_eq!(max, Some(360));
-    // After the lift: a rung at a time with the 5 s hold, 720p by 45 s.
+    // After the lift: a rung at a time. The path has carried each step's rate with no queue and
+    // has shown no limit yet, so the start's 1 s fast hold applies (was 5 s: 720p at 35.9 s).
     let ups: Vec<_> = r.steps.iter().filter(|s| s.at_us >= 25 * S).collect();
     assert!(ups.iter().all(|s| s.to.1 > s.from.1 || s.to.2 > s.from.2), "{ups:?}");
-    assert!(ups.windows(2).all(|w| w[1].at_us - w[0].at_us >= 5 * S), "{ups:?}");
+    assert!(ups.windows(2).all(|w| w[1].at_us - w[0].at_us >= S), "{ups:?}");
     let at720 = r.sizes.iter().find(|s| s.0 >= 25 * S && s.2 == 720).expect("720p");
-    assert!(at720.0 < 45 * S, "{}", sizes_line(&r));
-    assert_eq!(r.key_causes.hint, 0);
+    assert!(at720.0 < 31 * S, "{}", sizes_line(&r));
+    // One keyframe for the hint: the cap to 360p at 5 s finds it at 540p since 2.3 s (the fast
+    // start; before it was still at 360p).
+    assert!(r.key_causes.hint <= 1, "{:?}", r.key_causes);
 }
 
 #[test]
@@ -1019,9 +1031,12 @@ fn matrix_line(name: &str, v: &[f64; 7]) -> String {
 /// Runs scenario `name` over three seeds; returns the mean row over the call and, for "step",
 /// over 20-90 s (after the drop) as well.
 fn matrix_run(name: &str) -> ([f64; 7], [f64; 7]) {
-    let seeds = [3, 7, 11];
+    // `SIM_MATRIX_SEEDS=<n>`: seeds 1..=n instead (a 90 s run with bursts is chaotic: one
+    // different early decision changes the rest, so three seeds are noisy).
+    let n = std::env::var("SIM_MATRIX_SEEDS").ok().and_then(|v| v.parse::<u64>().ok());
+    let seeds: Vec<u64> = n.map_or(vec![3, 7, 11], |n| (1..=n).collect());
     let (mut all, mut after) = ([0.0; 7], [0.0; 7]);
-    for seed in seeds {
+    for &seed in &seeds {
         let sc = matrix_scenario(name, seed);
         let r = run(&sc, &mut FakeCodec::new(sc.fps, seed));
         assert_eq!(r.decode_errors, 0, "{name} seed {seed}");
@@ -1040,6 +1055,15 @@ fn matrix_run(name: &str) -> ([f64; 7], [f64; 7]) {
                 .collect();
             println!("bursts: {}", b.join(", "));
             println!("rate changes: {:?}", sc.link.rate_changes);
+            // The seconds with slow frames (p95 over 200 ms).
+            for t in 0..sc.duration_us / S {
+                let l = r.latencies_ms(t * S, (t + 1) * S);
+                if Report::pct(&l, 0.95) > 200.0 {
+                    let h = r.shown.iter().rev().find(|x| x.at_us < (t + 1) * S).map_or(0, |x| x.height);
+                    let br = r.mean_bitrate(t * S, (t + 1) * S) / 1000.0;
+                    println!("  {t:3} s: p95 {:5.0} ms, {} frames, {h}p, {br:.0} kbps", Report::pct(&l, 0.95), l.len());
+                }
+            }
             trace(&r, 0, 10 * S);
         }
         for i in 0..7 {
@@ -1121,4 +1145,114 @@ fn busy_sender_is_not_a_queue() {
     // The link carries 10 Mbps: the busy machine costs frames, not the rate.
     assert!(rows[1][0] > 1_200.0 && rows[1][1] > 50.0, "{:?}", rows[1]);
     assert!(rows[1][0] > rows[0][0] * 1.3, "{:?} vs {:?}", rows[1], rows[0]);
+}
+
+// --- Call start on a good link (docs/video.md, "Best case first: the call start") ---
+
+/// A clean home LAN: 10 Mbps, `rtt_ms` round trip (+-20%), 256 KB buffer; with `bursts`, a
+/// 200-400 ms window of +300 ms delay every 4-8 s (the first 1.5-3 s in).
+fn clean_start_scenario(rtt_ms: u64, bursts: bool, seed: u64) -> Scenario {
+    let mut rng = Rng::new(seed ^ 0xc1ea);
+    let one_way = rtt_ms * 1_000 / 2;
+    let spikes = if bursts {
+        let first = 1_500_000 + (rng.f64() * 1_500_000.0) as u64;
+        burst_train(&mut rng, first, 30 * S, (4 * S, 8 * S), (200_000, 400_000), (300_000, 300_001))
+    } else {
+        vec![]
+    };
+    let link = Link {
+        rate_bps: 10_000_000,
+        delay_us: one_way * 9 / 10,
+        jitter_us: one_way / 5,
+        queue_bytes: 256 * 1024,
+        spikes,
+        spike_loss: 0.05,
+        ..Link::default()
+    };
+    Scenario { duration_us: 30 * S, link, device: fast(), seed, ..base() }
+}
+
+/// First time the encoder is at `h` lines or more (NaN: never).
+fn first_at(r: &Report, h: u32) -> f64 {
+    r.sizes.iter().find(|s| s.2 >= h).map_or(f64::NAN, |s| s.0 as f64 / 1e6)
+}
+
+/// (s to 540p, s to 720p, p95 ms and freezes over the first 10 s) per run; software and
+/// hardware encoder (laptop and phone senders), three seeds.
+fn clean_start_rows(rtt_ms: u64, bursts: bool) -> Vec<(String, [f64; 4])> {
+    let mut rows = Vec::new();
+    for hw in [false, true] {
+        for seed in [3, 7, 11] {
+            let sc = clean_start_scenario(rtt_ms, bursts, seed);
+            let r = if hw {
+                let mut c = HwCodec::new(sc.fps, seed);
+                c.key_min = 2_500;
+                run(&sc, &mut c)
+            } else {
+                run(&sc, &mut FakeCodec::new(sc.fps, seed))
+            };
+            assert_eq!(r.decode_errors, 0);
+            let name = format!("{}ms{} {}/{seed}", rtt_ms, if bursts { "+b" } else { "" }, if hw { "hw" } else { "sw" });
+            let row = [first_at(&r, 540), first_at(&r, 720), p95(&r, 0, 10 * S), r.freezes(250_000, S, 10 * S).len() as f64];
+            println!(
+                "{name:>16}: 540p at {:4.1} s, 720p at {:4.1} s, first 10 s p95 {:4.0} ms, freezes {} | {}",
+                row[0], row[1], row[2], row[3], sizes_line(&r)
+            );
+            if std::env::var_os("SIM_STEPS").is_some() {
+                println!("{}", r.steps_text());
+            }
+            trace(&r, 0, 8 * S);
+            rows.push((name, row));
+        }
+    }
+    rows
+}
+
+#[test]
+fn clean_start() {
+    let mut all = Vec::new();
+    for (rtt, bursts) in [(5, false), (40, false), (10, true)] {
+        all.extend(clean_start_rows(rtt, bursts));
+    }
+    let worst = |i: usize, f: &dyn Fn(&str) -> bool| {
+        all.iter().filter(|r| f(&r.0)).map(|r| r.1[i]).fold(0.0f64, |a, b| if b.is_nan() { f64::INFINITY } else { a.max(b) })
+    };
+    let clean = |n: &str| !n.contains("+b");
+    let bursts = |n: &str| n.contains("+b");
+    println!(
+        "clean start: worst 540p {:.1} s, 720p {:.1} s (clean); with bursts {:.1} / {:.1} s",
+        worst(0, &clean),
+        worst(1, &clean),
+        worst(0, &bursts),
+        worst(1, &bursts),
+    );
+
+    // Links just above and below the rungs' thresholds (780 kbps for 540p, 1.3 Mbps for 720p):
+    // the fast hold needs the wire rate itself, so these start as before, without freezes.
+    for rate in [650_000, 1_000_000, 1_500_000] {
+        for seed in [3, 7, 11] {
+            let mut sc = clean_start_scenario(20, false, seed);
+            sc.link.rate_bps = rate;
+            sc.link.queue_bytes = 64 * 1024;
+            let r = run(&sc, &mut FakeCodec::new(sc.fps, seed));
+            let f = r.freezes(250_000, S, 10 * S);
+            println!(
+                "{:>16}: first 10 s p95 {:4.0} ms max {:4.0}, freezes {}, mean {:4.0} kbps | {}",
+                format!("{}k/{seed}", rate / 1000),
+                p95(&r, 0, 10 * S),
+                Report::pct(&r.latencies_ms(0, 10 * S), 1.0),
+                f.len(),
+                r.mean_bitrate(0, 10 * S) / 1000.0,
+                sizes_line(&r)
+            );
+            if std::env::var_os("SIM_STEPS").is_some() {
+                println!("{}", r.steps_text());
+            }
+            assert!(f.is_empty(), "{rate} seed {seed}: {f:?}");
+        }
+    }
+    // Was 6.1 / 11.9 s (two 5 s holds, each after ~1 s of ramp and encoder warm-up).
+    assert!(worst(0, &clean) <= 3.0 && worst(1, &clean) <= 5.0, "clean start too slow");
+    assert!(worst(1, &bursts) <= 8.0, "start with bursts too slow");
+    assert!(worst(3, &clean) == 0.0 && worst(2, &clean) < 130.0, "clean start costs latency");
 }

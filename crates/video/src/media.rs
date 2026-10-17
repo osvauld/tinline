@@ -136,6 +136,11 @@ pub struct LadderConfig {
     pub up_dip_pct: u32,
     /// and no sooner than this after stepping down.
     pub up_after_down_us: u64,
+    /// Until the first step down of the call, a step up needs only this long when what the path
+    /// carried with no queue (`Ladder::proven_bps`, measured at the receiver) has stayed at or
+    /// above the threshold, no dips allowed. The long hold guards against an estimate that ran
+    /// ahead of the link; delivered bytes with a flat delay are the link's own answer.
+    pub up_fast_hold_us: u64,
     /// Median encode time over a second above this % of the current tier's frame interval: too
     /// slow for the step. Stepping up needs the p75, scaled to the bigger picture, to fit the
     /// new step's budget.
@@ -165,6 +170,7 @@ impl Default for LadderConfig {
             up_hold_us: 5_000_000,
             up_dip_pct: 25,
             up_after_down_us: 10_000_000,
+            up_fast_hold_us: 1_000_000,
             encode_budget_pct: 60,
             cpu_block: Backoff { first_us: 5_000_000, max_us: 30_000_000, forget_us: 60_000_000 },
             flap_window_us: 20_000_000,
@@ -309,6 +315,8 @@ pub struct Ladder {
     cfg: LadderConfig,
     cur: usize,
     above_since: Option<u64>,
+    /// Since when `proven_bps` has covered the next step's threshold (see `up_fast_hold_us`).
+    fast_since: Option<u64>,
     /// Time spent below the next step's threshold since `above_since`, and the last look.
     dip_us: u64,
     last_look_us: u64,
@@ -333,6 +341,10 @@ pub struct Ladder {
     /// Set by the sender while the link has just been seen to get much slower (starved): a
     /// step down then is a real change, not a flap.
     pub real_drop: bool,
+    /// Set by the sender: what the path carried lately with no queue (median delivered rate of
+    /// the last 0.5 s; 0 while queueing or draining, and for good once an overuse episode has
+    /// shown the path's capacity). See `LadderConfig::up_fast_hold_us`.
+    pub proven_bps: u32,
 }
 
 impl Ladder {
@@ -349,6 +361,7 @@ impl Ladder {
             cfg,
             cur: 0,
             above_since: None,
+            fast_since: None,
             dip_us: 0,
             last_look_us: 0,
             last_down_us: None,
@@ -365,6 +378,7 @@ impl Ladder {
             steps_log: Default::default(),
             last_bps: start_bps,
             real_drop: false,
+            proven_bps: 0,
         };
         l.cur = l.start(start_bps);
         l
@@ -504,6 +518,7 @@ impl Ladder {
         self.ups.retain(|u| now_us.saturating_sub(u.1) <= window);
         self.cur = to;
         self.above_since = None;
+        self.fast_since = None;
         self.dip_us = 0;
         self.last_reason = Some(why);
         if resized {
@@ -579,6 +594,7 @@ impl Ladder {
         let dt = now_us.saturating_sub(self.last_look_us);
         self.last_look_us = now_us;
         let Some(next) = self.next_up(now_us, bps) else {
+            self.fast_since = None;
             // A dip: the hold goes on unless the dips add up to too much of it.
             if self.above_since.is_some() {
                 self.dip_us += dt;
@@ -591,11 +607,24 @@ impl Ladder {
         };
         let since = *self.above_since.get_or_insert(now_us);
         let settled = self.last_down_us.is_none_or(|t| now_us - t >= self.cfg.up_after_down_us);
-        if now_us - since >= self.cfg.up_hold_us && settled {
+        // The call start (no step down yet): the path itself has carried the next step's rate.
+        let proven = self.last_down_us.is_none()
+            && self.proven_bps > 0
+            && self.proven_bps as u64 * 100 >= self.floor(self.rate_step(next)) * self.cfg.up_margin_pct as u64;
+        self.fast_since = if proven { self.fast_since.or(Some(now_us)) } else { None };
+        let fast = self.fast_since.is_some_and(|t| now_us - t >= self.cfg.up_fast_hold_us);
+        if (now_us - since >= self.cfg.up_hold_us && settled) || fast {
             self.set(now_us, next, StepReason::Rate);
             return true;
         }
         false
+    }
+
+    /// The step whose floor decides whether `k` can be reached: a new size at a lower tier than
+    /// the current one needs its rate at the current tier (see `next_up`).
+    fn rate_step(&self, k: usize) -> usize {
+        let (nt, cur) = (self.nt(), self.cur);
+        if self.rung_of(k) > self.rung_of(cur) && k % nt < cur % nt { self.rung_of(k) * nt + cur % nt } else { k }
     }
 
     /// The step to go up to if the bitrate and encode time allow it now: the next tier at this
@@ -609,11 +638,7 @@ impl Ladder {
         let px = self.pixels_of(cur);
         let p75 = self.encode_pct(75, ENCODE_MIN);
         let ok = |k: usize| {
-            let rate_at = if self.rung_of(k) > self.rung_of(cur) && k % nt < cur % nt {
-                self.rung_of(k) * nt + cur % nt
-            } else {
-                k
-            };
+            let rate_at = self.rate_step(k);
             self.capped(k)
                 && self.cpu.allows(now_us, k)
                 && self.flap.allows(now_us, k)
@@ -750,6 +775,9 @@ pub struct Sender {
     /// stall shows the capacity is less. After a stall the ramp climbs back to it fast
     /// (`RECOVER_PCT`).
     good: u32,
+    /// An overuse episode without a stall has shown the path's capacity: the call start's fast
+    /// step-ups are over (see `LadderConfig::up_fast_hold_us`).
+    limit_seen: bool,
     /// A backlog reset was made in the current stall.
     stall_reset: bool,
     /// The last report got next to nothing through, and since when that has been so.
@@ -879,6 +907,7 @@ impl Sender {
             gap_us: None,
             healthy_us: None,
             good: 0,
+            limit_seen: false,
             stall_reset: false,
             empty_prev: false,
             empty_since: None,
@@ -1122,11 +1151,25 @@ impl Sender {
     pub fn on_report(&mut self, now_us: u64, r: &RateReport) {
         self.now_us = self.now_us.max(now_us);
         self.rate(now_us, r);
+        self.ladder.proven_bps = self.proven_bps();
         self.relayer();
         let (br, rung) = (self.bitrate(), self.ladder.index());
         if let Some(log) = &mut self.report_log {
             log.push((now_us, r.clone(), br, rung));
         }
+    }
+
+    /// What the path carried lately with no queue: the median delivered rate of the last
+    /// `RECENT_US`, while no overuse episode, drain or spike is on and the queueing delay is
+    /// under `underuse_us`; else 0. Always 0 once the path's capacity has shown (`limit_seen`).
+    fn proven_bps(&self) -> u32 {
+        if self.limit_seen
+            || self.episode.is_some() || self.drain.is_some() || self.spike.is_some() || self.queuing_us >= self.cfg.underuse_us {
+            return 0;
+        }
+        let mut v: Vec<u64> = self.recent_delivered.iter().map(|d| d.1).collect();
+        v.sort_unstable();
+        v.get(v.len().saturating_sub(1) / 2).map_or(0, |&d| d.min(u32::MAX as u64) as u32)
     }
 
     /// Queueing the last keyframe's own burst explains: its size at our rate right after it,
@@ -1312,6 +1355,7 @@ impl Sender {
                     // Queueing while delivering: the path carries no more than this.
                     if keep == 0 {
                         self.good = self.good.min((median as u32).max(self.cfg.min_bps));
+                        self.limit_seen = true;
                     }
                 } else {
                     if self.settle_until.is_none() {
@@ -2067,6 +2111,34 @@ mod tests {
         hold(&mut l, 3_500 * MS, 4_200 * MS, 700_000);
         assert_eq!(hold(&mut l, 4_200 * MS, 9_000 * MS, 800_000), 0);
         assert_eq!(hold(&mut l, 9_000 * MS, 9_400 * MS, 800_000), 1);
+    }
+
+    #[test]
+    fn ladder_steps_up_fast_on_proven_rate_at_the_start() {
+        // The path carried 800 kbps with no queue: 540p after the 1 s fast hold, not 5 s.
+        let mut l = ladder(300_000);
+        l.proven_bps = 800_000;
+        assert_eq!(hold(&mut l, 0, 900 * MS, 800_000), 0);
+        assert_eq!(hold(&mut l, 900 * MS, 1_200 * MS, 800_000), 1);
+        assert_eq!(at(&l), (2, 30));
+        // The estimate alone isn't enough: under the threshold on the wire, the long hold.
+        let mut l = ladder(300_000);
+        l.proven_bps = 700_000;
+        assert_eq!(hold(&mut l, 0, 4_900 * MS, 800_000), 0);
+        // Any dip of the proven rate restarts the fast hold.
+        let mut l = ladder(300_000);
+        l.proven_bps = 800_000;
+        hold(&mut l, 0, 800 * MS, 800_000);
+        l.proven_bps = 0;
+        hold(&mut l, 800 * MS, 900 * MS, 800_000);
+        l.proven_bps = 800_000;
+        assert_eq!(hold(&mut l, 900 * MS, 1_800 * MS, 800_000), 0);
+        assert_eq!(hold(&mut l, 1_800 * MS, 2_000 * MS, 800_000), 1);
+        // After the call's first step down the normal holds apply again.
+        let mut l = ladder(5_000_000);
+        l.proven_bps = 5_000_000;
+        assert!(l.update(0, 900_000));
+        assert_eq!(hold(&mut l, 100 * MS, 9_900 * MS, 2_000_000), 0);
     }
 
     #[test]
