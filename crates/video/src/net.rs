@@ -228,7 +228,9 @@ impl SendState {
 
     fn feedback(&mut self) {
         let now = now_us(self.epoch);
-        let horizon = now.saturating_sub(self.rtt_us() + ACK_SLACK_US);
+        let rtt = self.rtt_us();
+        self.tx.set_rtt(rtt);
+        let horizon = now.saturating_sub(rtt + ACK_SLACK_US);
         let mut lost_current = false;
         self.groups.retain(|_, g| {
             let ended = g.done.load(Ordering::Relaxed);

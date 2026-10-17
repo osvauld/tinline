@@ -747,6 +747,7 @@ pub fn run(sc: &Scenario, codec: &mut dyn SimCodec) -> Report {
                 Backlog::Unsent => tx.iter().map(|(g, s)| (*g, s.unsent())).collect(),
                 Backlog::Unacked => tx.iter_mut().map(|(g, s)| (*g, s.unacked_by(horizon))).collect(),
             };
+            sender.set_rtt(srtt as u64);
             let outs = sender.feedback(&unsent);
             apply(now, &outs, &mut tx, &mut |g| {
                 push(&mut evs, reset_at(now, link_free, &sc.link).max(fwd_last), Ev::ResetRx(g))

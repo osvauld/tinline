@@ -208,16 +208,24 @@ const SPIKE_HOLD_US: u64 = 1_500_000;
 /// ...while the drain stays at or above this % of the rate before the episode: a queue of ours
 /// at the link's capacity drains well before that.
 const SPIKE_DRAIN_PCT: u64 = 70;
-/// A report delivering under this % of the estimate got next to nothing through, and one
-/// arriving this long after the previous was held up: a stall (Wi-Fi retries, a delay burst),
-/// not a slower link, which still delivers its rate.
+/// A report delivering under this % of the estimate got next to nothing through. Nothing for
+/// longer than a lost packet's recovery explains (`STALL_MIN_US`, or 1.5 round trips if more:
+/// QUIC finds a loss about an RTT later and resends it), or a report that long after the
+/// previous one: a stall (Wi-Fi retries, a delay burst, a handover), not a slower link, which
+/// still delivers its rate.
 const GAP_PCT: u64 = 1;
+const STALL_MIN_US: u64 = 140_000;
+const RTT_BUCKET_US: u64 = 5_000_000;
+/// How long after its last empty report a stall still explains an overuse episode.
+const STALL_HOLD_US: u64 = 1_000_000;
 const REPORT_GAP_US: u64 = 150_000;
 /// An overuse episode with a stall in it (or just before) cuts the estimate and the drain no
 /// lower than this % of the rate before: nothing getting through says nothing about capacity.
 const STALL_KEEP_PCT: u64 = 50;
-/// Below the remembered good rate the path carried, the ramp climbs this % per 100 ms (the
-/// normal ramp is 8%) and this soon after the last decrease (normally 500 ms).
+/// After a stall the ramp climbs back to the rate the path carried before at this % per
+/// (smoothed) round trip, at least 100 ms (the normal ramp is 8% per 100 ms), starting a round
+/// trip (at least 200 ms) after the last decrease: on a 250 ms relay path, a faster climb is
+/// ahead of what the reports can show.
 const RECOVER_PCT: u64 = 25;
 const RECOVER_AFTER_US: u64 = 200_000;
 /// Below this rate the ramp's cap looks at the delivered rate over this long.
@@ -723,12 +731,20 @@ pub struct Sender {
     good: u32,
     /// A backlog reset was made in the current stall.
     stall_reset: bool,
-    /// The last report got next to nothing through.
+    /// The last report got next to nothing through, and since when that has been so.
     empty_prev: bool,
+    empty_since: Option<u64>,
     /// (time, delivered) of the reports of the last `RECENT_US`.
     recent_delivered: std::collections::VecDeque<(u64, u64)>,
     /// The last overuse episode had a stall in it: climb back to `good` fast.
     recover: bool,
+    /// Round-trip time from the transport (0: unknown): the lowest of this 5 s bucket and the
+    /// one before (a delay burst inflates the smoothed RTT just when the stall rules need the
+    /// path's own).
+    rtt_us: u64,
+    rtt_buckets: (u64, u64, u64),
+    /// The smoothed RTT as last given (paces the climb after a stall).
+    srtt_us: u64,
     /// Queueing delay at the last cut: an episode cuts again only when it grows past this (a
     /// queue we feed), not while it stays flat (a delay burst, or our drain at work).
     cut_q: u64,
@@ -844,8 +860,12 @@ impl Sender {
             good: 0,
             stall_reset: false,
             empty_prev: false,
+            empty_since: None,
             recent_delivered: Default::default(),
             recover: false,
+            rtt_us: 0,
+            rtt_buckets: (0, u64::MAX, u64::MAX),
+            srtt_us: 0,
             cut_q: 0,
             delivering: false,
             last_delivered_us: None,
@@ -919,6 +939,17 @@ impl Sender {
         let base = if capture_us >= due + iv || due > capture_us + 2 * iv { capture_us } else { due };
         self.next_take_us = Some(base + iv);
         true
+    }
+
+    /// The path's round-trip time (QUIC's smoothed RTT), for timings that must scale with it.
+    pub fn set_rtt(&mut self, rtt_us: u64) {
+        let (since, prev, cur) = &mut self.rtt_buckets;
+        if self.now_us >= *since + RTT_BUCKET_US {
+            (*since, *prev, *cur) = (self.now_us, *cur, u64::MAX);
+        }
+        *cur = (*cur).min(rtt_us);
+        self.srtt_us = rtt_us;
+        self.rtt_us = (*prev).min(*cur);
     }
 
     /// The receiver's hint (from `video::net`, or the simulation). A lower cap applies at once
@@ -1123,12 +1154,16 @@ impl Sender {
 
     fn rate(&mut self, now_us: u64, r: &RateReport) {
         let delivered = r.delivered_bps as u64;
-        let late = self.last_report_us.is_some_and(|t| now_us.saturating_sub(t) > REPORT_GAP_US);
+        let rtt = self.rtt_us * 3 / 2;
+        let late = self.last_report_us.is_some_and(|t| now_us.saturating_sub(t) > REPORT_GAP_US.max(rtt));
         let sent = self.sent_bps(now_us).unwrap_or(0);
-        // Two empty reports in a row (a lost packet holds a stream up for about an RTT, which
-        // empties one), or one held up itself.
         let empty = delivered * 100 < self.bitrate as u64 * GAP_PCT;
-        if late || (empty && self.empty_prev) {
+        // The first empty report's window began a rate window before it.
+        let since = *self.empty_since.get_or_insert(now_us.saturating_sub(RATE_WINDOW_US));
+        if !empty {
+            self.empty_since = None;
+        }
+        if late || (empty && now_us - since >= STALL_MIN_US.max(rtt)) {
             self.gap_us = Some(now_us);
         }
         if !empty && !late {
@@ -1168,10 +1203,12 @@ impl Sender {
             let pre = self.bitrate;
             self.episode = Some(Episode { pre, looks: 0, put_off: false, stall: gap_recent, cuts: 0 });
         }
-        if let Some(ep) = &mut self.episode
-            && gap_recent
-        {
-            ep.stall = true;
+        // ...for as long as the stall is fresh: a queue still standing `STALL_HOLD_US` (or two
+        // round trips) after the last of it is ours, and the episode goes back to the normal
+        // rules (a drop that came with a stall, like a handover to a worse cell).
+        let stall_fresh = self.gap_us.is_some_and(|t| now_us - t < STALL_HOLD_US.max(2 * self.rtt_us));
+        if let Some(ep) = &mut self.episode {
+            ep.stall = gap_recent || (ep.stall && stall_fresh);
         }
         // A cut in a stall keeps half the rate before.
         let keep = self.episode.filter(|ep| ep.stall).map_or(0, |ep| (ep.pre as u64 * STALL_KEEP_PCT / 100) as u32);
@@ -1300,10 +1337,12 @@ impl Sender {
         if self.bitrate >= self.good {
             self.recover = false;
         }
-        if path_ok && self.recover && since_cut > RECOVER_AFTER_US {
+        let srtt = self.srtt_us;
+        if path_ok && self.recover && since_cut > RECOVER_AFTER_US.max(srtt) {
             // Back toward the rate the path carried before a stall or a delay burst: fast, and
             // not held to what was delivered (that followed our own lowered rate).
-            let up = self.bitrate + (self.bitrate as u64 * RECOVER_PCT * dt / 100 / 100_000) as u32;
+            let per = srtt.max(100_000);
+            let up = self.bitrate + (self.bitrate as u64 * RECOVER_PCT * dt / 100 / per) as u32;
             self.bitrate = up.min(self.good).min(self.cfg.max_bps);
         } else if path_ok && since_cut > 500_000 {
             // Path is empty: +8% per 100 ms, never far above what was delivered (at low rates
@@ -1395,7 +1434,7 @@ impl Sender {
         // acked because nothing moves; it all comes out in a burst when the stall ends.
         let now = self.now_us;
         let quiet = self.empty_prev
-            || self.last_report_us.is_some_and(|t| now.saturating_sub(t) > REPORT_GAP_US)
+            || self.last_report_us.is_some_and(|t| now.saturating_sub(t) > REPORT_GAP_US.max(self.rtt_us * 3 / 2))
             || self.gap_us.is_some_and(|t| now.saturating_sub(t) < REPORT_GAP_US);
         let stall_for = self.healthy_us.filter(|_| quiet).map(|t| now.saturating_sub(t));
         // One reset per stall: the next keyframe would queue behind the same stall.
