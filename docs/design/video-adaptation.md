@@ -112,7 +112,7 @@ on tier change for that codec (one keyframe, still better than a resolution swit
 
 | source | desktop (iced) | Android | hint |
 |---|---|---|---|
-| drawn size | bounds of the remote picture widget, physical px | Compose `onSizeChanged` of the remote view | `max_pixels` = next rung at or above the drawn size (never below 320x180); `0` when the picture isn't on screen |
+| drawn size | bounds of the remote picture widget, physical px | Compose `onSizeChanged` of the remote view | `max_pixels` = one rung above the rung that covers the drawn size (so ~540p drawn asks for 720p; the top rung is the cap; never below 360p when shown); `0` when the picture isn't on screen |
 | decode + show cost | `VRENDER cost_ms` (pull + RGBA + handle) + decoder thread time, p75 over 2 s | MediaCodec/rav1d decode time + JNI pull, p75 | > 60% of the current frame interval -> `max_fps` one tier down; < 30% for 10 s -> one tier up |
 | thermal | none (laptop fans) | `PowerManager.thermal status` >= MODERATE -> 15 fps + 540p; SEVERE -> 15 fps + 360p | `reason` 3 |
 | battery saver | none | `isPowerSaveMode` -> 24 fps + 540p | `reason` 4 |

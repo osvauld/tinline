@@ -274,10 +274,19 @@ mod adapt_policy {
     }
 
     #[test]
-    fn drawn_size_rounds_up_to_a_rung() {
+    fn drawn_size_asks_one_rung_above_the_covering_rung() {
         let mut p = adapt::Policy::default();
         let t = Instant::now();
-        for (w, h, want) in [(100, 60, px(320, 180)), (320, 180, px(320, 180)), (321, 180, px(640, 360)), (900, 500, px(960, 540)), (1920, 1080, u32::MAX)] {
+        for (w, h, want) in [
+            (100, 60, px(640, 360)),
+            (320, 180, px(640, 360)),
+            (321, 180, px(960, 540)),
+            (540, 960, px(1280, 720)),
+            (608, 1080, px(1280, 720)),
+            (900, 500, px(1280, 720)),
+            (1280, 720, px(1280, 720)),
+            (1920, 1080, u32::MAX),
+        ] {
             let mut p2 = adapt::Policy::default();
             p2.set_view(w, h, true);
             let h = p2.update(t).unwrap_or_else(|| Hint { max_pixels: u32::MAX, max_fps: 0, reason: HintReason::None });
@@ -293,12 +302,13 @@ mod adapt_policy {
         let t = Instant::now();
         p.set_view(1280, 720, true);
         assert_eq!(p.update(t).unwrap().max_pixels, px(1280, 720));
-        p.set_view(640, 360, true);
+        p.set_view(640, 360, true); // asks for 540p, a shrink: held
         assert_eq!(p.update(t + Duration::from_millis(100)), None);
-        p.set_view(641, 361, true); // another rung: the wait restarts
+        p.set_view(641, 361, true); // 540p covers it, so 720p: same as now, the hold is dropped
+        assert_eq!(p.update(t + Duration::from_millis(200)), None);
         p.set_view(640, 360, true);
         assert_eq!(p.update(t + Duration::from_millis(600)), None);
-        assert_eq!(p.update(t + Duration::from_millis(1700)).unwrap().max_pixels, px(640, 360));
+        assert_eq!(p.update(t + Duration::from_millis(1700)).unwrap().max_pixels, px(960, 540));
         p.set_view(1280, 720, true);
         assert_eq!(p.update(t + Duration::from_millis(1800)).unwrap().max_pixels, px(1280, 720));
         // The same rung again is not news.

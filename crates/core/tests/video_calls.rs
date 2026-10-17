@@ -340,15 +340,16 @@ fn receiver_hints_cap_the_sender() {
     let s = stats_when(&a, 10, "sending", |s| s.send_fps >= 20);
     assert_eq!((s.send_cap.pixels, s.send_cap.fps, s.send_cap.reason.as_str()), (1280 * 720, 30, "none"), "{s:?}");
 
+    // Drawn at 180p: the receiver asks for one rung above, 360p.
     b.node.set_video_view(320, 180, true);
-    let s = stats_when(&a, 1, "display cap", |s| s.send_cap.pixels == 320 * 180);
+    let s = stats_when(&a, 1, "display cap", |s| s.send_cap.pixels == 640 * 360);
     assert_eq!(s.send_cap.reason, "display", "{s:?}");
 
     b.node.set_video_budget(VideoBudget { thermal: 2, power_save: false });
     let s = stats_when(&a, 1, "thermal cap", |s| s.send_cap.fps == 15);
-    assert_eq!((s.send_cap.pixels, s.send_cap.reason.as_str()), (320 * 180, "thermal"), "{s:?}");
+    assert_eq!((s.send_cap.pixels, s.send_cap.reason.as_str()), (640 * 360, "thermal"), "{s:?}");
     let s = stats_when(&a, 2, "<= 16 fps", |s| s.send_fps > 0 && s.send_fps <= 16);
-    assert!(s.send_width <= 320 && s.send_height <= 180, "{s:?}");
+    assert!(s.send_width <= 640 && s.send_height <= 360, "{s:?}");
     println!("{s:?}");
 
     // Lifting the budget and showing the picture big lifts the cap again.
