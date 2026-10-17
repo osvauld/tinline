@@ -16,6 +16,28 @@ pub(crate) const REPLY_TIMEOUT: Duration = Duration::from_secs(10);
 /// Pause before each further delivery attempt (seconds; the last repeats).
 pub(crate) const RETRY_SECS: [u64; 5] = [2, 5, 15, 30, 60];
 
+/// A chat or own-device session with no stream traffic either way for this long closes
+/// cleanly, unless something of ours keeps it open (local activity towards that contact, pending
+/// work, a live call). Decided 2026-10-17 (consent-based links): peers do not hold connections
+/// open; whoever needs the other redials.
+pub(crate) const IDLE_CLOSE: Duration = Duration::from_secs(60);
+
+/// [`IDLE_CLOSE`], or `P2P_IDLE_CLOSE_MS` (a test knob, like `P2P_SELF_SYNC_SECS`).
+pub(crate) fn idle_close() -> Duration {
+    std::env::var("P2P_IDLE_CLOSE_MS").ok().and_then(|v| v.parse().ok()).map(Duration::from_millis).unwrap_or(IDLE_CLOSE)
+}
+
+/// How often a session checks whether it has been idle long enough to close.
+pub(crate) fn idle_check() -> Duration {
+    (idle_close() / 6).clamp(Duration::from_millis(50), Duration::from_secs(10))
+}
+
+/// At most one activity mark (and dial or presence kick) per contact per this, however often
+/// `Node::chat_typing` is called.
+pub(crate) fn typing_throttle() -> Duration {
+    (idle_close() / 20).clamp(Duration::from_millis(50), Duration::from_secs(3))
+}
+
 /// The pause before retry `round` (0-based) of a schedule like [`RETRY_SECS`].
 pub(crate) fn retry_pause(secs: &[u64], round: usize) -> Duration {
     Duration::from_secs(secs[round.min(secs.len() - 1)])

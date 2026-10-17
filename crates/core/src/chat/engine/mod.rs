@@ -78,6 +78,10 @@ pub struct ChatCore {
     dial_sem: Arc<Semaphore>,
     next_session: AtomicU64,
     pub(crate) presence: crate::chat::presence::Presence,
+    /// When the user here last acted towards a contact (typed in the conversation,
+    /// `Node::chat_typing`, or wrote to it): within `wire::idle_close()` of this, sessions with
+    /// that contact stay open and carry our presence (consent-based links, 2026-10-17).
+    activity: Mutex<HashMap<String, std::time::Instant>>,
     /// Signed recipient delivered/read receipts over this store (M3).
     pub(crate) receipts: Arc<crate::receipts::store::messages::MessageReceipts>,
     /// This install's device ID (U16; `ProfileV2::device_id`): what every version we write
@@ -96,6 +100,27 @@ pub struct ChatCore {
 }
 
 impl ChatCore {
+    /// Records local activity towards `did` now. With `throttle`, does nothing (and returns
+    /// false) if the last mark is more recent than that.
+    pub(crate) fn mark_active(&self, did: &str, throttle: Option<Duration>) -> bool {
+        let now = std::time::Instant::now();
+        let mut m = self.activity.lock();
+        if let Some(t) = throttle
+            && m.get(did).is_some_and(|at| now.duration_since(*at) < t)
+        {
+            return false;
+        }
+        let window = crate::wire::idle_close();
+        m.retain(|_, at| now.duration_since(*at) < window);
+        m.insert(did.to_string(), now);
+        true
+    }
+
+    /// Whether the user here acted towards `did` within the idle window.
+    pub(crate) fn locally_active(&self, did: &str) -> bool {
+        self.activity.lock().get(did).is_some_and(|at| at.elapsed() < crate::wire::idle_close())
+    }
+
     /// Asks every session to close (each ends its own loop).
     pub(crate) fn close_all_sessions(&self) {
         for s in self.sessions.lock().values() {
@@ -111,6 +136,9 @@ pub enum Cmd {
     Profile,
     /// Send the receipt-ledger ops of this day the contact device lacks (chat/6).
     Receipts(String),
+    /// Send our presence now (the user just became active with this contact); the heartbeat
+    /// sends it too while they stay active.
+    Presence,
     Close,
 }
 
@@ -129,6 +157,13 @@ pub struct Session {
     hist: Mutex<Option<oneshot::Sender<Vec<HistDay>>>>,
     /// What this contact device last said about itself (presence).
     pub(crate) presence: loro::awareness::EphemeralStore,
+}
+
+impl Session {
+    /// Hands `cmd` to the session's loop (dropped if it has ended).
+    pub(crate) fn cmd(&self, cmd: Cmd) {
+        let _ = self.tx.send(cmd);
+    }
 }
 
 /// `dm/{pair}/{day}` -> day, if it names the conversation `pair`. A contact's session can only

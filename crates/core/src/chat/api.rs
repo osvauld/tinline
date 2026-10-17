@@ -179,15 +179,19 @@ impl Node {
         self.block_on(async move { inner.chat_edit(&peer_did, &message_id, None).await })?
     }
 
-    /// Whether the contact is reachable right now (see `ChatEvents::on_presence_changed`).
+    /// Whether a session with the contact is up and it reports itself online (see
+    /// `ChatEvents::on_presence_changed`). A contact sends presence only while it is active
+    /// with us (consent-based links, 2026-10-17), so false means "unknown", not "away".
     pub fn contact_online(&self, peer_did: String) -> bool {
         self.inner.presence_of(&peer_did)
     }
 
-    /// A conversation was opened: connect to the contact if we are not already, so its
-    /// presence is known.
-    pub fn watch_presence(&self, peer_did: String) {
-        self.inner.presence_watch(&peer_did);
+    /// The user is typing in the conversation with `peer_did` (call it on each non-empty
+    /// composer edit; cheap, non-blocking, throttled inside). Dials the contact ahead of the
+    /// send and counts as activity with it: the session stays open and carries our presence
+    /// for the idle window. Nothing about the typing is sent to the contact.
+    pub fn chat_typing(&self, peer_did: String) {
+        self.inner.chat_typing(&peer_did);
     }
 
     /// Zeroes the local unread counter. Also signs a recipient read receipt for exactly the

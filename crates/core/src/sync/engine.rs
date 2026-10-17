@@ -82,6 +82,11 @@ pub(crate) struct SelfSync {
     pub backoff: parking_lot::Mutex<HashMap<[u8; 32], (u32, Instant)>>,
     pub dialing: parking_lot::Mutex<HashSet<[u8; 32]>>,
     pub kick: tokio::sync::Notify,
+    /// Per device: the change generation (`Inner::sync_tx`) it is known to hold everything up
+    /// to, set when a session with it ends idle. A device below the current generation (or
+    /// missing: after start or `sync_kick`) is owed a sync and gets dialled; others are not
+    /// (sessions are not held open, 2026-10-17).
+    pub synced: parking_lot::Mutex<HashMap<[u8; 32], u64>>,
     /// This device is unlinking itself: its own tombstone coming back in a batch must not remove
     /// the account before `unlink_device` has pushed that tombstone to the others.
     pub leaving: std::sync::atomic::AtomicBool,

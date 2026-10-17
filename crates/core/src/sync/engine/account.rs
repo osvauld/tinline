@@ -11,14 +11,28 @@ impl Inner {
         }
     }
 
-    /// Wakes the sessions (local data changed) and the dial loop.
+    /// Wakes the sessions (local data changed) and the dial loop: every other device is owed
+    /// this change until a session with it ends idle after seeing it.
     pub(crate) fn sync_bump(&self) {
         self.sync_tx.send_modify(|v| *v += 1);
+        self.selfsync.kick.notify_one();
     }
 
+    /// Dial every other device now (start, network change, rotation, linking): forgets the
+    /// backoff and what each device was known to hold.
     pub(crate) fn sync_kick(&self) {
         self.selfsync.backoff.lock().clear();
+        self.selfsync.synced.lock().clear();
         self.selfsync.kick.notify_one();
+    }
+
+    /// A session with `device` ends with nothing in flight: it holds everything up to
+    /// generation `seen` (unless a change came after: `changes` then has an unseen value).
+    pub(super) fn selfsync_settled(&self, device: [u8; 32], changes: &tokio::sync::watch::Receiver<u64>) {
+        let seen = *changes.borrow();
+        if !changes.has_changed().unwrap_or(true) {
+            self.selfsync.synced.lock().insert(device, seen);
+        }
     }
 
     /// Opens the account doc of the unlocked account (called wherever the chat store opens):

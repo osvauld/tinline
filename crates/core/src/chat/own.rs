@@ -68,15 +68,11 @@ impl Inner {
     }
 
     /// Marks `name` (a doc, or `READ_MARK`) as changed for every own-device session and wakes them.
+    /// With no session, only the bump: the next session's hellos compare everything anyway, and
+    /// the bump makes the dial loop dial the devices now owed a sync.
     pub(crate) fn selfsync_dirty(&self, name: &str) {
-        {
-            let sessions = self.selfsync.sessions.lock();
-            if sessions.is_empty() {
-                return;
-            }
-            for s in sessions.values() {
-                s.dirty.lock().insert(name.to_string());
-            }
+        for s in self.selfsync.sessions.lock().values() {
+            s.dirty.lock().insert(name.to_string());
         }
         self.sync_bump();
     }

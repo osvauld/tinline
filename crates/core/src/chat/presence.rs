@@ -6,9 +6,16 @@
 //!
 //! Datagrams, not a `ChatMsg` variant: an older app neither reads them nor breaks on them (it
 //! just shows the contact as not connected).
+//!
+//! Consent-based (decided 2026-10-17): we send presence on a session only while the user here
+//! is active with that contact (typed in the conversation, `Node::chat_typing`, or wrote to it
+//! within `wire::idle_close()`). A contact who dials only to deliver a message therefore learns
+//! nothing beyond that delivery, and "not online" means unknown, not away. Sessions with no
+//! `ChatMsg` traffic and none of our own reasons to stay close after the idle time; a contact
+//! cannot ask us to keep one open. (An older `tk1` keep datagram from a peer is ignored: no
+//! `tp1` prefix.)
 
 use std::collections::HashSet;
-use std::sync::Arc;
 use std::time::Duration;
 
 use bytes::Bytes;
@@ -54,9 +61,17 @@ pub(crate) fn parse(d: &[u8]) -> Option<&[u8]> {
 }
 
 impl Inner {
-    /// Refreshes our entry and sends it on `conn`. Best effort: a lost datagram is replaced by
-    /// the next heartbeat.
-    pub(crate) fn presence_send(&self, core: &ChatCore, conn: &Connection) {
+    /// Refreshes our entry and sends it on `conn`, but only while the user here is active
+    /// with `did` (the consent rule above); otherwise sends nothing. Best effort: a lost
+    /// datagram is replaced by the next heartbeat.
+    pub(crate) fn presence_send(&self, core: &ChatCore, did: &str, conn: &Connection) {
+        // A live call counts as activity: keep the window fresh while it lasts.
+        if self.in_call_with(did) {
+            core.mark_active(did, None);
+        }
+        if !core.locally_active(did) {
+            return;
+        }
         core.presence.local.set(KEY, true);
         let mut d = MAGIC.to_vec();
         d.extend_from_slice(&core.presence.local.encode(KEY));
@@ -88,11 +103,5 @@ impl Inner {
 
     pub(crate) fn presence_of(&self, did: &str) -> bool {
         self.chat_core().is_ok_and(|core| core.presence.online.lock().contains(did))
-    }
-
-    /// Opening a conversation: make sure a session is up (or being dialled), so presence is
-    /// known rather than "no session yet".
-    pub(crate) fn presence_watch(self: &Arc<Self>, did: &str) {
-        self.chat_kick(did.to_string());
     }
 }

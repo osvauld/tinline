@@ -49,8 +49,10 @@ interface ChatSource {
     fun edit(peerDid: String, messageId: String, text: String): Message
     fun delete(peerDid: String, messageId: String): Message
     fun markRead(peerDid: String)
-    /** A conversation opened: connect so the contact's presence is known. */
-    fun watchPresence(peerDid: String) {}
+    /** I'm typing to them (each non-empty composer edit): the core dials ahead and counts it as my activity, so the
+     *  link stays open and carries my presence for a minute. Local only: they see no typing indicator. Cheap and
+     *  non-blocking (throttled in the core); opening a conversation alone connects nothing (consent-based links). */
+    fun typing(peerDid: String) {}
     fun sendFile(peerDid: String, path: String, mime: String, text: String?): Message
     fun sendVoice(peerDid: String, path: String, durationMs: Int, waveform: ByteArray): Message
     fun download(peerDid: String, messageId: String)
@@ -118,9 +120,8 @@ class CoreChatSource(private val app: P2pApp) : ChatSource, ChatEvents {
     override fun edit(peerDid: String, messageId: String, text: String) = node.editMessage(peerDid, messageId, text)
     override fun delete(peerDid: String, messageId: String) = node.deleteMessage(peerDid, messageId)
     override fun markRead(peerDid: String) = node.markRead(peerDid)
-    override fun watchPresence(peerDid: String) {
-        try { node.watchPresence(peerDid) } catch (e: Exception) { Log.d(P2pApp.TAG, "watchPresence: $e") }
-        if (node.contactOnline(peerDid)) _links.update { it + (peerDid to Link.Connected) }
+    override fun typing(peerDid: String) {
+        try { node.chatTyping(peerDid) } catch (e: Exception) { Log.d(P2pApp.TAG, "chatTyping: $e") }
     }
     override fun sendFile(peerDid: String, path: String, mime: String, text: String?) = node.sendFile(peerDid, path, mime, text)
     override fun sendVoice(peerDid: String, path: String, durationMs: Int, waveform: ByteArray) =

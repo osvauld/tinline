@@ -82,7 +82,15 @@ impl Inner {
                 let mut theirs: HashMap<String, VersionVector> = HashMap::new();
                 for (d, vv) in shards {
                     if d == crate::sync::profiledoc::PROFILE_DOC {
-                        *sess.profile_vv.lock() = decode_vv(&vv)?;
+                        let held = decode_vv(&vv)?;
+                        // Holding all of our profile already is an ack (like `chat_ack` for the
+                        // days below): the Ack of an earlier session can be lost when that
+                        // session closes first, and nothing new is sent to be acked now, so the
+                        // owed profile would redial the contact forever.
+                        if self.profile_pending(&sess.did) {
+                            self.profile_ack(sess.epoch, &sess.did, &held)?;
+                        }
+                        *sess.profile_vv.lock() = held;
                         self.chat_profile_send(sess, writer).await?;
                         continue;
                     }
