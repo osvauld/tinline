@@ -306,10 +306,15 @@ fn hw_word(hw: bool) -> &'static str {
 }
 
 fn set_recv_decoder(pipe: &Pipe, codec: VideoCodec, hw: bool) {
-    let mut st = pipe.stats.lock();
-    st.recv_codec = codec.as_str().into();
-    st.recv_hardware = hw;
-    st.recv_decoder = decoder_name(codec, hw).into();
+    {
+        let mut st = pipe.stats.lock();
+        st.recv_codec = codec.as_str().into();
+        st.recv_hardware = hw;
+        st.recv_decoder = decoder_name(codec, hw).into();
+    }
+    // A live codec switch changes how the decode-cost policy reads decode time (VP8 MediaCodec by
+    // throughput, AV1 rav1d by CPU time), so it follows the decoder, not the call's first codec.
+    pipe.policy.lock().recv_pipelined = super::codecs::pipelined_decoder(codec);
 }
 
 /// One frame through the decoder (`decode_loop`).
