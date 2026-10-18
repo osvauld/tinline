@@ -73,7 +73,7 @@ fun SettingsScreen(
     var sheet by remember { mutableStateOf(false) }
     val deviceLabel = remember { app.node.deviceLabel() }
     val hasPass = remember { app.node.hasPassphrase() }
-    val bgOk = missing.none { it == Need.Battery || it == Need.Notifications || it == Need.FullScreen || it == Need.Mic }
+    val bgOk = missing.none { it == Need.Battery || it == Need.Notifications || it == Need.FullScreen }
     Page {
         TopBar("Settings", onBack)
         Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())) {
@@ -152,7 +152,6 @@ fun BatteryScreen(missing: List<Need>, onBack: () -> Unit, onFix: (Need) -> Unit
             CheckRow(PgIcons.Battery, "Battery", if (Need.Battery in missing) "Optimised — Android may pause Tinline" else null, Need.Battery !in missing, "On") { onFix(Need.Battery) }
             CheckRow(PgIcons.Bell, "Notifications", null, Need.Notifications !in missing, "On") { onFix(Need.Notifications) }
             CheckRow(PgIcons.Lock, "Ring over lock screen", null, Need.FullScreen !in missing, "On") { onFix(Need.FullScreen) }
-            CheckRow(PgIcons.Mic, "Microphone", null, Need.Mic !in missing, "Allowed") { onFix(Need.Mic) }
             Column(
                 Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp).fillMaxWidth().clip(SmoothCornerShape(14.dp)).background(c.sf2).padding(14.dp),
             ) {

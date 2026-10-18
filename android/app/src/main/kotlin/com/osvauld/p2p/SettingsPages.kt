@@ -31,8 +31,6 @@ data class PermProblem(val need: Need, val icon: ImageVector, val title: String,
 fun permProblems(missing: List<Need>): List<PermProblem> = buildList {
     if (Need.Notifications in missing) add(PermProblem(Need.Notifications, PgIcons.Bell, "Notifications are off",
         "Tinline can’t alert you to messages or calls. They still arrive; you’ll see them when you open the app. Turn notifications on in system settings."))
-    if (Need.Mic in missing) add(PermProblem(Need.Mic, PgIcons.MicOff, "Microphone is off",
-        "You can take and place calls, but people won’t hear you until Tinline can use the microphone. Turn it on in system settings."))
     if (Need.Battery in missing) add(PermProblem(Need.Battery, PgIcons.Battery, "Battery saving may delay calls",
         "Android can pause Tinline in the background, so calls and messages can arrive late. Set Tinline’s battery use to Unrestricted."))
 }
@@ -185,12 +183,13 @@ fun NotificationsPage(missing: List<Need>, onBack: () -> Unit, fix: (Need) -> Un
             PfCard {
                 listOf(
                     Triple(Need.Notifications, PgIcons.Bell, Triple("Notifications", "Allowed", "Off in system settings")),
-                    Triple(Need.Mic, PgIcons.Mic, Triple("Microphone", "Allowed", "Off in system settings")),
+                    Triple(Need.Mic, PgIcons.Mic, Triple("Microphone", "Allowed", "Asked when you call")),
                     Triple(Need.Battery, PgIcons.Battery, Triple("Battery use", "Unrestricted", "Restricted")),
                 ).forEach { (need, icon, t) ->
-                    val ok = need !in missing
+                    // The microphone is asked for when a call needs it (also "Ask every time"), so it is never a problem to fix here.
+                    val ok = need !in missing || need == Need.Mic
                     act {
-                        PfAct(t.first, icon = icon, sub = if (ok) t.second else t.third, subColor = if (ok) null else if (c.dark) c.goldInk else c.onWarn, subBold = !ok,
+                        PfAct(t.first, icon = icon, sub = if (need !in missing) t.second else t.third, subColor = if (ok) null else if (c.dark) c.goldInk else c.onWarn, subBold = !ok,
                             trailing = { Box(Modifier.widthIn(min = 64.dp), contentAlignment = Alignment.CenterEnd) { if (!ok) PBtn("Fix", { fix(need) }, height = 36.dp, padH = 14.dp) } })
                     }
                 }
