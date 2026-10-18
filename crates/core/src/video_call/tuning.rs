@@ -250,6 +250,8 @@ mod tests {
         assert_eq!(new_offer.encode, vec![VideoCodec::Av1]);
         assert_eq!(second.pipe.stats.lock().tuning, next);
         assert_eq!(original.encode, codecs::local_offer_codecs().encode);
+        // Forcing a codec never hides that our sender reads sharper-video hint flags.
+        assert!(original.hint_flags && new_offer.hint_flags);
         settings.enabled.store(false, Ordering::SeqCst);
         assert!(settings.offer(&Pipe::default()).is_none());
     }
