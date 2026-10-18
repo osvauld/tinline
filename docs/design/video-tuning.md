@@ -137,6 +137,23 @@ has `video path …`, `video encoder … -> …` and `video decoder … -> …` 
 
 ## Validation
 
+Phase 2 (2026-10-18, `feature/call-stats-panel`, through `tasks`, `-j 2`, named targets;
+`VPX_DIR` = build-cache libvpx 1.17.0 where `vp8`):
+
+| Check | Job | Result |
+|---|---|---|
+| `cargo test -p proto --lib tests::wire` | 697 | 14 passed |
+| `cargo test -p proto --test golden_wire` (new `video_codec`, `accept_codec_switch` frames) | 698 | 5 passed, 1 ignored (`dump`) |
+| `cargo test -p video --release --lib media::` | 699 | 40 passed |
+| `cargo test -p p2pcore --features vp8 --lib video_call` | 707 | 56 passed |
+| `cargo test -p p2pcore --lib video_call` (no vp8) | 714 | 54 passed |
+| `cargo test -p p2pcore --release --features vp8 --test video_calls` | 703, 712 | 703: 7/8 (`call_kind_…` raced b's video decision; test fixed), 712: 8 passed. Switch gaps 127-200 ms (703), 40-75 ms (712), 0 decode errors |
+| `cargo check -p desktop -p peer`; `-p desktop --no-default-features` | 715; 710 | ok, no warnings |
+| Android `:app:assembleRelease -PrustRelease=true -Pabis=arm64-v8a` (LAN worker) | 711 | BUILD SUCCESSFUL |
+| Android `:app:testDebugUnitTest` ScreenCallsTest + VideoQualityTest (LAN worker) | 713 | BUILD SUCCESSFUL |
+
+Phase 1:
+
 Deterministic tests cover filtered directional offers, unsupported peers/local
 encoders, validation, offer/call setting snapshots, readout rate semantics, and
 fixed-rung behavior under CPU/rate pressure, peer hints and device caps. Defaults

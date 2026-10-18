@@ -79,8 +79,8 @@ keyframe travel on different QUIC streams; a new-codec keyframe that arrives fir
 decoder (one decode error, a keyframe request) and is held, then decoded as soon as the message
 lands. Stats (`send_codec`/`send_hardware`/`send_encoder`, `recv_codec`/`recv_hardware`/
 `recv_decoder`) follow the swap. Measured on loopback (`video_calls::live_codec_switch_both_ways`,
-two desktops, libvpx and libaom): AV1 -> VP8 longest frame gap 152 ms, VP8 -> AV1 200 ms, AV1 ->
-VP8 127 ms, 0 decode errors. Not measured on phones; the ladder's CPU check restarts its window
+two desktops, libvpx and libaom): longest frame gap per switch 127-200 ms in one run and 40-75 ms
+in another (AV1 -> VP8 -> AV1 -> VP8), 0 decode errors. Not measured on phones; the ladder's CPU check restarts its window
 for the new encoder (`Ladder::restart_encode_timing`).
 
 ### Connection path
