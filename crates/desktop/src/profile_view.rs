@@ -856,7 +856,7 @@ impl App {
         {
             let tuning = self.node.video_tuning();
             let mut controls = column![pf_h2(t, "Video tuning"),
-                pf_note(t, "Session only. Changes apply to the next call. Fixed size disables rate/CPU resolution adaptation; peer and thermal caps still win. Use HD capture and compare actual payload rates and dimensions.")].spacing(8);
+                pf_note(t, "Session only. Changes apply to the next call (About this call changes the current one). Fixed size disables rate/CPU resolution adaptation; peer and thermal caps still win. Use HD capture and compare actual payload rates and dimensions.")].spacing(8);
             let mut codecs = row![tx("Send codec", 13.0, t.ink2)].spacing(8);
             for codec in self.node.video_tuning_codecs() {
                 let mut next = tuning.clone();
@@ -880,6 +880,15 @@ impl App {
                     .on_press(Msg::Video(super::super::Vm::Tuning(next))));
             }
             controls = controls.push(sizes);
+            let mut decoders = row![tx("Decoder for their video", 13.0, t.ink2)].spacing(8);
+            for (id, label) in [("auto", "Auto"), ("hw", "Hardware"), ("sw", "Software")] {
+                let mut next = tuning.clone(); next.recv_decoder = id.into();
+                let selected = tuning.recv_decoder == id || (tuning.recv_decoder.is_empty() && id == "auto");
+                decoders = decoders.push(button(tx(format!("{}{label}", if selected { "✓ " } else { "" }), 12.0, t.ink))
+                    .on_press(Msg::Video(super::super::Vm::Tuning(next))));
+            }
+            controls = controls.push(decoders)
+                .push(pf_note(t, "This computer decodes AV1 (rav1d) and VP8 (libvpx) in software only. During a call, About this call has the same controls for that call."));
             c = c.push(pf_sec(24.0, controls.into()));
         }
         self.pf_scroll(t, c.into(), 40.0)
