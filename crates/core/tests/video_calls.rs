@@ -403,7 +403,9 @@ fn call_kind_reaches_the_ring_and_both_logs() {
     for p in [&a, &b] {
         expect(p, 20, "active", |e| matches!(e, Ev::State(_, CallState::Active)).then_some(()));
     }
+    // Both sides: a call goes Active before its video is decided, so b may still be deciding.
     video_ev(&a, "video decided", |v| v.negotiated);
+    video_ev(&b, "video decided", |v| v.negotiated);
     b.node.set_camera(true).unwrap();
     video_ev(&a, "b's camera on", |v| v.remote_camera);
     b.node.hangup(call.call_id.clone()).unwrap();
@@ -476,4 +478,111 @@ fn video_call_starts_with_my_camera_only() {
     video_ev(&b, "no video, my camera off", |v| !v.negotiated && !v.local_camera);
     b.node.hangup(call.call_id.clone()).unwrap();
     ended(&a, &call.call_id);
+}
+
+/// Pulls frames for `d`: (count, longest gap between two frames, or from the start to the first).
+fn watch_gaps(p: &Peer, d: Duration) -> (u32, Duration) {
+    let start = Instant::now();
+    let (mut n, mut last, mut gap) = (0, start, Duration::ZERO);
+    while start.elapsed() < d {
+        if p.node.pull_video_frame().is_some() {
+            gap = gap.max(last.elapsed());
+            last = Instant::now();
+            n += 1;
+        }
+        std::thread::sleep(Duration::from_millis(5));
+    }
+    (n, gap.max(last.elapsed()))
+}
+
+fn live(p: &Peer) -> p2pcore::VideoLive {
+    p.node.video_live().expect("a call with video")
+}
+
+/// The in-call sheet's size, fps and cap reach the running sender (no new call): pinned to 360p
+/// the picture shrinks, a 15 fps pin slows it, Auto lets it climb again. "Ignore limits" needs a
+/// pinned size; nothing here turns a camera on.
+#[test]
+fn live_pin_and_cap_apply_mid_call() {
+    let (a, b) = pair("vlive");
+    let id = connect(&a, &b);
+    for p in [&a, &b] {
+        video_ev(p, "negotiated", |v| v.negotiated);
+    }
+    // Choosing things changes no camera.
+    let l = live(&b);
+    assert_eq!(l.send_codec, "auto");
+    b.node.set_video_live(p2pcore::VideoLive { fixed_height: 360, ..l.clone() }).unwrap();
+    assert!(!b.node.video_info().unwrap().local_camera, "the sheet never turns the camera on");
+    b.node.set_video_live(l.clone()).unwrap();
+    assert!(b.node.set_video_live(p2pcore::VideoLive { ignore_limits: true, ..l.clone() }).is_err(), "nothing pinned");
+    assert!(b.node.set_video_live(p2pcore::VideoLive { fixed_fps: 25, ..l.clone() }).is_err());
+
+    b.node.set_camera(true).unwrap();
+    video_ev(&a, "remote camera on", |v| v.remote_camera);
+    let cam = Camera::start(b.node.clone(), false);
+    // A loopback link: the ladder climbs to the camera's own 640x480 within seconds.
+    let s = stats_when(&a, 15, "640x480", |s| (s.recv_width, s.recv_height) == (640, 480));
+    assert_eq!(s.decode_errors, 0, "{s:?}");
+
+    b.node.set_video_live(p2pcore::VideoLive { fixed_height: 360, max_bps: 500_000, ..l.clone() }).unwrap();
+    let s = stats_when(&a, 3, "pinned 360p", |s| (s.recv_width, s.recv_height) == (480, 360));
+    let tx = stats_when(&b, 2, "cap", |s| s.bitrate_bps <= 500_000 && s.send_rung_height == 360);
+    assert_eq!((tx.live.fixed_height, tx.live.max_bps), (360, 500_000));
+    let rows = p2pcore::video_stat_rows(tx.clone(), 0, 0.0);
+    assert_eq!(rows[1].value.split(" \u{b7} ").next(), Some("360p (480x360)"), "{rows:?}");
+    assert_eq!(rows[5].value, "Pin 360p \u{b7} cap 0.5 Mbps");
+
+    b.node.set_video_live(p2pcore::VideoLive { fixed_height: 360, fixed_fps: 15, ignore_limits: true, ..l.clone() }).unwrap();
+    stats_when(&b, 3, "15 fps", |s| s.send_fps > 0 && s.send_fps <= 16 && s.send_rung_fps == 15);
+    assert!(p2pcore::video_stat_rows(b.node.video_stats().unwrap(), 0, 0.0)[10].value.contains("Limits ignored"));
+
+    b.node.set_video_live(l).unwrap();
+    stats_when(&a, 15, "640x480 again", |s| (s.recv_width, s.recv_height) == (640, 480));
+    assert_eq!(a.node.video_stats().unwrap().decode_errors, s.decode_errors);
+    // Two desktops: AV1 is the only decoder here, so the sheet shows Auto alone for it.
+    let d = a.node.video_live_decoders();
+    assert_eq!(d.len(), 1, "{d:?}");
+    cam.stop();
+    b.node.hangup(id).unwrap();
+}
+
+/// VP8 <-> AV1 mid-call (`Msg::VideoCodec`): b switches its sending codec both ways; a's decoder
+/// follows at the keyframe, keeps decoding, and the picture never stops for more than a bound.
+#[cfg(feature = "vp8")]
+#[test]
+fn live_codec_switch_both_ways() {
+    let (a, b) = pair("vswitch");
+    let id = connect(&a, &b);
+    for p in [&a, &b] {
+        video_ev(p, "negotiated", |v| v.negotiated);
+    }
+    b.node.set_camera(true).unwrap();
+    video_ev(&a, "remote camera on", |v| v.remote_camera);
+    let cam = Camera::start(b.node.clone(), false);
+    std::thread::sleep(Duration::from_millis(800));
+    let s = a.node.video_stats().unwrap();
+    assert_eq!((s.recv_codec.as_str(), s.recv_decoder.as_str()), ("av1", "rav1d"), "{s:?}");
+    let codecs = b.node.video_live_codecs();
+    let ids: Vec<_> = codecs.iter().filter(|c| c.available).map(|c| c.id.as_str()).collect();
+    assert_eq!(ids, ["auto", "av1", "vp8-sw"], "{codecs:?}");
+    let l = live(&b);
+    // Bound: a keyframe crosses a loopback link in well under this, even when the message comes
+    // after it (the held keyframe is decoded once the message is in).
+    const MAX_FREEZE: Duration = Duration::from_millis(700);
+    for (to, lib) in [("vp8-sw", "libvpx"), ("auto", "rav1d"), ("vp8-sw", "libvpx")] {
+        let before = a.node.video_stats().unwrap();
+        b.node.set_video_live(p2pcore::VideoLive { send_codec: to.into(), ..l.clone() }).unwrap();
+        let (n, gap) = watch_gaps(&a, Duration::from_secs(2));
+        let s = a.node.video_stats().unwrap();
+        let want = if to == "auto" { "av1" } else { "vp8" };
+        assert_eq!((s.recv_codec.as_str(), s.recv_decoder.as_str()), (want, lib), "{s:?}");
+        assert!(n >= 30 && gap < MAX_FREEZE, "to {to}: {n} frames, longest gap {gap:?}");
+        assert!(s.decode_errors <= before.decode_errors + 1, "{before:?} -> {s:?}");
+        let tx = b.node.video_stats().unwrap();
+        assert_eq!((tx.send_codec.as_str(), tx.send_encoder.as_str()), (want, if want == "vp8" { "libvpx" } else { "libaom" }));
+        println!("switch to {to}: {n} frames, longest gap {gap:?}, errors {}", s.decode_errors);
+    }
+    cam.stop();
+    b.node.hangup(id).unwrap();
 }

@@ -9,6 +9,10 @@ pub struct VideoTuning {
     pub max_bps: u32,
     /// Zero = adaptive; otherwise 360, 540 or 720. Peer/budget limits still win.
     pub fixed_height: u32,
+    /// Empty or "auto", "hw" or "sw": which decoder receives the peer's video, where this device
+    /// has both kinds for the codec that arrives (VP8 on a phone with a hardware decoder). Local
+    /// only: the offer's `hw_decode` (and so the peer's codec choice) is unchanged.
+    pub recv_decoder: String,
 }
 
 impl VideoTuning {
@@ -20,9 +24,12 @@ impl VideoTuning {
         }
     }
 
-    fn validate(&self, c: &codecs::LocalCodecs) -> Result<(), Error> {
+    pub(super) fn validate(&self, c: &codecs::LocalCodecs) -> Result<(), Error> {
         if !matches!(self.send_codec.as_str(), "" | "auto" | "av1" | "vp8") {
             return Err(Error::Protocol("unknown send codec".into()));
+        }
+        if !matches!(self.recv_decoder.as_str(), "" | "auto" | "hw" | "sw") {
+            return Err(Error::Protocol("unknown decoder".into()));
         }
         if self.codec().is_some_and(|codec| !c.encode.contains(&codec)) {
             return Err(Error::Protocol(
@@ -80,6 +87,7 @@ impl NodeVideo {
                 hw_decode: c.hw_decode,
                 hw_encode: c.hw_encode,
                 hint_flags: true,
+                codec_switch: true,
             }
         })
     }
@@ -110,43 +118,27 @@ impl Node {
     }
 }
 
-/// Shared developer readout. Payload rate is measured, not the encoder target or QUIC wire rate.
+/// Shared developer readout (Settings > Diagnostics while a call runs): the in-call sheet's rows
+/// (`video_stat_rows`) without the connection, one "Label value" per line. Payload rate is
+/// measured, not the encoder target or QUIC wire rate.
 #[uniffi::export]
 pub fn video_tuning_stats_label(s: VideoStats) -> String {
     if !s.tuning_problem.is_empty() {
         return s.tuning_problem;
     }
-    let size = if s.tuning.fixed_height == 0 {
-        "adaptive".into()
-    } else {
-        format!("{}p", s.tuning.fixed_height)
-    };
-    let cap = if s.tuning.max_bps == 0 {
-        "auto".into()
-    } else {
-        format!("{} kbps", s.tuning.max_bps / 1000)
-    };
-    format!(
-        "Send {} {}x{} @{} fps · payload {} kbps (target {}) · enc {:.1} ms\nRecv {} {}x{} @{} fps · payload {} kbps · dec p75 {:.1} ms\nLadder {}p · {} steps ({}) · test {} / cap {}",
-        video_codec_label(s.send_codec, s.send_hardware),
-        s.send_width,
-        s.send_height,
-        s.send_fps,
-        s.send_payload_bps / 1000,
-        s.bitrate_bps / 1000,
-        s.encode_ms,
-        video_codec_label(s.recv_codec, s.recv_hardware),
-        s.recv_width,
-        s.recv_height,
-        s.recv_fps,
-        s.recv_payload_bps / 1000,
-        s.decode_p75_ms,
-        s.send_rung_height,
-        s.ladder_steps,
-        s.last_step_reason,
-        size,
-        cap,
-    )
+    video_stat_rows(s, 0, 0.0)
+        .into_iter()
+        .filter(|r| r.section != "link")
+        .map(|r| {
+            let who = match (r.section.as_str(), r.label.as_str()) {
+                (_, l @ ("Your video" | "Their video")) => l.to_string(),
+                ("send", l) => format!("Your {}", l.to_lowercase()),
+                (_, l) => format!("Their {}", l.to_lowercase()),
+            };
+            format!("{who}: {}", r.value)
+        })
+        .collect::<Vec<_>>()
+        .join("\n")
 }
 
 #[cfg(test)]
@@ -171,6 +163,7 @@ mod tests {
             hw_decode: c.hw_decode,
             hw_encode: c.hw_encode,
             hint_flags: true,
+            codec_switch: true,
         }
     }
 
@@ -227,6 +220,10 @@ mod tests {
                 fixed_height: 1080,
                 ..Default::default()
             },
+            VideoTuning {
+                recv_decoder: "gpu".into(),
+                ..Default::default()
+            },
         ] {
             assert!(t.validate(&c).is_err());
         }
@@ -242,6 +239,7 @@ mod tests {
             send_codec: "av1".into(),
             max_bps: 1_000_000,
             fixed_height: 360,
+            recv_decoder: "sw".into(),
         };
         *settings.tuning.lock() = next.clone();
         assert_eq!(first.pipe.stats.lock().tuning, VideoTuning::default());
@@ -259,16 +257,21 @@ mod tests {
     #[test]
     fn readout_distinguishes_measured_payload_rate_from_target() {
         let s = VideoStats {
+            send_width: 960,
+            send_height: 540,
             send_payload_bps: 730_000,
             bitrate_bps: 1_000_000,
             decode_p75_ms: 12.5,
+            frames_received: 3,
             send_rung_height: 540,
+            send_rung_fps: 30,
             ..Default::default()
         };
         let label = video_tuning_stats_label(s);
-        assert!(label.contains("payload 730 kbps (target 1000)"));
-        assert!(label.contains("dec p75 12.5 ms"));
-        assert!(label.contains("Ladder 540p"));
+        assert!(label.contains("730 kbps sent \u{b7} target 1000"), "{label}");
+        assert!(label.contains("decode p75 12.5 ms"), "{label}");
+        assert!(label.contains("Your rung: 540p \u{b7} 30 fps tier"), "{label}");
+        assert!(label.contains("Your size: 540p (960x540)"), "{label}");
         assert_eq!(
             video_tuning_stats_label(VideoStats {
                 tuning_problem: "unsupported".into(),

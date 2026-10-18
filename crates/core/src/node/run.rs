@@ -158,6 +158,8 @@ impl Inner {
         // Our camera state goes to the peer once video runs (first the current one).
         let mut camera = call.video.camera_changes();
         camera.mark_changed();
+        // Live encoder changes from the in-call sheet (`video_call::live`).
+        let mut encoders = call.video.encoder_requests();
         let mut watchdog = tokio::time::interval(Duration::from_secs(5));
         watchdog.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
         // How a call that dies under us ends, by who we are and how far it got.
@@ -204,6 +206,7 @@ impl Inner {
                         break if active { "hangup_remote" } else if incoming_from.is_some() { "cancelled" } else { "no_answer" }.into();
                     }
                     Ok(Some(Msg::Video { camera })) if active => self.remote_camera(&call, camera),
+                    Ok(Some(Msg::VideoCodec { codec })) if active => self.remote_codec(&call, codec),
                     Ok(None) => break if active { "hangup_remote".into() } else { lost(false) },
                     Ok(Some(other)) => self.log(format!("ignoring {} mid-call", msg_name(&other))),
                     Err(e) => {
@@ -266,6 +269,20 @@ impl Inner {
                     if r.is_ok() && let Err(e) = ctrl.send(&Msg::Video { camera: on }).await {
                         self.log(format!("connection lost: {e}"));
                         break lost(active);
+                    }
+                }
+                r = encoders.changed(), if active && call.video.negotiated() => {
+                    let want = *encoders.borrow_and_update();
+                    // Another codec: tell the peer before the first frame of it (it swaps decoders
+                    // at that keyframe); VP8 hardware <-> software needs no message.
+                    if r.is_ok() && let Some(want) = want {
+                        if call.video.sending_codec() != Some(want.codec)
+                            && let Err(e) = ctrl.send(&Msg::VideoCodec { codec: want.codec }).await
+                        {
+                            self.log(format!("connection lost: {e}"));
+                            break lost(active);
+                        }
+                        call.video.use_encoder(want);
                     }
                 }
                 _ = watchdog.tick(), if active => {

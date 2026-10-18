@@ -78,6 +78,9 @@ const VENDOR_VP8_ENCODERS: [&CStr; 9] = [
     c"OMX.IMG.TOPAZ.VIDEO.Encoder",
     c"OMX.Intel.hw_ve.vp8",
 ];
+/// Google's software VP8 encoders (every Android device has one), for the in-call tuning sheet's
+/// "VP8 software": same bitstream as the hardware encoder, so the receiver notices nothing.
+const SOFTWARE_VP8_ENCODERS: [&CStr; 2] = [c"c2.android.vp8.encoder", c"OMX.google.vp8.encoder"];
 /// Software VP8 decoders, for the self-test's cross-check.
 const SOFTWARE_VP8_DECODERS: [&CStr; 2] = [c"c2.android.vp8.decoder", c"OMX.google.vp8.decoder"];
 
@@ -684,9 +687,34 @@ pub(crate) fn hardware_vp8_encoder() -> bool {
     hardware_encoder_name().is_some()
 }
 
+fn software_encoder_name() -> Option<&'static CStr> {
+    static NAME: OnceLock<Option<CString>> = OnceLock::new();
+    NAME.get_or_init(|| {
+        let n = SOFTWARE_VP8_ENCODERS
+            .iter()
+            .find(|n| configured_encoder(n, PROBE_SIZE.0, PROBE_SIZE.1, 30, 1_000_000, 10).is_ok())
+            .map(|n| (*n).to_owned());
+        tracing::info!("software vp8 encoder: {:?}", n);
+        n
+    })
+    .as_deref()
+}
+
+/// True iff Google's software VP8 encoder configures here (cached once per process). Never part of
+/// the offer (Auto keeps the hardware score); only the in-call tuning sheet uses it.
+pub(crate) fn software_vp8_encoder() -> bool {
+    software_encoder_name().is_some()
+}
+
 /// True iff the VP8 decoder `MediaCodecVp8Decoder` gets by default (the framework's pick for the
 /// type) is a hardware one (cached once per process). A phone with only the software decoder
 /// still decodes VP8, so it offers `decode: vp8` but not `hw_decode`.
+/// True iff Google's software VP8 decoder exists here (by name; cached once per process).
+pub(crate) fn software_vp8_decoder() -> bool {
+    static SW: OnceLock<bool> = OnceLock::new();
+    *SW.get_or_init(|| SOFTWARE_VP8_DECODERS.iter().any(|n| Codec::by_name(n).is_some()))
+}
+
 pub(crate) fn hardware_vp8_decoder() -> bool {
     static HW: OnceLock<bool> = OnceLock::new();
     *HW.get_or_init(|| {
@@ -724,6 +752,17 @@ impl MediaCodecVp8Encoder {
     pub(crate) fn new(cfg: &EncoderConfig) -> Result<Self> {
         let name = hardware_encoder_name()
             .ok_or_else(|| Error::Config("no hardware vp8 encoder".into()))?;
+        Self::with_name(name, cfg)
+    }
+
+    /// Google's software encoder (`c2.android.vp8.encoder`), for the in-call tuning sheet.
+    pub(crate) fn new_software(cfg: &EncoderConfig) -> Result<Self> {
+        let name = software_encoder_name()
+            .ok_or_else(|| Error::Config("no software vp8 encoder".into()))?;
+        Self::with_name(name, cfg)
+    }
+
+    fn with_name(name: &CStr, cfg: &EncoderConfig) -> Result<Self> {
         let (w, h) = (i32::try_from(cfg.width), i32::try_from(cfg.height));
         let (Ok(w), Ok(h)) = (w, h) else {
             return Err(Error::Config("size".into()));
@@ -924,6 +963,19 @@ impl MediaCodecVp8Decoder {
     /// `max_pixels` caps the picture size a peer can make us output.
     pub(crate) fn new(max_pixels: u32) -> Result<Self> {
         Self::build(None, max_pixels)
+    }
+
+    /// Google's software decoder (`c2.android.vp8.decoder`), for the in-call sheet's
+    /// "Decoder: software" on a phone whose default VP8 decoder is the hardware one.
+    pub(crate) fn new_software(max_pixels: u32) -> Result<Self> {
+        let mut last = Error::Config("no software vp8 decoder".into());
+        for n in SOFTWARE_VP8_DECODERS {
+            match Self::with_name(n, max_pixels) {
+                Ok(d) => return Ok(d),
+                Err(e) => last = e,
+            }
+        }
+        Err(last)
     }
 
     /// A specific codec (e.g. the software one, for cross-checks).
