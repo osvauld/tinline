@@ -32,9 +32,12 @@ fn frame_roundtrip_all_variants() {
                 hw_decode: vec![VideoCodec::Vp8],
                 hw_encode: vec![VideoCodec::Vp8],
                 hint_flags: true,
+                codec_switch: true,
             }),
         },
         Msg::Video { camera: true },
+        Msg::VideoCodec { codec: VideoCodec::Vp8 },
+        Msg::VideoCodec { codec: VideoCodec::Av1 },
         Msg::Cancel {
             reason: CancelReason::AnsweredElsewhere,
         },
@@ -303,6 +306,7 @@ fn offer(decode: &[VideoCodec], encode: &[VideoCodec], hw_decode: &[VideoCodec],
         hw_decode: hw_decode.to_vec(),
         hw_encode: hw_encode.to_vec(),
         hint_flags: false,
+        codec_switch: false,
     }
 }
 
@@ -318,6 +322,27 @@ fn video_offer_hint_flags_optional() {
     let json = serde_json::to_string(&on).unwrap();
     assert!(json.contains("\"hint_flags\":true"), "{json}");
     assert_eq!(serde_json::from_str::<VideoOffer>(&json).unwrap(), on);
+}
+
+/// `VideoOffer.codec_switch` is optional like `hint_flags`: absent (an older device) reads as
+/// false, false is not written, and `Msg::VideoCodec` has its own tag that an older device's
+/// parser refuses (so it is only sent to a peer that said `codec_switch`).
+#[test]
+fn video_offer_codec_switch_optional_and_message_shape() {
+    let o = offer(&[VideoCodec::Av1, VideoCodec::Vp8], &[VideoCodec::Av1], &[], &[]);
+    let json = serde_json::to_string(&o).unwrap();
+    assert!(!json.contains("codec_switch"), "{json}");
+    let on = VideoOffer { codec_switch: true, ..o.clone() };
+    let json = serde_json::to_string(&on).unwrap();
+    assert!(json.contains("\"codec_switch\":true"), "{json}");
+    assert_eq!(serde_json::from_str::<VideoOffer>(&json).unwrap(), on);
+    // An older device's offer JSON (no flag) still parses, as false.
+    let old = r#"{"max_pixels":921600,"max_fps":30,"decode":["av1"],"encode":["av1"],"hw_decode":[],"hw_encode":[]}"#;
+    assert!(!serde_json::from_str::<VideoOffer>(old).unwrap().codec_switch);
+    let m = serde_json::to_string(&Msg::VideoCodec { codec: VideoCodec::Vp8 }).unwrap();
+    assert_eq!(m, r#"{"t":"video_codec","codec":"vp8"}"#);
+    // Unknown codecs are refused, not mapped to a default.
+    assert!(serde_json::from_str::<Msg>(r#"{"t":"video_codec","codec":"h264"}"#).is_err());
 }
 
 #[test]

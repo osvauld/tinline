@@ -5,11 +5,12 @@ a new automatic codec rule or evidence that one codec gives a better picture.
 
 ## Controls
 
-- Android: Settings → Diagnostics → Video tuning, plus a readout over the call.
+- Android: Settings → Diagnostics → Video tuning (next call), and **Stats for nerds** in the
+  call's About this call (this call, see "Phase 2" below). The readout over the call is gone.
   Built in by `BuildConfig.VIDEO_TUNING`, on by default in debug **and release**
   builds while codecs are being tuned (user, 2026-10-18); `-PvideoTuning=false`
   builds without it.
-- Desktop: Settings → Video → Video tuning, readout in About this call. Cargo
+- Desktop: Settings → Video → Video tuning, Stats for nerds and live controls in About this call. Cargo
   feature `video-tuning`, a default feature (release too); `--no-default-features`
   builds without it.
 - With every control on Auto, calls behave as without the panel. The shared Rust
@@ -31,7 +32,10 @@ a new automatic codec rule or evidence that one codec gives a better picture.
   check the **actual** dimensions: selecting 720p does not create a 720p camera.
 - Controls are snapshotted into each call when our offer is constructed (caller:
   before dialling; callee: on answer). Later settings changes cannot mutate that
-  offer or its sender. They apply when a future offer is constructed, not mid-call.
+  offer or its sender. They apply when a future offer is constructed; the in-call sheet
+  (phase 2) is what changes the running call.
+- Decoder for their video: Auto / Hardware / Software (`VideoTuning.recv_decoder`, 2026-10-18),
+  where this device has both kinds for the arriving codec. Local only: the offer is unchanged.
 
 ## Negotiation and unsupported peers
 
@@ -52,9 +56,9 @@ Normal Auto offers keep AV1 and retain the existing behavior.
 
 ## Readout
 
-Android debug calls show an overlay; desktop debug calls show it in **About this
-call**. Android Diagnostics also shows it while a call exists. Both use the Rust
-`video_tuning_stats_label` formatter, refreshed roughly once per second:
+Both apps show it in **About this call** (Stats for nerds, `video_stat_rows`); Android
+Diagnostics shows `video_tuning_stats_label` (the same rows as text) while a call exists.
+Refreshed roughly once per second:
 
 - Send/receive codec and hardware/software, actual dimensions, admitted/decoded fps.
 - Measured admitted and received **payload** kbps, distinct from the sender's target.
@@ -80,9 +84,75 @@ production quality policy. Phone use/install requires separate user permission.
 
 Next phases remain separate: matched-clip quality measurement, device capability
 benchmarks, a quality-first start rule, and a negotiated live codec-switch protocol.
-No SSIM self-decode, automatic trials or live codec switching is implemented.
+No SSIM self-decode or automatic trials are implemented; the manual live switch is phase 2 below.
+
+## Phase 2: Stats for nerds and live controls (2026-10-18, `feature/call-stats-panel`)
+
+What and how: `docs/video.md` ("Stats for nerds and live controls", "Switching codecs mid-call",
+"Connection path"); wire: `docs/protocol.md` ("Mid-call codec switch"). Why each choice:
+
+- **In About this call, not over the picture.** The user found the readout over/below the call
+  buttons in the way and wanted it "inside the network icon". It is a sheet the person opens, so
+  the call screen never moves; the rows are a fixed set (11, two lines each) and chip rows reserve
+  their height, so a refresh or a longer value never moves the sheet either.
+- **Wording in Rust** (`video_stat_rows`): one text for Android and desktop, tested once. Rung,
+  actual size and cap are separate rows with their own names, after a 0.1.35 readout ("Ladder
+  720p" next to "720x1280" and the moto's 180x240) was read as "sending at 180". The limit names
+  its owner and value ("15 fps: their decoder (VP8 · software)"): "cap=…(decode)" didn't say whose.
+- **Rung from the frame, not the tick.** The rung now comes from the same sender look as the
+  frame's size, so the two can never describe different moments.
+- **This call vs next call.** Settings stays the next-call default (it shapes the offer); the
+  sheet changes the running sender, because a fair codec comparison needs the same scene and link
+  seconds apart, not two calls. It starts from the snapshot's size and cap with the codec on Auto.
+- **VP8 hw <-> sw needs no protocol**: same bitstream, so it is sender-local (new encoder +
+  keyframe). Android's software VP8 is Google's MediaCodec `c2.android` (Android never links
+  libvpx); it is never put in the offer, so Auto's hardware score and older peers are unaffected.
+- **VP8 <-> AV1 needs a message**, because the receiver must swap decoders exactly at the new
+  codec's first keyframe. `Msg::VideoCodec` rides the ordered call control stream; the keyframe
+  goes on a new QUIC stream, so the receiver also sniffs keyframes and holds one that beat the
+  message (no group number needed in the message). Gated by `VideoOffer.codec_switch` (absent =
+  false) because an older parser refuses the unknown tag.
+- **Decoder choice is local**: it swaps at the next keyframe and asks for one with the existing
+  request (video control message 2). The offer's `hw_decode` stays as it is, so the peer's codec
+  choice doesn't change (else "software" would make the peer stop sending VP8, the very thing
+  being tested).
+- **Pin + "Ignore limits"**: by default a pin still yields to heat, battery saver and the peer's
+  hints (safe). The switch exists to see what the phones do at 720p30 anyway. It is per call and
+  never saved, needs a pinned size, and never exceeds the peer's offer (its decoder refuses bigger
+  frames). While on, the Note row says "Limits ignored: may stutter or heat up".
+- **Path row and log** (`video path …`): a LAN call with rate cuts can be told apart from one that
+  went through a relay. The address type is shown and logged, never the address.
+
+Limits: the software VP8 encoder's time is measured like the hardware one's (queue + drain, not
+CPU), so the ladder's CPU check doesn't see its cost; pin a size when comparing it. The ladder's
+adaptation is otherwise untouched. Not validated on devices.
+
+Phone checks (Pixel 3a + moto, matching builds): in a video call open About this call from the
+signal icon; nothing is drawn over the picture and the rows refresh without moving. On the Pixel
+pick VP8 software (Your video: `VP8 · software (MediaCodec c2.android)`), then AV1 (the moto's
+Their video follows after a short freeze at most). Pin 720p + 30 fps with and without Ignore
+limits and watch the Limit and Note rows. On the moto receiving VP8, Decoder shows Auto alone if
+the moto has only Google's decoder. On one Wi-Fi the Connection row says Direct LAN. The call log
+has `video path …`, `video encoder … -> …` and `video decoder … -> …` lines.
 
 ## Validation
+
+Phase 2 (2026-10-18, `feature/call-stats-panel`, through `tasks`, `-j 2`, named targets;
+`VPX_DIR` = build-cache libvpx 1.17.0 where `vp8`):
+
+| Check | Job | Result |
+|---|---|---|
+| `cargo test -p proto --lib tests::wire` | 697 | 14 passed |
+| `cargo test -p proto --test golden_wire` (new `video_codec`, `accept_codec_switch` frames) | 698 | 5 passed, 1 ignored (`dump`) |
+| `cargo test -p video --release --lib media::` | 699 | 40 passed |
+| `cargo test -p p2pcore --features vp8 --lib video_call` | 707 | 56 passed |
+| `cargo test -p p2pcore --lib video_call` (no vp8) | 714 | 54 passed |
+| `cargo test -p p2pcore --release --features vp8 --test video_calls` | 703, 712 | 703: 7/8 (`call_kind_…` raced b's video decision; test fixed), 712: 8 passed. Switch gaps 127-200 ms (703), 40-75 ms (712), 0 decode errors |
+| `cargo check -p desktop -p peer`; `-p desktop --no-default-features` | 715; 710 | ok, no warnings |
+| Android `:app:assembleRelease -PrustRelease=true -Pabis=arm64-v8a` (LAN worker) | 711 | BUILD SUCCESSFUL |
+| Android `:app:testDebugUnitTest` ScreenCallsTest + VideoQualityTest (LAN worker) | 713 | BUILD SUCCESSFUL |
+
+Phase 1:
 
 Deterministic tests cover filtered directional offers, unsupported peers/local
 encoders, validation, offer/call setting snapshots, readout rate semantics, and

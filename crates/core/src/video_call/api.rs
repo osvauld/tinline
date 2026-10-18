@@ -222,6 +222,7 @@ impl Node {
         let Some(call) = self.inner.current_video_call() else { return };
         let pipe = &call.video.pipe;
         pipe.policy.lock().budget = budget;
+        pipe.stats.lock().budget = budget;
         adapt::apply_own_caps(pipe);
         adapt::push_hint(pipe, Instant::now());
     }

@@ -46,6 +46,7 @@ pub(super) fn msg_name(m: &Msg) -> &'static str {
         Msg::ContactPending => "ContactPending",
         Msg::WelcomeTaken => "WelcomeTaken",
         Msg::Video { .. } => "Video",
+        Msg::VideoCodec { .. } => "VideoCodec",
     }
 }
 

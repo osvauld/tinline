@@ -67,12 +67,18 @@ mod codecs;
 mod ffi_bytes;
 mod frames;
 mod hd;
+mod live;
+mod nerds;
+mod path;
 // The Android MediaCodec VP8 encoder/decoder (`codecs` names what it must provide).
 #[cfg(all(target_os = "android", feature = "mediacodec"))]
 mod mediacodec;
 mod pipes;
 mod tuning;
 pub use tuning::{VideoTuning, video_tuning_stats_label};
+pub use live::{VideoChoice, VideoLive};
+pub use nerds::{VideoStatRow, video_stat_rows};
+use self::codecs::EncoderChoice;
 
 pub use self::ffi_bytes::Bytes;
 #[cfg_attr(not(target_os = "android"), allow(unused_imports))]
@@ -99,9 +105,16 @@ pub struct VideoStats {
     /// Last measured second's admitted/received payload rate, not QUIC wire throughput.
     pub send_payload_bps: u32,
     pub recv_payload_bps: u32,
+    /// The ladder rung (its landscape height: 180/360/540/720) and frame-rate tier the last sent
+    /// frame was prepared for. The frame itself may be smaller (aspect kept, never upscaled):
+    /// `send_width` x `send_height` is the actual size.
     pub send_rung_height: u32,
+    pub send_rung_fps: u32,
     /// Settings snapshotted with our offer; later changes apply to a future call.
     pub tuning: VideoTuning,
+    /// This call's live overrides from the in-call sheet (`Node::set_video_live`); starts as the
+    /// snapshot's size and cap with the codec on Auto.
+    pub live: VideoLive,
     pub tuning_problem: String,
     pub frames_decoded: u64,
     pub decode_errors: u64,
@@ -130,6 +143,21 @@ pub struct VideoStats {
     /// (MediaCodec hardware; libaom, rav1d and libvpx are software). False before video is decided.
     pub send_hardware: bool,
     pub recv_hardware: bool,
+    /// The library behind each: "libaom", "rav1d", "libvpx", "MediaCodec" (the platform's
+    /// default, hardware here) or "MediaCodec c2.android" (Google's software one). Empty before.
+    pub send_encoder: String,
+    pub recv_decoder: String,
+    /// My device's budget (`set_video_budget`) and the codecs the peer decodes in hardware (its
+    /// offer), so the sheet can name a cap: "360p: heat here (severe)", "their decoder (VP8 software)".
+    pub budget: VideoBudget,
+    pub peer_hw_decode: Vec<String>,
+    /// The in-call "Ignore limits" switch is on and my pinned size/fps is above what the caps allow.
+    pub limits_ignored: bool,
+    /// The call's selected path (`video_call::path`): "lan", "internet", "relay" or "" before it is
+    /// known; the remote address's type ("IPv4 private"; never the address); QUIC's RTT on it.
+    pub path_kind: String,
+    pub path_addr: String,
+    pub path_rtt_ms: u32,
     /// Frames per second sent and decoded, measured over the last second.
     pub send_fps: u32,
     pub recv_fps: u32,
@@ -225,6 +253,13 @@ struct Pipe {
     render_ms: Mutex<VecDeque<(Instant, f32)>>,
     /// This second's send/receive pipeline timings, for the per-second debug log.
     timing: Mutex<Timing>,
+    /// The encoder the send thread runs (set when video is decided; a live switch changes it
+    /// once the peer has been told, see `live`).
+    encoder: Mutex<Option<EncoderChoice>>,
+    /// The peer said its video is this codec from its next keyframe (`Msg::VideoCodec`).
+    recv_switch: Mutex<Option<VideoCodec>>,
+    /// My decoder preference for this call: None Auto, Some(true) hardware, Some(false) software.
+    decoder_pref: Mutex<Option<bool>>,
 }
 
 /// Where a frame's time goes on this device (debug log `video timing`, once a second): what the
@@ -255,6 +290,13 @@ pub(crate) struct CallVideo {
     /// Either camera was on while video ran: the call log calls it a video call.
     seen: AtomicBool,
     peer_max_pixels: AtomicU32,
+    /// The peer's offer once video is decided (what it decodes, whether it follows
+    /// `Msg::VideoCodec`), and the encoder Auto means in this call.
+    peer_video: Mutex<Option<VideoOffer>>,
+    auto_encoder: Mutex<Option<EncoderChoice>>,
+    /// A live encoder change from the in-call sheet, for `run_call`: it tells the peer first when
+    /// the codec changes, then hands it to the send thread (`Pipe::encoder`).
+    encoder_req: watch::Sender<Option<EncoderChoice>>,
     pipe: Arc<Pipe>,
     tasks: Mutex<Vec<JoinHandle<()>>>,
 }
@@ -269,6 +311,9 @@ impl Default for CallVideo {
             remote_camera: AtomicBool::new(false),
             seen: AtomicBool::new(false),
             peer_max_pixels: AtomicU32::new(0),
+            peer_video: Mutex::new(None),
+            auto_encoder: Mutex::new(None),
+            encoder_req: watch::channel(None).0,
             pipe: Arc::default(),
             tasks: Mutex::new(Vec::new()),
         }
@@ -287,6 +332,21 @@ impl CallVideo {
 
     pub(crate) fn camera(&self) -> bool {
         *self.camera.borrow()
+    }
+
+    /// Live encoder requests from the in-call sheet, for `run_call` (see `encoder_req`).
+    pub(crate) fn encoder_requests(&self) -> watch::Receiver<Option<EncoderChoice>> {
+        self.encoder_req.subscribe()
+    }
+
+    /// The codec the send thread runs (or will run first).
+    pub(crate) fn sending_codec(&self) -> Option<VideoCodec> {
+        self.pipe.encoder.lock().map(|c| c.codec)
+    }
+
+    /// Hands a live encoder change to the send thread (after the peer was told, if needed).
+    pub(crate) fn use_encoder(&self, choice: EncoderChoice) {
+        *self.pipe.encoder.lock() = Some(choice);
     }
 
     /// The call is placed as a video call: the camera is on from the start, as if `set_camera
@@ -368,12 +428,27 @@ impl Inner {
                 return;
             };
             *v.codecs.lock() = Some((tx, rx));
+            let first = EncoderChoice { codec: tx, hardware: ours.hw_encode.contains(&tx) };
+            *v.pipe.encoder.lock() = Some(first);
+            *v.auto_encoder.lock() = Some(first);
+            *v.peer_video.lock() = Some(peer.clone());
             {
                 let mut st = v.pipe.stats.lock();
                 st.send_codec = tx.as_str().into();
                 st.recv_codec = rx.as_str().into();
-                st.send_hardware = ours.hw_encode.contains(&tx);
+                st.send_hardware = first.hardware;
                 st.recv_hardware = ours.hw_decode.contains(&rx);
+                st.send_encoder = codecs::encoder_name(first).into();
+                st.peer_hw_decode = peer.hw_decode.iter().map(|c| c.as_str().to_string()).collect();
+                st.live = VideoLive {
+                    send_codec: "auto".into(),
+                    max_bps: st.tuning.max_bps,
+                    fixed_height: st.tuning.fixed_height,
+                    fixed_fps: 0,
+                    ignore_limits: false,
+                    recv_decoder: live::decoder_id(st.tuning.recv_decoder.as_str()).into(),
+                };
+                *v.pipe.decoder_pref.lock() = live::decoder_pref(&st.live.recv_decoder);
             }
             tracing::info!("video codecs: send {} recv {}", tx.as_str(), rx.as_str());
             v.peer_max_pixels.store(peer.max_pixels, Ordering::SeqCst);
@@ -385,10 +460,11 @@ impl Inner {
             }
             v.negotiated.store(true, Ordering::SeqCst);
             let pipe = v.pipe.clone();
-            let send = self.handle.spawn(run_send(conn.clone(), pipe.clone(), tx));
+            let send = self.handle.spawn(run_send(conn.clone(), pipe.clone()));
             let recv = self.handle.spawn(run_recv(conn.clone(), pipe, rx, peer.hint_flags));
             let policy = self.handle.spawn(adapt::run_policy(v.pipe.clone()));
-            v.tasks.lock().extend([send, recv, policy]);
+            let path = self.handle.spawn(path::watch(conn.clone(), v.pipe.clone()));
+            v.tasks.lock().extend([send, recv, policy, path]);
             if v.pipe.stop.load(Ordering::SeqCst) {
                 // Ended meanwhile.
                 v.stop();

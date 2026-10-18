@@ -33,6 +33,64 @@ p75 and the current rung, not a live picture-quality score. A tuned offer keeps
 `hint_flags`, and the sharper-video rule below is unchanged (tuned calls feed it tuned inputs). See
 [controls, compatibility, A/B procedure and limitations](design/video-tuning.md).
 
+## Stats for nerds and live controls (2026-10-18, `feature/call-stats-panel`)
+
+Developer builds (Android `BuildConfig.VIDEO_TUNING`, desktop feature `video-tuning`, both on in
+test builds) show **Stats for nerds** inside About this call, opened from the call screen's signal
+icon; nothing is drawn over the picture any more. Rows come from Rust (`video_stat_rows(stats,
+rtt_ms, loss_pct)`, always the same 11 rows): my codec + library, my actual size (`720p (portrait
+720x1280) · 15 fps`), the ladder **rung** and tier that frame was prepared for, payload vs target
+and encode time (wall time for hardware), the active **limit** with whose it is and its value
+(`720p · 15 fps: their decoder (VP8 · software)`, `360p · 15 fps: heat on your device (Android
+severe)`), this call's pin; their codec + decoder library, size, payload, decode p75 and errors;
+the **path** (`Direct LAN (IPv4 private) · 4 ms round trip · 0.3% lost`).
+
+The rung readout used to be written by the once-a-second policy tick while the size came from
+the encoder thread; both now come from the same sender look per frame (`pipes::encode_loop`).
+
+**Controls** (`Node::set_video_live(VideoLive)`, this call only, never saved; Settings stays the
+next-call default): send codec Auto / VP8 hardware / VP8 software / AV1 (`video_live_codecs()`
+lists what this device has and whether the peer takes it, with why not); size pin Auto / 360 /
+540 / 720 and fps pin Auto / 15 / 24 / 30; bitrate cap Auto / 0.5 / 1 / 2 / 3 Mbps; **Ignore
+limits (heat, their decoder)**, only with a pinned size: the pin holds against heat, battery saver
+and the peer's hints (any pinned size already skips the CPU check), but never above the peer's offer (`max_pixels`/`max_fps`, what
+its decoder takes at all); the Note row says "Limits ignored: may stutter or heat up"; decoder for
+their video Auto / hardware / software (`video_live_decoders()`; only where both kinds exist: VP8
+on a phone with a hardware decoder; AV1 is rav1d only and shows Auto alone with that note). No
+control turns a camera on.
+
+- Size, fps and cap: `Sender::set_test_limits` on the running sender (a resize is a ladder step:
+  keyframe, new group).
+- VP8 hardware <-> software (Android: MediaCodec default vs Google's `c2.android.vp8.encoder`):
+  a new encoder and a keyframe; same bitstream, nothing sent.
+- Decoder: the decode thread swaps at the next keyframe and asks for one once (video control
+  message 2). Local only: the offer's `hw_decode` (and the peer's codec choice) is unchanged.
+
+### Switching codecs mid-call
+
+VP8 <-> AV1 changes what the receiver must decode, so the sender says so first: `run_call` sends
+`Msg::VideoCodec { codec }` on the call control stream, then hands the new encoder to the send
+thread, whose first frame is a keyframe (a new group). Only to a peer whose offer has
+`codec_switch` (absent = false; an older peer can't parse the message) and that decodes the codec;
+`video_live_codecs` marks the others unavailable with the reason. The receiver keeps decoding the
+old codec until a keyframe whose first bytes look like the new one (`codecs::keyframe_is`: VP8's
+`9d 01 2a` start code, AV1's temporal delimiter or sequence header OBU), then swaps. Message and
+keyframe travel on different QUIC streams; a new-codec keyframe that arrives first fails in the old
+decoder (one decode error, a keyframe request) and is held, then decoded as soon as the message
+lands. Stats (`send_codec`/`send_hardware`/`send_encoder`, `recv_codec`/`recv_hardware`/
+`recv_decoder`) follow the swap. Measured on loopback (`video_calls::live_codec_switch_both_ways`,
+two desktops, libvpx and libaom): longest frame gap per switch 127-200 ms in one run and 40-75 ms
+in another (AV1 -> VP8 -> AV1 -> VP8), 0 decode errors. Not measured on phones; the ladder's CPU check restarts its window
+for the new encoder (`Ladder::restart_encode_timing`).
+
+### Connection path
+
+`video_call::path` reads iroh's selected path once a second: direct LAN (private, link-local,
+unique-local or loopback address), direct internet (public or CGNAT address), or relay; the remote
+address **type**, never the address; QUIC's RTT on that path. Logged (`p2pcore::video_call`,
+info) once per call and on every change: `video path Direct LAN (IPv4 private) rtt=4ms`, then
+`... (changed)`. Stats: `path_kind`, `path_addr`, `path_rtt_ms`.
+
 ## Suggesting sharper video (2026-10-17, `feature/hd-suggest`)
 
 Sharper video stays **off by default**. When a call could carry it, the call screen says so
@@ -298,9 +356,10 @@ Runs `media::Sender`/`Receiver` over the call's iroh `Connection` (audio stays o
 ## Call protocol and core API (`crates/core/src/video_call.rs`)
 
 **Negotiation** (`proto::Msg`, JSON on the call's control stream):
-- `CallHello.video` / `Accept.video`: `Option<VideoOffer { max_pixels, max_fps, decode, encode, hw_decode, hw_encode, hint_flags }>`.
+- `CallHello.video` / `Accept.video`: `Option<VideoOffer { max_pixels, max_fps, decode, encode, hw_decode, hw_encode, hint_flags, codec_switch }>`.
   `hint_flags` (optional, absent = false, not written when false): this device's sender reads
-  hint message 5 (2026-10-17).
+  hint message 5 (2026-10-17). `codec_switch` (same rules): this device's receiver follows
+  `Msg::VideoCodec` (2026-10-18, "Switching codecs mid-call").
   Presence = "this device does video in this call"; `max_pixels` = largest picture it wants to
   receive (today 1280x720); `max_fps` = highest frame rate it decodes and shows (30; the
   peer's ladder stays at or below it); `decode`/`encode` = its codecs, best first (both always have

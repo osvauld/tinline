@@ -78,6 +78,7 @@ pub use store::CallRecord;
 pub use video_call::{video_codec_label, video_recv_label, video_send_label};
 pub use video_call::{HdSuggestMemory, video_hd_suggest_after_call, video_hd_suggest_allowed, video_hd_suggestion};
 pub use video_call::{Bytes, Pulled, VideoBudget, VideoEvents, VideoFrame, VideoInfo, VideoSendCap, VideoStats, VideoTuning, video_tuning_stats_label};
+pub use video_call::{VideoChoice, VideoLive, VideoStatRow, video_stat_rows};
 pub use node::{AccountSummary, Availability, CallInfo, CallState, CallStats, CardPeek, Contact, LockState, Node, NodeEvents, NodeStatus, ProfileInfo};
 pub use licences::{open_source_licences, OpenSourceLicence};
 

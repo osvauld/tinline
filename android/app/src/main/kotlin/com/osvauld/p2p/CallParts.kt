@@ -206,7 +206,9 @@ internal fun CallFocus(name: String, did: String, active: Boolean, ringing: Bool
 @Composable
 internal fun CallInfo(name: String, active: Boolean, onDismiss: () -> Unit, reconnecting: Boolean = false,
     signal: Int = 0, direct: Boolean? = null, rttMs: Int? = null, lossPct: Double? = null, video: Boolean = false,
-    sendCodec: String = "", recvCodec: String = "") {
+    sendCodec: String = "", recvCodec: String = "",
+    /** Developer builds: "Stats for nerds" (CallNerds.kt), shown in place of the codec rows. */
+    nerds: (@Composable () -> Unit)? = null) {
     val c = Tin.c
     val first = name.trim().substringBefore(' ')
     // An overlay in the call screen's own window (not a dialog window), so the system bar insets apply.
@@ -215,8 +217,10 @@ internal fun CallInfo(name: String, active: Boolean, onDismiss: () -> Unit, reco
         Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = .24f))
             .clickable(interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, indication = null, onClick = onDismiss)) {
             Column(Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(start = 16.dp, end = 16.dp, bottom = 24.dp)
-                .widthIn(max = 420.dp).fillMaxWidth().depth(Depth.Sheet, SmoothCornerShape(24.dp)).clip(SmoothCornerShape(24.dp))
-                .background(c.sfRaised).clickable(interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, indication = null, onClick = {})
+                .widthIn(max = 420.dp).fillMaxWidth()
+                .heightIn(max = (androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp * 0.85f).dp)
+                .depth(Depth.Sheet, SmoothCornerShape(24.dp)).clip(SmoothCornerShape(24.dp))
+                .background(c.sfRaised).verticalScroll(rememberScrollState()).clickable(interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, indication = null, onClick = {})
                 .padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 16.dp)
                 .semantics { contentDescription = "About this call" }) {
                 val p = TinType.bodyM.copy(fontSize = 13.sp, lineHeight = 19.sp)
@@ -246,7 +250,8 @@ internal fun CallInfo(name: String, active: Boolean, onDismiss: () -> Unit, reco
                         Modifier.padding(top = 6.dp, start = 34.dp), style = TinFs.meta, color = c.ink2)
                     // Codec per direction while that camera is on. Both rows are always there on a video call
                     // (blank when off), so the card never changes height.
-                    if (video) for ((who, what) in listOf("Your video" to sendCodec, "Their video" to recvCodec)) Row(
+                    if (nerds != null) nerds()
+                    else if (video) for ((who, what) in listOf("Your video" to sendCodec, "Their video" to recvCodec)) Row(
                         Modifier.padding(top = 6.dp, start = 34.dp).heightIn(min = 19.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         Text(who, Modifier.width(88.dp), style = TinFs.meta, color = c.ink2)
                         Text(what, style = TinFs.meta, color = c.ink)

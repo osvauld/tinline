@@ -27,6 +27,9 @@ pub struct VideoSendCap {
     pub fps: u32,
     /// Why, for the chip: "none", "display", "decode", "thermal", "battery" or "user".
     pub reason: String,
+    /// Whose limit it is: "peer" (their hint: their screen, decoder, heat, battery saver),
+    /// "device" (my own budget, or their offer's largest size), "" when nothing caps it.
+    pub source: String,
 }
 
 /// The picture label for what we send, from the stats (one text for every app): "HD · 24 fps"
@@ -398,6 +401,12 @@ impl Policy {
                 pixels: px,
                 fps,
                 reason: why.as_str().into(),
+                source: match src {
+                    "hint" => "peer",
+                    "budget" => "device",
+                    _ => "",
+                }
+                .into(),
             },
             src,
         )
@@ -522,7 +531,6 @@ pub(super) async fn run_policy(pipe: Arc<Pipe>) {
         let (cap, src) = pipe.policy.lock().send_cap(hint);
         // What the sharper-video rule needs from the sender (`hd::SendSample`).
         let mut send_room = hd::SendSample { cap_px: cap.pixels as u64, ..Default::default() };
-        let mut rung_height = 0;
         let mut key_causes = video::media::KeyCauses::default();
         if let Some(s) = &send {
             let (trouble, draining, rate, rung, fps, enc_p75, causes) = s.with_sender(|s| {
@@ -534,7 +542,6 @@ pub(super) async fn run_policy(pipe: Arc<Pipe>) {
             last_trouble = trouble;
             send_room.rate_bps = rate;
             send_room.rung_px = rung.width as u64 * rung.height as u64;
-            rung_height = rung.height;
             send_room.fps = fps;
             send_room.encode_p75_us = enc_p75;
         }
@@ -544,7 +551,7 @@ pub(super) async fn run_policy(pipe: Arc<Pipe>) {
         st.recv_payload_bps = traffic::payload_bps(st.received_payload_bytes.saturating_sub(last_recv_payload), secs);
         (last_payload, last_recv_payload) = (st.admitted_payload_bytes, st.received_payload_bytes);
         st.decode_p75_ms = dec;
-        st.send_rung_height = rung_height;
+        // `send_rung_height` comes with each sent frame (`pipes::encode_loop`), not from here.
         for s in &steps {
             let why = match s.reason {
                 video::media::StepReason::Rate => "rate",

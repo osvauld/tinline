@@ -405,6 +405,11 @@ fun InCallScreen(ui: CallUi, meName: String, app: P2pApp, onCameraOn: () -> Unit
     val onCamera = { if (v?.localCamera == true) app.video.setCamera(false) else onCameraOn() }
     val name = ui.info.peerName.ifBlank { "Unknown" }
     val bars = if (s != null && loss != null) qualityBars(s.rttMs.toInt(), loss) else null
+    // Stats for nerds in About this call (developer builds, once video is negotiated): the live
+    // readout and this call's codec/size/decoder controls, instead of an overlay on the picture.
+    val nerds: (@Composable () -> Unit)? = if (BuildConfig.VIDEO_TUNING && v != null) {
+        { CallNerds(app, s?.rttMs?.toInt(), loss) }
+    } else null
     Box(Modifier.fillMaxSize()) {
     if (v != null && (v.localCamera || v.remoteCamera)) {
         TinlineTheme(dark = true) {
@@ -421,7 +426,7 @@ fun InCallScreen(ui: CallUi, meName: String, app: P2pApp, onCameraOn: () -> Unit
                 selfView = { m -> SelfView(app, front, m) },
                 routes = ui.routes, onRoute = { calls.selectRoute(it) }, onAllowBtNames = onAllowBtNames,
                 waitingCard = { m -> WaitingCard(waiting, name, onDecline = { calls.declineWaiting() }, onEndAnswer = { calls.endAndAnswer() }, modifier = m) },
-                ending = ending,
+                ending = ending, rttMs = s?.rttMs?.toInt(), lossPct = loss, nerds = nerds,
             )
         }
     } else InCallContent(
@@ -434,9 +439,8 @@ fun InCallScreen(ui: CallUi, meName: String, app: P2pApp, onCameraOn: () -> Unit
         routes = ui.routes, onRoute = { calls.selectRoute(it) }, onAllowBtNames = onAllowBtNames, onMessage = onMessage,
         waiting = waiting != null,
         waitingCard = { m -> WaitingCard(waiting, name, onDecline = { calls.declineWaiting() }, onEndAnswer = { calls.endAndAnswer() }, modifier = m) },
-        ending = ending,
+        ending = ending, nerds = nerds,
     )
-    if (BuildConfig.VIDEO_TUNING) DebugVideoStats(app, Modifier.align(Alignment.TopCenter).padding(top = 64.dp, start = 8.dp, end = 8.dp))
     }
 }
 
@@ -461,6 +465,8 @@ fun InCallContent(
     waitingCard: (@Composable (Modifier) -> Unit)? = null,
     /** I pressed End (HangupGlyph.kt). */
     ending: Boolean = false,
+    /** Developer builds: Stats for nerds inside About this call. */
+    nerds: (@Composable () -> Unit)? = null,
 ) {
     var routeSheet by remember { mutableStateOf(startWithSheet) }
     var info by remember { mutableStateOf(startWithInfo) }
@@ -472,7 +478,7 @@ fun InCallContent(
                 onCamera, onFlip = null, onEnd, caption, icon, ending = ending)
         }
         if (info) CallInfo(name, active, onDismiss = { info = false }, reconnecting = reconnecting, signal = bars ?: 0,
-            direct = direct, rttMs = rttMs, lossPct = lossPct)
+            direct = direct, rttMs = rttMs, lossPct = lossPct, nerds = nerds)
     }
     if (routeSheet) AudioRouteSheet(speaker, routes, relayed = active && direct == false, onDismiss = { routeSheet = false },
         onPick = { wantSpeaker -> if (wantSpeaker != speaker) onSpeaker(); routeSheet = false },
@@ -537,6 +543,8 @@ fun VideoCallContent(
     videoQuality: String? = null, sendCodec: String = "", recvCodec: String = "", hd: Boolean = false, hdPaused: Boolean = false, onHd: () -> Unit = {},
     /** I pressed End (HangupGlyph.kt). */
     ending: Boolean = false,
+    /** About this call's numbers, and (developer builds) Stats for nerds there. */
+    rttMs: Int? = null, lossPct: Double? = null, nerds: (@Composable () -> Unit)? = null,
 ) {
     val c = Tin.c
     var info by remember { mutableStateOf(false) }
@@ -570,7 +578,7 @@ fun VideoCallContent(
                 color = Color.White.copy(alpha = 0.8f), maxLines = 1, overflow = TextOverflow.Ellipsis) }
         }
         if (info) CallInfo(name, active = true, onDismiss = { info = false }, reconnecting = reconnecting, signal = bars ?: 0,
-            direct = direct, video = true,
+            direct = direct, video = true, rttMs = rttMs, lossPct = lossPct, nerds = nerds,
             sendCodec = if (localCamera) sendCodec else "", recvCodec = if (remoteCamera) recvCodec else "")
         // Self-view: our camera (the front one mirrored), top right under the bar.
         if (localCamera) Box(Modifier.align(Alignment.TopEnd).statusBarsPadding().padding(top = 72.dp, end = 12.dp)

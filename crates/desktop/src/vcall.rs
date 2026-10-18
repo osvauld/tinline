@@ -32,6 +32,9 @@ pub(super) enum Vm {
     SelectCamera(String),
     #[cfg(feature = "video-tuning")]
     Tuning(p2pcore::VideoTuning),
+    /// About this call's live controls: this call only, never saved.
+    #[cfg(feature = "video-tuning")]
+    Live(p2pcore::VideoLive),
 }
 
 #[derive(Default)]
@@ -77,6 +80,9 @@ pub(super) struct VideoUi {
     /// The last (width, height, visible) given to the core.
     view_sent: Option<(u32, u32, bool)>,
     stats_tick: u32,
+    /// Why the last live control didn't apply (About this call's reserved line).
+    #[cfg(feature = "video-tuning")]
+    pub live_note: Option<String>,
 }
 
 impl VideoUi {
@@ -190,6 +196,10 @@ impl App {
                     self.video.send_size = None;
                     self.sync_camera();
                 }
+            }
+            #[cfg(feature = "video-tuning")]
+            Vm::Live(live) => {
+                self.video.live_note = self.node.set_video_live(live).err().map(|e| e.to_string());
             }
             #[cfg(feature = "video-tuning")]
             Vm::Tuning(tuning) => {

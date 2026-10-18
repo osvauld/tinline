@@ -203,8 +203,8 @@ fn offer_has_av1_and_vp8_only_where_built_in() {
     let want = if cfg!(feature = "vp8") { vec![VideoCodec::Av1, VideoCodec::Vp8] } else { vec![VideoCodec::Av1] };
     assert_eq!(c.encode, want);
     assert!(c.hw_decode.is_empty() && c.hw_encode.is_empty());
-    assert_eq!(codecs::new_encoder(VideoCodec::Vp8, &EncoderConfig::default()).is_ok(), cfg!(feature = "vp8"));
-    assert_eq!(codecs::new_decoder(VideoCodec::Vp8, MAX_PIXELS).is_ok(), cfg!(feature = "vp8"));
+    assert_eq!(codecs::new_encoder(codecs::EncoderChoice { codec: VideoCodec::Vp8, hardware: false }, &EncoderConfig::default()).is_ok(), cfg!(feature = "vp8"));
+    assert_eq!(codecs::new_decoder(VideoCodec::Vp8, false, MAX_PIXELS).is_ok(), cfg!(feature = "vp8"));
 }
 
 /// The desktop's VP8 send path end to end without a network: `codecs::new_encoder(Vp8)` output
@@ -214,7 +214,7 @@ fn offer_has_av1_and_vp8_only_where_built_in() {
 fn desktop_vp8_encoder_feeds_the_vp8_receive_path() {
     let (w, h) = (320, 240);
     let cfg = EncoderConfig { width: w, height: h, keyint: 300, ..Default::default() };
-    let mut enc = codecs::new_encoder(VideoCodec::Vp8, &cfg).unwrap();
+    let mut enc = codecs::new_encoder(codecs::EncoderChoice { codec: VideoCodec::Vp8, hardware: false }, &cfg).unwrap();
     let mut cam = video::Pattern::new(w, h);
     let pipe = Arc::new(Pipe::default());
     let (tx, rx) = mpsc::channel(32);

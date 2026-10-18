@@ -124,10 +124,11 @@ Codes are reusable for a week, so nobody becomes a contact without the owner's y
    Either side ends with `Hangup`. `renewed_grant` is a fresh call token for B.
 
 Video is offered in the same messages: `CallHello.video` / `Accept.video` =
-`Option<VideoOffer { max_pixels, max_fps, decode, encode, hw_decode, hw_encode, hint_flags }>`
+`Option<VideoOffer { max_pixels, max_fps, decode, encode, hw_decode, hw_encode, hint_flags, codec_switch }>`
 (codec lists of `"av1"` / `"vp8"`, best first; `decode` always has `av1`; `hint_flags` optional,
 absent = false: the device's video sender reads the receiver's hint flags, video control message
-5). Each direction uses `send_codec(sender, receiver)`: score each common codec by sender
+5; `codec_switch` optional, absent = false, not written when false: the device's receiver follows
+`VideoCodec` below). Each direction uses `send_codec(sender, receiver)`: score each common codec by sender
 hardware encode + receiver hardware decode, with sender-order ties. Both ends
 compute it from the two offers, with no further message. Both offers must be
 present and `proto::video_codecs` must validate **both** resulting directions
@@ -141,8 +142,19 @@ true if the call was placed as video or a camera was on while it was active.
 Developer tuning can filter `encode`/`hw_encode` to a single locally supported
 send codec, without changing `decode` or `hint_flags`. Auto offers still contain AV1. Matching
 updated builds are required for forced-codec experiments; older peers assume AV1
-is always offered. No wire field or mid-call codec-switch message is added. See
-`docs/design/video-tuning.md`.
+is always offered. See `docs/design/video-tuning.md`.
+
+**Mid-call codec switch** (2026-10-18, developer builds' in-call sheet): `VideoCodec { codec }`
+(JSON `{"t":"video_codec","codec":"vp8"}`) on the call's control stream, sender to receiver, once
+the call is active with video: "my video is `codec` from my next keyframe". The sender sends it
+only to a peer whose offer has `codec_switch: true` (an older device's parser refuses the unknown
+tag, which would end its call) and only for a codec in that peer's `decode`; it then starts the
+new encoder with a keyframe (a new group). The receiver ignores a codec it doesn't decode, keeps
+its decoder until a keyframe of the new codec arrives, then swaps; a keyframe that arrived before
+the message (another QUIC stream) is held and decoded once the message is in. VP8 hardware vs
+software is the same bitstream and sends nothing; nor do size, frame rate, bitrate or decoder
+choices (the receiver's decoder swap asks for a keyframe with the existing video control
+message 2). Details: `docs/video.md` ("Switching codecs mid-call").
 
 ## Tokens (P6; decisions U13, U15)
 

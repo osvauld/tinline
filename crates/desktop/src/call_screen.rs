@@ -162,10 +162,10 @@ impl App {
                         .padding(Padding { top: 6.0, left: 34.0, ..Padding::ZERO }).height(25));
                 }
             }
+            // Stats for nerds and this call's video controls (developer builds), in place of an overlay.
             #[cfg(feature = "video-tuning")]
-            if let Some(stats) = self.node.video_stats() {
-                content = content.push(Space::new().height(8))
-                    .push(tx(p2pcore::video_tuning_stats_label(stats), 11.0, t.ink2));
+            if self.video.negotiated() {
+                content = content.push(self.call_nerds(t, st.rtt_ms, self.call_ui.loss.pct()));
             }
             // Desktop keeps the real device selectors here, off the focus screen. No immediate-switch claim.
             for (title, devices, selected, on) in [
@@ -191,6 +191,67 @@ impl App {
             .style(move |_, _| button::Style { background: Some(ui::alpha(Color::BLACK, 0.24).into()), ..Default::default() })
             .on_press(Msg::CallUi(Action::CloseAbout));
         stack![scrim, container(card).center_x(Fill).align_bottom(Fill).padding(24)].into()
+    }
+
+    /// "Stats for nerds": the core's fixed rows (`video_stat_rows`, same 11 rows every refresh, so the card never
+    /// changes height) and this call's controls (`Node::set_video_live`), in a scroll area of a fixed height.
+    #[cfg(feature = "video-tuning")]
+    fn call_nerds(&self, t: Tok, rtt_ms: u32, loss: f64) -> El<'_> {
+        use super::super::Vm;
+        let rows = self.node.video_stats().map(|s| p2pcore::video_stat_rows(s, rtt_ms, loss)).unwrap_or_default();
+        let mut c = column![semi("Stats for nerds", 12.0, t.ink2)].spacing(2);
+        for (i, r) in rows.into_iter().enumerate() {
+            if i == 6 || i == 9 {
+                c = c.push(Space::new().height(6));
+            }
+            c = c.push(row![container(tx(r.label, 11.0, t.ink2)).width(76), container(tx(r.value, 11.0, t.ink)).width(Fill)].spacing(10).height(30));
+        }
+        let Some(l) = self.node.video_live() else { return c.into() };
+        let chip = |label: String, on: bool, msg: Option<Msg>| {
+            let b = button(tx(format!("{}{label}", if on { "✓ " } else { "" }), 12.0, if msg.is_some() || on { t.ink } else { t.ink2 }));
+            match msg { Some(m) => b.on_press(m), None => b }
+        };
+        let live = |next: p2pcore::VideoLive| Some(Msg::Video(Vm::Live(next)));
+        c = c.push(Space::new().height(10)).push(tx("These apply to this call now. Settings > Video sets the next call.", 11.0, t.ink2));
+        let mut codecs = iced::widget::Row::new().spacing(6);
+        for ch in self.node.video_live_codecs() {
+            let on = l.send_codec == ch.id || (l.send_codec.is_empty() && ch.id == "auto");
+            codecs = codecs.push(chip(ch.label.clone(), on, ch.available.then(|| p2pcore::VideoLive { send_codec: ch.id.clone(), ..l.clone() }).and_then(live)));
+        }
+        c = c.push(tx("Your video codec", 11.0, t.ink2)).push(container(codecs.wrap()).height(64));
+        let mut sizes = iced::widget::Row::new().spacing(6);
+        for (h, label) in [(0, "Auto"), (360, "360p"), (540, "540p"), (720, "720p")] {
+            sizes = sizes.push(chip(label.into(), l.fixed_height == h, live(p2pcore::VideoLive { fixed_height: h, ignore_limits: l.ignore_limits && h != 0, ..l.clone() })));
+        }
+        c = c.push(tx("Your size", 11.0, t.ink2)).push(sizes);
+        let mut fps = iced::widget::Row::new().spacing(6);
+        for (f, label) in [(0, "Auto"), (15, "15"), (24, "24"), (30, "30")] {
+            fps = fps.push(chip(label.into(), l.fixed_fps == f, live(p2pcore::VideoLive { fixed_fps: f, ..l.clone() })));
+        }
+        c = c.push(tx("Your frame rate", 11.0, t.ink2)).push(fps);
+        let mut caps = iced::widget::Row::new().spacing(6);
+        for (b, label) in [(0, "Auto"), (500_000, "0.5M"), (1_000_000, "1M"), (2_000_000, "2M"), (3_000_000, "3M")] {
+            caps = caps.push(chip(label.into(), l.max_bps == b, live(p2pcore::VideoLive { max_bps: b, ..l.clone() })));
+        }
+        c = c.push(tx("Your bitrate cap (not a promised rate)", 11.0, t.ink2)).push(caps);
+        let pinned = l.fixed_height != 0;
+        let mut ignore = iced::widget::toggler(l.ignore_limits).label("Ignore limits (heat, their decoder)").text_size(12).style(ui::toggle_style(t));
+        if pinned {
+            let next = l.clone();
+            ignore = ignore.on_toggle(move |on| Msg::Video(Vm::Live(p2pcore::VideoLive { ignore_limits: on, ..next.clone() })));
+        }
+        c = c.push(Space::new().height(4)).push(ignore)
+            .push(tx(if pinned { "For testing. Your picture may stutter or your computer may heat up." } else { "Pin a size first." }, 11.0, t.ink2));
+        let decoders = self.node.video_live_decoders();
+        let mut dec = iced::widget::Row::new().spacing(6);
+        for ch in &decoders {
+            let on = l.recv_decoder == ch.id || (l.recv_decoder.is_empty() && ch.id == "auto");
+            dec = dec.push(chip(ch.label.clone(), on, live(p2pcore::VideoLive { recv_decoder: ch.id.clone(), ..l.clone() })));
+        }
+        c = c.push(tx("Decoder for their video", 11.0, t.ink2)).push(container(dec.wrap()).height(64));
+        let note = self.video.live_note.clone().or_else(|| decoders.first().filter(|_| decoders.len() == 1).map(|d| d.why.clone())).unwrap_or_default();
+        c = c.push(container(tx(note, 11.0, t.ink2)).height(30));
+        container(iced::widget::scrollable(c.spacing(4)).style(ui::scroll_style(t)).height(360)).padding(Padding { top: 10.0, ..Padding::ZERO }).into()
     }
 
     /// CallStrip.svelte: a minimised call, 44 px across the top of the window (in flow, so the

@@ -129,6 +129,14 @@ pub struct LadderConfig {
     /// Developer test mode: hold this resolution, ignoring rate/CPU stepping. Caps still win.
     /// None preserves normal adaptation. Does not pin bitrate or upscale camera frames.
     pub fixed_rung: Option<usize>,
+    /// Developer test mode: at most this frame rate (15/24/30); with `fixed_rung` exactly this
+    /// tier unless a cap is lower. None = no test limit.
+    pub fixed_fps: Option<u32>,
+    /// Developer test switch, with `fixed_rung` only: the fixed step ignores the device/peer caps
+    /// and hints (`max_rung`, `max_fps`, the peer's hint), so a person can see what the phones do
+    /// at a size their heat or decoder would refuse. The caller still bounds `fixed_rung` and
+    /// `fixed_fps` by the peer's offer (what its decoder takes at all).
+    pub ignore_caps: bool,
     /// Highest frame rate allowed (device or peer capability, `VideoOffer.max_fps`).
     pub max_fps: u32,
     /// Step up once the bitrate is this % of the next step's floor...
@@ -169,6 +177,8 @@ impl Default for LadderConfig {
             tiers: vec![15, 24, 30],
             max_rung: 3,
             fixed_rung: None,
+            fixed_fps: None,
+            ignore_caps: false,
             max_fps: 30,
             up_margin_pct: 130,
             up_hold_us: 5_000_000,
@@ -409,9 +419,16 @@ impl Ladder {
 
     /// Fixed test size, bounded by device/peer caps and hints, at the highest allowed tier.
     fn fixed_step(&self) -> Option<usize> {
-        let rung = self.cfg.fixed_rung?.min(self.cfg.rungs.len() - 1)
-            .min(self.cfg.max_rung).min(self.hint_rung);
-        (rung * self.nt()..(rung + 1) * self.nt()).rev().find(|&k| self.capped(k))
+        let mut rung = self.cfg.fixed_rung?.min(self.cfg.rungs.len() - 1);
+        if !self.cfg.ignore_caps {
+            rung = rung.min(self.cfg.max_rung).min(self.hint_rung);
+        }
+        let fps_ok = |k: usize| self.cfg.fixed_fps.is_none_or(|f| self.fps_of(k) <= f);
+        let lowest = rung * self.nt();
+        (lowest..lowest + self.nt())
+            .rev()
+            .find(|&k| fps_ok(k) && (self.cfg.ignore_caps || self.capped(k)))
+            .or(Some(lowest))
     }
 
     fn nt(&self) -> usize {
@@ -484,7 +501,7 @@ impl Ladder {
     /// Allowed by the caps (device, peer, hint). The lowest tier is always allowed.
     fn capped(&self, k: usize) -> bool {
         let max_rung = self.cfg.max_rung.min(self.hint_rung);
-        let max_fps = self.cfg.max_fps.min(self.hint_fps);
+        let max_fps = self.cfg.max_fps.min(self.hint_fps).min(self.cfg.fixed_fps.unwrap_or(u32::MAX));
         self.rung_of(k) <= max_rung && (self.fps_of(k) <= max_fps || k.is_multiple_of(self.nt()))
     }
 
@@ -507,6 +524,30 @@ impl Ladder {
     /// `None` right after a size change.
     pub fn encode_p75(&self) -> Option<u64> {
         self.encode_pct(75, ENCODE_MIN)
+    }
+
+    /// Developer test limits changed mid-call (`Sender::set_test_limits`): the per-rung bitrate
+    /// ceilings (one per rung) and the fixed test rung. A new fixed rung applies at the next
+    /// [`Self::update`]; `None` resumes normal adaptation from the current step.
+    pub fn set_test_limits(&mut self, rung_max_bps: &[u32], fixed_rung: Option<usize>, fixed_fps: Option<u32>, ignore_caps: bool) {
+        for (r, &max) in self.cfg.rungs.iter_mut().zip(rung_max_bps) {
+            r.max_bps = max;
+        }
+        self.cfg.fixed_rung = fixed_rung;
+        self.cfg.fixed_fps = fixed_fps;
+        self.cfg.ignore_caps = ignore_caps && fixed_rung.is_some();
+    }
+
+    /// The test switch is on and the fixed step is above what the caps would allow.
+    pub fn caps_ignored(&self) -> bool {
+        self.cfg.ignore_caps && self.cfg.fixed_rung.is_some() && !self.capped(self.cur)
+    }
+
+    /// A new encoder (a codec switch) at the same size: its first frames are slower, and the
+    /// old encoder's times say nothing about it, so the encode-time window starts again.
+    pub fn restart_encode_timing(&mut self) {
+        self.encode.clear();
+        self.warmup = ENCODE_WARMUP;
     }
 
     /// Steps taken since the last call (at most the last 64).
@@ -1073,6 +1114,19 @@ impl Sender {
 
     pub fn ladder(&self) -> &Ladder {
         &self.ladder
+    }
+
+    /// Developer test limits changed mid-call (the in-call tuning sheet): `cfg`'s overall
+    /// `max_bps`, its rungs' `max_bps` and its `ladder.fixed_rung` replace ours; nothing else
+    /// of `cfg` is read (and `ladder.fixed_fps` / `ladder.ignore_caps`). A lower ceiling applies at once, a raised one through the normal ramp;
+    /// a new fixed rung moves the ladder now (a resize wants a keyframe, as any step).
+    pub fn set_test_limits(&mut self, cfg: &SenderConfig) {
+        self.cfg.max_bps = cfg.max_bps;
+        let rung_max: Vec<u32> = cfg.ladder.rungs.iter().map(|r| r.max_bps).collect();
+        let l = &cfg.ladder;
+        self.ladder.set_test_limits(&rung_max, l.fixed_rung, l.fixed_fps, l.ignore_caps);
+        self.bitrate = self.bitrate.min(self.cfg.max_bps);
+        self.relayer();
     }
 
     pub fn ladder_mut(&mut self) -> &mut Ladder {
@@ -1885,6 +1939,65 @@ mod tests {
         tx.set_hint(Hint { max_pixels: 640 * 360, max_fps: 30, reason: HintReason::DisplaySize, room: false });
         assert_eq!(tx.resolution(), (640, 360));
         assert!(tx.wants_keyframe(), "a safety cap resize still needs a keyframe");
+    }
+
+    /// The in-call sheet: a fixed size and a bitrate cap applied to a running sender, then lifted.
+    #[test]
+    fn test_limits_apply_to_a_running_sender() {
+        let mut tx = Sender::new(SenderConfig { start_bps: 2_500_000, ..Default::default() });
+        tx.frame(0, true, b"k");
+        assert_eq!(tx.resolution(), (1280, 720));
+        let mut cfg = SenderConfig::default();
+        cfg.max_bps = 500_000;
+        for r in &mut cfg.ladder.rungs {
+            r.max_bps = 500_000;
+        }
+        cfg.ladder.fixed_rung = Some(1);
+        tx.set_test_limits(&cfg);
+        assert_eq!(tx.resolution(), (640, 360));
+        assert!(tx.wants_keyframe(), "a resize opens a new group");
+        assert!(tx.bitrate() <= 500_000, "{}", tx.bitrate());
+        // Back to Auto: the ceiling returns, the size stays until adaptation moves it.
+        tx.set_test_limits(&SenderConfig::default());
+        assert_eq!(tx.resolution(), (640, 360));
+        assert_eq!(tx.ladder().cfg.fixed_rung, None);
+        assert_eq!(tx.ladder().cfg.rungs[3].max_bps, 3_000_000);
+    }
+
+    /// The pin: 720p at 24 fps. Caps (a hint, heat) still win by default; with the test switch
+    /// the pin holds against them, and lifting the switch lets the caps apply again.
+    #[test]
+    fn pin_with_and_without_ignoring_caps() {
+        let mut tx = Sender::new(SenderConfig::default());
+        tx.frame(0, true, b"k");
+        let mut cfg = SenderConfig::default();
+        cfg.ladder.fixed_rung = Some(3);
+        cfg.ladder.fixed_fps = Some(24);
+        tx.set_test_limits(&cfg);
+        assert_eq!((tx.resolution(), tx.fps()), ((1280, 720), 24));
+        tx.set_hint(Hint { max_pixels: 640 * 360, max_fps: 15, reason: HintReason::DecodeSlow, room: false });
+        assert_eq!((tx.resolution(), tx.fps()), ((640, 360), 15), "caps win by default");
+        assert!(!tx.ladder().caps_ignored());
+        cfg.ladder.ignore_caps = true;
+        tx.set_test_limits(&cfg);
+        assert_eq!((tx.resolution(), tx.fps()), ((1280, 720), 24), "the pin holds");
+        assert!(tx.ladder().caps_ignored());
+        tx.ladder_mut().set_max_fps(15);
+        tx.ladder_mut().set_max(1);
+        tx.ladder_mut().update(1_000_000, 100_000);
+        assert_eq!((tx.resolution(), tx.fps()), ((1280, 720), 24), "heat ignored too");
+        cfg.ladder.ignore_caps = false;
+        tx.set_test_limits(&cfg);
+        assert_eq!((tx.resolution(), tx.fps()), ((640, 360), 15));
+        // Without a pinned size the switch does nothing; the fps pin is a ceiling.
+        let mut auto = SenderConfig::default();
+        auto.ladder.fixed_fps = Some(24);
+        auto.ladder.ignore_caps = true;
+        let mut tx = Sender::new(SenderConfig { start_bps: 2_500_000, ..Default::default() });
+        tx.frame(0, true, b"k");
+        tx.set_test_limits(&auto);
+        tx.ladder_mut().update(1_000_000, 2_500_000);
+        assert!(tx.fps() <= 24 && !tx.ladder().caps_ignored());
     }
 
     #[test]

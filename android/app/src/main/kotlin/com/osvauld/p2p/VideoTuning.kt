@@ -40,7 +40,7 @@ internal fun VideoTuningPanel(app: P2pApp) {
         }
     }
     SectionLabel("VIDEO TUNING · DEBUG ONLY")
-    Hint("Session only. Changes apply to the next call. Fixed size disables rate/CPU resolution adaptation; peer and thermal caps still win. Enable HD capture for larger sizes. Compare actual payload rates and dimensions.", Modifier.padding(horizontal = 20.dp))
+    Hint("Session only. Changes apply to the next call; the call screen’s About this call changes the current one. Fixed size disables rate/CPU resolution adaptation; peer and thermal caps still win. Enable HD capture for larger sizes. Compare actual payload rates and dimensions.", Modifier.padding(horizontal = 20.dp))
     tuning?.let { t ->
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Hint("Send codec")
@@ -72,6 +72,14 @@ internal fun VideoTuningPanel(app: P2pApp) {
                     TinButton((if (t.fixedHeight == height) "✓ " else "") + label, { apply(t.copy(fixedHeight = height)) }, fill = false, height = 36.dp)
                 }
             }
+            Hint("Decoder for their video (where this phone has both kinds; AV1 is software only)")
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                listOf("auto" to "Auto", "hw" to "Hardware", "sw" to "Software").forEach { (id, label) ->
+                    val selected = t.recvDecoder == id || (t.recvDecoder.isEmpty() && id == "auto")
+                    TinButton((if (selected) "✓ " else "") + label, { apply(t.copy(recvDecoder = id)) }, fill = false, height = 36.dp)
+                }
+            }
+            Hint("During a call, About this call (the signal icon) has the same controls for that call.")
             if (busy) Hint("Applying…")
             error?.let { Hint(it) }
         }
