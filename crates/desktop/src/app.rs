@@ -336,8 +336,6 @@ struct App {
     add_in: String,
     call: Option<CallView>,
     call_ui: crate::call_ui::State,
-    /// The call was placed with the video button: turn the camera on when the call finds one.
-    video_intent: bool,
     /// A second incoming call, shown as a banner over the call; the call carries on until the user chooses.
     waiting: Option<CallInfo>,
     /// "End & answer" was chosen: this call takes over when the current one ends.
@@ -471,7 +469,7 @@ enum Msg {
     /// Accept on a contact request answered (the DID, the new contact).
     RequestAnswered(String, Result<Contact, String>),
     CallPressed(String),
-    /// The conversation's video button: dial, and turn the camera on once the call has video.
+    /// The conversation's video button: a video call (my camera on from the start, when there is one).
     DialVideo(String),
     /// Settings > Notifications / Sounds.
     Alerts(Alerts),
@@ -484,6 +482,8 @@ enum Msg {
     AllowCalls(String, bool),
     Done(Result<(), String>),
     Answer,
+    /// "Video" on a ringing video call: answer with my camera on.
+    AnswerVideo,
     Decline,
     DeclineWaiting,
     EndAnswer,
@@ -934,7 +934,6 @@ impl App {
             add_in: String::new(),
             call: None,
             call_ui: crate::call_ui::State::default(),
-            video_intent: false,
             waiting: None,
             takeover: None,
             early: Vec::new(),
@@ -1326,25 +1325,33 @@ impl App {
 
     /// Starts a call (ignored while one is on) to `did`.
     fn dial(&mut self, did: String) -> Task<Msg> {
-        if self.call.is_some() {
+        if !self.may_dial(&did) {
             return Task::none();
         }
+        let node = self.node.clone();
+        blocking(move || node.call(did).map_err(s), Msg::CallStarted)
+    }
+
+    /// Whether a call to `did` may start now; says why not.
+    pub(super) fn may_dial(&mut self, did: &str) -> bool {
+        if self.call.is_some() {
+            return false;
+        }
         use crate::blocks::{CallGate, Composer};
-        let gate = if self.demo { CallGate::Ok } else { self.blocks.call_gate(&did, self.is_contact(&did)) };
+        let gate = if self.demo { CallGate::Ok } else { self.blocks.call_gate(did, self.is_contact(did)) };
         if gate != CallGate::Ok {
-            let name = self.chat_name(&did);
+            let name = self.chat_name(did);
             self.notice = Some(match gate {
                 CallGate::Closed(Composer::BlockedByMe) => format!("You blocked {name}. Unblock to call."),
                 CallGate::Closed(Composer::BlockedMe) => format!("Can\u{2019}t call: {} blocked you", crate::blocks::first_name(&name)),
                 CallGate::NotAllowed => crate::blocks::calls_not_allowed_text(&name),
                 _ => format!("{name} is no longer in your contacts."),
             });
-            return Task::none();
+            return false;
         }
         self.notice = None;
         self.ended = None;
-        let (node, video) = (self.node.clone(), self.video_intent);
-        blocking(move || if video { node.video_call(did) } else { node.call(did) }.map_err(s), Msg::CallStarted)
+        true
     }
 
     fn update(&mut self, msg: Msg) -> Task<Msg> {
@@ -2127,10 +2134,7 @@ impl App {
                 let can_minimize = self.call.as_ref().is_some_and(|c| !(c.info.incoming && !c.answered && c.state == CallState::Ringing));
                 self.call_ui.apply(action, can_minimize);
             }
-            Msg::CallPressed(did) => {
-                self.video_intent = false;
-                return self.dial(did);
-            }
+            Msg::CallPressed(did) => return self.dial(did),
             Msg::GCall(m) => return self.gcall_update(m),
             Msg::Privacy(m) => match m {
                 PvMsg::Pick(on) => self.pv.pick = on,
@@ -2195,10 +2199,7 @@ impl App {
                 }
                 self.save_settings();
             }
-            Msg::DialVideo(did) => {
-                self.video_intent = true;
-                return self.dial(did);
-            }
+            Msg::DialVideo(did) => return self.dial_video(did),
             Msg::CallAgain(did) => return self.dial(did),
             Msg::CallStarted(r) => match r {
                 Ok(info) => {
@@ -2333,6 +2334,7 @@ impl App {
                     return blocking(move || node.answer(id).map_err(s), Msg::Done);
                 }
             }
+            Msg::AnswerVideo => return self.answer_with_video(),
             Msg::Decline => {
                 if let Some(c) = &self.call {
                     self.ctl.stop_ring();
@@ -2671,7 +2673,9 @@ impl App {
                 });
                 self.ended = None;
                 if crate::audio::RING_CALLS.load(Ordering::Relaxed) { notify("Tinline", &format!("{name} is calling"), Target::Show); }
-                let mut tasks = vec![self.show_window()];
+                // The camera is looked up while it rings (no streaming, so no camera light): the Camera and
+                // "Video" buttons work the moment they are pressed.
+                let mut tasks = vec![self.show_window(), self.find_camera()];
                 if let Some(secs) = INIT.get().unwrap().auto_answer {
                     let (node, id) = (self.node.clone(), info.call_id);
                     self.ctl.stop_ring();
