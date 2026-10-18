@@ -56,6 +56,10 @@ windows-native-keyring-store = { version = "1", default-features = false }
 windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_UI_WindowsAndMessaging"] }
 
 [features]
+# Developer video tuning (Settings → Video, readout in About this call), release builds too while we
+# tune codecs; `--no-default-features` builds without it.
+default = ["video-tuning"]
+video-tuning = []
 # Test knobs (P2P_AUTO_ANSWER, P2P_PASSPHRASE, ...) and the TICKET/STATS stderr lines the e2e scripts
 # parse. Never enable in a release build.
 test-hooks = []

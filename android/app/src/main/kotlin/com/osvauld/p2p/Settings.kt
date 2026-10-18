@@ -118,7 +118,7 @@ fun SettingsScreen(
                 sub = when (val n = blocks.list.size) { 0 -> "Nobody"; 1 -> "1 person"; else -> "$n people" })
             SectionLabel("ABOUT")
             ListItem("About Tinline", onClick = onAbout, icon = PgIcons.Info, sub = "Version, licences, terms, privacy")
-            if (BuildConfig.DEBUG) ListItem("Diagnostics", onClick = onDiagnostics, icon = PgIcons.Bug, sub = "Test tone and core version (debug builds)")
+            if (BuildConfig.DEBUG || BuildConfig.VIDEO_TUNING) ListItem("Diagnostics", onClick = onDiagnostics, icon = PgIcons.Bug, sub = "Test tone, video tuning, core version")
         }
     }
     if (sheet) AccountSheet(app, onDismiss = { sheet = false }, onPick = { sheet = false; onSwitchPick(it) },
@@ -448,7 +448,7 @@ fun DiagnosticsScreen(app: P2pApp, onBack: () -> Unit) {
                 TinSwitch(tone, { tone = it; app.testToneHz = if (it) 440f else null; app.node.setTestTone(app.testToneHz) }, "Test tone")
             })
             Hint("p2pcore ${uniffi.p2pcore.coreVersion()}", Modifier.padding(horizontal = 20.dp, vertical = 8.dp))
-            if (BuildConfig.DEBUG) VideoTuningPanel(app)
+            if (BuildConfig.VIDEO_TUNING) VideoTuningPanel(app)
         }
     }
 }

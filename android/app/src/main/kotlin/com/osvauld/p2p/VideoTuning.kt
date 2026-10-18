@@ -15,10 +15,10 @@ import kotlinx.coroutines.withContext
 import uniffi.p2pcore.VideoTuning
 import uniffi.p2pcore.videoTuningStatsLabel
 
-/** Session-only controls, intentionally unreachable in release UI. Rust owns validation/policy. */
+/** Session-only controls, only in builds with [BuildConfig.VIDEO_TUNING]. Rust owns validation/policy. */
 @Composable
 internal fun VideoTuningPanel(app: P2pApp) {
-    if (!BuildConfig.DEBUG) return
+    if (!BuildConfig.VIDEO_TUNING) return
     val node = app.node
     var tuning by remember(node) { mutableStateOf<VideoTuning?>(null) }
     var codecs by remember(node) { mutableStateOf(emptyList<String>()) }
@@ -79,10 +79,10 @@ internal fun VideoTuningPanel(app: P2pApp) {
     DebugVideoStats(app)
 }
 
-/** Visible in debug calls, without turning a decoder's pipeline latency into a CPU claim. */
+/** Visible in calls of builds with video tuning, without turning a decoder's pipeline latency into a CPU claim. */
 @Composable
 internal fun DebugVideoStats(app: P2pApp, modifier: Modifier = Modifier) {
-    if (!BuildConfig.DEBUG) return
+    if (!BuildConfig.VIDEO_TUNING) return
     val node = app.node
     var line by remember(node) { mutableStateOf("") }
     LaunchedEffect(node) {

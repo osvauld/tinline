@@ -436,7 +436,7 @@ fun InCallScreen(ui: CallUi, meName: String, app: P2pApp, onCameraOn: () -> Unit
         waitingCard = { m -> WaitingCard(waiting, name, onDecline = { calls.declineWaiting() }, onEndAnswer = { calls.endAndAnswer() }, modifier = m) },
         ending = ending,
     )
-    if (BuildConfig.DEBUG) DebugVideoStats(app, Modifier.align(Alignment.TopCenter).padding(top = 64.dp, start = 8.dp, end = 8.dp))
+    if (BuildConfig.VIDEO_TUNING) DebugVideoStats(app, Modifier.align(Alignment.TopCenter).padding(top = 64.dp, start = 8.dp, end = 8.dp))
     }
 }
 

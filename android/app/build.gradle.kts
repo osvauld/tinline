@@ -20,6 +20,9 @@ android {
         minSdk = 28
         targetSdk = 36
         buildConfigField("boolean", "VIDEO_HD_CAPTURE", "false")
+        // Developer video tuning (Settings → Diagnostics, in-call readout), release builds too while we tune codecs;
+        // -PvideoTuning=false builds without it.
+        buildConfigField("boolean", "VIDEO_TUNING", ((findProperty("videoTuning") as String?) ?: "true").toBoolean().toString())
         // Play needs a higher code on every upload; scripts/build_android.py --bundle passes the commit count.
         versionCode = (findProperty("versionCode") as String?)?.toInt() ?: 582
         versionName = (findProperty("versionName") as String?) ?: "0.1.34"

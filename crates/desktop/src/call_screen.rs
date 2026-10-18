@@ -162,7 +162,7 @@ impl App {
                         .padding(Padding { top: 6.0, left: 34.0, ..Padding::ZERO }).height(25));
                 }
             }
-            #[cfg(debug_assertions)]
+            #[cfg(feature = "video-tuning")]
             if let Some(stats) = self.node.video_stats() {
                 content = content.push(Space::new().height(8))
                     .push(tx(p2pcore::video_tuning_stats_label(stats), 11.0, t.ink2));

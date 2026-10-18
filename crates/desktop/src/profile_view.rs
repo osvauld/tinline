@@ -852,10 +852,10 @@ impl App {
         } else {
             c = c.push(pf_sec(24.0, column![pf_h2(t, "Camera"), pf_card(t, rows), pf_note(t, note)].into()));
         }
-        #[cfg(debug_assertions)]
+        #[cfg(feature = "video-tuning")]
         {
             let tuning = self.node.video_tuning();
-            let mut controls = column![pf_h2(t, "Video tuning · debug only"),
+            let mut controls = column![pf_h2(t, "Video tuning"),
                 pf_note(t, "Session only. Changes apply to the next call. Fixed size disables rate/CPU resolution adaptation; peer and thermal caps still win. Use HD capture and compare actual payload rates and dimensions.")].spacing(8);
             let mut codecs = row![tx("Send codec", 13.0, t.ink2)].spacing(8);
             for codec in self.node.video_tuning_codecs() {

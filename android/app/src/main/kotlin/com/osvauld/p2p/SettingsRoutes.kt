@@ -34,14 +34,14 @@ fun SettingsRoute(
     var adding by remember { mutableStateOf(false) }
     SettingsLanding(store, fallback, list, permProblems(missing), onBack, onMe, onSwitchPick, { adding = true },
         onDevices, onPrivacy, onNotifications, onSounds, onVideo, onStorage, onAbout) {
-        // Not in the playground: the app's "Video in calls" offer, and debug-only tools.
+        // Not in the playground: the app's "Video in calls" offer, and developer tools.
         var video by remember { mutableStateOf(app.videoEnabled) }
         PfSec {
             PfCard {
                 act { PfAct("Video in calls", onClick = { video = !video; app.videoEnabled = video }, icon = Pg.Video, plain = true, role = androidx.compose.ui.semantics.Role.Switch,
                     sub = if (video) "You can turn your camera on in a call" else "Calls are voice only",
                     trailing = { PgSwitch(video, { video = it; app.videoEnabled = it }, "Video in calls") }) }
-                if (BuildConfig.DEBUG) act { PfAct("Diagnostics", onClick = onDiagnostics, chevron = true, sub = "Test tone and core version (debug builds)") }
+                if (BuildConfig.DEBUG || BuildConfig.VIDEO_TUNING) act { PfAct("Diagnostics", onClick = onDiagnostics, chevron = true, sub = "Test tone, video tuning, core version") }
             }
         }
     }

@@ -5,11 +5,15 @@ a new automatic codec rule or evidence that one codec gives a better picture.
 
 ## Controls
 
-- Android debug builds: Settings → Diagnostics → Video tuning.
-- Desktop debug builds (`debug_assertions`): Settings → Video → Video tuning.
-- Release UI has no controls or debug readout. The shared Rust API is present with
-  inert defaults; Android's native Rust release profile does not determine whether
-  the Android UI is a debug build.
+- Android: Settings → Diagnostics → Video tuning, plus a readout over the call.
+  Built in by `BuildConfig.VIDEO_TUNING`, on by default in debug **and release**
+  builds while codecs are being tuned (user, 2026-10-18); `-PvideoTuning=false`
+  builds without it.
+- Desktop: Settings → Video → Video tuning, readout in About this call. Cargo
+  feature `video-tuning`, a default feature (release too); `--no-default-features`
+  builds without it.
+- With every control on Auto, calls behave as without the panel. The shared Rust
+  API is always present with inert defaults.
 - Session-only, not saved to disk or synced. Recreating the Node resets settings.
 - Send codec: Auto / AV1 / VP8, with only locally supported encoders listed. Rust
   rejects unsupported codecs and unknown parameter values. Receiving capabilities
@@ -96,7 +100,7 @@ Results after merging `dev` (2026-10-18, all through `tasks`, `-j 2`, named targ
 | `cargo test -p video --release --features net --lib` (media, net, sim) | 599 | 106 passed, 6 ignored (5 `net_real_*` 30 s real-time, `debug_latency_by_second`) |
 | `cargo test -p p2pcore --release --test video_calls` | 603 | 4 passed |
 | `cargo check -p desktop -p peer` (debug) | 596 | ok, no warnings |
-| `cargo check --release -p desktop` (tuning UI compiled out by `debug_assertions`) | 614 | ok, no warnings |
+| `cargo check --release -p desktop` (before 2026-10-18 the tuning UI was debug-only) | 614 | ok, no warnings |
 | Android `:app:assembleDebug -Pabis=arm64-v8a` | 624 (local, after the LAN worker's 586/184 hit Gradle `OutOfMemoryError: Java heap space` and hung; cancelled) | BUILD SUCCESSFUL |
 
 ## Measurement tooling already in the tree (for the codec table)

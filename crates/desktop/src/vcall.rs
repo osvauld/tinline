@@ -30,7 +30,7 @@ pub(super) enum Vm {
     ScanCameras,
     Cameras(Vec<camera::Info>),
     SelectCamera(String),
-    #[cfg(debug_assertions)]
+    #[cfg(feature = "video-tuning")]
     Tuning(p2pcore::VideoTuning),
 }
 
@@ -191,7 +191,7 @@ impl App {
                     self.sync_camera();
                 }
             }
-            #[cfg(debug_assertions)]
+            #[cfg(feature = "video-tuning")]
             Vm::Tuning(tuning) => {
                 if let Err(e) = self.node.set_video_tuning(tuning) {
                     self.notice = Some(format!("Video tuning: {e}"));
