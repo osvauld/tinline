@@ -97,7 +97,7 @@ Results after merging `dev` (2026-10-18, all through `tasks`, `-j 2`, named targ
 | `cargo test -p p2pcore --release --test video_calls` | 603 | 4 passed |
 | `cargo check -p desktop -p peer` (debug) | 596 | ok, no warnings |
 | `cargo check --release -p desktop` (tuning UI compiled out by `debug_assertions`) | 614 | ok, no warnings |
-| Android `:app:assembleDebug -Pabis=arm64-v8a` (LAN worker) | 586 (worker 184) | **not verified**: worker Gradle hit `OutOfMemoryError: Java heap space` in `compileDebugKotlin` (Kotlin daemon failed to connect) and `mergeDebugResources` failed, then hung; cancelled. Retry 622 queued |
+| Android `:app:assembleDebug -Pabis=arm64-v8a` | 624 (local, after the LAN worker's 586/184 hit Gradle `OutOfMemoryError: Java heap space` and hung; cancelled) | BUILD SUCCESSFUL |
 
 ## Measurement tooling already in the tree (for the codec table)
 
