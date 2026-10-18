@@ -29,7 +29,8 @@ rate/CPU resolution adaptation but still honors peer and budget caps. Both peers
 validate the directional codec intersection (`proto::video_codecs`): an unsupported
 forced codec makes the call audio-only, never silently substitutes AV1. Auto's
 hardware score is unchanged. Shared stats expose measured payload rates, decode
-p75 and the current rung, not a live picture-quality score. See
+p75 and the current rung, not a live picture-quality score. A tuned offer keeps
+`hint_flags`, and the sharper-video rule below is unchanged (tuned calls feed it tuned inputs). See
 [controls, compatibility, A/B procedure and limitations](design/video-tuning.md).
 
 ## Suggesting sharper video (2026-10-17, `feature/hd-suggest`)
