@@ -172,6 +172,9 @@ val uniffiBindgen = tasks.register<RustExec>("uniffiBindgen") {
         "generate", "--library", so.absolutePath, "--language", "kotlin",
         "--out-dir", uniffiOut.get().asFile.absolutePath))
     inputs.files(rustInputs).withPropertyName("rustSources").withPathSensitivity(PathSensitivity.RELATIVE)
+    // The bindings list the library's functions, so `dev-tools` must regenerate them: reusing a
+    // release task's bindings breaks debug Kotlin, and the reverse ships calls the .so lacks.
+    inputs.property("devTools", devTools)
     outputs.dir(uniffiOut)
     doFirst { uniffiOut.get().asFile.deleteRecursively() }
 }
