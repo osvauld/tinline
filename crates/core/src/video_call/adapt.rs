@@ -172,6 +172,9 @@ pub(super) struct Policy {
     pub(super) peer: (usize, u32),
     /// The app's HD choice for this call (`Node::set_video_hd`).
     pub(super) hd_on: bool,
+    /// Our decoder is asynchronous (hardware, or any MediaCodec one: `codecs::pipelined_decoder`):
+    /// its cost is judged by throughput, not wall time.
+    pub(super) recv_pipelined: bool,
     /// The sharper-video rules (`hd`): how long each has held, our receiver's `Hint::room`, and
     /// what the app may suggest (`VideoStats::hd_suggest`).
     send_room: hd::Streak,
@@ -192,6 +195,7 @@ impl Default for Policy {
             shrink: None,
             peer: (usize::MAX, u32::MAX),
             hd_on: false,
+            recv_pipelined: false,
             send_room: hd::Streak::default(),
             recv_room: hd::Streak::default(),
             room: false,
@@ -422,6 +426,20 @@ pub(super) fn push_hint(pipe: &Pipe, now: Instant) {
     }
 }
 
+/// Why each keyframe was sent, for the per-second log: "start 1 rate 2 req 5 backlog 6" (zeros left out).
+pub(super) fn key_causes_text(c: &video::media::KeyCauses) -> String {
+    let all = [
+        ("start", c.start),
+        ("rate", c.rate),
+        ("cpu", c.cpu),
+        ("hint", c.hint),
+        ("req", c.request),
+        ("backlog", c.backlog),
+        ("other", c.other),
+    ];
+    all.iter().filter(|e| e.1 > 0).map(|(n, v)| format!("{n} {v}")).collect::<Vec<_>>().join(" ")
+}
+
 fn step_name(s: (u32, u32, u32)) -> String {
     format!("{}p{}", s.1, s.2)
 }
@@ -471,7 +489,7 @@ pub(super) async fn run_policy(pipe: Arc<Pipe>) {
             let mut pol = pipe.policy.lock();
             let (rx_total, dec_total, hw) = {
                 let st = pipe.stats.lock();
-                (st.frames_received, st.frames_decoded, st.recv_hardware)
+                (st.frames_received, st.frames_decoded, st.recv_hardware || pol.recv_pipelined)
             };
             hist.push_back((rx_total - last_rx, dec_total - last_dec));
             last_rx = rx_total;
@@ -483,7 +501,7 @@ pub(super) async fn run_policy(pipe: Arc<Pipe>) {
             recv_room.behind = hw_behind(rx2, dec2);
             recv_room.frames = hist.back().map_or(0, |e| e.1);
             let changed = if hw {
-                // Hardware: latency is not cost; judge by throughput (+ render).
+                // Hardware or MediaCodec: latency is not cost; judge by throughput (+ render).
                 let behind = hw_behind(rx2, dec2);
                 let r = if rn >= DECODE_MIN_SAMPLES { render } else { 0.0 };
                 pol.observe_decode_hw(now, behind, r, DECODE_MIN_SAMPLES.max(n))
@@ -505,11 +523,13 @@ pub(super) async fn run_policy(pipe: Arc<Pipe>) {
         // What the sharper-video rule needs from the sender (`hd::SendSample`).
         let mut send_room = hd::SendSample { cap_px: cap.pixels as u64, ..Default::default() };
         let mut rung_height = 0;
+        let mut key_causes = video::media::KeyCauses::default();
         if let Some(s) = &send {
-            let (trouble, draining, rate, rung, fps, enc_p75) = s.with_sender(|s| {
+            let (trouble, draining, rate, rung, fps, enc_p75, causes) = s.with_sender(|s| {
                 let l = s.ladder();
-                ((s.trace.overuse, s.trace.starved, s.drops), s.draining(), s.bitrate(), l.rung(), l.fps(), l.encode_p75())
+                ((s.trace.overuse, s.trace.starved, s.drops), s.draining(), s.bitrate(), l.rung(), l.fps(), l.encode_p75(), s.key_causes)
             });
+            key_causes = causes;
             send_room.congested = draining || trouble != last_trouble;
             last_trouble = trouble;
             send_room.rate_bps = rate;
@@ -560,10 +580,10 @@ pub(super) async fn run_policy(pipe: Arc<Pipe>) {
         if st.frames_sent > 0 || st.frames_decoded > 0 {
             tracing::info!(
                 target: "p2pcore::video_call",
-                "video send {}x{}@{} {}kbps cap={}px/{}fps({}) key={} overuse={} starved={} queue={}ms drops={} | recv {}x{}@{} dec={:.1}ms decode_err={}",
+                "video send {}x{}@{} {}kbps cap={}px/{}fps({}) key={} ({}) overuse={} starved={} queue={}ms qoff={}ms drops={} | recv {}x{}@{} dec={:.1}ms decode_err={}",
                 st.send_width, st.send_height, st.send_fps, st.bitrate_bps / 1000,
-                cap.pixels, cap.fps, cap.reason, st.keyframes_sent, st.rate_overuse, st.rate_starved,
-                st.last_queuing_us / 1000, st.backlog_drops,
+                cap.pixels, cap.fps, cap.reason, st.keyframes_sent, key_causes_text(&key_causes), st.rate_overuse, st.rate_starved,
+                st.last_queuing_us / 1000, st.queuing_offset_us / 1000, st.backlog_drops,
                 st.recv_width, st.recv_height, st.recv_fps, p75, st.decode_errors,
             );
         }

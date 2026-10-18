@@ -77,6 +77,14 @@ fn hardware_vp8_decoder() -> bool {
     false
 }
 
+/// Whether our decoder for `codec` runs through MediaCodec (Android VP8, hardware or not, e.g.
+/// the moto g52's `c2.android.vp8.decoder`): asynchronous, so the wall time of a decode call is
+/// pipeline latency and up to `DECODE_BUDGET` of waiting, not CPU work. The decode-cost policy
+/// then judges it by throughput, as it does hardware decoders (`adapt::Policy::observe_decode_hw`).
+pub(crate) fn pipelined_decoder(codec: VideoCodec) -> bool {
+    codec == VideoCodec::Vp8 && cfg!(all(target_os = "android", feature = "mediacodec"))
+}
+
 /// The decoder for what the peer sends us. `max_pixels` caps what the peer can make us allocate.
 pub(crate) fn new_decoder(
     codec: VideoCodec,
