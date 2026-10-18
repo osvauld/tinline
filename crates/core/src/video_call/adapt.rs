@@ -402,6 +402,7 @@ pub(super) async fn run_policy(pipe: Arc<Pipe>) {
     let mut tick = tokio::time::interval(Duration::from_secs(1));
     tick.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
     let (mut last, mut last_sent, mut last_dec) = (Instant::now(), 0u64, 0u64);
+    let (mut last_payload, mut last_recv_payload) = (0u64, 0u64);
     // (received, decoded) frames per tick, last two ticks: the hardware decoder's throughput.
     let (mut last_rx, mut hist) = (0u64, std::collections::VecDeque::<(u64, u64)>::new());
     loop {
@@ -467,7 +468,13 @@ pub(super) async fn run_policy(pipe: Arc<Pipe>) {
             let hint = send.as_ref().and_then(|s| s.with_sender(|s| s.hint()));
             pipe.policy.lock().send_cap(hint)
         };
+        let rung = send.as_ref().map_or(0, |s| s.with_sender(|s| s.ladder().rung().height));
         let mut st = pipe.stats.lock();
+        st.send_payload_bps = traffic::payload_bps(st.admitted_payload_bytes.saturating_sub(last_payload), secs);
+        st.recv_payload_bps = traffic::payload_bps(st.received_payload_bytes.saturating_sub(last_recv_payload), secs);
+        (last_payload, last_recv_payload) = (st.admitted_payload_bytes, st.received_payload_bytes);
+        st.decode_p75_ms = dec;
+        st.send_rung_height = rung;
         for s in &steps {
             let why = match s.reason {
                 video::media::StepReason::Rate => "rate",

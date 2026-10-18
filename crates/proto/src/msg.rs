@@ -150,7 +150,7 @@ pub struct VideoOffer {
     pub max_fps: u8,
     /// Codecs it decodes, best first; always contains `Av1`.
     pub decode: Vec<VideoCodec>,
-    /// Codecs it encodes, best first; always contains `Av1`.
+    /// Codecs it encodes, best first; normally contains `Av1` (developer forcing may filter it).
     pub encode: Vec<VideoCodec>,
     /// The subset of `decode` this device decodes in hardware (MediaCodec hardware codec).
     pub hw_decode: Vec<VideoCodec>,
@@ -173,6 +173,15 @@ pub fn send_codec(sender: &VideoOffer, receiver: &VideoOffer) -> VideoCodec {
         }
     }
     best.map_or(VideoCodec::Av1, |(_, c)| c)
+}
+
+/// Both video directions, or None when an offer has no common codec. In particular, developer
+/// codec forcing can filter AV1 out: `send_codec`'s legacy fallback is not a negotiated codec.
+/// Both peers must use this check before starting video streams. Hardware scoring is unchanged.
+pub fn video_codecs(a: &VideoOffer, b: &VideoOffer) -> Option<(VideoCodec, VideoCodec)> {
+    let (tx, rx) = (send_codec(a, b), send_codec(b, a));
+    (a.encode.contains(&tx) && b.decode.contains(&tx)
+        && b.encode.contains(&rx) && a.decode.contains(&rx)).then_some((tx, rx))
 }
 
 /// The `Reject` reason a contact gets when it calls without being allowed to (no call token, or

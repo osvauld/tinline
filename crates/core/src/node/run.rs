@@ -216,7 +216,7 @@ impl Inner {
                         let devices = self.my_device_list(&me);
                         // Video only if they offered it and we take it.
                         let theirs = call.video.peer_offer.lock().clone();
-                        let video = theirs.as_ref().and_then(|_| self.video_offer());
+                        let video = theirs.as_ref().and_then(|_| self.video_offer(&call));
                         if let Err(e) = ctrl.send(&Msg::Accept { renewed_grant: renewed, devices, video: video.clone() }).await {
                             self.log(format!("connection lost: {e}"));
                             break lost(false);

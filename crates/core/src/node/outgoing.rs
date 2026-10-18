@@ -154,7 +154,7 @@ impl Inner {
         call: Arc<Call>,
         mut cmds: mpsc::UnboundedReceiver<Cmd>,
     ) {
-        let offer = self.video_offer();
+        let offer = self.video_offer(&call);
         let (mut legs, mut ev_rx) = self.spawn_legs(&ep, &me, &contact, &call, offer.clone());
         // What each leg is doing, to decide the end when none is left.
         #[derive(Clone, Copy, PartialEq)]

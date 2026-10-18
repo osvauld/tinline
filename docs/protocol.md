@@ -124,11 +124,21 @@ Codes are reusable for a week, so nobody becomes a contact without the owner's y
    Either side ends with `Hangup`. `renewed_grant` is a fresh call token for B.
 
 Video is offered in the same messages: `CallHello.video` / `Accept.video` =
-`Option<VideoOffer { max_pixels, decode, encode }>` (codec lists of `"av1"` / `"vp8"`, best first;
-`decode` always has `av1`). Both present = video. Each direction's codec is
-`send_codec(sender, receiver)`: the first of the sender's `encode` the receiver decodes, else AV1;
-both ends compute it from the two offers, with no further message. Details: `docs/video.md`
-("Call protocol") and `docs/design/video-hw-vp8.md`.
+`Option<VideoOffer { max_pixels, max_fps, decode, encode, hw_decode, hw_encode }>`
+(codec lists of `"av1"` / `"vp8"`, best first; `decode` always has `av1`). Each
+direction uses `send_codec(sender, receiver)`: score each common codec by sender
+hardware encode + receiver hardware decode, with sender-order ties. Both ends
+compute it from the two offers, with no further message. Both offers must be
+present and `proto::video_codecs` must validate **both** resulting directions
+against the actual lists before streams start: no common codec = audio-only,
+not an unoffered AV1 fallback. Details: `docs/video.md` ("Call protocol") and
+`docs/design/video-hw-vp8.md`.
+
+Developer tuning can filter `encode`/`hw_encode` to a single locally supported
+send codec, without changing `decode`. Auto offers still contain AV1. Matching
+updated builds are required for forced-codec experiments; older peers assume AV1
+is always offered. No wire field or mid-call codec-switch message is added. See
+`docs/design/video-tuning.md`.
 
 ## Tokens (P6; decisions U13, U15)
 

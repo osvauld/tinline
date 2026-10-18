@@ -443,9 +443,12 @@ fun DiagnosticsScreen(app: P2pApp, onBack: () -> Unit) {
     var tone by remember { mutableStateOf(app.testToneHz != null) }
     Page {
         TopBar("Diagnostics", onBack)
-        ListItem("Test tone", sub = "Send a 440 Hz tone instead of the microphone", trailing = {
-            TinSwitch(tone, { tone = it; app.testToneHz = if (it) 440f else null; app.node.setTestTone(app.testToneHz) }, "Test tone")
-        })
-        Hint("p2pcore ${uniffi.p2pcore.coreVersion()}", Modifier.padding(horizontal = 20.dp, vertical = 8.dp))
+        Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
+            ListItem("Test tone", sub = "Send a 440 Hz tone instead of the microphone", trailing = {
+                TinSwitch(tone, { tone = it; app.testToneHz = if (it) 440f else null; app.node.setTestTone(app.testToneHz) }, "Test tone")
+            })
+            Hint("p2pcore ${uniffi.p2pcore.coreVersion()}", Modifier.padding(horizontal = 20.dp, vertical = 8.dp))
+            if (BuildConfig.DEBUG) VideoTuningPanel(app)
+        }
     }
 }

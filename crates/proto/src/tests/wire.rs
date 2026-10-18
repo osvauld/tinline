@@ -329,12 +329,29 @@ fn send_codec_table() {
     ];
     for (i, (s, r, want)) in cases.into_iter().enumerate() {
         assert_eq!(send_codec(s, r), want, "case {i}");
+        assert_eq!(video_codecs(s, r).map(|(tx, _)| tx), Some(want), "validated case {i}");
     }
     // Ties go to the sender's encode order; an empty or odd offer falls back to AV1.
     assert_eq!(send_codec(&offer(&[Av1, Vp8], &[Av1, Vp8], &[], &[]), &offer(&[Vp8, Av1], &[], &[], &[])), Av1);
     assert_eq!(send_codec(&offer(&[Av1, Vp8], &[Vp8, Av1], &[], &[]), &offer(&[Av1, Vp8], &[], &[], &[])), Vp8);
     assert_eq!(send_codec(&offer(&[], &[], &[], &[]), &offer(&[], &[], &[], &[])), Av1);
     assert_eq!(send_codec(&offer(&[Av1], &[Vp8], &[], &[Vp8]), &offer(&[Av1], &[], &[], &[])), Av1);
+}
+
+#[test]
+fn filtered_video_offers_require_a_common_codec_in_both_directions() {
+    use VideoCodec::{Av1, Vp8};
+    let pixel = offer(&[Av1, Vp8], &[Vp8, Av1], &[Vp8], &[Vp8]);
+    let av1_forced = offer(&[Av1, Vp8], &[Av1], &[Vp8], &[]);
+    assert_eq!(video_codecs(&av1_forced, &pixel), Some((Av1, Vp8)));
+    assert_eq!(video_codecs(&pixel, &av1_forced), Some((Vp8, Av1)));
+    let vp8_forced = offer(&[Av1, Vp8], &[Vp8], &[], &[]);
+    let desktop = offer(&[Av1, Vp8], &[Av1, Vp8], &[], &[]);
+    assert_eq!(video_codecs(&vp8_forced, &desktop), Some((Vp8, Av1)));
+    let av1_only = offer(&[Av1], &[Av1], &[], &[]);
+    assert_eq!(video_codecs(&vp8_forced, &av1_only), None);
+    assert_eq!(video_codecs(&av1_only, &vp8_forced), None);
+    assert_eq!(video_codecs(&offer(&[], &[], &[], &[]), &desktop), None);
 }
 
 #[test]

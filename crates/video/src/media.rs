@@ -126,6 +126,9 @@ pub struct LadderConfig {
     pub tiers: Vec<u32>,
     /// Highest rung index allowed (device or peer capability).
     pub max_rung: usize,
+    /// Developer test mode: hold this resolution, ignoring rate/CPU stepping. Caps still win.
+    /// None preserves normal adaptation. Does not pin bitrate or upscale camera frames.
+    pub fixed_rung: Option<usize>,
     /// Highest frame rate allowed (device or peer capability, `VideoOffer.max_fps`).
     pub max_fps: u32,
     /// Step up once the bitrate is this % of the next step's floor...
@@ -165,6 +168,7 @@ impl Default for LadderConfig {
             ],
             tiers: vec![15, 24, 30],
             max_rung: 3,
+            fixed_rung: None,
             max_fps: 30,
             up_margin_pct: 130,
             up_hold_us: 5_000_000,
@@ -391,6 +395,9 @@ impl Ladder {
     /// starts at full frame rate (the frame rate goes down first, but the start isn't a step
     /// down; and keyframes at a lower tier are bigger).
     fn start(&self, bps: u32) -> usize {
+        if let Some(k) = self.fixed_step() {
+            return k;
+        }
         let nt = self.nt();
         let top = (0..nt).rev().find(|&t| self.capped(t)).unwrap_or(0);
         (0..self.cfg.rungs.len())
@@ -398,6 +405,13 @@ impl Ladder {
             .map(|r| r * nt + top)
             .find(|&k| self.capped(k) && self.floor(k) <= bps as u64)
             .unwrap_or(top)
+    }
+
+    /// Fixed test size, bounded by device/peer caps and hints, at the highest allowed tier.
+    fn fixed_step(&self) -> Option<usize> {
+        let rung = self.cfg.fixed_rung?.min(self.cfg.rungs.len() - 1)
+            .min(self.cfg.max_rung).min(self.hint_rung);
+        (rung * self.nt()..(rung + 1) * self.nt()).rev().find(|&k| self.capped(k))
     }
 
     fn nt(&self) -> usize {
@@ -535,6 +549,9 @@ impl Ladder {
 
     /// One frame took `us` to encode. Returns true if the step changed.
     pub fn encode_time(&mut self, now_us: u64, us: u64) -> bool {
+        if self.cfg.fixed_rung.is_some() {
+            return false;
+        }
         if self.warmup > 0 {
             self.warmup -= 1;
             return false;
@@ -571,6 +588,13 @@ impl Ladder {
     /// [`Self::update`], but with `hold` only a lowered cap applies yet.
     pub fn update_held(&mut self, now_us: u64, bps: u32, hold: bool) -> bool {
         self.last_bps = bps;
+        if let Some(to) = self.fixed_step() {
+            if to != self.cur {
+                self.set(now_us, to, StepReason::Cap);
+                return true;
+            }
+            return false;
+        }
         if !self.capped(self.cur) {
             let to = self.fit_below(self.cur, bps);
             self.set(now_us, to, StepReason::Cap);
@@ -1781,6 +1805,55 @@ impl Receiver {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn fixed_test_rung_ignores_rate_and_cpu_but_obeys_caps() {
+        let cfg = LadderConfig { fixed_rung: Some(2), ..Default::default() };
+        let mut l = Ladder::new(cfg, 30, 500_000);
+        assert_eq!((l.index(), l.fps()), (2, 30));
+        assert!(!l.update(1_000_000, 100_000));
+        for i in 0..100 { assert!(!l.encode_time(i * 33_333, 90_000)); }
+        assert_eq!((l.index(), l.fps()), (2, 30));
+        l.set_max(1);
+        l.set_max_fps(15);
+        assert!(l.update_held(4_000_000, 100_000, true));
+        assert_eq!((l.index(), l.fps()), (1, 15));
+        l.set_max(3);
+        l.set_max_fps(30);
+        l.update(5_000_000, 100_000);
+        assert_eq!((l.index(), l.fps()), (2, 30));
+        l.set_hint(0, 0);
+        l.update(6_000_000, 100_000);
+        assert_eq!((l.index(), l.fps()), (0, 15));
+        l.set_hint(1280 * 720, 24);
+        l.update(7_000_000, 100_000);
+        assert_eq!((l.index(), l.fps()), (2, 24));
+    }
+
+    #[test]
+    fn fixed_test_mode_keeps_network_backoff_and_keyframes_on_cap_changes() {
+        let cfg = SenderConfig {
+            ladder: LadderConfig { fixed_rung: Some(2), ..Default::default() },
+            ..Default::default()
+        };
+        let mut tx = Sender::new(cfg);
+        tx.frame(0, true, b"k");
+        tx.on_report(1_000_000, &RateReport { delivered_bps: 300_000, queuing_us: 100_000 });
+        assert_eq!(tx.bitrate(), 240_000);
+        assert!(tx.draining());
+        assert_eq!(tx.resolution(), (960, 540));
+        assert!(!tx.wants_keyframe(), "a rate drop alone must not resize a fixed test");
+        tx.set_hint(Hint { max_pixels: 640 * 360, max_fps: 30, reason: HintReason::DisplaySize });
+        assert_eq!(tx.resolution(), (640, 360));
+        assert!(tx.wants_keyframe(), "a safety cap resize still needs a keyframe");
+    }
+
+    #[test]
+    fn fixed_test_rung_is_bounded_at_start_and_cannot_index_past_ladder() {
+        let cfg = LadderConfig { fixed_rung: Some(usize::MAX), max_rung: 1, max_fps: 24, ..Default::default() };
+        let l = Ladder::new(cfg, 30, 100_000);
+        assert_eq!((l.index(), l.fps()), (1, 24));
+    }
 
     fn feed(rx: &mut Receiver, outs: &[Out], chunk: usize) {
         for o in outs {

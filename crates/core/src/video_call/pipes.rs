@@ -15,6 +15,7 @@ pub(super) fn max_rung(ladder: &LadderConfig, max_pixels: u32) -> usize {
 
 pub(super) async fn run_send(conn: Connection, pipe: Arc<Pipe>, codec: VideoCodec) {
     let mut cfg = SenderConfig::default();
+    pipe.stats.lock().tuning.configure(&mut cfg);
     (cfg.ladder.max_rung, cfg.ladder.max_fps) = pipe.policy.lock().own_caps();
     let send = match VideoSend::accept(conn, cfg).await {
         Ok(s) => s,
@@ -88,9 +89,13 @@ pub(super) fn encode_loop(pipe: Arc<Pipe>, send: Arc<VideoSend>, codec: VideoCod
                 ..Default::default()
             };
             match new_encoder(codec, &cfg) {
-                Ok(e) => enc = Some((e, w, h)),
+                Ok(e) => {
+                    enc = Some((e, w, h));
+                    pipe.stats.lock().tuning_problem.clear();
+                }
                 Err(e) => {
                     tracing::warn!("video encoder: {e}");
+                    pipe.stats.lock().tuning_problem = format!("Video encoder unavailable at {w}x{h}: {e}");
                     continue;
                 }
             }
@@ -105,6 +110,7 @@ pub(super) fn encode_loop(pipe: Arc<Pipe>, send: Arc<VideoSend>, codec: VideoCod
             Ok(p) => p,
             Err(e) => {
                 tracing::warn!("video encode: {e}");
+                pipe.stats.lock().tuning_problem = format!("Video encode failed: {e}");
                 enc = None;
                 continue;
             }

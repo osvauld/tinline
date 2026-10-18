@@ -21,7 +21,7 @@ use std::time::Instant;
 
 use iroh::endpoint::Connection;
 use parking_lot::{Condvar, Mutex};
-use proto::{VideoCodec, VideoOffer, send_codec};
+use proto::{VideoCodec, VideoOffer};
 use tokio::sync::{Notify, mpsc, watch};
 use tokio::task::JoinHandle;
 use video::convert::{self, Prepare, Range, RgbLayout, Rotation, Yuv420};
@@ -70,6 +70,8 @@ mod frames;
 #[cfg(all(target_os = "android", feature = "mediacodec"))]
 mod mediacodec;
 mod pipes;
+mod tuning;
+pub use tuning::{VideoTuning, video_tuning_stats_label};
 
 pub use self::ffi_bytes::Bytes;
 #[cfg_attr(not(target_os = "android"), allow(unused_imports))]
@@ -90,13 +92,22 @@ pub struct VideoStats {
     pub send_height: u32,
     pub bitrate_bps: u32,
     pub encode_ms: f32,
+    /// Decode wall-time p75 over two seconds (hardware pipeline latency, not CPU cost).
+    pub decode_p75_ms: f32,
+    /// Last measured second's admitted/received payload rate, not QUIC wire throughput.
+    pub send_payload_bps: u32,
+    pub recv_payload_bps: u32,
+    pub send_rung_height: u32,
+    /// Settings snapshotted with our offer; later changes apply to a future call.
+    pub tuning: VideoTuning,
+    pub tuning_problem: String,
     pub frames_decoded: u64,
     pub decode_errors: u64,
     pub recv_width: u32,
     pub recv_height: u32,
-    /// AV1 payload accepted into the local sender, NOT transmitted/ACKed QUIC bytes.
+    /// Video payload accepted into the local sender, NOT transmitted/ACKed QUIC bytes.
     pub admitted_payload_bytes: u64,
-    /// Complete validated AV1 payload received before decode/decoder-queue admission.
+    /// Complete validated video payload received before decode/decoder-queue admission.
     pub received_payload_bytes: u64,
     pub frames_received: u64,
     /// Receiver rate reports so far, and how many said "queueing" (delay above the overuse
@@ -146,6 +157,7 @@ pub trait VideoEvents: Send + Sync {
 /// Node-wide video settings.
 pub(crate) struct NodeVideo {
     enabled: AtomicBool,
+    tuning: Mutex<VideoTuning>,
     events: Mutex<Option<Arc<dyn VideoEvents>>>,
     /// Video state events go out on one thread of their own, in order (`emit_video`).
     dispatch: Mutex<Option<std::sync::mpsc::Sender<(Arc<dyn VideoEvents>, VideoInfo)>>>,
@@ -153,7 +165,7 @@ pub(crate) struct NodeVideo {
 
 impl Default for NodeVideo {
     fn default() -> Self {
-        Self { enabled: AtomicBool::new(true), events: Mutex::new(None), dispatch: Mutex::new(None) }
+        Self { enabled: AtomicBool::new(true), tuning: Mutex::default(), events: Mutex::new(None), dispatch: Mutex::new(None) }
     }
 }
 
@@ -286,18 +298,8 @@ impl Drop for CallVideo {
 
 impl Inner {
     /// Our offer, when video is enabled on this node.
-    pub(crate) fn video_offer(&self) -> Option<VideoOffer> {
-        self.video.enabled.load(Ordering::SeqCst).then(|| {
-            let c = codecs::local_offer_codecs();
-            VideoOffer {
-                max_pixels: MAX_PIXELS,
-                max_fps: FPS as u8,
-                decode: c.decode,
-                encode: c.encode,
-                hw_decode: c.hw_decode,
-                hw_encode: c.hw_encode,
-            }
-        })
+    pub(crate) fn video_offer(&self, call: &crate::node::Call) -> Option<VideoOffer> {
+        self.video.offer(&call.video.pipe)
     }
 
     fn video_info(&self, call: &crate::node::Call) -> VideoInfo {
@@ -328,7 +330,11 @@ impl Inner {
         if let (Some(ours), Some(peer)) = (ours, theirs) {
             let v = &call.video;
             // Each end computes both directions from both offers: no extra message.
-            let (tx, rx) = (send_codec(&ours, &peer), send_codec(&peer, &ours));
+            let Some((tx, rx)) = proto::video_codecs(&ours, &peer) else {
+                v.pipe.stats.lock().tuning_problem = "Requested video codec unsupported by peer; audio only".into();
+                self.emit_video(call);
+                return;
+            };
             *v.codecs.lock() = Some((tx, rx));
             {
                 let mut st = v.pipe.stats.lock();

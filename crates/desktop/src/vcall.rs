@@ -28,6 +28,8 @@ pub(super) enum Vm {
     ScanCameras,
     Cameras(Vec<camera::Info>),
     SelectCamera(String),
+    #[cfg(debug_assertions)]
+    Tuning(p2pcore::VideoTuning),
 }
 
 #[derive(Default)]
@@ -157,6 +159,12 @@ impl App {
                     self.video.camera = None;
                     self.video.send_size = None;
                     self.sync_camera();
+                }
+            }
+            #[cfg(debug_assertions)]
+            Vm::Tuning(tuning) => {
+                if let Err(e) = self.node.set_video_tuning(tuning) {
+                    self.notice = Some(format!("Video tuning: {e}"));
                 }
             }
             Vm::PreferHd(on) => {

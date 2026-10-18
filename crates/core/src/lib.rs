@@ -76,7 +76,7 @@ pub use voice::{VoiceDecoder, VoiceInfo, VoiceRecorder};
 pub use recovery_key::{is_recovery_key, recovery_key_from_phrase, recovery_phrase_from_input};
 pub use store::CallRecord;
 pub use video_call::{video_codec_label, video_recv_label, video_send_label};
-pub use video_call::{Bytes, Pulled, VideoBudget, VideoEvents, VideoFrame, VideoInfo, VideoSendCap, VideoStats};
+pub use video_call::{Bytes, Pulled, VideoBudget, VideoEvents, VideoFrame, VideoInfo, VideoSendCap, VideoStats, VideoTuning, video_tuning_stats_label};
 pub use node::{AccountSummary, Availability, CallInfo, CallState, CallStats, CardPeek, Contact, LockState, Node, NodeEvents, NodeStatus, ProfileInfo};
 pub use licences::{open_source_licences, OpenSourceLicence};
 

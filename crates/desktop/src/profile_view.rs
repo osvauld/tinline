@@ -852,6 +852,36 @@ impl App {
         } else {
             c = c.push(pf_sec(24.0, column![pf_h2(t, "Camera"), pf_card(t, rows), pf_note(t, note)].into()));
         }
+        #[cfg(debug_assertions)]
+        {
+            let tuning = self.node.video_tuning();
+            let mut controls = column![pf_h2(t, "Video tuning · debug only"),
+                pf_note(t, "Session only. Changes apply to the next call. Fixed size disables rate/CPU resolution adaptation; peer and thermal caps still win. Use HD capture and compare actual payload rates and dimensions.")].spacing(8);
+            let mut codecs = row![tx("Send codec", 13.0, t.ink2)].spacing(8);
+            for codec in self.node.video_tuning_codecs() {
+                let mut next = tuning.clone();
+                next.send_codec = codec.clone();
+                let selected = tuning.send_codec == codec || (tuning.send_codec.is_empty() && codec == "auto");
+                codecs = codecs.push(button(tx(format!("{}{}", if selected { "✓ " } else { "" }, codec.to_uppercase()), 12.0, t.ink))
+                    .on_press(Msg::Video(super::super::Vm::Tuning(next))));
+            }
+            controls = controls.push(codecs);
+            let mut rates = row![tx("Bitrate cap", 13.0, t.ink2)].spacing(8);
+            for (bps, label) in [(0, "Auto"), (500_000, "0.5M"), (1_000_000, "1M"), (2_000_000, "2M"), (3_000_000, "3M")] {
+                let mut next = tuning.clone(); next.max_bps = bps;
+                rates = rates.push(button(tx(format!("{}{label}", if tuning.max_bps == bps { "✓ " } else { "" }), 12.0, t.ink))
+                    .on_press(Msg::Video(super::super::Vm::Tuning(next))));
+            }
+            controls = controls.push(rates);
+            let mut sizes = row![tx("Fixed rung", 13.0, t.ink2)].spacing(8);
+            for (height, label) in [(0, "Auto"), (360, "360p"), (540, "540p"), (720, "720p")] {
+                let mut next = tuning.clone(); next.fixed_height = height;
+                sizes = sizes.push(button(tx(format!("{}{label}", if tuning.fixed_height == height { "✓ " } else { "" }), 12.0, t.ink))
+                    .on_press(Msg::Video(super::super::Vm::Tuning(next))));
+            }
+            controls = controls.push(sizes);
+            c = c.push(pf_sec(24.0, controls.into()));
+        }
         self.pf_scroll(t, c.into(), 40.0)
     }
 

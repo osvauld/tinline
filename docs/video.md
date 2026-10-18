@@ -21,6 +21,17 @@ for exact checks, local-call evidence and remaining limits. No GPU/hardware
 encoding has been added. Older spike measurements below describe their original
 capture settings, not the new opt-in preference.
 
+## Developer tuning (phase 1)
+
+Debug UI can force the **send** codec at the next offer, set a bitrate ceiling,
+and request a fixed test rung; release UI is unchanged. Fixed test mode bypasses
+rate/CPU resolution adaptation but still honors peer and budget caps. Both peers
+validate the directional codec intersection (`proto::video_codecs`): an unsupported
+forced codec makes the call audio-only, never silently substitutes AV1. Auto's
+hardware score is unchanged. Shared stats expose measured payload rates, decode
+p75 and the current rung, not a live picture-quality score. See
+[controls, compatibility, A/B procedure and limitations](design/video-tuning.md).
+
 ## Decisions
 
 - **Codec: AV1.** Encoder = libaom in realtime mode (C, through `csrc/aom_rt.c`); decoder =
@@ -28,7 +39,7 @@ capture settings, not the new opt-in preference.
   is the memory-safe one; the encoder only ever sees our own camera frames.
 - **Hardware VP8 for 1:1 calls** (decided 2026-10-16, [design](design/video-hw-vp8.md)): an
   Android phone with a hardware VP8 encoder sends VP8 when the peer decodes it (the offer's
-  codec lists, `proto::send_codec`); phones decode VP8 with MediaCodec, the Linux desktop with
+  codec lists, validated by `proto::video_codecs`); phones decode VP8 with MediaCodec, the Linux desktop with
   libvpx (static, VP8 decoder and realtime encoder, `scripts/build_libvpx.py`, video feature
   `vp8`; peer keyframes above `max_pixels` are refused before libvpx parses them). The desktop
   also encodes VP8 (libvpx, software, `vpx::Vp8Encoder`) but only sends it to a peer that
@@ -221,7 +232,7 @@ Runs `media::Sender`/`Receiver` over the call's iroh `Connection` (audio stays o
   Presence = "this device does video in this call"; `max_pixels` = largest picture it wants to
   receive (today 1280x720); `max_fps` = highest frame rate it decodes and shows (30; the
   peer's ladder stays at or below it); `decode`/`encode` = its codecs, best first (both always have
-  AV1); `hw_decode`/`hw_encode` = the subsets that run in hardware (MediaCodec hardware codec;
+  AV1 in normal Auto mode; developer forcing may filter `encode`); `hw_decode`/`hw_encode` = the subsets that run in hardware (MediaCodec hardware codec;
   libaom, rav1d and libvpx are software). Each direction uses `proto::send_codec(sender,
   receiver)`, computed by both ends: of the sender's `encode` codecs the receiver decodes, the
   one with the most hardware wins (one point if the sender encodes it in hardware, one if the
@@ -230,7 +241,7 @@ Runs `media::Sender`/`Receiver` over the call's iroh `Connection` (audio stays o
   (uniffi record, read by both apps) carries `send_codec`/`recv_codec` ("av1"/"vp8") and
   `send_hardware`/`recv_hardware` (bool, false until video is decided). The callee answers with an offer only if the hello had one and video is
   enabled on it (`set_video_enabled`, default on); the caller ignores an offer it didn't ask
-  for. Both present = video negotiated, else the call is audio only (nothing else changes).
+  for. Both present and both directional codec intersections valid = video negotiated, else the call is audio only (nothing else changes).
 - The sender caps its ladder (`LadderConfig::max_rung`) at the highest rung within the peer's
   `max_pixels`.
 - Mid-call `Msg::Video { camera: bool }`, only once video is negotiated: sent when the call
