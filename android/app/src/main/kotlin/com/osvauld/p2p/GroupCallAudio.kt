@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import uniffi.p2pcore.GroupCallEvent
 import uniffi.p2pcore.GroupCallEventKind
@@ -18,8 +19,8 @@ import uniffi.p2pcore.GroupCallHere
 /**
  * Group-call audio and service (GA-A1): the same mic + speaker loop as a 1:1 call (its own
  * [AudioEngine], so nothing on the 1:1 path stops it), audio focus and communication mode, and the
- * foreground service in call mode (microphone type, wake + Wi-Fi locks) while this device is in a
- * group call or hosts one: a phone host keeps running while its own user is in the call.
+ * foreground service in call mode (microphone type, wake + Wi-Fi locks) while this device's user is
+ * in a group call ([CallNotif] derives it; hosting alone keeps the always-on service, not call mode).
  *
  * Driven by the core's [GroupCallEvents]. Each event only triggers a re-read of the core's state
  * ([uniffi.p2pcore.Node.groupCallHere]) on one worker thread: the callbacks run on separate core
@@ -50,14 +51,22 @@ class GroupCallAudio(private val app: P2pApp) : GroupCallEvents {
     /** Worker thread only. */
     private var session: CallSession? = null
     private var sessionWatch: Job? = null
-    /** [prepare] raised the service for a call that has not shown up yet. */
-    @Volatile private var prepared = false
+    /**
+     * When [prepare] raised the service for a call that has not shown up yet, else null. Read by
+     * [CallNotif]; counts for [CallNotif.PREPARE_TIMEOUT_MS] at most, so a prepare that never settles
+     * cannot keep the ongoing notification.
+     */
+    @Volatile var preparedAtMs: Long? = null
+        private set
+    /** The group's name for [callName], cached by [reconcile] (the service reads it on the main thread). */
+    @Volatile private var hereName: String = NAME
 
     /** In a group call or hosting one. */
     val active: Boolean get() = _here.value != null
 
     override fun onGroupCall(event: GroupCallEvent) {
         testLog("group-call kind=${event.kind} group=${event.groupId} call=${event.callId} detail=${event.detail}")
+        CallTrace.add("group ${event.kind} ${shortId(event.callId)}")
         _events.tryEmit(event)
         val settles = event.kind == GroupCallEventKind.START_FAILED || event.kind == GroupCallEventKind.LEFT
         worker.execute { reconcile(settles) }
@@ -66,12 +75,18 @@ class GroupCallAudio(private val app: P2pApp) : GroupCallEvents {
     /**
      * Call right before the user starts or joins a group call: raises the service to the
      * microphone type while the app is in the foreground (Android 14+ refuses it later from the
-     * background). Undone by `StartFailed`/`Left` if the call does not come about; call
-     * [unprepare] when the start or join call itself throws.
+     * background). Undone by `StartFailed`/`Left` if the call does not come about, and by the
+     * timeout if nothing comes at all; call [unprepare] when the start or join call itself throws.
      */
     fun prepare() {
-        prepared = true
-        CoreService.ensureRunning(app, CoreService.ACTION_IN_CALL, NAME)
+        val at = System.currentTimeMillis()
+        preparedAtMs = at
+        CallTrace.add("group prepare")
+        CoreService.ensureRunning(app, CoreService.ACTION_IN_CALL)
+        app.scope.launch {
+            delay(CallNotif.PREPARE_TIMEOUT_MS + 500)
+            if (preparedAtMs == at) { CallTrace.add("group prepare timed out"); CoreService.poke("prepare timeout") }
+        }
     }
 
     fun unprepare() {
@@ -92,7 +107,7 @@ class GroupCallAudio(private val app: P2pApp) : GroupCallEvents {
     }
 
     /** The group call's name for the ongoing notification: the group's, else "Group call". */
-    fun callName(): String = _here.value?.let { groupName(it.groupId) } ?: NAME
+    fun callName(): String = hereName
 
     private fun groupName(groupId: String): String =
         try { app.node.groups().firstOrNull { it.id == groupId }?.name } catch (e: Exception) { null }?.ifBlank { null } ?: NAME
@@ -130,18 +145,21 @@ class GroupCallAudio(private val app: P2pApp) : GroupCallEvents {
     private fun reconcile(settles: Boolean = false) {
         val h = try { app.node.groupCallHere() } catch (e: Exception) { Log.w(TAG, "groupCallHere: $e"); null }
         val was = _here.value
+        // The name first: the service re-derives (and reads it) as soon as [here] changes.
+        if (h != null && h.groupId != was?.groupId) hereName = groupName(h.groupId)
+        val wasPrepared = preparedAtMs != null
+        // Hosting alone (not yet in it) does not settle a prepare: the join may still be on its way.
+        if (h?.inCall == true || settles) preparedAtMs = null
         _here.value = h
         if (h?.inCall == true) {
             if (was?.inCall != true) _micProblem.value = null
             startSession(h)
         } else endSession()
+        // Pokes only: the service derives the state itself ([CallNotif]), so their order is free.
         if (h != null) {
-            prepared = false
-            if (was == null) CoreService.ensureRunning(app, CoreService.ACTION_IN_CALL, groupName(h.groupId))
-        } else if (was != null || (prepared && settles)) {
-            prepared = false
-            // A 1:1 call (if any) owns the service state; the two never run at the same time.
-            if (app.calls.ui.value == null) CoreService.ensureRunning(app, CoreService.ACTION_IDLE)
+            if (was == null) CoreService.ensureRunning(app, CoreService.ACTION_IN_CALL)
+        } else if (was != null || (wasPrepared && settles)) {
+            CoreService.ensureRunning(app, CoreService.ACTION_IDLE)
         }
     }
 

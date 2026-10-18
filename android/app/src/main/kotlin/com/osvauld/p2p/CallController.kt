@@ -41,6 +41,8 @@ data class CallUi(
     val activeSinceMs: Long? = null,
     /** Shown on the call screen when the mic cannot be used (denied permission or init failure). */
     val micProblem: String? = null,
+    /** I answered (or ended the other call to answer this one): in call from the tap, before Active. */
+    val answered: Boolean = false,
 ) {
     val speaker: Boolean get() = routes.speaker
 }
@@ -110,12 +112,14 @@ class CallController(private val app: P2pApp) {
         val cur = _ui.value
         if (cur != null && cur.state is CallState.Active && cur.info.callId != call.callId) {
             testLog("waiting id=${call.callId} from=${call.peerName.ifBlank { call.peerDid }}")
+            CallTrace.add("waiting ${shortId(call.callId)}")
             _waiting.value = call
             startWaitingTone()
             if (!callScreenShown) Notifications.waiting(app, call)
             return
         }
         testLog("incoming id=${call.callId} from=${call.peerName.ifBlank { call.peerDid }}")
+        CallTrace.add("incoming ${shortId(call.callId)}${if (cur != null) " over ${shortId(cur.info.callId)} ${CallNotif.of(cur)}" else ""}")
         everActive = false; _ended.value = null
         app.video.reset()
         _ui.value = CallUi(call, CallState.Ringing)
@@ -141,6 +145,7 @@ class CallController(private val app: P2pApp) {
 
     fun onState(callId: String, state: CallState) {
         testLog("state id=$callId state=${describe(state)}")
+        CallTrace.add("state ${shortId(callId)} ${describe(state)}")
         val w = _waiting.value
         if (w != null && w.callId == callId) {
             if (state is CallState.Ended) {
@@ -154,6 +159,7 @@ class CallController(private val app: P2pApp) {
             val c = _ui.value
             if (c == null || c.info.callId != callId) {
                 if (placing) early.add(callId to state)
+                else CallTrace.add("state ${shortId(callId)} ignored: current ${shortId(c?.info?.callId)}")
                 return
             }
         }
@@ -165,13 +171,13 @@ class CallController(private val app: P2pApp) {
                 val now = System.currentTimeMillis()
                 val cur = _ui.updateAndGet { u -> if (u?.info?.callId == callId) u.copy(state = state, activeSinceMs = now) else u }
                     ?: return
-                inCallService(cur.info)
+                inCallService()
                 audio.muted = cur.muted
                 session?.connected() ?: audio.start()
                 updateProximity(Routes.proximityWanted(cur.routes, videoNow))
                 startStats()
             }
-            is CallState.Ended -> {
+            is CallState.Ended -> try {
                 ringTimeout?.cancel()
                 stopRinging(); Notifications.cancelIncoming(app)
                 statsJob?.cancel(); updateProximity(false)
@@ -191,8 +197,15 @@ class CallController(private val app: P2pApp) {
                         s?.direct, if (s != null && loss != null) qualityBars(s.rttMs.toInt(), loss) else null,
                     )
                     // End & answer: straight on to the new call, no "call ended" screen in between.
-                    _ui.update { u -> if (u?.info?.callId == callId) next?.let { CallUi(it, CallState.Ringing) } else u }
+                    _ui.update { u -> if (u?.info?.callId == callId) next?.let { CallUi(it, CallState.Ringing, answered = true) } else u }
                     if (next != null) newSession(next)
+                }
+            } finally {
+                // Whatever threw above, the call is over: never leave it in [ui] (the notification is
+                // derived from it), and have the ongoing notification re-derive.
+                if (_ui.value?.info?.callId == callId) {
+                    CallTrace.add("ended ${shortId(callId)}: ui still set, cleared")
+                    _ui.update { u -> if (u?.info?.callId == callId) null else u }
                 }
                 CoreService.ensureRunning(app, CoreService.ACTION_IDLE)
             }
@@ -200,8 +213,8 @@ class CallController(private val app: P2pApp) {
         }
     }
 
-    private fun inCallService(info: CallInfo) =
-        CoreService.ensureRunning(app, CoreService.ACTION_IN_CALL, info.peerName.ifBlank { "Call" })
+    /** Pokes the service while the app may still take the microphone type; it derives the rest from [ui]. */
+    private fun inCallService() = CoreService.ensureRunning(app, CoreService.ACTION_IN_CALL)
 
     fun place(did: String): Result<CallInfo> = runCatching {
         // One press of the video button, one video call: never carried to a later call.
@@ -235,16 +248,27 @@ class CallController(private val app: P2pApp) {
         val c = _ui.value ?: return
         ringTimeout?.cancel()
         stopRinging(); Notifications.cancelIncoming(app)
-        // Raise the service to microphone type while still allowed (user-initiated).
-        inCallService(c.info)
+        CallTrace.add("answer ${shortId(c.info.callId)}")
+        // Raise the service to microphone type while still allowed (user-initiated): marked
+        // answered first, so the service derives "in call" from this poke on.
+        _ui.update { u -> if (u?.info?.callId == c.info.callId) u.copy(answered = true) else u }
+        inCallService()
         session?.answering()
-        app.scope.launch { try { app.node.answer(c.info.callId) } catch (e: Exception) { Log.w("Call", "answer: $e") } }
+        app.scope.launch {
+            try { app.node.answer(c.info.callId) } catch (e: Exception) {
+                Log.w("Call", "answer: $e")
+                CallTrace.add("answer ${shortId(c.info.callId)} failed (${e.javaClass.simpleName})")
+                // Not answered after all: no ongoing notification for a call that is only ringing.
+                _ui.update { u -> if (u?.info?.callId == c.info.callId && u.state !is CallState.Active) u.copy(answered = false) else u }
+            }
+        }
     }
 
     fun decline() {
         val c = _ui.value ?: return
         ringTimeout?.cancel()
         stopRinging(); Notifications.cancelIncoming(app)
+        CallTrace.add("decline ${shortId(c.info.callId)}")
         localEnd = DisconnectCause.REJECTED
         app.scope.launch { try { app.node.decline(c.info.callId) } catch (e: Exception) { Log.w("Call", "decline: $e") } }
     }
@@ -262,7 +286,9 @@ class CallController(private val app: P2pApp) {
         clearWaiting()
         takeover = w
         localEnd = DisconnectCause.LOCAL
-        inCallService(w)
+        CallTrace.add("end and answer ${shortId(w.callId)}")
+        // The current call is still Active (in call); its Ended hands over to [w] marked answered.
+        inCallService()
         everActive = false
         app.scope.launch {
             try { app.node.endAndAnswer(w.callId) } catch (e: Exception) { takeover = null; Log.w("Call", "end and answer: $e") }
@@ -294,7 +320,8 @@ class CallController(private val app: P2pApp) {
     val endTapMs = MutableStateFlow(0L)
 
     fun hangup() {
-        val c = _ui.value ?: return
+        val c = _ui.value ?: run { CallTrace.add("hangup: no call"); return }
+        CallTrace.add("hangup ${shortId(c.info.callId)}")
         endTapMs.value = System.currentTimeMillis()
         localEnd = DisconnectCause.LOCAL
         app.scope.launch { try { app.node.hangup(c.info.callId) } catch (e: Exception) { Log.w("Call", "hangup: $e") } }
