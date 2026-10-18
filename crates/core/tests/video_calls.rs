@@ -416,3 +416,64 @@ fn call_kind_reaches_the_ring_and_both_logs() {
     ended(&a, &id);
     assert!(!logged(&a, &id).video && !logged(&b, &id).video);
 }
+
+/// A video call starts with the caller's camera on (frames pushed while it rings count once video
+/// runs), and only the caller's: a plain Answer keeps the callee's camera off, "Video" (camera on
+/// while ringing, then answer) turns it on at once. To a device with video off it rings as a voice
+/// call, and the caller's camera goes off once the call is active (no video to send).
+#[test]
+fn video_call_starts_with_my_camera_only() {
+    let (a, b) = pair("vstart");
+    let ring = |a: &Peer| {
+        expect(a, 40, "incoming", |e| match e {
+            Ev::Incoming(c) => Some(c.clone()),
+            _ => None,
+        })
+    };
+    let ended = |p: &Peer, id: &str| {
+        expect(p, 15, "ended", |e| matches!(e, Ev::State(i, CallState::Ended { .. }) if i == id).then_some(()))
+    };
+
+    // Plain Answer: their camera only. The caller's camera pushes from the moment it dials.
+    let call = b.node.video_call(a.did.clone()).unwrap();
+    let cam = Camera::start(b.node.clone(), false);
+    let inc = ring(&a);
+    assert!(inc.video);
+    a.node.answer(inc.call_id).unwrap();
+    video_ev(&a, "b's camera on, mine off", |v| v.negotiated && v.remote_camera && !v.local_camera);
+    video_ev(&b, "my camera on, a's off", |v| v.negotiated && v.local_camera && !v.remote_camera);
+    std::thread::sleep(Duration::from_millis(500));
+    let (n, _) = watch(&a, Duration::from_secs(2));
+    assert!(n >= 30, "{n} frames from the caller's camera");
+    cam.stop();
+    b.node.hangup(call.call_id.clone()).unwrap();
+    ended(&a, &call.call_id);
+    ended(&b, &call.call_id);
+
+    // "Video": the callee's camera on before answering reaches the caller at once.
+    let call = b.node.video_call(a.did.clone()).unwrap();
+    let inc = ring(&a);
+    assert!(inc.video);
+    a.node.set_camera(true).unwrap();
+    a.node.answer(inc.call_id).unwrap();
+    video_ev(&a, "both cameras on", |v| v.negotiated && v.local_camera && v.remote_camera);
+    video_ev(&b, "both cameras on", |v| v.negotiated && v.local_camera && v.remote_camera);
+    let cam = Camera::start(a.node.clone(), false);
+    std::thread::sleep(Duration::from_millis(500));
+    let (n, _) = watch(&b, Duration::from_secs(2));
+    assert!(n >= 30, "{n} frames from the callee's camera");
+    cam.stop();
+    b.node.hangup(call.call_id.clone()).unwrap();
+    ended(&a, &call.call_id);
+    ended(&b, &call.call_id);
+
+    // Video off on the callee: a voice call there, and the caller's camera goes off.
+    a.node.set_video_enabled(false);
+    let call = b.node.video_call(a.did.clone()).unwrap();
+    let inc = ring(&a);
+    assert!(!inc.video, "{inc:?}");
+    a.node.answer(inc.call_id).unwrap();
+    video_ev(&b, "no video, my camera off", |v| !v.negotiated && !v.local_camera);
+    b.node.hangup(call.call_id.clone()).unwrap();
+    ended(&a, &call.call_id);
+}

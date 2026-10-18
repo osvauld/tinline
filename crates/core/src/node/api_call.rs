@@ -9,8 +9,11 @@ impl Node {
         self.inner.clone().start_call(did, false)
     }
 
-    /// `call`, as a video call: the callee rings as one and both logs say video. The app still
-    /// turns its camera on (`set_camera`) once video is negotiated.
+    /// `call`, as a video call: the callee rings as one and both logs say video, and our camera is
+    /// on from the start (as `set_camera(true)` right away). Push frames as soon as the camera
+    /// delivers them: they are dropped until video runs, so the camera is warm by then (docs/video.md
+    /// "Starting the camera"). An app that cannot use its camera turns it off (`set_camera(false)`).
+    /// With video off on this node (`set_video_enabled(false)`) it is a voice call.
     pub fn video_call(&self, did: String) -> Result<CallInfo, Error> {
         self.inner.clone().start_call(did, true)
     }

@@ -109,7 +109,8 @@ impl Inner {
             peer_did: did,
             peer_name: contact.as_ref().map(display_name).or(held_name.clone()).unwrap_or_default(),
             incoming: false,
-            video,
+            // Only a call that offers video can be one.
+            video: video && self.video_enabled(),
         };
         let contact = match (contact, held_name) {
             (Some(c), None) => c,
@@ -121,6 +122,9 @@ impl Inner {
             }
         };
         let (call, cmds) = self.begin_call(info.clone(), CallState::Dialing, true, me.epoch)?;
+        if info.video {
+            call.video.camera_on_from_start();
+        }
         let this = self.clone();
         self.handle.spawn(async move {
             // A panic below must not leave the slot busy forever.

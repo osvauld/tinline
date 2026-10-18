@@ -14,7 +14,8 @@ impl Inner {
     ) -> Result<(), Error> {
         let Msg::CallHello { call_id, relay: hint, devices: list, video, camera, .. } = &hello else { unreachable!() };
         let (call_id, hint, list, video) = (call_id.clone(), relay_hint(hint), list.clone(), video.clone());
-        let video_call = *camera && video.is_some();
+        // A video call when they placed it as one and we take video at all.
+        let video_call = *camera && video.is_some() && self.video_enabled();
         // It reaches the UI and logs: keep it to what we ourselves generate.
         if call_id.is_empty() || call_id.len() > 64 || !call_id.bytes().all(|b| b.is_ascii_alphanumeric()) {
             ctrl.send(&Msg::Reject { reason: REFUSED.into() }).await?;
