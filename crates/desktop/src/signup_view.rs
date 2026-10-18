@@ -9,7 +9,7 @@
 //! primary at the far right, 12 apart. Every size here is there to keep something from moving.
 
 use super::*;
-use super::super::signup::{strength, AddTab, Gs, Step, CONFIRM_AT, CONFIRM_ID, DEVICE_ID, NAME_ID, PASS_ID, URL_PRIVACY, URL_TERMS};
+use super::super::signup::{strength, AddTab, Gs, Step, DEVICE_ID, NAME_ID, PASS_ID, URL_PRIVACY, URL_TERMS};
 use super::super::Reach;
 use crate::pg_icons::pgi;
 use iced::widget::{column, rich_text, span, stack};
@@ -543,33 +543,18 @@ impl App {
                     },
                     vec![seg, shown],
                 );
-                // One primary slot, two moments: the same button, the same size. The key gets no quiz: its checksum
-                // catches a bad copy when it is pasted.
+                // One primary slot, two moments: the same button, the same size, and always a second (text) button, so
+                // nothing moves. No quiz: the key's checksum catches a bad copy when it is pasted, and restore checks the
+                // words' own checksum.
                 let b = if self.gate.copied {
-                    let mut v = vec![gbtn(t, if as_key { "I\u{2019}ve saved it" } else { "I\u{2019}ve saved them" }, B::Primary, true, Some(g(Gs::Saved)))];
-                    if !as_key {
-                        v.push(gbtn(t, "Check my copy", B::Text, false, Some(g(Gs::Check))));
-                    }
-                    v
+                    vec![
+                        gbtn(t, if as_key { "I\u{2019}ve saved it" } else { "I\u{2019}ve saved them" }, B::Primary, true, Some(g(Gs::Saved))),
+                        gbtn(t, "Copy again", B::Text, false, Some(g(Gs::CopyWords))),
+                    ]
                 } else {
                     vec![gbtn(t, if as_key { "Copy my key" } else { "Copy my words" }, B::Primary, true, Some(g(Gs::CopyWords))), gbtn(t, if as_key { "I saved it elsewhere" } else { "I wrote them down" }, B::Text, false, Some(g(Gs::Saved)))]
                 };
                 (container(scroll(t, container(body).padding(pad))).height(Fill).into(), foot(b))
-            }
-            Step::Confirm => {
-                let phrase = self.new_phrase.as_ref().map(|p| p.to_string());
-                let mut col = column![].spacing(14);
-                for (i, p) in CONFIRM_AT.iter().enumerate() {
-                    let input = text_input("", &self.gate.confirm[i]).id(CONFIRM_ID[i]).font(ui::MONO).on_input(move |v| g(Gs::ConfirmIn(i, v))).on_submit(g(Gs::ConfirmGo));
-                    let err = self.gate.wrong(i, phrase.as_deref()).then(|| format!("That isn\u{2019}t word {p}. Check your saved copy."));
-                    col = col.push(gfield(t, &format!("Word {p}"), input, None, err, 1));
-                }
-                let body = shell("Check my copy", vec!["Optional. Type a few words from your saved copy, to be sure it\u{2019}s right.".into()], vec![col.into()]);
-                let ok = self.gate.confirm.iter().all(|a| !a.trim().is_empty());
-                (
-                    container(scroll(t, container(body).padding(pad))).height(Fill).into(),
-                    foot(vec![gbtn(t, "Done", B::Primary, true, ok.then_some(g(Gs::ConfirmGo))), gbtn(t, "Back to the words", B::Text, false, Some(g(Gs::BackToWords)))]),
-                )
             }
             Step::Device => {
                 let input = text_input("", &self.device_in).id(DEVICE_ID).on_input(Msg::DeviceIn).on_submit(Msg::DeviceGo);

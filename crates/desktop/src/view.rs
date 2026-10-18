@@ -745,9 +745,6 @@ impl App {
             t.ink2,
         ));
         let mut badges = row![].spacing(8);
-        if c.verified {
-            badges = badges.push(badge(t.primary_c, t.on_primary_c, Some(Icon::ShieldCheck), "Verified"));
-        }
         if let Some(st) = self.blocks.status(&c.did) {
             badges = badges.push(badge(t.error_c, t.on_error_c, Some(Icon::PhoneOff), st));
         }
@@ -763,7 +760,6 @@ impl App {
             pill(t, Kind::Primary, Some(call_icon), "Call", can_call.then(|| Msg::CallPressed(c.did.clone()))),
             pill(t, Kind::Quiet, Some(Icon::MessageSquare), "Message", Some(Msg::Chat(super::chat::Cm::Info(false)))),
             pill(t, Kind::Quiet, Some(Icon::Pencil), "Rename", Some(Msg::SetDetail(Detail::Rename))),
-            pill(t, Kind::Quiet, Some(Icon::ShieldCheck), "Safety number", Some(Msg::SetDetail(Detail::Verify))),
             // U19: Block is the contact action; there is no Remove.
             if blocked_by_me {
                 pill(t, Kind::Quiet, None, "Unblock", Some(Msg::Unblock(c.did.clone())))
@@ -823,63 +819,6 @@ impl App {
                 .style(ui::card(t))
                 .into(),
             ),
-            Detail::Verify => {
-                let digits = self.safety.clone().unwrap_or_default();
-                let groups: Vec<String> = digits
-                    .split_whitespace()
-                    .map(str::to_string)
-                    .collect::<Vec<_>>();
-                let groups = if groups.len() == 1 {
-                    digits.as_bytes().chunks(5).map(|c| String::from_utf8_lossy(c).into_owned()).collect()
-                } else {
-                    groups
-                };
-                let mut grid = column![].spacing(10);
-                for line in groups.chunks(4) {
-                    let mut r = row![].spacing(12);
-                    for g in line {
-                        r = r.push(
-                            container(mono(g.clone(), 20.0, t.ink))
-                                .padding([10, 14])
-                                .width(Fill)
-                                .center_x(Fill)
-                                .style(ui::plain(t.surface2, 10.0)),
-                        );
-                    }
-                    grid = grid.push(r);
-                }
-                Some(
-                    container(
-                        column![
-                            semi(format!("Verify {name}"), 17.0, t.ink),
-                            tx(
-                                format!("Compare these numbers with {name}, in person or on a Tinline call. If they match, your calls go only to them \u{2014} nobody is in the middle."),
-                                14.0,
-                                t.ink2
-                            ),
-                            grid,
-                            tx("Same on both computers. Read them aloud in groups.", 13.0, t.ink2),
-                            row![
-                                pill(t, Kind::Primary, Some(Icon::Check), "They match", Some(Msg::SetVerified(true))),
-                                pill(t, Kind::Quiet, Some(Icon::Copy), "Copy", Some(Msg::CopySafety)),
-                                pill(t, Kind::Danger, Some(Icon::X), "They don\u{2019}t match", Some(Msg::SetVerified(false))),
-                                Space::new().width(Fill),
-                                pill(t, Kind::Ghost, None, "Close", Some(Msg::SetDetail(Detail::View))),
-                            ]
-                            .spacing(8),
-                            tx(
-                                format!("If they don\u{2019}t match, block {name} and add each other again face to face."),
-                                13.0,
-                                t.ink2
-                            ),
-                        ]
-                        .spacing(14),
-                    )
-                    .padding(24)
-                    .style(ui::card(t))
-                    .into(),
-                )
-            }
             Detail::ConfirmBlock => Some({
                 let (title_, lines) = crate::blocks::block_dialog(&name);
                 let text_ = lines.iter().map(|b| format!("\u{2022} {b}")).collect::<Vec<_>>().join("\n");

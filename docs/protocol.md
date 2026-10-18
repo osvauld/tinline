@@ -719,7 +719,8 @@ messages (an older app fails to decode them, U18).
 - Calls are logged to `calls.json` (last 500, newest first; `recent_calls`, `calls_with`).
   The log is written before `Ended` is delivered, so the UI re-reads it on `on_call_state`
   `Ended`. A block keeps their entries.
-- Safety number: per party, SHA-512 over `"tinline-safety-v1" || signing_pk`, then 5200 rounds
+- Safety number (core only since 2026-10-18: the apps no longer show it or let you mark a contact
+  verified; `safety_number`/`set_verified` stay in the API): per party, SHA-512 over `"tinline-safety-v1" || signing_pk`, then 5200 rounds
   of `H = SHA-512(H || signing_pk)`; the first 30 bytes give 6 groups of 5 bytes, each read as a
   big-endian integer mod 100000 and zero-padded to 5 digits. The two 30-digit halves are
   concatenated in sorted order and shown as 12 groups of 5. Only the DID keys count, so it

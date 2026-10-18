@@ -95,7 +95,6 @@ private sealed interface Route {
     data object Home : Route
     data class Add(val scan: Boolean, val ticket: String? = null, val paste: Boolean = false) : Route
     data class Contact(val did: String) : Route
-    data class Verify(val did: String) : Route
     data object Settings : Route
     data object History : Route
     data class Chat(val did: String, val searchHit: uniffi.p2pcore.MessageHit? = null) : Route
@@ -383,7 +382,7 @@ private fun Root(app: P2pApp) {
                 is Route.Contact -> {
                     val c = contacts.firstOrNull { it.did == r.did }
                     if (c == null) LaunchedEffect(Unit) { pop() }
-                    else ContactScreen(c, onBack = ::pop, onCall = { call(c.did) }, onMessage = { stack.add(Route.Chat(c.did)) }, onVerify = { stack.add(Route.Verify(c.did)) },
+                    else ContactScreen(c, onBack = ::pop, onCall = { call(c.did) }, onMessage = { stack.add(Route.Chat(c.did)) },
                         block = app.blocks.collectAsState().value.of(c.did), onUnblock = { app.unblock(c.did) },
                         callGate = app.blocks.collectAsState().value.callGate(c.did, true),
                         callsAllowed = app.blocks.collectAsState().value.callsAllowed(c.did), onAllowCalls = { on -> app.allowCalls(c.did, on) },
@@ -392,20 +391,6 @@ private fun Root(app: P2pApp) {
                         // U19/U24: the contact and the chat stay; the page shows Blocked and Unblock.
                         app.block(c.did); say("${firstName(c.display())} is told you blocked them")
                     })
-                }
-                is Route.Verify -> {
-                    val c = contacts.firstOrNull { it.did == r.did }
-                    if (c == null) LaunchedEffect(Unit) { pop() }
-                    else {
-                        val groups = remember(c.did, c.device) { runCatching { app.node.safetyNumber(c.did).trim().split(Regex("\\s+")) }.getOrNull() }
-                        VerifyScreen(app.node.profile()?.name ?: "", c, groups, onBack = ::pop, onMatch = {
-                            scope.launch(Dispatchers.IO) { runCatching { app.node.setVerified(c.did, true) }; app.refresh() }
-                            pop()
-                        }, onBlock = {
-                            pop()
-                            app.block(c.did); say("${firstName(c.display())} is told you blocked them")
-                        })
-                    }
                 }
                 Route.Settings -> SettingsRoute(
                     app, missing, onBack = ::pop, onMe = { stack.add(Route.Me) }, onSwitchPick = { stack.add(Route.SwitchConfirm(it)) },

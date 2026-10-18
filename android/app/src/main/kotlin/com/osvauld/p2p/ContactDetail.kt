@@ -22,19 +22,18 @@ import androidx.compose.ui.unit.sp
 import uniffi.p2pcore.Contact
 
 /**
- * Contact page: name (alias first), Verified pill, Call / Rename / Verify / Block, and this contact's call history.
+ * Contact page: name (alias first), Call / Rename / Block, and this contact's call history.
  * U19: a contact's action is Block (kept contact, kept chat, Unblock available); there is no Remove.
  */
 @Composable
 fun ContactScreen(
     contact: Contact, onBack: () -> Unit, onCall: () -> Unit, onBlock: () -> Unit,
-    history: List<RecentCall> = emptyList(), onRename: (String?) -> Unit = {}, onVerify: () -> Unit = {}, onMessage: (() -> Unit)? = null,
+    history: List<RecentCall> = emptyList(), onRename: (String?) -> Unit = {}, onMessage: (() -> Unit)? = null,
     block: BlockView = BlockView(), onUnblock: () -> Unit = {},
     /** P6: whether they let us call (NotAllowed: the button is crossed out and says why), and our "Allow calls" switch. */
     callGate: CallGate = CallGate.Ok, callsAllowed: Boolean? = null, onAllowCalls: (Boolean) -> Unit = {},
 ) {
     val alias = contact.alias?.takeIf { it.isNotBlank() }
-    val verified = contact.verified
     val c = Tin.c
     var confirmBlock by remember { mutableStateOf(false) }
     val blockedMe = block.blockedMeAtSecs != null
@@ -49,25 +48,17 @@ fun ContactScreen(
                 // Tap the photo to see it large.
                 ViewablePgAvatar(shown, 0, 96.dp, person = contact.did)
                 Text(shown, Modifier.padding(top = 6.dp), style = TinType.h1, color = c.ink, textAlign = TextAlign.Center)
-                if ((alias != null && alias != contact.name) || verified || block.blockedByMe || blockedMe) Row(
+                if ((alias != null && alias != contact.name) || block.blockedByMe || blockedMe) Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically,
                 ) {
                     if (alias != null && alias != contact.name) Text("Calls themselves “${contact.name}”", style = TinType.bodyM, color = c.ink2)
                     if (block.blockedByMe || blockedMe) Text(if (block.blockedByMe) "Blocked" else "Blocked you",
                         style = TinType.caption.copy(fontWeight = FontWeight.SemiBold), color = c.er)
-                    if (verified) Row(
-                        Modifier.heightIn(min = 22.dp).clip(RoundedCornerShape(50)).background(c.prc).padding(start = 6.dp, end = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    ) {
-                        Icon(PgIcons.Shield, null, tint = c.onPrc, modifier = Modifier.size(14.dp))
-                        Text("Verified", style = TinType.caption.copy(fontWeight = FontWeight.SemiBold), color = c.onPrc)
-                    }
                 }
                 TinButton("Call", onCall, Modifier.padding(top = 14.dp), icon = if (canCall) PgIcons.Phone else PgIcons.Callend, enabled = !closed)
                 Row(Modifier.padding(top = 10.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     if (onMessage != null) ActionChip(PgIcons.Chat, "Message", c.pr, onMessage)
                     ActionChip(PgIcons.Edit, "Rename", c.pr) { renaming = true }
-                    ActionChip(PgIcons.Shield, "Verify", c.pr, onVerify)
                     if (block.blockedByMe) ActionChip(PgIcons.Off, "Unblock", c.pr, onUnblock)
                     else ActionChip(PgIcons.Off, "Block", c.er) { confirmBlock = true }
                 }
@@ -137,42 +128,3 @@ fun RenameSheet(current: String, theirName: String, hasAlias: Boolean, onDismiss
     }
 }
 
-/** Safety-number comparison. [groups] are the 12 five-digit groups, same on both phones. */
-@Composable
-fun VerifyScreen(
-    me: String, contact: Contact, groups: List<String>?, onBack: () -> Unit, onMatch: () -> Unit, onBlock: () -> Unit,
-) {
-    val c = Tin.c
-    var mismatch by remember { mutableStateOf(false) }
-    val name = contact.display()
-    Page {
-        TopBar("Verify $name", onBack)
-        Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Lead("Compare these numbers with $name, in person or on a Tinline call. If they match, your calls go only to them — nobody is in the middle.")
-            CardBox(Modifier.fillMaxWidth(), radius = 20.dp) {
-                Column(Modifier.padding(horizontal = 16.dp, vertical = 20.dp).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    PairAvatars(me, name, contact.did, mine = 40.dp, theirs = 40.dp)
-                    if (groups == null) Text("Not available yet.", style = TinType.bodyM, color = c.ink2)
-                    else groups.chunked(4).forEach { row ->
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            row.forEach { Text(it, style = TinType.mono.copy(fontSize = 19.sp, letterSpacing = 0.04.sp), color = c.ink) }
-                        }
-                    }
-                    Hint("Same on both phones. Read them aloud in groups.", align = TextAlign.Center)
-                }
-            }
-        }
-        Column(Modifier.padding(start = 24.dp, end = 24.dp, bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            TinButton("They match", onMatch, icon = PgIcons.Check, enabled = groups != null)
-            TinButton("They don’t match", { mismatch = true }, style = BtnStyle.Text)
-            Hint("If they don’t match, block $name and add each other again face to face.", Modifier.fillMaxWidth(), align = TextAlign.Center)
-        }
-    }
-    if (mismatch) TinDialog(
-        "The numbers don’t match", { mismatch = false }, "Block $name", { mismatch = false; onBlock() }, dismiss = "Check again",
-        destructive = true, icon = PgIcons.Warning,
-    ) {
-        DialogText("Someone may be in the middle of your calls, or a digit was misread. Look once more, group by group.")
-        DialogText("If they still differ, block $name and add each other again face to face.")
-    }
-}

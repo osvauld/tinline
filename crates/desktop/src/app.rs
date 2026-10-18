@@ -168,7 +168,6 @@ enum Screen {
 enum Detail {
     View,
     Rename,
-    Verify,
     /// "Block X?" (U19: a contact's action is Block; there is no Remove).
     ConfirmBlock,
 }
@@ -265,7 +264,6 @@ struct App {
     add_phase: AddPhase,
     add_alias: String,
     settings_tab: u8,
-    safety: Option<String>,
     ended: Option<EndedView>,
     /// When I pressed End on the current call: End's glyph lets go (hangup.rs) and the call screen holds a moment.
     end_tap: Option<Instant>,
@@ -498,7 +496,6 @@ enum Msg {
     RenameIn(String),
     RenameSave,
     RenameClear,
-    SetVerified(bool),
     SearchIn(String),
     ShellSearch(shell_search::Action),
     Profile(profile_ui::Action),
@@ -518,7 +515,6 @@ enum Msg {
     EndHeld(String, CallState),
     #[allow(dead_code, reason = "unwired by the UI port (b57ee23); UI owner to decide: wire back or delete")]
     CallAgain(String),
-    CopySafety,
     NameEdit(String),
     SaveName,
     InDev(String),
@@ -779,7 +775,6 @@ impl App {
         self.sel = None;
         self.detail = Detail::View;
         self.search.clear();
-        self.safety = None;
         self.ended = None;
         self.waiting = None;
         self.takeover = None;
@@ -880,7 +875,6 @@ impl App {
             add_phase: AddPhase::Idle,
             add_alias: String::new(),
             settings_tab: 0,
-            safety: None,
             ended: None,
             end_tap: None,
             screen: match lock {
@@ -2225,7 +2219,6 @@ impl App {
                 self.sel = Some(did);
                 self.chat.info = false;
                 self.detail = Detail::View;
-                self.safety = None;
                 self.refresh_detail_calls();
                 if self.screen != Screen::Home {
                     self.screen = Screen::Home;
@@ -2244,47 +2237,20 @@ impl App {
                 self.leave_chat();
                 self.sel = None;
                 self.detail = Detail::View;
-                self.safety = None;
                 if self.call.is_none() {
                     self.screen = Screen::Home;
                 }
             }
             Msg::SetDetail(d) => {
                 self.detail = d;
-                self.safety = None;
                 if d == Detail::Rename {
                     self.rename_in = self.selected().map(|c| c.alias.clone().unwrap_or_default()).unwrap_or_default();
                     return operation::focus(RENAME_ID);
-                }
-                if d == Detail::Verify
-                    && let Some(did) = self.sel.clone()
-                {
-                    match self.node.safety_number(did) {
-                        Ok(n) => self.safety = Some(n),
-                        Err(e) => {
-                            self.notice = Some(friendly(e));
-                            self.detail = Detail::View;
-                        }
-                    }
                 }
             }
             Msg::RenameIn(v) => self.rename_in = v,
             Msg::RenameSave => return self.rename(false),
             Msg::RenameClear => return self.rename(true),
-            Msg::SetVerified(v) => {
-                if let Some(did) = self.sel.clone() {
-                    let node = self.node.clone();
-                    self.detail = Detail::View;
-                    self.safety = None;
-                    return blocking(move || node.set_verified(did, v).map_err(s), Msg::Done);
-                }
-            }
-            Msg::CopySafety => {
-                if let Some(n) = self.safety.clone() {
-                    self.notice = Some("Safety number copied".into());
-                    return clipboard::write(n);
-                }
-            }
             Msg::SearchIn(v) => return self.shell_search_query(v),
             Msg::ShellSearch(action) => return self.shell_search_update(action),
             Msg::Profile(action) => return self.profile_update(action),

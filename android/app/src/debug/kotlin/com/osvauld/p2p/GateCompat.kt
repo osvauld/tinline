@@ -27,10 +27,8 @@ fun PassphraseStep(
 
 @Composable
 fun PhraseScreen(phrase: String, onNext: () -> Unit) {
-    var checking by remember { mutableStateOf(false) }
     Page {
-        GateHead(if (checking) ({ checking = false }) else null, 3 to 6)
-        if (checking) ConfirmStep(phrase) { checking = false }
-        else PhraseStep(phrase, onNext, onCheck = { checking = true })
+        GateHead(null, 3 to 6)
+        PhraseStep(phrase, onNext)
     }
 }

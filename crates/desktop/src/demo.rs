@@ -113,17 +113,15 @@ impl App {
                 contacts.clear();
                 self.recents.clear();
             }
-            "contact" | "verify" | "rename" | "block" | "remove" => {
+            "contact" | "rename" | "block" | "remove" => {
                 self.sel = Some(arjun.clone());
                 self.detail_calls = self.recents.iter().filter(|r| r.peer_did == arjun).cloned().collect();
                 self.detail = match name {
-                    "verify" => Detail::Verify,
                     "rename" => Detail::Rename,
                     // "remove" kept as an alias for old screenshot scripts (U19: it is Block now).
                     "block" | "remove" => Detail::ConfirmBlock,
                     _ => Detail::View,
                 };
-                self.safety = Some("41203 88127 05519 73360 29841 66012 90475 13398 57206 84431 20987 36654".into());
             }
             "offer" | "empty-offer" => {
                 if name == "empty-offer" {

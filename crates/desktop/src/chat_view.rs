@@ -211,7 +211,7 @@ impl App {
     pub(super) fn conversation_view<'a>(&'a self, t: Tok, c: &'a Contact) -> El<'a> {
         let name = Self::display(c);
         let calling = self.call.is_some();
-        // "You": no contact behind it, so no presence, call or safety number.
+        // "You": no contact behind it, so no presence or call.
         let me = self.is_me(&c.did);
         let contact = me || self.contacts.iter().any(|x| x.did == c.did);
         // Conversation.svelte `.bar`: 60 tall, 8 padding, surface, hairline under. The head (avatar 36, name

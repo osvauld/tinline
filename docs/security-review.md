@@ -143,7 +143,9 @@ or reproducible audit report. The following protections are present in this snap
   A passphrase is not a screen-lock gate on every startup. Desktop drops remembered
   keys once a passphrase is configured. Neither protects an already compromised process.
 - Contact tickets are bearer invitations: possession permits redemption. Reset leaked
-  tickets; compare safety numbers via a trusted channel.
+  tickets. Since 2026-10-18 the apps no longer show safety numbers, so a swapped ticket (someone
+  in the middle of the first exchange) cannot be detected in the UI; exchange codes in person or
+  over a channel you trust.
 
 ## Release acceptance checklist (not yet completed here)
 

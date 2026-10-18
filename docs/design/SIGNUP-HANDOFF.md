@@ -131,10 +131,11 @@ desktop and Android ports **what is decided and why**, so the reasons survive th
 - **The words show straight away**, with no blur and no "Show the words". *Why:* a reveal makes the moment
   feel dangerous; we want it to feel ordinary.
 - **One primary slot, two moments.** First it says "Copy my words" (Enter). Once copied, the *same button* says
-  "I've saved them" (Enter goes on), and the quiet option changes from "I wrote them down" to "Check my copy".
-  Same size, so nothing moves (measured: x and width unchanged). `gate.phraseShown` remembers the copy, so
-  coming back from Check my copy keeps the second state. *Why:* copying is the easy, likely path, so lead
-  with it; writing on paper is still one tap away.
+  "I've saved them" (Enter goes on), and the quiet option changes from "I wrote them down" to "Copy again".
+  Same size, so nothing moves (measured: x and width unchanged). `gate.phraseShown` remembers the copy.
+  *Why:* copying is the easy, likely path, so lead with it; writing on paper is still one tap away.
+  2026-10-18: the "Check my copy" quiz (words 4, 11, 19) is removed from both apps. The words' checksum and
+  the key's checksum catch a bad copy at restore.
 - **Clipboard (implementor).** Android: put the text on the clipboard with `ClipDescription.EXTRA_IS_SENSITIVE`
   (API 33+) so it isn't shown in the clipboard preview. Desktop: clearing it after a while is a reasonable
   extra, but say nothing alarming about it in the UI.

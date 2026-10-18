@@ -51,7 +51,7 @@ private enum class AddStage { Main, Paste, Confirm, Adding, Added, Failed }
 
 /** Add contact: My code / Scan tabs, Paste a card, Adding..., Added, Couldn't add. */
 @Composable
-fun AddContactScreen(app: P2pApp, startOnScan: Boolean, autoAdd: String? = null, pasteOnOpen: Boolean = false, onClose: () -> Unit, onCall: (Contact) -> Unit, onVerify: (Contact) -> Unit) {
+fun AddContactScreen(app: P2pApp, startOnScan: Boolean, autoAdd: String? = null, pasteOnOpen: Boolean = false, onClose: () -> Unit, onCall: (Contact) -> Unit) {
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     val contacts by app.contacts.collectAsState()
@@ -99,7 +99,7 @@ fun AddContactScreen(app: P2pApp, startOnScan: Boolean, autoAdd: String? = null,
             ?: AddMain(app, meName, tab, { tab = it }, onClose, onPaste = ::pasteNow, onScanned = { pasted = it; add(it) })
         AddStage.Paste -> PasteCardScreen(app, pasted, { pasted = it }, onBack = { stage = AddStage.Main }, onAdd = { add(it) }, note = pasteNote)
         AddStage.Adding -> AddingScreen(meName) { job?.cancel(); stage = AddStage.Main }
-        AddStage.Added -> added?.let { AddedScreen(meName, it, onCall = { onCall(it) }, onVerify = { onVerify(it) }, onDone = onClose,
+        AddStage.Added -> added?.let { AddedScreen(meName, it, onCall = { onCall(it) }, onDone = onClose,
             onSaveAs = { a -> if (a != null) runCatching { app.node.renameContact(it.did, a); app.refresh() } }) }
         AddStage.Failed -> FailedScreen(meName, failure, onRetry = { add(pasted) }, onOther = { pasted = ""; tab = 1; stage = AddStage.Main })
     }
@@ -240,14 +240,13 @@ fun AddingScreen(me: String, onCancel: () -> Unit) {
 }
 
 @Composable
-fun AddedScreen(me: String, contact: Contact, onCall: () -> Unit, onVerify: () -> Unit, onDone: () -> Unit, onSaveAs: (String?) -> Unit = {}) {
+fun AddedScreen(me: String, contact: Contact, onCall: () -> Unit, onDone: () -> Unit, onSaveAs: (String?) -> Unit = {}) {
     var saveAs by remember { mutableStateOf("") }
     val name = contact.name.ifBlank { "Contact" }
     val shown = saveAs.trim().ifEmpty { name }
     fun commit() { val t = saveAs.trim(); onSaveAs(if (t.isEmpty() || t == contact.name) null else t) }
     CenterScreen(footer = {
         TinButton("Call $shown", { commit(); onCall() }, icon = PgIcons.Phone)
-        TinButton("Verify identity", { commit(); onVerify() }, style = BtnStyle.Outlined, icon = PgIcons.Shield)
         TinButton("Done", { commit(); onDone() }, style = BtnStyle.Text)
     }) {
         PairAvatars(me, name, contact.did)

@@ -63,10 +63,10 @@ import kotlinx.coroutines.withContext
  */
 
 private enum class Step {
-    Welcome, Choose, Done, Name, Pass, Phrase, Confirm, Device, Restored, Terms, Perms, Restore, SaveFailed, PassAdd, LinkName, LinkQr, LinkPass, Syncing;
+    Welcome, Choose, Done, Name, Pass, Phrase, Device, Restored, Terms, Perms, Restore, SaveFailed, PassAdd, LinkName, LinkQr, LinkPass, Syncing;
 
     val hasTextInput: Boolean get() = when (this) {
-        Name, Pass, Confirm, Device, Restore, PassAdd, LinkName, LinkPass -> true
+        Name, Pass, Device, Restore, PassAdd, LinkName, LinkPass -> true
         else -> false
     }
 }
@@ -116,7 +116,7 @@ private val STEP_LABEL = mapOf(
 )
 
 /**
- * First run: Welcome - Name - Passphrase (optional) - Recovery phrase (optional Check my copy) - Name this phone - Terms -
+ * First run: Welcome - Name - Passphrase (optional) - Recovery phrase - Name this phone - Terms -
  * Permissions, or the restore path (recovery words - name - passphrase - Name this phone - Restored - Terms - Permissions).
  * [forgot] is the "forgot my passphrase" restore over a locked identity: words, new passphrase, done. When [P2pApp.adding] is set
  * the flow adds an account next to the existing ones: it starts at the name or the words, skips Terms and Permissions, and
@@ -150,7 +150,7 @@ fun OnboardingFlow(
     var linkedPeer by remember { mutableStateOf<String?>(null) }
     var linkedName by remember { mutableStateOf("") }
     var label by rememberSaveable { mutableStateOf("Personal phone") }
-    // "Copy my words" was pressed: coming back from Check my copy keeps "I've saved them" (gate.phraseShown).
+    // "Copy my words" was pressed: the step keeps "I've saved them" across recomposition (gate.phraseShown).
     var phraseCopied by rememberSaveable { mutableStateOf(false) }
     // The identity appeared some other way (debug hook, a restored process): leave onboarding.
     val has by app.hasIdentity.collectAsState()
@@ -270,9 +270,8 @@ fun OnboardingFlow(
                     PassStep(if (forgot) PassKind.Forgot else if (restoring) PassKind.Restore else PassKind.Create, pass, { pass = it; error = null }, busy, error,
                         onNext = { val p = pass; pass = ""; finishIdentity(p) },
                         onSkip = { pass = ""; finishIdentity("") }) }
-                Step.Phrase -> { head(null); PhraseStep(phrase.orEmpty(), onNext = { go(Step.Device) }, onCheck = { go(Step.Confirm) },
+                Step.Phrase -> { head(null); PhraseStep(phrase.orEmpty(), onNext = { go(Step.Device) },
                     copiedAlready = phraseCopied, onCopied = { phraseCopied = true }, person = app.currentDid()) }
-                Step.Confirm -> { head { back(Step.Phrase) }; ConfirmStep(phrase.orEmpty(), onDone = { back(Step.Phrase) }) }
                 Step.Device -> { head(null); DeviceStep(label, { label = it; error = null }, busy, error, onNext = {
                     busy = true; error = null
                     scope.launch {
@@ -511,7 +510,7 @@ fun NewPassphraseField(pass: String, onPass: (String) -> Unit, enabled: Boolean 
     if (why) GNotice("Encrypts your account on this phone. Your phone remembers it, so calls still ring after a restart. If you forget it, your recovery words let you set a new one.", icon = PgIcons.Lock)
 }
 
-// ------------------------------------------------------------------ recovery phrase (Phrase.svelte, Confirm.svelte)
+// ------------------------------------------------------------------ recovery phrase (Phrase.svelte)
 
 /** Two columns, column-major (1-12 left, 13-24 right): cells 32 tall, gap 4, r8, line border, number 20 wide, mono 15/20. */
 @Composable
@@ -536,13 +535,14 @@ fun WordGrid(phrase: String, hidden: Boolean = false) {
 }
 
 @Composable
-internal fun PhraseStep(phrase: String, onNext: () -> Unit, onCheck: () -> Unit, copiedAlready: Boolean = false, onCopied: () -> Unit = {}, person: String? = null) {
+internal fun PhraseStep(phrase: String, onNext: () -> Unit, copiedAlready: Boolean = false, onCopied: () -> Unit = {}, person: String? = null) {
     val ctx = LocalContext.current
     // One primary slot, two moments: "Copy my words" first; once copied the same button says "I've saved them" (same size, so
     // nothing moves). Calm, never alarming: no blur, no warning box; paper is a suggestion, not a rule.
     var copied by remember { mutableStateOf(copiedAlready) }
     // Words or key: the same secret two ways (core recovery_key.rs). Words suit paper, the key a password manager. Either
-    // copy counts as saved; the key gets no quiz (its checksum catches a bad copy when it is pasted).
+    // copy counts as saved. There is no quiz: the key's checksum catches a bad copy when it is pasted, and restore checks
+    // the words' own checksum.
     var asKey by remember { mutableStateOf(false) }
     val key = remember(phrase) { runCatching { uniffi.p2pcore.recoveryKeyFromPhrase(phrase) }.getOrDefault("") }
     GateStep(if (asKey) "Here is your recovery key" else "Here are your recovery words",
@@ -551,7 +551,8 @@ internal fun PhraseStep(phrase: String, onNext: () -> Unit, onCheck: () -> Unit,
         foot = {
             if (copied) {
                 GBtn(if (asKey) "I’ve saved it" else "I’ve saved them", onNext)
-                if (!asKey) GBtn("Check my copy", onCheck, kind = GKind.Text)
+                // Keeps the footer two buttons tall in both moments, so nothing moves.
+                GBtn("Copy again", { if (asKey) copyToClipboard(ctx, "Recovery key", key) else copyToClipboard(ctx, "Recovery words", phrase) }, kind = GKind.Text)
             } else {
                 // flagged sensitive (EXTRA_IS_SENSITIVE), so Android 13+ keeps it out of the clipboard preview
                 GBtn(if (asKey) "Copy my key" else "Copy my words", {
@@ -568,31 +569,6 @@ internal fun PhraseStep(phrase: String, onNext: () -> Unit, onCheck: () -> Unit,
         }
         WordsKeySeg(asKey) { asKey = it }
         if (asKey) KeyCard(key) else WordGrid(phrase)
-    }
-}
-
-/** Positions asked on Check my copy (gate.svelte.ts CONFIRM_AT). */
-private val CONFIRM_AT = listOf(4, 11, 19)
-
-@Composable
-internal fun ConfirmStep(phrase: String, onDone: () -> Unit) {
-    val words = remember(phrase) { phrase.trim().split(Regex("\\s+")) }
-    val answers = remember { mutableStateListOf("", "", "") }
-    var tried by remember { mutableStateOf(false) }
-    fun wrong(i: Int) = tried && answers[i].trim().lowercase() != words.getOrNull(CONFIRM_AT[i] - 1)
-    val submit = { tried = true; if (CONFIRM_AT.indices.none { answers[it].trim().lowercase() != words.getOrNull(CONFIRM_AT[it] - 1) }) onDone() }
-    val first = rememberAutofocus()
-    GateStep("Check my copy", lead = "Optional. Type a few words from your saved copy, to be sure it’s right.", foot = {
-        GBtn("Done", submit, enabled = answers.none { it.isBlank() })
-        GBtn("Back to the words", onDone, kind = GKind.Text)
-    }) {
-        Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            CONFIRM_AT.forEachIndexed { i, p ->
-                GField(answers[i], { answers[i] = it; tried = false }, "Word $p", mono = true, reserveLines = 1f, focus = if (i == 0) first else null,
-                    error = if (wrong(i)) "That isn’t word $p. Check your saved copy." else null,
-                    keyboard = KeyboardOptions(imeAction = if (i == 2) ImeAction.Done else ImeAction.Next, autoCorrectEnabled = false))
-            }
-        }
     }
 }
 
@@ -935,9 +911,8 @@ internal fun GateStepPreview(which: String) {
             "choose" -> { GateHead(none, 0 to 6); ChooseStep(none, none) }
             "name" -> { GateHead(none, 1 to 6); NameStep(name, { name = it }, none) }
             "pass", "pass-typed" -> { GateHead(none, 2 to 6); PassStep(PassKind.Create, pass, { pass = it }, false, null, none, none) }
-            "phrase" -> { GateHead(null, 3 to 6); PhraseStep(phrase, none, onCheck = none) }
-            "phrase-copied" -> { GateHead(null, 3 to 6); PhraseStep(phrase, none, onCheck = none, copiedAlready = true) }
-            "confirm" -> { GateHead(none, null); ConfirmStep(phrase, none) }
+            "phrase" -> { GateHead(null, 3 to 6); PhraseStep(phrase, none) }
+            "phrase-copied" -> { GateHead(null, 3 to 6); PhraseStep(phrase, none, copiedAlready = true) }
             "device" -> { GateHead(none, 4 to 6); DeviceStep(label, { label = it }, false, null, none) }
             "terms" -> { GateHead(null, 5 to 6); TermsStep(none) }
             "perms" -> { GateHead(null, 6 to 6); PermsStep(listOf(Need.Mic, Need.FullScreen, Need.Battery), {}, none) }

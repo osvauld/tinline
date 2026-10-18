@@ -107,8 +107,8 @@ and rules; read it first. *Drawer* is the Simulation section that drives the scr
 same steps.
 - **Read `SIGNUP-HANDOFF.md` first** (2026-10-13 refinement: layout, keys, copy and the reasons for each).
 - **Welcome** offers "Create my account" and "I have an account" (then Link my other device / Restore my account).
-- **Confirmations are optional**: "Check my copy" for the phrase; the passphrase has show/hide and
-  no confirm field.
+- **No confirmations**: no quiz for the phrase ("Check my copy" was removed 2026-10-18); the passphrase
+  has show/hide and no confirm field.
 - **Lockout**: after 5 wrong passphrases, Unlock waits 30 s. This is a core gap.
 - **Restore on a device that already has an account** adds a second account, reading "Added
   <name> to this device". This is also a core gap.

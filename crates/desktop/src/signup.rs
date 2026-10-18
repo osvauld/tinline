@@ -2,8 +2,7 @@
 //! `screens/gate/*` (Gate.svelte, gate.svelte.ts) and `screens/people/AddContact.svelte`; the decisions
 //! and their reasons are in docs/design/SIGNUP-HANDOFF.md. The screens are in `signup_view.rs`.
 //!
-//! Create: Welcome → Name → Passphrase (the identity is made, in memory) → Recovery words (+ Check my
-//! copy) → Name this computer (the key is saved and the account committed, as before) → Before you
+//! Create: Welcome → Name → Passphrase (the identity is made, in memory) → Recovery words → Name this computer (the key is saved and the account committed, as before) → Before you
 //! start → Done. Restore and Link keep their existing screens; Welcome's "I have an account" reaches
 //! them through Choose.
 
@@ -22,16 +21,12 @@ pub(super) enum Step {
     Name,
     Pass,
     Phrase,
-    Confirm,
     Device,
     Terms,
     Done,
     /// Restore: the 24 recovery words (Restore.svelte). Then Name and Pass in the restore flow.
     Restore,
 }
-
-/// 1-based word positions asked on Check my copy.
-pub(super) const CONFIRM_AT: [usize; 3] = [4, 11, 19];
 
 /// The create order for the progress header. Desktop has no Permissions step (nothing on a computer
 /// asks for one), so it counts five; see SCREENS-PORT-STATUS.md.
@@ -58,7 +53,6 @@ pub(super) fn word_id(i: usize) -> iced::widget::Id {
 pub(super) const NAME_ID: &str = "gate-name";
 pub(super) const PASS_ID: &str = "gate-pass";
 pub(super) const DEVICE_ID: &str = "gate-device";
-pub(super) const CONFIRM_ID: [&str; 3] = ["gate-w1", "gate-w2", "gate-w3"];
 
 pub(super) const URL_TERMS: &str = "https://tinline.osvauld.com/terms";
 pub(super) const URL_PRIVACY: &str = "https://tinline.osvauld.com/privacy";
@@ -71,8 +65,6 @@ pub(super) struct Gate {
     history: Vec<Step>,
     /// "Copy my words" was pressed: the same button now says "I've saved them".
     pub copied: bool,
-    pub confirm: [String; 3],
-    pub confirm_tried: bool,
     pub show_pass: bool,
     /// Unlock: the "Open as" menu under "Welcome back, Maya ⌄" is open.
     pub open_as: bool,
@@ -96,7 +88,7 @@ pub(super) struct Gate {
 
 impl Default for Gate {
     fn default() -> Self {
-        Gate { step: Step::Welcome, history: Vec::new(), copied: false, confirm: Default::default(), confirm_tried: false, show_pass: false, open_as: false, as_key: false, rec_key: String::new(), creating: false, taut: false, tugs: 0,
+        Gate { step: Step::Welcome, history: Vec::new(), copied: false, show_pass: false, open_as: false, as_key: false, rec_key: String::new(), creating: false, taut: false, tugs: 0,
             restoring: false, words: Default::default(), active: None, tried: false }
     }
 }
@@ -135,13 +127,6 @@ impl Gate {
     }
     pub fn filled(&self) -> usize {
         self.words.iter().filter(|w| !w.is_empty()).count()
-    }
-
-    /// Whether word `i` of Check my copy is wrong (only after a try).
-    pub fn wrong(&self, i: usize, phrase: Option<&str>) -> bool {
-        let Some(p) = phrase else { return false };
-        let want = p.split_whitespace().nth(CONFIRM_AT[i] - 1).unwrap_or("");
-        self.confirm_tried && self.confirm[i].trim().to_lowercase() != want
     }
 }
 
@@ -208,10 +193,6 @@ pub(super) enum Gs {
     ClearKey,
     CopyWords,
     Saved,
-    Check,
-    ConfirmIn(usize, String),
-    ConfirmGo,
-    BackToWords,
     DeviceSug(&'static str),
     Agree,
     Open(&'static str),
@@ -276,7 +257,6 @@ impl App {
             Step::Name => iced::widget::operation::focus(NAME_ID),
             Step::Pass => iced::widget::operation::focus(PASS_ID),
             Step::Device => iced::widget::operation::focus(DEVICE_ID),
-            Step::Confirm => iced::widget::operation::focus(CONFIRM_ID[0]),
             _ => Task::none(),
         }
     }
@@ -334,7 +314,6 @@ impl App {
 
     fn hide_new_phrase(&mut self) {
         self.new_phrase = None;
-        self.gate.confirm = Default::default();
     }
 
     pub(super) fn gate_update(&mut self, m: Gs) -> Task<Msg> {
@@ -460,27 +439,6 @@ impl App {
                 }
             }
             Gs::Saved => return self.gate_go(Step::Device),
-            Gs::Check => {
-                self.gate.confirm = Default::default();
-                self.gate.confirm_tried = false;
-                return self.gate_go(Step::Confirm);
-            }
-            Gs::ConfirmIn(i, v) => {
-                if let Some(s) = self.gate.confirm.get_mut(i) {
-                    *s = v;
-                }
-            }
-            Gs::ConfirmGo => {
-                if self.gate.confirm.iter().any(|a| a.trim().is_empty()) {
-                    return Task::none();
-                }
-                self.gate.confirm_tried = true;
-                let phrase = self.new_phrase.as_ref().map(|p| p.to_string());
-                if (0..3).all(|i| !self.gate.wrong(i, phrase.as_deref())) {
-                    self.gate.back();
-                }
-            }
-            Gs::BackToWords => self.gate.back(),
             Gs::DeviceSug(s) => self.device_in = s.to_string(),
             Gs::Agree => {
                 // The button is the agreement (no checkbox); the line above it says so.
@@ -720,7 +678,6 @@ impl App {
             Step::Pass => Gs::PassGo,
             Step::Phrase if self.gate.copied => Gs::Saved,
             Step::Phrase => Gs::CopyWords,
-            Step::Confirm => Gs::ConfirmGo,
             Step::Device => return self.update(Msg::DeviceGo),
             Step::Terms => Gs::Agree,
             Step::Done => Gs::AddFirst,
@@ -750,7 +707,6 @@ impl App {
                 "name" | "name-empty" => &[Step::Name],
                 "pass" | "pass-typed" | "pass-busy" => &[Step::Name, Step::Pass],
                 "phrase" | "phrase-copied" => &[Step::Name, Step::Pass, Step::Phrase],
-                "confirm" | "confirm-wrong" => &[Step::Name, Step::Pass, Step::Phrase, Step::Confirm],
                 "device" => &[Step::Name, Step::Pass, Step::Phrase, Step::Device],
                 "terms" => &[Step::Name, Step::Pass, Step::Phrase, Step::Device, Step::Terms],
                 "done" | "done-slack" => &[Step::Name, Step::Pass, Step::Phrase, Step::Device, Step::Terms, Step::Done],
@@ -771,10 +727,6 @@ impl App {
                     self.busy = true;
                 }
                 "phrase-copied" => self.gate.copied = true,
-                "confirm-wrong" => {
-                    self.gate.confirm = ["about".into(), "acid".into(), "across".into()];
-                    self.gate.confirm_tried = true;
-                }
                 "done" => self.gate.taut = true,
                 // Five words in, the sixth half typed (suggestions), the third misspelt.
                 "restore-typing" => {
