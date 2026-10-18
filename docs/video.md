@@ -175,13 +175,15 @@ Frame 0 of a group is a keyframe. Receiver caps frame size (`max_frame`, default
 No resolution field: the size only changes at a keyframe, whose AV1 sequence header carries
 it, and rav1d follows it with the same decoder instance.
 
-Logs (`p2pcore::video_call`, info): once a second `video send WxH@fps kbps cap=.. key=..
-overuse=.. starved=.. queue=..ms | recv WxH@fps dec=..ms`; on every ladder step
+Logs (`p2pcore::video_call`, info): once a second `video send WxH@fps kbps cap=.. key=N
+(start 1 rate 2 req 5 backlog 6) overuse=.. starved=.. queue=..ms qoff=..ms drops=.. | recv
+WxH@fps dec=..ms` (the keyframes by cause, zeros left out, and the learned queueing baseline,
+since 2026-10-18); on every ladder step
 `video step 720p30 -> 720p15 reason=rate est=820kbps`; on every hint we send
 `video hint max=..px fps=.. reason=..`. The receiver also steers its frame-rate tier from the
 p75 decode time over 2 s (above 60% of the interval: a tier down; below 30% for 10 s: a tier up).
 The apps report the per-frame pull cost with `report_video_render_ms`; its p75 over 2 s is added to the decode p75 (needs >= 10 samples).
-That rule is for software decoders, where wall time of `decode` is CPU work. A hardware MediaCodec decoder's wall time is pipeline latency (a Pixel 3a: 12 ms at 360p, 25 ms at 720p, with the decoder thread at ~3% CPU), so with `recv_hardware` the policy ignores it and judges throughput instead: the decoder is "behind" when, over the last 2 s, it delivered under 80% of the frames it received (>= 20 received); that counts as 100% of the interval (a tier down), otherwise only the render cost counts, with the same 60% / 30% thresholds and 10 s hold before a tier up.
+That rule is for software decoders, where wall time of `decode` is CPU work. A hardware MediaCodec decoder's wall time is pipeline latency (a Pixel 3a: 12 ms at 360p, 25 ms at 720p, with the decoder thread at ~3% CPU), so with `recv_hardware`, or any MediaCodec decoder (`codecs::pipelined_decoder`: Android VP8, also the software `c2.android.vp8.decoder` of a phone without a hardware one, since 2026-10-18), the policy ignores it and judges throughput instead: the decoder is "behind" when, over the last 2 s, it delivered under 80% of the frames it received (>= 20 received); that counts as 100% of the interval (a tier down), otherwise only the render cost counts, with the same 60% / 30% thresholds and 10 s hold before a tier up.
 
 ## Resolution ladder (`media::Ladder`, owned by `Sender`)
 
@@ -579,7 +581,10 @@ device's measured encode time allow.
 - **Queueing delay** (receiver): the least delayed frame of the last 100 ms against the 10 s
   minimum (was the latest frame). A queue delays every frame; one late frame (a preempted
   encoder, a retransmission) is not a queue. Costs about a frame of reaction to a slow
-  build-up (worst frame after the 300 kbps drop 152 ms, was < 150).
+  build-up (worst frame after the 300 kbps drop 152 ms, was < 150). Since 2026-10-18 the
+  window spans at least two of the sender's frame intervals (median spacing of the last
+  frames' stamps; at most 250 ms): at 15 fps 100 ms often held one frame. See "Delay no rate
+  drains" below.
 - **Learned baseline** (sender): a queueing delay that hasn't been under `underuse_us` for 5 s
   while the estimate is at or below 1 Mbps (`BASELINE_MAX_BPS`) is not a queue we cause (every cut drains
   the path within a second or two): its minimum over those 5 s joins a baseline that is
@@ -1122,6 +1127,121 @@ limit has shown: 720p at 27.9 s, was 35.9 s; one keyframe for the hint, which fi
 capacity drops right after the fast step-up is handled by the normal step-down rules (and ends the
 start phase). Phones whose encoder can't take the next size are still held by the encode-time check.
 `SIM_FAST_HOLD=<ms>` (0: off) and `SIM_MATRIX_SEEDS=<n>` for experiments.
+
+### Delay no rate drains (2026-10-18, `fix/hw-encode-ladder`)
+
+**The calls** (0.1.35 test build, Pixel 3a hardware VP8 -> moto g52, both HD on; Pixel logs
+only):
+
+- 14:53: the Pixel sent 180x320@15, 25-200 kbps, `cap=518400px/15fps(thermal)` (Android
+  thermal MODERATE, skin 42.4 °C), `overuse` +15-18 a second (most of the 20 reports a second),
+  `queue` 37-78 ms, `key=35`, `starved=7`, `drops=6`; MediaCodec's bitrate set 1-6 times a
+  second between 50 and 200 kbps. The step that started it: `360p15 -> 180p15 reason=rate
+  est=159kbps`.
+- 14:55 (same app run): 720x1280@15, 1.4-2.85 Mbps, `cap=921600px/15fps(decode)`: the moto's
+  hint, queue 14-53 ms, overuse +4 a second. So the link carries 2.8 Mbps.
+- 14:57: 540p -> 360p (`reason=budget`), thermal SEVERE (44.0 °C): our own cap, 360p / 15 fps.
+
+**Cause 1, 180p** (the rate, not the encoder): 40-80 ms of "queueing" at 25-70 kbps, on a
+link that carried 2.8 Mbps two minutes later, is not a queue in the network. No rate cut
+drained it. The receiver's queueing value is the least delayed frame of the last 100 ms. At
+15 fps that window often holds one frame, so the filter ("one late frame is not a queue")
+did nothing, and every late read counted as overuse. Each overuse cut the rate to 85% of one
+report's delivered rate (a packet or two at these rates), and the ladder followed it down.
+Where the late reads come from is not proven (moto logs: none). The candidates are the moto's
+receive task reading late while its decoder thread waits on MediaCodec (`recv_wait` in the
+debug `video timing` line measures it) and Wi-Fi power save. The learned baseline didn't
+help: it needs 5 s with no report under 15 ms, and this delay jumped around.
+
+**Cause 2, 15 fps from the moto**: the moto decodes VP8 in software, but through MediaCodec
+(`c2.android.vp8.decoder`). Each decode call waits up to `DECODE_BUDGET` (20 ms) for its
+picture, so by wall time the cost was 60% of a 30 fps frame. The policy, for which only
+`recv_hardware` meant asynchronous, capped the Pixel at 15 fps for good: the tier never came
+back, because the wall time never drops under 30%.
+
+**Not the cause** (checked):
+- Encoder latency as CPU cost (the 89355034 decoder bug, encoder side): `ENCODE_BUDGET` is 0,
+  so `encode` returns without waiting for its packet. The ladder's encode time is the NV12
+  copy (2.4-5.6 ms), and every step in these logs was `reason=rate` / `hint` / `budget`, none
+  `cpu`. `overuse` is the delay counter, not CPU. Sim: `pixel_hw_sender_climbs` without the
+  busy receiver holds 540p at ~1.97 Mbps.
+- The thermal cap: MODERATE caps at 540p / 15 fps and SEVERE at 360p / 15 fps, never 180p.
+- MediaCodec's bitrate updates: they follow the estimate and the drain (the encoder gets the
+  rate x 30 / 15 at the 15 fps tier: 25 -> 50 kbps, 100 -> 200 kbps). Their churn is the
+  controller swinging, a symptom. Not rate-limited; no evidence that they hurt the qti
+  encoder.
+- 35 keyframes: the dedupe (`KEY_ASK_US`, `adapt_hw_keyframes`) holds in the sim. In the call,
+  6 are backlog resets; the rest (rate steps, the moto's requests) can't be split from these
+  logs. The `video send` line now says (`key=N (start 1 rate 2 req 5 backlog 6)`), with
+  `qoff=` (the learned baseline).
+
+**Changes**:
+- Receiver (`media::Receiver::report`): the queueing window spans at least two of the sender's
+  frame intervals (median spacing of the last 9 frame stamps; at most 250 ms; never less than
+  the 100 ms rate window). At 24 and 30 fps nothing changes. At 15 fps one late frame is no
+  longer a queue, and two in a row still are (`sparse_frames_one_late_is_not_a_queue`).
+- Core (`codecs::pipelined_decoder`): every MediaCodec decoder (Android VP8, hardware or not)
+  is judged by throughput (decoded / received over 2 s, plus render cost), like hardware ones.
+  The "hardware" label (`recv_hardware`) is unchanged (`mediacodec_decoder_tier_comes_back`).
+- Sim: `Scenario::rx_busy` (`RxBusy`): the receiving app reads for 5-12 ms, then not for
+  40-80 ms. Data arriving meanwhile is read, stamped, acked and reported on waking.
+
+`pixel_hw_sender_climbs` (hardware VP8 a frame late, keyframes >= 2.5 KB, little CPU, thermal
+MODERATE = 540p / 15 fps, MediaCodec decode 20 ms, 3 Mbps / 4 ms, 60 s; from 10 s):
+
+| | seed 3 | seed 7 | seed 11 |
+|---|---|---|---|
+| no busy receiver, before and after | 100% >= 540p, 1966 kbps | 100%, 1965 | 100%, 1961 |
+| busy receiver, before | 66%, 579 kbps (360p from 31.5 s) | **0%, 230 kbps (360p 5.0 s, 180p 14.4 s)** | 52%, 629 kbps |
+| busy receiver, after | 100%, 1647 kbps | 100%, 1303 kbps | 100%, 1453 kbps |
+
+The test asserts >= 80% of frames at >= 540p and >= 800 kbps in all six runs.
+
+Cost: at 15 fps a queue that builds is seen a frame (67 ms) later. The rest of the suite (before
+= this commit's window off; same worker):
+
+| scenario | before | after |
+|---|---|---|
+| 1 Mbps from 20 s (`adapt_fps_before_resolution_1mbps`) | p95 122 ms, 540p30 from 23.4 s | p95 138 ms, stays 720p15 (its open issue) |
+| flapping link | p95 122 ms | p95 132 ms |
+| slow device / throttled | p95 121 / 138 ms | 128 / 148 ms |
+| lan seeds sw / hw (mean of 6) | 2051 / 2007 kbps, 94% / 86% >= 540p, p95 311 / 381 ms | 1991 / 2031 kbps, 82% / 80%, p95 302 / 395 ms |
+| matrix lan / cafe / lte | 83 / 86 / 94% >= 540p, p95 333 / 176 / 157 | 78 / 85 / 92%, p95 285 / 197 / 159 |
+| step / step 20-90 s | 14% / 0% >= 540p, p95 115 / 116 | 41% / 33%, p95 121 / 121 |
+| busy sender, send stamps (the shipped case) | 2888 kbps, 97% >= 540p | unchanged; capture stamps (the old bug) 510 -> 531 kbps |
+| relay, weak, step+stall, drift, slow receiver, wifi spikes, clean start | | unchanged or within 1% |
+
+The LAN-burst runs move both ways from seed to seed: after a burst they sit at 15 fps, where
+reaction is a frame slower. The `>= 540p` mean drops by 6-12 points, while p95 and frozen time
+are about the same or better.
+
+**Thermal mapping** (Android status -> our cap, the same for what we send and for the hint
+we give the peer): LIGHT none, MODERATE 540p / 15 fps, SEVERE 360p / 15 fps. On the Pixel 3a
+the thermal HAL said MODERATE at ~42.4 °C skin and SEVERE at ~44.0 °C. The ThermalEngine
+was also limiting CPU6, a big core. Frame rate first is right. Halving the frame rate halves
+every per-frame cost on both phones: camera conversion, encode, network, the peer's decode,
+render. A resolution step loses more picture: on a 720p screen resolution beats codec, see
+`docs/design/codec-quality-table.md` on `feature/codec-quality-bench`. So the order stays
+fps, then size. One open question (not changed): with a hardware encoder, sending 720p
+instead of 540p costs ~1 ms more NV12 copy a frame. The heat that the cap actually saves is
+in what the Pixel *receives*: rav1d decodes the moto's AV1 at 5-14 ms a frame. MODERATE could
+keep the own send cap at 720p for hardware encoders and cap only the hint. The charger is a
+separate question: USB charging, the camera and HD capture all add heat, and these logs can't
+split them. Phone check: the same 3-minute call twice, on USB and unplugged, logging
+`dumpsys thermalservice` and `mb-therm-monitor` every 10 s.
+
+**Pixel -> moto codec** (analysis only, negotiation unchanged): VP8 is the right codec for
+this direction. On the Pixel, libaom costs ~20 ms a frame at 360p (the encode budget's edge)
+and misses 30 fps at 540p. That adds CPU heat on a phone that is already warm. Hardware VP8 at
+720p beats AV1 at 360p on a 720p screen at every rate from 0.5 Mbps (codec-quality table).
+The 15 fps was cause 2, a measuring error, not the moto's real decode cost. libvpx decodes
+720p in 0.4-2.6 ms on the worker. Whether the moto keeps 720p at 24-30 fps by throughput is
+the phone check.
+
+**Phone check** (both phones on this build): Pixel -> moto with HD on. Expected: no 180p
+phase, the moto's hint no longer `decode` at 15 fps unless its decoder falls behind,
+`video send` qoff / key causes logged. With `RUST_LOG=p2pcore=debug` on the moto: `video timing
+recv_wait>5ms` (late reads), and on both sides the `overuse` rate against `queue`.
 
 ## Capture/render conversion (`video::convert`)
 
