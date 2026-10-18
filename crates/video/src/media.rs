@@ -1602,6 +1602,12 @@ pub const REPORT_US: u64 = 50_000;
 /// Delivered rate is measured over this long (sliding), so 50 ms reports aren't too noisy.
 pub const RATE_WINDOW_US: u64 = 100_000;
 const BASELINE_US: u64 = 10_000_000;
+/// The queueing delay's window spans at least this many frame intervals (see `Receiver::report`)...
+const QUEUE_INTERVALS: u64 = 2;
+/// ...and at most this long.
+const QUEUE_SPAN_MAX_US: u64 = 250_000;
+/// Frame stamps the frame interval is the median spacing of.
+const INTERVAL_FRAMES: usize = 9;
 
 #[derive(Default)]
 struct Group {
@@ -1801,10 +1807,26 @@ impl Receiver {
         let delivered_bps = (bytes as u64 * 8 * 1_000_000 / span) as u32;
         let min = self.transit.iter().map(|t| t.1).min()?;
         // The least delayed frame of the rate window: a queue delays every frame, while one late
-        // frame (a retransmission, an encoder that was preempted) is not a queue.
-        let recent = self.transit.iter().rev().take_while(|t| t.0 > from).map(|t| t.1).min();
+        // frame (a retransmission, an encoder that was preempted) is not a queue. The window spans
+        // at least two frame intervals (the sender's, from the stamps; at most `QUEUE_SPAN_MAX_US`):
+        // at 15 fps 100 ms often holds one frame, its "least delayed" was just the latest, and a
+        // receiver that reads late now and then read as a queue no rate drains (2026-10-18 Pixel
+        // -> moto). At 24 and 30 fps it stays the rate window.
+        let qspan = (self.frame_interval_us() * QUEUE_INTERVALS)
+            .min(QUEUE_SPAN_MAX_US)
+            .max(self.cfg.rate_window_us);
+        let qfrom = now_us.saturating_sub(qspan);
+        let recent = self.transit.iter().rev().take_while(|t| t.0 > qfrom).map(|t| t.1).min();
         let last = recent.unwrap_or(self.transit.back()?.1);
         Some(RateReport { delivered_bps, queuing_us: (last - min) as u64 })
+    }
+
+    /// The sender's frame interval: the median spacing of the last frames' stamps (0 before two).
+    fn frame_interval_us(&self) -> u64 {
+        let stamps: Vec<i64> = self.transit.iter().rev().take(INTERVAL_FRAMES).map(|t| t.0 as i64 - t.1).collect();
+        let mut gaps: Vec<i64> = stamps.windows(2).map(|w| w[0] - w[1]).filter(|&g| g > 0).collect();
+        gaps.sort_unstable();
+        gaps.get(gaps.len().saturating_sub(1) / 2).map_or(0, |&g| g as u64)
     }
 
     /// Whether to send a keyframe request now (rate-limited to one per `stall_us`).
@@ -1950,6 +1972,38 @@ mod tests {
         assert_eq!(outs, vec![Out::Reset { group: 0 }]);
         assert!(tx.wants_keyframe());
         assert!(tx.bitrate() < before);
+    }
+
+    /// Frames every `iv` us (sender stamps), the `late` ones read `extra` us after they came in;
+    /// the report after the last one.
+    fn queuing_after(iv: u64, n: u64, late: &[u64], extra: u64) -> u64 {
+        let mut rx = Receiver::new(ReceiverConfig::default());
+        let mut tx = Sender::new(SenderConfig::default());
+        let mut at = 0;
+        for i in 0..n {
+            let stamp = 1_000_000 + i * iv;
+            at = stamp + 10_000 + if late.contains(&i) { extra } else { 0 };
+            for o in tx.frame(stamp, i == 0, &[0u8; 100]) {
+                if let Out::Write { group, data } = o {
+                    rx.on_data(at, group, &data).unwrap();
+                }
+            }
+        }
+        rx.last_report_us = 0;
+        rx.report(at).unwrap().queuing_us
+    }
+
+    #[test]
+    fn sparse_frames_one_late_is_not_a_queue() {
+        // 15 fps: the last frame read 50 ms late (a busy receiver); the one before was on time,
+        // and the window covers two frame intervals.
+        assert_eq!(queuing_after(66_667, 40, &[39], 50_000), 0);
+        // ...two late in a row are a queue.
+        assert_eq!(queuing_after(66_667, 40, &[38, 39], 50_000), 50_000);
+        // 30 fps: the rate window (100 ms) as before: three frames in it, one late is no queue,
+        // and a queue that delays the last three shows.
+        assert_eq!(queuing_after(33_333, 60, &[59], 50_000), 0);
+        assert_eq!(queuing_after(33_333, 60, &[57, 58, 59], 50_000), 50_000);
     }
 
     #[test]
