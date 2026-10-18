@@ -388,6 +388,32 @@ mod adapt_policy {
     }
 
     #[test]
+    fn mediacodec_decoder_tier_comes_back() {
+        // The moto g52 decodes VP8 in software but through MediaCodec: each call waits up to 20 ms
+        // for its picture, which by wall time kept it at 15 fps for good (2026-10-18). Judged by
+        // throughput, a tier lost once comes back after 10 s per step.
+        let mut p = run_hw(&[(30, 20); 3], 22.0, 3.0);
+        assert_eq!(p.update(Instant::now()).unwrap().max_fps, 15);
+        let t = Instant::now() + Duration::from_secs(10);
+        for i in 0..21 {
+            p.observe_decode_hw(t + Duration::from_secs(i), false, 3.0, 30);
+        }
+        assert_eq!(p.update(t + Duration::from_secs(21)).map(|h| h.max_fps), Some(0));
+        // Only MediaCodec decoders are pipelined: Android VP8; AV1 (rav1d) and desktop libvpx not.
+        assert!(!codecs::pipelined_decoder(proto::VideoCodec::Av1));
+        assert_eq!(
+            codecs::pipelined_decoder(proto::VideoCodec::Vp8),
+            cfg!(all(target_os = "android", feature = "mediacodec"))
+        );
+    }
+
+    #[test]
+    fn key_causes_log_text() {
+        let c = video::media::KeyCauses { start: 1, rate: 2, request: 5, backlog: 6, ..Default::default() };
+        assert_eq!(adapt::key_causes_text(&c), "start 1 rate 2 req 5 backlog 6");
+    }
+
+    #[test]
     fn hardware_decoder_that_falls_behind_drops_the_tier() {
         // 30 in, 20 out per second, backlog building: down to 24 then 15.
         let mut p = run_hw(&[(30, 20); 3], 10.0, 2.0);

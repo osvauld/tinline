@@ -337,6 +337,42 @@ impl Device {
     }
 }
 
+/// A receiving app that gets to read the network only now and then, in `[from, to)`: it reads
+/// for `awake` (uniform in the range), then nothing for `sleep`, and again; data arriving while
+/// it sleeps is read (and stamped, acked, reported) when it wakes. A busy phone's receive task,
+/// or its Wi-Fi radio in power save, look like this: delay that doesn't depend on how much is
+/// sent (2026-10-18 Pixel -> moto call: 40-80 ms of "queueing" at 25-70 kbps on a link that
+/// carried 2.8 Mbps a minute later).
+#[derive(Clone, Debug)]
+pub struct RxBusy {
+    pub from: u64,
+    pub to: u64,
+    pub awake_us: (u64, u64),
+    pub sleep_us: (u64, u64),
+}
+
+/// The receiving app's state under [`RxBusy`]: awake until the first time, asleep until the second.
+struct RxSchedule {
+    awake_until: u64,
+    asleep_until: u64,
+    rng: Rng,
+}
+
+impl RxSchedule {
+    fn awake(&mut self, now: u64, b: &RxBusy) -> bool {
+        if now < b.from || now >= b.to || now < self.awake_until {
+            return true;
+        }
+        if now < self.asleep_until {
+            return false;
+        }
+        let pick = |rng: &mut Rng, (lo, hi): (u64, u64)| lo + (rng.f64() * hi.saturating_sub(lo) as f64) as u64;
+        self.awake_until = now + pick(&mut self.rng, b.awake_us);
+        self.asleep_until = self.awake_until + pick(&mut self.rng, b.sleep_us);
+        true
+    }
+}
+
 /// What the transport reports to [`Sender::feedback`] as a group's backlog.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Backlog {
@@ -363,6 +399,9 @@ pub struct Scenario {
     /// Frames carry their capture time instead of the time they leave the encoder (what
     /// `video_call` did before 2026-10-17: encode time counted as queueing).
     pub stamp_capture: bool,
+    /// The receiving app is busy now and then (see [`RxBusy`]): what arrives meanwhile waits,
+    /// and reads late as queueing that no sending rate causes or drains.
+    pub rx_busy: Option<RxBusy>,
     pub sender: SenderConfig,
     pub receiver: ReceiverConfig,
     pub backlog: Backlog,
@@ -383,6 +422,7 @@ impl Default for Scenario {
             decode_changes: vec![],
             receiver_clock_ppm: 0,
             stamp_capture: false,
+            rx_busy: None,
             sender: SenderConfig::default(),
             receiver: ReceiverConfig::default(),
             backlog: Backlog::Unacked,
@@ -696,6 +736,7 @@ pub fn run(sc: &Scenario, codec: &mut dyn SimCodec) -> Report {
     let mut index = 0u64;
     let mut next_feedback = 0u64;
     let mut next_keycheck = 0u64;
+    let mut rx_sched = RxSchedule { awake_until: 0, asleep_until: 0, rng: Rng::new(sc.seed ^ 0xb05e) };
 
     let mut now = 0u64;
     while now < sc.duration_us {
@@ -944,8 +985,9 @@ pub fn run(sc: &Scenario, codec: &mut dyn SimCodec) -> Report {
         // room, so a slow decoder backs up into the link; acks, reports and keyframe requests
         // only go out while it is being awaited. On the receiver's clock, which may run faster.
         let rnow = now + now * sc.receiver_clock_ppm / 1_000_000;
-        let awaited = decode_queue.len() < DECODE_QUEUE;
-        while decode_queue.len() < DECODE_QUEUE {
+        let app_awake = sc.rx_busy.as_ref().is_none_or(|b| rx_sched.awake(now, b));
+        let awaited = app_awake && decode_queue.len() < DECODE_QUEUE;
+        while awaited && decode_queue.len() < DECODE_QUEUE {
             if let Some(f) = receiver.poll(rnow) {
                 decode_queue.push_back(f);
                 continue;

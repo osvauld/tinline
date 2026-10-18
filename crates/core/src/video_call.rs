@@ -381,6 +381,7 @@ impl Inner {
                 let mut pol = v.pipe.policy.lock();
                 let max_fps = if peer.max_fps == 0 { FPS } else { (peer.max_fps as u32).min(FPS) };
                 pol.peer = (pipes::max_rung(&LadderConfig::default(), peer.max_pixels), max_fps);
+                pol.recv_pipelined = codecs::pipelined_decoder(rx);
             }
             v.negotiated.store(true, Ordering::SeqCst);
             let pipe = v.pipe.clone();

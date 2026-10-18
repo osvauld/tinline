@@ -444,7 +444,10 @@ fn adapt_fps_before_resolution_1mbps() {
     assert_eq!(r.keyframes, 1 + r.switches, "no keyframes for frame-rate steps");
     // 129 ms (was 118): since the fast start it runs 720p30 near this 2 Mbps link's capacity
     // from 8 s instead of 12 s, and stays at 720p15 after the drop (was 540p30 from 29 s).
-    assert!(p95(&r, 0, sc.duration_us) <= 135.0, "p95 {}", p95(&r, 0, sc.duration_us));
+    // 138 ms (2026-10-18, the receiver's queueing window spans two frames at 15 fps): it now
+    // stays at 720p15 on the 1 Mbps link to the end (was 540p30 from 23.4 s, the open issue
+    // above), each frame ~50 ms on the wire.
+    assert!(p95(&r, 0, sc.duration_us) <= 140.0, "p95 {}", p95(&r, 0, sc.duration_us));
     assert!(r.freezes(250_000, S, sc.duration_us).is_empty());
 }
 
@@ -1257,4 +1260,86 @@ fn clean_start() {
     assert!(worst(0, &clean) <= 3.0 && worst(1, &clean) <= 5.0, "clean start too slow");
     assert!(worst(1, &bursts) <= 8.0, "start with bursts too slow");
     assert!(worst(3, &clean) == 0.0 && worst(2, &clean) < 130.0, "clean start costs latency");
+}
+
+// --- Pixel 3a (hardware VP8) -> moto g52, 2026-10-18 call (docs/video.md, "Delay no rate
+// drains") ---
+
+/// Pixel 3a sender: hardware VP8 (each packet comes out at the next encode call, i.e. a frame
+/// late; keyframes >= 2.5 KB), little CPU, Android thermal MODERATE (our own cap 540p / 15 fps);
+/// moto g52 receiver decoding VP8 through MediaCodec (~20 ms a frame); 3 Mbps Wi-Fi, 256 KB
+/// buffer. With `busy`, the moto's receive side reads the network for 5-12 ms, then not for
+/// 40-80 ms, all call long: delay no sending rate causes or drains, like the real call's 40-80 ms
+/// of queueing at 25-70 kbps (before the fix this kept seed 7 at 180-360p, 230 kbps).
+fn pixel_to_moto(seed: u64, busy: bool) -> Scenario {
+    let mut sc = base();
+    sc.duration_us = 60 * S;
+    sc.seed = seed;
+    sc.device = fast();
+    sc.link = Link { rate_bps: 3_000_000, delay_us: 4_000, jitter_us: 4_000, queue_bytes: 256 * 1024, ..Link::default() };
+    sc.decode_us = 20_000;
+    sc.sender.ladder.max_rung = 2;
+    sc.sender.ladder.max_fps = 15;
+    if busy {
+        // `SIM_RX_AWAKE` / `SIM_RX_SLEEP=<lo_ms>,<hi_ms>` for experiments.
+        let range = |k: &str, d: (u64, u64)| {
+            std::env::var(k)
+                .ok()
+                .and_then(|v| v.split_once(',').and_then(|(a, b)| Some((a.parse::<u64>().ok()? * 1_000, b.parse::<u64>().ok()? * 1_000))))
+                .unwrap_or(d)
+        };
+        let awake_us = range("SIM_RX_AWAKE", (5_000, 12_000));
+        let sleep_us = range("SIM_RX_SLEEP", (40_000, 80_000));
+        sc.rx_busy = Some(RxBusy { from: 0, to: sc.duration_us, awake_us, sleep_us });
+    }
+    sc
+}
+
+fn pixel_codec(sc: &Scenario) -> HwCodec {
+    let mut c = HwCodec::new(sc.fps, sc.seed);
+    c.delay = 1;
+    c.key_min = 2_500;
+    c
+}
+
+/// (share of frames >= 540p from 10 s, mean kbps from 10 s, keyframes, overuse reports).
+fn pixel_row(r: &Report, sc: &Scenario) -> (f64, f64, u64, usize) {
+    let d = sc.duration_us;
+    let overuse = r.reports.iter().filter(|x| x.1.queuing_us > sc.sender.overuse_us).count();
+    (share_at_least(r, 540, 10 * S, d), r.mean_bitrate(10 * S, d) / 1000.0, r.keyframes, overuse)
+}
+
+#[test]
+fn pixel_hw_sender_climbs() {
+    let mut fails = Vec::new();
+    for busy in [false, true] {
+        for seed in [3, 7, 11] {
+            if std::env::var("SIM_SEED").is_ok_and(|v| v != seed.to_string()) {
+                continue;
+            }
+            let sc = pixel_to_moto(seed, busy);
+            let r = run(&sc, &mut pixel_codec(&sc));
+            let (share, kbps, keys, overuse) = pixel_row(&r, &sc);
+            let name = format!("pixel{}/{seed}", if busy { " busy" } else { "" });
+            println!("{name:>16}: {}", r.summary(sc.duration_us));
+            println!(
+                "{:>16}  from 10 s: >= 540p {:.0}%, {kbps:.0} kbps, keys {keys} {:?}, overuse reports {overuse} | {}",
+                "",
+                100.0 * share,
+                r.key_causes,
+                sizes_line(&r)
+            );
+            if std::env::var_os("SIM_STEPS").is_some() {
+                println!("{}", r.steps_text());
+            }
+            trace(&r, 0, 20 * S);
+            assert_eq!(r.decode_errors, 0);
+            // 3 Mbps carries 540p15 (600 kbps floor x 0.7 at 15 fps) many times over: a hardware
+            // encoder's lag and a receiver that reads late are no reason to stay below it.
+            if share < 0.8 || kbps < 800.0 {
+                fails.push(format!("{name}: {:.0}% >= 540p, {kbps:.0} kbps | {}", 100.0 * share, sizes_line(&r)));
+            }
+        }
+    }
+    assert!(fails.is_empty(), "{fails:#?}");
 }
