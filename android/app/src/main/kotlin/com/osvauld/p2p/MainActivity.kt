@@ -212,6 +212,7 @@ private fun Root(app: P2pApp) {
         val bs = app.blocks.value.composer(did, isContact)
         if (app.blocks.value.callGate(did, isContact) != CallGate.Ok) {
             val name = contacts.firstOrNull { it.did == did }?.display() ?: app.chat.chats.value.firstOrNull { it.peerDid == did }?.peerName ?: ""
+            app.video.wantCamera = false
             say(BlockCopy.cantCall(name, bs)); return
         }
         scope.launch {
