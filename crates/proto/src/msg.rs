@@ -122,6 +122,14 @@ pub enum Msg {
     Video {
         camera: bool,
     },
+    /// Mid-call, sender to receiver: "my video is `codec` from my next keyframe" (a live codec
+    /// switch, `docs/video.md` "Switching codecs mid-call"). Only sent to a peer whose
+    /// `VideoOffer.codec_switch` is true (an older peer can't parse it), and only for a codec in
+    /// that peer's `decode` list. The receiver keeps its decoder until a keyframe of the new codec
+    /// arrives, then swaps; a codec it doesn't decode is ignored.
+    VideoCodec {
+        codec: VideoCodec,
+    },
 }
 
 /// A video codec of the call path (`docs/design/video-hw-vp8.md`).
@@ -165,6 +173,12 @@ pub struct VideoOffer {
     /// and then the peer sends hints as message 4 only.
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub hint_flags: bool,
+    /// Its receiver follows `Msg::VideoCodec` (a mid-call codec switch), so its peer may switch
+    /// codecs for it. Optional: absent (older devices) = false, and then the peer keeps the
+    /// negotiated codec for the whole call (VP8 hardware/software is the same bitstream and
+    /// needs no message).
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub codec_switch: bool,
 }
 
 /// The codec `sender` sends to `receiver`. Candidates are the sender's `encode` that the receiver
