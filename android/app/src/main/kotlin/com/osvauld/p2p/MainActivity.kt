@@ -158,6 +158,8 @@ private fun Root(app: P2pApp) {
     var missing by remember { mutableStateOf(Perms.missing(ctx)) }
     var callError by remember { mutableStateOf<String?>(null) }
     var pendingCall by remember { mutableStateOf<String?>(null) }
+    // A permission row's request ([fix]) and when it went out: an answer within moments means no dialog was shown.
+    var pendingFix by remember { mutableStateOf<Pair<Need, Long>?>(null) }
     // Back stack. Not saved: the recovery phrase may sit in it, and Home is a fine place to restart.
     val stack = remember { mutableStateListOf<Route>(Route.Home) }
     // Home's tab survives opening a chat or group and coming back.
@@ -173,7 +175,6 @@ private fun Root(app: P2pApp) {
             r.onSuccess { home(); onboarding = true }
         }
     }
-    val prefs = remember { ctx.getSharedPreferences("perm_state", Context.MODE_PRIVATE) }
     val owner = LocalLifecycleOwner.current
     DisposableEffect(owner) {
         val o = LifecycleEventObserver { _, e ->
@@ -226,6 +227,14 @@ private fun Root(app: P2pApp) {
             pendingCall = null
             if (Perms.granted(ctx, android.Manifest.permission.RECORD_AUDIO)) place(did) else stack.add(Route.MicNeeded)
         }
+        pendingFix?.let { (n, at) ->
+            pendingFix = null
+            val p = Perms.runtimePermission(n) ?: return@let
+            val act = ctx.findActivity()
+            // Blocked for good: the system answers at once with no dialog and no rationale; Settings is the only way.
+            if (!Perms.granted(ctx, p) && act != null && !androidx.core.app.ActivityCompat.shouldShowRequestPermissionRationale(act, p) &&
+                android.os.SystemClock.elapsedRealtime() - at < 500) Perms.openSettings(ctx, Perms.settingsIntent(ctx, n) ?: Perms.appDetails(ctx))
+        }
     }
     val settingsLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         missing = Perms.missing(ctx)
@@ -235,29 +244,20 @@ private fun Root(app: P2pApp) {
         val i = Perms.settingsIntent(ctx, n)
         when {
             p != null -> {
-                // After a permanent denial the system shows no dialog and "Allow" would do nothing:
-                // asked before + no rationale to show = go to the settings page instead.
-                val act = ctx.findActivity()
-                val blocked = Perms.granted(ctx, p) ||
-                    (prefs.getBoolean("asked_$p", false) && act != null &&
-                        !androidx.core.app.ActivityCompat.shouldShowRequestPermissionRationale(act, p))
-                if (blocked) Perms.openSettings(ctx, i ?: Perms.appDetails(ctx))
-                else { prefs.edit().putBoolean("asked_$p", true).apply(); permLauncher.launch(arrayOf(p)) }
+                // Always ask the system first: "asked before + no rationale" also describes an expired
+                // one-time grant ("Ask every time"), which still gets a dialog. The answer decides (permLauncher).
+                if (Perms.granted(ctx, p)) Perms.openSettings(ctx, i ?: Perms.appDetails(ctx))
+                else { pendingFix = n to android.os.SystemClock.elapsedRealtime(); permLauncher.launch(arrayOf(p)) }
             }
             i != null -> try { settingsLauncher.launch(i) } catch (_: Exception) { Perms.openSettings(ctx, Perms.appDetails(ctx)) }
         }
     }
-    /** Tap on a call button: microphone first (system dialog once, then the explainer screen), then dial. */
+    /** Tap on a call button: microphone first (the system dialog; still missing after it = the explainer screen), then dial. */
     val call: (String) -> Unit = { did ->
         val mic = android.Manifest.permission.RECORD_AUDIO
         if (Perms.granted(ctx, mic)) place(did)
-        else {
-            val act = ctx.findActivity()
-            val blocked = prefs.getBoolean("asked_$mic", false) && act != null &&
-                !androidx.core.app.ActivityCompat.shouldShowRequestPermissionRationale(act, mic)
-            if (blocked) stack.add(Route.MicNeeded)
-            else { pendingCall = did; prefs.edit().putBoolean("asked_$mic", true).apply(); permLauncher.launch(arrayOf(mic)) }
-        }
+        // Always ask: an expired "Ask every time" grant looks like a permanent denial until the system answers.
+        else { pendingCall = did; permLauncher.launch(arrayOf(mic)) }
     }
 
     // A tapped tinline://g/ link opens Join with it (G3).
