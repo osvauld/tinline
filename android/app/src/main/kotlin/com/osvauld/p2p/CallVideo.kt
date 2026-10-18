@@ -86,7 +86,11 @@ class CallVideo(private val app: P2pApp) : VideoEvents {
     val io = VideoIo { app.node }
     /** The camera was on when the call screen went away; it comes back on with the screen. */
     @Volatile private var paused = false
-    /** The call was placed with the conversation's video button: the camera turns on once video is negotiated. */
+    /**
+     * The conversation's video button was pressed: [CallController.place] reads it for the call it places (the
+     * call's start clears it, so does its end). Then only for a video call placed without the CAMERA permission: the
+     * camera is tried once video is negotiated (without the permission: "Camera permission needed").
+     */
     @Volatile var wantCamera = false
     private val rates = VideoRateMeter()
     @Volatile private var capturePreference = "-"
@@ -97,6 +101,7 @@ class CallVideo(private val app: P2pApp) : VideoEvents {
         val cur = app.calls.ui.value
         if (cur != null && cur.info.callId != info.callId) return
         _info.value = info
+        app.calls.onVideo(info)
         if (wantCamera && info.negotiated && !info.localCamera) { wantCamera = false; setCamera(true) }
     }
 
@@ -124,7 +129,7 @@ class CallVideo(private val app: P2pApp) : VideoEvents {
     fun reset() {
         if (hdSuggested || hdTurnedOn) app.hdSuggestMemory = videoHdSuggestAfterCall(app.hdSuggestMemory, hdSuggested, hdTurnedOn)
         hdSuggested = false; hdTurnedOn = false; hdMeteredSaid = false
-        _info.value = null; _problem.value = null; paused = false; _front.value = true; _hdCall.value = null; _hdNote.value = null
+        _info.value = null; _problem.value = null; paused = false; wantCamera = false; _front.value = true; _hdCall.value = null; _hdNote.value = null
         rates.reset(); capturePreference = "-"; actualCapture = "-"
     }
 

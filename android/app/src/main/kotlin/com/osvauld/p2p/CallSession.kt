@@ -40,6 +40,13 @@ class CallSession(
     private val engine: AudioEngine,
     private val name: String,
     private val incoming: Boolean,
+    /**
+     * A video call from the start (placed with the camera on, or rung as one): Telecom gets
+     * [CallAttributesCompat.CALL_TYPE_VIDEO_CALL] (so the system treats it as one: loudspeaker, no
+     * ear detection). A voice call that turns into video later keeps its Telecom type (core-telecom
+     * cannot change it) and moves to the speaker with [speakerIfEarpiece].
+     */
+    private val video: Boolean = false,
     /** Group and video calls: start on the loudspeaker when no headset is connected. */
     @Volatile var preferSpeaker: Boolean,
     /** Answered from outside the app (headset button, car, watch). */
@@ -82,7 +89,7 @@ class CallSession(
             displayName = name.ifBlank { "Tinline call" },
             address = ADDRESS,
             direction = if (incoming) CallAttributesCompat.DIRECTION_INCOMING else CallAttributesCompat.DIRECTION_OUTGOING,
-            callType = CallAttributesCompat.CALL_TYPE_AUDIO_CALL,
+            callType = callType(),
             callCapabilities = CallAttributesCompat.SUPPORTS_SET_INACTIVE,
         )
         try {
@@ -101,7 +108,7 @@ class CallSession(
                     if (mode == Mode.Ended) { launch { disconnect(DisconnectCause(DisconnectCause.LOCAL)) }; return@addCall }
                     mode = Mode.Telecom
                 }
-                Log.i(TAG, "telecom call added: incoming=$incoming")
+                Log.i(TAG, "telecom call added: incoming=$incoming video=$video")
                 val collectors = mutableListOf<Job>()
                 launch {
                     for (op in ops) try { op() } catch (e: Exception) { Log.w(TAG, "telecom op: $e") }
@@ -145,9 +152,11 @@ class CallSession(
     private fun activate() {
         if (activated) return
         activated = true
-        if (incoming) op { log("answer", answer(CallAttributesCompat.CALL_TYPE_AUDIO_CALL)) }
+        if (incoming) op { log("answer", answer(callType())) }
         else op { log("active", setActive()) }
     }
+
+    private fun callType() = if (video) CallAttributesCompat.CALL_TYPE_VIDEO_CALL else CallAttributesCompat.CALL_TYPE_AUDIO_CALL
 
     /** The call is over (any reason). Stops the audio and releases Telecom; idempotent. */
     fun end(cause: Int) {
@@ -247,7 +256,8 @@ class CallSession(
             cm?.let { return it }
             return try {
                 CallsManager(ctx.applicationContext).also {
-                    it.registerAppWithTelecom(CallsManager.CAPABILITY_BASELINE)
+                    // Video calling too: without it Telecom turns a video call into an audio one (earpiece).
+                    it.registerAppWithTelecom(CallsManager.CAPABILITY_BASELINE or CallsManager.CAPABILITY_SUPPORTS_VIDEO_CALLING)
                     cm = it; registered = true
                 }
             } catch (e: Throwable) {

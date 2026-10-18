@@ -25,6 +25,7 @@ import kotlinx.coroutines.launch
 import uniffi.p2pcore.CallInfo
 import uniffi.p2pcore.CallState
 import uniffi.p2pcore.CallStats
+import uniffi.p2pcore.VideoInfo
 
 data class CallUi(
     val info: CallInfo,
@@ -82,6 +83,9 @@ class CallController(private val app: P2pApp) {
     /** Debug screen gallery only: a made-up call to draw the strip with (never called by the app). */
     fun showForGallery(u: CallUi?) { _ui.value = u }
     private var proximity: PowerManager.WakeLock? = null
+
+    /** The current call is a video call now ([Routes.isVideo]): loudspeaker, no proximity wake lock. */
+    @Volatile private var videoNow = false
 
     /** The current call's Telecom registration and audio; replaced per call. */
     @Volatile private var session: CallSession? = null
@@ -164,7 +168,7 @@ class CallController(private val app: P2pApp) {
                 inCallService(cur.info)
                 audio.muted = cur.muted
                 session?.connected() ?: audio.start()
-                updateProximity(cur.routes.earpiece)
+                updateProximity(Routes.proximityWanted(cur.routes, videoNow))
                 startStats()
             }
             is CallState.Ended -> {
@@ -200,13 +204,20 @@ class CallController(private val app: P2pApp) {
         CoreService.ensureRunning(app, CoreService.ACTION_IN_CALL, info.peerName.ifBlank { "Call" })
 
     fun place(did: String): Result<CallInfo> = runCatching {
-        if (!Perms.granted(app, Manifest.permission.RECORD_AUDIO)) throw MicPermissionNeeded()
+        // One press of the video button, one video call: never carried to a later call.
+        val video = app.video.wantCamera
         app.video.reset()
+        if (!Perms.granted(app, Manifest.permission.RECORD_AUDIO)) throw MicPermissionNeeded()
+        // The video button: a video call, my camera on from the start (the core drops frames until video runs, so the
+        // camera is warm by then). Without the CAMERA permission it still rings as one, with my camera off until the
+        // old way asks for it once video runs (wantCamera, for this call only).
+        val camera = video && Perms.granted(app, Manifest.permission.CAMERA)
         synchronized(lock) { early.clear(); placing = true }
-        val info = try { app.node.call(did) } catch (e: Throwable) {
+        val info = try { if (video) app.node.videoCall(did) else app.node.call(did) } catch (e: Throwable) {
             synchronized(lock) { placing = false; early.clear() }
             throw e
         }
+        if (info.video && !camera) { runCatching { app.node.setCamera(false) }; app.video.wantCamera = true }
         everActive = false; _ended.value = null
         val replay = synchronized(lock) {
             _ui.value = CallUi(info, CallState.Dialing)
@@ -318,8 +329,11 @@ class CallController(private val app: P2pApp) {
         sessionWatch?.cancel()
         localEnd = null
         val id = info.callId
+        videoNow = info.video
         val s = CallSession(
-            app.scope, app, audio, info.peerName.ifBlank { "Tinline call" }, info.incoming, preferSpeaker = false,
+            app.scope, app, audio, info.peerName.ifBlank { "Tinline call" }, info.incoming,
+            // A video call (either side pressed Video) is a Telecom video call on the loudspeaker; a headset still wins.
+            video = info.video, preferSpeaker = info.video,
             onAnswer = { systemAnswer(id) }, onDisconnect = { systemDisconnect(id) }, onSystemMute = { systemMute(id, it) },
         )
         session = s
@@ -327,7 +341,7 @@ class CallController(private val app: P2pApp) {
             launch { s.held.collect { h -> _ui.update { if (it?.info?.callId == id) it.copy(held = h) else it } } }
             s.routes.collect { st ->
                 val n = _ui.updateAndGet { if (it?.info?.callId == id) it.copy(routes = st) else it }
-                if (n?.info?.callId == id && n.state is CallState.Active) updateProximity(st.earpiece)
+                if (n?.info?.callId == id && n.state is CallState.Active) updateProximity(Routes.proximityWanted(st, videoNow))
             }
         }
     }
@@ -349,6 +363,34 @@ class CallController(private val app: P2pApp) {
 
     /** Video calls are held away from the ear: the camera going on moves the earpiece to the speaker (headsets stay). */
     fun speakerForVideo() { session?.speakerIfEarpiece() }
+
+    /**
+     * The core's video state changed ([CallVideo.onVideoState]). A call that becomes a video call (either camera on,
+     * e.g. a voice call turned video mid-call) moves from the earpiece to the loudspeaker, once; headsets and
+     * Bluetooth stay. While it is one, no proximity wake lock (the screen must not go dark under the picture).
+     */
+    fun onVideo(v: VideoInfo) {
+        val u = _ui.value ?: return
+        if (u.info.callId != v.callId) return
+        // A VideoInfo can come while it rings (my camera on for "Video"): not decided until negotiated or active.
+        val decided = v.negotiated || u.state is CallState.Active
+        val now = Routes.isVideo(u.info.video, decided, v.negotiated, v.localCamera, v.remoteCamera)
+        val was = videoNow
+        videoNow = now
+        if (Routes.becameVideo(was, now)) {
+            testLog("video_call id=${v.callId} speaker")
+            session?.speakerIfEarpiece()
+        }
+        if (u.state is CallState.Active) updateProximity(Routes.proximityWanted(u.routes, now))
+    }
+
+    /** "Video" on a ringing video call: my camera on (the core takes it while ringing), then answer. */
+    fun answerWithVideo() {
+        val c = _ui.value ?: return
+        if (!c.info.incoming || c.state !is CallState.Ringing) return
+        app.video.setCamera(true)
+        answer()
+    }
 
     /** Earpiece/headset <-> loudspeaker. */
     fun toggleSpeaker() { session?.toggleSpeaker() }

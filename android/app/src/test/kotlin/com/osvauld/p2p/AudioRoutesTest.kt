@@ -54,6 +54,37 @@ class AudioRoutesTest {
         assertEquals("Bluetooth", Routes.label(generic))
     }
 
+    @Test fun videoCallIsPlacedAsVideoThenAnyCameraOn() {
+        // Ringing/dialling: how it was placed.
+        assertTrue(Routes.isVideo(placedAsVideo = true, decided = false, negotiated = false, localCamera = false, remoteCamera = false))
+        assertFalse(Routes.isVideo(placedAsVideo = false, decided = false, negotiated = false, localCamera = false, remoteCamera = false))
+        // My camera on while it rings ("Video") decides nothing yet.
+        assertFalse(Routes.isVideo(placedAsVideo = false, decided = false, negotiated = false, localCamera = true, remoteCamera = false))
+        // Active: video runs and a camera is on.
+        assertTrue(Routes.isVideo(placedAsVideo = true, decided = true, negotiated = true, localCamera = true, remoteCamera = false))
+        assertFalse(Routes.isVideo(placedAsVideo = false, decided = true, negotiated = true, localCamera = false, remoteCamera = false))
+        assertTrue(Routes.isVideo(placedAsVideo = false, decided = true, negotiated = true, localCamera = true, remoteCamera = false))
+        assertTrue(Routes.isVideo(placedAsVideo = false, decided = true, negotiated = true, localCamera = false, remoteCamera = true))
+        // Placed as video to a device without video: a voice call once that is known.
+        assertFalse(Routes.isVideo(placedAsVideo = true, decided = true, negotiated = false, localCamera = true, remoteCamera = false))
+    }
+
+    @Test fun becomingVideoIsOncePerChange() {
+        assertTrue(Routes.becameVideo(wasVideo = false, isVideo = true))
+        // A call that already is video is left where the person put it.
+        assertFalse(Routes.becameVideo(wasVideo = true, isVideo = true))
+        assertFalse(Routes.becameVideo(wasVideo = false, isVideo = false))
+        assertFalse(Routes.becameVideo(wasVideo = true, isVideo = false))
+    }
+
+    @Test fun proximityOnlyForVoiceOnEarpiece() {
+        val onEar = RouteState(ear, listOf(ear, spk))
+        assertTrue(Routes.proximityWanted(onEar, video = false))
+        assertFalse(Routes.proximityWanted(onEar, video = true))
+        assertFalse(Routes.proximityWanted(RouteState(spk, listOf(ear, spk)), video = false))
+        assertFalse(Routes.proximityWanted(RouteState(), video = false))
+    }
+
     @Test fun labels() {
         assertEquals("Phone", Routes.label(ear))
         assertEquals("Buds", Routes.label(bt))

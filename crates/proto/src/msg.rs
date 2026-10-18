@@ -49,6 +49,10 @@ pub enum Msg {
         /// The caller can do video in this call; absent = audio only.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         video: Option<VideoOffer>,
+        /// The caller pressed Video: it calls with its camera on, so the callee rings as a video
+        /// call. Only meaningful with `video`; absent = false.
+        #[serde(default, skip_serializing_if = "crate::is_false")]
+        camera: bool,
     },
     Ringing,
     Accept {

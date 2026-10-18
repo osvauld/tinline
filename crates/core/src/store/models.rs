@@ -419,4 +419,7 @@ pub struct CallRecord {
     /// Incoming and we never answered it (not one we declined, nor one turned away while
     /// unavailable).
     pub missed: bool,
+    /// A video call: placed as one (`CallInfo.video`), or a camera was on while it was active.
+    #[serde(default)]
+    pub video: bool,
 }

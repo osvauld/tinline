@@ -350,6 +350,7 @@ impl Inner {
             missed: call.info.incoming
                 && !answered
                 && !matches!(reason, "declined_local" | "answered_elsewhere" | "declined_elsewhere"),
+            video: call.info.video || call.video.camera_seen(),
         });
     }
 

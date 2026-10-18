@@ -133,7 +133,10 @@ compute it from the two offers, with no further message. Both offers must be
 present and `proto::video_codecs` must validate **both** resulting directions
 against the actual lists before streams start: no common codec = audio-only,
 not an unoffered AV1 fallback. Details: `docs/video.md` ("Call protocol") and
-`docs/design/video-hw-vp8.md`.
+`docs/design/video-hw-vp8.md`. `CallHello.camera` (absent = false) says the
+caller pressed Video and calls with its camera on: the callee rings it as a video call
+(`CallInfo.video`). Either camera can still go on in any call; the call log's `CallRecord.video` is
+true if the call was placed as video or a camera was on while it was active.
 
 Developer tuning can filter `encode`/`hw_encode` to a single locally supported
 send codec, without changing `decode` or `hint_flags`. Auto offers still contain AV1. Matching

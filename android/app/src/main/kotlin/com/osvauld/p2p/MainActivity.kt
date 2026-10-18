@@ -212,6 +212,7 @@ private fun Root(app: P2pApp) {
         val bs = app.blocks.value.composer(did, isContact)
         if (app.blocks.value.callGate(did, isContact) != CallGate.Ok) {
             val name = contacts.firstOrNull { it.did == did }?.display() ?: app.chat.chats.value.firstOrNull { it.peerDid == did }?.peerName ?: ""
+            app.video.wantCamera = false
             say(BlockCopy.cantCall(name, bs)); return
         }
         scope.launch {
@@ -305,7 +306,7 @@ private fun Root(app: P2pApp) {
                         onOpen = { ctx.startActivity(Intent(ctx, CallActivity::class.java)) },
                         onDecline = { app.calls.declineWaiting() }, onAnswer = { app.calls.endAndAnswer() })
                     u != null && u.info.incoming && u.state is CallState.Ringing -> RingHead.Ring(
-                        u.info.peerDid, u.info.peerName.ifBlank { "Unknown" }, "Incoming call",
+                        u.info.peerDid, u.info.peerName.ifBlank { "Unknown" }, if (u.info.video) "Incoming video call" else "Incoming call",
                         onOpen = { ctx.startActivity(Intent(ctx, IncomingCallActivity::class.java)) },
                         onDecline = { app.calls.decline() },
                         onAnswer = { ctx.startActivity(Intent(ctx, CallActivity::class.java).putExtra(CallActivity.EXTRA_ANSWER, true)) })

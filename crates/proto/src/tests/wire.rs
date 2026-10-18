@@ -111,7 +111,7 @@ fn old_format_messages_still_parse() {
     let att = attest(&a.id, a.dev, T0);
     let hello = serde_json::json!({"t":"call_hello","call_id":"c","attestation":att,"grant":g});
     match serde_json::from_value::<Msg>(hello).unwrap() {
-        Msg::CallHello { devices, relay, .. } => assert!(devices.is_none() && relay.is_none()),
+        Msg::CallHello { devices, relay, camera, .. } => assert!(devices.is_none() && relay.is_none() && !camera),
         _ => panic!(),
     }
     let acc = serde_json::json!({"t":"accept","renewed_grant":null});
@@ -127,6 +127,7 @@ fn old_format_messages_still_parse() {
     let m = call_hello(att, g, "c".into());
     assert!(!serde_json::to_string(&m).unwrap().contains("devices"));
     assert!(!serde_json::to_string(&m).unwrap().contains("video"));
+    assert!(!serde_json::to_string(&m).unwrap().contains("camera"));
 }
 
 #[test]

@@ -312,6 +312,13 @@ Runs `media::Sender`/`Receiver` over the call's iroh `Connection` (audio stays o
   `send_hardware`/`recv_hardware` (bool, false until video is decided). The callee answers with an offer only if the hello had one and video is
   enabled on it (`set_video_enabled`, default on); the caller ignores an offer it didn't ask
   for. Both present and both directional codec intersections valid = video negotiated, else the call is audio only (nothing else changes).
+- `CallHello.camera`: the caller placed a video call (`Node::video_call`; `call` sends false),
+  only set with `video`. The callee's `CallInfo.video` is true (when video is on there too), so its
+  ring, notification and log say "video call". It changes no negotiation, and the callee's camera still starts off (its
+  "Video" button answers with it on). The caller's camera is on from the start (see "Starting the
+  camera"). With video off on the caller (`set_video_enabled(false)`) `video_call` is a voice call.
+- Call log: `CallRecord.video` = placed as video, or either camera was on while the call was active
+  (`CallVideo.seen`, set when we send `Msg::Video { camera: true }` or receive it).
 - The sender caps its ladder (`LadderConfig::max_rung`) at the highest rung within the peer's
   `max_pixels`.
 - Mid-call `Msg::Video { camera: bool }`, only once video is negotiated: sent when the call
@@ -441,7 +448,44 @@ at 30 fps, one side as padded NV21 planes through `push_video_planes` and the ot
 renderer on `pull_video_frame_rgba_into`, >= 45 decoded frames in 3 s each way, 4:3 kept, 0
 decode errors; frame handles one per node, stable); camera off/on
 mid-call (remote state events, no frames while off, frames resume on a new group); video
-refused by the callee -> audio-only call continues.
+refused by the callee -> audio-only call continues; a video call starts with the caller's camera
+only (`video_call_starts_with_my_camera_only`: plain Answer keeps the callee's off, camera on while
+ringing = "Video", video off on the callee = a voice call and the caller's camera goes off).
+
+### Starting the camera (2026-10-18, `fix/call-start-port`)
+
+Video stays off by default: my camera goes on only when I press for it (the video-call button,
+"Video" on a ringing video call, the camera button mid-call; the call screen coming back resumes a
+camera I had on). Nothing turns it on by itself. What changed is how soon it streams once pressed:
+- **Caller**: `video_call` turns the camera on from the start (`CallVideo::camera_on_from_start`,
+  as `set_camera(true)` before the hello; nothing emitted, the app knows). The app starts its
+  capture right away and pushes frames while it rings; `push_input` drops them until video is
+  negotiated, so the camera is warm when the call goes active and the first frame goes out at
+  once (before: the lookup and the capture start only after the first negotiated `VideoInfo`).
+- **Callee**: "Video" on a ringing video call = `set_camera(true)` (allowed while ringing) and
+  then `answer`; the capture starts with the press. Plain Answer keeps it off.
+- **No video after all** (the peer has none, or it is off here): `video_decided` turns a camera
+  that went on before the call was active off again and emits `VideoInfo` (local off), so the app
+  stops capturing.
+- **Desktop lookup while ringing**: an incoming call looks the camera up as it rings
+  (`App::find_camera`: opens each capture node briefly for its capabilities, no streaming, so no
+  camera light); the video-call button looks it up just before placing the call. A `VideoInfo` can
+  now come before the call is active (my camera on while ringing): the app treats video as decided
+  with the first negotiated one, and until then captures only for a camera that went on with the
+  call (`VideoUi.early_camera`).
+- **Call-log timings** (`RUST_LOG=info`): core `video camera on|off` (the press, or `(placed as a
+  video call)`), `video peer camera on|off`, then the first `video send` line with a size shows
+  when frames got through; desktop `camera <fmt> <w>x<h> streaming after N ms` and `camera first
+  frame after N ms` from `Camera::start_with_quality`. By hand on a real V4L2 camera:
+  `cargo test -p desktop --bin p2p-desktop camera::tests::real_camera_start -- --ignored --nocapture` prints
+  the time to streaming and to the first frame for each quality (no numbers recorded here yet).
+- **Android**: the video button places `video_call`; without the CAMERA permission it turns my
+  camera off again right away (`set_camera(false)`) and tries it once video runs, as before
+  ("Camera permission needed"). The press counts for that one call only (`CallVideo.wantCamera`
+  is cleared when a call is placed, refused or ends). The capture starts when the call screen
+  shows the self-view. Telecom gets `CALL_TYPE_VIDEO_CALL` for a call that is video from
+  the start (and the app registers `CAPABILITY_SUPPORTS_VIDEO_CALLING`, without which Telecom turns
+  it into an audio call on the earpiece). See Android app, Audio route.
 
 ## Codec benchmark (i7-1165G7, synthetic camera pattern, 30 fps)
 
@@ -1164,8 +1208,14 @@ Files: `VideoIo.kt` (the only place frames cross the FFI), `CallVideo.kt` (state
   (false)`, so the peer sees the avatar rather than a frozen picture) and `onStart` turns it
   back on. So `CoreService` needs no `camera` foreground-service type (Android 14 requires it
   only for capture from the background, which we don't do).
-- **Audio route**: turning the camera on moves audio to the speaker (a video call is held
-  away from the ear; that also releases the proximity wake lock).
+- **Audio route**: a video call (`CallInfo.video`, either side pressed Video) starts on the
+  loudspeaker, and a voice call that becomes video (either camera on, `Routes.isVideo`) moves from
+  the earpiece to the loudspeaker once (`Routes.becameVideo`; a route picked during the video call
+  is kept). A headset or Bluetooth always wins. No proximity wake lock while the call is video
+  (`Routes.proximityWanted`: voice on the earpiece only). Tests: `AudioRoutesTest`.
+- **Answering**: a ringing video call shows Decline, Answer and Video; Video asks for the
+  microphone and camera, turns my camera on (`set_camera(true)` while ringing) and answers on the
+  loudspeaker. Answer (also the notification's and a headset's) keeps it off.
 - **Debug hooks** (`DebugReceiver`): `video_stats`, `camera on=1|0`, `flip`, `video_enabled
   on=1|0`, `callscreen`, `video_path jni=1|0` (frames through `VideoJni` or UniFFI),
   `video_io_bench n=200` (push cost per path without a call); during a video call
@@ -1261,7 +1311,8 @@ avatar: peer video large (`ContentFit::Contain`), our mirrored picture 220 px wi
 bottom-right corner (`stack!`), the peer's avatar with "Camera off" while their camera is off;
 the device pickers hide while video shows. All frame in/out is in `frames.rs`, so moving to
 the core's RGBA pull (V8) is a one-function change. Buttons: Camera (toggle; only once video
-is negotiated, starts off for every call), Settings > Calls > "Video in calls"
+is negotiated, starts off for every call; a video call I place starts with it on, and a ringing
+video call has a "Video" button that answers with it on), Settings > Calls > "Video in calls"
 (`set_video_enabled`, default on).
 
 Cost per frame, `cargo run -p desktop --release --example cam_probe [pattern]` (i7-1165G7,

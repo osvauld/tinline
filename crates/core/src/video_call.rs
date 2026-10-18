@@ -252,6 +252,8 @@ pub(crate) struct CallVideo {
     codecs: Mutex<Option<(VideoCodec, VideoCodec)>>,
     camera: watch::Sender<bool>,
     remote_camera: AtomicBool,
+    /// Either camera was on while video ran: the call log calls it a video call.
+    seen: AtomicBool,
     peer_max_pixels: AtomicU32,
     pipe: Arc<Pipe>,
     tasks: Mutex<Vec<JoinHandle<()>>>,
@@ -265,6 +267,7 @@ impl Default for CallVideo {
             codecs: Mutex::new(None),
             camera: watch::channel(false).0,
             remote_camera: AtomicBool::new(false),
+            seen: AtomicBool::new(false),
             peer_max_pixels: AtomicU32::new(0),
             pipe: Arc::default(),
             tasks: Mutex::new(Vec::new()),
@@ -286,6 +289,23 @@ impl CallVideo {
         *self.camera.borrow()
     }
 
+    /// The call is placed as a video call: the camera is on from the start, as if `set_camera
+    /// (true)` came first. Nothing to emit: the UI hears it with the first `VideoInfo`.
+    pub(crate) fn camera_on_from_start(&self) {
+        self.camera.send_replace(true);
+        self.pipe.resume.store(true, Ordering::SeqCst);
+        tracing::info!("video camera on (placed as a video call)");
+    }
+
+    pub(crate) fn saw_camera(&self) {
+        self.seen.store(true, Ordering::SeqCst);
+    }
+
+    /// Either camera was on at some point while video ran.
+    pub(crate) fn camera_seen(&self) -> bool {
+        self.seen.load(Ordering::SeqCst)
+    }
+
     /// Ends the codec threads and the streams. Idempotent.
     pub(crate) fn stop(&self) {
         self.pipe.stop.store(true, Ordering::SeqCst);
@@ -304,6 +324,11 @@ impl Drop for CallVideo {
 }
 
 impl Inner {
+    /// Video is enabled on this node (`Node::set_video_enabled`).
+    pub(crate) fn video_enabled(&self) -> bool {
+        self.video.enabled.load(Ordering::SeqCst)
+    }
+
     /// Our offer, when video is enabled on this node.
     pub(crate) fn video_offer(&self, call: &crate::node::Call) -> Option<VideoOffer> {
         self.video.offer(&call.video.pipe)
@@ -368,7 +393,14 @@ impl Inner {
                 v.stop();
             }
         }
-        if offered {
+        // No video in this call (the peer has none, or it is off here): a camera turned on before
+        // the call was active (a video call placed, or answered with video) goes off, so the app
+        // stops capturing and never shows a self-view nobody receives.
+        let was_on = !call.video.negotiated() && call.video.camera.send_replace(false);
+        if was_on {
+            call.video.pipe.input.lock().take();
+        }
+        if offered || was_on {
             self.emit_video(call);
         }
     }
@@ -378,6 +410,11 @@ impl Inner {
         let v = &call.video;
         if !v.negotiated() || v.remote_camera.swap(on, Ordering::SeqCst) == on {
             return;
+        }
+        // With "video camera" (ours) these date the start of each picture in a call log.
+        tracing::info!("video peer camera {}", if on { "on" } else { "off" });
+        if on {
+            v.saw_camera();
         }
         if !on {
             v.pipe.output.lock().take();

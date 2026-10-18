@@ -25,7 +25,7 @@ impl App {
             let active = c.state == CallState::Active;
             let reconnecting = active && c.stats.as_ref().is_some_and(|s| s.reconnecting);
             let secs = c.stats.as_ref().map_or(0, |s| s.secs);
-            let status = if incoming { "Incoming call".to_string() }
+            let status = if incoming { if c.info.video { "Incoming video call" } else { "Incoming call" }.to_string() }
                 else if reconnecting { "Reconnecting…".into() }
                 else { match c.state {
                     CallState::Dialing => "Calling…".into(),
@@ -64,10 +64,15 @@ impl App {
             ].align_x(Alignment::Center).width(Fill).into();
             let muted = self.ctl.muted.load(Ordering::Relaxed);
             let controls: El = if incoming {
-                row![
+                // A video call can be answered with my camera on ("Video"); Answer keeps it off.
+                let mut r = row![
                     self.round_btn(t, Kind::End, Icon::Hangup, "Decline", Some(Msg::Decline), false),
                     self.round_btn(t, Kind::Accept, Icon::Phone, "Answer", Some(Msg::Answer), false),
-                ].spacing(36).into()
+                ].spacing(36);
+                if c.info.video && !self.settings.no_video {
+                    r = r.push(self.round_btn(t, Kind::Accept, Icon::Video, "Video", Some(Msg::AnswerVideo), false));
+                }
+                r.into()
             } else {
                 row![
                     self.round_btn(t, Kind::Quiet, if muted { Icon::MicOff } else { Icon::Mic }, if muted { "Muted" } else { "Mute" }, active.then_some(Msg::ToggleMute), muted),

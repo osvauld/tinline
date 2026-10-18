@@ -25,6 +25,7 @@ pub fn call_hello(
         relay: None,
         devices: None,
         video: None,
+        camera: false,
     }
 }
 

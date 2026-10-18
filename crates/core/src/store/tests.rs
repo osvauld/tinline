@@ -80,6 +80,7 @@ fn history_is_capped_newest_first_and_private() {
         reason: "hangup_local".into(),
         direct: false,
         missed: false,
+        video: false,
     };
     for i in 0..MAX_HISTORY + 5 {
         h.push(rec(i, if i % 2 == 0 { "a" } else { "b" }));

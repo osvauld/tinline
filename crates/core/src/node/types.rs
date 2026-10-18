@@ -95,6 +95,9 @@ pub struct CallInfo {
     pub peer_did: String,
     pub peer_name: String,
     pub incoming: bool,
+    /// Placed as a video call (the caller pressed Video and calls with its camera on). The callee
+    /// learns it from `CallHello.camera`; either camera can still go on in any call.
+    pub video: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, uniffi::Enum)]

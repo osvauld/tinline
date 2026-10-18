@@ -66,6 +66,9 @@ impl Node {
         }
         let changed = call.video.camera.send_if_modified(|c| std::mem::replace(c, on) != on);
         if changed {
+            // The moment the person turned it on: the call log's start of "my camera" (the first
+            // `video send` line after it shows when frames got through).
+            tracing::info!("video camera {}", if on { "on" } else { "off" });
             if on {
                 call.video.pipe.resume.store(true, Ordering::SeqCst);
             } else {

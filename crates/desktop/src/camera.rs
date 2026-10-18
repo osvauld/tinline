@@ -81,6 +81,43 @@ mod tests {
         assert!(!hd_paused(false, Some((320, 180))));
         assert_eq!(hd_line(true, true), "HD paused \u{b7} weak connection");
     }
+
+    /// The real camera's start cost, the way a call starts it (`Camera::start_with_quality`): time to
+    /// streaming and to the first frame, for each quality. Needs a V4L2 camera and turns it on for a
+    /// moment; run by hand: `cargo test -p desktop --bin p2p-desktop camera::tests::real_camera_start -- --ignored --nocapture`.
+    #[test]
+    #[ignore]
+    fn real_camera_start() {
+        let src = find(None).expect("a V4L2 camera");
+        for quality in [Quality::PreferHd, Quality::Auto, Quality::PreferHd] {
+            let t0 = Instant::now();
+            let (tx, rx) = std::sync::mpsc::channel();
+            let tx2 = tx.clone();
+            let cam = Camera::start_with_quality(
+                src.clone(),
+                quality,
+                move |r| {
+                    let _ = tx.send(format!("{:?} after {} ms", r.map(|o| (o.format, o.width, o.height)), t0.elapsed().as_millis()));
+                },
+                move |p| {
+                    let _ = tx2.send(format!("frame {}x{} after {} ms", p.width, p.height, t0.elapsed().as_millis()));
+                },
+            );
+            let opened = rx.recv_timeout(Duration::from_secs(10)).expect("opened");
+            let first = rx.recv_timeout(Duration::from_secs(10)).expect("first frame");
+            let mut n = 0;
+            let t1 = Instant::now();
+            while t1.elapsed() < Duration::from_secs(1) {
+                if rx.recv_timeout(Duration::from_secs(1)).is_ok() {
+                    n += 1;
+                }
+            }
+            println!("{quality:?}: {opened}; {first}; then {n} frames in 1 s");
+            drop(cam);
+            // The thread closes the device after its current frame.
+            std::thread::sleep(Duration::from_millis(300));
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -179,10 +216,26 @@ impl Camera {
         src: Source,
         quality: Quality,
         opened: impl FnOnce(Result<Opened, String>) + Send + 'static,
-        frame: impl FnMut(I420) + Send + 'static,
+        mut frame: impl FnMut(I420) + Send + 'static,
     ) -> Camera {
         let stop = Arc::new(AtomicBool::new(false));
         let s = stop.clone();
+        // The call log dates each step of a camera start (docs/video.md "Starting the camera").
+        let t0 = Instant::now();
+        let opened = move |r: Result<Opened, String>| {
+            match &r {
+                Ok(o) => tracing::info!("camera {} {}x{} streaming after {} ms", o.format, o.width, o.height, t0.elapsed().as_millis()),
+                Err(e) => tracing::info!("camera failed after {} ms: {e}", t0.elapsed().as_millis()),
+            }
+            opened(r)
+        };
+        let mut first = true;
+        let frame = move |pic: I420| {
+            if std::mem::take(&mut first) {
+                tracing::info!("camera first frame after {} ms", t0.elapsed().as_millis());
+            }
+            frame(pic)
+        };
         let _ = std::thread::Builder::new()
             .name("tl-camera".into())
             .spawn(move || match src {

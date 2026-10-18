@@ -80,11 +80,25 @@ private fun ComponentActivity.registerMicThen(then: () -> Unit): () -> Unit {
     }
 }
 
+/** "Video" on a ringing video call: the microphone and the camera, then [then]. A refused camera still answers, with it off. */
+private fun ComponentActivity.registerMicCameraThen(then: () -> Unit): () -> Unit {
+    var pending: (() -> Unit)? = null
+    val launcher = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions()) {
+        pending?.invoke(); pending = null
+    }
+    return {
+        val need = listOf(android.Manifest.permission.RECORD_AUDIO, android.Manifest.permission.CAMERA).filter { !Perms.granted(this, it) }
+        if (need.isEmpty()) then()
+        else { pending = then; launcher.launch(need.toTypedArray()) }
+    }
+}
+
 /** Ended screens stay up this long (the "Call ended" board: "Closes by itself after 4 seconds"). */
 const val ENDED_AUTOCLOSE_MS = 4000L
 
 class CallActivity : ComponentActivity() {
     private lateinit var answerWithMic: () -> Unit
+    private lateinit var answerWithVideo: () -> Unit
     private lateinit var cameraOn: () -> Unit
     /** Android 12+: Nearby devices lets Telecom name Bluetooth headsets and switch between them. */
     private val btAllowed = mutableStateOf(true)
@@ -117,6 +131,7 @@ class CallActivity : ComponentActivity() {
         showOverLock()
         val app = P2pApp.get(this)
         answerWithMic = registerMicThen { app.calls.answer() }
+        answerWithVideo = registerMicCameraThen { app.calls.answerWithVideo() }
         val cameraLauncher = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.RequestPermission()) { ok ->
             if (ok) { app.video.setCamera(true); app.calls.speakerForVideo() } else app.video.cameraDenied()
         }
@@ -164,7 +179,8 @@ class CallActivity : ComponentActivity() {
                 when {
                     // Their call arrived while ours was open (ours yielded): ring it here.
                     u != null && u.info.incoming && u.state is CallState.Ringing ->
-                        IncomingContent(u.info.peerName, u.info.peerDid, onDecline = { app.calls.decline() }, onAnswer = { answerWithMic() })
+                        IncomingContent(u.info.peerName, u.info.peerDid, onDecline = { app.calls.decline() }, onAnswer = { answerWithMic() }, video = u.info.video,
+                            onVideo = { answerWithVideo() })
                     u != null || holding -> {
                         val shown = u ?: last!!
                         val allowed by btAllowed
@@ -203,6 +219,10 @@ class IncomingCallActivity : ComponentActivity() {
             app.calls.answer()
             startActivity(Intent(this@IncomingCallActivity, CallActivity::class.java)); finish()
         }
+        val answerWithVideo = registerMicCameraThen {
+            app.calls.answerWithVideo()
+            startActivity(Intent(this@IncomingCallActivity, CallActivity::class.java)); finish()
+        }
         setContent {
             TinlineTheme(dark = true) {
                 val ui by app.calls.ui.collectAsState()
@@ -213,7 +233,8 @@ class IncomingCallActivity : ComponentActivity() {
                         startActivity(Intent(this@IncomingCallActivity, CallActivity::class.java)); finish()
                     }
                 }
-                if (u != null) IncomingContent(u.info.peerName, u.info.peerDid, onDecline = { app.calls.decline(); finish() }, onAnswer = { answerWithMic() })
+                if (u != null) IncomingContent(u.info.peerName, u.info.peerDid, onDecline = { app.calls.decline(); finish() }, onAnswer = { answerWithMic() }, video = u.info.video,
+                    onVideo = { answerWithVideo() })
             }
         }
     }
@@ -222,13 +243,16 @@ class IncomingCallActivity : ComponentActivity() {
 // ------------------------------------------------------------------ incoming (always dark)
 
 @Composable
-fun IncomingContent(name: String, did: String, onDecline: () -> Unit, onAnswer: () -> Unit) {
+fun IncomingContent(name: String, did: String, onDecline: () -> Unit, onAnswer: () -> Unit, video: Boolean = false,
+    onVideo: (() -> Unit)? = null) {
     val c = Tin.c
     val who = name.ifBlank { "Unknown" }
-    CallFocus(who, did, active = false, ringing = true, incoming = true) {
+    CallFocus(who, did, active = false, ringing = true, incoming = true, video = video) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(36.dp, Alignment.CenterHorizontally)) {
             LabeledRound("Decline") { RoundBtn(CallGlyphs.End, "Decline", c.callButtonEnd, Color.White, onDecline, size = 64.dp) }
             LabeledRound("Answer") { RoundBtn(CallGlyphs.Phone, "Answer", c.callButtonAnswer, Color.White, onAnswer, size = 64.dp) }
+            // A video call can be answered with my camera on; Answer keeps it off.
+            if (video && onVideo != null) LabeledRound("Video") { RoundBtn(CallGlyphs.Video, "Answer with video", c.callButtonAnswer, Color.White, onVideo, size = 64.dp) }
         }
     }
 }

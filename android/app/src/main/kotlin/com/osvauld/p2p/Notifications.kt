@@ -187,9 +187,9 @@ object Notifications {
             .setTimeoutAfter(CallController.RING_TIMEOUT_MS)
         if (Build.VERSION.SDK_INT >= 31) {
             val p = Person.Builder().setName(name).setImportant(true).build()
-            b.style = Notification.CallStyle.forIncomingCall(p, decline, answer)
+            b.style = Notification.CallStyle.forIncomingCall(p, decline, answer).setIsVideo(call.video)
         } else {
-            b.setContentTitle(name).setContentText("Incoming call")
+            b.setContentTitle(name).setContentText(if (call.video) "Incoming video call" else "Incoming call")
             b.addAction(Notification.Action.Builder(Icon.createWithResource(c, android.R.drawable.ic_menu_close_clear_cancel), "Decline", decline).build())
             b.addAction(Notification.Action.Builder(Icon.createWithResource(c, android.R.drawable.sym_action_call), "Answer", answer).build())
         }

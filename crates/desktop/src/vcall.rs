@@ -7,7 +7,7 @@ use std::time::{Duration, Instant};
 
 use iced::widget::image::Handle;
 use iced::Task;
-use p2pcore::{CallState, VideoInfo};
+use p2pcore::{CallInfo, CallState, VideoInfo};
 
 use super::{blocking, App, Msg};
 use crate::camera::{self, Camera, Source};
@@ -20,6 +20,8 @@ pub(super) enum Vm {
     Tick,
     ToggleCamera,
     Found(Option<Source>),
+    /// A video call placed (`App::dial_video`): the camera it looked up first, and the call.
+    Placed(Option<Source>, Result<CallInfo, String>),
     /// The "video in calls" setting.
     Enabled(bool),
     PreferHd(bool),
@@ -37,6 +39,12 @@ pub(super) struct VideoUi {
     pub info: Option<VideoInfo>,
     /// The camera to use: None until looked up for this call, then Some(None) = no camera.
     pub source: Option<Option<Source>>,
+    /// The lookup is running.
+    looking: bool,
+    /// My camera goes on with this call (placed as a video call, or answered with "Video"): the capture
+    /// starts before video is decided (the core's `VideoInfo` once the call is active), so the camera is
+    /// streaming by then. Once video is decided the core's state rules.
+    early_camera: bool,
     camera: Option<Camera>,
     /// Newest self-view picture, written by the capture thread.
     slot: Arc<Mutex<Option<Rgba>>>,
@@ -132,20 +140,28 @@ impl App {
                 }
             }
             Vm::Found(src) => {
-                // A chosen camera that is gone (unplugged, renumbered) is not swapped for another
-                // one (`camera::find_selected`), so say why the camera stays off.
-                if src.is_none() && self.settings.camera_device.is_some() {
-                    self.notice = Some("Your chosen camera isn't connected. Pick one in Settings \u{2192} Video.".into());
-                }
-                self.video.source = Some(src);
-                let intent = std::mem::take(&mut self.video_intent);
+                self.video.looking = false;
+                self.found(src);
+                // Test hook: the camera goes on with video (the lookup now also runs while it rings).
                 if self.video.has_camera()
+                    && self.video.negotiated()
                     && !self.video.local_on()
-                    && (intent || crate::test_env("P2P_AUTO_CAMERA").is_some())
+                    && crate::test_env("P2P_AUTO_CAMERA").is_some()
                 {
                     return self.video_update(Vm::ToggleCamera);
                 }
                 self.sync_camera();
+            }
+            Vm::Placed(src, r) => {
+                self.video.looking = false;
+                let video = r.as_ref().is_ok_and(|i| i.video);
+                let t = self.update(Msg::CallStarted(r));
+                if self.call.is_some() {
+                    self.video.early_camera = video;
+                    self.found(src);
+                    self.sync_camera();
+                }
+                return t;
             }
             Vm::Enabled(on) => {
                 self.settings.no_video = !on;
@@ -189,6 +205,20 @@ impl App {
         Task::none()
     }
 
+    /// The camera lookup's answer for this call. A chosen camera that is gone (unplugged, renumbered) is not
+    /// swapped for another one (`camera::find_selected`), so say why the camera stays off; with no camera at
+    /// all, a camera that went on with the call (video call, "Video") goes off again.
+    fn found(&mut self, src: Option<Source>) {
+        if src.is_none() && self.settings.camera_device.is_some() {
+            self.notice = Some("Your chosen camera isn't connected. Pick one in Settings \u{2192} Video.".into());
+        }
+        if src.is_none() && (self.video.early_camera || self.video.local_on()) {
+            self.video.early_camera = false;
+            let _ = self.node.set_camera(false);
+        }
+        self.video.source = Some(src);
+    }
+
     /// The core's video state for the current call changed.
     pub(super) fn video_state(&mut self, info: VideoInfo) -> Task<Msg> {
         if self
@@ -198,26 +228,80 @@ impl App {
         {
             return Task::none();
         }
-        let first = self.video.info.is_none();
+        // A `VideoInfo` can come before the call is active (my camera on while it rings): video is decided
+        // with the first negotiated one.
+        let first = !self.video.negotiated();
         self.video.info = Some(info);
         if !self.video.remote_on() {
             self.video.remote = None;
         }
         self.sync_camera();
-        if first && self.video.negotiated() && self.video.source.is_none() {
-            let fake = crate::test_env("TINLINE_FAKE_CAMERA");
-            let selected = self.settings.camera_device.clone();
-            return blocking(
-                move || camera::find_selected(fake.as_deref(), selected.as_deref()),
-                |s| Msg::Video(Vm::Found(s)),
-            );
+        if first && self.video.negotiated() {
+            // Test hook: the camera found while it rang goes on with video.
+            if self.video.has_camera() && !self.video.local_on() && crate::test_env("P2P_AUTO_CAMERA").is_some() {
+                return self.video_update(Vm::ToggleCamera);
+            }
+            return self.find_camera();
         }
         Task::none()
     }
 
+    /// Looks the camera up for this call (once; opens each capture node briefly without streaming, so no
+    /// camera light), unless it is known, being looked up, or video is off.
+    pub(super) fn find_camera(&mut self) -> Task<Msg> {
+        if self.video.source.is_some() || self.video.looking || self.settings.no_video {
+            return Task::none();
+        }
+        self.video.looking = true;
+        let fake = crate::test_env("TINLINE_FAKE_CAMERA");
+        let selected = self.settings.camera_device.clone();
+        blocking(
+            move || camera::find_selected(fake.as_deref(), selected.as_deref()),
+            |s| Msg::Video(Vm::Found(s)),
+        )
+    }
+
+    /// The video call button: looks the camera up, then places a video call (the core turns my camera on from
+    /// the start, so the capture starts while it rings and is warm when video runs; docs/video.md "Starting
+    /// the camera"). Without a camera it is still a video call, with mine off.
+    pub(super) fn dial_video(&mut self, did: String) -> Task<Msg> {
+        if !self.may_dial(&did) {
+            return Task::none();
+        }
+        let node = self.node.clone();
+        let fake = crate::test_env("TINLINE_FAKE_CAMERA");
+        let selected = self.settings.camera_device.clone();
+        self.video.looking = true;
+        blocking(
+            move || {
+                let src = camera::find_selected(fake.as_deref(), selected.as_deref());
+                (src, node.video_call(did).map_err(|e| e.to_string()))
+            },
+            |(src, r)| Msg::Video(Vm::Placed(src, r)),
+        )
+    }
+
+    /// "Video" on a ringing video call: my camera on (the core takes it while ringing; the peer hears it once
+    /// the call is active), the capture started, then answer. Plain Answer keeps it off.
+    pub(super) fn answer_with_video(&mut self) -> Task<Msg> {
+        if self.call.is_none() {
+            return Task::none();
+        }
+        if !matches!(self.video.source, Some(None)) && self.node.set_camera(true).is_ok() {
+            self.video.early_camera = true;
+            self.sync_camera();
+        }
+        let find = self.find_camera();
+        let answer = self.update(Msg::Answer);
+        Task::batch([find, answer])
+    }
+
     /// Starts or stops the capture thread to match our camera state.
     fn sync_camera(&mut self) {
-        let want = self.video.local_on();
+        // Until video is decided, a camera that went on with the call (video call, "Video"); from then on the
+        // core's state, so a call without video (the peer has none) never captures.
+        let active = self.call.as_ref().is_some_and(|c| c.state == CallState::Active);
+        let want = if self.video.negotiated() { self.video.local_on() } else { !active && self.video.early_camera };
         if !want {
             self.video.camera = None;
             self.video.local = None;

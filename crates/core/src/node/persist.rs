@@ -295,7 +295,8 @@ impl Inner {
     }
 
     /// An incoming call that never became a `Call` (turned away unavailable, or busy).
-    pub(crate) fn log_refused(&self, epoch: u64, call_id: &str, did: &str, name: &str, reason: &str, missed: bool) {
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn log_refused(&self, epoch: u64, call_id: &str, did: &str, name: &str, reason: &str, missed: bool, video: bool) {
         self.log_call(epoch, CallRecord {
             call_id: call_id.to_string(),
             peer_did: did.to_string(),
@@ -306,6 +307,7 @@ impl Inner {
             reason: reason.to_string(),
             direct: false,
             missed,
+            video,
         });
     }
 }
