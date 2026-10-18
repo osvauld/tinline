@@ -743,14 +743,18 @@ fn presence_follows_the_contact_going_offline_and_back() {
     let a = make_peer("p1-a");
     let b = make_peer("p1-b");
     connect(&a, &b);
-    a.node.watch_presence(b.did.clone());
-    eventually(40, "A sees B online", || a.node.contact_online(b.did.clone()));
-    eventually(40, "B sees A online", || b.node.contact_online(a.did.clone()));
+    // Presence is consent-based (2026-10-17): each side shows only while it is active with the
+    // other, so both keep typing.
+    let both_type = || {
+        a.node.chat_typing(b.did.clone());
+        b.node.chat_typing(a.did.clone());
+    };
+    eventually(40, "A sees B online", || { both_type(); a.node.contact_online(b.did.clone()) });
+    eventually(40, "B sees A online", || { both_type(); b.node.contact_online(a.did.clone()) });
     b.node.stop();
-    eventually(40, "A sees B offline", || !a.node.contact_online(b.did.clone()));
+    eventually(40, "A sees B offline", || { a.node.chat_typing(b.did.clone()); !a.node.contact_online(b.did.clone()) });
     online(&b.node);
-    a.node.watch_presence(b.did.clone());
-    eventually(60, "A sees B online again", || a.node.contact_online(b.did.clone()));
+    eventually(60, "A sees B online again", || { both_type(); a.node.contact_online(b.did.clone()) });
 }
 
 #[test]
@@ -916,19 +920,30 @@ fn edits_and_deletes_on_one_device_show_on_the_other_and_at_the_contact() {
 #[test]
 fn presence_on_both_of_our_devices_and_for_a_contact_with_two_devices() {
     let (a, b1, b2) = trio("l5");
+    // Presence is consent-based (2026-10-17): a device shows only while it is active with the
+    // contact, so the ones that should show keep typing.
+    let type_to = |ps: &[&Peer], did: &str| {
+        for p in ps {
+            p.node.chat_typing(did.to_string());
+        }
+    };
     // Both of B's devices see A.
-    for p in [&b1, &b2] {
-        p.node.watch_presence(a.did.clone());
-    }
-    eventually(40, "b1 and b2 see A online", || b1.node.contact_online(a.did.clone()) && b2.node.contact_online(a.did.clone()));
+    eventually(40, "b1 and b2 see A online", || {
+        type_to(&[&a], &b1.did);
+        type_to(&[&b1, &b2], &a.did);
+        b1.node.contact_online(a.did.clone()) && b2.node.contact_online(a.did.clone())
+    });
     // A sees B online while any of B's devices is.
-    a.node.watch_presence(b1.did.clone());
-    eventually(40, "A sees B online", || a.node.contact_online(b1.did.clone()));
+    eventually(40, "A sees B online", || {
+        type_to(&[&a], &b1.did);
+        type_to(&[&b1, &b2], &a.did);
+        a.node.contact_online(b1.did.clone())
+    });
     b1.node.stop();
-    b2.node.watch_presence(a.did.clone());
     std::thread::sleep(Duration::from_secs(3));
     eventually(40, "A still sees B (b2 is up)", || {
-        a.node.watch_presence(b1.did.clone());
+        type_to(&[&a], &b1.did);
+        type_to(&[&b2], &a.did);
         a.node.contact_online(b1.did.clone())
     });
     b2.node.stop();
@@ -936,10 +951,11 @@ fn presence_on_both_of_our_devices_and_for_a_contact_with_two_devices() {
     // And A going away shows on both of B's devices.
     online(&b1.node);
     online(&b2.node);
-    for p in [&b1, &b2] {
-        p.node.watch_presence(a.did.clone());
-    }
-    eventually(60, "both see A again", || b1.node.contact_online(a.did.clone()) && b2.node.contact_online(a.did.clone()));
+    eventually(60, "both see A again", || {
+        type_to(&[&a], &b1.did);
+        type_to(&[&b1, &b2], &a.did);
+        b1.node.contact_online(a.did.clone()) && b2.node.contact_online(a.did.clone())
+    });
     a.node.stop();
     eventually(60, "both see A offline", || !b1.node.contact_online(a.did.clone()) && !b2.node.contact_online(a.did.clone()));
 }

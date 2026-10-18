@@ -85,6 +85,24 @@ online at the same time**. With the always-on service that is usually seconds; w
   evidence (chat/6, section 9); the earlier "read cursor" idea was not built.
 - Notifications: the foreground service receives pushes and posts a messaging-style
   notification (`MessagingStyle`), quiet if the conversation is open.
+- **Sessions are not held open; links are consent-based (decision 2026-10-17).** Reachability
+  comes from the relay registration: whoever has something to send dials. A link to a contact
+  opens or stays open only because of my own action or a real need; a contact can never hold my
+  link open or learn I am online without my action. A session with no `ChatMsg` either way for
+  60 s (`wire::IDLE_CLOSE`) closes cleanly unless this side has its own reason: I typed, wrote, or sent
+  a read receipt to that contact within those 60 s (a live 1:1 call counts too; an automatic
+  delivered receipt does not), something is pending for them (outbox, wanted download,
+  owed receipt, profile push), or a 1:1 call with them is live (`docs/protocol.md` "Session
+  lifetime"). **Typing is the wake point:** the composer calls `chat_typing(did)` on each
+  non-empty edit (local only, throttled in the core), which dials ahead of the send. Opening a
+  conversation connects nothing. There is no dial to every contact at start: only to contacts
+  with something pending. A contact who wrote while we were away redials us (its backoff reaches
+  60 s, so catch-up after coming back can take up to about a minute). Own devices follow the same
+  idle rule (section 8).
+- **Presence** is sent only while I am active with that contact (typed, wrote, sent a read receipt, or
+  was in a live call with them, within the idle time), so a contact who dials to deliver learns nothing more. "Online" in the conversation
+  header means "they are active with me now"; otherwise the header shows no presence word
+  (unknown, not "offline"). Chat and contact lists show no online dots.
 
 ### Storage (decided 2026-10-07: our vault + iroh-blobs)
 Two stores, both in the app's private data dir:
@@ -286,8 +304,9 @@ are sealed in the account store; see [profile-sync.md](design/profile-sync.md).
   replica that already showed the newer edit: the replicas stayed apart (the flaky
   `concurrent_edits_whose_loro_winner_is_older_are_refused`).
 - Outbox = the Loro doc plus an `out/{pair}/{day}` marker until the peer's vv covers our ops.
-  Dial at start, on local write, on `network_changed`, every 30 s while something is unsent, with
-  2..60 s backoff.
+  Dial on local write, on typing (`chat_typing`), at start and on `network_changed` when
+  something is unsent, every 30 s while something is pending, with 2..60 s backoff. Idle
+  sessions close after 60 s (2026-10-17, consent-based, "Delivery and offline").
 - Auto-download: incoming files up to the limit are fetched as soon as the message is applied;
   others on `download_attachment`. Retries on every new session.
 - **Reliable transfer (task 32, details in `docs/iroh-blobs.md` section 2).** A fetch with no
@@ -378,7 +397,9 @@ learns how many devices we have.
   the `account` doc. Docs the peer does not list it has none of: we send them whole. Then
   `Sync{doc, vv, update, sig}` carries the ops beyond the peer's vector, **all peers' ops** (ours,
   the other device's, the contact's). A write on any device marks its shard dirty and is pushed to
-  every connected own device at once. Older (closed) days travel the same way, only when a vector
+  every connected own device at once; an own device that is not connected is owed the change and
+  dialled (the link closes again after 60 s idle, decision 2026-10-17; `docs/protocol.md`
+  "Own-device sync"). Older (closed) days travel the same way, only when a vector
   differs; the cap bounds a session's work.
 - A batch relayed by an own device is validated like a vouched history snapshot (`Ctx::history`):
   the QUIC-authenticated own device signed the batch; the doc must be a conversation of ours (a

@@ -156,6 +156,11 @@ pub struct VideoOffer {
     pub hw_decode: Vec<VideoCodec>,
     /// The subset of `encode` this device encodes in hardware.
     pub hw_encode: Vec<VideoCodec>,
+    /// Its sender reads hint flags (video control message 5, `docs/video.md`), so its peer may
+    /// tell it "I have room for a sharper picture". Optional: absent (older devices) = false,
+    /// and then the peer sends hints as message 4 only.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub hint_flags: bool,
 }
 
 /// The codec `sender` sends to `receiver`. Candidates are the sender's `encode` that the receiver

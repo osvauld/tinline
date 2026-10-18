@@ -32,6 +32,68 @@ hardware score is unchanged. Shared stats expose measured payload rates, decode
 p75 and the current rung, not a live picture-quality score. See
 [controls, compatibility, A/B procedure and limitations](design/video-tuning.md).
 
+## Suggesting sharper video (2026-10-17, `feature/hd-suggest`)
+
+Sharper video stays **off by default**. When a call could carry it, the call screen says so
+**once**, in the short line under the header (Android) / the picture label (desktop), and the
+person decides with the HD chip. Nothing switches by itself. **Mobile data is no exception**
+(the rule never looks at the network type); with HD on over a metered network Android adds a
+one-time note. The rule lives in the core (`crates/core/src/video_call/hd.rs`), both apps read
+it from `VideoStats.hd_suggest` and show `video_hd_suggestion(..)`'s text.
+
+**Sending rule** (`hd::send_ok`, checked once a second by `adapt::run_policy`), all of:
+- the app says HD is off for this call (`Node::set_video_hd(false)`; on = never);
+- frames went out this second, and the **capture is the limit**: the ladder's rung is 540p or
+  more and bigger than the picture sent (HD off captures 640x480, the ladder can sit at 720p);
+- the peer's caps (hint, offer) and my budget allow 540p or more (`send_cap.pixels`);
+- the rate estimate is at least **1.3 Mbps**, the ladder's step-up threshold for 720p30 (1 Mbps
+  floor x 130%): an HD capture would climb to the top rung on it;
+- no overuse report, starvation verdict or backlog drop since the last second, and no drain;
+- the encoder has room: no CPU step down this second, and the p75 encode time scaled to a 540p
+  picture (`p75 x 960x540 / sent pixels`) fits 60% of the frame interval, the ladder's own
+  step-down budget (a hardware encoder skips this: its wall time is latency, and it does 720p).
+
+It must hold **10 s in a row** (twice the ladder's 5 s hold for a step up; any miss starts
+again from 0), so a weak or borderline link (a dip every few seconds) never earns it. 540p is
+the yardstick because it is the smallest picture sharper video brings everywhere (phones aim
+for 540p, computers 720p).
+
+**Receiving rule** (`hd::recv_ok`, same tick and the same 10 s): I draw the peer's picture at a
+size that asks for 540p or more (the hint's display rung), nothing of mine caps the hint
+(battery saver, heat, a lower decode tier: reason must be `display`, no fps cap), I receive
+frames smaller than 540p, and my decoder would keep up at 540p (software: p75 decode + render
+scaled to 540p within 60% of a 30 fps interval, >= 10 samples; hardware: not behind). Then my
+hint carries **`room`** (`Hint::room`, control message 5 below), and drops it as soon as the rule
+breaks. The receiver can't tell why the picture is small; the sender can: its own sending rule
+above is exactly "small because HD is off, not because of the link or the CPU".
+
+**`VideoStats.hd_suggest`**: `""`, `"line"` (my sending rule holds) or `"peer"` (it holds and
+the peer's hint says `room`). **`video_hd_suggestion(stats, hd_on, memory, peer_name)`** turns it
+into the line, `""` when HD is on or the device stopped suggesting:
+- `"line"`: **Room for sharper video · tap HD**
+- `"peer"`: **Ana could see you sharper · tap HD** (the name cut to 12 characters with `…`;
+  "They" when empty)
+
+**Once per call, then fewer.** Each app shows it at most once per call (6 s, longer than the
+chip's 2.6 s echo: it asks for a decision), never over another line that is still showing.
+The device remembers `HdSuggestMemory { turned_on, ignored_in_a_row }`:
+`video_hd_suggest_after_call(memory, shown, turned_on)` at the end of every call; a call where
+the person turned HD on with the chip counts toward `turned_on` and clears the unanswered count;
+a call that showed a suggestion without HD being turned on adds to `ignored_in_a_row`.
+`video_hd_suggest_allowed`: no more suggestions after **3 calls with HD turned on by hand** (they
+know the chip; Settings > Video has the lasting switch) or **3 suggestions in a row left
+unanswered** (not interested). There is no separate dismiss gesture: letting the line pass is
+the "no". Permanent per device; turning Settings > Video "Sharper video" on also ends them (HD on
+never suggests).
+
+**Mobile data (Android only)**: with HD on, my camera sending and
+`ConnectivityManager.isActiveNetworkMetered`, the line says once per call **On mobile data, HD
+uses more · tap HD** (6 s). The desktop has no metered signal and skips it.
+
+Logs: `video hd suggest="line" room=true` (target `p2pcore::video_call`) on every change.
+Not verified on devices yet (no phone run in this change): the thresholds come from the ladder
+and decode policy, not from a call measurement.
+
 ## Decisions
 
 - **Codec: AV1.** Encoder = libaom in realtime mode (C, through `csrc/aom_rt.c`); decoder =
@@ -186,7 +248,12 @@ Runs `media::Sender`/`Receiver` over the call's iroh `Connection` (audio stays o
   [offset u64]` ack, `4 [max_pixels u32][max_fps u8][reason u8]` hint (what the receiver can
   use: one rung above the rung that covers the drawn size, `0` = not shown; the frame rate it decodes and
   draws, `0` = no limit; reason 0 none, 1 display, 2 decode, 3 thermal, 4 battery, 5 user; sent
-  when set and on every change; an unknown reason or `max_fps` > 120 ends the session).
+  when set and on every change; an unknown reason or `max_fps` > 120 ends the session),
+  `5 [max_pixels u32][max_fps u8][reason u8][flags u8]` the same hint with flags (bit 0
+  `room`: the receiver has room for a sharper picture, see "Suggesting sharper video"; other
+  bits ignored), sent instead of `4` only while a flag is set and only to a sender whose
+  `VideoOffer.hint_flags` is true (`RecvConfig::hint_flags`; otherwise the flag is dropped).
+  The version byte stays `2`: an older sender never receives `5`.
   Unknown type ends the session; there is no v1 compatibility (pre-release).
   See `docs/design/video-adaptation.md`.
 - **Peer-controlled bytes, bounded**: frame > `max_frame` -> that stream is stopped and a
@@ -228,7 +295,9 @@ Runs `media::Sender`/`Receiver` over the call's iroh `Connection` (audio stays o
 ## Call protocol and core API (`crates/core/src/video_call.rs`)
 
 **Negotiation** (`proto::Msg`, JSON on the call's control stream):
-- `CallHello.video` / `Accept.video`: `Option<VideoOffer { max_pixels, max_fps, decode, encode, hw_decode, hw_encode }>`.
+- `CallHello.video` / `Accept.video`: `Option<VideoOffer { max_pixels, max_fps, decode, encode, hw_decode, hw_encode, hint_flags }>`.
+  `hint_flags` (optional, absent = false, not written when false): this device's sender reads
+  hint message 5 (2026-10-17).
   Presence = "this device does video in this call"; `max_pixels` = largest picture it wants to
   receive (today 1280x720); `max_fps` = highest frame rate it decodes and shows (30; the
   peer's ladder stays at or below it); `decode`/`encode` = its codecs, best first (both always have
@@ -287,6 +356,8 @@ the sender sees it); after a decode error it skips to the next keyframe and requ
 | `set_video_view(width_px, height_px, visible)` | the remote picture's drawn size in device pixels and whether it is on screen; call on layout changes. The core asks the peer for one rung above the rung that covers it (so ~540p drawn asks for 720p; the top rung is the cap; hidden = 180p at 15 fps); a shrink holds 1 s, anything else goes at once. No-op without a call |
 | `report_video_render_ms(ms)` | the app's cost to pull and prepare one remote frame; call once per drawn frame |
 | `video_send_label(stats)` (free function) | the picture label from the stats, one text for every app: `HD · 24 fps`, `540p · slow network`, `540p · their screen`; empty before a frame was sent |
+| `set_video_hd(on)` | sharper video (HD capture) is on for this call: the per-call chip, else the setting. Call when video starts and on every change; the core never suggests HD while it is on. No-op without a call |
+| `VideoStats.hd_suggest`, `video_hd_suggestion(stats, hd_on, memory, peer_name)`, `video_hd_suggest_allowed(memory)`, `video_hd_suggest_after_call(memory, shown, turned_on)` | the sharper-video suggestion (see "Suggesting sharper video"): `""`/`"line"`/`"peer"`, the line to show, and the device's stop rule (`HdSuggestMemory { turned_on, ignored_in_a_row }`, stored by each app) |
 | `set_video_budget(VideoBudget { thermal, power_save })` | Android thermal status (0-6) and battery saver. MODERATE (2): 15 fps up to 540p; SEVERE (3+): 15 fps up to 360p; power save: 24 fps up to 540p. Lowers the hint we send and caps our own ladder. No-op without a call |
 | `video_frame_handle() -> u64` | this node's handle for the direct (non-UniFFI) frame calls, see Frames across the FFI |
 
@@ -1062,6 +1133,8 @@ crops to fill, so the reported size is the view, not the picture. `CallVideo.wat
 `ACTION_POWER_SAVE_MODE_CHANGED` / `isPowerSaveMode` to `setVideoBudget`; `VideoIo.pull` reports
 each frame's pull + bitmap time with `reportVideoRenderMs`. The line under the header uses
 `videoSendLabel(stats)`. No policy in Kotlin. Needs a phone to check the thermal and power-save paths.
+The same line carries the sharper-video suggestion and the mobile-data note (`CallVideo.hdTick`,
+once a second from the send-stats loop; one line, cut with an ellipsis, never wrapped).
 
 Files: `VideoIo.kt` (the only place frames cross the FFI), `CallVideo.kt` (state, CameraX,
 `RemoteRenderer`), `CallScreens.kt` (`VideoCallContent`), Settings "Video in calls".
@@ -1146,7 +1219,7 @@ window scale factor each time it is drawn; the 33 ms video tick reports it with
 `set_video_view(w, h, visible)` on the first draw and on every change. `visible` is false when
 the picture was not drawn for a second (stage hidden, call minimised to the strip, window
 minimised). The pull cost of each remote frame goes to `report_video_render_ms`. The picture
-label (top-left of the stage, fixed 220 px box) is `video_send_label` (`HD · 24 fps`,
+label (top-left of the stage, fixed 300 px box since the sharper-video suggestion; 220 px before) is `video_send_label` (`HD · 24 fps`,
 `540p · slow network`); the HD chip itself still reads "HD". No budget on desktop. Needs a
 two-instance run to see the hint arrive (resize the window, minimise it).
 

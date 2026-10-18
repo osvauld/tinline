@@ -14,8 +14,10 @@ impl Inner {
 
     // ---- the dial loop --------------------------------------------------------------------
 
-    /// Started with the endpoint: dials every other live device of the registry that has no
-    /// session, now and then (and at once on `sync_kick`), with growing pauses per failing device.
+    /// Started with the endpoint: dials every other live device of the registry that is owed a
+    /// sync (`SelfSync::synced`) and has no session, now and then (and at once on a change or
+    /// `sync_kick`), with growing pauses per failing device. Devices in sync are not dialled:
+    /// a device with a change dials us.
     pub(crate) fn selfsync_started(self: &Arc<Self>) {
         let this = self.clone();
         self.handle.spawn(async move {
@@ -34,15 +36,18 @@ impl Inner {
 
     pub(super) fn dial_round(self: &Arc<Self>) {
         let Ok(me) = self.me() else { return };
+        let generation = *self.sync_tx.borrow();
         let targets: Vec<([u8; 32], Option<String>)> = {
             let s = self.shared.lock();
             if s.epoch != me.epoch {
                 return;
             }
+            let synced = self.selfsync.synced.lock();
             s.state
                 .registry
                 .iter()
                 .filter(|e| !e.removed && e.device != me.device)
+                .filter(|e| synced.get(&e.device).is_none_or(|g| *g < generation))
                 .map(|e| (e.device, e.relay.clone()))
                 .collect()
         };

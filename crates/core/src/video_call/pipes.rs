@@ -146,8 +146,9 @@ pub(super) fn encode_loop(pipe: Arc<Pipe>, send: Arc<VideoSend>, codec: VideoCod
     }
 }
 
-pub(super) async fn run_recv(conn: Connection, pipe: Arc<Pipe>, codec: VideoCodec) {
-    let mut recv = match VideoRecv::new(conn, RecvConfig::default()).await {
+/// `hint_flags`: the peer's sender reads hint flags (its `VideoOffer.hint_flags`).
+pub(super) async fn run_recv(conn: Connection, pipe: Arc<Pipe>, codec: VideoCodec, hint_flags: bool) {
+    let mut recv = match VideoRecv::new(conn, RecvConfig { hint_flags, ..Default::default() }).await {
         Ok(r) => r,
         Err(e) => {
             tracing::info!("video recv: {e}");

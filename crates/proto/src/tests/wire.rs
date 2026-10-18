@@ -31,6 +31,7 @@ fn frame_roundtrip_all_variants() {
                 encode: vec![VideoCodec::Vp8, VideoCodec::Av1],
                 hw_decode: vec![VideoCodec::Vp8],
                 hw_encode: vec![VideoCodec::Vp8],
+                hint_flags: true,
             }),
         },
         Msg::Video { camera: true },
@@ -300,7 +301,22 @@ fn offer(decode: &[VideoCodec], encode: &[VideoCodec], hw_decode: &[VideoCodec],
         encode: encode.to_vec(),
         hw_decode: hw_decode.to_vec(),
         hw_encode: hw_encode.to_vec(),
+        hint_flags: false,
     }
+}
+
+/// `VideoOffer.hint_flags` is optional both ways: an offer without it (an older device) reads as
+/// false, and false is not written (the offer's JSON stays what older devices send).
+#[test]
+fn video_offer_hint_flags_optional() {
+    let o = offer(&[VideoCodec::Av1], &[VideoCodec::Av1], &[], &[]);
+    let json = serde_json::to_string(&o).unwrap();
+    assert!(!json.contains("hint_flags"), "{json}");
+    assert_eq!(serde_json::from_str::<VideoOffer>(&json).unwrap(), o);
+    let on = VideoOffer { hint_flags: true, ..o };
+    let json = serde_json::to_string(&on).unwrap();
+    assert!(json.contains("\"hint_flags\":true"), "{json}");
+    assert_eq!(serde_json::from_str::<VideoOffer>(&json).unwrap(), on);
 }
 
 #[test]

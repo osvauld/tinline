@@ -170,6 +170,14 @@ pub(super) struct Policy {
     shrink: Option<(Hint, Instant)>,
     /// The peer's offer: highest rung and frame rate.
     pub(super) peer: (usize, u32),
+    /// The app's HD choice for this call (`Node::set_video_hd`).
+    pub(super) hd_on: bool,
+    /// The sharper-video rules (`hd`): how long each has held, our receiver's `Hint::room`, and
+    /// what the app may suggest (`VideoStats::hd_suggest`).
+    send_room: hd::Streak,
+    recv_room: hd::Streak,
+    room: bool,
+    pub(super) suggest: &'static str,
 }
 
 impl Default for Policy {
@@ -183,6 +191,11 @@ impl Default for Policy {
             applied: None,
             shrink: None,
             peer: (usize::MAX, u32::MAX),
+            hd_on: false,
+            send_room: hd::Streak::default(),
+            recv_room: hd::Streak::default(),
+            room: false,
+            suggest: "",
         }
     }
 }
@@ -218,6 +231,7 @@ impl Policy {
                 max_pixels: 0,
                 max_fps: 0,
                 reason: HintReason::DisplaySize,
+                room: false,
             };
         }
         let (bp, bf, br) = budget_caps(self.budget, &self.ladder.rungs);
@@ -242,14 +256,30 @@ impl Policy {
             max_pixels: disp.min(bp),
             max_fps: fps,
             reason,
+            room: self.room,
         }
+    }
+
+    /// One second of the sharper-video rules (`hd`): `send` for what I send (`peer_room`: the
+    /// peer's hint says it has room), `recv` with what I receive filled in except the view, which
+    /// comes from here. Sets our own hint's room flag and what the app may suggest.
+    pub(super) fn observe_room(&mut self, mut send: hd::SendSample, mut recv: hd::RecvSample, peer_room: bool) {
+        send.hd_on = self.hd_on;
+        let send_room = self.send_room.observe(hd::send_ok(&send));
+        self.suggest = hd::suggestion(send_room, peer_room);
+        let w = Hint { room: false, ..self.wanted() };
+        let shown = matches!(self.view, Some((_, _, true)));
+        recv.wanted_px = if shown { w.max_pixels as u64 } else { 0 };
+        recv.limited = w.reason != HintReason::DisplaySize || w.max_fps != 0;
+        self.room = self.recv_room.observe(hd::recv_ok(&recv));
     }
 
     /// A hint to send now, if there is a change worth sending. A change that only makes the
     /// picture smaller has to hold for a second (window resizes); everything else goes at once.
     pub(super) fn update(&mut self, now: Instant) -> Option<Hint> {
         let want = self.wanted();
-        let nothing = want.max_pixels == u32::MAX && want.max_fps == 0;
+        // No cap and no flag: nothing to say (a full-screen phone picture is beyond every rung).
+        let nothing = want.max_pixels == u32::MAX && want.max_fps == 0 && !want.room;
         if self.applied == Some(want) || (self.applied.is_none() && nothing) {
             self.shrink = None;
             return None;
@@ -405,6 +435,8 @@ pub(super) async fn run_policy(pipe: Arc<Pipe>) {
     let (mut last_payload, mut last_recv_payload) = (0u64, 0u64);
     // (received, decoded) frames per tick, last two ticks: the hardware decoder's throughput.
     let (mut last_rx, mut hist) = (0u64, std::collections::VecDeque::<(u64, u64)>::new());
+    // The sender's (overuse, starved, backlog drops) at the last tick: a change is congestion.
+    let mut last_trouble = (0u64, 0u64, 0u64);
     loop {
         tick.tick().await;
         if pipe.stop.load(Ordering::SeqCst) {
@@ -434,6 +466,7 @@ pub(super) async fn run_policy(pipe: Arc<Pipe>) {
         let (dec, n) = p75_of(&pipe.decode_ms);
         let (render, rn) = p75_of(&pipe.render_ms);
         let p75 = dec + if rn >= DECODE_MIN_SAMPLES { render } else { 0.0 };
+        let mut recv_room = hd::RecvSample { cost_ms: p75, cost_n: n, ..Default::default() };
         {
             let mut pol = pipe.policy.lock();
             let (rx_total, dec_total, hw) = {
@@ -446,6 +479,9 @@ pub(super) async fn run_policy(pipe: Arc<Pipe>) {
                 hist.pop_front();
             }
             let (rx2, dec2) = hist.iter().fold((0, 0), |a, e| (a.0 + e.0, a.1 + e.1));
+            recv_room.hw = hw;
+            recv_room.behind = hw_behind(rx2, dec2);
+            recv_room.frames = hist.back().map_or(0, |e| e.1);
             let changed = if hw {
                 // Hardware: latency is not cost; judge by throughput (+ render).
                 let behind = hw_behind(rx2, dec2);
@@ -464,17 +500,31 @@ pub(super) async fn run_policy(pipe: Arc<Pipe>) {
             .as_ref()
             .map(|s| s.with_sender(|s| s.ladder_mut().take_steps()))
             .unwrap_or_default();
-        let (cap, src) = {
-            let hint = send.as_ref().and_then(|s| s.with_sender(|s| s.hint()));
-            pipe.policy.lock().send_cap(hint)
-        };
-        let rung = send.as_ref().map_or(0, |s| s.with_sender(|s| s.ladder().rung().height));
+        let hint = send.as_ref().and_then(|s| s.with_sender(|s| s.hint()));
+        let (cap, src) = pipe.policy.lock().send_cap(hint);
+        // What the sharper-video rule needs from the sender (`hd::SendSample`).
+        let mut send_room = hd::SendSample { cap_px: cap.pixels as u64, ..Default::default() };
+        let mut rung_height = 0;
+        if let Some(s) = &send {
+            let (trouble, draining, rate, rung, fps, enc_p75) = s.with_sender(|s| {
+                let l = s.ladder();
+                ((s.trace.overuse, s.trace.starved, s.drops), s.draining(), s.bitrate(), l.rung(), l.fps(), l.encode_p75())
+            });
+            send_room.congested = draining || trouble != last_trouble;
+            last_trouble = trouble;
+            send_room.rate_bps = rate;
+            send_room.rung_px = rung.width as u64 * rung.height as u64;
+            rung_height = rung.height;
+            send_room.fps = fps;
+            send_room.encode_p75_us = enc_p75;
+        }
+        send_room.cpu_step = steps.iter().any(|s| s.reason == video::media::StepReason::Cpu);
         let mut st = pipe.stats.lock();
         st.send_payload_bps = traffic::payload_bps(st.admitted_payload_bytes.saturating_sub(last_payload), secs);
         st.recv_payload_bps = traffic::payload_bps(st.received_payload_bytes.saturating_sub(last_recv_payload), secs);
         (last_payload, last_recv_payload) = (st.admitted_payload_bytes, st.received_payload_bytes);
         st.decode_p75_ms = dec;
-        st.send_rung_height = rung;
+        st.send_rung_height = rung_height;
         for s in &steps {
             let why = match s.reason {
                 video::media::StepReason::Rate => "rate",
@@ -502,6 +552,10 @@ pub(super) async fn run_policy(pipe: Arc<Pipe>) {
         }
         st.send_fps = ((st.frames_sent - last_sent) as f32 / secs).round() as u32;
         st.recv_fps = ((st.frames_decoded - last_dec) as f32 / secs).round() as u32;
+        send_room.frames = st.frames_sent - last_sent;
+        send_room.send_px = st.send_width as u64 * st.send_height as u64;
+        send_room.hw = st.send_hardware;
+        recv_room.recv_px = st.recv_width as u64 * st.recv_height as u64;
         (last_sent, last_dec) = (st.frames_sent, st.frames_decoded);
         if st.frames_sent > 0 || st.frames_decoded > 0 {
             tracing::info!(
@@ -513,5 +567,18 @@ pub(super) async fn run_policy(pipe: Arc<Pipe>) {
                 st.recv_width, st.recv_height, st.recv_fps, p75, st.decode_errors,
             );
         }
+        drop(st);
+        // Sharper video: what the app may suggest, and our own hint's room flag (sent at once
+        // when it changes).
+        let suggest = {
+            let mut pol = pipe.policy.lock();
+            let before = (pol.suggest, pol.room);
+            pol.observe_room(send_room, recv_room, hint.is_some_and(|h| h.room));
+            (before != (pol.suggest, pol.room)).then_some((pol.suggest, pol.room))
+        };
+        if let Some((s, room)) = suggest {
+            tracing::info!(target: "p2pcore::video_call", "video hd suggest={s:?} room={room}");
+        }
+        push_hint(&pipe, now);
     }
 }

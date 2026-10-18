@@ -335,7 +335,8 @@ fn control_round_trip() {
         Control::Report(RateReport { delivered_bps: 123_456, queuing_us: 7_890 }),
         Control::Keyframe,
         Control::Ack { group: 42, offset: 1 << 40 },
-        Control::Hint(Hint { max_pixels: 640 * 360, max_fps: 15, reason: HintReason::Thermal }),
+        Control::Hint(Hint { max_pixels: 640 * 360, max_fps: 15, reason: HintReason::Thermal, room: false }),
+        Control::Hint(Hint { max_pixels: 1280 * 720, max_fps: 0, reason: HintReason::DisplaySize, room: true }),
     ];
     let mut b = Vec::new();
     for m in &msgs {
@@ -357,11 +358,34 @@ fn control_round_trip() {
     assert!(Control::decode(&[4, 0, 0, 0, 1, 200, 0]).is_err());
 }
 
+/// Hint flags: message 4 without a flag (what an older sender reads), 5 with one; unknown flag
+/// bits are ignored, and a receiver whose peer doesn't read flags never sends them.
+#[test]
+fn hint_flags_on_the_wire() {
+    let h = Hint { max_pixels: 1280 * 720, max_fps: 0, reason: HintReason::DisplaySize, room: false };
+    let mut b = Vec::new();
+    Control::Hint(h).encode(&mut b);
+    assert_eq!(b, [4, 0, 0x0e, 0x10, 0, 0, 1]);
+    b.clear();
+    Control::Hint(Hint { room: true, ..h }).encode(&mut b);
+    assert_eq!(b, [5, 0, 0x0e, 0x10, 0, 0, 1, 1]);
+    let (m, n) = Control::decode(&b).unwrap().unwrap();
+    assert_eq!((m, n), (Control::Hint(Hint { room: true, ..h }), 8));
+    assert!(Control::decode(&b[..7]).unwrap().is_none(), "incomplete");
+    // Bits this version doesn't know: ignored, room stays what bit 0 says.
+    assert_eq!(Control::decode(&[5, 0, 0x0e, 0x10, 0, 0, 1, 0xfe]).unwrap().unwrap().0, Control::Hint(h));
+    assert_eq!(
+        Control::decode(&[5, 0, 0x0e, 0x10, 0, 0, 1, 0xff]).unwrap().unwrap().0,
+        Control::Hint(Hint { room: true, ..h })
+    );
+    assert!(Control::decode(&[5, 0, 0, 0, 1, 200, 0, 1]).is_err(), "bad fps in 5 too");
+}
+
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn net_hint_round_trip() {
     let p = pair().await;
     let (tx, mut rx) = video(&p, RecvConfig::default()).await;
-    let h = Hint { max_pixels: 640 * 360, max_fps: 15, reason: HintReason::DisplaySize };
+    let h = Hint { max_pixels: 640 * 360, max_fps: 15, reason: HintReason::DisplaySize, room: false };
     rx.set_hint(h);
     let send = spawn_sender(tx.clone(), 400, Duration::from_millis(5), 60, no_lag);
     for _ in 0..100 {
@@ -372,7 +396,7 @@ async fn net_hint_round_trip() {
     }
     assert_eq!(tx.with_sender(|s| s.hint()), Some(h));
     // A change goes through; the same hint again doesn't.
-    let h2 = Hint { max_pixels: 0, max_fps: 0, reason: HintReason::DisplaySize };
+    let h2 = Hint { max_pixels: 0, max_fps: 0, reason: HintReason::DisplaySize, room: false };
     rx.set_hint(h2);
     rx.set_hint(h2);
     for _ in 0..100 {
@@ -384,4 +408,26 @@ async fn net_hint_round_trip() {
     assert_eq!(tx.with_sender(|s| s.hint()), Some(h2));
     assert_eq!((tx.stats().hints, rx.stats().hints), (2, 2));
     send.abort();
+}
+
+/// `Hint::room` reaches the sender only when the receiver knows the sender reads flags; without
+/// that the same hint goes as message 4 with the flag dropped.
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn net_hint_room_only_to_a_reader() {
+    for flags in [false, true] {
+        let p = pair().await;
+        let (tx, mut rx) = video(&p, RecvConfig { hint_flags: flags, ..Default::default() }).await;
+        let h = Hint { max_pixels: 1280 * 720, max_fps: 0, reason: HintReason::DisplaySize, room: true };
+        rx.set_hint(h);
+        let send = spawn_sender(tx.clone(), 400, Duration::from_millis(5), 60, no_lag);
+        let want = Hint { room: flags, ..h };
+        for _ in 0..100 {
+            if tx.with_sender(|s| s.hint()) == Some(want) {
+                break;
+            }
+            let _ = tokio::time::timeout(Duration::from_millis(100), rx.recv()).await;
+        }
+        assert_eq!(tx.with_sender(|s| s.hint()), Some(want), "flags={flags}");
+        send.abort();
+    }
 }

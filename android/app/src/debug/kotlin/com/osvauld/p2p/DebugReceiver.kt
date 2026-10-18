@@ -163,7 +163,7 @@ class DebugReceiver : BroadcastReceiver() {
             }
             "online" -> {
                 val did = contact(node, i).did
-                node.watchPresence(did)
+                node.chatTyping(did) // consent-based presence: being active with them dials and sends ours
                 testLog("online=${node.contactOnline(did)}")
             }
             else -> Log.w("P2PTEST", "unknown cmd $cmd")

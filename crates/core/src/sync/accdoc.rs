@@ -128,7 +128,13 @@ impl AccDoc {
             let m = sub(&devices, &proto::device_to_text(&e.device))?;
             set_str(&m, "att", &serde_json::to_string(&e.attestation).map_err(io)?)?;
             set_str(&m, "label", &e.label)?;
-            set_str(&m, "relay", e.relay.as_deref().unwrap_or(""))?;
+            // Only a known hint is written: the entry for this device (and any device we have no
+            // hint for) holds `None`, and writing "" over a sibling's hint would undo it on every
+            // merge (`read_into` keeps a hint over ""), so two devices would rewrite the field
+            // back and forth forever and the own-device session never idles out.
+            if let Some(relay) = e.relay.as_deref() {
+                set_str(&m, "relay", relay)?;
+            }
             if !e.links.is_empty() {
                 set_str(&m, "links", &serde_json::to_string(&e.links).map_err(io)?)?;
             }

@@ -124,9 +124,10 @@ Codes are reusable for a week, so nobody becomes a contact without the owner's y
    Either side ends with `Hangup`. `renewed_grant` is a fresh call token for B.
 
 Video is offered in the same messages: `CallHello.video` / `Accept.video` =
-`Option<VideoOffer { max_pixels, max_fps, decode, encode, hw_decode, hw_encode }>`
-(codec lists of `"av1"` / `"vp8"`, best first; `decode` always has `av1`). Each
-direction uses `send_codec(sender, receiver)`: score each common codec by sender
+`Option<VideoOffer { max_pixels, max_fps, decode, encode, hw_decode, hw_encode, hint_flags }>`
+(codec lists of `"av1"` / `"vp8"`, best first; `decode` always has `av1`; `hint_flags` optional,
+absent = false: the device's video sender reads the receiver's hint flags, video control message
+5). Each direction uses `send_codec(sender, receiver)`: score each common codec by sender
 hardware encode + receiver hardware decode, with sender-order ties. Both ends
 compute it from the two offers, with no further message. Both offers must be
 present and `proto::video_codecs` must validate **both** resulting directions
@@ -135,7 +136,7 @@ not an unoffered AV1 fallback. Details: `docs/video.md` ("Call protocol") and
 `docs/design/video-hw-vp8.md`.
 
 Developer tuning can filter `encode`/`hw_encode` to a single locally supported
-send codec, without changing `decode`. Auto offers still contain AV1. Matching
+send codec, without changing `decode` or `hint_flags`. Auto offers still contain AV1. Matching
 updated builds are required for forced-codec experiments; older peers assume AV1
 is always offered. No wire field or mid-call codec-switch message is added. See
 `docs/design/video-tuning.md`.
@@ -329,8 +330,17 @@ Frames: u32 BE length + postcard (`cryptography::codec`) of `SelfMsg` (16 MiB ca
   locks and deletes the account and emits `on_unlinked`. Ignored while a call is running (the next
   contact with a device that knows retries).
 - One session per device; if both dialled at once the connection dialled by the lower device key
-  survives on both ends. Dial loop: every 15 s (`P2P_SELF_SYNC_SECS`), at start, after a link, on
-  `network_changed`; per device exponential backoff 20 s..300 s, cleared by a kick.
+  survives on both ends. Sessions are not held open (decision 2026-10-17, same rule as chat): a
+  session with no stream data either way for the idle time (60 s, `wire::IDLE_CLOSE`) finishes
+  its stream and closes; the other side sees a clean end. Each device remembers, per other device,
+  the local change generation that device is known to hold (`SelfSync::synced`, set when a
+  session ends idle, or ends cleanly from the other side, with no newer local change unseen). Any
+  local change (account doc, calls, profile, chats, read cursors, groups) bumps the generation,
+  so the devices behind it are owed a sync. Dial loop: every 15 s (`P2P_SELF_SYNC_SECS`) and at
+  once on a change, it dials only owed devices without a session; start, a link,
+  `network_changed` and endpoint rotation (`sync_kick`) owe every device. Per device exponential
+  backoff 20 s..300 s, cleared by a kick. A device with a change dials the others, so devices in
+  sync stay unconnected; `last_seen` in the registry therefore means "last synced".
 
 What syncs: one Loro doc `account` (peer id = `BLAKE3("tinline-loro-peer-v1" || device || "account")`),
 sealed in `account.redb` under `sync/account`, with maps:
@@ -516,17 +526,63 @@ Design and rules: docs/chat.md section 7 "Signatures and writer IDs".
   every span's author is the session's DID. Every touched message must end as one of the proven
   versions. Nothing else is consulted (no device keys, device lists or remembered writer IDs).
 
-## Presence (on `tinline/chat/4`; unchanged from `/3`)
+## Session lifetime (decision 2026-10-17: consent-based links)
 
-Whether a contact is reachable right now. Each device keeps a Loro `EphemeralStore` with one key
-(`online`), refreshed every 8 s, and sends it on every chat session as a QUIC datagram: `b"tp1"` +
-`EphemeralStore::encode`, at most 512 bytes. The receiver applies it into a store belonging to that
-session only, so a contact speaks only for its own device. An entry not refreshed within 30 s
-expires (the store compares the sender's timestamp with our clock, so this also bounds the clock
-skew presence tolerates); a closed session drops its store at once. A contact is online while any
-of its devices has a live entry: `ChatEvents::on_presence_changed(did, online)`,
-`Node::contact_online(did)`. Opening a conversation calls `Node::watch_presence(did)`, which dials
-the contact if there is no session. Nothing is stored or retried.
+Tinline does not hold peer connections open, and links are consent-based: a link to a contact
+opens or stays open only because of this side's own action or a real need. A contact can never
+hold our link open or learn we are online without our action. Reachability comes from the relay
+registration: a peer that needs us redials.
+
+A chat session closes after 60 s with no `ChatMsg` either way and none of this side's reasons
+below (`wire::IDLE_CLOSE`; presence datagrams do not count), the same way as a local
+`Cmd::Close`: the stream is finished, then the connection closed, so the other side sees a normal
+end and does not retry because of it. Each side decides only for itself; it stays open while
+this side has:
+
+- recent local activity with that contact: the user typed in the conversation
+  (`Node::chat_typing(did)`) or wrote to it (send, edit, delete, file, voice) within the idle
+  time; a live 1:1 call with that DID and sending a read receipt for their messages
+  (`mark_read`) count as activity too, an automatic delivered receipt does not (user decision
+  2026-10-17);
+- something pending for that contact: unsent outbox days, wanted blob downloads, owed
+  receipts, a pending profile push (the `chat_kick_pending` conditions);
+- a live 1:1 call with that DID.
+
+ChatMsg traffic from the contact is real activity too (the idle timer counts it), but nothing a
+contact sends can ask us to keep a session: the `tk1` "keep" datagram tried earlier the same day
+was removed; one from an older build is ignored.
+
+**Typing is the wake point.** The apps call `Node::chat_typing(did)` on each non-empty composer
+edit. It is local only (no typing indicator goes to the contact), cheap and non-blocking, and
+throttled in the core to one activity mark per contact every 3 s (`wire::typing_throttle`). It
+dials the contact ahead of the send if no session is up, or sends our presence at once on the
+one that is. **Opening a conversation connects nothing**; there is no "watch". Sending a message
+dials as before.
+
+At start a device dials only contacts with something pending (no longer every contact); the 30 s
+tick dials only contacts with something pending. Delivery stays sender-driven: a contact who
+wrote while we were away dials us when we are back (its retry backs off up to 60 s). Sessions a
+contact opens to deliver are accepted as usual and close on idle. Own devices follow the same
+idle rule (see "Own-device sync"). Group call hosting and active calls keep their own connections
+and are not affected.
+
+## Presence (on `tinline/chat/4`; consent-based since 2026-10-17)
+
+Whether a contact is active with us right now. Each device keeps a Loro `EphemeralStore` with one
+key (`online`), refreshed every 8 s, and sends it as a QUIC datagram on a chat session **only
+while the user here is active with that contact** (typed, wrote to it, sent a read receipt for it, or has a live 1:1 call with it, within the idle
+time; see "Session lifetime"): `b"tp1"` + `EphemeralStore::encode`, at most 512 bytes. Otherwise it
+sends none, so a contact who dials to deliver a message learns nothing beyond the delivery
+itself. The receiver applies it into a store belonging to that session only, so a contact speaks
+only for its own device. An entry not refreshed within 30 s expires (the store compares the
+sender's timestamp with our clock, so this also bounds the clock skew presence tolerates); a
+closed session drops its store at once. A contact is online while any of its devices has a live
+entry: `ChatEvents::on_presence_changed(did, online)`, `Node::contact_online(did)`. Nothing is
+stored or retried.
+
+So "online" means "they are active with me now"; its absence means unknown, never "offline".
+The conversation header shows "Online" or nothing, there is no "they're offline" strip, and chat
+and contact lists show no online state.
 
 Datagrams rather than a `ChatMsg` variant: an older app never reads them and keeps working (it
 just shows the contact as not connected), where an unknown `ChatMsg` variant would fail to decode

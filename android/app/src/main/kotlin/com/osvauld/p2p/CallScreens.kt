@@ -335,6 +335,8 @@ fun InCallScreen(ui: CallUi, meName: String, app: P2pApp, onCameraOn: () -> Unit
         while (true) {
             value = withContext(Dispatchers.IO) {
                 runCatching { app.node.videoStats()?.let {
+                    // Sharper video: the core's suggestion (once per call) and the mobile-data note.
+                    app.video.hdTick(it, ui.info.peerName)
                     if (initialFrames == null) initialFrames = it.framesSent
                     // Don't label cached dimensions from before this camera start as current HD.
                     if (it.framesSent > initialFrames) (it.sendWidth.toInt() to it.sendHeight.toInt()) to videoSendLabel(it) else null
@@ -369,11 +371,13 @@ fun InCallScreen(ui: CallUi, meName: String, app: P2pApp, onCameraOn: () -> Unit
     val sendLabel = sendStats?.second?.takeIf { it.isNotEmpty() }
     val hdOn = effectivePreferHd(app.preferHdCapture, hdCall)
     val hdIsPaused = hdPaused(hdOn, sendSize?.first ?: 0, sendSize?.second ?: 0)
+    // The core suggests sharper video only while it is off: tell it what this call uses.
+    LaunchedEffect(hdOn, v?.negotiated, ui.info.callId) { if (v?.negotiated == true) app.video.syncHd(hdOn) }
     // The ladder stepping below HD while HD is on: say so once, when it happens.
     var wasPaused by remember { mutableStateOf(false) }
     LaunchedEffect(hdIsPaused) { if (hdIsPaused && !wasPaused) app.video.say(hdLine(true, true)); wasPaused = hdIsPaused }
     val hdNote by app.video.hdNote.collectAsState()
-    LaunchedEffect(hdNote?.id) { hdNote?.id?.let { id -> delay(2600); app.video.noteShown(id) } }
+    LaunchedEffect(hdNote?.id) { hdNote?.let { n -> delay(n.ms); app.video.noteShown(n.id) } }
     val onCamera = { if (v?.localCamera == true) app.video.setCamera(false) else onCameraOn() }
     val name = ui.info.peerName.ifBlank { "Unknown" }
     val bars = if (s != null && loss != null) qualityBars(s.rttMs.toInt(), loss) else null
@@ -537,7 +541,9 @@ fun VideoCallContent(
                     SignalBars(if (reconnecting) 0 else bars ?: 0, Color.White, wave = reconnecting)
                 }
             }
-            videoQuality?.let { Text(it, Modifier.padding(start = 52.dp), style = TinType.mono.copy(fontSize = 12.sp), color = Color.White.copy(alpha = 0.8f)) }
+            // One line, always: a longer line (a suggestion) is cut, never wrapped, so nothing below it moves.
+            videoQuality?.let { Text(it, Modifier.padding(start = 52.dp, end = 12.dp), style = TinType.mono.copy(fontSize = 12.sp),
+                color = Color.White.copy(alpha = 0.8f), maxLines = 1, overflow = TextOverflow.Ellipsis) }
         }
         if (info) CallInfo(name, active = true, onDismiss = { info = false }, reconnecting = reconnecting, signal = bars ?: 0,
             direct = direct, video = true,

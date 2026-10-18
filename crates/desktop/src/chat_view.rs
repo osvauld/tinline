@@ -228,7 +228,15 @@ impl App {
         } else {
             use crate::blocks::CallGate;
             let only = matches!(self.blocks.call_gate(&c.did, contact), CallGate::NotAllowed);
-            (format!("{}{}", if online { "Online" } else { "Offline" }, if only { " \u{b7} messages only" } else { "" }), t.ink2)
+            // Presence shows only while they're active with me (consent-based, 2026-10-17); otherwise
+            // it is unknown: no word rather than a false "Offline" (the line keeps its height).
+            let sub = match (online, only) {
+                (true, true) => "Online \u{b7} messages only",
+                (true, false) => "Online",
+                (false, true) => "Messages only",
+                (false, false) => "",
+            };
+            (sub.to_string(), t.ink2)
         };
         let fit_name = crate::fit::ellipsize(&name, ui::SANS_SEMI, 17.0, 360.0);
         let who = button(
@@ -396,7 +404,7 @@ impl App {
                 }
             }
             let body = container(empty).padding([32, 24]).center_x(Fill).center_y(Fill).height(Fill).style(ui::plain(t.canvas, 0.0));
-            return self.with_strip(t, body.into(), &first);
+            return self.with_strip(t, body.into());
         }
         let peer = self.chat.peer.clone().unwrap_or_default();
         let msgs = &self.chat.msgs;
@@ -415,9 +423,7 @@ impl App {
         let terms: Vec<String> = self.chat.find.as_deref().map(|q| q.split_whitespace().map(str::to_lowercase).collect()).unwrap_or_default();
         let join = |a: &ChatMsg, b: &ChatMsg| a.outgoing == b.outgoing && day_label(a.at) == day_label(b.at) && a.at.abs_diff(b.at) <= geom::GROUP_GAP_MS;
         let name_s = name.to_string();
-        let first2 = first.clone();
         let list = iced::widget::responsive(move |size| {
-            let first = first2.clone();
             let name = name_s.as_str();
             // .bub max-width: min(78 %, 560) of the list's content box (16 px each side).
             let max_bub = ((size.width - 32.0) * 0.78).min(560.0);
@@ -469,12 +475,12 @@ impl App {
             }
             col = col.push(container(self.block_note(t, &peer, name)).padding(Padding { top: 6.0, ..Default::default() }));
             // While the strip shows, the list gains its height at the top, so the oldest row can still come fully into view.
-            let strip_h = if self.strip_text(&first).is_some() { 33.0 } else { 0.0 };
+            let strip_h = if self.strip_text().is_some() { 33.0 } else { 0.0 };
             let list = scroll(t, container(col).padding(Padding { top: 6.0 + strip_h, right: 16.0, bottom: 19.0, left: 16.0 }))
                 .id(super::super::chat::LIST_ID).anchor_bottom().width(Fill).height(Fill);
             container(list).width(Fill).height(Fill).style(ui::plain(t.canvas, 0.0)).into()
         });
-        self.with_strip(t, list.into(), &first)
+        self.with_strip(t, list.into())
     }
 
     /// FindBar.svelte: field (44 tall, radius 22, surface-2, accent ring when focused) with "n/m" (newest = 1),
@@ -507,17 +513,15 @@ impl App {
             .padding(8).height(60).width(Fill).style(ui::plain(t.surface, 0.0)).into())
     }
 
-    fn strip_text(&self, first: &str) -> Option<String> {
-        if self.status.started && !self.status.online {
-            Some("You\u{2019}re offline. Messages send when you\u{2019}re back online.".to_string())
-        } else if self.chat.peer.as_deref().is_some_and(|p| !self.is_me(p) && !self.chat.online.contains(p) && self.status.started) {
-            Some(format!("{first} is offline. Messages send when you\u{2019}re both online."))
-        } else { None }
+    /// Only my own offline state: theirs is unknown unless they're active with me (consent-based
+    /// presence, 2026-10-17), so no "they're offline" strip.
+    fn strip_text(&self) -> Option<String> {
+        (self.status.started && !self.status.online).then(|| "You\u{2019}re offline. Messages send when you\u{2019}re back online.".to_string())
     }
 
-    /// The strip over the top of the list: offline (me) or offline (them). It overlays, so nothing moves.
-    fn with_strip<'a>(&'a self, t: Tok, body: El<'a>, first: &str) -> El<'a> {
-        let Some(text) = self.strip_text(first) else { return body };
+    /// The strip over the top of the list: I'm offline. It overlays, so nothing moves.
+    fn with_strip<'a>(&'a self, t: Tok, body: El<'a>) -> El<'a> {
+        let Some(text) = self.strip_text() else { return body };
         let strip = container(row![crate::pg_icons::pgi("off", 16.0, t.ink2), tx(text, 13.0, t.ink2).line_height(lh(18.0))].spacing(8).align_y(Alignment::Center))
             .padding([7, 16]).width(Fill).style(move |_: &Theme| container::Style {
                 background: Some(t.surface2.into()), border: Border { color: t.hairline, width: 0.0, radius: 0.0.into() }, ..Default::default() });

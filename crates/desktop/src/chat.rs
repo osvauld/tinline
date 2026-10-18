@@ -90,8 +90,10 @@ impl Source {
     pub fn contact_online(&self, peer: String) -> bool {
         route!(self.contact_online(peer))
     }
-    pub fn watch_presence(&self, peer: String) {
-        route!(self.watch_presence(peer))
+    /// I'm typing to `peer`: the core dials ahead and counts it as my activity (cheap, throttled
+    /// inside; nothing is sent to them about it).
+    pub fn chat_typing(&self, peer: String) {
+        route!(self.chat_typing(peer))
     }
     pub fn send_file(&self, peer: String, path: String, mime: String) -> Result<ChatMsg, Error> {
         match self {
@@ -644,12 +646,11 @@ impl App {
         if self.is_me(did) {
             return Task::batch([self.load_day(did.to_string(), None, false), self.mark_read(did)]);
         }
+        // Opening connects nothing (consent-based links, 2026-10-17): only what the core already
+        // knows; typing dials.
         let (src, p) = (self.src(), did.to_string());
         let presence = blocking(
-            move || {
-                src.watch_presence(p.clone());
-                (p.clone(), src.contact_online(p))
-            },
+            move || (p.clone(), src.contact_online(p)),
             |(p, on)| Msg::Chat(Cm::Presence(p, on)),
         );
         Task::batch([self.load_day(did.to_string(), None, false), self.mark_read(did), presence])
@@ -785,7 +786,19 @@ impl App {
                     }
                 }
             }
-            Cm::Edit(a) => self.chat.input.perform(a),
+            Cm::Edit(a) => {
+                let edit = a.is_edit();
+                self.chat.input.perform(a);
+                // Typing is the wake point (consent-based links, 2026-10-17): the core dials ahead.
+                if edit
+                    && let Some(p) = self.chat.peer.clone()
+                    && !self.is_me(&p)
+                    && self.chat_io()
+                    && !self.chat.input.text().trim().is_empty()
+                {
+                    self.src().chat_typing(p);
+                }
+            }
             Cm::Send => {
                 let Some(peer) = self.chat.peer.clone() else { return Task::none() };
                 let text = self.chat.input.text().trim_end().to_string();

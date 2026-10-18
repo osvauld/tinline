@@ -79,6 +79,7 @@ impl NodeVideo {
                 encode: c.encode,
                 hw_decode: c.hw_decode,
                 hw_encode: c.hw_encode,
+                hint_flags: true,
             }
         })
     }
@@ -169,6 +170,7 @@ mod tests {
             encode: c.encode,
             hw_decode: c.hw_decode,
             hw_encode: c.hw_encode,
+            hint_flags: true,
         }
     }
 

@@ -231,6 +231,7 @@ impl Inner {
                             *call.conn.lock() = Some(conn.clone());
                             let datagrams = self.start_media(&call, &conn);
                             self.set_state(&call, CallState::Active);
+                            self.chat_call_activity(&call.info.peer_did);
                             // An answer may only take video we offered.
                             let theirs = video.filter(|_| offer.is_some());
                             self.video_decided(&call, &conn, offer, theirs);

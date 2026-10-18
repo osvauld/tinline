@@ -503,6 +503,12 @@ impl Ladder {
         Some(v[(v.len() - 1) * pct / 100])
     }
 
+    /// p75 of the encode times of the last second at the current size (us), given at least 10;
+    /// `None` right after a size change.
+    pub fn encode_p75(&self) -> Option<u64> {
+        self.encode_pct(75, ENCODE_MIN)
+    }
+
     /// Steps taken since the last call (at most the last 64).
     pub fn take_steps(&mut self) -> Vec<Step> {
         self.steps_log.drain(..).collect()
@@ -694,10 +700,16 @@ pub struct Hint {
     pub max_fps: u8,
     /// For the sender's chip and logs only.
     pub reason: HintReason,
+    /// The receiver has room for a sharper picture than it gets: it draws the picture at 540p
+    /// or more, its decoder would keep up at that size, and nothing of its own (battery,
+    /// heat) holds it back. Never a cap and never acted on by itself: the sending app may
+    /// suggest sharper video to its person (docs/video.md, "Suggesting sharper video").
+    /// Wire: message 5 (`net`), only to a peer whose offer says it reads it.
+    pub room: bool,
 }
 
 impl Hint {
-    pub const NONE: Hint = Hint { max_pixels: u32::MAX, max_fps: 0, reason: HintReason::None };
+    pub const NONE: Hint = Hint { max_pixels: u32::MAX, max_fps: 0, reason: HintReason::None, room: false };
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -1032,10 +1044,15 @@ impl Sender {
     /// The receiver's hint (from `video::net`, or the simulation). A lower cap applies at once
     /// (a frame-rate step without a keyframe), a raised one through the ladder's rules for
     /// stepping up.
+    /// A change of [`Hint::room`] alone is only stored (it never steers the ladder).
     pub fn set_hint(&mut self, hint: Hint) {
+        let caps = |h: Hint| (h.max_pixels, h.max_fps, h.reason);
+        let same_caps = self.hint.is_some_and(|h| caps(h) == caps(hint));
         self.hint = Some(hint);
-        self.ladder.set_hint(hint.max_pixels, hint.max_fps);
-        self.relayer();
+        if !same_caps {
+            self.ladder.set_hint(hint.max_pixels, hint.max_fps);
+            self.relayer();
+        }
     }
 
     pub fn hint(&self) -> Option<Hint> {
@@ -1843,7 +1860,7 @@ mod tests {
         assert!(tx.draining());
         assert_eq!(tx.resolution(), (960, 540));
         assert!(!tx.wants_keyframe(), "a rate drop alone must not resize a fixed test");
-        tx.set_hint(Hint { max_pixels: 640 * 360, max_fps: 30, reason: HintReason::DisplaySize });
+        tx.set_hint(Hint { max_pixels: 640 * 360, max_fps: 30, reason: HintReason::DisplaySize, room: false });
         assert_eq!(tx.resolution(), (640, 360));
         assert!(tx.wants_keyframe(), "a safety cap resize still needs a keyframe");
     }
@@ -2453,7 +2470,7 @@ mod tests {
     fn sender_takes_frames_at_the_tier_rate() {
         let count = |hint_fps: u8| {
             let mut tx = Sender::new(SenderConfig { start_bps: 1_500_000, ..Default::default() });
-            tx.set_hint(Hint { max_pixels: u32::MAX, max_fps: hint_fps, reason: HintReason::DecodeSlow });
+            tx.set_hint(Hint { max_pixels: u32::MAX, max_fps: hint_fps, reason: HintReason::DecodeSlow, room: false });
             // Camera at 30 fps with +-3 ms of timestamp jitter, 10 s.
             (0..300u64).filter(|i| tx.take_frame(10_000 + i * 33_333 + (i * 37 % 7) * 1_000 - 3_000)).count()
         };
@@ -2467,15 +2484,15 @@ mod tests {
         let mut tx = Sender::new(SenderConfig { start_bps: 1_500_000, ..Default::default() });
         tx.frame(0, true, b"k");
         // A frame-rate cap: no keyframe.
-        tx.set_hint(Hint { max_pixels: u32::MAX, max_fps: 15, reason: HintReason::Thermal });
+        tx.set_hint(Hint { max_pixels: u32::MAX, max_fps: 15, reason: HintReason::Thermal, room: false });
         assert_eq!((tx.resolution(), tx.fps(), tx.wants_keyframe()), ((1280, 720), 15, false));
         // A size cap: a keyframe at the new size.
-        tx.set_hint(Hint { max_pixels: 640 * 360, max_fps: 0, reason: HintReason::DisplaySize });
+        tx.set_hint(Hint { max_pixels: 640 * 360, max_fps: 0, reason: HintReason::DisplaySize, room: false });
         assert_eq!((tx.resolution(), tx.fps(), tx.wants_keyframe()), ((640, 360), 30, true));
         tx.frame(10_000, true, b"k");
         assert_eq!(tx.key_causes.hint, 1);
         // Hidden: 180p15 (D4).
-        tx.set_hint(Hint { max_pixels: 0, max_fps: 0, reason: HintReason::DisplaySize });
+        tx.set_hint(Hint { max_pixels: 0, max_fps: 0, reason: HintReason::DisplaySize, room: false });
         assert_eq!((tx.resolution(), tx.fps()), ((320, 180), 15));
     }
 
@@ -2483,7 +2500,7 @@ mod tests {
     fn receiver_sends_each_hint_once() {
         let mut rx = Receiver::new(ReceiverConfig::default());
         assert_eq!(rx.take_hint(), None);
-        let h = Hint { max_pixels: 640 * 360, max_fps: 24, reason: HintReason::DisplaySize };
+        let h = Hint { max_pixels: 640 * 360, max_fps: 24, reason: HintReason::DisplaySize, room: false };
         rx.set_hint(h);
         assert_eq!(rx.take_hint(), Some(h));
         assert_eq!(rx.take_hint(), None);

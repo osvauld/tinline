@@ -20,6 +20,9 @@ import kotlinx.coroutines.flow.StateFlow
 import uniffi.p2pcore.VideoBudget
 import uniffi.p2pcore.VideoEvents
 import uniffi.p2pcore.VideoInfo
+import uniffi.p2pcore.VideoStats
+import uniffi.p2pcore.videoHdSuggestAfterCall
+import uniffi.p2pcore.videoHdSuggestion
 import java.util.concurrent.Executors
 
 /**
@@ -39,15 +42,47 @@ class CallVideo(private val app: P2pApp) : VideoEvents {
     private val _hdCall = MutableStateFlow<Boolean?>(null)
     val hdCall: StateFlow<Boolean?> = _hdCall
     fun hdOn(): Boolean = effectivePreferHd(app.preferHdCapture, _hdCall.value)
-    /** The chip's short line; [HdNote.id] changes with every new line so the screen can time it out. */
-    data class HdNote(val id: Int, val text: String)
+    /** The chip's short line; [HdNote.id] changes with every new line so the screen can time it out after [HdNote.ms]. */
+    data class HdNote(val id: Int, val text: String, val ms: Long = HD_NOTE_MS)
     private val _hdNote = MutableStateFlow<HdNote?>(null)
     val hdNote: StateFlow<HdNote?> = _hdNote
     private var noteId = 0
-    fun say(text: String) { _hdNote.value = HdNote(++noteId, text) }
+    fun say(text: String, ms: Long = HD_NOTE_MS) { _hdNote.value = HdNote(++noteId, text, ms) }
     fun noteShown(id: Int) { if (_hdNote.value?.id == id) _hdNote.value = null }
     /** Applies at once: the call screen rebinds the camera when [hdCall] changes. */
-    fun setHd(on: Boolean, paused: Boolean) { _hdCall.value = on; say(hdLine(on, paused && on)) }
+    fun setHd(on: Boolean, paused: Boolean) {
+        _hdCall.value = on
+        if (on) hdTurnedOn = true
+        say(hdLine(on, paused && on))
+        syncHd(on)
+    }
+    // Sharper-video suggestions (docs/video.md "Suggesting sharper video"): at most one per call, and the device
+    // stops suggesting after the person turned HD on in 3 calls or let 3 suggestions in a row pass (the core's rule).
+    @Volatile private var hdSuggested = false
+    @Volatile private var hdTurnedOn = false
+    @Volatile private var hdMeteredSaid = false
+
+    /** Tells the core whether sharper video is on for this call (it never suggests HD while it is). */
+    fun syncHd(on: Boolean) { analysisExec.execute { runCatching { app.node.setVideoHd(on) } } }
+
+    /** Once a second while my camera sends: the core's suggestion, then the mobile-data note. */
+    fun hdTick(stats: VideoStats, peerName: String) {
+        val hdOn = hdOn()
+        val line = videoHdSuggestion(stats, hdOn, app.hdSuggestMemory, peerName)
+        if (hdSuggestNow(line, hdSuggested, _hdNote.value != null)) {
+            hdSuggested = true
+            testLog("video_hd_suggest line=\"$line\" kind=${stats.hdSuggest}")
+            say(line, HD_SUGGEST_MS)
+        }
+        if (_hdNote.value == null && hdMeteredNow(hdOn, true, metered(), hdMeteredSaid)) {
+            hdMeteredSaid = true
+            say(HD_METERED_LINE, HD_SUGGEST_MS)
+        }
+    }
+
+    private fun metered(): Boolean = runCatching {
+        (app.getSystemService(android.content.Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager).isActiveNetworkMetered
+    }.getOrDefault(false)
     val io = VideoIo { app.node }
     /** The camera was on when the call screen went away; it comes back on with the screen. */
     @Volatile private var paused = false
@@ -87,6 +122,8 @@ class CallVideo(private val app: P2pApp) : VideoEvents {
 
     /** The call ended. */
     fun reset() {
+        if (hdSuggested || hdTurnedOn) app.hdSuggestMemory = videoHdSuggestAfterCall(app.hdSuggestMemory, hdSuggested, hdTurnedOn)
+        hdSuggested = false; hdTurnedOn = false; hdMeteredSaid = false
         _info.value = null; _problem.value = null; paused = false; _front.value = true; _hdCall.value = null; _hdNote.value = null
         rates.reset(); capturePreference = "-"; actualCapture = "-"
     }

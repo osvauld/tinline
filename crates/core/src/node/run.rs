@@ -223,6 +223,7 @@ impl Inner {
                         }
                         datagrams = Some(self.start_media(&call, &conn));
                         self.set_state(&call, CallState::Active);
+                        self.chat_call_activity(&call.info.peer_did);
                         self.video_decided(&call, &conn, video, theirs);
                     }
                     Some(Cmd::Answer) => {}

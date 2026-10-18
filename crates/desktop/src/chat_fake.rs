@@ -430,7 +430,7 @@ impl Fake {
         false
     }
 
-    pub fn watch_presence(&self, _peer: String) {}
+    pub fn chat_typing(&self, _peer: String) {}
 
     pub fn mark_read(&self, peer: String) -> Result<(), Error> {
         self.with(&peer, |st, p| st.unread.insert(p.to_string(), 0));

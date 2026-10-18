@@ -2,6 +2,8 @@
 //! (`tinline/self/3`). See docs/design/device-linking.md and docs/protocol.md.
 
 pub(crate) mod accdoc;
+#[cfg(test)]
+mod accdoc_tests;
 pub(crate) mod callsdoc;
 pub(crate) mod profiledoc;
 pub(crate) mod profilecache;
