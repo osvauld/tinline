@@ -36,6 +36,13 @@ object Notifications {
     const val ID_LOCKED = 4
     const val ID_WAITING = 5
     const val ID_GROUP_RING = 6
+    /**
+     * The always-on notification while in a call. A separate id from [ID_SERVICE]: moving the
+     * foreground service between the two ids makes Android remove the old one outright, so no
+     * call style, timer or status-bar call chip survives the call (an in-place update of one id
+     * left "in call" showing on Pixel 8 / moto after the log said idle, 2026-10-19).
+     */
+    const val ID_CALL = 7
 
     private fun nm(c: Context) = c.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
