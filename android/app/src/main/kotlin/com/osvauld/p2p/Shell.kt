@@ -224,7 +224,7 @@ fun SearchDock(addLabel: String, onSearch: () -> Unit, onAdd: () -> Unit) {
 /** `.bar`: 4 equal tabs on the surface, a hairline above. Tab: 56 x 30 pill (radius 15) over a 12 sp 600 label. The active
  * indicator grows out from the icon's centre (scaleX .3 -> 1 with opacity, 200 ms), never a hard swap. */
 @Composable
-fun TinTabBar(tab: HomeTab, onTab: (HomeTab) -> Unit, chatBadge: Int, showGroups: Boolean = true, groupBadge: Int = 0) {
+fun TinTabBar(tab: HomeTab, onTab: (HomeTab) -> Unit, chatBadge: Int, showGroups: Boolean = true, groupBadge: Int = 0, contactBadge: Int = 0) {
     val c = Tin.c
     Column(Modifier.fillMaxWidth().background(c.sf)) {
         Box(Modifier.fillMaxWidth().height(1.dp).background(c.hairline))
@@ -237,10 +237,10 @@ fun TinTabBar(tab: HomeTab, onTab: (HomeTab) -> Unit, chatBadge: Int, showGroups
                     val on = t == tab
                     val p by animateFloatAsState(if (on) 1f else 0f, tween(Motion.INDICATOR, easing = Motion.EaseOut), label = "ind")
                     val fg by animateColorAsState(if (on) c.accentInk else c.ink2, tween(Motion.INDICATOR, easing = Motion.EaseOut), label = "tabfg")
-                    val badge = when (t) { HomeTab.Chats -> chatBadge; HomeTab.Groups -> groupBadge; else -> 0 }
+                    val badge = when (t) { HomeTab.Chats -> chatBadge; HomeTab.Groups -> groupBadge; HomeTab.Contacts -> contactBadge; else -> 0 }
                     Column(
                         Modifier.weight(1f).heightIn(min = 56.dp).pressable({ onTab(t) }, RoundedCornerShape(0.dp), wash = Color.Transparent, role = Role.Tab)
-                            .semantics(mergeDescendants = true) { selected = on; if (badge > 0) stateDescription = "$badge unread" },
+                            .semantics(mergeDescendants = true) { selected = on; if (badge > 0) stateDescription = if (t == HomeTab.Contacts) "$badge waiting" else "$badge unread" },
                         horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(2.dp),
                     ) {
                         Box(Modifier.padding(top = 5.dp).size(56.dp, 30.dp), contentAlignment = Alignment.Center) {

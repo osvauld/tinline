@@ -1,6 +1,6 @@
 use super::*;
 
-const P: RotationPolicy = RotationPolicy::DEFAULT;
+const P: RotationPolicy = RotationPolicy::ON;
 
 // KIND: unit (rotation, D11) — members never rotate; a host rotates an interval plus its jitter
 // after the key was made.
@@ -17,6 +17,19 @@ fn due_is_made_plus_interval_plus_jitter_and_only_when_hosting() {
         rotation_due(1_000, &tight, 5, 2_000, true),
         Some(1_000 + P.interval_ms + 3)
     );
+}
+
+// KIND: unit (rotation, 2026-10-19) — off by default: nothing is ever due, hosting or not, however
+// overdue the key is.
+#[test]
+fn the_default_policy_never_rotates() {
+    let off = RotationPolicy::DEFAULT;
+    assert!(!off.enabled);
+    assert!(off.invalid().is_none());
+    for now in [2_000, 1_000 + 50 * off.interval_ms] {
+        assert_eq!(rotation_due(1_000, &off, 0, now, true), None);
+        assert_eq!(rotation_due(1_000, &off, 0, now, false), None);
+    }
 }
 
 // KIND: unit (rotation) — overdue on resume: due now (once); the promote then sets `made = now`,
@@ -60,6 +73,7 @@ fn due_is_never_earlier_than_made_plus_the_floor() {
     for _ in 0..10_000 {
         let interval = RotationPolicy::MIN_INTERVAL_MS + next() % (60 * DAY_MS);
         let policy = RotationPolicy {
+            enabled: true,
             interval_ms: interval,
             jitter_ms: next() % (interval + 1),
             announce_ms: 1 + next() % (30 * DAY_MS),

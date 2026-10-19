@@ -3,6 +3,14 @@
 What rotates today, when, and how it survives a crash. Decisions: D11 and D12 in
 `docs/design/rotation-open-decisions.md`. Earlier option studies: `docs/archive/rotation/`.
 
+**Off by default (decided 2026-10-19, for the alpha).** `RotationPolicy::DEFAULT` has
+`enabled: false`: no endpoint is scheduled to rotate until a policy with `enabled: true` is
+stored (`set_group_rotation_policy`). Why: the apps have no rotation setting and no lost-touch
+screen yet, so a contact who missed the announce window would drop out with nothing shown. The
+mechanism below is unchanged and tested; `private_rotate_now` still rotates on request. A stored
+policy row from before the flag reads as off. Turning it on by default needs the settings and
+lost-touch UI first.
+
 ## What rotates
 
 - **The group endpoint of a hosting device.** One group endpoint per install and account
@@ -35,6 +43,7 @@ All in `RotationPolicy::DEFAULT` (`crates/core/src/group/rotation.rs`):
 
 | Value | Default |
 |---|---|
+| enabled | **no** (2026-10-19) |
 | interval | 7 days |
 | jitter | up to 1 day |
 | announce window | 7 days (= interval) |

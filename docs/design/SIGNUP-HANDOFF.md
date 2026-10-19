@@ -350,12 +350,13 @@ face never moves), with a matching button:
 - **Codes are reusable for 7 days (decided by the user 2026-10-13: "taking a code every time would be annoying").**
   "Your code" says: "Send it to anyone you'd like to talk to, in any app. It works until Mon 19 Oct." A quiet
   **New code** on the "Your code" line replaces it (core `reset_ticket`): the old one stops working at once.
-  - *What makes reuse acceptable:* anyone holding the code can add you for a week without being asked, so (1) New
+  - *What makes reuse acceptable:* anyone holding the code can ask to add you for a week (each one is a request you accept or not), so (1) New
     code lets you cut an old one off, (2) every addition shows you the **New contact** sheet (needs the core events
     below), (3) you can remove or block them afterwards.
-  - *Core today is single use* (`accept_hello` drops the ticket; the redeemed-nonce set refuses a second joiner).
-    Until the core changes, the apps must keep the honest single-use line; don't ship "works until" on a
-    single-use core.
+  - *Core now matches (checked 2026-10-19):* a ticket is redeemable by any number of people until it expires or
+    `reset_ticket`, and every new person arrives as a held request the user accepts or not (`node/accept.rs`;
+    tests `tickets.rs` `reset_tickets_are_dead_and_live_ones_are_reusable`, `contact_requests.rs`). The paste
+    preview's old "single use" line was removed then.
 - *Why "isn't valid any more":* the core's "refused" can't say why (they made a new code, changed their nickname, which
   re-signs the code, or the code was used up on today's core). "Isn't valid any more" is true in every case.
 

@@ -197,11 +197,11 @@ fun PasteCardScreen(app: P2pApp, text: String, onChange: (String) -> Unit, onBac
             ) {
                 Column(Modifier.weight(1f)) {
                     Text("Looks like a Tinline card", style = TinType.bodyL.copy(fontSize = 15.sp, fontWeight = FontWeight.Bold), color = c.onPrc)
-                    Text(if (peek.known == true) "Already a contact" else "Add ${peek.name.ifBlank { null } ?: "them"} · single use", style = TinType.bodyM, color = c.onPrc)
+                    Text(if (peek.known == true) "Already a contact" else "Add ${peek.name.ifBlank { null } ?: "them"}", style = TinType.bodyM, color = c.onPrc)
                 }
                 Icon(PgIcons.Check, null, tint = c.onPrc)
             }
-            Hint("Tip: a card is safest sent over an app you already trust. Anyone who gets it first could use it instead.")
+            Hint("Tip: get their card over an app you already trust, so you know it’s really theirs.")
         }
         Column(Modifier.padding(start = 24.dp, end = 24.dp, bottom = 24.dp)) { TinButton("Add contact", { peek?.let { onAdd(it.ticket) } }, enabled = looks && peek.known != true) }
     }

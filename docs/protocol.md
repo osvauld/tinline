@@ -12,8 +12,8 @@ close code 426 like the other superseded versions).
 - **Device key**: random per-install ed25519 key. Its public half is the iroh
   `EndpointId` (the private endpoint). The QUIC/TLS handshake proves the peer holds it; the
   transport passes that as `remote_device` into every check below. Text form: base64url (no pad).
-  It is not permanent: each install rotates it periodically (`docs/rotation.md` "Private
-  endpoint"); the DID, the install's device ID and writer ID stay.
+  It is not permanent: an install can rotate it periodically (`docs/rotation.md` "Private
+  endpoint"; off by default since 2026-10-19); the DID, the install's device ID and writer ID stay.
 - **Attestation** `{did, device, iat}`, signed by the DID: "this device is mine".
   Several devices per DID are fine; each has its own attestation.
 

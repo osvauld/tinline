@@ -132,6 +132,7 @@ fun HomeScreen(
         chatBadge = rows.sumOf { it.unread } + pendingRequests, callBadge = history.count { it.missed && it.startedAt.toLong() > callsSeen },
         firstRun = { FirstRunAdd(app, onScan = { onAdd(true) }, onPaste = onPaste) },
         groupsBody = { GroupsLiveTab(app, onGroup, onNewGroup, onJoinGroup, say, onChat) }, groupBadge = groupBadge,
+        contactBadge = waitingIn.count { it.did !in hiddenRequests },
         requestsBlock = { GroupRequestsBlock(app, onChat, say) },
         onSearch = onSearch, history = history, groupCalls = groupCalls,
         canCall = { did -> blocks.callGate(did, byDid.containsKey(did)) == CallGate.Ok && byDid.containsKey(did) },
@@ -173,6 +174,8 @@ fun HomeContent(
     firstRun: (@Composable () -> Unit)? = null,
     /** The Groups tab's content; null hides the tab (the gallery and tests). */
     groupsBody: (@Composable () -> Unit)? = null, groupBadge: Int = 0,
+    /** People waiting for my answer to their contact request (their cards are on Contacts). */
+    contactBadge: Int = 0,
     /** Group chat requests (U3), above the chats; draws nothing when there are none. */
     requestsBlock: (@Composable () -> Unit)? = null,
     /** Opens the full-screen search. */
@@ -231,7 +234,7 @@ fun HomeContent(
             }
         }
         if (dock) SearchDock(if (tab == HomeTab.Groups) "New group" else "New chat", onSearch, if (tab == HomeTab.Groups) onNewGroup else onNewChat)
-        TinTabBar(tab, onTab, chatBadge, showGroups = groupsBody != null, groupBadge = groupBadge)
+        TinTabBar(tab, onTab, chatBadge, showGroups = groupsBody != null, groupBadge = groupBadge, contactBadge = contactBadge)
     }
 }
 

@@ -1,6 +1,6 @@
 use super::*;
 
-const P: RotationPolicy = RotationPolicy::DEFAULT;
+const P: RotationPolicy = RotationPolicy::ON;
 
 fn me_with(secret: [u8; 32]) -> Me {
     let (id, phrase) = identity::generate();

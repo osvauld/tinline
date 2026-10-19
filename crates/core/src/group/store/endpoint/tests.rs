@@ -113,6 +113,7 @@ fn the_rotation_policy_row() {
     s.set_rotation_policy(&p).unwrap();
     assert_eq!(s.rotation_policy().unwrap(), p);
     let short = RotationPolicy {
+        enabled: true,
         interval_ms: 1_000,
         jitter_ms: 0,
         announce_ms: 1_000,
@@ -122,6 +123,9 @@ fn the_rotation_policy_row() {
         Err(Error::Rejected(_))
     ));
     assert_eq!(s.rotation_policy().unwrap(), p);
+    // A row written before `enabled` existed reads as off.
+    s.ep_put_raw_for_test("ep/policy", br#"{"interval_ms":172800000,"jitter_ms":0,"announce_ms":86400000}"#);
+    assert!(!s.rotation_policy().unwrap().enabled);
     s.ep_put_raw_for_test("ep/policy", b"{");
     assert!(s.rotation_policy().is_err());
 }

@@ -80,6 +80,8 @@ impl App {
             let badge = match tab {
                 SideTab::Chats => self.chat.unread_total() + self.live.list.iter().filter(|g| crate::app::group_live::active(g.my_role)).map(|g| g.unread).sum::<u32>() + self.live.pending_in().count() as u32,
                 SideTab::Groups => self.live.pending_invitations().count() as u32,
+                // People waiting for my answer: their cards are on Contacts ("Not now" ones aside).
+                SideTab::Contacts => self.requests_in.iter().filter(|r| !self.hidden_requests.contains(&r.did)).count() as u32,
                 _ => 0,
             };
             let mut caption = row![pgi(icon, 20.0, color), semi(label, 15.0, color).line_height(lh(21.0)).width(Fill)].spacing(12).height(44).align_y(Alignment::Center);

@@ -323,12 +323,12 @@ fn host_rotates_on_interval_and_offline_member_is_reconnected_after_host_restart
     let old = o.node.group_endpoint_id().unwrap();
     assert!(a.node.group_endpoint_rotation_due().is_none(), "members never rotate");
     c.node.stop();
-    o.node.group_set_rotation_policy_for_test(Some(RotationPolicy { interval_ms: 15_000, jitter_ms: 0, announce_ms: 600_000 }));
+    o.node.group_set_rotation_policy_for_test(Some(RotationPolicy { enabled: true, interval_ms: 15_000, jitter_ms: 0, announce_ms: 600_000 }));
     let due = o.node.group_endpoint_rotation_due().expect("a host has a deadline");
     eventually(WAIT + 15, "the host rotated", || o.node.group_endpoint_id().is_some_and(|e| e != old));
     assert!(now_ms() >= due);
-    // Back to the stored (default, days-long) policy: no second rotation during the test.
-    o.node.group_set_rotation_policy_for_test(None);
+    // Back to the default days-long interval, on: no second rotation during the test.
+    o.node.group_set_rotation_policy_for_test(Some(RotationPolicy::ON));
     let new = o.node.group_endpoint_id().unwrap();
     assert!(o.node.group_endpoint_rotation_due().unwrap() > now_ms() + 24 * 3600 * 1000, "the next one counts from this one");
     eventually(WAIT, "the online member follows", || a.node.group_known_endpoints_for_test(g.clone()) == vec![new.clone()]);
@@ -351,6 +351,7 @@ fn a_flag_removal_or_host_revocation_does_not_rotate() {
     let h = peer("nr-h");
     let m = peer("nr-m");
     let g = group_with(&o, &[&h, &m]);
+    o.node.group_set_rotation_policy_for_test(Some(RotationPolicy::ON));
     o.node.group_appoint_host(g.clone(), h.did.clone(), h.node.group_device_id().unwrap()).unwrap();
     eventually(WAIT, "h is asked to host", || h.node.group_detail(g.clone()).unwrap().host_requested_here);
     h.node.group_accept_host(g.clone(), true).unwrap();

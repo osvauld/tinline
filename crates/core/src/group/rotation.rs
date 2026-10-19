@@ -4,11 +4,17 @@
 
 const DAY_MS: u64 = 24 * 3600 * 1000;
 
-/// How often the group endpoint rotates, per device (stored in `group.redb`).
+/// Whether and how often this device's endpoints rotate (stored in `group.redb`; it drives the
+/// private endpoint too, `node/rotation.rs`).
 #[derive(
     Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize, uniffi::Record,
 )]
 pub struct RotationPolicy {
+    /// Off by default (decided 2026-10-19 for the alpha: the apps have no rotation settings or
+    /// lost-touch screen yet, so a contact who misses the announce window would drop silently).
+    /// While off nothing is scheduled; `private_rotate_now` still works.
+    #[serde(default)]
+    pub enabled: bool,
     /// Time between two rotations, ms (counted from the last one).
     pub interval_ms: u64,
     /// Upper bound of the random extra delay drawn once per key, ms.
@@ -19,11 +25,17 @@ pub struct RotationPolicy {
 
 impl RotationPolicy {
     /// Decided defaults (2026-10-16): 7 days, up to 1 day of jitter, announce for a whole
-    /// interval; the old endpoint closes right after the promote (no overlap).
+    /// interval; the old endpoint closes right after the promote (no overlap). Off (2026-10-19).
     pub const DEFAULT: Self = Self {
+        enabled: false,
         interval_ms: 7 * DAY_MS,
         jitter_ms: DAY_MS,
         announce_ms: 7 * DAY_MS,
+    };
+    /// The defaults, switched on.
+    pub const ON: Self = Self {
+        enabled: true,
+        ..Self::DEFAULT
     };
     /// The shortest interval a setting may ask for (decided 2026-10-16), so a
     /// mistaken setting cannot make a device rotate (and drop every session) every few minutes.
@@ -59,8 +71,8 @@ pub(crate) fn draw_jitter(max: u64) -> u64 {
     u64::from_le_bytes(b) % max.saturating_add(1)
 }
 
-/// When the endpoint made at `made` (unix ms, local clock) is due to rotate, `None` while this
-/// device hosts no chat and no calls (members never rotate). Counted from the last rotation
+/// When the endpoint made at `made` (unix ms, local clock) is due to rotate, `None` while the
+/// policy is off or this device hosts no chat and no calls (members never rotate). Counted from the last rotation
 /// only: no record time (`at`) and no saving of the setting moves it, so it cannot be postponed
 /// forever; a device that was off past the deadline rotates once on resume and counts a full
 /// interval from then. A `made` more than an interval in the future (the clock went back) is
@@ -72,7 +84,7 @@ pub(crate) fn rotation_due(
     now: u64,
     hosting: bool,
 ) -> Option<u64> {
-    if !hosting {
+    if !policy.enabled || !hosting {
         return None;
     }
     let interval = policy.interval_ms.max(1);

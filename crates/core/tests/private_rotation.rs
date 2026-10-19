@@ -65,7 +65,7 @@ fn call_rings(from: &Peer, to: &Peer) {
 
 /// Every timing short enough for a test; the interval stays long so nothing rotates by itself.
 fn short_windows(p: &Peer, announce_ms: u64, overlap_ms: u64) {
-    p.node.group_set_rotation_policy_for_test(Some(RotationPolicy { interval_ms: 30 * 24 * 3600 * 1000, jitter_ms: 0, announce_ms }));
+    p.node.group_set_rotation_policy_for_test(Some(RotationPolicy { enabled: true, interval_ms: 30 * 24 * 3600 * 1000, jitter_ms: 0, announce_ms }));
     p.node.set_private_overlap_for_test(Some(overlap_ms));
 }
 
@@ -76,6 +76,9 @@ fn short_windows(p: &Peer, announce_ms: u64, overlap_ms: u64) {
 #[test]
 fn a_contact_follows_a_rotation() {
     let (a, b) = pair("follow");
+    // Rotation is off by default (2026-10-19); this device has it on, without jitter so the
+    // restarted schedule is later than the first one (two random jitters need not be ordered).
+    a.node.group_set_rotation_policy_for_test(Some(RotationPolicy { jitter_ms: 0, ..RotationPolicy::ON }));
     message_arrives(&b, &a, "before");
     b.node.set_verified(a.did.clone(), true).unwrap();
     let (old, wid, ticket) = (a.key(), a.node.writer_id_for_test().unwrap(), a.node.my_ticket().unwrap());

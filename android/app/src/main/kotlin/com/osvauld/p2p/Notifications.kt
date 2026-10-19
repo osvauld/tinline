@@ -20,7 +20,9 @@ object Notifications {
     // A channel's sound is fixed when it is created, so Tinline's own `received` tone needed new ids; the first-version channels
     // ("messages", "groups", which used the system default sound) are deleted in createChannels.
     const val CH_MESSAGES = "messages2"
-    const val CH_REQUESTS = "requests"
+    // "requests2": High, so a contact request pops up like a message (a channel's importance is fixed once created; the first
+    // "requests" channel, Default, only showed an icon in the status bar and is deleted in createChannels).
+    const val CH_REQUESTS = "requests2"
     const val CH_GROUPS = "groups2"
     const val EXTRA_REQUEST = "contact_request"
     /** Open Home on the Groups tab (a group invitation). */
@@ -56,7 +58,7 @@ object Notifications {
             setShowBadge(false)
         })
         n.createNotificationChannel(NotificationChannel(CH_MISSED, "Missed calls", NotificationManager.IMPORTANCE_DEFAULT))
-        listOf("messages", "groups").forEach { old -> if (n.getNotificationChannel(old) != null) n.deleteNotificationChannel(old) }
+        listOf("messages", "groups", "requests").forEach { old -> if (n.getNotificationChannel(old) != null) n.deleteNotificationChannel(old) }
         val tone = receivedTone(c)
         val toneAttrs = android.media.AudioAttributes.Builder().setUsage(android.media.AudioAttributes.USAGE_NOTIFICATION)
             .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION).build()
@@ -68,7 +70,7 @@ object Notifications {
             description = "Posts in your groups and invitations to join one"
             if (tone != null) setSound(tone, toneAttrs)
         })
-        n.createNotificationChannel(NotificationChannel(CH_REQUESTS, "Contact requests", NotificationManager.IMPORTANCE_DEFAULT).apply {
+        n.createNotificationChannel(NotificationChannel(CH_REQUESTS, "Contact requests", NotificationManager.IMPORTANCE_HIGH).apply {
             description = "When someone asks to add you as a contact"
         })
         n.createNotificationChannel(NotificationChannel(CH_LOCKED, "Locked", NotificationManager.IMPORTANCE_LOW).apply {
@@ -262,6 +264,8 @@ object Notifications {
             .setSmallIcon(R.drawable.ic_stat_tinline)
             .setContentTitle("Contact request")
             .setContentText("${name.ifBlank { "Someone" }} would like to add you")
+            .setCategory(Notification.CATEGORY_SOCIAL)
+            .setPriority(androidx.core.app.NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
             .setContentIntent(activity(c, MainActivity::class.java, 40 + (did.hashCode() and 0xfff)) { it.putExtra(EXTRA_REQUEST, did) })
             .build()
