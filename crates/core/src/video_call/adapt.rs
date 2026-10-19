@@ -66,7 +66,11 @@ pub fn video_send_label(stats: &VideoStats) -> String {
             "rate" => "",
             "cpu" => "busy device",
             "hint" => "their screen",
-            "budget" => "battery saver",
+            "pin" => "your pin",
+            // Our own cap that is not a pin: name it only when the budget says why (the peer's
+            // offer caps it too; that used to be called "battery saver" with saver off).
+            "budget" if stats.budget.power_save => "battery saver",
+            "budget" if stats.budget.thermal >= 2 => "warm device",
             _ => "",
         },
     };
@@ -552,11 +556,14 @@ pub(super) async fn run_policy(pipe: Arc<Pipe>) {
         (last_payload, last_recv_payload) = (st.admitted_payload_bytes, st.received_payload_bytes);
         st.decode_p75_ms = dec;
         // `send_rung_height` comes with each sent frame (`pipes::encode_loop`), not from here.
+        let pinned = st.live.fixed_height != 0;
         for s in &steps {
             let why = match s.reason {
                 video::media::StepReason::Rate => "rate",
                 video::media::StepReason::Cpu => "cpu",
                 video::media::StepReason::Cap if src == "hint" => "hint",
+                // A pinned size (stats for nerds) moves the ladder as a cap step: say so.
+                video::media::StepReason::Cap if pinned => "pin",
                 video::media::StepReason::Cap => "budget",
             };
             tracing::info!(target: "p2pcore::video_call", "video step {} -> {} reason={why} est={}kbps", step_name(s.from), step_name(s.to), s.bps / 1000);

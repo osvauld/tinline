@@ -509,6 +509,11 @@ fn send_label_says_why() {
     assert_eq!(video_send_label(&still), "540p \u{b7} slow network");
     assert_eq!(video_send_label(&st(960, 540, 30, "display", "rate")), "540p \u{b7} their screen");
     assert_eq!(video_send_label(&st(540, 960, 15, "none", "")), "540p \u{b7} 15 fps");
+    // A pin or the peer's offer is not battery saver; only the budget's own flags name one.
+    assert_eq!(video_send_label(&st(960, 540, 30, "none", "pin")), "540p \u{b7} your pin");
+    assert_eq!(video_send_label(&st(960, 540, 30, "none", "budget")), "540p \u{b7} 30 fps");
+    let saver = VideoStats { budget: VideoBudget { thermal: 0, power_save: true }, ..st(960, 540, 24, "none", "budget") };
+    assert_eq!(video_send_label(&saver), "540p \u{b7} battery saver");
 }
 
 #[test]
