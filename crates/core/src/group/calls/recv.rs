@@ -133,7 +133,23 @@ impl Inner {
         let m = st.statuses.entry(gid.to_string()).or_default();
         let key = (s.host_ref.holder_did.clone(), s.host_ref.device_slot);
         if m.get(&key).is_none_or(|(_, have)| have.issued_ms <= s.issued_ms) {
-            m.insert(key, (blob, s));
+            m.insert(key, (blob, s.clone()));
+        }
+        // The host itself says it hosts nothing now: a call it hosted that is still listed is
+        // over (its End never reached us: a hand-over nobody took, a crash, a lost link).
+        let gone: Vec<String> = if s.busy {
+            vec![]
+        } else {
+            st.calls.get(gid).map_or(vec![], |c| {
+                c.iter()
+                    .filter(|(_, (_, cs))| cs.host_ref == s.host_ref && cs.started_ms + HOST_IDLE_GRACE_MS < s.issued_ms)
+                    .map(|(id, _)| id.clone())
+                    .collect()
+            })
+        };
+        drop(st);
+        for id in gone {
+            self.group_call_forget(gid, &id);
         }
     }
 
@@ -193,6 +209,17 @@ impl Inner {
         };
         if had {
             self.calls_emit(GroupCallEventKind::Ended, gid, call_id, vec![], String::new());
+        }
+    }
+
+    /// `call_id`'s host says it hosts nothing: the call leaves the list here, so a Join button
+    /// does not linger on a call that is gone. Not marked ended: a backup's takeover (a newer
+    /// `CallStart`, another host) still lists it again.
+    pub(super) fn group_call_forget(&self, gid: &str, call_id: &str) {
+        let had = self.group.calls.st.lock().calls.get_mut(gid).and_then(|c| c.remove(call_id)).is_some();
+        if had {
+            self.log(format!("group {}: call {call_id}: its host hosts nothing now, dropped from the list", short(gid)));
+            self.calls_emit(GroupCallEventKind::Ended, gid, call_id, vec![], "host lost".into());
         }
     }
 

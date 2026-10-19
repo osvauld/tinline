@@ -305,7 +305,11 @@ impl App {
 }
 
 /// gcall.svelte.ts `failed` wording: no host vs. anything else.
+/// The core's "no call host available: <why>" shows its why (Rust words); else a short line.
 fn start_failure(detail: &str) -> String {
+    if let Some((_, why)) = detail.split_once("no call host available: ") {
+        return why.to_string();
+    }
     let d = detail.to_lowercase();
     if d.contains("host") { "No call host available".into() } else { "Couldn\u{2019}t connect".into() }
 }

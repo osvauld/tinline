@@ -38,6 +38,32 @@ impl Inner {
         Ok(call_id)
     }
 
+    /// "no call host available: <why, for the person starting>". The apps show the part after
+    /// ": ". Why: nobody holds a call-host role; none is online (no fresh status); every one says
+    /// busy; or only phones are left, and a phone hosts only its own user's calls (§2.4, Q11).
+    fn no_host_reason(self: &Arc<Self>, core: &GroupCore, gid: &str) -> String {
+        let now = now_ms();
+        let hosts = core.groups.lock().get(gid).map_or(0, |l| l.state.call_hosts.len());
+        let i_host = GroupCallDir::new(self).my_host_ref(gid).is_some();
+        let (fresh, busy, phones) = self.group.calls.st.lock().statuses.get(gid).map_or((0, 0, 0), |m| {
+            let f: Vec<_> = m.values().map(|(_, s)| s).filter(|s| s.is_fresh(now)).collect();
+            let free: Vec<_> = f.iter().filter(|s| !s.busy).collect();
+            (f.len(), f.len() - free.len(), free.iter().filter(|s| s.class == DeviceClass::Phone).count())
+        });
+        let why = if hosts == 0 {
+            "Nobody in this group can host calls yet."
+        } else if fresh == 0 {
+            "Nobody who can host calls is online right now."
+        } else if busy == fresh {
+            "Everyone who can host is busy right now, maybe in another call."
+        } else if !i_host && phones == fresh - busy {
+            "Only phones can host here, and a phone hosts only its own calls. An admin can let you host calls, or keep Tinline open on a computer that can."
+        } else {
+            "Nobody who can host answered."
+        };
+        format!("no call host available: {why}")
+    }
+
     /// Acts on the picker's next step: ask the candidate (ourselves: host at once), or give up.
     pub(super) fn group_call_step(self: &Arc<Self>, core: &Arc<GroupCore>, gid: &str, call_id: &str, mut step: PickerStep) -> Result<(), Error> {
         loop {
@@ -48,8 +74,10 @@ impl Inner {
                         st.pending = None;
                     }
                     drop(st);
-                    self.calls_emit(GroupCallEventKind::StartFailed, gid, call_id, vec![], "no call host available".into());
-                    return Err(Error::Rejected("no call host available".into()));
+                    let why = self.no_host_reason(core, gid);
+                    self.log(format!("group {}: no call host for {call_id}: {why}", short(gid)));
+                    self.calls_emit(GroupCallEventKind::StartFailed, gid, call_id, vec![], why.clone());
+                    return Err(Error::Rejected(why));
                 }
                 PickerStep::Ask(p) => p,
             };

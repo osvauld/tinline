@@ -66,7 +66,10 @@ class GroupCallAudio(private val app: P2pApp) : GroupCallEvents {
 
     override fun onGroupCall(event: GroupCallEvent) {
         testLog("group-call kind=${event.kind} group=${event.groupId} call=${event.callId} detail=${event.detail}")
-        CallTrace.add("group ${event.kind} ${shortId(event.callId)}")
+        // Why a start failed or a call ended for us: reasons only (Joined/Announced details are DIDs).
+        val why = if (event.kind in listOf(GroupCallEventKind.START_FAILED, GroupCallEventKind.LEFT, GroupCallEventKind.HOSTING_ENDED, GroupCallEventKind.ENDED))
+            " " + event.detail.take(70) else ""
+        CallTrace.add("group ${event.kind} ${shortId(event.callId)}$why")
         _events.tryEmit(event)
         val settles = event.kind == GroupCallEventKind.START_FAILED || event.kind == GroupCallEventKind.LEFT
         worker.execute { reconcile(settles) }
