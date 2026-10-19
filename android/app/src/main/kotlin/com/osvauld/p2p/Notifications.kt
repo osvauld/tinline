@@ -224,6 +224,15 @@ object Notifications {
 
     fun cancelIncoming(c: Context) = nm(c).cancel(ID_INCOMING)
 
+    /** Process start: the call notifications a dead process may have left behind. */
+    fun cancelCallLeftovers(c: Context) {
+        val n = nm(c)
+        val left = try { n.activeNotifications.map { it.id }.filter { it == ID_INCOMING || it == ID_WAITING || it == ID_GROUP_RING } }
+            catch (_: Exception) { emptyList() }
+        if (left.isNotEmpty()) CallTrace.add("leftover call notifications $left cancelled")
+        listOf(ID_INCOMING, ID_WAITING, ID_GROUP_RING).forEach { try { n.cancel(it) } catch (_: Exception) {} }
+    }
+
     /** A second call during a call: a quiet heads-up with two actions, no full-screen intent. */
     fun waiting(c: Context, call: CallInfo) {
         val name = call.peerName.ifBlank { "Unknown" }

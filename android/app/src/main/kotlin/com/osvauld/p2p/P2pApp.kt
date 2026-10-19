@@ -101,7 +101,12 @@ class P2pApp : Application(), NodeEvents {
     override fun onCreate() {
         super.onCreate()
         instance = this
+        CallTrace.init(filesDir)
+        CallTrace.lastExit(this)
         Notifications.createChannels(this)
+        // A new process has no call yet: a ringing or waiting notification left by a process that
+        // died mid-call (posted with notify, not tied to the service) would otherwise stay forever.
+        Notifications.cancelCallLeftovers(this)
         ChatMedia.clear(this)
         calls = CallController(this)
         video = CallVideo(this)
