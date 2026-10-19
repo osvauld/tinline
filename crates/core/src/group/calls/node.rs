@@ -88,8 +88,13 @@ impl Node {
     /// progress, and a muted group where the app has a per-group mute.
     pub fn group_call_rings(&self, group_id: String, call_id: String) -> bool {
         let Ok(core) = self.inner.group_core() else { return false };
-        let starter = self.inner.group.calls.st.lock().calls.get(&group_id).and_then(|c| c.get(&call_id)).map(|(_, s)| s.starter_did.clone());
-        let Some(starter) = starter else { return false };
+        let found = self.inner.group.calls.st.lock().calls.get(&group_id).and_then(|c| c.get(&call_id)).map(|(_, s)| (s.starter_did.clone(), s.started_ms));
+        let Some((starter, started)) = found else { return false };
+        // Only a call started within the ring time rings: an old one re-announced to a device
+        // that just (re)connected or restarted shows as "Call in progress", silently.
+        if now_ms().saturating_sub(started) > GROUP_CALL_RING_MS {
+            return false;
+        }
         if starter == core.did || self.inner.gcall.busy() {
             return false;
         }

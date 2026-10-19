@@ -108,9 +108,16 @@ class GroupCallUi(private val app: P2pApp) {
         _s.update { s -> s.copy(live = if (c != null) s.live + (gid to c) else s.live - gid) }
     }
 
+    private val _needMic = MutableStateFlow<String?>(null)
+    /** A call or join waiting for the microphone permission: MainActivity asks, then calls [call] again. */
+    val needMic: StateFlow<String?> = _needMic
+    fun micAsked() { _needMic.value = null }
+
     /** The group header's call button: start a call, join the running one, or return to mine. */
     fun call(gid: String, onError: (String) -> Unit) {
         val cur = _s.value
+        // Microphone first, as for a 1:1 call: without it the call would join silent with no way to fix it.
+        if (!(cur.gid == gid && cur.active) && !Perms.granted(app, android.Manifest.permission.RECORD_AUDIO)) { _needMic.value = gid; return }
         if (cur.announce?.gid == gid) stopRing()
         _s.update { s -> if (s.announce?.gid == gid) s.copy(announce = null) else s }
         if (cur.gid == gid && cur.active) { _s.update { it.copy(minimized = false) }; return }
