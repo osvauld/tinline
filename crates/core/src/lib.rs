@@ -46,16 +46,6 @@ mod wire;
 
 pub use error::Error;
 
-/// Search internals the `search-bench` binary drives (it lives outside the lib so the
-/// benchmark code is not compiled into the app libraries). Not part of the uniffi API.
-#[cfg(feature = "bench")]
-#[doc(hidden)]
-pub mod search_bench_support {
-    pub use crate::search::index::{DocRow, Mark, Mode, PHASES, SearchIndex};
-    pub use crate::search::text;
-    pub use crate::chat::doc::{day_of, day_start};
-}
-
 pub use block::{BLOCKED, BlockNotice, BlockState, BlockedContact};
 pub use group::api::{GroupDelivery, GroupDetail, GroupEvents, GroupFlag, GroupHost, GroupInvitePeek, GroupItemKind, GroupMember, GroupMessage, GroupPage, GroupRemoval, GroupRole, GroupSummary};
 pub use group::requests::{ChatRequestState, GroupChatRequest, GroupRequestEvents};

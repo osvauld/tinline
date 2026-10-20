@@ -3,8 +3,5 @@
 //! open. Nothing leaves the device. See `docs/search.md`.
 
 pub mod api;
-pub mod hot;
-pub mod index;
-pub mod seg;
-pub mod text;
-pub mod find;
+// The index itself lives in `search-core`; p2pcore keeps the paths.
+pub use search_core::{find, index, text};

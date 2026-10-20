@@ -1,13 +1,8 @@
-use super::super::index::{DocRow, Mode, SearchIndex, VERSION};
+use super::super::index::{Mode, SearchIndex, VERSION};
 use super::*;
+use crate::testkit::{T0, row};
 
 const DAY: i64 = 86_400_000;
-/// 2026-01-01 00:00 UTC.
-const T0: i64 = 1_767_225_600_000;
-
-fn row(src: &str, id: &str, at: i64, text: &str) -> DocRow {
-    DocRow { src: src.into(), conv: "did:key:z".into(), day: crate::chat::doc::day_of(at), id: id.into(), at, author: "did:key:a".into(), text: text.into() }
-}
 
 /// Everything cold (today is far ahead).
 fn cold(ix: &SearchIndex) {

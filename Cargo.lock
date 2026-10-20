@@ -5732,6 +5732,7 @@ dependencies = [
  "parking_lot",
  "present",
  "proto",
+ "search-core",
  "serde",
  "serde_json",
  "sha2",
@@ -5740,8 +5741,6 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
- "unicode-normalization",
- "unicode-segmentation",
  "uniffi",
  "video",
  "zeroize",
@@ -7070,6 +7069,24 @@ dependencies = [
  "memmap2",
  "smithay-client-toolkit 0.19.2",
  "tiny-skia 0.11.4",
+]
+
+[[package]]
+name = "search-core"
+version = "0.1.38"
+dependencies = [
+ "blake3",
+ "crdt",
+ "cryptography",
+ "libc",
+ "loro",
+ "parking_lot",
+ "serde",
+ "storage",
+ "thiserror 2.0.21",
+ "unicode-normalization",
+ "unicode-segmentation",
+ "zeroize",
 ]
 
 [[package]]

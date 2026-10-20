@@ -134,7 +134,7 @@ Search inside one open conversation (a find bar in the chat screen), on the same
   150 ms debounce, from 2 characters.
 - Format: the `z/` table is new, so the index format version goes to 3 (rebuilt on open).
 
-## Implementation notes (S1, v1 layout; replaced by v2 below, `crates/core/src/search/`)
+## Implementation notes (S1, v1 layout; replaced by v2 below, `crates/core/src/search/`, now `crates/search-core`)
 
 Where the code differs from the plan above, and why.
 
@@ -257,7 +257,7 @@ Send-path index cost < 0.5 ms p99; `search.redb` <= 1.5 KB/message; first full b
 < 60 s; hot-tier build on open of 8 days measured (and in `scale-year.md` for the year
 dataset); queries <= 10 ms p95.
 
-### Implementation notes (v2, `crates/core/src/search/{index,hot,seg}.rs`)
+### Implementation notes (v2, `crates/search-core/src/{index,hot,seg}.rs`)
 
 Where the code settles what the design above leaves open.
 
@@ -346,7 +346,7 @@ Where the code settles what the design above leaves open.
     3 s.
 
 
-### Implementation notes (find in chat, `crates/core/src/search/find.rs`)
+### Implementation notes (find in chat, `crates/search-core/src/find.rs`)
 
 - **Format version 4** (3 is the bucketed lists above). Old files are emptied and rebuilt.
 - **`z/{seg:08x}/{part:04x}`**: the doc table is cut into records of 1 024 docs (2 KB), not one

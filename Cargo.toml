@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/identity", "crates/cryptography", "crates/proto", "crates/audio", "crates/video", "crates/storage", "crates/gcall-bench", "crates/gcall-core", "crates/crdt", "crates/core", "crates/peer", "crates/desktop", "crates/tin-icons", "crates/present"]
+members = ["crates/identity", "crates/cryptography", "crates/proto", "crates/audio", "crates/video", "crates/storage", "crates/gcall-bench", "crates/gcall-core", "crates/crdt", "crates/search-core", "crates/core", "crates/peer", "crates/desktop", "crates/tin-icons", "crates/present"]
 
 [workspace.package]
 version = "0.1.38"
@@ -30,6 +30,7 @@ audio = { path = "crates/audio" }
 storage = { path = "crates/storage" }
 gcall-core = { path = "crates/gcall-core" }
 crdt = { path = "crates/crdt" }
+search-core = { path = "crates/search-core" }
 
 # Full debug info made every test binary ~0.5 GB and filled the build-cache disk with a dozen
 # agents building at once; line tables still give file:line in panics and backtraces.

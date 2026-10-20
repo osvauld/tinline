@@ -7,7 +7,8 @@ use std::path::Path;
 use std::sync::Arc;
 
 use super::find;
-use super::index::{DocRow, Mark, Mode, SearchIndex};
+use super::index::{DocRow, INDEX_DOMAIN, Keys, Mark, Mode, STORE_DOMAIN, SearchIndex};
+use crate::rekey::phrase_key;
 use super::text;
 use crate::Error;
 use crate::chat::doc::{MsgRec, pair_id};
@@ -148,7 +149,7 @@ impl Node {
         let ix = self.inner.search_ix().ok_or(Error::Locked)?;
         let day = crate::chat::doc::day_of(crate::node::now_ms() as i64);
         let row = DocRow { src: group_src(&group_id), conv: group_id.clone(), day: day.clone(), id: post_id, at: 1, author: me.id.did().to_string(), text };
-        ix.apply(&[row], &[], &[Mark { src: group_src(&group_id), day, prev: None, vv: Vec::new() }])
+        Ok(ix.apply(&[row], &[], &[Mark { src: group_src(&group_id), day, prev: None, vv: Vec::new() }])?)
     }
 
     /// Pretends today is `day` (`YYYY-MM-DD`) for the search index (`None`: the real clock).
@@ -200,6 +201,21 @@ pub(crate) fn group_src(gid: &str) -> String {
     format!("g.{gid}")
 }
 
+/// Opens (creating) the index file at `path` with the phrase's keys: waits for a previous owner
+/// of the file and makes it private, also when a stale file is replaced.
+fn open_index(path: &Path, phrase: &str) -> Result<SearchIndex, Error> {
+    let keys = Keys { store: phrase_key(STORE_DOMAIN, phrase), index: phrase_key(INDEX_DOMAIN, phrase) };
+    let open_store = |p: &Path| -> Result<storage::Store, search_core::Error> {
+        let store = crate::store::open_waiting(p).map_err(|e| match e {
+            Error::Io(s) => search_core::Error::Io(s),
+            e => search_core::Error::Io(e.to_string()),
+        })?;
+        crate::store::set_private(p);
+        Ok(store)
+    };
+    Ok(SearchIndex::open(path, keys, &open_store)?)
+}
+
 /// What a 1:1 message contributes to the index: its text and the name of a file it carries.
 fn dm_row(did: &str, pair: &str, day: &str, rec: &MsgRec) -> DocRow {
     let mut t = if rec.deleted { String::new() } else { rec.text.clone() };
@@ -245,7 +261,7 @@ impl Inner {
         if slot.as_ref().is_some_and(|s| !s.is_closed()) {
             return;
         }
-        match SearchIndex::open(&dir.join("search.redb"), phrase) {
+        match open_index(&dir.join("search.redb"), phrase) {
             Ok(ix) => *slot = Some(Arc::new(ix)),
             Err(e) => tracing::warn!("search index: {e}"),
         }
@@ -268,7 +284,8 @@ impl Inner {
         self.search_skip.try_update(Ordering::SeqCst, Ordering::SeqCst, |n| n.checked_sub(1)).is_ok()
     }
 
-    fn search_log(e: Error) {
+    fn search_log(e: impl Into<Error>) {
+        let e: Error = e.into();
         tracing::warn!("search index: {e}");
     }
 

@@ -5,9 +5,17 @@
 //! of the last days on open, then times the query loop of `Inner::search` (scan, row, match,
 //! snippet) without the node-side name lookups.
 
-use p2pcore::search_bench_support::{DocRow, Mark, Mode, PHASES, SearchIndex, day_of, day_start, text};
+use crdt::{day_of, day_start};
+use search_core::{DocRow, INDEX_DOMAIN, Keys, Mark, Mode, PHASES, STORE_DOMAIN, SearchIndex, text};
 use std::path::Path;
 use std::time::{Duration, Instant};
+
+/// Opens (creating) a bench index file with the keys of "bench phrase" (as the app derives them).
+fn open(path: &Path) -> SearchIndex {
+    let phrase = b"bench phrase";
+    let keys = Keys { store: cryptography::kdf::derive(STORE_DOMAIN, phrase), index: cryptography::kdf::derive(INDEX_DOMAIN, phrase) };
+    SearchIndex::open(path, keys, &|p| Ok(storage::Store::open(p)?)).unwrap()
+}
 
 struct Rng(u64);
 impl Rng {
@@ -179,7 +187,7 @@ pub fn run(n: usize, dir: &Path) {
     // written into segments on a background thread, as the node's periodic check does.
     let path = dir.join("live.redb");
     let _ = std::fs::remove_file(&path);
-    let ix = SearchIndex::open(&path, "bench phrase").unwrap();
+    let ix = open(&path);
     let mut each = Vec::with_capacity(n);
     let mut maint: Vec<Duration> = Vec::new();
     let t0 = Instant::now();
@@ -235,7 +243,7 @@ pub fn run(n: usize, dir: &Path) {
     }
     let rpath = dir.join("rebuild.redb");
     let _ = std::fs::remove_file(&rpath);
-    let rix = SearchIndex::open(&rpath, "bench phrase").unwrap();
+    let rix = open(&rpath);
     rix.set_today(Some(&end_day));
     let mut batches: std::collections::BTreeMap<(String, String), Vec<DocRow>> = Default::default();
     for r in &data {
@@ -261,7 +269,7 @@ pub fn run(n: usize, dir: &Path) {
     // reconcile does for the hot window, minus reading the chat stores).
     drop(ix);
     let t = Instant::now();
-    let reopened = SearchIndex::open(&path, "bench phrase").unwrap();
+    let reopened = open(&path);
     reopened.set_today(Some(&end_day));
     let open_t = t.elapsed();
     let cutoff = day_start(&end_day).unwrap() - 7 * 86_400_000;
@@ -334,7 +342,7 @@ pub fn run_live(n: usize, dir: &Path) {
     println!("search-bench live: {n} messages in the index, then {LIVE} sends {} ms apart per run, {} cpus", PACE.as_millis(), std::thread::available_parallelism().map_or(1, |n| n.get()));
     let path = dir.join("liveprod.redb");
     let _ = std::fs::remove_file(&path);
-    let ix = SearchIndex::open(&path, "bench phrase").unwrap();
+    let ix = open(&path);
     ix.set_today(Some(&end_day));
     let mut batches: std::collections::BTreeMap<(String, String), Vec<DocRow>> = Default::default();
     for r in &data {
