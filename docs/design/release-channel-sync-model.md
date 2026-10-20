@@ -27,7 +27,7 @@ proof preservation, or the independence of call hosting. That document and
 
 ## Model topology and observations
 
-`scripts/test_sync_routing_model.py` has one phone, one own desktop, one official
+`docs/archive/models/test_sync_routing_model.py` has one phone, one own desktop, one official
 host serving two separate groups, and two individual contacts. Identities are
 synthetic. Authenticated identity, admitted scope and valid immutable author
 records are assumed oracles, not implemented cryptography.
@@ -100,5 +100,5 @@ models and real integration tests. These results do not prove production behavio
 Run the lightweight offline model:
 
 ```sh
-python3 scripts/test_sync_routing_model.py
+python3 docs/archive/models/test_sync_routing_model.py
 ```

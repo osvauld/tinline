@@ -1,7 +1,7 @@
 # Paged frontier reconciliation with shared message/file budgets
 
 Status: **offline candidate model only**. No production routing/format change.
-Source: `scripts/test_paged_sync_model.py`.
+Source: `docs/archive/models/test_paged_sync_model.py`.
 
 ## Scope
 
@@ -78,7 +78,7 @@ Messages caught up does not establish attachment availability or host/member rec
 ## Owned validation
 
 ```sh
-python3 -B scripts/test_paged_sync_model.py
+python3 -B docs/archive/models/test_paged_sync_model.py
 ```
 
 **10 passed, 0 failed, 0 skipped**, approximately 0.4 seconds; tiny offline run,
