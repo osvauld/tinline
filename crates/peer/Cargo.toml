@@ -9,7 +9,7 @@ name = "p2p-peer"
 path = "src/main.rs"
 
 [dependencies]
-p2pcore = { path = "../core" }
+p2pcore = { path = "../core", features = ["dev-tools"] }  # WHO line uses Node::device_key_for_test
 audio.workspace = true
 hound = "3.5"
 video = { path = "../video", default-features = false, features = ["sim"] }

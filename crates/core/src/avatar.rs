@@ -314,7 +314,7 @@ mod tests {
                 let f = fingerprint(&d).unwrap();
                 let a = art_from_fingerprint(&f, small);
                 out += &format!("did {d} small {small} sw {}\n", a.stroke_width);
-                out += &format!("fp {}\n", f.iter().map(|x| format!("{x:02x}")).collect::<String>());
+                out += &format!("fp {}\n", hex::encode(f));
                 out += &format!("light {:08x} {:08x} dark {:08x} {:08x}\n", a.light.bg, a.light.fg, a.dark.bg, a.dark.fg);
                 for s in &a.strokes {
                     out += &format!("s {} {} {}", s.closed as u8, s.gold as u8, s.alpha);
@@ -330,7 +330,7 @@ mod tests {
                 let f = group_fingerprint(gid);
                 let a = art_from_fingerprint(&f, small);
                 out += &format!("group {gid} small {small} sw {}\n", a.stroke_width);
-                out += &format!("fp {}\n", f.iter().map(|x| format!("{x:02x}")).collect::<String>());
+                out += &format!("fp {}\n", hex::encode(f));
                 out += &format!("light {:08x} {:08x} dark {:08x} {:08x}\n", a.light.bg, a.light.fg, a.dark.bg, a.dark.fg);
                 for s in &a.strokes {
                     out += &format!("s {} {} {}", s.closed as u8, s.gold as u8, s.alpha);

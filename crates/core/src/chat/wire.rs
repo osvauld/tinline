@@ -8,6 +8,7 @@ use iroh::endpoint::{RecvStream, SendStream};
 use serde::{Deserialize, Serialize};
 
 use crate::Error;
+use crate::frames::{FrameBuf, send_frame};
 
 pub const CHAT_ALPN: &[u8] = b"tinline/chat/7";
 /// A shard snapshot of a very busy day can be large; blobs carry the rest.
@@ -84,50 +85,22 @@ pub fn verify_batch(device: &[u8; 32], doc: &str, update: &[u8], sig: &[u8]) -> 
 }
 
 pub struct ChatWriter(pub SendStream);
-pub struct ChatReader {
-    recv: RecvStream,
-    buf: Vec<u8>,
-}
+pub struct ChatReader(FrameBuf);
 
 impl ChatReader {
     pub fn new(recv: RecvStream) -> Self {
-        Self { recv, buf: Vec::new() }
+        Self(FrameBuf::new(recv))
     }
 
     /// `None` when the peer finished its side cleanly. Cancel-safe.
     pub async fn recv(&mut self) -> Result<Option<ChatMsg>, Error> {
-        let mut chunk = vec![0u8; 64 * 1024];
-        loop {
-            if self.buf.len() >= 4 {
-                let len = u32::from_be_bytes(self.buf[..4].try_into().unwrap()) as usize;
-                if len > MAX_FRAME {
-                    return Err(Error::Protocol("chat frame too large".into()));
-                }
-                if self.buf.len() >= 4 + len {
-                    let msg = cryptography::codec::from_bytes(&self.buf[4..4 + len], MAX_FRAME)
-                        .map_err(|_| Error::Protocol("chat frame does not decode".into()))?;
-                    self.buf.drain(..4 + len);
-                    return Ok(Some(msg));
-                }
-            }
-            match self.recv.read(&mut chunk).await.map_err(Error::net)? {
-                Some(n) => self.buf.extend_from_slice(&chunk[..n]),
-                None if self.buf.is_empty() => return Ok(None),
-                None => return Err(Error::Protocol("stream ended mid-frame".into())),
-            }
-        }
+        self.0.recv(MAX_FRAME, "chat ").await
     }
 }
 
 impl ChatWriter {
     pub async fn send(&mut self, msg: &ChatMsg) -> Result<(), Error> {
-        let body = cryptography::codec::to_bytes(msg).map_err(|e| Error::Protocol(e.to_string()))?;
-        if body.len() > MAX_FRAME {
-            return Err(Error::Protocol("chat frame too large".into()));
-        }
-        let mut out = (body.len() as u32).to_be_bytes().to_vec();
-        out.extend_from_slice(&body);
-        self.0.write_all(&out).await.map_err(Error::net)
+        send_frame(&mut self.0, msg, MAX_FRAME, "chat ").await
     }
 }
 

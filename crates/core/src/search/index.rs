@@ -309,7 +309,7 @@ impl SearchIndex {
 
     fn today(&self) -> u32 {
         (*self.today.lock()).unwrap_or_else(|| {
-            let ms = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_or(0, |d| d.as_millis() as i64);
+            let ms = crate::node::now_ms() as i64;
             ms.div_euclid(DAY_MS) as u32
         })
     }

@@ -1,4 +1,4 @@
-//! `*_for_test` hooks. Hidden from docs, but `pub`: they ship in the cdylib.
+//! `*_for_test` hooks. Hidden from docs, and compiled only for unit tests and `dev-tools` builds, so release builds do not ship them.
 
 use super::*;
 
