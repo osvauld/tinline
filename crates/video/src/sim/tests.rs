@@ -503,7 +503,9 @@ fn adapt_flapping_link() {
     // Baseline: 7 in 20-80 s (540p <-> 720p every 8-16 s). Now 900 kbps holds 720p15 / 540p at
     // a lower tier, and a step up undone within 20 s is blocked.
     assert!(res_switches(&r, 20 * S) <= 2, "{}", sizes_line(&r));
-    assert!(p95(&r, 0, sc.duration_us) <= 134.0, "p95 {}", p95(&r, 0, sc.duration_us));
+    // 138 ms (was 132): after the 900 kbps phase the frame rate comes back after 2 s, not 5
+    // (`fps_up_hold_us`): 720p24 at 18.9 s instead of 21.9, 48 more frames shown.
+    assert!(p95(&r, 0, sc.duration_us) <= 140.0, "p95 {}", p95(&r, 0, sc.duration_us));
 }
 
 /// A fast device on a 3 Mbps link with `hints` from the receiving app.

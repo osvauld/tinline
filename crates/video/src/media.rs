@@ -155,8 +155,16 @@ pub struct LadderConfig {
     pub max_rung: usize,
     /// The bitrate and encode time never go below this rung (user, 2026-10-20: 180p is too poor
     /// to look at; drop frames at 360p instead). Only the peer's hint (a hidden or tiny
-    /// picture) and the caps go lower.
+    /// picture), the caps and the last resort go lower.
     pub min_rung: usize,
+    /// Last resort: a bitrate under `resort_below_bps` for `resort_after_us` opens the rungs
+    /// under `min_rung` (360p at 6 fps on 25-100 kbps is mush; 180p is at least a picture)...
+    pub resort_below_bps: u32,
+    pub resort_after_us: u64,
+    /// ...and `resort_leave_bps` or more for `resort_leave_us` closes them again (back to
+    /// `min_rung` at once, at the frame rate the bitrate covers).
+    pub resort_leave_bps: u32,
+    pub resort_leave_us: u64,
     /// Developer test mode: hold this resolution, ignoring rate/CPU stepping. Caps still win.
     /// None preserves normal adaptation. Does not pin bitrate or upscale camera frames.
     pub fixed_rung: Option<usize>,
@@ -183,6 +191,10 @@ pub struct LadderConfig {
     /// above the threshold, no dips allowed. The long hold guards against an estimate that ran
     /// ahead of the link; delivered bytes with a flat delay are the link's own answer.
     pub up_fast_hold_us: u64,
+    /// A step up in frame rate only (no keyframe) needs this long instead of `up_hold_us`, and
+    /// this long after a step down instead of `up_after_down_us` (14:38 call: 10 s at 6 fps for
+    /// a 1 s dip, the rate back at 0.5-1.1 Mbps). Only right after a step down for the bitrate.
+    pub fps_up_hold_us: u64,
     /// Median encode time over a second above this % of the current tier's frame interval: too
     /// slow for the step. Stepping up needs the p75, scaled to the bigger picture, to fit the
     /// new step's budget.
@@ -200,7 +212,8 @@ impl Default for LadderConfig {
         let r = |width, height, min_bps, max_bps, min_fps| Rung { width, height, min_bps, max_bps, min_fps };
         Self {
             rungs: vec![
-                r(320, 180, 0, 500_000, 15),
+                // Floors 70/88/100 kbps at 15/24/30 fps: under 100 kbps the last resort is 180p15.
+                r(320, 180, 100_000, 500_000, 15),
                 r(640, 360, 250_000, 1_200_000, 6),
                 r(960, 540, 600_000, 2_000_000, 15),
                 r(1280, 720, 1_000_000, 3_000_000, 15),
@@ -209,6 +222,10 @@ impl Default for LadderConfig {
             tiers: vec![6, 10, 15, 24, 30],
             max_rung: 3,
             min_rung: 1,
+            resort_below_bps: 100_000,
+            resort_after_us: 3_000_000,
+            resort_leave_bps: 170_000,
+            resort_leave_us: 5_000_000,
             fixed_rung: None,
             fixed_fps: None,
             ignore_caps: false,
@@ -218,6 +235,7 @@ impl Default for LadderConfig {
             up_dip_pct: 25,
             up_after_down_us: 10_000_000,
             up_fast_hold_us: 1_000_000,
+            fps_up_hold_us: 2_000_000,
             encode_budget_pct: 60,
             cpu_block: Backoff { first_us: 5_000_000, max_us: 30_000_000, forget_us: 60_000_000 },
             flap_window_us: 20_000_000,
@@ -374,12 +392,23 @@ pub struct Ladder {
     fast_since: Option<u64>,
     /// Time spent below the next step's threshold since `above_since`, and the last look.
     dip_us: u64,
+    /// The last step was down for the bitrate: frame rate comes back on `fps_up_hold_us`. Not
+    /// after one for encode time (too slow stays so a while), nor between steps up (720p24 ->
+    /// 30 on a 2 Mbps link: on a lucky encode-time sample, and back for encode time 1.3 s later).
+    rate_dip: bool,
+    /// The hold the next step up needs (`up_hold_us` or `fps_up_hold_us`): dips may add up to
+    /// `up_dip_pct` of it.
+    hold_us: u64,
     last_look_us: u64,
     last_down_us: Option<u64>,
     /// (time, encode time us) over the last `ENCODE_WINDOW_US` at the current rung, after the
     /// first `warmup` frames.
     encode: std::collections::VecDeque<(u64, u64)>,
     warmup: u32,
+    /// The last resort is open (see `LadderConfig::resort_below_bps`), and since when the
+    /// bitrate has been past the threshold that changes that.
+    resort: bool,
+    resort_since: Option<u64>,
     /// Caps from the peer's hint: highest rung, highest fps.
     hint_rung: usize,
     hint_fps: u32,
@@ -418,10 +447,14 @@ impl Ladder {
             above_since: None,
             fast_since: None,
             dip_us: 0,
+            rate_dip: false,
+            hold_us: 0,
             last_look_us: 0,
             last_down_us: None,
             encode: Default::default(),
             warmup: ENCODE_WARMUP,
+            resort: false,
+            resort_since: None,
             hint_rung: usize::MAX,
             hint_fps: u32::MAX,
             cpu: Block::default(),
@@ -458,7 +491,8 @@ impl Ladder {
 
     /// The lowest rung the bitrate and encode time may use now (see `LadderConfig::min_rung`).
     fn min_rung(&self) -> usize {
-        self.cfg.min_rung.min(self.cfg.max_rung).min(self.hint_rung).min(self.cfg.rungs.len() - 1)
+        let floor = if self.resort { 0 } else { self.cfg.min_rung };
+        floor.min(self.cfg.max_rung).min(self.hint_rung).min(self.cfg.rungs.len() - 1)
     }
 
     /// First tier index allowed at rung `r` (its `min_fps`; the top tier if none reaches it).
@@ -639,6 +673,7 @@ impl Ladder {
 
     fn set(&mut self, now_us: u64, to: usize, why: StepReason) {
         let resized = self.rung_of(to) != self.rung_of(self.cur);
+        self.rate_dip = to < self.cur && why == StepReason::Rate;
         if self.steps_log.len() >= STEP_LOG {
             self.steps_log.pop_front();
         }
@@ -719,12 +754,14 @@ impl Ladder {
             }
             return false;
         }
+        self.track_resort(now_us, bps);
         if !self.capped(self.cur) {
             let to = self.fit_below(self.cur, bps);
             self.set(now_us, to, StepReason::Cap);
             return true;
         }
-        // Below the lowest rung (a hidden picture shown again): back up to it at once.
+        // Below the lowest rung (a hidden picture shown again, the last resort closed): back up
+        // to it at once.
         if self.rung_of(self.cur) < self.min_rung() {
             let r = self.min_rung();
             let to = self.fit_below(r * self.nt() + self.nt() - 1, bps);
@@ -760,7 +797,7 @@ impl Ladder {
             // A dip: the hold goes on unless the dips add up to too much of it.
             if self.above_since.is_some() {
                 self.dip_us += dt;
-                if self.dip_us * 100 > self.cfg.up_hold_us * self.cfg.up_dip_pct as u64 {
+                if self.dip_us * 100 > self.hold_us * self.cfg.up_dip_pct as u64 {
                     self.above_since = None;
                     self.dip_us = 0;
                 }
@@ -768,18 +805,46 @@ impl Ladder {
             return false;
         };
         let since = *self.above_since.get_or_insert(now_us);
-        let settled = self.last_down_us.is_none_or(|t| now_us - t >= self.cfg.up_after_down_us);
+        let quick = self.rung_of(next) == self.rung_of(self.cur) && self.rate_dip;
+        let (hold_us, after_us) = if quick {
+            (self.cfg.fps_up_hold_us, self.cfg.fps_up_hold_us)
+        } else {
+            (self.cfg.up_hold_us, self.cfg.up_after_down_us)
+        };
+        self.hold_us = hold_us;
+        let settled = self.last_down_us.is_none_or(|t| now_us - t >= after_us);
         // The call start (no step down yet): the path itself has carried the next step's rate.
         let proven = self.last_down_us.is_none()
             && self.proven_bps > 0
             && self.proven_bps as u64 * 100 >= self.floor(self.rate_step(next)) * self.cfg.up_margin_pct as u64;
         self.fast_since = if proven { self.fast_since.or(Some(now_us)) } else { None };
         let fast = self.fast_since.is_some_and(|t| now_us - t >= self.cfg.up_fast_hold_us);
-        if (now_us - since >= self.cfg.up_hold_us && settled) || fast {
+        if (now_us - since >= hold_us && settled) || fast {
             self.set(now_us, next, StepReason::Rate);
             return true;
         }
         false
+    }
+
+    /// Opens or closes the last resort (see `LadderConfig::resort_below_bps`).
+    fn track_resort(&mut self, now_us: u64, bps: u32) {
+        if self.cfg.min_rung == 0 {
+            return;
+        }
+        let (past, after) = if self.resort {
+            (bps >= self.cfg.resort_leave_bps, self.cfg.resort_leave_us)
+        } else {
+            (bps < self.cfg.resort_below_bps, self.cfg.resort_after_us)
+        };
+        if !past {
+            self.resort_since = None;
+            return;
+        }
+        let since = *self.resort_since.get_or_insert(now_us);
+        if now_us - since >= after {
+            self.resort = !self.resort;
+            self.resort_since = None;
+        }
     }
 
     /// The step whose floor decides whether `k` can be reached: a new size at a lower tier than
@@ -1939,6 +2004,10 @@ const INTERVAL_FRAMES: usize = 9;
 const BURST_MIN_BYTES: usize = 3 * 1_200;
 /// ...and the report gives the median of the last 3 s's (a probe goes every 2 s).
 const BURST_WINDOW_US: u64 = 3_000_000;
+/// A frame read in less than this gives none: it waited in the transport's buffer and came out in
+/// one go, so its time is how fast the app read, not the path (2026-10-20 phones: medians of
+/// 0.7-2,000 Gbps). Three packets in 2 ms is 14 Mbps, well over what probing has to judge.
+const BURST_MIN_US: u64 = 2_000;
 
 #[derive(Default)]
 struct Group {
@@ -2094,7 +2163,7 @@ impl Receiver {
             if let Some((t0, b0)) = start
                 && self.cfg.report_burst
                 && total >= BURST_MIN_BYTES
-                && now_us > t0
+                && now_us >= t0 + BURST_MIN_US
                 && total > b0
             {
                 let bps = ((total - b0) as u64 * 8 * 1_000_000 / (now_us - t0)).min(u32::MAX as u64) as u32;
@@ -2414,6 +2483,24 @@ mod tests {
         let got: Vec<_> = std::iter::from_fn(|| rx.poll(0)).map(|f| f.payload).collect();
         assert_eq!(got.len(), 2);
         assert_eq!(&got[1][..], b"d2");
+    }
+
+    #[test]
+    fn burst_read_in_one_go_is_not_timed() {
+        let tx_cfg = SenderConfig::default();
+        let mut tx = Sender::new(tx_cfg);
+        let mut rx = Receiver::new(ReceiverConfig { report_burst: true, ..ReceiverConfig::default() });
+        // A frame that waited in the transport's buffer: 1200-byte reads 10 us apart.
+        let mut t = 0;
+        for o in tx.frame(10, true, &[7u8; 8000]) {
+            if let Out::Write { group, data } = o {
+                for c in data.chunks(1200) {
+                    t += 10;
+                    rx.on_data(t, group, c).unwrap();
+                }
+            }
+        }
+        assert_eq!(rx.report(100_000).unwrap().burst_bps, 0);
     }
 
     #[test]
@@ -2780,11 +2867,13 @@ mod tests {
         l.proven_bps = 800_000;
         assert_eq!(hold(&mut l, 900 * MS, 1_800 * MS, 800_000), 0);
         assert_eq!(hold(&mut l, 1_800 * MS, 2_000 * MS, 800_000), 1);
-        // After the call's first step down the normal holds apply again.
+        // After the call's first step down the normal holds apply again: the frame rate back
+        // after 2 s, a new size not within 10 s.
         let mut l = ladder(5_000_000);
         l.proven_bps = 5_000_000;
-        assert!(l.update(0, 900_000));
-        assert_eq!(hold(&mut l, 100 * MS, 9_900 * MS, 2_000_000), 0);
+        assert!(l.update(0, 450_000));
+        assert_eq!(hold(&mut l, 100 * MS, 9_900 * MS, 2_000_000), 1);
+        assert_eq!(at(&l), (2, 30));
     }
 
     #[test]
@@ -2793,7 +2882,7 @@ mod tests {
         let mut l = ladder(300_000);
         assert_eq!(hold(&mut l, 0, 5_200 * MS, 2_000_000), 1);
         assert_eq!(at(&l), (2, 30));
-        // At 15 fps the tiers come back at once, as far as the rate goes (10 s after the step
+        // At 15 fps the tiers come back at once, as far as the rate goes (2 s after the step
         // down): 750 kbps covers 540p24's 528 kbps x 130%, not 540p30's 780.
         let mut l = ladder(5_000_000);
         assert!(l.update(0, 450_000));
@@ -2810,11 +2899,56 @@ mod tests {
         hold(&mut l, 0, 1_000 * MS, 300_000);
         assert!(l.update(1_000 * MS, 100_000));
         assert_eq!(at(&l), (1, 6));
-        // The rate recovers at once, but no step up within 10 s of the step down; then straight
-        // back to 30 fps (frame-rate steps need no keyframe).
-        assert_eq!(hold(&mut l, 1_100 * MS, 11_000 * MS, 400_000), 0);
-        assert_eq!(hold(&mut l, 11_000 * MS, 11_200 * MS, 400_000), 1);
+        // The rate recovers at once: frame-rate steps need no keyframe, so after 2 s (not the
+        // 10 s a new size waits) straight back to 30 fps.
+        assert_eq!(hold(&mut l, 1_100 * MS, 3_000 * MS, 400_000), 0);
+        assert_eq!(hold(&mut l, 3_000 * MS, 3_200 * MS, 400_000), 1);
         assert_eq!(at(&l), (1, 30));
+        // A new size still waits 10 s after the step down (and 5 s after the last step up).
+        let mut l = ladder(5_000_000);
+        assert!(l.update(0, 450_000));
+        assert_eq!(at(&l), (2, 15));
+        assert_eq!(hold(&mut l, 100 * MS, 9_900 * MS, 2_000_000), 1);
+        assert_eq!(at(&l), (2, 30));
+        assert_eq!(hold(&mut l, 9_900 * MS, 10_200 * MS, 2_000_000), 1);
+        assert_eq!(at(&l), (3, 30));
+    }
+
+    #[test]
+    fn ladder_last_resort_is_180p_after_3_s_starved() {
+        let mut l = ladder(300_000);
+        hold(&mut l, 0, 1_000 * MS, 300_000);
+        assert!(l.update(1_000 * MS, 50_000));
+        assert_eq!(at(&l), (1, 6));
+        // 3 s under 100 kbps: 180p15.
+        assert_eq!(hold(&mut l, 1_100 * MS, 3_900 * MS, 50_000), 0);
+        assert_eq!(hold(&mut l, 3_900 * MS, 4_100 * MS, 50_000), 1);
+        assert_eq!(at(&l), (0, 15));
+        // 5 s at 170 kbps or more: back to 360p at once, at the frame rate 200 kbps covers.
+        hold(&mut l, 4_100 * MS, 9_000 * MS, 200_000);
+        assert_eq!(at(&l).0, 0);
+        hold(&mut l, 9_000 * MS, 9_300 * MS, 200_000);
+        assert_eq!(at(&l), (1, 15));
+        // Under 170 kbps the 5 s start over.
+        let mut l = ladder(300_000);
+        hold(&mut l, 0, 4_000 * MS, 50_000);
+        assert_eq!(at(&l).0, 0);
+        hold(&mut l, 4_000 * MS, 8_000 * MS, 200_000);
+        hold(&mut l, 8_000 * MS, 8_200 * MS, 150_000);
+        hold(&mut l, 8_200 * MS, 13_000 * MS, 200_000);
+        assert_eq!(at(&l).0, 0);
+    }
+
+    #[test]
+    fn ladder_short_starvation_stays_at_360p() {
+        // Dips under 100 kbps shorter than 3 s, again and again: 360p at a low frame rate.
+        let mut l = ladder(300_000);
+        for i in 0..10u64 {
+            let t = i * 4_000 * MS;
+            hold(&mut l, t, t + 2_500 * MS, 50_000);
+            assert_eq!(at(&l).0, 1, "{i}");
+            hold(&mut l, t + 2_500 * MS, t + 4_000 * MS, 300_000);
+        }
     }
 
     #[test]

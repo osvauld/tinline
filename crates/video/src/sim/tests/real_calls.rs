@@ -345,6 +345,23 @@ pub(super) fn duplex_relay(seed: u64) -> (Scenario, Scenario) {
     // The Pixel decodes AV1 with rav1d: ~8 ms at 360p.
     moto.decode_us = 8_000;
     moto.link = side(&mut rng, 1_500_000, vec![]);
+    // `SIM_MOTO_WALK`: the moto's upload wanders like a mobile link (14:38 call: it read a
+    // 30-370 ms queue all call long while the audio round trip stayed flat).
+    if std::env::var_os("SIM_MOTO_WALK").is_some() {
+        moto.link.delay_walk = mobile_walk(&mut rng, d);
+    }
+    // Experiments: `SIM_MIN_RUNG=0` (180p allowed again), `SIM_TIERS=15,24,30`, `SIM_LASTBYTE`.
+    for sc in [&mut pixel, &mut moto] {
+        if let Some(r) = std::env::var("SIM_MIN_RUNG").ok().and_then(|v| v.parse().ok()) {
+            sc.sender.ladder.min_rung = r;
+        }
+        if let Ok(t) = std::env::var("SIM_TIERS") {
+            sc.sender.ladder.tiers = t.split(',').filter_map(|x| x.parse().ok()).collect();
+        }
+        if std::env::var_os("SIM_LASTBYTE").is_some() {
+            sc.receiver.low_fps_delay = false;
+        }
+    }
     (pixel, moto)
 }
 
