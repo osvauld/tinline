@@ -57,8 +57,8 @@ promises one total phone socket.
 
 Commands executed directly as tiny low-compute tests, with `-B` to avoid cache files:
 
-- `python3 -B scripts/test_sync_routing_model.py`: **10 passed**, 0.038 s.
-- `python3 -B scripts/test_connection_budget_model.py`: **12 passed**, 0.003 s.
+- `python3 -B docs/archive/models/test_sync_routing_model.py`: **10 passed**, 0.038 s.
+- `python3 -B docs/archive/models/test_connection_budget_model.py`: **12 passed**, 0.003 s.
 - `git diff --check`: passed for tracked changes; new files were manually reviewed.
 
 No tests ignored. No Rust builds, device operations, real QUIC load tests or battery

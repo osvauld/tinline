@@ -1,7 +1,7 @@
 # Bounded host work and delayed/lossy transport simulation
 
 Status: **offline candidate model only**, before further routing implementation.
-Source: `scripts/test_host_fault_budget_model.py`, an overlay on
+Source: `docs/archive/models/test_host_fault_budget_model.py`, an overlay on
 [the host topology model](host-topology-model.md). Production routing is unchanged.
 
 ## What changed relative to the first topology model
@@ -65,7 +65,7 @@ Owned batch, admitted through the shared queue:
 
 ```sh
 python3 /home/abe/p2p_chat/scripts/buildlock.py --who sync-fault-budget-model -- \
-  python3 -B scripts/test_host_fault_budget_model.py
+  python3 -B docs/archive/models/test_host_fault_budget_model.py
 ```
 
 Latest run: **14 passed, 0 failed, 0 skipped**, approximately 9 seconds.

@@ -81,7 +81,7 @@ Offline models cannot prove cryptographic, transport, persistence or battery cla
 ## Progress checkpoint
 
 - First source-audit report: `sync-connection-audit.md`.
-- Added `scripts/test_connection_budget_model.py`: shared/distinct host demand,
+- Added `docs/archive/models/test_connection_budget_model.py`: shared/distinct host demand,
   multi-device contacts, separate ALPN/local identities and bounded lease/dial
   scheduling. Twelve tests passed.
 - Existing routing model: ten tests passed, including 2,000 seeded transitions.

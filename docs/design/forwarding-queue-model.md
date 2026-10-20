@@ -1,7 +1,7 @@
 # Bounded forwarding and partial handover model
 
 Status: executable offline model only. No production protocol/schema change.
-Source: `scripts/test_forwarding_queue_model.py`.
+Source: `docs/archive/models/test_forwarding_queue_model.py`.
 
 ## Assumptions
 
@@ -58,7 +58,7 @@ There are no measured failure deadlines, discovery guarantees or hysteresis rule
 
 ## Tests
 
-`python3 -B scripts/test_forwarding_queue_model.py`: **12 passed**, 0.315 s on
+`python3 -B docs/archive/models/test_forwarding_queue_model.py`: **12 passed**, 0.315 s on
 latest run; no ignored tests. Includes:
 
 - Laptop acknowledgement distinct from upstream storage.

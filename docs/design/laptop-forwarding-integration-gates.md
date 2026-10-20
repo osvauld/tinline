@@ -58,7 +58,7 @@ backpressure, not delivery success. Give groups fair byte/record budgets; pause 
 history before interactive updates. Fairness under topology churn and partial
 frames needs additional tests beyond stable-target round robin.
 
-Model evidence: `test_forwarding_queue_model.py` checks dropped-hint repair,
+Model evidence: `docs/archive/models/test_forwarding_queue_model.py` checks dropped-hint repair,
 quota/local admission, persistence rejection, independent peer progress and a hot
 group not starving another group, while preserving exact synthetic proof tokens.
 This does not prove actual validators/storage/transport handle those cases.

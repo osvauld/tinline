@@ -1,9 +1,9 @@
 # Group hosts and personal sync devices: offline topology model
 
 Status: **candidate simulation only**, before further production routing changes.
-Source: `scripts/test_host_topology_model.py`; reuses the immutable-record,
+Source: `docs/archive/models/test_host_topology_model.py`; reuses the immutable-record,
 quota-limited replica and issuer-aware receipt primitives in
-`test_forwarding_queue_model.py`. No new production routing is enabled.
+`docs/archive/models/test_forwarding_queue_model.py`. No new production routing is enabled.
 
 ## Roles and assumptions
 
@@ -97,7 +97,7 @@ A new [fault/budget overlay](host-fault-budget-model.md) couples bounded per-dev
 message/Ack work and connections, network-wide new dials, queued frames and delayed
 failure observations. It does not yet combine blob traffic with those global budgets.
 Each link is bounded, but host aggregate work grows with connected members. The
-existing `test_connection_budget_model.py` separately models bounded fair leases;
+existing `docs/archive/models/test_connection_budget_model.py` separately models bounded fair leases;
 it is not yet coupled to this topology's transfers. No capacity/energy inference
 is justified by these counts.
 
@@ -106,10 +106,10 @@ is justified by these counts.
 Owned offline commands (no builds or device sessions):
 
 ```sh
-python3 -B scripts/test_host_topology_model.py
-python3 -B scripts/test_sync_routing_model.py
-python3 -B scripts/test_connection_budget_model.py
-python3 -B scripts/test_forwarding_queue_model.py
+python3 -B docs/archive/models/test_host_topology_model.py
+python3 -B docs/archive/models/test_sync_routing_model.py
+python3 -B docs/archive/models/test_connection_budget_model.py
+python3 -B docs/archive/models/test_forwarding_queue_model.py
 ```
 
 Latest run: **23 + 10 + 12 + 12 = 57 passed; 0 failed, 0 skipped**.
