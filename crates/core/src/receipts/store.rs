@@ -13,6 +13,7 @@ use storage::Sealed;
 pub(crate) struct ReceiptStore {
     db: Sealed,
     opened: Mutex<BTreeSet<String>>,
+    #[cfg(test)]
     joins: Mutex<std::sync::Weak<joins::JoinController>>,
     #[cfg(test)]
     fail_commit: std::sync::atomic::AtomicBool,
@@ -37,7 +38,9 @@ pub(crate) struct Position {
     pub counter: i32,
 }
 /// Provisional sidecar budget, not a negotiated frame or retention ceiling.
+#[cfg(test)]
 pub(crate) const MAX_IMPORT_EVIDENCE: usize = super::calls::MAX_CALL_EVIDENCE;
+#[cfg(test)]
 pub(crate) struct ImportClaim {
     pub entry: Entry,
     /// Only says the signed body was already durable; not proof of historical
@@ -46,7 +49,9 @@ pub(crate) struct ImportClaim {
 }
 pub(crate) struct Committed {
     pub entries: Vec<Entry>,
+    #[cfg_attr(not(test), allow(dead_code))] // read by tests only
     pub update: Option<Vec<u8>>,
+    #[cfg_attr(not(test), allow(dead_code))] // read by tests only
     pub frontier: VersionVector,
 }
 fn io(e: impl std::fmt::Display) -> ReceiptError {
@@ -67,6 +72,7 @@ impl ReceiptStore {
         Arc::new(Self {
             db,
             opened: Mutex::new(BTreeSet::new()),
+            #[cfg(test)]
             joins: Mutex::new(std::sync::Weak::new()),
             #[cfg(test)]
             fail_commit: false.into(),
@@ -150,6 +156,7 @@ impl ReceiptStore {
     }
 
     /// The backing sealed namespace, for store-owned controllers' sidecar rows.
+    #[cfg(test)]
     pub(crate) fn db(&self) -> &Sealed {
         &self.db
     }
@@ -172,6 +179,7 @@ impl Drop for Ledger {
 impl Ledger {
     /// Low-level durably stored claim; caller must verify real source content/
     /// lifecycle and admission under its appropriate locks before issuing it.
+    #[cfg(test)]
     pub(crate) fn write(
         &self,
         claim: &Receipt,
@@ -224,6 +232,7 @@ impl Ledger {
     /// Strict import with supporting originals. Caller must check protocol
     /// semantics, authority/context and peer admission, even for duplicate pulls.
     /// No sidecar-only recovery or adoption of dangling legacy claims is implied.
+    #[cfg(test)]
     pub(crate) fn apply_remote_with_evidence(
         &self,
         update: &[u8],
@@ -337,6 +346,7 @@ impl Ledger {
     }
     /// Strict local call bridge: exact supporting originals and receipt commit
     /// together. This does not itself perform protocol role/lifecycle checks.
+    #[cfg(test)]
     pub(crate) fn write_with_evidence(
         &self,
         claim: &Receipt,
@@ -348,6 +358,7 @@ impl Ledger {
     }
     /// Store-owned controller sidecars only: native receipt, originals and intent
     /// completion must share a transaction. Never exposed to protocol/UI callers.
+    #[cfg(test)]
     fn write_with_evidence_and_ops(
         &self,
         claim: &Receipt,
@@ -401,6 +412,7 @@ impl Ledger {
         admit(std::slice::from_ref(&entry)).map_err(ReceiptError::Policy)?;
         self.commit_with_ops(&mut live, candidate, update, vec![entry], evidence, extra)
     }
+    #[cfg(test)]
     pub(crate) fn evidence(
         &self,
         id: &[u8; 32],
@@ -500,6 +512,7 @@ impl Ledger {
     pub(crate) fn entries(&self) -> Result<Vec<Entry>, ReceiptError> {
         self.state.lock().doc.entries()
     }
+    #[cfg(test)]
     pub(crate) fn raw(&self, id: &str) -> Option<Vec<u8>> {
         self.state.lock().doc.raw(id)
     }
@@ -514,7 +527,9 @@ impl Ledger {
         self.state.lock().doc.export_batch(theirs, limits)
     }
 }
+#[cfg(test)]
 pub(crate) mod bundles;
+#[cfg(test)]
 pub(crate) mod joins;
 pub(crate) mod messages;
 #[cfg(test)]

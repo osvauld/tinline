@@ -113,6 +113,7 @@ impl StorageAttestation {
         Ok(())
     }
     // Only the persisted issuer below is a runtime minting entry point.
+    #[cfg(test)]
     fn sign(
         &self,
         account: &identity::Identity,
@@ -160,6 +161,7 @@ impl GroupCore {
     /// Gate issuance on current persisted hosting authority and persisted original
     /// operations, never a sent/planned VV or a mutable uncommitted day cache.
     /// Uses the importer lock through signing, freezing membership and appends.
+    #[cfg(test)]
     pub(crate) fn issue_storage_attestation(
         &self,
         group: &str,
@@ -212,6 +214,7 @@ impl GroupCore {
     /// First-acceptance authority check using LOCAL persisted metadata. Does not
     /// store/index this proof or change debt/status. Missing context defers; a
     /// claimed old context never overrides current removal/revocation.
+    #[cfg(test)]
     pub(crate) fn verify_storage_attestation(
         &self,
         bytes: &[u8],

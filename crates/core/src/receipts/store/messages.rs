@@ -101,6 +101,7 @@ fn decode_intent(raw: &[u8]) -> Result<ContextIntent, ReceiptError> {
 #[derive(Debug, Clone)]
 pub(crate) struct Issued {
     pub scope: Scope,
+    #[cfg_attr(not(test), allow(dead_code))] // read by tests only
     pub entry: Entry,
 }
 
@@ -263,6 +264,7 @@ impl MessageReceipts {
     }
 
     /// Pending intent rows (bounded page).
+    #[cfg(test)]
     pub(crate) fn pending(&self) -> Result<usize, ReceiptError> {
         Ok(self
             .store
