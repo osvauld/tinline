@@ -26,8 +26,7 @@ import uniffi.p2pcore.GroupRole as CoreRole
 /*
  * Group chat on the core's real API (G1: crates/core/src/group/api.rs, docs/group-core.md).
  * [GroupsController] is what the screens in GroupsLive.kt read; every core call goes through [GroupApi]
- * so the flows are tested on the JVM with a stand-in (GroupsCoreTest). The placeholder preview
- * (GroupsSource.kt, FakeGroupsPrivacy.kt) lives in src/debug for the gallery only (docs/archive/ui-placeholders.md).
+ * so the flows are tested on the JVM with a stand-in (GroupsCoreTest).
  *
  * Decisions (rotation-open-decisions.md §0): 3 admin flags remove a member (U9/U15) and the removed member
  * sees the signed flags; a post written before a removal still shows, marked (U11); only hosts know member

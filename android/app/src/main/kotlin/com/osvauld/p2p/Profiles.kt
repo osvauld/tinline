@@ -58,9 +58,7 @@ interface ProfileStore {
 }
 
 object ProfileBackend {
-    /** Debug gallery only (FakeProfileStore); production never sets it. */
-    @Volatile var override: ProfileStore? = null
-    fun of(app: P2pApp): ProfileStore = override ?: app.profiles
+    fun of(app: P2pApp): ProfileStore = app.profiles
 }
 
 /** UI work is bound to an account session, not just a DID (A -> B -> A is a new session). */
