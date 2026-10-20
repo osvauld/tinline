@@ -6,8 +6,17 @@
 //!
 //! The frames dir holds `f-<W>x<H>-<N>.i420` files, played in name order (raw I420, as `vpxdec --i420 --md5`-style dumps). Window 600x1000.
 
+// The app uses the drawn-size report; this reproducer does not.
+#[allow(dead_code)]
 #[path = "../src/video_surface.rs"]
 mod video_surface;
+
+/// video_surface sizes the picture by the app's window scale; this reproducer draws at 1.0.
+mod ui {
+    pub fn scale() -> f32 {
+        1.0
+    }
+}
 
 use iced::widget::{container, image, image::Handle};
 use iced::{time, Color, ContentFit, Element, Fill, Task};
