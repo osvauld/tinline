@@ -20,12 +20,7 @@ use support::eventually_200ms as eventually;
 use support::wait::now_secs as now;
 use support::*;
 
-const TAG: &str = "p2";
-
-/// A committed identity (with a passphrase, so it is written at once); started or not.
-fn peer(name: &str, started: bool) -> Peer {
-    Peer::committed(TAG, name, started)
-}
+const S: Suite = Suite("p2");
 
 fn claim(ticket: &str) -> proto::InviteClaim {
     proto::ContactTicket::from_text(ticket).unwrap().verify(now()).unwrap()
@@ -38,8 +33,8 @@ fn claim(ticket: &str) -> proto::InviteClaim {
 // once online). A contact redeems the live one and both sides can chat.
 #[test]
 fn after_restore_my_ticket_names_the_current_device_key_and_redeems() {
-    let mut b = peer("new-b", true);
-    let c = peer("new-c", true);
+    let mut b = S.committed("new-b", true);
+    let c = S.committed("new-c", true);
     let before = b.node.my_ticket().unwrap();
     let (old_dev, new_dev) = b.restore_in_place();
     assert_eq!(proto::device_to_text(&claim(&before).device), old_dev);
@@ -76,7 +71,7 @@ fn after_restore_my_ticket_names_the_current_device_key_and_redeems() {
 // as before. Also, once re-issued after a restore, the new ticket is stable across calls.
 #[test]
 fn unchanged_device_key_keeps_the_cached_ticket() {
-    let mut b = peer("same-b", true);
+    let mut b = S.committed("same-b", true);
     let before = b.node.my_ticket().unwrap();
     let dev = b.node.device_key_for_test().unwrap();
     b.reopen();
@@ -101,8 +96,8 @@ fn unchanged_device_key_keeps_the_cached_ticket() {
 // no longer valid" instead of a dial timeout indistinguishable from "B is offline".
 #[test]
 fn a_pre_restore_ticket_fails_without_creating_a_contact() {
-    let mut b = peer("old-b", true);
-    let c = peer("old-c", true);
+    let mut b = S.committed("old-b", true);
+    let c = S.committed("old-c", true);
     let before = b.node.my_ticket().unwrap();
     b.restore_in_place();
     online(&b.node);
