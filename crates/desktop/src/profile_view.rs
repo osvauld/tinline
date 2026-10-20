@@ -952,7 +952,7 @@ impl App {
             tx("Made by Osvauld", 13.0, t.ink2).line_height(lh(18.0)),
         ].spacing(4).align_x(Alignment::Center)).width(Fill).center_x(Fill).padding(Padding { top: 8.0, right: 0.0, bottom: 8.0, left: 0.0 });
         let mut libs = p2pcore::open_source_licences();
-        libs.extend([("Iced", "MIT"), ("WebRTC audio processing", "BSD-3-Clause")].map(|(n, l)| p2pcore::OpenSourceLicence { name: n.into(), licence: l.into() }));
+        libs.extend([("Iced", "MIT"), ("WebRTC audio processing", "BSD-3-Clause"), ("libvpx", "BSD-3-Clause")].map(|(n, l)| p2pcore::OpenSourceLicence { name: n.into(), licence: l.into() }));
         let licences: RowFn = Box::new(move |r| pf_act(t, Some("licence"), "Open-source licences".into(), Some(("The libraries Tinline is built on".into(), t.ink2, false)),
             Some(pgi(if open_ { "chevup" } else { "chev" }, 18.0, t.ink2)), Some(m(Action::ToggleLicences)), false, r));
         let list: RowFn = Box::new(move |_| {
