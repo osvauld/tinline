@@ -13,32 +13,21 @@ pub enum End {
 
 /// `name` is what the user calls the other person. `incoming` and `answered` tell a missed call
 /// from one the user ended; `blocked_by_me` says whose block ended a "blocked" call. Which calls
-/// are hidden or missed is `present::call::end_view`; the headline of a shown screen is [`text`].
+/// are hidden or missed, and the headline, is `present::call::end_view`.
 pub fn present(reason: &str, name: &str, incoming: bool, answered: bool, blocked_by_me: bool) -> End {
     use present::call::{end_view, EndKind};
     let v = end_view(reason.into(), name.into(), incoming, answered, blocked_by_me);
     match v.kind {
         EndKind::Hidden => End::Hidden,
         EndKind::Missed => End::Missed(v.text),
-        EndKind::Screen => text(reason, name, blocked_by_me).map_or(End::Hidden, End::Screen),
+        EndKind::Screen => End::Screen(v.text),
     }
 }
 
-/// User-facing text for a reason token; `None` for tokens that are never shown. The words come
-/// from `present::call::end_reason_text`, except four tokens whose wording the desktop keeps
-/// until the user picks between the desktop and Android phrasing (DECISIONS.md, "End reason").
+/// User-facing text for a reason token; `None` for tokens that are never shown
+/// (`present::call::end_reason_text`; this is the outgoing-call reading for the directional tokens).
 pub fn text(reason: &str, name: &str, blocked_by_me: bool) -> Option<String> {
-    let who = match name.trim() {
-        "" => "They",
-        n => n,
-    };
-    match reason {
-        "cancelled" => Some("Call cancelled".into()),
-        "no_answer" => Some("No answer".into()),
-        "busy" => Some(format!("{who} is busy")),
-        "unavailable" => Some("Turned away while unavailable".into()),
-        r => present::call::end_reason_text(r.into(), name.into(), false, blocked_by_me),
-    }
+    present::call::end_reason_text(reason.into(), name.into(), false, blocked_by_me)
 }
 
 /// One line for a history row. `missed` is the record's flag.
@@ -88,7 +77,7 @@ mod tests {
         assert_eq!(present("superseded", "Ann", false, false, false), End::Hidden);
         assert_eq!(present("declined_local", "Ann", true, false, false), End::Hidden);
         assert_eq!(present("cancelled", "Ann", true, false, false), End::Missed("Missed call from Ann".into()));
-        assert_eq!(present("cancelled", "Ann", false, false, false), End::Screen("Call cancelled".into()));
+        assert_eq!(present("cancelled", "Ann", false, false, false), End::Screen("You cancelled the call".into()));
         assert_eq!(present("hangup_remote", "Ann", true, true, false), End::Screen("Ann hung up".into()));
     }
 }

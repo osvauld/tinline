@@ -9,7 +9,6 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import java.time.format.TextStyle
 import java.time.temporal.ChronoUnit
 import java.util.Locale
 
@@ -35,7 +34,6 @@ fun tickOf(m: Message, receipt: ReceiptTick?, link: Link, online: Boolean, nowMs
 
 
 private val HM = DateTimeFormatter.ofPattern("HH:mm")
-private val DM = DateTimeFormatter.ofPattern("d MMM", Locale.getDefault())
 private fun zone() = ZoneId.systemDefault()
 private fun dateOf(ms: Long) = Instant.ofEpochMilli(ms).atZone(zone()).toLocalDate()
 
@@ -43,13 +41,9 @@ fun msClock(ms: Long): String = Instant.ofEpochMilli(ms).atZone(zone()).format(H
 
 private fun daysAgo(ms: Long, nowMs: Long) = ChronoUnit.DAYS.between(dateOf(ms), dateOf(nowMs))
 
-/** Chat list time: "12:41", "Yesterday", "Mon", "12 Sep". */
-fun listTime(ms: Long, nowMs: Long): String = when (val d = daysAgo(ms, nowMs)) {
-    0L -> msClock(ms)
-    1L -> "Yesterday"
-    in 2..6 -> dateOf(ms).dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault())
-    else -> if (d < 0) msClock(ms) else dateOf(ms).format(DM)
-}
+/** Chat list time: "12:41", "Yesterday", "Monday", "12 Sep" (`uniffi.present.listTime`). */
+fun listTime(ms: Long, nowMs: Long): String =
+    uniffi.present.listTime(ms / 1000, nowMs / 1000, zone().rules.getOffset(Instant.ofEpochMilli(nowMs)).totalSeconds)
 
 /** Day pill in a conversation (Conversation.svelte `dayLabel`): "Today", "Yesterday", else "Thursday 8 Oct" (with the year
  *  when it isn't this year). */
@@ -68,14 +62,8 @@ fun sameDay(a: Long, b: Long): Boolean = dateOf(a) == dateOf(b)
 /** The viewer's top line: "Today, 16:02". */
 fun viewerWhen(ms: Long, nowMs: Long): String = "${dayLabel(ms, nowMs)}, ${msClock(ms)}"
 
-/** "2.4 MB", "184 MB", "812 KB". */
-fun sizeText(bytes: Long): String = when {
-    bytes >= 1_000_000_000 -> String.format(Locale.US, "%.1f GB", bytes / 1e9)
-    bytes >= 100_000_000 -> "${bytes / 1_000_000} MB"
-    bytes >= 1_000_000 -> String.format(Locale.US, "%.1f MB", bytes / 1e6)
-    bytes >= 1000 -> "${bytes / 1000} KB"
-    else -> "$bytes B"
-}
+/** "2.4 MB", "34 MB", "812 KB" (`uniffi.present.bytes`). */
+fun sizeText(bytes: Long): String = uniffi.present.bytes(bytes.toULong())
 
 /** "PDF", "MP4", ... from the name's extension, else the MIME subtype. */
 fun typeLabel(a: Attachment): String =

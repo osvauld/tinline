@@ -62,7 +62,7 @@ fun SignalBars(level: Int, color: Color, modifier: Modifier = Modifier, wave: Bo
 private const val GHOST = .28f
 
 /** link.svelte.ts `SIGNAL_WORD`, by strength 1..4. */
-fun signalWord(level: Int) = when (level) { 4 -> "Strong"; 3 -> "Good"; 2 -> "Fair"; else -> "Weak" }
+fun signalWord(level: Int) = uniffi.present.signalWord(level.toUByte())
 
 /**
  * Loss over the last few seconds, not the whole call, or one bad minute would colour the rest of it.

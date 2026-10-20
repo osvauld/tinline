@@ -39,25 +39,14 @@ fn chip_day(ms: u64) -> String {
     }
 }
 
-/// The sidebar's time column: the time today, else the day.
+/// The sidebar's time column: the time today, else the day (`present::time::list_time`).
 pub(super) fn list_time(ms: u64) -> String {
-    if ms == 0 {
-        return String::new();
-    }
-    match day_label(ms).as_str() {
-        "Today" => hhmm(ms),
-        other => other.to_string(),
-    }
+    let now = Local::now();
+    present::time::list_time((ms / 1000) as i64, now.timestamp(), now.offset().local_minus_utc())
 }
 
 fn size_text(b: u64) -> String {
-    match b {
-        0..=999 => format!("{b} B"),
-        1_000..=999_999 => format!("{} KB", b / 1_000),
-        1_000_000..=9_999_999 => format!("{:.1} MB", b as f64 / 1e6),
-        10_000_000..=999_999_999 => format!("{} MB", b / 1_000_000),
-        _ => format!("{:.1} GB", b as f64 / 1e9),
-    }
+    present::time::bytes(b)
 }
 
 fn kind_label(name: &str) -> String {

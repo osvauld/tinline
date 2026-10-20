@@ -152,26 +152,19 @@ fn badge<'a>(bg: Color, fg: Color, icon: Option<Icon>, s: &str) -> El<'a> {
     container(r).padding([5, 12]).style(ui::plain(bg, 999.0)).into()
 }
 
-/// Age without a time zone: "4 min ago", "3 h ago", "5 d ago".
+/// Age without a time zone: "just now", "4 min ago", "3 h ago" (`present::time::ago`).
 fn ago(now: u64, then: u64) -> String {
-    let d = now.saturating_sub(then);
-    match d {
-        0..=59 => "just now".into(),
-        60..=3599 => format!("{} min ago", d / 60),
-        3600..=86399 => format!("{} h ago", d / 3600),
-        _ if d < 86400 * 14 => format!("{} d ago", d / 86400),
-        _ => format!("{} w ago", d / (86400 * 7)),
-    }
+    present::time::ago(now as i64, then as i64)
 }
 
 fn now_secs() -> u64 {
     std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0)
 }
 
-/// 1-4 bars from round-trip time and loss, with the call screen's words (call_ui::strength).
-fn quality(rtt_ms: u32, loss_pct: f64) -> (u8, &'static str) {
-    let n = crate::call_ui::strength(rtt_ms, loss_pct);
-    (n, crate::call_ui::SIGNAL_WORD[n as usize])
+/// 1-4 bars from round-trip time and loss, with the call screen's words.
+fn quality(rtt_ms: u32, loss_pct: f64) -> (u8, String) {
+    let q = present::call::call_quality(rtt_ms, loss_pct);
+    (q.bars, q.label)
 }
 
 /// Banner content: title, body, optional action, is-error.

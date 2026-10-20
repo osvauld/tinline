@@ -126,7 +126,7 @@ impl App {
             Step::Failed(reason) => {
                 let retry = if reason == "locked" { None } else { Some(Msg::LinkRegen) };
                 let col = column![
-                    banner(t, "Not linked", failure_text(reason), None, true),
+                    banner(t, "Not linked", &failure_text(reason), None, true),
                     self.wide("Try again", Kind::Primary, t, retry.filter(|_| !self.busy)),
                     self.wide(if existing { "Back to Settings" } else { "Back" }, Kind::Quiet, t, Some(Msg::LinkCancel)),
                 ]

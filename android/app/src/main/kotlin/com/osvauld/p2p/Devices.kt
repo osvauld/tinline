@@ -18,16 +18,7 @@ import kotlinx.coroutines.withContext
 import uniffi.p2pcore.LinkedDevice
 
 /** "2 min ago", "3 hours ago", "23 days ago" for a unix-seconds timestamp. */
-fun agoText(secs: Long, nowSecs: Long = System.currentTimeMillis() / 1000): String {
-    val d = (nowSecs - secs).coerceAtLeast(0)
-    fun n(v: Long, unit: String) = "$v $unit${if (v == 1L) "" else "s"} ago"
-    return when {
-        d < 60 -> "just now"
-        d < 3600 -> n(d / 60, "min").replace("mins", "min")
-        d < 86400 -> n(d / 3600, "hour")
-        else -> n(d / 86400, "day")
-    }
-}
+fun agoText(secs: Long, nowSecs: Long = System.currentTimeMillis() / 1000): String = uniffi.present.ago(nowSecs, secs)
 
 /** The registry of the account, re-read whenever the core says it changed. */
 @Composable

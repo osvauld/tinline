@@ -177,10 +177,8 @@ fun TinField(
 
 // ------------------------------------------------------------------ avatar
 
-private fun hashOf(s: String): Int { var h = 0; for (ch in s) h = h * 31 + ch.code; return h and 0x7fffffff }
-
-/** Which of the six avatar tints a key (DID or name) gets. */
-internal fun avatarHue(key: String): Int = hashOf(key) % uniffi.present.avatarSlotCount().toInt()
+/** Which of the avatar tints a key (DID or name) gets: FNV-1a over UTF-8 in `uniffi.present`. */
+internal fun avatarHue(key: String): Int = uniffi.present.avatarSlot(key, uniffi.present.avatarSlotCount()).toInt()
 
 /** The person avatar (lib/ui/Avatar.svelte via [PgAvatar]): [key] is the person's DID where there is one, so their picture shows. */
 @Composable

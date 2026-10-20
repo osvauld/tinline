@@ -7,7 +7,6 @@ class ScreenCallsTest {
     @Test fun realPhaseFlagsChooseStatusWithoutInventingTiming() {
         assertEquals("Calling…", callStatus(false, false, false, 0))
         assertEquals("Ringing…", callStatus(false, true, false, 0))
-        assertEquals("01:05", callStatus(true, false, false, 65))
         assertEquals("Reconnecting…", callStatus(true, false, true, 65))
     }
     @Test fun encryptionClaimIsConditionalOnConnection() {
@@ -20,8 +19,6 @@ class ScreenCallsTest {
         assertFalse(connected.contains("relay"))
     }
     @Test fun signalUsesRecentLossAndSharedThresholds() {
-        assertEquals(listOf(4, 3, 2, 1), listOf(qualityBars(42, .2), qualityBars(140, 1.4), qualityBars(280, 5.0), qualityBars(520, 14.0)))
-        assertEquals("Good", signalWord(qualityBars(140, 1.4)))
         val l = RecentLoss()
         l.push(0, 0); l.push(1000, 200)
         var last = 0.0

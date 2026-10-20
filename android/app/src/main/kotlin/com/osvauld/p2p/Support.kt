@@ -64,14 +64,7 @@ fun openUrl(c: Context, url: String) {
     try { c.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) } catch (_: Exception) {}
 }
 
-/** Bars (1-4) from round-trip time and loss, as the tokens board describes: 4 Excellent, 3 Good, 2 OK, 1 Poor. */
-/** link.svelte.ts `strength()`, the same thresholds on every app: 4 Strong rtt < 100 ms and loss < 1 % ·
- *  3 Good < 200 / < 3 % · 2 Fair < 350 / < 8 % · 1 Weak. Loss is the recent loss ([RecentLoss]). */
-fun qualityBars(rttMs: Int, lossPct: Double): Int = when {
-    rttMs < 100 && lossPct < 1.0 -> 4
-    rttMs < 200 && lossPct < 3.0 -> 3
-    rttMs < 350 && lossPct < 8.0 -> 2
-    else -> 1
-}
+/** Bars (1-4) from round-trip time and loss (thresholds and words: `uniffi.present.callQuality`). */
+fun qualityBars(rttMs: Int, lossPct: Double): Int = uniffi.present.callQuality(rttMs.toUInt(), lossPct).bars.toInt()
 
 fun qualityLabel(bars: Int) = signalWord(bars)

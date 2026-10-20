@@ -692,7 +692,7 @@ private fun SelfView(app: P2pApp, front: Boolean, modifier: Modifier) {
 @Composable
 private fun EndedRoute(e: EndedUi, meName: String, onClose: () -> Unit, onAgain: () -> Unit) {
     if (uniffi.present.classifyEnd(e.reason) == uniffi.present.EndClass.UNREACHABLE && !e.wasActive) UnreachableContent(e.peerName, e.peerDid, meName, onAgain, onClose)
-    else EndedContent(e.peerName, e.peerDid, meName, uniffi.present.endReasonText(e.reason, e.peerName, e.incoming, P2pApp.instance.blocks.value.blockedByMe(e.peerDid)), if (e.wasActive) e.secs else null, e.direct, e.bars, onAgain, onClose)
+    else EndedContent(e.peerName, e.peerDid, meName, (uniffi.present.endReasonText(e.reason, e.peerName, e.incoming, P2pApp.instance.blocks.value.blockedByMe(e.peerDid)) ?: "Call ended"), if (e.wasActive) e.secs else null, e.direct, e.bars, onAgain, onClose)
 }
 
 @Composable

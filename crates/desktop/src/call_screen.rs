@@ -40,7 +40,7 @@ impl App {
             let live = !incoming && !matches!(c.state, CallState::Ended { .. });
             let (level, _) = self.signal_now();
             let info_label = if reconnecting { "About this call. Reconnecting.".to_string() }
-                else if level > 0 { format!("About this call. {} signal, {}.", crate::call_ui::SIGNAL_WORD[level as usize], path.unwrap_or("Relayed").to_lowercase()) }
+                else if level > 0 { format!("About this call. {} signal, {}.", crate::call_ui::signal_word(level), path.unwrap_or("Relayed").to_lowercase()) }
                 else { "About this call".into() };
             let bars = button(container(ui::signal_bars(self.fx.bar_alphas(), 24.0, t.ink)).center_x(44).center_y(44))
                 .padding(0).width(44).height(44).style(ui::button_style(t, Kind::Ghost, 999.0)).on_press(Msg::CallUi(Action::About));
@@ -140,7 +140,7 @@ impl App {
             ].size(13).line_height(lh(19.0)));
             let (level, wave) = self.signal_now();
             let title = if wave { "Reconnecting".to_string() }
-                else { format!("{} signal · {}", crate::call_ui::SIGNAL_WORD[level as usize], if st.direct { "Direct" } else { "Relayed" }) };
+                else { format!("{} signal · {}", crate::call_ui::signal_word(level), if st.direct { "Direct" } else { "Relayed" }) };
             let mut line = if wave { format!("The connection dropped for a moment. Tinline is finding a way back to {first}.") }
                 else if st.direct { format!("Your call goes straight between your device and {first}’s.") }
                 else { "Your devices can’t reach each other directly right now, so a relay passes the call along. It can’t listen.".into() };
