@@ -180,17 +180,7 @@ fun TinField(
 private fun hashOf(s: String): Int { var h = 0; for (ch in s) h = h * 31 + ch.code; return h and 0x7fffffff }
 
 /** Which of the six avatar tints a key (DID or name) gets. */
-internal fun avatarHue(key: String): Int = hashOf(key) % 6
-
-fun initialsOf(name: String): String {
-    // First letter or digit of each word, so "Lena (work)" is "LW", not "L(".
-    val parts = name.trim().split(Regex("\\s+")).mapNotNull { w -> w.firstOrNull { it.isLetterOrDigit() } }
-    return when {
-        parts.isEmpty() -> "?"
-        parts.size == 1 -> parts[0].toString().uppercase()
-        else -> (parts[0].toString() + parts.last()).uppercase()
-    }
-}
+internal fun avatarHue(key: String): Int = hashOf(key) % uniffi.present.avatarSlotCount().toInt()
 
 /** The person avatar (lib/ui/Avatar.svelte via [PgAvatar]): [key] is the person's DID where there is one, so their picture shows. */
 @Composable

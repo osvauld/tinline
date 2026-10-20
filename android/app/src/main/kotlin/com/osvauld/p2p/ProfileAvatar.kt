@@ -160,7 +160,7 @@ fun PgAvatar(name: String, hue: Int, size: Dp, person: String? = null, modifier:
             val gold = c.gold
             Box(Modifier.fillMaxSize().drawBehind { drawFingerprint(art, fg, gold) })
         } else Text(
-            initialsOf(name), color = fg, maxLines = 1, softWrap = false,
+            uniffi.present.initials(name), color = fg, maxLines = 1, softWrap = false,
             style = TextStyle(
                 fontFamily = Figtree, fontSize = fontPx.sp, lineHeight = fontPx.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.02.em,
                 platformStyle = PlatformTextStyle(includeFontPadding = false),

@@ -3,7 +3,6 @@ package com.osvauld.p2p
 import uniffi.p2pcore.CallRecord
 import uniffi.p2pcore.Contact
 import java.time.Instant
-import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
@@ -11,7 +10,7 @@ import java.time.temporal.ChronoUnit
 import java.util.Locale
 
 /** Name to show for a contact: the alias we gave them if any, else what they call themselves. */
-fun Contact.display(): String = alias?.takeIf { it.isNotBlank() } ?: name.ifBlank { "Unnamed" }
+fun Contact.display(): String = uniffi.present.displayName(alias, name)
 
 /** One call in the Recent section / a contact's history, already worded. */
 data class RecentCall(
@@ -32,41 +31,16 @@ private val DM = DateTimeFormatter.ofPattern("d MMM", Locale.getDefault())
 private fun zone() = ZoneId.systemDefault()
 private fun dayOf(secs: Long) = Instant.ofEpochSecond(secs).atZone(zone()).toLocalDate()
 private fun hm(secs: Long) = Instant.ofEpochSecond(secs).atZone(zone()).format(HM)
-private fun weekday(d: LocalDate) = d.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault())
 private fun daysBetween(at: Long, now: Long) = ChronoUnit.DAYS.between(dayOf(at), dayOf(now))
 
+/** UTC offset (seconds east) at [at]: the one zone fact `uniffi.present` needs for the time words. */
+private fun utcOffset(at: Long) = zone().rules.getOffset(Instant.ofEpochSecond(at)).totalSeconds
+
 /** Relative "when" for the Recent list: "4 min ago", "12:31", "Yesterday · 08:15", "Mon · 09:12", "12 Sep". */
-fun whenShort(at: Long, now: Long): String {
-    val ago = now - at
-    val days = daysBetween(at, now)
-    return when {
-        ago < 60 -> "just now"
-        ago < 3600 -> "${ago / 60} min ago"
-        days <= 0L -> hm(at)
-        days == 1L -> "Yesterday · ${hm(at)}"
-        days < 7 -> "${weekday(dayOf(at))} · ${hm(at)}"
-        else -> dayOf(at).format(DM)
-    }
-}
+fun whenShort(at: Long, now: Long): String = uniffi.present.whenShort(at, now, utcOffset(now))
 
 /** "Today, 12:31" / "Yesterday, 19:04" / "Mon, 09:12" / "12 Sep, 09:12". */
-fun whenLong(at: Long, now: Long): String {
-    val days = daysBetween(at, now)
-    val day = when {
-        days <= 0L -> "Today"
-        days == 1L -> "Yesterday"
-        days < 7 -> weekday(dayOf(at))
-        else -> dayOf(at).format(DM)
-    }
-    return "$day, ${hm(at)}"
-}
-
-/** "42 s", "18 min", "1 h 5 min". */
-fun durationText(secs: Long): String = when {
-    secs < 60 -> "$secs s"
-    secs < 3600 -> "${(secs + 30) / 60} min"
-    else -> "${secs / 3600} h ${secs % 3600 / 60} min"
-}
+fun whenLong(at: Long, now: Long): String = uniffi.present.whenLong(at, now, utcOffset(now))
 
 fun CallRecord.toRecent(contacts: Map<String, Contact>, now: Long): RecentCall {
     val at = startedAt.toLong()
@@ -86,7 +60,7 @@ fun CallRecord.toRecent(contacts: Map<String, Contact>, now: Long): RecentCall {
     }
     val secs = durationSecs.toLong()
     val detail = when {
-        secs > 0 -> durationText(secs)
+        secs > 0 -> uniffi.present.durationText(secs)
         kind == RecentCall.Kind.Outgoing || kind == RecentCall.Kind.Incoming -> when (reason) {
             "declined", "declined_local" -> "declined"
             "cancelled" -> "cancelled"

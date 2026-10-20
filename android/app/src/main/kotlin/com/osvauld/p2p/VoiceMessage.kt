@@ -197,11 +197,6 @@ fun rememberVoiceRecState(onSend: (RecordedVoice) -> Unit): VoiceRecState {
     return state
 }
 
-fun formatMs(ms: Int): String {
-    val s = (ms + 500) / 1000
-    return "%d:%02d".format(s / 60, s % 60)
-}
-
 /** The mic button. Hold to record, release to send, slide left to cancel, up to lock (then it becomes Send). */
 @Composable
 fun VoiceMicButton(state: VoiceRecState, modifier: Modifier = Modifier) {
@@ -283,7 +278,7 @@ fun VoiceRecordingBar(state: VoiceRecState, modifier: Modifier = Modifier) {
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         Box(Modifier.size(10.dp).background(c.er, CircleShape))
-        Text(formatMs(state.elapsedMs), color = c.ink, style = TinType.mono.copy(fontSize = 15.sp))
+        Text(uniffi.present.clockMs(state.elapsedMs.toUInt()), color = c.ink, style = TinType.mono.copy(fontSize = 15.sp))
         if (state.locked) {
             Box(Modifier.weight(1f))
             Box(
@@ -469,6 +464,6 @@ fun VoiceBubbleContent(id: String, path: String, durationMs: Int, waveform: Byte
                 drawRoundRect(if ((i + 0.5f) / n <= progress) c.pr else idle, Offset(x, (size.height - h) / 2), Size(barW, h), CornerRadius(barW / 2))
             }
         }
-        Text(formatMs(shown), fontFamily = PlexMono, fontSize = 12.sp, color = if (outgoing) c.onPrc else c.ink2)
+        Text(uniffi.present.clockMs(shown.toUInt()), fontFamily = PlexMono, fontSize = 12.sp, color = if (outgoing) c.onPrc else c.ink2)
     }
 }

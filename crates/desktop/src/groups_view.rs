@@ -116,7 +116,7 @@ impl App {
             real = real.push(tx("Nobody is blocked. To block someone, open them in Contacts and choose Block.", 14.0, t.ink2));
         }
         real = real.push(
-            container(column![semi("Unblocking", 13.0, t.ink), tx(crate::blocks::UNBLOCK_NOTE, 13.0, t.ink2)].spacing(4))
+            container(column![semi("Unblocking", 13.0, t.ink), tx(present::block::unblock_note(), 13.0, t.ink2)].spacing(4))
                 .padding(12)
                 .width(Fill)
                 .style(ui::plain(t.surface2, 12.0)),

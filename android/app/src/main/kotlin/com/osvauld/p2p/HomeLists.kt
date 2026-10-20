@@ -127,12 +127,6 @@ fun callWhat(r: CallRecord): String = when {
     }
 }
 
-/** fmtShort: m:ss, or h:mm:ss. */
-fun fmtShort(secs: Long): String {
-    val h = secs / 3600; val m = secs % 3600 / 60; val s = secs % 60
-    return if (h > 0) "%d:%02d:%02d".format(h, m, s) else "%d:%02d".format(m, s)
-}
-
 /**
  * Group calls on the Calls tab (CallsList.svelte, 2026-10-14): [log] is the core's group call log, [names] the groups I am
  * still in (a group I left has no row). The avatar opens the group's info, the row starts or joins a call there.
@@ -185,7 +179,7 @@ fun CallsTabBody(
                 Row(
                     Modifier.weight(1f).heightIn(min = 68.dp).pressable({ if (callable) onCall(r.peerDid) else onProfile(r.peerDid) }, RowShape)
                         .semantics(mergeDescendants = true) {
-                            contentDescription = "$name, $what call" + (if (r.durationSecs > 0u) ", " + fmtShort(r.durationSecs.toLong()) else "") + ", $stamp. " + if (callable) "Call" else "Can’t call"
+                            contentDescription = "$name, $what call" + (if (r.durationSecs > 0u) ", " + uniffi.present.clock(r.durationSecs.toLong()) else "") + ", $stamp. " + if (callable) "Call" else "Can’t call"
                         }
                         .padding(start = 12.dp, top = 8.dp, bottom = 8.dp),
                     verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -195,7 +189,7 @@ fun CallsTabBody(
                         val fg = if (bad) c.danger else c.ink2
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                             Icon(if (r.incoming) PgIcons.CallIn else PgIcons.CallOut, null, tint = fg, modifier = Modifier.size(15.dp))
-                            Text(if (r.durationSecs > 0u) "$what · ${fmtShort(r.durationSecs.toLong())}" else what, style = TinFs.sub.copy(lineHeight = 21.sp, fontFeatureSettings = "tnum"), color = fg, maxLines = 1)
+                            Text(if (r.durationSecs > 0u) "$what · ${uniffi.present.clock(r.durationSecs.toLong())}" else what, style = TinFs.sub.copy(lineHeight = 21.sp, fontFeatureSettings = "tnum"), color = fg, maxLines = 1)
                         }
                     }
                     Text(stamp, style = TinFs.meta, color = c.ink2)

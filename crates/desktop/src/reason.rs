@@ -12,54 +12,38 @@ pub enum End {
 }
 
 /// `name` is what the user calls the other person. `incoming` and `answered` tell a missed call
-/// from one the user ended.
-pub fn present(reason: &str, name: &str, incoming: bool, answered: bool) -> End {
-    match reason {
-        "superseded" | "declined_local" => End::Hidden,
-        "cancelled" | "no_answer" if incoming && !answered => End::Missed(format!("Missed call from {name}")),
-        "busy" if incoming => End::Missed(format!("Missed call from {name}")),
-        r => match text(r, name) {
-            Some(t) => End::Screen(t),
-            None => End::Hidden,
-        },
+/// from one the user ended; `blocked_by_me` says whose block ended a "blocked" call. Which calls
+/// are hidden or missed is `present::call::end_view`; the headline of a shown screen is [`text`].
+pub fn present(reason: &str, name: &str, incoming: bool, answered: bool, blocked_by_me: bool) -> End {
+    use present::call::{end_view, EndKind};
+    let v = end_view(reason.into(), name.into(), incoming, answered, blocked_by_me);
+    match v.kind {
+        EndKind::Hidden => End::Hidden,
+        EndKind::Missed => End::Missed(v.text),
+        EndKind::Screen => text(reason, name, blocked_by_me).map_or(End::Hidden, End::Screen),
     }
 }
 
-/// User-facing text for a reason token; `None` for tokens that are never shown.
-pub fn text(reason: &str, name: &str) -> Option<String> {
-    Some(match reason {
-        "hangup_local" => "You hung up".into(),
-        "hangup_remote" => format!("{name} hung up"),
-        "declined" => format!("{name} declined"),
-        "declined_local" => "You declined".into(),
-        "cancelled" => "Call cancelled".into(),
-        "no_answer" => "No answer".into(),
-        "unreachable" => format!("Couldn\u{2019}t reach {name}"),
-        "connection_lost" => "Connection lost".into(),
-        "busy" => format!("{name} is busy"),
-        "unavailable" => "Turned away while unavailable".into(),
-        "answered_elsewhere" => "Answered on another device".into(),
-        "declined_elsewhere" => "Declined on another device".into(),
-        // Either side's block ends the call with this token; the app says "You blocked X" when
-        // it was ours.
-        "blocked" => format!("{} blocked you", crate::blocks::first_name(name)),
-        // P6: they let us message them but not call.
-        "calls not allowed" => format!("{} hasn\u{2019}t allowed calls from you", crate::blocks::first_name(name)),
-        "superseded" => return None,
-        // Tokens from a newer core: say something rather than nothing.
-        _ => "Call ended".into(),
-    })
+/// User-facing text for a reason token; `None` for tokens that are never shown. The words come
+/// from `present::call::end_reason_text`, except four tokens whose wording the desktop keeps
+/// until the user picks between the desktop and Android phrasing (DECISIONS.md, "End reason").
+pub fn text(reason: &str, name: &str, blocked_by_me: bool) -> Option<String> {
+    let who = match name.trim() {
+        "" => "They",
+        n => n,
+    };
+    match reason {
+        "cancelled" => Some("Call cancelled".into()),
+        "no_answer" => Some("No answer".into()),
+        "busy" => Some(format!("{who} is busy")),
+        "unavailable" => Some("Turned away while unavailable".into()),
+        r => present::call::end_reason_text(r.into(), name.into(), false, blocked_by_me),
+    }
 }
 
 /// One line for a history row. `missed` is the record's flag.
 pub fn history(reason: &str, incoming: bool, missed: bool, secs: u32, name: &str) -> String {
-    let dur = |s: u32| {
-        if s >= 3600 {
-            format!("{}:{:02}:{:02}", s / 3600, s / 60 % 60, s % 60)
-        } else {
-            format!("{}:{:02}", s / 60, s % 60)
-        }
-    };
+    let dur = |s: u32| present::time::clock(s as i64);
     if missed {
         return "Missed".into();
     }
@@ -75,7 +59,7 @@ pub fn history(reason: &str, incoming: bool, missed: bool, secs: u32, name: &str
         "blocked" => "Blocked".into(),
         "calls not allowed" => "Calls not allowed".into(),
         _ if secs > 0 => format!("{} \u{b7} {}", if incoming { "Incoming" } else { "Outgoing" }, dur(secs)),
-        r => text(r, name).unwrap_or_else(|| "Call".into()),
+        r => text(r, name, false).unwrap_or_else(|| "Call".into()),
     }
 }
 
@@ -85,26 +69,26 @@ mod tests {
 
     #[test]
     fn vocabulary() {
-        assert_eq!(text("hangup_local", "Ann").as_deref(), Some("You hung up"));
-        assert_eq!(text("hangup_remote", "Ann").as_deref(), Some("Ann hung up"));
-        assert_eq!(text("declined", "Ann").as_deref(), Some("Ann declined"));
-        assert_eq!(text("no_answer", "Ann").as_deref(), Some("No answer"));
-        assert_eq!(text("unreachable", "Ann").as_deref(), Some("Couldn\u{2019}t reach Ann"));
-        assert_eq!(text("connection_lost", "Ann").as_deref(), Some("Connection lost"));
-        assert_eq!(text("superseded", "Ann"), None);
-        assert_eq!(text("answered_elsewhere", "Ann").as_deref(), Some("Answered on another device"));
+        assert_eq!(text("hangup_local", "Ann", false).as_deref(), Some("You hung up"));
+        assert_eq!(text("hangup_remote", "Ann", false).as_deref(), Some("Ann hung up"));
+        assert_eq!(text("declined", "Ann", false).as_deref(), Some("Ann declined"));
+        assert_eq!(text("no_answer", "Ann", false).as_deref(), Some("No answer"));
+        assert_eq!(text("unreachable", "Ann", false).as_deref(), Some("Couldn\u{2019}t reach Ann"));
+        assert_eq!(text("connection_lost", "Ann", false).as_deref(), Some("Connection lost"));
+        assert_eq!(text("superseded", "Ann", false), None);
+        assert_eq!(text("answered_elsewhere", "Ann", false).as_deref(), Some("Answered on another device"));
         assert_eq!(history("declined_elsewhere", true, false, 0, "Ann"), "Declined on another device");
-        assert_eq!(text("blocked", "Ann Lee").as_deref(), Some("Ann blocked you"));
+        assert_eq!(text("blocked", "Ann Lee", false).as_deref(), Some("Ann blocked you"));
         assert_eq!(history("blocked", false, false, 0, "Ann"), "Blocked");
-        assert_eq!(text(p2pcore::CALLS_NOT_ALLOWED, "Ann Lee").as_deref(), Some("Ann hasn\u{2019}t allowed calls from you"));
+        assert_eq!(text(p2pcore::CALLS_NOT_ALLOWED, "Ann Lee", false).as_deref(), Some("Ann hasn\u{2019}t allowed calls from you"));
     }
 
     #[test]
     fn presentation() {
-        assert_eq!(present("superseded", "Ann", false, false), End::Hidden);
-        assert_eq!(present("declined_local", "Ann", true, false), End::Hidden);
-        assert_eq!(present("cancelled", "Ann", true, false), End::Missed("Missed call from Ann".into()));
-        assert_eq!(present("cancelled", "Ann", false, false), End::Screen("Call cancelled".into()));
-        assert_eq!(present("hangup_remote", "Ann", true, true), End::Screen("Ann hung up".into()));
+        assert_eq!(present("superseded", "Ann", false, false, false), End::Hidden);
+        assert_eq!(present("declined_local", "Ann", true, false, false), End::Hidden);
+        assert_eq!(present("cancelled", "Ann", true, false, false), End::Missed("Missed call from Ann".into()));
+        assert_eq!(present("cancelled", "Ann", false, false, false), End::Screen("Call cancelled".into()));
+        assert_eq!(present("hangup_remote", "Ann", true, true, false), End::Screen("Ann hung up".into()));
     }
 }

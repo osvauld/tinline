@@ -22,16 +22,10 @@ fn hhmm(ms: u64) -> String {
 }
 
 /// "Today", "Yesterday", a weekday within the last week, else "12 Sep" (with the year if old).
+/// The words are `present::time::day_label`; the clock and the zone are read here.
 fn day_label(ms: u64) -> String {
-    let (Some(d), now) = (local(ms), Local::now()) else { return String::new() };
-    let days = (now.date_naive() - d.date_naive()).num_days();
-    match days {
-        0 => "Today".into(),
-        1 => "Yesterday".into(),
-        2..=6 => d.format("%A").to_string(),
-        _ if d.year() == now.year() => d.format("%-d %b").to_string(),
-        _ => d.format("%-d %b %Y").to_string(),
-    }
+    let now = Local::now();
+    present::time::day_label((ms / 1000) as i64, now.timestamp(), now.offset().local_minus_utc())
 }
 
 /// Conversation.svelte day chip (`dayLabel`): Today, Yesterday, else "Thursday 8 Oct" (the year when not this year).
@@ -320,7 +314,7 @@ impl App {
             Composer::BlockedByMe => self.composer_footer(
                 t,
                 row![
-                    tx(crate::blocks::blocked_by_me_line(&name), 14.0, t.ink2).width(Fill),
+                    tx(present::block::blocked_by_me_line(name.clone()), 14.0, t.ink2).width(Fill),
                     pill(t, Kind::Primary, None, "Unblock", Some(Msg::Unblock(c.did.clone()))),
                 ]
                 .spacing(12)
@@ -329,12 +323,12 @@ impl App {
             ),
             Composer::BlockedMe => self.composer_footer(
                 t,
-                tx(format!("You can\u{2019}t send messages to {}.", crate::blocks::first_name(&name)), 14.0, t.ink2).into(),
+                tx(present::block::cant_send_text(name.clone()), 14.0, t.ink2).into(),
             ),
             Composer::NotContact => self.composer_footer(
                 t,
                 row![
-                    tx(crate::blocks::not_contact_line(&name), 14.0, t.ink2).width(Fill),
+                    tx(present::block::not_contact_line(name.clone()), 14.0, t.ink2).width(Fill),
                     pill(t, Kind::Quiet, Some(Icon::UserPlus), "Add contact", Some(Msg::OpenAdd)),
                 ]
                 .spacing(12)
@@ -353,7 +347,7 @@ impl App {
 
     /// The quiet line (we block them) or the signed notice (they block us) under the messages.
     fn block_note<'a>(&self, t: Tok, peer: &str, name: &str) -> El<'a> {
-        let first = crate::blocks::first_name(name).to_string();
+        let first = present::names::first_word(name).to_string();
         if self.blocks.blocked_by_me(peer) {
             let at = self.blocks.list.iter().find(|b| b.did == peer).map(|b| b.blocked_at).unwrap_or(0);
             let when = if at > 0 { format!(" \u{b7} {}", block_when(at)) } else { String::new() };
@@ -363,7 +357,7 @@ impl App {
                 .into();
         }
         let Some(at) = self.blocks.blocked_me(peer) else { return Space::new().into() };
-        let (title, body) = crate::blocks::blocked_you_card(name);
+        let (title, body) = (present::block::blocked_you_title(name.to_string()), present::block::blocked_you_body(name.to_string()));
         container(
             container(
                 column![
@@ -386,7 +380,7 @@ impl App {
     /// call records as pills on the caller's side, and runs of one sender's messages stacked (10 px between
     /// runs, 2 px inside, the facing corners tight). The offline strip lies over the top of the list.
     fn message_list<'a>(&'a self, t: Tok, name: &str) -> El<'a> {
-        let first = crate::blocks::first_name(name).to_string();
+        let first = present::names::first_word(name).to_string();
         if self.chat.msgs.is_empty() {
             let mut empty = column![].spacing(0).align_x(Alignment::Center).max_width(320);
             if !self.chat.loading {
@@ -581,7 +575,7 @@ impl App {
         // A photo (Framed, 2026-10-14): the bubble is the photo plus a 3 px rim; caption and time keep to its width.
         let pbox = if m.deleted { None } else { self.photo_box(m) };
         let inner_max = match pbox { Some((bw, _)) => bw - 18.0, None => (max_bub - 26.0).max(80.0) };
-        let first = crate::blocks::first_name(name).to_string();
+        let first = present::names::first_word(name).to_string();
         let side = if m.outgoing { geom::Side::Right } else { geom::Side::Left };
         let radii = geom::bubble_radii(pos, side, geom::R_BUB, geom::R_BUB_TIGHT);
         // .meta: 11px, gap 3: "edited", the time, then my tick (check, or a clock while it waits).
@@ -672,7 +666,7 @@ impl App {
         }
         if self.blocks.not_delivered(&m.peer_did, &m.id) && m.outgoing {
             // .fail: under my message, the not-delivered ink (the tick's), "Not delivered".
-            let note = container(tx(crate::blocks::not_delivered_text(name), 12.0, t.tick_bad).line_height(lh(16.0))).align_right(Fill).padding(Padding { top: 3.0, right: 2.0, ..Padding::ZERO });
+            let note = container(tx(present::block::not_delivered_text(name.to_string()), 12.0, t.tick_bad).line_height(lh(16.0))).align_right(Fill).padding(Padding { top: 3.0, right: 2.0, ..Padding::ZERO });
             return self.row_with_menu(t, m, name, bubble.into(), Some(note.into()));
         }
         self.row_with_menu(t, m, name, bubble.into(), None)
@@ -746,7 +740,7 @@ impl App {
             return None;
         }
         let st = self.chat.receipts.get(&m.id)?;
-        let first = crate::blocks::first_name(&self.chat_name(&m.peer_did)).to_string();
+        let first = present::names::first_word(&self.chat_name(&m.peer_did)).to_string();
         let head = match st.tick {
             ReceiptTick::Read => format!("Read on {first}\u{2019}s device"),
             ReceiptTick::Delivered => format!("On {first}\u{2019}s device"),
@@ -759,7 +753,7 @@ impl App {
             if r.proofs.is_empty() {
                 continue;
             }
-            out.push(format!("Signed by {}", crate::blocks::first_name(&self.chat_name(&r.did))));
+            out.push(format!("Signed by {}", present::names::first_word(&self.chat_name(&r.did))));
             // One line per signing device: which of their devices said what.
             let mut devices: Vec<(String, Vec<&str>)> = Vec::new();
             for p in &r.proofs {
@@ -909,7 +903,7 @@ impl App {
             st = st.push(container(e).center_x(bw).center_y(bh));
         }
         if m.outgoing && m.delivery == DeliveryState::Pending && !self.chat.online.contains(&m.peer_did) {
-            let first = crate::blocks::first_name(&self.chat_name(&m.peer_did)).to_string();
+            let first = present::names::first_word(&self.chat_name(&m.peer_did)).to_string();
             st = st.push(container(chip(format!("Sends when {first} is online"))).width(bw).height(bh).align_bottom(bh).padding(8));
         }
         st.width(bw).height(bh).into()
@@ -921,7 +915,7 @@ impl App {
     pub(super) fn delete_overlay<'a>(&'a self, t: Tok) -> Option<El<'a>> {
         let id = self.chat.confirm_delete.clone()?;
         let peer = self.chat.peer.as_deref()?;
-        let first = crate::blocks::first_name(&self.chat_name(peer)).to_string();
+        let first = present::names::first_word(&self.chat_name(peer)).to_string();
         let delivered = self.chat.find(&id).is_some_and(|m| m.delivery == DeliveryState::Delivered);
         let body = if !delivered { "It was never delivered, so it\u{2019}s only on this computer.".to_string() }
             else if self.chat.online.contains(peer) && self.status.online { format!("Delete for everyone asks {first}\u{2019}s devices to remove it too. Copies elsewhere can\u{2019}t be recalled.") }
@@ -1041,7 +1035,7 @@ impl App {
     /// Reply / edit shows a chip above the field (radius 12, surface-2, 3 px accent bar). Desktop keeps voice
     /// messages: with nothing typed the send slot is the mic (the playground has no voice messages).
     fn composer<'a>(&'a self, t: Tok, name: &str) -> El<'a> {
-        let first = crate::blocks::first_name(name).to_string();
+        let first = present::names::first_word(name).to_string();
         let ctx = |title: String, snippet: String| -> El<'a> {
             let bar = container(Space::new()).width(3).height(Fill).style(ui::plain(t.accent, 0.0));
             let body = column![semi(title, 13.0, t.accent_ink).line_height(lh(18.0)).wrapping(iced::widget::text::Wrapping::None),
@@ -1113,16 +1107,16 @@ impl App {
     }
 }
 
-/// Message text: only a few emojis show big, emojis inside text a little larger (`emoji.rs`).
+/// Message text: only a few emojis show big, emojis inside text a little larger (`present::emoji`).
 fn message_text<'a>(s: &'a str, fg: Color) -> El<'a> {
-    if crate::emoji::is_big(s) {
+    if present::emoji::emoji_is_big(s.to_string()) {
         return text(s.trim()).size(38).font(ui::EMOJI).color(fg).into();
     }
-    let spans: Vec<iced::widget::text::Span<'a, ()>> = crate::emoji::runs(s)
+    let spans: Vec<iced::widget::text::Span<'a, ()>> = present::emoji::emoji_runs(s.to_string())
         .into_iter()
-        .map(|(part, emoji)| {
-            let sp = iced::widget::span(part).color(fg);
-            if emoji { sp.size(15.0 * crate::emoji::INLINE_SCALE).font(ui::EMOJI) } else { sp.size(15.0) }
+        .map(|run| {
+            let sp = iced::widget::span(run.text).color(fg);
+            if run.is_emoji { sp.size(15.0 * present::emoji::INLINE_SCALE).font(ui::EMOJI) } else { sp.size(15.0) }
         })
         .collect();
     iced::widget::rich_text(spans).line_height(lh(21.0)).into()

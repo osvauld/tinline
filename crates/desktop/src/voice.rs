@@ -358,11 +358,6 @@ impl Drop for Player {
 // Widgets
 // ---------------------------------------------------------------------------------------------
 
-pub fn clock(ms: u32) -> String {
-    let s = (ms + 500) / 1000;
-    format!("{}:{:02}", s / 60, s % 60)
-}
-
 fn glyph<'a, M: 'a>(body: &'static str, size: f32, color: Color, fill: bool) -> Element<'a, M> {
     let paint = if fill { r##"fill="#000" stroke="none""## } else { ui::STROKE };
     ui::glyph(paint, body, size, color)
@@ -455,7 +450,7 @@ pub fn bubble<'a, M: Clone + 'a>(
     row![
         play,
         wave,
-        text(clock(shown)).font(ui::MONO).size(12).color(if outgoing { t.on_primary_c } else { t.ink2 }),
+        text(present::time::clock_ms(shown)).font(ui::MONO).size(12).color(if outgoing { t.on_primary_c } else { t.ink2 }),
     ]
     .spacing(10)
     .align_y(Alignment::Center)
@@ -493,7 +488,7 @@ pub fn record_bar<'a, M: Clone + 'a>(t: Tok, elapsed_ms: u32, on_send: M, on_can
     container(
         row![
             dot,
-            text(clock(elapsed_ms)).font(ui::MONO).size(15).color(t.ink),
+            text(present::time::clock_ms(elapsed_ms)).font(ui::MONO).size(15).color(t.ink),
             text("Esc to cancel").size(14).color(t.ink2).width(Length::Fill).align_x(Alignment::Center),
             bin,
             send,
@@ -537,11 +532,5 @@ mod tests {
             u.process(&[0.1; 320], |_| n += 1);
         }
         assert!((n - 48_000).abs() <= 3, "{n}");
-    }
-
-    #[test]
-    fn clock_formats() {
-        assert_eq!(clock(7_400), "0:07");
-        assert_eq!(clock(14 * 60_000 + 59_600), "15:00");
     }
 }

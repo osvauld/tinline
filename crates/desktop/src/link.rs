@@ -286,8 +286,8 @@ impl App {
                 if self.busy || text.is_empty() {
                     return Task::none();
                 }
-                if !text.starts_with("OSVL1:") {
-                    self.notice = Some("That isn\u{2019}t a link code. It starts with OSVL1:".into());
+                if let Some(why) = present::link::link_qr_problem(text.clone()) {
+                    self.notice = Some(why);
                     return Task::none();
                 }
                 self.busy = true;

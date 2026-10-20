@@ -562,7 +562,7 @@ fun VideoCallContent(
                 IconBtn(PgIcons.Back, "Back. The call continues", onMinimise, tint = Color.White)
                 Column(Modifier.weight(1f)) {
                     Text(name, style = TinType.titleM, color = Color.White, maxLines = 1)
-                    Text(if (reconnecting) "Reconnecting…" else clock(secs), style = TinType.mono.copy(fontSize = 14.sp), color = Color.White.copy(alpha = 0.8f))
+                    Text(if (reconnecting) "Reconnecting…" else uniffi.present.clock(secs), style = TinType.mono.copy(fontSize = 14.sp), color = Color.White.copy(alpha = 0.8f))
                 }
                 if (onMessage != null) IconBtn(PgIcons.Chat, "Message. The call continues", onMessage, tint = Color.White)
                 Box(Modifier.size(44.dp).clip(CircleShape).clickable(role = Role.Button) { info = true }
@@ -691,8 +691,8 @@ private fun SelfView(app: P2pApp, front: Boolean, modifier: Modifier) {
 
 @Composable
 private fun EndedRoute(e: EndedUi, meName: String, onClose: () -> Unit, onAgain: () -> Unit) {
-    if (classifyEnd(e.reason) == EndKind.Unreachable && !e.wasActive) UnreachableContent(e.peerName, e.peerDid, meName, onAgain, onClose)
-    else EndedContent(e.peerName, e.peerDid, meName, endReasonText(e.reason, e.peerName, e.incoming, P2pApp.instance.blocks.value.blockedByMe(e.peerDid)), if (e.wasActive) e.secs else null, e.direct, e.bars, onAgain, onClose)
+    if (uniffi.present.classifyEnd(e.reason) == uniffi.present.EndClass.UNREACHABLE && !e.wasActive) UnreachableContent(e.peerName, e.peerDid, meName, onAgain, onClose)
+    else EndedContent(e.peerName, e.peerDid, meName, uniffi.present.endReasonText(e.reason, e.peerName, e.incoming, P2pApp.instance.blocks.value.blockedByMe(e.peerDid)), if (e.wasActive) e.secs else null, e.direct, e.bars, onAgain, onClose)
 }
 
 @Composable
@@ -709,7 +709,7 @@ fun EndedContent(
             Text("Call ended", Modifier.padding(top = 16.dp), style = TinType.h1.copy(fontSize = 30.sp, lineHeight = 36.sp), color = c.ink)
             Text(reasonText, style = TinType.bodyL.copy(fontSize = 17.sp), color = c.ink2, textAlign = TextAlign.Center)
             if (secs != null) Row(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Badge(clock(secs), BadgeKind.Mono)
+                Badge(uniffi.present.clock(secs), BadgeKind.Mono)
                 if (direct == true) Badge("Direct", BadgeKind.Direct)
                 if (direct == false) Badge("Relayed", BadgeKind.Relayed)
                 if (bars != null) Badge("${qualityLabel(bars)} signal", BadgeKind.Neutral)
@@ -734,7 +734,7 @@ fun UnreachableContent(name: String, did: String, meName: String, onAgain: () ->
                 SelfAvatar(meName.ifBlank { "?" }, 64.dp)
                 Box(Modifier.width(36.dp).height(3.dp).background(c.thread.copy(alpha = 0.5f), RoundedCornerShape(2.dp)))
                 Box(Modifier.size(96.dp).clip(CircleShape).background(c.sf3), contentAlignment = Alignment.Center) {
-                    Text(initialsOf(name), style = TinType.titleL.copy(fontSize = 34.sp), color = c.ink2)
+                    Text(uniffi.present.initials(name), style = TinType.titleL.copy(fontSize = 34.sp), color = c.ink2)
                 }
             }
             H1("Couldn’t reach $who", Modifier.padding(top = 16.dp), align = TextAlign.Center)

@@ -176,16 +176,6 @@ fun linkFailText(reason: String, detail: String?): String = when (reason) {
     else -> detail?.takeIf { it.isNotBlank() } ?: "Couldn’t link. Try again."
 }
 
-/** Null if [text] is a device-link QR; otherwise why not (a contact code gets its own message). */
-fun linkQrProblem(text: String): String? {
-    val t = text.trim()
-    return when {
-        t.startsWith("OSVL1:") -> null
-        t.startsWith("OSVC") -> "That’s a contact code, not a device-link code. Use Add contact for those."
-        else -> "That isn’t a Tinline device-link code."
-    }
-}
-
 // ------------------------------------------------------------------ the flow (both sides)
 
 private enum class LinkStage { Intro, Scan, Show }
@@ -207,7 +197,7 @@ fun LinkSession(app: P2pApp, newDevice: Boolean, label: String, onClose: () -> U
     DisposableEffect(Unit) { links.reset(); onDispose { links.cancel() } }
 
     fun onText(text: String) {
-        val bad = linkQrProblem(text)
+        val bad = uniffi.present.linkQrProblem(text)
         if (bad != null) { scanNote = bad; return }
         scanNote = null
         links.scan(text, newDevice, label)
