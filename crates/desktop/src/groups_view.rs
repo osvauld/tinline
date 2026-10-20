@@ -1,6 +1,5 @@
 //! Shared pieces of the group screens (used by `group_live_view.rs`): time formats, rules, tags,
-//! footers, and Settings > Privacy with the people I block. The placeholder groups preview that
-//! used to live here is in `groups_preview_view.rs` (test-hooks and test builds only).
+//! footers, and Settings > Privacy with the people I block.
 
 use chrono::{Local, TimeZone};
 use iced::widget::{column, container, Space};
@@ -41,11 +40,6 @@ pub(super) fn rule<'a>(t: Tok) -> El<'a> {
 /// The group avatar: the group id's mandala in a rounded square (people are circles).
 pub(super) fn gav<'a>(t: Tok, key: &str, size: f32) -> El<'a> {
     ui::group_face(t, key, size)
-}
-
-/// A status dot (host rows).
-pub(super) fn dot<'a>(c: Color) -> El<'a> {
-    container(Space::new()).width(8).height(8).style(ui::plain(c, 4.0)).into()
 }
 
 /// Owner / Admin / Host pills and the like.
@@ -105,16 +99,7 @@ pub(super) fn message_body<'a>(s: &str, fg: Color) -> El<'a> {
 }
 
 impl App {
-    /// Whether a placeholder preview group or person is open in the main pane (never in release).
-    pub(super) fn preview_open(&self) -> bool {
-        #[cfg(any(test, feature = "test-hooks"))]
-        return self.groups.open.is_some();
-        #[cfg(not(any(test, feature = "test-hooks")))]
-        false
-    }
-
-    /// Settings › Privacy: the people I block (real, from the core). Test and test-hooks builds add the
-    /// placeholder preview below it.
+    /// Settings › Privacy: the people I block (real, from the core).
     pub(super) fn privacy_page(&self, t: Tok) -> El<'_> {
         let mut real = column![tx("One list across all your devices: a block made on another device shows here too.", 13.0, t.ink2)].spacing(10);
         for b in &self.blocks.list {
@@ -137,9 +122,6 @@ impl App {
                 .style(ui::plain(t.surface2, 12.0)),
         );
         let real = section(t, "Blocked people", real.into());
-        #[cfg(any(test, feature = "test-hooks"))]
-        return self.privacy_page_preview(t, real);
-        #[cfg(not(any(test, feature = "test-hooks")))]
         real
     }
 }

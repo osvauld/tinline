@@ -6,9 +6,6 @@ mod view;
 
 #[path = "demo.rs"]
 mod demo;
-#[cfg(feature = "test-hooks")]
-#[path = "demo_pg.rs"]
-mod demo_pg;
 
 #[path = "chat.rs"]
 mod chat;
@@ -20,11 +17,6 @@ use signup::{AddUi, Gate, Gs};
 #[path = "link.rs"]
 mod link;
 
-#[cfg(any(test, feature = "test-hooks"))]
-#[path = "groups.rs"]
-mod groups;
-#[cfg(any(test, feature = "test-hooks"))]
-use groups::{GroupsUi, Gm};
 #[path = "group_live.rs"]
 mod group_live;
 #[path = "gcall.rs"]
@@ -87,10 +79,6 @@ struct Settings {
     input: Option<String>,
     output: Option<String>,
     tone: bool,
-    /// The groups & privacy preview switch (tests and test-hooks only).
-    #[serde(default)]
-    #[cfg(any(test, feature = "test-hooks"))]
-    groups_preview: Option<bool>,
     /// Calls are audio only (no video offered or taken).
     #[serde(default)]
     no_video: bool,
@@ -214,13 +202,9 @@ impl Reach {
 
 /// A finished call, shown for a few seconds.
 struct EndedView {
-    #[allow(dead_code, reason = "unwired by the UI port (b57ee23); UI owner to decide: wire back or delete (the ended card does not show why or direct/relayed)")]
-    reason: String,
     did: String,
     name: String,
     text: String,
-    #[allow(dead_code, reason = "unwired by the UI port (b57ee23); UI owner to decide: wire back or delete")]
-    direct: bool,
     secs: u32,
     at: Instant,
 }
@@ -372,8 +356,6 @@ struct App {
     link_joined: bool,
     unlinked: Option<UnlinkedInfo>,
     /// Groups, hosting, blocking and permissions preview on placeholder data.
-    #[cfg(any(test, feature = "test-hooks"))]
-    groups: GroupsUi,
     /// Group chat on the core (G1): the Groups tab.
     live: GroupsLive,
     /// Real contact blocking, read from the core (`crate::blocks`).
@@ -503,18 +485,10 @@ enum Msg {
     OpenAdd,
     SettingsTab(u8),
     Key(iced::keyboard::Key, iced::keyboard::Modifiers),
-    #[allow(dead_code, reason = "unwired by the UI port (b57ee23); UI owner to decide: wire back or delete")]
-    AddAlias(String),
-    #[allow(dead_code, reason = "unwired by the UI port (b57ee23); UI owner to decide: wire back or delete")]
-    SaveAlias,
-    #[allow(dead_code, reason = "unwired by the UI port (b57ee23); UI owner to decide: wire back or delete")]
-    CloseEnded,
     /// The ended call's hold ran out (only closes the ended view it was started for).
     EndedHoldDone(Option<Instant>),
     /// My own End's hold ran out: finish ending that call (hangup::HOLD).
     EndHeld(String, CallState),
-    #[allow(dead_code, reason = "unwired by the UI port (b57ee23); UI owner to decide: wire back or delete")]
-    CallAgain(String),
     NameEdit(String),
     SaveName,
     InDev(String),
@@ -564,8 +538,6 @@ enum Msg {
     Shot(window::Screenshot),
     /// Test-hooks: `P2P_SHOT_EVERY=dir` writes the window to dir/NNN.png twice a second (demos of live state).
     ShotEvery,
-    #[cfg(any(test, feature = "test-hooks"))]
-    Groups(Gm),
     Live(Lm),
     Video(Vm),
     Gate(Gs),
@@ -802,11 +774,6 @@ impl App {
         self.refresh_identity();
         self.refresh_accounts();
         self.refresh_linked();
-        #[cfg(any(test, feature = "test-hooks"))]
-        {
-            let preview_on = self.groups.on;
-            self.groups.enable(preview_on, &self.profile_name);
-        }
         self.reload_contacts();
         self.recents = self.node.recent_calls(RECENTS);
         self.group_log = self.node.group_call_history(None).unwrap_or_default();
@@ -850,10 +817,6 @@ impl App {
         let test_unlock = init.test_pass.clone().filter(|_| lock == LockState::Locked);
         let forced_dark = crate::test_env("P2P_DARK").map(|v| v == "1");
         settings.apply_alerts();
-        #[cfg(any(test, feature = "test-hooks"))]
-        let preview_on = settings.groups_preview.unwrap_or(groups::PREVIEW_DEFAULT);
-        #[cfg(any(test, feature = "test-hooks"))]
-        let me_name = node.profile().map(|p| p.name).unwrap_or_default();
         let mut app = App {
             win: None,
             dark: forced_dark.or(settings.appearance).unwrap_or(false),
@@ -951,8 +914,6 @@ impl App {
             unlink_ask: None,
             link_joined: false,
             unlinked: None,
-            #[cfg(any(test, feature = "test-hooks"))]
-            groups: GroupsUi::new(preview_on, &me_name),
             live: GroupsLive::default(),
             blocks: Default::default(),
             kept: Vec::new(),
@@ -1164,7 +1125,7 @@ impl App {
                 }
                 self.end_tap = None;
                 let who = c.info.peer_name.clone();
-                let (direct, secs) = c.stats.as_ref().map(|s| (s.direct, s.secs)).unwrap_or((false, 0));
+                let secs = c.stats.as_ref().map_or(0, |s| s.secs);
                 let did = c.info.peer_did.clone();
                 let mut presentation = reason::present(&reason, &who, c.info.incoming, c.answered);
                 // "blocked" ends the call on both sides: say which side blocked. "calls not
@@ -1201,7 +1162,7 @@ impl App {
                     End::Screen(text) => {
                         let failed = matches!(reason.as_str(), "unreachable" | "connection_lost" | "failed");
                         let hold = if failed { 2600 } else { 900 };
-                        self.ended = Some(EndedView { reason: reason.clone(), did, name: who, text, direct, secs, at: Instant::now() });
+                        self.ended = Some(EndedView { did, name: who, text, secs, at: Instant::now() });
                         let at = self.ended.as_ref().map(|e| e.at);
                         return Task::perform(tokio::time::sleep(Duration::from_millis(hold)), move |_| Msg::EndedHoldDone(at));
                     }
@@ -1978,8 +1939,6 @@ impl App {
                     Key::Named(Named::Escape) if self.call_ui.about => return self.update(Msg::CallUi(crate::call_ui::Action::CloseAbout)),
                     Key::Named(Named::Escape) if ringing => return self.update(Msg::Decline),
                     Key::Named(Named::Escape) if self.call.is_some() && !self.call_ui.minimized => return self.update(Msg::CallUi(crate::call_ui::Action::Minimize)),
-                    #[cfg(any(test, feature = "test-hooks"))]
-                    Key::Named(Named::Escape) if self.groups.dialog.is_some() => return self.update_groups(Gm::Dismiss),
                     Key::Named(Named::Escape) if self.live.dialog.is_some() => return self.update_live(Lm::Dismiss),
                     Key::Named(Named::Escape) if self.call.is_none() && self.shell_search.active => return self.shell_search_update(shell_search::Action::Escape),
                     Key::Named(Named::Escape) if self.call.is_none() && self.live.open.is_some() => return self.update_live(Lm::Close),
@@ -2042,7 +2001,6 @@ impl App {
                     self.dismissed.insert(p.ticket);
                 }
             }
-            Msg::AddAlias(v) => self.add_alias = v,
             Msg::OpenAdd => {
                 self.screen = Screen::AddContact;
                 self.add_ui = AddUi::default();
@@ -2106,22 +2064,6 @@ impl App {
                         eprintln!("accept_contact_request: {e}");
                         self.notice = Some("Couldn\u{2019}t accept just now. Try again in a moment.".into());
                     }
-                }
-            }
-            Msg::SaveAlias => {
-                if let AddPhase::Added(c) = &self.add_phase {
-                    let alias = self.add_alias.trim().to_string();
-                    let alias = (!alias.is_empty() && alias != c.name).then_some(alias);
-                    let (node, did) = (self.node.clone(), c.did.clone());
-                    self.sel = Some(did.clone());
-                    self.detail = Detail::View;
-                    self.screen = Screen::Home;
-                    self.add_phase = AddPhase::Idle;
-                    let open = self.open_chat(&did.clone());
-                    return Task::batch([
-                        open,
-                        blocking(move || node.rename_contact(did, alias).map_err(s), Msg::Done),
-                    ]);
                 }
             }
             Msg::CallUi(action) => {
@@ -2194,7 +2136,6 @@ impl App {
                 self.save_settings();
             }
             Msg::DialVideo(did) => return self.dial_video(did),
-            Msg::CallAgain(did) => return self.dial(did),
             Msg::CallStarted(r) => match r {
                 Ok(info) => {
                     let id = info.call_id.clone();
@@ -2211,10 +2152,6 @@ impl App {
                 Err(e) => self.notice = Some(format!("Could not call: {e}")),
             },
             Msg::Select(did) => {
-                #[cfg(any(test, feature = "test-hooks"))]
-                {
-                    self.groups.open = None;
-                }
                 self.live.close();
                 self.sel = Some(did);
                 self.chat.info = false;
@@ -2227,11 +2164,6 @@ impl App {
                 return self.open_chat(&did);
             }
             Msg::Home => {
-                #[cfg(any(test, feature = "test-hooks"))]
-                {
-                    self.groups.open = None;
-                    self.groups.dialog = None;
-                }
                 self.live.close();
                 self.live.dialog = None;
                 self.leave_chat();
@@ -2264,7 +2196,6 @@ impl App {
                 });
                 return self.profile_write(profile_ui::Save::Availability, move |node| node.set_available(on, until).map_err(s));
             }
-            Msg::CloseEnded => self.ended = None,
             Msg::EndedHoldDone(at) => {
                 if self.ended.as_ref().map(|e| e.at) == at { self.ended = None; }
             }
@@ -2468,8 +2399,6 @@ impl App {
                 });
             }
             Msg::Chat(m) => return self.update_chat(m),
-            #[cfg(any(test, feature = "test-hooks"))]
-            Msg::Groups(m) => return self.update_groups(m),
             Msg::Live(m) => return self.update_live(m),
             m @ (Msg::LinkStartNew
             | Msg::LinkStartExisting

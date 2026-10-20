@@ -135,8 +135,6 @@ impl App {
             } else { None };
             items.push((at, self.pg_chat_row(t, sel, face, s.name.clone(), at, s.unread, false, pv, Msg::Live(super::super::group_live::Lm::Open(s.id.clone())), mark)));
         }
-        #[cfg(any(test, feature = "test-hooks"))]
-        items.extend(self.preview_rows(t, q));
         items.sort_by(|a, b| b.0.cmp(&a.0));
         let mut list = column![].spacing(0);
         if let Some(b) = self.live_requests(t) {

@@ -96,63 +96,6 @@ fn file(name: &str, size: u64, mime: &str, state: TransferState) -> Attachment {
     }
 }
 
-/// `P2P_DEMO=pg-*`: the playground seed's 1:1 conversations (seed.ts), for paired screenshots.
-fn pg_seed(peer: &str) -> Option<Vec<Message>> {
-    use chrono::{Local, TimeZone};
-    let id = peer.strip_prefix("did:key:z6Mkpg")?;
-    let at = |h: u32, m: u32, d: i64| {
-        let day = Local::now().date_naive() - chrono::Duration::days(d);
-        Local.from_local_datetime(&day.and_hms_opt(h, m, 0).unwrap()).single().map(|x| x.timestamp_millis() as u64).unwrap_or(0)
-    };
-    let mut n = 0;
-    let mut m = |out: bool, (h, mi, d): (u32, u32, i64), text: &str| { n += 1; base(&format!("{id}-{n}"), peer, out, at(h, mi, d), text) };
-    let v = match id {
-        "arjun" => {
-            let mut v = vec![
-                m(false, (19, 2, 9), "The flat on Marine Drive is still available."),
-                m(true, (19, 10, 9), "Can we see it on Saturday?"),
-                m(false, (11, 20, 6), "Booked the café near the station for lunch. Their coffee is excellent."),
-                m(true, (11, 25, 6), "Perfect, I\u{2019}ll bring the lease papers"),
-                m(false, (17, 45, 4), "The landlord wants the deposit by Friday."),
-                m(false, (21, 12, 1), "Did you get home ok?"),
-                m(true, (21, 14, 1), "Yes, train was on time for once"),
-                m(true, (21, 15, 1), "Thanks for dinner. That place was great"),
-                m(false, (21, 20, 1), "Anytime \u{1f642}"),
-                m(false, (12, 36, 0), "Are we still on for the call about the flat?"),
-                m(true, (12, 38, 0), "Yes, after 6 works for me"),
-                m(true, (12, 39, 0), "I\u{2019}ll call from the office, it\u{2019}s quieter there"),
-                m(false, (12, 41, 0), "I have the landlord\u{2019}s numbers now"),
-            ];
-            v[10].edited_at = Some(v[10].at + 60_000);
-            let after6 = v[10].id.clone();
-            v[12].reply_to = Some(after6);
-            v
-        }
-        "dev" => vec![
-            m(false, (14, 0, 7), "Lunch last Thursday was fun, same place again sometime?"),
-            m(true, (11, 2, 0), "Free this week?"),
-            m(false, (11, 5, 0), "Thursday works. The place near the station?"),
-        ],
-        "sana" => vec![
-            m(false, (10, 12, 11), "明日の会議は十時です。資料を送ります。"),
-            m(false, (10, 14, 11), "Meeting notes attached, the draft review is on Friday."),
-            m(false, (8, 20, 0), "Sent the draft to your laptop too"),
-        ],
-        "meera" => {
-            let mut v = vec![
-                m(false, (10, 15, 12), "Which station do you use for the Bengaluru trip?"),
-                m(true, (10, 20, 12), "Whichever has the earlier train"),
-                m(false, (17, 40, 1), "Can you send the scan when you\u{2019}re back online?"),
-                m(true, (17, 46, 1), "Running 10 minutes late, sorry"),
-            ];
-            v[3].delivery = DeliveryState::Pending;
-            v
-        }
-        _ => return None,
-    };
-    Some(v)
-}
-
 /// The conversation every contact starts with. `now` is unix ms.
 pub fn seed(peer: &str, now: u64) -> Vec<Message> {
     let id = |n: u32| format!("{peer}-{n}");
@@ -275,7 +218,7 @@ impl Fake {
 
     fn with<T>(&self, peer: &str, f: impl FnOnce(&mut State, &str) -> T) -> T {
         let mut st = self.st.lock().unwrap();
-        st.msgs.entry(peer.to_string()).or_insert_with(|| pg_seed(peer).unwrap_or_else(|| seed(peer, now())));
+        st.msgs.entry(peer.to_string()).or_insert_with(|| seed(peer, now()));
         f(&mut st, peer)
     }
 
