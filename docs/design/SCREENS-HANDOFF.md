@@ -215,8 +215,8 @@ same steps.
   - The "Video paused, audio continues" chip has a fixed width.
   - Minimised on Android: a small floating tile plus the strip. On desktop: the strip only.
   - Calling back from a video-call record starts a video call.
-  - **Sharper video suggestion** (2026-10-17; rule and copy: `docs/video.md` "Suggesting sharper
-    video"). Why: HD stays off by default, but people should learn it exists when their call could
+  - **Sharper video suggestion** (2026-10-17; replaced on 2026-10-20 by automatic HD, see
+    `docs/video.md` "Sharper video": the line below is history, only the mobile-data note remains). Why: HD stays off by default, but people should learn it exists when their call could
     carry it, without anything switching by itself. It reuses the HD chip's short line (the one
     `hdLine()` drives): same slot, same type, so nothing moves when it appears; the line is one
     line, cut with an ellipsis, never wrapped. Shown once per call for 6 s (the chip's own echo is

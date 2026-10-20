@@ -455,8 +455,8 @@ mod adapt_policy {
     }
 
     /// The sharper-video rules through the policy, one call per second: the receiver's room flag
-    /// rides on the hint (sent once when it changes), the suggestion follows my sending rule and
-    /// the peer's flag, and HD on or battery saver stop them.
+    /// rides on the hint (sent once when it changes), the core's HD choice follows my sending
+    /// rule, and battery saver or a hidden picture stop the flag.
     #[test]
     fn video_call_hd_room_through_the_policy() {
         let send = hd::SendSample {
@@ -475,29 +475,33 @@ mod adapt_policy {
         // A full-screen phone picture: beyond every rung, so no hint at all until the flag.
         p.set_view(0, 1080, 2340, true);
         assert_eq!(p.update(t), None);
-        for i in 1..hd::ROOM_SECS {
-            p.observe_room(send, recv, false);
-            assert_eq!((p.suggest, p.update(t)), ("", None), "second {i}");
+        for i in 1..hd::ON_SECS {
+            p.observe_room(send, recv);
+            assert!(!p.auto.on, "second {i}");
+            assert_eq!(p.update(t), None, "second {i}");
         }
-        p.observe_room(send, recv, false);
-        assert_eq!(p.suggest, "line");
+        p.observe_room(send, recv);
+        assert!(p.auto.on, "the camera goes to HD after ON_SECS");
+        for _ in hd::ON_SECS..hd::ROOM_SECS - 1 {
+            p.observe_room(send, recv);
+        }
+        assert_eq!(p.update(t), None);
+        p.observe_room(send, recv);
         assert!(p.update(t).unwrap().room, "the flag goes to the peer at once");
-        p.observe_room(send, recv, true);
-        assert_eq!((p.suggest, p.update(t)), ("peer", None));
-        // HD on: never.
+        // The app follows: HD captured, the rung's size sent. It stays HD.
         p.hd_on = true;
-        p.observe_room(send, recv, true);
-        assert_eq!(p.suggest, "");
+        p.observe_room(hd::SendSample { send_px: px(1280, 720) as u64, ..send }, recv);
+        assert!(p.auto.on);
         // Battery saver caps my hint: the room flag goes, with the cap.
         p.budget = VideoBudget { thermal: 0, power_save: true };
-        p.observe_room(send, recv, true);
+        p.observe_room(send, recv);
         let h = p.update(t).unwrap();
         assert!(!h.room && h.reason == HintReason::PowerSave);
         // Hidden: no room either.
         let mut q = adapt::Policy::default();
         q.set_view(0, 1080, 2340, false);
         for _ in 0..30 {
-            q.observe_room(send, recv, false);
+            q.observe_room(send, recv);
         }
         assert!(!q.wanted().room);
     }

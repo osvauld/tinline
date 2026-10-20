@@ -231,16 +231,6 @@ class P2pApp : Application(), NodeEvents {
         get() = VideoQualityPreference.fromStored(callPrefs.getString("video_quality", null))
         set(value) { callPrefs.edit().putString("video_quality", value.name).apply() }
 
-    /** What this device remembers about sharper-video suggestions (the core decides what it means). */
-    internal var hdSuggestMemory: uniffi.p2pcore.HdSuggestMemory
-        get() = uniffi.p2pcore.HdSuggestMemory(
-            callPrefs.getInt("hd_suggest_turned_on", 0).coerceAtLeast(0).toUInt(),
-            callPrefs.getInt("hd_suggest_ignored", 0).coerceAtLeast(0).toUInt())
-        set(m) {
-            callPrefs.edit().putInt("hd_suggest_turned_on", m.turnedOn.coerceAtMost(1000u).toInt())
-                .putInt("hd_suggest_ignored", m.ignoredInARow.coerceAtMost(1000u).toInt()).apply()
-        }
-
     internal val preferHdCapture: Boolean
         get() = if (callPrefs.contains("video_quality")) videoQualityPreference == VideoQualityPreference.PREFER_HD
             else BuildConfig.DEBUG && BuildConfig.VIDEO_HD_CAPTURE

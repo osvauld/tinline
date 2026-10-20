@@ -1,31 +1,38 @@
-//! "This call has room for sharper video": the rule behind the HD suggestion both apps show
-//! (docs/video.md, "Suggesting sharper video"). Sharper video stays off by default; when the
-//! line, the encoder and the peer's screen could all carry a sharper picture than the camera
-//! gives (HD off captures 640x480), the call screen says so once and the person decides with the
-//! HD chip. Nothing switches by itself. Mobile data is no exception.
+//! Sharper video by itself: when to open the camera at 1280x720 instead of 640x480 (docs/video.md,
+//! "Sharper video"). The ladder decides the picture sent; the camera only bounds it. With a
+//! 640x480 capture the ladder can sit at its 720p rung and still send 480p, so when the line, the
+//! encoder and the peer's screen could all carry more, the core says "HD" ([`Auto`],
+//! `VideoStats::hd_auto`) and the app reopens the camera. The HD chip still overrides it for the
+//! call, and Settings > Video "Prefer HD" keeps the camera at HD. Mobile data is no exception;
+//! Android says once when HD runs on a metered network.
 //!
 //! Two directions, one rule each, evaluated once a second by `adapt::run_policy`:
-//! - **Sending** ([`send_ok`]): my HD is off and my picture is smaller than my ladder already
-//!   allows, because of the capture, with the rate, the encoder and the peer's caps to spare.
+//! - **Sending** ([`send_ok`]): my capture is not HD and my picture is smaller than my ladder
+//!   already allows, because of the capture, with the rate, the encoder and the peer's caps to
+//!   spare. Held [`ON_SECS`] in a row, the camera goes to HD; below 540p for [`OFF_SECS`] in a
+//!   row ([`keep_ok`]), back to 640x480.
 //! - **Receiving** ([`recv_ok`]): I draw the peer's picture big, I get less than 540p, and my
-//!   decoder would keep up at 540p. That sets [`video::media::Hint::room`], which tells the
-//!   peer's sender; its own sending rule still decides whether its HD being off is the reason.
+//!   decoder would keep up at 540p. That sets [`video::media::Hint::room`] for the peer's logs.
 //!
-//! Both have to hold for [`ROOM_SECS`] seconds in a row ([`Streak`]): a borderline link that
-//! dips now and then never earns a suggestion.
-
-use super::*;
+//! A rule has to hold for its seconds in a row ([`Streak`]): a borderline link that dips now and
+//! then never switches the camera.
 
 /// The smallest picture sharper video brings on every device: 960x540 (phones aim for 540p,
 /// computers for 720p). HD off sends at most 640x480.
 pub(super) const SHARPER_PIXELS: u64 = 960 * 540;
 /// The rate my line has to carry: the ladder's step-up threshold for 720p30 (floor 1 Mbps x
 /// 130%), the point at which an HD capture would climb to the top rung. Above the 540p rung's
-/// threshold (780 kbps) on purpose: a suggestion should lead to a clearly sharper picture, not to
+/// threshold (780 kbps) on purpose: HD should lead to a clearly sharper picture, not to
 /// one rung that a dip takes back.
 pub(super) const ROOM_BPS: u32 = 1_300_000;
-/// Seconds in a row the rule must hold: twice the ladder's 5 s hold for a step up, so the
-/// suggestion never comes before the ladder itself would trust the rate.
+/// Seconds in a row the sending rule must hold before the camera goes to HD: the ladder's own
+/// 5 s hold for a step up, on top of the rate having reached the 720p threshold.
+pub(super) const ON_SECS: u32 = 5;
+/// Seconds in a row below 540p (the ladder's rung or the peer's cap) before the camera goes back
+/// to 640x480. Reopening the camera costs a keyframe and a short freeze, so a dip doesn't; an
+/// HD capture under a 360p rung is only scaled down, it never sends more.
+pub(super) const OFF_SECS: u32 = 15;
+/// Seconds in a row the receiving rule must hold for the room flag.
 pub(super) const ROOM_SECS: u32 = 10;
 /// Encode / decode + render time budget, % of the frame interval: the ladder's and the decode
 /// policy's step-down threshold (60%). A size that would be predicted above it is not "room".
@@ -34,7 +41,7 @@ const BUDGET_PCT: u64 = 60;
 /// One second of my sending, as `run_policy` sees it.
 #[derive(Debug, Clone, Copy, Default, PartialEq)]
 pub(super) struct SendSample {
-    /// The app's HD choice for this call (`Node::set_video_hd`).
+    /// The camera captures HD now (`Node::set_video_hd`).
     pub hd_on: bool,
     /// Frames sent in the last second.
     pub frames: u64,
@@ -56,7 +63,7 @@ pub(super) struct SendSample {
     pub hw: bool,
 }
 
-/// My line, encoder and the peer's caps could carry a sharper picture than my HD-off capture
+/// My line, encoder and the peer's caps could carry a sharper picture than my 640x480 capture
 /// gives, this second.
 pub(super) fn send_ok(s: &SendSample) -> bool {
     if s.hd_on || s.frames == 0 || s.send_px == 0 {
@@ -68,6 +75,12 @@ pub(super) fn send_ok(s: &SendSample) -> bool {
     let line = s.rate_bps >= ROOM_BPS && !s.congested;
     let cpu = !s.cpu_step && (s.hw || fits(s.encode_p75_us, s.send_px, s.fps));
     capture_bound && peer_takes_it && line && cpu
+}
+
+/// An HD capture still pays this second: the ladder's rung and the peer's cap are 540p or more.
+/// No frames (the camera reopening, or off) counts as keeping it.
+pub(super) fn keep_ok(s: &SendSample) -> bool {
+    s.frames == 0 || (s.rung_px >= SHARPER_PIXELS && s.cap_px >= SHARPER_PIXELS)
 }
 
 /// One second of what I receive and draw.
@@ -113,109 +126,37 @@ fn fits(p75_us: Option<u64>, px: u64, fps: u32) -> bool {
     p75_us.is_some_and(|p| px > 0 && p * SHARPER_PIXELS / px <= budget_us(fps))
 }
 
-/// Seconds in a row a rule has held; true from the [`ROOM_SECS`]th on, false at once when it
-/// breaks.
+/// Seconds in a row a rule has held; true from the `secs`th on, false at once when it breaks.
 #[derive(Debug, Default)]
 pub(super) struct Streak(u32);
 
 impl Streak {
-    pub(super) fn observe(&mut self, ok: bool) -> bool {
+    pub(super) fn observe(&mut self, ok: bool, secs: u32) -> bool {
         self.0 = if ok { self.0.saturating_add(1) } else { 0 };
-        self.0 >= ROOM_SECS
+        self.0 >= secs
     }
 }
 
-/// `VideoStats::hd_suggest`: "" (nothing), "line" (my line has room) or "peer" (my line has room
-/// and the peer's side has room for a sharper picture too).
-pub(super) fn suggestion(send_room: bool, peer_room: bool) -> &'static str {
-    match (send_room, peer_room) {
-        (false, _) => "",
-        (true, false) => "line",
-        (true, true) => "peer",
-    }
+/// The core's HD choice for the camera (`VideoStats::hd_auto`): on after [`send_ok`] held
+/// [`ON_SECS`], off again after [`keep_ok`] failed for [`OFF_SECS`] in a row.
+#[derive(Debug, Default)]
+pub(super) struct Auto {
+    pub(super) on: bool,
+    room: Streak,
+    below: Streak,
 }
 
-/// What the device remembers about HD suggestions (each app stores the two numbers).
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, uniffi::Record)]
-pub struct HdSuggestMemory {
-    /// Calls in which the person turned sharper video on with the chip.
-    pub turned_on: u32,
-    /// Calls in a row that showed a suggestion and ended without HD being turned on.
-    pub ignored_in_a_row: u32,
-}
-
-/// After this many calls with HD turned on by hand the person knows the chip: no more
-/// suggestions (Settings > Video has the lasting switch).
-pub const HD_SUGGEST_MAX_TURNED_ON: u32 = 3;
-/// After this many suggestions in a row went unanswered the person isn't interested: stop.
-pub const HD_SUGGEST_MAX_IGNORED: u32 = 3;
-
-/// Whether HD suggestions may still be shown on this device.
-#[uniffi::export]
-pub fn video_hd_suggest_allowed(memory: HdSuggestMemory) -> bool {
-    memory.turned_on < HD_SUGGEST_MAX_TURNED_ON && memory.ignored_in_a_row < HD_SUGGEST_MAX_IGNORED
-}
-
-/// The memory after a call: `shown` = a suggestion was shown in it, `turned_on` = the person
-/// turned sharper video on with the chip in it (suggested or not). Turning it on clears the
-/// unanswered count; a call without a suggestion leaves it as it was.
-#[uniffi::export]
-pub fn video_hd_suggest_after_call(
-    memory: HdSuggestMemory,
-    shown: bool,
-    turned_on: bool,
-) -> HdSuggestMemory {
-    if turned_on {
-        HdSuggestMemory {
-            turned_on: memory.turned_on.saturating_add(1),
-            ignored_in_a_row: 0,
+impl Auto {
+    pub(super) fn observe(&mut self, s: &SendSample) -> bool {
+        if self.on {
+            if self.below.observe(!keep_ok(s), OFF_SECS) {
+                *self = Self::default();
+            }
+        } else if self.room.observe(send_ok(s), ON_SECS) {
+            self.on = true;
+            self.room = Streak::default();
         }
-    } else if shown {
-        HdSuggestMemory {
-            ignored_in_a_row: memory.ignored_in_a_row.saturating_add(1),
-            ..memory
-        }
-    } else {
-        memory
-    }
-}
-
-/// Longest peer name in a suggestion before it is shortened (the line has one line of room).
-const NAME_CHARS: usize = 12;
-
-/// The suggestion to show now in the call's short status line, "" for none: from the stats
-/// (`hd_suggest`), the app's own HD state for the call (a second guard: HD on never suggests)
-/// and the device's memory. The app shows it at most once per call (one text for every app).
-#[uniffi::export]
-pub fn video_hd_suggestion(
-    stats: &VideoStats,
-    hd_on: bool,
-    memory: HdSuggestMemory,
-    peer_name: String,
-) -> String {
-    if hd_on || !video_hd_suggest_allowed(memory) {
-        return String::new();
-    }
-    match stats.hd_suggest.as_str() {
-        "line" => "Room for sharper video \u{b7} tap HD".into(),
-        "peer" => {
-            let name = peer_name.trim();
-            let name = if name.is_empty() {
-                "They".to_string()
-            } else if name.chars().count() > NAME_CHARS {
-                format!(
-                    "{}\u{2026}",
-                    name.chars()
-                        .take(NAME_CHARS - 1)
-                        .collect::<String>()
-                        .trim_end()
-                )
-            } else {
-                name.to_string()
-            };
-            format!("{name} could see you sharper \u{b7} tap HD")
-        }
-        _ => String::new(),
+        self.on
     }
 }
 
@@ -250,13 +191,13 @@ mod tests {
         samples
             .into_iter()
             .zip(1..)
-            .find(|(s, _)| st.observe(send_ok(s)))
+            .find(|(s, _)| st.observe(send_ok(s), ON_SECS))
             .map(|(_, i)| i)
     }
 
     #[test]
-    fn video_call_hd_good_line_suggests_after_room_secs() {
-        assert_eq!(first_room(std::iter::repeat_n(good(), 30)), Some(ROOM_SECS));
+    fn video_call_hd_good_line_has_room_after_on_secs() {
+        assert_eq!(first_room(std::iter::repeat_n(good(), 30)), Some(ON_SECS));
         // Right at the threshold counts; a hardware encoder needs no time.
         let edge = SendSample {
             rate_bps: ROOM_BPS,
@@ -264,7 +205,7 @@ mod tests {
             hw: true,
             ..good()
         };
-        assert_eq!(first_room(std::iter::repeat_n(edge, 30)), Some(ROOM_SECS));
+        assert_eq!(first_room(std::iter::repeat_n(edge, 30)), Some(ON_SECS));
     }
 
     #[test]
@@ -275,8 +216,8 @@ mod tests {
             ..good()
         };
         assert_eq!(first_room(std::iter::repeat_n(weak, 120)), None);
-        // Borderline: above it, but a dip every 6 s.
-        let calls = (0..120).map(|i| if i % 6 == 5 { weak } else { good() });
+        // Borderline: above it, but a dip every 5 s.
+        let calls = (0..120).map(|i| if i % 5 == 4 { weak } else { good() });
         assert_eq!(first_room(calls), None);
         // The ladder isn't at 540p or above (the rate never got there): no room either.
         assert_eq!(
@@ -298,28 +239,28 @@ mod tests {
             congested: true,
             ..good()
         };
-        // 9 good seconds, overuse, then it takes another full 10.
-        let s = std::iter::repeat_n(good(), 9)
+        // 4 good seconds, overuse, then it takes another full 5.
+        let s = std::iter::repeat_n(good(), 4)
             .chain([over])
             .chain(std::iter::repeat_n(good(), 30));
-        assert_eq!(first_room(s), Some(9 + 1 + ROOM_SECS));
+        assert_eq!(first_room(s), Some(4 + 1 + ON_SECS));
         // Room already earned goes at once with an overuse, and is earned again from zero.
         let mut st = Streak::default();
-        for _ in 0..ROOM_SECS {
-            st.observe(send_ok(&good()));
+        for _ in 0..ON_SECS {
+            st.observe(send_ok(&good()), ON_SECS);
         }
-        assert!(st.observe(send_ok(&good())));
-        assert!(!st.observe(send_ok(&over)));
-        assert!(!st.observe(send_ok(&good())));
+        assert!(st.observe(send_ok(&good()), ON_SECS));
+        assert!(!st.observe(send_ok(&over), ON_SECS));
+        assert!(!st.observe(send_ok(&good()), ON_SECS));
         // A CPU step down resets it the same way.
         let cpu = SendSample {
             cpu_step: true,
             ..good()
         };
-        let s = std::iter::repeat_n(good(), 9)
+        let s = std::iter::repeat_n(good(), 4)
             .chain([cpu])
             .chain(std::iter::repeat_n(good(), 30));
-        assert_eq!(first_room(s), Some(9 + 1 + ROOM_SECS));
+        assert_eq!(first_room(s), Some(4 + 1 + ON_SECS));
     }
 
     #[test]
@@ -333,15 +274,6 @@ mod tests {
                 60
             )),
             None
-        );
-        // And the app's own guard: HD on, no line even if the stats said so.
-        let st = VideoStats {
-            hd_suggest: "line".into(),
-            ..Default::default()
-        };
-        assert_eq!(
-            video_hd_suggestion(&st, true, HdSuggestMemory::default(), "Ana".into()),
-            ""
         );
     }
 
@@ -445,75 +377,57 @@ mod tests {
         assert!(!recv_ok(&RecvSample { frames: 0, ..big() }));
     }
 
-    #[test]
-    fn video_call_hd_suggestion_kind_and_text() {
-        assert_eq!(suggestion(false, true), "");
-        assert_eq!(suggestion(true, false), "line");
-        assert_eq!(suggestion(true, true), "peer");
-        let m = HdSuggestMemory::default();
-        let st = |k: &str| VideoStats {
-            hd_suggest: k.into(),
-            ..Default::default()
-        };
-        assert_eq!(video_hd_suggestion(&st(""), false, m, "Ana".into()), "");
-        assert_eq!(
-            video_hd_suggestion(&st("line"), false, m, "Ana".into()),
-            "Room for sharper video \u{b7} tap HD"
-        );
-        assert_eq!(
-            video_hd_suggestion(&st("peer"), false, m, "Ana".into()),
-            "Ana could see you sharper \u{b7} tap HD"
-        );
-        assert_eq!(
-            video_hd_suggestion(&st("peer"), false, m, "  ".into()),
-            "They could see you sharper \u{b7} tap HD"
-        );
-        assert_eq!(
-            video_hd_suggestion(&st("peer"), false, m, "Bartholomew Quince".into()),
-            "Bartholomew\u{2026} could see you sharper \u{b7} tap HD"
-        );
+    /// Feeds `samples` one per second; returns the seconds (1-based) at which the choice changed.
+    fn switches(samples: impl IntoIterator<Item = SendSample>) -> Vec<u32> {
+        let mut auto = Auto::default();
+        let mut was = false;
+        let mut out = vec![];
+        for (s, i) in samples.into_iter().zip(1..) {
+            // The app follows: once HD, the camera captures HD and sends the rung's size.
+            let s = if was { SendSample { hd_on: true, send_px: s.rung_px.min(P720), ..s } } else { s };
+            let on = auto.observe(&s);
+            if on != was {
+                out.push(i);
+            }
+            was = on;
+        }
+        out
     }
 
     #[test]
-    fn video_call_hd_memory_stops_after_uses_or_ignores() {
-        let mut m = HdSuggestMemory::default();
-        assert!(video_hd_suggest_allowed(m));
-        // Ignored twice, then accepted: the count starts again.
-        m = video_hd_suggest_after_call(m, true, false);
-        m = video_hd_suggest_after_call(m, true, false);
-        m = video_hd_suggest_after_call(m, false, false);
-        assert_eq!(
-            m,
-            HdSuggestMemory {
-                turned_on: 0,
-                ignored_in_a_row: 2
-            },
-            "a call without a suggestion changes nothing"
-        );
-        m = video_hd_suggest_after_call(m, true, true);
-        assert_eq!(
-            m,
-            HdSuggestMemory {
-                turned_on: 1,
-                ignored_in_a_row: 0
-            }
-        );
-        // Three ignored in a row: stop.
-        for _ in 0..3 {
-            m = video_hd_suggest_after_call(m, true, false);
-        }
-        assert!(!video_hd_suggest_allowed(m));
-        let st = VideoStats {
-            hd_suggest: "line".into(),
-            ..Default::default()
-        };
-        assert_eq!(video_hd_suggestion(&st, false, m, "Ana".into()), "");
-        // Three calls with HD turned on by hand: stop too.
-        let mut m = HdSuggestMemory::default();
-        for _ in 0..3 {
-            assert!(video_hd_suggest_allowed(m));
-            m = video_hd_suggest_after_call(m, false, true);
-        }
-        assert!(!video_hd_suggest_allowed(m));
+    fn video_call_hd_auto_on_after_on_secs_and_stays_through_a_dip() {
+        assert_eq!(switches(std::iter::repeat_n(good(), 60)), [ON_SECS]);
+        // Once HD, a 10 s dip to 360p keeps the camera (a reopen costs a freeze).
+        let dip = SendSample { rung_px: 640 * 360, rate_bps: 500_000, congested: true, ..good() };
+        let s = std::iter::repeat_n(good(), 10)
+            .chain(std::iter::repeat_n(dip, OFF_SECS as usize - 1))
+            .chain(std::iter::repeat_n(good(), 30));
+        assert_eq!(switches(s), [ON_SECS]);
+        // Overuse or a CPU step while HD is on doesn't turn it off by itself either.
+        let s = std::iter::repeat_n(good(), 10).chain([SendSample { congested: true, cpu_step: true, ..good() }]).chain(std::iter::repeat_n(good(), 10));
+        assert_eq!(switches(s), [ON_SECS]);
+    }
+
+    #[test]
+    fn video_call_hd_auto_off_after_off_secs_below_540p_then_on_again() {
+        let low = SendSample { rung_px: 640 * 360, rate_bps: 500_000, ..good() };
+        let s = std::iter::repeat_n(good(), 10)
+            .chain(std::iter::repeat_n(low, 30))
+            .chain(std::iter::repeat_n(good(), 30));
+        assert_eq!(switches(s), [ON_SECS, 10 + OFF_SECS, 40 + ON_SECS]);
+        // The peer's picture shrinks below 540p (a small window, a hidden picture): off as well.
+        let small = SendSample { cap_px: 640 * 360, ..good() };
+        let s = std::iter::repeat_n(good(), 10).chain(std::iter::repeat_n(small, 30));
+        assert_eq!(switches(s), [ON_SECS, 10 + OFF_SECS]);
+        // The camera reopening (no frames) doesn't count toward off.
+        let none = SendSample { frames: 0, rung_px: 640 * 360, ..good() };
+        let s = std::iter::repeat_n(good(), 10).chain(std::iter::repeat_n(none, 60));
+        assert_eq!(switches(s), [ON_SECS]);
+    }
+
+    #[test]
+    fn video_call_hd_auto_never_on_a_weak_line() {
+        let weak = SendSample { rate_bps: 1_100_000, ..good() };
+        assert_eq!(switches(std::iter::repeat_n(weak, 120)), Vec::<u32>::new());
     }
 }

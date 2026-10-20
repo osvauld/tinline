@@ -125,12 +125,11 @@ class VideoQualityTest {
         assertEquals("On mobile data, HD uses more \u00b7 tap HD", HD_METERED_LINE)
     }
 
-    @Test fun hdSuggestionOncePerCallAndNeverOverAnotherLine() {
-        val line = "Room for sharper video \u00b7 tap HD"
-        assertTrue(hdSuggestNow(line, shownThisCall = false, otherLineShowing = false))
-        assertFalse(hdSuggestNow(line, shownThisCall = true, otherLineShowing = false))
-        assertFalse(hdSuggestNow(line, shownThisCall = false, otherLineShowing = true))
-        assertFalse(hdSuggestNow("", shownThisCall = false, otherLineShowing = false))
-        assertTrue(HD_SUGGEST_MS > HD_NOTE_MS)
+    @Test fun hdFollowsChipThenSettingThenCore() {
+        assertFalse(effectivePreferHd(setting = false, callChoice = null))
+        assertTrue(effectivePreferHd(setting = true, callChoice = null))
+        assertFalse(effectivePreferHd(setting = true, callChoice = false))
+        assertTrue(effectivePreferHd(setting = false, callChoice = true))
+        assertTrue(HD_METERED_MS > HD_NOTE_MS)
     }
 }

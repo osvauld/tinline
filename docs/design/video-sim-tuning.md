@@ -179,11 +179,20 @@ call overlay has that; it is not in the per-second log line yet).
 So on this phone the royalty-free choice is VP8 in hardware both ways; VP9 only as a receive
 codec (hardware decode, software encode capped at 720p); AV1 receive only, in software.
 
+## Phones: Cut+probe is the default (2026-10-20)
+
+A/B on the relay path (moto g52 <-> Pixel 3a): on "Cut" the moto's camera video sat at 360p6, 25-150 kbps (delay with no queue behind it
+read as overuse); with Cut+probe on both phones it ran 540p, 0.6-2 Mbps, 15-24 fps, and the
+Pixel stayed at its top step (3 Mbps). So the apps' "auto" (and an empty tuning) is now
+Cut+probe (`VideoTuning::configure_rate`); the tuning sheet keeps "Plain (old)", "Cut" and
+"Trend+probe" for A/B calls. The probe still needs the peer's offer to say `burst_probe`. The
+sim's `SenderConfig::default()` is unchanged (its tests and the scoreboard's `fixed` row are the
+old controller; Cut+probe is the `c+b` variant).
+
 ## Next
 
-- Phones: a switch for `smooth_cut`, `burst_room` / `report_burst` and the detector (the
-  in-call tuning sheet), then A/B calls on the same paths (moto <-> phone on mobile data, a relay
-  call), with the burst rate and roomy count in the per-second log line.
+- Phones: the probe is idle on the moto side (burst=0 there: the Pixel reads the moto's frames
+  in one go): time bursts at packet arrival.
 - Scoreboard (`sim/tests/scoreboard.rs`, `--ignored`): every scenario x variant in one table;
   the 3-seed `fixed` baseline is in `docs/design/video-scoreboard-baseline.txt`.
 - Codecs and paths in the scoreboard: hardware VP8, software VP8 (libvpx), software AV1; direct

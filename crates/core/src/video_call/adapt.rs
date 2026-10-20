@@ -184,17 +184,16 @@ pub(super) struct Policy {
     pub(super) peer: (usize, u32),
     /// The peer's offer says `burst_probe`.
     pub(super) peer_probes: bool,
-    /// The app's HD choice for this call (`Node::set_video_hd`).
+    /// The camera captures HD now (`Node::set_video_hd`).
     pub(super) hd_on: bool,
     /// Our decoder is asynchronous (hardware, or any MediaCodec one: `codecs::pipelined_decoder`):
     /// its cost is judged by throughput, not wall time.
     pub(super) recv_pipelined: bool,
-    /// The sharper-video rules (`hd`): how long each has held, our receiver's `Hint::room`, and
-    /// what the app may suggest (`VideoStats::hd_suggest`).
-    send_room: hd::Streak,
+    /// The sharper-video rules (`hd`): the core's HD choice for the camera
+    /// (`VideoStats::hd_auto`), and how long our receiver's `Hint::room` has held.
+    pub(super) auto: hd::Auto,
     recv_room: hd::Streak,
     room: bool,
-    pub(super) suggest: &'static str,
 }
 
 impl Default for Policy {
@@ -212,10 +211,9 @@ impl Default for Policy {
             peer_probes: false,
             hd_on: false,
             recv_pipelined: false,
-            send_room: hd::Streak::default(),
+            auto: hd::Auto::default(),
             recv_room: hd::Streak::default(),
             room: false,
-            suggest: "",
         }
     }
 }
@@ -282,18 +280,17 @@ impl Policy {
         }
     }
 
-    /// One second of the sharper-video rules (`hd`): `send` for what I send (`peer_room`: the
-    /// peer's hint says it has room), `recv` with what I receive filled in except the view, which
-    /// comes from here. Sets our own hint's room flag and what the app may suggest.
-    pub(super) fn observe_room(&mut self, mut send: hd::SendSample, mut recv: hd::RecvSample, peer_room: bool) {
+    /// One second of the sharper-video rules (`hd`): `send` for what I send, `recv` with what I
+    /// receive filled in except the view, which comes from here. Sets the core's HD choice for
+    /// the camera and our own hint's room flag.
+    pub(super) fn observe_room(&mut self, mut send: hd::SendSample, mut recv: hd::RecvSample) {
         send.hd_on = self.hd_on;
-        let send_room = self.send_room.observe(hd::send_ok(&send));
-        self.suggest = hd::suggestion(send_room, peer_room);
+        self.auto.observe(&send);
         let w = Hint { room: false, ..self.wanted() };
         let shown = matches!(self.view, Some((_, _, true)));
         recv.wanted_px = if shown { w.max_pixels as u64 } else { 0 };
         recv.limited = w.reason != HintReason::DisplaySize || w.max_fps != 0;
-        self.room = self.recv_room.observe(hd::recv_ok(&recv));
+        self.room = self.recv_room.observe(hd::recv_ok(&recv), hd::ROOM_SECS);
     }
 
     /// A hint to send now, if there is a change worth sending. A change that only makes the
@@ -621,16 +618,16 @@ pub(super) async fn run_policy(pipe: Arc<Pipe>) {
             );
         }
         drop(st);
-        // Sharper video: what the app may suggest, and our own hint's room flag (sent at once
-        // when it changes).
-        let suggest = {
+        // Sharper video: the core's HD choice for the camera, and our own hint's room flag (sent
+        // at once when it changes).
+        let changed = {
             let mut pol = pipe.policy.lock();
-            let before = (pol.suggest, pol.room);
-            pol.observe_room(send_room, recv_room, hint.is_some_and(|h| h.room));
-            (before != (pol.suggest, pol.room)).then_some((pol.suggest, pol.room))
+            let before = (pol.auto.on, pol.room);
+            pol.observe_room(send_room, recv_room);
+            (before != (pol.auto.on, pol.room)).then_some((pol.auto.on, pol.room))
         };
-        if let Some((s, room)) = suggest {
-            tracing::info!(target: "p2pcore::video_call", "video hd suggest={s:?} room={room}");
+        if let Some((auto, room)) = changed {
+            tracing::info!(target: "p2pcore::video_call", "video hd auto={auto} room={room}");
         }
         push_hint(&pipe, now);
     }

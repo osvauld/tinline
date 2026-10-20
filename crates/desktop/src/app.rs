@@ -84,12 +84,6 @@ struct Settings {
     prefer_hd: bool,
     #[serde(default)]
     camera_device: Option<String>,
-    /// Sharper-video suggestions: calls with HD turned on by hand, and suggestions in a row left unanswered
-    /// (`p2pcore::HdSuggestMemory`; the core decides when to stop).
-    #[serde(default)]
-    hd_suggest_turned_on: u32,
-    #[serde(default)]
-    hd_suggest_ignored: u32,
     /// Appearance: None follows the system; Some(dark) is an explicit choice (the sign-up switch).
     #[serde(default)]
     appearance: Option<bool>,

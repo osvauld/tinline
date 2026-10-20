@@ -1377,13 +1377,11 @@ impl App {
             st = st.push(container(container(tx(v.recv_label.clone(), 13.0, t.ink)).width(260).height(18).clip(true)).padding(14).align_bottom(Fill));
         }
         if v.local_on() {
-            // The short line (the chip's echo 2.6 s, a sharper-video suggestion 6 s) borrows the picture label; the
-            // label's box does not change.
+            // The short line (the chip's echo, 2.6 s) borrows the picture label; the label's box does not change.
             let label = v.hd_line().map(str::to_string).unwrap_or_else(|| {
                 if v.send_size.is_none() || v.send_label.is_empty() { "Starting video\u{2026}".to_string() } else { v.send_label.clone() }
             });
-            // A fixed-width box, wide enough for the longest suggestion (a 12-character name): the words change,
-            // nothing around them moves.
+            // A fixed-width box: the words change, nothing around them moves.
             st = st.push(container(container(tx(label, 13.0, t.ink)).width(300).height(18).clip(true)).padding(14));
             // My picture, with the HD chip on its top-start corner (it is about what I send).
             let hd = v.hd_on(self.settings.prefer_hd);
