@@ -302,9 +302,3 @@ fun ListGroupAvatar(size: Dp, alpha: Float = 1f, gid: String? = null) {
 fun ListSection(text: String, modifier: Modifier = Modifier) {
     Text(text.uppercase(), modifier, style = TinFs.section, color = Tin.c.ink2)
 }
-
-/** Crossfaded text in one cell, so a changing line never moves its neighbours. */
-@Composable
-fun FadeText(text: String, content: @Composable (String) -> Unit) {
-    Crossfade(text, animationSpec = tween(Motion.CROSSFADE), label = "fadeText") { content(it) }
-}

@@ -43,8 +43,6 @@ import kotlinx.coroutines.launch
 import uniffi.p2pcore.Contact
 import uniffi.p2pcore.CallRecord
 
-private fun String.matchesQuery(q: String) = q.isBlank() || contains(q.trim(), ignoreCase = true)
-
 @Composable
 fun HomeScreen(
     app: P2pApp, missing: List<Need>, onFix: (Need) -> Unit,

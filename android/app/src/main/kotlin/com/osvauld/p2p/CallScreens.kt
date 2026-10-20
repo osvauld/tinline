@@ -259,8 +259,6 @@ fun IncomingContent(name: String, did: String, onDecline: () -> Unit, onAnswer: 
 
 // ------------------------------------------------------------------ calling / in call
 
-private fun routeLabel(speaker: Boolean) = if (speaker) "Speaker" else "Phone"
-
 private fun routeIcon(k: AudioRoute.Kind): ImageVector = when (k) {
     AudioRoute.Kind.Earpiece -> PgIcons.Phone
     AudioRoute.Kind.Speaker -> PgIcons.Vol

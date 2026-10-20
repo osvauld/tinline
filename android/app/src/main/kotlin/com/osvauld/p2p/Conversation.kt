@@ -584,10 +584,6 @@ private fun Composer(
     )
 }
 
-@Composable
-private fun BannerLine(text: String) =
-    Text(text, style = TinType.bodyM.copy(fontSize = 13.sp, lineHeight = 18.sp), color = Tin.c.ink2, maxLines = 1, overflow = TextOverflow.Ellipsis)
-
 // ------------------------------------------------------------------ bubbles
 
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)

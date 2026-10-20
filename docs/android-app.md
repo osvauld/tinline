@@ -92,8 +92,6 @@ Spec: `docs/design/*.dc.html` (tokens in `Main.dc.html`). Code map (package `com
   They match -> `setVerified`), availability (`P2pApp.availability`, status pill + sheet, Settings toggle,
   banner, foreground-notification text, a coroutine timer for timed breaks, re-read on resume),
   `CallStats.reconnecting` (In call "Reconnecting" state).
-- Debug builds include `GalleryActivity` (`--es screen <name>`) that renders the screens with sample data
-  for screenshots.
 
 ## Accounts, passphrase + device unlock (`UnlockStore`)
 

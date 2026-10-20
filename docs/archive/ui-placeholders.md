@@ -1,5 +1,9 @@
 # Retired placeholder UI (2026-10-14)
 
+> **2026-10-20:** the gated preview layer described below is now deleted outright (desktop
+> `groups.rs`, `groups_fake.rs`, `groups_preview_view.rs`, `demo_pg.rs`; Android debug gallery and
+> its fakes). The restore tag below still works.
+
 The groups & privacy PREVIEW screens ran on invented data before the core had groups. The core now
 has real groups (`group_live*.rs` on desktop, `GroupsLive.kt` on Android), so the placeholder layer
 was removed from shipped builds. Everything is restorable from the git tag

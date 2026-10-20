@@ -36,7 +36,6 @@ object EmptyQuiet {
     const val UNREAD = "You’re all caught up."
     const val CALLS = "Calls you make and receive show up here."
     const val CONTACTS = "The people you add show up here."
-    const val GROUPS_PHONE = "When someone invites you to a group, it shows up here."
 }
 
 @Composable

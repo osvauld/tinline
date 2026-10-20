@@ -71,22 +71,6 @@ private enum class Step {
     }
 }
 
-/** Older onboarding frame, still used by a few non-gate screens. Same furniture as the gate now. */
-@Composable
-fun StepFrame(
-    progress: Int?, onBack: (() -> Unit)?, modifier: Modifier = Modifier,
-    footer: @Composable ColumnScope.() -> Unit = {}, body: @Composable ColumnScope.() -> Unit,
-) {
-    Page {
-        GateHead(onBack, progress?.let { it to 6 })
-        Column(
-            modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp), content = body,
-        )
-        Column(Modifier.fillMaxWidth().padding(start = 24.dp, end = 24.dp, bottom = 24.dp, top = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp), content = footer)
-    }
-}
-
 @Composable
 fun H1(text: String, modifier: Modifier = Modifier, align: TextAlign = TextAlign.Start) =
     Text(text, modifier, style = TinType.h1, color = Tin.c.ink, textAlign = align)
@@ -423,10 +407,6 @@ private fun DoneTip(icon: ImageVector, title: String, body: String) {
     }
 }
 
-/** Welcome on its own (kept for callers outside the flow). */
-@Composable
-fun WelcomeScreen(onStart: () -> Unit, onRestore: () -> Unit, onLink: () -> Unit = {}) = Page { GateHead(null, 0 to 6); WelcomeStep(false, onStart, onRestore) }
-
 // ------------------------------------------------------------------ name (Name.svelte)
 
 @Composable
@@ -588,11 +568,6 @@ private fun DeviceStep(label: String, onChange: (String) -> Unit, busy: Boolean,
     }
 }
 
-/** Kept for callers outside the flow. */
-@Composable
-fun DeviceNameScreen(label: String, onChange: (String) -> Unit, busy: Boolean, error: String?, onNext: () -> Unit, progress: Int? = 4, cta: String = "Continue", onBack: (() -> Unit)? = null) =
-    Page { GateHead(onBack, progress?.let { it to 6 }); DeviceStep(label, onChange, busy, error, onNext) }
-
 // ------------------------------------------------------------------ restored / linked (the app's own end screens, Done.svelte look)
 
 @Composable
@@ -640,10 +615,6 @@ private fun SyncRow(icon: ImageVector, title: String, value: String, done: Boole
         }
     })
 }
-
-/** Kept for callers outside the flow (Link.kt used it before the port). */
-@Composable
-fun SyncingScreen(name: String, peer: String, contacts: Int, calls: Int, onStart: () -> Unit) = Page { GateHead(null, null); SyncingStep(name, peer, contacts, calls, onStart) }
 
 // ------------------------------------------------------------------ save failed (Failed.svelte, savefailed)
 
@@ -737,10 +708,6 @@ private fun PermRow(icon: ImageVector, title: String, why: String, granted: Bool
         }
     }
 }
-
-/** Kept for callers outside the flow. */
-@Composable
-fun PermissionsScreen(missing: List<Need>, onFix: (Need) -> Unit, onDone: () -> Unit) = Page { GateHead(null, null); PermsStep(missing, onFix, onDone) }
 
 // ------------------------------------------------------------------ restore: 24 words (Restore.svelte)
 
@@ -888,38 +855,7 @@ private fun WordCell(
     }
 }
 
-/** The 24-word screen on its own (the forgot-passphrase path from Unlock uses the flow; kept for other callers). */
-@Composable
-fun RestoreScreen(onBack: () -> Unit, error: String?, busy: Boolean, warning: String, onSubmit: (String) -> Unit) {
-    var err by remember(error) { mutableStateOf(error) }
-    Page { GateHead(onBack, null); RestoreStep(err, warning, { err = it }, onSubmit) }
-}
-
 // ------------------------------------------------------------------ previews (debug gallery: `g-<step>`)
-
-/** One sign-up step with its header, synthetic data only (the debug gallery and screenshots). */
-@Composable
-internal fun GateStepPreview(which: String) {
-    val phrase = "abandon ability able about above absent absorb abstract absurd abuse access accident account accuse achieve acid acoustic acquire across act action actor actress actual"
-    var name by remember { mutableStateOf("Maya Kurian") }
-    var pass by remember { mutableStateOf(if (which == "pass-typed") "blue kettle" else "") }
-    var label by remember { mutableStateOf("Personal phone") }
-    val none = {}
-    Page {
-        when (which) {
-            "welcome" -> { GateHead(null, 0 to 6); WelcomeStep(false, none, none) }
-            "choose" -> { GateHead(none, 0 to 6); ChooseStep(none, none) }
-            "name" -> { GateHead(none, 1 to 6); NameStep(name, { name = it }, none) }
-            "pass", "pass-typed" -> { GateHead(none, 2 to 6); PassStep(PassKind.Create, pass, { pass = it }, false, null, none, none) }
-            "phrase" -> { GateHead(null, 3 to 6); PhraseStep(phrase, none) }
-            "phrase-copied" -> { GateHead(null, 3 to 6); PhraseStep(phrase, none, copiedAlready = true) }
-            "device" -> { GateHead(none, 4 to 6); DeviceStep(label, { label = it }, false, null, none) }
-            "terms" -> { GateHead(null, 5 to 6); TermsStep(none) }
-            "perms" -> { GateHead(null, 6 to 6); PermsStep(listOf(Need.Mic, Need.FullScreen, Need.Battery), {}, none) }
-            "done" -> { GateHead(null, null); DoneStep(name, none, none) }
-        }
-    }
-}
 
 /** Words | Key: the same secret two ways (recovery step, Settings). Hugs its two buttons. */
 @Composable

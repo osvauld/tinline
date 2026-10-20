@@ -43,14 +43,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-/** The app icon as a rounded square, for the Unlock screen and About. */
-@Composable
-fun AppIconBadge(size: androidx.compose.ui.unit.Dp) {
-    Box(Modifier.size(size).clip(RoundedCornerShape(size * 0.28f)).background(Color(0xFF0B6B5B)), contentAlignment = Alignment.Center) {
-        TinMark(size * 0.62f, can = Color(0xFFF5F6F3), string = Color(0xFFE8B04A), mouth = Color(0xFF0B6B5B))
-    }
-}
-
 // Five-try / 30-second lockout is a core gap, not a UI-only security policy.
 
 /** Shown while the identity is Locked and no device key could unlock it. */

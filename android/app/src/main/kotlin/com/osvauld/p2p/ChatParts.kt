@@ -195,14 +195,6 @@ fun PgStack(children: List<@Composable () -> Unit>) {
     }
 }
 
-/** "You deleted this message", italic and muted inside a hairline outline. */
-@Composable
-fun PgDeletedBubble(label: String, pos: BubblePos, mine: Boolean, time: String, modifier: Modifier = Modifier) {
-    PgBubble(pos, mine, modifier, gone = true) {
-        PgTextWithMeta(AnnotatedString(label), Tin.c.ink2, { PgMeta(BubbleMeta(time), Tin.c.ink2) }, PgBodyText.copy(fontStyle = FontStyle.Italic))
-    }
-}
-
 /** The quote of the message replied to (`.quote`): surface-2, 3 dp accent bar at the start, smooth 12 corners. */
 @Composable
 fun PgQuote(who: String?, whoColor: Color, text: String, onClick: (() -> Unit)?) {
@@ -262,25 +254,6 @@ fun PgStrip(text: String, icon: ImageVector, warn: Boolean = false, modifier: Mo
             Text(text, style = PgBodyText.copy(fontSize = 13.sp, lineHeight = 18.sp), color = if (warn) c.onWarn else c.ink2)
         }
         Box(Modifier.fillMaxWidth().height(1.dp).background(c.hairline))
-    }
-}
-
-/** The "scroll to latest" button (`.tobottom`): 44 dp, raised surface, lift depth, a count of new messages. */
-@Composable
-fun PgToBottom(below: Int, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    val c = Tin.c
-    Box(modifier.size(44.dp)) {
-        Box(
-            Modifier.fillMaxSize().depth(Depth.Lift, CircleShape).clip(CircleShape).background(c.sfRaised)
-                .pgPress(onClick, if (below > 0) "Scroll to latest, $below new" else "Scroll to latest"),
-            contentAlignment = Alignment.Center,
-        ) { Icon(Pg.Chev, null, tint = c.ink, modifier = Modifier.size(22.dp)) }
-        // .t-badge at top/end -4, its 2 dp canvas ring outside it.
-        if (below > 0) Box(Modifier.align(Alignment.TopEnd).offset(6.dp, (-6).dp).clip(RoundedCornerShape(11.dp)).background(c.canvas).padding(2.dp)) {
-            Box(Modifier.heightIn(min = 18.dp).widthIn(min = 18.dp).clip(RoundedCornerShape(9.dp)).background(c.accentFill).padding(horizontal = 5.dp), contentAlignment = Alignment.Center) {
-                Text("$below", style = MetaText.copy(fontWeight = FontWeight.Bold), color = c.onAccentFill)
-            }
-        }
     }
 }
 
@@ -413,20 +386,6 @@ fun PgSheet(onDismiss: () -> Unit, content: @Composable ColumnScope.() -> Unit) 
     }
 }
 
-/** A menu row (`.mi`): 52 dp, 24 dp side padding, a 20 dp muted icon 16 dp before the label. */
-@Composable
-fun PgMenuItem(icon: ImageVector, label: String, danger: Boolean = false, onClick: () -> Unit) {
-    val c = Tin.c
-    val fg = if (danger) c.er else c.ink
-    Row(
-        Modifier.fillMaxWidth().heightIn(min = 52.dp).clickable(role = Role.Button, onClick = onClick).padding(horizontal = 24.dp),
-        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        Icon(icon, null, tint = if (danger) c.er else c.ink2, modifier = Modifier.size(20.dp))
-        Text(label, style = PgBodyText, color = fg)
-    }
-}
-
 /** The dialog body inside a sheet (`.dlg`): 20/20/16 padding, a 17/24 title. */
 @Composable
 fun PgDialogBody(title: String, content: @Composable ColumnScope.() -> Unit) {
@@ -435,37 +394,3 @@ fun PgDialogBody(title: String, content: @Composable ColumnScope.() -> Unit) {
         content()
     }
 }
-
-@Composable
-fun PgDialogText(text: String) = Text(text, Modifier.padding(vertical = 6.dp), style = PgBodyText.copy(fontSize = 13.sp, lineHeight = 19.sp), color = Tin.c.ink2)
-
-enum class PgBtn { Primary, Quiet, Danger, QuietDanger }
-
-/** `.btn`: 44 dp pill, 18 dp side padding, 15 semibold. */
-@Composable
-fun PgButton(label: String, kind: PgBtn, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    val c = Tin.c
-    val dangerBtn = if (c.dark) Color(0xFFC73A30) else Color(0xFFA12B23)
-    val (bg, fg) = when (kind) {
-        PgBtn.Primary -> c.accentFill to c.onAccentFill
-        PgBtn.Danger -> dangerBtn to Color.White
-        PgBtn.Quiet -> Color.Transparent to c.ink
-        PgBtn.QuietDanger -> Color.Transparent to c.er
-    }
-    Box(modifier.heightIn(min = 44.dp).clip(RoundedCornerShape(22.dp)).background(bg).pgPress(onClick).padding(horizontal = 18.dp), contentAlignment = Alignment.Center) {
-        Text(label, style = PgBodyText.copy(fontWeight = FontWeight.SemiBold), color = fg, maxLines = 1)
-    }
-}
-
-/** Android stacks dialog actions full width, last one on top (`.acts.stack`: column-reverse). Pass them in reading order. */
-@Composable
-fun PgActions(vararg buttons: @Composable (Modifier) -> Unit) {
-    Column(Modifier.fillMaxWidth().padding(top = 18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        buttons.reversed().forEach { it(Modifier.fillMaxWidth()) }
-    }
-}
-
-/** Fades [content] in and out with the cross-fade token (strips, notes). */
-@Composable
-fun PgFade(visible: Boolean, modifier: Modifier = Modifier, content: @Composable () -> Unit) =
-    AnimatedVisibility(visible, modifier, enter = fadeIn(tween(PgMotion.CROSSFADE, easing = PgMotion.Out)), exit = fadeOut(tween(PgMotion.CROSSFADE, easing = PgMotion.Out))) { content() }

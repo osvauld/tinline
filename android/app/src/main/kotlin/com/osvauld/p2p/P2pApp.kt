@@ -46,8 +46,6 @@ class P2pApp : Application(), NodeEvents {
     /** Group chat on the core (GroupsCore.kt): the Groups tab. */
     lateinit var groups: GroupsController
         private set
-    /** The debug gallery only: render the group screens over sample data instead of the core. */
-    fun groupsForGallery(g: GroupsController) { groups = g }
     /** Device linking: the state machine behind the Link a device screens, and the core's LinkEvents. */
     lateinit var links: LinkController
         private set
