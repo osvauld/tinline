@@ -3,4 +3,5 @@
     <cache-path name="chat_media" path="chat_media/" />
     <cache-path name="chat_camera" path="chat_camera/" />
     <files-path name="tones" path="tones/" />
+    <cache-path name="debug_log" path="debug_log/" />
 </paths>

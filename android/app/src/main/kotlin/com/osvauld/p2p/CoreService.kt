@@ -92,13 +92,28 @@ class CoreService : Service() {
     /** Main thread only: re-derive and re-post; a change also redoes the service type and the locks. */
     private fun apply(why: String) {
         if (reevaluate(why)) { enterForeground(); updateLocks(); return }
+        repost()
+    }
+
+    private fun notifId() = if (inCall != null) Notifications.ID_CALL else Notifications.ID_SERVICE
+
+    private fun repost() {
         try {
             (getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager)
-                .notify(Notifications.ID_SERVICE, Notifications.service(this, inCall))
+                .notify(notifId(), Notifications.service(this, inCall))
         } catch (_: Exception) {}
     }
 
+    /**
+     * Android drops updates past a few per second per app; a call's end posts several at once,
+     * so the last (idle) one could be the dropped one. Re-post the current state once it is quiet.
+     */
+    private val settle = Runnable { CallTrace.add("settle ${if (inCall != null) "in-call" else "idle"}"); repost() }
+
     private fun enterForeground() {
+        main.removeCallbacks(settle)
+        main.postDelayed(settle, SETTLE_MS)
+        val id = notifId()
         val n = Notifications.service(this, inCall)
         try {
             if (Build.VERSION.SDK_INT >= 29) {
@@ -109,14 +124,17 @@ class CoreService : Service() {
                 if (inCall != null && Perms.granted(this, android.Manifest.permission.RECORD_AUDIO))
                     type = type or ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
                 try {
-                    startForeground(Notifications.ID_SERVICE, n, type)
+                    startForeground(id, n, type)
                 } catch (e: Exception) {
                     // Microphone type may be refused when started from the background (API 34+).
                     Log.w(TAG, "startForeground($type) refused: $e")
                     CallTrace.add("startForeground mic type refused (${e.javaClass.simpleName})")
-                    startForeground(Notifications.ID_SERVICE, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
+                    startForeground(id, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
                 }
-            } else startForeground(Notifications.ID_SERVICE, n)
+            } else startForeground(id, n)
+            // Android removes the previous id's notification when the id changes; make sure.
+            val other = if (id == Notifications.ID_CALL) Notifications.ID_SERVICE else Notifications.ID_CALL
+            try { (getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager).cancel(other) } catch (_: Exception) {}
         } catch (e: Exception) { Log.e(TAG, "startForeground failed: $e"); CallTrace.add("startForeground failed (${e.javaClass.simpleName})") }
     }
 
@@ -139,6 +157,7 @@ class CoreService : Service() {
     }
 
     override fun onDestroy() {
+        main.removeCallbacks(settle)
         try { cm.unregisterNetworkCallback(netCb) } catch (_: Exception) {}
         watch?.cancel(); watch = null
         inCall = null; updateLocks()
@@ -150,6 +169,7 @@ class CoreService : Service() {
 
     companion object {
         const val TAG = "CoreService"
+        private const val SETTLE_MS = 1500L
         const val ACTION_DECLINE = "com.osvauld.p2p.DECLINE"
         const val ACTION_HANGUP = "com.osvauld.p2p.HANGUP"
         const val ACTION_DECLINE_WAITING = "com.osvauld.p2p.DECLINE_WAITING"

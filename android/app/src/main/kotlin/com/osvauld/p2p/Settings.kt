@@ -281,6 +281,17 @@ fun AboutScreen(onBack: () -> Unit, onLicences: () -> Unit) {
     val ctx = LocalContext.current
     val libs = remember { runCatching { uniffi.p2pcore.openSourceLicences().map { it.name to it.licence } }.getOrDefault(emptyList()) + ANDROID_LIBS }
     var open by rememberSaveable { mutableStateOf(false) }
+    var logNote by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
+    // Reading logcat takes a moment; off the main thread, then copy or hand the file to the share sheet.
+    fun logs(send: Boolean) = scope.launch {
+        logNote = "Collecting the log…"
+        val full = withContext(Dispatchers.IO) { DebugLog.collect(ctx) }
+        logNote = runCatching {
+            if (send) { withContext(Dispatchers.IO) { DebugLog.share(ctx, full) }; null }
+            else { copyToClipboard(ctx, "Tinline debug log", DebugLog.forClipboard(full)); "Debug log copied. Paste it into a message." }
+        }.getOrElse { "Couldn't get the log: ${friendly(it)}" }
+    }
     PfPage("About Tinline", onBack) {
         Column(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 24.dp, bottom = 8.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
             TinMark(56.dp)
@@ -316,6 +327,13 @@ fun AboutScreen(onBack: () -> Unit, onLicences: () -> Unit) {
                 act { PfAct("tinline.osvauld.com", onClick = { openUrl(ctx, URL_SITE) }, icon = PgIcons.Globe, chevron = true) }
             }
             PfNote("Not for emergency calls.")
+        }
+        PfSec {
+            PfCard {
+                act { PfAct("Copy debug log", onClick = { logs(false) }, icon = PgIcons.Copy, sub = "Paste it to whoever is helping you fix a problem") }
+                act { PfAct("Send debug log", onClick = { logs(true) }, icon = PgIcons.Share, sub = "The full log as a file") }
+            }
+            PfNote(logNote ?: "The log has what Tinline did on this phone, with ids of contacts and calls. It never has your messages or your root secret.")
         }
     }
 }
