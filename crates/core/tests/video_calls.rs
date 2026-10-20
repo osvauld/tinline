@@ -198,6 +198,7 @@ fn watch(p: &Peer, d: Duration) -> (u32, Option<(u32, u32)>) {
 }
 
 #[test]
+#[cfg_attr(debug_assertions, ignore = "frame-rate timing: run with --release")]
 fn video_both_ways() {
     let (a, b) = pair("vboth");
     let id = connect(&a, &b);
@@ -244,6 +245,7 @@ fn video_both_ways() {
 }
 
 #[test]
+#[cfg_attr(debug_assertions, ignore = "frame-rate timing: run with --release")]
 fn camera_off_and_on_mid_call() {
     let (a, b) = pair("vcam");
     // Camera on before the call is even answered: applies once video runs.
@@ -327,6 +329,7 @@ fn stats_when(p: &Peer, secs: u64, what: &str, f: impl Fn(&p2pcore::VideoStats) 
 /// reports a thermal state; a's sender is capped within a second and sends at most 16 fps
 /// within two more.
 #[test]
+#[cfg_attr(debug_assertions, ignore = "frame-rate timing: run with --release")]
 fn receiver_hints_cap_the_sender() {
     let (a, b) = pair("vhint");
     connect(&a, &b);
@@ -424,6 +427,7 @@ fn call_kind_reaches_the_ring_and_both_logs() {
 /// while ringing, then answer) turns it on at once. To a device with video off it rings as a voice
 /// call, and the caller's camera goes off once the call is active (no video to send).
 #[test]
+#[cfg_attr(debug_assertions, ignore = "frame-rate timing: run with --release")]
 fn video_call_starts_with_my_camera_only() {
     let (a, b) = pair("vstart");
     let ring = |a: &Peer| {
@@ -503,6 +507,7 @@ fn live(p: &Peer) -> p2pcore::VideoLive {
 /// the picture shrinks, a 15 fps pin slows it, Auto lets it climb again. "Ignore limits" needs a
 /// pinned size; nothing here turns a camera on.
 #[test]
+#[cfg_attr(debug_assertions, ignore = "frame-rate timing: run with --release")]
 fn live_pin_and_cap_apply_mid_call() {
     let (a, b) = pair("vlive");
     let id = connect(&a, &b);
@@ -551,6 +556,7 @@ fn live_pin_and_cap_apply_mid_call() {
 /// follows at the keyframe, keeps decoding, and the picture never stops for more than a bound.
 #[cfg(feature = "vp8")]
 #[test]
+#[cfg_attr(debug_assertions, ignore = "frame-rate timing: run with --release")]
 fn live_codec_switch_both_ways() {
     let (a, b) = pair("vswitch");
     let id = connect(&a, &b);
