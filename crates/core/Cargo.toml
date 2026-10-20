@@ -28,7 +28,7 @@ required-features = ["bench"]
 dev-tools = ["video/sim", "proto/test-support"]
 # Benchmark binaries; app, Android and test builds skip them. `cargo build --release --features bench --bin search-bench`.
 # They drive the synthetic peers, so they need `dev-tools`.
-bench = ["dev-tools"]
+bench = ["dev-tools", "search-core/bench"]
 # Decode VP8 from phones' hardware encoders with libvpx (docs/design/video-hw-vp8.md). The linux
 # desktop enables it; Android uses `mediacodec` instead and never links libvpx.
 vp8 = ["video/vp8"]
@@ -42,6 +42,8 @@ proto.workspace = true
 gcall-core.workspace = true
 # Loro doc helpers (own-device doc, export batching, UTC days, writer IDs).
 crdt.workspace = true
+# The local search index; re-exported under `search` (src/search/mod.rs).
+search-core.workspace = true
 # Shared UI logic; its UniFFI items are re-exported from lib.rs so they land in libp2pcore.so.
 present = { path = "../present" }
 audio.workspace = true
@@ -61,8 +63,6 @@ hex = "0.4"
 bs58 = "0.5"
 loro = "1.13.9"
 blake3 = "1"
-unicode-normalization = "0.1"
-unicode-segmentation = "1"
 image = { version = "0.25", default-features = false, features = ["png", "jpeg", "webp"] }
 storage.workspace = true
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync", "time", "fs", "io-util"] }

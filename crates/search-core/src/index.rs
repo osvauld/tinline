@@ -19,15 +19,30 @@ use super::find::{Filter, Verdict};
 use super::hot::Hot;
 use super::seg::{self, Built, CHUNK, DayData, PART_DOCS, DayKey, Digest, Manifest, NO_DIGEST, Seg, View, decode_chunk, decode_list, rev_at, x_key, y_key, z_key, b_key, bucket_find, bucket_of};
 use crate::Error;
-use crate::chat::doc::{DAY_MS, day_of, day_start};
-use crate::rekey::phrase_key;
+use crdt::{DAY_MS, day_of, day_start};
 
 /// Bump when the tokenizer or the layout changes: the index is rebuilt from the chat and group
 /// stores. (1: per-message postings in the file. 2: hot tier + segments. 3: bucketed short
 /// posting lists. 4: `z/` doc tables for find in chat.)
 pub const VERSION: u32 = 4;
-const STORE_DOMAIN: &str = "tinline/search-store/v1";
-const INDEX_DOMAIN: &str = "tinline/search-index/v1";
+/// The key domain of the store's sealing key (p2pcore derives [`Keys::store`] under it).
+pub const STORE_DOMAIN: &str = "tinline/search-store/v1";
+/// The key domain of the keyed doc/term/conversation hashes ([`Keys::index`]).
+pub const INDEX_DOMAIN: &str = "tinline/search-index/v1";
+
+/// The two keys of an index, derived by the caller from the account's phrase under
+/// [`STORE_DOMAIN`] and [`INDEX_DOMAIN`].
+#[derive(Clone)]
+pub struct Keys {
+    /// Seals every record of the file.
+    pub store: cryptography::Secret32,
+    /// Keys the doc, term, conversation and day hashes.
+    pub index: cryptography::Secret32,
+}
+
+/// Opens (creating) the store file at a path: p2pcore waits for a previous owner and makes the
+/// file private.
+pub type OpenStore<'a> = &'a dyn Fn(&Path) -> Result<Store, Error>;
 
 /// Days (today and the ones before) whose docs live in the hot tier only.
 pub const HOT_DAYS: i64 = 8;
@@ -218,26 +233,25 @@ pub struct SearchIndex {
 
 impl SearchIndex {
     /// Opens (creating) the index; a file of another format version is emptied (a rebuild).
-    pub fn open(path: &Path, phrase: &str) -> Result<Self, Error> {
-        let store = crate::store::open_waiting(path)?;
-        crate::store::set_private(path);
-        Self::with_store(store, phrase, Some(path))
+    pub fn open(path: &Path, keys: Keys, open_store: OpenStore<'_>) -> Result<Self, Error> {
+        let store = open_store(path)?;
+        Self::with_store(store, keys, Some((path, open_store)))
     }
 
     #[cfg(test)]
     pub fn with_store_for_test(store: Store) -> Self {
-        Self::with_store(store, "alpha beta", None).unwrap()
+        Self::with_store(store, crate::testkit::keys("alpha beta"), None).unwrap()
     }
 
     #[cfg(test)]
     pub fn in_memory(phrase: &str) -> Self {
-        Self::with_store(Store::open_in_memory().unwrap(), phrase, None).unwrap()
+        Self::with_store(Store::open_in_memory().unwrap(), crate::testkit::keys(phrase), None).unwrap()
     }
 
-    fn with_store(store: Store, phrase: &str, path: Option<&Path>) -> Result<Self, Error> {
+    fn with_store(store: Store, keys: Keys, file: Option<(&Path, OpenStore<'_>)>) -> Result<Self, Error> {
         let mut me = Self {
-            db: Sealed::new(store, phrase_key(STORE_DOMAIN, phrase)),
-            keyer: Keyer(phrase_key(INDEX_DOMAIN, phrase)),
+            db: Sealed::new(store, keys.store.clone()),
+            keyer: Keyer(keys.index),
             hot: Mutex::new(Hot::default()),
             view: RwLock::new(Arc::new(View::default())),
             maint: Mutex::new(Memo::default()),
@@ -248,19 +262,18 @@ impl SearchIndex {
             closed: std::sync::atomic::AtomicBool::new(false),
         };
         let current = matches!(me.db.get("v"), Ok(Some(v)) if v == VERSION.to_be_bytes());
-        let man = if current { me.db.get("m").ok().flatten().and_then(|b| cryptography::codec::from_bytes::<Manifest>(&b, crate::store::MAX_ROW).ok()) } else { None };
+        let man = if current { me.db.get("m").ok().flatten().and_then(|b| cryptography::codec::from_bytes::<Manifest>(&b, storage::MAX_ROW).ok()) } else { None };
         match man {
             Some(m) => *me.view.write() = Arc::new(View::new(m)),
             None => {
                 // Another version, no manifest or an unreadable one: start over. A file is
                 // replaced by a new one (deleting a gigabyte of records one by one takes
                 // half a minute, and the file would stay that big).
-                if let Some(path) = path {
+                if let Some((path, open_store)) = file {
                     me.db.close();
                     let _ = std::fs::remove_file(path);
-                    let store = crate::store::open_waiting(path)?;
-                    crate::store::set_private(path);
-                    me.db = Sealed::new(store, phrase_key(STORE_DOMAIN, phrase));
+                    let store = open_store(path)?;
+                    me.db = Sealed::new(store, keys.store);
                 }
                 me.db.apply(&[Op::DeletePrefix(String::new()), me.db.put_op("v", &VERSION.to_be_bytes())?])?;
             }
@@ -309,7 +322,7 @@ impl SearchIndex {
 
     fn today(&self) -> u32 {
         (*self.today.lock()).unwrap_or_else(|| {
-            let ms = crate::node::now_ms() as i64;
+            let ms = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_or(0, |d| d.as_millis() as u64) as i64;
             ms.div_euclid(DAY_MS) as u32
         })
     }
@@ -407,7 +420,7 @@ impl SearchIndex {
                 }
                 let owner = view.owner.get(&key).map(|(_, d)| *d).filter(|d| *d != NO_DIGEST);
                 let have: HashMap<u64, &DocRow> = rows.iter().map(|(h, r)| (*h, r)).collect();
-                let changes = puts.iter().any(|(h, k, r)| *k == key && (crate::search::text::index_terms(&r.text).is_empty() == have.contains_key(h) || (have.get(h).is_some_and(|o| *o != *r))))
+                let changes = puts.iter().any(|(h, k, r)| *k == key && (crate::text::index_terms(&r.text).is_empty() == have.contains_key(h) || (have.get(h).is_some_and(|o| *o != *r))))
                     || drops.iter().any(|h| have.contains_key(h))
                     || ms.iter().any(|m| m.key == key && m.prev.is_none_or(|p| p == owner.unwrap_or(empty)) && owner != Some(m.vv));
                 if !changes {

@@ -30,8 +30,7 @@ pub enum Backing {
     Sealed(storage::Sealed),
 }
 
-/// Cap for decoding a binary row our own store wrote (disk garbage is still bounded).
-pub(crate) const MAX_ROW: usize = 1 << 20;
+pub(crate) use storage::MAX_ROW;
 
 const STATE_KEY: &str = "state";
 const CALLS_KEY: &str = "calls";

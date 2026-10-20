@@ -1,12 +1,7 @@
 use super::*;
-
-fn row(src: &str, id: &str, at: i64, text: &str) -> DocRow {
-    DocRow { src: src.into(), conv: "did:key:z".into(), day: crate::chat::doc::day_of(at), id: id.into(), at, author: "did:key:a".into(), text: text.into() }
-}
+use crate::testkit::{T0, keys, open, row};
 
 const D: i64 = DAY_MS;
-/// 2026-01-01 00:00 UTC.
-const T0: i64 = 1_767_225_600_000;
 
 fn ids(ix: &SearchIndex, term: &str) -> Vec<String> {
     let mut s = ix.scan(term, None).unwrap();
@@ -136,7 +131,7 @@ fn sealed_at_rest() {
             assert!(!v.windows(word.len()).any(|w| w == word.as_bytes()), "value of {k} leaks {word}");
         }
     }
-    let other = SearchIndex::with_store(ix.db.raw().clone(), "other phrase", None).unwrap();
+    let other = SearchIndex::with_store(ix.db.raw().clone(), keys("other phrase"), None).unwrap();
     assert!(ids(&other, "conf").is_empty());
     assert!(ix.db.raw().get("v").unwrap().is_some());
 }
@@ -149,7 +144,7 @@ fn version_mismatch_empties() {
     ix.db.put("v", &1u32.to_be_bytes()).unwrap();
     ix.db.put("d/00ff", b"old row").unwrap();
     raw.put("t/abcd/ffff/00ff", b"").unwrap();
-    let again = SearchIndex::with_store(raw, "alpha beta", None).unwrap();
+    let again = SearchIndex::with_store(raw, keys("alpha beta"), None).unwrap();
     assert_eq!(again.raw_rows().len(), 1, "only the version row");
     assert!(again.ix_version_ok());
 }
@@ -176,7 +171,7 @@ fn cold_day_in_a_segment_is_found_after_reopen() {
     assert_eq!((ix.stats().hot_docs, ix.stats().segs), (0, 1));
     assert_eq!(ids(&ix, "manus"), ["1"]);
     assert!(ix.watermark_is("dm.p", &r.day, &[1]) || ix.has_watermark("dm.p", &r.day));
-    let again = SearchIndex::with_store(ix.db.raw().clone(), "alpha beta", None).unwrap();
+    let again = SearchIndex::with_store(ix.db.raw().clone(), keys("alpha beta"), None).unwrap();
     assert_eq!(ids(&again, "manus"), ["1"]);
     assert!(again.has_watermark("dm.p", &r.day));
     assert_eq!(again.stats().hot_docs, 0);
@@ -227,7 +222,7 @@ fn crash_before_rewrite_leaves_the_old_watermark() {
     ix.maintain(Mode::Force).unwrap();
     ix.apply(&[row("dm.p", "a", T0 + 100, "one three")], &[], &[mark(&a, 2)]).unwrap();
     assert!(ix.watermark_is("dm.p", &a.day, &[2]));
-    let crashed = SearchIndex::with_store(ix.db.raw().clone(), "alpha beta", None).unwrap();
+    let crashed = SearchIndex::with_store(ix.db.raw().clone(), keys("alpha beta"), None).unwrap();
     assert!(crashed.watermark_is("dm.p", &a.day, &[1]) && !crashed.watermark_is("dm.p", &a.day, &[2]));
     assert_eq!(ids(&crashed, "two"), ["a"], "the file still has the old text, reconcile fixes it");
 }
@@ -424,7 +419,7 @@ fn fill_from(ix: &SearchIndex, first: usize, convs: usize, days: i64, per_day: u
 #[test]
 fn compaction_trigger_and_same_answers() {
     let path = temp_path("trigger");
-    let ix = SearchIndex::open(&path, "alpha beta").unwrap();
+    let ix = open(&path, "alpha beta").unwrap();
     at_day(&ix, "2026-06-01");
     for c in 0..6 {
         // one segment a conversation, so that forgetting it frees its pages
@@ -455,7 +450,7 @@ fn compaction_trigger_and_same_answers() {
     // Still writable, and a reopen sees the same index.
     ix.close();
     drop(ix);
-    let ix = SearchIndex::open(&path, "alpha beta").unwrap();
+    let ix = open(&path, "alpha beta").unwrap();
     at_day(&ix, "2026-06-01");
     assert_eq!(answers(&ix), before);
     let n = ids(&ix, "picnic").len();
@@ -484,7 +479,7 @@ fn compaction_follows_maintenance_not_bulk() {
 fn compaction_killed_midway_opens() {
     use std::process::{Command, Stdio};
     if let Ok(p) = std::env::var("COMPACT_CHILD") {
-        let ix = SearchIndex::open(std::path::Path::new(&p), "alpha beta").unwrap();
+        let ix = open(std::path::Path::new(&p), "alpha beta").unwrap();
         at_day(&ix, "2026-06-01");
         println!("ready");
         loop {
@@ -499,7 +494,7 @@ fn compaction_killed_midway_opens() {
     }
     let path = temp_path("kill");
     {
-        let ix = SearchIndex::open(&path, "alpha beta").unwrap();
+        let ix = open(&path, "alpha beta").unwrap();
         at_day(&ix, "2026-06-01");
         fill(&ix, 8, 40, 30);
         ix.maintain(Mode::Force).unwrap();
@@ -512,7 +507,7 @@ fn compaction_killed_midway_opens() {
     for delay in [5u64, 40, 120, 300, 700] {
         let exe = std::env::current_exe().unwrap();
         let mut child = Command::new(exe)
-            .args(["--exact", "search::index::tests::compaction_killed_midway_opens", "--nocapture"])
+            .args(["--exact", "index::tests::compaction_killed_midway_opens", "--nocapture"])
             .env("COMPACT_CHILD", &path)
             .stdout(Stdio::null())
             .spawn()
@@ -521,7 +516,7 @@ fn compaction_killed_midway_opens() {
         child.kill().unwrap();
         child.wait().unwrap();
         // Opens, whatever moment it died at; the manifest and its segments are consistent.
-        let ix = SearchIndex::open(&path, "alpha beta").unwrap();
+        let ix = open(&path, "alpha beta").unwrap();
         at_day(&ix, "2026-06-01");
         let st = ix.stats();
         // Every doc the manifest lists reads back (a lost page would make the scan skip it).
@@ -564,7 +559,7 @@ fn apply_does_not_wait_for_a_compaction() {
 fn old_format_file_is_replaced() {
     let path = temp_path("oldfmt");
     {
-        let ix = SearchIndex::open(&path, "alpha beta").unwrap();
+        let ix = open(&path, "alpha beta").unwrap();
         fill(&ix, 6, 30, 60);
         at_day(&ix, "2026-06-01");
         ix.maintain(Mode::Force).unwrap();
@@ -572,7 +567,7 @@ fn old_format_file_is_replaced() {
         ix.close();
     }
     let big = std::fs::metadata(&path).unwrap().len();
-    let ix = SearchIndex::open(&path, "alpha beta").unwrap();
+    let ix = open(&path, "alpha beta").unwrap();
     assert!(ix.ix_version_ok());
     assert_eq!(ix.raw_rows().len(), 1);
     assert!(std::fs::metadata(&path).unwrap().len() < big && std::fs::metadata(&path).unwrap().len() < (2 << 20), "{big}");

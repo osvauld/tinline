@@ -78,6 +78,15 @@ impl From<crdt::Error> for Error {
     }
 }
 
+impl From<search_core::Error> for Error {
+    fn from(e: search_core::Error) -> Self {
+        match e {
+            search_core::Error::Io(s) => Error::Io(s),
+            search_core::Error::Protocol(s) => Error::Protocol(s),
+        }
+    }
+}
+
 impl From<audio::Error> for Error {
     fn from(e: audio::Error) -> Self {
         Error::Audio(e.to_string())
