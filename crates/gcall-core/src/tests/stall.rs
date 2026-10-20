@@ -17,10 +17,7 @@ fn gcall_stall_fix_preserves_exact_frame_boundary_admission() {
     );
 }
 fn steady() -> World {
-    let (mut s, _) = base();
-    for m in [A1, BOB, CAROL] {
-        s.join(m).unwrap();
-    }
+    let (mut s, _) = base_joined(&[A1, BOB, CAROL]);
     for _ in 0..AVG_FRAMES * 2 {
         s.speak(A1, 20).unwrap();
         s.step();

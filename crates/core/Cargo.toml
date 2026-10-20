@@ -38,6 +38,8 @@ mediacodec = ["dep:ndk-sys"]
 
 [dependencies]
 proto.workspace = true
+# Sans-IO group-call engines; re-exported as `p2pcore::gcall` (src/gcall.rs).
+gcall-core.workspace = true
 # Shared UI logic; its UniFFI items are re-exported from lib.rs so they land in libp2pcore.so.
 present = { path = "../present" }
 audio.workspace = true

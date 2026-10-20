@@ -6,10 +6,7 @@ use super::world::*;
 // or freshly signed, Roster) is ignored by every board and client, state unchanged.
 #[test]
 fn gcall_s03_stale_end_callstart_and_roster_after_redial_are_ignored() {
-    let (mut s, cid) = base();
-    for m in [A1, CAROL] {
-        s.join(m).unwrap();
-    }
+    let (mut s, cid) = base_joined(&[A1, CAROL]);
     let gen1 = s.hosts[&H1].start_blob().clone();
     s.d[H1].online = false;
     s.advance(4_000);
@@ -67,10 +64,7 @@ fn gcall_s03_stale_end_callstart_and_roster_after_redial_are_ignored() {
 #[test]
 fn gcall_s08_host_drop_redials_backup0_else_backup1_and_split_resolves_to_backup0() {
     let setup = || {
-        let (mut s, cid) = base();
-        for m in [A1, CAROL, HP] {
-            s.join(m).unwrap();
-        }
+        let (mut s, cid) = base_joined(&[A1, CAROL, HP]);
         s.advance(2_000);
         (s, cid)
     };
@@ -144,10 +138,7 @@ fn gcall_s08_host_drop_redials_backup0_else_backup1_and_split_resolves_to_backup
 // whose permit was revoked, is refused; a revoked host makes members redial the next backup.
 #[test]
 fn gcall_client_refuses_rogue_roster_and_redials_when_the_host_permit_is_revoked() {
-    let (mut s, cid) = base();
-    for m in [A1, CAROL] {
-        s.join(m).unwrap();
-    }
+    let (mut s, cid) = base_joined(&[A1, CAROL]);
     let h1 = s.d[H1].id.clone();
     let (j, b) = w::sign_join(&s.d[MALLORY].id.clone(), &gid(), &cid, 1, s.now).unwrap();
     let rogue = Signed::sign(

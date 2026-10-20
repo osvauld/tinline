@@ -2418,6 +2418,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "gcall-core"
+version = "0.1.38"
+dependencies = [
+ "audio",
+ "blake3",
+ "cryptography",
+ "identity",
+ "proto",
+ "serde_json",
+]
+
+[[package]]
 name = "genawaiter"
 version = "0.99.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5694,6 +5706,7 @@ dependencies = [
  "bs58",
  "bytes",
  "cryptography",
+ "gcall-core",
  "hex",
  "identity",
  "image",

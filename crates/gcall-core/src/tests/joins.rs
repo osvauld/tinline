@@ -6,10 +6,7 @@ use super::world::*;
 // too. Positive control: a valid Join is accepted.
 #[test]
 fn gcall_s01_bad_joins_are_refused_and_leave_host_state_unchanged() {
-    let (mut s, cid) = base();
-    for m in [A1, BOB] {
-        s.join(m).unwrap();
-    }
+    let (mut s, cid) = base_joined(&[A1, BOB]);
     s.advance(3_000);
     let carol = s.d[CAROL].id.clone();
     let (cep, mep) = (s.d[CAROL].ep, s.d[MALLORY].ep);

@@ -290,10 +290,7 @@ fn gcall_q2_twelve_speakers_fill_s_on_every_host() {
 // every speaker is still forwarded.
 #[test]
 fn gcall_q2_metered_mid_call_warns_and_keeps_every_speaker() {
-    let (mut s, _) = base();
-    for m in [OLGA, A1, BOB, CAROL] {
-        s.join(m).unwrap();
-    }
+    let (mut s, _) = base_joined(&[OLGA, A1, BOB, CAROL]);
     let talk = |s: &mut World| {
         for _ in 0..AVG_FRAMES * 2 {
             for (i, m) in [OLGA, A1, BOB, CAROL].iter().enumerate() {

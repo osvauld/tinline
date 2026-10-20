@@ -50,10 +50,7 @@ fn allocations(f: impl FnOnce()) -> usize {
 fn gcall_mix_mutes_without_stopping_receiver_clocks_or_replaying_on_unmute() {
     let sources = [BOB, CAROL, OLGA];
     let fixture = || {
-        let (mut s, _) = base();
-        for m in [A1, BOB, CAROL, OLGA] {
-            s.join(m).unwrap();
-        }
+        let (mut s, _) = base_joined(&[A1, BOB, CAROL, OLGA]);
         let slots = sources.map(|m| s.hosts[&H1].slot_of(&s.did(m)).unwrap());
         let c = s.clients.get_mut(&A1).unwrap();
         c.on_control(
@@ -107,10 +104,7 @@ fn gcall_mix_mutes_without_stopping_receiver_clocks_or_replaying_on_unmute() {
 }
 #[test]
 fn gcall_mix_steady_decoded_audio_has_no_rust_heap_allocations() {
-    let (mut s, _) = base();
-    for m in [A1, BOB, CAROL, OLGA] {
-        s.join(m).unwrap();
-    }
+    let (mut s, _) = base_joined(&[A1, BOB, CAROL, OLGA]);
     let sources = [BOB, CAROL, OLGA];
     let slots = sources.map(|m| s.hosts[&H1].slot_of(&s.did(m)).unwrap());
     let mut senders = sources.map(|_| audio::Sender::new(GROUP_BITRATE_BPS).unwrap());
