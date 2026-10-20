@@ -245,7 +245,12 @@ class GroupCallUi(private val app: P2pApp) {
         } catch (x: Exception) { Log.w("GroupCallUi", "event: $x") }
     }
 
-    private fun startFailure(d: String) = if (d.lowercase().contains("host")) "No call host available" else "Couldn’t connect"
+    /** The core's "no call host available: <why>" shows its why (Rust words); else a short line. */
+    private fun startFailure(d: String) = when {
+        d.contains("no call host available: ") -> d.substringAfter("no call host available: ")
+        d.lowercase().contains("host") -> "No call host available"
+        else -> "Couldn’t connect"
+    }
 }
 
 internal fun clockOf(secs: Long) = "%02d:%02d".format(secs / 60, secs % 60)

@@ -156,3 +156,23 @@ fn gcall_s16_phone_degrade_reduces_k_refuses_joins_and_hands_over() {
         assert_eq!(s.host_of(m), (H1, 2), "{m}");
     }
 }
+
+/// A phone host whose user is the last one in the call ends it (`End{ended}`), so every
+/// member's list drops it; with someone still in, it hands over (`host_leaving`) as before.
+#[test]
+fn the_last_one_leaving_a_phone_hosted_call_ends_it() {
+    let mut s = World::new();
+    s.d[HP].cond = Cond::phone(80, true);
+    s.start_call(HP, HP, vec![H1]).unwrap();
+    for m in [HP, OLGA] {
+        s.join(m).unwrap();
+    }
+    let acts = s.clients.get_mut(&OLGA).unwrap().leave(s.now);
+    s.client_actions(OLGA, acts);
+    s.pump();
+    let acts = s.clients.get_mut(&HP).unwrap().leave(s.now);
+    s.client_actions(HP, acts);
+    s.pump();
+    assert!(s.host_ended.contains(&(HP, EndReason::Ended, None)), "{:?}", s.host_ended);
+    assert!(!s.host_ended.iter().any(|(_, r, _)| *r == EndReason::HostLeaving));
+}

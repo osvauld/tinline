@@ -60,6 +60,9 @@ pub const CALL_KEEP_MS: u64 = 4 * 3600 * 1000;
 /// A group call someone else starts rings (like an incoming call) for at most this long; the
 /// announcement itself stays (a quiet "Join").
 pub const GROUP_CALL_RING_MS: u64 = 30_000;
+/// A host's status saying "not busy" this long after a call it hosted started means that call
+/// is over (one hosted call per node), whatever End we missed.
+pub const HOST_IDLE_GRACE_MS: u64 = 10_000;
 /// Seen-blob memory bound (relay dedupe).
 const SEEN_MAX: usize = 4096;
 /// A signed blob larger than this is not relayed (statuses are ~0.6 KiB, CallStarts ~1.5 KiB).
