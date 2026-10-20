@@ -195,7 +195,7 @@ impl ReceiptDoc {
         from: &VersionVector,
         to: &VersionVector,
     ) -> Result<Vec<Entry>, ReceiptError> {
-        crate::signed_map::inserts(
+        crdt::signed_map::inserts(
             doc,
             from,
             to,

@@ -1,0 +1,16 @@
+[package]
+name = "gcall-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+description = "Sans-IO group-call engines (host, client, call board, ranking); p2pcore runs them on iroh"
+
+[dependencies]
+proto.workspace = true
+identity.workspace = true
+cryptography.workspace = true
+# The client engine owns the Opus sender, per-slot jitter buffers and the local mix.
+audio.workspace = true
+blake3 = "1"
+serde_json.workspace = true

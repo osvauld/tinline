@@ -29,8 +29,8 @@ use std::collections::{BTreeMap, BTreeSet};
 use loro::{ExportMode, LoroDoc, LoroMap, LoroValue, VersionVector};
 use serde::{Deserialize, Serialize};
 
-pub const HOUR_MS: i64 = 3_600_000;
-pub const DAY_MS: i64 = 24 * HOUR_MS;
+// UTC days and writer/device IDs are shared Loro helpers (the `crdt` crate).
+pub use crdt::{DAY_MS, HOUR_MS, day_of, day_start, new_device_value, writer_id};
 pub const MAX_TEXT: usize = 20_000;
 const MAX_FILE_JSON: usize = 4096;
 
@@ -68,68 +68,6 @@ fn writer_of_key(k: &str) -> Option<u64> {
 /// ranks the same versions the same way, so all of them show the same one in any arrival order.
 fn rank(m: &MsgRec, writer: u64) -> (bool, Option<i64>, u64) {
     (m.deleted, m.edited_at, writer)
-}
-
-/// The writer ID (U16) of the account `did` on the install whose device ID is `device`: the
-/// first 64 bits (little-endian) of `hash::hasher(WRITER_ID)` over the DID and the device ID. The app writes every chat doc with it as the Loro peer id, and every receiver recomputes
-/// it from the author and the `dev` of each version. It depends on no device or transport key.
-/// `u64::MAX` is not a valid Loro peer id; that one output maps to `u64::MAX - 1`.
-pub fn writer_id(did: &str, device: &[u8; 32]) -> u64 {
-    let id = cryptography::hash::hasher(cryptography::domains::WRITER_ID).part(did.as_bytes()).part(device).u64();
-    if id == u64::MAX { u64::MAX - 1 } else { id }
-}
-
-/// A fresh random device ID: generated once per account per install, never derived.
-pub fn new_device_value() -> [u8; 32] {
-    let mut v = [0u8; 32];
-    cryptography::rng::fill(&mut v);
-    v
-}
-
-// ---- UTC days ------------------------------------------------------------------------------
-
-fn days_from_civil(y: i64, m: i64, d: i64) -> i64 {
-    let y = if m <= 2 { y - 1 } else { y };
-    let era = y.div_euclid(400);
-    let yoe = y - era * 400;
-    let doy = (153 * (if m > 2 { m - 3 } else { m + 9 }) + 2) / 5 + d - 1;
-    let doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
-    era * 146_097 + doe - 719_468
-}
-
-fn civil_from_days(z: i64) -> (i64, i64, i64) {
-    let z = z + 719_468;
-    let era = z.div_euclid(146_097);
-    let doe = z - era * 146_097;
-    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365;
-    let y = yoe + era * 400;
-    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
-    let mp = (5 * doy + 2) / 153;
-    let d = doy - (153 * mp + 2) / 5 + 1;
-    let m = if mp < 10 { mp + 3 } else { mp - 9 };
-    (if m <= 2 { y + 1 } else { y }, m, d)
-}
-
-/// The UTC day (`YYYY-MM-DD`) of a unix-millisecond time.
-pub fn day_of(ms: i64) -> String {
-    let (y, m, d) = civil_from_days(ms.div_euclid(DAY_MS));
-    format!("{y:04}-{m:02}-{d:02}")
-}
-
-/// Start of a day in unix ms; `None` if `day` is not `YYYY-MM-DD`.
-pub fn day_start(day: &str) -> Option<i64> {
-    let b = day.as_bytes();
-    if b.len() != 10 || b[4] != b'-' || b[7] != b'-' {
-        return None;
-    }
-    let y: i64 = day.get(..4)?.parse().ok()?;
-    let m: i64 = day.get(5..7)?.parse().ok()?;
-    let d: i64 = day.get(8..)?.parse().ok()?;
-    if !(1..=12).contains(&m) || !(1..=31).contains(&d) {
-        return None;
-    }
-    let ms = days_from_civil(y, m, d) * DAY_MS;
-    (day_of(ms) == day).then_some(ms)
 }
 
 // ---- records -------------------------------------------------------------------------------

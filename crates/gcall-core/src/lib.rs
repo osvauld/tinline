@@ -10,7 +10,8 @@
 //! Inputs are events with a millisecond timestamp (any monotonic clock); outputs are actions
 //! for the IO layer (send a control frame, send a datagram, close, dial). Membership and
 //! permits are asked through [`CallAuthority`] (group chat provides it through
-//! `group::calldir::GroupCallDir`). [`net`] runs the engines on iroh connections (unstable API on `Node`).
+//! `p2pcore::group::calldir::GroupCallDir`). `p2pcore::gcall::net` runs the engines on iroh
+//! connections (unstable API on `Node`); this crate has no IO and no iroh dependency.
 //!
 //! Spec gaps G1–G10 (§9) are settled as modelled in `crates/group-sim/src/group_call.rs` on the `design-models` branch:
 //! G1 the CallStart travels with a call-host record (the wiring's job; here `host_permit_ok`);
@@ -23,12 +24,13 @@
 mod board;
 mod client;
 mod host;
-pub mod net;
 mod policy;
 pub mod rank;
 mod select;
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod testkit;
 
 use std::collections::{BTreeMap, BTreeSet};
 

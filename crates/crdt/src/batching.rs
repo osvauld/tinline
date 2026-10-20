@@ -1,24 +1,23 @@
 //! Bounded native-operation export. Not a transport, receipt or readiness gate.
+//! Used by group docs (p2pcore `GroupDoc::export_batch`) and receipts.
 use std::{cmp::Reverse, collections::BinaryHeap};
 
 use loro::{ExportMode, ID, IdSpan, VersionVector};
 
-use super::GroupDoc;
-
-pub(crate) const MAX_EXPORT_BYTES: usize = 12 * 1024 * 1024;
-pub(crate) const MAX_EXPORT_OPS: usize = 256;
-pub(crate) const MAX_EXPORT_WRITERS: usize = 4096;
+pub const MAX_EXPORT_BYTES: usize = 12 * 1024 * 1024;
+pub const MAX_EXPORT_OPS: usize = 256;
+pub const MAX_EXPORT_WRITERS: usize = 4096;
 
 /// Work/admission limits for one planning call, not group membership limits.
 #[derive(Debug, Clone, Copy)]
-pub(crate) struct BatchLimits {
+pub struct BatchLimits {
     pub bytes: usize,
     pub operations: usize,
     pub writers: usize,
 }
 
 #[derive(Debug)]
-pub(crate) struct ExportBatch {
+pub struct ExportBatch {
     pub update: Vec<u8>,
     /// Source-known causal frontier covered by this batch plus receiver input.
     /// Advisory only: never a receiver Ack or the source's whole frontier.
@@ -29,7 +28,7 @@ pub(crate) struct ExportBatch {
 }
 
 #[derive(Debug, PartialEq, Eq, thiserror::Error)]
-pub(crate) enum BatchError {
+pub enum BatchError {
     #[error("group export planning bounds")]
     Bounds,
     #[error("group export writer budget exceeded")]
@@ -46,32 +45,25 @@ pub(crate) enum BatchError {
     Oversized { required: usize, limit: usize },
 }
 
-impl GroupDoc {
-    pub(crate) fn export_batch(
-        &self,
-        theirs: &VersionVector,
-        limits: BatchLimits,
-    ) -> Result<Option<ExportBatch>, BatchError> {
-        NativeExporter {
-            doc: &self.doc,
-            tainted: self.tainted,
-        }
-        .export_batch(theirs, limits)
-    }
+/// Plans one batch of `doc`'s native operations that the receiver (at `theirs`) lacks. A
+/// `tainted` source (it holds operations it never accepted) refuses with [`BatchError::Tainted`].
+pub fn export_batch(
+    doc: &loro::LoroDoc,
+    tainted: bool,
+    theirs: &VersionVector,
+    limits: BatchLimits,
+) -> Result<Option<ExportBatch>, BatchError> {
+    NativeExporter { doc, tainted }.export_batch(theirs, limits)
 }
 
 /// Shared planner for already-validated native documents. The caller is
 /// responsible for content/admission validation; this only plans native spans.
-pub(crate) fn export_native_batch(
+pub fn export_native_batch(
     doc: &loro::LoroDoc,
     theirs: &VersionVector,
     limits: BatchLimits,
 ) -> Result<Option<ExportBatch>, BatchError> {
-    NativeExporter {
-        doc,
-        tainted: false,
-    }
-    .export_batch(theirs, limits)
+    export_batch(doc, false, theirs, limits)
 }
 struct NativeExporter<'a> {
     doc: &'a loro::LoroDoc,
@@ -88,7 +80,7 @@ impl NativeExporter<'_> {
     /// Limits bound heap size, candidate count and *successful* encoded bytes.
     /// Trial encoding and causal-frontier conversion still have costs dependent on
     /// retained history; this is not a constant-RAM/CPU streaming exporter.
-    pub(crate) fn export_batch(
+    fn export_batch(
         &self,
         theirs: &VersionVector,
         limits: BatchLimits,
@@ -214,6 +206,3 @@ impl NativeExporter<'_> {
         Ok((lamport, peer, counter))
     }
 }
-
-#[cfg(test)]
-mod tests;

@@ -28,7 +28,6 @@ mod node;
 mod recovery_key;
 mod rekey;
 mod receipts;
-mod signed_map;
 mod search;
 mod store;
 mod sync;

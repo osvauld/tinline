@@ -69,6 +69,15 @@ impl From<proto::Error> for Error {
     }
 }
 
+impl From<crdt::Error> for Error {
+    fn from(e: crdt::Error) -> Self {
+        match e {
+            crdt::Error::Io(s) => Error::Io(s),
+            crdt::Error::MissingDeps => Error::Protocol(e.to_string()),
+        }
+    }
+}
+
 impl From<audio::Error> for Error {
     fn from(e: audio::Error) -> Self {
         Error::Audio(e.to_string())

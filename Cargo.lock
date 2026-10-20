@@ -1453,6 +1453,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "crdt"
+version = "0.1.38"
+dependencies = [
+ "cryptography",
+ "loro",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "critical-section"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2415,6 +2424,18 @@ dependencies = [
  "iroh",
  "parking_lot",
  "tokio",
+]
+
+[[package]]
+name = "gcall-core"
+version = "0.1.38"
+dependencies = [
+ "audio",
+ "blake3",
+ "cryptography",
+ "identity",
+ "proto",
+ "serde_json",
 ]
 
 [[package]]
@@ -5693,7 +5714,9 @@ dependencies = [
  "blake3",
  "bs58",
  "bytes",
+ "crdt",
  "cryptography",
+ "gcall-core",
  "hex",
  "identity",
  "image",

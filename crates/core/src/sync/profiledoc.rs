@@ -30,7 +30,7 @@ impl ProfileDoc {
     }
 
     pub fn load(device: &[u8; 32], snapshot: Option<&[u8]>) -> Result<Self, Error> {
-        Doc::load(device, PROFILE_DOC, snapshot).map(Self)
+        Ok(Self(Doc::load(device, PROFILE_DOC, snapshot)?))
     }
 
     /// Reads all fields, including extensions unknown to this client. Invalid representations

@@ -5,12 +5,7 @@ use proto::Signed;
 use proto::gcall::{MAX_PARTICIPANTS, new_call_id};
 use proto::gcall_status::{STATUS_TTL_MS, SignedStatus};
 
-const NOW: u64 = 1_800_000_000_000;
-
-fn ident(seed: u8) -> Identity {
-    let m = identity::Mnemonic::from_entropy(&[seed; 32]).unwrap();
-    identity::recover(&m.to_string()).unwrap()
-}
+use crate::testkit::{T0 as NOW, ident};
 
 fn gid() -> String {
     "f0".repeat(32)

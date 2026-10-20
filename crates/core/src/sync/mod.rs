@@ -9,7 +9,14 @@ pub(crate) mod profiledoc;
 pub(crate) mod profilecache;
 #[cfg(test)]
 mod profiledoc_tests;
-pub(crate) mod doc;
+/// The own-device doc wrapper lives in the `crdt` crate; `io` maps any error into ours.
+pub(crate) mod doc {
+    pub(crate) use crdt::doc::{Doc, entries, field, text};
+
+    pub(crate) fn io<E: std::fmt::Display>(e: E) -> crate::Error {
+        crate::Error::Io(e.to_string())
+    }
+}
 pub(crate) mod api;
 pub(crate) mod engine;
 pub(crate) mod frames;

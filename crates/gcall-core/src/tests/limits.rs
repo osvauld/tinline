@@ -5,10 +5,7 @@ use super::world::*;
 // GC-S13. Floods are bounded and other members are unaffected.
 #[test]
 fn gcall_s13_floods_are_bounded_and_other_members_are_unaffected() {
-    let (mut s, cid) = base();
-    for m in [OLGA, A1, CAROL] {
-        s.join(m).unwrap();
-    }
+    let (mut s, cid) = base_joined(&[OLGA, A1, CAROL]);
     let a1_conn = s.route[&A1].1;
     let olga = s.did(OLGA);
     let olga_slot = s.hosts[&H1].slot_of(&olga).unwrap();

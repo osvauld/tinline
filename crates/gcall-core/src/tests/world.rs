@@ -21,12 +21,7 @@ pub(super) const HP: usize = 6; // phone
 pub(super) const MALLORY: usize = 7; // not a member
 pub(super) const N: usize = 8;
 pub(super) const CALL_HOSTS: [usize; 4] = [H1, BOB, OLGA, HP];
-pub(super) const T0: u64 = 1_800_000_000_000;
-
-pub(super) fn ident(seed: u8) -> Identity {
-    let m = identity::Mnemonic::from_entropy(&[seed; 32]).unwrap();
-    identity::recover(&m.to_string()).unwrap()
-}
+pub(super) use crate::testkit::{T0, ident};
 
 pub(super) fn gid() -> String {
     "a1".repeat(32)
@@ -458,5 +453,14 @@ impl World {
 pub(super) fn base() -> (World, String) {
     let mut s = World::new();
     let cid = s.start_call(H1, OLGA, vec![BOB, OLGA]).unwrap();
+    (s, cid)
+}
+
+/// [`base`], then `members` join in that order.
+pub(super) fn base_joined(members: &[usize]) -> (World, String) {
+    let (mut s, cid) = base();
+    for &m in members {
+        s.join(m).unwrap();
+    }
     (s, cid)
 }
