@@ -81,6 +81,7 @@ mod outgoing;
 mod persist;
 mod rotation;
 mod run;
+#[cfg(any(test, feature = "dev-tools"))]
 mod testkit;
 mod types;
 mod unlock;

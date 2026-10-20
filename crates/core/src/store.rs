@@ -55,6 +55,7 @@ pub(crate) fn note_open(path: &Path, waited: bool) {
 }
 
 /// (opens, opens that waited) of every store file under `dir`.
+#[cfg(any(test, feature = "dev-tools"))]
 pub(crate) fn open_stats(dir: &Path) -> (u64, u64) {
     let m = OPENS.lock();
     m.iter().flatten().filter(|(p, _)| p.starts_with(dir)).fold((0, 0), |a, (_, v)| (a.0 + v.0, a.1 + v.1))
