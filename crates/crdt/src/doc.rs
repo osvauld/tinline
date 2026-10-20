@@ -1,34 +1,35 @@
 //! A Loro doc that own devices sync whole (`tinline/self/2`), named on the wire: the account doc
-//! (`accdoc.rs`) and the call log (`callsdoc.rs`). Load, snapshot, and export/import by version.
+//! (p2pcore `sync/accdoc.rs`) and the call log (`sync/callsdoc.rs`). Load, snapshot, and
+//! export/import by version.
 
 use loro::{ExportMode, LoroDoc, LoroValue, VersionVector};
 
 use crate::Error;
 
 pub struct Doc {
-    pub(super) doc: LoroDoc,
+    pub doc: LoroDoc,
     peer: u64,
 }
 
-pub(super) fn io<E: std::fmt::Display>(e: E) -> Error {
+fn io<E: std::fmt::Display>(e: E) -> Error {
     Error::Io(e.to_string())
 }
 
-pub(super) fn entries(v: &LoroValue) -> Vec<(String, &LoroValue)> {
+pub fn entries(v: &LoroValue) -> Vec<(String, &LoroValue)> {
     match v {
         LoroValue::Map(m) => m.iter().map(|(k, v)| (k.clone(), v)).collect(),
         _ => Vec::new(),
     }
 }
 
-pub(super) fn field<'a>(v: &'a LoroValue, k: &str) -> Option<&'a LoroValue> {
+pub fn field<'a>(v: &'a LoroValue, k: &str) -> Option<&'a LoroValue> {
     match v {
         LoroValue::Map(m) => m.get(k),
         _ => None,
     }
 }
 
-pub(super) fn text(v: &LoroValue) -> Option<String> {
+pub fn text(v: &LoroValue) -> Option<String> {
     match v {
         LoroValue::String(s) => Some(s.to_string()),
         _ => None,
@@ -36,7 +37,7 @@ pub(super) fn text(v: &LoroValue) -> Option<String> {
 }
 
 /// The Loro peer id of `device` for the own-device doc `name`. (Chat docs do not use this: they
-/// are written under writer IDs, `chat::doc::writer_id`.) `u64::MAX` is not a valid Loro peer
+/// are written under writer IDs, [`crate::writer_id`].) `u64::MAX` is not a valid Loro peer
 /// id; that one output maps to `u64::MAX - 1`.
 fn peer_id(device: &[u8; 32], name: &str) -> u64 {
     let id = cryptography::hash::hasher(cryptography::domains::LORO_PEER).part(device).part(name.as_bytes()).u64();
@@ -85,7 +86,7 @@ impl Doc {
         let before = self.vv();
         let status = self.doc.import(bytes).map_err(io)?;
         if status.pending.is_some() {
-            return Err(Error::Protocol("update with missing dependencies".into()));
+            return Err(Error::MissingDeps);
         }
         Ok(self.vv() != before)
     }

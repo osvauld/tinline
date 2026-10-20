@@ -27,7 +27,17 @@ use serde::{Deserialize, Serialize};
 use super::record::{Body, Record, RecordError, decode_trusted, open_record, record_id};
 use crate::chat::doc::{DAY_MS, HOUR_MS, day_of, day_start, writer_id};
 
-pub(crate) mod batching;
+/// Bounded native export lives in the `crdt` crate; this keeps the `group::doc::batching` paths.
+pub(crate) mod batching {
+    pub(crate) use crdt::batching::*;
+
+    #[cfg(test)]
+    use super::GroupDoc;
+    #[cfg(test)]
+    use loro::{ID, VersionVector};
+    #[cfg(test)]
+    mod tests;
+}
 
 const ROOT: &str = "r";
 
@@ -302,6 +312,16 @@ impl GroupDoc {
         self.tainted
     }
 
+    /// One bounded batch of native operations the receiver (at `theirs`) lacks
+    /// ([`crdt::batching::export_batch`]); a tainted doc refuses.
+    pub(crate) fn export_batch(
+        &self,
+        theirs: &VersionVector,
+        limits: batching::BatchLimits,
+    ) -> Result<Option<batching::ExportBatch>, batching::BatchError> {
+        batching::export_batch(&self.doc, self.tainted, theirs, limits)
+    }
+
     /// Test hook (`synth`): imports `update` unchecked, to merge batches written by several
     /// member docs into one before it goes through `apply_remote`.
     #[cfg(any(test, feature = "dev-tools"))]
@@ -381,7 +401,7 @@ fn ops_between(
     id: &DocId,
     verify: bool,
 ) -> Result<Vec<Entry>, Reject> {
-    crate::signed_map::inserts(
+    crdt::signed_map::inserts(
         doc,
         from,
         to,

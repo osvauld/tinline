@@ -4,7 +4,7 @@ use loro::{
     ContainerID, ContainerType, JsonMapOp, JsonOpContent, LoroDoc, LoroValue, VersionVector,
 };
 
-pub(crate) fn inserts<T, E: Clone>(
+pub fn inserts<T, E: Clone>(
     doc: &LoroDoc,
     from: &VersionVector,
     to: &VersionVector,
