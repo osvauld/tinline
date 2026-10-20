@@ -115,10 +115,9 @@ Tested on devices: Pixel 3a -> laptop HD with no flicker; phone-started video ca
 ## Next work
 - [ ] Packet C: chats onto the shared Loro ledger (last of the refactor).
 - [ ] Packet B remainder: gate the remaining `*_for_test` hooks (about 39 files) behind `dev-tools`.
-- [ ] Hardening H1–H6: rav1d garbage-input SIGABRT repro, IP exposure before app auth test, lock
+- [ ] Hardening H1–H6: IP exposure before app auth test, lock
       poison helper, `capacity_twelve_talking_at_once` failure (fails even alone).
-- [ ] Known failures: storage `golden_redb` (redb 2 fixture); clippy TAU error at
-      `crates/core/src/cues.rs:89`.
+- [ ] Known failure: clippy TAU error at `crates/core/src/cues.rs:89`.
 - [ ] Flaky under load: `calls::hangup_while_dialing_is_immediate`,
       `blocking_acceptance::blocked_senders_messages_never_reach_the_blocker`.
 - [ ] Rotation follow-ups: a dial in flight on a retired group endpoint can wait ~20 s; "lost touch"
