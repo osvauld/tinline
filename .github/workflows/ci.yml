@@ -56,6 +56,6 @@ jobs:
           echo "VPX_DIR=$prefix" >> "$GITHUB_ENV"
       # The core integration tests start real iroh nodes and use n0's public relays.
       - name: Rust tests
-        run: cargo test --workspace --locked
+        run: cargo test --workspace --locked --no-fail-fast
       - name: Release upload safeguards
         run: python3 scripts/test_r2_upload.py

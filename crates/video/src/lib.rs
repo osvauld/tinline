@@ -189,6 +189,10 @@ impl Decoder {
 
 impl VideoDecoder for Decoder {
     fn decode(&mut self, packet: &[u8]) -> Result<Vec<I420>> {
+        // rav1d rejects a zero-size buffer by aborting in debug builds; an empty packet holds no frame.
+        if packet.is_empty() {
+            return Ok(Vec::new());
+        }
         let mut data = Dav1dData {
             data: None,
             sz: 0,
