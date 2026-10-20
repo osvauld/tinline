@@ -832,7 +832,7 @@ impl App {
     /// Settings > Video (CallsVideo.svelte): "Sharper video" (each call starts this way; the HD chip changes one call), then the computer's cameras.
     fn video_page(&self, t: Tok) -> El<'_> {
         let hd = self.settings.prefer_hd;
-        let sub = if hd { "Up to 720p when the connection allows. Uses more data and battery." } else { "Adjusts by itself for smooth calls." };
+        let sub = if hd { "Always starts in HD. Uses more data and battery." } else { "Goes HD by itself when the connection allows." };
         let quality: Vec<RowFn> = vec![Box::new(move |r| pf_act(t, Some("video"), "Sharper video".into(), Some((sub.into(), t.ink2, false)),
             Some(pg_switch(t, hd, Msg::Video(super::super::Vm::PreferHd(!hd)))), None, false, r))];
         let note = "A new camera is used the next time your camera starts.";
@@ -889,9 +889,9 @@ impl App {
             }
             controls = controls.push(decoders);
             let mut rcs = row![tx("Rate control", 13.0, t.ink2)].spacing(8);
-            for (id, label) in [("auto", "Today"), ("cut", "Cut"), ("probe", "Cut+probe"), ("trend", "Trend+probe")] {
+            for (id, label) in [("auto", "Cut+probe"), ("cut", "Cut"), ("plain", "Plain (old)"), ("trend", "Trend+probe")] {
                 let mut next = tuning.clone(); next.rate_control = id.into();
-                let selected = tuning.rate_control == id || (tuning.rate_control.is_empty() && id == "auto");
+                let selected = tuning.rate_control == id || (matches!(tuning.rate_control.as_str(), "" | "probe") && id == "auto");
                 rcs = rcs.push(button(tx(format!("{}{label}", if selected { "✓ " } else { "" }), 12.0, t.ink))
                     .on_press(Msg::Video(super::super::Vm::Tuning(next))));
             }

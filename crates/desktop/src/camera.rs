@@ -28,10 +28,9 @@ impl Quality {
     }
 }
 
-/// The capture quality for a camera start: this call's HD chip choice wins over Settings > Video "Sharper video";
-/// the setting itself is never changed by it.
-pub fn quality_for(prefer_hd_setting: bool, call_choice: Option<bool>) -> Quality {
-    if call_choice.unwrap_or(prefer_hd_setting) { Quality::PreferHd } else { Quality::Auto }
+/// The capture quality for a camera start, from whether sharper video is on (`VideoUi::hd_on`).
+pub fn quality_for(hd_on: bool) -> Quality {
+    if hd_on { Quality::PreferHd } else { Quality::Auto }
 }
 
 /// Shortest side of the picture the sender aims for with sharper video on a computer (720p).
@@ -65,11 +64,9 @@ mod tests {
     }
 
     #[test]
-    fn call_choice_overrides_setting_only_for_the_start() {
-        assert_eq!(quality_for(false, None), Quality::Auto);
-        assert_eq!(quality_for(true, None), Quality::PreferHd);
-        assert_eq!(quality_for(false, Some(true)), Quality::PreferHd);
-        assert_eq!(quality_for(true, Some(false)), Quality::Auto);
+    fn hd_on_opens_the_hd_capture() {
+        assert_eq!(quality_for(false), Quality::Auto);
+        assert_eq!(quality_for(true), Quality::PreferHd);
     }
 
     #[test]

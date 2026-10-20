@@ -81,13 +81,13 @@ internal fun VideoTuningPanel(app: P2pApp) {
             }
             Hint("Rate control (next call; probing needs the other phone on this build too, so set both the same)")
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                listOf("auto" to "Today", "cut" to "Cut").forEach { (id, label) ->
-                    val selected = t.rateControl == id || (t.rateControl.isEmpty() && id == "auto")
+                listOf("auto" to "Cut+probe", "cut" to "Cut").forEach { (id, label) ->
+                    val selected = t.rateControl == id || (t.rateControl in listOf("", "probe") && id == "auto")
                     TinButton((if (selected) "✓ " else "") + label, { apply(t.copy(rateControl = id)) }, fill = false, height = 36.dp)
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                listOf("probe" to "Cut+probe", "trend" to "Trend+probe").forEach { (id, label) ->
+                listOf("plain" to "Plain (old)", "trend" to "Trend+probe").forEach { (id, label) ->
                     val selected = t.rateControl == id
                     TinButton((if (selected) "✓ " else "") + label, { apply(t.copy(rateControl = id)) }, fill = false, height = 36.dp)
                 }

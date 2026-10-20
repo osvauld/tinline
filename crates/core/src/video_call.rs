@@ -85,7 +85,6 @@ pub use self::ffi_bytes::Bytes;
 pub(crate) use self::frames::chroma_spans;
 pub(crate) use self::pipes::fit;
 pub use self::adapt::{VideoBudget, VideoSendCap, video_codec_label, video_recv_label, video_send_label};
-pub use self::hd::{HdSuggestMemory, video_hd_suggest_after_call, video_hd_suggest_allowed, video_hd_suggestion};
 use self::frames::*;
 use self::pipes::*;
 
@@ -166,11 +165,11 @@ pub struct VideoStats {
     /// Ladder steps so far, and the reason of the last: "rate", "cpu", "hint", "pin" or "budget".
     pub ladder_steps: u64,
     pub last_step_reason: String,
-    /// Sharper video could be suggested (`video_call::hd`, docs/video.md "Suggesting sharper
-    /// video"): "" no, "line" my line, encoder and the peer's screen have room for more than my
-    /// HD-off capture gives, "peer" that and the peer's side has room too. Show it with
-    /// `video_hd_suggestion`.
-    pub hd_suggest: String,
+    /// The core wants the camera at HD (1280x720): the line, the encoder and the peer's screen
+    /// carry 540p or more and a 640x480 capture holds the picture back (`video_call::hd`,
+    /// docs/video.md "Sharper video"). The app reopens the camera when it changes, unless the HD
+    /// chip or Settings decide for it.
+    pub hd_auto: bool,
 }
 
 impl VideoStats {

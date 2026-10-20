@@ -21,8 +21,6 @@ import uniffi.p2pcore.VideoBudget
 import uniffi.p2pcore.VideoEvents
 import uniffi.p2pcore.VideoInfo
 import uniffi.p2pcore.VideoStats
-import uniffi.p2pcore.videoHdSuggestAfterCall
-import uniffi.p2pcore.videoHdSuggestion
 import java.util.concurrent.Executors
 
 /**
@@ -41,7 +39,10 @@ class CallVideo(private val app: P2pApp) : VideoEvents {
     /** The HD chip's choice for this call (null = follow Settings). Never written to Settings. */
     private val _hdCall = MutableStateFlow<Boolean?>(null)
     val hdCall: StateFlow<Boolean?> = _hdCall
-    fun hdOn(): Boolean = effectivePreferHd(app.preferHdCapture, _hdCall.value)
+    /** The core wants the camera at HD (`VideoStats.hdAuto`); followed unless the chip or Settings decide. */
+    private val _hdAuto = MutableStateFlow(false)
+    val hdAuto: StateFlow<Boolean> = _hdAuto
+    fun hdOn(): Boolean = effectivePreferHd(app.preferHdCapture || _hdAuto.value, _hdCall.value)
     /** The chip's short line; [HdNote.id] changes with every new line so the screen can time it out after [HdNote.ms]. */
     data class HdNote(val id: Int, val text: String, val ms: Long = HD_NOTE_MS)
     private val _hdNote = MutableStateFlow<HdNote?>(null)
@@ -51,32 +52,23 @@ class CallVideo(private val app: P2pApp) : VideoEvents {
     fun noteShown(id: Int) { if (_hdNote.value?.id == id) _hdNote.value = null }
     /** Applies at once: the call screen rebinds the camera when [hdCall] changes. */
     fun setHd(on: Boolean, paused: Boolean) {
+        testLog("video_hd_chip on=$on")
         _hdCall.value = on
-        if (on) hdTurnedOn = true
         say(hdLine(on, paused && on))
         syncHd(on)
     }
-    // Sharper-video suggestions (docs/video.md "Suggesting sharper video"): at most one per call, and the device
-    // stops suggesting after the person turned HD on in 3 calls or let 3 suggestions in a row pass (the core's rule).
-    @Volatile private var hdSuggested = false
-    @Volatile private var hdTurnedOn = false
     @Volatile private var hdMeteredSaid = false
 
-    /** Tells the core whether sharper video is on for this call (it never suggests HD while it is). */
+    /** Tells the core whether the camera captures HD for this call. */
     fun syncHd(on: Boolean) { analysisExec.execute { runCatching { app.node.setVideoHd(on) } } }
 
-    /** Once a second while my camera sends: the core's suggestion, then the mobile-data note. */
-    fun hdTick(stats: VideoStats, peerName: String) {
-        val hdOn = hdOn()
-        val line = videoHdSuggestion(stats, hdOn, app.hdSuggestMemory, peerName)
-        if (hdSuggestNow(line, hdSuggested, _hdNote.value != null)) {
-            hdSuggested = true
-            testLog("video_hd_suggest line=\"$line\" kind=${stats.hdSuggest}")
-            say(line, HD_SUGGEST_MS)
-        }
-        if (_hdNote.value == null && hdMeteredNow(hdOn, true, metered(), hdMeteredSaid)) {
+    /** Once a second while my camera sends: the core's HD choice (docs/video.md "Sharper video"), then the mobile-data note. */
+    fun hdTick(stats: VideoStats) {
+        if (_hdAuto.value != stats.hdAuto) testLog("video_hd_auto on=${stats.hdAuto}")
+        _hdAuto.value = stats.hdAuto
+        if (_hdNote.value == null && hdMeteredNow(hdOn(), true, metered(), hdMeteredSaid)) {
             hdMeteredSaid = true
-            say(HD_METERED_LINE, HD_SUGGEST_MS)
+            say(HD_METERED_LINE, HD_METERED_MS)
         }
     }
 
@@ -127,9 +119,8 @@ class CallVideo(private val app: P2pApp) : VideoEvents {
 
     /** The call ended. */
     fun reset() {
-        if (hdSuggested || hdTurnedOn) app.hdSuggestMemory = videoHdSuggestAfterCall(app.hdSuggestMemory, hdSuggested, hdTurnedOn)
-        hdSuggested = false; hdTurnedOn = false; hdMeteredSaid = false
-        _info.value = null; _problem.value = null; paused = false; wantCamera = false; _front.value = true; _hdCall.value = null; _hdNote.value = null
+        hdMeteredSaid = false
+        _info.value = null; _problem.value = null; paused = false; wantCamera = false; _front.value = true; _hdCall.value = null; _hdAuto.value = false; _hdNote.value = null
         rates.reset(); capturePreference = "-"; actualCapture = "-"
     }
 
