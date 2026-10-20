@@ -5,7 +5,6 @@ import android.content.ContextWrapper
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.enableEdgeToEdge
-import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -291,7 +290,6 @@ private fun Root(app: P2pApp) {
             else key(acct) { UnlockScreen(app) { forgot = true } }
         !termsOk -> TermsScreen(progress = null, onBack = null) { LegalStore.accept(ctx); termsOk = true }
         else -> {
-            BackHandler(stack.size > 1) { pop() }
             val inCall by app.calls.ui.collectAsState()
             val top = stack.last()
             // RingHead.svelte: a call ringing while the app is open turns the home header into the caller, in place. Over
@@ -338,6 +336,7 @@ private fun Root(app: P2pApp) {
                     say = ::say, onGroup = { stack.add(Route.Group(it)) }, onGroupInfo = { stack.add(Route.GroupInfo(it)) }, onNewGroup = { stack.add(Route.NewGroup) }, onJoinGroup = { stack.add(Route.JoinGroup()) },
                     onSearch = { stack.add(Route.Search) },
                 ) }
+            BackSwipe(enabled = stack.size > 1, onBack = ::pop) {
             when (val r = stack.last()) {
                 Route.Home -> homeScreen()
                 Route.Search -> SearchScreen(app, onBack = ::pop, onChat = { did ->
@@ -424,6 +423,7 @@ private fun Root(app: P2pApp) {
                 Route.Licences -> LicencesScreen(::pop)
                 Route.Diagnostics -> DiagnosticsScreen(app, ::pop)
                 Route.MicNeeded -> MicNeededScreen(onOpenSettings = { Perms.openSettings(ctx, Perms.appDetails(ctx)) }, onNotNow = ::pop)
+            }
             }
         }
     }
