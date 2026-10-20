@@ -25,11 +25,11 @@ use loro::{ExportMode, LoroDoc, LoroValue, VersionVector};
 use serde::{Deserialize, Serialize};
 
 use super::record::{Body, Record, RecordError, decode_trusted, open_record, record_id};
-use crate::chat::doc::{DAY_MS, HOUR_MS, day_of, day_start, writer_id};
+use crdt::{DAY_MS, HOUR_MS, day_of, day_start, writer_id};
 
 /// Bounded native export lives in the `crdt` crate; this keeps the `group::doc::batching` paths.
-pub(crate) mod batching {
-    pub(crate) use crdt::batching::*;
+pub mod batching {
+    pub use crdt::batching::*;
 
     #[cfg(test)]
     use super::GroupDoc;
@@ -189,7 +189,7 @@ impl GroupDoc {
     /// Independent rollback checkpoint for the small meta doc. Unlike cloning a
     /// Loro handle, a fork does not advance when the original imports new ops.
     /// Preserve this install's writer ID; the fork's generated ID must not escape.
-    pub(crate) fn checkpoint(&self) -> Self {
+    pub fn checkpoint(&self) -> Self {
         let doc = self.doc.fork();
         doc.set_peer_id(self.peer()).expect("peer id");
         Self { group: self.group.clone(), id: self.id.clone(), doc, tainted: self.tainted }
@@ -314,7 +314,7 @@ impl GroupDoc {
 
     /// One bounded batch of native operations the receiver (at `theirs`) lacks
     /// ([`crdt::batching::export_batch`]); a tainted doc refuses.
-    pub(crate) fn export_batch(
+    pub fn export_batch(
         &self,
         theirs: &VersionVector,
         limits: batching::BatchLimits,
@@ -326,7 +326,7 @@ impl GroupDoc {
     /// member docs into one before it goes through `apply_remote`.
     #[cfg(any(test, feature = "dev-tools"))]
     #[doc(hidden)]
-    pub(crate) fn import_for_test(&self, update: &[u8]) {
+    pub fn import_for_test(&self, update: &[u8]) {
         self.doc.import(update).expect("import");
     }
 
@@ -339,7 +339,7 @@ impl GroupDoc {
     }
 
     /// Every record in the doc with its first position (all were validated on the way in).
-    #[cfg(test)]
+    #[cfg(any(test, feature = "testkit"))]
     pub fn entries(&self) -> Result<Vec<Entry>, Reject> {
         self.read_entries(true)
     }
@@ -361,32 +361,32 @@ impl GroupDoc {
     }
 
     /// Test hook: inserts raw `value` under `key` with our peer id, unchecked (a forgery).
-    #[cfg(test)]
-    pub(crate) fn raw_insert(&self, key: &str, value: Vec<u8>) -> Vec<u8> {
+    #[cfg(any(test, feature = "testkit"))]
+    pub fn raw_insert(&self, key: &str, value: Vec<u8>) -> Vec<u8> {
         let before = self.vv();
         self.doc.get_map(ROOT).insert(key, LoroValue::Binary(value.into())).unwrap();
         self.doc.commit();
         self.doc.export(ExportMode::updates(&before)).unwrap()
     }
 
-    #[cfg(test)]
-    pub(crate) fn raw_delete(&self, key: &str) -> Vec<u8> {
+    #[cfg(any(test, feature = "testkit"))]
+    pub fn raw_delete(&self, key: &str) -> Vec<u8> {
         let before = self.vv();
         self.doc.get_map(ROOT).delete(key).unwrap();
         self.doc.commit();
         self.doc.export(ExportMode::updates(&before)).unwrap()
     }
 
-    #[cfg(test)]
-    pub(crate) fn raw_other(&self) -> Vec<u8> {
+    #[cfg(any(test, feature = "testkit"))]
+    pub fn raw_other(&self) -> Vec<u8> {
         let before = self.vv();
         self.doc.get_map("other").insert("x", 1).unwrap();
         self.doc.commit();
         self.doc.export(ExportMode::updates(&before)).unwrap()
     }
 
-    #[cfg(test)]
-    pub(crate) fn set_peer(&self, peer: u64) {
+    #[cfg(any(test, feature = "testkit"))]
+    pub fn set_peer(&self, peer: u64) {
         self.doc.set_peer_id(peer).unwrap();
     }
 }

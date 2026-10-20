@@ -1,7 +1,7 @@
 use super::super::doc::{DocId, GroupDoc};
 use super::super::record::*;
 use super::*;
-use crate::chat::doc::writer_id;
+use crdt::writer_id;
 use proto::Signed;
 
 /// One device of one account, writing into its own replica: the meta doc and the day doc
@@ -69,7 +69,7 @@ impl Dev {
                 iss: self.did(),
                 sub: proto::Subject::Anyone,
                 iat_ms: 1,
-                exp_ms: 1 + crate::group::record::MAX_INVITE_TTL_MS,
+                exp_ms: 1 + crate::record::MAX_INVITE_TTL_MS,
                 nonce: [3; 16],
                 claim: GroupJoin { group: group.into() },
             },

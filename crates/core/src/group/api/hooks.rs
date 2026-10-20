@@ -58,7 +58,7 @@ impl Node {
 
     /// The days of posts this device holds of the group, oldest first.
     pub fn group_days_for_test(&self, group_id: String) -> Result<Vec<String>, Error> {
-        self.inner.group_core()?.store.days(&group_id)
+        Ok(self.inner.group_core()?.store.days(&group_id)?)
     }
 
     /// Forgets every day doc of the group on this device (its history), keeping the meta

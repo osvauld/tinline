@@ -21,7 +21,7 @@ pub const MAX_RECORD: usize = 64 * 1024;
 /// Most bytes of a signed invite or host address body (both are a few hundred bytes).
 const MAX_SMALL_BODY: usize = 1024;
 /// Most bytes of an encoded `InviteToken` (an invite plus a handful of host addresses).
-pub(crate) const MAX_TOKEN: usize = 64 * 1024;
+pub const MAX_TOKEN: usize = 64 * 1024;
 pub const MAX_TEXT: usize = 20_000;
 pub const MAX_NAME: usize = 100;
 /// A `seen` frontier with more writers than this is refused (bounds a record's size).
@@ -244,7 +244,7 @@ pub fn endpoint_auth(
     dev: [u8; 32],
     endpoint: [u8; 32],
 ) -> EndpointAuth {
-    proto::gcall::sign_note(account, &dev, &endpoint, crate::node::now_ms())
+    proto::gcall::sign_note(account, &dev, &endpoint, crdt::now_ms())
 }
 
 /// The proof's statement, if valid and made for the connection whose remote key is `remote`.

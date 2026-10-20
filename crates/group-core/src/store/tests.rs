@@ -9,7 +9,7 @@ fn the_doc_is_sealed_at_rest_and_reloads() {
     let a = identity::generate().0;
     let s = GroupStore::in_memory("alpha beta");
     let dev = [1; 32];
-    let peer = crate::chat::doc::writer_id(a.did(), &dev);
+    let peer = crdt::writer_id(a.did(), &dev);
     let doc = GroupDoc::new("g", peer);
     let mut meta = GroupMeta::default();
     for i in 0..70 {
@@ -38,11 +38,7 @@ fn the_doc_is_sealed_at_rest_and_reloads() {
     assert_eq!(back.entries().unwrap().len(), 70);
     assert_eq!(s.groups().unwrap().len(), 1);
     // Another phrase cannot read it.
-    let other = GroupStore {
-        db: Sealed::new(s.db.raw().clone(), key_from_phrase("gamma")),
-        fail_next_append: Default::default(),
-        fail_next_meta_write: Default::default(),
-    };
+    let other = GroupStore::new(s.db.raw().clone(), cryptography::kdf::derive(STORE_DOMAIN, b"gamma"));
     assert!(other.meta_rows("g").is_err());
 }
 
@@ -53,7 +49,7 @@ fn day_docs_are_sealed_indexed_and_compact() {
     let a = identity::generate().0;
     let s = GroupStore::in_memory("alpha beta");
     let dev = [1; 32];
-    let peer = crate::chat::doc::writer_id(a.did(), &dev);
+    let peer = crdt::writer_id(a.did(), &dev);
     let day = || DocId::Day("1970-01-01".into());
     let doc = GroupDoc::new_in("g", day(), peer);
     let mut sm = ShardMeta::default();

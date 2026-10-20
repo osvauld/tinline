@@ -26,29 +26,23 @@
 //! the link then names that host. Revoking (`group_revoke_invite`) makes the host forget the code;
 //! an invite that someone already fetched stays valid until it expires (it is a bearer grant).
 //! Like the old token, a link reveals one host's group endpoint to whoever holds it.
+//!
+//! The link format (`ShortCode`) and the code rows live in `group_core::code`, re-exported here.
 
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use parking_lot::Mutex;
-use serde::{Deserialize, Serialize};
-use storage::Op;
 use tokio::sync::oneshot;
+
+pub use group_core::code::*;
 
 use super::engine::{GroupCore, INVITE_TTL};
 use super::record::*;
-use super::store::{GroupStore, io, json};
 use super::wire::*;
 use crate::Error;
 use crate::node::{Inner, Node, addr_for, now, now_ms};
-
-pub const LINK_PREFIX: &str = "tinline://g/";
-pub const CODE_LEN: usize = 12;
-const VERSION: u8 = 1;
-const N0_SUFFIX: &str = ".relay.n0.iroh.link";
-/// The n0 relays (iroh 1.3 `presets::N0`), by index.
-const N0_RELAYS: [&str; 4] = ["use1-1", "usw1-1", "euc1-1", "aps1-1"];
 
 /// Unknown codes a host answers on one connection before closing it.
 pub const MAX_BAD_PER_CONN: u32 = 3;
@@ -64,118 +58,6 @@ const FETCH_DEADLINE: Duration = Duration::from_secs(40);
 const ACK_TIMEOUT: Duration = Duration::from_secs(15);
 /// How long `group_invite` waits for a session with a host when we do not host.
 const HOST_WAIT: Duration = Duration::from_secs(30);
-
-/// What a link names: one host's group endpoint (+ relay hint) and a code it keeps.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ShortCode {
-    pub endpoint: [u8; 32],
-    pub relay: Option<String>,
-    pub code: [u8; CODE_LEN],
-}
-
-fn relay_host(url: &str) -> Option<&str> {
-    let h = url.strip_prefix("https://")?;
-    let h = h.strip_suffix('/').unwrap_or(h);
-    Some(h.strip_suffix('.').unwrap_or(h))
-}
-
-fn pack_relay(relay: Option<&str>, out: &mut Vec<u8>) {
-    let Some(url) = relay else {
-        out.push(0);
-        return;
-    };
-    if let Some(host) = relay_host(url)
-        && let Some(name) = host.strip_suffix(N0_SUFFIX)
-        && !name.contains('/')
-    {
-        if let Some(i) = N0_RELAYS.iter().position(|r| *r == name) {
-            out.extend_from_slice(&[1, i as u8]);
-            return;
-        }
-        if name.len() < 64 {
-            out.extend_from_slice(&[2, name.len() as u8]);
-            out.extend_from_slice(name.as_bytes());
-            return;
-        }
-    }
-    if url.len() <= 255 {
-        out.extend_from_slice(&[3, url.len() as u8]);
-        out.extend_from_slice(url.as_bytes());
-    } else {
-        out.push(0);
-    }
-}
-
-fn unpack_relay(b: &[u8]) -> Option<Option<String>> {
-    let n0 = |name: &str| format!("https://{name}{N0_SUFFIX}./");
-    match b {
-        [0] => Some(None),
-        [1, i] => N0_RELAYS.get(*i as usize).map(|r| Some(n0(r))),
-        [2, len, rest @ ..] if rest.len() == *len as usize => {
-            let name = std::str::from_utf8(rest).ok()?;
-            name.bytes().all(|c| c.is_ascii_alphanumeric() || c == b'-' || c == b'.').then(|| Some(n0(name)))
-        }
-        [3, len, rest @ ..] if rest.len() == *len as usize => Some(Some(std::str::from_utf8(rest).ok()?.to_string())),
-        _ => None,
-    }
-}
-
-impl ShortCode {
-    pub fn to_bytes(&self) -> Vec<u8> {
-        let mut b = vec![VERSION];
-        b.extend_from_slice(&self.endpoint);
-        b.extend_from_slice(&self.code);
-        pack_relay(self.relay.as_deref(), &mut b);
-        b
-    }
-
-    pub fn to_link(&self) -> String {
-        format!("{LINK_PREFIX}{}", bs58::encode(self.to_bytes()).into_string())
-    }
-
-    /// A link (`tinline://g/...`, any case of the scheme, a trailing `/` tolerated) or the bare code.
-    pub fn parse(text: &str) -> Option<Self> {
-        let t = text.trim();
-        let body = match (t.get(..LINK_PREFIX.len()), t.get(LINK_PREFIX.len()..)) {
-            (Some(p), Some(rest)) if p.eq_ignore_ascii_case(LINK_PREFIX) => rest,
-            _ => t,
-        };
-        let body = body.trim_end_matches('/');
-        if body.is_empty() || body.len() > 512 {
-            return None;
-        }
-        let b = bs58::decode(body).into_vec().ok()?;
-        if b.len() < 1 + 32 + CODE_LEN + 1 || b[0] != VERSION {
-            return None;
-        }
-        let endpoint: [u8; 32] = b[1..33].try_into().ok()?;
-        let code: [u8; CODE_LEN] = b[33..33 + CODE_LEN].try_into().ok()?;
-        let relay = unpack_relay(&b[33 + CODE_LEN..])?;
-        Some(Self { endpoint, relay, code })
-    }
-}
-
-/// Host side: an invite (or a device token) kept under a code.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub(crate) struct CodeRow {
-    pub gid: String,
-    /// `codec` bytes of a `SignedInvite`; `None` for a device code.
-    pub invite: Option<Vec<u8>>,
-    /// Unix ms.
-    pub expires: u64,
-    /// Who registered it.
-    pub by: String,
-}
-
-/// Issuer side: which group and host a code we made is at (for revoking it).
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub(crate) struct IssuedRow {
-    pub gid: String,
-    pub host_did: String,
-    pub host_dev: String,
-    /// Unix ms.
-    pub expires: u64,
-}
 
 /// Runtime state (not persisted).
 #[derive(Default)]
@@ -207,61 +89,6 @@ impl CodeRt {
 }
 
 pub(crate) const UNKNOWN_CODE: &str = "unknown or expired invite code";
-
-impl GroupStore {
-    pub(crate) fn put_code(&self, code: &[u8; CODE_LEN], r: &CodeRow) -> Result<(), Error> {
-        self.db.put(&format!("code/{}", hex::encode(code)), &json(r)).map_err(io)
-    }
-
-    /// The code's row if it is unexpired (an expired one is forgotten here).
-    pub(crate) fn code(&self, code: &[u8; CODE_LEN]) -> Result<Option<CodeRow>, Error> {
-        let k = format!("code/{}", hex::encode(code));
-        let Some(r) = self.db.get(&k).map_err(io)?.and_then(|v| serde_json::from_slice::<CodeRow>(&v).ok()) else { return Ok(None) };
-        if r.expires < now_ms() {
-            self.db.apply(&[Op::Delete(k)]).map_err(io)?;
-            return Ok(None);
-        }
-        Ok(Some(r))
-    }
-
-    pub(crate) fn drop_code(&self, code: &[u8; CODE_LEN]) -> Result<(), Error> {
-        self.db.apply(&[Op::Delete(format!("code/{}", hex::encode(code))), Op::Delete(format!("issued/{}", hex::encode(code)))]).map_err(io)
-    }
-
-    /// Forgets every expired code (and issued row); returns how many codes `gid` still holds.
-    pub(crate) fn prune_codes(&self, gid: Option<&str>) -> Result<usize, Error> {
-        let t = now_ms();
-        let mut dead = Vec::new();
-        let mut held = 0;
-        for (k, v) in self.db.scan("code/").map_err(io)? {
-            match serde_json::from_slice::<CodeRow>(&v) {
-                Ok(r) if r.expires >= t => {
-                    if gid == Some(r.gid.as_str()) {
-                        held += 1;
-                    }
-                }
-                _ => dead.push(Op::Delete(k)),
-            }
-        }
-        for (k, v) in self.db.scan("issued/").map_err(io)? {
-            if serde_json::from_slice::<IssuedRow>(&v).map_or(true, |r| r.expires < t) {
-                dead.push(Op::Delete(k));
-            }
-        }
-        if !dead.is_empty() {
-            self.db.apply(&dead).map_err(io)?;
-        }
-        Ok(held)
-    }
-
-    pub(crate) fn put_issued(&self, code: &[u8; CODE_LEN], r: &IssuedRow) -> Result<(), Error> {
-        self.db.put(&format!("issued/{}", hex::encode(code)), &json(r)).map_err(io)
-    }
-
-    pub(crate) fn issued(&self, code: &[u8; CODE_LEN]) -> Result<Option<IssuedRow>, Error> {
-        Ok(self.db.get(&format!("issued/{}", hex::encode(code))).map_err(io)?.and_then(|v| serde_json::from_slice(&v).ok()))
-    }
-}
 
 /// Checks a fetched token against the code it was fetched with: the dialled endpoint is one of
 /// the group's signed host addresses, and the invite (if any) is signed, for this group, unexpired.
@@ -524,7 +351,7 @@ impl Node {
                 if row.by != core.did && !admin {
                     return Err(Error::Rejected("only its issuer or an admin can revoke an invite".into()));
                 }
-                return core.store.drop_code(&sc.code);
+                return Ok(core.store.drop_code(&sc.code)?);
             }
             let Some(issued) = core.store.issued(&sc.code)? else { return Err(Error::NotFound) };
             let dev: [u8; 32] = hex::decode(&issued.host_dev).ok().and_then(|b| b.try_into().ok()).ok_or(Error::NotFound)?;
@@ -591,5 +418,3 @@ impl Node {
     }
 }
 
-#[cfg(test)]
-mod tests;

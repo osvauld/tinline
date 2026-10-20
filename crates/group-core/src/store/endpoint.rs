@@ -10,7 +10,7 @@ use zeroize::Zeroizing;
 
 use super::{GroupStore, io};
 use crate::Error;
-use crate::group::rotation::RotationPolicy;
+use crate::rotation::RotationPolicy;
 
 const SECRET: &str = "ep/secret";
 const MADE: &str = "ep/made";
@@ -20,7 +20,7 @@ const PENDING: &str = "ep/pending";
 const POLICY: &str = "ep/policy";
 
 /// The current group endpoint key and its schedule inputs.
-pub(crate) struct EpState {
+pub struct EpState {
     pub secret: Zeroizing<[u8; 32]>,
     /// When this key became current (unix ms).
     pub made: u64,
@@ -51,7 +51,7 @@ fn time(b: Option<Vec<u8>>, row: &str) -> Result<Option<u64>, Error> {
 impl GroupStore {
     /// The current endpoint state, `None` before the first key. A malformed or partial row is
     /// an error: never a silent new key, never a silent `made = 0`.
-    pub(crate) fn ep_state(&self) -> Result<Option<EpState>, Error> {
+    pub fn ep_state(&self) -> Result<Option<EpState>, Error> {
         let get = |row: &str| self.db.get(row).map_err(io);
         let Some(secret) = key(get(SECRET)?, SECRET)? else {
             return Ok(None);
@@ -66,7 +66,7 @@ impl GroupStore {
     }
 
     /// The current state, making the first key (current from `now`) if there is none.
-    pub(crate) fn ep_state_or_init(&self, now: u64, jitter: u64) -> Result<EpState, Error> {
+    pub fn ep_state_or_init(&self, now: u64, jitter: u64) -> Result<EpState, Error> {
         if let Some(s) = self.ep_state()? {
             return Ok(s);
         }
@@ -85,14 +85,14 @@ impl GroupStore {
     }
 
     /// Step 1 of a rotation: a fresh key in `ep/pending` (not current yet); returns it.
-    pub(crate) fn ep_stage(&self) -> Result<Zeroizing<[u8; 32]>, Error> {
+    pub fn ep_stage(&self) -> Result<Zeroizing<[u8; 32]>, Error> {
         let next = Zeroizing::new(proto::new_device_secret());
         self.apply_append(&[self.db.put_op(PENDING, next.as_slice()).map_err(io)?])?;
         Ok(next)
     }
 
     /// Step 2: the staged key becomes current, with its schedule, in one transaction.
-    pub(crate) fn ep_promote(
+    pub fn ep_promote(
         &self,
         now: u64,
         announce_until: u64,
@@ -112,13 +112,13 @@ impl GroupStore {
     }
 
     /// Drops a staged key that was never promoted (on start, or after a failed rebind).
-    pub(crate) fn ep_discard_pending(&self) -> Result<(), Error> {
+    pub fn ep_discard_pending(&self) -> Result<(), Error> {
         self.apply_append(&[Op::Delete(PENDING.into())])
     }
 
     /// This device's rotation policy (`RotationPolicy::DEFAULT` until one is set). A stored
     /// policy that does not parse or is out of bounds is an error.
-    pub(crate) fn rotation_policy(&self) -> Result<RotationPolicy, Error> {
+    pub fn rotation_policy(&self) -> Result<RotationPolicy, Error> {
         let Some(b) = self.db.get(POLICY).map_err(io)? else {
             return Ok(RotationPolicy::DEFAULT);
         };
@@ -130,22 +130,22 @@ impl GroupStore {
         }
     }
 
-    pub(crate) fn set_rotation_policy(&self, p: &RotationPolicy) -> Result<(), Error> {
+    pub fn set_rotation_policy(&self, p: &RotationPolicy) -> Result<(), Error> {
         if let Some(why) = p.invalid() {
             return Err(Error::Rejected(why.into()));
         }
         self.apply_append(&[self.db.put_op(POLICY, &super::json(p)).map_err(io)?])
     }
 
-    #[cfg(test)]
-    pub(crate) fn ep_pending_for_test(&self) -> Option<[u8; 32]> {
+    #[cfg(any(test, feature = "testkit"))]
+    pub fn ep_pending_for_test(&self) -> Option<[u8; 32]> {
         key(self.db.get(PENDING).unwrap(), PENDING)
             .unwrap()
             .map(|k| *k)
     }
 
-    #[cfg(test)]
-    pub(crate) fn ep_put_raw_for_test(&self, row: &str, value: &[u8]) {
+    #[cfg(any(test, feature = "testkit"))]
+    pub fn ep_put_raw_for_test(&self, row: &str, value: &[u8]) {
         self.db.put(row, value).unwrap();
     }
 }

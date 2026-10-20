@@ -39,11 +39,11 @@ fn hostile_links_and_ids_do_not_panic() {
     for t in ["tinline://gé", "tinline://é", "TINLINE://G/ü", "ééééééé", "tinline://g", ""] {
         assert!(ShortCode::parse(t).is_none(), "{t}");
     }
-    assert_eq!(crate::group::short("abc"), "abc");
-    assert_eq!(crate::group::short("é"), "é");
-    assert_eq!(crate::group::short("0123456789"), "01234567");
-    assert!(!crate::group::valid_gid("abc"));
-    assert!(!crate::group::valid_gid(&"é".repeat(32)));
-    assert!(!crate::group::valid_gid(&"A".repeat(64)));
-    assert!(crate::group::valid_gid(&"0a".repeat(32)));
+    assert_eq!(crate::short("abc"), "abc");
+    assert_eq!(crate::short("é"), "é");
+    assert_eq!(crate::short("0123456789"), "01234567");
+    assert!(!crate::valid_gid("abc"));
+    assert!(!crate::valid_gid(&"é".repeat(32)));
+    assert!(!crate::valid_gid(&"A".repeat(64)));
+    assert!(crate::valid_gid(&"0a".repeat(32)));
 }

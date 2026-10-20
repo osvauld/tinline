@@ -24,14 +24,13 @@ impl Inner {
         if let Some(p) = *self.group.rotation_policy_for_test.lock() {
             return Ok(p);
         }
-        core.store.rotation_policy()
+        Ok(core.store.rotation_policy()?)
     }
 
     /// The current endpoint key and schedule (the first key is made here).
     pub(super) fn group_ep_state(&self, core: &GroupCore) -> Result<EpState, Error> {
         let policy = self.group_rotation_policy(core)?;
-        core.store
-            .ep_state_or_init(now_ms(), draw_jitter(policy.jitter_ms))
+        Ok(core.store.ep_state_or_init(now_ms(), draw_jitter(policy.jitter_ms))?)
     }
 
     /// When this device's group endpoint is due to rotate (periodic only, D11: no removal,
@@ -98,7 +97,7 @@ impl Inner {
             .ep_promote(now, announce_until, draw_jitter(policy.jitter_ms));
         let old = {
             let mut slot = core.ep.lock().await;
-            if let Err(e) = promoted.and(if core.closed() {
+            if let Err(e) = promoted.map_err(Error::from).and(if core.closed() {
                 Err(Error::Locked)
             } else {
                 Ok(())

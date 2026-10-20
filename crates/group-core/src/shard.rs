@@ -12,21 +12,21 @@ use super::doc::{DocId, Entry, GroupDoc};
 use super::state::{GroupState, Item, Vis, post_item, post_visible};
 use super::store::{GroupMeta, GroupStore, PostBrief, ShardMeta};
 use crate::Error;
-use crate::chat::doc::{DAY_MS, day_of};
+use crdt::{DAY_MS, day_of};
 
 /// Day docs of one group held in memory at most.
-pub(crate) const MAX_SHARDS_CACHED: usize = 12;
+pub const MAX_SHARDS_CACHED: usize = 12;
 /// A day this old (or older) is compacted into one snapshot row, as in 1:1 chat.
-pub(crate) const CLOSE_AFTER_DAYS: i64 = 8;
+pub const CLOSE_AFTER_DAYS: i64 = 8;
 
 /// One post held, with the verdict `post_visible` gave it.
-pub(crate) struct PostRow {
+pub struct PostRow {
     pub entry: Entry,
     pub vis: Vis,
 }
 
 /// One day doc and its posts.
-pub(crate) struct Shard {
+pub struct Shard {
     pub doc: GroupDoc,
     pub meta: ShardMeta,
     /// Every post held, ordered by `(at, id)`.
@@ -92,7 +92,7 @@ impl Shard {
 
 /// The day docs of one group that are in memory.
 #[derive(Default)]
-pub(crate) struct Shards {
+pub struct Shards {
     map: HashMap<String, Shard>,
     tick: u64,
 }
@@ -135,11 +135,11 @@ impl Shards {
 }
 
 /// What a chat-list row keeps of a post.
-pub(crate) fn brief(i: &Item) -> PostBrief {
+pub fn brief(i: &Item) -> PostBrief {
     PostBrief { id: i.id.clone(), author: i.author.clone(), at: i.at, text: i.text.clone(), reply_to: i.reply_to.clone(), peer: i.peer, counter: i.counter }
 }
 
-pub(crate) fn brief_item(b: &PostBrief, st: &GroupState) -> Item {
+pub fn brief_item(b: &PostBrief, st: &GroupState) -> Item {
     Item {
         id: b.id.clone(),
         kind: super::state::ItemKind::Post,
@@ -156,7 +156,7 @@ pub(crate) fn brief_item(b: &PostBrief, st: &GroupState) -> Item {
 
 /// Books posts that show now in the group's local state: the chat-list row (newest), the unread
 /// count (`me` is our DID) and the newest day.
-pub(crate) fn note_posts(meta: &mut GroupMeta, me: &str, shown: &[Item]) {
+pub fn note_posts(meta: &mut GroupMeta, me: &str, shown: &[Item]) {
     for i in shown {
         if meta.last.as_ref().is_none_or(|l| (l.at, &l.id) < (i.at, &i.id)) {
             meta.last = Some(brief(i));
@@ -168,6 +168,6 @@ pub(crate) fn note_posts(meta: &mut GroupMeta, me: &str, shown: &[Item]) {
 }
 
 /// The calendar days (UTC, newest first) from today back `n` days.
-pub(crate) fn recent_days(now_ms: i64, n: i64) -> Vec<String> {
+pub fn recent_days(now_ms: i64, n: i64) -> Vec<String> {
     (0..n).map(|i| day_of(now_ms - i * DAY_MS)).collect()
 }

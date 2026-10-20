@@ -111,7 +111,7 @@ impl Node {
     /// Group calls this device was in or missed, newest first; `None` lists every group (the
     /// Calls tab), `Some` one group (its thread). Local to this device.
     pub fn group_call_history(&self, group_id: Option<String>) -> Result<Vec<crate::group::calllog::GroupCallRecord>, Error> {
-        self.inner.group_core()?.store.clog_list(group_id.as_deref())
+        Ok(self.inner.group_core()?.store.clog_list(group_id.as_deref())?)
     }
 
     /// Test hook: the DIDs whose fresh `CallHostStatus` this device holds for the group.
