@@ -1,10 +1,10 @@
 //! Typed CALL OBSERVATIONS, not global attendance/read/media proofs. Runtime
 //! hooks and proof/admission checks are intentionally separate from this codec.
 use super::*;
-pub(crate) const MAX_CALL_ID_BYTES: usize = 128; // provisional, real protocol ID checked by admission
-pub(crate) const MAX_CALL_EVIDENCE: usize = 16; // exact supporting proof references per event
+pub const MAX_CALL_ID_BYTES: usize = 128; // provisional, real protocol ID checked by admission
+pub const MAX_CALL_EVIDENCE: usize = 16; // exact supporting proof references per event
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub(crate) enum CallOutcome {
+pub enum CallOutcome {
     Left,
     RemoteEnded,
     Removed,
@@ -14,7 +14,7 @@ pub(crate) enum CallOutcome {
     Superseded,
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub(crate) enum CallEventKind {
+pub enum CallEventKind {
     ObservedStart,
     Joined,
     ParticipationEnded { outcome: CallOutcome },
@@ -24,7 +24,7 @@ pub(crate) enum CallEventKind {
     Declined,
 }
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub(crate) struct CallEvent {
+pub struct CallEvent {
     pub call_id: String,
     /// Host generation for group calls; individual calls have no group host.
     pub host_generation: Option<u32>,
@@ -38,7 +38,7 @@ pub(crate) struct CallEvent {
     pub evidence: Vec<[u8; 32]>,
 }
 impl CallEvent {
-    pub(super) fn check(&self, scope: &Scope) -> Result<(), ReceiptError> {
+    pub fn check(&self, scope: &Scope) -> Result<(), ReceiptError> {
         let at = i64::try_from(self.observed_at_ms).map_err(|_| ReceiptError::Bounds)?;
         if self.call_id.is_empty()
             || self.call_id.len() > MAX_CALL_ID_BYTES
@@ -72,4 +72,4 @@ impl CallEvent {
     }
 }
 #[cfg(test)]
-pub(super) mod tests;
+pub mod tests;

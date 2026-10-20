@@ -1,8 +1,14 @@
 use super::*;
-use crate::chat::doc::{MsgRec, Shard, Writer, doc_name};
-use storage::Store;
+use crate::chat::doc::{Shard, Writer, doc_name, pair_id};
+use crate::receipts::{
+    Conversation, Kind, MAX_MESSAGES, Receipt, ReceiptError, Scope,
+    store::{ReceiptStore, messages::*},
+    testkit::{self, TempDir},
+};
+use std::sync::Arc;
+use storage::{Sealed, Store};
 
-const LIMITS: crate::group::doc::batching::BatchLimits = crate::group::doc::batching::BatchLimits {
+const LIMITS: crdt::batching::BatchLimits = crdt::batching::BatchLimits {
     bytes: 1 << 20,
     operations: 64,
     writers: 64,
@@ -10,31 +16,12 @@ const LIMITS: crate::group::doc::batching::BatchLimits = crate::group::doc::batc
 const DAY: &str = "2026-10-15";
 const AT: i64 = 1_792_022_400_000 + 3_600_000; // 2026-10-15T01:00Z
 
-struct Directory(std::path::PathBuf);
-impl Directory {
-    fn new() -> Self {
-        let p = std::env::temp_dir().join(format!(
-            "tinline-message-receipts-{}-{}",
-            std::process::id(),
-            hex::encode(proto::new_device_secret())
-        ));
-        std::fs::create_dir(&p).unwrap();
-        Self(p)
-    }
-    fn open(&self) -> Arc<ReceiptStore> {
-        ReceiptStore::new(Sealed::new(
-            Store::open(self.0.join("r.redb")).unwrap(),
-            [4; 32],
-        ))
-    }
-}
-impl Drop for Directory {
-    fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(&self.0);
-    }
+/// A ledger factory over the sealed store in `dir` (reopened by each call).
+fn open(dir: &TempDir) -> Arc<ReceiptStore> {
+    ReceiptStore::new(Sealed::new(Store::open(dir.0.join("r.redb")).unwrap(), [4; 32]))
 }
 fn memory() -> Arc<ReceiptStore> {
-    ReceiptStore::new(Sealed::new(Store::open_in_memory().unwrap(), [5; 32]))
+    testkit::memory(5)
 }
 
 struct Pair {
@@ -120,9 +107,9 @@ fn intent_commits_exact_versions_atomically_and_survives_reopen() {
     let p = pair();
     let (_, recs) = versions(&p, &p.alice, 3);
     let ds = digests(&p, &recs);
-    let dir = Directory::new();
+    let dir = TempDir::new("tinline-message-receipts");
     let issued = {
-        let store = dir.open();
+        let store = open(&dir);
         let bob = MessageReceipts::new(store.clone(), p.bob.did(), [2; 32]);
         // Only A and C were read: B must stay a hole.
         let ops = bob
@@ -136,7 +123,7 @@ fn intent_commits_exact_versions_atomically_and_survives_reopen() {
         assert!(bob.pump(&p.bob).unwrap().is_empty());
         issued
     };
-    let store = dir.open();
+    let store = open(&dir);
     let bob = MessageReceipts::new(store, p.bob.did(), [2; 32]);
     let is_bob = |d: &str| d == p.bob.did();
     for (i, d) in ds.iter().enumerate() {

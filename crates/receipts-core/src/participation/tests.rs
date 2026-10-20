@@ -1,8 +1,6 @@
 use super::*;
-use crate::{
-    chat::doc::writer_id,
-    gcall::{ClientAction, ClientEngine, ClientState},
-};
+use crdt::writer_id;
+use gcall_core::{ClientAction, ClientEngine, ClientState};
 use storage::{Sealed, Store};
 struct Authority {
     allowed: bool,
@@ -35,7 +33,7 @@ fn sidecars(p: &JoinProofs) -> Vec<Evidence> {
     ]
 }
 fn replica(p: &JoinProofs, peer: u64) -> (std::sync::Arc<store::ReceiptStore>, Ledger) {
-    let db = store::ReceiptStore::new(Sealed::new(Store::open_in_memory().unwrap(), [9; 32]));
+    let db = crate::testkit::memory(9);
     let l = db
         .open(
             Scope {
@@ -125,7 +123,7 @@ pub(crate) fn fixture() -> (identity::Identity, JoinProofs) {
 }
 fn ledger(a: &identity::Identity, p: &JoinProofs) -> (std::sync::Arc<store::ReceiptStore>, Ledger) {
     let s = p.start.open().unwrap();
-    let db = store::ReceiptStore::new(Sealed::new(Store::open_in_memory().unwrap(), [9; 32]));
+    let db = crate::testkit::memory(9);
     let l = db
         .open(
             Scope {
@@ -293,7 +291,7 @@ fn revoked_roles_local_device_gate_and_forged_originals_refuse_before_commit() {
 fn dangling_evidence_cannot_produce_a_proof_backed_joined_view() {
     let (a, _) = fixture();
     let claim = super::super::calls::tests::claim(&a, true);
-    let s = store::ReceiptStore::new(Sealed::new(Store::open_in_memory().unwrap(), [9; 32]));
+    let s = crate::testkit::memory(9);
     let l = s
         .open(
             claim.scope.clone(),
@@ -607,7 +605,7 @@ fn new_native_progress_cannot_implicitly_heal_an_older_dangling_claim() {
 }
 #[test]
 fn proof_aware_export_shrinks_native_prefix_until_all_originals_fit_then_converges() {
-    use crate::group::doc::batching::BatchLimits;
+    use crdt::batching::BatchLimits;
     let (a, p) = fixture();
     let (_, source) = ledger(&a, &p);
     persist_join(
@@ -677,7 +675,7 @@ fn proof_aware_export_shrinks_native_prefix_until_all_originals_fit_then_converg
 }
 #[test]
 fn proof_aware_export_refuses_missing_or_corrupt_original_without_source_progress() {
-    use crate::group::doc::batching::BatchLimits;
+    use crdt::batching::BatchLimits;
     for corrupt in [false, true] {
         let (a, p) = fixture();
         let backing = Sealed::new(Store::open_in_memory().unwrap(), [9; 32]);
@@ -736,7 +734,7 @@ fn proof_aware_export_refuses_missing_or_corrupt_original_without_source_progres
 }
 #[test]
 fn proof_aware_export_defers_indivisible_native_oversize_without_returning_a_frontier() {
-    use crate::group::doc::batching::{BatchError, BatchLimits};
+    use crdt::batching::{BatchError, BatchLimits};
     let (a, p) = fixture();
     let (_, source) = ledger(&a, &p);
     assert!(
@@ -850,18 +848,7 @@ fn identical_replay_still_checks_current_local_device_gate() {
 
 #[test]
 fn clean_sealed_redb_reopen_restores_exact_originals_and_joined_projection() {
-    struct Directory(std::path::PathBuf);
-    impl Drop for Directory {
-        fn drop(&mut self) {
-            let _ = std::fs::remove_dir_all(&self.0);
-        }
-    }
-    let directory = Directory(std::env::temp_dir().join(format!(
-        "tinline-join-evidence-{}-{}",
-        std::process::id(),
-        hex::encode(proto::new_device_secret())
-    )));
-    std::fs::create_dir(&directory.0).unwrap();
+    let directory = crate::testkit::TempDir::new("tinline-join-evidence");
     let path = directory.0.join("receipts.redb");
     let (a, p) = fixture();
     let scope = Scope {

@@ -1,37 +1,39 @@
-//! Shared message/call receipt codec, Loro primitives and transactional ledger.
+//! Shared message/call receipt codec, Loro primitives and transactional ledger, with no IO
+//! runtime, transport or UniFFI (p2pcore re-exports it as `p2pcore::receipts` and owns the
+//! app-facing API and tick visuals).
 //! No runtime lifecycle/content issuance, admission policy, wire or UI hooks yet.
 //! A signature is a claim, not a disk/read audit. Host/cache proofs are separate.
-use crate::chat::doc::{day_of, day_start};
+use crdt::{day_of, day_start};
 use cryptography::{domains, hash};
 use proto::{Signable, Signed, Signer};
 use serde::{Deserialize, Serialize};
 
-pub(crate) mod api;
-pub(crate) mod calls;
-pub(crate) mod doc;
-pub(crate) mod evidence;
+pub mod calls;
+pub mod doc;
+pub mod evidence;
 // Group-call join proofs and the evidence bundles are built and tested but not yet wired into a
 // runtime; they compile for tests only until the group receipt wire lands.
 #[cfg(test)]
-pub(crate) mod participation;
-pub(crate) mod store;
-pub(crate) mod ticks;
-pub(crate) mod list;
+pub mod participation;
+pub mod store;
+/// Shared test setup (in-memory/temporary ledgers); p2pcore's tests use it via `testkit`.
+#[cfg(any(test, feature = "testkit"))]
+pub mod testkit;
 // Provisional budgets indexed in docs/design/sync-receipt-limits.md.
-pub(crate) const MAX_MESSAGES: usize = 256;
-pub(crate) const MAX_CONTEXT_WRITERS: usize = 1024;
-pub(crate) const MAX_BODY: usize = 32 * 1024;
+pub const MAX_MESSAGES: usize = 256;
+pub const MAX_CONTEXT_WRITERS: usize = 1024;
+pub const MAX_BODY: usize = 32 * 1024;
 #[cfg(test)]
-pub(crate) const MAX_SIGNED: usize = MAX_BODY + proto::signed::SIG_LEN;
-pub(crate) const MAX_UPDATE_BYTES: usize = crate::group::doc::batching::MAX_EXPORT_BYTES;
+pub const MAX_SIGNED: usize = MAX_BODY + proto::signed::SIG_LEN;
+pub const MAX_UPDATE_BYTES: usize = crdt::batching::MAX_EXPORT_BYTES;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub(crate) enum Conversation {
+pub enum Conversation {
     Direct(String),
     Group(String),
 }
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub(crate) struct Scope {
+pub struct Scope {
     pub conversation: Conversation,
     pub day: String,
 }
@@ -48,13 +50,13 @@ impl Scope {
     }
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub(crate) enum Kind {
+pub enum Kind {
     Delivered,
     Read,
     Call,
 }
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub(crate) struct Receipt {
+pub struct Receipt {
     pub scope: Scope,
     pub kind: Kind,
     pub recipient: String,
@@ -70,7 +72,7 @@ pub(crate) struct Receipt {
     /// This extends the UNDEPLOYED prototype schema, not legacy stored/wire data.
     pub call: Option<calls::CallEvent>,
 }
-pub(crate) type SignedReceipt = Signed<Receipt>;
+pub type SignedReceipt = Signed<Receipt>;
 
 impl Signable for Receipt {
     const DOMAIN: domains::Domain = domains::RECEIPT;
@@ -83,7 +85,7 @@ impl Signable for Receipt {
     }
 }
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
-pub(crate) enum ReceiptError {
+pub enum ReceiptError {
     #[error("recipient receipt bounds or shape")]
     Bounds,
     #[error("recipient receipt encoding")]
@@ -109,10 +111,10 @@ pub(crate) enum ReceiptError {
 /// or a random record ID. Callers must validate/canonicalize those bytes first.
 /// The real DM/group extraction adapters are not implemented by this helper.
 #[cfg(test)]
-pub(crate) fn message_digest(original: &[u8]) -> [u8; 32] {
+pub fn message_digest(original: &[u8]) -> [u8; 32] {
     hash::content(domains::RECEIPT_MESSAGE, original)
 }
-pub(crate) fn receipt_id(original: &[u8]) -> String {
+pub fn receipt_id(original: &[u8]) -> String {
     hash::hasher(domains::RECEIPT_ID).part(original).hex()
 }
 impl Receipt {
@@ -151,7 +153,7 @@ impl Receipt {
     }
     /// Low-level claim signer ONLY. A future runtime controller must derive
     /// coverage from durable verified messages/read events, not peer assertions.
-    pub(crate) fn sign_claim(
+    pub fn sign_claim(
         &self,
         account: &identity::Identity,
     ) -> Result<SignedReceipt, ReceiptError> {
@@ -164,7 +166,7 @@ impl Receipt {
 }
 /// Cryptographic check only. Membership/device/contact/content coverage are
 /// caller policy; a valid signature alone must not advance delivery/read UI.
-pub(crate) fn open_receipt(bytes: &[u8], scope: &Scope) -> Result<Receipt, ReceiptError> {
+pub fn open_receipt(bytes: &[u8], scope: &Scope) -> Result<Receipt, ReceiptError> {
     let signed = SignedReceipt::from_bytes(bytes).map_err(|_| ReceiptError::Bounds)?;
     let claim = signed.peek().map_err(|_| ReceiptError::Encoding)?;
     claim.check_shape()?;

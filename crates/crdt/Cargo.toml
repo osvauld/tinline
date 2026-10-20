@@ -10,3 +10,4 @@ description = "Loro doc helpers shared by chat, group, receipts and own-device s
 loro = "1.13.9"
 cryptography.workspace = true
 thiserror.workspace = true
+blake3 = "1"

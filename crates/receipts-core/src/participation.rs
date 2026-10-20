@@ -7,16 +7,16 @@ use super::{
     store::{Committed, Ledger},
     *,
 };
-use crate::gcall::CallAuthority;
+use gcall_core::CallAuthority;
 use proto::gcall::{self as w, SignedJoin, SignedRoster, SignedStart};
 
-pub(crate) struct JoinProofs {
+pub struct JoinProofs {
     pub start: SignedStart,
     pub expected_join: SignedJoin,
     pub roster: SignedRoster,
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct ParticipationView {
+pub struct ParticipationView {
     pub group: String,
     pub call_id: String,
     pub issuer: String,
@@ -65,7 +65,7 @@ fn opened(proofs: &JoinProofs, issuer: &str) -> Result<(w::CallStart, w::Roster)
 /// Called ONLY for a confirmed actual local Joined transition, with that
 /// device's original outbound Join. A matching signed roster alone is not proof
 /// this device's live session transitioned. The owner's hook must enforce this.
-pub(crate) fn persist_join(
+pub fn persist_join(
     ledger: &Ledger,
     account: &identity::Identity,
     device: [u8; 32],
@@ -81,7 +81,7 @@ pub(crate) fn persist_join(
 
 /// Freeze the exact body/originals before a durable controller queues a transition.
 /// Caller still supplies the actual transition witness and frozen local context.
-pub(super) fn prepare_join(
+pub fn prepare_join(
     account: &identity::Identity,
     device: [u8; 32],
     observed_at_ms: u64,
@@ -130,7 +130,7 @@ pub(super) fn prepare_join(
 /// Proof-backed observations, NOT another call-log backend or an all-member
 /// roster/attendance/duration count. Consumes only locally accepted originals;
 /// historical views do not reapply current host authority and erase observations.
-pub(crate) fn joined_views(ledger: &Ledger) -> Result<Vec<ParticipationView>, ReceiptError> {
+pub fn joined_views(ledger: &Ledger) -> Result<Vec<ParticipationView>, ReceiptError> {
     let mut views = Vec::new();
     for entry in ledger.entries()? {
         if entry
@@ -152,7 +152,7 @@ pub(crate) fn joined_views(ledger: &Ledger) -> Result<Vec<ParticipationView>, Re
 /// Supporting protocol correspondence for an already signature/structure-checked
 /// native entry. Caller still decides current/historical authority and device
 /// admission; a remote signature is a reported observation, not our own lifecycle.
-pub(crate) fn verify_joined_entry(
+pub fn verify_joined_entry(
     entry: &super::doc::Entry,
     mut resolve: impl FnMut(&[u8; 32]) -> Result<Option<Evidence>, ReceiptError>,
 ) -> Result<ParticipationView, ReceiptError> {
@@ -219,4 +219,4 @@ pub(crate) fn verify_joined_entry(
     })
 }
 #[cfg(test)]
-pub(crate) mod tests;
+pub mod tests;

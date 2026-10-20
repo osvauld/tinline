@@ -18,7 +18,7 @@
 //! our own unread cursor. Those are not recipient-signed evidence.
 
 use super::*;
-use crate::receipts::store::messages::{VersionEvidence, dm_version};
+use crate::receipts::{messages::dm_version, store::messages::VersionEvidence};
 use crate::receipts::{Conversation, Kind, ReceiptError, Scope, api};
 use std::collections::BTreeMap;
 

@@ -3,6 +3,12 @@
 pub const HOUR_MS: i64 = 3_600_000;
 pub const DAY_MS: i64 = 24 * HOUR_MS;
 
+/// The wall clock in unix ms (0 if it reads before 1970).
+pub fn now_ms() -> u64 {
+    use std::time::{SystemTime, UNIX_EPOCH};
+    SystemTime::now().duration_since(UNIX_EPOCH).map_or(0, |d| d.as_millis() as u64)
+}
+
 fn days_from_civil(y: i64, m: i64, d: i64) -> i64 {
     let y = if m <= 2 { y - 1 } else { y };
     let era = y.div_euclid(400);

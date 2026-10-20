@@ -1,16 +1,16 @@
 //! Proof-aware packaging over the existing whole-operation native planner.
 //! Internal API only: no wire names, negotiation or new authority policy.
 use super::*;
-use crate::group::doc::batching::{BatchError, BatchLimits, ExportBatch};
-use crate::receipts::evidence::Evidence;
+use crate::evidence::Evidence;
+use crdt::batching::{BatchError, BatchLimits, ExportBatch};
 
 #[derive(Debug)]
-pub(crate) struct EvidenceBatch {
+pub struct EvidenceBatch {
     pub native: ExportBatch,
     pub evidence: Vec<Evidence>,
 }
 #[derive(Debug, thiserror::Error)]
-pub(crate) enum EvidenceExportError {
+pub enum EvidenceExportError {
     #[error(transparent)]
     Native(#[from] BatchError),
     #[error(transparent)]
@@ -21,7 +21,7 @@ impl Ledger {
     /// limits do not cover sidecar bytes; they have their own bounded count/codec.
     /// Advisory frontier is never a receiver Ack. History-dependent trials/forks
     /// are unchanged; holding this scope's ledger lock is not a global scheduler.
-    pub(crate) fn export_with_evidence(
+    pub fn export_with_evidence(
         &self,
         theirs: &VersionVector,
         mut limits: BatchLimits,

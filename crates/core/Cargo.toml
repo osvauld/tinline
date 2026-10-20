@@ -42,6 +42,8 @@ proto.workspace = true
 gcall-core.workspace = true
 # Loro doc helpers (own-device doc, export batching, UTC days, writer IDs).
 crdt.workspace = true
+# Receipt codec, Loro receipt map and ledger; re-exported as `p2pcore::receipts` (src/receipts/mod.rs).
+receipts-core.workspace = true
 # Shared UI logic; its UniFFI items are re-exported from lib.rs so they land in libp2pcore.so.
 present = { path = "../present" }
 audio.workspace = true
@@ -76,6 +78,8 @@ tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
 # tests/video_calls.rs feeds a synthetic camera (`video::Pattern`).
 video = { path = "../video", default-features = false, features = ["net", "sim"] }
 proto = { workspace = true, features = ["test-support"] }
+# Receipt ledger test hooks (commit fault injection, temporary stores) for the unit tests.
+receipts-core = { workspace = true, features = ["testkit"] }
 # Integration tests use the synthetic peers and test signers (`dev-tools`).
 p2pcore = { path = ".", features = ["dev-tools"] }
 

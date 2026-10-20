@@ -1,4 +1,14 @@
-//! Writer IDs and device IDs.
+//! Writer IDs, device IDs and DM pair IDs.
+
+/// `pair` for two DIDs: hex BLAKE3 of the sorted, NUL-joined DIDs.
+pub fn pair_id(a: &str, b: &str) -> String {
+    let (x, y) = if a <= b { (a, b) } else { (b, a) };
+    let mut h = blake3::Hasher::new();
+    h.update(x.as_bytes());
+    h.update(&[0]);
+    h.update(y.as_bytes());
+    h.finalize().to_hex().to_string()
+}
 
 /// The writer ID (U16) of the account `did` on the install whose device ID is `device`: the
 /// first 64 bits (little-endian) of `hash::hasher(WRITER_ID)` over the DID and the device ID. The app writes every chat doc with it as the Loro peer id, and every receiver recomputes

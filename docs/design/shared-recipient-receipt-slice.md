@@ -10,7 +10,7 @@ primitive stage; it does not describe live receipt issuance or transport.
 
 ## Sources and reuse
 
-- `crates/core/src/receipts.rs`: canonical prototype v1 statements for both
+- `crates/receipts-core/src/lib.rs` (re-exported as `p2pcore::receipts`): canonical prototype v1 statements for both
   direct/group scopes and delivered/read kinds. DID signature binds conversation,
   UTC day, kind, issuer DID/device, sorted exact original-message/version digests
   and group metadata context. Direct scope has empty group context. Signature
