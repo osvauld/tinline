@@ -179,6 +179,9 @@ fun TinField(
 
 private fun hashOf(s: String): Int { var h = 0; for (ch in s) h = h * 31 + ch.code; return h and 0x7fffffff }
 
+/** Which of the six avatar tints a key (DID or name) gets. */
+internal fun avatarHue(key: String): Int = hashOf(key) % 6
+
 fun initialsOf(name: String): String {
     // First letter or digit of each word, so "Lena (work)" is "LW", not "L(".
     val parts = name.trim().split(Regex("\\s+")).mapNotNull { w -> w.firstOrNull { it.isLetterOrDigit() } }
@@ -192,7 +195,7 @@ fun initialsOf(name: String): String {
 /** The person avatar (lib/ui/Avatar.svelte via [PgAvatar]): [key] is the person's DID where there is one, so their picture shows. */
 @Composable
 fun Avatar(name: String, key: String, size: Dp, modifier: Modifier = Modifier, alpha: Float = 1f) =
-    PgAvatar(name, hashOf(key) % 6, size, person = key, modifier = modifier, alpha = alpha)
+    PgAvatar(name, avatarHue(key), size, person = key, modifier = modifier, alpha = alpha)
 
 /** My own avatar: hue 0 (the seed's account hue) and my picture. */
 @Composable
@@ -216,21 +219,6 @@ fun PairAvatars(me: String, other: String, otherKey: String?, mine: Dp = 64.dp, 
 }
 
 // ------------------------------------------------------------------ progress
-
-/** Onboarding progress: filled dots up to [step] (1-based) joined by amber string, the rest outlined. */
-@Composable
-fun ProgressDots(step: Int, total: Int = 5) {
-    val c = Tin.c
-    Row(Modifier.fillMaxWidth().padding(start = 24.dp, end = 24.dp, top = 4.dp).semantics { contentDescription = "Step $step of $total" },
-        verticalAlignment = Alignment.CenterVertically) {
-        for (i in 1..total) {
-            val done = i <= step
-            Box(Modifier.size(10.dp).clip(CircleShape).then(
-                if (done) Modifier.background(c.pr) else Modifier.border(2.dp, c.ln2, CircleShape)))
-            if (i < total) Box(Modifier.weight(1f).height(2.dp).background(if (i < step) c.thread else c.ln))
-        }
-    }
-}
 
 // ------------------------------------------------------------------ banners, pills, rows
 
@@ -260,31 +248,6 @@ fun Banner(kind: BannerKind, icon: ImageVector, title: String, body: String, act
         ) {
             Text(action, style = TinType.label.copy(fontWeight = FontWeight.Bold, textDecoration = androidx.compose.ui.text.style.TextDecoration.Underline),
                 color = if (kind == BannerKind.Neutral) c.pr else fg)
-        }
-    }
-}
-
-enum class PillState { Available, Connecting, Offline, Away }
-
-/** Status pill: Available / Connecting... / Offline / Not available. Tappable only when [onClick] is given. */
-@Composable
-fun StatusPill(state: PillState, onClick: (() -> Unit)? = null) {
-    val c = Tin.c
-    val (bg, fg, label) = when (state) {
-        PillState.Available -> Triple(c.prc, c.onPrc, "Available")
-        PillState.Connecting -> Triple(c.sf3, c.ink, "Connecting…")
-        PillState.Offline -> Triple(c.sf3, c.ink, "Offline")
-        PillState.Away -> Triple(c.sf3, c.ink, "Not available")
-    }
-    Surface(
-        shape = RoundedCornerShape(50), color = bg, contentColor = fg,
-        modifier = Modifier.heightIn(min = 36.dp).let { if (onClick != null) it.clickable(role = Role.Button, onClick = onClick) else it },
-    ) {
-        Row(Modifier.padding(start = 10.dp, end = 12.dp).heightIn(min = 36.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            if (state == PillState.Available) Dot(c.pr, 10.dp)
-            else if (state == PillState.Connecting) Dot(c.thread, 10.dp)
-            else Dot(c.ln2, 10.dp, hollow = true)
-            Text(label, style = TinType.label, color = fg)
         }
     }
 }

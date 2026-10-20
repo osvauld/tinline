@@ -759,12 +759,6 @@ fun ReservedLine(text: String, modifier: Modifier = Modifier, style: TextStyle =
  * A Layer dialog on Android: a bottom sheet (surface-raised, r24 top, sheet shadow), the 28 x 4 notch, the playground scrim,
  * content padded as .pf-dlg (20 20 16).
  */
-@Composable
-fun PeopleSheet(onDismiss: () -> Unit, pad: Boolean = true, label: String = "", content: @Composable ColumnScope.() -> Unit) {
-    PgLayer(true, onDismiss, label) {
-        Column(Modifier.fillMaxWidth().let { if (pad) it.padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 16.dp) else it }, content = content)
-    }
-}
 
 /** .pf-dlg h2 (17 px 650, 24) and paragraphs (13/19 muted, 8 above; lead = 15/21 ink). */
 @Composable
@@ -772,16 +766,6 @@ fun DlgTitle(text: String) = Text(text, Modifier.padding(bottom = 4.dp).semantic
 @Composable
 fun DlgP(text: String, lead: Boolean = false, modifier: Modifier = Modifier) =
     Text(text, modifier.fillMaxWidth().padding(top = 8.dp), style = if (lead) PgType.body else PgType.sub19, color = if (lead) Tin.c.ink else Tin.c.ink2)
-
-/** profile.css .pf-dlg with the actions row: title, paragraphs, buttons at the end. */
-@Composable
-fun PfDialog(title: String, onDismiss: () -> Unit, actions: @Composable RowScope.() -> Unit, body: @Composable ColumnScope.() -> Unit) {
-    PeopleSheet(onDismiss) {
-        DlgTitle(title)
-        body()
-        PfActs(content = actions)
-    }
-}
 
 // ------------------------------------------------------------------ people
 
@@ -802,15 +786,6 @@ fun PersonRowPg(name: String, key: String, sub: String, onClick: (() -> Unit)? =
         }
         end?.invoke()
     }
-}
-
-/** A height-animated appearance (PermBanner's grow: height and opacity together, crossfade duration). */
-@Composable
-fun Grow(visible: Boolean, content: @Composable () -> Unit) {
-    val reduced = rememberReducedMotion()
-    val d = if (reduced) 0 else PgMotion.CROSSFADE
-    AnimatedVisibility(visible, enter = expandVertically(tween(d, easing = LinearEasing)) + fadeIn(tween(d, easing = LinearEasing)),
-        exit = shrinkVertically(tween(d, easing = LinearEasing)) + fadeOut(tween(d, easing = LinearEasing))) { content() }
 }
 
 /** CSS `outline: 2px solid; outline-offset: 1px` (gate/Field focus): a ring drawn 1..3 px outside the shape, taking no layout space. */

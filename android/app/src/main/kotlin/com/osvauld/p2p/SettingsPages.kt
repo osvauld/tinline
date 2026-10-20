@@ -97,7 +97,7 @@ fun SettingsLanding(
                     }
                 }
                 accounts.filter { !it.current }.forEach { a ->
-                    act { PfAct(a.name, onClick = { onSwitch(a.did) }, leading = { PgAvatar(a.name, hueOf(a.did), 36.dp) }, sub = "Paused · tap to switch") }
+                    act { PfAct(a.name, onClick = { onSwitch(a.did) }, leading = { PgAvatar(a.name, avatarHue(a.did), 36.dp) }, sub = "Paused · tap to switch") }
                 }
                 act { PfAct("Add another account", onClick = onAdd, icon = PgIcons.Plus, chevron = true) }
             }
@@ -133,7 +133,6 @@ fun SettingsLanding(
 }
 
 /** Stable avatar hue for a key (the same hash as Components.kt's Avatar). */
-fun hueOf(key: String): Int { var h = 0; for (ch in key) h = h * 31 + ch.code; return (h and 0x7fffffff) % 6 }
 
 // ------------------------------------------------------------------ app-level alert and sound settings (stored on this device)
 

@@ -46,8 +46,6 @@ object Pg {
     val Check = tin(TinIcons.Check)
     /** The tick in a bubble's meta (Icon size 12, stroke 2.2 at that size). */
     val Tick = icon("tick", "M5 12.5l4.5 4.5L19 7", stroke = 2.2f * 24f / 12f)
-    val TickClock = icon("tickclock", circle(12f, 12f, 9f), "M12 7v5l3 2", stroke = 2f * 24f / 11f)
-    val TickWarn = icon("tickwarn", "M12 3l10 18H2zM12 10v5M12 18v.01", stroke = 2.2f * 24f / 12f)
     val Clock = tin(TinIcons.Clock)
     val File = tin(TinIcons.File)
     val Image = tin(TinIcons.Image)
@@ -69,7 +67,6 @@ object PgMotion {
     val In = CubicBezierEasing(.4f, 0f, 1f, 1f)
     val InOut = CubicBezierEasing(.4f, 0f, .2f, 1f)
     val easeOut = Out
-    val easeInOut = InOut
     /** slide.ts: 1 - (1 - t)^3. */
     val cubicOut = androidx.compose.animation.core.Easing { t -> 1f - (1f - t) * (1f - t) * (1f - t) }
 }

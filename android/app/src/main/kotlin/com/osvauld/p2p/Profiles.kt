@@ -183,6 +183,3 @@ class ProfilesController(private val app: P2pApp) : ProfileEvents, ProfileStore 
         const val ACCOUNT_CHANGED = "The selected account changed. Nothing was saved to the new account."
     }
 }
-
-/** Locked or no account: profile work must not run. */
-internal fun P2pApp.profileReady(): Boolean = runCatching { node.lockState() == LockState.UNLOCKED }.getOrDefault(false)

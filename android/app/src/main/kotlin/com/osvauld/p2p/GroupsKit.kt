@@ -428,29 +428,3 @@ fun GJoinChip() {
  * someone joining only changes a number. [joined] is null while the core doesn't report a count: the line then reads only
  * "Call in progress".
  */
-@Composable
-fun GOngoingCall(inCall: Boolean, joined: Int?, sub: String? = null, onJoin: () -> Unit, onOpen: () -> Unit) {
-    val c = Tin.c
-    val bg = if (c.dark) lerp(c.sf, c.accentFill, .24f) else c.accentSoft
-    val fg = if (c.dark) c.ink else c.accentInk
-    Row(
-        Modifier.fillMaxWidth().heightIn(min = 56.dp).background(bg).padding(start = 14.dp, end = 12.dp, top = 8.dp, bottom = 8.dp)
-            .semantics(mergeDescendants = true) { contentDescription = "A call is in progress" + (joined?.let { ", $it joined" } ?: "") },
-        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Column(Modifier.weight(1f)) {
-            Text(if (inCall) "You’re in the call" else "Call in progress", style = GType.body.copy(fontWeight = FontWeight.SemiBold), color = fg, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            val line = sub ?: joined?.let { "$it joined" }
-            if (line != null) Text(line, Modifier.alpha(.85f), style = GType.sub.copy(lineHeight = 17.sp, fontFeatureSettings = "tnum"), color = fg)
-        }
-        val src = remember { MutableInteractionSource() }
-        val shape = RoundedCornerShape(18.dp)
-        Box(
-            Modifier.widthIn(min = 72.dp).heightIn(min = 44.dp).groupPress(src).clip(shape)
-                .let { if (inCall) it.border(1.5.dp, fg, shape) else it.background(c.accentFill) }
-                .clickable(src, ripple(), role = Role.Button, onClick = if (inCall) onOpen else onJoin).padding(horizontal = 18.dp),
-            contentAlignment = Alignment.Center,
-        ) { Text(if (inCall) "Open" else "Join", style = GType.sub.copy(fontWeight = FontWeight.Bold), color = if (inCall) fg else c.onAccent) }
-    }
-    Box(Modifier.fillMaxWidth().height(1.dp).background(c.hairline))
-}
