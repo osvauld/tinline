@@ -42,7 +42,7 @@ provenance in the message menu / action sheet. Group receipts are not built.
   dir/NNN.png twice a second), `P2P_TICK_AT_MS=n` (freeze every transition at n ms).
 - Open: whether users can turn read receipts off.
 
-Files: `crates/desktop/src/{ticks.rs, chat.rs, chat_view.rs, chat_fake.rs, group_live_view.rs,
+Files: `crates/desktop/src/{ticks.rs, chat.rs, chat_view.rs, group_live_view.rs,
 ui.rs, app.rs, main.rs}`, `crates/tin-icons` (+ generated), `android/.../{ReceiptTicks.kt,
 ChatSource.kt, ChatUi.kt, ChatParts.kt, ChatGlyphs.kt, PgIcons.kt, Chats.kt, Conversation.kt,
 GroupsLive.kt, Theme.kt}`. The desktop fake chat never reports Delivered/Read

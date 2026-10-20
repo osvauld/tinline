@@ -92,7 +92,7 @@ pub enum Action {
     SavedOff(String, u64),
     // Availability
     Available,
-    Busy(&'static str),
+    Busy,
     // AddInfo
     Add,
     AddPick(Option<String>),
@@ -225,8 +225,7 @@ pub struct State {
     /// Rows showing "Saved" (key → token), Availability uses "availability".
     pub saved: HashMap<String, u64>,
     saved_seq: u64,
-    /// Availability: the chosen Busy length and a refusal.
-    pub busy_choice: Option<&'static str>,
+    /// Availability: a refusal.
     pub av_error: String,
     /// A save was accepted while offline (MyProfile `px.pending` strip).
     pub offline_saves: bool,
@@ -480,9 +479,6 @@ impl App {
         self.profile_owner().and_then(|d| self.profiles.cache.get(&d))
     }
     pub(super) fn refresh_profile(&mut self, did: String) -> Task<Msg> {
-        if self.demo {
-            return Task::none();
-        }
         let Some(owner) = self.profile_owner() else { return Task::none() };
         let epoch = self.chat.account_epoch;
         let generation = self.profiles.generations.entry(did.clone()).or_default();
@@ -499,7 +495,7 @@ impl App {
         Task::batch(dids.into_iter().map(|did| self.refresh_profile(did)).collect::<Vec<_>>())
     }
     fn profile_completion_current(&self, epoch: u64, owner: &str) -> bool {
-        epoch == self.chat.account_epoch && self.profile_owner().as_deref() == Some(owner) && (self.demo || self.node.profile().is_some_and(|p| p.did == owner))
+        epoch == self.chat.account_epoch && self.profile_owner().as_deref() == Some(owner) && self.node.profile().is_some_and(|p| p.did == owner)
     }
     /// One write at a time, on a worker, for the account that is selected now.
     pub(super) fn profile_write(&mut self, what: Save, f: impl FnOnce(&Node) -> Result<(), String> + Send + 'static) -> Task<Msg> {
@@ -510,9 +506,6 @@ impl App {
         let Some(owner) = self.profile_owner() else { return Task::none() };
         let epoch = self.chat.account_epoch;
         self.profiles.pending = true;
-        if self.demo {
-            return Task::done(Msg::Profile(Action::Saved { epoch, owner, what, result: Ok(()) }));
-        }
         let node = self.node.clone();
         let o = owner.clone();
         blocking(
@@ -572,7 +565,7 @@ impl App {
     }
 
     pub(super) fn profile_update(&mut self, action: Action) -> Task<Msg> {
-        if self.busy && matches!(action, Action::Save | Action::Remove(_) | Action::Available | Action::Busy(_) | Action::AddSave | Action::UsePhoto | Action::ConfirmRemovePhoto | Action::ConfirmBlock) {
+        if self.busy && matches!(action, Action::Save | Action::Remove(_) | Action::Available | Action::Busy | Action::AddSave | Action::UsePhoto | Action::ConfirmRemovePhoto | Action::ConfirmBlock) {
             self.notice = Some("Wait for the current account operation to finish.".into());
             return Task::none();
         }
@@ -732,15 +725,9 @@ impl App {
                 self.profiles.av_error.clear();
                 return self.profile_write(Save::Availability, |n| n.set_available(true, None).map_err(s));
             }
-            Action::Busy(id) => {
-                if !self.demo {
-                    self.profiles.av_error = availability_problem(false).unwrap().into();
-                    return Task::none();
-                }
-                self.profiles.busy_choice = Some(id);
-                self.profiles.av_error.clear();
-                let until = busy_until(id);
-                return self.profile_write(Save::Availability, move |n| n.set_available(false, until).map_err(s));
+            Action::Busy => {
+                self.profiles.av_error = availability_problem(false).unwrap().into();
+                return Task::none();
             }
             Action::Add => {
                 self.profiles.layer = Some(Layer::Add { pick: None, name: String::new(), value: String::new(), error: String::new() });
@@ -944,9 +931,7 @@ impl App {
                                 }
                             }
                             Save::Availability => {
-                                if !self.demo {
-                                    self.avail = self.node.availability();
-                                }
+                                self.avail = self.node.availability();
                                 tasks.push(self.mark_saved("availability"));
                             }
                             Save::Add(_) | Save::Picture | Save::RemovePicture => {
@@ -954,9 +939,7 @@ impl App {
                                 self.profiles.preview = None;
                             }
                         }
-                        if !self.demo {
-                            self.reload_contacts();
-                        }
+                        self.reload_contacts();
                         tasks.push(self.refresh_profiles());
                         return Task::batch(tasks);
                     }
@@ -989,23 +972,6 @@ impl App {
 
 pub const ADD_NAME_ID: &str = "add-info-name";
 pub const ADD_VALUE_ID: &str = "add-info-value";
-
-/// Availability BUSY_CHOICES `until`, in unix seconds (None: no end time).
-fn busy_until(id: &str) -> Option<u64> {
-    use chrono::{Local, TimeZone};
-    let now = Local::now();
-    let secs = now.timestamp() as u64;
-    match id {
-        "30m" => Some(secs + 30 * 60),
-        "1h" => Some(secs + 3600),
-        "4h" => Some(secs + 4 * 3600),
-        "tom" => {
-            let t = (now.date_naive() + chrono::Duration::days(1)).and_hms_opt(8, 0, 0)?;
-            Local.from_local_datetime(&t).single().map(|d| d.timestamp() as u64)
-        }
-        _ => None,
-    }
-}
 
 /// info.ts untilLabel: "18:00", "tomorrow 08:00", "Friday 08:00".
 pub fn until_label(until_secs: u64) -> String {

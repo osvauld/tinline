@@ -1027,7 +1027,7 @@ impl App {
                 .on_press(msg);
             b.into()
         };
-        let seg = container(row![seg("Available", available, m(Action::Available)), seg("Busy", !available, m(Action::Busy(self.profiles.busy_choice.unwrap_or("1h"))))].spacing(4))
+        let seg = container(row![seg("Available", available, m(Action::Available)), seg("Busy", !available, m(Action::Busy))].spacing(4))
             .padding(4).width(Fill).style(ui::plain(t.surface2, 16.0));
         let line = if available { "Available".to_string() } else { self.avail.until.map(|u| format!("Busy until {}", pf::until_label(u))).unwrap_or_else(|| "Busy until you change it".into()) };
         let mut now = row![].spacing(10).align_y(Alignment::Center);
@@ -1041,7 +1041,7 @@ impl App {
         }
         let mut c = column![seg, container(now).height(19)].spacing(10);
         if !available {
-            let active = if self.avail.until.is_none() { "open" } else { self.profiles.busy_choice.unwrap_or("1h") };
+            let active = if self.avail.until.is_none() { "open" } else { "1h" };
             let mut chips = row![].spacing(8);
             for (id, label) in pf::BUSY_CHOICES {
                 let on = active == id;
@@ -1052,7 +1052,7 @@ impl App {
                         border: Border { color: if on { Color::TRANSPARENT } else { t.line }, width: 1.0, radius: 16.0.into() },
                         ..Default::default()
                     })
-                    .on_press(m(Action::Busy(id))));
+                    .on_press(m(Action::Busy)));
             }
             c = c.push(chips.wrap());
         }

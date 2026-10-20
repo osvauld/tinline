@@ -4,9 +4,6 @@
 #[path = "view.rs"]
 mod view;
 
-#[path = "demo.rs"]
-mod demo;
-
 #[path = "chat.rs"]
 mod chat;
 
@@ -229,8 +226,6 @@ struct App {
     forced_dark: Option<bool>,
     /// What the system asks for (the last `Msg::Theme`), for Settings › Appearance › "Match my computer".
     sys_dark: bool,
-    /// Test-hooks only: fake data for screenshots; the node is not asked for it.
-    demo: bool,
     sel: Option<String>,
     detail: Detail,
     rename_in: String,
@@ -721,9 +716,6 @@ impl App {
 
     /// Re-reads what the account UI shows (accounts list, device name, passphrase state).
     fn refresh_accounts(&mut self) {
-        if self.demo {
-            return;
-        }
         self.accounts = self.node.accounts();
         self.device_label = self.node.device_label().unwrap_or_default();
     }
@@ -732,18 +724,12 @@ impl App {
     fn reset_account_state(&mut self) {
         self.leave_chat();
         let tab = self.chat.tab;
-        #[cfg(feature = "test-hooks")]
-        let fake = self.chat.fake.take();
         let account_epoch = self.chat.account_epoch.checked_add(1).expect("chat account epoch exhausted");
         self.chat = ChatState::default();
         self.chat.account_epoch = account_epoch;
         self.chat.tab = tab;
         self.profiles = profile_ui::State::default();
         self.install_profile_events();
-        #[cfg(feature = "test-hooks")]
-        {
-            self.chat.fake = fake;
-        }
         self.sel = None;
         self.detail = Detail::View;
         self.search.clear();
@@ -822,7 +808,6 @@ impl App {
             dark: forced_dark.or(settings.appearance).unwrap_or(false),
             forced_dark,
             sys_dark: false,
-            demo: false,
             sel: None,
             detail: Detail::View,
             rename_in: String::new(),
@@ -942,32 +927,8 @@ impl App {
         if app.screen == Screen::Onboarding {
             tasks.push(app.probe_keyring());
         }
-        if app.screen == Screen::Unlock && app.has_pass && !app.demo {
+        if app.screen == Screen::Unlock && app.has_pass {
             tasks.push(app.probe_remember());
-        }
-        #[cfg(feature = "test-hooks")]
-        if crate::test_env("P2P_CHAT_FAKE").is_some_and(|v| v == "1") {
-            app.chat.fake = Some(Arc::new(chat::chat_fake::Fake::new(Some(init.tx.clone()))));
-        }
-        if let Some(name) = crate::test_env("P2P_DEMO") {
-            app.load_demo(&name);
-            // pg-chat-*: load the open conversation like a click would.
-            if name.starts_with("pg-chat-") && let Some(d) = app.sel.clone() {
-                tasks.push(app.open_chat(&d));
-                // pg-chat-<id>-find / -reply: the find bar open on "landlord", or replying to their newest message.
-                if name.ends_with("-find") { app.chat.find = Some("landlord".into()); }
-                if name.ends_with("-reply") { app.chat.reply = Some(format!("{}-13", &name["pg-chat-".len()..name.len() - "-reply".len()])); }
-            }
-            tasks.push(app.ensure_thumbs());
-            tasks.push(app.gate_focus());
-            if let Some(peer) = app.chat.peer.clone() {
-                match name.as_str() {
-                    "chat-viewer" => tasks.push(app.update_chat(Cm::View(format!("{peer}-12")))),
-                    "chat-text" => tasks.push(app.update_chat(Cm::Open(format!("{peer}-14")))),
-                    _ => {}
-                }
-            }
-            return (app, Task::batch(tasks));
         }
         if let Some(pass) = test_unlock {
             app.busy = true;
@@ -1032,7 +993,6 @@ impl App {
     /// Whether the home screen is what the user is looking at, so a card offer makes sense.
     fn can_offer(&self) -> bool {
         self.win.is_some()
-            && !self.demo
             && self.call.is_none()
             && self.ended.is_none()
             && self.screen == Screen::Home
@@ -1079,9 +1039,6 @@ impl App {
 
     /// Refreshes what `view` shows about the identity; the node is only asked here, never per redraw.
     fn refresh_identity(&mut self) {
-        if self.demo {
-            return;
-        }
         self.lock = self.node.lock_state();
         self.profile_name = self.node.profile().map(|p| p.name).unwrap_or_default();
         self.me = self.node.profile().map(|p| self_contact(&p.did));
@@ -1112,7 +1069,7 @@ impl App {
             CallState::Active => {
                 c.answered = true;
                 // The in-call screen has device pickers.
-                if self.devices.0.is_empty() && !self.demo {
+                if self.devices.0.is_empty() {
                     return blocking(audio::list_devices, Msg::Devices);
                 }
             }
@@ -1174,9 +1131,6 @@ impl App {
     }
 
     fn refresh_history(&mut self) {
-        if self.demo {
-            return;
-        }
         self.recents = self.node.recent_calls(RECENTS);
         self.group_log = self.node.group_call_history(None).unwrap_or_default();
         self.avail = self.node.availability();
@@ -1184,9 +1138,6 @@ impl App {
     }
 
     fn refresh_detail_calls(&mut self) {
-        if self.demo {
-            return;
-        }
         self.detail_calls = match &self.sel {
             Some(did) => self.node.calls_with(did.clone(), 30),
             None => Vec::new(),
@@ -1219,19 +1170,14 @@ impl App {
     /// Contacts from the core, then everything that depends on them.
     fn reload_contacts(&mut self) {
         self.contacts = self.node.contacts();
-        if !self.demo {
-            self.requests_in = self.node.contact_requests();
-            self.requests_out = self.node.sent_contact_requests();
-        }
+        self.requests_in = self.node.contact_requests();
+        self.requests_out = self.node.sent_contact_requests();
         self.refresh_blocks();
     }
 
     /// Re-reads block states for every conversation we show, the kept chats, and why our
     /// pending messages in the open conversation are not delivered. Cheap core reads.
     pub(super) fn refresh_blocks(&mut self) {
-        if self.demo {
-            return;
-        }
         let mut dids: Vec<String> = self.contacts.iter().map(|c| c.did.clone()).collect();
         let more: Vec<String> = self.chat.chats.iter().map(|c| c.peer_did.clone()).filter(|d| !self.is_me(d) && !dids.contains(d)).collect();
         dids.extend(more);
@@ -1256,9 +1202,6 @@ impl App {
 
     /// Why our pending messages in the open conversation are not delivered.
     pub(super) fn refresh_undelivered(&mut self) {
-        if self.demo {
-            return;
-        }
         let Some(peer) = self.chat.peer.clone() else { return };
         let pending: Vec<&str> = self
             .chat
@@ -1293,7 +1236,7 @@ impl App {
             return false;
         }
         use crate::blocks::{CallGate, Composer};
-        let gate = if self.demo { CallGate::Ok } else { self.blocks.call_gate(did, self.is_contact(did)) };
+        let gate = self.blocks.call_gate(did, self.is_contact(did));
         if gate != CallGate::Ok {
             let name = self.chat_name(did);
             self.notice = Some(match gate {
@@ -1369,9 +1312,6 @@ impl App {
                     if self.ticks >= after && (!busy || self.ticks >= after + 30) {
                         return window::screenshot(id).map(Msg::Shot);
                     }
-                }
-                if self.demo {
-                    return Task::none();
                 }
                 self.ticks += 1;
                 self.status = self.node.status();
@@ -1573,17 +1513,15 @@ impl App {
                     Err(SetupErr::Other(e)) => self.notice = Some(e),
                 }
             }
-            Msg::KeyringProbed(ok) if !self.demo => self.keyring_ok = ok,
-            Msg::KeyringProbed(_) => {}
-            Msg::RememberProbed(ok, on) if !self.demo => {
+            Msg::KeyringProbed(ok) => self.keyring_ok = ok,
+            Msg::RememberProbed(ok, on) => {
                 self.remember_avail = Some(ok);
                 self.remember = ok && on;
             }
-            Msg::RememberProbed(..) => {}
             Msg::Remember(on) => {
                 self.remember = on;
                 // On the unlock screen the choice waits for the unlock; on the Passphrase page it applies now.
-                if self.screen != Screen::Unlock && self.lock == LockState::Unlocked && self.has_pass && !self.demo {
+                if self.screen != Screen::Unlock && self.lock == LockState::Unlocked && self.has_pass {
                     let (node, data) = (self.node.clone(), INIT.get().unwrap().data.clone());
                     return blocking(move || flow::apply_remember(keystore::system(), &data, &node, on).map(|_| on), Msg::RememberSet);
                 }
@@ -2482,20 +2420,18 @@ impl App {
                 }
             }
             Ev::Contacts => {
-                if !self.demo {
-                    self.reload_contacts();
-                    // Our code may have been replaced (a rename, a block): show the current one.
-                    let ticket = if self.ticket.is_some() && !self.fetching { self.fetch_ticket() } else { Task::none() };
-                    if self.offer.as_ref().is_some_and(|o| self.contacts.iter().any(|c| c.did == o.did)) {
-                        self.offer = None;
-                    }
-                    self.refresh_history();
-                    // Linked just now: the first contacts mean the sync has started to land.
-                    if self.screen == Screen::LinkSync && !self.contacts.is_empty() {
-                        self.screen = Screen::Home;
-                    }
-                    return Task::batch([ticket, self.refresh_chats(), self.refresh_profiles()]);
+                self.reload_contacts();
+                // Our code may have been replaced (a rename, a block): show the current one.
+                let ticket = if self.ticket.is_some() && !self.fetching { self.fetch_ticket() } else { Task::none() };
+                if self.offer.as_ref().is_some_and(|o| self.contacts.iter().any(|c| c.did == o.did)) {
+                    self.offer = None;
                 }
+                self.refresh_history();
+                // Linked just now: the first contacts mean the sync has started to land.
+                if self.screen == Screen::LinkSync && !self.contacts.is_empty() {
+                    self.screen = Screen::Home;
+                }
+                return Task::batch([ticket, self.refresh_chats(), self.refresh_profiles()]);
             }
             Ev::Profile { epoch, did } => {
                 if epoch == self.chat.account_epoch {

@@ -19,7 +19,7 @@ was removed from shipped builds. Everything is restorable from the git tag
 | `groups_view.rs` | Now only what live screens share: time formats, rule, tag, footer, `sys`, `btn`, `ordinal`, `short_time`, `message_body`, and the real Settings > Privacy "Blocked people" page. |
 
 Hooks in `app.rs`, `view.rs`, `chat_view.rs`, `signup.rs`, `main.rs` carry the same cfg. The design
-screenshots (`P2P_DEMO=groups*`, `demo.rs`) are test-hooks builds, so they keep working unchanged.
+screenshots (`P2P_DEMO=groups*`, `demo.rs`) were test-hooks builds; the demo tools were removed 2026-10-20 (restorable from git history).
 
 ## Android (`android/app/src`)
 

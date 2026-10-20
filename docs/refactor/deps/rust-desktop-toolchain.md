@@ -55,7 +55,7 @@ Cargo.lock facts below were grepped from /home/abe/p2p_chat/Cargo.lock.
 ## 5. png 0.17.16 -> 0.18.1
 1. Changes (https://github.com/image-rs/image-png/blob/master/CHANGES.md): 0.18.0 breaking: `Decoder` needs reader `Seek + BufRead` (`Decoder::new(Cursor)` OK; Cursor is both), `output_buffer_size()`/`output_line_size()` now return `Option<usize>`, removed `Info::encode`, `Encoder::set_srgb`, decoder event/streaming changes (not used), bitflags 2. MSRV unchanged (no change noted).
 2. Advisories: none found.
-3. Our use: crates/desktop/Cargo.toml:19 `png = "0.17"`. Call sites: tray.rs:74-82 (Decoder::new(Cursor).read_info(), `reader.output_buffer_size()` at :75 -> must `.unwrap_or/ok()?`; next_frame; ColorType matches); app.rs:2086-2088 Encoder::new/set_color/set_depth (unchanged); media.rs:369-371 same; chat_fake.rs:150-152 same. Only tray.rs:75 breaks (`vec![0; Option<usize>]`). Note `png::Decoder::new(BufRead+Seek)` at tray.rs:74 passes Cursor fine.
+3. Our use: crates/desktop/Cargo.toml:19 `png = "0.17"`. Call sites: tray.rs:74-82 (Decoder::new(Cursor).read_info(), `reader.output_buffer_size()` at :75 -> must `.unwrap_or/ok()?`; next_frame; ColorType matches); app.rs:2086-2088 Encoder::new/set_color/set_depth (unchanged); media.rs:369-371 same; (chat_fake.rs, a demo tool, was removed 2026-10-20; restorable from git history.) Only tray.rs:75 breaks (`vec![0; Option<usize>]`). Note `png::Decoder::new(BufRead+Seek)` at tray.rs:74 passes Cursor fine.
 4. Risk: none user-facing.
 5. Effort S. Upgrade now. Acceptance: `cargo check -p desktop`; tray icon and window icon (tray.rs window_icon) still decode; screenshot encoding test.
 
