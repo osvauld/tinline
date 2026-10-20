@@ -760,22 +760,11 @@ pub fn avatar_hue(key: &str) -> usize {
     if let Some(h) = HUES.get().and_then(|m| m.lock().unwrap().get(key).copied()) {
         return h;
     }
-    key.bytes().fold(0u32, |a, b| a.wrapping_mul(31).wrapping_add(b as u32)) as usize % 6
+    present::avatar::avatar_slot(key.to_string(), present::avatar::AVATAR_SLOTS) as usize
 }
 
 pub fn avatar_colors(t: Tok, key: &str) -> (Color, Color) {
     avatar_pair(t, avatar_hue(key))
-}
-
-pub fn initials(name: &str) -> String {
-    // store.svelte.ts initials(): first letter of the first and the last word. The first letter
-    // or digit of each word, so "Lena (work)" is "LW", not "L(".
-    let words: Vec<char> = name.split_whitespace().filter_map(|w| w.chars().find(|c| c.is_alphanumeric())).collect();
-    match (words.first(), words.len()) {
-        (Some(a), 1) => a.to_uppercase().to_string(),
-        (Some(a), _) => format!("{}{}", a.to_uppercase(), words[words.len() - 1].to_uppercase()),
-        _ => "?".into(),
-    }
 }
 
 /// Thin, quiet scroll rails.

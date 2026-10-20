@@ -421,7 +421,7 @@ fun ConversationScreen(
                         is ConvRow.Call -> CallPill(r.r, enabled = block?.callGate ?: CallGate.Ok == CallGate.Ok, onCall)
                         is ConvRow.Msg -> Bubble(
                             r.m, r.pos, name, link, online, nowMs, progress, requested, byId, source, receipts[r.m.id],
-                            notDelivered = if (r.m.id in undelivered) BlockCopy.notDelivered(name) else null,
+                            notDelivered = if (r.m.id in undelivered) uniffi.present.notDeliveredText(name) else null,
                             selected = actionsFor == r.m.id || foundId == r.m.id,
                             findQuery = if (find.open && find.hits.any { it.id == r.m.id }) find.q else "", findCurrent = find.current?.id == r.m.id,
                             onLong = { if (!r.m.deleted) actionsFor = r.m.id },
@@ -637,7 +637,7 @@ private fun Bubble(
                 ChatFind.marked(Emoji.styled(m.text), findQuery, findCurrent, c.thread), pos, out, meta,
                 Modifier.widthIn(max = bubbleMaxWidth).combinedClickable(onClick = {}, onLongClick = onLong)
                     .let { if (selected) it.border(2.dp, c.accentInk, shape) else it },
-                emoji = m.replyTo == null && Emoji.isBig(m.text), held = selected,
+                emoji = m.replyTo == null && uniffi.present.emojiIsBig(m.text), held = selected,
                 quote = m.replyTo?.let { rid -> { val q = byId[rid]; PgQuote(if (q == null) null else if (q.outgoing) "You" else first, c.accentInk, q?.let(ChatNotifier::previewOf) ?: "Original message unavailable", null) } },
             )
             return@BoxWithConstraints
@@ -685,7 +685,7 @@ private fun Bubble(
             val metaColor = if (notDelivered != null) c.tickBadText else if (tick == Tick.Clock) c.threadText else if (out) c.onPrc else c.ink2
             if (a == null && m.text.isNotBlank()) {
                 // Only a few emojis: big, like the other chat apps; emojis in text: a bit larger.
-                val big = Emoji.isBig(m.text)
+                val big = uniffi.present.emojiIsBig(m.text)
                 val style = if (big) TinType.bodyL.copy(fontSize = 38.sp, lineHeight = 46.sp) else TinType.bodyL.copy(fontSize = 15.sp, lineHeight = 21.sp)
                 CompactTextBubble(if (big) AnnotatedString(m.text.trim()) else Emoji.styled(m.text), style, fg, label, mark, metaColor)
             } else {
@@ -997,7 +997,7 @@ private fun VoiceBubble(m: Message, a: Attachment, ready: Boolean, out: Boolean,
             Modifier.size(40.dp).clip(CircleShape).background(c.pr).clickable(enabled = remote, role = Role.Button) { onDownload() },
             contentAlignment = Alignment.Center,
         ) { Icon(if (remote) PgIcons.Download else PgIcons.Play, if (remote) "Download voice message" else "Voice message loading", tint = c.onPr) }
-        Text(formatMs(a.durationMs.toInt()), style = TinType.caption.copy(fontFamily = PlexMono, fontSize = 12.sp), color = if (out) c.onPrc else c.ink2)
+        Text(uniffi.present.clockMs(a.durationMs.toUInt()), style = TinType.caption.copy(fontFamily = PlexMono, fontSize = 12.sp), color = if (out) c.onPrc else c.ink2)
     }
 }
 
@@ -1017,8 +1017,8 @@ private fun BlockNote(name: String, v: BlockView) {
         Modifier.fillMaxWidth().padding(vertical = 8.dp).clip(SmoothCornerShape(16.dp)).background(c.erc).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        Text(BlockCopy.blockedYouTitle(name), style = TinType.bodyL.copy(fontWeight = FontWeight.Bold), color = c.onErc)
-        Text(BlockCopy.blockedYouBody(name), style = TinType.bodyM, color = c.onErc)
+        Text(uniffi.present.blockedYouTitle(name), style = TinType.bodyL.copy(fontWeight = FontWeight.Bold), color = c.onErc)
+        Text(uniffi.present.blockedYouBody(name), style = TinType.bodyM, color = c.onErc)
         Text("Signed by $f · ${BlockCopy.date(blockedMeAt)}", style = TinType.caption, color = c.onErc.copy(alpha = .8f))
     }
 }
@@ -1034,9 +1034,9 @@ private fun BlockedFooter(name: String, state: ComposerState, onUnblock: () -> U
     ) {
         Text(
             when (state) {
-                ComposerState.BlockedByMe -> BlockCopy.blockedByMeLine(name)
-                ComposerState.BlockedMe -> BlockCopy.cantSend(name)
-                else -> BlockCopy.notContact(name)
+                ComposerState.BlockedByMe -> uniffi.present.blockedByMeLine(name)
+                ComposerState.BlockedMe -> uniffi.present.cantSendText(name)
+                else -> uniffi.present.notContactLine(name)
             },
             Modifier.weight(1f), style = TinType.bodyM, color = c.ink2,
         )

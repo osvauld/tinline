@@ -13,13 +13,10 @@ pub struct State {
     pub loss: Loss,
 }
 
-/// link.svelte.ts `strength()`: the desktop's old `quality()` thresholds, so every app agrees.
+/// Signal bars 1-4 (thresholds and words: `present::call::call_quality`).
 /// 4 Strong rtt < 100 and loss < 1 % · 3 Good < 200 / < 3 % · 2 Fair < 350 / < 8 % · 1 Weak.
 pub fn strength(rtt_ms: u32, loss_pct: f64) -> u8 {
-    if rtt_ms < 100 && loss_pct < 1.0 { 4 }
-    else if rtt_ms < 200 && loss_pct < 3.0 { 3 }
-    else if rtt_ms < 350 && loss_pct < 8.0 { 2 }
-    else { 1 }
+    present::call::call_quality(rtt_ms, loss_pct).bars
 }
 
 /// A loss percentage the way the card prints it: "0", "0.2", "14".
@@ -28,8 +25,10 @@ pub fn pct(v: f64) -> String {
     if r.fract() == 0.0 || r >= 10.0 { format!("{}", r.round()) } else { format!("{r:.1}") }
 }
 
-/// `SIGNAL_WORD`, by strength (index 0 unused).
-pub const SIGNAL_WORD: [&str; 5] = ["", "Weak", "Fair", "Good", "Strong"];
+/// The word for a strength (1-4).
+pub fn signal_word(level: u8) -> String {
+    present::call::signal_word(level)
+}
 
 /// Loss over the last few seconds, not the whole call, or one bad minute would colour the rest of it.
 /// Fed `CallStats.received/lost` (running totals) about once a second.
@@ -105,7 +104,7 @@ mod tests {
         for i in 2..9 { l.push(1000 * i, 200); }  // then clean
         assert_eq!(l.pct(), 0.0);
         assert_eq!([strength(42, 0.2), strength(140, 1.4), strength(280, 5.0), strength(520, 14.0)], [4, 3, 2, 1]);
-        assert_eq!(SIGNAL_WORD[strength(140, 1.4) as usize], "Good");
+        assert_eq!(signal_word(strength(140, 1.4)), "Good");
     }
     #[test]
     fn fixed_boxes_match_the_playground_flex_equations() {

@@ -38,6 +38,8 @@ mediacodec = ["dep:ndk-sys"]
 
 [dependencies]
 proto.workspace = true
+# Shared UI logic; its UniFFI items are re-exported from lib.rs so they land in libp2pcore.so.
+present = { path = "../present" }
 audio.workspace = true
 video = { path = "../video", default-features = false, features = ["net"] }
 identity.workspace = true

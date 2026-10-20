@@ -173,15 +173,15 @@ fn history_golden() {
 #[test]
 fn quality_golden() {
     for (rtt, loss, bars, label) in [
-        (0, 0.0, 4, "Excellent"),
-        (99, 0.9, 4, "Excellent"),
+        (0, 0.0, 4, "Strong"),
+        (99, 0.9, 4, "Strong"),
         (100, 0.0, 3, "Good"),
         (50, 1.0, 3, "Good"),
         (199, 2.9, 3, "Good"),
-        (200, 0.0, 2, "OK"),
-        (349, 7.9, 2, "OK"),
-        (350, 0.0, 1, "Poor"),
-        (10, 8.0, 1, "Poor"),
+        (200, 0.0, 2, "Fair"),
+        (349, 7.9, 2, "Fair"),
+        (350, 0.0, 1, "Weak"),
+        (10, 8.0, 1, "Weak"),
     ] {
         assert_eq!(
             call_quality(rtt, loss),

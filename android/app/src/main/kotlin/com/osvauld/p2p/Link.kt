@@ -161,30 +161,7 @@ class LinkController(private val app: P2pApp) : LinkEvents {
 }
 
 /** What to tell the user for a failed link ([LinkEvents.onLinkFailed] reasons). */
-fun linkFailText(reason: String, detail: String?): String = when (reason) {
-    "expired" -> "The code expired. Try again."
-    "cancelled" -> "Cancelled on the other device."
-    "rejected" -> "That QR code was already used or isn’t valid. Make a fresh one and try again."
-    "bad_proof" -> "The other device didn’t accept that QR code. Make a fresh one and try again."
-    "mismatch" -> "These two devices don’t belong to the same account, so nothing was shared."
-    "timeout" -> "The other device didn’t answer in time. Keep both open and try again."
-    "net" -> "Couldn’t reach the other device. Check that both are online."
-    "locked" -> "The other device is locked. Unlock Tinline there and try again."
-    "busy" -> "Tinline was busy with something else. Try again in a moment."
-    "bad_grant" -> "The other device sent something this app couldn’t read. Update Tinline on both and try again."
-    "account_exists" -> "This account is already on this phone."
-    else -> detail?.takeIf { it.isNotBlank() } ?: "Couldn’t link. Try again."
-}
-
-/** Null if [text] is a device-link QR; otherwise why not (a contact code gets its own message). */
-fun linkQrProblem(text: String): String? {
-    val t = text.trim()
-    return when {
-        t.startsWith("OSVL1:") -> null
-        t.startsWith("OSVC") -> "That’s a contact code, not a device-link code. Use Add contact for those."
-        else -> "That isn’t a Tinline device-link code."
-    }
-}
+fun linkFailText(reason: String, detail: String?): String = uniffi.present.linkFailText(reason, detail, "phone")
 
 // ------------------------------------------------------------------ the flow (both sides)
 
@@ -207,7 +184,7 @@ fun LinkSession(app: P2pApp, newDevice: Boolean, label: String, onClose: () -> U
     DisposableEffect(Unit) { links.reset(); onDispose { links.cancel() } }
 
     fun onText(text: String) {
-        val bad = linkQrProblem(text)
+        val bad = uniffi.present.linkQrProblem(text)
         if (bad != null) { scanNote = bad; return }
         scanNote = null
         links.scan(text, newDevice, label)

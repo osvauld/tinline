@@ -53,18 +53,8 @@ impl BlockApi for Node {
     }
 }
 
-/// What sits where the composer goes.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Composer {
-    Open,
-    /// We block them: "You blocked X" and Unblock.
-    BlockedByMe,
-    /// They block us: no composer, just why.
-    BlockedMe,
-    /// A kept chat with someone who is no longer a contact (their block deleted our entry for
-    /// them, then they unblocked): they have to be added again before messaging (U20).
-    NotContact,
-}
+/// What sits where the composer goes (variants and rules: `present::block`).
+pub use present::block::ComposerState as Composer;
 
 #[derive(Default)]
 pub struct Blocks {
@@ -146,24 +136,18 @@ impl Blocks {
 
     /// `contact`: they are in our contacts (or it is the "You" conversation).
     pub fn composer(&self, did: &str, contact: bool) -> Composer {
-        if self.blocked_by_me(did) {
-            Composer::BlockedByMe
-        } else if self.blocked_me(did).is_some() {
-            Composer::BlockedMe
-        } else if !contact {
-            Composer::NotContact
-        } else {
-            Composer::Open
-        }
+        present::block::composer_state(self.blocked_by_me(did), self.blocked_me(did).is_some(), contact)
     }
 
     /// Calling is off while either side blocks, for someone who is not a contact, and when they
     /// have not allowed calls from us.
     pub fn call_gate(&self, did: &str, contact: bool) -> CallGate {
-        match self.composer(did, contact) {
-            Composer::Open if self.tokens.contains(did) => CallGate::Ok,
-            Composer::Open => CallGate::NotAllowed,
-            other => CallGate::Closed(other),
+        use present::block as pb;
+        let composer = self.composer(did, contact);
+        match pb::call_gate(composer, self.tokens.contains(did)) {
+            pb::CallGate::Ok => CallGate::Ok,
+            pb::CallGate::NotAllowed => CallGate::NotAllowed,
+            pb::CallGate::Closed => CallGate::Closed(composer),
         }
     }
 
@@ -177,71 +161,14 @@ impl Blocks {
     }
 
     /// The red line under the name, in lists and headers.
-    pub fn status(&self, did: &str) -> Option<&'static str> {
-        match self.composer(did, true) {
-            Composer::BlockedByMe => Some("Blocked"),
-            Composer::BlockedMe => Some("Blocked you"),
-            _ => None,
-        }
+    pub fn status(&self, did: &str) -> Option<String> {
+        present::block::block_status(self.blocked_by_me(did), self.blocked_me(did).is_some())
     }
 
     pub fn not_delivered(&self, peer: &str, id: &str) -> bool {
         self.undelivered.contains(&(peer.to_string(), id.to_string()))
     }
 }
-
-pub fn first_name(name: &str) -> &str {
-    name.split_whitespace().next().unwrap_or(name)
-}
-
-/// "Block X?" and its explanation (U5 revised, U19, U20, U24).
-pub fn block_dialog(name: &str) -> (String, Vec<String>) {
-    let first = first_name(name);
-    (
-        format!("Block {first}?"),
-        vec![
-            format!("{first} can\u{2019}t message or call you, on any of your devices."),
-            format!("{first} will see that you blocked them, and their app removes you from their contacts."),
-            format!("Your chat history with {first} stays."),
-            format!("To talk again after you unblock, {first} has to add you again with your code."),
-            "Groups you share are not affected.".into(),
-        ],
-    )
-}
-
-/// Tapping call on someone who has not allowed calls from us, and a call that ended that way.
-pub fn calls_not_allowed_text(name: &str) -> String {
-    format!("{} hasn\u{2019}t allowed calls from you. You can still message them.", first_name(name))
-}
-
-/// Under one of our messages that will not arrive.
-pub fn not_delivered_text(name: &str) -> String {
-    format!("Not delivered: {} blocked you", first_name(name))
-}
-
-/// The signed notice in the blocked person's chat: (title, body).
-pub fn blocked_you_card(name: &str) -> (String, String) {
-    let first = first_name(name);
-    (
-        format!("{first} blocked you"),
-        format!("You can\u{2019}t message or call {first}. Your earlier messages stay here."),
-    )
-}
-
-/// In place of the composer of a kept chat with someone who is no longer a contact.
-pub fn not_contact_line(name: &str) -> String {
-    let first = first_name(name);
-    format!("{first} is no longer in your contacts. Add {first} again with their code to message.")
-}
-
-/// What the blocker sees in place of the composer.
-pub fn blocked_by_me_line(name: &str) -> String {
-    let first = first_name(name);
-    format!("You blocked {first}. They can\u{2019}t message or call you.")
-}
-
-/// Settings › Privacy › Unblocking.
-pub const UNBLOCK_NOTE: &str = "They are told you unblocked them and can message you again once they add you back: their app removed you from their contacts when you blocked them. Your chat history is kept either way.";
 
 #[cfg(test)]
 mod tests {
@@ -349,7 +276,7 @@ mod tests {
         assert!(core.chats.borrow().contains("ann"), "the chat is kept");
         assert_eq!(b.composer("ann", true), Composer::BlockedByMe);
         assert!(!b.can_call("ann", true));
-        assert_eq!(b.status("ann"), Some("Blocked"));
+        assert_eq!(b.status("ann"), Some("Blocked".to_string()));
         assert_eq!(b.list.iter().map(|c| c.did.as_str()).collect::<Vec<_>>(), ["ann"]);
         assert_eq!(b.composer("bob", true), Composer::Open);
 
@@ -403,14 +330,13 @@ mod tests {
         assert!(core.chats.borrow().contains("meera"), "the chat is kept, read-only");
         assert_eq!(b.composer("meera", false), Composer::BlockedMe);
         assert!(!b.can_call("meera", false));
-        assert_eq!(b.status("meera"), Some("Blocked you"));
+        assert_eq!(b.status("meera"), Some("Blocked you".to_string()));
         assert_eq!(b.blocked_me("meera"), Some(1_700_000_000));
         assert!(b.list.is_empty(), "their block is not on our blocked list");
 
         b.refresh_undelivered(&core, "meera", ["m1", "m2"]);
         assert!(b.not_delivered("meera", "m2"));
         assert!(!b.not_delivered("meera", "m1"), "a delivered message stays delivered");
-        assert_eq!(not_delivered_text("Meera K"), "Not delivered: Meera blocked you");
 
         // Blocking someone who blocked us: their contact entry is gone, so the core refuses.
         assert!(core.block("meera".into()).is_err());
@@ -423,7 +349,6 @@ mod tests {
         assert_eq!(b.composer("meera", false), Composer::NotContact);
         assert!(!b.can_call("meera", false));
         assert_eq!(b.status("meera"), None);
-        assert!(not_contact_line("Meera K").contains("Add Meera again"));
     }
 
     #[test]
@@ -440,7 +365,6 @@ mod tests {
         assert!(!b.can_call("priya", true));
         assert!(!b.calls_allowed("priya"));
         assert_eq!(b.composer("priya", true), Composer::Open, "messaging is unaffected");
-        assert!(calls_not_allowed_text("Priya N").starts_with("Priya hasn"));
 
         // We allow Priya to call us: only our switch changes.
         core.allowed.borrow_mut().insert("priya".into());
@@ -452,19 +376,5 @@ mod tests {
         core.block("ann".into()).unwrap();
         b.refresh(&core, core.dids());
         assert_eq!(b.call_gate("ann", true), CallGate::Closed(Composer::BlockedByMe));
-    }
-
-    #[test]
-    fn the_block_dialog_says_what_happens() {
-        let (title, lines) = block_dialog("Arjun Oommen");
-        assert_eq!(title, "Block Arjun?");
-        let all = lines.join(" ");
-        // U5 revised: they see it. U20: their app removes us; re-add to talk again. U24: history stays.
-        assert!(all.contains("will see that you blocked them"));
-        assert!(all.contains("removes you from their contacts"));
-        assert!(all.contains("chat history with Arjun stays"));
-        assert!(all.contains("has to add you again"));
-        assert!(all.contains("Groups you share are not affected"));
-        assert!(!all.to_lowercase().contains("delete"), "nothing is deleted by a block");
     }
 }

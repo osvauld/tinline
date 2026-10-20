@@ -151,7 +151,7 @@ class CallController(private val app: P2pApp) {
             if (state is CallState.Ended) {
                 // Unanswered (or the caller gave up): a missed call like any other.
                 clearWaiting()
-                if (isMissedReason(state.reason, true)) Notifications.missed(app, w.peerName)
+                if (uniffi.present.isMissedReason(state.reason, true, false)) Notifications.missed(app, w.peerName)
             }
             return
         }
@@ -186,12 +186,12 @@ class CallController(private val app: P2pApp) {
                 endSession(cur?.takeIf { it.info.callId == callId }, state.reason)
                 if (cur != null && cur.info.callId == callId) {
                     val reason = state.reason
-                    if (!everActive && isMissedReason(reason, cur.info.incoming)) Notifications.missed(app, cur.info.peerName)
+                    if (!everActive && uniffi.present.isMissedReason(reason, cur.info.incoming, everActive)) Notifications.missed(app, cur.info.peerName)
                     val s = cur.stats
                     val next = takeover; takeover = null
                     val loss = cur.lossPct
                     // Our outgoing call yielded to their simultaneous call: no ended screen, theirs rings.
-                    if (next == null && classifyEnd(reason) != EndKind.Superseded) _ended.value = EndedUi(
+                    if (next == null && uniffi.present.classifyEnd(reason) != uniffi.present.EndClass.SUPERSEDED) _ended.value = EndedUi(
                         cur.info.peerName, cur.info.peerDid, reason, cur.info.incoming, everActive,
                         cur.activeSinceMs?.let { (System.currentTimeMillis() - it) / 1000 } ?: 0L,
                         s?.direct, if (s != null && loss != null) qualityBars(s.rttMs.toInt(), loss) else null,
@@ -378,7 +378,7 @@ class CallController(private val app: P2pApp) {
         session = null
         sessionWatch?.cancel(); sessionWatch = null
         val cause = localEnd ?: when {
-            cur != null && !everActive && cur.info.incoming && isMissedReason(reason, true) -> DisconnectCause.MISSED
+            cur != null && !everActive && cur.info.incoming && uniffi.present.isMissedReason(reason, true, false) -> DisconnectCause.MISSED
             else -> DisconnectCause.REMOTE
         }
         localEnd = null
@@ -439,9 +439,10 @@ class CallController(private val app: P2pApp) {
         } catch (e: Exception) { Log.w("Call", "proximity: $e") }
     }
 
-    fun statsLine(s: CallStats): String =
-        "stats secs=${s.secs} direct=${s.direct} rtt=${s.rttMs} sent=${s.sent} recv=${s.received} lost=${s.lost} " +
-            "recovered=${s.recovered} concealed=${s.concealed} buf=${s.bufferedMs} freq=${"%.1f".format(s.rxFreqHz)} rms=${"%.0f".format(s.rxRms)}"
+    fun statsLine(s: CallStats): String = uniffi.present.audioStatsLine(uniffi.present.AudioStats(
+        s.secs, s.direct, s.rttMs, s.sent, s.received, s.lost, s.recovered, s.concealed, s.bufferedMs,
+        s.rxFreqHz.toDouble(), s.rxRms.toDouble(),
+    ))
 
     fun logStats() {
         val s = app.node.callStats()

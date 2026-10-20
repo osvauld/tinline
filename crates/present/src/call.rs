@@ -167,22 +167,34 @@ pub struct Quality {
     pub label: String,
 }
 
-/// Bars from round-trip time and packet loss: 4 Excellent, 3 Good, 2 OK, 1 Poor.
+/// Bars from round-trip time and packet loss: 4 Strong, 3 Good, 2 Fair, 1 Weak (the words both apps already used).
 #[uniffi::export]
 pub fn call_quality(rtt_ms: u32, loss_pct: f64) -> Quality {
     let (bars, label) = if rtt_ms < 100 && loss_pct < 1.0 {
-        (4, "Excellent")
+        (4, "Strong")
     } else if rtt_ms < 200 && loss_pct < 3.0 {
         (3, "Good")
     } else if rtt_ms < 350 && loss_pct < 8.0 {
-        (2, "OK")
+        (2, "Fair")
     } else {
-        (1, "Poor")
+        (1, "Weak")
     };
     Quality {
         bars,
         label: label.into(),
     }
+}
+
+/// The word for a number of bars (1 to 4); anything else reads "Weak".
+#[uniffi::export]
+pub fn signal_word(bars: u8) -> String {
+    match bars {
+        4 => "Strong",
+        3 => "Good",
+        2 => "Fair",
+        _ => "Weak",
+    }
+    .into()
 }
 
 /// The numbers of an audio call's stats (the core's `CallStats`), passed in plain.

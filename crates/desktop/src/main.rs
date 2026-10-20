@@ -23,7 +23,6 @@ mod shaped;
 mod tallest;
 /// Contact blocking on the core's API: state the screens read, and the dialog copy.
 mod blocks;
-mod emoji;
 mod audio;
 mod cues;
 mod flow;

@@ -73,7 +73,7 @@ fn avatar<'a>(t: Tok, name: &str, key: &str, size: f32) -> El<'a> {
         return face;
     }
     let (bg, fg) = ui::avatar_colors(t, key);
-    container(bold(ui::initials(name), (size * 0.34).round(), fg).line_height(lh((size * 0.34).round() * 1.2)))
+    container(bold(present::names::initials(name.to_string()), (size * 0.34).round(), fg).line_height(lh((size * 0.34).round() * 1.2)))
         .width(size)
         .height(size)
         .center_x(size)
@@ -152,26 +152,19 @@ fn badge<'a>(bg: Color, fg: Color, icon: Option<Icon>, s: &str) -> El<'a> {
     container(r).padding([5, 12]).style(ui::plain(bg, 999.0)).into()
 }
 
-/// Age without a time zone: "4 min ago", "3 h ago", "5 d ago".
+/// Age without a time zone: "just now", "4 min ago", "3 h ago" (`present::time::ago`).
 fn ago(now: u64, then: u64) -> String {
-    let d = now.saturating_sub(then);
-    match d {
-        0..=59 => "just now".into(),
-        60..=3599 => format!("{} min ago", d / 60),
-        3600..=86399 => format!("{} h ago", d / 3600),
-        _ if d < 86400 * 14 => format!("{} d ago", d / 86400),
-        _ => format!("{} w ago", d / (86400 * 7)),
-    }
+    present::time::ago(now as i64, then as i64)
 }
 
 fn now_secs() -> u64 {
     std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0)
 }
 
-/// 1-4 bars from round-trip time and loss, with the call screen's words (call_ui::strength).
-fn quality(rtt_ms: u32, loss_pct: f64) -> (u8, &'static str) {
-    let n = crate::call_ui::strength(rtt_ms, loss_pct);
-    (n, crate::call_ui::SIGNAL_WORD[n as usize])
+/// 1-4 bars from round-trip time and loss, with the call screen's words.
+fn quality(rtt_ms: u32, loss_pct: f64) -> (u8, String) {
+    let q = present::call::call_quality(rtt_ms, loss_pct);
+    (q.bars, q.label)
 }
 
 /// Banner content: title, body, optional action, is-error.
@@ -596,7 +589,7 @@ impl App {
                 },
             };
             let d = r.duration_secs;
-            let dur = if d >= 3600 { format!("{}:{:02}:{:02}", d / 3600, d % 3600 / 60, d % 60) } else { format!("{}:{:02}", d / 60, d % 60) };
+            let dur = present::time::clock(d as i64);
             let sub_c = if missed { t.error } else { t.ink2 };
             let sub = row![crate::pg_icons::pgi(if r.incoming { "call-in" } else { "call-out" }, 15.0, sub_c),
                 tx(if answered { format!("{what} \u{b7} {dur}") } else { what.to_string() }, 13.0, sub_c).line_height(lh(21.0))].spacing(5).align_y(Alignment::Center);
@@ -737,7 +730,7 @@ impl App {
         ));
         let mut badges = row![].spacing(8);
         if let Some(st) = self.blocks.status(&c.did) {
-            badges = badges.push(badge(t.error_c, t.on_error_c, Some(Icon::PhoneOff), st));
+            badges = badges.push(badge(t.error_c, t.on_error_c, Some(Icon::PhoneOff), &st));
         }
         let blocked_by_me = self.blocks.blocked_by_me(&c.did);
         // Disabled while a block is on; tapping when they haven't allowed calls says so.
@@ -763,7 +756,7 @@ impl App {
         // turns everything off; the switch comes back as it was).
         let allow_calls: El = {
             let on = self.blocks.calls_allowed(&c.did);
-            let first = crate::blocks::first_name(&name).to_string();
+            let first = present::names::first_word(&name).to_string();
             let sub = if blocked_by_me {
                 "Blocked: nothing gets through until you unblock.".to_string()
             } else if on {
@@ -811,7 +804,7 @@ impl App {
                 .into(),
             ),
             Detail::ConfirmBlock => Some({
-                let (title_, lines) = crate::blocks::block_dialog(&name);
+                let (title_, lines) = (present::block::block_dialog_title(name.clone()), present::block::block_dialog_lines(name.clone()));
                 let text_ = lines.iter().map(|b| format!("\u{2022} {b}")).collect::<Vec<_>>().join("\n");
                 container(
                     column![

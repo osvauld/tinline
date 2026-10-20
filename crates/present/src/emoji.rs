@@ -6,6 +6,12 @@ pub const BIG_MAX: u32 = 3;
 /// How much larger than the letters an emoji inside text is drawn.
 pub const INLINE_SCALE: f32 = 1.25;
 
+/// [`INLINE_SCALE`] for Kotlin (`pub const` is not exported by UniFFI).
+#[uniffi::export]
+pub fn emoji_inline_scale() -> f32 {
+    INLINE_SCALE
+}
+
 fn is_emoji(c: char) -> bool {
     matches!(c as u32, 0x1F000..=0x1FAFF | 0x2600..=0x27BF | 0x2300..=0x23FF | 0x2B00..=0x2BFF)
 }

@@ -10,6 +10,8 @@ path = "src/main.rs"
 
 [dependencies]
 p2pcore = { path = "../core" }
+# Shared UI logic (names, call words, time words, emoji, link/block copy).
+present = { path = "../present" }
 # The BIP39 English word list for the restore grid (checks and suggestions); identity already uses it.
 bip39.workspace = true
 # Frame conversion (camera formats -> I420, I420 -> RGBA); p2pcore already links it.

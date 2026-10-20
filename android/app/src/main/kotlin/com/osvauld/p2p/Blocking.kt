@@ -103,36 +103,15 @@ data class Blocks(
 /** What a conversation needs to know about blocking. */
 data class ConvBlock(val view: BlockView, val composer: ComposerState, val callGate: CallGate = CallGate.Ok)
 
-/** All the words of blocking in one place. */
+/** The words of blocking are `uniffi.present` (block*, cantSendText, notContactLine, unblockNote...). */
 object BlockCopy {
-    fun dialogTitle(name: String) = "Block ${firstName(name)}?"
-
-    fun dialogLines(name: String): List<String> {
-        val f = firstName(name)
-        return listOf(
-            "$f can’t message or call you, on any of your devices.",
-            "$f will see that you blocked them, and their app removes you from their contacts.",
-            "Your chat history with $f stays.",
-            "To talk again after you unblock, $f has to add you again with your QR code.",
-            "Groups you share are not affected.",
-        )
-    }
-
-    fun notDelivered(name: String) = "Not delivered: ${firstName(name)} blocked you"
-    fun blockedYouTitle(name: String) = "${firstName(name)} blocked you"
-    fun blockedYouBody(name: String) = "You can’t message or call ${firstName(name)}. Your earlier messages stay here."
-    fun blockedByMeLine(name: String) = "You blocked ${firstName(name)}. They can’t message or call you."
-    fun cantSend(name: String) = "You can’t send messages to ${firstName(name)}."
-    fun notContact(name: String) = "${firstName(name)} is no longer in your contacts. Add them again with their QR code to message."
-    fun cantCall(name: String, state: ComposerState) = when (state) {
-        ComposerState.BlockedByMe -> "You blocked ${firstName(name)}. Unblock to call."
-        ComposerState.BlockedMe -> "Can’t call: ${firstName(name)} blocked you"
-        ComposerState.NotContact -> "${firstName(name)} is no longer in your contacts."
-        ComposerState.Open -> callsNotAllowed(name)
-    }
-    /** Tapping call on someone who hasn't allowed calls from us, and a call that ended that way (P6). */
-    fun callsNotAllowed(name: String) = "${firstName(name)} hasn’t allowed calls from you. You can still message them."
-    const val UNBLOCK_NOTE = "They are told you unblocked them and can message you again once they add you back: their app removed you from their contacts when you blocked them. Your chat history is kept either way."
+    /** Why the call button is closed ([ComposerState] mapped to the shared words). */
+    fun cantCall(name: String, state: ComposerState) = uniffi.present.cantCallText(name, when (state) {
+        ComposerState.Open -> uniffi.present.ComposerState.OPEN
+        ComposerState.BlockedByMe -> uniffi.present.ComposerState.BLOCKED_BY_ME
+        ComposerState.BlockedMe -> uniffi.present.ComposerState.BLOCKED_ME
+        ComposerState.NotContact -> uniffi.present.ComposerState.NOT_CONTACT
+    })
 
     fun date(secs: Long, zone: ZoneId = ZoneId.systemDefault()): String =
         DateTimeFormatter.ofPattern("MMM d, HH:mm", Locale.ENGLISH).format(Instant.ofEpochSecond(secs).atZone(zone))
@@ -141,8 +120,8 @@ object BlockCopy {
 /** "Block X?" with every consequence listed before the tap. */
 @Composable
 fun BlockDialog(name: String, onDismiss: () -> Unit, onBlock: () -> Unit) {
-    TinDialog(BlockCopy.dialogTitle(name), onDismiss, "Block", { onDismiss(); onBlock() }, destructive = true, icon = PgIcons.Off) {
-        BlockCopy.dialogLines(name).forEach { DialogText("• $it") }
+    TinDialog(uniffi.present.blockDialogTitle(name), onDismiss, "Block", { onDismiss(); onBlock() }, destructive = true, icon = PgIcons.Off) {
+        uniffi.present.blockDialogLines(name).forEach { DialogText("• $it") }
     }
 }
 
@@ -173,7 +152,7 @@ fun BlockedPeopleScreen(app: P2pApp, onBack: () -> Unit, say: (String) -> Unit) 
             }
             Column(Modifier.padding(20.dp).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("Unblocking", style = TinType.bodyL.copy(fontSize = 15.sp, fontWeight = FontWeight.Bold), color = c.ink)
-                Text(BlockCopy.UNBLOCK_NOTE, style = TinType.bodyM, color = c.ink2)
+                Text(uniffi.present.unblockNote(), style = TinType.bodyM, color = c.ink2)
             }
         }
     }

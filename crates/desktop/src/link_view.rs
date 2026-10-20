@@ -12,10 +12,6 @@ const OS: &str = match std::env::consts::OS.as_bytes() {
     _ => "Desktop",
 };
 
-fn mmss(secs: u64) -> String {
-    format!("{}:{:02}", secs / 60, secs % 60)
-}
-
 impl App {
     pub(super) fn link_screen(&self, t: Tok) -> El<'_> {
         let l = &self.link;
@@ -130,7 +126,7 @@ impl App {
             Step::Failed(reason) => {
                 let retry = if reason == "locked" { None } else { Some(Msg::LinkRegen) };
                 let col = column![
-                    banner(t, "Not linked", failure_text(reason), None, true),
+                    banner(t, "Not linked", &failure_text(reason), None, true),
                     self.wide("Try again", Kind::Primary, t, retry.filter(|_| !self.busy)),
                     self.wide(if existing { "Back to Settings" } else { "Back" }, Kind::Quiet, t, Some(Msg::LinkCancel)),
                 ]
@@ -161,7 +157,7 @@ impl App {
             col = col
                 .push(container(canvas(super::QrView(q)).width(Length::Fixed(256.0)).height(Length::Fixed(256.0))).padding(12)
                     .style(move |_: &Theme| container::Style { background: Some(Color::WHITE.into()), border: Border { color: t.line, width: 1.0, radius: 20.0.into() }, ..Default::default() }))
-                .push(tx(format!("Expires in {} \u{b7} works once", mmss(left)), 13.0, t.ink2));
+                .push(tx(format!("Expires in {} \u{b7} works once", present::time::clock(left as i64)), 13.0, t.ink2));
             if !existing {
                 col = col.push(container(tx("Anyone who can see this code in the next few minutes could try to use it. Show it only to your own device.", 13.0, t.ink2).line_height(lh(18.0)).align_x(Alignment::Center)).max_width(320));
             }

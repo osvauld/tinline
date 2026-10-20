@@ -1084,7 +1084,7 @@ impl App {
                 let who = c.info.peer_name.clone();
                 let secs = c.stats.as_ref().map_or(0, |s| s.secs);
                 let did = c.info.peer_did.clone();
-                let mut presentation = reason::present(&reason, &who, c.info.incoming, c.answered);
+                let (incoming, answered) = (c.info.incoming, c.answered);
                 // "blocked" ends the call on both sides: say which side blocked. "calls not
                 // allowed" turns their call token off here.
                 if reason == p2pcore::CALLS_NOT_ALLOWED {
@@ -1092,10 +1092,8 @@ impl App {
                 }
                 if reason == p2pcore::BLOCKED {
                     self.refresh_blocks();
-                    if self.blocks.blocked_by_me(&did) {
-                        presentation = End::Screen(format!("You blocked {}", crate::blocks::first_name(&who)));
-                    }
                 }
+                let presentation = reason::present(&reason, &who, incoming, answered, self.blocks.blocked_by_me(&did));
                 self.call = None;
                 self.video_reset();
                 // End & answer: straight on to the new call, no "call ended" screen in between.
@@ -1235,15 +1233,13 @@ impl App {
         if self.call.is_some() {
             return false;
         }
-        use crate::blocks::{CallGate, Composer};
+        use crate::blocks::CallGate;
         let gate = self.blocks.call_gate(did, self.is_contact(did));
         if gate != CallGate::Ok {
             let name = self.chat_name(did);
             self.notice = Some(match gate {
-                CallGate::Closed(Composer::BlockedByMe) => format!("You blocked {name}. Unblock to call."),
-                CallGate::Closed(Composer::BlockedMe) => format!("Can\u{2019}t call: {} blocked you", crate::blocks::first_name(&name)),
-                CallGate::NotAllowed => crate::blocks::calls_not_allowed_text(&name),
-                _ => format!("{name} is no longer in your contacts."),
+                CallGate::Closed(why) => present::block::cant_call_text(name, why),
+                _ => present::block::calls_not_allowed_text(name),
             });
             return false;
         }
@@ -2525,7 +2521,7 @@ impl App {
                     let w = self.waiting.take().unwrap();
                     self.refresh_history();
                     // Unanswered, or the caller gave up: a missed call like any other.
-                    if let End::Missed(text) = reason::present(&reason, &w.peer_name, true, false) {
+                    if let End::Missed(text) = reason::present(&reason, &w.peer_name, true, false, false) {
                         if crate::audio::RING_CALLS.load(Ordering::Relaxed) { notify("Tinline", &text, Target::Show); }
                         self.notice = Some(text);
                     }

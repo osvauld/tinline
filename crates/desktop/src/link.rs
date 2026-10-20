@@ -75,22 +75,9 @@ pub struct UnlinkedInfo {
     pub by_self: bool,
 }
 
-/// Plain words for the core's `on_link_failed` reasons.
-pub fn failure_text(reason: &str) -> &'static str {
-    match reason {
-        "expired" => "The code expired. Try again.",
-        "cancelled" => "Cancelled on the other device.",
-        "rejected" => "The other device didn\u{2019}t accept the link.",
-        "bad_proof" => "That QR code was already used or isn\u{2019}t valid. Make a fresh one and try again.",
-        "mismatch" => "These two devices don\u{2019}t belong to the same account, so nothing was shared.",
-        "timeout" => "The other device didn\u{2019}t answer in time. Keep both open and try again.",
-        "net" => "Couldn\u{2019}t reach the other device. Check that both are online.",
-        "locked" => "Tinline is locked. Unlock it and try again.",
-        "busy" => "Another link is already in progress. Finish or cancel it first.",
-        "bad_grant" => "What the other device sent wasn\u{2019}t valid, so nothing was linked.",
-        "account_exists" => "That account is already on this computer.",
-        _ => "The link didn\u{2019}t work. Nothing was changed.",
-    }
+/// Plain words for the core's `on_link_failed` reasons (`present::link::link_fail_text`).
+pub fn failure_text(reason: &str) -> String {
+    present::link::link_fail_text(reason.into(), None, "computer".into())
 }
 
 impl App {
@@ -286,8 +273,8 @@ impl App {
                 if self.busy || text.is_empty() {
                     return Task::none();
                 }
-                if !text.starts_with("OSVL1:") {
-                    self.notice = Some("That isn\u{2019}t a link code. It starts with OSVL1:".into());
+                if let Some(why) = present::link::link_qr_problem(text.clone()) {
+                    self.notice = Some(why);
                     return Task::none();
                 }
                 self.busy = true;

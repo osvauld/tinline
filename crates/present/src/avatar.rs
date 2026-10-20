@@ -7,6 +7,15 @@
 const FNV_OFFSET: u32 = 0x811c_9dc5;
 const FNV_PRIME: u32 = 0x0100_0193;
 
+/// How many tinted avatar containers the apps have (the hue pairs of the design tokens).
+pub const AVATAR_SLOTS: u32 = 6;
+
+/// [`AVATAR_SLOTS`] for Kotlin (`pub const` is not exported by UniFFI).
+#[uniffi::export]
+pub fn avatar_slot_count() -> u32 {
+    AVATAR_SLOTS
+}
+
 /// FNV-1a, 32 bit, over `key`'s UTF-8 bytes.
 #[uniffi::export]
 pub fn stable_hash(key: String) -> u32 {

@@ -34,7 +34,7 @@ import androidx.compose.ui.text.withStyle
 /** CallScreen.svelte's copy: never claim encryption while dialling or ringing. */
 internal fun callStatus(active: Boolean, ringing: Boolean, reconnecting: Boolean, secs: Long): String = when {
     active && reconnecting -> "Reconnecting…"
-    active -> clock(secs)
+    active -> uniffi.present.clock(secs)
     ringing -> "Ringing…"
     else -> "Calling…"
 }

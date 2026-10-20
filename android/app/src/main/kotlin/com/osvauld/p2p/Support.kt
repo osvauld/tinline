@@ -64,67 +64,7 @@ fun openUrl(c: Context, url: String) {
     try { c.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) } catch (_: Exception) {}
 }
 
-/** Call duration as mm:ss (or h:mm:ss). */
-fun clock(secs: Long): String {
-    val s = secs.coerceAtLeast(0)
-    return if (s >= 3600) "%d:%02d:%02d".format(s / 3600, s % 3600 / 60, s % 60) else "%02d:%02d".format(s / 60, s % 60)
-}
-
-/** Bars (1-4) from round-trip time and loss, as the tokens board describes: 4 Excellent, 3 Good, 2 OK, 1 Poor. */
-/** link.svelte.ts `strength()`, the same thresholds on every app: 4 Strong rtt < 100 ms and loss < 1 % ·
- *  3 Good < 200 / < 3 % · 2 Fair < 350 / < 8 % · 1 Weak. Loss is the recent loss ([RecentLoss]). */
-fun qualityBars(rttMs: Int, lossPct: Double): Int = when {
-    rttMs < 100 && lossPct < 1.0 -> 4
-    rttMs < 200 && lossPct < 3.0 -> 3
-    rttMs < 350 && lossPct < 8.0 -> 2
-    else -> 1
-}
+/** Bars (1-4) from round-trip time and loss (thresholds and words: `uniffi.present.callQuality`). */
+fun qualityBars(rttMs: Int, lossPct: Double): Int = uniffi.present.callQuality(rttMs.toUInt(), lossPct).bars.toInt()
 
 fun qualityLabel(bars: Int) = signalWord(bars)
-
-// ---------------------------------------------------------------- call end reasons
-
-enum class EndKind { Normal, Unreachable, Declined, Superseded }
-
-/**
- * The stable end-reason tokens of `CallState.Ended` / `CallRecord.reason` (docs/protocol.md,
- * "End reasons"): hangup_local, hangup_remote, declined, declined_local, cancelled, no_answer,
- * unreachable, connection_lost, busy, superseded, and the history-only unavailable.
- */
-fun classifyEnd(reason: String): EndKind = when (reason) {
-    "unreachable" -> EndKind.Unreachable
-    "declined", "declined_local", "busy" -> EndKind.Declined
-    "superseded" -> EndKind.Superseded
-    else -> EndKind.Normal
-}
-
-/** An incoming call that rang out or was given up on without us answering it. */
-fun isMissedReason(reason: String, incoming: Boolean) =
-    incoming && (reason == "cancelled" || reason == "no_answer" || reason == "busy")
-
-/**
- * THE one place that turns an end reason into words for the Call ended screen. [incoming] is whether
- * the call came in (the same token reads differently from each side). Unknown reasons give "Call ended".
- */
-fun endReasonText(reason: String, peerName: String, incoming: Boolean = false, blockedByMe: Boolean = false): String {
-    val who = peerName.trim().ifEmpty { "They" }
-    return when (reason) {
-        "hangup_local" -> "You hung up"
-        "hangup_remote" -> "$who hung up"
-        "declined" -> "$who declined"
-        "declined_local" -> "You declined"
-        "cancelled" -> if (incoming) "$who stopped calling" else "You cancelled the call"
-        "no_answer" -> if (incoming) "Missed call" else "No answer"
-        "busy" -> if (incoming) "Missed call" else "$who is on another call"
-        "unreachable" -> "Couldn\u2019t reach $who"
-        "connection_lost" -> "Connection lost"
-        "unavailable" -> "Turned away while you were not available"
-        "answered_elsewhere" -> "Answered on another device"
-        "declined_elsewhere" -> "Declined on another device"
-        // Either side's block ends the call with the same token; [blockedByMe] says which.
-        // P6: they let us message them but not call.
-        "calls not allowed" -> "${firstName(who)} hasn’t allowed calls from you"
-        "blocked" -> if (blockedByMe) "You blocked ${firstName(who)}" else "${firstName(who)} blocked you"
-        else -> "Call ended"
-    }
-}
