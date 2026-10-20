@@ -406,7 +406,12 @@ impl HostEngine {
         }
         self.remove_part(&l.did);
         if l.did == self.id.did() && self.st.cond.class == Class::Phone {
-            // §2.4 / Q11: a phone hosts only while its own user is in the call.
+            // §2.4 / Q11: a phone hosts only while its own user is in the call. With nobody else
+            // in it there is no one to hand over to: end it for everyone (`End{ended}`), so every
+            // member's list drops it, instead of a hand-over nobody redials (left listed for hours).
+            if self.st.parts.is_empty() {
+                return Ok(self.end(EndReason::Ended, None));
+            }
             let next = self.next_backup(auth);
             return Ok(self.end(EndReason::HostLeaving, next));
         }

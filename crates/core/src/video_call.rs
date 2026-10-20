@@ -163,7 +163,7 @@ pub struct VideoStats {
     pub recv_fps: u32,
     /// What caps our sending now (the peer's hint, our own budget, the peer's offer).
     pub send_cap: VideoSendCap,
-    /// Ladder steps so far, and the reason of the last: "rate", "cpu", "hint" or "budget".
+    /// Ladder steps so far, and the reason of the last: "rate", "cpu", "hint", "pin" or "budget".
     pub ladder_steps: u64,
     pub last_step_reason: String,
     /// Sharper video could be suggested (`video_call::hd`, docs/video.md "Suggesting sharper

@@ -97,6 +97,7 @@ class CallSession(
                 attrs,
                 onAnswer = { _ -> activated = true; guard("answer") { onAnswer() } },
                 onDisconnect = { _ ->
+                    CallTrace.add("telecom disconnected${if (endedHere) "" else " by system"}")
                     remoteEnded = true
                     ops.close()
                     if (!endedHere) guard("disconnect") { onDisconnect() }
@@ -108,7 +109,7 @@ class CallSession(
                     if (mode == Mode.Ended) { launch { disconnect(DisconnectCause(DisconnectCause.LOCAL)) }; return@addCall }
                     mode = Mode.Telecom
                 }
-                Log.i(TAG, "telecom call added: incoming=$incoming video=$video")
+                Log.i(TAG, "telecom call added: incoming=$incoming video=$video"); CallTrace.add("telecom added")
                 val collectors = mutableListOf<Job>()
                 launch {
                     for (op in ops) try { op() } catch (e: Exception) { Log.w(TAG, "telecom op: $e") }
@@ -165,7 +166,8 @@ class CallSession(
             endedHere = true
             val wasTelecom = mode == Mode.Telecom
             mode = Mode.Ended
-            if (wasTelecom) ops.trySend { disconnect(DisconnectCause(cause)) }
+            if (wasTelecom) ops.trySend { log("disconnect", disconnect(DisconnectCause(cause))) }
+            CallTrace.add("telecom end ($cause${if (wasTelecom) "" else ", not in telecom"})")
         }
         ops.close()
         engine.stop()
@@ -211,7 +213,7 @@ class CallSession(
     private fun fallback(why: String) {
         synchronized(this) {
             if (mode == Mode.Ended || mode == Mode.Fallback || remoteEnded) return
-            Log.w(TAG, "$why; routing in-app")
+            Log.w(TAG, "$why; routing in-app"); CallTrace.add("telecom fallback")
             mode = Mode.Fallback
             ops.close()
             if (audioOn) engine.takeRouting(preferSpeaker)
@@ -229,7 +231,7 @@ class CallSession(
     }
 
     private fun log(what: String, r: CallControlResult) {
-        if (r is CallControlResult.Error) Log.w(TAG, "$what failed: ${r.errorCode}")
+        if (r is CallControlResult.Error) { Log.w(TAG, "$what failed: ${r.errorCode}"); CallTrace.add("telecom $what failed ${r.errorCode}") }
     }
 
     private fun routeOf(e: CallEndpointCompat) = AudioRoute(

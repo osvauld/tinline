@@ -1,6 +1,7 @@
 package com.osvauld.p2p
 
 import android.util.Log
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -84,10 +85,46 @@ object CallTrace {
     const val MAX = 200
     private val ring = ArrayDeque<String>()
     private val fmt = SimpleDateFormat("MM-dd HH:mm:ss.SSS", Locale.US)
+    /** The ring mirrored to disk, so a crash or kill at hang-up still leaves the lines before it. */
+    @Volatile private var file: File? = null
+    /** Lines appended since the file was last cut back to [MAX]; the process can live for days. */
+    private var appended = 0
+
+    /** Process start: reload the last [MAX] lines of the previous processes, then keep appending. */
+    fun init(dir: File) {
+        val f = File(dir, "calltrace.log")
+        try {
+            val old = if (f.exists()) f.readLines().takeLast(MAX) else emptyList()
+            synchronized(ring) { ring.clear(); old.forEach(::push) }
+            f.writeText(old.joinToString("") { "$it\n" })
+            file = f
+        } catch (e: Exception) { Log.w(TAG, "trace file: $e") }
+        add("--- process start")
+    }
+
+    /** Why the previous process ended (crash, kill, low memory): API 30+. */
+    fun lastExit(c: android.content.Context) {
+        if (android.os.Build.VERSION.SDK_INT < 30) return
+        try {
+            val am = c.getSystemService(android.app.ActivityManager::class.java)
+            am.getHistoricalProcessExitReasons(null, 0, 1).forEach { e ->
+                val at = synchronized(fmt) { fmt.format(Date(e.timestamp)) }
+                add("last exit $at reason=${e.reason} status=${e.status} ${e.description.orEmpty().take(80)}")
+            }
+        } catch (e: Exception) { Log.w(TAG, "exit reasons: $e") }
+    }
 
     fun add(msg: String) {
         val line = synchronized(fmt) { fmt.format(Date()) } + " " + msg
         push(line)
+        file?.let { f ->
+            try {
+                synchronized(ring) {
+                    if (++appended > MAX) { f.writeText(ring.joinToString("") { "$it\n" }); appended = 0 }
+                    else f.appendText("$line\n")
+                }
+            } catch (_: Exception) {}
+        }
         Log.i(TAG, msg)
     }
 
