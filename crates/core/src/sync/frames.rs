@@ -4,54 +4,28 @@ use iroh::endpoint::{RecvStream, SendStream};
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
 use crate::Error;
+use crate::frames::{FrameBuf, send_frame};
 
 pub const MAX_FRAME: usize = 16 * 1024 * 1024;
 
 pub struct FrameWriter(pub SendStream);
 
-pub struct FrameReader {
-    recv: RecvStream,
-    buf: Vec<u8>,
-}
+pub struct FrameReader(FrameBuf);
 
 impl FrameReader {
     pub fn new(recv: RecvStream) -> Self {
-        Self { recv, buf: Vec::new() }
+        Self(FrameBuf::new(recv))
     }
 
     /// `None` when the peer finished its side cleanly. Cancel-safe.
     pub async fn recv<T: DeserializeOwned>(&mut self) -> Result<Option<T>, Error> {
-        let mut chunk = vec![0u8; 64 * 1024];
-        loop {
-            if self.buf.len() >= 4 {
-                let len = u32::from_be_bytes(self.buf[..4].try_into().unwrap()) as usize;
-                if len > MAX_FRAME {
-                    return Err(Error::Protocol("frame too large".into()));
-                }
-                if self.buf.len() >= 4 + len {
-                    let msg = cryptography::codec::from_bytes(&self.buf[4..4 + len], MAX_FRAME).map_err(|_| Error::Protocol("frame does not decode".into()))?;
-                    self.buf.drain(..4 + len);
-                    return Ok(Some(msg));
-                }
-            }
-            match self.recv.read(&mut chunk).await.map_err(Error::net)? {
-                Some(n) => self.buf.extend_from_slice(&chunk[..n]),
-                None if self.buf.is_empty() => return Ok(None),
-                None => return Err(Error::Protocol("stream ended mid-frame".into())),
-            }
-        }
+        self.0.recv(MAX_FRAME, "").await
     }
 }
 
 impl FrameWriter {
     pub async fn send<T: Serialize>(&mut self, msg: &T) -> Result<(), Error> {
-        let body = cryptography::codec::to_bytes(msg).map_err(|e| Error::Protocol(e.to_string()))?;
-        if body.len() > MAX_FRAME {
-            return Err(Error::Protocol("frame too large".into()));
-        }
-        let mut out = (body.len() as u32).to_be_bytes().to_vec();
-        out.extend_from_slice(&body);
-        self.0.write_all(&out).await.map_err(Error::net)
+        send_frame(&mut self.0, msg, MAX_FRAME, "").await
     }
 
     pub fn finish(&mut self) {
