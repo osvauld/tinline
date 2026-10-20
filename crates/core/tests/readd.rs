@@ -18,7 +18,7 @@ mod support;
 use support::eventually_200ms as eventually;
 use support::*;
 
-const TAG: &str = "p10";
+const S: Suite = Suite("p10");
 
 fn open(dir: &std::path::Path) -> Arc<Node> {
     let node = Node::new(dir.to_string_lossy().into(), Arc::new(Quiet)).unwrap();
@@ -28,15 +28,13 @@ fn open(dir: &std::path::Path) -> Arc<Node> {
 
 /// a and b, each a contact of the other (b scanned a's ticket).
 fn pair(tag: &str) -> (Peer, Peer) {
-    Peer::pair(TAG, tag)
+    S.pair(tag)
 }
 
 /// Drops the node and opens the same data directory again at once (a process restart). No
 /// pause: the chat store must open even while the old node's tasks still hold `chat.redb`.
 fn restart(p: &mut Peer) {
-    p.reopen();
-    p.node.unlock(PASS.into()).unwrap();
-    online(&p.node);
+    p.restart();
     eventually(10, "the chat store is open after the restart", || p.node.writer_id_for_test().is_some());
 }
 

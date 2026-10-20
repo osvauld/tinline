@@ -16,16 +16,7 @@ use support::fs::find_files;
 use support::group::*;
 use support::*;
 
-const TAG: &str = "g2";
-
-fn peer(name: &str) -> Peer {
-    Peer::new(TAG, name)
-}
-
-/// `e` links a fresh install (same DID); returns it committed and online.
-fn link_fresh(e: &Peer, name: &str) -> Peer {
-    e.link_fresh(TAG, name, LinkAs { label: "Desk", ..LinkAs::default() })
-}
+const S: Suite = Suite("g2");
 
 
 
@@ -63,9 +54,9 @@ fn delivered(p: &Peer, g: &str, text: &str) -> bool {
 // device ID), so no (writer ID, counter) is reused and its new post arrives everywhere.
 #[test]
 fn a_lost_group_store_gives_a_fresh_writer_and_new_posts_arrive() {
-    let o = peer("ls-o");
-    let mut a = peer("ls-a");
-    let b = peer("ls-b");
+    let o = S.peer("ls-o");
+    let mut a = S.peer("ls-a");
+    let b = S.peer("ls-b");
     let g = group_with(&o, &[&a, &b]);
     a.node.group_post(g.clone(), "before".into(), None).unwrap();
     eventually(WAIT, "before is delivered", || delivered(&a, &g, "before"));
@@ -99,10 +90,10 @@ fn a_lost_group_store_gives_a_fresh_writer_and_new_posts_arrive() {
 // held by the offline host, and one of the two would be dropped silently when the hosts meet.
 #[test]
 fn a_lost_group_store_never_reuses_a_counter_held_by_an_offline_host() {
-    let o = peer("lh-o");
-    let h = peer("lh-h");
-    let mut a = peer("lh-a");
-    let b = peer("lh-b");
+    let o = S.peer("lh-o");
+    let h = S.peer("lh-h");
+    let mut a = S.peer("lh-a");
+    let b = S.peer("lh-b");
     let g = group_with(&o, &[&h, &a, &b]);
     o.node.group_appoint_host(g.clone(), h.did.clone(), h.node.group_device_id().unwrap()).unwrap();
     eventually(WAIT, "h sees the permit", || all(&h, &g).iter().any(|x| x.kind == GroupItemKind::HostAdded && x.subject_did == h.did));
@@ -147,9 +138,9 @@ fn a_lost_group_store_never_reuses_a_counter_held_by_an_offline_host() {
 // `a knows h's group endpoint` timeout above, under load, when h's session to o was reconnecting).
 #[test]
 fn a_host_that_accepts_while_the_first_host_is_away_still_reaches_members() {
-    let o = peer("ha-o");
-    let h = peer("ha-h");
-    let a = peer("ha-a");
+    let o = S.peer("ha-o");
+    let h = S.peer("ha-h");
+    let a = S.peer("ha-a");
     let g = group_with(&o, &[&h, &a]);
     o.node.group_appoint_host(g.clone(), h.did.clone(), h.node.group_device_id().unwrap()).unwrap();
     eventually(WAIT, "h is asked to host", || h.node.group_detail(g.clone()).unwrap().host_requested_here);
@@ -176,13 +167,13 @@ fn lists(p: &Peer, g: &str) -> bool {
 // the new device reaches the old one. Contents come from the hosts (U7), verified (U10).
 #[test]
 fn a_linked_device_learns_the_accounts_groups_without_a_token() {
-    let o = peer("os-o");
-    let a = peer("os-a");
+    let o = S.peer("os-o");
+    let a = S.peer("os-a");
     let g = group_with(&o, &[&a]);
     a.node.group_post(g.clone(), "before linking".into(), None).unwrap();
     eventually(WAIT, "o has it", || has_post(&o, &g, &a.did, "before linking"));
 
-    let a2 = link_fresh(&a, "os-a2");
+    let a2 = S.link_desk(&a, "os-a2");
     eventually(WAIT, "a2 lists the group", || lists(&a2, &g));
     eventually(WAIT, "a2 sees history", || has_post(&a2, &g, &a.did, "before linking"));
     assert_eq!(a2.node.group_detail(g.clone()).unwrap().my_role, GroupRole::Member);
@@ -245,9 +236,9 @@ fn chat_has(p: &Peer, peer_did: &str, text: &str) -> bool {
 // accept both become message-only contacts (no calls) and chat directly.
 #[test]
 fn a_chat_request_accepted_makes_message_only_contacts_that_chat_directly() {
-    let o = peer("cr-o");
-    let a = peer("cr-a");
-    let b = peer("cr-b");
+    let o = S.peer("cr-o");
+    let a = S.peer("cr-a");
+    let b = S.peer("cr-b");
     let g = group_with(&o, &[&a, &b]);
     let r = request_chat(&a, &g, &b.did);
     assert!(r.outgoing && r.state == p2pcore::ChatRequestState::Pending && r.peer_did == b.did);
@@ -283,10 +274,10 @@ fn a_chat_request_accepted_makes_message_only_contacts_that_chat_directly() {
 // app that skips its own checks.
 #[test]
 fn chat_requests_can_be_declined_and_blocked_senders_are_refused() {
-    let o = peer("cd-o");
-    let a = peer("cd-a");
-    let b = peer("cd-b");
-    let c = peer("cd-c");
+    let o = S.peer("cd-o");
+    let a = S.peer("cd-a");
+    let b = S.peer("cd-b");
+    let c = S.peer("cd-c");
     let g = group_with(&o, &[&a, &b, &c]);
     let r = request_chat(&a, &g, &b.did);
     eventually(WAIT, "b sees it", || incoming(&b).iter().any(|x| x.id == r.id));
@@ -316,9 +307,9 @@ fn chat_requests_can_be_declined_and_blocked_senders_are_refused() {
 // where it moved (the window is persisted), without rotating again.
 #[test]
 fn host_rotates_on_interval_and_offline_member_is_reconnected_after_host_restart() {
-    let mut o = peer("ri-o");
-    let a = peer("ri-a");
-    let c = peer("ri-c");
+    let mut o = S.peer("ri-o");
+    let a = S.peer("ri-a");
+    let c = S.peer("ri-c");
     let g = group_with(&o, &[&a, &c]);
     let old = o.node.group_endpoint_id().unwrap();
     assert!(a.node.group_endpoint_rotation_due().is_none(), "members never rotate");
@@ -347,9 +338,9 @@ fn host_rotates_on_interval_and_offline_member_is_reconnected_after_host_restart
 // reschedule anything: the deadline stays where the interval put it.
 #[test]
 fn a_flag_removal_or_host_revocation_does_not_rotate() {
-    let o = peer("nr-o");
-    let h = peer("nr-h");
-    let m = peer("nr-m");
+    let o = S.peer("nr-o");
+    let h = S.peer("nr-h");
+    let m = S.peer("nr-m");
     let g = group_with(&o, &[&h, &m]);
     o.node.group_set_rotation_policy_for_test(Some(RotationPolicy::ON));
     o.node.group_appoint_host(g.clone(), h.did.clone(), h.node.group_device_id().unwrap()).unwrap();
@@ -378,9 +369,9 @@ fn a_flag_removal_or_host_revocation_does_not_rotate() {
 // `an_offline_post_written_before_the_removal_is_delivered`, default window.)
 #[test]
 fn removed_member_upload_refused_after_the_window_even_with_a_shared_group() {
-    let o = peer("rw-o");
-    let m = peer("rw-m");
-    let b = peer("rw-b");
+    let o = S.peer("rw-o");
+    let m = S.peer("rw-m");
+    let b = S.peer("rw-b");
     let g = group_with(&o, &[&m, &b]);
     let shared = group_with(&o, &[&m]);
     o.node.group_set_removed_upload_window_for_test(Some(3_000));

@@ -21,23 +21,9 @@ mod support;
 use support::eventually_200ms as eventually;
 use support::*;
 
-const TAG: &str = "p6";
+const S: Suite = Suite("p6");
 /// A refusal must be quick: well under any dial timeout.
 const QUICK: Duration = Duration::from_secs(5);
-
-fn peer(name: &str) -> Peer {
-    Peer::new(TAG, name)
-}
-
-/// a and b, each a contact of the other (b scanned a's ticket).
-fn pair(tag: &str) -> (Peer, Peer) {
-    Peer::pair(TAG, tag)
-}
-
-/// `e` (existing) links a fresh install; returns it committed and online.
-fn link_fresh(e: &Peer, name: &str) -> Peer {
-    e.link_fresh(TAG, name, LinkAs::default())
-}
 
 /// `from` calls `to`; `to` rings; `from` hangs up and both settle.
 fn rings(from: &Peer, to: &Peer) {
@@ -70,7 +56,7 @@ fn message_arrives(from: &Peer, to: &Peer, text: &str) {
 // in both directions, and each side reports calls allowed / can call.
 #[test]
 fn ticket_contacts_can_chat_and_call_both_ways() {
-    let (a, b) = pair("tkt");
+    let (a, b) = S.pair("tkt");
     for (x, y) in [(&a, &b), (&b, &a)] {
         assert!(x.node.calls_allowed(y.did.clone()), "ticket contacts may call");
         assert!(x.node.can_call(y.did.clone()), "ticket contacts hold a call token");
@@ -89,8 +75,8 @@ fn ticket_contacts_can_chat_and_call_both_ways() {
 // with "calls not allowed" and never rings; it is not told "blocked".
 #[test]
 fn a_message_only_contact_chats_but_its_call_is_refused() {
-    let a = peer("mo-a");
-    let b = peer("mo-b");
+    let a = S.peer("mo-a");
+    let b = S.peer("mo-b");
     // b came to a through a group chat request: b gives a message only.
     b.node.add_contact_as_for_test(a.node.my_ticket().unwrap(), ContactOrigin::GroupRequest).unwrap();
     assert!(!b.node.calls_allowed(a.did.clone()));
@@ -107,8 +93,8 @@ fn a_message_only_contact_chats_but_its_call_is_refused() {
 // Decision: U13 ("allow calls" sends the call token) — the upgrade lets calls through.
 #[test]
 fn allow_calls_upgrades_a_message_only_contact() {
-    let a = peer("up-a");
-    let b = peer("up-b");
+    let a = S.peer("up-a");
+    let b = S.peer("up-b");
     b.node.add_contact_as_for_test(a.node.my_ticket().unwrap(), ContactOrigin::GroupRequest).unwrap();
     refused_calls_not_allowed(&a, &b);
     b.node.allow_calls(a.did.clone(), true).unwrap();
@@ -123,7 +109,7 @@ fn allow_calls_upgrades_a_message_only_contact() {
 // calls" stops their calls at once; chat goes on; our own calls to them are unaffected.
 #[test]
 fn disallow_calls_stops_calls_but_not_chat() {
-    let (a, b) = pair("down");
+    let (a, b) = S.pair("down");
     rings(&a, &b);
     b.node.allow_calls(a.did.clone(), false).unwrap();
     assert!(!b.node.calls_allowed(a.did.clone()));
@@ -144,7 +130,7 @@ fn disallow_calls_stops_calls_but_not_chat() {
 // keeps a's old tokens; after the unblock they open nothing; the re-add issues fresh ones.
 #[test]
 fn block_revokes_both_tokens_and_unblock_does_not_revive_them() {
-    let (a, b) = pair("rev");
+    let (a, b) = S.pair("rev");
     b.node.ignore_block_notices_for_test(true);
     let old = b.node.held_token_ids_for_test(a.did.clone());
     a.node.block(b.did.clone()).unwrap();
@@ -181,8 +167,8 @@ fn block_revokes_both_tokens_and_unblock_does_not_revive_them() {
 // block stays message-only after its re-add (and is not told "blocked").
 #[test]
 fn unblock_and_readd_issues_fresh_tokens_and_keeps_call_permission() {
-    let (a, b) = pair("readd");
-    let c = peer("readd-c");
+    let (a, b) = S.pair("readd");
+    let c = S.peer("readd-c");
     c.node.add_contact(a.node.my_ticket().unwrap()).unwrap();
     a.node.allow_calls(c.did.clone(), false).unwrap();
     let old_b = b.node.held_token_ids_for_test(a.did.clone());
@@ -211,10 +197,10 @@ fn unblock_and_readd_issues_fresh_tokens_and_keeps_call_permission() {
 // knows) is refused with "calls not allowed" and rings neither device.
 #[test]
 fn a_downgrade_holds_on_the_linked_sibling() {
-    let a = peer("sib-a");
-    let e = peer("sib-e");
+    let a = S.peer("sib-a");
+    let e = S.peer("sib-e");
     e.node.add_contact(a.node.my_ticket().unwrap()).unwrap();
-    let n = link_fresh(&e, "sib-n");
+    let n = S.link_fresh(&e, "sib-n");
     eventually(40, "N has A", || n.node.contacts().iter().any(|c| c.did == a.did));
     assert!(n.node.calls_allowed(a.did.clone()));
     n.node.allow_calls(a.did.clone(), false).unwrap();
