@@ -237,13 +237,15 @@ impl MessageReceipts {
 
     /// Digests of `kind` already covered by ANY device of our account in this
     /// scope. One admitted device suffices for the account (user decision).
+    /// Runs on every pump, so it reads the committed ledger without verifying
+    /// every signature again (they were verified when they entered it).
     fn own_coverage(
         &self,
         ledger: &Ledger,
         kind: Kind,
     ) -> Result<BTreeSet<[u8; 32]>, ReceiptError> {
         let mut out = BTreeSet::new();
-        for e in ledger.entries()? {
+        for e in ledger.entries_trusted()? {
             if e.receipt.kind == kind && e.receipt.recipient == self.me {
                 out.extend(e.receipt.messages.iter().copied());
             }

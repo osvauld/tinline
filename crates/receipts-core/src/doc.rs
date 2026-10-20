@@ -169,8 +169,18 @@ impl ReceiptDoc {
         }
     }
     pub fn entries(&self) -> Result<Vec<Entry>, ReceiptError> {
+        self.read_entries(true)
+    }
+    /// `entries` without verifying the signatures again: bookkeeping over our own committed
+    /// statements only (which digests a pump may skip), never admission. Every op in this doc
+    /// was verified when it entered (`write`, `apply_remote`, `load`); verifying the whole
+    /// ledger again on every pump made each issued receipt cost O(ledger) signature checks.
+    pub fn entries_trusted(&self) -> Result<Vec<Entry>, ReceiptError> {
+        self.read_entries(false)
+    }
+    fn read_entries(&self, verify: bool) -> Result<Vec<Entry>, ReceiptError> {
         let mut unique = BTreeMap::new();
-        for e in self.inspect(&self.doc, &VersionVector::default(), &self.vv())? {
+        for e in self.inspect_with(&self.doc, &VersionVector::default(), &self.vv(), verify)? {
             unique.entry(e.id.clone()).or_insert(e);
         }
         Ok(unique.into_values().collect())
@@ -195,6 +205,15 @@ impl ReceiptDoc {
         from: &VersionVector,
         to: &VersionVector,
     ) -> Result<Vec<Entry>, ReceiptError> {
+        self.inspect_with(doc, from, to, true)
+    }
+    fn inspect_with(
+        &self,
+        doc: &LoroDoc,
+        from: &VersionVector,
+        to: &VersionVector,
+        verify: bool,
+    ) -> Result<Vec<Entry>, ReceiptError> {
         crdt::signed_map::inserts(
             doc,
             from,
@@ -205,7 +224,11 @@ impl ReceiptDoc {
                 if receipt_id(bytes) != key {
                     return Err(ReceiptError::Key);
                 }
-                let receipt = open_receipt(bytes, &self.scope)?;
+                let receipt = if verify {
+                    open_receipt(bytes, &self.scope)?
+                } else {
+                    peek_receipt(bytes, &self.scope)?
+                };
                 if writer_id(&receipt.recipient, &receipt.device) != peer {
                     return Err(ReceiptError::Writer);
                 }
