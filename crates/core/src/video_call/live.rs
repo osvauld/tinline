@@ -105,8 +105,12 @@ pub(super) fn check(want: EncoderChoice, current: VideoCodec, peer: &VideoOffer,
 /// offer takes (its decoder refuses more), whatever `ignore_limits` says.
 pub(super) fn sender_config(pipe: &Pipe) -> SenderConfig {
     let mut cfg = SenderConfig::default();
-    let live = pipe.stats.lock().live.clone();
+    let (live, tuning) = {
+        let st = pipe.stats.lock();
+        (st.live.clone(), st.tuning.clone())
+    };
     live.limits().configure(&mut cfg);
+    tuning.configure_rate(&mut cfg, pipe.policy.lock().peer_probes);
     let (offer_rung, offer_fps) = pipe.policy.lock().peer;
     let l = &mut cfg.ladder;
     l.fixed_rung = l.fixed_rung.map(|r| r.min(offer_rung));
@@ -237,6 +241,7 @@ mod tests {
             hw_encode: vec![],
             hint_flags: true,
             codec_switch,
+            burst_probe: false,
         }
     }
 

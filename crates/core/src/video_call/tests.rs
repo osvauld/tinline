@@ -288,11 +288,26 @@ mod adapt_policy {
             (1920, 1080, u32::MAX),
         ] {
             let mut p2 = adapt::Policy::default();
-            p2.set_view(w, h, true);
+            p2.set_view(0, w, h, true);
             let h = p2.update(t).unwrap_or_else(|| Hint { max_pixels: u32::MAX, max_fps: 0, reason: HintReason::None, room: false });
             assert_eq!(h.max_pixels, want);
         }
-        p.set_view(0, 0, false);
+        p.set_view(0, 0, 0, false);
+        assert_eq!(p.update(t).unwrap().max_pixels, 0);
+    }
+
+    #[test]
+    fn a_hidden_second_view_does_not_hide_the_shown_one() {
+        // The call screen shows the picture full screen; the strip's tile, composed in the
+        // stopped main screen behind it, reports hidden after it (2026-10-20: the Pixel sent
+        // 180p15 to the moto's full-screen picture for a whole call).
+        let t = Instant::now();
+        let mut p = adapt::Policy::default();
+        p.set_view(1, 1080, 2340, true);
+        p.set_view(2, 240, 320, false);
+        assert_eq!(p.update(t).map_or(u32::MAX, |h| h.max_pixels), u32::MAX);
+        // Both hidden: hidden.
+        p.set_view(1, 1080, 2340, false);
         assert_eq!(p.update(t).unwrap().max_pixels, 0);
     }
 
@@ -300,19 +315,19 @@ mod adapt_policy {
     fn shrinking_holds_a_second_growing_goes_at_once() {
         let mut p = adapt::Policy::default();
         let t = Instant::now();
-        p.set_view(1280, 720, true);
+        p.set_view(0, 1280, 720, true);
         assert_eq!(p.update(t).unwrap().max_pixels, px(1280, 720));
-        p.set_view(640, 360, true); // asks for 540p, a shrink: held
+        p.set_view(0, 640, 360, true); // asks for 540p, a shrink: held
         assert_eq!(p.update(t + Duration::from_millis(100)), None);
-        p.set_view(641, 361, true); // 540p covers it, so 720p: same as now, the hold is dropped
+        p.set_view(0, 641, 361, true); // 540p covers it, so 720p: same as now, the hold is dropped
         assert_eq!(p.update(t + Duration::from_millis(200)), None);
-        p.set_view(640, 360, true);
+        p.set_view(0, 640, 360, true);
         assert_eq!(p.update(t + Duration::from_millis(600)), None);
         assert_eq!(p.update(t + Duration::from_millis(1700)).unwrap().max_pixels, px(960, 540));
-        p.set_view(1280, 720, true);
+        p.set_view(0, 1280, 720, true);
         assert_eq!(p.update(t + Duration::from_millis(1800)).unwrap().max_pixels, px(1280, 720));
         // The same rung again is not news.
-        p.set_view(1200, 700, true);
+        p.set_view(0, 1200, 700, true);
         assert_eq!(p.update(t + Duration::from_millis(1900)), None);
     }
 
@@ -320,7 +335,7 @@ mod adapt_policy {
     fn budget_caps_size_and_rate() {
         let mut p = adapt::Policy::default();
         let t = Instant::now();
-        p.set_view(1280, 720, true);
+        p.set_view(0, 1280, 720, true);
         p.update(t);
         p.budget = VideoBudget { thermal: 2, power_save: false };
         let h = p.update(t).unwrap();
@@ -341,7 +356,7 @@ mod adapt_policy {
     fn decode_cost_steers_the_rate_tier() {
         let mut p = adapt::Policy::default();
         let t = Instant::now();
-        p.set_view(1280, 720, true);
+        p.set_view(0, 1280, 720, true);
         p.update(t);
         // 25 ms is 75% of a 33 ms interval: down to 24, then (60 ms is 144% of 41) to 15.
         assert!(p.observe_decode(t, 25.0, 30));
@@ -361,7 +376,7 @@ mod adapt_policy {
     fn run_hw(ticks: &[(u64, u64)], decode_ms: f32, render_ms: f32) -> adapt::Policy {
         let mut p = adapt::Policy::default();
         let t = Instant::now();
-        p.set_view(1280, 720, true);
+        p.set_view(0, 1280, 720, true);
         p.update(t);
         let mut hist: Vec<(u64, u64)> = Vec::new();
         for (i, &tick) in ticks.iter().enumerate() {
@@ -382,7 +397,7 @@ mod adapt_policy {
         assert_eq!(p.update(Instant::now()).map(|h| h.max_fps).unwrap_or(30), 30);
         // The same latency through the software rule does drop.
         let mut s = adapt::Policy::default();
-        s.set_view(1280, 720, true);
+        s.set_view(0, 1280, 720, true);
         s.update(Instant::now());
         assert!(s.observe_decode(Instant::now(), 25.0 + 4.0, 30));
     }
@@ -458,7 +473,7 @@ mod adapt_policy {
         let t = Instant::now();
         let mut p = adapt::Policy::default();
         // A full-screen phone picture: beyond every rung, so no hint at all until the flag.
-        p.set_view(1080, 2340, true);
+        p.set_view(0, 1080, 2340, true);
         assert_eq!(p.update(t), None);
         for i in 1..hd::ROOM_SECS {
             p.observe_room(send, recv, false);
@@ -480,7 +495,7 @@ mod adapt_policy {
         assert!(!h.room && h.reason == HintReason::PowerSave);
         // Hidden: no room either.
         let mut q = adapt::Policy::default();
-        q.set_view(1080, 2340, false);
+        q.set_view(0, 1080, 2340, false);
         for _ in 0..30 {
             q.observe_room(send, recv, false);
         }

@@ -79,7 +79,20 @@ internal fun VideoTuningPanel(app: P2pApp) {
                     TinButton((if (selected) "✓ " else "") + label, { apply(t.copy(recvDecoder = id)) }, fill = false, height = 36.dp)
                 }
             }
-            Hint("During a call, About this call (the signal icon) has the same controls for that call.")
+            Hint("Rate control (next call; probing needs the other phone on this build too, so set both the same)")
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                listOf("auto" to "Today", "cut" to "Cut").forEach { (id, label) ->
+                    val selected = t.rateControl == id || (t.rateControl.isEmpty() && id == "auto")
+                    TinButton((if (selected) "✓ " else "") + label, { apply(t.copy(rateControl = id)) }, fill = false, height = 36.dp)
+                }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                listOf("probe" to "Cut+probe", "trend" to "Trend+probe").forEach { (id, label) ->
+                    val selected = t.rateControl == id
+                    TinButton((if (selected) "✓ " else "") + label, { apply(t.copy(rateControl = id)) }, fill = false, height = 36.dp)
+                }
+            }
+            Hint("During a call, About this call (the signal icon) has the same controls for that call (rate control excepted).")
             if (busy) Hint("Applying…")
             error?.let { Hint(it) }
         }

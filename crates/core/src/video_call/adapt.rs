@@ -163,8 +163,13 @@ pub(super) fn budget_caps(b: VideoBudget, rungs: &[video::media::Rung]) -> (u32,
 
 pub(super) struct Policy {
     ladder: LadderConfig,
-    /// The drawn size of the remote picture and whether it is on screen.
+    /// The drawn size of the remote picture and whether it is on screen: the largest shown of
+    /// `views`, else hidden (None before any).
     view: Option<(u32, u32, bool)>,
+    /// Every place the app draws the remote picture, by the app's id for it: the call screen
+    /// and the in-app strip's tile can both be composed, and the one reported last used to win
+    /// (a stopped screen's tile said "hidden" and the peer sent 180p15 to a full-screen picture).
+    views: std::collections::BTreeMap<u32, (u32, u32, bool)>,
     pub(super) budget: VideoBudget,
     /// Frame rate tier our decoder keeps up with (30, 24, 15).
     decode_fps: u8,
@@ -173,6 +178,8 @@ pub(super) struct Policy {
     shrink: Option<(Hint, Instant)>,
     /// The peer's offer: highest rung and frame rate.
     pub(super) peer: (usize, u32),
+    /// The peer's offer says `burst_probe`.
+    pub(super) peer_probes: bool,
     /// The app's HD choice for this call (`Node::set_video_hd`).
     pub(super) hd_on: bool,
     /// Our decoder is asynchronous (hardware, or any MediaCodec one: `codecs::pipelined_decoder`):
@@ -191,12 +198,14 @@ impl Default for Policy {
         Self {
             ladder: LadderConfig::default(),
             view: None,
+            views: Default::default(),
             budget: VideoBudget::default(),
             decode_fps: 30,
             low_since: None,
             applied: None,
             shrink: None,
             peer: (usize::MAX, u32::MAX),
+            peer_probes: false,
             hd_on: false,
             recv_pipelined: false,
             send_room: hd::Streak::default(),
@@ -208,8 +217,10 @@ impl Default for Policy {
 }
 
 impl Policy {
-    pub(super) fn set_view(&mut self, w: u32, h: u32, visible: bool) {
-        self.view = Some((w, h, visible));
+    pub(super) fn set_view(&mut self, id: u32, w: u32, h: u32, visible: bool) {
+        self.views.insert(id, (w, h, visible));
+        let shown = self.views.values().filter(|v| v.2).max_by_key(|v| v.0 as u64 * v.1 as u64);
+        self.view = Some(shown.copied().unwrap_or((w, h, false)));
     }
 
     /// The hint for the state now (before hysteresis).
@@ -373,7 +384,8 @@ impl Policy {
             hint_why = h.reason;
             if h.max_pixels == 0 {
                 hint_px = rungs[0].width * rungs[0].height;
-                hint_fps = self.ladder.tiers[0];
+                // The rung's lowest tier (see `Rung::min_fps`).
+                hint_fps = self.ladder.tiers.iter().copied().find(|&t| t >= rungs[0].min_fps).unwrap_or(top_fps);
             } else {
                 hint_px = rungs
                     .iter()
@@ -464,6 +476,8 @@ pub(super) async fn run_policy(pipe: Arc<Pipe>) {
     let (mut last_rx, mut hist) = (0u64, std::collections::VecDeque::<(u64, u64)>::new());
     // The sender's (overuse, starved, backlog drops) at the last tick: a change is congestion.
     let mut last_trouble = (0u64, 0u64, 0u64);
+    // (burst kbps, roomy reports, probes) for the per-second line (`SenderConfig::burst_room`).
+    let mut rate_line = (0u32, 0u64, 0u64);
     loop {
         tick.tick().await;
         if pipe.stop.load(Ordering::SeqCst) {
@@ -533,10 +547,12 @@ pub(super) async fn run_policy(pipe: Arc<Pipe>) {
         let mut send_room = hd::SendSample { cap_px: cap.pixels as u64, ..Default::default() };
         let mut key_causes = video::media::KeyCauses::default();
         if let Some(s) = &send {
-            let (trouble, draining, rate, rung, fps, enc_p75, causes) = s.with_sender(|s| {
+            let (trouble, draining, rate, rung, fps, enc_p75, causes, probe) = s.with_sender(|s| {
                 let l = s.ladder();
-                ((s.trace.overuse, s.trace.starved, s.drops), s.draining(), s.bitrate(), l.rung(), l.fps(), l.encode_p75(), s.key_causes)
+                let probe = (s.burst_bps(), s.trace.roomy, s.probes);
+                ((s.trace.overuse, s.trace.starved, s.drops), s.draining(), s.bitrate(), l.rung(), l.fps(), l.encode_p75(), s.key_causes, probe)
             });
+            rate_line = probe;
             key_causes = causes;
             send_room.congested = draining || trouble != last_trouble;
             last_trouble = trouble;
@@ -587,10 +603,13 @@ pub(super) async fn run_policy(pipe: Arc<Pipe>) {
         if st.frames_sent > 0 || st.frames_decoded > 0 {
             tracing::info!(
                 target: "p2pcore::video_call",
-                "video send {}x{}@{} {}kbps cap={}px/{}fps({}) key={} ({}) overuse={} starved={} queue={}ms qoff={}ms drops={} | recv {}x{}@{} dec={:.1}ms decode_err={}",
+                "video send {}x{}@{} {}kbps cap={}px/{}fps({}) key={} ({}) overuse={} starved={} queue={}ms qoff={}ms drops={} enc={:.1}ms rc={} burst={}kbps roomy={} probes={} | recv {}x{}@{} dec={:.1}ms decode_err={}",
                 st.send_width, st.send_height, st.send_fps, st.bitrate_bps / 1000,
                 cap.pixels, cap.fps, cap.reason, st.keyframes_sent, key_causes_text(&key_causes), st.rate_overuse, st.rate_starved,
                 st.last_queuing_us / 1000, st.queuing_offset_us / 1000, st.backlog_drops,
+                send_room.encode_p75_us.unwrap_or(0) as f32 / 1000.0,
+                if st.tuning.rate_control.is_empty() { "auto" } else { st.tuning.rate_control.as_str() },
+                rate_line.0 / 1000, rate_line.1, rate_line.2,
                 st.recv_width, st.recv_height, st.recv_fps, p75, st.decode_errors,
             );
         }

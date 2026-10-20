@@ -173,9 +173,12 @@ pub(super) fn encode_loop(pipe: Arc<Pipe>, send: Arc<VideoSend>) {
     }
 }
 
-/// `hint_flags`: the peer's sender reads hint flags (its `VideoOffer.hint_flags`).
-pub(super) async fn run_recv(conn: Connection, pipe: Arc<Pipe>, codec: VideoCodec, hint_flags: bool) {
-    let mut recv = match VideoRecv::new(conn, RecvConfig { hint_flags, ..Default::default() }).await {
+/// `hint_flags`: the peer's sender reads hint flags (its `VideoOffer.hint_flags`); `bursts`: it
+/// reads reports with a burst rate (`VideoOffer.burst_probe`).
+pub(super) async fn run_recv(conn: Connection, pipe: Arc<Pipe>, codec: VideoCodec, hint_flags: bool, bursts: bool) {
+    let mut media = video::media::ReceiverConfig::default();
+    media.report_burst = bursts;
+    let mut recv = match VideoRecv::new(conn, RecvConfig { hint_flags, media, ..Default::default() }).await {
         Ok(r) => r,
         Err(e) => {
             tracing::info!("video recv: {e}");

@@ -610,13 +610,6 @@ fun VideoCallContent(
 /** The peer's decoded frames, pulled on the display clock by a [RemoteRenderer] while shown. */
 @Composable
 internal fun RemoteVideo(app: P2pApp, calls: CallController, modifier: Modifier) {
-    var frame by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
-    var n by remember { mutableLongStateOf(0L) }
-    DisposableEffect(Unit) {
-        val r = RemoteRenderer(app.video.io) { b -> frame = b; n++ }
-        calls.renderer = r
-        onDispose { r.stop(); if (calls.renderer === r) calls.renderer = null }
-    }
     // The picture's drawn size for the peer's sender; hidden while the screen is stopped.
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     var viewSize by remember { mutableStateOf(IntSize.Zero) }
@@ -628,9 +621,23 @@ internal fun RemoteVideo(app: P2pApp, calls: CallController, modifier: Modifier)
         lifecycle.addObserver(o)
         onDispose { lifecycle.removeObserver(o) }
     }
-    LaunchedEffect(viewSize, started) { app.video.setView(viewSize.width, viewSize.height, started) }
+    // Its own id: the call screen and the strip's tile can both be composed, and the core asks
+    // for the largest one shown (one reported hidden must not hide the other).
+    val viewId = remember { app.video.newViewId() }
+    var frame by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
+    var n by remember { mutableLongStateOf(0L) }
+    // Frames only while this screen is started: each renderer pulls from the one decoded queue,
+    // and the strip's tile in the stopped main screen took every other frame from the call
+    // screen's picture.
+    DisposableEffect(started) {
+        if (!started) return@DisposableEffect onDispose {}
+        val r = RemoteRenderer(app.video.io) { b -> frame = b; n++ }
+        calls.renderer = r
+        onDispose { r.stop(); if (calls.renderer === r) calls.renderer = null }
+    }
+    LaunchedEffect(viewSize, started) { app.video.setView(viewId, viewSize.width, viewSize.height, started) }
     val latestSize by rememberUpdatedState(viewSize)
-    DisposableEffect(Unit) { onDispose { app.video.setView(latestSize.width, latestSize.height, false) } }
+    DisposableEffect(Unit) { onDispose { app.video.setView(viewId, latestSize.width, latestSize.height, false) } }
     val modifier = modifier.onSizeChanged { viewSize = it }
     val b = frame
     if (b == null) Box(modifier, contentAlignment = Alignment.Center) {

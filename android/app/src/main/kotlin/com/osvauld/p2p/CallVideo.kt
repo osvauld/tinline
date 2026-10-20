@@ -133,10 +133,14 @@ class CallVideo(private val app: P2pApp) : VideoEvents {
         rates.reset(); capturePreference = "-"; actualCapture = "-"
     }
 
-    /** The remote picture's size in pixels and whether it is on screen; the core turns it into the peer's hint. */
-    fun setView(width: Int, height: Int, visible: Boolean) {
+    /** Ids for [setView]: each place that draws the remote picture has its own. */
+    private val viewIds = java.util.concurrent.atomic.AtomicInteger(1)
+    fun newViewId(): Int = viewIds.getAndIncrement()
+
+    /** One remote picture's size in pixels and whether it is on screen; the core asks the peer for the largest one shown. */
+    fun setView(id: Int, width: Int, height: Int, visible: Boolean) {
         if (width <= 0 || height <= 0) return
-        analysisExec.execute { runCatching { app.node.setVideoView(width.toUInt(), height.toUInt(), visible) } }
+        analysisExec.execute { runCatching { app.node.setVideoViewOf(id.toUInt(), width.toUInt(), height.toUInt(), visible) } }
     }
 
     /** Thermal status and battery saver, while a call with video is on screen; the core decides what they mean. */

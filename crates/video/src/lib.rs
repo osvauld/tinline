@@ -27,6 +27,7 @@ pub mod cpu;
 mod rav1e_enc;
 #[cfg(feature = "rav1e")]
 pub use rav1e_enc::Encoder;
+pub mod detect;
 pub mod media;
 #[cfg(feature = "net")]
 pub mod net;

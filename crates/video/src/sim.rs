@@ -59,6 +59,11 @@ pub struct Link {
     /// Loss probability per packet sent during a spike of 50 ms or more (busy airtime: the
     /// radio's retries run out).
     pub spike_loss: f64,
+    /// Mobile-downlink delay: `(at, extra_us)` points, the forward path's extra one-way delay
+    /// linear between them, packets in order. Unlike `spikes` there's no stall: packets keep
+    /// arriving, just later and later, then sooner, so it reads as a queue that comes and goes
+    /// with no sending rate behind it (the radio scheduler's grants, a cell's other users).
+    pub delay_walk: Vec<(u64, u64)>,
 }
 
 impl Default for Link {
@@ -73,6 +78,7 @@ impl Default for Link {
             outages: vec![],
             spikes: vec![],
             spike_loss: 0.0,
+            delay_walk: vec![],
         }
     }
 }
@@ -80,6 +86,21 @@ impl Default for Link {
 impl Link {
     fn in_lossy_spike(&self, t: u64) -> bool {
         self.spikes.iter().any(|s| t >= s.0 && t < s.1 && s.2 >= 50_000)
+    }
+
+    /// Extra delay of a packet leaving the bottleneck at `t` (see `delay_walk`).
+    fn walk_us(&self, t: u64) -> u64 {
+        let w = &self.delay_walk;
+        let i = w.partition_point(|p| p.0 <= t);
+        match (i.checked_sub(1).map(|j| w[j]), w.get(i)) {
+            (Some((a, da)), Some(&(b, db))) => {
+                let f = (t - a) as f64 / (b - a).max(1) as f64;
+                (da as f64 + (db as f64 - da as f64) * f) as u64
+            }
+            (Some((_, d)), None) => d,
+            (None, Some(&(_, d))) => d,
+            (None, None) => 0,
+        }
     }
 
     /// Extra delay of a packet leaving at `t` (see `spikes`).
@@ -683,197 +704,286 @@ const MAX_ACK_DELAY_US: f64 = 25_000.0;
 
 /// Runs `sc` with `codec` and returns what the receiver saw.
 pub fn run(sc: &Scenario, codec: &mut dyn SimCodec) -> Report {
-    let mut rng = Rng::new(sc.seed);
-    let mut rep = Report::default();
-    let mut sender = Sender::new(sc.sender.clone());
-    let mut receiver = Receiver::new(sc.receiver.clone());
-
-    // Sender-side QUIC state.
-    let mut tx: BTreeMap<u64, TxStream> = BTreeMap::new();
-    let mut cwnd = 10.0 * MSS as f64;
-    let mut ssthresh = f64::INFINITY;
-    let mut inflight = 0usize;
-    let mut srtt = (2 * sc.link.delay_us) as f64;
-    let mut rttvar = srtt / 2.0;
-    let mut hints = sc.hints.clone();
-    // Dropped packets the sender doesn't know about yet: (packet, probe timeout).
-    let mut lost_wait: Vec<(Pkt, u64)> = Vec::new();
-    let mut recovery_start = 0u64;
-    let mut pace_next = 0u64;
-    // Link state.
-    let mut rate = sc.link.rate_bps;
-    let mut link_free = 0u64;
-    // Delay spikes: their own RNG (other scenarios keep their numbers), and the last delivery
-    // time per path: data, QUIC acks, and the receiver app's messages.
-    let mut spike_rng = Rng::new(sc.seed ^ 0x5b1e);
-    let (mut fwd_last, mut ack_last, mut back_last) = (0u64, 0u64, 0u64);
-    // Receiver-side QUIC state, what the app hasn't read yet, and what it has (read, acked).
-    let mut rx: BTreeMap<u64, RxStream> = BTreeMap::new();
-    let mut app_buf: VecDeque<AppEv> = VecDeque::new();
-    let mut app_read: BTreeMap<u64, (usize, usize)> = BTreeMap::new();
-    let mut next_app_ack = 0u64;
-    let mut decode_queue: VecDeque<crate::media::Frame> = VecDeque::new();
-    // Events by due time (stable order for equal times).
-    let mut evs: BTreeMap<(u64, u64), Ev> = BTreeMap::new();
-    let mut ev_seq = 0u64;
-    let mut push = |evs: &mut BTreeMap<(u64, u64), Ev>, at: u64, e: Ev| {
-        ev_seq += 1;
-        evs.insert((at, ev_seq), e);
-    };
-    // Frames waiting for the encoder / decoder to finish: (done_at, ...).
-    // (done_at, capture, key, width, height, encode_us)
-    let mut encoding: VecDeque<(u64, u64, bool, u32, u32, u64)> = VecDeque::new();
-    let mut encoder_free = 0u64;
-    let mut enc_rng = Rng::new(sc.seed ^ 0x5eed);
-    let mut sizes: BTreeMap<u64, (u32, u32)> = BTreeMap::new();
-    // Frames given to the codec and not out yet: index -> capture time.
-    let mut in_codec: BTreeMap<u64, u64> = BTreeMap::new();
-    // The stamp each frame went out with -> its capture time.
-    let mut stamps: BTreeMap<u64, u64> = BTreeMap::new();
-    let mut decode_busy_until = 0u64;
-    let frame_us = 1_000_000 / sc.fps as u64;
-    let mut next_capture = 0u64;
-    let mut index = 0u64;
-    let mut next_feedback = 0u64;
-    let mut next_keycheck = 0u64;
-    let mut rx_sched = RxSchedule { awake_until: 0, asleep_until: 0, rng: Rng::new(sc.seed ^ 0xb05e) };
-
+    let mut h = Half::new(sc);
     let mut now = 0u64;
     while now < sc.duration_us {
+        h.tick(sc, codec, now, 0);
+        now += TICK_US;
+    }
+    h.finish()
+}
+
+/// Both directions of a call at once, each phone's upload the bottleneck of what it sends:
+/// what each receiver sends back (QUIC acks, reports, app acks, hints, keyframe requests) waits
+/// behind the queue of the other direction's link, since it leaves on that phone's upload. One
+/// side filling its upload then delays the other side's feedback (2026-10-20 relay call: the
+/// Pixel's step to 480x640 at 3 Mbps and both directions falling to 180p within a minute).
+/// The feedback's own bytes are not counted. `a` is sent by phone A over A's upload, `b` by B.
+pub fn run_duplex(a: &Scenario, ca: &mut dyn SimCodec, b: &Scenario, cb: &mut dyn SimCodec) -> (Report, Report) {
+    let (mut ha, mut hb) = (Half::new(a), Half::new(b));
+    let mut now = 0u64;
+    while now < a.duration_us.max(b.duration_us) {
+        let (fa, fb) = (ha.link_free, hb.link_free);
+        if now < a.duration_us {
+            ha.tick(a, ca, now, fb);
+        }
+        if now < b.duration_us {
+            hb.tick(b, cb, now, fa);
+        }
+        now += TICK_US;
+    }
+    (ha.finish(), hb.finish())
+}
+
+fn push(evs: &mut BTreeMap<(u64, u64), Ev>, seq: &mut u64, at: u64, e: Ev) {
+    *seq += 1;
+    evs.insert((at, *seq), e);
+}
+
+/// One direction: sender, modelled QUIC connection, link and receiver.
+struct Half {
+    rng: Rng,
+    rep: Report,
+    sender: Sender,
+    receiver: Receiver,
+    // Sender-side QUIC state.
+    tx: BTreeMap<u64, TxStream>,
+    cwnd: f64,
+    ssthresh: f64,
+    inflight: usize,
+    srtt: f64,
+    rttvar: f64,
+    hints: Vec<(u64, Hint)>,
+    // Dropped packets the sender doesn't know about yet: (packet, probe timeout).
+    lost_wait: Vec<(Pkt, u64)>,
+    recovery_start: u64,
+    pace_next: u64,
+    // Link state.
+    rate: u64,
+    link_free: u64,
+    // Delay spikes: their own RNG (other scenarios keep their numbers), and the last delivery
+    // time per path: data, QUIC acks, and the receiver app's messages.
+    spike_rng: Rng,
+    fwd_last: u64,
+    ack_last: u64,
+    back_last: u64,
+    walk_last: u64,
+    // Receiver-side QUIC state, what the app hasn't read yet, and what it has (read, acked).
+    rx: BTreeMap<u64, RxStream>,
+    app_buf: VecDeque<AppEv>,
+    app_read: BTreeMap<u64, (usize, usize)>,
+    next_app_ack: u64,
+    decode_queue: VecDeque<crate::media::Frame>,
+    // Events by due time (stable order for equal times).
+    evs: BTreeMap<(u64, u64), Ev>,
+    ev_seq: u64,
+    // Frames waiting for the encoder / decoder to finish: (done_at, ...).
+    // (done_at, capture, key, width, height, encode_us)
+    encoding: VecDeque<(u64, u64, bool, u32, u32, u64)>,
+    encoder_free: u64,
+    enc_rng: Rng,
+    sizes: BTreeMap<u64, (u32, u32)>,
+    // Frames given to the codec and not out yet: index -> capture time.
+    in_codec: BTreeMap<u64, u64>,
+    // The stamp each frame went out with -> its capture time.
+    stamps: BTreeMap<u64, u64>,
+    decode_busy_until: u64,
+    frame_us: u64,
+    next_capture: u64,
+    index: u64,
+    next_feedback: u64,
+    next_keycheck: u64,
+    rx_sched: RxSchedule,
+}
+
+impl Half {
+    fn new(sc: &Scenario) -> Self {
+        Self {
+            rng: Rng::new(sc.seed),
+            rep: Report::default(),
+            sender: Sender::new(sc.sender.clone()),
+            receiver: Receiver::new(sc.receiver.clone()),
+            tx: BTreeMap::new(),
+            cwnd: 10.0 * MSS as f64,
+            ssthresh: f64::INFINITY,
+            inflight: 0usize,
+            srtt: (2 * sc.link.delay_us) as f64,
+            rttvar: (2 * sc.link.delay_us) as f64 / 2.0,
+            hints: sc.hints.clone(),
+            lost_wait: Vec::new(),
+            recovery_start: 0u64,
+            pace_next: 0u64,
+            rate: sc.link.rate_bps,
+            link_free: 0u64,
+            spike_rng: Rng::new(sc.seed ^ 0x5b1e),
+            fwd_last: 0u64,
+            ack_last: 0u64,
+            back_last: 0u64,
+            walk_last: 0u64,
+            rx: BTreeMap::new(),
+            app_buf: VecDeque::new(),
+            app_read: BTreeMap::new(),
+            next_app_ack: 0u64,
+            decode_queue: VecDeque::new(),
+            evs: BTreeMap::new(),
+            ev_seq: 0u64,
+            encoding: VecDeque::new(),
+            encoder_free: 0u64,
+            enc_rng: Rng::new(sc.seed ^ 0x5eed),
+            sizes: BTreeMap::new(),
+            in_codec: BTreeMap::new(),
+            stamps: BTreeMap::new(),
+            decode_busy_until: 0u64,
+            frame_us: 1_000_000 / sc.fps as u64,
+            next_capture: 0u64,
+            index: 0u64,
+            next_feedback: 0u64,
+            next_keycheck: 0u64,
+            rx_sched: RxSchedule { awake_until: 0, asleep_until: 0, rng: Rng::new(sc.seed ^ 0xb05e) },
+        }
+    }
+
+    /// One tick at `now`. `back_free`: when the return path's bottleneck (the other direction's
+    /// link, in [`run_duplex`]) is next free; 0 for a return path with no queue.
+    fn tick(&mut self, sc: &Scenario, codec: &mut dyn SimCodec, now: u64, back_free: u64) {
         for &(at, r) in &sc.link.rate_changes {
             if at > now.saturating_sub(TICK_US) && at <= now {
-                rate = r;
+                self.rate = r;
             }
         }
 
-        // The receiving app's hints.
-        hints.retain(|&(at, h)| {
+        // The receiving app's self.hints.
+        self.hints.retain(|&(at, h)| {
             if at <= now {
-                receiver.set_hint(h);
+                self.receiver.set_hint(h);
             }
             at > now
         });
-        if let Some(h) = receiver.take_hint() {
-            let at = spiked(&sc.link, now, now + sc.link.delay_us, &mut back_last, &mut spike_rng);
-            push(&mut evs, at, Ev::Hint(h));
+        if let Some(h) = self.receiver.take_hint() {
+            let at = spiked(&sc.link, now, now.max(back_free) + sc.link.delay_us, &mut self.back_last, &mut self.spike_rng);
+            push(&mut self.evs, &mut self.ev_seq, at, Ev::Hint(h));
         }
 
         // Camera + encoder.
-        if now >= next_capture {
-            rep.captured += 1;
-            next_capture += frame_us;
-            if encoding.len() >= 2 {
-                rep.camera_drops += 1;
-            } else if sender.take_frame(now) {
-                // The camera frame is scaled to the size the sender wants when captured.
-                let (w, h) = sender.resolution();
-                let t = sc.device.encode_us(now, w, h, &mut enc_rng);
-                encoder_free = encoder_free.max(now) + t;
-                encoding.push_back((encoder_free, now, sender.poll_keyframe(now), w, h, t));
+        if now >= self.next_capture {
+            self.rep.captured += 1;
+            self.next_capture += self.frame_us;
+            if self.encoding.len() >= 2 {
+                self.rep.camera_drops += 1;
+            } else if self.sender.take_frame(now) {
+                // The camera frame is scaled to the size the self.sender wants when captured.
+                let (w, h) = self.sender.resolution();
+                let t = sc.device.encode_us(now, w, h, &mut self.enc_rng);
+                self.encoder_free = self.encoder_free.max(now) + t;
+                self.encoding.push_back((self.encoder_free, now, self.sender.poll_keyframe(now), w, h, t));
             } else {
-                rep.fps_skips += 1;
+                self.rep.fps_skips += 1;
             }
         }
-        while encoding.front().is_some_and(|f| f.0 <= now) {
-            let (done, capture, key, w, h, t) = encoding.pop_front().unwrap();
-            in_codec.insert(index, capture);
-            let out = codec.encode(index, key, sender.encoder_bitrate(), w, h);
-            index += 1;
-            if rep.sizes.last().is_none_or(|s| (s.1, s.2) != (w, h)) {
-                rep.sizes.push((now, w, h));
+        while self.encoding.front().is_some_and(|f| f.0 <= now) {
+            let (done, capture, key, w, h, t) = self.encoding.pop_front().unwrap();
+            self.in_codec.insert(self.index, capture);
+            let out = codec.encode(self.index, key, self.sender.encoder_bitrate(), w, h);
+            self.index += 1;
+            if self.rep.sizes.last().is_none_or(|s| (s.1, s.2) != (w, h)) {
+                self.rep.sizes.push((now, w, h));
             }
-            sizes.insert(capture, (w, h));
-            sender.encode_time(now, t);
+            self.sizes.insert(capture, (w, h));
+            self.sender.encode_time(now, t);
             let Some((i, payload, is_key)) = out else { continue };
             // Frames the codec dropped (a re-created encoder) never come out.
-            in_codec = in_codec.split_off(&i);
-            let capture = in_codec.remove(&i).expect("codec output for a frame it was given");
-            rep.encoded.push(capture);
+            self.in_codec = self.in_codec.split_off(&i);
+            let capture = self.in_codec.remove(&i).expect("codec output for a frame it was given");
+            self.rep.encoded.push(capture);
             // The encoder runs one frame at a time, so `done` rises (and is unique).
             let stamp = if sc.stamp_capture { capture } else { done };
-            stamps.insert(stamp, capture);
-            let outs = sender.frame(stamp, is_key, &payload);
-            apply(now, &outs, &mut tx, &mut |g| {
-                push(&mut evs, reset_at(now, link_free, &sc.link).max(fwd_last), Ev::ResetRx(g))
+            self.stamps.insert(stamp, capture);
+            let outs = self.sender.frame(stamp, is_key, &payload);
+            apply(now, &outs, &mut self.tx, &mut |g| {
+                push(&mut self.evs, &mut self.ev_seq, reset_at(now, self.link_free, &sc.link).max(self.fwd_last).max(self.walk_last), Ev::ResetRx(g))
             });
         }
 
-        // Sender feedback: per-group backlog and the congestion controller's rate.
-        if now >= next_feedback {
-            let horizon = now.saturating_sub(srtt as u64 + 40_000);
+        // Sender feedback: per-group backlog and the congestion controller's self.rate.
+        if now >= self.next_feedback {
+            let horizon = now.saturating_sub(self.srtt as u64 + 40_000);
             let unsent: BTreeMap<u64, usize> = match sc.backlog {
-                Backlog::Unsent => tx.iter().map(|(g, s)| (*g, s.unsent())).collect(),
-                Backlog::Unacked => tx.iter_mut().map(|(g, s)| (*g, s.unacked_by(horizon))).collect(),
+                Backlog::Unsent => self.tx.iter().map(|(g, s)| (*g, s.unsent())).collect(),
+                Backlog::Unacked => self.tx.iter_mut().map(|(g, s)| (*g, s.unacked_by(horizon))).collect(),
             };
-            sender.set_rtt(srtt as u64);
-            let outs = sender.feedback(&unsent);
-            apply(now, &outs, &mut tx, &mut |g| {
-                push(&mut evs, reset_at(now, link_free, &sc.link).max(fwd_last), Ev::ResetRx(g))
+            self.sender.set_rtt(self.srtt as u64);
+            let outs = self.sender.feedback(&unsent);
+            apply(now, &outs, &mut self.tx, &mut |g| {
+                push(&mut self.evs, &mut self.ev_seq, reset_at(now, self.link_free, &sc.link).max(self.fwd_last).max(self.walk_last), Ev::ResetRx(g))
             });
-            rep.bitrate.push((now, sender.bitrate()));
-            rep.wire.push((now, rep.wire_bytes));
-            rep.steps.extend(sender.ladder_mut().take_steps());
-            if rep.fps.last().is_none_or(|f| f.1 != sender.fps()) {
-                rep.fps.push((now, sender.fps()));
+            self.rep.bitrate.push((now, self.sender.bitrate()));
+            self.rep.wire.push((now, self.rep.wire_bytes));
+            self.rep.steps.extend(self.sender.ladder_mut().take_steps());
+            if self.rep.fps.last().is_none_or(|f| f.1 != self.sender.fps()) {
+                self.rep.fps.push((now, self.sender.fps()));
             }
-            rep.queue.push((now, (link_free.saturating_sub(now) * rate / 8 / 1_000_000) as usize));
+            self.rep.queue.push((now, (self.link_free.saturating_sub(now) * self.rate / 8 / 1_000_000) as usize));
             // Forget streams that are reset, or fully sent, FIN'd and acked.
-            tx.retain(|_, s| !(s.unacked == 0 && (s.reset || (s.fin_sent && s.unsent() == 0))));
-            next_feedback += 10_000;
+            self.tx.retain(|_, s| !(s.unacked == 0 && (s.reset || (s.fin_sent && s.unsent() == 0))));
+            self.next_feedback += 10_000;
         }
 
         // Transmit: retransmissions first, then new data, newest group first; within the
-        // congestion window and paced at 1.25 x cwnd / srtt.
-        while (inflight + MSS) as f64 <= cwnd && pace_next <= now {
-            let Some((g, off, data, fin)) = next_packet(&mut tx) else { break };
+        // congestion window and paced at 1.25 x self.cwnd / self.srtt.
+        while (self.inflight + MSS) as f64 <= self.cwnd && self.pace_next <= now {
+            let Some((g, off, data, fin)) = next_packet(&mut self.tx) else { break };
             let size = data.len() + OVERHEAD;
             let p = Pkt { group: g, off, data, fin, size, sent_us: now };
-            inflight += size;
-            rep.sent_packets += 1;
-            rep.wire_bytes += size as u64;
-            pace_next = now + (size as f64 * srtt / (1.25 * cwnd)) as u64;
+            self.inflight += size;
+            self.rep.sent_packets += 1;
+            self.rep.wire_bytes += size as u64;
+            self.pace_next = now + (size as f64 * self.srtt / (1.25 * self.cwnd)) as u64;
             let in_outage = sc.link.outages.iter().any(|&(a, b)| now >= a && now < b);
-            let queued = link_free.saturating_sub(now) * rate / 8 / 1_000_000;
+            let queued = self.link_free.saturating_sub(now) * self.rate / 8 / 1_000_000;
             let spike_lost =
-                sc.link.spike_loss > 0.0 && sc.link.in_lossy_spike(now) && spike_rng.f64() < sc.link.spike_loss;
+                sc.link.spike_loss > 0.0 && sc.link.in_lossy_spike(now) && self.spike_rng.f64() < sc.link.spike_loss;
             let dropped =
-                in_outage || queued as usize + size > sc.link.queue_bytes || rng.f64() < sc.link.loss || spike_lost;
-            let depart = link_free.max(now) + size as u64 * 8 * 1_000_000 / rate.max(1);
+                in_outage || queued as usize + size > sc.link.queue_bytes || self.rng.f64() < sc.link.loss || spike_lost;
+            let depart = self.link_free.max(now) + size as u64 * 8 * 1_000_000 / self.rate.max(1);
             if !(in_outage || queued as usize + size > sc.link.queue_bytes) {
-                link_free = depart;
+                self.link_free = depart;
             }
-            let jitter = if sc.link.jitter_us > 0 { rng.next_u64() % sc.link.jitter_us } else { 0 };
-            let arrive = spiked(&sc.link, depart, depart + sc.link.delay_us + jitter, &mut fwd_last, &mut spike_rng);
+            let jitter = if sc.link.jitter_us > 0 { self.rng.next_u64() % sc.link.jitter_us } else { 0 };
+            let mut arrive = spiked(&sc.link, depart, depart + sc.link.delay_us + jitter, &mut self.fwd_last, &mut self.spike_rng);
+            if !sc.link.delay_walk.is_empty() {
+                arrive = (arrive + sc.link.walk_us(depart)).max(self.walk_last);
+                self.walk_last = arrive;
+            }
             if dropped {
-                rep.lost_packets += 1;
+                self.rep.lost_packets += 1;
                 // Found lost once a later packet is acked (below), or else at the probe timeout:
                 // a tail loss (last packet before the stream idles) waits for the PTO.
-                let pto = now + (srtt + (4.0 * rttvar).max(1_000.0) + MAX_ACK_DELAY_US) as u64;
-                lost_wait.push((p, pto));
+                let pto = now + (self.srtt + (4.0 * self.rttvar).max(1_000.0) + MAX_ACK_DELAY_US) as u64;
+                self.lost_wait.push((p, pto));
             } else {
-                push(&mut evs, arrive, Ev::Arrive(p.clone()));
-                let acked = spiked(&sc.link, arrive, arrive + sc.link.delay_us, &mut ack_last, &mut spike_rng);
-                push(&mut evs, acked, Ev::Ack(p));
+                push(&mut self.evs, &mut self.ev_seq, arrive, Ev::Arrive(p.clone()));
+                let acked = spiked(&sc.link, arrive, arrive.max(back_free) + sc.link.delay_us, &mut self.ack_last, &mut self.spike_rng);
+                push(&mut self.evs, &mut self.ev_seq, acked, Ev::Ack(p));
             }
         }
 
         // Probe timeouts.
-        lost_wait.retain(|(p, pto)| {
+        self.lost_wait.retain(|(p, pto)| {
             if *pto <= now {
-                push(&mut evs, now, Ev::Lost(p.clone()));
+                push(&mut self.evs, &mut self.ev_seq, now, Ev::Lost(p.clone()));
             }
             *pto > now
         });
 
         // Deliver due events.
-        while let Some((&(at, seq), _)) = evs.first_key_value() {
+        while let Some((&(at, seq), _)) = self.evs.first_key_value() {
             if at > now {
                 break;
             }
-            let ev = evs.remove(&(at, seq)).unwrap();
+            let ev = self.evs.remove(&(at, seq)).unwrap();
             match ev {
                 Ev::Arrive(p) => {
-                    let s = rx.entry(p.group).or_default();
+                    let s = self.rx.entry(p.group).or_default();
                     if s.done {
                         continue;
                     }
@@ -891,50 +1001,50 @@ pub fn run(sc: &Scenario, codec: &mut dyn SimCodec) -> Report {
                         if o + d.len() > s.delivered {
                             let skip = s.delivered - o;
                             s.delivered = o + d.len();
-                            app_buf.push_back(AppEv::Data(p.group, d[skip..].to_vec()));
+                            self.app_buf.push_back(AppEv::Data(p.group, d[skip..].to_vec()));
                         }
                     }
                     if s.fin_at == Some(s.delivered) {
                         s.done = true;
-                        app_buf.push_back(AppEv::Finish(p.group));
+                        self.app_buf.push_back(AppEv::Finish(p.group));
                     }
                 }
                 Ev::Ack(p) => {
                     // Anything sent before this packet and dropped is found lost now, once the
                     // reordering time threshold (9/8 RTT) has passed.
                     let rtt = (at - p.sent_us) as f64;
-                    let threshold = (1.125 * srtt.max(rtt)) as u64;
-                    lost_wait.retain(|(q, _)| {
+                    let threshold = (1.125 * self.srtt.max(rtt)) as u64;
+                    self.lost_wait.retain(|(q, _)| {
                         if q.sent_us < p.sent_us {
-                            push(&mut evs, at.max(q.sent_us + threshold), Ev::Lost(q.clone()));
+                            push(&mut self.evs, &mut self.ev_seq, at.max(q.sent_us + threshold), Ev::Lost(q.clone()));
                             return false;
                         }
                         true
                     });
                     // Only a window that was used grows (QUIC doesn't grow it when app-limited).
-                    let used = inflight * 2 >= cwnd as usize;
-                    inflight -= p.size;
-                    if let Some(s) = tx.get_mut(&p.group) {
+                    let used = self.inflight * 2 >= self.cwnd as usize;
+                    self.inflight -= p.size;
+                    if let Some(s) = self.tx.get_mut(&p.group) {
                         s.unacked -= 1;
                     }
-                    rttvar = 0.75 * rttvar + 0.25 * (srtt - rtt).abs();
-                    srtt = 0.875 * srtt + 0.125 * rtt;
+                    self.rttvar = 0.75 * self.rttvar + 0.25 * (self.srtt - rtt).abs();
+                    self.srtt = 0.875 * self.srtt + 0.125 * rtt;
                     if used {
-                        if cwnd < ssthresh {
-                            cwnd += p.size as f64;
+                        if self.cwnd < self.ssthresh {
+                            self.cwnd += p.size as f64;
                         } else {
-                            cwnd += (MSS * p.size) as f64 / cwnd;
+                            self.cwnd += (MSS * p.size) as f64 / self.cwnd;
                         }
                     }
                 }
                 Ev::Lost(p) => {
-                    inflight -= p.size;
-                    if p.sent_us >= recovery_start {
-                        cwnd = (cwnd * 0.7).max(2.0 * MSS as f64);
-                        ssthresh = cwnd;
-                        recovery_start = at;
+                    self.inflight -= p.size;
+                    if p.sent_us >= self.recovery_start {
+                        self.cwnd = (self.cwnd * 0.7).max(2.0 * MSS as f64);
+                        self.ssthresh = self.cwnd;
+                        self.recovery_start = at;
                     }
-                    if let Some(s) = tx.get_mut(&p.group) {
+                    if let Some(s) = self.tx.get_mut(&p.group) {
                         s.unacked -= 1;
                         if !s.reset {
                             if p.fin {
@@ -946,100 +1056,102 @@ pub fn run(sc: &Scenario, codec: &mut dyn SimCodec) -> Report {
                     }
                 }
                 Ev::ResetRx(g) => {
-                    rx.entry(g).or_default().done = true;
+                    self.rx.entry(g).or_default().done = true;
                     // QUIC drops what the app hasn't read of a reset stream.
-                    app_buf.retain(|e| !matches!(e, AppEv::Data(x, _) if *x == g));
-                    app_buf.push_back(AppEv::Reset(g));
+                    self.app_buf.retain(|e| !matches!(e, AppEv::Data(x, _) if *x == g));
+                    self.app_buf.push_back(AppEv::Reset(g));
                 }
-                Ev::KeyReq => sender.request_keyframe(),
-                Ev::Hint(h) => sender.set_hint(h),
+                Ev::KeyReq => self.sender.request_keyframe(),
+                Ev::Hint(h) => self.sender.set_hint(h),
                 Ev::AppAck(g, off) => {
-                    if let Some(s) = tx.get_mut(&g) {
+                    if let Some(s) = self.tx.get_mut(&g) {
                         s.app_acked = s.app_acked.max(off);
                     }
                 }
                 Ev::Report(r) => {
-                    sender.on_report(at, &r);
-                    rep.reports.push((at, r));
+                    self.sender.on_report(at, &r);
+                    self.rep.reports.push((at, r));
                 }
             }
         }
 
         // Decoder: decode and show in order, one at a time.
-        if decode_busy_until <= now
-            && let Some(f) = decode_queue.pop_front()
+        if self.decode_busy_until <= now
+            && let Some(f) = self.decode_queue.pop_front()
         {
             if !codec.decode(&f.payload) {
-                rep.decode_errors += 1;
+                self.rep.decode_errors += 1;
             }
             let decode_us = sc.decode_changes.iter().rev().find(|c| c.0 <= now).map_or(sc.decode_us, |c| c.1);
-            decode_busy_until = now + decode_us;
+            self.decode_busy_until = now + decode_us;
             // Older entries are frames that were never shown.
-            let capture = stamps.remove(&f.capture_us).unwrap_or(f.capture_us);
-            stamps = stamps.split_off(&f.capture_us);
-            let (width, height) = sizes.remove(&capture).unwrap_or_default();
-            sizes = sizes.split_off(&capture);
-            rep.shown.push(Shown { at_us: decode_busy_until, capture_us: capture, width, height });
+            let capture = self.stamps.remove(&f.capture_us).unwrap_or(f.capture_us);
+            self.stamps = self.stamps.split_off(&f.capture_us);
+            let (width, height) = self.sizes.remove(&capture).unwrap_or_default();
+            self.sizes = self.sizes.split_off(&capture);
+            self.rep.shown.push(Shown { at_us: self.decode_busy_until, capture_us: capture, width, height });
         }
         // Receiver app (`VideoRecv::recv`): reads from QUIC only while the decoder queue has
         // room, so a slow decoder backs up into the link; acks, reports and keyframe requests
-        // only go out while it is being awaited. On the receiver's clock, which may run faster.
+        // only go out while it is being awaited. On the self.receiver's clock, which may run faster.
         let rnow = now + now * sc.receiver_clock_ppm / 1_000_000;
-        let app_awake = sc.rx_busy.as_ref().is_none_or(|b| rx_sched.awake(now, b));
-        let awaited = app_awake && decode_queue.len() < DECODE_QUEUE;
-        while awaited && decode_queue.len() < DECODE_QUEUE {
-            if let Some(f) = receiver.poll(rnow) {
-                decode_queue.push_back(f);
+        let app_awake = sc.rx_busy.as_ref().is_none_or(|b| self.rx_sched.awake(now, b));
+        let awaited = app_awake && self.decode_queue.len() < DECODE_QUEUE;
+        while awaited && self.decode_queue.len() < DECODE_QUEUE {
+            if let Some(f) = self.receiver.poll(rnow) {
+                self.decode_queue.push_back(f);
                 continue;
             }
-            let Some(e) = app_buf.pop_front() else { break };
+            let Some(e) = self.app_buf.pop_front() else { break };
             match e {
                 AppEv::Data(g, d) => {
-                    app_read.entry(g).or_default().0 += d.len();
-                    if receiver.on_data(rnow, g, &d).is_err() {
-                        rep.decode_errors += 1;
+                    self.app_read.entry(g).or_default().0 += d.len();
+                    if self.receiver.on_data(rnow, g, &d).is_err() {
+                        self.rep.decode_errors += 1;
                     }
                 }
-                AppEv::Finish(g) => receiver.on_finish(g),
-                AppEv::Reset(g) => receiver.on_reset(g),
+                AppEv::Finish(g) => self.receiver.on_finish(g),
+                AppEv::Reset(g) => self.receiver.on_reset(g),
             }
         }
         if awaited {
-            if now >= next_app_ack {
-                for (g, (read, acked)) in app_read.iter_mut() {
+            if now >= self.next_app_ack {
+                for (g, (read, acked)) in self.app_read.iter_mut() {
                     if *read > *acked {
                         *acked = *read;
-                        let at = spiked(&sc.link, now, now + sc.link.delay_us, &mut back_last, &mut spike_rng);
-                        push(&mut evs, at, Ev::AppAck(*g, *read));
+                        let at = spiked(&sc.link, now, now.max(back_free) + sc.link.delay_us, &mut self.back_last, &mut self.spike_rng);
+                        push(&mut self.evs, &mut self.ev_seq, at, Ev::AppAck(*g, *read));
                     }
                 }
-                if let Some(&newest) = app_read.keys().next_back() {
-                    app_read = app_read.split_off(&newest.saturating_sub(16));
+                if let Some(&newest) = self.app_read.keys().next_back() {
+                    self.app_read = self.app_read.split_off(&newest.saturating_sub(16));
                 }
-                next_app_ack = now + APP_ACK_US;
+                self.next_app_ack = now + APP_ACK_US;
             }
-            if let Some(r) = receiver.report(rnow) {
-                let at = spiked(&sc.link, now, now + sc.link.delay_us, &mut back_last, &mut spike_rng);
-                push(&mut evs, at, Ev::Report(r));
+            if let Some(r) = self.receiver.report(rnow) {
+                let at = spiked(&sc.link, now, now.max(back_free) + sc.link.delay_us, &mut self.back_last, &mut self.spike_rng);
+                push(&mut self.evs, &mut self.ev_seq, at, Ev::Report(r));
             }
-            if now >= next_keycheck {
-                if receiver.wants_keyframe(rnow) {
-                    rep.keyframe_requests += 1;
-                    let at = spiked(&sc.link, now, now + sc.link.delay_us, &mut back_last, &mut spike_rng);
-                    push(&mut evs, at, Ev::KeyReq);
+            if now >= self.next_keycheck {
+                if self.receiver.wants_keyframe(rnow) {
+                    self.rep.keyframe_requests += 1;
+                    let at = spiked(&sc.link, now, now.max(back_free) + sc.link.delay_us, &mut self.back_last, &mut self.spike_rng);
+                    push(&mut self.evs, &mut self.ev_seq, at, Ev::KeyReq);
                 }
-                next_keycheck = now + 50_000;
+                self.next_keycheck = now + 50_000;
             }
         }
 
-        now += TICK_US;
     }
-    rep.keyframes = sender.keyframes;
-    rep.key_causes = sender.key_causes;
-    rep.sender_drops = sender.drops;
-    rep.switches = sender.ladder().switches;
-    rep.skipped = receiver.skipped_frames;
-    rep
+
+    fn finish(mut self) -> Report {
+        self.rep.keyframes = self.sender.keyframes;
+        self.rep.key_causes = self.sender.key_causes;
+        self.rep.sender_drops = self.sender.drops;
+        self.rep.switches = self.sender.ladder().switches;
+        self.rep.skipped = self.receiver.skipped_frames;
+        self.rep
+    }
 }
 
 /// RESET_STREAM goes out in a packet behind whatever already sits in the bottleneck buffer
