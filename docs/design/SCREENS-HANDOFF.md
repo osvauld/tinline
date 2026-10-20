@@ -320,7 +320,7 @@ it in your report.
 - **Shared emulator.** Agents overwrite each other's APKs and flip night mode. Before every screenshot, reinstall
   your own APK (`adb install -r -d`), set `cmd uimode night yes|no` explicitly, then force-stop and relaunch.
 - **Desktop screenshots.** grim and scrot capture black here. Use the app's own capture:
-  `P2P_DEMO=<demo> P2P_DARK=0|1 P2P_SHOT=<png>` with a throwaway `--data` dir (demos are in `demo.rs`).
+  `P2P_DARK=0|1 P2P_SHOT=<png>` with a throwaway `--data` dir. (The desktop demo tools (`P2P_DEMO`, `P2P_CHAT_FAKE`, `demo.rs`, `chat_fake.rs`) were removed 2026-10-20; restorable from git history.)
   The cargo package is `desktop`; the binary is `p2p-desktop`.
 - **Desktop curves.** iced MSAA on this surface format is coarse. Draw curved surfaces through `shaped.rs`
   (tiny-skia raster, cached; `mark.rs` shows the pattern for animated drawing).

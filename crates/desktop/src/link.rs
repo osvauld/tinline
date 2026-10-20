@@ -95,9 +95,6 @@ pub fn failure_text(reason: &str) -> &'static str {
 
 impl App {
     pub(super) fn refresh_linked(&mut self) {
-        if self.demo {
-            return;
-        }
         self.linked = self.node.linked_devices().into_iter().filter(|d| !d.removed).collect();
         crate::tlog!("LINKED_DEVICES {}", self.linked.iter().map(|d| format!("{}{}", d.label, if d.this_device { "*" } else { "" })).collect::<Vec<_>>().join(","));
     }

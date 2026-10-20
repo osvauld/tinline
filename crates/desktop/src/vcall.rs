@@ -349,18 +349,16 @@ impl App {
     }
 
     fn video_tick(&mut self) {
-        if !self.demo {
-            if self.video.recv_tick == 0 {
-                let stats = self.node.video_stats();
-                self.video.recv_label = stats.as_ref().map(p2pcore::video_recv_label).unwrap_or_default();
-                let codec = |c: &str, hw| p2pcore::video_codec_label(c.into(), hw);
-                (self.video.send_codec, self.video.recv_codec) = stats.as_ref().map_or_else(Default::default, |s| {
-                    (codec(&s.send_codec, s.send_hardware), codec(&s.recv_codec, s.recv_hardware))
-                });
-            }
-            self.video.recv_tick = (self.video.recv_tick + 1) % 30;
+        if self.video.recv_tick == 0 {
+            let stats = self.node.video_stats();
+            self.video.recv_label = stats.as_ref().map(p2pcore::video_recv_label).unwrap_or_default();
+            let codec = |c: &str, hw| p2pcore::video_codec_label(c.into(), hw);
+            (self.video.send_codec, self.video.recv_codec) = stats.as_ref().map_or_else(Default::default, |s| {
+                (codec(&s.send_codec, s.send_hardware), codec(&s.recv_codec, s.recv_hardware))
+            });
         }
-        if self.video.local_on() && !self.demo {
+        self.video.recv_tick = (self.video.recv_tick + 1) % 30;
+        if self.video.local_on() {
             if self.video.stats_tick == 0 {
                 let stats = self.node.video_stats();
                 self.video.send_label = stats.as_ref().map(p2pcore::video_send_label).unwrap_or_default();
@@ -443,7 +441,7 @@ impl App {
     /// The call ended: camera off, pictures gone.
     pub(super) fn video_reset(&mut self) {
         let (shown, turned_on) = (self.video.hd_suggested, self.video.hd_turned_on);
-        if (shown || turned_on) && !self.demo {
+        if shown || turned_on {
             let m = p2pcore::video_hd_suggest_after_call(self.hd_suggest_memory(), shown, turned_on);
             (self.settings.hd_suggest_turned_on, self.settings.hd_suggest_ignored) = (m.turned_on, m.ignored_in_a_row);
             self.save_settings();

@@ -208,7 +208,7 @@ Design decisions applied in this pass (user, 2026-10-13):
 ## Full port pass — 2026-10-14 (ui-parity/signup-port, uncommitted)
 
 Compared against the ui-parity playground at the same size: desktop window interior 1278×798 (headless sway,
-`P2P_DEMO=pg-*` with the seed's data; `P2P_CHAT_FAKE=1` for messages), Android at 2.625× against the emulator
+with the seed's data; demo tools removed 2026-10-20, restorable from git history), Android at 2.625× against the emulator
 gallery. Shots: `/home/abe/build-cache/p2p_chat/screens-shots/port/{pairs,android}/`.
 
 Ported this pass:

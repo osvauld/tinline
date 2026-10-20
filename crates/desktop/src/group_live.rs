@@ -1235,9 +1235,6 @@ pub(super) fn sent_line(r: &GroupChatRequest) -> (String, bool) {
 
 impl super::App {
     pub(super) fn update_live(&mut self, m: Lm) -> Task<super::Msg> {
-        if self.demo {
-            return Task::none();
-        }
         let node = self.node.clone();
         let out = self.live.step(&*node, m);
         self.after_live(out)
@@ -1279,9 +1276,6 @@ impl super::App {
 
     /// After unlock or an account switch: the groups of the account now open.
     pub(super) fn sync_live(&mut self) {
-        if self.demo {
-            return;
-        }
         let did = self.me.as_ref().map(|m| m.did.clone()).unwrap_or_default();
         let ready = self.lock == p2pcore::LockState::Unlocked;
         if did == self.live.me && ready == self.live.ready {

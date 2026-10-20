@@ -234,7 +234,7 @@ impl App {
     fn gcall_event(&mut self, e: GroupCallEvent) -> Task<Msg> {
         let mine = self.gcall.gid.as_deref() == Some(e.group_id.as_str()) && self.gcall.live();
         // The core logs the call before it tells us; the thread and the Calls tab read it back.
-        if !self.demo && matches!(e.kind, GroupCallEventKind::Ended | GroupCallEventKind::Left) {
+        if matches!(e.kind, GroupCallEventKind::Ended | GroupCallEventKind::Left) {
             self.group_log = self.node.group_call_history(None).unwrap_or_default();
         }
         // My own leaving (or the end) may leave the call running for others, or over for everyone: re-read, so Join never lingers.

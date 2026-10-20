@@ -95,7 +95,7 @@ usually go wrong. The detailed "what and why" is in `SIGNUP-HANDOFF.md`; copy ru
   computer"); the greyed call buttons in a new chat; the empty chat's shield. Port them as they are and list them.
 
 ## 7. How to show it's done
-- Desktop: a test-hooks build (`P2P_DEMO` / `P2P_DARK` / `P2P_SHOT`, throwaway `--data` dir). Take a shot of
+- Desktop: a test-hooks build (`P2P_DARK` / `P2P_SHOT`, throwaway `--data` dir; the `P2P_DEMO` tool was removed 2026-10-20, restorable from git history). Take a shot of
   every step in light and dark next to the playground at the same size, and list the differences.
 - Android: the same on the emulator, with the keyboard up on the field steps.
 - Report the exact commands you ran, what you measured, what you couldn't match and why, and any

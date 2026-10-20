@@ -742,8 +742,8 @@ impl App {
         let blocked_by_me = self.blocks.blocked_by_me(&c.did);
         // Disabled while a block is on; tapping when they haven't allowed calls says so.
         let gate = self.blocks.call_gate(&c.did, true);
-        let can_call = self.demo || !matches!(gate, crate::blocks::CallGate::Closed(_));
-        let call_icon = if self.demo || self.blocks.can_call(&c.did, true) { Icon::Phone } else { Icon::PhoneOff };
+        let can_call = !matches!(gate, crate::blocks::CallGate::Closed(_));
+        let call_icon = if self.blocks.can_call(&c.did, true) { Icon::Phone } else { Icon::PhoneOff };
         let head = row![avatar(t, &name, &c.did, 72.0), column![title, badges].spacing(10).width(Fill)]
             .spacing(20)
             .align_y(Alignment::Center);
@@ -761,7 +761,7 @@ impl App {
         .spacing(10);
         // "Allow calls" (U13, P6): whether they may ring us. Off while we block them (a block
         // turns everything off; the switch comes back as it was).
-        let allow_calls: Option<El> = (!self.demo).then(|| {
+        let allow_calls: El = {
             let on = self.blocks.calls_allowed(&c.did);
             let first = crate::blocks::first_name(&name).to_string();
             let sub = if blocked_by_me {
@@ -775,7 +775,7 @@ impl App {
             let tg = toggler(on).style(ui::toggle_style(t));
             let tg = if blocked_by_me { tg } else { tg.on_toggle(move |v| Msg::AllowCalls(did.clone(), v)) };
             line(t, "Allow calls", &sub, tg.into())
-        });
+        };
 
         let panel: Option<El> = match self.detail {
             Detail::View => None,
@@ -887,9 +887,7 @@ impl App {
         hist = hist.push(tx("History stays on this computer only.", 12.0, t.ink2));
 
         let mut col = column![back, head, actions].spacing(20);
-        if let Some(a) = allow_calls {
-            col = col.push(container(a).padding(16).width(Fill).style(ui::card(t)));
-        }
+        col = col.push(container(allow_calls).padding(16).width(Fill).style(ui::card(t)));
         if let Some(p) = panel {
             col = col.push(p);
         }
@@ -1078,8 +1076,7 @@ impl App {
             }
             c.into()
         };
-        // (tab, name) in nav order. Hosting lists the groups this computer hosts (the demo shows
-        // the preview's placeholder page instead).
+        // (tab, name) in nav order. Hosting lists the groups this computer hosts.
         let mut items: Vec<(u8, &str)> = vec![(0, "Account"), (1, "Linked devices"), (7, "Privacy"), (6, "Hosting")];
         items.extend([(2, "Calls & availability"), (3, "Audio devices"), (4, "Security")]);
         let mut nav = column![

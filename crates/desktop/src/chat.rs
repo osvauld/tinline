@@ -1,6 +1,5 @@
 //! Chat: state, updates and the bridge from core events. The screens are in `chat_view.rs`.
-//! Every call into the chat API goes through `Source`, so a test-hooks build can swap in the
-//! in-memory `chat_fake`. An erroring API (the real one, until it is filled in) leaves the
+//! Every call into the chat API goes through `Source`. An erroring API (the real one, until it is filled in) leaves the
 //! lists empty; only a send, edit or save the user asked for reports its error.
 
 use std::collections::{HashMap, HashSet};
@@ -20,10 +19,6 @@ use crate::ChatEv;
 #[path = "compose_state.rs"]
 mod compose_state;
 
-#[cfg(feature = "test-hooks")]
-#[path = "chat_fake.rs"]
-pub(super) mod chat_fake;
-
 #[derive(PartialEq, Clone, Copy, Debug)]
 pub(super) enum SideTab {
     Chats,
@@ -33,20 +28,16 @@ pub(super) enum SideTab {
     Contacts,
 }
 
-/// Where chat calls go: the node, or (test-hooks) an in-memory fake.
+/// Where chat calls go: the node.
 #[derive(Clone)]
 pub(super) enum Source {
     Node(Arc<Node>),
-    #[cfg(feature = "test-hooks")]
-    Fake(Arc<chat_fake::Fake>),
 }
 
 macro_rules! route {
     ($self:ident.$m:ident($($a:expr),*)) => {
         match $self {
             Source::Node(n) => n.$m($($a),*),
-            #[cfg(feature = "test-hooks")]
-            Source::Fake(f) => f.$m($($a),*),
         }
     };
 }
@@ -58,8 +49,6 @@ impl Source {
                 let _ = contacts;
                 n.chats()
             }
-            #[cfg(feature = "test-hooks")]
-            Source::Fake(f) => f.chats(contacts),
         }
     }
     pub fn chat_day(&self, peer: String, day: Option<String>) -> Result<DayPage, Error> {
@@ -98,8 +87,6 @@ impl Source {
     pub fn send_file(&self, peer: String, path: String, mime: String) -> Result<ChatMsg, Error> {
         match self {
             Source::Node(n) => n.send_file(peer, path, mime, None),
-            #[cfg(feature = "test-hooks")]
-            Source::Fake(f) => f.send_file(peer, path, mime),
         }
     }
     pub fn send_voice(&self, peer: String, path: String, duration_ms: u32, waveform: Vec<u8>) -> Result<ChatMsg, Error> {
@@ -175,8 +162,6 @@ pub(super) struct ChatState {
     pub thumbs: HashMap<String, Thumb>,
     /// The image or text overlay.
     pub viewer: Option<Viewer>,
-    #[cfg(feature = "test-hooks")]
-    pub fake: Option<Arc<chat_fake::Fake>>,
 }
 
 #[derive(Clone)]
@@ -239,8 +224,6 @@ impl Default for ChatState {
             voice_files: HashMap::new(),
             thumbs: HashMap::new(),
             viewer: None,
-            #[cfg(feature = "test-hooks")]
-            fake: None,
         }
     }
 }
@@ -480,10 +463,6 @@ pub(super) const COMPOSER_ID: &str = "composer";
 
 impl App {
     pub(super) fn src(&self) -> Source {
-        #[cfg(feature = "test-hooks")]
-        if let Some(f) = &self.chat.fake {
-            return Source::Fake(f.clone());
-        }
         Source::Node(self.node.clone())
     }
 
@@ -496,9 +475,6 @@ impl App {
 
     /// Starts decoding a thumbnail for each Ready picture that has none yet.
     pub(super) fn ensure_thumbs(&mut self) -> Task<Msg> {
-        if !self.chat_io() {
-            return Task::none();
-        }
         let Some(peer) = self.chat.peer.clone() else { return Task::none() };
         let mut todo = Vec::new();
         for m in self.chat.msgs.iter().filter(|m| !m.deleted) {
@@ -532,15 +508,6 @@ impl App {
         Task::batch(tasks)
     }
 
-    /// Chat IO is skipped in demo screens unless they brought a fake source.
-    fn chat_io(&self) -> bool {
-        #[cfg(feature = "test-hooks")]
-        if self.chat.fake.is_some() {
-            return true;
-        }
-        !self.demo
-    }
-
     /// The conversation is on screen (not contact details, settings, a call...).
     pub(super) fn chat_visible(&self) -> bool {
         self.screen == Screen::Home
@@ -551,18 +518,12 @@ impl App {
     }
 
     pub(super) fn refresh_chats(&self) -> Task<Msg> {
-        if !self.chat_io() {
-            return Task::none();
-        }
         let (src, contacts) = (self.src(), self.contacts.clone());
         Task::batch([blocking(move || src.chats(contacts).map_err(s), |r| Msg::Chat(Cm::Chats(r))), self.refresh_marks()])
     }
 
     /// Re-reads the chat list's marks (my last message's tick per DM and group). Off the UI loop.
     pub(super) fn refresh_marks(&self) -> Task<Msg> {
-        if !self.chat_io() {
-            return Task::none();
-        }
         let node = self.node.clone();
         blocking(move || node.chat_list_marks().unwrap_or_default(), |v| Msg::Chat(Cm::Marks(v)))
     }
@@ -581,7 +542,7 @@ impl App {
     }
 
     fn load_day_receipts(&self, peer: String, day: String) -> Task<Msg> {
-        if day.is_empty() || !self.chat_io() {
+        if day.is_empty() {
             return Task::none();
         }
         let (src, p) = (self.src(), peer.clone());
@@ -590,7 +551,7 @@ impl App {
 
     /// Re-reads one message's receipt status (after it was sent, edited, changed or ticked).
     pub(super) fn load_receipt(&self, peer: &str, id: &str) -> Task<Msg> {
-        if self.chat.peer.as_deref() != Some(peer) || !self.chat_io() {
+        if self.chat.peer.as_deref() != Some(peer) {
             return Task::none();
         }
         let (src, p, i, peer) = (self.src(), peer.to_string(), id.to_string(), peer.to_string());
@@ -603,9 +564,6 @@ impl App {
                 return Task::none();
             }
             c.unread = 0;
-        }
-        if !self.chat_io() {
-            return Task::none();
         }
         let (src, p) = (self.src(), peer.to_string());
         blocking(move || src.mark_read(p).map_err(s), |_| Msg::Chat(Cm::Nop))
@@ -633,9 +591,6 @@ impl App {
         self.chat.progress.clear();
         self.chat.thumbs.clear();
         self.chat.viewer = None;
-        if !self.chat_io() {
-            return Task::none();
-        }
         self.chat.loading = true;
         if self.is_me(did) {
             return Task::batch([self.load_day(did.to_string(), None, false), self.mark_read(did)]);
@@ -787,7 +742,6 @@ impl App {
                 if edit
                     && let Some(p) = self.chat.peer.clone()
                     && !self.is_me(&p)
-                    && self.chat_io()
                     && !self.chat.input.text().trim().is_empty()
                 {
                     self.src().chat_typing(p);
@@ -796,7 +750,7 @@ impl App {
             Cm::Send => {
                 let Some(peer) = self.chat.peer.clone() else { return Task::none() };
                 let text = self.chat.input.text().trim_end().to_string();
-                if text.trim().is_empty() || !self.chat_io() {
+                if text.trim().is_empty() {
                     return Task::none();
                 }
                 let (reply, editing) = (self.chat.reply.take(), self.chat.editing.take());
@@ -923,7 +877,7 @@ impl App {
             Cm::DropHover(on) => self.chat.drop_hover = on && self.chat_visible(),
             Cm::Dropped(path) => {
                 self.chat.drop_hover = false;
-                let Some(peer) = self.chat.peer.clone().filter(|_| self.chat_visible() && self.chat_io()) else {
+                let Some(peer) = self.chat.peer.clone().filter(|_| self.chat_visible()) else {
                     return Task::none();
                 };
                 if !path.is_file() {
@@ -1037,7 +991,7 @@ impl App {
                 return self.find_scroll();
             }
             Cm::RecStart => {
-                if self.chat.peer.is_none() || self.chat.rec.is_some() || !self.chat_io() {
+                if self.chat.peer.is_none() || self.chat.rec.is_some() {
                     return Task::none();
                 }
                 self.chat.player = None;

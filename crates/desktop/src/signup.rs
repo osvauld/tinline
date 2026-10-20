@@ -476,7 +476,7 @@ impl App {
                 }
             }
             Gs::AcNewCode => {
-                if self.demo || self.fetching {
+                if self.fetching {
                     return Task::none();
                 }
                 if let Err(e) = self.node.reset_ticket() {
@@ -573,11 +573,6 @@ impl App {
             return Task::none();
         }
         self.add_ui.answering = true;
-        if self.demo {
-            let name = self.add_ui.incoming.as_ref().map(|i| i.name.clone()).unwrap_or_default();
-            let c = p2pcore::Contact { did: did.clone(), name, device: String::new(), added_at: 0, alias: None, verified: false, lost_touch: false };
-            return Task::done(Msg::RequestAnswered(did, Ok(c)));
-        }
         let node = self.node.clone();
         let d = did.clone();
         super::blocking(move || node.accept_contact_request(d).map_err(|e| e.to_string()), move |r| Msg::RequestAnswered(did.clone(), r))
@@ -656,9 +651,6 @@ impl App {
     }
 
     pub(super) fn play_cue(&self, samples: Vec<f32>) {
-        if self.demo && crate::test_env("P2P_SHOT").is_some() {
-            return;
-        }
         let out = self.ctl.devices.lock().unwrap().1.clone();
         crate::audio::play_cue(out, samples);
     }
@@ -680,140 +672,5 @@ impl App {
             Step::Restore => Gs::RestoreGo,
         };
         self.gate_update(m)
-    }
-}
-
-/// Test-hooks screenshots of sign-up and the first landing (`P2P_DEMO=gate-<step>` / `first-…`),
-/// synthetic data only; nothing touches the node.
-#[cfg(feature = "test-hooks")]
-impl App {
-    pub(super) fn signup_demo(&mut self, name: &str) -> bool {
-        const WORDS: &str = "abandon ability able about above absent absorb abstract absurd abuse access accident account accuse achieve acid acoustic acquire across act action actor actress actual";
-        const CODE: &str = "OSVC2:FCEWVDVCGJJE7XYHDYHHPQXEB6TD5E75GBDKTY7A7YHRCQ2LMNOPQRSTUVWXYZ234567ABCDEFGHIJ";
-        if let Some(step) = name.strip_prefix("gate-") {
-            self.demo = true;
-            self.screen = Screen::Onboarding;
-            self.keyring_ok = true;
-            self.name_in = "Maya Kurian".into();
-            self.new_phrase = Some(Zeroizing::new(WORDS.into()));
-            self.device_in = "Home computer".into();
-            let path: &[Step] = match step {
-                "welcome" => &[],
-                "choose" => &[Step::Choose],
-                "name" | "name-empty" => &[Step::Name],
-                "pass" | "pass-typed" | "pass-busy" => &[Step::Name, Step::Pass],
-                "phrase" | "phrase-copied" => &[Step::Name, Step::Pass, Step::Phrase],
-                "device" => &[Step::Name, Step::Pass, Step::Phrase, Step::Device],
-                "terms" => &[Step::Name, Step::Pass, Step::Phrase, Step::Device, Step::Terms],
-                "done" | "done-slack" => &[Step::Name, Step::Pass, Step::Phrase, Step::Device, Step::Terms, Step::Done],
-                "restore" | "restore-typing" | "restore-pass" => &[Step::Choose, Step::Restore],
-                _ => &[],
-            };
-            if step.starts_with("restore") {
-                self.gate.restoring = true;
-            }
-            for s in path {
-                self.gate.go(*s);
-            }
-            match step {
-                "name-empty" => self.name_in.clear(),
-                "pass-typed" => self.pass_in = Zeroizing::new("blue kettle".into()),
-                "pass-busy" => {
-                    self.pass_in = Zeroizing::new("blue kettle river stone".into());
-                    self.busy = true;
-                }
-                "phrase-copied" => self.gate.copied = true,
-                "done" => self.gate.taut = true,
-                // Five words in, the sixth half typed (suggestions), the third misspelt.
-                "restore-typing" => {
-                    for (i, w) in ["abandon", "ability", "ablee", "about", "above", "abs"].iter().enumerate() { self.gate.words[i] = w.to_string(); }
-                    self.gate.active = Some(5);
-                }
-                "restore-pass" => {
-                    for (i, w) in WORDS.split_whitespace().enumerate() { self.gate.words[i] = w.to_string(); }
-                    self.gate.go(Step::Name);
-                    self.gate.go(Step::Pass);
-                }
-                _ => {}
-            }
-            return true;
-        }
-        if let Some(v) = name.strip_prefix("first") {
-            self.demo = true;
-            self.screen = Screen::Home;
-            self.profile_name = "Maya Kurian".into();
-            self.contacts.clear();
-            self.recents.clear();
-            self.ticket = Some(CODE.into());
-            self.qr = super::view::qr_of(CODE);
-            let tara = p2pcore::Contact { did: "did:key:z6MkTara".into(), name: "Tara Iyer".into(), device: "ab12".into(), added_at: 0, alias: None, verified: false, lost_touch: false };
-            let peek = p2pcore::CardPeek { ticket: "OSVC2:TARA".into(), name: "Tara Iyer".into(), did: tara.did.clone(), known: false };
-            let req = p2pcore::ContactRequest { did: tara.did.clone(), name: "Tara Iyer".into(), at: 0, expires_at: 0 };
-            self.ticket_exp = Some(1_792_400_000);
-            match v {
-                "-open" => self.contacts = vec![tara],
-                // § 6f: the joiner waiting (empty first screen), the owner asked, both sides opened.
-                "-waiting" => self.requests_out = vec![req],
-                "-request" | "-request-joined" => {
-                    self.screen = Screen::AddContact;
-                    self.add_ui.incoming = Some(Incoming { did: tara.did.clone(), name: "Tara Iyer".into(), joined: v == "-request-joined", theirs: false });
-                    if v == "-request-joined" {
-                        self.contacts = vec![tara];
-                    }
-                }
-                "-accepted" => {
-                    self.contacts = vec![tara.clone()];
-                    self.screen = Screen::AddContact;
-                    self.add_ui.incoming = Some(Incoming { did: tara.did.clone(), name: "Tara Iyer".into(), joined: true, theirs: true });
-                }
-                "-contacts-requests" => {
-                    let _ = self.update_chat(super::Cm::Tab(super::chat::SideTab::Contacts));
-                    self.requests_in = vec![req.clone()];
-                    self.requests_out = vec![p2pcore::ContactRequest { did: "did:key:z6MkNikhil".into(), name: "Nikhil Das".into(), at: 0, expires_at: 0 }];
-                }
-                "-add" => self.screen = Screen::AddContact,
-                "-add-qr" => {
-                    self.screen = Screen::AddContact;
-                    self.add_ui.tab = AddTab::Qr;
-                }
-                "-add-empty" | "-add-junk" | "-add-own" => {
-                    self.screen = Screen::AddContact;
-                    let text = match v {
-                        "-add-empty" => String::new(),
-                        "-add-own" => CODE.to_string(),
-                        _ => "see you at 6".to_string(),
-                    };
-                    // the node is not asked: mirror ac_pasted's hints
-                    self.add_ui.hint = if text.is_empty() {
-                        "Your clipboard is empty right now. When their code arrives, copy it and paste it here.".into()
-                    } else if text.contains(CODE) {
-                        "That\u{2019}s your own code. Send it to them, and paste theirs here.".into()
-                    } else {
-                        "That doesn\u{2019}t look like a Tinline code. Could they copy it again for you?".into()
-                    };
-                }
-                "-add-found" | "-add-adding" | "-add-slow" | "-add-requested" | "-add-refused" | "-add-timeout" | "-add-blocked" | "-add-offline" | "-add-added" => {
-                    self.screen = Screen::AddContact;
-                    self.add_ui.found = Some(peek);
-                    self.add_phase = match v {
-                        "-add-adding" => super::AddPhase::Connecting(Instant::now() + Duration::from_secs(3600)),
-                        "-add-slow" => super::AddPhase::Connecting(Instant::now() - Duration::from_secs(3)),
-                        "-add-requested" => super::AddPhase::Requested,
-                        "-add-refused" => super::AddPhase::Failed(super::Reach::Refused),
-                        "-add-timeout" => super::AddPhase::Failed(super::Reach::Timeout),
-                        "-add-blocked" => super::AddPhase::Failed(super::Reach::Blocked),
-                        "-add-offline" => super::AddPhase::Failed(super::Reach::Offline),
-                        "-add-added" => {
-                            self.contacts = vec![tara.clone()];
-                            super::AddPhase::Added(tara)
-                        }
-                        _ => super::AddPhase::Idle,
-                    };
-                }
-                _ => {}
-            }
-            return true;
-        }
-        false
     }
 }
