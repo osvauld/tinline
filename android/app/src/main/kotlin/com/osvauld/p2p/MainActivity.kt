@@ -157,6 +157,7 @@ private fun Root(app: P2pApp) {
     var missing by remember { mutableStateOf(Perms.missing(ctx)) }
     var callError by remember { mutableStateOf<String?>(null) }
     var pendingCall by remember { mutableStateOf<String?>(null) }
+    var pendingGroupCall by remember { mutableStateOf<String?>(null) }
     // A permission row's request ([fix]) and when it went out: an answer within moments means no dialog was shown.
     var pendingFix by remember { mutableStateOf<Pair<Need, Long>?>(null) }
     // Back stack. Not saved: the recovery phrase may sit in it, and Home is a fine place to restart.
@@ -226,6 +227,10 @@ private fun Root(app: P2pApp) {
             pendingCall = null
             if (Perms.granted(ctx, android.Manifest.permission.RECORD_AUDIO)) place(did) else stack.add(Route.MicNeeded)
         }
+        pendingGroupCall?.let { gid ->
+            pendingGroupCall = null
+            if (Perms.granted(ctx, android.Manifest.permission.RECORD_AUDIO)) app.groupCallUi.call(gid) { say(it) } else stack.add(Route.MicNeeded)
+        }
         pendingFix?.let { (n, at) ->
             pendingFix = null
             val p = Perms.runtimePermission(n) ?: return@let
@@ -257,6 +262,15 @@ private fun Root(app: P2pApp) {
         if (Perms.granted(ctx, mic)) place(did)
         // Always ask: an expired "Ask every time" grant looks like a permanent denial until the system answers.
         else { pendingCall = did; permLauncher.launch(arrayOf(mic)) }
+    }
+
+    // A group call or join that needs the microphone: the system dialog, then the call (or the explainer).
+    val groupNeedsMic by app.groupCallUi.needMic.collectAsState()
+    LaunchedEffect(groupNeedsMic) {
+        val gid = groupNeedsMic ?: return@LaunchedEffect
+        app.groupCallUi.micAsked()
+        pendingGroupCall = gid
+        permLauncher.launch(arrayOf(android.Manifest.permission.RECORD_AUDIO))
     }
 
     // A tapped tinline://g/ link opens Join with it (G3).
