@@ -10,15 +10,15 @@ use parking_lot::Mutex;
 use std::{collections::BTreeSet, sync::Arc};
 use storage::Sealed;
 
-pub(crate) struct ReceiptStore {
+pub struct ReceiptStore {
     db: Sealed,
     opened: Mutex<BTreeSet<String>>,
     #[cfg(test)]
     joins: Mutex<std::sync::Weak<joins::JoinController>>,
-    #[cfg(test)]
+    #[cfg(any(test, feature = "testkit"))]
     fail_commit: std::sync::atomic::AtomicBool,
 }
-pub(crate) struct Ledger {
+pub struct Ledger {
     store: Arc<ReceiptStore>,
     prefix: String,
     state: Mutex<Live>,
@@ -33,21 +33,21 @@ struct StoredState {
     vv: Vec<u8>,
 }
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub(crate) struct Position {
+pub struct Position {
     pub peer: u64,
     pub counter: i32,
 }
 /// Provisional sidecar budget, not a negotiated frame or retention ceiling.
 #[cfg(test)]
-pub(crate) const MAX_IMPORT_EVIDENCE: usize = super::calls::MAX_CALL_EVIDENCE;
+pub const MAX_IMPORT_EVIDENCE: usize = super::calls::MAX_CALL_EVIDENCE;
 #[cfg(test)]
-pub(crate) struct ImportClaim {
+pub struct ImportClaim {
     pub entry: Entry,
     /// Only says the signed body was already durable; not proof of historical
     /// authority or of a previously verified supporting-evidence policy.
     pub already_stored: bool,
 }
-pub(crate) struct Committed {
+pub struct Committed {
     pub entries: Vec<Entry>,
     #[cfg_attr(not(test), allow(dead_code))] // read by tests only
     pub update: Option<Vec<u8>>,
@@ -68,17 +68,17 @@ fn prefix(scope: &Scope) -> Result<String, ReceiptError> {
     Ok(format!("receipts/{kind}/{id}/{}/", scope.day))
 }
 impl ReceiptStore {
-    pub(crate) fn new(db: Sealed) -> Arc<Self> {
+    pub fn new(db: Sealed) -> Arc<Self> {
         Arc::new(Self {
             db,
             opened: Mutex::new(BTreeSet::new()),
             #[cfg(test)]
             joins: Mutex::new(std::sync::Weak::new()),
-            #[cfg(test)]
+            #[cfg(any(test, feature = "testkit"))]
             fail_commit: false.into(),
         })
     }
-    pub(crate) fn open(
+    pub fn open(
         self: &Arc<Self>,
         scope: Scope,
         peer: u64,
@@ -94,7 +94,7 @@ impl ReceiptStore {
             let saved = self.db.get(&format!("{p}state")).map_err(io)?;
             let rows = self.db.scan(&format!("{p}u/")).map_err(io)?;
             let state: StoredState = saved
-                .map(|b| cryptography::codec::from_bytes(&b, crate::store::MAX_ROW).map_err(io))
+                .map(|b| cryptography::codec::from_bytes(&b, storage::MAX_ROW).map_err(io))
                 .transpose()?
                 .unwrap_or(StoredState {
                     seq: 0,
@@ -120,7 +120,7 @@ impl ReceiptStore {
                     .get(&format!("{p}index/{}", e.id))
                     .map_err(io)?
                     .ok_or_else(|| io("receipt index missing"))?;
-                let pos: Position = cryptography::codec::from_bytes(&raw, crate::store::MAX_ROW).map_err(io)?;
+                let pos: Position = cryptography::codec::from_bytes(&raw, storage::MAX_ROW).map_err(io)?;
                 if pos
                     != (Position {
                         peer: e.peer,
@@ -145,7 +145,7 @@ impl ReceiptStore {
         result
     }
     fn apply_ops(&self, ops: &[storage::Op]) -> Result<(), ReceiptError> {
-        #[cfg(test)]
+        #[cfg(any(test, feature = "testkit"))]
         if self
             .fail_commit
             .swap(false, std::sync::atomic::Ordering::SeqCst)
@@ -156,17 +156,17 @@ impl ReceiptStore {
     }
 
     /// The backing sealed namespace, for store-owned controllers' sidecar rows.
-    #[cfg(test)]
-    pub(crate) fn db(&self) -> &Sealed {
+    #[cfg(any(test, feature = "testkit"))]
+    pub fn db(&self) -> &Sealed {
         &self.db
     }
     /// Sidecar-only transaction (same injected-failure hook as receipt commits).
-    pub(crate) fn apply(&self, ops: &[storage::Op]) -> Result<(), ReceiptError> {
+    pub fn apply(&self, ops: &[storage::Op]) -> Result<(), ReceiptError> {
         self.apply_ops(ops)
     }
 
-    #[cfg(test)]
-    pub(crate) fn fail_next_commit(&self) {
+    #[cfg(any(test, feature = "testkit"))]
+    pub fn fail_next_commit(&self) {
         self.fail_commit
             .store(true, std::sync::atomic::Ordering::SeqCst);
     }
@@ -179,8 +179,8 @@ impl Drop for Ledger {
 impl Ledger {
     /// Low-level durably stored claim; caller must verify real source content/
     /// lifecycle and admission under its appropriate locks before issuing it.
-    #[cfg(test)]
-    pub(crate) fn write(
+    #[cfg(any(test, feature = "testkit"))]
+    pub fn write(
         &self,
         claim: &Receipt,
         account: &identity::Identity,
@@ -191,7 +191,7 @@ impl Ledger {
     /// `write` plus caller-owned sidecar ops (e.g. completing a durable issuance
     /// intent) in the SAME transaction. An identical already-stored claim still
     /// applies `extra` alone, so a retried intent completes without re-signing.
-    pub(crate) fn write_with_ops(
+    pub fn write_with_ops(
         &self,
         claim: &Receipt,
         account: &identity::Identity,
@@ -212,7 +212,7 @@ impl Ledger {
         };
         self.commit_with_ops(&mut live, candidate, update, vec![entry], &[], extra)
     }
-    pub(crate) fn apply_remote(
+    pub fn apply_remote(
         &self,
         update: &[u8],
         admit: impl FnOnce(&[Entry]) -> Result<(), String>,
@@ -233,7 +233,7 @@ impl Ledger {
     /// semantics, authority/context and peer admission, even for duplicate pulls.
     /// No sidecar-only recovery or adoption of dangling legacy claims is implied.
     #[cfg(test)]
-    pub(crate) fn apply_remote_with_evidence(
+    pub fn apply_remote_with_evidence(
         &self,
         update: &[u8],
         supplied: &[super::evidence::Evidence],
@@ -347,7 +347,7 @@ impl Ledger {
     /// Strict local call bridge: exact supporting originals and receipt commit
     /// together. This does not itself perform protocol role/lifecycle checks.
     #[cfg(test)]
-    pub(crate) fn write_with_evidence(
+    pub fn write_with_evidence(
         &self,
         claim: &Receipt,
         account: &identity::Identity,
@@ -413,7 +413,7 @@ impl Ledger {
         self.commit_with_ops(&mut live, candidate, update, vec![entry], evidence, extra)
     }
     #[cfg(test)]
-    pub(crate) fn evidence(
+    pub fn evidence(
         &self,
         id: &[u8; 32],
     ) -> Result<Option<super::evidence::Evidence>, ReceiptError> {
@@ -506,31 +506,31 @@ impl Ledger {
             frontier,
         })
     }
-    pub(crate) fn vv(&self) -> VersionVector {
+    pub fn vv(&self) -> VersionVector {
         self.state.lock().doc.vv()
     }
-    pub(crate) fn entries(&self) -> Result<Vec<Entry>, ReceiptError> {
+    pub fn entries(&self) -> Result<Vec<Entry>, ReceiptError> {
         self.state.lock().doc.entries()
     }
-    #[cfg(test)]
-    pub(crate) fn raw(&self, id: &str) -> Option<Vec<u8>> {
+    #[cfg(any(test, feature = "testkit"))]
+    pub fn raw(&self, id: &str) -> Option<Vec<u8>> {
         self.state.lock().doc.raw(id)
     }
-    pub(crate) fn export_batch(
+    pub fn export_batch(
         &self,
         theirs: &VersionVector,
-        limits: crate::group::doc::batching::BatchLimits,
+        limits: crdt::batching::BatchLimits,
     ) -> Result<
-        Option<crate::group::doc::batching::ExportBatch>,
-        crate::group::doc::batching::BatchError,
+        Option<crdt::batching::ExportBatch>,
+        crdt::batching::BatchError,
     > {
         self.state.lock().doc.export_batch(theirs, limits)
     }
 }
 #[cfg(test)]
-pub(crate) mod bundles;
+pub mod bundles;
 #[cfg(test)]
-pub(crate) mod joins;
-pub(crate) mod messages;
+pub mod joins;
+pub mod messages;
 #[cfg(test)]
 mod tests;

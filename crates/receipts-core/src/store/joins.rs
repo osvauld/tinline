@@ -3,23 +3,21 @@
 //! handle capture failure, and schedule retries outside media/state locks.
 use super::*;
 use crate::{
-    chat::doc::writer_id,
-    gcall::CallAuthority,
-    receipts::{
-        evidence::Evidence,
-        participation::{JoinProofs, ParticipationView, prepare_join, verify_joined_entry},
-    },
+    evidence::Evidence,
+    participation::{JoinProofs, ParticipationView, prepare_join, verify_joined_entry},
 };
+use crdt::writer_id;
+use gcall_core::CallAuthority;
 use proto::gcall as w;
 const PENDING: &str = "receipt-runtime/group-joins/v1/pending/";
 const DONE: &str = "receipt-runtime/group-joins/v1/done/";
 /// Provisional bounds, not permission to drop an unrecorded event.
-pub(crate) const MAX_PENDING_JOINS: usize = 64;
-pub(crate) const MAX_JOIN_INTENT_BYTES: usize = 64 * 1024;
-pub(crate) const MAX_JOIN_DONE_BYTES: usize = 1024;
+pub const MAX_PENDING_JOINS: usize = 64;
+pub const MAX_JOIN_INTENT_BYTES: usize = 64 * 1024;
+pub const MAX_JOIN_DONE_BYTES: usize = 1024;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub(crate) struct JoinContext {
+pub struct JoinContext {
     pub source_epoch: u64,
     pub issuer: String,
     pub device: [u8; 32],
@@ -41,19 +39,19 @@ struct Done {
     start_id: [u8; 32],
 }
 #[derive(Debug, PartialEq, Eq)]
-pub(crate) enum CapturedJoin {
+pub enum CapturedJoin {
     Pending(String),
     /// Durable completion index only. Not a proof-backed UI status; use the
     /// ledger projection/commit result, which verifies the original evidence.
     AlreadyCommitted(String),
 }
-pub(crate) struct JoinCommit {
+pub struct JoinCommit {
     pub view: ParticipationView,
     /// Only the first native receipt insertion. Lost notifications require
     /// reconciliation from durable history, not an exactly-once callback claim.
     pub newly_committed: bool,
 }
-pub(crate) struct JoinController {
+pub struct JoinController {
     store: Arc<ReceiptStore>,
     // Serializes capture/completion in this backing namespace. Never call back
     // into the controller from admission, or hold a media lock around a call.
@@ -162,7 +160,7 @@ impl Intent {
 }
 impl ReceiptStore {
     /// One controller per factory/backing namespace; no competing ledger factory.
-    pub(crate) fn join_controller(self: &Arc<Self>) -> Arc<JoinController> {
+    pub fn join_controller(self: &Arc<Self>) -> Arc<JoinController> {
         let mut slot = self.joins.lock();
         if let Some(controller) = slot.upgrade() {
             return controller;
@@ -179,7 +177,7 @@ impl JoinController {
     /// Call only for a witnessed actual Joined transition. The callback must
     /// check the frozen account/device/source and transition under caller locks.
     /// Returns success only once the exact signed body and originals are durable.
-    pub(crate) fn capture(
+    pub fn capture(
         &self,
         account: &identity::Identity,
         device: [u8; 32],
@@ -253,7 +251,7 @@ impl JoinController {
     }
     /// At most one key per call; rotate BEFORE retry so a failing scope cannot
     /// starve other intents. No automatic retry timer, abandonment or eviction.
-    pub(crate) fn next_pending(&self) -> Result<Option<String>, ReceiptError> {
+    pub fn next_pending(&self) -> Result<Option<String>, ReceiptError> {
         let mut cursor = self.cursor.lock();
         let after = cursor.as_ref().map(|s| format!("{PENDING}{s}"));
         let mut keys = self
@@ -280,7 +278,7 @@ impl JoinController {
     /// Caller supplies the one backing-owned ledger and must recheck current
     /// source/device/authority admission. Old epochs are NOT automatically rebound
     /// on restart. The callback must not reenter this controller.
-    pub(crate) fn try_commit(
+    pub fn try_commit(
         &self,
         id: &str,
         ledger: &Ledger,

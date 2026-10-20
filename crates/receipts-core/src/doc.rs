@@ -2,27 +2,27 @@
 //! Imports stage on a fork, require explicit caller admission and retain exact
 //! original signed bytes and original Loro writer/counters through relays.
 use super::*;
-use crate::{
-    chat::doc::writer_id,
-    group::doc::batching::{BatchError, BatchLimits, ExportBatch, export_native_batch},
+use crdt::{
+    batching::{BatchError, BatchLimits, ExportBatch, export_native_batch},
+    writer_id,
 };
 use loro::{ExportMode, LoroDoc, LoroValue, VersionVector};
 use std::collections::BTreeMap;
 const ROOT: &str = "receipts";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct Entry {
+pub struct Entry {
     pub id: String,
     pub receipt: Receipt,
     pub peer: u64,
     pub counter: i32,
 }
-pub(crate) struct ReceiptDoc {
+pub struct ReceiptDoc {
     scope: Scope,
     doc: LoroDoc,
 }
 impl ReceiptDoc {
-    pub(crate) fn new(scope: Scope, peer: u64) -> Result<Self, ReceiptError> {
+    pub fn new(scope: Scope, peer: u64) -> Result<Self, ReceiptError> {
         if !scope.valid() {
             return Err(ReceiptError::Bounds);
         }
@@ -30,12 +30,12 @@ impl ReceiptDoc {
         doc.set_peer_id(peer).map_err(|_| ReceiptError::Writer)?;
         Ok(Self { scope, doc })
     }
-    pub(crate) fn vv(&self) -> VersionVector {
+    pub fn vv(&self) -> VersionVector {
         self.doc.oplog_vv()
     }
     /// Low-level staged write; not a durably issued acknowledgement. The caller
     /// must checkpoint/persist before exposing, forwarding or projecting it.
-    pub(crate) fn write(
+    pub fn write(
         &mut self,
         claim: &Receipt,
         account: &identity::Identity,
@@ -76,7 +76,7 @@ impl ReceiptDoc {
         self.doc = scratch;
         Ok(Some((entry, update)))
     }
-    pub(crate) fn apply_remote(
+    pub fn apply_remote(
         &mut self,
         update: &[u8],
         admit: impl FnOnce(&[Entry]) -> Result<(), String>,
@@ -112,14 +112,14 @@ impl ReceiptDoc {
         Ok(fresh)
     }
     #[cfg(test)]
-    pub(crate) fn snapshot(&self) -> Result<Vec<u8>, ReceiptError> {
+    pub fn snapshot(&self) -> Result<Vec<u8>, ReceiptError> {
         self.doc
             .export(ExportMode::Snapshot)
             .map_err(|_| ReceiptError::Encoding)
     }
     /// Full reconstruction with signatures/structure and caller admission checks.
     /// This is not a trusted sealed-row fast path and is history-dependent.
-    pub(crate) fn load(
+    pub fn load(
         scope: Scope,
         peer: u64,
         snapshot: Option<&[u8]>,
@@ -146,7 +146,7 @@ impl ReceiptDoc {
         admit(&s.entries()?).map_err(ReceiptError::Policy)?;
         Ok(s)
     }
-    pub(crate) fn checkpoint(&self) -> Result<Self, ReceiptError> {
+    pub fn checkpoint(&self) -> Result<Self, ReceiptError> {
         let doc = self.doc.fork();
         doc.set_peer_id(self.doc.peer_id())
             .map_err(|_| ReceiptError::Writer)?;
@@ -155,20 +155,20 @@ impl ReceiptDoc {
             doc,
         })
     }
-    pub(crate) fn export_batch(
+    pub fn export_batch(
         &self,
         theirs: &VersionVector,
         limits: BatchLimits,
     ) -> Result<Option<ExportBatch>, BatchError> {
         export_native_batch(&self.doc, theirs, limits)
     }
-    pub(crate) fn raw(&self, id: &str) -> Option<Vec<u8>> {
+    pub fn raw(&self, id: &str) -> Option<Vec<u8>> {
         match self.doc.get_map(ROOT).get(id) {
             Some(loro::ValueOrContainer::Value(LoroValue::Binary(b))) => Some(b.to_vec()),
             _ => None,
         }
     }
-    pub(crate) fn entries(&self) -> Result<Vec<Entry>, ReceiptError> {
+    pub fn entries(&self) -> Result<Vec<Entry>, ReceiptError> {
         let mut unique = BTreeMap::new();
         for e in self.inspect(&self.doc, &VersionVector::default(), &self.vv())? {
             unique.entry(e.id.clone()).or_insert(e);
@@ -178,11 +178,11 @@ impl ReceiptDoc {
     /// Original insert statements in a native interval, including known IDs
     /// under new counters. Not an authorization or acknowledgement frontier.
     #[cfg(test)]
-    pub(crate) fn entries_since(&self, from: &VersionVector) -> Result<Vec<Entry>, ReceiptError> {
+    pub fn entries_since(&self, from: &VersionVector) -> Result<Vec<Entry>, ReceiptError> {
         self.entries_between(from, &self.vv())
     }
     #[cfg(test)]
-    pub(crate) fn entries_between(
+    pub fn entries_between(
         &self,
         from: &VersionVector,
         to: &VersionVector,

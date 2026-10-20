@@ -1,33 +1,15 @@
 use super::*;
 use crate::{
-    chat::doc::writer_id,
-    receipts::{calls::tests::claim, tests::sample},
+    calls::tests::claim,
+    testkit::{self, TempDir},
+    tests::sample,
 };
-struct Directory(std::path::PathBuf);
-impl Directory {
-    fn new() -> Self {
-        let p = std::env::temp_dir().join(format!(
-            "tinline-receipt-ledger-{}-{}",
-            std::process::id(),
-            hex::encode(proto::new_device_secret())
-        ));
-        std::fs::create_dir(&p).unwrap();
-        Self(p)
-    }
-}
-impl Drop for Directory {
-    fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(&self.0);
-    }
-}
+use crdt::writer_id;
 fn ok(_: &[Entry]) -> Result<(), String> {
     Ok(())
 }
 fn memory() -> Arc<ReceiptStore> {
-    ReceiptStore::new(Sealed::new(
-        storage::Store::open_in_memory().unwrap(),
-        [9; 32],
-    ))
+    testkit::memory(9)
 }
 
 #[test]
@@ -121,7 +103,7 @@ fn single_live_owner_enforced_and_failed_open_releases_scope_lease() {
 }
 #[test]
 fn real_sealed_reopen_restores_typed_call_observations_and_message_read_holes() {
-    let directory = Directory::new();
+    let directory = TempDir::new("tinline-receipt-ledger");
     let path = directory.0.join("shared-receipts.redb");
     let key = [9; 32];
     let a = identity::generate().0;

@@ -1,5 +1,5 @@
 use super::*;
-use crate::receipts::tests::sample;
+use crate::tests::sample;
 fn ok(_: &[Entry]) -> Result<(), String> {
     Ok(())
 }

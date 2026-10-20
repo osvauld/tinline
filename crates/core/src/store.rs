@@ -30,6 +30,7 @@ pub enum Backing {
     Sealed(storage::Sealed),
 }
 
+/// Cap for decoding a binary row our own store wrote; shared with the receipt ledger.
 pub(crate) use storage::MAX_ROW;
 
 const STATE_KEY: &str = "state";

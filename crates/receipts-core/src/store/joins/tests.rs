@@ -1,5 +1,5 @@
 use super::*;
-use crate::receipts::participation::{joined_views, tests::fixture};
+use crate::participation::{joined_views, tests::fixture};
 use storage::{Sealed, Store};
 
 struct Authority(bool);
@@ -30,7 +30,7 @@ fn setup(
     a: &identity::Identity,
     p: &JoinProofs,
 ) -> (Arc<ReceiptStore>, Arc<JoinController>, Ledger) {
-    let store = ReceiptStore::new(Sealed::new(Store::open_in_memory().unwrap(), [8; 32]));
+    let store = crate::testkit::memory(8);
     let controller = store.join_controller();
     let ledger = open(&store, a, p);
     (store, controller, ledger)

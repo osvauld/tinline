@@ -7,7 +7,7 @@
 //! reads only committed ledger entries. No transport, host Ack or own-device
 //! read cursor is consulted: none of them is recipient evidence.
 use super::*;
-use crate::chat::doc::{MsgRec, pair_id, writer_id};
+use crdt::{pair_id, writer_id};
 use std::collections::BTreeMap;
 
 /// Durable, sealed intent rows in the backing chat/group store. Separate from
@@ -16,32 +16,20 @@ const INTENTS: &str = "receipt-runtime/messages/v1/q/";
 /// Scopes holding statements WE issued that a counterparty has not acknowledged.
 const OUTBOX: &str = "receipt-runtime/messages/v1/out/";
 /// Provisional: digests per intent row (split, never truncated).
-pub(crate) const MAX_INTENT_DIGESTS: usize = 1024;
+pub const MAX_INTENT_DIGESTS: usize = 1024;
 /// Provisional: intent rows handled per `pump` call; more stay queued.
-pub(crate) const MAX_INTENTS_PER_PUMP: usize = 64;
+pub const MAX_INTENTS_PER_PUMP: usize = 64;
 /// Provisional: idle ledgers kept open per controller (a cache, not retention).
-pub(crate) const MAX_OPEN_LEDGERS: usize = 32;
+pub const MAX_OPEN_LEDGERS: usize = 32;
 /// Provisional encoded intent ceiling: header plus `MAX_INTENT_DIGESTS` digests.
-pub(crate) const MAX_INTENT_BYTES: usize = 64 * 1024;
+pub const MAX_INTENT_BYTES: usize = 64 * 1024;
 
-/// Canonical identity of ONE persisted, verified DM message version: the doc,
-/// record id, author, writing install and the author's DID signature, which was
-/// verified over the full version content and its exact op span before the
-/// version was stored (`chat::doc::apply_remote`/local write). An edit or delete
-/// is a new signed version and therefore a new digest: receipts never carry over.
-pub(crate) fn dm_version(doc: &str, rec: &MsgRec) -> [u8; 32] {
-    cryptography::hash::hasher(cryptography::domains::RECEIPT_DM_VERSION)
-        .part(doc.as_bytes())
-        .part(rec.id.as_bytes())
-        .part(rec.author.as_bytes())
-        .part(&rec.dev)
-        .part(&rec.did_sig)
-        .finish()
-}
+/// The digest of one DM message version is `p2pcore::receipts::messages::dm_version`: it reads
+/// the chat record, which lives in p2pcore.
 
 /// Canonical identity of one stored, verified group record: its exact original
 /// signed bytes (group records are immutable; there are no edits).
-pub(crate) fn group_version(signed_record: &[u8]) -> [u8; 32] {
+pub fn group_version(signed_record: &[u8]) -> [u8; 32] {
     cryptography::hash::content(cryptography::domains::RECEIPT_GROUP_VERSION, signed_record)
 }
 
@@ -99,7 +87,7 @@ fn decode_intent(raw: &[u8]) -> Result<ContextIntent, ReceiptError> {
 
 /// One committed receipt the pump issued (for logs/tests; not a UI event).
 #[derive(Debug, Clone)]
-pub(crate) struct Issued {
+pub struct Issued {
     pub scope: Scope,
     #[cfg_attr(not(test), allow(dead_code))] // read by tests only
     pub entry: Entry,
@@ -107,12 +95,12 @@ pub(crate) struct Issued {
 
 /// Evidence projection for one exact version.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct VersionEvidence {
+pub struct VersionEvidence {
     pub delivered: Vec<Entry>,
     pub read: Vec<Entry>,
 }
 
-pub(crate) struct MessageReceipts {
+pub struct MessageReceipts {
     store: Arc<ReceiptStore>,
     me: String,
     device: [u8; 32],
@@ -132,7 +120,7 @@ fn valid_kind(e: &Entry) -> Result<(), String> {
 impl MessageReceipts {
     /// One controller per backing namespace (`ReceiptStore` enforces one live
     /// ledger per scope). `device` is this install's scoped device ID.
-    pub(crate) fn new(store: Arc<ReceiptStore>, me: &str, device: [u8; 32]) -> Arc<Self> {
+    pub fn new(store: Arc<ReceiptStore>, me: &str, device: [u8; 32]) -> Arc<Self> {
         Arc::new(Self {
             store,
             me: me.to_string(),
@@ -159,7 +147,7 @@ impl MessageReceipts {
         Ok(())
     }
 
-    pub(crate) fn ledger(&self, scope: &Scope) -> Result<Arc<Ledger>, ReceiptError> {
+    pub fn ledger(&self, scope: &Scope) -> Result<Arc<Ledger>, ReceiptError> {
         let key = prefix(scope)?;
         let mut open = self.ledgers.lock();
         if let Some(l) = open.get(&key) {
@@ -180,7 +168,7 @@ impl MessageReceipts {
     /// Ops recording an exact issuance obligation. The caller MUST apply them in
     /// the same transaction that durably stores the source state (accepted
     /// version / read action); nothing is signed before that commit.
-    pub(crate) fn intent_ops(
+    pub fn intent_ops(
         &self,
         kind: Kind,
         scope: &Scope,
@@ -192,7 +180,7 @@ impl MessageReceipts {
     /// `intent_ops` with the conversation context to sign: a group receipt
     /// carries the issuer's meta frontier at acceptance (non-empty); a DM
     /// receipt carries none. Checked here so no row can poison the queue.
-    pub(crate) fn intent_ops_in_context(
+    pub fn intent_ops_in_context(
         &self,
         kind: Kind,
         scope: &Scope,
@@ -239,7 +227,7 @@ impl MessageReceipts {
             cryptography::rng::fill(&mut nonce);
             let key = format!(
                 "{INTENTS}{:020}-{}",
-                crate::node::now_ms(),
+                crdt::now_ms(),
                 hex::encode(nonce)
             );
             ops.push(self.store.db.put_op(&key, &bytes).map_err(io)?);
@@ -264,8 +252,8 @@ impl MessageReceipts {
     }
 
     /// Pending intent rows (bounded page).
-    #[cfg(test)]
-    pub(crate) fn pending(&self) -> Result<usize, ReceiptError> {
+    #[cfg(any(test, feature = "testkit"))]
+    pub fn pending(&self) -> Result<usize, ReceiptError> {
         Ok(self
             .store
             .db
@@ -278,7 +266,7 @@ impl MessageReceipts {
     /// intents. Each intent row is deleted in the transaction of its final
     /// receipt write; a failure leaves it queued for the next call. Already
     /// covered versions (identical retry, other own device) are skipped.
-    pub(crate) fn pump(&self, account: &identity::Identity) -> Result<Vec<Issued>, ReceiptError> {
+    pub fn pump(&self, account: &identity::Identity) -> Result<Vec<Issued>, ReceiptError> {
         if account.did() != self.me {
             return Err(ReceiptError::Signature);
         }
@@ -382,7 +370,7 @@ impl MessageReceipts {
 
     /// Evidence from `issuers` (DIDs) that covers exactly `version` in `scope`.
     /// Committed ledger state only; anything absent stays unconfirmed.
-    pub(crate) fn evidence(
+    pub fn evidence(
         &self,
         scope: &Scope,
         version: &[u8; 32],
@@ -410,7 +398,7 @@ impl MessageReceipts {
     /// `session_did` (M4 entry point; NOT wired to a wire frame yet). Only the
     /// session's own and our own account's statements are admitted; call
     /// claims are refused. Returns the newly committed entries.
-    pub(crate) fn import_direct(
+    pub fn import_direct(
         &self,
         scope: &Scope,
         session_did: &str,
@@ -440,7 +428,7 @@ impl MessageReceipts {
     /// Imports a receipt update under caller policy `admit` (asked with the
     /// statements new to this ledger, before anything commits). Call claims are
     /// always refused. Group ingest uses this with its member admission rule.
-    pub(crate) fn import_checked(
+    pub fn import_checked(
         &self,
         scope: &Scope,
         update: &[u8],
@@ -457,17 +445,17 @@ impl MessageReceipts {
     }
 
     /// Every committed statement of one scope (a group day's aggregation input).
-    pub(crate) fn entries(&self, scope: &Scope) -> Result<Vec<Entry>, ReceiptError> {
+    pub fn entries(&self, scope: &Scope) -> Result<Vec<Entry>, ReceiptError> {
         self.ledger(scope)?.entries()
     }
 
     /// Committed native frontier of one scope's receipt ledger.
-    pub(crate) fn vv(&self, scope: &Scope) -> Result<loro::VersionVector, ReceiptError> {
+    pub fn vv(&self, scope: &Scope) -> Result<loro::VersionVector, ReceiptError> {
         Ok(self.ledger(scope)?.vv())
     }
 
     /// Days of `conversation` with own statements not yet acknowledged (bounded).
-    pub(crate) fn outbox_days(
+    pub fn outbox_days(
         &self,
         conversation: &Conversation,
         limit: usize,
@@ -486,7 +474,7 @@ impl MessageReceipts {
     /// A counterparty acknowledged holding `theirs` of this scope: once that
     /// covers every statement THIS install wrote there, drop the outbox mark.
     /// Statements from our other installs are their own installs' duty.
-    pub(crate) fn acknowledged(
+    pub fn acknowledged(
         &self,
         scope: &Scope,
         theirs: &loro::VersionVector,
@@ -511,16 +499,14 @@ impl MessageReceipts {
     }
 
     /// Native receipt update a peer holding `theirs` lacks (bounded exporter).
-    pub(crate) fn export(
+    pub fn export(
         &self,
         scope: &Scope,
         theirs: &loro::VersionVector,
-        limits: crate::group::doc::batching::BatchLimits,
-    ) -> Result<Option<crate::group::doc::batching::ExportBatch>, ReceiptError> {
+        limits: crdt::batching::BatchLimits,
+    ) -> Result<Option<crdt::batching::ExportBatch>, ReceiptError> {
         self.ledger(scope)?
             .export_batch(theirs, limits)
             .map_err(|e| ReceiptError::Store(e.to_string()))
     }
 }
-#[cfg(test)]
-mod tests;

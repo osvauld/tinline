@@ -126,7 +126,7 @@ After ownership agreement:
    provenance; agree the API rather than duplicate the history engine.
 
 Storage/controller prerequisite now implemented in
-[`receipts/store/joins.rs`](../../crates/core/src/receipts/store/joins.rs):
+[`receipts/store/joins.rs`](../../crates/receipts-core/src/store/joins.rs):
 [durable Joined controller](call-joined-controller.md). One factory shares its
 controller; it freezes the first signed observation/originals, bounds pending
 intents, rotates retries, and commits receipt/evidence/completion atomically.

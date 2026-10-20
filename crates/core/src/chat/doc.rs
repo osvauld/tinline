@@ -29,20 +29,10 @@ use std::collections::{BTreeMap, BTreeSet};
 use loro::{ExportMode, LoroDoc, LoroMap, LoroValue, VersionVector};
 use serde::{Deserialize, Serialize};
 
-// UTC days and writer/device IDs are shared Loro helpers (the `crdt` crate).
-pub use crdt::{DAY_MS, HOUR_MS, day_of, day_start, new_device_value, writer_id};
+// UTC days and writer/device/pair IDs are shared Loro helpers (the `crdt` crate).
+pub use crdt::{DAY_MS, HOUR_MS, day_of, day_start, new_device_value, pair_id, writer_id};
 pub const MAX_TEXT: usize = 20_000;
 const MAX_FILE_JSON: usize = 4096;
-
-/// `pair` for two DIDs: hex BLAKE3 of the sorted, NUL-joined DIDs.
-pub fn pair_id(a: &str, b: &str) -> String {
-    let (x, y) = if a <= b { (a, b) } else { (b, a) };
-    let mut h = blake3::Hasher::new();
-    h.update(x.as_bytes());
-    h.update(&[0]);
-    h.update(y.as_bytes());
-    h.finalize().to_hex().to_string()
-}
 
 pub fn doc_name(pair: &str, day: &str) -> String {
     format!("dm/{pair}/{day}")

@@ -1,8 +1,6 @@
 use super::*;
-use crate::{
-    chat::doc::writer_id,
-    receipts::{doc::ReceiptDoc, tests::sample},
-};
+use crate::{doc::ReceiptDoc, tests::sample};
+use crdt::writer_id;
 pub(crate) fn claim(a: &identity::Identity, group: bool) -> Receipt {
     let mut c = sample(a, Kind::Delivered, group);
     c.kind = Kind::Call;
@@ -71,7 +69,7 @@ fn mixed_message_call_payloads_wrong_day_generation_and_evidence_shape_refused()
             1 => c.kind = Kind::Read,
             2 => c.call = None,
             3 => c.call.as_mut().unwrap().host_generation = Some(0),
-            4 => c.call.as_mut().unwrap().observed_at_ms = crate::chat::doc::DAY_MS as u64,
+            4 => c.call.as_mut().unwrap().observed_at_ms = crdt::DAY_MS as u64,
             5 => c.call.as_mut().unwrap().evidence.clear(),
             6 => c.call.as_mut().unwrap().evidence.push([1; 32]),
             7 => c.call.as_mut().unwrap().active_ms = Some(1000),
