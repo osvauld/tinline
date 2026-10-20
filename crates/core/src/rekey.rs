@@ -73,7 +73,7 @@ mod tests {
     #[test]
     fn phrase_keys_are_byte_identical() {
         let phrase = " Alpha  beta\tGAMMA\n";
-        let hex = |k: Secret32| k.iter().map(|b| format!("{b:02x}")).collect::<String>();
+        let hex = |k: Secret32| hex::encode(*k);
         assert_eq!(hex(key_from_phrase(Which::Account, phrase)), "aaede98680b9849ea1cc82ade454ce6a6a160007faf952812676085851f8474a");
         assert_eq!(hex(key_from_phrase(Which::Chat, phrase)), "ff534a58745f63af85c6170d22180e758d0a057add803ebfc4c1113838aef9fd");
         assert_eq!(hex(crate::group::store::key_from_phrase(phrase)), "ecbbddb539af581bebf460ddd0c12c59b7cbd3e48d5b81db4d40d5ceb4938bcc");
