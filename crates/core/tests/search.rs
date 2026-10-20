@@ -11,6 +11,7 @@ use p2pcore::{Error, LinkEvents, MessageHit, Node, SearchConvKind, SearchNameKin
 
 mod support;
 use support::*;
+use support::now_ms_i64 as now_ms;
 
 struct Root(TempDir);
 impl Root {
@@ -225,10 +226,6 @@ fn group_posts_found_by_members() {
 // ---- tests added for the gaps: recovery, closed days, devices, groups, names, errors, budget ----
 
 const DAY_MS: i64 = 86_400_000;
-
-fn now_ms() -> i64 {
-    std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_millis() as i64
-}
 
 /// Locks and unlocks: the index is closed and opened again, and reconcile runs in the background.
 fn relock(n: &Node) {

@@ -12,24 +12,12 @@ mod support;
 use support::eventually_200ms as eventually;
 use support::*;
 
-const TAG: &str = "p9";
+const S: Suite = Suite("p9");
 
 fn open(dir: &std::path::Path) -> Arc<Node> {
     let node = Node::new(dir.to_string_lossy().into(), Arc::new(Quiet)).unwrap();
     node.auto_accept_contacts_for_test(true);
     node
-}
-
-fn peer(name: &str) -> Peer {
-    Peer::new(TAG, name)
-}
-
-/// Drops the node and opens the same data directory again (a process restart).
-fn restart(p: &mut Peer) {
-    p.reopen();
-    // No pause: `chat_open` waits for a `chat.redb` the old node's tasks still hold (P10).
-    p.node.unlock(PASS.into()).unwrap();
-    online(&p.node);
 }
 
 fn text_of(p: &Peer, did: &str, id: &str) -> Option<String> {
@@ -52,8 +40,8 @@ fn ops(p: &Peer, did: &str) -> Vec<(String, u64, i32)> {
 // ID. The writer ID survives a restart.
 #[test]
 fn every_op_is_written_under_a_writer_id() {
-    let mut a = peer("wid-a");
-    let b = peer("wid-b");
+    let mut a = S.peer("wid-a");
+    let b = S.peer("wid-b");
     b.node.add_contact(a.node.my_ticket().unwrap()).unwrap();
     let (wa, wb) = (a.node.writer_id_for_test().unwrap(), b.node.writer_id_for_test().unwrap());
     assert_ne!(wa, wb);
@@ -87,7 +75,7 @@ fn every_op_is_written_under_a_writer_id() {
     }
 
     // A restart keeps the device ID, hence the writer ID; new content stays under it.
-    restart(&mut a);
+    a.restart();
     eventually(20, "A's chat store is open", || a.node.writer_id_for_test().is_some());
     assert_eq!(a.node.writer_id_for_test(), Some(wa));
     let m3 = a.node.send_text(b.did.clone(), "m3: after restart".into(), None).unwrap().id;
@@ -102,8 +90,8 @@ fn every_op_is_written_under_a_writer_id() {
 // is DID-signed, the writer ID is proven by the version's device ID).
 #[test]
 fn a_restore_makes_a_new_writer_id() {
-    let a = peer("wid-ra");
-    let mut b = peer("wid-rb");
+    let a = S.peer("wid-ra");
+    let mut b = S.peer("wid-rb");
     b.node.add_contact(a.node.my_ticket().unwrap()).unwrap();
     let m1 = b.node.send_text(a.did.clone(), "m1".into(), None).unwrap().id;
     eventually(60, "A holds m1", || text_of(&a, &b.did, &m1).is_some());
@@ -130,8 +118,8 @@ fn a_restore_makes_a_new_writer_id() {
 // (`a_restore_makes_a_new_writer_id`).
 #[test]
 fn a_new_device_key_without_a_new_install_keeps_the_writer_id() {
-    let mut a = peer("wid-ka");
-    let b = peer("wid-kb");
+    let mut a = S.peer("wid-ka");
+    let b = S.peer("wid-kb");
     b.node.add_contact(a.node.my_ticket().unwrap()).unwrap();
     let m1 = a.node.send_text(b.did.clone(), "m1".into(), None).unwrap().id;
     eventually(60, "B holds m1", || text_of(&b, &a.did, &m1).is_some());
@@ -139,7 +127,7 @@ fn a_new_device_key_without_a_new_install_keeps_the_writer_id() {
     eventually(60, "A holds r1", || text_of(&a, &b.did, &r1).is_some());
     let (wa, key) = (a.node.writer_id_for_test().unwrap(), a.node.device_key_for_test().unwrap());
     a.node.rotate_device_key_on_disk_for_test().unwrap();
-    restart(&mut a);
+    a.restart();
     eventually(20, "A's chat store is open", || a.node.writer_id_for_test().is_some());
     assert_ne!(a.node.device_key_for_test().unwrap(), key, "the device key changed");
     assert_eq!(a.node.writer_id_for_test(), Some(wa), "the writer ID did not");

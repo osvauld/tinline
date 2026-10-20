@@ -60,21 +60,12 @@ const GRANT_TTL: u64 = 365 * 24 * 3600 * 1000;
 /// `CHAT_ALPN` (`crates/core/src/chat/wire.rs`), private there. Version 7 since postcard.
 const CHAT_ALPN: &[u8] = b"tinline/chat/7";
 const WAIT: Duration = Duration::from_secs(30);
-const TAG: &str = "w2c";
+const S: Suite = Suite("w2c");
 
 impl Peer {
     fn dump(&self) -> String {
         format!("{:?} {:?}", self.node.contacts(), self.node.blocked_for_test())
     }
-}
-
-fn peer(name: &str) -> Peer {
-    Peer::new(TAG, name)
-}
-
-/// a and b, each a contact of the other (b scanned a's ticket).
-fn pair(tag: &str) -> (Peer, Peer) {
-    Peer::pair(TAG, tag)
 }
 
 fn ended_within(p: &Peer, id: &str, secs: u64) -> String {
@@ -358,7 +349,7 @@ fn is_reject(m: &Option<Msg>) -> bool {
 // `call`, each with a one-year TTL, issued by the node's DID to the contact's.
 #[test]
 fn ticket_contact_holds_message_and_call_tokens_with_a_one_year_ttl() {
-    let a = peer("ttl-a");
+    let a = S.peer("ttl-a");
     let raw = Raw::new();
     let added = raw.add(&a.node.my_ticket().unwrap());
     let m = verify_from(&a, &raw.did(), &added.from_node);
@@ -380,7 +371,7 @@ fn ticket_contact_holds_message_and_call_tokens_with_a_one_year_ttl() {
 // it is answered "calls not allowed" and never rings. A self-issued token opens neither.
 #[test]
 fn the_message_token_opens_chat_and_the_call_token_rings() {
-    let a = peer("both-a");
+    let a = S.peer("both-a");
     let raw = Raw::new();
     let added = raw.add(&a.node.my_ticket().unwrap());
     let call_token = added.call_from_node.clone().unwrap();
@@ -422,7 +413,7 @@ fn the_message_token_opens_chat_and_the_call_token_rings() {
 // block list are unchanged.
 #[test]
 fn a_lifted_grant_is_refused_on_both_paths_with_state_unchanged() {
-    let a = peer("lift-a");
+    let a = S.peer("lift-a");
     let b = Raw::new();
     let c = Raw::new();
     let b_added = b.add(&a.node.my_ticket().unwrap());
@@ -442,7 +433,7 @@ fn a_lifted_grant_is_refused_on_both_paths_with_state_unchanged() {
 // expiry, PROVISIONAL: `caps.rs` `RENEW_WINDOW`.)
 #[test]
 fn answering_renews_the_callers_grant_declining_does_not() {
-    let a = peer("renew-a");
+    let a = S.peer("renew-a");
     let raw = Raw::new();
     let added = raw.add(&a.node.my_ticket().unwrap());
     let call_token = added.call_from_node.clone().unwrap();
@@ -484,7 +475,7 @@ fn answering_renews_the_callers_grant_declining_does_not() {
 // generic reason on both paths, nothing rings, and the node's state is unchanged by the attempts.
 #[test]
 fn block_takes_both_tokens_back_and_unblock_does_not_revive_them() {
-    let a = peer("blk-a");
+    let a = S.peer("blk-a");
     let raw = Raw::new();
     let added = raw.add(&a.node.my_ticket().unwrap());
     let call_token = added.call_from_node.clone().unwrap();
@@ -546,8 +537,8 @@ fn tokens_are_taken_back_per_did_never_by_id() {
 // rings a. The global availability switch still works as before.
 #[test]
 fn calls_are_refused_per_contact_while_messages_flow() {
-    let (a, b) = pair("away");
-    let c = peer("away-c");
+    let (a, b) = S.pair("away");
+    let c = S.peer("away-c");
     c.node.add_contact(a.node.my_ticket().unwrap()).unwrap();
     a.node.allow_calls(b.did.clone(), false).unwrap();
     let call = b.node.call(a.did.clone()).unwrap();

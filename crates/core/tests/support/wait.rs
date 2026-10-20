@@ -54,6 +54,11 @@ pub fn now_ms() -> u64 {
         .as_millis() as u64
 }
 
+/// Unix time in milliseconds, signed (for the files whose arithmetic is `i64`).
+pub fn now_ms_i64() -> i64 {
+    now_ms() as i64
+}
+
 /// Unix time in seconds.
 pub fn now_secs() -> u64 {
     SystemTime::now()

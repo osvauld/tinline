@@ -37,13 +37,6 @@ fn trio(tag: &str) -> (Peer, Peer, Peer) {
 
 
 
-fn incoming(p: &Peer) -> String {
-    expect(p, 40, "incoming", |e| match e {
-        Ev::Incoming(c) => Some(c.call_id.clone()),
-        _ => None,
-    })
-}
-
 fn active(p: &Peer, id: &str) {
     expect(p, 20, "active", |e| matches!(e, Ev::State(i, CallState::Active) if i == id).then_some(()));
 }
@@ -56,8 +49,8 @@ fn record(p: &Peer, id: &str) -> p2pcore::CallRecord {
 fn second_device_answers_first_ends_answered_elsewhere() {
     let (a, b1, b2) = trio("answer");
     let call = a.node.call(b1.did.clone()).unwrap();
-    assert_eq!(incoming(&b1), call.call_id);
-    assert_eq!(incoming(&b2), call.call_id);
+    assert_eq!(incoming(&b1, 40), call.call_id);
+    assert_eq!(incoming(&b2, 40), call.call_id);
     b2.node.answer(call.call_id.clone()).unwrap();
     active(&a, &call.call_id);
     active(&b2, &call.call_id);
@@ -76,8 +69,8 @@ fn second_device_answers_first_ends_answered_elsewhere() {
 fn decline_on_one_device_declines_the_call_everywhere() {
     let (a, b1, b2) = trio("decline");
     let call = a.node.call(b1.did.clone()).unwrap();
-    assert_eq!(incoming(&b1), call.call_id);
-    assert_eq!(incoming(&b2), call.call_id);
+    assert_eq!(incoming(&b1, 40), call.call_id);
+    assert_eq!(incoming(&b2, 40), call.call_id);
     b1.node.decline(call.call_id.clone()).unwrap();
     assert_eq!(expect(&a, 10, "a ended", ended(&call.call_id)), "declined");
     assert_eq!(expect(&b1, 10, "b1 ended", ended(&call.call_id)), "declined_local");
@@ -90,8 +83,8 @@ fn decline_on_one_device_declines_the_call_everywhere() {
 fn caller_hangup_while_ringing_cancels_all_devices() {
     let (a, b1, b2) = trio("hangup");
     let call = a.node.call(b1.did.clone()).unwrap();
-    assert_eq!(incoming(&b1), call.call_id);
-    assert_eq!(incoming(&b2), call.call_id);
+    assert_eq!(incoming(&b1, 40), call.call_id);
+    assert_eq!(incoming(&b2, 40), call.call_id);
     a.node.hangup(call.call_id.clone()).unwrap();
     assert_eq!(expect(&a, 10, "a ended", ended(&call.call_id)), "cancelled");
     for b in [&b1, &b2] {
@@ -106,7 +99,7 @@ fn an_offline_device_does_not_delay_the_other() {
     b1.node.stop();
     let t = Instant::now();
     let call = a.node.call(b1.did.clone()).unwrap();
-    assert_eq!(incoming(&b2), call.call_id);
+    assert_eq!(incoming(&b2, 40), call.call_id);
     assert!(t.elapsed() < Duration::from_secs(15), "ringing took {:?}", t.elapsed());
     b2.node.answer(call.call_id.clone()).unwrap();
     active(&a, &call.call_id);
@@ -118,8 +111,8 @@ fn an_offline_device_does_not_delay_the_other() {
 fn simultaneous_answers_leave_exactly_one_active_call() {
     let (a, b1, b2) = trio("race");
     let call = a.node.call(b1.did.clone()).unwrap();
-    assert_eq!(incoming(&b1), call.call_id);
-    assert_eq!(incoming(&b2), call.call_id);
+    assert_eq!(incoming(&b1, 40), call.call_id);
+    assert_eq!(incoming(&b2, 40), call.call_id);
     let (n1, n2, id1, id2) = (b1.node.clone(), b2.node.clone(), call.call_id.clone(), call.call_id.clone());
     let barrier = Arc::new(std::sync::Barrier::new(2));
     let (x, y) = (barrier.clone(), barrier);
@@ -171,14 +164,14 @@ fn one_device_busy_the_other_answers() {
     let e = make_peer("busyone-e", None);
     e.node.add_contact(b1.node.my_ticket().unwrap()).unwrap();
     let c1 = c.node.call(b1.did.clone()).unwrap();
-    assert_eq!(incoming(&b1), c1.call_id);
+    assert_eq!(incoming(&b1, 40), c1.call_id);
     b1.node.answer(c1.call_id.clone()).unwrap();
     active(&b1, &c1.call_id);
     let d1 = d.node.call(b1.did.clone()).unwrap();
-    assert_eq!(incoming(&b1), d1.call_id); // waiting
+    assert_eq!(incoming(&b1, 40), d1.call_id); // waiting
     // Now a third call is refused busy at b1.
     let call = a.node.call(b1.did.clone()).unwrap();
-    assert_eq!(incoming(&b2), call.call_id);
+    assert_eq!(incoming(&b2, 40), call.call_id);
     b2.node.answer(call.call_id.clone()).unwrap();
     active(&a, &call.call_id);
     assert_eq!(a.node.current_call().unwrap().call_id, call.call_id);
@@ -199,11 +192,11 @@ fn all_devices_busy_is_busy() {
         let d = make_peer(&format!("busyall-d{i}"), None);
         d.node.add_contact(b.node.my_ticket().unwrap()).unwrap();
         let c1 = c.node.call(b.did.clone()).unwrap();
-        assert_eq!(incoming(b), c1.call_id);
+        assert_eq!(incoming(b, 40), c1.call_id);
         b.node.answer(c1.call_id.clone()).unwrap();
         active(b, &c1.call_id);
         let d1 = d.node.call(b.did.clone()).unwrap();
-        assert_eq!(incoming(b), d1.call_id);
+        assert_eq!(incoming(b, 40), d1.call_id);
         others.push((c, d, c1.call_id));
     }
     let call = a.node.call(b1.did.clone()).unwrap();
