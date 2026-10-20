@@ -1,6 +1,11 @@
-//! Byte-identical regression for the Opus encoder/decoder settings. The hashes were recorded
-//! against the pre-`codec` implementation; a change here means the wire output changed.
+//! Byte-identical regression for the Opus encoder/decoder settings: a change here means the wire
+//! output changed. DRED and deep PLC are off here because libopus's neural code rounds
+//! differently per CPU (CI's runner disagreed with both dev machines); `tests.rs` covers those
+//! paths by behaviour instead.
 use super::*;
+
+/// The call codec without its CPU-dependent neural parts: no DRED, decoder below deep PLC (5).
+const PLAIN_CALL: CodecConfig = CodecConfig { dred: 0, decoder_complexity: Some(4), ..CALL_CODEC };
 
 fn fnv(h: &mut u64, bytes: &[u8]) {
     for &b in bytes {
@@ -28,7 +33,7 @@ fn fixture(frame: usize) -> [i16; FRAME] {
 
 #[test]
 fn sender_bytes_golden() {
-    let mut tx = Sender::new(32_000).unwrap();
+    let mut tx = Sender::with_codec(&PLAIN_CALL).unwrap();
     let mut h = 0xcbf2_9ce4_8422_2325u64;
     for f in 0..150 {
         fnv(&mut h, &tx.encode(&fixture(f)).unwrap());
@@ -38,7 +43,7 @@ fn sender_bytes_golden() {
 
 #[test]
 fn group_sender_bytes_golden() {
-    let mut tx = Sender::new(24_000).unwrap();
+    let mut tx = Sender::with_codec(&CodecConfig { bitrate: 24_000, ..PLAIN_CALL }).unwrap();
     let mut h = 0xcbf2_9ce4_8422_2325u64;
     for f in 0..150 {
         // Quiet stretch in the middle closes then reopens the gate.
@@ -56,13 +61,13 @@ fn group_sender_bytes_golden() {
 
 #[test]
 fn receiver_pcm_golden() {
-    let mut tx = Sender::new(32_000).unwrap();
-    let mut rx = Receiver::new().unwrap();
+    let mut tx = Sender::with_codec(&PLAIN_CALL).unwrap();
+    let mut rx = Receiver::with_codec(&PLAIN_CALL).unwrap();
     let mut h = 0xcbf2_9ce4_8422_2325u64;
     for f in 0..150usize {
         let now = f as u64 * 20;
         let d = tx.encode(&fixture(f)).unwrap();
-        // Drop every 7th datagram so FEC/DRED/PLC paths run.
+        // Drop every 7th datagram so the FEC and PLC paths run.
         if f % 7 != 3 {
             rx.push(&d, now);
         }
@@ -75,6 +80,6 @@ fn receiver_pcm_golden() {
     assert_eq!(h, RECEIVER_HASH, "receiver hash is {h:#x}");
 }
 
-const SENDER_HASH: u64 = 0xb159dc6ca0ba65de;
+const SENDER_HASH: u64 = 0x3fb116cfdf791360;
 const GROUP_SENDER_HASH: u64 = 0xc239e2fe0fb39dd0;
-const RECEIVER_HASH: u64 = 0xca143306ba2ffe4e;
+const RECEIVER_HASH: u64 = 0x6bbef000ab6e61ac;

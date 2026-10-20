@@ -196,7 +196,11 @@ pub enum GroupFrame {
 impl Sender {
     /// `bitrate_bps` ~ 32_000 is a good default for voice.
     pub fn new(bitrate_bps: i32) -> Result<Self> {
-        let enc = Encoder::new(&CodecConfig { bitrate: bitrate_bps, ..CALL_CODEC })?;
+        Self::with_codec(&CodecConfig { bitrate: bitrate_bps, ..CALL_CODEC })
+    }
+
+    fn with_codec(cfg: &CodecConfig) -> Result<Self> {
+        let enc = Encoder::new(cfg)?;
         Ok(Sender { enc, seq: 0, scratch: Box::new([0; MAX_PACKET]), quiet_ms: 0, gated: false })
     }
 
@@ -328,12 +332,16 @@ fn fade(out: &mut [i16; FRAME], rising: bool) {
 
 impl Receiver {
     pub fn new() -> Result<Self> {
+        Self::with_codec(&CALL_CODEC)
+    }
+
+    fn with_codec(cfg: &CodecConfig) -> Result<Self> {
         let slots = (0..SLOTS)
             .map(|_| Slot { seq: 0, used: false, len: 0, level: 127, data: Box::new([0; MAX_PACKET]) })
             .collect();
         Ok(Receiver {
-            dec: Decoder::new(&CALL_CODEC)?,
-            dred: Dred::new(&CALL_CODEC)?,
+            dec: Decoder::new(cfg)?,
+            dred: Dred::new(cfg)?,
             slots,
             started: false,
             playing: false,
