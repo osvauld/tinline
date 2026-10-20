@@ -37,6 +37,48 @@ impl Default for LinkAs {
     }
 }
 
+/// One test file's identity: the tag that names its temp directories. Replaces the
+/// `peer`/`pair`/`link_fresh` wrappers every file used to re-roll: `const S: Suite = Suite("g2");`.
+#[derive(Clone, Copy)]
+pub struct Suite(pub &'static str);
+
+impl Suite {
+    /// A committed identity, started and online (`Peer::new`).
+    pub fn peer(self, name: &str) -> Peer {
+        Peer::new(self.0, name)
+    }
+
+    /// A committed identity, started (`online`) or not (`Peer::committed`).
+    pub fn committed(self, name: &str, started: bool) -> Peer {
+        Peer::committed(self.0, name, started)
+    }
+
+    /// As `committed`, with noisy link events (`Peer::committed_with(.., true)`).
+    pub fn noisy(self, name: &str, started: bool) -> Peer {
+        Peer::committed_with(self.0, name, started, true)
+    }
+
+    /// `a` and `b`, each a contact of the other (`Peer::pair`).
+    pub fn pair(self, tag: &str) -> (Peer, Peer) {
+        Peer::pair(self.0, tag)
+    }
+
+    /// `e` links a fresh install, default `LinkAs`.
+    pub fn link_fresh(self, e: &Peer, name: &str) -> Peer {
+        e.link_fresh(self.0, name, LinkAs::default())
+    }
+
+    /// As `link_fresh`, announcing the device label "Desk".
+    pub fn link_desk(self, e: &Peer, name: &str) -> Peer {
+        e.link_fresh(self.0, name, LinkAs { label: "Desk", ..LinkAs::default() })
+    }
+
+    /// As `link_fresh`, also waiting for the existing install's own "link done".
+    pub fn link_both_done(self, e: &Peer, name: &str) -> Peer {
+        e.link_fresh(self.0, name, LinkAs { wait_existing_done: true, ..LinkAs::default() })
+    }
+}
+
 pub struct Peer {
     pub node: Arc<Node>,
     pub rx: Receiver<Ev>,
@@ -201,6 +243,18 @@ impl Peer {
         self.rx = rx;
         self.lrx = lrx;
         self.logs = logs;
+    }
+
+    /// A process restart: `reopen` (no pause), unlock with `PASS`, start and wait online.
+    pub fn restart(&mut self) {
+        self.reopen_unlocked(PASS);
+        online(&self.node);
+    }
+
+    /// `reopen`, then unlock with `pass`. Left stopped.
+    pub fn reopen_unlocked(&mut self, pass: &str) {
+        self.reopen();
+        self.node.unlock(pass.into()).unwrap();
     }
 
     /// The forgotten-passphrase restore over the same directory: reopen, then restore the

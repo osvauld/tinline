@@ -20,9 +20,9 @@ pub use calls::{ended, ended_after, expect, incoming, saw_incoming};
 pub use chat::{all_msgs, all_msgs_oldest_first, delivered, has, holds, ticks};
 pub use events::{Ev, LEv, LTap, NoLink, Quiet, Tap};
 pub use group::{Member, WAIT};
-pub use peer::{LinkAs, Peer};
+pub use peer::{LinkAs, Peer, Suite};
 pub use tempdir::TempDir;
-pub use wait::{eventually, eventually_200ms, now_ms, now_secs, online, within};
+pub use wait::{eventually, eventually_200ms, now_ms, now_ms_i64, now_secs, online, within};
 
 /// The passphrase every test identity uses.
 pub const PASS: &str = "test-passphrase";
