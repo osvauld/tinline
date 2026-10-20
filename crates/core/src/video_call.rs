@@ -457,11 +457,12 @@ impl Inner {
                 let max_fps = if peer.max_fps == 0 { FPS } else { (peer.max_fps as u32).min(FPS) };
                 pol.peer = (pipes::max_rung(&LadderConfig::default(), peer.max_pixels), max_fps);
                 pol.recv_pipelined = codecs::pipelined_decoder(rx);
+                pol.peer_probes = peer.burst_probe;
             }
             v.negotiated.store(true, Ordering::SeqCst);
             let pipe = v.pipe.clone();
             let send = self.handle.spawn(run_send(conn.clone(), pipe.clone()));
-            let recv = self.handle.spawn(run_recv(conn.clone(), pipe, rx, peer.hint_flags));
+            let recv = self.handle.spawn(run_recv(conn.clone(), pipe, rx, peer.hint_flags, peer.burst_probe));
             let policy = self.handle.spawn(adapt::run_policy(v.pipe.clone()));
             let path = self.handle.spawn(path::watch(conn.clone(), v.pipe.clone()));
             v.tasks.lock().extend([send, recv, policy, path]);

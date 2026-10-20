@@ -887,7 +887,16 @@ impl App {
                 decoders = decoders.push(button(tx(format!("{}{label}", if selected { "✓ " } else { "" }), 12.0, t.ink))
                     .on_press(Msg::Video(super::super::Vm::Tuning(next))));
             }
-            controls = controls.push(decoders)
+            controls = controls.push(decoders);
+            let mut rcs = row![tx("Rate control", 13.0, t.ink2)].spacing(8);
+            for (id, label) in [("auto", "Today"), ("cut", "Cut"), ("probe", "Cut+probe"), ("trend", "Trend+probe")] {
+                let mut next = tuning.clone(); next.rate_control = id.into();
+                let selected = tuning.rate_control == id || (tuning.rate_control.is_empty() && id == "auto");
+                rcs = rcs.push(button(tx(format!("{}{label}", if selected { "✓ " } else { "" }), 12.0, t.ink))
+                    .on_press(Msg::Video(super::super::Vm::Tuning(next))));
+            }
+            controls = controls.push(rcs)
+                .push(pf_note(t, "Rate control: probing needs the other side on this build too; set both the same for an A/B call."))
                 .push(pf_note(t, "This computer decodes AV1 (rav1d) and VP8 (libvpx) in software only. During a call, About this call has the same controls for that call."));
             c = c.push(pf_sec(24.0, controls.into()));
         }

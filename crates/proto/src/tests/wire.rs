@@ -33,6 +33,7 @@ fn frame_roundtrip_all_variants() {
                 hw_encode: vec![VideoCodec::Vp8],
                 hint_flags: true,
                 codec_switch: true,
+                burst_probe: false,
             }),
         },
         Msg::Video { camera: true },
@@ -307,6 +308,7 @@ fn offer(decode: &[VideoCodec], encode: &[VideoCodec], hw_decode: &[VideoCodec],
         hw_encode: hw_encode.to_vec(),
         hint_flags: false,
         codec_switch: false,
+        burst_probe: false,
     }
 }
 

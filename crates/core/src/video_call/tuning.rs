@@ -13,6 +13,10 @@ pub struct VideoTuning {
     /// has both kinds for the codec that arrives (VP8 on a phone with a hardware decoder). Local
     /// only: the offer's `hw_decode` (and so the peer's codec choice) is unchanged.
     pub recv_decoder: String,
+    /// Empty or "auto" (the default controller), "cut" (`SenderConfig::smooth_cut`), "probe"
+    /// (that and `burst_room`: probing, where the peer's offer says `burst_probe`) or "trend"
+    /// (those and the delay-trend detector). For A/B calls (`docs/design/video-sim-tuning.md`).
+    pub rate_control: String,
 }
 
 impl VideoTuning {
@@ -30,6 +34,9 @@ impl VideoTuning {
         }
         if !matches!(self.recv_decoder.as_str(), "" | "auto" | "hw" | "sw") {
             return Err(Error::Protocol("unknown decoder".into()));
+        }
+        if !matches!(self.rate_control.as_str(), "" | "auto" | "cut" | "probe" | "trend") {
+            return Err(Error::Protocol("unknown rate control".into()));
         }
         if self.codec().is_some_and(|codec| !c.encode.contains(&codec)) {
             return Err(Error::Protocol(
@@ -70,6 +77,17 @@ impl VideoTuning {
             _ => None,
         };
     }
+
+    /// `rate_control` into the sender's config; probing only to a peer whose offer says
+    /// `burst_probe` (an older receiver would decode the padding).
+    pub(super) fn configure_rate(&self, cfg: &mut SenderConfig, peer_probes: bool) {
+        let rc = self.rate_control.as_str();
+        cfg.smooth_cut = matches!(rc, "cut" | "probe" | "trend");
+        cfg.burst_room = peer_probes && matches!(rc, "probe" | "trend");
+        if rc == "trend" {
+            cfg.detector = video::detect::Detector::Trend;
+        }
+    }
 }
 
 impl NodeVideo {
@@ -88,6 +106,7 @@ impl NodeVideo {
                 hw_encode: c.hw_encode,
                 hint_flags: true,
                 codec_switch: true,
+                burst_probe: true,
             }
         })
     }
@@ -164,6 +183,7 @@ mod tests {
             hw_encode: c.hw_encode,
             hint_flags: true,
             codec_switch: true,
+            burst_probe: true,
         }
     }
 
@@ -224,6 +244,10 @@ mod tests {
                 recv_decoder: "gpu".into(),
                 ..Default::default()
             },
+            VideoTuning {
+                rate_control: "bbr".into(),
+                ..Default::default()
+            },
         ] {
             assert!(t.validate(&c).is_err());
         }
@@ -240,6 +264,7 @@ mod tests {
             max_bps: 1_000_000,
             fixed_height: 360,
             recv_decoder: "sw".into(),
+            rate_control: "probe".into(),
         };
         *settings.tuning.lock() = next.clone();
         assert_eq!(first.pipe.stats.lock().tuning, VideoTuning::default());
@@ -297,5 +322,19 @@ mod tests {
         assert_eq!(cfg.start_bps, 500_000);
         assert_eq!(cfg.ladder.fixed_rung, Some(2));
         assert!(cfg.ladder.rungs.iter().all(|r| r.max_bps == 1_000_000));
+    }
+
+    #[test]
+    fn rate_control_probes_only_a_peer_that_takes_probes() {
+        let t = |rc: &str| VideoTuning { rate_control: rc.into(), ..Default::default() };
+        let mut cfg = SenderConfig::default();
+        t("").configure_rate(&mut cfg, true);
+        assert!(!cfg.smooth_cut && !cfg.burst_room);
+        assert_eq!(cfg.detector, video::detect::Detector::Fixed);
+        t("probe").configure_rate(&mut cfg, false);
+        assert!(cfg.smooth_cut && !cfg.burst_room);
+        t("trend").configure_rate(&mut cfg, true);
+        assert!(cfg.smooth_cut && cfg.burst_room);
+        assert_eq!(cfg.detector, video::detect::Detector::Trend);
     }
 }

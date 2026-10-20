@@ -3,12 +3,17 @@
 
 use super::*;
 
+mod real_calls;
+mod scoreboard;
+
 const S: u64 = 1_000_000;
 
 /// Defaults. Overrides for experiments: `SIM_BACKLOG=unsent` (QUIC-unsent backlog model),
 /// `SIM_DRAIN=<pct>`, `SIM_STARVE=<pct>` (100 / 0 turn them off), `SIM_UP_DIP=<pct>` (0: any dip
 /// restarts the ladder's step-up hold), `SIM_STAMP_CAPTURE=1` (frames stamped at capture),
-/// `SIM_FAST_HOLD=<ms>` (the start's fast step-up hold; 0: off, the controller before it).
+/// `SIM_FAST_HOLD=<ms>` (the start's fast step-up hold; 0: off, the controller before it),
+/// `SIM_DETECTOR=trend` (`crate::detect`), `SIM_CUT=1` (`SenderConfig::smooth_cut`),
+/// `SIM_PROBE=1` (`SenderConfig::burst_room`).
 fn base() -> Scenario {
     let mut sc = Scenario::default();
     if std::env::var("SIM_BACKLOG").is_ok_and(|v| v == "unsent") {
@@ -26,6 +31,16 @@ fn base() -> Scenario {
     }
     if std::env::var_os("SIM_STAMP_CAPTURE").is_some() {
         sc.stamp_capture = true;
+    }
+    if std::env::var("SIM_DETECTOR").is_ok_and(|v| v == "trend") {
+        sc.sender.detector = crate::detect::Detector::Trend;
+    }
+    if std::env::var_os("SIM_CUT").is_some() {
+        sc.sender.smooth_cut = true;
+    }
+    if std::env::var_os("SIM_PROBE").is_some() {
+        sc.sender.burst_room = true;
+        sc.receiver.report_burst = true;
     }
     if let Some(v) = knob("SIM_FAST_HOLD") {
         sc.sender.ladder.up_fast_hold_us = if v == 0 { u64::MAX } else { v as u64 * 1_000 };
@@ -57,10 +72,11 @@ fn trace(r: &Report, from: u64, to: u64) {
             let br = r.bitrate.iter().rev().find(|x| x.0 <= *at).map_or(0, |x| x.1);
             let q = r.queue.iter().rev().find(|x| x.0 <= *at).map_or(0, |x| x.1);
             println!(
-                "  {:7.3}s delivered {:5} kbps queuing {:4} ms | br after {:5} kbps q {:6} B",
+                "  {:7.3}s delivered {:5} kbps queuing {:4} ms burst {:5} kbps | br after {:5} kbps q {:6} B",
                 *at as f64 / 1e6,
                 rp.delivered_bps / 1000,
                 rp.queuing_us / 1000,
+                rp.burst_bps / 1000,
                 br / 1000,
                 q
             );
@@ -238,11 +254,13 @@ fn ladder_follows_bandwidth_dip() {
     println!("{:>10}  sizes {:?}", "", r.sizes);
     assert_eq!(r.decode_errors, 0);
     assert!(min_height(&r, 8 * S, 10 * S) >= 540, "uses the 2 Mbps link: {:?}", r.sizes);
-    // Down to 320x180 within a second of the drop, and stays there while it lasts.
-    let down = r.sizes.iter().find(|s| s.0 >= 10 * S && s.2 == 180).expect("steps down");
-    assert!(down.0 < 11 * S, "180p at {} ms", down.0 / 1000);
+    // Down to 640x360 within a second of the drop (never 180p: `LadderConfig::min_rung`), at
+    // the frame rate 200 kbps holds, and stays at that size while it lasts.
+    let down = r.sizes.iter().find(|s| s.0 >= 10 * S && s.2 == 360).expect("steps down");
+    assert!(down.0 < 11 * S, "360p at {} ms", down.0 / 1000);
     // (From 13 s: the frames queued before the drop are shown until ~12.4 s, see below.)
-    assert_eq!(shown_height(&r, 13 * S, 20 * S), (180, true));
+    assert_eq!(shown_height(&r, 13 * S, 20 * S), (360, true));
+    assert!(fps_at(&r, 15 * S) <= 15, "{:?}", r.fps);
     // Back up after recovery, one rung at a time (10 s after the step down, 5 s holds), without
     // flapping: 360p at ~26 s, 540p at ~32 s, then (the phone model) 720p24 at ~38 s. The drop
     // starved the link, so it isn't a flap: no block.
@@ -255,9 +273,13 @@ fn ladder_follows_bandwidth_dip() {
     // at capture, whose encode-time "queue" after each step up held the rate at ~1.6 instead of
     // ~1.9 Mbps on this 2 Mbps link; the trade-off is in docs/video.md).
     assert!(p95(&r, 0, 40 * S) < 650.0, "p95 {}", p95(&r, 0, 40 * S));
-    // (Up to 37 s: the 720p24 step near the link's capacity costs ~190 ms for a second.)
+    // (Up to 37 s: the 720p24 step near the link's capacity costs ~190 ms for a second.) 360p
+    // at 6 fps on the full 200 kbps link: each frame is a sixth of a second's bits, so it takes
+    // ~167 ms to send, and with `ReceiverConfig::low_fps_delay` the link runs a little fuller
+    // (219 ms worst, at 18.9 s; 180p30 was under 150).
     let worst = Report::pct(&r.latencies_ms(13 * S, 37 * S), 1.0);
-    assert!(worst < 150.0, "{worst}");
+    let at = r.shown.iter().filter(|s| s.at_us >= 13 * S && s.at_us < 37 * S).max_by_key(|s| s.at_us - s.capture_us);
+    assert!(worst < 250.0, "{worst} ms, shown at {:?}", at.map(|s| s.at_us / 1000));
     let f: u64 = r.freezes(250_000, S, 40 * S).iter().map(|f| f.1).sum();
     assert!(f < 2_000_000, "frozen {} ms", f / 1000);
 }
@@ -314,8 +336,10 @@ fn real_av1_across_resolution_switch() {
     println!("{:>10}  decoded {:?}", "", codec.decoded_sizes);
     trace(&r, 5_800_000, 10 * S);
     assert_eq!(r.decode_errors, 0);
-    let small = codec.decoded_sizes.iter().position(|&s| s == (320, 180)).expect("decoded 180p");
-    assert!(codec.decoded_sizes[small + 1..].contains(&(640, 360)), "{:?}", codec.decoded_sizes);
+    // Up to 540p, down to 360p (not 180p: `LadderConfig::min_rung`) when the link drops.
+    let big = codec.decoded_sizes.iter().position(|&s| s == (960, 540)).expect("decoded 540p");
+    assert!(codec.decoded_sizes[big + 1..].contains(&(640, 360)), "{:?}", codec.decoded_sizes);
+    assert!(!codec.decoded_sizes.contains(&(320, 180)), "{:?}", codec.decoded_sizes);
     let f: u64 = r.freezes(250_000, S, sc.duration_us).iter().map(|f| f.1).sum();
     // The 540p frames queued before the drop was noticed (see docs/video.md).
     assert!(f < 2 * S, "frozen {} ms", f / 1000);

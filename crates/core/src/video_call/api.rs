@@ -195,9 +195,16 @@ impl Node {
     /// shrink for a second and tells the peer's sender (`docs/design/video-adaptation.md`).
     /// Hidden: the peer sends 180p at 15 fps. Ignored without a call.
     pub fn set_video_view(&self, width_px: u32, height_px: u32, visible: bool) {
+        self.set_video_view_of(0, width_px, height_px, visible);
+    }
+
+    /// [`Self::set_video_view`] for one of several places the app draws the remote picture
+    /// (`view`: the app's id for it, stable while it is composed). The peer is asked for the
+    /// largest one shown; hidden only when none is.
+    pub fn set_video_view_of(&self, view: u32, width_px: u32, height_px: u32, visible: bool) {
         let Some(call) = self.inner.current_video_call() else { return };
         let pipe = &call.video.pipe;
-        pipe.policy.lock().set_view(width_px, height_px, visible);
+        pipe.policy.lock().set_view(view, width_px, height_px, visible);
         adapt::push_hint(pipe, Instant::now());
     }
 

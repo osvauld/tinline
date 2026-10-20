@@ -332,7 +332,8 @@ async fn net_buffer_limit_is_an_error() {
 #[test]
 fn control_round_trip() {
     let msgs = [
-        Control::Report(RateReport { delivered_bps: 123_456, queuing_us: 7_890 }),
+        Control::Report(RateReport { delivered_bps: 123_456, queuing_us: 7_890, burst_bps: 0 }),
+        Control::Report(RateReport { delivered_bps: 123_456, queuing_us: 7_890, burst_bps: 4_000_000 }),
         Control::Keyframe,
         Control::Ack { group: 42, offset: 1 << 40 },
         Control::Hint(Hint { max_pixels: 640 * 360, max_fps: 15, reason: HintReason::Thermal, room: false }),

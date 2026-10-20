@@ -75,9 +75,13 @@ impl Control {
     pub fn encode(&self, out: &mut Vec<u8>) {
         match self {
             Control::Report(r) => {
-                out.push(1);
+                // Canonical: 1 without a burst rate (an older sender reads it), 6 with one.
+                out.push(if r.burst_bps == 0 { 1 } else { 6 });
                 out.extend_from_slice(&r.delivered_bps.to_be_bytes());
                 out.extend_from_slice(&r.queuing_us.to_be_bytes());
+                if r.burst_bps != 0 {
+                    out.extend_from_slice(&r.burst_bps.to_be_bytes());
+                }
             }
             Control::Keyframe => out.push(2),
             Control::Ack { group, offset } => {
@@ -107,6 +111,7 @@ impl Control {
             3 => 17,
             4 => 7,
             5 => 8,
+            6 => 17,
             _ => return Err(NetError::Protocol("unknown control message")),
         };
         if buf.len() < len {
@@ -114,9 +119,10 @@ impl Control {
         }
         let u64_at = |i: usize| u64::from_be_bytes(buf[i..i + 8].try_into().unwrap());
         let msg = match t {
-            1 => Control::Report(RateReport {
+            1 | 6 => Control::Report(RateReport {
                 delivered_bps: u32::from_be_bytes(buf[1..5].try_into().unwrap()),
                 queuing_us: u64_at(5),
+                burst_bps: if t == 6 { u32::from_be_bytes(buf[13..17].try_into().unwrap()) } else { 0 },
             }),
             2 => Control::Keyframe,
             3 => Control::Ack { group: u64_at(1), offset: u64_at(9) },

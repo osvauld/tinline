@@ -179,6 +179,11 @@ pub struct VideoOffer {
     /// needs no message).
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub codec_switch: bool,
+    /// Its receiver drops probe padding (`video::media::PAD_STAMP` records) and its sender reads
+    /// rate reports with a burst rate (video control message 6), so its peer may send both.
+    /// Optional: absent (older devices) = false, and then the peer sends neither.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub burst_probe: bool,
 }
 
 /// The codec `sender` sends to `receiver`. Candidates are the sender's `encode` that the receiver
