@@ -27,9 +27,6 @@ mod emoji;
 mod audio;
 mod cues;
 mod flow;
-/// Placeholder data for the groups & privacy preview screens (tests and design screenshots only).
-#[cfg(any(test, feature = "test-hooks"))]
-mod groups_fake;
 mod hostcond;
 mod keystore;
 mod hangup;
@@ -61,7 +58,6 @@ mod reason;
 mod single;
 mod tray;
 mod ui;
-#[allow(dead_code)]
 mod voice;
 
 use std::path::PathBuf;

@@ -91,16 +91,6 @@ pub enum CallGate {
 }
 
 impl Blocks {
-    /// Test-hooks demos: who may call us, whom we may call, whom we blocked.
-    #[cfg(feature = "test-hooks")]
-    pub fn demo(&mut self, allowed: &[String], tokens: &[String], blocked: &[String]) {
-        self.allowed = allowed.iter().cloned().collect();
-        self.tokens = tokens.iter().cloned().collect();
-        for d in blocked {
-            self.states.insert(d.clone(), BlockState { blocked_by_me: true, blocked_at: Some(0), blocked_me: None });
-        }
-    }
-
     /// Re-reads the blocked list and the state of each of `dids`.
     pub fn refresh(&mut self, api: &dyn BlockApi, dids: impl IntoIterator<Item = String>) {
         self.list = api.blocked_contacts();

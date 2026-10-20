@@ -62,12 +62,6 @@ impl Default for Spring {
 }
 
 impl Spring {
-    /// The old dead stop (recoil 0): the string goes tight and the cans stay put.
-    #[allow(dead_code)]
-    pub fn dead_stop() -> Self {
-        Spring { hit_over: 1.1, recoil: 0.0, ..Spring::default() }
-    }
-
     /// springs.ts LINE_SPRING, the "line opens" pull (sign-up Done, the first contact on the empty
     /// state): two tugs in the rhythm of the `line` cue, so the gap is read from the cue itself.
     pub fn line() -> Self {
@@ -89,8 +83,6 @@ pub fn colors(dark: bool) -> (Color, Color) {
 pub enum CallPhase {
     Incoming,
     Outgoing,
-    #[allow(dead_code, reason = "statusLook has a connecting look; the call engine has no separate connecting state yet")]
-    Connecting,
     Active,
     Reconnecting,
 }
@@ -102,7 +94,6 @@ pub enum Net {
     Online,
 }
 
-#[allow(dead_code)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct StatusLook {
     pub state: MarkState,
@@ -118,7 +109,6 @@ pub fn status_look(call: Option<CallPhase>, net: Net) -> StatusLook {
     match call {
         Some(CallPhase::Incoming) => return ringing(1.6, 12.0, "Incoming call"),
         Some(CallPhase::Outgoing) => return ringing(2.0, 9.0, "Calling"),
-        Some(CallPhase::Connecting) => return ringing(1.2, 6.0, "Connecting"),
         Some(CallPhase::Active) => return StatusLook { state: MarkState::Taut, sway: None, dim: false, label: "In a call" },
         Some(CallPhase::Reconnecting) => return ringing(2.0, 4.0, "Reconnecting"),
         None => {}
@@ -975,12 +965,6 @@ mod tests {
         assert_eq!(m.d, m.p.dt);
         assert!(m.pose().sag.abs() < 1e-6, "taut string has no sag");
         assert!(!m.active());
-        // recoil 0 restores the old dead stop: one tug, never pulled back in.
-        let mut dead = Model::new(Params::tier(96.0));
-        dead.set_spring(Spring::dead_stop());
-        let (tugs, _) = pull(&mut dead);
-        assert_eq!(tugs.len(), 1);
-        assert_eq!(dead.d, dead.p.dt);
     }
 
     #[test]
@@ -1106,7 +1090,6 @@ mod tests {
         let l = status_look(Some(CallPhase::Incoming), Net::Online);
         assert_eq!((l.state, l.sway, l.dim), (MarkState::Ringing, Some((1.6, 12.0)), false));
         assert_eq!(status_look(Some(CallPhase::Outgoing), Net::Offline).sway, Some((2.0, 9.0)));
-        assert_eq!(status_look(Some(CallPhase::Connecting), Net::Online).sway, Some((1.2, 6.0)));
         assert_eq!(status_look(Some(CallPhase::Active), Net::Offline).state, MarkState::Taut);
         assert_eq!(status_look(Some(CallPhase::Reconnecting), Net::Online).sway, Some((2.0, 4.0)));
         assert_eq!(status_look(None, Net::Connecting).sway, Some((3.2, 5.0)));

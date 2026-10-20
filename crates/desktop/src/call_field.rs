@@ -33,10 +33,6 @@ fn s2l(c: f64) -> f64 {
     let c = c / 255.0;
     if c <= 0.04045 { c / 12.92 } else { ((c + 0.055) / 1.055).powf(2.4) }
 }
-fn l2s(c: f64) -> f64 {
-    let c = clamp(c, 0.0, 1.0);
-    255.0 * if c <= 0.0031308 { 12.92 * c } else { 1.055 * c.powf(1.0 / 2.4) - 0.055 }
-}
 pub fn rgb_to_lab(rgb: [f64; 3]) -> [f64; 3] {
     let (r, g, b) = (s2l(rgb[0]), s2l(rgb[1]), s2l(rgb[2]));
     let l = (0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b).cbrt();
@@ -46,17 +42,6 @@ pub fn rgb_to_lab(rgb: [f64; 3]) -> [f64; 3] {
         0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s,
         1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s,
         0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s,
-    ]
-}
-#[allow(dead_code)]
-pub fn lab_to_rgb(c: [f64; 3]) -> [f64; 3] {
-    let l = (c[0] + 0.3963377774 * c[1] + 0.2158037573 * c[2]).powi(3);
-    let m = (c[0] - 0.1055613458 * c[1] - 0.0638541728 * c[2]).powi(3);
-    let s = (c[0] - 0.0894841775 * c[1] - 1.2914855480 * c[2]).powi(3);
-    [
-        l2s(4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s),
-        l2s(-1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s),
-        l2s(-0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s),
     ]
 }
 /// OKLab mix; chroma is interpolated separately so a teal->gold mid-mix does not go grey/olive.
@@ -231,10 +216,10 @@ impl Voice {
 }
 
 // ---- state table -----------------------------------------------------------------------------------------------
-#[allow(dead_code, reason = "mirrors the playground state table")]
+// Ended and Failed are driven by the golden-trace tests; the app ends calls on its own card.
+#[cfg_attr(not(test), allow(dead_code))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum State {
-    Calm,
     Incoming,
     Outgoing,
     Connecting,
@@ -245,21 +230,6 @@ pub enum State {
     Failed,
 }
 impl State {
-    #[allow(dead_code, reason = "mirrors the playground state table")]
-    pub fn from_name(s: &str) -> Option<State> {
-        Some(match s {
-            "calm" => State::Calm,
-            "incoming" => State::Incoming,
-            "outgoing" => State::Outgoing,
-            "connecting" => State::Connecting,
-            "active" => State::Active,
-            "waiting" => State::Waiting,
-            "reconnecting" => State::Reconnecting,
-            "ended" => State::Ended,
-            "failed" => State::Failed,
-            _ => return None,
-        })
-    }
     /// The cue pattern this state's notes come from (STATE_CUE in cues.ts).
     pub fn pattern(self) -> Option<Pattern> {
         match self {
@@ -270,7 +240,7 @@ impl State {
             State::Reconnecting => Some(PAT_PULSE),
             State::Ended => Some(PAT_ENDED),
             State::Failed => Some(PAT_FAILED),
-            State::Calm | State::Connecting => None,
+            State::Connecting => None,
         }
     }
     /// How long after the state change the cue's first note sounds (cues.ts): connect waits so its landing note
@@ -314,9 +284,7 @@ const WARP: usize = 2;
 const PULL: usize = 3;
 const SPREAD: usize = 4;
 const CHROMA: usize = 5;
-static STATES: [Cfg; 9] = [
-    // calm
-    Cfg { cue: false, looped: false, e: [0.50, 0.8, 0.08, 0.0, 0.0, 1.0, 1.0, 0.30, 0.45], bias: 0.35, blend: 900.0, voice: false, fade: None, tc: tc(&[]) },
+static STATES: [Cfg; 8] = [
     // incoming
     Cfg { cue: true, looped: true, e: [1.00, 0.9, 0.12, 0.0, 0.0, 1.0, 2.6, 0.38, 1.0], bias: 0.74, blend: 300.0, voice: false, fade: None, tc: tc(&[]) },
     // outgoing

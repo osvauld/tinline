@@ -1,7 +1,6 @@
 //! Group chat on the core's real API (G1, `crates/core/src/group/api.rs`, docs/group-core.md):
 //! the Groups side tab, a group's conversation, its members pane and the group dialogs. The
-//! screens are in `group_live_view.rs`; the placeholder preview (`groups.rs`, `groups_fake.rs`)
-//! is kept only for the P2P_DEMO screens and the privacy preview.
+//! screens are in `group_live_view.rs`.
 //!
 //! Every core call goes through `GroupApi`, so the flows are tested with a stand-in that follows
 //! the core's rules (`tests` below). Reads (`groups`, `group_detail`, `group_messages`) are
@@ -536,12 +535,6 @@ impl GroupsLive {
     #[cfg(test)]
     pub fn summary(&self, gid: &str) -> Option<&GroupSummary> {
         self.list.iter().find(|s| s.id == gid)
-    }
-
-    /// The Groups tab's badge: unread posts in groups we are still in, plus invitations to answer.
-    #[allow(dead_code, reason = "unwired by the UI port (b57ee23); UI owner to decide: wire back or delete (Groups tab badge)")]
-    pub fn badge(&self) -> u32 {
-        self.list.iter().filter(|s| active(s.my_role)).map(|s| s.unread).sum::<u32>() + self.pending_invitations().count() as u32
     }
 
     /// Invitations to us still to answer.
@@ -1240,12 +1233,6 @@ pub(super) fn sent_line(r: &GroupChatRequest) -> (String, bool) {
     }
 }
 
-/// The small line under one of our posts.
-#[allow(dead_code, reason = "unwired by the UI port (b57ee23); UI owner to decide: wire back or delete (the waiting-for-a-host line under our posts)")]
-pub(super) fn delivery_word(m: &GroupMessage) -> Option<&'static str> {
-    (m.outgoing && m.kind == GroupItemKind::Post && m.delivery == GroupDelivery::Waiting).then_some("Waiting for a host")
-}
-
 impl super::App {
     pub(super) fn update_live(&mut self, m: Lm) -> Task<super::Msg> {
         if self.demo {
@@ -1260,11 +1247,6 @@ impl super::App {
         if out.opened {
             self.leave_chat();
             self.sel = None;
-            #[cfg(any(test, feature = "test-hooks"))]
-            {
-                self.groups.open = None;
-                self.groups.dialog = None;
-            }
             self.chat.info = false;
             self.screen = super::Screen::Home;
         }
