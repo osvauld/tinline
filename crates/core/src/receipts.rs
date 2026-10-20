@@ -10,6 +10,9 @@ pub(crate) mod api;
 pub(crate) mod calls;
 pub(crate) mod doc;
 pub(crate) mod evidence;
+// Group-call join proofs and the evidence bundles are built and tested but not yet wired into a
+// runtime; they compile for tests only until the group receipt wire lands.
+#[cfg(test)]
 pub(crate) mod participation;
 pub(crate) mod store;
 pub(crate) mod ticks;
@@ -18,6 +21,7 @@ pub(crate) mod list;
 pub(crate) const MAX_MESSAGES: usize = 256;
 pub(crate) const MAX_CONTEXT_WRITERS: usize = 1024;
 pub(crate) const MAX_BODY: usize = 32 * 1024;
+#[cfg(test)]
 pub(crate) const MAX_SIGNED: usize = MAX_BODY + proto::signed::SIG_LEN;
 pub(crate) const MAX_UPDATE_BYTES: usize = crate::group::doc::batching::MAX_EXPORT_BYTES;
 
@@ -104,6 +108,7 @@ pub(crate) enum ReceiptError {
 /// Low-level hash of canonical ORIGINAL SIGNED message/version bytes, not text
 /// or a random record ID. Callers must validate/canonicalize those bytes first.
 /// The real DM/group extraction adapters are not implemented by this helper.
+#[cfg(test)]
 pub(crate) fn message_digest(original: &[u8]) -> [u8; 32] {
     hash::content(domains::RECEIPT_MESSAGE, original)
 }

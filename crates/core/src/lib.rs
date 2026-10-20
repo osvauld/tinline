@@ -23,9 +23,6 @@ mod logging;
 mod node;
 mod recovery_key;
 mod rekey;
-// Message receipts are wired into DM runtime issuance/projection (M3); call
-// and transport primitives remain partly unconnected, hence the allowance.
-#[allow(dead_code)]
 mod receipts;
 mod signed_map;
 mod search;

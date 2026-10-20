@@ -1,6 +1,8 @@
 //! Exact original signed group-call protocol evidence (a `proto::Signed` envelope's bytes);
 //! no endpoint notes/media.
+#[cfg(test)]
 use super::*;
+#[cfg(test)]
 pub(crate) const MAX_PROTOCOL_EVIDENCE_BYTES: usize =
     proto::gcall::MAX_CONTROL + proto::signed::SIG_LEN;
 #[derive(Debug, Clone)]
@@ -8,9 +10,11 @@ pub(crate) struct Evidence {
     pub id: [u8; 32],
     pub bytes: Vec<u8>,
 }
+#[cfg(test)]
 fn hash(bytes: &[u8]) -> [u8; 32] {
     cryptography::hash::content(cryptography::domains::RECEIPT_EVIDENCE, bytes)
 }
+#[cfg(test)]
 impl Evidence {
     /// Size only; the caller must open the actual protocol statement and validate its scope,
     /// roles and lifecycle correspondence.

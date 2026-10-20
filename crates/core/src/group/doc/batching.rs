@@ -23,6 +23,7 @@ pub(crate) struct ExportBatch {
     /// Source-known causal frontier covered by this batch plus receiver input.
     /// Advisory only: never a receiver Ack or the source's whole frontier.
     pub frontier: VersionVector,
+    #[cfg_attr(not(test), allow(dead_code))] // read by tests only
     pub operations: usize,
     pub more: bool,
 }

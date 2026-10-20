@@ -46,8 +46,6 @@ mod documents;
 mod durability;
 mod history;
 mod lifecycle;
-// The status aggregate has no app binding yet (UniFFI to be agreed with the UI lanes).
-#[allow(dead_code)]
 pub(crate) mod member_receipts;
 mod replication;
 mod rotation;

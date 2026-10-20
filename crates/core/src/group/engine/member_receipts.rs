@@ -482,6 +482,7 @@ impl GroupCore {
     }
 
     /// The status of post `post_id` of day doc `day`: the sender's mark and per-member detail.
+    #[cfg(test)]
     pub(crate) fn member_receipt_status(
         &self,
         gid: &str,
@@ -490,15 +491,6 @@ impl GroupCore {
     ) -> Result<GroupReceiptStatus, Error> {
         let mut out = self.member_day_receipts_where(gid, day, |e| e.id == post_id)?;
         out.pop().ok_or(Error::NotFound)
-    }
-
-    /// `member_receipt_status` for every visible post of one day doc, oldest first.
-    pub(crate) fn member_day_receipts(
-        &self,
-        gid: &str,
-        day: &str,
-    ) -> Result<Vec<GroupReceiptStatus>, Error> {
-        self.member_day_receipts_where(gid, day, |_| true)
     }
 
     /// Statuses of the visible posts with `at` in `[from, to]` (author clock ms), only ours if

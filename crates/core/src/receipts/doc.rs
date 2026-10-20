@@ -111,6 +111,7 @@ impl ReceiptDoc {
         self.doc = scratch;
         Ok(fresh)
     }
+    #[cfg(test)]
     pub(crate) fn snapshot(&self) -> Result<Vec<u8>, ReceiptError> {
         self.doc
             .export(ExportMode::Snapshot)
@@ -176,9 +177,11 @@ impl ReceiptDoc {
     }
     /// Original insert statements in a native interval, including known IDs
     /// under new counters. Not an authorization or acknowledgement frontier.
+    #[cfg(test)]
     pub(crate) fn entries_since(&self, from: &VersionVector) -> Result<Vec<Entry>, ReceiptError> {
         self.entries_between(from, &self.vv())
     }
+    #[cfg(test)]
     pub(crate) fn entries_between(
         &self,
         from: &VersionVector,
