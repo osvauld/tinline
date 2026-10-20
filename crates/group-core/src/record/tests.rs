@@ -154,9 +154,9 @@ fn group_ids_bind_owner_and_nonce() {
 // The shared envelope property table for every statement type this crate signs.
 #[test]
 fn core_signables_pass_the_envelope_conformance_table() {
-    use crate::group::mail::Mail;
-    use crate::group::{attestation::StorageAttestation, doc::DocId};
-    use crate::receipts::{Conversation, Kind, Receipt, Scope};
+    use crate::mail::Mail;
+    use crate::{attestation::StorageAttestation, doc::DocId};
+    use receipts_core::{Conversation, Kind, Receipt, Scope};
     use proto::signed::conformance::check;
     let (a, stranger) = (acct(), acct());
     check(

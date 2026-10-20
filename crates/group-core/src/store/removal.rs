@@ -9,7 +9,7 @@ use crate::Error;
 
 impl GroupStore {
     /// When we first derived `did`'s removal from `gid` (unix ms), if we have.
-    pub(crate) fn removal_seen(&self, gid: &str, did: &str) -> Result<Option<u64>, Error> {
+    pub fn removal_seen(&self, gid: &str, did: &str) -> Result<Option<u64>, Error> {
         let Some(b) = self.db.get(&format!("rm_seen/{gid}/{did}")).map_err(io)? else {
             return Ok(None);
         };
@@ -19,7 +19,7 @@ impl GroupStore {
     }
 
     /// Records `now` for `did` (a removal we hold no row for).
-    pub(crate) fn note_removal_seen(&self, gid: &str, did: &str, now: u64) -> Result<(), Error> {
+    pub fn note_removal_seen(&self, gid: &str, did: &str, now: u64) -> Result<(), Error> {
         self.db
             .put(&format!("rm_seen/{gid}/{did}"), &now.to_be_bytes())
             .map_err(io)
@@ -27,7 +27,7 @@ impl GroupStore {
 
     /// Records `now` for every DID of `removed` not recorded yet, and forgets the rows of DIDs
     /// no longer removed (re-added later: a later removal opens a fresh window).
-    pub(crate) fn sync_removals_seen(
+    pub fn sync_removals_seen(
         &self,
         gid: &str,
         removed: &[String],

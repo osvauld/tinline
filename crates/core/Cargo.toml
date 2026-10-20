@@ -25,7 +25,7 @@ required-features = ["bench"]
 # Debug-only entry points (`video_bench`: codec benchmark that opens a caller-supplied file).
 # Android debug builds pass it (android/app/build.gradle.kts); release builds must not.
 # `proto/test-support`: `Node::forge_block_notice_for_test` calls proto's forge.
-dev-tools = ["video/sim", "proto/test-support"]
+dev-tools = ["video/sim", "proto/test-support", "group-core/dev-tools"]
 # Benchmark binaries; app, Android and test builds skip them. `cargo build --release --features bench --bin search-bench`.
 # They drive the synthetic peers, so they need `dev-tools`.
 bench = ["dev-tools", "search-core/bench"]
@@ -46,6 +46,8 @@ crdt.workspace = true
 search-core.workspace = true
 # Receipt codec, Loro receipt map and ledger; re-exported as `p2pcore::receipts` (src/receipts/mod.rs).
 receipts-core.workspace = true
+# The group model (records, docs, derived state, vault rows); re-exported under `group` (src/group/mod.rs).
+group-core.workspace = true
 # Shared UI logic; its UniFFI items are re-exported from lib.rs so they land in libp2pcore.so.
 present = { path = "../present" }
 audio.workspace = true
@@ -80,6 +82,8 @@ video = { path = "../video", default-features = false, features = ["net", "sim"]
 proto = { workspace = true, features = ["test-support"] }
 # Receipt ledger test hooks (commit fault injection, temporary stores) for the unit tests.
 receipts-core = { workspace = true, features = ["testkit"] }
+# Group store/doc test hooks (fault injection, in-memory stores, raw doc edits) for the unit tests.
+group-core = { workspace = true, features = ["testkit"] }
 # Integration tests use the synthetic peers and test signers (`dev-tools`).
 p2pcore = { path = ".", features = ["dev-tools"] }
 

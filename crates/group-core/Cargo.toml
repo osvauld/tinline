@@ -1,0 +1,33 @@
+[package]
+name = "group-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+description = "Group chat model: signed records, Loro docs and acceptance, derived state, day shards, the sealed group vault and its rows; p2pcore owns the engine, wire, calls and app API"
+
+[features]
+# Test hooks (store fault injection, raw doc edits, in-memory stores) for p2pcore's tests.
+testkit = []
+# `GroupDoc::import_for_test` for p2pcore's synthetic peers (`dev-tools`).
+dev-tools = []
+
+[dependencies]
+proto.workspace = true
+identity.workspace = true
+cryptography.workspace = true
+storage.workspace = true
+crdt.workspace = true
+loro = "1.13.9"
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+zeroize.workspace = true
+hex = "0.4"
+bs58 = "0.5"
+
+[dev-dependencies]
+# `proto::signed::conformance`, the shared envelope property table.
+proto = { workspace = true, features = ["test-support"] }
+# The envelope conformance table checks receipts next to the group statements.
+receipts-core.workspace = true

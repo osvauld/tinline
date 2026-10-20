@@ -2706,6 +2706,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "group-core"
+version = "0.1.38"
+dependencies = [
+ "bs58",
+ "crdt",
+ "cryptography",
+ "hex",
+ "identity",
+ "loro",
+ "proto",
+ "receipts-core",
+ "serde",
+ "serde_json",
+ "storage",
+ "thiserror 2.0.21",
+ "zeroize",
+]
+
+[[package]]
 name = "guillotiere"
 version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5718,6 +5737,7 @@ dependencies = [
  "crdt",
  "cryptography",
  "gcall-core",
+ "group-core",
  "hex",
  "identity",
  "image",

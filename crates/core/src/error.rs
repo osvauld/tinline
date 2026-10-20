@@ -87,6 +87,16 @@ impl From<search_core::Error> for Error {
     }
 }
 
+impl From<group_core::Error> for Error {
+    fn from(e: group_core::Error) -> Self {
+        match e {
+            group_core::Error::Io(s) => Error::Io(s),
+            group_core::Error::Protocol(s) => Error::Protocol(s),
+            group_core::Error::Rejected(s) => Error::Rejected(s),
+        }
+    }
+}
+
 impl From<audio::Error> for Error {
     fn from(e: audio::Error) -> Self {
         Error::Audio(e.to_string())

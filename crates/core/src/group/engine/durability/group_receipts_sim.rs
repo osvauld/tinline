@@ -814,14 +814,14 @@ fn intents_ledgers_and_kept_statements_survive_reopen() {
     let (owner_path, member_path) = (dir.0.join("owner.redb"), dir.0.join("member.redb"));
     let mut sim = Sim::with_owner_store(
         1,
-        GroupStore::open(owner_path.clone(), "owner phrase").unwrap(),
+        crate::group::store::open(owner_path.clone(), "owner phrase").unwrap(),
     );
     // Member 1 on a file store: replace the in-memory device by a durable one of the same account.
     let m = sim.nodes[1].account.clone();
     let durable = device(
         &m,
         [20; 32],
-        GroupStore::open(member_path.clone(), "member phrase").unwrap(),
+        crate::group::store::open(member_path.clone(), "member phrase").unwrap(),
     );
     sim.attach(&durable);
     sim.nodes[1] = durable;
@@ -838,7 +838,7 @@ fn intents_ledgers_and_kept_statements_survive_reopen() {
     let reopened = device(
         &m,
         [20; 32],
-        GroupStore::open(member_path.clone(), "member phrase").unwrap(),
+        crate::group::store::open(member_path.clone(), "member phrase").unwrap(),
     );
     load_groups(&reopened);
     sim.nodes.insert(1, reopened);
@@ -865,7 +865,7 @@ fn intents_ledgers_and_kept_statements_survive_reopen() {
     let owner = device(
         &owner_id,
         [1; 32],
-        GroupStore::open(owner_path.clone(), "owner phrase").unwrap(),
+        crate::group::store::open(owner_path.clone(), "owner phrase").unwrap(),
     );
     load_groups(&owner);
     sim.nodes.insert(0, owner);

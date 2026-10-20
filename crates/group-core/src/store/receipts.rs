@@ -1,15 +1,15 @@
 //! Immutable original host attestations, separate from unsigned legacy Ack rows.
 use super::*;
-use crate::group::doc::DocId;
+use crate::doc::DocId;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub(crate) struct StoredAttestation {
+pub struct StoredAttestation {
     pub doc: DocId,
     pub bytes: Vec<u8>,
 }
 
 impl GroupStore {
-    pub(crate) fn storage_attestation(
+    pub fn storage_attestation(
         &self,
         gid: &str,
         digest: &str,
@@ -17,10 +17,10 @@ impl GroupStore {
         self.db
             .get(&format!("proof/{gid}/{digest}"))
             .map_err(io)?
-            .map(|row| cryptography::codec::from_bytes(&row, crate::store::MAX_ROW).map_err(|e| Error::Io(e.to_string())))
+            .map(|row| cryptography::codec::from_bytes(&row, storage::MAX_ROW).map_err(|e| Error::Io(e.to_string())))
             .transpose()
     }
-    pub(crate) fn storage_attestation_page(
+    pub fn storage_attestation_page(
         &self,
         gid: &str,
         after: Option<&str>,
@@ -44,7 +44,7 @@ impl GroupStore {
         }
         Ok(rows)
     }
-    pub(crate) fn attestation_ack(
+    pub fn attestation_ack(
         &self,
         gid: &str,
         doc: &DocId,
@@ -56,7 +56,7 @@ impl GroupStore {
     /// Original proof, UI Ack projection and any debt clear commit together.
     /// Only the verifier under the importer lock may call this adapter.
     #[allow(clippy::too_many_arguments)]
-    pub(crate) fn commit_storage_attestation(
+    pub fn commit_storage_attestation(
         &self,
         gid: &str,
         digest: &str,
@@ -66,7 +66,7 @@ impl GroupStore {
         ack: &[u8],
         meta: &GroupMeta,
     ) -> Result<(), Error> {
-        #[cfg(test)]
+        #[cfg(any(test, feature = "testkit"))]
         if self
             .fail_next_meta_write
             .swap(false, std::sync::atomic::Ordering::SeqCst)

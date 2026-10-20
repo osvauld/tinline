@@ -141,7 +141,7 @@ impl GroupCore {
             .append_meta(gid, &mut live.meta, &update, || doc.snapshot())
         {
             live.restore_meta(gid, previous_doc, previous_meta, previous_entries);
-            return Err(e);
+            return Err(e.into());
         }
         let new_items = live
             .state
@@ -210,7 +210,7 @@ impl GroupCore {
         ) {
             *meta = previous_meta;
             shards.remove(&day);
-            return Err(e);
+            return Err(e.into());
         }
         let posts = vec![PostDiff {
             day: day.clone(),

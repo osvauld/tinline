@@ -7,20 +7,20 @@
 //! stored `GroupCallRecord`. Records live in the group vault (`clog/{gid}/{call_id}`), local to
 //! this device: the synced 1:1 `CallRecord` doc is untouched, and what this device saw (its
 //! own peak, its own join time) is not something another device of the account can know.
+//! `Finished`, `merge` and the vault rows are `group_core::calllog`, re-exported here.
 //!
 //! One record per call: a host move (`Joined` again, a new `host_gen`) neither starts a second
 //! session nor a second record; leaving and rejoining the same call adds to the same record.
 
 use std::collections::{BTreeSet, HashMap};
 
-use serde::{Deserialize, Serialize};
+pub use group_core::calllog::*;
 
 use super::calls::{CALL_KEEP_MS, GroupCallEventKind};
-use super::store::{GroupStore, io, json};
-use crate::Error;
 
+// The record lives with its vault rows (`group_core::calllog`); this declares it to UniFFI.
 /// A group call as the log lists it. Times are unix seconds like `CallRecord`.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, uniffi::Record)]
+#[uniffi::remote(Record)]
 pub struct GroupCallRecord {
     pub call_id: String,
     pub group_id: String,
@@ -51,18 +51,6 @@ pub fn group_call_label(r: GroupCallRecord) -> String {
     } else {
         format!("Group call \u{b7} {len}")
     }
-}
-
-/// One finished session, to merge into the stored record.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct Finished {
-    pub(crate) call_id: String,
-    pub(crate) gid: String,
-    pub(crate) starter: String,
-    pub(crate) started_ms: u64,
-    pub(crate) in_call_ms: u64,
-    pub(crate) peak: u32,
-    pub(crate) missed: bool,
 }
 
 #[derive(Debug, Default)]
@@ -137,48 +125,6 @@ impl CallLog {
             }
             _ => None,
         }
-    }
-}
-
-/// The stored record after `f`: a rejoin adds its time and keeps the larger peak.
-pub(crate) fn merge(old: Option<GroupCallRecord>, f: &Finished) -> GroupCallRecord {
-    let secs = (f.in_call_ms / 1000).min(u32::MAX as u64) as u32;
-    match old {
-        Some(mut r) => {
-            r.duration_secs = r.duration_secs.saturating_add(secs);
-            r.people = r.people.max(f.peak);
-            r.missed = r.missed && f.missed;
-            if r.started_by.is_empty() {
-                r.started_by = f.starter.clone();
-            }
-            r
-        }
-        None => GroupCallRecord { call_id: f.call_id.clone(), group_id: f.gid.clone(), started_by: f.starter.clone(), started_at: f.started_ms / 1000, duration_secs: secs, people: f.peak, missed: f.missed },
-    }
-}
-
-impl GroupStore {
-    pub(crate) fn clog_get(&self, gid: &str, call_id: &str) -> Option<GroupCallRecord> {
-        serde_json::from_slice(&self.db.get(&format!("clog/{gid}/{call_id}")).ok()??).ok()
-    }
-
-    pub(crate) fn clog_put(&self, r: &GroupCallRecord) -> Result<(), Error> {
-        self.db.put(&format!("clog/{}/{}", r.group_id, r.call_id), &json(r)).map_err(io)
-    }
-
-    /// Newest first; `gid` filters to one group.
-    pub(crate) fn clog_list(&self, gid: Option<&str>) -> Result<Vec<GroupCallRecord>, Error> {
-        let p = gid.map_or("clog/".to_string(), |g| format!("clog/{g}/"));
-        let mut v: Vec<GroupCallRecord> = self.db.scan(&p).map_err(io)?.into_iter().filter_map(|(_, b)| serde_json::from_slice(&b).ok()).collect();
-        v.sort_by(|a, b| b.started_at.cmp(&a.started_at).then_with(|| a.call_id.cmp(&b.call_id)));
-        Ok(v)
-    }
-
-    /// Stores what `f` left and returns the record.
-    pub(crate) fn clog_record(&self, f: &Finished) -> Result<GroupCallRecord, Error> {
-        let r = merge(self.clog_get(&f.gid, &f.call_id), f);
-        self.clog_put(&r)?;
-        Ok(r)
     }
 }
 

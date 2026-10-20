@@ -1,6 +1,6 @@
 use super::*;
-use crate::chat::doc::writer_id;
-use crate::group::{
+use crdt::writer_id;
+use crate::{
     doc::{DocId, Reject},
     record::{Body, Record},
 };
@@ -345,7 +345,7 @@ fn grouped_loro_changes_can_be_split_at_whole_map_operation_boundaries() {
             },
         };
         let bytes = record.sign(&a).to_bytes();
-        let id = crate::group::record::record_id(&bytes);
+        let id = crate::record::record_id(&bytes);
         map.insert(&id, loro::LoroValue::Binary(bytes.into()))
             .unwrap();
     }
