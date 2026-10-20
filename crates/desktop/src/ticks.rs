@@ -180,18 +180,6 @@ pub fn glyph<'a, M: 'a>(to: Vis, anim: Option<&Anim>, inks: Inks, size: f32, now
     image(handle).width(Length::Fixed(w)).height(Length::Fixed(size)).into()
 }
 
-/// The screen-reader / tooltip words for a state (VOICE.md: says how things are).
-#[allow(dead_code)]
-pub fn label(v: Vis) -> &'static str {
-    match v {
-        Vis::Slack => "Waiting to send",
-        Vis::One => "Sent",
-        Vis::Two => "Delivered",
-        Vis::Read => "Read",
-        Vis::Bad => "Not delivered",
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

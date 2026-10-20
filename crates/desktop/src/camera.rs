@@ -204,7 +204,6 @@ pub struct Camera {
 
 /// What the capture thread reports once it is streaming (logged by test-hooks builds).
 #[derive(Clone, Debug)]
-#[allow(dead_code)]
 pub struct Opened {
     pub format: String,
     pub width: u32,

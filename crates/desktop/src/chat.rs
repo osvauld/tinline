@@ -441,12 +441,6 @@ impl ChatState {
             .collect()
     }
 
-    /// Test-hooks demos: a saved draft for a conversation that is not open.
-    #[cfg(feature = "test-hooks")]
-    pub(super) fn demo_draft(&mut self, peer: &str, text: &str) {
-        self.compose_memory.suspend(peer, text.to_string(), None, false);
-    }
-
     pub(super) fn draft_for(&self, peer: &str) -> String {
         if self.peer.as_deref() == Some(peer) {
             self.compose_memory.edit_stash.clone().unwrap_or_else(|| self.input.text())

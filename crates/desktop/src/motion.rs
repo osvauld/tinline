@@ -5,38 +5,19 @@
 use std::time::Instant;
 
 /// Durations in ms (motion.ts `DUR`).
-#[allow(dead_code, reason = "the full motion.ts token table; not every token is wired yet")]
 pub mod dur {
-    pub const PRESS: f32 = 100.0;
-    pub const RELEASE: f32 = 140.0;
-    pub const SWITCH: f32 = 120.0;
     pub const CROSSFADE: f32 = 120.0;
-    pub const ENTER: f32 = 200.0;
-    pub const EXIT: f32 = 140.0;
     pub const OVERLAY_OPEN: f32 = 240.0;
-    pub const OVERLAY_CLOSE: f32 = 220.0;
-    pub const STRIP_IN: f32 = 160.0;
-    pub const CALL_END: f32 = 300.0;
-    pub const BUBBLE_IN: f32 = 160.0;
-    pub const TAB_OUT: f32 = 90.0;
-    pub const TAB_IN: f32 = 210.0;
     pub const INDICATOR: f32 = 200.0;
 }
 
-/// Easing curves (motion.ts `EASE`), plus Svelte's cubicOut/cubicIn used by the tab fade-through.
-#[allow(dead_code, reason = "the full motion.ts easing table")]
+/// Easing curves (motion.ts `EASE`).
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Ease {
     /// cubic-bezier(.2,.8,.2,1)
     Out,
-    /// cubic-bezier(.4,0,1,1)
-    In,
     /// cubic-bezier(.4,0,.2,1)
     InOut,
-    /// svelte/easing cubicOut
-    CubicOut,
-    /// svelte/easing cubicIn
-    CubicIn,
     Linear,
 }
 
@@ -70,13 +51,7 @@ impl Ease {
         let x = x.clamp(0.0, 1.0);
         match self {
             Ease::Out => bezier(0.2, 0.8, 0.2, 1.0, x),
-            Ease::In => bezier(0.4, 0.0, 1.0, 1.0, x),
             Ease::InOut => bezier(0.4, 0.0, 0.2, 1.0, x),
-            Ease::CubicOut => {
-                let f = x - 1.0;
-                f * f * f + 1.0
-            }
-            Ease::CubicIn => x * x * x,
             Ease::Linear => x,
         }
     }
@@ -164,13 +139,12 @@ mod tests {
 
     #[test]
     fn motion_bezier_matches_css_endpoints_and_midpoints() {
-        for e in [Ease::Out, Ease::In, Ease::InOut] {
+        for e in [Ease::Out, Ease::InOut] {
             assert!(e.apply(0.0).abs() < 1e-4);
             assert!((e.apply(1.0) - 1.0).abs() < 1e-4);
         }
-        // Exact curve values at x = .5 (bisection on the bezier): Out .9461, In .3248, InOut .7756.
+        // Exact curve values at x = .5 (bisection on the bezier): Out .9461, InOut .7756.
         assert!((Ease::Out.apply(0.5) - 0.9461).abs() < 1e-3, "{}", Ease::Out.apply(0.5));
-        assert!((Ease::In.apply(0.5) - 0.3248).abs() < 1e-3, "{}", Ease::In.apply(0.5));
         assert!((Ease::InOut.apply(0.5) - 0.7756).abs() < 1e-3, "{}", Ease::InOut.apply(0.5));
     }
 

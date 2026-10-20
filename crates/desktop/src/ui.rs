@@ -214,7 +214,6 @@ pub fn alpha(c: Color, a: f32) -> Color {
 
 // ---- icons: Lucide, 24 grid, 1.75 stroke ----
 
-#[allow(dead_code, reason = "the full icon set; not every icon is used yet")]
 #[derive(Clone, Copy)]
 pub enum Icon {
     Phone,
@@ -224,7 +223,6 @@ pub enum Icon {
     Mic,
     MicOff,
     UserPlus,
-    Sliders,
     ArrowLeft,
     Copy,
     ShieldCheck,
@@ -234,7 +232,6 @@ pub enum Icon {
     ChevronRight,
     ChevronLeft,
     ChevronDown,
-    Info,
     ExternalLink,
     Pencil,
     Trash,
@@ -242,49 +239,26 @@ pub enum Icon {
     Outgoing,
     Direct,
     Relayed,
-    LogOut,
     Key,
-    CheckCheck,
-    Clock,
-    Paperclip,
-    Send,
     Download,
     File,
-    Reply,
     MessageSquare,
     RotateCw,
-    More,
-    Users,
     Flag,
     Ban,
     Server,
     Video,
     VideoOff,
-    Search,
-    Contact,
-    Plus,
-    Camera,
-    Bell,
-    Devices,
-    Volume,
 }
 
 impl Icon {
     fn body(self) -> &'static str {
         match self {
-            Icon::Search => r#"<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>"#,
-            Icon::Contact => r#"<rect x="4" y="3" width="16" height="18" rx="2"/><circle cx="12" cy="10" r="3"/><path d="M7.5 17c.8-2 2.5-3 4.5-3s3.7 1 4.5 3"/><path d="M2 7h2M2 12h2M2 17h2"/>"#,
-            Icon::Plus => r#"<path d="M12 5v14M5 12h14"/>"#,
-            Icon::Camera => r#"<path d="M4 8h3l2-3h6l2 3h3v12H4z"/><circle cx="12" cy="13.5" r="3.5"/>"#,
-            Icon::Bell => r#"<path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4zM10 21h4"/>"#,
-            Icon::Devices => r#"<path d="M3 6h13v9H3zM1 18h17M18 9h4v9h-4z"#,
-            Icon::Volume => r#"<path d="M4 9v6h4l5 4V5L8 9zM16.5 9a4 4 0 0 1 0 6"/>"#,
             Icon::Phone => r#"<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>"#,
             Icon::PhoneOff | Icon::Hangup => r#"<path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.42 19.42 0 0 1-3.33-2.67m-2.67-3.34a19.79 19.79 0 0 1-3.07-8.63A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91"/><path d="M22 2 2 22"/>"#,
             Icon::Mic => r#"<path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/>"#,
             Icon::MicOff => r#"<path d="M2 2l20 20"/><path d="M18.89 13.23A7.12 7.12 0 0 0 19 12v-2"/><path d="M5 10v2a7 7 0 0 0 12 5"/><path d="M15 9.34V5a3 3 0 0 0-5.68-1.33"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12"/><path d="M12 19v3"/>"#,
             Icon::UserPlus => r#"<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6"/><path d="M22 11h-6"/>"#,
-            Icon::Sliders => r#"<path d="M21 4h-7"/><path d="M10 4H3"/><path d="M21 12h-9"/><path d="M8 12H3"/><path d="M21 20h-5"/><path d="M12 20H3"/><path d="M14 2v4"/><path d="M8 10v4"/><path d="M16 18v4"/>"#,
             Icon::ArrowLeft => r#"<path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>"#,
             Icon::Copy => r#"<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>"#,
             Icon::ShieldCheck => r#"<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/>"#,
@@ -293,7 +267,6 @@ impl Icon {
             Icon::Lock => r#"<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>"#,
             Icon::ChevronLeft => r#"<path d="m15 18-6-6 6-6"/>"#,
             Icon::ChevronDown => r#"<path d="m6 9 6 6 6-6"/>"#,
-            Icon::Info => r#"<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>"#,
             Icon::ExternalLink => r#"<path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>"#,
             Icon::ChevronRight => r#"<path d="m9 18 6-6-6-6"/>"#,
             Icon::Pencil => r#"<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/>"#,
@@ -304,18 +277,10 @@ impl Icon {
             // through a locked box.
             Icon::Direct => r#"<circle cx="4" cy="12" r="2"/><circle cx="20" cy="12" r="2"/><path d="M6 12h12"/>"#,
             Icon::Relayed => r#"<circle cx="3" cy="12" r="2"/><circle cx="21" cy="12" r="2"/><path d="M5 12h4"/><path d="M15 12h4"/><rect width="6" height="6" x="9" y="9" rx="1"/><path d="M10.5 9V8a1.5 1.5 0 0 1 3 0v1"/>"#,
-            Icon::LogOut => r#"<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>"#,
-            Icon::CheckCheck => r#"<path d="M18 6 7 17l-5-5"/><path d="m22 10-7.5 7.5L13 16"/>"#,
-            Icon::Clock => r#"<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>"#,
-            Icon::Paperclip => r#"<path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/>"#,
-            Icon::Send => r#"<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>"#,
             Icon::Download => r#"<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/>"#,
             Icon::File => r#"<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/>"#,
-            Icon::Reply => r#"<path d="m9 17-5-5 5-5"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/>"#,
             Icon::MessageSquare => r#"<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>"#,
             Icon::RotateCw => r#"<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>"#,
-            Icon::More => r#"<circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>"#,
-            Icon::Users => r#"<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>"#,
             Icon::Flag => r#"<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><path d="M4 22v-7"/>"#,
             Icon::Ban => r#"<circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/>"#,
             Icon::Server => r#"<rect width="20" height="8" x="2" y="2" rx="2" ry="2"/><rect width="20" height="8" x="2" y="14" rx="2" ry="2"/><path d="M6 6h.01"/><path d="M6 18h.01"/>"#,
@@ -420,14 +385,13 @@ pub const STROKE: &str = r##"fill="none" stroke="#000" stroke-width="1.75" strok
 pub fn icon<'a, M: 'a>(i: Icon, size: f32, color: Color) -> Element<'a, M> {
     let tin = match i {
         Icon::Phone => Some("phone"), Icon::PhoneOff => Some("callend"), Icon::Hangup => Some("hangup"), Icon::Mic => Some("mic"), Icon::MicOff => Some("micoff"), Icon::UserPlus => Some("userplus"),
-        Icon::Sliders => Some("sliders"), Icon::ArrowLeft | Icon::ChevronLeft => Some("back"), Icon::Copy => Some("copy"), Icon::Check => Some("check"),
-        Icon::X => Some("x"), Icon::Lock => Some("lock"), Icon::ChevronRight => Some("chevr"), Icon::ChevronDown => Some("chev"), Icon::Info => Some("info"),
+        Icon::ArrowLeft | Icon::ChevronLeft => Some("back"), Icon::Copy => Some("copy"), Icon::Check => Some("check"),
+        Icon::X => Some("x"), Icon::Lock => Some("lock"), Icon::ChevronRight => Some("chevr"), Icon::ChevronDown => Some("chev"),
         Icon::Pencil => Some("edit"), Icon::Trash => Some("trash"), Icon::Incoming => Some("call-in"), Icon::Outgoing => Some("call-out"),
-        Icon::Direct => Some("direct"), Icon::Relayed => Some("relayed"), Icon::LogOut => Some("leave"), Icon::Key => Some("key"), Icon::Clock => Some("clock"),
-        Icon::Paperclip => Some("clip"), Icon::Send => Some("send"), Icon::File => Some("file"), Icon::Reply => Some("reply"), Icon::MessageSquare => Some("chat"),
-        Icon::RotateCw => Some("retry"), Icon::Users => Some("users"), Icon::Flag => Some("flag"), Icon::Server => Some("server"), Icon::Video => Some("video"),
-        Icon::VideoOff => Some("camoff"), Icon::Search => Some("search"), Icon::Contact => Some("contact"), Icon::Plus => Some("plus"), Icon::Camera => Some("camera"),
-        Icon::Bell => Some("bell"), Icon::Devices => Some("devices"), Icon::Volume => Some("vol"),
+        Icon::Direct => Some("direct"), Icon::Relayed => Some("relayed"), Icon::Key => Some("key"),
+        Icon::File => Some("file"), Icon::MessageSquare => Some("chat"),
+        Icon::RotateCw => Some("retry"), Icon::Flag => Some("flag"), Icon::Server => Some("server"), Icon::Video => Some("video"),
+        Icon::VideoOff => Some("camoff"),
         _ => None,
     };
     if let Some(g) = tin.and_then(|n| crate::tin_icons::get(n, size)) {
@@ -787,12 +751,6 @@ pub fn avatar_pair(t: Tok, hue: usize) -> (Color, Color) {
 }
 
 static HUES: OnceLock<Mutex<HashMap<String, usize>>> = OnceLock::new();
-
-/// Test-hooks demos pin the playground seed's hues for paired screenshots.
-#[cfg(feature = "test-hooks")]
-pub fn pin_hue(key: &str, hue: usize) {
-    HUES.get_or_init(Default::default).lock().unwrap().insert(key.to_string(), hue);
-}
 
 /// A stable hue for a person key (the same on every device); "me" is the account hue 0.
 pub fn avatar_hue(key: &str) -> usize {

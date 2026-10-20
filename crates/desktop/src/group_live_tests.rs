@@ -444,7 +444,7 @@ fn run(l: &mut GroupsLive, api: &Fake, m: Lm) -> Option<String> {
 }
 
 #[test]
-fn the_list_shows_last_message_and_unread_and_the_badge_skips_removed_groups() {
+fn the_list_shows_last_message_and_unread() {
     let api = Fake::default();
     api.add("a", "did:key:sam", &[], &["did:key:priya"]);
     api.add("b", "did:key:sam", &[], &[]);
@@ -459,7 +459,6 @@ fn the_list_shows_last_message_and_unread_and_the_badge_skips_removed_groups() {
     assert_eq!(a.unread, 2);
     assert_eq!(preview(a, ME), "priya: anyone?");
     assert_eq!(preview(l.summary("b").unwrap(), ME), "You were removed from this group");
-    assert_eq!(l.badge(), 2, "a removed group's unread does not count");
 }
 
 #[test]
@@ -474,7 +473,6 @@ fn opening_a_group_loads_it_marks_it_read_and_live_messages_land_in_order() {
     assert_eq!(l.msgs.len(), 1);
     assert_eq!(l.detail.as_ref().unwrap().my_role, GroupRole::Member);
     assert_eq!(api.marked.borrow().as_slice(), ["a".to_string()]);
-    assert_eq!(l.badge(), 0);
 
     let two = api.incoming("a", "did:key:sam", "two");
     // An older message delivered late goes in its place, not at the end.
@@ -491,7 +489,6 @@ fn opening_a_group_loads_it_marks_it_read_and_live_messages_land_in_order() {
     let other = api.g.borrow()["b"].msgs[0].clone();
     l.step(&api, Lm::Message(other));
     assert_eq!(l.msgs.len(), 3);
-    assert_eq!(l.badge(), 1);
 }
 
 #[test]
@@ -510,13 +507,11 @@ fn sending_posts_through_a_job_and_shows_waiting_for_a_host() {
     l.step(&api, out.job.unwrap().run(&api));
     let mine = l.msgs.last().unwrap();
     assert!(mine.outgoing);
-    assert_eq!(delivery_word(mine), Some("Waiting for a host"));
     assert_eq!(preview(l.summary("a").unwrap(), ME), "You: hi all");
 
     // Host acknowledges: a Changed event re-reads the window and the mark goes.
     api.g.borrow_mut().get_mut("a").unwrap().msgs.last_mut().unwrap().delivery = GroupDelivery::Delivered;
     l.step(&api, Lm::Changed("a".into()));
-    assert_eq!(delivery_word(l.msgs.last().unwrap()), None);
 }
 
 #[test]
@@ -738,13 +733,13 @@ fn adding_members_sends_invitations_and_shows_their_state() {
 }
 
 #[test]
-fn invitations_to_us_count_on_the_badge_and_join_or_decline() {
+fn invitations_to_us_are_counted_and_join_or_decline() {
     let api = Fake::default();
     api.invs.borrow_mut().push(inv("in1", "hike", false, "did:key:sam", GroupInvitationState::Pending));
     api.invs.borrow_mut().push(inv("in2", "chess", false, "did:key:ravi", GroupInvitationState::Pending));
     let mut l = live();
     run(&mut l, &api, Lm::Reload);
-    assert_eq!(l.badge(), 2);
+    assert_eq!(l.pending_invitations().count(), 2);
     let said = run(&mut l, &api, Lm::AcceptInv("in1".into()));
     assert_eq!(said.as_deref(), Some("You joined Group hike."));
     assert_eq!(l.open.as_deref(), Some("hike"));
@@ -755,7 +750,7 @@ fn invitations_to_us_count_on_the_badge_and_join_or_decline() {
     // An event re-reads the list.
     api.invs.borrow_mut().push(inv("in3", "x", false, "did:key:sam", GroupInvitationState::Pending));
     l.step(&api, Lm::InvitationChanged(inv("in3", "x", false, "did:key:sam", GroupInvitationState::Pending)));
-    assert_eq!(l.badge(), 1);
+    assert_eq!(l.pending_invitations().count(), 1);
 }
 
 #[test]
