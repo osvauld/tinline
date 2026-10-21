@@ -16,29 +16,8 @@ use crate::Error;
 // `account_model::store`; this module opens and writes the sealed `account.redb`.
 pub use account_model::store::*;
 
-// The record lives with the models (`account_model::store`); this declares it to UniFFI.
-/// One finished call, as the UI lists it. `reason` is one of the stable end reasons in
-/// `docs/protocol.md`.
-#[uniffi::remote(Record)]
-pub struct CallRecord {
-    pub call_id: String,
-    pub peer_did: String,
-    /// Their name when the call happened (our alias for them if we had one).
-    pub peer_name: String,
-    pub incoming: bool,
-    /// Unix seconds when the call started (dialing, or the first ring).
-    pub started_at: u64,
-    /// Seconds from answer to end; 0 if it never became active.
-    pub duration_secs: u32,
-    pub reason: String,
-    /// Media went over a direct path rather than a relay (as last seen).
-    pub direct: bool,
-    /// Incoming and we never answered it (not one we declined, nor one turned away while
-    /// unavailable).
-    pub missed: bool,
-    /// A video call: placed as one (`CallInfo.video`), or a camera was on while it was active.
-    pub video: bool,
-}
+// UniFFI's declaration of `CallRecord` (its model is `account_model::store`).
+mod models;
 
 /// Where state and the call log are written.
 #[derive(Clone)]
