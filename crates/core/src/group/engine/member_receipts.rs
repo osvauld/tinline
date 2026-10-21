@@ -17,6 +17,11 @@
 //!   the session and asked again with `ReceiptHello` after our docs advance. Any other refusal
 //!   is logged; the session goes on (a receipt never breaks group sync).
 //! - Reconnect = a new session: hello again, so lost frames are recovered from VVs.
+//! - Public groups (`docs/design/public-group.md` §4): while a group is open (or we are joining
+//!   one by its open link) no delivered/read intent is recorded, no `ReceiptHello`/`Receipts`/
+//!   `ReceiptAck` is sent, and incoming ones are dropped unread. Own-post delivery (`Waiting` ->
+//!   `Delivered`) comes from host `Ack`s, not receipts, and is unchanged. Nothing is backdated:
+//!   posts that arrived while open get no receipt if the group closes later.
 
 use std::collections::BTreeMap;
 
@@ -93,6 +98,9 @@ impl GroupCore {
         day: &str,
         posts: &[(PostRef, [u8; 32])],
     ) -> Vec<Op> {
+        if state.open {
+            return Vec::new();
+        }
         let digests: Vec<[u8; 32]> = posts
             .iter()
             .filter(|(p, _)| may_issue(state, &self.did, frontier, p))
@@ -154,7 +162,8 @@ impl GroupCore {
             .map_or(0, |i| i.at)
             .max(last_post)
             .max(old);
-        let read = if read_receipts {
+        // Public group §4: no read receipts while the group is open.
+        let read = if read_receipts && !live.state.open {
             self.read_ops(live, gid, old, new)
         } else {
             Ok(Vec::new())
@@ -243,6 +252,20 @@ impl GroupCore {
 
     // ---- wire ------------------------------------------------------------------------------
 
+    /// Public group §4: no receipt traffic for `gid` while it is open, or while we are joining it
+    /// by its open link (before its records arrive we cannot tell it is open).
+    pub(crate) fn receipts_off(&self, gid: &str) -> bool {
+        self.groups
+            .lock()
+            .get(gid)
+            .is_some_and(|l| l.state.open || l.meta.open_join)
+    }
+
+    /// The `ReceiptHello` a new session starts with; none while receipts are off.
+    pub(crate) fn session_receipt_hello(&self, gid: &str) -> Option<GroupMsg> {
+        (!self.receipts_off(gid)).then(|| self.receipt_hello(gid))
+    }
+
     /// Our `ReceiptHello` for `gid`: recent held days plus unacknowledged outbox days.
     pub(crate) fn receipt_hello(&self, gid: &str) -> GroupMsg {
         let mut days = self.held_recent_days(gid);
@@ -279,6 +302,9 @@ impl GroupCore {
         if days.len() > MAX_RECEIPT_DAYS {
             return Err(Error::Protocol("too many receipt days".into()));
         }
+        if self.receipts_off(&sess.gid) {
+            return Ok(());
+        }
         let mut todo = Vec::new();
         for (d, vv) in days {
             if !crate::group::doc::day_valid(&d) {
@@ -313,7 +339,7 @@ impl GroupCore {
 
     /// Sends `sess` what it lacks of one day's ledger (bounded frames per call).
     pub(crate) fn receipts_send(&self, sess: &Sess, day: &str) -> Result<(), Error> {
-        if self.store.shard_meta(&sess.gid, day)?.is_none() {
+        if self.receipts_off(&sess.gid) || self.store.shard_meta(&sess.gid, day)?.is_none() {
             return Ok(());
         }
         for _ in 0..RECEIPT_FRAMES_PER_SEND {
@@ -367,6 +393,10 @@ impl GroupCore {
         if !crate::group::doc::day_valid(day) {
             return Err(Error::Protocol("bad receipt day".into()));
         }
+        // Public group §4: dropped unread, unanswered.
+        if self.receipts_off(&sess.gid) {
+            return Ok(vec![]);
+        }
         // Evidence attaches to a day we hold; anything else waits for the day.
         let fresh = if self.store.shard_meta(&sess.gid, day)?.is_none() {
             sess.receipt_waiting.lock().insert(day.to_string());
@@ -408,6 +438,9 @@ impl GroupCore {
             return Err(Error::Protocol("bad receipt day".into()));
         }
         let vv = decode_vv(vv)?;
+        if self.receipts_off(&sess.gid) {
+            return Ok(());
+        }
         if self.store.shard_meta(&sess.gid, day)?.is_some() {
             self.receipts
                 .acknowledged(&scope(&sess.gid, day), &vv)
@@ -423,6 +456,9 @@ impl GroupCore {
 
     /// After our docs of `gid` advanced: ask again for the days whose receipts waited.
     pub(crate) fn receipts_rehello(&self, gid: &str) {
+        if self.receipts_off(gid) {
+            return;
+        }
         for s in self.sessions_of(gid) {
             let days: Vec<String> = std::mem::take(&mut *s.receipt_waiting.lock())
                 .into_iter()

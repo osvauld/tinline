@@ -53,8 +53,11 @@ impl Inner {
         if !hosts.is_empty() {
             let _ = sess.tx.send(Out::Msg(GroupMsg::Hosts { hosts }));
         }
-        // Member receipts: after the docs, so the posts they cover arrive first.
-        let _ = sess.tx.send(Out::Msg(core.receipt_hello(&gid)));
+        // Member receipts: after the docs, so the posts they cover arrive first (none in an open
+        // group, public group §4).
+        if let Some(hello) = core.session_receipt_hello(&gid) {
+            let _ = sess.tx.send(Out::Msg(hello));
+        }
         self.group_mail_on_session(&core, &sess);
         self.group_calls_on_session(&core, &sess);
         if let Some(ev) = self.group_ev() {

@@ -90,6 +90,10 @@ impl CodeRt {
 
 pub(crate) const UNKNOWN_CODE: &str = "unknown or expired invite code";
 pub(crate) const NOT_OPEN: &str = "this group is not open to new members";
+/// `group_open_code`: how many `NOT_OPEN` answers (a host still catching up on our `Open`
+/// record) are asked again, across all hosts, before the refusal stands. Each retry waits for
+/// the next 500 ms round, and the whole call stays inside `HOST_WAIT`.
+const NOT_OPEN_RETRIES: u32 = 10;
 
 /// Checks a fetched token against the code it was fetched with: the dialled endpoint is one of
 /// the group's signed host addresses, and the invite (if any) is signed, for this group, unexpired.
@@ -187,6 +191,7 @@ impl Inner {
         let end = Instant::now() + HOST_WAIT;
         let mut tried: std::collections::HashSet<(String, [u8; 32])> = Default::default();
         let mut refused = None;
+        let mut not_open_retries = 0;
         loop {
             let hosts: Vec<(String, [u8; 32])> = core.with_state(gid, |st| st.hosts.iter().map(|h| (h.did.clone(), h.dev)).collect()).unwrap_or_default();
             for (did, dev) in hosts {
@@ -208,6 +213,12 @@ impl Inner {
                         }
                     }
                     Some((true, _)) => {}
+                    // The host has not applied our `Open` record yet (its catch-up is still in
+                    // flight): ask it again on a later round, a bounded number of times.
+                    Some((false, reason)) if reason == NOT_OPEN && not_open_retries < NOT_OPEN_RETRIES => {
+                        not_open_retries += 1;
+                        tried.remove(&(did, dev));
+                    }
                     Some((false, reason)) => refused = Some(reason),
                     None => {
                         tried.remove(&(did, dev));
