@@ -2,17 +2,13 @@ import SwiftUI
 
 @main
 struct TinlineApp: App {
+    /// The one app state (android P2pApp); the Shell's `RootView` creates the node in it on first appearance.
+    @StateObject private var app = AppEnv()
+
     var body: some Scene {
         WindowGroup {
-            RootView().tinTheme()
+            // RootView is the Shell's (Screens/Shell/ShellRoot.swift): the gates, then the home stack.
+            RootView().environmentObject(app).tinTheme()
         }
-    }
-}
-
-/// Placeholder shell until the navigation layer lands (docs/design/SCREENS-HANDOFF.md).
-struct RootView: View {
-    @Environment(\.tin) private var tin
-    var body: some View {
-        ZStack { tin.bg.ignoresSafeArea(); Text("Tinline").font(TinType.display).foregroundStyle(tin.ink) }
     }
 }
