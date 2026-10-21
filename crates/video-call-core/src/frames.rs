@@ -1,9 +1,15 @@
 //! Camera frames as pushed: sources, size checks and plane geometry.
 
-use super::*;
+use std::time::Instant;
+
+use video::I420;
+use video::convert::{self, Prepare, Range, RgbLayout, Rotation, Yuv420};
+
+/// Largest camera frame side `push_video_frame` takes.
+pub const MAX_INPUT_SIDE: u32 = 4096;
 
 /// A camera frame as pushed; converted on the encoder thread.
-pub(super) enum Source {
+pub enum Source {
     I420(I420),
     /// Android `YUV_420_888` planes (`u`/`v` with pixel stride 2 are the NV12/NV21 views).
     Yuv {
@@ -19,18 +25,18 @@ pub(super) enum Source {
     Yuyv { data: Vec<u8>, stride: usize },
 }
 
-pub(super) struct Input {
-    pub(super) width: usize,
-    pub(super) height: usize,
-    pub(super) src: Source,
-    pub(super) rotation: u32,
-    pub(super) at: Instant,
+pub struct Input {
+    pub width: usize,
+    pub height: usize,
+    pub src: Source,
+    pub rotation: u32,
+    pub at: Instant,
 }
 
 impl Input {
     /// Upright and fit into the rung `rw` x `rh` (see [`fit`]); `prepare`'s center crop then
     /// only trims what even rounding loses.
-    pub(super) fn prepare(&self, rw: usize, rh: usize) -> video::Result<I420> {
+    pub fn prepare(&self, rw: usize, rh: usize) -> video::Result<I420> {
         let rotate = Rotation::from_degrees(self.rotation as i32);
         let (sw, sh) = if matches!(rotate, Rotation::R90 | Rotation::R270) {
             (self.height, self.width)
@@ -74,7 +80,7 @@ impl Input {
 
 /// U and V; an empty one is taken from the other's interleaved plane (NV21: only `v`, NV12:
 /// only `u`, each a whole interleaved chroma plane).
-pub(super) fn chroma_views<'a>(u: &'a [u8], v: &'a [u8]) -> (&'a [u8], &'a [u8]) {
+pub fn chroma_views<'a>(u: &'a [u8], v: &'a [u8]) -> (&'a [u8], &'a [u8]) {
     match (u.is_empty(), v.is_empty()) {
         (true, false) => (&v[1..], v),
         (false, true) => (u, &u[1..]),
@@ -85,8 +91,7 @@ pub(super) fn chroma_views<'a>(u: &'a [u8], v: &'a [u8]) -> (&'a [u8], &'a [u8])
 /// U and V of `YUV_420_888` given as memory spans (address, length): with pixel stride 2 and
 /// one starting a byte after the other they are views of one interleaved plane, returned once
 /// as their union (the other span empty, as `chroma_views` expects); otherwise as they are.
-#[cfg_attr(not(target_os = "android"), allow(dead_code))]
-pub(crate) fn chroma_spans(u: (usize, usize), v: (usize, usize), pixel_stride: usize) -> ((usize, usize), (usize, usize)) {
+pub fn chroma_spans(u: (usize, usize), v: (usize, usize), pixel_stride: usize) -> ((usize, usize), (usize, usize)) {
     let (none, union) = ((0, 0), |a: (usize, usize), b: (usize, usize)| (a.0, a.1.max(b.1 + 1)));
     if pixel_stride == 2 && u.1 > 0 && v.1 > 0 {
         if Some(u.0) == v.0.checked_add(1) {
@@ -101,7 +106,7 @@ pub(crate) fn chroma_spans(u: (usize, usize), v: (usize, usize), pixel_stride: u
 
 /// Whether `len` bytes hold a plane of `w` x `h` samples, rows `stride` apart, samples `step`
 /// apart (the last row may end right after its last sample).
-pub(super) fn plane_fits(len: usize, w: usize, h: usize, stride: usize, step: usize) -> bool {
+pub fn plane_fits(len: usize, w: usize, h: usize, stride: usize, step: usize) -> bool {
     let row = (w - 1) * step + 1;
     step >= 1 && stride >= row && len >= (h - 1) * stride + row
 }
@@ -109,7 +114,7 @@ pub(super) fn plane_fits(len: usize, w: usize, h: usize, stride: usize, step: us
 /// Whether `YUV_420_888` planes as `push_video_frame_yuv` takes them hold a `width` x `height`
 /// frame.
 #[allow(clippy::too_many_arguments)]
-pub(super) fn yuv_fits(width: u32, height: u32, y: &[u8], y_stride: usize, u: &[u8], v: &[u8], uv_stride: usize, uv_pixel_stride: usize) -> bool {
+pub fn yuv_fits(width: u32, height: u32, y: &[u8], y_stride: usize, u: &[u8], v: &[u8], uv_stride: usize, uv_pixel_stride: usize) -> bool {
     if !size_ok(width, height) {
         return false;
     }
@@ -121,10 +126,27 @@ pub(super) fn yuv_fits(width: u32, height: u32, y: &[u8], y_stride: usize, u: &[
 }
 
 /// Bytes a plane of `w` x `h` samples, rows `stride` apart, samples `step` apart, spans.
-pub(super) fn plane_len(w: usize, h: usize, stride: usize, step: usize) -> usize {
+pub fn plane_len(w: usize, h: usize, stride: usize, step: usize) -> usize {
     (h - 1) * stride + (w - 1) * step + 1
 }
 
-pub(super) fn size_ok(width: u32, height: u32) -> bool {
+pub fn size_ok(width: u32, height: u32) -> bool {
     (1..=MAX_INPUT_SIDE).contains(&width) && (1..=MAX_INPUT_SIDE).contains(&height)
 }
+
+/// Largest even size of `sw` x `sh`'s aspect within the rung `rw` x `rh` (turned to match the
+/// picture's orientation), never upscaled.
+pub fn fit(sw: usize, sh: usize, rw: usize, rh: usize) -> (usize, usize) {
+    let (rw, rh) = if sh > sw { (rh, rw) } else { (rw, rh) };
+    let (w, h) = if sw * rh <= sh * rw {
+        let h = sh.min(rh);
+        (sw * h / sh, h)
+    } else {
+        let w = sw.min(rw);
+        (w, sh * w / sw)
+    };
+    ((w & !1).max(2), (h & !1).max(2))
+}
+
+#[cfg(test)]
+mod tests;

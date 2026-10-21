@@ -24,7 +24,7 @@ use parking_lot::{Condvar, Mutex};
 use proto::{VideoCodec, VideoOffer};
 use tokio::sync::{Notify, mpsc, watch};
 use tokio::task::JoinHandle;
-use video::convert::{self, Prepare, Range, RgbLayout, Rotation, Yuv420};
+use video::convert;
 use video::media::{Frame, Hint, LadderConfig, SenderConfig};
 use video::net::{RecvConfig, VideoRecv, VideoSend};
 use video::{EncoderConfig, I420, VideoEncoder};
@@ -34,8 +34,6 @@ use crate::Error;
 
 /// Largest picture we decode, and what we offer to receive (the top rung, 720p).
 pub(crate) const MAX_PIXELS: u32 = 1280 * 720;
-/// Largest camera frame side `push_video_frame` takes.
-const MAX_INPUT_SIDE: u32 = 4096;
 const ENCODER_THREADS: usize = 2;
 const DECODER_THREADS: usize = 2;
 const FPS: u32 = 30;
@@ -65,8 +63,6 @@ mod adapt;
 mod api;
 mod codecs;
 mod ffi_bytes;
-mod frames;
-mod hd;
 mod live;
 mod nerds;
 mod path;
@@ -75,23 +71,23 @@ mod path;
 mod mediacodec;
 mod pipes;
 mod tuning;
-pub use tuning::{VideoTuning, video_tuning_stats_label};
-pub use live::{VideoChoice, VideoLive};
-pub use nerds::{VideoStatRow, video_stat_rows};
+pub use tuning::video_tuning_stats_label;
+pub use video_call_core::{VideoLive, VideoStatRow, VideoStats, VideoTuning};
+pub use live::VideoChoice;
+pub use nerds::video_stat_rows;
 use self::codecs::EncoderChoice;
 
 pub use self::ffi_bytes::Bytes;
 #[cfg_attr(not(target_os = "android"), allow(unused_imports))]
-pub(crate) use self::frames::chroma_spans;
-pub(crate) use self::pipes::fit;
-pub use self::adapt::{VideoBudget, VideoSendCap, video_codec_label, video_recv_label, video_send_label};
-use self::frames::*;
+pub(crate) use video_call_core::frames::chroma_spans;
+pub use self::adapt::{video_codec_label, video_recv_label, video_send_label};
+pub use video_call_core::{VideoBudget, VideoSendCap};
+use video_call_core::frames::*;
 use self::pipes::*;
 
-#[path = "video_call/traffic.rs"]
-mod traffic;
-
-#[derive(Debug, Clone, Default, PartialEq, uniffi::Record)]
+/// Video stats, one read per second. The record lives in `video_call_core::stats`; this declares
+/// it to UniFFI.
+#[uniffi::remote(Record)]
 pub struct VideoStats {
     pub frames_sent: u64,
     pub keyframes_sent: u64,
@@ -172,15 +168,6 @@ pub struct VideoStats {
     pub hd_auto: bool,
 }
 
-impl VideoStats {
-    fn record_admitted(&mut self, len: usize) {
-        traffic::record(&mut self.admitted_payload_bytes, &mut self.frames_sent, len);
-    }
-    fn record_received(&mut self, len: usize) {
-        traffic::record(&mut self.received_payload_bytes, &mut self.frames_received, len);
-    }
-}
-
 /// Video state changes of the current call (`negotiated` is known when the call goes active;
 /// camera on/off on either side). Frames are pulled, not pushed: see `pull_video_frame`.
 #[uniffi::export(rust, foreign)]
@@ -240,7 +227,7 @@ struct Pipe {
     key_wanted: Notify,
     stats: Mutex<VideoStats>,
     /// Drawn size, budget and decode cost (`adapt`), turned into hints for the peer.
-    policy: Mutex<adapt::Policy>,
+    policy: Mutex<video_call_core::adapt::Policy>,
     /// The newest hint for the receive task, and the wake for it.
     hint_slot: Mutex<Option<Hint>>,
     hint_changed: Notify,
