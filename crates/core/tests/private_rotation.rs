@@ -16,15 +16,8 @@ use support::eventually_200ms as eventually;
 use support::*;
 
 const TAG: &str = "pf";
+const S: Suite = Suite(TAG);
 const BLOCKED: &str = "blocked";
-
-fn peer(name: &str) -> Peer {
-    Peer::new(TAG, name)
-}
-
-fn pair(tag: &str) -> (Peer, Peer) {
-    Peer::pair(TAG, tag)
-}
 
 impl Peer {
     fn key(&self) -> String {
@@ -40,12 +33,6 @@ impl Peer {
 
 fn text_of(p: &Peer, did: &str, id: &str) -> Option<String> {
     all_msgs(p, did).into_iter().find(|m| m.id == id).map(|m| m.text)
-}
-
-fn restart(p: &mut Peer) {
-    p.reopen();
-    p.node.unlock(PASS.into()).unwrap();
-    online(&p.node);
 }
 
 /// `from` messages `to` and it arrives.
@@ -75,7 +62,7 @@ fn short_windows(p: &Peer, announce_ms: u64, overlap_ms: u64) {
 // account DID and the writer ID stay, and the new QR names the new key.
 #[test]
 fn a_contact_follows_a_rotation() {
-    let (a, b) = pair("follow");
+    let (a, b) = S.pair("follow");
     // Rotation is off by default (2026-10-19); this device has it on, without jitter so the
     // restarted schedule is later than the first one (two random jitters need not be ordered).
     a.node.group_set_rotation_policy_for_test(Some(RotationPolicy { jitter_ms: 0, ..RotationPolicy::ON }));
@@ -108,13 +95,13 @@ fn a_contact_follows_a_rotation() {
 // old address, is told the new one there, and continues on it.
 #[test]
 fn an_offline_contact_reconnects_through_the_overlap() {
-    let (a, mut b) = pair("overlap");
+    let (a, mut b) = S.pair("overlap");
     message_arrives(&b, &a, "warm");
     b.node.stop();
     a.node.private_rotate_now().unwrap();
     let new = a.key();
     assert!(a.node.overlap_open_for_test());
-    restart(&mut b);
+    b.restart();
     // b knows only the old key: its next exchange lands on the overlapping old endpoint.
     let id = b.node.send_text(a.did.clone(), "back".into(), None).unwrap().id;
     eventually(120, "b follows to the new key", || b.dials(&a) == vec![new.clone()]);
@@ -127,14 +114,14 @@ fn an_offline_contact_reconnects_through_the_overlap() {
 // them (their key did not change) carries the new one, and they follow.
 #[test]
 fn an_offline_longer_contact_reconnects_when_we_dial_them() {
-    let (a, mut b) = pair("longer");
+    let (a, mut b) = S.pair("longer");
     short_windows(&a, 7 * 24 * 3600 * 1000, 500);
     message_arrives(&b, &a, "warm");
     b.node.stop();
     a.node.private_rotate_now().unwrap();
     let new = a.key();
     eventually(20, "the old address closes", || !a.node.overlap_open_for_test());
-    restart(&mut b);
+    b.restart();
     message_arrives(&a, &b, "we dial them");
     eventually(120, "b follows to the new key", || b.dials(&a) == vec![new.clone()]);
     message_arrives(&b, &a, "and they reach us");
@@ -146,7 +133,7 @@ fn an_offline_longer_contact_reconnects_when_we_dial_them() {
 // block notice and keeps dialling: only our refusal holds.
 #[test]
 fn a_blocked_contact_never_learns_the_new_address() {
-    let (a, b) = pair("blocked");
+    let (a, b) = S.pair("blocked");
     message_arrives(&b, &a, "warm");
     let old = a.key();
     b.node.ignore_block_notices_for_test(true);
@@ -169,7 +156,7 @@ fn a_blocked_contact_never_learns_the_new_address() {
 // rotated key is not listed as an unlinked device anywhere.
 #[test]
 fn a_linked_device_follows() {
-    let e = peer("own-e");
+    let e = S.peer("own-e");
     let n = e.link_fresh(TAG, "own-n", LinkAs { new_pass: PASS, ..LinkAs::default() });
     e.node.private_rotate_now().unwrap();
     let new = e.key();
@@ -191,17 +178,17 @@ fn a_linked_device_follows() {
 // contacts told).
 #[test]
 fn a_restart_mid_rotation_keeps_one_key() {
-    let (mut a, b) = pair("restart");
+    let (mut a, b) = S.pair("restart");
     message_arrives(&b, &a, "warm");
     let old = a.key();
     a.node.private_rotate_interrupted_for_test(false).unwrap();
-    restart(&mut a);
+    a.restart();
     assert_eq!(a.key(), old, "never promoted: the old key serves on");
     assert!(!a.node.overlap_open_for_test());
     message_arrives(&b, &a, "still the old key");
 
     a.node.private_rotate_interrupted_for_test(true).unwrap();
-    restart(&mut a);
+    a.restart();
     let new = a.key();
     assert_ne!(new, old, "promoted: the new key serves");
     assert_eq!(a.node.linked_devices().len(), 1);
@@ -215,7 +202,7 @@ fn a_restart_mid_rotation_keeps_one_key() {
 // clears it on both sides.
 #[test]
 fn both_rotating_apart_lose_touch_until_a_ticket_swap() {
-    let (mut a, mut b) = pair("lost");
+    let (mut a, mut b) = S.pair("lost");
     for p in [&a, &b] {
         short_windows(p, 15_000, 500);
     }
@@ -224,11 +211,11 @@ fn both_rotating_apart_lose_touch_until_a_ticket_swap() {
     a.node.private_rotate_now().unwrap();
     eventually(20, "a's old address closes", || !a.node.overlap_open_for_test());
     a.node.stop();
-    restart(&mut b);
+    b.restart();
     short_windows(&b, 15_000, 500);
     b.node.private_rotate_now().unwrap();
     eventually(20, "b's old address closes", || !b.node.overlap_open_for_test());
-    restart(&mut a);
+    a.restart();
     short_windows(&a, 15_000, 500);
     eventually(90, "a lost touch with b", || a.contact(&b.did).lost_touch);
     eventually(90, "b lost touch with a", || b.contact(&a.did).lost_touch);

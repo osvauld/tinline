@@ -23,12 +23,17 @@ done
 
 # Static libaom (video encoder) from the pinned, verified source: no libaom.so at runtime.
 HOST_TRIPLE="$(rustc -vV | sed -n 's/^host: //p')"
-AOM_PREFIX="$(python3 scripts/buildlock.py --who deb-package -- python3 scripts/build_libaom.py --target host | tail -n1)"
+AOM_PREFIX="$(python3 scripts/build_libaom.py --target host | tail -n1)"
+# Static libvpx (desktop VP8, feature vp8) the same way: no libvpx.so at runtime.
+VPX_PREFIX="$(python3 scripts/build_libvpx.py | tail -n1)"
 export "AOM_DIR_${HOST_TRIPLE//-/_}=$AOM_PREFIX" AOM_STATIC_REQUIRED=1
-python3 scripts/buildlock.py --who deb-package -- \
-  cargo build --locked --release -p desktop --target-dir target/distribution
+export "VPX_DIR_${HOST_TRIPLE//-/_}=$VPX_PREFIX" VPX_STATIC_REQUIRED=1
+cargo build --locked --release -p desktop --target-dir target/distribution
 if readelf -d target/distribution/release/p2p-desktop | grep -q 'NEEDED.*libaom'; then
   echo "p2p-desktop links libaom dynamically; it must be static" >&2; exit 1
+fi
+if readelf -d target/distribution/release/p2p-desktop | grep -q 'NEEDED.*libvpx'; then
+  echo "p2p-desktop links libvpx dynamically; it must be static" >&2; exit 1
 fi
 
 PKGROOT="target/package/deb/tinline_${VERSION}_${DEB_ARCH}"

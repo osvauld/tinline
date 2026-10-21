@@ -36,6 +36,7 @@ use support::eventually_200ms as eventually;
 use support::*;
 
 const TAG: &str = "w2d";
+const S: Suite = Suite(TAG);
 
 impl Peer {
     fn devices_of(&self, other: &Peer) -> Vec<String> {
@@ -46,15 +47,10 @@ impl Peer {
     }
 }
 
-/// A committed identity; started (`online`) or not.
-fn peer(name: &str, started: bool) -> Peer {
-    Peer::committed(TAG, name, started)
-}
-
 /// a and b, each a contact of the other (b scanned a's ticket).
 fn pair(tag: &str) -> (Peer, Peer) {
-    let a = peer(&format!("{tag}-a"), true);
-    let b = peer(&format!("{tag}-b"), true);
+    let a = S.committed(&format!("{tag}-a"), true);
+    let b = S.committed(&format!("{tag}-b"), true);
     b.node.add_contact(a.node.my_ticket().unwrap()).unwrap();
     assert!(a.node.contacts().iter().any(|c| c.did == b.did), "a has b");
     (a, b)
@@ -179,8 +175,8 @@ fn adding_a_device_reaches_the_contact_without_a_call() {
 // by the DID key, so the restore no longer strands it: both `m2` and `m3` reach A.
 #[test]
 fn restore_push_and_did_signed_chat_clear_the_pending_message_stall() {
-    let a = peer("rst-a", true);
-    let mut b = peer("rst-b", true);
+    let a = S.committed("rst-a", true);
+    let mut b = S.committed("rst-b", true);
     b.node.add_contact(a.node.my_ticket().unwrap()).unwrap();
     call_answered(&a, &b);
     let m1 = chat(&b, &a, "m1: delivered before restore");

@@ -25,10 +25,10 @@ required-features = ["bench"]
 # Debug-only entry points (`video_bench`: codec benchmark that opens a caller-supplied file).
 # Android debug builds pass it (android/app/build.gradle.kts); release builds must not.
 # `proto/test-support`: `Node::forge_block_notice_for_test` calls proto's forge.
-dev-tools = ["video/sim", "proto/test-support"]
+dev-tools = ["video/sim", "proto/test-support", "group-core/dev-tools"]
 # Benchmark binaries; app, Android and test builds skip them. `cargo build --release --features bench --bin search-bench`.
 # They drive the synthetic peers, so they need `dev-tools`.
-bench = ["dev-tools"]
+bench = ["dev-tools", "search-core/bench"]
 # Decode VP8 from phones' hardware encoders with libvpx (docs/design/video-hw-vp8.md). The linux
 # desktop enables it; Android uses `mediacodec` instead and never links libvpx.
 vp8 = ["video/vp8"]
@@ -38,6 +38,16 @@ mediacodec = ["dep:ndk-sys"]
 
 [dependencies]
 proto.workspace = true
+# Sans-IO group-call engines; re-exported as `p2pcore::gcall` (src/gcall.rs).
+gcall-core.workspace = true
+# Loro doc helpers (own-device doc, export batching, UTC days, writer IDs).
+crdt.workspace = true
+# The local search index; re-exported under `search` (src/search/mod.rs).
+search-core.workspace = true
+# Receipt codec, Loro receipt map and ledger; re-exported as `p2pcore::receipts` (src/receipts/mod.rs).
+receipts-core.workspace = true
+# The group model (records, docs, derived state, vault rows); re-exported under `group` (src/group/mod.rs).
+group-core.workspace = true
 # Shared UI logic; its UniFFI items are re-exported from lib.rs so they land in libp2pcore.so.
 present = { path = "../present" }
 audio.workspace = true
@@ -57,8 +67,6 @@ hex = "0.4"
 bs58 = "0.5"
 loro = "1.13.9"
 blake3 = "1"
-unicode-normalization = "0.1"
-unicode-segmentation = "1"
 image = { version = "0.25", default-features = false, features = ["png", "jpeg", "webp"] }
 storage.workspace = true
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync", "time", "fs", "io-util"] }
@@ -72,6 +80,10 @@ tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
 # tests/video_calls.rs feeds a synthetic camera (`video::Pattern`).
 video = { path = "../video", default-features = false, features = ["net", "sim"] }
 proto = { workspace = true, features = ["test-support"] }
+# Receipt ledger test hooks (commit fault injection, temporary stores) for the unit tests.
+receipts-core = { workspace = true, features = ["testkit"] }
+# Group store/doc test hooks (fault injection, in-memory stores, raw doc edits) for the unit tests.
+group-core = { workspace = true, features = ["testkit"] }
 # Integration tests use the synthetic peers and test signers (`dev-tools`).
 p2pcore = { path = ".", features = ["dev-tools"] }
 

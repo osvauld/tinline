@@ -27,23 +27,13 @@ mod support;
 use support::eventually_200ms as eventually;
 use support::*;
 
-const TAG: &str = "rotk1";
+const S: Suite = Suite("rotk1");
 
 impl Peer {
     /// Whether this node refused any chat batch, history snapshot or own-device batch.
     fn refused_chat(&self) -> bool {
         ["rejected chat batch", "rejected history", "rejected own-device batch"].iter().any(|n| self.logged(n))
     }
-}
-
-/// A committed identity; started (`online`) or not.
-fn peer(name: &str, started: bool) -> Peer {
-    Peer::committed_with(TAG, name, started, true)
-}
-
-/// `e` (started) links a fresh install of its account.
-fn link_fresh(e: &Peer, name: &str) -> Peer {
-    e.link_fresh(TAG, name, LinkAs { wait_existing_done: true, ..LinkAs::default() })
 }
 
 /// Every call id `call_answered` placed in this process.
@@ -122,8 +112,8 @@ struct Chat {
 }
 
 fn chat_fixture(tag: &str, a_holds_list: bool, pending: bool, a_verifies_b: bool) -> Chat {
-    let a = peer(&format!("{tag}-a"), true);
-    let mut b = peer(&format!("{tag}-b"), true);
+    let a = S.noisy(&format!("{tag}-a"), true);
+    let mut b = S.noisy(&format!("{tag}-b"), true);
     b.node.add_contact(a.node.my_ticket().unwrap()).unwrap();
     if a_holds_list {
         call_answered(&a, &b);
@@ -257,10 +247,10 @@ struct Sib {
 }
 
 fn sibling_fixture(tag: &str) -> Sib {
-    let a1 = peer(&format!("{tag}-a1"), true);
-    let mut b = peer(&format!("{tag}-b"), true);
+    let a1 = S.noisy(&format!("{tag}-a1"), true);
+    let mut b = S.noisy(&format!("{tag}-b"), true);
     b.node.add_contact(a1.node.my_ticket().unwrap()).unwrap();
-    let a2 = link_fresh(&a1, &format!("{tag}-a2"));
+    let a2 = S.link_both_done(&a1, &format!("{tag}-a2"));
     eventually(40, "A2 has B", || a2.node.contacts().iter().any(|c| c.did == b.did));
     // B learns A2 from A's device list on A1's answer.
     call_answered(&b, &a1);
@@ -386,8 +376,8 @@ fn o6_contacts_verified_flag_is_cleared_by_our_restore() {
 // changes neither side's safety number. No network needed.
 #[test]
 fn o6_safety_numbers_do_not_change_on_restore() {
-    let a = peer("o6sn-a", false);
-    let mut b = peer("o6sn-b", false);
+    let a = S.noisy("o6sn-a", false);
+    let mut b = S.noisy("o6sn-b", false);
     let on_a = a.node.safety_number(b.did.clone()).unwrap();
     let on_b = b.node.safety_number(a.did.clone()).unwrap();
     assert_eq!(on_a, on_b);

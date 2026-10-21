@@ -13,9 +13,11 @@ pub struct VideoTuning {
     /// has both kinds for the codec that arrives (VP8 on a phone with a hardware decoder). Local
     /// only: the offer's `hw_decode` (and so the peer's codec choice) is unchanged.
     pub recv_decoder: String,
-    /// Empty or "auto" (the default controller), "cut" (`SenderConfig::smooth_cut`), "probe"
-    /// (that and `burst_room`: probing, where the peer's offer says `burst_probe`) or "trend"
-    /// (those and the delay-trend detector). For A/B calls (`docs/design/video-sim-tuning.md`).
+    /// Empty, "auto" or "probe": Cut+probe (`SenderConfig::smooth_cut` and `burst_room`: probing,
+    /// where the peer's offer says `burst_probe`), the default since 2026-10-20 (it fixed the
+    /// moto's stall on a bumpy upload). For A/B calls (`docs/design/video-sim-tuning.md`): "plain"
+    /// (the controller before, neither), "cut" (`smooth_cut` only) or "trend" (Cut+probe and the
+    /// delay-trend detector).
     pub rate_control: String,
 }
 
@@ -35,7 +37,7 @@ impl VideoTuning {
         if !matches!(self.recv_decoder.as_str(), "" | "auto" | "hw" | "sw") {
             return Err(Error::Protocol("unknown decoder".into()));
         }
-        if !matches!(self.rate_control.as_str(), "" | "auto" | "cut" | "probe" | "trend") {
+        if !matches!(self.rate_control.as_str(), "" | "auto" | "plain" | "cut" | "probe" | "trend") {
             return Err(Error::Protocol("unknown rate control".into()));
         }
         if self.codec().is_some_and(|codec| !c.encode.contains(&codec)) {
@@ -82,8 +84,8 @@ impl VideoTuning {
     /// `burst_probe` (an older receiver would decode the padding).
     pub(super) fn configure_rate(&self, cfg: &mut SenderConfig, peer_probes: bool) {
         let rc = self.rate_control.as_str();
-        cfg.smooth_cut = matches!(rc, "cut" | "probe" | "trend");
-        cfg.burst_room = peer_probes && matches!(rc, "probe" | "trend");
+        cfg.smooth_cut = rc != "plain";
+        cfg.burst_room = peer_probes && !matches!(rc, "plain" | "cut");
         if rc == "trend" {
             cfg.detector = video::detect::Detector::Trend;
         }
@@ -328,9 +330,17 @@ mod tests {
     fn rate_control_probes_only_a_peer_that_takes_probes() {
         let t = |rc: &str| VideoTuning { rate_control: rc.into(), ..Default::default() };
         let mut cfg = SenderConfig::default();
-        t("").configure_rate(&mut cfg, true);
+        // The default is Cut+probe.
+        for rc in ["", "auto", "probe"] {
+            let mut cfg = SenderConfig::default();
+            t(rc).configure_rate(&mut cfg, true);
+            assert!(cfg.smooth_cut && cfg.burst_room, "{rc:?}");
+            assert_eq!(cfg.detector, video::detect::Detector::Fixed);
+        }
+        t("plain").configure_rate(&mut cfg, true);
         assert!(!cfg.smooth_cut && !cfg.burst_room);
-        assert_eq!(cfg.detector, video::detect::Detector::Fixed);
+        t("cut").configure_rate(&mut cfg, true);
+        assert!(cfg.smooth_cut && !cfg.burst_room);
         t("probe").configure_rate(&mut cfg, false);
         assert!(cfg.smooth_cut && !cfg.burst_room);
         t("trend").configure_rate(&mut cfg, true);

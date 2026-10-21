@@ -10,10 +10,7 @@ mod support;
 use support::*;
 
 const TAG: &str = "test";
-
-fn peer(name: &str) -> Peer {
-    make_peer(name, None)
-}
+const S: Suite = Suite(TAG);
 
 /// With `phrase`: the same person on a new install (new device key).
 fn make_peer(name: &str, restore: Option<&str>) -> Peer {
@@ -23,14 +20,9 @@ fn make_peer(name: &str, restore: Option<&str>) -> Peer {
     }
 }
 
-/// a and b, each a contact of the other.
-fn pair(tag: &str) -> (Peer, Peer) {
-    Peer::pair(TAG, tag)
-}
-
 #[test]
 fn caller_cancels_while_ringing() {
-    let (a, b) = pair("cancel");
+    let (a, b) = S.pair("cancel");
     let call = b.node.call(a.did.clone()).unwrap();
     let inc = expect(&a, 40, "incoming", |e| match e {
         Ev::Incoming(c) => Some(c.call_id.clone()),
@@ -49,7 +41,7 @@ fn caller_cancels_while_ringing() {
 
 #[test]
 fn callee_declines() {
-    let (a, b) = pair("decline");
+    let (a, b) = S.pair("decline");
     let call = b.node.call(a.did.clone()).unwrap();
     expect(&a, 40, "incoming", |e| matches!(e, Ev::Incoming(_)).then_some(()));
     a.node.hangup(call.call_id.clone()).unwrap();
@@ -61,10 +53,13 @@ fn callee_declines() {
 
 #[test]
 fn hangup_while_dialing_is_immediate() {
-    let (a, b) = pair("dialing");
-    // Nobody home: a's endpoint is gone, so b's dial would sit out its 30 s timeout.
+    let (a, b) = S.pair("dialing");
+    // Nobody home: a's endpoint is gone, so b's dial would sit out its 30 s timeout. Dropped,
+    // not only stopped: a stopped endpoint still holds its socket and refuses b at once.
     a.node.stop();
-    let call = b.node.call(a.did.clone()).unwrap();
+    let a_did = a.did.clone();
+    drop(a);
+    let call = b.node.call(a_did).unwrap();
     std::thread::sleep(Duration::from_millis(300));
     let t = Instant::now();
     b.node.hangup(call.call_id.clone()).unwrap();
@@ -75,7 +70,7 @@ fn hangup_while_dialing_is_immediate() {
 
 #[test]
 fn glare_leaves_exactly_one_call() {
-    let (a, b) = pair("glare");
+    let (a, b) = S.pair("glare");
     // Each side answers whatever rings.
     let ca = a.node.call(b.did.clone()).unwrap();
     let cb = b.node.call(a.did.clone()).unwrap();
@@ -106,7 +101,7 @@ fn glare_leaves_exactly_one_call() {
 
 #[test]
 fn call_states_arrive_in_order() {
-    let (a, b) = pair("order");
+    let (a, b) = S.pair("order");
     let call = b.node.call(a.did.clone()).unwrap();
     let inc = expect(&a, 40, "incoming", |e| match e {
         Ev::Incoming(c) => Some(c.call_id.clone()),
@@ -143,7 +138,7 @@ fn call_states_arrive_in_order() {
 
 #[test]
 fn history_and_reconnecting_over_a_real_call() {
-    let (a, b) = pair("history");
+    let (a, b) = S.pair("history");
     let call = b.node.call(a.did.clone()).unwrap();
     let inc = expect(&a, 40, "incoming", |e| match e {
         Ev::Incoming(c) => Some(c.call_id.clone()),
@@ -179,7 +174,7 @@ fn history_and_reconnecting_over_a_real_call() {
 
 #[test]
 fn unavailable_turns_callers_away_quietly() {
-    let (a, b) = pair("away");
+    let (a, b) = S.pair("away");
     assert!(a.node.availability().available);
     a.node.set_available(false, Some(4_000_000_000)).unwrap();
     assert_eq!(a.node.availability().until, Some(4_000_000_000));
@@ -203,7 +198,7 @@ fn unavailable_turns_callers_away_quietly() {
 
 #[test]
 fn alias_verified_and_safety_number() {
-    let (a, b) = pair("alias");
+    let (a, b) = S.pair("alias");
     let c = &b.node.contacts()[0];
     assert_eq!((c.alias.clone(), c.verified), (None, false));
     b.node.rename_contact(a.did.clone(), Some("  Mum \u{7}  ".into())).unwrap();
@@ -227,21 +222,14 @@ fn alias_verified_and_safety_number() {
 
 /// b is in a call with a; a and c are contacts of b.
 fn trio(tag: &str) -> (Peer, Peer, Peer, String) {
-    let (a, b) = pair(tag);
-    let c = peer(&format!("{tag}-c"));
+    let (a, b) = S.pair(tag);
+    let c = S.peer(&format!("{tag}-c"));
     c.node.add_contact(b.node.my_ticket().unwrap()).unwrap();
     let call = a.node.call(b.did.clone()).unwrap();
-    let inc = incoming(&b);
+    let inc = incoming(&b, 40);
     b.node.answer(inc).unwrap();
     expect(&a, 20, "active", |e| matches!(e, Ev::State(_, CallState::Active)).then_some(()));
     (a, b, c, call.call_id)
-}
-
-fn incoming(p: &Peer) -> String {
-    expect(p, 40, "incoming", |e| match e {
-        Ev::Incoming(c) => Some(c.call_id.clone()),
-        _ => None,
-    })
 }
 
 #[test]
@@ -249,15 +237,16 @@ fn second_call_declined_ignored_or_answered() {
     // Only calls that arrive during a call read this, when they start.
     unsafe { std::env::set_var("P2P_WAITING_RING_SECS", "4") };
     let (a, b, c, first) = trio("waiting");
+    // Made before c's call: on a loaded machine making a node takes longer than the 4 s ring.
+    let d = S.peer("waiting-d");
+    d.node.add_contact(b.node.my_ticket().unwrap()).unwrap();
 
     // Declined: c hears busy, the a-b call is untouched.
     let c1 = c.node.call(b.did.clone()).unwrap();
-    assert_eq!(incoming(&b), c1.call_id);
+    assert_eq!(incoming(&b, 40), c1.call_id);
     assert_eq!(b.node.waiting_call().unwrap().call_id, c1.call_id);
     assert_eq!(b.node.current_call().unwrap().call_id, first);
     // A third call while one waits is turned away busy at once.
-    let d = peer("waiting-d");
-    d.node.add_contact(b.node.my_ticket().unwrap()).unwrap();
     let d1 = d.node.call(b.did.clone()).unwrap();
     assert_eq!(expect(&d, 20, "third busy", ended(&d1.call_id)), "busy");
     b.node.decline(c1.call_id.clone()).unwrap();
@@ -269,7 +258,7 @@ fn second_call_declined_ignored_or_answered() {
 
     // Ignored: no_answer for c, missed for b, the call goes on.
     let c2 = c.node.call(b.did.clone()).unwrap();
-    assert_eq!(incoming(&b), c2.call_id);
+    assert_eq!(incoming(&b, 40), c2.call_id);
     assert_eq!(expect(&c, 20, "c no_answer", ended(&c2.call_id)), "no_answer");
     assert_eq!(expect(&b, 10, "b ended", ended(&c2.call_id)), "no_answer");
     let rec = b.node.recent_calls(10).into_iter().find(|r| r.call_id == c2.call_id).unwrap();
@@ -278,7 +267,7 @@ fn second_call_declined_ignored_or_answered() {
 
     // End & answer: a's call ends, c's becomes the current call and goes active.
     let c3 = c.node.call(b.did.clone()).unwrap();
-    assert_eq!(incoming(&b), c3.call_id);
+    assert_eq!(incoming(&b, 40), c3.call_id);
     b.node.end_and_answer(c3.call_id.clone()).unwrap();
     assert_eq!(expect(&a, 10, "a ended", ended(&first)), "hangup_remote");
     assert_eq!(expect(&b, 10, "b ended first", ended(&first)), "hangup_local");
@@ -293,11 +282,11 @@ fn second_call_declined_ignored_or_answered() {
 fn waiting_call_rings_normally_when_the_active_call_ends() {
     let (a, b, c, first) = trio("promote");
     let c1 = c.node.call(b.did.clone()).unwrap();
-    assert_eq!(incoming(&b), c1.call_id);
+    assert_eq!(incoming(&b, 40), c1.call_id);
     a.node.hangup(first.clone()).unwrap();
     expect(&b, 10, "b ended first", ended(&first));
     // It is announced again as an ordinary incoming call, and can now be answered.
-    assert_eq!(incoming(&b), c1.call_id);
+    assert_eq!(incoming(&b, 40), c1.call_id);
     assert!(b.node.waiting_call().is_none());
     b.node.answer(c1.call_id.clone()).unwrap();
     expect(&c, 20, "c active", |e| matches!(e, Ev::State(_, CallState::Active)).then_some(()));
@@ -308,7 +297,7 @@ fn waiting_call_rings_normally_when_the_active_call_ends() {
 /// the moment it is over.
 #[test]
 fn account_switch_is_refused_during_a_call() {
-    let (a, b) = pair("switch-incall");
+    let (a, b) = S.pair("switch-incall");
     let call = b.node.call(a.did.clone()).unwrap();
     expect(&a, 40, "incoming", |e| matches!(e, Ev::Incoming(_)).then_some(()));
     for p in [&a, &b] {
@@ -340,7 +329,7 @@ fn group_call_and_one_to_one_exclude_each_other() {
     impl GcallEvents for NoEvents {
         fn on_gcall_event(&self, _: GcallEvent) {}
     }
-    let (a, b) = pair("gcall-busy");
+    let (a, b) = S.pair("gcall-busy");
     let dir = Arc::new(StaticDirectory::default());
     let href = HostRef { holder_did: a.did.clone(), device_slot: 0, permit_digest: "permit-a".into() };
     {
@@ -373,7 +362,7 @@ fn group_call_and_one_to_one_exclude_each_other() {
 
     // Now a 1:1 call goes through, and a group call is refused while it runs.
     let call = b.node.call(a.did.clone()).unwrap();
-    a.node.answer(incoming(&a)).unwrap();
+    a.node.answer(incoming(&a, 40)).unwrap();
     expect(&b, 20, "active", |e| matches!(e, Ev::State(_, CallState::Active)).then_some(()));
     assert!(matches!(host(), Err(p2pcore::Error::InCall)));
     assert!(a.node.gcall_status().is_none_or(|s| s.hosting.is_none()));

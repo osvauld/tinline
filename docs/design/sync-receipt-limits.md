@@ -87,7 +87,7 @@ See [call/ledger validation and boundaries](call-receipt-ledger-slice.md).
 
 ## Local Joined intent controller (not installed into Node)
 
-Defined in [`receipts/store/joins.rs`](../../crates/core/src/receipts/store/joins.rs).
+Defined in [`receipts/store/joins.rs`](../../crates/receipts-core/src/store/joins.rs).
 See [ordering, ownership and validation](call-joined-controller.md).
 
 | Item | Value | Defining constant / classification and purpose |
@@ -111,7 +111,7 @@ can return a proof-backed projection. No Node retry task is installed by this sl
 
 ## Message receipt runtime (DM, M3/M4; branch only)
 
-Defined in [`receipts/store/messages.rs`](../../crates/core/src/receipts/store/messages.rs)
+Defined in [`receipts/store/messages.rs`](../../crates/receipts-core/src/store/messages.rs)
 and [`chat/engine/receipts.rs`](../../crates/core/src/chat/engine/receipts.rs). See
 [runtime slice](message-receipt-runtime-slice.md). All provisional.
 

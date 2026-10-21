@@ -69,6 +69,34 @@ impl From<proto::Error> for Error {
     }
 }
 
+impl From<crdt::Error> for Error {
+    fn from(e: crdt::Error) -> Self {
+        match e {
+            crdt::Error::Io(s) => Error::Io(s),
+            crdt::Error::MissingDeps => Error::Protocol(e.to_string()),
+        }
+    }
+}
+
+impl From<search_core::Error> for Error {
+    fn from(e: search_core::Error) -> Self {
+        match e {
+            search_core::Error::Io(s) => Error::Io(s),
+            search_core::Error::Protocol(s) => Error::Protocol(s),
+        }
+    }
+}
+
+impl From<group_core::Error> for Error {
+    fn from(e: group_core::Error) -> Self {
+        match e {
+            group_core::Error::Io(s) => Error::Io(s),
+            group_core::Error::Protocol(s) => Error::Protocol(s),
+            group_core::Error::Rejected(s) => Error::Rejected(s),
+        }
+    }
+}
+
 impl From<audio::Error> for Error {
     fn from(e: audio::Error) -> Self {
         Error::Audio(e.to_string())

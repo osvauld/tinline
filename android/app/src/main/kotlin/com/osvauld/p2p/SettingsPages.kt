@@ -256,7 +256,7 @@ internal fun VideoSettingsPage(quality: VideoQualityPreference, onQuality: (Vide
             PfCard {
                 act {
                     PfAct("Sharper video", onClick = { set(!hd) }, icon = PgIcons.Video, role = Role.Switch, plain = true,
-                        sub = if (hd) "Up to 540p when the connection allows. Uses more data and battery." else "Adjusts by itself for smooth calls.",
+                        sub = if (hd) "Always starts in HD. Uses more data and battery." else "Goes HD by itself when the connection allows.",
                         trailing = { PgSwitch(hd, set, "Sharper video") })
                 }
             }

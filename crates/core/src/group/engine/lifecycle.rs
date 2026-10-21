@@ -54,7 +54,7 @@ impl Inner {
         // host may still hold. A store from G1 (no `dev/id` row yet) keeps the profile's ID.
         let path = dir.join("group.redb");
         let existed = path.exists();
-        let store = GroupStore::open(path, &me.profile.mnemonic)?;
+        let store = crate::group::store::open(path, &me.profile.mnemonic)?;
         // A key staged by a rotation that never finished never becomes current (rotation.md).
         store.ep_discard_pending()?;
         let dev = store.device_id(if existed { profile_dev } else { None })?;
@@ -109,6 +109,7 @@ impl Inner {
             rotating: AtomicBool::new(false),
             announcing: Default::default(),
             compacted: Default::default(),
+            compacting: Default::default(),
             codes: Default::default(),
             receipts,
         });

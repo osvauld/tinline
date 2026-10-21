@@ -28,7 +28,7 @@ impl ProfileCache {
         if snapshot.is_none() {
             return Ok(Self::new(device));
         }
-        Doc::load(device, PROFILE_CACHE_DOC, snapshot).map(Self)
+        Ok(Self(Doc::load(device, PROFILE_CACHE_DOC, snapshot)?))
     }
     pub fn profile(&self, did: &str, device: &[u8; 32]) -> Result<Option<ProfileDoc>, Error> {
         let Some(value) = self.doc.get_map("profiles").get(did) else {

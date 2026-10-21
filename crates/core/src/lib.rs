@@ -28,7 +28,6 @@ mod node;
 mod recovery_key;
 mod rekey;
 mod receipts;
-mod signed_map;
 mod search;
 mod store;
 mod sync;
@@ -46,16 +45,6 @@ mod voice;
 mod wire;
 
 pub use error::Error;
-
-/// Search internals the `search-bench` binary drives (it lives outside the lib so the
-/// benchmark code is not compiled into the app libraries). Not part of the uniffi API.
-#[cfg(feature = "bench")]
-#[doc(hidden)]
-pub mod search_bench_support {
-    pub use crate::search::index::{DocRow, Mark, Mode, PHASES, SearchIndex};
-    pub use crate::search::text;
-    pub use crate::chat::doc::{day_of, day_start};
-}
 
 pub use block::{BLOCKED, BlockNotice, BlockState, BlockedContact};
 pub use group::api::{GroupDelivery, GroupDetail, GroupEvents, GroupFlag, GroupHost, GroupInvitePeek, GroupItemKind, GroupMember, GroupMessage, GroupPage, GroupRemoval, GroupRole, GroupSummary};
@@ -77,7 +66,6 @@ pub use voice::{VoiceDecoder, VoiceInfo, VoiceRecorder};
 pub use recovery_key::{is_recovery_key, recovery_key_from_phrase, recovery_phrase_from_input};
 pub use store::CallRecord;
 pub use video_call::{video_codec_label, video_recv_label, video_send_label};
-pub use video_call::{HdSuggestMemory, video_hd_suggest_after_call, video_hd_suggest_allowed, video_hd_suggestion};
 pub use video_call::{Bytes, Pulled, VideoBudget, VideoEvents, VideoFrame, VideoInfo, VideoSendCap, VideoStats, VideoTuning, video_tuning_stats_label};
 pub use video_call::{VideoChoice, VideoLive, VideoStatRow, video_stat_rows};
 pub use node::{AccountSummary, Availability, CallInfo, CallState, CallStats, CardPeek, Contact, LockState, Node, NodeEvents, NodeStatus, ProfileInfo};

@@ -22,6 +22,7 @@ use support::eventually_200ms as eventually;
 use support::*;
 
 const TAG: &str = "p4";
+const S: Suite = Suite(TAG);
 /// Longest gap between two delivery attempts of the outbox (its backoff tops out at 60 s).
 const RETRY_MAX: u64 = 60;
 
@@ -35,10 +36,6 @@ impl Peer {
     fn key(&self) -> String {
         self.node.device_key_for_test().unwrap()
     }
-}
-
-fn peer(name: &str) -> Peer {
-    Peer::new(TAG, name)
 }
 
 /// a and b, each a contact of the other (b scanned a's ticket).
@@ -161,7 +158,7 @@ fn an_offline_contact_gets_the_latest_list_when_it_is_back() {
 #[test]
 fn a_blocked_contact_is_not_told() {
     let (a, b) = pair("blk");
-    let c = peer("blk-c");
+    let c = S.peer("blk-c");
     c.node.add_contact(b.node.my_ticket().unwrap()).unwrap();
     b.node.block(c.did.clone()).unwrap();
     let b2 = register_sibling(&b, "blk-b2");

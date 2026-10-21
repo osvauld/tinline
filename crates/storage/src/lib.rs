@@ -20,3 +20,6 @@ mod store;
 pub use error::StorageError;
 pub use sealed::Sealed;
 pub use store::{Op, Store, Usage};
+
+/// Cap for decoding a binary row our own store wrote (disk garbage is still bounded).
+pub const MAX_ROW: usize = 1 << 20;

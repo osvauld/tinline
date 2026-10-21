@@ -266,7 +266,9 @@ trick, confirmed by the Pixel self-test.** The options are kept below for the re
   a flag on the hint (message 5, `Hint::room`), gated by `VideoOffer.hint_flags` so an older
   sender never gets it; a new message rather than a new `Msg` because, like the hint, it is
   about what the media can carry and the sender's rule needs it next to the ladder. Rule,
-  thresholds and stop rule: docs/video.md "Suggesting sharper video".
+  thresholds and stop rule: docs/video.md "Sharper video". **2026-10-20: replaced by automatic
+  HD** (the core's `VideoStats::hd_auto`, the apps reopen the camera; the chip overrides); the
+  suggestion lines and their stop rule are gone, the room flag is only logged.
 
 ## 9. Plan (Sonnet helpers, one per step, buildlock `--who vfr-<step>`; lead merges)
 

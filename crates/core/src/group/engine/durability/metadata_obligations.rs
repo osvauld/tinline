@@ -153,7 +153,7 @@ fn legacy_group_metadata_without_obligation_retains_existing_user_state() {
 
 pub(super) fn disk_core(path: &std::path::Path, account: &identity::Identity) -> GroupCore {
     let mut core = receiver();
-    core.store = GroupStore::open(path.to_path_buf(), "synthetic restart fixture").unwrap();
+    core.store = crate::group::store::open(path.to_path_buf(), "synthetic restart fixture").unwrap();
     core.account = account.clone();
     core.did = account.did().into();
     core.dev = [4; 32];

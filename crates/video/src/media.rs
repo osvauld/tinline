@@ -899,8 +899,8 @@ pub struct Hint {
     pub reason: HintReason,
     /// The receiver has room for a sharper picture than it gets: it draws the picture at 540p
     /// or more, its decoder would keep up at that size, and nothing of its own (battery,
-    /// heat) holds it back. Never a cap and never acted on by itself: the sending app may
-    /// suggest sharper video to its person (docs/video.md, "Suggesting sharper video").
+    /// heat) holds it back. Never a cap and never acted on: the sender logs it (its own
+    /// rule decides on an HD camera, docs/video.md "Sharper video").
     /// Wire: message 5 (`net`), only to a peer whose offer says it reads it.
     pub room: bool,
 }

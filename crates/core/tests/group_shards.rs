@@ -16,22 +16,20 @@ use support::fs::find_files;
 use support::group::*;
 use support::*;
 
-const TAG: &str = "g2";
-
-fn peer(name: &str) -> Peer {
-    Peer::new(TAG, name)
-}
-
-/// `e` links a fresh install (same DID); returns it committed and online.
-fn link_fresh(e: &Peer, name: &str) -> Peer {
-    e.link_fresh(TAG, name, LinkAs { label: "Desk", ..LinkAs::default() })
-}
+const S: Suite = Suite("g2");
 
 
 
 /// Restarts `p`'s process (a new `Node` over the same directory); with `lose_groups`, the group
 /// store (`group.redb`) is gone when it comes back (lost, deleted, or a backup without it).
 fn restart(p: &mut Peer, lose_groups: bool) {
+    relaunch(p, lose_groups);
+    online(&p.node);
+}
+
+/// `restart`, but the new node is only unlocked, not started: no session opens (and nothing is
+/// pushed or pulled) until the test calls `online`.
+fn relaunch(p: &mut Peer, lose_groups: bool) {
     p.node.stop();
     std::thread::sleep(Duration::from_secs(2));
     let node = Node::new(p.dir.to_string_lossy().into(), Arc::new(Quiet)).unwrap();
@@ -48,16 +46,11 @@ fn restart(p: &mut Peer, lose_groups: bool) {
         }
     }
     p.node.unlock(PASS.into()).unwrap();
-    online(&p.node);
 }
 
 
 
 const DAY_MS: i64 = 24 * 3_600_000;
-
-fn now_ms() -> i64 {
-    std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_millis() as i64
-}
 
 fn texts(p: &Peer, g: &str) -> Vec<String> {
     all(p, g).into_iter().filter(|m| m.kind == GroupItemKind::Post).map(|m| m.text).collect()
@@ -70,7 +63,7 @@ fn write_history(o: &Peer, g: &str, n: i64, per: i64) -> Vec<String> {
         for k in 0..per {
             let t = format!("day-{d}-post-{k}");
             // Mid-day, so the post sits in its day whatever the hour of the test run.
-            let at = now_ms() / DAY_MS * DAY_MS - d * DAY_MS + 12 * 3_600_000 + k * 1000;
+            let at = now_ms_i64() / DAY_MS * DAY_MS - d * DAY_MS + 12 * 3_600_000 + k * 1000;
             o.node.group_post_at_for_test(g.into(), at, t.clone()).unwrap();
             out.push(t);
         }
@@ -84,7 +77,7 @@ fn write_history(o: &Peer, g: &str, n: i64, per: i64) -> Vec<String> {
 // memory; the cursor `{at}:{id}~` of a message still ends the page at that message.
 #[test]
 fn paging_crosses_days_and_the_cache_is_bounded() {
-    let o = peer("pg-o");
+    let o = S.peer("pg-o");
     let g = o.node.group_create("Paging".into()).unwrap();
     let mut want = write_history(&o, &g, 20, 3);
     o.node.group_post(g.clone(), "today".into(), None).unwrap();
@@ -123,8 +116,8 @@ fn paging_crosses_days_and_the_cache_is_bounded() {
 // resets unread; a new message moves the row.
 #[test]
 fn the_chat_list_row_and_unread_do_not_load_days() {
-    let o = peer("cl-o");
-    let mut a = peer("cl-a");
+    let o = S.peer("cl-o");
+    let mut a = S.peer("cl-a");
     let g = group_with(&o, &[&a]);
     for i in 0..3 {
         o.node.group_post(g.clone(), format!("news {i}"), None).unwrap();
@@ -133,11 +126,13 @@ fn the_chat_list_row_and_unread_do_not_load_days() {
     let row = |p: &Peer| p.node.groups().unwrap().into_iter().find(|s| s.id == g).unwrap();
     assert_eq!(row(&a).unread, 3);
     assert_eq!(row(&a).last.as_ref().map(|m| m.text.clone()), Some("news 2".into()));
-    restart(&mut a, false);
+    // Offline: once a's session with the host opens, it pushes today's day (which loads it).
+    relaunch(&mut a, false);
     assert_eq!(a.node.group_cached_days_for_test(g.clone()).unwrap(), 0);
     let r = row(&a);
     assert_eq!((r.unread, r.last.map(|m| m.text)), (3, Some("news 2".into())));
     assert_eq!(a.node.group_cached_days_for_test(g.clone()).unwrap(), 0, "the list loaded no day doc");
+    online(&a.node);
     a.node.group_mark_read(g.clone()).unwrap();
     assert_eq!(row(&a).unread, 0);
     o.node.group_post(g.clone(), "news 3".into(), None).unwrap();
@@ -152,7 +147,7 @@ fn the_chat_list_row_and_unread_do_not_load_days() {
 // every message is still there, in order, and a late post into a closed day opens it again.
 #[test]
 fn closed_days_survive_a_restart() {
-    let mut o = peer("cd-o");
+    let mut o = S.peer("cd-o");
     let g = o.node.group_create("Closed".into()).unwrap();
     let want = write_history(&o, &g, 14, 2);
     // (The hourly compaction may have closed the first days while they were being written.)
@@ -165,7 +160,9 @@ fn closed_days_survive_a_restart() {
     assert_eq!(texts(&o, &g), want);
     assert_eq!(o.node.group_closed_days_for_test(g.clone()).unwrap(), closed, "still closed after the restart");
     // A late post into a closed day: the day opens again, then closes at the next compaction.
-    let at = now_ms() / DAY_MS * DAY_MS - 12 * DAY_MS + 15 * 3_600_000;
+    // Settle the restart's own compaction first, or it may close the day again before we look.
+    assert_eq!(o.node.group_compact_now_for_test().unwrap(), 0);
+    let at = now_ms_i64() / DAY_MS * DAY_MS - 12 * DAY_MS + 15 * 3_600_000;
     o.node.group_post_at_for_test(g.clone(), at, "late".into()).unwrap();
     assert_eq!(o.node.group_closed_days_for_test(g.clone()).unwrap(), closed - 1);
     // (The restart's own compaction may get there first.)
@@ -179,10 +176,10 @@ fn closed_days_survive_a_restart() {
 // member is filled with all days in the background by the inventory sync with its host.
 #[test]
 fn a_new_member_backfills_the_whole_history() {
-    let o = peer("bf-o");
+    let o = S.peer("bf-o");
     let g = o.node.group_create("History".into()).unwrap();
     let want = write_history(&o, &g, 30, 2);
-    let a = peer("bf-a");
+    let a = S.peer("bf-a");
     a.node.group_backfill_pause_ms_for_test(5);
     let tok = o.node.group_invite(g.clone()).unwrap();
     assert_eq!(join(&a, tok), g);
@@ -197,18 +194,22 @@ fn a_new_member_backfills_the_whole_history() {
 // lacks: a host that lost its history (a wiped or new host) is refilled by a member in session.
 #[test]
 fn a_wiped_host_is_refilled_from_a_member() {
-    let mut o = peer("wh-o");
-    let a = peer("wh-a");
+    let mut o = S.peer("wh-o");
+    let a = S.peer("wh-a");
     let g = group_with(&o, &[&a]);
     let want = write_history(&o, &g, 12, 2);
     o.node.group_post(g.clone(), "today".into(), None).unwrap();
     a.node.group_post(g.clone(), "from a".into(), None).unwrap();
-    eventually(WAIT, "a holds it all", || texts(&a, &g).len() == want.len() + 2);
-    let held = a.node.group_days_for_test(g.clone()).unwrap();
-    // The host forgets every day, then restarts: its session with a comes back, and it asks a.
-    assert_eq!(o.node.group_drop_days_for_test(g.clone()).unwrap() as usize, held.len());
+    let days = |p: &Peer| p.node.group_days_for_test(g.clone()).unwrap();
+    // Texts can show before every day is stored (under load); wait for the stored days too.
+    eventually(WAIT, "a holds it all", || texts(&a, &g).len() == want.len() + 2 && days(&a) == days(&o));
+    let held = days(&a);
+    // The host restarts and forgets every day before it goes online (in session, a would push
+    // them straight back); then its session with a comes back, and it asks a.
+    relaunch(&mut o, false);
+    assert_eq!(o.node.group_drop_days_for_test(g.clone()).unwrap() as usize, held.len(), "a holds {held:?}");
     assert!(texts(&o, &g).is_empty());
-    restart(&mut o, false);
+    online(&o.node);
     o.node.group_backfill_pause_ms_for_test(5);
     eventually(WAIT, "the host has its history back", || texts(&o, &g).len() == want.len() + 2);
     assert_eq!(o.node.group_days_for_test(g.clone()).unwrap(), held);
@@ -224,12 +225,12 @@ fn a_wiped_host_is_refilled_from_a_member() {
 // the chat-list row) as soon as the meta doc advances.
 #[test]
 fn a_post_before_its_meta_is_pending_then_shown() {
-    let o = peer("pm-o");
+    let o = S.peer("pm-o");
     let phrase = o.node.synth_phrase_for_test();
     let did = o.node.synth_peer_for_test(phrase).unwrap();
     let mut sg = o.node.synth_group_new_for_test("Pending".into()).unwrap();
     let g = sg.gid();
-    let at = now_ms();
+    let at = now_ms_i64();
     let m = o.node.synth_group_add_for_test(&mut sg, did.clone(), "early".into(), at).unwrap();
     o.node.synth_group_post_for_test(&mut sg, m, at + 10, "early bird".into()).unwrap();
     // The day doc first: the post names the join, which we do not hold yet.
@@ -247,7 +248,7 @@ fn a_post_before_its_meta_is_pending_then_shown() {
     let phrase = o.node.synth_phrase_for_test();
     let stranger = o.node.synth_peer_for_test(phrase).unwrap();
     let mut r = o.node.synth_remote_open_for_test(g.clone(), stranger).unwrap();
-    o.node.synth_remote_post_for_test(&mut r, "spam".into(), now_ms() + 20).unwrap();
+    o.node.synth_remote_post_for_test(&mut r, "spam".into(), now_ms_i64() + 20).unwrap();
     assert!(!texts(&o, &g).contains(&"spam".to_string()));
 }
 
@@ -256,10 +257,10 @@ fn a_post_before_its_meta_is_pending_then_shown() {
 // lacks arrives by backfill.
 #[test]
 fn hosts_converge_per_day_doc_and_share_history() {
-    let o = peer("hc-o");
-    let h = peer("hc-h");
-    let a = peer("hc-a");
-    let b = peer("hc-b");
+    let o = S.peer("hc-o");
+    let h = S.peer("hc-h");
+    let a = S.peer("hc-a");
+    let b = S.peer("hc-b");
     let g = group_with(&o, &[&h, &a, &b]);
     o.node.group_appoint_host(g.clone(), h.did.clone(), h.node.group_device_id().unwrap()).unwrap();
     eventually(WAIT, "h sees the permit", || all(&h, &g).iter().any(|x| x.kind == GroupItemKind::HostAdded && x.subject_did == h.did));
@@ -276,8 +277,8 @@ fn hosts_converge_per_day_doc_and_share_history() {
     b.node.group_dial_only_for_test(Some(h.did.clone()));
     a.node.group_post(g.clone(), "a via o today".into(), None).unwrap();
     b.node.group_post(g.clone(), "b via h today".into(), None).unwrap();
-    let three = now_ms() - 3 * DAY_MS;
-    let twenty = now_ms() - 20 * DAY_MS;
+    let three = now_ms_i64() - 3 * DAY_MS;
+    let twenty = now_ms_i64() - 20 * DAY_MS;
     a.node.group_post_at_for_test(g.clone(), three, "a via o, 3 days ago".into()).unwrap();
     b.node.group_post_at_for_test(g.clone(), twenty, "b via h, 20 days ago".into()).unwrap();
     for (who, p) in [("o", &o), ("h", &h), ("a", &a), ("b", &b)] {
@@ -311,9 +312,9 @@ fn newest_has(p: &Peer, g: &str, text: &str) -> bool {
 }
 
 fn two_hosts(tag: &str, extra: usize) -> (Peer, Peer, Vec<Peer>, String) {
-    let o = peer(&format!("{tag}-o"));
-    let h = peer(&format!("{tag}-h"));
-    let ms: Vec<Peer> = (0..extra).map(|i| peer(&format!("{tag}-m{i}"))).collect();
+    let o = S.peer(&format!("{tag}-o"));
+    let h = S.peer(&format!("{tag}-h"));
+    let ms: Vec<Peer> = (0..extra).map(|i| S.peer(&format!("{tag}-m{i}"))).collect();
     let mut refs: Vec<&Peer> = vec![&h];
     refs.extend(ms.iter());
     let g = group_with(&o, &refs);
@@ -339,9 +340,9 @@ fn pct(v: &mut [f64], q: f64) -> f64 {
 // through the host within a second (loopback), p95 over 50 posts.
 #[test]
 fn a_post_shows_on_another_member_within_a_second() {
-    let o = peer("lv-o");
-    let a = peer("lv-a");
-    let b = peer("lv-b");
+    let o = S.peer("lv-o");
+    let a = S.peer("lv-a");
+    let b = S.peer("lv-b");
     let g = group_with(&o, &[&a, &b]);
     let mut ms = Vec::new();
     for i in 0..50 {
@@ -362,6 +363,7 @@ fn a_post_shows_on_another_member_within_a_second() {
 // KIND: acceptance (group liveness b) — a burst of 200 posts from one member arrives complete
 // and in order on two members connected to different hosts.
 #[test]
+#[cfg_attr(debug_assertions, ignore = "200 posts through two hosts: run with --release")]
 fn a_burst_of_200_arrives_complete_and_in_order_through_two_hosts() {
     let (o, h, ms, g) = two_hosts("bu", 3);
     let (a, b, c) = (&ms[0], &ms[1], &ms[2]);
@@ -425,9 +427,9 @@ fn three_members_posting_concurrently_converge() {
 // still arrives, none twice.
 #[test]
 fn a_host_restart_mid_burst_loses_and_duplicates_nothing() {
-    let mut o = peer("rs-o");
-    let a = peer("rs-a");
-    let b = peer("rs-b");
+    let mut o = S.peer("rs-o");
+    let a = S.peer("rs-a");
+    let b = S.peer("rs-b");
     let g = group_with(&o, &[&a, &b]);
     let (n, gg) = (a.node.clone(), g.clone());
     let writer = std::thread::spawn(move || {
@@ -452,10 +454,10 @@ fn a_host_restart_mid_burst_loses_and_duplicates_nothing() {
 // day docs and all arrive.
 #[test]
 fn posts_across_utc_midnight_land_in_the_right_days() {
-    let o = peer("mn-o");
-    let a = peer("mn-a");
+    let o = S.peer("mn-o");
+    let a = S.peer("mn-a");
     let g = group_with(&o, &[&a]);
-    let midnight = now_ms() / DAY_MS * DAY_MS - 3 * DAY_MS;
+    let midnight = now_ms_i64() / DAY_MS * DAY_MS - 3 * DAY_MS;
     let times = [midnight - 2000, midnight - 1, midnight, midnight + 1, midnight + 2000];
     for (i, at) in times.iter().enumerate() {
         let p = if i % 2 == 0 { &o } else { &a };
@@ -476,8 +478,8 @@ fn posts_across_utc_midnight_land_in_the_right_days() {
 // day through the inventory sync (the days older than a week are not pushed live).
 #[test]
 fn a_member_offline_for_ten_days_catches_up_every_day() {
-    let o = peer("of-o");
-    let a = peer("of-a");
+    let o = S.peer("of-o");
+    let a = S.peer("of-a");
     let g = group_with(&o, &[&a]);
     a.node.group_backfill_pause_ms_for_test(5);
     o.node.group_backfill_pause_ms_for_test(5);

@@ -18,9 +18,7 @@ use p2pcore::CallState;
 mod support;
 use support::*;
 
-fn peer(name: &str) -> Peer {
-    Peer::new("close", name)
-}
+const S: Suite = Suite("close");
 
 #[derive(Debug, PartialEq)]
 enum Probe {
@@ -54,8 +52,8 @@ fn probe(rt: &tokio::runtime::Runtime, ep: &iroh::Endpoint, id: iroh::PublicKey,
 #[test]
 fn a_restart_leaves_no_refusing_endpoint_behind() {
     unsafe { std::env::set_var("P2P_CLOSE_WAIT_MS", "0") };
-    let a = peer("close-a");
-    let b = peer("close-b");
+    let a = S.peer("close-a");
+    let b = S.peer("close-b");
     b.node.add_contact(a.node.my_ticket().unwrap()).unwrap();
 
     // An active call, so `a` has a connection to drain when it closes.

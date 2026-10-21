@@ -42,7 +42,7 @@ impl CallsDoc {
     }
 
     pub fn load(device: &[u8; 32], snapshot: Option<&[u8]>) -> Result<Self, Error> {
-        Doc::load(device, CALLS_DOC, snapshot).map(Self)
+        Ok(Self(Doc::load(device, CALLS_DOC, snapshot)?))
     }
 
     fn records(&self) -> BTreeMap<String, CallRecord> {

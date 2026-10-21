@@ -15,7 +15,7 @@ mod support;
 use support::group::*;
 use support::*;
 
-const TAG: &str = "g3";
+const S: Suite = Suite("g3");
 
 struct ITap(Mutex<Vec<GroupInvitation>>);
 impl GroupInvitationEvents for ITap {
@@ -53,12 +53,12 @@ fn wrap(base: support::Peer) -> Peer {
 }
 
 fn peer(name: &str) -> Peer {
-    wrap(support::Peer::new(TAG, name))
+    wrap(S.peer(name))
 }
 
 /// `e` links a fresh install (same DID); returns it committed and online.
 fn link_fresh(e: &Peer, name: &str) -> Peer {
-    wrap(e.link_fresh(TAG, name, LinkAs { label: "Desk", ..LinkAs::default() }))
+    wrap(S.link_desk(e, name))
 }
 
 fn contacts(a: &Peer, b: &Peer) {

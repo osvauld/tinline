@@ -19,8 +19,9 @@ mod support;
 use support::all_msgs_oldest_first as all_msgs;
 use support::eventually_200ms as eventually;
 use support::*;
+use support::now_ms_i64 as now_ms;
 
-const TAG: &str = "shards";
+const S: Suite = Suite("shards");
 
 impl Peer {
     /// The log lines about refused batches.
@@ -34,17 +35,8 @@ impl Peer {
     }
 }
 
-/// A committed identity; started (`online`) or not.
-fn peer(name: &str, started: bool) -> Peer {
-    Peer::committed_with(TAG, name, started, true)
-}
-
 const DAY: i64 = 86_400_000;
 const HOUR: i64 = 3_600_000;
-
-fn now_ms() -> i64 {
-    std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_millis() as i64
-}
 
 /// Start of the UTC day containing `ms`.
 fn floor(ms: i64) -> i64 {
@@ -76,24 +68,11 @@ fn find(p: &Peer, did: &str, id: &str) -> Option<Message> {
     all_msgs(p, did).into_iter().find(|m| m.id == id)
 }
 
-fn has(p: &Peer, did: &str, id: &str) -> bool {
-    find(p, did, id).is_some()
-}
-
-fn ticks(p: &Peer, did: &str, id: &str) -> DeliveryState {
-    find(p, did, id).expect("message held").delivery
-}
-
 /// `(id, text, deleted)` of every message, sorted by id: the state two devices must agree on.
 fn state(p: &Peer, did: &str) -> Vec<(String, String, bool)> {
     let mut v: Vec<_> = all_msgs(p, did).into_iter().map(|m| (m.id, m.text, m.deleted)).collect();
     v.sort();
     v
-}
-
-fn restart(p: &mut Peer, pass: &str) {
-    p.reopen();
-    p.node.unlock(pass.into()).unwrap();
 }
 
 /// Records when events arrived.
@@ -126,8 +105,8 @@ fn tap(p: &Peer) -> Arc<Stamps> {
 
 /// Two started peers that are contacts, with a chat session up (one warm-up message delivered).
 fn pair(tag: &str) -> (Peer, Peer) {
-    let a = peer(&format!("{tag}-a"), true);
-    let b = peer(&format!("{tag}-b"), true);
+    let a = S.noisy(&format!("{tag}-a"), true);
+    let b = S.noisy(&format!("{tag}-b"), true);
     b.node.add_contact(a.node.my_ticket().unwrap()).unwrap();
     eventually(30, "A has B as a contact", || a.node.contacts().iter().any(|c| c.did == b.did));
     let hi = a.node.send_text(b.did.clone(), "warm-up".into(), None).unwrap().id;
@@ -322,8 +301,8 @@ fn edits_deletes_and_late_messages_in_closed_days_converge_and_survive_restarts(
     assert_eq!(sa, sb);
 
     // Restart both: the closed days and their deltas come back from the store.
-    restart(&mut a, PASS);
-    restart(&mut b, PASS);
+    a.reopen_unlocked(PASS);
+    b.reopen_unlocked(PASS);
     assert_eq!(texts(&a, &b.did), want, "A after its restart");
     assert_eq!(texts(&b, &a.did), want, "B after its restart");
     online(&a.node);
@@ -343,8 +322,8 @@ fn edits_deletes_and_late_messages_in_closed_days_converge_and_survive_restarts(
     assert!(b.node.compact_now_for_test().unwrap() >= 2);
     assert_eq!(state(&a, &b.did), sa);
     assert_eq!(state(&b, &a.did), sb);
-    restart(&mut a, PASS);
-    restart(&mut b, PASS);
+    a.reopen_unlocked(PASS);
+    b.reopen_unlocked(PASS);
     assert_eq!(state(&a, &b.did), sa, "A after recompaction and restart");
     assert_eq!(state(&b, &a.did), sb, "B after recompaction and restart");
     assert!(!a.refused_chat() && !b.refused_chat(), "refused: {:?}", [&a, &b].map(|p| p.refusals()));
@@ -488,7 +467,7 @@ fn a_peer_restarting_mid_burst_still_gets_everything_once() {
     let to = b.did.clone();
     let sender = std::thread::spawn(move || (0..200).map(|i| n.send_text(to.clone(), format!("burst {i}"), None).unwrap().id).collect::<Vec<_>>());
     eventually(60, "B has part of the burst", || tb.added.lock().unwrap().len() >= 30);
-    restart(&mut b, PASS);
+    b.reopen_unlocked(PASS);
     tap(&b);
     online(&b.node);
     let ids = sender.join().unwrap();

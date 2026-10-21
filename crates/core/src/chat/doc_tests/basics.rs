@@ -1,15 +1,11 @@
-//! Days, pairs, writer IDs, signatures and record fields.
+//! Pairs, writer IDs, signatures and record fields.
 
 use super::*;
 
 // KIND: invariant
 #[test]
-fn days_and_pairs() {
-    assert_eq!(day_of(NOON), DAY);
-    assert_eq!(day_of(0), "1970-01-01");
-    assert_eq!(day_start(DAY), Some(NOON - 12 * HOUR_MS));
-    assert_eq!(day_start("2026-02-30"), None);
-    assert_eq!(day_start("nope"), None);
+fn pairs() {
+    // Days: `crdt::time` tests.
     assert_eq!(pair_id("did:a", "did:b"), pair_id("did:b", "did:a"));
     assert_ne!(pair_id("did:a", "did:b"), pair_id("did:a", "did:c"));
 }

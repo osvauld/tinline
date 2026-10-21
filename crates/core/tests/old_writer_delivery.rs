@@ -17,23 +17,13 @@ mod support;
 use support::eventually_200ms as eventually;
 use support::*;
 
-const TAG: &str = "p10b";
+const S: Suite = Suite("p10b");
 
 impl Peer {
     /// Whether this node refused any chat batch, history snapshot or own-device batch.
     fn refused_chat(&self) -> bool {
         ["rejected chat batch", "rejected history", "rejected own-device batch"].iter().any(|n| self.logged(n))
     }
-}
-
-/// A committed identity; started (`online`) or not.
-fn peer(name: &str, started: bool) -> Peer {
-    Peer::committed_with(TAG, name, started, true)
-}
-
-/// `e` (started) links a fresh install of its account.
-fn link_fresh(e: &Peer, name: &str) -> Peer {
-    e.link_fresh(TAG, name, LinkAs { wait_existing_done: true, ..LinkAs::default() })
 }
 
 fn creator(p: &Peer, did: &str, id: &str) -> u64 {
@@ -44,17 +34,11 @@ fn count(p: &Peer, did: &str, id: &str) -> usize {
     all_msgs(p, did).iter().filter(|m| m.id == id).count()
 }
 
-/// Stop, drop the node, open the same directory and unlock it (a process restart). Left stopped.
-fn restart(p: &mut Peer, pass: &str) {
-    p.reopen();
-    p.node.unlock(pass.into()).unwrap();
-}
-
 /// B (contact of A) sends `m1` (delivered), then `m2` while A is offline. Returns `(a, b, m2,
 /// B's writer ID at the time)`, both left as they are: A stopped, B started.
 fn pending_m2(tag: &str) -> (Peer, Peer, String, u64) {
-    let a = peer(&format!("{tag}-a"), true);
-    let b = peer(&format!("{tag}-b"), true);
+    let a = S.noisy(&format!("{tag}-a"), true);
+    let b = S.noisy(&format!("{tag}-b"), true);
     b.node.add_contact(a.node.my_ticket().unwrap()).unwrap();
     let m1 = b.node.send_text(a.did.clone(), "m1".into(), None).unwrap().id;
     eventually(60, "A holds m1", || has(&a, &b.did, &m1));
@@ -98,7 +82,7 @@ fn a_message_pending_at_a_restore_is_delivered_after_a_restart() {
     b.restore_in_place();
     online(&b.node);
     std::thread::sleep(Duration::from_millis(500));
-    restart(&mut b, "pass two");
+    b.reopen_unlocked("pass two");
     online(&b.node);
     m2_arrives(&a, &b, &m2, old_wid);
 }
@@ -108,10 +92,10 @@ fn a_message_pending_at_a_restore_is_delivered_after_a_restart() {
 // and wiped, then A comes online and gets `m2` from B2 (proven by B's DID signature).
 #[test]
 fn a_sibling_device_forwards_an_undelivered_message_of_an_unlinked_device() {
-    let a = peer("p10b-s-a", true);
-    let b1 = peer("p10b-s-b1", true);
+    let a = S.noisy("p10b-s-a", true);
+    let b1 = S.noisy("p10b-s-b1", true);
     b1.node.add_contact(a.node.my_ticket().unwrap()).unwrap();
-    let b2 = link_fresh(&b1, "p10b-s-b2");
+    let b2 = S.link_both_done(&b1, "p10b-s-b2");
     eventually(40, "B2 has A", || b2.node.contacts().iter().any(|c| c.did == a.did));
     let m1 = b1.node.send_text(a.did.clone(), "m1".into(), None).unwrap().id;
     eventually(60, "A holds m1", || has(&a, &b1.did, &m1));
@@ -139,8 +123,8 @@ fn a_sibling_device_forwards_an_undelivered_message_of_an_unlinked_device() {
 // nothing, the session stays up, and A gets the message with the edit.
 #[test]
 fn a_live_edit_does_not_push_an_old_undelivered_op_of_another_writer() {
-    let a = peer("p10b-l-a", true);
-    let b = peer("p10b-l-b", true);
+    let a = S.noisy("p10b-l-a", true);
+    let b = S.noisy("p10b-l-b", true);
     b.node.add_contact(a.node.my_ticket().unwrap()).unwrap();
     let m1 = b.node.send_text(a.did.clone(), "m1".into(), None).unwrap().id;
     eventually(60, "A holds m1", || has(&a, &b.did, &m1));

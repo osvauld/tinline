@@ -1,0 +1,28 @@
+[package]
+name = "receipts-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+description = "Signed message/call receipts: the claim codec, grow-only Loro receipt map and transactional ledger; p2pcore owns the app API and tick visuals"
+
+[features]
+# Test hooks (commit fault injection, raw ledger access, temporary stores) for p2pcore's tests.
+testkit = []
+
+[dependencies]
+proto.workspace = true
+identity.workspace = true
+cryptography.workspace = true
+storage.workspace = true
+crdt.workspace = true
+loro = "1.13.9"
+serde.workspace = true
+thiserror.workspace = true
+parking_lot = "0.12"
+hex = "0.4"
+tracing = "0.1"
+
+[dev-dependencies]
+# The group-call join evidence bridge (participation, store::joins) is test-only until wired.
+gcall-core.workspace = true

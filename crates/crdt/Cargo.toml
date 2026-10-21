@@ -1,0 +1,13 @@
+[package]
+name = "crdt"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+description = "Loro doc helpers shared by chat, group, receipts and own-device sync: the own-device doc wrapper, bounded native export batching, signed-map inspection, UTC days and writer IDs"
+
+[dependencies]
+loro = "1.13.9"
+cryptography.workspace = true
+thiserror.workspace = true
+blake3 = "1"

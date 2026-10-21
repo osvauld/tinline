@@ -6,7 +6,10 @@
 //! - After a session's doc catch-up each side sends `ReceiptHello` (its ledger VV for the recent
 //!   days it holds plus its unacknowledged outbox days). The answer is `Receipts` for every day
 //!   where the other side lacks something; each import is answered by `ReceiptAck` (what we
-//!   hold now, authoritative for the sender, which also clears our outbox mark).
+//!   hold now, which also clears our outbox mark). The sender merges it into what it already
+//!   sent: an Ack answers one frame while later ones may still be in flight, and taking it as
+//!   the whole truth sent every in-flight statement again (each resend answered by another
+//!   stale Ack). A hello is what resets it.
 //! - New statements (our pump, or fresh ones imported from a session) are pushed live to every
 //!   other session of the group. A relay re-exports the ledger's ORIGINAL native ops: every
 //!   statement keeps its signer's signed bytes, writer and counter byte for byte.
@@ -397,7 +400,9 @@ impl GroupCore {
         Ok(fresh)
     }
 
-    /// A `ReceiptAck`: what the peer holds now (authoritative); may clear our outbox mark.
+    /// A `ReceiptAck`: what the peer holds now; may clear our outbox mark. Merged into what we
+    /// sent since (later frames may be in flight); refused frames come back through the peer's
+    /// `ReceiptHello`.
     pub(crate) fn on_receipt_ack(&self, sess: &Sess, day: &str, vv: &[u8]) -> Result<(), Error> {
         if !crate::group::doc::day_valid(day) {
             return Err(Error::Protocol("bad receipt day".into()));
@@ -408,7 +413,11 @@ impl GroupCore {
                 .acknowledged(&scope(&sess.gid, day), &vv)
                 .map_err(rio)?;
         }
-        sess.receipt_vv.lock().insert(day.to_string(), vv);
+        sess.receipt_vv
+            .lock()
+            .entry(day.to_string())
+            .or_default()
+            .merge(&vv);
         Ok(())
     }
 

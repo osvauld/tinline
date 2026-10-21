@@ -12,16 +12,18 @@ impl Inner {
         from: Option<u64>,
     ) {
         let gid = changed.gid.clone();
-        // Sign receipt intents the change committed (bounded; failures stay queued) and push
-        // them; receipts that waited for these docs are asked for again.
-        core.member_receipts_pump_and_push();
-        self.search_group(&gid, &changed.posts);
         // Order matters: the records first (a removed member gets the flags that removed it,
         // a new host's acceptance reaches others before its address), then enforcement, then
         // address announcements.
         let days: Vec<String> = changed.doc.day().map(str::to_string).into_iter().collect();
         self.group_push(core, &gid, from, &days);
+        // Sign receipt intents the change committed (bounded; failures stay queued) and push
+        // them, after the records they cover on each session's ordered stream: a receipt that
+        // arrives before its post is refused as pending and has to be asked for again.
+        core.member_receipts_pump_and_push();
+        self.search_group(&gid, &changed.posts);
         self.group_enforce(core, &gid);
+        // Receipts that waited for these docs are asked for again.
         core.receipts_rehello(&gid);
         // Became (or stopped being) a host: announce our address.
         let mine = self.group_my_addr(core, &gid);

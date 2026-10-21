@@ -832,7 +832,7 @@ impl App {
     /// Settings > Video (CallsVideo.svelte): "Sharper video" (each call starts this way; the HD chip changes one call), then the computer's cameras.
     fn video_page(&self, t: Tok) -> El<'_> {
         let hd = self.settings.prefer_hd;
-        let sub = if hd { "Up to 720p when the connection allows. Uses more data and battery." } else { "Adjusts by itself for smooth calls." };
+        let sub = if hd { "Always starts in HD. Uses more data and battery." } else { "Goes HD by itself when the connection allows." };
         let quality: Vec<RowFn> = vec![Box::new(move |r| pf_act(t, Some("video"), "Sharper video".into(), Some((sub.into(), t.ink2, false)),
             Some(pg_switch(t, hd, Msg::Video(super::super::Vm::PreferHd(!hd)))), None, false, r))];
         let note = "A new camera is used the next time your camera starts.";
@@ -889,9 +889,9 @@ impl App {
             }
             controls = controls.push(decoders);
             let mut rcs = row![tx("Rate control", 13.0, t.ink2)].spacing(8);
-            for (id, label) in [("auto", "Today"), ("cut", "Cut"), ("probe", "Cut+probe"), ("trend", "Trend+probe")] {
+            for (id, label) in [("auto", "Cut+probe"), ("cut", "Cut"), ("plain", "Plain (old)"), ("trend", "Trend+probe")] {
                 let mut next = tuning.clone(); next.rate_control = id.into();
-                let selected = tuning.rate_control == id || (tuning.rate_control.is_empty() && id == "auto");
+                let selected = tuning.rate_control == id || (matches!(tuning.rate_control.as_str(), "" | "probe") && id == "auto");
                 rcs = rcs.push(button(tx(format!("{}{label}", if selected { "✓ " } else { "" }), 12.0, t.ink))
                     .on_press(Msg::Video(super::super::Vm::Tuning(next))));
             }
@@ -952,7 +952,7 @@ impl App {
             tx("Made by Osvauld", 13.0, t.ink2).line_height(lh(18.0)),
         ].spacing(4).align_x(Alignment::Center)).width(Fill).center_x(Fill).padding(Padding { top: 8.0, right: 0.0, bottom: 8.0, left: 0.0 });
         let mut libs = p2pcore::open_source_licences();
-        libs.extend([("Iced", "MIT"), ("WebRTC audio processing", "BSD-3-Clause")].map(|(n, l)| p2pcore::OpenSourceLicence { name: n.into(), licence: l.into() }));
+        libs.extend([("Iced", "MIT"), ("WebRTC audio processing", "BSD-3-Clause"), ("libvpx", "BSD-3-Clause")].map(|(n, l)| p2pcore::OpenSourceLicence { name: n.into(), licence: l.into() }));
         let licences: RowFn = Box::new(move |r| pf_act(t, Some("licence"), "Open-source licences".into(), Some(("The libraries Tinline is built on".into(), t.ink2, false)),
             Some(pgi(if open_ { "chevup" } else { "chev" }, 18.0, t.ink2)), Some(m(Action::ToggleLicences)), false, r));
         let list: RowFn = Box::new(move |_| {

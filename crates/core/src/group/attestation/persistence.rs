@@ -9,6 +9,7 @@ use crate::{
     },
     node::Inner,
 };
+use loro::VersionVector;
 use std::sync::Arc;
 
 pub(crate) const PROOFS_PER_PAGE: usize = 1; // provisional transfer/work budget
@@ -166,7 +167,7 @@ impl GroupCore {
         Ok(result)
     }
 }
-fn store_error(e: Error) -> AttestationError {
+fn store_error(e: impl std::fmt::Display) -> AttestationError {
     AttestationError::Store(e.to_string())
 }
 pub(crate) fn protocol_error(e: AttestationError) -> Error {

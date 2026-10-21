@@ -109,6 +109,7 @@ fn receiver() -> GroupCore {
         rotating: AtomicBool::new(false),
         announcing: Default::default(),
         compacted: Default::default(),
+        compacting: Default::default(),
         codes: Default::default(),
         receipts,
     }

@@ -2,8 +2,9 @@ name: Release builds
 
 on:
   workflow_dispatch:
+  # Production is the prod branch: every merge to prod builds the release and drafts it as v<workspace version>.
   push:
-    branches: ['release/linux-android-packaging']
+    branches: [prod]
     tags: ['v*']
 
 permissions:
@@ -35,6 +36,11 @@ jobs:
               raise SystemExit('Only stable X.Y.Z versions supported by this workflow')
           if os.environ['GITHUB_REF_TYPE'] == 'tag' and os.environ['GITHUB_REF_NAME'] != f'v{version}':
               raise SystemExit('Tag must match Cargo workspace version')
+          if os.environ['GITHUB_REF'] == 'refs/heads/prod':
+              # A prod merge without a version bump would re-release an existing tag: refuse early.
+              tagged = subprocess.run(['git', 'rev-list', '-n1', f'v{version}'], capture_output=True, text=True)
+              if tagged.returncode == 0 and tagged.stdout.strip() != os.environ['GITHUB_SHA']:
+                  raise SystemExit(f'v{version} already exists on another commit: bump the workspace version before merging to prod')
           code = subprocess.check_output(['git', 'rev-list', '--count', 'HEAD'], text=True).strip()
           with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
               f.write(f'version={version}\ncode={code}\n')
@@ -162,7 +168,7 @@ jobs:
           if-no-files-found: error
 
   draft-release:
-    if: github.ref_type == 'tag'
+    if: github.ref_type == 'tag' || github.ref == 'refs/heads/prod'
     needs: [version, linux, android]
     runs-on: ubuntu-24.04
     permissions:
@@ -175,14 +181,16 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          TAG: ${{ github.ref_name }}
+          TAG: v${{ needs.version.outputs.version }}
         run: |
           if gh release view "$TAG" >/dev/null 2>&1; then
             test "$(gh release view "$TAG" --json isDraft --jq .isDraft)" = true || {
               echo 'Refusing to replace artifacts on a published release'; exit 1;
             }
           else
-            gh release create "$TAG" --verify-tag --draft --title "Tinline $TAG" \
+            # A tag push already has the tag; a prod merge gets it on this commit when the draft is published.
+            if [ "$GITHUB_REF_TYPE" = tag ]; then from=(--verify-tag); else from=(--target "$GITHUB_SHA"); fi
+            gh release create "$TAG" "${from[@]}" --draft --title "Tinline $TAG" \
               --notes 'Candidate Linux tarball, Debian package, AppImage, and signed Android APK. Test before publishing. Linux build baseline: Ubuntu 24.04; older distros are not verified.'
           fi
           mapfile -d '' files < <(find artifacts -type f -print0)

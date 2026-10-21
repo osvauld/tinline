@@ -68,9 +68,8 @@ pub(crate) fn user_call() -> bool {
     !on_core_thread() || USER_CALL.try_with(|_| ()).is_ok()
 }
 
-pub(crate) fn now_ms() -> u64 {
-    SystemTime::now().duration_since(UNIX_EPOCH).map_or(0, |d| d.as_millis() as u64)
-}
+// The wall clock lives in `crdt` so the receipt ledger shares it.
+pub(crate) use crdt::now_ms;
 
 pub(crate) fn now() -> u64 {
     SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0)

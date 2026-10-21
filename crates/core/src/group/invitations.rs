@@ -30,9 +30,11 @@ use base64::Engine;
 use proto::{Msg, SignedGrant};
 use serde::{Deserialize, Serialize};
 
+pub use group_core::invitations::*;
+
 use super::engine::{GroupCore, INVITE_TTL};
 use super::record::*;
-use super::store::{GroupStore, io, json};
+use super::store::json;
 use crate::Error;
 use crate::node::{Inner, Me, Node, addr_for, now_ms};
 use crate::wire::{Ctrl, RETRY_SECS};
@@ -46,7 +48,8 @@ pub const MAX_OWN_INVITATIONS: usize = 512;
 /// The self/3 dirty mark for invitations.
 pub(crate) const INVITES_MARK: &str = "!invites";
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, uniffi::Enum)]
+// The state lives with the stored rows (`group_core::invitations`); this declares it to UniFFI.
+#[uniffi::remote(Enum)]
 pub enum GroupInvitationState {
     /// Not answered yet.
     Pending,
@@ -86,29 +89,6 @@ pub trait GroupInvitationEvents: Send + Sync {
     fn on_group_invitation(&self, invitation: GroupInvitation);
 }
 
-/// One invitation as this device holds it (group store `inv/{id}`).
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub(crate) struct InvRow {
-    pub id: String,
-    pub group: String,
-    pub group_name: String,
-    pub inviter: String,
-    pub inviter_name: String,
-    pub invitee: String,
-    pub invitee_name: String,
-    pub outgoing: bool,
-    pub state: GroupInvitationState,
-    pub at: u64,
-    pub expires: u64,
-    /// `codec` bytes of an `InviteToken` (with the signed invite).
-    pub token: Vec<u8>,
-    #[serde(default)]
-    pub delivered: bool,
-    /// This device still has to deliver this row's letter (the invite, or our decline).
-    #[serde(default)]
-    pub owe: bool,
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) enum Letter {
     Invite { id: [u8; 16], token: Vec<u8>, inviter_name: String },
@@ -133,24 +113,6 @@ fn id_bytes(id: &str) -> Option<[u8; 16]> {
 
 fn final_state(s: GroupInvitationState) -> bool {
     s != GroupInvitationState::Pending
-}
-
-impl GroupStore {
-    pub(crate) fn put_inv(&self, r: &InvRow) -> Result<(), Error> {
-        self.db.put(&format!("inv/{}", r.id), &json(r)).map_err(io)
-    }
-
-    pub(crate) fn inv(&self, id: &str) -> Result<Option<InvRow>, Error> {
-        Ok(self.db.get(&format!("inv/{id}")).map_err(io)?.and_then(|v| serde_json::from_slice(&v).ok()))
-    }
-
-    pub(crate) fn invs(&self) -> Result<Vec<InvRow>, Error> {
-        Ok(self.db.scan("inv/").map_err(io)?.into_iter().filter_map(|(_, v)| serde_json::from_slice(&v).ok()).collect())
-    }
-
-    fn drop_inv(&self, id: &str) -> Result<(), Error> {
-        self.db.apply(&[storage::Op::Delete(format!("inv/{id}"))]).map_err(io)
-    }
 }
 
 /// How one delivery attempt ended.

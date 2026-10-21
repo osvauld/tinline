@@ -1,7 +1,9 @@
 # Group chat in core (G1 first slice, G2 second slice, G3 invitations)
 
-Code: `crates/core/src/group/` (`record.rs`, `doc.rs`, `state.rs`, `store.rs`, `wire.rs`,
-`engine.rs`, `api.rs`; G2: `own.rs`, `mail.rs`, `requests.rs`; G3: `invitations.rs`, `code.rs`).
+Code: the model is the `group-core` crate (`crates/group-core/src/`: `record.rs`, `doc.rs`,
+`state.rs`, `shard.rs`, `store.rs`, `mail.rs`, `rotation.rs`, the code link and the stored
+invitation/request/call-log rows), re-exported under `crates/core/src/group/` (`wire.rs`,
+`engine.rs`, `api.rs`; G2: `own.rs`, `requests.rs`; G3: `invitations.rs`, `code.rs`).
 Acceptance tests on real nodes: `crates/core/tests/group_core.rs` (G1), `crates/core/tests/group_g2.rs`
 (G2) and `crates/core/tests/group_g3.rs` (G3).
 Decisions: `docs/design/rotation-open-decisions.md` (U2, U4 revised,

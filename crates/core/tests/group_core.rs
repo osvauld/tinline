@@ -15,16 +15,7 @@ mod support;
 use support::*;
 use support::group::*;
 
-const TAG: &str = "g1";
-
-fn peer(name: &str) -> Peer {
-    Peer::new(TAG, name)
-}
-
-/// `e` links a fresh install (same DID); returns it committed and online.
-fn link_fresh(e: &Peer, name: &str) -> Peer {
-    e.link_fresh(TAG, name, LinkAs { label: "Desk", ..LinkAs::default() })
-}
+const S: Suite = Suite("g1");
 
 // ---- stage 2: group endpoint, host role, create / invite / join / post ---------------------------
 
@@ -33,8 +24,8 @@ fn link_fresh(e: &Peer, name: &str) -> Peer {
 // first host (PROVISIONAL default).
 #[test]
 fn create_invite_join_and_post_both_ways() {
-    let o = peer("cj-o");
-    let a = peer("cj-a");
+    let o = S.peer("cj-o");
+    let a = S.peer("cj-a");
     let g = group_with(&o, &[&a]);
 
     let d = o.node.group_detail(g.clone()).unwrap();
@@ -68,9 +59,9 @@ fn create_invite_join_and_post_both_ways() {
 // appears in group traffic.
 #[test]
 fn member_endpoints_stay_with_hosts() {
-    let o = peer("ep-o");
-    let a = peer("ep-a");
-    let b = peer("ep-b");
+    let o = S.peer("ep-o");
+    let a = S.peer("ep-a");
+    let b = S.peer("ep-b");
     let g = group_with(&o, &[&a, &b]);
     a.node.group_post(g.clone(), "hi".into(), None).unwrap();
     eventually(WAIT, "b sees a", || has_post(&b, &g, &a.did, "hi"));
@@ -97,9 +88,9 @@ fn member_endpoints_stay_with_hosts() {
 // KIND: acceptance (G1 stage 2) — an offline member catches up through the host.
 #[test]
 fn offline_member_catches_up_via_host() {
-    let o = peer("off-o");
-    let a = peer("off-a");
-    let b = peer("off-b");
+    let o = S.peer("off-o");
+    let a = S.peer("off-a");
+    let b = S.peer("off-b");
     let g = group_with(&o, &[&a, &b]);
     b.node.stop();
     std::thread::sleep(Duration::from_secs(1));
@@ -122,10 +113,10 @@ fn offline_member_catches_up_via_host() {
 // different host converge; the hosts sync each other. Hosting is opt-in per device.
 #[test]
 fn members_on_different_hosts_converge() {
-    let o = peer("mh-o");
-    let h = peer("mh-h");
-    let a = peer("mh-a");
-    let b = peer("mh-b");
+    let o = S.peer("mh-o");
+    let h = S.peer("mh-h");
+    let a = S.peer("mh-a");
+    let b = S.peer("mh-b");
     let g = group_with(&o, &[&h, &a, &b]);
     // Owner appoints h's device; it is a host only once h accepts.
     o.node.group_appoint_host(g.clone(), h.did.clone(), h.node.group_device_id().unwrap()).unwrap();
@@ -153,9 +144,9 @@ fn members_on_different_hosts_converge() {
 // KIND: acceptance (G1 stage 2) — a non-member cannot join without an admin's invite.
 #[test]
 fn a_stranger_without_an_invite_is_refused() {
-    let o = peer("st-o");
-    let a = peer("st-a");
-    let x = peer("st-x");
+    let o = S.peer("st-o");
+    let a = S.peer("st-a");
+    let x = S.peer("st-x");
     let g = group_with(&o, &[&a]);
     // A member's device token admits only that member's own DID.
     let tok = a.node.group_device_token(g.clone()).unwrap();
@@ -172,13 +163,13 @@ fn a_stranger_without_an_invite_is_refused() {
 // group endpoint) joins, sees history and sends; every device verifies (U10, U16).
 #[test]
 fn a_second_device_of_a_member_joins_sees_and_sends() {
-    let o = peer("md-o");
-    let a = peer("md-a");
+    let o = S.peer("md-o");
+    let a = S.peer("md-a");
     let g = group_with(&o, &[&a]);
     a.node.group_post(g.clone(), "before the second device".into(), None).unwrap();
     eventually(WAIT, "o has it", || has_post(&o, &g, &a.did, "before the second device"));
 
-    let a2 = link_fresh(&a, "md-a2");
+    let a2 = S.link_desk(&a, "md-a2");
     assert_eq!(a2.did, a.did);
     assert_ne!(a2.node.group_device_id().unwrap(), a.node.group_device_id().unwrap());
     let tok = a.node.group_device_token(g.clone()).unwrap();
@@ -202,10 +193,10 @@ fn a_second_device_of_a_member_joins_sees_and_sends() {
 
 /// o owner+host, a admin, m and b members.
 fn admin_group(tag: &str) -> (Peer, Peer, Peer, Peer, String) {
-    let o = peer(&format!("{tag}-o"));
-    let a = peer(&format!("{tag}-a"));
-    let m = peer(&format!("{tag}-m"));
-    let b = peer(&format!("{tag}-b"));
+    let o = S.peer(&format!("{tag}-o"));
+    let a = S.peer(&format!("{tag}-a"));
+    let m = S.peer(&format!("{tag}-m"));
+    let b = S.peer(&format!("{tag}-b"));
     let g = group_with(&o, &[&a, &m, &b]);
     o.node.group_set_admin(g.clone(), a.did.clone(), true).unwrap();
     for p in [&o, &a, &m, &b] {
@@ -291,9 +282,9 @@ fn an_offline_post_written_before_the_removal_is_delivered() {
 // KIND: acceptance (G1 stage 4) — leaving: the member is gone for everyone and cannot post.
 #[test]
 fn a_member_can_leave() {
-    let o = peer("lv-o");
-    let a = peer("lv-a");
-    let b = peer("lv-b");
+    let o = S.peer("lv-o");
+    let a = S.peer("lv-a");
+    let b = S.peer("lv-b");
     let g = group_with(&o, &[&a, &b]);
     a.node.group_leave(g.clone()).unwrap();
     for p in [&o, &b] {
@@ -307,9 +298,9 @@ fn a_member_can_leave() {
 // KIND: acceptance (G1 stage 4) — an admin can revoke a host; the revoked device stops hosting.
 #[test]
 fn an_admin_can_revoke_a_host() {
-    let o = peer("rh-o");
-    let h = peer("rh-h");
-    let a = peer("rh-a");
+    let o = S.peer("rh-o");
+    let h = S.peer("rh-h");
+    let a = S.peer("rh-a");
     let g = group_with(&o, &[&h, &a]);
     o.node.group_appoint_host(g.clone(), h.did.clone(), h.node.group_device_id().unwrap()).unwrap();
     eventually(WAIT, "h sees the permit", || all(&h, &g).iter().any(|x| x.kind == GroupItemKind::HostAdded && x.subject_did == h.did));
@@ -329,8 +320,8 @@ fn an_admin_can_revoke_a_host() {
 // host still hosts (same group endpoint) and members reconnect and keep posting.
 #[test]
 fn groups_survive_a_host_restart() {
-    let mut o = peer("rs-o");
-    let a = peer("rs-a");
+    let mut o = S.peer("rs-o");
+    let a = S.peer("rs-a");
     let g = group_with(&o, &[&a]);
     a.node.group_post(g.clone(), "before the restart".into(), None).unwrap();
     eventually(WAIT, "o has it", || has_post(&o, &g, &a.did, "before the restart"));

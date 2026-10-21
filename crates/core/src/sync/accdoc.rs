@@ -114,7 +114,7 @@ impl AccDoc {
     }
 
     pub fn load(device: &[u8; 32], snapshot: Option<&[u8]>) -> Result<Self, Error> {
-        Doc::load(device, DOC_NAME, snapshot).map(Self)
+        Ok(Self(Doc::load(device, DOC_NAME, snapshot)?))
     }
 
     // ---- State -> doc -----------------------------------------------------------------

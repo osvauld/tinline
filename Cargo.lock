@@ -1453,6 +1453,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "crdt"
+version = "0.1.38"
+dependencies = [
+ "blake3",
+ "cryptography",
+ "loro",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "critical-section"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2418,6 +2428,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "gcall-core"
+version = "0.1.38"
+dependencies = [
+ "audio",
+ "blake3",
+ "cryptography",
+ "identity",
+ "proto",
+ "serde_json",
+]
+
+[[package]]
 name = "genawaiter"
 version = "0.99.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2681,6 +2703,25 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fdf242682df893b86f33a73828fb09ca4b2d3bb6cc95249707fc684d27484b91"
 dependencies = [
  "bitflags 2.13.2",
+]
+
+[[package]]
+name = "group-core"
+version = "0.1.38"
+dependencies = [
+ "bs58",
+ "crdt",
+ "cryptography",
+ "hex",
+ "identity",
+ "loro",
+ "proto",
+ "receipts-core",
+ "serde",
+ "serde_json",
+ "storage",
+ "thiserror 2.0.21",
+ "zeroize",
 ]
 
 [[package]]
@@ -5693,7 +5734,10 @@ dependencies = [
  "blake3",
  "bs58",
  "bytes",
+ "crdt",
  "cryptography",
+ "gcall-core",
+ "group-core",
  "hex",
  "identity",
  "image",
@@ -5709,6 +5753,8 @@ dependencies = [
  "parking_lot",
  "present",
  "proto",
+ "receipts-core",
+ "search-core",
  "serde",
  "serde_json",
  "sha2",
@@ -5717,8 +5763,6 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
- "unicode-normalization",
- "unicode-segmentation",
  "uniffi",
  "video",
  "zeroize",
@@ -6620,6 +6664,24 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "03251193000f4bd3b042892be858ee50e8b3719f2b08e5833ac4353724632430"
 
 [[package]]
+name = "receipts-core"
+version = "0.1.38"
+dependencies = [
+ "crdt",
+ "cryptography",
+ "gcall-core",
+ "hex",
+ "identity",
+ "loro",
+ "parking_lot",
+ "proto",
+ "serde",
+ "storage",
+ "thiserror 2.0.21",
+ "tracing",
+]
+
+[[package]]
 name = "redb"
 version = "4.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7047,6 +7109,24 @@ dependencies = [
  "memmap2",
  "smithay-client-toolkit 0.19.2",
  "tiny-skia 0.11.4",
+]
+
+[[package]]
+name = "search-core"
+version = "0.1.38"
+dependencies = [
+ "blake3",
+ "crdt",
+ "cryptography",
+ "libc",
+ "loro",
+ "parking_lot",
+ "serde",
+ "storage",
+ "thiserror 2.0.21",
+ "unicode-normalization",
+ "unicode-segmentation",
+ "zeroize",
 ]
 
 [[package]]

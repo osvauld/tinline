@@ -128,21 +128,7 @@ mod harness {
 // Real-node helpers (the shared harness is in `support/`).
 // ---------------------------------------------------------------------------------------------
 
-const TAG: &str = "r1a-blk";
-
-fn peer(name: &str) -> Peer {
-    Peer::new(TAG, name)
-}
-
-/// a and b, each a contact of the other (b scanned a's ticket).
-fn pair(tag: &str) -> (Peer, Peer) {
-    Peer::pair(TAG, tag)
-}
-
-/// `e` (existing) links a fresh install; returns it committed and online.
-fn link_fresh(e: &Peer, name: &str) -> Peer {
-    e.link_fresh(TAG, name, LinkAs::default())
-}
+const S: Suite = Suite("r1a-blk");
 
 fn block_today(p: &Peer, did: &str) {
     harness::block(&p.node, did).unwrap();
@@ -179,7 +165,7 @@ fn teach_devices_by_call(a: &Peer, e: &Peer) {
 // Decision: U5 revised — blocking does not trigger an endpoint rotation (nor change the DID).
 #[test]
 fn blocking_does_not_change_the_endpoint_or_the_did() {
-    let (a, b) = pair("norot");
+    let (a, b) = S.pair("norot");
     let (dev, did) = (a.node.device_key_for_test().unwrap(), a.did.clone());
     block_today(&a, &b.did);
     std::thread::sleep(Duration::from_secs(2));
@@ -193,7 +179,7 @@ fn blocking_does_not_change_the_endpoint_or_the_did() {
 // `blocked_caller_ends_at_once_with_the_blocked_reason`).
 #[test]
 fn blocked_caller_never_rings_and_ends_quickly() {
-    let (a, b) = pair("noring");
+    let (a, b) = S.pair("noring");
     block_today(&a, &b.did);
     let t0 = Instant::now();
     let call = b.node.call(a.did.clone()).unwrap();
@@ -208,7 +194,7 @@ fn blocked_caller_never_rings_and_ends_quickly() {
 // the blocker's conversation.
 #[test]
 fn blocked_senders_messages_never_reach_the_blocker() {
-    let (a, b) = pair("nomsg");
+    let (a, b) = S.pair("nomsg");
     let warm = b.node.send_text(a.did.clone(), "before".into(), None).unwrap().id;
     eventually(60, "a holds the first message", || holds(&a, &b.did, &warm));
     block_today(&a, &b.did);
@@ -223,10 +209,10 @@ fn blocked_senders_messages_never_reach_the_blocker() {
 // immediate): a block made on E holds on its linked sibling N; the blocked caller rings neither.
 #[test]
 fn block_on_one_device_holds_on_the_linked_sibling() {
-    let a = peer("sib-a");
-    let e = peer("sib-e");
+    let a = S.peer("sib-a");
+    let e = S.peer("sib-e");
     e.node.add_contact(a.node.my_ticket().unwrap()).unwrap();
-    let n = link_fresh(&e, "sib-n");
+    let n = S.link_fresh(&e, "sib-n");
     eventually(40, "N has A", || n.node.contacts().iter().any(|c| c.did == a.did));
     teach_devices_by_call(&a, &e);
     let n_dev = n.node.device_key_for_test().unwrap();
@@ -253,7 +239,7 @@ fn block_on_one_device_holds_on_the_linked_sibling() {
 // "blocked", both live and in the call record.
 #[test]
 fn blocked_caller_ends_at_once_with_the_blocked_reason() {
-    let (a, b) = pair("callrsn");
+    let (a, b) = S.pair("callrsn");
     ignores_notices(&b);
     block_today(&a, &b.did);
     for _ in 0..2 {
@@ -272,7 +258,7 @@ fn blocked_caller_ends_at_once_with_the_blocked_reason() {
 // side with the reason "blocked" (not "hangup_remote").
 #[test]
 fn blocking_mid_call_ends_it_with_the_blocked_reason() {
-    let (a, b) = pair("midcall");
+    let (a, b) = S.pair("midcall");
     let call = b.node.call(a.did.clone()).unwrap();
     incoming(&a, 30);
     a.node.answer(call.call_id.clone()).unwrap();
@@ -289,7 +275,7 @@ fn blocking_mid_call_ends_it_with_the_blocked_reason() {
 // blocked contact redeeming a fresh ticket of the blocker is refused with "blocked".
 #[test]
 fn blocked_contact_redeeming_a_fresh_ticket_is_refused_as_blocked() {
-    let (a, b) = pair("tktrsn");
+    let (a, b) = S.pair("tktrsn");
     ignores_notices(&b);
     block_today(&a, &b.did);
     let t0 = Instant::now();
@@ -306,13 +292,13 @@ fn blocked_contact_redeeming_a_fresh_ticket_is_refused_as_blocked() {
 #[test]
 #[ignore = "R1/P4: today the device list travels only inside call hello/accept (no push)"]
 fn blocked_contact_is_excluded_from_device_list_notes() {
-    let e = peer("dl-e");
-    let b = peer("dl-b");
-    let c = peer("dl-c");
+    let e = S.peer("dl-e");
+    let b = S.peer("dl-b");
+    let c = S.peer("dl-c");
     b.node.add_contact(e.node.my_ticket().unwrap()).unwrap();
     c.node.add_contact(e.node.my_ticket().unwrap()).unwrap();
     block_today(&e, &b.did);
-    let n = link_fresh(&e, "dl-n");
+    let n = S.link_fresh(&e, "dl-n");
     let n_dev = n.node.device_key_for_test().unwrap();
     // No call: the change must be pushed.
     eventually(60, "C learns N", || c.node.contact_devices_for_test(e.did.clone()).contains(&n_dev));
@@ -329,7 +315,7 @@ fn blocked_contact_is_excluded_from_device_list_notes() {
 // "<name> blocked you"; the blocker keeps the contact as "Blocked".
 #[test]
 fn block_sends_one_signed_notice_the_blocked_side_verifies() {
-    let (a, b) = pair("notice");
+    let (a, b) = S.pair("notice");
     harness::block(&a.node, &b.did).unwrap();
     let mine = harness::block_state(&a.node, &b.did);
     assert!(mine.blocked_by_me && mine.blocked_me.is_none());
@@ -347,8 +333,8 @@ fn block_sends_one_signed_notice_the_blocked_side_verifies() {
 // notice not signed by the claimed DID is refused and changes nothing.
 #[test]
 fn a_forged_block_notice_is_refused() {
-    let (a, b) = pair("forge");
-    let x = peer("forge-x");
+    let (a, b) = S.pair("forge");
+    let x = S.peer("forge-x");
     let forged = harness::forge_block_notice_for_test(&x.node, &a.did, &b.did);
     assert!(!harness::offer_block_notice_for_test(&b.node, &forged));
     assert!(harness::block_state(&b.node, &a.did).blocked_me.is_none());
@@ -371,7 +357,7 @@ fn a_forged_block_notice_is_refused() {
 // "Not delivered: <name> blocked you" (reason "blocked"), never stuck pending.
 #[test]
 fn blocked_senders_message_shows_not_delivered_blocked() {
-    let (a, b) = pair("nd");
+    let (a, b) = S.pair("nd");
     // b writes while a is away, so the message exists before any notice; a blocks meanwhile.
     a.node.stop();
     let m = b.node.send_text(a.did.clone(), "hi".into(), None).unwrap().id;
@@ -391,7 +377,7 @@ fn blocked_senders_message_shows_not_delivered_blocked() {
 // as not delivered with the same reason once it is back, and by then it holds the notice.
 #[test]
 fn queued_messages_surface_as_not_delivered_blocked() {
-    let (a, b) = pair("queued");
+    let (a, b) = S.pair("queued");
     b.node.stop();
     harness::block(&a.node, &b.did).unwrap();
     let m1 = b.node.send_text(a.did.clone(), "queued 1".into(), None).unwrap().id;
@@ -410,7 +396,7 @@ fn queued_messages_surface_as_not_delivered_blocked() {
 // same "blocked" reason, and the blocker sends no second notice.
 #[test]
 fn every_later_attempt_gets_the_same_reason_and_no_second_notice() {
-    let (a, b) = pair("repeat");
+    let (a, b) = S.pair("repeat");
     harness::block(&a.node, &b.did).unwrap();
     for i in 0..3 {
         let t0 = Instant::now();
@@ -428,14 +414,16 @@ fn every_later_attempt_gets_the_same_reason_and_no_second_notice() {
 // the blocked contact with the same "blocked" reason and shows the contact as Blocked.
 #[test]
 fn linked_sibling_refuses_with_the_blocked_reason() {
-    let a = peer("sibr-a");
-    let e = peer("sibr-e");
+    let a = S.peer("sibr-a");
+    let e = S.peer("sibr-e");
     // a ignores the notice, so its call really reaches the sibling.
     ignores_notices(&a);
     e.node.add_contact(a.node.my_ticket().unwrap()).unwrap();
-    let n = link_fresh(&e, "sibr-n");
+    let n = S.link_fresh(&e, "sibr-n");
     eventually(40, "N has A", || n.node.contacts().iter().any(|c| c.did == a.did));
     teach_devices_by_call(&a, &e);
+    // The teaching call may also ring N (fan-out, once A knows N); only later rings count.
+    let _ = n.rx.try_iter().count();
     harness::block(&e.node, &a.did).unwrap();
     eventually(40, "N shows A as Blocked", || harness::block_state(&n.node, &a.did).blocked_by_me);
     assert_eq!(harness::block_notices_sent_for_test(&n.node, &a.did), 0, "the sibling hands out E's notice; it signs none");
@@ -460,7 +448,7 @@ fn refusals(p: &Peer) -> usize {
 // and the blocker sees no further attempt at all.
 #[test]
 fn blocked_app_never_dials_or_sends_after_the_notice() {
-    let (a, b) = pair("consent");
+    let (a, b) = S.pair("consent");
     let warm = b.node.send_text(a.did.clone(), "before".into(), None).unwrap().id;
     eventually(60, "a holds the first message", || holds(&a, &b.did, &warm));
     harness::block(&a.node, &b.did).unwrap();
@@ -490,7 +478,7 @@ fn blocked_app_never_dials_or_sends_after_the_notice() {
 // blocker's devices, with "blocked", for calls, messages and history requests alike.
 #[test]
 fn a_modified_app_that_ignores_the_notice_is_still_refused() {
-    let (a, b) = pair("modded");
+    let (a, b) = S.pair("modded");
     ignores_notices(&b);
     harness::block(&a.node, &b.did).unwrap();
     std::thread::sleep(Duration::from_secs(2));
@@ -513,7 +501,7 @@ fn a_modified_app_that_ignores_the_notice_is_still_refused() {
 // side's "blocked you" state clears once delivery works again.
 #[test]
 fn unblock_restores_messaging() {
-    let (a, b) = pair("unblk");
+    let (a, b) = S.pair("unblk");
     let warm = b.node.send_text(a.did.clone(), "before".into(), None).unwrap().id;
     eventually(60, "a holds the first message", || holds(&a, &b.did, &warm));
     harness::block(&a.node, &b.did).unwrap();
@@ -545,8 +533,8 @@ fn unblock_restores_messaging() {
 // the unblock they re-add a from its ticket and get fresh tokens.)
 #[test]
 fn unblock_restores_calls_only_if_previously_allowed() {
-    let (a, b) = pair("unblkc-b");
-    let c = peer("unblkc-c");
+    let (a, b) = S.pair("unblkc-b");
+    let c = S.peer("unblkc-c");
     c.node.add_contact(a.node.my_ticket().unwrap()).unwrap();
     assert!(harness::calls_allowed(&a.node, &b.did), "ticket contacts get message+call (U13 default)");
     harness::set_calls_allowed(&a.node, &c.did, false).unwrap();
@@ -581,9 +569,9 @@ fn unblock_restores_calls_only_if_previously_allowed() {
 #[test]
 #[ignore = "needs the group chat API (none in p2pcore yet); P5 touches nothing group-related"]
 fn personal_block_does_not_change_group_membership() {
-    let h = peer("grp-h");
-    let a = peer("grp-a");
-    let b = peer("grp-b");
+    let h = S.peer("grp-h");
+    let a = S.peer("grp-a");
+    let b = S.peer("grp-b");
     for p in [&a, &b] {
         p.node.add_contact(h.node.my_ticket().unwrap()).unwrap();
     }

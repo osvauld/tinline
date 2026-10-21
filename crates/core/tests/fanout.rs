@@ -21,9 +21,17 @@ fn make_peer(name: &str, restore: Option<&str>) -> Peer {
 
 /// A, and B on two installs that know each other; A has both as devices of the contact B.
 fn trio(tag: &str) -> (Peer, Peer, Peer) {
+    trio_with(tag, |_| {})
+}
+
+/// `trio`, with `early(b1)` run while B has only one install: whoever it makes calls to B now
+/// knows no other device of B, so those calls ring B1 alone (a caller who meets B later rings
+/// both installs).
+fn trio_with(tag: &str, early: impl FnOnce(&Peer)) -> (Peer, Peer, Peer) {
     let a = make_peer(&format!("{tag}-a"), None);
     let b1 = make_peer(&format!("{tag}-b1"), None);
     b1.node.add_contact(a.node.my_ticket().unwrap()).unwrap();
+    early(&b1);
     let b2 = make_peer(&format!("{tag}-b2"), Some(&b1.phrase));
     assert_eq!(b2.did, b1.did);
     b2.node.add_contact(a.node.my_ticket().unwrap()).unwrap();
@@ -37,13 +45,6 @@ fn trio(tag: &str) -> (Peer, Peer, Peer) {
 
 
 
-fn incoming(p: &Peer) -> String {
-    expect(p, 40, "incoming", |e| match e {
-        Ev::Incoming(c) => Some(c.call_id.clone()),
-        _ => None,
-    })
-}
-
 fn active(p: &Peer, id: &str) {
     expect(p, 20, "active", |e| matches!(e, Ev::State(i, CallState::Active) if i == id).then_some(()));
 }
@@ -56,8 +57,8 @@ fn record(p: &Peer, id: &str) -> p2pcore::CallRecord {
 fn second_device_answers_first_ends_answered_elsewhere() {
     let (a, b1, b2) = trio("answer");
     let call = a.node.call(b1.did.clone()).unwrap();
-    assert_eq!(incoming(&b1), call.call_id);
-    assert_eq!(incoming(&b2), call.call_id);
+    assert_eq!(incoming(&b1, 40), call.call_id);
+    assert_eq!(incoming(&b2, 40), call.call_id);
     b2.node.answer(call.call_id.clone()).unwrap();
     active(&a, &call.call_id);
     active(&b2, &call.call_id);
@@ -76,8 +77,8 @@ fn second_device_answers_first_ends_answered_elsewhere() {
 fn decline_on_one_device_declines_the_call_everywhere() {
     let (a, b1, b2) = trio("decline");
     let call = a.node.call(b1.did.clone()).unwrap();
-    assert_eq!(incoming(&b1), call.call_id);
-    assert_eq!(incoming(&b2), call.call_id);
+    assert_eq!(incoming(&b1, 40), call.call_id);
+    assert_eq!(incoming(&b2, 40), call.call_id);
     b1.node.decline(call.call_id.clone()).unwrap();
     assert_eq!(expect(&a, 10, "a ended", ended(&call.call_id)), "declined");
     assert_eq!(expect(&b1, 10, "b1 ended", ended(&call.call_id)), "declined_local");
@@ -90,8 +91,8 @@ fn decline_on_one_device_declines_the_call_everywhere() {
 fn caller_hangup_while_ringing_cancels_all_devices() {
     let (a, b1, b2) = trio("hangup");
     let call = a.node.call(b1.did.clone()).unwrap();
-    assert_eq!(incoming(&b1), call.call_id);
-    assert_eq!(incoming(&b2), call.call_id);
+    assert_eq!(incoming(&b1, 40), call.call_id);
+    assert_eq!(incoming(&b2, 40), call.call_id);
     a.node.hangup(call.call_id.clone()).unwrap();
     assert_eq!(expect(&a, 10, "a ended", ended(&call.call_id)), "cancelled");
     for b in [&b1, &b2] {
@@ -106,7 +107,7 @@ fn an_offline_device_does_not_delay_the_other() {
     b1.node.stop();
     let t = Instant::now();
     let call = a.node.call(b1.did.clone()).unwrap();
-    assert_eq!(incoming(&b2), call.call_id);
+    assert_eq!(incoming(&b2, 40), call.call_id);
     assert!(t.elapsed() < Duration::from_secs(15), "ringing took {:?}", t.elapsed());
     b2.node.answer(call.call_id.clone()).unwrap();
     active(&a, &call.call_id);
@@ -118,8 +119,8 @@ fn an_offline_device_does_not_delay_the_other() {
 fn simultaneous_answers_leave_exactly_one_active_call() {
     let (a, b1, b2) = trio("race");
     let call = a.node.call(b1.did.clone()).unwrap();
-    assert_eq!(incoming(&b1), call.call_id);
-    assert_eq!(incoming(&b2), call.call_id);
+    assert_eq!(incoming(&b1, 40), call.call_id);
+    assert_eq!(incoming(&b2, 40), call.call_id);
     let (n1, n2, id1, id2) = (b1.node.clone(), b2.node.clone(), call.call_id.clone(), call.call_id.clone());
     let barrier = Arc::new(std::sync::Barrier::new(2));
     let (x, y) = (barrier.clone(), barrier);
@@ -159,56 +160,48 @@ fn simultaneous_answers_leave_exactly_one_active_call() {
     assert_eq!(expect(winner, 10, "winner ended", ended(&call.call_id)), "hangup_remote");
 }
 
+/// Puts `b` in a call (answered, from `c`) with a second call from `d` waiting over it: both
+/// of its slots are used. Returns the callers and the active call's id.
+fn fill(b: &Peer, tag: &str) -> (Peer, Peer, String) {
+    let c = make_peer(&format!("{tag}-c"), None);
+    c.node.add_contact(b.node.my_ticket().unwrap()).unwrap();
+    let d = make_peer(&format!("{tag}-d"), None);
+    d.node.add_contact(b.node.my_ticket().unwrap()).unwrap();
+    let c1 = c.node.call(b.did.clone()).unwrap();
+    assert_eq!(incoming(b, 40), c1.call_id);
+    b.node.answer(c1.call_id.clone()).unwrap();
+    active(b, &c1.call_id);
+    let d1 = d.node.call(b.did.clone()).unwrap();
+    assert_eq!(incoming(b, 40), d1.call_id); // waiting
+    (c, d, c1.call_id)
+}
+
 #[test]
 fn one_device_busy_the_other_answers() {
-    let (a, b1, b2) = trio("busyone");
-    // B1 is in a call with c already; c rings B1 then A calls B.
-    let c = make_peer("busyone-c", None);
-    c.node.add_contact(b1.node.my_ticket().unwrap()).unwrap();
-    // Two waiting slots are used (active + waiting): fill b1 with c's call and a waiting call from d.
-    let d = make_peer("busyone-d", None);
-    d.node.add_contact(b1.node.my_ticket().unwrap()).unwrap();
-    let e = make_peer("busyone-e", None);
-    e.node.add_contact(b1.node.my_ticket().unwrap()).unwrap();
-    let c1 = c.node.call(b1.did.clone()).unwrap();
-    assert_eq!(incoming(&b1), c1.call_id);
-    b1.node.answer(c1.call_id.clone()).unwrap();
-    active(&b1, &c1.call_id);
-    let d1 = d.node.call(b1.did.clone()).unwrap();
-    assert_eq!(incoming(&b1), d1.call_id); // waiting
-    // Now a third call is refused busy at b1.
+    // B1 is in a call with c and has d waiting over it; a third call is refused busy there.
+    let mut filled = None;
+    let (a, b1, b2) = trio_with("busyone", |b1| filled = Some(fill(b1, "busyone")));
+    let (c, _d, c1) = filled.unwrap();
     let call = a.node.call(b1.did.clone()).unwrap();
-    assert_eq!(incoming(&b2), call.call_id);
+    assert_eq!(incoming(&b2, 40), call.call_id);
     b2.node.answer(call.call_id.clone()).unwrap();
     active(&a, &call.call_id);
     assert_eq!(a.node.current_call().unwrap().call_id, call.call_id);
     a.node.hangup(call.call_id.clone()).unwrap();
     assert_eq!(expect(&b2, 10, "b2 ended", ended(&call.call_id)), "hangup_remote");
-    c.node.hangup(c1.call_id).unwrap();
-    drop(e);
+    c.node.hangup(c1).unwrap();
 }
 
 #[test]
 fn all_devices_busy_is_busy() {
-    let (a, b1, b2) = trio("busyall");
-    // Each install is in a call (with the other install's callers) and has one waiting.
-    let mut others = Vec::new();
-    for (i, b) in [&b1, &b2].into_iter().enumerate() {
-        let c = make_peer(&format!("busyall-c{i}"), None);
-        c.node.add_contact(b.node.my_ticket().unwrap()).unwrap();
-        let d = make_peer(&format!("busyall-d{i}"), None);
-        d.node.add_contact(b.node.my_ticket().unwrap()).unwrap();
-        let c1 = c.node.call(b.did.clone()).unwrap();
-        assert_eq!(incoming(b), c1.call_id);
-        b.node.answer(c1.call_id.clone()).unwrap();
-        active(b, &c1.call_id);
-        let d1 = d.node.call(b.did.clone()).unwrap();
-        assert_eq!(incoming(b), d1.call_id);
-        others.push((c, d, c1.call_id));
-    }
+    // Each install is in a call and has one waiting. B1 is filled before B2 exists; callers
+    // who meet B afterwards ring both installs, so B2's callers are refused busy at B1.
+    let mut first = None;
+    let (a, b1, b2) = trio_with("busyall", |b1| first = Some(fill(b1, "busyall-1")));
+    let second = fill(&b2, "busyall-2");
     let call = a.node.call(b1.did.clone()).unwrap();
     assert_eq!(expect(&a, 30, "a ended", ended(&call.call_id)), "busy");
-    for (c, _d, id) in others {
+    for (c, _d, id) in [first.unwrap(), second] {
         c.node.hangup(id).unwrap();
     }
 }
@@ -381,8 +374,17 @@ fn device_list_persists_across_restart() {
 fn own_device_list_is_signed_and_changes_with_the_registry() {
     let (a, b1, b2) = trio("own-list");
     let _ = a;
-    let list: proto::SignedDeviceList =
-        serde_json::from_str(&b1.node.own_device_list_for_test().unwrap()).unwrap();
+    let read = || -> proto::SignedDeviceList {
+        serde_json::from_str(&b1.node.own_device_list_for_test().unwrap()).unwrap()
+    };
+    // A relay hint arriving after start-up is a real registry change (a new seq); wait it out.
+    let mut list = read();
+    eventually(20, "own list settles", || {
+        let next = read();
+        let same = next == list;
+        list = next;
+        same
+    });
     let l = proto::verify_device_list(&list, &b1.did).unwrap();
     assert_eq!(l.devices.len(), 2);
     assert_eq!(
@@ -390,8 +392,10 @@ fn own_device_list_is_signed_and_changes_with_the_registry() {
         b1.node.device_key_for_test().unwrap()
     );
     // Unchanged registry: the same blob, not a fresh seq.
-    let again: proto::SignedDeviceList =
-        serde_json::from_str(&b1.node.own_device_list_for_test().unwrap()).unwrap();
-    assert_eq!(list, again);
+    let again = read();
+    let la = proto::verify_device_list(&again, &b1.did).unwrap();
+    if (&la.devices, &la.links) == (&l.devices, &l.links) {
+        assert_eq!(list, again);
+    }
     let _ = b2;
 }

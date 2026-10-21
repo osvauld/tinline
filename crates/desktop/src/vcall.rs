@@ -64,10 +64,8 @@ pub(super) struct VideoUi {
     /// The short line, when it was said and how long it shows in the picture label (the chip's echo 2.6 s, a
     /// sharper-video suggestion 6 s).
     pub hd_note: Option<(String, Instant, Duration)>,
-    /// A sharper-video suggestion was shown in this call / the person turned HD on with the chip in it (for the
-    /// device's memory, `p2pcore::video_hd_suggest_after_call`).
-    hd_suggested: bool,
-    hd_turned_on: bool,
+    /// The core wants the camera at HD (`VideoStats::hd_auto`), refreshed about once a second.
+    pub hd_auto: bool,
     was_paused: bool,
     /// The picture label for what I send ("HD \u{b7} 24 fps"), from the core, refreshed about once a second.
     pub send_label: String,
@@ -106,9 +104,9 @@ impl VideoUi {
         self.info.as_ref().is_some_and(|i| i.remote_camera)
     }
 
-    /// Sharper video is on for this call (the chip's choice, else Settings).
+    /// Sharper video is on for this call (the chip's choice, else Settings, else the core's).
     pub fn hd_on(&self, prefer_hd_setting: bool) -> bool {
-        self.hd_call.unwrap_or(prefer_hd_setting)
+        self.hd_call.unwrap_or(prefer_hd_setting || self.hd_auto)
     }
 
     /// The short line while it is fresh.
@@ -127,8 +125,6 @@ impl VideoUi {
 
 /// The chip's echo of a tap.
 const HD_NOTE: Duration = Duration::from_millis(2600);
-/// A sharper-video suggestion: it asks for a decision, so it stays long enough to read and reach the chip.
-pub(super) const HD_SUGGEST: Duration = Duration::from_millis(6000);
 
 /// Test hook P2P_AUTO_CALL: placed once per run.
 static AUTO_CALLED: AtomicBool = AtomicBool::new(false);
@@ -184,18 +180,12 @@ impl App {
             Vm::ToggleHd => {
                 let on = !self.video.hd_on(self.settings.prefer_hd);
                 self.video.hd_call = Some(on);
-                self.video.hd_turned_on |= on;
+                crate::tlog!("VHD chip={on}");
                 self.node.set_video_hd(on);
                 let paused = camera::hd_paused(on, self.video.send_size);
                 self.video.was_paused = paused;
                 self.video.say(camera::hd_line(on, paused), HD_NOTE);
-                if self.video.local_on() {
-                    // Applies at once: stop the capture and start it again at the new size. The last self-view
-                    // picture stays until the new camera's first frame; the label reads "Starting video…".
-                    self.video.camera = None;
-                    self.video.send_size = None;
-                    self.sync_camera();
-                }
+                self.restart_camera();
             }
             #[cfg(feature = "video-tuning")]
             Vm::Live(live) => {
@@ -331,7 +321,7 @@ impl App {
         self.video.stats_tick = 0;
         self.video.camera = Some(Camera::start_with_quality(
             src,
-            camera::quality_for(self.settings.prefer_hd, self.video.hd_call),
+            camera::quality_for(self.video.hd_on(self.settings.prefer_hd)),
             move |r| match r {
                 Ok(_o) => {
                     crate::tlog!("CAMERA {} {}x{}", _o.format, _o.width, _o.height);
@@ -362,7 +352,7 @@ impl App {
             if self.video.stats_tick == 0 {
                 let stats = self.node.video_stats();
                 self.video.send_label = stats.as_ref().map(p2pcore::video_send_label).unwrap_or_default();
-                self.hd_suggest_tick(stats.as_ref());
+                self.hd_auto_tick(stats.as_ref());
                 self.video.send_size = stats.and_then(|s| {
                     (s.frames_sent > self.video.initial_sent
                         && s.send_width > 0
@@ -414,38 +404,31 @@ impl App {
         }
     }
 
-    /// Once a second while my camera sends: keep the core told whether sharper video is on (the chip, else
-    /// Settings), and show its suggestion at most once per call (docs/video.md "Suggesting sharper video").
-    fn hd_suggest_tick(&mut self, stats: Option<&p2pcore::VideoStats>) {
+    /// Once a second while my camera sends: follow the core's HD choice (unless the chip or Settings decide) and
+    /// keep the core told what the camera captures (docs/video.md "Sharper video").
+    fn hd_auto_tick(&mut self, stats: Option<&p2pcore::VideoStats>) {
+        let before = self.video.hd_on(self.settings.prefer_hd);
+        self.video.hd_auto = stats.is_some_and(|s| s.hd_auto);
         let hd_on = self.video.hd_on(self.settings.prefer_hd);
         self.node.set_video_hd(hd_on);
-        let (Some(stats), Some(call)) = (stats, self.call.as_ref()) else { return };
-        if self.video.hd_suggested || self.video.hd_line().is_some() {
-            return;
-        }
-        let line = p2pcore::video_hd_suggestion(stats, hd_on, self.hd_suggest_memory(), call.info.peer_name.clone());
-        if !line.is_empty() {
-            crate::tlog!("VHD suggest kind={} line={line}", stats.hd_suggest);
-            self.video.hd_suggested = true;
-            self.video.say(line, HD_SUGGEST);
+        if hd_on != before {
+            crate::tlog!("VHD auto={hd_on}");
+            self.restart_camera();
         }
     }
 
-    pub(super) fn hd_suggest_memory(&self) -> p2pcore::HdSuggestMemory {
-        p2pcore::HdSuggestMemory {
-            turned_on: self.settings.hd_suggest_turned_on,
-            ignored_in_a_row: self.settings.hd_suggest_ignored,
+    /// A new HD choice applies at once: stop the capture and start it again at the new size. The last self-view
+    /// picture stays until the new camera's first frame; the label reads "Starting video…".
+    fn restart_camera(&mut self) {
+        if self.video.local_on() {
+            self.video.camera = None;
+            self.video.send_size = None;
+            self.sync_camera();
         }
     }
 
     /// The call ended: camera off, pictures gone.
     pub(super) fn video_reset(&mut self) {
-        let (shown, turned_on) = (self.video.hd_suggested, self.video.hd_turned_on);
-        if shown || turned_on {
-            let m = p2pcore::video_hd_suggest_after_call(self.hd_suggest_memory(), shown, turned_on);
-            (self.settings.hd_suggest_turned_on, self.settings.hd_suggest_ignored) = (m.turned_on, m.ignored_in_a_row);
-            self.save_settings();
-        }
         self.video = VideoUi::default();
         crate::video_surface::forget_drawn();
     }
@@ -480,20 +463,5 @@ impl App {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    /// The chip's echo goes after 2.6 s, a suggestion stays 6 s, in the same label box.
-    #[test]
-    fn short_line_keeps_its_own_time() {
-        let mut v = VideoUi::default();
-        assert_eq!(v.hd_line(), None);
-        v.say("Sharper video on", HD_NOTE);
-        assert_eq!(v.hd_line(), Some("Sharper video on"));
-        let Some(three_ago) = Instant::now().checked_sub(Duration::from_secs(3)) else { return };
-        v.hd_note = Some(("Sharper video on".into(), three_ago, HD_NOTE));
-        assert_eq!(v.hd_line(), None);
-        v.hd_note = Some(("Room for sharper video \u{b7} tap HD".into(), three_ago, HD_SUGGEST));
-        assert_eq!(v.hd_line(), Some("Room for sharper video \u{b7} tap HD"));
-    }
-}
+#[path = "vcall_tests.rs"]
+mod tests;

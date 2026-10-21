@@ -1,0 +1,28 @@
+[package]
+name = "search-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+description = "Local search index (tokenizer, hot tier, time segments, find in chat) over a sealed redb store; p2pcore feeds and queries it"
+
+[features]
+# `SearchIndex::content_sizes` for the `search-bench` binary.
+bench = []
+
+[dependencies]
+storage.workspace = true
+cryptography.workspace = true
+# UTC days of message times.
+crdt.workspace = true
+loro = "1.13.9"
+blake3 = "1"
+parking_lot = "0.12"
+serde.workspace = true
+thiserror.workspace = true
+zeroize.workspace = true
+unicode-normalization = "0.1"
+unicode-segmentation = "1"
+
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"

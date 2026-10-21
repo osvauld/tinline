@@ -345,20 +345,22 @@ fun InCallScreen(ui: CallUi, meName: String, app: P2pApp, onCameraOn: () -> Unit
     val videoProblem by app.video.problem.collectAsState()
     val v = vi?.takeIf { active && it.negotiated && it.callId == ui.info.callId }
     val hdCall by app.video.hdCall.collectAsState()
+    val hdAuto by app.video.hdAuto.collectAsState()
+    val hdOn = effectivePreferHd(app.preferHdCapture || hdAuto, hdCall)
     val inVideo = v != null && (v.localCamera || v.remoteCamera)
     DisposableEffect(inVideo, ui.info.callId) {
         val stop = if (inVideo) app.video.watchBudget() else ({})
         onDispose(stop)
     }
-    val sendStats by produceState<Pair<Pair<Int, Int>, String>?>(null, ui.info.callId, v?.localCamera, hdCall) {
+    val sendStats by produceState<Pair<Pair<Int, Int>, String>?>(null, ui.info.callId, v?.localCamera, hdOn) {
         value = null
         if (v?.localCamera != true) return@produceState
         var initialFrames: ULong? = null
         while (true) {
             value = withContext(Dispatchers.IO) {
                 runCatching { app.node.videoStats()?.let {
-                    // Sharper video: the core's suggestion (once per call) and the mobile-data note.
-                    app.video.hdTick(it, ui.info.peerName)
+                    // Sharper video: the core's HD choice and the mobile-data note.
+                    app.video.hdTick(it)
                     if (initialFrames == null) initialFrames = it.framesSent
                     // Don't label cached dimensions from before this camera start as current HD.
                     if (it.framesSent > initialFrames) (it.sendWidth.toInt() to it.sendHeight.toInt()) to videoSendLabel(it) else null
@@ -391,9 +393,8 @@ fun InCallScreen(ui: CallUi, meName: String, app: P2pApp, onCameraOn: () -> Unit
     }
     val sendSize = sendStats?.first
     val sendLabel = sendStats?.second?.takeIf { it.isNotEmpty() }
-    val hdOn = effectivePreferHd(app.preferHdCapture, hdCall)
     val hdIsPaused = hdPaused(hdOn, sendSize?.first ?: 0, sendSize?.second ?: 0)
-    // The core suggests sharper video only while it is off: tell it what this call uses.
+    // Tell the core what the camera captures (its HD rule looks at a 640x480 capture only).
     LaunchedEffect(hdOn, v?.negotiated, ui.info.callId) { if (v?.negotiated == true) app.video.syncHd(hdOn) }
     // The ladder stepping below HD while HD is on: say so once, when it happens.
     var wasPaused by remember { mutableStateOf(false) }
@@ -678,6 +679,8 @@ internal fun HdChip(on: Boolean, paused: Boolean, onClick: () -> Unit, modifier:
 @Composable
 private fun SelfView(app: P2pApp, front: Boolean, modifier: Modifier) {
     val hdChoice by app.video.hdCall.collectAsState()
+    val hdAuto by app.video.hdAuto.collectAsState()
+    val hd = effectivePreferHd(app.preferHdCapture || hdAuto, hdChoice)
     val ctx = LocalContext.current
     val owner = LocalLifecycleOwner.current
     val view = remember {
@@ -686,8 +689,8 @@ private fun SelfView(app: P2pApp, front: Boolean, modifier: Modifier) {
             scaleType = PreviewView.ScaleType.FILL_CENTER
         }
     }
-    // A new HD choice restarts the capture at once (the picture warms up for a moment).
-    DisposableEffect(front, owner, hdChoice) {
+    // A new HD choice (the chip's or the core's) restarts the capture at once (the picture warms up for a moment).
+    DisposableEffect(front, owner, hd) {
         app.video.startCamera(owner, view.surfaceProvider, front)
         onDispose { app.video.stopCamera() }
     }

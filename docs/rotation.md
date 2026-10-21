@@ -39,7 +39,7 @@ lost-touch UI first.
 
 ### Values (decided 2026-10-16)
 
-All in `RotationPolicy::DEFAULT` (`crates/core/src/group/rotation.rs`):
+All in `RotationPolicy::DEFAULT` (`crates/group-core/src/rotation.rs`):
 
 | Value | Default |
 |---|---|
