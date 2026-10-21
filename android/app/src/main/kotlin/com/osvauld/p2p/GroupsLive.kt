@@ -38,6 +38,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -59,6 +60,7 @@ import uniffi.p2pcore.GroupInvitation
 import uniffi.p2pcore.GroupInvitePeek
 import uniffi.p2pcore.GroupItemKind
 import uniffi.p2pcore.GroupMessage
+import uniffi.p2pcore.OnlineMember
 import uniffi.p2pcore.GroupDelivery as CoreDelivery
 import uniffi.p2pcore.GroupMember as CoreMember
 import uniffi.p2pcore.GroupRole as CoreRole
@@ -447,6 +449,9 @@ fun GroupChatLive(app: P2pApp, id: String, onBack: () -> Unit, onInfo: () -> Uni
     var draft by rememberSaveable(id) { mutableStateOf("") }
     var replyTo by remember(id) { mutableStateOf<String?>(null) }
     var sending by remember { mutableStateOf(false) }
+    // The online list (public group §8): open, and whether I hide myself (read before it opens, so its note never pops in).
+    var onlineSheet by remember(id) { mutableStateOf<Boolean?>(null) }
+    val scope = rememberCoroutineScope()
     val list = rememberLazyListState()
     // The thread: posts and this group's call log (MessageRow `.callrec`) merged by time, oldest first.
     val rows = remember(o.messages, groupLog, id) {
@@ -476,6 +481,11 @@ fun GroupChatLive(app: P2pApp, id: String, onBack: () -> Unit, onInfo: () -> Uni
                     Text(d.name, style = PgBodyText.copy(fontSize = 17.sp, lineHeight = 22.sp, fontWeight = FontWeight.SemiBold), color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(GroupText.status(d), style = PgBodyText.copy(fontSize = 13.sp, lineHeight = 18.sp), color = if (d.myRole == CoreRole.REMOVED) c.er else c.ink2, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
+            }
+            // Public group §8: "12 online" in an open group opens the online list. The label keeps the width of "500+ online",
+            // so a changing count moves nothing beside it.
+            if (GroupText.showsOnline(d)) OnlinePill(o.online.size) {
+                scope.launch { onlineSheet = !withContext(Dispatchers.IO) { app.groups.presenceVisible() } }
             }
             // The call button: start, join the running call, or return to mine (accent while one runs); dimmed while the
             // group has no call host and no call runs (a tap says why).
@@ -524,7 +534,7 @@ fun GroupChatLive(app: P2pApp, id: String, onBack: () -> Unit, onInfo: () -> Uni
                 TinButton("Why?", onRemoval, Modifier.weight(1f), style = BtnStyle.Outlined, height = 48.dp)
             }
             CoreRole.LEFT -> BlockedFooter("You left this group. Its messages stay here, read-only.")
-            else -> {
+            else -> if (GroupText.adminsOnlyLocked(d)) AdminsOnlyLine() else {
                 val r = replyTo?.let { rid -> o.messages.firstOrNull { it.id == rid } }
                 PgComposer(draft, { draft = it }, "Message", r?.let {
                     ComposerCtx("Replying to " + (if (it.outgoing) "yourself" else firstName(nameOf(app, it.authorDid, it.authorName))), it.text, "Cancel reply")
@@ -539,6 +549,65 @@ fun GroupChatLive(app: P2pApp, id: String, onBack: () -> Unit, onInfo: () -> Uni
                 }, onAttach = null)
             }
         }
+    }
+    val hidden = onlineSheet
+    if (hidden != null && GroupText.showsOnline(d)) OnlineSheet(app, d, o.online, hidden) { onlineSheet = null }
+}
+
+/** The top bar's "12 online" (dot + count, 44 dp tall); its label keeps the width of "500+ online". Tap = who's online. */
+@Composable
+private fun OnlinePill(n: Int, onClick: () -> Unit) {
+    val c = Tin.c
+    val style = PgBodyText.copy(fontSize = 13.sp, lineHeight = 18.sp, fontWeight = FontWeight.SemiBold)
+    Row(Modifier.heightIn(min = 44.dp).clip(RoundedCornerShape(22.dp)).gTap(label = "Who’s online", onClick = onClick).padding(horizontal = 10.dp),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        Box(Modifier.size(8.dp).clip(CircleShape).background(if (n > 0) c.accent else c.ink2))
+        Box {
+            Text(GroupText.onlineLabel(GroupText.ONLINE_CAP), Modifier.alpha(0f).clearAndSetSemantics {}, style = style, maxLines = 1)
+            Text(GroupText.onlineLabel(n), style = style, color = c.ink2, maxLines = 1)
+        }
+    }
+}
+
+/**
+ * Who is online in the open group (desktop's online dialog as a sheet): admins first then by name, an Admin tag, the lag note,
+ * the cap note at 500, and a line when I hide myself.
+ */
+@Composable
+private fun OnlineSheet(app: P2pApp, d: GroupDetail, online: List<OnlineMember>, hidden: Boolean, onDismiss: () -> Unit) {
+    val c = Tin.c
+    val rows = remember(online) { GroupText.onlineRows(online) }
+    GSheet(onDismiss, "Who’s online in ${d.name}") { close ->
+        Column(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 16.dp)) {
+            Text(d.name, style = GType.sub, color = c.ink2, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(GroupText.onlineLabel(rows.size), Modifier.padding(top = 2.dp).semantics { heading() }, style = GType.title, color = c.ink)
+            GPara("Members a host has seen in the last minute. It can be a few seconds behind.")
+            if (rows.size >= GroupText.ONLINE_CAP) GPara("A host lists up to ${GroupText.ONLINE_CAP} people at a time, so there may be more.")
+            if (hidden) GPara("You’re not shown to others here. You can change that in Settings › Privacy.")
+            if (rows.isEmpty()) GPara("No one is online right now. People show here while they’re connected.", top = 14.dp)
+            else Column(Modifier.padding(top = 10.dp)) {
+                rows.forEach { m ->
+                    key(m.did) {
+                        val n = nameOf(app, m.did, m.name)
+                        Row(Modifier.fillMaxWidth().heightIn(min = 52.dp).semantics(mergeDescendants = true) {},
+                            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Avatar(n, m.did, 32.dp)
+                            Text(n, Modifier.weight(1f), style = GType.bodyStrong, color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            if (m.isAdmin) GPill("Admin", GTone.Admin)
+                        }
+                    }
+                }
+            }
+            GActs { GBtn("Close", close, GBtnKind.Quiet) }
+        }
+    }
+}
+
+/** An admins-only group (a channel), for a member: one calm line in the composer's place at its height (8 + 48 + 10), so nothing moves when an admin switches it. */
+@Composable
+private fun AdminsOnlyLine() {
+    Box(Modifier.fillMaxWidth().padding(start = 10.dp, end = 10.dp, top = 8.dp, bottom = 10.dp).heightIn(min = 48.dp), contentAlignment = Alignment.Center) {
+        Text(GroupText.ADMINS_ONLY, style = PgBodyText.copy(fontSize = 14.sp, lineHeight = 20.sp), color = Tin.c.ink2, textAlign = TextAlign.Center)
     }
 }
 
@@ -625,7 +694,8 @@ private fun ColumnScope.GroupItemLive(
     val quote: (@Composable () -> Unit)? = if (m.replyTo == null) null else ({ PgQuote(qWho, qColor, qr?.text ?: "Original message unavailable", null) })
     // Waiting for a host = the slack string; sent = one tick; every eligible member signed delivered = two ticks; every one
     // read = the read ink (core's GroupReceiptStatus). Host storage is never members' delivery/read.
-    val lines = receipt?.takeIf { it.eligible > 0u }?.let { groupReceiptLines(it) }
+    // An open group sends no member receipts (public group §4): "Delivered 0/N" would mislead, so no n/N there.
+    val lines = receipt?.takeIf { it.eligible > 0u && !d.open }?.let { groupReceiptLines(it) }
     val tick = if (!m.outgoing) null else if (m.delivery == CoreDelivery.WAITING) MetaReceipt(TickVis.SLACK, m.id, "Waiting for a host")
         else {
             val vis = receipt?.let { tickVisOf(it.tick, false) } ?: TickVis.ONE
@@ -671,7 +741,12 @@ private sealed interface InfoSheet {
     data class Member(val did: String) : InfoSheet
     data object Invite : InfoSheet
     data object Leave : InfoSheet
+    /** Open the group to anyone with the link (confirm first: receipts go off, an online list shows). */
+    data object OpenGroup : InfoSheet
 }
+
+/** A public-group setting whose change is on its way to the core (its switch shows the asked-for value meanwhile). */
+private enum class PubSetting { Open, AdminsOnly, Link }
 
 /** "n members" / "1 member". */
 private fun plural(n: Int, one: String, many: String = one + "s") = "$n ${if (n == 1) one else many}"
@@ -691,6 +766,7 @@ fun GroupInfoLive(app: P2pApp, id: String, onBack: () -> Unit, onLink: () -> Uni
     LaunchedEffect(id) { withContext(Dispatchers.IO) { if (app.groups.open.value?.id != id) app.groups.open(id) } }
     val d = open?.takeIf { it.id == id }?.detail ?: run { InfoPage("Group info", onBack) {}; return }
     var sheet by remember { mutableStateOf<InfoSheet?>(null) }
+    var pending by remember(id) { mutableStateOf<Pair<PubSetting, Boolean>?>(null) }
     val admin = GroupText.isAdmin(d.myRole)
     val done: (Result<String>) -> Unit = { r -> r.onSuccess { if (it.isNotEmpty()) say(it) }.onFailure { say(it.message ?: "Couldn’t do that") } }
     val name: (String, String) -> String = { did, fb -> nameOf(app, did, fb).let { if (it == "You") app.node.profile()?.name?.ifBlank { null } ?: "You" else it } }
@@ -742,6 +818,10 @@ fun GroupInfoLive(app: P2pApp, id: String, onBack: () -> Unit, onLink: () -> Uni
                             }
                         }
                     }
+                }
+                // Public group (§8): the open link, and who may post.
+                if (admin) item(key = "public") {
+                    PublicGroupSection(app, d, pending, { pending = it }, exec, done, say) { sheet = InfoSheet.OpenGroup }
                 }
                 item(key = "hosts") {
                     HostsSection(app, d, admin, name, exec, done)
@@ -813,6 +893,21 @@ fun GroupInfoLive(app: P2pApp, id: String, onBack: () -> Unit, onLink: () -> Uni
                 GActs {
                     GBtn("Cancel", close, GBtnKind.Quiet)
                     GBtn("Leave", { exec({ app.groups.leave(id) }) { r -> done(r); r.onSuccess { sheet = null; onBack() } } }, GBtnKind.Danger)
+                }
+            }
+        }
+        InfoSheet.OpenGroup -> GSheet({ sheet = null }, "Open the group") { close ->
+            val busy = pending?.first == PubSetting.Open
+            GDialogBody("Open ${d.name} to anyone with the link?") {
+                GPara("Anyone holding the link can join, with no invite and no expiry. Share it where you’d like people to find the group.", top = 4.dp)
+                GPara("While it’s open, no read receipts are sent in this group, and members see who is online. Each person can hide themselves in their settings.")
+                GPara("You can close the link any time; everyone already in stays.")
+                GActs {
+                    GBtn("Cancel", close, GBtnKind.Quiet)
+                    GBtn(if (busy) "Opening…" else "Open the group", {
+                        pending = PubSetting.Open to true
+                        exec({ app.groups.openLink(id).map { "Your group is open. Copy the link to share it." } }) { r -> pending = null; done(r); if (r.isSuccess) close() }
+                    }, GBtnKind.Primary, enabled = !busy)
                 }
             }
         }
@@ -896,6 +991,73 @@ private fun StatusLine(lines: List<String>, current: Int, on: Boolean) {
     Row(Modifier.padding(start = 4.dp, end = 4.dp, bottom = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         Box(Modifier.padding(top = 6.dp)) { GDot(on) }
         GStack(lines, current, GType.note, col, Modifier.weight(1f))
+    }
+}
+
+/**
+ * Public group (owner and admins; desktop's Group info › Public group): the Open link switch (turning it on asks first), Copy
+ * link (the link this phone holds, else fetched from the hosts), the Admins only switch, and what it means. A switch shows the
+ * asked-for value while its call runs; results and errors are said like the other actions here.
+ */
+@Composable
+private fun PublicGroupSection(app: P2pApp, d: GroupDetail, pending: Pair<PubSetting, Boolean>?, onPending: (Pair<PubSetting, Boolean>?) -> Unit,
+                               exec: (suspend () -> Result<String>, (Result<String>) -> Unit) -> Unit, done: (Result<String>) -> Unit,
+                               say: (String) -> Unit, onAskOpen: () -> Unit) {
+    val ctx = LocalContext.current
+    val held by app.groups.openLink.collectAsState()
+    val openOn = pending?.takeIf { it.first == PubSetting.Open }?.second ?: d.open
+    val aoOn = pending?.takeIf { it.first == PubSetting.AdminsOnly }?.second ?: d.adminsOnly
+    val fetching = pending?.first == PubSetting.Link
+    val link = held?.takeIf { it.first == d.id && d.open }?.second
+    val copy: (String) -> Unit = { copyToClipboard(ctx, "Group link", it); say(GroupText.OPEN_LINK_COPIED) }
+    InfoSec("Public group") {
+        GCard(Modifier.fillMaxWidth()) {
+            SwitchRow(GIcons.Link, "Open link", "Anyone with the link can join", "Only people you invite can join", openOn) { want ->
+                if (pending == null) {
+                    if (want) onAskOpen()
+                    else { onPending(PubSetting.Open to false); exec({ app.groups.closeLink(d.id) }) { r -> onPending(null); done(r) } }
+                }
+            }
+            GRule()
+            ActRow(PgIcons.Copy, "Copy link", when {
+                fetching -> "Getting the link…"
+                link != null -> link
+                openOn -> "A link that doesn’t expire"
+                else -> "Turn on Open link to share it"
+            }, enabled = openOn && !fetching) {
+                if (link != null) copy(link)
+                else if (pending == null && d.open) {
+                    onPending(PubSetting.Link to true)
+                    exec({ app.groups.openLink(d.id) }) { r -> onPending(null); r.onSuccess(copy).onFailure { say(it.message ?: "Couldn’t get the link") } }
+                }
+            }
+            GRule()
+            SwitchRow(GIcons.Shield, "Admins only", "Only admins post; everyone reads", "Everyone in the group can post", aoOn) { want ->
+                if (pending == null) { onPending(PubSetting.AdminsOnly to want); exec({ app.groups.setAdminsOnly(d.id, want) }) { r -> onPending(null); done(r) } }
+            }
+        }
+        GNote("The open link doesn’t expire. Closing it stops new joins; everyone already in stays. While the group is open, no read receipts are sent in it and members see who is online.",
+            Modifier.padding(start = 4.dp, end = 4.dp, top = 10.dp))
+    }
+}
+
+/** A card row with a switch (`.act` + Switch): the row toggles too; its sub-line keeps the height of its longer wording, so flipping moves nothing. */
+@Composable
+private fun SwitchRow(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, subOn: String, subOff: String, on: Boolean, onToggle: (Boolean) -> Unit) {
+    val c = Tin.c
+    Row(
+        Modifier.fillMaxWidth().heightIn(min = 60.dp).gTap(role = Role.Switch) { onToggle(!on) }.padding(start = 16.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        Icon(icon, null, tint = c.ink2, modifier = Modifier.size(20.dp))
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
+            Text(title, style = GType.bodyStrong, color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Box {
+                Text(if (on) subOff else subOn, Modifier.alpha(0f).clearAndSetSemantics {}, style = GType.sub)
+                Text(if (on) subOn else subOff, style = GType.sub, color = c.ink2)
+            }
+        }
+        PgSwitch(on, onToggle, title)
     }
 }
 

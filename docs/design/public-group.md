@@ -1,7 +1,7 @@
 # Public channel and lobby (alpha)
 
 Status: spec, decided with the user 2026-10-21. Built: §1 (settings records), §2 (open link,
-host admission; `tinline/group/5`), §3 (presence), §4 (receipts off) and §8 on desktop (without images); the rest not yet. Base: dev, rebased after
+host admission; `tinline/group/5`), §3 (presence), §4 (receipts off) and §8 on desktop and Android (without images); the rest not yet. Base: dev, rebased after
 `integrate/crate-split` lands (image posts build on its `crates/transfer`).
 
 ## Purpose
@@ -219,6 +219,28 @@ tests `group_public_tests.rs`; not yet looked at on screen):
 - **Receipts:** ticks follow the core unchanged (open groups get no member receipts, so own posts
   stay at one tick once a host has them); the tick tooltip with "Delivered n/N · Read n/N" is not
   shown in open groups, where 0/N would mislead.
+
+**Android, as built** (`android/.../GroupsCore.kt` state and words, `GroupsLive.kt` screens, `SettingsPages.kt` /
+`SettingsRoutes.kt` privacy; JVM tests `GroupsPublicTest.kt`; not yet looked at on a phone). Same words and rules as desktop:
+
+- **Top bar:** an open group I'm in shows "12 online" (8 dp dot, accent when anyone is listed; 13 sp semibold) between the
+  group's head and the call button, 44 dp tall; an invisible "500+ online" under the label keeps its width, so a changing
+  count moves nothing. `GroupsController` keeps the list in `OpenGroup.online`, read with the detail (open, `on_group_changed`)
+  and re-read on `on_group_presence` for the group on screen (lock-free: an in-memory core read). Tapping it reads
+  `group_presence_visible` and opens a bottom sheet (the `GSheet` pattern): group name, "12 online", the lag note, the
+  500 note, "You're not shown to others here..." when I hide myself, then rows (32 dp avatar, name, "Admin" pill), admins
+  first then by name; Close.
+- **Group info › Public group** (owner/admins, after Invites): a card with "Open link" (switch row), "Copy link" and "Admins
+  only" (switch row), then the note. Sub-lines reserve the height of both wordings. Turning the link on opens a confirm sheet
+  ("Open … to anyone with the link?" › *Open the group*, "Opening..." while `group_open_link` runs); off calls
+  `group_set_open(id, false)` at once. "Copy link" copies the link this phone holds (`GroupsController.openLink`, dropped when
+  the group closes), else fetches it first; disabled while closed. A switch shows the asked-for value while its call runs;
+  results and errors go to the screen's snackbar (`say`), like the other Group info actions.
+- **Composer:** a member (not owner/admin) of an admins-only group sees "Only admins post here" centred in the composer's
+  place at its height (8 + 48 + 10 dp). `post` refuses locally with the same words, and `Rejected("admins only")` maps to them.
+- **Settings › Privacy:** a third card, "Show me as online in public groups" (eye icon, switch; the title may wrap to two
+  lines on a narrow phone), with the "this device only" note; `group_presence_visible` / `group_set_presence_visible`.
+- **Receipts:** the tap-to-show "Delivered n/N · Read n/N" lines under my post are not offered in open groups.
 
 ## Acceptance tests
 

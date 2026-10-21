@@ -325,7 +325,8 @@ fun StoragePage(pictures: Long, files: Long, messages: Long, cache: Long, downlo
 /** Privacy.svelte landing. */
 @Composable
 fun PrivacyLanding(blockedN: Int, msgOnly: Int, hasPassphrase: Boolean, onBack: () -> Unit, onBlocked: () -> Unit, onCalls: () -> Unit, onPhrase: () -> Unit, onPassphrase: () -> Unit,
-                   readReceipts: Boolean = true, onReadReceipts: (Boolean) -> Unit = {}) {
+                   readReceipts: Boolean = true, onReadReceipts: (Boolean) -> Unit = {},
+                   presenceVisible: Boolean = true, onPresenceVisible: (Boolean) -> Unit = {}) {
     PfPage("Privacy", onBack) {
         PfSec(first = true) {
             PfCard {
@@ -351,11 +352,26 @@ fun PrivacyLanding(blockedN: Int, msgOnly: Int, hasPassphrase: Boolean, onBack: 
             }
             PfNote("Delivered ticks still go out either way, and you still see when others read yours. Messages you read while this is off stay unconfirmed.")
         }
+        // Public group §3: a setting of this install (group core, default on). Same words as desktop; the title may wrap.
+        PfSec {
+            PfCard {
+                act {
+                    PfAct(PRESENCE_TITLE, onClick = { onPresenceVisible(!presenceVisible) }, icon = PgIcons.Eye, role = Role.Switch, plain = true, titleMaxLines = 2,
+                        sub = if (presenceVisible) PRESENCE_ON else PRESENCE_OFF,
+                        subReserve = listOf(PRESENCE_ON, PRESENCE_OFF),
+                        trailing = { PgSwitch(presenceVisible, onPresenceVisible, PRESENCE_TITLE) })
+                }
+            }
+            PfNote("Public groups are the ones anyone can join with an open link. This applies on this device; your other devices keep their own choice.")
+        }
     }
 }
 
 private const val READ_RECEIPTS_ON = "People see when you’ve read their messages"
 private const val READ_RECEIPTS_OFF = "Your reads stay with you"
+private const val PRESENCE_TITLE = "Show me as online in public groups"
+private const val PRESENCE_ON = "Members see when you’re here"
+private const val PRESENCE_OFF = "You stay off their online lists"
 
 data class CallsRow(val did: String, val name: String, val allowed: Boolean)
 
