@@ -57,8 +57,10 @@ jobs:
       # The core integration tests start real iroh nodes and use n0's public relays.
       - name: Rust tests
         run: cargo test --workspace --locked --no-fail-fast
-      # The video call tests count frames per second; debug builds decode too slowly, so they skip there.
-      - name: Video call tests (release)
-        run: cargo test --release --locked -p p2pcore --test video_calls
+      # Tests that count frames per second or mix twelve live calls skip in debug builds (too slow);
+      # they run here. Runs even when the debug step failed, so one CI run reports both.
+      - name: Timing tests (release)
+        if: success() || failure()
+        run: cargo test --release --locked -p p2pcore --test video_calls --test group_call
       - name: Release upload safeguards
         run: python3 scripts/test_r2_upload.py

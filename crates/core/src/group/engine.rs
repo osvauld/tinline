@@ -197,6 +197,8 @@ pub(crate) struct GroupCore {
     announcing: Mutex<Option<iroh::PublicKey>>,
     /// When day docs were last compacted (hourly, and once after open).
     compacted: Mutex<Option<Instant>>,
+    /// Held for a whole compaction run, so the hourly one and a forced one never overlap.
+    compacting: Mutex<()>,
     /// G3: invite codes (waiters for host answers, the wrong-code limiter).
     pub(crate) codes: super::code::CodeRt,
     /// Member message receipts over this store (`member_receipts`), signed as `did`/`dev`.

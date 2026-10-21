@@ -152,6 +152,8 @@ fn closed_days_survive_a_restart() {
     assert_eq!(texts(&o, &g), want);
     assert_eq!(o.node.group_closed_days_for_test(g.clone()).unwrap(), closed, "still closed after the restart");
     // A late post into a closed day: the day opens again, then closes at the next compaction.
+    // Settle the restart's own compaction first, or it may close the day again before we look.
+    assert_eq!(o.node.group_compact_now_for_test().unwrap(), 0);
     let at = now_ms_i64() / DAY_MS * DAY_MS - 12 * DAY_MS + 15 * 3_600_000;
     o.node.group_post_at_for_test(g.clone(), at, "late".into()).unwrap();
     assert_eq!(o.node.group_closed_days_for_test(g.clone()).unwrap(), closed - 1);
