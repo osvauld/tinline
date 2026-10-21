@@ -200,9 +200,10 @@ fn run() -> Result<(), String> {
     let events = Arc::new(Printer { tx: Mutex::new(tx), verbose: o.verbose });
     let node = Node::new(o.data.to_string_lossy().into(), events).map_err(|e| e.to_string())?;
     // A headless test peer: contact hellos are welcomed at once, as before contact requests
-    // (the e2e scripts have nobody to press Accept).
-    node.auto_accept_contacts_for_test(true);
+    // (the e2e scripts have nobody to press Accept). Not for a public group host: anyone in the
+    // lobby could become its contact.
     let rest: Vec<&str> = o.rest.iter().map(String::as_str).collect();
+    node.auto_accept_contacts_for_test(rest.first() != Some(&"group-host"));
     if rest.first() != Some(&"init") && rest.first() != Some(&"group-host") {
         match node.lock_state() {
             LockState::Locked => node.unlock(o.passphrase.clone()).map_err(|e| e.to_string())?,
