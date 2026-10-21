@@ -35,8 +35,14 @@ trust model of `docs/group-chat.md` §10 is unchanged.
 
 ### 1. Settings records (group-core)
 
-New owner/admin meta records, latest by `(at, id)` per kind, judged "admin as of the record's
-frontier" like `HostPermit`:
+New owner/admin meta records, judged "admin as of the record's frontier" like `HostPermit`,
+ordered **causally** per kind (as built after review, `state::in_force`): a counted record whose
+own `seen` includes an earlier one of the same kind supersedes it; only records that nobody
+superseded (concurrent ones) are compared by `(at, id)`. The `at` is the author's claim, so a
+fast or forged clock (`at = i64::MAX`) only wins ties between concurrent records, and any
+admin who saw a setting can change it, also after its author was demoted. "As of a frontier"
+(an `OpenJoin`'s, a post's) applies the same rule to the records inside that frontier. A pure
+function of the record set: every delivery order agrees.
 
 - `Open { active }`: the group accepts joins with an open invite (below).
 - `AdminsOnly { active }`: only the owner and admins may post (the channel).
@@ -55,8 +61,8 @@ Invites cannot be permanent: `proto::Issued` caps their lifetime (`MAX_INVITE_TT
 days). An open group needs no invite instead:
 
 - New member record `OpenJoin { name }` (group-core, built): a join that counts when the
-  group was open as of the record's frontier (`Open{active: true}` by an admin, latest by
-  `(at, id)` inside the frontier). Joins already made stay valid after closing.
+  group was open as of the record's frontier (`Open{active: true}` by an admin in force
+  inside the frontier, the causal rule of §1). Joins already made stay valid after closing.
 - `group_open_link(id)` (admins): writes `Open{active: true}` if not set and registers one
   short code with no invite and no expiry at every chat host reachable now (ourselves if we
   host, then each host we have a session with); the link names us if we host, else the first

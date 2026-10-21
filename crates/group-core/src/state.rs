@@ -28,9 +28,13 @@
 //! - Call hosts (U21, G6 §2.1): the same rule over the separate `CallHostPermit` /
 //!   `CallHostAccept` records. Chat hosting never implies call hosting, nor the reverse.
 //! - Public groups (`docs/design/public-group.md`): `Open` and `AdminsOnly` count when written
-//!   by an admin as of their frontier; the latest by `(at, id)` inside a frontier is the
-//!   setting as of it. An `OpenJoin` is a join when the group was open as of its frontier. A
-//!   post by a non-admin (as of its frontier) is hidden if admins-only was on as of it.
+//!   by an admin as of their frontier. The setting as of a frontier is causal (`in_force`): of
+//!   the counted records of that kind inside the frontier, a record whose own `seen` includes
+//!   another supersedes it; of those nobody inside the frontier superseded (concurrent ones),
+//!   the latest by `(at, id)` wins. So an author-chosen `at` only breaks ties between
+//!   concurrent records, and any admin who saw a setting can change it. An `OpenJoin` is a join
+//!   when the group was open as of its frontier. A post by a non-admin (as of its frontier) is
+//!   hidden if admins-only was on as of it.
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -149,10 +153,39 @@ pub struct Positions {
     events: BTreeMap<String, Vec<(u64, i32, bool)>>,
     /// Counted flags on each DID by `(peer, counter)`.
     flags: BTreeMap<String, Vec<(u64, i32)>>,
-    /// Admin `AdminsOnly` records `(peer, counter, active)`, in `(at, id)` order.
-    admins_only: Vec<(u64, i32, bool)>,
+    /// Admin `AdminsOnly` records, in `(at, id)` order.
+    admins_only: Vec<Setting>,
     /// The owner's `Admin` records per member `(peer, counter, admin)`, in `(at, id)` order.
     admin_events: BTreeMap<String, Vec<(u64, i32, bool)>>,
+}
+
+/// One counted `Open` / `AdminsOnly` record: its position, value and own frontier.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct Setting {
+    peer: u64,
+    counter: i32,
+    on: bool,
+    seen: Vec<(u64, i32)>,
+}
+
+impl Setting {
+    fn of(e: &Entry, on: bool) -> Self {
+        Self { peer: e.peer, counter: e.counter, on, seen: e.rec.seen.clone() }
+    }
+}
+
+/// The value of a setting as of `seen` (`None`: every record held), from its counted records
+/// in `(at, id)` order (the rule of the module doc): the records inside the frontier that no
+/// other record inside it supersedes (whose `seen` includes them), and of those the latest by
+/// `(at, id)`. Off when there is none. Pure in the record set, so every delivery order agrees.
+fn in_force(recs: &[Setting], seen: Option<&[(u64, i32)]>) -> bool {
+    let inside = |s: &Setting| seen.is_none_or(|f| seen_has(f, s.peer, s.counter));
+    recs.iter()
+        .enumerate()
+        .rev()
+        .filter(|(_, s)| inside(s))
+        .find(|(i, s)| !recs.iter().enumerate().any(|(j, t)| j != *i && inside(t) && seen_has(&t.seen, s.peer, s.counter)))
+        .is_some_and(|(_, s)| s.on)
 }
 
 /// Whether a post shows (`post_visible`).
@@ -177,7 +210,7 @@ pub fn post_visible(st: &GroupState, author: &str, seen: &[(u64, i32)]) -> Vis {
         || p.events.get(author).and_then(|evs| evs.iter().rev().find(|(peer, c, _)| seen_has(seen, *peer, *c))).is_some_and(|(_, _, join)| *join);
     let flagged = p.flags.get(author).is_some_and(|f| f.iter().filter(|(peer, c)| seen_has(seen, *peer, *c)).count() >= REMOVAL_FLAGS);
     let latest = |evs: &[(u64, i32, bool)]| evs.iter().rev().find(|(peer, c, _)| seen_has(seen, *peer, *c)).is_some_and(|(_, _, on)| *on);
-    let muted = latest(&p.admins_only) && author != owner && !p.admin_events.get(author).is_some_and(|evs| latest(evs));
+    let muted = in_force(&p.admins_only, Some(seen)) && author != owner && !p.admin_events.get(author).is_some_and(|evs| latest(evs));
     if member && !flagged && !muted { Vis::Visible } else { Vis::Hidden }
 }
 

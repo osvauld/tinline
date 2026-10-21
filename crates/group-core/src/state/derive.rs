@@ -20,8 +20,8 @@ struct Ctx<'a> {
     /// The owner's admin records, ordered.
     admin_recs: Vec<&'a Entry>,
     /// `Open` / `AdminsOnly` records by an admin as of their own frontier, ordered.
-    open_recs: Vec<&'a Entry>,
-    admins_only_recs: Vec<&'a Entry>,
+    open_recs: Vec<Setting>,
+    admins_only_recs: Vec<Setting>,
 }
 
 impl<'a> Ctx<'a> {
@@ -29,13 +29,19 @@ impl<'a> Ctx<'a> {
         let mut admin_recs: Vec<&Entry> = entries.iter().filter(|e| e.rec.author == owner && matches!(e.rec.body, Body::Admin { .. })).collect();
         admin_recs.sort_by(|a, b| order(a).cmp(&order(b)));
         let mut cx = Ctx { group, entries, owner, admin_recs, open_recs: Vec::new(), admins_only_recs: Vec::new() };
-        let settings = |pick: fn(&Body) -> bool| {
-            let mut v: Vec<&Entry> = entries.iter().filter(|e| pick(&e.rec.body) && cx.admin_as_of(&e.rec.author, Some(&e.rec.seen))).collect();
+        let settings = |pick: fn(&Body) -> Option<bool>| {
+            let mut v: Vec<&Entry> = entries.iter().filter(|e| pick(&e.rec.body).is_some() && cx.admin_as_of(&e.rec.author, Some(&e.rec.seen))).collect();
             v.sort_by(|a, b| order(a).cmp(&order(b)));
-            v
+            v.into_iter().map(|e| Setting::of(e, pick(&e.rec.body) == Some(true))).collect::<Vec<_>>()
         };
-        let open_recs = settings(|b| matches!(b, Body::Open { .. }));
-        let admins_only_recs = settings(|b| matches!(b, Body::AdminsOnly { .. }));
+        let open_recs = settings(|b| match b {
+            Body::Open { active } => Some(*active),
+            _ => None,
+        });
+        let admins_only_recs = settings(|b| match b {
+            Body::AdminsOnly { active } => Some(*active),
+            _ => None,
+        });
         cx.open_recs = open_recs;
         cx.admins_only_recs = admins_only_recs;
         cx
@@ -43,7 +49,7 @@ impl<'a> Ctx<'a> {
 
     /// Whether the group is open as of `seen` (`None`: now).
     fn open_as_of(&self, seen: Option<&[(u64, i32)]>) -> bool {
-        self.open_recs.iter().rev().find(|e| seen.is_none_or(|s| e.seen_by(s))).is_some_and(|e| matches!(e.rec.body, Body::Open { active: true }))
+        in_force(&self.open_recs, seen)
     }
 
     /// Whether `e` is a join that counts: an invite join (`valid_join`), or an `OpenJoin`
@@ -206,9 +212,8 @@ fn derive_admins(st: &mut GroupState, cx: &Ctx) {
 /// its frontier: the admins-only records and the owner's admin records.
 fn derive_settings(cx: &Ctx, st: &mut GroupState) {
     st.open = cx.open_as_of(None);
-    let flag = |e: &&Entry| (e.peer, e.counter, matches!(e.rec.body, Body::AdminsOnly { active: true }));
-    st.pos.admins_only = cx.admins_only_recs.iter().map(flag).collect();
-    st.admins_only = st.pos.admins_only.last().is_some_and(|(_, _, on)| *on);
+    st.pos.admins_only = cx.admins_only_recs.clone();
+    st.admins_only = in_force(&st.pos.admins_only, None);
     for e in &cx.admin_recs {
         if let Body::Admin { member, admin } = &e.rec.body {
             st.pos.admin_events.entry(member.clone()).or_default().push((e.peer, e.counter, *admin));
