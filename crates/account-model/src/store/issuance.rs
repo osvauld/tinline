@@ -44,7 +44,7 @@ impl IssuanceStore for Tickets<'_> {
         let n = URL_SAFE_NO_PAD.encode(nonce);
         match self.st.req_tickets.get(&n) {
             Some(t) => !(t.did == holder && t.exp >= self.now),
-            None => !crate::node::ticket_live(self.st, &n, self.now),
+            None => !crate::tickets::ticket_live(self.st, &n, self.now),
         }
     }
 

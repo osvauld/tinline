@@ -94,13 +94,8 @@ pub(crate) fn policy_for(st: &State, did: &str, origin: ContactOrigin) -> proto:
     proto::TokenPolicy { call, not_before_ms: not_before(st, did) }
 }
 
-/// Whether `new` (from `issuer` to `holder`, carrying `cap`) should replace `old` in that slot:
-/// valid now and expiring later than `old` (an `old` that no longer verifies loses).
-pub(crate) fn outlives(old: Option<&SignedGrant>, new: &SignedGrant, cap: Cap, issuer: &str, holder: &str, now_ms: u64) -> bool {
-    let Ok(new) = proto::verify_token(new, issuer, holder, cap, now_ms, &Unrecorded) else { return false };
-    let old_exp = old.and_then(|o| proto::verify_token(o, issuer, holder, cap, now_ms, &Unrecorded).ok()).map_or(0, |g| g.exp_ms);
-    new.exp_ms > old_exp
-}
+// Which token a slot keeps is `account_model::caps::outlives` (the own-device merge uses it too).
+pub(crate) use account_model::caps::outlives;
 
 /// Runtime state that is not persisted.
 #[derive(Default)]

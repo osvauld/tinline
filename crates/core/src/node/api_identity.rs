@@ -125,7 +125,7 @@ impl Node {
         if current.as_deref() == Some(id.as_str()) || self.inner.accounts.current().as_deref() == Some(id.as_str()) {
             return Err(Error::Protocol("the current account cannot be removed".into()));
         }
-        self.inner.accounts.remove(&id)
+        Ok(self.inner.accounts.remove(&id)?)
     }
 
     /// Names this installation ("Personal phone"), 1-64 characters, no control characters.
@@ -234,7 +234,7 @@ impl Node {
                 return other.map(|_| ());
             }
         };
-        let opened = vault::open_with_key(&vault, &key).and_then(|secrets| {
+        let opened = vault::open_with_key(&vault, &key).map_err(Error::from).and_then(|secrets| {
             <[u8; 32]>::try_from(key.as_slice())
                 .map(|k| (secrets, zeroize::Zeroizing::new(k)))
                 .map_err(|_| Error::WrongPassphrase)

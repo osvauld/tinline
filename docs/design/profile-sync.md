@@ -24,7 +24,9 @@ The earlier 285-test result verifies the old policy; the automatic-deletion run 
 
 ## Implementation: reuse, not a second sync system
 
-`profile/model.rs` contains the small picture descriptor and schema/bounds validation ONLY. The originally proposed signed-snapshot envelopes and signature-frontier layer were removed.
+The model lives in the `account-model` crate (`crates/account-model/src/`), re-exported by p2pcore under the old paths; p2pcore's `profile/` keeps the node API and picture transfer.
+
+`profile.rs` (p2pcore's `profile::model`) contains the small picture descriptor and schema/bounds validation ONLY. The originally proposed signed-snapshot envelopes and signature-frontier layer were removed.
 
 - `sync::Doc`: existing snapshot/version-vector/Loro primitives.
 - `sync/profiledoc.rs`: `profile`, with JSON fields in `fields/<name>` and signed deletion permits in `deletions/<old hash>`.

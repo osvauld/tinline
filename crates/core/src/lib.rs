@@ -8,7 +8,9 @@ uniffi::setup_scaffolding!();
 // Links `present` (and its UniFFI scaffolding) into libp2pcore.so: bindgen then writes uniffi/present/present.kt.
 pub use present;
 
-pub mod accounts;
+// The account model (state, account dirs, vault, chat day doc, own-device docs) is the
+// `account-model` crate; its modules keep their old paths here.
+pub use account_model::accounts;
 pub mod avatar;
 mod block;
 mod caps;
@@ -37,7 +39,7 @@ pub mod synth;
 mod version;
 #[cfg(test)]
 mod account_tests;
-mod vault;
+use account_model::vault;
 mod video_call;
 #[cfg(target_os = "android")]
 mod video_jni;

@@ -69,8 +69,8 @@ impl AccountDirs {
         self.root.join("accounts")
     }
 
-    #[cfg(any(test, feature = "dev-tools"))]
-    pub(crate) fn root(&self) -> &std::path::Path {
+    #[cfg(any(test, feature = "testkit"))]
+    pub fn root(&self) -> &std::path::Path {
         &self.root
     }
 

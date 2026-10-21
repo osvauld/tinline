@@ -14,7 +14,7 @@
 //!   `merge_device_list` (`node.rs:3122`, via `accept_device_list` `node.rs:2296`, called at
 //!   `node.rs:2218` and `:2606`): verify for the contact's DID, keep only if `proto::newer`.
 //! - Our own installs pass contacts' lists among themselves in the account doc
-//!   (`crates/core/src/sync/accdoc.rs:360`), but nothing sends OUR list to a contact outside a call.
+//!   (`crates/account-model/src/sync/accdoc.rs`), but nothing sends OUR list to a contact outside a call.
 //!   Chat sessions never carry it.
 //!
 //! Every test carries one label:
