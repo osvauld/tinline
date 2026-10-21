@@ -108,6 +108,17 @@ Tested on devices: Pixel 3a -> laptop HD with no flicker; phone-started video ca
 - [ ] Device checks still open: moto on the new build; Android thermal/power-save hints; desktop
       window resize/minimise hints; the 2-minute Pixel HD call with the new ladder (bounce gone?).
 
+## CI failures parked for the release (2026-10-21)
+- [ ] `group_call::the_next_call_follows_a_rotated_call_host_and_a_revoked_call_host_hands_over`
+      is `#[ignore]`d. It failed in both GitHub runs (dev 35cc6e9a and ddbf879c), never on our
+      machines. Right after the chat host and then the call host rotate, a member starts a call
+      with 2 candidates; neither answers its call-host request, and after about 12 s the start gives
+      up with "Nobody who can host answered" and does not try again. Meanwhile a member's link to the
+      chat host logs "host moved" 4 times in 14 s and only comes back about 20 s later. Likely a
+      product weakness: the request is lost while the route re-forms, and the picker does not resend.
+      Code: `crates/core/src/group/calls/start.rs` (`group_call_step`, `calls_originate`). Next:
+      reproduce with a slow network after a rotation, fix (resend when the route returns), un-ignore.
+
 ## Decisions still open
 - [ ] Delete the storage-attestation runtime? Nothing issues one. Recommendation: delete.
 - [ ] Remote unlink: lock the account instead of deleting its directory? Recommendation: lock.
