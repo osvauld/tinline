@@ -178,5 +178,17 @@ pub fn open_receipt(bytes: &[u8], scope: &Scope) -> Result<Receipt, ReceiptError
         _ => ReceiptError::Encoding,
     })
 }
+/// `open_receipt` without the signature check, for statements already verified on arrival
+/// (bookkeeping over a committed ledger, never admission).
+pub(crate) fn peek_receipt(bytes: &[u8], scope: &Scope) -> Result<Receipt, ReceiptError> {
+    let claim = SignedReceipt::from_bytes(bytes)
+        .map_err(|_| ReceiptError::Bounds)?
+        .peek()
+        .map_err(|_| ReceiptError::Encoding)?;
+    if &claim.scope != scope {
+        return Err(ReceiptError::Scope);
+    }
+    Ok(claim)
+}
 #[cfg(test)]
 mod tests;

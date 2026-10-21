@@ -512,6 +512,10 @@ impl Ledger {
     pub fn entries(&self) -> Result<Vec<Entry>, ReceiptError> {
         self.state.lock().doc.entries()
     }
+    /// [`ReceiptDoc::entries_trusted`]: committed statements, signatures not checked again.
+    pub fn entries_trusted(&self) -> Result<Vec<Entry>, ReceiptError> {
+        self.state.lock().doc.entries_trusted()
+    }
     #[cfg(any(test, feature = "testkit"))]
     pub fn raw(&self, id: &str) -> Option<Vec<u8>> {
         self.state.lock().doc.raw(id)

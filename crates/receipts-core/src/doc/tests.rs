@@ -36,6 +36,8 @@ fn original_delivery_and_read_receipts_cross_two_native_hops_without_reauthoring
         phone.apply_remote(&batch.update, ok).unwrap();
     }
     assert_eq!(phone.entries().unwrap(), source.entries().unwrap());
+    // What entered verified reads back the same without checking signatures again.
+    assert_eq!(phone.entries_trusted().unwrap(), phone.entries().unwrap());
     assert_eq!(phone.raw(&delivered.id), source.raw(&delivered.id));
     assert_eq!(phone.raw(&read_entry.id), source.raw(&read_entry.id));
     assert!(phone.apply_remote(&first, ok).unwrap().is_empty());
