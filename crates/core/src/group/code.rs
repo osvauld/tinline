@@ -267,9 +267,13 @@ impl Inner {
             if live.state.open || live.state.owner.is_none() {
                 return;
             }
-            if live.meta.open_link.take().is_some() {
+            if let Some(link) = live.meta.open_link.take() {
                 live.meta.open_link_record = None;
                 let _ = core.store.put_meta(gid, &live.meta);
+                // Our issued row of it (a code we registered at another host) goes too.
+                if let Some(sc) = ShortCode::parse(&link) {
+                    let _ = core.store.drop_code(&sc.code);
+                }
             }
             true
         };
