@@ -76,3 +76,27 @@ fn open_code_never_expires_and_counts() {
     assert!(s.issued(&[1; CODE_LEN]).unwrap().is_none());
     assert_eq!(s.prune_codes(Some("g")).unwrap(), 1);
 }
+
+// KIND: unit (public groups, review finding 4) — `drop_open_codes`: closing drops every open
+// code of the group (any issuer, with their issued rows) and nothing else; per issuer it keeps
+// only the code named.
+#[test]
+fn open_codes_drop_on_close_and_one_per_issuer() {
+    let s = GroupStore::in_memory("alpha beta");
+    let by = |kind, who: &str| CodeRow { gid: "g".into(), kind, invite: None, expires: NO_EXPIRY, by: who.into() };
+    s.put_code(&[1; CODE_LEN], &by(CodeKind::Open, "did:key:a")).unwrap();
+    s.put_issued(&[1; CODE_LEN], &IssuedRow { gid: "g".into(), host_did: "h".into(), host_dev: "00".into(), expires: NO_EXPIRY }).unwrap();
+    s.put_code(&[2; CODE_LEN], &by(CodeKind::Open, "did:key:a")).unwrap();
+    s.put_code(&[3; CODE_LEN], &by(CodeKind::Open, "did:key:b")).unwrap();
+    s.put_code(&[4; CODE_LEN], &row("g", CodeKind::Device, crdt::now_ms() + 60_000)).unwrap();
+    s.put_code(&[5; CODE_LEN], &row("other", CodeKind::Open, NO_EXPIRY)).unwrap();
+    // a registers code 2 again: its code 1 goes, b's stays.
+    assert_eq!(s.drop_open_codes("g", Some("did:key:a"), Some(&[2; CODE_LEN])).unwrap(), 1);
+    assert!(s.code(&[1; CODE_LEN]).unwrap().is_none() && s.issued(&[1; CODE_LEN]).unwrap().is_none());
+    assert!(s.code(&[2; CODE_LEN]).unwrap().is_some() && s.code(&[3; CODE_LEN]).unwrap().is_some());
+    // The group closes: every open code of it goes, the device code and the other group's stay.
+    assert_eq!(s.drop_open_codes("g", None, None).unwrap(), 2);
+    assert!(s.code(&[2; CODE_LEN]).unwrap().is_none() && s.code(&[3; CODE_LEN]).unwrap().is_none());
+    assert!(s.code(&[4; CODE_LEN]).unwrap().is_some() && s.code(&[5; CODE_LEN]).unwrap().is_some());
+    assert_eq!(s.drop_open_codes("g", None, None).unwrap(), 0);
+}

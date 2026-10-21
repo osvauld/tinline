@@ -23,6 +23,10 @@ impl Inner {
         core.member_receipts_pump_and_push();
         self.search_group(&gid, &changed.posts);
         self.group_enforce(core, &gid);
+        if changed.doc == DocId::Meta {
+            // Public group §2: a closed group keeps no open codes here.
+            self.group_open_codes_closed(core, &gid);
+        }
         // Receipts that waited for these docs are asked for again.
         core.receipts_rehello(&gid);
         // Became (or stopped being) a host: announce our address.

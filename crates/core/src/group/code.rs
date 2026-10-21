@@ -90,6 +90,7 @@ impl CodeRt {
 
 pub(crate) const UNKNOWN_CODE: &str = "unknown or expired invite code";
 pub(crate) const NOT_OPEN: &str = "this group is not open to new members";
+pub(crate) const OPEN_LINK_WITHDRAWN: &str = "this open link was withdrawn; ask for a new one";
 /// `group_open_code`: how many `NOT_OPEN` answers (a host still catching up on our `Open`
 /// record) are asked again, across all hosts, before the refusal stands. Each retry waits for
 /// the next 500 ms round, and the whole call stays inside `HOST_WAIT`.
@@ -174,14 +175,19 @@ impl Inner {
     /// with), so closing can drop it everywhere. The link names us if we host, else the first
     /// host that took it. The caller has written `Open{active: true}` before: a host refuses the
     /// code unless the group is open (that record goes first on the same session stream).
-    pub(crate) async fn group_open_code(self: &Arc<Self>, core: &Arc<GroupCore>, gid: &str) -> Result<String, Error> {
-        let code: [u8; CODE_LEN] = cryptography::rng::bytes();
+    ///
+    /// `reuse`: register this code (our stored link's) again instead of a new one, so a host that
+    /// lost it (or never had it) holds it again. Each host keeps one open code per issuer: ours
+    /// replaces the one we registered before.
+    pub(crate) async fn group_open_code(self: &Arc<Self>, core: &Arc<GroupCore>, gid: &str, reuse: Option<[u8; CODE_LEN]>) -> Result<String, Error> {
+        let code: [u8; CODE_LEN] = reuse.unwrap_or_else(cryptography::rng::bytes);
         let mut link = None;
         if core.am_host(gid)
             && let Some(mine) = self.group_my_addr(core, gid)
             && let Some(a) = mine.open().ok()
         {
-            if core.store.prune_codes(Some(gid))? >= MAX_CODES_PER_GROUP {
+            core.store.drop_open_codes(gid, Some(&core.did), Some(&code))?;
+            if core.store.code(&code)?.is_none() && core.store.prune_codes(Some(gid))? >= MAX_CODES_PER_GROUP {
                 return Err(Error::Rejected("too many open invites for this group; revoke some".into()));
             }
             core.store.put_code(&code, &CodeRow { gid: gid.to_string(), kind: CodeKind::Open, invite: None, expires: NO_EXPIRY, by: core.did.clone() })?;
@@ -250,6 +256,28 @@ impl Inner {
         }
     }
 
+    /// After a meta change: while `gid` is closed (derived `open` now), this device keeps no
+    /// open code of it (as a host: every issuer's, so another admin's close, or a close we missed
+    /// the revoke of, leaves nothing a later reopen would revive) and forgets its own stored open
+    /// link (an admin gets a new one after reopening).
+    pub(crate) fn group_open_codes_closed(&self, core: &GroupCore, gid: &str) {
+        let closed = {
+            let mut groups = core.groups.lock();
+            let Some(live) = groups.get_mut(gid) else { return };
+            if live.state.open || live.state.owner.is_none() {
+                return;
+            }
+            if live.meta.open_link.take().is_some() {
+                live.meta.open_link_record = None;
+                let _ = core.store.put_meta(gid, &live.meta);
+            }
+            true
+        };
+        if closed && let Err(e) = core.store.drop_open_codes(gid, None, None) {
+            tracing::debug!("group {}: dropping open codes: {e}", super::short(gid));
+        }
+    }
+
     /// Asks the host a link names for the invite behind it. GL: a lost connection or a timeout
     /// is tried again (pauses of 0.5, 1, 2, 4 s) until `FETCH_DEADLINE`, the worst case of a single
     /// attempt before (connect + answer); a refusal or anything else comes back at once.
@@ -307,10 +335,10 @@ impl Inner {
     /// Host side: the token for `code`, or why not.
     fn group_fetch_answer(self: &Arc<Self>, core: &Arc<GroupCore>, code: &[u8; CODE_LEN]) -> Result<InviteToken, String> {
         let row = core.store.code(code).ok().flatten().ok_or_else(|| UNKNOWN_CODE.to_string())?;
-        let (hosting, name, owner, open) = {
+        let (hosting, name, owner, open, issuer_admin) = {
             let groups = core.groups.lock();
             let Some(l) = groups.get(&row.gid) else { return Err(UNKNOWN_CODE.into()) };
-            (l.state.is_host(&core.did, &core.dev), l.state.name.clone(), l.state.owner.clone().unwrap_or_default(), l.state.open)
+            (l.state.is_host(&core.did, &core.dev), l.state.name.clone(), l.state.owner.clone().unwrap_or_default(), l.state.open, l.state.is_admin(&row.by))
         };
         if !hosting {
             return Err("this device no longer hosts that group; ask for a new invite".into());
@@ -320,6 +348,11 @@ impl Inner {
             // Closed since (a close we missed the revoke of): the link is dead for good.
             let _ = core.store.drop_code(code);
             return Err(NOT_OPEN.into());
+        }
+        if open_link && !issuer_admin {
+            // Its issuer is no longer an admin (or no longer a member): the link goes with the role.
+            let _ = core.store.drop_code(code);
+            return Err(OPEN_LINK_WITHDRAWN.into());
         }
         let _ = self.group_my_addr(core, &row.gid);
         let invite = match &row.invite {
@@ -386,12 +419,21 @@ impl Inner {
                 if expires <= now_ms() {
                     return ack(code, false, "invite expired");
                 }
+                let held = core.store.code(&code).ok().flatten();
+                // An admin registering its open link again (a host that lost it, `group_open_link`)
+                // is fine; any other existing code is someone else's.
+                let again = held.as_ref().is_some_and(|r| r.gid == gid && r.kind == CodeKind::Open && kind == CodeKind::Open && r.by == did);
+                if held.is_some() && !again {
+                    return ack(code, false, "code in use");
+                }
+                // One open link per issuer per group: this one replaces the issuer's earlier one.
+                if kind == CodeKind::Open && core.store.drop_open_codes(gid, Some(did), Some(&code)).is_err() {
+                    return ack(code, false, "could not store the code");
+                }
                 match core.store.prune_codes(Some(gid)) {
+                    Ok(_) if again => {}
                     Ok(n) if n < MAX_CODES_PER_GROUP => {}
                     _ => return ack(code, false, "too many open invites for this group; revoke some"),
-                }
-                if core.store.code(&code).ok().flatten().is_some() {
-                    return ack(code, false, "code in use");
                 }
                 let row = CodeRow { gid: gid.to_string(), kind, invite: invite.as_ref().map(|i| cryptography::codec::to_bytes(i).expect("serialises")), expires, by: did.to_string() };
                 match core.store.put_code(&code, &row) {

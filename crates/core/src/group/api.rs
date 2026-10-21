@@ -437,16 +437,21 @@ impl Node {
             if !core.with_state(&group_id, |st| st.open).unwrap_or(false) {
                 inner.group_write(&core, &group_id, Body::Open { active: true })?;
             }
-            let stored = core.groups.lock().get(&group_id).and_then(|l| l.meta.open_link.clone());
-            if let Some(link) = stored
-                && inner.group_open_link_live(&core, &group_id, &link)
+            // Only a link made in this open period (under the `Open` record in force now).
+            let stored = core.groups.lock().get(&group_id).and_then(|l| l.meta.open_link.clone().filter(|_| l.meta.open_link_record.is_some() && l.meta.open_link_record == l.state.open_record));
+            if let Some(link) = &stored
+                && inner.group_open_link_live(&core, &group_id, link)
             {
-                return Ok(link);
+                return Ok(link.clone());
             }
-            let link = inner.group_open_code(&core, &group_id).await?;
+            // A stored link at another host (which may have lost it) is registered again under the
+            // same code; otherwise a new one.
+            let reuse = stored.as_deref().and_then(super::code::ShortCode::parse).map(|sc| sc.code);
+            let link = inner.group_open_code(&core, &group_id, reuse).await?;
             let mut groups = core.groups.lock();
             if let Some(live) = groups.get_mut(&group_id) {
                 live.meta.open_link = Some(link.clone());
+                live.meta.open_link_record = live.state.open_record;
                 core.store.put_meta(&group_id, &live.meta)?;
             }
             Ok(link)
@@ -467,6 +472,7 @@ impl Node {
                 let mut groups = core.groups.lock();
                 let live = groups.get_mut(&group_id).ok_or(Error::NotFound)?;
                 let link = live.meta.open_link.take();
+                live.meta.open_link_record = None;
                 if link.is_some() {
                     core.store.put_meta(&group_id, &live.meta)?;
                 }
@@ -595,17 +601,14 @@ impl Inner {
         !core.store.acks(gid).unwrap_or_default().iter().any(|(_, vv)| loro::VersionVector::decode(vv).ok().and_then(|v| v.get(&core.wid).copied()).unwrap_or(0) >= mine)
     }
 
-    /// Our stored open link still names a chat host of `gid` (and, if that is us, we still keep
-    /// its code).
+    /// Our stored open link names us, a chat host of `gid`, and we still keep its code. A link
+    /// at another host is not known to be live (that host may have lost or dropped it): the
+    /// caller registers it again.
     fn group_open_link_live(self: &Arc<Self>, core: &Arc<GroupCore>, gid: &str, link: &str) -> bool {
         let Some(sc) = super::code::ShortCode::parse(link) else { return false };
         let _ = self.group_my_addr(core, gid);
         let names_host = core.chat_host_addrs(gid).iter().filter_map(|h| h.open().ok()).find(|a| a.endpoint == sc.endpoint);
-        match names_host {
-            Some(a) if a.did == core.did && a.dev == core.dev => core.store.code(&sc.code).ok().flatten().is_some(),
-            Some(_) => true,
-            None => false,
-        }
+        names_host.is_some_and(|a| a.did == core.did && a.dev == core.dev) && core.store.code(&sc.code).ok().flatten().is_some_and(|r| r.kind == super::code::CodeKind::Open && r.by == core.did)
     }
 
     fn group_forget(&self, core: &GroupCore, gid: &str) {

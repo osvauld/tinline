@@ -132,8 +132,11 @@ pub struct GroupState {
     pub call_hosts: Vec<CallHostInfo>,
     /// Devices an admin allowed to host calls that have not accepted (yet).
     pub call_host_requests: Vec<CallHostInfo>,
-    /// Anyone may join with `OpenJoin` (the latest admin `Open` record is active).
+    /// Anyone may join with `OpenJoin` (the admin `Open` record in force is active).
     pub open: bool,
+    /// While open: the `(peer, counter)` of the `Open{active: true}` record in force. A new one
+    /// (a reopen) is a new "open period": open links made before it are not handed out again.
+    pub open_record: Option<(u64, i32)>,
     /// Only the owner and admins post (a channel).
     pub admins_only: bool,
     /// System lines (not posts: those are judged per post, `post_visible`), ordered by `(at, id)`.
@@ -179,13 +182,18 @@ impl Setting {
 /// other record inside it supersedes (whose `seen` includes them), and of those the latest by
 /// `(at, id)`. Off when there is none. Pure in the record set, so every delivery order agrees.
 fn in_force(recs: &[Setting], seen: Option<&[(u64, i32)]>) -> bool {
+    in_force_rec(recs, seen).is_some_and(|s| s.on)
+}
+
+/// The record `in_force` reads (`None`: no record inside the frontier).
+fn in_force_rec<'a>(recs: &'a [Setting], seen: Option<&[(u64, i32)]>) -> Option<&'a Setting> {
     let inside = |s: &Setting| seen.is_none_or(|f| seen_has(f, s.peer, s.counter));
     recs.iter()
         .enumerate()
         .rev()
         .filter(|(_, s)| inside(s))
         .find(|(i, s)| !recs.iter().enumerate().any(|(j, t)| j != *i && inside(t) && seen_has(&t.seen, s.peer, s.counter)))
-        .is_some_and(|(_, s)| s.on)
+        .map(|(_, s)| s)
 }
 
 /// Whether a post shows (`post_visible`).

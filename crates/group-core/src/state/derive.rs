@@ -212,6 +212,7 @@ fn derive_admins(st: &mut GroupState, cx: &Ctx) {
 /// its frontier: the admins-only records and the owner's admin records.
 fn derive_settings(cx: &Ctx, st: &mut GroupState) {
     st.open = cx.open_as_of(None);
+    st.open_record = in_force_rec(&cx.open_recs, None).filter(|s| s.on).map(|s| (s.peer, s.counter));
     st.pos.admins_only = cx.admins_only_recs.clone();
     st.admins_only = in_force(&st.pos.admins_only, None);
     for e in &cx.admin_recs {

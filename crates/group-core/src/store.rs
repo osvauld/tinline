@@ -99,6 +99,10 @@ pub struct GroupMeta {
     /// Admins: the open link we made (`group_open_link`), handed out again until the group closes.
     #[serde(default)]
     pub open_link: Option<String>,
+    /// The `GroupState::open_record` `open_link` was made under: a link from an earlier open
+    /// period (the group closed and reopened, maybe while we were away) is never reused.
+    #[serde(default)]
+    pub open_link_record: Option<(u64, i32)>,
     /// The signed records a host showed us to prove we were removed (U9 visible notice).
     #[serde(default)]
     pub removal_proof: Vec<Vec<u8>>,
