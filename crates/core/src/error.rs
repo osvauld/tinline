@@ -110,6 +110,17 @@ impl From<account_model::Error> for Error {
     }
 }
 
+impl From<transfer::Error> for Error {
+    fn from(e: transfer::Error) -> Self {
+        match e {
+            transfer::Error::Timeout => Error::Timeout,
+            transfer::Error::Protocol(s) => Error::Protocol(s),
+            transfer::Error::Net(s) => Error::Net(s),
+            transfer::Error::Io(s) => Error::Io(s),
+        }
+    }
+}
+
 impl From<audio::Error> for Error {
     fn from(e: audio::Error) -> Self {
         Error::Audio(e.to_string())

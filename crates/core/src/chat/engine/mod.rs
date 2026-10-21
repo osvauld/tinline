@@ -17,7 +17,7 @@ use storage::Op;
 use tokio::sync::{OnceCell, Semaphore, mpsc, oneshot};
 
 use super::api::{Attachment, AttachmentKind, Chat, ChatEvents, DayPage, DeliveryState, Message, TransferState};
-use super::blobs::{BlobHub, Gate, UploadEnd, UploadProgress};
+use transfer::{BlobHub, Gate, UploadEnd, UploadProgress};
 use super::crypt;
 use super::doc::*;
 use super::store::*;

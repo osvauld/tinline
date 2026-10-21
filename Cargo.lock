@@ -5783,6 +5783,7 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
+ "transfer",
  "uniffi",
  "video",
  "video-call-core",
@@ -8354,6 +8355,20 @@ dependencies = [
  "tracing",
  "tracing-core",
  "tracing-log",
+]
+
+[[package]]
+name = "transfer"
+version = "0.1.38"
+dependencies = [
+ "cryptography",
+ "hex",
+ "iroh",
+ "iroh-blobs",
+ "n0-future",
+ "parking_lot",
+ "thiserror 2.0.21",
+ "tokio",
 ]
 
 [[package]]

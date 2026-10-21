@@ -1,6 +1,6 @@
 //! Blob storage and transfer: iroh-blobs on the node's own endpoint.
 //!
-//! Everything in the store is ciphertext (see `crypt.rs`); the hash is the ciphertext's BLAKE3.
+//! Everything in the store is ciphertext (see [`crate::crypt`]); the hash is the ciphertext's BLAKE3.
 //! Each hash we hold carries a tag `tl/<hex>` (what protects it from the store's GC); dropping
 //! the tag lets the GC reclaim the bytes within `GC_INTERVAL`.
 //!
@@ -8,8 +8,9 @@
 //! authenticated device key and the hash asked for. `push` and `observe` are always refused.
 
 #[cfg(test)]
-#[path = "profile_blob_tests.rs"]
-mod profile_tests;
+mod owned_tests;
+#[cfg(test)]
+mod tests;
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -24,8 +25,9 @@ use iroh_blobs::{BlobsProtocol, Hash, HashAndFormat};
 use n0_future::StreamExt;
 use parking_lot::Mutex;
 
-use super::crypt;
-use crate::Error;
+use crate::{Error, crypt};
+
+const OWNED_PREFIX: &str = "profile/";
 
 pub const GC_INTERVAL: Duration = Duration::from_secs(30);
 
@@ -68,7 +70,7 @@ pub struct BlobHub {
     store: FsStore,
     dir: PathBuf,
     proto: BlobsProtocol,
-    profile_claims: Mutex<std::collections::HashMap<String, std::sync::Weak<tokio::sync::Mutex<()>>>>,
+    owned_claims: Mutex<std::collections::HashMap<String, std::sync::Weak<tokio::sync::Mutex<()>>>>,
 }
 
 fn io_err(e: impl std::fmt::Display) -> Error {
@@ -105,7 +107,7 @@ impl BlobHub {
         let (events, rx) = EventSender::channel(64, mask);
         tokio::spawn(gate_loop(rx, gate, progress, ended, knobs));
         let proto = BlobsProtocol::new(&store, Some(events));
-        Ok(Self { store, dir: dir.to_path_buf(), proto, profile_claims: Default::default() })
+        Ok(Self { store, dir: dir.to_path_buf(), proto, owned_claims: Default::default() })
     }
 
     pub fn protocol(&self) -> BlobsProtocol {
@@ -154,11 +156,11 @@ impl BlobHub {
 
     /// Serializes this owner's tag/verified-readiness publication with old-cache cleanup.
     /// Other hashes and other owners stay independent. Weak entries do not retain past claims.
-    pub(crate) async fn profile_claim(&self, owner: &str, hash: &Hash) -> tokio::sync::OwnedMutexGuard<()> {
+    pub async fn claim_owned(&self, owner: &str, hash: &Hash) -> tokio::sync::OwnedMutexGuard<()> {
         let lock = {
-            let mut claims = self.profile_claims.lock();
+            let mut claims = self.owned_claims.lock();
             claims.retain(|_, weak| weak.strong_count() > 0);
-            let key = Self::protected_tag(Some(owner), hash);
+            let key = Self::owned_tag(owner, hash);
             match claims.get(&key).and_then(std::sync::Weak::upgrade) {
                 Some(lock) => lock,
                 None => {
@@ -171,7 +173,8 @@ impl BlobHub {
         lock.lock_owned().await
     }
 
-    pub(crate) async fn add_profile_bytes(&self, owner: &str, key: [u8; 32], data: Vec<u8>) -> Result<Hash, Error> {
+    /// Like `add_bytes`, but protected by `owner`'s own tag instead of the shared one.
+    pub async fn add_bytes_owned(&self, owner: &str, key: [u8; 32], data: Vec<u8>) -> Result<Hash, Error> {
         self.add_bytes_for(Some(owner), key, data).await
     }
 
@@ -197,25 +200,31 @@ impl BlobHub {
         self.store.tags().set(tag_of(hash), HashAndFormat::raw(*hash)).await.map_err(io_err)
     }
 
+    /// The owner-scoped tag name: `profile/<hash of owner>/<hash>` (the prefix is kept from when
+    /// profile pictures were its only user; stores written then stay valid).
+    pub fn owned_tag(owner: &str, hash: &Hash) -> String {
+        format!(
+            "{OWNED_PREFIX}{}/{hash}",
+            hex::encode(cryptography::hash::content(cryptography::domains::PROTECTED_BLOB, owner.as_bytes()))
+        )
+    }
     fn protected_tag(owner: Option<&str>, hash: &Hash) -> String {
         match owner {
-            Some(owner) => format!(
-                "profile/{}/{hash}",
-                hex::encode(cryptography::hash::content(cryptography::domains::PROTECTED_BLOB, owner.as_bytes()))
-            ),
+            Some(owner) => Self::owned_tag(owner, hash),
             None => tag_of(hash),
         }
     }
     async fn keep_for(&self, owner: Option<&str>, hash: &Hash) -> Result<(), Error> {
         self.store.tags().set(Self::protected_tag(owner, hash), HashAndFormat::raw(*hash)).await.map_err(io_err)
     }
-    pub(crate) async fn keep_profile(&self, owner: &str, hash: &Hash) -> Result<(), Error> {
+    /// Tags `hash` for `owner` alone.
+    pub async fn keep_owned(&self, owner: &str, hash: &Hash) -> Result<(), Error> {
         self.keep_for(Some(owner), hash).await
     }
-    /// Crash recovery, before this hub is published: remove tags for uncommitted profile uploads
-    /// and durable deletion requests. Retained pictures have owner-scoped account-store markers.
-    pub(crate) async fn recover_profile_tags(&self, references: &std::collections::HashSet<String>) -> Result<(), Error> {
-        let mut tags = Box::pin(self.store.tags().list_prefix(b"profile/").await.map_err(io_err)?);
+    /// Crash recovery, before this hub is published: remove every owner-scoped tag whose name is
+    /// not in `references` (uncommitted uploads, durable deletion requests). Shared tags stay.
+    pub async fn recover_owned_tags(&self, references: &std::collections::HashSet<String>) -> Result<(), Error> {
+        let mut tags = Box::pin(self.store.tags().list_prefix(OWNED_PREFIX.as_bytes()).await.map_err(io_err)?);
         let mut remove = Vec::new();
         while let Some(info) = tags.next().await {
             let info = info.map_err(io_err)?;
@@ -226,8 +235,8 @@ impl BlobHub {
         for name in remove { self.store.tags().delete(name).await.map_err(io_err)?; }
         Ok(())
     }
-    /// Drops only this profile owner's claim. Chat tags and other owners' tags are untouched.
-    pub(crate) async fn release_profile(&self, owner: &str, hash: &Hash) -> Result<(), Error> {
+    /// Drops only this owner's claim. Shared tags and other owners' tags are untouched.
+    pub async fn release_owned(&self, owner: &str, hash: &Hash) -> Result<(), Error> {
         self.store.tags().delete(Self::protected_tag(Some(owner), hash)).await.map(|_| ()).map_err(io_err)
     }
 
@@ -278,7 +287,8 @@ impl BlobHub {
         self.fetch_for(None, conn, hash, cipher_total, stall, progress).await
     }
 
-    pub(crate) async fn fetch_profile(&self, owner: &str, conn: Connection, hash: Hash, cipher_total: u64) -> Result<(), Error> {
+    /// `fetch` protected by `owner`'s tag instead of the shared one.
+    pub async fn fetch_owned(&self, owner: &str, conn: Connection, hash: Hash, cipher_total: u64) -> Result<(), Error> {
         self.fetch_for(Some(owner), conn, hash, cipher_total, STALL, |_, _| {}).await
     }
 
