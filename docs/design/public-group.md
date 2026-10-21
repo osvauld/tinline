@@ -168,9 +168,22 @@ Existing removal stays (3 counted flags; one admin may flag 3 times). No new rul
 
 ### 7. Headless host (`crates/peer`)
 
-`p2p-peer --data DIR group-host [--accept GROUP_ID]...` runs the node forever:
-accepts host appointments for the listed groups, logs sessions/presence counts once a minute,
-and exits cleanly on SIGTERM (systemd unit on the worker, `Restart=always`).
+`p2p-peer --data DIR [--passphrase PASS] group-host [--name NAME] [--accept GROUP_ID]... [--join LINK]...`
+(built, `crates/peer/src/group_host.rs`; example unit `crates/peer/tinline-group-host.service`).
+
+- Identity: unlocks the profile in DIR, or on first run creates one named `--name` (default
+  "Tinline host") and prints its DID, so the owner can invite it. Passphrase as for other
+  subcommands (`--passphrase`, else `P2P_PASSPHRASE`).
+- `--join LINK` (repeatable): joins by invite or open link if not yet a member; retried
+  every 10 s while the link is not joined.
+- `--accept GROUP_ID` (repeatable): when the group's `host_requested_here` is set (an admin
+  appointed this device), calls `group_accept_host(id, true)`. Checked at start, on every
+  `on_group_changed` and every 10 s. Appointments for groups not listed are only logged as
+  `PENDING ... restart with --accept ID`.
+- Once a minute, per group: id, name, open, active host (`am_host`), member count, other
+  hosts online, `group_online` count. (Per-member session counts are not exposed by the core
+  API.)
+- SIGTERM/SIGINT: stops the node and exits 0.
 
 ### 8. Apps
 
@@ -210,7 +223,7 @@ Deterministic, offline, in `crates/core/tests/` (names indicative):
 9. `image_post_roundtrip_via_host`: a member's image reaches another member through a host,
    hash-verified; an oversized blob is refused.
 10. Headless: `p2p-peer group-host` accepts an appointment and relays between two members
-    (e2e script, not a unit test).
+    (e2e script, not a unit test). Command built; argument-parsing unit tests only; e2e not run.
 
 Manual: worker host + laptop host + Android emulator; turn the laptop off, the lobby keeps
 working through the worker.

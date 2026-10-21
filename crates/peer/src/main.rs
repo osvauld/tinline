@@ -17,6 +17,7 @@
 //!   p2p-peer --data DIR file-send NAME PATH [--wait SECS]
 //!   p2p-peer --data DIR voice-send NAME OGGFILE [--duration-ms N] [--wait SECS]
 //!   p2p-peer --data DIR link-serve          (commands on stdin: init, link-show, link-scan, approve, devices ...; see `link_serve`)
+//!   p2p-peer --data DIR group-host [--name NAME] [--accept GROUP_ID]... [--join LINK]...   (headless public-group host; runs until SIGTERM/SIGINT)
 //!   p2p-peer --data DIR chat-serve          (commands on stdin, events on stdout; see `serve`)
 //!   p2p-peer --data DIR listen [--for SECS]   (also receives chat; prints CHAT lines)
 //!
@@ -26,6 +27,8 @@
 //! VIDEO (calls): `--video-pattern WxH` turns the camera on and sends `video::Pattern` at 30 fps;
 //! `--video-snap out.ppm` saves the last decoded peer frame; `--no-video` refuses video. With
 //! video, each second also prints a `VIDEO` line and the end a `VRESULT` line.
+
+mod group_host;
 
 use std::path::PathBuf;
 use std::sync::mpsc;
@@ -200,7 +203,7 @@ fn run() -> Result<(), String> {
     // (the e2e scripts have nobody to press Accept).
     node.auto_accept_contacts_for_test(true);
     let rest: Vec<&str> = o.rest.iter().map(String::as_str).collect();
-    if rest.first() != Some(&"init") {
+    if rest.first() != Some(&"init") && rest.first() != Some(&"group-host") {
         match node.lock_state() {
             LockState::Locked => node.unlock(o.passphrase.clone()).map_err(|e| e.to_string())?,
             LockState::NoIdentity | LockState::Unlocked => {}
@@ -212,6 +215,10 @@ fn run() -> Result<(), String> {
         node.set_video_events(Arc::new(VideoPrinter));
     }
     match rest.as_slice() {
+        ["group-host", args @ ..] => {
+            let args = group_host::parse_args(args)?;
+            group_host::run(&node, &o.passphrase, &args, start_online)?;
+        }
         ["link-serve"] => link_serve(&node, &o, rx)?,
         ["chat-send", who, text] => {
             start_online(&node)?;

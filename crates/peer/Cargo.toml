@@ -10,6 +10,7 @@ path = "src/main.rs"
 
 [dependencies]
 p2pcore = { path = "../core", features = ["dev-tools"] }  # WHO line uses Node::device_key_for_test
+libc = "0.2"
 audio.workspace = true
 hound = "3.5"
 video = { path = "../video", default-features = false, features = ["sim"] }
