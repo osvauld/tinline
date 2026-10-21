@@ -40,6 +40,7 @@ fn join_first(ps: &mut [Peer], g: &str, call: &str, n: usize) {
 }
 
 #[test]
+#[cfg_attr(debug_assertions, ignore = "thirteen live nodes joining one call: run with --release")]
 fn capacity_twelve_authentic_members_reject_extra_without_disruption_then_recover_space() {
     let mut ps = peers("boundary", 13);
     let (g, call) = setup(&ps);

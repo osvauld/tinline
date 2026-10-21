@@ -55,7 +55,12 @@ jobs:
           prefix="$(python3 scripts/build_libvpx.py | tail -n1)"
           echo "VPX_DIR=$prefix" >> "$GITHUB_ENV"
       # The core integration tests start real iroh nodes and use n0's public relays.
+      # Targets that have failed on this runner before go first, so a regression shows in
+      # minutes; the full suite below runs them again.
+      - name: Previously failing tests (debug)
+        run: cargo test --locked --no-fail-fast -p p2pcore --test blocking_acceptance --test fanout --test group_shards --test group_call
       - name: Rust tests
+        if: success() || failure()
         run: cargo test --workspace --locked --no-fail-fast
       # Tests that count frames per second or mix twelve live calls skip in debug builds (too slow);
       # they run here. Runs even when the debug step failed, so one CI run reports both.
