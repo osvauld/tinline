@@ -422,6 +422,8 @@ fn linked_sibling_refuses_with_the_blocked_reason() {
     let n = S.link_fresh(&e, "sibr-n");
     eventually(40, "N has A", || n.node.contacts().iter().any(|c| c.did == a.did));
     teach_devices_by_call(&a, &e);
+    // The teaching call may also ring N (fan-out, once A knows N); only later rings count.
+    let _ = n.rx.try_iter().count();
     harness::block(&e.node, &a.did).unwrap();
     eventually(40, "N shows A as Blocked", || harness::block_state(&n.node, &a.did).blocked_by_me);
     assert_eq!(harness::block_notices_sent_for_test(&n.node, &a.did), 0, "the sibling hands out E's notice; it signs none");
