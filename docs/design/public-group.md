@@ -50,15 +50,22 @@ as U11). Posting while `AdminsOnly` is active returns `Rejected("admins only")` 
 
 ### 2. Permanent open link
 
-- `group_open_link(id)` (admins): issues an invite with no expiry (`exp_ms = u64::MAX`) and
-  registers a short code on each host the issuer can reach (`Code{..}` with `expires = MAX`).
-  The link format is unchanged (`tinline://g/...`). Writes `Open{active: true}` if not set.
-- **Host admission:** a host accepts a non-expiring invite **only while the group is open**
-  (its derived `open` is true). Closing (`group_set_open(id, false)`) makes hosts refuse new
-  joins with it at once; existing members stay. Regular 7-day invites work as before.
-- A host keeps an open code past the 256-live-codes cap's expiry sweep; it counts as one code.
+Invites cannot be permanent: `proto::Issued` caps their lifetime (`MAX_INVITE_TTL_MS`, 30
+days). An open group needs no invite instead:
+
+- New member record `OpenJoin { name }` (group-core, built): a join that counts when the
+  group was open as of the record's frontier (`Open{active: true}` by an admin, latest by
+  `(at, id)` inside the frontier). Joins already made stay valid after closing.
+- `group_open_link(id)` (admins): writes `Open{active: true}` if not set and registers a
+  short code with no invite and no expiry on each reachable host; the link format is
+  unchanged (`tinline://g/...`). `Fetched` returns the token with `invite: None` and the group
+  marked open.
+- **Host admission:** a `Hello` from a non-member without an invite is welcomed **only while
+  the group is open** (derived `open` now); the joiner may then send only its own records
+  until its `OpenJoin` makes it a member (as invite joiners today). Closing
+  (`group_set_open(id, false)`) refuses new joiners at once; the open code is dropped.
+- An open code counts as one of the 256 live codes and is not swept by expiry.
 - Guess limits (3 per connection, 30/min per host) and the 300 ms wrong-answer delay stay.
-- Joins already in the doc stay valid after closing (as expired invites do today).
 
 ### 3. Online list (presence)
 
@@ -119,10 +126,11 @@ Desktop first (it is a host), Android next:
 
 Deterministic, offline, in `crates/core/tests/` (names indicative):
 
-1. `open_link_joins_without_expiry`: a join with a non-expiring invite is welcomed while open.
+1. `open_link_joins_without_invite`: a non-member's `Hello` without an invite is welcomed
+   while open and its `OpenJoin` makes it a member (unit rule: `open_join_counts_only_while_open`, built).
 2. `closing_refuses_new_open_joins_keeps_members`: after `Open{false}`, a new joiner gets
    `Refused`; an existing member still syncs.
-3. `admins_only_hides_member_posts_in_every_order`: a member post written after
+3. `admins_only_hides_member_posts_in_every_order` (built): a member post written after
    `AdminsOnly{true}` is hidden on every device regardless of delivery order; one written
    before stays visible.
 4. `admins_only_rejects_local_post`: `group_post` by a non-admin returns `Rejected`.

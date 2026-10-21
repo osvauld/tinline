@@ -64,6 +64,15 @@ pub enum Body {
     /// group endpoint shown to every caller), so a call host needs both a `CallHostPermit` and
     /// this.
     CallHostAccept { active: bool },
+    /// The author joins an open group (`Open{active: true}` as of this record's frontier)
+    /// without an invite; `name` as in `Join`. Inert in a group that was not open.
+    OpenJoin { name: String },
+    /// Owner or admin: anyone may join with `OpenJoin` (or no longer may). Latest by
+    /// `(at, id)` among those inside a frontier counts. Members who joined stay.
+    Open { active: bool },
+    /// Owner or admin: only the owner and admins may post (a channel), or everyone again.
+    /// Judged per post as of its frontier, like membership (U11).
+    AdminsOnly { active: bool },
 }
 
 /// One group op, as signed.
@@ -117,7 +126,7 @@ impl Record {
         }
         match &self.body {
             Body::Genesis { name, owner_name, .. } if name.len() > MAX_NAME || name.trim().is_empty() || owner_name.len() > MAX_NAME => bad,
-            Body::Join { name, .. } if name.len() > MAX_NAME => bad,
+            Body::Join { name, .. } | Body::OpenJoin { name } if name.len() > MAX_NAME => bad,
             Body::Post { text, reply_to } if text.len() > MAX_TEXT || text.is_empty() || reply_to.as_ref().is_some_and(|r| r.len() > 64) => bad,
             Body::Admin { member, .. } | Body::Flag { member } if member.len() > 200 => bad,
             Body::HostPermit { host, .. } | Body::CallHostPermit { host, .. } if host.len() > 200 => bad,

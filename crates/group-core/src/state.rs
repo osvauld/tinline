@@ -27,6 +27,10 @@
 //!   and `did` is a member (not removed).
 //! - Call hosts (U21, G6 §2.1): the same rule over the separate `CallHostPermit` /
 //!   `CallHostAccept` records. Chat hosting never implies call hosting, nor the reverse.
+//! - Public groups (`docs/design/public-group.md`): `Open` and `AdminsOnly` count when written
+//!   by an admin as of their frontier; the latest by `(at, id)` inside a frontier is the
+//!   setting as of it. An `OpenJoin` is a join when the group was open as of its frontier. A
+//!   post by a non-admin (as of its frontier) is hidden if admins-only was on as of it.
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -124,6 +128,10 @@ pub struct GroupState {
     pub call_hosts: Vec<CallHostInfo>,
     /// Devices an admin allowed to host calls that have not accepted (yet).
     pub call_host_requests: Vec<CallHostInfo>,
+    /// Anyone may join with `OpenJoin` (the latest admin `Open` record is active).
+    pub open: bool,
+    /// Only the owner and admins post (a channel).
+    pub admins_only: bool,
     /// System lines (not posts: those are judged per post, `post_visible`), ordered by `(at, id)`.
     pub items: Vec<Item>,
     /// What `post_visible` needs: per-DID join/leave and flag positions.
@@ -141,6 +149,10 @@ pub struct Positions {
     events: BTreeMap<String, Vec<(u64, i32, bool)>>,
     /// Counted flags on each DID by `(peer, counter)`.
     flags: BTreeMap<String, Vec<(u64, i32)>>,
+    /// Admin `AdminsOnly` records `(peer, counter, active)`, in `(at, id)` order.
+    admins_only: Vec<(u64, i32, bool)>,
+    /// The owner's `Admin` records per member `(peer, counter, admin)`, in `(at, id)` order.
+    admin_events: BTreeMap<String, Vec<(u64, i32, bool)>>,
 }
 
 /// Whether a post shows (`post_visible`).
@@ -164,7 +176,9 @@ pub fn post_visible(st: &GroupState, author: &str, seen: &[(u64, i32)]) -> Vis {
     let member = author == owner
         || p.events.get(author).and_then(|evs| evs.iter().rev().find(|(peer, c, _)| seen_has(seen, *peer, *c))).is_some_and(|(_, _, join)| *join);
     let flagged = p.flags.get(author).is_some_and(|f| f.iter().filter(|(peer, c)| seen_has(seen, *peer, *c)).count() >= REMOVAL_FLAGS);
-    if member && !flagged { Vis::Visible } else { Vis::Hidden }
+    let latest = |evs: &[(u64, i32, bool)]| evs.iter().rev().find(|(peer, c, _)| seen_has(seen, *peer, *c)).is_some_and(|(_, _, on)| *on);
+    let muted = latest(&p.admins_only) && author != owner && !p.admin_events.get(author).is_some_and(|evs| latest(evs));
+    if member && !flagged && !muted { Vis::Visible } else { Vis::Hidden }
 }
 
 /// The conversation line of a post; `before_removal` is its author's removal now.

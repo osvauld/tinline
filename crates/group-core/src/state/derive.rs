@@ -19,13 +19,41 @@ struct Ctx<'a> {
     owner: String,
     /// The owner's admin records, ordered.
     admin_recs: Vec<&'a Entry>,
+    /// `Open` / `AdminsOnly` records by an admin as of their own frontier, ordered.
+    open_recs: Vec<&'a Entry>,
+    admins_only_recs: Vec<&'a Entry>,
 }
 
 impl<'a> Ctx<'a> {
     fn new(group: &'a str, entries: &'a [Entry], owner: String) -> Self {
         let mut admin_recs: Vec<&Entry> = entries.iter().filter(|e| e.rec.author == owner && matches!(e.rec.body, Body::Admin { .. })).collect();
         admin_recs.sort_by(|a, b| order(a).cmp(&order(b)));
-        Ctx { group, entries, owner, admin_recs }
+        let mut cx = Ctx { group, entries, owner, admin_recs, open_recs: Vec::new(), admins_only_recs: Vec::new() };
+        let settings = |pick: fn(&Body) -> bool| {
+            let mut v: Vec<&Entry> = entries.iter().filter(|e| pick(&e.rec.body) && cx.admin_as_of(&e.rec.author, Some(&e.rec.seen))).collect();
+            v.sort_by(|a, b| order(a).cmp(&order(b)));
+            v
+        };
+        let open_recs = settings(|b| matches!(b, Body::Open { .. }));
+        let admins_only_recs = settings(|b| matches!(b, Body::AdminsOnly { .. }));
+        cx.open_recs = open_recs;
+        cx.admins_only_recs = admins_only_recs;
+        cx
+    }
+
+    /// Whether the group is open as of `seen` (`None`: now).
+    fn open_as_of(&self, seen: Option<&[(u64, i32)]>) -> bool {
+        self.open_recs.iter().rev().find(|e| seen.is_none_or(|s| e.seen_by(s))).is_some_and(|e| matches!(e.rec.body, Body::Open { active: true }))
+    }
+
+    /// Whether `e` is a join that counts: an invite join (`valid_join`), or an `OpenJoin`
+    /// written while the group was open as of its frontier.
+    fn joins(&self, e: &Entry) -> bool {
+        match &e.rec.body {
+            Body::Join { .. } => self.valid_join(e).is_some(),
+            Body::OpenJoin { .. } => self.open_as_of(Some(&e.rec.seen)),
+            _ => false,
+        }
     }
 
     /// Whether `did` is an admin as of `seen` (`None`: now).
@@ -84,6 +112,7 @@ pub fn derive_meta(group: &str, entries: &[Entry], have: &VersionVector) -> Grou
     let flags = derive_flags(&cx, &mut st);
     derive_members(&cx, &mut st, genesis, owner_name);
     derive_admins(&mut st, &cx);
+    derive_settings(&cx, &mut st);
     derive_enc_keys(&cx, &mut st);
     derive_hosts(&cx, &mut st);
     derive_call_hosts(&cx, &mut st);
@@ -124,7 +153,7 @@ fn derive_members(cx: &Ctx, st: &mut GroupState, genesis: &Entry, owner_name: St
     let mut events: BTreeMap<String, Vec<&Entry>> = BTreeMap::new();
     for e in cx.entries {
         let counts = match &e.rec.body {
-            Body::Join { .. } => cx.valid_join(e).is_some(),
+            Body::Join { .. } | Body::OpenJoin { .. } => cx.joins(e),
             Body::Leave => true,
             _ => false,
         };
@@ -150,7 +179,7 @@ fn derive_members(cx: &Ctx, st: &mut GroupState, genesis: &Entry, owner_name: St
             continue;
         }
         match &last.rec.body {
-            Body::Join { name, .. } => {
+            Body::Join { name, .. } | Body::OpenJoin { name } => {
                 st.members.insert(
                     did.clone(),
                     MemberInfo { did: did.clone(), name: name.clone(), joined_at: last.rec.at, invited_by: cx.valid_join(last), devices: devices.get(&did).cloned().unwrap_or_default() },
@@ -162,13 +191,27 @@ fn derive_members(cx: &Ctx, st: &mut GroupState, genesis: &Entry, owner_name: St
         }
     }
     // Positions of the valid joins and leaves (`events` holds only those, sorted).
-    st.pos.events = events.iter().map(|(d, evs)| (d.clone(), evs.iter().map(|e| (e.peer, e.counter, matches!(e.rec.body, Body::Join { .. }))).collect())).collect();
+    st.pos.events = events.iter().map(|(d, evs)| (d.clone(), evs.iter().map(|e| (e.peer, e.counter, matches!(e.rec.body, Body::Join { .. } | Body::OpenJoin { .. }))).collect())).collect();
 }
 
 fn derive_admins(st: &mut GroupState, cx: &Ctx) {
     for did in st.members.keys() {
         if cx.admin_as_of(did, None) {
             st.admins.insert(did.clone());
+        }
+    }
+}
+
+/// `Open` / `AdminsOnly` now, and what `post_visible` needs to judge a post's author as of
+/// its frontier: the admins-only records and the owner's admin records.
+fn derive_settings(cx: &Ctx, st: &mut GroupState) {
+    st.open = cx.open_as_of(None);
+    let flag = |e: &&Entry| (e.peer, e.counter, matches!(e.rec.body, Body::AdminsOnly { active: true }));
+    st.pos.admins_only = cx.admins_only_recs.iter().map(flag).collect();
+    st.admins_only = st.pos.admins_only.last().is_some_and(|(_, _, on)| *on);
+    for e in &cx.admin_recs {
+        if let Body::Admin { member, admin } = &e.rec.body {
+            st.pos.admin_events.entry(member.clone()).or_default().push((e.peer, e.counter, *admin));
         }
     }
 }
@@ -279,7 +322,7 @@ fn derive_items(cx: &Ctx, st: &mut GroupState, flags: &BTreeMap<String, Vec<&Ent
             counter: e.counter,
         };
         match &r.body {
-            Body::Join { .. } if cx.valid_join(e).is_some() && r.author != cx.owner => st.items.push(item(ItemKind::Joined, &r.author)),
+            Body::Join { .. } | Body::OpenJoin { .. } if cx.joins(e) && r.author != cx.owner => st.items.push(item(ItemKind::Joined, &r.author)),
             Body::Leave if r.author != cx.owner => st.items.push(item(ItemKind::Left, &r.author)),
             Body::Admin { member, admin } if r.author == cx.owner => {
                 st.items.push(item(if *admin { ItemKind::AdminGranted } else { ItemKind::AdminRevoked }, member))
