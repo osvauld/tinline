@@ -49,7 +49,7 @@ protocol CallProvider: AnyObject {
     func addCall(name: String, incoming: Bool, video: Bool, events: SystemCallEvents) async throws -> SystemCall
 }
 
-struct CallProviderUnavailable: Error {}
+struct CallProviderUnavailable: Swift.Error {}
 
 /**
  * TODO(ios-device): CallKit. A CXProvider (CXProviderConfiguration: supportsVideo, maximumCallGroups 1,

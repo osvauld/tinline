@@ -107,7 +107,7 @@ enum ChatMedia {
     static func share(_ file: URL) -> Bool { ChatPresenter.present(UIActivityViewController(activityItems: [file], applicationActivities: nil)) }
 }
 
-enum ChatMediaError: Error { case noAttachment }
+enum ChatMediaError: Swift.Error { case noAttachment }
 
 /// Presents UIKit controllers (share sheet, exporter) from the foremost view controller.
 enum ChatPresenter {

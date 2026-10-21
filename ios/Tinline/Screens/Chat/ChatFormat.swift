@@ -8,9 +8,6 @@ import SwiftUI
 /// without proof.
 enum ChatLink { case connected, relayed, offline, unknown }
 
-/// Position in a run of same-sender messages.
-enum BubblePos { case solo, first, mid, last }
-
 /// Honest status of a message we sent, for words ("Waiting"). The bubble draws the receipt tick itself
 /// (`ReceiptTickView`). `.two` and `.read` come only from the contact's signed receipts (core `ReceiptTick`); `.one` =
 /// sent or saved here, not confirmed yet; `.clock` = it cannot go out now (waiting until you are both online).

@@ -106,7 +106,7 @@ struct PeopleFieldRow: View {
     }
     private var editable: Bool { !readonly && onSave != nil && (isNull || (value?.isScalar ?? false)) }
     private var removable: Bool { !readonly && onRemove != nil && optional && !editable }
-    private var url: String? { kind == .link ? ProfileInfo.safeUrl(text) : nil }
+    private var url: String? { kind == .link ? PeopleProfileInfo.safeUrl(text) : nil }
 
     var body: some View {
         Group {
@@ -208,7 +208,7 @@ struct PeopleFieldRow: View {
                     .accessibilityElement(children: .ignore).accessibilityLabel("\(label): \(text.isEmpty ? empty : text). Edit")
                     .accessibilityAddTraits(.isButton)
             } else { content }
-            if let url, let onOpen { toolButton(.link, 20, "Open \(label): \(ProfileInfo.shortUrl(url))") { onOpen(url) } }
+            if let url, let onOpen { toolButton(.link, 20, "Open \(label): \(PeopleProfileInfo.shortUrl(url))") { onOpen(url) } }
             if editable {
                 toolButton(.edit, 18, nil, alpha: 0.8) { edit() }.padding(.trailing, 6).padding(.leading, url != nil && onOpen != nil ? -8 : 0)
             }
@@ -265,7 +265,7 @@ struct PeopleProfileValue: View {
                     VStack(alignment: .leading, spacing: 8) {
                         ForEach(o.keys, id: \.self) { k in
                             VStack(alignment: .leading, spacing: 1) {
-                                Text(ProfileInfo.humanize(k)).peopleStyle(.sub).foregroundStyle(c.ink2)
+                                Text(PeopleProfileInfo.humanize(k)).peopleStyle(.sub).foregroundStyle(c.ink2)
                                 PeopleProfileValue(value: o[k] ?? .null, depth: depth + 1)
                             }
                         }

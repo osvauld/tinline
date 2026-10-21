@@ -23,3 +23,14 @@ targets:
     dependencies:
       - framework: build/P2pCore.xcframework
         embed: false
+  TinlineTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - TinlineTests
+    dependencies:
+      - target: Tinline
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.osvauld.tinline.tests
+        GENERATE_INFOPLIST_FILE: YES

@@ -147,7 +147,7 @@ struct EndedUi: Equatable {
 }
 
 /** Thrown by [CallController.place] when the microphone permission is missing. */
-struct MicPermissionNeeded: Error, LocalizedError {
+struct MicPermissionNeeded: Swift.Error, LocalizedError {
     var errorDescription: String? { "Microphone permission needed to place a call" }
 }
 

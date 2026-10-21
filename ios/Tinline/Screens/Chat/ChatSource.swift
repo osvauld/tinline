@@ -178,4 +178,4 @@ final class CoreChatSource: ChatSource, ChatEvents, @unchecked Sendable {
     }
 }
 
-enum ChatSourceError: Error { case noNode }
+enum ChatSourceError: Swift.Error { case noNode }

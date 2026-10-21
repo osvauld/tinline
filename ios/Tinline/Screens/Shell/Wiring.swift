@@ -151,7 +151,6 @@ enum ShellWiring {
 
     static func selfView(people: PeopleModel) -> ProfileView? { people.profiles.selfDid.flatMap { people.profiles.views[$0] } }
 
-    /// "Busy until 18:30" (People/ProfileModel.swift). NOTE: People's `enum ProfileInfo` has the same name as the core's
-    /// `struct ProfileInfo` (`Node.profile()`); one of them must be renamed before this compiles.
-    static func busyUntilLabel(_ ms: Int64) -> String { ProfileInfo.untilLabel(atMs: ms) }
+    /// "Busy until 18:30" (People/ProfileModel.swift).
+    static func busyUntilLabel(_ ms: Int64) -> String { PeopleProfileInfo.untilLabel(atMs: ms) }
 }

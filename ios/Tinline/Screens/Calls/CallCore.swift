@@ -50,7 +50,7 @@ protocol CallCore: AnyObject, Sendable {
 extension Node: CallCore {}
 
 /** No node yet (locked vault, account switch in progress). */
-struct CallCoreUnavailable: Error {}
+struct CallCoreUnavailable: Swift.Error {}
 
 /** Runs a (possibly blocking) core call off the main actor, as Kotlin's `app.scope.launch(Dispatchers.IO)`. */
 @discardableResult

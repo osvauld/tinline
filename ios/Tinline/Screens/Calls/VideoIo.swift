@@ -36,7 +36,7 @@ protocol CallCamera: AnyObject {
     var previewLayer: CALayer? { get }
 }
 
-struct CameraUnavailable: Error {}
+struct CameraUnavailable: Swift.Error {}
 
 /**
  * TODO(ios-device): an AVCaptureSession (`.vga640x480` for SD, `.hd1280x720` for HD; CaptureUnsupported when

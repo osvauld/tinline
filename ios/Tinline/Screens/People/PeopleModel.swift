@@ -12,7 +12,7 @@ struct IncomingSheet: Equatable {
 /// The two sounds this area asks for (sound-direction.md: the `knock` and the `line`). The Shell plays them.
 enum PeopleCue { case knock, line }
 
-enum PeopleError: Error { case accountChanged }
+enum PeopleError: Swift.Error { case accountChanged }
 
 /// The people area's slice of Android `P2pApp`: contacts, block state, contact requests, the Add contact sheet's handshake state,
 /// and the profile controller. The Shell creates one, injects it with `.environmentObject`, calls `attach(node:)` whenever the

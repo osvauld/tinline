@@ -80,7 +80,7 @@ struct KnownField {
     let hint: String
 }
 
-enum ProfileInfo {
+enum PeopleProfileInfo {
     /// In display order.
     static let knownKeys = ["pronouns", "location", "website"]
     static let known: [String: KnownField] = [
@@ -175,7 +175,7 @@ struct Avail: Equatable {
     var untilMs: Int64? = nil
 }
 
-func effectiveAvailability(_ fields: PeopleObject?, nowMs: Int64 = ProfileInfo.nowMillis()) -> Avail {
+func effectiveAvailability(_ fields: PeopleObject?, nowMs: Int64 = PeopleProfileInfo.nowMillis()) -> Avail {
     guard let a = fields?["availability"]?.asObject else { return Avail(available: true) }
     if case .bool(let b)? = a["available"], !b {} else { return Avail(available: true) }
     var until: Int64?

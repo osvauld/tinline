@@ -44,7 +44,7 @@ final class VideoQualityTests: XCTestCase {
     }
 
     func testPermissionErrorIsNotHiddenByFallback() {
-        struct Denied: Error {}
+        struct Denied: Swift.Error {}
         var attempts = 0
         XCTAssertThrowsError(try bindCapture(capturePreferences(preferHd: true)) { _ in attempts += 1; throw Denied() }) {
             XCTAssertTrue($0 is Denied)

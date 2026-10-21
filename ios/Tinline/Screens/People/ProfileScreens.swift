@@ -83,7 +83,7 @@ private struct ProfileScreenContent: View {
     private func saveLink(_ key: String) -> (String) async -> String? {
         { v in
             if v.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return await setField(key, nil) }
-            guard let n = ProfileInfo.normaliseLink(v) else { return "Enter a web address that starts with http:// or https://." }
+            guard let n = PeopleProfileInfo.normaliseLink(v) else { return "Enter a web address that starts with http:// or https://." }
             return await setField(key, n)
         }
     }
@@ -101,9 +101,9 @@ private struct ProfileScreenContent: View {
     }
 
     var body: some View {
-        let extras = ProfileInfo.extraKeys(fields)
+        let extras = PeopleProfileInfo.extraKeys(fields)
         let hasPic = view?.hash != nil
-        let hasOther = extras.contains { ProfileInfo.known[$0] == nil }
+        let hasOther = extras.contains { PeopleProfileInfo.known[$0] == nil }
         PeopleProfilePage(title: title, onBack: onBack, bottomPad: 96, overlay: { floating }) {
             hero(hasPic: hasPic)
 
@@ -128,8 +128,8 @@ private struct ProfileScreenContent: View {
             PeopleSection(title: "Additional information") {
                 PeopleCard {
                     ForEach(extras, id: \.self) { k in
-                        let known = ProfileInfo.known[k]
-                        PeopleFieldRow(label: ProfileInfo.labelOf(k), value: fields[k], kind: known?.link == true ? .link : .text, hint: known?.hint ?? "",
+                        let known = PeopleProfileInfo.known[k]
+                        PeopleFieldRow(label: PeopleProfileInfo.labelOf(k), value: fields[k], kind: known?.link == true ? .link : .text, hint: known?.hint ?? "",
                                        optional: true, limit: ProfileRules.textLimit, offline: offline,
                                        onSave: known?.link == true ? saveLink(k) : optionalText(k), onRemove: drop(k), onOpen: { layer = .link($0) })
                             .id("\(me ?? "")-\(k)")
@@ -235,7 +235,7 @@ struct PeopleAvailabilityCard: View {
     let offline: Bool
     let save: (_ available: Bool, _ untilSecs: Int64?) async -> String?
 
-    @State private var now = ProfileInfo.nowMillis()
+    @State private var now = PeopleProfileInfo.nowMillis()
     @State private var choice = "1h"
     @State private var error = ""
     @State private var saved = 0
@@ -243,7 +243,7 @@ struct PeopleAvailabilityCard: View {
     var body: some View {
         let av = effectiveAvailability(fields, nowMs: now)
         let active: String? = av.available ? nil : av.untilMs == nil ? "open" : choice
-        let line = av.available ? "Available" : av.untilMs.map { "Busy until \(ProfileInfo.untilLabel(atMs: $0))" } ?? "Busy until you change it"
+        let line = av.available ? "Available" : av.untilMs.map { "Busy until \(PeopleProfileInfo.untilLabel(atMs: $0))" } ?? "Busy until you change it"
         VStack(alignment: .leading, spacing: 10) {
             PeopleSegmented(options: ["Available", "Busy"], selected: av.available ? 0 : 1, label: "Availability") { i in
                 if i == 0 { apply(true, nil) } else if av.available { setBusy(choice) }
@@ -268,24 +268,24 @@ struct PeopleAvailabilityCard: View {
         .padding(16).padding(.vertical, -2)
         .task(id: av) {
             if let until = av.untilMs {
-                let wait = max(0, until - ProfileInfo.nowMillis()) + 50
+                let wait = max(0, until - PeopleProfileInfo.nowMillis()) + 50
                 try? await Task.sleep(nanoseconds: UInt64(wait) * 1_000_000)
-                now = ProfileInfo.nowMillis()
+                now = PeopleProfileInfo.nowMillis()
             }
         }
         .task(id: saved) { if saved > 0 { try? await Task.sleep(nanoseconds: savedMs * 1_000_000); saved = 0 } }
     }
 
     private func apply(_ available: Bool, _ untilMs: Int64?) {
-        if !available, let untilMs, untilMs <= ProfileInfo.nowMillis() { error = "Choose a time that hasn\u{2019}t passed yet."; return }
+        if !available, let untilMs, untilMs <= PeopleProfileInfo.nowMillis() { error = "Choose a time that hasn\u{2019}t passed yet."; return }
         Task {
             let r = await save(available, untilMs.map { $0 / 1000 })
-            if let r { error = r } else { error = ""; saved += 1; now = ProfileInfo.nowMillis() }
+            if let r { error = r } else { error = ""; saved += 1; now = PeopleProfileInfo.nowMillis() }
         }
     }
     private func setBusy(_ id: String) {
         choice = id
-        apply(false, busyChoices.first { $0.id == id }?.until(ProfileInfo.nowMillis()) ?? nil)
+        apply(false, busyChoices.first { $0.id == id }?.until(PeopleProfileInfo.nowMillis()) ?? nil)
     }
 }
 
@@ -337,18 +337,18 @@ private struct PeopleAddInfo: View {
         if let p = pick, !p.isEmpty { return p }
         return name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased().replacingOccurrences(of: "\\s+", with: "-", options: .regularExpression)
     }
-    private var link: Bool { pick.flatMap { ProfileInfo.known[$0]?.link } == true }
+    private var link: Bool { pick.flatMap { PeopleProfileInfo.known[$0]?.link } == true }
     private let icons: [String: PeopleIcon] = ["pronouns": .users, "location": .info, "website": .link]
 
     private func submit() {
         if pick == "" {
             if let m = ProfileRules.checkKey(name) { error = m; return }
-            if ProfileRules.reserved.contains(key) || ProfileInfo.known[key] != nil || have.contains(key) { error = "You already have information with that name."; return }
+            if ProfileRules.reserved.contains(key) || PeopleProfileInfo.known[key] != nil || have.contains(key) { error = "You already have information with that name."; return }
         }
         var value: String? = v.trimmingCharacters(in: .whitespacesAndNewlines)
         if value?.isEmpty != false { error = "Add something to save."; return }
         if link {
-            value = ProfileInfo.normaliseLink(v)
+            value = PeopleProfileInfo.normaliseLink(v)
             if value == nil { error = "Enter a web address that starts with http:// or https://."; return }
         }
         let k = key, val = value!
@@ -358,14 +358,14 @@ private struct PeopleAddInfo: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             if let p = pick {
-                PeopleDialogTitle(p.isEmpty ? "Something else" : ProfileInfo.labelOf(p))
+                PeopleDialogTitle(p.isEmpty ? "Something else" : PeopleProfileInfo.labelOf(p))
                 VStack(alignment: .leading, spacing: 6) {
                     if p.isEmpty {
                         Text("What is it called?").peopleStyle(.sub, weight: .semibold).foregroundStyle(c.ink2).padding(.top, 6)
                         PeopleInput(text: $name, label: "What is it called?", placeholder: "For example, Favourite tea", focus: true, onSubmit: submit)
                     }
-                    Text(p.isEmpty ? "Value" : ProfileInfo.labelOf(p)).peopleStyle(.sub, weight: .semibold).foregroundStyle(c.ink2).padding(.top, 6)
-                    PeopleInput(text: $v, label: p.isEmpty ? "Value" : ProfileInfo.labelOf(p), placeholder: ProfileInfo.known[p]?.hint ?? "",
+                    Text(p.isEmpty ? "Value" : PeopleProfileInfo.labelOf(p)).peopleStyle(.sub, weight: .semibold).foregroundStyle(c.ink2).padding(.top, 6)
+                    PeopleInput(text: $v, label: p.isEmpty ? "Value" : PeopleProfileInfo.labelOf(p), placeholder: PeopleProfileInfo.known[p]?.hint ?? "",
                                 link: link, focus: !p.isEmpty, plain: true, onSubmit: submit)
                     if !error.isEmpty { PeopleErr(text: error).padding(.top, -10) }
                 }
@@ -378,8 +378,8 @@ private struct PeopleAddInfo: View {
                 PeopleDialogTitle("Add information")
                 PeopleDialogText("Your contacts will see it on your profile.")
                 VStack(spacing: 0) {
-                    ForEach(ProfileInfo.knownKeys.filter { !have.contains($0) }, id: \.self) { k in
-                        PeopleAct(title: ProfileInfo.labelOf(k), action: { pick = k }, icon: icons[k] ?? .info, padH: 12)
+                    ForEach(PeopleProfileInfo.knownKeys.filter { !have.contains($0) }, id: \.self) { k in
+                        PeopleAct(title: PeopleProfileInfo.labelOf(k), action: { pick = k }, icon: icons[k] ?? .info, padH: 12)
                     }
                     PeopleAct(title: "Something else", action: { pick = "" }, icon: .plus, sub: "Name it yourself", padH: 12)
                 }

@@ -68,7 +68,7 @@ func videoResolutionLabel(width: Int, height: Int) -> String? {
 }
 
 /** The capture setup refused this size or use case: the only failure [bindCapture] retries. */
-struct CaptureUnsupported: Error { var message: String }
+struct CaptureUnsupported: Swift.Error { var message: String }
 
 /** Only unsupported-resolution/use-case failures retry; never hide permission/lifecycle errors. */
 func bindCapture(_ preferences: [CapturePreference], bind: (CapturePreference) throws -> Void) throws -> CapturePreference {

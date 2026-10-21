@@ -35,16 +35,16 @@ final class ProfileModelTests: XCTestCase {
 
     func testExtraKeysListKnownFirstThenAddedOrder() {
         let f = obj("{\"name\":\"M\",\"zeta\":1,\"website\":\"https://a.example/\",\"pronouns\":\"x\",\"alpha\":2}")
-        XCTAssertEqual(ProfileInfo.extraKeys(f), ["pronouns", "website", "zeta", "alpha"])
+        XCTAssertEqual(PeopleProfileInfo.extraKeys(f), ["pronouns", "website", "zeta", "alpha"])
     }
 
     func testHumanizeAndLinks() {
-        XCTAssertEqual(ProfileInfo.humanize("work-title"), "Work title")
-        XCTAssertEqual(ProfileInfo.humanize("workTitle"), "Work title")
-        XCTAssertEqual(ProfileInfo.normaliseLink("arjun.example"), "https://arjun.example/")
-        XCTAssertNil(ProfileInfo.safeUrl("javascript:alert(1)"))
-        XCTAssertNil(ProfileInfo.safeUrl("https://user:pw@a.example/"))
-        XCTAssertEqual(ProfileInfo.shortUrl("https://arjun.example/"), "arjun.example")
+        XCTAssertEqual(PeopleProfileInfo.humanize("work-title"), "Work title")
+        XCTAssertEqual(PeopleProfileInfo.humanize("workTitle"), "Work title")
+        XCTAssertEqual(PeopleProfileInfo.normaliseLink("arjun.example"), "https://arjun.example/")
+        XCTAssertNil(PeopleProfileInfo.safeUrl("javascript:alert(1)"))
+        XCTAssertNil(PeopleProfileInfo.safeUrl("https://user:pw@a.example/"))
+        XCTAssertEqual(PeopleProfileInfo.shortUrl("https://arjun.example/"), "arjun.example")
     }
 
     func testAvailabilityPassedDeadlineReadsAvailable() {
@@ -57,8 +57,8 @@ final class ProfileModelTests: XCTestCase {
     func testUntilLabelSaysTodayTomorrowOrWeekday() {
         var cal = Calendar(identifier: .gregorian); cal.timeZone = TimeZone(identifier: "UTC")!
         let now: Int64 = 1_791_640_200_000   // 2026-10-10 13:50 UTC
-        XCTAssertEqual(ProfileInfo.untilLabel(atMs: now + 3_600_000, nowMs: now, calendar: cal, locale: Locale(identifier: "en_US")), "14:50")
-        XCTAssertEqual(ProfileInfo.untilLabel(atMs: now + 86_400_000, nowMs: now, calendar: cal, locale: Locale(identifier: "en_US")), "tomorrow 13:50")
-        XCTAssertEqual(ProfileInfo.untilLabel(atMs: now + 3 * 86_400_000, nowMs: now, calendar: cal, locale: Locale(identifier: "en_US")), "Tuesday 13:50")
+        XCTAssertEqual(PeopleProfileInfo.untilLabel(atMs: now + 3_600_000, nowMs: now, calendar: cal, locale: Locale(identifier: "en_US")), "14:50")
+        XCTAssertEqual(PeopleProfileInfo.untilLabel(atMs: now + 86_400_000, nowMs: now, calendar: cal, locale: Locale(identifier: "en_US")), "tomorrow 13:50")
+        XCTAssertEqual(PeopleProfileInfo.untilLabel(atMs: now + 3 * 86_400_000, nowMs: now, calendar: cal, locale: Locale(identifier: "en_US")), "Tuesday 13:50")
     }
 }
