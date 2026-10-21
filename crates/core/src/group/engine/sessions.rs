@@ -17,6 +17,7 @@ impl Inner {
         hosting: bool,
         joining: bool,
         open_join: bool,
+        show: bool,
         theirs: Peer,
     ) -> Result<(), Error> {
         let (tx, mut rx) = mpsc::unbounded_channel();
@@ -29,6 +30,7 @@ impl Inner {
             hosting,
             joining,
             open_join,
+            show,
             tx,
             peer_vv: Mutex::new(theirs.vv),
             peer_days: Mutex::new(theirs.days),
@@ -60,6 +62,7 @@ impl Inner {
         }
         self.group_mail_on_session(&core, &sess);
         self.group_calls_on_session(&core, &sess);
+        self.group_presence_on_session(&core, &sess);
         if let Some(ev) = self.group_ev() {
             let g = gid.clone();
             self.handle.spawn_blocking(move || ev.on_group_changed(g));
@@ -81,6 +84,7 @@ impl Inner {
         let backfill = tokio::spawn(self.clone().group_days_sync(core.clone(), sess.clone()));
         let res = self.group_read(&core, &sess, &mut reader).await;
         core.sessions.lock().remove(&id);
+        self.group_presence_session_end(&core, &sess);
         backfill.abort();
         writer_task.abort();
         conn.close(0u32.into(), b"bye");
@@ -228,6 +232,9 @@ impl Inner {
                 }
                 GroupMsg::ReceiptAck { day, vv } => {
                     core.on_receipt_ack(sess, &day, &vv)?;
+                }
+                GroupMsg::Presence { presence } => {
+                    self.group_presence_in(core, sess, presence);
                 }
                 _ => return Err(Error::Protocol("unexpected group frame".into())),
             }

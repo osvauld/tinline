@@ -64,7 +64,7 @@ the user was away; each is listed at the end.
 
 - **Two endpoints (U2).** Each device runs a second iroh endpoint for groups (key in the group
   store, one per account per install, independent of the private endpoint), ALPN
-  `tinline/group/5` (`wire::GROUP_ALPN`; /3 = postcard frames, /4 = plus member receipt frames, /5 = plus open links). It is bound when the node starts and the account has a
+  `tinline/group/5` (`wire::GROUP_ALPN`; /3 = postcard frames, /4 = plus member receipt frames, /5 = plus open links, `Hello.presence` and `Presence`; `docs/design/public-group.md`). It is bound when the node starts and the account has a
   group, or on create/join, and closed with the private endpoint (stop, lock, account switch).
 - **Only hosts know member endpoints (U7).** Members dial only hosts. Hosts accept, keep a
   directory `did/dev → member group endpoint`, and dial other hosts like members do. Host
@@ -73,7 +73,7 @@ the user was away; each is listed at the end.
   joiner with no state yet takes the ones in its invite token). Records never contain endpoints.
 - **Endpoint proof.** Each side of a connection first sends `EndpointAuth` (the gcall
   `Signed<GroupNote{did, dev, endpoint, issued_ms}>`, one statement for both); the receiver checks `endpoint` equals the QUIC remote key (QUIC proves possession).
-- **Session** (`wire.rs`): member `Hello{auth, group, vv, days, invite?, hosts, relay}` → host
+- **Session** (`wire.rs`): member `Hello{auth, group, vv, days, invite?, hosts, relay, presence}` → host
   `Welcome{auth, vv, days, hosts}` | `Removed{records, vv}` | `Refused{reason}` (`vv`: the meta
   doc's version vector, `days`: those of the day docs of the last 7 days we hold); then both sides
   exchange `Update{doc, update}` (Loro export of what the other lacks of one doc: meta first,
@@ -81,6 +81,9 @@ the user was away; each is listed at the end.
   `Mail{mail}` / `MailAck{id}` (sealed chat requests). A host that rotated opens its own
   connection to a member and sends `Moved{auth, group, hosts}` (G2, see Rotation). Hosts relay every accepted
   update to every other session at once (live), and catch up a reconnecting member from its vv.
+  Open groups only (`docs/design/public-group.md` §3, §4): hosts send `Presence{presence}` (a
+  host's DID-signed online list; hosts relay other hosts' frames as they are), and no member
+  receipt frames are sent (incoming ones are dropped).
 - **History (decision 3 of `group-shards.md`).** Every member device holds the full history of its
   groups. On every session, both sides (a host asks a member just as a member asks a host) page
   the peer's day list (`HistoryList{before, limit}` → `HistoryDays`, newest first) and fetch each
@@ -278,7 +281,7 @@ Code: `calldir.rs`, `calls.rs`; spec `docs/design/group-call-spec.md` §11 (GA-I
 
 ## API (UniFFI, `api.rs`)
 
-`set_group_events(GroupEvents{on_group_message, on_group_changed})`, `groups() ->
+`set_group_events(GroupEvents{on_group_message, on_group_changed, on_group_presence})`, `groups() ->
 [GroupSummary]` (the row and unread count come from the group's local state: no day doc is
 loaded), `group_detail(id) -> GroupDetail` (members with roles/flags/devices/invited-by,
 hosts with online state, host offers, my role, `am_host`, my removal), `group_messages(id, before,
@@ -293,7 +296,10 @@ admin)` (owner), `group_leave(id)`, `group_appoint_host(id, did, device_id)` /
 `group_revoke_host(...)` (admins), `group_accept_host(id, accept)` (this device),
 `group_device_id()`, `group_endpoint_id()`, `group_endpoint_rotation_due() -> Option<u64>`,
 `group_rotation_policy() -> RotationPolicy`, `set_group_rotation_policy(policy)`,
-`group_rotate_now()` (`docs/rotation.md`).
+`group_rotate_now()` (`docs/rotation.md`). Public groups (`docs/design/public-group.md`):
+`group_open_link(id)`, `group_set_open(id, open)`, `group_set_admins_only(id, on)`,
+`group_online(id) -> [OnlineMember{did, name, is_admin}]` (open groups; in memory only),
+`group_set_presence_visible(visible)` / `group_presence_visible()` (local, default visible).
 `GroupDetail` (G2) also has `host_requests` (devices an admin appointed that have not answered,
 with `appointed_by`) and `host_requested_here` (an admin appointed THIS device: show "host this
 group?" and answer with `group_accept_host(id, true|false)`; a later `HostAccept{false}` ends the
@@ -305,7 +311,9 @@ Chat requests (G2, `requests.rs`): `set_group_request_events(GroupRequestEvents{
 ChatRequestState{Pending, Accepted, Declined, Blocked}, at, contact_added}`.
 Test hooks: `group_known_endpoints_for_test`, `group_directory_for_test`,
 `group_dial_only_for_test`, `group_ignore_removal_for_test`, (dev-tools builds only)
-`group_set_rotation_policy_for_test(policy)` and `group_set_removed_upload_window_for_test(ms)`,
+`group_set_rotation_policy_for_test(policy)`, `group_set_removed_upload_window_for_test(ms)`,
+`group_set_presence_timing_for_test((every_ms, window_ms))` and
+`group_send_presence_for_test(id, dids)`,
 `group_skip_request_checks_for_test`,
 `group_relayed_mail_count_for_test`, `group_relayed_mail_contains_for_test`.
 

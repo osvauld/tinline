@@ -240,6 +240,43 @@ impl Signable for HostAddr {
 
 pub type SignedHostAddr = Signed<HostAddr>;
 
+// ---- presence (outside the doc, never stored) -------------------------------------------------
+
+/// Most members one `Presence` lists (public group §3: larger groups show "500+ online").
+pub const MAX_PRESENCE: usize = 500;
+
+/// "Host device `dev` of `host` saw these members online", DID-signed by the host (public group
+/// §3). `online` is `(member DID, last seen)` and `at` the host's clock when it signed, so a
+/// receiver judges age as `at - last seen` without trusting clocks to agree. `seq` grows per
+/// host device (the newest frame per host wins; a relay drops one it has). In memory only:
+/// never a record, never stored.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Presence {
+    pub group: String,
+    pub host: String,
+    pub dev: [u8; 32],
+    pub online: Vec<(String, u64)>,
+    pub seq: u64,
+    pub at: u64,
+}
+
+impl Signable for Presence {
+    const DOMAIN: domains::Domain = domains::GROUP_PRESENCE;
+    /// 500 DIDs of ~60 bytes plus their times, with room.
+    const MAX_BODY: usize = 64 * 1024;
+    fn signer(&self) -> Signer<'_> {
+        Signer::Did(&self.host)
+    }
+    fn check(&self) -> proto::Result<()> {
+        if self.online.len() > MAX_PRESENCE || self.online.iter().any(|(d, _)| d.len() > 200) {
+            return Err(proto::Error::Decode);
+        }
+        Ok(())
+    }
+}
+
+pub type SignedPresence = Signed<Presence>;
+
 // ---- endpoint proof (per connection) -------------------------------------------------------------
 
 /// "Group endpoint `endpoint` is device `dev` of `did`", DID-signed: the same statement as the

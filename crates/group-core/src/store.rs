@@ -22,6 +22,7 @@
 //! ep/pending                    32 bytes   a staged next key, not current yet (endpoint.rs)
 //! ep/policy                     json       this device's RotationPolicy (default if absent)
 //! dev/id                        32 bytes   this store's device ID (U16 device value, G2 stage 1)
+//! set/presence_hidden           empty      present: this account hides its presence in open groups
 //! req/{id}                      ReqRow     a 1:1 chat request we sent or got (U3)
 //! out/{gid}/{mail id}           bytes      sealed mail of ours not yet taken by a host
 //! mail/{gid}/{to}/{mail id}     bytes      host side: (expiry ms, sealed mail) to deliver
@@ -413,6 +414,20 @@ impl GroupStore {
         let k = adopt.unwrap_or_else(crdt::new_device_value);
         self.db.put("dev/id", &k).map_err(io)?;
         Ok(k)
+    }
+
+    /// Public group §3: whether this account shows as online in open groups (a local setting of
+    /// this install, never a record; default visible).
+    pub fn presence_visible(&self) -> Result<bool, Error> {
+        Ok(self.db.get("set/presence_hidden").map_err(io)?.is_none())
+    }
+
+    pub fn set_presence_visible(&self, visible: bool) -> Result<(), Error> {
+        if visible {
+            self.db.delete("set/presence_hidden").map_err(io)
+        } else {
+            self.db.put("set/presence_hidden", &[]).map_err(io)
+        }
     }
 
     /// Raw (sealed) bytes of every row, for the at-rest test.

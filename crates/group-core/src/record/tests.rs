@@ -196,6 +196,18 @@ fn core_signables_pass_the_envelope_conformance_table() {
         &stranger,
     );
     check(
+        &Presence {
+            group: "g".into(),
+            host: a.did().into(),
+            dev: [1; 32],
+            online: vec![(stranger.did().into(), 4)],
+            seq: 1,
+            at: 5,
+        },
+        &a,
+        &stranger,
+    );
+    check(
         &Mail {
             group: "g".into(),
             from: a.did().into(),
@@ -235,4 +247,24 @@ fn core_signables_pass_the_envelope_conformance_table() {
         &a,
         &stranger,
     );
+}
+
+// KIND: unit (public group 7) — a presence frame verifies only as its host's; a forged signer,
+// a tampered body and more than `MAX_PRESENCE` DIDs are refused.
+#[test]
+fn presence_frames_verify_and_are_bounded() {
+    let (h, m) = (acct(), acct());
+    let p = Presence { group: "g".into(), host: h.did().into(), dev: [1; 32], online: vec![(m.did().into(), 9)], seq: 3, at: 10 };
+    let signed = Signed::sign(&p, &h).unwrap();
+    assert_eq!(signed.open().unwrap(), p);
+    assert!(Signed::sign(&p, &m).is_err(), "only the host signs as the host");
+    assert!(forge(&p, &m).open().is_err(), "the named host did not sign");
+    let mut raw = signed.to_bytes();
+    raw[4] ^= 1;
+    assert!(Signed::<Presence>::from_bytes(&raw).and_then(|s| s.open()).is_err());
+    let big = Presence { online: (0..=MAX_PRESENCE).map(|i| (format!("did:key:z{i}"), 1)).collect(), ..p.clone() };
+    assert!(Signed::sign(&big, &h).is_err());
+    assert!(forge(&big, &h).open().is_err());
+    let full = Presence { online: (0..MAX_PRESENCE).map(|i| (format!("did:key:z6Mk{i:0>44}"), u64::MAX)).collect(), ..p };
+    assert!(Signed::sign(&full, &h).unwrap().open().is_ok(), "500 DIDs fit one frame");
 }

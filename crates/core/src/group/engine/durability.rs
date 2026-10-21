@@ -112,6 +112,7 @@ fn receiver() -> GroupCore {
         compacting: Default::default(),
         codes: Default::default(),
         receipts,
+        presence: Default::default(),
     }
 }
 

@@ -1,7 +1,7 @@
 # Public channel and lobby (alpha)
 
-Status: spec, decided with the user 2026-10-21. Built: §1 (settings records) and §2 (open link,
-host admission; `tinline/group/5`); the rest not yet. Base: dev, rebased after
+Status: spec, decided with the user 2026-10-21. Built: §1 (settings records), §2 (open link,
+host admission; `tinline/group/5`), §3 (presence) and §4 (receipts off); the rest not yet. Base: dev, rebased after
 `integrate/crate-split` lands (image posts build on its `crates/transfer`).
 
 ## Purpose
@@ -102,12 +102,53 @@ days). An open group needs no invite instead:
 - Presence is not stored and not replicated into docs; it is best-effort and may lag by
   ~15 s.
 
+**As built** (`crates/core/src/group/engine/presence.rs`, `group_core::record::Presence`):
+
+- **Open groups only.** A private group sends no `Presence` and drops incoming ones;
+  `group_online` is empty for it (conservative: private groups unchanged).
+- **Frame:** `GroupMsg::Presence { presence: Signed<Presence{group, host, dev, online: [(did,
+  last_seen_ms)], seq, at}> }`, domain `tinline/group/presence/v1`. `dev` names the host device
+  (hosts are devices); `at` is the host's clock when signing, so a receiver ages an entry as
+  `at - last_seen` from when the frame arrived and clocks need not agree. `seq` is per host
+  device, at least its clock (it keeps growing across restarts).
+- **Send:** each host every 15 s from the dial-loop tick (2 s), and after a session starts or
+  ends (debounced: at most one frame a second per group), to its member sessions and to the
+  other hosts (`relay::relay_targets`, the call-frame rule: current members only, never a
+  joiner or removed member). A host lists itself (unless its own setting hides it), every
+  member with a live session whose `Hello` said `presence: true` (and none of that DID's sessions
+  said `false`), and members whose last visible session ended within the window (with that
+  time, so a reconnect does not flicker).
+- **Accept and relay:** a receiver keeps a frame only for an open group, signed by an active
+  host device, with a higher `seq` than the one it holds from that device. A host relays an
+  accepted frame unchanged to its other sessions; the `seq` check ends relay loops. A member on
+  one host thus sees the members of every host. Frames of a host that is no longer active are
+  ignored when the list is computed.
+- **Hide me:** `group_set_presence_visible(false)` writes the local row `set/presence_hidden`
+  and ends our sessions to hosts of open groups, so the next `Hello` carries it at once; the
+  host forgets the member's "recently left" entry when a hiding session starts.
+- **Events:** `on_group_presence(id)` when the computed online set changes (on a new frame, and
+  checked every tick, so expiries are reported too).
+- **500+:** a frame lists at most 500 DIDs (newest first); the union may hold more. Showing
+  "500+ online" is left to the apps (§8).
+- **Timing knobs:** `group_set_presence_timing_for_test((every_ms, window_ms))` (dev-tools
+  builds) lets tests run in seconds.
+- **Open:** the setting is per install, not synced: two devices of one account may disagree (a
+  host never lists a DID one of whose sessions with it hides; another host may still list it via
+  a visible device).
+
 ### 4. Receipts off in public groups
 
 When `open` is true: no read or delivered receipts are written or sent for that group
 (`member_receipts`), `ReceiptHello` is not sent, and incoming receipt frames for it are
 dropped. Own-post delivery still shows `Waiting` → `Delivered` from host `Ack`s (local, no
 receipt traffic). Private groups are unchanged (`receipt-policy-decisions`).
+
+**As built** (`engine::member_receipts`): "off" = the derived `open` now, or we are joining by an
+open link (`GroupMeta.open_join`, before the group's records arrive). No delivered/read intent
+is recorded, the session `ReceiptHello` is skipped, `Receipts`/`ReceiptAck` are not sent, and
+incoming receipt frames are dropped without an answer. Nothing is backdated: posts that arrived
+while the group was open get no receipts if it closes later; statements signed before it opened
+stay in the outbox and go out only if it closes again.
 
 ### 5. Images
 
@@ -156,12 +197,16 @@ Deterministic, offline, in `crates/core/tests/` (names indicative):
    before stays visible.
 4. `admins_only_rejects_local_post` (built): `group_post` by a non-admin returns
    `Rejected("admins only")`.
-5. `presence_union_across_two_hosts`: members on host A and host B both appear online to a
-   member of either host within 20 s; a disconnected member drops out within 75 s.
-6. `hidden_member_not_listed`: a member with presence hidden never appears in `group_online`.
-7. `presence_only_from_active_hosts`: a `Presence` signed by a non-host is ignored.
-8. `public_group_sends_no_receipts`: a session of an open group carries no receipt frames;
-   a private group still does.
+5. `presence_union_across_two_hosts` (built, `public_group.rs`; 1 s / 4 s timing): members on
+   host A and host B both appear online to a member of either host within 20 s; a disconnected
+   member drops out within 75 s; an own post still turns `Delivered`.
+6. `hidden_member_not_listed` (built): a member with presence hidden never appears in
+   `group_online`; showing again lists it, hiding again takes it off.
+7. `presence_only_from_active_hosts` (built): a `Presence` signed by a non-host is ignored; the
+   same frame signed by the host is taken (unit: `presence_frames_verify_and_are_bounded`).
+8. `public_group_sends_no_receipts` (built, a session simulation in p2pcore's lib tests,
+   `group_receipts_sim.rs`, where every frame is observable): a session of an open group
+   carries no receipt frames and drops incoming ones; a private group still does.
 9. `image_post_roundtrip_via_host`: a member's image reaches another member through a host,
    hash-verified; an oversized blob is refused.
 10. Headless: `p2p-peer group-host` accepts an appointment and relays between two members

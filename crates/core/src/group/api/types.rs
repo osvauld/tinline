@@ -174,6 +174,15 @@ pub struct GroupInvitePeek {
     pub open: bool,
 }
 
+/// A member online in an open group (`Node::group_online`, public group §3).
+#[derive(Debug, Clone, PartialEq, uniffi::Record)]
+pub struct OnlineMember {
+    pub did: String,
+    /// The name the member shows the group (its join record).
+    pub name: String,
+    pub is_admin: bool,
+}
+
 /// Registered with `Node::set_group_events`. Called on core threads: do not block.
 #[uniffi::export(rust, foreign)]
 pub trait GroupEvents: Send + Sync {
@@ -181,4 +190,7 @@ pub trait GroupEvents: Send + Sync {
     fn on_group_message(&self, message: GroupMessage);
     /// Anything else about the group changed (members, roles, hosts, delivery, removal).
     fn on_group_changed(&self, group_id: String);
+    /// The online list of an open group changed (re-read `group_online`). Best effort; may lag
+    /// by about 15 s.
+    fn on_group_presence(&self, group_id: String);
 }

@@ -52,7 +52,7 @@ impl Inner {
         let hello = tokio::time::timeout(HELLO_TIMEOUT, reader.recv())
             .await
             .map_err(|_| Error::Timeout)??;
-        let (auth, group, vv, days, invite, hosts, relay) = match hello {
+        let (auth, group, vv, days, invite, hosts, relay, show) = match hello {
             Some(GroupMsg::Hello {
                 auth,
                 group,
@@ -61,7 +61,8 @@ impl Inner {
                 invite,
                 hosts,
                 relay,
-            }) => (auth, group, vv, days, invite, hosts, relay),
+                presence,
+            }) => (auth, group, vv, days, invite, hosts, relay, presence),
             Some(GroupMsg::Fetch { code }) => {
                 // G3: someone with a short invite link asks for the invite behind it.
                 self.group_fetch_session(&core, writer, reader, code).await;
@@ -201,7 +202,7 @@ impl Inner {
                     .await?;
                 let peer = Peer::new(&vv, &days)?;
                 self.group_run(
-                    core, conn, writer, reader, group, auth, true, joining, open_join, peer,
+                    core, conn, writer, reader, group, auth, true, joining, open_join, show, peer,
                 )
                 .await
             }

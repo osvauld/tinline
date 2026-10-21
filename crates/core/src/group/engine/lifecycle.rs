@@ -86,6 +86,7 @@ impl Inner {
             );
         }
         let receipts = member_receipts::controller(&store, &did, dev);
+        let presence = presence::PresenceRt::new(store.presence_visible().unwrap_or(true));
         let core = Arc::new(GroupCore {
             epoch,
             store,
@@ -112,6 +113,7 @@ impl Inner {
             compacting: Default::default(),
             codes: Default::default(),
             receipts,
+            presence,
         });
         *slot = Some(core.clone());
         // Receipt intents committed before a stop are signed now (bounded; see M3).

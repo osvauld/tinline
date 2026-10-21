@@ -28,6 +28,7 @@ impl Inner {
             self.group_req_tick(&core);
             self.group_calls_tick(&core);
             self.group_codes_tick(&core);
+            self.group_presence_tick(&core);
             if let Err(e) = self.group_rotation_tick(&core).await {
                 tracing::warn!("group endpoint rotation: {e}");
             }
@@ -190,6 +191,7 @@ impl Inner {
                 invite,
                 hosts: core.host_addrs(&gid),
                 relay: relay_of(&ep),
+                presence: core.presence.visible(),
             })
             .await?;
         let reply = tokio::time::timeout(HELLO_TIMEOUT, reader.recv())
@@ -211,7 +213,7 @@ impl Inner {
                 core.merge_hosts_from(&gid, &hosts, None);
                 let peer = Peer::new(&vv, &days)?;
                 self.group_run(
-                    core, conn, writer, reader, gid, auth, false, false, false, peer,
+                    core, conn, writer, reader, gid, auth, false, false, false, false, peer,
                 )
                 .await
             }

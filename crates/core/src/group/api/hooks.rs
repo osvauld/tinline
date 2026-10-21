@@ -117,4 +117,20 @@ impl Node {
     pub fn group_set_removed_upload_window_for_test(&self, ms: Option<u64>) {
         *self.inner.group.removed_upload_window_for_test.lock() = ms;
     }
+
+    /// Presence `(every_ms, window_ms)` instead of 15 s / 60 s; `None` goes back to them. Not in
+    /// release builds.
+    pub fn group_set_presence_timing_for_test(&self, timing: Option<(u64, u64)>) {
+        *self.inner.group.presence_timing_for_test.lock() = timing;
+        if let Ok(c) = self.inner.group_core() {
+            c.kick_pub();
+        }
+    }
+
+    /// Signs a presence frame as this device (host or not) listing `dids` and sends it on every
+    /// session of the group: what a modified app could send. Not in release builds.
+    pub fn group_send_presence_for_test(&self, group_id: String, dids: Vec<String>) -> Result<(), Error> {
+        let core = self.inner.group_core()?;
+        self.inner.group_presence_forge_for_test(&core, &group_id, dids)
+    }
 }

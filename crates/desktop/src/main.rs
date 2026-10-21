@@ -185,6 +185,8 @@ impl p2pcore::GroupEvents for GroupBridge {
     fn on_group_changed(&self, group_id: String) {
         let _ = self.0.send(Ev::Group(GroupEv::Changed(group_id)));
     }
+    /// The online list (public group §3) has no desktop view yet (§8).
+    fn on_group_presence(&self, _group_id: String) {}
 }
 
 /// What the core's `ChatEvents` report, as plain data for the UI loop.

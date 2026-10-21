@@ -525,6 +525,9 @@ class GroupsController(private val api: GroupApi, private val me: () -> String?)
         }
     }
 
+    /** An open group's online list changed (public group §3); no screen shows it yet. */
+    override fun onGroupPresence(groupId: String) {}
+
     fun attach(node: Node) {
         try { node.setGroupEvents(this); node.setGroupRequestEvents(this); node.setGroupInvitationEvents(this) } catch (e: Exception) { Log.w(P2pApp.TAG, "setGroupEvents: $e") }
     }

@@ -47,6 +47,7 @@ mod durability;
 mod history;
 mod lifecycle;
 pub(crate) mod member_receipts;
+pub(crate) mod presence;
 mod replication;
 mod rotation;
 mod sessions;
@@ -101,6 +102,9 @@ pub(crate) struct GroupRt {
     /// Test knob: the removed-upload window, ms, instead of `REMOVED_UPLOAD_WINDOW_MS`.
     #[cfg(any(test, feature = "dev-tools"))]
     pub(crate) removed_upload_window_for_test: Mutex<Option<u64>>,
+    /// Test knob: presence `(every_ms, window_ms)` instead of 15 s / 60 s (public group §3).
+    #[cfg(any(test, feature = "dev-tools"))]
+    pub(crate) presence_timing_for_test: Mutex<Option<(u64, u64)>>,
     /// Group calls over this runtime (GA-I1, `calls.rs`).
     pub(crate) calls: super::calls::GroupCalls,
     /// G3: invitation events and the DIDs with an invitation delivery task running.
@@ -203,6 +207,8 @@ pub(crate) struct GroupCore {
     pub(crate) codes: super::code::CodeRt,
     /// Member message receipts over this store (`member_receipts`), signed as `did`/`dev`.
     pub(crate) receipts: Arc<crate::receipts::store::messages::MessageReceipts>,
+    /// Who is online in open groups (public group §3): in memory only.
+    pub(crate) presence: presence::PresenceRt,
 }
 
 pub(crate) struct Sess {
@@ -217,6 +223,8 @@ pub(crate) struct Sess {
     /// Host side: that join is an open one (no invite, public group §2): refused once the group
     /// closes before the joiner is a member.
     open_join: bool,
+    /// Host side: the member's `Hello` said "show me as online" (public group §3).
+    show: bool,
     pub(crate) tx: mpsc::UnboundedSender<Out>,
     /// What the peer holds of the meta doc.
     peer_vv: Mutex<VersionVector>,

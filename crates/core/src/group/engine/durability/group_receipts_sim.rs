@@ -964,6 +964,7 @@ fn open_sess(
         hosting,
         joining: false,
         open_join: false,
+        show: true,
         tx,
         peer_vv: Default::default(),
         peer_days: Default::default(),

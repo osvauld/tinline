@@ -20,6 +20,7 @@ use crate::node::{Inner, Node, now_ms};
 
 mod hooks;
 mod hosts;
+mod presence;
 mod rotation;
 mod types;
 pub use types::*;

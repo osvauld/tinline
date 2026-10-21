@@ -461,7 +461,11 @@ app and wipe its data**.
 **Open links (2026-10-21, `feature/public-group`, not merged).** Group ALPN `tinline/group/5` =
 `/4` with `GroupMsg::Code` carrying a `CodeKind` (Invite / Device / Open) and `InviteToken` an
 `open` flag (also inside self/5 group lists and direct invitation letters, whose encoding
-changes with it). A `/4` peer fails at connect. Details: `docs/design/public-group.md` §2.
+changes with it), `Hello.presence` and `GroupMsg::Presence{presence}` (a host's DID-signed
+`Presence{group, host, dev, online: [(did, last seen)], seq, at}`, domain
+`tinline/group/presence/v1`, open groups only). In an open group no
+`ReceiptHello`/`Receipts`/`ReceiptAck` is sent and incoming ones are dropped. A `/4` peer fails
+at connect. Details: `docs/design/public-group.md` §2-§4.
 
 **Group member receipts (2026-10-16, `feature/group-receipts`, not merged).** Group ALPN
 `tinline/group/4` = `/3` plus `GroupMsg::{ReceiptHello, Receipts, ReceiptAck}` (member <->

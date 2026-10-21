@@ -1,9 +1,13 @@
 //! Public groups (`docs/design/public-group.md`): the permanent open link, open-join admission
-//! at hosts, and admins-only posting, on real nodes over real iroh endpoints (needs network, like
-//! `group_g3.rs`; the shared harness is in `support/`).
+//! at hosts, admins-only posting and the online list (presence), on real nodes over real iroh
+//! endpoints (needs network, like `group_g3.rs`; the shared harness is in `support/`). Receipts
+//! off (test 8) is a session-level simulation in p2pcore's lib tests
+//! (`group_receipts_sim::public_group_sends_no_receipts`).
 //!
 //! Every test carries `// KIND: acceptance (public group N)`, N the spec's acceptance test.
 #![allow(dead_code)]
+
+use p2pcore::{GroupDelivery, GroupItemKind};
 
 mod support;
 use support::group::*;
@@ -159,5 +163,197 @@ fn admins_only_rejects_local_post() {
     a.node.group_post(g.clone(), "thanks".into(), None).unwrap();
     eventually(WAIT, "o sees a's post", || {
         has_post(&o, &g, &a.did, "thanks")
+    });
+}
+
+// ---- presence (§3) ---------------------------------------------------------------------------
+
+/// Presence for tests: a frame every second (the dial tick makes it about two), online for 4 s
+/// after a host last saw someone (instead of 15 s / 60 s).
+const FAST: (u64, u64) = (1_000, 4_000);
+
+fn timing(ps: &[&Peer], t: (u64, u64)) {
+    for p in ps {
+        p.node.group_set_presence_timing_for_test(Some(t));
+    }
+}
+
+/// Sorted DIDs `p` sees online in `g`.
+fn online_dids(p: &Peer, g: &str) -> Vec<String> {
+    sorted(
+        p.node
+            .group_online(g.into())
+            .unwrap()
+            .into_iter()
+            .map(|m| m.did)
+            .collect(),
+    )
+}
+
+fn sees_online(p: &Peer, g: &str, did: &str) -> bool {
+    online_dids(p, g).iter().any(|d| d == did)
+}
+
+/// Opens `g` (owner `o`) and waits until every peer holds the record.
+fn open_up(o: &Peer, g: &str, ps: &[&Peer]) {
+    o.node.group_set_open(g.into(), true).unwrap();
+    for p in ps {
+        eventually(WAIT, "everyone sees it open", || is_open(p, g));
+    }
+}
+
+/// `o` appoints `h` (a member) as a second host and `h` accepts; everyone sees two hosts.
+fn second_host(o: &Peer, h: &Peer, g: &str, ps: &[&Peer]) {
+    o.node
+        .group_appoint_host(g.into(), h.did.clone(), h.node.group_device_id().unwrap())
+        .unwrap();
+    eventually(WAIT, "h sees the permit", || {
+        all(h, g)
+            .iter()
+            .any(|x| x.kind == GroupItemKind::HostAdded && x.subject_did == h.did)
+    });
+    h.node.group_accept_host(g.into(), true).unwrap();
+    for p in ps {
+        eventually(WAIT, "two hosts everywhere", || {
+            p.node.group_detail(g.into()).unwrap().hosts.len() == 2
+        });
+    }
+}
+
+/// `p` has a live session with host `host`.
+fn connected_to(p: &Peer, g: &str, host: &str) -> bool {
+    p.node
+        .group_detail(g.into())
+        .is_ok_and(|d| d.hosts.iter().any(|h| h.did == host && h.online))
+}
+
+// KIND: acceptance (public group 5) — two hosts, each with a member that dials only it: both
+// members (and both hosts) see all four online, the host they do not use relaying the other
+// host's signed list; a member that goes away drops out once the window passes. An own post in
+// the open group still turns Delivered from the host's ack (receipts are off, §4).
+#[test]
+fn presence_union_across_two_hosts() {
+    let o = peer("pu-o");
+    let h = peer("pu-h");
+    let a = peer("pu-a");
+    let b = peer("pu-b");
+    let everyone = [&o, &h, &a, &b];
+    timing(&everyone, FAST);
+    let g = group_with(&o, &[&h, &a, &b]);
+    second_host(&o, &h, &g, &everyone);
+    open_up(&o, &g, &everyone);
+    a.node.group_dial_only_for_test(Some(o.did.clone()));
+    b.node.group_dial_only_for_test(Some(h.did.clone()));
+    // A dial already in flight when the knob is set may still land: setting it again closes it.
+    eventually(WAIT, "a uses only o, b only h", || {
+        a.node.group_dial_only_for_test(Some(o.did.clone()));
+        b.node.group_dial_only_for_test(Some(h.did.clone()));
+        connected_to(&a, &g, &o.did)
+            && connected_to(&b, &g, &h.did)
+            && !connected_to(&a, &g, &h.did)
+            && !connected_to(&b, &g, &o.did)
+    });
+    let all4 = sorted(everyone.iter().map(|p| p.did.clone()).collect());
+    for p in everyone {
+        eventually(20, "all four online", || online_dids(p, &g) == all4);
+    }
+    let me = a.node.group_online(g.clone()).unwrap();
+    let owner = me.iter().find(|m| m.did == o.did).unwrap();
+    assert!(owner.is_admin && !owner.name.is_empty());
+    assert!(me.iter().any(|m| m.did == b.did && !m.is_admin));
+    // Receipts are off, own-post delivery is not.
+    a.node
+        .group_post(g.clone(), "on time".into(), None)
+        .unwrap();
+    eventually(WAIT, "a's post is delivered", || {
+        all(&a, &g)
+            .iter()
+            .any(|x| x.text == "on time" && x.delivery == GroupDelivery::Delivered)
+    });
+    // b goes away: gone everywhere once the window has passed (spec: within 75 s at 60 s).
+    b.node.stop();
+    for p in [&a, &o, &h] {
+        eventually(75, "b dropped out", || !sees_online(p, &g, &b.did));
+    }
+    assert!(sees_online(&a, &g, &h.did), "the others stay");
+}
+
+// KIND: acceptance (public group 6) — a member that hides is never listed by any host (not
+// even to itself), though it is connected and posts; showing it again lists it, hiding again
+// takes it off.
+#[test]
+fn hidden_member_not_listed() {
+    let o = peer("hm-o");
+    let a = peer("hm-a");
+    let z = peer("hm-z");
+    timing(&[&o, &a, &z], FAST);
+    assert!(
+        z.node.group_presence_visible().unwrap(),
+        "visible by default"
+    );
+    z.node.group_set_presence_visible(false).unwrap();
+    assert!(!z.node.group_presence_visible().unwrap());
+    let g = o.node.group_create("Lobby".into()).unwrap();
+    let link = o.node.group_open_link(g.clone()).unwrap();
+    assert_eq!(join(&a, link.clone()), g);
+    assert_eq!(join(&z, link), g);
+    z.node
+        .group_post(g.clone(), "lurking".into(), None)
+        .unwrap();
+    for p in [&o, &a] {
+        eventually(WAIT, "z's post arrived", || {
+            has_post(p, &g, &z.did, "lurking")
+        });
+    }
+    eventually(WAIT, "z is connected", || connected_to(&z, &g, &o.did));
+    for p in [&o, &a] {
+        eventually(20, "o and a online", || {
+            sees_online(p, &g, &o.did) && sees_online(p, &g, &a.did)
+        });
+    }
+    assert!(
+        !within(6, || [&o, &a, &z]
+            .iter()
+            .any(|p| sees_online(p, &g, &z.did))),
+        "a hidden member is never listed"
+    );
+    z.node.group_set_presence_visible(true).unwrap();
+    eventually(WAIT, "shown again", || sees_online(&a, &g, &z.did));
+    z.node.group_set_presence_visible(false).unwrap();
+    for p in [&o, &a] {
+        eventually(20, "hidden again", || !sees_online(p, &g, &z.did));
+    }
+}
+
+// KIND: acceptance (public group 7) — a presence frame signed by a member that is not a host is
+// ignored (by the host, which does not relay it either, and by the other members); the same
+// frame signed by the host is taken.
+#[test]
+fn presence_only_from_active_hosts() {
+    let o = peer("pa-o");
+    let m = peer("pa-m");
+    let n = peer("pa-n");
+    let z = peer("pa-z");
+    // Slow own frames, so the host's forged-by-test frame below is not replaced at once.
+    timing(&[&o, &m, &n, &z], (10_000, 60_000));
+    z.node.group_set_presence_visible(false).unwrap();
+    let g = group_with(&o, &[&m, &n, &z]);
+    open_up(&o, &g, &[&o, &m, &n, &z]);
+    for p in [&m, &n, &z] {
+        eventually(WAIT, "connected", || connected_to(p, &g, &o.did));
+    }
+    eventually(30, "n sees m", || sees_online(&n, &g, &m.did));
+    m.node
+        .group_send_presence_for_test(g.clone(), vec![z.did.clone()])
+        .unwrap();
+    assert!(
+        !within(5, || [&o, &n].iter().any(|p| sees_online(p, &g, &z.did))),
+        "a non-host's frame is ignored"
+    );
+    o.node
+        .group_send_presence_for_test(g.clone(), vec![z.did.clone()])
+        .unwrap();
+    eventually(10, "the host's frame is taken", || {
+        sees_online(&n, &g, &z.did)
     });
 }
