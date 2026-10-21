@@ -54,9 +54,12 @@ fn callee_declines() {
 #[test]
 fn hangup_while_dialing_is_immediate() {
     let (a, b) = S.pair("dialing");
-    // Nobody home: a's endpoint is gone, so b's dial would sit out its 30 s timeout.
+    // Nobody home: a's endpoint is gone, so b's dial would sit out its 30 s timeout. Dropped,
+    // not only stopped: a stopped endpoint still holds its socket and refuses b at once.
     a.node.stop();
-    let call = b.node.call(a.did.clone()).unwrap();
+    let a_did = a.did.clone();
+    drop(a);
+    let call = b.node.call(a_did).unwrap();
     std::thread::sleep(Duration::from_millis(300));
     let t = Instant::now();
     b.node.hangup(call.call_id.clone()).unwrap();

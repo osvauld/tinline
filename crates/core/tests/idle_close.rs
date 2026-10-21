@@ -75,6 +75,12 @@ fn settled_pair(tag: &str) -> (Peer, Peer) {
 #[test]
 fn a_message_dials_a_session_that_closes_when_idle_and_nobody_redials() {
     let (a, b) = settled_pair("msg");
+    // Counted from here: the sessions that adding the contact opens may end any way.
+    let lost = |p: &Peer, did: &str| {
+        let needle = format!("chat session with {did} ended: connection lost");
+        p.logs.lock().unwrap().iter().filter(|l| l.contains(&needle)).count()
+    };
+    let lost_before = (lost(&a, &b.did), lost(&b, &a.did));
     let id = a
         .node
         .send_text(b.did.clone(), "hello idle".into(), None)
@@ -88,9 +94,7 @@ fn a_message_dials_a_session_that_closes_when_idle_and_nobody_redials() {
         "one side closed for idleness"
     );
     // The other side saw a clean close, not a lost connection.
-    let lost =
-        |p: &Peer, did: &str| p.logged(&format!("chat session with {did} ended: connection lost"));
-    assert!(!lost(&a, &b.did) && !lost(&b, &a.did), "closed cleanly");
+    assert_eq!((lost(&a, &b.did), lost(&b, &a.did)), lost_before, "closed cleanly");
     let (na, nb) = (opened(&a, &b.did), opened(&b, &a.did));
     // Past the 30 s pending tick: nothing pending, so nobody dials.
     assert!(
