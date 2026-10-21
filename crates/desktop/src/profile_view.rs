@@ -561,8 +561,8 @@ impl App {
         None
     }
 
-    /// privacy/Privacy.svelte: one row per area, then the read-receipt switch (core account setting). Online
-    /// visibility isn't offered: the core has none.
+    /// privacy/Privacy.svelte: one row per area, then the read-receipt switch (core account setting), then
+    /// "Show me as online in public groups" (public group §3, a setting of this install).
     fn privacy_landing(&self, t: Tok) -> El<'_> {
         let blocked = self.blocks.list.len();
         let msg_only = self.contacts.iter().filter(|c| !self.blocks.blocked_by_me(&c.did) && !self.blocks.calls_allowed(&c.did)).count();
@@ -580,10 +580,16 @@ impl App {
         let receipts: Vec<RowFn> = vec![Box::new(move |r| pf_act_reserved(t, Some("check"), "Read receipts".into(),
             &["People see when you\u{2019}ve read their messages", "Your reads stay with you"], if reads { 0 } else { 1 }, t.ink2,
             Some(pg_switch(t, reads, m(Action::SetReadReceipts(!reads)))), None, r))];
+        let shown = self.profiles.presence_visible.unwrap_or(true);
+        let presence: Vec<RowFn> = vec![Box::new(move |r| pf_act_reserved(t, Some("eye"), "Show me as online in public groups".into(),
+            &["Members see when you\u{2019}re here", "You stay off their online lists"], if shown { 0 } else { 1 }, t.ink2,
+            Some(pg_switch(t, shown, m(Action::SetPresenceVisible(!shown)))), None, r))];
         let c = pf_sec(16.0, column![pf_card(t, rows),
             pf_note(t, "Your contacts see your name, picture and profile. Tinline doesn\u{2019}t hide who you talk to, and every device linked to your account can read your chats."),
             container(pf_card(t, receipts)).padding(Padding { top: 24.0, ..Padding::ZERO }),
-            pf_note(t, "Delivered ticks still go out either way, and you still see when others read yours. Messages you read while this is off stay unconfirmed.")].into());
+            pf_note(t, "Delivered ticks still go out either way, and you still see when others read yours. Messages you read while this is off stay unconfirmed."),
+            container(pf_card(t, presence)).padding(Padding { top: 24.0, ..Padding::ZERO }),
+            pf_note(t, "Public groups are the ones anyone can join with an open link. This applies on this device; your other devices keep their own choice.")].into());
         self.pf_scroll(t, c, 40.0)
     }
 

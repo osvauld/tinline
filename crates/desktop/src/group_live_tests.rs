@@ -27,6 +27,11 @@ struct G {
     online: bool,
     msgs: Vec<GroupMessage>,
     read: usize,
+    /// Public group settings (§1) and who the hosts say is online (§3): (did, name, admin).
+    open: bool,
+    admins_only: bool,
+    present: Vec<(String, String, bool)>,
+    open_link: Option<String>,
 }
 
 #[derive(Default)]
@@ -44,6 +49,8 @@ struct Fake {
     asked: RefCell<Option<(String, String)>>,
     /// Invitations, both directions (G3).
     invs: RefCell<Vec<GroupInvitation>>,
+    /// "Show me as online" is off on this install.
+    hidden: RefCell<bool>,
 }
 
 fn msg(gid: &str, id: &str, at: u64, author: &str, name: &str, kind: GroupItemKind, text: &str) -> GroupMessage {
@@ -133,8 +140,8 @@ impl GroupApi for Fake {
                 host_reachable: g.online,
                 last: g.msgs.last().cloned(),
                 unread: g.msgs[g.read..].iter().filter(|m| !m.outgoing && m.kind == GroupItemKind::Post).count() as u32,
-                open: false,
-                admins_only: false,
+                open: g.open,
+                admins_only: g.admins_only,
             })
             .collect())
     }
@@ -192,8 +199,8 @@ impl GroupApi for Fake {
             call_hosts: Vec::new(),
             call_host_requests: Vec::new(),
             call_host_requested_here: false,
-            open: false,
-            admins_only: false,
+            open: g.open,
+            admins_only: g.admins_only,
         })
     }
     fn group_messages(&self, id: String, before: Option<String>, limit: u32) -> Result<GroupPage, Error> {
@@ -254,6 +261,9 @@ impl GroupApi for Fake {
                 GroupRole::Removed => return Err(Error::Rejected("removed".into())),
                 GroupRole::Left => return Err(Error::Rejected("not a member".into())),
                 _ => {}
+            }
+            if g.admins_only && Fake::check_admin(g).is_err() {
+                return Err(Error::Rejected("admins only".into()));
             }
             let mut m = msg(&id, &format!("m{at}"), at, ME, "Me", GroupItemKind::Post, &text);
             m.reply_to = reply_to;
@@ -396,6 +406,44 @@ impl GroupApi for Fake {
     }
     fn group_invitation_decline(&self, id: String) -> Result<GroupInvitation, Error> {
         self.answer_inv(&id, GroupInvitationState::Declined)
+    }
+    fn group_open_link(&self, id: String) -> Result<String, Error> {
+        self.with(&id, |g| {
+            Fake::check_admin(g)?;
+            if !g.online && !g.hosts.iter().any(|h| h.1 == DEV) {
+                return Err(Error::Timeout);
+            }
+            g.open = true;
+            Ok(g.open_link.get_or_insert_with(|| format!("tinline://g/open-{id}")).clone())
+        })
+    }
+    fn group_set_open(&self, id: String, open: bool) -> Result<(), Error> {
+        self.with(&id, |g| {
+            Fake::check_admin(g)?;
+            g.open = open;
+            if !open {
+                g.open_link = None;
+            }
+            Ok(())
+        })
+    }
+    fn group_set_admins_only(&self, id: String, admins_only: bool) -> Result<(), Error> {
+        self.with(&id, |g| {
+            Fake::check_admin(g)?;
+            g.admins_only = admins_only;
+            Ok(())
+        })
+    }
+    fn group_online(&self, id: String) -> Result<Vec<OnlineMember>, Error> {
+        let gs = self.g.borrow();
+        let g = gs.get(&id).ok_or(Error::NotFound)?;
+        if !g.open {
+            return Ok(Vec::new());
+        }
+        Ok(g.present.iter().map(|(did, name, is_admin)| OnlineMember { did: did.clone(), name: name.clone(), is_admin: *is_admin }).collect())
+    }
+    fn group_presence_visible(&self) -> Result<bool, Error> {
+        Ok(!*self.hidden.borrow())
     }
 }
 
@@ -933,3 +981,6 @@ fn an_admin_asking_this_device_to_host_shows_a_prompt() {
     assert_eq!(l.host_asked(), None);
     assert!(l.detail.as_ref().unwrap().am_host);
 }
+
+#[path = "group_public_tests.rs"]
+mod public;

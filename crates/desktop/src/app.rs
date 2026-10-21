@@ -2450,11 +2450,16 @@ impl App {
                         _ => {}
                     }
                 }
+                // Presence moves only the open group's "N online" and its list: no list marks to redo.
+                if let crate::GroupEv::Presence(id) = g {
+                    return self.update_live(Lm::Presence(id));
+                }
                 let t = self.update_live(match g {
                     crate::GroupEv::Message(m) => Lm::Message(m),
                     crate::GroupEv::Changed(id) => Lm::Changed(id),
                     crate::GroupEv::Request(r) => Lm::RequestChanged(r),
                     crate::GroupEv::Invitation(i) => Lm::InvitationChanged(i),
+                    crate::GroupEv::Presence(id) => Lm::Presence(id),
                 });
                 // The chat list's group marks follow group changes.
                 return Task::batch([t, self.refresh_marks()]);

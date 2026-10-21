@@ -18,13 +18,16 @@
 
 use iced::Task;
 use p2pcore::{
-    ChatRequestState, Error, GroupChatRequest, GroupDelivery, GroupDetail, GroupInvitation, GroupInvitationState, GroupInvitePeek, GroupItemKind, GroupMember, GroupMessage, GroupPage, GroupRole, GroupSummary, Node,
+    ChatRequestState, Error, GroupChatRequest, GroupDelivery, GroupDetail, GroupInvitation, GroupInvitationState, GroupInvitePeek, GroupItemKind, GroupMember, GroupMessage, GroupPage, GroupRole, GroupSummary, Node, OnlineMember,
 };
 
 /// Messages loaded when a group opens, and per "Show earlier".
 pub(super) const PAGE: u32 = 100;
 /// Flags that remove a member (U9/U15; `state::REMOVAL_FLAGS` in core).
 pub(super) const FLAGS_TO_REMOVE: u32 = 3;
+/// A host's presence frame lists at most this many DIDs (public group §3): at or above it the count
+/// may be cut short, so the header says "500+ online".
+pub(super) const ONLINE_CAP: usize = 500;
 
 /// The core's group calls.
 pub trait GroupApi {
@@ -73,6 +76,14 @@ pub trait GroupApi {
     fn group_invitations_outgoing(&self, id: String) -> Result<Vec<GroupInvitation>, Error>;
     fn group_invitation_accept(&self, id: String) -> Result<GroupInvitation, Error>;
     fn group_invitation_decline(&self, id: String) -> Result<GroupInvitation, Error>;
+    // Public groups (docs/design/public-group.md §2–§3).
+    /// Network (registers the code at the hosts): only from a job. Opens the group if it is closed.
+    fn group_open_link(&self, id: String) -> Result<String, Error>;
+    fn group_set_open(&self, id: String, open: bool) -> Result<(), Error>;
+    fn group_set_admins_only(&self, id: String, admins_only: bool) -> Result<(), Error>;
+    /// In memory in the core: empty for a private group.
+    fn group_online(&self, id: String) -> Result<Vec<OnlineMember>, Error>;
+    fn group_presence_visible(&self) -> Result<bool, Error>;
 }
 
 impl GroupApi for Node {
@@ -169,6 +180,21 @@ impl GroupApi for Node {
     fn group_invitation_decline(&self, id: String) -> Result<GroupInvitation, Error> {
         Node::group_invitation_decline(self, id)
     }
+    fn group_open_link(&self, id: String) -> Result<String, Error> {
+        Node::group_open_link(self, id)
+    }
+    fn group_set_open(&self, id: String, open: bool) -> Result<(), Error> {
+        Node::group_set_open(self, id, open)
+    }
+    fn group_set_admins_only(&self, id: String, admins_only: bool) -> Result<(), Error> {
+        Node::group_set_admins_only(self, id, admins_only)
+    }
+    fn group_online(&self, id: String) -> Result<Vec<OnlineMember>, Error> {
+        Node::group_online(self, id)
+    }
+    fn group_presence_visible(&self) -> Result<bool, Error> {
+        Node::group_presence_visible(self)
+    }
 }
 
 /// Words for a failed group call.
@@ -180,6 +206,7 @@ pub(super) fn gerr(e: Error) -> String {
             "already a contact" => "You already have them as a contact. Message them from Chats.".into(),
             "you block them" => "You block them. Unblock them first to ask for a chat.".into(),
             "unknown or expired invite code" => "That invite isn\u{2019}t valid any more. Ask for a new one.".into(),
+            "admins only" => "Only admins post here.".into(),
             r if r == p2pcore::BLOCKED => "They blocked you, so you can\u{2019}t ask them for a chat.".into(),
             r => {
                 let mut c = r.chars();
@@ -257,6 +284,19 @@ pub(super) enum LDialog {
     Request { did: String },
     /// This device starts (true) or stops hosting the open group.
     Host { accept: bool },
+    /// Who is online in the open (public) group.
+    Online,
+    /// Open the group to anyone with the link (confirm first: receipts go off, an online list shows).
+    OpenGroup,
+}
+
+/// A group setting whose change is on its way to the core (its switch shows the new value meanwhile).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum Setting {
+    Open,
+    AdminsOnly,
+    /// The open link is being fetched for "Copy link".
+    Link,
 }
 
 /// Work that writes or waits on the network: run off the UI thread, its result comes back as an `Lm`.
@@ -287,6 +327,11 @@ pub(super) enum Job {
     DeclineReq(String),
     /// Block the sender (P5), then decline.
     BlockReq { id: String, did: String },
+    /// The open link (opens the group if closed); `copy`: put it on the clipboard when it comes.
+    OpenLink { gid: String, copy: bool },
+    /// Close the open link (opening goes through `OpenLink`).
+    CloseLink(String),
+    AdminsOnly { gid: String, on: bool },
 }
 
 impl Job {
@@ -337,6 +382,15 @@ impl Job {
                 }
                 Lm::Answered(api.group_chat_decline(id).map_err(gerr))
             }
+            Job::OpenLink { gid, copy } => Lm::OpenLinked(gid.clone(), copy, api.group_open_link(gid).map_err(gerr)),
+            Job::CloseLink(gid) => did(
+                api.group_set_open(gid, false),
+                "The open link is closed. Everyone already in stays; new people join with an invite.".into(),
+            ),
+            Job::AdminsOnly { gid, on } => did(
+                api.group_set_admins_only(gid, on),
+                if on { "Only admins post now. Everyone can still read.".into() } else { "Everyone can post again.".into() },
+            ),
             Job::AcceptHost { gid, accept } => did(
                 api.group_accept_host(gid, accept),
                 if accept {
@@ -424,6 +478,16 @@ pub(super) enum Lm {
     RequestChanged(GroupChatRequest),
     Requested(Result<GroupChatRequest, String>),
     Answered(Result<GroupChatRequest, String>),
+    /// The online list of this group changed (GroupEvents::on_group_presence).
+    Presence(String),
+    /// The header's "N online": the list.
+    ShowOnline,
+    /// Group info (admins): the open link on or off, admins only on or off, copy the open link.
+    SetOpen(bool),
+    SetAdminsOnly(bool),
+    CopyOpenLink,
+    /// The open link came back: (group, copy it, the link).
+    OpenLinked(String, bool, Result<String, String>),
 }
 
 /// What a step asks of the app around it.
@@ -490,6 +554,14 @@ pub(super) struct GroupsLive {
     pub joining: Option<String>,
     /// The invite QR fills the window.
     pub qr_full: bool,
+    /// Who is online in the open group (public groups only; empty otherwise).
+    pub online: Vec<OnlineMember>,
+    /// The open link as the core last gave it: (group, link).
+    pub open_link: Option<(String, String)>,
+    /// A group setting on its way to the core, and the value asked for.
+    pub pending: Option<(Setting, bool)>,
+    /// This account shows in online lists (read when the list opens).
+    pub presence_visible: bool,
 }
 
 /// Member menu entries, in order.
@@ -554,6 +626,34 @@ impl GroupsLive {
 
     pub fn is_admin(&self) -> bool {
         matches!(self.role(), Some(GroupRole::Owner | GroupRole::Admin))
+    }
+
+    /// An admins-only group (a channel) and we are a member who may not post: no composer, a calm line.
+    pub fn admins_only_locked(&self) -> bool {
+        self.detail.as_ref().is_some_and(|d| d.admins_only && active(d.my_role)) && !self.is_admin()
+    }
+
+    /// The open group's "N online" (None for a private group, or one we are no longer in).
+    pub fn online_label(&self) -> Option<String> {
+        self.detail.as_ref().filter(|d| d.open && active(d.my_role)).map(|_| online_label(self.online.len()))
+    }
+
+    /// A setting's switch: the value on its way to the core, else the group's.
+    pub fn setting_on(&self, s: Setting) -> bool {
+        match self.pending {
+            Some((p, v)) if p == s => v,
+            _ => self.detail.as_ref().is_some_and(|d| match s {
+                Setting::Open => d.open,
+                Setting::AdminsOnly => d.admins_only,
+                Setting::Link => false,
+            }),
+        }
+    }
+
+    /// The open link of the open group, if the core gave it to us.
+    pub fn open_link_of_open(&self) -> Option<&str> {
+        let (g, link) = self.open_link.as_ref()?;
+        (self.open.as_deref() == Some(g.as_str())).then_some(link.as_str())
     }
 
     pub fn member(&self, did: &str) -> Option<&GroupMember> {
@@ -689,6 +789,10 @@ impl GroupsLive {
                 let Some(gid) = self.open.clone() else { return out };
                 if !self.can_post() {
                     out.notice = Some("You can\u{2019}t send messages to this group.".into());
+                    return out;
+                }
+                if self.admins_only_locked() {
+                    out.notice = Some("Only admins post here.".into());
                     return out;
                 }
                 self.input.clear();
@@ -980,11 +1084,77 @@ impl GroupsLive {
             }
             Lm::Did(r) => {
                 self.busy = false;
+                self.pending = None;
                 match r {
                     Ok(said) => {
                         self.dialog = None;
                         self.error = None;
                         out.notice = Some(said);
+                    }
+                    Err(e) if self.dialog.is_some() => self.error = Some(e),
+                    Err(e) => out.notice = Some(e),
+                }
+                self.reload_list(api);
+                self.reload_open(api);
+            }
+            Lm::Presence(gid) => {
+                if self.open.as_deref() == Some(gid.as_str()) {
+                    self.reload_online(api);
+                }
+            }
+            Lm::ShowOnline => {
+                if self.online_label().is_some() {
+                    self.reload_online(api);
+                    self.presence_visible = api.group_presence_visible().unwrap_or(true);
+                    self.show(LDialog::Online);
+                }
+            }
+            Lm::SetOpen(on) => {
+                let Some(gid) = self.open.clone() else { return out };
+                if self.pending.is_some() || !self.is_admin() {
+                    return out;
+                }
+                if on {
+                    self.show(LDialog::OpenGroup);
+                } else {
+                    self.pending = Some((Setting::Open, false));
+                    out.job = Some(Job::CloseLink(gid));
+                }
+            }
+            Lm::SetAdminsOnly(on) => {
+                let Some(gid) = self.open.clone() else { return out };
+                if self.pending.is_some() || !self.is_admin() {
+                    return out;
+                }
+                self.pending = Some((Setting::AdminsOnly, on));
+                out.job = Some(Job::AdminsOnly { gid, on });
+            }
+            Lm::CopyOpenLink => {
+                let Some(gid) = self.open.clone() else { return out };
+                if let Some(link) = self.open_link_of_open() {
+                    out.copy = Some(link.to_string());
+                    out.notice = Some(OPEN_LINK_COPIED.into());
+                } else if self.pending.is_none() && self.setting_on(Setting::Open) {
+                    self.pending = Some((Setting::Link, true));
+                    out.job = Some(Job::OpenLink { gid, copy: true });
+                }
+            }
+            Lm::OpenLinked(gid, copy, r) => {
+                self.busy = false;
+                self.pending = None;
+                match r {
+                    Ok(link) => {
+                        if matches!(self.dialog, Some(LDialog::OpenGroup)) {
+                            self.dialog = None;
+                            self.error = None;
+                        }
+                        self.open_link = Some((gid, link.clone()));
+                        if copy {
+                            out.copy = Some(link);
+                            out.notice = Some(OPEN_LINK_COPIED.into());
+                        } else {
+                            out.notice = Some("Your group is open. Copy the link to share it.".into());
+                        }
                     }
                     Err(e) if self.dialog.is_some() => self.error = Some(e),
                     Err(e) => out.notice = Some(e),
@@ -1036,7 +1206,11 @@ impl GroupsLive {
             LDialog::Leave => Job::Leave(gid),
             LDialog::Host { accept } => Job::AcceptHost { gid, accept },
             LDialog::Request { did } => Job::Request { gid, did },
-            LDialog::Token { .. } | LDialog::Removal => {
+            LDialog::OpenGroup => {
+                self.pending = Some((Setting::Open, true));
+                Job::OpenLink { gid, copy: false }
+            }
+            LDialog::Token { .. } | LDialog::Removal | LDialog::Online => {
                 self.dialog = None;
                 self.qr_full = false;
                 return None;
@@ -1059,6 +1233,8 @@ impl GroupsLive {
         self.receipts.clear();
         self.tick_vis.clear();
         self.tick_anims.clear();
+        self.online.clear();
+        self.pending = None;
     }
 
     pub fn reload(&mut self, api: &dyn GroupApi) {
@@ -1099,18 +1275,33 @@ impl GroupsLive {
         let Some(gid) = self.open.clone() else { return };
         self.reload_sent(api);
         match api.group_detail(gid.clone()) {
-            Ok(d) => self.detail = Some(d),
+            Ok(d) => {
+                // Closing drops the link in the core; a link we kept for this group goes with it.
+                if !d.open && self.open_link.as_ref().is_some_and(|(g, _)| *g == gid) {
+                    self.open_link = None;
+                }
+                self.detail = Some(d);
+            }
             Err(_) => {
                 self.close();
                 return;
             }
         }
+        self.reload_online(api);
         let want = (self.msgs.len() as u32).max(PAGE);
         if let Ok(p) = api.group_messages(gid.clone(), None, want) {
             self.msgs = p.messages;
             self.older = p.older;
         }
         self.reload_receipts(api, gid);
+    }
+
+    /// Who is online in the open group (a cheap in-memory read; a private group has no list).
+    fn reload_online(&mut self, api: &dyn GroupApi) {
+        self.online = match (&self.open, &self.detail) {
+            (Some(gid), Some(d)) if d.open && active(d.my_role) => api.group_online(gid.clone()).unwrap_or_default(),
+            _ => Vec::new(),
+        };
     }
 
     /// The member receipts of my posts in the loaded window (one core read per day doc).
@@ -1165,6 +1356,20 @@ impl GroupsLive {
         let now = std::time::Instant::now();
         self.tick_anims.iter().any(|(id, a)| self.tick_vis.get(id).is_some_and(|v| crate::ticks::running(a, *v, now)))
     }
+}
+
+const OPEN_LINK_COPIED: &str = "Copied. Anyone holding the link can join while it\u{2019}s open.";
+
+/// "12 online"; at the presence cap the count may be cut short: "500+ online".
+pub(super) fn online_label(n: usize) -> String {
+    if n >= ONLINE_CAP { format!("{ONLINE_CAP}+ online") } else { format!("{n} online") }
+}
+
+/// The online list's order: admins first, then by name (case-insensitive), then DID.
+pub(super) fn online_rows(list: &[OnlineMember]) -> Vec<&OnlineMember> {
+    let mut v: Vec<&OnlineMember> = list.iter().collect();
+    v.sort_by_key(|m| (!m.is_admin, m.name.to_lowercase(), m.did.clone()));
+    v
 }
 
 /// Still in the group (can read new messages and post).

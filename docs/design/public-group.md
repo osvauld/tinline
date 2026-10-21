@@ -1,7 +1,7 @@
 # Public channel and lobby (alpha)
 
 Status: spec, decided with the user 2026-10-21. Built: §1 (settings records), §2 (open link,
-host admission; `tinline/group/5`), §3 (presence) and §4 (receipts off); the rest not yet. Base: dev, rebased after
+host admission; `tinline/group/5`), §3 (presence), §4 (receipts off) and §8 on desktop (without images); the rest not yet. Base: dev, rebased after
 `integrate/crate-split` lands (image posts build on its `crates/transfer`).
 
 ## Purpose
@@ -193,6 +193,32 @@ Desktop first (it is a host), Android next:
 - Composer hidden for non-admins in an admins-only group ("Only admins post here").
 - Profile/privacy: "Show me as online in public groups" toggle.
 - Images in posts; the auto-download setting.
+
+**Desktop, as built** (`crates/desktop/src/group_live.rs` state, `group_live_view.rs` screens,
+tests `group_public_tests.rs`; not yet looked at on screen):
+
+- **Header:** an open group shows a "12 online" pill (dot + count) between the group's name and
+  the call button; its width is that of "500+ online", so a changing count moves nothing.
+  `group_online` is re-read on open, on `on_group_changed` and on `on_group_presence` (now wired
+  into the app's event loop). At 500 or more the label reads "500+ online" (a host frame stops at
+  500 DIDs, so exactly 500 may already be cut short). Pressing it opens a sheet (the group dialog
+  pattern): "12 online", admins first then by name, an "Admin" tag, and a line when I hide myself
+  ("You're not shown to others here...").
+- **Group info › Public group** (owner/admins only, under Invites): "Open link" switch, "Copy link"
+  row, "Admins only" switch, and a note (no expiry; closing keeps members; receipts off and the
+  online list while open). Turning the link on asks first ("Open … to anyone with the link?" ›
+  *Open the group*), then calls `group_open_link`; turning it off calls `group_set_open(id,
+  false)` at once. "Copy link" copies the link this computer holds, else fetches it with
+  `group_open_link` (a job) and copies it; it is disabled while the group is closed. A switch
+  shows the asked-for value while its job runs; errors and results show in the notice bar, now
+  also on the Group info page.
+- **Composer:** in an admins-only group a member (not owner/admin) sees "Only admins post here"
+  in the composer's place at its height (62 px); `Rejected("admins only")` reads the same.
+- **Settings › Privacy:** "Show me as online in public groups" switch (`group_set_presence_visible`),
+  with the note that it applies to this device only.
+- **Receipts:** ticks follow the core unchanged (open groups get no member receipts, so own posts
+  stay at one tick once a host has them); the tick tooltip with "Delivered n/N · Read n/N" is not
+  shown in open groups, where 0/N would mislead.
 
 ## Acceptance tests
 

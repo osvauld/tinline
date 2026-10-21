@@ -161,6 +161,8 @@ pub enum GroupEv {
     Request(p2pcore::GroupChatRequest),
     /// A group invitation appeared or changed (G3).
     Invitation(p2pcore::GroupInvitation),
+    /// The online list of an open group changed (public group §3).
+    Presence(String),
 }
 
 /// Bridges `GroupEvents` into the same channel as `NodeEvents`.
@@ -185,8 +187,10 @@ impl p2pcore::GroupEvents for GroupBridge {
     fn on_group_changed(&self, group_id: String) {
         let _ = self.0.send(Ev::Group(GroupEv::Changed(group_id)));
     }
-    /// The online list (public group §3) has no desktop view yet (§8).
-    fn on_group_presence(&self, _group_id: String) {}
+    /// The online list of an open group changed (public group §3): the header count and its list.
+    fn on_group_presence(&self, group_id: String) {
+        let _ = self.0.send(Ev::Group(GroupEv::Presence(group_id)));
+    }
 }
 
 /// What the core's `ChatEvents` report, as plain data for the UI loop.
