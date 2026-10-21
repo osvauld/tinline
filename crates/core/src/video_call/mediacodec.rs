@@ -41,6 +41,11 @@ const COLOR_YUV420_FLEXIBLE: i32 = 0x7F42_0888;
 const COLOR_QCOM_YVU420_SEMIPLANAR: i32 = 0x7FA3_0C00;
 /// QOMX_COLOR_FORMATYUV420PackedSemiPlanar32m (linear NV12, Venus alignment).
 const COLOR_QCOM_YUV420_SEMIPLANAR_32M: i32 = 0x7FA3_0C04;
+/// `android._color-format` HAL_PIXEL_FORMAT_YV12 ('YV12': planar, V first, chroma rows aligned
+/// to 16). The moto g52's `c2.android.vp8.encoder` names it but reads plain I420: U first and
+/// chroma rows of half the stride (V first swapped the colours, the self-test's chroma PSNR 22 dB
+/// for both planes; 16-aligned rows were wrong from 540 wide on, where 270 is not 272).
+const HAL_YV12: i32 = 0x3231_5659;
 
 const BITRATE_MODE_CBR: i32 = 2;
 const BUFFER_FLAG_KEY_FRAME: u32 = sys::AMEDIACODEC_BUFFER_FLAG_KEY_FRAME;
@@ -528,6 +533,20 @@ impl Layout {
             .and_then(|s| usize::try_from(s).ok())
             .filter(|&s| s >= h)
             .unwrap_or(h);
+        // A flexible format names the buffer's kind in `android._color-format`, and Google's
+        // software encoders differ there: the Pixel 3a's `c2.android.vp8.encoder` says 19 (I420),
+        // the moto g52's says YV12. Writing NV12 into those gave a grey picture with colour lines.
+        // Neither is quite what they read (`HAL_YV12`, `or_nv21`); the self-test's chroma PSNR is the
+        // check (`mediacodec_vp8_selftest`, software).
+        let color = match (color, f.i32(c"android._color-format")) {
+            (COLOR_YUV420_FLEXIBLE, Some(HAL_YV12)) => COLOR_YUV420_PLANAR,
+            // Only the ones below; anything else keeps the flexible guess (NV12).
+            (
+                COLOR_YUV420_FLEXIBLE,
+                Some(c @ (COLOR_YUV420_PLANAR | COLOR_YUV420_SEMIPLANAR | COLOR_QCOM_YVU420_SEMIPLANAR | COLOR_QCOM_YUV420_SEMIPLANAR_32M)),
+            ) => c,
+            _ => color,
+        };
         match color {
             COLOR_YUV420_PLANAR => Ok(Self::planar(stride, slice)),
             // Flexible without a MediaImage2: hardware codecs use NV12 here (the self-test's
@@ -551,6 +570,21 @@ impl Layout {
                 .max(self.u.end(cx, cy, cw, ch)?)
                 .max(self.v.end(cx, cy, cw, ch)?),
         )
+    }
+
+    /// NV21 with the same stride and slice height, when this planar layout doesn't fit a `cap`
+    /// byte buffer and NV21 does. Google's software encoder on the Pixel 3a names I420 (19) but
+    /// hands out 480x640 buffers of 491489 bytes at stride 512: I420 needs 491504, a semi-planar
+    /// one 491488; with NV12 the self-test's chroma PSNR was 22 dB for both U and V (swapped).
+    /// The moto g52's names YV12 and reads I420 (`HAL_YV12`), which fits its buffers.
+    fn or_nv21(&self, w: usize, h: usize, cap: usize) -> Option<Self> {
+        if self.y.col != 1 || self.u.col != 1 || self.end(0, 0, w, h).is_some_and(|n| n <= cap) {
+            return None;
+        }
+        let stride = self.y.row;
+        let slice = self.u.off.min(self.v.off) / stride;
+        let nv21 = Self::semi_planar(stride, slice, true);
+        nv21.end(0, 0, w, h).is_some_and(|n| n <= cap).then_some(nv21)
     }
 
     /// Writes `pic` into `dst`; returns the bytes used.
@@ -732,7 +766,10 @@ pub(crate) struct MediaCodecVp8Encoder {
     width: usize,
     height: usize,
     layout: Layout,
-    epoch: Instant,
+    /// The layout was checked against the first input buffer's size.
+    layout_fits: bool,
+    /// Configured frame rate: frame `n` gets pts `n / fps` (`pts`).
+    fps: u32,
     last_pts: Option<u64>,
     /// Next input frame index.
     frame: u64,
@@ -787,7 +824,8 @@ impl MediaCodecVp8Encoder {
             width: cfg.width,
             height: cfg.height,
             layout,
-            epoch: Instant::now(),
+            layout_fits: false,
+            fps: cfg.fps.max(1),
             last_pts: None,
             frame: 0,
             queued: VecDeque::new(),
@@ -812,12 +850,13 @@ impl MediaCodecVp8Encoder {
         self.wait = wait;
     }
 
+    /// Frame-count pts at the configured rate, like the AV1 encoder: both MediaCodec encoders
+    /// budget by timestamps, so with the time each frame was queued the bitrate scaled for a
+    /// lower tier (`Sender::encoder_bitrate`, x2 at 15 fps) came out x2 on the wire (self-test
+    /// at 15 fps: 4750 kbps for 2500 on the Pixel's hardware encoder; in a call on the software
+    /// one, a 250 ms queue, backlog keyframes and the rate down to 100 kbps).
     fn pts(&mut self) -> u64 {
-        let now = self.epoch.elapsed().as_micros() as u64;
-        let pts = match self.last_pts {
-            Some(l) if now <= l => l + 1,
-            _ => now,
-        };
+        let pts = self.frame * 1_000_000 / self.fps as u64;
         self.last_pts = Some(pts);
         pts
     }
@@ -898,13 +937,21 @@ impl VideoEncoder for MediaCodecVp8Encoder {
         self.drain(&mut out, None, start)?;
         let frame = self.frame;
         self.frame += 1;
-        let layout = self.layout;
         let Some(idx) = self.codec.dequeue_input(INPUT_WAIT)? else {
             // The codec is behind: drop this frame instead of queueing it (a pending keyframe
             // request waits for the next one).
             self.dropped += 1;
             return Ok(out);
         };
+        if !self.layout_fits {
+            self.layout_fits = true;
+            let cap = self.codec.input_buffer(idx).map_or(0, |b| b.len());
+            if let Some(l) = self.layout.or_nv21(self.width, self.height, cap) {
+                tracing::info!("vp8 encoder {} input buffer {cap} bytes: layout {l:?} (was {:?})", self.codec.name, self.layout);
+                self.layout = l;
+            }
+        }
+        let layout = self.layout;
         let len = match self
             .codec
             .input_buffer(idx)
@@ -1225,6 +1272,8 @@ mod selftest {
         width: u32,
         height: u32,
         wait_ms: i32,
+        software: bool,
+        fps: u32,
     ) -> std::result::Result<String, String> {
         let (w, h, secs) = (
             width as usize,
@@ -1243,16 +1292,21 @@ mod selftest {
             hardware_encoder_name(),
             probe.elapsed().as_millis()
         ));
+        // Frames go in at `fps` with the bitrate scaled as in a call at that tier
+        // (`Sender::encoder_bitrate`: x 30 / fps); `phase_kbps` should still meet the targets.
+        let fps = fps.clamp(1, 30);
+        let scaled = |bps: u32| bps / fps * 30;
         let (high, low) = (2_500_000u32, 1_000_000u32);
         let cfg = EncoderConfig {
             width: w,
             height: h,
             fps: 30,
-            bitrate_bps: high,
+            bitrate_bps: scaled(high),
             keyint: 3600 * 30,
             ..Default::default()
         };
-        let mut enc = MediaCodecVp8Encoder::new(&cfg).map_err(|e| format!("encoder: {e}"))?;
+        let enc = if software { MediaCodecVp8Encoder::new_software(&cfg) } else { MediaCodecVp8Encoder::new(&cfg) };
+        let mut enc = enc.map_err(|e| format!("encoder: {e}"))?;
         if let Ok(ms) = u64::try_from(wait_ms) {
             enc.set_wait(Duration::from_millis(ms));
         }
@@ -1332,8 +1386,8 @@ mod selftest {
         let mut sync_req: Option<f64> = None;
         let mut sync_resp: Option<f64> = None;
         let mut sent_dropped = 0u32;
-        let frame_dur = Duration::from_secs_f64(1.0 / 30.0);
-        let total = secs * 30;
+        let frame_dur = Duration::from_secs_f64(1.0 / fps as f64);
+        let total = secs * fps as usize;
         let mut sec_logged = 0usize;
         let sec_report = |sec: usize,
                           outs: &[Out],
@@ -1369,7 +1423,7 @@ mod selftest {
             }
             let el = t0.elapsed().as_secs_f64();
             if !low_set && el >= 10.0 {
-                enc.set_bitrate(low).map_err(|e| e.to_string())?;
+                enc.set_bitrate(scaled(low)).map_err(|e| e.to_string())?;
                 low_set = true;
             }
             let mut key = false;
@@ -1379,7 +1433,7 @@ mod selftest {
                 sync_req = Some(el);
             }
             if !high_set && el >= 20.0 {
-                enc.set_bitrate(high).map_err(|e| e.to_string())?;
+                enc.set_bitrate(scaled(high)).map_err(|e| e.to_string())?;
                 high_set = true;
             }
             let t = Instant::now();
@@ -1555,7 +1609,9 @@ mod selftest {
 /// 10 s, keyframe request at 15 s, 2.5 Mbps at 20 s; packets go to `MediaCodecVp8Decoder` on
 /// another thread and decoded pictures are compared with the source. Returns one line per
 /// second plus summary lines. `wait_ms` < 0 = the encoder's default wait for its output;
-/// Debug builds run it via DebugReceiver `mediacodec_vp8`.
+/// `software`: Google's software encoder instead of the default one; `fps` (1-30, 0 = 30): frames
+/// at that tier with the call's scaled bitrate. Debug builds run it via DebugReceiver
+/// `mediacodec_vp8` (`--ez sw true`, `--ei fps 15`).
 #[cfg(feature = "dev-tools")]
 #[uniffi::export]
 pub fn mediacodec_vp8_selftest(
@@ -1563,6 +1619,8 @@ pub fn mediacodec_vp8_selftest(
     width: u32,
     height: u32,
     wait_ms: i32,
+    software: bool,
+    fps: u32,
 ) -> std::result::Result<String, crate::Error> {
-    selftest::run(seconds, width, height, wait_ms).map_err(crate::Error::Protocol)
+    selftest::run(seconds, width, height, wait_ms, software, if fps == 0 { 30 } else { fps }).map_err(crate::Error::Protocol)
 }
