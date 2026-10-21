@@ -374,8 +374,17 @@ fn device_list_persists_across_restart() {
 fn own_device_list_is_signed_and_changes_with_the_registry() {
     let (a, b1, b2) = trio("own-list");
     let _ = a;
-    let list: proto::SignedDeviceList =
-        serde_json::from_str(&b1.node.own_device_list_for_test().unwrap()).unwrap();
+    let read = || -> proto::SignedDeviceList {
+        serde_json::from_str(&b1.node.own_device_list_for_test().unwrap()).unwrap()
+    };
+    // A relay hint arriving after start-up is a real registry change (a new seq); wait it out.
+    let mut list = read();
+    eventually(20, "own list settles", || {
+        let next = read();
+        let same = next == list;
+        list = next;
+        same
+    });
     let l = proto::verify_device_list(&list, &b1.did).unwrap();
     assert_eq!(l.devices.len(), 2);
     assert_eq!(
@@ -383,8 +392,10 @@ fn own_device_list_is_signed_and_changes_with_the_registry() {
         b1.node.device_key_for_test().unwrap()
     );
     // Unchanged registry: the same blob, not a fresh seq.
-    let again: proto::SignedDeviceList =
-        serde_json::from_str(&b1.node.own_device_list_for_test().unwrap()).unwrap();
-    assert_eq!(list, again);
+    let again = read();
+    let la = proto::verify_device_list(&again, &b1.did).unwrap();
+    if (&la.devices, &la.links) == (&l.devices, &l.links) {
+        assert_eq!(list, again);
+    }
     let _ = b2;
 }
