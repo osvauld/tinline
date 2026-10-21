@@ -12,5 +12,6 @@
     <string>Fonts/plexmono_medium.ttf</string>
   </array>
   <key>NSMicrophoneUsageDescription</key><string>For voice calls and voice messages.</string>
+  <key>NSPhotoLibraryAddUsageDescription</key><string>To save photos and videos you choose to keep.</string>
   <key>NSCameraUsageDescription</key><string>For video calls, only when you turn your camera on.</string>
 </dict></plist>
