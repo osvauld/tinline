@@ -51,7 +51,7 @@ fn thermal_name(t: u8) -> &'static str {
 /// (Android severe)". Empty when nothing caps it.
 pub fn cap_reason(s: &VideoStats) -> String {
     let c = &s.send_cap;
-    let theirs_hw = s.peer_hw_decode.iter().any(|x| *x == s.send_codec);
+    let theirs_hw = s.peer_hw_decode.contains(&s.send_codec);
     match (c.source.as_str(), c.reason.as_str()) {
         ("peer", "display") => "their screen size".into(),
         ("peer", "decode") => format!("their decoder ({})", codec_label(s.send_codec.clone(), theirs_hw)),
