@@ -67,7 +67,11 @@ days). An open group needs no invite instead:
   short code with no invite and no expiry at every chat host reachable now (ourselves if we
   host, then each host we have a session with); the link names us if we host, else the first
   host that took it. The link format is unchanged (`tinline://g/...`). Asking again returns the
-  stored link (`GroupMeta.open_link`, local) while the host it names still hosts.
+  stored link (`GroupMeta.open_link`, local) if it names us and we still keep its code; a stored
+  link at another host is registered again under the same code (that host may have lost it) and
+  the link of whichever host takes it is returned. A stored link is reused only in the same open
+  period (`GroupMeta.open_link_record` = `GroupState::open_record`, the `Open{true}` record in
+  force): after a close and reopen, even one we missed while away, the admin gets a new code.
 - Codes say what they admit: `CodeKind::{Invite, Device, Open}` on `CodeRow` and in
   `GroupMsg::Code` (an invite-less code is no longer ambiguous). An open code has
   `expires = NO_EXPIRY` (`u64::MAX`). A host takes an `Open` code only from an admin while the
@@ -83,10 +87,35 @@ days). An open group needs no invite instead:
   the group is open** (derived `open` now); the joiner may then send only its own records
   until its `OpenJoin` makes it a member (as invite joiners today). Closing
   (`group_set_open(id, false)`) refuses new joiners at once; the open code is dropped here and
-  `RevokeCode` goes to every host we reach. A host we miss refuses (and drops) the open code
-  at its next fetch, as the group is closed. A joiner admitted while open whose `OpenJoin` has
-  not arrived when the group closes is refused at that update ("not open").
-- An open code counts as one of the 256 live codes and is not swept by expiry.
+  `RevokeCode` goes to every host we reach. A joiner admitted while open whose `OpenJoin` has
+  not arrived when the group closes is refused at that update ("not open"). A joiner that
+  catches up (holds the host's meta as of `Welcome`) and finds the group closed before it wrote
+  its `OpenJoin` stops: `group_join` returns `Rejected("this group is not open to new
+  members")` and forgets the group.
+- **Open codes at hosts (as built after review):** whenever a device derives the group closed
+  (after any meta change) it drops **every** `Open` code of that group it keeps, whoever
+  registered it, and forgets its own stored link. So another admin's close, or a close whose
+  `RevokeCode` never reached us, leaves nothing a reopen could revive. A host keeps **one** open
+  code per issuer per group (a new one replaces the issuer's earlier one; registering the same
+  code again is accepted). At fetch, an open code whose issuer is no longer an admin is dropped
+  and refused ("this open link was withdrawn; ask for a new one").
+- An open code counts as one of the 256 live codes and is not swept by expiry (one per admin).
+- **What a host takes from member sessions (as built after review, `engine/admit.rs`).** The
+  `seen` frontier is the author's claim, so a host adds two checks on records arriving from a
+  member's session (host-to-host sync is exempt, so one late record cannot make a host refuse
+  a whole batch from another host):
+  - An `OpenJoin` only while the group is open now, and only from its own author: a member
+    cannot add throwaway DIDs to a closed (or once-open) group with joins whose frontier names
+    an old `Open{true}`.
+  - While admins-only is on now, a post by a non-admin author that the rules would show (or
+    that is pending) is refused, unless the uploading member is an admin. A stale frontier would
+    otherwise let a member post into a channel on every device. **PROVISIONAL (conservative):**
+    an honest offline post written concurrently with the switch is refused too; the member's
+    session to that host is closed each time it carries it (the post never spreads). A refused
+    batch closes the session, as for every refusal.
+  - Checking `seen` against the Loro change's own dependencies was considered and not done: the
+    author builds those too (a modified app can write on a fork of an old version), so it
+    proves nothing a host can rely on.
 - Wire: `tinline/group/5` (`Code.kind`, `InviteToken.open`; the token's encoding also changes
   inside self/5 group lists and direct-invitation letters, pre-release, no compatibility).
 - Guess limits (3 per connection, 30/min per host) and the 300 ms wrong-answer delay stay.
@@ -124,17 +153,23 @@ days). An open group needs no invite instead:
   member with a live session whose `Hello` said `presence: true` (and none of that DID's sessions
   said `false`), and members whose last visible session ended within the window (with that
   time, so a reconnect does not flicker).
-- **Accept and relay:** a receiver keeps a frame only for an open group, signed by an active
-  host device, with a higher `seq` than the one it holds from that device. A host relays an
-  accepted frame unchanged to its other sessions; the `seq` check ends relay loops. A member on
-  one host thus sees the members of every host. Frames of a host that is no longer active are
-  ignored when the list is computed.
+- **Accept and relay:** a receiver keeps a frame only for an open group, arriving on a session
+  whose peer device hosts the group (a member's own session never hands in presence), signed by
+  an active host device, with `at` within 2 minutes of the receiver's clock
+  (`PRESENCE_MAX_SKEW_MS`), and with a higher `seq` than any frame taken from that device. The
+  highest `seq` per host device is kept after its frame expires, until the group closes or the
+  device stops hosting (bounded by the number of hosts), so an old frame cannot be replayed. A
+  host relays an accepted frame unchanged to its other sessions; the `seq` check ends relay
+  loops. A member on one host thus sees the members of every host. Frames of a host that is no
+  longer active are ignored when the list is computed.
 - **Hide me:** `group_set_presence_visible(false)` writes the local row `set/presence_hidden`
   and ends our sessions to hosts of open groups, so the next `Hello` carries it at once; the
   host forgets the member's "recently left" entry when a hiding session starts.
 - **Events:** `on_group_presence(id)` when the computed online set changes (on a new frame, and
   checked every tick, so expiries are reported too).
-- **500+:** a frame lists at most 500 DIDs (newest first); the union may hold more. Showing
+- **500+:** a frame lists at most 500 DIDs (newest first), each at most `MAX_PRESENCE_DID` (64)
+  bytes (a member DID is a 56-byte `did:key`), so a full frame stays well inside its 64 KiB
+  body; the union may hold more. Showing
   "500+ online" is left to the apps (§8).
 - **Timing knobs:** `group_set_presence_timing_for_test((every_ms, window_ms))` (dev-tools
   builds) lets tests run in seconds.
@@ -278,6 +313,18 @@ Deterministic, offline, in `crates/core/tests/` (names indicative):
    hash-verified; an oversized blob is refused.
 10. Headless: `p2p-peer group-host` accepts an appointment and relays between two members
     (e2e script, not a unit test). Command built; argument-parsing unit tests only; e2e not run.
+
+Review follow-ups (built, `public_group.rs` unless noted):
+
+11. Settings are causal (unit: `settings_follow_causality_not_clocks`,
+    `concurrent_settings_tie_break_by_time`).
+12. `stale_frontier_post_refused_in_admins_only` (unit:
+    `admins_only_refuses_stale_frontier_posts_at_the_host`).
+13. `member_cannot_add_open_joins_for_others` (unit: `open_joins_only_from_their_author_while_open`).
+14. `open_links_die_on_close_and_with_the_issuer_role` (unit:
+    `open_codes_drop_on_close_and_one_per_issuer`).
+15. Presence replay, skew, pruning and frame size (unit: `presence_frames_cannot_be_replayed`,
+    `presence_state_is_pruned`, `a_full_presence_frame_fits`).
 
 Manual: worker host + laptop host + Android emulator; turn the laptop off, the lobby keeps
 working through the worker.

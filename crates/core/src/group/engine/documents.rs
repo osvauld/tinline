@@ -119,6 +119,31 @@ impl GroupCore {
         }
     }
 
+    /// Test hook (a modified app): writes `body` claiming the signed frontier `seen` instead of
+    /// our meta version vector.
+    #[cfg(any(test, feature = "dev-tools"))]
+    pub(crate) fn write_seen_for_test(&self, gid: &str, body: Body, seen: Vec<(u64, i32)>) -> Result<(Entry, Changed), Error> {
+        let mut groups = self.groups.lock();
+        let live = groups.get_mut(gid).ok_or(Error::NotFound)?;
+        let rec = Record { group: gid.to_string(), author: self.did.clone(), dev: self.dev, at: now_ms() as i64, seen, body };
+        if matches!(rec.body, Body::Post { .. }) { self.write_post(live, gid, rec) } else { self.write_meta(live, gid, rec) }
+    }
+
+    /// Test hook (a modified app): a fresh identity writes `OpenJoin{name}` claiming `seen`; the
+    /// record goes into our meta doc as if it had arrived, and on to our sessions. Returns the
+    /// throwaway DID.
+    #[cfg(any(test, feature = "dev-tools"))]
+    pub(crate) fn forge_open_join_for_test(&self, gid: &str, name: String, seen: Vec<(u64, i32)>) -> Result<(String, Option<Changed>), Error> {
+        let x = identity::generate().0;
+        let rec = Record { group: gid.to_string(), author: x.did().to_string(), dev: [0x5a; 32], at: now_ms() as i64, seen, body: Body::OpenJoin { name } };
+        let update = {
+            let groups = self.groups.lock();
+            groups.get(gid).ok_or(Error::NotFound)?.doc.foreign_update_for_test(&x, &rec)
+        };
+        let changed = self.apply(gid, &DocId::Meta, &update, |_, _, _| Ok(())).map_err(|e| Error::Protocol(e.to_string()))?;
+        Ok((rec.author, changed))
+    }
+
     pub(super) fn write_meta(
         &self,
         live: &mut Live,

@@ -330,6 +330,21 @@ impl GroupDoc {
         self.doc.import(update).expect("import");
     }
 
+    /// Test hook (a modified app): the update that adds `rec`, signed by `account` (its author,
+    /// not us), as written under the author's own writer ID on top of what we hold. Our doc is
+    /// left unchanged; the caller applies the update like any remote one.
+    #[cfg(any(test, feature = "dev-tools"))]
+    #[doc(hidden)]
+    pub fn foreign_update_for_test(&self, account: &identity::Identity, rec: &Record) -> Vec<u8> {
+        let fork = self.doc.fork();
+        fork.set_peer_id(writer_id(&rec.author, &rec.dev)).expect("peer id");
+        let before = fork.oplog_vv();
+        let bytes = rec.sign(account).to_bytes();
+        fork.get_map(ROOT).insert(&record_id(&bytes), LoroValue::Binary(bytes.into())).expect("insert");
+        fork.commit();
+        fork.export(ExportMode::updates(&before)).expect("export")
+    }
+
     /// The stored bytes of record `id`.
     pub fn raw_value(&self, id: &str) -> Option<Vec<u8>> {
         match self.doc.get_map(ROOT).get(id) {

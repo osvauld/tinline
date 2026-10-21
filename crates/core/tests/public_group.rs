@@ -166,6 +166,120 @@ fn admins_only_rejects_local_post() {
     });
 }
 
+// ---- host-side rules (review findings 2-4) ----------------------------------------------------
+
+fn role(p: &Peer, g: &str) -> Option<p2pcore::GroupRole> {
+    p.node.group_detail(g.into()).ok().map(|d| d.my_role)
+}
+
+fn rejected(r: Result<String, p2pcore::Error>) -> String {
+    match r {
+        Err(p2pcore::Error::Rejected(r)) => r,
+        other => panic!("expected a refusal, got {other:?}"),
+    }
+}
+
+// KIND: acceptance (public group, review finding 2) — a member (a modified app) posts in an
+// admins-only group claiming a frontier from before the switch: the post would show on every
+// device by the rules, so the host refuses it and nobody else ever gets it; the owner's posts
+// still go through.
+#[test]
+fn stale_frontier_post_refused_in_admins_only() {
+    let o = peer("sf-o");
+    let a = peer("sf-a");
+    let b = peer("sf-b");
+    let g = group_with(&o, &[&a, &b]);
+    let stale = a.node.group_meta_frontier_for_test(g.clone()).unwrap();
+    o.node.group_set_admins_only(g.clone(), true).unwrap();
+    for p in [&a, &b] {
+        eventually(WAIT, "admins only everywhere", || {
+            p.node.group_detail(g.clone()).is_ok_and(|d| d.admins_only)
+        });
+    }
+    a.node
+        .group_post_with_seen_for_test(g.clone(), "sneaky".into(), stale)
+        .unwrap();
+    assert!(
+        !within(8, || has_post(&o, &g, &a.did, "sneaky") || has_post(&b, &g, &a.did, "sneaky")),
+        "the host refuses a non-admin's post with a stale frontier"
+    );
+    o.node.group_post(g.clone(), "news".into(), None).unwrap();
+    eventually(WAIT, "b sees the owner's post", || {
+        has_post(&b, &g, &o.did, "news")
+    });
+}
+
+// KIND: acceptance (public group, review finding 3) — a member cannot add identities: an
+// `OpenJoin` of a throwaway DID it uploads is refused by the host, whether the group is closed
+// (with a frontier naming the old `Open{true}`, so the record itself would count) or open.
+#[test]
+fn member_cannot_add_open_joins_for_others() {
+    let o = peer("fj-o");
+    let a = peer("fj-a");
+    let b = peer("fj-b");
+    let g = group_with(&o, &[&a, &b]);
+    open_up(&o, &g, &[&o, &a, &b]);
+    let stale = a.node.group_meta_frontier_for_test(g.clone()).unwrap();
+    o.node.group_set_open(g.clone(), false).unwrap();
+    eventually(WAIT, "a sees it closed", || !is_open(&a, &g));
+    let x = a.node.group_forge_open_join_for_test(g.clone(), stale).unwrap();
+    assert!(
+        members(&a, &g).contains(&x),
+        "on a's own replica the record counts (its frontier says open)"
+    );
+    // Open again: b relays another throwaway's join written while open.
+    open_up(&o, &g, &[&o, &b]);
+    let now = b.node.group_meta_frontier_for_test(g.clone()).unwrap();
+    let y = b.node.group_forge_open_join_for_test(g.clone(), now).unwrap();
+    assert!(
+        !within(8, || {
+            let m = members(&o, &g);
+            m.contains(&x) || m.contains(&y)
+        }),
+        "the host takes an open join only from its author while open"
+    );
+}
+
+// KIND: acceptance (public group, review finding 4) — open links: asking again gives the same
+// link (registered again at the host); another admin's close drops every open code at the host,
+// so a reopen does not revive the old link and the admin gets a new one; a link stops working
+// when its issuer is no longer an admin.
+#[test]
+fn open_links_die_on_close_and_with_the_issuer_role() {
+    let o = peer("oc-o");
+    let a = peer("oc-a");
+    let b = peer("oc-b");
+    let c = peer("oc-c");
+    let g = group_with(&o, &[&a]);
+    o.node
+        .group_set_admin(g.clone(), a.did.clone(), true)
+        .unwrap();
+    eventually(WAIT, "a is an admin", || {
+        role(&a, &g) == Some(p2pcore::GroupRole::Admin)
+    });
+    let first = a.node.group_open_link(g.clone()).unwrap();
+    assert_eq!(a.node.group_open_link(g.clone()).unwrap(), first, "the same link again");
+    // The owner (not a) closes and reopens.
+    o.node.group_set_open(g.clone(), false).unwrap();
+    eventually(WAIT, "a sees it closed", || !is_open(&a, &g));
+    open_up(&o, &g, &[&o, &a]);
+    let r = rejected(b.node.group_join(first.clone()));
+    assert!(r.contains("unknown or expired"), "{r}");
+    let second = a.node.group_open_link(g.clone()).unwrap();
+    assert_ne!(second, first, "a new open period, a new link");
+    assert_eq!(join(&b, second.clone()), g);
+    // a is no longer an admin: its link stops working.
+    o.node
+        .group_set_admin(g.clone(), a.did.clone(), false)
+        .unwrap();
+    eventually(WAIT, "a is a member again", || {
+        role(&a, &g) == Some(p2pcore::GroupRole::Member)
+    });
+    let r = rejected(c.node.group_join(second));
+    assert!(r.contains("withdrawn"), "{r}");
+    assert!(!members(&o, &g).contains(&c.did));
+}
+
 // ---- presence (§3) ---------------------------------------------------------------------------
 
 /// Presence for tests: a frame every second (the dial tick makes it about two), online for 4 s

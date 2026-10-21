@@ -127,6 +127,35 @@ impl Node {
         }
     }
 
+    /// The group's meta frontier on this device now (`(peer, counter)`): what a record written
+    /// now names as `seen`. Not in release builds.
+    pub fn group_meta_frontier_for_test(&self, group_id: String) -> Result<Vec<(u64, i32)>, Error> {
+        let core = self.inner.group_core()?;
+        let groups = core.groups.lock();
+        Ok(groups.get(&group_id).ok_or(Error::NotFound)?.doc.seen())
+    }
+
+    /// Posts claiming the signed frontier `seen` (say, one from before admins-only), skipping
+    /// the local checks: what a modified app could do. Not in release builds.
+    pub fn group_post_with_seen_for_test(&self, group_id: String, text: String, seen: Vec<(u64, i32)>) -> Result<(), Error> {
+        let core = self.inner.group_core()?;
+        let (_, changed) = core.write_seen_for_test(&group_id, Body::Post { text, reply_to: None }, seen)?;
+        self.inner.group_after(&core, changed, None);
+        Ok(())
+    }
+
+    /// A throwaway identity's `OpenJoin` claiming `seen`, added here and pushed to our hosts as
+    /// if this member relayed it: what a modified app could do. Returns the throwaway DID. Not in
+    /// release builds.
+    pub fn group_forge_open_join_for_test(&self, group_id: String, seen: Vec<(u64, i32)>) -> Result<String, Error> {
+        let core = self.inner.group_core()?;
+        let (did, changed) = core.forge_open_join_for_test(&group_id, "throwaway".into(), seen)?;
+        if let Some(c) = changed {
+            self.inner.group_after(&core, c, None);
+        }
+        Ok(did)
+    }
+
     /// Signs a presence frame as this device (host or not) listing `dids` and sends it on every
     /// session of the group: what a modified app could send. Not in release builds.
     pub fn group_send_presence_for_test(&self, group_id: String, dids: Vec<String>) -> Result<(), Error> {

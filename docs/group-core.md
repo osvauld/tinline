@@ -56,7 +56,11 @@ the user was away; each is listed at the end.
     the author lie inside its frontier (U11 option A). A shown post by a since-removed member
     carries `before_removal`;
   - a device hosts when its latest admin `HostPermit` is active, its own latest `HostAccept` is
-    active and its DID is a member.
+    active and its DID is a member;
+  - public groups: `Open` / `AdminsOnly` (admin as of the record's frontier) are causal, not
+    "latest `at`": a record whose `seen` includes an earlier one of its kind supersedes it, and
+    `(at, id)` only orders concurrent ones; the same rule as of a frontier decides an `OpenJoin`
+    and, for a non-admin's post, admins-only (`docs/design/public-group.md` §1).
   - System lines (joined, left, removed, admin granted/revoked, host added/removed) are derived
     from the same records; "removed" is placed at the 3rd counted flag.
 
@@ -82,8 +86,12 @@ the user was away; each is listed at the end.
   connection to a member and sends `Moved{auth, group, hosts}` (G2, see Rotation). Hosts relay every accepted
   update to every other session at once (live), and catch up a reconnecting member from its vv.
   Open groups only (`docs/design/public-group.md` §3, §4): hosts send `Presence{presence}` (a
-  host's DID-signed online list; hosts relay other hosts' frames as they are), and no member
-  receipt frames are sent (incoming ones are dropped).
+  host's DID-signed online list; hosts relay other hosts' frames as they are; taken only from a
+  session whose peer hosts, fresh by `seq` and within 2 minutes of our clock), and no member
+  receipt frames are sent (incoming ones are dropped). From a member's session (not from another
+  host) a host also refuses an `OpenJoin` unless the group is open now and it is the session's
+  own, and, while admins-only is on, a non-admin's post the rules would show (its `seen` is the
+  author's claim; `engine/admit.rs`).
 - **History (decision 3 of `group-shards.md`).** Every member device holds the full history of its
   groups. On every session, both sides (a host asks a member just as a member asks a host) page
   the peer's day list (`HistoryList{before, limit}` → `HistoryDays`, newest first) and fetch each
@@ -338,6 +346,10 @@ delivered}`. Test hook: `group_guess_codes_for_test(link, n)`.
 4. A removed admin's earlier flags still count; mutual removal removes both (§11 Q9).
 5. Removal is final in this slice (no readmission op yet, §11 Q7).
 6. Concurrent admin grant/revoke or host permit/revoke resolve by latest `(author clock, id)`.
+   Open: these (and `CallHostPermit`, join/leave, `EncKey`) still take the latest by the
+   author's clock even when not concurrent, so an admin with a fast or forged clock can make a
+   `HostPermit` outlast a later revoke; `Open` / `AdminsOnly` now use the causal rule
+   (public-group review); moving these to it too is a follow-up.
 7. A removed member's proof check accepts flags by the owner or by DIDs the owner made admin
    (any time); the full "admin as of the flag's frontier" rule applies once the flags are in the
    member's own doc (they are relayed before the removal notice).
