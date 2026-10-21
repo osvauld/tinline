@@ -62,5 +62,8 @@ jobs:
       - name: Timing tests (release)
         if: success() || failure()
         run: cargo test --release --locked -p p2pcore --test video_calls --test group_call
+      - name: Group burst (release)
+        if: success() || failure()
+        run: cargo test --release --locked -p p2pcore --test group_shards a_burst_of_200
       - name: Release upload safeguards
         run: python3 scripts/test_r2_upload.py
