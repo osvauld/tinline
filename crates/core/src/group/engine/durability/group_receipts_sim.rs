@@ -963,6 +963,7 @@ fn open_sess(
         dev: peer.dev,
         hosting,
         joining: false,
+        open_join: false,
         tx,
         peer_vv: Default::default(),
         peer_days: Default::default(),

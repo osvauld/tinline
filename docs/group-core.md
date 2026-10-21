@@ -64,7 +64,7 @@ the user was away; each is listed at the end.
 
 - **Two endpoints (U2).** Each device runs a second iroh endpoint for groups (key in the group
   store, one per account per install, independent of the private endpoint), ALPN
-  `tinline/group/4` (`wire::GROUP_ALPN`; /3 = postcard frames, /4 = plus member receipt frames). It is bound when the node starts and the account has a
+  `tinline/group/5` (`wire::GROUP_ALPN`; /3 = postcard frames, /4 = plus member receipt frames, /5 = plus open links). It is bound when the node starts and the account has a
   group, or on create/join, and closed with the private endpoint (stop, lock, account switch).
 - **Only hosts know member endpoints (U7).** Members dial only hosts. Hosts accept, keep a
   directory `did/dev → member group endpoint`, and dial other hosts like members do. Host

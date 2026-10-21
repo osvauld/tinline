@@ -115,13 +115,30 @@ impl ShortCode {
     }
 }
 
-/// Host side: an invite (or a device token) kept under a code.
+/// `CodeRow::expires` of a code that never expires (an open link). Never swept by
+/// `prune_codes`; it still counts as one of the group's codes.
+pub const NO_EXPIRY: u64 = u64::MAX;
+
+/// What a code admits.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum CodeKind {
+    /// An admin's signed invite (bearer grant, expires with it).
+    Invite,
+    /// No invite: admits only the issuer's own DID (its other devices), expires like an invite.
+    Device,
+    /// No invite: anyone may fetch it while the group is open (`Open{active}`); never expires
+    /// (`NO_EXPIRY`), dropped when the group closes (`docs/design/public-group.md` §2).
+    Open,
+}
+
+/// Host side: an invite (or a device token, or an open link) kept under a code.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CodeRow {
     pub gid: String,
-    /// `codec` bytes of a `SignedInvite`; `None` for a device code.
+    pub kind: CodeKind,
+    /// `codec` bytes of a `SignedInvite` (`CodeKind::Invite` only).
     pub invite: Option<Vec<u8>>,
-    /// Unix ms.
+    /// Unix ms; `NO_EXPIRY` for an open link.
     pub expires: u64,
     /// Who registered it.
     pub by: String,

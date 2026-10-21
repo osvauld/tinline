@@ -274,6 +274,9 @@ pub struct InviteToken {
     pub owner: String,
     pub invite: Option<SignedInvite>,
     pub hosts: Vec<SignedHostAddr>,
+    /// Fetched with an open link (`invite` is `None`): anyone may join with `OpenJoin` while
+    /// the group is open. `false` with no invite: a device token (own DID only).
+    pub open: bool,
 }
 
 #[cfg(test)]

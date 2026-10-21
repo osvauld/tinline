@@ -1,6 +1,7 @@
 # Public channel and lobby (alpha)
 
-Status: spec, decided with the user 2026-10-21. Not built. Base: dev, rebased after
+Status: spec, decided with the user 2026-10-21. Built: §1 (settings records) and §2 (open link,
+host admission; `tinline/group/5`); the rest not yet. Base: dev, rebased after
 `integrate/crate-split` lands (image posts build on its `crates/transfer`).
 
 ## Purpose
@@ -56,15 +57,32 @@ days). An open group needs no invite instead:
 - New member record `OpenJoin { name }` (group-core, built): a join that counts when the
   group was open as of the record's frontier (`Open{active: true}` by an admin, latest by
   `(at, id)` inside the frontier). Joins already made stay valid after closing.
-- `group_open_link(id)` (admins): writes `Open{active: true}` if not set and registers a
-  short code with no invite and no expiry on each reachable host; the link format is
-  unchanged (`tinline://g/...`). `Fetched` returns the token with `invite: None` and the group
-  marked open.
+- `group_open_link(id)` (admins): writes `Open{active: true}` if not set and registers one
+  short code with no invite and no expiry at every chat host reachable now (ourselves if we
+  host, then each host we have a session with); the link names us if we host, else the first
+  host that took it. The link format is unchanged (`tinline://g/...`). Asking again returns the
+  stored link (`GroupMeta.open_link`, local) while the host it names still hosts.
+- Codes say what they admit: `CodeKind::{Invite, Device, Open}` on `CodeRow` and in
+  `GroupMsg::Code` (an invite-less code is no longer ambiguous). An open code has
+  `expires = NO_EXPIRY` (`u64::MAX`). A host takes an `Open` code only from an admin while the
+  group is open (the admin's `Open` record goes first on the same session stream).
+- `Fetched` returns the token with `invite: None` and `InviteToken.open = true`;
+  `GroupInvitePeek.open` shows it. The joiner keeps `GroupMeta.open_join` and writes
+  `OpenJoin { name }` once it holds the group **and** the `Open{active: true}` record (so its
+  frontier names it), instead of `Join`.
+- `group_set_open(id, bool)` and `group_set_admins_only(id, bool)` (owner/admins; others get
+  `Rejected`) write the record only when the setting changes. `GroupSummary` and `GroupDetail`
+  carry `open` and `admins_only` (UniFFI default `false`).
 - **Host admission:** a `Hello` from a non-member without an invite is welcomed **only while
   the group is open** (derived `open` now); the joiner may then send only its own records
   until its `OpenJoin` makes it a member (as invite joiners today). Closing
-  (`group_set_open(id, false)`) refuses new joiners at once; the open code is dropped.
+  (`group_set_open(id, false)`) refuses new joiners at once; the open code is dropped here and
+  `RevokeCode` goes to every host we reach. A host we miss refuses (and drops) the open code
+  at its next fetch, as the group is closed. A joiner admitted while open whose `OpenJoin` has
+  not arrived when the group closes is refused at that update ("not open").
 - An open code counts as one of the 256 live codes and is not swept by expiry.
+- Wire: `tinline/group/5` (`Code.kind`, `InviteToken.open`; the token's encoding also changes
+  inside self/5 group lists and direct-invitation letters, pre-release, no compatibility).
 - Guess limits (3 per connection, 30/min per host) and the 300 ms wrong-answer delay stay.
 
 ### 3. Online list (presence)
@@ -126,14 +144,18 @@ Desktop first (it is a host), Android next:
 
 Deterministic, offline, in `crates/core/tests/` (names indicative):
 
-1. `open_link_joins_without_invite`: a non-member's `Hello` without an invite is welcomed
-   while open and its `OpenJoin` makes it a member (unit rule: `open_join_counts_only_while_open`, built).
-2. `closing_refuses_new_open_joins_keeps_members`: after `Open{false}`, a new joiner gets
-   `Refused`; an existing member still syncs.
+1. `open_link_joins_without_invite` (built, `crates/core/tests/public_group.rs`): a
+   non-member's `Hello` without an invite is welcomed while open and its `OpenJoin` makes it a
+   member (unit rule: `open_join_counts_only_while_open`, built; code rows:
+   `open_code_never_expires_and_counts`, built).
+2. `closing_refuses_new_open_joins_keeps_members` (built): after `Open{false}`, the link is
+   refused at fetch and a joiner holding a token fetched while open gets `Refused` at `Hello`;
+   an existing member still syncs.
 3. `admins_only_hides_member_posts_in_every_order` (built): a member post written after
    `AdminsOnly{true}` is hidden on every device regardless of delivery order; one written
    before stays visible.
-4. `admins_only_rejects_local_post`: `group_post` by a non-admin returns `Rejected`.
+4. `admins_only_rejects_local_post` (built): `group_post` by a non-admin returns
+   `Rejected("admins only")`.
 5. `presence_union_across_two_hosts`: members on host A and host B both appear online to a
    member of either host within 20 s; a disconnected member drops out within 75 s.
 6. `hidden_member_not_listed`: a member with presence hidden never appears in `group_online`.

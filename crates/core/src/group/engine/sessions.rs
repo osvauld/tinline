@@ -16,6 +16,7 @@ impl Inner {
         peer: proto::gcall::GroupNote,
         hosting: bool,
         joining: bool,
+        open_join: bool,
         theirs: Peer,
     ) -> Result<(), Error> {
         let (tx, mut rx) = mpsc::unbounded_channel();
@@ -27,6 +28,7 @@ impl Inner {
             dev: peer.dev,
             hosting,
             joining,
+            open_join,
             tx,
             peer_vv: Mutex::new(theirs.vv),
             peer_days: Mutex::new(theirs.days),

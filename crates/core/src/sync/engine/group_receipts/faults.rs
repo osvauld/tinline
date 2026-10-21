@@ -76,6 +76,7 @@ async fn session(
             owner: me.id.did().into(),
             hosts: vec![],
             invite: None,
+            open: false,
         };
         writer
             .send(&SelfMsg::Groups {

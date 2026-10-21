@@ -47,3 +47,32 @@ fn hostile_links_and_ids_do_not_panic() {
     assert!(!crate::valid_gid(&"A".repeat(64)));
     assert!(crate::valid_gid(&"0a".repeat(32)));
 }
+
+fn row(gid: &str, kind: CodeKind, expires: u64) -> CodeRow {
+    CodeRow { gid: gid.into(), kind, invite: None, expires, by: "did:key:o".into() }
+}
+
+// KIND: unit (public group §2) — an open link's code never expires: pruning keeps it (and its
+// issued row), lookups return it, and it counts as one of the group's codes; an expired invite
+// code next to it is swept.
+#[test]
+fn open_code_never_expires_and_counts() {
+    let s = GroupStore::in_memory("alpha beta");
+    let now = crdt::now_ms();
+    s.put_code(&[1; CODE_LEN], &row("g", CodeKind::Open, NO_EXPIRY)).unwrap();
+    s.put_issued(&[1; CODE_LEN], &IssuedRow { gid: "g".into(), host_did: "h".into(), host_dev: "00".into(), expires: NO_EXPIRY }).unwrap();
+    s.put_code(&[2; CODE_LEN], &row("g", CodeKind::Device, now - 1)).unwrap();
+    s.put_code(&[3; CODE_LEN], &row("g", CodeKind::Device, now + 60_000)).unwrap();
+    s.put_code(&[4; CODE_LEN], &row("other", CodeKind::Open, NO_EXPIRY)).unwrap();
+    assert_eq!(s.prune_codes(Some("g")).unwrap(), 2, "the open code and the live device code");
+    assert!(s.code(&[2; CODE_LEN]).unwrap().is_none(), "expired: swept");
+    let open = s.code(&[1; CODE_LEN]).unwrap().expect("the open code stays");
+    assert_eq!(open.kind, CodeKind::Open);
+    assert!(open.invite.is_none());
+    assert!(s.issued(&[1; CODE_LEN]).unwrap().is_some(), "its issued row stays");
+    // Dropping it (closing the group) forgets both rows.
+    s.drop_code(&[1; CODE_LEN]).unwrap();
+    assert!(s.code(&[1; CODE_LEN]).unwrap().is_none());
+    assert!(s.issued(&[1; CODE_LEN]).unwrap().is_none());
+    assert_eq!(s.prune_codes(Some("g")).unwrap(), 1);
+}

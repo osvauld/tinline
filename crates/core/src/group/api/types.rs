@@ -131,6 +131,12 @@ pub struct GroupDetail {
     /// An admin allowed THIS device to host the group's calls and it has not answered: show
     /// "host calls for this group?" and call `group_accept_call_host(group, true/false)`.
     pub call_host_requested_here: bool,
+    /// Anyone may join with the open link (public group §2).
+    #[uniffi(default = false)]
+    pub open: bool,
+    /// Only the owner and admins post (a channel); hide the composer for others.
+    #[uniffi(default = false)]
+    pub admins_only: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, uniffi::Record)]
@@ -145,6 +151,12 @@ pub struct GroupSummary {
     pub host_reachable: bool,
     pub last: Option<GroupMessage>,
     pub unread: u32,
+    /// Anyone may join with the open link (public group §2).
+    #[uniffi(default = false)]
+    pub open: bool,
+    /// Only the owner and admins post (a channel).
+    #[uniffi(default = false)]
+    pub admins_only: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, uniffi::Record)]
@@ -157,6 +169,9 @@ pub struct GroupInvitePeek {
     /// Unix ms.
     pub expires: Option<u64>,
     pub host_count: u32,
+    /// An open link (no invite, no expiry): joining makes us a member of a public group.
+    #[uniffi(default = false)]
+    pub open: bool,
 }
 
 /// Registered with `Node::set_group_events`. Called on core threads: do not block.

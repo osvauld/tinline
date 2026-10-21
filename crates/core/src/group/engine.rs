@@ -1,4 +1,4 @@
-//! The group runtime: the group endpoint (U2, `tinline/group/4`), host and member sessions,
+//! The group runtime: the group endpoint (U2, `tinline/group/5`), host and member sessions,
 //! live relay, catch-up, day-doc sync and removal enforcement. Everything hangs off
 //! `Inner::group` (`GroupRt`).
 //!
@@ -214,6 +214,9 @@ pub(crate) struct Sess {
     pub(crate) hosting: bool,
     /// Host side: the member was joining (not yet a member) at Hello.
     joining: bool,
+    /// Host side: that join is an open one (no invite, public group §2): refused once the group
+    /// closes before the joiner is a member.
+    open_join: bool,
     pub(crate) tx: mpsc::UnboundedSender<Out>,
     /// What the peer holds of the meta doc.
     peer_vv: Mutex<VersionVector>,
@@ -252,6 +255,7 @@ impl Sess {
     /// side, a joiner may send only its own records until it is a member.
     fn admit(&self) -> impl FnOnce(&GroupState, &[Entry], &[Entry]) -> Result<(), String> + use<> {
         let (did, joining, hosting) = (self.did.clone(), self.joining, self.hosting);
+        let open_join = self.open_join;
         move |state, _, fresh| {
             if hosting
                 && joining
@@ -259,6 +263,9 @@ impl Sess {
                 && fresh.iter().any(|e| e.rec.author != did)
             {
                 return Err("a joiner may send only its own records".into());
+            }
+            if hosting && open_join && !state.open && !state.is_member(&did) {
+                return Err(super::code::NOT_OPEN.into());
             }
             Ok(())
         }

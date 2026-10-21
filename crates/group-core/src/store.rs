@@ -91,6 +91,13 @@ pub struct GroupMeta {
     /// We are joining with this invite (`codec` bytes of a `SignedInvite`) and have not written our join yet.
     #[serde(default)]
     pub joining: Option<Vec<u8>>,
+    /// We are joining an open group without an invite (an open link) and have not written our
+    /// `OpenJoin` yet.
+    #[serde(default)]
+    pub open_join: bool,
+    /// Admins: the open link we made (`group_open_link`), handed out again until the group closes.
+    #[serde(default)]
+    pub open_link: Option<String>,
     /// The signed records a host showed us to prove we were removed (U9 visible notice).
     #[serde(default)]
     pub removal_proof: Vec<Vec<u8>>,

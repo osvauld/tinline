@@ -55,6 +55,7 @@ fn session(id: u64, gid: &str, did: &str) -> (Arc<Sess>, mpsc::UnboundedReceiver
             dev: [1; 32],
             hosting: true,
             joining: false,
+            open_join: false,
             tx,
             peer_vv: Default::default(),
             peer_days: Default::default(),

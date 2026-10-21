@@ -133,6 +133,8 @@ impl GroupApi for Fake {
                 host_reachable: g.online,
                 last: g.msgs.last().cloned(),
                 unread: g.msgs[g.read..].iter().filter(|m| !m.outgoing && m.kind == GroupItemKind::Post).count() as u32,
+                open: false,
+                admins_only: false,
             })
             .collect())
     }
@@ -190,6 +192,8 @@ impl GroupApi for Fake {
             call_hosts: Vec::new(),
             call_host_requests: Vec::new(),
             call_host_requested_here: false,
+            open: false,
+            admins_only: false,
         })
     }
     fn group_messages(&self, id: String, before: Option<String>, limit: u32) -> Result<GroupPage, Error> {
@@ -230,6 +234,7 @@ impl GroupApi for Fake {
             issuer_did: Some("did:key:own".into()),
             expires: Some(7 * 86_400_000),
             host_count: 1,
+            open: false,
         })
     }
     fn group_join(&self, token: String) -> Result<String, Error> {

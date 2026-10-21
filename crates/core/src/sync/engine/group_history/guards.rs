@@ -55,6 +55,7 @@ async fn stale_malformed_unnegotiated_revoked_and_failed_persistence_emit_no_ack
             owner: me.id.did().into(),
             hosts: vec![],
             invite: None,
+            open: false,
         })
         .unwrap();
         node.inner.group_own_apply(&[token], true);

@@ -52,6 +52,7 @@ async fn session(
         owner: me.id.did().into(),
         hosts: vec![],
         invite: None,
+        open: false,
     })
     .unwrap();
     let receiving = async {

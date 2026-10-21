@@ -141,7 +141,7 @@ fn invites_host_addrs_and_auth_verify() {
         "claimed DID did not sign"
     );
 
-    let tok = InviteToken { group: "g".into(), name: "n".into(), owner: a.did().into(), invite: Some(inv), hosts: vec![ha] };
+    let tok = InviteToken { group: "g".into(), name: "n".into(), owner: a.did().into(), invite: Some(inv), hosts: vec![ha], open: false };
     assert_eq!(cryptography::codec::from_bytes::<InviteToken>(&cryptography::codec::to_bytes(&tok).unwrap(), usize::MAX).unwrap(), tok);
 }
 

@@ -210,8 +210,10 @@ impl Inner {
                 core.refusals.lock().remove(&gid);
                 core.merge_hosts_from(&gid, &hosts, None);
                 let peer = Peer::new(&vv, &days)?;
-                self.group_run(core, conn, writer, reader, gid, auth, false, false, peer)
-                    .await
+                self.group_run(
+                    core, conn, writer, reader, gid, auth, false, false, false, peer,
+                )
+                .await
             }
             Some(GroupMsg::Removed {
                 records, update, ..
@@ -296,34 +298,52 @@ impl Inner {
         }
     }
 
-    /// We joined with an invite and now hold the group: write our `Join` (once).
+    /// We joined with an invite (or an open link) and now hold the group: write our `Join`
+    /// (`OpenJoin`) once. An open join waits until we hold the admin's `Open{active: true}`, so
+    /// our record names it in its frontier (otherwise it would not count).
     pub(super) fn group_maybe_join(self: &Arc<Self>, core: &Arc<GroupCore>, gid: &str) {
-        let invite = {
+        enum How {
+            Invite(SignedInvite),
+            Open,
+        }
+        let how = {
             let mut groups = core.groups.lock();
             let Some(live) = groups.get_mut(gid) else {
                 return;
             };
             if live.state.owner.is_none() || live.state.is_member(&core.did) {
-                if live.meta.joining.is_some() && live.state.is_member(&core.did) {
+                if (live.meta.joining.is_some() || live.meta.open_join)
+                    && live.state.is_member(&core.did)
+                {
                     live.meta.joining = None;
+                    live.meta.open_join = false;
                     let _ = core.store.put_meta(gid, &live.meta);
                 }
                 return;
             }
-            let Some(b) = live.meta.joining.take() else {
+            if let Some(b) = live.meta.joining.take() {
+                let _ = core.store.put_meta(gid, &live.meta);
+                match cryptography::codec::from_bytes::<SignedInvite>(&b, crate::store::MAX_ROW) {
+                    Ok(i) => How::Invite(i),
+                    Err(_) => return,
+                }
+            } else if live.meta.open_join && live.state.open {
+                live.meta.open_join = false;
+                let _ = core.store.put_meta(gid, &live.meta);
+                How::Open
+            } else {
                 return;
-            };
-            let _ = core.store.put_meta(gid, &live.meta);
-            match cryptography::codec::from_bytes::<SignedInvite>(&b, crate::store::MAX_ROW) {
-                Ok(i) => i,
-                Err(_) => return,
             }
         };
         let name = self
             .me()
             .map(|m| m.profile.name.clone())
             .unwrap_or_default();
-        match core.write(gid, Body::Join { invite, name }) {
+        let body = match how {
+            How::Invite(invite) => Body::Join { invite, name },
+            How::Open => Body::OpenJoin { name },
+        };
+        match core.write(gid, body) {
             Ok((_, c)) => self.group_after(core, c, None),
             Err(e) => tracing::warn!("group join: {e}"),
         }

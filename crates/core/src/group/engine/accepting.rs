@@ -88,7 +88,11 @@ impl Inner {
         enum Verdict {
             Refuse(&'static str),
             Removed(Vec<Vec<u8>>, Vec<u8>, Option<Vec<u8>>),
-            Welcome { joining: bool },
+            /// `open_join`: a joiner without an invite, admitted because the group is open.
+            Welcome {
+                joining: bool,
+                open_join: bool,
+            },
         }
         let verdict = {
             let groups = core.groups.lock();
@@ -106,16 +110,27 @@ impl Inner {
                         upto,
                     )
                 }
-                Some(live) if live.state.is_member(&auth.did) => {
-                    Verdict::Welcome { joining: false }
-                }
+                Some(live) if live.state.is_member(&auth.did) => Verdict::Welcome {
+                    joining: false,
+                    open_join: false,
+                },
                 Some(live) => {
                     let ok = invite
                         .as_ref()
                         .and_then(|i| redeem_invite(i, &group, &auth.did, now_ms(), &core.store))
                         .is_some_and(|i| live.state.is_admin(&i.iss));
                     if ok {
-                        Verdict::Welcome { joining: true }
+                        Verdict::Welcome {
+                            joining: true,
+                            open_join: false,
+                        }
+                    } else if invite.is_none() && live.state.open {
+                        // Public group §2: an open group admits anyone without an invite, while
+                        // it is open now; the joiner's `OpenJoin` then makes it a member.
+                        Verdict::Welcome {
+                            joining: true,
+                            open_join: true,
+                        }
                     } else {
                         Verdict::Refuse("not a member")
                     }
@@ -145,7 +160,7 @@ impl Inner {
                 let _ = tokio::time::timeout(Duration::from_secs(2), conn.closed()).await;
                 Ok(())
             }
-            Verdict::Welcome { joining } => {
+            Verdict::Welcome { joining, open_join } => {
                 // U7: the host keeps the member device's group endpoint.
                 let relay = relay.filter(|r| r.len() <= 300);
                 let entry = DirEntry {
@@ -185,8 +200,10 @@ impl Inner {
                     })
                     .await?;
                 let peer = Peer::new(&vv, &days)?;
-                self.group_run(core, conn, writer, reader, group, auth, true, joining, peer)
-                    .await
+                self.group_run(
+                    core, conn, writer, reader, group, auth, true, joining, open_join, peer,
+                )
+                .await
             }
         }
     }

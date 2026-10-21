@@ -2,7 +2,7 @@
 //! that accept posts or move the read cursor, the signing pump, policy-checked import, export
 //! for dissemination and the status aggregate. Rules: `group::member_receipts`.
 //!
-//! Wire (`tinline/group/4`, between members and hosts only, U7):
+//! Wire (`tinline/group/5`, between members and hosts only, U7):
 //! - After a session's doc catch-up each side sends `ReceiptHello` (its ledger VV for the recent
 //!   days it holds plus its unacknowledged outbox days). The answer is `Receipts` for every day
 //!   where the other side lacks something; each import is answered by `ReceiptAck` (what we
