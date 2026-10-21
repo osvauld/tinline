@@ -5765,6 +5765,7 @@ dependencies = [
  "tracing-subscriber",
  "uniffi",
  "video",
+ "video-call-core",
  "zeroize",
 ]
 
@@ -8693,6 +8694,15 @@ dependencies = [
  "rav1e",
  "thiserror 2.0.21",
  "tokio",
+]
+
+[[package]]
+name = "video-call-core"
+version = "0.1.38"
+dependencies = [
+ "proto",
+ "thiserror 2.0.21",
+ "video",
 ]
 
 [[package]]

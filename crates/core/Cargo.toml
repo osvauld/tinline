@@ -48,6 +48,7 @@ search-core.workspace = true
 receipts-core.workspace = true
 # The group model (records, docs, derived state, vault rows); re-exported under `group` (src/group/mod.rs).
 group-core.workspace = true
+video-call-core.workspace = true
 # Shared UI logic; its UniFFI items are re-exported from lib.rs so they land in libp2pcore.so.
 present = { path = "../present" }
 audio.workspace = true
