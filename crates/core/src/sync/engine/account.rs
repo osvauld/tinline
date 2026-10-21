@@ -8,6 +8,7 @@ impl Inner {
             my_did: me.id.did(),
             me_device: me.device,
             now_ms: crate::node::now_ms(),
+            relay_hint: crate::node::relay_hint,
         }
     }
 

@@ -239,14 +239,7 @@ pub(crate) fn retire_ticket(st: &mut State, keep: bool) {
     st.ticket = None;
 }
 
-/// Whether our ticket with this nonce still adds contacts: the current one, or an older one
-/// that was replaced but not reset, until it expires.
-pub(crate) fn ticket_live(st: &State, nonce: &str, now: u64) -> bool {
-    st.live_tickets.get(nonce).is_some_and(|&exp| exp > now) || current_nonce(st, now).as_deref() == Some(nonce)
-}
-
-/// The nonce of the ticket we currently hand out, if it is still valid.
-pub(super) fn current_nonce(state: &State, now: u64) -> Option<String> {
-    let t = ContactTicket::from_text(state.ticket.as_deref()?).ok()?;
-    Some(t.verify(now).ok()?.nonce)
-}
+// Whether a ticket of ours still adds contacts is `account_model::tickets` (`ticket_live`, read by
+// the issuance store).
+#[cfg(test)]
+pub(super) use account_model::tickets::current_nonce;

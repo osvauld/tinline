@@ -19,6 +19,25 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "366ffbaa4442f4684d91e2cd7c5ea7c4ed8add41959a31447066e279e432b618"
 
 [[package]]
+name = "account-model"
+version = "0.1.38"
+dependencies = [
+ "base64 0.23.1",
+ "blake3",
+ "crdt",
+ "cryptography",
+ "hex",
+ "identity",
+ "loro",
+ "proto",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+ "tracing",
+ "zeroize",
+]
+
+[[package]]
 name = "adler2"
 version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5729,6 +5748,7 @@ dependencies = [
 name = "p2pcore"
 version = "0.1.38"
 dependencies = [
+ "account-model",
  "audio",
  "base64 0.23.1",
  "blake3",

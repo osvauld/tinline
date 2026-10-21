@@ -93,6 +93,8 @@ pub use self::types::*;
 pub(crate) use self::api_contacts::*;
 pub(crate) use self::contacts::*;
 pub(crate) use self::call::*;
+// Only the unit tests reach `merge_device_list` through `node`; the account doc gets the model's.
+#[cfg(test)]
 pub(crate) use self::devices::*;
 pub(crate) use self::lifecycle::*;
 pub(crate) use self::persist::*;

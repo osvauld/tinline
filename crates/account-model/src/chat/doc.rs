@@ -254,7 +254,8 @@ impl Writer {
 
     /// For test hooks only: signs with `account` but writes under the writer ID that `as_did`
     /// would have for `device` (a forgery receivers must refuse).
-    pub(crate) fn forging(account: identity::Identity, device: [u8; 32], as_did: &str) -> Self {
+    #[doc(hidden)]
+    pub fn forging(account: identity::Identity, device: [u8; 32], as_did: &str) -> Self {
         Self { peer: writer_id(as_did, &device), account, device }
     }
 

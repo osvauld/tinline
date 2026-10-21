@@ -1,5 +1,6 @@
 //! Account profiles: existing own-device Loro sync + authenticated chat control + encrypted blobs.
-pub(crate) mod model;
+// Field validation is `account_model::profile`.
+pub(crate) use account_model::profile as model;
 mod pictures;
 mod test_api;
 #[cfg(test)]
@@ -501,13 +502,14 @@ impl Inner {
                 .profile
                 .as_ref()
                 .map(|p| ProfileDoc::load(&me.device, Some(&p.snapshot())))
-                .transpose();
+                .transpose()
+                .map_err(Error::from);
         }
         if !s.state.contacts.iter().any(|c| c.did == did) {
             return Ok(None);
         }
         let cache = s.profile_cache.as_ref().ok_or(Error::Locked)?;
-        cache.profile(did, &me.device)
+        Ok(cache.profile(did, &me.device)?)
     }
 }
 
@@ -592,10 +594,10 @@ impl Node {
                     "cannot request deletion of the current picture".into(),
                 ));
             }
-            p.request_deletion(
+            Ok(p.request_deletion(
                 &hash,
                 &proto::profile::sign_picture_deletion(&me.id, &hash, crate::node::now_ms())?,
-            )
+            )?)
         })
     }
     pub fn picture_deletion_permits(&self, did: String) -> Result<Vec<String>, Error> {

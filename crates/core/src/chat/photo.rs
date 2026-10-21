@@ -7,10 +7,8 @@
 use image::{DynamicImage, ImageDecoder, ImageReader, metadata::Orientation};
 use std::path::Path;
 
-/// Preview grid: columns x rows, RGB.
-pub const PREVIEW_W: u32 = 4;
-pub const PREVIEW_H: u32 = 3;
-pub const PREVIEW_LEN: usize = (PREVIEW_W * PREVIEW_H * 3) as usize;
+/// Preview grid: columns x rows, RGB (shared with the day doc's bounds, `account_model::chat::photo`).
+pub use account_model::chat::photo::{PREVIEW_H, PREVIEW_LEN, PREVIEW_W};
 /// Larger pictures still get their size; decoding them only for the preview isn't worth the memory.
 const MAX_PREVIEW_PIXELS: u64 = 64_000_000;
 

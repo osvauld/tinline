@@ -2,7 +2,8 @@
 //! files and voice as encrypted iroh-blobs. See `docs/chat.md`.
 
 pub mod blobs;
-pub mod crypt;
+// The day doc and the blob cipher are `account_model::chat`.
+pub use account_model::chat::{crypt, doc};
 
 #[cfg(test)]
 mod blobs_tests;
@@ -12,7 +13,4 @@ pub mod own;
 pub mod presence;
 pub mod store;
 pub mod wire;
-pub mod doc;
 pub mod photo;
-#[cfg(test)]
-mod doc_tests;

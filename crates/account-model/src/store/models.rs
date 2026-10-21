@@ -398,11 +398,11 @@ pub struct HeldNotice {
 }
 
 /// Most calls kept in the call log; the oldest fall off.
-pub(super) const MAX_HISTORY: usize = 500;
+pub const MAX_HISTORY: usize = 500;
 
 /// One finished call, as the UI lists it. `reason` is one of the stable end reasons in
 /// `docs/protocol.md`.
-#[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CallRecord {
     pub call_id: String,
     pub peer_did: String,

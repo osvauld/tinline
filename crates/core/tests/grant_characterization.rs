@@ -19,7 +19,7 @@
 //! - Renewal: only the callee's `Accept` carries `renewed_grant` (`node.rs:2753`); the caller keeps
 //!   it if it outlives the stored one (`node.rs:2839`, `grant_outlives` `:3153`).
 //! - Revocation: `State.revoked` (`crates/core/src/store.rs:169`) is read on both paths and
-//!   merged between own installs (`crates/core/src/sync/accdoc.rs:241`, `:400`), but no code path
+//!   merged between own installs (`crates/account-model/src/sync/accdoc.rs`), but no code path
 //!   adds to it. Blocking is per DID (`State.blocked`, `Node::remove_contact` `node.rs:984`).
 //!
 //! P6 (U13, U15) built separate tokens: the `KIND: limitation` tests below were flipped to the
