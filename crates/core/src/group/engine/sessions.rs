@@ -131,7 +131,11 @@ impl Inner {
                             }));
                             if let Some(mut c) = changed {
                                 if doc == DocId::Meta {
-                                    self.group_maybe_join(core, &sess.gid);
+                                    let ours = core.doc_vv(&sess.gid, &DocId::Meta);
+                                    let caught_up = ours
+                                        .partial_cmp(&sess.peer_vv.lock())
+                                        .is_some_and(|o| o != std::cmp::Ordering::Less);
+                                    self.group_maybe_join(core, &sess.gid, caught_up);
                                 }
                                 // Older than the days a session pushes live: history catching up.
                                 c.history = doc.day().is_some_and(|d| {

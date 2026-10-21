@@ -8,10 +8,13 @@
 //! - A member whose `Hello` said `presence: false` (or this account, for itself, while its own
 //!   setting is off) is never listed. A member whose visible session ended stays listed with
 //!   that time until the window passes, so a reconnect does not flicker.
-//! - Receivers accept a frame only for an open group, signed by an active host device, newer
-//!   (`seq`) than the one they hold from that host device. A host relays an accepted frame to
-//!   its other sessions as it came (the signature is the host's), so a member connected to one
-//!   host sees the members of every host; the `seq` check ends relay loops.
+//! - Receivers accept a frame only for an open group, from a session whose peer device hosts it
+//!   (never from a member), signed by an active host device, with an `at` within
+//!   `PRESENCE_MAX_SKEW_MS` of the local clock, and newer (`seq`) than any frame taken from that
+//!   host device: the highest `seq` is kept after the frame expires (until the group closes or
+//!   the device stops hosting), so an old frame cannot be replayed. A host relays an accepted
+//!   frame to its other sessions as it came (the signature is the host's), so a member
+//!   connected to one host sees the members of every host; the `seq` check ends relay loops.
 //! - Online = the union over the frames held (and, on a host, its own sessions): a DID some host
 //!   saw within `PRESENCE_WINDOW_MS`. Ages are taken on the host's clock (`at - last seen`) and
 //!   counted from when the frame arrived here, so clocks need not agree.
@@ -21,7 +24,7 @@ use std::collections::BTreeSet;
 
 use super::*;
 use crate::group::api::OnlineMember;
-use crate::group::record::{MAX_PRESENCE, Presence, SignedPresence};
+use crate::group::record::{MAX_PRESENCE, MAX_PRESENCE_DID, Presence, SignedPresence};
 use crate::group::relay::{Route, relay_targets};
 
 /// A host sends its online list this often.
@@ -32,6 +35,9 @@ pub const PRESENCE_WINDOW_MS: u64 = 60_000;
 const PRESENCE_MIN_GAP_MS: u64 = 1_000;
 /// Largest presence frame looked at (500 DIDs fit well inside).
 const MAX_PRESENCE_BLOB: usize = 70 * 1024;
+/// A frame whose `at` is further than this from our clock is dropped (a replay, or a host
+/// whose clock is far off).
+pub const PRESENCE_MAX_SKEW_MS: u64 = 120_000;
 
 /// Presence state of one account's group runtime.
 pub(crate) struct PresenceRt {
@@ -67,10 +73,69 @@ struct St {
     ours: HashMap<String, Ours>,
     /// The newest frame of each other host device, per group.
     frames: HashMap<String, HashMap<(String, [u8; 32]), Held>>,
+    /// The highest `seq` taken from each host device, per group: kept after its frame expires
+    /// (so an old frame cannot be replayed), until the group is no longer open or the device no
+    /// longer hosts it. One number per active host: bounded.
+    high: HashMap<String, HashMap<(String, [u8; 32]), u64>>,
     /// Per group: the online DIDs `on_group_presence` last reported.
     notified: HashMap<String, BTreeSet<String>>,
     /// Our last `seq` (all groups): at least the clock, so it keeps growing across restarts.
     seq: u64,
+}
+
+impl St {
+    /// Takes `p` (already verified: signed by an active host of this open group) if it is newer
+    /// than anything taken from that host device and its `at` is within
+    /// `PRESENCE_MAX_SKEW_MS` of `now`; then it is the held frame of that device.
+    fn take(&mut self, p: Presence, signed: SignedPresence, now: u64) -> bool {
+        if p.at.abs_diff(now) > PRESENCE_MAX_SKEW_MS {
+            return false;
+        }
+        let key = (p.host.clone(), p.dev);
+        let high = self.high.entry(p.group.clone()).or_default();
+        if high.get(&key).is_some_and(|s| *s >= p.seq) {
+            return false;
+        }
+        high.insert(key.clone(), p.seq);
+        self.frames.entry(p.group.clone()).or_default().insert(
+            key,
+            Held {
+                p,
+                signed,
+                recv: now,
+            },
+        );
+        true
+    }
+
+    /// Forgets what belongs to groups that are no longer open (`open`: each open group's active
+    /// host devices) and frames older than `window`; `notified` keeps a closed group only until
+    /// its empty list was reported.
+    fn prune(
+        &mut self,
+        open: &HashMap<String, HashSet<(String, [u8; 32])>>,
+        now: u64,
+        window: u64,
+    ) {
+        self.frames.retain(|g, _| open.contains_key(g));
+        self.ours.retain(|g, _| open.contains_key(g));
+        self.left.retain(|g, _| open.contains_key(g));
+        self.high.retain(|g, m| {
+            let Some(hosts) = open.get(g) else {
+                return false;
+            };
+            m.retain(|k, _| hosts.contains(k));
+            !m.is_empty()
+        });
+        self.notified
+            .retain(|g, s| open.contains_key(g) || !s.is_empty());
+        for m in self.left.values_mut() {
+            m.retain(|_, t| now.saturating_sub(*t) <= window);
+        }
+        for m in self.frames.values_mut() {
+            m.retain(|_, h| now.saturating_sub(h.recv) <= window);
+        }
+    }
 }
 
 #[derive(Default)]
@@ -145,7 +210,10 @@ impl Inner {
             };
             seen.into_iter()
                 .filter(|(d, _)| {
-                    !hidden.contains(d) && l.state.is_member(d) && !l.state.is_removed(d)
+                    !hidden.contains(d)
+                        && l.state.is_member(d)
+                        && !l.state.is_removed(d)
+                        && d.len() <= MAX_PRESENCE_DID
                 })
                 .collect()
         };
@@ -197,35 +265,37 @@ impl Inner {
     pub(super) fn group_presence_tick(self: &Arc<Self>, core: &Arc<GroupCore>) {
         let (every, window) = self.group_presence_timing();
         let now = now_ms();
-        let groups: Vec<(String, bool, bool)> = core
-            .groups
-            .lock()
-            .iter()
-            .map(|(g, l)| {
-                (
-                    g.clone(),
-                    l.state.open,
-                    l.state.is_host(&core.did, &core.dev),
-                )
-            })
-            .collect();
-        {
-            let open: HashSet<&str> = groups
+        let (groups, open): (
+            Vec<(String, bool, bool)>,
+            HashMap<String, HashSet<(String, [u8; 32])>>,
+        ) = {
+            let all = core.groups.lock();
+            let groups = all
                 .iter()
-                .filter(|g| g.1)
-                .map(|g| g.0.as_str())
+                .map(|(g, l)| {
+                    (
+                        g.clone(),
+                        l.state.open,
+                        l.state.is_host(&core.did, &core.dev),
+                    )
+                })
                 .collect();
-            let mut st = core.presence.st.lock();
-            st.frames.retain(|g, _| open.contains(g.as_str()));
-            st.ours.retain(|g, _| open.contains(g.as_str()));
-            st.left.retain(|g, _| open.contains(g.as_str()));
-            for m in st.left.values_mut() {
-                m.retain(|_, t| now.saturating_sub(*t) <= window);
-            }
-            for m in st.frames.values_mut() {
-                m.retain(|_, h| now.saturating_sub(h.recv) <= window);
-            }
-        }
+            let open = all
+                .iter()
+                .filter(|(_, l)| l.state.open)
+                .map(|(g, l)| {
+                    let hosts = l
+                        .state
+                        .hosts
+                        .iter()
+                        .map(|h| (h.did.clone(), h.dev))
+                        .collect();
+                    (g.clone(), hosts)
+                })
+                .collect();
+            (groups, open)
+        };
+        core.presence.st.lock().prune(&open, now, window);
         for (gid, open, host) in groups {
             if open && host {
                 let due = core.presence.st.lock().ours.get(&gid).is_none_or(|o| {
@@ -307,29 +377,15 @@ impl Inner {
         if p.group != sess.gid || (p.host == core.did && p.dev == core.dev) {
             return;
         }
-        let ok = core
-            .groups
-            .lock()
-            .get(&sess.gid)
-            .is_some_and(|l| l.state.open && l.state.is_host(&p.host, &p.dev));
-        if !ok {
+        // Only from a host: the session's peer device hosts the group (we dialled it, or it is
+        // another host that dialled us). A member never hands us presence.
+        let ok = core.groups.lock().get(&sess.gid).is_some_and(|l| {
+            l.state.open
+                && l.state.is_host(&p.host, &p.dev)
+                && l.state.is_host(&sess.did, &sess.dev)
+        });
+        if !ok || !core.presence.st.lock().take(p, signed.clone(), now_ms()) {
             return;
-        }
-        {
-            let mut st = core.presence.st.lock();
-            let held = st.frames.entry(sess.gid.clone()).or_default();
-            let key = (p.host.clone(), p.dev);
-            if held.get(&key).is_some_and(|h| h.p.seq >= p.seq) {
-                return;
-            }
-            held.insert(
-                key,
-                Held {
-                    p,
-                    signed: signed.clone(),
-                    recv: now_ms(),
-                },
-            );
         }
         for s in relay_targets(core, &sess.gid, Some(sess.id), &Route::All) {
             let _ = s.tx.send(Out::Msg(GroupMsg::Presence {
@@ -500,3 +556,6 @@ impl Inner {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests;

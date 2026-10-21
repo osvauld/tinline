@@ -67,8 +67,9 @@ pub enum Body {
     /// The author joins an open group (`Open{active: true}` as of this record's frontier)
     /// without an invite; `name` as in `Join`. Inert in a group that was not open.
     OpenJoin { name: String },
-    /// Owner or admin: anyone may join with `OpenJoin` (or no longer may). Latest by
-    /// `(at, id)` among those inside a frontier counts. Members who joined stay.
+    /// Owner or admin: anyone may join with `OpenJoin` (or no longer may). Causal: a later
+    /// record that saw this one supersedes it; `(at, id)` only orders concurrent ones
+    /// (`state.rs`). Members who joined stay.
     Open { active: bool },
     /// Owner or admin: only the owner and admins may post (a channel), or everyone again.
     /// Judged per post as of its frontier, like membership (U11).
@@ -244,6 +245,10 @@ pub type SignedHostAddr = Signed<HostAddr>;
 
 /// Most members one `Presence` lists (public group §3: larger groups show "500+ online").
 pub const MAX_PRESENCE: usize = 500;
+/// Longest member DID a `Presence` lists. A member's DID is a `did:key` that signs its records
+/// (56 bytes for ed25519), so this never drops a real member; it bounds a full frame to
+/// 500 × (64 + 11) bytes plus the header, well inside `MAX_BODY`.
+pub const MAX_PRESENCE_DID: usize = 64;
 
 /// "Host device `dev` of `host` saw these members online", DID-signed by the host (public group
 /// §3). `online` is `(member DID, last seen)` and `at` the host's clock when it signed, so a
@@ -262,13 +267,13 @@ pub struct Presence {
 
 impl Signable for Presence {
     const DOMAIN: domains::Domain = domains::GROUP_PRESENCE;
-    /// 500 DIDs of ~60 bytes plus their times, with room.
+    /// 500 DIDs of at most `MAX_PRESENCE_DID` bytes plus their times, with room.
     const MAX_BODY: usize = 64 * 1024;
     fn signer(&self) -> Signer<'_> {
         Signer::Did(&self.host)
     }
     fn check(&self) -> proto::Result<()> {
-        if self.online.len() > MAX_PRESENCE || self.online.iter().any(|(d, _)| d.len() > 200) {
+        if self.online.len() > MAX_PRESENCE || self.online.iter().any(|(d, _)| d.len() > MAX_PRESENCE_DID) || self.host.len() > 200 || self.group.len() > 200 {
             return Err(proto::Error::Decode);
         }
         Ok(())

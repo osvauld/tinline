@@ -302,10 +302,13 @@ impl Inner {
 
     /// We joined with an invite (or an open link) and now hold the group: write our `Join`
     /// (`OpenJoin`) once. An open join waits until we hold the admin's `Open{active: true}`, so
-    /// our record names it in its frontier (otherwise it would not count).
-    pub(super) fn group_maybe_join(self: &Arc<Self>, core: &Arc<GroupCore>, gid: &str) {
+    /// our record names it in its frontier (otherwise it would not count). `caught_up`: we hold
+    /// all of the meta doc the host had at `Welcome`, so a group that is still closed was closed
+    /// before we could join: the open join ends there.
+    pub(super) fn group_maybe_join(self: &Arc<Self>, core: &Arc<GroupCore>, gid: &str, caught_up: bool) {
         enum How {
-            Invite(SignedInvite),
+            /// The invite, and its stored bytes (to put back if the write fails).
+            Invite(SignedInvite, Vec<u8>),
             Open,
         }
         let how = {
@@ -323,16 +326,28 @@ impl Inner {
                 }
                 return;
             }
+            // The flag is cleared before the write (so a concurrent call does not write twice)
+            // and put back if the write fails (so it is tried again).
             if let Some(b) = live.meta.joining.take() {
                 let _ = core.store.put_meta(gid, &live.meta);
                 match cryptography::codec::from_bytes::<SignedInvite>(&b, crate::store::MAX_ROW) {
-                    Ok(i) => How::Invite(i),
+                    Ok(i) => How::Invite(i, b),
                     Err(_) => return,
                 }
             } else if live.meta.open_join && live.state.open {
                 live.meta.open_join = false;
                 let _ = core.store.put_meta(gid, &live.meta);
                 How::Open
+            } else if live.meta.open_join && caught_up {
+                // Closed before our `OpenJoin` was written: it would not count, and a host refuses
+                // it. Stop here; `group_join` reports the refusal (and forgets the group).
+                live.meta.open_join = false;
+                let _ = core.store.put_meta(gid, &live.meta);
+                drop(groups);
+                core.refusals
+                    .lock()
+                    .insert(gid.to_string(), super::super::code::NOT_OPEN.into());
+                return;
             } else {
                 return;
             }
@@ -341,13 +356,25 @@ impl Inner {
             .me()
             .map(|m| m.profile.name.clone())
             .unwrap_or_default();
-        let body = match how {
-            How::Invite(invite) => Body::Join { invite, name },
-            How::Open => Body::OpenJoin { name },
+        let (body, restore) = match how {
+            How::Invite(invite, b) => (Body::Join { invite, name }, Some(b)),
+            How::Open => (Body::OpenJoin { name }, None),
         };
         match core.write(gid, body) {
             Ok((_, c)) => self.group_after(core, c, None),
-            Err(e) => tracing::warn!("group join: {e}"),
+            Err(e) => {
+                tracing::warn!("group join: {e}");
+                let mut groups = core.groups.lock();
+                if let Some(live) = groups.get_mut(gid)
+                    && !live.state.is_member(&core.did)
+                {
+                    match restore {
+                        Some(b) => live.meta.joining = Some(b),
+                        None => live.meta.open_join = true,
+                    }
+                    let _ = core.store.put_meta(gid, &live.meta);
+                }
+            }
         }
     }
 }
