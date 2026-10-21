@@ -4,7 +4,7 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 publish = false
-description = "Account data model: the persisted state and account dirs, the passphrase vault, the 1:1 chat day doc and its blob encryption, and the own-device Loro docs (account, calls, profile, profile cache); p2pcore owns the node, sessions, wire and app API"
+description = "Account data model: the persisted state and account dirs, the passphrase vault, and the own-device Loro docs (account, calls, profile, profile cache); p2pcore owns the node, sessions, wire and app API"
 
 [features]
 # Test hooks (`AccountDirs::root`) for p2pcore's tests and synthetic peers.
@@ -24,6 +24,3 @@ base64.workspace = true
 hex = "0.4"
 tracing = "0.1"
 
-[dev-dependencies]
-# The chat doc tests hash a forged span the way an attacker would.
-blake3 = "1"

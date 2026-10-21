@@ -23,7 +23,6 @@ name = "account-model"
 version = "0.1.38"
 dependencies = [
  "base64 0.23.1",
- "blake3",
  "crdt",
  "cryptography",
  "hex",
@@ -1083,6 +1082,24 @@ dependencies = [
  "cfg-if",
  "cpufeatures 0.3.1",
  "rand_core 0.10.1",
+]
+
+[[package]]
+name = "chat-core"
+version = "0.1.38"
+dependencies = [
+ "blake3",
+ "crdt",
+ "cryptography",
+ "hex",
+ "identity",
+ "image",
+ "loro",
+ "proto",
+ "serde",
+ "serde_json",
+ "storage",
+ "thiserror 2.0.21",
 ]
 
 [[package]]
@@ -5754,6 +5771,7 @@ dependencies = [
  "blake3",
  "bs58",
  "bytes",
+ "chat-core",
  "crdt",
  "cryptography",
  "gcall-core",

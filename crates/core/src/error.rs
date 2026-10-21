@@ -97,6 +97,14 @@ impl From<group_core::Error> for Error {
     }
 }
 
+impl From<chat_core::Error> for Error {
+    fn from(e: chat_core::Error) -> Self {
+        match e {
+            chat_core::Error::Io(s) => Error::Io(s),
+        }
+    }
+}
+
 impl From<account_model::Error> for Error {
     fn from(e: account_model::Error) -> Self {
         match e {
