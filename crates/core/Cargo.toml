@@ -51,6 +51,7 @@ group-core.workspace = true
 # The account model (state, account dirs, vault, chat day doc, own-device docs); its modules
 # keep their old paths (src/lib.rs, src/store.rs, src/chat/mod.rs, src/sync/mod.rs).
 account-model.workspace = true
+transfer.workspace = true
 video-call-core.workspace = true
 # Shared UI logic; its UniFFI items are re-exported from lib.rs so they land in libp2pcore.so.
 present = { path = "../present" }

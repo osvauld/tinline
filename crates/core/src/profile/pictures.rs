@@ -97,9 +97,9 @@ impl Inner {
         if self.me()?.epoch != me.epoch {
             return Err(Error::Locked);
         }
-        let hash = hub.add_profile_bytes(me.id.did(), key, plain).await?;
-        let _claim = hub.profile_claim(me.id.did(), &hash).await;
-        hub.keep_profile(me.id.did(), &hash).await?;
+        let hash = hub.add_bytes_owned(me.id.did(), key, plain).await?;
+        let _claim = hub.claim_owned(me.id.did(), &hash).await;
+        hub.keep_owned(me.id.did(), &hash).await?;
         let size = hub
             .complete_size(&hash)
             .await
@@ -128,7 +128,7 @@ impl Inner {
             Some(&descriptor.hash),
         );
         if result.is_err() {
-            let _ = hub.release_profile(me.id.did(), &hash).await;
+            let _ = hub.release_owned(me.id.did(), &hash).await;
         }
         result
     }
@@ -153,7 +153,7 @@ impl Inner {
         }
         let hub = self.chat_hub().await?;
         let hash = p.hash.parse::<Hash>().map_err(bad)?;
-        let _claim = hub.profile_claim(did, &hash).await;
+        let _claim = hub.claim_owned(did, &hash).await;
         if hub.complete_size(&hash).await != Some(p.size) {
             return Ok(None);
         }
@@ -281,11 +281,11 @@ impl Inner {
             return Err(Error::Locked);
         }
         let hash = p.hash.parse::<Hash>().map_err(bad)?;
-        let claim = hub.profile_claim(did, &hash).await;
+        let claim = hub.claim_owned(did, &hash).await;
         if self.me()?.epoch != epoch {
             return Err(Error::Locked);
         }
-        hub.keep_profile(did, &hash).await?;
+        hub.keep_owned(did, &hash).await?;
         let mut sources = self
             .own_blob_sources()
             .into_iter()
@@ -310,7 +310,7 @@ impl Inner {
                     .connect(addr, iroh_blobs::ALPN)
                     .await
                     .map_err(Error::net)?;
-                let result = hub.fetch_profile(did, conn.clone(), hash, p.size).await;
+                let result = hub.fetch_owned(did, conn.clone(), hash, p.size).await.map_err(Error::from);
                 conn.close(0u32.into(), b"picture fetched");
                 result
             };
@@ -380,7 +380,7 @@ impl Inner {
     ) -> Result<(), Error> {
         let hub = self.chat_hub().await?;
         let hash = hash.parse::<Hash>().map_err(bad)?;
-        let _claim = hub.profile_claim(did, &hash).await;
+        let _claim = hub.claim_owned(did, &hash).await;
         {
             let s = self.shared.lock();
             if s.epoch != epoch {
@@ -395,7 +395,7 @@ impl Inner {
             }
         }
         // Purpose- and owner-specific protection tags avoid races with other owners and chat.
-        hub.release_profile(did, &hash).await
+        Ok(hub.release_owned(did, &hash).await?)
     }
 }
 

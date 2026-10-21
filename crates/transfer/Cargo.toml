@@ -1,0 +1,17 @@
+[package]
+name = "transfer"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+description = "Encrypted blob transfer on iroh-blobs: the chunked blob cipher, the blob store with GC tags and a device-keyed serving gate, resumable fetch with stall detection and upload progress; no chat or account types, no UniFFI"
+
+[dependencies]
+cryptography.workspace = true
+iroh = "1.3"
+iroh-blobs = { version = "0.103", default-features = false, features = ["fs-store"] }
+n0-future = "0.3"
+parking_lot = "0.12"
+hex = "0.4"
+thiserror.workspace = true
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync", "time", "fs", "io-util"] }
