@@ -39,6 +39,7 @@ use crate::node::{Inner, addr_for, now_ms, relay_of};
 use crate::wire::DIAL_TIMEOUT;
 
 mod accepting;
+pub(crate) mod admit;
 mod changes;
 mod dialing;
 mod documents;
@@ -259,23 +260,20 @@ impl Sess {
         }
     }
 
-    /// The session's policy for what the peer sends (`GroupCore::apply`'s `admit`): on the host
-    /// side, a joiner may send only its own records until it is a member.
+    /// The session's policy for what the peer sends (`GroupCore::apply`'s `admit`; the rules
+    /// are `admit::SessPolicy`).
     fn admit(&self) -> impl FnOnce(&GroupState, &[Entry], &[Entry]) -> Result<(), String> + use<> {
-        let (did, joining, hosting) = (self.did.clone(), self.joining, self.hosting);
-        let open_join = self.open_join;
-        move |state, _, fresh| {
-            if hosting
-                && joining
-                && !state.is_member(&did)
-                && fresh.iter().any(|e| e.rec.author != did)
-            {
-                return Err("a joiner may send only its own records".into());
-            }
-            if hosting && open_join && !state.open && !state.is_member(&did) {
-                return Err(super::code::NOT_OPEN.into());
-            }
-            Ok(())
+        let policy = self.policy();
+        move |state, _, fresh| policy.admit(state, fresh)
+    }
+
+    pub(crate) fn policy(&self) -> admit::SessPolicy {
+        admit::SessPolicy {
+            did: self.did.clone(),
+            dev: self.dev,
+            hosting: self.hosting,
+            joining: self.joining,
+            open_join: self.open_join,
         }
     }
 }
