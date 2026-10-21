@@ -147,3 +147,6 @@ pub fn fit(sw: usize, sh: usize, rw: usize, rh: usize) -> (usize, usize) {
     };
     ((w & !1).max(2), (h & !1).max(2))
 }
+
+#[cfg(test)]
+mod tests;
