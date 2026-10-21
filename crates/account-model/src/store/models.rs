@@ -32,7 +32,7 @@ pub struct ProfileV2 {
 
 /// A fresh device ID (`ProfileV2::device_id`).
 pub fn new_device_id() -> String {
-    hex::encode(crate::chat::doc::new_device_value())
+    hex::encode(crdt::new_device_value())
 }
 
 impl ProfileV2 {
