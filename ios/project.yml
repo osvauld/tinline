@@ -13,6 +13,8 @@ targets:
     platform: iOS
     sources:
       - Tinline
+      - path: build/generated/p2pcore.swift
+      - path: build/generated/present.swift
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.osvauld.tinline
