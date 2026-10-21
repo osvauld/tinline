@@ -50,10 +50,12 @@ impl Node {
         self.inner.group_message(&core, &group_id, &item.ok_or(Error::NotFound)?).ok_or(Error::NotFound)
     }
 
-    /// Compacts the old day docs now (otherwise every hour); returns how many it closed.
+    /// Compacts the old day docs now (otherwise every hour); returns how many it closed. Also
+    /// counts as the hourly run, so none starts behind the test's back for the next hour, and
+    /// waits out one already running.
     pub fn group_compact_now_for_test(&self) -> Result<u32, Error> {
         let core = self.inner.group_core()?;
-        Ok(self.inner.group_compact(&core))
+        Ok(self.inner.group_compact_now(&core))
     }
 
     /// The days of posts this device holds of the group, oldest first.

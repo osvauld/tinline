@@ -148,6 +148,7 @@ fn capacity_speaker_recovers_when_previous_selected_speakers_go_silent() {
 /// Q2 (2026-10-14): twelve real nodes all talking at once, each with its own tone. The host
 /// forwards every speaker, so every node hears the other eleven tones and never its own.
 #[test]
+#[cfg_attr(debug_assertions, ignore = "twelve live nodes mixing audio: run with --release")]
 fn capacity_twelve_talking_at_once_each_hears_the_other_eleven() {
     const HZ: [f32; 12] = [330.0, 450.0, 570.0, 690.0, 810.0, 930.0, 1050.0, 1170.0, 1290.0, 1410.0, 1530.0, 1650.0];
     let mut ps = peers("all-talk", 12);

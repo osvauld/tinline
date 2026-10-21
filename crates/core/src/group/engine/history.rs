@@ -168,7 +168,14 @@ impl Inner {
 
     /// Days at least `CLOSE_AFTER_DAYS` old become one snapshot row each (as in 1:1 chat);
     /// returns how many days it closed. Nothing is dropped.
+    /// `group_compact` that also counts as the hourly run (tests: nothing compacts behind them).
+    pub(crate) fn group_compact_now(&self, core: &GroupCore) -> u32 {
+        *core.compacted.lock() = Some(std::time::Instant::now());
+        self.group_compact(core)
+    }
+
     pub(crate) fn group_compact(&self, core: &GroupCore) -> u32 {
+        let _one = core.compacting.lock();
         let limit = day_of(now_ms() as i64 - CLOSE_AFTER_DAYS * DAY_MS);
         let mut closed = 0;
         let gids: Vec<String> = core.groups.lock().keys().cloned().collect();
