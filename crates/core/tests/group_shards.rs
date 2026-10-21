@@ -23,6 +23,13 @@ const S: Suite = Suite("g2");
 /// Restarts `p`'s process (a new `Node` over the same directory); with `lose_groups`, the group
 /// store (`group.redb`) is gone when it comes back (lost, deleted, or a backup without it).
 fn restart(p: &mut Peer, lose_groups: bool) {
+    relaunch(p, lose_groups);
+    online(&p.node);
+}
+
+/// `restart`, but the new node is only unlocked, not started: no session opens (and nothing is
+/// pushed or pulled) until the test calls `online`.
+fn relaunch(p: &mut Peer, lose_groups: bool) {
     p.node.stop();
     std::thread::sleep(Duration::from_secs(2));
     let node = Node::new(p.dir.to_string_lossy().into(), Arc::new(Quiet)).unwrap();
@@ -39,7 +46,6 @@ fn restart(p: &mut Peer, lose_groups: bool) {
         }
     }
     p.node.unlock(PASS.into()).unwrap();
-    online(&p.node);
 }
 
 
@@ -120,11 +126,13 @@ fn the_chat_list_row_and_unread_do_not_load_days() {
     let row = |p: &Peer| p.node.groups().unwrap().into_iter().find(|s| s.id == g).unwrap();
     assert_eq!(row(&a).unread, 3);
     assert_eq!(row(&a).last.as_ref().map(|m| m.text.clone()), Some("news 2".into()));
-    restart(&mut a, false);
+    // Offline: once a's session with the host opens, it pushes today's day (which loads it).
+    relaunch(&mut a, false);
     assert_eq!(a.node.group_cached_days_for_test(g.clone()).unwrap(), 0);
     let r = row(&a);
     assert_eq!((r.unread, r.last.map(|m| m.text)), (3, Some("news 2".into())));
     assert_eq!(a.node.group_cached_days_for_test(g.clone()).unwrap(), 0, "the list loaded no day doc");
+    online(&a.node);
     a.node.group_mark_read(g.clone()).unwrap();
     assert_eq!(row(&a).unread, 0);
     o.node.group_post(g.clone(), "news 3".into(), None).unwrap();
@@ -196,10 +204,12 @@ fn a_wiped_host_is_refilled_from_a_member() {
     // Texts can show before every day is stored (under load); wait for the stored days too.
     eventually(WAIT, "a holds it all", || texts(&a, &g).len() == want.len() + 2 && days(&a) == days(&o));
     let held = days(&a);
-    // The host forgets every day, then restarts: its session with a comes back, and it asks a.
+    // The host restarts and forgets every day before it goes online (in session, a would push
+    // them straight back); then its session with a comes back, and it asks a.
+    relaunch(&mut o, false);
     assert_eq!(o.node.group_drop_days_for_test(g.clone()).unwrap() as usize, held.len(), "a holds {held:?}");
     assert!(texts(&o, &g).is_empty());
-    restart(&mut o, false);
+    online(&o.node);
     o.node.group_backfill_pause_ms_for_test(5);
     eventually(WAIT, "the host has its history back", || texts(&o, &g).len() == want.len() + 2);
     assert_eq!(o.node.group_days_for_test(g.clone()).unwrap(), held);

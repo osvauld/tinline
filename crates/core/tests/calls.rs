@@ -234,6 +234,9 @@ fn second_call_declined_ignored_or_answered() {
     // Only calls that arrive during a call read this, when they start.
     unsafe { std::env::set_var("P2P_WAITING_RING_SECS", "4") };
     let (a, b, c, first) = trio("waiting");
+    // Made before c's call: on a loaded machine making a node takes longer than the 4 s ring.
+    let d = S.peer("waiting-d");
+    d.node.add_contact(b.node.my_ticket().unwrap()).unwrap();
 
     // Declined: c hears busy, the a-b call is untouched.
     let c1 = c.node.call(b.did.clone()).unwrap();
@@ -241,8 +244,6 @@ fn second_call_declined_ignored_or_answered() {
     assert_eq!(b.node.waiting_call().unwrap().call_id, c1.call_id);
     assert_eq!(b.node.current_call().unwrap().call_id, first);
     // A third call while one waits is turned away busy at once.
-    let d = S.peer("waiting-d");
-    d.node.add_contact(b.node.my_ticket().unwrap()).unwrap();
     let d1 = d.node.call(b.did.clone()).unwrap();
     assert_eq!(expect(&d, 20, "third busy", ended(&d1.call_id)), "busy");
     b.node.decline(c1.call_id.clone()).unwrap();

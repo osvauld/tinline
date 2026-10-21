@@ -11,6 +11,10 @@ pub fn online(n: &Node) {
     while !n.status().online && t.elapsed() < Duration::from_secs(10) {
         std::thread::sleep(Duration::from_millis(100));
     }
+    if !n.status().online {
+        // Said in the log, so a later step's error (an add_contact that fails) has its cause.
+        eprintln!("online: no relay after 10 s, going on");
+    }
 }
 
 fn poll(every_ms: u64, secs: u64, what: &str, mut f: impl FnMut() -> bool) {
