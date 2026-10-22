@@ -107,8 +107,7 @@ struct Rec {
 impl Rec {
     fn encode_pending(&mut self, flush_all: bool) -> Result<(), Error> {
         let mut used = 0;
-        while self.pending.len() - used >= FRAME {
-            let frame: [i16; FRAME] = self.pending[used..used + FRAME].try_into().unwrap();
+        while let Some(frame) = self.pending[used..].first_chunk::<FRAME>().copied() {
             self.emit(&frame)?;
             used += FRAME;
         }

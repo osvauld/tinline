@@ -174,7 +174,9 @@ impl History {
                     page_ready: false,
                 }));
             }
-            let scope = self.current.as_ref().unwrap();
+            let Some(scope) = self.current.as_ref() else {
+                return Err(Error::Protocol("own history scope missing".into()));
+            };
             let message = if !scope.meta_done {
                 let doc = format!("group/{}/meta", scope.gid);
                 let bytes = inner.group.group_own_local_vv(&doc)?.encode();
@@ -218,7 +220,9 @@ impl History {
                 continue;
             } else if scope.page_ready && !self.queued.is_empty() {
                 // Rotate at page boundaries; only one page's goals stay resident.
-                let mut scope = self.current.take().unwrap();
+                let Some(mut scope) = self.current.take() else {
+                    return Err(Error::Protocol("own history scope missing".into()));
+                };
                 scope.page_ready = false;
                 let gid = scope.gid.clone();
                 self.resumes.insert(gid.clone(), scope);

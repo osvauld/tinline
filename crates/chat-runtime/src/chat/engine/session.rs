@@ -318,10 +318,7 @@ impl ChatRt {
 
     pub(super) fn auth_msg(&self, me: &Me, grant: proto::SignedGrant) -> ChatMsg {
         let relay = self.endpoint().ok().and_then(|ep| relay_of(&ep));
-        match proto::call_hello(me.attestation.clone(), grant, "chat".into()) {
-            Msg::CallHello { attestation, grant, .. } => ChatMsg::Auth { attestation, grant, relay },
-            _ => unreachable!(),
-        }
+        ChatMsg::Auth { attestation: me.attestation.clone(), grant, relay }
     }
 
     /// Verifies a peer's `Auth` like a call hello: attested device = the connection's key, a

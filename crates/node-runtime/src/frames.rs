@@ -22,8 +22,8 @@ impl FrameBuf {
     pub async fn recv<T: DeserializeOwned>(&mut self, limit: usize, label: &str) -> Result<Option<T>, Error> {
         let mut chunk = vec![0u8; 64 * 1024];
         loop {
-            if self.buf.len() >= 4 {
-                let len = u32::from_be_bytes(self.buf[..4].try_into().unwrap()) as usize;
+            if let Some(head) = self.buf.first_chunk::<4>() {
+                let len = u32::from_be_bytes(*head) as usize;
                 if len > limit {
                     return Err(Error::Protocol(format!("{label}frame too large")));
                 }
