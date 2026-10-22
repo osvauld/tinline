@@ -301,6 +301,7 @@ pub struct Sess {
     receipt_waiting: Mutex<std::collections::BTreeSet<String>>,
 }
 
+#[allow(clippy::large_enum_variant)]
 pub enum Out {
     Msg(GroupMsg),
     Close,

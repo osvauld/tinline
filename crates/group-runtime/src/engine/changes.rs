@@ -281,6 +281,7 @@ impl GroupRt {
     /// Host side: a session whose member is now removed gets the signed proof and is closed.
     /// Sessions with a device that no longer hosts, or (when we stopped hosting) with the
     /// members we served, are closed.
+    #[allow(clippy::type_complexity)]
     pub(super) fn group_enforce(&self, core: &GroupCore, gid: &str) {
         let removed: Vec<(Arc<Sess>, Vec<Vec<u8>>, Vec<u8>, Option<Vec<u8>>)> = {
             let groups = core.groups.lock();

@@ -80,7 +80,7 @@ impl GroupRt {
                 continue;
             }
             for h in hosts {
-                if let Some(a) = h.open().ok() {
+                if let Ok(a) = h.open() {
                     let _ = core.store.put_host(&gid, &a.did, &a.dev, h);
                 }
             }

@@ -63,7 +63,7 @@ impl Node {
     /// `push_mic` as little-endian PCM16 bytes: a `ByteArray` on the Kotlin side rather than
     /// a boxed `List<Short>`, which would allocate 50 times a second.
     pub fn push_mic_pcm16(&self, pcm: Vec<u8>) {
-        let samples: Vec<i16> = pcm.chunks_exact(2).map(|b| i16::from_le_bytes([b[0], b[1]])).collect();
+        let samples: Vec<i16> = pcm.as_chunks::<2>().0.iter().map(|b| i16::from_le_bytes(*b)).collect();
         self.inner.push_mic(&samples);
     }
 

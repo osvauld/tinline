@@ -280,7 +280,7 @@ pub async fn handle(
                 &group,
                 after.as_deref(),
                 PAGE_DAYS,
-            ).map_err(Error::from) {
+            ) {
                 Ok(page) if page.days.iter().all(|(_, bytes)| vv(bytes).is_ok()) => {
                     (page.days, page.next, false)
                 }
@@ -315,7 +315,7 @@ pub async fn handle(
                 writers: 4096,
             };
             let (update, frontier, more, deferred) = match inner
-                .group.group_own_export_batch(me.epoch, remote, &doc, &theirs, limits).map_err(Error::from)
+                .group.group_own_export_batch(me.epoch, remote, &doc, &theirs, limits)
             {
                 Ok(Some(batch)) => (batch.update, batch.frontier.encode(), batch.more, false),
                 Ok(None) => (vec![], VersionVector::default().encode(), false, false),

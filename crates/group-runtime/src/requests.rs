@@ -209,7 +209,7 @@ impl GroupRt {
     pub fn group_req_list(self: &Arc<Self>, outgoing: bool) -> Result<Vec<GroupChatRequest>, Error> {
         let core = self.group_core()?;
         let mut rows: Vec<ReqRow> = core.store.reqs()?.into_iter().filter(|r| r.outgoing == outgoing).collect();
-        rows.sort_by(|a, b| b.at.cmp(&a.at));
+        rows.sort_by_key(|r| std::cmp::Reverse(r.at));
         Ok(rows.iter().map(|r| self.group_req_view(&core, r)).collect())
     }
 

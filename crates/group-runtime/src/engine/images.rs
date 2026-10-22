@@ -513,7 +513,7 @@ impl GroupRt {
                     }
                 }
                 Err(e) => {
-                    err = e.into();
+                    err = e;
                     continue;
                 }
             };

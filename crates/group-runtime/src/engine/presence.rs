@@ -262,6 +262,7 @@ impl GroupRt {
 
     /// Dial-loop tick: our frames when due, expiry, and `on_group_presence` when the list
     /// changed.
+    #[allow(clippy::type_complexity)]
     pub(super) fn group_presence_tick(self: &Arc<Self>, core: &Arc<GroupCore>) {
         let (every, window) = self.group_presence_timing();
         let now = now_ms();

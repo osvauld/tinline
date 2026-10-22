@@ -58,7 +58,7 @@ pub fn read_versions(pair: &str, me: &str, from: i64, to: i64, days: &[(String, 
             }
         }
     }
-    found.sort_by(|a, b| b.0.cmp(&a.0));
+    found.sort_by_key(|f| std::cmp::Reverse(f.0));
     found.truncate(MAX_READ_VERSIONS);
     let mut by_day: BTreeMap<String, Vec<[u8; 32]>> = BTreeMap::new();
     for (_, day, v) in found {

@@ -62,6 +62,7 @@ pub const HOST_WAIT: Duration = Duration::from_secs(30);
 
 /// Runtime state (not persisted).
 #[derive(Default)]
+#[allow(clippy::type_complexity)]
 pub struct CodeRt {
     /// Answers to our `Code` / `RevokeCode`, by code.
     pub waiters: Mutex<HashMap<[u8; CODE_LEN], oneshot::Sender<(bool, String)>>>,

@@ -224,6 +224,7 @@ impl SyncRt {
         VersionVector::decode(update_vv).ok()
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn self_loop(
         self: Arc<Self>,
         me: &Arc<Me>,

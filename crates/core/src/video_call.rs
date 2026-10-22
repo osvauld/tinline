@@ -19,7 +19,6 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 use call_video::{RawFrame, VideoSink};
 use parking_lot::Mutex;
-use proto::VideoOffer;
 
 use crate::node::Inner;
 

@@ -6,7 +6,7 @@ use std::sync::atomic::Ordering;
 pub use node_runtime::block::*;
 use proto::SignedBlockNotice as SignedBlob;
 
-use crate::node::{Inner, Node, now_ms, retire_ticket};
+use crate::node::{Node, now_ms, retire_ticket};
 use crate::Error;
 
 /// A verified block notice someone sent us, as the UI shows it ("<name> blocked you").

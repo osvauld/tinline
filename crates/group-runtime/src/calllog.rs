@@ -38,6 +38,7 @@ pub struct CallLog {
 impl CallLog {
     /// Folds one event in. `known`: the call's start time (ms) and starter, when the announce
     /// is held. Returns the session that just finished, if any.
+    #[allow(clippy::too_many_arguments)]
     pub fn apply(&mut self, kind: GroupCallEventKind, gid: &str, call_id: &str, participants: &[String], detail: &str, now_ms: u64, known: Option<(u64, String)>) -> Option<Finished> {
         self.live.retain(|_, l| now_ms.saturating_sub(l.seen_ms) < CALL_KEEP_MS);
         fn entry<'a>(live: &'a mut HashMap<String, Live>, gid: &str, call_id: &str, now_ms: u64, known: &Option<(u64, String)>) -> &'a mut Live {

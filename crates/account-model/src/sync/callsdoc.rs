@@ -15,10 +15,9 @@ use loro::LoroValue;
 
 use super::doc::{Doc, entries, io, text};
 use crate::Error;
-use crate::store::CallRecord;
+use crate::store::{CallRecord, MAX_HISTORY};
 
 pub const CALLS_DOC: &str = "calls";
-const MAX_HISTORY: usize = 500;
 
 pub struct CallsDoc(Doc);
 

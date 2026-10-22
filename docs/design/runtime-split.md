@@ -513,8 +513,15 @@ member receipts. p2pcore keeps the remote records, the `*Events` callbacks and t
 adapters. W7 (`refactor/rt-w7-sync`): `SyncRt` in `crates/sync-runtime` holds own-device
 sync (self/3: account, devices, push, sessions, group contents/history/receipts) and device
 linking. It sits above `ChatRt` and `GroupRt`; they reach it only through `NodeCtx`'s
-`OwnDocSignal`. p2pcore keeps `LinkEvents` and its `LinkEventsAdapter` (`LinkSink`). W8
-cleanup is next. See `runtime-split-HANDOFF.md`.
+`OwnDocSignal`. p2pcore keeps `LinkEvents` and its `LinkEventsAdapter` (`LinkSink`).
+W8 (`refactor/rt-w8-cleanup`): unused imports and same-type conversions left by the moves are
+gone, and clippy is clean on p2pcore and the runtime crates (design-level lints such as
+`too_many_arguments` are allowed per item, as p2pcore already did). p2pcore's `Error` stays
+its own UniFFI type with `From` both ways for now. A `#[uniffi::remote]` of
+`node_runtime::Error` is possible (node-runtime already depends on transfer, audio and
+call-video; only the gcall-net and search-core conversions would move), but it needs a
+binding diff to prove the generated code is unchanged; that is a later packet. See
+`runtime-split-HANDOFF.md`.
 
 After public-group merges: W3, then W4 and W5 in parallel, then W6, then W7. W3 is the
 dependency for everything after it.

@@ -180,7 +180,7 @@ impl GroupRt {
             ours
         };
         if new_call {
-            self.log(format!("group {}: call {} by {} hosted by {}", short(gid), &s.call_id, s.starter_did, s.host_ref.holder_did));
+            self.log(format!("group {}: call {} by {} hosted by {}", short(gid), s.call_id, s.starter_did, s.host_ref.holder_did));
             self.calls_emit(GroupCallEventKind::Announced, gid, &s.call_id, vec![], s.starter_did.clone());
         }
         let hosted_here = self.gcall.status().is_some_and(|st| st.call_id == s.call_id && st.hosting.is_some());

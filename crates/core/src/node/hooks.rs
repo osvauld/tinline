@@ -11,7 +11,6 @@ use node_runtime::{BoxFuture, Me, RotationPolicy};
 use tokio::sync::OwnedSemaphorePermit;
 
 use super::Inner;
-use crate::Error;
 
 impl NodeHooks for Inner {
     fn group_unpark(self: Arc<Self>) {
@@ -67,11 +66,11 @@ impl NodeHooks for Inner {
     }
 
     fn incoming_chat(self: Arc<Self>, accepting: Accepting, chat: bool, permit: OwnedSemaphorePermit) -> BoxFuture<Result<(), node_runtime::Error>> {
-        Box::pin(async move { self.chat.clone().handle_chat_incoming(accepting, chat, permit).await.map_err(Into::into) })
+        Box::pin(async move { self.chat.clone().handle_chat_incoming(accepting, chat, permit).await })
     }
 
     fn chat_conn(self: Arc<Self>, conn: Connection, chat: bool, permit: OwnedSemaphorePermit) -> BoxFuture<Result<(), node_runtime::Error>> {
-        Box::pin(async move { self.chat.clone().handle_chat_conn(conn, chat, permit).await.map_err(Into::into) })
+        Box::pin(async move { self.chat.clone().handle_chat_conn(conn, chat, permit).await })
     }
 
     fn group_letter(self: Arc<Self>, ctrl: Ctrl, letter: proto::Msg, remote: [u8; 32], me: Arc<Me>) -> BoxFuture<Result<(), node_runtime::Error>> {

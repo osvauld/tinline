@@ -20,6 +20,12 @@ pub fn load_account(accounts: &AccountDirs, id: &str) -> Result<Loaded, Error> {
     Ok(Loaded { id: id.to_string(), disk, store })
 }
 
+impl Default for Shared {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Shared {
     pub fn new() -> Self {
         Shared {
@@ -115,7 +121,7 @@ impl NodeCtx {
         if self.fail_writes.try_update(Ordering::SeqCst, Ordering::SeqCst, |n| n.checked_sub(1)).is_ok() {
             return Err(Error::Io("injected write failure".into()));
         }
-        backing.save_state(state).map_err(Error::from)
+        backing.save_state(state)
     }
 
     /// `persist_for` for async code: the write (and its fsyncs) runs on the blocking pool, not on

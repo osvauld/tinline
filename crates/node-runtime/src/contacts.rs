@@ -98,7 +98,7 @@ impl NodeCtx {
             Ok(Err(e)) => {
                 undo(&self);
                 let _ = self.persist_async(me.epoch).await;
-                return Err(e.into());
+                return Err(e);
             }
             Err(_) => {
                 undo(&self);

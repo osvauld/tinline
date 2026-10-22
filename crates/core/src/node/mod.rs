@@ -4,24 +4,18 @@
 //! Blocking methods are meant for the app's IO threads; long work (dialing, ringing, the call
 //! itself) runs on this node's own tokio runtime and reports through `NodeEvents`.
 
-use std::collections::VecDeque;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+use std::sync::atomic::Ordering;
+use std::time::Duration;
 
-use bytes::Bytes;
-use identity::Identity;
-use iroh::endpoint::{Connection, QuicTransportConfig, presets};
-use iroh::{Endpoint, EndpointAddr, PublicKey, RelayUrl, SecretKey, Watcher};
-use proto::{ContactTicket, Msg};
-use sha2::{Digest, Sha512};
-use tokio::sync::{OwnedMutexGuard, OwnedSemaphorePermit, mpsc, oneshot};
+use iroh::PublicKey;
+use proto::ContactTicket;
+use tokio::sync::OwnedMutexGuard;
 use zeroize::Zeroize;
 
 use crate::accounts::{self, AccountDirs};
-use crate::store::{self, Backing, CallRecord, ContactDevice, Disk, History, OwnDevice, Profile, ProfileV2, State, Store, StoredContact};
+use crate::store::{self, Backing, CallRecord, Disk, History, OwnDevice, Profile, ProfileV2, State, Store, StoredContact};
 use crate::vault::{self, Dek, Secrets};
-use crate::wire::Ctrl;
 use crate::Error;
 
 mod api_call;
