@@ -510,7 +510,11 @@ records are in `receipts-core::status`, `OwnDocSink::in_session` was added, and
 W6 (`refactor/rt-w6-group`): `GroupRt` in `crates/group-runtime` holds the group engine,
 calls (it is the `GcallHost` now), invitations, requests, codes, own docs, attestation and
 member receipts. p2pcore keeps the remote records, the `*Events` callbacks and their
-adapters. W7 is next. See `runtime-split-HANDOFF.md`.
+adapters. W7 (`refactor/rt-w7-sync`): `SyncRt` in `crates/sync-runtime` holds own-device
+sync (self/3: account, devices, push, sessions, group contents/history/receipts) and device
+linking. It sits above `ChatRt` and `GroupRt`; they reach it only through `NodeCtx`'s
+`OwnDocSignal`. p2pcore keeps `LinkEvents` and its `LinkEventsAdapter` (`LinkSink`). W8
+cleanup is next. See `runtime-split-HANDOFF.md`.
 
 After public-group merges: W3, then W4 and W5 in parallel, then W6, then W7. W3 is the
 dependency for everything after it.

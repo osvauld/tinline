@@ -76,7 +76,7 @@ async fn stale_malformed_unnegotiated_revoked_and_failed_persistence_emit_no_ack
         let mut peer = PeerChat::default();
         assert!(
             handle(
-                &node.inner,
+                &node.inner.sync,
                 &me,
                 &remote,
                 &mut peer,
@@ -89,7 +89,7 @@ async fn stale_malformed_unnegotiated_revoked_and_failed_persistence_emit_no_ack
         peer.history.enabled = true;
         assert!(
             handle(
-                &node.inner,
+                &node.inner.sync,
                 &me,
                 &remote,
                 &mut peer,
@@ -137,7 +137,7 @@ async fn stale_malformed_unnegotiated_revoked_and_failed_persistence_emit_no_ack
             more: false,
             deferred: false,
         };
-        handle(&node.inner, &me, &remote, &mut peer, stale, &mut writer)
+        handle(&node.inner.sync, &me, &remote, &mut peer, stale, &mut writer)
             .await
             .unwrap();
         assert_eq!(
@@ -155,14 +155,14 @@ async fn stale_malformed_unnegotiated_revoked_and_failed_persistence_emit_no_ack
             deferred: false,
         };
         assert!(
-            handle(&node.inner, &me, &remote, &mut peer, forged, &mut writer)
+            handle(&node.inner.sync, &me, &remote, &mut peer, forged, &mut writer)
                 .await
                 .is_err()
         );
         target.store.fail_next_append_for_test();
         assert!(matches!(
             handle(
-                &node.inner,
+                &node.inner.sync,
                 &me,
                 &remote,
                 &mut peer,
@@ -186,7 +186,7 @@ async fn stale_malformed_unnegotiated_revoked_and_failed_persistence_emit_no_ack
             .unwrap()
             .removed = true;
         assert!(matches!(
-            handle(&node.inner, &me, &remote, &mut peer, want, &mut writer).await,
+            handle(&node.inner.sync, &me, &remote, &mut peer, want, &mut writer).await,
             Err(Error::Rejected(_))
         ));
         assert!(

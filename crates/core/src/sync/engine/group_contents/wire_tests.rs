@@ -122,7 +122,7 @@ async fn actual_authenticated_self_reader_does_not_ack_failed_group_append() {
         target.store.fail_next_append_for_test();
         let run = async {
             let accepting = server.accept().await.unwrap().accept().unwrap();
-            node.inner.clone().handle_self_incoming(accepting).await
+            node.inner.sync.clone().handle_self_incoming(accepting).await
         };
         let drive = async {
             let conn = client
@@ -223,7 +223,7 @@ async fn produced(negotiated: bool) {
                 group_contents: negotiated,
                 ..Default::default()
             };
-            node.inner
+            node.inner.sync
                 .push_all_chat(&me, &remote, &mut peer, &mut writer)
                 .await
                 .unwrap();

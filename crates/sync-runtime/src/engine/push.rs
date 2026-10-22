@@ -2,8 +2,8 @@
 
 use super::*;
 
-impl Inner {
-    pub(super) fn own_content_catalog(self: &Arc<Self>) -> Vec<(String, Vec<u8>)> {
+impl SyncRt {
+    pub fn own_content_catalog(self: &Arc<Self>) -> Vec<(String, Vec<u8>)> {
         group_contents::catalog(
             self.chat.chat_own_docs(),
             self.group.group_own_content_docs(MAX_OWN_DOCS),
@@ -11,7 +11,7 @@ impl Inner {
     }
 
     /// DM shards plus negotiated group meta/recent days, then read cursors.
-    pub(super) async fn push_all_chat(
+    pub async fn push_all_chat(
         self: &Arc<Self>,
         me: &Arc<Me>,
         remote: &[u8; 32],
@@ -41,7 +41,7 @@ impl Inner {
     }
 
     /// Our group invitations, if they changed since the last ones this session sent (G3).
-    pub(super) async fn push_invitations(
+    pub async fn push_invitations(
         self: &Arc<Self>,
         peer: &mut PeerChat,
         writer: &mut FrameWriter,
@@ -57,7 +57,7 @@ impl Inner {
     }
 
     /// Our group list, if it changed since the last one this session sent (G2).
-    pub(super) async fn push_groups(
+    pub async fn push_groups(
         self: &Arc<Self>,
         peer: &mut PeerChat,
         writer: &mut FrameWriter,
@@ -70,7 +70,7 @@ impl Inner {
         writer.send(&SelfMsg::Groups { groups }).await
     }
 
-    pub(super) async fn push_chat_doc(
+    pub async fn push_chat_doc(
         self: &Arc<Self>,
         me: &Arc<Me>,
         name: &str,
@@ -86,7 +86,7 @@ impl Inner {
             }
         };
         if let Some((update, vv)) = out {
-            let sig = crate::chat::wire::sign_batch(&me.profile.device_secret, name, &update);
+            let sig = chat_runtime::chat::wire::sign_batch(&me.profile.device_secret, name, &update);
             writer
                 .send(&SelfMsg::Sync {
                     doc: name.to_string(),
@@ -102,7 +102,7 @@ impl Inner {
         Ok(())
     }
 
-    pub(super) async fn push_group_doc(
+    pub async fn push_group_doc(
         self: &Arc<Self>,
         me: &Arc<Me>,
         remote: &[u8; 32],
@@ -132,7 +132,7 @@ impl Inner {
             Err(e) => return Err(e),
         };
         if let Some((update, vv)) = out {
-            let sig = crate::chat::wire::sign_batch(&me.profile.device_secret, name, &update);
+            let sig = chat_runtime::chat::wire::sign_batch(&me.profile.device_secret, name, &update);
             writer
                 .send(&SelfMsg::Sync {
                     doc: name.into(),
@@ -149,7 +149,7 @@ impl Inner {
     }
 
     /// The contacts' acks the peer is not known to hold yet.
-    pub(super) async fn push_acks(
+    pub async fn push_acks(
         &self,
         peer: &mut PeerChat,
         writer: &mut FrameWriter,
@@ -171,7 +171,7 @@ impl Inner {
         writer.send(&SelfMsg::Acks { acks }).await
     }
 
-    pub(super) async fn push_read(
+    pub async fn push_read(
         &self,
         peer: &mut PeerChat,
         writer: &mut FrameWriter,
@@ -192,7 +192,7 @@ impl Inner {
     }
 
     /// What the peer lacks of a whole-synced doc (`name`), once its `Hello` said what it holds.
-    pub(super) async fn push_changes(
+    pub async fn push_changes(
         &self,
         me: &Arc<Me>,
         name: &str,
@@ -204,7 +204,7 @@ impl Inner {
             return Ok(());
         };
         if let Some((update, vv)) = doc.export_since(theirs) {
-            let sig = crate::chat::wire::sign_batch(&me.profile.device_secret, name, &update);
+            let sig = chat_runtime::chat::wire::sign_batch(&me.profile.device_secret, name, &update);
             writer
                 .send(&SelfMsg::Sync {
                     doc: name.into(),

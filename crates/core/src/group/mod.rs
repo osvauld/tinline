@@ -6,7 +6,9 @@
 //! re-exported here so `crate::group::...` paths keep working. This module keeps the UniFFI
 //! surface: the records declared as remote types, the app's event callbacks and the `Node` calls.
 
-pub use group_runtime::{attestation, doc, engine, images, mail, own, record, state, store};
+pub use group_runtime::{engine, images, mail, record, state, store};
+#[cfg(test)]
+pub use group_runtime::{doc, own};
 
 pub mod api;
 pub mod calllog;

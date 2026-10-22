@@ -21,7 +21,6 @@ mod profile;
 pub use profile::{AccountProfile, ProfileEvents};
 mod group;
 mod error;
-pub(crate) use node_runtime::frames;
 pub mod gcall;
 pub mod cues;
 mod licences;
@@ -36,7 +35,6 @@ mod sync;
 /// Synthetic peers, contacts and groups for tests and benches; not in release builds.
 #[cfg(any(test, feature = "dev-tools"))]
 pub mod synth;
-pub(crate) use node_runtime::version;
 #[cfg(test)]
 mod account_tests;
 use account_model::vault;

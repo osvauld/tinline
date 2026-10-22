@@ -18,21 +18,14 @@ impl Node {
             shared.install(load_account(&accounts, &id)?)?;
         }
         let ctx = Arc::new(NodeCtx::new(rt.handle().clone(), accounts, shared, Arc::new(NodeEventsAdapter(events))));
-        let selfsync: Arc<crate::sync::engine::SelfSync> = Default::default();
+        let selfsync: Arc<sync_runtime::engine::SelfSync> = Default::default();
         let sink: std::sync::Weak<dyn OwnDocSink> = Arc::downgrade(&(selfsync.clone() as Arc<dyn OwnDocSink>));
         ctx.signal.set_sink(sink);
         let search: Arc<search_ix::SearchIx> = Default::default();
         let chat = Arc::new(chat_runtime::ChatRt::new(ctx.clone(), search.clone()));
         let group = Arc::new(group_runtime::GroupRt::new(ctx.clone(), search.clone()));
-        let inner = Arc::new(Inner {
-            ctx,
-            chat,
-            link_events: Mutex::new(None),
-            selfsync,
-            link: Default::default(),
-            group,
-            search,
-        });
+        let sync = Arc::new(sync_runtime::SyncRt::new(ctx.clone(), chat.clone(), group.clone(), selfsync));
+        let inner = Arc::new(Inner { ctx, chat, group, sync, search });
         let gcall_host: std::sync::Weak<group_runtime::GroupRt> = Arc::downgrade(&inner.group);
         inner.group.gcall.install_host(gcall_host);
         let host: std::sync::Weak<Inner> = Arc::downgrade(&inner);
@@ -306,7 +299,7 @@ impl Node {
         if !matches!(self.inner.shared.lock().disk, Some(Disk::V2(_))) {
             return;
         }
-        self.inner.link_cancel();
+        self.inner.sync.link_cancel();
         let inner = self.inner.clone();
         self.run_lifecycle(async move {
             {

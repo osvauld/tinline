@@ -4,7 +4,7 @@ use iroh::endpoint::{RecvStream, SendStream};
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
 use crate::Error;
-use crate::frames::{FrameBuf, send_frame};
+use node_runtime::frames::{FrameBuf, send_frame};
 
 pub const MAX_FRAME: usize = 16 * 1024 * 1024;
 

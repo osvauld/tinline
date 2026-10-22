@@ -5925,6 +5925,7 @@ dependencies = [
  "serde_json",
  "sha2",
  "storage",
+ "sync-runtime",
  "thiserror 2.0.21",
  "tokio",
  "tracing",
@@ -7980,6 +7981,26 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 1.0.109",
+]
+
+[[package]]
+name = "sync-runtime"
+version = "0.1.38"
+dependencies = [
+ "account-model",
+ "chat-runtime",
+ "crdt",
+ "cryptography",
+ "group-runtime",
+ "identity",
+ "iroh",
+ "loro",
+ "node-runtime",
+ "parking_lot",
+ "proto",
+ "serde",
+ "tokio",
+ "tracing",
 ]
 
 [[package]]

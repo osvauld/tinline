@@ -2,10 +2,10 @@
 
 use super::*;
 
-impl Inner {
+impl SyncRt {
     /// A session with `device` ends with nothing in flight: it holds everything up to
     /// generation `seen` (unless a change came after: `changes` then has an unseen value).
-    pub(super) fn selfsync_settled(&self, device: [u8; 32], changes: &tokio::sync::watch::Receiver<u64>) {
+    pub fn selfsync_settled(&self, device: [u8; 32], changes: &tokio::sync::watch::Receiver<u64>) {
         let seen = *changes.borrow();
         if !changes.has_changed().unwrap_or(true) {
             self.selfsync.synced.lock().insert(device, seen);
@@ -14,7 +14,7 @@ impl Inner {
 
     /// Opens the account doc of the unlocked account (called wherever the chat store opens):
     /// loads the sealed snapshot, flushes the working copy into it, merges it back.
-    pub(crate) fn acc_open(self: &Arc<Self>) {
+    pub fn acc_open(self: &Arc<Self>) {
         if let Err(e) = self.chat.profile_open() {
             tracing::debug!("profile open: {e}");
         }
@@ -78,7 +78,7 @@ impl Inner {
     }
 
     /// Imports a batch from another own device and merges it into the working copy.
-    pub(crate) fn apply_account_update(
+    pub fn apply_account_update(
         self: &Arc<Self>,
         epoch: u64,
         update: &[u8],
@@ -107,7 +107,7 @@ impl Inner {
             (ch, s.acct.as_ref().and_then(|a| a.backing.clone()))
         };
         if let (Some(l), Some(Backing::Sealed(db))) = (&ch.label, &state_backing) {
-            let _ = crate::store::save_label(db, l);
+            let _ = node_runtime::store::save_label(db, l);
         }
         self.persist_for(Some(epoch))?;
         self.save_doc();
@@ -151,7 +151,7 @@ impl Inner {
     }
 
     /// Imports a batch of the call log from another own device and merges it into ours.
-    pub(crate) fn apply_calls_update(&self, epoch: u64, update: &[u8]) -> Result<(), Error> {
+    pub fn apply_calls_update(&self, epoch: u64, update: &[u8]) -> Result<(), Error> {
         let changed = {
             let s = self.shared.lock();
             if s.epoch != epoch {
@@ -182,7 +182,7 @@ impl Inner {
 
     /// This device was unlinked: drop the account from it (best effort when a call is running;
     /// the next sync with a device that knows retries).
-    pub(crate) async fn remove_self_account(self: Arc<Self>, epoch: u64) {
+    pub async fn remove_self_account(self: Arc<Self>, epoch: u64) {
         let did = {
             let s = self.shared.lock();
             if s.epoch != epoch {
@@ -196,7 +196,7 @@ impl Inner {
         if self.not_in_call().is_err() {
             return;
         }
-        let Ok(id) = crate::accounts::id_of(&did) else {
+        let Ok(id) = account_model::accounts::id_of(&did) else {
             return;
         };
         if self.ctx.replace_account(None).await.is_err() {
@@ -213,7 +213,7 @@ impl Inner {
 
     /// A valid attestation of our DID from a device the registry does not list: a device that
     /// was linked but never announced itself (or one added while we were away).
-    pub(super) fn note_own_device(
+    pub fn note_own_device(
         self: &Arc<Self>,
         epoch: u64,
         att: &proto::SignedAttestation,

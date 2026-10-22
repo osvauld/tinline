@@ -240,14 +240,14 @@ async fn actual_authenticated_two_node_archive_sync_crosses_page_and_batch_bound
                 .unwrap()
                 .await
                 .unwrap();
-            a.inner.clone().self_run(incoming, false).await
+            a.inner.sync.clone().self_run(incoming, false).await
         };
         let run_b = async {
             let outgoing = client
                 .connect(server.addr(), b"tinline/self/3")
                 .await
                 .unwrap();
-            b.inner.clone().self_run(outgoing, true).await
+            b.inner.sync.clone().self_run(outgoing, true).await
         };
         let monitor = async {
             loop {
