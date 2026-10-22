@@ -338,13 +338,14 @@ impl App {
         Some(self.group_info_page(t))
     }
 
-    /// Composer.svelte for a group (no attach in groups): the reply chip, the field and the round send button.
+    /// Composer.svelte for a group: the reply chip, the picture button (public group §5; the text
+    /// goes with the picture as its caption), the field and the round send button.
     fn live_composer(&self, t: Tok) -> El<'_> {
         let mut c = column![].spacing(6);
         if let Some(id) = &self.live.reply {
             let (who, text_) = match self.live.by_id(id) {
-                Some(m) if m.outgoing => ("yourself".to_string(), m.text.clone()),
-                Some(m) => (first_name(&self.live_name(&m.author_did, &m.author_name)).to_string(), m.text.clone()),
+                Some(m) if m.outgoing => ("yourself".to_string(), gl::post_line(m)),
+                Some(m) => (first_name(&self.live_name(&m.author_did, &m.author_name)).to_string(), gl::post_line(m)),
                 None => ("a message".to_string(), String::new()),
             };
             let bar = container(Space::new()).width(3).height(Fill).style(ui::plain(t.accent, 0.0));
@@ -375,7 +376,11 @@ impl App {
         let send = button(container(crate::pg_icons::pgi("send", 20.0, t.on_accent)).center_x(44).center_y(44)).padding(0).width(44).height(44)
             .style(move |_: &iced::Theme, _| iced::widget::button::Style { background: Some(ui::alpha(t.accent, if can { 1.0 } else { 0.38 }).into()), border: iced::Border { radius: 22.0.into(), ..Default::default() }, ..Default::default() })
             .on_press_maybe(can.then_some(l(Lm::Send)));
-        c = c.push(row![container(field).width(Fill), send].spacing(6).align_y(Alignment::End));
+        let busy = self.live.sending;
+        let attach = button(container(crate::pg_icons::pgi("image", 24.0, if busy { ui::alpha(t.ink2, 0.38) } else { t.ink2 })).center_x(44).center_y(44))
+            .padding(0).width(44).height(44).style(super::shell_view::wash(t, None, (!busy).then_some(t.surface2), 22.0))
+            .on_press_maybe((!busy).then_some(l(Lm::Attach)));
+        c = c.push(row![attach, container(field).width(Fill), send].spacing(6).align_y(Alignment::End));
         container(c).padding(Padding { top: 8.0, right: 10.0, bottom: 10.0, left: 10.0 }).width(Fill).style(ui::plain(t.canvas, 0.0)).into()
     }
 
@@ -411,7 +416,7 @@ impl App {
             return sys(t, &gl::sys_text(m, &self.live.me));
         }
         let quote = m.reply_to.as_ref().map(|id| match self.live.by_id(id) {
-            Some(r) => (if r.outgoing { "You".to_string() } else { first_name(&self.live_name(&r.author_did, &r.author_name)).to_string() }, r.text.clone(), r.outgoing),
+            Some(r) => (if r.outgoing { "You".to_string() } else { first_name(&self.live_name(&r.author_did, &r.author_name)).to_string() }, gl::post_line(r), r.outgoing),
             None => (String::new(), "Original message unavailable".to_string(), false),
         });
         let name = self.live_name(&m.author_did, &m.author_name);
@@ -464,10 +469,16 @@ impl App {
             });
             meta_w += tw + 3.0;
         }
+        if let Some(img) = &m.image {
+            c = c.push(container(self.live_image(t, m, img, inner, fg)).padding(Padding { top: 2.0, bottom: 4.0, ..Padding::ZERO }));
+        }
         let te = message_body(&m.text, fg);
         let (lines, last) = live_wrap(&m.text, inner);
         let fits = last + 10.0 + meta_w <= inner;
-        c = c.push(if fits && lines == 1 {
+        c = c.push(if m.text.is_empty() {
+            // A picture without a caption: the time under it, on the right.
+            El::from(container(meta).align_right(Fill))
+        } else if fits && lines == 1 {
             El::from(row![te, column![Space::new().height(10), meta].padding(Padding { left: 10.0, ..Padding::ZERO })])
         } else if fits {
             iced::widget::stack![container(te).width(inner), container(meta).align_right(Fill).align_bottom(Fill)].into()
@@ -495,6 +506,48 @@ impl App {
                 .align_right(Fill).padding(Padding { top: 3.0, right: 2.0, ..Padding::ZERO }));
         }
         mouse_area(col).on_enter(l(Lm::Hover(Some(m.id.clone())))).on_exit(l(Lm::Hover(None))).into()
+    }
+
+    /// A post's picture (public group §5), drawn like a 1:1 photo (PhotoBody): its box at the
+    /// picture's shape from the start, the 4x3 colour preview until it is here, then the picture.
+    /// Not downloaded (the auto-download setting said wait): its size and "Load photo"; on its way:
+    /// "Loading..."; failed: "Try again".
+    fn live_image<'a>(&'a self, t: Tok, m: &'a GroupMessage, img: &'a p2pcore::GroupImage, inner: f32, fg: Color) -> El<'a> {
+        use p2pcore::GroupImageState as St;
+        let (w, h) = (img.width.max(1) as f32, img.height.max(1) as f32);
+        let s = (inner.min(300.0) / w).min(340.0 / h);
+        let (bw, bh) = ((w * s).max(80.0).round(), (h * s).max(40.0).round());
+        let r: iced::border::Radius = 10.0.into();
+        let mut st = iced::widget::stack![container(Space::new()).width(bw).height(bh)
+            .style(move |_: &iced::Theme| iced::widget::container::Style { background: Some(ui::alpha(fg, 0.08).into()), border: Border { radius: r, ..Default::default() }, ..Default::default() })];
+        if img.preview.len() == 36 {
+            let rgba: Vec<u8> = img.preview.chunks(3).flat_map(|p| [p[0], p[1], p[2], 255]).collect();
+            st = st.push(iced::widget::image(iced::widget::image::Handle::from_rgba(4, 3, rgba)).width(bw).height(bh)
+                .content_fit(iced::ContentFit::Fill).filter_method(iced::widget::image::FilterMethod::Linear).border_radius(r));
+        }
+        if img.state == St::Ready
+            && let Some(path) = self.live.image_paths.get(&m.id)
+        {
+            st = st.push(iced::widget::image(iced::widget::image::Handle::from_path(path)).width(bw).height(bh).content_fit(iced::ContentFit::Cover).border_radius(r));
+        }
+        let chip = |s: String| -> El<'a> {
+            container(tx(s, 11.0, Color::WHITE).line_height(lh(15.0))).padding([2, 8]).style(ui::plain(Color { a: 0.42, ..Color::BLACK }, 10.0)).into()
+        };
+        let pill = |label_: &'static str, msg: Msg| -> El<'a> {
+            button(container(semi(label_, 13.0, t.on_accent)).center_y(32)).padding([0, 16]).height(32)
+                .style(move |_: &iced::Theme, _| button::Style { background: Some(t.accent.into()), border: Border { radius: 16.0.into(), ..Default::default() }, ..Default::default() })
+                .on_press(msg).into()
+        };
+        let mid: Option<El> = match img.state {
+            St::Remote => Some(column![chip(format!("Photo \u{b7} {}", present::time::bytes(img.size))), pill("Load photo", l(Lm::LoadImage(m.id.clone())))].spacing(8).align_x(Alignment::Center).into()),
+            St::Loading => Some(chip("Loading\u{2026}".into())),
+            St::Failed => Some(pill("Try again", l(Lm::LoadImage(m.id.clone())))),
+            St::Ready => None,
+        };
+        if let Some(e) = mid {
+            st = st.push(container(e).center_x(bw).center_y(bh));
+        }
+        st.width(bw).height(bh).into()
     }
 
     /// In the removed person's chat: when, why and by whom, plainly.

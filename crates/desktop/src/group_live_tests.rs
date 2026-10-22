@@ -51,6 +51,8 @@ struct Fake {
     invs: RefCell<Vec<GroupInvitation>>,
     /// "Show me as online" is off on this install.
     hidden: RefCell<bool>,
+    /// Posts whose picture was asked for (`group_fetch_image`).
+    fetched: RefCell<Vec<String>>,
 }
 
 fn msg(gid: &str, id: &str, at: u64, author: &str, name: &str, kind: GroupItemKind, text: &str) -> GroupMessage {
@@ -274,6 +276,26 @@ impl GroupApi for Fake {
             g.msgs.push(m.clone());
             Ok(m)
         })
+    }
+    fn group_post_image(&self, id: String, path: String, caption: String) -> Result<GroupMessage, Error> {
+        if !path.ends_with(".png") {
+            return Err(Error::Protocol("image: only PNG, JPEG and WebP pictures can be posted".into()));
+        }
+        let mut m = self.group_post(id.clone(), caption, None)?;
+        m.image = Some(p2pcore::GroupImage { width: 1080, height: 720, size: 200_000, mime: "image/jpeg".into(), preview: vec![9; 36], state: p2pcore::GroupImageState::Ready });
+        self.with(&id, |g| {
+            if let Some(last) = g.msgs.last_mut() {
+                *last = m.clone();
+            }
+            Ok(m.clone())
+        })
+    }
+    fn group_fetch_image(&self, _id: String, message_id: String) -> Result<(), Error> {
+        self.fetched.borrow_mut().push(message_id);
+        Ok(())
+    }
+    fn group_image_path(&self, _id: String, message_id: String) -> Option<String> {
+        Some(format!("/pictures/{message_id}.jpg"))
     }
     fn group_flag(&self, id: String, did: String) -> Result<(), Error> {
         self.with(&id, |g| {
@@ -985,3 +1007,6 @@ fn an_admin_asking_this_device_to_host_shows_a_prompt() {
 
 #[path = "group_public_tests.rs"]
 mod public;
+
+#[path = "group_image_tests.rs"]
+mod images;

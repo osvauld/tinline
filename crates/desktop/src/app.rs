@@ -2439,7 +2439,7 @@ impl App {
                             && !(attended && self.live.open.as_deref() == Some(m.group_id.as_str())) && !self.blocks.blocked_by_me(&m.author_did) => {
                             let group = self.live.list.iter().find(|s| s.id == m.group_id).map(|s| s.name.clone()).unwrap_or_else(|| "A group".into());
                             let who = m.author_name.split_whitespace().next().unwrap_or(&m.author_name).to_string();
-                            notify(&group, &format!("{who}: {}", m.text), Target::Show);
+                            notify(&group, &format!("{who}: {}", crate::app::group_live::post_line(m)), Target::Show);
                             self.play_received();
                         }
                         // Away: "Book club · Priya invited you to the group". In front: one knock; the Groups tab counts it.
@@ -2460,7 +2460,7 @@ impl App {
                     crate::GroupEv::Request(r) => Lm::RequestChanged(r),
                     crate::GroupEv::Invitation(i) => Lm::InvitationChanged(i),
                     crate::GroupEv::Presence(id) => Lm::Presence(id),
-                    crate::GroupEv::Image(id, _) => Lm::Changed(id),
+                    crate::GroupEv::Image(id, msg) => Lm::Image(id, msg),
                 });
                 // The chat list's group marks follow group changes.
                 return Task::batch([t, self.refresh_marks()]);

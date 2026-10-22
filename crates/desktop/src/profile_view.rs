@@ -562,7 +562,9 @@ impl App {
     }
 
     /// privacy/Privacy.svelte: one row per area, then the read-receipt switch (core account setting), then
-    /// "Show me as online in public groups" (public group §3, a setting of this install).
+    /// "Show me as online in public groups" (public group §3, a setting of this install), then "Load
+    /// group pictures by themselves" (§5; this computer can't tell Wi-Fi from mobile data, so it is
+    /// on or on tap).
     fn privacy_landing(&self, t: Tok) -> El<'_> {
         let blocked = self.blocks.list.len();
         let msg_only = self.contacts.iter().filter(|c| !self.blocks.blocked_by_me(&c.did) && !self.blocks.calls_allowed(&c.did)).count();
@@ -584,12 +586,18 @@ impl App {
         let presence: Vec<RowFn> = vec![Box::new(move |r| pf_act_reserved(t, Some("eye"), "Show me as online in public groups".into(),
             &["Members see when you\u{2019}re here", "You stay off their online lists"], if shown { 0 } else { 1 }, t.ink2,
             Some(pg_switch(t, shown, m(Action::SetPresenceVisible(!shown)))), None, r))];
+        let auto = self.profiles.group_images.unwrap_or(true);
+        let pictures: Vec<RowFn> = vec![Box::new(move |r| pf_act_reserved(t, Some("image"), "Load group pictures by themselves".into(),
+            &["Pictures in groups appear as they arrive", "Each shows a soft preview until you tap it"], if auto { 0 } else { 1 }, t.ink2,
+            Some(pg_switch(t, auto, m(Action::SetGroupImages(!auto)))), None, r))];
         let c = pf_sec(16.0, column![pf_card(t, rows),
             pf_note(t, "Your contacts see your name, picture and profile. Tinline doesn\u{2019}t hide who you talk to, and every device linked to your account can read your chats."),
             container(pf_card(t, receipts)).padding(Padding { top: 24.0, ..Padding::ZERO }),
             pf_note(t, "Delivered ticks still go out either way, and you still see when others read yours. Messages you read while this is off stay unconfirmed."),
             container(pf_card(t, presence)).padding(Padding { top: 24.0, ..Padding::ZERO }),
-            pf_note(t, "Public groups are the ones anyone can join with an open link. This applies on this device; your other devices keep their own choice.")].into());
+            pf_note(t, "Public groups are the ones anyone can join with an open link. This applies on this device; your other devices keep their own choice."),
+            container(pf_card(t, pictures)).padding(Padding { top: 24.0, ..Padding::ZERO }),
+            pf_note(t, "Hosts keep every group picture so members can load them. This applies on this device.")].into());
         self.pf_scroll(t, c, 40.0)
     }
 

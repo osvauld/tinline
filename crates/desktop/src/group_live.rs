@@ -84,6 +84,18 @@ pub trait GroupApi {
     /// In memory in the core: empty for a private group.
     fn group_online(&self, id: String) -> Result<Vec<OnlineMember>, Error>;
     fn group_presence_visible(&self) -> Result<bool, Error>;
+    // Image posts (public group §5). Defaults for test fakes.
+    /// Blocking (the core scales and re-encodes the picture): only from a job.
+    fn group_post_image(&self, _id: String, _path: String, _caption: String) -> Result<GroupMessage, Error> {
+        Err(Error::NotFound)
+    }
+    fn group_fetch_image(&self, _id: String, _message_id: String) -> Result<(), Error> {
+        Ok(())
+    }
+    /// Blocking the first time (the core opens the picture into a file): only from a job.
+    fn group_image_path(&self, _id: String, _message_id: String) -> Option<String> {
+        None
+    }
 }
 
 impl GroupApi for Node {
@@ -116,6 +128,15 @@ impl GroupApi for Node {
     }
     fn group_post(&self, id: String, text: String, reply_to: Option<String>) -> Result<GroupMessage, Error> {
         Node::group_post(self, id, text, reply_to)
+    }
+    fn group_post_image(&self, id: String, path: String, caption: String) -> Result<GroupMessage, Error> {
+        Node::group_post_image(self, id, path, caption)
+    }
+    fn group_fetch_image(&self, id: String, message_id: String) -> Result<(), Error> {
+        Node::group_fetch_image(self, id, message_id)
+    }
+    fn group_image_path(&self, id: String, message_id: String) -> Option<String> {
+        Node::group_image_path(self, id, message_id)
     }
     fn group_flag(&self, id: String, did: String) -> Result<(), Error> {
         Node::group_flag(self, id, did)
@@ -311,6 +332,12 @@ pub(super) enum Job {
     AcceptInv(String),
     DeclineInv(String),
     Post { gid: String, text: String, reply: Option<String> },
+    /// Post the picture at `path` with the composer's text as its caption.
+    PostImage { gid: String, path: String, caption: String },
+    /// Load a post's picture now (tap to load, or try again).
+    FetchImage { gid: String, id: String },
+    /// Open the pictures of these posts into files (the first time decrypts them).
+    ImagePaths { gid: String, ids: Vec<String> },
     Flag { gid: String, did: String },
     SetAdmin { gid: String, did: String, admin: bool },
     Leave(String),
@@ -348,6 +375,15 @@ impl Job {
             Job::Post { gid, text, reply } => {
                 let r = api.group_post(gid, text.clone(), reply).map_err(gerr);
                 Lm::Posted(r, text)
+            }
+            Job::PostImage { gid, path, caption } => {
+                let r = api.group_post_image(gid, path, caption.clone()).map_err(gerr);
+                Lm::Posted(r, caption)
+            }
+            Job::FetchImage { gid, id } => Lm::ImageAsked(api.group_fetch_image(gid, id).map_err(gerr)),
+            Job::ImagePaths { gid, ids } => {
+                let paths = ids.into_iter().map(|id| (id.clone(), api.group_image_path(gid.clone(), id))).collect();
+                Lm::ImagePaths(paths)
             }
             Job::Flag { gid, did: who } => did(api.group_flag(gid, who), "Flag recorded. It is signed by you and the member can see it.".into()),
             Job::SetAdmin { gid, did: who, admin } => did(
@@ -488,6 +524,15 @@ pub(super) enum Lm {
     CopyOpenLink,
     /// The open link came back: (group, copy it, the link).
     OpenLinked(String, bool, Result<String, String>),
+    /// Image posts (public group §5): the composer's picture button (the app opens the file
+    /// picker), the picked file, a tap on a picture that is not here, the core's
+    /// `on_group_image(group, post)`, opened files `(post, path)` and a fetch request's outcome.
+    Attach,
+    Picked(Option<std::path::PathBuf>),
+    LoadImage(String),
+    Image(String, String),
+    ImagePaths(Vec<(String, Option<String>)>),
+    ImageAsked(Result<(), String>),
 }
 
 /// What a step asks of the app around it.
@@ -562,6 +607,10 @@ pub(super) struct GroupsLive {
     pub pending: Option<(Setting, bool)>,
     /// This account shows in online lists (read when the list opens).
     pub presence_visible: bool,
+    /// Opened pictures of posts, by post id (`group_image_path`).
+    pub image_paths: std::collections::HashMap<String, String>,
+    /// Posts whose picture file was asked for (once per `on_group_image`).
+    pub image_asked: std::collections::HashSet<String>,
 }
 
 /// Member menu entries, in order.
@@ -798,6 +847,49 @@ impl GroupsLive {
                 self.input.clear();
                 self.sending = true;
                 out.job = Some(Job::Post { gid, text, reply: self.reply.take() });
+            }
+            Lm::Attach => {}
+            Lm::Picked(path) => {
+                let (Some(path), Some(gid)) = (path, self.open.clone()) else { return out };
+                if self.sending {
+                    return out;
+                }
+                if !self.can_post() {
+                    out.notice = Some("You can\u{2019}t send messages to this group.".into());
+                    return out;
+                }
+                if self.admins_only_locked() {
+                    out.notice = Some("Only admins post here.".into());
+                    return out;
+                }
+                // The composer's text goes with the picture as its caption.
+                let caption = self.input.trim().to_string();
+                self.input.clear();
+                self.reply = None;
+                self.sending = true;
+                out.job = Some(Job::PostImage { gid, path: path.to_string_lossy().into_owned(), caption });
+            }
+            Lm::LoadImage(id) => {
+                let Some(gid) = self.open.clone() else { return out };
+                out.job = Some(Job::FetchImage { gid, id });
+            }
+            Lm::Image(gid, id) => {
+                self.image_asked.remove(&id);
+                if self.open.as_deref() == Some(gid.as_str()) {
+                    self.reload_open(api);
+                }
+            }
+            Lm::ImagePaths(paths) => {
+                for (id, p) in paths {
+                    if let Some(p) = p {
+                        self.image_paths.insert(id, p);
+                    }
+                }
+            }
+            Lm::ImageAsked(r) => {
+                if let Err(e) = r {
+                    out.notice = Some(e);
+                }
             }
             Lm::Posted(r, text) => {
                 self.sending = false;
@@ -1420,8 +1512,17 @@ pub(super) fn preview(s: &GroupSummary, me: &str) -> String {
     match &s.last {
         None => String::new(),
         Some(m) if m.kind != GroupItemKind::Post => sys_text(m, me),
-        Some(m) if m.outgoing => format!("You: {}", m.text),
-        Some(m) => format!("{}: {}", first_name(or_someone(&m.author_name)), m.text),
+        Some(m) if m.outgoing => format!("You: {}", post_line(m)),
+        Some(m) => format!("{}: {}", first_name(or_someone(&m.author_name)), post_line(m)),
+    }
+}
+
+/// A post in one line: its text, "Photo" for a picture alone, "Photo · caption" with one.
+pub(super) fn post_line(m: &GroupMessage) -> String {
+    match (&m.image, m.text.is_empty()) {
+        (Some(_), true) => "Photo".into(),
+        (Some(_), false) => format!("Photo \u{b7} {}", m.text),
+        (None, _) => m.text.clone(),
     }
 }
 
@@ -1440,9 +1541,47 @@ pub(super) fn sent_line(r: &GroupChatRequest) -> (String, bool) {
 
 impl super::App {
     pub(super) fn update_live(&mut self, m: Lm) -> Task<super::Msg> {
+        if matches!(m, Lm::Attach) {
+            if self.live.open.is_none() || self.live.sending {
+                return Task::none();
+            }
+            return Task::perform(
+                async {
+                    rfd::AsyncFileDialog::new()
+                        .set_title("Post a picture")
+                        .add_filter("Pictures", &["png", "jpg", "jpeg", "webp"])
+                        .pick_file()
+                        .await
+                        .map(|h| h.path().to_path_buf())
+                },
+                |p| super::Msg::Live(Lm::Picked(p)),
+            );
+        }
         let node = self.node.clone();
         let out = self.live.step(&*node, m);
-        self.after_live(out)
+        let t = self.after_live(out);
+        Task::batch([t, self.live_image_paths()])
+    }
+
+    /// Opens the pictures of loaded posts that are here but not opened yet (a job: the first
+    /// open decrypts the picture into a file).
+    fn live_image_paths(&mut self) -> Task<super::Msg> {
+        let Some(gid) = self.live.open.clone() else { return Task::none() };
+        let ids: Vec<String> = self
+            .live
+            .msgs
+            .iter()
+            .filter(|m| m.image.as_ref().is_some_and(|i| i.state == p2pcore::GroupImageState::Ready))
+            .filter(|m| !self.live.image_paths.contains_key(&m.id) && !self.live.image_asked.contains(&m.id))
+            .map(|m| m.id.clone())
+            .collect();
+        if ids.is_empty() {
+            return Task::none();
+        }
+        self.live.image_asked.extend(ids.iter().cloned());
+        let node = self.node.clone();
+        let job = Job::ImagePaths { gid, ids };
+        super::blocking(move || job.run(&*node), super::Msg::Live)
     }
 
     fn after_live(&mut self, out: Out) -> Task<super::Msg> {

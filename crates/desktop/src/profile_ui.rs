@@ -77,6 +77,8 @@ pub enum Action {
     SetReadReceipts(bool),
     /// Settings > Privacy: show me in the online list of public groups (group core, per install, default on).
     SetPresenceVisible(bool),
+    /// Group pictures load by themselves (`Always`) or wait for a tap (`Tap`).
+    SetGroupImages(bool),
     ClearCache,
     CacheCleared,
     /// About Tinline: expand or fold the licence list.
@@ -213,6 +215,9 @@ pub struct State {
     pub read_receipts: Option<bool>,
     /// Settings > Privacy: "Show me as online in public groups" as last read from core (None until read).
     pub presence_visible: Option<bool>,
+    /// Settings > Privacy: group pictures load by themselves (public group §5; off = on tap), as
+    /// last read from core (None until read).
+    pub group_images: Option<bool>,
     /// About Tinline: the open-source licence list is expanded.
     pub licences_open: bool,
     pub history: Vec<Page>,
@@ -596,6 +601,7 @@ impl App {
                     // One small row read; the switch shows what core will do.
                     self.profiles.read_receipts = self.node.read_receipts().ok();
                     self.profiles.presence_visible = self.node.group_presence_visible().ok();
+                    self.profiles.group_images = self.node.group_image_auto_download().ok().map(|d| d != p2pcore::PictureDownload::Tap);
                 }
                 if page == Page::Storage {
                     self.profiles.cache_cleared = false;
@@ -621,6 +627,12 @@ impl App {
                 self.profiles.presence_visible = Some(on);
                 let node = self.node.clone();
                 return blocking(move || node.group_set_presence_visible(on).map_err(s), Msg::Done);
+            }
+            Action::SetGroupImages(on) => {
+                self.profiles.group_images = Some(on);
+                let node = self.node.clone();
+                let mode = if on { p2pcore::PictureDownload::Always } else { p2pcore::PictureDownload::Tap };
+                return blocking(move || node.group_set_image_auto_download(mode).map_err(s), Msg::Done);
             }
             Action::ClearCache => {
                 return blocking(|| { crate::media::wipe_now(); }, |_| Msg::Profile(Action::CacheCleared));
