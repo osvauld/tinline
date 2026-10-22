@@ -76,7 +76,7 @@ fn cut_offs_take_tokens_back_per_did() {
     // Block: both cut-offs; even the fresh call token is refused.
     // Read the clock first: in milliseconds the block can land a tick after `t`.
     let t = now_ms();
-    Inner::revoke_all(&mut st, d);
+    NodeCtx::revoke_all(&mut st, d);
     assert!(st.cut_offs[d].message >= t && st.cut_offs[d].call >= t);
     let pre_block = claims(&proto::issue_token(&me, d, Cap::Message, t, DAY));
     assert_eq!(check(&st, d, &pre_block, Cap::Message, t + 1), Err(Denied::Refused));

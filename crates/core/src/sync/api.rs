@@ -171,7 +171,7 @@ impl Node {
             let e = s.state.registry.iter_mut().find(|e| e.device == dev).ok_or(Error::NotFound)?;
             e.label = label;
         }
-        self.inner.persist_for(Some(me.epoch))
+        self.inner.persist_for(Some(me.epoch)).map_err(Error::from)
     }
 
     /// Removes an install from the account: it stops syncing and ringing, and is told to drop the
@@ -217,7 +217,7 @@ impl Node {
             inner.send_unlinked(dev, relay).await;
         });
         // U8: contacts stop dialling the unlinked install.
-        self.inner.devices_changed();
+        self.inner.ctx.devices_changed();
         if let Some(ev) = self.inner.link_events() {
             ev.on_devices_changed();
         }

@@ -3,14 +3,14 @@
 use super::*;
 
 /// What `accept_hello` did with a good hello.
-pub(super) enum Hello {
+pub enum Hello {
     /// Added at once: send this `ContactWelcome`.
     Welcome(Msg, Contact),
     /// Held for the user's Accept: send `ContactPending`. `fresh`: the first from that DID.
     Held { request: crate::contact_req::ContactRequest, fresh: bool },
 }
 
-pub(super) enum HelloError {
+pub enum HelloError {
     /// Not acceptable (bad, spent, old or blocked ticket): the joiner is turned away.
     Refused(String),
     /// Acceptable, but we could not make it durable.
@@ -19,14 +19,14 @@ pub(super) enum HelloError {
     Blocked(proto::SignedBlockNotice),
 }
 
-impl Inner {
+impl NodeCtx {
     /// An incoming `ContactHello`. Checked, then either held as a request for the user's Accept
     /// (the default for a ticket hello, 2026-10-13: nobody becomes a contact without our yes) or,
     /// for a group chat request ticket we already said yes to, an existing contact re-adding, or
     /// the test switch, answered with a `Welcome` at once. Either way the outcome is durable in
     /// one write before the joiner hears anything. Blocking: runs on the blocking pool. If the
     /// write fails nothing changes in memory either, and the joiner can retry.
-    pub(super) fn accept_hello(&self, me: &Me, hello: &Msg, remote: [u8; 32], hint: Option<String>, on: [u8; 32]) -> Result<Hello, HelloError> {
+    pub fn accept_hello(&self, me: &Me, hello: &Msg, remote: [u8; 32], hint: Option<String>, on: [u8; 32]) -> Result<Hello, HelloError> {
         let _w = self.writing.lock();
         let (mut next, backing) = {
             let s = self.shared.lock();
@@ -113,7 +113,7 @@ impl Inner {
 
     /// The slot in `permit` is held until this connection has become a call or a contact, or is
     /// over; `reserved` says it came from the contacts-only pool.
-    pub(crate) async fn handle_incoming(
+    pub async fn handle_incoming(
         self: Arc<Self>,
         incoming: iroh::endpoint::Accepting,
         permit: OwnedSemaphorePermit,
@@ -129,7 +129,7 @@ impl Inner {
     /// (ours, or the previous one while it overlaps after a rotation: a hello on an old ticket
     /// is answered under the key the ticket names). `started`: when the deadline to the hello
     /// began.
-    pub(crate) async fn handle_incoming_conn(
+    pub async fn handle_incoming_conn(
         self: Arc<Self>,
         conn: Connection,
         mut permit: OwnedSemaphorePermit,
@@ -172,7 +172,7 @@ impl Inner {
                 match accepted {
                     Ok(Hello::Welcome(welcome, contact)) => {
                         // Durable now; only then does the joiner hear of it.
-                        self.events.on_contacts_changed();
+                        self.sink.on_contacts_changed();
                         ctrl.send(&welcome).await?;
                         ctrl.finish();
                         drop(permit);
@@ -247,7 +247,9 @@ impl Inner {
             }
             letter @ Msg::GroupLetter { .. } => {
                 drop(permit);
-                self.group_letter_incoming(ctrl, letter, remote, &me).await?;
+                if let Some(h) = self.hooks() {
+                    h.group_letter(ctrl, letter, remote, me.clone()).await?;
+                }
                 let _ = tokio::time::timeout(LINGER, conn.closed()).await;
                 Ok(())
             }
@@ -261,24 +263,24 @@ impl Inner {
         }
     }
 
-    pub(crate) fn is_contact_device(&self, device: &[u8; 32]) -> bool {
+    pub fn is_contact_device(&self, device: &[u8; 32]) -> bool {
         self.shared.lock().state.contacts.iter().any(|c| c.has_device(device))
     }
 
-    pub(super) fn live_calls_with(&self, did: &str) -> Vec<Arc<Call>> {
+    pub fn live_calls_with(&self, did: &str) -> Vec<Arc<Call>> {
         let live = self.live.lock();
         live.call.iter().chain(live.waiting.iter()).filter(|c| c.info.peer_did == did).cloned().collect()
     }
 
     /// We blocked `did`: a call with them tells them so and ends.
-    pub(crate) fn calls_blocked(&self, did: &str, notice: &proto::SignedBlockNotice) {
+    pub fn calls_blocked(&self, did: &str, notice: &proto::SignedBlockNotice) {
         for call in self.live_calls_with(did) {
             let _ = call.cmd.send(Cmd::Block(notice.clone()));
         }
     }
 
     /// Ends any call with `did` with `reason`, from outside its task.
-    pub(crate) fn end_calls_with(&self, did: &str, reason: &str) {
+    pub fn end_calls_with(&self, did: &str, reason: &str) {
         for call in self.live_calls_with(did) {
             self.end_call(&call, reason.into());
         }

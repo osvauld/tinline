@@ -1,3 +1,6 @@
+use cryptography::Secret32;
+use storage::Store;
+
 use super::*;
 
 /// Store keys must never drift: these bytes open existing account/chat/group/search files.

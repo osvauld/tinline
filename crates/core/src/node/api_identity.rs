@@ -17,41 +17,28 @@ impl Node {
         if let Some(id) = accounts.current() {
             shared.install(load_account(&accounts, &id)?)?;
         }
+        let ctx = Arc::new(NodeCtx::new(rt.handle().clone(), accounts, shared, Arc::new(NodeEventsAdapter(events))));
+        let selfsync: Arc<crate::sync::engine::SelfSync> = Default::default();
+        let sink: std::sync::Weak<dyn OwnDocSink> = Arc::downgrade(&(selfsync.clone() as Arc<dyn OwnDocSink>));
+        ctx.signal.set_sink(sink);
         let inner = Arc::new(Inner {
-            handle: rt.handle().clone(),
-            accounts,
-            gate: Mutex::new(()),
-            fail_writes: AtomicU32::new(0),
-            writing: Mutex::new(()),
-            events,
-            shared: Mutex::new(shared),
-            live: Mutex::new(Live::default()),
-            pending: Arc::new(Semaphore::new(MAX_PENDING_HELLOS)),
-            reserved: Arc::new(Semaphore::new(RESERVED_HELLOS)),
-            lifecycle: Arc::new(tokio::sync::Mutex::new(())),
-            closing: Arc::new(tokio::sync::Mutex::new(())),
+            ctx,
             chat: Mutex::new(None),
             chat_events: Mutex::new(None),
             link_events: Mutex::new(None),
-            selfsync: Default::default(),
-            sync_tx: tokio::sync::watch::channel(0).0,
+            selfsync,
             link: Default::default(),
             gcall: crate::gcall::net::GcallNet::new(rt.handle().clone()),
-            block: Default::default(),
-            requests: Default::default(),
             group: Default::default(),
-            caps: Default::default(),
-            devlist: Default::default(),
-            rotation: Default::default(),
             profile_events: Default::default(),
             profile_downloads: Default::default(),
             profile_fetches: Arc::new(Semaphore::new(4)),
-            video: Default::default(),
             search: Mutex::new(None),
             search_skip: AtomicU32::new(0),
         });
         let host: std::sync::Weak<Inner> = Arc::downgrade(&inner);
-        inner.gcall.install_host(host);
+        inner.gcall.install_host(host.clone());
+        inner.ctx.install_hooks(host);
         Ok(Arc::new(Self { inner, rt: Some(rt) }))
     }
 
@@ -107,7 +94,7 @@ impl Node {
         self.inner.not_in_call()?;
         let loaded = load_account(&self.inner.accounts, &id)?;
         let inner = self.inner.clone();
-        self.block_on(async move { inner.replace_account(Some(loaded)).await })?
+        self.block_on(async move { inner.ctx.replace_account(Some(loaded)).await })?.map_err(Error::from)
     }
 
     /// Leaves no account selected, so `has_identity` is false and `create_identity` /
@@ -116,7 +103,7 @@ impl Node {
     pub fn begin_new_account(&self) -> Result<(), Error> {
         self.inner.not_in_call()?;
         let inner = self.inner.clone();
-        self.block_on(async move { inner.replace_account(None).await })?
+        self.block_on(async move { inner.ctx.replace_account(None).await })?.map_err(Error::from)
     }
 
     /// Deletes a non-current account and everything in its directory.
@@ -363,7 +350,7 @@ impl Node {
             retire_ticket(&mut s.state, true);
             s.me.is_some()
         };
-        if unlocked { self.inner.persist() } else { Ok(()) }
+        if unlocked { self.inner.persist() } else { Ok(()) }.map_err(Error::from)
     }
 
     /// Drops the ticket we hand out, and every older one still live: the old QR/text stops
@@ -372,6 +359,6 @@ impl Node {
     pub fn reset_ticket(&self) -> Result<(), Error> {
         self.inner.me()?;
         retire_ticket(&mut self.inner.shared.lock().state, false);
-        self.inner.persist()
+        self.inner.persist().map_err(Error::from)
     }
 }

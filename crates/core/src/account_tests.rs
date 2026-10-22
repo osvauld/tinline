@@ -65,7 +65,7 @@ fn stale_session_cannot_write_into_next_account() {
     let (x, _) = identity::generate();
     let save = |epoch: u64, nc: proto::NewContact| {
         let i = inner.clone();
-        n.block_on(async move { i.save_contact(epoch, nc, None, true, true).await }).unwrap()
+        n.block_on(async move { i.ctx.clone().save_contact(epoch, nc, None, true, true).await }).unwrap()
     };
     save(epoch_b, new_contact(&x, &b, 1)).unwrap();
     n.set_verified(x.did().to_string(), true).unwrap();
@@ -74,10 +74,10 @@ fn stale_session_cannot_write_into_next_account() {
     // Everything a task of A might still do.
     inner.log_call(epoch_a, record("stale"));
     inner.log_refused(epoch_a, "stale2", "did:key:x", "x", "busy", true, false);
-    inner.note_device(epoch_a, x.did(), [9; 32], Some("https://relay.example/".into()));
-    inner.renew_grant(epoch_a, x.did(), proto::issue_grant(&x, &b, now(), 100_000));
-    assert!(matches!(inner.persist_for(Some(epoch_a)), Err(Error::Locked)));
-    assert!(matches!(save(epoch_a, new_contact(&x, &a, 2)), Err(Error::Locked)));
+    inner.ctx.note_device(epoch_a, x.did(), [9; 32], Some("https://relay.example/".into()));
+    inner.ctx.renew_grant(epoch_a, x.did(), proto::issue_grant(&x, &b, now(), 100_000));
+    assert!(matches!(inner.persist_for(Some(epoch_a)), Err(node_runtime::Error::Locked)));
+    assert!(matches!(save(epoch_a, new_contact(&x, &a, 2)), Err(node_runtime::Error::Locked)));
     std::thread::sleep(std::time::Duration::from_millis(300)); // background writes, if any
     assert!(n.recent_calls(10).is_empty());
     let c = &n.contacts()[0];
@@ -87,7 +87,7 @@ fn stale_session_cannot_write_into_next_account() {
     assert_eq!(before, after, "B's sealed store was not written");
 
     // B's own session still writes.
-    inner.note_device(epoch_b, x.did(), [9; 32], None);
+    inner.ctx.note_device(epoch_b, x.did(), [9; 32], None);
     assert!(!n.contacts()[0].verified, "unfamiliar device resets verification");
     inner.log_call(epoch_b, record("fresh"));
     assert_eq!(n.recent_calls(10).len(), 1);
@@ -107,7 +107,7 @@ fn stale_session_cannot_write_into_next_account() {
     // Locked: nothing of the last session may write either.
     n.lock();
     inner.log_call(epoch_a2, record("late"));
-    assert!(matches!(inner.persist_for(Some(epoch_a2)), Err(Error::Locked)));
+    assert!(matches!(inner.persist_for(Some(epoch_a2)), Err(node_runtime::Error::Locked)));
     drop(n);
     let _ = std::fs::remove_dir_all(&root);
 }

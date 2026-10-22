@@ -132,7 +132,7 @@ pub(crate) fn injected(n: &std::sync::atomic::AtomicU32) -> bool {
 }
 
 /// G6 §5 / Q12: a due rotation waits for a running group call, at most this long.
-pub const CALL_ROTATION_DEFER_MS: u64 = 3600 * 1000;
+pub use node_runtime::CALL_ROTATION_DEFER_MS;
 /// After a restart inside a rotation's announce window, members that were online have this
 /// long to come back on their own before the `Moved` campaign resumes dialing them.
 const RESUME_ANNOUNCE_WAIT: Duration = Duration::from_secs(10);

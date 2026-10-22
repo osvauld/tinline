@@ -25,7 +25,7 @@ required-features = ["bench"]
 # Debug-only entry points (`video_bench`: codec benchmark that opens a caller-supplied file).
 # Android debug builds pass it (android/app/build.gradle.kts); release builds must not.
 # `proto/test-support`: `Node::forge_block_notice_for_test` calls proto's forge.
-dev-tools = ["video/sim", "proto/test-support", "group-core/dev-tools", "account-model/testkit"]
+dev-tools = ["video/sim", "proto/test-support", "group-core/dev-tools", "account-model/testkit", "node-runtime/testkit"]
 # Benchmark binaries; app, Android and test builds skip them. `cargo build --release --features bench --bin search-bench`.
 # They drive the synthetic peers, so they need `dev-tools`.
 bench = ["dev-tools", "search-core/bench"]
@@ -58,6 +58,8 @@ transfer.workspace = true
 video-call-core.workspace = true
 # The 1:1 call video runtime (send/receive tasks, codec threads, adaptation); the Node video API wraps it.
 call-video.workspace = true
+# The node's base runtime (account session, endpoint, 1:1 call, contacts cluster, rotation); p2pcore implements its NodeHooks (src/node/mod.rs).
+node-runtime.workspace = true
 # Shared UI logic; its UniFFI items are re-exported from lib.rs so they land in libp2pcore.so.
 present = { path = "../present" }
 audio.workspace = true

@@ -2,12 +2,12 @@
 
 use super::*;
 
-impl Inner {
+impl NodeCtx {
     /// The caller's device and relay as of this call, so our next call to them dials straight
     /// there. A device we have not seen before resets `verified`, exactly as when they add us.
     /// A contact whose signed device list we hold is dialled by that list only: a device missing
     /// from it is accepted for this call (same DID) but not added.
-    pub(crate) fn note_device(self: &Arc<Self>, epoch: u64, did: &str, device: [u8; 32], relay: Option<String>) {
+    pub fn note_device(self: &Arc<Self>, epoch: u64, did: &str, device: [u8; 32], relay: Option<String>) {
         let changed = {
             let mut s = self.shared.lock();
             if s.epoch != epoch {
@@ -41,14 +41,14 @@ impl Inner {
         };
         if changed {
             self.persist_in_background(epoch);
-            self.events.on_contacts_changed();
+            self.sink.on_contacts_changed();
         }
         self.touched(epoch, did);
     }
 
     /// A contact's signed `DeviceList` from a hello or an accept: kept if it verifies for that
     /// DID and is newer than the one we hold. A new device in it resets `verified`.
-    pub(crate) fn accept_device_list(
+    pub fn accept_device_list(
         self: &Arc<Self>,
         epoch: u64,
         did: &str,
@@ -66,14 +66,14 @@ impl Inner {
         };
         if changed {
             self.persist_in_background(epoch);
-            self.events.on_contacts_changed();
+            self.sink.on_contacts_changed();
         }
         changed
     }
 
     /// Our own `DeviceList`: every live install of the registry (this device first, on its
     /// current relay). Re-signed with a higher `seq` only when its content changed.
-    pub(crate) fn my_device_list(self: &Arc<Self>, me: &Me) -> Option<proto::SignedDeviceList> {
+    pub fn my_device_list(self: &Arc<Self>, me: &Me) -> Option<proto::SignedDeviceList> {
         let relay = self.endpoint().ok().as_ref().and_then(relay_of);
         let (blob, dirty) = {
             let mut s = self.shared.lock();
@@ -157,6 +157,6 @@ impl Inner {
 /// Replaces the contact's devices by `blob`'s if it is a newer list for their DID
 /// (`account_model::devices::merge_device_list`, with our relay hint parsing). Returns whether
 /// anything changed.
-pub(crate) fn merge_device_list(c: &mut StoredContact, blob: &proto::SignedDeviceList) -> bool {
+pub fn merge_device_list(c: &mut StoredContact, blob: &proto::SignedDeviceList) -> bool {
     account_model::devices::merge_device_list(c, blob, relay_hint)
 }

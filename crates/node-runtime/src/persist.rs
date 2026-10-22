@@ -3,13 +3,13 @@
 use super::*;
 
 /// An account's files, read before anything is unlocked.
-pub(crate) struct Loaded {
-    pub(super) id: String,
-    pub(super) disk: Disk,
-    pub(super) store: Store,
+pub struct Loaded {
+    pub id: String,
+    pub disk: Disk,
+    pub store: Store,
 }
 
-pub(crate) fn load_account(accounts: &AccountDirs, id: &str) -> Result<Loaded, Error> {
+pub fn load_account(accounts: &AccountDirs, id: &str) -> Result<Loaded, Error> {
     // `Store::open` would create the directory of an account that is not there.
     if !accounts.exists(id)? {
         return Err(Error::NotFound);
@@ -21,7 +21,7 @@ pub(crate) fn load_account(accounts: &AccountDirs, id: &str) -> Result<Loaded, E
 }
 
 impl Shared {
-    pub(crate) fn new() -> Self {
+    pub fn new() -> Self {
         Shared {
             disk: None,
             me: None,
@@ -41,7 +41,7 @@ impl Shared {
     }
 
     /// Puts the account's files in place, locked.
-    pub(crate) fn install(&mut self, l: Loaded) -> Result<(), Error> {
+    pub fn install(&mut self, l: Loaded) -> Result<(), Error> {
         self.forget_session();
         self.epoch += 1;
         self.acct = Some(Acct { id: l.id, store: l.store, backing: None });
@@ -52,7 +52,7 @@ impl Shared {
 
     /// Everything of the account that is secret or sealed leaves memory. An identity that was
     /// never committed has nowhere to come back from, so it goes entirely.
-    pub(crate) fn forget_session(&mut self) {
+    pub fn forget_session(&mut self) {
         self.epoch += 1;
         self.me = None;
         self.dek = None;
@@ -80,15 +80,15 @@ impl Shared {
     }
 }
 
-impl Inner {
+impl NodeCtx {
     /// Writes a snapshot of `State` to the current account.
-    pub(crate) fn persist(&self) -> Result<(), Error> {
+    pub fn persist(&self) -> Result<(), Error> {
         self.persist_for(None)
     }
 
     /// `persist` for something that belongs to session `epoch`: refused (`Locked`) if the account
     /// in memory has been replaced since. Callers must not hold `shared`.
-    pub(crate) fn persist_for(&self, epoch: Option<u64>) -> Result<(), Error> {
+    pub fn persist_for(&self, epoch: Option<u64>) -> Result<(), Error> {
         let _w = self.writing.lock();
         let (snapshot, backing) = {
             let s = self.shared.lock();
@@ -111,16 +111,16 @@ impl Inner {
         Ok(())
     }
 
-    pub(crate) fn write_state(&self, backing: &Backing, state: &State) -> Result<(), Error> {
+    pub fn write_state(&self, backing: &Backing, state: &State) -> Result<(), Error> {
         if self.fail_writes.try_update(Ordering::SeqCst, Ordering::SeqCst, |n| n.checked_sub(1)).is_ok() {
             return Err(Error::Io("injected write failure".into()));
         }
-        backing.save_state(state)
+        backing.save_state(state).map_err(Error::from)
     }
 
     /// `persist_for` for async code: the write (and its fsyncs) runs on the blocking pool, not on
     /// a worker that other connections need.
-    pub(crate) async fn persist_async(self: &Arc<Self>, epoch: u64) -> Result<(), Error> {
+    pub async fn persist_async(self: &Arc<Self>, epoch: u64) -> Result<(), Error> {
         let this = self.clone();
         tokio::task::spawn_blocking(move || this.persist_for(Some(epoch)))
             .await
@@ -128,18 +128,18 @@ impl Inner {
     }
 
     /// Fire and forget, for state that is only a cache (a device, a renewed grant).
-    pub(crate) fn persist_in_background(self: &Arc<Self>, epoch: u64) {
+    pub fn persist_in_background(self: &Arc<Self>, epoch: u64) {
         let this = self.clone();
         self.handle.spawn_blocking(move || {
             let _ = this.persist_for(Some(epoch));
         });
     }
 
-    pub(crate) fn history(&self) -> Arc<History> {
+    pub fn history(&self) -> Arc<History> {
         self.shared.lock().history.clone()
     }
 
-    pub(crate) fn not_in_call(&self) -> Result<(), Error> {
+    pub fn not_in_call(&self) -> Result<(), Error> {
         let live = self.live.lock();
         if live.call.is_some() || live.waiting.is_some() {
             return Err(Error::InCall);
@@ -148,7 +148,7 @@ impl Inner {
     }
 
     /// Runs `f` while no 1:1 call is active and none can begin (a group call starting).
-    pub(crate) fn with_no_call<R>(&self, f: impl FnOnce() -> Result<R, Error>) -> Result<R, Error> {
+    pub fn with_no_call<R>(&self, f: impl FnOnce() -> Result<R, Error>) -> Result<R, Error> {
         let live = self.live.lock();
         if live.call.is_some() || live.waiting.is_some() {
             return Err(Error::InCall);
@@ -161,7 +161,7 @@ impl Inner {
     /// Writes a new account's files: the dir (never an existing one), `account.json`, the sealed
     /// store, then the pointer. What it created is removed again if any step fails.
     #[allow(clippy::too_many_arguments)]
-    pub(crate) fn create_account_files(
+    pub fn create_account_files(
         &self,
         id: &str,
         disk: &Disk,
@@ -186,7 +186,7 @@ impl Inner {
 
     /// Restore over an account dir that is already there (its owner forgot the passphrase): the
     /// sealed stores stay, `account.json` gets the new vault. Nothing of the old vault survives.
-    pub(crate) fn restore_account_files(
+    pub fn restore_account_files(
         &self,
         id: &str,
         disk: &Disk,
@@ -202,13 +202,15 @@ impl Inner {
         Ok(Acct { id: id.to_string(), store, backing: Some(Backing::Sealed(db)) })
     }
 
-    /// `commit_identity` with the gate held.
-    pub(crate) fn commit_locked(self: &Arc<Self>) -> Result<(), Error> {
+    /// `commit_identity` with the gate held: writes the files of an identity that is not on disk
+    /// yet. `Ok(false)`: it already was. The caller then opens the chat store and the account doc
+    /// and persists whatever changed meanwhile.
+    pub fn commit_files(&self) -> Result<bool, Error> {
         let (disk, phrase, state, calls, label) = {
             let s = self.shared.lock();
             let disk = s.disk.clone().ok_or(Error::NoIdentity)?;
             if s.committed {
-                return Ok(());
+                return Ok(false);
             }
             let phrase = zeroize::Zeroizing::new(s.me.as_ref().ok_or(Error::Locked)?.profile.mnemonic.clone());
             s.dek.as_ref().ok_or(Error::Locked)?;
@@ -230,26 +232,29 @@ impl Inner {
             s.acct = Some(acct);
             s.committed = true;
         }
-        self.chat_open();
-        self.acc_open();
-        // Anything that changed while the files were being written.
-        self.persist()
+        Ok(true)
     }
 
     /// Switches (or, with `None`, deselects) the account in memory. Stops everything of the old one.
-    pub(crate) async fn replace_account(self: &Arc<Self>, target: Option<Loaded>) -> Result<(), Error> {
+    pub async fn replace_account(self: &Arc<Self>, target: Option<Loaded>) -> Result<(), Error> {
         let _life = self.lifecycle.lock().await;
         self.not_in_call()?;
         match &target {
             Some(l) => self.accounts.select(&l.id)?,
             None => self.accounts.deselect()?,
         }
-        self.chat_sessions_close();
+        if let Some(h) = self.hooks() {
+            h.chat_sessions_close();
+        }
         // GA-M4: the group call ends like on stop / lock (Leave as a member, End{host_leaving,
         // next_host} as its host), before the endpoints close so those frames still go out.
-        self.gcall_shutdown().await;
+        if let Some(h) = self.hooks() {
+            h.gcall_shutdown().await;
+        }
         self.close_endpoint().await;
-        self.chat_close().await;
+        if let Some(h) = self.hooks() {
+            h.chat_close().await;
+        }
         {
             let mut s = self.shared.lock();
             s.forget_session();
@@ -261,12 +266,12 @@ impl Inner {
             }
         }
         self.emit_status();
-        self.events.on_contacts_changed();
+        self.sink.on_contacts_changed();
         Ok(())
     }
 
     /// The setting as of now: an expired "until" counts as available again.
-    pub(crate) fn availability(&self) -> Availability {
+    pub fn availability(&self) -> Availability {
         let a = self.shared.lock().state.availability.clone();
         match a.until {
             Some(t) if a.unavailable && now() >= t => Availability { available: true, until: None },
@@ -277,7 +282,7 @@ impl Inner {
 
     /// Adds to the call log of session `epoch` and writes it in the background; dropped if that
     /// session is over.
-    pub(crate) fn log_call(&self, epoch: u64, rec: CallRecord) {
+    pub fn log_call(&self, epoch: u64, rec: CallRecord) {
         let history = {
             let s = self.shared.lock();
             if s.epoch != epoch {
@@ -296,7 +301,7 @@ impl Inner {
 
     /// An incoming call that never became a `Call` (turned away unavailable, or busy).
     #[allow(clippy::too_many_arguments)]
-    pub(crate) fn log_refused(&self, epoch: u64, call_id: &str, did: &str, name: &str, reason: &str, missed: bool, video: bool) {
+    pub fn log_refused(&self, epoch: u64, call_id: &str, did: &str, name: &str, reason: &str, missed: bool, video: bool) {
         self.log_call(epoch, CallRecord {
             call_id: call_id.to_string(),
             peer_did: did.to_string(),

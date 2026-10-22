@@ -33,8 +33,7 @@ mod group_receipts;
 mod push;
 mod sessions;
 
-const DOC_KEY: &str = "sync/account";
-const CALLS_KEY: &str = "sync/calls";
+use node_runtime::{CALLS_KEY, DOC_KEY};
 const AUTH_TIMEOUT: Duration = Duration::from_secs(15);
 const DIAL_TIMEOUT: Duration = Duration::from_secs(10);
 
@@ -69,6 +68,19 @@ struct PeerChat {
     invitations: Option<Vec<Vec<u8>>>,
 }
 
+impl node_runtime::OwnDocSink for SelfSync {
+    fn mark_dirty(&self, name: &str) {
+        for s in self.sessions.lock().values() {
+            s.dirty.lock().insert(name.to_string());
+        }
+    }
+
+    fn forget_progress(&self) {
+        self.backoff.lock().clear();
+        self.synced.lock().clear();
+    }
+}
+
 impl SelfSlot {
     pub(crate) fn close(&self) {
         self.conn.close(0u32.into(), b"unlinked");
@@ -81,7 +93,6 @@ pub(crate) struct SelfSync {
     /// Per device: failed attempts and when to try next.
     pub backoff: parking_lot::Mutex<HashMap<[u8; 32], (u32, Instant)>>,
     pub dialing: parking_lot::Mutex<HashSet<[u8; 32]>>,
-    pub kick: tokio::sync::Notify,
     /// Per device: the change generation (`Inner::sync_tx`) it is known to hold everything up
     /// to, set when a session with it ends idle. A device below the current generation (or
     /// missing: after start or `sync_kick`) is owed a sync and gets dialled; others are not

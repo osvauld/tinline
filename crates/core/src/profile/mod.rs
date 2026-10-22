@@ -320,7 +320,7 @@ impl Inner {
             }
             s.state.profile_outbox.insert(did.into());
         }
-        self.persist_in_background(me.epoch);
+        self.ctx.persist_in_background(me.epoch);
         self.chat_kick(did.into());
     }
 
@@ -428,7 +428,7 @@ impl Inner {
             }
         }
         self.sync_bump();
-        self.events.on_contacts_changed();
+        self.sink.on_contacts_changed();
         self.profile_notify(did);
         self.profile_apply_deletions(epoch, did);
         self.profile_download(did.into());
@@ -485,7 +485,7 @@ impl Inner {
             }
         }
         self.sync_bump();
-        self.events.on_contacts_changed();
+        self.sink.on_contacts_changed();
         for did in dids {
             self.profile_notify(&did);
             self.profile_apply_deletions(epoch, &did);
