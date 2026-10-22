@@ -217,6 +217,31 @@ impl GroupDoc {
         fork.export(ExportMode::updates(theirs)).ok()
     }
 
+    /// `export_since`, without the ops at `cut` (each `(peer, counter)`) and every later op of
+    /// those peers: what a member uploads while it holds posts its host would refuse. `None` if
+    /// nothing is left to send, or if what is left still depends on a cut op (then the whole
+    /// doc waits rather than leak it).
+    pub fn export_since_before(&self, theirs: &VersionVector, cut: &[(u64, i32)]) -> Option<Vec<u8>> {
+        if cut.is_empty() {
+            return self.export_since(theirs);
+        }
+        let mut upto = self.vv();
+        for (p, c) in cut {
+            if upto.get(p).is_some_and(|v| *v > *c) {
+                upto.insert(*p, *c);
+            }
+        }
+        let fork = self.doc.fork_at(&self.doc.vv_to_frontiers(&upto)).ok()?;
+        let held = fork.oplog_vv();
+        if cut.iter().any(|(p, c)| held.get(p).is_some_and(|v| *v > *c)) {
+            return None;
+        }
+        if theirs.partial_cmp(&held).is_some_and(|o| o != std::cmp::Ordering::Less) {
+            return None;
+        }
+        fork.export(ExportMode::updates(theirs)).ok()
+    }
+
     /// Only ops written under `peer` (our own device) beyond `theirs`.
     pub fn export_peer_since(&self, peer: u64, theirs: &VersionVector) -> Option<Vec<u8>> {
         let mine = self.vv();

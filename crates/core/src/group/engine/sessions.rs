@@ -65,6 +65,9 @@ impl Inner {
         self.group_calls_on_session(&core, &sess);
         self.group_presence_on_session(&core, &sess);
         self.group_images_on_session(&core, &gid);
+        if !sess.hosting {
+            self.group_fail_refused(&core, &gid, false);
+        }
         if let Some(ev) = self.group_ev() {
             let g = gid.clone();
             self.handle.spawn_blocking(move || ev.on_group_changed(g));
@@ -138,6 +141,9 @@ impl Inner {
                                         .partial_cmp(&sess.peer_vv.lock())
                                         .is_some_and(|o| o != std::cmp::Ordering::Less);
                                     self.group_maybe_join(core, &sess.gid, caught_up);
+                                    if !sess.hosting {
+                                        self.group_fail_refused(core, &sess.gid, false);
+                                    }
                                 }
                                 // Older than the days a session pushes live: history catching up.
                                 c.history = doc.day().is_some_and(|d| {
@@ -152,6 +158,16 @@ impl Inner {
                             // Retryable storage failure, not a membership refusal.
                             // group_run closes this session; no Ack or fan-out.
                             return Err(Error::Io(reason));
+                        }
+                        Err(Reject::Policy(r)) if r == admit::ADMINS_ONLY => {
+                            // A non-admin's post in an admins-only group: refuse the batch, keep
+                            // the session; the member marks such posts failed and stops sending.
+                            self.log(format!(
+                                "group {}: refused an update from {}: {r}",
+                                crate::group::short(&sess.gid),
+                                sess.did
+                            ));
+                            let _ = sess.tx.send(Out::Msg(GroupMsg::Refused { reason: r }));
                         }
                         Err(e) => {
                             self.log(format!(
@@ -196,6 +212,9 @@ impl Inner {
                 }
                 GroupMsg::Hosts { hosts } => {
                     core.merge_hosts_from(&sess.gid, &hosts, Some(sess.id));
+                }
+                GroupMsg::Refused { reason } if !sess.hosting && reason == admit::ADMINS_ONLY => {
+                    self.group_fail_refused(core, &sess.gid, true);
                 }
                 GroupMsg::Refused { reason } => {
                     return Err(Error::Rejected(reason));

@@ -1091,7 +1091,7 @@ private fun PublicGroupSection(app: P2pApp, d: GroupDetail, pending: Pair<PubSet
     val aoOn = pending?.takeIf { it.first == PubSetting.AdminsOnly }?.second ?: d.adminsOnly
     val fetching = pending?.first == PubSetting.Link
     val link = held?.takeIf { it.first == d.id && d.open }?.second
-    val copy: (String) -> Unit = { copyToClipboard(ctx, "Group link", it); say(GroupText.OPEN_LINK_COPIED) }
+    val copy: (String) -> Unit = { copyToClipboard(ctx, "Group link", it, sensitive = false); say(GroupText.OPEN_LINK_COPIED) }
     InfoSec("Public group") {
         GCard(Modifier.fillMaxWidth()) {
             SwitchRow(GIcons.Link, "Open link", "Anyone with the link can join", "Only people you invite can join", openOn) { want ->

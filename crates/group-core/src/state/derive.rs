@@ -17,8 +17,8 @@ struct Ctx<'a> {
     group: &'a str,
     entries: &'a [Entry],
     owner: String,
-    /// The owner's admin records, ordered.
-    admin_recs: Vec<&'a Entry>,
+    /// The owner's `Admin` records per member, ordered.
+    admin_events: BTreeMap<String, Vec<Setting>>,
     /// `Open` / `AdminsOnly` records by an admin as of their own frontier, ordered.
     open_recs: Vec<Setting>,
     admins_only_recs: Vec<Setting>,
@@ -28,7 +28,13 @@ impl<'a> Ctx<'a> {
     fn new(group: &'a str, entries: &'a [Entry], owner: String) -> Self {
         let mut admin_recs: Vec<&Entry> = entries.iter().filter(|e| e.rec.author == owner && matches!(e.rec.body, Body::Admin { .. })).collect();
         admin_recs.sort_by(|a, b| order(a).cmp(&order(b)));
-        let mut cx = Ctx { group, entries, owner, admin_recs, open_recs: Vec::new(), admins_only_recs: Vec::new() };
+        let mut admin_events: BTreeMap<String, Vec<Setting>> = BTreeMap::new();
+        for e in admin_recs {
+            if let Body::Admin { member, admin } = &e.rec.body {
+                admin_events.entry(member.clone()).or_default().push(Setting::of(e, *admin));
+            }
+        }
+        let mut cx = Ctx { group, entries, owner, admin_events, open_recs: Vec::new(), admins_only_recs: Vec::new() };
         let settings = |pick: fn(&Body) -> Option<bool>| {
             let mut v: Vec<&Entry> = entries.iter().filter(|e| pick(&e.rec.body).is_some() && cx.admin_as_of(&e.rec.author, Some(&e.rec.seen))).collect();
             v.sort_by(|a, b| order(a).cmp(&order(b)));
@@ -62,21 +68,10 @@ impl<'a> Ctx<'a> {
         }
     }
 
-    /// Whether `did` is an admin as of `seen` (`None`: now).
+    /// Whether `did` is an admin as of `seen` (`None`: now): the owner, or the owner's `Admin`
+    /// record for `did` in force (causal, like the settings).
     fn admin_as_of(&self, did: &str, seen: Option<&[(u64, i32)]>) -> bool {
-        if did == self.owner {
-            return true;
-        }
-        let mut last = None;
-        for e in &self.admin_recs {
-            if let Body::Admin { member, admin } = &e.rec.body
-                && member == did
-                && seen.is_none_or(|s| e.seen_by(s))
-            {
-                last = Some(*admin);
-            }
-        }
-        last == Some(true)
+        did == self.owner || self.admin_events.get(did).is_some_and(|evs| in_force(evs, seen))
     }
 
     /// The issuer of a join's invite, if the join is valid.
@@ -215,11 +210,34 @@ fn derive_settings(cx: &Ctx, st: &mut GroupState) {
     st.open_record = in_force_rec(&cx.open_recs, None).filter(|s| s.on).map(|s| (s.peer, s.counter));
     st.pos.admins_only = cx.admins_only_recs.clone();
     st.admins_only = in_force(&st.pos.admins_only, None);
-    for e in &cx.admin_recs {
-        if let Body::Admin { member, admin } = &e.rec.body {
-            st.pos.admin_events.entry(member.clone()).or_default().push((e.peer, e.counter, *admin));
+    st.pos.admin_events = cx.admin_events.clone();
+}
+
+/// The permit in force per `(host, dev)` from counted (by an admin as of their frontier)
+/// `HostPermit` / `CallHostPermit` records (`pick` reads the key): causal like the settings,
+/// so a later revoke beats a fast-clock (or forged `at`) permit it saw.
+fn permits_in_force<'a>(cx: &Ctx<'a>, pick: fn(&Body) -> Option<(&String, &[u8; 32])>) -> BTreeMap<(String, [u8; 32]), &'a Entry> {
+    let mut by_key: BTreeMap<(String, [u8; 32]), Vec<&Entry>> = BTreeMap::new();
+    for e in cx.entries {
+        if let Some((host, dev)) = pick(&e.rec.body)
+            && cx.admin_as_of(&e.rec.author, Some(&e.rec.seen))
+        {
+            by_key.entry((host.clone(), *dev)).or_default().push(e);
         }
     }
+    by_key
+        .into_iter()
+        .filter_map(|(k, mut v)| {
+            v.sort_by(|a, b| order(a).cmp(&order(b)));
+            causal_latest(&v, |e| (e.peer, e.counter), |e| &e.rec.seen, None).map(|e| (k, *e))
+        })
+        .collect()
+}
+
+/// Whether the device's acceptance record `a` answers permit `p`: written after seeing it, or
+/// concurrent with it and later by `(at, id)` (so a forged-future permit cannot keep asking).
+fn answers(a: &Entry, p: &Entry) -> bool {
+    p.seen_by(&a.rec.seen) || (!a.seen_by(&p.rec.seen) && order(a) > order(p))
 }
 
 /// Encryption keys of members (U3 mail).
@@ -234,16 +252,13 @@ fn derive_enc_keys(cx: &Ctx, st: &mut GroupState) {
 }
 
 fn derive_hosts(cx: &Ctx, st: &mut GroupState) {
-    let mut permits: BTreeMap<(String, [u8; 32]), &Entry> = BTreeMap::new();
+    let permits = permits_in_force(cx, |b| match b {
+        Body::HostPermit { host, host_dev, .. } => Some((host, host_dev)),
+        _ => None,
+    });
     let mut accepts: BTreeMap<(String, [u8; 32]), &Entry> = BTreeMap::new();
     for e in cx.entries {
         match &e.rec.body {
-            Body::HostPermit { host, host_dev, .. } if cx.admin_as_of(&e.rec.author, Some(&e.rec.seen)) => {
-                let k = (host.clone(), *host_dev);
-                if permits.get(&k).is_none_or(|p| order(p) < order(e)) {
-                    permits.insert(k, e);
-                }
-            }
             Body::HostAccept { .. } => {
                 let k = (e.rec.author.clone(), e.rec.dev);
                 if accepts.get(&k).is_none_or(|p| order(p) < order(e)) {
@@ -259,7 +274,7 @@ fn derive_hosts(cx: &Ctx, st: &mut GroupState) {
         let info = HostInfo { did: did.clone(), dev: *dev, appointed_by: p.rec.author.clone(), at: p.rec.at };
         if accepted && st.members.contains_key(did) {
             st.hosts.push(info);
-        } else if st.members.contains_key(did) && !accepts.get(&(did.clone(), *dev)).is_some_and(|a| order(a) > order(p)) {
+        } else if st.members.contains_key(did) && !accepts.get(&(did.clone(), *dev)).is_some_and(|a| answers(a, p)) {
             // Not accepted, and not declined after this permit: still asking.
             st.host_requests.push(info);
         }
@@ -276,16 +291,13 @@ fn derive_hosts(cx: &Ctx, st: &mut GroupState) {
 
 /// Call hosts (U21): the same rule over their own permit / acceptance records.
 fn derive_call_hosts(cx: &Ctx, st: &mut GroupState) {
-    let mut cpermits: BTreeMap<(String, [u8; 32]), &Entry> = BTreeMap::new();
+    let cpermits = permits_in_force(cx, |b| match b {
+        Body::CallHostPermit { host, host_dev, .. } => Some((host, host_dev)),
+        _ => None,
+    });
     let mut caccepts: BTreeMap<(String, [u8; 32]), &Entry> = BTreeMap::new();
     for e in cx.entries {
         match &e.rec.body {
-            Body::CallHostPermit { host, host_dev, .. } if cx.admin_as_of(&e.rec.author, Some(&e.rec.seen)) => {
-                let k = (host.clone(), *host_dev);
-                if cpermits.get(&k).is_none_or(|p| order(p) < order(e)) {
-                    cpermits.insert(k, e);
-                }
-            }
             Body::CallHostAccept { .. } => {
                 let k = (e.rec.author.clone(), e.rec.dev);
                 if caccepts.get(&k).is_none_or(|p| order(p) < order(e)) {
@@ -304,7 +316,7 @@ fn derive_call_hosts(cx: &Ctx, st: &mut GroupState) {
         let info = CallHostInfo { did: did.clone(), dev: *dev, appointed_by: p.rec.author.clone(), at: p.rec.at, permit: p.id.clone() };
         if acc.is_some_and(|a| matches!(a.rec.body, Body::CallHostAccept { active: true })) {
             st.call_hosts.push(info);
-        } else if !acc.is_some_and(|a| order(a) > order(p)) {
+        } else if !acc.is_some_and(|a| answers(a, p)) {
             st.call_host_requests.push(info);
         }
     }

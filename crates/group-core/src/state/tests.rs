@@ -539,3 +539,5 @@ fn concurrent_settings_tie_break_by_time() {
     sync(&mut x, &mut o);
     assert!(o.state().open && !o.state().is_member(&x.did()), "closed as of x's frontier");
 }
+
+mod causal;

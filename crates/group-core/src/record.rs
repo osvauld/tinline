@@ -57,8 +57,8 @@ pub enum Body {
     /// chat requests, `mail.rs`). The latest per author counts.
     EncKey { key: [u8; 32] },
     /// Owner or admin: device `host_dev` of `host` may (or may no longer) host group CALLS
-    /// (U21: a separate `host_call` capability, never implied by `HostPermit`). Latest by
-    /// `(author clock, id)` per device wins, like `HostPermit`.
+    /// (U21: a separate `host_call` capability, never implied by `HostPermit`). Per device
+    /// the record in force by causality wins, like `HostPermit` (`state::causal_latest`).
     CallHostPermit { host: String, host_dev: [u8; 32], active: bool },
     /// The author's own device `dev` agrees to host group calls (or stops). Separate from
     /// `HostAccept`: agreeing to relay chat is not agreeing to carry calls (battery, uplink, the

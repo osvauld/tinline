@@ -47,10 +47,11 @@ object LegalStore {
     fun accept(c: Context) { prefs(c).edit().putInt("terms_version", CURRENT).putLong("terms_accepted_at", System.currentTimeMillis()).apply() }
 }
 
-/** Copies [text]; flagged sensitive so Android 13+ hides it from the clipboard preview. */
-fun copyToClipboard(c: Context, label: String, text: String) {
+/** Copies [text]; flagged sensitive (unless [sensitive] is false, e.g. a public link) so
+ *  Android 13+ hides it from the clipboard preview. */
+fun copyToClipboard(c: Context, label: String, text: String, sensitive: Boolean = true) {
     val clip = ClipData.newPlainText(label, text)
-    clip.description.extras = PersistableBundle().apply {
+    if (sensitive) clip.description.extras = PersistableBundle().apply {
         if (Build.VERSION.SDK_INT >= 33) putBoolean(ClipDescription.EXTRA_IS_SENSITIVE, true)
         else putBoolean("android.content.extra.IS_SENSITIVE", true)
     }

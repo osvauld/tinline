@@ -236,3 +236,5 @@ fn in_place_apply_agrees_and_taints_on_refusal() {
     assert_eq!(m.apply_remote_inplace(&up, ok), Err(Reject::WrongDoc));
     assert!(m.tainted());
 }
+
+mod upload;

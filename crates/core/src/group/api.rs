@@ -564,6 +564,17 @@ impl Node {
         self.inner.group_write(&core, &group_id, Body::Post { text, reply_to, image: None })
     }
 
+    /// Why a post of ours will not be posted (`None`: it is not failed). A post written offline
+    /// while an admin turned admins-only on is refused by the hosts: this device stops sending
+    /// it and keeps it here with the reason ("Not posted: only admins post here"); its
+    /// `delivery` stays `Waiting`. A later post of ours on the same day carries it along again.
+    pub fn group_post_failure(&self, group_id: String, message_id: String) -> Result<Option<String>, Error> {
+        let core = self.inner.group_core()?;
+        let groups = core.groups.lock();
+        let live = groups.get(&group_id).ok_or(Error::NotFound)?;
+        Ok(live.meta.failed_posts.get(&message_id).map(|f| f.reason.clone()))
+    }
+
     /// One admin flag on `member_did` (U9/U15: any 3 remove; final, visible to them).
     pub fn group_flag(&self, group_id: String, member_did: String) -> Result<(), Error> {
         let core = self.inner.group_core()?;

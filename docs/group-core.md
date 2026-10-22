@@ -46,8 +46,9 @@ the user was away; each is listed at the end.
   every delivery order. `derive_meta` runs on meta changes only; each post is judged on its own
   (Visible, Hidden, or Pending when its `seen` names meta records we do not hold yet; pending
   posts are judged again when the meta doc advances):
-  - admins = owner + members the owner made admin (latest `Admin` per member by `(at, id)`);
-    "admin as of a frontier" counts only the owner's `Admin` records inside it;
+  - admins = owner + members the owner made admin (the owner's `Admin` record in force per
+    member, by the causal rule below); "admin as of a frontier" counts only the owner's `Admin`
+    records inside it;
   - members = owner + DIDs whose latest join/leave is a `Join` with an invite that verifies,
     names this group and whose issuer was owner/admin as of the join's frontier;
   - flags count if the flagger was admin as of the flag's frontier; any 3 counted flags remove
@@ -55,12 +56,24 @@ the user was away; each is listed at the end.
   - a post shows if its author was a member as of its frontier and fewer than 3 counted flags on
     the author lie inside its frontier (U11 option A). A shown post by a since-removed member
     carries `before_removal`;
-  - a device hosts when its latest admin `HostPermit` is active, its own latest `HostAccept` is
-    active and its DID is a member;
-  - public groups: `Open` / `AdminsOnly` (admin as of the record's frontier) are causal, not
-    "latest `at`": a record whose `seen` includes an earlier one of its kind supersedes it, and
-    `(at, id)` only orders concurrent ones; the same rule as of a frontier decides an `OpenJoin`
-    and, for a non-admin's post, admins-only (`docs/design/public-group.md` §1).
+  - a device hosts when the admin `HostPermit` in force for it (causal rule) is active, its own
+    latest `HostAccept` is active and its DID is a member; a decline answers a permit it saw (or
+    a concurrent one with an earlier `(at, id)`);
+  - public groups: `Open` / `AdminsOnly` count when written by an admin as of the record's
+    frontier; the setting in force as of a frontier decides an `OpenJoin` and, for a
+    non-admin's post, admins-only (`docs/design/public-group.md` §1);
+  - **the causal rule** (`state::causal_latest`) for the owner's `Admin` records, `HostPermit`,
+    `CallHostPermit`, `Open` and `AdminsOnly`, per kind and key: of the counted records inside
+    the frontier (or all held), one whose own signed `seen` includes another supersedes it; of
+    those nobody superseded (concurrent ones), the latest by `(at, id)` wins. An author's clock
+    only orders concurrent records, so an admin with a fast or forged clock (`at = i64::MAX`)
+    cannot make a permit or setting outlast a later revoke written by someone who saw it, also
+    after that admin is demoted. Pure in the record set: the same result in every delivery
+    order;
+  - still latest by `(at, id)`, because only their author writes them and so a forged clock can
+    only override the author's own records: join/leave (the member), `HostAccept` /
+    `CallHostAccept` (the device) and `EncKey` (derived from the root secret, the same key in
+    every record of one author);
   - System lines (joined, left, removed, admin granted/revoked, host added/removed) are derived
     from the same records; "removed" is placed at the 3rd counted flag.
 
@@ -350,11 +363,9 @@ delivered}`. Test hook: `group_guess_codes_for_test(link, n)`.
 3. The owner cannot be flagged out (flags on the owner never count, §11 Q3) and cannot leave.
 4. A removed admin's earlier flags still count; mutual removal removes both (§11 Q9).
 5. Removal is final in this slice (no readmission op yet, §11 Q7).
-6. Concurrent admin grant/revoke or host permit/revoke resolve by latest `(author clock, id)`.
-   Open: these (and `CallHostPermit`, join/leave, `EncKey`) still take the latest by the
-   author's clock even when not concurrent, so an admin with a fast or forged clock can make a
-   `HostPermit` outlast a later revoke; `Open` / `AdminsOnly` now use the causal rule
-   (public-group review); moving these to it too is a follow-up.
+6. Concurrent admin grant/revoke or host/call-host permit/revoke (neither saw the other)
+   resolve by latest `(author clock, id)`; a record that saw another always supersedes it (the
+   causal rule above).
 7. A removed member's proof check accepts flags by the owner or by DIDs the owner made admin
    (any time); the full "admin as of the flag's frontier" rule applies once the flags are in the
    member's own doc (they are relayed before the removal notice).

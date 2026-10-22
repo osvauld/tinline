@@ -109,10 +109,22 @@ days). An open group needs no invite instead:
     an old `Open{true}`.
   - While admins-only is on now, a post by a non-admin author that the rules would show (or
     that is pending) is refused, unless the uploading member is an admin. A stale frontier would
-    otherwise let a member post into a channel on every device. **PROVISIONAL (conservative):**
-    an honest offline post written concurrently with the switch is refused too; the member's
-    session to that host is closed each time it carries it (the post never spreads). A refused
-    batch closes the session, as for every refusal.
+    otherwise let a member post into a channel on every device. An honest offline post written
+    concurrently with the switch is refused too (the host cannot tell it from a stale claim).
+    The host answers `Refused{"admins only"}` for that batch and keeps the session (other
+    refusals still close it).
+  - The member's side (as built, `admit::fail_refused_posts` / `upload_cut`): once it learns
+    from synced meta that admins-only is on and it is not an admin, or a host answers
+    `Refused{"admins only"}` first, its own posts no host acknowledged that a host would refuse
+    are marked failed ("Not posted: only admins post here", `GroupMeta::failed_posts`, read by
+    `group_post_failure`; the author still sees the post) and are never uploaded: uploads to
+    hosts leave out such posts and everything after them under the same writer
+    (`GroupDoc::export_since_before`), and the day is no longer owed to a host. A Loro writer's
+    ops form a chain, so a later post of ours on the same day carries a failed one along: it
+    can only be written once we may post (admins-only off, or we are an admin), when hosts
+    accept it, and the failed mark is dropped then. The app DTO has no failed state yet:
+    `GroupMessage.delivery` stays `Waiting`; apps should show the reason from
+    `group_post_failure` (follow-up).
   - Checking `seen` against the Loro change's own dependencies was considered and not done: the
     author builds those too (a modified app can write on a fork of an old version), so it
     proves nothing a host can rely on.
@@ -387,6 +399,12 @@ Review follow-ups (built, `public_group.rs` unless noted):
     `open_codes_drop_on_close_and_one_per_issuer`).
 15. Presence replay, skew, pruning and frame size (unit: `presence_frames_cannot_be_replayed`,
     `presence_state_is_pruned`, `a_full_presence_frame_fits`).
+16. Permits and the owner's admin grants are causal too (`docs/group-core.md`; unit:
+    `forged_clock_permit_is_superseded_by_a_later_revoke`,
+    `forged_clock_admin_grant_is_superseded_by_a_later_revoke`,
+    `concurrent_permits_tie_break_by_time_in_every_order`).
+17. `offline_post_refused_by_admins_only_fails_and_sync_goes_on` (unit:
+    `an_upload_leaves_out_the_cut_post_and_what_follows`).
 
 Manual: worker host + laptop host + Android emulator; turn the laptop off, the lobby keeps
 working through the worker.
