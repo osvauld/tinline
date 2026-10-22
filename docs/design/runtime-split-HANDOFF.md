@@ -58,7 +58,14 @@ the state at the end of the first integration session.
     (4320); bindings diff empty (4341/4344); set 1 (4319, nixos single job); set 2 (4278
     laptop steps, failures rerun alone in 4292; `search` paging tie-order fails, fixed by
     d0c25107 on fix/test-flakes); APK (4354).
-- Remaining waves: W8 cleanup.
+  - W8 `refactor/rt-w8-cleanup`: p2pcore unused imports, same-type `Error` conversions in
+    the runtimes, mechanical clippy fixes, per-item allows for design-level lints, the
+    `cues.rs` `6.28` kept (allowed) so the cues stay bit-identical, `callsdoc` uses
+    `store::MAX_HISTORY`. Clippy (`--workspace --exclude desktop`) passes; `desktop` still
+    fails on approximate-constant lints in `call_field.rs` (not part of the split).
+    W8 checks: lib tests 189 (4370); sets 1+2 (4371; lifecycle and devices were load flakes and passed alone in 4433); APK (4440).
+- All waves are merged. The user merges `integrate/runtime-split` (and `fix/test-flakes`)
+  into `dev`.
 
 ## Rules that held this session
 
@@ -114,9 +121,8 @@ Source-scan tests read paths: when code moves to a new crate, update them
 
 ## Later
 
-- W8: ~15 unused-import warnings from moved code; hooks impl uses `Inner::method(&self)`
-  to avoid trait shadowing — collapse when `impl Inner` remnants go.
-- Duplicate `MAX_HISTORY`; clippy in moved code; TAU error `cues.rs:89`.
+- Clippy in `desktop/src/call_field.rs` (approximate constants) and the p2pcore test-only
+  lints in `sync/engine/*` tests.
 - Worktrees: 17 merged ones were removed on 2026-10-22 (split-wave*, crate-split, gcall-*, etc.). The user
   removes `agent-aa449…`/`agent-ab21b…` (they need `--force`). About 40 with unmerged or uncommitted work wait for the user. rt-w1..w5 and rt-base
   go after the split lands.

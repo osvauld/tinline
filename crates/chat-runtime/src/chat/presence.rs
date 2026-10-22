@@ -41,6 +41,12 @@ pub struct Presence {
     online: Mutex<HashSet<String>>,
 }
 
+impl Default for Presence {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Presence {
     pub fn new() -> Self {
         Self { local: EphemeralStore::new(TIMEOUT_MS), online: Default::default() }

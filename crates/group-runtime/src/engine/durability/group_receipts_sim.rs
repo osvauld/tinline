@@ -170,9 +170,7 @@ impl Sim {
     }
 
     fn day_update(&self, from: &GroupCore, theirs: &VersionVector) -> Option<Vec<u8>> {
-        if from.store.shard_meta(&self.gid, DAY).unwrap().is_none() {
-            return None;
-        }
+        from.store.shard_meta(&self.gid, DAY).unwrap()?;
         let mut groups = from.groups.lock();
         let Live { state, shards, .. } = groups.get_mut(&self.gid).unwrap();
         shards

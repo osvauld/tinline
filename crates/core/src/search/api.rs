@@ -449,12 +449,12 @@ impl Inner {
             let s = self.shared.lock();
             let mut people: Vec<(String, String)> = s.state.contacts.iter().map(|c| (c.did.clone(), crate::node::display_name(c))).collect();
             people.extend(s.state.notices.iter().filter(|(d, _)| !s.state.contacts.iter().any(|c| &c.did == *d)).map(|(d, h)| (d.clone(), h.name.clone())));
-            people.sort_by(|a, b| a.1.to_lowercase().cmp(&b.1.to_lowercase()));
+            people.sort_by_key(|p| p.1.to_lowercase());
             out.extend(people.into_iter().filter(|(_, n)| hit(n)).map(|(id, name)| NameHit { kind: SearchNameKind::Contact, id, name }));
         }
         if let Some(gc) = gcore {
             let mut groups: Vec<(String, String)> = gc.groups.lock().iter().filter(|(_, l)| !l.state.name.is_empty()).map(|(g, l)| (g.clone(), l.state.name.clone())).collect();
-            groups.sort_by(|a, b| a.1.to_lowercase().cmp(&b.1.to_lowercase()));
+            groups.sort_by_key(|g| g.1.to_lowercase());
             out.extend(groups.into_iter().filter(|(_, n)| hit(n)).map(|(id, name)| NameHit { kind: SearchNameKind::Group, id, name }));
         }
         out

@@ -183,7 +183,7 @@ impl GroupRt {
                 rows.push(self.inv_current(&core, r));
             }
         }
-        rows.sort_by(|a, b| b.at.cmp(&a.at));
+        rows.sort_by_key(|r| std::cmp::Reverse(r.at));
         Ok(rows.iter().map(|r| self.inv_view(r)).collect())
     }
 
@@ -435,7 +435,7 @@ impl GroupRt {
         let Ok(core) = self.group_core() else { return vec![] };
         let t = now_ms();
         let mut rows: Vec<InvRow> = core.store.invs().unwrap_or_default().into_iter().filter(|r| r.expires + KEEP_AFTER_EXPIRY >= t).collect();
-        rows.sort_by(|a, b| b.at.cmp(&a.at));
+        rows.sort_by_key(|r| std::cmp::Reverse(r.at));
         rows.truncate(MAX_OWN_INVITATIONS);
         let mut out: Vec<Vec<u8>> = rows
             .into_iter()

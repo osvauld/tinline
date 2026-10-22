@@ -37,7 +37,9 @@ pub fn safety_number(mine: &str, theirs: &str) -> Result<String, Error> {
             h = Sha512::new().chain_update(h).chain_update(key).finalize();
         }
         Ok(h[..30]
-            .chunks_exact(5)
+            .as_chunks::<5>()
+            .0
+            .iter()
             .map(|c| format!("{:05}", c.iter().fold(0u64, |n, b| n << 8 | *b as u64) % 100_000))
             .collect())
     };

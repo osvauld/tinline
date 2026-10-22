@@ -340,7 +340,7 @@ async fn no_host_hint_bootstrap_grants_no_role_until_signed_meta_and_borrowed_wr
             open: false,
         })
         .unwrap();
-        node.inner.group.group_own_apply(&[token.clone()], false);
+        node.inner.group.group_own_apply(std::slice::from_ref(&token), false);
         assert!(!target.groups.lock().contains_key(&gid));
         node.inner.group.group_own_apply(&[token], true);
         assert!(target.groups.lock().contains_key(&gid));

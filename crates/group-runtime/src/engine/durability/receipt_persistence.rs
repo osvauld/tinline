@@ -102,7 +102,7 @@ fn partial_proof_never_clears_newer_day_debt() {
         day(),
         writer_id(f.author.did(), &f.dev),
         None,
-        &[first.clone()],
+        std::slice::from_ref(&first),
     )
     .unwrap();
     let rec = Record {

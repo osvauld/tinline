@@ -42,7 +42,6 @@ mod video_call;
 #[cfg(target_os = "android")]
 mod video_jni;
 mod voice;
-pub(crate) use node_runtime::wire;
 
 pub use error::Error;
 

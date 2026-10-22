@@ -111,6 +111,7 @@ impl ChatRt {
     /// A peer-vouched snapshot of a day (see `Ctx::history`): validated like any batch (every op
     /// proven by its author's DID signature), merged into whatever we hold of that day, stored as
     /// the new snapshot. `shards` holds the day (`chat_shard`).
+    #[allow(clippy::too_many_arguments)]
     pub(super) fn chat_apply_history(&self, mut shards: ShardCache<'_>, core: &ChatCore, me: &Me, sess: &Session, pair: &str, day: &str, snap: &[u8]) -> Result<bool, Error> {
         let shard = shards.get_mut(&(pair.to_string(), day.to_string())).ok_or(Error::NotFound)?;
         let before = shard.vv();

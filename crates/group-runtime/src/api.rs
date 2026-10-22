@@ -118,9 +118,7 @@ impl GroupRt {
         let (name, role, members, hosts, here, last, unread, reachable, open, admins_only) = {
             let groups = core.groups.lock();
             let live = groups.get(gid)?;
-            if live.state.owner.is_none() {
-                return None;
-            }
+            live.state.owner.as_ref()?;
             let reachable = live.state.hosts.iter().any(|h| (h.did == core.did && h.dev == core.dev) || core.has_session(gid, &h.did, &h.dev));
             // The row comes from the group's local state: no day doc is loaded for the list.
             let last_post = live.meta.last.as_ref().map(|b| brief_item(b, &live.state));

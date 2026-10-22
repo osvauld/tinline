@@ -65,6 +65,7 @@ impl GroupRt {
     /// Hosts to dial now: active hosts of each group we belong to (any validly signed address
     /// from the invite while we are still joining), minus ourselves, live sessions, dials in
     /// flight and those backing off.
+    #[allow(clippy::type_complexity)]
     pub(super) fn group_targets(&self, core: &GroupCore) -> Vec<(String, HostAddr)> {
         let only = self.dial_only.lock().clone();
         let ignore = self.ignore_removal.load(Ordering::SeqCst);

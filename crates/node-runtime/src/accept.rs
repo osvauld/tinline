@@ -3,6 +3,7 @@
 use super::*;
 
 /// What `accept_hello` did with a good hello.
+#[allow(clippy::large_enum_variant)]
 pub enum Hello {
     /// Added at once: send this `ContactWelcome`.
     Welcome(Msg, Contact),

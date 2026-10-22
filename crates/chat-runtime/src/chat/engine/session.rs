@@ -147,7 +147,7 @@ impl ChatRt {
         match self.core.lock().clone() {
             Some(c) => Ok(c),
             None => match self.me() {
-                Err(e) => Err(e.into()),
+                Err(e) => Err(e),
                 Ok(_) => Err(Error::Locked),
             },
         }
@@ -369,7 +369,7 @@ impl ChatRt {
             let addr = match addr_for(&cd.device, cd.relay.as_deref()) {
                 Ok(a) => a,
                 Err(e) => {
-                    last = e.into();
+                    last = e;
                     continue;
                 }
             };
@@ -377,7 +377,6 @@ impl ChatRt {
             let conn = match tokio::time::timeout(DIAL_TIMEOUT, node_runtime::version::connect(&ep, addr, &node_runtime::version::CHAT)).await {
                 Ok(Ok(c)) => c,
                 Ok(Err(e)) => {
-                    let e = Error::from(e);
                     if matches!(e, Error::Protocol(_)) {
                         self.log(format!("chat with {did}: {e}"));
                     }

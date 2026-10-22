@@ -121,7 +121,7 @@ impl SyncRt {
             return Ok(());
         }
         let theirs = peer.docs.get(name).cloned().unwrap_or_default();
-        let out = match self.group.group_own_content_export(me.epoch, remote, name, &theirs).map_err(Error::from) {
+        let out = match self.group.group_own_content_export(me.epoch, remote, name, &theirs) {
             Ok(out) => out,
             Err(Error::Protocol(reason)) => {
                 // Oversized history needs range batching. Keep records and pending

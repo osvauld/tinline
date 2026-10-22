@@ -75,6 +75,7 @@ impl Call {
 }
 
 /// What one dialled device of the callee reports to `run_outgoing`.
+#[allow(clippy::large_enum_variant)]
 pub enum LegEvent {
     /// Connected and hello sent: the device is being rung (or about to be).
     Connected,

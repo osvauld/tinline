@@ -43,7 +43,7 @@ impl GroupRt {
         self.log(format!(
             "group {} session with {} ({})",
             crate::short(&gid),
-            &peer.did,
+            peer.did,
             if hosting { "we host" } else { "they host" }
         ));
         // Catch the other side up: the meta doc, then the recent days (older ones are history).

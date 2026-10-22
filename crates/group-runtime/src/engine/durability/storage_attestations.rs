@@ -201,7 +201,7 @@ fn failed_append_never_attests_unpersisted_operation_or_a_planned_frontier() {
         day(),
         writer_id(f.author.did(), &f.dev),
         None,
-        &[first.clone()],
+        std::slice::from_ref(&first),
     )
     .unwrap();
     let record = Record {

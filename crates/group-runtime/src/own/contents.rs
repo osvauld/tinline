@@ -139,6 +139,7 @@ impl GroupCore {
     }
 
     /// Export only already-persisted original record bytes, never a re-authored diff.
+    #[allow(clippy::type_complexity)]
     pub fn own_content_export(
         &self,
         gid: &str,
@@ -231,6 +232,7 @@ impl GroupRt {
             .unwrap_or_default()
     }
 
+    #[allow(clippy::type_complexity)]
     pub fn group_own_content_export(
         self: &Arc<Self>,
         epoch: u64,

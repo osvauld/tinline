@@ -87,6 +87,7 @@ pub struct GroupCalls {
 }
 
 #[derive(Default)]
+#[allow(clippy::type_complexity)]
 pub struct CallsSt {
     /// gid → (holder DID, device slot) → latest admitted status.
     pub statuses: HashMap<String, BTreeMap<(String, u64), (SignedStatus, CallHostStatus)>>,

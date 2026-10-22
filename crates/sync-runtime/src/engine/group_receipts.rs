@@ -223,7 +223,7 @@ pub async fn handle(
                     // rows in later passes after metadata catch-up/regrant. No
                     // pending payload queue or fabricated receipt/Ack is kept.
                     Err(AttestationError::PendingMetadata | AttestationError::Authority) => {}
-                    Err(e) => return Err(protocol_error(e).into()),
+                    Err(e) => return Err(protocol_error(e)),
                 }
             }
             inner.group.own_group_admit(me.epoch, remote)?;

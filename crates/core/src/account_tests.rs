@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use crate::node::{Node, now};
 use crate::store::CallRecord;
-use crate::{Error, NodeEvents};
+use crate::NodeEvents;
 
 struct Quiet;
 impl NodeEvents for Quiet {
