@@ -16,6 +16,7 @@ pub mod calllog;
 pub mod calls;
 pub mod code;
 pub mod engine;
+pub mod images;
 pub mod invitations;
 pub(crate) mod member_receipts;
 pub mod own;

@@ -29,6 +29,7 @@ impl Inner {
             self.group_calls_tick(&core);
             self.group_codes_tick(&core);
             self.group_presence_tick(&core);
+            self.group_images_pump(&core);
             if let Err(e) = self.group_rotation_tick(&core).await {
                 tracing::warn!("group endpoint rotation: {e}");
             }

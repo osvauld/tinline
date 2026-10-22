@@ -27,6 +27,7 @@ impl Inner {
             gid: gid.clone(),
             did: peer.did.clone(),
             dev: peer.dev,
+            ep: *conn.remote_id().as_bytes(),
             hosting,
             joining,
             open_join,
@@ -63,6 +64,7 @@ impl Inner {
         self.group_mail_on_session(&core, &sess);
         self.group_calls_on_session(&core, &sess);
         self.group_presence_on_session(&core, &sess);
+        self.group_images_on_session(&core, &gid);
         if let Some(ev) = self.group_ev() {
             let g = gid.clone();
             self.handle.spawn_blocking(move || ev.on_group_changed(g));

@@ -68,6 +68,7 @@ fn msg(gid: &str, id: &str, at: u64, author: &str, name: &str, kind: GroupItemKi
         outgoing: author == ME,
         delivery: GroupDelivery::Delivered,
         before_removal: false,
+        image: None,
     }
 }
 

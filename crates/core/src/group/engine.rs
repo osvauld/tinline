@@ -46,6 +46,7 @@ mod documents;
 #[cfg(test)]
 mod durability;
 mod history;
+pub(crate) mod images;
 mod lifecycle;
 pub(crate) mod member_receipts;
 pub(crate) mod presence;
@@ -210,6 +211,8 @@ pub(crate) struct GroupCore {
     pub(crate) receipts: Arc<crate::receipts::store::messages::MessageReceipts>,
     /// Who is online in open groups (public group §3): in memory only.
     pub(crate) presence: presence::PresenceRt,
+    /// Image blobs of posts (public group §5).
+    pub(crate) images: images::ImagesRt,
 }
 
 pub(crate) struct Sess {
@@ -217,6 +220,8 @@ pub(crate) struct Sess {
     pub(crate) gid: String,
     pub(crate) did: String,
     pub(crate) dev: [u8; 32],
+    /// The peer's group endpoint (the connection's remote): what the image gate knows it by.
+    pub(crate) ep: [u8; 32],
     /// We accepted it: we host this session's member.
     pub(crate) hosting: bool,
     /// Host side: the member was joining (not yet a member) at Hello.

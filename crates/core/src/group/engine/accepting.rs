@@ -30,6 +30,13 @@ impl Inner {
                     return;
                 };
                 let Ok(conn) = conn else { return };
+                // Image blobs of posts (public group §5): gated in `images.rs`.
+                if alpn.as_slice() == iroh_blobs::ALPN {
+                    if let Err(e) = this.group_blob_incoming(core, conn).await {
+                        tracing::debug!("group blob incoming: {e}");
+                    }
+                    return;
+                }
                 if let Err(e) = this.group_host_session(core, conn).await {
                     tracing::debug!("group incoming: {e}");
                 }

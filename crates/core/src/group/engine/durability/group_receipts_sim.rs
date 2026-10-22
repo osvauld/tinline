@@ -203,6 +203,7 @@ impl Sim {
                 Body::Post {
                     text: text.into(),
                     reply_to: None,
+                    image: None,
                 },
                 at,
             )
@@ -961,6 +962,7 @@ fn open_sess(
         gid: gid.into(),
         did: peer.did.clone(),
         dev: peer.dev,
+        ep: peer.dev,
         hosting,
         joining: false,
         open_join: false,
@@ -1216,6 +1218,7 @@ fn reading_an_old_compacted_day_still_issues_read_receipts() {
             Body::Post {
                 text: "from last week".into(),
                 reply_to: None,
+                image: None,
             },
             at,
         )

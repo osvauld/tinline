@@ -44,7 +44,7 @@ impl Node {
     pub fn group_post_at_for_test(&self, group_id: String, at_ms: i64, text: String) -> Result<GroupMessage, Error> {
         let core = self.inner.group_core()?;
         self.inner.group_member_check(&core, &group_id)?;
-        let (entry, changed) = core.write_at(&group_id, Body::Post { text, reply_to: None }, at_ms)?;
+        let (entry, changed) = core.write_at(&group_id, Body::Post { text, reply_to: None, image: None }, at_ms)?;
         let item = changed.new_items.iter().find(|i| i.id == entry.id).cloned();
         self.inner.group_after(&core, changed, None);
         self.inner.group_message(&core, &group_id, &item.ok_or(Error::NotFound)?).ok_or(Error::NotFound)
@@ -139,7 +139,7 @@ impl Node {
     /// the local checks: what a modified app could do. Not in release builds.
     pub fn group_post_with_seen_for_test(&self, group_id: String, text: String, seen: Vec<(u64, i32)>) -> Result<(), Error> {
         let core = self.inner.group_core()?;
-        let (_, changed) = core.write_seen_for_test(&group_id, Body::Post { text, reply_to: None }, seen)?;
+        let (_, changed) = core.write_seen_for_test(&group_id, Body::Post { text, reply_to: None, image: None }, seen)?;
         self.inner.group_after(&core, changed, None);
         Ok(())
     }

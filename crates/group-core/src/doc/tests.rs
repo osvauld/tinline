@@ -24,6 +24,7 @@ fn post(a: &identity::Identity, dev: [u8; 32], doc: &GroupDoc, text: &str) -> Re
         body: Body::Post {
             text: text.into(),
             reply_to: None,
+            image: None,
         },
     }
 }
@@ -151,6 +152,7 @@ fn records_are_accepted_only_in_their_doc() {
             Body::Post {
                 text: "x".into(),
                 reply_to: None,
+                image: None,
             },
         )
     };

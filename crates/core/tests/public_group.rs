@@ -471,3 +471,92 @@ fn presence_only_from_active_hosts() {
         sees_online(&n, &g, &z.did)
     });
 }
+
+// ---- images (public group §5) -------------------------------------------------------------------
+
+/// A noisy picture (so its JPEG stays large), `w` x `h`, as PNG bytes.
+fn noisy_png(w: u32, h: u32, seed: u32) -> Vec<u8> {
+    let mut s = seed | 1;
+    let img = image::RgbImage::from_fn(w, h, |_, _| {
+        s ^= s << 13;
+        s ^= s >> 17;
+        s ^= s << 5;
+        image::Rgb([s as u8, (s >> 8) as u8, (s >> 16) as u8])
+    });
+    let mut out = std::io::Cursor::new(Vec::new());
+    image::DynamicImage::ImageRgb8(img).write_to(&mut out, image::ImageFormat::Png).unwrap();
+    out.into_inner()
+}
+
+fn image_of(p: &Peer, g: &str, id: &str) -> Option<p2pcore::GroupImage> {
+    all(p, g).into_iter().find(|m| m.id == id).and_then(|m| m.image)
+}
+
+fn image_state(p: &Peer, g: &str, id: &str) -> Option<p2pcore::GroupImageState> {
+    image_of(p, g, id).map(|i| i.state)
+}
+
+fn image_bytes(p: &Peer, g: &str, id: &str) -> Option<Vec<u8>> {
+    p.node.group_image_path(g.into(), id.into()).map(|f| std::fs::read(f).unwrap())
+}
+
+// KIND: acceptance (public group 9) — a member's picture reaches another member through the host:
+// the sender scales it (<= 1080 px, < 300 KB JPEG), the host fetches it from the sender's session,
+// the other member (tap to load) fetches it from the host and gets the same bytes (the ciphertext
+// hash is verified while streaming, the blob cipher when it is opened). A host over its per-group
+// budget drops the oldest picture; one over the host's size limit is refused (the host never takes
+// it, so no member gets it); a blob larger than its post says is refused when the stream passes
+// the declared size.
+#[test]
+fn image_post_roundtrip_via_host() {
+    use p2pcore::{GroupImageState as St, PictureDownload};
+    let o = peer("im-o");
+    let a = peer("im-a");
+    let b = peer("im-b");
+    let g = group_with(&o, &[&a, &b]);
+    assert_eq!(a.node.group_image_auto_download().unwrap(), PictureDownload::Wifi, "the default");
+    b.node.group_set_image_auto_download(PictureDownload::Tap).unwrap();
+
+    let sent = a.node.group_post_image_bytes(g.clone(), noisy_png(1600, 1200, 7), "".into()).unwrap();
+    assert_eq!(sent.text, "", "a picture needs no caption");
+    let img = sent.image.clone().expect("the post carries its picture");
+    assert_eq!((img.width, img.height), (1080, 810));
+    assert!(img.size < 300 * 1024 && img.mime == "image/jpeg", "{img:?}");
+    assert_eq!(img.state, St::Ready);
+    let mine = image_bytes(&a, &g, &sent.id).expect("the sender has it at once");
+    assert_eq!(image::load_from_memory(&mine).unwrap().width(), 1080);
+
+    eventually(WAIT, "the host fetches it from a", || image_state(&o, &g, &sent.id) == Some(St::Ready));
+    assert_eq!(image_bytes(&o, &g, &sent.id).unwrap(), mine);
+    eventually(WAIT, "b sees the post", || image_of(&b, &g, &sent.id).is_some());
+    assert_eq!(image_state(&b, &g, &sent.id), Some(St::Remote), "on tap only: it waits");
+    assert!(b.node.group_image_path(g.clone(), sent.id.clone()).is_none());
+    b.node.group_fetch_image(g.clone(), sent.id.clone()).unwrap();
+    eventually(WAIT, "b loads it from the host", || image_state(&b, &g, &sent.id) == Some(St::Ready));
+    assert_eq!(image_bytes(&b, &g, &sent.id).unwrap(), mine, "the same picture");
+
+    // Over the host's budget: the oldest picture goes, the newest stays.
+    b.node.group_set_image_auto_download(PictureDownload::Always).unwrap();
+    let budget = img.size + img.size / 2;
+    o.node.group_set_image_limits_for_test(Some((1024 * 1024, budget)));
+    let second = a.node.group_post_image_bytes(g.clone(), noisy_png(1200, 900, 11), "second".into()).unwrap();
+    eventually(WAIT, "b gets the second one from the host", || image_state(&b, &g, &second.id) == Some(St::Ready));
+    eventually(WAIT, "the host dropped the first", || image_state(&o, &g, &sent.id) == Some(St::Failed));
+    assert_eq!(image_state(&o, &g, &second.id), Some(St::Ready));
+    assert!(o.node.group_image_path(g.clone(), sent.id.clone()).is_none());
+    assert_eq!(image_state(&b, &g, &sent.id), Some(St::Ready), "b keeps its copy");
+
+    // Over the host's size limit: refused, never fetched, so b never gets it.
+    o.node.group_set_image_limits_for_test(Some((40_000, u64::MAX)));
+    let big = a.node.group_post_image_bytes(g.clone(), noisy_png(1080, 800, 13), "big".into()).unwrap();
+    assert!(big.image.as_ref().unwrap().size > 40_000);
+    eventually(WAIT, "the host refuses it", || image_state(&o, &g, &big.id) == Some(St::Failed));
+    eventually(WAIT, "b sees the post", || image_of(&b, &g, &big.id).is_some());
+    assert!(!within(6, || b.node.group_image_path(g.clone(), big.id.clone()).is_some()), "b never gets it");
+
+    // A blob larger than its post says: the host stops at the declared size and refuses it.
+    o.node.group_set_image_limits_for_test(None);
+    let liar = a.node.group_post_raw_image_for_test(g.clone(), vec![7u8; 200_000], 1_000).unwrap();
+    eventually(WAIT, "the host refuses the oversized blob", || image_state(&o, &g, &liar.id) == Some(St::Failed));
+    assert!(o.node.group_image_path(g.clone(), liar.id.clone()).is_none());
+}

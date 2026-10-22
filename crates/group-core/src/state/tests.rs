@@ -128,7 +128,7 @@ fn genesis_join_and_posts_derive_members() {
     assert_eq!(s.members.len(), 3);
     assert!(s.is_admin(&o.did()) && !s.is_admin(&ms[0].did()));
     assert_eq!(s.members[&ms[0].did()].invited_by.as_deref(), Some(o.did().as_str()));
-    ms[0].write(Body::Post { text: "hi".into(), reply_to: None });
+    ms[0].write(Body::Post { text: "hi".into(), reply_to: None, image: None });
     sync(&mut ms[0], &mut o);
     let posts = o.shown();
     assert_eq!(posts.len(), 1);
@@ -136,7 +136,7 @@ fn genesis_join_and_posts_derive_members() {
     // A stranger's post (no join) is inert.
     let mut x = Dev::new(&o.doc.group.clone(), 99);
     sync(&mut o, &mut x);
-    x.write(Body::Post { text: "spam".into(), reply_to: None });
+    x.write(Body::Post { text: "spam".into(), reply_to: None, image: None });
     sync(&mut x, &mut o);
     assert!(!o.shown().iter().any(|i| i.text == "spam"));
     assert!(o.judged().iter().any(|(e, v)| matches!(&e.rec.body, Body::Post { text, .. } if text == "spam") && *v == Vis::Hidden));
@@ -190,7 +190,7 @@ fn signed_frontier_decides_posts_around_a_removal_in_every_order() {
     let (_g, mut o, mut ms) = group(1);
     let m = ms[0].did();
     // m writes offline (it has not seen any flag).
-    let (_, offline) = ms[0].write(Body::Post { text: "written offline".into(), reply_to: None });
+    let (_, offline) = ms[0].write(Body::Post { text: "written offline".into(), reply_to: None, image: None });
     // Owner flags m three times.
     let mut ups = Vec::new();
     for _ in 0..3 {
@@ -212,7 +212,7 @@ fn signed_frontier_decides_posts_around_a_removal_in_every_order() {
     }
     // After m saw its removal, a new post does not show (anywhere).
     sync(&mut o, &mut ms[0]);
-    ms[0].write(Body::Post { text: "after".into(), reply_to: None });
+    ms[0].write(Body::Post { text: "after".into(), reply_to: None, image: None });
     sync(&mut ms[0], &mut r1);
     assert!(!r1.shown().iter().any(|i| i.text == "after"));
     assert_eq!(r1.state(), {
@@ -334,7 +334,7 @@ fn leaving_ends_membership() {
     let (_g, mut o, mut ms) = group(1);
     let m = ms[0].did();
     ms[0].write(Body::Leave);
-    ms[0].write(Body::Post { text: "after leaving".into(), reply_to: None });
+    ms[0].write(Body::Post { text: "after leaving".into(), reply_to: None, image: None });
     sync(&mut ms[0], &mut o);
     let s = o.state();
     assert!(!s.is_member(&m) && s.left.contains(&m));
@@ -353,7 +353,7 @@ fn a_post_before_its_meta_is_pending_then_shown() {
     sync(&mut o, &mut n);
     let inv = o.invite(&g);
     n.write(Body::Join { invite: inv, name: "n".into() });
-    n.write(Body::Post { text: "hello".into(), reply_to: None });
+    n.write(Body::Post { text: "hello".into(), reply_to: None, image: None });
     // r gets the post (day doc) first, without the join (meta): pending, hidden.
     let mut r = Dev::new(&g, 60);
     sync(&mut o, &mut r);
@@ -367,7 +367,7 @@ fn a_post_before_its_meta_is_pending_then_shown() {
     // Hidden is a verdict, not a wait: a stranger's post is hidden even with all meta held.
     let mut x = Dev::new(&g, 99);
     sync(&mut o, &mut x);
-    x.write(Body::Post { text: "spam".into(), reply_to: None });
+    x.write(Body::Post { text: "spam".into(), reply_to: None, image: None });
     sync(&mut x, &mut r);
     assert!(r.judged().iter().any(|(e, v)| e.rec.author == x.did() && *v == Vis::Hidden));
     // No genesis yet at all (a joiner's first sync order): everything pending.
@@ -412,7 +412,7 @@ fn open_join_counts_only_while_open() {
     assert!(!st.open && st.is_member(&x.did()) && !st.is_member(&y.did()));
     assert_eq!(st, x.state(), "every replica derives the same");
     // x can post as a member.
-    x.write(Body::Post { text: "hello".into(), reply_to: None });
+    x.write(Body::Post { text: "hello".into(), reply_to: None, image: None });
     sync(&mut x, &mut o);
     assert!(o.shown().iter().any(|i| i.text == "hello"));
 }
@@ -424,16 +424,16 @@ fn open_join_counts_only_while_open() {
 fn admins_only_hides_member_posts_in_every_order() {
     let (gid, mut o, mut ms) = group(2);
     let m1 = ms[1].did();
-    ms[0].write(Body::Post { text: "before".into(), reply_to: None });
+    ms[0].write(Body::Post { text: "before".into(), reply_to: None, image: None });
     o.write(Body::Admin { member: m1.clone(), admin: true });
     o.write(Body::AdminsOnly { active: true });
     for m in ms.iter_mut() {
         sync(&mut o, m);
     }
     assert!(o.state().admins_only);
-    ms[0].write(Body::Post { text: "after".into(), reply_to: None });
-    ms[1].write(Body::Post { text: "admin".into(), reply_to: None });
-    o.write(Body::Post { text: "owner".into(), reply_to: None });
+    ms[0].write(Body::Post { text: "after".into(), reply_to: None, image: None });
+    ms[1].write(Body::Post { text: "admin".into(), reply_to: None, image: None });
+    o.write(Body::Post { text: "owner".into(), reply_to: None, image: None });
     for m in ms.iter_mut() {
         sync(m, &mut o);
     }
@@ -452,7 +452,7 @@ fn admins_only_hides_member_posts_in_every_order() {
     // Turning it off: m0's next post shows again; the "after" post stays hidden.
     o.write(Body::AdminsOnly { active: false });
     sync(&mut o, &mut ms[0]);
-    ms[0].write(Body::Post { text: "again".into(), reply_to: None });
+    ms[0].write(Body::Post { text: "again".into(), reply_to: None, image: None });
     sync(&mut ms[0], &mut o);
     assert!(!o.state().admins_only);
     assert_eq!(texts(&o), ["admin", "again", "before", "owner"]);
@@ -489,7 +489,7 @@ fn settings_follow_causality_not_clocks() {
     assert!(!st.admins_only, "a later off supersedes the fast-clock on");
     // A member that saw everything posts: shown (admins-only was off as of its frontier).
     sync(&mut o, &mut ms[1]);
-    ms[1].write(Body::Post { text: "allowed".into(), reply_to: None });
+    ms[1].write(Body::Post { text: "allowed".into(), reply_to: None, image: None });
     sync(&mut ms[1], &mut o);
     assert!(o.shown().iter().any(|i| i.text == "allowed"));
     // A fresh replica that gets everything at once derives the same.

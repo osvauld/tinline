@@ -465,7 +465,11 @@ changes with it), `Hello.presence` and `GroupMsg::Presence{presence}` (a host's 
 `Presence{group, host, dev, online: [(did, last seen)], seq, at}`, domain
 `tinline/group/presence/v1`, open groups only). In an open group no
 `ReceiptHello`/`Receipts`/`ReceiptAck` is sent and incoming ones are dropped. A `/4` peer fails
-at connect. Details: `docs/design/public-group.md` §2-§4.
+at connect. Details: `docs/design/public-group.md` §2-§4. Image posts (§5) change records, not
+frames: `Body::Post` gains `image: Option<ImageRef{hash, key, size, w, h, mime, preview}>` (the
+picture sealed with `transfer::crypt` under a per-image key carried in the post; `hash` is the
+ciphertext's BLAKE3), and the group endpoint also accepts the stock iroh-blobs ALPN, gated per
+requester and hash. No ALPN bump (`/5` is unreleased).
 
 **Group member receipts (2026-10-16, `feature/group-receipts`, not merged).** Group ALPN
 `tinline/group/4` = `/3` plus `GroupMsg::{ReceiptHello, Receipts, ReceiptAck}` (member <->

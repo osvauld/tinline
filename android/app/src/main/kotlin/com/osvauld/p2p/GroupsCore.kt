@@ -591,6 +591,8 @@ class GroupsController(private val api: GroupApi, private val me: () -> String?)
      * An open group's online list changed (public group §3): re-read it for the group on screen. An in-memory core read, and
      * without the monitor (it can be held across markRead for most of a second; these come every 15 s or so).
      */
+    override fun onGroupImage(groupId: String, messageId: String) {}
+
     override fun onGroupPresence(groupId: String) {
         val o = _open.value?.takeIf { it.id == groupId } ?: return
         val now = onlineOf(groupId, o.detail)

@@ -50,6 +50,36 @@ pub struct GroupMessage {
     pub delivery: GroupDelivery,
     /// A post by a member removed since, kept because it was written before the removal (U11).
     pub before_removal: bool,
+    /// The post's picture (public group §5); `text` may then be empty.
+    #[uniffi(default = None)]
+    pub image: Option<GroupImage>,
+}
+
+/// Where a post's picture is on this device.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, uniffi::Enum)]
+pub enum GroupImageState {
+    /// Here: `Node::group_image_path` opens it.
+    Ready,
+    /// On its way from a host.
+    Loading,
+    /// Not downloaded (the auto-download setting said wait): `Node::group_fetch_image` on tap.
+    Remote,
+    /// Could not be fetched (tap tries again), or a host dropped it.
+    Failed,
+}
+
+/// A post's picture: its shown size (draw the box at this shape before it arrives), the 4x3 RGB
+/// colour grid for the placeholder, and where it is.
+#[derive(Debug, Clone, PartialEq, uniffi::Record)]
+pub struct GroupImage {
+    pub width: u32,
+    pub height: u32,
+    /// Bytes.
+    pub size: u64,
+    pub mime: String,
+    /// 4x3 RGB colours, row by row (empty if the sender made none).
+    pub preview: Vec<u8>,
+    pub state: GroupImageState,
 }
 
 #[derive(Debug, Clone, PartialEq, uniffi::Record)]
@@ -193,4 +223,7 @@ pub trait GroupEvents: Send + Sync {
     /// The online list of an open group changed (re-read `group_online`). Best effort; may lag
     /// by about 15 s.
     fn on_group_presence(&self, group_id: String);
+    /// The picture of post `message_id` changed state (arrived, failed, was asked for): re-read
+    /// the message's `image` and `group_image_path`.
+    fn on_group_image(&self, group_id: String, message_id: String);
 }

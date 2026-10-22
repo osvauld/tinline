@@ -53,6 +53,7 @@ fn session(id: u64, gid: &str, did: &str) -> (Arc<Sess>, mpsc::UnboundedReceiver
             gid: gid.into(),
             did: did.into(),
             dev: [1; 32],
+            ep: [1; 32],
             hosting: true,
             joining: false,
             open_join: false,

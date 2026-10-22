@@ -1,7 +1,7 @@
 # Public channel and lobby (alpha)
 
 Status: spec, decided with the user 2026-10-21. Built: §1 (settings records), §2 (open link,
-host admission; `tinline/group/5`), §3 (presence), §4 (receipts off) and §8 on desktop and Android (without images); the rest not yet. Base: dev, rebased after
+host admission; `tinline/group/5`), §3 (presence), §4 (receipts off), §5 (images, core) and §8 on desktop and Android; the rest not yet. Base: dev, rebased after
 `integrate/crate-split` lands (image posts build on its `crates/transfer`).
 
 ## Purpose
@@ -203,6 +203,48 @@ Image posts for both spaces, on `crates/transfer` (BlobHub) once it lands:
   only.
 - A host refuses blobs over 1 MB and keeps at most 2 GB per group (oldest unreferenced first).
 
+**As built** (`group_core::record::ImageRef`, `group_core::store::images`, p2pcore
+`group/images.rs` (resize), `group/engine/images.rs` (runtime), `group/api/images.rs` (API)):
+
+- **Record:** `Body::Post { text, reply_to, image: Option<ImageRef> }`, `ImageRef { hash, key,
+  size, w, h, mime, preview }`. Every device checks the shape: `0 < size <= 1 MiB`
+  (`MAX_IMAGE_BYTES`), `1 <= w, h <= 4096`, `mime` one of image/jpeg, image/webp, image/png,
+  `preview` at most 36 bytes (the 4x3 RGB grid 1:1 chat photos carry). A post with an image may
+  have empty text.
+- **Encryption (as chat):** the blob is the picture sealed with `transfer::crypt` under a fresh
+  random key for that one image; the key travels in the signed post, so every member and host can
+  open it, and the blob store holds only ciphertext. `hash` is the ciphertext's BLAKE3 (verified by
+  iroh-blobs while streaming); `size` is the plaintext length. No group key scheme.
+- **Sending:** `group_post_image(id, path, caption)` / `group_post_image_bytes(id, bytes,
+  caption)`: the core decodes PNG/JPEG/WebP (EXIF orientation applied, transparency onto white),
+  scales the long side to at most 1080 px and encodes JPEG under 300 KB (quality 85 down to 45, then
+  smaller). Same checks as `group_post` (member, `Rejected("admins only")` in a channel). The blob
+  goes into the group blob store under the group's own tag (`group/<gid>`).
+- **Transport:** a separate `BlobHub` per account (`group-blobs/`), served on the **group endpoint**
+  under the stock iroh-blobs ALPN (no new frame, no ALPN bump). The gate serves a hash to a
+  requesting endpoint only if a visible post of a group we hold names it (row not dropped) and, in
+  that group, the requester is a current member on a session we host, or an active host (a session
+  we dialed or a host address we hold). Members fetch only from hosts (live sessions first, then
+  addresses); a host fetches every visible post's image from the author's sessions with it, then
+  other hosts (a host dials a member's group endpoint for this, as for `Moved`). Retries 2/5/15/30/60
+  s, then given up (`Failed`) until a new session in the group or a tap.
+- **Host limits:** a post declaring more than 1 MB is refused by a host (never fetched or served,
+  `Failed` there); a blob longer than its post declares is cut off at the declared size and refused
+  for good. At most 2 GB of image blobs per group: over that, posts are judged again and the blobs
+  no visible post references go first, then the oldest by post time (`plan_eviction`); a dropped
+  image is not fetched again there. Members keep what they fetched (no cap).
+- **Auto-download:** `group_image_auto_download()` / `group_set_image_auto_download(mode)` with
+  chat's `PictureDownload` (`Always` / `Wifi` / `Tap`), per account on this device, default
+  `Wifi`; "Wi-Fi" is the app's existing `set_connection_metered` hint (desktop: never metered).
+  Hosts always fetch. `group_fetch_image(id, message_id)` loads one now (tap, or retry).
+- **Showing:** `GroupMessage.image: Option<GroupImage{width, height, size, mime, preview, state}>`,
+  `state` = `Ready` / `Loading` / `Remote` (tap to load) / `Failed`;
+  `group_image_path(id, message_id)` opens the picture once into `group-images/` and returns the
+  file; `GroupEvents.on_group_image(id, message_id)` when a picture changes state.
+- **Test knobs** (dev-tools): `group_set_image_limits_for_test`, `group_post_raw_image_for_test`.
+- **Open:** a member never re-asks a host that got the image later than its retries (until a new
+  session or a tap); hosts' opened copies (`group-images/`) are made only when asked for.
+
 ### 6. Moderation
 
 Existing removal stays (3 counted flags; one admin may flag 3 times). No new rule now.
@@ -309,8 +351,11 @@ Deterministic, offline, in `crates/core/tests/` (names indicative):
 8. `public_group_sends_no_receipts` (built, a session simulation in p2pcore's lib tests,
    `group_receipts_sim.rs`, where every frame is observable): a session of an open group
    carries no receipt frames and drops incoming ones; a private group still does.
-9. `image_post_roundtrip_via_host`: a member's image reaches another member through a host,
-   hash-verified; an oversized blob is refused.
+9. `image_post_roundtrip_via_host` (built, `public_group.rs`): a member's image reaches another
+   member (tap to load) through a host with the same bytes; the host drops the oldest over its
+   budget; an image over the host's limit is refused and never reaches the member; a blob longer
+   than its post declares is refused (units: `image_posts_are_bounded`, `prepare_bounds_the_picture`,
+   `eviction_drops_unreferenced_then_oldest`, `image_rows_round_trip_and_forget`).
 10. Headless: `p2p-peer group-host` accepts an appointment and relays between two members
     (e2e script, not a unit test). Command built; argument-parsing unit tests only; e2e not run.
 
@@ -348,4 +393,4 @@ working through the worker.
 4. Presence (§3) with tests 5–7.
 5. Headless host (§7) on the worker.
 6. Desktop UI (§8), then Android.
-7. Images (§5), after `crates/transfer` lands.
+7. Images (§5), after `crates/transfer` lands. Core built with test 9.

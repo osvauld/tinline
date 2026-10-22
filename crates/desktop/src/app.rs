@@ -2460,6 +2460,7 @@ impl App {
                     crate::GroupEv::Request(r) => Lm::RequestChanged(r),
                     crate::GroupEv::Invitation(i) => Lm::InvitationChanged(i),
                     crate::GroupEv::Presence(id) => Lm::Presence(id),
+                    crate::GroupEv::Image(id, _) => Lm::Changed(id),
                 });
                 // The chat list's group marks follow group changes.
                 return Task::batch([t, self.refresh_marks()]);

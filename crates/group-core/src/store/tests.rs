@@ -64,6 +64,7 @@ fn day_docs_are_sealed_indexed_and_compact() {
             body: Body::Post {
                 text,
                 reply_to: None,
+                image: None,
             },
         };
         let (_, up) = doc.write(&a, &rec).unwrap();
@@ -94,6 +95,7 @@ fn day_docs_are_sealed_indexed_and_compact() {
         body: Body::Post {
             text: "late".into(),
             reply_to: None,
+            image: None,
         },
     };
     let (_, up) = doc.write(&a, &rec).unwrap();

@@ -29,6 +29,9 @@ impl Inner {
                     let _ = tokio::time::timeout(Duration::from_secs(3), ep.close()).await;
                 });
             }
+            if let Some(hub) = old.images.hub_now() {
+                self.handle.spawn(async move { hub.shutdown().await });
+            }
         }
         if self.group.parked.load(Ordering::SeqCst) && !crate::node::user_call() {
             return Err(Error::NotStarted);
@@ -87,6 +90,7 @@ impl Inner {
         }
         let receipts = member_receipts::controller(&store, &did, dev);
         let presence = presence::PresenceRt::new(store.presence_visible().unwrap_or(true));
+        let images = images::ImagesRt::new(dir.clone());
         let core = Arc::new(GroupCore {
             epoch,
             store,
@@ -114,6 +118,7 @@ impl Inner {
             codes: Default::default(),
             receipts,
             presence,
+            images,
         });
         *slot = Some(core.clone());
         // Receipt intents committed before a stop are signed now (bounded; see M3).
@@ -137,6 +142,9 @@ impl Inner {
             *core.ep_id.lock() = None;
             if let Some(ep) = ep {
                 let _ = tokio::time::timeout(Duration::from_secs(3), ep.close()).await;
+            }
+            if let Some(hub) = core.images.hub_now() {
+                hub.shutdown().await;
             }
         }
     }
@@ -288,7 +296,12 @@ pub(super) async fn bind_group_endpoint(secret: &[u8; 32]) -> Result<Endpoint, E
         .build();
     let mut builder = Endpoint::builder(presets::N0)
         .secret_key(SecretKey::from_bytes(secret))
-        .alpns(vec![GROUP_ALPN.to_vec(), proto::gcall::GCALL_ALPN.to_vec()])
+        .alpns(vec![
+            GROUP_ALPN.to_vec(),
+            proto::gcall::GCALL_ALPN.to_vec(),
+            // Image blobs of posts (public group §5, `images.rs`), gated per requester and hash.
+            iroh_blobs::ALPN.to_vec(),
+        ])
         .transport_config(transport);
     if std::env::var_os("P2P_RELAY_ONLY").is_some() {
         builder = builder.clear_ip_transports();

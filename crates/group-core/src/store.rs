@@ -23,6 +23,9 @@
 //! ep/policy                     json       this device's RotationPolicy (default if absent)
 //! dev/id                        32 bytes   this store's device ID (U16 device value, G2 stage 1)
 //! set/presence_hidden           empty      present: this account hides its presence in open groups
+//! set/img_dl                    u8         image auto-download: 0 always, 1 Wi-Fi only (default), 2 tap
+//! img/{gid}/{hash}              ImgRow     an image a visible post names and what we hold (images.rs)
+//! imgp/{gid}/{post id}          hash hex   the image of that post
 //! req/{id}                      ReqRow     a 1:1 chat request we sent or got (U3)
 //! out/{gid}/{mail id}           bytes      sealed mail of ours not yet taken by a host
 //! mail/{gid}/{to}/{mail id}     bytes      host side: (expiry ms, sealed mail) to deliver
@@ -41,9 +44,11 @@ use super::record::SignedHostAddr;
 use crate::Error;
 
 mod endpoint;
+mod images;
 mod receipts;
 mod removal;
 pub use endpoint::EpState;
+pub use images::{IMG_DL_DEFAULT, ImgRow, plan_eviction};
 pub use receipts::StoredAttestation;
 
 /// The KDF domain of the store key (p2pcore's `rekey::phrase_key` over the recovery phrase).
@@ -58,6 +63,9 @@ pub struct PostBrief {
     pub at: i64,
     pub text: String,
     pub reply_to: Option<String>,
+    /// The post's image, if any (the list shows "Photo" for an image without text).
+    #[serde(default)]
+    pub image: Option<super::record::ImageRef>,
     /// Where the record sits in its day doc (delivery state of our own posts).
     pub peer: u64,
     pub counter: i32,
@@ -400,6 +408,8 @@ impl GroupStore {
                 Op::DeletePrefix(format!("mail/{gid}/")),
                 Op::DeletePrefix(format!("clog/{gid}/")),
                 Op::DeletePrefix(format!("rm_seen/{gid}/")),
+                Op::DeletePrefix(format!("img/{gid}/")),
+                Op::DeletePrefix(format!("imgp/{gid}/")),
             ])
             .map_err(io)
     }

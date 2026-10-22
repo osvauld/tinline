@@ -70,6 +70,11 @@ the user was away; each is listed at the end.
   store, one per account per install, independent of the private endpoint), ALPN
   `tinline/group/5` (`wire::GROUP_ALPN`; /3 = postcard frames, /4 = plus member receipt frames, /5 = plus open links, `Hello.presence` and `Presence`; `docs/design/public-group.md`). It is bound when the node starts and the account has a
   group, or on create/join, and closed with the private endpoint (stop, lock, account switch).
+  The same endpoint also speaks `tinline/gcall/1` (calls) and the stock iroh-blobs ALPN for the
+  pictures of image posts (public group §5, `engine/images.rs`): a request is served only if a
+  visible post of a group we hold names the hash and the requester's endpoint is, in that group, a
+  current member on a session we host or an active host. Members fetch only from hosts; hosts
+  fetch from the author's session or other hosts.
 - **Only hosts know member endpoints (U7).** Members dial only hosts. Hosts accept, keep a
   directory `did/dev → member group endpoint`, and dial other hosts like members do. Host
   addresses (`SignedHostAddr`, DID-signed, newest `at` wins) are the only endpoints that travel to

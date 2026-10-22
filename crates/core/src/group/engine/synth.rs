@@ -183,6 +183,7 @@ impl Inner {
             body: Body::Post {
                 text: text.to_string(),
                 reply_to: None,
+                image: None,
             },
         };
         let (_, up) = r.m.days[&day].write(&r.m.acct, &rec).map_err(rej)?;

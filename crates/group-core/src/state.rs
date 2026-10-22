@@ -103,6 +103,8 @@ pub struct Item {
     pub at: i64,
     pub text: String,
     pub reply_to: Option<String>,
+    /// A post's image (public group §5).
+    pub image: Option<crate::record::ImageRef>,
     /// A post shown although its author is removed now: written before the removal (U11).
     pub before_removal: bool,
     pub peer: u64,
@@ -224,7 +226,7 @@ pub fn post_visible(st: &GroupState, author: &str, seen: &[(u64, i32)]) -> Vis {
 
 /// The conversation line of a post; `before_removal` is its author's removal now.
 pub fn post_item(e: &Entry, st: &GroupState) -> Option<Item> {
-    let Body::Post { text, reply_to } = &e.rec.body else { return None };
+    let Body::Post { text, reply_to, image } = &e.rec.body else { return None };
     Some(Item {
         id: e.id.clone(),
         kind: ItemKind::Post,
@@ -233,6 +235,7 @@ pub fn post_item(e: &Entry, st: &GroupState) -> Option<Item> {
         at: e.rec.at,
         text: text.clone(),
         reply_to: reply_to.clone(),
+        image: image.clone(),
         before_removal: st.removed.contains_key(&e.rec.author),
         peer: e.peer,
         counter: e.counter,

@@ -50,6 +50,7 @@ impl GroupEvents for Dirty {
         self.0.store(true, Ordering::SeqCst);
     }
     fn on_group_presence(&self, _group_id: String) {}
+    fn on_group_image(&self, _group_id: String, _message_id: String) {}
 }
 
 static STOP: AtomicBool = AtomicBool::new(false);

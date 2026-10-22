@@ -22,6 +22,8 @@ impl Inner {
         // arrives before its post is refused as pending and has to be asked for again.
         core.member_receipts_pump_and_push();
         self.search_group(&gid, &changed.posts);
+        // Images of posts that show now (public group §5).
+        self.group_images_noted(core, &gid, &changed.posts);
         self.group_enforce(core, &gid);
         if changed.doc == DocId::Meta {
             // Public group §2: a closed group keeps no open codes here.

@@ -20,6 +20,7 @@ use crate::node::{Inner, Node, now_ms};
 
 mod hooks;
 mod hosts;
+mod images;
 mod presence;
 mod rotation;
 mod types;
@@ -96,6 +97,19 @@ impl Inner {
             outgoing,
             delivery,
             before_removal: i.before_removal,
+            image: i.image.as_ref().map(|img| GroupImage {
+                width: img.w,
+                height: img.h,
+                size: img.size,
+                mime: img.mime.clone(),
+                preview: img.preview.clone(),
+                state: match core.image_state(gid, img) {
+                    super::engine::images::ImgState::Ready => GroupImageState::Ready,
+                    super::engine::images::ImgState::Loading => GroupImageState::Loading,
+                    super::engine::images::ImgState::Remote => GroupImageState::Remote,
+                    super::engine::images::ImgState::Failed => GroupImageState::Failed,
+                },
+            }),
         })
     }
 
@@ -223,6 +237,7 @@ impl Inner {
             at: entry.rec.at,
             text: String::new(),
             reply_to: None,
+            image: None,
             before_removal: false,
             peer: entry.peer,
             counter: entry.counter,
@@ -546,7 +561,7 @@ impl Node {
         if core.with_state(&group_id, |st| st.admins_only && !st.is_admin(&core.did)).unwrap_or(false) {
             return Err(Error::Rejected("admins only".into()));
         }
-        self.inner.group_write(&core, &group_id, Body::Post { text, reply_to })
+        self.inner.group_write(&core, &group_id, Body::Post { text, reply_to, image: None })
     }
 
     /// One admin flag on `member_did` (U9/U15: any 3 remove; final, visible to them).

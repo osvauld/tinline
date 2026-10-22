@@ -69,6 +69,7 @@ pub(super) fn own_content_core_for_test(
             body: Body::Post {
                 text: "original phone bytes".into(),
                 reply_to: None,
+                image: None,
             },
         };
         let (_, update) = doc.write(&account, &record).unwrap();
@@ -113,6 +114,7 @@ fn receiver() -> GroupCore {
         codes: Default::default(),
         receipts,
         presence: Default::default(),
+        images: Default::default(),
     }
 }
 
@@ -189,6 +191,7 @@ impl Fixture {
             body: Body::Post {
                 text: "must persist".into(),
                 reply_to: None,
+                image: None,
             },
         };
         doc.write(&self.author, &record).unwrap().1
@@ -471,6 +474,7 @@ fn failed_local_day_write_does_not_leave_a_phantom_outbox_or_counter() {
     let body = Body::Post {
         text: "local durability".into(),
         reply_to: None,
+        image: None,
     };
     f.core.store.fail_next_append_for_test();
     assert!(f.core.write_at(&f.gid, body.clone(), 1000).is_err());

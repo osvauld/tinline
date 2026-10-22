@@ -114,6 +114,7 @@ fn partial_proof_never_clears_newer_day_debt() {
         body: Body::Post {
             text: "newer debt".into(),
             reply_to: None,
+            image: None,
         },
     };
     let (_, second) = source.write(&f.author, &rec).unwrap();

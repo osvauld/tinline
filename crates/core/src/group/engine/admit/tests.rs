@@ -177,6 +177,7 @@ fn admins_only_refuses_stale_frontier_posts_at_the_host() {
         Body::Post {
             text: "spam".into(),
             reply_to: None,
+            image: None,
         },
         stale,
     );
@@ -207,6 +208,7 @@ fn admins_only_refuses_stale_frontier_posts_at_the_host() {
     let (e2, _) = m.write(Body::Post {
         text: "hidden".into(),
         reply_to: None,
+        image: None,
     });
     assert_eq!(post_visible(&st, &e2.rec.author, &e2.rec.seen), Vis::Hidden);
     assert_eq!(member_sess(&m).admit(&st, &m.fresh_post(&e2.id)), Ok(()));
@@ -216,6 +218,7 @@ fn admins_only_refuses_stale_frontier_posts_at_the_host() {
     let (ea, _) = a.write(Body::Post {
         text: "news".into(),
         reply_to: None,
+        image: None,
     });
     assert_eq!(member_sess(&a).admit(&st, &a.fresh_post(&ea.id)), Ok(()));
     let mut by_m = member_sess(&m);
