@@ -150,12 +150,12 @@ impl Reader {
 
     /// `None` when the peer finished its side cleanly. Cancel-safe.
     pub async fn recv(&mut self) -> Result<Option<GroupMsg>, Error> {
-        self.0.recv(MAX_FRAME, "group ").await
+        self.0.recv(MAX_FRAME, "group ").await.map_err(Error::from)
     }
 }
 
 impl Writer {
     pub async fn send(&mut self, msg: &GroupMsg) -> Result<(), Error> {
-        send_frame(&mut self.0, msg, MAX_FRAME, "group ").await
+        send_frame(&mut self.0, msg, MAX_FRAME, "group ").await.map_err(Error::from)
     }
 }

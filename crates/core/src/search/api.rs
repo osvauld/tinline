@@ -207,7 +207,7 @@ fn open_index(path: &Path, phrase: &str) -> Result<SearchIndex, Error> {
     let keys = Keys { store: phrase_key(STORE_DOMAIN, phrase), index: phrase_key(INDEX_DOMAIN, phrase) };
     let open_store = |p: &Path| -> Result<storage::Store, search_core::Error> {
         let store = crate::store::open_waiting(p).map_err(|e| match e {
-            Error::Io(s) => search_core::Error::Io(s),
+            node_runtime::Error::Io(s) => search_core::Error::Io(s),
             e => search_core::Error::Io(e.to_string()),
         })?;
         crate::store::set_private(p);

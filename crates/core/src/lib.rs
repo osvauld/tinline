@@ -21,7 +21,7 @@ mod profile;
 pub use profile::{AccountProfile, ProfileEvents};
 mod group;
 mod error;
-mod frames;
+pub(crate) use node_runtime::frames;
 pub mod gcall;
 pub mod cues;
 mod licences;
@@ -36,7 +36,7 @@ mod sync;
 /// Synthetic peers, contacts and groups for tests and benches; not in release builds.
 #[cfg(any(test, feature = "dev-tools"))]
 pub mod synth;
-mod version;
+pub(crate) use node_runtime::version;
 #[cfg(test)]
 mod account_tests;
 use account_model::vault;
@@ -44,7 +44,7 @@ mod video_call;
 #[cfg(target_os = "android")]
 mod video_jni;
 mod voice;
-mod wire;
+pub(crate) use node_runtime::wire;
 
 pub use error::Error;
 

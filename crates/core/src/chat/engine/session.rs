@@ -376,6 +376,7 @@ impl Inner {
             let conn = match tokio::time::timeout(DIAL_TIMEOUT, crate::version::connect(&ep, addr, &crate::version::CHAT)).await {
                 Ok(Ok(c)) => c,
                 Ok(Err(e)) => {
+                    let e = Error::from(e);
                     if matches!(e, Error::Protocol(_)) {
                         self.log(format!("chat with {did}: {e}"));
                     }

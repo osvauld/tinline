@@ -19,13 +19,13 @@ impl FrameReader {
 
     /// `None` when the peer finished its side cleanly. Cancel-safe.
     pub async fn recv<T: DeserializeOwned>(&mut self) -> Result<Option<T>, Error> {
-        self.0.recv(MAX_FRAME, "").await
+        self.0.recv(MAX_FRAME, "").await.map_err(Error::from)
     }
 }
 
 impl FrameWriter {
     pub async fn send<T: Serialize>(&mut self, msg: &T) -> Result<(), Error> {
-        send_frame(&mut self.0, msg, MAX_FRAME, "").await
+        send_frame(&mut self.0, msg, MAX_FRAME, "").await.map_err(Error::from)
     }
 
     pub fn finish(&mut self) {

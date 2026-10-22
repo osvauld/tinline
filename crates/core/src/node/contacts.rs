@@ -98,7 +98,7 @@ impl Inner {
             Ok(Err(e)) => {
                 undo(&self);
                 let _ = self.persist_async(me.epoch).await;
-                return Err(e);
+                return Err(e.into());
             }
             Err(_) => {
                 undo(&self);

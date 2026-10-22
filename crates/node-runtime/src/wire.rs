@@ -10,47 +10,47 @@ use proto::Msg;
 use crate::Error;
 
 /// How long a dial may take before the attempt counts as failed.
-pub(crate) const DIAL_TIMEOUT: Duration = Duration::from_secs(20);
+pub const DIAL_TIMEOUT: Duration = Duration::from_secs(20);
 /// How long a delivery waits for the other side's reply.
-pub(crate) const REPLY_TIMEOUT: Duration = Duration::from_secs(10);
+pub const REPLY_TIMEOUT: Duration = Duration::from_secs(10);
 /// Pause before each further delivery attempt (seconds; the last repeats).
-pub(crate) const RETRY_SECS: [u64; 5] = [2, 5, 15, 30, 60];
+pub const RETRY_SECS: [u64; 5] = [2, 5, 15, 30, 60];
 
 /// A chat or own-device session with no stream traffic either way for this long closes
 /// cleanly, unless something of ours keeps it open (local activity towards that contact, pending
 /// work, a live call). Decided 2026-10-17 (consent-based links): peers do not hold connections
 /// open; whoever needs the other redials.
-pub(crate) const IDLE_CLOSE: Duration = Duration::from_secs(60);
+pub const IDLE_CLOSE: Duration = Duration::from_secs(60);
 
 /// [`IDLE_CLOSE`], or `P2P_IDLE_CLOSE_MS` (a test knob, like `P2P_SELF_SYNC_SECS`).
-pub(crate) fn idle_close() -> Duration {
+pub fn idle_close() -> Duration {
     std::env::var("P2P_IDLE_CLOSE_MS").ok().and_then(|v| v.parse().ok()).map(Duration::from_millis).unwrap_or(IDLE_CLOSE)
 }
 
 /// How often a session checks whether it has been idle long enough to close.
-pub(crate) fn idle_check() -> Duration {
+pub fn idle_check() -> Duration {
     (idle_close() / 6).clamp(Duration::from_millis(50), Duration::from_secs(10))
 }
 
 /// At most one activity mark (and dial or presence kick) per contact per this, however often
 /// `Node::chat_typing` is called.
-pub(crate) fn typing_throttle() -> Duration {
+pub fn typing_throttle() -> Duration {
     (idle_close() / 20).clamp(Duration::from_millis(50), Duration::from_secs(3))
 }
 
 /// The pause before retry `round` (0-based) of a schedule like [`RETRY_SECS`].
-pub(crate) fn retry_pause(secs: &[u64], round: usize) -> Duration {
+pub fn retry_pause(secs: &[u64], round: usize) -> Duration {
     Duration::from_secs(secs[round.min(secs.len() - 1)])
 }
 
 /// Dials on the call ALPN (version-checked), within [`DIAL_TIMEOUT`].
-pub(crate) async fn dial_call(ep: &iroh::Endpoint, addr: EndpointAddr) -> Result<Connection, Error> {
+pub async fn dial_call(ep: &iroh::Endpoint, addr: EndpointAddr) -> Result<Connection, Error> {
     tokio::time::timeout(DIAL_TIMEOUT, crate::version::connect(ep, addr, &crate::version::CALL)).await.map_err(|_| Error::Timeout)?
 }
 
 /// One delivery: sends `msg` on a fresh stream, waits up to [`REPLY_TIMEOUT`] for the reply and
 /// closes the connection. `None`: they finished without replying.
-pub(crate) async fn exchange(conn: Connection, msg: &Msg) -> Result<Option<Msg>, Error> {
+pub async fn exchange(conn: Connection, msg: &Msg) -> Result<Option<Msg>, Error> {
     let (send, recv) = conn.open_bi().await.map_err(Error::net)?;
     let mut ctrl = Ctrl::new(send, recv);
     ctrl.send(msg).await?;

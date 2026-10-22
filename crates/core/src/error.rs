@@ -179,3 +179,53 @@ impl From<Error> for gcall_net::Error {
         }
     }
 }
+
+impl From<node_runtime::Error> for Error {
+    fn from(e: node_runtime::Error) -> Self {
+        use node_runtime::Error as N;
+        match e {
+            N::NoIdentity => Error::NoIdentity,
+            N::HaveIdentity => Error::HaveIdentity,
+            N::AccountExists(s) => Error::AccountExists(s),
+            N::InCall => Error::InCall,
+            N::BadPhrase => Error::BadPhrase,
+            N::WrongPassphrase => Error::WrongPassphrase,
+            N::Locked => Error::Locked,
+            N::WeakPassphrase => Error::WeakPassphrase,
+            N::NotStarted => Error::NotStarted,
+            N::NotFound => Error::NotFound,
+            N::Busy => Error::Busy,
+            N::Timeout => Error::Timeout,
+            N::Rejected(s) => Error::Rejected(s),
+            N::Protocol(s) => Error::Protocol(s),
+            N::Net(s) => Error::Net(s),
+            N::Io(s) => Error::Io(s),
+            N::Audio(s) => Error::Audio(s),
+        }
+    }
+}
+
+impl From<Error> for node_runtime::Error {
+    fn from(e: Error) -> Self {
+        use node_runtime::Error as N;
+        match e {
+            Error::NoIdentity => N::NoIdentity,
+            Error::HaveIdentity => N::HaveIdentity,
+            Error::AccountExists(s) => N::AccountExists(s),
+            Error::InCall => N::InCall,
+            Error::BadPhrase => N::BadPhrase,
+            Error::WrongPassphrase => N::WrongPassphrase,
+            Error::Locked => N::Locked,
+            Error::WeakPassphrase => N::WeakPassphrase,
+            Error::NotStarted => N::NotStarted,
+            Error::NotFound => N::NotFound,
+            Error::Busy => N::Busy,
+            Error::Timeout => N::Timeout,
+            Error::Rejected(s) => N::Rejected(s),
+            Error::Protocol(s) => N::Protocol(s),
+            Error::Net(s) => N::Net(s),
+            Error::Io(s) => N::Io(s),
+            Error::Audio(s) => N::Audio(s),
+        }
+    }
+}

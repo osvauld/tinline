@@ -5023,6 +5023,35 @@ dependencies = [
 ]
 
 [[package]]
+name = "node-runtime"
+version = "0.1.38"
+dependencies = [
+ "account-model",
+ "audio",
+ "bytes",
+ "call-video",
+ "chat-core",
+ "crdt",
+ "cryptography",
+ "hex",
+ "identity",
+ "iroh",
+ "iroh-blobs",
+ "n0-future",
+ "parking_lot",
+ "proto",
+ "serde",
+ "serde_json",
+ "sha2",
+ "storage",
+ "thiserror 2.0.21",
+ "tokio",
+ "tracing",
+ "transfer",
+ "zeroize",
+]
+
+[[package]]
 name = "nom"
 version = "7.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5817,6 +5846,7 @@ dependencies = [
  "libc",
  "loro",
  "n0-future",
+ "node-runtime",
  "p2pcore",
  "paranoid-android",
  "parking_lot",

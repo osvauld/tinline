@@ -8,18 +8,18 @@ use serde::{Serialize, de::DeserializeOwned};
 use crate::Error;
 
 /// The receiving half: buffers stream bytes and yields whole frames.
-pub(crate) struct FrameBuf {
+pub struct FrameBuf {
     recv: RecvStream,
     buf: Vec<u8>,
 }
 
 impl FrameBuf {
-    pub(crate) fn new(recv: RecvStream) -> Self {
+    pub fn new(recv: RecvStream) -> Self {
         Self { recv, buf: Vec::new() }
     }
 
     /// `None` when the peer finished its side cleanly. Cancel-safe.
-    pub(crate) async fn recv<T: DeserializeOwned>(&mut self, limit: usize, label: &str) -> Result<Option<T>, Error> {
+    pub async fn recv<T: DeserializeOwned>(&mut self, limit: usize, label: &str) -> Result<Option<T>, Error> {
         let mut chunk = vec![0u8; 64 * 1024];
         loop {
             if self.buf.len() >= 4 {
@@ -43,7 +43,7 @@ impl FrameBuf {
 }
 
 /// Writes one frame (length prefix + body in a single `write_all`).
-pub(crate) async fn send_frame<T: Serialize>(stream: &mut SendStream, msg: &T, limit: usize, label: &str) -> Result<(), Error> {
+pub async fn send_frame<T: Serialize>(stream: &mut SendStream, msg: &T, limit: usize, label: &str) -> Result<(), Error> {
     let body = cryptography::codec::to_bytes(msg).map_err(|e| Error::Protocol(e.to_string()))?;
     if body.len() > limit {
         return Err(Error::Protocol(format!("{label}frame too large")));
