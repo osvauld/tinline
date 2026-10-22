@@ -5855,6 +5855,7 @@ dependencies = [
  "proto",
  "receipts-core",
  "search-core",
+ "search-ix",
  "serde",
  "serde_json",
  "sha2",
@@ -7230,6 +7231,19 @@ dependencies = [
  "unicode-normalization",
  "unicode-segmentation",
  "zeroize",
+]
+
+[[package]]
+name = "search-ix"
+version = "0.1.38"
+dependencies = [
+ "chat-core",
+ "group-core",
+ "node-runtime",
+ "parking_lot",
+ "search-core",
+ "storage",
+ "tracing",
 ]
 
 [[package]]

@@ -6,7 +6,7 @@
 
 use std::collections::{HashSet, VecDeque};
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use bytes::Bytes;
@@ -57,10 +57,9 @@ pub(crate) struct Inner {
     pub(crate) profile_events: Mutex<Option<Arc<dyn crate::profile::ProfileEvents>>>,
     pub(crate) profile_downloads: Mutex<HashSet<(u64, String, String)>>,
     pub(crate) profile_fetches: Arc<Semaphore>,
-    /// The selected account's search index (`search.redb`), open while its chat store is.
-    pub(crate) search: Mutex<Option<Arc<crate::search::index::SearchIndex>>>,
-    /// For tests: the next `n` search hook writes are skipped (a crash between commit and index).
-    pub(crate) search_skip: AtomicU32,
+    /// The selected account's search index (`search.redb`), open while its chat store is; the
+    /// chat and group engines write to it after every accepted change.
+    pub(crate) search: Arc<search_ix::SearchIx>,
 }
 
 impl Inner {

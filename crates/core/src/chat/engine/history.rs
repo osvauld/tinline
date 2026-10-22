@@ -148,7 +148,7 @@ impl Inner {
         let prev = core.store.shard_meta(pair, day)?.map(|m| m.vv).unwrap_or_default();
         core.store.db.apply(&ops)?;
         self.selfsync_dirty(&doc_name(pair, day));
-        self.search_dm(&sess.did, pair, day, &all, Some(prev), meta.vv);
+        self.search.dm(&sess.did, pair, day, &all, Some(prev), meta.vv);
         Ok(true)
     }
 

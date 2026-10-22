@@ -3,16 +3,14 @@
 //! background reconcile, and the query (`docs/search.md`).
 
 use std::collections::HashSet;
-use std::path::Path;
 use std::sync::Arc;
 
 use super::find;
-use super::index::{DocRow, INDEX_DOMAIN, Keys, Mark, Mode, STORE_DOMAIN, SearchIndex};
-use crate::rekey::phrase_key;
+use super::index::{DocRow, Mark, Mode, SearchIndex};
 use super::text;
 use crate::Error;
-use crate::chat::doc::{MsgRec, pair_id};
-use crate::group::engine::{GroupCore, Live, PostDiff};
+use crate::chat::doc::pair_id;
+use crate::group::engine::{GroupCore, Live};
 use crate::group::shard::Shard;
 use crate::group::state::Item;
 use crate::node::{Inner, Node};
@@ -137,7 +135,7 @@ impl Node {
     /// between the store commit and the index write.
     #[doc(hidden)]
     pub fn search_skip_next_writes_for_test(&self, n: u32) {
-        self.inner.search_skip.store(n, std::sync::atomic::Ordering::SeqCst);
+        self.inner.search.skip_next_writes(n);
     }
 
     /// Puts a stale post row (as an older version of the post, or a post no longer shown) into
@@ -193,46 +191,7 @@ const RECONCILE_BATCH: usize = 4000;
 /// Test switch (`synth.rs`): no reconcile in the background on open.
 pub(crate) static NO_BG_RECONCILE: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 
-pub(crate) fn dm_src(pair: &str) -> String {
-    format!("dm.{pair}")
-}
-
-pub(crate) fn group_src(gid: &str) -> String {
-    format!("g.{gid}")
-}
-
-/// Opens (creating) the index file at `path` with the phrase's keys: waits for a previous owner
-/// of the file and makes it private, also when a stale file is replaced.
-fn open_index(path: &Path, phrase: &str) -> Result<SearchIndex, Error> {
-    let keys = Keys { store: phrase_key(STORE_DOMAIN, phrase), index: phrase_key(INDEX_DOMAIN, phrase) };
-    let open_store = |p: &Path| -> Result<storage::Store, search_core::Error> {
-        let store = crate::store::open_waiting(p).map_err(|e| match e {
-            node_runtime::Error::Io(s) => search_core::Error::Io(s),
-            e => search_core::Error::Io(e.to_string()),
-        })?;
-        crate::store::set_private(p);
-        Ok(store)
-    };
-    Ok(SearchIndex::open(path, keys, &open_store)?)
-}
-
-/// What a 1:1 message contributes to the index: its text and the name of a file it carries.
-fn dm_row(did: &str, pair: &str, day: &str, rec: &MsgRec) -> DocRow {
-    let mut t = if rec.deleted { String::new() } else { rec.text.clone() };
-    if !rec.deleted
-        && let Some(f) = rec.file.as_ref().filter(|f| f.kind != "voice")
-    {
-        if !t.is_empty() {
-            t.push('\n');
-        }
-        t.push_str(&f.name);
-    }
-    DocRow { src: dm_src(pair), conv: did.to_string(), day: day.to_string(), id: rec.id.clone(), at: rec.at, author: rec.author.clone(), text: t }
-}
-
-fn group_row(gid: &str, day: &str, i: &Item) -> DocRow {
-    DocRow { src: group_src(gid), conv: gid.to_string(), day: day.to_string(), id: i.id.clone(), at: i.at, author: i.author.clone(), text: i.text.clone() }
-}
+pub(crate) use search_ix::{dm_row, dm_src, group_row, group_src};
 
 /// A cursor is `{rev_at}/{h}`, both 16 hex digits.
 fn check_cursor(cursor: Option<&str>) -> Result<(), Error> {
@@ -252,81 +211,13 @@ fn scan_lookups(scan: &text::Term, terms: &[text::Term]) -> Vec<String> {
 }
 
 impl Inner {
-    // ---- lifecycle -------------------------------------------------------------------------
-
-    /// Opens the account's index next to `chat.redb` (called by `chat_open`). A failure leaves
-    /// search off for this session; nothing else depends on it.
-    pub(crate) fn search_open(&self, dir: &Path, phrase: &str) {
-        let mut slot = self.search.lock();
-        if slot.as_ref().is_some_and(|s| !s.is_closed()) {
-            return;
-        }
-        match open_index(&dir.join("search.redb"), phrase) {
-            Ok(ix) => *slot = Some(Arc::new(ix)),
-            Err(e) => tracing::warn!("search index: {e}"),
-        }
-    }
-
-    /// Closes the index for every holder (stop of the chat store: lock, account switch, drop).
-    pub(crate) fn search_close(&self) {
-        if let Some(ix) = self.search.lock().take() {
-            ix.close();
-        }
-    }
-
     fn search_ix(&self) -> Option<Arc<SearchIndex>> {
-        self.search.lock().clone().filter(|s| !s.is_closed())
-    }
-
-    /// Test switch: this hook write is to be skipped.
-    fn search_skipped(&self) -> bool {
-        use std::sync::atomic::Ordering;
-        self.search_skip.try_update(Ordering::SeqCst, Ordering::SeqCst, |n| n.checked_sub(1)).is_ok()
+        self.search.index()
     }
 
     fn search_log(e: impl Into<Error>) {
         let e: Error = e.into();
         tracing::warn!("search index: {e}");
-    }
-
-    // ---- hooks -----------------------------------------------------------------------------
-
-    /// After a committed 1:1 change: index the touched messages; the shard's watermark moves
-    /// from `prev` to `vv` only if it was at `prev`.
-    pub(crate) fn search_dm(&self, did: &str, pair: &str, day: &str, recs: &[&MsgRec], prev: Option<Vec<u8>>, vv: Vec<u8>) {
-        if self.search_skipped() {
-            return;
-        }
-        let Some(ix) = self.search_ix() else { return };
-        let rows: Vec<DocRow> = recs.iter().map(|r| dm_row(did, pair, day, r)).collect();
-        let mark = Mark { src: dm_src(pair), day: day.to_string(), prev, vv };
-        if let Err(e) = ix.apply(&rows, &[], &[mark]) {
-            Self::search_log(e);
-        }
-    }
-
-    /// After a group change (`group_after`): index the posts that show now, per day doc; each
-    /// day's watermark moves from `prev` to `vv` only if it was at `prev`.
-    pub(crate) fn search_group(&self, gid: &str, diffs: &[PostDiff]) {
-        if diffs.is_empty() || self.search_skipped() {
-            return;
-        }
-        let Some(ix) = self.search_ix() else { return };
-        let src = group_src(gid);
-        let rows: Vec<DocRow> = diffs.iter().flat_map(|d| d.put.iter().map(|i| group_row(gid, &d.day, i))).collect();
-        let marks: Vec<Mark> = diffs.iter().map(|d| Mark { src: src.clone(), day: d.day.clone(), prev: Some(d.prev.clone()), vv: d.vv.clone() }).collect();
-        if let Err(e) = ix.apply(&rows, &[], &marks) {
-            Self::search_log(e);
-        }
-    }
-
-    /// A conversation went from this device (a forgotten group): its docs leave the index.
-    pub(crate) fn search_forget(&self, src: &str) {
-        if let Some(ix) = self.search_ix()
-            && let Err(e) = ix.forget(src)
-        {
-            Self::search_log(e);
-        }
     }
 
     // ---- reconcile -------------------------------------------------------------------------

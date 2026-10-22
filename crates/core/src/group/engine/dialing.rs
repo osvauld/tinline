@@ -293,7 +293,7 @@ impl Inner {
                 if stale {
                     core.groups.lock().remove(&gid);
                     let _ = core.store.forget(&gid);
-                    self.search_forget(&crate::search::api::group_src(&gid));
+                    self.search.forget(&search_ix::group_src(&gid));
                 }
                 Err(Error::Rejected(reason))
             }
