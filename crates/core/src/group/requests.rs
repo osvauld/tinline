@@ -183,7 +183,7 @@ impl Inner {
         let _ = core.store.put_req(&row);
         let this = self.clone();
         self.handle.spawn(async move {
-            match this.clone().ctx.add_contact_from(ticket, crate::caps::ContactOrigin::GroupRequest).await {
+            match this.ctx.clone().add_contact_from(ticket, crate::caps::ContactOrigin::GroupRequest).await {
                 Ok(c) => {
                     this.log(format!("chat request accepted: {} is a contact", c.name));
                     row.added = true;

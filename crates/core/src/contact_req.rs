@@ -172,7 +172,7 @@ impl Node {
             return Err(AddError::Expired);
         }
         let inner = self.inner.clone();
-        self.block_on(inner.ctx.add_contact_outcome(ticket, crate::caps::ContactOrigin::Ticket))
+        self.block_on(inner.ctx.clone().add_contact_outcome(ticket, crate::caps::ContactOrigin::Ticket))
             .map_err(AddError::from)?
             .map_err(AddError::from)
     }

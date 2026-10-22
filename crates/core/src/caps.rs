@@ -74,7 +74,7 @@ impl Node {
     #[doc(hidden)]
     pub fn add_contact_as_for_test(&self, ticket: String, origin: ContactOrigin) -> Result<crate::Contact, Error> {
         let inner = self.inner.clone();
-        self.block_on(inner.ctx.add_contact_from(ticket, origin))?.map_err(Error::from)
+        self.block_on(inner.ctx.clone().add_contact_from(ticket, origin))?.map_err(Error::from)
     }
 
     /// For tests: ids (hex nonces) of the (message, call) tokens we hold from `did`.

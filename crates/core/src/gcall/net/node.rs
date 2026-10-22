@@ -22,7 +22,7 @@ impl GcallHost for Inner {
 
     /// Runs `f` under the `live` lock (lock order: live -> gcall session).
     fn with_no_call(&self, f: &mut dyn FnMut() -> Result<(), gcall_net::Error>) -> Result<(), gcall_net::Error> {
-        self.with_no_call(|| f().map_err(|e| Error::from(e).into())).map_err(|e| gcall_net::Error::from(Error::from(e)))
+        self.ctx.with_no_call(|| f().map_err(|e| node_runtime::Error::from(Error::from(e)))).map_err(|e| gcall_net::Error::from(Error::from(e)))
     }
 }
 

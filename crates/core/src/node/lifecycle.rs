@@ -8,7 +8,7 @@ impl Node {
     /// Binds the endpoint and starts accepting calls. Idempotent.
     pub fn start(&self) -> Result<(), Error> {
         let inner = self.inner.clone();
-        self.block_on(async move { inner.ctx.start().await.map_err(Error::from) })?
+        self.block_on(async move { inner.ctx.clone().start().await.map_err(Error::from) })?
     }
 
     pub fn stop(&self) {
