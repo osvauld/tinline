@@ -66,7 +66,7 @@ mod ffi_bytes;
 mod live;
 mod nerds;
 mod path;
-// The Android MediaCodec VP8 encoder/decoder (`codecs` names what it must provide).
+// The debug self-test export of the Android MediaCodec VP8 path (the codec is `video::mediacodec`).
 #[cfg(all(target_os = "android", feature = "mediacodec"))]
 mod mediacodec;
 mod pipes;

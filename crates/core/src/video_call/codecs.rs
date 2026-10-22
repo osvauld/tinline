@@ -9,7 +9,7 @@ use video::{Decoder, EncoderConfig, VideoDecoder, VideoEncoder};
 
 use super::DECODER_THREADS;
 #[cfg(all(target_os = "android", feature = "mediacodec"))]
-use super::mediacodec;
+use video::mediacodec;
 
 pub(crate) use video_call_core::LocalCodecs;
 
