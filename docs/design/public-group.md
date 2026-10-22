@@ -302,6 +302,16 @@ tests `group_public_tests.rs`; not yet looked at on screen):
 - **Receipts:** ticks follow the core unchanged (open groups get no member receipts, so own posts
   stay at one tick once a host has them); the tick tooltip with "Delivered n/N · Read n/N" is not
   shown in open groups, where 0/N would mislead.
+- **Images (§5):** a post's picture shows inside its bubble above the caption (box at the
+  picture's shape, at most 300 x 340, the core's 4x3 colour preview until it is here, then the
+  picture from `group_image_path`, opened by a job). `Remote`: "Photo · size" and *Load photo*
+  (`group_fetch_image`); `Loading`: "Loading..."; `Failed`: *Try again*. A picture without a caption
+  shows only its time under it. The composer has a picture button (file picker: PNG/JPEG/WebP; the
+  typed text goes with it as its caption; a member of an admins-only group is refused locally). The
+  list, notifications and reply quotes say "Photo" / "Photo · caption". `on_group_image` re-reads
+  the open thread. **Settings › Privacy:** "Load group pictures by themselves" switch (on =
+  `Always`, off = `Tap`; this computer never reports a metered connection). Tests
+  `group_image_tests.rs`.
 
 **Android, as built** (`android/.../GroupsCore.kt` state and words, `GroupsLive.kt` screens, `SettingsPages.kt` /
 `SettingsRoutes.kt` privacy; JVM tests `GroupsPublicTest.kt`; not yet looked at on a phone). Same words and rules as desktop:
@@ -324,6 +334,13 @@ tests `group_public_tests.rs`; not yet looked at on screen):
 - **Settings › Privacy:** a third card, "Show me as online in public groups" (eye icon, switch; the title may wrap to two
   lines on a narrow phone), with the "this device only" note; `group_presence_visible` / `group_set_presence_visible`.
 - **Receipts:** the tap-to-show "Delivered n/N · Read n/N" lines under my post are not offered in open groups.
+- **Images (§5):** `GroupPhotoBox` draws a post's picture like a chat `PhotoBox` (box from `photoBox`, the blurred colour
+  preview, the picture decoded from `group_image_path` off the main thread): `Remote` shows "Photo · size" and *Load photo*,
+  `Loading` a ring, `Failed` a retry ring; a long press replies. The composer's attach button opens the photo picker (images
+  only); the bytes go to `group_post_image_bytes` with the draft as caption (at most 64 MB read; the core scales). "Photo" /
+  "Photo · caption" in the list, the reply chip and quotes. `onGroupImage` re-reads the group on screen. **Settings ›
+  Privacy:** a "Group pictures" card with Always / On Wi-Fi (default) / When I tap them, using the existing
+  `set_connection_metered` hint. JVM tests `GroupsImagesTest.kt`.
 
 ## Acceptance tests
 
