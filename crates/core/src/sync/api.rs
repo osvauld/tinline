@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use crate::node::{Inner, Node, now};
+use crate::node::{Node, now};
 use crate::store::Disk;
 use crate::vault;
 use crate::Error;
@@ -43,9 +43,27 @@ pub struct LinkedDevice {
     pub removed: bool,
 }
 
-impl Inner {
-    pub(crate) fn link_events(&self) -> Option<Arc<dyn LinkEvents>> {
-        self.link_events.lock().clone()
+/// Forwards the runtime's `LinkSink` to the app's `LinkEvents`.
+pub(crate) struct LinkEventsAdapter(pub(crate) Arc<dyn LinkEvents>);
+
+impl sync_runtime::LinkSink for LinkEventsAdapter {
+    fn on_link_code(&self, code: String, peer_label: String) {
+        self.0.on_link_code(code, peer_label)
+    }
+    fn on_link_done(&self, did: String, name: String) {
+        self.0.on_link_done(did, name)
+    }
+    fn on_link_failed(&self, reason: String) {
+        self.0.on_link_failed(reason)
+    }
+    fn on_devices_changed(&self) {
+        self.0.on_devices_changed()
+    }
+    fn on_history_changed(&self) {
+        self.0.on_history_changed()
+    }
+    fn on_unlinked(&self, did: String) {
+        self.0.on_unlinked(did)
     }
 }
 
@@ -79,33 +97,33 @@ impl Node {
 #[uniffi::export]
 impl Node {
     pub fn set_link_events(&self, events: Arc<dyn LinkEvents>) {
-        *self.inner.link_events.lock() = Some(events);
+        self.inner.sync.set_link_sink(Arc::new(LinkEventsAdapter(events)));
     }
 
     /// E (unlocked, started): shows a QR (`OSVL1:...`, valid 5 minutes, one scan) for a new
     /// device to scan. Progress arrives through `LinkEvents`.
     pub fn link_show_qr(&self) -> Result<String, Error> {
-        self.inner.link_show_qr()
+        Ok(self.inner.sync.link_show_qr()?)
     }
 
     /// E: scans the QR a new device shows, and dials it.
     pub fn link_scan(&self, qr_text: String) -> Result<(), Error> {
-        self.inner.link_scan(&qr_text)
+        Ok(self.inner.sync.link_scan(&qr_text)?)
     }
 
     /// N (no account selected; `begin_new_account` first if needed): shows a QR. `device_label`
     /// is this install's name ("Pixel 8"), shown on E.
     pub fn link_new_show_qr(&self, device_label: String) -> Result<String, Error> {
-        self.inner.require_no_account()?;
+        self.inner.sync.require_no_account()?;
         let (secret, ep) = self.fresh_link_endpoint()?;
-        self.inner.link_new_show_qr(device_label, secret, ep)
+        Ok(self.inner.sync.link_new_show_qr(device_label, secret, ep)?)
     }
 
     /// N: scans E's QR.
     pub fn link_new_scan(&self, qr_text: String, device_label: String) -> Result<(), Error> {
-        self.inner.require_no_account()?;
+        self.inner.sync.require_no_account()?;
         let (secret, ep) = self.fresh_link_endpoint()?;
-        self.inner.link_new_scan(&qr_text, device_label, secret, ep)
+        Ok(self.inner.sync.link_new_scan(&qr_text, device_label, secret, ep)?)
     }
 
     /// E: the user compared the codes and agrees. With a passphrase on the account it must be
@@ -115,13 +133,13 @@ impl Node {
     pub fn link_approve(&self, passphrase: Option<String>) -> Result<(), Error> {
         self.inner.me()?;
         self.local_auth(passphrase)?;
-        self.inner.link_approve_cmd()
+        Ok(self.inner.sync.link_approve_cmd()?)
     }
 
     /// Abandons the link in progress (either side); `on_link_failed("cancelled")` follows if a
     /// peer was connected.
     pub fn link_cancel(&self) {
-        self.inner.link_cancel();
+        self.inner.sync.link_cancel();
     }
 
     /// The registry of this account: every install, this one first.
@@ -185,7 +203,7 @@ impl Node {
         if dev == me.device {
             self.inner.not_in_call()?;
             // Tell the others first (best effort: they stop dialling this device), then go.
-            self.inner.selfsync.leaving.store(true, std::sync::atomic::Ordering::SeqCst);
+            self.inner.sync.selfsync.leaving.store(true, std::sync::atomic::Ordering::SeqCst);
             {
                 let mut s = self.inner.shared.lock();
                 if let Some(e) = s.state.registry.iter_mut().find(|e| e.device == dev) {
@@ -193,13 +211,13 @@ impl Node {
                 }
             }
             let _ = self.inner.persist_for(Some(me.epoch));
-            self.inner.wait_pushed(std::time::Duration::from_secs(5));
+            self.inner.sync.wait_pushed(std::time::Duration::from_secs(5));
             let inner = self.inner.clone();
             let epoch = me.epoch;
             let r = self.block_on(async move {
-                inner.remove_self_account(epoch).await;
+                inner.sync.clone().remove_self_account(epoch).await;
             });
-            self.inner.selfsync.leaving.store(false, std::sync::atomic::Ordering::SeqCst);
+            self.inner.sync.selfsync.leaving.store(false, std::sync::atomic::Ordering::SeqCst);
             return r;
         }
         let relay = {
@@ -209,16 +227,16 @@ impl Node {
             e.relay.clone()
         };
         self.inner.persist_for(Some(me.epoch))?;
-        if let Some(slot) = self.inner.selfsync.sessions.lock().get(&dev) {
+        if let Some(slot) = self.inner.sync.selfsync.sessions.lock().get(&dev) {
             slot.close();
         }
         let inner = self.inner.clone();
         self.inner.handle.spawn(async move {
-            inner.send_unlinked(dev, relay).await;
+            inner.sync.send_unlinked(dev, relay).await;
         });
         // U8: contacts stop dialling the unlinked install.
         self.inner.ctx.devices_changed();
-        if let Some(ev) = self.inner.link_events() {
+        if let Some(ev) = self.inner.sync.link_events() {
             ev.on_devices_changed();
         }
         Ok(())
@@ -249,7 +267,7 @@ impl Node {
     pub fn self_probe_for_test(&self, device: String) -> bool {
         let Ok(dev) = proto::device_from_text(&device) else { return false };
         let inner = self.inner.clone();
-        self.block_on(async move { inner.self_probe(dev).await.is_ok() }).unwrap_or(false)
+        self.block_on(async move { inner.sync.self_probe(dev).await.is_ok() }).unwrap_or(false)
     }
 
     /// For tests: forget the dial backoff and dial now.

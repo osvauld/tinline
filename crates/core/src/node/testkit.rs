@@ -22,7 +22,7 @@ impl Node {
     /// For tests: how many own-device sync sessions are up right now.
     #[doc(hidden)]
     pub fn own_sessions_for_test(&self) -> u32 {
-        self.inner.selfsync.sessions.lock().len() as u32
+        self.inner.sync.selfsync.sessions.lock().len() as u32
     }
 }
 

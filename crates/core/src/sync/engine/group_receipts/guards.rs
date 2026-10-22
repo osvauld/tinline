@@ -50,7 +50,7 @@ async fn unnegotiated_stale_failed_persistence_and_removed_device_do_not_confirm
         let mut peer = PeerChat::default();
         assert!(
             handle(
-                &node.inner,
+                &node.inner.sync,
                 &me,
                 &remote,
                 &mut peer,
@@ -68,7 +68,7 @@ async fn unnegotiated_stale_failed_persistence_and_removed_device_do_not_confirm
             sent: Instant::now(),
         });
         handle(
-            &node.inner,
+            &node.inner.sync,
             &me,
             &remote,
             &mut peer,
@@ -88,7 +88,7 @@ async fn unnegotiated_stale_failed_persistence_and_removed_device_do_not_confirm
         target.store.fail_next_append_for_test();
         assert!(matches!(
             handle(
-                &node.inner,
+                &node.inner.sync,
                 &me,
                 &remote,
                 &mut peer,
@@ -124,7 +124,7 @@ async fn unnegotiated_stale_failed_persistence_and_removed_device_do_not_confirm
             .unwrap()
             .removed = true;
         assert!(
-            handle(&node.inner, &me, &remote, &mut peer, message, &mut writer)
+            handle(&node.inner.sync, &me, &remote, &mut peer, message, &mut writer)
                 .await
                 .is_err()
         );

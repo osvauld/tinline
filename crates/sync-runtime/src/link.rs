@@ -11,9 +11,10 @@ use iroh::endpoint::{Accepting, Connection, Endpoint, RecvStream, SendStream};
 use proto::link::{self as pl, LinkMsg, LinkQr, LinkRole};
 use tokio::sync::mpsc;
 
-use crate::node::{Inner, Me, addr_for, now, relay_within};
-use crate::store::{Disk, OwnDevice, ProfileV2, State};
-use crate::vault::{self, Secrets};
+use crate::SyncRt;
+use node_runtime::{Me, addr_for, now, relay_within};
+use node_runtime::store::{Disk, OwnDevice, ProfileV2, State};
+use account_model::vault::{self, Secrets};
 use crate::Error;
 
 const HELLO_TIMEOUT: Duration = Duration::from_secs(15);
@@ -22,13 +23,13 @@ const APPROVE_TIMEOUT: Duration = Duration::from_secs(300);
 /// How long a QR waits for a just-started endpoint to know its relay.
 const QR_RELAY_WAIT: Duration = Duration::from_secs(8);
 
-pub(crate) enum LinkCmd {
+pub enum LinkCmd {
     Approve,
     Cancel,
 }
 
 /// Everything one link session needs once its peer is connected.
-pub(crate) struct LinkRun {
+pub struct LinkRun {
     id: u64,
     is_e: bool,
     scanner: bool,
@@ -42,7 +43,7 @@ pub(crate) struct LinkRun {
     epoch: u64,
 }
 
-pub(crate) struct LinkSlot {
+pub struct LinkSlot {
     id: u64,
     tx: mpsc::UnboundedSender<LinkCmd>,
     /// A displayed QR nobody has connected to yet.
@@ -50,7 +51,7 @@ pub(crate) struct LinkSlot {
 }
 
 #[derive(Default)]
-pub(crate) struct LinkState {
+pub struct LinkState {
     pub slot: parking_lot::Mutex<Option<LinkSlot>>,
     pub next_id: std::sync::atomic::AtomicU64,
 }
@@ -85,7 +86,7 @@ impl LinkIo {
     }
 }
 
-impl Inner {
+impl SyncRt {
     fn reserve_link(&self) -> Result<(u64, mpsc::UnboundedSender<LinkCmd>, mpsc::UnboundedReceiver<LinkCmd>), Error> {
         let mut slot = self.link.slot.lock();
         if slot.is_some() {
@@ -104,7 +105,7 @@ impl Inner {
         }
     }
 
-    pub(crate) fn link_cancel(&self) {
+    pub fn link_cancel(&self) {
         if let Some(s) = self.link.slot.lock().as_ref() {
             let _ = s.tx.send(LinkCmd::Cancel);
         }
@@ -115,7 +116,7 @@ impl Inner {
         }
     }
 
-    pub(crate) fn link_approve_cmd(&self) -> Result<(), Error> {
+    pub fn link_approve_cmd(&self) -> Result<(), Error> {
         match self.link.slot.lock().as_ref() {
             Some(s) if s.pending.is_none() => s.tx.send(LinkCmd::Approve).map_err(|_| Error::NotFound),
             _ => Err(Error::NotFound),
@@ -133,7 +134,7 @@ impl Inner {
     // ---- E -------------------------------------------------------------------------------
 
     /// E shows a QR and waits for N to scan it.
-    pub(crate) fn link_show_qr(self: &Arc<Self>) -> Result<String, Error> {
+    pub fn link_show_qr(self: &Arc<Self>) -> Result<String, Error> {
         let me = self.me()?;
         let ep = self.endpoint()?;
         let (id, _tx, rx) = self.reserve_link()?;
@@ -146,7 +147,7 @@ impl Inner {
     }
 
     /// E scans N's QR and dials it.
-    pub(crate) fn link_scan(self: &Arc<Self>, text: &str) -> Result<(), Error> {
+    pub fn link_scan(self: &Arc<Self>, text: &str) -> Result<(), Error> {
         let me = self.me()?;
         let ep = self.endpoint()?;
         let qr = LinkQr::from_text(text)?;
@@ -163,7 +164,7 @@ impl Inner {
     // ---- N -------------------------------------------------------------------------------
 
     /// N (no account on this device yet) shows a QR.
-    pub(crate) fn link_new_show_qr(self: &Arc<Self>, label: String, secret: [u8; 32], ep: Endpoint) -> Result<String, Error> {
+    pub fn link_new_show_qr(self: &Arc<Self>, label: String, secret: [u8; 32], ep: Endpoint) -> Result<String, Error> {
         self.require_no_account()?;
         let (id, _tx, rx) = self.reserve_link()?;
         let device = cryptography::signature::public_key(&secret);
@@ -185,7 +186,7 @@ impl Inner {
     }
 
     /// N scans E's QR.
-    pub(crate) fn link_new_scan(self: &Arc<Self>, text: &str, label: String, secret: [u8; 32], ep: Endpoint) -> Result<(), Error> {
+    pub fn link_new_scan(self: &Arc<Self>, text: &str, label: String, secret: [u8; 32], ep: Endpoint) -> Result<(), Error> {
         self.require_no_account()?;
         let qr = LinkQr::from_text(text)?;
         if qr.is_expired(now()) {
@@ -198,7 +199,7 @@ impl Inner {
         Ok(())
     }
 
-    pub(crate) fn require_no_account(&self) -> Result<(), Error> {
+    pub fn require_no_account(&self) -> Result<(), Error> {
         if self.shared.lock().disk.is_some() {
             return Err(Error::HaveIdentity);
         }
@@ -254,7 +255,7 @@ impl Inner {
     }
 
     /// The displayer's side of a new connection: consumes the QR.
-    pub(crate) async fn handle_link_incoming(self: Arc<Self>, accepting: Accepting) -> Result<(), Error> {
+    pub async fn handle_link_incoming(self: Arc<Self>, accepting: Accepting) -> Result<(), Error> {
         let conn = tokio::time::timeout(HELLO_TIMEOUT, accepting).await.map_err(|_| Error::Timeout)?.map_err(Error::net)?;
         let run = {
             let mut slot = self.link.slot.lock();
@@ -494,15 +495,15 @@ impl Inner {
         if !registry.iter().any(|e| &e.device == e_dev && !e.removed) {
             return Err("mismatch");
         }
-        let dir_id = crate::accounts::id_of(&did).map_err(|_| "bad_grant")?;
+        let dir_id = account_model::accounts::id_of(&did).map_err(|_| "bad_grant")?;
         if self.accounts.exists(&dir_id).map_err(|_| "rejected")? {
             return Err("account_exists");
         }
-        let profile = crate::store::Profile { mnemonic: body.mnemonic.trim().to_string(), name: proto::sanitize_name(&body.account_name), device_secret };
+        let profile = node_runtime::store::Profile { mnemonic: body.mnemonic.trim().to_string(), name: proto::sanitize_name(&body.account_name), device_secret };
         let mut me = Me::load(profile, 0).map_err(|_| "bad_grant")?;
         let secrets = Secrets { mnemonic: me.profile.mnemonic.clone(), device_secret };
         let (vault, dek) = vault::seal(&secrets, None).map_err(|_| "rejected")?;
-        let disk = Disk::V2(ProfileV2 { version: 2, name: me.profile.name.clone(), did: did.clone(), device_public: me.device, vault, device_id: Some(crate::store::new_device_id()), profile_name_pending: false, profile_inherited: true });
+        let disk = Disk::V2(ProfileV2 { version: 2, name: me.profile.name.clone(), did: did.clone(), device_public: me.device, vault, device_id: Some(node_runtime::store::new_device_id()), profile_name_pending: false, profile_inherited: true });
         registry.retain(|e| e.device != me.device);
         registry.insert(0, OwnDevice { device: me.device, attestation: me.attestation.clone(), label: label.to_string(), removed: false, last_seen: now(), relay: None, links: Vec::new(), rotated: false });
         let state = State { registry, ..State::default() };
@@ -510,7 +511,7 @@ impl Inner {
             let mut s = self.shared.lock();
             s.epoch += 1;
             me.epoch = s.epoch;
-            s.history = Arc::new(crate::store::History::new(Vec::new(), None));
+            s.history = Arc::new(node_runtime::store::History::new(Vec::new(), None));
             s.state = state;
             s.device_label = Some(label.to_string()).filter(|l| !l.is_empty());
             s.committed = false;

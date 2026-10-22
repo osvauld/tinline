@@ -25,7 +25,7 @@ impl NodeHooks for Inner {
     }
 
     fn selfsync_started(self: Arc<Self>) {
-        Inner::selfsync_started(&self);
+        sync_runtime::SyncRt::selfsync_started(&self.sync);
     }
 
     fn group_started(self: Arc<Self>) {
@@ -53,17 +53,17 @@ impl NodeHooks for Inner {
     }
 
     fn selfsync_sessions_close(self: Arc<Self>) {
-        for slot in self.selfsync.sessions.lock().values() {
+        for slot in self.sync.selfsync.sessions.lock().values() {
             slot.close();
         }
     }
 
     fn incoming_self(self: Arc<Self>, accepting: Accepting) -> BoxFuture<Result<(), node_runtime::Error>> {
-        Box::pin(async move { self.handle_self_incoming(accepting).await.map_err(Into::into) })
+        Box::pin(async move { self.sync.clone().handle_self_incoming(accepting).await })
     }
 
     fn incoming_link(self: Arc<Self>, accepting: Accepting) -> BoxFuture<Result<(), node_runtime::Error>> {
-        Box::pin(async move { self.handle_link_incoming(accepting).await.map_err(Into::into) })
+        Box::pin(async move { self.sync.clone().handle_link_incoming(accepting).await })
     }
 
     fn incoming_chat(self: Arc<Self>, accepting: Accepting, chat: bool, permit: OwnedSemaphorePermit) -> BoxFuture<Result<(), node_runtime::Error>> {

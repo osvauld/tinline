@@ -2,8 +2,8 @@
 
 use super::*;
 
-impl Inner {
-    pub(super) fn touch_device(&self, epoch: u64, device: [u8; 32]) {
+impl SyncRt {
+    pub fn touch_device(&self, epoch: u64, device: [u8; 32]) {
         let mut s = self.shared.lock();
         if s.epoch == epoch
             && let Some(e) = s.state.registry.iter_mut().find(|e| e.device == device)
@@ -18,7 +18,7 @@ impl Inner {
     /// sync (`SelfSync::synced`) and has no session, now and then (and at once on a change or
     /// `sync_kick`), with growing pauses per failing device. Devices in sync are not dialled:
     /// a device with a change dials us.
-    pub(crate) fn selfsync_started(self: &Arc<Self>) {
+    pub fn selfsync_started(self: &Arc<Self>) {
         let this = self.clone();
         self.handle.spawn(async move {
             loop {
@@ -34,7 +34,7 @@ impl Inner {
         });
     }
 
-    pub(super) fn dial_round(self: &Arc<Self>) {
+    pub fn dial_round(self: &Arc<Self>) {
         let Ok(me) = self.me() else { return };
         let generation = self.signal.generation();
         let targets: Vec<([u8; 32], Option<String>)> = {
@@ -82,12 +82,12 @@ impl Inner {
     }
 
     /// For tests: a bare `Auth` exchange with `device`, as whoever we are.
-    pub(crate) async fn self_probe(self: &Arc<Self>, device: [u8; 32]) -> Result<(), Error> {
+    pub async fn self_probe(self: &Arc<Self>, device: [u8; 32]) -> Result<(), Error> {
         let me = self.me()?;
         let ep = self.endpoint()?;
         let conn = tokio::time::timeout(
             DIAL_TIMEOUT,
-            crate::version::connect(&ep, addr_for(&device, None)?, &crate::version::OWN),
+            node_runtime::version::connect(&ep, addr_for(&device, None)?, &node_runtime::version::OWN),
         )
         .await
         .map_err(|_| Error::Timeout)??;
@@ -111,7 +111,7 @@ impl Inner {
 
     /// Tells a removed device that it is (so it drops the account), if it can be reached:
     /// authenticates as one of its own devices, sends `Unlinked`, waits briefly.
-    pub(crate) async fn send_unlinked(self: &Arc<Self>, device: [u8; 32], relay: Option<String>) {
+    pub async fn send_unlinked(self: &Arc<Self>, device: [u8; 32], relay: Option<String>) {
         let Ok(me) = self.me() else { return };
         let Ok(ep) = self.endpoint() else { return };
         let Ok(addr) = addr_for(&device, relay.as_deref()) else {
@@ -119,7 +119,7 @@ impl Inner {
         };
         let Ok(Ok(conn)) = tokio::time::timeout(
             Duration::from_secs(8),
-            crate::version::connect(&ep, addr, &crate::version::OWN),
+            node_runtime::version::connect(&ep, addr, &node_runtime::version::OWN),
         )
         .await
         else {

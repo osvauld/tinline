@@ -2,10 +2,10 @@
 
 use super::*;
 
-impl Inner {
+impl SyncRt {
     // ---- sessions -----------------------------------------------------------------------
 
-    pub(crate) async fn handle_self_incoming(
+    pub async fn handle_self_incoming(
         self: Arc<Self>,
         accepting: Accepting,
     ) -> Result<(), Error> {
@@ -20,7 +20,7 @@ impl Inner {
         r
     }
 
-    pub(super) async fn self_dial(
+    pub async fn self_dial(
         self: Arc<Self>,
         device: [u8; 32],
         relay: Option<String>,
@@ -29,7 +29,7 @@ impl Inner {
         let addr = addr_for(&device, relay.as_deref())?;
         let conn = tokio::time::timeout(
             DIAL_TIMEOUT,
-            crate::version::connect(&ep, addr, &crate::version::OWN),
+            node_runtime::version::connect(&ep, addr, &node_runtime::version::OWN),
         )
         .await
         .map_err(|_| Error::Timeout)??;
@@ -40,7 +40,7 @@ impl Inner {
         r
     }
 
-    pub(super) fn tombstones(&self) -> HashSet<[u8; 32]> {
+    pub fn tombstones(&self) -> HashSet<[u8; 32]> {
         self.shared
             .lock()
             .state
@@ -53,7 +53,7 @@ impl Inner {
 
     /// Keeps one session per device: if both sides dialled at once, the connection dialled by
     /// the lower device key survives on both ends. `false` = this one lost.
-    pub(super) fn register_session(
+    pub fn register_session(
         &self,
         remote: [u8; 32],
         dialer: [u8; 32],
@@ -82,7 +82,7 @@ impl Inner {
 
     /// Waits (bounded) until every other live device of the registry has a session whose peer
     /// confirmed holding everything we hold (dialling the ones without).
-    pub(crate) fn wait_pushed(&self, max: Duration) {
+    pub fn wait_pushed(&self, max: Duration) {
         self.sync_kick();
         let end = Instant::now() + max;
         loop {
@@ -123,7 +123,7 @@ impl Inner {
         }
     }
 
-    pub(super) fn drop_session(&self, remote: [u8; 32], conn: &Connection) {
+    pub fn drop_session(&self, remote: [u8; 32], conn: &Connection) {
         let mut map = self.selfsync.sessions.lock();
         if map
             .get(&remote)
@@ -133,7 +133,7 @@ impl Inner {
         }
     }
 
-    pub(super) async fn self_run(
+    pub async fn self_run(
         self: Arc<Self>,
         conn: Connection,
         dialer: bool,
@@ -220,11 +220,11 @@ impl Inner {
         r
     }
 
-    pub(super) fn peer_vv_of(update_vv: &[u8]) -> Option<VersionVector> {
+    pub fn peer_vv_of(update_vv: &[u8]) -> Option<VersionVector> {
         VersionVector::decode(update_vv).ok()
     }
 
-    pub(super) async fn self_loop(
+    pub async fn self_loop(
         self: Arc<Self>,
         me: &Arc<Me>,
         conn: &Connection,
@@ -283,7 +283,7 @@ impl Inner {
         };
         let mut seen = traffic(conn);
         let mut active = Instant::now();
-        let mut idle = tokio::time::interval(crate::wire::idle_check());
+        let mut idle = tokio::time::interval(node_runtime::wire::idle_check());
         loop {
             tokio::select! {
                 _ = idle.tick() => {
@@ -291,7 +291,7 @@ impl Inner {
                     if t != seen {
                         seen = t;
                         active = Instant::now();
-                    } else if active.elapsed() >= crate::wire::idle_close() && !changes.has_changed().unwrap_or(true) {
+                    } else if active.elapsed() >= node_runtime::wire::idle_close() && !changes.has_changed().unwrap_or(true) {
                         self.selfsync_settled(remote, &changes);
                         writer.finish();
                         let _ = tokio::time::timeout(Duration::from_millis(300), conn.closed()).await;
@@ -351,7 +351,7 @@ impl Inner {
                                 if !update.is_empty() {
                                     self.apply_account_update(epoch, &update)?;
                                     // Tell the sender what we hold now (an empty batch is an ack).
-                                    let sig = crate::chat::wire::sign_batch(&me.profile.device_secret, DOC_NAME, &[]);
+                                    let sig = chat_runtime::chat::wire::sign_batch(&me.profile.device_secret, DOC_NAME, &[]);
                                     writer.send(&SelfMsg::Sync { doc: DOC_NAME.into(), vv: acc.vv().encode(), update: Vec::new(), sig }).await?;
                                 }
                                 if let Some(theirs) = Self::peer_vv_of(&vv) {
@@ -364,7 +364,7 @@ impl Inner {
                             } else if doc == CALLS_DOC {
                                 if !update.is_empty() {
                                     self.apply_calls_update(epoch, &update)?;
-                                    let sig = crate::chat::wire::sign_batch(&me.profile.device_secret, CALLS_DOC, &[]);
+                                    let sig = chat_runtime::chat::wire::sign_batch(&me.profile.device_secret, CALLS_DOC, &[]);
                                     writer.send(&SelfMsg::Sync { doc: CALLS_DOC.into(), vv: calls.vv().encode(), update: Vec::new(), sig }).await?;
                                 }
                                 if let (Some(s), Some(theirs)) = (sent_calls.as_mut(), Self::peer_vv_of(&vv)) {
@@ -375,7 +375,7 @@ impl Inner {
                                     if doc == PROFILE_DOC { self.chat.apply_profile_update(epoch, &update)?; }
                                     else { self.chat.apply_profile_cache_update(epoch, &update)?; }
                                     let current = if doc == PROFILE_DOC { profile.as_deref().map(|p| &**p) } else { cache.as_deref().map(|p| &**p) }.ok_or(Error::Locked)?;
-                                    let sig = crate::chat::wire::sign_batch(&me.profile.device_secret, &doc, &[]);
+                                    let sig = chat_runtime::chat::wire::sign_batch(&me.profile.device_secret, &doc, &[]);
                                     writer.send(&SelfMsg::Sync { doc: doc.clone(), vv: current.vv().encode(), update: Vec::new(), sig }).await?;
                                 }
                                 let sent_doc = if doc == PROFILE_DOC { &mut sent_profile } else { &mut sent_cache };
@@ -388,7 +388,7 @@ impl Inner {
                                     // Error ends the session so transient persistence failures
                                     // are retried; never ack a rejected or unpersisted import.
                                     let accepted = self.group.group_own_content_apply(epoch, &remote, &doc, &update)?;
-                                    let sig = crate::chat::wire::sign_batch(&me.profile.device_secret, &doc, &[]);
+                                    let sig = chat_runtime::chat::wire::sign_batch(&me.profile.device_secret, &doc, &[]);
                                     writer.send(&SelfMsg::Sync { doc: doc.clone(), vv: accepted, update: Vec::new(), sig }).await?;
                                 }
                                 if let Some(theirs) = Self::peer_vv_of(&vv) {
@@ -435,7 +435,7 @@ impl Inner {
                             }
                         }
                         SelfMsg::Groups { groups } => {
-                            if groups.len() > crate::group::own::MAX_OWN_GROUPS {
+                            if groups.len() > group_runtime::own::MAX_OWN_GROUPS {
                                 return Err(Error::Protocol("too many groups".into()));
                             }
                             self.group.own_group_admit(epoch, &remote)?;
@@ -444,7 +444,7 @@ impl Inner {
                             if peer.receipts.enabled { peer.receipts.offer(&self, &groups); }
                         }
                         SelfMsg::Invitations { rows } => {
-                            if rows.len() > crate::group::invitations::MAX_OWN_INVITATIONS {
+                            if rows.len() > group_runtime::invitations::MAX_OWN_INVITATIONS {
                                 return Err(Error::Protocol("too many invitations".into()));
                             }
                             self.group.group_own_invitations_apply(&rows);
@@ -494,7 +494,7 @@ impl Inner {
                                 self.push_read(&mut peer, writer).await?;
                             } else if name == GROUPS_MARK {
                                 self.push_groups(&mut peer, writer).await?;
-                            } else if name == crate::group::invitations::INVITES_MARK {
+                            } else if name == group_runtime::invitations::INVITES_MARK {
                                 self.push_invitations(&mut peer, writer).await?;
                             } else if name == ACK_MARK {
                                 self.push_acks(&mut peer, writer).await?;

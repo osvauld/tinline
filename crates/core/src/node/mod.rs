@@ -13,7 +13,6 @@ use bytes::Bytes;
 use identity::Identity;
 use iroh::endpoint::{Connection, QuicTransportConfig, presets};
 use iroh::{Endpoint, EndpointAddr, PublicKey, RelayUrl, SecretKey, Watcher};
-use parking_lot::{Mutex, ReentrantMutex};
 use proto::{ContactTicket, Msg};
 use sha2::{Digest, Sha512};
 use tokio::sync::{OwnedMutexGuard, OwnedSemaphorePermit, mpsc, oneshot};
@@ -47,11 +46,10 @@ pub(crate) struct Inner {
     pub(crate) ctx: Arc<NodeCtx>,
     /// The chat runtime (1:1 chat and profiles), `chat_runtime`.
     pub(crate) chat: Arc<chat_runtime::ChatRt>,
-    pub(crate) link_events: Mutex<Option<Arc<dyn crate::sync::LinkEvents>>>,
-    pub(crate) selfsync: Arc<crate::sync::engine::SelfSync>,
-    pub(crate) link: crate::sync::link::LinkState,
     /// The group runtime (G1: second endpoint, sessions with hosts; group calls), `group_runtime`.
     pub(crate) group: Arc<group_runtime::GroupRt>,
+    /// The own-device runtime (linking, own-device sync), `sync_runtime`.
+    pub(crate) sync: Arc<sync_runtime::SyncRt>,
     /// The selected account's search index (`search.redb`), open while its chat store is; the
     /// chat and group engines write to it after every accepted change.
     pub(crate) search: Arc<search_ix::SearchIx>,
@@ -72,7 +70,7 @@ impl Inner {
             return Ok(());
         }
         self.chat_open();
-        self.acc_open();
+        self.sync.acc_open();
         // Anything that changed while the files were being written.
         self.persist().map_err(Error::from)
     }

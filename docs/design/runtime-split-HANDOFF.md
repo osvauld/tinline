@@ -46,7 +46,19 @@ the state at the end of the first integration session.
     chat-runtime 7 + node-runtime 20 = 189); bindings diff empty (4236); bench+vp8 (4237);
     APK (4239); set 1 (4254, laptop `-j 6`); set 2 (4255; 11 targets, 99 passed).
     `sync-connection-audit` was already on dev (2b3a4d10) and was removed.
-- Remaining waves: W7 sync-runtime, then W8 cleanup.
+  - W7 `refactor/rt-w7-sync` (`crates/sync-runtime`: `SyncRt` derefs to `NodeCtx` and holds
+    `chat`, `group`, `selfsync` (the `OwnDocSink`), `link` and the `LinkSink` slot; the
+    engine, its submodules, `link.rs` and `frames.rs` moved with `git mv`). p2pcore keeps
+    `Inner { sync: Arc<SyncRt> }`; `Inner` lost `selfsync`, `link` and `link_events`.
+    `LinkEvents` stays in p2pcore with a `LinkEventsAdapter`. The group history/receipts
+    fault, guard and wire tests need `Node`, so they stay in p2pcore under
+    `sync/engine/*` holder modules that re-export the runtime module (`#[cfg(test)]`).
+    W7 checks: dev-tools workspace check (4270); lib tests (4271; p2pcore 69 +
+    sync-runtime 4 + group-runtime 89 + chat-runtime 7 + node-runtime 20 = 189); bench+vp8
+    (4320); bindings diff empty (4341/4344); set 1 (4319, nixos single job); set 2 (4278
+    laptop steps, failures rerun alone in 4292; `search` paging tie-order fails, fixed by
+    d0c25107 on fix/test-flakes); APK (4354).
+- Remaining waves: W8 cleanup.
 
 ## Rules that held this session
 

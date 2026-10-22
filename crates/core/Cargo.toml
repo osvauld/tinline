@@ -25,7 +25,7 @@ required-features = ["bench"]
 # Debug-only entry points (`video_bench`: codec benchmark that opens a caller-supplied file).
 # Android debug builds pass it (android/app/build.gradle.kts); release builds must not.
 # `proto/test-support`: `Node::forge_block_notice_for_test` calls proto's forge.
-dev-tools = ["video/sim", "proto/test-support", "group-core/dev-tools", "account-model/testkit", "node-runtime/testkit", "chat-runtime/testkit", "group-runtime/testkit"]
+dev-tools = ["video/sim", "proto/test-support", "group-core/dev-tools", "account-model/testkit", "node-runtime/testkit", "chat-runtime/testkit", "group-runtime/testkit", "sync-runtime/testkit"]
 # Benchmark binaries; app, Android and test builds skip them. `cargo build --release --features bench --bin search-bench`.
 # They drive the synthetic peers, so they need `dev-tools`.
 bench = ["dev-tools", "search-core/bench"]
@@ -64,6 +64,7 @@ search-ix.workspace = true
 # The chat runtime (1:1 chat engine and profiles); re-exported under `chat` and `profile`.
 chat-runtime.workspace = true
 group-runtime.workspace = true
+sync-runtime.workspace = true
 # Shared UI logic; its UniFFI items are re-exported from lib.rs so they land in libp2pcore.so.
 present = { path = "../present" }
 audio.workspace = true
