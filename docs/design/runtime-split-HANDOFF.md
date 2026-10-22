@@ -16,8 +16,26 @@ the state at the end of the first integration session.
     contacts, block, caps, devlist, rotation, wire/frames/rekey/store) — f7afbfde.
     p2pcore `Inner { ctx: Arc<NodeCtx>, .. }` derefs to NodeCtx; `impl NodeHooks for Inner`
     in `crates/core/src/node/hooks.rs`, installed (as Weak) in `node/api_identity.rs`.
-- Remaining waves: W4 search-ix and W5 chat-runtime (chat + profile) — can go in parallel;
-  then W6 group-runtime (unblocked, public group landed); W7 sync-runtime; W8 cleanup.
+  - W4 `refactor/rt-w4-search` (`crates/search-ix`: `SearchIx` index slot, write hooks and
+    `skip_next_writes`; built on node-runtime; `PostDiff` moved to `group-core::state`), d2c0b6f8.
+  - W5 `refactor/rt-w5-chat` (`crates/chat-runtime`: `ChatRt` with the chat engine and
+    profiles; the `ChatSink`/`ProfileSink` traits have p2pcore adapters; the plain receipt
+    records are in `receipts-core::status`; `dm_version` moved to `chat-core::doc`;
+    `OwnDocSink::in_session` and `NodeCtx::is_own_device` are in node-runtime), 7d7d5cf9.
+    p2pcore keeps `Inner { chat: Arc<ChatRt> }`. `Node::block_rt` maps
+    `node_runtime::Error` on a blocking call, and `Inner::chat_open` reconciles search when
+    `ChatRt::chat_open` returns true. `synth_dm` is behind chat-runtime's `testkit` feature,
+    which p2pcore `dev-tools` turns on.
+    W5 checks: workspace check (4181), lib tests (4183; p2pcore 162 + chat-runtime 7 = 169),
+    set 1 (4184), set 2 (4196), bindings diff empty (4197), APK (4198).
+- Remaining waves: W6 group-runtime, then W7 sync-runtime, then W8 cleanup.
+  W6 notes from a read-through: `crates/core/src/group` is 16.4k lines (about 3.2k of them
+  durability tests). Its outside dependencies are already in lower crates: `blocked_me` and
+  `known_name` in node-runtime `block`, `photo`/`metered` in chat-core, receipts in
+  receipts-core, gcall-net, and `selfsync_dirty` in node-runtime `signal`. p2pcore keeps
+  `group/api.rs`, `api/types.rs`, `api/images.rs`, the hooks and the synth helpers
+  (`testkit`). The uncommitted `sync-connection-audit` worktree (50 files in group/, from
+  10-13) overlaps it: check with the user before W6.
 
 ## Rules that held this session
 
@@ -33,9 +51,12 @@ the state at the end of the first integration session.
 - Lock order (design doc): writing before shared; lifecycle; closing; live before gcall
   session; group.core held while the store opens. Hooks are called after data guards drop
   (except `in_group_call`, under `live`, as documented).
-- Task manager: `--anywhere` by default; one release-test job on nixos at a time (7.6 GiB);
+- Task manager: `--anywhere` by default; nixos has 16 GiB since 2026-10-22, so two release jobs are fine;
   no `sh -c` loops (one cargo command with many `--test` is fine); pipes need
-  `bash -c 'set -eo pipefail; …'`; integration tests need `ulimit -n 65536`; Android
+  `bash -c 'set -eo pipefail; …'`; do not `| grep` inside a job (it buffers, so the log
+  looks stuck); use `tasks logs ID --grep` afterwards. A `bash -c` job can land on the
+  laptop with `-j 6`: pin heavy test jobs with `--peer nixos`. Integration tests need
+  `ulimit -n 65536`; Android
   always `--peer nixos`. Lockfile refresh: `cargo metadata --offline --format-version 1 >/dev/null`.
 
 ## Acceptance per wave (what W3 ran)
@@ -61,18 +82,22 @@ Source-scan tests read paths: when code moves to a new crate, update them
 
 ## Open, needs the user
 
-- `crates/core/tests/search.rs:581` `paging_across_tiers_with_a_tier_change_between_pages`
-  fails 2/2 on plain dev dbcfd512 (jobs 4158, 4159): tie order for equal timestamps
-  differs between test `(at,id)` reversed and the engine. Real bug, before release.
-- `sync::engine::group_history::tests::actual_authenticated_two_node_archive_sync_crosses_page_and_batch_boundaries`
-  times out ~1/3 at 90 s (also on dev). Proposal: 300 s at its `tests.rs:168`. Waiting for OK.
+- Both earlier items were approved and fixed on branch `fix/test-flakes` (worktree
+  `.claude/worktrees/test-flakes`, from dev), which the user merges:
+  - `search.rs` paging test: the engine breaks equal-timestamp ties by a keyed hash of the
+    id, and the test assumed id order. Not an engine bug. The test now sleeps 3 ms between
+    old sends, so every `at` is distinct.
+  - The group_history archive sync timeout went from 90 s to 300 s (passed in job 4203).
+- W6 decision: what to do with the uncommitted `sync-connection-audit` group work.
 
 ## Later
 
 - W8: ~15 unused-import warnings from moved code; hooks impl uses `Inner::method(&self)`
   to avoid trait shadowing — collapse when `impl Inner` remnants go.
 - Duplicate `MAX_HISTORY`; clippy in moved code; TAU error `cues.rs:89`.
-- Worktrees to clean (show the user first): rt-w1, rt-w2, rt-w3, rt-base, split-wave*, ~40 old ones.
+- Worktrees: 17 merged ones were removed on 2026-10-22 (split-wave*, crate-split, gcall-*, etc.). The user
+  removes `agent-aa449…`/`agent-ab21b…` (they need `--force`). About 40 with unmerged or uncommitted work wait for the user. rt-w1..w5 and rt-base
+  go after the split lands.
 - Release after the split: user pushes → CI → Pixel 3a phone test (incl. MediaCodec moved in
   W1) → version bump (only the 12 workspace crates in Cargo.lock) → tag. iOS in or out: undecided.
 - Rename p2pcore → tinline (post-release).
