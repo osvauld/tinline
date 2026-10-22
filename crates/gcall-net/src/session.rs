@@ -61,7 +61,7 @@ pub(super) struct Session {
     pub(super) id: Identity,
     pub(super) cfg: Arc<GcallConfig>,
     /// Calls run on the group endpoint (U2/U7), looked up at each dial: it may rotate (`docs/rotation.md`).
-    pub(super) inner: std::sync::Weak<Inner>,
+    pub(super) inner: std::sync::Weak<dyn GcallHost>,
     pub(super) handle: tokio::runtime::Handle,
     /// Session clock: Unix ms at creation plus monotonic elapsed time.
     pub(super) t0: Instant,
@@ -75,7 +75,7 @@ pub(super) fn is_ended(c: &ClientEngine) -> bool {
 }
 
 impl Session {
-    pub(super) fn new(call_id: &str, id: Identity, cfg: Arc<GcallConfig>, inner: std::sync::Weak<Inner>, handle: tokio::runtime::Handle, known: Known) -> Arc<Self> {
+    pub(super) fn new(call_id: &str, id: Identity, cfg: Arc<GcallConfig>, inner: std::sync::Weak<dyn GcallHost>, handle: tokio::runtime::Handle, known: Known) -> Arc<Self> {
         let cond = cfg.cond;
         Arc::new(Session {
             call_id: call_id.into(),
@@ -84,7 +84,7 @@ impl Session {
             inner,
             handle,
             t0: Instant::now(),
-            t0_unix: crate::node::now_ms(),
+            t0_unix: now_ms(),
             known,
             st: Mutex::new(St {
                 host: None,
@@ -479,4 +479,10 @@ impl Session {
             q.push_back(Work::C(acts));
         }
     }
+}
+
+/// The wall clock in unix ms (0 if it reads before 1970).
+fn now_ms() -> u64 {
+    use std::time::{SystemTime, UNIX_EPOCH};
+    SystemTime::now().duration_since(UNIX_EPOCH).map_or(0, |d| d.as_millis() as u64)
 }

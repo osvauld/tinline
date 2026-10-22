@@ -36,7 +36,7 @@ impl Node {
             selfsync: Default::default(),
             sync_tx: tokio::sync::watch::channel(0).0,
             link: Default::default(),
-            gcall: Default::default(),
+            gcall: crate::gcall::net::GcallNet::new(rt.handle().clone()),
             block: Default::default(),
             requests: Default::default(),
             group: Default::default(),
@@ -50,6 +50,8 @@ impl Node {
             search: Mutex::new(None),
             search_skip: AtomicU32::new(0),
         });
+        let host: std::sync::Weak<Inner> = Arc::downgrade(&inner);
+        inner.gcall.install_host(host);
         Ok(Arc::new(Self { inner, rt: Some(rt) }))
     }
 

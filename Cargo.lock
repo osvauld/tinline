@@ -2476,6 +2476,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "gcall-net"
+version = "0.1.38"
+dependencies = [
+ "audio",
+ "bytes",
+ "gcall-core",
+ "identity",
+ "iroh",
+ "parking_lot",
+ "proto",
+ "thiserror 2.0.21",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "genawaiter"
 version = "0.99.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5775,6 +5791,7 @@ dependencies = [
  "crdt",
  "cryptography",
  "gcall-core",
+ "gcall-net",
  "group-core",
  "hex",
  "identity",
