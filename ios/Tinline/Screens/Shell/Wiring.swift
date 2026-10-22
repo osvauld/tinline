@@ -20,6 +20,9 @@ enum ShellWiring {
     /// its chat list feeds `app.chats` (the Chats tab, and block reads for kept chats). Groups attach themselves on first use
     /// (`GroupsHub.controller(for:)`).
     static func attachAreas(app: AppEnv, node: Node) {
+        // One Node serves every account: re-read the groups on each unlock / switch (refresh is blocking, off the main thread).
+        let groups = GroupsHub.controller(for: node)
+        Task.detached(priority: .userInitiated) { groups.refresh() }
         let key = ObjectIdentifier(node)
         guard chatNode != key, let src = ChatBackend.current(node: node) else { return }
         chatNode = key
@@ -28,7 +31,6 @@ enum ShellWiring {
             app?.core?.people.refreshBlocks()
         }
         src.refresh()
-        _ = GroupsHub.controller(for: node)
     }
 
     static func refreshChats(app: AppEnv) { ChatBackend.current(node: app.node)?.refresh() }
@@ -73,22 +75,26 @@ enum ShellWiring {
 
     // ---------------------------------------------------------------- other areas' roots
 
-    @ViewBuilder static func conversation(app: AppEnv, people: PeopleModel, chatId: String, searchHit: MessageHit?, nav: ShellNav,
+    @ViewBuilder static func conversation(app: AppEnv, people: PeopleModel, calls: CallsEnv, chatId: String, searchHit: MessageHit?, nav: ShellNav,
                                           call: @escaping (String, Bool) -> Void) -> some View {
         let c = people.contacts.first { $0.did == chatId }
         let me = app.accountDid
         let isSelf = chatId == me
         let name = isSelf ? "You" : c.map(ShellText.display) ?? app.chats.first { $0.peerDid == chatId }.map { ShellText.ifBlank($0.peerName, "Unknown") } ?? "Unknown"
         let node = app.node
+        let ctl = calls.controller
+        let callLive = ctl.ui.map { $0.info.peerDid == chatId && !$0.isEnded } ?? false
         ConversationView(
             chatId: chatId, name: name, online: app.status?.online == true, isSelf: isSelf,
             block: isSelf ? nil : ConvBlock(view: people.blocks.of(chatId), composer: people.blocks.composer(chatId, contact: c != nil),
                                             callGate: people.blocks.callGate(chatId, contact: c != nil)),
             notDelivered: { id in node?.notDeliveredReason(peerDid: chatId, messageId: id) },
             calls: app.history.filter { $0.peerDid == chatId }, addedAtSecs: c.map { Int64($0.addedAt) }, searchHit: searchHit,
+            callLive: callLive,
             onBack: { nav.pop() }, onCall: { call(chatId, false) }, onVideo: { call(chatId, true) },
+            onReturnToCall: { ctl.openCallScreen() },
             onInfo: c != nil ? ({ nav.push(.contact(chatId)) } as () -> Void) : nil,
-            onUnblock: { people.unblock(chatId) }, onAddContact: { nav.push(.add(scan: true)) })
+            onUnblock: { people.unblock(chatId) }, onAddContact: { nav.openAdd(ShellAddArgs(scan: true)) })
     }
 
     @ViewBuilder static func contactDetail(app: AppEnv, did: String, nav: ShellNav, call: @escaping (String, Bool) -> Void) -> some View {
@@ -153,4 +159,56 @@ enum ShellWiring {
 
     /// "Busy until 18:30" (People/ProfileModel.swift).
     static func busyUntilLabel(_ ms: Int64) -> String { PeopleProfileInfo.untilLabel(atMs: ms) }
+}
+
+/// The Calls area's `GroupCallUi` as the Groups area's `GroupCallLauncher` (android GroupsLive.kt reads `app.groupCallUi`).
+/// The Groups screens read `snapshot` while rendering and call in from any thread (`refreshLive` runs on a worker), so the
+/// snapshot sits behind a lock and every action hops to the main actor.
+final class ShellGroupCallLauncher: GroupCallLauncher, @unchecked Sendable {
+    private let ui: GroupCallUi
+    private let lock = NSLock()
+    private var current = GroupCallSnapshot()
+    private let subject = PassthroughSubject<GroupCallSnapshot, Never>()
+    private var bag: AnyCancellable?
+
+    @MainActor init(ui: GroupCallUi, groupLog: AnyPublisher<[GroupCallRecord], Never>) {
+        self.ui = ui
+        current = Self.snapshot(ui.state, [], nowMs: callNowMs())
+        // The ticker keeps "You're in the call" 02:14 moving; unchanged snapshots are dropped.
+        let tick = Timer.publish(every: 1, on: .main, in: .common).autoconnect().map { _ in () }.prepend(())
+        bag = ui.$state.combineLatest(groupLog, tick)
+            .map { s, log, _ in Self.snapshot(s, log, nowMs: callNowMs()) }
+            .removeDuplicates()
+            .sink { [weak self] s in self?.publish(s) }
+    }
+
+    var snapshot: GroupCallSnapshot { lock.lock(); defer { lock.unlock() }; return current }
+    var snapshots: AnyPublisher<GroupCallSnapshot, Never> { subject.eraseToAnyPublisher() }
+
+    func refreshLive(groupId: String) {
+        let ui = ui
+        Task { @MainActor in await ui.refreshLive(groupId) }
+    }
+
+    func startOrJoin(groupId: String, onError: @escaping (String) -> Void) {
+        let ui = ui
+        Task { @MainActor in ui.call(groupId, onError: onError) }
+    }
+
+    func restore() {
+        let ui = ui
+        Task { @MainActor in ui.restore() }
+    }
+
+    private func publish(_ s: GroupCallSnapshot) {
+        lock.lock(); current = s; lock.unlock()
+        subject.send(s)
+    }
+
+    static func snapshot(_ s: GcState, _ log: [GroupCallRecord], nowMs: Int64) -> GroupCallSnapshot {
+        var live: [String: GroupLiveCall] = [:]
+        for (gid, c) in s.live { live[gid] = GroupLiveCall(groupId: gid, joined: c.joined, starterDid: c.starterDid) }
+        let line = s.phase == .active ? clockOf(max(0, (nowMs - (s.sinceMs ?? nowMs)) / 1000)) : s.status
+        return GroupCallSnapshot(live: live, activeGroupId: s.active ? s.gid : nil, activeLine: s.active ? line : "", history: log)
+    }
 }

@@ -68,12 +68,22 @@ struct ShellHomeScreen: View {
         }
     }
 
+    private var groupCallPhase: MarkGroupCallPhase {
+        switch calls.groupUi.state.phase {
+        case .starting: return .starting
+        case .connecting: return .connecting
+        case .active: return .active
+        case .reconnecting: return .reconnecting
+        case .idle, .ended, .failed: return .none
+        }
+    }
+
     var body: some View {
         let rows = self.rows
         let waitingIn = people.requestsIn.filter { !hiddenRequests.contains($0.did) }
         let tab = nav.tab
         let dock = tab == .chats || tab == .groups
-        let look = statusLook(call: callPhase, conn: online ? .online : grace ? .connecting : .offline)
+        let look = statusLook(call: callPhase, gcall: groupCallPhase, conn: online ? .online : grace ? .connecting : .offline)
         VStack(spacing: 0) {
             ShellHomeAppBar(look: look, showSearch: !dock, ring: ring, onSearch: { nav.push(.search) }, onSettings: { nav.push(.settings) })
             ShellTabPanel(tab: tab) { t in

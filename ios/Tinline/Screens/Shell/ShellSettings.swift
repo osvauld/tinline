@@ -353,17 +353,10 @@ struct ShellStoragePage: View {
     }
 }
 
-/// The opened-media cache (android ChatMedia.size / clear). GUESS: the Chat area keeps it under Caches/chat-media.
-/// TODO(ios-device): align with the Chat area's ChatMedia directory.
+/// The opened-media cache (android ChatMedia.size / clear): the Chat area's decrypted copies (Chat/ChatMedia.swift).
 enum ShellMediaCache {
-    static var dir: URL { FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0].appendingPathComponent("chat-media", isDirectory: true) }
-    static func size() -> Int64 {
-        guard let e = FileManager.default.enumerator(at: dir, includingPropertiesForKeys: [.fileSizeKey]) else { return 0 }
-        var n: Int64 = 0
-        for case let u as URL in e { n += Int64((try? u.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0) }
-        return n
-    }
-    static func clear() { try? FileManager.default.removeItem(at: dir) }
+    static func size() -> Int64 { ChatMedia.size() }
+    static func clear() { ChatMedia.clear() }
 }
 
 // ------------------------------------------------------------------ Privacy (Privacy.svelte, CallsAllowed.svelte)

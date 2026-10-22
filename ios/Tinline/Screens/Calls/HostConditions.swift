@@ -45,6 +45,8 @@ final class DeviceHostReadings: HostReadingSource {
     }
 
     func start(onChange: @escaping (HostReading) -> Void) {
+        // CallsEnv.attach runs on every unlock and account switch: never stack a second set of observers and monitors.
+        stop()
         self.onChange = onChange
         UIDevice.current.isBatteryMonitoringEnabled = true
         let nc = NotificationCenter.default

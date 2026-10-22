@@ -82,6 +82,8 @@ final class ShellCore {
     let calls: CallsEnv
     /// The names and settings the call screens read from the other areas.
     let callDirectory: ShellCallDirectory
+    /// The group call entry points the Groups screens read (`\.groupCallLauncher`), over the Calls area's `GroupCallUi`.
+    let groupLauncher: ShellGroupCallLauncher
     private let lifecycle = ShellSerial("p2p-lifecycle")
     private var events: ShellNodeEvents?
     private var requestEvents: ShellRequestEvents?
@@ -101,8 +103,13 @@ final class ShellCore {
         people = pm
         let dir = ShellCallDirectory(app: app, people: pm, prefs: prefs)
         callDirectory = dir
-        calls = CallsEnv(directory: dir)
+        let env = CallsEnv(directory: dir)
+        calls = env
+        groupLauncher = ShellGroupCallLauncher(ui: env.groupUi, groupLog: app.$groupLog.eraseToAnyPublisher())
         links.core = self
+        // A call holds the microphone: no voice messages meanwhile (Chat area).
+        ChatHooks.callActive = { [weak env] in env.map { $0.controller.ui != nil || $0.groupUi.state.active } ?? false }
+        env.groupUi.appInFront = { [weak self] in self?.resumed ?? true }
         people.chatPeerDids = { [weak app] in app?.chats.map(\.peerDid) ?? [] }
         people.appVisible = { [weak self] in self?.resumed ?? false }
         people.playCue = { ShellWiring.cue($0) }

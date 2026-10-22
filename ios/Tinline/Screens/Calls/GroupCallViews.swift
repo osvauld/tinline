@@ -202,7 +202,7 @@ private struct GcAboutCard: View {
  * OngoingCall.svelte: "Call in progress" under a group's header while its call runs and I'm not in it (Join), or
  * "You're in the call" with the timer (Open). The core doesn't say how many joined, so the line names who started it.
  */
-struct OngoingCallBanner: View {
+struct GroupCallOngoingBanner: View {
     @ObservedObject var ui: GroupCallUi
     let gid: String
     let onError: (String) -> Void

@@ -7,17 +7,21 @@ import SwiftUI
 
 /**
  * The live mark in the call's top row. The Components area owns `TinMark`; the call look (state, sway, label) is
- * computed here ([callMarkLook]) and passed on once its parameters exist.
- * TODO(ios-components): pass `look.state`, the sway and `live: true` when TinMark takes them (Mark.kt `TinMark(size,
- * state, live, sway, description)`).
+ * computed here ([callMarkLook]) and passed on (Mark.kt `TinMark(size, state, live, sway, description)`).
  */
 struct CallLiveMark: View {
     let look: CallMarkLook
+    private var state: MarkState {
+        switch look.state {
+        case .slack: return .slack
+        case .ringing: return .ringing
+        case .taut: return .taut
+        }
+    }
     var body: some View {
-        TinMark(size: 28)
+        TinMark(size: 28, state: state, live: true, sway: look.swayPeriod.map { Sway(period: $0, amp: look.swayAmp ?? 0) },
+                description: look.label)
             .frame(width: 28, height: 28)
-            .accessibilityElement()
-            .accessibilityLabel(look.label)
     }
 }
 

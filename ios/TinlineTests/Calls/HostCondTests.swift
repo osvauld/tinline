@@ -33,15 +33,15 @@ final class HostCondTests: XCTestCase {
     }
 
     func testThermalStatus() {
-        XCTAssertEqual(.none, HostCond.thermal(-1))
-        XCTAssertEqual(.none, HostCond.thermal(0))
+        XCTAssertEqual(GroupCallThermal.none, HostCond.thermal(-1))
+        XCTAssertEqual(GroupCallThermal.none, HostCond.thermal(0))
         XCTAssertEqual(.light, HostCond.thermal(1))
         XCTAssertEqual(.moderate, HostCond.thermal(2))
         XCTAssertEqual(.severe, HostCond.thermal(3))
         XCTAssertEqual(.critical, HostCond.thermal(4))
         XCTAssertEqual(.critical, HostCond.thermal(5)) // emergency
         XCTAssertEqual(.critical, HostCond.thermal(6)) // shutdown
-        XCTAssertEqual(.none, HostCond.thermal(ProcessInfo.ThermalState.nominal))
+        XCTAssertEqual(GroupCallThermal.none, HostCond.thermal(ProcessInfo.ThermalState.nominal))
         XCTAssertEqual(.severe, HostCond.thermal(ProcessInfo.ThermalState.serious))
         // The video budget code and the hosting step agree.
         for s in [ProcessInfo.ThermalState.nominal, .fair, .serious, .critical] {

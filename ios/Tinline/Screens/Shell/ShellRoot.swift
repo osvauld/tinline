@@ -270,7 +270,18 @@ private struct ShellMainStack: View {
                 }
                 // A group screen that opens a 1:1 chat (a member's row) comes back here.
                 .environment(\.groupsOpenChat, { did in nav.push(.chat(did, nil)) })
+                // Group calls from the group screens go to the Calls area's group call UI.
+                .environment(\.groupCallLauncher, core.groupLauncher)
             }
+            // MiniVideo: their picture floats over the app while a video call is minimised.
+            CallMiniVideo(calls: calls, onOpenCall: { callShown = true })
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
+                .padding(.trailing, 12).padding(.bottom, 92)
+            // "Sam started a call in Weekend hike": over the app (GroupsOpenChat.current is the group on screen).
+            GroupCallAnnounce(ui: calls.groupUi, inOneToOne: calls.controller.ui != nil, openGid: GroupsOpenChat.current,
+                              onOpen: { gid in nav.push(group: ShellWiring.groupRoute(gid)) })
+            // The full group call screen while a group call is on and not minimised.
+            GroupCallLayer(ui: calls.groupUi, audio: calls.groupAudio)
         }
         .fullScreenCover(isPresented: $callShown) {
             ShellWiring.callScreen(calls: calls, onClose: { callShown = false },
@@ -278,6 +289,14 @@ private struct ShellMainStack: View {
         }
         .onAppear { calls.controller.openCallScreen = { callShown = true } }
         .onChange(of: callShown) { _, on in calls.controller.callScreenShown = on }
+        // A group call or join that needs the microphone: the system dialog, then the call (or the explainer screen).
+        .onChange(of: calls.groupUi.needMic) { _, gid in
+            guard let gid else { return }
+            calls.groupUi.micAsked()
+            Task {
+                if await ShellWiring.permissions.request(.mic) { calls.groupUi.call(gid, onError: toast.say) } else { nav.push(.micNeeded) }
+            }
+        }
         // A call that starts while the app is open gets its screen, except a ringing one the home header is showing (RingHead).
         .onChange(of: calls.controller.ui?.info.callId) { old, new in
             guard old == nil, new != nil, let u = calls.controller.ui else { return }
@@ -301,7 +320,7 @@ private struct ShellMainStack: View {
             ShellSearchScreen(onBack: nav.pop, onChat: { did, hit in nav.push(.chat(did, hit)) },
                               onGroup: { gid in nav.push(group: ShellWiring.groupRoute(gid)) }, onContact: { nav.push(.contact($0)) })
         case .chat(let did, let hit):
-            ShellWiring.conversation(app: app, people: people, chatId: did, searchHit: hit, nav: nav, call: { call($0, video: $1) })
+            ShellWiring.conversation(app: app, people: people, calls: calls, chatId: did, searchHit: hit, nav: nav, call: { call($0, video: $1) })
         case .newChat:
             ShellNewChatScreen(onBack: nav.pop, onPick: { did in nav.pop(); nav.push(.chat(did, nil)) },
                                onAdd: { nav.pop(); nav.openAdd(ShellAddArgs(scan: true)) })
