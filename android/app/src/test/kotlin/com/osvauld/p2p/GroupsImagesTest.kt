@@ -28,7 +28,7 @@ class GroupsImagesTest {
 
     private fun post(id: String, text: String, image: GroupImage?, outgoing: Boolean = false) =
         GroupMessage(id, "g", GroupItemKind.POST, if (outgoing) me else "did:key:sam", if (outgoing) "Me" else "Sam Lee",
-            if (outgoing) me else "did:key:sam", "Sam Lee", 1uL, text, null, outgoing, CoreDelivery.DELIVERED, false, image)
+            if (outgoing) me else "did:key:sam", "Sam Lee", 1uL, text, null, outgoing, CoreDelivery.DELIVERED, null, false, image)
 
     @Test fun aPictureReadsAsPhotoInOneLine() {
         assertEquals("Photo", GroupText.postLine(post("a", "", image(GroupImageState.READY))))
@@ -53,7 +53,7 @@ class GroupsImagesTest {
         override fun receipts(id: String, fromMs: ULong, toMs: ULong) = emptyList<uniffi.p2pcore.GroupReceiptStatus>()
         override fun postImage(id: String, bytes: ByteArray, caption: String): GroupMessage {
             posted = bytes.size to caption
-            return GroupMessage("p1", id, GroupItemKind.POST, "did:key:me", "Me", "did:key:me", "Me", 2uL, caption, null, true, CoreDelivery.WAITING, false,
+            return GroupMessage("p1", id, GroupItemKind.POST, "did:key:me", "Me", "did:key:me", "Me", 2uL, caption, null, true, CoreDelivery.WAITING, null, false,
                 GroupImage(1080u, 720u, 200_000uL, "image/jpeg", ByteArray(0), GroupImageState.READY))
         }
         override fun fetchImage(id: String, messageId: String) { fetched += messageId }
