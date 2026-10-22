@@ -16,6 +16,7 @@ fn seed(f: &Fixture, ordinal: i64) -> String {
         body: Body::Post {
             text: format!("archived day {ordinal}"),
             reply_to: None,
+            image: None,
         },
     };
     let (_, update) = doc.write(&f.author, &record).unwrap();

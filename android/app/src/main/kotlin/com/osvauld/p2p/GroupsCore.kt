@@ -19,6 +19,7 @@ import uniffi.p2pcore.GroupPage
 import uniffi.p2pcore.GroupReceiptStatus
 import uniffi.p2pcore.GroupSummary
 import uniffi.p2pcore.Node
+import uniffi.p2pcore.OnlineMember
 import uniffi.p2pcore.GroupDelivery as CoreDelivery
 import uniffi.p2pcore.GroupMember as CoreMember
 import uniffi.p2pcore.GroupRole as CoreRole
@@ -75,6 +76,20 @@ interface GroupApi {
     fun appointCallHost(id: String, did: String, deviceId: String): Unit = throw UnsupportedOperationException()
     fun revokeCallHost(id: String, did: String, deviceId: String): Unit = throw UnsupportedOperationException()
     fun acceptCallHost(id: String, accept: Boolean): Unit = throw UnsupportedOperationException()
+    // Public groups (docs/design/public-group.md §2–§3). Defaults keep JVM stand-ins compiling.
+    /** Network (registers the code at the hosts): IO threads only. Opens the group if it is closed. */
+    fun openLink(id: String): String = throw UnsupportedOperationException()
+    fun setOpen(id: String, open: Boolean): Unit = throw UnsupportedOperationException()
+    fun setAdminsOnly(id: String, adminsOnly: Boolean): Unit = throw UnsupportedOperationException()
+    /** In memory in the core: empty for a private group. */
+    fun online(id: String): List<OnlineMember> = emptyList()
+    fun presenceVisible(): Boolean = true
+    // Image posts (public group §5). Defaults keep JVM stand-ins compiling.
+    /** Blocking (the core scales and re-encodes the picture): IO threads only. */
+    fun postImage(id: String, bytes: ByteArray, caption: String): GroupMessage = throw UnsupportedOperationException()
+    fun fetchImage(id: String, messageId: String) {}
+    /** Blocking the first time (the core opens the picture into a file): IO threads only. */
+    fun imagePath(id: String, messageId: String): String? = null
 }
 
 class NodeGroupApi(private val node: () -> Node) : GroupApi {
@@ -109,6 +124,14 @@ class NodeGroupApi(private val node: () -> Node) : GroupApi {
     override fun appointCallHost(id: String, did: String, deviceId: String) = node().groupAppointCallHost(id, did, deviceId)
     override fun revokeCallHost(id: String, did: String, deviceId: String) = node().groupRevokeCallHost(id, did, deviceId)
     override fun acceptCallHost(id: String, accept: Boolean) = node().groupAcceptCallHost(id, accept)
+    override fun openLink(id: String) = node().groupOpenLink(id)
+    override fun setOpen(id: String, open: Boolean) = node().groupSetOpen(id, open)
+    override fun setAdminsOnly(id: String, adminsOnly: Boolean) = node().groupSetAdminsOnly(id, adminsOnly)
+    override fun online(id: String) = node().groupOnline(id)
+    override fun presenceVisible() = node().groupPresenceVisible()
+    override fun postImage(id: String, bytes: ByteArray, caption: String) = node().groupPostImageBytes(id, bytes, caption)
+    override fun fetchImage(id: String, messageId: String) = node().groupFetchImage(id, messageId)
+    override fun imagePath(id: String, messageId: String) = node().groupImagePath(id, messageId)
 }
 
 /** A contact as the "Add members" picker sees it. */
@@ -120,7 +143,9 @@ data class PickRow(val did: String, val name: String, val why: String?, val invi
 /** The group on screen: its detail and the loaded window of messages (oldest first). */
 data class OpenGroup(val id: String, val detail: GroupDetail, val messages: List<GroupMessage>, val older: String?,
                      /** Signed member receipts of my loaded posts, by message id. */
-                     val receipts: Map<String, GroupReceiptStatus> = emptyMap())
+                     val receipts: Map<String, GroupReceiptStatus> = emptyMap(),
+                     /** Who is online in an open (public) group; empty for a private one (public group §3). */
+                     val online: List<OnlineMember> = emptyList())
 
 /** What a member's sheet offers us, in order. */
 sealed interface MemberAction {
@@ -136,6 +161,8 @@ sealed interface MemberAction {
 object GroupText {
     const val FLAGS_TO_REMOVE = 3
     const val PAGE = 100
+    /** A host's presence frame lists at most this many DIDs (public group §3): at or above it the count may be cut short. */
+    const val ONLINE_CAP = 500
 
     fun active(r: CoreRole) = r == CoreRole.OWNER || r == CoreRole.ADMIN || r == CoreRole.MEMBER
     fun isAdmin(r: CoreRole) = r == CoreRole.OWNER || r == CoreRole.ADMIN
@@ -169,11 +196,21 @@ object GroupText {
             null -> ""
             else -> when {
                 m.kind != GroupItemKind.POST -> sysText(m, me)
-                m.outgoing -> "You: ${m.text}"
-                else -> "${firstName(someone(m.authorName))}: ${m.text}"
+                m.outgoing -> "You: ${postLine(m)}"
+                else -> "${firstName(someone(m.authorName))}: ${postLine(m)}"
             }
         }
     }
+
+    /** A post in one line: its text, "Photo" for a picture alone, "Photo · caption" with one. Same words as desktop. */
+    fun postLine(m: GroupMessage): String = when {
+        m.image == null -> m.text
+        m.text.isEmpty() -> "Photo"
+        else -> "Photo · ${m.text}"
+    }
+
+    /** Largest picture file the composer reads in (the core refuses anything larger). */
+    const val MAX_PICTURE_BYTES = 64 * 1024 * 1024
 
     /** The header's sub-line. */
     fun status(d: GroupDetail): String {
@@ -193,6 +230,24 @@ object GroupText {
     }
 
     fun waitingForHost(d: GroupDetail) = active(d.myRole) && !d.amHost && d.hosts.none { it.online }
+
+    // ---- public groups (docs/design/public-group.md §8; same words as desktop)
+
+    /** "12 online"; at the presence cap the count may be cut short: "500+ online". */
+    fun onlineLabel(n: Int) = if (n >= ONLINE_CAP) "$ONLINE_CAP+ online" else "$n online"
+
+    /** An open group we are still in shows "N online" in its top bar. */
+    fun showsOnline(d: GroupDetail) = d.open && active(d.myRole)
+
+    /** The online list's order: admins first, then by name (case-insensitive), then DID. */
+    fun onlineRows(list: List<OnlineMember>): List<OnlineMember> =
+        list.sortedWith(compareBy<OnlineMember>({ !it.isAdmin }, { it.name.lowercase() }, { it.did }))
+
+    /** An admins-only group (a channel) and we are a member who may not post: no composer, a calm line. */
+    fun adminsOnlyLocked(d: GroupDetail) = d.adminsOnly && d.myRole == CoreRole.MEMBER
+
+    const val ADMINS_ONLY = "Only admins post here"
+    const val OPEN_LINK_COPIED = "Copied. Anyone holding the link can join while it’s open."
 
     /** The small line under one of our posts, or null when delivered. */
     fun deliveryWord(m: GroupMessage): String? =
@@ -282,6 +337,7 @@ object GroupText {
                     "you block them" -> "You block them. Unblock them first to ask for a chat."
                     "blocked" -> "They blocked you, so you can’t ask them for a chat."
                     "unknown or expired invite code" -> "That invite isn’t valid any more. Ask for a new one."
+                    "admins only" -> "$ADMINS_ONLY."
                     "" -> "Refused."
                     else -> r.replaceFirstChar { it.uppercase() }.trimEnd('.') + "."
                 }
@@ -371,7 +427,9 @@ class GroupsController(private val api: GroupApi, private val me: () -> String?)
         _open.value = try {
             val d = api.detail(id)
             val p = api.messages(id, null, want)
-            OpenGroup(id, d, p.messages, p.older, receiptsOf(id, p.messages))
+            // Closing drops the link in the core; a link we kept for this group goes with it.
+            if (!d.open) _openLink.update { if (it?.first == id) null else it }
+            OpenGroup(id, d, p.messages, p.older, receiptsOf(id, p.messages), onlineOf(id, d))
         } catch (e: Exception) { null }
         // A close() that ran meanwhile wins (it clears [shown] before it clears [_open]).
         if (shown != id) _open.update { if (it?.id == id) null else it }
@@ -383,6 +441,10 @@ class GroupsController(private val api: GroupApi, private val me: () -> String?)
         if (mine.isEmpty()) return emptyMap()
         return try { api.receipts(id, mine.minOf { it.at }, mine.maxOf { it.at }).associateBy { it.messageId } } catch (e: Exception) { emptyMap() }
     }
+
+    /** Who is online in an open group we are in (a cheap in-memory read; none for a private group). */
+    private fun onlineOf(id: String, d: GroupDetail): List<OnlineMember> =
+        if (GroupText.showsOnline(d)) try { api.online(id) } catch (_: Exception) { emptyList() } else emptyList()
 
     private fun reloadOpen() { _open.value?.let { load(it.id, maxOf(it.messages.size, GroupText.PAGE)) } }
 
@@ -401,11 +463,28 @@ class GroupsController(private val api: GroupApi, private val me: () -> String?)
     fun post(id: String, text: String, replyTo: String?): Result<GroupMessage> {
         val t = text.trim()
         if (t.isEmpty()) return Result.failure(IllegalArgumentException("Type a message first."))
+        if (_open.value?.takeIf { it.id == id }?.detail?.let(GroupText::adminsOnlyLocked) == true) return Result.failure(GroupFailure("${GroupText.ADMINS_ONLY}."))
         return runCatching { api.post(id, t, replyTo) }.onSuccess { m -> synchronized(this) {
             _open.update { o -> if (o?.id == id) o.copy(messages = upsertGroupMessage(o.messages, m)) else o }
             _list.value = try { api.groups() } catch (e: Exception) { _list.value }
         } }.mapError()
     }
+
+    /** Posts a picture (bytes of a PNG, JPEG or WebP) with [caption]; the core scales and re-encodes it. IO threads only. */
+    fun postImage(id: String, bytes: ByteArray, caption: String): Result<GroupMessage> {
+        if (_open.value?.takeIf { it.id == id }?.detail?.let(GroupText::adminsOnlyLocked) == true) return Result.failure(GroupFailure("${GroupText.ADMINS_ONLY}."))
+        if (bytes.isEmpty() || bytes.size > GroupText.MAX_PICTURE_BYTES) return Result.failure(GroupFailure("That picture is too large to post."))
+        return runCatching { api.postImage(id, bytes, caption.trim()) }.onSuccess { m -> synchronized(this) {
+            _open.update { o -> if (o?.id == id) o.copy(messages = upsertGroupMessage(o.messages, m)) else o }
+            _list.value = try { api.groups() } catch (e: Exception) { _list.value }
+        } }.mapError()
+    }
+
+    /** Loads a post's picture now (tap to load, or try again). IO threads only. */
+    fun fetchImage(id: String, messageId: String): Result<Unit> = runCatching { api.fetchImage(id, messageId) }.mapError()
+
+    /** The post's picture as a file once it is here (null before). IO threads only. */
+    fun imagePath(id: String, messageId: String): String? = try { api.imagePath(id, messageId) } catch (_: Exception) { null }
 
     fun create(name: String): Result<String> {
         if (name.isBlank()) return Result.failure(IllegalArgumentException("Give the group a name."))
@@ -472,6 +551,24 @@ class GroupsController(private val api: GroupApi, private val me: () -> String?)
         api.acceptCallHost(id, true)
     }
 
+    // ---- public groups (docs/design/public-group.md §2–§3, §8)
+
+    private val _openLink = MutableStateFlow<Pair<String, String>?>(null)
+    /** The open link as the core last gave it: (group, link). Dropped when the group closes. */
+    val openLink: StateFlow<Pair<String, String>?> = _openLink
+
+    /** The open link of [id], opening the group if it is closed (network: IO threads only). */
+    fun openLink(id: String): Result<String> = runCatching { api.openLink(id) }
+        .onSuccess { _openLink.value = id to it }.also { refresh() }.mapError()
+
+    fun closeLink(id: String) = act("The open link is closed. Everyone already in stays; new people join with an invite.") { api.setOpen(id, false) }
+        .also { r -> if (r.isSuccess) _openLink.update { if (it?.first == id) null else it } }
+
+    fun setAdminsOnly(id: String, on: Boolean) = act(if (on) "Only admins post now. Everyone can still read." else "Everyone can post again.") { api.setAdminsOnly(id, on) }
+
+    /** This account shows in the online lists of public groups (a setting of this install; default on). */
+    fun presenceVisible(): Boolean = try { api.presenceVisible() } catch (_: Exception) { true }
+
     private fun reloadRequests() {
         _incoming.value = try { api.requestsIncoming() } catch (_: Exception) { emptyList() }
         _outgoing.value = try { api.requestsOutgoing() } catch (_: Exception) { emptyList() }
@@ -523,6 +620,22 @@ class GroupsController(private val api: GroupApi, private val me: () -> String?)
             _list.value = try { api.groups() } catch (e: Exception) { _list.value }
             if (_open.value?.id == groupId) { reloadOpen(); reloadInvitations() }
         }
+    }
+
+    /**
+     * An open group's online list changed (public group §3): re-read it for the group on screen. An in-memory core read, and
+     * without the monitor (it can be held across markRead for most of a second; these come every 15 s or so).
+     */
+    /** A post's picture arrived or changed state (public group §5): the group on screen re-reads its window. */
+    override fun onGroupImage(groupId: String, messageId: String) {
+        if (shown != groupId) return
+        synchronized(this) { if (_open.value?.id == groupId) reloadOpen() }
+    }
+
+    override fun onGroupPresence(groupId: String) {
+        val o = _open.value?.takeIf { it.id == groupId } ?: return
+        val now = onlineOf(groupId, o.detail)
+        _open.update { cur -> if (cur?.id == groupId) cur.copy(online = now) else cur }
     }
 
     fun attach(node: Node) {

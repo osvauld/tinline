@@ -1,4 +1,4 @@
-//! The group runtime: the group endpoint (U2, `tinline/group/4`), host and member sessions,
+//! The group runtime: the group endpoint (U2, `tinline/group/5`), host and member sessions,
 //! live relay, catch-up, day-doc sync and removal enforcement. Everything hangs off
 //! `Inner::group` (`GroupRt`).
 //!
@@ -39,14 +39,17 @@ use crate::node::{Inner, addr_for, now_ms, relay_of};
 use crate::wire::DIAL_TIMEOUT;
 
 mod accepting;
+pub(crate) mod admit;
 mod changes;
 mod dialing;
 mod documents;
 #[cfg(test)]
 mod durability;
 mod history;
+pub(crate) mod images;
 mod lifecycle;
 pub(crate) mod member_receipts;
+pub(crate) mod presence;
 mod replication;
 mod rotation;
 mod sessions;
@@ -101,6 +104,9 @@ pub(crate) struct GroupRt {
     /// Test knob: the removed-upload window, ms, instead of `REMOVED_UPLOAD_WINDOW_MS`.
     #[cfg(any(test, feature = "dev-tools"))]
     pub(crate) removed_upload_window_for_test: Mutex<Option<u64>>,
+    /// Test knob: presence `(every_ms, window_ms)` instead of 15 s / 60 s (public group §3).
+    #[cfg(any(test, feature = "dev-tools"))]
+    pub(crate) presence_timing_for_test: Mutex<Option<(u64, u64)>>,
     /// Group calls over this runtime (GA-I1, `calls.rs`).
     pub(crate) calls: super::calls::GroupCalls,
     /// G3: invitation events and the DIDs with an invitation delivery task running.
@@ -203,6 +209,10 @@ pub(crate) struct GroupCore {
     pub(crate) codes: super::code::CodeRt,
     /// Member message receipts over this store (`member_receipts`), signed as `did`/`dev`.
     pub(crate) receipts: Arc<crate::receipts::store::messages::MessageReceipts>,
+    /// Who is online in open groups (public group §3): in memory only.
+    pub(crate) presence: presence::PresenceRt,
+    /// Image blobs of posts (public group §5).
+    pub(crate) images: images::ImagesRt,
 }
 
 pub(crate) struct Sess {
@@ -210,10 +220,17 @@ pub(crate) struct Sess {
     pub(crate) gid: String,
     pub(crate) did: String,
     pub(crate) dev: [u8; 32],
+    /// The peer's group endpoint (the connection's remote): what the image gate knows it by.
+    pub(crate) ep: [u8; 32],
     /// We accepted it: we host this session's member.
     pub(crate) hosting: bool,
     /// Host side: the member was joining (not yet a member) at Hello.
     joining: bool,
+    /// Host side: that join is an open one (no invite, public group §2): refused once the group
+    /// closes before the joiner is a member.
+    open_join: bool,
+    /// Host side: the member's `Hello` said "show me as online" (public group §3).
+    show: bool,
     pub(crate) tx: mpsc::UnboundedSender<Out>,
     /// What the peer holds of the meta doc.
     peer_vv: Mutex<VersionVector>,
@@ -248,19 +265,20 @@ impl Sess {
         }
     }
 
-    /// The session's policy for what the peer sends (`GroupCore::apply`'s `admit`): on the host
-    /// side, a joiner may send only its own records until it is a member.
+    /// The session's policy for what the peer sends (`GroupCore::apply`'s `admit`; the rules
+    /// are `admit::SessPolicy`).
     fn admit(&self) -> impl FnOnce(&GroupState, &[Entry], &[Entry]) -> Result<(), String> + use<> {
-        let (did, joining, hosting) = (self.did.clone(), self.joining, self.hosting);
-        move |state, _, fresh| {
-            if hosting
-                && joining
-                && !state.is_member(&did)
-                && fresh.iter().any(|e| e.rec.author != did)
-            {
-                return Err("a joiner may send only its own records".into());
-            }
-            Ok(())
+        let policy = self.policy();
+        move |state, _, fresh| policy.admit(state, fresh)
+    }
+
+    pub(crate) fn policy(&self) -> admit::SessPolicy {
+        admit::SessPolicy {
+            did: self.did.clone(),
+            dev: self.dev,
+            hosting: self.hosting,
+            joining: self.joining,
+            open_join: self.open_join,
         }
     }
 }

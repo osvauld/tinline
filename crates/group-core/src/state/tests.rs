@@ -128,7 +128,7 @@ fn genesis_join_and_posts_derive_members() {
     assert_eq!(s.members.len(), 3);
     assert!(s.is_admin(&o.did()) && !s.is_admin(&ms[0].did()));
     assert_eq!(s.members[&ms[0].did()].invited_by.as_deref(), Some(o.did().as_str()));
-    ms[0].write(Body::Post { text: "hi".into(), reply_to: None });
+    ms[0].write(Body::Post { text: "hi".into(), reply_to: None, image: None });
     sync(&mut ms[0], &mut o);
     let posts = o.shown();
     assert_eq!(posts.len(), 1);
@@ -136,7 +136,7 @@ fn genesis_join_and_posts_derive_members() {
     // A stranger's post (no join) is inert.
     let mut x = Dev::new(&o.doc.group.clone(), 99);
     sync(&mut o, &mut x);
-    x.write(Body::Post { text: "spam".into(), reply_to: None });
+    x.write(Body::Post { text: "spam".into(), reply_to: None, image: None });
     sync(&mut x, &mut o);
     assert!(!o.shown().iter().any(|i| i.text == "spam"));
     assert!(o.judged().iter().any(|(e, v)| matches!(&e.rec.body, Body::Post { text, .. } if text == "spam") && *v == Vis::Hidden));
@@ -190,7 +190,7 @@ fn signed_frontier_decides_posts_around_a_removal_in_every_order() {
     let (_g, mut o, mut ms) = group(1);
     let m = ms[0].did();
     // m writes offline (it has not seen any flag).
-    let (_, offline) = ms[0].write(Body::Post { text: "written offline".into(), reply_to: None });
+    let (_, offline) = ms[0].write(Body::Post { text: "written offline".into(), reply_to: None, image: None });
     // Owner flags m three times.
     let mut ups = Vec::new();
     for _ in 0..3 {
@@ -212,7 +212,7 @@ fn signed_frontier_decides_posts_around_a_removal_in_every_order() {
     }
     // After m saw its removal, a new post does not show (anywhere).
     sync(&mut o, &mut ms[0]);
-    ms[0].write(Body::Post { text: "after".into(), reply_to: None });
+    ms[0].write(Body::Post { text: "after".into(), reply_to: None, image: None });
     sync(&mut ms[0], &mut r1);
     assert!(!r1.shown().iter().any(|i| i.text == "after"));
     assert_eq!(r1.state(), {
@@ -334,7 +334,7 @@ fn leaving_ends_membership() {
     let (_g, mut o, mut ms) = group(1);
     let m = ms[0].did();
     ms[0].write(Body::Leave);
-    ms[0].write(Body::Post { text: "after leaving".into(), reply_to: None });
+    ms[0].write(Body::Post { text: "after leaving".into(), reply_to: None, image: None });
     sync(&mut ms[0], &mut o);
     let s = o.state();
     assert!(!s.is_member(&m) && s.left.contains(&m));
@@ -353,7 +353,7 @@ fn a_post_before_its_meta_is_pending_then_shown() {
     sync(&mut o, &mut n);
     let inv = o.invite(&g);
     n.write(Body::Join { invite: inv, name: "n".into() });
-    n.write(Body::Post { text: "hello".into(), reply_to: None });
+    n.write(Body::Post { text: "hello".into(), reply_to: None, image: None });
     // r gets the post (day doc) first, without the join (meta): pending, hidden.
     let mut r = Dev::new(&g, 60);
     sync(&mut o, &mut r);
@@ -367,7 +367,7 @@ fn a_post_before_its_meta_is_pending_then_shown() {
     // Hidden is a verdict, not a wait: a stranger's post is hidden even with all meta held.
     let mut x = Dev::new(&g, 99);
     sync(&mut o, &mut x);
-    x.write(Body::Post { text: "spam".into(), reply_to: None });
+    x.write(Body::Post { text: "spam".into(), reply_to: None, image: None });
     sync(&mut x, &mut r);
     assert!(r.judged().iter().any(|(e, v)| e.rec.author == x.did() && *v == Vis::Hidden));
     // No genesis yet at all (a joiner's first sync order): everything pending.
@@ -376,3 +376,168 @@ fn a_post_before_its_meta_is_pending_then_shown() {
     assert_eq!(j.judged()[0].1, Vis::Pending);
     let _ = &mut ms[0];
 }
+
+// KIND: unit (public groups) — an `OpenJoin` counts only if the group was open as of its
+// frontier; closing stops new ones and keeps those who joined; a non-admin's `Open` is inert.
+#[test]
+fn open_join_counts_only_while_open() {
+    let (gid, mut o, mut ms) = group(1);
+    let mut x = Dev::new(&gid, 50);
+    sync(&mut o, &mut x);
+    x.write(Body::OpenJoin { name: "x".into() });
+    sync(&mut x, &mut o);
+    assert!(!o.state().is_member(&x.did()), "closed group: inert");
+    // A plain member cannot open the group.
+    ms[0].write(Body::Open { active: true });
+    sync(&mut ms[0], &mut o);
+    assert!(!o.state().open);
+    o.write(Body::Open { active: true });
+    sync(&mut o, &mut x);
+    assert!(o.state().open);
+    x.write(Body::OpenJoin { name: "x".into() });
+    sync(&mut x, &mut o);
+    let st = o.state();
+    assert!(st.is_member(&x.did()));
+    assert_eq!(st.members[&x.did()].name, "x");
+    assert_eq!(st.members[&x.did()].invited_by, None);
+    assert!(st.items.iter().any(|i| i.kind == ItemKind::Joined && i.subject == x.did()));
+    // Closing: a later open join is inert, x stays.
+    o.write(Body::Open { active: false });
+    let mut y = Dev::new(&gid, 51);
+    sync(&mut o, &mut y);
+    y.write(Body::OpenJoin { name: "y".into() });
+    sync(&mut y, &mut o);
+    sync(&mut o, &mut x);
+    let st = o.state();
+    assert!(!st.open && st.is_member(&x.did()) && !st.is_member(&y.did()));
+    assert_eq!(st, x.state(), "every replica derives the same");
+    // x can post as a member.
+    x.write(Body::Post { text: "hello".into(), reply_to: None, image: None });
+    sync(&mut x, &mut o);
+    assert!(o.shown().iter().any(|i| i.text == "hello"));
+}
+
+// KIND: unit (public groups) — admins-only (a channel): a member's post written after it saw
+// `AdminsOnly{true}` is hidden, one written before (or concurrently) shows, admins and the
+// owner always show; the same on a replica that got the posts before the meta records.
+#[test]
+fn admins_only_hides_member_posts_in_every_order() {
+    let (gid, mut o, mut ms) = group(2);
+    let m1 = ms[1].did();
+    ms[0].write(Body::Post { text: "before".into(), reply_to: None, image: None });
+    o.write(Body::Admin { member: m1.clone(), admin: true });
+    o.write(Body::AdminsOnly { active: true });
+    for m in ms.iter_mut() {
+        sync(&mut o, m);
+    }
+    assert!(o.state().admins_only);
+    ms[0].write(Body::Post { text: "after".into(), reply_to: None, image: None });
+    ms[1].write(Body::Post { text: "admin".into(), reply_to: None, image: None });
+    o.write(Body::Post { text: "owner".into(), reply_to: None, image: None });
+    for m in ms.iter_mut() {
+        sync(m, &mut o);
+    }
+    let texts = |d: &Dev| {
+        let mut v: Vec<String> = d.shown().into_iter().map(|i| i.text).collect();
+        v.sort();
+        v
+    };
+    assert_eq!(texts(&o), ["admin", "before", "owner"]);
+    // A fresh replica that receives the posts first: pending, then the same verdicts.
+    let mut f = Dev::new(&gid, 60);
+    f.take_posts(&o.posts.export_since(&f.posts.vv()).unwrap());
+    assert!(f.judged().iter().all(|(_, v)| *v == Vis::Pending));
+    f.take(&o.doc.export_since(&f.doc.vv()).unwrap());
+    assert_eq!(texts(&f), texts(&o));
+    // Turning it off: m0's next post shows again; the "after" post stays hidden.
+    o.write(Body::AdminsOnly { active: false });
+    sync(&mut o, &mut ms[0]);
+    ms[0].write(Body::Post { text: "again".into(), reply_to: None, image: None });
+    sync(&mut ms[0], &mut o);
+    assert!(!o.state().admins_only);
+    assert_eq!(texts(&o), ["admin", "again", "before", "owner"]);
+    // A non-admin's AdminsOnly is inert.
+    ms[0].write(Body::AdminsOnly { active: true });
+    sync(&mut ms[0], &mut o);
+    assert!(!o.state().admins_only);
+}
+
+// KIND: unit (public groups, review finding 1) — settings are causal, not "latest `at`": an
+// admin with a clock far ahead (or a forged `at = i64::MAX`) opens the group, then the owner,
+// who saw that record, closes it with an ordinary clock: closed, on every replica and in every
+// delivery order. After the admin is demoted, its next `Open{true}` is inert. The same holds
+// for `AdminsOnly` as of a post's frontier.
+#[test]
+fn settings_follow_causality_not_clocks() {
+    let (gid, mut o, mut ms) = group(2);
+    let a = ms[0].did();
+    o.write(Body::Admin { member: a.clone(), admin: true });
+    for m in ms.iter_mut() {
+        sync(&mut o, m);
+    }
+    // a's clock is far ahead.
+    ms[0].clock = i64::MAX - 1_000;
+    ms[0].write(Body::Open { active: true });
+    ms[0].write(Body::AdminsOnly { active: true });
+    sync(&mut ms[0], &mut o);
+    assert!(o.state().open && o.state().admins_only);
+    // The owner saw both and turns them off with its own (earlier) clock.
+    o.write(Body::Open { active: false });
+    o.write(Body::AdminsOnly { active: false });
+    let st = o.state();
+    assert!(!st.open, "a later close supersedes the fast-clock open");
+    assert!(!st.admins_only, "a later off supersedes the fast-clock on");
+    // A member that saw everything posts: shown (admins-only was off as of its frontier).
+    sync(&mut o, &mut ms[1]);
+    ms[1].write(Body::Post { text: "allowed".into(), reply_to: None, image: None });
+    sync(&mut ms[1], &mut o);
+    assert!(o.shown().iter().any(|i| i.text == "allowed"));
+    // A fresh replica that gets everything at once derives the same.
+    let mut f = Dev::new(&gid, 70);
+    let all = o.doc.export_since(&f.doc.vv()).unwrap();
+    f.take(&all);
+    assert_eq!(f.state(), o.state());
+    // Demoted, a opens again (it saw its demotion): inert; the group stays closed.
+    o.write(Body::Admin { member: a.clone(), admin: false });
+    sync(&mut o, &mut ms[0]);
+    ms[0].write(Body::Open { active: true });
+    sync(&mut ms[0], &mut o);
+    assert!(!o.state().open, "a demoted admin's open does not count");
+    // And a re-open by the owner, written after it saw everything, opens it.
+    o.write(Body::Open { active: true });
+    assert!(o.state().open);
+}
+
+// KIND: unit (public groups, review finding 1) — concurrent settings (neither saw the other)
+// are decided by `(at, id)`, the same on both replicas whichever arrives first; an `OpenJoin`
+// is judged by the setting as of its own frontier with the same causal rule.
+#[test]
+fn concurrent_settings_tie_break_by_time() {
+    let (gid, mut o, mut ms) = group(1);
+    let a = ms[0].did();
+    o.write(Body::Admin { member: a.clone(), admin: true });
+    sync(&mut o, &mut ms[0]);
+    // Concurrent: o closes-after-open, a opens with a later clock.
+    o.write(Body::Open { active: true });
+    o.write(Body::Open { active: false });
+    ms[0].clock = o.clock + 1_000;
+    ms[0].write(Body::Open { active: true });
+    let mut f = Dev::new(&gid, 71);
+    let from_o = o.doc.export_since(&f.doc.vv()).unwrap();
+    let from_a = ms[0].doc.export_since(&o.doc.vv()).unwrap();
+    f.take(&from_o);
+    f.take(&from_a);
+    // o gets a's record after its own, a gets o's after its own: both orders agree.
+    sync(&mut o, &mut ms[0]);
+    assert!(o.state().open, "the concurrent open has the later `at`");
+    assert_eq!(o.state(), ms[0].state());
+    assert_eq!(f.state(), o.state());
+    // x joins having seen only o's close (not a's open): inert, everywhere.
+    let mut x = Dev::new(&gid, 73);
+    x.take(&from_o);
+    x.write(Body::OpenJoin { name: "x".into() });
+    sync(&mut x, &mut o);
+    assert!(o.state().open && !o.state().is_member(&x.did()), "closed as of x's frontier");
+}
+
+mod causal;

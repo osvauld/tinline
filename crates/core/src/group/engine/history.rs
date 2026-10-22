@@ -16,7 +16,7 @@ const INVENTORY_WAIT: Duration = Duration::from_secs(30);
 
 #[cfg(test)]
 pub(super) fn export_day_for_durability_test(core: &GroupCore, gid: &str, day: &str, theirs: &VersionVector) -> Option<Vec<u8>> {
-    core.day_update_since(gid, day, theirs)
+    core.day_update_since(gid, day, theirs, false)
 }
 
 impl GroupCore {
@@ -46,11 +46,26 @@ impl GroupCore {
     }
 
     /// What a peer holding `theirs` of day doc `day` lacks (read from the store, the cache is
-    /// left alone); `None` if nothing.
-    fn day_update_since(&self, gid: &str, day: &str, theirs: &VersionVector) -> Option<Vec<u8>> {
+    /// left alone); `None` if nothing. `to_host`: the peer is a host we dialled, so posts it
+    /// would refuse stay out (`admit::upload_cut`).
+    fn day_update_since(&self, gid: &str, day: &str, theirs: &VersionVector, to_host: bool) -> Option<Vec<u8>> {
+        let cut = if to_host {
+            let mut groups = self.groups.lock();
+            let live = groups.get_mut(gid)?;
+            let Live { state, shards, meta, .. } = live;
+            let need = (state.admins_only && !state.is_admin(&self.did)) || meta.failed_posts.values().any(|f| f.day == day);
+            if !need || state.is_host(&self.did, &self.dev) {
+                Vec::new()
+            } else {
+                let shard = shards.get(&self.store, gid, self.wid, day, state).ok()?;
+                admit::upload_cut(state, meta, &self.did, day, &shard.rows, theirs)
+            }
+        } else {
+            Vec::new()
+        };
         let (snap, ups) = self.store.shard_rows(gid, day).ok()?;
         let doc = GroupDoc::load_in(gid, DocId::Day(day.to_string()), self.wid, snap.as_deref(), &ups).ok()?;
-        doc.export_since(theirs)
+        doc.export_since_before(theirs, &cut)
     }
 }
 
@@ -148,7 +163,7 @@ impl Inner {
                 return Err(());
             }
             let theirs = sess.peer_days.lock().get(day).cloned().unwrap_or_default();
-            let update = core.day_update_since(&sess.gid, day, &theirs);
+            let update = core.day_update_since(&sess.gid, day, &theirs, !sess.hosting);
             let Some(update) = update else { continue };
             let doc = DocId::Day(day.clone());
             if let Ok(meta) = loro::LoroDoc::decode_import_blob_meta(&update, false) {

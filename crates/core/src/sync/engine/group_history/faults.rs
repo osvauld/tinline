@@ -52,6 +52,7 @@ async fn session(
         owner: me.id.did().into(),
         hosts: vec![],
         invite: None,
+        open: false,
     })
     .unwrap();
     let receiving = async {
@@ -311,6 +312,7 @@ async fn lost_want_page_and_cache_ack_reconnect_from_durable_frontier_without_du
         later.body = crate::group::record::Body::Post {
             text: "obsolete callback must not import this".into(),
             reply_to: None,
+            image: None,
         };
         let (_, stale_update) = stale_source.write(&me.id, &later).unwrap();
         let doc = format!("group/{gid}/{day}");

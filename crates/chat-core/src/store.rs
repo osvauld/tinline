@@ -127,6 +127,11 @@ pub fn set_metered(on: bool) {
     METERED.store(on, std::sync::atomic::Ordering::Relaxed);
 }
 
+/// The last `set_metered` (group image auto-download reads it too).
+pub fn metered() -> bool {
+    METERED.load(std::sync::atomic::Ordering::Relaxed)
+}
+
 #[derive(Clone)]
 pub struct ChatStore {
     pub db: Sealed,

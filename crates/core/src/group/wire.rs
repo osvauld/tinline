@@ -1,4 +1,4 @@
-//! Frames of `tinline/group/4` on the group endpoint (U2): u32 BE length + postcard (`cryptography::codec`) of `GroupMsg`
+//! Frames of `tinline/group/5` on the group endpoint (U2): u32 BE length + postcard (`cryptography::codec`) of `GroupMsg`
 //! on one bidirectional stream opened by the dialer. Dialers are members (or hosts acting as
 //! members towards another host); the acceptor is always a host (U7).
 //!
@@ -7,29 +7,34 @@
 //! `Ack` name the doc, and the meta doc always goes before a day doc's update.
 //!
 //! ```text
-//! member -> host  Hello { auth, group, vv, days, invite?, hosts, relay }
+//! member -> host  Hello { auth, group, vv, days, invite?, hosts, relay, presence }
 //! host -> member  Moved { auth, group, hosts }       (own connection, after a rotation)
 //! host -> member  Welcome { auth, vv, days, hosts }  | Removed { records, vv, update? } | Refused { reason }
 //! both            Update { doc, update } / Ack { doc, vv } / Hosts { hosts } / Mail { mail } / MailAck { id }
 //! both            Days { after, days }   (inventory of every day doc held, in pages; an empty page ends it)
-//! member -> host  Code { code, invite?, expires } / RevokeCode { code }  -> CodeAck { code, ok, reason }
+//! member -> host  Code { code, kind, invite?, expires } / RevokeCode { code }  -> CodeAck { code, ok, reason }
 //! anyone -> host  Fetch { code }  (first frame, G3)   -> Fetched { token } | Refused { reason }
 //! both            CallHostStatus / CallStart / CallEnd / CallHostRequest / CallHostRefusal (GA-I1)
-//! both            ReceiptHello { days } / Receipts { day, update } / ReceiptAck { day, vv }  (member receipts)
+//! both            ReceiptHello { days } / Receipts { day, update } / ReceiptAck { day, vv }  (member receipts; none in an open group)
+//! host -> both    Presence { presence }  (open groups: a host's signed online list; hosts relay other hosts')
 //! ```
 //!
-//! group/4 = group/3 plus the member receipt frames (no compatibility with group/3 peers: the
-//! ALPN differs, so an old peer fails at connect instead of mid-session).
+//! group/4 = group/3 plus the member receipt frames; group/5 = group/4 plus open links (`Code`
+//! carries a `CodeKind`, `InviteToken` an `open` flag; `docs/design/public-group.md` §2), the
+//! online list (`Hello.presence`, `Presence`, §3) and no receipts in open groups (§4). No
+//! compatibility with older peers: the ALPN differs, so an old peer fails at connect instead of
+//! mid-session.
 
 use iroh::endpoint::{RecvStream, SendStream};
 use serde::{Deserialize, Serialize};
 
 use super::doc::DocId;
-use super::record::{EndpointAuth, InviteToken, SignedHostAddr, SignedInvite};
+use super::code::CodeKind;
+use super::record::{EndpointAuth, InviteToken, SignedHostAddr, SignedInvite, SignedPresence};
 use crate::Error;
 use crate::frames::{FrameBuf, send_frame};
 
-pub const GROUP_ALPN: &[u8] = b"tinline/group/4";
+pub const GROUP_ALPN: &[u8] = b"tinline/group/5";
 pub const MAX_FRAME: usize = 16 * 1024 * 1024;
 /// `Hello` and `Welcome` list the day docs of this many recent days (as 1:1 chat does).
 pub const HELLO_DAYS: i64 = 7;
@@ -41,8 +46,9 @@ pub const DAYS_PAGE: usize = 64;
 pub enum GroupMsg {
     /// `relay`: the member's home relay, so a host that rotated can reach it again (`docs/rotation.md`).
     /// `vv`: the meta doc's version vector; `days`: those of the day docs of the last `HELLO_DAYS`
-    /// days we hold.
-    Hello { auth: EndpointAuth, group: String, vv: Vec<u8>, days: Vec<(String, Vec<u8>)>, invite: Option<SignedInvite>, hosts: Vec<SignedHostAddr>, relay: Option<String> },
+    /// days we hold. `presence`: the account shows as online in open groups (public group §3;
+    /// a host never lists a member whose session said `false`).
+    Hello { auth: EndpointAuth, group: String, vv: Vec<u8>, days: Vec<(String, Vec<u8>)>, invite: Option<SignedInvite>, hosts: Vec<SignedHostAddr>, relay: Option<String>, presence: bool },
     Welcome { auth: EndpointAuth, vv: Vec<u8>, days: Vec<(String, Vec<u8>)>, hosts: Vec<SignedHostAddr> },
     /// The member is removed: the signed records that prove it (genesis, the owner's admin
     /// grants of the flaggers, the flags) and what the host holds, so the member can still upload
@@ -76,12 +82,14 @@ pub enum GroupMsg {
     /// invite behind this short code" (`code.rs`). Answered `Fetched` or `Refused`; the dialer
     /// may try again on the same connection, and the host closes it after a few unknown codes.
     Fetch { code: [u8; 12] },
-    /// Host -> fetcher: the full invite token (the signed invite, absent for a device code; the
-    /// group, its name and owner; the hosts' DID-signed addresses, this host's among them).
+    /// Host -> fetcher: the full invite token (the signed invite, absent for a device code and an
+    /// open link, which sets `open`; the group, its name and owner; the hosts' DID-signed
+    /// addresses, this host's among them).
     Fetched { token: InviteToken },
-    /// G3, member -> host inside a session: keep `invite` (ours, signed by us as an admin; `None`
-    /// for a device code, which admits only our own DID) under `code` until `expires` (unix ms).
-    Code { code: [u8; 12], invite: Option<SignedInvite>, expires: u64 },
+    /// G3, member -> host inside a session: keep `code` until `expires` (unix ms). `kind`
+    /// `Invite`: `invite` is ours, signed by us as an admin; `Device`: no invite, admits only our
+    /// own DID; `Open` (admins, group open): no invite, never expires, dropped when it closes.
+    Code { code: [u8; 12], kind: CodeKind, invite: Option<SignedInvite>, expires: u64 },
     /// G3, member -> host inside a session: forget `code` (its issuer or an admin).
     RevokeCode { code: [u8; 12] },
     /// Host -> member: the answer to `Code` / `RevokeCode`.
@@ -124,6 +132,12 @@ pub enum GroupMsg {
     /// What we hold of that day's ledger after the import (authoritative for the sender; a
     /// refused frame is sent again on the next trigger).
     ReceiptAck { day: String, vv: Vec<u8> },
+    // ---- presence (public group §3, open groups only; `engine::presence`) ---------------------
+    /// A host's DID-signed list of the members it sees online (at most `MAX_PRESENCE`), every
+    /// 15 s and after a session starts or ends, to its member sessions and the other hosts. A host
+    /// relays other hosts' frames as they are (newest `seq` per host device; an older or equal
+    /// one is dropped, which ends relay loops). Accepted only from an active host. Never stored.
+    Presence { presence: SignedPresence },
 }
 
 pub struct Writer(pub SendStream);

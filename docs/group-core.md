@@ -46,8 +46,9 @@ the user was away; each is listed at the end.
   every delivery order. `derive_meta` runs on meta changes only; each post is judged on its own
   (Visible, Hidden, or Pending when its `seen` names meta records we do not hold yet; pending
   posts are judged again when the meta doc advances):
-  - admins = owner + members the owner made admin (latest `Admin` per member by `(at, id)`);
-    "admin as of a frontier" counts only the owner's `Admin` records inside it;
+  - admins = owner + members the owner made admin (the owner's `Admin` record in force per
+    member, by the causal rule below); "admin as of a frontier" counts only the owner's `Admin`
+    records inside it;
   - members = owner + DIDs whose latest join/leave is a `Join` with an invite that verifies,
     names this group and whose issuer was owner/admin as of the join's frontier;
   - flags count if the flagger was admin as of the flag's frontier; any 3 counted flags remove
@@ -55,8 +56,24 @@ the user was away; each is listed at the end.
   - a post shows if its author was a member as of its frontier and fewer than 3 counted flags on
     the author lie inside its frontier (U11 option A). A shown post by a since-removed member
     carries `before_removal`;
-  - a device hosts when its latest admin `HostPermit` is active, its own latest `HostAccept` is
-    active and its DID is a member.
+  - a device hosts when the admin `HostPermit` in force for it (causal rule) is active, its own
+    latest `HostAccept` is active and its DID is a member; a decline answers a permit it saw (or
+    a concurrent one with an earlier `(at, id)`);
+  - public groups: `Open` / `AdminsOnly` count when written by an admin as of the record's
+    frontier; the setting in force as of a frontier decides an `OpenJoin` and, for a
+    non-admin's post, admins-only (`docs/design/public-group.md` §1);
+  - **the causal rule** (`state::causal_latest`) for the owner's `Admin` records, `HostPermit`,
+    `CallHostPermit`, `Open` and `AdminsOnly`, per kind and key: of the counted records inside
+    the frontier (or all held), one whose own signed `seen` includes another supersedes it; of
+    those nobody superseded (concurrent ones), the latest by `(at, id)` wins. An author's clock
+    only orders concurrent records, so an admin with a fast or forged clock (`at = i64::MAX`)
+    cannot make a permit or setting outlast a later revoke written by someone who saw it, also
+    after that admin is demoted. Pure in the record set: the same result in every delivery
+    order;
+  - still latest by `(at, id)`, because only their author writes them and so a forged clock can
+    only override the author's own records: join/leave (the member), `HostAccept` /
+    `CallHostAccept` (the device) and `EncKey` (derived from the root secret, the same key in
+    every record of one author);
   - System lines (joined, left, removed, admin granted/revoked, host added/removed) are derived
     from the same records; "removed" is placed at the 3rd counted flag.
 
@@ -64,8 +81,13 @@ the user was away; each is listed at the end.
 
 - **Two endpoints (U2).** Each device runs a second iroh endpoint for groups (key in the group
   store, one per account per install, independent of the private endpoint), ALPN
-  `tinline/group/4` (`wire::GROUP_ALPN`; /3 = postcard frames, /4 = plus member receipt frames). It is bound when the node starts and the account has a
+  `tinline/group/5` (`wire::GROUP_ALPN`; /3 = postcard frames, /4 = plus member receipt frames, /5 = plus open links, `Hello.presence` and `Presence`; `docs/design/public-group.md`). It is bound when the node starts and the account has a
   group, or on create/join, and closed with the private endpoint (stop, lock, account switch).
+  The same endpoint also speaks `tinline/gcall/1` (calls) and the stock iroh-blobs ALPN for the
+  pictures of image posts (public group §5, `engine/images.rs`): a request is served only if a
+  visible post of a group we hold names the hash and the requester's endpoint is, in that group, a
+  current member on a session we host or an active host. Members fetch only from hosts; hosts
+  fetch from the author's session or other hosts.
 - **Only hosts know member endpoints (U7).** Members dial only hosts. Hosts accept, keep a
   directory `did/dev → member group endpoint`, and dial other hosts like members do. Host
   addresses (`SignedHostAddr`, DID-signed, newest `at` wins) are the only endpoints that travel to
@@ -73,7 +95,7 @@ the user was away; each is listed at the end.
   joiner with no state yet takes the ones in its invite token). Records never contain endpoints.
 - **Endpoint proof.** Each side of a connection first sends `EndpointAuth` (the gcall
   `Signed<GroupNote{did, dev, endpoint, issued_ms}>`, one statement for both); the receiver checks `endpoint` equals the QUIC remote key (QUIC proves possession).
-- **Session** (`wire.rs`): member `Hello{auth, group, vv, days, invite?, hosts, relay}` → host
+- **Session** (`wire.rs`): member `Hello{auth, group, vv, days, invite?, hosts, relay, presence}` → host
   `Welcome{auth, vv, days, hosts}` | `Removed{records, vv}` | `Refused{reason}` (`vv`: the meta
   doc's version vector, `days`: those of the day docs of the last 7 days we hold); then both sides
   exchange `Update{doc, update}` (Loro export of what the other lacks of one doc: meta first,
@@ -81,6 +103,13 @@ the user was away; each is listed at the end.
   `Mail{mail}` / `MailAck{id}` (sealed chat requests). A host that rotated opens its own
   connection to a member and sends `Moved{auth, group, hosts}` (G2, see Rotation). Hosts relay every accepted
   update to every other session at once (live), and catch up a reconnecting member from its vv.
+  Open groups only (`docs/design/public-group.md` §3, §4): hosts send `Presence{presence}` (a
+  host's DID-signed online list; hosts relay other hosts' frames as they are; taken only from a
+  session whose peer hosts, fresh by `seq` and within 2 minutes of our clock), and no member
+  receipt frames are sent (incoming ones are dropped). From a member's session (not from another
+  host) a host also refuses an `OpenJoin` unless the group is open now and it is the session's
+  own, and, while admins-only is on, a non-admin's post the rules would show (its `seen` is the
+  author's claim; `engine/admit.rs`).
 - **History (decision 3 of `group-shards.md`).** Every member device holds the full history of its
   groups. On every session, both sides (a host asks a member just as a member asks a host) page
   the peer's day list (`HistoryList{before, limit}` → `HistoryDays`, newest first) and fetch each
@@ -278,7 +307,7 @@ Code: `calldir.rs`, `calls.rs`; spec `docs/design/group-call-spec.md` §11 (GA-I
 
 ## API (UniFFI, `api.rs`)
 
-`set_group_events(GroupEvents{on_group_message, on_group_changed})`, `groups() ->
+`set_group_events(GroupEvents{on_group_message, on_group_changed, on_group_presence})`, `groups() ->
 [GroupSummary]` (the row and unread count come from the group's local state: no day doc is
 loaded), `group_detail(id) -> GroupDetail` (members with roles/flags/devices/invited-by,
 hosts with online state, host offers, my role, `am_host`, my removal), `group_messages(id, before,
@@ -293,7 +322,10 @@ admin)` (owner), `group_leave(id)`, `group_appoint_host(id, did, device_id)` /
 `group_revoke_host(...)` (admins), `group_accept_host(id, accept)` (this device),
 `group_device_id()`, `group_endpoint_id()`, `group_endpoint_rotation_due() -> Option<u64>`,
 `group_rotation_policy() -> RotationPolicy`, `set_group_rotation_policy(policy)`,
-`group_rotate_now()` (`docs/rotation.md`).
+`group_rotate_now()` (`docs/rotation.md`). Public groups (`docs/design/public-group.md`):
+`group_open_link(id)`, `group_set_open(id, open)`, `group_set_admins_only(id, on)`,
+`group_online(id) -> [OnlineMember{did, name, is_admin}]` (open groups; in memory only),
+`group_set_presence_visible(visible)` / `group_presence_visible()` (local, default visible).
 `GroupDetail` (G2) also has `host_requests` (devices an admin appointed that have not answered,
 with `appointed_by`) and `host_requested_here` (an admin appointed THIS device: show "host this
 group?" and answer with `group_accept_host(id, true|false)`; a later `HostAccept{false}` ends the
@@ -305,7 +337,9 @@ Chat requests (G2, `requests.rs`): `set_group_request_events(GroupRequestEvents{
 ChatRequestState{Pending, Accepted, Declined, Blocked}, at, contact_added}`.
 Test hooks: `group_known_endpoints_for_test`, `group_directory_for_test`,
 `group_dial_only_for_test`, `group_ignore_removal_for_test`, (dev-tools builds only)
-`group_set_rotation_policy_for_test(policy)` and `group_set_removed_upload_window_for_test(ms)`,
+`group_set_rotation_policy_for_test(policy)`, `group_set_removed_upload_window_for_test(ms)`,
+`group_set_presence_timing_for_test((every_ms, window_ms))` and
+`group_send_presence_for_test(id, dids)`,
 `group_skip_request_checks_for_test`,
 `group_relayed_mail_count_for_test`, `group_relayed_mail_contains_for_test`.
 
@@ -329,7 +363,9 @@ delivered}`. Test hook: `group_guess_codes_for_test(link, n)`.
 3. The owner cannot be flagged out (flags on the owner never count, §11 Q3) and cannot leave.
 4. A removed admin's earlier flags still count; mutual removal removes both (§11 Q9).
 5. Removal is final in this slice (no readmission op yet, §11 Q7).
-6. Concurrent admin grant/revoke or host permit/revoke resolve by latest `(author clock, id)`.
+6. Concurrent admin grant/revoke or host/call-host permit/revoke (neither saw the other)
+   resolve by latest `(author clock, id)`; a record that saw another always supersedes it (the
+   causal rule above).
 7. A removed member's proof check accepts flags by the owner or by DIDs the owner made admin
    (any time); the full "admin as of the flag's frontier" rule applies once the flags are in the
    member's own doc (they are relayed before the removal notice).

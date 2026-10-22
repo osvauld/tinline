@@ -18,6 +18,7 @@ pub(super) fn post(f: &Fixture, doc: &GroupDoc, dev: [u8; 32], text: &str) -> (E
             body: Body::Post {
                 text: text.into(),
                 reply_to: None,
+                image: None,
             },
         },
     )

@@ -97,6 +97,7 @@ async fn actual_authenticated_self_reader_does_not_ack_failed_group_append() {
             owner: me.id.did().into(),
             hosts: Vec::new(),
             invite: None,
+            open: false,
         })
         .unwrap();
         node.inner.group_own_apply(&[token], true);
@@ -336,6 +337,7 @@ async fn no_host_hint_bootstrap_grants_no_role_until_signed_meta_and_borrowed_wr
             owner: me.id.did().into(),
             hosts: Vec::new(),
             invite: None,
+            open: false,
         })
         .unwrap();
         node.inner.group_own_apply(&[token.clone()], false);

@@ -133,7 +133,7 @@ impl Node {
     /// Buffers a post by member `idx`.
     #[doc(hidden)]
     pub fn synth_group_post_for_test(&self, g: &mut SynthGroup, idx: usize, at: i64, text: String) -> Result<(), Error> {
-        self.inner.synth_group_write(g, idx, at, Body::Post { text, reply_to: None })
+        self.inner.synth_group_write(g, idx, at, Body::Post { text, reply_to: None, image: None })
     }
 
     #[doc(hidden)]

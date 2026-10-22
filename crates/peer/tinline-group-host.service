@@ -1,0 +1,23 @@
+# Example only. Copy to /etc/systemd/system/, replace <GROUP_ID>, then:
+#   systemctl daemon-reload && systemctl enable --now tinline-group-host
+# First start prints the host's DID in the journal; invite that account, then appoint it as host.
+[Unit]
+Description=Tinline headless group host
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=tinline-host
+Group=tinline-host
+StateDirectory=tinline-host
+Environment=P2P_PASSPHRASE=change-me
+ExecStart=/usr/local/bin/p2p-peer --data /var/lib/tinline-host group-host --accept <GROUP_ID>
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

@@ -203,6 +203,7 @@ impl Sim {
                 Body::Post {
                     text: text.into(),
                     reply_to: None,
+                    image: None,
                 },
                 at,
             )
@@ -961,8 +962,11 @@ fn open_sess(
         gid: gid.into(),
         did: peer.did.clone(),
         dev: peer.dev,
+        ep: peer.dev,
         hosting,
         joining: false,
+        open_join: false,
+        show: true,
         tx,
         peer_vv: Default::default(),
         peer_days: Default::default(),
@@ -997,8 +1001,11 @@ impl Sim {
         let (h, m) = (&self.nodes[0], &self.nodes[member]);
         let (at_host, to_member) = open_sess(h, &self.gid, m, true);
         let (at_member, to_host) = open_sess(m, &self.gid, h, false);
-        let _ = at_host.tx.send(Out::Msg(h.receipt_hello(&self.gid)));
-        let _ = at_member.tx.send(Out::Msg(m.receipt_hello(&self.gid)));
+        for (core, sess) in [(h, &at_host), (m, &at_member)] {
+            if let Some(hello) = core.session_receipt_hello(&self.gid) {
+                let _ = sess.tx.send(Out::Msg(hello));
+            }
+        }
         Link {
             host: 0,
             member,
@@ -1211,6 +1218,7 @@ fn reading_an_old_compacted_day_still_issues_read_receipts() {
             Body::Post {
                 text: "from last week".into(),
                 reply_to: None,
+                image: None,
             },
             at,
         )
@@ -1271,4 +1279,62 @@ fn reading_an_old_compacted_day_still_issues_read_receipts() {
         .member_receipt_status(&sim.gid, old_day, &id)
         .unwrap();
     assert_eq!((s.tick, s.read), (ReceiptTick::Read, 1));
+}
+
+/// Public group test 8: one sim flow (post, deliver, pump, mark read, push), open or not; the
+/// receipt frames the sessions carried and the statements the owner holds.
+fn receipts_flow(open: bool) -> (usize, usize) {
+    let mut sim = Sim::new(2);
+    if open {
+        sim.write(0, Body::Open { active: true });
+        sim.meta_all();
+        assert!(sim.nodes.iter().all(|n| n.receipts_off(&sim.gid)));
+    }
+    let mut links: Vec<Link> = (1..3).map(|m| sim.connect(m)).collect();
+    let mut frames = sim.flush(&mut links, |_| 1);
+    sim.post(0, "hello everyone");
+    for n in 1..3 {
+        sim.day(0, n);
+        sim.nodes[n].member_receipts_pump_and_push();
+        sim.nodes[n].mark_read(&sim.gid, true).unwrap();
+        sim.nodes[n].member_receipts_pump_and_push();
+        sim.nodes[n].receipts_rehello(&sim.gid);
+    }
+    frames += sim.flush(&mut links, |_| 1);
+    (frames, sim.entries(0))
+}
+
+// KIND: acceptance (public group 8) — an open group's sessions carry no receipt frames (no
+// hello, no statements: none are even recorded) and a statement arriving anyway is dropped
+// unread and unanswered; a private group's same flow does carry them.
+#[test]
+fn public_group_sends_no_receipts() {
+    let (frames, held) = receipts_flow(false);
+    assert!(
+        frames > 0 && held > 0,
+        "private: {frames} frames, {held} statements"
+    );
+    let (frames, held) = receipts_flow(true);
+    assert_eq!((frames, held), (0, 0), "open: no receipt traffic");
+
+    // A statement signed while the group was still private reaches a host after it opened.
+    let mut sim = Sim::new(1);
+    sim.post(0, "before opening");
+    sim.day(0, 1);
+    assert_eq!(sim.pump(1), 1);
+    let frame = sim.frame(1, &VersionVector::default()).unwrap();
+    sim.write(0, Body::Open { active: true });
+    sim.meta_all();
+    let (at_host, mut to_member) = open_sess(&sim.nodes[0], &sim.gid, &sim.nodes[1], true);
+    let fresh = sim.nodes[0].on_receipts(&at_host, DAY, &frame).unwrap();
+    assert!(fresh.is_empty());
+    assert_eq!(sim.entries(0), 0, "dropped, not stored");
+    assert!(to_member.try_recv().is_err(), "no ReceiptAck either");
+    sim.nodes[0]
+        .on_receipt_hello(&at_host, vec![(DAY.into(), Vec::new())])
+        .unwrap();
+    assert!(to_member.try_recv().is_err(), "a hello is not answered");
+    // Marking read in an open group records no read intent.
+    sim.nodes[1].mark_read(&sim.gid, true).unwrap();
+    assert_eq!(sim.pump(1), 0);
 }

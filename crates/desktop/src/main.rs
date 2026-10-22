@@ -161,6 +161,10 @@ pub enum GroupEv {
     Request(p2pcore::GroupChatRequest),
     /// A group invitation appeared or changed (G3).
     Invitation(p2pcore::GroupInvitation),
+    /// The online list of an open group changed (public group §3).
+    Presence(String),
+    /// The picture of a post changed state (public group §5): `(group, message)`.
+    Image(String, String),
 }
 
 /// Bridges `GroupEvents` into the same channel as `NodeEvents`.
@@ -184,6 +188,14 @@ impl p2pcore::GroupEvents for GroupBridge {
     }
     fn on_group_changed(&self, group_id: String) {
         let _ = self.0.send(Ev::Group(GroupEv::Changed(group_id)));
+    }
+    /// The online list of an open group changed (public group §3): the header count and its list.
+    fn on_group_presence(&self, group_id: String) {
+        let _ = self.0.send(Ev::Group(GroupEv::Presence(group_id)));
+    }
+    /// A post's picture arrived or changed state (public group §5): the open thread re-reads it.
+    fn on_group_image(&self, group_id: String, message_id: String) {
+        let _ = self.0.send(Ev::Group(GroupEv::Image(group_id, message_id)));
     }
 }
 

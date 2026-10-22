@@ -28,6 +28,8 @@ impl Inner {
             self.group_req_tick(&core);
             self.group_calls_tick(&core);
             self.group_codes_tick(&core);
+            self.group_presence_tick(&core);
+            self.group_images_pump(&core);
             if let Err(e) = self.group_rotation_tick(&core).await {
                 tracing::warn!("group endpoint rotation: {e}");
             }
@@ -190,6 +192,7 @@ impl Inner {
                 invite,
                 hosts: core.host_addrs(&gid),
                 relay: relay_of(&ep),
+                presence: core.presence.visible(),
             })
             .await?;
         let reply = tokio::time::timeout(HELLO_TIMEOUT, reader.recv())
@@ -210,8 +213,10 @@ impl Inner {
                 core.refusals.lock().remove(&gid);
                 core.merge_hosts_from(&gid, &hosts, None);
                 let peer = Peer::new(&vv, &days)?;
-                self.group_run(core, conn, writer, reader, gid, auth, false, false, peer)
-                    .await
+                self.group_run(
+                    core, conn, writer, reader, gid, auth, false, false, false, false, peer,
+                )
+                .await
             }
             Some(GroupMsg::Removed {
                 records, update, ..
@@ -296,36 +301,81 @@ impl Inner {
         }
     }
 
-    /// We joined with an invite and now hold the group: write our `Join` (once).
-    pub(super) fn group_maybe_join(self: &Arc<Self>, core: &Arc<GroupCore>, gid: &str) {
-        let invite = {
+    /// We joined with an invite (or an open link) and now hold the group: write our `Join`
+    /// (`OpenJoin`) once. An open join waits until we hold the admin's `Open{active: true}`, so
+    /// our record names it in its frontier (otherwise it would not count). `caught_up`: we hold
+    /// all of the meta doc the host had at `Welcome`, so a group that is still closed was closed
+    /// before we could join: the open join ends there.
+    pub(super) fn group_maybe_join(self: &Arc<Self>, core: &Arc<GroupCore>, gid: &str, caught_up: bool) {
+        enum How {
+            /// The invite, and its stored bytes (to put back if the write fails).
+            Invite(SignedInvite, Vec<u8>),
+            Open,
+        }
+        let how = {
             let mut groups = core.groups.lock();
             let Some(live) = groups.get_mut(gid) else {
                 return;
             };
             if live.state.owner.is_none() || live.state.is_member(&core.did) {
-                if live.meta.joining.is_some() && live.state.is_member(&core.did) {
+                if (live.meta.joining.is_some() || live.meta.open_join)
+                    && live.state.is_member(&core.did)
+                {
                     live.meta.joining = None;
+                    live.meta.open_join = false;
                     let _ = core.store.put_meta(gid, &live.meta);
                 }
                 return;
             }
-            let Some(b) = live.meta.joining.take() else {
+            // The flag is cleared before the write (so a concurrent call does not write twice)
+            // and put back if the write fails (so it is tried again).
+            if let Some(b) = live.meta.joining.take() {
+                let _ = core.store.put_meta(gid, &live.meta);
+                match cryptography::codec::from_bytes::<SignedInvite>(&b, crate::store::MAX_ROW) {
+                    Ok(i) => How::Invite(i, b),
+                    Err(_) => return,
+                }
+            } else if live.meta.open_join && live.state.open {
+                live.meta.open_join = false;
+                let _ = core.store.put_meta(gid, &live.meta);
+                How::Open
+            } else if live.meta.open_join && caught_up {
+                // Closed before our `OpenJoin` was written: it would not count, and a host refuses
+                // it. Stop here; `group_join` reports the refusal (and forgets the group).
+                live.meta.open_join = false;
+                let _ = core.store.put_meta(gid, &live.meta);
+                drop(groups);
+                core.refusals
+                    .lock()
+                    .insert(gid.to_string(), super::super::code::NOT_OPEN.into());
                 return;
-            };
-            let _ = core.store.put_meta(gid, &live.meta);
-            match cryptography::codec::from_bytes::<SignedInvite>(&b, crate::store::MAX_ROW) {
-                Ok(i) => i,
-                Err(_) => return,
+            } else {
+                return;
             }
         };
         let name = self
             .me()
             .map(|m| m.profile.name.clone())
             .unwrap_or_default();
-        match core.write(gid, Body::Join { invite, name }) {
+        let (body, restore) = match how {
+            How::Invite(invite, b) => (Body::Join { invite, name }, Some(b)),
+            How::Open => (Body::OpenJoin { name }, None),
+        };
+        match core.write(gid, body) {
             Ok((_, c)) => self.group_after(core, c, None),
-            Err(e) => tracing::warn!("group join: {e}"),
+            Err(e) => {
+                tracing::warn!("group join: {e}");
+                let mut groups = core.groups.lock();
+                if let Some(live) = groups.get_mut(gid)
+                    && !live.state.is_member(&core.did)
+                {
+                    match restore {
+                        Some(b) => live.meta.joining = Some(b),
+                        None => live.meta.open_join = true,
+                    }
+                    let _ = core.store.put_meta(gid, &live.meta);
+                }
+            }
         }
     }
 }

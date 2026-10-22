@@ -26,7 +26,7 @@ fn rec(a: &identity::Identity, group: &str, body: Body) -> Record {
 #[test]
 fn records_verify_and_tampering_is_refused() {
     let a = acct();
-    let r = rec(&a, "g", Body::Post { text: "hi".into(), reply_to: None });
+    let r = rec(&a, "g", Body::Post { text: "hi".into(), reply_to: None, image: None });
     let bytes = r.sign(&a).to_bytes();
     assert_eq!(open_record(&bytes, "g").unwrap(), r);
     assert_eq!(open_record(&bytes, "other"), Err(RecordError::WrongGroup));
@@ -42,7 +42,7 @@ fn records_verify_and_tampering_is_refused() {
     assert!(open_record(&t, "g").is_err());
     // Claiming another author: the signature is the signer's, not the claimed DID's.
     let b = acct();
-    let mut forged = rec(&a, "g", Body::Post { text: "as b".into(), reply_to: None });
+    let mut forged = rec(&a, "g", Body::Post { text: "as b".into(), reply_to: None, image: None });
     forged.author = b.did().into();
     let bytes = forge(&forged, &a).to_bytes();
     assert_eq!(open_record(&bytes, "g"), Err(RecordError::BadSignature));
@@ -53,8 +53,8 @@ fn records_verify_and_tampering_is_refused() {
 fn malformed_records_are_refused() {
     let a = acct();
     let cases = [
-        Body::Post { text: String::new(), reply_to: None },
-        Body::Post { text: "x".repeat(MAX_TEXT + 1), reply_to: None },
+        Body::Post { text: String::new(), reply_to: None, image: None },
+        Body::Post { text: "x".repeat(MAX_TEXT + 1), reply_to: None, image: None },
         Body::Genesis { name: " ".into(), nonce: [0; 16], owner_name: "o".into() },
         Body::CallHostPermit { host: "d".repeat(201), host_dev: [0; 32], active: true },
     ];
@@ -141,7 +141,7 @@ fn invites_host_addrs_and_auth_verify() {
         "claimed DID did not sign"
     );
 
-    let tok = InviteToken { group: "g".into(), name: "n".into(), owner: a.did().into(), invite: Some(inv), hosts: vec![ha] };
+    let tok = InviteToken { group: "g".into(), name: "n".into(), owner: a.did().into(), invite: Some(inv), hosts: vec![ha], open: false };
     assert_eq!(cryptography::codec::from_bytes::<InviteToken>(&cryptography::codec::to_bytes(&tok).unwrap(), usize::MAX).unwrap(), tok);
 }
 
@@ -166,6 +166,7 @@ fn core_signables_pass_the_envelope_conformance_table() {
             Body::Post {
                 text: "hi".into(),
                 reply_to: None,
+                image: None,
             },
         ),
         &a,
@@ -190,6 +191,18 @@ fn core_signables_pass_the_envelope_conformance_table() {
             dev: [1; 32],
             endpoint: [2; 32],
             relay: None,
+            at: 5,
+        },
+        &a,
+        &stranger,
+    );
+    check(
+        &Presence {
+            group: "g".into(),
+            host: a.did().into(),
+            dev: [1; 32],
+            online: vec![(stranger.did().into(), 4)],
+            seq: 1,
             at: 5,
         },
         &a,
@@ -235,4 +248,63 @@ fn core_signables_pass_the_envelope_conformance_table() {
         &a,
         &stranger,
     );
+}
+
+// KIND: unit (public group 7) — a presence frame verifies only as its host's; a forged signer,
+// a tampered body and more than `MAX_PRESENCE` DIDs are refused.
+#[test]
+fn presence_frames_verify_and_are_bounded() {
+    let (h, m) = (acct(), acct());
+    let p = Presence { group: "g".into(), host: h.did().into(), dev: [1; 32], online: vec![(m.did().into(), 9)], seq: 3, at: 10 };
+    let signed = Signed::sign(&p, &h).unwrap();
+    assert_eq!(signed.open().unwrap(), p);
+    assert!(Signed::sign(&p, &m).is_err(), "only the host signs as the host");
+    assert!(forge(&p, &m).open().is_err(), "the named host did not sign");
+    let mut raw = signed.to_bytes();
+    raw[4] ^= 1;
+    assert!(Signed::<Presence>::from_bytes(&raw).and_then(|s| s.open()).is_err());
+    let big = Presence { online: (0..=MAX_PRESENCE).map(|i| (format!("did:key:z{i}"), 1)).collect(), ..p.clone() };
+    assert!(Signed::sign(&big, &h).is_err());
+    assert!(forge(&big, &h).open().is_err());
+    let full = Presence { online: (0..MAX_PRESENCE).map(|i| (format!("did:key:z6Mk{i:0>44}"), u64::MAX)).collect(), ..p };
+    assert!(Signed::sign(&full, &h).unwrap().open().is_ok(), "500 DIDs fit one frame");
+}
+
+fn image(size: u64, w: u32, h: u32, mime: &str) -> ImageRef {
+    ImageRef { hash: [1; 32], key: [2; 32], size, w, h, mime: mime.into(), preview: vec![0; 36] }
+}
+
+// KIND: unit (public group §5) — a post may carry an image (and then no text); the image's
+// declared size, sides, type and preview are bounded on every device.
+#[test]
+fn image_posts_are_bounded() {
+    let a = acct();
+    let post = |text: &str, img: ImageRef| Body::Post { text: text.into(), reply_to: None, image: Some(img) };
+    for ok in [
+        post("", image(300_000, 1080, 720, "image/jpeg")),
+        post("caption", image(MAX_IMAGE_BYTES, MAX_IMAGE_SIDE, 1, "image/webp")),
+        post("", image(1, 1, MAX_IMAGE_SIDE, "image/png")),
+    ] {
+        let r = rec(&a, "g", ok);
+        assert_eq!(open_record(&r.sign(&a).to_bytes(), "g").unwrap(), r);
+    }
+    let mut no_preview = image(10, 10, 10, "image/jpeg");
+    no_preview.preview.clear();
+    let r = rec(&a, "g", post("", no_preview));
+    assert!(open_record(&r.sign(&a).to_bytes(), "g").is_ok());
+    let mut big_preview = image(10, 10, 10, "image/jpeg");
+    big_preview.preview = vec![0; MAX_IMAGE_PREVIEW + 1];
+    for bad in [
+        post("", image(MAX_IMAGE_BYTES + 1, 10, 10, "image/jpeg")),
+        post("", image(0, 10, 10, "image/jpeg")),
+        post("", image(10, MAX_IMAGE_SIDE + 1, 10, "image/jpeg")),
+        post("", image(10, 10, MAX_IMAGE_SIDE + 1, "image/jpeg")),
+        post("", image(10, 0, 10, "image/jpeg")),
+        post("", image(10, 10, 10, "image/gif")),
+        post("", image(10, 10, 10, "text/html")),
+        post("", big_preview),
+        post(&"x".repeat(MAX_TEXT + 1), image(10, 10, 10, "image/jpeg")),
+    ] {
+        assert_eq!(open_record(&forge(&rec(&a, "g", bad), &a).to_bytes(), "g"), Err(RecordError::Malformed));
+    }
 }
