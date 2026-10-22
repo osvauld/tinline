@@ -161,7 +161,7 @@ struct AddContactSheet: View {
                 Text(myCodeExp.map { "Send it to anyone you\u{2019}d like to talk to, in any app. It works until \(codeUntil($0))." }
                      ?? "Send it to anyone you\u{2019}d like to talk to, in any app.")
                     .peopleStyle(.sub19).foregroundStyle(c.ink2)
-                Text(myCode ?? "Preparing your code\u{2026}").peopleStyle(.mono, lineHeight: 18, size: 12).foregroundStyle(c.ink2).lineLimit(1).truncationMode(.tail)
+                Text(myCode ?? "Preparing your code\u{2026}").peopleStyle(.mono, size: 12, lineHeight: 18).foregroundStyle(c.ink2).lineLimit(1).truncationMode(.tail)
                     .padding(.horizontal, 12).padding(.vertical, 8).frame(maxWidth: .infinity, alignment: .leading)
                     .background(RoundedRectangle(cornerRadius: 12, style: .circular).fill(c.sf2))
                 // the bare code only (OSVC2:...)
@@ -279,7 +279,7 @@ struct AddContactSheet: View {
         adding = true; slow = false
         let timer = Task { try? await Task.sleep(nanoseconds: 2_500_000_000); if !Task.isCancelled { slow = true } }
         Task {
-            let r: Result<AddOutcome, Error> = await Task.detached { Result { try node.addContactByCode(text: p.ticket) } }.value
+            let r: Result<AddOutcome, any Swift.Error> = await Task.detached { Result { try node.addContactByCode(text: p.ticket) } }.value
             timer.cancel(); adding = false; slow = false
             switch r {
             case .success(let outcome):
@@ -316,44 +316,30 @@ struct AddContactSheet: View {
 
 private enum PeopleLineState { case slack, ringing, taut }
 
-/// LineJoin.svelte: me - the mark - them, fixed 64 high; slack -> ringing (the call "connecting" sway, 1.2 s) -> taut.
-// TODO(ios-device): the line between the faces is a stand-in for `TinMark` (Components area) in its line state; swap it in once its
-// initialiser is known. The sway and the settle to taut are drawn here with the same timings.
+/// LineJoin.svelte: me - the mark - them, fixed 64 high; slack -> ringing (the call "connecting" sway, 1.2 s) -> taut. The mark is the
+/// shared `TinMark` with the two-tug line spring and the faded-gold slack string (android LineJoin).
 private struct PeopleLineJoin: View {
-    @Environment(\.tin) private var c
-    @Environment(\.accessibilityReduceMotion) private var reduced
     let meDid: String
     let did: String
     let state: PeopleLineState
 
+    private var markState: MarkState {
+        switch state {
+        case .slack: return .slack
+        case .ringing: return .ringing
+        case .taut: return .taut
+        }
+    }
+
     var body: some View {
         HStack(spacing: 6) {
             TinAvatar(did: meDid, size: 56)
-            PeopleLineMark(state: state, reduced: reduced).frame(width: 64, height: 64)
-                .accessibilityLabel(state == .taut ? "Connected" : state == .ringing ? "Connecting" : "Not connected yet")
+            TinMark(size: 64, state: markState, live: true, sway: Sway(period: 1.2, amp: 6),
+                    description: state == .taut ? "Connected" : state == .ringing ? "Connecting" : "Not connected yet",
+                    spring: .line, lineColor: true)
             TinAvatar(did: did, size: 56)
         }
         .frame(height: 64)
-    }
-}
-
-private struct PeopleLineMark: View {
-    @Environment(\.tin) private var c
-    let state: PeopleLineState
-    let reduced: Bool
-    var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30, paused: reduced || state != .ringing)) { ctx in
-            let t = ctx.date.timeIntervalSinceReferenceDate
-            // slack hangs low; ringing sways 6 degrees over 1.2 s; taut is straight.
-            let sway = state == .ringing && !reduced ? sin(t * 2 * .pi / 1.2) * 6 : 0
-            let sag: CGFloat = state == .taut ? 0 : 14
-            Path { p in
-                p.move(to: CGPoint(x: 0, y: 32))
-                p.addQuadCurve(to: CGPoint(x: 64, y: 32), control: CGPoint(x: 32, y: 32 + sag + CGFloat(sway)))
-            }
-            .stroke(state == .taut ? c.thread : c.ln2, style: StrokeStyle(lineWidth: 3, lineCap: .round))
-            .animation(reduced ? nil : PeopleMotion.easeOut(0.4), value: state)
-        }
     }
 }
 

@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 /// Generic building blocks (android Components.kt), prefixed `Tin`. Same sizes, radii, colours and copy as Kotlin.
 
@@ -26,7 +27,7 @@ struct TinTopBar<Actions: View>: View {
     var onBack: (() -> Void)?
     @ViewBuilder var actions: () -> Actions
 
-    init(title: String? = nil, onBack: (() -> Void)? = nil, @ViewBuilder actions: @escaping () -> Actions = { EmptyView() }) {
+    init(title: String? = nil, onBack: (() -> Void)? = nil, @ViewBuilder actions: @escaping () -> Actions) {
         self.title = title; self.onBack = onBack; self.actions = actions
     }
 
@@ -41,6 +42,10 @@ struct TinTopBar<Actions: View>: View {
         .frame(minHeight: 64)
         .padding(.leading, 4).padding(.trailing, 8)
     }
+}
+
+extension TinTopBar where Actions == EmptyView {
+    init(title: String? = nil, onBack: (() -> Void)? = nil) { self.init(title: title, onBack: onBack) { EmptyView() } }
 }
 
 /// 48 pt round tap target around a 24 pt icon.
@@ -194,7 +199,7 @@ struct TinField<Trailing: View>: View {
     init(_ label: String, text: Binding<String>, mono: Bool = false, password: Bool = false, state: TinFieldState = .normal,
          enabled: Bool = true, singleLine: Bool = true, minHeight: CGFloat = 56, hint: String? = nil, placeholder: String? = nil,
          keyboard: UIKeyboardType = .default, submitLabel: SubmitLabel = .done, onSubmit: (() -> Void)? = nil,
-         @ViewBuilder trailing: @escaping () -> Trailing = { EmptyView() }) {
+         @ViewBuilder trailing: @escaping () -> Trailing) {
         self.label = label; _text = text; self.mono = mono; self.password = password; self.state = state; self.enabled = enabled
         self.singleLine = singleLine; self.minHeight = minHeight; self.hint = hint; self.placeholder = placeholder
         self.keyboard = keyboard; self.submitLabel = submitLabel; self.onSubmit = onSubmit; self.trailing = trailing
@@ -243,6 +248,16 @@ struct TinField<Trailing: View>: View {
         } else {
             TextField("", text: $text, prompt: prompt, axis: .vertical)
         }
+    }
+}
+
+extension TinField where Trailing == EmptyView {
+    init(_ label: String, text: Binding<String>, mono: Bool = false, password: Bool = false, state: TinFieldState = .normal,
+         enabled: Bool = true, singleLine: Bool = true, minHeight: CGFloat = 56, hint: String? = nil, placeholder: String? = nil,
+         keyboard: UIKeyboardType = .default, submitLabel: SubmitLabel = .done, onSubmit: (() -> Void)? = nil) {
+        self.init(label, text: text, mono: mono, password: password, state: state, enabled: enabled, singleLine: singleLine,
+                  minHeight: minHeight, hint: hint, placeholder: placeholder, keyboard: keyboard, submitLabel: submitLabel,
+                  onSubmit: onSubmit) { EmptyView() }
     }
 }
 
@@ -323,7 +338,7 @@ struct TinBadge<Leading: View>: View {
     var icon: TinIconData?
     @ViewBuilder var leading: () -> Leading
 
-    init(_ text: String, kind: TinBadgeKind, icon: TinIconData? = nil, @ViewBuilder leading: @escaping () -> Leading = { EmptyView() }) {
+    init(_ text: String, kind: TinBadgeKind, icon: TinIconData? = nil, @ViewBuilder leading: @escaping () -> Leading) {
         self.text = text; self.kind = kind; self.icon = icon; self.leading = leading
     }
 
@@ -345,12 +360,16 @@ struct TinBadge<Leading: View>: View {
     }
 }
 
+extension TinBadge where Leading == EmptyView {
+    init(_ text: String, kind: TinBadgeKind, icon: TinIconData? = nil) { self.init(text, kind: kind, icon: icon) { EmptyView() } }
+}
+
 struct TinSectionLabel<Trailing: View>: View {
     @Environment(\.tin) private var tin
     var text: String
     @ViewBuilder var trailing: () -> Trailing
 
-    init(_ text: String, @ViewBuilder trailing: @escaping () -> Trailing = { EmptyView() }) { self.text = text; self.trailing = trailing }
+    init(_ text: String, @ViewBuilder trailing: @escaping () -> Trailing) { self.text = text; self.trailing = trailing }
 
     var body: some View {
         HStack {
@@ -360,6 +379,10 @@ struct TinSectionLabel<Trailing: View>: View {
         }
         .padding(.leading, 20).padding(.trailing, 20).padding(.top, 18).padding(.bottom, 6)
     }
+}
+
+extension TinSectionLabel where Trailing == EmptyView {
+    init(_ text: String) { self.init(text) { EmptyView() } }
 }
 
 /// Settings-style row: icon, title, optional sub-line, trailing slot (chevron by default).
@@ -447,9 +470,9 @@ struct TinHint: View {
 /// Dialog: radius 24, optional round icon, title, body, then Cancel / confirm (android `TinDialog`). Shown over the whole app on a
 /// scrim; a tap on the scrim dismisses. `confirm` stays disabled while `confirmEnabled` is false.
 extension View {
-    func tinDialog<Body: View>(
+    func tinDialog<Inner: View>(
         isPresented: Binding<Bool>, title: String, confirm: String, onConfirm: @escaping () -> Void, dismiss: String? = "Cancel",
-        destructive: Bool = false, icon: TinIconData? = nil, confirmEnabled: Bool = true, @ViewBuilder body: @escaping () -> Body
+        destructive: Bool = false, icon: TinIconData? = nil, confirmEnabled: Bool = true, @ViewBuilder body: @escaping () -> Inner
     ) -> some View {
         fullScreenCover(isPresented: isPresented) {
             TinDialogCard(title: title, confirm: confirm, onConfirm: onConfirm, dismissLabel: dismiss, destructive: destructive, icon: icon,
@@ -459,7 +482,7 @@ extension View {
     }
 }
 
-private struct TinDialogCard<Body: View>: View {
+private struct TinDialogCard<Inner: View>: View {
     @Environment(\.tin) private var tin
     let title: String, confirm: String
     let onConfirm: () -> Void
@@ -468,7 +491,7 @@ private struct TinDialogCard<Body: View>: View {
     let icon: TinIconData?
     let confirmEnabled: Bool
     let onDismiss: () -> Void
-    @ViewBuilder let content: () -> Body
+    @ViewBuilder let content: () -> Inner
 
     var body: some View {
         let shape = SmoothRoundedRectangle(cornerRadius: 24)
@@ -527,7 +550,7 @@ struct TinCardBox<Content: View>: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     TinTopBar(title: "Settings", onBack: {}) { TinIconButton(TinIcons.search, "Search", {}) }
-                    TinMark(size: 48, live: true, state: .taut)
+                    TinMark(size: 48, state: .taut, live: true)
                     HStack { TinAvatar(did: "did:key:z6MkSynthetic", size: 44, name: "Maya"); ReceiptTickView(tick: .delivered, size: 12) }
                     TinField("Name", text: $text, hint: "Shown beside your avatar")
                     TinButton("Continue") {}

@@ -1,5 +1,6 @@
 import SwiftUI
 import PhotosUI
+import UIKit
 
 /*
  * My profile (playground screens/profile/MyProfile.svelte, route `#/me`; android ProfileScreens.kt): picture, name, status, about,
@@ -109,11 +110,11 @@ private struct ProfileScreenContent: View {
 
             PeopleSection(title: "Profile") {
                 PeopleCard {
-                    PeopleFieldRow(label: "Name", value: .string(name), limit: ProfileRules.nameLimit, offline: offline, placeholder: "Your name",
+                    PeopleFieldRow(label: "Name", value: .string(name), placeholder: "Your name", limit: ProfileRules.nameLimit, offline: offline,
                                    onSave: saveName)
                     PeopleHairline()
-                    PeopleFieldRow(label: "Status", value: fields["status"], optional: true, limit: ProfileRules.textLimit, offline: offline,
-                                   empty: "Add a status", placeholder: "What are you up to?", onSave: optionalText("status"), onRemove: drop("status"))
+                    PeopleFieldRow(label: "Status", value: fields["status"], placeholder: "What are you up to?", optional: true, limit: ProfileRules.textLimit,
+                                   offline: offline, empty: "Add a status", onSave: optionalText("status"), onRemove: drop("status"))
                     PeopleHairline()
                     PeopleFieldRow(label: "About", value: fields["about"], kind: .multiline, optional: true, limit: ProfileRules.textLimit, offline: offline,
                                    empty: "Add a few words about you", onSave: optionalText("about"), onRemove: drop("about"))

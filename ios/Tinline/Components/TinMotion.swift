@@ -51,6 +51,11 @@ enum SvelteEase {
 struct TinEasedAnimation: CustomAnimation {
     var duration: Double
     var ease: @Sendable (Double) -> Double
+    /// Identity of the easing (CustomAnimation is Hashable and a closure is not).
+    var name: String
+
+    static func == (a: TinEasedAnimation, b: TinEasedAnimation) -> Bool { a.duration == b.duration && a.name == b.name }
+    func hash(into h: inout Hasher) { h.combine(duration); h.combine(name) }
 
     func animate<V: VectorArithmetic>(value: V, time: TimeInterval, context: inout AnimationContext<V>) -> V? {
         if time >= duration { return nil }
@@ -59,8 +64,8 @@ struct TinEasedAnimation: CustomAnimation {
 }
 
 extension Animation {
-    static func tinCubicOut(_ duration: Double) -> Animation { Animation(TinEasedAnimation(duration: duration, ease: SvelteEase.cubicOut)) }
-    static func tinCubicIn(_ duration: Double) -> Animation { Animation(TinEasedAnimation(duration: duration, ease: SvelteEase.cubicIn)) }
+    static func tinCubicOut(_ duration: Double) -> Animation { Animation(TinEasedAnimation(duration: duration, ease: SvelteEase.cubicOut, name: "cubicOut")) }
+    static func tinCubicIn(_ duration: Double) -> Animation { Animation(TinEasedAnimation(duration: duration, ease: SvelteEase.cubicIn, name: "cubicIn")) }
 }
 
 extension Color {

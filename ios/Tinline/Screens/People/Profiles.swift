@@ -46,6 +46,7 @@ final class ProfileSession {
 
 /// What the profile controller needs from the app (Android `P2pApp`): node reads serialized with account swaps, and the two
 /// refreshes a profile change implies. The Shell implements this; `PeopleModel` is the default.
+@MainActor
 protocol ProfileHost: AnyObject {
     var isOnline: Bool { get }
     /// Runs `body` against the node on a worker, only while `ticket` is still the selected account session; throws otherwise.
@@ -142,7 +143,7 @@ final class ProfilesController: ObservableObject, ProfileEvents, @unchecked Send
     func apply(_ op: ProfileOp) async -> String? {
         if case .setAvailable(let available, _) = op, let problem = ProfilePolicy.availabilityProblem(available: available) { return problem }
         guard let ticket = session.ticket(), let host else { return Self.saveFailed }
-        let result: Result<Void, Error>
+        let result: Result<Void, any Swift.Error>
         do {
             try await host.profileWork(ticket) { node in
                 switch op {

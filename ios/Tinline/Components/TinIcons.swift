@@ -3,34 +3,6 @@
 // each tier [lines, fills, strings] as SVG path data in a 24-unit box.
 
 enum TinIcons {
-    /// One icon at one size tier. [all] is the whole glyph in one colour; [body] and [string] split it so the string can be gold. 
-class TinGlyph(val all: ImageVector, val body: ImageVector, val string: ImageVector?)
-
-/// A Tinline line icon (crates/tin-icons). Tiers are designed for 16, 20 and 24 dp; [at] picks the nearest. 
-class TinIcon internal constructor(private val name: String, internal val tiers: Array<Array<String>>) {
-private val cache = arrayOfNulls<TinGlyph>(3)
-
-fun at(size: Dp): TinGlyph {
-val t = when { size.value < 18f -> 0; size.value < 22f -> 1; else -> 2 }
-return cache[t] ?: build(tiers[t]).also { cache[t] = it }
-}
-
-private fun build(p: Array<String>): TinGlyph {
-val (lines, fills, strings) = p
-return TinGlyph(vec(lines + strings, fills), vec(lines, fills), if (strings.isEmpty()) null else vec(strings, ""))
-}
-
-private fun vec(lines: String, fills: String): ImageVector =
-ImageVector.Builder(name, 24.dp, 24.dp, 24f, 24f).apply {
-if (lines.isNotEmpty()) addPath(
-PathParser().parsePathString(lines).toNodes(), fill = null, stroke = SolidColor(Color.Black),
-strokeLineWidth = 1.75f, strokeLineCap = StrokeCap.Round, strokeLineJoin = StrokeJoin.Round,
-)
-if (fills.isNotEmpty()) addPath(PathParser().parsePathString(fills).toNodes(), fill = SolidColor(Color.Black))
-}.build()
-}
-
-object TinIcons {
     /// `call` (mark). The mark in line: two cans and the slack string. Starts or shows a call.
     static let call = TinIconData("call", [
         ["M7.8 6.6C9.04 6.6 10.04 8.57 10.04 11C10.04 13.43 9.04 15.4 7.8 15.4C6.56 15.4 5.56 13.43 5.56 11C5.56 8.57 6.56 6.6 7.8 6.6M7.8 6.6L4.2 6.6C2.96 6.6 1.96 8.57 1.96 11C1.96 13.43 2.96 15.4 4.2 15.4L7.8 15.4M16.2 6.6C14.96 6.6 13.96 8.57 13.96 11C13.96 13.43 14.96 15.4 16.2 15.4C17.44 15.4 18.44 13.43 18.44 11C18.44 8.57 17.44 6.6 16.2 6.6M16.2 6.6L19.8 6.6C21.04 6.6 22.04 8.57 22.04 11C22.04 13.43 21.04 15.4 19.8 15.4L16.2 15.4", "M7.8 9.5C8.22 9.5 8.56 10.17 8.56 11C8.56 11.83 8.22 12.5 7.8 12.5C7.38 12.5 7.04 11.83 7.04 11C7.04 10.17 7.38 9.5 7.8 9.5ZM16.2 9.5C15.78 9.5 15.44 10.17 15.44 11C15.44 11.83 15.78 12.5 16.2 12.5C16.62 12.5 16.96 11.83 16.96 11C16.96 10.17 16.62 9.5 16.2 9.5Z", "M7.8 11Q12 17.8 16.2 11"],

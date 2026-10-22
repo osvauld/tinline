@@ -40,7 +40,7 @@ final class ProfileModelTests: XCTestCase {
 
     func testHumanizeAndLinks() {
         XCTAssertEqual(PeopleProfileInfo.humanize("work-title"), "Work title")
-        XCTAssertEqual(PeopleProfileInfo.humanize("workTitle"), "Work title")
+        XCTAssertEqual(PeopleProfileInfo.humanize("workTitle"), "Work Title")   // only the first letter is raised, as in info.ts
         XCTAssertEqual(PeopleProfileInfo.normaliseLink("arjun.example"), "https://arjun.example/")
         XCTAssertNil(PeopleProfileInfo.safeUrl("javascript:alert(1)"))
         XCTAssertNil(PeopleProfileInfo.safeUrl("https://user:pw@a.example/"))

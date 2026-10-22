@@ -81,7 +81,7 @@ private struct PeopleStyled: ViewModifier {
 }
 
 extension View {
-    func peopleStyle(_ style: PeopleTextStyle, weight: Font.Weight? = nil, lineHeight: CGFloat? = nil, size: CGFloat? = nil, tnum: Bool = false) -> some View {
+    func peopleStyle(_ style: PeopleTextStyle, weight: Font.Weight? = nil, size: CGFloat? = nil, lineHeight: CGFloat? = nil, tnum: Bool = false) -> some View {
         modifier(PeopleStyled(style: style, weight: weight, lineHeight: lineHeight, size: size, tnum: tnum))
     }
 }
@@ -642,7 +642,7 @@ struct PeopleGateNextRow<Next: View, Start: View>: View {
 /// gate/StepShell.svelte on Android: heading (26/32 bold), optional lead (15/22 muted), body (gap 16, padding 8 24 16) that scrolls,
 /// footer (padding 12 24 24, gap 8, full-width buttons). `center` centres the body; with `anchor` it hangs from a fixed point
 /// (min(14 % of the height, 96 pt) from the top) so an added line never re-centres the rest.
-struct PeopleGateStep<Hero: View, Body: View, Foot: View>: View {
+struct PeopleGateStep<Hero: View, Main: View, Foot: View>: View {
     @Environment(\.tin) private var c
     let title: String
     var lead: String? = nil
@@ -652,7 +652,7 @@ struct PeopleGateStep<Hero: View, Body: View, Foot: View>: View {
     /// The body fills the height instead of scrolling (Welcome's mark, Choose's options and Terms' consent line sit at the bottom).
     var fill = false
     @ViewBuilder let hero: Hero
-    @ViewBuilder let content: Body
+    @ViewBuilder let content: Main
     @ViewBuilder let foot: Foot
 
     var body: some View {

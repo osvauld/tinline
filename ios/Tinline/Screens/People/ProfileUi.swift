@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 /*
  * Profile furniture ported from playground src/screens/profile (android ProfileUi.kt): FieldRow.svelte (one piece of information:
