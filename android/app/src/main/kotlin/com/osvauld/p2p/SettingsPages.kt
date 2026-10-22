@@ -326,7 +326,8 @@ fun StoragePage(pictures: Long, files: Long, messages: Long, cache: Long, downlo
 @Composable
 fun PrivacyLanding(blockedN: Int, msgOnly: Int, hasPassphrase: Boolean, onBack: () -> Unit, onBlocked: () -> Unit, onCalls: () -> Unit, onPhrase: () -> Unit, onPassphrase: () -> Unit,
                    readReceipts: Boolean = true, onReadReceipts: (Boolean) -> Unit = {},
-                   presenceVisible: Boolean = true, onPresenceVisible: (Boolean) -> Unit = {}) {
+                   presenceVisible: Boolean = true, onPresenceVisible: (Boolean) -> Unit = {},
+                   groupPictures: uniffi.p2pcore.PictureDownload = uniffi.p2pcore.PictureDownload.WIFI, onGroupPictures: (uniffi.p2pcore.PictureDownload) -> Unit = {}) {
     PfPage("Privacy", onBack) {
         PfSec(first = true) {
             PfCard {
@@ -363,6 +364,17 @@ fun PrivacyLanding(blockedN: Int, msgOnly: Int, hasPassphrase: Boolean, onBack: 
                 }
             }
             PfNote("Public groups are the ones anyone can join with an open link. This applies on this device; your other devices keep their own choice.")
+        }
+        // Public group §5: when group pictures load by themselves on this phone (group core, default Wi-Fi only).
+        PfSec("Group pictures") {
+            PfCard {
+                listOf(Triple(uniffi.p2pcore.PictureDownload.ALWAYS, "Always", "On Wi-Fi and mobile data"),
+                    Triple(uniffi.p2pcore.PictureDownload.WIFI, "On Wi-Fi", "On mobile data they wait for a tap"),
+                    Triple(uniffi.p2pcore.PictureDownload.TAP, "When I tap them", "Each shows a soft preview until then")).forEach { (d, label, sub) ->
+                    act { PfRadioRow(label, sub, groupPictures == d, { onGroupPictures(d) }) }
+                }
+            }
+            PfNote("Pictures in groups come from the group’s hosts. This applies on this device.")
         }
     }
 }

@@ -6,6 +6,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.stateDescription
@@ -469,6 +470,33 @@ fun GroupChatLive(app: P2pApp, id: String, onBack: () -> Unit, onInfo: () -> Uni
         if (unreadAtOpen > 0) o.messages.filter { !it.outgoing && it.kind == GroupItemKind.POST }.takeLast(unreadAtOpen).firstOrNull()?.id else null
     }
     val nowMs = System.currentTimeMillis()
+    // Public group §5: the picture button posts a picked image (the draft is its caption); the core scales it.
+    val picker = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia()) { uri ->
+        if (uri == null || sending) return@rememberLauncherForActivityResult
+        val caption = draft
+        draft = ""; replyTo = null; sending = true
+        exec({
+            withContext(Dispatchers.IO) {
+                val bytes = runCatching {
+                    ctx.contentResolver.openInputStream(uri)?.use { s ->
+                        val buf = java.io.ByteArrayOutputStream()
+                        val chunk = ByteArray(64 * 1024)
+                        while (true) {
+                            val n = s.read(chunk)
+                            if (n < 0) break
+                            buf.write(chunk, 0, n)
+                            if (buf.size() > GroupText.MAX_PICTURE_BYTES) break
+                        }
+                        buf.toByteArray()
+                    }
+                }.getOrNull() ?: return@withContext Result.failure(GroupFailure("Couldn’t read that picture."))
+                app.groups.postImage(id, bytes, caption).map { "" }
+            }
+        }) { res ->
+            sending = false
+            res.onFailure { if (draft.isEmpty()) draft = caption; say(it.message ?: "Couldn’t send") }
+        }
+    }
     Page {
         // Conversation.svelte `.bar` for a group: back · the head (avatar 36, name 17/22, status 13/18; tap = info) · call · info.
         Row(Modifier.fillMaxWidth().height(56.dp).background(c.sf).padding(horizontal = 6.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -520,7 +548,7 @@ fun GroupChatLive(app: P2pApp, id: String, onBack: () -> Unit, onInfo: () -> Uni
                             is ThreadRow.Call -> GroupCallPill(row.r, me, GroupText.active(d.myRole)) { app.groupCallUi.call(d.id, say) }
                             is ThreadRow.Post -> {
                                 if (row.m.id == dividerId) PgUnreadDivider(unreadAtOpen)
-                                GroupItemLive(app, o.messages, row.i, row.m, me, d, blocks.blockedByMe(row.m.authorDid), onRemoval, onReply = { replyTo = row.m.id }, top = if (newDay) 0.dp else null, receipt = o.receipts[row.m.id])
+                                GroupItemLive(app, o.messages, row.i, row.m, me, d, blocks.blockedByMe(row.m.authorDid), onRemoval, onReply = { replyTo = row.m.id }, top = if (newDay) 0.dp else null, receipt = o.receipts[row.m.id], say = say)
                             }
                         }
                     }
@@ -537,7 +565,7 @@ fun GroupChatLive(app: P2pApp, id: String, onBack: () -> Unit, onInfo: () -> Uni
             else -> if (GroupText.adminsOnlyLocked(d)) AdminsOnlyLine() else {
                 val r = replyTo?.let { rid -> o.messages.firstOrNull { it.id == rid } }
                 PgComposer(draft, { draft = it }, "Message", r?.let {
-                    ComposerCtx("Replying to " + (if (it.outgoing) "yourself" else firstName(nameOf(app, it.authorDid, it.authorName))), it.text, "Cancel reply")
+                    ComposerCtx("Replying to " + (if (it.outgoing) "yourself" else firstName(nameOf(app, it.authorDid, it.authorName))), GroupText.postLine(it), "Cancel reply")
                 }, editing = false, onCancelCtx = { replyTo = null }, onSend = {
                     if (sending || draft.isBlank()) return@PgComposer
                     val text = draft; val reply = replyTo
@@ -546,7 +574,10 @@ fun GroupChatLive(app: P2pApp, id: String, onBack: () -> Unit, onInfo: () -> Uni
                         sending = false
                         res.onFailure { if (draft.isEmpty()) draft = text; say(it.message ?: "Couldn’t send") }
                     }
-                }, onAttach = null)
+                }, onAttach = {
+                    if (!sending) try { picker.launch(androidx.activity.result.PickVisualMediaRequest(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.ImageOnly)) }
+                        catch (_: Exception) { say("No photo picker on this phone.") }
+                })
             }
         }
     }
@@ -649,7 +680,7 @@ private fun GroupCallPill(r: uniffi.p2pcore.GroupCallRecord, me: String, enabled
 private fun ColumnScope.GroupItemLive(
     app: P2pApp, all: List<GroupMessage>, i: Int, m: GroupMessage, me: String, d: GroupDetail, authorBlocked: Boolean,
     onRemoval: () -> Unit, onReply: () -> Unit, top: androidx.compose.ui.unit.Dp? = null,
-    receipt: uniffi.p2pcore.GroupReceiptStatus? = null,
+    receipt: uniffi.p2pcore.GroupReceiptStatus? = null, say: (String) -> Unit = {},
 ) {
     val c = Tin.c
     if (m.kind == GroupItemKind.REMOVED && m.subjectDid == me) {
@@ -691,7 +722,7 @@ private fun ColumnScope.GroupItemLive(
     val qr = m.replyTo?.let { rid -> all.firstOrNull { it.id == rid } }
     val qWho = qr?.let { if (it.outgoing) "You" else firstName(nameOf(app, it.authorDid, it.authorName)) }
     val qColor = if (qr?.outgoing == true) c.accentInk else qr?.let { authorColor(it.authorDid) } ?: c.accentInk
-    val quote: (@Composable () -> Unit)? = if (m.replyTo == null) null else ({ PgQuote(qWho, qColor, qr?.text ?: "Original message unavailable", null) })
+    val quote: (@Composable () -> Unit)? = if (m.replyTo == null) null else ({ PgQuote(qWho, qColor, qr?.let { GroupText.postLine(it) } ?: "Original message unavailable", null) })
     // Waiting for a host = the slack string; sent = one tick; every eligible member signed delivered = two ticks; every one
     // read = the read ink (core's GroupReceiptStatus). Host storage is never members' delivery/read.
     // An open group sends no member receipts (public group §4): "Delivered 0/N" would mislead, so no n/N there.
@@ -705,11 +736,17 @@ private fun ColumnScope.GroupItemLive(
     var info by remember(m.id) { mutableStateOf(false) }
     val meta = BubbleMeta(msClock(m.at.toLong()), receipt = tick)
     Column(Modifier.padding(top = top ?: gapAbove(pos)).fillMaxWidth(), horizontalAlignment = if (m.outgoing) Alignment.End else Alignment.Start) {
-        Box(Modifier.fillMaxWidth(.78f), contentAlignment = if (m.outgoing) Alignment.CenterEnd else Alignment.CenterStart) {
+        m.image?.let { img ->
+            if (!m.outgoing && !p) Text(firstName(name) + if (m.beforeRemoval) " · removed" else "", Modifier.padding(start = 4.dp, bottom = 2.dp),
+                style = PgBodyText.copy(fontSize = 13.sp, lineHeight = 18.sp, fontWeight = FontWeight.Bold), color = if (m.beforeRemoval) c.ink2 else authorColor(m.authorDid))
+            GroupPhotoBox(app, d.id, m, img, if (m.text.isEmpty()) pos else BubblePos.First, m.outgoing, say, onReply)
+            if (m.text.isEmpty()) Text(msClock(m.at.toLong()), Modifier.padding(top = 3.dp, start = 4.dp, end = 4.dp), style = PgBodyText.copy(fontSize = 11.sp, lineHeight = 14.sp), color = c.ink2)
+        }
+        if (m.image == null || m.text.isNotEmpty()) Box(Modifier.fillMaxWidth(.78f), contentAlignment = if (m.outgoing) Alignment.CenterEnd else Alignment.CenterStart) {
             PgTextBubble(androidx.compose.ui.text.AnnotatedString(m.text), pos, m.outgoing, meta,
                 Modifier.combinedClickable(enabled = GroupText.active(d.myRole) || lines != null, onLongClickLabel = "Reply", onLongClick = onReply,
                     onClickLabel = if (lines != null) "Who has it" else null, onClick = { if (lines != null) info = !info }),
-                sender = if (m.outgoing || p) null else firstName(name) + if (m.beforeRemoval) " · removed" else "",
+                sender = if (m.outgoing || p || m.image != null) null else firstName(name) + if (m.beforeRemoval) " · removed" else "",
                 senderColor = if (m.beforeRemoval) c.ink2 else authorColor(m.authorDid), quote = quote)
         }
         if (m.outgoing && m.delivery == CoreDelivery.WAITING) Row(Modifier.padding(top = 3.dp, end = 2.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -719,6 +756,51 @@ private fun ColumnScope.GroupItemLive(
         if (m.beforeRemoval) Text("Written before ${firstName(name)} was removed", Modifier.padding(top = 3.dp), style = PgBodyText.copy(fontSize = 11.sp), color = c.ink2)
         if (info && lines != null) Text(lines.joinToString("\n"), Modifier.padding(top = 3.dp, end = 2.dp), style = PgBodyText.copy(fontSize = 12.sp, lineHeight = 16.sp), color = c.ink2,
             textAlign = androidx.compose.ui.text.style.TextAlign.End)
+    }
+}
+
+/**
+ * A post's picture (public group §5), drawn like a 1:1 photo (PhotoBox): its box at the picture's shape from the start,
+ * the core's colour preview until it is here, then the picture. Not downloaded (the auto-download setting said wait): its
+ * size and "Load photo"; on its way: a ring; failed: retry. A long press replies, as on the text bubble.
+ */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+@Composable
+private fun GroupPhotoBox(app: P2pApp, gid: String, m: GroupMessage, img: uniffi.p2pcore.GroupImage, pos: BubblePos, out: Boolean, say: (String) -> Unit, onLong: () -> Unit) {
+    val c = Tin.c
+    val scope = rememberCoroutineScope()
+    val ready = img.state == uniffi.p2pcore.GroupImageState.READY
+    val bmp by produceState<androidx.compose.ui.graphics.ImageBitmap?>(null, m.id, ready) {
+        value = if (!ready) null else withContext(Dispatchers.IO) {
+            app.groups.imagePath(gid, m.id)?.let { runCatching { ChatMedia.bitmap(java.io.File(it), 720) }.getOrNull() }
+        }
+    }
+    val pv = remember(m.id) { previewBitmap(img.preview) }
+    val (w, h) = photoBox(img.width, img.height)
+    fun load() = scope.launch { withContext(Dispatchers.IO) { app.groups.fetchImage(gid, m.id) }.onFailure { say(it.message ?: "Couldn’t load the picture") } }
+    Box(Modifier.size(w, h).clip(bubbleShape(pos, out, 3.dp)).background(c.sf3)
+        .combinedClickable(role = Role.Button, onLongClickLabel = "Reply", onLongClick = onLong, onClickLabel = if (ready) null else "Load photo", onClick = { if (!ready) load() })
+        .semantics { contentDescription = if (m.text.isEmpty()) "Photo" else "Photo: ${m.text}" },
+        contentAlignment = Alignment.Center) {
+        pv?.let {
+            Image(it, null, Modifier.fillMaxSize().graphicsLayer { scaleX = 1.24f; scaleY = 1.24f }.blur(14.dp),
+                contentScale = androidx.compose.ui.layout.ContentScale.FillBounds, filterQuality = androidx.compose.ui.graphics.FilterQuality.High)
+        }
+        bmp?.let { Image(it, null, Modifier.fillMaxSize(), contentScale = androidx.compose.ui.layout.ContentScale.Crop) }
+        when (img.state) {
+            uniffi.p2pcore.GroupImageState.REMOTE -> Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                PhotoChip("Photo · ${sizeText(img.size.toLong())}")
+                Row(Modifier.clip(RoundedCornerShape(18.dp)).background(c.accent).clickable(role = Role.Button) { load() }.padding(horizontal = 16.dp, vertical = 7.dp),
+                    verticalAlignment = Alignment.CenterVertically) {
+                    Text("Load photo", style = TinType.caption.copy(fontSize = 13.sp, fontWeight = FontWeight.SemiBold), color = c.onAccent)
+                }
+            }
+            uniffi.p2pcore.GroupImageState.LOADING -> Ring {
+                androidx.compose.material3.CircularProgressIndicator(Modifier.size(40.dp), color = Color.White, trackColor = Color.White.copy(alpha = .28f), strokeWidth = 3.dp)
+            }
+            uniffi.p2pcore.GroupImageState.FAILED -> Ring { Icon(PgIcons.Retry, "Try loading again", tint = Color.White) }
+            uniffi.p2pcore.GroupImageState.READY -> if (bmp == null && pv == null) Icon(PgIcons.Image, null, tint = c.ink2)
+        }
     }
 }
 

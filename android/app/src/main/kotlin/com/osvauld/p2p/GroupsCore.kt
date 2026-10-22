@@ -84,6 +84,12 @@ interface GroupApi {
     /** In memory in the core: empty for a private group. */
     fun online(id: String): List<OnlineMember> = emptyList()
     fun presenceVisible(): Boolean = true
+    // Image posts (public group §5). Defaults keep JVM stand-ins compiling.
+    /** Blocking (the core scales and re-encodes the picture): IO threads only. */
+    fun postImage(id: String, bytes: ByteArray, caption: String): GroupMessage = throw UnsupportedOperationException()
+    fun fetchImage(id: String, messageId: String) {}
+    /** Blocking the first time (the core opens the picture into a file): IO threads only. */
+    fun imagePath(id: String, messageId: String): String? = null
 }
 
 class NodeGroupApi(private val node: () -> Node) : GroupApi {
@@ -123,6 +129,9 @@ class NodeGroupApi(private val node: () -> Node) : GroupApi {
     override fun setAdminsOnly(id: String, adminsOnly: Boolean) = node().groupSetAdminsOnly(id, adminsOnly)
     override fun online(id: String) = node().groupOnline(id)
     override fun presenceVisible() = node().groupPresenceVisible()
+    override fun postImage(id: String, bytes: ByteArray, caption: String) = node().groupPostImageBytes(id, bytes, caption)
+    override fun fetchImage(id: String, messageId: String) = node().groupFetchImage(id, messageId)
+    override fun imagePath(id: String, messageId: String) = node().groupImagePath(id, messageId)
 }
 
 /** A contact as the "Add members" picker sees it. */
@@ -187,11 +196,21 @@ object GroupText {
             null -> ""
             else -> when {
                 m.kind != GroupItemKind.POST -> sysText(m, me)
-                m.outgoing -> "You: ${m.text}"
-                else -> "${firstName(someone(m.authorName))}: ${m.text}"
+                m.outgoing -> "You: ${postLine(m)}"
+                else -> "${firstName(someone(m.authorName))}: ${postLine(m)}"
             }
         }
     }
+
+    /** A post in one line: its text, "Photo" for a picture alone, "Photo · caption" with one. Same words as desktop. */
+    fun postLine(m: GroupMessage): String = when {
+        m.image == null -> m.text
+        m.text.isEmpty() -> "Photo"
+        else -> "Photo · ${m.text}"
+    }
+
+    /** Largest picture file the composer reads in (the core refuses anything larger). */
+    const val MAX_PICTURE_BYTES = 64 * 1024 * 1024
 
     /** The header's sub-line. */
     fun status(d: GroupDetail): String {
@@ -451,6 +470,22 @@ class GroupsController(private val api: GroupApi, private val me: () -> String?)
         } }.mapError()
     }
 
+    /** Posts a picture (bytes of a PNG, JPEG or WebP) with [caption]; the core scales and re-encodes it. IO threads only. */
+    fun postImage(id: String, bytes: ByteArray, caption: String): Result<GroupMessage> {
+        if (_open.value?.takeIf { it.id == id }?.detail?.let(GroupText::adminsOnlyLocked) == true) return Result.failure(GroupFailure("${GroupText.ADMINS_ONLY}."))
+        if (bytes.isEmpty() || bytes.size > GroupText.MAX_PICTURE_BYTES) return Result.failure(GroupFailure("That picture is too large to post."))
+        return runCatching { api.postImage(id, bytes, caption.trim()) }.onSuccess { m -> synchronized(this) {
+            _open.update { o -> if (o?.id == id) o.copy(messages = upsertGroupMessage(o.messages, m)) else o }
+            _list.value = try { api.groups() } catch (e: Exception) { _list.value }
+        } }.mapError()
+    }
+
+    /** Loads a post's picture now (tap to load, or try again). IO threads only. */
+    fun fetchImage(id: String, messageId: String): Result<Unit> = runCatching { api.fetchImage(id, messageId) }.mapError()
+
+    /** The post's picture as a file once it is here (null before). IO threads only. */
+    fun imagePath(id: String, messageId: String): String? = try { api.imagePath(id, messageId) } catch (_: Exception) { null }
+
     fun create(name: String): Result<String> {
         if (name.isBlank()) return Result.failure(IllegalArgumentException("Give the group a name."))
         return runCatching { api.create(name.trim()) }.also { refresh() }.mapError()
@@ -591,7 +626,11 @@ class GroupsController(private val api: GroupApi, private val me: () -> String?)
      * An open group's online list changed (public group §3): re-read it for the group on screen. An in-memory core read, and
      * without the monitor (it can be held across markRead for most of a second; these come every 15 s or so).
      */
-    override fun onGroupImage(groupId: String, messageId: String) {}
+    /** A post's picture arrived or changed state (public group §5): the group on screen re-reads its window. */
+    override fun onGroupImage(groupId: String, messageId: String) {
+        if (shown != groupId) return
+        synchronized(this) { if (_open.value?.id == groupId) reloadOpen() }
+    }
 
     override fun onGroupPresence(groupId: String) {
         val o = _open.value?.takeIf { it.id == groupId } ?: return
