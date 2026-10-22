@@ -86,7 +86,7 @@ async fn authenticated_own_sessions_forward_exact_host_proof_and_reconcile_recei
         let monitor = async {
             loop {
                 let held = target.store.storage_attestation(&gid, &digest(&original)).unwrap();
-                let day = crate::group::doc::DocId::Day("1970-01-01".into());
+                let day = group_runtime::doc::DocId::Day("1970-01-01".into());
                 if held.is_some() && target.doc_vv(&gid, &day) == source.doc_vv(&gid, &day)
                     && !target.groups.lock()[&gid].meta.owed_days.contains("1970-01-01") {
                     assert_eq!(held.unwrap().bytes, original);

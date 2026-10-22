@@ -69,8 +69,7 @@ impl Node {
     /// stale open link's token does after the group closed.
     pub fn group_join_token_for_test(&self, token: Vec<u8>) -> Result<String, Error> {
         let t: InviteToken = cryptography::codec::from_bytes(&token, MAX_TOKEN).map_err(|_| Error::Protocol("bad token".into()))?;
-        let inner = self.inner.clone();
-        Ok(self.block_on(async move { inner.group.group_join_token(t).await })??)
+        self.run(|inner| async move { inner.group.group_join_token(t).await })
     }
 
     /// The group endpoint id of the host `link` names.

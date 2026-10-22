@@ -4,8 +4,6 @@
 
 // The day doc is `chat_core::doc`.
 pub use chat_core::doc;
-#[cfg(test)]
-pub use chat_runtime::chat::wire;
 
 pub mod api;
 pub mod store;

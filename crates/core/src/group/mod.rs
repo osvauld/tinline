@@ -7,8 +7,6 @@
 //! surface: the records declared as remote types, the app's event callbacks and the `Node` calls.
 
 pub use group_runtime::{engine, images, mail, record, state, store};
-#[cfg(test)]
-pub use group_runtime::{doc, own};
 
 pub mod api;
 pub mod calllog;

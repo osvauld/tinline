@@ -1,7 +1,6 @@
 //! The group API records, declared to UniFFI (the runtime's, `group_runtime::api`, are plain),
 //! and the app's event callback.
 
-use std::sync::Arc;
 
 pub use group_runtime::api::*;
 
@@ -238,23 +237,12 @@ pub trait GroupEvents: Send + Sync {
     fn on_group_image(&self, group_id: String, message_id: String);
 }
 
-/// Hands the runtime's events to the app's `GroupEvents`.
-pub(crate) struct GroupEventsAdapter(pub(crate) Arc<dyn GroupEvents>);
-
-impl group_runtime::api::GroupSink for GroupEventsAdapter {
-    fn on_group_message(&self, message: GroupMessage) {
-        self.0.on_group_message(message);
+sink_adapter!(
+    /// Hands the runtime's events to the app's `GroupEvents`.
+    pub(crate) GroupEventsAdapter(GroupEvents) => group_runtime::api::GroupSink {
+        fn on_group_message(message: GroupMessage);
+        fn on_group_changed(group_id: String);
+        fn on_group_presence(group_id: String);
+        fn on_group_image(group_id: String, message_id: String);
     }
-
-    fn on_group_changed(&self, group_id: String) {
-        self.0.on_group_changed(group_id);
-    }
-
-    fn on_group_presence(&self, group_id: String) {
-        self.0.on_group_presence(group_id);
-    }
-
-    fn on_group_image(&self, group_id: String, message_id: String) {
-        self.0.on_group_image(group_id, message_id);
-    }
-}
+);

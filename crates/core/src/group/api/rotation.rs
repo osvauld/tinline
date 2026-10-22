@@ -32,10 +32,9 @@ impl Node {
     /// Rotates this device's group endpoint now (a Settings "change it now"): the next periodic
     /// rotation counts from this one. `NotStarted` before the group endpoint is up.
     pub fn group_rotate_now(&self) -> Result<(), Error> {
-        let inner = self.inner.clone();
-        Ok(self.block_on(async move {
+        self.run(|inner| async move {
             let core = inner.group.group_core()?;
             inner.group.group_rotate(&core).await
-        })??)
+        })
     }
 }

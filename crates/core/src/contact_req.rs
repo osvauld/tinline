@@ -116,18 +116,13 @@ pub trait ContactRequestEvents: Send + Sync {
     fn on_request_accepted(&self, contact: Contact);
 }
 
-/// Hands the runtime's contact-request events to the app's `ContactRequestEvents`.
-struct RequestEventsAdapter(Arc<dyn ContactRequestEvents>);
-
-impl ContactRequestSink for RequestEventsAdapter {
-    fn on_contact_request(&self, request: ContactRequest) {
-        self.0.on_contact_request(request);
+sink_adapter!(
+    /// Hands the runtime's contact-request events to the app's `ContactRequestEvents`.
+    RequestEventsAdapter(ContactRequestEvents) => ContactRequestSink {
+        fn on_contact_request(request: ContactRequest);
+        fn on_request_accepted(contact: Contact);
     }
-
-    fn on_request_accepted(&self, contact: Contact) {
-        self.0.on_request_accepted(contact);
-    }
-}
+);
 
 #[uniffi::export]
 impl Node {

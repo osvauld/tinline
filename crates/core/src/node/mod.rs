@@ -141,6 +141,16 @@ impl Node {
         Ok(self.block_on(fut)??)
     }
 
+    /// `block_rt` for an engine call that needs the node's parts: `self.run(|i| async move { .. })`
+    /// hands the closure an owned `Arc<Inner>` to move into the future.
+    pub(crate) fn run<T, Fut>(&self, f: impl FnOnce(Arc<Inner>) -> Fut) -> Result<T, Error>
+    where
+        T: Send + 'static,
+        Fut: std::future::Future<Output = Result<T, node_runtime::Error>> + Send + 'static,
+    {
+        self.block_rt(f(self.inner.clone()))
+    }
+
     /// Takes the lifecycle lock for the caller's whole operation; refuses on core threads.
     fn lifecycle(&self) -> Result<OwnedMutexGuard<()>, Error> {
         let l = self.inner.lifecycle.clone();

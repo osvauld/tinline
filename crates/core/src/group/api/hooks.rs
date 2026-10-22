@@ -42,8 +42,7 @@ impl Node {
 
     /// Writes our post into the day of `at_ms` (a time in the past, say).
     pub fn group_post_at_for_test(&self, group_id: String, at_ms: i64, text: String) -> Result<GroupMessage, Error> {
-        let core = self.inner.group.group_core()?;
-        self.inner.group.group_member_check(&core, &group_id)?;
+        let core = self.inner.group.member_core(&group_id)?;
         let (entry, changed) = core.write_at(&group_id, Body::Post { text, reply_to: None, image: None }, at_ms)?;
         let item = changed.new_items.iter().find(|i| i.id == entry.id).cloned();
         self.inner.group.group_after(&core, changed, None);

@@ -19,8 +19,7 @@ impl Node {
 
     /// Redeems someone's ticket: dials them, exchanges grants, stores them. Blocks until done.
     pub fn add_contact(&self, ticket: String) -> Result<Contact, Error> {
-        let inner = self.inner.clone();
-        self.block_on(inner.ctx.clone().add_contact(ticket))?.map_err(Error::from)
+        self.run(|inner| inner.ctx.clone().add_contact(ticket))
     }
 
     pub fn contacts(&self) -> Vec<Contact> {

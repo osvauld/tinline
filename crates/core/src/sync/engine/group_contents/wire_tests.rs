@@ -3,7 +3,7 @@
 //! runs the real self_run DID/device auth handshake with synthetic identities.
 use super::*;
 use crate::chat::doc::writer_id;
-use crate::group::doc::{DocId, GroupDoc};
+use group_runtime::doc::{DocId, GroupDoc};
 use crate::group::record::InviteToken;
 use crate::{CallInfo, CallState, Node, NodeEvents, NodeStatus};
 use iroh::{Endpoint, SecretKey, endpoint::presets};
@@ -160,7 +160,7 @@ async fn actual_authenticated_self_reader_does_not_ack_failed_group_append() {
                 })
                 .await
                 .unwrap();
-            let sig = crate::chat::wire::sign_batch(&client_secret, &name, &update);
+            let sig = chat_runtime::chat::wire::sign_batch(&client_secret, &name, &update);
             writer
                 .send(&SelfMsg::Sync {
                     doc: name.clone(),
