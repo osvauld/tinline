@@ -131,7 +131,7 @@ impl GroupRt {
 
     async fn group_days_pass(self: &Arc<Self>, core: &Arc<GroupCore>, sess: &Arc<Sess>, first: bool, alive: &impl Fn() -> bool) -> Result<(), ()> {
         // Our inventory, in pages, ended by an empty page.
-        let days = core.store.days(&sess.gid).unwrap_or_default();
+        let days = core.store.days(&sess.gid).or_log_default("reading the history days");
         let mut after = None;
         for page in days.chunks(DAYS_PAGE) {
             let page: Vec<(String, Vec<u8>)> = page.iter().filter_map(|d| Some((d.clone(), core.store.shard_meta(&sess.gid, d).ok().flatten()?.vv))).collect();
@@ -195,7 +195,7 @@ impl GroupRt {
         let mut closed = 0;
         let gids: Vec<String> = core.groups.lock().keys().cloned().collect();
         for gid in gids {
-            for day in core.store.days(&gid).unwrap_or_default() {
+            for day in core.store.days(&gid).or_log_default("reading the history days") {
                 if day >= limit || core.closed() {
                     break;
                 }

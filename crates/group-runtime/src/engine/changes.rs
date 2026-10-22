@@ -251,7 +251,7 @@ impl GroupRt {
             .unwrap_or_default();
         let mut out: Vec<Vec<u8>> = Vec::new();
         if !sess.hosting {
-            out.extend(core.store.outbox(&sess.gid).unwrap_or_default());
+            out.extend(core.store.outbox(&sess.gid).or_log_default("reading the outbox"));
         }
         if we_host {
             let now = now_ms();

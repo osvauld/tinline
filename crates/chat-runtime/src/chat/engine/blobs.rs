@@ -112,13 +112,16 @@ impl ChatRt {
             }
             if let Some(res) = res {
                 let ok = res.is_ok();
-                if let Ok(Some(mut info)) = c2.store.blob(&h2) {
+                if let Some(mut info) = c2.store.blob(&h2).or_log_flat("reading the finished blob row") {
                     info.ready = ok;
                     info.failed = !ok;
-                    if let Ok(op) = c2.store.put_blob_op(&h2, &info) {
-                        let _ = c2.store.db.apply(&[op]);
+                    // Tell the UI only about a row that was written; otherwise it would show a
+                    // state the next start does not have.
+                    let op = c2.store.put_blob_op(&h2, &info).or_log("encoding the finished blob row");
+                    let written = op.and_then(|op| c2.store.db.apply(&[op]).or_log("writing the finished blob row"));
+                    if written.is_some() {
+                        this.chat_emit_changed(&c2, &did, &info.day, &info.msg);
                     }
-                    this.chat_emit_changed(&c2, &did, &info.day, &info.msg);
                 }
             }
         });
@@ -142,7 +145,7 @@ impl ChatRt {
             if !retryable || attempt >= RETRY_BACKOFF.len() {
                 return Some(Err(err));
             }
-            if !core.store.blob(hash).ok().flatten().is_some_and(|i| i.wanted) {
+            if !core.store.blob(hash).or_log_flat("reading a blob row").is_some_and(|i| i.wanted) {
                 return None;
             }
             if let Some(e) = core.downloading.lock().get_mut(hash)
@@ -163,7 +166,7 @@ impl ChatRt {
     pub(super) fn chat_emit_changed(self: &Arc<Self>, core: &Arc<ChatCore>, did: &str, day: &str, id: &str) {
         let Ok(me) = self.me() else { return };
         let pair = pair_id(me.id.did(), did);
-        let rec = core.shards.lock().get(&(pair.clone(), day.to_string())).and_then(|s| s.messages().ok()).and_then(|mut m| m.remove(id));
+        let rec = core.shards.lock().get(&(pair.clone(), day.to_string())).and_then(|s| s.messages().or_log("reading a message shard")).and_then(|mut m| m.remove(id));
         let this = self.clone();
         let (core, did, day, id) = (core.clone(), did.to_string(), day.to_string(), id.to_string());
         self.handle.spawn(async move {
@@ -173,7 +176,7 @@ impl ChatRt {
                     let Ok(shards) = this.chat_shard(&core, &pair, &day).await else {
                         return;
                     };
-                    match shards.get(&(pair.clone(), day.clone())).and_then(|s| s.messages().ok()).and_then(|mut m| m.remove(&id)) {
+                    match shards.get(&(pair.clone(), day.clone())).and_then(|s| s.messages().or_log("reading a message shard")).and_then(|mut m| m.remove(&id)) {
                         Some(r) => r,
                         None => return,
                     }
@@ -309,7 +312,7 @@ impl ChatRt {
     pub(super) fn chat_resume_downloads(self: &Arc<Self>, core: &Arc<ChatCore>, did: &str) {
         let Ok(me) = self.me() else { return };
         let pair = pair_id(me.id.did(), did);
-        for (hash, info) in core.store.wanted_blobs().unwrap_or_default() {
+        for (hash, info) in core.store.wanted_blobs().or_log_default("reading the wanted blobs") {
             if info.pair == pair {
                 self.chat_download(did.to_string(), hash);
             }
@@ -323,7 +326,7 @@ impl ChatRt {
         let day = core.store.mi(&pair, id)?.ok_or(Error::NotFound)?;
         let hash = {
             let shards = core.shards.lock();
-            shards.get(&(pair.clone(), day.clone())).and_then(|s| s.messages().ok()).and_then(|mut m| m.remove(id)).and_then(|r| r.file).map(|f| f.hash)
+            shards.get(&(pair.clone(), day.clone())).and_then(|s| s.messages().or_log("reading a message shard")).and_then(|mut m| m.remove(id)).and_then(|r| r.file).map(|f| f.hash)
         };
         // Not cached: look the hash up through the blob records of this message.
         match hash {
@@ -332,7 +335,7 @@ impl ChatRt {
                 .store
                 .conv_blobs(&pair)?
                 .into_iter()
-                .find(|h| core.store.blob(h).ok().flatten().is_some_and(|b| b.msg == id))
+                .find(|h| core.store.blob(h).or_log_flat("reading a blob row").is_some_and(|b| b.msg == id))
                 .ok_or(Error::NotFound),
         }
     }
@@ -388,7 +391,7 @@ impl ChatRt {
             .store
             .conv_blobs(&pair)?
             .into_iter()
-            .find(|h| core.store.blob(h).ok().flatten().is_some_and(|b| b.msg == id))
+            .find(|h| core.store.blob(h).or_log_flat("reading a blob row").is_some_and(|b| b.msg == id))
             .ok_or(Error::NotFound)?;
         let info = core.store.blob(&hash)?.ok_or(Error::NotFound)?;
         let h = parse_hash(&hash)?;

@@ -164,7 +164,7 @@ impl NodeCtx {
             }
             st.overlap.as_ref().map(|o| Zeroizing::new(o.secret))
         };
-        let _ = self.persist_async(me.epoch).await;
+        self.persist_logged(me.epoch).await;
         if let Some(secret) = overlap
             && self.rotation.overlap.lock().is_none()
         {
@@ -228,7 +228,7 @@ impl NodeCtx {
                 s.state.overlap = None;
             }
         }
-        let _ = self.persist_async(epoch).await;
+        self.persist_logged(epoch).await;
         if let Some(ep) = ep {
             self.log(format!("previous endpoint {} closed", ep.id()));
             let gate = self.closing.clone().lock_owned().await;
@@ -251,7 +251,7 @@ impl NodeCtx {
             st.lost_touch.extend(lost.iter().cloned());
             lost
         };
-        let _ = self.persist_async(me.epoch).await;
+        self.persist_logged(me.epoch).await;
         if !lost.is_empty() {
             self.log(format!("lost touch with {} contacts after the announce window", lost.len()));
             self.sink.on_contacts_changed();
@@ -379,7 +379,7 @@ impl NodeCtx {
             Ok(ep) => ep,
             Err(e) => {
                 unstage(self);
-                let _ = self.persist_async(me.epoch).await;
+                self.persist_logged(me.epoch).await;
                 return Err(e);
             }
         };
@@ -411,12 +411,16 @@ impl NodeCtx {
             Ok(m) => m,
             Err(e) => {
                 unstage(self);
-                let _ = self.persist_async(me.epoch).await;
+                self.persist_logged(me.epoch).await;
                 let _ = tokio::time::timeout(Duration::from_secs(3), new_ep.close()).await;
                 return Err(e);
             }
         };
-        let _ = self.persist_async(me.epoch).await;
+        // The live endpoint is already the new one; a failed write leaves the state (contact
+        // notifications, overlap) unsaved until the next write. Loud, since nothing else shows it.
+        if let Err(e) = self.persist_async(me.epoch).await {
+            tracing::warn!("endpoint rotation: the new account state was NOT saved ({e}); the next write retries");
+        }
         // 5. The old endpoint overlaps; one rotated before it closes now.
         let older = self.rotation.overlap.lock().replace(old_ep.clone());
         if let Some(ep) = older {

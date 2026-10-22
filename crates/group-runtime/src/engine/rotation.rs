@@ -254,7 +254,7 @@ impl GroupRt {
             if !l.state.is_host(&core.did, &core.dev) {
                 continue;
             }
-            for (k, d) in core.store.dir(gid).unwrap_or_default() {
+            for (k, d) in core.store.dir(gid).or_log_default("reading the group directory") {
                 let Some((did, dev)) = k.rsplit_once('/') else {
                     continue;
                 };

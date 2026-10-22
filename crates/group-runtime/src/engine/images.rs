@@ -461,7 +461,7 @@ impl GroupRt {
             row.failed = true;
             // A host refuses for good what cannot match its post.
             row.dropped |= hopeless && core.am_host(gid);
-            let _ = core.store.put_image(gid, &row);
+            core.store.put_image(gid, &row).or_log("saving the failed state of an image");
             self.group_image_event(gid, &row.post);
             let (this, core, gid) = (self.clone(), core.clone(), gid.to_string());
             self.handle.spawn(async move {
@@ -776,10 +776,17 @@ impl GroupRt {
             preview: p.preview.clone(),
         };
         let path = core.images.opened(&img.hash, mime);
-        if let Some(parent) = path.parent() {
-            let _ = std::fs::create_dir_all(parent);
+        // Our own picture is shown from this file: without it the post would look like one we
+        // still have to download. The blob goes again and nothing has been announced.
+        let cached = match path.parent() {
+            Some(parent) => std::fs::create_dir_all(parent),
+            None => Ok(()),
         }
-        let _ = std::fs::write(&path, &p.jpeg);
+        .and_then(|()| std::fs::write(&path, &p.jpeg));
+        if let Err(e) = cached {
+            let _ = hub.release_owned(&owner_of(gid), &hash).await;
+            return Err(e.into());
+        }
         Ok(img)
     }
 

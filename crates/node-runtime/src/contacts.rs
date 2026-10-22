@@ -97,12 +97,12 @@ impl NodeCtx {
             Ok(Ok(c)) => c,
             Ok(Err(e)) => {
                 undo(&self);
-                let _ = self.persist_async(me.epoch).await;
+                self.persist_logged(me.epoch).await;
                 return Err(e);
             }
             Err(_) => {
                 undo(&self);
-                let _ = self.persist_async(me.epoch).await;
+                self.persist_logged(me.epoch).await;
                 return Err(Error::Timeout);
             }
         };
@@ -119,7 +119,7 @@ impl NodeCtx {
         let new = match reply {
             Msg::Reject { reason } => {
                 undo(&self);
-                let _ = self.persist_async(me.epoch).await;
+                self.persist_logged(me.epoch).await;
                 return Err(Error::Rejected(clip_reason(&reason)));
             }
             // They block us: their app's notice is the answer (and is taken here).

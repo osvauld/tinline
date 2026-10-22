@@ -37,7 +37,7 @@ use super::record::*;
 use super::store::json;
 use crate::Error;
 use crate::GroupRt;
-use node_runtime::{Me, addr_for, now_ms};
+use node_runtime::{Me, OrLog, addr_for, now_ms};
 use node_runtime::wire::{Ctrl, RETRY_SECS};
 
 /// Largest letter (a token with many hosts fits easily).
@@ -120,7 +120,7 @@ impl GroupRt {
             if joined {
                 r.state = GroupInvitationState::Joined;
                 r.owe = false;
-                let _ = core.store.put_inv(&r);
+                core.store.put_inv(&r).or_log("saving an invitation");
             } else if r.expires < now_ms() {
                 r.state = GroupInvitationState::Expired;
             }
@@ -229,7 +229,7 @@ impl GroupRt {
                         Some(l) => todo.push((r, l)),
                         None => {
                             r.owe = false;
-                            let _ = core.store.put_inv(&r);
+                            core.store.put_inv(&r).or_log("saving an invitation");
                         }
                     }
                 }
@@ -324,7 +324,7 @@ impl GroupRt {
     /// After start: deliver whatever is still owed.
     pub fn group_invites_started(self: &Arc<Self>) {
         let Ok(core) = self.group_core() else { return };
-        let mut dids: Vec<String> = core.store.invs().unwrap_or_default().into_iter().filter(|r| r.owe).map(|r| if r.outgoing { r.invitee } else { r.inviter }).collect();
+        let mut dids: Vec<String> = core.store.invs().or_log_default("reading invitations").into_iter().filter(|r| r.owe).map(|r| if r.outgoing { r.invitee } else { r.inviter }).collect();
         dids.sort();
         dids.dedup();
         for d in dids {
@@ -434,7 +434,7 @@ impl GroupRt {
     pub fn group_own_invitations(self: &Arc<Self>) -> Vec<Vec<u8>> {
         let Ok(core) = self.group_core() else { return vec![] };
         let t = now_ms();
-        let mut rows: Vec<InvRow> = core.store.invs().unwrap_or_default().into_iter().filter(|r| r.expires + KEEP_AFTER_EXPIRY >= t).collect();
+        let mut rows: Vec<InvRow> = core.store.invs().or_log_default("reading invitations").into_iter().filter(|r| r.expires + KEEP_AFTER_EXPIRY >= t).collect();
         rows.sort_by_key(|r| std::cmp::Reverse(r.at));
         rows.truncate(MAX_OWN_INVITATIONS);
         let mut out: Vec<Vec<u8>> = rows
@@ -489,7 +489,7 @@ impl GroupRt {
                 }
                 Some(mut cur) if r.delivered && !cur.delivered => {
                     cur.delivered = true;
-                    let _ = core.store.put_inv(&cur);
+                    core.store.put_inv(&cur).or_log("saving an invitation");
                 }
                 Some(_) => {}
             }

@@ -25,7 +25,7 @@ use super::wire::*;
 use super::own::{ACK_MARK, READ_MARK};
 use crate::Error;
 use crate::ChatRt;
-use node_runtime::{Me, addr_for, relay_hint, relay_of};
+use node_runtime::{Me, OrLog, OrLogFlat, addr_for, relay_hint, relay_of};
 
 mod blobs;
 mod history;
