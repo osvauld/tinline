@@ -6,7 +6,7 @@ impl Inner {
     pub(super) fn own_content_catalog(self: &Arc<Self>) -> Vec<(String, Vec<u8>)> {
         group_contents::catalog(
             self.chat.chat_own_docs(),
-            self.group_own_content_docs(MAX_OWN_DOCS),
+            self.group.group_own_content_docs(MAX_OWN_DOCS),
         )
     }
 
@@ -46,7 +46,7 @@ impl Inner {
         peer: &mut PeerChat,
         writer: &mut FrameWriter,
     ) -> Result<(), Error> {
-        let rows = self.group_own_invitations();
+        let rows = self.group.group_own_invitations();
         if peer.invitations.as_ref() == Some(&rows)
             || (rows.is_empty() && peer.invitations.is_none())
         {
@@ -62,7 +62,7 @@ impl Inner {
         peer: &mut PeerChat,
         writer: &mut FrameWriter,
     ) -> Result<(), Error> {
-        let groups = self.group_own_tokens();
+        let groups = self.group.group_own_tokens();
         if peer.groups.as_ref() == Some(&groups) || (groups.is_empty() && peer.groups.is_none()) {
             return Ok(());
         }
@@ -114,14 +114,14 @@ impl Inner {
             return Ok(());
         }
         if peer.history.enabled {
-            self.own_group_admit(me.epoch, remote)?;
+            self.group.own_group_admit(me.epoch, remote)?;
             if let Some((group, _)) = group_documents::parse_doc(name) {
                 writer.send(&SelfMsg::GroupHistoryChanged { group }).await?;
             }
             return Ok(());
         }
         let theirs = peer.docs.get(name).cloned().unwrap_or_default();
-        let out = match self.group_own_content_export(me.epoch, remote, name, &theirs) {
+        let out = match self.group.group_own_content_export(me.epoch, remote, name, &theirs).map_err(Error::from) {
             Ok(out) => out,
             Err(Error::Protocol(reason)) => {
                 // Oversized history needs range batching. Keep records and pending

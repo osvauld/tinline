@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/identity", "crates/cryptography", "crates/proto", "crates/audio", "crates/video", "crates/storage", "crates/gcall-bench", "crates/gcall-core", "crates/crdt", "crates/search-core", "crates/receipts-core", "crates/group-core", "crates/account-model", "crates/chat-core", "crates/video-call-core", "crates/call-video", "crates/transfer", "crates/gcall-net", "crates/node-runtime", "crates/search-ix", "crates/chat-runtime", "crates/core", "crates/peer", "crates/desktop", "crates/tin-icons", "crates/present"]
+members = ["crates/identity", "crates/cryptography", "crates/proto", "crates/audio", "crates/video", "crates/storage", "crates/gcall-bench", "crates/gcall-core", "crates/crdt", "crates/search-core", "crates/receipts-core", "crates/group-core", "crates/account-model", "crates/chat-core", "crates/video-call-core", "crates/call-video", "crates/transfer", "crates/gcall-net", "crates/node-runtime", "crates/search-ix", "crates/chat-runtime", "crates/group-runtime", "crates/core", "crates/peer", "crates/desktop", "crates/tin-icons", "crates/present"]
 
 [workspace.package]
 version = "0.1.38"
@@ -42,6 +42,7 @@ gcall-net = { path = "crates/gcall-net" }
 node-runtime = { path = "crates/node-runtime" }
 search-ix = { path = "crates/search-ix" }
 chat-runtime = { path = "crates/chat-runtime" }
+group-runtime = { path = "crates/group-runtime" }
 
 # Full debug info made every test binary ~0.5 GB and filled the build-cache disk with a dozen
 # agents building at once; line tables still give file:line in panics and backtraces.

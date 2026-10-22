@@ -10,9 +10,7 @@ use super::index::{DocRow, Mark, Mode, SearchIndex};
 use super::text;
 use crate::Error;
 use crate::chat::doc::pair_id;
-use crate::group::engine::{GroupCore, Live};
-use crate::group::shard::Shard;
-use crate::group::state::Item;
+use crate::group::engine::GroupCore;
 use crate::node::{Inner, Node};
 
 /// What a name hit opens.
@@ -185,13 +183,9 @@ impl Node {
     }
 }
 
-/// Posts a group reconcile collects from several days before it writes them to the index.
-const RECONCILE_BATCH: usize = 4000;
+pub(crate) use search_ix::NO_BG_RECONCILE;
 
-/// Test switch (`synth.rs`): no reconcile in the background on open.
-pub(crate) static NO_BG_RECONCILE: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
-
-pub(crate) use search_ix::{dm_row, dm_src, group_row, group_src};
+pub(crate) use search_ix::{dm_row, dm_src, group_src};
 
 /// A cursor is `{rev_at}/{h}`, both 16 hex digits.
 fn check_cursor(cursor: Option<&str>) -> Result<(), Error> {
@@ -215,11 +209,6 @@ impl Inner {
         self.search.index()
     }
 
-    fn search_log(e: impl Into<Error>) {
-        let e: Error = e.into();
-        tracing::warn!("search index: {e}");
-    }
-
     // ---- reconcile -------------------------------------------------------------------------
 
     /// In the background after open: every shard and group whose version differs from its
@@ -236,7 +225,7 @@ impl Inner {
             }
             let gc = this.group.core.lock().clone();
             if let Some(gc) = gc.filter(|c| !c.closed()) {
-                let _ = this.search_reconcile_groups_run(&gc).await;
+                let _ = this.group.search_reconcile_groups_run(&gc).await;
             }
             // Days that are cold now (and what the bulk left in memory) go into segments.
             let ix2 = ix.clone();
@@ -296,15 +285,6 @@ impl Inner {
         Ok(())
     }
 
-    /// Per day doc of each group, as for DMs: each whose watermark differs from its version (and
-    /// each with pending posts) is diffed against the index: the posts that show are written, the
-    /// docs of that day that no longer show are dropped. In the background.
-    pub(crate) fn search_reconcile_groups(self: &Arc<Self>, core: &Arc<GroupCore>) {
-        if NO_BG_RECONCILE.load(std::sync::atomic::Ordering::SeqCst) {
-            return;
-        }
-        drop(self.search_reconcile_groups_run(core));
-    }
 
     /// For the year-scale measurements: both reconcile parts now, timed.
     #[cfg(any(test, feature = "dev-tools"))]
@@ -314,73 +294,13 @@ impl Inner {
         self.search_reconcile_dms(&ix).await?;
         let dms = t.elapsed();
         let t = std::time::Instant::now();
-        let gc = self.group_core()?;
-        let _ = self.search_reconcile_groups_run(&gc).await;
+        let gc = self.group.group_core()?;
+        let _ = self.group.search_reconcile_groups_run(&gc).await;
         // The cold days the bulk left in memory go into segments (the open's last step; its
         // time counts in the groups part).
         let ix2 = ix.clone();
         tokio::task::spawn_blocking(move || ix2.maintain(Mode::Force)).await.map_err(|e| Error::Io(e.to_string()))??;
         Ok((dms, t.elapsed()))
-    }
-
-    fn search_reconcile_groups_run(self: &Arc<Self>, core: &Arc<GroupCore>) -> n0_future::task::JoinHandle<()> {
-        let Some(ix) = self.search_ix() else { return self.handle.spawn_blocking(|| {}) };
-        let core = core.clone();
-        self.handle.spawn_blocking(move || {
-            let gids: Vec<String> = core.groups.lock().keys().cloned().collect();
-            for gid in gids {
-                let src = group_src(&gid);
-                let days = core.store.days(&gid).unwrap_or_default();
-                let (mut batch, mut stale, mut marks): (Vec<DocRow>, Vec<String>, Vec<Mark>) = Default::default();
-                let pending = core.groups.lock().get(&gid).map(|l| l.meta.pending_days.clone()).unwrap_or_default();
-                for day in days {
-                    if ix.is_closed() || core.closed() {
-                        return;
-                    }
-                    let Some(sm) = core.store.shard_meta(&gid, &day).ok().flatten() else { continue };
-                    if !pending.contains(&day) && ix.watermark_is(&src, &day, &sm.vv) {
-                        continue;
-                    }
-                    // The day as cached, or read once without disturbing the cache.
-                    let rows: Vec<DocRow> = {
-                        let mut groups = core.groups.lock();
-                        let Some(Live { state, shards, .. }) = groups.get_mut(&gid) else { break };
-                        let items: Vec<Item> = match shards.peek(&day) {
-                            Some(s) => s.visible(state).collect(),
-                            None => match Shard::load(&core.store, &gid, core.wid, &day, state) {
-                                Ok(s) => s.visible(state).collect(),
-                                Err(e) => {
-                                    tracing::debug!("search reconcile {gid} {day}: {e}");
-                                    continue;
-                                }
-                            },
-                        };
-                        items.iter().map(|i| group_row(&gid, &day, i)).collect()
-                    };
-                    let live: HashSet<String> = rows.iter().map(|r| ix.doc_key(&src, &r.id)).collect();
-                    // A day the index has never seen (a rebuild) has nothing stale to find, which
-                    // keeps a full rebuild from scanning the group's keys once per day.
-                    if ix.has_watermark(&src, &day) {
-                        match ix.day_keys(&src, &day) {
-                            Ok(k) => stale.extend(k.into_iter().filter(|h| !live.contains(h))),
-                            Err(e) => return Self::search_log(e),
-                        }
-                    }
-                    batch.extend(rows);
-                    marks.push(Mark { src: src.clone(), day: day.clone(), prev: None, vv: sm.vv });
-                    // Days go to the index together (a transaction per few thousand posts): one
-                    // transaction per day would cost more than the posts themselves.
-                    if batch.len() >= RECONCILE_BATCH
-                        && let Err(e) = ix.apply_bulk(&std::mem::take(&mut batch), &std::mem::take(&mut stale), &std::mem::take(&mut marks))
-                    {
-                        return Self::search_log(e);
-                    }
-                }
-                if let Err(e) = ix.apply_bulk(&batch, &stale, &marks) {
-                    return Self::search_log(e);
-                }
-            }
-        })
     }
 
     // ---- query -----------------------------------------------------------------------------
@@ -389,7 +309,7 @@ impl Inner {
         let me = self.me()?;
         self.chat.chat_core()?;
         let ix = self.search_ix().ok_or(Error::Locked)?;
-        let gcore = self.group_core().ok();
+        let gcore = self.group.group_core().ok();
         let names = if cursor.is_none() { self.search_names(&me, gcore.as_deref(), query) } else { Vec::new() };
         let terms = text::query_terms(query);
         let Some(scan) = terms.iter().max_by_key(|t| t.weight()) else {
@@ -431,7 +351,7 @@ impl Inner {
         let me = self.me()?;
         self.chat.chat_core()?;
         let ix = self.search_ix().ok_or(Error::Locked)?;
-        let gcore = self.group_core().ok();
+        let gcore = self.group.group_core().ok();
         let none = SearchResults { names: Vec::new(), messages: Vec::new(), next: None };
         let terms = text::query_terms(query);
         let Some(scan_term) = terms.iter().max_by_key(|t| t.weight()) else { return Ok(none) };
@@ -495,7 +415,7 @@ impl Inner {
         let n = text::normalize(&row.text);
         let hits = text::match_all(terms, &n)?;
         let author_name = match gc {
-            Some(gc) => self.group_name_of(gc, &row.conv, &row.author),
+            Some(gc) => self.group.group_name_of(gc, &row.conv, &row.author),
             None if row.author == me.id.did() => me.profile.name.clone(),
             None => crate::block::known_name(&self.shared.lock().state, &row.author).unwrap_or_default(),
         };

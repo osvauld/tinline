@@ -154,3 +154,9 @@ impl SearchIx {
         }
     }
 }
+
+/// Posts a group reconcile collects from several days before it writes them to the index.
+pub const RECONCILE_BATCH: usize = 4000;
+
+/// Test switch (p2pcore `synth.rs`): no reconcile in the background on open.
+pub static NO_BG_RECONCILE: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);

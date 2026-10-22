@@ -29,11 +29,11 @@ impl NodeHooks for Inner {
     }
 
     fn group_started(self: Arc<Self>) {
-        Inner::group_started(&self);
+        group_runtime::GroupRt::group_started(&self.group);
     }
 
     fn group_invites_started(self: Arc<Self>) {
-        Inner::group_invites_started(&self);
+        group_runtime::GroupRt::group_invites_started(&self.group);
     }
 
     fn chat_sessions_close(self: Arc<Self>) {
@@ -41,11 +41,11 @@ impl NodeHooks for Inner {
     }
 
     fn gcall_shutdown(self: Arc<Self>) -> BoxFuture<()> {
-        Box::pin(async move { Inner::gcall_shutdown(&self).await })
+        Box::pin(async move { self.group.gcall_shutdown().await })
     }
 
     fn group_close(self: Arc<Self>) -> BoxFuture<()> {
-        Box::pin(async move { Inner::group_close(&self).await })
+        Box::pin(async move { self.group.group_close().await })
     }
 
     fn chat_close(self: Arc<Self>) -> BoxFuture<()> {
@@ -75,11 +75,11 @@ impl NodeHooks for Inner {
     }
 
     fn group_letter(self: Arc<Self>, ctrl: Ctrl, letter: proto::Msg, remote: [u8; 32], me: Arc<Me>) -> BoxFuture<Result<(), node_runtime::Error>> {
-        Box::pin(async move { self.group_letter_incoming(ctrl, letter, remote, &me).await.map_err(Into::into) })
+        Box::pin(async move { self.group.group_letter_incoming(ctrl, letter, remote, &me).await })
     }
 
     fn in_group_call(&self) -> bool {
-        self.gcall.in_call()
+        self.group.gcall.in_call()
     }
 
     fn chat_call_activity(self: Arc<Self>, did: &str) {
@@ -99,8 +99,8 @@ impl NodeHooks for Inner {
     }
 
     fn group_rotation_policy(self: Arc<Self>) -> Result<RotationPolicy, node_runtime::Error> {
-        let core = self.group_core()?;
-        Inner::group_rotation_policy(&self, &core).map_err(Into::into)
+        let core = self.group.group_core()?;
+        self.group.group_rotation_policy(&core)
     }
 
     fn profile_for_new_contact(self: Arc<Self>, did: &str) {

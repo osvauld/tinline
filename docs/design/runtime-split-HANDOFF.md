@@ -28,14 +28,25 @@ the state at the end of the first integration session.
     which p2pcore `dev-tools` turns on.
     W5 checks: workspace check (4181), lib tests (4183; p2pcore 162 + chat-runtime 7 = 169),
     set 1 (4184), set 2 (4196), bindings diff empty (4197), APK (4198).
-- Remaining waves: W6 group-runtime, then W7 sync-runtime, then W8 cleanup.
-  W6 notes from a read-through: `crates/core/src/group` is 16.4k lines (about 3.2k of them
-  durability tests). Its outside dependencies are already in lower crates: `blocked_me` and
-  `known_name` in node-runtime `block`, `photo`/`metered` in chat-core, receipts in
-  receipts-core, gcall-net, and `selfsync_dirty` in node-runtime `signal`. p2pcore keeps
-  `group/api.rs`, `api/types.rs`, `api/images.rs`, the hooks and the synth helpers
-  (`testkit`). The uncommitted `sync-connection-audit` worktree (50 files in group/, from
-  10-13) overlaps it: check with the user before W6.
+  - W6 `refactor/rt-w6-group` (`crates/group-runtime`: `GroupRt` derefs to `NodeCtx` and
+    holds the group engine, sessions, calls, invitations, requests, codes, own docs,
+    attestation, calldir/calllog, images and member receipts; 54 files moved with `git mv`).
+    p2pcore keeps `Inner { group: Arc<GroupRt> }`. Each runtime trait (`GroupSink`,
+    `GroupRequestSink`, `GroupInvitationSink`, `GroupCallSink`) has a p2pcore `*EventsAdapter`.
+    `GroupRt` is the `GcallHost` (installed as Weak in `api_identity.rs`); gcall errors map
+    through `calls::from_gcall`, because the orphan rule blocks a `From` impl. Search
+    reconcile for groups moved into `group-runtime/src/search.rs` (`RECONCILE_BATCH` and
+    `NO_BG_RECONCILE` are in search-ix). `GROUPS_MARK` is in node-runtime `signal`, and
+    `From<group_core::Error>` is in node-runtime. Durability tests build a bare runtime with
+    `bare_rt` (NodeCtx over a temp dir and a quiet NodeSink), not p2pcore `Node`. The synth
+    helpers (`SynthGroup`, `SynthRemote`) and test hooks are behind group-runtime `testkit`,
+    which p2pcore `dev-tools` turns on. The `own/contents/auth_tests.rs` test, which needs
+    `Node`, stays in p2pcore as `group/own_auth_tests.rs`.
+    W6 checks: dev-tools workspace check; lib tests (4235; p2pcore 73 + group-runtime 89 +
+    chat-runtime 7 + node-runtime 20 = 189); bindings diff empty (4236); bench+vp8 (4237);
+    APK (4239); set 1 (4254, laptop `-j 6`); set 2 (4255; 11 targets, 99 passed).
+    `sync-connection-audit` was already on dev (2b3a4d10) and was removed.
+- Remaining waves: W7 sync-runtime, then W8 cleanup.
 
 ## Rules that held this session
 
@@ -88,7 +99,6 @@ Source-scan tests read paths: when code moves to a new crate, update them
     id, and the test assumed id order. Not an engine bug. The test now sleeps 3 ms between
     old sends, so every `at` is distinct.
   - The group_history archive sync timeout went from 90 s to 300 s (passed in job 4203).
-- W6 decision: what to do with the uncommitted `sync-connection-audit` group work.
 
 ## Later
 

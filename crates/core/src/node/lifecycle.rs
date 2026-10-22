@@ -17,7 +17,7 @@ impl Node {
             {
                 let _life = inner.lifecycle.lock().await;
                 inner.chat.chat_sessions_close();
-                inner.gcall_shutdown().await;
+                inner.group.gcall_shutdown().await;
                 inner.close_endpoint().await;
             }
             inner.emit_status();

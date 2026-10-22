@@ -1,6 +1,7 @@
-//! The keys of the sealed stores: `node_runtime::rekey`, kept under the old path.
+//! The keys of the sealed stores are `node_runtime::rekey`; their tests stay here.
 
-pub use node_runtime::rekey::*;
+#[cfg(test)]
+use node_runtime::rekey::*;
 
 #[cfg(test)]
 #[path = "rekey_tests.rs"]

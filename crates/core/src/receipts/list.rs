@@ -40,7 +40,7 @@ impl Node {
                 }
             }
         }
-        if let Ok(core) = self.inner.group_core() {
+        if let Ok(core) = self.inner.group.group_core() {
             for s in self.groups().unwrap_or_default() {
                 let Some(m) = s
                     .last

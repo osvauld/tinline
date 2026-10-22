@@ -2820,6 +2820,40 @@ dependencies = [
 ]
 
 [[package]]
+name = "group-runtime"
+version = "0.1.38"
+dependencies = [
+ "account-model",
+ "base64 0.23.1",
+ "bytes",
+ "chat-core",
+ "crdt",
+ "cryptography",
+ "gcall-core",
+ "gcall-net",
+ "group-core",
+ "hex",
+ "identity",
+ "image",
+ "iroh",
+ "iroh-blobs",
+ "loro",
+ "n0-future",
+ "node-runtime",
+ "parking_lot",
+ "proto",
+ "receipts-core",
+ "search-core",
+ "search-ix",
+ "serde",
+ "serde_json",
+ "storage",
+ "tokio",
+ "tracing",
+ "transfer",
+]
+
+[[package]]
 name = "guillotiere"
 version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5868,6 +5902,7 @@ dependencies = [
  "gcall-core",
  "gcall-net",
  "group-core",
+ "group-runtime",
  "hex",
  "identity",
  "image",

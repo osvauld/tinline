@@ -500,7 +500,8 @@ fn block_takes_both_tokens_back_and_unblock_does_not_revive_them() {
 // `no_code_path_writes_the_grant_revocation_set`, a limitation)
 // Tokens are taken back per DID (`State::cut_offs`); there is no id set to revoke by (every
 // renewal mints a new token, so ids would leak). Source scan of every non-test file under
-// `crates/core/src` and `crates/node-runtime/src`, walked at run time so split modules stay covered.
+// `crates/core/src` and the runtime crates it is split into (`node-runtime`, `chat-runtime`,
+// `group-runtime`), walked at run time so split modules stay covered.
 #[test]
 fn tokens_are_taken_back_per_did_never_by_id() {
     fn walk(dir: &std::path::Path, out: &mut Vec<(String, String)>) {
@@ -519,7 +520,9 @@ fn tokens_are_taken_back_per_did_never_by_id() {
     let core = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
     let mut files = Vec::new();
     walk(&core.join("src"), &mut files);
-    walk(&core.join("../node-runtime/src"), &mut files);
+    for rt in ["node-runtime", "chat-runtime", "group-runtime"] {
+        walk(&core.join("..").join(rt).join("src"), &mut files);
+    }
     assert!(files.len() > 50, "source scan found only {} files", files.len());
     let ids: Vec<_> = files
         .iter()

@@ -50,10 +50,8 @@ pub(crate) struct Inner {
     pub(crate) link_events: Mutex<Option<Arc<dyn crate::sync::LinkEvents>>>,
     pub(crate) selfsync: Arc<crate::sync::engine::SelfSync>,
     pub(crate) link: crate::sync::link::LinkState,
-    /// Group calls (G6), `crate::gcall::net`.
-    pub(crate) gcall: crate::gcall::net::GcallNet,
-    /// G1: group chat runtime (second endpoint, sessions with hosts); see `group/engine.rs`.
-    pub(crate) group: crate::group::engine::GroupRt,
+    /// The group runtime (G1: second endpoint, sessions with hosts; group calls), `group_runtime`.
+    pub(crate) group: Arc<group_runtime::GroupRt>,
     /// The selected account's search index (`search.redb`), open while its chat store is; the
     /// chat and group engines write to it after every accepted change.
     pub(crate) search: Arc<search_ix::SearchIx>,
@@ -109,14 +107,14 @@ impl Drop for Node {
                     if let Some(ep) = ep {
                         let _ = tokio::time::timeout(Duration::from_secs(1), ep.close()).await;
                     }
-                    let _ = tokio::time::timeout(Duration::from_secs(3), inner.group_close()).await;
+                    let _ = tokio::time::timeout(Duration::from_secs(3), inner.group.group_close()).await;
                     let _ = tokio::time::timeout(Duration::from_secs(3), inner.chat.chat_close()).await;
                 });
             }
             // GL: every store file goes now, whatever task still holds a clone (the tasks are
             // only dropped below, in the background), so a node made next on this directory
             // opens them at once.
-            self.inner.group_close_now();
+            self.inner.group.group_close_now();
             self.inner.chat.chat_close_now();
             self.inner.shared.lock().forget_session();
             // Never blocks, so it is safe even if the last reference drops on a core thread.

@@ -125,3 +125,13 @@ impl From<audio::Error> for Error {
         Error::Audio(e.to_string())
     }
 }
+
+impl From<group_core::Error> for Error {
+    fn from(e: group_core::Error) -> Self {
+        match e {
+            group_core::Error::Io(s) => Error::Io(s),
+            group_core::Error::Protocol(s) => Error::Protocol(s),
+            group_core::Error::Rejected(s) => Error::Rejected(s),
+        }
+    }
+}
