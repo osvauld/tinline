@@ -9,7 +9,7 @@ use video::{Decoder, EncoderConfig, VideoDecoder, VideoEncoder};
 
 use super::DECODER_THREADS;
 #[cfg(all(target_os = "android", feature = "mediacodec"))]
-use super::mediacodec;
+use video::mediacodec;
 
 pub(crate) use video_call_core::LocalCodecs;
 
@@ -189,7 +189,7 @@ fn new_vp8_decoder(_: bool, _: u32) -> video::Result<Box<dyn VideoDecoder>> {
 /// Which encoder our sender runs: a codec and whether it is the hardware one. VP8 hardware and
 /// VP8 software make the same bitstream (the receiver can't tell); AV1 is always software.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) struct EncoderChoice {
+pub struct EncoderChoice {
     pub codec: VideoCodec,
     pub hardware: bool,
 }

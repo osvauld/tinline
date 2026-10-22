@@ -943,6 +943,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "call-video"
+version = "0.1.38"
+dependencies = [
+ "iroh",
+ "parking_lot",
+ "proto",
+ "thiserror 2.0.21",
+ "tokio",
+ "tracing",
+ "video",
+ "video-call-core",
+]
+
+[[package]]
 name = "calloop"
 version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5787,6 +5801,7 @@ dependencies = [
  "blake3",
  "bs58",
  "bytes",
+ "call-video",
  "chat-core",
  "crdt",
  "cryptography",
@@ -5802,7 +5817,6 @@ dependencies = [
  "libc",
  "loro",
  "n0-future",
- "ndk-sys 0.6.0+11769913",
  "p2pcore",
  "paranoid-android",
  "parking_lot",
@@ -8758,12 +8772,15 @@ dependencies = [
  "cc",
  "iroh",
  "libc",
+ "ndk-sys 0.6.0+11769913",
  "noq-proto",
+ "parking_lot",
  "pkg-config",
  "rav1d",
  "rav1e",
  "thiserror 2.0.21",
  "tokio",
+ "tracing",
 ]
 
 [[package]]

@@ -203,7 +203,7 @@ pub(crate) struct Inner {
     pub(crate) profile_events: Mutex<Option<Arc<dyn crate::profile::ProfileEvents>>>,
     pub(crate) profile_downloads: Mutex<HashSet<(u64, String, String)>>,
     pub(crate) profile_fetches: Arc<Semaphore>,
-    pub(crate) video: crate::video_call::NodeVideo,
+    pub(crate) video: call_video::NodeVideo,
     /// The selected account's search index (`search.redb`), open while its chat store is.
     pub(crate) search: Mutex<Option<Arc<crate::search::index::SearchIndex>>>,
     /// For tests: the next `n` search hook writes are skipped (a crash between commit and index).
