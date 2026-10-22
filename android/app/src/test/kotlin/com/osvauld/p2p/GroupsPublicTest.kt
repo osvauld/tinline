@@ -79,7 +79,7 @@ class GroupsPublicTest {
         override fun setOpen(id: String, open: Boolean) { d = d.copy(open = open) }
         override fun post(id: String, text: String, replyTo: String?): GroupMessage {
             posts++
-            return GroupMessage("p$posts", id, GroupItemKind.POST, "did:key:me", "Me", "did:key:me", "Me", 1uL, text, replyTo, true, CoreDelivery.WAITING, false)
+            return GroupMessage("p$posts", id, GroupItemKind.POST, "did:key:me", "Me", "did:key:me", "Me", 1uL, text, replyTo, true, CoreDelivery.WAITING, null, false)
         }
     }
 
@@ -126,5 +126,18 @@ class GroupsPublicTest {
         assertTrue(ctl.closeLink("g").isSuccess)
         assertNull(ctl.openLink.value)
         assertFalse(ctl.open.value!!.detail.open)
+    }
+
+    private fun post(delivery: CoreDelivery, failure: String?, outgoing: Boolean = true) =
+        GroupMessage("m", "g", GroupItemKind.POST, me, "Me", me, "Me", 1uL, "hi", null, outgoing, delivery, failure, false)
+
+    @Test fun aRefusedPostSaysWhyInTheWaitingSlotAndNeverLooksDelivered() {
+        val failed = post(CoreDelivery.FAILED, "Not posted: only admins post here")
+        assertEquals("Not posted: only admins post here", GroupText.deliveryWord(failed))
+        assertTrue(GroupText.isFailed(failed))
+        assertEquals("Waiting for a host", GroupText.deliveryWord(post(CoreDelivery.WAITING, null)))
+        assertFalse(GroupText.isFailed(post(CoreDelivery.WAITING, null)))
+        assertNull(GroupText.deliveryWord(post(CoreDelivery.DELIVERED, null)))
+        assertNull(GroupText.deliveryWord(post(CoreDelivery.FAILED, "x", outgoing = false)))
     }
 }

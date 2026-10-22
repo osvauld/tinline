@@ -214,3 +214,19 @@ fn members_cannot_flip_the_settings() {
     assert_eq!(l.step(&api, Lm::SetAdminsOnly(true)), Out::default());
     assert_eq!(l.dialog, None);
 }
+
+#[test]
+fn a_refused_post_shows_the_reason_in_the_waiting_slot_and_never_looks_delivered() {
+    let mut m = msg("g", "m1", 1, ME, "Me", GroupItemKind::Post, "written offline");
+    assert_eq!(failed_line(&m), None);
+    m.delivery = GroupDelivery::Failed;
+    m.failure = Some("Not posted: only admins post here".into());
+    assert_eq!(failed_line(&m), Some("Not posted: only admins post here"));
+    // Someone else's post never carries the line.
+    let mut other = msg("g", "m2", 2, "did:key:sam", "Sam", GroupItemKind::Post, "hi");
+    other.delivery = GroupDelivery::Failed;
+    other.failure = Some("x".into());
+    assert_eq!(failed_line(&other), None);
+    // The tick is the slack one (not sent), like waiting, from any receipt state.
+    assert_eq!(live().tick_vis_of(&m), Some(crate::ticks::Vis::Slack));
+}

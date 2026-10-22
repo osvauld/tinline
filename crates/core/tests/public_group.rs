@@ -234,6 +234,9 @@ fn offline_post_refused_by_admins_only_fails_and_sync_goes_on() {
         a.node.group_post_failure(g.clone(), m.id.clone()).unwrap().as_deref()
             == Some("Not posted: only admins post here")
     });
+    let shown = a.node.group_messages(g.clone(), None, 50).unwrap().messages.into_iter().find(|x| x.id == m.id).unwrap();
+    assert_eq!(shown.delivery, GroupDelivery::Failed, "never Waiting or Delivered");
+    assert_eq!(shown.failure.as_deref(), Some("Not posted: only admins post here"));
     assert!(has_post(&a, &g, &a.did, "written offline"), "the author still sees it");
     o.node
         .group_post(g.clone(), "after the switch".into(), None)

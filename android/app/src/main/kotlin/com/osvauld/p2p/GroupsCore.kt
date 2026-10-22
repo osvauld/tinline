@@ -249,9 +249,16 @@ object GroupText {
     const val ADMINS_ONLY = "Only admins post here"
     const val OPEN_LINK_COPIED = "Copied. Anyone holding the link can join while it’s open."
 
-    /** The small line under one of our posts, or null when delivered. */
-    fun deliveryWord(m: GroupMessage): String? =
-        if (m.outgoing && m.kind == GroupItemKind.POST && m.delivery == CoreDelivery.WAITING) "Waiting for a host" else null
+    /** The small line under one of our posts, or null when delivered. A refused post says why ([isFailed]); it never reads as delivered. */
+    fun deliveryWord(m: GroupMessage): String? = when {
+        !m.outgoing || m.kind != GroupItemKind.POST -> null
+        m.delivery == CoreDelivery.FAILED -> m.failure ?: "Not posted"
+        m.delivery == CoreDelivery.WAITING -> "Waiting for a host"
+        else -> null
+    }
+
+    /** The hosts refuse this post of ours and the core stopped sending it: its line is the error one, in the waiting slot. */
+    fun isFailed(m: GroupMessage) = m.outgoing && m.kind == GroupItemKind.POST && m.delivery == CoreDelivery.FAILED
 
     /** A sent request's state line and whether it is bad news. A block is visible (U5 revised, P5). */
     fun sentLine(r: GroupChatRequest): Pair<String, Boolean> {
