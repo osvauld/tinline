@@ -76,8 +76,14 @@ impl GroupCore {
                 pv.merge(&ours);
             }
         }
+        let we_host = live.state.is_host(&self.did, &self.dev);
         for day in days {
-            let Live { state, shards, .. } = &mut *live;
+            let Live {
+                state,
+                shards,
+                meta,
+                ..
+            } = &mut *live;
             let Ok(shard) = shards.get(&self.store, gid, self.wid, day, state) else {
                 continue;
             };
@@ -88,12 +94,27 @@ impl GroupCore {
                 }
                 let mut pd = s.peer_days.lock();
                 let pv = pd.entry(day.clone()).or_default();
-                if let Some(update) = shard.doc.export_since(pv) {
+                // To a host: never what it would refuse (admins-only, `admit::upload_cut`).
+                let cut = if s.hosting || we_host {
+                    Vec::new()
+                } else {
+                    admit::upload_cut(state, meta, &self.did, day, &shard.rows, pv)
+                };
+                if let Some(update) = shard.doc.export_since_before(pv, &cut) {
+                    // With a cut the peer holds only what we sent, not the cut ops.
+                    let sent = (!cut.is_empty())
+                        .then(|| loro::LoroDoc::decode_import_blob_meta(&update, false).ok())
+                        .flatten()
+                        .map(|m| m.partial_end_vv);
                     let _ = s.tx.send(Out::Msg(GroupMsg::Update {
                         doc: DocId::Day(day.clone()),
                         update,
                     }));
-                    pv.merge(&theirs);
+                    match (cut.is_empty(), sent) {
+                        (true, _) => pv.merge(&theirs),
+                        (false, Some(v)) => pv.merge(&v),
+                        (false, None) => {}
+                    }
                 }
             }
         }

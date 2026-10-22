@@ -213,6 +213,7 @@ async fn actual_authenticated_two_node_archive_sync_crosses_page_and_batch_bound
                         body: Body::Post {
                             text: format!("cold original {i}/{j}"),
                             reply_to: None,
+                            image: None,
                         },
                     },
                 )

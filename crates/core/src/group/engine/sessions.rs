@@ -16,6 +16,8 @@ impl Inner {
         peer: proto::gcall::GroupNote,
         hosting: bool,
         joining: bool,
+        open_join: bool,
+        show: bool,
         theirs: Peer,
     ) -> Result<(), Error> {
         let (tx, mut rx) = mpsc::unbounded_channel();
@@ -25,8 +27,11 @@ impl Inner {
             gid: gid.clone(),
             did: peer.did.clone(),
             dev: peer.dev,
+            ep: *conn.remote_id().as_bytes(),
             hosting,
             joining,
+            open_join,
+            show,
             tx,
             peer_vv: Mutex::new(theirs.vv),
             peer_days: Mutex::new(theirs.days),
@@ -51,10 +56,18 @@ impl Inner {
         if !hosts.is_empty() {
             let _ = sess.tx.send(Out::Msg(GroupMsg::Hosts { hosts }));
         }
-        // Member receipts: after the docs, so the posts they cover arrive first.
-        let _ = sess.tx.send(Out::Msg(core.receipt_hello(&gid)));
+        // Member receipts: after the docs, so the posts they cover arrive first (none in an open
+        // group, public group §4).
+        if let Some(hello) = core.session_receipt_hello(&gid) {
+            let _ = sess.tx.send(Out::Msg(hello));
+        }
         self.group_mail_on_session(&core, &sess);
         self.group_calls_on_session(&core, &sess);
+        self.group_presence_on_session(&core, &sess);
+        self.group_images_on_session(&core, &gid);
+        if !sess.hosting {
+            self.group_fail_refused(&core, &gid, false);
+        }
         if let Some(ev) = self.group_ev() {
             let g = gid.clone();
             self.handle.spawn_blocking(move || ev.on_group_changed(g));
@@ -76,6 +89,7 @@ impl Inner {
         let backfill = tokio::spawn(self.clone().group_days_sync(core.clone(), sess.clone()));
         let res = self.group_read(&core, &sess, &mut reader).await;
         core.sessions.lock().remove(&id);
+        self.group_presence_session_end(&core, &sess);
         backfill.abort();
         writer_task.abort();
         conn.close(0u32.into(), b"bye");
@@ -122,7 +136,14 @@ impl Inner {
                             }));
                             if let Some(mut c) = changed {
                                 if doc == DocId::Meta {
-                                    self.group_maybe_join(core, &sess.gid);
+                                    let ours = core.doc_vv(&sess.gid, &DocId::Meta);
+                                    let caught_up = ours
+                                        .partial_cmp(&sess.peer_vv.lock())
+                                        .is_some_and(|o| o != std::cmp::Ordering::Less);
+                                    self.group_maybe_join(core, &sess.gid, caught_up);
+                                    if !sess.hosting {
+                                        self.group_fail_refused(core, &sess.gid, false);
+                                    }
                                 }
                                 // Older than the days a session pushes live: history catching up.
                                 c.history = doc.day().is_some_and(|d| {
@@ -137,6 +158,16 @@ impl Inner {
                             // Retryable storage failure, not a membership refusal.
                             // group_run closes this session; no Ack or fan-out.
                             return Err(Error::Io(reason));
+                        }
+                        Err(Reject::Policy(r)) if r == admit::ADMINS_ONLY => {
+                            // A non-admin's post in an admins-only group: refuse the batch, keep
+                            // the session; the member marks such posts failed and stops sending.
+                            self.log(format!(
+                                "group {}: refused an update from {}: {r}",
+                                crate::group::short(&sess.gid),
+                                sess.did
+                            ));
+                            let _ = sess.tx.send(Out::Msg(GroupMsg::Refused { reason: r }));
                         }
                         Err(e) => {
                             self.log(format!(
@@ -182,6 +213,9 @@ impl Inner {
                 GroupMsg::Hosts { hosts } => {
                     core.merge_hosts_from(&sess.gid, &hosts, Some(sess.id));
                 }
+                GroupMsg::Refused { reason } if !sess.hosting && reason == admit::ADMINS_ONLY => {
+                    self.group_fail_refused(core, &sess.gid, true);
+                }
                 GroupMsg::Refused { reason } => {
                     return Err(Error::Rejected(reason));
                 }
@@ -223,6 +257,9 @@ impl Inner {
                 }
                 GroupMsg::ReceiptAck { day, vv } => {
                     core.on_receipt_ack(sess, &day, &vv)?;
+                }
+                GroupMsg::Presence { presence } => {
+                    self.group_presence_in(core, sess, presence);
                 }
                 _ => return Err(Error::Protocol("unexpected group frame".into())),
             }

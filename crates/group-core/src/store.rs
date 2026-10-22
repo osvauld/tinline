@@ -22,6 +22,10 @@
 //! ep/pending                    32 bytes   a staged next key, not current yet (endpoint.rs)
 //! ep/policy                     json       this device's RotationPolicy (default if absent)
 //! dev/id                        32 bytes   this store's device ID (U16 device value, G2 stage 1)
+//! set/presence_hidden           empty      present: this account hides its presence in open groups
+//! set/img_dl                    u8         image auto-download: 0 always, 1 Wi-Fi only (default), 2 tap
+//! img/{gid}/{hash}              ImgRow     an image a visible post names and what we hold (images.rs)
+//! imgp/{gid}/{post id}          hash hex   the image of that post
 //! req/{id}                      ReqRow     a 1:1 chat request we sent or got (U3)
 //! out/{gid}/{mail id}           bytes      sealed mail of ours not yet taken by a host
 //! mail/{gid}/{to}/{mail id}     bytes      host side: (expiry ms, sealed mail) to deliver
@@ -40,9 +44,11 @@ use super::record::SignedHostAddr;
 use crate::Error;
 
 mod endpoint;
+mod images;
 mod receipts;
 mod removal;
 pub use endpoint::EpState;
+pub use images::{IMG_DL_DEFAULT, ImgRow, plan_eviction};
 pub use receipts::StoredAttestation;
 
 /// The KDF domain of the store key (p2pcore's `rekey::phrase_key` over the recovery phrase).
@@ -57,6 +63,9 @@ pub struct PostBrief {
     pub at: i64,
     pub text: String,
     pub reply_to: Option<String>,
+    /// The post's image, if any (the list shows "Photo" for an image without text).
+    #[serde(default)]
+    pub image: Option<super::record::ImageRef>,
     /// Where the record sits in its day doc (delivery state of our own posts).
     pub peer: u64,
     pub counter: i32,
@@ -91,6 +100,17 @@ pub struct GroupMeta {
     /// We are joining with this invite (`codec` bytes of a `SignedInvite`) and have not written our join yet.
     #[serde(default)]
     pub joining: Option<Vec<u8>>,
+    /// We are joining an open group without an invite (an open link) and have not written our
+    /// `OpenJoin` yet.
+    #[serde(default)]
+    pub open_join: bool,
+    /// Admins: the open link we made (`group_open_link`), handed out again until the group closes.
+    #[serde(default)]
+    pub open_link: Option<String>,
+    /// The `GroupState::open_record` `open_link` was made under: a link from an earlier open
+    /// period (the group closed and reopened, maybe while we were away) is never reused.
+    #[serde(default)]
+    pub open_link_record: Option<(u64, i32)>,
     /// The signed records a host showed us to prove we were removed (U9 visible notice).
     #[serde(default)]
     pub removal_proof: Vec<Vec<u8>>,
@@ -122,6 +142,21 @@ pub struct GroupMeta {
     /// This is local bookkeeping, not a membership or destination receipt.
     #[serde(default)]
     pub own_owed_meta: Vec<u8>,
+    /// Posts of ours (this device's writer) that will never be uploaded, by post id: a host
+    /// would refuse them (public group §1, admins-only). Local only; shown to us as failed.
+    #[serde(default)]
+    pub failed_posts: std::collections::BTreeMap<String, FailedPost>,
+}
+
+/// One post of ours marked failed (`GroupMeta::failed_posts`).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct FailedPost {
+    /// Its day doc and position there (what an upload leaves out).
+    pub day: String,
+    pub peer: u64,
+    pub counter: i32,
+    /// Why, in the words the author sees.
+    pub reason: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -388,6 +423,8 @@ impl GroupStore {
                 Op::DeletePrefix(format!("mail/{gid}/")),
                 Op::DeletePrefix(format!("clog/{gid}/")),
                 Op::DeletePrefix(format!("rm_seen/{gid}/")),
+                Op::DeletePrefix(format!("img/{gid}/")),
+                Op::DeletePrefix(format!("imgp/{gid}/")),
             ])
             .map_err(io)
     }
@@ -406,6 +443,20 @@ impl GroupStore {
         let k = adopt.unwrap_or_else(crdt::new_device_value);
         self.db.put("dev/id", &k).map_err(io)?;
         Ok(k)
+    }
+
+    /// Public group §3: whether this account shows as online in open groups (a local setting of
+    /// this install, never a record; default visible).
+    pub fn presence_visible(&self) -> Result<bool, Error> {
+        Ok(self.db.get("set/presence_hidden").map_err(io)?.is_none())
+    }
+
+    pub fn set_presence_visible(&self, visible: bool) -> Result<(), Error> {
+        if visible {
+            self.db.delete("set/presence_hidden").map_err(io)
+        } else {
+            self.db.put("set/presence_hidden", &[]).map_err(io)
+        }
     }
 
     /// Raw (sealed) bytes of every row, for the at-rest test.

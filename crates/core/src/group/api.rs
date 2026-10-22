@@ -20,6 +20,8 @@ use crate::node::{Inner, Node, now_ms};
 
 mod hooks;
 mod hosts;
+mod images;
+mod presence;
 mod rotation;
 mod types;
 pub use types::*;
@@ -95,11 +97,24 @@ impl Inner {
             outgoing,
             delivery,
             before_removal: i.before_removal,
+            image: i.image.as_ref().map(|img| GroupImage {
+                width: img.w,
+                height: img.h,
+                size: img.size,
+                mime: img.mime.clone(),
+                preview: img.preview.clone(),
+                state: match core.image_state(gid, img) {
+                    super::engine::images::ImgState::Ready => GroupImageState::Ready,
+                    super::engine::images::ImgState::Loading => GroupImageState::Loading,
+                    super::engine::images::ImgState::Remote => GroupImageState::Remote,
+                    super::engine::images::ImgState::Failed => GroupImageState::Failed,
+                },
+            }),
         })
     }
 
     fn group_summary(&self, core: &GroupCore, gid: &str) -> Option<GroupSummary> {
-        let (name, role, members, hosts, here, last, unread, reachable) = {
+        let (name, role, members, hosts, here, last, unread, reachable, open, admins_only) = {
             let groups = core.groups.lock();
             let live = groups.get(gid)?;
             if live.state.owner.is_none() {
@@ -122,6 +137,8 @@ impl Inner {
                 last,
                 live.meta.unread,
                 reachable,
+                live.state.open,
+                live.state.admins_only,
             )
         };
         Some(GroupSummary {
@@ -134,6 +151,8 @@ impl Inner {
             host_reachable: reachable,
             last: last.and_then(|i| self.group_message(core, gid, &i)),
             unread,
+            open,
+            admins_only,
         })
     }
 
@@ -200,6 +219,8 @@ impl Inner {
             call_hosts,
             call_host_requests,
             call_host_requested_here,
+            open: s.open,
+            admins_only: s.admins_only,
         })
     }
 
@@ -216,6 +237,7 @@ impl Inner {
             at: entry.rec.at,
             text: String::new(),
             reply_to: None,
+            image: None,
             before_removal: false,
             peer: entry.peer,
             counter: entry.counter,
@@ -261,7 +283,7 @@ impl Inner {
         if all.is_empty() {
             return Err(Error::Rejected("the group has no reachable host yet".into()));
         }
-        Ok(InviteToken { group: gid.to_string(), name, owner, invite, hosts: all })
+        Ok(InviteToken { group: gid.to_string(), name, owner, invite, hosts: all, open: false })
     }
 }
 
@@ -415,6 +437,79 @@ impl Node {
         })?
     }
 
+    /// The group's permanent open link (public group §2; owner and admins): anyone holding it
+    /// may join without an invite while the group is open. Opens the group if it is not open
+    /// (`Open{active: true}`) and has every chat host reachable now keep one code with no expiry;
+    /// asking again returns the same link while the host it names still hosts. Closing
+    /// (`group_set_open(id, false)`) drops it.
+    pub fn group_open_link(&self, group_id: String) -> Result<String, Error> {
+        let inner = self.inner.clone();
+        self.block_on(async move {
+            let core = inner.group_core()?;
+            inner.group_admin_check(&core, &group_id)?;
+            inner.group_ensure(&core).await?;
+            inner.group_relay_ready().await;
+            if !core.with_state(&group_id, |st| st.open).unwrap_or(false) {
+                inner.group_write(&core, &group_id, Body::Open { active: true })?;
+            }
+            // Only a link made in this open period (under the `Open` record in force now).
+            let stored = core.groups.lock().get(&group_id).and_then(|l| l.meta.open_link.clone().filter(|_| l.meta.open_link_record.is_some() && l.meta.open_link_record == l.state.open_record));
+            if let Some(link) = &stored
+                && inner.group_open_link_live(&core, &group_id, link)
+            {
+                return Ok(link.clone());
+            }
+            // A stored link at another host (which may have lost it) is registered again under the
+            // same code; otherwise a new one.
+            let reuse = stored.as_deref().and_then(super::code::ShortCode::parse).map(|sc| sc.code);
+            let link = inner.group_open_code(&core, &group_id, reuse).await?;
+            let mut groups = core.groups.lock();
+            if let Some(live) = groups.get_mut(&group_id) {
+                live.meta.open_link = Some(link.clone());
+                live.meta.open_link_record = live.state.open_record;
+                core.store.put_meta(&group_id, &live.meta)?;
+            }
+            Ok(link)
+        })?
+    }
+
+    /// Opens or closes the group to joins without an invite (owner and admins). Closing refuses
+    /// new open joiners at once and drops the open link on the hosts we reach; members stay.
+    /// Opening alone makes no link (`group_open_link`).
+    pub fn group_set_open(&self, group_id: String, open: bool) -> Result<(), Error> {
+        let core = self.inner.group_core()?;
+        self.inner.group_admin_check(&core, &group_id)?;
+        if core.with_state(&group_id, |st| st.open).unwrap_or(false) != open {
+            self.inner.group_write(&core, &group_id, Body::Open { active: open })?;
+        }
+        if !open {
+            let link = {
+                let mut groups = core.groups.lock();
+                let live = groups.get_mut(&group_id).ok_or(Error::NotFound)?;
+                let link = live.meta.open_link.take();
+                live.meta.open_link_record = None;
+                if link.is_some() {
+                    core.store.put_meta(&group_id, &live.meta)?;
+                }
+                link
+            };
+            if let Some(link) = link {
+                self.inner.group_drop_open_code(&core, &group_id, &link);
+            }
+        }
+        Ok(())
+    }
+
+    /// Only the owner and admins may post (a channel), or everyone again (owner and admins).
+    pub fn group_set_admins_only(&self, group_id: String, admins_only: bool) -> Result<(), Error> {
+        let core = self.inner.group_core()?;
+        self.inner.group_admin_check(&core, &group_id)?;
+        if core.with_state(&group_id, |st| st.admins_only).unwrap_or(false) != admins_only {
+            self.inner.group_write(&core, &group_id, Body::AdminsOnly { active: admins_only })?;
+        }
+        Ok(())
+    }
+
     /// What an invite link is for, fetched from the host it names (blocks up to about 20 s;
     /// `None` if the link is not one, the host refuses it, or cannot be reached).
     pub fn group_peek_invite(&self, token: String) -> Option<GroupInvitePeek> {
@@ -434,6 +529,7 @@ impl Node {
             owner_did: t.owner.clone(),
             issuer_did: inv.as_ref().map(|i| i.iss.clone()),
             expires: inv.map(|i| i.exp_ms),
+            open: t.open && t.invite.is_none(),
             host_count: t
                 .hosts
                 .iter()
@@ -460,7 +556,23 @@ impl Node {
         }
         let core = self.inner.group_core()?;
         self.inner.group_member_check(&core, &group_id)?;
-        self.inner.group_write(&core, &group_id, Body::Post { text, reply_to })
+        // A channel (public group §1): only the owner and admins post. Others' posts would be
+        // hidden on every device anyway (`post_visible`).
+        if core.with_state(&group_id, |st| st.admins_only && !st.is_admin(&core.did)).unwrap_or(false) {
+            return Err(Error::Rejected("admins only".into()));
+        }
+        self.inner.group_write(&core, &group_id, Body::Post { text, reply_to, image: None })
+    }
+
+    /// Why a post of ours will not be posted (`None`: it is not failed). A post written offline
+    /// while an admin turned admins-only on is refused by the hosts: this device stops sending
+    /// it and keeps it here with the reason ("Not posted: only admins post here"); its
+    /// `delivery` stays `Waiting`. A later post of ours on the same day carries it along again.
+    pub fn group_post_failure(&self, group_id: String, message_id: String) -> Result<Option<String>, Error> {
+        let core = self.inner.group_core()?;
+        let groups = core.groups.lock();
+        let live = groups.get(&group_id).ok_or(Error::NotFound)?;
+        Ok(live.meta.failed_posts.get(&message_id).map(|f| f.reason.clone()))
     }
 
     /// One admin flag on `member_did` (U9/U15: any 3 remove; final, visible to them).
@@ -515,6 +627,16 @@ impl Inner {
         !core.store.acks(gid).unwrap_or_default().iter().any(|(_, vv)| loro::VersionVector::decode(vv).ok().and_then(|v| v.get(&core.wid).copied()).unwrap_or(0) >= mine)
     }
 
+    /// Our stored open link names us, a chat host of `gid`, and we still keep its code. A link
+    /// at another host is not known to be live (that host may have lost or dropped it): the
+    /// caller registers it again.
+    fn group_open_link_live(self: &Arc<Self>, core: &Arc<GroupCore>, gid: &str, link: &str) -> bool {
+        let Some(sc) = super::code::ShortCode::parse(link) else { return false };
+        let _ = self.group_my_addr(core, gid);
+        let names_host = core.chat_host_addrs(gid).iter().filter_map(|h| h.open().ok()).find(|a| a.endpoint == sc.endpoint);
+        names_host.is_some_and(|a| a.did == core.did && a.dev == core.dev) && core.store.code(&sc.code).ok().flatten().is_some_and(|r| r.kind == super::code::CodeKind::Open && r.by == core.did)
+    }
+
     fn group_forget(&self, core: &GroupCore, gid: &str) {
         core.groups.lock().remove(gid);
         let _ = core.store.forget(gid);
@@ -544,7 +666,12 @@ impl Inner {
             Some(true) => return Ok(gid),
             Some(false) => {}
             None => {
-                let meta = GroupMeta { joining: t.invite.as_ref().map(|i| cryptography::codec::to_bytes(i).expect("serialises")), ..Default::default() };
+                // An open link carries no invite: we write `OpenJoin` once we hold the group.
+                let meta = GroupMeta {
+                    joining: t.invite.as_ref().map(|i| cryptography::codec::to_bytes(i).expect("serialises")),
+                    open_join: t.open && t.invite.is_none(),
+                    ..Default::default()
+                };
                 core.groups.lock().insert(gid.clone(), super::engine::Live::empty(&gid, core.wid, meta.clone()));
                 core.store.put_meta(&gid, &meta)?;
             }
@@ -564,7 +691,7 @@ impl Inner {
             let (member, joined) = {
                 let groups = core.groups.lock();
                 let l = groups.get(&gid).ok_or(Error::NotFound)?;
-                (l.state.is_member(&core.did), l.meta.joining.is_none())
+                (l.state.is_member(&core.did), l.meta.joining.is_none() && !l.meta.open_join)
             };
             let acked = !inner.group_owes_pub(&core, &gid);
             if member && joined && acked {

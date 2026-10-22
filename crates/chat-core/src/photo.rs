@@ -39,8 +39,9 @@ pub fn describe(path: &Path, mime: &str) -> Option<(u32, u32, Vec<u8>)> {
     Some((sw, sh, preview.unwrap_or_default()))
 }
 
-/// The average colour of each cell of a 4x3 grid over the picture (RGB, row by row).
-fn grid(img: &DynamicImage) -> Vec<u8> {
+/// The average colour of each cell of a 4x3 grid over the picture (RGB, row by row). Group
+/// image posts carry the same preview (p2pcore `group::images`).
+pub fn grid(img: &DynamicImage) -> Vec<u8> {
     let rgb = img.thumbnail(64, 64).to_rgb8();
     let (w, h) = rgb.dimensions();
     let mut out = Vec::with_capacity(PREVIEW_LEN);

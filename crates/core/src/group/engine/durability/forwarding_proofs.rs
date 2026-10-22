@@ -81,6 +81,7 @@ fn own_replica_forwarding_cannot_strip_or_substitute_author_signature() {
     record.body = Body::Post {
         text: "substituted by forwarder".into(),
         reply_to: None,
+        image: None,
     };
     let forged = SignedRecord::from_parts(
         cryptography::codec::to_bytes(&record).unwrap(),

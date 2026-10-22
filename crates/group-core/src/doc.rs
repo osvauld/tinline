@@ -217,6 +217,31 @@ impl GroupDoc {
         fork.export(ExportMode::updates(theirs)).ok()
     }
 
+    /// `export_since`, without the ops at `cut` (each `(peer, counter)`) and every later op of
+    /// those peers: what a member uploads while it holds posts its host would refuse. `None` if
+    /// nothing is left to send, or if what is left still depends on a cut op (then the whole
+    /// doc waits rather than leak it).
+    pub fn export_since_before(&self, theirs: &VersionVector, cut: &[(u64, i32)]) -> Option<Vec<u8>> {
+        if cut.is_empty() {
+            return self.export_since(theirs);
+        }
+        let mut upto = self.vv();
+        for (p, c) in cut {
+            if upto.get(p).is_some_and(|v| *v > *c) {
+                upto.insert(*p, *c);
+            }
+        }
+        let fork = self.doc.fork_at(&self.doc.vv_to_frontiers(&upto)).ok()?;
+        let held = fork.oplog_vv();
+        if cut.iter().any(|(p, c)| held.get(p).is_some_and(|v| *v > *c)) {
+            return None;
+        }
+        if theirs.partial_cmp(&held).is_some_and(|o| o != std::cmp::Ordering::Less) {
+            return None;
+        }
+        fork.export(ExportMode::updates(theirs)).ok()
+    }
+
     /// Only ops written under `peer` (our own device) beyond `theirs`.
     pub fn export_peer_since(&self, peer: u64, theirs: &VersionVector) -> Option<Vec<u8>> {
         let mine = self.vv();
@@ -328,6 +353,21 @@ impl GroupDoc {
     #[doc(hidden)]
     pub fn import_for_test(&self, update: &[u8]) {
         self.doc.import(update).expect("import");
+    }
+
+    /// Test hook (a modified app): the update that adds `rec`, signed by `account` (its author,
+    /// not us), as written under the author's own writer ID on top of what we hold. Our doc is
+    /// left unchanged; the caller applies the update like any remote one.
+    #[cfg(any(test, feature = "dev-tools"))]
+    #[doc(hidden)]
+    pub fn foreign_update_for_test(&self, account: &identity::Identity, rec: &Record) -> Vec<u8> {
+        let fork = self.doc.fork();
+        fork.set_peer_id(writer_id(&rec.author, &rec.dev)).expect("peer id");
+        let before = fork.oplog_vv();
+        let bytes = rec.sign(account).to_bytes();
+        fork.get_map(ROOT).insert(&record_id(&bytes), LoroValue::Binary(bytes.into())).expect("insert");
+        fork.commit();
+        fork.export(ExportMode::updates(&before)).expect("export")
     }
 
     /// The stored bytes of record `id`.

@@ -212,6 +212,7 @@ fn failed_append_never_attests_unpersisted_operation_or_a_planned_frontier() {
         body: Body::Post {
             text: "second original".into(),
             reply_to: None,
+            image: None,
         },
     };
     let (_, after) = next.write(&f.author, &record).unwrap();

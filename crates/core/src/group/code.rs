@@ -89,6 +89,12 @@ impl CodeRt {
 }
 
 pub(crate) const UNKNOWN_CODE: &str = "unknown or expired invite code";
+pub(crate) const NOT_OPEN: &str = "this group is not open to new members";
+pub(crate) const OPEN_LINK_WITHDRAWN: &str = "this open link was withdrawn; ask for a new one";
+/// `group_open_code`: how many `NOT_OPEN` answers (a host still catching up on our `Open`
+/// record) are asked again, across all hosts, before the refusal stands. Each retry waits for
+/// the next 500 ms round, and the whole call stays inside `HOST_WAIT`.
+const NOT_OPEN_RETRIES: u32 = 10;
 
 /// Checks a fetched token against the code it was fetched with: the dialled endpoint is one of
 /// the group's signed host addresses, and the invite (if any) is signed, for this group, unexpired.
@@ -114,6 +120,7 @@ impl Inner {
     /// host `gid`, else a host we have a session with. Returns the link.
     pub(crate) async fn group_issue_code(self: &Arc<Self>, core: &Arc<GroupCore>, gid: &str, invite: Option<SignedInvite>) -> Result<String, Error> {
         let code: [u8; CODE_LEN] = cryptography::rng::bytes();
+        let kind = if invite.is_some() { CodeKind::Invite } else { CodeKind::Device };
         let expires = invite
             .as_ref()
             .and_then(|i| i.open().ok())
@@ -128,7 +135,7 @@ impl Inner {
             if core.store.prune_codes(Some(gid))? >= MAX_CODES_PER_GROUP {
                 return Err(Error::Rejected("too many open invites for this group; revoke some".into()));
             }
-            let row = CodeRow { gid: gid.to_string(), invite: invite.as_ref().map(|i| cryptography::codec::to_bytes(i).expect("serialises")), expires, by: core.did.clone() };
+            let row = CodeRow { gid: gid.to_string(), kind, invite: invite.as_ref().map(|i| cryptography::codec::to_bytes(i).expect("serialises")), expires, by: core.did.clone() };
             core.store.put_code(&code, &row)?;
             core.store.put_issued(&code, &IssuedRow { gid: gid.to_string(), host_did: core.did.clone(), host_dev: hex::encode(core.dev), expires })?;
             return Ok(ShortCode { endpoint: a.endpoint, relay: a.relay, code }.to_link());
@@ -138,7 +145,7 @@ impl Inner {
         let (host_did, host_dev) = loop {
             let (tx, rx) = oneshot::channel();
             core.codes.waiters.lock().insert(code, tx);
-            if let Some(h) = core.send_to_a_host(gid, GroupMsg::Code { code, invite: invite.clone(), expires }) {
+            if let Some(h) = core.send_to_a_host(gid, GroupMsg::Code { code, kind, invite: invite.clone(), expires }) {
                 match tokio::time::timeout(ACK_TIMEOUT, rx).await {
                     Ok(Ok((true, _))) => break h,
                     Ok(Ok((false, reason))) => return Err(Error::Rejected(reason)),
@@ -161,6 +168,118 @@ impl Inner {
             .ok_or_else(|| Error::Rejected("the host's address is unknown".into()))?;
         core.store.put_issued(&code, &IssuedRow { gid: gid.to_string(), host_did, host_dev: hex::encode(host_dev), expires })?;
         Ok(ShortCode { endpoint: addr.endpoint, relay: addr.relay, code }.to_link())
+    }
+
+    /// An open link for `gid` (public group §2): one code with no invite and no expiry, kept by
+    /// every chat host reachable now (ourselves if we host, then each host we have a session
+    /// with), so closing can drop it everywhere. The link names us if we host, else the first
+    /// host that took it. The caller has written `Open{active: true}` before: a host refuses the
+    /// code unless the group is open (that record goes first on the same session stream).
+    ///
+    /// `reuse`: register this code (our stored link's) again instead of a new one, so a host that
+    /// lost it (or never had it) holds it again. Each host keeps one open code per issuer: ours
+    /// replaces the one we registered before.
+    pub(crate) async fn group_open_code(self: &Arc<Self>, core: &Arc<GroupCore>, gid: &str, reuse: Option<[u8; CODE_LEN]>) -> Result<String, Error> {
+        let code: [u8; CODE_LEN] = reuse.unwrap_or_else(cryptography::rng::bytes);
+        let mut link = None;
+        if core.am_host(gid)
+            && let Some(mine) = self.group_my_addr(core, gid)
+            && let Some(a) = mine.open().ok()
+        {
+            core.store.drop_open_codes(gid, Some(&core.did), Some(&code))?;
+            if core.store.code(&code)?.is_none() && core.store.prune_codes(Some(gid))? >= MAX_CODES_PER_GROUP {
+                return Err(Error::Rejected("too many open invites for this group; revoke some".into()));
+            }
+            core.store.put_code(&code, &CodeRow { gid: gid.to_string(), kind: CodeKind::Open, invite: None, expires: NO_EXPIRY, by: core.did.clone() })?;
+            core.store.put_issued(&code, &IssuedRow { gid: gid.to_string(), host_did: core.did.clone(), host_dev: hex::encode(core.dev), expires: NO_EXPIRY })?;
+            link = Some(ShortCode { endpoint: a.endpoint, relay: a.relay, code }.to_link());
+        }
+        let end = Instant::now() + HOST_WAIT;
+        let mut tried: std::collections::HashSet<(String, [u8; 32])> = Default::default();
+        let mut refused = None;
+        let mut not_open_retries = 0;
+        loop {
+            let hosts: Vec<(String, [u8; 32])> = core.with_state(gid, |st| st.hosts.iter().map(|h| (h.did.clone(), h.dev)).collect()).unwrap_or_default();
+            for (did, dev) in hosts {
+                if (did == core.did && dev == core.dev) || tried.contains(&(did.clone(), dev)) || !core.has_session(gid, &did, &dev) {
+                    continue;
+                }
+                tried.insert((did.clone(), dev));
+                let (tx, rx) = oneshot::channel();
+                core.codes.waiters.lock().insert(code, tx);
+                let msg = GroupMsg::Code { code, kind: CodeKind::Open, invite: None, expires: NO_EXPIRY };
+                let answer = if core.send_to_host(gid, &did, &dev, msg) { tokio::time::timeout(ACK_TIMEOUT, rx).await.ok().and_then(|r| r.ok()) } else { None };
+                core.codes.waiters.lock().remove(&code);
+                match answer {
+                    Some((true, _)) if link.is_none() => {
+                        let addr = core.store.hosts(gid)?.into_iter().filter_map(|s| s.open().ok()).find(|a| a.did == did && a.dev == dev);
+                        if let Some(a) = addr {
+                            core.store.put_issued(&code, &IssuedRow { gid: gid.to_string(), host_did: did.clone(), host_dev: hex::encode(dev), expires: NO_EXPIRY })?;
+                            link = Some(ShortCode { endpoint: a.endpoint, relay: a.relay, code }.to_link());
+                        }
+                    }
+                    Some((true, _)) => {}
+                    // The host has not applied our `Open` record yet (its catch-up is still in
+                    // flight): ask it again on a later round, a bounded number of times.
+                    Some((false, reason)) if reason == NOT_OPEN && not_open_retries < NOT_OPEN_RETRIES => {
+                        not_open_retries += 1;
+                        tried.remove(&(did, dev));
+                    }
+                    Some((false, reason)) => refused = Some(reason),
+                    None => {
+                        tried.remove(&(did, dev));
+                    }
+                }
+            }
+            if let Some(l) = link {
+                return Ok(l);
+            }
+            if let Some(reason) = refused.take() {
+                return Err(Error::Rejected(reason));
+            }
+            if Instant::now() > end {
+                return Err(Error::Rejected("no host of this group is reachable right now".into()));
+            }
+            core.kick_pub();
+            tokio::time::sleep(Duration::from_millis(500)).await;
+        }
+    }
+
+    /// Closing an open group: forget its open link here and have every host we reach forget it
+    /// (best effort; a host we miss drops it at its next fetch, as the group is closed).
+    pub(crate) fn group_drop_open_code(&self, core: &GroupCore, gid: &str, link: &str) {
+        let Some(sc) = ShortCode::parse(link) else { return };
+        let _ = core.store.drop_code(&sc.code);
+        let hosts: Vec<(String, [u8; 32])> = core.with_state(gid, |st| st.hosts.iter().map(|h| (h.did.clone(), h.dev)).collect()).unwrap_or_default();
+        for (did, dev) in hosts {
+            core.send_to_host(gid, &did, &dev, GroupMsg::RevokeCode { code: sc.code });
+        }
+    }
+
+    /// After a meta change: while `gid` is closed (derived `open` now), this device keeps no
+    /// open code of it (as a host: every issuer's, so another admin's close, or a close we missed
+    /// the revoke of, leaves nothing a later reopen would revive) and forgets its own stored open
+    /// link (an admin gets a new one after reopening).
+    pub(crate) fn group_open_codes_closed(&self, core: &GroupCore, gid: &str) {
+        let closed = {
+            let mut groups = core.groups.lock();
+            let Some(live) = groups.get_mut(gid) else { return };
+            if live.state.open || live.state.owner.is_none() {
+                return;
+            }
+            if let Some(link) = live.meta.open_link.take() {
+                live.meta.open_link_record = None;
+                let _ = core.store.put_meta(gid, &live.meta);
+                // Our issued row of it (a code we registered at another host) goes too.
+                if let Some(sc) = ShortCode::parse(&link) {
+                    let _ = core.store.drop_code(&sc.code);
+                }
+            }
+            true
+        };
+        if closed && let Err(e) = core.store.drop_open_codes(gid, None, None) {
+            tracing::debug!("group {}: dropping open codes: {e}", super::short(gid));
+        }
     }
 
     /// Asks the host a link names for the invite behind it. GL: a lost connection or a timeout
@@ -220,20 +339,31 @@ impl Inner {
     /// Host side: the token for `code`, or why not.
     fn group_fetch_answer(self: &Arc<Self>, core: &Arc<GroupCore>, code: &[u8; CODE_LEN]) -> Result<InviteToken, String> {
         let row = core.store.code(code).ok().flatten().ok_or_else(|| UNKNOWN_CODE.to_string())?;
-        let (hosting, name, owner) = {
+        let (hosting, name, owner, open, issuer_admin) = {
             let groups = core.groups.lock();
             let Some(l) = groups.get(&row.gid) else { return Err(UNKNOWN_CODE.into()) };
-            (l.state.is_host(&core.did, &core.dev), l.state.name.clone(), l.state.owner.clone().unwrap_or_default())
+            (l.state.is_host(&core.did, &core.dev), l.state.name.clone(), l.state.owner.clone().unwrap_or_default(), l.state.open, l.state.is_admin(&row.by))
         };
         if !hosting {
             return Err("this device no longer hosts that group; ask for a new invite".into());
+        }
+        let open_link = row.kind == CodeKind::Open;
+        if open_link && !open {
+            // Closed since (a close we missed the revoke of): the link is dead for good.
+            let _ = core.store.drop_code(code);
+            return Err(NOT_OPEN.into());
+        }
+        if open_link && !issuer_admin {
+            // Its issuer is no longer an admin (or no longer a member): the link goes with the role.
+            let _ = core.store.drop_code(code);
+            return Err(OPEN_LINK_WITHDRAWN.into());
         }
         let _ = self.group_my_addr(core, &row.gid);
         let invite = match &row.invite {
             Some(b) => Some(cryptography::codec::from_bytes::<SignedInvite>(b, crate::store::MAX_ROW).map_err(|_| UNKNOWN_CODE.to_string())?),
             None => None,
         };
-        Ok(InviteToken { group: row.gid.clone(), name, owner, invite, hosts: core.chat_host_addrs(&row.gid) })
+        Ok(InviteToken { group: row.gid.clone(), name, owner, invite, hosts: core.chat_host_addrs(&row.gid), open: open_link })
     }
 
     /// Host side: a connection that opened with `Fetch`. Answers up to `MAX_BAD_PER_CONN` unknown
@@ -271,31 +401,45 @@ impl Inner {
 
     /// Host side, inside a member's session: `Code` / `RevokeCode`.
     pub(crate) fn group_code_in(&self, core: &GroupCore, gid: &str, did: &str, msg: GroupMsg) -> GroupMsg {
-        let (member, admin) = core.groups.lock().get(gid).map(|l| (l.state.is_member(did) && !l.state.is_removed(did), l.state.is_admin(did))).unwrap_or_default();
+        let (member, admin, open) = core.groups.lock().get(gid).map(|l| (l.state.is_member(did) && !l.state.is_removed(did), l.state.is_admin(did), l.state.open)).unwrap_or_default();
         let ack = |code, ok: bool, reason: &str| GroupMsg::CodeAck { code, ok, reason: reason.to_string() };
         match msg {
-            GroupMsg::Code { code, invite, expires } => {
+            GroupMsg::Code { code, kind, invite, expires } => {
                 if !member {
                     return ack(code, false, "not a member");
                 }
-                let expires = match &invite {
-                    Some(i) => match redeem_invite(i, gid, did, now_ms(), &core.store) {
+                let expires = match (kind, &invite) {
+                    (CodeKind::Invite, Some(i)) => match redeem_invite(i, gid, did, now_ms(), &core.store) {
                         Some(inv) if inv.iss == did && admin => inv.exp_ms,
                         _ => return ack(code, false, "only admins can invite"),
                     },
-                    None => expires.min(now_ms() + INVITE_TTL),
+                    (CodeKind::Device, None) => expires.min(now_ms() + INVITE_TTL),
+                    // The admin's `Open{active: true}` went before this frame on the same stream.
+                    (CodeKind::Open, None) if !admin => return ack(code, false, "only admins can share an open link"),
+                    (CodeKind::Open, None) if !open => return ack(code, false, NOT_OPEN),
+                    (CodeKind::Open, None) => NO_EXPIRY,
+                    _ => return ack(code, false, "malformed invite code"),
                 };
                 if expires <= now_ms() {
                     return ack(code, false, "invite expired");
                 }
+                let held = core.store.code(&code).ok().flatten();
+                // An admin registering its open link again (a host that lost it, `group_open_link`)
+                // is fine; any other existing code is someone else's.
+                let again = held.as_ref().is_some_and(|r| r.gid == gid && r.kind == CodeKind::Open && kind == CodeKind::Open && r.by == did);
+                if held.is_some() && !again {
+                    return ack(code, false, "code in use");
+                }
+                // One open link per issuer per group: this one replaces the issuer's earlier one.
+                if kind == CodeKind::Open && core.store.drop_open_codes(gid, Some(did), Some(&code)).is_err() {
+                    return ack(code, false, "could not store the code");
+                }
                 match core.store.prune_codes(Some(gid)) {
+                    Ok(_) if again => {}
                     Ok(n) if n < MAX_CODES_PER_GROUP => {}
                     _ => return ack(code, false, "too many open invites for this group; revoke some"),
                 }
-                if core.store.code(&code).ok().flatten().is_some() {
-                    return ack(code, false, "code in use");
-                }
-                let row = CodeRow { gid: gid.to_string(), invite: invite.as_ref().map(|i| cryptography::codec::to_bytes(i).expect("serialises")), expires, by: did.to_string() };
+                let row = CodeRow { gid: gid.to_string(), kind, invite: invite.as_ref().map(|i| cryptography::codec::to_bytes(i).expect("serialises")), expires, by: did.to_string() };
                 match core.store.put_code(&code, &row) {
                     Ok(()) => ack(code, true, ""),
                     Err(e) => ack(code, false, &e.to_string()),
@@ -382,6 +526,22 @@ impl Node {
 /// Test hooks (not for apps).
 #[uniffi::export]
 impl Node {
+    /// The token a link's host hands out (`codec` bytes), without joining.
+    pub fn group_fetch_token_for_test(&self, link: String) -> Option<Vec<u8>> {
+        let sc = ShortCode::parse(&link)?;
+        let inner = self.inner.clone();
+        let t = self.block_on(async move { inner.group_fetch(&sc).await }).ok()?.ok()?;
+        cryptography::codec::to_bytes(&t).ok()
+    }
+
+    /// Joins with a token fetched earlier (`group_fetch_token_for_test`): what a joiner holding a
+    /// stale open link's token does after the group closed.
+    pub fn group_join_token_for_test(&self, token: Vec<u8>) -> Result<String, Error> {
+        let t: InviteToken = cryptography::codec::from_bytes(&token, MAX_TOKEN).map_err(|_| Error::Protocol("bad token".into()))?;
+        let inner = self.inner.clone();
+        self.block_on(async move { inner.group_join_token(t).await })?
+    }
+
     /// The group endpoint id of the host `link` names.
     pub fn group_link_endpoint_for_test(&self, link: String) -> Option<String> {
         let sc = ShortCode::parse(&link)?;
