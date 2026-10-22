@@ -500,7 +500,7 @@ fn block_takes_both_tokens_back_and_unblock_does_not_revive_them() {
 // `no_code_path_writes_the_grant_revocation_set`, a limitation)
 // Tokens are taken back per DID (`State::cut_offs`); there is no id set to revoke by (every
 // renewal mints a new token, so ids would leak). Source scan of every non-test file under
-// `crates/core/src`, walked at run time so split modules stay covered.
+// `crates/core/src` and `crates/node-runtime/src`, walked at run time so split modules stay covered.
 #[test]
 fn tokens_are_taken_back_per_did_never_by_id() {
     fn walk(dir: &std::path::Path, out: &mut Vec<(String, String)>) {
@@ -516,9 +516,10 @@ fn tokens_are_taken_back_per_did_never_by_id() {
             }
         }
     }
-    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
+    let core = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
     let mut files = Vec::new();
-    walk(&root, &mut files);
+    walk(&core.join("src"), &mut files);
+    walk(&core.join("../node-runtime/src"), &mut files);
     assert!(files.len() > 50, "source scan found only {} files", files.len());
     let ids: Vec<_> = files
         .iter()
@@ -526,8 +527,8 @@ fn tokens_are_taken_back_per_did_never_by_id() {
         .collect();
     assert!(ids.is_empty(), "something keeps a revoked-id set: {ids:?}");
     // The cut-offs are what a block and "disallow calls" raise.
-    let caps = include_str!("../src/caps.rs");
-    assert!(caps.contains("cut.call = cut.call.max(now_ms())") && caps.contains("cut.message = cut.message.max(t)"));
+    let (caps, rt_caps) = (include_str!("../src/caps.rs"), include_str!("../../node-runtime/src/caps.rs"));
+    assert!(caps.contains("cut.call = cut.call.max(now_ms())") && rt_caps.contains("cut.message = cut.message.max(t)"));
 }
 
 // KIND: invariant (flipped by P6; was `only_global_availability_separates_calls_from_messages`,
