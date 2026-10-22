@@ -42,7 +42,7 @@ impl Inner {
             Body::EncKey { key },
         ] {
             let (_, ch) = core.write(&gid, body)?;
-            self.search_group(&gid, &ch.posts);
+            self.search.group(&gid, &ch.posts);
         }
         let snap = core.groups.lock().get(&gid).ok_or(Error::NotFound)?.doc.snapshot();
         // Our own writing doc continues our counters from the doc as it is now.
@@ -126,7 +126,7 @@ impl Inner {
         if let Some(update) = g.hub.export_since(&g.sent) {
             g.sent = g.hub.vv();
             if let Some(changed) = core.apply_for_test(&g.gid, &DocId::Meta, &update).map_err(rej)? {
-                self.search_group(&g.gid, &changed.posts);
+                self.search.group(&g.gid, &changed.posts);
             }
         }
         self.synth_flush_days(&core, g, days)
@@ -144,7 +144,7 @@ impl Inner {
             let Some(update) = hub.export_since(sent) else { continue };
             *sent = hub.vv();
             if let Some(changed) = core.apply_for_test(&g.gid, &DocId::Day(day.clone()), &update).map_err(rej)? {
-                self.search_group(&g.gid, &changed.posts);
+                self.search.group(&g.gid, &changed.posts);
             }
         }
         Ok(())

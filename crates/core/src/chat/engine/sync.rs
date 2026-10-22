@@ -246,7 +246,7 @@ impl Inner {
         }
         core.store.db.apply(&extra)?;
         self.selfsync_dirty(&doc_name(pair, day));
-        self.search_dm(&did, pair, day, recs, Some(prev), meta.vv);
+        self.search.dm(&did, pair, day, recs, Some(prev), meta.vv);
         Ok(())
     }
 

@@ -56,7 +56,7 @@ impl Inner {
                 return;
             }
         };
-        self.search_open(&dir, &phrase);
+        self.search.open(&dir, &phrase);
         let receipts = crate::receipts::store::messages::MessageReceipts::new(crate::receipts::store::ReceiptStore::new(store.db.clone()), &did, value);
         let core = Arc::new(ChatCore {
             receipts,
@@ -123,7 +123,7 @@ impl Inner {
             // GL: the file goes now, whatever task still holds the core.
             core.store.db.close();
         }
-        self.search_close();
+        self.search.close();
     }
 
     /// `chat_close` without waiting (for `Node`'s drop on a core thread): the store closes, the
@@ -133,7 +133,7 @@ impl Inner {
             core.close_all_sessions();
             core.store.db.close();
         }
-        self.search_close();
+        self.search.close();
     }
 
     pub(crate) fn chat_sessions_close(self: &Arc<Self>) {

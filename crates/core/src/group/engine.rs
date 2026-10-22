@@ -30,6 +30,7 @@ use super::api::GroupEvents;
 use super::doc::{DocId, Entry, GroupDoc, Reject};
 use super::record::*;
 use super::shard::{Shards, note_posts, recent_days};
+pub(crate) use super::state::PostDiff;
 use super::state::{GroupState, Item, Vis, derive_meta, post_item, post_visible};
 use super::store::{DirEntry, GroupMeta, GroupStore};
 use super::wire::*;
@@ -332,14 +333,6 @@ pub(crate) struct Changed {
     pub posts: Vec<PostDiff>,
     /// Arrived for a day older than a session pushes live (history catching up): no new-message events.
     pub history: bool,
-}
-
-/// The posts of one day doc a change made show, and the doc's version vector before and after.
-pub(crate) struct PostDiff {
-    pub day: String,
-    pub put: Vec<Item>,
-    pub prev: Vec<u8>,
-    pub vv: Vec<u8>,
 }
 
 /// Device `dev` of `did` hosts the group's chat or its calls: the devices whose group endpoint

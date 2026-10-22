@@ -60,6 +60,7 @@ video-call-core.workspace = true
 call-video.workspace = true
 # The node's base runtime (account session, endpoint, 1:1 call, contacts cluster, rotation); p2pcore implements its NodeHooks (src/node/mod.rs).
 node-runtime.workspace = true
+search-ix.workspace = true
 # Shared UI logic; its UniFFI items are re-exported from lib.rs so they land in libp2pcore.so.
 present = { path = "../present" }
 audio.workspace = true

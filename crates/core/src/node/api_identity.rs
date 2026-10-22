@@ -33,8 +33,7 @@ impl Node {
             profile_events: Default::default(),
             profile_downloads: Default::default(),
             profile_fetches: Arc::new(Semaphore::new(4)),
-            search: Mutex::new(None),
-            search_skip: AtomicU32::new(0),
+            search: Default::default(),
         });
         let host: std::sync::Weak<Inner> = Arc::downgrade(&inner);
         inner.gcall.install_host(host.clone());

@@ -121,6 +121,16 @@ pub struct Item {
     pub counter: i32,
 }
 
+/// The posts of one day doc a change made show, and the doc's version vector before and after
+/// (what the search index writes: `search-ix`).
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct PostDiff {
+    pub day: String,
+    pub put: Vec<Item>,
+    pub prev: Vec<u8>,
+    pub vv: Vec<u8>,
+}
+
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct GroupState {
     pub name: String,
