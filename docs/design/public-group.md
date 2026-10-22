@@ -325,6 +325,10 @@ Review follow-ups (built, `public_group.rs` unless noted):
     `open_codes_drop_on_close_and_one_per_issuer`).
 15. Presence replay, skew, pruning and frame size (unit: `presence_frames_cannot_be_replayed`,
     `presence_state_is_pruned`, `a_full_presence_frame_fits`).
+16. Permits and the owner's admin grants are causal too (`docs/group-core.md`; unit:
+    `forged_clock_permit_is_superseded_by_a_later_revoke`,
+    `forged_clock_admin_grant_is_superseded_by_a_later_revoke`,
+    `concurrent_permits_tie_break_by_time_in_every_order`).
 
 Manual: worker host + laptop host + Android emulator; turn the laptop off, the lobby keeps
 working through the worker.
