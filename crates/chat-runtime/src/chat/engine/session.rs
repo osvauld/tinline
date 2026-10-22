@@ -5,25 +5,26 @@ use super::*;
 /// The end reason of a session closed for being idle (`wire::idle_close`).
 const IDLE: &str = "idle";
 
-impl Inner {
+impl ChatRt {
     // ---- lifecycle -------------------------------------------------------------------------
 
-    /// Opens the sealed chat store; called whenever the data key becomes available.
-    pub(crate) fn chat_open(self: &Arc<Self>) {
+    /// Opens the sealed chat store; called whenever the data key becomes available. True when
+    /// this call opened it (the caller then reconciles the search index).
+    pub fn chat_open(self: &Arc<Self>) -> bool {
         let (phrase, did) = {
             let s = self.shared.lock();
             match (s.dek.as_ref(), s.me.as_ref()) {
                 (Some(_), Some(me)) => (zeroize::Zeroizing::new(me.profile.mnemonic.clone()), me.id.did().to_string()),
-                _ => return,
+                _ => return false,
             }
         };
-        if self.chat.lock().is_some() {
-            return;
+        if self.core.lock().is_some() {
+            return false;
         }
         // Nothing to open before the account has a directory (an uncommitted identity).
         let dir = match self.shared.lock().acct.as_ref() {
             Some(a) => a.store.dir().to_path_buf(),
-            None => return,
+            None => return false,
         };
         // A chat store that is not there yet starts from nothing: whatever this install wrote
         // before under its writer ID (a lost or deleted store) is not in it, but contacts may hold
@@ -35,17 +36,17 @@ impl Inner {
             && let Err(e) = self.new_device_id()
         {
             tracing::warn!("chat store: device id: {e}");
-            return;
+            return false;
         }
         // Keyed by the recovery phrase (rekey.rs). The node before a restart may still hold the
         // file for a moment: `open_waiting`.
-        let sealed = match crate::store::open_waiting(&path)
-            .and_then(|db| crate::rekey::open(db, crate::rekey::key_from_phrase(crate::rekey::Which::Chat, &phrase)))
+        let sealed = match node_runtime::store::open_waiting(&path)
+            .and_then(|db| node_runtime::rekey::open(db, node_runtime::rekey::key_from_phrase(node_runtime::rekey::Which::Chat, &phrase)))
         {
             Ok(d) => d,
             Err(e) => {
                 tracing::warn!("chat store: {e}");
-                return;
+                return false;
             }
         };
         let store = ChatStore::new(sealed);
@@ -53,11 +54,11 @@ impl Inner {
             Ok(v) => v,
             Err(e) => {
                 tracing::warn!("chat store: device id: {e}");
-                return;
+                return false;
             }
         };
         self.search.open(&dir, &phrase);
-        let receipts = crate::receipts::store::messages::MessageReceipts::new(crate::receipts::store::ReceiptStore::new(store.db.clone()), &did, value);
+        let receipts = receipts_core::store::messages::MessageReceipts::new(receipts_core::store::ReceiptStore::new(store.db.clone()), &did, value);
         let core = Arc::new(ChatCore {
             receipts,
             store,
@@ -79,19 +80,19 @@ impl Inner {
             clock_ms: Default::default(),
             clock_wrong: Default::default(),
         });
-        *self.chat.lock() = Some(core);
-        self.search_reconcile();
+        *self.core.lock() = Some(core);
         // Receipt intents left by a crash/failed commit before this start.
         self.chat_receipts_pump();
+        true
     }
 
     /// Gives this install a new device ID (`ProfileV2::device_id`) and saves the profile.
     pub(super) fn new_device_id(&self) -> Result<(), Error> {
         let mut s = self.shared.lock();
-        let Some(crate::store::Disk::V2(p)) = s.disk.as_ref() else { return Err(Error::NoIdentity) };
+        let Some(node_runtime::store::Disk::V2(p)) = s.disk.as_ref() else { return Err(Error::NoIdentity) };
         let mut p = p.clone();
-        p.device_id = Some(crate::store::new_device_id());
-        let disk = crate::store::Disk::V2(p);
+        p.device_id = Some(node_runtime::store::new_device_id());
+        let disk = node_runtime::store::Disk::V2(p);
         s.acct.as_ref().ok_or(Error::NoIdentity)?.store.save_profile(&disk)?;
         s.disk = Some(disk);
         Ok(())
@@ -101,20 +102,20 @@ impl Inner {
     /// has none yet.
     pub(super) fn device_id(&self) -> Result<[u8; 32], Error> {
         let mut s = self.shared.lock();
-        let Some(crate::store::Disk::V2(p)) = s.disk.as_ref() else { return Err(Error::NoIdentity) };
+        let Some(node_runtime::store::Disk::V2(p)) = s.disk.as_ref() else { return Err(Error::NoIdentity) };
         if let Some(i) = p.device_id_bytes() {
             return Ok(i);
         }
         let mut p = p.clone();
-        p.device_id = Some(crate::store::new_device_id());
-        let disk = crate::store::Disk::V2(p.clone());
+        p.device_id = Some(node_runtime::store::new_device_id());
+        let disk = node_runtime::store::Disk::V2(p.clone());
         s.acct.as_ref().ok_or(Error::NoIdentity)?.store.save_profile(&disk)?;
         s.disk = Some(disk);
         p.device_id_bytes().ok_or(Error::NoIdentity)
     }
 
-    pub(crate) async fn chat_close(self: &Arc<Self>) {
-        let core = self.chat.lock().take();
+    pub async fn chat_close(self: &Arc<Self>) {
+        let core = self.core.lock().take();
         if let Some(core) = core {
             core.close_all_sessions();
             if let Some(h) = core.hub.get() {
@@ -128,22 +129,22 @@ impl Inner {
 
     /// `chat_close` without waiting (for `Node`'s drop on a core thread): the store closes, the
     /// blob store is left to its drop.
-    pub(crate) fn chat_close_now(&self) {
-        if let Some(core) = self.chat.lock().take() {
+    pub fn chat_close_now(&self) {
+        if let Some(core) = self.core.lock().take() {
             core.close_all_sessions();
             core.store.db.close();
         }
         self.search.close();
     }
 
-    pub(crate) fn chat_sessions_close(self: &Arc<Self>) {
-        if let Some(core) = self.chat.lock().clone() {
+    pub fn chat_sessions_close(self: &Arc<Self>) {
+        if let Some(core) = self.core.lock().clone() {
             core.close_all_sessions();
         }
     }
 
-    pub(crate) fn chat_core(&self) -> Result<Arc<ChatCore>, Error> {
-        match self.chat.lock().clone() {
+    pub fn chat_core(&self) -> Result<Arc<ChatCore>, Error> {
+        match self.core.lock().clone() {
             Some(c) => Ok(c),
             None => match self.me() {
                 Err(e) => Err(e.into()),
@@ -152,14 +153,14 @@ impl Inner {
         }
     }
 
-    pub(crate) fn ev(&self) -> Option<Arc<dyn ChatEvents>> {
+    pub fn ev(&self) -> Option<Arc<dyn ChatSink>> {
         self.chat_events.lock().clone()
     }
 
     /// Called once the endpoint is up: reconnect to everyone we owe something, and keep trying.
     /// Not to everyone (2026-10-17): delivery is sender-driven, so a contact who wrote while we
     /// were away dials us; we dial only contacts we have something pending for.
-    pub(crate) fn chat_started(self: &Arc<Self>) {
+    pub fn chat_started(self: &Arc<Self>) {
         let this = self.clone();
         self.handle.spawn(async move {
             if let Ok(me) = this.me() {
@@ -189,7 +190,7 @@ impl Inner {
 
     /// Dials every contact we have something pending for (`chat_needs_session`). Not contacts
     /// whose conversation is merely open: links are consent-based (2026-10-17), typing dials.
-    pub(crate) fn chat_kick_pending(self: &Arc<Self>) {
+    pub fn chat_kick_pending(self: &Arc<Self>) {
         let Ok(core) = self.chat_core() else { return };
         let Ok(me) = self.me() else { return };
         let dids: Vec<String> = self.shared.lock().state.contacts.iter().map(|c| c.did.clone()).collect();
@@ -211,7 +212,7 @@ impl Inner {
     /// Whether we want a session with `did` kept open past the idle close: the user here acted
     /// towards it within the idle window, something is pending for it, or a 1:1 call with it is
     /// live. Only our own reasons: a contact cannot hold our link open (2026-10-17).
-    pub(crate) fn chat_keep(&self, core: &ChatCore, did: &str) -> bool {
+    pub fn chat_keep(&self, core: &ChatCore, did: &str) -> bool {
         if core.locally_active(did) {
             return true;
         }
@@ -221,19 +222,19 @@ impl Inner {
         self.me().is_ok_and(|me| self.chat_needs_session(core, &me, did))
     }
 
-    pub(crate) fn in_call_with(&self, did: &str) -> bool {
+    pub fn in_call_with(&self, did: &str) -> bool {
         self.live.lock().call.as_ref().is_some_and(|c| c.info.peer_did == did)
     }
 
     /// The user is typing to `did` (`Node::chat_typing`): local activity, and a session dialled
     /// ahead of the send (or our presence sent now on the one that is up). Throttled, so it is
     /// cheap per keystroke. Nothing goes to the contact about the typing itself.
-    pub(crate) fn chat_typing(self: &Arc<Self>, did: &str) {
+    pub fn chat_typing(self: &Arc<Self>, did: &str) {
         if self.is_self_did(did) {
             return;
         }
         let Ok(core) = self.chat_core() else { return };
-        if !core.mark_active(did, Some(crate::wire::typing_throttle())) {
+        if !core.mark_active(did, Some(node_runtime::wire::typing_throttle())) {
             return;
         }
         self.chat_wake(&core, did);
@@ -241,7 +242,7 @@ impl Inner {
 
     /// A live 1:1 call with `did` is activity towards it (2026-10-17): our presence goes to it
     /// while the call is live and for the idle window after.
-    pub(crate) fn chat_call_activity(self: &Arc<Self>, did: &str) {
+    pub fn chat_call_activity(self: &Arc<Self>, did: &str) {
         if self.is_self_did(did) {
             return;
         }
@@ -272,13 +273,13 @@ impl Inner {
         core.sessions.lock().values().find(|s| s.did == did).cloned()
     }
 
-    pub(crate) fn chat_sessions_of(&self, core: &ChatCore, did: &str) -> Vec<Arc<Session>> {
+    pub fn chat_sessions_of(&self, core: &ChatCore, did: &str) -> Vec<Arc<Session>> {
         core.sessions.lock().values().filter(|s| s.did == did).cloned().collect()
     }
 
     /// Makes sure there is (or soon will be) a session with `did`, retrying with backoff while
     /// there is something to send.
-    pub(crate) fn chat_kick(self: &Arc<Self>, did: String) {
+    pub fn chat_kick(self: &Arc<Self>, did: String) {
         let Ok(core) = self.chat_core() else { return };
         if self.chat_session(&core, &did).is_some() || !core.dialing.lock().insert(did.clone()) {
             return;
@@ -331,7 +332,7 @@ impl Inner {
         let msg = Msg::CallHello { call_id: "chat".into(), attestation: attestation.clone(), grant: grant.clone(), relay: relay.clone(), devices: None, video: None, camera: false };
         let s = self.shared.lock();
         let contacts = &s.state.contacts;
-        let who = proto::accept_hello(&me.id, &msg, remote, crate::node::now_ms(), |did| contacts.iter().any(|c| c.did == did))?;
+        let who = proto::accept_hello(&me.id, &msg, remote, node_runtime::now_ms(), |did| contacts.iter().any(|c| c.did == did))?;
         Ok((who.did, relay_hint(relay), who.grant))
     }
 
@@ -349,7 +350,7 @@ impl Inner {
     /// Whether we keep a session with `did` going: a contact that neither side blocks.
     pub(super) fn chat_may_dial(&self, did: &str) -> bool {
         let s = self.shared.lock();
-        s.state.contacts.iter().any(|c| c.did == did) && !s.state.blocked.contains(did) && !crate::block::blocked_me(&s.state, did)
+        s.state.contacts.iter().any(|c| c.did == did) && !s.state.blocked.contains(did) && !node_runtime::block::blocked_me(&s.state, did)
     }
 
     pub(super) async fn chat_dial(self: &Arc<Self>, core: &Arc<ChatCore>, me: &Arc<Me>, did: &str) -> Result<(), Error> {
@@ -373,7 +374,7 @@ impl Inner {
                 }
             };
             self.ctx.list_before(&ep, did, cd.device, cd.relay.as_deref()).await;
-            let conn = match tokio::time::timeout(DIAL_TIMEOUT, crate::version::connect(&ep, addr, &crate::version::CHAT)).await {
+            let conn = match tokio::time::timeout(DIAL_TIMEOUT, node_runtime::version::connect(&ep, addr, &node_runtime::version::CHAT)).await {
                 Ok(Ok(c)) => c,
                 Ok(Err(e)) => {
                     let e = Error::from(e);
@@ -423,13 +424,13 @@ impl Inner {
                     && self.is_block_from(&did, notice)
                 {
                     let _ = self.ctx.take_notice(notice);
-                    return Err(Error::Rejected(crate::BLOCKED.into()));
+                    return Err(Error::Rejected(node_runtime::BLOCKED.into()));
                 }
                 return Err(Error::Protocol("unexpected notice".into()));
             }
             let (did, hint, grant) = self.verify_auth(me, &reply, remote)?;
             if self.shared.lock().state.blocked.contains(&did) {
-                return Err(Error::Rejected(crate::BLOCKED.into()));
+                return Err(Error::Rejected(node_runtime::BLOCKED.into()));
             }
             self.chat_admit(&did, &grant)?;
             (did, hint)
@@ -445,7 +446,7 @@ impl Inner {
                 writer.send(&ChatMsg::Notice { notice }).await?;
                 let _ = writer.0.finish();
                 let _ = tokio::time::timeout(Duration::from_secs(2), conn.closed()).await;
-                return Err(Error::Rejected(crate::BLOCKED.into()));
+                return Err(Error::Rejected(node_runtime::BLOCKED.into()));
             }
             self.chat_admit(&did, &grant)?;
             let grant = {
@@ -496,13 +497,13 @@ impl Inner {
         Ok(())
     }
 
-    pub(crate) async fn handle_chat_incoming(self: Arc<Self>, accepting: Accepting, chat: bool, permit: tokio::sync::OwnedSemaphorePermit) -> Result<(), Error> {
+    pub async fn handle_chat_incoming(self: Arc<Self>, accepting: Accepting, chat: bool, permit: tokio::sync::OwnedSemaphorePermit) -> Result<(), Error> {
         let conn = tokio::time::timeout(AUTH_TIMEOUT, accepting).await.map_err(|_| Error::Timeout)?.map_err(Error::net)?;
         self.handle_chat_conn(conn, chat, permit).await
     }
 
     /// `handle_chat_incoming` once the connection is up.
-    pub(crate) async fn handle_chat_conn(self: Arc<Self>, conn: Connection, chat: bool, permit: tokio::sync::OwnedSemaphorePermit) -> Result<(), Error> {
+    pub async fn handle_chat_conn(self: Arc<Self>, conn: Connection, chat: bool, permit: tokio::sync::OwnedSemaphorePermit) -> Result<(), Error> {
         let remote = *conn.remote_id().as_bytes();
         if chat {
             let me = self.me()?;
@@ -563,7 +564,7 @@ impl Inner {
             // Idle = no ChatMsg either way and no local activity (`chat_keep`); presence datagrams
             // do not count.
             let mut active = std::time::Instant::now();
-            let mut idle = tokio::time::interval(crate::wire::idle_check());
+            let mut idle = tokio::time::interval(node_runtime::wire::idle_check());
             loop {
                 tokio::select! {
                     _ = heartbeat.tick() => {
@@ -571,7 +572,7 @@ impl Inner {
                         self.presence_update(&core, &sess.did);
                     }
                     _ = idle.tick() => {
-                        if active.elapsed() >= crate::wire::idle_close() && !self.chat_keep(&core, &sess.did) {
+                        if active.elapsed() >= node_runtime::wire::idle_close() && !self.chat_keep(&core, &sess.did) {
                             break 'run IDLE.into();
                         }
                     }

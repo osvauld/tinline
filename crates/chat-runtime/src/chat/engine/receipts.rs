@@ -18,26 +18,27 @@
 //! our own unread cursor. Those are not recipient-signed evidence.
 
 use super::*;
-use crate::receipts::{messages::dm_version, store::messages::VersionEvidence};
-use crate::receipts::{Conversation, Kind, ReceiptError, Scope, api};
+use chat_core::doc::dm_version;
+use receipts_core::store::messages::VersionEvidence;
+use receipts_core::{Conversation, Kind, ReceiptError, Scope, status as api};
 use std::collections::BTreeMap;
 
 /// Provisional: newest read versions one mark-read step can cover. Older
 /// versions beyond it stay without a read receipt (a hole, never a claim).
-pub(crate) const MAX_READ_VERSIONS: usize = 4096;
+pub const MAX_READ_VERSIONS: usize = 4096;
 /// Provisional: days one `ReceiptHello` lists beyond the recent hello days.
-pub(crate) const MAX_RECEIPT_DAYS: usize = 64;
+pub const MAX_RECEIPT_DAYS: usize = 64;
 /// Provisional per-frame native receipt budget (well under `MAX_FRAME`).
-const RECEIPT_BATCH: crate::group::doc::batching::BatchLimits =
-    crate::group::doc::batching::BatchLimits { bytes: 256 * 1024, operations: 64, writers: 4096 };
+const RECEIPT_BATCH: group_core::doc::batching::BatchLimits =
+    group_core::doc::batching::BatchLimits { bytes: 256 * 1024, operations: 64, writers: 4096 };
 /// Provisional: frames one send pass writes for a day; the rest follows the next trigger.
 const RECEIPT_FRAMES_PER_SEND: usize = 16;
 
 /// Provisional: closed days one mark-read step loads from their blobs (newest first).
-pub(crate) const MAX_CLOSED_READ_DAYS: usize = 64;
+pub const MAX_CLOSED_READ_DAYS: usize = 64;
 
 /// Messages of closed days loaded for a read step, by day.
-pub(crate) type ClosedDays = BTreeMap<String, BTreeMap<String, MsgRec>>;
+pub type ClosedDays = BTreeMap<String, BTreeMap<String, MsgRec>>;
 
 /// The shard days a read step `(from, to]` may touch: a version's `at` may sit up to an hour
 /// outside its shard's day (one day of margin).
@@ -47,7 +48,7 @@ fn read_day_range(from: i64, to: i64) -> (String, String) {
 
 /// The exact incoming, undeleted versions a read step `(from, to]` covers, newest
 /// `MAX_READ_VERSIONS` only (older ones stay a hole), by day.
-pub(crate) fn read_versions(pair: &str, me: &str, from: i64, to: i64, days: &[(String, BTreeMap<String, MsgRec>)]) -> BTreeMap<String, Vec<[u8; 32]>> {
+pub fn read_versions(pair: &str, me: &str, from: i64, to: i64, days: &[(String, BTreeMap<String, MsgRec>)]) -> BTreeMap<String, Vec<[u8; 32]>> {
     let mut found: Vec<(i64, String, [u8; 32])> = Vec::new();
     for (day, msgs) in days {
         let doc = doc_name(pair, day);
@@ -70,14 +71,14 @@ fn rio(e: ReceiptError) -> Error {
     Error::Io(format!("receipts: {e}"))
 }
 
-pub(crate) fn dm_scope(pair: &str, day: &str) -> Scope {
+pub fn dm_scope(pair: &str, day: &str) -> Scope {
     Scope { conversation: Conversation::Direct(pair.to_string()), day: day.to_string() }
 }
 
-impl Inner {
+impl ChatRt {
     /// Ops to add to the transaction that durably stores `recs` (accepted from
     /// the contact): one delivered obligation for the incoming versions.
-    pub(crate) fn chat_delivered_intent(core: &ChatCore, me: &Me, pair: &str, day: &str, recs: &[&MsgRec]) -> Result<Vec<Op>, Error> {
+    pub fn chat_delivered_intent(core: &ChatCore, me: &Me, pair: &str, day: &str, recs: &[&MsgRec]) -> Result<Vec<Op>, Error> {
         let doc = doc_name(pair, day);
         let versions: Vec<[u8; 32]> = recs.iter().filter(|r| r.author != me.id.did()).map(|r| dm_version(&doc, r)).collect();
         if versions.is_empty() {
@@ -112,7 +113,7 @@ impl Inner {
     /// turning it on later confirms only reads from then on (no backdating).
     /// `closed`: the messages of closed days (older than 8 days, held only as a snapshot blob)
     /// that `chat_closed_for_read` loaded before the step; without them those days are skipped.
-    pub(crate) fn chat_read_intent(core: &ChatCore, me: &Me, pair: &str, from: i64, to: i64, closed: &ClosedDays) -> Result<Vec<Op>, Error> {
+    pub fn chat_read_intent(core: &ChatCore, me: &Me, pair: &str, from: i64, to: i64, closed: &ClosedDays) -> Result<Vec<Op>, Error> {
         if to <= from || !core.store.read_receipts() {
             return Ok(vec![]);
         }
@@ -143,7 +144,7 @@ impl Inner {
     /// their snapshot blobs, so reading an old unread message still issues its read receipt.
     /// Nothing when read receipts are off or nothing is unread. A day that fails to load is skipped
     /// (logged); its messages stay without a read receipt.
-    pub(crate) async fn chat_closed_for_read(self: &Arc<Self>, core: &Arc<ChatCore>, pair: &str, from: i64, to: i64) -> ClosedDays {
+    pub async fn chat_closed_for_read(self: &Arc<Self>, core: &Arc<ChatCore>, pair: &str, from: i64, to: i64) -> ClosedDays {
         let mut out = ClosedDays::new();
         if to <= from || !core.store.read_receipts() {
             return out;
@@ -173,7 +174,7 @@ impl Inner {
 
     /// Signs/commits pending receipt intents (bounded); failures stay queued.
     /// Live sessions of the affected contacts are told to send the new ops.
-    pub(crate) fn chat_receipts_pump(&self) {
+    pub fn chat_receipts_pump(&self) {
         let (Ok(me), Ok(core)) = (self.me(), self.chat_core()) else { return };
         let issued = match core.receipts.pump(&me.id) {
             Ok(i) => i,
@@ -197,7 +198,7 @@ impl Inner {
     }
 
     /// We hold statements of ours this contact has not acknowledged.
-    pub(crate) fn chat_receipts_owed(core: &ChatCore, pair: &str) -> bool {
+    pub fn chat_receipts_owed(core: &ChatCore, pair: &str) -> bool {
         core.receipts.outbox_days(&Conversation::Direct(pair.to_string()), 1).is_ok_and(|d| !d.is_empty())
     }
 
@@ -322,7 +323,7 @@ impl Inner {
 
     /// After a committed import: our outgoing messages whose shown version the
     /// contact's new statements cover changed their receipt status.
-    async fn chat_receipts_changed(self: &Arc<Self>, core: &Arc<ChatCore>, me: &Me, did: &str, pair: &str, day: &str, fresh: &[crate::receipts::doc::Entry]) {
+    async fn chat_receipts_changed(self: &Arc<Self>, core: &Arc<ChatCore>, me: &Me, did: &str, pair: &str, day: &str, fresh: &[receipts_core::doc::Entry]) {
         let Some(ev) = self.ev() else { return };
         let covered: std::collections::BTreeSet<[u8; 32]> =
             fresh.iter().filter(|e| e.receipt.recipient == did).flat_map(|e| e.receipt.messages.iter().copied()).collect();
@@ -370,7 +371,7 @@ impl Inner {
 
     /// Recipient evidence for every message of one day page (one shard and one ledger
     /// read), in the page's order. For list rendering instead of one call per row.
-    pub(crate) async fn chat_day_receipts(self: &Arc<Self>, did: &str, day: &str) -> Result<Vec<api::MessageReceiptStatus>, Error> {
+    pub async fn chat_day_receipts(self: &Arc<Self>, did: &str, day: &str) -> Result<Vec<api::MessageReceiptStatus>, Error> {
         let me = self.me()?;
         let core = self.chat_core()?;
         self.chat_contact(did, false)?;
@@ -391,7 +392,7 @@ impl Inner {
     }
 
     /// Recipient evidence for the version of `id` this device shows.
-    pub(crate) async fn chat_message_receipts(self: &Arc<Self>, did: &str, id: &str) -> Result<api::MessageReceiptStatus, Error> {
+    pub async fn chat_message_receipts(self: &Arc<Self>, did: &str, id: &str) -> Result<api::MessageReceiptStatus, Error> {
         let me = self.me()?;
         let core = self.chat_core()?;
         self.chat_contact(did, false)?;
@@ -407,7 +408,7 @@ impl Inner {
 
     /// The status of each conversation's last message, when it is ours (the chat
     /// list's tick). Reads stored rows only; never a cached doc ahead of the store.
-    pub(crate) fn chat_list_receipts(&self) -> Result<Vec<api::ChatReceiptRow>, Error> {
+    pub fn chat_list_receipts(&self) -> Result<Vec<api::ChatReceiptRow>, Error> {
         let me = self.me()?;
         let core = self.chat_core()?;
         let dids: Vec<String> = self.shared.lock().state.contacts.iter().map(|c| c.did.clone()).collect();

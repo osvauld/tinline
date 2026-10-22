@@ -70,7 +70,7 @@ impl Node {
     pub fn set_available(&self, available: bool, until: Option<u64>) -> Result<(), Error> {
         self.inner.me()?;
         if self.inner.shared.lock().profile.is_some() {
-            return self.inner.profile_set_field("availability".into(), Some(serde_json::json!({"available": available, "until": if available { None } else { until }})));
+            return Ok(self.inner.chat.profile_set_field("availability".into(), Some(serde_json::json!({"available": available, "until": if available { None } else { until }})))?);
         }
         self.inner.shared.lock().state.availability = crate::store::AvailabilityState {
             unavailable: !available,

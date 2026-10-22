@@ -5,7 +5,7 @@ use super::*;
 impl Inner {
     pub(super) fn own_content_catalog(self: &Arc<Self>) -> Vec<(String, Vec<u8>)> {
         group_contents::catalog(
-            self.chat_own_docs(),
+            self.chat.chat_own_docs(),
             self.group_own_content_docs(MAX_OWN_DOCS),
         )
     }
@@ -30,7 +30,7 @@ impl Inner {
             }
         } else {
             // Preserve the complete legacy DM slice, despite group names in Hello.
-            for (name, _) in self.chat_own_docs() {
+            for (name, _) in self.chat.chat_own_docs() {
                 self.push_chat_doc(me, &name, peer, writer).await?;
             }
         }
@@ -78,7 +78,7 @@ impl Inner {
         writer: &mut FrameWriter,
     ) -> Result<(), Error> {
         let theirs = peer.docs.get(name).cloned().unwrap_or_default();
-        let out = match self.chat_own_export(name, &theirs).await {
+        let out = match self.chat.chat_own_export(name, &theirs).await {
             Ok(o) => o,
             Err(e) => {
                 tracing::debug!("own-device export of {name}: {e}");
@@ -155,7 +155,7 @@ impl Inner {
         writer: &mut FrameWriter,
     ) -> Result<(), Error> {
         let mut acks = Vec::new();
-        for (doc, vv) in self.chat_acks() {
+        for (doc, vv) in self.chat.chat_acks() {
             if peer.acks.get(&doc).is_some_and(|p| {
                 p.partial_cmp(&vv)
                     .is_some_and(|o| o != std::cmp::Ordering::Less)
@@ -177,6 +177,7 @@ impl Inner {
         writer: &mut FrameWriter,
     ) -> Result<(), Error> {
         let cursors: Vec<(String, i64)> = self
+            .chat
             .chat_read_cursors()
             .into_iter()
             .filter(|(p, c)| peer.read.get(p).is_none_or(|x| c > x))

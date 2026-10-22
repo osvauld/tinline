@@ -372,8 +372,8 @@ impl Inner {
                                 }
                             } else if doc == PROFILE_DOC || doc == PROFILE_CACHE_DOC {
                                 if !update.is_empty() {
-                                    if doc == PROFILE_DOC { self.apply_profile_update(epoch, &update)?; }
-                                    else { self.apply_profile_cache_update(epoch, &update)?; }
+                                    if doc == PROFILE_DOC { self.chat.apply_profile_update(epoch, &update)?; }
+                                    else { self.chat.apply_profile_cache_update(epoch, &update)?; }
                                     let current = if doc == PROFILE_DOC { profile.as_deref().map(|p| &**p) } else { cache.as_deref().map(|p| &**p) }.ok_or(Error::Locked)?;
                                     let sig = crate::chat::wire::sign_batch(&me.profile.device_secret, &doc, &[]);
                                     writer.send(&SelfMsg::Sync { doc: doc.clone(), vv: current.vv().encode(), update: Vec::new(), sig }).await?;
@@ -400,7 +400,7 @@ impl Inner {
                             } else if parse_doc(&doc).is_some() {
                                 // A rejected or unusable batch is dropped, the session goes on.
                                 if !update.is_empty()
-                                    && let Err(e) = self.chat_own_apply(&doc, &update).await
+                                    && let Err(e) = self.chat.chat_own_apply(&doc, &update).await
                                 {
                                     tracing::debug!("own-device chat batch for {doc}: {e}");
                                 }
@@ -421,7 +421,7 @@ impl Inner {
                                     peer.acks.entry(doc.clone()).and_modify(|x| x.merge(&v)).or_insert(v);
                                 }
                             }
-                            if let Err(e) = self.chat_apply_acks(&acks) {
+                            if let Err(e) = self.chat.chat_apply_acks(&acks) {
                                 tracing::debug!("own-device acks: {e}");
                             }
                         }
@@ -430,7 +430,7 @@ impl Inner {
                                 let e = peer.read.entry(pair.clone()).or_insert(0);
                                 *e = (*e).max(*c);
                             }
-                            if let Err(e) = self.chat_apply_read(&cursors).await {
+                            if let Err(e) = self.chat.chat_apply_read(&cursors).await {
                                 tracing::debug!("own-device read cursors: {e}");
                             }
                         }
@@ -468,7 +468,7 @@ impl Inner {
                     if let Some(c) = &cache { self.push_changes(me, PROFILE_CACHE_DOC, c, &mut sent_cache, writer).await?; }
                     if full {
                         self.push_all_chat(me, &remote, &mut peer, writer).await?;
-                        self.chat_resume_all();
+                        self.chat.chat_resume_all();
                     }
                     peer.history.pump(&self, me, &remote, writer).await?;
                     peer.receipts.pump(&self, me, &remote, writer).await?;

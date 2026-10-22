@@ -2,7 +2,7 @@
 
 use super::*;
 
-impl Inner {
+impl ChatRt {
     // ---- reading -----------------------------------------------------------------------------------
 
     pub(super) fn chat_attachment(&self, core: &ChatCore, f: &FileRef, outgoing: bool) -> Attachment {
@@ -40,7 +40,7 @@ impl Inner {
         if c > ack { DeliveryState::Pending } else { DeliveryState::Delivered }
     }
 
-    pub(crate) fn chat_api_message(&self, core: &ChatCore, me: &Me, did: &str, pair: &str, day: &str, rec: &MsgRec) -> Message {
+    pub fn chat_api_message(&self, core: &ChatCore, me: &Me, did: &str, pair: &str, day: &str, rec: &MsgRec) -> Message {
         let outgoing = rec.author == me.id.did();
         // "You" items go nowhere; a message written on another of our devices has no counter
         // here and shows as held (it reached this device).
@@ -60,13 +60,13 @@ impl Inner {
         }
     }
 
-    pub(crate) fn chat_api_chat(&self, core: &ChatCore, me: &Me, conv: &ConvMeta) -> Option<Chat> {
+    pub fn chat_api_chat(&self, core: &ChatCore, me: &Me, conv: &ConvMeta) -> Option<Chat> {
         let is_self = conv.peer_did == me.id.did();
         let name = if is_self {
             "You".to_string()
         } else {
             let s = self.shared.lock();
-            crate::block::known_name(&s.state, &conv.peer_did)?
+            node_runtime::block::known_name(&s.state, &conv.peer_did)?
         };
         let pair = pair_id(me.id.did(), &conv.peer_did);
         let last_id = conv.last.as_ref().map(|l| l.id.clone());
@@ -83,7 +83,7 @@ impl Inner {
         Some(Chat { peer_did: conv.peer_did.clone(), peer_name: name, preview, last_outgoing, last_delivery, last_activity, unread: conv.unread, last_id })
     }
 
-    pub(crate) fn chat_list(&self) -> Result<Vec<Chat>, Error> {
+    pub fn chat_list(&self) -> Result<Vec<Chat>, Error> {
         let me = self.me()?;
         let core = self.chat_core()?;
         let mut dids: Vec<String> = {
@@ -106,7 +106,7 @@ impl Inner {
         Ok(out)
     }
 
-    pub(crate) async fn chat_day(self: &Arc<Self>, did: &str, day: Option<String>) -> Result<DayPage, Error> {
+    pub async fn chat_day(self: &Arc<Self>, did: &str, day: Option<String>) -> Result<DayPage, Error> {
         let me = self.me()?;
         let core = self.chat_core()?;
         self.chat_contact(did, false)?;
@@ -148,7 +148,7 @@ impl Inner {
     /// incoming message, which our other devices pick up (their unread clears too).
     /// Async: closed days in the step's range are loaded from their blobs first, so old unread
     /// messages get their read receipts too (`chat_closed_for_read`).
-    pub(crate) async fn chat_mark_read(self: &Arc<Self>, did: &str) -> Result<(), Error> {
+    pub async fn chat_mark_read(self: &Arc<Self>, did: &str) -> Result<(), Error> {
         let me = self.me()?;
         let core = self.chat_core()?;
         let pair = pair_id(me.id.did(), did);

@@ -21,7 +21,7 @@ impl NodeHooks for Inner {
     }
 
     fn chat_started(self: Arc<Self>) {
-        Inner::chat_started(&self);
+        chat_runtime::ChatRt::chat_started(&self.chat);
     }
 
     fn selfsync_started(self: Arc<Self>) {
@@ -37,7 +37,7 @@ impl NodeHooks for Inner {
     }
 
     fn chat_sessions_close(self: Arc<Self>) {
-        Inner::chat_sessions_close(&self);
+        chat_runtime::ChatRt::chat_sessions_close(&self.chat);
     }
 
     fn gcall_shutdown(self: Arc<Self>) -> BoxFuture<()> {
@@ -49,7 +49,7 @@ impl NodeHooks for Inner {
     }
 
     fn chat_close(self: Arc<Self>) -> BoxFuture<()> {
-        Box::pin(async move { Inner::chat_close(&self).await })
+        Box::pin(async move { self.chat.chat_close().await })
     }
 
     fn selfsync_sessions_close(self: Arc<Self>) {
@@ -67,11 +67,11 @@ impl NodeHooks for Inner {
     }
 
     fn incoming_chat(self: Arc<Self>, accepting: Accepting, chat: bool, permit: OwnedSemaphorePermit) -> BoxFuture<Result<(), node_runtime::Error>> {
-        Box::pin(async move { self.handle_chat_incoming(accepting, chat, permit).await.map_err(Into::into) })
+        Box::pin(async move { self.chat.clone().handle_chat_incoming(accepting, chat, permit).await.map_err(Into::into) })
     }
 
     fn chat_conn(self: Arc<Self>, conn: Connection, chat: bool, permit: OwnedSemaphorePermit) -> BoxFuture<Result<(), node_runtime::Error>> {
-        Box::pin(async move { self.handle_chat_conn(conn, chat, permit).await.map_err(Into::into) })
+        Box::pin(async move { self.chat.clone().handle_chat_conn(conn, chat, permit).await.map_err(Into::into) })
     }
 
     fn group_letter(self: Arc<Self>, ctrl: Ctrl, letter: proto::Msg, remote: [u8; 32], me: Arc<Me>) -> BoxFuture<Result<(), node_runtime::Error>> {
@@ -83,19 +83,19 @@ impl NodeHooks for Inner {
     }
 
     fn chat_call_activity(self: Arc<Self>, did: &str) {
-        Inner::chat_call_activity(&self, did);
+        chat_runtime::ChatRt::chat_call_activity(&self.chat, did);
     }
 
     fn chat_close_sessions(self: Arc<Self>, did: &str) {
-        Inner::chat_close_sessions(&self, did);
+        chat_runtime::ChatRt::chat_close_sessions(&self.chat, did);
     }
 
     fn chat_kick(self: Arc<Self>, did: String) {
-        Inner::chat_kick(&self, did);
+        chat_runtime::ChatRt::chat_kick(&self.chat, did);
     }
 
     fn chat_kick_pending(self: Arc<Self>) {
-        Inner::chat_kick_pending(&self);
+        chat_runtime::ChatRt::chat_kick_pending(&self.chat);
     }
 
     fn group_rotation_policy(self: Arc<Self>) -> Result<RotationPolicy, node_runtime::Error> {
@@ -104,6 +104,6 @@ impl NodeHooks for Inner {
     }
 
     fn profile_for_new_contact(self: Arc<Self>, did: &str) {
-        Inner::profile_for_new_contact(&self, did);
+        chat_runtime::ChatRt::profile_for_new_contact(&self.chat, did);
     }
 }

@@ -21,19 +21,17 @@ impl Node {
         let selfsync: Arc<crate::sync::engine::SelfSync> = Default::default();
         let sink: std::sync::Weak<dyn OwnDocSink> = Arc::downgrade(&(selfsync.clone() as Arc<dyn OwnDocSink>));
         ctx.signal.set_sink(sink);
+        let search: Arc<search_ix::SearchIx> = Default::default();
+        let chat = Arc::new(chat_runtime::ChatRt::new(ctx.clone(), search.clone()));
         let inner = Arc::new(Inner {
             ctx,
-            chat: Mutex::new(None),
-            chat_events: Mutex::new(None),
+            chat,
             link_events: Mutex::new(None),
             selfsync,
             link: Default::default(),
             gcall: crate::gcall::net::GcallNet::new(rt.handle().clone()),
             group: Default::default(),
-            profile_events: Default::default(),
-            profile_downloads: Default::default(),
-            profile_fetches: Arc::new(Semaphore::new(4)),
-            search: Default::default(),
+            search,
         });
         let host: std::sync::Weak<Inner> = Arc::downgrade(&inner);
         inner.gcall.install_host(host.clone());
@@ -317,7 +315,7 @@ impl Node {
                 inner.gcall_shutdown().await;
                 inner.close_endpoint().await;
                 inner.shared.lock().forget_session();
-                inner.chat_close().await;
+                inner.chat.chat_close().await;
             }
             inner.emit_status();
         });
@@ -326,7 +324,7 @@ impl Node {
     pub fn set_name(&self, name: String) -> Result<(), Error> {
         if name.len() > 256 || name.chars().any(|c| !proto::safe_name_char(c)) { return Err(Error::Protocol("invalid profile name".into())); }
         if self.inner.shared.lock().profile.is_some() {
-            return self.inner.profile_set_field("name".into(), Some(serde_json::json!(name)));
+            return Ok(self.inner.chat.profile_set_field("name".into(), Some(serde_json::json!(name)))?);
         }
         let unlocked = {
             let mut s = self.inner.shared.lock();

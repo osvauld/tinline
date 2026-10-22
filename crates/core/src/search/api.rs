@@ -181,7 +181,7 @@ impl Node {
     #[doc(hidden)]
     pub fn compact_now_for_test(&self) -> Result<u32, Error> {
         let inner = self.inner.clone();
-        self.block_on(async move { inner.chat_compact_for_test().await })?
+        self.block_rt(async move { inner.chat.chat_compact_for_test().await })
     }
 }
 
@@ -256,7 +256,7 @@ impl Inner {
     }
 
     async fn search_reconcile_dms(self: &Arc<Self>, ix: &Arc<SearchIndex>) -> Result<(), Error> {
-        let core = self.chat_core()?;
+        let core = self.chat.chat_core()?;
         let me = self.me()?;
         let mut owners: Vec<String> = {
             let s = self.shared.lock();
@@ -279,7 +279,7 @@ impl Inner {
                     continue;
                 }
                 // A closed day whose snapshot blob is not here (yet) is skipped: next time.
-                let shard = match self.chat_load_shard(&core, &pair, &day).await {
+                let shard = match self.chat.chat_load_shard(&core, &pair, &day).await {
                     Ok(s) => s,
                     Err(e) => {
                         tracing::debug!("search reconcile {day}: {e}");
@@ -387,7 +387,7 @@ impl Inner {
 
     pub(crate) fn search(self: &Arc<Self>, query: &str, limit: u32, cursor: Option<&str>, budget: usize) -> Result<SearchResults, Error> {
         let me = self.me()?;
-        self.chat_core()?;
+        self.chat.chat_core()?;
         let ix = self.search_ix().ok_or(Error::Locked)?;
         let gcore = self.group_core().ok();
         let names = if cursor.is_none() { self.search_names(&me, gcore.as_deref(), query) } else { Vec::new() };
@@ -429,7 +429,7 @@ impl Inner {
     #[allow(clippy::too_many_arguments)]
     pub(crate) fn search_in(self: &Arc<Self>, kind: SearchConvKind, conv: &str, query: &str, limit: u32, cursor: Option<&str>, budget: usize, drop_budget: usize, stats: &mut FindStats) -> Result<SearchResults, Error> {
         let me = self.me()?;
-        self.chat_core()?;
+        self.chat.chat_core()?;
         let ix = self.search_ix().ok_or(Error::Locked)?;
         let gcore = self.group_core().ok();
         let none = SearchResults { names: Vec::new(), messages: Vec::new(), next: None };

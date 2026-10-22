@@ -1,5 +1,5 @@
 use super::*;
-use crate::chat::doc::{Shard, Writer, doc_name, pair_id};
+use crate::chat::doc::{MsgRec, Shard, Writer, doc_name, pair_id};
 use crate::receipts::{
     Conversation, Kind, MAX_MESSAGES, Receipt, ReceiptError, Scope,
     store::{ReceiptStore, messages::*},

@@ -4,7 +4,7 @@
 use iroh::endpoint::{RecvStream, SendStream};
 
 use crate::Error;
-use crate::frames::{FrameBuf, send_frame};
+use node_runtime::frames::{FrameBuf, send_frame};
 
 pub use chat_core::wire::*;
 

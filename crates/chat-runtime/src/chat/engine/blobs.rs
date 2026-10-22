@@ -2,10 +2,10 @@
 
 use super::*;
 
-impl Inner {
+impl ChatRt {
     // ---- blobs -----------------------------------------------------------------------------------
 
-    pub(crate) async fn chat_hub(self: &Arc<Self>) -> Result<Arc<BlobHub>, Error> {
+    pub async fn chat_hub(self: &Arc<Self>) -> Result<Arc<BlobHub>, Error> {
         let epoch = self.me()?.epoch;
         let core = self.chat_core()?;
         let this = Arc::downgrade(self);
@@ -39,7 +39,7 @@ impl Inner {
         if let Some(c) = self.shared.lock().state.contacts.iter().find(|c| c.has_device(dev)) {
             return Some(c.did.clone());
         }
-        let core = self.chat.lock().clone()?;
+        let core = self.core.lock().clone()?;
         let map = core.sessions.lock();
         map.values().find(|s| s.device == *dev).map(|s| s.did.clone())
     }
@@ -83,7 +83,7 @@ impl Inner {
     /// Starts fetching a blob from `did` in the background. Idempotent while a fetch is
     /// running; an entry that is only waiting out a retry delay is replaced at once (a new
     /// session or a user tap means "try now"), so nothing stale blocks a new attempt.
-    pub(crate) fn chat_download(self: &Arc<Self>, did: String, hash: String) {
+    pub fn chat_download(self: &Arc<Self>, did: String, hash: String) {
         let Ok(core) = self.chat_core() else { return };
         let seq = core.next_dl.fetch_add(1, Ordering::Relaxed);
         {
@@ -296,7 +296,7 @@ impl Inner {
 
     /// Test hook: tries to fetch a blob from a contact's device as this node, whatever the
     /// conversations say. Fails when the contact's gate refuses us.
-    pub(crate) async fn chat_raw_fetch(self: &Arc<Self>, did: &str, hash_hex: &str, size: u64) -> Result<u64, Error> {
+    pub async fn chat_raw_fetch(self: &Arc<Self>, did: &str, hash_hex: &str, size: u64) -> Result<u64, Error> {
         let core = self.chat_core()?;
         let hash = parse_hash(hash_hex)?;
         let hub = self.chat_hub().await?;
@@ -338,7 +338,7 @@ impl Inner {
     }
 
     /// User asked for the attachment of a message.
-    pub(crate) fn chat_want(self: &Arc<Self>, did: &str, id: &str) -> Result<(), Error> {
+    pub fn chat_want(self: &Arc<Self>, did: &str, id: &str) -> Result<(), Error> {
         let core = self.chat_core()?;
         let hash = self.chat_blob_of(&core, did, id)?;
         let mut info = core.store.blob(&hash)?.ok_or(Error::NotFound)?;
@@ -356,7 +356,7 @@ impl Inner {
     /// The user gave up on a download: stop the fetch, forget the wish (so a reconnect does not
     /// restart it) and drop our tag so the GC frees the partial bytes. The attachment is
     /// `Remote` again and a later `chat_want` starts from scratch.
-    pub(crate) async fn chat_cancel(self: &Arc<Self>, did: &str, id: &str) -> Result<(), Error> {
+    pub async fn chat_cancel(self: &Arc<Self>, did: &str, id: &str) -> Result<(), Error> {
         let core = self.chat_core()?;
         let hash = self.chat_blob_of(&core, did, id)?;
         let mut info = core.store.blob(&hash)?.ok_or(Error::NotFound)?;
@@ -380,7 +380,7 @@ impl Inner {
         Ok(())
     }
 
-    pub(crate) async fn chat_save(self: &Arc<Self>, did: &str, id: &str, dest: PathBuf) -> Result<(), Error> {
+    pub async fn chat_save(self: &Arc<Self>, did: &str, id: &str, dest: PathBuf) -> Result<(), Error> {
         let me = self.me()?;
         let core = self.chat_core()?;
         let pair = pair_id(me.id.did(), did);
@@ -402,7 +402,7 @@ impl Inner {
     }
 
     /// Encrypts a local file into the blob store and sends a message that carries it.
-    pub(crate) async fn chat_send_file(
+    pub async fn chat_send_file(
         self: &Arc<Self>,
         did: &str,
         path: PathBuf,

@@ -2,11 +2,11 @@
 
 use super::*;
 
-impl Inner {
+impl ChatRt {
     // ---- hello / sync -----------------------------------------------------------------------
 
     /// This node's chat clock: the real one plus the test offset (`Node::chat_clock_offset_for_test`).
-    pub(crate) fn chat_now(&self) -> i64 {
+    pub fn chat_now(&self) -> i64 {
         now_ms() + self.chat_core().map(|c| c.clock_ms.load(Ordering::Relaxed)).unwrap_or(0)
     }
 
@@ -44,11 +44,11 @@ impl Inner {
             }
         }
         let profile_vv = self.profile_doc(&sess.did)?.map(|p| p.vv()).unwrap_or_default();
-        shards.push((crate::sync::profiledoc::PROFILE_DOC.into(), profile_vv.encode()));
+        shards.push((account_model::sync::profiledoc::PROFILE_DOC.into(), profile_vv.encode()));
         Ok(ChatMsg::Hello { shards })
     }
 
-    pub(crate) fn chat_profile_changed(self: &Arc<Self>, did: &str) {
+    pub fn chat_profile_changed(self: &Arc<Self>, did: &str) {
         if let Ok(core) = self.chat_core() {
             for s in self.chat_sessions_of(&core, did) { let _ = s.tx.send(Cmd::Profile); }
         }
@@ -62,7 +62,7 @@ impl Inner {
         let since = sess.profile_vv.lock().clone();
         if let Some((update, vv)) = p.export_since(&since) {
             if update.len() > crate::profile::model::MAX_SNAPSHOT { return Err(Error::Protocol("profile update bounds".into())); }
-            let doc = crate::sync::profiledoc::PROFILE_DOC;
+            let doc = account_model::sync::profiledoc::PROFILE_DOC;
             let sig = sign_batch(&me.profile.device_secret, doc, &update);
             writer.send(&ChatMsg::Sync { doc: doc.into(), vv: vv.encode(), update, sig }).await?;
         }
@@ -81,7 +81,7 @@ impl Inner {
                 }
                 let mut theirs: HashMap<String, VersionVector> = HashMap::new();
                 for (d, vv) in shards {
-                    if d == crate::sync::profiledoc::PROFILE_DOC {
+                    if d == account_model::sync::profiledoc::PROFILE_DOC {
                         let held = decode_vv(&vv)?;
                         // Holding all of our profile already is an ack (like `chat_ack` for the
                         // days below): the Ack of an earlier session can be lost when that
@@ -119,7 +119,7 @@ impl Inner {
                 Ok(())
             }
             ChatMsg::Sync { doc, vv, update, sig } => {
-                if doc == crate::sync::profiledoc::PROFILE_DOC {
+                if doc == account_model::sync::profiledoc::PROFILE_DOC {
                     if !verify_batch(&sess.device, &doc, &update, &sig) { return Err(Error::Protocol("bad profile batch signature".into())); }
                     let vv = self.profile_receive(sess.epoch, &sess.did, &update)?;
                     return writer.send(&ChatMsg::Ack { doc, vv: vv.encode() }).await;
@@ -132,7 +132,7 @@ impl Inner {
             }
             ChatMsg::Push { doc, update, sig } => self.chat_receive(core, &me, sess, &doc, &update, &sig, true, writer).await,
             ChatMsg::Ack { doc, vv } => {
-                if doc == crate::sync::profiledoc::PROFILE_DOC {
+                if doc == account_model::sync::profiledoc::PROFILE_DOC {
                     let vv = decode_vv(&vv)?;
                     sess.profile_vv.lock().merge(&vv);
                     return self.profile_ack(sess.epoch, &sess.did, &vv);
@@ -172,7 +172,7 @@ impl Inner {
     /// A cached shard that holds other ops than the store (a write whose `chat_persist` failed
     /// after the doc took it) is dropped and loaded again: its ops were never stored, so they
     /// must never be sent, and our next write must not build on them (P10).
-    pub(crate) async fn chat_shard<'c>(self: &Arc<Self>, core: &'c Arc<ChatCore>, pair: &str, day: &str) -> Result<ShardCache<'c>, Error> {
+    pub async fn chat_shard<'c>(self: &Arc<Self>, core: &'c Arc<ChatCore>, pair: &str, day: &str) -> Result<ShardCache<'c>, Error> {
         let key = (pair.to_string(), day.to_string());
         {
             let mut cache = core.shards.lock();
@@ -196,7 +196,7 @@ impl Inner {
     }
 
     /// A shard as stored (a closed one from its snapshot blob), not cached.
-    pub(crate) async fn chat_load_shard(self: &Arc<Self>, core: &Arc<ChatCore>, pair: &str, day: &str) -> Result<Shard, Error> {
+    pub async fn chat_load_shard(self: &Arc<Self>, core: &Arc<ChatCore>, pair: &str, day: &str) -> Result<Shard, Error> {
         let meta = core.store.shard_meta(pair, day)?;
         let (snap, ups) = core.store.shard_rows(pair, day)?;
         let base = match (&snap, meta.as_ref().and_then(|m| m.closed.clone())) {
@@ -221,7 +221,7 @@ impl Inner {
     /// shard is ahead of the store; `chat_shard` reloads it before anyone uses it again.
     /// `recs`: the messages the change touched, for the search index (written after the
     /// commit; a failure there is only logged, reconcile heals it).
-    pub(crate) fn chat_persist(&self, core: &ChatCore, pair: &str, shard: &Shard, update: &[u8], mut extra: Vec<Op>, recs: &[&MsgRec]) -> Result<(), Error> {
+    pub fn chat_persist(&self, core: &ChatCore, pair: &str, shard: &Shard, update: &[u8], mut extra: Vec<Op>, recs: &[&MsgRec]) -> Result<(), Error> {
         let me = self.me()?;
         let Some(did) = self.pair_owner(&me, pair) else {
             return Err(Error::NotFound);
@@ -252,7 +252,7 @@ impl Inner {
 
     /// Registers the file of a message (a new `blob/` record, the read permission) and returns
     /// the ops, plus the hash if it should be downloaded now.
-    pub(crate) fn chat_register_file(&self, core: &ChatCore, pair: &str, day: &str, rec: &MsgRec, incoming: bool) -> Result<(Vec<Op>, Option<String>), Error> {
+    pub fn chat_register_file(&self, core: &ChatCore, pair: &str, day: &str, rec: &MsgRec, incoming: bool) -> Result<(Vec<Op>, Option<String>), Error> {
         let Some(f) = &rec.file else { return Ok((vec![], None)) };
         // Validate before it is trusted as a path component or a key.
         parse_hash(&f.hash)?;
@@ -281,7 +281,7 @@ impl Inner {
 
     /// Conversation row after `rec` was added or changed. A newly added incoming message counts
     /// as unread unless it is at or before the read cursor (`ConvMeta::read_upto`).
-    pub(crate) fn chat_conv_ops(&self, core: &ChatCore, me: &Me, did: &str, pair: &str, recs: &[(&MsgRec, bool)]) -> Result<(Vec<Op>, ConvMeta), Error> {
+    pub fn chat_conv_ops(&self, core: &ChatCore, me: &Me, did: &str, pair: &str, recs: &[(&MsgRec, bool)]) -> Result<(Vec<Op>, ConvMeta), Error> {
         let mut conv = core.store.conv(pair)?.unwrap_or_else(|| ConvMeta { peer_did: did.to_string(), ..Default::default() });
         conv.peer_did = did.to_string();
         for (rec, added) in recs {
@@ -389,7 +389,7 @@ impl Inner {
     /// `all_remote`: the batch came from another of our own devices, so even messages we
     /// authored have no bytes here. Call with the shard cache locked.
     #[allow(clippy::too_many_arguments, clippy::type_complexity)]
-    pub(crate) fn chat_commit(
+    pub fn chat_commit(
         &self,
         core: &ChatCore,
         me: &Me,
@@ -514,7 +514,7 @@ impl Inner {
 
     /// Whether a contact holding `theirs` of a day lacks ops of ours: of any of our writer IDs
     /// in it (`ShardMeta::own`, plus this install's), not only this install's (P10b).
-    pub(crate) fn chat_owes(core: &ChatCore, meta: &ShardMeta, theirs: &VersionVector) -> bool {
+    pub fn chat_owes(core: &ChatCore, meta: &ShardMeta, theirs: &VersionVector) -> bool {
         let held = decode_vv(&meta.vv).unwrap_or_default();
         meta.own.iter().chain(std::iter::once(&core.wid)).any(|p| theirs.get(p).copied().unwrap_or(0) < held.get(p).copied().unwrap_or(0))
     }

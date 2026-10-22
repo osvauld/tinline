@@ -1117,6 +1117,35 @@ dependencies = [
 ]
 
 [[package]]
+name = "chat-runtime"
+version = "0.1.38"
+dependencies = [
+ "account-model",
+ "blake3",
+ "bytes",
+ "chat-core",
+ "cryptography",
+ "group-core",
+ "hex",
+ "identity",
+ "image",
+ "iroh",
+ "iroh-blobs",
+ "loro",
+ "node-runtime",
+ "parking_lot",
+ "proto",
+ "receipts-core",
+ "search-ix",
+ "serde_json",
+ "storage",
+ "tokio",
+ "tracing",
+ "transfer",
+ "zeroize",
+]
+
+[[package]]
 name = "chrono"
 version = "0.4.45"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5833,6 +5862,7 @@ dependencies = [
  "bytes",
  "call-video",
  "chat-core",
+ "chat-runtime",
  "crdt",
  "cryptography",
  "gcall-core",

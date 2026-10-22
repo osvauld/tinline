@@ -16,7 +16,7 @@ impl Node {
     /// For tests: how many chat sessions with `did` are up right now.
     #[doc(hidden)]
     pub fn chat_sessions_for_test(&self, did: String) -> u32 {
-        self.inner.chat_core().map_or(0, |core| self.inner.chat_sessions_of(&core, &did).len() as u32)
+        self.inner.chat.chat_core().map_or(0, |core| self.inner.chat.chat_sessions_of(&core, &did).len() as u32)
     }
 
     /// For tests: how many own-device sync sessions are up right now.

@@ -4,7 +4,7 @@
 //! Blocking methods are meant for the app's IO threads; long work (dialing, ringing, the call
 //! itself) runs on this node's own tokio runtime and reports through `NodeEvents`.
 
-use std::collections::{HashSet, VecDeque};
+use std::collections::VecDeque;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
@@ -16,7 +16,7 @@ use iroh::{Endpoint, EndpointAddr, PublicKey, RelayUrl, SecretKey, Watcher};
 use parking_lot::{Mutex, ReentrantMutex};
 use proto::{ContactTicket, Msg};
 use sha2::{Digest, Sha512};
-use tokio::sync::{OwnedMutexGuard, OwnedSemaphorePermit, Semaphore, mpsc, oneshot};
+use tokio::sync::{OwnedMutexGuard, OwnedSemaphorePermit, mpsc, oneshot};
 use zeroize::Zeroize;
 
 use crate::accounts::{self, AccountDirs};
@@ -45,8 +45,8 @@ pub use self::types::*;
 /// engines that still live in p2pcore. Hooks into the engines are `hooks.rs`.
 pub(crate) struct Inner {
     pub(crate) ctx: Arc<NodeCtx>,
-    pub(crate) chat: Mutex<Option<Arc<crate::chat::engine::ChatCore>>>,
-    pub(crate) chat_events: Mutex<Option<Arc<dyn crate::chat::api::ChatEvents>>>,
+    /// The chat runtime (1:1 chat and profiles), `chat_runtime`.
+    pub(crate) chat: Arc<chat_runtime::ChatRt>,
     pub(crate) link_events: Mutex<Option<Arc<dyn crate::sync::LinkEvents>>>,
     pub(crate) selfsync: Arc<crate::sync::engine::SelfSync>,
     pub(crate) link: crate::sync::link::LinkState,
@@ -54,15 +54,20 @@ pub(crate) struct Inner {
     pub(crate) gcall: crate::gcall::net::GcallNet,
     /// G1: group chat runtime (second endpoint, sessions with hosts); see `group/engine.rs`.
     pub(crate) group: crate::group::engine::GroupRt,
-    pub(crate) profile_events: Mutex<Option<Arc<dyn crate::profile::ProfileEvents>>>,
-    pub(crate) profile_downloads: Mutex<HashSet<(u64, String, String)>>,
-    pub(crate) profile_fetches: Arc<Semaphore>,
     /// The selected account's search index (`search.redb`), open while its chat store is; the
     /// chat and group engines write to it after every accepted change.
     pub(crate) search: Arc<search_ix::SearchIx>,
 }
 
 impl Inner {
+    /// Opens the chat store (and with it the search index) when the data key is available; a
+    /// store opened now gets its search index reconciled in the background.
+    pub(crate) fn chat_open(self: &Arc<Self>) {
+        if self.chat.chat_open() {
+            self.search_reconcile();
+        }
+    }
+
     /// `commit_identity` with the gate held: the files, then the stores that open with them.
     pub(crate) fn commit_locked(self: &Arc<Self>) -> Result<(), Error> {
         if !self.commit_files()? {
@@ -105,14 +110,14 @@ impl Drop for Node {
                         let _ = tokio::time::timeout(Duration::from_secs(1), ep.close()).await;
                     }
                     let _ = tokio::time::timeout(Duration::from_secs(3), inner.group_close()).await;
-                    let _ = tokio::time::timeout(Duration::from_secs(3), inner.chat_close()).await;
+                    let _ = tokio::time::timeout(Duration::from_secs(3), inner.chat.chat_close()).await;
                 });
             }
             // GL: every store file goes now, whatever task still holds a clone (the tasks are
             // only dropped below, in the background), so a node made next on this directory
             // opens them at once.
             self.inner.group_close_now();
-            self.inner.chat_close_now();
+            self.inner.chat.chat_close_now();
             self.inner.shared.lock().forget_session();
             // Never blocks, so it is safe even if the last reference drops on a core thread.
             rt.shutdown_background();
@@ -136,6 +141,14 @@ impl Node {
             let _ = tx.send(fut.await);
         }));
         rx.recv().map_err(|_| Error::Protocol("core runtime stopped".into()))
+    }
+
+    /// `block_on` for an engine call that fails with the runtime's error.
+    pub(crate) fn block_rt<T: Send + 'static>(
+        &self,
+        fut: impl std::future::Future<Output = Result<T, node_runtime::Error>> + Send + 'static,
+    ) -> Result<T, Error> {
+        Ok(self.block_on(fut)??)
     }
 
     /// Takes the lifecycle lock for the caller's whole operation; refuses on core threads.

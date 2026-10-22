@@ -117,7 +117,7 @@ impl Node {
             height: 0,
             preview: String::new(),
         });
-        self.block_on(async move { inner.synth_dm(&with, &author, text, at, file).await })?
+        self.block_rt(async move { inner.chat.synth_dm(&with, &author, peer(&author), text, at, file).await })
     }
 
     #[doc(hidden)]

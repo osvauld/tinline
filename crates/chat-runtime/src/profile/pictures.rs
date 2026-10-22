@@ -1,10 +1,11 @@
 //! Picture normalization and encrypted transfer reuse the chat BlobHub and its serving gate.
 use super::{
-    Error, Inner,
+    Error, ChatRt,
     model::{MAX_PICTURE, Picture, picture},
     picture_marker, sealed,
 };
-use crate::{chat::crypt, node::addr_for};
+use crate::chat::crypt;
+use node_runtime::addr_for;
 use image::{ImageFormat, ImageReader};
 use iroh_blobs::Hash;
 use std::io::Cursor;
@@ -76,8 +77,8 @@ fn decrypt(p: &Picture, cipher: &[u8]) -> Result<Vec<u8>, Error> {
     }
     normalize(&plain, true)
 }
-impl Inner {
-    pub(crate) async fn profile_set_picture(self: &Arc<Self>, bytes: Vec<u8>) -> Result<(), Error> {
+impl ChatRt {
+    pub async fn profile_set_picture(self: &Arc<Self>, bytes: Vec<u8>) -> Result<(), Error> {
         let me = self.me()?;
         let plain = tokio::task::spawn_blocking(move || normalize(&bytes, false))
             .await
@@ -120,7 +121,7 @@ impl Inner {
                 if let Some(old) = old {
                     p.request_deletion(
                         &old.hash,
-                        &proto::profile::sign_picture_deletion(&me.id, &old.hash, crate::node::now_ms())?,
+                        &proto::profile::sign_picture_deletion(&me.id, &old.hash, node_runtime::now_ms())?,
                     )?;
                 }
                 Ok(())
@@ -133,7 +134,7 @@ impl Inner {
         result
     }
 
-    pub(crate) fn profile_picture_ready(&self, did: &str, hash: &str) -> Result<bool, Error> {
+    pub fn profile_picture_ready(&self, did: &str, hash: &str) -> Result<bool, Error> {
         let s = self.shared.lock();
         s.me.as_ref().ok_or(Error::Locked)?;
         Ok(sealed(&s)?
@@ -142,7 +143,7 @@ impl Inner {
             .as_deref()
             == Some(b"ready"))
     }
-    pub(crate) async fn profile_picture_local(
+    pub async fn profile_picture_local(
         self: &Arc<Self>,
         did: &str,
         p: &Picture,
@@ -166,7 +167,7 @@ impl Inner {
     }
 
     /// Called by the EXISTING BlobHub gate, never an alternate unauthenticated serving path.
-    pub(crate) fn profile_may_serve(&self, device: &[u8; 32], hash: &Hash) -> bool {
+    pub fn profile_may_serve(&self, device: &[u8; 32], hash: &Hash) -> bool {
         let s = self.shared.lock();
         let Some(me) = &s.me else { return false };
         let own = s
@@ -183,7 +184,7 @@ impl Inner {
         {
             return false;
         }
-        let selected = |p: &crate::sync::profiledoc::ProfileDoc| {
+        let selected = |p: &account_model::sync::profiledoc::ProfileDoc| {
             picture(&p.fields().unwrap_or_default())
                 .ok()
                 .flatten()
@@ -199,7 +200,7 @@ impl Inner {
             .is_some_and(|v| v.values().any(selected))
     }
 
-    pub(crate) fn profile_download(self: &Arc<Self>, did: String) {
+    pub fn profile_download(self: &Arc<Self>, did: String) {
         let Ok(me) = self.me() else { return };
         let Some(p) = self
             .profile_doc(&did)
@@ -355,7 +356,7 @@ impl Inner {
         Ok(())
     }
 
-    pub(crate) fn profile_apply_deletions(self: &Arc<Self>, epoch: u64, did: &str) {
+    pub fn profile_apply_deletions(self: &Arc<Self>, epoch: u64, did: &str) {
         let Some(doc) = self.profile_doc(did).ok().flatten() else {
             return;
         };

@@ -2,11 +2,11 @@
 
 use super::*;
 
-impl Inner {
+impl ChatRt {
     // ---- local writes ----------------------------------------------------------------------------
 
     /// `did` is us: the "You" conversation (saved items; it exists only on our own devices).
-    pub(crate) fn is_self_did(&self, did: &str) -> bool {
+    pub fn is_self_did(&self, did: &str) -> bool {
         self.shared.lock().me.as_ref().is_some_and(|m| m.id.did() == did)
     }
 
@@ -22,8 +22,8 @@ impl Inner {
         if !write {
             return if contact || s.state.notices.contains_key(did) { Ok(()) } else { Err(Error::NotFound) };
         }
-        if crate::block::blocked_me(&s.state, did) {
-            return Err(Error::Rejected(crate::BLOCKED.into()));
+        if node_runtime::block::blocked_me(&s.state, did) {
+            return Err(Error::Rejected(node_runtime::BLOCKED.into()));
         }
         if s.state.blocked.contains(did) {
             return Err(Error::Protocol("you blocked them; unblock first".into()));
@@ -32,7 +32,7 @@ impl Inner {
     }
 
     /// Adds a message of ours to today's shard, persists it, tells the session (or dials).
-    pub(crate) async fn chat_send_message(
+    pub async fn chat_send_message(
         self: &Arc<Self>,
         did: &str,
         text: String,
@@ -79,13 +79,13 @@ impl Inner {
 
     /// Test hook (`write_as_sibling_for_test`): a message of ours sent at `at`, under a fresh
     /// device ID's writer ID, stored like one relayed by an own device (pending, not pushed).
-    pub(crate) async fn chat_write_as_sibling_for_test(self: &Arc<Self>, did: &str, text: String, at: i64) -> Result<String, Error> {
+    pub async fn chat_write_as_sibling_for_test(self: &Arc<Self>, did: &str, text: String, at: i64) -> Result<String, Error> {
         self.chat_write_in_day_for_test(did, text, at, &day_of(at)).await
     }
 
     /// As `chat_write_as_sibling_for_test`, but filed in the shard of `day` whatever `at` is
     /// (a message a receiver must judge against that day's window).
-    pub(crate) async fn chat_write_in_day_for_test(self: &Arc<Self>, did: &str, text: String, at: i64, day: &str) -> Result<String, Error> {
+    pub async fn chat_write_in_day_for_test(self: &Arc<Self>, did: &str, text: String, at: i64, day: &str) -> Result<String, Error> {
         let me = self.me()?;
         let core = self.chat_core()?;
         self.chat_contact(did, true)?;
@@ -110,7 +110,7 @@ impl Inner {
 
     /// How this install writes chat messages: signed by the account's DID key, under the writer
     /// ID of this install's device ID (P9c: the same for every conversation).
-    pub(crate) fn chat_writer(&self, me: &Me, core: &ChatCore) -> Writer {
+    pub fn chat_writer(&self, me: &Me, core: &ChatCore) -> Writer {
         Writer::new(me.id.clone(), core.device_id)
     }
 
@@ -126,7 +126,7 @@ impl Inner {
         }
     }
 
-    pub(crate) async fn chat_edit(self: &Arc<Self>, did: &str, id: &str, text: Option<String>) -> Result<Message, Error> {
+    pub async fn chat_edit(self: &Arc<Self>, did: &str, id: &str, text: Option<String>) -> Result<Message, Error> {
         let me = self.me()?;
         let core = self.chat_core()?;
         self.chat_contact(did, true)?;

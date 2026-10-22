@@ -15,6 +15,8 @@ pub trait OwnDocSink: Send + Sync {
     fn mark_dirty(&self, name: &str);
     /// Forgets the dial backoff and what each device is known to hold (a kick).
     fn forget_progress(&self);
+    /// Which of `devices` have an own-device session up right now.
+    fn in_session(&self, devices: &[[u8; 32]]) -> Vec<bool>;
 }
 
 #[derive(Default)]
@@ -60,6 +62,14 @@ impl OwnDocSignal {
             s.forget_progress();
         }
         self.wake.notify_one();
+    }
+
+    /// Which of `devices` (own devices) are in sync with us right now; all false with no engine.
+    pub fn in_session(&self, devices: &[[u8; 32]]) -> Vec<bool> {
+        match self.sink() {
+            Some(s) => s.in_session(devices),
+            None => vec![false; devices.len()],
+        }
     }
 
     /// The current change generation.

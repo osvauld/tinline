@@ -6,11 +6,11 @@ use std::sync::Arc;
 
 use super::*;
 
-impl Inner {
+impl ChatRt {
     /// One message in the conversation with contact `with`, authored by us or by that contact
-    /// (a registered synthetic peer), at unix ms `at`. Stored as a delivered message (no outbox
-    /// mark, no network). Returns the message id.
-    pub(crate) async fn synth_dm(self: &Arc<Self>, with: &str, author: &str, text: String, at: i64, file: Option<FileRef>) -> Result<String, Error> {
+    /// (a registered synthetic peer: `peer` holds its identity and device), at unix ms `at`.
+    /// Stored as a delivered message (no outbox mark, no network). Returns the message id.
+    pub async fn synth_dm(self: &Arc<Self>, with: &str, author: &str, peer: Option<(identity::Identity, [u8; 32])>, text: String, at: i64, file: Option<FileRef>) -> Result<String, Error> {
         let me = self.me()?;
         let core = self.chat_core()?;
         self.chat_contact(with, true)?;
@@ -21,7 +21,7 @@ impl Inner {
         let writer = if mine {
             self.chat_writer(&me, &core)
         } else {
-            let (id, dev) = crate::synth::peer(author).ok_or(Error::NotFound)?;
+            let (id, dev) = peer.ok_or(Error::NotFound)?;
             Writer::new(id, dev)
         };
         let rec = MsgRec { id: random_msg_id(), author: author.to_string(), at, text, edited_at: None, deleted: false, reply_to: None, file, dev: [0; 32], did_sig: Vec::new() };
