@@ -19,6 +19,24 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "366ffbaa4442f4684d91e2cd7c5ea7c4ed8add41959a31447066e279e432b618"
 
 [[package]]
+name = "account-model"
+version = "0.1.38"
+dependencies = [
+ "base64 0.23.1",
+ "crdt",
+ "cryptography",
+ "hex",
+ "identity",
+ "loro",
+ "proto",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+ "tracing",
+ "zeroize",
+]
+
+[[package]]
 name = "adler2"
 version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1064,6 +1082,24 @@ dependencies = [
  "cfg-if",
  "cpufeatures 0.3.1",
  "rand_core 0.10.1",
+]
+
+[[package]]
+name = "chat-core"
+version = "0.1.38"
+dependencies = [
+ "blake3",
+ "crdt",
+ "cryptography",
+ "hex",
+ "identity",
+ "image",
+ "loro",
+ "proto",
+ "serde",
+ "serde_json",
+ "storage",
+ "thiserror 2.0.21",
 ]
 
 [[package]]
@@ -5729,11 +5765,13 @@ dependencies = [
 name = "p2pcore"
 version = "0.1.38"
 dependencies = [
+ "account-model",
  "audio",
  "base64 0.23.1",
  "blake3",
  "bs58",
  "bytes",
+ "chat-core",
  "crdt",
  "cryptography",
  "gcall-core",
@@ -5763,8 +5801,10 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
+ "transfer",
  "uniffi",
  "video",
+ "video-call-core",
  "zeroize",
 ]
 
@@ -8336,6 +8376,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "transfer"
+version = "0.1.38"
+dependencies = [
+ "cryptography",
+ "hex",
+ "iroh",
+ "iroh-blobs",
+ "n0-future",
+ "parking_lot",
+ "thiserror 2.0.21",
+ "tokio",
+]
+
+[[package]]
 name = "tray-icon"
 version = "0.26.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8693,6 +8747,15 @@ dependencies = [
  "rav1e",
  "thiserror 2.0.21",
  "tokio",
+]
+
+[[package]]
+name = "video-call-core"
+version = "0.1.38"
+dependencies = [
+ "proto",
+ "thiserror 2.0.21",
+ "video",
 ]
 
 [[package]]

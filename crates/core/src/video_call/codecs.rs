@@ -11,14 +11,7 @@ use super::DECODER_THREADS;
 #[cfg(all(target_os = "android", feature = "mediacodec"))]
 use super::mediacodec;
 
-/// This device's `VideoOffer` codec lists, best first.
-pub(crate) struct LocalCodecs {
-    pub decode: Vec<VideoCodec>,
-    pub encode: Vec<VideoCodec>,
-    /// Subsets of `decode` / `encode` that run in hardware.
-    pub hw_decode: Vec<VideoCodec>,
-    pub hw_encode: Vec<VideoCodec>,
-}
+pub(crate) use video_call_core::LocalCodecs;
 
 pub(crate) fn local_offer_codecs() -> LocalCodecs {
     let mut c = LocalCodecs {

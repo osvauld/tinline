@@ -97,6 +97,38 @@ impl From<group_core::Error> for Error {
     }
 }
 
+impl From<chat_core::Error> for Error {
+    fn from(e: chat_core::Error) -> Self {
+        match e {
+            chat_core::Error::Io(s) => Error::Io(s),
+        }
+    }
+}
+
+impl From<account_model::Error> for Error {
+    fn from(e: account_model::Error) -> Self {
+        match e {
+            account_model::Error::AccountExists(s) => Error::AccountExists(s),
+            account_model::Error::WrongPassphrase => Error::WrongPassphrase,
+            account_model::Error::WeakPassphrase => Error::WeakPassphrase,
+            account_model::Error::NotFound => Error::NotFound,
+            account_model::Error::Protocol(s) => Error::Protocol(s),
+            account_model::Error::Io(s) => Error::Io(s),
+        }
+    }
+}
+
+impl From<transfer::Error> for Error {
+    fn from(e: transfer::Error) -> Self {
+        match e {
+            transfer::Error::Timeout => Error::Timeout,
+            transfer::Error::Protocol(s) => Error::Protocol(s),
+            transfer::Error::Net(s) => Error::Net(s),
+            transfer::Error::Io(s) => Error::Io(s),
+        }
+    }
+}
+
 impl From<audio::Error> for Error {
     fn from(e: audio::Error) -> Self {
         Error::Audio(e.to_string())

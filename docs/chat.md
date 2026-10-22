@@ -109,7 +109,7 @@ Two stores, both in the app's private data dir:
 
 - **Vault records**: osvauld2's `storage` (one redb file, sortable path keys) with `vault`'s
   sealed-record pattern (`put_doc` / `put_entry`: Loro-free, snapshots are opaque sealed
-  bytes). Sealed with Tinline's existing data key (DEK, `crates/core/src/vault.rs`), not a
+  bytes). Sealed with Tinline's existing data key (DEK, `crates/account-model/src/vault.rs`), not a
   per-login passphrase: the phone unlocks at boot from the Keystore-remembered DEK, so chat
   must be readable then too. Holds: open shards (Loro snapshot + appended updates), the shard
   index (`dm/{pair}/{day}` → vv, closed-snapshot hash), outbox, read cursors.

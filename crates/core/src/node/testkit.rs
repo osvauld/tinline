@@ -135,6 +135,6 @@ impl Node {
         let secrets = Secrets { mnemonic: me.profile.mnemonic.clone(), device_secret };
         let vault = vault::reseal(&cur.vault, &dek, &secrets)?;
         let disk = Disk::V2(ProfileV2 { device_public: cryptography::signature::public_key(&device_secret), vault, ..cur });
-        s.acct.as_ref().ok_or(Error::NoIdentity)?.store.save_profile(&disk)
+        Ok(s.acct.as_ref().ok_or(Error::NoIdentity)?.store.save_profile(&disk)?)
     }
 }

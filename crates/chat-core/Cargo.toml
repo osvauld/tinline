@@ -1,0 +1,24 @@
+[package]
+name = "chat-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+description = "1:1 chat model: the day Loro doc and its acceptance rules, the sealed chat vault rows, the signed chat frames and batch signature, photo previews; p2pcore owns the engine, the iroh transport and the app API"
+
+[dependencies]
+proto.workspace = true
+cryptography.workspace = true
+storage.workspace = true
+crdt.workspace = true
+loro = "1.13.9"
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+hex = "0.4"
+identity.workspace = true
+image = { version = "0.25", default-features = false, features = ["png", "jpeg", "webp"] }
+
+[dev-dependencies]
+# The chat doc tests hash a forged span the way an attacker would.
+blake3 = "1"

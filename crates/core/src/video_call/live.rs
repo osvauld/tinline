@@ -23,7 +23,7 @@ use super::codecs::{EncoderChoice, decoder_kinds, decoder_name, local_encoders, 
 /// `ignore_limits` (only with a pinned size): the pin holds against heat, battery saver and the
 /// peer's hints, never above what the peer's offer takes; `recv_decoder` "auto", "hw" or "sw".
 /// Per call, never saved: the next call starts from Settings again.
-#[derive(Debug, Clone, Default, PartialEq, Eq, uniffi::Record)]
+#[uniffi::remote(Record)]
 pub struct VideoLive {
     pub send_codec: String,
     pub max_bps: u32,
@@ -31,13 +31,6 @@ pub struct VideoLive {
     pub fixed_fps: u32,
     pub ignore_limits: bool,
     pub recv_decoder: String,
-}
-
-impl VideoLive {
-    /// The size and cap as tuning values (the codecs are handled here, not by `tuning`).
-    pub(super) fn limits(&self) -> VideoTuning {
-        VideoTuning { max_bps: self.max_bps, fixed_height: self.fixed_height, ..Default::default() }
-    }
 }
 
 /// "" and "auto" are Auto.
@@ -190,7 +183,7 @@ impl Node {
         if !v.negotiated() {
             return Err(Error::Protocol("no video in this call".into()));
         }
-        live.limits().validate(&local_offer_codecs())?;
+        live.limits().validate(&local_offer_codecs()).map_err(|e| Error::Protocol(e.to_string()))?;
         let peer = v.peer_video.lock().clone().ok_or(Error::NotFound)?;
         let auto = (*v.auto_encoder.lock()).ok_or(Error::NotFound)?;
         let want = match live.send_codec.as_str() {

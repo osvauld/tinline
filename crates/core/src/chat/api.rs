@@ -255,7 +255,7 @@ impl Node {
 
     /// Attachments up to this many bytes download by themselves; 0 = never. Default 10 MB.
     pub fn set_auto_download_limit(&self, bytes: u64) -> Result<(), Error> {
-        self.inner.chat_core()?.store.set_auto_download(bytes)
+        self.inner.chat_core()?.store.set_auto_download(bytes).map_err(Error::from)
     }
 
     pub fn auto_download_limit(&self) -> Result<u64, Error> {
@@ -268,7 +268,7 @@ impl Node {
     }
 
     pub fn set_picture_download(&self, policy: PictureDownload) -> Result<(), Error> {
-        self.inner.chat_core()?.store.set_picture_download(policy)
+        self.inner.chat_core()?.store.set_picture_download(policy).map_err(Error::from)
     }
 
     /// Settings > Privacy "Read receipts" (default on, per account on this device). Off: this
@@ -279,7 +279,7 @@ impl Node {
     }
 
     pub fn set_read_receipts(&self, on: bool) -> Result<(), Error> {
-        self.inner.chat_core()?.store.set_read_receipts(on)
+        self.inner.chat_core()?.store.set_read_receipts(on).map_err(Error::from)
     }
 
     /// Tells the core whether the connection is metered (mobile data), for `PictureDownload::Wifi`.

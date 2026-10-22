@@ -371,17 +371,3 @@ pub(super) fn to_rgba(f: VideoFrame) -> VideoFrame {
     let pic = I420 { width: f.width as usize, height: f.height as usize, data: f.data.0 };
     VideoFrame { data: convert::to_rgba(&pic).into(), ..f }
 }
-
-/// Largest even size of `sw` x `sh`'s aspect within the rung `rw` x `rh` (turned to match the
-/// picture's orientation), never upscaled.
-pub(crate) fn fit(sw: usize, sh: usize, rw: usize, rh: usize) -> (usize, usize) {
-    let (rw, rh) = if sh > sw { (rh, rw) } else { (rw, rh) };
-    let (w, h) = if sw * rh <= sh * rw {
-        let h = sh.min(rh);
-        (sw * h / sh, h)
-    } else {
-        let w = sw.min(rw);
-        (w, sh * w / sw)
-    };
-    ((w & !1).max(2), (h & !1).max(2))
-}

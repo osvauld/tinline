@@ -25,7 +25,7 @@ use std::ops::Deref;
 use loro::{Container, LoroMap, LoroValue, ValueOrContainer};
 use serde::{Deserialize, Serialize};
 
-use crate::node::merge_device_list;
+use crate::devices::merge_device_list;
 use super::doc::{Doc, entries, field, io, text};
 use crate::store::{ContactDevice, CutOffs, HeldNotice, OwnDevice, State, StoredContact};
 use crate::Error;
@@ -76,6 +76,8 @@ pub struct Ctx<'a> {
     pub me_device: [u8; 32],
     /// Unix ms.
     pub now_ms: u64,
+    /// Sanitises the unsigned relay hints of a contact's device list (`devices::merge_device_list`).
+    pub relay_hint: fn(&Option<String>) -> Option<String>,
 }
 
 
@@ -359,7 +361,7 @@ impl AccDoc {
                     }
                     // Device set: the newer signed list wins; without lists, union (ours first).
                     if let Some(theirs) = &rec.device_list {
-                        merge_device_list(c, theirs);
+                        merge_device_list(c, theirs, ctx.relay_hint);
                     } else if c.device_list.is_none() {
                         for d in rec.devices {
                             if !c.has_device(&d.device) {

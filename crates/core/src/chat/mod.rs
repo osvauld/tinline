@@ -1,18 +1,14 @@
 //! 1:1 chat: sealed vault store, Loro conversation docs, signed batches over `tinline/chat/3`,
 //! files and voice as encrypted iroh-blobs. See `docs/chat.md`.
 
-pub mod blobs;
-pub mod crypt;
+// The day doc is `chat_core::doc`; the blob cipher is `transfer::crypt`.
+pub use chat_core::doc;
+pub use transfer::crypt;
 
-#[cfg(test)]
-mod blobs_tests;
 pub mod api;
 pub mod engine;
 pub mod own;
 pub mod presence;
 pub mod store;
 pub mod wire;
-pub mod doc;
 pub mod photo;
-#[cfg(test)]
-mod doc_tests;

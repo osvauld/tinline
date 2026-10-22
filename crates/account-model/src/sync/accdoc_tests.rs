@@ -37,8 +37,8 @@ fn a_relay_hint_learned_by_a_sibling_converges() {
     // A has no hint for itself; B learned A's hint from A's Auth.
     let mut sa = State { registry: vec![device(&id, ka, None), device(&id, kb, None)], ..State::default() };
     let mut sb = State { registry: vec![device(&id, ka, Some(hint)), device(&id, kb, None)], ..State::default() };
-    let ctx_a = Ctx { my_did: &did, me_device: ka, now_ms: 0 };
-    let ctx_b = Ctx { my_did: &did, me_device: kb, now_ms: 0 };
+    let ctx_a = Ctx { my_did: &did, me_device: ka, now_ms: 0, relay_hint: Option::clone };
+    let ctx_b = Ctx { my_did: &did, me_device: kb, now_ms: 0, relay_hint: Option::clone };
     let a = AccDoc::new(&ka);
     let b = AccDoc::new(&kb);
     a.write_from(&sa, &ctx_a).unwrap();

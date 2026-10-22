@@ -79,7 +79,7 @@ pub struct FileRef {
     #[serde(default)]
     pub waveform: Vec<u8>,
     /// Pictures (`tinline/chat/5`): the size shown (EXIF orientation applied) and a 4x3 RGB colour grid, hex
-    /// ([`crate::chat::photo`]). 0x0 and empty for anything else, and for records written before /5.
+    /// ([`crate::photo`]). 0x0 and empty for anything else, and for records written before /5.
     #[serde(default, skip_serializing_if = "is_zero")]
     pub width: u32,
     #[serde(default, skip_serializing_if = "is_zero")]
@@ -254,7 +254,8 @@ impl Writer {
 
     /// For test hooks only: signs with `account` but writes under the writer ID that `as_did`
     /// would have for `device` (a forgery receivers must refuse).
-    pub(crate) fn forging(account: identity::Identity, device: [u8; 32], as_did: &str) -> Self {
+    #[doc(hidden)]
+    pub fn forging(account: identity::Identity, device: [u8; 32], as_did: &str) -> Self {
         Self { peer: writer_id(as_did, &device), account, device }
     }
 
@@ -438,7 +439,7 @@ fn read_records(doc: &LoroDoc) -> Result<Records, Reject> {
                             || f.name.len() > 300
                             || f.width > 100_000
                             || f.height > 100_000
-                            || f.preview.len() > 2 * crate::chat::photo::PREVIEW_LEN
+                            || f.preview.len() > 2 * crate::photo::PREVIEW_LEN
                     })
                     || (rec.deleted && !rec.text.is_empty())
                 {

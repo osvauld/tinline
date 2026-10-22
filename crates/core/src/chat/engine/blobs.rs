@@ -27,7 +27,7 @@ impl Inner {
                 });
                 let hub = BlobHub::open(&core.dir.join("blobs"), gate, progress, ended).await?;
                 if let Some(inner) = this.upgrade() {
-                    hub.recover_profile_tags(&inner.profile_blob_tags(epoch)?).await?;
+                    hub.recover_owned_tags(&inner.profile_blob_tags(epoch)?).await?;
                 }
                 Ok::<_, Error>(Arc::new(hub))
             })
@@ -288,7 +288,7 @@ impl Inner {
                 .await;
             match r {
                 Ok(()) => return Ok(()),
-                Err(e) => err = e,
+                Err(e) => err = e.into(),
             }
         }
         Err(err)

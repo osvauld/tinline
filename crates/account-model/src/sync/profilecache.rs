@@ -6,7 +6,7 @@ use super::{
 };
 use crate::{
     Error,
-    profile::model::{MAX_SNAPSHOT, validate},
+    profile::{MAX_SNAPSHOT, validate},
 };
 use base64::{Engine, engine::general_purpose::STANDARD};
 use std::collections::BTreeMap;
