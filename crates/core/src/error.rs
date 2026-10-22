@@ -129,6 +129,15 @@ impl From<transfer::Error> for Error {
     }
 }
 
+impl From<call_video::Error> for Error {
+    fn from(e: call_video::Error) -> Self {
+        match e {
+            call_video::Error::NotFound => Error::NotFound,
+            call_video::Error::Protocol(s) => Error::Protocol(s),
+        }
+    }
+}
+
 impl From<audio::Error> for Error {
     fn from(e: audio::Error) -> Self {
         Error::Audio(e.to_string())

@@ -1,0 +1,27 @@
+[package]
+name = "call-video"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+description = "The 1:1 call video runtime: per-call send and receive tasks, codec threads, frame slots, adaptation and live controls on an iroh connection; plain Rust, p2pcore adds the UniFFI surface"
+
+[features]
+# libvpx VP8 (desktop); forwarded to `video/vp8`. p2pcore's `vp8` enables both.
+vp8 = ["video/vp8"]
+# Android hardware VP8 through MediaCodec; forwarded to `video/mediacodec`, which only compiles on
+# target_os = "android".
+mediacodec = ["video/mediacodec"]
+
+[dependencies]
+proto.workspace = true
+video = { path = "../video", default-features = false, features = ["net"] }
+video-call-core.workspace = true
+iroh = "1.3"
+tokio = { version = "1", features = ["rt", "sync", "time", "macros"] }
+parking_lot = "0.12"
+tracing = "0.1"
+thiserror.workspace = true
+
+[dev-dependencies]
+video = { path = "../video", default-features = false, features = ["net", "sim"] }

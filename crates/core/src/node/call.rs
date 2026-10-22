@@ -48,7 +48,7 @@ pub(crate) struct Call {
     /// Woken when the call ends from outside its own task (glare, lock), so an outgoing call
     /// that is still dialling several devices stops at once.
     pub(super) ended_wake: tokio::sync::Notify,
-    pub(crate) video: crate::video_call::CallVideo,
+    pub(crate) video: call_video::CallVideo,
 }
 
 /// Ends the call when dropped unless it already ended: covers every early return (and panic)

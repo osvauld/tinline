@@ -349,7 +349,7 @@ fn decode_one(pipe: &Pipe, dec: &mut dyn video::VideoDecoder, f: Frame, broken: 
                         st.recv_width = p.width as u32;
                         st.recv_height = p.height as u32;
                     }
-                    let frame = VideoFrame { width: p.width as u32, height: p.height as u32, data: p.data.into(), seq };
+                    let frame = RawFrame { width: p.width as u32, height: p.height as u32, data: p.data, seq };
                     *pipe.output.lock() = Some(frame);
                 }
             }
@@ -364,10 +364,4 @@ fn decode_one(pipe: &Pipe, dec: &mut dyn video::VideoDecoder, f: Frame, broken: 
             }
         }
     }
-}
-
-/// An I420 `VideoFrame` as RGBA.
-pub(super) fn to_rgba(f: VideoFrame) -> VideoFrame {
-    let pic = I420 { width: f.width as usize, height: f.height as usize, data: f.data.0 };
-    VideoFrame { data: convert::to_rgba(&pic).into(), ..f }
 }
