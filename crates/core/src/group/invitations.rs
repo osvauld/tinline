@@ -326,7 +326,7 @@ impl Inner {
         match reply {
             Some(Msg::GroupLetterTaken) => Ok(Outcome::Taken),
             Some(Msg::Notice { notice }) if self.is_block_from(did, &notice) => {
-                let _ = self.take_notice(&notice);
+                let _ = self.ctx.take_notice(&notice);
                 Ok(Outcome::Blocked)
             }
             Some(Msg::Reject { .. }) => Ok(Outcome::Refused),

@@ -8,7 +8,7 @@ impl Node {
     /// Binds the endpoint and starts accepting calls. Idempotent.
     pub fn start(&self) -> Result<(), Error> {
         let inner = self.inner.clone();
-        self.block_on(inner.start())?
+        self.block_on(async move { inner.ctx.start().await.map_err(Error::from) })?
     }
 
     pub fn stop(&self) {
@@ -45,6 +45,6 @@ impl Node {
     /// when our relay changes.
     pub fn my_ticket(&self) -> Result<String, Error> {
         let inner = self.inner.clone();
-        self.block_on(async move { inner.ticket().await })?
+        self.block_on(async move { inner.ctx.ticket().await.map_err(Error::from) })?
     }
 }

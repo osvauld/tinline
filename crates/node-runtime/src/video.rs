@@ -37,7 +37,7 @@ impl NodeCtx {
         call.video.remote_codec(codec);
     }
 
-    fn current_video_call(&self) -> Option<Arc<Call>> {
+    pub fn current_video_call(&self) -> Option<Arc<Call>> {
         self.live.lock().call.clone()
     }
 

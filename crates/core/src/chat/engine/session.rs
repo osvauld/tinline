@@ -146,7 +146,7 @@ impl Inner {
         match self.chat.lock().clone() {
             Some(c) => Ok(c),
             None => match self.me() {
-                Err(e) => Err(e),
+                Err(e) => Err(e.into()),
                 Ok(_) => Err(Error::Locked),
             },
         }
@@ -342,7 +342,7 @@ impl Inner {
             self.log(format!("chat refused: {did}: no valid message token"));
             return Err(Error::Rejected("not accepted".into()));
         }
-        self.renew_message_if_due(did, grant);
+        self.ctx.renew_message_if_due(did, grant);
         Ok(())
     }
 
@@ -368,11 +368,11 @@ impl Inner {
             let addr = match addr_for(&cd.device, cd.relay.as_deref()) {
                 Ok(a) => a,
                 Err(e) => {
-                    last = e;
+                    last = e.into();
                     continue;
                 }
             };
-            self.list_before(&ep, did, cd.device, cd.relay.as_deref()).await;
+            self.ctx.list_before(&ep, did, cd.device, cd.relay.as_deref()).await;
             let conn = match tokio::time::timeout(DIAL_TIMEOUT, crate::version::connect(&ep, addr, &crate::version::CHAT)).await {
                 Ok(Ok(c)) => c,
                 Ok(Err(e)) => {
@@ -422,7 +422,7 @@ impl Inner {
                 if let Some(did) = did
                     && self.is_block_from(&did, notice)
                 {
-                    let _ = self.take_notice(notice);
+                    let _ = self.ctx.take_notice(notice);
                     return Err(Error::Rejected(crate::BLOCKED.into()));
                 }
                 return Err(Error::Protocol("unexpected notice".into()));
@@ -456,7 +456,7 @@ impl Inner {
             writer.send(&self.auth_msg(me, grant)).await?;
             (did, hint)
         };
-        self.note_device(me.epoch, &did, remote, hint);
+        self.ctx.note_device(me.epoch, &did, remote, hint);
         let (tx, rx) = mpsc::unbounded_channel();
         let my_dev = me.device;
         let sess = Arc::new(Session {

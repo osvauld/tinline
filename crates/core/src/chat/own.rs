@@ -67,16 +67,6 @@ impl Inner {
             .cloned()
     }
 
-    /// Marks `name` (a doc, or `READ_MARK`) as changed for every own-device session and wakes them.
-    /// With no session, only the bump: the next session's hellos compare everything anyway, and
-    /// the bump makes the dial loop dial the devices now owed a sync.
-    pub(crate) fn selfsync_dirty(&self, name: &str) {
-        for s in self.selfsync.sessions.lock().values() {
-            s.dirty.lock().insert(name.to_string());
-        }
-        self.sync_bump();
-    }
-
     /// The shards we offer another own device: `(doc, vv)`, newest day first.
     pub(crate) fn chat_own_docs(&self) -> Vec<(String, Vec<u8>)> {
         let (Ok(me), Ok(core)) = (self.me(), self.chat_core()) else { return vec![] };

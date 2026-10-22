@@ -3,30 +3,6 @@
 use super::*;
 
 impl Inner {
-    pub(super) fn ctx<'a>(me: &'a Me) -> Ctx<'a> {
-        Ctx {
-            my_did: me.id.did(),
-            me_device: me.device,
-            now_ms: crate::node::now_ms(),
-            relay_hint: crate::node::relay_hint,
-        }
-    }
-
-    /// Wakes the sessions (local data changed) and the dial loop: every other device is owed
-    /// this change until a session with it ends idle after seeing it.
-    pub(crate) fn sync_bump(&self) {
-        self.sync_tx.send_modify(|v| *v += 1);
-        self.selfsync.kick.notify_one();
-    }
-
-    /// Dial every other device now (start, network change, rotation, linking): forgets the
-    /// backoff and what each device was known to hold.
-    pub(crate) fn sync_kick(&self) {
-        self.selfsync.backoff.lock().clear();
-        self.selfsync.synced.lock().clear();
-        self.selfsync.kick.notify_one();
-    }
-
     /// A session with `device` ends with nothing in flight: it holds everything up to
     /// generation `seen` (unless a change came after: `changes` then has an unseen value).
     pub(super) fn selfsync_settled(&self, device: [u8; 32], changes: &tokio::sync::watch::Receiver<u64>) {
@@ -78,7 +54,7 @@ impl Inner {
             }
             let label = s.device_label.clone();
             ensure_self_registered(&mut s.state.registry, &me, label);
-            let ctx = Self::ctx(&me);
+            let ctx = node_runtime::own_ctx(&me);
             if let Err(e) = doc.write_from(&s.state, &ctx) {
                 tracing::warn!("account doc flush: {e}");
             }
@@ -97,61 +73,7 @@ impl Inner {
         };
         self.save_doc();
         if changed {
-            self.events.on_contacts_changed();
-        }
-    }
-
-    pub(super) fn save_doc(&self) {
-        let (acc, calls, backing) = {
-            let s = self.shared.lock();
-            (
-                s.acc.clone(),
-                s.calls.clone(),
-                s.acct.as_ref().and_then(|a| a.backing.clone()),
-            )
-        };
-        let Some(Backing::Sealed(db)) = backing else {
-            return;
-        };
-        let docs = [
-            (DOC_KEY, acc.as_deref().map(|d| &**d)),
-            (CALLS_KEY, calls.as_deref().map(|d| &**d)),
-        ];
-        for (key, doc) in docs {
-            if let Some(doc) = doc
-                && let Err(e) = db.put(key, &doc.snapshot())
-            {
-                tracing::warn!("saving {key}: {e}");
-            }
-        }
-    }
-
-    /// A local write happened (state or call log): flush it into the doc and tell the sessions.
-    pub(crate) fn sync_local(&self, epoch: Option<u64>) {
-        let Ok(me) = self.me() else { return };
-        let changed = {
-            let s = self.shared.lock();
-            if epoch.is_some_and(|e| e != s.epoch) || s.epoch != me.epoch {
-                return;
-            }
-            let (Some(acc), Some(calls)) = (s.acc.clone(), s.calls.clone()) else {
-                return;
-            };
-            let a = acc
-                .write_from(&s.state, &Self::ctx(&me))
-                .unwrap_or_else(|e| {
-                    tracing::warn!("account doc flush: {e}");
-                    false
-                });
-            let c = calls.write_from(&s.history.snapshot()).unwrap_or_else(|e| {
-                tracing::warn!("calls doc flush: {e}");
-                false
-            });
-            a || c
-        };
-        if changed {
-            self.save_doc();
-            self.sync_bump();
+            self.sink.on_contacts_changed();
         }
     }
 
@@ -168,7 +90,7 @@ impl Inner {
                 return Err(Error::Locked);
             }
             let acc = s.acc.clone().ok_or(Error::Locked)?;
-            let ctx = Self::ctx(&me);
+            let ctx = node_runtime::own_ctx(&me);
             // Our own unwritten changes go in first, so they merge as concurrent edits.
             acc.write_from(&s.state, &ctx)?;
             if !acc.import(update)? {
@@ -190,7 +112,7 @@ impl Inner {
         self.persist_for(Some(epoch))?;
         self.save_doc();
         if ch.contacts {
-            self.events.on_contacts_changed();
+            self.sink.on_contacts_changed();
             let dids = self
                 .shared
                 .lock()
@@ -206,7 +128,7 @@ impl Inner {
         }
         if ch.devices {
             // U8: a sibling linked or unlinked a device; our list changes too.
-            self.devices_changed();
+            self.ctx.devices_changed();
         }
         if let Some(ev) = self.link_events()
             && ch.devices
@@ -277,7 +199,7 @@ impl Inner {
         let Ok(id) = crate::accounts::id_of(&did) else {
             return;
         };
-        if self.replace_account(None).await.is_err() {
+        if self.ctx.replace_account(None).await.is_err() {
             return;
         }
         if let Err(e) = self.accounts.remove(&id) {
@@ -329,7 +251,7 @@ impl Inner {
         };
         if added {
             let _ = self.persist_for(Some(epoch));
-            self.devices_changed();
+            self.ctx.devices_changed();
             if let Some(ev) = self.link_events() {
                 ev.on_devices_changed();
             }

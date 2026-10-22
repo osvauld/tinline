@@ -106,7 +106,7 @@ impl NodeCtx {
         }
     }
 
-    fn overlap_ms(&self) -> u64 {
+    pub fn overlap_ms(&self) -> u64 {
         self.rotation.overlap_ms_for_test.lock().unwrap_or(PRIVATE_OVERLAP_MS)
     }
 

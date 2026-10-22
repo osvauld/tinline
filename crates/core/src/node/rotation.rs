@@ -10,14 +10,14 @@ impl Node {
     /// When this device's private endpoint will rotate next (unix ms; periodic, on the same
     /// policy as the group endpoint, `set_group_rotation_policy`). `None` while locked.
     pub fn private_endpoint_rotation_due(&self) -> Option<u64> {
-        self.inner.private_rotation_due()
+        self.inner.ctx.private_rotation_due()
     }
 
     /// Rotates this device's private endpoint now (a Settings "change it now"); the next periodic
     /// rotation counts from this one. `NotStarted` before the endpoint is up.
     pub fn private_rotate_now(&self) -> Result<(), Error> {
         let inner = self.inner.clone();
-        self.block_on(async move { inner.private_rotate().await })?
+        self.block_on(async move { inner.ctx.private_rotate().await.map_err(Error::from) })?
     }
 }
 

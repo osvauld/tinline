@@ -20,7 +20,7 @@ impl Node {
             let ep = inner.endpoint()?;
             let devices = inner.shared.lock().state.contacts.iter().find(|c| c.did == did).map(|c| c.devices.clone()).unwrap_or_default();
             for d in devices {
-                if let Ok(Outcome::Taken) = inner.deliver_list(&ep, &did, d.device, d.relay.as_deref(), &blob).await {
+                if let Ok(Outcome::Taken) = inner.ctx.deliver_list(&ep, &did, d.device, d.relay.as_deref(), &blob).await {
                     return Ok(true);
                 }
             }

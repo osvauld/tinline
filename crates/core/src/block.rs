@@ -68,7 +68,7 @@ impl Node {
             // Takes back both their tokens (P6): an unblock does not revive them.
             node_runtime::NodeCtx::revoke_all(&mut s.state, &did);
             // A ticket they may have seen is of no further use (nor any older one still live).
-            crate::retire_ticket(&mut s.state, false);
+            retire_ticket(&mut s.state, false);
             n
         };
         self.inner.block.signed.lock().insert(did.clone(), 1);
@@ -76,9 +76,9 @@ impl Node {
         let saved = self.inner.persist();
         self.inner.chat_close_sessions(&did);
         self.inner.calls_blocked(&did, &notice);
-        self.inner.notice_kick(did);
-        self.inner.events.on_contacts_changed();
-        saved
+        self.inner.ctx.notice_kick(did);
+        self.inner.sink.on_contacts_changed();
+        saved.map_err(Error::from)
     }
 
     /// Lifts our block: their messages are accepted again, and a signed unblock notice tells
@@ -90,10 +90,10 @@ impl Node {
             return Ok(());
         }
         let saved = self.inner.persist();
-        self.inner.notice_kick(did.clone());
+        self.inner.ctx.notice_kick(did.clone());
         self.inner.chat_kick(did);
-        self.inner.events.on_contacts_changed();
-        saved
+        self.inner.sink.on_contacts_changed();
+        saved.map_err(Error::from)
     }
 
     /// The block state of the conversation with `did`.
@@ -160,7 +160,7 @@ impl Node {
     /// taken.
     #[doc(hidden)]
     pub fn offer_block_notice_for_test(&self, notice_json: String) -> bool {
-        serde_json::from_str::<SignedBlob>(&notice_json).is_ok_and(|n| self.inner.take_notice(&n).is_ok())
+        serde_json::from_str::<SignedBlob>(&notice_json).is_ok_and(|n| self.inner.ctx.take_notice(&n).is_ok())
     }
 
     /// For tests: make this node behave like a modified app that ignores block notices.

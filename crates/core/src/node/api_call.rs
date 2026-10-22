@@ -6,7 +6,7 @@ use super::*;
 impl Node {
     /// Starts calling `did`; progress arrives through `on_call_state`.
     pub fn call(&self, did: String) -> Result<CallInfo, Error> {
-        self.inner.clone().start_call(did, false)
+        self.inner.clone().ctx.start_call(did, false).map_err(Error::from)
     }
 
     /// `call`, as a video call: the callee rings as one and both logs say video, and our camera is
@@ -15,19 +15,19 @@ impl Node {
     /// "Starting the camera"). An app that cannot use its camera turns it off (`set_camera(false)`).
     /// With video off on this node (`set_video_enabled(false)`) it is a voice call.
     pub fn video_call(&self, did: String) -> Result<CallInfo, Error> {
-        self.inner.clone().start_call(did, true)
+        self.inner.clone().ctx.start_call(did, true).map_err(Error::from)
     }
 
     pub fn answer(&self, call_id: String) -> Result<(), Error> {
-        self.inner.command(&call_id, Cmd::Answer)
+        self.inner.command(&call_id, Cmd::Answer).map_err(Error::from)
     }
 
     pub fn decline(&self, call_id: String) -> Result<(), Error> {
-        self.inner.command(&call_id, Cmd::Decline)
+        self.inner.command(&call_id, Cmd::Decline).map_err(Error::from)
     }
 
     pub fn hangup(&self, call_id: String) -> Result<(), Error> {
-        self.inner.command(&call_id, Cmd::Hangup)
+        self.inner.command(&call_id, Cmd::Hangup).map_err(Error::from)
     }
 
     /// Ends the active call (a local hangup) and answers the waiting one `call_id`, which
@@ -80,5 +80,18 @@ impl Node {
     /// that does not depend on the device having a real mic.
     pub fn set_test_tone(&self, hz: Option<f32>) {
         self.inner.live.lock().tone = hz;
+    }
+}
+
+impl Inner {
+    /// Microphone to the active 1:1 call, else to the group call.
+    pub(crate) fn push_mic(&self, pcm: &[i16]) {
+        if !self.push_call_mic(pcm) {
+            self.gcall.push_mic(pcm);
+        }
+    }
+
+    pub(crate) fn pull_speaker(&self) -> Vec<i16> {
+        self.pull_call_speaker().unwrap_or_else(|| self.gcall.pull_speaker())
     }
 }

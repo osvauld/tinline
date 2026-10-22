@@ -132,7 +132,7 @@ impl ContactRequestSink for RequestEventsAdapter {
 #[uniffi::export]
 impl Node {
     pub fn set_contact_request_events(&self, events: Arc<dyn ContactRequestEvents>) {
-        *self.inner.requests.events.lock() = Some(events);
+        *self.inner.requests.events.lock() = Some(Arc::new(RequestEventsAdapter(events)));
     }
 
     /// Our code and its date. Same rules as `my_ticket`.
@@ -172,7 +172,7 @@ impl Node {
             return Err(AddError::Expired);
         }
         let inner = self.inner.clone();
-        self.block_on(inner.add_contact_outcome(ticket, crate::caps::ContactOrigin::Ticket))
+        self.block_on(inner.ctx.add_contact_outcome(ticket, crate::caps::ContactOrigin::Ticket))
             .map_err(AddError::from)?
             .map_err(AddError::from)
     }
@@ -220,9 +220,9 @@ impl Node {
                 .await
                 .map_err(|_| Error::Io("accept task failed".into()))?
         })??;
-        self.inner.events.on_contacts_changed();
-        self.inner.welcome_kick(contact.did.clone());
-        self.inner.list_for_new_contact(&contact.did);
+        self.inner.sink.on_contacts_changed();
+        self.inner.ctx.welcome_kick(contact.did.clone());
+        self.inner.ctx.list_for_new_contact(&contact.did);
         self.inner.log(format!("accepted contact request from {}", contact.name));
         Ok(contact)
     }
@@ -238,3 +238,9 @@ impl Node {
 
 #[cfg(test)]
 mod tests;
+
+impl From<node_runtime::Error> for AddError {
+    fn from(e: node_runtime::Error) -> Self {
+        AddError::from(Error::from(e))
+    }
+}

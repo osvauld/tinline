@@ -20,7 +20,7 @@ impl Node {
     /// Redeems someone's ticket: dials them, exchanges grants, stores them. Blocks until done.
     pub fn add_contact(&self, ticket: String) -> Result<Contact, Error> {
         let inner = self.inner.clone();
-        self.block_on(inner.add_contact(ticket))?
+        self.block_on(inner.ctx.add_contact(ticket))?.map_err(Error::from)
     }
 
     pub fn contacts(&self) -> Vec<Contact> {
@@ -51,7 +51,7 @@ impl Node {
     /// person. Derived from the two long-term identity keys only, not from any device.
     pub fn safety_number(&self, did: String) -> Result<String, Error> {
         let mine = self.profile().ok_or(Error::NoIdentity)?.did;
-        safety_number(&mine, &did)
+        safety_number(&mine, &did).map_err(Error::from)
     }
 
     /// Finished calls, newest first, at most `limit`. Re-read on `on_call_state` `Ended`.
@@ -76,7 +76,7 @@ impl Node {
             unavailable: !available,
             until: if available { None } else { until },
         };
-        self.inner.persist()
+        self.inner.persist().map_err(Error::from)
     }
 
     pub fn availability(&self) -> Availability {
@@ -97,7 +97,7 @@ impl Node {
             f(s.state.contacts.iter_mut().find(|c| c.did == did).ok_or(Error::NotFound)?);
         }
         let saved = self.inner.persist();
-        self.inner.events.on_contacts_changed();
-        saved
+        self.inner.sink.on_contacts_changed();
+        saved.map_err(Error::from)
     }
 }

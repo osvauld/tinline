@@ -513,7 +513,7 @@ impl Inner {
                     }
                 }
                 Err(e) => {
-                    err = e;
+                    err = e.into();
                     continue;
                 }
             };

@@ -28,7 +28,7 @@ impl Inner {
                 this.dial_round();
                 tokio::select! {
                     _ = tokio::time::sleep(sync_period()) => {}
-                    _ = this.selfsync.kick.notified() => {}
+                    _ = this.signal.woken() => {}
                 }
             }
         });
@@ -36,7 +36,7 @@ impl Inner {
 
     pub(super) fn dial_round(self: &Arc<Self>) {
         let Ok(me) = self.me() else { return };
-        let generation = *self.sync_tx.borrow();
+        let generation = self.signal.generation();
         let targets: Vec<([u8; 32], Option<String>)> = {
             let s = self.shared.lock();
             if s.epoch != me.epoch {

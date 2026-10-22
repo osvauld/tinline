@@ -274,7 +274,7 @@ impl Inner {
         let mut sent_profile: Option<VersionVector> = None;
         let mut sent_cache: Option<VersionVector> = None;
         let mut peer = PeerChat::default();
-        let mut changes = self.sync_tx.subscribe();
+        let mut changes = self.signal.subscribe();
         // Idle = no stream data either way (QUIC acks and keep-alives do not count): then the
         // session closes cleanly and this device is in sync up to what the session saw.
         let traffic = |c: &Connection| {

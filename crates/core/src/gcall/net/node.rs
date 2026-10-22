@@ -13,7 +13,7 @@ use crate::node::Inner;
 
 impl GcallHost for Inner {
     fn identity(&self) -> Result<Identity, gcall_net::Error> {
-        Ok(self.me()?.id.clone())
+        Ok(self.me().map_err(Error::from)?.id.clone())
     }
 
     fn group_endpoint(&self) -> Option<Endpoint> {
@@ -22,7 +22,7 @@ impl GcallHost for Inner {
 
     /// Runs `f` under the `live` lock (lock order: live -> gcall session).
     fn with_no_call(&self, f: &mut dyn FnMut() -> Result<(), gcall_net::Error>) -> Result<(), gcall_net::Error> {
-        Inner::with_no_call(self, || f().map_err(Error::from)).map_err(gcall_net::Error::from)
+        self.with_no_call(|| f().map_err(|e| Error::from(e).into())).map_err(|e| gcall_net::Error::from(Error::from(e)))
     }
 }
 

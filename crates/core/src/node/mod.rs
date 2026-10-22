@@ -65,6 +65,19 @@ pub(crate) struct Inner {
     pub(crate) search_skip: AtomicU32,
 }
 
+impl Inner {
+    /// `commit_identity` with the gate held: the files, then the stores that open with them.
+    pub(crate) fn commit_locked(self: &Arc<Self>) -> Result<(), Error> {
+        if !self.commit_files()? {
+            return Ok(());
+        }
+        self.chat_open();
+        self.acc_open();
+        // Anything that changed while the files were being written.
+        self.persist().map_err(Error::from)
+    }
+}
+
 impl std::ops::Deref for Inner {
     type Target = NodeCtx;
 

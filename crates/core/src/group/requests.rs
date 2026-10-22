@@ -183,7 +183,7 @@ impl Inner {
         let _ = core.store.put_req(&row);
         let this = self.clone();
         self.handle.spawn(async move {
-            match this.clone().add_contact_from(ticket, crate::caps::ContactOrigin::GroupRequest).await {
+            match this.clone().ctx.add_contact_from(ticket, crate::caps::ContactOrigin::GroupRequest).await {
                 Ok(c) => {
                     this.log(format!("chat request accepted: {} is a contact", c.name));
                     row.added = true;
@@ -290,7 +290,7 @@ impl Node {
         self.block_on(async move {
             let core = inner.group_core()?;
             let mut row = inner.group_req_incoming_pending(&core, &request_id)?;
-            let ticket = inner.request_ticket(&row.peer, REQ_TICKET_TTL).await?;
+            let ticket = inner.ctx.request_ticket(&row.peer, REQ_TICKET_TTL).await?;
             let m = inner.group_seal(&core, &row.group, &row.peer, Letter::Accept { req: req_bytes(&row.req).ok_or(Error::NotFound)?, ticket })?;
             row.state = ReqState::Accepted;
             inner.group_req_save(&core, &row);

@@ -40,7 +40,7 @@ pub struct DevlistRt {
 }
 
 /// How one delivery attempt to one device ended.
-enum Outcome {
+pub enum Outcome {
     /// `DevicesTaken`: done with this list.
     Taken,
     /// They block us (their notice, now taken) or refuse us: stop sending.
@@ -218,7 +218,7 @@ impl NodeCtx {
         });
     }
 
-    async fn deliver_list(
+    pub async fn deliver_list(
         self: &Arc<Self>,
         ep: &iroh::Endpoint,
         did: &str,
