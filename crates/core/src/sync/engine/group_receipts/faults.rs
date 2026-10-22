@@ -20,7 +20,7 @@ async fn session(
     legacy: bool,
 ) -> usize {
     let me = node.inner.me().unwrap();
-    let receiver = node.inner.group_core().unwrap();
+    let receiver = node.inner.group.group_core().unwrap();
     let receiving = async {
         let incoming = server
             .accept()
@@ -30,7 +30,7 @@ async fn session(
             .unwrap()
             .await
             .unwrap();
-        node.inner.clone().self_run(incoming, false).await
+        node.inner.sync.clone().self_run(incoming, false).await
     };
     let driving = async {
         let conn = client

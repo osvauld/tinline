@@ -1,11 +1,17 @@
 //! The `Node` API of direct group invitations, and its test hook.
 
+use std::sync::Arc;
+
 use super::*;
+use crate::Error;
+use crate::group::engine::INVITE_TTL;
+use crate::group::record::*;
+use crate::node::{Node, now_ms};
 
 #[uniffi::export]
 impl Node {
     pub fn set_group_invitation_events(&self, events: Arc<dyn GroupInvitationEvents>) {
-        *self.inner.group.inv_events.lock() = Some(events);
+        *self.inner.group.inv_events.lock() = Some(Arc::new(GroupInvitationEventsAdapter(events)));
     }
 
     /// Admins: invites contacts `dids` to `group_id` over the private channel (one fresh signed
@@ -15,8 +21,8 @@ impl Node {
     pub fn group_invite_contacts(&self, group_id: String, dids: Vec<String>) -> Result<Vec<GroupInvitation>, Error> {
         let inner = self.inner.clone();
         self.block_on(async move {
-            let core = inner.group_core()?;
-            inner.group_admin_check(&core, &group_id)?;
+            let core = inner.group.group_core()?;
+            inner.group.group_admin_check(&core, &group_id)?;
             let mut dids = dids;
             dids.sort();
             dids.dedup();
@@ -41,8 +47,8 @@ impl Node {
                     names.push(name);
                 }
             }
-            inner.group_ensure(&core).await?;
-            inner.group_relay_ready().await;
+            inner.group.group_ensure(&core).await?;
+            inner.group.group_relay_ready().await;
             let my_name = inner.me()?.profile.name.clone();
             let existing = core.store.invs()?;
             let mut out = Vec::new();
@@ -52,7 +58,7 @@ impl Node {
                     Some(r) => r.clone(),
                     None => {
                         let invite = issue_invite(&core.account, &group_id, now_ms(), INVITE_TTL);
-                        let t = inner.group_token(&core, &group_id, Some(invite))?;
+                        let t = inner.group.group_token(&core, &group_id, Some(invite))?;
                         let row = InvRow {
                             id: hex::encode(cryptography::rng::bytes::<16>()),
                             group: group_id.clone(),
@@ -69,12 +75,12 @@ impl Node {
                             delivered: false,
                             owe: true,
                         };
-                        inner.inv_save(&core, &row);
+                        inner.group.inv_save(&core, &row);
                         row
                     }
                 };
-                out.push(inner.inv_view(&row));
-                inner.invites_kick(did.clone());
+                out.push(inner.group.inv_view(&row));
+                inner.group.invites_kick(did.clone());
             }
             Ok(out)
         })?
@@ -83,12 +89,12 @@ impl Node {
     /// Invitations to groups we got (from DIDs we do not block), newest first.
     pub fn group_invitations_incoming(&self) -> Result<Vec<GroupInvitation>, Error> {
         let blocked = self.inner.shared.lock().state.blocked.clone();
-        self.inner.inv_list(move |r| !r.outgoing && !blocked.contains(&r.inviter))
+        Ok(self.inner.group.inv_list(move |r| !r.outgoing && !blocked.contains(&r.inviter))?)
     }
 
     /// Invitations we sent for `group_id`, newest first.
     pub fn group_invitations_outgoing(&self, group_id: String) -> Result<Vec<GroupInvitation>, Error> {
-        self.inner.inv_list(move |r| r.outgoing && r.group == group_id)
+        Ok(self.inner.group.inv_list(move |r| r.outgoing && r.group == group_id)?)
     }
 
     /// Joins the group of an incoming invitation (blocks until joined, like `group_join`; the same
@@ -96,33 +102,33 @@ impl Node {
     pub fn group_invitation_accept(&self, id: String) -> Result<GroupInvitation, Error> {
         let inner = self.inner.clone();
         self.block_on(async move {
-            let core = inner.group_core()?;
+            let core = inner.group.group_core()?;
             let r = core.store.inv(&id)?.ok_or(Error::NotFound)?;
-            let mut r = inner.inv_current(&core, r);
+            let mut r = inner.group.inv_current(&core, r);
             if r.outgoing {
                 return Err(Error::Rejected("that is our own invitation".into()));
             }
             match r.state {
                 GroupInvitationState::Pending => {}
-                GroupInvitationState::Joined => return Ok(inner.inv_view(&r)),
+                GroupInvitationState::Joined => return Ok(inner.group.inv_view(&r)),
                 GroupInvitationState::Expired => return Err(Error::Rejected("this invitation has expired".into())),
                 _ => return Err(Error::Rejected("already answered".into())),
             }
             let t: InviteToken = cryptography::codec::from_bytes(&r.token, crate::group::record::MAX_TOKEN).map_err(|_| Error::Protocol("bad invitation".into()))?;
-            inner.group_join_token(t).await?;
+            inner.group.group_join_token(t).await?;
             r.state = GroupInvitationState::Joined;
             r.owe = false;
-            inner.inv_save(&core, &r);
-            Ok(inner.inv_view(&r))
+            inner.group.inv_save(&core, &r);
+            Ok(inner.group.inv_view(&r))
         })?
     }
 
     /// Declines an incoming invitation; the inviter sees Declined (delivered when it is next
     /// reachable).
     pub fn group_invitation_decline(&self, id: String) -> Result<GroupInvitation, Error> {
-        let core = self.inner.group_core()?;
+        let core = self.inner.group.group_core()?;
         let r = core.store.inv(&id)?.ok_or(Error::NotFound)?;
-        let mut r = self.inner.inv_current(&core, r);
+        let mut r = self.inner.group.inv_current(&core, r);
         if r.outgoing {
             return Err(Error::Rejected("that is our own invitation".into()));
         }
@@ -131,9 +137,9 @@ impl Node {
         }
         r.state = GroupInvitationState::Declined;
         r.owe = true;
-        self.inner.inv_save(&core, &r);
-        self.inner.invites_kick(r.inviter.clone());
-        Ok(self.inner.inv_view(&r))
+        self.inner.group.inv_save(&core, &r);
+        self.inner.group.invites_kick(r.inviter.clone());
+        Ok(self.inner.group.inv_view(&r))
     }
 }
 
@@ -142,7 +148,7 @@ impl Node {
 impl Node {
     /// The group endpoint ids of the hosts the token of invitation `id` names.
     pub fn group_invitation_hosts_for_test(&self, id: String) -> Vec<String> {
-        let Ok(core) = self.inner.group_core() else {
+        let Ok(core) = self.inner.group.group_core() else {
             return vec![];
         };
         let row = core

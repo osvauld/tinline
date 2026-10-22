@@ -64,7 +64,7 @@ async fn session(
             .unwrap()
             .await
             .unwrap();
-        node.inner.clone().self_run(incoming, false).await
+        node.inner.sync.clone().self_run(incoming, false).await
     };
     let driving = async {
         let conn = client

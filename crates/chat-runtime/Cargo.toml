@@ -1,0 +1,36 @@
+[package]
+name = "chat-runtime"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+description = "The chat runtime: 1:1 chat sessions, outbox, blobs, presence, receipts and own-device chat sync, plus account profiles and pictures; built on node-runtime's NodeCtx; no UniFFI"
+
+[features]
+# Synthetic-message writer for p2pcore's `dev-tools` (the year-scale measurements).
+testkit = []
+
+[dependencies]
+proto.workspace = true
+identity.workspace = true
+cryptography.workspace = true
+storage.workspace = true
+account-model.workspace = true
+chat-core.workspace = true
+group-core.workspace = true
+receipts-core.workspace = true
+transfer.workspace = true
+node-runtime.workspace = true
+search-ix.workspace = true
+zeroize.workspace = true
+serde_json.workspace = true
+parking_lot = "0.12"
+iroh = "1.3"
+iroh-blobs = { version = "0.103", default-features = false, features = ["fs-store"] }
+loro = "1.13.9"
+blake3 = "1"
+bytes = "1"
+hex = "0.4"
+image = { version = "0.25", default-features = false, features = ["png", "jpeg", "webp"] }
+tracing = "0.1"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync", "time", "fs", "io-util"] }

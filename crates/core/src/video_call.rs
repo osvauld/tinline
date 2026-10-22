@@ -15,31 +15,18 @@
 //! drops frames instead of queueing them, and no platform code runs on the codec threads.
 
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, Ordering};
-use std::collections::VecDeque;
-use std::time::Instant;
+use std::sync::atomic::{AtomicU64, Ordering};
 
-use iroh::endpoint::Connection;
-use parking_lot::{Condvar, Mutex};
-use proto::{VideoCodec, VideoOffer};
-use tokio::sync::{Notify, mpsc, watch};
-use tokio::task::JoinHandle;
-use video::convert;
-use video::media::{Frame, Hint, LadderConfig, SenderConfig};
-use video::net::{RecvConfig, VideoRecv, VideoSend};
-use video::{EncoderConfig, I420, VideoEncoder};
+use call_video::{RawFrame, VideoSink};
+use parking_lot::Mutex;
 
-use crate::node::{CallState, Inner, Node};
-use crate::Error;
+use crate::node::Inner;
 
-/// Largest picture we decode, and what we offer to receive (the top rung, 720p).
-pub(crate) const MAX_PIXELS: u32 = 1280 * 720;
-const ENCODER_THREADS: usize = 2;
-const DECODER_THREADS: usize = 2;
-const FPS: u32 = 30;
+pub use call_video::{Pulled, VideoInfo};
+pub use video_call_core::{VideoBudget, VideoLive, VideoSendCap, VideoStatRow, VideoStats, VideoTuning};
 
 /// Video state of the current call, as the call screen shows it.
-#[derive(Debug, Clone, PartialEq, Eq, uniffi::Record)]
+#[uniffi::remote(Record)]
 pub struct VideoInfo {
     pub call_id: String,
     /// Both sides offered video, so it runs. False = audio only (the peer refused or can't).
@@ -59,31 +46,29 @@ pub struct VideoFrame {
     pub seq: u64,
 }
 
+impl From<RawFrame> for VideoFrame {
+    fn from(f: RawFrame) -> Self {
+        VideoFrame { width: f.width, height: f.height, data: Bytes(f.data), seq: f.seq }
+    }
+}
+
 mod adapt;
 mod api;
-mod codecs;
 mod ffi_bytes;
 mod live;
-mod nerds;
-mod path;
-// The Android MediaCodec VP8 encoder/decoder (`codecs` names what it must provide).
+// The debug self-test export of the Android MediaCodec VP8 path (the codec is `video::mediacodec`).
 #[cfg(all(target_os = "android", feature = "mediacodec"))]
 mod mediacodec;
-mod pipes;
+mod nerds;
 mod tuning;
 pub use tuning::video_tuning_stats_label;
-pub use video_call_core::{VideoLive, VideoStatRow, VideoStats, VideoTuning};
 pub use live::VideoChoice;
 pub use nerds::video_stat_rows;
-use self::codecs::EncoderChoice;
 
 pub use self::ffi_bytes::Bytes;
 #[cfg_attr(not(target_os = "android"), allow(unused_imports))]
 pub(crate) use video_call_core::frames::chroma_spans;
 pub use self::adapt::{video_codec_label, video_recv_label, video_send_label};
-pub use video_call_core::{VideoBudget, VideoSendCap};
-use video_call_core::frames::*;
-use self::pipes::*;
 
 /// Video stats, one read per second. The record lives in `video_call_core::stats`; this declares
 /// it to UniFFI.
@@ -175,334 +160,12 @@ pub trait VideoEvents: Send + Sync {
     fn on_video_state(&self, info: VideoInfo);
 }
 
-/// Node-wide video settings.
-pub(crate) struct NodeVideo {
-    enabled: AtomicBool,
-    tuning: Mutex<VideoTuning>,
-    events: Mutex<Option<Arc<dyn VideoEvents>>>,
-    /// Video state events go out on one thread of their own, in order (`emit_video`).
-    dispatch: Mutex<Option<std::sync::mpsc::Sender<(Arc<dyn VideoEvents>, VideoInfo)>>>,
-}
+/// Hands the runtime's video state to the app's `VideoEvents`.
+struct VideoEventsAdapter(Arc<dyn VideoEvents>);
 
-impl Default for NodeVideo {
-    fn default() -> Self {
-        Self { enabled: AtomicBool::new(true), tuning: Mutex::default(), events: Mutex::new(None), dispatch: Mutex::new(None) }
-    }
-}
-
-impl NodeVideo {
-    /// Hands the event to the dispatch thread (started on first use; it ends with the node).
-    fn dispatch(&self, ev: Arc<dyn VideoEvents>, info: VideoInfo) {
-        let mut tx = self.dispatch.lock();
-        if tx.is_none() {
-            let (send, recv) = std::sync::mpsc::channel::<(Arc<dyn VideoEvents>, VideoInfo)>();
-            let spawned = std::thread::Builder::new().name("tl-video-events".into()).spawn(move || {
-                for (ev, info) in recv {
-                    ev.on_video_state(info);
-                }
-            });
-            if let Err(e) = spawned {
-                tracing::warn!("video events thread: {e}");
-                drop(tx);
-                ev.on_video_state(info);
-                return;
-            }
-            *tx = Some(send);
-        }
-        let _ = tx.as_ref().expect("dispatch sender").send((ev, info));
-    }
-}
-
-/// Between the platform's threads and the codec threads of one call.
-#[derive(Default)]
-struct Pipe {
-    input: Mutex<Option<Input>>,
-    wake: Condvar,
-    stop: AtomicBool,
-    /// The camera came (back) on: start a new group.
-    resume: AtomicBool,
-    output: Mutex<Option<VideoFrame>>,
-    seq: AtomicU64,
-    /// The decoder failed: ask the sender for a keyframe.
-    key_wanted: Notify,
-    stats: Mutex<VideoStats>,
-    /// Drawn size, budget and decode cost (`adapt`), turned into hints for the peer.
-    policy: Mutex<video_call_core::adapt::Policy>,
-    /// The newest hint for the receive task, and the wake for it.
-    hint_slot: Mutex<Option<Hint>>,
-    hint_changed: Notify,
-    /// Our sender, once running (caps, steps and the peer's hint are read from it).
-    send: Mutex<Option<Arc<VideoSend>>>,
-    /// (when, ms) of recent decodes.
-    decode_ms: Mutex<VecDeque<(Instant, f32)>>,
-    /// (when, ms) of recent frame pulls + draws, reported by the app (`report_video_render_ms`).
-    render_ms: Mutex<VecDeque<(Instant, f32)>>,
-    /// This second's send/receive pipeline timings, for the per-second debug log.
-    timing: Mutex<Timing>,
-    /// The encoder the send thread runs (set when video is decided; a live switch changes it
-    /// once the peer has been told, see `live`).
-    encoder: Mutex<Option<EncoderChoice>>,
-    /// The peer said its video is this codec from its next keyframe (`Msg::VideoCodec`).
-    recv_switch: Mutex<Option<VideoCodec>>,
-    /// My decoder preference for this call: None Auto, Some(true) hardware, Some(false) software.
-    decoder_pref: Mutex<Option<bool>>,
-}
-
-/// Where a frame's time goes on this device (debug log `video timing`, once a second): what the
-/// rate control must not mistake for the network.
-#[derive(Default)]
-struct Timing {
-    /// Encode time, and camera push -> handed to the transport, per frame sent (us).
-    encode_us: Vec<u32>,
-    lag_us: Vec<u32>,
-    /// Camera frames replaced in the input slot before the encoder took them.
-    replaced: u64,
-    /// Longest wait to hand a received frame to the decoder (the network isn't read meanwhile,
-    /// so arrival times stamped after it are late by that much), and how many waited > 5 ms.
-    recv_wait_max_us: u32,
-    recv_waits: u32,
-}
-
-/// One call's video.
-pub(crate) struct CallVideo {
-    /// We offered video in this call (hello or accept) and the peer did too.
-    negotiated: AtomicBool,
-    /// What the peer offered in its hello (callee side), until we answer.
-    pub(crate) peer_offer: Mutex<Option<VideoOffer>>,
-    /// Codecs of (our sender, our receiver), once video is decided.
-    codecs: Mutex<Option<(VideoCodec, VideoCodec)>>,
-    camera: watch::Sender<bool>,
-    remote_camera: AtomicBool,
-    /// Either camera was on while video ran: the call log calls it a video call.
-    seen: AtomicBool,
-    peer_max_pixels: AtomicU32,
-    /// The peer's offer once video is decided (what it decodes, whether it follows
-    /// `Msg::VideoCodec`), and the encoder Auto means in this call.
-    peer_video: Mutex<Option<VideoOffer>>,
-    auto_encoder: Mutex<Option<EncoderChoice>>,
-    /// A live encoder change from the in-call sheet, for `run_call`: it tells the peer first when
-    /// the codec changes, then hands it to the send thread (`Pipe::encoder`).
-    encoder_req: watch::Sender<Option<EncoderChoice>>,
-    pipe: Arc<Pipe>,
-    tasks: Mutex<Vec<JoinHandle<()>>>,
-}
-
-impl Default for CallVideo {
-    fn default() -> Self {
-        Self {
-            negotiated: AtomicBool::new(false),
-            peer_offer: Mutex::new(None),
-            codecs: Mutex::new(None),
-            camera: watch::channel(false).0,
-            remote_camera: AtomicBool::new(false),
-            seen: AtomicBool::new(false),
-            peer_max_pixels: AtomicU32::new(0),
-            peer_video: Mutex::new(None),
-            auto_encoder: Mutex::new(None),
-            encoder_req: watch::channel(None).0,
-            pipe: Arc::default(),
-            tasks: Mutex::new(Vec::new()),
-        }
-    }
-}
-
-impl CallVideo {
-    pub(crate) fn negotiated(&self) -> bool {
-        self.negotiated.load(Ordering::SeqCst)
-    }
-
-    /// Changes of the local camera, for `run_call` to tell the peer.
-    pub(crate) fn camera_changes(&self) -> watch::Receiver<bool> {
-        self.camera.subscribe()
-    }
-
-    pub(crate) fn camera(&self) -> bool {
-        *self.camera.borrow()
-    }
-
-    /// Live encoder requests from the in-call sheet, for `run_call` (see `encoder_req`).
-    pub(crate) fn encoder_requests(&self) -> watch::Receiver<Option<EncoderChoice>> {
-        self.encoder_req.subscribe()
-    }
-
-    /// The codec the send thread runs (or will run first).
-    pub(crate) fn sending_codec(&self) -> Option<VideoCodec> {
-        self.pipe.encoder.lock().map(|c| c.codec)
-    }
-
-    /// Hands a live encoder change to the send thread (after the peer was told, if needed).
-    pub(crate) fn use_encoder(&self, choice: EncoderChoice) {
-        *self.pipe.encoder.lock() = Some(choice);
-    }
-
-    /// The call is placed as a video call: the camera is on from the start, as if `set_camera
-    /// (true)` came first. Nothing to emit: the UI hears it with the first `VideoInfo`.
-    pub(crate) fn camera_on_from_start(&self) {
-        self.camera.send_replace(true);
-        self.pipe.resume.store(true, Ordering::SeqCst);
-        tracing::info!("video camera on (placed as a video call)");
-    }
-
-    pub(crate) fn saw_camera(&self) {
-        self.seen.store(true, Ordering::SeqCst);
-    }
-
-    /// Either camera was on at some point while video ran.
-    pub(crate) fn camera_seen(&self) -> bool {
-        self.seen.load(Ordering::SeqCst)
-    }
-
-    /// Ends the codec threads and the streams. Idempotent.
-    pub(crate) fn stop(&self) {
-        self.pipe.stop.store(true, Ordering::SeqCst);
-        self.pipe.wake.notify_all();
-        for t in self.tasks.lock().drain(..) {
-            t.abort();
-        }
-        self.pipe.output.lock().take();
-    }
-}
-
-impl Drop for CallVideo {
-    fn drop(&mut self) {
-        self.stop();
-    }
-}
-
-impl Inner {
-    /// Video is enabled on this node (`Node::set_video_enabled`).
-    pub(crate) fn video_enabled(&self) -> bool {
-        self.video.enabled.load(Ordering::SeqCst)
-    }
-
-    /// Our offer, when video is enabled on this node.
-    pub(crate) fn video_offer(&self, call: &crate::node::Call) -> Option<VideoOffer> {
-        self.video.offer(&call.video.pipe)
-    }
-
-    fn video_info(&self, call: &crate::node::Call) -> VideoInfo {
-        let v = &call.video;
-        VideoInfo {
-            call_id: call.info.call_id.clone(),
-            negotiated: v.negotiated(),
-            local_camera: v.camera(),
-            remote_camera: v.remote_camera.load(Ordering::SeqCst),
-        }
-    }
-
-    pub(crate) fn emit_video(&self, call: &crate::node::Call) {
-        // Never call the app back from inside one of its own calls (`set_camera` lands here):
-        // on Android the callback runs on a thread JNA attached for it, a nested callback on it
-        // detached that thread while Kotlin still ran on it, and ART aborted the app (16 Oct 2026,
-        // phone-started video call cut at "Active"). The dispatch thread also keeps them in order.
-        let ev = self.video.events.lock().clone();
-        if let Some(ev) = ev {
-            self.video.dispatch(ev, self.video_info(call));
-        }
-    }
-
-    /// The call went active. With both offers present the video streams start on `conn`;
-    /// either way the UI hears whether there is video.
-    pub(crate) fn video_decided(&self, call: &Arc<crate::node::Call>, conn: &Connection, ours: Option<VideoOffer>, theirs: Option<VideoOffer>) {
-        let offered = ours.is_some();
-        if let (Some(ours), Some(peer)) = (ours, theirs) {
-            let v = &call.video;
-            // Each end computes both directions from both offers: no extra message.
-            let Some((tx, rx)) = proto::video_codecs(&ours, &peer) else {
-                v.pipe.stats.lock().tuning_problem = "Requested video codec unsupported by peer; audio only".into();
-                self.emit_video(call);
-                return;
-            };
-            *v.codecs.lock() = Some((tx, rx));
-            let first = EncoderChoice { codec: tx, hardware: ours.hw_encode.contains(&tx) };
-            *v.pipe.encoder.lock() = Some(first);
-            *v.auto_encoder.lock() = Some(first);
-            *v.peer_video.lock() = Some(peer.clone());
-            {
-                let mut st = v.pipe.stats.lock();
-                st.send_codec = tx.as_str().into();
-                st.recv_codec = rx.as_str().into();
-                st.send_hardware = first.hardware;
-                st.recv_hardware = ours.hw_decode.contains(&rx);
-                st.send_encoder = codecs::encoder_name(first).into();
-                st.peer_hw_decode = peer.hw_decode.iter().map(|c| c.as_str().to_string()).collect();
-                st.live = VideoLive {
-                    send_codec: "auto".into(),
-                    max_bps: st.tuning.max_bps,
-                    fixed_height: st.tuning.fixed_height,
-                    fixed_fps: 0,
-                    ignore_limits: false,
-                    recv_decoder: live::decoder_id(st.tuning.recv_decoder.as_str()).into(),
-                };
-                *v.pipe.decoder_pref.lock() = live::decoder_pref(&st.live.recv_decoder);
-            }
-            tracing::info!("video codecs: send {} recv {}", tx.as_str(), rx.as_str());
-            v.peer_max_pixels.store(peer.max_pixels, Ordering::SeqCst);
-            {
-                let mut pol = v.pipe.policy.lock();
-                let max_fps = if peer.max_fps == 0 { FPS } else { (peer.max_fps as u32).min(FPS) };
-                pol.peer = (pipes::max_rung(&LadderConfig::default(), peer.max_pixels), max_fps);
-                pol.recv_pipelined = codecs::pipelined_decoder(rx);
-                pol.peer_probes = peer.burst_probe;
-            }
-            v.negotiated.store(true, Ordering::SeqCst);
-            let pipe = v.pipe.clone();
-            let send = self.handle.spawn(run_send(conn.clone(), pipe.clone()));
-            let recv = self.handle.spawn(run_recv(conn.clone(), pipe, rx, peer.hint_flags, peer.burst_probe));
-            let policy = self.handle.spawn(adapt::run_policy(v.pipe.clone()));
-            let path = self.handle.spawn(path::watch(conn.clone(), v.pipe.clone()));
-            v.tasks.lock().extend([send, recv, policy, path]);
-            if v.pipe.stop.load(Ordering::SeqCst) {
-                // Ended meanwhile.
-                v.stop();
-            }
-        }
-        // No video in this call (the peer has none, or it is off here): a camera turned on before
-        // the call was active (a video call placed, or answered with video) goes off, so the app
-        // stops capturing and never shows a self-view nobody receives.
-        let was_on = !call.video.negotiated() && call.video.camera.send_replace(false);
-        if was_on {
-            call.video.pipe.input.lock().take();
-        }
-        if offered || was_on {
-            self.emit_video(call);
-        }
-    }
-
-    /// The peer's `Msg::Video`.
-    pub(crate) fn remote_camera(&self, call: &crate::node::Call, on: bool) {
-        let v = &call.video;
-        if !v.negotiated() || v.remote_camera.swap(on, Ordering::SeqCst) == on {
-            return;
-        }
-        // With "video camera" (ours) these date the start of each picture in a call log.
-        tracing::info!("video peer camera {}", if on { "on" } else { "off" });
-        if on {
-            v.saw_camera();
-        }
-        if !on {
-            v.pipe.output.lock().take();
-        }
-        self.emit_video(call);
-    }
-
-    fn current_video_call(&self) -> Option<Arc<crate::node::Call>> {
-        self.live.lock().call.clone()
-    }
-
-    /// Hands a checked frame to the current call's encoder thread (latest wins).
-    fn push_input(&self, width: u32, height: u32, rotation: u32, src: Source) -> bool {
-        let Some(call) = self.current_video_call() else { return false };
-        let v = &call.video;
-        if !v.negotiated() || !v.camera() || v.pipe.stop.load(Ordering::SeqCst) {
-            return false;
-        }
-        let input = Input { width: width as usize, height: height as usize, src, rotation, at: Instant::now() };
-        if v.pipe.input.lock().replace(input).is_some() {
-            v.pipe.timing.lock().replaced += 1;
-        }
-        v.pipe.wake.notify_one();
-        true
+impl VideoSink for VideoEventsAdapter {
+    fn on_video_state(&self, info: call_video::VideoInfo) {
+        self.0.on_video_state(info);
     }
 }
 
@@ -515,78 +178,6 @@ static NEXT_FRAME_PORT: AtomicU64 = AtomicU64::new(1);
 #[cfg_attr(not(target_os = "android"), allow(dead_code))]
 pub(crate) fn frame_port(handle: u64) -> Option<Arc<Inner>> {
     FRAME_PORTS.lock().iter().find(|(h, _)| *h == handle).and_then(|(_, w)| w.upgrade())
-}
-
-/// What `pull_video_frame_rgba_into` did.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Pulled {
-    /// No new frame.
-    None,
-    /// A frame of this size waits but the buffer is under `width * height * 4` bytes; it stays.
-    TooSmall { width: u32, height: u32 },
-    /// The buffer starts with the frame as packed RGBA.
-    Frame { width: u32, height: u32, seq: u64 },
-}
-
-impl Inner {
-    /// `push_video_frame_yuv` from borrowed planes: each copied once, only the bytes the frame
-    /// spans.
-    #[allow(clippy::too_many_arguments)]
-    pub(crate) fn push_yuv_planes(
-        &self,
-        width: u32,
-        height: u32,
-        rotation: u32,
-        y: &[u8],
-        y_stride: usize,
-        u: &[u8],
-        v: &[u8],
-        uv_stride: usize,
-        uv_pixel_stride: usize,
-        full_range: bool,
-    ) -> bool {
-        if !yuv_fits(width, height, y, y_stride, u, v, uv_stride, uv_pixel_stride) {
-            return false;
-        }
-        let (w, h) = (width as usize, height as usize);
-        let (cw, ch) = I420::chroma(w, h);
-        let chroma = plane_len(cw, ch, uv_stride, uv_pixel_stride);
-        // One interleaved plane (u or v empty) spans one byte more than each of its views.
-        let take = |p: &[u8], other: &[u8]| {
-            let n = if other.is_empty() { chroma + 1 } else { chroma };
-            if p.is_empty() { Vec::new() } else { p[..n].to_vec() }
-        };
-        let src = Source::Yuv {
-            y: y[..plane_len(w, h, y_stride, 1)].to_vec(),
-            y_stride,
-            u: take(u, v),
-            v: take(v, u),
-            uv_stride,
-            uv_pixel_stride,
-            full_range,
-        };
-        self.push_input(width, height, rotation, src)
-    }
-
-    pub(crate) fn pull_rgba_into(&self, dst: &mut [u8]) -> Pulled {
-        let Some(call) = self.current_video_call() else { return Pulled::None };
-        let f = {
-            let mut slot = call.video.pipe.output.lock();
-            match slot.as_ref() {
-                None => return Pulled::None,
-                Some(f) if dst.len() < f.width as usize * f.height as usize * 4 => {
-                    return Pulled::TooSmall { width: f.width, height: f.height };
-                }
-                Some(_) => slot.take().expect("checked"),
-            }
-        };
-        let (width, height, seq) = (f.width, f.height, f.seq);
-        let pic = I420 { width: width as usize, height: height as usize, data: f.data.0 };
-        match convert::i420_to_rgba(&pic, dst) {
-            Ok(()) => Pulled::Frame { width, height, seq },
-            Err(_) => Pulled::None,
-        }
-    }
 }
 
 #[cfg(test)]

@@ -29,6 +29,9 @@ mod rav1e_enc;
 pub use rav1e_enc::Encoder;
 pub mod detect;
 pub mod media;
+// The Android MediaCodec VP8 encoder/decoder (p2pcore's `codecs` says what it must provide).
+#[cfg(all(target_os = "android", feature = "mediacodec"))]
+pub mod mediacodec;
 #[cfg(feature = "net")]
 pub mod net;
 #[cfg(any(test, feature = "sim"))]
