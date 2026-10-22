@@ -10,7 +10,7 @@ import SwiftUI
 
 // ------------------------------------------------------------------ routes
 
-/// Where the group screens push. The Shell's `NavigationStack` resolves them with `.groupsNavigation()` (GroupsRootView already does).
+/// Where the group screens push. The Shell's `NavigationStack` resolves them with `.groupsNavigation()`; the Groups tab does not repeat it (a second registration warns).
 enum GroupsRoute: Hashable {
     case group(String)
     case info(String)
@@ -137,7 +137,6 @@ private struct GroupsTab: View {
         .background(tin.bg)
         .groupsToasts(session)
         .environment(\.groupsNavigate, { pushed = $0 })
-        .groupsNavigation()
         .navigationDestination(item: $pushed) { GroupsRouteView(route: $0) }
         .sheet(isPresented: $creating) {
             NewGroupSheet(session: session) { id in creating = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { pushed = .group(id) } }

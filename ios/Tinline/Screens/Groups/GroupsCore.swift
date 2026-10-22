@@ -449,6 +449,8 @@ final class GroupsController: ObservableObject, GroupEvents, GroupRequestEvents,
     func refresh() {
         groupsOffMain("GroupsController.refresh")
         monitor.lock(); defer { monitor.unlock() }
+        // One Node serves every account on iOS, so who "You" is can change between refreshes (unlock, account switch).
+        write { _myDid = nil; _myDevice = "" }
         // A node without groups (or locked) answers with an error: an empty list.
         let l = (try? api.groups()) ?? []
         write { _list = l }

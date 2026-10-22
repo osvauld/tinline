@@ -124,7 +124,7 @@ enum ShellWiring {
         BlockedPeopleScreen(onBack: onBack, say: say)
     }
 
-    /// The Groups tab body. It registers its own routes on the NavigationStack (`groupsNavigation()`); a 1:1 chat it opens comes
+    /// The Groups tab body. The Shell's NavigationStack registers the routes (`groupsNavigation()` in ShellRoot); a 1:1 chat it opens comes
     /// back through `groupsOpenChat`.
     @ViewBuilder static func groupsTab(nav: ShellNav) -> some View {
         GroupsRootView().environment(\.groupsOpenChat, { did in nav.push(.chat(did, nil)) })

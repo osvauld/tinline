@@ -52,7 +52,7 @@ final class PeopleModel: ObservableObject, ProfileHost {
 
     func attach(node: Node?) {
         self.node = node
-        guard let node else { profiles.invalidate(); contacts = []; blocks = Blocks(); return }
+        guard let node else { profiles.invalidate(); contacts = []; blocks = Blocks(); requestsIn = []; requestsOut = []; return }
         refresh()
         let did = node.profile()?.did
         profiles.select(did)
