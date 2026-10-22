@@ -102,7 +102,7 @@ private struct GroupInfoScreen: View {
     }
 
     private func invites(_ d: GroupDetail, sent: [GroupInvitation]) -> some View {
-        let shownSent = sent.filter { $0.groupId == id && !d.members.contains(where: { m in m.did == $0.inviteeDid }) }
+        let shownSent = sent.filter { inv in inv.groupId == id && !d.members.contains(where: { m in m.did == inv.inviteeDid }) }
         let noHost = d.hosts.isEmpty && !d.amHost
         return InfoSec(title: "Invites") {
             GroupsCard {

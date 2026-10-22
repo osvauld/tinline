@@ -99,7 +99,7 @@ private struct GroupChatScreen: View {
         return VStack(spacing: 0) {
             bar(d)
             GroupsRule()
-            if GroupText.active(d.myRole) { OngoingCallBanner(session: session, gid: id, snapshot: calls.snapshot) }
+            if GroupText.active(d.myRole) { GroupsOngoingCallBanner(session: session, gid: id, snapshot: calls.snapshot) }
             HostAskCard(session: session, d: d)
             ZStack(alignment: .top) {
                 tin.grpCanvas
@@ -297,7 +297,7 @@ private struct GroupCallPill: View {
 
 /// OngoingCall.svelte: "Call in progress" under a group's header while its call runs and I'm not in it (Join), or
 /// "You're in the call" with the timer (Open). The core doesn't say how many joined, so the line names who started it.
-private struct OngoingCallBanner: View {
+private struct GroupsOngoingCallBanner: View {
     @ObservedObject var session: GroupsSession
     let gid: String
     let snapshot: GroupCallSnapshot
@@ -354,7 +354,6 @@ private struct HostAskCard: View {
 
 // ------------------------------------------------------------------ one group item
 
-private enum BubblePos { case solo, first, mid, last }
 
 /// One group item (MessageRow.svelte): a system line, my removal card, a folded post from someone I blocked, or a post as a
 /// bubble (sender's first name in their colour on the first of their run, the quote, the inline time and tick; "Waiting for a

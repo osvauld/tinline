@@ -90,8 +90,8 @@ enum ChatMedia {
             guard status == .authorized || status == .limited else { return false }
             return await withCheckedContinuation { c in
                 PHPhotoLibrary.shared().performChanges({
-                    if mime.hasPrefix("image/") { PHAssetChangeRequest.creationRequestForAssetFromImage(atFileURL: file) }
-                    else { PHAssetChangeRequest.creationRequestForAssetFromVideo(atFileURL: file) }
+                    if mime.hasPrefix("image/") { _ = PHAssetChangeRequest.creationRequestForAssetFromImage(atFileURL: file) }
+                    else { _ = PHAssetChangeRequest.creationRequestForAssetFromVideo(atFileURL: file) }
                 }, completionHandler: { ok, _ in c.resume(returning: ok) })
             }
         }

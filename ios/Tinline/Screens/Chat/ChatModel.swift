@@ -369,7 +369,7 @@ final class ConversationModel: ObservableObject {
 /// Friendly text for a core error; never includes secrets (android Support.kt `friendly`). The Shell may own a fuller
 /// version; this keeps the chat area self-contained.
 enum ChatErrors {
-    static func friendly(_ e: Error) -> String {
+    static func friendly(_ e: Swift.Error) -> String {
         let s = String(describing: e)
         if s.contains("inCall") { return "Finish your call first" }
         if s.contains("locked") { return "Locked — enter your passphrase to unlock" }

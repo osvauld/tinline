@@ -24,7 +24,7 @@ enum ChatFixtures {
     }
 
     /// 2026-10-14 12:00 UTC in ms plus `minutes`.
-    static func at(minutes: Int) -> UInt64 { 1_791_979_200_000 + UInt64(minutes) * 60_000 }
+    static func at(minutes: Int) -> UInt64 { UInt64(1_791_979_200_000 + minutes * 60_000) }
 }
 
 final class ChatFakeSource: ChatSource {
