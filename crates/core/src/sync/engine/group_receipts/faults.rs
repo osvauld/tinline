@@ -4,8 +4,9 @@ use super::super::group_history::tests::{Directory, Quiet, endpoint, registry};
 use super::*;
 use crate::{
     Node,
-    group::{doc::DocId, engine::GroupCore},
+    group::engine::GroupCore,
 };
+use group_runtime::doc::DocId;
 use iroh::Endpoint;
 
 async fn session(
@@ -111,7 +112,7 @@ async fn session(
                             gid,
                             &which,
                             &their,
-                            crate::group::doc::batching::BatchLimits {
+                            group_runtime::doc::batching::BatchLimits {
                                 bytes: 256 * 1024,
                                 operations: 64,
                                 writers: 4096,
@@ -121,7 +122,7 @@ async fn session(
                     let (update, vv, more) = out
                         .map(|o| (o.update, o.frontier.encode(), o.more))
                         .unwrap_or((vec![], VersionVector::default().encode(), false));
-                    let sig = crate::chat::wire::sign_batch(secret, &doc, &update);
+                    let sig = chat_runtime::chat::wire::sign_batch(secret, &doc, &update);
                     writer
                         .send(&SelfMsg::GroupBatch {
                             request,

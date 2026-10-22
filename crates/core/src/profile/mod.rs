@@ -19,14 +19,12 @@ pub struct AccountProfile {
 pub trait ProfileEvents: Send + Sync {
     fn on_profile_changed(&self, did: String);
 }
-/// Hands the profile engine's events to the app's `ProfileEvents`.
-pub(crate) struct ProfileEventsAdapter(pub(crate) Arc<dyn ProfileEvents>);
-
-impl chat_runtime::ProfileSink for ProfileEventsAdapter {
-    fn on_profile_changed(&self, did: String) {
-        self.0.on_profile_changed(did);
+sink_adapter!(
+    /// Hands the profile engine's events to the app's `ProfileEvents`.
+    pub(crate) ProfileEventsAdapter(ProfileEvents) => chat_runtime::ProfileSink {
+        fn on_profile_changed(did: String);
     }
-}
+);
 
 #[uniffi::export]
 impl Node {

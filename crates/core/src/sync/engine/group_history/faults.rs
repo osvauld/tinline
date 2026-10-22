@@ -6,8 +6,9 @@ use super::{
 };
 use crate::{
     Node,
-    group::{doc::GroupDoc, engine::GroupCore},
+    group::engine::GroupCore,
 };
+use group_runtime::doc::GroupDoc;
 use iroh::Endpoint;
 
 #[derive(Default, Debug)]
@@ -160,7 +161,7 @@ async fn session(
                     let (update, frontier, more) = out
                         .map(|b| (b.update, b.frontier.encode(), b.more))
                         .unwrap_or((vec![], VersionVector::default().encode(), false));
-                    let sig = crate::chat::wire::sign_batch(secret, &doc, &update);
+                    let sig = chat_runtime::chat::wire::sign_batch(secret, &doc, &update);
                     writer
                         .send(&SelfMsg::GroupBatch {
                             request,
@@ -320,7 +321,7 @@ async fn lost_want_page_and_cache_ack_reconnect_from_durable_frontier_without_du
             request: 3,
             doc: doc.clone(),
             vv: stale_source.vv().encode(),
-            sig: crate::chat::wire::sign_batch(&secret, &doc, &stale_update),
+            sig: chat_runtime::chat::wire::sign_batch(&secret, &doc, &stale_update),
             update: stale_update,
             more: false,
             deferred: false,

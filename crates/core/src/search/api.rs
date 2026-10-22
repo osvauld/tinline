@@ -178,8 +178,7 @@ impl Node {
     /// Compacts the old days now (otherwise every hour); returns how many days are closed.
     #[doc(hidden)]
     pub fn compact_now_for_test(&self) -> Result<u32, Error> {
-        let inner = self.inner.clone();
-        self.block_rt(async move { inner.chat.chat_compact_for_test().await })
+        self.run(|inner| async move { inner.chat.chat_compact_for_test().await })
     }
 }
 

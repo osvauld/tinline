@@ -160,14 +160,12 @@ pub trait VideoEvents: Send + Sync {
     fn on_video_state(&self, info: VideoInfo);
 }
 
-/// Hands the runtime's video state to the app's `VideoEvents`.
-struct VideoEventsAdapter(Arc<dyn VideoEvents>);
-
-impl VideoSink for VideoEventsAdapter {
-    fn on_video_state(&self, info: call_video::VideoInfo) {
-        self.0.on_video_state(info);
+sink_adapter!(
+    /// Hands the runtime's video state to the app's `VideoEvents`.
+    VideoEventsAdapter(VideoEvents) => VideoSink {
+        fn on_video_state(info: call_video::VideoInfo);
     }
-}
+);
 
 /// Nodes reachable by the platform's direct frame calls (Android: `video_jni`), by handle: the
 /// platform never holds a pointer into Rust, so a stale or bogus handle is just "no node".

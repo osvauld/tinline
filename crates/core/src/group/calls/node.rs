@@ -9,13 +9,12 @@ use crate::node::{Node, now_ms};
 
 impl Node {
     fn calls_ready(&self) -> Result<Arc<GroupCore>, Error> {
-        let inner = self.inner.clone();
-        self.block_on(async move {
+        self.run(|inner| async move {
             let core = inner.group.group_core()?;
             inner.group.group_ensure(&core).await?;
             inner.group.group_calls_configure();
             Ok(core)
-        })?
+        })
     }
 }
 

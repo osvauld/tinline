@@ -5,6 +5,9 @@
 
 uniffi::setup_scaffolding!();
 
+#[macro_use]
+mod sink_adapter;
+
 // Links `present` (and its UniFFI scaffolding) into libp2pcore.so: bindgen then writes uniffi/present/present.kt.
 pub use present;
 

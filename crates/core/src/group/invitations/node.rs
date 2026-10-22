@@ -21,8 +21,7 @@ impl Node {
     pub fn group_invite_contacts(&self, group_id: String, dids: Vec<String>) -> Result<Vec<GroupInvitation>, Error> {
         let inner = self.inner.clone();
         self.block_on(async move {
-            let core = inner.group.group_core()?;
-            inner.group.group_admin_check(&core, &group_id)?;
+            let core = inner.group.admin_core(&group_id)?;
             let mut dids = dids;
             dids.sort();
             dids.dedup();

@@ -43,29 +43,17 @@ pub struct LinkedDevice {
     pub removed: bool,
 }
 
-/// Forwards the runtime's `LinkSink` to the app's `LinkEvents`.
-pub(crate) struct LinkEventsAdapter(pub(crate) Arc<dyn LinkEvents>);
-
-impl sync_runtime::LinkSink for LinkEventsAdapter {
-    fn on_link_code(&self, code: String, peer_label: String) {
-        self.0.on_link_code(code, peer_label)
+sink_adapter!(
+    /// Forwards the runtime's `LinkSink` to the app's `LinkEvents`.
+    pub(crate) LinkEventsAdapter(LinkEvents) => sync_runtime::LinkSink {
+        fn on_link_code(code: String, peer_label: String);
+        fn on_link_done(did: String, name: String);
+        fn on_link_failed(reason: String);
+        fn on_devices_changed();
+        fn on_history_changed();
+        fn on_unlinked(did: String);
     }
-    fn on_link_done(&self, did: String, name: String) {
-        self.0.on_link_done(did, name)
-    }
-    fn on_link_failed(&self, reason: String) {
-        self.0.on_link_failed(reason)
-    }
-    fn on_devices_changed(&self) {
-        self.0.on_devices_changed()
-    }
-    fn on_history_changed(&self) {
-        self.0.on_history_changed()
-    }
-    fn on_unlinked(&self, did: String) {
-        self.0.on_unlinked(did)
-    }
-}
+);
 
 impl Node {
     fn local_auth(&self, passphrase: Option<String>) -> Result<(), Error> {

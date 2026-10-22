@@ -43,14 +43,12 @@ pub trait GroupRequestEvents: Send + Sync {
     fn on_chat_request(&self, request: GroupChatRequest);
 }
 
-/// Hands the runtime's events to the app's `GroupRequestEvents`.
-pub(crate) struct GroupRequestEventsAdapter(pub(crate) Arc<dyn GroupRequestEvents>);
-
-impl group_runtime::requests::GroupRequestSink for GroupRequestEventsAdapter {
-    fn on_chat_request(&self, request: GroupChatRequest) {
-        self.0.on_chat_request(request);
+sink_adapter!(
+    /// Hands the runtime's events to the app's `GroupRequestEvents`.
+    pub(crate) GroupRequestEventsAdapter(GroupRequestEvents) => group_runtime::requests::GroupRequestSink {
+        fn on_chat_request(request: GroupChatRequest);
     }
-}
+);
 
 #[uniffi::export]
 impl Node {
@@ -63,8 +61,7 @@ impl Node {
     /// contacts. Asking again while a request is pending returns that request.
     pub fn group_chat_request(&self, group_id: String, did: String) -> Result<GroupChatRequest, Error> {
         let inner = self.inner.clone();
-        let core = inner.group.group_core()?;
-        inner.group.group_member_check(&core, &group_id)?;
+        let core = inner.group.member_core(&group_id)?;
         if did == core.did {
             return Err(Error::Rejected("that is you".into()));
         }

@@ -141,34 +141,17 @@ pub trait ChatEvents: Send + Sync {
     fn on_presence_changed(&self, peer_did: String, online: bool);
 }
 
-/// Hands the chat engine's events to the app's `ChatEvents`.
-pub(crate) struct ChatEventsAdapter(pub(crate) Arc<dyn ChatEvents>);
-
-impl chat_runtime::ChatSink for ChatEventsAdapter {
-    fn on_message_added(&self, message: Message) {
-        self.0.on_message_added(message);
+sink_adapter!(
+    /// Hands the chat engine's events to the app's `ChatEvents`.
+    pub(crate) ChatEventsAdapter(ChatEvents) => chat_runtime::ChatSink {
+        fn on_message_added(message: Message);
+        fn on_message_changed(message: Message);
+        fn on_chat_changed(chat: Chat);
+        fn on_delivery_changed(peer_did: String, message_id: String, delivery: DeliveryState);
+        fn on_transfer_progress(peer_did: String, hash: String, done: u64, total: u64, outgoing: bool);
+        fn on_presence_changed(peer_did: String, online: bool);
     }
-
-    fn on_message_changed(&self, message: Message) {
-        self.0.on_message_changed(message);
-    }
-
-    fn on_chat_changed(&self, chat: Chat) {
-        self.0.on_chat_changed(chat);
-    }
-
-    fn on_delivery_changed(&self, peer_did: String, message_id: String, delivery: DeliveryState) {
-        self.0.on_delivery_changed(peer_did, message_id, delivery);
-    }
-
-    fn on_transfer_progress(&self, peer_did: String, hash: String, done: u64, total: u64, outgoing: bool) {
-        self.0.on_transfer_progress(peer_did, hash, done, total, outgoing);
-    }
-
-    fn on_presence_changed(&self, peer_did: String, online: bool) {
-        self.0.on_presence_changed(peer_did, online);
-    }
-}
+);
 
 #[uniffi::export]
 impl Node {
