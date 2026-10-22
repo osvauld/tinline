@@ -16,7 +16,7 @@ impl Node {
         self.run_lifecycle(async move {
             {
                 let _life = inner.lifecycle.lock().await;
-                inner.chat_sessions_close();
+                inner.chat.chat_sessions_close();
                 inner.gcall_shutdown().await;
                 inner.close_endpoint().await;
             }
@@ -30,7 +30,7 @@ impl Node {
         let ep = self.inner.shared.lock().endpoint.clone();
         if let Some(ep) = ep {
             self.inner.handle.spawn(async move { ep.network_change().await });
-            self.inner.chat_kick_pending();
+            self.inner.chat.chat_kick_pending();
             self.inner.sync_kick();
         }
     }

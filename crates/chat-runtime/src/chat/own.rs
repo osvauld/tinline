@@ -11,48 +11,43 @@ use super::doc::*;
 use super::engine::{ChatCore, decode_vv};
 use super::store::ConvMeta;
 use crate::Error;
-use crate::node::{Inner, Me, now_ms};
+use crate::ChatRt;
+use node_runtime::{Me, now_ms};
 
 /// The dirty-set entry that means "a read cursor moved".
-pub(crate) const READ_MARK: &str = "!read";
+pub const READ_MARK: &str = "!read";
 /// The dirty-set entry that means "a contact acknowledged more".
-pub(crate) const ACK_MARK: &str = "!ack";
+pub const ACK_MARK: &str = "!ack";
 /// The dirty-set entry that means "our group list or a group's hosts may have changed" (G2).
-pub(crate) const GROUPS_MARK: &str = "!groups";
+pub const GROUPS_MARK: &str = "!groups";
 /// Shards offered per session (newest days first); the rest are not synced until the next
 /// session finds room (older days are normally closed and rarely change).
-pub(crate) const MAX_OWN_DOCS: usize = 4096;
+pub const MAX_OWN_DOCS: usize = 4096;
 /// A batch bigger than this is not sent over the own-device link (the frame cap is 16 MiB).
 const MAX_OWN_BATCH: usize = 12 * 1024 * 1024;
 
 /// `dm/{pair}/{day}` -> `(pair, day)`.
-pub(crate) fn parse_doc(doc: &str) -> Option<(String, String)> {
+pub fn parse_doc(doc: &str) -> Option<(String, String)> {
     let rest = doc.strip_prefix("dm/")?;
     let (pair, day) = rest.split_once('/')?;
     (pair.len() == 64 && pair.bytes().all(|b| b.is_ascii_hexdigit()) && day_start(day).is_some()).then(|| (pair.to_string(), day.to_string()))
 }
 
-impl Inner {
-    /// Another install of this account that is not removed (it may read our blobs).
-    pub(crate) fn is_own_device(&self, dev: &[u8; 32]) -> bool {
-        let s = self.shared.lock();
-        s.me.as_ref().is_some_and(|m| m.device != *dev) && s.state.registry.iter().any(|e| e.device == *dev && !e.removed)
-    }
-
+impl ChatRt {
     /// Our other devices as `(device, relay, in sync with it right now)`.
-    pub(crate) fn own_blob_sources(&self) -> Vec<([u8; 32], Option<String>, bool)> {
+    pub fn own_blob_sources(&self) -> Vec<([u8; 32], Option<String>, bool)> {
         let list: Vec<([u8; 32], Option<String>)> = {
             let s = self.shared.lock();
             let Some(me) = s.me.as_ref() else { return vec![] };
             s.state.registry.iter().filter(|e| !e.removed && e.device != me.device).map(|e| (e.device, e.relay.clone())).collect()
         };
-        let sessions = self.selfsync.sessions.lock();
-        list.into_iter().map(|(d, r)| (d, r, sessions.contains_key(&d))).collect()
+        let live = self.signal.in_session(&list.iter().map(|(d, _)| *d).collect::<Vec<_>>());
+        list.into_iter().zip(live).map(|((d, r), live)| (d, r, live)).collect()
     }
 
     /// `pair` -> the DID of that conversation's other side (ourselves for "You"), if it is a
     /// conversation of ours right now.
-    pub(crate) fn pair_owner(&self, me: &Me, pair: &str) -> Option<String> {
+    pub fn pair_owner(&self, me: &Me, pair: &str) -> Option<String> {
         if pair_id(me.id.did(), me.id.did()) == pair {
             return Some(me.id.did().to_string());
         }
@@ -68,7 +63,7 @@ impl Inner {
     }
 
     /// The shards we offer another own device: `(doc, vv)`, newest day first.
-    pub(crate) fn chat_own_docs(&self) -> Vec<(String, Vec<u8>)> {
+    pub fn chat_own_docs(&self) -> Vec<(String, Vec<u8>)> {
         let (Ok(me), Ok(core)) = (self.me(), self.chat_core()) else { return vec![] };
         let Ok(all) = core.store.all_shards(MAX_OWN_DOCS) else { return vec![] };
         let mut owners: HashMap<String, bool> = HashMap::new();
@@ -80,7 +75,7 @@ impl Inner {
 
     /// What we hold of `doc` beyond `theirs`, with our version vector; `None` if they have it
     /// all (or the doc is not one of our conversations).
-    pub(crate) async fn chat_own_export(self: &Arc<Self>, doc: &str, theirs: &VersionVector) -> Result<Option<(Vec<u8>, Vec<u8>)>, Error> {
+    pub async fn chat_own_export(self: &Arc<Self>, doc: &str, theirs: &VersionVector) -> Result<Option<(Vec<u8>, Vec<u8>)>, Error> {
         let (me, core) = (self.me()?, self.chat_core()?);
         let Some((pair, day)) = parse_doc(doc) else { return Ok(None) };
         if self.pair_owner(&me, &pair).is_none() {
@@ -106,7 +101,7 @@ impl Inner {
     /// devices; every op must be proven by its author's DID signature under the author's writer
     /// ID (the rules of a vouched history snapshot), authors are only us and the contact, and the
     /// usual per-field rules hold. `Err` = rejected, nothing stored.
-    pub(crate) async fn chat_own_apply(self: &Arc<Self>, doc: &str, update: &[u8]) -> Result<(), Error> {
+    pub async fn chat_own_apply(self: &Arc<Self>, doc: &str, update: &[u8]) -> Result<(), Error> {
         let (me, core) = (self.me()?, self.chat_core()?);
         let (pair, day) = parse_doc(doc).ok_or_else(|| Error::Protocol("bad doc".into()))?;
         // Not (or no longer) a conversation of ours, e.g. a contact removed meanwhile: nothing to do.
@@ -145,7 +140,7 @@ impl Inner {
                             // already delivers; the relayed ack usually clears it first.
                             if let Some(meta) = core.store.shard_meta(&pair, &day)? {
                                 let acked = core.store.ack(&pair, &day)?.and_then(|b| decode_vv(&b).ok()).unwrap_or_default();
-                                if Inner::chat_owes(&core, &meta, &acked) {
+                                if ChatRt::chat_owes(&core, &meta, &acked) {
                                     ops.push(core.store.out_op(&pair, &day, true)?);
                                 }
                             }
@@ -184,7 +179,7 @@ impl Inner {
     // ---- read cursors --------------------------------------------------------------------------
 
     /// `(pair, cursor)` of every conversation with a cursor.
-    pub(crate) fn chat_read_cursors(&self) -> Vec<(String, i64)> {
+    pub fn chat_read_cursors(&self) -> Vec<(String, i64)> {
         let (Ok(me), Ok(core)) = (self.me(), self.chat_core()) else { return vec![] };
         core.store
             .convs()
@@ -197,7 +192,7 @@ impl Inner {
 
     /// Cursors from another own device: a larger one wins (a max-register), and the unread count
     /// is recomputed against it, so the order in which messages and cursors arrive does not matter.
-    pub(crate) async fn chat_apply_read(self: &Arc<Self>, cursors: &[(String, i64)]) -> Result<(), Error> {
+    pub async fn chat_apply_read(self: &Arc<Self>, cursors: &[(String, i64)]) -> Result<(), Error> {
         let (me, core) = (self.me()?, self.chat_core()?);
         let mut moved = false;
         for (pair, cursor) in cursors {
@@ -223,7 +218,7 @@ impl Inner {
     }
 
     /// `(doc, vv)` of every day a contact of ours acknowledged.
-    pub(crate) fn chat_acks(&self) -> Vec<(String, VersionVector)> {
+    pub fn chat_acks(&self) -> Vec<(String, VersionVector)> {
         let (Ok(me), Ok(core)) = (self.me(), self.chat_core()) else { return vec![] };
         core.store
             .acks()
@@ -236,7 +231,7 @@ impl Inner {
 
     /// Acks relayed by another own device: merged like the contact's own (`chat_ack`), which
     /// passes them on to our other devices when they add anything.
-    pub(crate) fn chat_apply_acks(&self, acks: &[(String, Vec<u8>)]) -> Result<(), Error> {
+    pub fn chat_apply_acks(&self, acks: &[(String, Vec<u8>)]) -> Result<(), Error> {
         let (me, core) = (self.me()?, self.chat_core()?);
         for (doc, vv) in acks {
             let Some((pair, day)) = parse_doc(doc) else { continue };
@@ -265,7 +260,7 @@ impl Inner {
 
     /// After a session with an own device came up: fetch what we wanted but could not get, now
     /// that it may be a source.
-    pub(crate) fn chat_resume_all(self: &Arc<Self>) {
+    pub fn chat_resume_all(self: &Arc<Self>) {
         let (Ok(me), Ok(core)) = (self.me(), self.chat_core()) else { return };
         for (hash, info) in core.store.wanted_blobs().unwrap_or_default() {
             if let Some(did) = self.pair_owner(&me, &info.pair) {

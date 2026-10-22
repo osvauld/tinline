@@ -15,7 +15,7 @@ impl Inner {
     /// Opens the account doc of the unlocked account (called wherever the chat store opens):
     /// loads the sealed snapshot, flushes the working copy into it, merges it back.
     pub(crate) fn acc_open(self: &Arc<Self>) {
-        if let Err(e) = self.profile_open() {
+        if let Err(e) = self.chat.profile_open() {
             tracing::debug!("profile open: {e}");
         }
         let (me, backing) = {
@@ -98,7 +98,7 @@ impl Inner {
             }
             // A contact entry deleted by a block notice keeps its calls and chat history (U20).
             let ch = acc.read_into(&mut s.state, &ctx);
-            if let Err(e) = Self::profile_project(&mut s) {
+            if let Err(e) = chat_runtime::ChatRt::profile_project(&mut s) {
                 tracing::warn!("profile projection: {e}");
             }
             if let Some(l) = &ch.label {
@@ -122,8 +122,8 @@ impl Inner {
                 .map(|c| c.did.clone())
                 .collect::<Vec<_>>();
             for did in dids {
-                self.profile_download(did.clone());
-                self.profile_for_new_contact(&did);
+                self.chat.profile_download(did.clone());
+                self.chat.profile_for_new_contact(&did);
             }
         }
         if ch.devices {

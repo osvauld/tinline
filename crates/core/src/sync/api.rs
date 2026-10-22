@@ -268,7 +268,7 @@ impl Node {
     pub fn forged_own_batch_for_test(&self, contact: String, kind: u8) -> Result<(), Error> {
         use crate::chat::doc::{MsgRec, Shard, Writer, day_of, doc_name, new_device_value, pair_id};
         let me = self.inner.me()?;
-        let core = self.inner.chat_core()?;
+        let core = self.inner.chat.chat_core()?;
         let pair = pair_id(me.id.did(), &contact);
         let at = crate::node::now_ms() as i64;
         let day = day_of(at);
@@ -277,21 +277,21 @@ impl Node {
             0 => (contact.clone(), Writer::forging(stranger, new_device_value(), &contact)),
             1 => (me.id.did().to_string(), Writer::forging(stranger, new_device_value(), me.id.did())),
             2 => (stranger.did().to_string(), Writer::new(stranger, new_device_value())),
-            _ => (me.id.did().to_string(), self.inner.chat_writer(&me, &core)),
+            _ => (me.id.did().to_string(), self.inner.chat.chat_writer(&me, &core)),
         };
         let shard = Shard::new(&pair, &day, writer.writer_id());
         let rec = MsgRec { id: format!("forged{kind}"), author, at, text: format!("forged {kind}"), edited_at: None, deleted: false, reply_to: None, file: None, dev: [0; 32], did_sig: Vec::new() };
         let update = shard.add_message(&rec, &writer).map_err(|e| Error::Io(e.to_string()))?;
         let inner = self.inner.clone();
         let doc = doc_name(&pair, &day);
-        self.block_on(async move { inner.chat_own_apply(&doc, &update).await })?
+        self.block_rt(async move { inner.chat.chat_own_apply(&doc, &update).await })
     }
 
     /// For tests: does the chat store hold any shard of the conversation between `me_did` and
     /// `peer_did` (`me_did == peer_did`: the "You" docs)?
     #[doc(hidden)]
     pub fn has_chat_docs_for_test(&self, me_did: &str, peer_did: &str) -> bool {
-        let Ok(core) = self.inner.chat_core() else { return false };
+        let Ok(core) = self.inner.chat.chat_core() else { return false };
         let pair = crate::chat::doc::pair_id(me_did, peer_did);
         core.store.shard_days(&pair).map(|d| !d.is_empty()).unwrap_or(false)
     }
@@ -299,7 +299,7 @@ impl Node {
     /// For tests (P9): our writer ID (`None` while the chat store is not open).
     #[doc(hidden)]
     pub fn writer_id_for_test(&self) -> Option<u64> {
-        self.inner.chat_core().ok().map(|c| c.wid)
+        self.inner.chat.chat_core().ok().map(|c| c.wid)
     }
 
     /// For tests (P9): every `(day, Loro peer id, op count)` in our copy of the conversation
@@ -309,11 +309,11 @@ impl Node {
     pub fn chat_doc_peers_for_test(&self, peer_did: String) -> (Vec<(String, u64, i32)>, Vec<(String, u64)>) {
         let inner = self.inner.clone();
         self.block_on(async move {
-            let (Ok(me), Ok(core)) = (inner.me(), inner.chat_core()) else { return (vec![], vec![]) };
+            let (Ok(me), Ok(core)) = (inner.me(), inner.chat.chat_core()) else { return (vec![], vec![]) };
             let pair = crate::chat::doc::pair_id(me.id.did(), &peer_did);
             let (mut peers, mut created) = (Vec::new(), Vec::new());
             for day in core.store.shard_days(&pair).unwrap_or_default() {
-                let Ok(shards) = inner.chat_shard(&core, &pair, &day).await else { continue };
+                let Ok(shards) = inner.chat.chat_shard(&core, &pair, &day).await else { continue };
                 let Some(s) = shards.get(&(pair.clone(), day.clone())) else { continue };
                 peers.extend(s.vv().iter().map(|(p, c)| (day.clone(), *p, *c)));
                 for id in s.messages().map(|m| m.into_keys().collect::<Vec<_>>()).unwrap_or_default() {
@@ -330,7 +330,7 @@ impl Node {
     /// For tests (P10): the next `n` chat writes (`chat_persist`) fail, as if the disk were full.
     #[doc(hidden)]
     pub fn fail_next_chat_writes_for_test(&self, n: u32) {
-        if let Ok(core) = self.inner.chat_core() {
+        if let Ok(core) = self.inner.chat.chat_core() {
             core.fail_writes.store(n, std::sync::atomic::Ordering::SeqCst);
         }
     }
@@ -341,7 +341,7 @@ impl Node {
     #[doc(hidden)]
     pub fn write_as_sibling_for_test(&self, peer_did: String, text: String, at_ms: i64) -> Result<String, Error> {
         let inner = self.inner.clone();
-        self.block_on(async move { inner.chat_write_as_sibling_for_test(&peer_did, text, at_ms).await })?
+        self.block_rt(async move { inner.chat.chat_write_as_sibling_for_test(&peer_did, text, at_ms).await })
     }
 
     /// For tests: like `write_as_sibling_for_test`, but filed in the shard of `day`
@@ -349,7 +349,7 @@ impl Node {
     #[doc(hidden)]
     pub fn write_in_day_for_test(&self, peer_did: String, text: String, at_ms: i64, day: String) -> Result<String, Error> {
         let inner = self.inner.clone();
-        self.block_on(async move { inner.chat_write_in_day_for_test(&peer_did, text, at_ms, &day).await })?
+        self.block_rt(async move { inner.chat.chat_write_in_day_for_test(&peer_did, text, at_ms, &day).await })
     }
 
     /// For tests: messages written now are stamped `ms` ahead of the real clock (negative: a
@@ -357,7 +357,7 @@ impl Node {
     /// it too). The live window and catch-up decision keep the real clock.
     #[doc(hidden)]
     pub fn chat_clock_offset_for_test(&self, ms: i64) {
-        if let Ok(core) = self.inner.chat_core() {
+        if let Ok(core) = self.inner.chat.chat_core() {
             core.clock_wrong.store(false, std::sync::atomic::Ordering::Relaxed);
             core.clock_ms.store(ms, std::sync::atomic::Ordering::Relaxed);
         }
@@ -367,7 +367,7 @@ impl Node {
     /// live window and catch-up decision use it as well (0 sets it right again).
     #[doc(hidden)]
     pub fn chat_clock_skew_for_test(&self, ms: i64) {
-        if let Ok(core) = self.inner.chat_core() {
+        if let Ok(core) = self.inner.chat.chat_core() {
             core.clock_ms.store(ms, std::sync::atomic::Ordering::Relaxed);
             core.clock_wrong.store(ms != 0, std::sync::atomic::Ordering::Relaxed);
         }

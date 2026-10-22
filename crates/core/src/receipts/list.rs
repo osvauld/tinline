@@ -25,7 +25,7 @@ impl Node {
     /// cannot be read (no group store yet) is left out, never guessed.
     pub fn chat_list_marks(&self) -> Result<Vec<ListMark>, Error> {
         let mut out = Vec::new();
-        if let Ok(rows) = self.inner.chat_list_receipts() {
+        if let Ok(rows) = self.inner.chat.chat_list_receipts() {
             for r in rows {
                 let not_delivered = self
                     .not_delivered_reason(r.peer_did.clone(), r.status.message_id.clone())

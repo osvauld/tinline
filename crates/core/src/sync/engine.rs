@@ -79,6 +79,11 @@ impl node_runtime::OwnDocSink for SelfSync {
         self.backoff.lock().clear();
         self.synced.lock().clear();
     }
+
+    fn in_session(&self, devices: &[[u8; 32]]) -> Vec<bool> {
+        let sessions = self.sessions.lock();
+        devices.iter().map(|d| sessions.contains_key(d)).collect()
+    }
 }
 
 impl SelfSlot {

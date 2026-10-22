@@ -1,5 +1,5 @@
 //! The chat runtime: sealed store, shard cache, sessions over `tinline/chat/3`, outbox/retry,
-//! blob transfers. Everything hangs off `Inner` (see `node.rs`); the UniFFI methods in `api.rs`
+//! blob transfers. Everything hangs off `ChatRt` (see `node.rs`); the UniFFI methods in `api.rs`
 //! are thin wrappers over the `chat_*` functions here.
 
 use std::collections::{HashMap, HashSet};
@@ -16,7 +16,7 @@ use proto::Msg;
 use storage::Op;
 use tokio::sync::{OnceCell, Semaphore, mpsc, oneshot};
 
-use super::api::{Attachment, AttachmentKind, Chat, ChatEvents, DayPage, DeliveryState, Message, TransferState};
+use super::api::{Attachment, AttachmentKind, Chat, ChatSink, DayPage, DeliveryState, Message, TransferState};
 use transfer::{BlobHub, Gate, UploadEnd, UploadProgress};
 use super::crypt;
 use super::doc::*;
@@ -24,21 +24,22 @@ use super::store::*;
 use super::wire::*;
 use super::own::{ACK_MARK, READ_MARK};
 use crate::Error;
-use crate::node::{Inner, Me, addr_for, relay_hint, relay_of};
+use crate::ChatRt;
+use node_runtime::{Me, addr_for, relay_hint, relay_of};
 
 mod blobs;
 mod history;
 mod local;
 mod read;
-pub(crate) mod receipts;
+pub mod receipts;
 mod session;
 mod sync;
-#[cfg(any(test, feature = "dev-tools"))]
+#[cfg(any(test, feature = "testkit"))]
 mod synth;
 #[cfg(test)]
 mod tests;
 
-use crate::wire::DIAL_TIMEOUT;
+use node_runtime::wire::DIAL_TIMEOUT;
 const AUTH_TIMEOUT: Duration = Duration::from_secs(15);
 const HELLO_DAYS: i64 = 7;
 const MAX_HELLO_SHARDS: usize = 64;
@@ -52,7 +53,7 @@ const MAX_SHARDS_CACHED: usize = 12;
 const RETRY_BACKOFF: [u64; 5] = [2, 5, 15, 30, 60];
 
 /// One running download (a fetch, or the pause before its next retry).
-pub(crate) struct Dl {
+pub struct Dl {
     done: u64,
     total: u64,
     /// Sleeping before a retry: a new `chat_download` replaces it at once.
@@ -62,13 +63,13 @@ pub(crate) struct Dl {
 }
 
 /// The shard cache, locked (`chat_shard`).
-pub(crate) type ShardCache<'c> = MutexGuard<'c, HashMap<(String, String), Shard>>;
+pub type ShardCache<'c> = MutexGuard<'c, HashMap<(String, String), Shard>>;
 
 pub struct ChatCore {
     pub store: ChatStore,
     pub dir: PathBuf,
     hub: OnceCell<Arc<BlobHub>>,
-    pub(crate) shards: Mutex<HashMap<(String, String), Shard>>,
+    pub shards: Mutex<HashMap<(String, String), Shard>>,
     /// Live sessions by the contact's device (a person's several devices may each hold one).
     sessions: Mutex<HashMap<[u8; 32], Arc<Session>>>,
     dialing: Mutex<HashSet<String>>,
@@ -77,32 +78,32 @@ pub struct ChatCore {
     pulling: Mutex<HashSet<(String, String)>>,
     dial_sem: Arc<Semaphore>,
     next_session: AtomicU64,
-    pub(crate) presence: crate::chat::presence::Presence,
+    pub presence: crate::chat::presence::Presence,
     /// When the user here last acted towards a contact (typed in the conversation,
     /// `Node::chat_typing`, or wrote to it): within `wire::idle_close()` of this, sessions with
     /// that contact stay open and carry our presence (consent-based links, 2026-10-17).
     activity: Mutex<HashMap<String, std::time::Instant>>,
     /// Signed recipient delivered/read receipts over this store (M3).
-    pub(crate) receipts: Arc<crate::receipts::store::messages::MessageReceipts>,
+    pub receipts: Arc<receipts_core::store::messages::MessageReceipts>,
     /// This install's device ID (U16; `ProfileV2::device_id`): what every version we write
     /// carries as `dev`.
     device_id: [u8; 32],
     /// Our writer ID: `writer_id(our DID, value)`, the Loro peer id we write chat docs with.
-    pub(crate) wid: u64,
+    pub wid: u64,
     /// Test knob: the next this-many `chat_persist` calls fail, as if the disk were full.
-    pub(crate) fail_writes: std::sync::atomic::AtomicU32,
+    pub fail_writes: std::sync::atomic::AtomicU32,
     /// Test knob: this node's chat clock runs this many ms ahead of the real one (per node,
     /// unlike `P2P_CHAT_CLOCK_MS_OFFSET`).
-    pub(crate) clock_ms: std::sync::atomic::AtomicI64,
+    pub clock_ms: std::sync::atomic::AtomicI64,
     /// With `clock_ms`: the device clock itself is wrong (the live-window and catch-up checks
     /// use it too), not just the time a message is stamped with.
-    pub(crate) clock_wrong: std::sync::atomic::AtomicBool,
+    pub clock_wrong: std::sync::atomic::AtomicBool,
 }
 
 impl ChatCore {
     /// Records local activity towards `did` now. With `throttle`, does nothing (and returns
     /// false) if the last mark is more recent than that.
-    pub(crate) fn mark_active(&self, did: &str, throttle: Option<Duration>) -> bool {
+    pub fn mark_active(&self, did: &str, throttle: Option<Duration>) -> bool {
         let now = std::time::Instant::now();
         let mut m = self.activity.lock();
         if let Some(t) = throttle
@@ -110,19 +111,19 @@ impl ChatCore {
         {
             return false;
         }
-        let window = crate::wire::idle_close();
+        let window = node_runtime::wire::idle_close();
         m.retain(|_, at| now.duration_since(*at) < window);
         m.insert(did.to_string(), now);
         true
     }
 
     /// Whether the user here acted towards `did` within the idle window.
-    pub(crate) fn locally_active(&self, did: &str) -> bool {
-        self.activity.lock().get(did).is_some_and(|at| at.elapsed() < crate::wire::idle_close())
+    pub fn locally_active(&self, did: &str) -> bool {
+        self.activity.lock().get(did).is_some_and(|at| at.elapsed() < node_runtime::wire::idle_close())
     }
 
     /// Asks every session to close (each ends its own loop).
-    pub(crate) fn close_all_sessions(&self) {
+    pub fn close_all_sessions(&self) {
         for s in self.sessions.lock().values() {
             let _ = s.tx.send(Cmd::Close);
         }
@@ -156,19 +157,19 @@ pub struct Session {
     receipt_vv: Mutex<HashMap<String, VersionVector>>,
     hist: Mutex<Option<oneshot::Sender<Vec<HistDay>>>>,
     /// What this contact device last said about itself (presence).
-    pub(crate) presence: loro::awareness::EphemeralStore,
+    pub presence: loro::awareness::EphemeralStore,
 }
 
 impl Session {
     /// Hands `cmd` to the session's loop (dropped if it has ended).
-    pub(crate) fn cmd(&self, cmd: Cmd) {
+    pub fn cmd(&self, cmd: Cmd) {
         let _ = self.tx.send(cmd);
     }
 }
 
 /// `dm/{pair}/{day}` -> day, if it names the conversation `pair`. A contact's session can only
 /// ever name its own conversation, so it can neither request nor push the "You" docs.
-pub(crate) fn doc_day_of(pair: &str, doc: &str) -> Result<String, Error> {
+pub fn doc_day_of(pair: &str, doc: &str) -> Result<String, Error> {
     let rest = doc.strip_prefix("dm/").ok_or_else(|| Error::Protocol("bad doc".into()))?;
     let (p, day) = rest.split_once('/').ok_or_else(|| Error::Protocol("bad doc".into()))?;
     if p != pair || !day_valid(day) {
@@ -221,7 +222,7 @@ fn now_ms() -> i64 {
 }
 
 
-pub(crate) fn merge_vv(into: &mut VersionVector, other: &VersionVector) {
+pub fn merge_vv(into: &mut VersionVector, other: &VersionVector) {
     for (p, c) in other.iter() {
         let cur = into.get(p).copied().unwrap_or(0);
         if *c > cur {

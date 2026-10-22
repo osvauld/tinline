@@ -24,47 +24,47 @@ use loro::awareness::EphemeralStore;
 use parking_lot::Mutex;
 
 use super::engine::{ChatCore, Session};
-use crate::node::Inner;
+use crate::ChatRt;
 
-pub(crate) const HEARTBEAT: Duration = Duration::from_secs(8);
+pub const HEARTBEAT: Duration = Duration::from_secs(8);
 /// Sender clock vs ours: the store drops entries stamped older than this, so it also bounds the
 /// clock skew presence tolerates.
-pub(crate) const TIMEOUT_MS: i64 = 30_000;
+pub const TIMEOUT_MS: i64 = 30_000;
 const MAGIC: &[u8] = b"tp1";
 const KEY: &str = "online";
 /// Our one key encodes to a few dozen bytes; anything much bigger is not presence.
 const MAX_DATAGRAM: usize = 512;
 
 /// Ours (sent) and which contacts we last reported online.
-pub(crate) struct Presence {
+pub struct Presence {
     local: EphemeralStore,
     online: Mutex<HashSet<String>>,
 }
 
 impl Presence {
-    pub(crate) fn new() -> Self {
+    pub fn new() -> Self {
         Self { local: EphemeralStore::new(TIMEOUT_MS), online: Default::default() }
     }
 }
 
 /// What a contact's device told us about itself.
-pub(crate) fn session_store() -> EphemeralStore {
+pub fn session_store() -> EphemeralStore {
     EphemeralStore::new(TIMEOUT_MS)
 }
 
 /// A presence datagram's payload, if `d` is one.
-pub(crate) fn parse(d: &[u8]) -> Option<&[u8]> {
+pub fn parse(d: &[u8]) -> Option<&[u8]> {
     if d.len() > MAX_DATAGRAM {
         return None;
     }
     d.strip_prefix(MAGIC)
 }
 
-impl Inner {
+impl ChatRt {
     /// Refreshes our entry and sends it on `conn`, but only while the user here is active
     /// with `did` (the consent rule above); otherwise sends nothing. Best effort: a lost
     /// datagram is replaced by the next heartbeat.
-    pub(crate) fn presence_send(&self, core: &ChatCore, did: &str, conn: &Connection) {
+    pub fn presence_send(&self, core: &ChatCore, did: &str, conn: &Connection) {
         // A live call counts as activity: keep the window fresh while it lasts.
         if self.in_call_with(did) {
             core.mark_active(did, None);
@@ -78,7 +78,7 @@ impl Inner {
         let _ = conn.send_datagram(Bytes::from(d));
     }
 
-    pub(crate) fn presence_receive(&self, core: &ChatCore, sess: &Session, d: &[u8]) {
+    pub fn presence_receive(&self, core: &ChatCore, sess: &Session, d: &[u8]) {
         let Some(payload) = parse(d) else { return };
         if sess.presence.apply(payload).is_ok() {
             self.presence_update(core, &sess.did);
@@ -87,7 +87,7 @@ impl Inner {
 
     /// Recomputes whether `did` is online (any of its devices with a live entry) and reports a
     /// change.
-    pub(crate) fn presence_update(&self, core: &ChatCore, did: &str) {
+    pub fn presence_update(&self, core: &ChatCore, did: &str) {
         let online = self.chat_sessions_of(core, did).iter().any(|s| {
             s.presence.remove_outdated();
             s.presence.get(KEY).is_some()
@@ -101,7 +101,7 @@ impl Inner {
         }
     }
 
-    pub(crate) fn presence_of(&self, did: &str) -> bool {
+    pub fn presence_of(&self, did: &str) -> bool {
         self.chat_core().is_ok_and(|core| core.presence.online.lock().contains(did))
     }
 }

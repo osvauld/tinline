@@ -2,7 +2,7 @@
 
 use super::*;
 
-impl Inner {
+impl ChatRt {
     // ---- history & compaction ------------------------------------------------------------------------
 
     pub(super) async fn chat_snapshot_blob(self: &Arc<Self>, core: &Arc<ChatCore>, pair: &str, day: &str) -> Result<HistDay, Error> {
@@ -56,7 +56,7 @@ impl Inner {
     }
 
     /// Asks the peer for days older than `before` that we do not hold; returns how many arrived.
-    pub(crate) async fn chat_fetch_history(self: &Arc<Self>, did: &str, before: String) -> Result<u32, Error> {
+    pub async fn chat_fetch_history(self: &Arc<Self>, did: &str, before: String) -> Result<u32, Error> {
         let me = self.me()?;
         let core = self.chat_core()?;
         self.chat_contact(did, false)?;
@@ -68,8 +68,8 @@ impl Inner {
         }
         {
             let s = self.shared.lock();
-            if crate::block::blocked_me(&s.state, did) {
-                return Err(Error::Rejected(crate::BLOCKED.into()));
+            if node_runtime::block::blocked_me(&s.state, did) {
+                return Err(Error::Rejected(node_runtime::BLOCKED.into()));
             }
             if s.state.blocked.contains(did) || !s.state.contacts.iter().any(|c| c.did == did) {
                 return Err(Error::Protocol("not a contact you can ask".into()));
@@ -247,7 +247,7 @@ impl Inner {
     }
 
     /// For tests: `chat_compact` now; how many days are closed (a snapshot blob, no rows).
-    pub(crate) async fn chat_compact_for_test(self: &Arc<Self>) -> Result<u32, Error> {
+    pub async fn chat_compact_for_test(self: &Arc<Self>) -> Result<u32, Error> {
         self.chat_compact().await?;
         let (me, core) = (self.me()?, self.chat_core()?);
         let mut dids: Vec<String> = self.shared.lock().state.contacts.iter().map(|c| c.did.clone()).collect();
@@ -267,7 +267,7 @@ impl Inner {
     // ---- contact removal ---------------------------------------------------------------------------------
 
     /// Ends every chat session with `did` (a block, either way).
-    pub(crate) fn chat_close_sessions(&self, did: &str) {
+    pub fn chat_close_sessions(&self, did: &str) {
         let Ok(core) = self.chat_core() else { return };
         core.sessions.lock().retain(|_, s| {
             let hit = s.did == did;
@@ -279,7 +279,7 @@ impl Inner {
     }
 
     /// Whether `id` is a message of ours to `did` that has not reached them.
-    pub(crate) fn chat_pending(&self, did: &str, id: &str) -> bool {
+    pub fn chat_pending(&self, did: &str, id: &str) -> bool {
         let (Ok(me), Ok(core)) = (self.me(), self.chat_core()) else { return false };
         let pair = pair_id(me.id.did(), did);
         match core.store.mi(&pair, id).ok().flatten() {

@@ -74,7 +74,7 @@ impl Node {
         self.inner.block.signed.lock().insert(did.clone(), 1);
         // The block holds in memory whether or not it reached the disk: act on it either way.
         let saved = self.inner.persist();
-        self.inner.chat_close_sessions(&did);
+        self.inner.chat.chat_close_sessions(&did);
         self.inner.calls_blocked(&did, &notice);
         self.inner.ctx.notice_kick(did);
         self.inner.sink.on_contacts_changed();
@@ -91,7 +91,7 @@ impl Node {
         }
         let saved = self.inner.persist();
         self.inner.ctx.notice_kick(did.clone());
-        self.inner.chat_kick(did);
+        self.inner.chat.chat_kick(did);
         self.inner.sink.on_contacts_changed();
         saved.map_err(Error::from)
     }
@@ -135,7 +135,7 @@ impl Node {
         if !blocked_me(&self.inner.shared.lock().state, &peer_did) {
             return None;
         }
-        self.inner.chat_pending(&peer_did, &message_id).then(|| BLOCKED.to_string())
+        self.inner.chat.chat_pending(&peer_did, &message_id).then(|| BLOCKED.to_string())
     }
 }
 

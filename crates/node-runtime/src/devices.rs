@@ -3,6 +3,12 @@
 use super::*;
 
 impl NodeCtx {
+    /// Another install of this account that is not removed (it may read our blobs).
+    pub fn is_own_device(&self, dev: &[u8; 32]) -> bool {
+        let s = self.shared.lock();
+        s.me.as_ref().is_some_and(|m| m.device != *dev) && s.state.registry.iter().any(|e| e.device == *dev && !e.removed)
+    }
+
     /// The caller's device and relay as of this call, so our next call to them dials straight
     /// there. A device we have not seen before resets `verified`, exactly as when they add us.
     /// A contact whose signed device list we hold is dialled by that list only: a device missing
