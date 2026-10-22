@@ -23,18 +23,19 @@ impl Node {
         ctx.signal.set_sink(sink);
         let search: Arc<search_ix::SearchIx> = Default::default();
         let chat = Arc::new(chat_runtime::ChatRt::new(ctx.clone(), search.clone()));
+        let group = Arc::new(group_runtime::GroupRt::new(ctx.clone(), search.clone()));
         let inner = Arc::new(Inner {
             ctx,
             chat,
             link_events: Mutex::new(None),
             selfsync,
             link: Default::default(),
-            gcall: crate::gcall::net::GcallNet::new(rt.handle().clone()),
-            group: Default::default(),
+            group,
             search,
         });
+        let gcall_host: std::sync::Weak<group_runtime::GroupRt> = Arc::downgrade(&inner.group);
+        inner.group.gcall.install_host(gcall_host);
         let host: std::sync::Weak<Inner> = Arc::downgrade(&inner);
-        inner.gcall.install_host(host.clone());
         inner.ctx.install_hooks(host);
         Ok(Arc::new(Self { inner, rt: Some(rt) }))
     }
@@ -312,7 +313,7 @@ impl Node {
                 // Under the lifecycle lock, so a `start` that is binding right now finishes
                 // first and its endpoint is closed here.
                 let _life = inner.lifecycle.lock().await;
-                inner.gcall_shutdown().await;
+                inner.group.gcall_shutdown().await;
                 inner.close_endpoint().await;
                 inner.shared.lock().forget_session();
                 inner.chat.chat_close().await;

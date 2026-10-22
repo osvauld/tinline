@@ -58,13 +58,13 @@ async fn stale_malformed_unnegotiated_revoked_and_failed_persistence_emit_no_ack
             open: false,
         })
         .unwrap();
-        node.inner.group_own_apply(&[token], true);
+        node.inner.group.group_own_apply(&[token], true);
         let meta_name = format!("group/{gid}/meta");
         let (meta, _) = source
             .own_content_export(&gid, &DocId::Meta, &VersionVector::default())
             .unwrap()
             .unwrap();
-        node.inner
+        node.inner.group
             .group_own_content_apply(me.epoch, &remote, &meta_name, &meta)
             .unwrap();
         let doc = format!("group/{gid}/{day}");

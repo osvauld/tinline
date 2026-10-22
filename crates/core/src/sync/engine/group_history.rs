@@ -84,7 +84,7 @@ impl History {
             };
             if token.invite.is_none()
                 && valid_group(&token.group)
-                && inner.group_own_history_context(&token.group)
+                && inner.group.group_own_history_context(&token.group)
                 && self.scopes.len() < crate::group::own::MAX_OWN_GROUPS
                 && self.scopes.insert(token.group.clone())
             {
@@ -132,7 +132,7 @@ impl History {
         if !self.enabled {
             return Ok(());
         }
-        inner.own_group_admit(me.epoch, remote)?;
+        inner.group.own_group_admit(me.epoch, remote)?;
         let now = Instant::now();
         if let Some(waiting) = self.awaiting.as_mut() {
             if now.duration_since(waiting.sent) >= RETRY {
@@ -177,7 +177,7 @@ impl History {
             let scope = self.current.as_ref().unwrap();
             let message = if !scope.meta_done {
                 let doc = format!("group/{}/meta", scope.gid);
-                let bytes = inner.group_own_local_vv(&doc)?.encode();
+                let bytes = inner.group.group_own_local_vv(&doc)?.encode();
                 if vv(&bytes).is_err() {
                     // A legitimate large frontier needs a scalable protocol;
                     // defer this scope, not account/other-scope sync.
@@ -190,7 +190,7 @@ impl History {
                     vv: bytes,
                 }
             } else if let Some(doc) = self.continue_doc.clone() {
-                let bytes = inner.group_own_local_vv(&doc)?.encode();
+                let bytes = inner.group.group_own_local_vv(&doc)?.encode();
                 if vv(&bytes).is_err() {
                     self.continue_doc = None;
                     self.docs.pop_front();
@@ -202,7 +202,7 @@ impl History {
                     vv: bytes,
                 }
             } else if let Some((doc, goal)) = self.docs.pop_front() {
-                let held = inner.group_own_local_vv(&doc)?;
+                let held = inner.group.group_own_local_vv(&doc)?;
                 if covers(&held, &goal) || vv(&held.encode()).is_err() {
                     continue;
                 }
@@ -233,7 +233,7 @@ impl History {
                     after,
                 }
             };
-            inner.own_group_admit(me.epoch, remote)?;
+            inner.group.own_group_admit(me.epoch, remote)?;
             writer.send(&message).await?;
             self.awaiting = Some(Awaiting { message, sent: now });
             self.next_issue = Some(now + Duration::from_millis(25));
@@ -253,7 +253,7 @@ pub(super) async fn handle(
     if !peer.history.enabled {
         return Err(Error::Protocol("own history was not negotiated".into()));
     }
-    inner.own_group_admit(me.epoch, remote)?;
+    inner.group.own_group_admit(me.epoch, remote)?;
     match message {
         SelfMsg::GroupHistoryChanged { group } => {
             if !valid_group(&group) {
@@ -274,13 +274,13 @@ pub(super) async fn handle(
             {
                 return Err(Error::Protocol("bad own history request".into()));
             }
-            let (days, next, deferred) = match inner.group_own_history_page(
+            let (days, next, deferred) = match inner.group.group_own_history_page(
                 me.epoch,
                 remote,
                 &group,
                 after.as_deref(),
                 PAGE_DAYS,
-            ) {
+            ).map_err(Error::from) {
                 Ok(page) if page.days.iter().all(|(_, bytes)| vv(bytes).is_ok()) => {
                     (page.days, page.next, false)
                 }
@@ -288,7 +288,7 @@ pub(super) async fn handle(
                 Err(Error::Protocol(_)) => (vec![], None, true),
                 Err(e) => return Err(e),
             };
-            inner.own_group_admit(me.epoch, remote)?;
+            inner.group.own_group_admit(me.epoch, remote)?;
             writer
                 .send(&SelfMsg::GroupHistoryPage {
                     request,
@@ -315,7 +315,7 @@ pub(super) async fn handle(
                 writers: 4096,
             };
             let (update, frontier, more, deferred) = match inner
-                .group_own_export_batch(me.epoch, remote, &doc, &theirs, limits)
+                .group.group_own_export_batch(me.epoch, remote, &doc, &theirs, limits).map_err(Error::from)
             {
                 Ok(Some(batch)) => (batch.update, batch.frontier.encode(), batch.more, false),
                 Ok(None) => (vec![], VersionVector::default().encode(), false, false),
@@ -323,7 +323,7 @@ pub(super) async fn handle(
                 Err(e) => return Err(e),
             };
             let sig = crate::chat::wire::sign_batch(&me.profile.device_secret, &doc, &update);
-            inner.own_group_admit(me.epoch, remote)?;
+            inner.group.own_group_admit(me.epoch, remote)?;
             writer
                 .send(&SelfMsg::GroupBatch {
                     request,
@@ -414,14 +414,14 @@ pub(super) async fn handle(
             let planned = vv(&bytes)?;
             if !update.is_empty() {
                 // Imports/owed frontiers must persist before the cache receipt.
-                let accepted = inner.group_own_content_apply(me.epoch, remote, &doc, &update)?;
+                let accepted = inner.group.group_own_content_apply(me.epoch, remote, &doc, &update)?;
                 if !covers(&vv(&accepted)?, &planned) {
                     return Err(Error::Protocol(
                         "own history batch frontier mismatch".into(),
                     ));
                 }
                 let sig = crate::chat::wire::sign_batch(&me.profile.device_secret, &doc, &[]);
-                inner.own_group_admit(me.epoch, remote)?;
+                inner.group.own_group_admit(me.epoch, remote)?;
                 writer
                     .send(&SelfMsg::Sync {
                         doc: doc.clone(),

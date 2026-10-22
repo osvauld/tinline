@@ -6,6 +6,9 @@
 
 use std::sync::{Arc, Weak};
 
+/// The own-doc dirty mark that means "our group list or a group's hosts may have changed" (G2).
+pub const GROUPS_MARK: &str = "!groups";
+
 use parking_lot::Mutex;
 use tokio::sync::{Notify, watch};
 

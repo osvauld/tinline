@@ -49,7 +49,7 @@ impl Receipts {
             };
             if token.invite.is_none()
                 && group_documents::parse_doc(&format!("group/{}/meta", token.group)).is_some()
-                && inner.group_own_history_context(&token.group)
+                && inner.group.group_own_history_context(&token.group)
                 && self.scopes.len() < crate::group::own::MAX_OWN_GROUPS
                 && self.scopes.insert(token.group.clone())
             {
@@ -92,7 +92,7 @@ impl Receipts {
         if !self.enabled {
             return Ok(());
         }
-        inner.own_group_admit(me.epoch, remote)?;
+        inner.group.own_group_admit(me.epoch, remote)?;
         let now = Instant::now();
         if let Some(w) = self.waiting.as_mut() {
             if now.duration_since(w.sent) >= RETRY {
@@ -126,7 +126,7 @@ impl Receipts {
             .checked_add(1)
             .ok_or_else(|| Error::Protocol("receipt request ID exhausted".into()))?;
         let request = self.serial;
-        inner.own_group_admit(me.epoch, remote)?;
+        inner.group.own_group_admit(me.epoch, remote)?;
         writer
             .send(&SelfMsg::GroupReceiptGet {
                 request,
@@ -156,7 +156,7 @@ pub(super) async fn handle(
     if !peer.receipts.enabled {
         return Err(Error::Protocol("group receipts were not negotiated".into()));
     }
-    inner.own_group_admit(me.epoch, remote)?;
+    inner.group.own_group_admit(me.epoch, remote)?;
     match message {
         SelfMsg::GroupReceiptGet {
             request,
@@ -169,9 +169,9 @@ pub(super) async fn handle(
             {
                 return Err(Error::Protocol("bad receipt request".into()));
             }
-            let proofs = inner.own_receipt_page(me.epoch, remote, &group, after.as_deref())?;
+            let proofs = inner.group.own_receipt_page(me.epoch, remote, &group, after.as_deref())?;
             let next = proofs.last().map(|(_, bytes)| digest(bytes));
-            inner.own_group_admit(me.epoch, remote)?;
+            inner.group.own_group_admit(me.epoch, remote)?;
             writer
                 .send(&SelfMsg::GroupReceiptPage {
                     request,
@@ -213,7 +213,7 @@ pub(super) async fn handle(
                 if gid != group {
                     return Err(Error::Protocol("foreign receipt document".into()));
                 }
-                match inner.own_receipt_accept(me.epoch, remote, &name, &bytes) {
+                match inner.group.own_receipt_accept(me.epoch, remote, &name, &bytes) {
                     Ok(changed) => {
                         if changed {
                             inner.sync_bump();
@@ -223,10 +223,10 @@ pub(super) async fn handle(
                     // rows in later passes after metadata catch-up/regrant. No
                     // pending payload queue or fabricated receipt/Ack is kept.
                     Err(AttestationError::PendingMetadata | AttestationError::Authority) => {}
-                    Err(e) => return Err(protocol_error(e)),
+                    Err(e) => return Err(protocol_error(e).into()),
                 }
             }
-            inner.own_group_admit(me.epoch, remote)?;
+            inner.group.own_group_admit(me.epoch, remote)?;
             peer.receipts.waiting = None;
             if let Some(id) = next {
                 peer.receipts.queue.push_back((group, Some(id)));

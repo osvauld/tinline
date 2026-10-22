@@ -37,23 +37,23 @@ impl Node {
     /// An admin permits (`active`) or withdraws the permit of device `device_id` of `did`.
     fn host_permit(&self, group_id: String, did: String, device_id: String, active: bool, kind: HostKind) -> Result<(), Error> {
         let dev = parse_dev(&device_id)?;
-        let core = self.inner.group_core()?;
-        self.inner.group_admin_check(&core, &group_id)?;
+        let core = self.inner.group.group_core()?;
+        self.inner.group.group_admin_check(&core, &group_id)?;
         if active && !core.groups.lock().get(&group_id).is_some_and(|l| l.state.is_member(&did)) {
             return Err(Error::Rejected(kind.must_be_members().into()));
         }
-        self.inner.group_write(&core, &group_id, kind.permit(did, dev, active)).map(|_| ())
+        Ok(self.inner.group.group_write(&core, &group_id, kind.permit(did, dev, active)).map(|_| ())?)
     }
 
     /// This device agrees to host (or stops).
     fn host_accept(&self, group_id: String, accept: bool, kind: HostKind) -> Result<(), Error> {
         let inner = self.inner.clone();
-        self.block_on(async move {
-            let core = inner.group_core()?;
-            inner.group_member_check(&core, &group_id)?;
-            inner.group_ensure(&core).await?;
-            inner.group_write(&core, &group_id, kind.accept(accept)).map(|_| ())
-        })?
+        Ok(self.block_on(async move {
+            let core = inner.group.group_core()?;
+            inner.group.group_member_check(&core, &group_id)?;
+            inner.group.group_ensure(&core).await?;
+            inner.group.group_write(&core, &group_id, kind.accept(accept)).map(|_| ())
+        })??)
     }
 }
 

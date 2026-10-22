@@ -1,7 +1,11 @@
-//! The DTOs and the event trait of the group API.
+//! The group API records, declared to UniFFI (the runtime's, `group_runtime::api`, are plain),
+//! and the app's event callback.
 
+use std::sync::Arc;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, uniffi::Enum)]
+pub use group_runtime::api::*;
+
+#[uniffi::remote(Enum)]
 pub enum GroupRole {
     Owner,
     Admin,
@@ -12,7 +16,7 @@ pub enum GroupRole {
     Left,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, uniffi::Enum)]
+#[uniffi::remote(Enum)]
 pub enum GroupItemKind {
     Post,
     /// System lines, "about" `subject_did`.
@@ -28,14 +32,14 @@ pub enum GroupItemKind {
 /// For our own posts: `Waiting` = only on this device ("Waiting for a host"); `Delivered` = a
 /// host acknowledged holding it; `Failed` = the hosts refuse it and this device stopped sending
 /// it (`GroupMessage::failure` has the words). Everything else is `Delivered`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, uniffi::Enum)]
+#[uniffi::remote(Enum)]
 pub enum GroupDelivery {
     Waiting,
     Delivered,
     Failed,
 }
 
-#[derive(Debug, Clone, PartialEq, uniffi::Record)]
+#[uniffi::remote(Record)]
 pub struct GroupMessage {
     pub id: String,
     pub group_id: String,
@@ -62,7 +66,7 @@ pub struct GroupMessage {
 }
 
 /// Where a post's picture is on this device.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, uniffi::Enum)]
+#[uniffi::remote(Enum)]
 pub enum GroupImageState {
     /// Here: `Node::group_image_path` opens it.
     Ready,
@@ -76,7 +80,7 @@ pub enum GroupImageState {
 
 /// A post's picture: its shown size (draw the box at this shape before it arrives), the 4x3 RGB
 /// colour grid for the placeholder, and where it is.
-#[derive(Debug, Clone, PartialEq, uniffi::Record)]
+#[uniffi::remote(Record)]
 pub struct GroupImage {
     pub width: u32,
     pub height: u32,
@@ -88,7 +92,7 @@ pub struct GroupImage {
     pub state: GroupImageState,
 }
 
-#[derive(Debug, Clone, PartialEq, uniffi::Record)]
+#[uniffi::remote(Record)]
 pub struct GroupPage {
     /// Oldest first.
     pub messages: Vec<GroupMessage>,
@@ -96,7 +100,7 @@ pub struct GroupPage {
     pub older: Option<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, uniffi::Record)]
+#[uniffi::remote(Record)]
 pub struct GroupMember {
     pub did: String,
     pub name: String,
@@ -113,7 +117,7 @@ pub struct GroupMember {
     pub device_ids: Vec<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, uniffi::Record)]
+#[uniffi::remote(Record)]
 pub struct GroupHost {
     pub did: String,
     pub name: String,
@@ -124,14 +128,14 @@ pub struct GroupHost {
     pub online: bool,
 }
 
-#[derive(Debug, Clone, PartialEq, uniffi::Record)]
+#[uniffi::remote(Record)]
 pub struct GroupFlag {
     pub by_did: String,
     pub by_name: String,
     pub at: u64,
 }
 
-#[derive(Debug, Clone, PartialEq, uniffi::Record)]
+#[uniffi::remote(Record)]
 pub struct GroupRemoval {
     /// When the 3rd flag was made.
     pub at: u64,
@@ -139,7 +143,7 @@ pub struct GroupRemoval {
     pub flags: Vec<GroupFlag>,
 }
 
-#[derive(Debug, Clone, PartialEq, uniffi::Record)]
+#[uniffi::remote(Record)]
 pub struct GroupDetail {
     pub id: String,
     pub name: String,
@@ -175,7 +179,7 @@ pub struct GroupDetail {
     pub admins_only: bool,
 }
 
-#[derive(Debug, Clone, PartialEq, uniffi::Record)]
+#[uniffi::remote(Record)]
 pub struct GroupSummary {
     pub id: String,
     pub name: String,
@@ -195,7 +199,7 @@ pub struct GroupSummary {
     pub admins_only: bool,
 }
 
-#[derive(Debug, Clone, PartialEq, uniffi::Record)]
+#[uniffi::remote(Record)]
 pub struct GroupInvitePeek {
     pub group_id: String,
     pub name: String,
@@ -211,7 +215,7 @@ pub struct GroupInvitePeek {
 }
 
 /// A member online in an open group (`Node::group_online`, public group §3).
-#[derive(Debug, Clone, PartialEq, uniffi::Record)]
+#[uniffi::remote(Record)]
 pub struct OnlineMember {
     pub did: String,
     /// The name the member shows the group (its join record).
@@ -232,4 +236,25 @@ pub trait GroupEvents: Send + Sync {
     /// The picture of post `message_id` changed state (arrived, failed, was asked for): re-read
     /// the message's `image` and `group_image_path`.
     fn on_group_image(&self, group_id: String, message_id: String);
+}
+
+/// Hands the runtime's events to the app's `GroupEvents`.
+pub(crate) struct GroupEventsAdapter(pub(crate) Arc<dyn GroupEvents>);
+
+impl group_runtime::api::GroupSink for GroupEventsAdapter {
+    fn on_group_message(&self, message: GroupMessage) {
+        self.0.on_group_message(message);
+    }
+
+    fn on_group_changed(&self, group_id: String) {
+        self.0.on_group_changed(group_id);
+    }
+
+    fn on_group_presence(&self, group_id: String) {
+        self.0.on_group_presence(group_id);
+    }
+
+    fn on_group_image(&self, group_id: String, message_id: String) {
+        self.0.on_group_image(group_id, message_id);
+    }
 }

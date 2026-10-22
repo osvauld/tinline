@@ -87,11 +87,11 @@ impl Inner {
     /// Microphone to the active 1:1 call, else to the group call.
     pub(crate) fn push_mic(&self, pcm: &[i16]) {
         if !self.push_call_mic(pcm) {
-            self.gcall.push_mic(pcm);
+            self.group.gcall.push_mic(pcm);
         }
     }
 
     pub(crate) fn pull_speaker(&self) -> Vec<i16> {
-        self.pull_call_speaker().unwrap_or_else(|| self.gcall.pull_speaker())
+        self.pull_call_speaker().unwrap_or_else(|| self.group.gcall.pull_speaker())
     }
 }

@@ -20,7 +20,7 @@ async fn session(
     legacy: bool,
 ) -> usize {
     let me = node.inner.me().unwrap();
-    let receiver = node.inner.group_core().unwrap();
+    let receiver = node.inner.group.group_core().unwrap();
     let receiving = async {
         let incoming = server
             .accept()

@@ -504,10 +504,13 @@ being re-wrapped**: an `InCall` must not turn into `Protocol("in call")`.
 **Order:** W1 and W2 now, in parallel; they share no files except `crates/core/Cargo.toml`.
 Status (2026-10-22): W1, W2 and W3 are merged into `integrate/runtime-split`. So is W4
 (d2c0b6f8): `SearchIx` builds on `node-runtime`, and `PostDiff` moved to `group-core`. W5
-(7d7d5cf9) is in progress: `ChatRt` holds the chat engine and profiles, the plain receipt
+(7d7d5cf9) is merged too: `ChatRt` holds the chat engine and profiles, the plain receipt
 records are in `receipts-core::status`, `OwnDocSink::in_session` was added, and
 `ChatRt::chat_open` returns whether it opened the store so that p2pcore reconciles search.
-W6 is next. See `runtime-split-HANDOFF.md`.
+W6 (`refactor/rt-w6-group`): `GroupRt` in `crates/group-runtime` holds the group engine,
+calls (it is the `GcallHost` now), invitations, requests, codes, own docs, attestation and
+member receipts. p2pcore keeps the remote records, the `*Events` callbacks and their
+adapters. W7 is next. See `runtime-split-HANDOFF.md`.
 
 After public-group merges: W3, then W4 and W5 in parallel, then W6, then W7. W3 is the
 dependency for everything after it.

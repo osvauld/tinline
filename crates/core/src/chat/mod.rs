@@ -8,4 +8,3 @@ pub use chat_runtime::chat::{own, wire};
 
 pub mod api;
 pub mod store;
-pub mod photo;

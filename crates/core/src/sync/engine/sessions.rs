@@ -387,7 +387,7 @@ impl Inner {
                                 if !update.is_empty() {
                                     // Error ends the session so transient persistence failures
                                     // are retried; never ack a rejected or unpersisted import.
-                                    let accepted = self.group_own_content_apply(epoch, &remote, &doc, &update)?;
+                                    let accepted = self.group.group_own_content_apply(epoch, &remote, &doc, &update)?;
                                     let sig = crate::chat::wire::sign_batch(&me.profile.device_secret, &doc, &[]);
                                     writer.send(&SelfMsg::Sync { doc: doc.clone(), vv: accepted, update: Vec::new(), sig }).await?;
                                 }
@@ -438,8 +438,8 @@ impl Inner {
                             if groups.len() > crate::group::own::MAX_OWN_GROUPS {
                                 return Err(Error::Protocol("too many groups".into()));
                             }
-                            self.own_group_admit(epoch, &remote)?;
-                            self.group_own_apply(&groups, peer.group_contents);
+                            self.group.own_group_admit(epoch, &remote)?;
+                            self.group.group_own_apply(&groups, peer.group_contents);
                             if peer.history.enabled { peer.history.offer(&self, &groups); }
                             if peer.receipts.enabled { peer.receipts.offer(&self, &groups); }
                         }
@@ -447,7 +447,7 @@ impl Inner {
                             if rows.len() > crate::group::invitations::MAX_OWN_INVITATIONS {
                                 return Err(Error::Protocol("too many invitations".into()));
                             }
-                            self.group_own_invitations_apply(&rows);
+                            self.group.group_own_invitations_apply(&rows);
                         }
                         SelfMsg::Unlinked => {
                             self.clone().remove_self_account(epoch).await;
