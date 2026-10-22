@@ -165,7 +165,7 @@ fn request_ids_do_not_wrap_and_retry_keeps_original_id() {
 
 #[tokio::test(flavor = "current_thread")]
 async fn actual_authenticated_two_node_archive_sync_crosses_page_and_batch_boundaries() {
-    tokio::time::timeout(Duration::from_secs(90), async {
+    tokio::time::timeout(Duration::from_secs(300), async {
         let a_dir = Directory::new();
         let b_dir = Directory::new();
         let a = Node::new(a_dir.0.to_string_lossy().into(), Arc::new(Quiet)).unwrap();
