@@ -216,6 +216,9 @@ impl GroupCore {
             .collect();
         note_posts(meta, &self.did, &shown);
         meta.owed_days.insert(day.clone());
+        // Our failed posts of this day ride along now (an upload carries every earlier op of
+        // ours): they are no longer failed (`admit::fail_refused_posts`).
+        meta.failed_posts.retain(|_, f| f.day != day);
         if vis == Vis::Pending {
             meta.pending_days.insert(day.clone());
         }

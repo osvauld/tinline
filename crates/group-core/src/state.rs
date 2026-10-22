@@ -249,6 +249,15 @@ pub fn post_visible(st: &GroupState, author: &str, seen: &[(u64, i32)]) -> Vis {
     if member && !flagged && !muted { Vis::Visible } else { Vis::Hidden }
 }
 
+/// Whether a host refuses `author`'s post with frontier `seen` uploaded by member `uploader`
+/// (judged by `st`, the state now; public group §1): admins-only is on, neither the author nor
+/// the uploader is an admin, and the rules would show the post (`seen` is the author's claim,
+/// so a stale one could make a post written after the switch show). A member applies the same
+/// test to what it uploads, so it never sends what its host would refuse.
+pub fn refused_admins_only(st: &GroupState, uploader: &str, author: &str, seen: &[(u64, i32)]) -> bool {
+    st.admins_only && !st.is_admin(author) && !st.is_admin(uploader) && post_visible(st, author, seen) != Vis::Hidden
+}
+
 /// The conversation line of a post; `before_removal` is its author's removal now.
 pub fn post_item(e: &Entry, st: &GroupState) -> Option<Item> {
     let Body::Post { text, reply_to } = &e.rec.body else { return None };

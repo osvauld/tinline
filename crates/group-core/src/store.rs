@@ -134,6 +134,21 @@ pub struct GroupMeta {
     /// This is local bookkeeping, not a membership or destination receipt.
     #[serde(default)]
     pub own_owed_meta: Vec<u8>,
+    /// Posts of ours (this device's writer) that will never be uploaded, by post id: a host
+    /// would refuse them (public group §1, admins-only). Local only; shown to us as failed.
+    #[serde(default)]
+    pub failed_posts: std::collections::BTreeMap<String, FailedPost>,
+}
+
+/// One post of ours marked failed (`GroupMeta::failed_posts`).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct FailedPost {
+    /// Its day doc and position there (what an upload leaves out).
+    pub day: String,
+    pub peer: u64,
+    pub counter: i32,
+    /// Why, in the words the author sees.
+    pub reason: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]

@@ -209,6 +209,62 @@ fn stale_frontier_post_refused_in_admins_only() {
     });
 }
 
+// KIND: acceptance (public group, follow-up Fix B) — an honest member posts while offline, the
+// owner turns admins-only on meanwhile, the member comes back: the hosts would refuse its post,
+// so the member marks it failed ("Not posted: only admins post here"), keeps it visible to
+// itself and never uploads it; nobody else gets it, and the member keeps syncing (it gets a
+// later admin post) on a session the host keeps open (at most one refusal, no closes).
+#[test]
+fn offline_post_refused_by_admins_only_fails_and_sync_goes_on() {
+    let o = peer("af-o");
+    let a = peer("af-a");
+    let b = peer("af-b");
+    let g = group_with(&o, &[&a, &b]);
+    a.node.stop();
+    std::thread::sleep(std::time::Duration::from_secs(1));
+    let m = a
+        .node
+        .group_post(g.clone(), "written offline".into(), None)
+        .unwrap();
+    assert_eq!(m.delivery, GroupDelivery::Waiting);
+    assert_eq!(a.node.group_post_failure(g.clone(), m.id.clone()).unwrap(), None);
+    o.node.group_set_admins_only(g.clone(), true).unwrap();
+    online(&a.node);
+    eventually(WAIT, "a's post is marked failed", || {
+        a.node.group_post_failure(g.clone(), m.id.clone()).unwrap().as_deref()
+            == Some("Not posted: only admins post here")
+    });
+    assert!(has_post(&a, &g, &a.did, "written offline"), "the author still sees it");
+    o.node
+        .group_post(g.clone(), "after the switch".into(), None)
+        .unwrap();
+    eventually(WAIT, "a keeps syncing", || {
+        has_post(&a, &g, &o.did, "after the switch")
+    });
+    eventually(WAIT, "b gets the admin post", || {
+        has_post(&b, &g, &o.did, "after the switch")
+    });
+    assert!(
+        !within(5, || has_post(&o, &g, &a.did, "written offline")
+            || has_post(&b, &g, &a.did, "written offline")),
+        "the failed post is never uploaded"
+    );
+    assert!(connected_to(&a, &g, &o.did), "the session stays up");
+    let refusals = o
+        .logs
+        .lock()
+        .unwrap()
+        .iter()
+        .filter(|l| l.contains("refused an update from") && l.contains(a.did.as_str()))
+        .count();
+    assert!(refusals <= 1, "no repeated refusals ({refusals})");
+    assert_eq!(
+        a.node.group_post_failure(g.clone(), m.id.clone()).unwrap().as_deref(),
+        Some("Not posted: only admins post here"),
+        "still failed"
+    );
+}
+
 // KIND: acceptance (public group, review finding 3) — a member cannot add identities: an
 // `OpenJoin` of a throwaway DID it uploads is refused by the host, whether the group is closed
 // (with a frontier naming the old `Open{true}`, so the record itself would count) or open.
