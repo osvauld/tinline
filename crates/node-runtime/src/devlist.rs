@@ -197,7 +197,7 @@ impl NodeCtx {
                         }
                         same
                     };
-                    let _ = this.persist_async(me.epoch).await;
+                    this.persist_logged(me.epoch).await;
                     if matches!(o, Outcome::Taken) {
                         this.log(format!("device list delivered to {did}"));
                         this.touched(me.epoch, &did);

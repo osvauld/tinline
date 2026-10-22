@@ -270,7 +270,7 @@ impl NodeCtx {
                             }
                         }
                     }
-                    let _ = this.persist_async(me.epoch).await;
+                    this.persist_logged(me.epoch).await;
                     this.log(format!("tokens delivered to {did}"));
                     round = 0;
                     continue;

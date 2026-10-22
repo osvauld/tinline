@@ -22,7 +22,7 @@ use super::engine::GroupCore;
 use super::mail::{self, Letter, SignedMail};
 use crate::Error;
 use crate::GroupRt;
-use node_runtime::{now, now_ms};
+use node_runtime::{OrLog, OrLogFlat, now, now_ms};
 
 /// How long the one-time ticket in an acceptance stays good (PROVISIONAL).
 pub const REQ_TICKET_TTL: u64 = 7 * 24 * 3600;
@@ -135,8 +135,15 @@ impl GroupRt {
                     return;
                 }
                 let id = hex::encode(req);
-                if core.store.req(&id).ok().flatten().is_some() {
-                    return;
+                // A read error must not look like "no such request": saving a fresh Pending row
+                // would overwrite one the user already answered. Refuse; the sender can ask again.
+                match core.store.req(&id) {
+                    Ok(None) => {}
+                    Ok(Some(_)) => return,
+                    Err(e) => {
+                        tracing::warn!("chat request not stored (reading requests failed): {e}");
+                        return;
+                    }
                 }
                 if self.shared.lock().state.blocked.contains(&m.from) {
                     // P5: refused with a notice; never shown here.
@@ -152,7 +159,7 @@ impl GroupRt {
                 self.group_req_save(core, &row);
             }
             Letter::Accept { req, ticket } => {
-                let Some(mut row) = core.store.req(&hex::encode(req)).ok().flatten() else { return };
+                let Some(mut row) = core.store.req(&hex::encode(req)).or_log_flat("reading a chat request") else { return };
                 if !row.outgoing || row.peer != m.from || row.group != gid || row.state != ReqState::Pending {
                     return;
                 }
@@ -167,7 +174,7 @@ impl GroupRt {
                 self.group_req_add(core.clone(), row);
             }
             Letter::Decline { req, blocked } => {
-                let Some(mut row) = core.store.req(&hex::encode(req)).ok().flatten() else { return };
+                let Some(mut row) = core.store.req(&hex::encode(req)).or_log_flat("reading a chat request") else { return };
                 if !row.outgoing || row.peer != m.from || row.state != ReqState::Pending {
                     return;
                 }
@@ -181,7 +188,8 @@ impl GroupRt {
     fn group_req_add(self: &Arc<Self>, core: Arc<GroupCore>, mut row: ReqRow) {
         let Some(ticket) = row.ticket.clone() else { return };
         row.next_try = now_ms() + ADD_RETRY_MS;
-        let _ = core.store.put_req(&row);
+        // A failed write loses the retry stamp: this attempt still runs, the next tick sees the old one.
+        core.store.put_req(&row).or_log("saving the chat request retry time");
         let this = self.clone();
         self.handle.spawn(async move {
             match this.ctx.clone().add_contact_from(ticket, node_runtime::caps::ContactOrigin::GroupRequest).await {

@@ -241,7 +241,7 @@ impl NodeCtx {
                 s.state.welcome_outbox.remove(did);
             }
         }
-        let _ = self.persist_async(epoch).await;
+        self.persist_logged(epoch).await;
         self.log(format!("{what}: {did}"));
     }
 

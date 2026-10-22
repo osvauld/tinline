@@ -6,7 +6,7 @@ impl ChatRt {
     // ---- reading -----------------------------------------------------------------------------------
 
     pub(super) fn chat_attachment(&self, core: &ChatCore, f: &FileRef, outgoing: bool) -> Attachment {
-        let info = core.store.blob(&f.hash).ok().flatten();
+        let info = core.store.blob(&f.hash).or_log_flat("reading a blob row");
         let dl = core.downloading.lock().get(&f.hash).map(|d| (d.done, d.total));
         // Our own message sent from another of our devices has no bytes here until fetched.
         let (state, transferred) = match (&info, dl, outgoing) {
@@ -35,8 +35,17 @@ impl ChatRt {
     /// Two ticks once the contact holds the change that created our message (`mo`: the writer
     /// ID it was created under, here or on another of our devices, and the op count after it).
     pub(super) fn chat_delivery(core: &ChatCore, pair: &str, day: &str, id: &str) -> DeliveryState {
-        let Some((peer, c)) = core.store.mo(pair, day, id).ok().flatten() else { return DeliveryState::Delivered };
-        let ack = core.store.ack(pair, day).ok().flatten().and_then(|b| decode_vv(&b).ok()).and_then(|v| v.get(&peer).copied()).unwrap_or(0);
+        let (peer, c) = match core.store.mo(pair, day, id) {
+            Ok(Some(mo)) => mo,
+            // No counter here: written on another of our devices, so it reached this one.
+            Ok(None) => return DeliveryState::Delivered,
+            // A failed read is not a delivery: show the single tick rather than two.
+            Err(e) => {
+                tracing::warn!("reading the delivery counter: {e}");
+                return DeliveryState::Pending;
+            }
+        };
+        let ack = core.store.ack(pair, day).or_log_flat("reading the delivery ack").and_then(|b| decode_vv(&b).ok()).and_then(|v| v.get(&peer).copied()).unwrap_or(0);
         if c > ack { DeliveryState::Pending } else { DeliveryState::Delivered }
     }
 
@@ -72,7 +81,7 @@ impl ChatRt {
         let last_id = conv.last.as_ref().map(|l| l.id.clone());
         let (last_outgoing, last_delivery, last_activity, preview) = match &conv.last {
             Some(l) => {
-                let delivery = match core.store.mi(&pair, &l.id).ok().flatten() {
+                let delivery = match core.store.mi(&pair, &l.id).or_log_flat("reading the message index") {
                     Some(day) if l.outgoing && !is_self => Self::chat_delivery(core, &pair, &day, &l.id),
                     _ => DeliveryState::Delivered,
                 };

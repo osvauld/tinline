@@ -157,7 +157,7 @@ impl ChatRt {
             if out.len() >= MAX_CLOSED_READ_DAYS || seen >= MAX_READ_VERSIONS {
                 break;
             }
-            let closed = core.store.shard_meta(pair, &day).ok().flatten().is_some_and(|m| m.closed.is_some());
+            let closed = core.store.shard_meta(pair, &day).or_log_flat("reading a shard row").is_some_and(|m| m.closed.is_some());
             if !closed || core.store.shard_rows(pair, &day).map(|r| r.0.is_some()).unwrap_or(true) {
                 continue;
             }
@@ -331,7 +331,7 @@ impl ChatRt {
             return;
         }
         let msgs = match self.chat_shard(core, pair, day).await {
-            Ok(shards) => shards.get(&(pair.to_string(), day.to_string())).and_then(|s| s.messages().ok()),
+            Ok(shards) => shards.get(&(pair.to_string(), day.to_string())).and_then(|s| s.messages().or_log("reading a message shard")),
             Err(_) => None,
         };
         let doc = doc_name(pair, day);

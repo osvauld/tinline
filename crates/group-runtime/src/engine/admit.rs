@@ -113,7 +113,7 @@ impl GroupCore {
         }
         let mut next = meta.clone();
         for day in &meta.owed_days {
-            let acks: Vec<VersionVector> = self.store.acks_day(gid, day).unwrap_or_default().iter().filter_map(|(_, v)| decode_vv(v).ok()).collect();
+            let acks: Vec<VersionVector> = self.store.acks_day(gid, day).or_log_default("reading the day acks").iter().filter_map(|(_, v)| decode_vv(v).ok()).collect();
             let Ok(shard) = shards.get(&self.store, gid, self.wid, day, state) else { continue };
             let mut owed = false;
             for r in &shard.rows {

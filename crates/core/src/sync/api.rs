@@ -210,7 +210,15 @@ impl Node {
                     e.removed = true;
                 }
             }
-            let _ = self.inner.persist_for(Some(me.epoch));
+            // The others are told only once "removed" is on disk: otherwise we would reload
+            // un-removed while they have already dropped us.
+            if let Err(e) = self.inner.persist_for(Some(me.epoch)) {
+                if let Some(e) = self.inner.shared.lock().state.registry.iter_mut().find(|e| e.device == dev) {
+                    e.removed = false;
+                }
+                self.inner.sync.selfsync.leaving.store(false, std::sync::atomic::Ordering::SeqCst);
+                return Err(e.into());
+            }
             self.inner.sync.wait_pushed(std::time::Duration::from_secs(5));
             let inner = self.inner.clone();
             let epoch = me.epoch;

@@ -1,6 +1,7 @@
 //! Account and call document persistence and linked-device registry updates.
 
 use super::*;
+use node_runtime::OrLog;
 
 impl SyncRt {
     /// A session with `device` ends with nothing in flight: it holds everything up to
@@ -107,7 +108,7 @@ impl SyncRt {
             (ch, s.acct.as_ref().and_then(|a| a.backing.clone()))
         };
         if let (Some(l), Some(Backing::Sealed(db))) = (&ch.label, &state_backing) {
-            let _ = node_runtime::store::save_label(db, l);
+            node_runtime::store::save_label(db, l).or_log("saving the device label");
         }
         self.persist_for(Some(epoch))?;
         self.save_doc();
@@ -171,7 +172,7 @@ impl SyncRt {
         };
         self.save_doc();
         if changed {
-            let _ = self.history().save();
+            self.history().save().or_log("saving call history");
             if let Some(ev) = self.link_events() {
                 ev.on_history_changed();
             }
@@ -250,7 +251,9 @@ impl SyncRt {
             }
         };
         if added {
-            let _ = self.persist_for(Some(epoch));
+            // A failed write is logged; the device is in memory and the next change or tick
+            // writes the registry again.
+            self.persist_for(Some(epoch)).or_log("persisting the new own device");
             self.ctx.devices_changed();
             if let Some(ev) = self.link_events() {
                 ev.on_devices_changed();

@@ -324,27 +324,28 @@ impl GroupRt {
                 {
                     live.meta.joining = None;
                     live.meta.open_join = false;
-                    let _ = core.store.put_meta(gid, &live.meta);
+                    core.store.put_meta(gid, &live.meta).or_log("saving the finished join state");
                 }
                 return;
             }
             // The flag is cleared before the write (so a concurrent call does not write twice)
-            // and put back if the write fails (so it is tried again).
+            // and put back if the write fails (so it is tried again). If saving the cleared flag
+            // fails, the stored copy still has it, which a restart also retries.
             if let Some(b) = live.meta.joining.take() {
-                let _ = core.store.put_meta(gid, &live.meta);
+                core.store.put_meta(gid, &live.meta).or_log("saving the join state (cleared)");
                 match cryptography::codec::from_bytes::<SignedInvite>(&b, node_runtime::store::MAX_ROW) {
                     Ok(i) => How::Invite(i, b),
                     Err(_) => return,
                 }
             } else if live.meta.open_join && live.state.open {
                 live.meta.open_join = false;
-                let _ = core.store.put_meta(gid, &live.meta);
+                core.store.put_meta(gid, &live.meta).or_log("saving the open-join state (cleared)");
                 How::Open
             } else if live.meta.open_join && caught_up {
                 // Closed before our `OpenJoin` was written: it would not count, and a host refuses
                 // it. Stop here; `group_join` reports the refusal (and forgets the group).
                 live.meta.open_join = false;
-                let _ = core.store.put_meta(gid, &live.meta);
+                core.store.put_meta(gid, &live.meta).or_log("saving the open-join state (refused)");
                 drop(groups);
                 core.refusals
                     .lock()
@@ -374,7 +375,9 @@ impl GroupRt {
                         Some(b) => live.meta.joining = Some(b),
                         None => live.meta.open_join = true,
                     }
-                    let _ = core.store.put_meta(gid, &live.meta);
+                    // The flag is back in memory, so this run retries; if the save fails the
+                    // stored copy may lack it and a restart would not.
+                    core.store.put_meta(gid, &live.meta).or_log("saving the restored join state");
                 }
             }
         }

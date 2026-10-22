@@ -91,3 +91,39 @@ pub fn grant_outlives(old: &proto::SignedGrant, new: &proto::SignedGrant, issuer
     let old_exp = old.redeem(&e, &proto::Unrecorded).map_or(0, |g| g.exp_ms);
     new.exp_ms > old_exp
 }
+
+/// Turns a failed read or write into a warning instead of silence, for call sites that cannot
+/// return the error. The result is the value, or `None` / the default when it failed.
+pub trait OrLog<T> {
+    /// `Some(value)` on success (`None` for a missing value), `None` after logging on `Err`.
+    fn or_log(self, what: &str) -> Option<T>;
+    /// The value, or `T::default()` after logging on `Err`.
+    fn or_log_default(self, what: &str) -> T
+    where
+        T: Default;
+}
+
+impl<T, E: std::fmt::Display> OrLog<T> for Result<T, E> {
+    fn or_log(self, what: &str) -> Option<T> {
+        self.map_err(|e| tracing::warn!("{what}: {e}")).ok()
+    }
+
+    fn or_log_default(self, what: &str) -> T
+    where
+        T: Default,
+    {
+        self.or_log(what).unwrap_or_default()
+    }
+}
+
+/// `Result<Option<T>, E>` flattened: an absent value and a failed read both give `None`, and
+/// only the failure is logged.
+pub trait OrLogFlat<T> {
+    fn or_log_flat(self, what: &str) -> Option<T>;
+}
+
+impl<T, E: std::fmt::Display> OrLogFlat<T> for Result<Option<T>, E> {
+    fn or_log_flat(self, what: &str) -> Option<T> {
+        self.or_log(what).flatten()
+    }
+}
