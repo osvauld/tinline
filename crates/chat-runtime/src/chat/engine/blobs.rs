@@ -273,7 +273,7 @@ impl ChatRt {
             };
             let (c2, did2, h2) = (core.clone(), did.to_string(), hash_hex.to_string());
             let this = self.clone();
-            let last = Arc::new(Mutex::new(std::time::Instant::now() - Duration::from_secs(1)));
+            let last = Arc::new(Mutex::new(std::time::Instant::now().checked_sub(Duration::from_secs(1)).unwrap_or_else(std::time::Instant::now)));
             let r = hub
                 .fetch(conn, hash, total, move |done, tot| {
                     if let Some(e) = c2.downloading.lock().get_mut(&h2) {

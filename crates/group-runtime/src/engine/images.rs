@@ -653,7 +653,7 @@ impl GroupRt {
         let mut want: BTreeSet<String> = BTreeSet::new();
         for r in rows {
             // A post sits in the day doc of its time or a neighbouring one (an hour of tolerance).
-            for at in [r.at - crdt::HOUR_MS, r.at, r.at + crdt::HOUR_MS] {
+            for at in [r.at.saturating_sub(crdt::HOUR_MS), r.at, r.at.saturating_add(crdt::HOUR_MS)] {
                 let d = day_of(at);
                 if days.contains(&d) {
                     want.insert(d);

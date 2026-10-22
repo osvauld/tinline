@@ -29,7 +29,8 @@ use node_runtime::{addr_for, now_ms};
 
 /// `HostRef::device_slot` of a group device ID: its first 8 bytes, big-endian.
 pub fn device_slot(dev: &[u8; 32]) -> u64 {
-    u64::from_be_bytes(dev[..8].try_into().expect("8 bytes"))
+    let [a, b, c, d, e, f, g, h, ..] = *dev;
+    u64::from_be_bytes([a, b, c, d, e, f, g, h])
 }
 
 pub fn host_ref_of(h: &CallHostInfo) -> HostRef {

@@ -70,7 +70,7 @@ impl GroupStore {
         if self.db.get(&k).map_err(io)?.is_some() {
             return Ok(false);
         }
-        self.db.put(&k, &cryptography::codec::to_bytes(&(expires, mail.to_vec())).expect("serialises")).map_err(io)?;
+        self.db.put(&k, &cryptography::codec::to_bytes_infallible(&(expires, mail.to_vec()))).map_err(io)?;
         Ok(true)
     }
 

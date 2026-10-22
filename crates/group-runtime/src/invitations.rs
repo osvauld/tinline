@@ -363,7 +363,7 @@ impl GroupRt {
             ctrl.finish();
             return Ok(());
         }
-        let Msg::GroupLetter { letter, .. } = &msg else { unreachable!() };
+        let Msg::GroupLetter { letter, .. } = &msg else { return Err(Error::Protocol("not a group letter".into())) };
         match letter_of(letter) {
             Some(l) => self.group_letter_take(&sender.did, l),
             None => self.log("a group letter does not decode"),

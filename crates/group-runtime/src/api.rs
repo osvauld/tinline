@@ -336,7 +336,7 @@ impl GroupRt {
             None => {
                 // An open link carries no invite: we write `OpenJoin` once we hold the group.
                 let meta = GroupMeta {
-                    joining: t.invite.as_ref().map(|i| cryptography::codec::to_bytes(i).expect("serialises")),
+                    joining: t.invite.as_ref().map(cryptography::codec::to_bytes_infallible),
                     open_join: t.open && t.invite.is_none(),
                     ..Default::default()
                 };
