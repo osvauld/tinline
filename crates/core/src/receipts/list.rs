@@ -49,7 +49,7 @@ impl Node {
                     continue;
                 };
                 let mark = match m.delivery {
-                    crate::group::api::GroupDelivery::Waiting => TickVis::Slack,
+                    crate::group::api::GroupDelivery::Waiting | crate::group::api::GroupDelivery::Failed => TickVis::Slack,
                     crate::group::api::GroupDelivery::Delivered => core
                         .member_receipts_range(&s.id, m.at as i64, m.at as i64, true)
                         .ok()
