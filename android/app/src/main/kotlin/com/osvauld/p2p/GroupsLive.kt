@@ -696,7 +696,7 @@ private fun ColumnScope.GroupItemLive(
     // read = the read ink (core's GroupReceiptStatus). Host storage is never members' delivery/read.
     // An open group sends no member receipts (public group §4): "Delivered 0/N" would mislead, so no n/N there.
     val lines = receipt?.takeIf { it.eligible > 0u && !d.open }?.let { groupReceiptLines(it) }
-    val tick = if (!m.outgoing) null else if (m.delivery == CoreDelivery.WAITING) MetaReceipt(TickVis.SLACK, m.id, "Waiting for a host")
+    val tick = if (!m.outgoing) null else if (m.delivery == CoreDelivery.WAITING || m.delivery == CoreDelivery.FAILED) MetaReceipt(TickVis.SLACK, m.id, GroupText.deliveryWord(m) ?: "Waiting for a host")
         else {
             val vis = receipt?.let { tickVisOf(it.tick, false) } ?: TickVis.ONE
             MetaReceipt(vis, m.id, lines?.take(2)?.joinToString(", ") ?: "Sent")
@@ -715,6 +715,10 @@ private fun ColumnScope.GroupItemLive(
         if (m.outgoing && m.delivery == CoreDelivery.WAITING) Row(Modifier.padding(top = 3.dp, end = 2.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
             Icon(Pg.Clock, null, Modifier.size(12.dp), tint = c.goldInk)
             Text("Waiting for a host", style = PgBodyText.copy(fontSize = 12.sp, lineHeight = 16.sp, fontWeight = FontWeight.SemiBold), color = c.goldInk)
+        }
+        if (GroupText.isFailed(m)) Row(Modifier.padding(top = 3.dp, end = 2.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            Icon(Pg.Warning, null, Modifier.size(12.dp), tint = c.danger)
+            Text(GroupText.deliveryWord(m) ?: "", style = PgBodyText.copy(fontSize = 12.sp, lineHeight = 16.sp, fontWeight = FontWeight.SemiBold), color = c.danger)
         }
         if (m.beforeRemoval) Text("Written before ${firstName(name)} was removed", Modifier.padding(top = 3.dp), style = PgBodyText.copy(fontSize = 11.sp), color = c.ink2)
         if (info && lines != null) Text(lines.joinToString("\n"), Modifier.padding(top = 3.dp, end = 2.dp), style = PgBodyText.copy(fontSize = 12.sp, lineHeight = 16.sp), color = c.ink2,

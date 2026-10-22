@@ -26,11 +26,13 @@ pub enum GroupItemKind {
 }
 
 /// For our own posts: `Waiting` = only on this device ("Waiting for a host"); `Delivered` = a
-/// host acknowledged holding it. Everything else is `Delivered`.
+/// host acknowledged holding it; `Failed` = the hosts refuse it and this device stopped sending
+/// it (`GroupMessage::failure` has the words). Everything else is `Delivered`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, uniffi::Enum)]
 pub enum GroupDelivery {
     Waiting,
     Delivered,
+    Failed,
 }
 
 #[derive(Debug, Clone, PartialEq, uniffi::Record)]
@@ -48,6 +50,10 @@ pub struct GroupMessage {
     pub reply_to: Option<String>,
     pub outgoing: bool,
     pub delivery: GroupDelivery,
+    /// Why the post is not posted ("Not posted: only admins post here"); `Some` exactly when
+    /// `delivery` is `Failed`. It follows the current failed state, so a post that later gets
+    /// carried along again stops being failed.
+    pub failure: Option<String>,
     /// A post by a member removed since, kept because it was written before the removal (U11).
     pub before_removal: bool,
 }

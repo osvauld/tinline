@@ -494,6 +494,11 @@ impl App {
             col = col.push(container(row![crate::pg_icons::pgi("clock", 12.0, t.gold_ink), semi("Waiting for a host", 12.0, t.gold_ink).line_height(lh(16.0))].spacing(4).align_y(Alignment::Center))
                 .align_right(Fill).padding(Padding { top: 3.0, right: 2.0, ..Padding::ZERO }));
         }
+        // Failed takes the same slot, in the error ink: the hosts refuse this post and it is not sent.
+        if let Some(why) = crate::app::group_live::failed_line(m) {
+            col = col.push(container(row![crate::pg_icons::pgi("warning", 12.0, t.error), semi(why, 12.0, t.error).line_height(lh(16.0))].spacing(4).align_y(Alignment::Center))
+                .align_right(Fill).padding(Padding { top: 3.0, right: 2.0, ..Padding::ZERO }));
+        }
         mouse_area(col).on_enter(l(Lm::Hover(Some(m.id.clone())))).on_exit(l(Lm::Hover(None))).into()
     }
 

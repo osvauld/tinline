@@ -71,7 +71,14 @@ impl Inner {
     pub(crate) fn group_message(&self, core: &GroupCore, gid: &str, i: &Item) -> Option<GroupMessage> {
         let hosting = core.with_state(gid, |st| st.is_host(&core.did, &core.dev))?;
         let outgoing = i.author == core.did;
-        let delivery = if i.peer != core.wid || hosting {
+        let failure = if i.peer == core.wid && i.kind == ItemKind::Post {
+            core.groups.lock().get(gid).and_then(|l| l.meta.failed_posts.get(&i.id).map(|f| f.reason.clone()))
+        } else {
+            None
+        };
+        let delivery = if failure.is_some() {
+            GroupDelivery::Failed
+        } else if i.peer != core.wid || hosting {
             GroupDelivery::Delivered
         } else {
             // Our post sits in the day doc of its time, any other record in the meta doc; some
@@ -95,6 +102,7 @@ impl Inner {
             reply_to: i.reply_to.clone(),
             outgoing,
             delivery,
+            failure,
             before_removal: i.before_removal,
         })
     }
@@ -552,7 +560,7 @@ impl Node {
     /// Why a post of ours will not be posted (`None`: it is not failed). A post written offline
     /// while an admin turned admins-only on is refused by the hosts: this device stops sending
     /// it and keeps it here with the reason ("Not posted: only admins post here"); its
-    /// `delivery` stays `Waiting`. A later post of ours on the same day carries it along again.
+    /// `delivery` is `Failed` while it is in this list. A later post of ours on the same day carries it along again.
     pub fn group_post_failure(&self, group_id: String, message_id: String) -> Result<Option<String>, Error> {
         let core = self.inner.group_core()?;
         let groups = core.groups.lock();

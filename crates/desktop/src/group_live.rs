@@ -1324,7 +1324,7 @@ impl GroupsLive {
             return None;
         }
         Some(match m.delivery {
-            GroupDelivery::Waiting => crate::ticks::Vis::Slack,
+            GroupDelivery::Waiting | GroupDelivery::Failed => crate::ticks::Vis::Slack,
             GroupDelivery::Delivered => self
                 .receipts
                 .get(&m.id)
@@ -1501,4 +1501,10 @@ mod tests;
 
 fn gid_for_receipts(open: &Option<String>) -> String {
     open.clone().unwrap_or_default()
+}
+
+/// The line under one of my posts the hosts refuse (`Failed`): the core's words, none otherwise.
+/// It sits in the slot of "Waiting for a host", so nothing moves when a post turns failed.
+pub(crate) fn failed_line(m: &GroupMessage) -> Option<&str> {
+    if m.outgoing && m.delivery == GroupDelivery::Failed { m.failure.as_deref() } else { None }
 }

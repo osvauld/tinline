@@ -122,9 +122,13 @@ days). An open group needs no invite instead:
     (`GroupDoc::export_since_before`), and the day is no longer owed to a host. A Loro writer's
     ops form a chain, so a later post of ours on the same day carries a failed one along: it
     can only be written once we may post (admins-only off, or we are an admin), when hosts
-    accept it, and the failed mark is dropped then. The app DTO has no failed state yet:
-    `GroupMessage.delivery` stays `Waiting`; apps should show the reason from
-    `group_post_failure` (follow-up).
+    accept it, and the failed mark is dropped then. The app DTO has `GroupDelivery::Failed`
+    and `GroupMessage.failure` (the reason), both read from the current `failed_posts` each time
+    the message is built, so they go away when the mark is dropped and nothing is sticky. A
+    failed post is shown in the slot of "Waiting for a host" (no layout shift), in the error
+    ink with a warning icon and the reason text; its tick is the slack one, never delivered.
+    The core tells the apps (`on_group_changed`) when a post turns failed. Desktop:
+    `group_live::failed_line`; Android: `GroupText.deliveryWord` / `isFailed`.
   - Checking `seen` against the Loro change's own dependencies was considered and not done: the
     author builds those too (a modified app can write on a fork of an old version), so it
     proves nothing a host can rely on.
