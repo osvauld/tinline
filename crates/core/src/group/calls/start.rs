@@ -96,7 +96,7 @@ impl Inner {
                     cond: self.gcall.cond(),
                     own_user_in: true,
                 };
-                match self.gcall_host(cfg) {
+                match self.gcall.host(cfg) {
                     Ok(_) => {
                         let mut st = self.group.calls.st.lock();
                         if st.pending.as_ref().is_some_and(|p| p.call_id == call_id) {
@@ -210,7 +210,7 @@ impl Inner {
             let _ = self.group_call_step(core, &gid, &call_id, step);
         }
         // A listen-only hosted call nobody is in ends.
-        let empty = self.gcall_status().and_then(|s| {
+        let empty = self.gcall.status().and_then(|s| {
             let own_in = s.client.as_ref().is_some_and(|c| !matches!(c.state, ClientState::Ended(_)));
             s.hosting.map(|h| h.roster.is_empty() && !own_in)
         });
@@ -229,7 +229,7 @@ impl Inner {
         };
         if end {
             self.log("group call: nobody left in the call hosted here, ending it");
-            self.gcall_end();
+            self.gcall.end();
         }
         // Forget what is stale.
         let mut st = self.group.calls.st.lock();

@@ -40,6 +40,8 @@ mediacodec = ["dep:ndk-sys"]
 proto.workspace = true
 # Sans-IO group-call engines; re-exported as `p2pcore::gcall` (src/gcall.rs).
 gcall-core.workspace = true
+# Group-call network service; the node plugs in through `GcallHost` (src/gcall/net.rs).
+gcall-net.workspace = true
 # Loro doc helpers (own-device doc, export batching, UTC days, writer IDs).
 crdt.workspace = true
 # The local search index; re-exported under `search` (src/search/mod.rs).

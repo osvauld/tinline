@@ -134,3 +134,39 @@ impl From<audio::Error> for Error {
         Error::Audio(e.to_string())
     }
 }
+
+impl From<gcall_net::Error> for Error {
+    fn from(e: gcall_net::Error) -> Self {
+        use gcall_net::Error as G;
+        match e {
+            G::NoIdentity => Error::NoIdentity,
+            G::InCall => Error::InCall,
+            G::Locked => Error::Locked,
+            G::NotStarted => Error::NotStarted,
+            G::Busy => Error::Busy,
+            G::Timeout => Error::Timeout,
+            G::Rejected(s) => Error::Rejected(s),
+            G::Protocol(s) => Error::Protocol(s),
+            G::Net(s) => Error::Net(s),
+        }
+    }
+}
+
+impl From<Error> for gcall_net::Error {
+    /// Only the variants the host closure can produce are distinguished; the rest are text.
+    fn from(e: Error) -> Self {
+        use gcall_net::Error as G;
+        match e {
+            Error::NoIdentity => G::NoIdentity,
+            Error::InCall => G::InCall,
+            Error::Locked => G::Locked,
+            Error::NotStarted => G::NotStarted,
+            Error::Busy => G::Busy,
+            Error::Timeout => G::Timeout,
+            Error::Rejected(s) => G::Rejected(s),
+            Error::Protocol(s) => G::Protocol(s),
+            Error::Net(s) => G::Net(s),
+            other => G::Protocol(other.to_string()),
+        }
+    }
+}

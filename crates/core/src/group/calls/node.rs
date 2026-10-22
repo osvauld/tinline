@@ -37,16 +37,16 @@ impl Node {
         self.inner.group_member_check(&core, &group_id)?;
         let blob = self.inner.group.calls.st.lock().calls.get(&group_id).and_then(|c| c.get(&call_id)).map(|(b, _)| b.clone());
         let blob = blob.ok_or(Error::NotFound)?;
-        self.inner.gcall_join(&blob, None)
+        self.inner.gcall.join(&blob, None).map_err(Into::into)
     }
 
     /// Leaves the call this device is in. A call hosted here that nobody is in any more ends.
     pub fn group_call_leave(&self) {
         self.inner.group.calls.st.lock().pending = None;
-        self.inner.gcall_leave();
-        let empty = self.inner.gcall_status().and_then(|s| s.hosting).is_some_and(|h| h.roster.is_empty());
+        self.inner.gcall.leave();
+        let empty = self.inner.gcall.status().and_then(|s| s.hosting).is_some_and(|h| h.roster.is_empty());
         if empty {
-            self.inner.gcall_end();
+            self.inner.gcall.end();
         }
     }
 
@@ -54,14 +54,14 @@ impl Node {
     /// §2.4). Until the first call this device advertises no call hosting and declines to host.
     /// Push on start and whenever they change.
     pub fn group_call_set_conditions(&self, conditions: GroupCallConditions) {
-        self.inner.gcall_set_cond(conditions.into())
+        self.inner.gcall.set_cond(conditions.into())
     }
 
     /// The group call this device is in or hosts, if any: what the apps' audio threads and
     /// foreground service follow (re-read on every `GroupCallEvents` callback; the callbacks
     /// can arrive out of order).
     pub fn group_call_here(&self) -> Option<GroupCallHere> {
-        let st = self.inner.gcall_status()?;
+        let st = self.inner.gcall.status()?;
         let in_call = self.inner.gcall.own_in_call();
         let hosting = self.inner.gcall.busy() && st.hosting.is_some();
         if !in_call && !hosting {
@@ -73,7 +73,7 @@ impl Node {
 
     /// Mutes this device's microphone in the group call.
     pub fn group_call_set_muted(&self, muted: bool) {
-        self.inner.gcall_set_mic_muted(muted)
+        self.inner.gcall.set_mic_muted(muted)
     }
 
     /// How long a started group call rings, in ms (apps ring up to this long from the moment

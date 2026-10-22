@@ -170,7 +170,7 @@ impl Inner {
             new
         };
         self.group_calls_configure();
-        if let Err(e) = self.gcall_observe_start(&blob) {
+        if let Err(e) = self.gcall.observe_start(&blob) {
             tracing::debug!("group call {}: {e}", short(gid));
         }
         let join = {
@@ -185,17 +185,17 @@ impl Inner {
             self.log(format!("group {}: call {} by {} hosted by {}", short(gid), &s.call_id, s.starter_did, s.host_ref.holder_did));
             self.calls_emit(GroupCallEventKind::Announced, gid, &s.call_id, vec![], s.starter_did.clone());
         }
-        let hosted_here = self.gcall_status().is_some_and(|st| st.call_id == s.call_id && st.hosting.is_some());
+        let hosted_here = self.gcall.status().is_some_and(|st| st.call_id == s.call_id && st.hosting.is_some());
         if join
             && !hosted_here
-            && let Err(e) = self.gcall_join(&blob, None)
+            && let Err(e) = self.gcall.join(&blob, None)
         {
             self.calls_emit(GroupCallEventKind::StartFailed, gid, &s.call_id, vec![], e.to_string());
         }
     }
 
     pub(super) fn group_call_ended(self: &Arc<Self>, gid: &str, call_id: &str, end: &SignedEnd) {
-        let _ = self.gcall_observe_end(end);
+        let _ = self.gcall.observe_end(end);
         let had = {
             let mut st = self.group.calls.st.lock();
             if let Ok(e) = end.open() {
@@ -245,7 +245,7 @@ impl Inner {
                 cond,
                 own_user_in: false,
             };
-            self.gcall_host(cfg).err().map(|e| e.to_string())
+            self.gcall.host(cfg).err().map(|e| e.to_string())
         };
         let Some(reason) = why else {
             self.log(format!("group {}: hosting call {} for {}", short(gid), r.call_id, r.starter_did));

@@ -189,7 +189,7 @@ pub(crate) struct Inner {
     pub(crate) sync_tx: tokio::sync::watch::Sender<u64>,
     pub(crate) link: crate::sync::link::LinkState,
     /// Group calls (G6), `crate::gcall::net`.
-    pub(crate) gcall: crate::gcall::net::Service,
+    pub(crate) gcall: crate::gcall::net::GcallNet,
     pub(crate) block: crate::block::BlockRt,
     /// Contact requests (`contact_req.rs`).
     pub(crate) requests: crate::contact_req::ReqRt,

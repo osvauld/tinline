@@ -291,7 +291,7 @@ impl Inner {
             GcallEvent::Superseded { call_id, by } => (GroupCallEventKind::Reconnecting, gid_of(call_id), call_id.clone(), vec![], format!("superseded by {}", by.holder_did)),
             GcallEvent::Ended { call_id, why } => (GroupCallEventKind::Left, gid_of(call_id), call_id.clone(), vec![], format!("{why:?}")),
             GcallEvent::Notice(n) => {
-                let call_id = self.gcall_status().map(|s| s.call_id).unwrap_or_default();
+                let call_id = self.gcall.status().map(|s| s.call_id).unwrap_or_default();
                 let kind = match n {
                     HostNotice::Limited => GroupCallEventKind::HostingLimited,
                     HostNotice::Unlimited => GroupCallEventKind::HostingUnlimited,
@@ -304,7 +304,7 @@ impl Inner {
     }
 
     fn group_calls_list(&self, core: &GroupCore, gid: &str) -> Vec<GroupCall> {
-        let status = self.gcall_status();
+        let status = self.gcall.status();
         let calls: Vec<CallStart> = self.group.calls.st.lock().calls.get(gid).map(|c| c.values().map(|(_, s)| s.clone()).collect()).unwrap_or_default();
         let groups = core.groups.lock();
         let state = groups.get(gid).map(|l| &l.state);
