@@ -12,32 +12,20 @@
 //! - The joiner keeps its half (`State::sent_requests`) and takes the dialled-back Welcome if it
 //!   matches (`welcome_incoming`): both have each other, with call tokens both ways (`policy_for`).
 
-use std::collections::HashSet;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::Ordering;
 
-use parking_lot::Mutex;
-use proto::{ContactTicket, Msg};
+use proto::ContactTicket;
 
+pub use node_runtime::contact_req::*;
+use node_runtime::ContactRequestSink;
+
+use crate::node::{CardPeek, Contact, Node, find_card, now};
 use crate::Error;
-use crate::node::{CardPeek, Contact, Inner, Me, Node, addr_for, apply_contact, find_card, now, stored_contact};
-use crate::store::{HeldRequest, WelcomeOut};
-use crate::wire::Ctrl;
-
-/// At most this many requests wait for an answer; more are refused (a code can reach anyone, and
-/// DIDs cost nothing to make). PROVISIONAL.
-pub(crate) const MAX_HELD: usize = 64;
-/// How long an accepting device keeps trying to deliver its Welcome, and how long a joiner keeps
-/// its half after the code expired (an Accept on the code's last day may land later).
-pub(crate) const WELCOME_GRACE: u64 = 7 * 24 * 3600;
-/// `add_contact` (which must return a contact) when the owner holds the hello as a request.
-pub(crate) const PENDING: &str = "they hold it as a contact request";
-
-const RETRY_SECS: [u64; 6] = [2, 5, 15, 30, 60, 300];
 
 /// A contact request, either way: one made with our code (`contact_requests`, "Waiting for you")
 /// or one we made with theirs (`sent_contact_requests`, "Waiting for them").
-#[derive(Debug, Clone, PartialEq, Eq, uniffi::Record)]
+#[uniffi::remote(Record)]
 pub struct ContactRequest {
     pub did: String,
     /// The name they gave themselves (incoming: unsigned, from their hello) or the signed name in
@@ -58,7 +46,7 @@ pub struct MyCode {
 }
 
 /// What adding someone by their code did.
-#[derive(Debug, Clone, uniffi::Enum)]
+#[uniffi::remote(Enum)]
 pub enum AddOutcome {
     /// They added us at once (a re-add of an existing contact, or a group chat request ticket).
     Added { contact: Contact },
@@ -128,18 +116,17 @@ pub trait ContactRequestEvents: Send + Sync {
     fn on_request_accepted(&self, contact: Contact);
 }
 
-/// Runtime state that is not persisted.
-#[derive(Default)]
-pub(crate) struct ReqRt {
-    events: Mutex<Option<Arc<dyn ContactRequestEvents>>>,
-    /// DIDs with a Welcome delivery task running.
-    delivering: Mutex<HashSet<String>>,
-    /// Tests: welcome every good hello at once, as before requests.
-    pub(crate) auto_accept: AtomicBool,
-}
+/// Hands the runtime's contact-request events to the app's `ContactRequestEvents`.
+struct RequestEventsAdapter(Arc<dyn ContactRequestEvents>);
 
-pub(crate) fn request_view(did: &str, r: &HeldRequest) -> ContactRequest {
-    ContactRequest { did: did.to_string(), name: r.name.clone(), at: r.at, expires_at: r.exp }
+impl ContactRequestSink for RequestEventsAdapter {
+    fn on_contact_request(&self, request: ContactRequest) {
+        self.0.on_contact_request(request);
+    }
+
+    fn on_request_accepted(&self, contact: Contact) {
+        self.0.on_request_accepted(contact);
+    }
 }
 
 #[uniffi::export]
@@ -246,208 +233,6 @@ impl Node {
     #[doc(hidden)]
     pub fn auto_accept_contacts_for_test(&self, on: bool) {
         self.inner.requests.auto_accept.store(on, Ordering::SeqCst);
-    }
-}
-
-impl Inner {
-    pub(crate) fn request_event(&self, request: ContactRequest) {
-        if let Some(ev) = self.requests.events.lock().clone() {
-            self.handle.spawn_blocking(move || ev.on_contact_request(request));
-        }
-    }
-
-    /// The Accept: the contact, the redeemed (DID, nonce), the request's removal and the Welcome
-    /// to deliver are one durable write, as `accept_hello` does for a Welcome sent at once.
-    fn accept_request(&self, me: &Me, did: &str) -> Result<Contact, Error> {
-        let _w = self.writing.lock();
-        let (mut next, backing) = {
-            let s = self.shared.lock();
-            if s.epoch != me.epoch {
-                return Err(Error::Locked);
-            }
-            (s.state.clone(), s.committed.then(|| s.acct.as_ref().and_then(|a| a.backing.clone())).flatten())
-        };
-        let now = now();
-        let req = next.contact_requests.get(did).cloned().ok_or(Error::NotFound)?;
-        if self.refusal_for(did).is_some() {
-            return Err(Error::Rejected(crate::BLOCKED.into()));
-        }
-        // Checked again: the code may have expired since, or another device of ours added them.
-        // Under the key their ticket named: after a rotation, the previous one.
-        let on = req.on.unwrap_or(me.device);
-        let (welcome, new) = proto::accept_contact_hello_with(&me.id, on, &req.hello, req.device, now * 1000, &proto::Unrecorded, crate::node::GRANT_TTL, |d| {
-            crate::caps::policy_for(&next, d, crate::caps::ContactOrigin::Ticket)
-        })?;
-        if new.did != did {
-            return Err(Error::Protocol("request does not match".into()));
-        }
-        let calls_allowed = matches!(&welcome, Msg::ContactWelcome { call_grant_for_you: Some(_), .. });
-        let stored = stored_contact(&new, req.relay.clone(), calls_allowed);
-        let contact = Contact::from(&stored);
-        let out = WelcomeOut { welcome, device: req.device, relay: req.relay.clone(), from: Some(on), until: now + WELCOME_GRACE };
-        let apply = |st: &mut crate::store::State| {
-            st.redeemed.insert(proto::redeemed_key(&new.did, &new.redeemed_nonce));
-            st.contact_requests.remove(did);
-            st.welcome_outbox.insert(did.to_string(), out.clone());
-            if on != me.device {
-                // They hold our previous key from the ticket: they are owed the new one.
-                st.list_outbox.insert(did.to_string());
-            }
-            apply_contact(st, stored.clone(), new.device, false)
-        };
-        apply(&mut next)?;
-        if let Some(b) = &backing {
-            self.write_state(b, &next)?;
-        }
-        let mut s = self.shared.lock();
-        if s.epoch != me.epoch {
-            return Err(Error::Locked);
-        }
-        apply(&mut s.state)?;
-        Ok(contact)
-    }
-
-    /// A connection that opened with `ContactWelcome`: their user accepted our request. Taken
-    /// only if it answers a request of ours to the DID and device it comes from.
-    pub(crate) async fn welcome_incoming(self: &Arc<Self>, mut ctrl: Ctrl, msg: Msg, remote: [u8; 32], me: &Me) -> Result<(), Error> {
-        let now = now();
-        let found = {
-            let s = self.shared.lock();
-            s.state
-                .sent_requests
-                .iter()
-                .find(|(_, r)| r.pending.device == remote && r.exp + WELCOME_GRACE > now)
-                .map(|(d, r)| (d.clone(), r.clone()))
-        };
-        let taken = match found {
-            Some((did, req)) if self.refusal_for(&did).is_none() => match proto::accept_contact_welcome(&me.id, &req.pending, &msg, remote, now * 1000) {
-                Ok(new) => {
-                    let stored = stored_contact(&new, req.relay.clone(), req.calls_allowed);
-                    let contact = Contact::from(&stored);
-                    let applied = {
-                        let mut s = self.shared.lock();
-                        if s.epoch != me.epoch {
-                            return Err(Error::Locked);
-                        }
-                        s.state.sent_requests.remove(&did);
-                        // Not a way past a block made since (refused above; checked again here).
-                        apply_contact(&mut s.state, stored, new.device, false)
-                    };
-                    match applied {
-                        Ok(()) => {
-                            self.persist_async(me.epoch).await?;
-                            Some(contact)
-                        }
-                        Err(e) => {
-                            tracing::warn!("welcome from {did}: {e}");
-                            None
-                        }
-                    }
-                }
-                Err(e) => {
-                    self.log(format!("refused a welcome: {e}"));
-                    None
-                }
-            },
-            _ => None,
-        };
-        let reply = if taken.is_some() { Msg::WelcomeTaken } else { Msg::Reject { reason: crate::node::REFUSED.into() } };
-        ctrl.send(&reply).await?;
-        ctrl.finish();
-        if let Some(contact) = taken {
-            self.log(format!("{} accepted our request", contact.name));
-            self.events.on_contacts_changed();
-            self.list_for_new_contact(&contact.did);
-            if let Some(ev) = self.requests.events.lock().clone() {
-                self.handle.spawn_blocking(move || ev.on_request_accepted(contact));
-            }
-        }
-        Ok(())
-    }
-
-    /// Delivers the Welcome for an accepted request to `did`'s device, retrying with backoff
-    /// while the endpoint is up, until taken, refused (they hold no such request) or `until`.
-    pub(crate) fn welcome_kick(self: &Arc<Self>, did: String) {
-        if !self.requests.delivering.lock().insert(did.clone()) {
-            return;
-        }
-        let this = self.clone();
-        self.handle.spawn(async move {
-            let mut round = 0usize;
-            loop {
-                let Ok(me) = this.me() else { break };
-                let Some(out) = this.shared.lock().state.welcome_outbox.get(&did).cloned() else { break };
-                if now() > out.until {
-                    this.welcome_done(&did, &out, me.epoch, "gave up delivering the welcome").await;
-                    break;
-                }
-                // From the endpoint of the key the Welcome is made under (the joiner checks it).
-                let Some(ep) = this.endpoint_of(out.from.unwrap_or(me.device)) else {
-                    if this.endpoint().is_err() {
-                        break;
-                    }
-                    this.welcome_done(&did, &out, me.epoch, "gave up delivering the welcome: the address it was asked at has closed").await;
-                    break;
-                };
-                match this.deliver_welcome(&ep, &did, &out).await {
-                    Ok(true) => {
-                        this.welcome_done(&did, &out, me.epoch, "welcome delivered").await;
-                        // A list owed to them waited for this (`lists_kick`).
-                        this.lists_kick(did.clone());
-                        break;
-                    }
-                    Ok(false) => {
-                        this.welcome_done(&did, &out, me.epoch, "welcome refused (no request of theirs)").await;
-                        break;
-                    }
-                    Err(e) => tracing::debug!("welcome to {did}: {e}"),
-                }
-                tokio::time::sleep(crate::wire::retry_pause(&RETRY_SECS, round)).await;
-                round += 1;
-            }
-            this.requests.delivering.lock().remove(&did);
-        });
-    }
-
-    async fn welcome_done(self: &Arc<Self>, did: &str, out: &WelcomeOut, epoch: u64, what: &str) {
-        {
-            let mut s = self.shared.lock();
-            if s.state.welcome_outbox.get(did) == Some(out) {
-                s.state.welcome_outbox.remove(did);
-            }
-        }
-        let _ = self.persist_async(epoch).await;
-        self.log(format!("{what}: {did}"));
-    }
-
-    /// `Ok(true)` taken, `Ok(false)` refused for good; `Err` try again later.
-    async fn deliver_welcome(self: &Arc<Self>, ep: &iroh::Endpoint, did: &str, out: &WelcomeOut) -> Result<bool, Error> {
-        let conn = crate::wire::dial_call(ep, addr_for(&out.device, out.relay.as_deref())?).await?;
-        let reply = crate::wire::exchange(conn, &out.welcome).await?;
-        match reply {
-            Some(Msg::WelcomeTaken) => Ok(true),
-            Some(Msg::Reject { .. }) => Ok(false),
-            // They block us now: take their notice; nothing more to deliver.
-            Some(Msg::Notice { notice }) if self.is_block_from(did, &notice) => {
-                let _ = self.take_notice(&notice);
-                Ok(false)
-            }
-            other => Err(Error::Protocol(format!("welcome not taken: {other:?}"))),
-        }
-    }
-
-    /// After start: deliver the Welcomes still owed, and forget requests that can't be answered.
-    pub(crate) fn welcomes_started(self: &Arc<Self>) {
-        let now = now();
-        let dids: Vec<String> = {
-            let mut s = self.shared.lock();
-            s.state.contact_requests.retain(|_, r| r.exp > now);
-            s.state.sent_requests.retain(|_, r| r.exp + WELCOME_GRACE > now);
-            s.state.welcome_outbox.keys().cloned().collect()
-        };
-        for did in dids {
-            self.welcome_kick(did);
-        }
     }
 }
 

@@ -2,7 +2,7 @@
 
 use super::*;
 
-pub(crate) enum Cmd {
+pub enum Cmd {
     Answer,
     Decline,
     Hangup,
@@ -10,52 +10,52 @@ pub(crate) enum Cmd {
     Block(proto::SignedBlockNotice),
 }
 
-pub(crate) struct Call {
-    pub(crate) info: CallInfo,
-    pub(super) conn: Mutex<Option<Connection>>,
-    pub(super) state: Mutex<CallState>,
-    pub(super) cmd: mpsc::UnboundedSender<Cmd>,
-    pub(super) started: Instant,
-    pub(super) sender: Mutex<audio::Sender>,
-    pub(super) receiver: Mutex<audio::Receiver>,
-    pub(super) mic: Mutex<Vec<i16>>,
+pub struct Call {
+    pub info: CallInfo,
+    pub conn: Mutex<Option<Connection>>,
+    pub state: Mutex<CallState>,
+    pub cmd: mpsc::UnboundedSender<Cmd>,
+    pub started: Instant,
+    pub sender: Mutex<audio::Sender>,
+    pub receiver: Mutex<audio::Receiver>,
+    pub mic: Mutex<Vec<i16>>,
     /// The last second played, for `rx_freq_hz`.
-    pub(super) played: Mutex<VecDeque<i16>>,
-    pub(super) sent: Mutex<u64>,
-    pub(super) tone: Mutex<Option<(f32, audio::Tone)>>,
+    pub played: Mutex<VecDeque<i16>>,
+    pub sent: Mutex<u64>,
+    pub tone: Mutex<Option<(f32, audio::Tone)>>,
     /// Set once by `end_call`; later calls are no-ops, so every path may call it.
-    pub(super) ended: Mutex<bool>,
+    pub ended: Mutex<bool>,
     /// Held while a state change is made and delivered, so one call's events reach the UI in
     /// the order they happened. Reentrant: a callback may start the next call.
-    pub(super) notify: ReentrantMutex<()>,
+    pub notify: ReentrantMutex<()>,
     /// When media last arrived (or the call went active); feeds the no-audio watchdog.
-    pub(super) last_rx: Mutex<Instant>,
+    pub last_rx: Mutex<Instant>,
     /// Unix seconds when the call began, for the history.
-    pub(super) started_at: u64,
+    pub started_at: u64,
     /// When it went active, for the duration.
-    pub(super) active_at: Mutex<Option<Instant>>,
+    pub active_at: Mutex<Option<Instant>>,
     /// Whether the selected path was direct when last looked at (the connection is gone by the
     /// time the call has ended).
-    pub(super) direct: Mutex<bool>,
+    pub direct: Mutex<bool>,
     /// An incoming call that arrived during another call and sits in `Live::waiting`, not
     /// yet in the slot. Declining it tells the caller `Busy`.
-    pub(super) waiting: AtomicBool,
+    pub waiting: AtomicBool,
     /// "End & answer" was chosen: answer this call the moment it takes over the slot.
-    pub(super) answer_on_promote: AtomicBool,
+    pub answer_on_promote: AtomicBool,
     /// The session (see `Shared::epoch`) it belongs to: a call that outlives a switch of account
     /// must not write into the next one.
-    pub(super) epoch: u64,
+    pub epoch: u64,
     /// Woken when the call ends from outside its own task (glare, lock), so an outgoing call
     /// that is still dialling several devices stops at once.
-    pub(super) ended_wake: tokio::sync::Notify,
-    pub(crate) video: call_video::CallVideo,
+    pub ended_wake: tokio::sync::Notify,
+    pub video: call_video::CallVideo,
 }
 
 /// Ends the call when dropped unless it already ended: covers every early return (and panic)
 /// between taking the slot and `run_call` finishing it.
-pub(super) struct SlotGuard<'a> {
-    pub(super) inner: &'a Inner,
-    pub(super) call: Arc<Call>,
+pub struct SlotGuard<'a> {
+    pub inner: &'a NodeCtx,
+    pub call: Arc<Call>,
 }
 
 impl Drop for SlotGuard<'_> {
@@ -65,17 +65,17 @@ impl Drop for SlotGuard<'_> {
 }
 
 impl Call {
-    pub(super) fn now_ms(&self) -> u64 {
+    pub fn now_ms(&self) -> u64 {
         self.started.elapsed().as_millis() as u64
     }
 
-    pub(crate) fn state(&self) -> CallState {
+    pub fn state(&self) -> CallState {
         self.state.lock().clone()
     }
 }
 
 /// What one dialled device of the callee reports to `run_outgoing`.
-pub(super) enum LegEvent {
+pub enum LegEvent {
     /// Connected and hello sent: the device is being rung (or about to be).
     Connected,
     Ringing,
@@ -102,18 +102,18 @@ pub(super) enum LegEvent {
 
 /// One connection of a fanned-out outgoing call: connects, sends the hello, relays what the
 /// device answers, and on a message from the coordinator sends it (a `Cancel`) and closes.
-pub(super) struct Leg {
-    pub(super) ep: Endpoint,
-    pub(super) device: ContactDevice,
-    pub(super) hello: Msg,
-    pub(super) idx: usize,
-    pub(super) events: mpsc::UnboundedSender<(usize, LegEvent)>,
-    pub(super) cmds: mpsc::UnboundedReceiver<Msg>,
-    pub(super) name: String,
+pub struct Leg {
+    pub ep: Endpoint,
+    pub device: ContactDevice,
+    pub hello: Msg,
+    pub idx: usize,
+    pub events: mpsc::UnboundedSender<(usize, LegEvent)>,
+    pub cmds: mpsc::UnboundedReceiver<Msg>,
+    pub name: String,
 }
 
 impl Leg {
-    pub(super) async fn run(mut self) {
+    pub async fn run(mut self) {
         let idx = self.idx;
         let fail = |events: &mpsc::UnboundedSender<(usize, LegEvent)>, why: String| {
             let _ = events.send((idx, LegEvent::Failed(why)));
@@ -163,7 +163,7 @@ impl Leg {
                         Ok(Some(Msg::Busy)) => LegEvent::Busy,
                         Ok(Some(Msg::Hangup)) => LegEvent::GaveUp,
                         Ok(Some(Msg::Notice { notice })) => LegEvent::Blocked(notice),
-                        Ok(Some(Msg::Reject { reason })) if reason == crate::CALLS_NOT_ALLOWED => LegEvent::CallsNotAllowed,
+                        Ok(Some(Msg::Reject { reason })) if reason == crate::caps::CALLS_NOT_ALLOWED => LegEvent::CallsNotAllowed,
                         Ok(Some(Msg::Reject { reason })) => LegEvent::Failed(format!("rejected: {}", clip_reason(&reason))),
                         Ok(Some(other)) => {
                             tracing::debug!("ignoring {} before the answer", msg_name(&other));
@@ -194,9 +194,9 @@ impl Leg {
     }
 }
 
-impl Inner {
+impl NodeCtx {
     /// Spawns the datagram reader; dropping the returned sender stops it.
-    pub(crate) fn start_media(&self, call: &Arc<Call>, conn: &Connection) -> oneshot::Sender<()> {
+    pub fn start_media(&self, call: &Arc<Call>, conn: &Connection) -> oneshot::Sender<()> {
         let (stop_tx, mut stop_rx) = oneshot::channel::<()>();
         let call = call.clone();
         let conn = conn.clone();
@@ -221,7 +221,7 @@ impl Inner {
     /// A callee's `Accept` may carry a fresh grant for us. It replaces the stored one only if it
     /// is validly signed by them for us and outlives the old one; anything else is ignored, so a
     /// peer can't shorten or break the grant we call them with.
-    pub(crate) fn renew_grant(self: &Arc<Self>, epoch: u64, did: &str, grant: proto::SignedGrant) {
+    pub fn renew_grant(self: &Arc<Self>, epoch: u64, did: &str, grant: proto::SignedGrant) {
         let Ok(me) = self.me() else { return };
         let replaced = {
             let mut s = self.shared.lock();
@@ -243,7 +243,7 @@ impl Inner {
 
     /// Never overwrites `Ended`, and the change and its delivery are one step, so the UI sees a
     /// call's states in the order they happened.
-    pub(crate) fn set_state(&self, call: &Call, state: CallState) {
+    pub fn set_state(&self, call: &Call, state: CallState) {
         let _order = call.notify.lock();
         {
             let mut cur = call.state.lock();
@@ -256,13 +256,13 @@ impl Inner {
             call.active_at.lock().get_or_insert_with(Instant::now);
         }
         self.log(format!("call {}: {state:?}", call.info.call_id));
-        self.events.on_call_state(call.info.call_id.clone(), state);
+        self.sink.on_call_state(call.info.call_id.clone(), state);
     }
 
     /// Frees the slot, closes the connection and emits Ended — once per call, however many
     /// paths get here. The slot is free before `Ended` is delivered (a UI that reacts to it may
     /// place the next call at once); the next call's first event waits for this one's.
-    pub(crate) fn end_call(&self, call: &Arc<Call>, reason: String) {
+    pub fn end_call(&self, call: &Arc<Call>, reason: String) {
         if std::mem::replace(&mut *call.ended.lock(), true) {
             return;
         }
@@ -293,7 +293,7 @@ impl Inner {
         }
         self.record_ended(call, &reason);
         self.log(format!("call {}: {state:?}", call.info.call_id));
-        self.events.on_call_state(call.info.call_id.clone(), state);
+        self.sink.on_call_state(call.info.call_id.clone(), state);
         if let Some(w) = promoted {
             if w.answer_on_promote.load(Ordering::SeqCst) {
                 let _ = w.cmd.send(Cmd::Answer);
@@ -301,15 +301,15 @@ impl Inner {
                 // Now an ordinary ringing call: the UI hears of it as a fresh incoming call.
                 let _order = w.notify.lock();
                 if !matches!(w.state(), CallState::Ended { .. }) {
-                    self.events.on_incoming_call(w.info.clone());
-                    self.events.on_call_state(w.info.call_id.clone(), CallState::Ringing);
+                    self.sink.on_incoming_call(w.info.clone());
+                    self.sink.on_call_state(w.info.call_id.clone(), CallState::Ringing);
                 }
             }
         }
     }
 
     /// Remembers whether the call is on a direct path while we still have its connection.
-    pub(crate) fn note_direct(&self, call: &Call) {
+    pub fn note_direct(&self, call: &Call) {
         if let Some((direct, _)) = call.conn.lock().as_ref().and_then(selected_path) {
             *call.direct.lock() = direct;
         }
@@ -317,7 +317,7 @@ impl Inner {
 
     /// Writes the call into the history (before `Ended` is delivered, so the UI's re-read sees
     /// it). Not for a call we gave up on in favour of theirs, nor for a contact since removed.
-    pub(crate) fn record_ended(&self, call: &Call, reason: &str) {
+    pub fn record_ended(&self, call: &Call, reason: &str) {
         if reason == "superseded" {
             return;
         }
@@ -354,7 +354,7 @@ impl Inner {
         });
     }
 
-    pub(crate) fn command(&self, call_id: &str, cmd: Cmd) -> Result<(), Error> {
+    pub fn command(&self, call_id: &str, cmd: Cmd) -> Result<(), Error> {
         let live = self.live.lock();
         let call = live
             .call
@@ -365,16 +365,17 @@ impl Inner {
         call.cmd.send(cmd).map_err(|_| Error::NotFound)
     }
 
-    pub(crate) fn active_call(&self) -> Option<(Arc<Call>, Option<f32>)> {
+    pub fn active_call(&self) -> Option<(Arc<Call>, Option<f32>)> {
         let live = self.live.lock();
         let call = live.call.clone()?;
         (call.state() == CallState::Active).then_some((call, live.tone))
     }
 
-    pub(crate) fn push_mic(&self, pcm: &[i16]) {
-        // No active 1:1 call: the microphone feeds the group call, if any.
-        let Some((call, tone)) = self.active_call() else { return self.gcall.push_mic(pcm) };
-        let Some(conn) = call.conn.lock().clone() else { return };
+    /// Feeds the microphone to the active 1:1 call. `false`: there is none, and the caller may
+    /// feed a group call instead.
+    pub fn push_call_mic(&self, pcm: &[i16]) -> bool {
+        let Some((call, tone)) = self.active_call() else { return false };
+        let Some(conn) = call.conn.lock().clone() else { return true };
         let mut mic = call.mic.lock();
         mic.extend_from_slice(pcm);
         let mut frame = [0i16; audio::FRAME];
@@ -399,11 +400,14 @@ impl Inner {
                 *call.sent.lock() += 1;
             }
         }
+        true
     }
 
-    pub(crate) fn pull_speaker(&self) -> Vec<i16> {
+    /// The next frame of the active 1:1 call; `None`: there is none, and the caller may pull a
+    /// group call's instead.
+    pub fn pull_call_speaker(&self) -> Option<Vec<i16>> {
         let mut out = [0i16; audio::FRAME];
-        let Some((call, _)) = self.active_call() else { return self.gcall.pull_speaker() };
+        let (call, _) = self.active_call()?;
         {
             call.receiver.lock().pull(&mut out, call.now_ms());
             let mut played = call.played.lock();
@@ -411,10 +415,10 @@ impl Inner {
             let excess = played.len().saturating_sub(audio::RATE as usize);
             played.drain(..excess);
         }
-        out.to_vec()
+        Some(out.to_vec())
     }
 
-    pub(crate) fn call_stats(&self) -> Option<CallStats> {
+    pub fn call_stats(&self) -> Option<CallStats> {
         let call = self.live.lock().call.clone()?;
         let rx = call.receiver.lock().stats();
         let (direct, rtt_ms) = call.conn.lock().as_ref().and_then(selected_path).unwrap_or((false, 0));
@@ -443,6 +447,6 @@ impl Inner {
 }
 
 /// Whether the connection's selected path is direct (not via a relay), and its round trip.
-pub(super) fn selected_path(c: &Connection) -> Option<(bool, u32)> {
+pub fn selected_path(c: &Connection) -> Option<(bool, u32)> {
     c.paths().iter().find(|p| p.is_selected()).map(|p| (p.is_ip(), p.rtt().as_millis() as u32))
 }

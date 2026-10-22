@@ -2,14 +2,14 @@
 
 use super::*;
 
-impl Inner {
-    pub(crate) async fn add_contact(self: Arc<Self>, text: String) -> Result<Contact, Error> {
+impl NodeCtx {
+    pub async fn add_contact(self: Arc<Self>, text: String) -> Result<Contact, Error> {
         self.add_contact_from(text, crate::caps::ContactOrigin::Ticket).await
     }
 
     /// `add_contact_outcome` for callers that need the contact now (a group chat request ticket,
     /// which its owner takes at once): a request held for their user is an error here.
-    pub(crate) async fn add_contact_from(self: Arc<Self>, text: String, origin: crate::caps::ContactOrigin) -> Result<Contact, Error> {
+    pub async fn add_contact_from(self: Arc<Self>, text: String, origin: crate::caps::ContactOrigin) -> Result<Contact, Error> {
         match self.add_contact_outcome(text, origin).await? {
             crate::contact_req::AddOutcome::Added { contact } => Ok(contact),
             crate::contact_req::AddOutcome::Requested { .. } => Err(Error::Protocol(crate::contact_req::PENDING.into())),
@@ -20,7 +20,7 @@ impl Inner {
     /// message only). Their device either adds us at once (`Added`) or holds our hello as a
     /// request for its user (`Requested`): our half is kept in `sent_requests`, and their
     /// Welcome arrives later on a connection they dial (`welcome_incoming`).
-    pub(crate) async fn add_contact_outcome(
+    pub async fn add_contact_outcome(
         self: Arc<Self>,
         text: String,
         origin: crate::caps::ContactOrigin,
@@ -126,7 +126,7 @@ impl Inner {
             Msg::Notice { notice } if self.is_block_from(&claim.iss, &notice) => {
                 self.shared.lock().state.sent_requests.remove(&claim.iss);
                 let _ = self.take_notice(&notice);
-                return Err(Error::Rejected(crate::BLOCKED.into()));
+                return Err(Error::Rejected(crate::block::BLOCKED.into()));
             }
             Msg::ContactPending => {
                 ctrl.finish();
@@ -152,7 +152,7 @@ impl Inner {
 
     /// `lift_block`: only when the user scanned this contact's ticket; a contact who arrives on
     /// their own (they scanned ours) must not undo a removal.
-    pub(crate) async fn save_contact(
+    pub async fn save_contact(
         self: &Arc<Self>,
         epoch: u64,
         new: proto::NewContact,
@@ -170,12 +170,12 @@ impl Inner {
             apply_contact(&mut s.state, stored, new.device, lift_block)?;
         }
         self.persist_async(epoch).await?;
-        self.events.on_contacts_changed();
+        self.sink.on_contacts_changed();
         Ok(contact)
     }
 }
 
-pub(crate) fn stored_contact(new: &proto::NewContact, relay: Option<String>, calls_allowed: bool) -> StoredContact {
+pub fn stored_contact(new: &proto::NewContact, relay: Option<String>, calls_allowed: bool) -> StoredContact {
     StoredContact {
         did: new.did.clone(),
         name: proto::sanitize_name(&new.name),
@@ -192,7 +192,7 @@ pub(crate) fn stored_contact(new: &proto::NewContact, relay: Option<String>, cal
 
 /// Adds `stored`, or refreshes the contact of that DID. A device we have not seen before resets
 /// `verified`: the safety numbers were compared with another phone.
-pub(crate) fn apply_contact(st: &mut State, stored: StoredContact, device: [u8; 32], lift_block: bool) -> Result<(), Error> {
+pub fn apply_contact(st: &mut State, stored: StoredContact, device: [u8; 32], lift_block: bool) -> Result<(), Error> {
     // A block is lifted only by `unblock` (which signs the notice); `add_contact` does that
     // before it gets here.
     if !lift_block && st.blocked.contains(&stored.did) {
@@ -227,7 +227,7 @@ pub(crate) fn apply_contact(st: &mut State, stored: StoredContact, device: [u8; 
 /// Stops handing out the current ticket (the next `my_ticket` mints a fresh one). `keep`: it
 /// stays redeemable until it expires (reusable codes); otherwise every ticket we handed out
 /// stops working at once (`reset_ticket`, a block).
-pub(crate) fn retire_ticket(st: &mut State, keep: bool) {
+pub fn retire_ticket(st: &mut State, keep: bool) {
     if keep {
         let now = now();
         if let Some(c) = st.ticket.as_deref().and_then(|t| ContactTicket::from_text(t).ok()).and_then(|t| t.verify(now).ok()) {
@@ -242,4 +242,4 @@ pub(crate) fn retire_ticket(st: &mut State, keep: bool) {
 // Whether a ticket of ours still adds contacts is `account_model::tickets` (`ticket_live`, read by
 // the issuance store).
 #[cfg(test)]
-pub(super) use account_model::tickets::current_nonce;
+pub use account_model::tickets::current_nonce;

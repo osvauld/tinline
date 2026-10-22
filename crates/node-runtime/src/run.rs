@@ -2,8 +2,8 @@
 
 use super::*;
 
-impl Inner {
-    pub(crate) async fn incoming_call(
+impl NodeCtx {
+    pub async fn incoming_call(
         self: Arc<Self>,
         conn: Connection,
         mut ctrl: Ctrl,
@@ -60,7 +60,7 @@ impl Inner {
         // generic refusal.
         if let Err(denied) = self.token_check(&caller.did, &caller.grant, proto::Cap::Call) {
             let reason = match denied {
-                crate::caps::Denied::CallsNotAllowed => crate::CALLS_NOT_ALLOWED,
+                crate::caps::Denied::CallsNotAllowed => crate::caps::CALLS_NOT_ALLOWED,
                 crate::caps::Denied::Refused => REFUSED,
             };
             self.log(format!("incoming call refused: {reason}"));
@@ -116,8 +116,8 @@ impl Inner {
             // Not if the call already ended meanwhile: the UI never heard of it.
             let _order = call.notify.lock();
             if !matches!(call.state(), CallState::Ended { .. }) {
-                self.events.on_incoming_call(info.clone());
-                self.events.on_call_state(info.call_id.clone(), CallState::Ringing);
+                self.sink.on_incoming_call(info.clone());
+                self.sink.on_call_state(info.call_id.clone(), CallState::Ringing);
             }
         }
         // Authenticated and holding the call slot: no longer one of the unproven connections.
@@ -129,7 +129,7 @@ impl Inner {
     /// Both sides dialled each other at once: each would answer the other's hello with Busy
     /// and both calls die. The call from the lower device key wins; the higher side drops its
     /// own outgoing call so the incoming one can take the slot.
-    pub(crate) fn yield_on_glare(&self, peer: &str, mine: [u8; 32], theirs: [u8; 32]) {
+    pub fn yield_on_glare(&self, peer: &str, mine: [u8; 32], theirs: [u8; 32]) {
         let ours = self.live.lock().call.clone();
         if let Some(ours) = ours
             && !ours.info.incoming
@@ -143,7 +143,7 @@ impl Inner {
 
     /// Drives one call from ringing to the end, on either side. `incoming_from` is the caller's
     /// DID when we are the callee, so the answer can carry a renewed grant.
-    pub(crate) async fn run_call(
+    pub async fn run_call(
         self: Arc<Self>,
         call: Arc<Call>,
         conn: Connection,
@@ -199,7 +199,7 @@ impl Inner {
                     // They blocked us during the call.
                     Ok(Some(Msg::Notice { notice })) if self.is_block_from(&call.info.peer_did, &notice) => {
                         let _ = self.take_notice(&notice);
-                        break crate::BLOCKED.into();
+                        break crate::block::BLOCKED.into();
                     }
                     Ok(Some(Msg::Hangup)) => {
                         // A callee only hangs up unanswered when its ring timed out; a refusal is a Decline.
@@ -228,13 +228,15 @@ impl Inner {
                         }
                         datagrams = Some(self.start_media(&call, &conn));
                         self.set_state(&call, CallState::Active);
-                        self.chat_call_activity(&call.info.peer_did);
+                        if let Some(h) = self.hooks() {
+                            h.chat_call_activity(&call.info.peer_did);
+                        }
                         self.video_decided(&call, &conn, video, theirs);
                     }
                     Some(Cmd::Answer) => {}
                     Some(Cmd::Block(notice)) => {
                         let _ = ctrl.send(&Msg::Notice { notice }).await;
-                        break crate::BLOCKED.into();
+                        break crate::block::BLOCKED.into();
                     }
                     // Not yet answered: the callee refusing is a decline, the caller giving up
                     // is a hangup (the callee shows it as missed).

@@ -2,8 +2,8 @@
 
 use super::*;
 
-impl Inner {
-    pub(super) fn new_call(
+impl NodeCtx {
+    pub fn new_call(
         info: CallInfo,
         state: CallState,
         epoch: u64,
@@ -41,7 +41,7 @@ impl Inner {
 
     /// Takes the call slot. With `announce` the first state is delivered to the UI before any
     /// other thread can see (and end) the call, and after the previous call's events.
-    pub(crate) fn begin_call(
+    pub fn begin_call(
         &self,
         info: CallInfo,
         state: CallState,
@@ -57,7 +57,7 @@ impl Inner {
                     return Err(Error::Busy);
                 }
                 // The user is in a group call (G6): incoming 1:1 calls get Busy, outgoing InCall.
-                if self.gcall.in_call() {
+                if self.hooks().is_some_and(|h| h.in_group_call()) {
                     return Err(Error::InCall);
                 }
                 live.call = Some(call.clone());
@@ -67,7 +67,7 @@ impl Inner {
             let _previous = previous.as_ref().map(|p| p.notify.lock());
             if announce {
                 self.log(format!("call {}: {state:?}", call.info.call_id));
-                self.events.on_call_state(call.info.call_id.clone(), state);
+                self.sink.on_call_state(call.info.call_id.clone(), state);
             }
         }
         Ok((call, rx))
@@ -75,7 +75,7 @@ impl Inner {
 
     /// Parks an incoming call beside the active one. Busy unless there is an answered call
     /// and nothing already waiting.
-    pub(super) fn begin_waiting(&self, info: CallInfo, epoch: u64) -> Result<(Arc<Call>, mpsc::UnboundedReceiver<Cmd>), Error> {
+    pub fn begin_waiting(&self, info: CallInfo, epoch: u64) -> Result<(Arc<Call>, mpsc::UnboundedReceiver<Cmd>), Error> {
         let (call, rx) = Self::new_call(info, CallState::Ringing, epoch)?;
         call.waiting.store(true, Ordering::SeqCst);
         let mut live = self.live.lock();
@@ -88,7 +88,7 @@ impl Inner {
         }
     }
 
-    pub(crate) fn start_call(self: Arc<Self>, did: String, video: bool) -> Result<CallInfo, Error> {
+    pub fn start_call(self: Arc<Self>, did: String, video: bool) -> Result<CallInfo, Error> {
         let me = self.me()?;
         let ep = self.endpoint()?;
         let (contact, held_name) = {
@@ -117,7 +117,7 @@ impl Inner {
             _ => {
                 let (call, _cmds) = self.begin_call(info.clone(), CallState::Dialing, true, me.epoch)?;
                 let this = self.clone();
-                self.handle.spawn(async move { this.end_call(&call, crate::BLOCKED.into()) });
+                self.handle.spawn(async move { this.end_call(&call, crate::block::BLOCKED.into()) });
                 return Ok(info);
             }
         };
@@ -151,7 +151,7 @@ impl Inner {
     ///
     /// Media is read from the winning connection only; messages of the other legs are not read
     /// once they are cancelled.
-    pub(super) async fn run_outgoing(
+    pub async fn run_outgoing(
         self: Arc<Self>,
         ep: Endpoint,
         me: Arc<Me>,
@@ -236,7 +236,9 @@ impl Inner {
                             *call.conn.lock() = Some(conn.clone());
                             let datagrams = self.start_media(&call, &conn);
                             self.set_state(&call, CallState::Active);
-                            self.chat_call_activity(&call.info.peer_did);
+                            if let Some(h) = self.hooks() {
+                                h.chat_call_activity(&call.info.peer_did);
+                            }
                             // An answer may only take video we offered.
                             let theirs = video.filter(|_| offer.is_some());
                             self.video_decided(&call, &conn, offer, theirs);
@@ -265,7 +267,7 @@ impl Inner {
                         LegEvent::Blocked(notice) if self.is_block_from(&call.info.peer_did, &notice) => {
                             let _ = self.take_notice(&notice);
                             cancel_others(&mut legs, Some(idx), hangup_msg.clone());
-                            break crate::BLOCKED.into();
+                            break crate::block::BLOCKED.into();
                         }
                         LegEvent::Blocked(_) => {
                             legs[idx] = None;
@@ -275,7 +277,7 @@ impl Inner {
                         LegEvent::CallsNotAllowed => {
                             self.drop_call_token(call.epoch, &call.info.peer_did);
                             cancel_others(&mut legs, Some(idx), hangup_msg.clone());
-                            break crate::CALLS_NOT_ALLOWED.into();
+                            break crate::caps::CALLS_NOT_ALLOWED.into();
                         }
                     }
                 }
@@ -360,7 +362,7 @@ impl Inner {
     /// Keeps reading the legs' events after the call was decided: a device whose `Accept` was
     /// already on its way gets `msg` (a `Cancel`) and is closed, so it stops instead of waiting
     /// on a call nobody will carry. Ends when the last leg task is gone.
-    pub(super) fn cancel_late_answers(
+    pub fn cancel_late_answers(
         handle: &tokio::runtime::Handle,
         mut events: mpsc::UnboundedReceiver<(usize, LegEvent)>,
         msg: Msg,

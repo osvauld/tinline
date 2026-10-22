@@ -1,6 +1,10 @@
-//! Public records and the `NodeEvents` callback of the `Node` API.
+//! Public records and the `NodeEvents` callback of the `Node` API. Most records are
+//! `node_runtime` types, declared to UniFFI here (UniFFI puts the declaring module's path into
+//! the type metadata, so they stay in this module).
 
-use super::*;
+use std::sync::Arc;
+
+pub use node_runtime::{Availability, CallInfo, CallState, CallStats, CardPeek, Contact, NodeStatus, ProfileInfo};
 
 /// `on_call_state` with `Ended` is also the moment the call history has changed: the UI should
 /// re-read `recent_calls` / `calls_with` then (there is no separate history callback).
@@ -11,22 +15,6 @@ pub trait NodeEvents: Send + Sync {
     fn on_incoming_call(&self, call: CallInfo);
     fn on_call_state(&self, call_id: String, state: CallState);
     fn on_log(&self, line: String);
-}
-
-#[derive(Debug, Clone, uniffi::Record)]
-pub struct NodeStatus {
-    pub started: bool,
-    /// Connected to a home relay, i.e. reachable from anywhere.
-    pub online: bool,
-    pub relay: Option<String>,
-    pub endpoint_id: String,
-}
-
-#[derive(Debug, Clone, uniffi::Record)]
-pub struct ProfileInfo {
-    pub did: String,
-    pub name: String,
-    pub device: String,
 }
 
 /// One account on this device, as the lock screen and the switcher list it. Read from the clear
@@ -49,7 +37,23 @@ pub enum LockState {
     Unlocked,
 }
 
-#[derive(Debug, Clone, uniffi::Record)]
+#[uniffi::remote(Record)]
+pub struct NodeStatus {
+    pub started: bool,
+    /// Connected to a home relay, i.e. reachable from anywhere.
+    pub online: bool,
+    pub relay: Option<String>,
+    pub endpoint_id: String,
+}
+
+#[uniffi::remote(Record)]
+pub struct ProfileInfo {
+    pub did: String,
+    pub name: String,
+    pub device: String,
+}
+
+#[uniffi::remote(Record)]
 pub struct Contact {
     pub did: String,
     pub name: String,
@@ -67,10 +71,9 @@ pub struct Contact {
     #[uniffi(default = false)]
     pub lost_touch: bool,
 }
-
 /// What a contact card found in some text says, before anyone is dialled: for "Add <name>?"
 /// prompts when a card is pasted or sits on the clipboard.
-#[derive(Debug, Clone, PartialEq, Eq, uniffi::Record)]
+#[uniffi::remote(Record)]
 pub struct CardPeek {
     /// The card itself, cut out of the surrounding text; hand this to `add_contact`.
     pub ticket: String,
@@ -80,16 +83,15 @@ pub struct CardPeek {
     /// Already in our contacts.
     pub known: bool,
 }
-
 /// Whether calls ring. While unavailable, callers are turned away without being told why.
-#[derive(Debug, Clone, PartialEq, Eq, uniffi::Record)]
+#[uniffi::remote(Record)]
 pub struct Availability {
     pub available: bool,
     /// Unix seconds at which it turns back to available by itself; `None` = until switched on.
     pub until: Option<u64>,
 }
 
-#[derive(Debug, Clone, uniffi::Record)]
+#[uniffi::remote(Record)]
 pub struct CallInfo {
     pub call_id: String,
     pub peer_did: String,
@@ -100,7 +102,7 @@ pub struct CallInfo {
     pub video: bool,
 }
 
-#[derive(Debug, Clone, PartialEq, uniffi::Enum)]
+#[uniffi::remote(Enum)]
 pub enum CallState {
     Dialing,
     Ringing,
@@ -108,7 +110,7 @@ pub enum CallState {
     Ended { reason: String },
 }
 
-#[derive(Debug, Clone, uniffi::Record)]
+#[uniffi::remote(Record)]
 pub struct CallStats {
     pub call_id: String,
     pub state: CallState,
@@ -127,20 +129,27 @@ pub struct CallStats {
     /// Active, but no media for over 1.5 s and the call has not ended: the path is changing.
     pub reconnecting: bool,
 }
+/// Hands the runtime's events to the app's `NodeEvents`.
+pub(crate) struct NodeEventsAdapter(pub(crate) Arc<dyn NodeEvents>);
 
-impl Me {
-    pub(crate) fn load(profile: Profile, epoch: u64) -> Result<Self, Error> {
-        let id = identity::recover(&profile.mnemonic).map_err(|_| Error::BadPhrase)?;
-        let device = cryptography::signature::public_key(&profile.device_secret);
-        let attestation = proto::attest(&id, device, now());
-        Ok(Self { epoch, profile, id, device, attestation })
+impl node_runtime::NodeSink for NodeEventsAdapter {
+    fn on_status(&self, status: NodeStatus) {
+        self.0.on_status(status);
     }
 
-    pub(crate) fn info(&self) -> ProfileInfo {
-        ProfileInfo {
-            did: self.id.did().to_string(),
-            name: self.profile.name.clone(),
-            device: PublicKey::from_bytes(&self.device).map(|k| k.to_string()).unwrap_or_default(),
-        }
+    fn on_contacts_changed(&self) {
+        self.0.on_contacts_changed();
+    }
+
+    fn on_incoming_call(&self, call: CallInfo) {
+        self.0.on_incoming_call(call);
+    }
+
+    fn on_call_state(&self, call_id: String, state: CallState) {
+        self.0.on_call_state(call_id, state);
+    }
+
+    fn on_log(&self, line: String) {
+        self.0.on_log(line);
     }
 }
