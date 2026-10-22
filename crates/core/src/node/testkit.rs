@@ -60,7 +60,7 @@ impl Node {
             }
         }
         self.inner.persist_for(Some(me.epoch))?;
-        self.inner.devices_changed();
+        self.inner.ctx.devices_changed();
         Ok(())
     }
 
@@ -74,7 +74,7 @@ impl Node {
         let Ok(blob) = serde_json::from_str::<proto::SignedDeviceList>(&list_json) else {
             return false;
         };
-        let taken = self.inner.accept_device_list(me.epoch, &did, &blob);
+        let taken = self.inner.ctx.accept_device_list(me.epoch, &did, &blob);
         let _ = self.inner.persist_for(Some(me.epoch));
         taken
     }
@@ -101,7 +101,7 @@ impl Node {
     #[doc(hidden)]
     pub fn own_device_list_for_test(&self) -> Option<String> {
         let me = self.inner.me().ok()?;
-        serde_json::to_string(&self.inner.my_device_list(&me)?).ok()
+        serde_json::to_string(&self.inner.ctx.my_device_list(&me)?).ok()
     }
 
     /// For tests: dies like a killed process. The runtime stops at once and nothing is closed,

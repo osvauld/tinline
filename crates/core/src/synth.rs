@@ -94,7 +94,7 @@ impl Node {
             let (hello, pending) = proto::contact_hello_with(&me.id, me.device, &ticket, &me.profile.name, now * 1000, crate::node::GRANT_TTL, policy)?;
             let (welcome, _) = proto::accept_contact_hello_with(&pid, pubdev, &hello, me.device, now * 1000, &proto::Unrecorded, crate::node::GRANT_TTL, |_| policy)?;
             let new = proto::accept_contact_welcome(&me.id, &pending, &welcome, pubdev, now * 1000)?;
-            inner.save_contact(me.epoch, new, None, true, true).await?;
+            inner.ctx.save_contact(me.epoch, new, None, true, true).await?;
             Ok(())
         })?
     }

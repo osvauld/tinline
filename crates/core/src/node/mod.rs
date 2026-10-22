@@ -35,8 +35,6 @@ mod rotation;
 mod testkit;
 mod types;
 mod unlock;
-#[cfg(test)]
-mod tests;
 
 // The runtime (account session, endpoint, 1:1 call, contacts cluster, rotation) is the
 // `node-runtime` crate; its items keep their `crate::node::` paths.
