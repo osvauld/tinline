@@ -35,12 +35,11 @@ impl Node {
         let core = self.inner.group.group_core()?;
         self.inner.group.group_post_check(&core, &group_id)?;
         let p = prepare(&bytes)?;
-        let inner = self.inner.clone();
-        Ok(self.block_on(async move {
+        self.run(|inner| async move {
             inner
                 .group.group_post_prepared(&core, &group_id, p, "image/jpeg", caption)
                 .await
-        })??)
+        })
     }
 
     /// Loads the picture of post `message_id` now (tap to load, or try again after `Failed`),

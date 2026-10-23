@@ -84,8 +84,7 @@ impl Node {
         let id = accounts::id_of(&did)?;
         self.inner.not_in_call()?;
         let loaded = load_account(&self.inner.accounts, &id)?;
-        let inner = self.inner.clone();
-        self.block_on(async move { inner.ctx.replace_account(Some(loaded)).await })?.map_err(Error::from)
+        self.run(|inner| async move { inner.ctx.replace_account(Some(loaded)).await })
     }
 
     /// Leaves no account selected, so `has_identity` is false and `create_identity` /
@@ -93,8 +92,7 @@ impl Node {
     /// 1:1 call; a group call is left as on `switch_account`.
     pub fn begin_new_account(&self) -> Result<(), Error> {
         self.inner.not_in_call()?;
-        let inner = self.inner.clone();
-        self.block_on(async move { inner.ctx.replace_account(None).await })?.map_err(Error::from)
+        self.run(|inner| async move { inner.ctx.replace_account(None).await })
     }
 
     /// Deletes a non-current account and everything in its directory.

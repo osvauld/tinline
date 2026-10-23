@@ -164,7 +164,7 @@ impl NodeCtx {
         let me = self.me()?;
         match first {
             hello @ Msg::ContactHello { .. } => {
-                let Msg::ContactHello { relay: hint, .. } = &hello else { unreachable!() };
+                let Msg::ContactHello { relay: hint, .. } = &hello else { return Err(Error::Protocol("not a contact hello".into())) };
                 let hint = relay_hint(hint);
                 let (this, me2, hello2) = (self.clone(), me.clone(), hello.clone());
                 let accepted = tokio::task::spawn_blocking(move || this.accept_hello(&me2, &hello2, remote, hint, on))

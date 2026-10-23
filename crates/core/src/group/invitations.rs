@@ -1,7 +1,6 @@
 //! Inviting contacts directly (G3). The runtime is `group_runtime::invitations`; this declares
 //! its records to UniFFI, forwards its events to the app and holds the `Node` calls (`node.rs`).
 
-use std::sync::Arc;
 
 pub use group_runtime::invitations::*;
 
@@ -46,13 +45,11 @@ pub trait GroupInvitationEvents: Send + Sync {
     fn on_group_invitation(&self, invitation: GroupInvitation);
 }
 
-/// Hands the runtime's events to the app's `GroupInvitationEvents`.
-pub(crate) struct GroupInvitationEventsAdapter(pub(crate) Arc<dyn GroupInvitationEvents>);
-
-impl group_runtime::invitations::GroupInvitationSink for GroupInvitationEventsAdapter {
-    fn on_group_invitation(&self, invitation: GroupInvitation) {
-        self.0.on_group_invitation(invitation);
+sink_adapter!(
+    /// Hands the runtime's events to the app's `GroupInvitationEvents`.
+    pub(crate) GroupInvitationEventsAdapter(GroupInvitationEvents) => group_runtime::invitations::GroupInvitationSink {
+        fn on_group_invitation(invitation: GroupInvitation);
     }
-}
+);
 
 mod node;

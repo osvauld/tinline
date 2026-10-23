@@ -508,7 +508,7 @@ impl SearchIndex {
             ops.push(Op::DeletePrefix(format!("z/{:08x}/", g.id)));
         }
         man.segs.retain(|g| !g.days.is_empty());
-        ops.push(self.db.put_op("m", &cryptography::codec::to_bytes(&man).expect("serialises"))?);
+        ops.push(self.db.put_op("m", &cryptography::codec::to_bytes_infallible(&man))?);
         self.db.apply(&ops)?;
         self.file_changed.store(true, std::sync::atomic::Ordering::SeqCst);
         *self.view.write() = Arc::new(View::new(man));

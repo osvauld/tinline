@@ -2,7 +2,7 @@
 //! [`GcallHost`] implementation) is the group runtime's (`group_runtime::calls`).
 
 use iroh::EndpointAddr;
-use proto::gcall::{SignedEnd, SignedStart};
+use proto::gcall::SignedStart;
 
 use super::*;
 use crate::Error;
@@ -19,11 +19,10 @@ impl crate::Node {
 
     /// The group endpoint, bound (otherwise it is bound only once the account has a group).
     fn gcall_ensure_endpoint(&self) -> Result<(), Error> {
-        let inner = self.inner.clone();
-        Ok(self.block_on(async move {
+        self.run(|inner| async move {
             let core = inner.group.group_core()?;
             inner.group.group_ensure(&core).await.map(|_| ())
-        })??)
+        })
     }
 
     /// New local hosting conditions (§2.4: battery, charging, thermal, metered), from the
@@ -37,11 +36,6 @@ impl crate::Node {
     /// A CallStart relayed through the chat hosts (`GcallNet::observe_start`).
     pub fn gcall_observe_start(&self, start: &SignedStart) -> Result<(), Error> {
         self.inner.group.gcall.observe_start(start).map_err(Error::from)
-    }
-
-    /// A relayed `End{ended}`: the call leaves the group's board.
-    pub fn gcall_observe_end(&self, end: &SignedEnd) -> Result<(), Error> {
-        self.inner.group.gcall.observe_end(end).map_err(Error::from)
     }
 
     /// Host a call (`GcallNet::host`).
@@ -66,22 +60,6 @@ impl crate::Node {
 
     pub fn gcall_end(&self) {
         self.inner.group.gcall.end()
-    }
-
-    pub fn gcall_set_mic_muted(&self, muted: bool) {
-        self.inner.group.gcall.set_mic_muted(muted)
-    }
-
-    pub fn gcall_mute_participant(&self, did: &str, muted: bool) {
-        self.inner.group.gcall.mute_participant(did, muted)
-    }
-
-    pub fn gcall_push_mic(&self, pcm: &[i16]) {
-        self.inner.group.gcall.push_mic(pcm)
-    }
-
-    pub fn gcall_pull_speaker(&self) -> Vec<i16> {
-        self.inner.group.gcall.pull_speaker()
     }
 
     pub fn gcall_status(&self) -> Option<GcallStatus> {

@@ -118,7 +118,7 @@ async fn stale_malformed_unnegotiated_revoked_and_failed_persistence_emit_no_ack
             .own_content_export(&gid, &DocId::Day(day.clone()), &VersionVector::default())
             .unwrap()
             .unwrap();
-        let sig = crate::chat::wire::sign_batch(&client_secret, &doc, &update);
+        let sig = chat_runtime::chat::wire::sign_batch(&client_secret, &doc, &update);
         let batch = SelfMsg::GroupBatch {
             request: 1,
             doc: doc.clone(),

@@ -67,4 +67,5 @@ fn reasons_and_relays_are_bounded() {
 
 #[cfg(test)]
 mod find_card_tests;
+mod or_log_tests;
 

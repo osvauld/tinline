@@ -118,10 +118,12 @@ pub(super) fn read_ogg(data: &[u8]) -> Result<Ogg, Error> {
         if (flags & 0x01 != 0) != open {
             return Err(bad_ogg("continuation flag does not match the previous page"));
         }
-        let granule = u64::from_le_bytes(h[6..14].try_into().unwrap());
-        let ser = u32::from_le_bytes(h[14..18].try_into().unwrap());
-        let seq = u32::from_le_bytes(h[18..22].try_into().unwrap());
-        let want_crc = u32::from_le_bytes(h[22..26].try_into().unwrap());
+        let (Some(granule), Some(ser), Some(seq), Some(want_crc)) =
+            (h[6..].first_chunk::<8>(), h[14..].first_chunk::<4>(), h[18..].first_chunk::<4>(), h[22..].first_chunk::<4>())
+        else {
+            return Err(bad_ogg("short page header"));
+        };
+        let (granule, ser, seq, want_crc) = (u64::from_le_bytes(*granule), u32::from_le_bytes(*ser), u32::from_le_bytes(*seq), u32::from_le_bytes(*want_crc));
         if first {
             serial = ser;
         } else if ser != serial {

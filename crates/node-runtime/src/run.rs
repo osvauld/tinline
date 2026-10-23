@@ -12,7 +12,7 @@ impl NodeCtx {
         me: &Me,
         permit: OwnedSemaphorePermit,
     ) -> Result<(), Error> {
-        let Msg::CallHello { call_id, relay: hint, devices: list, video, camera, .. } = &hello else { unreachable!() };
+        let Msg::CallHello { call_id, relay: hint, devices: list, video, camera, .. } = &hello else { return Err(Error::Protocol("not a call hello".into())) };
         let (call_id, hint, list, video) = (call_id.clone(), relay_hint(hint), list.clone(), video.clone());
         // A video call when they placed it as one and we take video at all.
         let video_call = *camera && video.is_some() && self.video_enabled();

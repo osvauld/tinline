@@ -41,7 +41,7 @@ use super::wire::*;
 use crate::Error;
 use chat_core::doc::{DAY_MS, day_of, writer_id};
 use node_runtime::wire::DIAL_TIMEOUT;
-use node_runtime::{addr_for, now_ms, relay_of};
+use node_runtime::{OrLog, addr_for, now_ms, relay_of};
 
 mod accepting;
 pub mod admit;

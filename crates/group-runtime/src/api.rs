@@ -13,7 +13,7 @@ use super::store::GroupMeta;
 use crate::Error;
 use chat_core::doc::day_of;
 use crate::GroupRt;
-use node_runtime::now_ms;
+use node_runtime::{OrLog, now_ms};
 
 mod images;
 mod types;
@@ -292,7 +292,7 @@ impl GroupRt {
         if mine == 0 || core.am_host(gid) {
             return false;
         }
-        !core.store.acks(gid).unwrap_or_default().iter().any(|(_, vv)| loro::VersionVector::decode(vv).ok().and_then(|v| v.get(&core.wid).copied()).unwrap_or(0) >= mine)
+        !core.store.acks(gid).or_log_default("reading acks").iter().any(|(_, vv)| loro::VersionVector::decode(vv).ok().and_then(|v| v.get(&core.wid).copied()).unwrap_or(0) >= mine)
     }
 
     /// Our stored open link names us, a chat host of `gid`, and we still keep its code. A link
@@ -336,7 +336,7 @@ impl GroupRt {
             None => {
                 // An open link carries no invite: we write `OpenJoin` once we hold the group.
                 let meta = GroupMeta {
-                    joining: t.invite.as_ref().map(|i| cryptography::codec::to_bytes(i).expect("serialises")),
+                    joining: t.invite.as_ref().map(cryptography::codec::to_bytes_infallible),
                     open_join: t.open && t.invite.is_none(),
                     ..Default::default()
                 };

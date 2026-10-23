@@ -283,8 +283,8 @@ impl ChatRt {
     pub fn chat_pending(&self, did: &str, id: &str) -> bool {
         let (Ok(me), Ok(core)) = (self.me(), self.chat_core()) else { return false };
         let pair = pair_id(me.id.did(), did);
-        match core.store.mi(&pair, id).ok().flatten() {
-            Some(day) => core.store.mo(&pair, &day, id).ok().flatten().is_some() && Self::chat_delivery(&core, &pair, &day, id) == DeliveryState::Pending,
+        match core.store.mi(&pair, id).or_log_flat("reading the message index") {
+            Some(day) => core.store.mo(&pair, &day, id).or_log_flat("reading the delivery counter").is_some() && Self::chat_delivery(&core, &pair, &day, id) == DeliveryState::Pending,
             None => false,
         }
     }

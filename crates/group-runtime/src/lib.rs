@@ -21,6 +21,7 @@ pub use group_core::{short, valid_gid};
 pub use node_runtime::Error;
 
 mod access;
+mod checked;
 pub mod api;
 pub mod attestation;
 pub mod calldir;

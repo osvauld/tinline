@@ -374,7 +374,7 @@ impl GroupStore {
     }
 
     pub fn put_host(&self, gid: &str, did: &str, dev: &[u8; 32], a: &SignedHostAddr) -> Result<(), Error> {
-        self.db.put(&format!("hosts/{gid}/{did}/{}", hex::encode(dev)), &cryptography::codec::to_bytes(a).expect("serialises")).map_err(io)
+        self.db.put(&format!("hosts/{gid}/{did}/{}", hex::encode(dev)), &cryptography::codec::to_bytes_infallible(a)).map_err(io)
     }
 
     pub fn dir(&self, gid: &str) -> Result<Vec<(String, DirEntry)>, Error> {

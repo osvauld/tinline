@@ -16,6 +16,7 @@ use super::engine::Live;
 use super::record::*;
 use super::store::GroupMeta;
 use crate::GroupRt;
+use node_runtime::OrLog;
 
 /// At most this many groups per message.
 pub const MAX_OWN_GROUPS: usize = 512;
@@ -81,7 +82,7 @@ impl GroupRt {
             }
             for h in hosts {
                 if let Ok(a) = h.open() {
-                    let _ = core.store.put_host(&gid, &a.did, &a.dev, h);
+                    core.store.put_host(&gid, &a.did, &a.dev, h).or_log("saving a group host");
                 }
             }
             self.log(format!("group {}: learned from an own device", super::short(&gid)));

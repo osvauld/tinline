@@ -4,7 +4,8 @@ use std::sync::Arc;
 use loro::VersionVector;
 
 use node_runtime::Error;
-use crate::group::own::contents::*;
+use chat_runtime::chat::own::parse_doc;
+use group_runtime::own::contents::*;
 use crate::{CallInfo, CallState, Node, NodeEvents, NodeStatus};
 
 struct Quiet;

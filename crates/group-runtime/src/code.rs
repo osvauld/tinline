@@ -137,7 +137,7 @@ impl GroupRt {
             if core.store.prune_codes(Some(gid))? >= MAX_CODES_PER_GROUP {
                 return Err(Error::Rejected("too many open invites for this group; revoke some".into()));
             }
-            let row = CodeRow { gid: gid.to_string(), kind, invite: invite.as_ref().map(|i| cryptography::codec::to_bytes(i).expect("serialises")), expires, by: core.did.clone() };
+            let row = CodeRow { gid: gid.to_string(), kind, invite: invite.as_ref().map(cryptography::codec::to_bytes_infallible), expires, by: core.did.clone() };
             core.store.put_code(&code, &row)?;
             core.store.put_issued(&code, &IssuedRow { gid: gid.to_string(), host_did: core.did.clone(), host_dev: hex::encode(core.dev), expires })?;
             return Ok(ShortCode { endpoint: a.endpoint, relay: a.relay, code }.to_link());
@@ -441,7 +441,7 @@ impl GroupRt {
                     Ok(n) if n < MAX_CODES_PER_GROUP => {}
                     _ => return ack(code, false, "too many open invites for this group; revoke some"),
                 }
-                let row = CodeRow { gid: gid.to_string(), kind, invite: invite.as_ref().map(|i| cryptography::codec::to_bytes(i).expect("serialises")), expires, by: did.to_string() };
+                let row = CodeRow { gid: gid.to_string(), kind, invite: invite.as_ref().map(cryptography::codec::to_bytes_infallible), expires, by: did.to_string() };
                 match core.store.put_code(&code, &row) {
                     Ok(()) => ack(code, true, ""),
                     Err(e) => ack(code, false, &e.to_string()),

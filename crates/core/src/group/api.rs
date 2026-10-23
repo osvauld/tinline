@@ -150,28 +150,24 @@ impl Node {
     /// the link's code (we, if we host; else a host we are connected to, which can take up to 30
     /// s to reach). See `code.rs`.
     pub fn group_invite(&self, group_id: String) -> Result<String, Error> {
-        let inner = self.inner.clone();
-        Ok(self.block_on(async move {
-            let core = inner.group.group_core()?;
-            inner.group.group_admin_check(&core, &group_id)?;
+        self.run(|inner| async move {
+            let core = inner.group.admin_core(&group_id)?;
             inner.group.group_ensure(&core).await?;
             inner.group.group_relay_ready().await;
             let invite = issue_invite(&core.account, &group_id, now_ms(), INVITE_TTL);
             inner.group.group_issue_code(&core, &group_id, Some(invite)).await
-        })??)
+        })
     }
 
     /// A short link for our own other devices (same DID): it admits only this account. Valid 7
     /// days.
     pub fn group_device_token(&self, group_id: String) -> Result<String, Error> {
-        let inner = self.inner.clone();
-        Ok(self.block_on(async move {
-            let core = inner.group.group_core()?;
-            inner.group.group_member_check(&core, &group_id)?;
+        self.run(|inner| async move {
+            let core = inner.group.member_core(&group_id)?;
             inner.group.group_ensure(&core).await?;
             inner.group.group_relay_ready().await;
             inner.group.group_issue_code(&core, &group_id, None).await
-        })??)
+        })
     }
 
     /// The group's permanent open link (public group §2; owner and admins): anyone holding it
@@ -182,8 +178,7 @@ impl Node {
     pub fn group_open_link(&self, group_id: String) -> Result<String, Error> {
         let inner = self.inner.clone();
         self.block_on(async move {
-            let core = inner.group.group_core()?;
-            inner.group.group_admin_check(&core, &group_id)?;
+            let core = inner.group.admin_core(&group_id)?;
             inner.group.group_ensure(&core).await?;
             inner.group.group_relay_ready().await;
             if !core.with_state(&group_id, |st| st.open).unwrap_or(false) {
@@ -214,8 +209,7 @@ impl Node {
     /// new open joiners at once and drops the open link on the hosts we reach; members stay.
     /// Opening alone makes no link (`group_open_link`).
     pub fn group_set_open(&self, group_id: String, open: bool) -> Result<(), Error> {
-        let core = self.inner.group.group_core()?;
-        self.inner.group.group_admin_check(&core, &group_id)?;
+        let core = self.inner.group.admin_core(&group_id)?;
         if core.with_state(&group_id, |st| st.open).unwrap_or(false) != open {
             self.inner.group.group_write(&core, &group_id, Body::Open { active: open })?;
         }
@@ -239,8 +233,7 @@ impl Node {
 
     /// Only the owner and admins may post (a channel), or everyone again (owner and admins).
     pub fn group_set_admins_only(&self, group_id: String, admins_only: bool) -> Result<(), Error> {
-        let core = self.inner.group.group_core()?;
-        self.inner.group.group_admin_check(&core, &group_id)?;
+        let core = self.inner.group.admin_core(&group_id)?;
         if core.with_state(&group_id, |st| st.admins_only).unwrap_or(false) != admins_only {
             self.inner.group.group_write(&core, &group_id, Body::AdminsOnly { active: admins_only })?;
         }
@@ -280,19 +273,17 @@ impl Node {
     /// device holds the group as a member. A host refusal comes back as `Rejected(reason)`.
     pub fn group_join(&self, token: String) -> Result<String, Error> {
         let sc = super::code::ShortCode::parse(&token).ok_or_else(|| Error::Protocol("not a group invite".into()))?;
-        let inner = self.inner.clone();
-        Ok(self.block_on(async move {
+        self.run(|inner| async move {
             let t = inner.group.group_fetch(&sc).await?;
             inner.group.group_join_token(t).await
-        })??)
+        })
     }
 
     pub fn group_post(&self, group_id: String, text: String, reply_to: Option<String>) -> Result<GroupMessage, Error> {
         if text.is_empty() || text.len() > MAX_TEXT {
             return Err(Error::Protocol("message must be 1-20000 bytes".into()));
         }
-        let core = self.inner.group.group_core()?;
-        self.inner.group.group_member_check(&core, &group_id)?;
+        let core = self.inner.group.member_core(&group_id)?;
         // A channel (public group §1): only the owner and admins post. Others' posts would be
         // hidden on every device anyway (`post_visible`).
         if core.with_state(&group_id, |st| st.admins_only && !st.is_admin(&core.did)).unwrap_or(false) {
@@ -314,8 +305,7 @@ impl Node {
 
     /// One admin flag on `member_did` (U9/U15: any 3 remove; final, visible to them).
     pub fn group_flag(&self, group_id: String, member_did: String) -> Result<(), Error> {
-        let core = self.inner.group.group_core()?;
-        self.inner.group.group_admin_check(&core, &group_id)?;
+        let core = self.inner.group.admin_core(&group_id)?;
         let ok = core.groups.lock().get(&group_id).is_some_and(|l| l.state.is_member(&member_did) && l.state.owner.as_deref() != Some(member_did.as_str()));
         if !ok {
             return Err(Error::Rejected("not a member that can be flagged".into()));
@@ -325,8 +315,7 @@ impl Node {
 
     /// Owner only: make `member_did` an admin, or not.
     pub fn group_set_admin(&self, group_id: String, member_did: String, admin: bool) -> Result<(), Error> {
-        let core = self.inner.group.group_core()?;
-        self.inner.group.group_member_check(&core, &group_id)?;
+        let core = self.inner.group.member_core(&group_id)?;
         let ok = core.groups.lock().get(&group_id).is_some_and(|l| l.state.owner.as_deref() == Some(core.did.as_str()) && l.state.is_member(&member_did));
         if !ok {
             return Err(Error::Rejected("only the owner can change admins of members".into()));
@@ -336,8 +325,7 @@ impl Node {
 
     /// Leaves the group (PROVISIONAL: the owner cannot leave).
     pub fn group_leave(&self, group_id: String) -> Result<(), Error> {
-        let core = self.inner.group.group_core()?;
-        self.inner.group.group_member_check(&core, &group_id)?;
+        let core = self.inner.group.member_core(&group_id)?;
         if core.groups.lock().get(&group_id).is_some_and(|l| l.state.owner.as_deref() == Some(core.did.as_str())) {
             return Err(Error::Rejected("the owner cannot leave".into()));
         }

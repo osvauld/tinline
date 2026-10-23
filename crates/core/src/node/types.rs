@@ -2,7 +2,6 @@
 //! `node_runtime` types, declared to UniFFI here (UniFFI puts the declaring module's path into
 //! the type metadata, so they stay in this module).
 
-use std::sync::Arc;
 
 pub use node_runtime::{Availability, CallInfo, CallState, CallStats, CardPeek, Contact, NodeStatus, ProfileInfo};
 
@@ -129,27 +128,13 @@ pub struct CallStats {
     /// Active, but no media for over 1.5 s and the call has not ended: the path is changing.
     pub reconnecting: bool,
 }
-/// Hands the runtime's events to the app's `NodeEvents`.
-pub(crate) struct NodeEventsAdapter(pub(crate) Arc<dyn NodeEvents>);
-
-impl node_runtime::NodeSink for NodeEventsAdapter {
-    fn on_status(&self, status: NodeStatus) {
-        self.0.on_status(status);
+sink_adapter!(
+    /// Hands the runtime's events to the app's `NodeEvents`.
+    pub(crate) NodeEventsAdapter(NodeEvents) => node_runtime::NodeSink {
+        fn on_status(status: NodeStatus);
+        fn on_contacts_changed();
+        fn on_incoming_call(call: CallInfo);
+        fn on_call_state(call_id: String, state: CallState);
+        fn on_log(line: String);
     }
-
-    fn on_contacts_changed(&self) {
-        self.0.on_contacts_changed();
-    }
-
-    fn on_incoming_call(&self, call: CallInfo) {
-        self.0.on_incoming_call(call);
-    }
-
-    fn on_call_state(&self, call_id: String, state: CallState) {
-        self.0.on_call_state(call_id, state);
-    }
-
-    fn on_log(&self, line: String) {
-        self.0.on_log(line);
-    }
-}
+);

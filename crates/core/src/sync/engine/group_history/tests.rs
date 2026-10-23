@@ -1,9 +1,7 @@
 use super::*;
 use crate::chat::doc::{DAY_MS, writer_id};
-use crate::group::{
-    doc::GroupDoc,
-    record::{Body, Record},
-};
+use crate::group::record::{Body, Record};
+use group_runtime::doc::GroupDoc;
 use crate::{CallInfo, CallState, Node, NodeEvents, NodeStatus};
 use iroh::{Endpoint, SecretKey, endpoint::presets};
 

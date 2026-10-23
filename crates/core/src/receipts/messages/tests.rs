@@ -1,6 +1,6 @@
 use super::*;
 use crate::chat::doc::{MsgRec, Shard, Writer, doc_name, pair_id};
-use crate::receipts::{
+use receipts_core::{
     Conversation, Kind, MAX_MESSAGES, Receipt, ReceiptError, Scope,
     store::{ReceiptStore, messages::*},
     testkit::{self, TempDir},

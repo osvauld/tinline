@@ -1,7 +1,6 @@
 //! The group-call records, declared to UniFFI (the runtime's are plain), and the app's
 //! callback.
 
-use std::sync::Arc;
 
 use group_runtime::calls::*;
 
@@ -107,11 +106,9 @@ pub struct GroupCallHere {
     pub hosting: bool,
 }
 
-/// Hands the runtime's events to the app's `GroupCallEvents`.
-pub(crate) struct GroupCallEventsAdapter(pub(crate) Arc<dyn GroupCallEvents>);
-
-impl group_runtime::calls::GroupCallSink for GroupCallEventsAdapter {
-    fn on_group_call(&self, event: GroupCallEvent) {
-        self.0.on_group_call(event);
+sink_adapter!(
+    /// Hands the runtime's events to the app's `GroupCallEvents`.
+    pub(crate) GroupCallEventsAdapter(GroupCallEvents) => group_runtime::calls::GroupCallSink {
+        fn on_group_call(event: GroupCallEvent);
     }
-}
+);

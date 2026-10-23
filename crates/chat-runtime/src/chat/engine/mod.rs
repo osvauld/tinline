@@ -25,7 +25,7 @@ use super::wire::*;
 use super::own::{ACK_MARK, READ_MARK};
 use crate::Error;
 use crate::ChatRt;
-use node_runtime::{Me, addr_for, relay_hint, relay_of};
+use node_runtime::{Me, OrLog, OrLogFlat, addr_for, relay_hint, relay_of};
 
 mod blobs;
 mod history;
@@ -218,7 +218,7 @@ fn random_msg_id() -> String {
 fn now_ms() -> i64 {
     static OFFSET: std::sync::OnceLock<i64> = std::sync::OnceLock::new();
     let off = *OFFSET.get_or_init(|| std::env::var("P2P_CHAT_CLOCK_MS_OFFSET").ok().and_then(|v| v.parse().ok()).unwrap_or(0));
-    std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_millis() as i64).unwrap_or(0) + off
+    i64::try_from(node_runtime::now_ms()).unwrap_or(i64::MAX).saturating_add(off)
 }
 
 

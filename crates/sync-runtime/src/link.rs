@@ -409,7 +409,11 @@ impl SyncRt {
                 None => s.state.registry.push(OwnDevice { device: remote, attestation, label: linked.label.clone(), removed: false, last_seen: now(), relay, links: Vec::new(), rotated: false }),
             }
         }
-        let _ = self.persist_for(Some(me.epoch));
+        // A link that only lives in memory is lost on restart: it fails instead of reporting done.
+        if let Err(e) = self.persist_for(Some(me.epoch)) {
+            tracing::warn!("persisting the linked device: {e}");
+            return Err("storage");
+        }
         self.log(format!("linked device {}", proto::device_to_text(&remote)));
         // U8: tell every unblocked contact about the new install.
         self.ctx.devices_changed();

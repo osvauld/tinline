@@ -99,8 +99,7 @@ impl Node {
         peer_did: String,
         message_id: String,
     ) -> Result<MessageReceiptStatus, Error> {
-        let inner = self.inner.clone();
-        self.block_rt(async move { inner.chat.chat_message_receipts(&peer_did, &message_id).await })
+        self.run(|inner| async move { inner.chat.chat_message_receipts(&peer_did, &message_id).await })
     }
 
     /// The mark for every conversation whose last message is ours (the chat list).
@@ -116,7 +115,6 @@ impl Node {
         peer_did: String,
         day: String,
     ) -> Result<Vec<MessageReceiptStatus>, Error> {
-        let inner = self.inner.clone();
-        self.block_rt(async move { inner.chat.chat_day_receipts(&peer_did, &day).await })
+        self.run(|inner| async move { inner.chat.chat_day_receipts(&peer_did, &day).await })
     }
 }

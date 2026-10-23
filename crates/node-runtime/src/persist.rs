@@ -133,11 +133,17 @@ impl NodeCtx {
             .map_err(|_| Error::Io("persist task failed".into()))?
     }
 
+    /// `persist_async` for callers that cannot return the error (a task, an undo path): a
+    /// failed write is logged, not lost without a trace.
+    pub async fn persist_logged(self: &Arc<Self>, epoch: u64) {
+        self.persist_async(epoch).await.or_log("persisting account state");
+    }
+
     /// Fire and forget, for state that is only a cache (a device, a renewed grant).
     pub fn persist_in_background(self: &Arc<Self>, epoch: u64) {
         let this = self.clone();
         self.handle.spawn_blocking(move || {
-            let _ = this.persist_for(Some(epoch));
+            this.persist_for(Some(epoch)).or_log("persisting account state (cache)");
         });
     }
 

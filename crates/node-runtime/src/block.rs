@@ -257,7 +257,7 @@ impl NodeCtx {
                         }
                         same
                     };
-                    let _ = this.persist_async(me.epoch).await;
+                    this.persist_logged(me.epoch).await;
                     this.log(format!("notice delivered to {did}"));
                     if done {
                         break;
