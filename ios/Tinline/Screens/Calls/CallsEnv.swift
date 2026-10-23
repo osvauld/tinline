@@ -21,9 +21,15 @@ final class CallsEnv: ObservableObject {
     private let box: CoreBox
     private var bag: Set<AnyCancellable> = []
 
-    init(platform: CallPlatform = CallPlatformIOS(), alerts: CallAlerts = CallAlertsStub(),
-         directory: CallDirectory = CallDirectoryStub(), provider: CallProvider? = CallKitProviderStub(),
-         camera: CallCamera = CallCameraStub(), readings: HostReadingSource = DeviceHostReadings()) {
+    /// Defaults are built in the body, not as default arguments: those run nonisolated and the stubs are
+    /// main-actor types. `provider` nil means no CallKit provider (the Shell passes the stub; tests pass none).
+    init(platform: CallPlatform? = nil, alerts: CallAlerts? = nil, directory: CallDirectory? = nil,
+         provider: CallProvider? = nil, camera: CallCamera? = nil, readings: HostReadingSource? = nil) {
+        let platform = platform ?? CallPlatformIOS()
+        let alerts = alerts ?? CallAlertsStub()
+        let directory = directory ?? CallDirectoryStub()
+        let camera = camera ?? CallCameraStub()
+        let readings = readings ?? DeviceHostReadings()
         let box = CoreBox()
         let core: @Sendable () -> CallCore? = { box.get() }
         self.box = box

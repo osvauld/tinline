@@ -120,7 +120,12 @@ def main():
             f"-DCMAKE_OSX_DEPLOYMENT_TARGET={IOS_MIN}",
             "-DAOM_TARGET_CPU=arm64",
             "-DCONFIG_RUNTIME_CPU_DETECT=0",
+            # iOS makes executables app bundles by default; aomenc's install rule has no bundle path.
+            "-DCMAKE_MACOSX_BUNDLE=OFF",
         ]
+    elif args.target == "host" and sys.platform == "darwin":
+        # Explicit, so an IPHONEOS_DEPLOYMENT_TARGET in the environment can't make clang build it for iOS.
+        cmake += ["-DCMAKE_OSX_SYSROOT=macosx", "-DCMAKE_OSX_DEPLOYMENT_TARGET=11.0"]
     elif args.target != "host":
         abi, cpu = ANDROID_ABI[args.target]
         ndk = os.environ.get("ANDROID_NDK_HOME") or os.environ.get("ANDROID_NDK_ROOT")

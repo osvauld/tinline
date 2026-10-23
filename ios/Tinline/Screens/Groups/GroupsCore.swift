@@ -688,6 +688,18 @@ final class GroupsController: ObservableObject, GroupEvents, GroupRequestEvents,
         }
     }
 
+    /// A post's picture arrived: reload the open chat if it shows that group (GroupsCore.kt does the same).
+    func onGroupImage(groupId: String, messageId: String) {
+        guard read({ shown == groupId }) else { return }
+        locked { if opened?.id == groupId { reloadOpen() } }
+    }
+
+    /// Who is online changed. The port has no separate presence field yet, so the open group's detail (hosts'
+    /// `online`) is reloaded instead of patched.
+    func onGroupPresence(groupId: String) {
+        locked { if opened?.id == groupId { reloadOpen() } }
+    }
+
     func attach(_ node: Node) {
         node.setGroupEvents(events: self)
         node.setGroupRequestEvents(events: self)

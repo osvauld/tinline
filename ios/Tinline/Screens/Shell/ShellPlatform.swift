@@ -64,7 +64,7 @@ final class ShellKeychainStore: ShellKeyStore, @unchecked Sendable {
             guard let d = out as? Data, d.count == 32 else { return .gone }
             return .key(d)
         case errSecItemNotFound: return .gone
-        default: return .transient
+        case let status: NSLog("Tinline: keychain load failed: %d", status); return .transient
         }
     }
 
@@ -73,8 +73,10 @@ final class ShellKeychainStore: ShellKeyStore, @unchecked Sendable {
         var add = base(did)
         add[kSecValueData as String] = secret
         add[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
-        guard SecItemAdd(add as CFDictionary, nil) == errSecSuccess else { return false }
+        let added = SecItemAdd(add as CFDictionary, nil)
+        guard added == errSecSuccess else { NSLog("Tinline: keychain add failed: %d", added); return false }
         if case .key(var back) = load(did) { back.resetBytes(in: 0..<back.count); return true }
+        NSLog("Tinline: keychain read-back failed (saved %d bytes)", secret.count)
         return false
     }
 

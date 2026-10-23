@@ -103,7 +103,7 @@ final class ShellCore {
         people = pm
         let dir = ShellCallDirectory(app: app, people: pm, prefs: prefs)
         callDirectory = dir
-        let env = CallsEnv(directory: dir)
+        let env = CallsEnv(directory: dir, provider: CallKitProviderStub())
         calls = env
         groupLauncher = ShellGroupCallLauncher(ui: env.groupUi, groupLog: app.$groupLog.eraseToAnyPublisher())
         links.core = self

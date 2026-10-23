@@ -117,10 +117,18 @@ private struct ConversationScreen: View {
     private var composerState: ComposerState { block?.composer ?? .open }
     private var callGate: CallGate { block?.callGate ?? .ok }
     private var blockedMeAt: Int64? { block?.view.blockedMeAtSecs }
+    /// Re-check "not delivered" when the pending sends or the blocked-me time change.
+    private var undeliveredKey: [String] {
+        let pending: [String] = model.messages.filter { $0.outgoing && $0.delivery == .pending }.map(\.id)
+        return pending + [blockedMeAt.map { String($0) } ?? ""]
+    }
 
-    var body: some View {
+    // Split in three: as one modifier chain the body is too big for Swift to type-check in reasonable time.
+    var body: some View { lifecycle(presentations(layout)) }
+
+    private var layout: some View {
         let p = ChatPalette(tin)
-        VStack(spacing: 0) {
+        return VStack(spacing: 0) {
             ZStack {
                 if find.open {
                     ChatFindBar(state: find, onQuery: { _ in }, onOlder: olderMatch, onNewer: { find.newer() }, onClose: { find.close() })
@@ -144,6 +152,11 @@ private struct ConversationScreen: View {
         }
         .background(tin.sf)
         .navigationBarBackButtonHidden(true).toolbar(.hidden, for: .navigationBar)
+    }
+
+    /// Toast, sheets, pickers and viewers.
+    private func presentations<V: View>(_ v: V) -> some View {
+        v
         .overlay(alignment: .bottom) { toastView }
         .sheet(isPresented: Binding(get: { actionsFor != nil }, set: { if !$0 { actionsFor = nil } })) { actionsSheet }
         .sheet(isPresented: $attachOpen) {
@@ -185,6 +198,11 @@ private struct ConversationScreen: View {
             }
         }
         .quickLookPreview($quickLook)
+    }
+
+    /// Loading, clocks and the onChange reactions.
+    private func lifecycle<V: View>(_ v: V) -> some View {
+        v
         .task {
             voice.onSend = { model.sendVoice($0) }
             model.setCalls(calls)
@@ -194,7 +212,7 @@ private struct ConversationScreen: View {
         .task { while !Task.isCancelled { try? await Task.sleep(nanoseconds: 15_000_000_000); model.tickClock() } }
         .task(id: calls.map(\.callId)) { model.setCalls(calls) }
         .task(id: searchHit?.id) { if let hit = searchHit, model.loaded { await model.showSearchHit(hit) } }
-        .task(id: model.messages.filter { $0.outgoing && $0.delivery == .pending }.map(\.id) + [blockedMeAt.map { String($0) } ?? ""]) {
+        .task(id: undeliveredKey) {
             await model.refreshUndelivered(blockedMe: blockedMeAt != nil, reason: notDelivered)
         }
         .onChange(of: find.q) { _, _ in restartFind() }
