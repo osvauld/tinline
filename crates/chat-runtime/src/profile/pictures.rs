@@ -13,7 +13,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 fn bad(e: impl std::fmt::Display) -> Error {
-    Error::Protocol(format!("profile picture: {e}"))
+    Error::invalid("profile picture", e)
 }
 fn normalize(bytes: &[u8], received: bool) -> Result<Vec<u8>, Error> {
     if bytes.is_empty()

@@ -5104,6 +5104,7 @@ dependencies = [
  "n0-future",
  "parking_lot",
  "proto",
+ "receipts-core",
  "serde",
  "serde_json",
  "sha2",

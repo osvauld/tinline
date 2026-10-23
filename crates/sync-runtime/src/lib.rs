@@ -25,6 +25,8 @@ pub use account_model::sync::{accdoc, callsdoc, profilecache, profiledoc};
 pub mod doc {
     pub use crdt::doc::Doc;
 }
+pub mod devices_api;
+pub use devices_api::DeviceEntry;
 pub mod engine;
 pub mod frames;
 pub mod link;

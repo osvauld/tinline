@@ -18,7 +18,8 @@ pub fn close_wait() -> Duration {
         .map_or(CLOSE_WAIT, Duration::from_millis)
 }
 
-/// A reason string from the peer, for the UI: no control characters, bounded length.
+/// A string from the peer (reason, display name), for the UI and for log lines: no control
+/// characters, bounded length.
 pub fn clip_reason(reason: &str) -> String {
     reason.chars().filter(|c| !c.is_control()).take(MAX_REASON_CHARS).collect()
 }
@@ -47,6 +48,15 @@ pub fn msg_name(m: &Msg) -> &'static str {
         Msg::WelcomeTaken => "WelcomeTaken",
         Msg::Video { .. } => "Video",
         Msg::VideoCodec { .. } => "VideoCodec",
+    }
+}
+
+/// The error for a reply that is not the expected "taken": `<what> not taken: <message kind>`
+/// (`Net`, "no reply", when the stream closed instead), never the message's contents.
+pub fn not_taken(what: &str, reply: Option<&Msg>) -> Error {
+    match reply {
+        Some(m) => Error::Protocol(format!("{what} not taken: {}", msg_name(m))),
+        None => Error::eof(&format!("{what} not taken: no reply")),
     }
 }
 

@@ -123,7 +123,7 @@ impl ChatRt {
         if shard.vv() == before {
             return Ok(false);
         }
-        let msgs = shard.messages().map_err(|e| Error::Io(e.to_string()))?;
+        let msgs = shard.messages()?;
         let mut ops = Vec::new();
         for rec in msgs.values() {
             ops.push(core.store.mi_op(pair, &rec.id, day)?);
@@ -193,8 +193,7 @@ impl ChatRt {
         let ct = hub.read_cipher(&hash).await?;
         let snap = tokio::task::spawn_blocking(move || crypt::decrypt_bytes(&key, &ct))
             .await
-            .map_err(|e| Error::Io(e.to_string()))?
-            .map_err(|e| Error::Io(e.to_string()))?;
+            .map_err(Error::join)??;
         let _ = hub.release(&hash).await;
         let shards = self.chat_shard(core, pair, &d.day).await?;
         let added = self.chat_apply_history(shards, core, me, sess, pair, &d.day, &snap)?;

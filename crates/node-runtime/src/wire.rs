@@ -86,7 +86,7 @@ impl Ctrl {
             match self.recv.read(&mut chunk).await.map_err(Error::net)? {
                 Some(n) => self.buf.extend_from_slice(&chunk[..n]),
                 None if self.buf.is_empty() => return Ok(None),
-                None => return Err(Error::Protocol("stream ended mid-frame".into())),
+                None => return Err(Error::eof("stream ended mid-frame")),
             }
         }
     }

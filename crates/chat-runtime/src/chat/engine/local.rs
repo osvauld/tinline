@@ -2,6 +2,9 @@
 
 use super::*;
 
+/// Shown as is when a message (new or edited) is over the limit.
+const MSG_TOO_LONG: &str = "message too long";
+
 impl ChatRt {
     // ---- local writes ----------------------------------------------------------------------------
 
@@ -43,7 +46,7 @@ impl ChatRt {
         let core = self.chat_core()?;
         self.chat_contact(did, true)?;
         if text.len() > MAX_TEXT {
-            return Err(Error::Protocol("message too long".into()));
+            return Err(Error::Protocol(MSG_TOO_LONG.into()));
         }
         let pair = pair_id(me.id.did(), did);
         let at = self.chat_now();
@@ -53,7 +56,7 @@ impl ChatRt {
         let conv = {
             let mut shards = held;
             let shard = shards.get_mut(&(pair.clone(), day.clone())).ok_or(Error::NotFound)?;
-            let update = shard.add_message(&rec, &self.chat_writer(&me, &core)).map_err(|e| Error::Io(e.to_string()))?;
+            let update = shard.add_message(&rec, &self.chat_writer(&me, &core))?;
             // The tick marker names the peer id it was written under: our writer ID.
             let mut ops = vec![core.store.put_mo_op(&pair, &day, &rec.id, shard.peer(), shard.my_counter())?, core.store.mi_op(&pair, &rec.id, &day)?];
             if !self.is_self_did(did) {
@@ -97,7 +100,7 @@ impl ChatRt {
         let rec = MsgRec { id: random_msg_id(), author: me.id.did().to_string(), at, text, edited_at: None, deleted: false, reply_to: None, file: None, dev, did_sig: Vec::new() };
         let key = (pair.clone(), day.clone());
         let shard = shards.get_mut(&key).ok_or(Error::NotFound)?;
-        let update = shard.add_message(&rec, &w).map_err(|e| Error::Io(e.to_string()))?;
+        let update = shard.add_message(&rec, &w)?;
         let end = shard.vv().get(&w.writer_id()).copied().unwrap_or(0);
         let mut ops = vec![core.store.put_mo_op(&pair, &day, &rec.id, w.writer_id(), end)?, core.store.mi_op(&pair, &rec.id, &day)?, core.store.out_op(&pair, &day, true)?];
         let (cops, _) = self.chat_conv_ops(&core, &me, did, &pair, &[(&rec, true)])?;
@@ -136,21 +139,21 @@ impl ChatRt {
         let (rec, conv) = {
             let mut shards = held;
             let shard = shards.get_mut(&(pair.clone(), day.clone())).ok_or(Error::NotFound)?;
-            let cur = shard.messages().map_err(|e| Error::Io(e.to_string()))?.remove(id).ok_or(Error::NotFound)?;
+            let cur = shard.messages()?.remove(id).ok_or(Error::NotFound)?;
             if cur.author != me.id.did() {
                 return Err(Error::Protocol("only the author can change a message".into()));
             }
             let update = match &text {
                 Some(t) => {
                     if t.len() > MAX_TEXT {
-                        return Err(Error::Protocol("message too long".into()));
+                        return Err(Error::Protocol(MSG_TOO_LONG.into()));
                     }
                     shard.edit(id, t, self.chat_now(), &self.chat_writer(&me, &core))
                 }
                 None => shard.delete(id, self.chat_now(), &self.chat_writer(&me, &core)),
             }
-            .map_err(|e| Error::Io(e.to_string()))?;
-            let rec = shard.messages().map_err(|e| Error::Io(e.to_string()))?.remove(id).ok_or(Error::NotFound)?;
+            ?;
+            let rec = shard.messages()?.remove(id).ok_or(Error::NotFound)?;
             let ops = if self.is_self_did(did) { vec![] } else { vec![core.store.out_op(&pair, &day, true)?] };
             let (cops, conv) = self.chat_conv_ops(&core, &me, did, &pair, &[(&rec, false)])?;
             let mut ops = ops;

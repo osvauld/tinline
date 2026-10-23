@@ -51,7 +51,7 @@ impl GroupRt {
                             None => match Shard::load(&core.store, &gid, core.wid, &day, state) {
                                 Ok(s) => s.visible(state).collect(),
                                 Err(e) => {
-                                    tracing::debug!("search reconcile {gid} {day}: {e}");
+                                    tracing::debug!("search reconcile {} {day}: {e}", crate::short(&gid));
                                     continue;
                                 }
                             },

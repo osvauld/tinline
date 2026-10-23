@@ -94,7 +94,7 @@ impl GroupRt {
 
     pub fn group_req_save(&self, core: &GroupCore, r: &ReqRow) {
         if let Err(e) = core.store.put_req(r) {
-            tracing::warn!("chat request: {e}");
+            tracing::warn!("group {} chat request: {e}", crate::short(&r.group));
         }
         if let Some(ev) = self.req_events.lock().clone() {
             let v = self.group_req_view(core, r);
@@ -141,7 +141,7 @@ impl GroupRt {
                     Ok(None) => {}
                     Ok(Some(_)) => return,
                     Err(e) => {
-                        tracing::warn!("chat request not stored (reading requests failed): {e}");
+                        tracing::warn!("group {}: chat request not stored (reading requests failed): {e}", crate::short(gid));
                         return;
                     }
                 }
@@ -192,13 +192,15 @@ impl GroupRt {
         core.store.put_req(&row).or_log("saving the chat request retry time");
         let this = self.clone();
         self.handle.spawn(async move {
-            match this.ctx.clone().add_contact_from(ticket, node_runtime::caps::ContactOrigin::GroupRequest).await {
-                Ok(c) => {
+            match this.ctx.clone().add_contact_outcome(ticket, node_runtime::caps::ContactOrigin::GroupRequest).await {
+                Ok(node_runtime::AddOutcome::Added { contact: c }) => {
                     this.log(format!("chat request accepted: {} is a contact", c.name));
                     row.added = true;
                     row.ticket = None;
                     this.group_req_save(&core, &row);
                 }
+                // Their device holds it as a contact request: not added yet, tried again later.
+                Ok(node_runtime::AddOutcome::Requested { .. }) => this.log(format!("chat request: adding {} failed: {}", row.peer, node_runtime::contact_req::PENDING)),
                 Err(e) => this.log(format!("chat request: adding {} failed: {e}", row.peer)),
             }
         });

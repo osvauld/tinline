@@ -130,7 +130,7 @@ impl Node {
         self.inner.handle.spawn(USER_CALL.scope((), async move {
             let _ = tx.send(fut.await);
         }));
-        rx.recv().map_err(|_| Error::Protocol("core runtime stopped".into()))
+        rx.recv().map_err(|_| Error::Io("core runtime stopped".into()))
     }
 
     /// `block_on` for an engine call that fails with the runtime's error.
@@ -171,7 +171,7 @@ impl Node {
     /// it, so it never runs while `shared` is held and never on a callback thread.
     pub(crate) fn kdf<T: Send + 'static>(&self, f: impl FnOnce() -> T + Send + 'static) -> Result<T, Error> {
         self.block_on(async move {
-            tokio::task::spawn_blocking(f).await.map_err(|_| Error::Protocol("kdf task failed".into()))
+            tokio::task::spawn_blocking(f).await.map_err(Error::join)
         })?
     }
 }

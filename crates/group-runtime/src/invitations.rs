@@ -148,7 +148,7 @@ impl GroupRt {
     /// Saves a row, tells the app and our other devices.
     pub fn inv_save(&self, core: &GroupCore, r: &InvRow) {
         if let Err(e) = core.store.put_inv(r) {
-            tracing::warn!("group invitation: {e}");
+            tracing::warn!("group {} invitation: {e}", crate::short(&r.group));
         }
         self.selfsync_dirty(INVITES_MARK);
         if let Some(ev) = self.inv_events.lock().clone() {
@@ -263,7 +263,7 @@ impl GroupRt {
                                 outcome = Some(o);
                                 break;
                             }
-                            Err(e) => tracing::debug!("group invitation to {did}: {e}"),
+                            Err(e) => tracing::debug!("group invitation to {}: {e}", crate::short(&did)),
                         }
                     }
                     let Some(o) = outcome else { continue };
@@ -317,7 +317,7 @@ impl GroupRt {
                 Ok(Outcome::Blocked)
             }
             Some(Msg::Reject { .. }) => Ok(Outcome::Refused),
-            other => Err(Error::Protocol(format!("group letter not taken: {other:?}"))),
+            other => Err(node_runtime::not_taken("group letter", other.as_ref())),
         }
     }
 

@@ -80,7 +80,7 @@ impl LinkIo {
             }
             match self.recv.read(&mut chunk).await.map_err(Error::net)? {
                 Some(n) => self.buf.extend_from_slice(&chunk[..n]),
-                None => return Err(Error::Protocol("closed".into())),
+                None => return Err(Error::eof("closed")),
             }
         }
     }
@@ -243,12 +243,21 @@ impl SyncRt {
             let relay = run.qr.relay.clone();
             let addr = match addr_for(&run.qr.device, relay.as_deref()) {
                 Ok(a) => a,
-                Err(_) => return this.fail(id, "rejected"),
+                Err(e) => {
+                    tracing::warn!("link {id}: no usable address in the code: {e}");
+                    return this.fail(id, "rejected");
+                }
             };
             let conn = match tokio::time::timeout(Duration::from_secs(20), ep.connect(addr, pl::LINK_ALPN)).await {
                 Ok(Ok(c)) => c,
-                Ok(Err(_)) => return this.fail(id, "net"),
-                Err(_) => return this.fail(id, "timeout"),
+                Ok(Err(e)) => {
+                    tracing::warn!("link {id}: connecting failed: {e}");
+                    return this.fail(id, "net");
+                }
+                Err(_) => {
+                    tracing::warn!("link {id}: connecting timed out");
+                    return this.fail(id, "timeout");
+                }
             };
             this.link_session(run, conn).await;
         });

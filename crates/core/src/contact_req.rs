@@ -213,7 +213,7 @@ impl Node {
             let this = inner.clone();
             tokio::task::spawn_blocking(move || this.accept_request(&me, &did))
                 .await
-                .map_err(|_| Error::Io("accept task failed".into()))?
+                .map_err(Error::join)?
         })??;
         self.inner.sink.on_contacts_changed();
         self.inner.ctx.welcome_kick(contact.did.clone());

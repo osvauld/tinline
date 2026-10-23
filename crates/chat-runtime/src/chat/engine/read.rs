@@ -145,7 +145,7 @@ impl ChatRt {
         }
         let recs = {
             let shards = self.chat_shard(&core, &pair, &day).await?;
-            shards.get(&(pair.clone(), day.clone())).map(|s| s.messages()).transpose().map_err(|e| Error::Io(e.to_string()))?.unwrap_or_default()
+            shards.get(&(pair.clone(), day.clone())).map(|s| s.messages()).transpose()?.unwrap_or_default()
         };
         let mut recs: Vec<MsgRec> = recs.into_values().collect();
         recs.sort_by(|a, b| a.order().cmp(&b.order()));

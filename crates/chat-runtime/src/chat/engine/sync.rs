@@ -207,13 +207,12 @@ impl ChatRt {
                 let ct = hub.read_cipher(&hash).await?;
                 let plain = tokio::task::spawn_blocking(move || crypt::decrypt_bytes(&k, &ct))
                     .await
-                    .map_err(|e| Error::Io(e.to_string()))?
-                    .map_err(|e| Error::Io(e.to_string()))?;
+                    .map_err(Error::join)??;
                 Some(plain)
             }
             _ => snap,
         };
-        Shard::load(pair, day, core.wid, base.as_deref(), &ups).map_err(|e| Error::Io(e.to_string()))
+        Shard::load(pair, day, core.wid, base.as_deref(), &ups).map_err(Error::from)
     }
 
     /// Persists a shard change: the update (or a fresh snapshot every so often), the meta, and
@@ -401,7 +400,7 @@ impl ChatRt {
         applied: &Applied,
         all_remote: bool,
     ) -> Result<(Vec<(MsgRec, bool)>, ConvMeta, Vec<String>), Error> {
-        let msgs = shard.messages().map_err(|e| Error::Io(e.to_string()))?;
+        let msgs = shard.messages()?;
         let touched: Vec<&MsgRec> = applied.added.iter().chain(applied.changed.iter()).filter_map(|id| msgs.get(id)).collect();
         let mut ops = Vec::new();
         let mut files = Vec::new();

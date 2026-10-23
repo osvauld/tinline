@@ -302,7 +302,7 @@ impl GroupRt {
                 }
                 Ok(None) => {}
                 Err(e) => {
-                    tracing::warn!("group image row: {e}");
+                    tracing::warn!("group {}: image row: {e}", crate::short(gid));
                     continue;
                 }
             }
@@ -326,7 +326,7 @@ impl GroupRt {
                 referenced: true,
             };
             if let Err(e) = core.store.put_image(gid, &row) {
-                tracing::warn!("group image row: {e}");
+                tracing::warn!("group {}: image row: {e}", crate::short(gid));
                 continue;
             }
             if !refused {

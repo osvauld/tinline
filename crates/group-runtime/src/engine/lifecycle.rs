@@ -69,7 +69,7 @@ impl GroupRt {
             let doc = match GroupDoc::load(&gid, wid, snap.as_deref(), &ups) {
                 Ok(d) => d,
                 Err(e) => {
-                    tracing::warn!("group {gid}: {e}");
+                    tracing::warn!("group {}: {e}", crate::short(&gid));
                     continue;
                 }
             };
