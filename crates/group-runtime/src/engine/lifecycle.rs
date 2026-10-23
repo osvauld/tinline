@@ -69,7 +69,7 @@ impl GroupRt {
             let doc = match GroupDoc::load(&gid, wid, snap.as_deref(), &ups) {
                 Ok(d) => d,
                 Err(e) => {
-                    tracing::warn!("group {gid}: {e}");
+                    tracing::warn!("group {}: {e}", crate::short(&gid));
                     continue;
                 }
             };
@@ -212,7 +212,7 @@ impl GroupRt {
         *slot = Some(ep.clone());
         *core.ep_id.lock() = Some(ep.clone());
         drop(slot);
-        self.log(format!("group endpoint {} bound", ep.id()));
+        self.log("group endpoint bound");
         self.group_serve(core, &ep);
         Ok(ep)
     }

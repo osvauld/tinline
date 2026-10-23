@@ -175,7 +175,7 @@ impl ChatRt {
         let issued = match core.receipts.pump(&me.id) {
             Ok(i) => i,
             Err(e) => {
-                tracing::warn!("chat receipts: {e}");
+                tracing::warn!("chat receipts pump: {e}");
                 return;
             }
         };
@@ -289,7 +289,7 @@ impl ChatRt {
                 Ok(f) => f,
                 Err(e) => {
                     // Not stored, not projected; the chat session itself goes on.
-                    self.log(format!("rejected receipts of {day} from {}: {e}", sess.did));
+                    self.log(format!("rejected receipts of {day} from {}: {e}", short(&sess.did)));
                     vec![]
                 }
             }

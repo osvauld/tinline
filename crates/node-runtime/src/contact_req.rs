@@ -166,7 +166,7 @@ impl NodeCtx {
                             Some(contact)
                         }
                         Err(e) => {
-                            tracing::warn!("welcome from {did}: {e}");
+                            tracing::warn!("welcome from {}: {e}", crate::short(&did));
                             None
                         }
                     }
@@ -182,7 +182,7 @@ impl NodeCtx {
         ctrl.send(&reply).await?;
         ctrl.finish();
         if let Some(contact) = taken {
-            self.log(format!("{} accepted our request", contact.name));
+            self.log(format!("{} accepted our request", crate::short(&contact.did)));
             self.sink.on_contacts_changed();
             self.list_for_new_contact(&contact.did);
             if let Some(ev) = self.requests.events.lock().clone() {
@@ -227,7 +227,7 @@ impl NodeCtx {
                         this.welcome_done(&did, &out, me.epoch, "welcome refused (no request of theirs)").await;
                         break;
                     }
-                    Err(e) => tracing::debug!("welcome to {did}: {e}"),
+                    Err(e) => tracing::debug!("welcome to {}: {e}", crate::short(&did)),
                 }
                 tokio::time::sleep(crate::wire::retry_pause(&RETRY_SECS, round)).await;
                 round += 1;
@@ -244,7 +244,7 @@ impl NodeCtx {
             }
         }
         self.persist_logged(epoch).await;
-        self.log(format!("{what}: {did}"));
+        self.log(format!("{what}: {}", crate::short(did)));
     }
 
     /// `Ok(true)` taken, `Ok(false)` refused for good; `Err` try again later.

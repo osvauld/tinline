@@ -338,7 +338,7 @@ impl ChatRt {
                     break 'blk (shard.vv(), (Vec::new(), ConvMeta::default()));
                 }
                 Err(r) => {
-                    self.log(format!("rejected chat batch from {}: {r}", sess.did));
+                    self.log(format!("rejected chat batch from {}: {r}", short(&sess.did)));
                     return Err(Error::Protocol(format!("rejected batch: {r}")));
                 }
             };

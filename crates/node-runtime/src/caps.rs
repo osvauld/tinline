@@ -257,7 +257,7 @@ impl NodeCtx {
                             taken = true;
                             break;
                         }
-                        Err(e) => tracing::debug!("tokens to {did}: {e}"),
+                        Err(e) => tracing::debug!("tokens to {}: {e}", crate::short(&did)),
                     }
                 }
                 if taken {
@@ -271,7 +271,7 @@ impl NodeCtx {
                         }
                     }
                     this.persist_logged(me.epoch).await;
-                    this.log(format!("tokens delivered to {did}"));
+                    this.log(format!("tokens delivered to {}", crate::short(&did)));
                     round = 0;
                     continue;
                 }

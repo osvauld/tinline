@@ -203,11 +203,11 @@ impl SyncRt {
             return Ok(());
         };
         self.selfsync.backoff.lock().remove(&remote);
-        self.log(format!(
+        tracing::debug!(
             "own-device sync with {} ({})",
-            proto::device_to_text(&remote),
+            node_runtime::short(&proto::device_to_text(&remote)),
             if dialer { "dialed" } else { "accepted" }
-        ));
+        );
         let r = self
             .clone()
             .self_loop(&me, &conn, remote, &acked, &dirty, &mut reader, &mut writer)
@@ -215,7 +215,7 @@ impl SyncRt {
         self.drop_session(remote, &conn);
         conn.close(0u32.into(), b"done");
         if let Err(e) = &r {
-            tracing::debug!("own-device sync ended: {e}");
+            tracing::debug!("own-device sync with {} ended: {e}", node_runtime::short(&proto::device_to_text(&remote)));
         }
         r
     }
@@ -296,7 +296,7 @@ impl SyncRt {
                         self.selfsync_settled(remote, &changes);
                         writer.finish();
                         let _ = tokio::time::timeout(Duration::from_millis(300), conn.closed()).await;
-                        self.log(format!("own-device sync with {} closed: idle", proto::device_to_text(&remote)));
+                        tracing::debug!("own-device sync with {} closed: idle", node_runtime::short(&proto::device_to_text(&remote)));
                         return Ok(());
                     }
                 }

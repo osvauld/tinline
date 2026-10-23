@@ -135,7 +135,7 @@ impl GroupRt {
             let _ = tokio::time::timeout(Duration::from_secs(3), ep.close()).await;
         }
         self.group_relay_ready().await;
-        self.log(format!("group endpoint rotated to {}", new.id()));
+        self.log("group endpoint rotated");
         for gid in &hosted {
             let _ = self.group_my_addr(core, gid);
         }
@@ -311,7 +311,7 @@ impl GroupRt {
         self.log(format!(
             "group {}: host {} moved",
             crate::short(gid),
-            auth.did
+            crate::short(&auth.did)
         ));
         core.kick.notify_waiters();
     }

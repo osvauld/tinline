@@ -18,7 +18,8 @@ pub fn close_wait() -> Duration {
         .map_or(CLOSE_WAIT, Duration::from_millis)
 }
 
-/// A reason string from the peer, for the UI: no control characters, bounded length.
+/// A string from the peer (reason, display name), for the UI and for log lines: no control
+/// characters, bounded length.
 pub fn clip_reason(reason: &str) -> String {
     reason.chars().filter(|c| !c.is_control()).take(MAX_REASON_CHARS).collect()
 }

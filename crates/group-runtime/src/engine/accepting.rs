@@ -233,7 +233,8 @@ impl GroupRt {
         {
             if !self.group_removed_upload_open(core, gid, did) {
                 self.log(format!(
-                    "group {gid}: a removed member's upload window has closed"
+                    "group {}: a removed member's upload window has closed",
+                    crate::short(gid)
                 ));
                 let _ = writer
                     .send(&GroupMsg::Refused {
@@ -280,7 +281,8 @@ impl GroupRt {
                 }
                 Err(e) => {
                     self.log(format!(
-                        "group {gid}: refused a removed member's upload: {e}"
+                        "group {}: refused a removed member's upload: {e}",
+                        crate::short(gid)
                     ));
                     let _ = writer
                         .send(&GroupMsg::Refused {
@@ -304,7 +306,7 @@ impl GroupRt {
                 now
             }
             Err(e) => {
-                tracing::warn!("group {gid}: removal time: {e}");
+                tracing::warn!("group {}: removal time: {e}", crate::short(gid));
                 return false;
             }
         };

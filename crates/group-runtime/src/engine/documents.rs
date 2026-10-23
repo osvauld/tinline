@@ -379,7 +379,7 @@ impl GroupCore {
             let shard = match shards.get(&self.store, gid, self.wid, &day, state) {
                 Ok(s) => s,
                 Err(e) => {
-                    tracing::warn!("group {gid} day {day}: {e}");
+                    tracing::warn!("group {} day {day}: {e}", crate::short(gid));
                     continue;
                 }
             };

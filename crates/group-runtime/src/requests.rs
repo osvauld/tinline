@@ -94,7 +94,7 @@ impl GroupRt {
 
     pub fn group_req_save(&self, core: &GroupCore, r: &ReqRow) {
         if let Err(e) = core.store.put_req(r) {
-            tracing::warn!("chat request: {e}");
+            tracing::warn!("group {} chat request: {e}", crate::short(&r.group));
         }
         if let Some(ev) = self.req_events.lock().clone() {
             let v = self.group_req_view(core, r);
@@ -141,13 +141,13 @@ impl GroupRt {
                     Ok(None) => {}
                     Ok(Some(_)) => return,
                     Err(e) => {
-                        tracing::warn!("chat request not stored (reading requests failed): {e}");
+                        tracing::warn!("group {}: chat request not stored (reading requests failed): {e}", crate::short(gid));
                         return;
                     }
                 }
                 if self.shared.lock().state.blocked.contains(&m.from) {
                     // P5: refused with a notice; never shown here.
-                    self.log(format!("group {gid}: refused a chat request from blocked {}", m.from));
+                    self.log(format!("group {}: refused a chat request from blocked {}", crate::short(gid), crate::short(&m.from)));
                     let _ = self.group_letter(core, gid, &m.from, Letter::Decline { req, blocked: true });
                     return;
                 }
@@ -165,7 +165,7 @@ impl GroupRt {
                 }
                 let ok = proto::ContactTicket::from_text(&ticket).ok().and_then(|t| t.verify(now()).ok()).is_some_and(|c| c.iss == m.from);
                 if !ok {
-                    self.log(format!("group {gid}: an acceptance carried a ticket that is not theirs"));
+                    self.log(format!("group {}: an acceptance carried a ticket that is not theirs", crate::short(gid)));
                     return;
                 }
                 row.state = ReqState::Accepted;
@@ -194,14 +194,14 @@ impl GroupRt {
         self.handle.spawn(async move {
             match this.ctx.clone().add_contact_outcome(ticket, node_runtime::caps::ContactOrigin::GroupRequest).await {
                 Ok(node_runtime::AddOutcome::Added { contact: c }) => {
-                    this.log(format!("chat request accepted: {} is a contact", c.name));
+                    this.log(format!("chat request accepted: {} is a contact", crate::short(&c.did)));
                     row.added = true;
                     row.ticket = None;
                     this.group_req_save(&core, &row);
                 }
                 // Their device holds it as a contact request: not added yet, tried again later.
-                Ok(node_runtime::AddOutcome::Requested { .. }) => this.log(format!("chat request: adding {} failed: {}", row.peer, node_runtime::contact_req::PENDING)),
-                Err(e) => this.log(format!("chat request: adding {} failed: {e}", row.peer)),
+                Ok(node_runtime::AddOutcome::Requested { .. }) => this.log(format!("chat request: adding {} failed: {}", crate::short(&row.peer), node_runtime::contact_req::PENDING)),
+                Err(e) => this.log(format!("chat request: adding {} failed: {e}", crate::short(&row.peer))),
             }
         });
     }

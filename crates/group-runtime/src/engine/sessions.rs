@@ -40,12 +40,13 @@ impl GroupRt {
             receipt_waiting: Default::default(),
         });
         core.sessions.lock().insert(id, sess.clone());
-        self.log(format!(
+        // Per session, and sessions recur with the idle links: debug, not the app's log.
+        tracing::debug!(
             "group {} session with {} ({})",
             crate::short(&gid),
-            peer.did,
+            crate::short(&peer.did),
             if hosting { "we host" } else { "they host" }
-        ));
+        );
         // Catch the other side up: the meta doc, then the recent days (older ones are history).
         self.group_push(&core, &gid, None, &core.held_recent_days(&gid));
         // GF: the host addresses again, after the records. Those in Hello/Welcome are merged
@@ -163,17 +164,19 @@ impl GroupRt {
                             // A non-admin's post in an admins-only group: refuse the batch, keep
                             // the session; the member marks such posts failed and stops sending.
                             self.log(format!(
-                                "group {}: refused an update from {}: {r}",
+                                "group {}: refused an update from {}: {}",
                                 crate::short(&sess.gid),
-                                sess.did
+                                crate::short(&sess.did),
+                                node_runtime::clip_reason(&r)
                             ));
                             let _ = sess.tx.send(Out::Msg(GroupMsg::Refused { reason: r }));
                         }
                         Err(e) => {
                             self.log(format!(
-                                "group {}: refused an update from {}: {e}",
+                                "group {}: refused an update from {}: {}",
                                 crate::short(&sess.gid),
-                                sess.did
+                                crate::short(&sess.did),
+                                node_runtime::clip_reason(&e.to_string())
                             ));
                             let _ = sess.tx.send(Out::Msg(GroupMsg::Refused {
                                 reason: e.to_string(),

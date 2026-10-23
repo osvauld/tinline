@@ -226,7 +226,7 @@ impl GroupRt {
                     match core.apply(&gid, &DocId::Meta, &u, |_, _, _| Ok(())) {
                         Ok(Some(c)) => self.group_after(&core, c, None),
                         Ok(None) => {}
-                        Err(e) => tracing::debug!("group {gid}: removal records: {e}"),
+                        Err(e) => tracing::debug!("group {}: removal records: {e}", crate::short(&gid)),
                     }
                 }
                 let ignore = self.ignore_removal.load(Ordering::SeqCst);
@@ -366,7 +366,7 @@ impl GroupRt {
         match core.write(gid, body) {
             Ok((_, c)) => self.group_after(core, c, None),
             Err(e) => {
-                tracing::warn!("group join: {e}");
+                tracing::warn!("group {}: join: {e}", crate::short(gid));
                 let mut groups = core.groups.lock();
                 if let Some(live) = groups.get_mut(gid)
                     && !live.state.is_member(&core.did)

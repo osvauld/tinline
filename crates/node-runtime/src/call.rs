@@ -123,7 +123,7 @@ impl Leg {
             Ok(a) => a,
             Err(e) => return fail(&self.events, e.to_string()),
         };
-        tracing::debug!("dialing {} at {}", self.name, addr.id);
+        tracing::debug!("dialing {}", crate::short(&addr.id.to_string()));
         let connect = tokio::time::timeout(DIAL_TIMEOUT, crate::version::connect(&self.ep, addr, &crate::version::CALL));
         let conn = tokio::select! {
             c = connect => match c {
@@ -210,7 +210,16 @@ impl NodeCtx {
                             *call.last_rx.lock() = Instant::now();
                             call.receiver.lock().push(&d, call.now_ms());
                         }
-                        Err(_) => break,
+                        Err(e) => {
+                            // A hangup closes the connection: only an unexpected end is a warning.
+                            let id = crate::short(&call.info.call_id);
+                            if matches!(e, iroh::endpoint::ConnectionError::ApplicationClosed(_) | iroh::endpoint::ConnectionError::LocallyClosed) {
+                                tracing::debug!("call {id}: media ended: {e}");
+                            } else {
+                                tracing::warn!("call {id}: media ended: {e}");
+                            }
+                            break;
+                        }
                     },
                     _ = &mut stop_rx => break,
                 }
@@ -393,7 +402,7 @@ impl NodeCtx {
             let datagram = match call.sender.lock().encode(&frame) {
                 Ok(d) => d,
                 Err(e) => {
-                    tracing::warn!("encode: {e}");
+                    tracing::warn!("call {}: encode: {e}", crate::short(&call.info.call_id));
                     continue;
                 }
             };

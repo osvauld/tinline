@@ -180,7 +180,7 @@ impl GroupRt {
             ours
         };
         if new_call {
-            self.log(format!("group {}: call {} by {} hosted by {}", short(gid), s.call_id, s.starter_did, s.host_ref.holder_did));
+            self.log(format!("group {}: call {} by {} hosted by {}", short(gid), short(&s.call_id), short(&s.starter_did), short(&s.host_ref.holder_did)));
             self.calls_emit(GroupCallEventKind::Announced, gid, &s.call_id, vec![], s.starter_did.clone());
         }
         let hosted_here = self.gcall.status().is_some_and(|st| st.call_id == s.call_id && st.hosting.is_some());
@@ -216,7 +216,7 @@ impl GroupRt {
     pub(super) fn group_call_forget(&self, gid: &str, call_id: &str) {
         let had = self.calls.st.lock().calls.get_mut(gid).and_then(|c| c.remove(call_id)).is_some();
         if had {
-            self.log(format!("group {}: call {call_id}: its host hosts nothing now, dropped from the list", short(gid)));
+            self.log(format!("group {}: call {}: its host hosts nothing now, dropped from the list", short(gid), short(call_id)));
             self.calls_emit(GroupCallEventKind::Ended, gid, call_id, vec![], "host lost".into());
         }
     }
@@ -246,10 +246,10 @@ impl GroupRt {
             self.gcall.host(cfg).err().map(|e| e.to_string())
         };
         let Some(reason) = why else {
-            self.log(format!("group {}: hosting call {} for {}", short(gid), r.call_id, r.starter_did));
+            self.log(format!("group {}: hosting call {} for {}", short(gid), short(&r.call_id), short(&r.starter_did)));
             return;
         };
-        self.log(format!("group {}: declined to host call {}: {reason}", short(gid), r.call_id));
+        self.log(format!("group {}: declined to host call {}: {reason}", short(gid), short(&r.call_id)));
         let f = HostRefusal {
             gid: gid.to_string(),
             call_id: r.call_id.clone(),
