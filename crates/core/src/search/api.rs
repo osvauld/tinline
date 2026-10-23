@@ -3,18 +3,14 @@
 //! background reconcile, and the query (`docs/search.md`).
 
 use std::collections::HashSet;
-use std::path::Path;
 use std::sync::Arc;
 
 use super::find;
-use super::index::{DocRow, INDEX_DOMAIN, Keys, Mark, Mode, STORE_DOMAIN, SearchIndex};
-use crate::rekey::phrase_key;
+use super::index::{DocRow, Mark, Mode, SearchIndex};
 use super::text;
 use crate::Error;
-use crate::chat::doc::{MsgRec, pair_id};
-use crate::group::engine::{GroupCore, Live, PostDiff};
-use crate::group::shard::Shard;
-use crate::group::state::Item;
+use crate::chat::doc::pair_id;
+use crate::group::engine::GroupCore;
 use crate::node::{Inner, Node};
 
 /// What a name hit opens.
@@ -137,7 +133,7 @@ impl Node {
     /// between the store commit and the index write.
     #[doc(hidden)]
     pub fn search_skip_next_writes_for_test(&self, n: u32) {
-        self.inner.search_skip.store(n, std::sync::atomic::Ordering::SeqCst);
+        self.inner.search.skip_next_writes(n);
     }
 
     /// Puts a stale post row (as an older version of the post, or a post no longer shown) into
@@ -182,57 +178,13 @@ impl Node {
     /// Compacts the old days now (otherwise every hour); returns how many days are closed.
     #[doc(hidden)]
     pub fn compact_now_for_test(&self) -> Result<u32, Error> {
-        let inner = self.inner.clone();
-        self.block_on(async move { inner.chat_compact_for_test().await })?
+        self.run(|inner| async move { inner.chat.chat_compact_for_test().await })
     }
 }
 
-/// Posts a group reconcile collects from several days before it writes them to the index.
-const RECONCILE_BATCH: usize = 4000;
+pub(crate) use search_ix::NO_BG_RECONCILE;
 
-/// Test switch (`synth.rs`): no reconcile in the background on open.
-pub(crate) static NO_BG_RECONCILE: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
-
-pub(crate) fn dm_src(pair: &str) -> String {
-    format!("dm.{pair}")
-}
-
-pub(crate) fn group_src(gid: &str) -> String {
-    format!("g.{gid}")
-}
-
-/// Opens (creating) the index file at `path` with the phrase's keys: waits for a previous owner
-/// of the file and makes it private, also when a stale file is replaced.
-fn open_index(path: &Path, phrase: &str) -> Result<SearchIndex, Error> {
-    let keys = Keys { store: phrase_key(STORE_DOMAIN, phrase), index: phrase_key(INDEX_DOMAIN, phrase) };
-    let open_store = |p: &Path| -> Result<storage::Store, search_core::Error> {
-        let store = crate::store::open_waiting(p).map_err(|e| match e {
-            Error::Io(s) => search_core::Error::Io(s),
-            e => search_core::Error::Io(e.to_string()),
-        })?;
-        crate::store::set_private(p);
-        Ok(store)
-    };
-    Ok(SearchIndex::open(path, keys, &open_store)?)
-}
-
-/// What a 1:1 message contributes to the index: its text and the name of a file it carries.
-fn dm_row(did: &str, pair: &str, day: &str, rec: &MsgRec) -> DocRow {
-    let mut t = if rec.deleted { String::new() } else { rec.text.clone() };
-    if !rec.deleted
-        && let Some(f) = rec.file.as_ref().filter(|f| f.kind != "voice")
-    {
-        if !t.is_empty() {
-            t.push('\n');
-        }
-        t.push_str(&f.name);
-    }
-    DocRow { src: dm_src(pair), conv: did.to_string(), day: day.to_string(), id: rec.id.clone(), at: rec.at, author: rec.author.clone(), text: t }
-}
-
-fn group_row(gid: &str, day: &str, i: &Item) -> DocRow {
-    DocRow { src: group_src(gid), conv: gid.to_string(), day: day.to_string(), id: i.id.clone(), at: i.at, author: i.author.clone(), text: i.text.clone() }
-}
+pub(crate) use search_ix::{dm_row, dm_src, group_src};
 
 /// A cursor is `{rev_at}/{h}`, both 16 hex digits.
 fn check_cursor(cursor: Option<&str>) -> Result<(), Error> {
@@ -252,81 +204,8 @@ fn scan_lookups(scan: &text::Term, terms: &[text::Term]) -> Vec<String> {
 }
 
 impl Inner {
-    // ---- lifecycle -------------------------------------------------------------------------
-
-    /// Opens the account's index next to `chat.redb` (called by `chat_open`). A failure leaves
-    /// search off for this session; nothing else depends on it.
-    pub(crate) fn search_open(&self, dir: &Path, phrase: &str) {
-        let mut slot = self.search.lock();
-        if slot.as_ref().is_some_and(|s| !s.is_closed()) {
-            return;
-        }
-        match open_index(&dir.join("search.redb"), phrase) {
-            Ok(ix) => *slot = Some(Arc::new(ix)),
-            Err(e) => tracing::warn!("search index: {e}"),
-        }
-    }
-
-    /// Closes the index for every holder (stop of the chat store: lock, account switch, drop).
-    pub(crate) fn search_close(&self) {
-        if let Some(ix) = self.search.lock().take() {
-            ix.close();
-        }
-    }
-
     fn search_ix(&self) -> Option<Arc<SearchIndex>> {
-        self.search.lock().clone().filter(|s| !s.is_closed())
-    }
-
-    /// Test switch: this hook write is to be skipped.
-    fn search_skipped(&self) -> bool {
-        use std::sync::atomic::Ordering;
-        self.search_skip.try_update(Ordering::SeqCst, Ordering::SeqCst, |n| n.checked_sub(1)).is_ok()
-    }
-
-    fn search_log(e: impl Into<Error>) {
-        let e: Error = e.into();
-        tracing::warn!("search index: {e}");
-    }
-
-    // ---- hooks -----------------------------------------------------------------------------
-
-    /// After a committed 1:1 change: index the touched messages; the shard's watermark moves
-    /// from `prev` to `vv` only if it was at `prev`.
-    pub(crate) fn search_dm(&self, did: &str, pair: &str, day: &str, recs: &[&MsgRec], prev: Option<Vec<u8>>, vv: Vec<u8>) {
-        if self.search_skipped() {
-            return;
-        }
-        let Some(ix) = self.search_ix() else { return };
-        let rows: Vec<DocRow> = recs.iter().map(|r| dm_row(did, pair, day, r)).collect();
-        let mark = Mark { src: dm_src(pair), day: day.to_string(), prev, vv };
-        if let Err(e) = ix.apply(&rows, &[], &[mark]) {
-            Self::search_log(e);
-        }
-    }
-
-    /// After a group change (`group_after`): index the posts that show now, per day doc; each
-    /// day's watermark moves from `prev` to `vv` only if it was at `prev`.
-    pub(crate) fn search_group(&self, gid: &str, diffs: &[PostDiff]) {
-        if diffs.is_empty() || self.search_skipped() {
-            return;
-        }
-        let Some(ix) = self.search_ix() else { return };
-        let src = group_src(gid);
-        let rows: Vec<DocRow> = diffs.iter().flat_map(|d| d.put.iter().map(|i| group_row(gid, &d.day, i))).collect();
-        let marks: Vec<Mark> = diffs.iter().map(|d| Mark { src: src.clone(), day: d.day.clone(), prev: Some(d.prev.clone()), vv: d.vv.clone() }).collect();
-        if let Err(e) = ix.apply(&rows, &[], &marks) {
-            Self::search_log(e);
-        }
-    }
-
-    /// A conversation went from this device (a forgotten group): its docs leave the index.
-    pub(crate) fn search_forget(&self, src: &str) {
-        if let Some(ix) = self.search_ix()
-            && let Err(e) = ix.forget(src)
-        {
-            Self::search_log(e);
-        }
+        self.search.index()
     }
 
     // ---- reconcile -------------------------------------------------------------------------
@@ -345,7 +224,7 @@ impl Inner {
             }
             let gc = this.group.core.lock().clone();
             if let Some(gc) = gc.filter(|c| !c.closed()) {
-                let _ = this.search_reconcile_groups_run(&gc).await;
+                let _ = this.group.search_reconcile_groups_run(&gc).await;
             }
             // Days that are cold now (and what the bulk left in memory) go into segments.
             let ix2 = ix.clone();
@@ -365,7 +244,7 @@ impl Inner {
     }
 
     async fn search_reconcile_dms(self: &Arc<Self>, ix: &Arc<SearchIndex>) -> Result<(), Error> {
-        let core = self.chat_core()?;
+        let core = self.chat.chat_core()?;
         let me = self.me()?;
         let mut owners: Vec<String> = {
             let s = self.shared.lock();
@@ -388,7 +267,7 @@ impl Inner {
                     continue;
                 }
                 // A closed day whose snapshot blob is not here (yet) is skipped: next time.
-                let shard = match self.chat_load_shard(&core, &pair, &day).await {
+                let shard = match self.chat.chat_load_shard(&core, &pair, &day).await {
                     Ok(s) => s,
                     Err(e) => {
                         tracing::debug!("search reconcile {day}: {e}");
@@ -405,15 +284,6 @@ impl Inner {
         Ok(())
     }
 
-    /// Per day doc of each group, as for DMs: each whose watermark differs from its version (and
-    /// each with pending posts) is diffed against the index: the posts that show are written, the
-    /// docs of that day that no longer show are dropped. In the background.
-    pub(crate) fn search_reconcile_groups(self: &Arc<Self>, core: &Arc<GroupCore>) {
-        if NO_BG_RECONCILE.load(std::sync::atomic::Ordering::SeqCst) {
-            return;
-        }
-        drop(self.search_reconcile_groups_run(core));
-    }
 
     /// For the year-scale measurements: both reconcile parts now, timed.
     #[cfg(any(test, feature = "dev-tools"))]
@@ -423,8 +293,8 @@ impl Inner {
         self.search_reconcile_dms(&ix).await?;
         let dms = t.elapsed();
         let t = std::time::Instant::now();
-        let gc = self.group_core()?;
-        let _ = self.search_reconcile_groups_run(&gc).await;
+        let gc = self.group.group_core()?;
+        let _ = self.group.search_reconcile_groups_run(&gc).await;
         // The cold days the bulk left in memory go into segments (the open's last step; its
         // time counts in the groups part).
         let ix2 = ix.clone();
@@ -432,73 +302,13 @@ impl Inner {
         Ok((dms, t.elapsed()))
     }
 
-    fn search_reconcile_groups_run(self: &Arc<Self>, core: &Arc<GroupCore>) -> n0_future::task::JoinHandle<()> {
-        let Some(ix) = self.search_ix() else { return self.handle.spawn_blocking(|| {}) };
-        let core = core.clone();
-        self.handle.spawn_blocking(move || {
-            let gids: Vec<String> = core.groups.lock().keys().cloned().collect();
-            for gid in gids {
-                let src = group_src(&gid);
-                let days = core.store.days(&gid).unwrap_or_default();
-                let (mut batch, mut stale, mut marks): (Vec<DocRow>, Vec<String>, Vec<Mark>) = Default::default();
-                let pending = core.groups.lock().get(&gid).map(|l| l.meta.pending_days.clone()).unwrap_or_default();
-                for day in days {
-                    if ix.is_closed() || core.closed() {
-                        return;
-                    }
-                    let Some(sm) = core.store.shard_meta(&gid, &day).ok().flatten() else { continue };
-                    if !pending.contains(&day) && ix.watermark_is(&src, &day, &sm.vv) {
-                        continue;
-                    }
-                    // The day as cached, or read once without disturbing the cache.
-                    let rows: Vec<DocRow> = {
-                        let mut groups = core.groups.lock();
-                        let Some(Live { state, shards, .. }) = groups.get_mut(&gid) else { break };
-                        let items: Vec<Item> = match shards.peek(&day) {
-                            Some(s) => s.visible(state).collect(),
-                            None => match Shard::load(&core.store, &gid, core.wid, &day, state) {
-                                Ok(s) => s.visible(state).collect(),
-                                Err(e) => {
-                                    tracing::debug!("search reconcile {gid} {day}: {e}");
-                                    continue;
-                                }
-                            },
-                        };
-                        items.iter().map(|i| group_row(&gid, &day, i)).collect()
-                    };
-                    let live: HashSet<String> = rows.iter().map(|r| ix.doc_key(&src, &r.id)).collect();
-                    // A day the index has never seen (a rebuild) has nothing stale to find, which
-                    // keeps a full rebuild from scanning the group's keys once per day.
-                    if ix.has_watermark(&src, &day) {
-                        match ix.day_keys(&src, &day) {
-                            Ok(k) => stale.extend(k.into_iter().filter(|h| !live.contains(h))),
-                            Err(e) => return Self::search_log(e),
-                        }
-                    }
-                    batch.extend(rows);
-                    marks.push(Mark { src: src.clone(), day: day.clone(), prev: None, vv: sm.vv });
-                    // Days go to the index together (a transaction per few thousand posts): one
-                    // transaction per day would cost more than the posts themselves.
-                    if batch.len() >= RECONCILE_BATCH
-                        && let Err(e) = ix.apply_bulk(&std::mem::take(&mut batch), &std::mem::take(&mut stale), &std::mem::take(&mut marks))
-                    {
-                        return Self::search_log(e);
-                    }
-                }
-                if let Err(e) = ix.apply_bulk(&batch, &stale, &marks) {
-                    return Self::search_log(e);
-                }
-            }
-        })
-    }
-
     // ---- query -----------------------------------------------------------------------------
 
     pub(crate) fn search(self: &Arc<Self>, query: &str, limit: u32, cursor: Option<&str>, budget: usize) -> Result<SearchResults, Error> {
         let me = self.me()?;
-        self.chat_core()?;
+        self.chat.chat_core()?;
         let ix = self.search_ix().ok_or(Error::Locked)?;
-        let gcore = self.group_core().ok();
+        let gcore = self.group.group_core().ok();
         let names = if cursor.is_none() { self.search_names(&me, gcore.as_deref(), query) } else { Vec::new() };
         let terms = text::query_terms(query);
         let Some(scan) = terms.iter().max_by_key(|t| t.weight()) else {
@@ -538,9 +348,9 @@ impl Inner {
     #[allow(clippy::too_many_arguments)]
     pub(crate) fn search_in(self: &Arc<Self>, kind: SearchConvKind, conv: &str, query: &str, limit: u32, cursor: Option<&str>, budget: usize, drop_budget: usize, stats: &mut FindStats) -> Result<SearchResults, Error> {
         let me = self.me()?;
-        self.chat_core()?;
+        self.chat.chat_core()?;
         let ix = self.search_ix().ok_or(Error::Locked)?;
-        let gcore = self.group_core().ok();
+        let gcore = self.group.group_core().ok();
         let none = SearchResults { names: Vec::new(), messages: Vec::new(), next: None };
         let terms = text::query_terms(query);
         let Some(scan_term) = terms.iter().max_by_key(|t| t.weight()) else { return Ok(none) };
@@ -604,7 +414,7 @@ impl Inner {
         let n = text::normalize(&row.text);
         let hits = text::match_all(terms, &n)?;
         let author_name = match gc {
-            Some(gc) => self.group_name_of(gc, &row.conv, &row.author),
+            Some(gc) => self.group.group_name_of(gc, &row.conv, &row.author),
             None if row.author == me.id.did() => me.profile.name.clone(),
             None => crate::block::known_name(&self.shared.lock().state, &row.author).unwrap_or_default(),
         };
@@ -638,12 +448,12 @@ impl Inner {
             let s = self.shared.lock();
             let mut people: Vec<(String, String)> = s.state.contacts.iter().map(|c| (c.did.clone(), crate::node::display_name(c))).collect();
             people.extend(s.state.notices.iter().filter(|(d, _)| !s.state.contacts.iter().any(|c| &c.did == *d)).map(|(d, h)| (d.clone(), h.name.clone())));
-            people.sort_by(|a, b| a.1.to_lowercase().cmp(&b.1.to_lowercase()));
+            people.sort_by_key(|p| p.1.to_lowercase());
             out.extend(people.into_iter().filter(|(_, n)| hit(n)).map(|(id, name)| NameHit { kind: SearchNameKind::Contact, id, name }));
         }
         if let Some(gc) = gcore {
             let mut groups: Vec<(String, String)> = gc.groups.lock().iter().filter(|(_, l)| !l.state.name.is_empty()).map(|(g, l)| (g.clone(), l.state.name.clone())).collect();
-            groups.sort_by(|a, b| a.1.to_lowercase().cmp(&b.1.to_lowercase()));
+            groups.sort_by_key(|g| g.1.to_lowercase());
             out.extend(groups.into_iter().filter(|(_, n)| hit(n)).map(|(id, name)| NameHit { kind: SearchNameKind::Group, id, name }));
         }
         out

@@ -17,39 +17,19 @@ impl Node {
         if let Some(id) = accounts.current() {
             shared.install(load_account(&accounts, &id)?)?;
         }
-        let inner = Arc::new(Inner {
-            handle: rt.handle().clone(),
-            accounts,
-            gate: Mutex::new(()),
-            fail_writes: AtomicU32::new(0),
-            writing: Mutex::new(()),
-            events,
-            shared: Mutex::new(shared),
-            live: Mutex::new(Live::default()),
-            pending: Arc::new(Semaphore::new(MAX_PENDING_HELLOS)),
-            reserved: Arc::new(Semaphore::new(RESERVED_HELLOS)),
-            lifecycle: Arc::new(tokio::sync::Mutex::new(())),
-            closing: Arc::new(tokio::sync::Mutex::new(())),
-            chat: Mutex::new(None),
-            chat_events: Mutex::new(None),
-            link_events: Mutex::new(None),
-            selfsync: Default::default(),
-            sync_tx: tokio::sync::watch::channel(0).0,
-            link: Default::default(),
-            gcall: Default::default(),
-            block: Default::default(),
-            requests: Default::default(),
-            group: Default::default(),
-            caps: Default::default(),
-            devlist: Default::default(),
-            rotation: Default::default(),
-            profile_events: Default::default(),
-            profile_downloads: Default::default(),
-            profile_fetches: Arc::new(Semaphore::new(4)),
-            video: Default::default(),
-            search: Mutex::new(None),
-            search_skip: AtomicU32::new(0),
-        });
+        let ctx = Arc::new(NodeCtx::new(rt.handle().clone(), accounts, shared, Arc::new(NodeEventsAdapter(events))));
+        let selfsync: Arc<sync_runtime::engine::SelfSync> = Default::default();
+        let sink: std::sync::Weak<dyn OwnDocSink> = Arc::downgrade(&(selfsync.clone() as Arc<dyn OwnDocSink>));
+        ctx.signal.set_sink(sink);
+        let search: Arc<search_ix::SearchIx> = Default::default();
+        let chat = Arc::new(chat_runtime::ChatRt::new(ctx.clone(), search.clone()));
+        let group = Arc::new(group_runtime::GroupRt::new(ctx.clone(), search.clone()));
+        let sync = Arc::new(sync_runtime::SyncRt::new(ctx.clone(), chat.clone(), group.clone(), selfsync));
+        let inner = Arc::new(Inner { ctx, chat, group, sync, search });
+        let gcall_host: std::sync::Weak<group_runtime::GroupRt> = Arc::downgrade(&inner.group);
+        inner.group.gcall.install_host(gcall_host);
+        let host: std::sync::Weak<Inner> = Arc::downgrade(&inner);
+        inner.ctx.install_hooks(host);
         Ok(Arc::new(Self { inner, rt: Some(rt) }))
     }
 
@@ -104,8 +84,7 @@ impl Node {
         let id = accounts::id_of(&did)?;
         self.inner.not_in_call()?;
         let loaded = load_account(&self.inner.accounts, &id)?;
-        let inner = self.inner.clone();
-        self.block_on(async move { inner.replace_account(Some(loaded)).await })?
+        self.run(|inner| async move { inner.ctx.replace_account(Some(loaded)).await })
     }
 
     /// Leaves no account selected, so `has_identity` is false and `create_identity` /
@@ -113,8 +92,7 @@ impl Node {
     /// 1:1 call; a group call is left as on `switch_account`.
     pub fn begin_new_account(&self) -> Result<(), Error> {
         self.inner.not_in_call()?;
-        let inner = self.inner.clone();
-        self.block_on(async move { inner.replace_account(None).await })?
+        self.run(|inner| async move { inner.ctx.replace_account(None).await })
     }
 
     /// Deletes a non-current account and everything in its directory.
@@ -125,7 +103,7 @@ impl Node {
         if current.as_deref() == Some(id.as_str()) || self.inner.accounts.current().as_deref() == Some(id.as_str()) {
             return Err(Error::Protocol("the current account cannot be removed".into()));
         }
-        self.inner.accounts.remove(&id)
+        Ok(self.inner.accounts.remove(&id)?)
     }
 
     /// Names this installation ("Personal phone"), 1-64 characters, no control characters.
@@ -234,7 +212,7 @@ impl Node {
                 return other.map(|_| ());
             }
         };
-        let opened = vault::open_with_key(&vault, &key).and_then(|secrets| {
+        let opened = vault::open_with_key(&vault, &key).map_err(Error::from).and_then(|secrets| {
             <[u8; 32]>::try_from(key.as_slice())
                 .map(|k| (secrets, zeroize::Zeroizing::new(k)))
                 .map_err(|_| Error::WrongPassphrase)
@@ -319,17 +297,17 @@ impl Node {
         if !matches!(self.inner.shared.lock().disk, Some(Disk::V2(_))) {
             return;
         }
-        self.inner.link_cancel();
+        self.inner.sync.link_cancel();
         let inner = self.inner.clone();
         self.run_lifecycle(async move {
             {
                 // Under the lifecycle lock, so a `start` that is binding right now finishes
                 // first and its endpoint is closed here.
                 let _life = inner.lifecycle.lock().await;
-                inner.gcall_shutdown().await;
+                inner.group.gcall_shutdown().await;
                 inner.close_endpoint().await;
                 inner.shared.lock().forget_session();
-                inner.chat_close().await;
+                inner.chat.chat_close().await;
             }
             inner.emit_status();
         });
@@ -338,7 +316,7 @@ impl Node {
     pub fn set_name(&self, name: String) -> Result<(), Error> {
         if name.len() > 256 || name.chars().any(|c| !proto::safe_name_char(c)) { return Err(Error::Protocol("invalid profile name".into())); }
         if self.inner.shared.lock().profile.is_some() {
-            return self.inner.profile_set_field("name".into(), Some(serde_json::json!(name)));
+            return Ok(self.inner.chat.profile_set_field("name".into(), Some(serde_json::json!(name)))?);
         }
         let unlocked = {
             let mut s = self.inner.shared.lock();
@@ -361,7 +339,7 @@ impl Node {
             retire_ticket(&mut s.state, true);
             s.me.is_some()
         };
-        if unlocked { self.inner.persist() } else { Ok(()) }
+        if unlocked { self.inner.persist() } else { Ok(()) }.map_err(Error::from)
     }
 
     /// Drops the ticket we hand out, and every older one still live: the old QR/text stops
@@ -370,6 +348,6 @@ impl Node {
     pub fn reset_ticket(&self) -> Result<(), Error> {
         self.inner.me()?;
         retire_ticket(&mut self.inner.shared.lock().state, false);
-        self.inner.persist()
+        self.inner.persist().map_err(Error::from)
     }
 }

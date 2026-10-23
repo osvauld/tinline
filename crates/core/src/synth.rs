@@ -7,11 +7,8 @@ use std::collections::HashMap;
 use std::sync::{Mutex, OnceLock};
 use std::time::Duration;
 
-use loro::VersionVector;
-
 use crate::Error;
 use crate::chat::doc::FileRef;
-use crate::group::doc::GroupDoc;
 use crate::group::record::Body;
 use crate::node::Node;
 
@@ -22,44 +19,7 @@ pub(crate) fn peer(did: &str) -> Option<(identity::Identity, [u8; 32])> {
     PEERS.get()?.lock().ok()?.get(did).cloned()
 }
 
-pub(crate) struct SMember {
-    pub did: String,
-    pub acct: identity::Identity,
-    pub dev: [u8; 32],
-    /// The member's writing replica of the meta doc.
-    pub doc: GroupDoc,
-    /// ... and of the day docs it posted in.
-    pub days: HashMap<String, GroupDoc>,
-}
-
-/// A group being built (see `Node::synth_group_new_for_test`).
-#[doc(hidden)]
-pub struct SynthGroup {
-    pub(crate) gid: String,
-    /// Where the members' batches meet: the meta doc and one doc per day.
-    pub(crate) hub: GroupDoc,
-    pub(crate) day_hubs: HashMap<String, GroupDoc>,
-    pub(crate) members: Vec<SMember>,
-    /// What went through `apply` already, per doc.
-    pub(crate) sent: VersionVector,
-    pub(crate) day_sent: HashMap<String, VersionVector>,
-}
-
-/// A remote member's writing doc (see `Node::synth_remote_open_for_test`).
-#[doc(hidden)]
-pub struct SynthRemote {
-    pub(crate) gid: String,
-    pub(crate) m: SMember,
-}
-
-impl SynthGroup {
-    pub fn gid(&self) -> String {
-        self.gid.clone()
-    }
-    pub fn member_did(&self, idx: usize) -> String {
-        self.members[idx].did.clone()
-    }
-}
+pub use group_runtime::engine::synth::{SynthGroup, SynthRemote};
 
 impl Node {
     /// A fresh recovery phrase.
@@ -94,7 +54,7 @@ impl Node {
             let (hello, pending) = proto::contact_hello_with(&me.id, me.device, &ticket, &me.profile.name, now * 1000, crate::node::GRANT_TTL, policy)?;
             let (welcome, _) = proto::accept_contact_hello_with(&pid, pubdev, &hello, me.device, now * 1000, &proto::Unrecorded, crate::node::GRANT_TTL, |_| policy)?;
             let new = proto::accept_contact_welcome(&me.id, &pending, &welcome, pubdev, now * 1000)?;
-            inner.save_contact(me.epoch, new, None, true, true).await?;
+            inner.ctx.save_contact(me.epoch, new, None, true, true).await?;
             Ok(())
         })?
     }
@@ -117,45 +77,45 @@ impl Node {
             height: 0,
             preview: String::new(),
         });
-        self.block_on(async move { inner.synth_dm(&with, &author, text, at, file).await })?
+        self.block_rt(async move { inner.chat.synth_dm(&with, &author, peer(&author), text, at, file).await })
     }
 
     #[doc(hidden)]
     pub fn synth_group_new_for_test(&self, name: String) -> Result<SynthGroup, Error> {
-        self.inner.synth_group_new(&name)
+        Ok(self.inner.group.synth_group_new(&name)?)
     }
 
     #[doc(hidden)]
     pub fn synth_group_add_for_test(&self, g: &mut SynthGroup, did: String, name: String, at: i64) -> Result<usize, Error> {
-        self.inner.synth_group_add(g, &did, &name, at)
+        Ok(self.inner.group.synth_group_add(g, &did, peer(&did).ok_or(Error::NotFound)?, &name, at)?)
     }
 
     /// Buffers a post by member `idx`.
     #[doc(hidden)]
     pub fn synth_group_post_for_test(&self, g: &mut SynthGroup, idx: usize, at: i64, text: String) -> Result<(), Error> {
-        self.inner.synth_group_write(g, idx, at, Body::Post { text, reply_to: None })
+        Ok(self.inner.group.synth_group_write(g, idx, at, Body::Post { text, reply_to: None, image: None })?)
     }
 
     #[doc(hidden)]
     pub fn synth_group_flush_for_test(&self, g: &mut SynthGroup) -> Result<(), Error> {
-        self.inner.synth_group_flush(g)
+        Ok(self.inner.group.synth_group_flush(g)?)
     }
 
     /// Only the meta doc's and/or only the day docs' buffered records go through `apply`.
     #[doc(hidden)]
     pub fn synth_group_flush_part_for_test(&self, g: &mut SynthGroup, meta: bool, days: bool) -> Result<(), Error> {
-        self.inner.synth_group_flush_part(g, meta, days)
+        Ok(self.inner.group.synth_group_flush_part(g, meta, days)?)
     }
 
     #[doc(hidden)]
     pub fn synth_remote_open_for_test(&self, gid: String, did: String) -> Result<SynthRemote, Error> {
-        self.inner.synth_remote_open(&gid, &did)
+        Ok(self.inner.group.synth_remote_open(&gid, &did, peer(&did).ok_or(Error::NotFound)?)?)
     }
 
     /// A remote member's post arrives; returns (apply, after) times.
     #[doc(hidden)]
     pub fn synth_remote_post_for_test(&self, r: &mut SynthRemote, text: String, at: i64) -> Result<(Duration, Duration), Error> {
-        self.inner.synth_remote_post(r, &text, at)
+        Ok(self.inner.group.synth_remote_post(r, &text, at)?)
     }
 
     /// Switch for the background search reconcile (on open); off = the test calls

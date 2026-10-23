@@ -4,208 +4,78 @@
 //! Blocking methods are meant for the app's IO threads; long work (dialing, ringing, the call
 //! itself) runs on this node's own tokio runtime and reports through `NodeEvents`.
 
-use std::collections::{HashSet, VecDeque};
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
-use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+use std::sync::atomic::Ordering;
+use std::time::Duration;
 
-use bytes::Bytes;
-use identity::Identity;
-use iroh::endpoint::{Connection, QuicTransportConfig, presets};
-use iroh::{Endpoint, EndpointAddr, PublicKey, RelayUrl, SecretKey, Watcher};
-use parking_lot::{Mutex, ReentrantMutex};
-use proto::{ContactTicket, Msg};
-use sha2::{Digest, Sha512};
-use tokio::sync::{OwnedMutexGuard, OwnedSemaphorePermit, Semaphore, mpsc, oneshot};
+use iroh::PublicKey;
+use proto::ContactTicket;
+use tokio::sync::OwnedMutexGuard;
 use zeroize::Zeroize;
 
 use crate::accounts::{self, AccountDirs};
-use crate::store::{self, Backing, CallRecord, ContactDevice, Disk, History, OwnDevice, Profile, ProfileV2, State, Store, StoredContact};
+use crate::store::{self, Backing, CallRecord, Disk, History, OwnDevice, Profile, ProfileV2, State, Store, StoredContact};
 use crate::vault::{self, Dek, Secrets};
-use crate::wire::Ctrl;
 use crate::Error;
-
-/// Short, because a ticket is a bearer secret until someone redeems it.
-const TICKET_TTL: u64 = 7 * 24 * 3600;
-/// Long, because renewal happens on every answered call; this only bites a contact who never
-/// calls back. Unix ms, like every issued statement.
-pub(crate) const GRANT_TTL: u64 = 365 * 24 * 3600 * 1000;
-const DIAL_TIMEOUT: Duration = Duration::from_secs(30);
-/// All devices of one contact together; each device alone gets at most `DIAL_TIMEOUT`.
-const DIAL_TOTAL: Duration = Duration::from_secs(45);
-/// Devices remembered per contact: what a device list may hold.
-const MAX_DEVICES: usize = proto::MAX_LIST_DEVICES;
-/// An active call that receives no media for this long is over.
-const NO_AUDIO_TIMEOUT: Duration = Duration::from_secs(30);
-/// How long a turned-away connection gets to read our refusal before we let go of its slot.
-const LINGER: Duration = Duration::from_secs(2);
-/// Longest peer-supplied reason we pass on to the UI.
-const MAX_REASON_CHARS: usize = 100;
-const RING_TIMEOUT: Duration = Duration::from_secs(60);
-/// How long a second incoming call (one that arrives during a call) waits to be answered.
-/// `P2P_WAITING_RING_SECS` overrides it, for tests.
-const WAITING_RING_TIMEOUT: Duration = Duration::from_secs(30);
-/// See `close_wait`.
-const CLOSE_WAIT: Duration = Duration::from_secs(2);
-/// Longest `start` waits for a previous endpoint to finish closing (iroh's own bound is ~3 s).
-const CLOSING_MAX: Duration = Duration::from_secs(10);
-/// An active call with no media for this long shows as `reconnecting` (a path change or a
-/// network switch), well before the no-audio timeout ends it.
-const RECONNECT_AFTER: Duration = Duration::from_millis(1500);
-/// Longest local alias for a contact, in characters (same cap as names from peers).
-const MAX_ALIAS_CHARS: usize = 64;
-/// One deadline for a connection to get from first packet to hello, and for the reply to the
-/// hello we send when adding a contact.
-const HELLO_TIMEOUT: Duration = Duration::from_secs(15);
-/// Connections from strangers we hold open at once until they are accepted; past this new ones
-/// are refused rather than queued. A slot is held for the whole life of a connection that has
-/// not become a call or a contact, refusals and their linger included.
-const MAX_PENDING_HELLOS: usize = 24;
-/// Extra slots only for devices of our contacts, so a flood of strangers cannot lock them out.
-/// (Whose device it is is only known once the handshake is done, so a stranger can hold one of
-/// these until then; it moves to the general pool or is dropped right after.)
-const RESERVED_HELLOS: usize = 8;
-/// What a peer is told when we turn it away. The real reason is logged locally: telling an
-/// unauthenticated stranger "revoked" vs "not a contact" would leak our contact list.
-pub(crate) const REFUSED: &str = "not accepted";
 
 mod api_call;
 mod api_contacts;
 mod api_identity;
-mod accept;
-mod call;
-mod contacts;
-mod devices;
+mod hooks;
 mod lifecycle;
-mod outgoing;
-mod persist;
 mod rotation;
-mod run;
 #[cfg(any(test, feature = "dev-tools"))]
 mod testkit;
 mod types;
 mod unlock;
-mod util;
-#[cfg(test)]
-mod tests;
 
+// The runtime (account session, endpoint, 1:1 call, contacts cluster, rotation) is the
+// `node-runtime` crate; its items keep their `crate::node::` paths.
+pub use node_runtime::*;
 pub use self::types::*;
-pub(crate) use self::api_contacts::*;
-pub(crate) use self::contacts::*;
-pub(crate) use self::call::*;
-pub(crate) use self::devices::*;
-pub(crate) use self::lifecycle::*;
-pub(crate) use self::persist::*;
-pub(crate) use self::util::*;
 
-pub(crate) struct Me {
-    /// The session this was unlocked in; see `Shared::epoch`.
-    pub(crate) epoch: u64,
-    pub(crate) profile: Profile,
-    pub(crate) id: Identity,
-    pub(crate) device: [u8; 32],
-    pub(crate) attestation: proto::SignedAttestation,
-}
-
-pub(crate) struct Shared {
-    /// What `account.json` holds; present whenever an identity exists, locked or not. (Also
-    /// present, in memory only, for an identity not yet `commit_identity`ed.)
-    pub(crate) disk: Option<Disk>,
-    /// Present while unlocked (and for a legacy profile).
-    pub(crate) me: Option<Arc<Me>>,
-    /// The vault's data key while unlocked via a vault; never written to disk by the core.
-    pub(crate) dek: Option<Dek>,
-    /// Empty while locked: it is sealed on disk.
-    pub(crate) state: State,
-    pub(crate) endpoint: Option<Endpoint>,
-    /// Changes whenever the account in memory is replaced, locked or unlocked. Everything that
-    /// runs on its own (call tasks, background writes) remembers the value it started under and
-    /// is refused once it differs, so nothing of one account is ever written into another.
-    pub(crate) epoch: u64,
-    /// The account's directory and where its state goes; `None` for no identity and for one not
-    /// yet committed. `backing` is `None` while locked.
-    pub(crate) acct: Option<Acct>,
-    /// The call log of the unlocked account; empty while locked.
-    pub(crate) history: Arc<History>,
-    /// Sealed; known only while unlocked.
-    pub(crate) device_label: Option<String>,
-    /// `account.json` is on disk. False only for a no-passphrase identity waiting for
-    /// `commit_identity`.
-    pub(crate) committed: bool,
-    /// The account doc of own-device sync; open while unlocked.
-    pub(crate) acc: Option<Arc<crate::sync::accdoc::AccDoc>>,
-    /// The call log of own-device sync, beside the account doc; open while unlocked.
-    pub(crate) calls: Option<Arc<crate::sync::callsdoc::CallsDoc>>,
-    pub(crate) profile: Option<Arc<crate::sync::profiledoc::ProfileDoc>>,
-    pub(crate) profile_cache: Option<Arc<crate::sync::profilecache::ProfileCache>>,
-}
-
-pub(crate) struct Acct {
-    pub(crate) id: String,
-    pub(crate) store: Store,
-    pub(crate) backing: Option<Backing>,
-}
-
-/// The call slot, apart from `Shared` so the 50 Hz audio threads never wait behind a disk
-/// write or a handshake holding `Shared`.
-#[derive(Default)]
-pub(crate) struct Live {
-    pub(crate) call: Option<Arc<Call>>,
-    /// A second incoming call, ringing over the active one. At most one; a third is turned
-    /// away busy. Takes the slot if the active call ends first.
-    waiting: Option<Arc<Call>>,
-    /// The call that held the slot before, until the next call has waited for its events to
-    /// be delivered (so `Ended` always precedes the next call's `Dialing`).
-    last: Option<Arc<Call>>,
-    tone: Option<f32>,
-}
-
+/// What the engines share through `Deref<Target = NodeCtx>`: the runtime context plus the
+/// engines that still live in p2pcore. Hooks into the engines are `hooks.rs`.
 pub(crate) struct Inner {
-    pub(crate) handle: tokio::runtime::Handle,
-    pub(crate) accounts: AccountDirs,
-    /// Serialises creating, committing and unlocking an account (they open its files).
-    pub(crate) gate: Mutex<()>,
-    /// Test knob: this many state writes fail. See `Node::fail_next_writes`.
-    pub(crate) fail_writes: AtomicU32,
-    /// Held while snapshotting and writing state, so writes land in the order taken. Always
-    /// taken before `shared`, never while holding it.
-    pub(crate) writing: Mutex<()>,
-    pub(crate) events: Arc<dyn NodeEvents>,
-    pub(crate) shared: Mutex<Shared>,
-    pub(crate) live: Mutex<Live>,
-    pub(crate) pending: Arc<Semaphore>,
-    pub(crate) reserved: Arc<Semaphore>,
-    /// Serialises start, stop, lock and set_passphrase.
-    pub(crate) lifecycle: Arc<tokio::sync::Mutex<()>>,
-    /// Held while an endpoint of ours is closing (`close_fully`); `start` binds the next one only
-    /// once it is free, so two endpoints never hold this device key at once.
-    pub(crate) closing: Arc<tokio::sync::Mutex<()>>,
-    pub(crate) chat: Mutex<Option<Arc<crate::chat::engine::ChatCore>>>,
-    pub(crate) chat_events: Mutex<Option<Arc<dyn crate::chat::api::ChatEvents>>>,
-    pub(crate) link_events: Mutex<Option<Arc<dyn crate::sync::LinkEvents>>>,
-    pub(crate) selfsync: crate::sync::engine::SelfSync,
-    pub(crate) sync_tx: tokio::sync::watch::Sender<u64>,
-    pub(crate) link: crate::sync::link::LinkState,
-    /// Group calls (G6), `crate::gcall::net`.
-    pub(crate) gcall: crate::gcall::net::Service,
-    pub(crate) block: crate::block::BlockRt,
-    /// Contact requests (`contact_req.rs`).
-    pub(crate) requests: crate::contact_req::ReqRt,
-    /// G1: group chat runtime (second endpoint, sessions with hosts); see `group/engine.rs`.
-    pub(crate) group: crate::group::engine::GroupRt,
-    /// Token delivery (P6, `caps.rs`).
-    pub(crate) caps: crate::caps::CapsRt,
-    pub(crate) devlist: crate::devlist::DevlistRt,
-    /// Private endpoint rotation (`rotation.rs`).
-    pub(crate) rotation: rotation::RotationRt,
-    pub(crate) profile_events: Mutex<Option<Arc<dyn crate::profile::ProfileEvents>>>,
-    pub(crate) profile_downloads: Mutex<HashSet<(u64, String, String)>>,
-    pub(crate) profile_fetches: Arc<Semaphore>,
-    pub(crate) video: crate::video_call::NodeVideo,
-    /// The selected account's search index (`search.redb`), open while its chat store is.
-    pub(crate) search: Mutex<Option<Arc<crate::search::index::SearchIndex>>>,
-    /// For tests: the next `n` search hook writes are skipped (a crash between commit and index).
-    pub(crate) search_skip: AtomicU32,
+    pub(crate) ctx: Arc<NodeCtx>,
+    /// The chat runtime (1:1 chat and profiles), `chat_runtime`.
+    pub(crate) chat: Arc<chat_runtime::ChatRt>,
+    /// The group runtime (G1: second endpoint, sessions with hosts; group calls), `group_runtime`.
+    pub(crate) group: Arc<group_runtime::GroupRt>,
+    /// The own-device runtime (linking, own-device sync), `sync_runtime`.
+    pub(crate) sync: Arc<sync_runtime::SyncRt>,
+    /// The selected account's search index (`search.redb`), open while its chat store is; the
+    /// chat and group engines write to it after every accepted change.
+    pub(crate) search: Arc<search_ix::SearchIx>,
+}
+
+impl Inner {
+    /// Opens the chat store (and with it the search index) when the data key is available; a
+    /// store opened now gets its search index reconciled in the background.
+    pub(crate) fn chat_open(self: &Arc<Self>) {
+        if self.chat.chat_open() {
+            self.search_reconcile();
+        }
+    }
+
+    /// `commit_identity` with the gate held: the files, then the stores that open with them.
+    pub(crate) fn commit_locked(self: &Arc<Self>) -> Result<(), Error> {
+        if !self.commit_files()? {
+            return Ok(());
+        }
+        self.chat_open();
+        self.sync.acc_open();
+        // Anything that changed while the files were being written.
+        self.persist().map_err(Error::from)
+    }
+}
+
+impl std::ops::Deref for Inner {
+    type Target = NodeCtx;
+
+    fn deref(&self) -> &NodeCtx {
+        &self.ctx
+    }
 }
 
 /// Blocking methods (`start`, `stop`, `add_contact`, `my_ticket`) are for the app's own
@@ -229,15 +99,15 @@ impl Drop for Node {
                     if let Some(ep) = ep {
                         let _ = tokio::time::timeout(Duration::from_secs(1), ep.close()).await;
                     }
-                    let _ = tokio::time::timeout(Duration::from_secs(3), inner.group_close()).await;
-                    let _ = tokio::time::timeout(Duration::from_secs(3), inner.chat_close()).await;
+                    let _ = tokio::time::timeout(Duration::from_secs(3), inner.group.group_close()).await;
+                    let _ = tokio::time::timeout(Duration::from_secs(3), inner.chat.chat_close()).await;
                 });
             }
             // GL: every store file goes now, whatever task still holds a clone (the tasks are
             // only dropped below, in the background), so a node made next on this directory
             // opens them at once.
-            self.inner.group_close_now();
-            self.inner.chat_close_now();
+            self.inner.group.group_close_now();
+            self.inner.chat.chat_close_now();
             self.inner.shared.lock().forget_session();
             // Never blocks, so it is safe even if the last reference drops on a core thread.
             rt.shutdown_background();
@@ -261,6 +131,24 @@ impl Node {
             let _ = tx.send(fut.await);
         }));
         rx.recv().map_err(|_| Error::Protocol("core runtime stopped".into()))
+    }
+
+    /// `block_on` for an engine call that fails with the runtime's error.
+    pub(crate) fn block_rt<T: Send + 'static>(
+        &self,
+        fut: impl std::future::Future<Output = Result<T, node_runtime::Error>> + Send + 'static,
+    ) -> Result<T, Error> {
+        Ok(self.block_on(fut)??)
+    }
+
+    /// `block_rt` for an engine call that needs the node's parts: `self.run(|i| async move { .. })`
+    /// hands the closure an owned `Arc<Inner>` to move into the future.
+    pub(crate) fn run<T, Fut>(&self, f: impl FnOnce(Arc<Inner>) -> Fut) -> Result<T, Error>
+    where
+        T: Send + 'static,
+        Fut: std::future::Future<Output = Result<T, node_runtime::Error>> + Send + 'static,
+    {
+        self.block_rt(f(self.inner.clone()))
     }
 
     /// Takes the lifecycle lock for the caller's whole operation; refuses on core threads.

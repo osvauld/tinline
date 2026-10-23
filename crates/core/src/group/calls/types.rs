@@ -1,8 +1,10 @@
-//! The DTOs, events and conditions of the group-call API.
+//! The group-call records, declared to UniFFI (the runtime's are plain), and the app's
+//! callback.
 
-use super::*;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, uniffi::Enum)]
+use group_runtime::calls::*;
+
+#[uniffi::remote(Enum)]
 pub enum GroupCallEventKind {
     /// A call began in the group (`group_calls` lists it; `group_call_join` joins).
     Announced,
@@ -29,7 +31,7 @@ pub enum GroupCallEventKind {
     MeteredData,
 }
 
-#[derive(Debug, Clone, PartialEq, uniffi::Record)]
+#[uniffi::remote(Record)]
 pub struct GroupCallEvent {
     pub kind: GroupCallEventKind,
     pub group_id: String,
@@ -45,7 +47,7 @@ pub trait GroupCallEvents: Send + Sync {
     fn on_group_call(&self, event: GroupCallEvent);
 }
 
-#[derive(Debug, Clone, PartialEq, uniffi::Record)]
+#[uniffi::remote(Record)]
 pub struct GroupCall {
     pub group_id: String,
     pub call_id: String,
@@ -62,7 +64,7 @@ pub struct GroupCall {
 }
 
 /// What kind of device this is, for call hosting (§2.4).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, uniffi::Enum)]
+#[uniffi::remote(Enum)]
 pub enum GroupCallDeviceClass {
     Desktop,
     Headless,
@@ -70,7 +72,7 @@ pub enum GroupCallDeviceClass {
 }
 
 /// Android `PowerManager.THERMAL_STATUS_*` order; `None` where the platform has no reading.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, uniffi::Enum)]
+#[uniffi::remote(Enum)]
 pub enum GroupCallThermal {
     None,
     Light,
@@ -80,7 +82,7 @@ pub enum GroupCallThermal {
 }
 
 /// The platform's local conditions for call hosting (§2.4), `Node::group_call_set_conditions`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, uniffi::Record)]
+#[uniffi::remote(Record)]
 pub struct GroupCallConditions {
     pub device_class: GroupCallDeviceClass,
     /// On mains or charging.
@@ -93,31 +95,8 @@ pub struct GroupCallConditions {
     pub thermal: GroupCallThermal,
 }
 
-impl From<GroupCallConditions> for Cond {
-    fn from(c: GroupCallConditions) -> Cond {
-        Cond {
-            class: match c.device_class {
-                GroupCallDeviceClass::Desktop => Class::Desktop,
-                GroupCallDeviceClass::Headless => Class::Headless,
-                GroupCallDeviceClass::Phone => Class::Phone,
-            },
-            plugged: c.plugged,
-            battery: c.battery_pct.min(100),
-            metered: c.metered,
-            metered_override: c.metered_allowed,
-            thermal: match c.thermal {
-                GroupCallThermal::None => Thermal::None,
-                GroupCallThermal::Light => Thermal::Light,
-                GroupCallThermal::Moderate => Thermal::Moderate,
-                GroupCallThermal::Severe => Thermal::Severe,
-                GroupCallThermal::Critical => Thermal::Critical,
-            },
-        }
-    }
-}
-
 /// The group call this device takes part in, for the apps' audio and service (GA-A1).
-#[derive(Debug, Clone, PartialEq, uniffi::Record)]
+#[uniffi::remote(Record)]
 pub struct GroupCallHere {
     pub group_id: String,
     pub call_id: String,
@@ -126,3 +105,10 @@ pub struct GroupCallHere {
     /// This device hosts it (keep the process and network up).
     pub hosting: bool,
 }
+
+sink_adapter!(
+    /// Hands the runtime's events to the app's `GroupCallEvents`.
+    pub(crate) GroupCallEventsAdapter(GroupCallEvents) => group_runtime::calls::GroupCallSink {
+        fn on_group_call(event: GroupCallEvent);
+    }
+);

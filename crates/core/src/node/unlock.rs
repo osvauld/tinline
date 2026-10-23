@@ -52,7 +52,7 @@ impl Node {
         s.dek = Some(dek);
         drop(s);
         self.inner.chat_open();
-        self.inner.acc_open();
+        self.inner.sync.acc_open();
         Ok(())
     }
 
@@ -135,7 +135,7 @@ impl Node {
         s.dek = Some(dek);
         drop(s);
         self.inner.chat_open();
-        self.inner.acc_open();
+        self.inner.sync.acc_open();
         Ok(())
     }
 }

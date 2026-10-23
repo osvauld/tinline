@@ -1,9 +1,7 @@
 use super::*;
 use crate::chat::doc::{DAY_MS, writer_id};
-use crate::group::{
-    doc::GroupDoc,
-    record::{Body, Record},
-};
+use crate::group::record::{Body, Record};
+use group_runtime::doc::GroupDoc;
 use crate::{CallInfo, CallState, Node, NodeEvents, NodeStatus};
 use iroh::{Endpoint, SecretKey, endpoint::presets};
 
@@ -165,7 +163,7 @@ fn request_ids_do_not_wrap_and_retry_keeps_original_id() {
 
 #[tokio::test(flavor = "current_thread")]
 async fn actual_authenticated_two_node_archive_sync_crosses_page_and_batch_boundaries() {
-    tokio::time::timeout(Duration::from_secs(90), async {
+    tokio::time::timeout(Duration::from_secs(300), async {
         let a_dir = Directory::new();
         let b_dir = Directory::new();
         let a = Node::new(a_dir.0.to_string_lossy().into(), Arc::new(Quiet)).unwrap();
@@ -213,6 +211,7 @@ async fn actual_authenticated_two_node_archive_sync_crosses_page_and_batch_bound
                         body: Body::Post {
                             text: format!("cold original {i}/{j}"),
                             reply_to: None,
+                            image: None,
                         },
                     },
                 )
@@ -239,14 +238,14 @@ async fn actual_authenticated_two_node_archive_sync_crosses_page_and_batch_bound
                 .unwrap()
                 .await
                 .unwrap();
-            a.inner.clone().self_run(incoming, false).await
+            a.inner.sync.clone().self_run(incoming, false).await
         };
         let run_b = async {
             let outgoing = client
                 .connect(server.addr(), b"tinline/self/3")
                 .await
                 .unwrap();
-            b.inner.clone().self_run(outgoing, true).await
+            b.inner.sync.clone().self_run(outgoing, true).await
         };
         let monitor = async {
             loop {

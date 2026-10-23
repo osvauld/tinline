@@ -115,13 +115,31 @@ impl ShortCode {
     }
 }
 
-/// Host side: an invite (or a device token) kept under a code.
+/// `CodeRow::expires` of a code that never expires (an open link). Never swept by
+/// `prune_codes`; it still counts as one of the group's codes.
+pub const NO_EXPIRY: u64 = u64::MAX;
+
+/// What a code admits.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum CodeKind {
+    /// An admin's signed invite (bearer grant, expires with it).
+    Invite,
+    /// No invite: admits only the issuer's own DID (its other devices), expires like an invite.
+    Device,
+    /// No invite: anyone may fetch it while the group is open (`Open{active}`) and its issuer is
+    /// an admin; never expires (`NO_EXPIRY`); every host drops all of a group's open codes when
+    /// it sees the group closed, and keeps one per issuer (`docs/design/public-group.md` §2).
+    Open,
+}
+
+/// Host side: an invite (or a device token, or an open link) kept under a code.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CodeRow {
     pub gid: String,
-    /// `codec` bytes of a `SignedInvite`; `None` for a device code.
+    pub kind: CodeKind,
+    /// `codec` bytes of a `SignedInvite` (`CodeKind::Invite` only).
     pub invite: Option<Vec<u8>>,
-    /// Unix ms.
+    /// Unix ms; `NO_EXPIRY` for an open link.
     pub expires: u64,
     /// Who registered it.
     pub by: String,
@@ -181,6 +199,26 @@ impl GroupStore {
             self.db.apply(&dead).map_err(io)?;
         }
         Ok(held)
+    }
+
+    /// Forgets `gid`'s open codes (`CodeKind::Open`, and their issued rows): all of them (`by`
+    /// `None`: the group closed), or those `by` registered except `keep` (one open link per
+    /// issuer per group). Returns how many went.
+    pub fn drop_open_codes(&self, gid: &str, by: Option<&str>, keep: Option<&[u8; CODE_LEN]>) -> Result<usize, Error> {
+        let keep = keep.map(|k| format!("code/{}", hex::encode(k)));
+        let mut dead = Vec::new();
+        for (k, v) in self.db.scan("code/").map_err(io)? {
+            let Ok(r) = serde_json::from_slice::<CodeRow>(&v) else { continue };
+            if r.gid == gid && r.kind == CodeKind::Open && by.is_none_or(|b| r.by == b) && keep.as_ref() != Some(&k) {
+                dead.push(Op::Delete(format!("issued/{}", &k["code/".len()..])));
+                dead.push(Op::Delete(k));
+            }
+        }
+        let n = dead.len() / 2;
+        if !dead.is_empty() {
+            self.db.apply(&dead).map_err(io)?;
+        }
+        Ok(n)
     }
 
     pub fn put_issued(&self, code: &[u8; CODE_LEN], r: &IssuedRow) -> Result<(), Error> {

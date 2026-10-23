@@ -16,13 +16,13 @@ impl Node {
     /// For tests: how many chat sessions with `did` are up right now.
     #[doc(hidden)]
     pub fn chat_sessions_for_test(&self, did: String) -> u32 {
-        self.inner.chat_core().map_or(0, |core| self.inner.chat_sessions_of(&core, &did).len() as u32)
+        self.inner.chat.chat_core().map_or(0, |core| self.inner.chat.chat_sessions_of(&core, &did).len() as u32)
     }
 
     /// For tests: how many own-device sync sessions are up right now.
     #[doc(hidden)]
     pub fn own_sessions_for_test(&self) -> u32 {
-        self.inner.selfsync.sessions.lock().len() as u32
+        self.inner.sync.selfsync.sessions.lock().len() as u32
     }
 }
 
@@ -60,7 +60,7 @@ impl Node {
             }
         }
         self.inner.persist_for(Some(me.epoch))?;
-        self.inner.devices_changed();
+        self.inner.ctx.devices_changed();
         Ok(())
     }
 
@@ -74,7 +74,7 @@ impl Node {
         let Ok(blob) = serde_json::from_str::<proto::SignedDeviceList>(&list_json) else {
             return false;
         };
-        let taken = self.inner.accept_device_list(me.epoch, &did, &blob);
+        let taken = self.inner.ctx.accept_device_list(me.epoch, &did, &blob);
         let _ = self.inner.persist_for(Some(me.epoch));
         taken
     }
@@ -101,7 +101,7 @@ impl Node {
     #[doc(hidden)]
     pub fn own_device_list_for_test(&self) -> Option<String> {
         let me = self.inner.me().ok()?;
-        serde_json::to_string(&self.inner.my_device_list(&me)?).ok()
+        serde_json::to_string(&self.inner.ctx.my_device_list(&me)?).ok()
     }
 
     /// For tests: dies like a killed process. The runtime stops at once and nothing is closed,
@@ -135,6 +135,6 @@ impl Node {
         let secrets = Secrets { mnemonic: me.profile.mnemonic.clone(), device_secret };
         let vault = vault::reseal(&cur.vault, &dek, &secrets)?;
         let disk = Disk::V2(ProfileV2 { device_public: cryptography::signature::public_key(&device_secret), vault, ..cur });
-        s.acct.as_ref().ok_or(Error::NoIdentity)?.store.save_profile(&disk)
+        Ok(s.acct.as_ref().ok_or(Error::NoIdentity)?.store.save_profile(&disk)?)
     }
 }

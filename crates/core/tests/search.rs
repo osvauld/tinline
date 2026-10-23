@@ -566,6 +566,8 @@ fn paging_across_tiers_with_a_tier_change_between_pages() {
     for d in (9..=24).rev() {
         for k in 0..2 {
             want.push(send_old(&p.node, &me, &format!("standup report {d}-{k}"), d));
+            // Equal timestamps tie-break on a keyed hash, not the id: keep every `at` distinct.
+            std::thread::sleep(Duration::from_millis(3));
         }
     }
     for i in 0..3 {

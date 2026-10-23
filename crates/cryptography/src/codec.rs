@@ -26,6 +26,13 @@ pub fn to_bytes<T: Serialize + ?Sized>(v: &T) -> Result<Vec<u8>, CodecError> {
     postcard::to_allocvec(v).map_err(|_| CodecError::Encode)
 }
 
+/// [`to_bytes`] for our own derive-`Serialize` types, which cannot fail to encode. A failure is
+/// a bug in a hand-written `Serialize`; it panics here rather than signing or storing empty bytes.
+#[allow(clippy::expect_used)]
+pub fn to_bytes_infallible<T: Serialize + ?Sized>(v: &T) -> Vec<u8> {
+    to_bytes(v).expect("derive(Serialize) types always encode")
+}
+
 /// Decodes `bytes` (at most `max` long) as exactly one `T`, with nothing left over.
 pub fn from_bytes<T: DeserializeOwned>(bytes: &[u8], max: usize) -> Result<T, CodecError> {
     if bytes.len() > max {

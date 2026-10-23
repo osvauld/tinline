@@ -3,7 +3,7 @@
 //! runs the real self_run DID/device auth handshake with synthetic identities.
 use super::*;
 use crate::chat::doc::writer_id;
-use crate::group::doc::{DocId, GroupDoc};
+use group_runtime::doc::{DocId, GroupDoc};
 use crate::group::record::InviteToken;
 use crate::{CallInfo, CallState, Node, NodeEvents, NodeStatus};
 use iroh::{Endpoint, SecretKey, endpoint::presets};
@@ -97,14 +97,15 @@ async fn actual_authenticated_self_reader_does_not_ack_failed_group_append() {
             owner: me.id.did().into(),
             hosts: Vec::new(),
             invite: None,
+            open: false,
         })
         .unwrap();
-        node.inner.group_own_apply(&[token], true);
+        node.inner.group.group_own_apply(&[token], true);
         let (meta, _) = source
             .own_content_export(&gid, &DocId::Meta, &VersionVector::default())
             .unwrap()
             .unwrap();
-        node.inner
+        node.inner.group
             .group_own_content_apply(
                 me.epoch,
                 &remote,
@@ -121,7 +122,7 @@ async fn actual_authenticated_self_reader_does_not_ack_failed_group_append() {
         target.store.fail_next_append_for_test();
         let run = async {
             let accepting = server.accept().await.unwrap().accept().unwrap();
-            node.inner.clone().handle_self_incoming(accepting).await
+            node.inner.sync.clone().handle_self_incoming(accepting).await
         };
         let drive = async {
             let conn = client
@@ -159,7 +160,7 @@ async fn actual_authenticated_self_reader_does_not_ack_failed_group_append() {
                 })
                 .await
                 .unwrap();
-            let sig = crate::chat::wire::sign_batch(&client_secret, &name, &update);
+            let sig = chat_runtime::chat::wire::sign_batch(&client_secret, &name, &update);
             writer
                 .send(&SelfMsg::Sync {
                     doc: name.clone(),
@@ -222,7 +223,7 @@ async fn produced(negotiated: bool) {
                 group_contents: negotiated,
                 ..Default::default()
             };
-            node.inner
+            node.inner.sync
                 .push_all_chat(&me, &remote, &mut peer, &mut writer)
                 .await
                 .unwrap();
@@ -336,11 +337,12 @@ async fn no_host_hint_bootstrap_grants_no_role_until_signed_meta_and_borrowed_wr
             owner: me.id.did().into(),
             hosts: Vec::new(),
             invite: None,
+            open: false,
         })
         .unwrap();
-        node.inner.group_own_apply(&[token.clone()], false);
+        node.inner.group.group_own_apply(std::slice::from_ref(&token), false);
         assert!(!target.groups.lock().contains_key(&gid));
-        node.inner.group_own_apply(&[token], true);
+        node.inner.group.group_own_apply(&[token], true);
         assert!(target.groups.lock().contains_key(&gid));
         assert!(!target.groups.lock()[&gid].state.is_member(me.id.did()));
         assert!(
@@ -352,7 +354,7 @@ async fn no_host_hint_bootstrap_grants_no_role_until_signed_meta_and_borrowed_wr
             .own_content_export(&gid, &DocId::Meta, &VersionVector::default())
             .unwrap()
             .unwrap();
-        node.inner
+        node.inner.group
             .group_own_content_apply(
                 me.epoch,
                 &remote,
@@ -373,13 +375,12 @@ async fn no_host_hint_bootstrap_grants_no_role_until_signed_meta_and_borrowed_wr
         let name = contents::doc_name(&gid, &DocId::Day(day.clone()));
         target.store.fail_next_append_for_test();
         assert!(matches!(
-            node.inner
-                .group_own_content_apply(me.epoch, &remote, &name, &update),
-            Err(Error::Io(_))
+            node.inner.group.group_own_content_apply(me.epoch, &remote, &name, &update),
+            Err(node_runtime::Error::Io(_))
         ));
         assert!(!target.groups.lock()[&gid].meta.owed_days.contains(&day));
         let accepted = node
-            .inner
+            .inner.group
             .group_own_content_apply(me.epoch, &remote, &name, &update)
             .unwrap();
         assert!(target.groups.lock()[&gid].meta.owed_days.contains(&day));
@@ -397,7 +398,7 @@ async fn no_host_hint_bootstrap_grants_no_role_until_signed_meta_and_borrowed_wr
         );
         // Acknowledging only the laptop's own writer (absent here) must NOT clear
         // the phone-origin obligation, including after retry of a failed append.
-        node.inner.group_ack_for_durability_test(
+        node.inner.group.group_ack_for_durability_test(
             &target,
             &gid,
             "did:synthetic:host",
@@ -406,7 +407,7 @@ async fn no_host_hint_bootstrap_grants_no_role_until_signed_meta_and_borrowed_wr
             &VersionVector::default().encode(),
         );
         assert!(target.groups.lock()[&gid].meta.owed_days.contains(&day));
-        node.inner.group_ack_for_durability_test(
+        node.inner.group.group_ack_for_durability_test(
             &target,
             &gid,
             "did:synthetic:host",

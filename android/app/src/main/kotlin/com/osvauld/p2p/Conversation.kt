@@ -828,12 +828,12 @@ private fun PhotoBox(m: Message, a: Attachment, out: Boolean, pos: BubblePos, fi
 }
 
 @Composable
-private fun PhotoChip(text: String) =
+internal fun PhotoChip(text: String) =
     Text(text, Modifier.clip(RoundedCornerShape(10.dp)).background(Color.Black.copy(alpha = .42f)).padding(horizontal = 8.dp, vertical = 2.dp),
         style = TinType.caption.copy(fontSize = 11.sp, lineHeight = 15.sp, fontWeight = FontWeight.Normal), color = Color.White)
 
 @Composable
-private fun Ring(content: @Composable BoxScope.() -> Unit) =
+internal fun Ring(content: @Composable BoxScope.() -> Unit) =
     Box(Modifier.size(56.dp).clip(CircleShape).background(Color(0x8C0F1513)), contentAlignment = Alignment.Center, content = content)
 
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)

@@ -55,9 +55,10 @@ unsafe impl uniffi::FfiConverter<crate::UniFfiTag> for Bytes {
     }
 
     fn write(obj: Self, buf: &mut Vec<u8>) {
-        let n = i32::try_from(obj.0.len()).expect("bytes over 2 GiB");
-        buf.extend_from_slice(&n.to_be_bytes());
-        buf.extend_from_slice(&obj.0);
+        // Clamped, never a panic; a camera frame cannot reach 2 GiB, and the prefix and body stay consistent.
+        let len = obj.0.len().min(i32::MAX as usize);
+        buf.extend_from_slice(&(len as i32).to_be_bytes());
+        buf.extend_from_slice(&obj.0[..len]);
     }
 
     fn try_read(buf: &mut &[u8]) -> uniffi::Result<Self> {
@@ -75,7 +76,7 @@ uniffi::derive_ffi_traits!(local Bytes);
 
 fn read_len(buf: &mut &[u8]) -> uniffi::Result<usize> {
     uniffi::check_remaining(buf, 4)?;
-    let (n, rest) = buf.split_at(4);
+    let Some((n, rest)) = buf.split_first_chunk::<4>() else { uniffi::deps::anyhow::bail!("bytes: short length") };
     *buf = rest;
-    Ok(usize::try_from(i32::from_be_bytes(n.try_into().expect("4 bytes")))?)
+    Ok(usize::try_from(i32::from_be_bytes(*n))?)
 }

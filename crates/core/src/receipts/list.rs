@@ -25,7 +25,7 @@ impl Node {
     /// cannot be read (no group store yet) is left out, never guessed.
     pub fn chat_list_marks(&self) -> Result<Vec<ListMark>, Error> {
         let mut out = Vec::new();
-        if let Ok(rows) = self.inner.chat_list_receipts() {
+        if let Ok(rows) = self.inner.chat.chat_list_receipts() {
             for r in rows {
                 let not_delivered = self
                     .not_delivered_reason(r.peer_did.clone(), r.status.message_id.clone())
@@ -40,7 +40,7 @@ impl Node {
                 }
             }
         }
-        if let Ok(core) = self.inner.group_core() {
+        if let Ok(core) = self.inner.group.group_core() {
             for s in self.groups().unwrap_or_default() {
                 let Some(m) = s
                     .last
@@ -49,7 +49,7 @@ impl Node {
                     continue;
                 };
                 let mark = match m.delivery {
-                    crate::group::api::GroupDelivery::Waiting => TickVis::Slack,
+                    crate::group::api::GroupDelivery::Waiting | crate::group::api::GroupDelivery::Failed => TickVis::Slack,
                     crate::group::api::GroupDelivery::Delivered => core
                         .member_receipts_range(&s.id, m.at as i64, m.at as i64, true)
                         .ok()

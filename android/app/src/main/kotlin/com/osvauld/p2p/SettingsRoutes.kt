@@ -129,8 +129,20 @@ fun PrivacyRoute(app: P2pApp, onBack: () -> Unit, onBlocked: () -> Unit, onCalls
     LaunchedEffect(acct) {
         withContext(Dispatchers.IO) { runCatching { app.node.readReceipts() }.getOrNull() }?.let { reads = it }
     }
+    // "Show me as online in public groups": per install in the group core (default on).
+    var shown by remember(acct) { mutableStateOf(true) }
+    LaunchedEffect(acct) {
+        withContext(Dispatchers.IO) { runCatching { app.node.groupPresenceVisible() }.getOrNull() }?.let { shown = it }
+    }
+    // Group pictures (public group §5): per install in the group core (default Wi-Fi only).
+    var pictures by remember(acct) { mutableStateOf(uniffi.p2pcore.PictureDownload.WIFI) }
+    LaunchedEffect(acct) {
+        withContext(Dispatchers.IO) { runCatching { app.node.groupImageAutoDownload() }.getOrNull() }?.let { pictures = it }
+    }
     PrivacyLanding(blocks.list.size, msgOnly, hasPass, onBack, onBlocked, onCalls, onPhrase, onPassphrase, reads,
-        { on -> reads = on; app.scope.launch(Dispatchers.IO) { runCatching { app.node.setReadReceipts(on) } } })
+        { on -> reads = on; app.scope.launch(Dispatchers.IO) { runCatching { app.node.setReadReceipts(on) } } },
+        shown, { on -> shown = on; app.scope.launch(Dispatchers.IO) { runCatching { app.node.groupSetPresenceVisible(on) } } },
+        pictures, { d -> pictures = d; app.scope.launch(Dispatchers.IO) { runCatching { app.node.groupSetImageAutoDownload(d) } } })
 }
 
 @Composable

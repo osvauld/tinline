@@ -6,8 +6,9 @@ use super::{
 };
 use crate::{
     Node,
-    group::{doc::GroupDoc, engine::GroupCore},
+    group::engine::GroupCore,
 };
+use group_runtime::doc::GroupDoc;
 use iroh::Endpoint;
 
 #[derive(Default, Debug)]
@@ -52,6 +53,7 @@ async fn session(
         owner: me.id.did().into(),
         hosts: vec![],
         invite: None,
+        open: false,
     })
     .unwrap();
     let receiving = async {
@@ -63,7 +65,7 @@ async fn session(
             .unwrap()
             .await
             .unwrap();
-        node.inner.clone().self_run(incoming, false).await
+        node.inner.sync.clone().self_run(incoming, false).await
     };
     let driving = async {
         let conn = client
@@ -159,7 +161,7 @@ async fn session(
                     let (update, frontier, more) = out
                         .map(|b| (b.update, b.frontier.encode(), b.more))
                         .unwrap_or((vec![], VersionVector::default().encode(), false));
-                    let sig = crate::chat::wire::sign_batch(secret, &doc, &update);
+                    let sig = chat_runtime::chat::wire::sign_batch(secret, &doc, &update);
                     writer
                         .send(&SelfMsg::GroupBatch {
                             request,
@@ -311,6 +313,7 @@ async fn lost_want_page_and_cache_ack_reconnect_from_durable_frontier_without_du
         later.body = crate::group::record::Body::Post {
             text: "obsolete callback must not import this".into(),
             reply_to: None,
+            image: None,
         };
         let (_, stale_update) = stale_source.write(&me.id, &later).unwrap();
         let doc = format!("group/{gid}/{day}");
@@ -318,7 +321,7 @@ async fn lost_want_page_and_cache_ack_reconnect_from_durable_frontier_without_du
             request: 3,
             doc: doc.clone(),
             vv: stale_source.vv().encode(),
-            sig: crate::chat::wire::sign_batch(&secret, &doc, &stale_update),
+            sig: chat_runtime::chat::wire::sign_batch(&secret, &doc, &stale_update),
             update: stale_update,
             more: false,
             deferred: false,

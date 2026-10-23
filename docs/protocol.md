@@ -458,6 +458,19 @@ moved from bincode 1 to postcard 1 (`cryptography::codec`): chat `tinline/chat/7
 `tinline/self/5`, group `tinline/group/3`. `chat/6` and `self/4` are refused with code 426: **update the
 app and wipe its data**.
 
+**Open links (2026-10-21, `feature/public-group`, not merged).** Group ALPN `tinline/group/5` =
+`/4` with `GroupMsg::Code` carrying a `CodeKind` (Invite / Device / Open) and `InviteToken` an
+`open` flag (also inside self/5 group lists and direct invitation letters, whose encoding
+changes with it), `Hello.presence` and `GroupMsg::Presence{presence}` (a host's DID-signed
+`Presence{group, host, dev, online: [(did, last seen)], seq, at}`, domain
+`tinline/group/presence/v1`, open groups only). In an open group no
+`ReceiptHello`/`Receipts`/`ReceiptAck` is sent and incoming ones are dropped. A `/4` peer fails
+at connect. Details: `docs/design/public-group.md` §2-§4. Image posts (§5) change records, not
+frames: `Body::Post` gains `image: Option<ImageRef{hash, key, size, w, h, mime, preview}>` (the
+picture sealed with `transfer::crypt` under a per-image key carried in the post; `hash` is the
+ciphertext's BLAKE3), and the group endpoint also accepts the stock iroh-blobs ALPN, gated per
+requester and hash. No ALPN bump (`/5` is unreleased).
+
 **Group member receipts (2026-10-16, `feature/group-receipts`, not merged).** Group ALPN
 `tinline/group/4` = `/3` plus `GroupMsg::{ReceiptHello, Receipts, ReceiptAck}` (member <->
 host only; hosts relay the original native ledger ops). No compatibility with `/3` (user,

@@ -81,12 +81,12 @@ async fn authenticated_own_sessions_forward_exact_host_proof_and_reconcile_recei
         *a.inner.group.core.lock() = Some(source.clone()); *b.inner.group.core.lock() = Some(target.clone());
         let server = endpoint(ma.profile.device_secret).await; let client = endpoint(mb.profile.device_secret).await;
         registry(&a, *client.id().as_bytes()); registry(&b, *server.id().as_bytes());
-        let ra = async { let conn = server.accept().await.unwrap().accept().unwrap().await.unwrap(); a.inner.clone().self_run(conn, false).await };
-        let rb = async { let conn = client.connect(server.addr(), b"tinline/self/3").await.unwrap(); b.inner.clone().self_run(conn, true).await };
+        let ra = async { let conn = server.accept().await.unwrap().accept().unwrap().await.unwrap(); a.inner.sync.clone().self_run(conn, false).await };
+        let rb = async { let conn = client.connect(server.addr(), b"tinline/self/3").await.unwrap(); b.inner.sync.clone().self_run(conn, true).await };
         let monitor = async {
             loop {
                 let held = target.store.storage_attestation(&gid, &digest(&original)).unwrap();
-                let day = crate::group::doc::DocId::Day("1970-01-01".into());
+                let day = group_runtime::doc::DocId::Day("1970-01-01".into());
                 if held.is_some() && target.doc_vv(&gid, &day) == source.doc_vv(&gid, &day)
                     && !target.groups.lock()[&gid].meta.owed_days.contains("1970-01-01") {
                     assert_eq!(held.unwrap().bytes, original);
