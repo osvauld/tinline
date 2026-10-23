@@ -36,6 +36,8 @@ mod session;
 mod sync;
 #[cfg(any(test, feature = "testkit"))]
 mod synth;
+#[cfg(any(test, feature = "testkit"))]
+mod testhooks;
 #[cfg(test)]
 mod tests;
 
