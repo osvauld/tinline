@@ -41,7 +41,7 @@ and QR scanning are stubs for now.
 
 ## Known pins
 
-- `libc` is pinned to exactly 0.2.189 (`crates/search-core/Cargo.toml`, shared by the whole workspace). 0.2.190
+- `libc` is pinned to exactly 0.2.189 (`[workspace.dependencies]` in the root `Cargo.toml`). 0.2.190
   makes `in6_ifreq` macOS-only, and `netdev` 0.46.3 (pulled in by iroh) then fails to compile for iOS. Don't
   `cargo update` it past that until netdev or libc is fixed upstream.
 

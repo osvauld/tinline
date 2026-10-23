@@ -107,7 +107,7 @@ account-model = { workspace = true, features = ["testkit"] }
 p2pcore = { path = ".", features = ["dev-tools"] }
 
 [target.'cfg(unix)'.dependencies]
-libc = "0.2"
+libc.workspace = true
 
 [target.'cfg(target_os = "android")'.dependencies]
 paranoid-android = "0.2"
