@@ -128,7 +128,7 @@ impl GroupRt {
                 issued_ms: now_ms(),
             };
             let blob =
-                Signed::sign(&req, &core.account).map_err(|e| Error::Protocol(e.to_string()))?;
+                Signed::sign(&req, &core.account)?;
             let sig = *blob.sig();
             let route = Route::Device(pick.host.holder_did.clone(), pick.host.device_slot);
             self.calls_originate(core, gid, &sig, GroupMsg::CallHostRequest { request: blob }, route);

@@ -50,10 +50,6 @@ pub const RECEIPT_BATCH: crate::doc::batching::BatchLimits =
 /// Provisional: frames one send pass writes for a day; the rest follows the next trigger.
 pub const RECEIPT_FRAMES_PER_SEND: usize = 16;
 
-fn rio(e: ReceiptError) -> Error {
-    Error::Io(format!("group receipts: {e}"))
-}
-
 /// The receipt controller over the group store's own sealed namespace (one per store).
 pub fn controller(store: &GroupStore, did: &str, dev: [u8; 32]) -> Arc<MessageReceipts> {
     MessageReceipts::new(
@@ -219,7 +215,7 @@ impl GroupCore {
             ops.extend(
                 self.receipts
                     .intent_ops_in_context(Kind::Read, &scope(gid, &day), ds, &frontier)
-                    .map_err(rio)?,
+                    ?,
             );
         }
         Ok(ops)
@@ -317,7 +313,7 @@ impl GroupCore {
             // What they hold may complete our outbox.
             self.receipts
                 .acknowledged(&scope(&sess.gid, &d), &vv)
-                .map_err(rio)?;
+                ?;
             sess.receipt_vv.lock().insert(d.clone(), vv);
             todo.push(d);
         }
@@ -325,7 +321,7 @@ impl GroupCore {
         for d in self
             .receipts
             .outbox_days(&group, MAX_RECEIPT_DAYS)
-            .map_err(rio)?
+            ?
         {
             if !todo.contains(&d) {
                 todo.push(d);
@@ -346,7 +342,7 @@ impl GroupCore {
             let theirs = sess.receipt_vv.lock().get(day).cloned().unwrap_or_default();
             let Some(batch) = self
                 .member_receipts_export(&sess.gid, day, &theirs, RECEIPT_BATCH)
-                .map_err(rio)?
+                ?
             else {
                 return Ok(());
             };
@@ -419,7 +415,7 @@ impl GroupCore {
                 }
             }
         };
-        let vv = self.member_receipts_vv(&sess.gid, day).map_err(rio)?;
+        let vv = self.member_receipts_vv(&sess.gid, day)?;
         let _ = sess.tx.send(Out::Msg(GroupMsg::ReceiptAck {
             day: day.to_string(),
             vv: vv.encode(),
@@ -444,7 +440,7 @@ impl GroupCore {
         if self.store.shard_meta(&sess.gid, day)?.is_some() {
             self.receipts
                 .acknowledged(&scope(&sess.gid, day), &vv)
-                .map_err(rio)?;
+                ?;
         }
         sess.receipt_vv
             .lock()
@@ -581,7 +577,7 @@ impl GroupCore {
         }
         let Live { state, shards, .. } = live;
         let shard = shards.get(&self.store, gid, self.wid, day, state)?;
-        let entries = self.receipts.entries(&scope(gid, day)).map_err(rio)?;
+        let entries = self.receipts.entries(&scope(gid, day))?;
         Ok(shard
             .rows
             .iter()

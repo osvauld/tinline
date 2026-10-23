@@ -36,7 +36,7 @@ impl FrameBuf {
             match self.recv.read(&mut chunk).await.map_err(Error::net)? {
                 Some(n) => self.buf.extend_from_slice(&chunk[..n]),
                 None if self.buf.is_empty() => return Ok(None),
-                None => return Err(Error::Protocol("stream ended mid-frame".into())),
+                None => return Err(Error::eof("stream ended mid-frame")),
             }
         }
     }
@@ -44,7 +44,7 @@ impl FrameBuf {
 
 /// Writes one frame (length prefix + body in a single `write_all`).
 pub async fn send_frame<T: Serialize>(stream: &mut SendStream, msg: &T, limit: usize, label: &str) -> Result<(), Error> {
-    let body = cryptography::codec::to_bytes(msg).map_err(|e| Error::Protocol(e.to_string()))?;
+    let body = cryptography::codec::to_bytes(msg)?;
     if body.len() > limit {
         return Err(Error::Protocol(format!("{label}frame too large")));
     }

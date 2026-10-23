@@ -290,7 +290,7 @@ impl NodeCtx {
         let reply = crate::wire::exchange(conn, &Msg::Tokens { grants: grants.to_vec() }).await?;
         match reply {
             Some(Msg::TokensTaken) => Ok(()),
-            other => Err(Error::Protocol(format!("tokens not taken: {other:?}"))),
+            other => Err(crate::not_taken("tokens", other.as_ref())),
         }
     }
 

@@ -80,7 +80,7 @@ impl LinkIo {
             }
             match self.recv.read(&mut chunk).await.map_err(Error::net)? {
                 Some(n) => self.buf.extend_from_slice(&chunk[..n]),
-                None => return Err(Error::Protocol("closed".into())),
+                None => return Err(Error::eof("closed")),
             }
         }
     }

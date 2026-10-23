@@ -17,6 +17,7 @@ cryptography.workspace = true
 account-model.workspace = true
 group-core.workspace = true
 chat-core.workspace = true
+receipts-core.workspace = true
 crdt.workspace = true
 storage.workspace = true
 transfer.workspace = true

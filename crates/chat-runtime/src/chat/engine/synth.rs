@@ -26,7 +26,7 @@ impl ChatRt {
         };
         let rec = MsgRec { id: random_msg_id(), author: author.to_string(), at, text, edited_at: None, deleted: false, reply_to: None, file, dev: [0; 32], did_sig: Vec::new() };
         let shard = shards.get_mut(&(pair.clone(), day.clone())).ok_or(Error::NotFound)?;
-        let update = shard.add_message(&rec, &writer).map_err(|e| Error::Io(e.to_string()))?;
+        let update = shard.add_message(&rec, &writer)?;
         let mut ops = vec![core.store.mi_op(&pair, &rec.id, &day)?];
         if mine {
             ops.push(core.store.put_mo_op(&pair, &day, &rec.id, shard.peer(), shard.my_counter())?);

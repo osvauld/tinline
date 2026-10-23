@@ -412,7 +412,7 @@ impl ChatRt {
             let reply = tokio::time::timeout(AUTH_TIMEOUT, reader.recv())
                 .await
                 .map_err(|_| Error::Timeout)??
-                .ok_or_else(|| Error::Protocol("peer closed".into()))?;
+                .ok_or_else(|| Error::eof("peer closed"))?;
             if let ChatMsg::Notice { notice } = &reply {
                 // They block us: their notice instead of their Auth.
                 let did = self.shared.lock().state.contacts.iter().find(|c| c.has_device(&remote)).map(|c| c.did.clone());
@@ -434,7 +434,7 @@ impl ChatRt {
             let first = tokio::time::timeout(AUTH_TIMEOUT, reader.recv())
                 .await
                 .map_err(|_| Error::Timeout)??
-                .ok_or_else(|| Error::Protocol("peer closed before auth".into()))?;
+                .ok_or_else(|| Error::eof("peer closed before auth"))?;
             let (did, hint, grant) = self.verify_auth(me, &first, remote)?;
             // A DID we block gets our notice instead of our Auth, then the connection ends.
             if let Some(notice) = self.refusal_for(&did) {
