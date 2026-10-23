@@ -117,7 +117,7 @@ impl ChatRt {
         let before = shard.vv();
         let ctx = Ctx { signer_did: sess.did.clone(), now_ms: now_ms(), live: false, history: Some(me.id.did().to_string()) };
         if let Err(r) = shard.apply_remote(snap, &ctx) {
-            self.log(format!("rejected history of {day} from {}: {r}", short(&sess.did)));
+            self.log(format!("rejected history of {day} from {}: {r}", sess.did));
             return Err(Error::Protocol(format!("rejected history: {r}")));
         }
         if shard.vv() == before {
@@ -175,7 +175,7 @@ impl ChatRt {
             }
             .await;
             if let Err(e) = res {
-                this.log(format!("pulling {} from {}: {e}", key.1, short(&sess.did)));
+                this.log(format!("pulling {} from {}: {e}", key.1, sess.did));
             }
             core.pulling.lock().remove(&key);
         });

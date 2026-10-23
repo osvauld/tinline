@@ -276,7 +276,7 @@ impl GroupRt {
                     match o {
                         Outcome::Taken => {
                             r.delivered = true;
-                            this.log(format!("group invitation delivered to {}", crate::short(&did)));
+                            this.log(format!("group invitation delivered to {did}"));
                         }
                         Outcome::Blocked if r.outgoing => r.state = GroupInvitationState::Blocked,
                         Outcome::Blocked | Outcome::Refused => {}
@@ -390,7 +390,7 @@ impl GroupRt {
                 };
                 // The sender signed it, for this group, and it has not run out.
                 if inv.iss != from || !super::valid_gid(&t.group) || t.name.len() > MAX_NAME {
-                    self.log(format!("a group invitation from {} does not check out", crate::short(from)));
+                    self.log(format!("a group invitation from {from} does not check out"));
                     return;
                 }
                 let inviter_name = node_runtime::block::known_name(&self.shared.lock().state, from).unwrap_or_else(|| inviter_name.chars().take(100).collect());
@@ -412,7 +412,7 @@ impl GroupRt {
                     owe: false,
                 };
                 let row = self.inv_current(&core, row);
-                self.log(format!("group invitation from {} to group {}", crate::short(from), crate::short(&row.group)));
+                self.log(format!("group invitation from {from} to {}", row.group_name));
                 self.inv_save(&core, &row);
             }
             Letter::Answer { id, joined } => {

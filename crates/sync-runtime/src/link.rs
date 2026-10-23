@@ -12,7 +12,7 @@ use proto::link::{self as pl, LinkMsg, LinkQr, LinkRole};
 use tokio::sync::mpsc;
 
 use crate::SyncRt;
-use node_runtime::{Me, addr_for, now, relay_within, short};
+use node_runtime::{Me, addr_for, now, relay_within};
 use node_runtime::store::{Disk, OwnDevice, ProfileV2, State};
 use account_model::vault::{self, Secrets};
 use crate::Error;
@@ -423,7 +423,7 @@ impl SyncRt {
             tracing::warn!("persisting the linked device: {e}");
             return Err("storage");
         }
-        self.log(format!("linked device {}", short(&proto::device_to_text(&remote))));
+        self.log(format!("linked device {}", proto::device_to_text(&remote)));
         // U8: tell every unblocked contact about the new install.
         self.ctx.devices_changed();
         if let Some(ev) = self.link_events() {
@@ -463,7 +463,7 @@ impl SyncRt {
         let me = self.create_linked_account(&body, device_secret, &run.label, run.qr.relay.clone().filter(|_| run.scanner), e_dev)?;
         io.send(&LinkMsg::LinkDone { attestation: me.attestation.clone(), label: run.label.clone() }).await.map_err(|_| "net")?;
         self.acc_open();
-        self.log(format!("linked as {}", short(me.id.did())));
+        self.log(format!("linked as {}", me.id.did()));
         if let Some(ev) = self.link_events() {
             ev.on_link_done(me.id.did().to_string(), me.profile.name.clone());
         }

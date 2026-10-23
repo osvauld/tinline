@@ -40,13 +40,12 @@ impl GroupRt {
             receipt_waiting: Default::default(),
         });
         core.sessions.lock().insert(id, sess.clone());
-        // Per session, and sessions recur with the idle links: debug, not the app's log.
-        tracing::debug!(
+        self.log(format!(
             "group {} session with {} ({})",
             crate::short(&gid),
-            crate::short(&peer.did),
+            peer.did,
             if hosting { "we host" } else { "they host" }
-        );
+        ));
         // Catch the other side up: the meta doc, then the recent days (older ones are history).
         self.group_push(&core, &gid, None, &core.held_recent_days(&gid));
         // GF: the host addresses again, after the records. Those in Hello/Welcome are merged

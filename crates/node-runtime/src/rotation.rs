@@ -170,7 +170,7 @@ impl NodeCtx {
         {
             match self.bind_private(&secret).await {
                 Ok(ep) => {
-                    self.log("previous endpoint answers until its overlap ends");
+                    self.log(format!("previous endpoint {} answers until its overlap ends", ep.id()));
                     *self.rotation.overlap.lock() = Some(ep.clone());
                     self.serve_private(ep, false);
                 }
@@ -230,7 +230,7 @@ impl NodeCtx {
         }
         self.persist_logged(epoch).await;
         if let Some(ep) = ep {
-            self.log("previous endpoint closed");
+            self.log(format!("previous endpoint {} closed", ep.id()));
             let gate = self.closing.clone().lock_owned().await;
             let _ = tokio::time::timeout(close_wait(), self.close_fully(ep, gate)).await;
         }
@@ -307,7 +307,7 @@ impl NodeCtx {
         };
         if let Some(did) = contact.filter(|_| !refused) {
             drop(permit);
-            self.log(format!("{} reached our previous address: sending the new one", crate::short(&did)));
+            self.log(format!("{did} reached our previous address: sending the new one"));
             self.owe_list(&did);
             conn.close(0u32.into(), b"moved");
             return Ok(());
@@ -435,7 +435,7 @@ impl NodeCtx {
             h.selfsync_sessions_close();
         }
         self.serve_private(new_ep.clone(), true);
-        self.log("private endpoint rotated");
+        self.log(format!("private endpoint rotated to {}", new_ep.id()));
         self.emit_status();
         drop(_life);
         // 6. Announce.

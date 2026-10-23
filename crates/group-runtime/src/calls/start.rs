@@ -30,7 +30,7 @@ impl GroupRt {
         };
         let me = dir.my_host_ref(gid);
         let ranking = rank::rank(&dir, &blobs, &RankCtx { gid, call_id: &call_id, expected: expected as usize, starter: me.as_ref(), now_ms: now });
-        self.log(format!("group {}: starting call {}, {} candidate(s)", short(gid), short(&call_id), ranking.len()));
+        self.log(format!("group {}: starting call {call_id}, {} candidate(s)", short(gid), ranking.len()));
         let mut picker = Picker::new(ranking);
         let step = picker.start(now);
         self.calls.st.lock().pending = Some(Pending { gid: gid.to_string(), call_id: call_id.clone(), expected, picker });
@@ -75,7 +75,7 @@ impl GroupRt {
                     }
                     drop(st);
                     let why = self.no_host_reason(core, gid);
-                    self.log(format!("group {}: no call host for {}: {why}", short(gid), short(call_id)));
+                    self.log(format!("group {}: no call host for {call_id}: {why}", short(gid)));
                     self.calls_emit(GroupCallEventKind::StartFailed, gid, call_id, vec![], why.clone());
                     return Err(Error::Rejected(why));
                 }
@@ -142,7 +142,7 @@ impl GroupRt {
             st.pending.as_mut().filter(|p| p.call_id == f.call_id && p.gid == f.gid).and_then(|p| p.picker.on_refused(&f.host, now_ms()))
         };
         if let Some(step) = next {
-            self.log(format!("group {}: {} declined call {}: {}", short(&f.gid), short(&f.host.holder_did), short(&f.call_id), node_runtime::clip_reason(&f.reason)));
+            self.log(format!("group {}: {} declined call {}: {}", short(&f.gid), f.host.holder_did, f.call_id, f.reason));
             let _ = self.group_call_step(core, &f.gid, &f.call_id, step);
         }
     }

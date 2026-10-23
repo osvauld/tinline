@@ -289,7 +289,7 @@ impl ChatRt {
                 Ok(f) => f,
                 Err(e) => {
                     // Not stored, not projected; the chat session itself goes on.
-                    self.log(format!("rejected receipts of {day} from {}: {e}", short(&sess.did)));
+                    self.log(format!("rejected receipts of {day} from {}: {e}", sess.did));
                     vec![]
                 }
             }

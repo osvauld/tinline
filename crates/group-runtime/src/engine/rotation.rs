@@ -135,7 +135,7 @@ impl GroupRt {
             let _ = tokio::time::timeout(Duration::from_secs(3), ep.close()).await;
         }
         self.group_relay_ready().await;
-        self.log("group endpoint rotated");
+        self.log(format!("group endpoint rotated to {}", new.id()));
         for gid in &hosted {
             let _ = self.group_my_addr(core, gid);
         }

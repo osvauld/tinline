@@ -212,7 +212,7 @@ impl GroupRt {
         *slot = Some(ep.clone());
         *core.ep_id.lock() = Some(ep.clone());
         drop(slot);
-        self.log("group endpoint bound");
+        self.log(format!("group endpoint {} bound", ep.id()));
         self.group_serve(core, &ep);
         Ok(ep)
     }

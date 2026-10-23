@@ -133,7 +133,7 @@ impl NodeCtx {
             ep.close().await;
             return Ok(());
         }
-        self.log("endpoint bound");
+        self.log(format!("endpoint {} bound", ep.id()));
         self.emit_status();
         // GL: the group runtime may open its store from background tasks again.
         if let Some(h) = self.hooks() {
@@ -289,7 +289,7 @@ impl NodeCtx {
                     }
                 });
             }
-            this.log("endpoint closed");
+            this.log(format!("endpoint {id} closed"));
         });
     }
 

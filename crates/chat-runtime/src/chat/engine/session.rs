@@ -337,7 +337,7 @@ impl ChatRt {
     /// call token does not open chat. Renews the token when it is close to expiry.
     pub(super) fn chat_admit(self: &Arc<Self>, did: &str, grant: &proto::Grant) -> Result<(), Error> {
         if self.token_check(did, grant, proto::Cap::Message).is_err() {
-            self.log(format!("chat refused: {}: no valid message token", short(did)));
+            self.log(format!("chat refused: {did}: no valid message token"));
             return Err(Error::Rejected("not accepted".into()));
         }
         self.ctx.renew_message_if_due(did, grant);
@@ -375,7 +375,7 @@ impl ChatRt {
                 Ok(Ok(c)) => c,
                 Ok(Err(e)) => {
                     if matches!(e, Error::Protocol(_)) {
-                        self.log(format!("chat with {}: {e}", short(did)));
+                        self.log(format!("chat with {did}: {e}"));
                     }
                     last = e;
                     continue;
@@ -484,7 +484,7 @@ impl ChatRt {
                 let _ = old.tx.send(Cmd::Close);
             }
         }
-        tracing::debug!("chat session with {} ({})", short(&did), if dialer { "dialed" } else { "accepted" });
+        self.log(format!("chat session with {did} ({})", if dialer { "dialed" } else { "accepted" }));
         let this = self.clone();
         let core = core.clone();
         self.handle.spawn(async move {
@@ -624,7 +624,7 @@ impl ChatRt {
                 }
             }
         };
-        tracing::debug!("chat session with {} ended: {reason}", short(&sess.did));
+        self.log(format!("chat session with {} ended: {reason}", sess.did));
         {
             let mut map = core.sessions.lock();
             if map.get(&sess.device).is_some_and(|s| s.id == sess.id) {

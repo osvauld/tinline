@@ -182,7 +182,7 @@ impl NodeCtx {
         ctrl.send(&reply).await?;
         ctrl.finish();
         if let Some(contact) = taken {
-            self.log(format!("{} accepted our request", crate::short(&contact.did)));
+            self.log(format!("{} accepted our request", contact.name));
             self.sink.on_contacts_changed();
             self.list_for_new_contact(&contact.did);
             if let Some(ev) = self.requests.events.lock().clone() {
@@ -244,7 +244,7 @@ impl NodeCtx {
             }
         }
         self.persist_logged(epoch).await;
-        self.log(format!("{what}: {}", crate::short(did)));
+        self.log(format!("{what}: {did}"));
     }
 
     /// `Ok(true)` taken, `Ok(false)` refused for good; `Err` try again later.

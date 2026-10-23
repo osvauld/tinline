@@ -111,7 +111,7 @@ impl NodeCtx {
         }
         self.note_device(me.epoch, &caller.did, remote, hint);
         ctrl.send(&Msg::Ringing).await?;
-        self.log(format!("incoming call from {}", crate::short(&info.peer_did)));
+        self.log(format!("incoming call from {}", info.peer_name));
         {
             // Not if the call already ended meanwhile: the UI never heard of it.
             let _order = call.notify.lock();
@@ -177,7 +177,7 @@ impl NodeCtx {
                     // The caller told us another of our devices took the call (or declined it),
                     // or that it gave up. If we had answered meanwhile, we stop at once.
                     Ok(Some(Msg::Cancel { reason })) if incoming_from.is_some() => {
-                        self.log(format!("call {} cancelled by the caller: {reason:?}", crate::short(&call.info.call_id)));
+                        self.log(format!("call cancelled by the caller: {reason:?}"));
                         break match reason {
                             proto::CancelReason::AnsweredElsewhere => "answered_elsewhere",
                             proto::CancelReason::DeclinedElsewhere => "declined_elsewhere",
@@ -187,13 +187,13 @@ impl NodeCtx {
                         .into();
                     }
                     Ok(Some(Msg::Decline { reason })) => {
-                        self.log(format!("call {}: declined: {}", crate::short(&call.info.call_id), clip_reason(&reason)));
+                        self.log(format!("declined: {}", clip_reason(&reason)));
                         break "declined".into();
                     }
                     Ok(Some(Msg::Busy)) => break "busy".into(),
                     // A refusal (not a contact there, blocked, or away) reads as "couldn't reach".
                     Ok(Some(Msg::Reject { reason })) => {
-                        self.log(format!("call {}: rejected: {}", crate::short(&call.info.call_id), clip_reason(&reason)));
+                        self.log(format!("rejected: {}", clip_reason(&reason)));
                         break "unreachable".into();
                     }
                     // They blocked us during the call.
@@ -210,7 +210,7 @@ impl NodeCtx {
                     Ok(None) => break if active { "hangup_remote".into() } else { lost(false) },
                     Ok(Some(other)) => self.log(format!("ignoring {} mid-call", msg_name(&other))),
                     Err(e) => {
-                        self.log(format!("call {}: connection lost: {e}", crate::short(&call.info.call_id)));
+                        self.log(format!("connection lost: {e}"));
                         break lost(active);
                     }
                 },
@@ -223,7 +223,7 @@ impl NodeCtx {
                         let theirs = call.video.peer_offer.lock().clone();
                         let video = theirs.as_ref().and_then(|_| self.video_offer(&call));
                         if let Err(e) = ctrl.send(&Msg::Accept { renewed_grant: renewed, devices, video: video.clone() }).await {
-                            self.log(format!("call {}: connection lost: {e}", crate::short(&call.info.call_id)));
+                            self.log(format!("connection lost: {e}"));
                             break lost(false);
                         }
                         datagrams = Some(self.start_media(&call, &conn));
@@ -260,7 +260,7 @@ impl NodeCtx {
                     }
                 },
                 why = conn.closed() => {
-                    self.log(format!("call {}: connection lost: {why}", crate::short(&call.info.call_id)));
+                    self.log(format!("connection lost: {why}"));
                     break lost(active);
                 }
                 r = camera.changed(), if active && call.video.negotiated() => {
@@ -269,7 +269,7 @@ impl NodeCtx {
                         call.video.saw_camera();
                     }
                     if r.is_ok() && let Err(e) = ctrl.send(&Msg::Video { camera: on }).await {
-                        self.log(format!("call {}: connection lost: {e}", crate::short(&call.info.call_id)));
+                        self.log(format!("connection lost: {e}"));
                         break lost(active);
                     }
                 }
@@ -281,7 +281,7 @@ impl NodeCtx {
                         if call.video.sending_codec() != Some(want.codec)
                             && let Err(e) = ctrl.send(&Msg::VideoCodec { codec: want.codec }).await
                         {
-                            self.log(format!("call {}: connection lost: {e}", crate::short(&call.info.call_id)));
+                            self.log(format!("connection lost: {e}"));
                             break lost(active);
                         }
                         call.video.use_encoder(want);

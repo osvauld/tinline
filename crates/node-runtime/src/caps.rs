@@ -271,7 +271,7 @@ impl NodeCtx {
                         }
                     }
                     this.persist_logged(me.epoch).await;
-                    this.log(format!("tokens delivered to {}", crate::short(&did)));
+                    this.log(format!("tokens delivered to {did}"));
                     round = 0;
                     continue;
                 }
