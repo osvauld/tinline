@@ -50,6 +50,15 @@ pub fn msg_name(m: &Msg) -> &'static str {
     }
 }
 
+/// The error for a reply that is not the expected "taken": `<what> not taken: <message kind>`
+/// (`Net`, "no reply", when the stream closed instead), never the message's contents.
+pub fn not_taken(what: &str, reply: Option<&Msg>) -> Error {
+    match reply {
+        Some(m) => Error::Protocol(format!("{what} not taken: {}", msg_name(m))),
+        None => Error::eof(&format!("{what} not taken: no reply")),
+    }
+}
+
 /// Every thread of the core runtime carries this name (workers and blocking pool alike).
 pub const CORE_THREAD: &str = "p2pcore";
 

@@ -317,7 +317,7 @@ impl GroupRt {
                 Ok(Outcome::Blocked)
             }
             Some(Msg::Reject { .. }) => Ok(Outcome::Refused),
-            other => Err(Error::Protocol(format!("group letter not taken: {other:?}"))),
+            other => Err(node_runtime::not_taken("group letter", other.as_ref())),
         }
     }
 

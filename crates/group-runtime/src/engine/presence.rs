@@ -548,7 +548,7 @@ impl GroupRt {
             at: now,
         };
         let presence =
-            proto::Signed::sign(&p, &core.account).map_err(|e| Error::Protocol(e.to_string()))?;
+            proto::Signed::sign(&p, &core.account)?;
         for s in core.sessions_of(gid) {
             let _ = s.tx.send(Out::Msg(GroupMsg::Presence {
                 presence: presence.clone(),

@@ -161,7 +161,7 @@ impl SyncRt {
         let first: SelfMsg = tokio::time::timeout(AUTH_TIMEOUT, reader.recv())
             .await
             .map_err(|_| Error::Timeout)??
-            .ok_or_else(|| Error::Protocol("peer closed before auth".into()))?;
+            .ok_or_else(|| Error::eof("peer closed before auth"))?;
         let SelfMsg::Auth {
             attestation,
             relay: remote_relay,

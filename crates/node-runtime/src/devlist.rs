@@ -236,7 +236,7 @@ impl NodeCtx {
             }
             // Not (or no longer) their contact: nothing to retry. PROVISIONAL (coordinator).
             Some(Msg::Reject { .. }) => Ok(Outcome::Final),
-            other => Err(Error::Protocol(format!("device list not taken: {other:?}"))),
+            other => Err(crate::not_taken("device list", other.as_ref())),
         }
     }
 

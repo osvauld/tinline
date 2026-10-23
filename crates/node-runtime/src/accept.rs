@@ -156,7 +156,7 @@ impl NodeCtx {
             let first = ctrl
                 .recv()
                 .await?
-                .ok_or_else(|| Error::Protocol("peer closed before hello".into()))?;
+                .ok_or_else(|| Error::eof("peer closed before hello"))?;
             Ok::<_, Error>((conn, remote, ctrl, first))
         })
         .await
@@ -169,7 +169,7 @@ impl NodeCtx {
                 let (this, me2, hello2) = (self.clone(), me.clone(), hello.clone());
                 let accepted = tokio::task::spawn_blocking(move || this.accept_hello(&me2, &hello2, remote, hint, on))
                     .await
-                    .map_err(|_| Error::Io("contact task failed".into()))?;
+                    .map_err(Error::join)?;
                 match accepted {
                     Ok(Hello::Welcome(welcome, contact)) => {
                         // Durable now; only then does the joiner hear of it.

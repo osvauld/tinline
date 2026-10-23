@@ -30,7 +30,9 @@ pub const MAX_HELD: usize = 64;
 /// How long an accepting device keeps trying to deliver its Welcome, and how long a joiner keeps
 /// its half after the code expired (an Accept on the code's last day may land later).
 pub const WELCOME_GRACE: u64 = 7 * 24 * 3600;
-/// `add_contact` (which must return a contact) when the owner holds the hello as a request.
+/// The `Protocol` text of `add_contact_from` (which must return a contact) when the owner holds
+/// the hello as a request: p2pcore's `add_contact` shows it as it always has. Callers that can
+/// take a request use `add_contact_outcome`, which says so with a typed `AddOutcome::Requested`.
 pub const PENDING: &str = "they hold it as a contact request";
 
 const RETRY_SECS: [u64; 6] = [2, 5, 15, 30, 60, 300];
@@ -257,7 +259,7 @@ impl NodeCtx {
                 let _ = self.take_notice(&notice);
                 Ok(false)
             }
-            other => Err(Error::Protocol(format!("welcome not taken: {other:?}"))),
+            other => Err(crate::not_taken("welcome", other.as_ref())),
         }
     }
 

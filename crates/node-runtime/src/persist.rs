@@ -130,7 +130,7 @@ impl NodeCtx {
         let this = self.clone();
         tokio::task::spawn_blocking(move || this.persist_for(Some(epoch)))
             .await
-            .map_err(|_| Error::Io("persist task failed".into()))?
+            .map_err(Error::join)?
     }
 
     /// `persist_async` for callers that cannot return the error (a task, an undo path): a

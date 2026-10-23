@@ -40,7 +40,7 @@ pub struct Prepared {
 }
 
 fn bad(e: impl std::fmt::Display) -> Error {
-    Error::Protocol(format!("image: {e}"))
+    Error::invalid("image", e)
 }
 
 /// The picture in `bytes`, ready to post: JPEG, long side at most `TARGET_SIDE`, under
