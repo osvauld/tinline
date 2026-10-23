@@ -190,7 +190,7 @@ impl NodeCtx {
             cap_notices(&mut s.state);
             claim
         };
-        self.log(format!("{} {} us", claim.from, if claim.blocked { "blocked" } else { "unblocked" }));
+        self.log(format!("{} {} us", crate::short(&claim.from), if claim.blocked { "blocked" } else { "unblocked" }));
         self.persist_in_background(me.epoch);
         if claim.blocked {
             if let Some(h) = self.hooks() {
@@ -245,7 +245,7 @@ impl NodeCtx {
                             taken = true;
                             break;
                         }
-                        Err(e) => tracing::debug!("notice to {did}: {e}"),
+                        Err(e) => tracing::debug!("notice to {}: {e}", crate::short(&did)),
                     }
                 }
                 if taken {
@@ -258,7 +258,7 @@ impl NodeCtx {
                         same
                     };
                     this.persist_logged(me.epoch).await;
-                    this.log(format!("notice delivered to {did}"));
+                    this.log(format!("notice delivered to {}", crate::short(&did)));
                     if done {
                         break;
                     }

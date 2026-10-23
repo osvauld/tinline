@@ -43,7 +43,7 @@ impl GroupRt {
             referenced: true,
         };
         if let Err(e) = core.store.put_image(gid, &row) {
-            tracing::warn!("group image row: {e}");
+            tracing::warn!("group {}: image row: {e}", crate::short(gid));
         }
         let item = changed.new_items.iter().find(|i| i.id == entry.id).cloned();
         self.group_after(core, changed, None);

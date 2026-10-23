@@ -99,7 +99,7 @@ impl GroupRt {
         if need {
             match core.write(gid, Body::EncKey { key }) {
                 Ok((_, c)) => self.group_after(core, c, None),
-                Err(e) => tracing::warn!("group key: {e}"),
+                Err(e) => tracing::warn!("group {}: key: {e}", crate::short(gid)),
             }
         }
     }
@@ -128,7 +128,7 @@ impl GroupRt {
             .store
             .put_out(gid, &crate::mail::id_hex(&m.id), &bytes)
         {
-            tracing::warn!("group mail: {e}");
+            tracing::warn!("group {}: mail: {e}", crate::short(gid));
         }
         for s in core.sessions_of(gid) {
             if !s.hosting {

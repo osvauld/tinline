@@ -104,6 +104,8 @@ pub use block::{BLOCKED, BlockNotice, BlockState, BlockedContact};
 pub use caps::{CALLS_NOT_ALLOWED, ContactOrigin};
 pub use contact_req::{AddOutcome, ContactRequest};
 pub use error::Error;
+/// The one shortener for identifiers in log lines (shared with the other runtimes).
+pub use group_core::short;
 
 /// Short, because a ticket is a bearer secret until someone redeems it.
 pub const TICKET_TTL: u64 = 7 * 24 * 3600;

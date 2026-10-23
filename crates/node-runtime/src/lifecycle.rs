@@ -56,9 +56,18 @@ impl NodeCtx {
         self.shared.lock().endpoint.clone().ok_or(Error::NotStarted)
     }
 
+    /// A line for the app's `on_log` callback. It is mirrored to `tracing` at info in debug builds
+    /// only: in a release build the same line would reach logcat/stderr (Android keeps info), and
+    /// these lines are free-form event text, not reviewed log records. Release builds keep them at
+    /// debug (visible with `RUST_LOG=debug` on desktop, filtered out on Android); the runtimes'
+    /// direct `tracing::info!/warn!` lines are what a release build logs.
     pub fn log(&self, line: impl Into<String>) {
         let line = line.into();
-        tracing::info!("{line}");
+        if cfg!(debug_assertions) {
+            tracing::info!("{line}");
+        } else {
+            tracing::debug!("{line}");
+        }
         self.sink.on_log(line);
     }
 
@@ -124,7 +133,7 @@ impl NodeCtx {
             ep.close().await;
             return Ok(());
         }
-        self.log(format!("endpoint {} bound", ep.id()));
+        self.log("endpoint bound");
         self.emit_status();
         // GL: the group runtime may open its store from background tasks again.
         if let Some(h) = self.hooks() {
@@ -280,7 +289,7 @@ impl NodeCtx {
                     }
                 });
             }
-            this.log(format!("endpoint {id} closed"));
+            this.log("endpoint closed");
         });
     }
 

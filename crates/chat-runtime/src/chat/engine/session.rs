@@ -300,7 +300,7 @@ impl ChatRt {
                 drop(permit);
                 match res {
                     Ok(()) => break,
-                    Err(e) => tracing::debug!("chat dial {did}: {e}"),
+                    Err(e) => tracing::debug!("chat dial {}: {e}", short(&did)),
                 }
                 let pair = pair_id(me.id.did(), &did);
                 let pending = this.profile_pending(&did) || core.store.pending_days(&pair).map(|d| !d.is_empty()).unwrap_or(false) || this.chat_wants(&core, &pair);
@@ -337,7 +337,7 @@ impl ChatRt {
     /// call token does not open chat. Renews the token when it is close to expiry.
     pub(super) fn chat_admit(self: &Arc<Self>, did: &str, grant: &proto::Grant) -> Result<(), Error> {
         if self.token_check(did, grant, proto::Cap::Message).is_err() {
-            self.log(format!("chat refused: {did}: no valid message token"));
+            self.log(format!("chat refused: {}: no valid message token", short(did)));
             return Err(Error::Rejected("not accepted".into()));
         }
         self.ctx.renew_message_if_due(did, grant);
@@ -375,7 +375,7 @@ impl ChatRt {
                 Ok(Ok(c)) => c,
                 Ok(Err(e)) => {
                     if matches!(e, Error::Protocol(_)) {
-                        self.log(format!("chat with {did}: {e}"));
+                        self.log(format!("chat with {}: {e}", short(did)));
                     }
                     last = e;
                     continue;
@@ -484,7 +484,7 @@ impl ChatRt {
                 let _ = old.tx.send(Cmd::Close);
             }
         }
-        self.log(format!("chat session with {did} ({})", if dialer { "dialed" } else { "accepted" }));
+        tracing::debug!("chat session with {} ({})", short(&did), if dialer { "dialed" } else { "accepted" });
         let this = self.clone();
         let core = core.clone();
         self.handle.spawn(async move {
@@ -553,7 +553,7 @@ impl ChatRt {
                         break 'run e.to_string();
                     }
                 }
-                Err(e) => tracing::warn!("chat receipts: hello: {e}"),
+                Err(e) => tracing::warn!("chat receipts: hello for {}: {e}", short(&sess.did)),
             }
             self.chat_resume_downloads(&core, &sess.did);
             let mut heartbeat = tokio::time::interval(crate::chat::presence::HEARTBEAT);
@@ -574,7 +574,7 @@ impl ChatRt {
                     }
                     d = conn.read_datagram() => match d {
                         Ok(d) => self.presence_receive(&core, &sess, &d),
-                        Err(_) => break 'run "connection lost".into(),
+                        Err(e) => break 'run format!("connection lost: {e}"),
                     },
                     m = reader.recv() => match m {
                         Ok(Some(m)) => {
@@ -624,7 +624,7 @@ impl ChatRt {
                 }
             }
         };
-        self.log(format!("chat session with {} ended: {reason}", sess.did));
+        tracing::debug!("chat session with {} ended: {reason}", short(&sess.did));
         {
             let mut map = core.sessions.lock();
             if map.get(&sess.device).is_some_and(|s| s.id == sess.id) {

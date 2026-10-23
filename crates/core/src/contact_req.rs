@@ -218,7 +218,7 @@ impl Node {
         self.inner.sink.on_contacts_changed();
         self.inner.ctx.welcome_kick(contact.did.clone());
         self.inner.ctx.list_for_new_contact(&contact.did);
-        self.inner.log(format!("accepted contact request from {}", contact.name));
+        self.inner.log(format!("accepted contact request from {}", node_runtime::short(&contact.did)));
         Ok(contact)
     }
 }

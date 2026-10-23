@@ -140,7 +140,7 @@ impl ChatRt {
                 Ok(()) => return Some(Ok(())),
                 Err(e) => e,
             };
-            self.log(format!("blob download {hash}: {err}"));
+            self.log(format!("blob download {} from {}: {err}", short(hash), short(did)));
             let retryable = !matches!(err, Error::NotFound | Error::Protocol(_));
             if !retryable || attempt >= RETRY_BACKOFF.len() {
                 return Some(Err(err));

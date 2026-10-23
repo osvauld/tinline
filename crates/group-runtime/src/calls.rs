@@ -125,9 +125,7 @@ impl GcallEvents for Sink {
     }
 }
 
-fn short(gid: &str) -> &str {
-    super::short(gid)
-}
+use crate::short;
 
 impl GroupRt {
     // ---- configuration --------------------------------------------------------------------

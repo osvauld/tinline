@@ -126,9 +126,9 @@ impl NodeCtx {
             return Ok(());
         }
         if self.accept_device_list(me.epoch, &did, &list) {
-            self.log(format!("device list taken from {did}"));
+            self.log(format!("device list taken from {}", crate::short(&did)));
         } else {
-            self.log(format!("device list from {did} not taken"));
+            self.log(format!("device list from {} not taken", crate::short(&did)));
         }
         ctrl.send(&Msg::DevicesTaken).await?;
         ctrl.finish();
@@ -184,7 +184,7 @@ impl NodeCtx {
                             outcome = Some(o);
                             break;
                         }
-                        Err(e) => tracing::debug!("device list to {did}: {e}"),
+                        Err(e) => tracing::debug!("device list to {}: {e}", crate::short(&did)),
                     }
                 }
                 if let Some(o) = outcome {
@@ -199,7 +199,7 @@ impl NodeCtx {
                     };
                     this.persist_logged(me.epoch).await;
                     if matches!(o, Outcome::Taken) {
-                        this.log(format!("device list delivered to {did}"));
+                        this.log(format!("device list delivered to {}", crate::short(&did)));
                         this.touched(me.epoch, &did);
                     }
                     if done {
@@ -262,7 +262,7 @@ impl NodeCtx {
         }
         self.persist_in_background(me.epoch);
         if matches!(o, Outcome::Taken) {
-            self.log(format!("device list delivered to {did}"));
+            self.log(format!("device list delivered to {}", crate::short(did)));
             self.touched(me.epoch, did);
         }
     }

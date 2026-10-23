@@ -177,7 +177,7 @@ impl NodeCtx {
                         ctrl.send(&welcome).await?;
                         ctrl.finish();
                         drop(permit);
-                        self.log(format!("contact {} added us", contact.name));
+                        self.log(format!("contact {} added us", crate::short(&contact.did)));
                         self.list_for_new_contact(&contact.did);
                         if on != me.device {
                             // They redeemed a ticket naming our previous key: tell them the new one.
@@ -191,7 +191,7 @@ impl NodeCtx {
                         ctrl.send(&Msg::ContactPending).await?;
                         ctrl.finish();
                         drop(permit);
-                        self.log(format!("contact request from {}", request.name));
+                        self.log(format!("contact request from {}", crate::short(&request.did)));
                         if fresh {
                             self.request_event(request);
                         }

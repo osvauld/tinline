@@ -81,10 +81,7 @@ impl NodeCtx {
         };
         self.persist_async(me.epoch).await?;
         let addr = addr_for(&claim.device, relay.as_deref())?;
-        self.log(format!(
-            "adding contact {}: dialing {}",
-            claim.name, addr.id
-        ));
+        self.log(format!("adding contact {}: dialing", crate::short(&claim.iss)));
         // Not reached: they never saw this hello, so what we held before stands.
         let undo = |this: &Arc<Self>| {
             let mut s = this.shared.lock();
@@ -135,7 +132,7 @@ impl NodeCtx {
                     r.delivered = true;
                 }
                 self.persist_async(me.epoch).await?;
-                self.log(format!("contact request to {} delivered", claim.name));
+                self.log(format!("contact request to {} delivered", crate::short(&claim.iss)));
                 return Ok(AddOutcome::Requested { did: claim.iss.clone(), name: pending.name.clone() });
             }
             other => proto::accept_contact_welcome(&me.id, &pending, &other, remote, now_ms())?,
@@ -145,7 +142,7 @@ impl NodeCtx {
         self.shared.lock().state.sent_requests.remove(&claim.iss);
         // We scanned their ticket ourselves: that is the one way back from a block.
         let contact = self.save_contact(me.epoch, new, relay, true, policy.call).await?;
-        self.log(format!("contact {} added", contact.name));
+        self.log(format!("contact {} added", crate::short(&contact.did)));
         self.list_for_new_contact(&contact.did);
         Ok(AddOutcome::Added { contact })
     }

@@ -376,7 +376,7 @@ impl GroupCore {
                 tracing::warn!(
                     "group {} receipts to {}: {e}",
                     crate::short(gid),
-                    s.did
+                    crate::short(&s.did)
                 );
             }
         }
@@ -410,10 +410,10 @@ impl GroupCore {
                     if pending {
                         sess.receipt_waiting.lock().insert(day.to_string());
                     }
-                    tracing::info!(
+                    tracing::debug!(
                         "group {}: receipts of {day} from {} not stored: {e}",
                         crate::short(&sess.gid),
-                        sess.did
+                        crate::short(&sess.did)
                     );
                     vec![]
                 }

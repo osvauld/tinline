@@ -246,7 +246,7 @@ impl NodeCtx {
                             return;
                         }
                         LegEvent::Declined(why) => {
-                            self.log(format!("declined: {}", clip_reason(&why)));
+                            self.log(format!("call {}: declined: {}", crate::short(&call.info.call_id), clip_reason(&why)));
                             cancel_others(&mut legs, Some(idx), Msg::Cancel { reason: proto::CancelReason::DeclinedElsewhere });
                             break "declined".into();
                         }
@@ -259,7 +259,7 @@ impl NodeCtx {
                             state[idx] = LegPhase::GaveUp;
                         }
                         LegEvent::Failed(why) => {
-                            self.log(format!("device {idx} of {}: {why}", contact.name));
+                            self.log(format!("call {}: device {idx}: {}", crate::short(&call.info.call_id), clip_reason(&why)));
                             legs[idx] = None;
                             state[idx] = LegPhase::Gone;
                         }
