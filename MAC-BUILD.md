@@ -39,6 +39,12 @@ xcodebuild -project ios/Tinline.xcodeproj -scheme Tinline \
 configured; for a real iPhone set your team under Signing & Capabilities. Camera, CallKit, push
 and QR scanning are stubs for now.
 
+## Known pins
+
+- `libc` is pinned to exactly 0.2.189 (`crates/search-core/Cargo.toml`, shared by the whole workspace). 0.2.190
+  makes `in6_ifreq` macOS-only, and `netdev` 0.46.3 (pulled in by iroh) then fails to compile for iOS. Don't
+  `cargo update` it past that until netdev or libc is fixed upstream.
+
 ## What to send back
 
 The three logs (`desktop-build.log`, `ios-core.log`, `ios-app.log`), from wherever each one
