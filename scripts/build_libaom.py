@@ -3,6 +3,7 @@
 
     scripts/build_libaom.py --target host
     scripts/build_libaom.py --target aarch64-linux-android
+    scripts/build_libaom.py --target aarch64-apple-ios      (macOS with Xcode; also aarch64-apple-ios-sim)
 
 Prints the install prefix (last stdout line); point the video crate at it with
 `AOM_DIR_<triple>=<prefix>` or `AOM_DIR=<prefix>` (its build.rs then links `<prefix>/lib/libaom.a`
@@ -33,6 +34,12 @@ ANDROID_ABI = {
     "x86_64-linux-android": ("x86_64", "x86_64"),
 }
 MIN_SDK = "28"
+# Rust iOS triple -> Xcode SDK. Keep IOS_MIN in step with ios/project.yml deploymentTarget.
+IOS_SDK = {
+    "aarch64-apple-ios": "iphoneos",
+    "aarch64-apple-ios-sim": "iphonesimulator",
+}
+IOS_MIN = "17.0"
 
 
 def run(cmd, **kw):
@@ -79,10 +86,10 @@ def fetch_source():
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--target", default="host", help="host or a Rust Android target triple")
+    ap.add_argument("--target", default="host", help="host, or a Rust Android or iOS target triple")
     ap.add_argument("--jobs", default=str(os.cpu_count() or 4))
     args = ap.parse_args()
-    if args.target != "host" and args.target not in ANDROID_ABI:
+    if args.target != "host" and args.target not in ANDROID_ABI and args.target not in IOS_SDK:
         sys.exit(f"unknown target {args.target}")
 
     src = fetch_source()
@@ -104,7 +111,17 @@ def main():
         "-DENABLE_DOCS=0", "-DENABLE_EXAMPLES=0", "-DENABLE_TESTS=0",
         "-DENABLE_TESTDATA=0", "-DENABLE_TOOLS=0",
     ]
-    if args.target != "host":
+    if args.target in IOS_SDK:
+        # CMake's own iOS support; untested until the first Mac build.
+        cmake += [
+            "-DCMAKE_SYSTEM_NAME=iOS",
+            f"-DCMAKE_OSX_SYSROOT={IOS_SDK[args.target]}",
+            "-DCMAKE_OSX_ARCHITECTURES=arm64",
+            f"-DCMAKE_OSX_DEPLOYMENT_TARGET={IOS_MIN}",
+            "-DAOM_TARGET_CPU=arm64",
+            "-DCONFIG_RUNTIME_CPU_DETECT=0",
+        ]
+    elif args.target != "host":
         abi, cpu = ANDROID_ABI[args.target]
         ndk = os.environ.get("ANDROID_NDK_HOME") or os.environ.get("ANDROID_NDK_ROOT")
         if not ndk:

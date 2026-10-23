@@ -23,6 +23,9 @@ targets:
     dependencies:
       - framework: build/P2pCore.xcframework
         embed: false
+      # System frameworks the static Rust core links against (security-framework, system-configuration).
+      - sdk: Security.framework
+      - sdk: SystemConfiguration.framework
   TinlineTests:
     type: bundle.unit-test
     platform: iOS
