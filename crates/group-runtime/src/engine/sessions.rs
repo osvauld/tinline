@@ -163,17 +163,19 @@ impl GroupRt {
                             // A non-admin's post in an admins-only group: refuse the batch, keep
                             // the session; the member marks such posts failed and stops sending.
                             self.log(format!(
-                                "group {}: refused an update from {}: {r}",
+                                "group {}: refused an update from {}: {}",
                                 crate::short(&sess.gid),
-                                sess.did
+                                crate::short(&sess.did),
+                                node_runtime::clip_reason(&r)
                             ));
                             let _ = sess.tx.send(Out::Msg(GroupMsg::Refused { reason: r }));
                         }
                         Err(e) => {
                             self.log(format!(
-                                "group {}: refused an update from {}: {e}",
+                                "group {}: refused an update from {}: {}",
                                 crate::short(&sess.gid),
-                                sess.did
+                                crate::short(&sess.did),
+                                node_runtime::clip_reason(&e.to_string())
                             ));
                             let _ = sess.tx.send(Out::Msg(GroupMsg::Refused {
                                 reason: e.to_string(),

@@ -161,7 +161,7 @@ impl SyncRt {
         let first: SelfMsg = tokio::time::timeout(AUTH_TIMEOUT, reader.recv())
             .await
             .map_err(|_| Error::Timeout)??
-            .ok_or_else(|| Error::Protocol("peer closed before auth".into()))?;
+            .ok_or_else(|| Error::eof("peer closed before auth"))?;
         let SelfMsg::Auth {
             attestation,
             relay: remote_relay,
@@ -215,7 +215,7 @@ impl SyncRt {
         self.drop_session(remote, &conn);
         conn.close(0u32.into(), b"done");
         if let Err(e) = &r {
-            tracing::debug!("own-device sync ended: {e}");
+            tracing::debug!("own-device sync with {} ended: {e}", node_runtime::short(&proto::device_to_text(&remote)));
         }
         r
     }

@@ -43,6 +43,18 @@ impl Error {
     pub fn net(e: impl std::fmt::Display) -> Self {
         Error::Net(e.to_string())
     }
+
+    /// A spawned task that panicked or was cancelled: our fault (`Io`), as in node-runtime.
+    pub fn join(e: tokio::task::JoinError) -> Self {
+        Error::Io(format!("task failed: {e}"))
+    }
+}
+
+/// A `Reject` while reading our own shards is a storage fault (`Io`), as in node-runtime.
+impl From<chat_core::doc::Reject> for Error {
+    fn from(e: chat_core::doc::Reject) -> Self {
+        Error::Io(e.to_string())
+    }
 }
 
 impl From<std::io::Error> for Error {

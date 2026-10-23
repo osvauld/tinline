@@ -215,7 +215,7 @@ impl GroupRt {
                     }
                 };
                 if let Err(e) = core.store.compact_shard(&gid, &day, &mut sm, &snap) {
-                    tracing::warn!("group compaction: {e}");
+                    tracing::warn!("group {} day {day}: compaction: {e}", crate::short(&gid));
                     continue;
                 }
                 if let Some(s) = live.shards.peek_mut(&day) {

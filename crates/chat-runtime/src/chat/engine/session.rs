@@ -300,7 +300,7 @@ impl ChatRt {
                 drop(permit);
                 match res {
                     Ok(()) => break,
-                    Err(e) => tracing::debug!("chat dial {did}: {e}"),
+                    Err(e) => tracing::debug!("chat dial {}: {e}", short(&did)),
                 }
                 let pair = pair_id(me.id.did(), &did);
                 let pending = this.profile_pending(&did) || core.store.pending_days(&pair).map(|d| !d.is_empty()).unwrap_or(false) || this.chat_wants(&core, &pair);
@@ -412,7 +412,7 @@ impl ChatRt {
             let reply = tokio::time::timeout(AUTH_TIMEOUT, reader.recv())
                 .await
                 .map_err(|_| Error::Timeout)??
-                .ok_or_else(|| Error::Protocol("peer closed".into()))?;
+                .ok_or_else(|| Error::eof("peer closed"))?;
             if let ChatMsg::Notice { notice } = &reply {
                 // They block us: their notice instead of their Auth.
                 let did = self.shared.lock().state.contacts.iter().find(|c| c.has_device(&remote)).map(|c| c.did.clone());
@@ -434,7 +434,7 @@ impl ChatRt {
             let first = tokio::time::timeout(AUTH_TIMEOUT, reader.recv())
                 .await
                 .map_err(|_| Error::Timeout)??
-                .ok_or_else(|| Error::Protocol("peer closed before auth".into()))?;
+                .ok_or_else(|| Error::eof("peer closed before auth"))?;
             let (did, hint, grant) = self.verify_auth(me, &first, remote)?;
             // A DID we block gets our notice instead of our Auth, then the connection ends.
             if let Some(notice) = self.refusal_for(&did) {
@@ -553,7 +553,7 @@ impl ChatRt {
                         break 'run e.to_string();
                     }
                 }
-                Err(e) => tracing::warn!("chat receipts: hello: {e}"),
+                Err(e) => tracing::warn!("chat receipts: hello for {}: {e}", short(&sess.did)),
             }
             self.chat_resume_downloads(&core, &sess.did);
             let mut heartbeat = tokio::time::interval(crate::chat::presence::HEARTBEAT);
@@ -574,7 +574,7 @@ impl ChatRt {
                     }
                     d = conn.read_datagram() => match d {
                         Ok(d) => self.presence_receive(&core, &sess, &d),
-                        Err(_) => break 'run "connection lost".into(),
+                        Err(e) => break 'run format!("connection lost: {e}"),
                     },
                     m = reader.recv() => match m {
                         Ok(Some(m)) => {

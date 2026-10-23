@@ -257,7 +257,7 @@ impl NodeCtx {
                             taken = true;
                             break;
                         }
-                        Err(e) => tracing::debug!("tokens to {did}: {e}"),
+                        Err(e) => tracing::debug!("tokens to {}: {e}", crate::short(&did)),
                     }
                 }
                 if taken {
@@ -290,7 +290,7 @@ impl NodeCtx {
         let reply = crate::wire::exchange(conn, &Msg::Tokens { grants: grants.to_vec() }).await?;
         match reply {
             Some(Msg::TokensTaken) => Ok(()),
-            other => Err(Error::Protocol(format!("tokens not taken: {other:?}"))),
+            other => Err(crate::not_taken("tokens", other.as_ref())),
         }
     }
 

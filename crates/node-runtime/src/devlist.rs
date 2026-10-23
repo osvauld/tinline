@@ -184,7 +184,7 @@ impl NodeCtx {
                             outcome = Some(o);
                             break;
                         }
-                        Err(e) => tracing::debug!("device list to {did}: {e}"),
+                        Err(e) => tracing::debug!("device list to {}: {e}", crate::short(&did)),
                     }
                 }
                 if let Some(o) = outcome {
@@ -236,7 +236,7 @@ impl NodeCtx {
             }
             // Not (or no longer) their contact: nothing to retry. PROVISIONAL (coordinator).
             Some(Msg::Reject { .. }) => Ok(Outcome::Final),
-            other => Err(Error::Protocol(format!("device list not taken: {other:?}"))),
+            other => Err(crate::not_taken("device list", other.as_ref())),
         }
     }
 

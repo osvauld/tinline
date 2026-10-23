@@ -20,7 +20,7 @@
 use super::*;
 use chat_core::doc::dm_version;
 use receipts_core::store::messages::VersionEvidence;
-use receipts_core::{Conversation, Kind, ReceiptError, Scope, status as api};
+use receipts_core::{Conversation, Kind, Scope, status as api};
 use std::collections::BTreeMap;
 
 /// Provisional: newest read versions one mark-read step can cover. Older
@@ -67,10 +67,6 @@ pub fn read_versions(pair: &str, me: &str, from: i64, to: i64, days: &[(String, 
     by_day
 }
 
-fn rio(e: ReceiptError) -> Error {
-    Error::Io(format!("receipts: {e}"))
-}
-
 pub fn dm_scope(pair: &str, day: &str) -> Scope {
     Scope { conversation: Conversation::Direct(pair.to_string()), day: day.to_string() }
 }
@@ -84,7 +80,7 @@ impl ChatRt {
         if versions.is_empty() {
             return Ok(vec![]);
         }
-        core.receipts.intent_ops(Kind::Delivered, &dm_scope(pair, day), versions).map_err(rio)
+        core.receipts.intent_ops(Kind::Delivered, &dm_scope(pair, day), versions).map_err(Error::from)
     }
 
     /// A day's messages exactly as stored (never a cached doc ahead of the
@@ -96,15 +92,15 @@ impl ChatRt {
             if let Some(s) = cache.get(&(pair.to_string(), day.to_string()))
                 && s.vv().encode() == meta.vv
             {
-                return s.messages().map(Some).map_err(|e| Error::Io(e.to_string()));
+                return s.messages().map(Some).map_err(Error::from);
             }
         }
         let (snap, ups) = core.store.shard_rows(pair, day)?;
         if meta.closed.is_some() && snap.is_none() {
             return Ok(None);
         }
-        let shard = Shard::load(pair, day, core.wid, snap.as_deref(), &ups).map_err(|e| Error::Io(e.to_string()))?;
-        shard.messages().map(Some).map_err(|e| Error::Io(e.to_string()))
+        let shard = Shard::load(pair, day, core.wid, snap.as_deref(), &ups)?;
+        shard.messages().map(Some).map_err(Error::from)
     }
 
     /// Ops for a local mark-read step from `from` (exclusive) to `to`
@@ -135,7 +131,7 @@ impl ChatRt {
         let by_day = read_versions(pair, me.id.did(), from, to, &days);
         let mut ops = Vec::new();
         for (day, vs) in by_day {
-            ops.extend(core.receipts.intent_ops(Kind::Read, &dm_scope(pair, &day), vs).map_err(rio)?);
+            ops.extend(core.receipts.intent_ops(Kind::Read, &dm_scope(pair, &day), vs)?);
         }
         Ok(ops)
     }
@@ -161,7 +157,7 @@ impl ChatRt {
             if !closed || core.store.shard_rows(pair, &day).map(|r| r.0.is_some()).unwrap_or(true) {
                 continue;
             }
-            match self.chat_load_shard(core, pair, &day).await.and_then(|s| s.messages().map_err(|e| Error::Io(e.to_string()))) {
+            match self.chat_load_shard(core, pair, &day).await.and_then(|s| s.messages().map_err(Error::from)) {
                 Ok(msgs) => {
                     seen += msgs.len();
                     out.insert(day, msgs);
@@ -179,7 +175,7 @@ impl ChatRt {
         let issued = match core.receipts.pump(&me.id) {
             Ok(i) => i,
             Err(e) => {
-                tracing::warn!("chat receipts: {e}");
+                tracing::warn!("chat receipts pump: {e}");
                 return;
             }
         };
@@ -209,7 +205,7 @@ impl ChatRt {
         let me = self.me()?;
         let pair = pair_id(me.id.did(), &sess.did);
         let mut days = self.recent_days();
-        for d in core.receipts.outbox_days(&Conversation::Direct(pair.clone()), MAX_RECEIPT_DAYS).map_err(rio)? {
+        for d in core.receipts.outbox_days(&Conversation::Direct(pair.clone()), MAX_RECEIPT_DAYS)? {
             if !days.contains(&d) {
                 days.push(d);
             }
@@ -220,7 +216,7 @@ impl ChatRt {
                 break;
             }
             if core.store.shard_meta(&pair, &d)?.is_some() {
-                let vv = core.receipts.vv(&dm_scope(&pair, &d)).map_err(rio)?;
+                let vv = core.receipts.vv(&dm_scope(&pair, &d))?;
                 out.push((d, vv.encode()));
             }
         }
@@ -243,11 +239,11 @@ impl ChatRt {
                 continue;
             }
             // Their hello also says what they hold: it may complete our outbox.
-            core.receipts.acknowledged(&dm_scope(&pair, &d), &vv).map_err(rio)?;
+            core.receipts.acknowledged(&dm_scope(&pair, &d), &vv)?;
             sess.receipt_vv.lock().insert(d.clone(), vv);
             todo.push(d);
         }
-        for d in core.receipts.outbox_days(&Conversation::Direct(pair.clone()), MAX_RECEIPT_DAYS).map_err(rio)? {
+        for d in core.receipts.outbox_days(&Conversation::Direct(pair.clone()), MAX_RECEIPT_DAYS)? {
             if !todo.contains(&d) {
                 todo.push(d);
             }
@@ -268,7 +264,7 @@ impl ChatRt {
         let scope = dm_scope(&pair, day);
         for _ in 0..RECEIPT_FRAMES_PER_SEND {
             let theirs = sess.receipt_vv.lock().get(day).cloned().unwrap_or_default();
-            let Some(batch) = core.receipts.export(&scope, &theirs, RECEIPT_BATCH).map_err(rio)? else { return Ok(()) };
+            let Some(batch) = core.receipts.export(&scope, &theirs, RECEIPT_BATCH)? else { return Ok(()) };
             writer.send(&ChatMsg::Receipts { day: day.to_string(), update: batch.update }).await?;
             merge_vv(sess.receipt_vv.lock().entry(day.to_string()).or_default(), &batch.frontier);
             if !batch.more {
@@ -298,7 +294,7 @@ impl ChatRt {
                 }
             }
         };
-        let vv = core.receipts.vv(&scope).map_err(rio)?;
+        let vv = core.receipts.vv(&scope)?;
         writer.send(&ChatMsg::ReceiptAck { day: day.to_string(), vv: vv.encode() }).await?;
         if !fresh.is_empty() {
             self.chat_receipts_changed(core, &me, &sess.did, &pair, day, &fresh).await;
@@ -314,7 +310,7 @@ impl ChatRt {
         let pair = pair_id(me.id.did(), &sess.did);
         let vv = decode_vv(vv)?;
         if core.store.shard_meta(&pair, day)?.is_some() {
-            core.receipts.acknowledged(&dm_scope(&pair, day), &vv).map_err(rio)?;
+            core.receipts.acknowledged(&dm_scope(&pair, day), &vv)?;
         }
         // Authoritative: what they hold (a refused frame is resent on the next trigger).
         sess.receipt_vv.lock().insert(day.to_string(), vv);
@@ -353,7 +349,7 @@ impl ChatRt {
             // Our message: the contact confirms it. Theirs: our own account's
             // statements (what this account told, or will tell, the author).
             let recipient = if outgoing { did.to_string() } else { me.id.did().to_string() };
-            let ev: VersionEvidence = core.receipts.evidence(&dm_scope(pair, day), &version, |d| d == recipient).map_err(rio)?;
+            let ev: VersionEvidence = core.receipts.evidence(&dm_scope(pair, day), &version, |d| d == recipient)?;
             recipients.push(api::recipient(&recipient, &ev));
         }
         let tick = if !outgoing || did == me.id.did() || rec.deleted {
@@ -385,7 +381,7 @@ impl ChatRt {
         let mut recs: Vec<MsgRec> = {
             let shards = self.chat_shard(&core, &pair, day).await?;
             let shard = shards.get(&(pair.clone(), day.to_string())).ok_or(Error::NotFound)?;
-            shard.messages().map_err(|e| Error::Io(e.to_string()))?.into_values().collect()
+            shard.messages()?.into_values().collect()
         };
         recs.sort_by(|a, b| a.order().cmp(&b.order()));
         recs.iter().map(|rec| Self::chat_receipt_status(&core, &me, did, &pair, day, rec)).collect()
@@ -401,7 +397,7 @@ impl ChatRt {
         let rec = {
             let shards = self.chat_shard(&core, &pair, &day).await?;
             let shard = shards.get(&(pair.clone(), day.clone())).ok_or(Error::NotFound)?;
-            shard.messages().map_err(|e| Error::Io(e.to_string()))?.remove(id).ok_or(Error::NotFound)?
+            shard.messages()?.remove(id).ok_or(Error::NotFound)?
         };
         Self::chat_receipt_status(&core, &me, did, &pair, &day, &rec)
     }

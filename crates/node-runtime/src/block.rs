@@ -245,7 +245,7 @@ impl NodeCtx {
                             taken = true;
                             break;
                         }
-                        Err(e) => tracing::debug!("notice to {did}: {e}"),
+                        Err(e) => tracing::debug!("notice to {}: {e}", crate::short(&did)),
                     }
                 }
                 if taken {
@@ -284,7 +284,7 @@ impl NodeCtx {
         let reply = crate::wire::exchange(conn, &Msg::Notice { notice: notice.clone() }).await?;
         match reply {
             Some(Msg::NoticeTaken) => Ok(()),
-            other => Err(Error::Protocol(format!("notice not taken: {other:?}"))),
+            other => Err(crate::not_taken("notice", other.as_ref())),
         }
     }
 

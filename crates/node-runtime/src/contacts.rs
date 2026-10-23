@@ -115,7 +115,7 @@ impl NodeCtx {
         let reply = tokio::time::timeout(HELLO_TIMEOUT, ctrl.recv())
             .await
             .map_err(|_| Error::Timeout)??
-            .ok_or_else(|| Error::Protocol("peer closed".into()))?;
+            .ok_or_else(|| Error::eof("peer closed"))?;
         let new = match reply {
             Msg::Reject { reason } => {
                 undo(&self);

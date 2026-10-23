@@ -1,5 +1,16 @@
 //! The node runtime's error type. Variants and messages are those of p2pcore's `Error`, which
 //! this maps to one to one (and back): an `InCall` stays an `InCall` across the crate boundary.
+//!
+//! Which variant, when it is not one of the plain state ones (`Locked`, `NotFound`, ...). Callers
+//! decide on the variant, so keep to this:
+//! - `Protocol`: the peer broke the rules, or the request is invalid. It will fail the same way
+//!   again: do not retry (`images.rs` drops a host's image on it, chat downloads stop on it).
+//! - `Net` / `Timeout`: transient. Connecting, a connection that closed or ended early (EOF,
+//!   "peer closed", a stream that stopped mid-frame), an older app that refused the handshake.
+//!   Retry later.
+//! - `Io`: our own storage or local machinery failed (vault, rows we wrote, a background task
+//!   that panicked or was cancelled: see `Error::join`).
+//! - `Rejected`: the peer understood and said no (the reason is theirs to give).
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
@@ -43,6 +54,50 @@ pub enum Error {
 impl Error {
     pub fn net(e: impl std::fmt::Display) -> Self {
         Error::Net(e.to_string())
+    }
+
+    /// `what` is invalid or does not match, as seen from the caller: `Protocol("<what>: <why>")`.
+    pub fn invalid(what: &str, why: impl std::fmt::Display) -> Self {
+        Error::Protocol(format!("{what}: {why}"))
+    }
+
+    /// The connection or stream ended where more was due: transient (`Net`), not a rule broken.
+    pub fn eof(what: &str) -> Self {
+        Error::Net(what.to_string())
+    }
+
+    /// A `spawn_blocking` / spawned task that panicked or was cancelled: our fault (`Io`).
+    pub fn join(e: tokio::task::JoinError) -> Self {
+        Error::Io(format!("task failed: {e}"))
+    }
+}
+
+/// A `chat_core::Reject` while reading or writing a shard in our own store is `Io` (corrupt or
+/// unwritable rows). A `Reject` on a batch a peer sent is the peer's fault: map that one by hand
+/// to `Protocol` (`chat_receive` does).
+impl From<chat_core::doc::Reject> for Error {
+    fn from(e: chat_core::doc::Reject) -> Self {
+        Error::Io(e.to_string())
+    }
+}
+
+/// Receipt-store failures come from our own store and bookkeeping (`Io`); a peer's bad receipt
+/// is judged before it reaches the store and answered with `Protocol` there.
+impl From<receipts_core::ReceiptError> for Error {
+    fn from(e: receipts_core::ReceiptError) -> Self {
+        Error::Io(format!("receipts: {e}"))
+    }
+}
+
+/// Bytes that do not decode are a peer's (`Protocol`); a value of ours that does not encode is a
+/// local fault (`Io`).
+impl From<cryptography::codec::CodecError> for Error {
+    fn from(e: cryptography::codec::CodecError) -> Self {
+        use cryptography::codec::CodecError as C;
+        match e {
+            C::Encode => Error::Io(e.to_string()),
+            C::TooLarge | C::Decode | C::NonCanonical => Error::Protocol(e.to_string()),
+        }
     }
 }
 

@@ -274,11 +274,11 @@ impl Inner {
                         continue;
                     }
                 };
-                let msgs = shard.messages().map_err(|e| Error::Io(e.to_string()))?;
+                let msgs = shard.messages()?;
                 let rows: Vec<DocRow> = msgs.values().map(|r| dm_row(&did, &pair, &day, r)).collect();
                 let mark = Mark { src: src.clone(), day: day.clone(), prev: None, vv: shard.vv().encode() };
                 let ix2 = ix.clone();
-                tokio::task::spawn_blocking(move || ix2.apply_bulk(&rows, &[], &[mark])).await.map_err(|e| Error::Io(e.to_string()))??;
+                tokio::task::spawn_blocking(move || ix2.apply_bulk(&rows, &[], &[mark])).await.map_err(Error::join)??;
             }
         }
         Ok(())
@@ -298,7 +298,7 @@ impl Inner {
         // The cold days the bulk left in memory go into segments (the open's last step; its
         // time counts in the groups part).
         let ix2 = ix.clone();
-        tokio::task::spawn_blocking(move || ix2.maintain(Mode::Force)).await.map_err(|e| Error::Io(e.to_string()))??;
+        tokio::task::spawn_blocking(move || ix2.maintain(Mode::Force)).await.map_err(Error::join)??;
         Ok((dms, t.elapsed()))
     }
 

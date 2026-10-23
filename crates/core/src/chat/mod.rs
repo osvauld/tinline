@@ -6,4 +6,6 @@
 pub use chat_core::doc;
 
 pub mod api;
+#[cfg(any(test, feature = "dev-tools"))]
+mod hooks;
 pub mod store;

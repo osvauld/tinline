@@ -311,7 +311,7 @@ impl GroupRt {
         self.log(format!(
             "group {}: host {} moved",
             crate::short(gid),
-            auth.did
+            crate::short(&auth.did)
         ));
         core.kick.notify_waiters();
     }
