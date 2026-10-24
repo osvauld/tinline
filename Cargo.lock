@@ -9067,6 +9067,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "wake"
+version = "0.2.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "wake-relay-core",
+]
+
+[[package]]
 name = "wake-relay-core"
 version = "0.2.0"
 dependencies = [
