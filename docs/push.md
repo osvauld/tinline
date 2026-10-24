@@ -163,6 +163,12 @@ a new UnifiedPush endpoint). The sender keeps at most one token per (contact DID
 - Rate limits per tag (PROVISIONAL): `msg` 2 per minute, `call` 3 per minute; `register` 20
   per minute per IP. A limited request gets 429 and the sender falls back to its normal retry.
   (Cloudflare's limiter counts over 10 or 60 s windows only, so no daily cap for now.)
+  **Measured 2026-10-24:** the limiter is approximate and per Cloudflare location: a burst of 12
+  `msg` wakes on one token got 8 through before 429s. So the relay limit is a coarse abuse cap;
+  the exact limit is the sender's own: the core sends at most one `msg` wake per device per 30 s
+  and only after a failed dial.
+- **User-Agent:** `osvauld.com`'s Cloudflare bot protection answers `403 error code: 1010` to
+  generic client agents (e.g. `Python-urllib`). The apps send `Tinline/<version>`.
 - Answers: 202 sent; 410 drop the token (expired, revoked, push token gone, relay key retired);
   429 / 503 retry later; 403 kind not allowed; 400 malformed.
 - No request logging of tokens or IPs; errors only.
@@ -271,7 +277,7 @@ the push and call one core entry point (`on_wake(hint) -> WakeAction`).
 
 ## Build order
 
-1. Relay: `wake-relay-core` + tests, the Worker deployed at `https://push.osvauld.com` (2026-10-24; secrets pending).
+1. Relay: `wake-relay-core` + tests, the Worker deployed at `https://push.osvauld.com` (2026-10-24; `RELAY_KEYS` set; FCM / APNs secrets pending). End-to-end check passed: register, wake, kind refused, tampered token, revoke then 410.
 2. Core: tokens, `WakeTokens` on the wire, wake decision, revoke, `on_wake`; in-process tests.
 3. Android flavours: `play` (FCM) and `liberum` (no Google SDK, always-on); the no-Google
    build check; both in the release workflow. Then UnifiedPush in `liberum`.

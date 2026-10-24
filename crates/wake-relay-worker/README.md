@@ -29,6 +29,12 @@ Run from this directory. Needs Rust with the `wasm32-unknown-unknown` target and
      Apple works from Workers. Set `PROBE = "0"` and redeploy.
    - `no answer: …`: it does not; the fallback host is Fly.io Mumbai (docs/push.md).
 
+## Checking a deploy
+
+Send a `User-Agent` (osvauld.com's bot protection refuses generic ones with `error code: 1010`).
+A UnifiedPush target pointing at an endpoint that answers 410 exercises register → wake →
+`410 gone` without delivering anything.
+
 ## Provider secrets (later)
 
 - FCM: `npx wrangler secret put FCM_SERVICE_ACCOUNT < wake-relay.json` (the `wake-relay`
