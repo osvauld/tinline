@@ -5,10 +5,15 @@
 
 uniffi::setup_scaffolding!();
 
+#[macro_use]
+mod sink_adapter;
+
 // Links `present` (and its UniFFI scaffolding) into libp2pcore.so: bindgen then writes uniffi/present/present.kt.
 pub use present;
 
-pub mod accounts;
+// The account model (state, account dirs, vault, chat day doc, own-device docs) is the
+// `account-model` crate; its modules keep their old paths here.
+pub use account_model::accounts;
 pub mod avatar;
 mod block;
 mod caps;
@@ -19,7 +24,6 @@ mod profile;
 pub use profile::{AccountProfile, ProfileEvents};
 mod group;
 mod error;
-mod frames;
 pub mod gcall;
 pub mod cues;
 mod licences;
@@ -34,20 +38,18 @@ mod sync;
 /// Synthetic peers, contacts and groups for tests and benches; not in release builds.
 #[cfg(any(test, feature = "dev-tools"))]
 pub mod synth;
-mod version;
 #[cfg(test)]
 mod account_tests;
-mod vault;
+use account_model::vault;
 mod video_call;
 #[cfg(target_os = "android")]
 mod video_jni;
 mod voice;
-mod wire;
 
 pub use error::Error;
 
 pub use block::{BLOCKED, BlockNotice, BlockState, BlockedContact};
-pub use group::api::{GroupDelivery, GroupDetail, GroupEvents, GroupFlag, GroupHost, GroupInvitePeek, GroupItemKind, GroupMember, GroupMessage, GroupPage, GroupRemoval, GroupRole, GroupSummary};
+pub use group::api::{GroupDelivery, GroupDetail, GroupEvents, GroupFlag, GroupHost, GroupImage, GroupImageState, GroupInvitePeek, GroupItemKind, GroupMember, GroupMessage, GroupPage, GroupRemoval, GroupRole, GroupSummary, OnlineMember};
 pub use group::requests::{ChatRequestState, GroupChatRequest, GroupRequestEvents};
 pub use group::rotation::RotationPolicy;
 pub use group::calls::{GroupCall, GroupCallConditions, GroupCallDeviceClass, GroupCallEvent, GroupCallEventKind, GroupCallEvents, GroupCallHere, GroupCallThermal};

@@ -189,6 +189,23 @@ Cut+probe (`VideoTuning::configure_rate`); the tuning sheet keeps "Plain (old)",
 sim's `SenderConfig::default()` is unchanged (its tests and the scoreboard's `fixed` row are the
 old controller; Cut+probe is the `c+b` variant).
 
+### Software VP8 input layouts (2026-10-20)
+
+Google's `c2.android.vp8.encoder` hands out ByteBuffer input with a flexible `color-format`, no
+`image-data` (before or after start, nor per buffer), and a kind in `android._color-format`
+that is not what it reads. Writing NV12 there gave a grey picture with colour lines (moto
+sending VP8). Found with the self-test's chroma PSNR (`mediacodec_vp8_selftest`, DebugReceiver
+`mediacodec_vp8 --ez sw true`), fixed in `mediacodec.rs` (`Layout::of`, `or_nv21`):
+
+| Phone | Names | Reads | Encode p50 480x640 / 540x960 / 720x1280 |
+|---|---|---|---|
+| Pixel 3a | 19 (I420), stride 512 | NV21 (I420 does not fit its 491489-byte buffer) | 4.0 / 4.8 / 5.4 ms |
+| moto g52 | YV12 | plain I420 (U first, chroma rows half the stride) | 4.1 / 4.3 / 7.7 ms |
+
+Chroma PSNR after the fix: 45-49 dB at every size on both (22 dB with U/V swapped). The moto's
+software VP8 is ~7x cheaper than its software AV1 (27-30 ms at 480x640): VP8 could be its
+default send codec (not decided).
+
 ## Next
 
 - Phones: the probe is idle on the moto side (burst=0 there: the Pixel reads the moto's frames

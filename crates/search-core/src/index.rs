@@ -195,11 +195,18 @@ pub struct Stats {
 /// Lowers the priority of the calling thread (segment builders must not take the core a send
 /// is running on from it).
 fn background_thread() {
-    #[cfg(unix)]
+    #[cfg(any(target_os = "linux", target_os = "android"))]
     // SAFETY: plain syscalls on the calling thread's own id; failure is ignored.
     unsafe {
         let tid = libc::syscall(libc::SYS_gettid) as libc::id_t;
         libc::setpriority(libc::PRIO_PROCESS, tid, 15);
+    }
+    // Apple has no per-thread nice (setpriority there is per process); the QoS class is the
+    // per-thread equivalent.
+    #[cfg(target_vendor = "apple")]
+    // SAFETY: changes only the calling thread's QoS class; failure is ignored.
+    unsafe {
+        libc::pthread_set_qos_class_self_np(libc::qos_class_t::QOS_CLASS_UTILITY, 0);
     }
 }
 
@@ -508,7 +515,7 @@ impl SearchIndex {
             ops.push(Op::DeletePrefix(format!("z/{:08x}/", g.id)));
         }
         man.segs.retain(|g| !g.days.is_empty());
-        ops.push(self.db.put_op("m", &cryptography::codec::to_bytes(&man).expect("serialises"))?);
+        ops.push(self.db.put_op("m", &cryptography::codec::to_bytes_infallible(&man))?);
         self.db.apply(&ops)?;
         self.file_changed.store(true, std::sync::atomic::Ordering::SeqCst);
         *self.view.write() = Arc::new(View::new(man));

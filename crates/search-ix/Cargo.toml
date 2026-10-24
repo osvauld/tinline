@@ -1,0 +1,16 @@
+[package]
+name = "search-ix"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+description = "The account's search index slot and its write hooks (1:1 messages, group posts, forgotten conversations); reconcile and queries stay in p2pcore; no UniFFI"
+
+[dependencies]
+search-core.workspace = true
+chat-core.workspace = true
+group-core.workspace = true
+node-runtime.workspace = true
+storage.workspace = true
+parking_lot = "0.12"
+tracing = "0.1"

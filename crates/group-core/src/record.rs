@@ -41,7 +41,8 @@ pub enum Body {
     Join { invite: SignedInvite, name: String },
     /// The author leaves.
     Leave,
-    Post { text: String, reply_to: Option<String> },
+    /// `text` may be empty only when the post carries an image (public group §5).
+    Post { text: String, reply_to: Option<String>, image: Option<ImageRef> },
     /// Owner only: `member` is (or stops being) an admin.
     Admin { member: String, admin: bool },
     /// Admin: one flag towards removing `member` (U9/U15: any 3 flags remove).
@@ -56,14 +57,63 @@ pub enum Body {
     /// chat requests, `mail.rs`). The latest per author counts.
     EncKey { key: [u8; 32] },
     /// Owner or admin: device `host_dev` of `host` may (or may no longer) host group CALLS
-    /// (U21: a separate `host_call` capability, never implied by `HostPermit`). Latest by
-    /// `(author clock, id)` per device wins, like `HostPermit`.
+    /// (U21: a separate `host_call` capability, never implied by `HostPermit`). Per device
+    /// the record in force by causality wins, like `HostPermit` (`state::causal_latest`).
     CallHostPermit { host: String, host_dev: [u8; 32], active: bool },
     /// The author's own device `dev` agrees to host group calls (or stops). Separate from
     /// `HostAccept`: agreeing to relay chat is not agreeing to carry calls (battery, uplink, the
     /// group endpoint shown to every caller), so a call host needs both a `CallHostPermit` and
     /// this.
     CallHostAccept { active: bool },
+    /// The author joins an open group (`Open{active: true}` as of this record's frontier)
+    /// without an invite; `name` as in `Join`. Inert in a group that was not open.
+    OpenJoin { name: String },
+    /// Owner or admin: anyone may join with `OpenJoin` (or no longer may). Causal: a later
+    /// record that saw this one supersedes it; `(at, id)` only orders concurrent ones
+    /// (`state.rs`). Members who joined stay.
+    Open { active: bool },
+    /// Owner or admin: only the owner and admins may post (a channel), or everyone again.
+    /// Judged per post as of its frontier, like membership (U11).
+    AdminsOnly { active: bool },
+}
+
+/// Largest image blob a post may name, plaintext bytes (public group §5: senders stay under
+/// 300 KB; a host refuses anything over this).
+pub const MAX_IMAGE_BYTES: u64 = 1024 * 1024;
+/// Longest side of a posted image, pixels.
+pub const MAX_IMAGE_SIDE: u32 = 4096;
+/// Most bytes of an image's colour preview (a 4x3 RGB grid, as 1:1 chat photos carry).
+pub const MAX_IMAGE_PREVIEW: usize = 36;
+/// The picture types a post may carry.
+pub const IMAGE_MIMES: [&str; 3] = ["image/jpeg", "image/webp", "image/png"];
+
+/// An image attached to a post (public group §5). The blob is the picture sealed with the
+/// chunked blob cipher (`transfer::crypt`) under `key`, a fresh random key for this one blob,
+/// as 1:1 chat attachments are: the key travels in the signed record, so every member (hosts
+/// included) can open it, and the blob store holds only ciphertext. `hash` is the BLAKE3 of
+/// the ciphertext (what iroh-blobs verifies while streaming); `size` the plaintext length.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ImageRef {
+    pub hash: [u8; 32],
+    pub key: [u8; 32],
+    pub size: u64,
+    pub w: u32,
+    pub h: u32,
+    pub mime: String,
+    /// A 4x3 RGB grid of its colours (empty if none), for the placeholder before it loads.
+    pub preview: Vec<u8>,
+}
+
+impl ImageRef {
+    /// Within the bounds every device checks (`Record::check_shape`).
+    pub fn well_formed(&self) -> bool {
+        self.size > 0
+            && self.size <= MAX_IMAGE_BYTES
+            && (1..=MAX_IMAGE_SIDE).contains(&self.w)
+            && (1..=MAX_IMAGE_SIDE).contains(&self.h)
+            && IMAGE_MIMES.contains(&self.mime.as_str())
+            && self.preview.len() <= MAX_IMAGE_PREVIEW
+    }
 }
 
 /// One group op, as signed.
@@ -117,8 +167,15 @@ impl Record {
         }
         match &self.body {
             Body::Genesis { name, owner_name, .. } if name.len() > MAX_NAME || name.trim().is_empty() || owner_name.len() > MAX_NAME => bad,
-            Body::Join { name, .. } if name.len() > MAX_NAME => bad,
-            Body::Post { text, reply_to } if text.len() > MAX_TEXT || text.is_empty() || reply_to.as_ref().is_some_and(|r| r.len() > 64) => bad,
+            Body::Join { name, .. } | Body::OpenJoin { name } if name.len() > MAX_NAME => bad,
+            Body::Post { text, reply_to, image }
+                if text.len() > MAX_TEXT
+                    || (text.is_empty() && image.is_none())
+                    || reply_to.as_ref().is_some_and(|r| r.len() > 64)
+                    || image.as_ref().is_some_and(|i| !i.well_formed()) =>
+            {
+                bad
+            }
             Body::Admin { member, .. } | Body::Flag { member } if member.len() > 200 => bad,
             Body::HostPermit { host, .. } | Body::CallHostPermit { host, .. } if host.len() > 200 => bad,
             _ => Ok(()),
@@ -231,6 +288,47 @@ impl Signable for HostAddr {
 
 pub type SignedHostAddr = Signed<HostAddr>;
 
+// ---- presence (outside the doc, never stored) -------------------------------------------------
+
+/// Most members one `Presence` lists (public group §3: larger groups show "500+ online").
+pub const MAX_PRESENCE: usize = 500;
+/// Longest member DID a `Presence` lists. A member's DID is a `did:key` that signs its records
+/// (56 bytes for ed25519), so this never drops a real member; it bounds a full frame to
+/// 500 × (64 + 11) bytes plus the header, well inside `MAX_BODY`.
+pub const MAX_PRESENCE_DID: usize = 64;
+
+/// "Host device `dev` of `host` saw these members online", DID-signed by the host (public group
+/// §3). `online` is `(member DID, last seen)` and `at` the host's clock when it signed, so a
+/// receiver judges age as `at - last seen` without trusting clocks to agree. `seq` grows per
+/// host device (the newest frame per host wins; a relay drops one it has). In memory only:
+/// never a record, never stored.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Presence {
+    pub group: String,
+    pub host: String,
+    pub dev: [u8; 32],
+    pub online: Vec<(String, u64)>,
+    pub seq: u64,
+    pub at: u64,
+}
+
+impl Signable for Presence {
+    const DOMAIN: domains::Domain = domains::GROUP_PRESENCE;
+    /// 500 DIDs of at most `MAX_PRESENCE_DID` bytes plus their times, with room.
+    const MAX_BODY: usize = 64 * 1024;
+    fn signer(&self) -> Signer<'_> {
+        Signer::Did(&self.host)
+    }
+    fn check(&self) -> proto::Result<()> {
+        if self.online.len() > MAX_PRESENCE || self.online.iter().any(|(d, _)| d.len() > MAX_PRESENCE_DID) || self.host.len() > 200 || self.group.len() > 200 {
+            return Err(proto::Error::Decode);
+        }
+        Ok(())
+    }
+}
+
+pub type SignedPresence = Signed<Presence>;
+
 // ---- endpoint proof (per connection) -------------------------------------------------------------
 
 /// "Group endpoint `endpoint` is device `dev` of `did`", DID-signed: the same statement as the
@@ -265,6 +363,9 @@ pub struct InviteToken {
     pub owner: String,
     pub invite: Option<SignedInvite>,
     pub hosts: Vec<SignedHostAddr>,
+    /// Fetched with an open link (`invite` is `None`): anyone may join with `OpenJoin` while
+    /// the group is open. `false` with no invite: a device token (own DID only).
+    pub open: bool,
 }
 
 #[cfg(test)]

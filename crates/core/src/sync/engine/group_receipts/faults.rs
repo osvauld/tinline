@@ -4,8 +4,9 @@ use super::super::group_history::tests::{Directory, Quiet, endpoint, registry};
 use super::*;
 use crate::{
     Node,
-    group::{doc::DocId, engine::GroupCore},
+    group::engine::GroupCore,
 };
+use group_runtime::doc::DocId;
 use iroh::Endpoint;
 
 async fn session(
@@ -20,7 +21,7 @@ async fn session(
     legacy: bool,
 ) -> usize {
     let me = node.inner.me().unwrap();
-    let receiver = node.inner.group_core().unwrap();
+    let receiver = node.inner.group.group_core().unwrap();
     let receiving = async {
         let incoming = server
             .accept()
@@ -30,7 +31,7 @@ async fn session(
             .unwrap()
             .await
             .unwrap();
-        node.inner.clone().self_run(incoming, false).await
+        node.inner.sync.clone().self_run(incoming, false).await
     };
     let driving = async {
         let conn = client
@@ -76,6 +77,7 @@ async fn session(
             owner: me.id.did().into(),
             hosts: vec![],
             invite: None,
+            open: false,
         };
         writer
             .send(&SelfMsg::Groups {
@@ -110,7 +112,7 @@ async fn session(
                             gid,
                             &which,
                             &their,
-                            crate::group::doc::batching::BatchLimits {
+                            group_runtime::doc::batching::BatchLimits {
                                 bytes: 256 * 1024,
                                 operations: 64,
                                 writers: 4096,
@@ -120,7 +122,7 @@ async fn session(
                     let (update, vv, more) = out
                         .map(|o| (o.update, o.frontier.encode(), o.more))
                         .unwrap_or((vec![], VersionVector::default().encode(), false));
-                    let sig = crate::chat::wire::sign_batch(secret, &doc, &update);
+                    let sig = chat_runtime::chat::wire::sign_batch(secret, &doc, &update);
                     writer
                         .send(&SelfMsg::GroupBatch {
                             request,

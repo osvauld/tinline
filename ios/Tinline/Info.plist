@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>CFBundleName</key><string>Tinline</string>
+  <key>CFBundleDisplayName</key><string>Tinline</string>
+  <key>CFBundleExecutable</key><string>$(EXECUTABLE_NAME)</string>
+  <key>CFBundlePackageType</key><string>APPL</string>
+  <key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
+  <key>CFBundleDevelopmentRegion</key><string>en</string>
+  <key>LSRequiresIPhoneOS</key><true/>
+  <key>CFBundleIdentifier</key><string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+  <key>CFBundleShortVersionString</key><string>0.2.0</string>
+  <key>CFBundleVersion</key><string>1</string>
+  <key>UILaunchScreen</key><dict/>
+  <key>UIAppFonts</key><array>
+    <string>Fonts/figtree_variable.ttf</string>
+    <string>Fonts/plexmono_regular.ttf</string>
+    <string>Fonts/plexmono_medium.ttf</string>
+  </array>
+  <key>NSMicrophoneUsageDescription</key><string>For voice calls and voice messages.</string>
+  <key>NSPhotoLibraryAddUsageDescription</key><string>To save photos and videos you choose to keep.</string>
+  <key>NSCameraUsageDescription</key><string>For video calls, only when you turn your camera on.</string>
+</dict></plist>

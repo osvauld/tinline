@@ -1,0 +1,444 @@
+//! The chat records in the sealed vault file (`chat.redb`), as typed accessors over `Sealed`.
+//!
+//! Layout (all values sealed with a key derived from the DEK; paths are not secret):
+//! ```text
+//! conv/{pair}                    ConvMeta   list row: peer, unread, last message
+//! shard/{pair}/{day}/meta        ShardMeta  vv, counters, closed-snapshot ref
+//! shard/{pair}/{day}/snap        bytes      Loro snapshot (open shards)
+//! shard/{pair}/{day}/u/{seq}     bytes      validated update batches since the snapshot
+//! ack/{pair}/{day}               bytes      the peer's last acknowledged version vector
+//! mo/{pair}/{day}/{id}           u64+i32 BE our message: (writer ID it was created under, op count after)
+//! out/{pair}/{day}               empty      this day has ops of ours the peer has not acked
+//! blob/{hash}                    BlobInfo   hash -> key (+ name, size, mime, state)
+//! ref/{hash}/{pair}              empty      this conversation may read that blob
+//! pb/{pair}/{hash}               empty      the blobs a conversation uses (for deletion)
+//! snapcache/{pair}/{day}         SnapRef    a snapshot blob we made for a peer's history request
+//! set/auto_download              u64 BE
+//! ```
+
+use serde::{Deserialize, Serialize};
+use storage::{Op, Sealed};
+
+use crate::Error;
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct ClosedRef {
+    pub hash: String,
+    pub key: String,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct ShardMeta {
+    #[serde(with = "hexbytes")]
+    pub vv: Vec<u8>,
+    pub next_seq: u64,
+    pub n_updates: u32,
+    pub n_messages: u32,
+    /// Set once the day was compacted into a snapshot blob and its vault rows dropped.
+    pub closed: Option<ClosedRef>,
+    /// Our writer IDs in this day as of `vv` (`Shard::own_writers`): which ops the contact must
+    /// hold before the day is delivered, without loading the shard (P10b). Empty in a meta from
+    /// before P10b: then only our current writer ID is known.
+    #[serde(default)]
+    pub own: Vec<u64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct LastMsg {
+    pub id: String,
+    pub at: i64,
+    pub preview: String,
+    pub outgoing: bool,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct ConvMeta {
+    pub peer_did: String,
+    pub unread: u32,
+    pub last: Option<LastMsg>,
+    /// Everything incoming sent at or before this (unix ms, the author's clock) is read. A
+    /// max-register: it only grows, and it is synced between our own devices.
+    #[serde(default)]
+    pub read_upto: i64,
+    /// `at` of the newest incoming message applied here (what `mark_read` advances the cursor to).
+    #[serde(default)]
+    pub last_in: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BlobInfo {
+    pub key: String,
+    pub name: String,
+    pub size: u64,
+    pub mime: String,
+    pub kind: String,
+    pub pair: String,
+    /// The ciphertext is complete in the blob store.
+    pub ready: bool,
+    /// The user asked for it (or it is under the auto-download limit): fetch whenever possible.
+    pub wanted: bool,
+    pub failed: bool,
+    #[serde(default)]
+    pub day: String,
+    #[serde(default)]
+    pub msg: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SnapRef {
+    #[serde(with = "hexbytes")]
+    pub vv: Vec<u8>,
+    pub hash: String,
+    pub key: String,
+    pub size: u64,
+}
+
+mod hexbytes {
+    pub fn serialize<S: serde::Serializer>(v: &[u8], s: S) -> Result<S::Ok, S::Error> {
+        s.serialize_str(&hex::encode(v))
+    }
+    pub fn deserialize<'de, D: serde::Deserializer<'de>>(d: D) -> Result<Vec<u8>, D::Error> {
+        let s: String = serde::Deserialize::deserialize(d)?;
+        hex::decode(s).map_err(serde::de::Error::custom)
+    }
+}
+
+/// `(snapshot, updates)` rows of an open shard.
+pub type ShardRows = (Option<Vec<u8>>, Vec<Vec<u8>>);
+
+pub const DEFAULT_AUTO_DOWNLOAD: u64 = 10 * 1024 * 1024;
+
+/// Settings > Storage "Download pictures": when attachments under the size limit download by themselves.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum PictureDownload {
+    /// On Wi-Fi and on mobile data.
+    #[default]
+    Always,
+    /// Only while the connection is not metered; on mobile data they wait for a tap.
+    Wifi,
+    /// Nothing downloads until it is tapped.
+    Tap,
+}
+
+/// Whether the current connection is metered (the app reports it; the core cannot see the network type).
+static METERED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+pub fn set_metered(on: bool) {
+    METERED.store(on, std::sync::atomic::Ordering::Relaxed);
+}
+
+/// The last `set_metered` (group image auto-download reads it too).
+pub fn metered() -> bool {
+    METERED.load(std::sync::atomic::Ordering::Relaxed)
+}
+
+#[derive(Clone)]
+pub struct ChatStore {
+    pub db: Sealed,
+}
+
+fn decode_mo(b: &[u8]) -> Option<(u64, i32)> {
+    let b: [u8; 12] = b.try_into().ok()?;
+    Some((u64::from_be_bytes(b[..8].try_into().ok()?), i32::from_be_bytes(b[8..].try_into().ok()?)))
+}
+
+fn json<T: Serialize>(v: &T) -> Vec<u8> {
+    serde_json::to_vec(v).expect("serialises")
+}
+
+impl ChatStore {
+    pub fn new(db: Sealed) -> Self {
+        Self { db }
+    }
+
+    fn get_json<T: for<'de> Deserialize<'de>>(&self, path: &str) -> Result<Option<T>, Error> {
+        match self.db.get(path)? {
+            Some(b) => Ok(Some(serde_json::from_slice(&b)?)),
+            None => Ok(None),
+        }
+    }
+
+    // ---- conversations ---------------------------------------------------------------------
+
+    pub fn conv(&self, pair: &str) -> Result<Option<ConvMeta>, Error> {
+        self.get_json(&format!("conv/{pair}"))
+    }
+
+    pub fn conv_op(&self, pair: &str, c: &ConvMeta) -> Result<Op, Error> {
+        let path = format!("conv/{pair}");
+        self.db.put_op(&path, &json(c)).map_err(Error::from)
+    }
+
+    // ---- shards ----------------------------------------------------------------------------
+
+    pub fn shard_meta(&self, pair: &str, day: &str) -> Result<Option<ShardMeta>, Error> {
+        self.get_json(&format!("shard/{pair}/{day}/meta"))
+    }
+
+    /// Days we hold for a conversation, newest first.
+    pub fn shard_days(&self, pair: &str) -> Result<Vec<String>, Error> {
+        let prefix = format!("shard/{pair}/");
+        let mut days: Vec<String> = self
+            .db
+            .list_prefixed(&prefix)?
+            .into_iter()
+            .filter_map(|k| k.strip_prefix(&prefix)?.strip_suffix("/meta").map(str::to_string))
+            .filter(|d| !d.contains('/'))
+            .collect();
+        days.sort_by(|a, b| b.cmp(a));
+        Ok(days)
+    }
+
+    /// `(snapshot, updates)` rows of an open shard.
+    pub fn shard_rows(&self, pair: &str, day: &str) -> Result<ShardRows, Error> {
+        let snap = self.db.get(&format!("shard/{pair}/{day}/snap"))?;
+        let ups = self.db.scan(&format!("shard/{pair}/{day}/u/"))?.into_iter().map(|(_, v)| v).collect();
+        Ok((snap, ups))
+    }
+
+    pub fn put_meta_op(&self, pair: &str, day: &str, m: &ShardMeta) -> Result<Op, Error> {
+        self.db.put_op(&format!("shard/{pair}/{day}/meta"), &json(m)).map_err(Error::from)
+    }
+
+    pub fn put_update_op(&self, pair: &str, day: &str, seq: u64, update: &[u8]) -> Result<Op, Error> {
+        self.db.put_op(&format!("shard/{pair}/{day}/u/{seq:010}"), update).map_err(Error::from)
+    }
+
+    pub fn put_snap_ops(&self, pair: &str, day: &str, snap: &[u8]) -> Result<Vec<Op>, Error> {
+        Ok(vec![
+            Op::DeletePrefix(format!("shard/{pair}/{day}/u/")),
+            self.db.put_op(&format!("shard/{pair}/{day}/snap"), snap)?,
+        ])
+    }
+
+    pub fn drop_rows_ops(&self, pair: &str, day: &str) -> Vec<Op> {
+        vec![
+            Op::DeletePrefix(format!("shard/{pair}/{day}/u/")),
+            Op::Delete(format!("shard/{pair}/{day}/snap")),
+        ]
+    }
+
+    // ---- acks, counters, outbox --------------------------------------------------------------
+
+    pub fn ack(&self, pair: &str, day: &str) -> Result<Option<Vec<u8>>, Error> {
+        self.db.get(&format!("ack/{pair}/{day}")).map_err(Error::from)
+    }
+
+    /// Every `(pair, day, vv)` the contacts acknowledged.
+    pub fn acks(&self) -> Result<Vec<(String, String, Vec<u8>)>, Error> {
+        Ok(self
+            .db
+            .scan("ack/")?
+            .into_iter()
+            .filter_map(|(k, v)| {
+                let (pair, day) = k.strip_prefix("ack/")?.split_once('/')?;
+                Some((pair.to_string(), day.to_string(), v))
+            })
+            .collect())
+    }
+
+    pub fn put_ack_op(&self, pair: &str, day: &str, vv: &[u8]) -> Result<Op, Error> {
+        self.db.put_op(&format!("ack/{pair}/{day}"), vv).map_err(Error::from)
+    }
+
+    /// Our messages (written here or on another of our devices): `(writer ID, op count)` that the
+    /// contact must hold for two ticks.
+    pub fn mo(&self, pair: &str, day: &str, id: &str) -> Result<Option<(u64, i32)>, Error> {
+        Ok(self.db.get(&format!("mo/{pair}/{day}/{id}"))?.and_then(|b| decode_mo(&b)))
+    }
+
+    pub fn mos(&self, pair: &str, day: &str) -> Result<Vec<(String, (u64, i32))>, Error> {
+        let prefix = format!("mo/{pair}/{day}/");
+        Ok(self
+            .db
+            .scan(&prefix)?
+            .into_iter()
+            .filter_map(|(k, v)| Some((k.strip_prefix(&prefix)?.to_string(), decode_mo(&v)?)))
+            .collect())
+    }
+
+    pub fn put_mo_op(&self, pair: &str, day: &str, id: &str, peer: u64, c: i32) -> Result<Op, Error> {
+        let mut v = peer.to_be_bytes().to_vec();
+        v.extend_from_slice(&c.to_be_bytes());
+        self.db.put_op(&format!("mo/{pair}/{day}/{id}"), &v).map_err(Error::from)
+    }
+
+    pub fn out_op(&self, pair: &str, day: &str, pending: bool) -> Result<Op, Error> {
+        let path = format!("out/{pair}/{day}");
+        if pending { self.db.put_op(&path, b"").map_err(Error::from) } else { Ok(Op::Delete(path)) }
+    }
+
+    /// Days with ops the peer has not acknowledged.
+    pub fn pending_days(&self, pair: &str) -> Result<Vec<String>, Error> {
+        let prefix = format!("out/{pair}/");
+        Ok(self
+            .db
+            .list_prefixed(&prefix)?
+            .into_iter()
+            .filter_map(|k| k.strip_prefix(&prefix).map(str::to_string))
+            .collect())
+    }
+
+    // ---- blobs -----------------------------------------------------------------------------
+
+    pub fn blob(&self, hash: &str) -> Result<Option<BlobInfo>, Error> {
+        self.get_json(&format!("blob/{hash}"))
+    }
+
+    pub fn put_blob_op(&self, hash: &str, b: &BlobInfo) -> Result<Op, Error> {
+        self.db.put_op(&format!("blob/{hash}"), &json(b)).map_err(Error::from)
+    }
+
+    pub fn ref_ops(&self, hash: &str, pair: &str) -> Result<Vec<Op>, Error> {
+        Ok(vec![
+            self.db.put_op(&format!("ref/{hash}/{pair}"), b"")?,
+            self.db.put_op(&format!("pb/{pair}/{hash}"), b"")?,
+        ])
+    }
+
+    pub fn may_read(&self, hash: &str, pair: &str) -> bool {
+        matches!(self.db.raw().get(&format!("ref/{hash}/{pair}")), Ok(Some(_)))
+    }
+
+    /// Does any conversation of ours reference this blob? (Our own devices may read those.)
+    pub fn referenced(&self, hash: &str) -> bool {
+        self.db.list_prefixed(&format!("ref/{hash}/")).map(|v| !v.is_empty()).unwrap_or(false)
+    }
+
+    /// Every conversation row (`pair`, meta).
+    pub fn convs(&self) -> Result<Vec<(String, ConvMeta)>, Error> {
+        let mut out = Vec::new();
+        for (k, v) in self.db.scan("conv/")? {
+            if let (Some(pair), Ok(m)) = (k.strip_prefix("conv/"), serde_json::from_slice::<ConvMeta>(&v)) {
+                out.push((pair.to_string(), m));
+            }
+        }
+        Ok(out)
+    }
+
+    /// Every shard we hold as `(pair, day, vv)`, newest day first, at most `limit`.
+    pub fn all_shards(&self, limit: usize) -> Result<Vec<(String, String, Vec<u8>)>, Error> {
+        let mut keys: Vec<(String, String)> = self
+            .db
+            .list_prefixed("shard/")?
+            .into_iter()
+            .filter_map(|k| {
+                let rest = k.strip_prefix("shard/")?.strip_suffix("/meta")?;
+                let (pair, day) = rest.split_once('/')?;
+                (!day.contains('/')).then(|| (pair.to_string(), day.to_string()))
+            })
+            .collect();
+        keys.sort_by(|a, b| b.1.cmp(&a.1).then_with(|| a.0.cmp(&b.0)));
+        keys.truncate(limit);
+        let mut out = Vec::new();
+        for (pair, day) in keys {
+            if let Some(m) = self.shard_meta(&pair, &day)? {
+                out.push((pair, day, m.vv));
+            }
+        }
+        Ok(out)
+    }
+
+    /// Blobs the user wants (or auto-download chose) that are not complete yet.
+    pub fn wanted_blobs(&self) -> Result<Vec<(String, BlobInfo)>, Error> {
+        let mut out = Vec::new();
+        for (k, v) in self.db.scan("blob/")? {
+            let b: BlobInfo = serde_json::from_slice(&v)?;
+            if b.wanted && !b.ready {
+                out.push((k.trim_start_matches("blob/").to_string(), b));
+            }
+        }
+        Ok(out)
+    }
+
+    pub fn conv_blobs(&self, pair: &str) -> Result<Vec<String>, Error> {
+        let prefix = format!("pb/{pair}/");
+        Ok(self
+            .db
+            .list_prefixed(&prefix)?
+            .into_iter()
+            .filter_map(|k| k.strip_prefix(&prefix).map(str::to_string))
+            .collect())
+    }
+
+    pub fn snapcache(&self, pair: &str, day: &str) -> Result<Option<SnapRef>, Error> {
+        self.get_json(&format!("snapcache/{pair}/{day}"))
+    }
+
+    pub fn put_snapcache_op(&self, pair: &str, day: &str, s: &SnapRef) -> Result<Op, Error> {
+        self.db.put_op(&format!("snapcache/{pair}/{day}"), &json(s)).map_err(Error::from)
+    }
+
+    // ---- settings ----------------------------------------------------------------------------
+
+    pub fn auto_download(&self) -> u64 {
+        self.db
+            .get("set/auto_download")
+            .ok()
+            .flatten()
+            .and_then(|b| b.try_into().ok().map(u64::from_be_bytes))
+            .unwrap_or(DEFAULT_AUTO_DOWNLOAD)
+    }
+
+    pub fn set_auto_download(&self, bytes: u64) -> Result<(), Error> {
+        self.db.put("set/auto_download", &bytes.to_be_bytes()).map_err(Error::from)
+    }
+
+    /// Settings > Privacy "Read receipts" (default on). Off: this account issues no read
+    /// receipts (DM and group); delivered receipts still go out and others' reads still show.
+    /// PROVISIONAL defaults (user may change): no reciprocity, no backdating when turned on.
+    pub fn read_receipts(&self) -> bool {
+        !matches!(self.db.get("set/read_receipts").ok().flatten().and_then(|b| b.first().copied()), Some(0))
+    }
+
+    pub fn set_read_receipts(&self, on: bool) -> Result<(), Error> {
+        self.db.put("set/read_receipts", &[u8::from(on)]).map_err(Error::from)
+    }
+
+    pub fn picture_download(&self) -> PictureDownload {
+        match self.db.get("set/dl_policy").ok().flatten().and_then(|b| b.first().copied()) {
+            Some(1) => PictureDownload::Wifi,
+            Some(2) => PictureDownload::Tap,
+            _ => PictureDownload::Always,
+        }
+    }
+
+    pub fn set_picture_download(&self, p: PictureDownload) -> Result<(), Error> {
+        let b = match p { PictureDownload::Always => 0u8, PictureDownload::Wifi => 1, PictureDownload::Tap => 2 };
+        self.db.put("set/dl_policy", &[b]).map_err(Error::from)
+    }
+
+    /// The size limit in force right now: the stored limit, or 0 while the policy says wait.
+    pub fn effective_auto_download(&self) -> u64 {
+        match self.picture_download() {
+            PictureDownload::Tap => 0,
+            PictureDownload::Wifi if METERED.load(std::sync::atomic::Ordering::Relaxed) => 0,
+            _ => self.auto_download(),
+        }
+    }
+
+    /// Bytes of complete attachments held on this device: `(pictures, other files)`.
+    pub fn blob_usage(&self) -> Result<(u64, u64), Error> {
+        let (mut pictures, mut files) = (0u64, 0u64);
+        for (_, v) in self.db.scan("blob/")? {
+            let Ok(b) = serde_json::from_slice::<BlobInfo>(&v) else { continue };
+            if !b.ready { continue; }
+            if b.mime.starts_with("image/") { pictures += b.size } else { files += b.size }
+        }
+        Ok((pictures, files))
+    }
+}
+
+impl ChatStore {
+    /// Message id -> the day it lives in.
+    pub fn mi(&self, pair: &str, id: &str) -> Result<Option<String>, Error> {
+        Ok(self.db.get(&format!("mi/{pair}/{id}"))?.and_then(|b| String::from_utf8(b).ok()))
+    }
+
+    pub fn mi_op(&self, pair: &str, id: &str, day: &str) -> Result<Op, Error> {
+        self.db.put_op(&format!("mi/{pair}/{id}"), day.as_bytes()).map_err(Error::from)
+    }
+}
+
+#[cfg(test)]
+mod read_receipts_tests;

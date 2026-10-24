@@ -19,7 +19,7 @@
 //! - Renewal: only the callee's `Accept` carries `renewed_grant` (`node.rs:2753`); the caller keeps
 //!   it if it outlives the stored one (`node.rs:2839`, `grant_outlives` `:3153`).
 //! - Revocation: `State.revoked` (`crates/core/src/store.rs:169`) is read on both paths and
-//!   merged between own installs (`crates/core/src/sync/accdoc.rs:241`, `:400`), but no code path
+//!   merged between own installs (`crates/account-model/src/sync/accdoc.rs`), but no code path
 //!   adds to it. Blocking is per DID (`State.blocked`, `Node::remove_contact` `node.rs:984`).
 //!
 //! P6 (U13, U15) built separate tokens: the `KIND: limitation` tests below were flipped to the
@@ -500,7 +500,8 @@ fn block_takes_both_tokens_back_and_unblock_does_not_revive_them() {
 // `no_code_path_writes_the_grant_revocation_set`, a limitation)
 // Tokens are taken back per DID (`State::cut_offs`); there is no id set to revoke by (every
 // renewal mints a new token, so ids would leak). Source scan of every non-test file under
-// `crates/core/src`, walked at run time so split modules stay covered.
+// `crates/core/src` and the runtime crates it is split into (`node-runtime`, `chat-runtime`,
+// `group-runtime`), walked at run time so split modules stay covered.
 #[test]
 fn tokens_are_taken_back_per_did_never_by_id() {
     fn walk(dir: &std::path::Path, out: &mut Vec<(String, String)>) {
@@ -516,9 +517,12 @@ fn tokens_are_taken_back_per_did_never_by_id() {
             }
         }
     }
-    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
+    let core = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
     let mut files = Vec::new();
-    walk(&root, &mut files);
+    walk(&core.join("src"), &mut files);
+    for rt in ["node-runtime", "chat-runtime", "group-runtime"] {
+        walk(&core.join("..").join(rt).join("src"), &mut files);
+    }
     assert!(files.len() > 50, "source scan found only {} files", files.len());
     let ids: Vec<_> = files
         .iter()
@@ -526,8 +530,8 @@ fn tokens_are_taken_back_per_did_never_by_id() {
         .collect();
     assert!(ids.is_empty(), "something keeps a revoked-id set: {ids:?}");
     // The cut-offs are what a block and "disallow calls" raise.
-    let caps = include_str!("../src/caps.rs");
-    assert!(caps.contains("cut.call = cut.call.max(now_ms())") && caps.contains("cut.message = cut.message.max(t)"));
+    let (caps, rt_caps) = (include_str!("../src/caps.rs"), include_str!("../../node-runtime/src/caps.rs"));
+    assert!(caps.contains("cut.call = cut.call.max(now_ms())") && rt_caps.contains("cut.message = cut.message.max(t)"));
 }
 
 // KIND: invariant (flipped by P6; was `only_global_availability_separates_calls_from_messages`,

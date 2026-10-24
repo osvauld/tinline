@@ -1,5 +1,5 @@
 //! Identity: BIP39 mnemonic -> three derived keypairs (signing, encryption, device) and a
-//! self-authenticating DID. Passphrase sealing of the account lives in `p2pcore::vault`.
+//! self-authenticating DID. Passphrase sealing of the account lives in `account_model::vault`.
 
 mod did;
 mod error;

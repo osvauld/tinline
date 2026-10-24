@@ -325,7 +325,9 @@ fun StoragePage(pictures: Long, files: Long, messages: Long, cache: Long, downlo
 /** Privacy.svelte landing. */
 @Composable
 fun PrivacyLanding(blockedN: Int, msgOnly: Int, hasPassphrase: Boolean, onBack: () -> Unit, onBlocked: () -> Unit, onCalls: () -> Unit, onPhrase: () -> Unit, onPassphrase: () -> Unit,
-                   readReceipts: Boolean = true, onReadReceipts: (Boolean) -> Unit = {}) {
+                   readReceipts: Boolean = true, onReadReceipts: (Boolean) -> Unit = {},
+                   presenceVisible: Boolean = true, onPresenceVisible: (Boolean) -> Unit = {},
+                   groupPictures: uniffi.p2pcore.PictureDownload = uniffi.p2pcore.PictureDownload.WIFI, onGroupPictures: (uniffi.p2pcore.PictureDownload) -> Unit = {}) {
     PfPage("Privacy", onBack) {
         PfSec(first = true) {
             PfCard {
@@ -351,11 +353,37 @@ fun PrivacyLanding(blockedN: Int, msgOnly: Int, hasPassphrase: Boolean, onBack: 
             }
             PfNote("Delivered ticks still go out either way, and you still see when others read yours. Messages you read while this is off stay unconfirmed.")
         }
+        // Public group §3: a setting of this install (group core, default on). Same words as desktop; the title may wrap.
+        PfSec {
+            PfCard {
+                act {
+                    PfAct(PRESENCE_TITLE, onClick = { onPresenceVisible(!presenceVisible) }, icon = PgIcons.Eye, role = Role.Switch, plain = true, titleMaxLines = 2,
+                        sub = if (presenceVisible) PRESENCE_ON else PRESENCE_OFF,
+                        subReserve = listOf(PRESENCE_ON, PRESENCE_OFF),
+                        trailing = { PgSwitch(presenceVisible, onPresenceVisible, PRESENCE_TITLE) })
+                }
+            }
+            PfNote("Public groups are the ones anyone can join with an open link. This applies on this device; your other devices keep their own choice.")
+        }
+        // Public group §5: when group pictures load by themselves on this phone (group core, default Wi-Fi only).
+        PfSec("Group pictures") {
+            PfCard {
+                listOf(Triple(uniffi.p2pcore.PictureDownload.ALWAYS, "Always", "On Wi-Fi and mobile data"),
+                    Triple(uniffi.p2pcore.PictureDownload.WIFI, "On Wi-Fi", "On mobile data they wait for a tap"),
+                    Triple(uniffi.p2pcore.PictureDownload.TAP, "When I tap them", "Each shows a soft preview until then")).forEach { (d, label, sub) ->
+                    act { PfRadioRow(label, sub, groupPictures == d, { onGroupPictures(d) }) }
+                }
+            }
+            PfNote("Pictures in groups come from the group’s hosts. This applies on this device.")
+        }
     }
 }
 
 private const val READ_RECEIPTS_ON = "People see when you’ve read their messages"
 private const val READ_RECEIPTS_OFF = "Your reads stay with you"
+private const val PRESENCE_TITLE = "Show me as online in public groups"
+private const val PRESENCE_ON = "Members see when you’re here"
+private const val PRESENCE_OFF = "You stay off their online lists"
 
 data class CallsRow(val did: String, val name: String, val allowed: Boolean)
 

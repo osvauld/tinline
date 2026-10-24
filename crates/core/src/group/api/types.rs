@@ -1,7 +1,10 @@
-//! The DTOs and the event trait of the group API.
+//! The group API records, declared to UniFFI (the runtime's, `group_runtime::api`, are plain),
+//! and the app's event callback.
 
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, uniffi::Enum)]
+pub use group_runtime::api::*;
+
+#[uniffi::remote(Enum)]
 pub enum GroupRole {
     Owner,
     Admin,
@@ -12,7 +15,7 @@ pub enum GroupRole {
     Left,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, uniffi::Enum)]
+#[uniffi::remote(Enum)]
 pub enum GroupItemKind {
     Post,
     /// System lines, "about" `subject_did`.
@@ -26,14 +29,16 @@ pub enum GroupItemKind {
 }
 
 /// For our own posts: `Waiting` = only on this device ("Waiting for a host"); `Delivered` = a
-/// host acknowledged holding it. Everything else is `Delivered`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, uniffi::Enum)]
+/// host acknowledged holding it; `Failed` = the hosts refuse it and this device stopped sending
+/// it (`GroupMessage::failure` has the words). Everything else is `Delivered`.
+#[uniffi::remote(Enum)]
 pub enum GroupDelivery {
     Waiting,
     Delivered,
+    Failed,
 }
 
-#[derive(Debug, Clone, PartialEq, uniffi::Record)]
+#[uniffi::remote(Record)]
 pub struct GroupMessage {
     pub id: String,
     pub group_id: String,
@@ -48,11 +53,45 @@ pub struct GroupMessage {
     pub reply_to: Option<String>,
     pub outgoing: bool,
     pub delivery: GroupDelivery,
+    /// Why the post is not posted ("Not posted: only admins post here"); `Some` exactly when
+    /// `delivery` is `Failed`. It follows the current failed state, so a post that later gets
+    /// carried along again stops being failed.
+    pub failure: Option<String>,
     /// A post by a member removed since, kept because it was written before the removal (U11).
     pub before_removal: bool,
+    /// The post's picture (public group §5); `text` may then be empty.
+    #[uniffi(default = None)]
+    pub image: Option<GroupImage>,
 }
 
-#[derive(Debug, Clone, PartialEq, uniffi::Record)]
+/// Where a post's picture is on this device.
+#[uniffi::remote(Enum)]
+pub enum GroupImageState {
+    /// Here: `Node::group_image_path` opens it.
+    Ready,
+    /// On its way from a host.
+    Loading,
+    /// Not downloaded (the auto-download setting said wait): `Node::group_fetch_image` on tap.
+    Remote,
+    /// Could not be fetched (tap tries again), or a host dropped it.
+    Failed,
+}
+
+/// A post's picture: its shown size (draw the box at this shape before it arrives), the 4x3 RGB
+/// colour grid for the placeholder, and where it is.
+#[uniffi::remote(Record)]
+pub struct GroupImage {
+    pub width: u32,
+    pub height: u32,
+    /// Bytes.
+    pub size: u64,
+    pub mime: String,
+    /// 4x3 RGB colours, row by row (empty if the sender made none).
+    pub preview: Vec<u8>,
+    pub state: GroupImageState,
+}
+
+#[uniffi::remote(Record)]
 pub struct GroupPage {
     /// Oldest first.
     pub messages: Vec<GroupMessage>,
@@ -60,7 +99,7 @@ pub struct GroupPage {
     pub older: Option<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, uniffi::Record)]
+#[uniffi::remote(Record)]
 pub struct GroupMember {
     pub did: String,
     pub name: String,
@@ -77,7 +116,7 @@ pub struct GroupMember {
     pub device_ids: Vec<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, uniffi::Record)]
+#[uniffi::remote(Record)]
 pub struct GroupHost {
     pub did: String,
     pub name: String,
@@ -88,14 +127,14 @@ pub struct GroupHost {
     pub online: bool,
 }
 
-#[derive(Debug, Clone, PartialEq, uniffi::Record)]
+#[uniffi::remote(Record)]
 pub struct GroupFlag {
     pub by_did: String,
     pub by_name: String,
     pub at: u64,
 }
 
-#[derive(Debug, Clone, PartialEq, uniffi::Record)]
+#[uniffi::remote(Record)]
 pub struct GroupRemoval {
     /// When the 3rd flag was made.
     pub at: u64,
@@ -103,7 +142,7 @@ pub struct GroupRemoval {
     pub flags: Vec<GroupFlag>,
 }
 
-#[derive(Debug, Clone, PartialEq, uniffi::Record)]
+#[uniffi::remote(Record)]
 pub struct GroupDetail {
     pub id: String,
     pub name: String,
@@ -131,9 +170,15 @@ pub struct GroupDetail {
     /// An admin allowed THIS device to host the group's calls and it has not answered: show
     /// "host calls for this group?" and call `group_accept_call_host(group, true/false)`.
     pub call_host_requested_here: bool,
+    /// Anyone may join with the open link (public group §2).
+    #[uniffi(default = false)]
+    pub open: bool,
+    /// Only the owner and admins post (a channel); hide the composer for others.
+    #[uniffi(default = false)]
+    pub admins_only: bool,
 }
 
-#[derive(Debug, Clone, PartialEq, uniffi::Record)]
+#[uniffi::remote(Record)]
 pub struct GroupSummary {
     pub id: String,
     pub name: String,
@@ -145,9 +190,15 @@ pub struct GroupSummary {
     pub host_reachable: bool,
     pub last: Option<GroupMessage>,
     pub unread: u32,
+    /// Anyone may join with the open link (public group §2).
+    #[uniffi(default = false)]
+    pub open: bool,
+    /// Only the owner and admins post (a channel).
+    #[uniffi(default = false)]
+    pub admins_only: bool,
 }
 
-#[derive(Debug, Clone, PartialEq, uniffi::Record)]
+#[uniffi::remote(Record)]
 pub struct GroupInvitePeek {
     pub group_id: String,
     pub name: String,
@@ -157,6 +208,18 @@ pub struct GroupInvitePeek {
     /// Unix ms.
     pub expires: Option<u64>,
     pub host_count: u32,
+    /// An open link (no invite, no expiry): joining makes us a member of a public group.
+    #[uniffi(default = false)]
+    pub open: bool,
+}
+
+/// A member online in an open group (`Node::group_online`, public group §3).
+#[uniffi::remote(Record)]
+pub struct OnlineMember {
+    pub did: String,
+    /// The name the member shows the group (its join record).
+    pub name: String,
+    pub is_admin: bool,
 }
 
 /// Registered with `Node::set_group_events`. Called on core threads: do not block.
@@ -166,4 +229,20 @@ pub trait GroupEvents: Send + Sync {
     fn on_group_message(&self, message: GroupMessage);
     /// Anything else about the group changed (members, roles, hosts, delivery, removal).
     fn on_group_changed(&self, group_id: String);
+    /// The online list of an open group changed (re-read `group_online`). Best effort; may lag
+    /// by about 15 s.
+    fn on_group_presence(&self, group_id: String);
+    /// The picture of post `message_id` changed state (arrived, failed, was asked for): re-read
+    /// the message's `image` and `group_image_path`.
+    fn on_group_image(&self, group_id: String, message_id: String);
 }
+
+sink_adapter!(
+    /// Hands the runtime's events to the app's `GroupEvents`.
+    pub(crate) GroupEventsAdapter(GroupEvents) => group_runtime::api::GroupSink {
+        fn on_group_message(message: GroupMessage);
+        fn on_group_changed(group_id: String);
+        fn on_group_presence(group_id: String);
+        fn on_group_image(group_id: String, message_id: String);
+    }
+);

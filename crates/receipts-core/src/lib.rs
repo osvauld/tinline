@@ -15,6 +15,7 @@ pub mod evidence;
 // runtime; they compile for tests only until the group receipt wire lands.
 #[cfg(test)]
 pub mod participation;
+pub mod status;
 pub mod store;
 /// Shared test setup (in-memory/temporary ledgers); p2pcore's tests use it via `testkit`.
 #[cfg(any(test, feature = "testkit"))]

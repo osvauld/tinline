@@ -26,7 +26,13 @@ pub fn valid_gid(gid: &str) -> bool {
     gid.len() == 64 && gid.bytes().all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
 }
 
-/// The first 8 characters of an id, for logs; never panics on odd input.
+/// The first 8 characters of an id, for logs; never panics on odd input. The one shortener for
+/// every identifier a log line carries (group, call, device and endpoint ids, DIDs). A
+/// `did:key:z6Mk...` DID is cut after that constant prefix, so its 8 characters tell DIDs apart.
 pub fn short(id: &str) -> &str {
+    let id = id.strip_prefix("did:key:z6Mk").unwrap_or(id);
     id.get(..8).unwrap_or(id)
 }
+
+#[cfg(test)]
+mod tests;

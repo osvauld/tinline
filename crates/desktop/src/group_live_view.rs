@@ -158,7 +158,19 @@ impl App {
             .style(super::shell_view::wash(t, (running || (no_host && self.live.call_needs_host)).then_some(t.accent_soft), Some(t.surface2), 22.0))
             .on_press_maybe((!gone).then_some(press));
         let call_btn = iced::widget::tooltip(call_btn, iced::widget::text(tip).size(13), iced::widget::tooltip::Position::Bottom);
-        let head = row![head_btn, call_btn, info].spacing(2).align_y(Alignment::Center);
+        // Public group §8: "12 online" in an open group opens the online list. The label keeps the width of
+        // "500+ online", so a changing count moves nothing beside it.
+        let mut head = row![head_btn].spacing(2).align_y(Alignment::Center);
+        if let Some(label_) = self.live.online_label() {
+            let w = crate::fit::width(&gl::online_label(gl::ONLINE_CAP), ui::SANS_SEMI, 13.0).ceil();
+            let dot = container(Space::new()).width(8).height(8).style(ui::plain(if self.live.online.is_empty() { t.ink2 } else { t.accent }, 4.0));
+            let b = button(container(row![dot, container(semi(label_, 13.0, t.ink2).line_height(lh(18.0)).wrapping(iced::widget::text::Wrapping::None)).width(w)]
+                    .spacing(6).align_y(Alignment::Center)).height(44).center_y(44))
+                .padding([0, 12]).height(44)
+                .style(super::shell_view::wash(t, None, Some(t.surface2), 22.0)).on_press(l(Lm::ShowOnline));
+            head = head.push(iced::widget::tooltip(b, iced::widget::text("Who\u{2019}s online").size(13), iced::widget::tooltip::Position::Bottom));
+        }
+        let head = head.push(call_btn).push(info);
         let mut top = column![container(head).padding(8).height(60).width(Fill).style(ui::plain(t.surface, 0.0)), rule(t)];
         if !gone && let Some(b) = self.gcall_banner(t, &d.id) {
             top = top.push(b).push(rule(t));
@@ -314,6 +326,7 @@ impl App {
                 .into(),
             ),
             GroupRole::Left => footer(t, tx("You left this group. Its messages stay here, read-only.", 14.0, t.ink2).into()),
+            _ if self.live.admins_only_locked() => self.live_admins_only_line(t),
             _ => self.live_composer(t),
         };
         let conv = column![top, msgs, bottom].width(Fill).height(Fill);
@@ -325,13 +338,14 @@ impl App {
         Some(self.group_info_page(t))
     }
 
-    /// Composer.svelte for a group (no attach in groups): the reply chip, the field and the round send button.
+    /// Composer.svelte for a group: the reply chip, the picture button (public group §5; the text
+    /// goes with the picture as its caption), the field and the round send button.
     fn live_composer(&self, t: Tok) -> El<'_> {
         let mut c = column![].spacing(6);
         if let Some(id) = &self.live.reply {
             let (who, text_) = match self.live.by_id(id) {
-                Some(m) if m.outgoing => ("yourself".to_string(), m.text.clone()),
-                Some(m) => (first_name(&self.live_name(&m.author_did, &m.author_name)).to_string(), m.text.clone()),
+                Some(m) if m.outgoing => ("yourself".to_string(), gl::post_line(m)),
+                Some(m) => (first_name(&self.live_name(&m.author_did, &m.author_name)).to_string(), gl::post_line(m)),
                 None => ("a message".to_string(), String::new()),
             };
             let bar = container(Space::new()).width(3).height(Fill).style(ui::plain(t.accent, 0.0));
@@ -362,8 +376,19 @@ impl App {
         let send = button(container(crate::pg_icons::pgi("send", 20.0, t.on_accent)).center_x(44).center_y(44)).padding(0).width(44).height(44)
             .style(move |_: &iced::Theme, _| iced::widget::button::Style { background: Some(ui::alpha(t.accent, if can { 1.0 } else { 0.38 }).into()), border: iced::Border { radius: 22.0.into(), ..Default::default() }, ..Default::default() })
             .on_press_maybe(can.then_some(l(Lm::Send)));
-        c = c.push(row![container(field).width(Fill), send].spacing(6).align_y(Alignment::End));
+        let busy = self.live.sending;
+        let attach = button(container(crate::pg_icons::pgi("image", 24.0, if busy { ui::alpha(t.ink2, 0.38) } else { t.ink2 })).center_x(44).center_y(44))
+            .padding(0).width(44).height(44).style(super::shell_view::wash(t, None, (!busy).then_some(t.surface2), 22.0))
+            .on_press_maybe((!busy).then_some(l(Lm::Attach)));
+        c = c.push(row![attach, container(field).width(Fill), send].spacing(6).align_y(Alignment::End));
         container(c).padding(Padding { top: 8.0, right: 10.0, bottom: 10.0, left: 10.0 }).width(Fill).style(ui::plain(t.canvas, 0.0)).into()
+    }
+
+    /// An admins-only group (a channel), for a member: one calm line in the composer's place, at the
+    /// composer's height (8 + 44 + 10), so nothing moves when an admin switches it on or off.
+    fn live_admins_only_line(&self, t: Tok) -> El<'_> {
+        let line = container(tx("Only admins post here", 14.0, t.ink2).line_height(lh(20.0))).center_x(Fill).center_y(44);
+        container(line).padding(Padding { top: 8.0, right: 10.0, bottom: 10.0, left: 10.0 }).width(Fill).style(ui::plain(t.canvas, 0.0)).into()
     }
 
     /// MessageRow `.callrec` for a group call: "Group call · 19 min · 4 people", or "Missed group call · 5 min"
@@ -391,7 +416,7 @@ impl App {
             return sys(t, &gl::sys_text(m, &self.live.me));
         }
         let quote = m.reply_to.as_ref().map(|id| match self.live.by_id(id) {
-            Some(r) => (if r.outgoing { "You".to_string() } else { first_name(&self.live_name(&r.author_did, &r.author_name)).to_string() }, r.text.clone(), r.outgoing),
+            Some(r) => (if r.outgoing { "You".to_string() } else { first_name(&self.live_name(&r.author_did, &r.author_name)).to_string() }, gl::post_line(r), r.outgoing),
             None => (String::new(), "Original message unavailable".to_string(), false),
         });
         let name = self.live_name(&m.author_did, &m.author_name);
@@ -436,16 +461,24 @@ impl App {
             let inks = crate::ticks::Inks { meta: metac, read: t.tick_read, bad: t.tick_bad, bg };
             let glyph: El = container(crate::ticks::glyph(v, self.live.tick_anims.get(&m.id), inks, 12.0, self.fx.now)).width(tw).height(12).center_x(tw).center_y(12).into();
             // No details view for group posts yet: the n/N lines and who sit in the tick's tooltip (no layout shift).
-            meta = meta.push(match st.filter(|r| r.eligible > 0) {
+            // An open group sends no member receipts (public group §4): "Delivered 0/N" would mislead, so no n/N.
+            let open_group = self.live.detail.as_ref().is_some_and(|d| d.open);
+            meta = meta.push(match st.filter(|r| r.eligible > 0 && !open_group) {
                 Some(r) => El::from(iced::widget::tooltip(glyph, iced::widget::text(group_receipt_lines(r).join("\n")).size(13), iced::widget::tooltip::Position::Top)),
                 None => glyph,
             });
             meta_w += tw + 3.0;
         }
+        if let Some(img) = &m.image {
+            c = c.push(container(self.live_image(t, m, img, inner, fg)).padding(Padding { top: 2.0, bottom: 4.0, ..Padding::ZERO }));
+        }
         let te = message_body(&m.text, fg);
         let (lines, last) = live_wrap(&m.text, inner);
         let fits = last + 10.0 + meta_w <= inner;
-        c = c.push(if fits && lines == 1 {
+        c = c.push(if m.text.is_empty() {
+            // A picture without a caption: the time under it, on the right.
+            El::from(container(meta).align_right(Fill))
+        } else if fits && lines == 1 {
             El::from(row![te, column![Space::new().height(10), meta].padding(Padding { left: 10.0, ..Padding::ZERO })])
         } else if fits {
             iced::widget::stack![container(te).width(inner), container(meta).align_right(Fill).align_bottom(Fill)].into()
@@ -472,7 +505,54 @@ impl App {
             col = col.push(container(row![crate::pg_icons::pgi("clock", 12.0, t.gold_ink), semi("Waiting for a host", 12.0, t.gold_ink).line_height(lh(16.0))].spacing(4).align_y(Alignment::Center))
                 .align_right(Fill).padding(Padding { top: 3.0, right: 2.0, ..Padding::ZERO }));
         }
+        // Failed takes the same slot, in the error ink: the hosts refuse this post and it is not sent.
+        if let Some(why) = crate::app::group_live::failed_line(m) {
+            col = col.push(container(row![crate::pg_icons::pgi("warning", 12.0, t.error), semi(why, 12.0, t.error).line_height(lh(16.0))].spacing(4).align_y(Alignment::Center))
+                .align_right(Fill).padding(Padding { top: 3.0, right: 2.0, ..Padding::ZERO }));
+        }
         mouse_area(col).on_enter(l(Lm::Hover(Some(m.id.clone())))).on_exit(l(Lm::Hover(None))).into()
+    }
+
+    /// A post's picture (public group §5), drawn like a 1:1 photo (PhotoBody): its box at the
+    /// picture's shape from the start, the 4x3 colour preview until it is here, then the picture.
+    /// Not downloaded (the auto-download setting said wait): its size and "Load photo"; on its way:
+    /// "Loading..."; failed: "Try again".
+    fn live_image<'a>(&'a self, t: Tok, m: &'a GroupMessage, img: &'a p2pcore::GroupImage, inner: f32, fg: Color) -> El<'a> {
+        use p2pcore::GroupImageState as St;
+        let (w, h) = (img.width.max(1) as f32, img.height.max(1) as f32);
+        let s = (inner.min(300.0) / w).min(340.0 / h);
+        let (bw, bh) = ((w * s).max(80.0).round(), (h * s).max(40.0).round());
+        let r: iced::border::Radius = 10.0.into();
+        let mut st = iced::widget::stack![container(Space::new()).width(bw).height(bh)
+            .style(move |_: &iced::Theme| iced::widget::container::Style { background: Some(ui::alpha(fg, 0.08).into()), border: Border { radius: r, ..Default::default() }, ..Default::default() })];
+        if img.preview.len() == 36 {
+            let rgba: Vec<u8> = img.preview.chunks(3).flat_map(|p| [p[0], p[1], p[2], 255]).collect();
+            st = st.push(iced::widget::image(iced::widget::image::Handle::from_rgba(4, 3, rgba)).width(bw).height(bh)
+                .content_fit(iced::ContentFit::Fill).filter_method(iced::widget::image::FilterMethod::Linear).border_radius(r));
+        }
+        if img.state == St::Ready
+            && let Some(path) = self.live.image_paths.get(&m.id)
+        {
+            st = st.push(iced::widget::image(iced::widget::image::Handle::from_path(path)).width(bw).height(bh).content_fit(iced::ContentFit::Cover).border_radius(r));
+        }
+        let chip = |s: String| -> El<'a> {
+            container(tx(s, 11.0, Color::WHITE).line_height(lh(15.0))).padding([2, 8]).style(ui::plain(Color { a: 0.42, ..Color::BLACK }, 10.0)).into()
+        };
+        let pill = |label_: &'static str, msg: Msg| -> El<'a> {
+            button(container(semi(label_, 13.0, t.on_accent)).center_y(32)).padding([0, 16]).height(32)
+                .style(move |_: &iced::Theme, _| button::Style { background: Some(t.accent.into()), border: Border { radius: 16.0.into(), ..Default::default() }, ..Default::default() })
+                .on_press(msg).into()
+        };
+        let mid: Option<El> = match img.state {
+            St::Remote => Some(column![chip(format!("Photo \u{b7} {}", present::time::bytes(img.size))), pill("Load photo", l(Lm::LoadImage(m.id.clone())))].spacing(8).align_x(Alignment::Center).into()),
+            St::Loading => Some(chip("Loading\u{2026}".into())),
+            St::Failed => Some(pill("Try again", l(Lm::LoadImage(m.id.clone())))),
+            St::Ready => None,
+        };
+        if let Some(e) = mid {
+            st = st.push(container(e).center_x(bw).center_y(bh));
+        }
+        st.width(bw).height(bh).into()
     }
 
     /// In the removed person's chat: when, why and by whom, plainly.
@@ -588,6 +668,27 @@ impl App {
                     c = c.push(mrow(&i.invitee_did, name, line.to_string(), Space::new().into()));
                 }
                 col = col.push(sec(c));
+                // ---- public group (§8): the open link, and who may post. Each line under a title keeps the
+                // height of its longest variant, so flipping a switch moves nothing.
+                let open_on = self.live.setting_on(gl::Setting::Open);
+                let ao_on = self.live.setting_on(gl::Setting::AdminsOnly);
+                let fetching = self.live.pending.is_some_and(|(s_, _)| s_ == gl::Setting::Link);
+                let switch_row = |icon: &'static str, title: &'static str, subs: [&'static str; 2], on: bool, m: Msg| -> El<'a> {
+                    let sub = crate::tallest::tallest(subs.iter().map(|s_| El::from(tx(*s_, 13.0, t.ink2).line_height(lh(18.0)))).collect(), if on { 0 } else { 1 });
+                    container(row![crate::pg_icons::pgi(icon, 20.0, t.ink2), column![semi(title, 15.0, t.ink).line_height(lh(20.0)), sub].spacing(1).width(Fill),
+                            super::profile_view::pg_switch(t, on, m)].spacing(14).align_y(Alignment::Center).height(44))
+                        .padding([8, 16]).width(Fill).into()
+                };
+                let copy_sub = if fetching { "Getting the link\u{2026}".to_string() }
+                    else if let Some(link) = self.live.open_link_of_open() { crate::fit::ellipsize(link, ui::SANS, 13.0, 420.0) }
+                    else if open_on { "A link that doesn\u{2019}t expire".to_string() }
+                    else { "Turn on Open link to share it".to_string() };
+                let c = column![h2("Public group", None), card(vec![
+                    switch_row("link", "Open link", ["Anyone with the link can join", "Only people you invite can join"], open_on, l(Lm::SetOpen(!open_on))),
+                    act("copy", "Copy link".into(), Some(copy_sub), None, (open_on && !fetching).then_some(l(Lm::CopyOpenLink)), false),
+                    switch_row("shield", "Admins only", ["Only admins post; everyone reads", "Everyone in the group can post"], ao_on, l(Lm::SetAdminsOnly(!ao_on))),
+                ]), note("The open link doesn\u{2019}t expire. Closing it stops new joins; everyone already in stays. While the group is open, no read receipts are sent in it and members see who is online.".into())];
+                col = col.push(sec(c));
             }
             // ---- hosts
             let up = d.am_host || d.hosts.iter().any(|h| h.online);
@@ -693,7 +794,12 @@ impl App {
             }
         }
         let body = scroll(t, container(container(col.padding(Padding { bottom: 32.0, ..Padding::ZERO })).max_width(640)).center_x(Fill)).height(Fill);
-        container(column![bar, rule(t), body].width(Fill).height(Fill)).width(Fill).height(Fill).style(ui::plain(t.bg, 0.0)).into()
+        // What an action here did (or why it didn't), as over the conversation.
+        let mut page = column![bar, rule(t)];
+        if self.notice.is_some() {
+            page = page.push(container(self.notice_bar(t)).padding([8, 20]));
+        }
+        container(page.push(body).width(Fill).height(Fill)).width(Fill).height(Fill).style(ui::plain(t.bg, 0.0)).into()
     }
 
     // ---- members pane ----
@@ -1117,6 +1223,40 @@ impl App {
                 }
                 c
             }
+            LDialog::Online => {
+                let rows = gl::online_rows(&self.live.online);
+                let n = rows.len();
+                let mut list = column![].spacing(2);
+                if rows.is_empty() {
+                    list = list.push(para("No one is online right now. People show here while they\u{2019}re connected.".into()));
+                }
+                for m in rows {
+                    let name = self.live_name(&m.did, &m.name);
+                    let mut line = row![self.profile_avatar(t, &name, &m.did, 32.0), semi(name.clone(), 14.0, t.ink).wrapping(iced::widget::text::Wrapping::None).width(Fill)]
+                        .spacing(10)
+                        .align_y(Alignment::Center);
+                    if m.is_admin {
+                        line = line.push(tag(t.relay_c, t.on_relay_c, "Admin"));
+                    }
+                    list = list.push(container(line).padding([6, 10]).width(Fill));
+                }
+                let mut c = column![tx(gname.clone(), 13.0, t.ink2), title(gl::online_label(n)),
+                    para("Members a host has seen in the last minute. It can be a few seconds behind.".into())].spacing(14);
+                if n >= gl::ONLINE_CAP {
+                    c = c.push(para(format!("A host lists up to {} people at a time, so there may be more.", gl::ONLINE_CAP)));
+                }
+                if !self.live.presence_visible {
+                    c = c.push(para("You\u{2019}re not shown to others here. You can change that in Settings \u{203a} Privacy.".into()));
+                }
+                c.push(scroll(t, list).height(Length::Fixed(320.0))).push(row![Space::new().width(Fill), btn(t, Kind::Primary, "Close", Some(l(Lm::Dismiss)))])
+            }
+            LDialog::OpenGroup => column![
+                title(format!("Open {gname} to anyone with the link?")),
+                para("Anyone holding the link can join, with no invite and no expiry. Share it where you\u{2019}d like people to find the group.".into()),
+                para("While it\u{2019}s open, no read receipts are sent in this group, and members see who is online. Each person can hide themselves in their settings.".into()),
+                para("You can close the link any time; everyone already in stays.".into()),
+            ]
+            .spacing(14),
             LDialog::Removal => {
                 let r = self.live.detail.as_ref().and_then(|d| d.removal.as_ref())?;
                 let mut c = column![title("Why you were removed".into())].spacing(12);
@@ -1159,7 +1299,8 @@ impl App {
             LDialog::Leave => c.push(actions("Cancel", Some(("Leave", Kind::Danger)))),
             LDialog::Request { .. } => c.push(actions("Cancel", Some(("Send request", Kind::Primary)))),
             LDialog::Host { accept } => c.push(actions("Cancel", Some(if *accept { ("Host here", Kind::Primary) } else { ("Stop hosting", Kind::Danger) }))),
-            LDialog::Token { .. } | LDialog::Removal => c,
+            LDialog::OpenGroup => c.push(actions("Cancel", Some(("Open the group", Kind::Primary)))),
+            LDialog::Token { .. } | LDialog::Removal | LDialog::Online => c,
         };
         let card = ui::raised(container(c).padding(28).width(540), t, ui::Depth::Sheet, ui::sheet_surface(t, 24.0));
         let layer = container(opaque(card))

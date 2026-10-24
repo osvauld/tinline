@@ -71,10 +71,10 @@ class DebugReceiver : BroadcastReceiver() {
             // MediaCodec VP8 self-test (Rust, no camera, no call): synthetic frames through the
             // hardware encoder and decoder for `seconds` (30) at `w`x`h` (1280x720); one line per
             // second plus SUMMARY lines. `wait_ms` (int): how long the encoder
-            // waits for its output (default 0). Own thread: it outlives the broadcast's time limit.
+            // waits for its output (default 0). `sw` (boolean): Google's software encoder instead; `fps` (int, 30): a lower tier. Own thread: it outlives the broadcast's time limit.
             "mediacodec_vp8" -> Thread {
                 try {
-                    val out = uniffi.p2pcore.mediacodecVp8Selftest(i.getIntExtra("seconds", 30).toUInt(), i.getIntExtra("w", 1280).toUInt(), i.getIntExtra("h", 720).toUInt(), i.getIntExtra("wait_ms", -1))
+                    val out = uniffi.p2pcore.mediacodecVp8Selftest(i.getIntExtra("seconds", 30).toUInt(), i.getIntExtra("w", 1280).toUInt(), i.getIntExtra("h", 720).toUInt(), i.getIntExtra("wait_ms", -1), i.getBooleanExtra("sw", false), i.getIntExtra("fps", 30).toUInt())
                     out.lines().filter { it.isNotBlank() }.forEach { testLog("mediacodec_vp8 $it") }
                 } catch (e: Throwable) { testLog("mediacodec_vp8 error ${e.message}") }
                 testLog("mediacodec_vp8 done")

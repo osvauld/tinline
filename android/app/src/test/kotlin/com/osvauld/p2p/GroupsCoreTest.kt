@@ -28,7 +28,7 @@ class GroupsCoreTest {
 
     private fun msg(id: String, at: Long, author: String = "did:key:sam", name: String = "Sam Rao", kind: GroupItemKind = GroupItemKind.POST, text: String = "hi",
                     delivery: CoreDelivery = CoreDelivery.DELIVERED, gid: String = "g") =
-        GroupMessage(id, gid, kind, author, name, author, name, at.toULong(), text, null, author == me, delivery, false)
+        GroupMessage(id, gid, kind, author, name, author, name, at.toULong(), text, null, author == me, delivery, null, false)
 
     private fun member(did: String, owner: Boolean = false, admin: Boolean = owner, flags: Int = 0, devs: List<String> = listOf("dev-$did")) =
         CoreMember(did, did.removePrefix("did:key:"), did == me, owner, admin, false, flags.toUInt(), 1uL, null, devs)
@@ -64,7 +64,7 @@ class GroupsCoreTest {
         override fun join(token: String): String = throw uniffi.p2pcore.Exception.Rejected("they refused: invite expired or invalid")
         override fun post(id: String, text: String, replyTo: String?): GroupMessage {
             postError?.let { throw it }
-            val m = GroupMessage("p${msgs[id]!!.size}", id, GroupItemKind.POST, "did:key:me", "Me", "did:key:me", "Me", 9999uL, text, replyTo, true, CoreDelivery.WAITING, false)
+            val m = GroupMessage("p${msgs[id]!!.size}", id, GroupItemKind.POST, "did:key:me", "Me", "did:key:me", "Me", 9999uL, text, replyTo, true, CoreDelivery.WAITING, null, false)
             msgs[id]!!.add(m); return m
         }
         override fun flag(id: String, did: String) = throw uniffi.p2pcore.Exception.Rejected("they refused: only admins can do that")
@@ -171,7 +171,7 @@ class GroupsCoreTest {
     }
 
     @Test fun systemLinesSayYouAndNeverShowKeys() {
-        val m = GroupMessage("x", "g", GroupItemKind.ADMIN_GRANTED, "did:key:sam", "Sam", me, "Me", 1uL, "", null, false, CoreDelivery.DELIVERED, false)
+        val m = GroupMessage("x", "g", GroupItemKind.ADMIN_GRANTED, "did:key:sam", "Sam", me, "Me", 1uL, "", null, false, CoreDelivery.DELIVERED, null, false)
         assertEquals("Sam made you an admin", GroupText.sysText(m, me))
         assertEquals("Priya was removed after 3 admin flags", GroupText.sysText(m.copy(kind = GroupItemKind.REMOVED, subjectDid = "did:key:p", subjectName = "Priya"), me))
         assertEquals("Someone left", GroupText.sysText(m.copy(kind = GroupItemKind.LEFT, subjectDid = "did:key:x", subjectName = ""), me))

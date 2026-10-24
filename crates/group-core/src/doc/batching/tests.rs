@@ -28,6 +28,7 @@ fn write(account: &identity::Identity, doc: &GroupDoc, device: u8, text: &str) -
         Body::Post {
             text: text.into(),
             reply_to: None,
+            image: None,
         }
     };
     doc.write(
@@ -342,6 +343,7 @@ fn grouped_loro_changes_can_be_split_at_whole_map_operation_boundaries() {
             body: Body::Post {
                 text: format!("one transaction, operation {i}"),
                 reply_to: None,
+                image: None,
             },
         };
         let bytes = record.sign(&a).to_bytes();

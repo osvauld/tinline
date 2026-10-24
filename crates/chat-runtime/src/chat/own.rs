@@ -1,0 +1,270 @@
+//! Chats between a person's own devices (task 34g). The pieces the `tinline/self/3` session
+//! (`sync/engine.rs`) calls: which shards we offer, exporting and validating a batch relayed by
+//! another own device, read cursors, and who may fetch blobs. See `docs/chat.md` "Own devices".
+
+use std::collections::HashMap;
+use std::sync::Arc;
+
+use loro::VersionVector;
+
+use super::doc::*;
+use super::engine::{ChatCore, decode_vv};
+use super::store::ConvMeta;
+use crate::Error;
+use crate::ChatRt;
+use node_runtime::{Me, now_ms};
+
+/// The dirty-set entry that means "a read cursor moved".
+pub const READ_MARK: &str = "!read";
+/// The dirty-set entry that means "a contact acknowledged more".
+pub const ACK_MARK: &str = "!ack";
+pub use node_runtime::GROUPS_MARK;
+/// Shards offered per session (newest days first); the rest are not synced until the next
+/// session finds room (older days are normally closed and rarely change).
+pub const MAX_OWN_DOCS: usize = 4096;
+/// A batch bigger than this is not sent over the own-device link (the frame cap is 16 MiB).
+const MAX_OWN_BATCH: usize = 12 * 1024 * 1024;
+
+/// `dm/{pair}/{day}` -> `(pair, day)`.
+pub fn parse_doc(doc: &str) -> Option<(String, String)> {
+    let rest = doc.strip_prefix("dm/")?;
+    let (pair, day) = rest.split_once('/')?;
+    (pair.len() == 64 && pair.bytes().all(|b| b.is_ascii_hexdigit()) && day_start(day).is_some()).then(|| (pair.to_string(), day.to_string()))
+}
+
+impl ChatRt {
+    /// Our other devices as `(device, relay, in sync with it right now)`.
+    pub fn own_blob_sources(&self) -> Vec<([u8; 32], Option<String>, bool)> {
+        let list: Vec<([u8; 32], Option<String>)> = {
+            let s = self.shared.lock();
+            let Some(me) = s.me.as_ref() else { return vec![] };
+            s.state.registry.iter().filter(|e| !e.removed && e.device != me.device).map(|e| (e.device, e.relay.clone())).collect()
+        };
+        let live = self.signal.in_session(&list.iter().map(|(d, _)| *d).collect::<Vec<_>>());
+        list.into_iter().zip(live).map(|((d, r), live)| (d, r, live)).collect()
+    }
+
+    /// `pair` -> the DID of that conversation's other side (ourselves for "You"), if it is a
+    /// conversation of ours right now.
+    pub fn pair_owner(&self, me: &Me, pair: &str) -> Option<String> {
+        if pair_id(me.id.did(), me.id.did()) == pair {
+            return Some(me.id.did().to_string());
+        }
+        let s = self.shared.lock();
+        // Blocked either way, the history is kept (U19/U20), so own devices keep syncing it.
+        s.state
+            .contacts
+            .iter()
+            .map(|c| &c.did)
+            .chain(s.state.notices.keys())
+            .find(|did| pair_id(me.id.did(), did) == pair)
+            .cloned()
+    }
+
+    /// The shards we offer another own device: `(doc, vv)`, newest day first.
+    pub fn chat_own_docs(&self) -> Vec<(String, Vec<u8>)> {
+        let (Ok(me), Ok(core)) = (self.me(), self.chat_core()) else { return vec![] };
+        let Ok(all) = core.store.all_shards(MAX_OWN_DOCS) else { return vec![] };
+        let mut owners: HashMap<String, bool> = HashMap::new();
+        all.into_iter()
+            .filter(|(pair, _, _)| *owners.entry(pair.clone()).or_insert_with(|| self.pair_owner(&me, pair).is_some()))
+            .map(|(pair, day, vv)| (doc_name(&pair, &day), vv))
+            .collect()
+    }
+
+    /// What we hold of `doc` beyond `theirs`, with our version vector; `None` if they have it
+    /// all (or the doc is not one of our conversations).
+    pub async fn chat_own_export(self: &Arc<Self>, doc: &str, theirs: &VersionVector) -> Result<Option<(Vec<u8>, Vec<u8>)>, Error> {
+        let (me, core) = (self.me()?, self.chat_core()?);
+        let Some((pair, day)) = parse_doc(doc) else { return Ok(None) };
+        if self.pair_owner(&me, &pair).is_none() {
+            return Ok(None);
+        }
+        let Some(meta) = core.store.shard_meta(&pair, &day)? else { return Ok(None) };
+        let mine = VersionVector::decode(&meta.vv).map_err(|_| Error::Io("bad stored version vector".into()))?;
+        if theirs.partial_cmp(&mine).is_some_and(|o| o != std::cmp::Ordering::Less) {
+            return Ok(None);
+        }
+        let out = self.chat_shard(&core, &pair, &day).await?.get(&(pair, day)).and_then(|s| s.export_all_since(theirs).map(|u| (u, s.vv().encode())));
+        match out {
+            Some((u, _)) if u.len() > MAX_OWN_BATCH => {
+                tracing::warn!("own-device sync: {doc} is too big to send ({} bytes)", u.len());
+                Ok(None)
+            }
+            other => Ok(other),
+        }
+    }
+
+    /// Judges and stores a batch of `doc` relayed by another own device (its signature was
+    /// checked by the caller). The batch may hold ops of any of our devices and of the contact's
+    /// devices; every op must be proven by its author's DID signature under the author's writer
+    /// ID (the rules of a vouched history snapshot), authors are only us and the contact, and the
+    /// usual per-field rules hold. `Err` = rejected, nothing stored.
+    pub async fn chat_own_apply(self: &Arc<Self>, doc: &str, update: &[u8]) -> Result<(), Error> {
+        let (me, core) = (self.me()?, self.chat_core()?);
+        let (pair, day) = parse_doc(doc).ok_or_else(|| Error::Protocol("bad doc".into()))?;
+        // Not (or no longer) a conversation of ours, e.g. a contact removed meanwhile: nothing to do.
+        let Some(did) = self.pair_owner(&me, &pair) else { return Ok(()) };
+        let held = self.chat_shard(&core, &pair, &day).await?;
+        let committed = {
+            let mut shards = held;
+            let shard = shards.get_mut(&(pair.clone(), day.clone())).ok_or(Error::NotFound)?;
+            let before = shard.vv();
+            let ctx = Ctx { signer_did: me.id.did().to_string(), now_ms: now_ms() as i64, live: false, history: Some(did.clone()) };
+            match shard.apply_remote(update, &ctx) {
+                Ok(applied) => {
+                    if shard.vv() == before {
+                        None
+                    } else {
+                        let committed = self.chat_commit(&core, &me, &did, &pair, &day, shard, update, &applied, true)?;
+                        // Our messages written on the other device: remember which change the
+                        // contact must hold before they get two ticks here too.
+                        if !self.is_self_did(&did) {
+                            let mut ops = Vec::new();
+                            for (rec, added) in &committed.0 {
+                                if *added
+                                    && rec.author == me.id.did()
+                                    && let Some((peer, c)) = shard.creator_end(&rec.id)
+                                    && peer != shard.peer()
+                                {
+                                    ops.push(core.store.put_mo_op(&pair, &day, &rec.id, peer, c)?);
+                                }
+                            }
+                            // Ops of ours the contact has not acknowledged (written on the other
+                            // device): this device owes them too, so that they still reach the
+                            // contact if that device goes away first (P10b). Sent at the next
+                            // session with the contact; the pending sweep dials for it.
+                            // PROVISIONAL (coordinator): no immediate push or dial here, so an
+                            // own device does not dial a contact for every message its sibling
+                            // already delivers; the relayed ack usually clears it first.
+                            if let Some(meta) = core.store.shard_meta(&pair, &day)? {
+                                let acked = core.store.ack(&pair, &day)?.and_then(|b| decode_vv(&b).ok()).unwrap_or_default();
+                                if ChatRt::chat_owes(&core, &meta, &acked) {
+                                    ops.push(core.store.out_op(&pair, &day, true)?);
+                                }
+                            }
+                            if !ops.is_empty() {
+                                core.store.db.apply(&ops)?;
+                            }
+                        }
+                        Some(committed)
+                    }
+                }
+                // Ops that build on ops we lack: the sender's idea of our version was stale; the
+                // next hello fixes it.
+                Err(Reject::Pending) => None,
+                Err(r) => {
+                    self.log(format!("rejected own-device batch for {doc}: {r}"));
+                    return Err(Error::Protocol(format!("rejected own-device batch: {r}")));
+                }
+            }
+        };
+        let Some((recs, conv, files)) = committed else { return Ok(()) };
+        if let Some(ev) = self.ev() {
+            for (rec, added) in &recs {
+                let m = self.chat_api_message(&core, &me, &did, &pair, &day, rec);
+                if *added { ev.on_message_added(m) } else { ev.on_message_changed(m) }
+            }
+            if let Some(c) = self.chat_api_chat(&core, &me, &conv) {
+                ev.on_chat_changed(c);
+            }
+        }
+        for h in files {
+            self.chat_download(did.clone(), h);
+        }
+        Ok(())
+    }
+
+    // ---- read cursors --------------------------------------------------------------------------
+
+    /// `(pair, cursor)` of every conversation with a cursor.
+    pub fn chat_read_cursors(&self) -> Vec<(String, i64)> {
+        let (Ok(me), Ok(core)) = (self.me(), self.chat_core()) else { return vec![] };
+        core.store
+            .convs()
+            .unwrap_or_default()
+            .into_iter()
+            .filter(|(pair, c)| c.read_upto > 0 && self.pair_owner(&me, pair).is_some())
+            .map(|(pair, c)| (pair, c.read_upto))
+            .collect()
+    }
+
+    /// Cursors from another own device: a larger one wins (a max-register), and the unread count
+    /// is recomputed against it, so the order in which messages and cursors arrive does not matter.
+    pub async fn chat_apply_read(self: &Arc<Self>, cursors: &[(String, i64)]) -> Result<(), Error> {
+        let (me, core) = (self.me()?, self.chat_core()?);
+        let mut moved = false;
+        for (pair, cursor) in cursors {
+            let Some(did) = self.pair_owner(&me, pair) else { continue };
+            let mut conv = core.store.conv(pair)?.unwrap_or_else(|| ConvMeta { peer_did: did.clone(), ..Default::default() });
+            if *cursor <= conv.read_upto {
+                continue;
+            }
+            conv.peer_did = did.clone();
+            conv.read_upto = *cursor;
+            conv.unread = self.chat_count_unread(&core, &me, pair, *cursor).await?;
+            core.store.db.apply(&[core.store.conv_op(pair, &conv)?])?;
+            moved = true;
+            if let (Some(ev), Some(c)) = (self.ev(), self.chat_api_chat(&core, &me, &conv)) {
+                ev.on_chat_changed(c);
+            }
+        }
+        if moved {
+            // Pass it on to our other devices (the sessions only send what a device lacks).
+            self.selfsync_dirty(READ_MARK);
+        }
+        Ok(())
+    }
+
+    /// `(doc, vv)` of every day a contact of ours acknowledged.
+    pub fn chat_acks(&self) -> Vec<(String, VersionVector)> {
+        let (Ok(me), Ok(core)) = (self.me(), self.chat_core()) else { return vec![] };
+        core.store
+            .acks()
+            .unwrap_or_default()
+            .into_iter()
+            .filter(|(pair, _, _)| self.pair_owner(&me, pair).is_some())
+            .filter_map(|(pair, day, vv)| Some((doc_name(&pair, &day), decode_vv(&vv).ok()?)))
+            .collect()
+    }
+
+    /// Acks relayed by another own device: merged like the contact's own (`chat_ack`), which
+    /// passes them on to our other devices when they add anything.
+    pub fn chat_apply_acks(&self, acks: &[(String, Vec<u8>)]) -> Result<(), Error> {
+        let (me, core) = (self.me()?, self.chat_core()?);
+        for (doc, vv) in acks {
+            let Some((pair, day)) = parse_doc(doc) else { continue };
+            let Some(did) = self.pair_owner(&me, &pair) else { continue };
+            let Ok(vv) = decode_vv(vv) else { continue };
+            self.chat_ack(&core, &me, &did, &pair, &day, &vv)?;
+        }
+        Ok(())
+    }
+
+    /// Incoming, not deleted messages after `cursor`. Earlier days are all at or before it.
+    async fn chat_count_unread(self: &Arc<Self>, core: &Arc<ChatCore>, me: &Me, pair: &str, cursor: i64) -> Result<u32, Error> {
+        let from = day_of(cursor - 2 * HOUR_MS);
+        let mut n = 0u32;
+        for day in core.store.shard_days(pair)? {
+            if day < from {
+                continue;
+            }
+            let msgs = self.chat_shard(core, pair, &day).await?.get(&(pair.to_string(), day)).map(|s| s.messages());
+            if let Some(Ok(msgs)) = msgs {
+                n += msgs.values().filter(|m| m.author != me.id.did() && !m.deleted && m.at > cursor).count() as u32;
+            }
+        }
+        Ok(n)
+    }
+
+    /// After a session with an own device came up: fetch what we wanted but could not get, now
+    /// that it may be a source.
+    pub fn chat_resume_all(self: &Arc<Self>) {
+        let (Ok(me), Ok(core)) = (self.me(), self.chat_core()) else { return };
+        for (hash, info) in core.store.wanted_blobs().unwrap_or_default() {
+            if let Some(did) = self.pair_owner(&me, &info.pair) {
+                self.chat_download(did, hash);
+            }
+        }
+    }
+}

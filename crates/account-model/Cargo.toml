@@ -1,0 +1,26 @@
+[package]
+name = "account-model"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+description = "Account data model: the persisted state and account dirs, the passphrase vault, and the own-device Loro docs (account, calls, profile, profile cache); p2pcore owns the node, sessions, wire and app API"
+
+[features]
+# Test hooks (`AccountDirs::root`) for p2pcore's tests and synthetic peers.
+testkit = []
+
+[dependencies]
+proto.workspace = true
+identity.workspace = true
+cryptography.workspace = true
+crdt.workspace = true
+loro = "1.13.9"
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+zeroize.workspace = true
+base64.workspace = true
+hex = "0.4"
+tracing = "0.1"
+

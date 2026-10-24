@@ -64,6 +64,7 @@ fn day_docs_are_sealed_indexed_and_compact() {
             body: Body::Post {
                 text,
                 reply_to: None,
+                image: None,
             },
         };
         let (_, up) = doc.write(&a, &rec).unwrap();
@@ -94,6 +95,7 @@ fn day_docs_are_sealed_indexed_and_compact() {
         body: Body::Post {
             text: "late".into(),
             reply_to: None,
+            image: None,
         },
     };
     let (_, up) = doc.write(&a, &rec).unwrap();
@@ -101,4 +103,17 @@ fn day_docs_are_sealed_indexed_and_compact() {
     assert!(!s.shard_meta("g", "1970-01-01").unwrap().unwrap().closed);
     s.forget("g").unwrap();
     assert!(s.days("g").unwrap().is_empty() && s.shard_meta("g", "1970-01-01").unwrap().is_none());
+}
+
+// KIND: unit (public group 6) — the presence setting is local, defaults to visible and sticks.
+#[test]
+fn presence_setting_defaults_visible_and_persists() {
+    let s = GroupStore::in_memory("presence setting");
+    assert!(s.presence_visible().unwrap());
+    s.set_presence_visible(false).unwrap();
+    assert!(!s.presence_visible().unwrap());
+    s.set_presence_visible(false).unwrap();
+    assert!(!s.presence_visible().unwrap());
+    s.set_presence_visible(true).unwrap();
+    assert!(s.presence_visible().unwrap());
 }

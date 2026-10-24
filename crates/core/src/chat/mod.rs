@@ -1,18 +1,11 @@
 //! 1:1 chat: sealed vault store, Loro conversation docs, signed batches over `tinline/chat/3`,
-//! files and voice as encrypted iroh-blobs. See `docs/chat.md`.
+//! files and voice as encrypted iroh-blobs. See `docs/chat.md`. The runtime is
+//! `chat_runtime::chat`; this module keeps its paths and the UniFFI surface (`api`, `store`).
 
-pub mod blobs;
-pub mod crypt;
+// The day doc is `chat_core::doc`.
+pub use chat_core::doc;
 
-#[cfg(test)]
-mod blobs_tests;
 pub mod api;
-pub mod engine;
-pub mod own;
-pub mod presence;
+#[cfg(any(test, feature = "dev-tools"))]
+mod hooks;
 pub mod store;
-pub mod wire;
-pub mod doc;
-pub mod photo;
-#[cfg(test)]
-mod doc_tests;

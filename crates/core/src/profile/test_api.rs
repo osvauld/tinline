@@ -11,13 +11,13 @@ impl Node {
         let hash = hash
             .parse()
             .map_err(|_| Error::Protocol("invalid blob hash".into()))?;
-        Ok(self.inner.profile_may_serve(&device, &hash))
+        Ok(self.inner.chat.profile_may_serve(&device, &hash))
     }
     #[doc(hidden)]
     pub fn profile_blob_present_for_test(&self, hash: String) -> Result<bool, Error> {
-        let inner = self.inner.clone();
+        let chat = self.inner.chat.clone();
         self.block_on(async move {
-            let hub = inner.chat_hub().await?;
+            let hub = chat.chat_hub().await?;
             let hash = hash
                 .parse()
                 .map_err(|_| Error::Protocol("invalid blob hash".into()))?;

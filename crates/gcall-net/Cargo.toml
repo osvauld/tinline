@@ -1,0 +1,19 @@
+[package]
+name = "gcall-net"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+description = "Group-call network service: runs the gcall-core host and client engines on iroh connections (tinline/gcall/1); the node plugs in through the GcallHost trait; no UniFFI"
+
+[dependencies]
+gcall-core.workspace = true
+proto.workspace = true
+identity.workspace = true
+audio.workspace = true
+iroh = "1.3"
+parking_lot = "0.12"
+bytes = "1"
+tracing = "0.1"
+thiserror.workspace = true
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync", "time"] }

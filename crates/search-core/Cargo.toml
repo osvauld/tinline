@@ -25,4 +25,4 @@ unicode-normalization = "0.1"
 unicode-segmentation = "1"
 
 [target.'cfg(unix)'.dependencies]
-libc = "0.2"
+libc.workspace = true

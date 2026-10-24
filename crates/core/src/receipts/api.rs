@@ -7,13 +7,13 @@
 //! not merge them into `ReceiptLevel`. A signature proves the signer's claim,
 //! not human attention.
 
-use super::store::messages::VersionEvidence;
-use super::{Kind, doc::Entry};
+// The records are `receipts_core::status`; this declares them to UniFFI.
+pub use receipts_core::status::*;
 use crate::Error;
 use crate::node::Node;
 
 /// Strongest verified recipient statement for one exact message version.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, uniffi::Enum)]
+#[uniffi::remote(Enum)]
 pub enum ReceiptLevel {
     /// No committed recipient statement for this version (yet). Not "failed".
     Unconfirmed,
@@ -23,14 +23,14 @@ pub enum ReceiptLevel {
     Read,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, uniffi::Enum)]
+#[uniffi::remote(Enum)]
 pub enum ReceiptProofKind {
     Delivered,
     Read,
 }
 
 /// One original signed statement backing a level (inspectable provenance).
-#[derive(Debug, Clone, PartialEq, Eq, uniffi::Record)]
+#[uniffi::remote(Record)]
 pub struct ReceiptProof {
     pub kind: ReceiptProofKind,
     /// The DID whose key signed the statement.
@@ -45,7 +45,7 @@ pub struct ReceiptProof {
     pub covered_versions: u32,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, uniffi::Record)]
+#[uniffi::remote(Record)]
 pub struct RecipientReceipts {
     pub did: String,
     pub level: ReceiptLevel,
@@ -54,7 +54,7 @@ pub struct RecipientReceipts {
 
 /// What an outgoing message's status mark should say, decided in core so both
 /// apps agree. Only `Delivered`/`Read` come from recipient-signed statements.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, uniffi::Enum)]
+#[uniffi::remote(Enum)]
 pub enum ReceiptTick {
     /// No mark: incoming, deleted, or a note to yourself.
     None,
@@ -70,7 +70,7 @@ pub enum ReceiptTick {
 }
 
 /// The chat list's mark for a conversation whose last message is ours.
-#[derive(Debug, Clone, PartialEq, Eq, uniffi::Record)]
+#[uniffi::remote(Record)]
 pub struct ChatReceiptRow {
     pub peer_did: String,
     pub status: MessageReceiptStatus,
@@ -78,7 +78,7 @@ pub struct ChatReceiptRow {
 
 /// Recipient evidence for the version of a message this device shows. An
 /// edited/deleted message is a new version: earlier receipts do not carry over.
-#[derive(Debug, Clone, PartialEq, Eq, uniffi::Record)]
+#[uniffi::remote(Record)]
 pub struct MessageReceiptStatus {
     pub message_id: String,
     /// Hex digest of the exact signed version the statements must cover.
@@ -87,42 +87,6 @@ pub struct MessageReceiptStatus {
     pub tick: ReceiptTick,
     /// One row per recipient account; empty for "You" (notes to self).
     pub recipients: Vec<RecipientReceipts>,
-}
-
-fn proof(e: &Entry, day: &str) -> ReceiptProof {
-    ReceiptProof {
-        kind: if e.receipt.kind == Kind::Read {
-            ReceiptProofKind::Read
-        } else {
-            ReceiptProofKind::Delivered
-        },
-        signer_did: e.receipt.recipient.clone(),
-        signer_device: hex::encode(e.receipt.device),
-        receipt_id: e.id.clone(),
-        scope_day: day.to_string(),
-        covered_versions: e.receipt.messages.len() as u32,
-    }
-}
-
-pub(crate) fn recipient(did: &str, ev: &VersionEvidence) -> RecipientReceipts {
-    let level = if !ev.read.is_empty() {
-        ReceiptLevel::Read
-    } else if !ev.delivered.is_empty() {
-        ReceiptLevel::Delivered
-    } else {
-        ReceiptLevel::Unconfirmed
-    };
-    let proofs = ev
-        .delivered
-        .iter()
-        .chain(&ev.read)
-        .map(|e| proof(e, &e.receipt.scope.day))
-        .collect();
-    RecipientReceipts {
-        did: did.to_string(),
-        level,
-        proofs,
-    }
 }
 
 #[uniffi::export]
@@ -135,14 +99,13 @@ impl Node {
         peer_did: String,
         message_id: String,
     ) -> Result<MessageReceiptStatus, Error> {
-        let inner = self.inner.clone();
-        self.block_on(async move { inner.chat_message_receipts(&peer_did, &message_id).await })?
+        self.run(|inner| async move { inner.chat.chat_message_receipts(&peer_did, &message_id).await })
     }
 
     /// The mark for every conversation whose last message is ours (the chat list).
     /// Blocking. Re-read after `on_chat_changed` / `on_delivery_changed` / `on_message_changed`.
     pub fn chat_list_receipts(&self) -> Result<Vec<ChatReceiptRow>, Error> {
-        self.inner.chat_list_receipts()
+        Ok(self.inner.chat.chat_list_receipts()?)
     }
 
     /// `chat_message_receipts` for every message of one UTC day page, oldest first (as
@@ -152,7 +115,6 @@ impl Node {
         peer_did: String,
         day: String,
     ) -> Result<Vec<MessageReceiptStatus>, Error> {
-        let inner = self.inner.clone();
-        self.block_on(async move { inner.chat_day_receipts(&peer_did, &day).await })?
+        self.run(|inner| async move { inner.chat.chat_day_receipts(&peer_did, &day).await })
     }
 }

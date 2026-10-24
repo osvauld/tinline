@@ -1,13 +1,16 @@
 [workspace]
 resolver = "2"
-members = ["crates/identity", "crates/cryptography", "crates/proto", "crates/audio", "crates/video", "crates/storage", "crates/gcall-bench", "crates/gcall-core", "crates/crdt", "crates/search-core", "crates/receipts-core", "crates/group-core", "crates/core", "crates/peer", "crates/desktop", "crates/tin-icons", "crates/present"]
+members = ["crates/identity", "crates/cryptography", "crates/proto", "crates/audio", "crates/video", "crates/storage", "crates/gcall-bench", "crates/gcall-core", "crates/crdt", "crates/search-core", "crates/receipts-core", "crates/group-core", "crates/account-model", "crates/chat-core", "crates/video-call-core", "crates/call-video", "crates/transfer", "crates/gcall-net", "crates/node-runtime", "crates/search-ix", "crates/chat-runtime", "crates/group-runtime", "crates/sync-runtime", "crates/core", "crates/peer", "crates/desktop", "crates/tin-icons", "crates/present"]
 
 [workspace.package]
-version = "0.1.38"
+version = "0.2.0"
 edition = "2024"
 license = "GPL-3.0-or-later"
 
 [workspace.dependencies]
+# Pinned exactly: 0.2.190 limits `in6_ifreq` to macOS, so netdev 0.46.3 (iroh -> netwatch) stops compiling for
+# iOS. Lift the pin once netdev or libc fixes it; check with ios/scripts/build_core.sh on a Mac (MAC-BUILD.md).
+libc = "=0.2.189"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 thiserror = "2"
@@ -33,6 +36,17 @@ crdt = { path = "crates/crdt" }
 search-core = { path = "crates/search-core" }
 receipts-core = { path = "crates/receipts-core" }
 group-core = { path = "crates/group-core" }
+account-model = { path = "crates/account-model" }
+chat-core = { path = "crates/chat-core" }
+video-call-core = { path = "crates/video-call-core" }
+call-video = { path = "crates/call-video" }
+transfer = { path = "crates/transfer" }
+gcall-net = { path = "crates/gcall-net" }
+node-runtime = { path = "crates/node-runtime" }
+search-ix = { path = "crates/search-ix" }
+chat-runtime = { path = "crates/chat-runtime" }
+group-runtime = { path = "crates/group-runtime" }
+sync-runtime = { path = "crates/sync-runtime" }
 
 # Full debug info made every test binary ~0.5 GB and filled the build-cache disk with a dozen
 # agents building at once; line tables still give file:line in panics and backtraces.

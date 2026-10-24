@@ -1,0 +1,13 @@
+[package]
+name = "video-call-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+description = "Platform-free video call policy: stats, tuning, receiver-side adaptation, sharper-video rules, camera frame geometry and the stats-for-nerds text; p2pcore runs them on iroh and the codec threads"
+
+[dependencies]
+proto.workspace = true
+# Media types, converters and the delay detector only: no iroh transport, no codecs.
+video = { path = "../video", default-features = false }
+thiserror.workspace = true

@@ -19,6 +19,24 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "366ffbaa4442f4684d91e2cd7c5ea7c4ed8add41959a31447066e279e432b618"
 
 [[package]]
+name = "account-model"
+version = "0.2.0"
+dependencies = [
+ "base64 0.23.1",
+ "crdt",
+ "cryptography",
+ "hex",
+ "identity",
+ "loro",
+ "proto",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+ "tracing",
+ "zeroize",
+]
+
+[[package]]
 name = "adler2"
 version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -561,7 +579,7 @@ dependencies = [
 
 [[package]]
 name = "audio"
-version = "0.1.38"
+version = "0.2.0"
 dependencies = [
  "opusic-sys",
  "thiserror 2.0.21",
@@ -925,6 +943,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "call-video"
+version = "0.2.0"
+dependencies = [
+ "iroh",
+ "parking_lot",
+ "proto",
+ "thiserror 2.0.21",
+ "tokio",
+ "tracing",
+ "video",
+ "video-call-core",
+]
+
+[[package]]
 name = "calloop"
 version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1064,6 +1096,53 @@ dependencies = [
  "cfg-if",
  "cpufeatures 0.3.1",
  "rand_core 0.10.1",
+]
+
+[[package]]
+name = "chat-core"
+version = "0.2.0"
+dependencies = [
+ "blake3",
+ "crdt",
+ "cryptography",
+ "hex",
+ "identity",
+ "image",
+ "loro",
+ "proto",
+ "serde",
+ "serde_json",
+ "storage",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "chat-runtime"
+version = "0.2.0"
+dependencies = [
+ "account-model",
+ "blake3",
+ "bytes",
+ "chat-core",
+ "cryptography",
+ "group-core",
+ "hex",
+ "identity",
+ "image",
+ "iroh",
+ "iroh-blobs",
+ "loro",
+ "node-runtime",
+ "parking_lot",
+ "proto",
+ "receipts-core",
+ "search-ix",
+ "serde_json",
+ "storage",
+ "tokio",
+ "tracing",
+ "transfer",
+ "zeroize",
 ]
 
 [[package]]
@@ -1454,7 +1533,7 @@ dependencies = [
 
 [[package]]
 name = "crdt"
-version = "0.1.38"
+version = "0.2.0"
 dependencies = [
  "blake3",
  "cryptography",
@@ -1544,7 +1623,7 @@ dependencies = [
 
 [[package]]
 name = "cryptography"
-version = "0.1.38"
+version = "0.2.0"
 dependencies = [
  "aes-gcm 0.11.1",
  "argon2",
@@ -1757,7 +1836,7 @@ dependencies = [
 
 [[package]]
 name = "desktop"
-version = "0.1.38"
+version = "0.2.0"
 dependencies = [
  "apple-native-keyring-store",
  "audio",
@@ -2418,7 +2497,7 @@ dependencies = [
 
 [[package]]
 name = "gcall-bench"
-version = "0.1.38"
+version = "0.2.0"
 dependencies = [
  "audio",
  "bytes",
@@ -2429,7 +2508,7 @@ dependencies = [
 
 [[package]]
 name = "gcall-core"
-version = "0.1.38"
+version = "0.2.0"
 dependencies = [
  "audio",
  "blake3",
@@ -2437,6 +2516,22 @@ dependencies = [
  "identity",
  "proto",
  "serde_json",
+]
+
+[[package]]
+name = "gcall-net"
+version = "0.2.0"
+dependencies = [
+ "audio",
+ "bytes",
+ "gcall-core",
+ "identity",
+ "iroh",
+ "parking_lot",
+ "proto",
+ "thiserror 2.0.21",
+ "tokio",
+ "tracing",
 ]
 
 [[package]]
@@ -2707,7 +2802,7 @@ dependencies = [
 
 [[package]]
 name = "group-core"
-version = "0.1.38"
+version = "0.2.0"
 dependencies = [
  "bs58",
  "crdt",
@@ -2722,6 +2817,40 @@ dependencies = [
  "storage",
  "thiserror 2.0.21",
  "zeroize",
+]
+
+[[package]]
+name = "group-runtime"
+version = "0.2.0"
+dependencies = [
+ "account-model",
+ "base64 0.23.1",
+ "bytes",
+ "chat-core",
+ "crdt",
+ "cryptography",
+ "gcall-core",
+ "gcall-net",
+ "group-core",
+ "hex",
+ "identity",
+ "image",
+ "iroh",
+ "iroh-blobs",
+ "loro",
+ "n0-future",
+ "node-runtime",
+ "parking_lot",
+ "proto",
+ "receipts-core",
+ "search-core",
+ "search-ix",
+ "serde",
+ "serde_json",
+ "storage",
+ "tokio",
+ "tracing",
+ "transfer",
 ]
 
 [[package]]
@@ -3340,7 +3469,7 @@ checksum = "b9e0384b61958566e926dc50660321d12159025e767c18e043daf26b70104c39"
 
 [[package]]
 name = "identity"
-version = "0.1.38"
+version = "0.2.0"
 dependencies = [
  "bip39",
  "bs58",
@@ -4061,9 +4190,9 @@ checksum = "7a79a3332a6609480d7d0c9eab957bca6b455b91bb84e66d19f5ff66294b85b8"
 
 [[package]]
 name = "libc"
-version = "0.2.190"
+version = "0.2.189"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ce5d3ddc6d3fa000eb1536d85e147bfe31aacaba692ed6a876f95cb7c855be78"
+checksum = "3eaf3ede3fee6db1a4c2ee091bf8a8b4dccdc6d17f656fb07896ee72867612f2"
 
 [[package]]
 name = "libfuzzer-sys"
@@ -4957,6 +5086,37 @@ dependencies = [
 ]
 
 [[package]]
+name = "node-runtime"
+version = "0.2.0"
+dependencies = [
+ "account-model",
+ "audio",
+ "bytes",
+ "call-video",
+ "chat-core",
+ "crdt",
+ "cryptography",
+ "group-core",
+ "hex",
+ "identity",
+ "iroh",
+ "iroh-blobs",
+ "n0-future",
+ "parking_lot",
+ "proto",
+ "receipts-core",
+ "serde",
+ "serde_json",
+ "sha2",
+ "storage",
+ "thiserror 2.0.21",
+ "tokio",
+ "tracing",
+ "transfer",
+ "zeroize",
+]
+
+[[package]]
 name = "nom"
 version = "7.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5727,17 +5887,23 @@ dependencies = [
 
 [[package]]
 name = "p2pcore"
-version = "0.1.38"
+version = "0.2.0"
 dependencies = [
+ "account-model",
  "audio",
  "base64 0.23.1",
  "blake3",
  "bs58",
  "bytes",
+ "call-video",
+ "chat-core",
+ "chat-runtime",
  "crdt",
  "cryptography",
  "gcall-core",
+ "gcall-net",
  "group-core",
+ "group-runtime",
  "hex",
  "identity",
  "image",
@@ -5747,7 +5913,7 @@ dependencies = [
  "libc",
  "loro",
  "n0-future",
- "ndk-sys 0.6.0+11769913",
+ "node-runtime",
  "p2pcore",
  "paranoid-android",
  "parking_lot",
@@ -5755,16 +5921,20 @@ dependencies = [
  "proto",
  "receipts-core",
  "search-core",
+ "search-ix",
  "serde",
  "serde_json",
  "sha2",
  "storage",
+ "sync-runtime",
  "thiserror 2.0.21",
  "tokio",
  "tracing",
  "tracing-subscriber",
+ "transfer",
  "uniffi",
  "video",
+ "video-call-core",
  "zeroize",
 ]
 
@@ -5851,10 +6021,11 @@ checksum = "2ee67f1008b1ba2321834326597b8e186293b049a023cdef258527550b9935b4"
 
 [[package]]
 name = "peer"
-version = "0.1.38"
+version = "0.2.0"
 dependencies = [
  "audio",
  "hound",
+ "libc",
  "p2pcore",
  "video",
 ]
@@ -6194,7 +6365,7 @@ dependencies = [
 
 [[package]]
 name = "present"
-version = "0.1.38"
+version = "0.2.0"
 dependencies = [
  "uniffi",
 ]
@@ -6296,7 +6467,7 @@ dependencies = [
 
 [[package]]
 name = "proto"
-version = "0.1.38"
+version = "0.2.0"
 dependencies = [
  "base64 0.23.1",
  "cryptography",
@@ -6665,7 +6836,7 @@ checksum = "03251193000f4bd3b042892be858ee50e8b3719f2b08e5833ac4353724632430"
 
 [[package]]
 name = "receipts-core"
-version = "0.1.38"
+version = "0.2.0"
 dependencies = [
  "crdt",
  "cryptography",
@@ -7113,7 +7284,7 @@ dependencies = [
 
 [[package]]
 name = "search-core"
-version = "0.1.38"
+version = "0.2.0"
 dependencies = [
  "blake3",
  "crdt",
@@ -7127,6 +7298,19 @@ dependencies = [
  "unicode-normalization",
  "unicode-segmentation",
  "zeroize",
+]
+
+[[package]]
+name = "search-ix"
+version = "0.2.0"
+dependencies = [
+ "chat-core",
+ "group-core",
+ "node-runtime",
+ "parking_lot",
+ "search-core",
+ "storage",
+ "tracing",
 ]
 
 [[package]]
@@ -7657,7 +7841,7 @@ checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 
 [[package]]
 name = "storage"
-version = "0.1.38"
+version = "0.2.0"
 dependencies = [
  "cryptography",
  "redb",
@@ -7798,6 +7982,26 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 1.0.109",
+]
+
+[[package]]
+name = "sync-runtime"
+version = "0.2.0"
+dependencies = [
+ "account-model",
+ "chat-runtime",
+ "crdt",
+ "cryptography",
+ "group-runtime",
+ "identity",
+ "iroh",
+ "loro",
+ "node-runtime",
+ "parking_lot",
+ "proto",
+ "serde",
+ "tokio",
+ "tracing",
 ]
 
 [[package]]
@@ -7998,7 +8202,7 @@ dependencies = [
 
 [[package]]
 name = "tin-icons"
-version = "0.1.38"
+version = "0.2.0"
 dependencies = [
  "kurbo 0.13.1",
  "thiserror 2.0.21",
@@ -8333,6 +8537,20 @@ dependencies = [
  "tracing",
  "tracing-core",
  "tracing-log",
+]
+
+[[package]]
+name = "transfer"
+version = "0.2.0"
+dependencies = [
+ "cryptography",
+ "hex",
+ "iroh",
+ "iroh-blobs",
+ "n0-future",
+ "parking_lot",
+ "thiserror 2.0.21",
+ "tokio",
 ]
 
 [[package]]
@@ -8681,18 +8899,30 @@ checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 
 [[package]]
 name = "video"
-version = "0.1.38"
+version = "0.2.0"
 dependencies = [
  "bytes",
  "cc",
  "iroh",
  "libc",
+ "ndk-sys 0.6.0+11769913",
  "noq-proto",
+ "parking_lot",
  "pkg-config",
  "rav1d",
  "rav1e",
  "thiserror 2.0.21",
  "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "video-call-core"
+version = "0.2.0"
+dependencies = [
+ "proto",
+ "thiserror 2.0.21",
+ "video",
 ]
 
 [[package]]

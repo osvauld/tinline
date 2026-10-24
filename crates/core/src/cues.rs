@@ -86,6 +86,8 @@ fn tok(f: f64, dur: f64, rng: &mut Rng) -> Vec<f32> {
     for (r, a, d) in P {
         let w = 2.0 * std::f64::consts::PI * f * r / sr;
         let k = 1.0 / (sr * dur * d / 6.9);
+        // 6.28, not TAU: keeps the generated cues bit-identical.
+        #[allow(clippy::approx_constant)]
         let ph = rng.next() * 6.28;
         for (i, v) in y.iter_mut().enumerate() {
             *v += a * (-(i as f64) * k).exp() * (w * i as f64 + ph).sin();

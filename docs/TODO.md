@@ -130,7 +130,9 @@ Tested on devices: Pixel 3a -> laptop HD with no flicker; phone-started video ca
       poison helper, `capacity_twelve_talking_at_once` failure (fails even alone).
 - [ ] Known failure: clippy TAU error at `crates/core/src/cues.rs:89`.
 - [ ] Flaky under load: `calls::hangup_while_dialing_is_immediate`,
-      `blocking_acceptance::blocked_senders_messages_never_reach_the_blocker`.
+      `blocking_acceptance::blocked_senders_messages_never_reach_the_blocker`,
+      `calls::glare_leaves_exactly_one_call` (`Busy`), `chat_shards::a_live_push_from_a_clock_30_hours_ahead_is_refused`
+      (wait timeout); both pass alone (tasks2 jobs 171/174, 173/175, 2026-10-24).
 - [ ] Rotation follow-ups: a dial in flight on a retired group endpoint can wait ~20 s; "lost touch"
       is one-sided and has no recovery through a shared group host yet.
 - [ ] After the core: the Kotlin audit, then the iced desktop audit.
