@@ -1,0 +1,580 @@
+//! Push wake-ups on the node (`docs/push.md`, slice 3a): our wake tokens go to the relay and to
+//! our contacts, theirs are held for slice 3b, a block or a removed contact takes ours back.
+//!
+//! The decisions are the pure `wake::WakeState` (sealed with the account state, `State::wake`);
+//! this module does the I/O around it:
+//! - [`WakeRelay`]: the relay's three calls behind a trait ([`HttpRelay`] is the real one at
+//!   `https://push.osvauld.com`; tests use a fake).
+//! - [`NodeCtx::set_push_target`]: the platform push token of this device (`None`: always-on).
+//! - One task, [`NodeCtx::wake_kick`], mirrors `tokens_kick`: it works out which contacts want a
+//!   token (message for everyone we do not block, plus call when `calls_allowed`), registers
+//!   them at the relay, hands each contact its token as `Msg::WakeTokens` (`State::wake_outbox`,
+//!   retried until `WakeTokensTaken`), and tells the relay about revoked tokens
+//!   (`WakeState::revoke_outbox`, retried like block notices). It re-reads the state each round,
+//!   so a block, a removed contact or a call permission change needs only a kick.
+//! - [`NodeCtx::wake_tokens_incoming`]: a contact's token, kept only from a known device of a
+//!   known, unblocked contact.
+//!
+//! Tokens are never logged. Unblocking is personal policy only: the contact simply becomes
+//! wanted again and gets a fresh token (new tag) once it holds us as a contact.
+//!
+//! Not here (slice 3b): sending a wake after a failed dial and the call timing. The dial
+//! failures to hook are `chat_runtime`'s chat dial and `outgoing.rs`'s call dial; the token comes
+//! from `State::wake.wake_for(did, device, kind, now_ms)`, the relay from [`NodeCtx::wake_relay`],
+//! and the answer goes back through `WakeState::wake_result`.
+
+use std::collections::BTreeSet;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::time::Duration;
+
+use parking_lot::Mutex;
+use proto::Msg;
+use tokio::sync::Notify;
+use wake::{Issued, WakeState};
+use wake_relay_core::api::{RegisterRequest, RegisterResponse, RevokeRequest, WakeRequest};
+use wake_relay_core::{Kind, Kinds, Target};
+
+use crate::hooks::BoxFuture;
+use crate::store::{ContactDevice, State};
+use crate::wire::{Ctrl, RETRY_SECS};
+use crate::{Error, NodeCtx, REFUSED, addr_for, now_ms};
+
+/// The deployed relay (`docs/push.md` "Relay"). `P2P_WAKE_RELAY` overrides it, for tests.
+pub const RELAY_URL: &str = "https://push.osvauld.com";
+/// One request to the relay.
+pub const RELAY_TIMEOUT: Duration = Duration::from_secs(10);
+/// How often a running node looks at the 7-day renewal window of its tokens.
+pub const RENEW_EVERY: Duration = Duration::from_secs(12 * 3600);
+
+/// A relay call that did not succeed. `status` is the HTTP status when the relay answered.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RelayError {
+    pub status: Option<u16>,
+    pub message: String,
+}
+
+impl std::fmt::Display for RelayError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self.status {
+            Some(s) => write!(f, "relay answered {s}: {}", self.message),
+            None => write!(f, "relay: {}", self.message),
+        }
+    }
+}
+
+impl RelayError {
+    pub fn net(message: impl Into<String>) -> Self {
+        Self { status: None, message: message.into() }
+    }
+
+    pub fn status(status: u16) -> Self {
+        Self { status: Some(status), message: "refused".into() }
+    }
+
+    /// The token is unusable anyway (malformed or already dead), so a revoke is done.
+    fn token_dead(&self) -> bool {
+        matches!(self.status, Some(400 | 410))
+    }
+}
+
+/// The wake relay's API (`wake_relay_core::api`). Messages carry tokens: implementations must
+/// never log them.
+pub trait WakeRelay: Send + Sync {
+    /// `POST /v1/register`: one sealed token per requested tag.
+    fn register(&self, req: RegisterRequest) -> BoxFuture<Result<RegisterResponse, RelayError>>;
+    /// `POST /v1/wake`: the HTTP status (202 sent, 410 token dead, 429 limited, ...); `0` when
+    /// the relay could not be reached. Feed it to `WakeState::wake_result`.
+    fn wake(&self, token: String, kind: Kind) -> BoxFuture<u16>;
+    /// `POST /v1/revoke`: `Ok` on 2xx.
+    fn revoke(&self, token: String) -> BoxFuture<Result<(), RelayError>>;
+}
+
+/// The real relay over HTTPS (reqwest on rustls, the stack iroh already links).
+#[derive(Clone)]
+pub struct HttpRelay {
+    base: String,
+    client: Arc<std::sync::OnceLock<Result<reqwest::Client, String>>>,
+}
+
+impl HttpRelay {
+    pub fn new(base: impl Into<String>) -> Self {
+        Self { base: base.into().trim_end_matches('/').to_string(), client: Arc::new(std::sync::OnceLock::new()) }
+    }
+
+    /// `P2P_WAKE_RELAY` if set, else [`RELAY_URL`].
+    pub fn from_env() -> Self {
+        Self::new(std::env::var("P2P_WAKE_RELAY").unwrap_or_else(|_| RELAY_URL.to_string()))
+    }
+
+    fn client(&self) -> Result<reqwest::Client, RelayError> {
+        self.client
+            .get_or_init(|| {
+                reqwest::Client::builder()
+                    // osvauld.com's bot protection answers generic agents with 403 (1010).
+                    .user_agent(wake::user_agent(env!("CARGO_PKG_VERSION")))
+                    .timeout(RELAY_TIMEOUT)
+                    .build()
+                    .map_err(|e| e.to_string())
+            })
+            .clone()
+            .map_err(RelayError::net)
+    }
+
+    /// POSTs `body` as JSON; the status and the body bytes (at most 64 KiB are read).
+    async fn post(&self, path: &str, body: Vec<u8>) -> Result<(u16, Vec<u8>), RelayError> {
+        let res = self
+            .client()?
+            .post(format!("{}{path}", self.base))
+            .header(reqwest::header::CONTENT_TYPE, "application/json")
+            .body(body)
+            .send()
+            .await
+            // Only the kind of failure: the text of a reqwest error can carry the URL.
+            .map_err(|e| RelayError::net(if e.is_timeout() { "timed out" } else if e.is_connect() { "cannot connect" } else { "request failed" }))?;
+        let status = res.status().as_u16();
+        let bytes = res.bytes().await.map_err(|_| RelayError::net("reading the answer failed"))?;
+        Ok((status, bytes.iter().copied().take(wake_relay_core::api::MAX_BODY_BYTES).collect()))
+    }
+}
+
+impl WakeRelay for HttpRelay {
+    fn register(&self, req: RegisterRequest) -> BoxFuture<Result<RegisterResponse, RelayError>> {
+        let this = self.clone();
+        Box::pin(async move {
+            let body = serde_json::to_vec(&req).map_err(|e| RelayError::net(e.to_string()))?;
+            let (status, bytes) = this.post("/v1/register", body).await?;
+            if !(200..300).contains(&status) {
+                return Err(RelayError::status(status));
+            }
+            serde_json::from_slice(&bytes).map_err(|_| RelayError::net("unreadable register answer"))
+        })
+    }
+
+    fn wake(&self, token: String, kind: Kind) -> BoxFuture<u16> {
+        let this = self.clone();
+        Box::pin(async move {
+            let Ok(body) = serde_json::to_vec(&WakeRequest { token, kind }) else { return 0 };
+            this.post("/v1/wake", body).await.map_or(0, |(status, _)| status)
+        })
+    }
+
+    fn revoke(&self, token: String) -> BoxFuture<Result<(), RelayError>> {
+        let this = self.clone();
+        Box::pin(async move {
+            let body = serde_json::to_vec(&RevokeRequest { token }).map_err(|e| RelayError::net(e.to_string()))?;
+            let (status, _) = this.post("/v1/revoke", body).await?;
+            if (200..300).contains(&status) { Ok(()) } else { Err(RelayError::status(status)) }
+        })
+    }
+}
+
+/// Runtime state of the wake task that is not persisted.
+#[derive(Default)]
+pub struct PushRt {
+    /// The relay client; `None` until first used (then [`HttpRelay::from_env`]).
+    relay: Mutex<Option<Arc<dyn WakeRelay>>>,
+    task: Mutex<Task>,
+    /// Cuts a backoff short when something new needs doing.
+    nudge: Notify,
+    periodic: AtomicBool,
+}
+
+#[derive(Default)]
+struct Task {
+    running: bool,
+    /// Kicked while a round was running: go round again before stopping.
+    again: bool,
+}
+
+/// What one round of the wake task did.
+enum Round {
+    /// Nothing is left to do.
+    Done,
+    /// Something was done; look again at once.
+    Progress,
+    /// The relay or a contact could not be reached; back off.
+    Retry,
+    /// No endpoint or no unlocked account (start kicks again).
+    Stop,
+}
+
+/// The wake state, created on first need with a fresh hint key.
+pub fn wake_mut(st: &mut State) -> &mut WakeState {
+    st.wake.get_or_insert_with(|| WakeState::new(proto::new_device_secret()))
+}
+
+/// Whether `did` is a contact we may exchange wake tokens with: known, not blocked by us, not
+/// blocking us.
+fn live_contact(st: &State, did: &str) -> bool {
+    st.contacts.iter().any(|c| c.did == did) && !st.blocked.contains(did) && !crate::block::blocked_me(st, did)
+}
+
+/// The kinds each live contact should hold from us: message always, call when allowed.
+fn wanted(st: &State) -> Vec<(String, Kinds)> {
+    st.contacts
+        .iter()
+        .filter(|c| live_contact(st, &c.did))
+        .map(|c| (c.did.clone(), if c.calls_allowed { Kinds::ALL } else { Kinds::MSG }))
+        .collect()
+}
+
+/// Takes back and forgets the tokens of every DID that is no longer a live contact (a block, a
+/// contact deleted by their block notice). Whether anything changed.
+fn forget_gone(st: &mut State) -> bool {
+    let gone: Vec<String> = {
+        let Some(w) = &st.wake else { return false };
+        let dids: BTreeSet<&String> = w.issued.iter().map(|e| &e.did).chain(w.held.iter().map(|e| &e.did)).collect();
+        dids.into_iter().filter(|d| !live_contact(st, d)).cloned().collect()
+    };
+    let mut changed = !gone.is_empty();
+    for did in &gone {
+        if let Some(w) = st.wake.as_mut() {
+            w.block(did);
+        }
+    }
+    let before = st.wake_outbox.len();
+    let keep: Vec<String> = st.wake_outbox.iter().filter(|d| live_contact(st, d)).cloned().collect();
+    st.wake_outbox = keep.into_iter().collect();
+    changed |= st.wake_outbox.len() != before;
+    changed
+}
+
+fn random_tag() -> [u8; 16] {
+    let mut tag = [0u8; 16];
+    tag.copy_from_slice(&proto::new_device_secret()[..16]);
+    tag
+}
+
+impl NodeCtx {
+    /// The relay client (the real one unless [`Self::set_wake_relay`] replaced it). Slice 3b
+    /// sends wakes through it.
+    pub fn wake_relay(&self) -> Arc<dyn WakeRelay> {
+        self.push.relay.lock().get_or_insert_with(|| Arc::new(HttpRelay::from_env())).clone()
+    }
+
+    /// Replaces the relay client (tests, or an app pointing at another relay).
+    pub fn set_wake_relay(&self, relay: Arc<dyn WakeRelay>) {
+        *self.push.relay.lock() = Some(relay);
+    }
+
+    /// Our platform push token: `Some` registers contacts' tokens at the relay and hands them
+    /// out, `None` (always-on, no push) takes every token we issued back. Saved; the work runs
+    /// on the wake task.
+    pub fn set_push_target(self: &Arc<Self>, target: Option<Target>) -> Result<(), Error> {
+        let me = self.me()?;
+        if let Some(t) = &target {
+            t.validate().map_err(|e| Error::invalid("push target", e))?;
+        }
+        {
+            let mut s = self.shared.lock();
+            if s.epoch != me.epoch {
+                return Err(Error::Locked);
+            }
+            let st = &mut s.state;
+            let had = st.wake.as_ref().is_some_and(|w| w.target.is_some());
+            match target {
+                Some(t) => wake_mut(st).set_target(t),
+                // Nothing to take back (and no state to create) if we never had a target.
+                None if had => wake_mut(st).clear_target(),
+                None => {}
+            }
+            // Tokens issued under another target are gone; they are planned afresh.
+            let w = st.wake.as_ref();
+            st.wake_outbox.retain(|d| w.is_some_and(|w| w.issued_for(d).is_some()));
+        }
+        let saved = self.persist_for(Some(me.epoch));
+        self.wake_kick();
+        saved
+    }
+
+    /// The push target now, if any.
+    pub fn push_target(&self) -> Option<Target> {
+        self.shared.lock().state.wake.as_ref().and_then(|w| w.target.clone())
+    }
+
+    /// After start: work off what is owed, and look at the renewal window every
+    /// [`RENEW_EVERY`] while the node lives.
+    pub fn wake_started(self: &Arc<Self>) {
+        self.wake_kick();
+        if self.push.periodic.swap(true, Ordering::SeqCst) {
+            return;
+        }
+        let weak = Arc::downgrade(self);
+        self.handle.spawn(async move {
+            loop {
+                tokio::time::sleep(RENEW_EVERY).await;
+                let Some(this) = weak.upgrade() else { return };
+                this.wake_kick();
+            }
+        });
+    }
+
+    /// Our device key changed (endpoint rotation): contacts hold our tokens under the old key, so
+    /// every one is handed over again, with the same token under the new key.
+    pub fn wake_resend_all(self: &Arc<Self>) {
+        {
+            let mut s = self.shared.lock();
+            let st = &mut s.state;
+            let dids: Vec<String> = st.wake.iter().flat_map(|w| w.issued.iter().map(|e| e.did.clone())).collect();
+            st.wake_outbox.extend(dids);
+        }
+        self.persist_in_background(self.shared.lock().epoch);
+        self.wake_kick();
+    }
+
+    /// Runs the wake task, or asks the running one to look again. Cheap; call it after anything
+    /// that changes who should hold a token (contact added or accepted, block, unblock, call
+    /// permission, target).
+    pub fn wake_kick(self: &Arc<Self>) {
+        {
+            let mut t = self.push.task.lock();
+            if t.running {
+                t.again = true;
+                drop(t);
+                self.push.nudge.notify_one();
+                return;
+            }
+            t.running = true;
+            t.again = false;
+        }
+        let this = self.clone();
+        self.handle.spawn(async move { this.wake_loop().await });
+    }
+
+    async fn wake_loop(self: Arc<Self>) {
+        let mut round = 0usize;
+        let mut parked = BTreeSet::new();
+        loop {
+            match self.wake_round(&mut parked).await {
+                Round::Progress => round = 0,
+                Round::Retry => {
+                    let pause = crate::wire::retry_pause(&RETRY_SECS, round);
+                    round += 1;
+                    tokio::select! {
+                        _ = tokio::time::sleep(pause) => {}
+                        _ = self.push.nudge.notified() => round = 0,
+                    }
+                }
+                done @ (Round::Done | Round::Stop) => {
+                    let mut t = self.push.task.lock();
+                    if t.again && matches!(done, Round::Done) {
+                        t.again = false;
+                        round = 0;
+                        // A new reason to look: contacts that turned us away may take us now.
+                        parked.clear();
+                        continue;
+                    }
+                    t.running = false;
+                    return;
+                }
+            }
+        }
+    }
+
+    /// One pass: forget what is gone, tell the relay about revokes, register what is missing,
+    /// hand tokens to contacts.
+    async fn wake_round(self: &Arc<Self>, parked: &mut BTreeSet<String>) -> Round {
+        let Ok(me) = self.me() else { return Round::Stop };
+        let Ok(ep) = self.endpoint() else { return Round::Stop };
+        let relay = self.wake_relay();
+        let mut progress = false;
+        let mut failed = false;
+
+        // What is owed, read fresh.
+        let (revokes, plan, dirty) = {
+            let mut s = self.shared.lock();
+            if s.epoch != me.epoch {
+                return Round::Stop;
+            }
+            let st = &mut s.state;
+            if st.wake.is_none() {
+                return Round::Done;
+            }
+            let dirty = forget_gone(st);
+            let want = wanted(st);
+            let Some(w) = st.wake.as_ref() else { return Round::Done };
+            (w.take_revokes(), w.plan_register(&want, now_ms(), random_tag), dirty)
+        };
+        if dirty {
+            self.persist_logged(me.epoch).await;
+        }
+
+        // Revokes first: a blocked contact's token must stop working as soon as we can say so.
+        let mut revoked = Vec::new();
+        for token in revokes {
+            match relay.revoke(token.clone()).await {
+                Ok(()) => revoked.push(token),
+                Err(e) if e.token_dead() => revoked.push(token),
+                Err(e) => {
+                    tracing::debug!("wake revoke: {e}");
+                    failed = true;
+                }
+            }
+        }
+        if !revoked.is_empty() {
+            {
+                let mut s = self.shared.lock();
+                if s.epoch != me.epoch {
+                    return Round::Stop;
+                }
+                if let Some(w) = s.state.wake.as_mut() {
+                    for t in &revoked {
+                        w.revoked_ok(t);
+                    }
+                }
+            }
+            self.persist_logged(me.epoch).await;
+            progress = true;
+        }
+
+        // Tokens for the contacts that lack one.
+        if let Some((req, pending)) = plan {
+            match relay.register(req).await {
+                Ok(resp) => {
+                    let handed = {
+                        let mut s = self.shared.lock();
+                        if s.epoch != me.epoch {
+                            return Round::Stop;
+                        }
+                        let st = &mut s.state;
+                        let handed = st.wake.as_mut().map(|w| w.apply_register(pending, resp)).unwrap_or_default();
+                        st.wake_outbox.extend(handed.iter().map(|(did, _)| did.clone()));
+                        handed.len()
+                    };
+                    self.persist_logged(me.epoch).await;
+                    // An answer without our tags would plan the same request forever.
+                    if handed == 0 {
+                        tracing::debug!("wake register: the relay answered without our tags");
+                        failed = true;
+                    } else {
+                        progress = true;
+                    }
+                }
+                Err(e) => {
+                    tracing::debug!("wake register: {e}");
+                    failed = true;
+                }
+            }
+        }
+
+        // Hand them over.
+        let owed: Vec<(String, Vec<ContactDevice>, Issued)> = {
+            let mut s = self.shared.lock();
+            if s.epoch != me.epoch {
+                return Round::Stop;
+            }
+            let st = &mut s.state;
+            let mut owed = Vec::new();
+            for did in st.wake_outbox.clone() {
+                if parked.contains(&did) {
+                    continue;
+                }
+                let issued = st.wake.as_ref().and_then(|w| w.issued_for(&did)).cloned();
+                let devices = st.contacts.iter().find(|c| c.did == did).map(|c| c.devices.clone());
+                match (issued, devices) {
+                    (Some(i), Some(d)) if !d.is_empty() => owed.push((did, d, i)),
+                    // Nothing to hand over any more (re-planned on the next round if still due).
+                    _ => {
+                        st.wake_outbox.remove(&did);
+                    }
+                }
+            }
+            owed
+        };
+        for (did, devices, issued) in owed {
+            let msg = Msg::WakeTokens { device: me.device, token: issued.token.clone(), exp_ms: issued.exp_ms, kinds: issued.kinds.bits() };
+            let mut taken = false;
+            let mut unreachable = false;
+            for d in &devices {
+                match self.deliver_wake_tokens(&ep, d, &msg).await {
+                    Ok(true) => {
+                        taken = true;
+                        break;
+                    }
+                    Ok(false) => {}
+                    Err(e) => {
+                        tracing::debug!("wake token to {}: {e}", crate::short(&did));
+                        unreachable = true;
+                    }
+                }
+            }
+            if taken {
+                {
+                    let mut s = self.shared.lock();
+                    let same = s.state.wake.as_ref().and_then(|w| w.issued_for(&did)).is_some_and(|i| i.token == issued.token);
+                    if same {
+                        s.state.wake_outbox.remove(&did);
+                    }
+                }
+                self.persist_logged(me.epoch).await;
+                self.log(format!("wake token delivered to {did}"));
+                progress = true;
+            } else if unreachable {
+                failed = true;
+            } else {
+                // Every device turned us away (they do not hold us as a contact): wait for a
+                // reason to ask again (a kick) instead of a retry loop.
+                parked.insert(did);
+            }
+        }
+
+        if failed {
+            Round::Retry
+        } else if progress {
+            Round::Progress
+        } else {
+            Round::Done
+        }
+    }
+
+    /// `true`: taken; `false`: refused (`Reject`); `Err`: not reached or no sensible answer.
+    async fn deliver_wake_tokens(&self, ep: &iroh::Endpoint, d: &ContactDevice, msg: &Msg) -> Result<bool, Error> {
+        let conn = crate::wire::dial_call(ep, addr_for(&d.device, d.relay.as_deref())?).await?;
+        match crate::wire::exchange(conn, msg).await? {
+            Some(Msg::WakeTokensTaken) => Ok(true),
+            Some(Msg::Reject { .. }) | Some(Msg::Notice { .. }) => Ok(false),
+            other => Err(crate::not_taken("wake token", other.as_ref())),
+        }
+    }
+
+    /// An incoming connection that opened with `WakeTokens`. Kept only when it comes from the
+    /// very device it names (`remote`), a known device of a contact we have not blocked and who
+    /// has not blocked us; everything else gets the generic refusal, nothing is held.
+    pub async fn wake_tokens_incoming(
+        self: &Arc<Self>,
+        mut ctrl: Ctrl,
+        remote: [u8; 32],
+        device: [u8; 32],
+        token: String,
+        exp_ms: u64,
+        kinds: u8,
+    ) -> Result<(), Error> {
+        let me = self.me()?;
+        let held = device == remote
+            && Kinds::from_bits(kinds).is_some_and(|kinds| {
+                let mut s = self.shared.lock();
+                if s.epoch != me.epoch {
+                    return false;
+                }
+                let st = &mut s.state;
+                let Some(did) = st.contacts.iter().find(|c| c.has_device(&remote)).map(|c| c.did.clone()) else {
+                    return false;
+                };
+                live_contact(st, &did) && wake_mut(st).hold(&did, device, token, exp_ms, kinds, now_ms())
+            });
+        if held {
+            self.log("wake token taken");
+            self.persist_in_background(me.epoch);
+            ctrl.send(&Msg::WakeTokensTaken).await?;
+        } else {
+            tracing::debug!("wake token refused");
+            ctrl.send(&Msg::Reject { reason: REFUSED.into() }).await?;
+        }
+        ctrl.finish();
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests;

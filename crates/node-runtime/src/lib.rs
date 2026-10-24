@@ -61,6 +61,7 @@ pub mod devlist;
 pub mod error;
 pub mod frames;
 pub mod hooks;
+pub mod push;
 pub mod rekey;
 pub mod store;
 pub mod version;
@@ -241,6 +242,8 @@ pub struct NodeCtx {
     pub requests: contact_req::ReqRt,
     /// Token delivery (P6, `caps.rs`).
     pub caps: caps::CapsRt,
+    /// Push wake-ups (`push.rs`).
+    pub push: push::PushRt,
     pub devlist: devlist::DevlistRt,
     /// Private endpoint rotation (`rotation.rs`).
     pub rotation: RotationRt,
@@ -267,6 +270,7 @@ impl NodeCtx {
             block: Default::default(),
             requests: Default::default(),
             caps: Default::default(),
+            push: Default::default(),
             devlist: Default::default(),
             rotation: Default::default(),
             video: Default::default(),

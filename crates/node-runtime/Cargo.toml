@@ -12,6 +12,8 @@ testkit = ["account-model/testkit", "proto/test-support"]
 
 [dependencies]
 proto.workspace = true
+wake = { path = "../wake" }
+wake-relay-core = { path = "../wake-relay-core" }
 identity.workspace = true
 cryptography.workspace = true
 account-model.workspace = true
@@ -35,6 +37,8 @@ bytes = "1"
 hex = "0.4"
 n0-future = "0.3"
 tracing = "0.1"
+# The wake relay client (docs/push.md): the TLS stack iroh already uses (rustls, ring).
+reqwest = { version = "0.13", default-features = false, features = ["rustls-no-provider"] }
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync", "time", "fs", "io-util"] }
 
 [dev-dependencies]

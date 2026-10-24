@@ -58,6 +58,16 @@ impl Kinds {
     pub fn is_valid(self) -> bool {
         self.0 != 0 && self.0 & !Self::ALL.0 == 0
     }
+
+    /// The wire form (`proto::Msg::WakeTokens::kinds`): 1 message, 2 call, 3 both.
+    pub fn bits(self) -> u8 {
+        self.0
+    }
+
+    /// From the wire form; `None` unless valid.
+    pub fn from_bits(bits: u8) -> Option<Kinds> {
+        Some(Kinds(bits)).filter(|k| k.is_valid())
+    }
 }
 
 /// Where the push goes. Each push token is what the platform handed the device.

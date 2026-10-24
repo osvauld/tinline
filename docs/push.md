@@ -279,6 +279,11 @@ the push and call one core entry point (`on_wake(hint) -> WakeAction`).
 
 1. Relay: `wake-relay-core` + tests, the Worker deployed at `https://push.osvauld.com` (2026-10-24; `RELAY_KEYS` set; FCM / APNs secrets pending). End-to-end check passed: register, wake, kind refused, tampered token, revoke then 410.
 2. Core: tokens, `WakeTokens` on the wire, wake decision, revoke, `on_wake`; in-process tests.
+   - 3a done (2026-10-24, `crates/node-runtime/src/push.rs`): `wake::WakeState` sealed in `State::wake`;
+     relay client behind `WakeRelay` (`HttpRelay` on reqwest); `set_push_target`; one wake task
+     (register, hand `WakeTokens` to contacts, revoke outbox with retries); `WakeTokens` intake in
+     `accept.rs`; in-process tests with a fake relay (`cargo test -p node-runtime --lib wake`).
+     Still open: 3b (wake on failed dial, call timing), the app API (`on_wake`, target setter).
 3. Android flavours: `play` (FCM) and `liberum` (no Google SDK, always-on); the no-Google
    build check; both in the release workflow. Then UnifiedPush in `liberum`.
 4. iOS PushKit + CallKit, then message alert push.

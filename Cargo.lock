@@ -33,6 +33,7 @@ dependencies = [
  "serde_json",
  "thiserror 2.0.21",
  "tracing",
+ "wake",
  "zeroize",
 ]
 
@@ -5181,6 +5182,7 @@ dependencies = [
  "parking_lot",
  "proto",
  "receipts-core",
+ "reqwest",
  "serde",
  "serde_json",
  "sha2",
@@ -5189,6 +5191,8 @@ dependencies = [
  "tokio",
  "tracing",
  "transfer",
+ "wake",
+ "wake-relay-core",
  "zeroize",
 ]
 
