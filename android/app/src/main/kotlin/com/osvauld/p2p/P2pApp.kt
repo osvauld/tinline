@@ -96,7 +96,7 @@ class P2pApp : Application(), NodeEvents {
     val availability: StateFlow<Availability> = _availability
     @Volatile private var availJob: Job? = null
 
-    override fun onCreate() {
+    override fun onCreate() = Startup.trace("P2pApp.onCreate") {
         super.onCreate()
         instance = this
         CallTrace.init(filesDir)
@@ -108,7 +108,7 @@ class P2pApp : Application(), NodeEvents {
         ChatMedia.clear(this)
         calls = CallController(this)
         video = CallVideo(this)
-        node = newNode()
+        node = Startup.trace("newNode") { newNode() }
         profiles = ProfilesController(this)
         node.setProfileEvents(profiles)
         node.setVideoEvents(video)
@@ -131,9 +131,9 @@ class P2pApp : Application(), NodeEvents {
                 if (AppVisible.resumed) Cues.knock() else GroupNotifier.invitation(this, i)
             }
         }
-        selectLastAccountIfNone()
-        tryAutoUnlock()
-        refresh()
+        Startup.trace("selectAccount") { selectLastAccountIfNone() }
+        Startup.trace("tryAutoUnlock") { tryAutoUnlock() }
+        Startup.trace("refresh") { refresh() }
         // Kept chats of people who are no longer contacts (their block deleted our entry) come only from the chat list.
         scope.launch { realChat.chats.collect { refreshBlocks() } }
         // The always-on notification says "Available for calls" / "Not available" / "Offline".
@@ -141,6 +141,7 @@ class P2pApp : Application(), NodeEvents {
             combine(status, availability) { st, av -> (st?.online == true) to av.available }.distinctUntilChanged()
                 .collect { CoreService.refreshNotification() }
         }
+        Unit
     }
 
     fun refreshHistory() {
@@ -443,7 +444,7 @@ class P2pApp : Application(), NodeEvents {
                     return@execute
                 }
                 Notifications.cancelLocked(this)
-                try { node.start() } catch (e: Exception) { Log.e(TAG, "node.start failed", e) }
+                try { Startup.trace("node.start") { node.start() } } catch (e: Exception) { Log.e(TAG, "node.start failed", e) }
                 refresh()
             } catch (e: Throwable) { Log.e(TAG, "startNode", e) }
         }

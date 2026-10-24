@@ -62,6 +62,9 @@ fun HomeScreen(
     val history by app.history.collectAsState()
     val avail by app.availability.collectAsState()
     val chats by app.chat.chats.collectAsState()
+    val chatsLoaded by Startup.chatsLoaded.collectAsState()
+    // Startup measurement: "Fully drawn" in logcat once the list shows the core's chats (the frame after they arrive).
+    androidx.activity.compose.ReportDrawnWhen { chatsLoaded }
     val links by app.chat.links.collectAsState()
     var grace by remember { mutableStateOf(true) }
     var sheet by remember { mutableStateOf(false) }
