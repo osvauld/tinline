@@ -298,13 +298,19 @@ final class ShellCore {
     /// failing to remember its key only means the passphrase is asked after a restart.
     func persistIdentity() async -> String? {
         let failed = "Couldn\u{2019}t save your account on this phone."
-        guard let node else { return failed }
+        guard let node else { NSLog("Tinline: persistIdentity: no node"); return failed }
         let keys = self.keys
-        return (try? await lifecycle.run { () -> String? in
-            let saved = Self.rememberKey(node, keys: keys)
-            if !saved && !node.hasPassphrase() { return "Couldn\u{2019}t save your account safely on this phone." }
-            do { try node.commitIdentity(); return nil } catch { return failed }
-        }) ?? failed
+        do {
+            return try await lifecycle.run { () -> String? in
+                let saved = Self.rememberKey(node, keys: keys)
+                if !saved && !node.hasPassphrase() { return "Couldn\u{2019}t save your account safely on this phone." }
+                do { try node.commitIdentity(); return nil } catch {
+                    NSLog("Tinline: commitIdentity failed: \(error)"); return failed
+                }
+            }
+        } catch {
+            NSLog("Tinline: persistIdentity worker failed: \(error)"); return failed
+        }
     }
 
     /// Called after unlock / set-passphrase. The state refresh is immediate; remembering the key, committing (S1) and starting
