@@ -39,6 +39,10 @@ n0-future = "0.3"
 tracing = "0.1"
 # The wake relay client (docs/push.md): the TLS stack iroh already uses (rustls, ring).
 reqwest = { version = "0.13", default-features = false, features = ["rustls-no-provider"] }
+# Its TLS config is built by hand (ring provider + the bundled webpki roots): no process-wide
+# provider is installed, and no platform verifier needs a JNI init on Android.
+rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
+webpki-roots = "1"
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync", "time", "fs", "io-util"] }
 
 [dev-dependencies]

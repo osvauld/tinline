@@ -15,16 +15,24 @@ use super::*;
 use crate::store::{Profile, StoredContact};
 use crate::{CallInfo, CallState, Me, NodeSink, NodeStatus, Shared};
 
+/// What a test does when the relay is asked to wake a token (the phone starting up).
+type WakeHook = Arc<dyn Fn(&str, Kind) + Send + Sync>;
+
 /// A fake relay that records what it was asked and can be told to fail.
 #[derive(Default)]
-struct FakeRelay {
-    registers: Mutex<Vec<RegisterRequest>>,
+pub(super) struct FakeRelay {
+    pub(super) registers: Mutex<Vec<RegisterRequest>>,
     revokes: Mutex<Vec<String>>,
     fail_register: AtomicU32,
     fail_revoke: AtomicU32,
+    /// Every wake asked for: the token and the kind.
+    pub(super) wakes: Mutex<Vec<(String, Kind)>>,
+    /// The HTTP status a wake gets; 0: 202.
+    pub(super) wake_status: AtomicU32,
+    pub(super) on_wake: Mutex<Option<WakeHook>>,
 }
 
-fn hex(b: &[u8]) -> String {
+pub(super) fn hex(b: &[u8]) -> String {
     b.iter().map(|x| format!("{x:02x}")).collect()
 }
 
@@ -44,8 +52,17 @@ impl WakeRelay for FakeRelay {
         Box::pin(async move { result })
     }
 
-    fn wake(&self, _token: String, _kind: Kind) -> BoxFuture<u16> {
-        Box::pin(async { 202 })
+    fn wake(&self, token: String, kind: Kind) -> BoxFuture<u16> {
+        self.wakes.lock().push((token.clone(), kind));
+        let hook = self.on_wake.lock().clone();
+        if let Some(hook) = hook {
+            hook(&token, kind);
+        }
+        let status = match self.wake_status.load(Ordering::SeqCst) {
+            0 => 202,
+            s => s as u16,
+        };
+        Box::pin(async move { status })
     }
 
     fn revoke(&self, token: String) -> BoxFuture<Result<(), RelayError>> {
@@ -59,16 +76,25 @@ impl WakeRelay for FakeRelay {
     }
 }
 
-struct Quiet;
-impl NodeSink for Quiet {
+/// What the UI of a node would have been told about calls.
+#[derive(Default)]
+pub(super) struct Rec {
+    pub(super) incoming: Mutex<Vec<CallInfo>>,
+    pub(super) states: Mutex<Vec<CallState>>,
+}
+impl NodeSink for Rec {
     fn on_status(&self, _: NodeStatus) {}
     fn on_contacts_changed(&self) {}
-    fn on_incoming_call(&self, _: CallInfo) {}
-    fn on_call_state(&self, _: String, _: CallState) {}
+    fn on_incoming_call(&self, info: CallInfo) {
+        self.incoming.lock().push(info);
+    }
+    fn on_call_state(&self, _: String, state: CallState) {
+        self.states.lock().push(state);
+    }
     fn on_log(&self, _: String) {}
 }
 
-struct TestDir(std::path::PathBuf);
+pub(super) struct TestDir(std::path::PathBuf);
 impl TestDir {
     fn new() -> Self {
         let path = std::env::temp_dir().join(format!("wake-test-{}-{}", std::process::id(), hex(&proto::new_device_secret()[..8])));
@@ -84,44 +110,56 @@ impl Drop for TestDir {
 }
 
 /// One in-process node: a context over a loopback endpoint that serves the call ALPN.
-struct T {
-    ctx: Arc<NodeCtx>,
-    me: Arc<Me>,
-    ep: Endpoint,
-    relay: Arc<FakeRelay>,
+pub(super) struct T {
+    pub(super) ctx: Arc<NodeCtx>,
+    pub(super) me: Arc<Me>,
+    pub(super) ep: Endpoint,
+    pub(super) relay: Arc<FakeRelay>,
+    pub(super) rec: Arc<Rec>,
+    pub(super) secret: [u8; 32],
+    mnemonic: String,
     _dir: TestDir,
 }
 
 impl T {
-    fn did(&self) -> String {
+    pub(super) fn did(&self) -> String {
         self.me.id.did().to_string()
     }
 
-    fn state<R>(&self, f: impl FnOnce(&State) -> R) -> R {
+    pub(super) fn state<R>(&self, f: impl FnOnce(&State) -> R) -> R {
         f(&self.ctx.shared.lock().state)
     }
 
-    fn edit<R>(&self, f: impl FnOnce(&mut State) -> R) -> R {
+    pub(super) fn edit<R>(&self, f: impl FnOnce(&mut State) -> R) -> R {
         f(&mut self.ctx.shared.lock().state)
     }
 
-    fn held_from(&self, other: &T) -> Option<wake::Held> {
+    pub(super) fn held_from(&self, other: &T) -> Option<wake::Held> {
         self.state(|st| st.wake.as_ref()?.held.iter().find(|e| e.did == other.did() && e.device == other.me.device).map(|e| e.held.clone()))
     }
 
-    fn issued_to(&self, other: &T) -> Option<Issued> {
+    pub(super) fn issued_to(&self, other: &T) -> Option<Issued> {
         self.state(|st| st.wake.as_ref()?.issued_for(&other.did()).cloned())
     }
 }
 
-async fn node(lookup: &MemoryLookup) -> T {
+pub(super) async fn node(lookup: &MemoryLookup) -> T {
     node_with(lookup, State::default()).await
 }
 
 async fn node_with(lookup: &MemoryLookup, state: State) -> T {
     let (_id, phrase) = identity::generate();
+    node_as(lookup, state, phrase.to_string()).await
+}
+
+/// Another device of the account `other` belongs to.
+pub(super) async fn second_device(lookup: &MemoryLookup, other: &T) -> T {
+    node_as(lookup, State::default(), other.mnemonic.clone()).await
+}
+
+async fn node_as(lookup: &MemoryLookup, state: State, mnemonic: String) -> T {
     let secret = proto::new_device_secret();
-    let profile = Profile { mnemonic: phrase.to_string(), name: "synthetic".into(), device_secret: secret };
+    let profile = Profile { mnemonic: mnemonic.clone(), name: "synthetic".into(), device_secret: secret };
     let me = Arc::new(Me::load(profile, 1).unwrap());
     let ep = Endpoint::builder(presets::Minimal)
         .secret_key(SecretKey::from_bytes(&secret))
@@ -137,21 +175,36 @@ async fn node_with(lookup: &MemoryLookup, state: State) -> T {
     shared.endpoint = Some(ep.clone());
     shared.state = state;
     let accounts = account_model::accounts::AccountDirs::open(dir.0.clone()).unwrap();
-    let ctx = Arc::new(NodeCtx::new(tokio::runtime::Handle::current(), accounts, shared, Arc::new(Quiet)));
+    let rec = Arc::new(Rec::default());
+    let ctx = Arc::new(NodeCtx::new(tokio::runtime::Handle::current(), accounts, shared, rec.clone()));
     let relay = Arc::new(FakeRelay::default());
     ctx.set_wake_relay(relay.clone());
     ctx.serve_private(ep.clone(), true);
-    T { ctx, me, ep, relay, _dir: dir }
+    T { ctx, me, ep, relay, rec, secret, mnemonic, _dir: dir }
 }
 
-fn contact_of(other: &T, mine: &Identity, calls_allowed: bool) -> StoredContact {
+/// The phone starts up again: a new endpoint under the same key, served by the same context.
+pub(super) async fn bring_up(ctx: &Arc<NodeCtx>, secret: [u8; 32], lookup: &MemoryLookup) {
+    let ep = Endpoint::builder(presets::Minimal)
+        .secret_key(SecretKey::from_bytes(&secret))
+        .alpns(vec![proto::ALPN.to_vec()])
+        .address_lookup(lookup.clone())
+        .bind()
+        .await
+        .unwrap();
+    lookup.add_endpoint_info(ep.addr());
+    ctx.shared.lock().endpoint = Some(ep.clone());
+    ctx.serve_private(ep, true);
+}
+
+pub(super) fn contact_of(other: &T, mine: &Identity, calls_allowed: bool) -> StoredContact {
     StoredContact {
         did: other.did(),
         name: "friend".into(),
         devices: vec![ContactDevice { device: other.me.device, relay: None }],
         device_list: None,
         grant_from_them: proto::issue_token(&other.me.id, mine.did(), Cap::Message, now_ms(), 1_000_000),
-        call_grant_from_them: None,
+        call_grant_from_them: calls_allowed.then(|| proto::issue_token(&other.me.id, mine.did(), Cap::Call, now_ms(), 1_000_000)),
         calls_allowed,
         added_at: 1,
         alias: None,
@@ -162,7 +215,7 @@ fn contact_of(other: &T, mine: &Identity, calls_allowed: bool) -> StoredContact 
 use identity::Identity;
 
 /// `a` and `b` are contacts of each other (calls allowed both ways).
-fn befriend(a: &T, b: &T) {
+pub(super) fn befriend(a: &T, b: &T) {
     let ca = contact_of(b, &a.me.id, true);
     a.edit(|st| st.contacts.push(ca));
     let cb = contact_of(a, &b.me.id, true);
@@ -170,19 +223,19 @@ fn befriend(a: &T, b: &T) {
 }
 
 /// A valid FCM-looking token, distinct per `n`.
-fn fcm(n: u32) -> Target {
+pub(super) fn fcm(n: u32) -> Target {
     Target::Fcm { token: format!("fcm-token-for-tests-{n:04}") }
 }
 
 /// `set_push_target` on a node with no account files: it still takes effect, only the save fails.
-fn set_target(t: &T, target: Option<Target>) {
+pub(super) fn set_target(t: &T, target: Option<Target>) {
     match t.ctx.set_push_target(target) {
         Ok(()) | Err(Error::NoIdentity) => {}
         Err(e) => panic!("set_push_target: {e}"),
     }
 }
 
-async fn eventually(what: &str, mut ok: impl FnMut() -> bool) {
+pub(super) async fn eventually(what: &str, mut ok: impl FnMut() -> bool) {
     for _ in 0..400 {
         if ok() {
             return;

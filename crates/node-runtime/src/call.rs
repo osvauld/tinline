@@ -104,6 +104,10 @@ pub enum LegEvent {
 /// One connection of a fanned-out outgoing call: connects, sends the hello, relays what the
 /// device answers, and on a message from the coordinator sends it (a `Cancel`) and closes.
 pub struct Leg {
+    /// For a call wake when the callee device cannot be reached (`push.rs`).
+    pub ctx: Arc<NodeCtx>,
+    /// The callee's DID.
+    pub did: String,
     pub ep: Endpoint,
     pub device: ContactDevice,
     pub hello: Msg,
@@ -124,15 +128,11 @@ impl Leg {
             Err(e) => return fail(&self.events, e.to_string()),
         };
         tracing::debug!("dialing {}", crate::short(&addr.id.to_string()));
-        let connect = tokio::time::timeout(DIAL_TIMEOUT, crate::version::connect(&self.ep, addr, &crate::version::CALL));
-        let conn = tokio::select! {
-            c = connect => match c {
-                Ok(Ok(c)) => c,
-                Ok(Err(e)) => return fail(&self.events, e.to_string()),
-                Err(_) => return fail(&self.events, "timed out".into()),
-            },
+        let conn = match connect_leg(&self.ctx, &self.ep, addr, &self.did, self.device.device, &mut self.cmds).await {
+            Ok(c) => c,
+            Err(Some(why)) => return fail(&self.events, why),
             // Told to stop before we even connected: nothing was sent, nothing to say.
-            _ = self.cmds.recv() => return,
+            Err(None) => return,
         };
         let (send, recv) = match conn.open_bi().await {
             Ok(s) => s,
@@ -191,6 +191,67 @@ impl Leg {
                     return fail(&self.events, "connection lost".into());
                 }
             }
+        }
+    }
+}
+
+/// Dials one callee device. With a call token for it (`docs/push.md` "Calls") a first dial that
+/// fails after [`crate::push::CALL_FIRST_DIAL_MS`] sends a `call` wake and the device is redialled
+/// every [`crate::push::CALL_REDIAL_MS`] for [`crate::push::CALL_WAKE_DIAL_MS`], while the call
+/// stays `Dialing`; the wake crate's 10 s throttle allows a repeat wake meanwhile. Without a token
+/// it is one dial of [`DIAL_TIMEOUT`], as before. `Err(None)`: told to stop (nothing was sent);
+/// `Err(Some(why))`: could not connect.
+async fn connect_leg(
+    ctx: &Arc<NodeCtx>,
+    ep: &Endpoint,
+    addr: iroh::EndpointAddr,
+    did: &str,
+    device: [u8; 32],
+    cmds: &mut mpsc::UnboundedReceiver<Msg>,
+) -> Result<Connection, Option<String>> {
+    use crate::push::{CALL_ATTEMPT_MS, CALL_FIRST_DIAL_MS, CALL_REDIAL_MS, CALL_WAKE_DIAL_MS};
+    let wakeable = ctx.can_wake(did, &device, wake::Kind::Call);
+    let first = if wakeable { Duration::from_millis(CALL_FIRST_DIAL_MS) } else { DIAL_TIMEOUT };
+    let dial = |limit: Duration, addr: iroh::EndpointAddr| {
+        let ep = ep.clone();
+        async move { tokio::time::timeout(limit, crate::version::connect(&ep, addr, &crate::version::CALL)).await }
+    };
+    let first_try = tokio::select! {
+        c = dial(first, addr.clone()) => c,
+        _ = cmds.recv() => return Err(None),
+    };
+    let mut why = match first_try {
+        Ok(Ok(c)) => return Ok(c),
+        Ok(Err(e)) => e,
+        Err(_) => Error::Timeout,
+    };
+    if !wakeable || !matches!(why, Error::Net(_) | Error::Timeout) {
+        return Err(Some(why.to_string()));
+    }
+    let until = tokio::time::Instant::now() + Duration::from_millis(CALL_WAKE_DIAL_MS);
+    loop {
+        // The wake may take a moment (the relay); a hang-up does not wait for it.
+        tokio::select! {
+            _ = ctx.wake_device(did, device, wake::Kind::Call) => {}
+            _ = cmds.recv() => return Err(None),
+        }
+        let attempt = tokio::time::Instant::now();
+        if attempt >= until {
+            return Err(Some(why.to_string()));
+        }
+        let limit = Duration::from_millis(CALL_ATTEMPT_MS).min(until - attempt);
+        let tried = tokio::select! {
+            c = dial(limit, addr.clone()) => c,
+            _ = cmds.recv() => return Err(None),
+        };
+        match tried {
+            Ok(Ok(c)) => return Ok(c),
+            Ok(Err(e)) => why = e,
+            Err(_) => why = Error::Timeout,
+        }
+        tokio::select! {
+            _ = tokio::time::sleep_until(attempt + Duration::from_millis(CALL_REDIAL_MS)) => {}
+            _ = cmds.recv() => return Err(None),
         }
     }
 }

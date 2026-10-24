@@ -5183,6 +5183,7 @@ dependencies = [
  "proto",
  "receipts-core",
  "reqwest",
+ "rustls",
  "serde",
  "serde_json",
  "sha2",
@@ -5193,6 +5194,7 @@ dependencies = [
  "transfer",
  "wake",
  "wake-relay-core",
+ "webpki-roots",
  "zeroize",
 ]
 

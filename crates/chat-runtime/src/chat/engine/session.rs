@@ -296,10 +296,13 @@ impl ChatRt {
                     break;
                 }
                 let permit = core.dial_sem.clone().acquire_owned().await;
-                let res = this.chat_dial(&core, &me, &did).await;
+                let (res, unreached) = this.chat_dial_devices(&core, &me, &did).await;
                 drop(permit);
                 match res {
-                    Ok(()) => break,
+                    Ok(()) => {
+                        this.ctx.wake_reached(&did);
+                        break;
+                    }
                     Err(e) => tracing::debug!("chat dial {}: {e}", short(&did)),
                 }
                 let pair = pair_id(me.id.did(), &did);
@@ -307,8 +310,16 @@ impl ChatRt {
                 if !pending {
                     break;
                 }
-                tokio::time::sleep(delay).await;
-                delay = (delay * 2).min(Duration::from_secs(60));
+                // Something to deliver and a device out of reach: wake it (W2; docs/push.md). The
+                // wake crate's throttle decides whether this dial may; a wake that was accepted
+                // makes the next dials come sooner than the normal backoff.
+                this.ctx.wake_unreached(&did, &unreached).await;
+                let pause = this.ctx.fast_redial(&did).unwrap_or_else(|| {
+                    let d = delay;
+                    delay = (delay * 2).min(Duration::from_secs(60));
+                    d
+                });
+                tokio::time::sleep(pause).await;
             }
             core.dialing.lock().remove(&did);
         });
@@ -351,6 +362,21 @@ impl ChatRt {
     }
 
     pub(super) async fn chat_dial(self: &Arc<Self>, core: &Arc<ChatCore>, me: &Arc<Me>, did: &str) -> Result<(), Error> {
+        self.chat_dial_devices(core, me, did).await.0
+    }
+
+    /// `chat_dial`, and when it failed, the devices it could not even connect to (a timeout or a
+    /// network error; not one that answered and refused): the ones a wake may help.
+    pub(super) async fn chat_dial_devices(self: &Arc<Self>, core: &Arc<ChatCore>, me: &Arc<Me>, did: &str) -> (Result<(), Error>, Vec<[u8; 32]>) {
+        let mut unreached = Vec::new();
+        let res = self.chat_dial_each(core, me, did, &mut unreached).await;
+        if res.is_ok() {
+            unreached.clear();
+        }
+        (res, unreached)
+    }
+
+    async fn chat_dial_each(self: &Arc<Self>, core: &Arc<ChatCore>, me: &Arc<Me>, did: &str, unreached: &mut Vec<[u8; 32]>) -> Result<(), Error> {
         let ep = self.endpoint()?;
         let contact = self
             .shared
@@ -377,10 +403,14 @@ impl ChatRt {
                     if matches!(e, Error::Protocol(_)) {
                         self.log(format!("chat with {did}: {e}"));
                     }
+                    if matches!(e, Error::Net(_) | Error::Timeout) {
+                        unreached.push(cd.device);
+                    }
                     last = e;
                     continue;
                 }
                 Err(_) => {
+                    unreached.push(cd.device);
                     last = Error::Timeout;
                     continue;
                 }

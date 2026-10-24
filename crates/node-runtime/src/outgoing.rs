@@ -186,7 +186,10 @@ impl NodeCtx {
         } else {
             Msg::Hangup
         };
-        let dial_deadline = tokio::time::Instant::now() + DIAL_TOTAL;
+        // Legs that may redial a woken device (`connect_leg`) get the wake window on top.
+        let wakeable = contact.devices.iter().any(|d| self.can_wake(&contact.did, &d.device, wake::Kind::Call));
+        let wake_extra = if wakeable { Duration::from_millis(crate::push::CALL_WAKE_DIAL_MS) } else { Duration::ZERO };
+        let dial_deadline = tokio::time::Instant::now() + DIAL_TOTAL + wake_extra;
         let mut ring_deadline: Option<tokio::time::Instant> = None;
         let reason: String = loop {
             if *call.ended.lock() {
@@ -330,6 +333,8 @@ impl NodeCtx {
             let (tx, rx) = mpsc::unbounded_channel();
             legs.push(Some(tx));
             let leg = Leg {
+                ctx: self.clone(),
+                did: contact.did.clone(),
                 ep: ep.clone(),
                 device: device.clone(),
                 hello: {

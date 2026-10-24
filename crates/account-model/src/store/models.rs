@@ -273,8 +273,9 @@ pub struct State {
     /// `hint_key` is drawn once). Local: a push token belongs to this device.
     pub wake: Option<wake::WakeState>,
     /// Contacts this device still has to hand their current wake token (retried like
-    /// `token_outbox`; the token is read from `wake.issued` on each attempt). Local.
-    pub wake_outbox: BTreeSet<String>,
+    /// `token_outbox`; the token is read from `wake.issued` on each attempt), with the hex
+    /// device IDs that already took it: every device of a contact needs its own copy. Local.
+    pub wake_outbox: BTreeMap<String, BTreeSet<String>>,
 }
 
 /// See `State::private_ep`. `made == 0`: not scheduled yet (set on the first start).

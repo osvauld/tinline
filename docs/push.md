@@ -283,7 +283,15 @@ the push and call one core entry point (`on_wake(hint) -> WakeAction`).
      relay client behind `WakeRelay` (`HttpRelay` on reqwest); `set_push_target`; one wake task
      (register, hand `WakeTokens` to contacts, revoke outbox with retries); `WakeTokens` intake in
      `accept.rs`; in-process tests with a fake relay (`cargo test -p node-runtime --lib wake`).
-     Still open: 3b (wake on failed dial, call timing), the app API (`on_wake`, target setter).
+   - 3b done (2026-10-24): the relay client builds its own rustls config (ring + webpki roots;
+     live check `P2P_WAKE_LIVE=1 cargo test -p node-runtime --lib wake_live`); every device of a
+     contact gets its own `WakeTokens` copy (`State::wake_outbox`: DID -> devices that hold it);
+     `NodeCtx::wake_device` / `wake_unreached` / `fast_redial` (`push.rs`) are called by
+     `chat_kick`'s dial loop (a `msg` wake per unreached device when something is pending, then
+     fast redials at +2, 4, 7, 10, 15, 20, 30 s); `call.rs` `connect_leg` wakes a callee device
+     (`call`) after a first dial of 6 s and redials every 1 s for 30 s, state stays `Dialing`.
+     Tests: `dial_tests.rs` (W1, W2, W4/4b/4c, W8, W9, 410).
+     Still open: the app API (`on_wake`, target setter), B's ring window (slice 5).
 3. Android flavours: `play` (FCM) and `liberum` (no Google SDK, always-on); the no-Google
    build check; both in the release workflow. Then UnifiedPush in `liberum`.
 4. iOS PushKit + CallKit, then message alert push.
@@ -330,7 +338,11 @@ the push and call one core entry point (`on_wake(hint) -> WakeAction`).
    means moving the account (phrase or device link). Name and icon variant still to design.
 5. **Relay operations:** who runs it, uptime, what happens to wakes while it is down (senders
    fall back to normal retries; nothing breaks, sleeping devices just miss the wake).
-6. All PROVISIONAL numbers (token lifetime, rate limits, stale-call window).
+6. All PROVISIONAL numbers (token lifetime, rate limits, stale-call window). In code (3b,
+   `push.rs`): `MSG_REDIAL_AT_MS` (2, 4, 7, 10, 15, 20, 30 s after a msg wake), `CALL_REDIAL_MS` 1 s,
+   `CALL_WAKE_DIAL_MS` 30 s (from the wake), `CALL_FIRST_DIAL_MS` 6 s (first dial of a call that can
+   be woken, instead of 20 s), `CALL_ATTEMPT_MS` 3 s. A chat dial still waits `DIAL_TIMEOUT` (20 s)
+   before the msg wake: sending it earlier is a possible tuning.
 7. **iOS banner from a blocked contact before the revoke lands.** Accepted for now (about a minute,
    no name, no text). Later: ask Apple for the notification-filtering entitlement
    (`com.apple.developer.usernotifications.filtering`), so a Notification Service Extension can

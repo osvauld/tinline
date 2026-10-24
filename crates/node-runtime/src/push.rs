@@ -18,15 +18,21 @@
 //! Tokens are never logged. Unblocking is personal policy only: the contact simply becomes
 //! wanted again and gets a fresh token (new tag) once it holds us as a contact.
 //!
-//! Not here (slice 3b): sending a wake after a failed dial and the call timing. The dial
-//! failures to hook are `chat_runtime`'s chat dial and `outgoing.rs`'s call dial; the token comes
-//! from `State::wake.wake_for(did, device, kind, now_ms)`, the relay from [`NodeCtx::wake_relay`],
-//! and the answer goes back through `WakeState::wake_result`.
+//! Slice 3b, the sending side: [`NodeCtx::wake_device`] asks the relay to wake one device of a
+//! contact (the throttle and the 410/403 bookkeeping are `WakeState::wake_for` / `wake_result`).
+//! - Messages: `chat_runtime`'s dial loop calls [`NodeCtx::wake_unreached`] when a dial failed
+//!   with something to deliver, and [`NodeCtx::fast_redial`] for the pause before the next dial
+//!   (faster than the normal backoff for [`MSG_REDIAL_AT_MS`] after a wake was sent).
+//! - Calls: `call.rs`'s `Leg` wakes the callee device (kind `call`) after its first dial failed
+//!   and keeps redialling it every [`CALL_REDIAL_MS`] for [`CALL_WAKE_DIAL_MS`]; the call stays
+//!   `Dialing` and the protocol is unchanged (the callee never dials for a call).
+//!
+//! Not here: the app API (`on_wake`), the callee's ring window (slice 5).
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeSet, HashMap};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use parking_lot::Mutex;
 use proto::Msg;
@@ -46,6 +52,21 @@ pub const RELAY_URL: &str = "https://push.osvauld.com";
 pub const RELAY_TIMEOUT: Duration = Duration::from_secs(10);
 /// How often a running node looks at the 7-day renewal window of its tokens.
 pub const RENEW_EVERY: Duration = Duration::from_secs(12 * 3600);
+
+/// After a `msg` wake the contact is redialled at these offsets (ms since the wake), instead of
+/// the normal backoff, then the normal backoff goes on (PROVISIONAL: a woken phone needs a few
+/// seconds to start its node; the wake crate's 30 s throttle is the real rate limit).
+pub const MSG_REDIAL_AT_MS: [u64; 7] = [2_000, 4_000, 7_000, 10_000, 15_000, 20_000, 30_000];
+/// How often an outgoing call redials a device it has woken (PROVISIONAL, `docs/push.md` Calls).
+pub const CALL_REDIAL_MS: u64 = 1_000;
+/// How long an outgoing call keeps redialling a woken device, from the wake (PROVISIONAL: about
+/// the time A stays in `Dialing`; `docs/push.md` Calls).
+pub const CALL_WAKE_DIAL_MS: u64 = 30_000;
+/// With a call wake available, the first dial gives up after this (PROVISIONAL), so the wake
+/// goes out in seconds instead of after `DIAL_TIMEOUT`.
+pub const CALL_FIRST_DIAL_MS: u64 = 6_000;
+/// One redial attempt of a woken call (the next starts at least `CALL_REDIAL_MS` after it began).
+pub const CALL_ATTEMPT_MS: u64 = 3_000;
 
 /// A relay call that did not succeed. `status` is the HTTP status when the relay answered.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -90,6 +111,16 @@ pub trait WakeRelay: Send + Sync {
     fn revoke(&self, token: String) -> BoxFuture<Result<(), RelayError>>;
 }
 
+/// The TLS config for the relay: the ring provider named explicitly (nothing installs a process
+/// default) and the bundled webpki roots (no platform verifier, so no JNI setup on Android).
+fn tls_config() -> Result<rustls::ClientConfig, rustls::Error> {
+    let roots = rustls::RootCertStore { roots: webpki_roots::TLS_SERVER_ROOTS.to_vec() };
+    Ok(rustls::ClientConfig::builder_with_provider(Arc::new(rustls::crypto::ring::default_provider()))
+        .with_safe_default_protocol_versions()?
+        .with_root_certificates(roots)
+        .with_no_client_auth())
+}
+
 /// The real relay over HTTPS (reqwest on rustls, the stack iroh already links).
 #[derive(Clone)]
 pub struct HttpRelay {
@@ -110,7 +141,9 @@ impl HttpRelay {
     fn client(&self) -> Result<reqwest::Client, RelayError> {
         self.client
             .get_or_init(|| {
+                let tls = tls_config().map_err(|e| e.to_string())?;
                 reqwest::Client::builder()
+                    .tls_backend_preconfigured(tls)
                     // osvauld.com's bot protection answers generic agents with 403 (1010).
                     .user_agent(wake::user_agent(env!("CARGO_PKG_VERSION")))
                     .timeout(RELAY_TIMEOUT)
@@ -178,6 +211,8 @@ pub struct PushRt {
     /// Cuts a backoff short when something new needs doing.
     nudge: Notify,
     periodic: AtomicBool,
+    /// When a `msg` wake was last accepted for a contact (fast redials follow).
+    woken: Mutex<HashMap<String, Instant>>,
 }
 
 #[derive(Default)]
@@ -234,8 +269,8 @@ fn forget_gone(st: &mut State) -> bool {
         }
     }
     let before = st.wake_outbox.len();
-    let keep: Vec<String> = st.wake_outbox.iter().filter(|d| live_contact(st, d)).cloned().collect();
-    st.wake_outbox = keep.into_iter().collect();
+    let keep: Vec<String> = st.wake_outbox.keys().filter(|d| live_contact(st, d)).cloned().collect();
+    st.wake_outbox.retain(|d, _| keep.contains(d));
     changed |= st.wake_outbox.len() != before;
     changed
 }
@@ -256,6 +291,85 @@ impl NodeCtx {
     /// Replaces the relay client (tests, or an app pointing at another relay).
     pub fn set_wake_relay(&self, relay: Arc<dyn WakeRelay>) {
         *self.push.relay.lock() = Some(relay);
+    }
+
+    /// Asks the relay to wake one device of `did`: only if we hold a live token for it that allows
+    /// `kind` and its throttle allows another wake now (`WakeState::wake_for`). The relay's answer
+    /// updates the held token (410 drops it, 403 forgets the kind). `true`: the relay accepted
+    /// (202). Never logs the token.
+    pub async fn wake_device(self: &Arc<Self>, did: &str, device: [u8; 32], kind: Kind) -> bool {
+        let Ok(me) = self.me() else { return false };
+        let token = {
+            let mut s = self.shared.lock();
+            if s.epoch != me.epoch || !live_contact(&s.state, did) {
+                return false;
+            }
+            match s.state.wake.as_mut().and_then(|w| w.wake_for(did, &device, kind, now_ms())) {
+                Some(t) => t,
+                None => return false,
+            }
+        };
+        let status = self.wake_relay().wake(token, kind).await;
+        {
+            let mut s = self.shared.lock();
+            if s.epoch != me.epoch {
+                return false;
+            }
+            if let Some(w) = s.state.wake.as_mut() {
+                w.wake_result(did, &device, kind, status);
+            }
+        }
+        tracing::debug!("wake {kind:?} for a device of {}: {status}", crate::short(did));
+        // The throttle and a dropped token outlive a restart.
+        self.persist_in_background(me.epoch);
+        status == 202
+    }
+
+    /// Whether we hold a live token that can wake `device` of `did` for `kind` (not whether the
+    /// throttle would allow it now).
+    pub fn can_wake(&self, did: &str, device: &[u8; 32], kind: Kind) -> bool {
+        let s = self.shared.lock();
+        let now = now_ms();
+        live_contact(&s.state, did)
+            && s.state.wake.as_ref().is_some_and(|w| w.held.iter().any(|e| e.did == did && e.device == *device && e.held.exp_ms > now && e.held.kinds.allows(kind)))
+    }
+
+    /// A chat dial to `did` failed to reach these devices and there is something to deliver: wake
+    /// each one (W9) and remember it, so [`Self::fast_redial`] redials sooner. `true`: at least
+    /// one wake was accepted.
+    pub async fn wake_unreached(self: &Arc<Self>, did: &str, devices: &[[u8; 32]]) -> bool {
+        let mut set = tokio::task::JoinSet::new();
+        for device in devices {
+            let (this, did, device) = (self.clone(), did.to_string(), *device);
+            set.spawn(async move { this.wake_device(&did, device, Kind::Msg).await });
+        }
+        let mut any = false;
+        while let Some(done) = set.join_next().await {
+            any |= done.unwrap_or(false);
+        }
+        if any {
+            self.push.woken.lock().insert(did.to_string(), Instant::now());
+        }
+        any
+    }
+
+    /// The pause before the next dial of `did`, while a `msg` wake sent a moment ago is taking
+    /// effect ([`MSG_REDIAL_AT_MS`]); `None`: use the normal backoff.
+    pub fn fast_redial(&self, did: &str) -> Option<Duration> {
+        let mut woken = self.push.woken.lock();
+        let elapsed = woken.get(did)?.elapsed();
+        match MSG_REDIAL_AT_MS.iter().map(|ms| Duration::from_millis(*ms)).find(|at| *at > elapsed) {
+            Some(at) => Some(at - elapsed),
+            None => {
+                woken.remove(did);
+                None
+            }
+        }
+    }
+
+    /// The contact was reached: the fast redials are over.
+    pub fn wake_reached(&self, did: &str) {
+        self.push.woken.lock().remove(did);
     }
 
     /// Our platform push token: `Some` registers contacts' tokens at the relay and hands them
@@ -281,7 +395,7 @@ impl NodeCtx {
             }
             // Tokens issued under another target are gone; they are planned afresh.
             let w = st.wake.as_ref();
-            st.wake_outbox.retain(|d| w.is_some_and(|w| w.issued_for(d).is_some()));
+            st.wake_outbox.retain(|d, _| w.is_some_and(|w| w.issued_for(d).is_some()));
         }
         let saved = self.persist_for(Some(me.epoch));
         self.wake_kick();
@@ -317,7 +431,10 @@ impl NodeCtx {
             let mut s = self.shared.lock();
             let st = &mut s.state;
             let dids: Vec<String> = st.wake.iter().flat_map(|w| w.issued.iter().map(|e| e.did.clone())).collect();
-            st.wake_outbox.extend(dids);
+            // Same token, new key: every device of every contact needs it again.
+            for did in dids {
+                st.wake_outbox.insert(did, BTreeSet::new());
+            }
         }
         self.persist_in_background(self.shared.lock().epoch);
         self.wake_kick();
@@ -374,7 +491,7 @@ impl NodeCtx {
 
     /// One pass: forget what is gone, tell the relay about revokes, register what is missing,
     /// hand tokens to contacts.
-    async fn wake_round(self: &Arc<Self>, parked: &mut BTreeSet<String>) -> Round {
+    async fn wake_round(self: &Arc<Self>, parked: &mut BTreeSet<(String, [u8; 32])>) -> Round {
         let Ok(me) = self.me() else { return Round::Stop };
         let Ok(ep) = self.endpoint() else { return Round::Stop };
         let relay = self.wake_relay();
@@ -439,7 +556,10 @@ impl NodeCtx {
                         }
                         let st = &mut s.state;
                         let handed = st.wake.as_mut().map(|w| w.apply_register(pending, resp)).unwrap_or_default();
-                        st.wake_outbox.extend(handed.iter().map(|(did, _)| did.clone()));
+                        // A new token: no device holds it yet.
+                        for (did, _) in &handed {
+                            st.wake_outbox.insert(did.clone(), BTreeSet::new());
+                        }
                         handed.len()
                     };
                     self.persist_logged(me.epoch).await;
@@ -466,14 +586,24 @@ impl NodeCtx {
             }
             let st = &mut s.state;
             let mut owed = Vec::new();
-            for did in st.wake_outbox.clone() {
-                if parked.contains(&did) {
-                    continue;
-                }
+            for (did, have) in st.wake_outbox.clone() {
                 let issued = st.wake.as_ref().and_then(|w| w.issued_for(&did)).cloned();
                 let devices = st.contacts.iter().find(|c| c.did == did).map(|c| c.devices.clone());
                 match (issued, devices) {
-                    (Some(i), Some(d)) if !d.is_empty() => owed.push((did, d, i)),
+                    (Some(i), Some(d)) if !d.is_empty() => {
+                        // Every device of the contact needs its own copy.
+                        if d.iter().all(|x| have.contains(&hex::encode(x.device))) {
+                            st.wake_outbox.remove(&did);
+                        } else {
+                            let todo: Vec<ContactDevice> = d
+                                .into_iter()
+                                .filter(|x| !have.contains(&hex::encode(x.device)) && !parked.contains(&(did.clone(), x.device)))
+                                .collect();
+                            if !todo.is_empty() {
+                                owed.push((did, todo, i));
+                            }
+                        }
+                    }
                     // Nothing to hand over any more (re-planned on the next round if still due).
                     _ => {
                         st.wake_outbox.remove(&did);
@@ -484,38 +614,35 @@ impl NodeCtx {
         };
         for (did, devices, issued) in owed {
             let msg = Msg::WakeTokens { device: me.device, token: issued.token.clone(), exp_ms: issued.exp_ms, kinds: issued.kinds.bits() };
-            let mut taken = false;
-            let mut unreachable = false;
             for d in &devices {
                 match self.deliver_wake_tokens(&ep, d, &msg).await {
                     Ok(true) => {
-                        taken = true;
-                        break;
+                        {
+                            let mut s = self.shared.lock();
+                            let st = &mut s.state;
+                            let same = st.wake.as_ref().and_then(|w| w.issued_for(&did)).is_some_and(|i| i.token == issued.token);
+                            if same && let Some(have) = st.wake_outbox.get_mut(&did) {
+                                have.insert(hex::encode(d.device));
+                                let all = st.contacts.iter().find(|c| c.did == did).is_none_or(|c| c.devices.iter().all(|x| have.contains(&hex::encode(x.device))));
+                                if all {
+                                    st.wake_outbox.remove(&did);
+                                }
+                            }
+                        }
+                        self.persist_logged(me.epoch).await;
+                        self.log(format!("wake token delivered to {did}"));
+                        progress = true;
                     }
-                    Ok(false) => {}
+                    // The device does not hold us as a contact: wait for a reason to ask again
+                    // (a kick) instead of a retry loop.
+                    Ok(false) => {
+                        parked.insert((did.clone(), d.device));
+                    }
                     Err(e) => {
                         tracing::debug!("wake token to {}: {e}", crate::short(&did));
-                        unreachable = true;
+                        failed = true;
                     }
                 }
-            }
-            if taken {
-                {
-                    let mut s = self.shared.lock();
-                    let same = s.state.wake.as_ref().and_then(|w| w.issued_for(&did)).is_some_and(|i| i.token == issued.token);
-                    if same {
-                        s.state.wake_outbox.remove(&did);
-                    }
-                }
-                self.persist_logged(me.epoch).await;
-                self.log(format!("wake token delivered to {did}"));
-                progress = true;
-            } else if unreachable {
-                failed = true;
-            } else {
-                // Every device turned us away (they do not hold us as a contact): wait for a
-                // reason to ask again (a kick) instead of a retry loop.
-                parked.insert(did);
             }
         }
 
@@ -576,5 +703,9 @@ impl NodeCtx {
     }
 }
 
+#[cfg(test)]
+mod dial_tests;
+#[cfg(test)]
+mod live_tests;
 #[cfg(test)]
 mod tests;
