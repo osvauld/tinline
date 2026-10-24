@@ -191,6 +191,11 @@ async fn deliver(
     let mut resp = Fetch::Request(post(&req.url, headers, &req.body)?).send().await?;
     let status = resp.status_code();
     let text = if (200..300).contains(&status) { String::new() } else { resp.text().await.unwrap_or_default() };
+    if !matches!(req.auth, Auth::None) && !(200..300).contains(&status) {
+        // FCM/APNs error bodies name the reason (PERMISSION_DENIED, BadDeviceToken); no content.
+        let head: String = text.chars().take(300).collect();
+        worker::console_error!("provider answered {status}: {head}");
+    }
     Ok(push::outcome(target, status, &text))
 }
 
