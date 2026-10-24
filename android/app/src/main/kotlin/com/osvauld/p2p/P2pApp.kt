@@ -200,11 +200,11 @@ class P2pApp : Application(), NodeEvents {
         profiles.select(_accountDid.value.takeIf { _lock.value == LockState.UNLOCKED })
         rememberName()
         _contacts.value = node.contacts()
-        refreshRequests()
-        refreshBlocks()
+        Startup.trace("requests") { refreshRequests() }
+        Startup.trace("blocks") { refreshBlocks() }
         _status.value = node.status()
         scope.launch { groups.refresh() }
-        if (_lock.value == LockState.UNLOCKED) { refreshHistory(); refreshAvailability(); chat.refresh() }
+        if (_lock.value == LockState.UNLOCKED) { Startup.trace("history") { refreshHistory() }; Startup.trace("availability") { refreshAvailability() }; chat.refresh() }
         else { _history.value = emptyList(); _availability.value = Availability(true, null) }
         // The account to come back to if the app dies while a new one is being added.
         if (_hasIdentity.value && node.identityCommitted()) currentDid()?.let { lastPrefs.edit().putString("did", it).apply() }
@@ -281,11 +281,11 @@ class P2pApp : Application(), NodeEvents {
         if (node.lockState() != LockState.LOCKED) return node.lockState() != LockState.NO_IDENTITY
         val did = currentDid() ?: return false
         if (!UnlockStore.exists(this, did)) return false
-        when (val l = UnlockStore.load(this, did)) {
+        when (val l = Startup.trace("UnlockStore.load") { UnlockStore.load(this, did) }) {
             UnlockStore.Loaded.Gone -> { UnlockStore.clear(this, did); false }
             UnlockStore.Loaded.Transient -> false
             is UnlockStore.Loaded.Key -> try {
-                node.unlockWithKey(l.bytes); true
+                Startup.trace("unlockWithKey") { node.unlockWithKey(l.bytes) }; true
             } catch (e: uniffi.p2pcore.Exception.WrongPassphrase) {
                 Log.w(TAG, "unlockWithKey: key rejected")
                 UnlockStore.clear(this, did); false
