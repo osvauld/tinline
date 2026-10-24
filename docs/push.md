@@ -152,12 +152,29 @@ a new UnifiedPush endpoint). The sender keeps at most one token per (contact DID
 
 `POST /v1/register`, `POST /v1/wake {wake_token, kind}` → 202, `POST /v1/revoke {wake_token}`.
 
-- Rate limits per tag (PROVISIONAL): `msg` 1 per 30 s, `call` 3 per minute, 200 wakes per day;
-  per IP as well. A limited request gets 429 and the sender falls back to its normal retry.
-- No request logging of tokens or IPs; aggregate counters only.
-- Rust (axum; `a2` for APNs over HTTP/2; FCM HTTP v1; plain HTTPS POST for UnifiedPush).
-  New crate `crates/wake-relay` (binary). Deploy: a small VPS at `push.osvauld.com`.
-- Secrets (`.p8`, FCM service account, relay key) live only on the relay host, never in git.
+- Rate limits per tag (PROVISIONAL): `msg` 2 per minute, `call` 3 per minute; `register` 20
+  per minute per IP. A limited request gets 429 and the sender falls back to its normal retry.
+  (Cloudflare's limiter counts over 10 or 60 s windows only, so no daily cap for now.)
+- Answers: 202 sent; 410 drop the token (expired, revoked, push token gone, relay key retired);
+  429 / 503 retry later; 403 kind not allowed; 400 malformed.
+- No request logging of tokens or IPs; errors only.
+- Secrets (`.p8`, FCM service account, relay keys) live only in the relay's secret store, never
+  in git.
+
+### Relay on Cloudflare (decided 2026-10-24)
+
+- `crates/wake-relay-core`: all logic, no I/O, tested natively (`cargo test -p wake-relay-core
+  --lib`). The app core will use its token and hint formats.
+- `crates/wake-relay-worker`: the Worker (`workers-rs`, wasm32; outside the main workspace).
+  Deploy guide in its `README.md`. Storage: KV `WAKE_KV` (revoke list, shared provider bearers);
+  Cloudflare rate-limit bindings; Workers secrets.
+- Signing uses the runtime's WebCrypto (ECDSA P-256 for APNs, RSASSA-PKCS1-v1_5 for the FCM
+  service account), so no RSA crate is compiled to wasm.
+- APNs needs HTTP/2. Deployed Workers reach it through Cloudflare's proxy, which upgrades to
+  HTTP/2 (workerd issue #4841, not in Cloudflare's docs); `wrangler dev` cannot. The Worker's
+  `GET /v1/probe/apns` checks it once deployed. If it fails: the same core behind a small server
+  on Fly.io Mumbai.
+- Custom domain `push.osvauld.com` once the probe passes; until then `*.workers.dev`.
 
 ## Platforms
 
@@ -234,18 +251,18 @@ the push and call one core entry point (`on_wake(hint) -> WakeAction`).
 | Apple Developer Program (organization, D-U-N-S) | $99 / year (needed for TestFlight anyway) |
 | APNs, FCM, UnifiedPush | free |
 | Google Play account | $25 once (likely paid) |
-| Relay VPS | about $4–6 / month |
+| Relay (Cloudflare Workers) | free tier; about $5 / month on the paid plan if needed |
 
 ## Setup (user, needs the accounts)
 
 1. Apple: create an APNs auth key (`.p8`); enable Push Notifications on the app ID.
 2. Firebase: create a project, add `com.osvauld.tinline`, download `google-services.json`,
    create a service account key for the relay.
-3. VPS, DNS `push.osvauld.com`.
+3. Cloudflare: deploy the Worker (`crates/wake-relay-worker/README.md`), then the secrets.
 
 ## Build order
 
-1. Relay crate + its tests (in-memory fake APNs/FCM).
+1. Relay: `wake-relay-core` + tests (done 2026-10-24), the Worker (compiles; APNs probe not run yet).
 2. Core: tokens, `WakeTokens` on the wire, wake decision, revoke, `on_wake`; in-process tests.
 3. Android flavours: `play` (FCM) and `liberum` (no Google SDK, always-on); the no-Google
    build check; both in the release workflow. Then UnifiedPush in `liberum`.
@@ -265,7 +282,7 @@ the push and call one core entry point (`on_wake(hint) -> WakeAction`).
 | W5 | Call wake older than 30 s arrives | Android: nothing; iOS: reported and ended at once |
 | W6 | B blocks A, then A sends | Relay refuses after revoke; before revoke, B shows nothing and dials nothing |
 | W7 | `allow_calls(A, false)` | A's `call` wakes refused; `msg` wakes still work |
-| W8 | A sends 10 messages in 5 s | At most one `msg` wake per 30 s per device |
+| W8 | A sends 10 messages in 5 s | At most 2 `msg` wakes per minute per device |
 | W9 | B has two devices, both asleep | Both woken; both sync |
 | W10 | B's FCM/APNs token changes | Contacts receive new tokens; old ones stop working |
 | W11 | A offline before B wakes | B's dial-back fails quietly; message arrives at the next overlap |

@@ -1,0 +1,36 @@
+# The push wake relay (docs/push.md "Relay on Cloudflare"). Deploy guide: README.md.
+name = "tinline-wake"
+main = "build/worker/shim.mjs"
+compatibility_date = "2026-10-01"
+
+[build]
+command = "cargo install -q worker-build && worker-build --release"
+
+[vars]
+APNS_TOPIC = "com.osvauld.tinline"
+# "1" turns on GET /v1/probe/apns (the HTTP/2 check). Set to "0" once confirmed.
+PROBE = "1"
+
+# Revoke list and the shared provider bearers. Fill in the id from
+# `npx wrangler kv namespace create WAKE_KV`.
+[[kv_namespaces]]
+binding = "WAKE_KV"
+id = "REPLACE_WITH_KV_NAMESPACE_ID"
+
+# Per-token limits (PROVISIONAL, wake-relay-core relay.rs). namespace_id is any number unique
+# in the account.
+[[ratelimits]]
+name = "MSG_LIMITER"
+namespace_id = "7101"
+simple = { limit = 2, period = 60 }
+
+[[ratelimits]]
+name = "CALL_LIMITER"
+namespace_id = "7102"
+simple = { limit = 3, period = 60 }
+
+# Per caller IP, for /v1/register.
+[[ratelimits]]
+name = "REGISTER_LIMITER"
+namespace_id = "7103"
+simple = { limit = 20, period = 60 }
