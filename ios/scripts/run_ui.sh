@@ -13,6 +13,7 @@ xcrun simctl bootstatus "$UDID" -b >/dev/null
 xcrun simctl uninstall "$UDID" com.osvauld.tinline 2>/dev/null || true
 xcrun simctl keychain "$UDID" reset 2>/dev/null || true
 status=0
+start=$(date '+%Y-%m-%d %H:%M:%S')
 xcodebuild test -project ios/Tinline.xcodeproj -scheme TinlineUI -destination "id=$UDID" -derivedDataPath "$DD" \
   -resultBundlePath "$OUT/result.xcresult" ${ONLY:+-only-testing:"$ONLY"} -quiet || status=$?
 xcrun xcresulttool export attachments --path "$OUT/result.xcresult" --output-path "$OUT/raw" >/dev/null 2>&1 || true
@@ -29,6 +30,9 @@ for test in manifest:
         name = a.get("suggestedHumanReadableName") or a["exportedFileName"]
         shutil.copy(os.path.join(raw, a["exportedFileName"]), os.path.join(shots, name))
 EOF
+# The app's own log lines (NSLog) from the run, zipped with the shots.
+xcrun simctl spawn "$UDID" log show --start "$start" --style compact --predicate 'process == "Tinline"' > "$OUT/shots/app.log" 2>&1 || true
+grep -E 'Tinline: ' "$OUT/shots/app.log" | tail -20 || true
 (cd "$OUT/shots" && ls && zip -q ../shots.zip ./* 2>/dev/null || true)
 xcrun xcresulttool get test-results summary --path "$OUT/result.xcresult" 2>/dev/null | grep -E '"(result|failureText)"' | head -10 || true
 if [ "$status" -eq 0 ]; then echo "UI TEST: passed"; else echo "UI TEST: FAILED (xcodebuild exit $status)"; fi
