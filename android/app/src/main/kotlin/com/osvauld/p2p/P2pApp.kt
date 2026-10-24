@@ -215,7 +215,7 @@ class P2pApp : Application(), NodeEvents {
         if (notify) _unlinked.value = name
         try { lifecycle.submit { selectLastAccountIfNone() }.get() } catch (e: Exception) { Log.w(TAG, "accountGone: ${e.javaClass.simpleName}") }
         refresh()
-        if (node.hasIdentity()) { Notifications.cancelLocked(this); CoreService.ensureRunning(this); startNode() }
+        if (node.hasIdentity()) { Notifications.cancelLocked(this); CoreService.ensureAlwaysOn(this); startNode() }
     }
 
     private val lastPrefs by lazy { getSharedPreferences("accounts", Context.MODE_PRIVATE) }
@@ -344,7 +344,7 @@ class P2pApp : Application(), NodeEvents {
         catch (e: java.util.concurrent.ExecutionException) { throw e.cause ?: e }
         refresh()
         Notifications.cancelLocked(this)
-        CoreService.ensureRunning(this)
+        CoreService.ensureAlwaysOn(this)
         startNode()
     }
 
@@ -414,7 +414,7 @@ class P2pApp : Application(), NodeEvents {
     fun startServices() {
         refresh()
         Notifications.cancelLocked(this)
-        CoreService.ensureRunning(this)
+        CoreService.ensureAlwaysOn(this)
         startNode()
     }
 
@@ -443,6 +443,8 @@ class P2pApp : Application(), NodeEvents {
                     return@execute
                 }
                 Notifications.cancelLocked(this)
+                // Wake-by-push: tell the core where this device can be woken (or take the tokens back in always-on mode).
+                WakeHandler.syncTarget(this)
                 try { node.start() } catch (e: Exception) { Log.e(TAG, "node.start failed", e) }
                 refresh()
             } catch (e: Throwable) { Log.e(TAG, "startNode", e) }
@@ -537,6 +539,8 @@ class P2pApp : Application(), NodeEvents {
         try { node.notDeliveredReason(peerDid, messageId) } catch (e: Exception) { null }
     override fun onIncomingCall(call: CallInfo) = calls.onIncoming(call)
     override fun onCallState(callId: String, state: CallState) {
+        // A call wake's ring ("wake:<did>") is not a call: only its end matters (WakeRing).
+        if (WakeRingLogic.isWakeCallId(callId)) { if (state is CallState.Ended) WakeRing.onEnded(this, callId); return }
         if (state is CallState.Ended) refreshHistory()
         calls.onState(callId, state)
     }

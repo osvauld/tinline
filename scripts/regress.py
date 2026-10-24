@@ -51,7 +51,7 @@ def main():
     if emus:
         if not a.skip_build:
             results.append(step("build android", [PY, "scripts/build_android.py", "--abis", "x86_64"]))
-        apk = ROOT / "android/app/build/outputs/apk/debug/app-debug.apk"
+        apk = ROOT / "android/app/build/outputs/apk/play/debug/app-play-debug.apk"
         for e in emus:
             results.append(step(f"install {e}", [ADB, "-s", e, "install", "-r", str(apk)]))
             results.append(step(f"e2e android {e}", [PY, "scripts/e2e_android.py", "--fresh", "--serial", e]))

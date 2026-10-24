@@ -16,9 +16,9 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-APK = ROOT / "android/app/build/outputs/apk/debug/app-debug.apk"
-RELEASE_APK = ROOT / "android/app/build/outputs/apk/release/app-release.apk"
-AAB = ROOT / "android/app/build/outputs/bundle/release/app-release.aab"
+APK = ROOT / "android/app/build/outputs/apk/play/debug/app-play-debug.apk"
+RELEASE_APK = ROOT / "android/app/build/outputs/apk/play/release/app-play-release.apk"
+AAB = ROOT / "android/app/build/outputs/bundle/playRelease/app-play-release.aab"
 OUT = Path.home() / "tinline-builds"
 
 
@@ -42,7 +42,7 @@ def main():
     if Path("/usr/lib/jvm/java-21-openjdk").is_dir():
         env["JAVA_HOME"] = "/usr/lib/jvm/java-21-openjdk"
 
-    task = ":app:bundleRelease" if a.bundle else ":app:assembleRelease" if a.release else ":app:assembleDebug"
+    task = ":app:bundlePlayRelease" if a.bundle else ":app:assemblePlayRelease" if a.release else ":app:assemblePlayDebug"
     gradle = ["./gradlew", "--console=plain", task]
     if a.bundle:
         props = Path.home() / ".gradle/gradle.properties"

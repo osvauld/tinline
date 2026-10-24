@@ -139,25 +139,34 @@ jobs:
           test -n "$KEYSTORE_BASE64" || { echo 'Missing Android release keystore secret'; exit 1; }
           umask 077
           printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/tinline-release.jks"
-      - name: Build signed release APK
+      # Two editions (docs/push.md "Editions"): Liberum (no Google code) is the APK on GitHub Releases and the site;
+      # Play is the bundle for the Play Store, with the Firebase settings from secrets (optional: without them the
+      # Play build is always-on only, so set them before a Play upload).
+      - name: Build signed release APK (Liberum) and bundle (Play)
         working-directory: android
         env:
           ORG_GRADLE_PROJECT_RELEASE_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
           ORG_GRADLE_PROJECT_RELEASE_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ORG_GRADLE_PROJECT_RELEASE_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
+          FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
+          FIREBASE_GCM_SENDER_ID: ${{ secrets.FIREBASE_GCM_SENDER_ID }}
         run: |
           export ORG_GRADLE_PROJECT_RELEASE_STORE_FILE="$RUNNER_TEMP/tinline-release.jks"
-          ./gradlew --no-daemon --console=plain :app:assembleRelease \
+          ./gradlew --no-daemon --console=plain :app:assembleLiberumRelease :app:bundlePlayRelease \
             -PrequireReleaseSigning=true -PversionName="$VERSION" -PversionCode="$VERSION_CODE" \
             -Pabis=x86_64,arm64-v8a
-      - name: Verify APK signature and collect artifact
+      - name: Verify the Liberum APK has no Google code
+        run: python3 scripts/check_no_google.py android/app/build/outputs/apk/liberum/release/app-liberum-release.apk
+      - name: Verify APK signature and collect artifacts
         run: |
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs \
-            android/app/build/outputs/apk/release/app-release.apk
+            android/app/build/outputs/apk/liberum/release/app-liberum-release.apk
           mkdir -p dist/android
-          cp android/app/build/outputs/apk/release/app-release.apk "dist/android/tinline-v${VERSION}.apk"
+          cp android/app/build/outputs/apk/liberum/release/app-liberum-release.apk "dist/android/tinline-liberum-v${VERSION}.apk"
+          cp android/app/build/outputs/bundle/playRelease/app-play-release.aab "dist/android/tinline-play-v${VERSION}.aab"
           cd dist/android
-          sha256sum *.apk > SHA256SUMS
+          sha256sum *.apk *.aab > SHA256SUMS
       - name: Remove keystore
         if: always()
         run: rm -f "$RUNNER_TEMP/tinline-release.jks"
@@ -195,7 +204,7 @@ jobs:
             if [ "$GITHUB_REF_TYPE" = tag ]; then from=(--verify-tag); else from=(--target "$GITHUB_SHA"); fi
             # The release's own notes when docs/releases/<tag>.md exists, else a generic candidate note.
             if [ -f "docs/releases/$TAG.md" ]; then notes=(--notes-file "docs/releases/$TAG.md"); else
-              notes=(--notes 'Candidate Linux tarball, Debian package, AppImage, and signed Android APK. Test before publishing. Linux build baseline: Ubuntu 24.04; older distros are not verified.'); fi
+              notes=(--notes 'Candidate Linux tarball, Debian package, AppImage, signed Android APK (Tinline Liberum) and Play bundle. Test before publishing. Linux build baseline: Ubuntu 24.04; older distros are not verified.'); fi
             gh release create "$TAG" "${from[@]}" --draft --title "Tinline $TAG" "${notes[@]}"
           fi
           mapfile -d '' files < <(find artifacts -type f -print0)

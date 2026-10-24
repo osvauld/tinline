@@ -313,6 +313,20 @@ the push and call one core entry point (`on_wake(hint) -> WakeAction`).
      start) and `on_wake(data["h"])` from `onMessageReceived`.
 3. Android flavours: `play` (FCM) and `liberum` (no Google SDK, always-on); the no-Google
    build check; both in the release workflow. Then UnifiedPush in `liberum`.
+   - Slice 6 done (2026-10-24, `android/`): flavour dimension `edition` (`play`, `liberum`, applicationId
+     `com.osvauld.tinline.liberum`). Seam: `PushProvider` (`PushMode.kt`); `src/play` = FCM
+     (`PlayPush.kt`, `WakeMessagingService`, manifest with analytics/ad-id off and auto-init off), `src/liberum` =
+     `NoPush`. Firebase is started by hand (`FirebaseOptions`, no google-services plugin or json) from
+     `FIREBASE_*` values in `android/firebase.properties` (gitignored), Gradle properties or env; without them
+     `play` is always-on. `WakeHandler`: `onWake(hint)` unlocks with the remembered key, calls `Node.on_wake`, then
+     `Ring` -> `WakeRing` (CallStyle notification, same id as the real call, so it is replaced in place; Answer ->
+     `answer_wake_ring`, "Connecting…"; Decline -> `decline_wake_ring`; ends on `on_call_state("wake:<did>", Ended)`),
+     `DialedBack` -> keep the node up, `Locked`/`NoIdentity` -> generic "You may have a new message". The real
+     `on_incoming_call` takes the ring over by DID (an early answer carries into the call). Push mode: no service at
+     boot or app open; a wake or call raises `CoreService`, which stops itself 90 s after the last activity.
+     "Stay connected all the time" (Settings > Background & battery, play only) keeps the old always-on service and
+     sets `set_push_target(None)`. `scripts/check_no_google.py` is the W13 check (CI runs it on the Liberum APK).
+     Not device-tested; FCM secrets and the relay's FCM credential are still pending.
 4. iOS PushKit + CallKit, then message alert push.
 5. Device tests (Pixel 3a; a real iPhone), Play console texts, privacy policy.
 

@@ -223,19 +223,43 @@ class IncomingCallActivity : ComponentActivity() {
             app.calls.answerWithVideo()
             startActivity(Intent(this@IncomingCallActivity, CallActivity::class.java)); finish()
         }
+        // A call wake rings before the call has arrived (WakeRing); Answer asks for the microphone, then waits for the call.
+        val answerWake = registerMicThen { WakeRing.answer(app) }
+        if (savedInstanceState == null) takeWakeAnswer(intent, answerWake)
+        wakeAnswer = answerWake
         setContent {
             TinlineTheme(dark = true) {
                 val ui by app.calls.ui.collectAsState()
+                val wake by WakeRing.state.collectAsState()
                 val u = ui
-                LaunchedEffect(u?.state) {
-                    if (u == null) finish()
-                    else if (u.state is CallState.Active) {
+                val w = wake
+                LaunchedEffect(u?.state, u?.answered, w == null) {
+                    if (u == null && w == null) finish()
+                    // Answered on the wake screen: the call is in, carry on to the call screen.
+                    else if (u != null && (u.state is CallState.Active || u.answered)) {
                         startActivity(Intent(this@IncomingCallActivity, CallActivity::class.java)); finish()
                     }
+                }
+                if (u == null && w != null) {
+                    if (w.answered) CallFocus(w.name, w.did, active = false, ringing = false, incoming = true) {
+                        Text("Connecting…", style = TinType.bodyL, color = Tin.c.ink)
+                    } else IncomingContent(w.name, w.did, onDecline = { WakeRing.decline(app); finish() }, onAnswer = { answerWake() })
                 }
                 if (u != null) IncomingContent(u.info.peerName, u.info.peerDid, onDecline = { app.calls.decline(); finish() }, onAnswer = { answerWithMic() }, video = u.info.video,
                     onVideo = { answerWithVideo() })
             }
+        }
+    }
+
+    private var wakeAnswer: (() -> Unit)? = null
+
+    override fun onNewIntent(intent: Intent) { super.onNewIntent(intent); setIntent(intent); wakeAnswer?.let { takeWakeAnswer(intent, it) } }
+
+    /** The wake notification's Answer: answer once (the extra is taken so a recreation does not answer again). */
+    private fun takeWakeAnswer(i: Intent?, answer: () -> Unit) {
+        if (i?.getBooleanExtra(Notifications.EXTRA_WAKE_ANSWER, false) == true) {
+            i.removeExtra(Notifications.EXTRA_WAKE_ANSWER)
+            if (WakeRing.active) answer()
         }
     }
 }

@@ -56,7 +56,7 @@ Bucket layout:
 
 ```text
 tinline.gpg
-releases/v0.1.0/tinline-v0.1.0.apk
+releases/v0.1.0/tinline-liberum-v0.1.0.apk
 releases/v0.1.0/tinline-0.1.0-linux-x86_64.tar.gz
 releases/v0.1.0/tinline-0.1.0-linux-x86_64.AppImage
 releases/v0.1.0/SHA256SUMS

@@ -69,6 +69,7 @@ fun BatteryScreen(missing: List<Need>, onBack: () -> Unit, onFix: (Need) -> Unit
                 Text("Keep my line open", style = TinType.bodyL.copy(fontWeight = FontWeight.SemiBold), color = c.ink)
                 Hint("Tinline stays connected in the background so calls ring like a normal phone. It uses a little battery. The checklist below is what Android needs to allow that.")
             }
+            StayConnectedRow()
             SectionLabel("CHECKLIST")
             CheckRow(PgIcons.Battery, "Battery", if (Need.Battery in missing) "Optimised — Android may pause Tinline" else null, Need.Battery !in missing, "On") { onFix(Need.Battery) }
             CheckRow(PgIcons.Bell, "Notifications", null, Need.Notifications !in missing, "On") { onFix(Need.Notifications) }
@@ -82,6 +83,32 @@ fun BatteryScreen(missing: List<Need>, onBack: () -> Unit, onFix: (Need) -> Unit
             }
         }
     }
+}
+
+/**
+ * "Stay connected all the time" (docs/push.md): off = Tinline rests and a wake-up nudge starts it; on = the always-on
+ * service, as before. Only where the edition can wake by push (Play, configured); Liberum shows nothing new.
+ */
+@Composable
+private fun StayConnectedRow() {
+    val ctx = LocalContext.current
+    val canChoose = remember { PushMode.canChoose(ctx) }
+    if (!canChoose) return
+    var alwaysOn by remember { mutableStateOf(PushMode.mode(ctx) == PushPolicy.Mode.ALWAYS_ON) }
+    ListItem("Stay connected all the time", icon = PgIcons.Phone,
+        sub = if (alwaysOn) "Tinline keeps your line open, so calls and messages arrive straight away. It uses a little more battery."
+              else "Tinline rests until someone reaches you, then wakes up. The wake-up carries no message, only a nudge.",
+        trailing = {
+            TinSwitch(alwaysOn, { on ->
+                alwaysOn = on
+                PushMode.setAlwaysOn(ctx, on)
+                val app = P2pApp.get(ctx)
+                app.scope.launch {
+                    WakeHandler.syncTarget(app)
+                    if (on) CoreService.ensureRunning(ctx) else CoreService.poke("push mode")
+                }
+            }, "Stay connected all the time")
+        })
 }
 
 @Composable

@@ -43,6 +43,10 @@ object Notifications {
      * left "in call" showing on Pixel 8 / moto after the log said idle, 2026-10-19).
      */
     const val ID_CALL = 7
+    /** The content-free "you may have a new message" notice after a wake the app could not open (locked). */
+    const val ID_WAKE_NOTICE = 8
+    /** Opens the wake ring screen and answers it (the wake notification's Answer). */
+    const val EXTRA_WAKE_ANSWER = "wake_answer"
 
     private fun nm(c: Context) = c.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
@@ -181,10 +185,38 @@ object Notifications {
 
     fun incoming(c: Context, call: CallInfo) {
         if (!AlertPrefs.calls(c)) return   // Settings › Notifications › Calls off
-        val name = call.peerName.ifBlank { "Unknown" }
+        ring(c, call.peerName.ifBlank { "Unknown" }, call.video,
+            answer = activity(c, CallActivity::class.java, 21) { it.putExtra(CallActivity.EXTRA_ANSWER, true) },
+            decline = service(c, CoreService.ACTION_DECLINE, 22))
+    }
+
+    /**
+     * A call wake (docs/push.md): rings before the call itself has arrived, with the user's own name for the contact.
+     * Same look and id as [incoming], so the real call replaces it in place. Answer opens the wake screen (it asks for the
+     * microphone first); Decline goes to the service. Nothing here carries message text; the name is looked up locally.
+     */
+    fun wakeRing(c: Context, name: String) {
+        if (!AlertPrefs.calls(c)) return
+        ring(c, name.ifBlank { "Someone" }, false,
+            answer = activity(c, IncomingCallActivity::class.java, 23) { it.putExtra(EXTRA_WAKE_ANSWER, true) },
+            decline = service(c, CoreService.ACTION_WAKE_DECLINE, 24))
+    }
+
+    /** A wake the app could not open (still locked): names nobody and says nothing, only that something may be waiting. */
+    fun wakeNotice(c: Context) {
+        if (!AlertPrefs.messages(c)) return
+        val n = Notification.Builder(c, CH_MESSAGES)
+            .setSmallIcon(R.drawable.ic_stat_tinline)
+            .setAutoCancel(true)
+            .setContentTitle("You may have a new message")
+            .setContentText("Open Tinline and unlock to catch up.")
+            .setContentIntent(activity(c, MainActivity::class.java, 41))
+            .build()
+        try { nm(c).notify(ID_WAKE_NOTICE, n) } catch (e: SecurityException) { }
+    }
+
+    private fun ring(c: Context, name: String, video: Boolean, answer: PendingIntent, decline: PendingIntent) {
         val full = activity(c, IncomingCallActivity::class.java, 20)
-        val answer = activity(c, CallActivity::class.java, 21) { it.putExtra(CallActivity.EXTRA_ANSWER, true) }
-        val decline = service(c, CoreService.ACTION_DECLINE, 22)
         val b = Notification.Builder(c, CH_CALLS)
             .setSmallIcon(R.drawable.ic_stat_tinline)
             .setCategory(Notification.CATEGORY_CALL)
@@ -196,9 +228,9 @@ object Notifications {
             .setTimeoutAfter(CallController.RING_TIMEOUT_MS)
         if (Build.VERSION.SDK_INT >= 31) {
             val p = Person.Builder().setName(name).setImportant(true).build()
-            b.style = Notification.CallStyle.forIncomingCall(p, decline, answer).setIsVideo(call.video)
+            b.style = Notification.CallStyle.forIncomingCall(p, decline, answer).setIsVideo(video)
         } else {
-            b.setContentTitle(name).setContentText(if (call.video) "Incoming video call" else "Incoming call")
+            b.setContentTitle(name).setContentText(if (video) "Incoming video call" else "Incoming call")
             b.addAction(Notification.Action.Builder(Icon.createWithResource(c, android.R.drawable.ic_menu_close_clear_cancel), "Decline", decline).build())
             b.addAction(Notification.Action.Builder(Icon.createWithResource(c, android.R.drawable.sym_action_call), "Answer", answer).build())
         }

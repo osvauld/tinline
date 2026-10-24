@@ -1,0 +1,9 @@
+# Copy to android/firebase.properties (gitignored) and fill in from the Firebase console
+# (Project settings > Your apps > Android app com.osvauld.tinline). Never commit real values.
+# The same names also work as -P Gradle properties or environment variables.
+# Without them the `play` build still compiles and runs, but push wake-ups are unavailable and
+# the app stays always-on.
+FIREBASE_PROJECT_ID=tinline-3f889
+FIREBASE_APP_ID=
+FIREBASE_API_KEY=
+FIREBASE_GCM_SENDER_ID=
