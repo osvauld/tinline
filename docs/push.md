@@ -375,9 +375,47 @@ the push and call one core entry point (`on_wake(hint) -> WakeAction`).
    `push.rs`): `MSG_REDIAL_AT_MS` (2, 4, 7, 10, 15, 20, 30 s after a msg wake), `CALL_REDIAL_MS` 1 s,
    `CALL_WAKE_DIAL_MS` 30 s (from the wake), `CALL_FIRST_DIAL_MS` 6 s (first dial of a call that can
    be woken, instead of 20 s), `CALL_ATTEMPT_MS` 3 s. Slice 5 (`ring.rs`): `WAKE_RING_WINDOW_MS` 15 s from the wake's arrival,
-   `WAKE_RING_CAP_MS` 40 s in total. A chat dial still waits `DIAL_TIMEOUT` (20 s)
-   before the msg wake: sending it earlier is a possible tuning.
+   `WAKE_RING_CAP_MS` 40 s in total. Slice 7 (`push.rs`): `MSG_EARLY_WAKE_MS` 3 s: a chat dial with
+   something to deliver that has not connected after 3 s sends the `msg` wake in parallel with the
+   still-running dial (`NodeCtx::early_wake`, called by `chat_kick`; only for devices we hold a live
+   `msg` token for; the wake throttle still decides, and the post-failure `wake_unreached` stays as
+   the fallback, throttled away when the early wake went out). A dial that connects sooner sends
+   nothing. Call timing is unchanged.
 7. **iOS banner from a blocked contact before the revoke lands.** Accepted for now (about a minute,
    no name, no text). Later: ask Apple for the notification-filtering entitlement
    (`com.apple.developer.usernotifications.filtering`), so a Notification Service Extension can
    open the hint and hide wakes from blocked contacts.
+8. **Token handover at contact setup.** A new contact cannot wake us until our first wake round has
+   run while the app is up (register at the relay, then `WakeTokens` to each device of the contact).
+   If the app is closed right after adding the contact, the token never reaches them and they cannot
+   wake us. Options (not implemented; the user decides):
+   - (a) carry the wake token in `ContactWelcome` / the contact request, so it arrives with the contact;
+   - (b) Android keeps the service up while `wake_outbox` is non-empty, bounded (for example 60 s);
+   - (c) both.
+9. **After a wake the process lingers.** Seen on device (2026-10-24): after `CoreService` stops, the
+   process and its node keep running. Check that the node is stopped with the service in push mode.
+10. **Call audio after a push wake needs a device check.** When a call wake started `CoreService`,
+    Android logged "Foreground service started from background can not have
+    location/camera/microphone access". The microphone type may be refused for a service started by
+    a push; the existing fallback starts it as `specialUse`, but whether call audio then works is
+    unverified.
+
+## Device test, 2026-10-24 (Pixel 3a, play edition, desktop sender, relay `push.osvauld.com`)
+
+First real run. Passed end to end, with these numbers and findings:
+
+- **Message to a fully stopped phone:** the sender's chat dial ran its full `DIAL_TIMEOUT` (20 s)
+  before `wake_unreached` sent the `msg` wake; FCM delivered 2.2 s later; the phone connected 3 s
+  after the wake. Total about 24 s, 20 s of it waiting. Fix: `MSG_EARLY_WAKE_MS` (slice 7, Open 6).
+- **Call to a stopped phone:** the first dial gave up at about 6.8 s (`CALL_FIRST_DIAL_MS`), wake,
+  the phone rang 6.3 s later. Acceptable for now; unchanged.
+- **The phone failed silently for a long time:** its push errors were `tracing::debug!`, which
+  Android does not show, and a successful register / handover / receipt was not logged. Slice 7 logs
+  these at info (no tokens, hints, full DIDs or endpoints): `wake register ok/failed`, `wake token
+  handed to / refused by / not delivered to a device of <short did>`, `wake token received and
+  accepted / refused: <reason>`, `wake <Kind> sent for a device of <short did>: relay status N`,
+  `wake received: outcome <Kind>`.
+- **Notification text:** during a wake the foreground-service notification read "Available for
+  calls" (the always-on text). In push mode it now reads "Getting your messages…"; always-on mode
+  keeps "Available for calls".
+- Open 8, 9 and 10 record what else was seen.

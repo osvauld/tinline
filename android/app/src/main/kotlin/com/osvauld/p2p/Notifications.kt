@@ -121,18 +121,23 @@ object Notifications {
     private fun service(c: Context, action: String, code: Int): PendingIntent =
         PendingIntent.getService(c, code, Intent(c, CoreService::class.java).setAction(action), flags())
 
-    private fun idleTitle(): String {
+    /** Push mode (no always-on service): the service only runs for a wake, so it says what it is doing. */
+    private fun wakeOnly(c: Context) = PushMode.pushOn(c)
+
+    private fun idleTitle(c: Context): String {
         val app = P2pApp.instance
         return when {
+            wakeOnly(c) -> c.getString(R.string.wake_service_title)
             !app.availability.value.available -> "Not available"
             app.status.value?.online == false -> "Offline — reconnecting"
             else -> "Available for calls"
         }
     }
 
-    private fun idleText(): String {
+    private fun idleText(c: Context): String {
         val app = P2pApp.instance
         return when {
+            wakeOnly(c) -> c.getString(R.string.wake_service_text)
             !app.availability.value.available -> "Calls won’t ring. Tap to change."
             app.status.value?.online == false -> "Your calls come through again once you’re back online."
             else -> "Your line is open. Tap to change."
@@ -149,8 +154,8 @@ object Notifications {
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setColor(0xFF0B6B5B.toInt())
-            .setContentTitle(inCall ?: idleTitle())
-            .setContentText(if (inCall != null) "Tap to return to the call" else idleText())
+            .setContentTitle(inCall ?: idleTitle(c))
+            .setContentText(if (inCall != null) "Tap to return to the call" else idleText(c))
             .setContentIntent(
                 if (groupCall) activity(c, MainActivity::class.java, 13) { it.putExtra(EXTRA_GCALL_OPEN, true) }
                 else if (inCall != null) activity(c, CallActivity::class.java, 10)

@@ -133,6 +133,49 @@ async fn wake_w2_fast_redials_beat_the_normal_backoff() {
     assert!(started.elapsed() < Duration::from_millis(6500), "took {:?}", started.elapsed());
 }
 
+// ---- early message wake ----
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn wake_early_fires_at_3s_while_the_dial_still_hangs() {
+    let lookup = MemoryLookup::new();
+    let (a, b) = pair_with_token(&lookup).await;
+    let token = b.issued_to(&a).unwrap().token;
+    b.ep.close().await;
+    let early = a.ctx.early_wake(&b.did(), vec![b.me.device]);
+    tokio::time::sleep(Duration::from_millis(MSG_EARLY_WAKE_MS - 500)).await;
+    assert!(a.relay.wakes.lock().is_empty(), "not before the delay");
+    tokio::time::sleep(Duration::from_millis(1_000)).await;
+    assert_eq!(*a.relay.wakes.lock(), vec![(token, Kind::Msg)], "one msg wake, the dial is still going");
+    drop(early);
+    // The post-failure path is throttled away by the early wake.
+    assert!(!a.ctx.wake_unreached(&b.did(), &[b.me.device]).await);
+    assert_eq!(a.relay.wakes.lock().len(), 1);
+    assert!(a.ctx.fast_redial(&b.did()).is_some(), "the fast redials follow the early wake");
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn wake_early_is_cancelled_by_a_dial_that_connects_at_1s() {
+    let lookup = MemoryLookup::new();
+    let (a, b) = pair_with_token(&lookup).await;
+    let early = a.ctx.early_wake(&b.did(), vec![b.me.device]);
+    tokio::time::sleep(Duration::from_secs(1)).await;
+    assert!(try_dial(&a, b.me.device).await);
+    drop(early);
+    tokio::time::sleep(Duration::from_millis(MSG_EARLY_WAKE_MS + 500)).await;
+    assert!(a.relay.wakes.lock().is_empty(), "connected before 3 s, no wake");
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn wake_early_does_nothing_without_a_token() {
+    let lookup = MemoryLookup::new();
+    let (a, b) = (node(&lookup).await, node(&lookup).await);
+    befriend(&a, &b);
+    b.ep.close().await;
+    let _early = a.ctx.early_wake(&b.did(), vec![b.me.device]);
+    tokio::time::sleep(Duration::from_millis(MSG_EARLY_WAKE_MS + 500)).await;
+    assert!(a.relay.wakes.lock().is_empty(), "no token, no wake");
+}
+
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn wake_w8_several_sends_wake_a_device_once_per_throttle_window() {
     let lookup = MemoryLookup::new();
