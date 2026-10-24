@@ -22,7 +22,7 @@ type WakeHook = Arc<dyn Fn(&str, Kind) + Send + Sync>;
 #[derive(Default)]
 pub(super) struct FakeRelay {
     pub(super) registers: Mutex<Vec<RegisterRequest>>,
-    revokes: Mutex<Vec<String>>,
+    pub(super) revokes: Mutex<Vec<String>>,
     fail_register: AtomicU32,
     fail_revoke: AtomicU32,
     /// Every wake asked for: the token and the kind.
@@ -81,6 +81,8 @@ impl WakeRelay for FakeRelay {
 pub(super) struct Rec {
     pub(super) incoming: Mutex<Vec<CallInfo>>,
     pub(super) states: Mutex<Vec<CallState>>,
+    /// The same events with the call id they were reported under.
+    pub(super) events: Mutex<Vec<(String, CallState)>>,
 }
 impl NodeSink for Rec {
     fn on_status(&self, _: NodeStatus) {}
@@ -88,7 +90,8 @@ impl NodeSink for Rec {
     fn on_incoming_call(&self, info: CallInfo) {
         self.incoming.lock().push(info);
     }
-    fn on_call_state(&self, _: String, state: CallState) {
+    fn on_call_state(&self, id: String, state: CallState) {
+        self.events.lock().push((id, state.clone()));
         self.states.lock().push(state);
     }
     fn on_log(&self, _: String) {}

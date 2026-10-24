@@ -98,8 +98,21 @@ A (caller)                 Relay / push                     B (asleep)
 - B rings before the call is connected, so answering may wait a moment for A's next redial;
   the UI shows "Connecting…" on answer until `CallHello` arrives.
 - **A hangs up first:** its redials stop and no `CallHello` ever reaches B. B ends the ring when
-  no `CallHello` for that contact arrives within a short window after the node is up
-  (10–15 s, PROVISIONAL). No cancel push is needed.
+  no `CallHello` for that contact arrives within `WAKE_RING_WINDOW_MS` = 15 s (PROVISIONAL),
+  **measured from the wake's arrival** (the caller may still be redialling for ~36 s after
+  pressing Call, and repeat call wakes arrive about every 10 s). No cancel push is needed.
+- **Repeat wakes:** one ring per contact. A call wake for a contact that is already ringing moves
+  the end out to 15 s from the new wake, capped at `WAKE_RING_CAP_MS` = 40 s from the first. It
+  never starts a second ring.
+- **The real call arrives:** the normal `CallHello` path runs (`on_incoming_call`) and the wake
+  ring is consumed silently; the app matches the call to the ring by DID.
+- **Answered early:** `answer_wake_ring(did)` before the `CallHello` arrives is remembered; the
+  incoming call is accepted the moment it arrives, only if that is within the window (the UI shows
+  "Connecting…"). Otherwise the ring ends and a late call rings as an ordinary one.
+  `decline_wake_ring(did)` likewise declines the call unrung when it arrives.
+- **For app authors:** a wake ring's `call_id` is always `"wake:" + did`. Its end is reported
+  through the existing `on_call_state("wake:<did>", Ended { reason: "cancelled" })`; no other
+  state is sent for it, and nothing at all when the user declined it themselves.
 - **Caller states stay honest** (`CallState::Dialing` → `Ringing`, `crates/core/src/node/types.rs`):
   A shows "Calling…" (`Dialing`) while the wake is out and it redials, and switches to "Ringing"
   only when B's device answers `Ringing` to the `CallHello` (`docs/protocol.md` "Call"), exactly as
@@ -291,7 +304,13 @@ the push and call one core entry point (`on_wake(hint) -> WakeAction`).
      fast redials at +2, 4, 7, 10, 15, 20, 30 s); `call.rs` `connect_leg` wakes a callee device
      (`call`) after a first dial of 6 s and redials every 1 s for 30 s, state stays `Dialing`.
      Tests: `dial_tests.rs` (W1, W2, W4/4b/4c, W8, W9, 410).
-     Still open: the app API (`on_wake`, target setter), B's ring window (slice 5).
+   - Slice 5 done (2026-10-24): `NodeCtx::on_wake` and the wake ring (`crates/node-runtime/src/push/ring.rs`;
+     tests `ring_tests.rs`), the app API `crates/core/src/node/api_push.rs` (`PushTarget`, `set_push_target`,
+     `push_target`, `on_wake -> WakeOutcome { Ignore, EndCall, DialedBack, Ring { did, name } }`,
+     `answer_wake_ring`, `decline_wake_ring`). The callback trait is unchanged. With no open account
+     `on_wake` returns `Locked` / `NoIdentity`: the app shows a generic notice (iOS call: report to
+     CallKit and end at once). Android `play` calls `set_push_target(Fcm)` from `onNewToken` (and at
+     start) and `on_wake(data["h"])` from `onMessageReceived`.
 3. Android flavours: `play` (FCM) and `liberum` (no Google SDK, always-on); the no-Google
    build check; both in the release workflow. Then UnifiedPush in `liberum`.
 4. iOS PushKit + CallKit, then message alert push.
@@ -331,7 +350,7 @@ the push and call one core entry point (`on_wake(hint) -> WakeAction`).
 2. ~~FCM SDK vs "no tracking SDKs"~~ — decided 2026-10-24: the SDK ships only in the Play
    edition; Liberum has none.
 3. **Call wake timing:** A's redial interval while ringing (~1 s) and B's no-`CallHello`
-   window (10–15 s) need a device check; on a slow network the first `CallHello` may come late.
+   window (15 s from each wake, 40 s cap) need a device check; on a slow network the first `CallHello` may come late.
 4. ~~Default on Tinline (Play) and Liberum app ID~~ — decided 2026-10-24: Play wakes by push
    by default, always-on is an option in Settings. Liberum has its own application ID
    `com.osvauld.tinline.liberum`, so both can be installed side by side; moving between them
@@ -341,7 +360,8 @@ the push and call one core entry point (`on_wake(hint) -> WakeAction`).
 6. All PROVISIONAL numbers (token lifetime, rate limits, stale-call window). In code (3b,
    `push.rs`): `MSG_REDIAL_AT_MS` (2, 4, 7, 10, 15, 20, 30 s after a msg wake), `CALL_REDIAL_MS` 1 s,
    `CALL_WAKE_DIAL_MS` 30 s (from the wake), `CALL_FIRST_DIAL_MS` 6 s (first dial of a call that can
-   be woken, instead of 20 s), `CALL_ATTEMPT_MS` 3 s. A chat dial still waits `DIAL_TIMEOUT` (20 s)
+   be woken, instead of 20 s), `CALL_ATTEMPT_MS` 3 s. Slice 5 (`ring.rs`): `WAKE_RING_WINDOW_MS` 15 s from the wake's arrival,
+   `WAKE_RING_CAP_MS` 40 s in total. A chat dial still waits `DIAL_TIMEOUT` (20 s)
    before the msg wake: sending it earlier is a possible tuning.
 7. **iOS banner from a blocked contact before the revoke lands.** Accepted for now (about a minute,
    no name, no text). Later: ask Apple for the notification-filtering entitlement

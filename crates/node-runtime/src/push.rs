@@ -27,7 +27,8 @@
 //!   and keeps redialling it every [`CALL_REDIAL_MS`] for [`CALL_WAKE_DIAL_MS`]; the call stays
 //!   `Dialing` and the protocol is unchanged (the callee never dials for a call).
 //!
-//! Not here: the app API (`on_wake`), the callee's ring window (slice 5).
+//! Slice 5, the receiving side (`ring.rs`): [`NodeCtx::on_wake`], the wake ring, `answer_wake_ring`
+//! and `decline_wake_ring`.
 
 use std::collections::{BTreeSet, HashMap};
 use std::sync::Arc;
@@ -38,8 +39,11 @@ use parking_lot::Mutex;
 use proto::Msg;
 use tokio::sync::Notify;
 use wake::{Issued, WakeState};
+pub use wake::WakeAction;
+pub use wake_relay_core::Target;
+pub use ring::{Early, WAKE_RING_CAP_MS, WAKE_RING_WINDOW_MS, wake_call_id};
 use wake_relay_core::api::{RegisterRequest, RegisterResponse, RevokeRequest, WakeRequest};
-use wake_relay_core::{Kind, Kinds, Target};
+use wake_relay_core::{Kind, Kinds};
 
 use crate::hooks::BoxFuture;
 use crate::store::{ContactDevice, State};
@@ -213,6 +217,8 @@ pub struct PushRt {
     periodic: AtomicBool,
     /// When a `msg` wake was last accepted for a contact (fast redials follow).
     woken: Mutex<HashMap<String, Instant>>,
+    /// Wake rings and queued dial-backs of the receiving side (`ring.rs`).
+    pub(super) rings: ring::Rings,
 }
 
 #[derive(Default)]
@@ -410,6 +416,7 @@ impl NodeCtx {
     /// After start: work off what is owed, and look at the renewal window every
     /// [`RENEW_EVERY`] while the node lives.
     pub fn wake_started(self: &Arc<Self>) {
+        self.wake_dial_backs_started();
         self.wake_kick();
         if self.push.periodic.swap(true, Ordering::SeqCst) {
             return;
@@ -703,9 +710,12 @@ impl NodeCtx {
     }
 }
 
+mod ring;
 #[cfg(test)]
 mod dial_tests;
 #[cfg(test)]
 mod live_tests;
+#[cfg(test)]
+mod ring_tests;
 #[cfg(test)]
 mod tests;
