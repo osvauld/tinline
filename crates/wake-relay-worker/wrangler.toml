@@ -9,13 +9,13 @@ command = "cargo install -q worker-build && worker-build --release"
 [vars]
 APNS_TOPIC = "com.osvauld.tinline"
 # "1" turns on GET /v1/probe/apns (the HTTP/2 check). Set to "0" once confirmed.
-PROBE = "1"
+PROBE = "0"
 
 # Revoke list and the shared provider bearers. Fill in the id from
 # `npx wrangler kv namespace create WAKE_KV`.
 [[kv_namespaces]]
 binding = "WAKE_KV"
-id = "REPLACE_WITH_KV_NAMESPACE_ID"
+id = "2556036f9a844472be3e8e91a43d9fad"
 
 # Per-token limits (PROVISIONAL, wake-relay-core relay.rs). namespace_id is any number unique
 # in the account.

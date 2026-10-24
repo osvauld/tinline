@@ -180,8 +180,9 @@ a new UnifiedPush endpoint). The sender keeps at most one token per (contact DID
   service account), so no RSA crate is compiled to wasm.
 - APNs needs HTTP/2. Deployed Workers reach it through Cloudflare's proxy, which upgrades to
   HTTP/2 (workerd issue #4841, not in Cloudflare's docs); `wrangler dev` cannot. The Worker's
-  `GET /v1/probe/apns` checks it once deployed. If it fails: the same core behind a small server
-  on Fly.io Mumbai.
+  `GET /v1/probe/apns` checks it once deployed. **Confirmed 2026-10-24:** the deployed Worker got
+  `403 InvalidProviderToken` from the APNs sandbox (fake key), so HTTP/2 to Apple works; probe
+  turned off (`PROBE = "0"`). Fly.io Mumbai stays the fallback if that ever changes.
 - Custom domain `push.osvauld.com` once the probe passes; until then `*.workers.dev`.
 
 ## Platforms
@@ -270,7 +271,7 @@ the push and call one core entry point (`on_wake(hint) -> WakeAction`).
 
 ## Build order
 
-1. Relay: `wake-relay-core` + tests (done 2026-10-24), the Worker (compiles; APNs probe not run yet).
+1. Relay: `wake-relay-core` + tests, the Worker deployed at `tinline-wake.wake-relay-worker.workers.dev` (2026-10-24; secrets pending).
 2. Core: tokens, `WakeTokens` on the wire, wake decision, revoke, `on_wake`; in-process tests.
 3. Android flavours: `play` (FCM) and `liberum` (no Google SDK, always-on); the no-Google
    build check; both in the release workflow. Then UnifiedPush in `liberum`.
