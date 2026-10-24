@@ -138,12 +138,20 @@ a new UnifiedPush endpoint). The sender keeps at most one token per (contact DID
 
 **Taking a token back** (personal policy only; does not touch group or device policy):
 
+- The receiver keeps a copy of every token it issued (sealed state, per contact), so it can
+  hand one back.
 - Block, or `allow_calls(did, false)` for the `call` kind: the device POSTs `/v1/revoke
-  {wake_token}`. The relay keeps a small revoked set `(hash(tag), exp)` until each entry expires.
-  This is the relay's only stored state.
-- Even before the revoke lands, a wake from a blocked contact is dropped on the device: the hint
-  names the tag, the tag maps to a blocked contact, nothing is shown and nothing is dialled.
-  iOS VoIP is the exception (next section), which is why revoke matters there.
+  {wake_token}`. Queued in a local revoke outbox and retried like block notices (2, 5, 15, 30,
+  then every 60 s while online, and at start) until the relay answers 204. The relay keeps the
+  tag in its revoke list (KV) until the token would have expired; a later wake gets 410 and the
+  sender drops the token. A learns nothing new: a block is already visible to the blocked person.
+- **Gap before the revoke takes effect** (KV spreads in about a minute; longer if B blocked while
+  offline). The device drops the wake itself: the hint names the tag, the tag maps to a blocked
+  contact. Android: nothing shown, nothing dialled. iOS call: reported to CallKit and ended at
+  once (Apple requires the report), a brief flash at most. iOS message: the generic "New message"
+  banner still shows, since iOS displays it before the app runs (accepted 2026-10-24; Open 7).
+- Unblock: the old token stays revoked. The re-add after an unblock carries a new token with a
+  new tag, like the fresh grants of the existing re-add flow.
 - Unlinking a device: its tokens die with its push token; the remaining devices are unaffected.
 - Endpoint rotation (`docs/rotation.md`) does not change wake tokens: they are bound to the push
   token and the contact, not the iroh endpoint.
@@ -280,7 +288,9 @@ the push and call one core entry point (`on_wake(hint) -> WakeAction`).
 | W4b | Call wake: connection direction | The call session is dialled A→B with `CallHello`; B never dials for a call |
 | W4c | Call wake: caller UI | A shows "Calling…" until B's `Ringing` arrives, then "Ringing"; never "Ringing" before |
 | W5 | Call wake older than 30 s arrives | Android: nothing; iOS: reported and ended at once |
-| W6 | B blocks A, then A sends | Relay refuses after revoke; before revoke, B shows nothing and dials nothing |
+| W6 | B blocks A, then A sends | After the revoke: relay answers 410 and A drops the token. Before it: Android shows nothing and dials nothing; iOS call reported and ended at once; never a dial to A |
+| W6b | B blocks A while offline | Revoke waits in the outbox and reaches the relay on B's next start |
+| W6c | B unblocks, A re-adds | A holds a new token (new tag); the old one still gets 410 |
 | W7 | `allow_calls(A, false)` | A's `call` wakes refused; `msg` wakes still work |
 | W8 | A sends 10 messages in 5 s | At most 2 `msg` wakes per minute per device |
 | W9 | B has two devices, both asleep | Both woken; both sync |
@@ -309,3 +319,7 @@ the push and call one core entry point (`on_wake(hint) -> WakeAction`).
 5. **Relay operations:** who runs it, uptime, what happens to wakes while it is down (senders
    fall back to normal retries; nothing breaks, sleeping devices just miss the wake).
 6. All PROVISIONAL numbers (token lifetime, rate limits, stale-call window).
+7. **iOS banner from a blocked contact before the revoke lands.** Accepted for now (about a minute,
+   no name, no text). Later: ask Apple for the notification-filtering entitlement
+   (`com.apple.developer.usernotifications.filtering`), so a Notification Service Extension can
+   open the hint and hide wakes from blocked contacts.
