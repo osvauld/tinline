@@ -104,19 +104,21 @@ impl NodeCtx {
         };
         match &action {
             WakeAction::DialBack { did } => {
-                tracing::debug!("wake: msg");
+                tracing::info!("wake received: outcome DialBack");
                 self.wake_dial_back(did);
             }
             WakeAction::Ring { did } => {
                 if self.availability().available {
-                    tracing::debug!("wake: call");
+                    tracing::info!("wake received: outcome Ring");
                     self.wake_ring(did);
                 } else {
                     // The call itself would be turned away the same way.
+                    tracing::info!("wake received: outcome EndCall (not available for calls)");
                     return Ok(WakeAction::IgnoreCall);
                 }
             }
-            WakeAction::Ignore | WakeAction::IgnoreCall => {}
+            WakeAction::Ignore => tracing::info!("wake received: outcome Ignore"),
+            WakeAction::IgnoreCall => tracing::info!("wake received: outcome EndCall"),
         }
         Ok(action)
     }

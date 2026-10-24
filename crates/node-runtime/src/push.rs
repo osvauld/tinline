@@ -61,6 +61,10 @@ pub const RENEW_EVERY: Duration = Duration::from_secs(12 * 3600);
 /// the normal backoff, then the normal backoff goes on (PROVISIONAL: a woken phone needs a few
 /// seconds to start its node; the wake crate's 30 s throttle is the real rate limit).
 pub const MSG_REDIAL_AT_MS: [u64; 7] = [2_000, 4_000, 7_000, 10_000, 15_000, 20_000, 30_000];
+/// A chat dial that has not connected after this long wakes the contact's devices we hold a
+/// `msg` token for, in parallel with the dial that keeps running (PROVISIONAL; 2026-10-24 device
+/// test: waiting out `DIAL_TIMEOUT` (20 s) cost 20 of 24 s). `docs/push.md` Open 6.
+pub const MSG_EARLY_WAKE_MS: u64 = 3_000;
 /// How often an outgoing call redials a device it has woken (PROVISIONAL, `docs/push.md` Calls).
 pub const CALL_REDIAL_MS: u64 = 1_000;
 /// How long an outgoing call keeps redialling a woken device, from the wake (PROVISIONAL: about
@@ -228,6 +232,15 @@ struct Task {
     again: bool,
 }
 
+/// Cancels a pending [`NodeCtx::early_wake`] when dropped (a wake already being sent goes on).
+pub struct EarlyWake(tokio::task::JoinHandle<()>);
+
+impl Drop for EarlyWake {
+    fn drop(&mut self) {
+        self.0.abort();
+    }
+}
+
 /// What one round of the wake task did.
 enum Round {
     /// Nothing is left to do.
@@ -325,7 +338,7 @@ impl NodeCtx {
                 w.wake_result(did, &device, kind, status);
             }
         }
-        tracing::debug!("wake {kind:?} for a device of {}: {status}", crate::short(did));
+        tracing::info!("wake {kind:?} sent for a device of {}: relay status {status} (0: not reached)", crate::short(did));
         // The throttle and a dropped token outlive a restart.
         self.persist_in_background(me.epoch);
         status == 202
@@ -357,6 +370,26 @@ impl NodeCtx {
             self.push.woken.lock().insert(did.to_string(), Instant::now());
         }
         any
+    }
+
+    /// Call when a chat dial of `did` starts with something to deliver. If the returned guard is
+    /// still alive after [`MSG_EARLY_WAKE_MS`] (the dial has not connected: drop it as soon as
+    /// the dial ends), every device in `devices` we hold a live `msg` token for is woken, with
+    /// the usual throttle, while the dial goes on. Devices without a token are left alone.
+    pub fn early_wake(self: &Arc<Self>, did: &str, devices: Vec<[u8; 32]>) -> EarlyWake {
+        let (this, did) = (self.clone(), did.to_string());
+        let task = self.handle.spawn(async move {
+            tokio::time::sleep(Duration::from_millis(MSG_EARLY_WAKE_MS)).await;
+            let wakeable: Vec<[u8; 32]> = devices.into_iter().filter(|d| this.can_wake(&did, d, Kind::Msg)).collect();
+            if wakeable.is_empty() {
+                return;
+            }
+            // Detached: a dial that ends while the relay is being asked must not cut the wake
+            // (and its bookkeeping) short.
+            let ctx = this.clone();
+            this.handle.spawn(async move { ctx.wake_unreached(&did, &wakeable).await });
+        });
+        EarlyWake(task)
     }
 
     /// The pause before the next dial of `did`, while a `msg` wake sent a moment ago is taking
@@ -531,7 +564,7 @@ impl NodeCtx {
                 Ok(()) => revoked.push(token),
                 Err(e) if e.token_dead() => revoked.push(token),
                 Err(e) => {
-                    tracing::debug!("wake revoke: {e}");
+                    tracing::info!("wake revoke failed: {e}");
                     failed = true;
                 }
             }
@@ -572,14 +605,15 @@ impl NodeCtx {
                     self.persist_logged(me.epoch).await;
                     // An answer without our tags would plan the same request forever.
                     if handed == 0 {
-                        tracing::debug!("wake register: the relay answered without our tags");
+                        tracing::info!("wake register failed: the relay answered without our tags");
                         failed = true;
                     } else {
+                        tracing::info!("wake register ok: {handed} token(s)");
                         progress = true;
                     }
                 }
                 Err(e) => {
-                    tracing::debug!("wake register: {e}");
+                    tracing::info!("wake register failed: {e}");
                     failed = true;
                 }
             }
@@ -637,16 +671,17 @@ impl NodeCtx {
                             }
                         }
                         self.persist_logged(me.epoch).await;
-                        self.log(format!("wake token delivered to {did}"));
+                        tracing::info!("wake token handed to a device of {}", crate::short(&did));
                         progress = true;
                     }
                     // The device does not hold us as a contact: wait for a reason to ask again
                     // (a kick) instead of a retry loop.
                     Ok(false) => {
+                        tracing::info!("wake token refused by a device of {}", crate::short(&did));
                         parked.insert((did.clone(), d.device));
                     }
                     Err(e) => {
-                        tracing::debug!("wake token to {}: {e}", crate::short(&did));
+                        tracing::info!("wake token to a device of {} not delivered: {e}", crate::short(&did));
                         failed = true;
                     }
                 }
@@ -685,24 +720,31 @@ impl NodeCtx {
         kinds: u8,
     ) -> Result<(), Error> {
         let me = self.me()?;
-        let held = device == remote
-            && Kinds::from_bits(kinds).is_some_and(|kinds| {
-                let mut s = self.shared.lock();
-                if s.epoch != me.epoch {
-                    return false;
-                }
+        // `Err` is the reason class of a refusal.
+        let held: Result<(), &str> = if device != remote {
+            Err("not from the device it names")
+        } else if let Some(kinds) = Kinds::from_bits(kinds) {
+            let mut s = self.shared.lock();
+            if s.epoch != me.epoch {
+                Err("locked")
+            } else {
                 let st = &mut s.state;
-                let Some(did) = st.contacts.iter().find(|c| c.has_device(&remote)).map(|c| c.did.clone()) else {
-                    return false;
-                };
-                live_contact(st, &did) && wake_mut(st).hold(&did, device, token, exp_ms, kinds, now_ms())
-            });
-        if held {
-            self.log("wake token taken");
+                match st.contacts.iter().find(|c| c.has_device(&remote)).map(|c| c.did.clone()) {
+                    None => Err("unknown device"),
+                    Some(did) if !live_contact(st, &did) => Err("blocked contact"),
+                    Some(did) if wake_mut(st).hold(&did, device, token, exp_ms, kinds, now_ms()) => Ok(()),
+                    Some(_) => Err("token not acceptable"),
+                }
+            }
+        } else {
+            Err("unknown kinds")
+        };
+        if held.is_ok() {
+            tracing::info!("wake token received and accepted");
             self.persist_in_background(me.epoch);
             ctrl.send(&Msg::WakeTokensTaken).await?;
         } else {
-            tracing::debug!("wake token refused");
+            tracing::info!("wake token received and refused: {}", held.err().unwrap_or("refused"));
             ctrl.send(&Msg::Reject { reason: REFUSED.into() }).await?;
         }
         ctrl.finish();

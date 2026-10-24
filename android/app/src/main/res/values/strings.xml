@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Foreground-service notification while the phone is woken by a push (docs/push.md); the always-on mode keeps "Available for calls". -->
+    <string name="wake_service_title">Getting your messages…</string>
+    <string name="wake_service_text">Tinline will go back to sleep by itself.</string>
+</resources>
