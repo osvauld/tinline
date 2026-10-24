@@ -65,6 +65,8 @@ pub const MSG_REDIAL_AT_MS: [u64; 7] = [2_000, 4_000, 7_000, 10_000, 15_000, 20_
 /// `msg` token for, in parallel with the dial that keeps running (PROVISIONAL; 2026-10-24 device
 /// test: waiting out `DIAL_TIMEOUT` (20 s) cost 20 of 24 s). `docs/push.md` Open 6.
 pub const MSG_EARLY_WAKE_MS: u64 = 3_000;
+/// How often a running dial re-checks for something to deliver after [`MSG_EARLY_WAKE_MS`].
+const EARLY_WAKE_POLL: Duration = Duration::from_millis(250);
 /// How often an outgoing call redials a device it has woken (PROVISIONAL, `docs/push.md` Calls).
 pub const CALL_REDIAL_MS: u64 = 1_000;
 /// How long an outgoing call keeps redialling a woken device, from the wake (PROVISIONAL: about
@@ -372,14 +374,18 @@ impl NodeCtx {
         any
     }
 
-    /// Call when a chat dial of `did` starts with something to deliver. If the returned guard is
-    /// still alive after [`MSG_EARLY_WAKE_MS`] (the dial has not connected: drop it as soon as
-    /// the dial ends), every device in `devices` we hold a live `msg` token for is woken, with
-    /// the usual throttle, while the dial goes on. Devices without a token are left alone.
-    pub fn early_wake(self: &Arc<Self>, did: &str, devices: Vec<[u8; 32]>) -> EarlyWake {
+    /// Call when a chat dial of `did` starts; drop the returned guard as soon as the dial ends.
+    /// While it is alive, from [`MSG_EARLY_WAKE_MS`] on, the first time `pending` says there is
+    /// something to deliver (it may appear mid-dial: typing dials before the send), every device
+    /// in `devices` we hold a live `msg` token for is woken, with the usual throttle, while the
+    /// dial goes on. Devices without a token are left alone.
+    pub fn early_wake(self: &Arc<Self>, did: &str, devices: Vec<[u8; 32]>, pending: impl Fn() -> bool + Send + 'static) -> EarlyWake {
         let (this, did) = (self.clone(), did.to_string());
         let task = self.handle.spawn(async move {
             tokio::time::sleep(Duration::from_millis(MSG_EARLY_WAKE_MS)).await;
+            while !pending() {
+                tokio::time::sleep(EARLY_WAKE_POLL).await;
+            }
             let wakeable: Vec<[u8; 32]> = devices.into_iter().filter(|d| this.can_wake(&did, d, Kind::Msg)).collect();
             if wakeable.is_empty() {
                 return;

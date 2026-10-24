@@ -4,6 +4,8 @@
 //! hook starts it again. Names start with `wake_` (`cargo test -p node-runtime --lib wake`).
 
 use std::time::{Duration, Instant};
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use iroh::EndpointAddr;
 use iroh::address_lookup::memory::MemoryLookup;
@@ -141,7 +143,7 @@ async fn wake_early_fires_at_3s_while_the_dial_still_hangs() {
     let (a, b) = pair_with_token(&lookup).await;
     let token = b.issued_to(&a).unwrap().token;
     b.ep.close().await;
-    let early = a.ctx.early_wake(&b.did(), vec![b.me.device]);
+    let early = a.ctx.early_wake(&b.did(), vec![b.me.device], || true);
     tokio::time::sleep(Duration::from_millis(MSG_EARLY_WAKE_MS - 500)).await;
     assert!(a.relay.wakes.lock().is_empty(), "not before the delay");
     tokio::time::sleep(Duration::from_millis(1_000)).await;
@@ -157,7 +159,7 @@ async fn wake_early_fires_at_3s_while_the_dial_still_hangs() {
 async fn wake_early_is_cancelled_by_a_dial_that_connects_at_1s() {
     let lookup = MemoryLookup::new();
     let (a, b) = pair_with_token(&lookup).await;
-    let early = a.ctx.early_wake(&b.did(), vec![b.me.device]);
+    let early = a.ctx.early_wake(&b.did(), vec![b.me.device], || true);
     tokio::time::sleep(Duration::from_secs(1)).await;
     assert!(try_dial(&a, b.me.device).await);
     drop(early);
@@ -166,12 +168,29 @@ async fn wake_early_is_cancelled_by_a_dial_that_connects_at_1s() {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn wake_early_waits_for_something_to_deliver_during_the_dial() {
+    // Typing dials before the send: the dial starts with nothing pending, the message comes later.
+    let lookup = MemoryLookup::new();
+    let (a, b) = pair_with_token(&lookup).await;
+    let token = b.issued_to(&a).unwrap().token;
+    b.ep.close().await;
+    let sent = Arc::new(AtomicBool::new(false));
+    let flag = sent.clone();
+    let _early = a.ctx.early_wake(&b.did(), vec![b.me.device], move || flag.load(Ordering::SeqCst));
+    tokio::time::sleep(Duration::from_millis(MSG_EARLY_WAKE_MS + 1_000)).await;
+    assert!(a.relay.wakes.lock().is_empty(), "nothing to deliver, no wake");
+    sent.store(true, Ordering::SeqCst);
+    tokio::time::sleep(Duration::from_millis(1_000)).await;
+    assert_eq!(*a.relay.wakes.lock(), vec![(token, Kind::Msg)], "woken once the message is there");
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn wake_early_does_nothing_without_a_token() {
     let lookup = MemoryLookup::new();
     let (a, b) = (node(&lookup).await, node(&lookup).await);
     befriend(&a, &b);
     b.ep.close().await;
-    let _early = a.ctx.early_wake(&b.did(), vec![b.me.device]);
+    let _early = a.ctx.early_wake(&b.did(), vec![b.me.device], || true);
     tokio::time::sleep(Duration::from_millis(MSG_EARLY_WAKE_MS + 500)).await;
     assert!(a.relay.wakes.lock().is_empty(), "no token, no wake");
 }

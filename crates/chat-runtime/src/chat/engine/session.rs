@@ -296,14 +296,17 @@ impl ChatRt {
                     break;
                 }
                 let pair = pair_id(me.id.did(), &did);
-                let has_pending = |this: &Arc<Self>| this.profile_pending(&did) || core.store.pending_days(&pair).map(|d| !d.is_empty()).unwrap_or(false) || this.chat_wants(&core, &pair);
+                let has_pending = |this: &Arc<Self>| this.chat_dial_has_pending(&core, &did, &pair);
                 let permit = core.dial_sem.clone().acquire_owned().await;
-                // Something to deliver: if the dial has not connected after MSG_EARLY_WAKE_MS, wake
-                // the devices we hold a token for while it goes on (docs/push.md). Dropped with it.
-                let early = has_pending(&this).then(|| {
-                    let devices = this.shared.lock().state.contacts.iter().find(|c| c.did == did).map(|c| c.devices.iter().map(|d| d.device).collect()).unwrap_or_default();
-                    this.ctx.early_wake(&did, devices)
-                });
+                // If the dial has not connected after MSG_EARLY_WAKE_MS and there is something to
+                // deliver (now or by then: typing dials before the send), wake the devices we hold
+                // a token for while it goes on (docs/push.md). Dropped with it.
+                let devices = this.shared.lock().state.contacts.iter().find(|c| c.did == did).map(|c| c.devices.iter().map(|d| d.device).collect()).unwrap_or_default();
+                let pending = {
+                    let (this, core, did, pair) = (this.clone(), core.clone(), did.clone(), pair.clone());
+                    move || this.chat_dial_has_pending(&core, &did, &pair)
+                };
+                let early = this.ctx.early_wake(&did, devices, pending);
                 let (res, unreached) = this.chat_dial_devices(&core, &me, &did).await;
                 drop(early);
                 drop(permit);
@@ -330,6 +333,11 @@ impl ChatRt {
             }
             core.dialing.lock().remove(&did);
         });
+    }
+
+    /// Something a chat dial of `did` has to deliver: unsent ops or profile, wanted downloads.
+    fn chat_dial_has_pending(&self, core: &ChatCore, did: &str, pair: &str) -> bool {
+        self.profile_pending(did) || core.store.pending_days(pair).map(|d| !d.is_empty()).unwrap_or(false) || self.chat_wants(core, pair)
     }
 
     // ---- connections -------------------------------------------------------------------------
