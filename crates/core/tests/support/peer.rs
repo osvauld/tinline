@@ -70,12 +70,26 @@ impl Suite {
 
     /// As `link_fresh`, announcing the device label "Desk".
     pub fn link_desk(self, e: &Peer, name: &str) -> Peer {
-        e.link_fresh(self.0, name, LinkAs { label: "Desk", ..LinkAs::default() })
+        e.link_fresh(
+            self.0,
+            name,
+            LinkAs {
+                label: "Desk",
+                ..LinkAs::default()
+            },
+        )
     }
 
     /// As `link_fresh`, also waiting for the existing install's own "link done".
     pub fn link_both_done(self, e: &Peer, name: &str) -> Peer {
-        e.link_fresh(self.0, name, LinkAs { wait_existing_done: true, ..LinkAs::default() })
+        e.link_fresh(
+            self.0,
+            name,
+            LinkAs {
+                wait_existing_done: true,
+                ..LinkAs::default()
+            },
+        )
     }
 }
 
@@ -121,7 +135,7 @@ impl Peer {
         (node, rx, lrx, logs)
     }
 
-    /// An empty install in `<tmp>/p2pcore-<prefix>-<name>-<pid>`: no identity, not started.
+    /// An empty install in a unique temporary directory: no identity, not started.
     pub fn blank(prefix: &str, name: &str) -> Peer {
         Peer::blank_with(prefix, name, false)
     }
@@ -280,5 +294,58 @@ impl Peer {
     /// Whether any log line contains `needle`.
     pub fn logged(&self, needle: &str) -> bool {
         self.logs.lock().unwrap().iter().any(|l| l.contains(needle))
+    }
+}
+
+impl Peer {
+    /// The log lines about refused batches.
+    pub fn refusals(&self) -> Vec<String> {
+        self.logs
+            .lock()
+            .unwrap()
+            .iter()
+            .filter(|l| l.contains("rejected "))
+            .cloned()
+            .collect()
+    }
+
+    /// Whether this node refused any chat batch, history snapshot or own-device batch.
+    pub fn refused_chat(&self) -> bool {
+        [
+            "rejected chat batch",
+            "rejected history",
+            "rejected own-device batch",
+        ]
+        .iter()
+        .any(|n| self.logged(n))
+    }
+
+    /// This install's device key.
+    pub fn key(&self) -> String {
+        self.node.device_key_for_test().unwrap()
+    }
+
+    /// The device keys this node will dial for a contact.
+    pub fn dials(&self, other: &Peer) -> Vec<String> {
+        self.node.contact_devices_for_test(other.did.clone())
+    }
+
+    /// The same device list, named for device-list characterization.
+    pub fn devices_of(&self, other: &Peer) -> Vec<String> {
+        self.dials(other)
+    }
+
+    /// The contact record, required to exist.
+    pub fn contact(&self, did: &str) -> p2pcore::Contact {
+        self.node
+            .contacts()
+            .into_iter()
+            .find(|c| c.did == did)
+            .expect("a contact")
+    }
+
+    /// Contact state for before/after comparisons.
+    pub fn dump(&self) -> String {
+        format!("{:?}", self.node.contacts())
     }
 }

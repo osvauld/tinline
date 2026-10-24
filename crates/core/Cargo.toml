@@ -1,8 +1,13 @@
 [package]
+autotests = false
 name = "p2pcore"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+
+[[test]]
+name = "it"
+path = "tests/it/main.rs"
 
 [lib]
 crate-type = ["cdylib", "staticlib", "lib"]
@@ -94,7 +99,7 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
 
 [dev-dependencies]
-# tests/video_calls.rs feeds a synthetic camera (`video::Pattern`).
+# tests/it/video_calls.rs feeds a synthetic camera (`video::Pattern`).
 video = { path = "../video", default-features = false, features = ["net", "sim"] }
 proto = { workspace = true, features = ["test-support"] }
 # Receipt ledger test hooks (commit fault injection, temporary stores) for the unit tests.
