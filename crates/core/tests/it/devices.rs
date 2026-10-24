@@ -1,0 +1,99 @@
+//! A second device of the same person (same phrase, another install) meeting a contact.
+//! Needs network, like calls.rs.
+
+use std::sync::Arc;
+use std::sync::atomic::{AtomicU32, Ordering};
+use std::time::{Duration, Instant};
+
+use p2pcore::{CallInfo, CallState, Node, NodeEvents, NodeStatus};
+
+use crate::support;
+use support::*;
+
+#[derive(Default)]
+struct Count {
+    contacts_changed: AtomicU32,
+    incoming: AtomicU32,
+}
+impl NodeEvents for Count {
+    fn on_status(&self, _: NodeStatus) {}
+    fn on_contacts_changed(&self) {
+        self.contacts_changed.fetch_add(1, Ordering::SeqCst);
+    }
+    fn on_incoming_call(&self, _: CallInfo) {
+        self.incoming.fetch_add(1, Ordering::SeqCst);
+    }
+    fn on_call_state(&self, _: String, _: CallState) {}
+    fn on_log(&self, _: String) {}
+}
+
+struct Peer {
+    node: Arc<Node>,
+    events: Arc<Count>,
+    did: String,
+    _dir: TempDir,
+}
+
+/// `phrase`: another install of an existing person; each gets its own data root and device key.
+fn peer(tag: &str, phrase: Option<&str>) -> (Peer, String) {
+    let dir = TempDir::new("devices", tag);
+    let events = Arc::new(Count::default());
+    let node = Node::new(dir.to_string_lossy().into(), events.clone()).unwrap();
+    node.auto_accept_contacts_for_test(true);
+    let phrase = match phrase {
+        Some(p) => {
+            node.restore_identity(p.into(), tag.into(), PASS.into()).unwrap();
+            p.to_string()
+        }
+        None => node.create_identity(tag.into(), PASS.into()).unwrap(),
+    };
+    online(&node);
+    let did = node.profile().unwrap().did;
+    (Peer { node, events, did, _dir: dir }, phrase)
+}
+
+fn wait(what: &str, mut f: impl FnMut() -> bool) {
+    let t = Instant::now();
+    while !f() {
+        assert!(t.elapsed() < Duration::from_secs(20), "timed out waiting for {what}");
+        std::thread::sleep(Duration::from_millis(50));
+    }
+}
+
+/// S4: a device we have not met before, arriving through an authenticated call, resets
+/// `verified` exactly as when it adds us, and the UI is told.
+#[test]
+fn unfamiliar_device_in_a_call_resets_verified_and_notifies() {
+    let (a, _) = peer("s4-a", None);
+    let (b1, phrase) = peer("s4-b1", None);
+    b1.node.add_contact(a.node.my_ticket().unwrap()).unwrap();
+    assert_eq!(a.node.contacts()[0].did, b1.did);
+    let d1 = a.node.contacts()[0].device.clone();
+
+    // A learns a signed device list of B that does not include b1 (as if B had unlinked it). Its
+    // seq is an hour ahead so that the list b1 signs itself on calling cannot replace it (P4: a
+    // seq more than a day ahead of A's clock is refused).
+    // b1 is no longer dialled, but it still holds A's grant and can call.
+    let bid = identity::recover(&phrase).unwrap();
+    let list = proto::sign_device_list(&bid, &[([9u8; 32], None)], now_ms() + 3600 * 1000);
+    assert!(a.node.offer_device_list_for_test(b1.did.clone(), serde_json::to_string(&list).unwrap()));
+    assert_ne!(a.node.contacts()[0].device, d1);
+    // A new device in the list already reset it.
+    assert!(!a.node.contacts()[0].verified);
+
+    a.node.set_verified(b1.did.clone(), true).unwrap();
+    assert!(a.node.contacts()[0].verified);
+    let changed = a.events.contacts_changed.load(Ordering::SeqCst);
+
+    b1.node.call(a.did.clone()).unwrap();
+    wait("the call to reach A", || a.events.incoming.load(Ordering::SeqCst) > 0);
+    wait("verification reset", || !a.node.contacts()[0].verified);
+    // Accepted for this call, but not added for dialling while a list exists.
+    assert_ne!(a.node.contacts()[0].device, d1, "a device missing from the list is not dialled");
+    assert!(a.events.contacts_changed.load(Ordering::SeqCst) > changed, "the UI was told");
+
+    // And it stuck: a restart of A still shows it unverified.
+    a.node.lock();
+    a.node.unlock(PASS.into()).unwrap();
+    assert!(!a.node.contacts()[0].verified);
+}

@@ -1,16 +1,28 @@
 //! A per-test data directory that is removed when dropped.
 
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicU64, Ordering};
 
-/// `<tmp>/p2pcore-<prefix>-<name>-<pid>`, cleared first and removed again on drop.
+static NEXT_DIR: AtomicU64 = AtomicU64::new(0);
+static RUN: std::sync::LazyLock<u128> = std::sync::LazyLock::new(|| {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_nanos()
+});
+
+/// A unique per-allocation directory, removed on drop.
 pub struct TempDir(PathBuf);
 
 impl TempDir {
     /// The path only: the directory is not created (`Node::new` creates what it needs).
     pub fn new(prefix: &str, name: &str) -> TempDir {
-        let p =
-            std::env::temp_dir().join(format!("p2pcore-{prefix}-{name}-{}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&p);
+        let id = NEXT_DIR.fetch_add(1, Ordering::Relaxed);
+        let p = std::env::temp_dir().join(format!(
+            "p2pcore-{prefix}-{name}-{}-{}-{id}",
+            std::process::id(),
+            *RUN
+        ));
         TempDir(p)
     }
 
