@@ -13,7 +13,6 @@ import androidx.compose.runtime.*
 import uniffi.p2pcore.CallState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -30,7 +29,9 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import uniffi.p2pcore.LockState
 import androidx.compose.runtime.snapshots.SnapshotStateList
+import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -57,10 +58,15 @@ class MainActivity : ComponentActivity() {
         groupCallFrom(intent)
         if (savedInstanceState == null) { CardInbox.take(intent); GroupLinkInbox.take(intent); requestFrom(intent) }
         Appearance.load(this)
-        setContent {
-            val chosen by Appearance.dark.collectAsState()
-            TinlineTheme(dark = chosen ?: androidx.compose.foundation.isSystemInDarkTheme()) { Root(app) }
-        }
+        // Until the first account load is done (P2pApp.ready) the lock state is only a default: the window background
+        // (tin_bg, the theme's) stays up instead, so the first frame is the right screen and no placeholder frame is drawn.
+        if (app.ready.value) showRoot(app)
+        else lifecycleScope.launch { app.ready.first { it }; showRoot(app) }
+    }
+
+    private fun showRoot(app: P2pApp) = setContent {
+        val chosen by Appearance.dark.collectAsState()
+        TinlineTheme(dark = chosen ?: androidx.compose.foundation.isSystemInDarkTheme()) { Root(app) }
     }
 
     /** A tap on "Maya wants to add you as a contact": open the request sheet for it, if it is still waiting. */
@@ -283,7 +289,6 @@ private fun Root(app: P2pApp) {
     val groupNotice by app.groups.notice.collectAsState()
     LaunchedEffect(groupNotice) { groupNotice?.let { say(it); app.groups.clearNotice() } }
     val unlinkedName by app.unlinked.collectAsState()
-    val ready by app.ready.collectAsState()
     // The account went away (unlinked here or from another device): leave whatever screen was open.
     LaunchedEffect(has) { if (!has) home() }
     // A minimised call's strip sits in flow at the top (CallStrip.kt), under the status bar, and takes that inset from
@@ -295,8 +300,6 @@ private fun Root(app: P2pApp) {
     Box(Modifier.weight(1f).fillMaxWidth()
         .then(if (stripOn) Modifier.consumeWindowInsets(WindowInsets.statusBars) else Modifier)) {
     when {
-        // The first account load is still running (P2pApp.ready): the bare background, never a wrong screen.
-        !ready -> Box(Modifier.fillMaxSize().background(Tin.c.bg))
         unlinkedName != null -> UnlinkedScreen(unlinkedName!!, onOk = { app.dismissUnlinked(); home() },
             onLinkAgain = { app.dismissUnlinked(); if (!app.node.hasIdentity()) onboarding = true else addAccount(false, link = true) })
         onboarding || !has || adding != null -> key(adding) { OnboardingFlow(app, missing, fix,

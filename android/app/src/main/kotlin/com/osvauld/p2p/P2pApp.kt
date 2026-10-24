@@ -65,7 +65,7 @@ class P2pApp : Application(), NodeEvents {
     private val _ready = MutableStateFlow(false)
     /**
      * The first account load (select, auto-unlock, refresh) is done. Until then [lockState] and [hasIdentity] are only
-     * defaults, so the UI shows a quiet placeholder rather than onboarding or the unlock screen.
+     * defaults, so MainActivity keeps the window background up rather than show onboarding or the unlock screen.
      */
     val ready: StateFlow<Boolean> = _ready
 
