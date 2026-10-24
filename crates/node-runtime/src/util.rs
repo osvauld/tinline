@@ -48,6 +48,8 @@ pub fn msg_name(m: &Msg) -> &'static str {
         Msg::WelcomeTaken => "WelcomeTaken",
         Msg::Video { .. } => "Video",
         Msg::VideoCodec { .. } => "VideoCodec",
+        Msg::WakeTokens { .. } => "WakeTokens",
+        Msg::WakeTokensTaken => "WakeTokensTaken",
     }
 }
 

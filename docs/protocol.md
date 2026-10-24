@@ -182,6 +182,9 @@ token. Only the issuer verifies its own tokens, so taking one back is local and 
 - Renewal: the call token on every answered call; the message token when a chat session finds
   it within 30 days of expiry (PROVISIONAL), delivered as `Tokens`. A received token replaces the
   held one in its slot only if it is valid, of that kind, and expires later.
+- Push wake tokens travel as `WakeTokens { device, token, exp_ms, kinds }`, answered
+  `WakeTokensTaken`, on the calls ALPN. Not DID-signed (a capability for the relay only);
+  `token` is at most 2048 chars. See `docs/push.md` "Handing tokens to contacts".
 - A linked sibling that has not synced a downgrade or block yet still honours the old token
   (best effort, section 14 Q4 open).
 

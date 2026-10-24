@@ -254,6 +254,8 @@ impl NodeCtx {
                 let _ = tokio::time::timeout(LINGER, conn.closed()).await;
                 Ok(())
             }
+            // slice 3: push wake tokens (docs/push.md); until then refused like any other
+            // message not handled here.
             other => {
                 tracing::debug!("unexpected first message {}", msg_name(&other));
                 ctrl.send(&Msg::Reject { reason: REFUSED.into() }).await?;
