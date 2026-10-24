@@ -13,6 +13,7 @@ import androidx.compose.runtime.*
 import uniffi.p2pcore.CallState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -178,7 +179,7 @@ private fun Root(app: P2pApp) {
     DisposableEffect(owner) {
         val o = LifecycleEventObserver { _, e ->
             if (e == Lifecycle.Event.ON_RESUME) {
-                missing = Perms.missing(ctx); app.refresh()
+                missing = Perms.missing(ctx); app.refreshLater()
                 if (stack.last() == Route.MicNeeded && Perms.granted(ctx, android.Manifest.permission.RECORD_AUDIO)) pop()
             }
         }
@@ -282,6 +283,7 @@ private fun Root(app: P2pApp) {
     val groupNotice by app.groups.notice.collectAsState()
     LaunchedEffect(groupNotice) { groupNotice?.let { say(it); app.groups.clearNotice() } }
     val unlinkedName by app.unlinked.collectAsState()
+    val ready by app.ready.collectAsState()
     // The account went away (unlinked here or from another device): leave whatever screen was open.
     LaunchedEffect(has) { if (!has) home() }
     // A minimised call's strip sits in flow at the top (CallStrip.kt), under the status bar, and takes that inset from
@@ -293,6 +295,8 @@ private fun Root(app: P2pApp) {
     Box(Modifier.weight(1f).fillMaxWidth()
         .then(if (stripOn) Modifier.consumeWindowInsets(WindowInsets.statusBars) else Modifier)) {
     when {
+        // The first account load is still running (P2pApp.ready): the bare background, never a wrong screen.
+        !ready -> Box(Modifier.fillMaxSize().background(Tin.c.bg))
         unlinkedName != null -> UnlinkedScreen(unlinkedName!!, onOk = { app.dismissUnlinked(); home() },
             onLinkAgain = { app.dismissUnlinked(); if (!app.node.hasIdentity()) onboarding = true else addAccount(false, link = true) })
         onboarding || !has || adding != null -> key(adding) { OnboardingFlow(app, missing, fix,

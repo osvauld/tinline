@@ -99,7 +99,7 @@ fun HomeScreen(
     val blocks by app.blocks.collectAsState()
     val subs = remember(history, contacts, now, blocks) { contacts.associate { it.did to (blocks.status(it.did) ?: contactSubLine(it.did, history, now)) } }
     val online = status?.online == true
-    val myDid = remember(chats) { app.currentDid() }
+    val myDid by app.accountDid.collectAsState()
     // My last message's tick per conversation (core `chat_list_marks`), re-read when chats, groups or receipts change.
     val groupChanges by app.groups.changes.collectAsState()
     var chatChanges by remember { mutableIntStateOf(0) }

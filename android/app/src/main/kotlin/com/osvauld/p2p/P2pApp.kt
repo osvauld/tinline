@@ -62,6 +62,12 @@ class P2pApp : Application(), NodeEvents {
     val lockState: StateFlow<LockState> = _lock
     private val _hasIdentity = MutableStateFlow(false)
     val hasIdentity: StateFlow<Boolean> = _hasIdentity
+    private val _ready = MutableStateFlow(false)
+    /**
+     * The first account load (select, auto-unlock, refresh) is done. Until then [lockState] and [hasIdentity] are only
+     * defaults, so the UI shows a quiet placeholder rather than onboarding or the unlock screen.
+     */
+    val ready: StateFlow<Boolean> = _ready
 
     private val _accountDid = MutableStateFlow<String?>(null)
     /** The selected account's DID (changes when the user switches); null with no account. */
@@ -131,9 +137,15 @@ class P2pApp : Application(), NodeEvents {
                 if (AppVisible.resumed) Cues.knock() else GroupNotifier.invitation(this, i)
             }
         }
-        Startup.trace("selectAccount") { selectLastAccountIfNone() }
-        Startup.trace("tryAutoUnlock") { tryAutoUnlock() }
-        Startup.trace("refresh") { refresh() }
+        // Keystore unlock and the first state read run on the lifecycle thread (before any queued startNode), so the
+        // first frame never waits for them.
+        lifecycle.execute {
+            try {
+                Startup.trace("selectAccount") { selectLastAccountIfNone() }
+                Startup.trace("tryAutoUnlock") { tryAutoUnlock() }
+                Startup.trace("refresh") { refresh() }
+            } catch (e: Throwable) { Log.e(TAG, "first load", e) } finally { _ready.value = true }
+        }
         // Kept chats of people who are no longer contacts (their block deleted our entry) come only from the chat list.
         scope.launch { realChat.chats.collect { refreshBlocks() } }
         // The always-on notification says "Available for calls" / "Not available" / "Offline".
@@ -174,6 +186,11 @@ class P2pApp : Application(), NodeEvents {
     fun setAvailable(available: Boolean, until: Long? = null) {
         try { node.setAvailable(available, until?.toULong()) } catch (e: Exception) { Log.w(TAG, "setAvailable: $e") }
         refreshAvailability()
+    }
+
+    /** [refresh] on the lifecycle thread, after any unlock or account switch already queued there. For UI callers. */
+    fun refreshLater() {
+        lifecycle.execute { try { refresh() } catch (e: Exception) { Log.w(TAG, "refresh: ${e.javaClass.simpleName}") } }
     }
 
     fun refresh() {
