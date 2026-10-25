@@ -14394,7 +14394,7 @@ en = "{name} stays in the group as a member. Flags they already made still count
 where = [
   "desktop group_stays_in_the_group: Desktop, groups (in group_live_view.rs, live_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = "{name} bleibt als Mitglied in der Gruppe. Markierungen, die {name} schon gesetzt hat, zählen weiter."
+text = "{name} bleibt als Mitglied in der Gruppe. Markierungen, die die Person schon gesetzt hat, zählen weiter."
 
 [t_806b19150f]
 en = "Stop device {value} carrying calls"
@@ -14429,945 +14429,945 @@ en = "Stop hosting calls on this computer"
 where = [
   "desktop group_stop_hosting_calls_on: Desktop, groups (in group_live_view.rs, group_info_page).",
 ]
-text = ""
+text = "Anruf-Hosten auf diesem Computer beenden"
 
 [t_22b8522a44]
 en = "Stop hosting {gname} here?"
 where = [
   "desktop group_stop_hosting_here: Desktop, groups (in group_live_view.rs, live_overlay). {gname} is a value filled in by the app.",
 ]
-text = ""
+text = "{gname} hier nicht mehr hosten?"
 
 [t_543bf3e548]
 en = "Stop hosting on this computer"
 where = [
   "desktop group_stop_hosting_on_this: Desktop, groups (in group_live_view.rs, group_info_page).",
 ]
-text = ""
+text = "Hosten auf diesem Computer beenden"
 
 [t_976140c423]
 en = "{label}: {value}"
 where = [
   "desktop group_text: Desktop, groups (in group_live_view.rs, group_receipt_lines). {label} is a value filled in by the app. {value} is a value filled in by the app.",
 ]
-text = ""
+text = "{label}: {value}"
 
 [t_35c74d3978]
 en = "{what} · {value}"
 where = [
   "desktop group_text_2: Desktop, groups (in group_live_view.rs, live_list). {what} is a value filled in by the app. {value} is a value filled in by the app.",
 ]
-text = ""
+text = "{what} · {value}"
 
 [t_c5e67a6475]
 en = "That device no longer carries this group’s calls."
 where = [
   "desktop group_that_device_no_longer: Desktop, groups (in group_live.rs, run).",
 ]
-text = ""
+text = "Dieses Gerät trägt die Anrufe dieser Gruppe nicht mehr."
 
 [t_108d11a4e8]
 en = "That group isn’t on this computer."
 where = [
   "desktop group_that_group_isnt_on: Desktop, groups (in group_live.rs, gerr).",
 ]
-text = ""
+text = "Diese Gruppe ist nicht auf diesem Computer."
 
 [t_45b0032d7d]
 en = "the only host"
 where = [
   "desktop group_the_only_host: Shown after the member count for a group this computer hosts alone.",
 ]
-text = ""
+text = "der einzige Host"
 
 [t_d0b680b900]
 en = "The open link is closed. Everyone already in stays; new people join with an invite."
 where = [
   "desktop group_the_open_link_is: Desktop, groups (in group_live.rs, run).",
 ]
-text = ""
+text = "Der offene Link ist geschlossen. Wer schon drin ist, bleibt; neue Leute treten mit einer Einladung bei."
 
 [t_bdd0b2326a]
 en = "Then invite people from the members pane."
 where = [
   "desktop group_then_invite_people_from: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "Lade dann Leute über den Mitgliederbereich ein."
 
 [t_672fbdc744]
 en = "This computer carries the calls."
 where = [
   "desktop group_this_computer_carries_the: Desktop, groups (in group_live_view.rs, group_info_page).",
 ]
-text = ""
+text = "Dieser Computer trägt die Anrufe."
 
 [t_3bbd7b2774]
 en = "This computer carries this group’s calls now."
 where = [
   "desktop group_this_computer_carries_this: Desktop, groups (in group_live.rs, run).",
 ]
-text = ""
+text = "Dieser Computer trägt jetzt die Anrufe dieser Gruppe."
 
 [t_1ea2e18441]
 en = "This computer doesn’t host any groups. To host one, open it and choose Host from this computer in the members pane."
 where = [
   "desktop group_this_computer_doesnt_host: Desktop, groups (in group_live_view.rs, live_hosting_page).",
 ]
-text = ""
+text = "Dieser Computer hostet keine Gruppen. Um eine zu hosten, öffne sie und wähle im Mitgliederbereich „Auf diesem Computer hosten“."
 
 [t_66ba1bfba6]
 en = "This computer hosts the group. Posts go through right away."
 where = [
   "desktop group_this_computer_hosts_the: Desktop, groups (in group_live_view.rs, group_info_page).",
 ]
-text = ""
+text = "Dieser Computer hostet die Gruppe. Beiträge gehen sofort raus."
 
 [t_6e1d3b27d7]
 en = "This computer stopped carrying this group’s calls."
 where = [
   "desktop group_this_computer_stopped_carrying: Desktop, groups (in group_live.rs, run).",
 ]
-text = ""
+text = "Dieser Computer trägt die Anrufe dieser Gruppe nicht mehr."
 
 [t_fa4003bbee]
 en = "This computer stops passing the group’s messages on. You stay a member."
 where = [
   "desktop group_this_computer_stops_passing: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "Dieser Computer gibt die Nachrichten der Gruppe nicht mehr weiter. Du bleibst Mitglied."
 
 [t_dbd8fa4c7f]
 en = ", this computer too"
 where = [
   "desktop group_this_computer_too: Appended to the hosts-online line when this computer is one of the hosts. Keep the leading comma.",
 ]
-text = ""
+text = ", auch dieser Computer"
 
 [t_90c7b1d39f]
 en = "This device agreed to host. It hosts as soon as an admin has appointed it."
 where = [
   "desktop group_this_device_agreed_to: Desktop, groups (in group_live.rs, run).",
 ]
-text = ""
+text = "Dieses Gerät hat dem Hosten zugestimmt. Es hostet, sobald ein Admin es festgelegt hat."
 
 [t_9c2ace7693]
 en = "This device stopped hosting the group."
 where = [
   "desktop group_this_device_stopped_hosting: Desktop, groups (in group_live.rs, run).",
 ]
-text = ""
+text = "Dieses Gerät hostet die Gruppe nicht mehr."
 
 [t_133c91b930]
 en = "this member"
 where = [
   "desktop group_this_member: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "dieses Mitglied"
 
 [t_273944879b]
 en = "Unlock to see your groups."
 where = [
   "desktop group_unlock_to_see_your: Desktop, groups (in group_live_view.rs, live_list).",
 ]
-text = ""
+text = "Entsperre, um deine Gruppen zu sehen."
 
 [t_fc7b6359c4]
 en = "Why was I removed?"
 where = [
   "desktop group_why_was_i_removed: Desktop, groups (in group_live_view.rs, group_info_page).",
 ]
-text = ""
+text = "Warum wurde ich entfernt?"
 
 [t_0eeae9f4ec]
 en = "Why you were removed"
 where = [
   "desktop group_why_you_were_removed: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "Warum du entfernt wurdest"
 
 [t_cd7db50b44]
 en = "{name} will be able to invite people, flag members (3 flags remove someone) and appoint hosts. Only you, the owner, can make or remove admins."
 where = [
   "desktop group_will_be_able_to: Desktop, groups (in group_live_view.rs, live_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} kann dann Leute einladen, Mitglieder markieren (3 Markierungen entfernen jemanden) und Hosts festlegen. Nur du als Eigentümer kannst Admins ernennen oder entfernen."
 
 [t_497c9f2f05]
 en = "Withdraw the offer to host"
 where = [
   "desktop group_withdraw_the_offer_to: Desktop, groups (in group_live_view.rs, group_info_page).",
 ]
-text = ""
+text = "Angebot zum Hosten zurückziehen"
 
 [t_9465546688]
 en = "written before {value} was removed"
 where = [
   "desktop group_written_before_was_removed: Desktop, groups (in group_live_view.rs, live_item). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "geschrieben, bevor {value} entfernt wurde"
 
 [t_75d438ef41]
 en = "You are a member"
 where = [
   "desktop group_you_are_a_member: Desktop, groups (in group_live_view.rs, group_info_page).",
 ]
-text = ""
+text = "Du bist Mitglied"
 
 [t_09746c824d]
 en = "You are an admin"
 where = [
   "desktop group_you_are_an_admin: Desktop, groups (in group_live_view.rs, group_info_page).",
 ]
-text = ""
+text = "Du bist Admin"
 
 [t_2e95eb0424]
 en = "You are the owner"
 where = [
   "desktop group_you_are_the_owner: Desktop, groups (in group_live_view.rs, group_info_page).",
 ]
-text = ""
+text = "Du bist Eigentümer"
 
 [t_907733bbb3]
 en = "You block {name}; unblock them first"
 where = [
   "desktop group_you_block_unblock_them: Desktop, groups (in group_live_view.rs, live_menu). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Du blockierst {name}; heb die Blockierung zuerst auf"
 
 [t_41fbb0d898]
 en = "You keep the messages already here. The group’s hosts refuse your new messages. To rejoin, an admin has to invite you again."
 where = [
   "desktop group_you_keep_the_messages: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "Die Nachrichten, die schon hier sind, behältst du. Die Hosts der Gruppe nehmen deine neuen Nachrichten nicht an. Um wieder beizutreten, muss dich ein Admin neu einladen."
 
 [t_536628e93b]
 en = "You were removed from the group · {value}"
 where = [
   "desktop group_you_were_removed_from: Desktop, groups (in group_live_view.rs, live_removal_card). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "Du wurdest aus der Gruppe entfernt · {value}"
 
 [t_6566a09c14]
 en = "You’ll own the group. This computer hosts it at first: it keeps the group and passes messages on while members’ phones sleep, so it works best on a computer that stays on."
 where = [
   "desktop group_youll_own_the_group: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "Die Gruppe gehört dir. Dieser Computer hostet sie zuerst: Er hält die Gruppe und gibt Nachrichten weiter, während die Handys der Mitglieder schlafen, deshalb klappt es am besten auf einem Computer, der an bleibt."
 
 [t_eae8e245fc]
 en = "Yours will be flag {yours} of {flags_needed}. Any admin’s flags count, yours again too. At {flags_needed} flags {name} is removed right away and sees they were removed."
 where = [
   "desktop group_yours_will_be_flag: Desktop, groups (in group_live_view.rs, live_overlay). {yours} is a value filled in by the app. {flags_needed} is a value filled in by the app. {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Deine wird Markierung {yours} von {flags_needed}. Markierungen aller Admins zählen, auch weitere von dir. Bei {flags_needed} Markierungen wird {name} sofort entfernt und sieht, dass die Entfernung passiert ist."
 
 [t_a2776c67b5]
 en = "Yours will be flag {yours} of {flags_needed}. {name} is removed right away: hosts refuse their new messages and they see they were removed."
 where = [
   "desktop group_yours_will_be_flag_of: Desktop, groups (in group_live_view.rs, live_overlay). {yours} is a value filled in by the app. {flags_needed} is a value filled in by the app. {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Deine wird Markierung {yours} von {flags_needed}. {name} wird sofort entfernt: Hosts nehmen keine neuen Nachrichten mehr an, und die Person sieht, dass sie entfernt wurde."
 
 [t_b1f15f6576]
 en = "Contacts · {len}"
 where = [
   "desktop home_contacts: Desktop, home, sidebar and call list (in view.rs, list_pane). {len} is a value filled in by the app.",
 ]
-text = ""
+text = "Kontakte · {len}"
 
 [t_1a850f401a]
 en = "Contacts you add appear here."
 where = [
   "desktop home_contacts_you_add_appear: Desktop, home, sidebar and call list (in view.rs, list_pane).",
 ]
-text = ""
+text = "Kontakte, die du hinzufügst, erscheinen hier."
 
 [t_be49ff2081]
 en = "Last call {value}"
 where = [
   "desktop home_last_call: Desktop, home, sidebar and call list (in view.rs, contact_sub). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "Letzter Anruf {value}"
 
 [t_1bf2596e91]
 en = "Not here? Tinline has no directory — add people with their code."
 where = [
   "desktop home_not_here_tinline_has: Desktop, home, sidebar and call list (in view.rs, list_pane).",
 ]
-text = ""
+text = "Nicht dabei? Tinline hat kein Verzeichnis – füge Leute mit ihrem Code hinzu."
 
 [t_2fa8ae469e]
 en = "Start or join a call"
 where = [
   "desktop home_start_or_join_a: Desktop, home, sidebar and call list (in view.rs, calls_list).",
 ]
-text = ""
+text = "Anruf starten oder beitreten"
 
 [t_420265b999]
 en = "{what} · {dur}"
 where = [
   "desktop home_text: Desktop, home, sidebar and call list (in view.rs, calls_list). {what} is a value filled in by the app. {dur} is a duration such as 1:23.",
 ]
-text = ""
+text = "{what} · {dur}"
 
 [t_822e19febe]
 en = "Their card is on your clipboard."
 where = [
   "desktop home_their_card_is_on: Desktop, home, sidebar and call list (in view.rs, offer_bar).",
 ]
-text = ""
+text = "Ihre Karte ist in deiner Zwischenablage."
 
 [t_e3db10694d]
 en = "A linked device becomes you"
 where = [
   "desktop link_a_linked_device_becomes: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "Ein verknüpftes Gerät wird zu dir"
 
 [t_d73b68764a]
 en = "A passphrase encrypts your account on this computer. Optional — leave it empty and Tinline opens straight to your contacts. You can add one later in Settings."
 where = [
   "desktop link_a_passphrase_encrypts_your: Desktop, linking devices (in link_view.rs, link_secure_screen).",
 ]
-text = ""
+text = "Eine Passphrase verschlüsselt dein Konto auf diesem Computer. Optional – lass sie leer, dann öffnet Tinline direkt deine Kontakte. Du kannst später in den Einstellungen eine festlegen."
 
 [t_ca6ecd8e98]
 en = "Back to Settings"
 where = [
   "desktop link_back_to_settings: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "Zurück zu den Einstellungen"
 
 [t_a975a5773d]
 en = "Bringing your contacts and history over…"
 where = [
   "desktop link_bringing_your_contacts_and: Desktop, linking devices (in link_view.rs, link_sync_screen).",
 ]
-text = ""
+text = "Deine Kontakte und dein Verlauf kommen rüber…"
 
 [t_fb8243b29d]
 en = "Calls in history"
 where = [
   "desktop link_calls_in_history: Desktop, linking devices (in link_view.rs, link_sync_screen).",
 ]
-text = ""
+text = "Anrufe im Verlauf"
 
 [t_475dd4dd45]
 en = "Check the codes match and approve on your phone."
 where = [
   "desktop link_check_the_codes_match: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = ""
+text = "Prüfe, ob die Codes übereinstimmen, und bestätige auf deinem Handy."
 
 [t_d801726ed0]
 en = "Check the codes match, then approve here."
 where = [
   "desktop link_check_the_codes_match_then: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = ""
+text = "Prüfe, ob die Codes übereinstimmen, und bestätige dann hier."
 
 [t_85d2fc8750]
 en = "Codes match, link it"
 where = [
   "desktop link_codes_match_link_it: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "Codes stimmen, verknüpfen"
 
 [t_48b15af5a6]
 en = "Connect"
 where = [
   "desktop link_connect: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = ""
+text = "Verbinden"
 
 [t_2513f84ad2]
 en = "Connecting..."
 where = [
   "desktop link_connecting: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = ""
+text = "Verbinden..."
 
 [t_892724d737]
 en = "Connecting to the other device…"
 where = [
   "desktop link_connecting_to_the_other: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "Verbinde mit dem anderen Gerät…"
 
 [t_46161f68a7]
 en = "Desktop"
 where = [
   "desktop link_desktop: Desktop, linking devices (in link_view.rs, ).",
 ]
-text = ""
+text = "Desktop"
 
 [t_d7a8bd2415]
 en = "Device unlinked"
 where = [
   "desktop link_device_unlinked: Desktop, linking devices (in link.rs, link_update).",
 ]
-text = ""
+text = "Gerät getrennt"
 
 [t_1cc71a82c0]
 en = "Devices sync directly whenever two are online at once. Unlinking stops sync and ringing; it can’t lock a lost device remotely."
 where = [
   "desktop link_devices_sync_directly_whenever: Desktop, linking devices (in link_view.rs, linked_devices_page).",
 ]
-text = ""
+text = "Geräte gleichen sich direkt ab, sobald zwei gleichzeitig online sind. Trennen beendet Abgleich und Klingeln; ein verlorenes Gerät kann es nicht aus der Ferne sperren."
 
 [t_e19f8f0006]
 en = "Different code, or you didn’t start this? Cancel. Someone may be trying to copy your account."
 where = [
   "desktop link_different_code_or_you_didnt: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "Anderer Code, oder du hast das nicht gestartet? Brich ab. Vielleicht versucht jemand, dein Konto zu kopieren."
 
 [t_d6c534ecaa]
 en = "Expires in {value} · works once"
 where = [
   "desktop link_expires_in_works_once: Desktop, linking devices (in link_view.rs, link_qr_screen). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "Läuft ab in {value} · funktioniert einmal"
 
 [t_9dc5adbda5]
 en = "{profile_name} is removed from this computer: its contacts, chats and call history here are deleted. Your other devices are not affected."
 where = [
   "desktop link_is_removed_from_this: Desktop, linking devices (in link_view.rs, unlink_confirm). {profile_name} is a value filled in by the app.",
 ]
-text = ""
+text = "{profile_name} wird von diesem Computer entfernt: Kontakte, Chats und Anrufliste des Kontos werden hier gelöscht. Deine anderen Geräte sind nicht betroffen."
 
 [t_f5eaafed77]
 en = "It can call, chat and see your recovery phrase. Only link devices you own."
 where = [
   "desktop link_it_can_call_chat: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "Es kann anrufen, chatten und deine Wiederherstellungswörter sehen. Verknüpfe nur Geräte, die dir gehören."
 
 [t_5052507a1a]
 en = "It rings for your calls now. Contacts and call history sync whenever both devices are online."
 where = [
   "desktop link_it_rings_for_your: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "Es klingelt jetzt bei deinen Anrufen. Kontakte und Anrufliste gleichen sich ab, sobald beide Geräte online sind."
 
 [t_16d08f0405]
 en = "It shows a QR code. Tap Scan instead and point it at this screen."
 where = [
   "desktop link_it_shows_a_qr: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = ""
+text = "Es zeigt einen QR-Code. Tippe auf „Lieber scannen“ und richte es auf diesen Bildschirm."
 
 [t_0dde23f0ec]
 en = "Keep both devices online. If one drops off, it picks up where it left off next time they’re both online."
 where = [
   "desktop link_keep_both_devices_online: Desktop, linking devices (in link_view.rs, link_sync_screen).",
 ]
-text = ""
+text = "Lass beide Geräte online. Wenn eins wegfällt, macht es beim nächsten Mal, wenn beide online sind, dort weiter, wo es aufgehört hat."
 
 [t_3f8bad0261]
 en = "Link “{name}”?"
 where = [
   "desktop link_link: Desktop, linking devices (in link_view.rs, link_screen). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "„{name}“ verknüpfen?"
 
 [t_38f21d8c2a]
 en = "Link code from the other device"
 where = [
   "desktop link_link_code_from_the: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = ""
+text = "Verknüpfungscode vom anderen Gerät"
 
 [t_def224ce11]
 en = "Linked {name}"
 where = [
   "desktop link_linked: Desktop, linking devices (in link_view.rs, link_screen). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} verknüpft"
 
 [t_caf3c63402]
 en = "Linking stopped"
 where = [
   "desktop link_linking_stopped: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "Verknüpfen gestoppt"
 
 [t_0e8e99aae4]
 en = "Linux"
 where = [
   "desktop link_linux: Desktop, linking devices (in link_view.rs, ).",
 ]
-text = ""
+text = "Linux"
 
 [t_88b66617f5]
 en = "Make a new code"
 where = [
   "desktop link_make_a_new_code: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = ""
+text = "Neuen Code erstellen"
 
 [t_9c4702c37d]
 en = "Make sure the other device shows this same code."
 where = [
   "desktop link_make_sure_the_other: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "Prüfe, ob das andere Gerät denselben Code zeigt."
 
 [t_e7192b462f]
 en = "Making a code…"
 where = [
   "desktop link_making_a_code: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = ""
+text = "Code wird erstellt…"
 
 [t_5454768277]
 en = "Not linked"
 where = [
   "desktop link_not_linked: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "Nicht verknüpft"
 
 [t_96af6bbdbb]
 en = "Nothing was changed on either device."
 where = [
   "desktop link_nothing_was_changed_on: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "Auf keinem der Geräte wurde etwas geändert."
 
 [t_0914fb108e]
 en = "On the new device, install Tinline and choose Link to an existing account."
 where = [
   "desktop link_on_the_new_device: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = ""
+text = "Installiere Tinline auf dem neuen Gerät und wähle „Mit bestehendem Konto verknüpfen“."
 
 [t_7919900ea0]
 en = "On your phone, open Tinline › Settings › Link a device."
 where = [
   "desktop link_on_your_phone_open: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = ""
+text = "Öffne auf deinem Handy Tinline › Einstellungen › Gerät verknüpfen."
 
 [t_b7eb4c2371]
 en = "Passphrase (optional)"
 where = [
   "desktop link_passphrase_optional: Desktop, linking devices (in link_view.rs, link_secure_screen).",
 ]
-text = ""
+text = "Passphrase (optional)"
 
 [t_1eca9f710b]
 en = "Paste a link code instead"
 where = [
   "desktop link_paste_a_link_code: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = ""
+text = "Lieber einen Verknüpfungscode einfügen"
 
 [t_14d0722730]
 en = "Protect the account on this computer before it is saved."
 where = [
   "desktop link_protect_the_account_on: Desktop, linking devices (in link_view.rs, link_secure_screen).",
 ]
-text = ""
+text = "Schütze das Konto auf diesem Computer, bevor es gespeichert wird."
 
 [t_368e75b760]
 en = "Restore with recovery phrase instead"
 where = [
   "desktop link_restore_with_recovery_phrase: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "Lieber mit Wiederherstellungswörtern wiederherstellen"
 
 [t_43fea4daf5]
 en = "Sending your account over…"
 where = [
   "desktop link_sending_your_account_over: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "Dein Konto wird rübergeschickt…"
 
 [t_96c47afa9a]
 en = "Show this to the device you want to add. It becomes you, so only link your own."
 where = [
   "desktop link_show_this_to_the: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = ""
+text = "Zeig das dem Gerät, das du hinzufügen möchtest. Es wird zu dir, also verknüpfe nur deine eigenen."
 
 [t_0826ccb2c7]
 en = "Start using Tinline"
 where = [
   "desktop link_start_using_tinline: Desktop, linking devices (in link_view.rs, link_sync_screen).",
 ]
-text = ""
+text = "Tinline nutzen"
 
 [t_bcd18fac96]
 en = "Sync keeps going in the background."
 where = [
   "desktop link_sync_keeps_going_in: Desktop, linking devices (in link_view.rs, link_sync_screen).",
 ]
-text = ""
+text = "Der Abgleich läuft im Hintergrund weiter."
 
 [t_e37b0d5fa7]
 en = "Synced {value}"
 where = [
   "desktop link_synced: Desktop, linking devices (in link_view.rs, linked_devices_page). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "Abgeglichen {value}"
 
 [t_a4c809843c]
 en = "Tap Scan QR code and point it at this screen."
 where = [
   "desktop link_tap_scan_qr_code: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = ""
+text = "Tippe auf „QR-Code scannen“ und richte es auf diesen Bildschirm."
 
 [t_ba1b32b37f]
 en = "the other device"
 where = [
   "desktop link_the_other_device: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "das andere Gerät"
 
 [t_91b511ddf8]
 en = "There is no code yet."
 where = [
   "desktop link_there_is_no_code: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = ""
+text = "Es gibt noch keinen Code."
 
 [t_a542a56b19]
 en = "This account has no passphrase, and this computer can’t ask for a screen lock. By continuing you confirm you started this and the codes match."
 where = [
   "desktop link_this_account_has_no: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "Dieses Konto hat keine Passphrase, und dieser Computer kann nicht nach einer Bildschirmsperre fragen. Wenn du weitermachst, bestätigst du, dass du das gestartet hast und die Codes übereinstimmen."
 
 [t_eb8c9c2902]
 en = "This account has no passphrase, so confirming here is the only check."
 where = [
   "desktop link_this_account_has_no_passphrase: Desktop, linking devices (in link_view.rs, unlink_confirm).",
 ]
-text = ""
+text = "Dieses Konto hat keine Passphrase, also ist die Bestätigung hier die einzige Prüfung."
 
 [t_a273cebb53]
 en = "This code expired."
 where = [
   "desktop link_this_code_expired: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = ""
+text = "Dieser Code ist abgelaufen."
 
 [t_6c7f421a85]
 en = "This computer · {os}"
 where = [
   "desktop link_this_computer_os: Linked devices list, the row for this computer. {os} is the operating system name (Linux, macOS, Windows).",
 ]
-text = ""
+text = "Dieser Computer · {os}"
 
 [t_3e7643126b]
 en = "This computer was unlinked"
 where = [
   "desktop link_this_computer_was_unlinked: Desktop, linking devices (in link_view.rs, unlinked_screen).",
 ]
-text = ""
+text = "Dieser Computer wurde getrennt"
 
 [t_22a7e5f7ef]
 en = "This takes a few seconds."
 where = [
   "desktop link_this_takes_a_few: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "Das dauert ein paar Sekunden."
 
 [t_e23c8f931a]
 en = "Unlink this computer?"
 where = [
   "desktop link_unlink_this_computer: Desktop, linking devices (in link_view.rs, unlink_confirm).",
 ]
-text = ""
+text = "Diesen Computer trennen?"
 
 [t_8878bbf53e]
 en = "Unlinking..."
 where = [
   "desktop link_unlinking: Desktop, linking devices (in link_view.rs, unlink_confirm).",
 ]
-text = ""
+text = "Trennen..."
 
 [t_14f5ecac2d]
 en = "{name} was removed from this computer by another of your devices. Its contacts, chats and calls are deleted here. Your other devices are not affected."
 where = [
   "desktop link_was_removed_from_this: Desktop, linking devices (in link_view.rs, unlinked_screen). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} wurde von einem deiner anderen Geräte von diesem Computer entfernt. Kontakte, Chats und Anrufe des Kontos sind hier gelöscht. Deine anderen Geräte sind nicht betroffen."
 
 [t_1a1688094f]
 en = "{name} was removed from this computer. Its contacts, chats and calls are deleted here. Your other devices are not affected."
 where = [
   "desktop link_was_removed_from_this_computer: Desktop, linking devices (in link_view.rs, unlinked_screen). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} wurde von diesem Computer entfernt. Kontakte, Chats und Anrufe des Kontos sind hier gelöscht. Deine anderen Geräte sind nicht betroffen."
 
 [t_809c8177da]
 en = "Windows"
 where = [
   "desktop link_windows: Desktop, linking devices (in link_view.rs, ).",
 ]
-text = ""
+text = "Windows"
 
 [t_14bedc27c0]
 en = "You type it each time Tinline starts."
 where = [
   "desktop link_you_type_it_each: Desktop, linking devices (in link_view.rs, link_secure_screen).",
 ]
-text = ""
+text = "Du gibst sie bei jedem Start von Tinline ein."
 
 [t_ffd65be7e1]
 en = "Your account is on the other device."
 where = [
   "desktop link_your_account_is_on: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "Dein Konto ist auf dem anderen Gerät."
 
 [t_a3963415c6]
 en = "A new camera is used the next time your camera starts."
 where = [
   "desktop profile_a_new_camera_is: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "Eine neue Kamera wird beim nächsten Start deiner Kamera genutzt."
 
 [t_9ae5a12760]
 en = "a status"
 where = [
   "desktop profile_a_status: Desktop, profile and settings (in profile_ui.rs, profile_update).",
 ]
-text = ""
+text = "einen Status"
 
 [t_830cdd8bf7]
 en = "Accounts on this computer"
 where = [
   "desktop profile_accounts_on_this_computer: Desktop, profile and settings (in profile_view.rs, profile_page).",
 ]
-text = ""
+text = "Konten auf diesem Computer"
 
 [t_8ca5d6cba5]
 en = "Accounts stored on this computer"
 where = [
   "desktop profile_accounts_stored_on_this: Desktop, profile and settings (in profile_view.rs, native_page).",
 ]
-text = ""
+text = "Auf diesem Computer gespeicherte Konten"
 
 [t_dd2dfa0aa3]
 en = "Add a nickname"
 where = [
   "desktop profile_add_a_nickname: Desktop, profile and settings (in profile_view.rs, person_profile).",
 ]
-text = ""
+text = "Spitznamen hinzufügen"
 
 [t_437baa96ef]
 en = "Any length works. A few words make it stronger."
 where = [
   "desktop profile_any_length_works_a: Desktop, profile and settings (in profile_view.rs, passphrase_page).",
 ]
-text = ""
+text = "Jede Länge geht. Ein paar Wörter mehr machen sie stärker."
 
 [t_a197e8d110]
 en = "Anyone who has it can act as you, just like the words. Tinline never asks for it except to restore your account."
 where = [
   "desktop profile_anyone_who_has_it: Desktop, profile and settings (in profile_view.rs, phrase_page).",
 ]
-text = ""
+text = "Wer ihn hat, kann als du auftreten, genau wie mit den Wörtern. Tinline fragt nie danach, außer um dein Konto wiederherzustellen."
 
 [t_2c40fa833f]
 en = " Anyone who still has your recovery phrase, or can unlock {name}, can still act as you. If it is lost or stolen, the only full fix is a new account."
 where = [
   "desktop profile_anyone_who_still_has: Desktop, profile and settings (in profile_view.rs, devices_layer). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = " Wer deine Wiederherstellungswörter noch hat oder {name} entsperren kann, kann weiter als du auftreten. Wenn es verloren oder gestohlen ist, hilft ganz nur ein neues Konto."
 
 [t_9bb58d6614]
 en = "Audio, security and hosting"
 where = [
   "desktop profile_audio_security_and_hosting: Desktop, profile and settings (in profile_view.rs, settings_landing).",
 ]
-text = ""
+text = "Audio, Sicherheit und Hosten"
 
 [t_a0f9f18ca6]
 en = "Bitrate cap"
 where = [
   "desktop profile_bitrate_cap: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "Bitrate-Obergrenze"
 
 [t_a2c759c438]
 en = "Block {first2}"
 where = [
   "desktop profile_block: Desktop, profile and settings (in profile_view.rs, person_profile). {first2} is a value filled in by the app.",
 ]
-text = ""
+text = "{first2} blockieren"
 
 [t_e3cdf7ca3e]
 en = "Block {name}?"
 where = [
   "desktop profile_block_2: Desktop, profile and settings (in profile_view.rs, profile_layer). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} blockieren?"
 
 [t_0c1589aabf]
 en = "Block someone"
 where = [
   "desktop profile_block_someone: Desktop, profile and settings (in profile_view.rs, blocked_page).",
 ]
-text = ""
+text = "Jemanden blockieren"
 
 [t_58a99e3d8f]
 en = "Blocking is not silent. The person is told, their app stops contacting you and removes you from their contacts. Your chat history stays on your devices. Groups you share aren’t affected."
 where = [
   "desktop profile_blocking_is_not_silent: Desktop, profile and settings (in profile_view.rs, blocked_page).",
 ]
-text = ""
+text = "Blockieren passiert nicht still. Die Person erfährt es, ihre App hört auf, dich zu kontaktieren, und entfernt dich aus ihren Kontakten. Dein Chatverlauf bleibt auf deinen Geräten. Gemeinsame Gruppen sind nicht betroffen."
 
 [t_bcb476435a]
 en = "Busy until {value}"
 where = [
   "desktop profile_busy_until: Desktop, profile and settings (in profile_view.rs, settings_landing). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "Beschäftigt bis {value}"
 
 [t_dfe389f837]
 en = "Calls on this computer"
 where = [
   "desktop profile_calls_on_this_computer: Desktop, profile and settings (in profile_view.rs, profile_page).",
 ]
-text = ""
+text = "Anrufe auf diesem Computer"
 
 [t_31f5bad868]
 en = "{cap} can’t contain control or text-direction characters."
 where = [
   "desktop profile_cant_contain_control_or: Desktop, profile and settings (in profile_ui.rs, check_text). {cap} is a value filled in by the app.",
 ]
-text = ""
+text = "{cap} darf keine Steuer- oder Textrichtungszeichen enthalten."
 
 [t_4c3f0aabaf]
 en = "Checking…"
 where = [
   "desktop profile_checking: Desktop, profile and settings (in profile_view.rs, phrase_page).",
 ]
-text = ""
+text = "Prüfe…"
 
 [t_b5b9d1f203]
 en = "Contacts you haven’t blocked get your updated device list when they’re next online."
 where = [
   "desktop profile_contacts_you_havent_blocked: Desktop, profile and settings (in profile_view.rs, devices_layer).",
 ]
-text = ""
+text = "Kontakte, die du nicht blockiert hast, bekommen deine neue Geräteliste, wenn sie das nächste Mal online sind."
 
 [t_6e98940bd0]
 en = "Cut"
 where = [
   "desktop profile_cut: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "Schnitt"
 
 [t_fabff01ef6]
 en = "Cut+probe"
 where = [
   "desktop profile_cut_probe: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "Schnitt+Test"
 
 [t_d25ee7b4b0]
 en = "Each shows a soft preview until you tap it"
 where = [
   "desktop profile_each_shows_a_soft_preview: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "Jedes zeigt eine weiche Vorschau, bis du darauf tippst"
 
 [t_2b81c6b647]
 en = "Enter your passphrase to confirm"
 where = [
   "desktop profile_enter_your_passphrase_to: Desktop, profile and settings (in profile_view.rs, devices_layer).",
 ]
-text = ""
+text = "Gib zur Bestätigung deine Passphrase ein"
 
 [t_23bc418acf]
 en = "Enter your passphrase to continue"
 where = [
   "desktop profile_enter_your_passphrase_to_continue: Desktop, profile and settings (in profile_view.rs, phrase_page).",
 ]
-text = ""
+text = "Gib deine Passphrase ein, um weiterzumachen"
 
 [t_2c745833e1]
 en = "Every linked device is a full copy of you: it can read your chats and act as you. Names here are private to your devices; contacts never see them."
 where = [
   "desktop profile_every_linked_device_is: Desktop, profile and settings (in profile_view.rs, devices_page).",
 ]
-text = ""
+text = "Jedes verknüpfte Gerät ist eine vollständige Kopie von dir: Es kann deine Chats lesen und als du auftreten. Die Namen hier sind nur für deine Geräte; Kontakte sehen sie nie."
 
 [t_87fd46df46]
 en = "Fixed rung"
 where = [
   "desktop profile_fixed_rung: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "Feste Stufe"
 
 [t_97ecbd9279]
 en = "Groups you share aren’t affected. You can unblock {name} here at any time."
 where = [
   "desktop profile_groups_you_share_arent: Desktop, profile and settings (in profile_view.rs, profile_layer). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Gemeinsame Gruppen sind nicht betroffen. Du kannst die Blockierung von {name} hier jederzeit aufheben."
 
 [t_48ff9eddd1]
 en = "Hardware"
 where = [
   "desktop profile_hardware: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "Hardware"
 
 [t_80515997ef]
 en = "Hide key"
 where = [
   "desktop profile_hide_key: Desktop, profile and settings (in profile_view.rs, phrase_page).",
 ]
-text = ""
+text = "Schlüssel verbergen"
 
 [t_e1fa8e6a72]
 en = "Hide words"
 where = [
   "desktop profile_hide_words: Desktop, profile and settings (in profile_view.rs, phrase_page).",
 ]
-text = ""
+text = "Wörter verbergen"
 
 [t_639081c198]
 en = "Hides in {seconds} s"
 where = [
   "desktop profile_hides_in_s: Desktop, profile and settings (in profile_view.rs, phrase_page). {seconds} is a value filled in by the app.",
 ]
-text = ""
+text = "Verschwindet in {seconds} s"
 
 [t_bca16c3e78]
 en = "Hosts keep every group picture so members can load them. This applies on this device."
 where = [
   "desktop profile_hosts_keep_every_group: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "Hosts behalten jedes Gruppenbild, damit Mitglieder es laden können. Das gilt auf diesem Gerät."
 
 [t_6523fe005e]
 en = "{name} isn’t one of your contacts. You know them through a group. Looking at a profile doesn’t add anyone."
 where = [
   "desktop profile_isnt_one_of_your: Desktop, profile and settings (in profile_view.rs, person_profile). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} ist kein Kontakt von dir. Ihr kennt euch über eine Gruppe. Ein Profil anzusehen fügt niemanden hinzu."
 
 [t_33776c2f81]
 en = "It is offline, so it finds out the next time it connects."
 where = [
   "desktop profile_it_is_offline_so: Desktop, profile and settings (in profile_view.rs, devices_layer).",
 ]
-text = ""
+text = "Es ist offline und erfährt es also, wenn es sich das nächste Mal verbindet."
 
 [t_dfa1efbc07]
 en = "{round} KB"
 where = [
   "desktop profile_kb: Desktop, profile and settings (in profile_view.rs, fmt_bytes). {round} is a value filled in by the app.",
 ]
-text = ""
+text = "{round} KB"
 
 [t_ae83393da3]
 en_one = "Last seen {count} day ago"
@@ -15375,6 +15375,8 @@ en_other = "Last seen {count} days ago"
 where = [
   "desktop profile_last_seen_days: Under a contact profile when they were last online. {count} is the number of days.",
 ]
+one = "Zuletzt online vor {count} Tag"
+other = "Zuletzt online vor {count} Tagen"
 
 [t_e11bdbbee3]
 en_one = "Last seen {count} hour ago"
@@ -15382,13 +15384,15 @@ en_other = "Last seen {count} hours ago"
 where = [
   "desktop profile_last_seen_hours: Under a contact profile when they were last online. {count} is the number of hours.",
 ]
+one = "Zuletzt online vor {count} Stunde"
+other = "Zuletzt online vor {count} Stunden"
 
 [t_4385d29350]
 en = "Last seen just now"
 where = [
   "desktop profile_last_seen_just_now: Desktop, profile and settings (in profile_view.rs, last_seen).",
 ]
-text = ""
+text = "Gerade eben online"
 
 [t_8f77fe1d28]
 en_one = "Last seen {count} minute ago"
@@ -15396,83 +15400,85 @@ en_other = "Last seen {count} minutes ago"
 where = [
   "desktop profile_last_seen_minutes: Under a contact profile when they were last online. {count} is the number of minutes.",
 ]
+one = "Zuletzt online vor {count} Minute"
+other = "Zuletzt online vor {count} Minuten"
 
 [t_d1a0dcbb30]
 en = "Light or dark, as this computer is set"
 where = [
   "desktop profile_light_or_dark_as: Desktop, profile and settings (in profile_view.rs, settings_landing).",
 ]
-text = ""
+text = "Hell oder dunkel, wie dieser Computer eingestellt ist"
 
 [t_5814a07b57]
 en = "Load group pictures by themselves"
 where = [
   "desktop profile_load_group_pictures_by: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "Gruppenbilder von selbst laden"
 
 [t_b711ca0977]
 en = "Match my computer"
 where = [
   "desktop profile_match_my_computer: Desktop, profile and settings (in profile_view.rs, settings_landing).",
 ]
-text = ""
+text = "Wie mein Computer"
 
 [t_3577d58ddb]
 en = "{round} MB"
 where = [
   "desktop profile_mb: Desktop, profile and settings (in profile_view.rs, fmt_bytes). {round} is a value filled in by the app.",
 ]
-text = ""
+text = "{round} MB"
 
 [t_c1a3ac1d46]
 en = "Messages only: calling needs {name}’s permission"
 where = [
   "desktop profile_messages_only_calling_needs: Desktop, profile and settings (in profile_view.rs, person_profile). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Nur Nachrichten: Anrufe brauchen die Erlaubnis von {name}"
 
 [t_f422fbec3c]
 en = "New passphrase again"
 where = [
   "desktop profile_new_passphrase_again: Desktop, profile and settings (in profile_view.rs, passphrase_page).",
 ]
-text = ""
+text = "Neue Passphrase wiederholen"
 
 [t_2be53fc862]
 en = "Nickname"
 where = [
   "desktop profile_nickname: Desktop, profile and settings (in profile_view.rs, person_profile).",
 ]
-text = ""
+text = "Spitzname"
 
 [t_3ca88f3098]
 en = "No camera found. Plug one in and open this page again."
 where = [
   "desktop profile_no_camera_found_plug: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "Keine Kamera gefunden. Schließ eine an und öffne diese Seite nochmal."
 
 [t_925929dc39]
 en = "No microphone found"
 where = [
   "desktop profile_no_microphone_found: Desktop, profile and settings (in profile_view.rs, notifications_page).",
 ]
-text = ""
+text = "Kein Mikrofon gefunden"
 
 [t_6682826533]
 en = "No one is blocked."
 where = [
   "desktop profile_no_one_is_blocked: Desktop, profile and settings (in profile_view.rs, blocked_page).",
 ]
-text = ""
+text = "Niemand ist blockiert."
 
 [t_e3c3df9286]
 en = "No one left to block."
 where = [
   "desktop profile_no_one_left_to: Desktop, profile and settings (in profile_view.rs, privacy_layer).",
 ]
-text = ""
+text = "Niemand mehr zum Blockieren da."
 
 [t_c40e38a466]
 en = "No profile is available."
