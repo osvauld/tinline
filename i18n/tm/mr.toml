@@ -16295,903 +16295,903 @@ en = "Only the selected account is online on this computer. Switching pauses the
 where = [
   "desktop profile_only_the_selected_account: Desktop, profile and settings (in profile_view.rs, settings_landing).",
 ]
-text = ""
+text = "या कॉम्प्युटरवर फक्त निवडलेले खाते ऑनलाइन असते. खाते बदलल्यावर दुसरे थांबते: तुम्ही ते पुन्हा निवडेपर्यंत त्याला कॉल येत नाहीत."
 
 [t_0ed74faf85]
 en = "Only this device has your account. Link another to keep a second copy of your chats. Your recovery phrase brings back your account, not your messages."
 where = [
   "desktop profile_only_this_device_has: Desktop, profile and settings (in profile_view.rs, devices_page).",
 ]
-text = ""
+text = "तुमचे खाते फक्त याच डिव्हाइसवर आहे. तुमच्या चॅटची दुसरी प्रत ठेवण्यासाठी आणखी एक डिव्हाइस लिंक करा. तुमचे रिकव्हरी शब्द तुमचे खाते परत आणतात, तुमचे संदेश नाही."
 
 [t_b2c190e6e0]
 en = "Only you see these. A nickname changes what you call {name}, not their profile."
 where = [
   "desktop profile_only_you_see_these: Desktop, profile and settings (in profile_view.rs, person_profile). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "हे फक्त तुम्हाला दिसतात. टोपणनावाने तुम्ही {name} ला काय म्हणता ते बदलते, त्यांचे प्रोफाइल नाही."
 
 [t_1a9e8ecade]
 en = "Only your own devices see this name."
 where = [
   "desktop profile_only_your_own_devices: Desktop, profile and settings (in profile_view.rs, devices_layer).",
 ]
-text = ""
+text = "हे नाव फक्त तुमच्याच डिव्हाइसना दिसते."
 
 [t_e1f70eccfa]
 en = "Person not found."
 where = [
   "desktop profile_person_not_found: Desktop, profile and settings (in profile_view.rs, person_profile).",
 ]
-text = ""
+text = "व्यक्ती सापडली नाही."
 
 [t_20137e067f]
 en = "Pick a contact."
 where = [
   "desktop profile_pick_a_contact: Desktop, profile and settings (in profile_view.rs, privacy_layer).",
 ]
-text = ""
+text = "एक संपर्क निवडा."
 
 [t_81ee822845]
 en = "Pictures in groups appear as they arrive"
 where = [
   "desktop profile_pictures_in_groups_appear: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "ग्रुपमधील फोटो येताच दिसतात"
 
 [t_6281bd7fc7]
 en = "Plain (old)"
 where = [
   "desktop profile_plain_old: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "साधे (जुने)"
 
 [t_2903aaba1d]
 en = "Profile picture changed while loading"
 where = [
   "desktop profile_profile_picture_changed_while: Desktop, profile and settings (in profile_ui.rs, read_profile).",
 ]
-text = ""
+text = "लोड होत असताना प्रोफाइल फोटो बदलला"
 
 [t_784f3ae6ac]
 en = "Quit Tinline"
 where = [
   "desktop profile_quit_tinline: Desktop, profile and settings (in profile_view.rs, native_page).",
 ]
-text = ""
+text = "Tinline बंद करा"
 
 [t_2b5999b60c]
 en = "Rate control"
 where = [
   "desktop profile_rate_control: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "रेट कंट्रोल"
 
 [t_1712035de1]
 en = "Rate control: probing needs the other side on this build too; set both the same for an A/B call."
 where = [
   "desktop profile_rate_control_probing_needs: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "रेट कंट्रोल: प्रोबिंगसाठी समोरच्या बाजूलाही हाच बिल्ड लागतो; A/B कॉलसाठी दोन्हीकडे सारखेच सेट करा."
 
 [t_f6b0eb5b3a]
 en = "Remove “{label_}” from your profile?"
 where = [
   "desktop profile_remove_from_your_profile: Desktop, profile and settings (in profile_view.rs, field_row_inner). {label_} is a value filled in by the app.",
 ]
-text = ""
+text = "तुमच्या प्रोफाइलमधून “{label_}” काढायचे?"
 
 [t_ea0d1f95ed]
 en = "{name}’s app can reach you again. It removed you from their contacts when you blocked them, so you’ll both need to add each other again before you can message or call."
 where = [
   "desktop profile_s_app_can_reach: Desktop, profile and settings (in profile_view.rs, privacy_layer). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} चे ॲप तुमच्यापर्यंत पुन्हा पोहोचू शकते. तुम्ही त्यांना ब्लॉक केले तेव्हा त्या ॲपने तुम्हाला त्यांच्या संपर्कांमधून काढले, त्यामुळे संदेश किंवा कॉल करण्यापूर्वी तुम्हा दोघांना एकमेकांना पुन्हा जोडावे लागेल."
 
 [t_f10a13dfa8]
 en = "{name}’s profile hasn’t arrived yet. It shows here once it syncs."
 where = [
   "desktop profile_s_profile_hasnt_arrived: Desktop, profile and settings (in profile_view.rs, person_profile). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} चे प्रोफाइल अजून आलेले नाही. सिंक झाल्यावर ते इथे दिसेल."
 
 [t_0b53f94a6c]
 en = "Selected · connecting"
 where = [
   "desktop profile_selected_connecting: Desktop, profile and settings (in profile_view.rs, settings_landing).",
 ]
-text = ""
+text = "निवडलेले · कनेक्ट होत आहे"
 
 [t_c3eb6bca8d]
 en = "Send codec"
 where = [
   "desktop profile_send_codec: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "पाठवण्याचा कोडेक"
 
 [t_e7a3ee89e1]
 en = "Session only. Changes apply to the next call (About this call changes the current one). Fixed size disables rate/CPU resolution adaptation; peer and thermal caps still win. Use HD capture and compare actual payload rates and dimensions."
 where = [
   "desktop profile_session_only_changes_apply: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "फक्त या सत्रासाठी. बदल पुढच्या कॉलला लागू होतात (\"या कॉलबद्दल\" सध्याचा कॉल बदलते). निश्चित आकार ठेवल्यास रेट/CPU नुसार रिझोल्यूशन बदलणे बंद होते; समोरच्या बाजूच्या आणि उष्णतेच्या मर्यादा तरीही लागू होतात. HD कॅप्चर वापरा आणि प्रत्यक्ष पेलोड दर व आकार यांची तुलना करा."
 
 [t_50654bf33c]
 en = "Settings that belong to this computer only"
 where = [
   "desktop profile_settings_that_belong_to: Desktop, profile and settings (in profile_view.rs, settings_landing).",
 ]
-text = ""
+text = "फक्त या कॉम्प्युटरच्या सेटिंग्ज"
 
 [t_9c944ff0b2]
 en = "Show a QR code on the new device, then approve it here"
 where = [
   "desktop profile_show_a_qr_code: Desktop, profile and settings (in profile_view.rs, devices_page).",
 ]
-text = ""
+text = "नवीन डिव्हाइसवर QR कोड दाखवा, मग इथे मंजुरी द्या"
 
 [t_9c40d34486]
 en = "Show key"
 where = [
   "desktop profile_show_key: Desktop, profile and settings (in profile_view.rs, phrase_page).",
 ]
-text = ""
+text = "की दाखवा"
 
 [t_af70bc522d]
 en = "Show words"
 where = [
   "desktop profile_show_words: Desktop, profile and settings (in profile_view.rs, phrase_page).",
 ]
-text = ""
+text = "शब्द दाखवा"
 
 [t_c0c19a8034]
 en = "Shown after you confirm"
 where = [
   "desktop profile_shown_after_you_confirm: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "तुम्ही पुष्टी केल्यावर दिसते"
 
 [t_bd82fe332b]
 en = "Shown to you as {name} · their name is {name2}"
 where = [
   "desktop profile_shown_to_you_as: Desktop, profile and settings (in profile_view.rs, field_row_inner). {name} is a person's name (usually the first word of their chosen name). {name2} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "तुम्हाला {name} म्हणून दिसतात · त्यांचे नाव {name2} आहे"
 
 [t_b8e582229a]
 en = "Software"
 where = [
   "desktop profile_software: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "सॉफ्टवेअर"
 
 [t_30c1c86ee5]
 en = "The passphrase protects Tinline on this device only; your other devices keep their own. Tinline can’t recover a forgotten passphrase. If that happens, your recovery phrase restores your account, though not your messages."
 where = [
   "desktop profile_the_passphrase_protects_tinline: Desktop, profile and settings (in profile_view.rs, passphrase_page).",
 ]
-text = ""
+text = "पासफ्रेज फक्त या डिव्हाइसवर Tinline सुरक्षित ठेवतो; तुमच्या इतर डिव्हाइसचे स्वतःचे पासफ्रेज असतात. विसरलेला पासफ्रेज Tinline परत मिळवू शकत नाही. तसे झाल्यास, तुमचे रिकव्हरी शब्द तुमचे खाते परत आणतात, पण तुमचे संदेश नाही."
 
 [t_ad1986c0d4]
 en = "There is no copy button on purpose: the phrase stays off the clipboard. Tinline never asks for it except to restore your account. The phrase brings back your account, not your messages."
 where = [
   "desktop profile_there_is_no_copy: Desktop, profile and settings (in profile_view.rs, phrase_page).",
 ]
-text = ""
+text = "कॉपी बटण मुद्दामच नाही: हे शब्द क्लिपबोर्डपासून दूर राहतात. Tinline तुमचे खाते परत मिळवण्याव्यतिरिक्त ते कधीच मागत नाही. हे शब्द तुमचे खाते परत आणतात, तुमचे संदेश नाही."
 
 [t_057c54d1e7]
 en = "These stay on this computer. They aren’t part of your account."
 where = [
   "desktop profile_these_stay_on_this: Desktop, profile and settings (in profile_view.rs, native_page).",
 ]
-text = ""
+text = "या गोष्टी या कॉम्प्युटरवरच राहतात. त्या तुमच्या खात्याचा भाग नाहीत."
 
 [t_69f5484518]
 en = "This computer"
 where = [
   "desktop profile_this_computer: Desktop, profile and settings (in profile_view.rs, profile_page).",
 ]
-text = ""
+text = "हा कॉम्प्युटर"
 
 [t_c4d705c661]
 en = "This computer decodes AV1 (rav1d) and VP8 (libvpx) in software only. During a call, About this call has the same controls for that call."
 where = [
   "desktop profile_this_computer_decodes_av1: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "हा कॉम्प्युटर AV1 (rav1d) आणि VP8 (libvpx) फक्त सॉफ्टवेअरमध्ये डिकोड करतो. कॉलदरम्यान, \"या कॉलबद्दल\" मध्ये त्या कॉलसाठी हीच नियंत्रणे असतात."
 
 [t_52795ba2e7]
 en = "This computer has no keyring, so Tinline asks for your passphrase each time it starts."
 where = [
   "desktop profile_this_computer_has_no: Desktop, profile and settings (in profile_view.rs, passphrase_page).",
 ]
-text = ""
+text = "या कॉम्प्युटरमध्ये कीरिंग नाही, त्यामुळे Tinline सुरू होताना प्रत्येक वेळी तुमचा पासफ्रेज विचारते."
 
 [t_86dd1e0638]
 en = "This device · Online"
 where = [
   "desktop profile_this_device_online: Desktop, profile and settings (in profile_view.rs, devices_page).",
 ]
-text = ""
+text = "हे डिव्हाइस · ऑनलाइन"
 
 [t_d6a83681ca]
 en = "This is not a lock."
 where = [
   "desktop profile_this_is_not_a: Desktop, profile and settings (in profile_view.rs, devices_layer).",
 ]
-text = ""
+text = "हे लॉक नाही."
 
 [t_b62ccd7a6a]
 en = "Tinline tells it now."
 where = [
   "desktop profile_tinline_tells_it_now: Desktop, profile and settings (in profile_view.rs, devices_layer).",
 ]
-text = ""
+text = "Tinline त्याला आत्ता कळवते."
 
 [t_85188a2676]
 en = "Told you blocked them"
 where = [
   "desktop profile_told_you_blocked_them: Desktop, profile and settings (in profile_view.rs, blocked_page).",
 ]
-text = ""
+text = "तुम्ही ब्लॉक केल्याचे कळवले"
 
 [t_645532a521]
 en = "Trend+probe"
 where = [
   "desktop profile_trend_probe: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "ट्रेंड+प्रोब"
 
 [t_cdb835ad27]
 en = "Unblock {first2}"
 where = [
   "desktop profile_unblock: Desktop, profile and settings (in profile_view.rs, person_profile). {first2} is a value filled in by the app.",
 ]
-text = ""
+text = "{first2} ला अनब्लॉक करा"
 
 [t_f0fb307e02]
 en = "Unblock {name}?"
 where = [
   "desktop profile_unblock_2: Desktop, profile and settings (in profile_view.rs, privacy_layer). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} ला अनब्लॉक करायचे?"
 
 [t_69ca4cd424]
 en = "Unlinking…"
 where = [
   "desktop profile_unlinking: Desktop, profile and settings (in profile_view.rs, devices_layer).",
 ]
-text = ""
+text = "लिंक काढत आहे…"
 
 [t_62b2918318]
 en = "Version {value}"
 where = [
   "desktop profile_version: Desktop, profile and settings (in profile_view.rs, about_page). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "आवृत्ती {value}"
 
 [t_9e49a9bbf2]
 en = "Video tuning"
 where = [
   "desktop profile_video_tuning: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "व्हिडिओ ट्यूनिंग"
 
 [t_40f558f53e]
 en = "Wait for the current account operation to finish."
 where = [
   "desktop profile_wait_for_the_current: Desktop, profile and settings (in profile_ui.rs, profile_write).",
 ]
-text = ""
+text = "खात्याचे सध्याचे काम पूर्ण होईपर्यंत थांबा."
 
 [t_ce72295675]
 en = "WebRTC audio processing"
 where = [
   "desktop profile_webrtc_audio_processing: Desktop, profile and settings (in profile_view.rs, about_page).",
 ]
-text = ""
+text = "WebRTC ऑडिओ प्रोसेसिंग"
 
 [t_4d02b4bdcd]
 en = "{name} will stop syncing with your account and stop ringing when you’re called. {value}"
 where = [
   "desktop profile_will_stop_syncing_with: Desktop, profile and settings (in profile_view.rs, devices_layer). {name} is a person's name (usually the first word of their chosen name). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "{name} तुमच्या खात्याशी सिंक होणे आणि तुम्हाला कॉल आल्यावर रिंग होणे थांबवेल. {value}"
 
 [t_e92045b085]
 en = "Write these {words} words down, in order, and keep them somewhere private."
 where = [
   "desktop profile_write_these_24_words: Desktop, profile and settings (in profile_view.rs, phrase_page). {words} is the number of recovery words (24), a number.",
 ]
-text = ""
+text = "हे {words} शब्द क्रमाने लिहून ठेवा आणि कुठेतरी खाजगी ठिकाणी ठेवा."
 
 [t_af2d0dcbe5]
 en = "You blocked {name}. Their profile no longer updates."
 where = [
   "desktop profile_you_blocked_their_profile: Desktop, profile and settings (in profile_view.rs, person_profile). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "तुम्ही {name} ला ब्लॉक केले. त्यांचे प्रोफाइल आता अपडेट होत नाही."
 
 [t_c071e74cd1]
 en = "You blocked them"
 where = [
   "desktop profile_you_blocked_them: Desktop, profile and settings (in profile_view.rs, person_profile).",
 ]
-text = ""
+text = "तुम्ही त्यांना ब्लॉक केले"
 
 [t_0810d6d484]
 en = "You won’t get calls or messages from {name}, and their profile updates stop."
 where = [
   "desktop profile_you_wont_get_calls: Desktop, profile and settings (in profile_view.rs, profile_layer). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "तुम्हाला {name} कडून कॉल किंवा संदेश येणार नाहीत, आणि त्यांच्या प्रोफाइलचे अपडेट थांबतात."
 
 [t_9f41b4f49e]
 en = "Your chat history is still here."
 where = [
   "desktop profile_your_chat_history_is: Desktop, profile and settings (in profile_view.rs, privacy_layer).",
 ]
-text = ""
+text = "तुमचा चॅट इतिहास अजूनही इथे आहे."
 
 [t_14f1270f78]
 en = "Your recovery key is the same as your {words} words, as one line. A password manager is a good place for it."
 where = [
   "desktop profile_your_recovery_key_is: Desktop, profile and settings (in profile_view.rs, phrase_page). {words} is the number of recovery words (24), a number.",
 ]
-text = ""
+text = "तुमची रिकव्हरी की म्हणजे तुमचेच {words} शब्द, एका ओळीत. पासवर्ड मॅनेजर ती ठेवण्यासाठी चांगली जागा आहे."
 
 [t_044cdbfc11]
 en = "Your recovery phrase is the only way to get your account back if you lose every device. Anyone who has it can act as you."
 where = [
   "desktop profile_your_recovery_phrase_is: Desktop, profile and settings (in profile_view.rs, phrase_page).",
 ]
-text = ""
+text = "तुमची सर्व डिव्हाइस हरवली तर तुमचे खाते परत मिळवण्याचा एकमेव मार्ग म्हणजे तुमचे रिकव्हरी शब्द. ते ज्याच्याकडे असतील ती व्यक्ती तुमच्या नावाने काहीही करू शकते."
 
 [t_25988f1d9a]
 en = "Your settings for {name}"
 where = [
   "desktop profile_your_settings_for: Desktop, profile and settings (in profile_view.rs, person_profile). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} साठी तुमच्या सेटिंग्ज"
 
 [t_1a0a38d265]
 en = "Account"
 where = [
   "desktop settings_account: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "खाते"
 
 [t_96c9d2bee5]
 en = "Anyone who sees these words can become you. Check nobody is looking, then show them."
 where = [
   "desktop settings_anyone_who_sees_these: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "हे शब्द पाहणारे कोणीही तुमच्या नावाने काहीही करू शकतात. कोणी पाहत नाही ना हे तपासा, मग ते दाखवा."
 
 [t_b943e62fec]
 en = "Anyone who sees these words can become you. Check nobody is looking."
 where = [
   "desktop settings_anyone_who_sees_these_words: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "हे शब्द पाहणारे कोणीही तुमच्या नावाने काहीही करू शकतात. कोणी पाहत नाही ना हे तपासा."
 
 [t_007f441e85]
 en = "Asks you to confirm first"
 where = [
   "desktop settings_asks_you_to_confirm: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "आधी तुमची पुष्टी विचारते"
 
 [t_811da6b443]
 en = "Audio"
 where = [
   "desktop settings_audio: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "ऑडिओ"
 
 [t_9fb4995484]
 en = "Calls won’t ring until you turn it back on"
 where = [
   "desktop settings_calls_wont_ring_until: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "तुम्ही पुन्हा सुरू करेपर्यंत कॉल रिंग होणार नाहीत"
 
 [t_3261bdf0e1]
 en = "Change"
 where = [
   "desktop settings_change: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "बदला"
 
 [t_90ebfd544e]
 en = "Checking..."
 where = [
   "desktop settings_checking: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "तपासत आहे..."
 
 [t_458b341145]
 en = "Device changes apply from the next call"
 where = [
   "desktop settings_device_changes_apply_from: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "डिव्हाइसमधील बदल पुढच्या कॉलपासून लागू होतात"
 
 [t_a7394c8f06]
 en = "Enter your passphrase"
 where = [
   "desktop settings_enter_your_passphrase: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "तुमचा पासफ्रेज टाका"
 
 [t_bb48a50610]
 en = "Instead of the microphone, to check the connection"
 where = [
   "desktop settings_instead_of_the_microphone: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "कनेक्शन तपासण्यासाठी, मायक्रोफोनऐवजी"
 
 [t_6cde4fb02a]
 en = "Keep"
 where = [
   "desktop settings_keep: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "ठेवा"
 
 [t_8494e68bf4]
 en = "Locked · needs its passphrase"
 where = [
   "desktop settings_locked_needs_its_passphrase: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "लॉक आहे · त्याचा पासफ्रेज लागतो"
 
 [t_d87befa574]
 en = "Only your own devices see it"
 where = [
   "desktop settings_only_your_own_devices: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "फक्त तुमच्याच डिव्हाइसना दिसते"
 
 [t_5910a9281c]
 en = "Optional — encrypts your account on this computer"
 where = [
   "desktop settings_optional_encrypts_your_account: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "ऐच्छिक — या कॉम्प्युटरवर तुमचे खाते एन्क्रिप्ट करतो"
 
 [t_50b9a9cd8e]
 en = "Other accounts on this computer"
 where = [
   "desktop settings_other_accounts_on_this: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "या कॉम्प्युटरवरील इतर खाती"
 
 [t_040256ef93]
 en = "Recommended — your key is in a plain file"
 where = [
   "desktop settings_recommended_your_key_is: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "शिफारस केलेले — तुमची की साध्या फाइलमध्ये आहे"
 
 [t_99d98f7cf9]
 en = "Remove {name} from this computer? Its contacts, chats and call history here are deleted. Your recovery phrase brings back the identity, not those."
 where = [
   "desktop settings_remove_from_this_computer: Desktop, settings (older page) (in view.rs, native_settings_view). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} हे खाते या कॉम्प्युटरवरून काढायचे? त्याचे इथले संपर्क, चॅट आणि कॉल इतिहास हटवले जातात. तुमचे रिकव्हरी शब्द ओळख परत आणतात, या गोष्टी नाही."
 
 [t_5cd6c5f390]
 en = "Send a test tone"
 where = [
   "desktop settings_send_a_test_tone: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "टेस्ट टोन पाठवा"
 
 [t_b9cce40003]
 en = "Show recovery phrase"
 where = [
   "desktop settings_show_recovery_phrase: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "रिकव्हरी शब्द दाखवा"
 
 [t_0c6d910d36]
 en = "Shown to the people you add"
 where = [
   "desktop settings_shown_to_the_people: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "तुम्ही जोडलेल्या लोकांना दिसते"
 
 [t_c26dcc4ffd]
 en = "This computer’s name"
 where = [
   "desktop settings_this_computers_name: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "या कॉम्प्युटरचे नाव"
 
 [t_fedfb70e58]
 en = "Unlocks Tinline when it starts"
 where = [
   "desktop settings_unlocks_tinline_when_it: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "Tinline सुरू होताना ते अनलॉक करतो"
 
 [t_cdcc50b2f7]
 en = "Your camera stays off until you turn it on in the call"
 where = [
   "desktop settings_your_camera_stays_off: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "तुम्ही कॉलमध्ये सुरू करेपर्यंत तुमचा कॅमेरा बंद राहतो"
 
 [t_90bdebb782]
 en = "BLOCKED"
 where = [
   "desktop shell_blocked: Desktop, shell: sidebar, search, contacts (in shell_view.rs, contacts_list).",
 ]
-text = ""
+text = "ब्लॉक केलेले"
 
 [t_c2c5a73746]
 en = "Choose a chat"
 where = [
   "desktop shell_choose_a_chat: Desktop, shell: sidebar, search, contacts (in shell_view.rs, shell_empty_detail).",
 ]
-text = ""
+text = "चॅट निवडा"
 
 [t_8456b9462d]
 en = "Messages stay on your devices."
 where = [
   "desktop shell_messages_stay_on_your: Desktop, shell: sidebar, search, contacts (in shell_view.rs, shell_empty_detail).",
 ]
-text = ""
+text = "संदेश तुमच्या डिव्हाइसवरच राहतात."
 
 [t_2511179a74]
 en = "More messages"
 where = [
   "desktop shell_more_messages: Desktop, shell: sidebar, search, contacts (in shell_view.rs, shell_search_results).",
 ]
-text = ""
+text = "आणखी संदेश"
 
 [t_5b37e08e60]
 en = "No contact called “{trim}”."
 where = [
   "desktop shell_no_contact_called: Desktop, shell: sidebar, search, contacts (in shell_view.rs, new_chat_overlay). {trim} is a value filled in by the app.",
 ]
-text = ""
+text = "“{trim}” नावाचा कोणताही संपर्क नाही."
 
 [t_998b1844f6]
 en = "No messages match"
 where = [
   "desktop shell_no_messages_match: Desktop, shell: sidebar, search, contacts (in shell_view.rs, shell_search_results).",
 ]
-text = ""
+text = "कोणताही संदेश जुळत नाही"
 
 [t_7278323591]
 en = "No one called “{trim}” in your contacts."
 where = [
   "desktop shell_no_one_called_in: Desktop, shell: sidebar, search, contacts (in shell_view.rs, contacts_list). {trim} is a value filled in by the app.",
 ]
-text = ""
+text = "तुमच्या संपर्कांमध्ये “{trim}” नावाचे कोणीही नाही."
 
 [t_a878978527]
 en = "Scan a code or paste an invite"
 where = [
   "desktop shell_scan_a_code_or: Desktop, shell: sidebar, search, contacts (in shell_view.rs, new_chat_overlay).",
 ]
-text = ""
+text = "कोड स्कॅन करा किंवा आमंत्रण पेस्ट करा"
 
 [t_f4e09c2bbf]
 en = "Search (Ctrl+K)"
 where = [
   "desktop shell_search_ctrl_k: Desktop, shell: sidebar, search, contacts (in shell_view.rs, desktop_search_field).",
 ]
-text = ""
+text = "शोधा (Ctrl+K)"
 
 [t_f7a95b3438]
 en = "Searching…"
 where = [
   "desktop shell_searching: Desktop, shell: sidebar, search, contacts (in shell_view.rs, shell_search_results).",
 ]
-text = ""
+text = "शोधत आहे…"
 
 [t_09334bda23]
 en = "WAITING FOR THEM"
 where = [
   "desktop shell_waiting_for_them: Desktop, shell: sidebar, search, contacts (in shell_view.rs, contacts_list).",
 ]
-text = ""
+text = "त्यांच्या उत्तराच्या प्रतीक्षेत"
 
 [t_83e7098628]
 en = "WAITING FOR YOU"
 where = [
   "desktop shell_waiting_for_you: Desktop, shell: sidebar, search, contacts (in shell_view.rs, contacts_list).",
 ]
-text = ""
+text = "तुमच्या उत्तराच्या प्रतीक्षेत"
 
 [t_977fda7ea5]
 en = "A lock, so only you can open Tinline on this computer."
 where = [
   "desktop signup_a_lock_so_only: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "एक कुलूप, जेणेकरून या कॉम्प्युटरवर Tinline फक्त तुम्हीच उघडू शकाल."
 
 [t_0f29049271]
 en = "Accepted your request. Your line is open."
 where = [
   "desktop signup_accepted_your_request_your: Desktop, sign-up, restore and add contact (in signup.rs, request_accepted).",
 ]
-text = ""
+text = "तुमची विनंती स्वीकारली. तुमची लाइन खुली आहे."
 
 [t_1f0d4d7cb3]
 en = "Add {name}"
 where = [
   "desktop signup_add: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} ला जोडा"
 
 [t_cbe48ef105]
 en = "Add another name"
 where = [
   "desktop signup_add_another_name: Desktop, sign-up, restore and add contact (in signup_view.rs, open_as_menu).",
 ]
-text = ""
+text = "आणखी एक नाव जोडा"
 
 [t_4630a76192]
 en = "Couldn’t make a new code just now. Try again in a moment."
 where = [
   "desktop signup_couldnt_make_a_new: Desktop, sign-up, restore and add contact (in signup.rs, gate_update).",
 ]
-text = ""
+text = "आत्ता नवीन कोड तयार करता आला नाही. थोड्या वेळाने पुन्हा प्रयत्न करा."
 
 [t_5e800d7c99]
 en = "Create a new account or bring one you already have."
 where = [
   "desktop signup_create_a_new_account: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "नवीन खाते तयार करा किंवा तुमचे आधीचे खाते आणा."
 
 [t_0af5893864]
 en = "Encrypts your account on this computer. You type it each time Tinline starts. If you forget it, your recovery words let you set a new one."
 where = [
   "desktop signup_encrypts_your_account_on: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "या कॉम्प्युटरवर तुमचे खाते एन्क्रिप्ट करतो. Tinline सुरू होताना प्रत्येक वेळी तुम्ही तो टाइप करता. तो विसरलात, तर तुमच्या रिकव्हरी शब्दांनी नवीन सेट करता येतो."
 
 [t_c89a3beeba]
 en = "Groups are hosted on a computer. Keep Tinline open and your groups stay reachable."
 where = [
   "desktop signup_groups_are_hosted_on: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "ग्रुप कॉम्प्युटरवर होस्ट होतात. Tinline उघडे ठेवा, म्हणजे तुमचे ग्रुप उपलब्ध राहतील."
 
 [t_51feac3631]
 en = "Home computer"
 where = [
   "desktop signup_home_computer: Desktop, sign-up, restore and add contact (in signup.rs, gate_created).",
 ]
-text = ""
+text = "घरचा कॉम्प्युटर"
 
 [t_075bd28bc4]
 en = "If you ever switch devices, these {words} words bring your account along."
 where = [
   "desktop signup_if_you_ever_switch: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {words} is the number of recovery words (24), a number.",
 ]
-text = ""
+text = "तुम्ही कधी डिव्हाइस बदलले, तर हे {words} शब्द तुमचे खाते सोबत आणतात."
 
 [t_60e00617a2]
 en = "Is this the {name} you expected? If you’re not sure, check with them first."
 where = [
   "desktop signup_is_this_the_you: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "तुम्हाला अपेक्षित असलेली {name} हीच व्यक्ती आहे का? खात्री नसेल, तर आधी त्यांच्याशी बोलून खात्री करा."
 
 [t_01a5bbebc5]
 en = "Laptop"
 where = [
   "desktop signup_laptop: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "लॅपटॉप"
 
 [t_118c865bad]
 en = "Message {value}"
 where = [
   "desktop signup_message_2: Desktop, sign-up, restore and add contact (in signup_view.rs, empty_hero). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "{value} ला संदेश पाठवा"
 
 [t_e55f51ab05]
 en = "{filled} of {total}"
 where = [
   "desktop signup_of_24: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {filled} is a value filled in by the app. {total} is how many recovery words there are (24), a number.",
 ]
-text = ""
+text = "{total} पैकी {filled}"
 
 [t_874cf4e616]
 en = "Optional. A lock, so only you can open Tinline on this computer."
 where = [
   "desktop signup_optional_a_lock_so: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "ऐच्छिक. एक कुलूप, जेणेकरून या कॉम्प्युटरवर Tinline फक्त तुम्हीच उघडू शकाल."
 
 [t_2f46bf8b88]
 en = "Paste it somewhere safe. A password manager works great."
 where = [
   "desktop signup_paste_it_somewhere_safe: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "ती कुठेतरी सुरक्षित ठिकाणी पेस्ट करा. पासवर्ड मॅनेजर उत्तम काम करतो."
 
 [t_73f6fcb372]
 en = "Save a copy somewhere safe. Paper works great."
 where = [
   "desktop signup_save_a_copy_somewhere: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "एक प्रत सुरक्षित ठिकाणी जतन करा. कागदही छान चालतो."
 
 [t_90efd61b03]
 en = "Say hello to {value} whenever you like."
 where = [
   "desktop signup_say_hello_to_whenever: Desktop, sign-up, restore and add contact (in signup_view.rs, empty_hero). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "तुम्हाला वाटेल तेव्हा {value} ला नमस्कार म्हणा."
 
 [t_7e31fba9bb]
 en = "Send it to anyone you’d like to talk to, in any app. It works until {value}."
 where = [
   "desktop signup_send_it_to_anyone_youd: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "तुम्हाला ज्यांच्याशी बोलायचे आहे त्यांना कोणत्याही ॲपमधून हा पाठवा. तो {value} पर्यंत चालतो."
 
 [t_e42886dfd5]
 en = "That code from {value} has expired. Codes last 7 days, so ask them for a fresh one."
 where = [
   "desktop signup_that_code_from_has: Desktop, sign-up, restore and add contact (in signup.rs, ac_pasted). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "{value} कडून आलेल्या त्या कोडची मुदत संपली आहे. कोड 7 दिवस चालतात, म्हणून त्यांच्याकडे नवीन कोड मागा."
 
 [t_c26085963d]
 en = "This computer can host your groups"
 where = [
   "desktop signup_this_computer_can_host: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "हा कॉम्प्युटर तुमचे ग्रुप होस्ट करू शकतो"
 
 [t_07f4585e09]
 en = "Tinline connects your computer straight to theirs."
 where = [
   "desktop signup_tinline_connects_your_straight: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "Tinline तुमचा कॉम्प्युटर थेट त्यांच्या डिव्हाइसशी जोडते."
 
 [t_5660c32aef]
 en = "Type your {words} recovery words. This computer starts with an empty contact list."
 where = [
   "desktop signup_type_your_24_recovery: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {words} is the number of recovery words (24), a number.",
 ]
-text = ""
+text = "तुमचे {words} रिकव्हरी शब्द टाइप करा. हा कॉम्प्युटर रिकाम्या संपर्क यादीने सुरू होतो."
 
 [t_2c3e291ab1]
 en = "Type your {words} words in order, or paste them, or your recovery key, into the first box. They stay on this computer."
 where = [
   "desktop signup_type_your_24_words: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {words} is the number of recovery words (24), a number.",
 ]
-text = ""
+text = "तुमचे {words} शब्द क्रमाने टाइप करा, किंवा पहिल्या बॉक्समध्ये शब्द किंवा तुमची रिकव्हरी की पेस्ट करा. ते या कॉम्प्युटरवरच राहतात."
 
 [t_89cb7b48e0]
 en = "Use your phone to reach emergency services."
 where = [
   "desktop signup_use_your_phone_to: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "आपत्कालीन सेवांशी संपर्क करण्यासाठी तुमचा फोन वापरा."
 
 [t_f72f9d664d]
 en = "Word {value} isn’t in the recovery word list. Check the spelling."
 where = [
   "desktop signup_word_in_the_recovery: Desktop, sign-up (in signup_view.rs, gate_step, Restore step). {value} is the number (1 to 24) of the first word that is not in the recovery word list. Shown when exactly one word is wrong.",
 ]
-text = ""
+text = "शब्द {value} रिकव्हरी शब्दांच्या यादीत नाही. स्पेलिंग तपासा."
 
 [t_50284ec479]
 en = "Work computer"
 where = [
   "desktop signup_work_computer: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "कामाचा कॉम्प्युटर"
 
 [t_d00ea827d7]
 en = "You just need a nickname. Encrypted end to end."
 where = [
   "desktop signup_you_just_need_a: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "फक्त एक टोपणनाव लागते. एंड-टू-एंड एन्क्रिप्टेड."
 
 [t_bfd0aa5282]
 en = "{value} You type it each time Tinline starts. If you forget it, your recovery words let you set a new one."
 where = [
   "desktop signup_you_type_it_each: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "{value} Tinline सुरू होताना प्रत्येक वेळी तुम्ही तो टाइप करता. तो विसरलात, तर तुमच्या रिकव्हरी शब्दांनी नवीन सेट करता येतो."
 
 [t_2219f303c1]
 en = "Your account is its recovery phrase, so you can bring it to this computer two ways."
 where = [
   "desktop signup_your_account_is_its: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "तुमचे खाते म्हणजेच त्याचे रिकव्हरी शब्द, त्यामुळे तुम्ही ते या कॉम्प्युटरवर दोन प्रकारे आणू शकता."
 
 [t_9ff24cc852]
 en = "Your current account stays on this computer."
 where = [
   "desktop signup_your_current_account_stays: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "तुमचे सध्याचे खाते या कॉम्प्युटरवर राहील."
 
 [t_8734239b76]
 en = "Your recovery key is in. It stays on this computer."
 where = [
   "desktop signup_your_recovery_key_is: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "तुमची रिकव्हरी की टाकली आहे. ती या कॉम्प्युटरवरच राहते."
 
 [t_aacdf28414]
 en = "Your recovery key is the same as your {words} words, as one line."
 where = [
   "desktop signup_your_recovery_key_is_the: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {words} is the number of recovery words (24), a number.",
 ]
-text = ""
+text = "तुमची रिकव्हरी की म्हणजे तुमचेच {words} शब्द, एका ओळीत."
 
 [t_be60e742e9]
 en = "Your request to {value} is waiting. Your line opens when they accept."
 where = [
   "desktop signup_your_request_to_is: Desktop, sign-up, restore and add contact (in signup_view.rs, empty_hero). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "{value} ला पाठवलेली तुमची विनंती प्रतीक्षेत आहे. त्यांनी स्वीकारल्यावर तुमची लाइन खुली होईल."
 
 [t_23aa6f9dd7]
 en = "Quit"
 where = [
   "desktop tray_quit: Desktop, system tray (in tray.rs, build).",
 ]
-text = ""
+text = "बंद करा"
 
 [t_a8432fcc64]
 en = "Tinline - {status}"
 where = [
   "desktop tray_tinline: Desktop, system tray (in tray.rs, refresh). {status} is a value filled in by the app.",
 ]
-text = ""
+text = "Tinline - {status}"
 
 [t_82d3373306]
 en = "Camera: {error}"
 where = [
   "desktop video_camera: Desktop, video (in vcall.rs, video_update). {error} is the underlying error text, not translated.",
 ]
-text = ""
+text = "कॅमेरा: {error}"
 
 [t_fe64fb27a3]
 en = "Video tuning: {error}"
 where = [
   "desktop video_video_tuning: Desktop, video (in vcall.rs, video_update). {error} is the underlying error text, not translated.",
 ]
-text = ""
+text = "व्हिडिओ ट्यूनिंग: {error}"
 
 [t_d7ef28d854]
 en = "Your chosen camera isn't connected. Pick one in Settings → Video."
 where = [
   "desktop video_your_chosen_camera_isnt: Desktop, video (in vcall.rs, found).",
 ]
-text = ""
+text = "तुम्ही निवडलेला कॅमेरा जोडलेला नाही. सेटिंग्ज → व्हिडिओ मध्ये एक निवडा."
 
 [t_4d707b1137]
 en = "System default"
 where = [
   "desktop app_system_default: Entry at the top of the microphone, speaker and camera pick lists: use the system default device.",
 ]
-text = ""
+text = "सिस्टमचे डीफॉल्ट"
 
 [t_cf682df833]
 en = "This computer has no secure keyring, so Tinline needs a passphrase to protect your account."
 where = [
   "desktop app_no_secure_keyring: Shown when this computer has no secure keyring, so a passphrase is required.",
 ]
-text = ""
+text = "या कॉम्प्युटरमध्ये सुरक्षित कीरिंग नाही, त्यामुळे तुमचे खाते सुरक्षित ठेवण्यासाठी Tinline ला पासफ्रेज लागतो."
 
 [t_959c3e05f4]
 en_one = "Word {value} and {count} more aren’t in the recovery word list. Check the spelling."
@@ -17199,272 +17199,274 @@ en_other = "Word {value} and {count} more aren’t in the recovery word list. Ch
 where = [
   "desktop signup_word_in_the_recovery_more: Desktop, sign-up (in signup_view.rs, gate_step, Restore step). Shown when several words are wrong. {value} is the number (1 to 24) of the first wrong word; {count} is how many other words are also wrong (at least 1).",
 ]
+one = "शब्द {value} आणि आणखी {count} शब्द रिकव्हरी शब्दांच्या यादीत नाहीत. स्पेलिंग तपासा."
+other = "शब्द {value} आणि आणखी {count} शब्द रिकव्हरी शब्दांच्या यादीत नाहीत. स्पेलिंग तपासा."
 
 [t_71508df1e3]
 en = "By continuing, you agree to the {terms} and have read the {privacy}."
 where = [
   "desktop signup_by_continuing_you_agree: Desktop, sign-up, \"Before you start\" step (in signup_view.rs), small line above the Agree button. {terms} is replaced by a link that shows the text of Terms of use (signup_terms_of_use), {privacy} by a link that shows Privacy policy (signup_privacy_policy). Keep both placeholders; they can move.",
 ]
-text = ""
+text = "पुढे जाण्याचा अर्थ असा की तुम्हाला {terms} मान्य आहेत आणि तुम्ही {privacy} वाचले आहे."
 
 [t_f8a7b024d2]
 en = "A nickname can’t contain control or text-direction characters."
 where = [
   "desktop profile_err_nickname_chars: Desktop, profile edit (in profile_ui.rs, check_name / check_text). Error when the nickname I give a contact has invisible control or text-direction characters.",
 ]
-text = ""
+text = "टोपणनावात कंट्रोल किंवा मजकुराची दिशा बदलणारी अक्षरे असू शकत नाहीत."
 
 [t_5ebcb73db1]
 en = "That nickname is too long. Up to {limit} bytes; some characters take more than one."
 where = [
   "desktop profile_err_nickname_long: Desktop, profile edit (in profile_ui.rs, check_name / check_text). Error when a nickname is too long. {limit} is the maximum size in bytes.",
 ]
-text = ""
+text = "ते टोपणनाव खूप मोठे आहे. जास्तीत जास्त {limit} बाइट; काही अक्षरांना एकापेक्षा जास्त बाइट लागतात."
 
 [t_54327f7aaf]
 en = "That is too long: up to {limit} bytes, and some characters take more than one."
 where = [
   "desktop profile_err_text_long: Desktop, profile edit (in profile_ui.rs, check_name / check_text). Error when a custom profile field value is too long. {limit} is the maximum size in bytes.",
 ]
-text = ""
+text = "हे खूप मोठे आहे: जास्तीत जास्त {limit} बाइट, आणि काही अक्षरांना एकापेक्षा जास्त बाइट लागतात."
 
 [t_53d1dcceb7]
 en = "That can’t contain control or text-direction characters."
 where = [
   "desktop profile_err_text_chars: Desktop, profile edit (in profile_ui.rs, check_name / check_text). Error when a custom profile field value has invisible control or text-direction characters.",
 ]
-text = ""
+text = "यात कंट्रोल किंवा मजकुराची दिशा बदलणारी अक्षरे असू शकत नाहीत."
 
 [t_00a97f2c8f]
 en = "{list} and {last}"
 where = [
   "desktop common_list_and: End of a list of three or more names: {list} is the earlier items already joined with the list separator, {last} the final item. English \"A, B and C\".",
 ]
-text = ""
+text = "{list} आणि {last}"
 
 [t_fed8e6ea3e]
 en = "{first} and {last}"
 where = [
   "desktop common_list_two: A list of exactly two names. {first} and {last} are names.",
 ]
-text = ""
+text = "{first} आणि {last}"
 
 [t_2f27018b89]
 en = " · "
 where = [
   "desktop common_dot_separator: Between short whole phrases on one line, e.g. \"Invited by Ana · 1 of 3 flags\". Keep the spaces.",
 ]
-text = ""
+text = " · "
 
 [t_068c9a83c8]
 en = "Jan"
 where = [
   "desktop date_month_1: Short month name inside dates such as \"Sep 12\" (month 1 of 12). A word or abbreviation, nothing else.",
 ]
-text = ""
+text = "जाने"
 
 [t_2fc789c4d5]
 en = "Feb"
 where = [
   "desktop date_month_2: Short month name inside dates such as \"Sep 12\" (month 2 of 12). A word or abbreviation, nothing else.",
 ]
-text = ""
+text = "फेब्रु"
 
 [t_b066d8f5ef]
 en = "Mar"
 where = [
   "desktop date_month_3: Short month name inside dates such as \"Sep 12\" (month 3 of 12). A word or abbreviation, nothing else.",
 ]
-text = ""
+text = "मार्च"
 
 [t_74a7ff087e]
 en = "Apr"
 where = [
   "desktop date_month_4: Short month name inside dates such as \"Sep 12\" (month 4 of 12). A word or abbreviation, nothing else.",
 ]
-text = ""
+text = "एप्रि"
 
 [t_e532d1d3fa]
 en = "May"
 where = [
   "desktop date_month_5: Short month name inside dates such as \"Sep 12\" (month 5 of 12). A word or abbreviation, nothing else.",
 ]
-text = ""
+text = "मे"
 
 [t_1bfac4c565]
 en = "Jun"
 where = [
   "desktop date_month_6: Short month name inside dates such as \"Sep 12\" (month 6 of 12). A word or abbreviation, nothing else.",
 ]
-text = ""
+text = "जून"
 
 [t_b0624225dc]
 en = "Jul"
 where = [
   "desktop date_month_7: Short month name inside dates such as \"Sep 12\" (month 7 of 12). A word or abbreviation, nothing else.",
 ]
-text = ""
+text = "जुलै"
 
 [t_e7f1e3d854]
 en = "Aug"
 where = [
   "desktop date_month_8: Short month name inside dates such as \"Sep 12\" (month 8 of 12). A word or abbreviation, nothing else.",
 ]
-text = ""
+text = "ऑग"
 
 [t_2cd1a9363c]
 en = "Sep"
 where = [
   "desktop date_month_9: Short month name inside dates such as \"Sep 12\" (month 9 of 12). A word or abbreviation, nothing else.",
 ]
-text = ""
+text = "सप्टें"
 
 [t_9fb8e4095f]
 en = "Oct"
 where = [
   "desktop date_month_10: Short month name inside dates such as \"Sep 12\" (month 10 of 12). A word or abbreviation, nothing else.",
 ]
-text = ""
+text = "ऑक्टो"
 
 [t_babad4d09a]
 en = "Nov"
 where = [
   "desktop date_month_11: Short month name inside dates such as \"Sep 12\" (month 11 of 12). A word or abbreviation, nothing else.",
 ]
-text = ""
+text = "नोव्हें"
 
 [t_71dfdc0e04]
 en = "Dec"
 where = [
   "desktop date_month_12: Short month name inside dates such as \"Sep 12\" (month 12 of 12). A word or abbreviation, nothing else.",
 ]
-text = ""
+text = "डिसें"
 
 [t_27ab80e757]
 en = "Monday"
 where = [
   "desktop date_weekday_mon: Weekday name inside dates such as \"Thursday 8 Oct\". Just the day name.",
 ]
-text = ""
+text = "सोमवार"
 
 [t_83f75a6a3d]
 en = "Tuesday"
 where = [
   "desktop date_weekday_tue: Weekday name inside dates such as \"Thursday 8 Oct\". Just the day name.",
 ]
-text = ""
+text = "मंगळवार"
 
 [t_38d4808009]
 en = "Wednesday"
 where = [
   "desktop date_weekday_wed: Weekday name inside dates such as \"Thursday 8 Oct\". Just the day name.",
 ]
-text = ""
+text = "बुधवार"
 
 [t_21149a2390]
 en = "Thursday"
 where = [
   "desktop date_weekday_thu: Weekday name inside dates such as \"Thursday 8 Oct\". Just the day name.",
 ]
-text = ""
+text = "गुरुवार"
 
 [t_148abe3f88]
 en = "Friday"
 where = [
   "desktop date_weekday_fri: Weekday name inside dates such as \"Thursday 8 Oct\". Just the day name.",
 ]
-text = ""
+text = "शुक्रवार"
 
 [t_0968e86bdc]
 en = "Saturday"
 where = [
   "desktop date_weekday_sat: Weekday name inside dates such as \"Thursday 8 Oct\". Just the day name.",
 ]
-text = ""
+text = "शनिवार"
 
 [t_cc55d792bc]
 en = "Sunday"
 where = [
   "desktop date_weekday_sun: Weekday name inside dates such as \"Thursday 8 Oct\". Just the day name.",
 ]
-text = ""
+text = "रविवार"
 
 [t_a3673dec81]
 en = "{month} {day}"
 where = [
   "desktop date_month_day: A date without a year. {month} is the short month name, {day} the day number. English \"Sep 12\".",
 ]
-text = ""
+text = "{day} {month}"
 
 [t_5fd8e248d3]
 en = "{day} {month}"
 where = [
   "desktop date_day_month: A date without a year, day first. {day} is the day number, {month} the short month name. English \"12 Sep\".",
 ]
-text = ""
+text = "{day} {month}"
 
 [t_7a357641e5]
 en = "{month} {day}, {time}"
 where = [
   "desktop date_month_day_time: A date and the clock time. {month} short month name, {day} day number, {time} the time like 15:20. English \"Oct 10, 15:20\".",
 ]
-text = ""
+text = "{day} {month}, {time}"
 
 [t_f0d5b4190a]
 en = "{weekday} {day} {month}"
 where = [
   "desktop date_weekday_date: A date with its weekday, this year. {weekday} the day name, {day} the day number, {month} the short month name. English \"Thursday 8 Oct\".",
 ]
-text = ""
+text = "{weekday}, {day} {month}"
 
 [t_99e3037c80]
 en = "{weekday} {day} {month} {year}"
 where = [
   "desktop date_weekday_date_year: A date with its weekday and year. {weekday} day name, {day} day number, {month} short month name, {year} the year. English \"Thursday 8 Oct 2025\".",
 ]
-text = ""
+text = "{weekday}, {day} {month} {year}"
 
 [t_52db4d10a3]
 en = "Answering ends your current call."
 where = [
   "desktop call_ends_your_call: Desktop, call waiting card (in view.rs, waiting_banner), small line under the buttons, when the current caller has no name.",
 ]
-text = ""
+text = "उचलल्यावर तुमचा सध्याचा कॉल संपेल."
 
 [t_b2f4b04b14]
 en = "Someone is calling"
 where = [
   "desktop common_someone_is_calling: Desktop, incoming call: notification and call waiting card title when the caller has no name.",
 ]
-text = ""
+text = "कोणीतरी कॉल करत आहे"
 
 [t_705fd514d9]
 en = "Reconnecting the call"
 where = [
   "desktop call_reconnecting: Desktop, call screen and mark label: the CALL lost its connection and is trying again (not a device link).",
 ]
-text = ""
+text = "कॉल पुन्हा कनेक्ट होत आहे"
 
 [t_8927d78059]
 en = "**This computer** is carrying this call. Everyone in the call connects to it, and it passes the audio on and chooses who is heard when several people speak."
 where = [
   "desktop gcall_about_this_computer: Desktop, group call \"About this call\" sheet (in gcall_view.rs, gcall_about). The call is carried by this computer. **…** is shown bold.",
 ]
-text = ""
+text = "**हा कॉम्प्युटर** हा कॉल चालवत आहे. कॉलमधील सर्व जण त्याच्याशी जोडले जातात, आणि तो आवाज पुढे पाठवतो आणि अनेक जण बोलत असताना कोणाचा आवाज ऐकू येईल ते ठरवतो."
 
 [t_90a84c0267]
 en = "Call host: another device"
 where = [
   "desktop gcall_call_host_unnamed: Desktop, group call screen (in gcall_view.rs), small line that opens \"About this call\", when the host's owner has no known name.",
 ]
-text = ""
+text = "कॉल होस्ट: दुसरे डिव्हाइस"
 
 [t_33d5002404]
 en = "Replying to a message"
 where = [
   "desktop group_replying_to_a_message: Desktop, group composer: shown above the field while I reply to a message whose author I cannot name.",
 ]
-text = ""
+text = "एका संदेशाला उत्तर देत आहात"
 
 [t_479631b28d]
 en = "Invited by someone"
@@ -17472,49 +17474,49 @@ where = [
   "desktop group_invited_by_someone: Desktop, group member row: invited by someone I cannot name.",
   "desktop group_owner_by_unnamed_unnamed: Desktop, group join dialog (in group_live_view.rs, live_overlay): the line under the group name saying who invited me and who owns the group. Someone I cannot name made the link and the owner has no known name.",
 ]
-text = ""
+text = "एका सदस्याने आमंत्रित केले"
 
 [t_b1f3953010]
 en = "A link for your own other device"
 where = [
   "desktop group_link_own: Desktop, group join dialog (in group_live_view.rs, live_overlay): the line under the group name saying who invited me and who owns the group. The link is for my own other device.",
 ]
-text = ""
+text = "तुमच्याच दुसऱ्या डिव्हाइससाठीची लिंक"
 
 [t_d0331beb91]
 en = "A link for your own other device · owner {owner}"
 where = [
   "desktop group_link_own_owner: Desktop, group join dialog (in group_live_view.rs, live_overlay): the line under the group name saying who invited me and who owns the group. The link is for my own other device. {owner} is the owner's name.",
 ]
-text = ""
+text = "तुमच्याच दुसऱ्या डिव्हाइससाठीची लिंक · मालक {owner}"
 
 [t_fdd5e8b563]
 en = "Invited by you · owner {owner}"
 where = [
   "desktop group_owner_by_you: Desktop, group join dialog (in group_live_view.rs, live_overlay): the line under the group name saying who invited me and who owns the group. I made the link. {owner} is the owner's name.",
 ]
-text = ""
+text = "तुम्ही आमंत्रित केले · मालक {owner}"
 
 [t_44728366f9]
 en = "Invited by {inviter} · owner {owner}"
 where = [
   "desktop group_owner_by_named: Desktop, group join dialog (in group_live_view.rs, live_overlay): the line under the group name saying who invited me and who owns the group. {inviter} is the first name of who made the link, {owner} the owner's name.",
 ]
-text = ""
+text = "{inviter} ने आमंत्रित केले · मालक {owner}"
 
 [t_f86f5cbd4e]
 en = "Invited by {inviter}"
 where = [
   "desktop group_owner_by_named_unnamed: Desktop, group join dialog (in group_live_view.rs, live_overlay): the line under the group name saying who invited me and who owns the group. {inviter} made the link; the owner has no known name.",
 ]
-text = ""
+text = "{inviter} ने आमंत्रित केले"
 
 [t_25d7a50fc3]
 en = "Invited by someone · owner {owner}"
 where = [
   "desktop group_owner_by_unnamed: Desktop, group join dialog (in group_live_view.rs, live_overlay): the line under the group name saying who invited me and who owns the group. Someone I cannot name made the link. {owner} is the owner's name.",
 ]
-text = ""
+text = "एका सदस्याने आमंत्रित केले · मालक {owner}"
 
 [t_5a341ece46]
 en_one = "{count} host online, this computer too. Posts go through right away."
@@ -17522,48 +17524,50 @@ en_other = "{count} hosts online, this computer too. Posts go through right away
 where = [
   "desktop group_hosts_online_here: Desktop, group info, hosts section, when this computer is one of the hosts. {count} is how many hosts are online, including this computer.",
 ]
+one = "{count} होस्ट ऑनलाइन आहे, हा कॉम्प्युटरसुद्धा. पोस्ट लगेच पोहोचतात."
+other = "{count} होस्ट ऑनलाइन आहेत, हा कॉम्प्युटरसुद्धा. पोस्ट लगेच पोहोचतात."
 
 [t_a3446fca89]
 en = "A call host carries the call. Everyone in a call connects to it, and it passes the audio on, so it can hear the call. That is separate from chat hosting: a chat host is not a call host unless you also appoint it as one. Call hosts are members you trust, and each one chooses to accept. Appoint one from a member’s menu, or host calls on this computer."
 where = [
   "desktop group_a_call_host_carries_admin: Desktop, group info, call hosts section note, for admins.",
 ]
-text = ""
+text = "कॉल होस्ट कॉल चालवतो. कॉलमधील सर्व जण त्याच्याशी जोडले जातात आणि तो आवाज पुढे पाठवतो, त्यामुळे तो कॉल ऐकू शकतो. हे चॅट होस्टिंगपेक्षा वेगळे आहे: चॅट होस्टला तुम्ही कॉल होस्ट म्हणूनही नेमल्याशिवाय तो कॉल होस्ट होत नाही. कॉल होस्ट हे तुमच्या विश्वासातले सदस्य असतात, आणि स्वीकारायचे की नाही हे प्रत्येकाच्या हातात असते. सदस्याच्या मेनूमधून एखादा नेमा, किंवा या कॉम्प्युटरवर कॉल होस्ट करा."
 
 [t_a84095ecdc]
 en = "An admin asked this computer to host {group}"
 where = [
   "desktop group_asked_this_computer_to_unnamed: Desktop, group banner when an admin I cannot name asks this computer to host. {group} is the group name.",
 ]
-text = ""
+text = "एका ॲडमिनने या कॉम्प्युटरला {group} होस्ट करण्यास सांगितले"
 
 [t_c892a25b97]
 en = "this computer hosts the group"
 where = [
   "desktop group_status_this_computer_hosts: Desktop, group header (in group_live.rs, status_line): after the member count and a separator. This computer hosts the group.",
 ]
-text = ""
+text = "हा कॉम्प्युटर ग्रुप होस्ट करतो"
 
 [t_b30c122b4c]
 en = "Waiting for someone · via {group}"
 where = [
   "desktop group_sent_waiting_unnamed: Desktop, group requests I sent (in group_live.rs, sent_line): the state line of a private-chat request. The person has no known name. {group} is the group name.",
 ]
-text = ""
+text = "उत्तराची वाट · {group} मार्फत"
 
 [t_84ecf54979]
 en = "Blocked by them"
 where = [
   "desktop group_sent_blocked_unnamed: Desktop, group requests I sent (in group_live.rs, sent_line): the state line of a private-chat request. Someone blocked me.",
 ]
-text = ""
+text = "त्यांनी ब्लॉक केले"
 
 [t_85e9c7a5d8]
 en = "You can’t send messages to this group."
 where = [
   "desktop group_notice_cant_send: Desktop, group notice line (in group_live.rs). Shown when I try to post but may not.",
 ]
-text = ""
+text = "तुम्ही या ग्रुपला संदेश पाठवू शकत नाही."
 
 [t_4f6585901b]
 en_one = "{count} invitation sent. They join when they accept."
@@ -17571,52 +17575,54 @@ en_other = "{count} invitations sent. Each person joins when they accept."
 where = [
   "desktop group_notice_invitations_sent: Desktop, group notice line (in group_live.rs). Several invitations were sent. {count} is how many (2 or more).",
 ]
+one = "{count} आमंत्रण पाठवले. स्वीकारल्यावर ती व्यक्ती सामील होईल."
+other = "{count} आमंत्रणे पाठवली. प्रत्येक जण स्वीकारल्यावर सामील होईल."
 
 [t_a353a995d6]
 en = "Group made. This computer hosts it; invite people from the members pane."
 where = [
   "desktop group_notice_group_made: Desktop, group notice line (in group_live.rs). A new group was created on this computer.",
 ]
-text = ""
+text = "ग्रुप तयार झाला. हा कॉम्प्युटर तो होस्ट करतो; सदस्य विभागातून लोकांना आमंत्रित करा."
 
 [t_5459a31053]
 en = "Check that the other device shows this code, then approve there."
 where = [
   "desktop link_check_that_other_shows_this: Desktop, linking a device (in link_view.rs). Same as link_check_that_shows_this when the other device has no name.",
 ]
-text = ""
+text = "दुसऱ्या डिव्हाइसवर हाच कोड दिसतो आहे का ते तपासा, मग तिथे मंजुरी द्या."
 
 [t_77384a97d1]
 en = "Link the other device?"
 where = [
   "desktop link_link_other: Desktop, linking a device (in link_view.rs). Same as link_link when the other device has no name.",
 ]
-text = ""
+text = "दुसरे डिव्हाइस लिंक करायचे?"
 
 [t_a7e710aea7]
 en = "Linking the other device"
 where = [
   "desktop link_linking_other: Desktop, linking a device (in link_view.rs). Same as link_linking when the other device has no name.",
 ]
-text = ""
+text = "दुसरे डिव्हाइस लिंक करत आहे"
 
 [t_73260a10c6]
 en = "Linked the other device"
 where = [
   "desktop link_linked_other: Desktop, linking a device (in link_view.rs). Same as link_linked when the other device has no name.",
 ]
-text = ""
+text = "दुसरे डिव्हाइस लिंक केले"
 
 [t_fdf764a472]
 en = "Linked to your account"
 where = [
   "desktop link_linked_to_account: Desktop, linking a device (in link_view.rs). Same as link_linked_to when the other device has no name.",
 ]
-text = ""
+text = "तुमच्या खात्याशी लिंक झाले"
 
 [t_fae437985e]
 en = "You blocked {name} · {when}"
 where = [
   "desktop chat_you_blocked_on: Desktop, chat (in chat_view.rs, block_note): same line with the date. {name} is the first name, {when} a date and time such as \"Oct 10, 15:20\".",
 ]
-text = ""
+text = "तुम्ही {name} ला ब्लॉक केले · {when}"
