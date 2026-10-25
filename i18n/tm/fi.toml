@@ -13027,910 +13027,910 @@ en = "Enter answers · Esc declines"
 where = [
   "desktop call_enter_answers_esc_declines: Desktop, calls (voice and video) (in view.rs, video_call_view).",
 ]
-text = ""
+text = "Enter vastaa · Esc hylkää"
 
 [t_55195cbec5]
 en = "For testing. Your picture may stutter or your computer may heat up."
 where = [
   "desktop call_for_testing_your_picture: Desktop, calls (voice and video) (in call_screen.rs, call_nerds).",
 ]
-text = ""
+text = "Testausta varten. Kuvasi voi nykiä tai tietokoneesi voi lämmetä."
 
 [t_1e415b4258]
 en = "Hang up"
 where = [
   "desktop call_hang_up: Desktop, calls (voice and video) (in view.rs, video_call_view).",
 ]
-text = ""
+text = "Lopeta puhelu"
 
 [t_c8637eae36]
 en = "HD"
 where = [
   "desktop call_hd: Desktop, calls (voice and video) (in view.rs, hd_chip).",
 ]
-text = ""
+text = "HD"
 
 [t_30e7914804]
 en = "Ignore limits (heat, their decoder)"
 where = [
   "desktop call_ignore_limits_heat_their: Desktop, calls (voice and video) (in call_screen.rs, call_nerds).",
 ]
-text = ""
+text = "Ohita rajoitukset (lämpö, hänen purkajansa)"
 
 [t_75e076dea8]
 en = "is calling you"
 where = [
   "desktop call_is_calling_you: Desktop, calls (voice and video) (in view.rs, video_call_view).",
 ]
-text = ""
+text = "soittaa sinulle"
 
 [t_8f764feef1]
 en = "{rtt_ms} ms round trip · {value}% lost"
 where = [
   "desktop call_ms_round_trip_lost: Desktop, calls (voice and video) (in call_screen.rs, call_about). {rtt_ms} is a value filled in by the app. {value} is a value filled in by the app.",
 ]
-text = ""
+text = "{rtt_ms} ms edestakaisin · {value} % kadonnut"
 
 [t_f72c120dfc]
 en = "No camera"
 where = [
   "desktop call_no_camera: Desktop, calls (voice and video) (in call_screen.rs, call_view).",
 ]
-text = ""
+text = "Ei kameraa"
 
 [t_7fae834341]
 en = "Pin a size first."
 where = [
   "desktop call_pin_a_size_first: Desktop, calls (voice and video) (in call_screen.rs, call_nerds).",
 ]
-text = ""
+text = "Lukitse ensin koko."
 
 [t_8b2833f97e]
 en = "Relayed · encrypted"
 where = [
   "desktop call_relayed_encrypted: Desktop, calls (voice and video) (in view.rs, video_call_view).",
 ]
-text = ""
+text = "Välitetty · salattu"
 
 [t_8502df6288]
 en = "Sharper video on, up to 720p"
 where = [
   "desktop call_sharper_video_on_up: Desktop, calls (voice and video) (in view.rs, hd_chip).",
 ]
-text = ""
+text = "Terävämpi video päällä, enintään 720p"
 
 [t_3981b6e3cf]
 en = "{value} signal · {value2}"
 where = [
   "desktop call_signal: Desktop, calls (voice and video) (in call_screen.rs, call_about). {value} is a value filled in by the app. {value2} is a value filled in by the app.",
 ]
-text = ""
+text = "Signaali: {value} · {value2}"
 
 [t_a168cd45ed]
 en = "Stats for nerds"
 where = [
   "desktop call_stats_for_nerds: Desktop, calls (voice and video) (in call_screen.rs, call_nerds).",
 ]
-text = ""
+text = "Tilastoja nörteille"
 
 [t_17150a6034]
 en = "{day} {value}"
 where = [
   "desktop call_text: Desktop, calls (voice and video) (in view.rs, utc_date). {day} is a value filled in by the app. {value} is a value filled in by the app.",
 ]
-text = ""
+text = "{day} {value}"
 
 [t_d5b4307250]
 en = " The line is weak, so {name}’s voice may break up."
 where = [
   "desktop call_the_line_is_weak: Desktop, calls (voice and video) (in call_screen.rs, call_about). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = " Linja on heikko, joten henkilön {name} ääni voi katkeilla."
 
 [t_e6b445aa1b]
 en = "These apply to this call now. Settings > Video sets the next call."
 where = [
   "desktop call_these_apply_to_this: Desktop, calls (voice and video) (in call_screen.rs, call_nerds).",
 ]
-text = ""
+text = "Nämä koskevat tätä puhelua nyt. Asetukset > Video määrittää seuraavan puhelun."
 
 [t_8fa85234ca]
 en = "Video is starting…"
 where = [
   "desktop call_video_is_starting: Desktop, calls (voice and video) (in view.rs, video_stage).",
 ]
-text = ""
+text = "Video käynnistyy…"
 
 [t_d203b27537]
 en = "Your bitrate cap (not a promised rate)"
 where = [
   "desktop call_your_bitrate_cap_not: Desktop, calls (voice and video) (in call_screen.rs, call_nerds).",
 ]
-text = ""
+text = "Bittinopeutesi yläraja (ei luvattu nopeus)"
 
 [t_9742320971]
 en = "Your frame rate"
 where = [
   "desktop call_your_frame_rate: Desktop, calls (voice and video) (in call_screen.rs, call_nerds).",
 ]
-text = ""
+text = "Kuvataajuutesi"
 
 [t_2c467dc172]
 en = "Your network changed. Hold on — Tinline is finding the line again."
 where = [
   "desktop call_your_network_changed_hold: Desktop, calls (voice and video) (in view.rs, video_call_view).",
 ]
-text = ""
+text = "Verkkosi vaihtui. Hetkinen — Tinline etsii linjaa uudelleen."
 
 [t_e80b716ddc]
 en = "Your size"
 where = [
   "desktop call_your_size: Desktop, calls (voice and video) (in call_screen.rs, call_nerds).",
 ]
-text = ""
+text = "Kokosi"
 
 [t_a2ac53fc12]
 en = "Your video codec"
 where = [
   "desktop call_your_video_codec: Desktop, calls (voice and video) (in call_screen.rs, call_nerds).",
 ]
-text = ""
+text = "Videokoodekkisi"
 
 [t_343c975534]
 en = " Your voice is encrypted on this device and only decrypted on {name}’s."
 where = [
   "desktop call_your_voice_is_encrypted: Desktop, calls (voice and video) (in call_screen.rs, call_about). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = " Äänesi salataan tällä laitteella ja puretaan vain henkilön {name} laitteella."
 
 [t_dfe464b10a]
 en = "Ask for earlier messages"
 where = [
   "desktop chat_ask_for_earlier_messages: Desktop, chats (in chat_view.rs, history_note).",
 ]
-text = ""
+text = "Pyydä aiempia viestejä"
 
 [t_929d8923a5]
 en = "Could not open: {error}"
 where = [
   "desktop chat_could_not_open: Desktop, chats (in chat.rs, update_chat_inner). {error} is the underlying error text, not translated.",
 ]
-text = ""
+text = "Avaaminen ei onnistunut: {error}"
 
 [t_724abcb8df]
 en = "Could not play: {error}"
 where = [
   "desktop chat_could_not_play: Desktop, chats (in chat.rs, update_chat_inner). {error} is the underlying error text, not translated.",
 ]
-text = ""
+text = "Toistaminen ei onnistunut: {error}"
 
 [t_f7209a5c78]
 en = "Could not record: {error}"
 where = [
   "desktop chat_could_not_record: Desktop, chats (in chat.rs, update_chat_inner). {error} is the underlying error text, not translated.",
 ]
-text = ""
+text = "Tallentaminen ei onnistunut: {error}"
 
 [t_1702498248]
 en = "Could not save: {error}"
 where = [
   "desktop chat_could_not_save: Desktop, chats (in chat.rs, update_chat_inner). {error} is the underlying error text, not translated.",
 ]
-text = ""
+text = "Tallennus ei onnistunut: {error}"
 
 [t_ca9953df3e]
 en = "Could not send: {error}"
 where = [
   "desktop chat_could_not_send: Desktop, chats (in chat.rs, update_chat_inner). {error} is the underlying error text, not translated.",
 ]
-text = ""
+text = "Lähetys ei onnistunut: {error}"
 
 [t_622a8606a0]
 en = "Could not show this: {error}"
 where = [
   "desktop chat_could_not_show_this: Desktop, chats (in chat_view.rs, viewer_overlay). {error} is the underlying error text, not translated.",
 ]
-text = ""
+text = "Tätä ei voitu näyttää: {error}"
 
 [t_af4a349292]
 en = "{value} · couldn’t download — tap to retry"
 where = [
   "desktop chat_couldnt_download_tap_to: Desktop, chats (in chat_view.rs, attachment_view). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "{value} · lataus ei onnistunut — yritä uudelleen napauttamalla"
 
 [t_276ce0135b]
 en = "Delete"
 where = [
   "desktop chat_delete: Desktop, chats (in chat_view.rs, message_menu).",
 ]
-text = ""
+text = "Poista"
 
 [t_9990a7654e]
 en = "Delete for everyone"
 where = [
   "desktop chat_delete_for_everyone: Desktop, chats (in chat_view.rs, delete_overlay).",
 ]
-text = ""
+text = "Poista kaikilta"
 
 [t_5a4df3a700]
 en = "Delete for everyone asks {name}’s devices to remove it too. Copies elsewhere can’t be recalled."
 where = [
   "desktop chat_delete_for_everyone_asks: Desktop, chats (in chat_view.rs, delete_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Poista kaikilta pyytää henkilön {name} laitteita poistamaan sen myös. Muualla olevia kopioita ei voi kutsua takaisin."
 
 [t_a0d1400553]
 en = "Delete message?"
 where = [
   "desktop chat_delete_message: Desktop, chats (in chat_view.rs, delete_overlay).",
 ]
-text = ""
+text = "Poistetaanko viesti?"
 
 [t_ff5f9f7f6c]
 en = "{name} deleted this message"
 where = [
   "desktop chat_deleted_this_message: Desktop, chats (in chat_view.rs, message_row). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} poisti tämän viestin"
 
 [t_2c08303faf]
 en = "Device {device} · {value}"
 where = [
   "desktop chat_device: Desktop, chats (in chat_view.rs, receipt_lines). {device} is a value filled in by the app. {value} is a value filled in by the app.",
 ]
-text = ""
+text = "Laite {device} · {value}"
 
 [t_74fc21c4e4]
 en = "Downloading · {value} of {value2}"
 where = [
   "desktop chat_downloading_of: Desktop, chats (in chat_view.rs, attachment_view). {value} is a value filled in by the app. {value2} is a value filled in by the app.",
 ]
-text = ""
+text = "Ladataan · {value}/{value2}"
 
 [t_fc96a86226]
 en = "Draft: "
 where = [
   "desktop chat_draft: Desktop, chats (in chat_view.rs, pg_chat_row).",
 ]
-text = ""
+text = "Luonnos: "
 
 [t_ef98461b5f]
 en = "Drop to send to {name}"
 where = [
   "desktop chat_drop_to_send_to: Desktop, chats (in chat_view.rs, conversation_view). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Pudota lähettääksesi: {name}"
 
 [t_02f8ea12ed]
 en = "Encrypted on this computer. Up to 2 GB each. {name} gets it the next time you’re both online."
 where = [
   "desktop chat_encrypted_on_this_computer: Desktop, chats (in chat_view.rs, conversation_view). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Salattu tällä tietokoneella. Enintään 2 Gt kukin. {name} saa sen, kun olette seuraavan kerran molemmat verkossa."
 
 [t_2ac5e80587]
 en = "Esc to cancel"
 where = [
   "desktop chat_esc_to_cancel: Desktop, chats (in voice.rs, record_bar).",
 ]
-text = ""
+text = "Esc peruu"
 
 [t_1cee9b36cc]
 en = "Find in this chat (Ctrl+F)"
 where = [
   "desktop chat_find_in_this_chat_ctrl: Desktop, chats (in chat_view.rs, conversation_view).",
 ]
-text = ""
+text = "Hae tästä keskustelusta (Ctrl+F)"
 
 [t_817beb6d7c]
 en = "{value} · {name} gets it when you’re both online"
 where = [
   "desktop chat_gets_it_when_youre: Desktop, chats (in chat_view.rs, attachment_view). {value} is a value filled in by the app. {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{value} · {name} saa sen, kun olette molemmat verkossa"
 
 [t_35bf97d035]
 en = "{name} is offline. Delete for everyone reaches their devices when you’re both online."
 where = [
   "desktop chat_is_offline_delete_for: Desktop, chats (in chat_view.rs, delete_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} ei ole verkossa. Poista kaikilta ulottuu hänen laitteisiinsa, kun olette molemmat verkossa."
 
 [t_d5890c1bc8]
 en = "It was never delivered, so it’s only on this computer."
 where = [
   "desktop chat_it_was_never_delivered: Desktop, chats (in chat_view.rs, delete_overlay).",
 ]
-text = ""
+text = "Sitä ei koskaan toimitettu, joten se on vain tällä tietokoneella."
 
 [t_f60301b05b]
 en = "Load earlier messages"
 where = [
   "desktop chat_load_earlier_messages: Desktop, chats (in chat_view.rs, history_note).",
 ]
-text = ""
+text = "Lataa aiemmat viestit"
 
 [t_c59d44c923]
 en = "Message deleted"
 where = [
   "desktop chat_message_deleted: Desktop, chats (in chat.rs, preview_of).",
 ]
-text = ""
+text = "Viesti poistettu"
 
 [t_ae1837c44b]
 en = "Messages go straight to their devices."
 where = [
   "desktop chat_messages_go_straight_to: Desktop, chats (in chat_view.rs, message_list).",
 ]
-text = ""
+text = "Viestit kulkevat suoraan hänen laitteisiinsa."
 
 [t_64c071fa58]
 en = "{value} · not downloaded"
 where = [
   "desktop chat_not_downloaded: Desktop, chats (in chat_view.rs, attachment_view). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "{value} · ei ladattu"
 
 [t_0f05bc7174]
 en = "{value} of {len}"
 where = [
   "desktop chat_of: Desktop, chats (in chat_view.rs, viewer_overlay). {value} is a value filled in by the app. {len} is a value filled in by the app.",
 ]
-text = ""
+text = "{value}/{len}"
 
 [t_15c261a695]
 en = "Older messages are on {name}’s computer. This computer keeps them from when you started using it. Earlier days load when you’re both online."
 where = [
   "desktop chat_older_messages_are_on: Desktop, chats (in chat_view.rs, history_note). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Vanhemmat viestit ovat henkilön {name} tietokoneella. Tämä tietokone säilyttää ne siitä lähtien, kun aloit käyttää sitä. Aiemmat päivät latautuvat, kun olette molemmat verkossa."
 
 [t_250a61953d]
 en = "On {name}’s device"
 where = [
   "desktop chat_on_s_device: Desktop, chats (in chat_view.rs, receipt_lines). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Henkilön {name} laitteella"
 
 [t_bc7ea5e146]
 en = "Only files can be sent, not folders."
 where = [
   "desktop chat_only_files_can_be: Desktop, chats (in chat.rs, update_chat_inner).",
 ]
-text = ""
+text = "Vain tiedostoja voi lähettää, ei kansioita."
 
 [t_3d18972588]
 en = "Only on this computer so far"
 where = [
   "desktop chat_only_on_this_computer: Desktop, chats (in chat_view.rs, receipt_lines).",
 ]
-text = ""
+text = "Toistaiseksi vain tällä tietokoneella"
 
 [t_1265bdede4]
 en = "Open in default app"
 where = [
   "desktop chat_open_in_default_app: Desktop, chats (in chat_view.rs, viewer_overlay).",
 ]
-text = ""
+text = "Avaa oletussovelluksessa"
 
 [t_1041f84698]
 en = "{value} · paused — waiting for {name} to come online"
 where = [
   "desktop chat_paused_waiting_for_to: Desktop, chats (in chat_view.rs, attachment_view). {value} is a value filled in by the app. {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{value} · tauolla — odotetaan, että {name} tulee verkkoon"
 
 [t_ed90f518b6]
 en = "Read on {name}’s device"
 where = [
   "desktop chat_read_on_s_device: Desktop, chats (in chat_view.rs, receipt_lines). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Luettu henkilön {name} laitteella"
 
 [t_f100c495e7]
 en = "Replying to {value}"
 where = [
   "desktop chat_replying_to: Desktop, chats (in chat_view.rs, composer). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "Vastaus: {value}"
 
 [t_35f5a8c697]
 en = "Saved to {p}"
 where = [
   "desktop chat_saved_to: Desktop, chats (in chat.rs, update_chat_inner). {p} is a value filled in by the app.",
 ]
-text = ""
+text = "Tallennettu: {p}"
 
 [t_c29e950a10]
 en = "Say hello to {name}"
 where = [
   "desktop chat_say_hello_to: Desktop, chats (in chat_view.rs, message_list). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Sano hei henkilölle {name}"
 
 [t_8870224962]
 en = "Send a file"
 where = [
   "desktop chat_send_a_file: Desktop, chats (in chat.rs, update_chat_inner).",
 ]
-text = ""
+text = "Lähetä tiedosto"
 
 [t_a53d8bd1db]
 en = "Sends when {name} is online"
 where = [
   "desktop chat_sends_when_is_online: Desktop, chats (in chat_view.rs, image_view). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Lähtee, kun {name} on verkossa"
 
 [t_647f422a10]
 en = "Signed by {name} · {value}"
 where = [
   "desktop chat_signed_by: Desktop, chats (in chat_view.rs, block_note). {name} is a person's name (usually the first word of their chosen name). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "Allekirjoittaja {name} · {value}"
 
 [t_8fe87520fd]
 en = "Signed by {value}"
 where = [
   "desktop chat_signed_by_2: Desktop, chats (in chat_view.rs, receipt_lines). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "Allekirjoittaja {value}"
 
 [t_01bc208f24]
 en = "Tap to retry"
 where = [
   "desktop chat_tap_to_retry: Desktop, chats (in chat_view.rs, attachment_view).",
 ]
-text = ""
+text = "Yritä uudelleen napauttamalla"
 
 [t_75eed69db2]
 en = "That is everything {name} has."
 where = [
   "desktop chat_that_is_everything_has: Desktop, chats (in chat_view.rs, history_note). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Siinä on kaikki, mitä henkilöllä {name} on."
 
 [t_3aeb1ed651]
 en = "Too short — hold on a little longer."
 where = [
   "desktop chat_too_short_hold_on: Desktop, chats (in chat.rs, update_chat_inner).",
 ]
-text = ""
+text = "Liian lyhyt — pidä hieman pidempään."
 
 [t_c21fe6504f]
 en = "Waiting for {name}’s device to confirm"
 where = [
   "desktop chat_waiting_for_s_device: Desktop, chats (in chat_view.rs, receipt_lines). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Odotetaan vahvistusta henkilön {name} laitteelta"
 
 [t_4928d34862]
 en = "You blocked {name}{when}"
 where = [
   "desktop chat_you_blocked: Desktop, chats (in chat_view.rs, block_note). {name} is a person's name (usually the first word of their chosen name). {when} is a value filled in by the app.",
 ]
-text = ""
+text = "Estit henkilön {name}{when}"
 
 [t_4922fd0b5c]
 en = "Added {value}"
 where = [
   "desktop contact_added: Desktop, contact detail (in view.rs, detail_view). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "Lisätty {value}"
 
 [t_81af947f5e]
 en = "Calls themself “{name}” · {added}"
 where = [
   "desktop contact_calls_themself: Desktop, contact detail (in view.rs, detail_view). {name} is a person's name (usually the first word of their chosen name). {added} is a value filled in by the app.",
 ]
-text = ""
+text = "Kutsuu itseään nimellä ”{name}” · {added}"
 
 [t_c40c3cc5e8]
 en = "{name} can ring this computer and your other devices."
 where = [
   "desktop contact_can_ring_this_computer: Desktop, contact detail (in view.rs, detail_view). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} voi soittaa tähän tietokoneeseen ja muihin laitteisiisi."
 
 [t_42003932c9]
 en = "History stays on this computer only."
 where = [
   "desktop contact_history_stays_on_this: Desktop, contact detail (in view.rs, detail_view).",
 ]
-text = ""
+text = "Historia pysyy vain tällä tietokoneella."
 
 [t_8efe069875]
 en = "Home"
 where = [
   "desktop contact_home: Desktop, contact detail (in view.rs, detail_view).",
 ]
-text = ""
+text = "Koti"
 
 [t_573ad42e5f]
 en = "Length"
 where = [
   "desktop contact_length: Desktop, contact detail (in view.rs, detail_view).",
 ]
-text = ""
+text = "Kesto"
 
 [t_9a368b022b]
 en = "Name on this computer"
 where = [
   "desktop contact_name_on_this_computer: Desktop, contact detail (in view.rs, detail_view).",
 ]
-text = ""
+text = "Nimi tällä tietokoneella"
 
 [t_4901b5c982]
 en = "No calls yet."
 where = [
   "desktop contact_no_calls_yet: Desktop, contact detail (in view.rs, detail_view).",
 ]
-text = ""
+text = "Ei vielä puheluita."
 
 [t_70f49db840]
 en = "Only you see this. {name} still calls themself “{name2}”."
 where = [
   "desktop contact_only_you_see_this: Desktop, contact detail (in view.rs, detail_view). {name} is a person's name (usually the first word of their chosen name). {name2} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Vain sinä näet tämän. {name} kutsuu itseään yhä nimellä ”{name2}”."
 
 [t_4c6766fea8]
 en = "Path"
 where = [
   "desktop contact_path: Desktop, contact detail (in view.rs, detail_view).",
 ]
-text = ""
+text = "Reitti"
 
 [t_48f2045566]
 en = "When"
 where = [
   "desktop contact_when: Desktop, contact detail (in view.rs, detail_view).",
 ]
-text = ""
+text = "Milloin"
 
 [t_b4ee944a9e]
 en = "Anyone who sees these words can become you. Write them down and keep them somewhere safe."
 where = [
   "desktop gate_anyone_who_sees_these: Desktop, sign-in and gate screens (in view.rs, phrase_view).",
 ]
-text = ""
+text = "Kuka tahansa, joka näkee nämä sanat, voi esiintyä sinuna. Kirjoita ne muistiin ja säilytä turvallisessa paikassa."
 
 [t_83fb73677c]
 en = "I have saved it"
 where = [
   "desktop gate_i_have_saved_it: Desktop, sign-in and gate screens (in view.rs, phrase_view).",
 ]
-text = ""
+text = "Tallensin sen"
 
 [t_563bcc7b29]
 en = "Or"
 where = [
   "desktop gate_or: Desktop, sign-in and gate screens (in view.rs, key_failed_view).",
 ]
-text = ""
+text = "Tai"
 
 [t_50f37c1422]
 en = "Other accounts"
 where = [
   "desktop gate_other_accounts: Desktop, sign-in and gate screens (in view.rs, other_accounts).",
 ]
-text = ""
+text = "Muut tilit"
 
 [t_9f0a2108c4]
 en = "Retry"
 where = [
   "desktop gate_retry: Desktop, sign-in and gate screens (in view.rs, key_failed_view).",
 ]
-text = ""
+text = "Yritä uudelleen"
 
 [t_25991ff41c]
 en = "The system keyring did not accept the key."
 where = [
   "desktop gate_the_system_keyring_did: Desktop, sign-in and gate screens (in view.rs, key_failed_view).",
 ]
-text = ""
+text = "Järjestelmän avainnippu ei hyväksynyt avainta."
 
 [t_28118ea860]
 en = "These 24 words are the only way to restore your identity on another device."
 where = [
   "desktop gate_these_24_words_are: Desktop, sign-in and gate screens (in view.rs, phrase_view).",
 ]
-text = ""
+text = "Nämä 24 sanaa ovat ainoa tapa palauttaa identiteettisi toisella laitteella."
 
 [t_4999341dad]
 en = "This computer no longer has the key that opens it, and its keyring entry is missing. Once you restore, your calls come through again."
 where = [
   "desktop gate_this_computer_no_longer: Desktop, sign-in and gate screens (in view.rs, key_lost_view).",
 ]
-text = ""
+text = "Tällä tietokoneella ei enää ole avainta, joka avaa sen, ja sen avainnipun merkintä puuttuu. Kun palautat tilin, puhelusi tulevat taas perille."
 
 [t_46f9d90635]
 en = "Tinline couldn’t store the key that opens your account on this computer, so your account has not been saved yet. Nothing is lost."
 where = [
   "desktop gate_tinline_couldnt_store_the: Desktop, sign-in and gate screens (in view.rs, key_failed_view).",
 ]
-text = ""
+text = "Tinline ei voinut tallentaa tilisi avaavaa avainta tälle tietokoneelle, joten tiliäsi ei ole vielä tallennettu. Mitään ei ole menetetty."
 
 [t_12ec401f93]
 en = "Trying..."
 where = [
   "desktop gate_trying: Desktop, sign-in and gate screens (in view.rs, key_failed_view).",
 ]
-text = ""
+text = "Yritetään..."
 
 [t_ac7e2468f2]
 en = "Your recovery phrase"
 where = [
   "desktop gate_your_recovery_phrase: Desktop, sign-in and gate screens (in view.rs, phrase_view).",
 ]
-text = ""
+text = "Palautussanasi"
 
 [t_7a5c764b79]
 en = "Battery is low or the computer is hot. Hosting is limited: only one person is heard at a time, and no one new can join."
 where = [
   "desktop gcall_battery_is_low_or: Desktop, group calls (in gcall.rs, gcall_event).",
 ]
-text = ""
+text = "Akku on vähissä tai tietokone on kuuma. Isännöintiä on rajoitettu: vain yksi henkilö kuuluu kerrallaan, eikä kukaan uusi voi liittyä."
 
 [t_c1b5462e8b]
 en = "{value} is calling the group"
 where = [
   "desktop gcall_is_calling_the_group: Desktop, group calls (in gcall.rs, gcall_event). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "{value} soittaa ryhmälle"
 
 [t_e31bac2f34]
 en = "is carrying"
 where = [
   "desktop gcall_is_carrying: Desktop, group calls (in gcall_view.rs, gcall_about).",
 ]
-text = ""
+text = "välittää"
 
 [t_4d1b70ca13]
 en = "{count} people in the call"
 where = [
   "desktop gcall_people_in_the_call: Desktop, group calls (in gcall_view.rs, gcall_view). {count} is a number.",
 ]
-text = ""
+text = "Puhelussa henkilöitä: {count}"
 
 [t_06c8053807]
 en = "{value}’s device"
 where = [
   "desktop gcall_s_device: Desktop, group calls (in gcall_view.rs, gcall_host_label). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "jäsenen {value} laite"
 
 [t_5882776009]
 en = "Started by {value}"
 where = [
   "desktop gcall_started_by: Desktop, group calls (in gcall_view.rs, gcall_banner). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "Aloittaja: {value}"
 
 [t_d3c223d024]
 en = "The call host"
 where = [
   "desktop gcall_the_call_host: Desktop, group calls (in gcall_view.rs, gcall_about).",
 ]
-text = ""
+text = "Puheluisäntä"
 
 [t_dc989edf18]
 en = " {value} this call. Everyone in the call connects to it, and it passes the audio on and chooses who is heard when several people speak."
 where = [
   "desktop gcall_this_call_everyone_in: Desktop, group calls (in gcall_view.rs, gcall_about). {value} is a value filled in by the app.",
 ]
-text = ""
+text = " {value} tätä puhelua. Kaikki puhelussa olevat yhdistävät siihen, ja se välittää äänen eteenpäin ja valitsee, kuka kuuluu, kun useampi puhuu yhtä aikaa."
 
 [t_9982104078]
 en = "this computer"
 where = [
   "desktop gcall_this_computer: Desktop, group calls (in gcall_view.rs, gcall_host_label).",
 ]
-text = ""
+text = "tämä tietokone"
 
 [t_fdc94cdb2b]
 en = "A call host carries the call. Everyone in a call connects to it, and it passes the audio on, so it can hear the call. That is separate from chat hosting: a chat host is not a call host unless you also appoint it as one. Call hosts are members you trust, and each one chooses to accept.{value}"
 where = [
   "desktop group_a_call_host_carries: Desktop, groups (in group_live_view.rs, group_info_page). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "Puheluisäntä välittää puhelun. Kaikki puhelussa olevat yhdistävät siihen, ja se välittää äänen eteenpäin, joten se voi kuulla puhelun. Tämä on erillään keskustelun isännöinnistä: keskustelun isäntälaite ei ole puheluisäntä, ellet nimeä sitä myös sellaiseksi. Puheluisännät ovat jäseniä, joihin luotat, ja jokainen päättää itse hyväksyä tehtävän.{value}"
 
 [t_c72585d311]
 en = "A call host is a member’s computer or phone that carries the call. An admin can appoint one in Group info."
 where = [
   "desktop group_a_call_host_is: Desktop, groups (in group_live_view.rs, live_pane).",
 ]
-text = ""
+text = "Puheluisäntä on jäsenen tietokone tai puhelin, joka välittää puhelun. Ylläpitäjä voi nimetä sellaisen ryhmän tiedoissa."
 
 [t_d1b8093efb]
 en = "A call host is a member’s computer or phone that carries the call. You can host calls on this computer, or appoint a member in Group info."
 where = [
   "desktop group_a_call_host_is_a: Desktop, groups (in group_live_view.rs, live_pane).",
 ]
-text = ""
+text = "Puheluisäntä on jäsenen tietokone tai puhelin, joka välittää puhelun. Voit isännöidä puheluita tällä tietokoneella tai nimetä jäsenen ryhmän tiedoissa."
 
 [t_b9b1d3dfa0]
 en = "A call needs a call host"
 where = [
   "desktop group_a_call_needs_a: Desktop, groups (in group_live_view.rs, live_pane).",
 ]
-text = ""
+text = "Puhelu tarvitsee puheluisännän"
 
 [t_9b6f166f1f]
 en = "A flag is signed by you and can’t be taken back. {name} can see who flagged them and when. Messages {name} wrote before the removal still show, marked."
 where = [
   "desktop group_a_flag_is_signed: Desktop, groups (in group_live_view.rs, live_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Merkintä allekirjoitetaan sinun nimissäsi, eikä sitä voi perua. {name} näkee, kuka hänet merkitsi ja milloin. Viestit, jotka {name} kirjoitti ennen poistoa, näkyvät yhä merkittyinä."
 
 [t_ae23a1918a]
 en = "A host keeps a full copy of a group and passes messages on while members’ phones sleep. Members connect to hosts, not to each other; only hosts learn members’ group addresses. Tinline keeps hosting while the window is closed (it stays in the tray)."
 where = [
   "desktop group_a_host_keeps_a: Desktop, groups (in group_live_view.rs, live_hosting_page).",
 ]
-text = ""
+text = "Isäntälaite pitää täyden kopion ryhmästä ja välittää viestit eteenpäin jäsenten puhelinten nukkuessa. Jäsenet yhdistävät isäntälaitteisiin, eivät toisiinsa; vain isäntälaitteet saavat tietää jäsenten ryhmäosoitteet. Tinline jatkaa isännöintiä, vaikka ikkuna on suljettu (se pysyy ilmaisinalueella)."
 
 [t_0803302453]
 en = "A host keeps a full copy of the group, passes messages on while members’ phones sleep and learns members’ group addresses. It needs to stay running. Hosting doesn’t make you an admin; you can stop any time."
 where = [
   "desktop group_a_host_keeps_a_full: Desktop, groups (in group_live_view.rs, live_pane).",
 ]
-text = ""
+text = "Isäntälaite pitää täyden kopion ryhmästä, välittää viestit eteenpäin jäsenten puhelinten nukkuessa ja oppii jäsenten ryhmäosoitteet. Sen täytyy pysyä käynnissä. Isännöinti ei tee sinusta ylläpitäjää; voit lopettaa milloin tahansa."
 
 [t_6adb8d332d]
 en = "A host lists up to {value} people at a time, so there may be more."
 where = [
   "desktop group_a_host_lists_up: Desktop, groups (in group_live_view.rs, live_overlay). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "Isäntälaite näyttää kerralla enintään {value} henkilöä, joten heitä voi olla enemmän."
 
 [t_388413e2e0]
 en = "A host stays on and passes posts on while others are offline"
 where = [
   "desktop group_a_host_stays_on: Desktop, groups (in group_live_view.rs, group_info_page).",
 ]
-text = ""
+text = "Isäntälaite pysyy päällä ja välittää viestit eteenpäin, kun muut eivät ole verkossa"
 
 [t_b1f3953010]
 en = "A link for your own other device"
 where = [
   "desktop group_a_link_for_your: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "Linkki omalle toiselle laitteellesi"
 
 [t_6cbccca6c7]
 en = "a message"
 where = [
   "desktop group_a_message: Desktop, groups (in group_live_view.rs, live_composer).",
 ]
-text = ""
+text = "viesti"
 
 [t_e9b63fab04]
 en = "A request waits at the group’s hosts for up to 7 days."
 where = [
   "desktop group_a_request_waits_at: Desktop, groups (in group_live_view.rs, live_requests).",
 ]
-text = ""
+text = "Pyyntö odottaa ryhmän isäntälaitteilla enintään 7 päivää."
 
 [t_dd48d57724]
 en = "Add to {gname}"
 where = [
   "desktop group_add_to: Desktop, groups (in group_live_view.rs, live_overlay). {gname} is a value filled in by the app.",
 ]
-text = ""
+text = "Lisää ryhmään {gname}"
 
 [t_01ef28b1f8]
 en = "Admins of a group can make an invite. It works for 7 days."
 where = [
   "desktop group_admins_of_a_group: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "Ryhmän ylläpitäjät voivat luoda kutsun. Se toimii 7 päivää."
 
 [t_29bf7a72e5]
 en = "Also confirmed: {value}"
 where = [
   "desktop group_also_confirmed: Desktop, groups (in group_live_view.rs, group_receipt_lines). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "Myös vahvistaneet: {value}"
 
 [t_9ad14e4ac3]
 en = " · also hosts calls"
 where = [
   "desktop group_also_hosts_calls: Desktop, groups (in group_live_view.rs, group_info_page).",
 ]
-text = ""
+text = " · isännöi myös puheluita"
 
 [t_d8f81cb78d]
 en = "An admin asked this computer to carry the group’s calls"
 where = [
   "desktop group_an_admin_asked_this: Desktop, groups (in group_live_view.rs, group_info_page).",
 ]
-text = ""
+text = "Ylläpitäjä pyysi tätä tietokonetta välittämään ryhmän puhelut"
 
 [t_8f8adf5a2c]
 en = "{value} and {last}"
 where = [
   "desktop group_and: Desktop, groups (in groups_view.rs, and_list). {value} is a value filled in by the app. {last} is a value filled in by the app.",
 ]
-text = ""
+text = "{value} ja {last}"
 
 [t_daab639a96]
 en = "Anyone with this link or QR can join for 7 days. Share it over an app you trust; you see who joined and can flag them out. To invite your contacts directly, use Add members."
 where = [
   "desktop group_anyone_with_this_link: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "Kuka tahansa, jolla on tämä linkki tai QR-koodi, voi liittyä 7 päivän ajan. Jaa se sovelluksella, johon luotat; näet, kuka liittyi, ja voit merkitä hänet pois. Jos haluat kutsua yhteystietojasi suoraan, käytä kohtaa Lisää jäseniä."
 
 [t_4732b3a387]
 en = "Appointed. The device hosts once it agrees (Host from this device)."
 where = [
   "desktop group_appointed_the_device_hosts: Desktop, groups (in group_live.rs, run).",
 ]
-text = ""
+text = "Nimetty. Laite alkaa isännöidä, kun se suostuu (Isännöi tältä laitteelta)."
 
 [t_856dff95d1]
 en = "As a host this computer will:"
 where = [
   "desktop group_as_a_host_this: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "Isäntälaitteena tämä tietokone:"
 
 [t_fa48b44c60]
 en = "{value} asked this computer to host {name}"
 where = [
   "desktop group_asked_this_computer_to: Desktop, groups (in group_live_view.rs, live_pane). {value} is a value filled in by the app. {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{value} pyysi tätä tietokonetta isännöimään ryhmää {name}"
 
 [t_a367083c08]
 en = "Asks {name} to carry group calls on that device; they have to accept"
 where = [
   "desktop group_asks_to_carry_group: Desktop, groups (in group_live_view.rs, live_menu). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Pyytää henkilöä {name} välittämään ryhmäpuhelut sillä laitteella; hänen täytyy hyväksyä"
 
 [t_858da13864]
 en = "Block {name}"
 where = [
   "desktop group_block: Desktop, groups (in group_live_view.rs, live_requests). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Estä {name}"
 
 [t_9c0c00e458]
 en = " · Blocked"
 where = [
   "desktop group_blocked: Desktop, groups (in group_live_view.rs, group_info_page).",
 ]
-text = ""
+text = " · Estetty"
 
 [t_c78935c805]
 en = "Blocked {value}"
 where = [
   "desktop group_blocked_2: Desktop, groups (in groups_view.rs, privacy_page). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "Estetty {value}"
 
 [t_e07ade3895]
 en = "Calls go through the other call hosts"
 where = [
   "desktop group_calls_go_through_the: Desktop, groups (in group_live_view.rs, live_menu).",
 ]
-text = ""
+text = "Puhelut kulkevat muiden puheluisäntien kautta"
 
 [t_a88484de1a]
 en = "Can invite, flag members and appoint hosts"
 where = [
   "desktop group_can_invite_flag_members: Desktop, groups (in group_live_view.rs, live_menu).",
 ]
-text = ""
+text = "Voi kutsua, merkitä jäseniä ja nimetä isäntälaitteita"
 
 [t_30fa20a31a]
 en = "Carries the group’s calls; a computer that stays on is best"
 where = [
   "desktop group_carries_the_groups_calls: Desktop, groups (in group_live_view.rs, group_info_page).",
 ]
-text = ""
+text = "Välittää ryhmän puhelut; jatkuvasti päällä oleva tietokone on paras"
 
 [t_3c827bcc06]
 en = "Click anywhere to go back"
