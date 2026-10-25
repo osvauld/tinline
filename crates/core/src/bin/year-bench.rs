@@ -2,6 +2,7 @@
 //! (`run`). See `docs/scale-year.md`.
 //!
 //!   year-bench gen --scale 1.0 --dir /home/abe/build-cache/search-year-data/s1.0
+//!   year-bench gen ... --contacts 100 --no-passphrase   (an app-openable profile: see `generate`)
 //!   year-bench run --dir <same> --scenario intact|rebuild|bg [--work <dir>]
 //!
 //! Desktop only; no network is used (the node is never started).
@@ -186,24 +187,35 @@ fn arg(args: &[String], name: &str) -> Option<String> {
 
 fn generate(args: &[String]) {
     let scale: f64 = arg(args, "--scale").map_or(1.0, |s| s.parse().unwrap());
+    let contacts: usize = arg(args, "--contacts").map_or(CONTACTS, |s| s.parse().unwrap());
+    let pool_n = POOL.max(contacts);
+    // --no-passphrase: the vault opens with its key alone, written where the desktop app finds
+    // it (`unlock-<id>.key`), so `p2p-desktop --data <dir>/root` opens straight to Home.
+    let no_pass = args.iter().any(|a| a == "--no-passphrase");
+    let pass = if no_pass { "" } else { PASS };
     let dir = PathBuf::from(arg(args, "--dir").expect("--dir"));
     let _ = std::fs::remove_dir_all(&dir);
     let root = dir.join("root");
     std::fs::create_dir_all(&root).unwrap();
     let t0 = Instant::now();
     let node = Node::new(root.to_string_lossy().into(), Arc::new(Quiet)).unwrap();
-    let phrase = node.create_identity("Bench Me".into(), PASS.into()).unwrap();
+    let phrase = node.create_identity("Bench Me".into(), pass.into()).unwrap();
     let me = node.profile().unwrap().did;
     let key = node.unlock_key().expect("unlock key");
+    if no_pass {
+        node.commit_identity().unwrap();
+        let id: String = me.strip_prefix("did:key:").unwrap_or(&me).chars().filter(|c| c.is_ascii_alphanumeric()).collect();
+        std::fs::write(root.join(format!("unlock-{id}.key")), hex_of(&key)).unwrap();
+    }
     let c = corpus();
     let mut rng = Rng(0x1234_5678_9abc_def1);
 
     // Peers: contacts first.
     let mut pool: Vec<(String, String)> = Vec::new(); // (phrase, did)
-    for i in 0..POOL {
+    for i in 0..pool_n {
         let ph = node.synth_phrase_for_test();
         let did = node.synth_peer_for_test(ph.clone()).unwrap();
-        if i < CONTACTS {
+        if i < contacts {
             node.synth_contact_for_test(did.clone(), format!("Contact {i:02}")).unwrap();
         }
         pool.push((ph, did));
@@ -226,7 +238,7 @@ fn generate(args: &[String]) {
         let mut ats: Vec<i64> = (0..n).map(|_| day_start + (rng.next() % span as u64) as i64).collect();
         ats.sort();
         for at in ats {
-            let who = rng.zipf(CONTACTS);
+            let who = rng.zipf(contacts);
             let author = if rng.below(2) == 0 { me.clone() } else { pool[who].1.clone() };
             let mut text = message(&mut rng, &c);
             if total % 4403 == 17 {
@@ -259,7 +271,7 @@ fn generate(args: &[String]) {
         let start = today_start - (DAYS - 1) * DAY_MS;
         let mut ids = vec![(None::<String>, me.clone())];
         for k in 0..*members {
-            let (_, did) = &pool[(gi * 7 + k) % POOL];
+            let (_, did) = &pool[(gi * 7 + k) % pool_n];
             node.synth_group_add_for_test(&mut g, did.clone(), format!("Member {k}"), start + k as i64).unwrap();
             ids.push((Some(did.clone()), did.clone()));
         }
@@ -281,11 +293,11 @@ fn generate(args: &[String]) {
         }
         node.synth_group_flush_for_test(&mut g).unwrap();
         eprintln!("group {name}: {posts} posts, {:.0}s, rss {:.0} MB", t.elapsed().as_secs_f64(), rss_mb());
-        let mem: Vec<Value> = (1..=*members).map(|k| json!({"did": ids[k].1, "phrase": pool[(gi * 7 + k - 1) % POOL].0})).collect();
+        let mem: Vec<Value> = (1..=*members).map(|k| json!({"did": ids[k].1, "phrase": pool[(gi * 7 + k - 1) % pool_n].0})).collect();
         groups.push(json!({"gid": g.gid(), "name": name, "posts": posts, "members": mem}));
     }
-    let contacts: Vec<Value> = (0..CONTACTS).map(|i| json!({"did": pool[i].1, "phrase": pool[i].0})).collect();
-    let manifest = json!({"scale": scale, "passphrase": PASS, "phrase": phrase, "did": me, "unlock_key": hex_of(&key), "end_ms": end, "days": DAYS, "dms": total, "dm_files": files, "contacts": contacts, "groups": groups, "generated_secs": t0.elapsed().as_secs_f64()});
+    let contacts: Vec<Value> = (0..contacts).map(|i| json!({"did": pool[i].1, "phrase": pool[i].0})).collect();
+    let manifest = json!({"scale": scale, "passphrase": pass, "phrase": phrase, "did": me, "unlock_key": hex_of(&key), "end_ms": end, "days": DAYS, "dms": total, "dm_files": files, "contacts": contacts, "groups": groups, "generated_secs": t0.elapsed().as_secs_f64()});
     std::fs::write(dir.join("manifest.json"), serde_json::to_vec_pretty(&manifest).unwrap()).unwrap();
     eprintln!("sizes: {}", sizes(&root));
     node.lock();

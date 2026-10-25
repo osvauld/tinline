@@ -63,10 +63,18 @@ impl Node {
         if crate::block::blocked_me(&s.state, &did) {
             return false;
         }
-        s.state.contacts.iter().find(|c| c.did == did).and_then(|c| c.call_grant_from_them.as_ref()).is_some_and(|g| {
-            proto::verify_token(g, &did, me.id.did(), Cap::Call, now_ms(), &Unrecorded).is_ok()
-        })
+        s.state
+            .contacts
+            .iter()
+            .find(|c| c.did == did)
+            .and_then(|c| c.call_grant_from_them.as_ref())
+            .is_some_and(|g| call_token_ok(g, &did, me.id.did(), now_ms()))
     }
+}
+
+/// Whether `grant` is a call token from `did` to `me_did` that has not expired at `now` (ms).
+pub(crate) fn call_token_ok(grant: &SignedGrant, did: &str, me_did: &str, now: u64) -> bool {
+    proto::verify_token(grant, did, me_did, Cap::Call, now, &Unrecorded).is_ok()
 }
 
 impl Node {

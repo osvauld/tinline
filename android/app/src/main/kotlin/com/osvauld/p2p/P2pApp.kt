@@ -524,18 +524,18 @@ class P2pApp : Application(), NodeEvents {
         }
     }
 
-    /** Re-reads block states for every contact and conversation, and the blocked list. Cheap core reads. */
+    /** Re-reads block states for every contact and conversation, and the blocked list: two core calls, however many contacts. */
     fun refreshBlocks() {
         try {
             val me = currentDid()
             val dids = (_contacts.value.map { it.did } + realChat.chats.value.map { it.peerDid }).filter { it != me }.toSet()
-            val views = dids.associateWith { did ->
-                val st = node.blockState(did)
-                BlockView(st.blockedByMe, st.blockedAt?.toLong(), st.blockedMe?.signedAt?.toLong())
+            val rows = node.peerBlocks(dids.toList())
+            val views = rows.associate { r ->
+                r.did to BlockView(r.state.blockedByMe, r.state.blockedAt?.toLong(), r.state.blockedMe?.signedAt?.toLong())
             }
             val list = node.blockedContacts().map { BlockedRow(it.did, it.name, it.blockedAt.toLong()) }
-            val allowed = dids.filter { node.callsAllowed(it) }.toSet()
-            val tokens = dids.filter { node.canCall(it) }.toSet()
+            val allowed = rows.filter { it.callsAllowed }.map { it.did }.toSet()
+            val tokens = rows.filter { it.canCall }.map { it.did }.toSet()
             _blocks.value = Blocks.from(views, list, allowed, tokens)
         } catch (e: Exception) { Log.w(TAG, "blocks: $e") }
     }

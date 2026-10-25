@@ -563,6 +563,39 @@ fn unblock_restores_calls_only_if_previously_allowed() {
     eventually(60, "a holds c's message", || holds(&a, &c.did, &m));
 }
 
+/// `node.peer_blocks(dids)`, checked row by row against the three single calls it batches.
+fn peer_blocks_checked(node: &p2pcore::Node, dids: &[&str]) -> Vec<p2pcore::PeerBlocks> {
+    let rows = node.peer_blocks(dids.iter().map(|d| d.to_string()).collect());
+    assert_eq!(rows.iter().map(|r| r.did.as_str()).collect::<Vec<_>>(), dids, "one row per DID, in order");
+    for r in &rows {
+        assert_eq!(r.state, node.block_state(r.did.clone()), "{}", r.did);
+        assert_eq!(r.calls_allowed, node.calls_allowed(r.did.clone()), "{}", r.did);
+        assert_eq!(r.can_call, node.can_call(r.did.clone()), "{}", r.did);
+    }
+    rows
+}
+
+// `peer_blocks` is the one call the apps' block refresh makes at start-up instead of three per
+// contact: each row answers what `block_state`, `calls_allowed` and `can_call` answer.
+#[test]
+fn peer_blocks_answers_what_the_single_calls_answer() {
+    let (a, b) = S.pair("batch");
+    let c = S.peer("batch-c");
+    c.node.add_contact(a.node.my_ticket().unwrap()).unwrap();
+    harness::set_calls_allowed(&a.node, &c.did, false).unwrap();
+    eventually(30, "b holds a's call token", || b.node.can_call(a.did.clone()));
+    let nobody = "did:key:z6MkNotAContact";
+    let rows = peer_blocks_checked(&a.node, &[&b.did, &c.did, nobody]);
+    assert!(rows[0].calls_allowed && !rows[1].calls_allowed && !rows[2].calls_allowed);
+    assert!(peer_blocks_checked(&b.node, &[&a.did])[0].can_call);
+
+    harness::block(&a.node, &b.did).unwrap();
+    eventually(30, "b holds the notice", || harness::block_state(&b.node, &a.did).blocked_me.is_some());
+    assert!(peer_blocks_checked(&a.node, &[&b.did, &c.did])[0].state.blocked_by_me);
+    let r = &peer_blocks_checked(&b.node, &[&a.did])[0];
+    assert!(r.state.blocked_me.is_some() && !r.can_call, "{r:?}");
+}
+
 // KIND: acceptance
 // Decision: U5 revised — a personal block does not change group membership (only U9 removal
 // does); both stay members and the group keeps carrying both members' posts.

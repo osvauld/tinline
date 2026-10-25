@@ -14,7 +14,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-use p2pcore::{BlockState, BlockedContact, Error, Node};
+use p2pcore::{BlockState, BlockedContact, Error, Node, PeerBlocks};
 
 /// The core's blocking calls.
 pub trait BlockApi {
@@ -27,6 +27,18 @@ pub trait BlockApi {
     fn calls_allowed(&self, did: String) -> bool;
     /// We hold their call token: the call button.
     fn holds_call_token(&self, did: String) -> bool;
+    /// `block_state`, `calls_allowed` and `holds_call_token` for each of `dids` (one core call
+    /// on `Node`).
+    fn peer_blocks(&self, dids: Vec<String>) -> Vec<PeerBlocks> {
+        dids.into_iter()
+            .map(|did| PeerBlocks {
+                state: self.block_state(did.clone()),
+                calls_allowed: self.calls_allowed(did.clone()),
+                can_call: self.holds_call_token(did.clone()),
+                did,
+            })
+            .collect()
+    }
 }
 
 impl BlockApi for Node {
@@ -50,6 +62,9 @@ impl BlockApi for Node {
     }
     fn holds_call_token(&self, did: String) -> bool {
         Node::can_call(self, did)
+    }
+    fn peer_blocks(&self, dids: Vec<String>) -> Vec<PeerBlocks> {
+        Node::peer_blocks(self, dids)
     }
 }
 
@@ -87,16 +102,15 @@ impl Blocks {
         self.states.clear();
         self.allowed.clear();
         self.tokens.clear();
-        for did in dids {
-            if api.calls_allowed(did.clone()) {
+        for PeerBlocks { did, state, calls_allowed, can_call } in api.peer_blocks(dids.into_iter().collect()) {
+            if calls_allowed {
                 self.allowed.insert(did.clone());
             }
-            if api.holds_call_token(did.clone()) {
+            if can_call {
                 self.tokens.insert(did.clone());
             }
-            let st = api.block_state(did.clone());
-            if st.blocked_by_me || st.blocked_me.is_some() {
-                self.states.insert(did, st);
+            if state.blocked_by_me || state.blocked_me.is_some() {
+                self.states.insert(did, state);
             }
         }
         // A block from the list whose DID was not asked about (another device's block of

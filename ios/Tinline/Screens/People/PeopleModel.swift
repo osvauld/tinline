@@ -118,19 +118,19 @@ final class PeopleModel: ObservableObject, ProfileHost {
 
     // MARK: blocking
 
-    /// Re-reads block states for every contact and conversation, and the blocked list. Cheap core reads.
+    /// Re-reads block states for every contact and conversation, and the blocked list: two core calls, however many contacts.
     func refreshBlocks() {
         guard let node else { return }
         let me = node.profile()?.did
         let dids = Set((contacts.map { $0.did } + chatPeerDids()).filter { $0 != me })
+        let rows = node.peerBlocks(dids: Array(dids))
         var views: [String: BlockView] = [:]
-        for did in dids {
-            let st = node.blockState(did: did)
-            views[did] = BlockView(blockedByMe: st.blockedByMe, blockedAtSecs: st.blockedAt.map { Int64($0) }, blockedMeAtSecs: st.blockedMe.map { Int64($0.signedAt) })
+        for r in rows {
+            views[r.did] = BlockView(blockedByMe: r.state.blockedByMe, blockedAtSecs: r.state.blockedAt.map { Int64($0) }, blockedMeAtSecs: r.state.blockedMe.map { Int64($0.signedAt) })
         }
         let list = node.blockedContacts().map { BlockedRow(did: $0.did, name: $0.name, blockedAtSecs: Int64($0.blockedAt)) }
-        let allowed = Set(dids.filter { node.callsAllowed(did: $0) })
-        let tokens = Set(dids.filter { node.canCall(did: $0) })
+        let allowed = Set(rows.filter { $0.callsAllowed }.map { $0.did })
+        let tokens = Set(rows.filter { $0.canCall }.map { $0.did })
         blocks = Blocks.from(views, list, allowed: allowed, tokens: tokens)
     }
 

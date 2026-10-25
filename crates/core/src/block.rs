@@ -32,6 +32,18 @@ pub struct BlockState {
     pub blocked_me: Option<BlockNotice>,
 }
 
+/// One conversation's block and call state (`Node::peer_blocks`).
+#[derive(Debug, Clone, PartialEq, Eq, uniffi::Record)]
+pub struct PeerBlocks {
+    pub did: String,
+    /// As `Node::block_state`.
+    pub state: BlockState,
+    /// We let them call us, as `Node::calls_allowed`.
+    pub calls_allowed: bool,
+    /// We hold a live call token from them, as `Node::can_call`.
+    pub can_call: bool,
+}
+
 /// One row of Settings › Blocked people.
 #[uniffi::remote(Record)]
 pub struct BlockedContact {
@@ -101,17 +113,35 @@ impl Node {
 
     /// The block state of the conversation with `did`.
     pub fn block_state(&self, did: String) -> BlockState {
-        let s = self.inner.shared.lock();
-        let blocked_by_me = s.state.blocked.contains(&did);
-        BlockState {
-            blocked_by_me,
-            blocked_at: s.state.sent_notices.get(&did).filter(|_| blocked_by_me).map(|n| notice_at(n, &did) / 1000),
-            blocked_me: s.state.notices.get(&did).filter(|h| h.blocked).map(|h| BlockNotice {
-                from_did: did.clone(),
-                signed_at: h.at / 1000,
-                reason: BLOCKED.into(),
-            }),
-        }
+        block_state_in(&self.inner.shared.lock().state, &did)
+    }
+
+    /// `block_state`, `calls_allowed` and `can_call` for each of `dids`, in that order, in one
+    /// call: the apps' block refresh at start-up asks this for every contact and kept chat, and
+    /// one crossing per DID per question grows with the contact list.
+    pub fn peer_blocks(&self, dids: Vec<String>) -> Vec<PeerBlocks> {
+        let me = self.inner.me().ok();
+        // Read under the lock; the call tokens' signatures are checked after it is released.
+        let rows: Vec<_> = {
+            let s = self.inner.shared.lock();
+            let st = &s.state;
+            dids.into_iter()
+                .map(|did| {
+                    let c = st.contacts.iter().find(|c| c.did == did);
+                    let grant = c.and_then(|c| c.call_grant_from_them.clone()).filter(|_| !blocked_me(st, &did));
+                    (block_state_in(st, &did), c.is_some_and(|c| c.calls_allowed), grant, did)
+                })
+                .collect()
+        };
+        let now = now_ms();
+        rows.into_iter()
+            .map(|(state, calls_allowed, grant, did)| PeerBlocks {
+                can_call: me.as_ref().zip(grant).is_some_and(|(me, g)| crate::caps::call_token_ok(&g, &did, me.id.did(), now)),
+                did,
+                state,
+                calls_allowed,
+            })
+            .collect()
     }
 
     /// Everyone we block, newest block first (one list across our devices).
@@ -170,5 +200,18 @@ impl Node {
     #[doc(hidden)]
     pub fn ignore_block_notices_for_test(&self, ignore: bool) {
         self.inner.block.ignore.store(ignore, Ordering::SeqCst);
+    }
+}
+
+fn block_state_in(st: &node_runtime::store::State, did: &str) -> BlockState {
+    let blocked_by_me = st.blocked.contains(did);
+    BlockState {
+        blocked_by_me,
+        blocked_at: st.sent_notices.get(did).filter(|_| blocked_by_me).map(|n| notice_at(n, did) / 1000),
+        blocked_me: st.notices.get(did).filter(|h| h.blocked).map(|h| BlockNotice {
+            from_did: did.to_string(),
+            signed_at: h.at / 1000,
+            reason: BLOCKED.into(),
+        }),
     }
 }
