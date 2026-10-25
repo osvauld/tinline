@@ -84,6 +84,17 @@ Case, contraction or article depends on the slot (fr "à le", de dative, fi illa
 
 - `common_call`: button ("Call" = verb) and fallback title (noun). Split.
 
+Same problem (hi): `groupsb_open_link` (switch title, noun) shares "Open link"
+with `profile_open_link_button` (verb). Split by giving each role its own English.
+
+## 9b. Text that continues another element (hi)
+
+Strings that start after a bold name or end before one, so the verb can't go last:
+`link_match_body`, `call_is_calling_you` (desktop), `notif_accepted_text`,
+iOS `group_member_*_callhost{device}`, comma-joined role parts
+(`groupsb_role_*_lc`, `groupsb_desc_*`, `group_member_desc_*`), `history_detail_*`.
+Fix: one string with `{name}` (and bold markup) inside.
+
 ## 10. Not translatable
 
 - `app_ev` "Ev" is a Debug format string: remove it from the catalog.
