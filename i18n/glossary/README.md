@@ -83,3 +83,18 @@ never alarming, never blaming.
 
 Each `<tag>.md` has: script and layout, register, buttons, plurals, names and brand,
 glossary table, watch-outs, and confidence with what a native speaker must check.
+
+## Decided by the user (2026-10-25)
+
+These override any "verify" or open question in the per-language pages.
+
+- **root secret, Indian languages:** use an English loanword in the local script
+  (e.g. रूट सीक्रेट) wherever a literal translation reads like "the core mystery"
+  (hi, bn, gu and similar). Use the literal native term where it plainly means
+  "a secret" (ta, te, kn, ml, ur, sd, sa).
+- **Register:** French *vous*, German *du*. The other languages follow their own pages.
+- **One script per language:** Manipuri in Meetei Mayek, Sindhi in Arabic script,
+  Konkani in Devanagari, Santali in Ol Chiki. No second-script variants for now.
+- **Digits:** each platform's default for the locale; never hard-code digit shapes.
+- **Not decided yet, so use the per-language page's recommendation:** whether the
+  "line" metaphor survives in ta, sa, mni and sat, and "online" in Arabic.
