@@ -7,13 +7,14 @@ impl Node {
     /// Finds a contact card in `text` (a pasted message, the clipboard) and reads it without
     /// dialling anyone. `None` when there is no valid, unexpired card or it is our own.
     pub fn peek_card(&self, text: String) -> Option<CardPeek> {
+        let slot = self.open();
         let ticket = find_card(&text)?;
         let claim = ContactTicket::from_text(&ticket).ok()?.verify(now()).ok()?;
-        let me = self.inner.me().ok()?;
+        let me = slot.me().ok()?;
         if claim.iss == me.id.did() {
             return None;
         }
-        let known = self.inner.shared.lock().state.contacts.iter().any(|c| c.did == claim.iss);
+        let known = slot.shared.lock().state.contacts.iter().any(|c| c.did == claim.iss);
         Some(CardPeek { ticket, name: claim.name, did: claim.iss, known })
     }
 
@@ -23,7 +24,8 @@ impl Node {
     }
 
     pub fn contacts(&self) -> Vec<Contact> {
-        let s = self.inner.shared.lock();
+        let slot = self.open();
+        let s = slot.shared.lock();
         s.state
             .contacts
             .iter()
@@ -55,31 +57,32 @@ impl Node {
 
     /// Finished calls, newest first, at most `limit`. Re-read on `on_call_state` `Ended`.
     pub fn recent_calls(&self, limit: u32) -> Vec<CallRecord> {
-        self.inner.history().list(None, limit as usize)
+        self.open().history().list(None, limit as usize)
     }
 
     /// Finished calls with one person, newest first.
     pub fn calls_with(&self, did: String, limit: u32) -> Vec<CallRecord> {
-        self.inner.history().list(Some(&did), limit as usize)
+        self.open().history().list(Some(&did), limit as usize)
     }
 
     /// Turns calls on or off. Off, incoming calls are not shown and the caller just fails to
     /// get through; they are logged with reason `unavailable`. `until` (unix seconds) switches
     /// it back on by itself. Adding contacts still works.
     pub fn set_available(&self, available: bool, until: Option<u64>) -> Result<(), Error> {
-        self.inner.me()?;
-        if self.inner.shared.lock().profile.is_some() {
-            return Ok(self.inner.chat.profile_set_field("availability".into(), Some(serde_json::json!({"available": available, "until": if available { None } else { until }})))?);
+        let slot = self.open();
+        slot.me()?;
+        if slot.shared.lock().profile.is_some() {
+            return Ok(slot.chat.profile_set_field("availability".into(), Some(serde_json::json!({"available": available, "until": if available { None } else { until }})))?);
         }
-        self.inner.shared.lock().state.availability = crate::store::AvailabilityState {
+        slot.shared.lock().state.availability = crate::store::AvailabilityState {
             unavailable: !available,
             until: if available { None } else { until },
         };
-        self.inner.persist().map_err(Error::from)
+        slot.persist().map_err(Error::from)
     }
 
     pub fn availability(&self) -> Availability {
-        self.inner.availability()
+        self.open().availability()
     }
 
     /// Superseded by `block` (U19: a contact's action is Block; the contact and history are
@@ -91,12 +94,13 @@ impl Node {
 
 impl Node {
     pub(super) fn update_contact(&self, did: &str, f: impl FnOnce(&mut StoredContact)) -> Result<(), Error> {
+        let slot = self.open();
         {
-            let mut s = self.inner.shared.lock();
+            let mut s = slot.shared.lock();
             f(s.state.contacts.iter_mut().find(|c| c.did == did).ok_or(Error::NotFound)?);
         }
-        let saved = self.inner.persist();
-        self.inner.sink.on_contacts_changed();
+        let saved = slot.persist();
+        slot.sink.on_contacts_changed();
         saved.map_err(Error::from)
     }
 }

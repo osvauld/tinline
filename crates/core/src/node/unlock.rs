@@ -1,11 +1,11 @@
-//! `Node` helpers for unlocking and setting an identity.
+//! Unlocking a slot, and setting an identity on the open one.
 
 use super::*;
 
-impl Node {
+impl Inner {
     /// The vault to open, or `None` when there is nothing to unlock.
     pub(super) fn unlock_target(&self) -> Result<Option<vault::Vault>, Error> {
-        let s = self.inner.shared.lock();
+        let s = self.shared.lock();
         match &s.disk {
             None => Err(Error::NoIdentity),
             Some(Disk::V2(_)) if s.me.is_some() => Ok(None),
@@ -13,10 +13,32 @@ impl Node {
         }
     }
 
-    pub(super) fn finish_unlock(&self, secrets: Secrets, dek: Dek) -> Result<(), Error> {
-        let _gate = self.inner.gate.lock();
+    /// Unlocks with a data key the platform remembered (`Node::unlock_with_key`; a background
+    /// account's key from `AccountEvents::account_key`). `WrongPassphrase` if it does not open
+    /// the vault.
+    pub(crate) fn unlock_with_key(self: &Arc<Self>, mut key: Vec<u8>) -> Result<(), Error> {
+        let vault = match self.unlock_target() {
+            Ok(Some(v)) => v,
+            other => {
+                key.zeroize();
+                return other.map(|_| ());
+            }
+        };
+        let opened = vault::open_with_key(&vault, &key).map_err(Error::from).and_then(|secrets| {
+            <[u8; 32]>::try_from(key.as_slice())
+                .map(|k| (secrets, zeroize::Zeroizing::new(k)))
+                .map_err(|_| Error::WrongPassphrase)
+        });
+        key.zeroize();
+        let (secrets, dek) = opened?;
+        self.finish_unlock(secrets, dek)
+    }
+
+    pub(super) fn finish_unlock(self: &Arc<Self>, secrets: Secrets, dek: Dek) -> Result<(), Error> {
+        let slot = self;
+        let _gate = slot.gate.lock();
         let (store, did, name, started) = {
-            let s = self.inner.shared.lock();
+            let s = slot.shared.lock();
             let Some(Disk::V2(p)) = &s.disk else { return Err(Error::NoIdentity) };
             if s.me.is_some() {
                 return Ok(());
@@ -34,7 +56,7 @@ impl Node {
         // The sealed state is read outside `shared`.
         let (db, loaded) = store::load_sealed(&store, &secrets.mnemonic)?;
         let mut me = me;
-        let mut s = self.inner.shared.lock();
+        let mut s = slot.shared.lock();
         if s.epoch != started {
             // Another account was selected while the passphrase was being checked.
             return Err(Error::Locked);
@@ -51,13 +73,16 @@ impl Node {
         s.me = Some(Arc::new(me));
         s.dek = Some(dek);
         drop(s);
-        self.inner.chat_open();
-        self.inner.sync.acc_open();
+        slot.chat_open();
+        slot.sync.acc_open();
         Ok(())
     }
+}
 
+impl Node {
     pub(super) fn set_identity(&self, phrase: String, name: String, passphrase: String, inherited_profile: bool) -> Result<(), Error> {
-        let _gate = self.inner.gate.lock();
+        let slot = self.open();
+        let _gate = slot.gate.lock();
         let profile = Profile { mnemonic: phrase, name, device_secret: proto::new_device_secret() };
         let mut me = Me::load(profile, 0)?;
         let did = me.id.did().to_string();
@@ -66,7 +91,7 @@ impl Node {
         // over (the passphrase was forgotten); an unlocked one is not touched (`AccountExists`,
         // switch to it instead); any other selected account is `HaveIdentity`.
         {
-            let s = self.inner.shared.lock();
+            let s = slot.shared.lock();
             match &s.disk {
                 None => {}
                 Some(Disk::V2(p)) if p.did == did && s.me.is_none() && s.committed => {}
@@ -74,13 +99,18 @@ impl Node {
                 Some(_) => return Err(Error::HaveIdentity),
             }
         }
+        // Running in the background (unlocked): switch to it instead, as above. Two slots never
+        // hold one account.
+        if self.hub.is_woken(&id) {
+            return Err(Error::AccountExists(did));
+        }
         // Checked before the slow KDF; `create` / the restore below are the checks that cannot race.
-        let existing = self.inner.accounts.exists(&id)?;
+        let existing = slot.accounts.exists(&id)?;
         let mut state = State::default();
         let mut calls = Vec::new();
         let mut label = None;
         if existing {
-            let store = Store::open(self.inner.accounts.dir(&id)?)?;
+            let store = Store::open(slot.accounts.dir(&id)?)?;
             let old_device = match store.profile()? {
                 Some(Disk::V2(p)) => Some(p.device_public),
                 None => None,
@@ -115,14 +145,14 @@ impl Node {
         // Without a passphrase nothing is written until the platform has saved the key.
         let acct = if durable {
             Some(if existing {
-                self.inner.restore_account_files(&id, &disk, &me.profile.mnemonic, &state, &calls, label.as_deref())?
+                slot.restore_account_files(&id, &disk, &me.profile.mnemonic, &state, &calls, label.as_deref())?
             } else {
-                self.inner.create_account_files(&id, &disk, &me.profile.mnemonic, &state, &calls, label.as_deref())?
+                slot.create_account_files(&id, &disk, &me.profile.mnemonic, &state, &calls, label.as_deref())?
             })
         } else {
             None
         };
-        let mut s = self.inner.shared.lock();
+        let mut s = slot.shared.lock();
         s.epoch += 1;
         me.epoch = s.epoch;
         s.history = Arc::new(History::new(calls, acct.as_ref().and_then(|a| a.backing.clone())));
@@ -134,8 +164,8 @@ impl Node {
         s.me = Some(Arc::new(me));
         s.dek = Some(dek);
         drop(s);
-        self.inner.chat_open();
-        self.inner.sync.acc_open();
+        slot.chat_open();
+        slot.sync.acc_open();
         Ok(())
     }
 }

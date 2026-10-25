@@ -43,14 +43,14 @@ fn group_content_admission_requires_current_epoch_and_nonremoved_own_device() {
     // phone operation, public network or user's persistent account is involved.
     node.create_identity("synthetic admission".into(), String::new())
         .unwrap();
-    let me = node.inner.me().unwrap();
+    let me = node.open().me().unwrap();
     let remote = cryptography::signature::public_key(&proto::new_device_secret());
     assert!(matches!(
-        node.inner.group.own_group_admit(me.epoch, &remote),
+        node.open().group.own_group_admit(me.epoch, &remote),
         Err(Error::Rejected(_))
     ));
     assert!(matches!(
-        node.inner.group
+        node.open().group
             .own_group_admit(me.epoch.wrapping_add(1), &remote),
         Err(Error::Locked)
     ));
@@ -59,7 +59,7 @@ fn group_content_admission_requires_current_epoch_and_nonremoved_own_device() {
         proto::verify_attestation(&attestation).unwrap().did,
         me.id.did()
     );
-    node.inner
+    node.open()
         .shared
         .lock()
         .state
@@ -74,8 +74,8 @@ fn group_content_admission_requires_current_epoch_and_nonremoved_own_device() {
             links: Vec::new(),
             rotated: false,
         });
-    node.inner.group.own_group_admit(me.epoch, &remote).unwrap();
-    node.inner
+    node.open().group.own_group_admit(me.epoch, &remote).unwrap();
+    node.open()
         .shared
         .lock()
         .state
@@ -85,16 +85,16 @@ fn group_content_admission_requires_current_epoch_and_nonremoved_own_device() {
         .unwrap()
         .removed = true;
     assert!(matches!(
-        node.inner.group.own_group_admit(me.epoch, &remote),
+        node.open().group.own_group_admit(me.epoch, &remote),
         Err(Error::Rejected(_))
     ));
     assert!(matches!(
-        node.inner.group
+        node.open().group
             .group_own_content_apply(me.epoch, &remote, "not-a-document", &[]),
         Err(Error::Rejected(_))
     ));
     assert!(matches!(
-        node.inner.group.group_own_content_export(
+        node.open().group.group_own_content_export(
             me.epoch,
             &remote,
             "not-a-document",
@@ -103,7 +103,7 @@ fn group_content_admission_requires_current_epoch_and_nonremoved_own_device() {
         Err(Error::Rejected(_))
     ));
     assert!(matches!(
-        node.inner.group.own_group_admit(me.epoch, &me.device),
+        node.open().group.own_group_admit(me.epoch, &me.device),
         Err(Error::Rejected(_))
     ));
     drop(node);

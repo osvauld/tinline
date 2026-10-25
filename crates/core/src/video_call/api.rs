@@ -10,7 +10,7 @@ impl Node {
     /// scaled to what the link carries. Latest wins: a frame not yet taken by the encoder is
     /// replaced. False if not sent (no video running, camera off, or a malformed frame).
     pub fn push_video_frame(&self, width: u32, height: u32, rotation: u32, data: Vec<u8>) -> bool {
-        self.inner.current_video_call().is_some_and(|c| c.video.push_i420(width, height, rotation, data))
+        self.open().current_video_call().is_some_and(|c| c.video.push_i420(width, height, rotation, data))
     }
 
     /// `push_video_frame_yuv` from borrowed planes (each copied once, no FFI buffers): what
@@ -29,38 +29,39 @@ impl Node {
         uv_pixel_stride: usize,
         full_range: bool,
     ) -> bool {
-        self.inner.push_yuv_planes(width, height, rotation, y, y_row_stride, u, v, uv_row_stride, uv_pixel_stride, full_range)
+        self.open().push_yuv_planes(width, height, rotation, y, y_row_stride, u, v, uv_row_stride, uv_pixel_stride, full_range)
     }
 
     /// `pull_video_frame_rgba` into the caller's buffer (no allocation for the pixels).
     pub fn pull_video_frame_rgba_into(&self, dst: &mut [u8]) -> Pulled {
-        self.inner.pull_rgba_into(dst)
+        self.open().pull_rgba_into(dst)
     }
 }
 
 #[uniffi::export]
 impl Node {
     pub fn set_video_events(&self, events: Arc<dyn VideoEvents>) {
-        self.inner.video.set_sink(Arc::new(VideoEventsAdapter(events)));
+        self.hub.set_sinks(|s| s.video = Some(Arc::new(VideoEventsAdapter(events))));
     }
 
     /// Whether calls offer (outgoing) and take (incoming) video. Default on. Off = every call
     /// is audio only; the peer sees `negotiated == false`.
     pub fn set_video_enabled(&self, enabled: bool) {
-        self.inner.video.set_enabled(enabled);
+        self.open().video.set_enabled(enabled);
     }
 
     pub fn video_enabled(&self) -> bool {
-        self.inner.video.enabled()
+        self.open().video.enabled()
     }
 
     /// Turns our camera on or off in the current call (also before it is answered: it applies
     /// once video runs). Push frames only while it is on; frames pushed while off are dropped.
     /// `NotFound` without a call; `Protocol` once active without video.
     pub fn set_camera(&self, on: bool) -> Result<(), Error> {
-        let call = self.inner.current_video_call().ok_or(Error::NotFound)?;
+        let slot = self.open();
+        let call = slot.current_video_call().ok_or(Error::NotFound)?;
         if call.video.set_camera(on, call.state() == CallState::Active)? {
-            self.inner.emit_video(&call);
+            slot.emit_video(&call);
         }
         Ok(())
     }
@@ -97,32 +98,32 @@ impl Node {
         full_range: bool,
     ) -> bool {
         let (ys, uvs, ps) = (y_row_stride as usize, uv_row_stride as usize, uv_pixel_stride as usize);
-        self.inner.current_video_call().is_some_and(|c| c.video.push_yuv(width, height, rotation, y.0, ys, u.0, v.0, uvs, ps, full_range))
+        self.open().current_video_call().is_some_and(|c| c.video.push_yuv(width, height, rotation, y.0, ys, u.0, v.0, uvs, ps, full_range))
     }
 
     /// One frame of packed RGBA (`width * height * 4` bytes), converted on the encoder thread.
     /// Otherwise like `push_video_frame`.
     pub fn push_video_frame_rgba(&self, width: u32, height: u32, rotation: u32, data: Vec<u8>) -> bool {
-        self.inner.current_video_call().is_some_and(|c| c.video.push_rgba(width, height, rotation, data))
+        self.open().current_video_call().is_some_and(|c| c.video.push_rgba(width, height, rotation, data))
     }
 
     /// One frame of packed YUYV (YUY2), rows `stride` bytes apart (at least `width * 2`; even
     /// width), converted on the encoder thread. Otherwise like `push_video_frame`.
     pub fn push_video_frame_yuyv(&self, width: u32, height: u32, rotation: u32, stride: u32, data: Vec<u8>) -> bool {
-        self.inner.current_video_call().is_some_and(|c| c.video.push_yuyv(width, height, rotation, stride, data))
+        self.open().current_video_call().is_some_and(|c| c.video.push_yuyv(width, height, rotation, stride, data))
     }
 
     /// The newest decoded frame of the peer's video not pulled yet, else `None`. Poll it on the
     /// display's clock. Nothing while the peer's camera is off.
     pub fn pull_video_frame(&self) -> Option<VideoFrame> {
-        self.inner.current_video_call()?.video.take_frame().map(VideoFrame::from)
+        self.open().current_video_call()?.video.take_frame().map(VideoFrame::from)
     }
 
     /// Like `pull_video_frame`, but `data` is packed RGBA (`width * height * 4` bytes; Android
     /// `ARGB_8888` bitmaps and iced images use this byte order), converted on the caller's
     /// thread.
     pub fn pull_video_frame_rgba(&self) -> Option<VideoFrame> {
-        self.inner.current_video_call()?.video.take_frame().map(|f| VideoFrame::from(f.into_rgba()))
+        self.open().current_video_call()?.video.take_frame().map(|f| VideoFrame::from(f.into_rgba()))
     }
 
     /// This node's handle for the platform's direct frame calls (Android `VideoJni`: camera
@@ -131,28 +132,28 @@ impl Node {
     pub fn video_frame_handle(&self) -> u64 {
         let mut ports = FRAME_PORTS.lock();
         ports.retain(|(_, w)| w.strong_count() > 0);
-        if let Some((h, _)) = ports.iter().find(|(_, w)| std::ptr::eq(w.as_ptr(), Arc::as_ptr(&self.inner))) {
+        if let Some((h, _)) = ports.iter().find(|(_, w)| std::ptr::eq(w.as_ptr(), Arc::as_ptr(&self.hub))) {
             return *h;
         }
         let h = NEXT_FRAME_PORT.fetch_add(1, Ordering::Relaxed);
-        ports.push((h, Arc::downgrade(&self.inner)));
+        ports.push((h, Arc::downgrade(&self.hub)));
         h
     }
 
     pub fn video_info(&self) -> Option<VideoInfo> {
-        let call = self.inner.current_video_call()?;
+        let call = self.open().current_video_call()?;
         Some(call.video.info(&call.info.call_id))
     }
 
     pub fn video_stats(&self) -> Option<VideoStats> {
-        Some(self.inner.current_video_call()?.video.stats())
+        Some(self.open().current_video_call()?.video.stats())
     }
 
     /// The camera captures HD (1280x720) now: the app's per-call choice, else its setting, else
     /// the core's own (`VideoStats::hd_auto`). Call when the call's video starts and on every
     /// change. Ignored without a call.
     pub fn set_video_hd(&self, on: bool) {
-        if let Some(call) = self.inner.current_video_call() {
+        if let Some(call) = self.open().current_video_call() {
             call.video.set_hd(on);
         }
     }
@@ -169,7 +170,7 @@ impl Node {
     /// (`view`: the app's id for it, stable while it is composed). The peer is asked for the
     /// largest one shown; hidden only when none is.
     pub fn set_video_view_of(&self, view: u32, width_px: u32, height_px: u32, visible: bool) {
-        if let Some(call) = self.inner.current_video_call() {
+        if let Some(call) = self.open().current_video_call() {
             call.video.set_view(view, width_px, height_px, visible);
         }
     }
@@ -178,7 +179,7 @@ impl Node {
     /// frame; the core adds its p75 (2 s) to the decode cost when steering the frame rate.
     /// Ignored without a call.
     pub fn report_video_render_ms(&self, ms: f32) {
-        if let Some(call) = self.inner.current_video_call() {
+        if let Some(call) = self.open().current_video_call() {
             call.video.report_render_ms(ms);
         }
     }
@@ -187,7 +188,7 @@ impl Node {
     /// send ourselves (MODERATE: 15 fps up to 540p, SEVERE: 15 fps up to 360p, battery saver:
     /// 24 fps up to 540p). Ignored without a call.
     pub fn set_video_budget(&self, budget: VideoBudget) {
-        if let Some(call) = self.inner.current_video_call() {
+        if let Some(call) = self.open().current_video_call() {
             call.video.set_budget(budget);
         }
     }

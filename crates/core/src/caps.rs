@@ -15,9 +15,10 @@ impl Node {
     /// and a call from them ends with "calls not allowed" without ringing). Synced to our other
     /// devices. A call already in progress is not ended. `NotFound` if `did` is not a contact.
     pub fn allow_calls(&self, did: String, allowed: bool) -> Result<(), Error> {
-        self.inner.me()?;
+        let slot = self.open();
+        slot.me()?;
         let deliver = {
-            let mut s = self.inner.shared.lock();
+            let mut s = slot.shared.lock();
             let st = &mut s.state;
             let c = st.contacts.iter_mut().find(|c| c.did == did).ok_or(Error::NotFound)?;
             c.calls_allowed = allowed;
@@ -37,13 +38,13 @@ impl Node {
                 false
             }
         };
-        let saved = self.inner.persist();
+        let saved = slot.persist();
         if deliver {
-            self.inner.ctx.tokens_kick(did);
+            slot.ctx.tokens_kick(did);
         }
         // The contact's wake token follows its call permission.
-        self.inner.ctx.wake_kick();
-        self.inner.sink.on_contacts_changed();
+        slot.ctx.wake_kick();
+        slot.sink.on_contacts_changed();
         saved.map_err(Error::from)
     }
 
@@ -51,15 +52,16 @@ impl Node {
     /// contacts: true unless "disallow calls"; group chat-request contacts: false until "allow
     /// calls".
     pub fn calls_allowed(&self, did: String) -> bool {
-        self.inner.shared.lock().state.contacts.iter().any(|c| c.did == did && c.calls_allowed)
+        self.open().shared.lock().state.contacts.iter().any(|c| c.did == did && c.calls_allowed)
     }
 
     /// Whether we can call `did`: we hold a call token from them that has not expired (they may
     /// still have taken it back; the call then ends with "calls not allowed" and this turns
     /// false). For the call button.
     pub fn can_call(&self, did: String) -> bool {
-        let Ok(me) = self.inner.me() else { return false };
-        let s = self.inner.shared.lock();
+        let slot = self.open();
+        let Ok(me) = slot.me() else { return false };
+        let s = slot.shared.lock();
         if crate::block::blocked_me(&s.state, &did) {
             return false;
         }
@@ -89,7 +91,8 @@ impl Node {
     /// For tests: ids (hex nonces) of the (message, call) tokens we hold from `did`.
     #[doc(hidden)]
     pub fn held_token_ids_for_test(&self, did: String) -> (Option<String>, Option<String>) {
-        let s = self.inner.shared.lock();
+        let slot = self.open();
+        let s = slot.shared.lock();
         let c = s.state.contacts.iter().find(|c| c.did == did);
         let id = |g: Option<&SignedGrant>| g.and_then(|g| g.peek().ok()).map(|g| hex::encode(g.nonce));
         (

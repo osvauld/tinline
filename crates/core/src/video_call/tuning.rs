@@ -28,16 +28,16 @@ pub struct VideoTuning {
 #[uniffi::export]
 impl Node {
     pub fn video_tuning(&self) -> VideoTuning {
-        self.inner.video.tuning()
+        self.open().video.tuning()
     }
 
     /// Session-only. Changes never mutate an offer or encoder already in flight.
     pub fn set_video_tuning(&self, tuning: VideoTuning) -> Result<(), Error> {
-        Ok(self.inner.video.set_tuning(tuning)?)
+        Ok(self.open().video.set_tuning(tuning)?)
     }
 
     pub fn video_tuning_codecs(&self) -> Vec<String> {
-        self.inner.video.tuning_codecs()
+        self.open().video.tuning_codecs()
     }
 }
 

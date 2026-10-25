@@ -15,7 +15,7 @@ impl Node {
     #[doc(hidden)]
     pub fn push_device_list_for_test(&self, did: String, list_json: String) -> Result<bool, Error> {
         let blob: SignedBlob = serde_json::from_str(&list_json)?;
-        let inner = self.inner.clone();
+        let inner = self.open();
         self.block_on(async move {
             let ep = inner.endpoint()?;
             let devices = inner.shared.lock().state.contacts.iter().find(|c| c.did == did).map(|c| c.devices.clone()).unwrap_or_default();

@@ -2,7 +2,8 @@
 //! most one call at a time.
 //!
 //! Blocking methods are meant for the app's IO threads; long work (dialing, ringing, the call
-//! itself) runs on this node's own tokio runtime and reports through `NodeEvents`.
+//! itself) runs on this node's own tokio runtime and reports through `NodeEvents`. Several
+//! accounts may run at once, one slot each (`slots.rs`); the API acts on the open one.
 
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
@@ -18,6 +19,7 @@ use crate::store::{self, Backing, CallRecord, Disk, History, OwnDevice, Profile,
 use crate::vault::{self, Dek, Secrets};
 use crate::Error;
 
+mod api_accounts;
 mod api_call;
 mod api_contacts;
 mod api_identity;
@@ -25,6 +27,7 @@ mod api_push;
 mod hooks;
 mod lifecycle;
 mod rotation;
+mod slots;
 #[cfg(any(test, feature = "dev-tools"))]
 mod testkit;
 mod types;
@@ -34,6 +37,8 @@ mod unlock;
 // `node-runtime` crate; its items keep their `crate::node::` paths.
 pub use node_runtime::*;
 pub use self::api_push::{PushTarget, WakeOutcome};
+pub use self::slots::{AccountEvents, BackgroundMode};
+pub(crate) use self::slots::{Hub, SlotGate};
 pub use self::types::*;
 
 /// What the engines share through `Deref<Target = NodeCtx>`: the runtime context plus the
@@ -49,6 +54,8 @@ pub(crate) struct Inner {
     /// The selected account's search index (`search.redb`), open while its chat store is; the
     /// chat and group engines write to it after every accepted change.
     pub(crate) search: Arc<search_ix::SearchIx>,
+    /// Which account slot of the device this is, and whether it is the open one (`slots.rs`).
+    pub(crate) slot: Arc<SlotGate>,
 }
 
 impl Inner {
@@ -83,37 +90,53 @@ impl std::ops::Deref for Inner {
 /// Blocking methods (`start`, `stop`, `add_contact`, `my_ticket`) are for the app's own
 /// threads; called from inside a `NodeEvents` callback they fail (or, for `stop`, go async)
 /// instead of blocking the runtime that delivers the callback.
+///
+/// Holds every running account of the device, one slot each, on one runtime (`slots.rs`,
+/// `docs/multi-online.md`): the API acts on the open account; the others run in the background.
 #[derive(uniffi::Object)]
 pub struct Node {
-    pub(crate) inner: Arc<Inner>,
+    pub(crate) hub: Arc<Hub>,
     rt: Option<tokio::runtime::Runtime>,
 }
 
 impl Drop for Node {
     fn drop(&mut self) {
-        let ep = self.inner.shared.lock().endpoint.take();
+        let slots = self.hub.all_slots();
+        let eps: Vec<_> = slots.iter().map(|i| i.shared.lock().endpoint.take()).collect();
         if let Some(rt) = self.rt.take() {
             let can_block = !on_core_thread() && tokio::runtime::Handle::try_current().is_err();
             if can_block {
-                let inner = self.inner.clone();
+                let all = slots.clone();
                 rt.block_on(async move {
                     // Best effort: a clean close tells peers at once instead of at idle timeout.
-                    if let Some(ep) = ep {
+                    for ep in eps.into_iter().flatten() {
                         let _ = tokio::time::timeout(Duration::from_secs(1), ep.close()).await;
                     }
-                    let _ = tokio::time::timeout(Duration::from_secs(3), inner.group.group_close()).await;
-                    let _ = tokio::time::timeout(Duration::from_secs(3), inner.chat.chat_close()).await;
+                    for inner in &all {
+                        let _ = tokio::time::timeout(Duration::from_secs(3), inner.group.group_close()).await;
+                        let _ = tokio::time::timeout(Duration::from_secs(3), inner.chat.chat_close()).await;
+                    }
                 });
             }
-            // GL: every store file goes now, whatever task still holds a clone (the tasks are
-            // only dropped below, in the background), so a node made next on this directory
-            // opens them at once.
-            self.inner.group.group_close_now();
-            self.inner.chat.chat_close_now();
-            self.inner.shared.lock().forget_session();
+            for inner in &slots {
+                self.hub.save_unread(inner);
+                // GL: every store file goes now, whatever task still holds a clone (the tasks are
+                // only dropped below, in the background), so a node made next on this directory
+                // opens them at once.
+                inner.group.group_close_now();
+                inner.chat.chat_close_now();
+                inner.shared.lock().forget_session();
+            }
             // Never blocks, so it is safe even if the last reference drops on a core thread.
             rt.shutdown_background();
         }
+    }
+}
+
+impl Node {
+    /// The open account's slot: what every API method acts on.
+    pub(crate) fn open(&self) -> Arc<Inner> {
+        self.hub.open()
     }
 }
 
@@ -129,7 +152,7 @@ impl Node {
             return Err(Error::Protocol("blocking call made from a NodeEvents callback".into()));
         }
         let (tx, rx) = std::sync::mpsc::channel();
-        self.inner.handle.spawn(USER_CALL.scope((), async move {
+        self.hub.handle.spawn(USER_CALL.scope((), async move {
             let _ = tx.send(fut.await);
         }));
         rx.recv().map_err(|_| Error::Io("core runtime stopped".into()))
@@ -150,12 +173,12 @@ impl Node {
         T: Send + 'static,
         Fut: std::future::Future<Output = Result<T, node_runtime::Error>> + Send + 'static,
     {
-        self.block_rt(f(self.inner.clone()))
+        self.block_rt(f(self.open()))
     }
 
     /// Takes the lifecycle lock for the caller's whole operation; refuses on core threads.
     fn lifecycle(&self) -> Result<OwnedMutexGuard<()>, Error> {
-        let l = self.inner.lifecycle.clone();
+        let l = self.open().lifecycle.clone();
         self.block_on(async move { l.lock_owned().await })
     }
 
@@ -163,7 +186,7 @@ impl Node {
     /// the background.
     fn run_lifecycle(&self, fut: impl std::future::Future<Output = ()> + Send + 'static) {
         if on_core_thread() {
-            self.inner.handle.spawn(fut);
+            self.hub.handle.spawn(fut);
         } else {
             let _ = self.block_on(fut);
         }

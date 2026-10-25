@@ -19,13 +19,13 @@ impl Node {
     /// `peer_did` (`me_did == peer_did`: the "You" docs)?
     #[doc(hidden)]
     pub fn has_chat_docs_for_test(&self, me_did: &str, peer_did: &str) -> bool {
-        self.inner.chat.chat_has_docs_for_test(me_did, peer_did)
+        self.open().chat.chat_has_docs_for_test(me_did, peer_did)
     }
 
     /// For tests (P9): our writer ID (`None` while the chat store is not open).
     #[doc(hidden)]
     pub fn writer_id_for_test(&self) -> Option<u64> {
-        self.inner.chat.chat_writer_id_for_test()
+        self.open().chat.chat_writer_id_for_test()
     }
 
     /// For tests (P9): every `(day, Loro peer id, op count)` in our copy of the conversation
@@ -33,14 +33,14 @@ impl Node {
     #[doc(hidden)]
     #[allow(clippy::type_complexity)]
     pub fn chat_doc_peers_for_test(&self, peer_did: String) -> (Vec<(String, u64, i32)>, Vec<(String, u64)>) {
-        let inner = self.inner.clone();
+        let inner = self.open();
         self.block_on(async move { inner.chat.chat_doc_peers_for_test(peer_did).await }).unwrap_or_default()
     }
 
     /// For tests (P10): the next `n` chat writes (`chat_persist`) fail, as if the disk were full.
     #[doc(hidden)]
     pub fn fail_next_chat_writes_for_test(&self, n: u32) {
-        self.inner.chat.chat_fail_next_writes_for_test(n);
+        self.open().chat.chat_fail_next_writes_for_test(n);
     }
 
     /// For tests (P10b): stores a message of ours to `peer_did` sent at `at_ms`, written under
@@ -63,20 +63,20 @@ impl Node {
     /// it too). The live window and catch-up decision keep the real clock.
     #[doc(hidden)]
     pub fn chat_clock_offset_for_test(&self, ms: i64) {
-        self.inner.chat.chat_clock_offset_for_test(ms);
+        self.open().chat.chat_clock_offset_for_test(ms);
     }
 
     /// For tests: this device's clock is wrong by `ms`: as `chat_clock_offset_for_test`, and the
     /// live window and catch-up decision use it as well (0 sets it right again).
     #[doc(hidden)]
     pub fn chat_clock_skew_for_test(&self, ms: i64) {
-        self.inner.chat.chat_clock_skew_for_test(ms);
+        self.open().chat.chat_clock_skew_for_test(ms);
     }
 
     /// For tests: does the chat store hold any "You" shard?
     #[doc(hidden)]
     pub fn has_you_docs_for_test(&self) -> bool {
-        let Ok(me) = self.inner.me() else { return false };
+        let Ok(me) = self.open().me() else { return false };
         self.has_chat_docs_for_test(me.id.did(), me.id.did())
     }
 }

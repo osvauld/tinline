@@ -29,15 +29,16 @@ sink_adapter!(
 #[uniffi::export]
 impl Node {
     pub fn set_profile_events(&self, events: Arc<dyn ProfileEvents>) {
-        self.inner.chat.set_profile_sink(Arc::new(ProfileEventsAdapter(events)));
+        self.hub.set_sinks(|s| s.profile = Some(Arc::new(ProfileEventsAdapter(events))));
     }
     pub fn account_profile(&self, did: String) -> Result<Option<AccountProfile>, Error> {
-        let Some(doc) = self.inner.chat.profile_doc(&did)? else {
+        let slot = self.open();
+        let Some(doc) = slot.chat.profile_doc(&did)? else {
             return Ok(None);
         };
         let mut fields = doc.fields()?;
         if !fields.contains_key("name") {
-            let s = self.inner.shared.lock();
+            let s = slot.shared.lock();
             let me = s.me.as_ref().ok_or(Error::Locked)?;
             let name = if did == me.id.did() {
                 Some(me.profile.name.clone())
@@ -54,7 +55,7 @@ impl Node {
         }
         let p = picture(&fields)?;
         let ready = if let Some(p) = &p {
-            self.inner.chat.profile_picture_ready(&did, &p.hash)?
+            slot.chat.profile_picture_ready(&did, &p.hash)?
         } else {
             false
         };
@@ -66,19 +67,20 @@ impl Node {
         }))
     }
     pub fn set_profile_field(&self, key: String, json_value: Option<String>) -> Result<(), Error> {
-        self.inner.me()?;
+        let slot = self.open();
+        slot.me()?;
         if json_value.as_ref().is_some_and(|s| s.len() > 16 * 1024) {
             return Err(Error::Protocol("profile field too large".into()));
         }
         let v = json_value.map(|s| serde_json::from_str(&s)).transpose()?;
-        Ok(self.inner.chat.profile_set_field(key, v)?)
+        Ok(slot.chat.profile_set_field(key, v)?)
     }
     pub fn set_profile_picture(&self, bytes: Vec<u8>) -> Result<(), Error> {
         self.replace_profile_picture(bytes)
     }
     /// Replacing the owner's picture automatically requests deletion of the previous cached copy.
     pub fn replace_profile_picture(&self, bytes: Vec<u8>) -> Result<(), Error> {
-        let chat = self.inner.chat.clone();
+        let chat = self.open().chat.clone();
         self.block_rt(async move { chat.profile_set_picture(bytes).await })
     }
     pub fn clear_profile_picture(&self) -> Result<(), Error> {
@@ -86,8 +88,9 @@ impl Node {
     }
     /// Removing the owner's picture automatically signs the previous-hash deletion request.
     pub fn remove_profile_picture(&self) -> Result<(), Error> {
-        let me = self.inner.me()?;
-        Ok(self.inner.chat.profile_edit(me.epoch, |p, me| {
+        let slot = self.open();
+        let me = slot.me()?;
+        Ok(slot.chat.profile_edit(me.epoch, |p, me| {
             let old = picture(&p.fields()?)?;
             p.remove("picture")?;
             if let Some(old) = old {
@@ -100,8 +103,9 @@ impl Node {
         })?)
     }
     pub fn request_profile_picture_deletion(&self, hash: String) -> Result<(), Error> {
-        let me = self.inner.me()?;
-        Ok(self.inner.chat.profile_edit(me.epoch, |p, me| {
+        let slot = self.open();
+        let me = slot.me()?;
+        Ok(slot.chat.profile_edit(me.epoch, |p, me| {
             if picture(&p.fields()?)?.is_some_and(|pic| pic.hash == hash) {
                 return Err(node_runtime::Error::Protocol(
                     "cannot request deletion of the current picture".into(),
@@ -114,7 +118,8 @@ impl Node {
         })?)
     }
     pub fn picture_deletion_permits(&self, did: String) -> Result<Vec<String>, Error> {
-        let Some(doc) = self.inner.chat.profile_doc(&did)? else {
+        let slot = self.open();
+        let Some(doc) = slot.chat.profile_doc(&did)? else {
             return Ok(Vec::new());
         };
         doc.deletions()?
@@ -123,13 +128,14 @@ impl Node {
             .collect()
     }
     pub fn profile_picture(&self, did: String) -> Result<Option<Vec<u8>>, Error> {
-        let Some(doc) = self.inner.chat.profile_doc(&did)? else {
+        let slot = self.open();
+        let Some(doc) = slot.chat.profile_doc(&did)? else {
             return Ok(None);
         };
         let Some(p) = picture(&doc.fields()?)? else {
             return Ok(None);
         };
-        let chat = self.inner.chat.clone();
+        let chat = slot.chat.clone();
         self.block_rt(async move { chat.profile_picture_local(&did, &p).await })
     }
 }

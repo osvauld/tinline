@@ -13,10 +13,10 @@ async fn unnegotiated_stale_failed_persistence_and_removed_device_do_not_confirm
             .unwrap();
         let _ = node.unlock_key().unwrap();
         node.commit_identity().unwrap();
-        let me = node.inner.me().unwrap();
+        let me = node.open().me().unwrap();
         let (_, target, gid, bytes) =
             crate::group::engine::receipt_cores_for_test(me.id.clone(), me.epoch, me.epoch);
-        *node.inner.group.core.lock() = Some(target.clone());
+        *node.open().group.core.lock() = Some(target.clone());
         let server = endpoint(me.profile.device_secret).await;
         let client = endpoint(proto::new_device_secret()).await;
         let remote = *client.id().as_bytes();
@@ -50,7 +50,7 @@ async fn unnegotiated_stale_failed_persistence_and_removed_device_do_not_confirm
         let mut peer = PeerChat::default();
         assert!(
             handle(
-                &node.inner.sync,
+                &node.open().sync,
                 &me,
                 &remote,
                 &mut peer,
@@ -68,7 +68,7 @@ async fn unnegotiated_stale_failed_persistence_and_removed_device_do_not_confirm
             sent: Instant::now(),
         });
         handle(
-            &node.inner.sync,
+            &node.open().sync,
             &me,
             &remote,
             &mut peer,
@@ -88,7 +88,7 @@ async fn unnegotiated_stale_failed_persistence_and_removed_device_do_not_confirm
         target.store.fail_next_append_for_test();
         assert!(matches!(
             handle(
-                &node.inner.sync,
+                &node.open().sync,
                 &me,
                 &remote,
                 &mut peer,
@@ -114,7 +114,7 @@ async fn unnegotiated_stale_failed_persistence_and_removed_device_do_not_confirm
                 .unwrap()
                 .is_none()
         );
-        node.inner
+        node.open()
             .shared
             .lock()
             .state
@@ -124,7 +124,7 @@ async fn unnegotiated_stale_failed_persistence_and_removed_device_do_not_confirm
             .unwrap()
             .removed = true;
         assert!(
-            handle(&node.inner.sync, &me, &remote, &mut peer, message, &mut writer)
+            handle(&node.open().sync, &me, &remote, &mut peer, message, &mut writer)
                 .await
                 .is_err()
         );

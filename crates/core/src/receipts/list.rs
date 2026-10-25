@@ -24,8 +24,9 @@ impl Node {
     /// with the list (`on_chat_changed`, `on_message_changed`, `on_group_changed`). A part that
     /// cannot be read (no group store yet) is left out, never guessed.
     pub fn chat_list_marks(&self) -> Result<Vec<ListMark>, Error> {
+        let slot = self.open();
         let mut out = Vec::new();
-        if let Ok(rows) = self.inner.chat.chat_list_receipts() {
+        if let Ok(rows) = slot.chat.chat_list_receipts() {
             for r in rows {
                 let not_delivered = self
                     .not_delivered_reason(r.peer_did.clone(), r.status.message_id.clone())
@@ -40,7 +41,7 @@ impl Node {
                 }
             }
         }
-        if let Ok(core) = self.inner.group.group_core() {
+        if let Ok(core) = slot.group.group_core() {
             for s in self.groups().unwrap_or_default() {
                 let Some(m) = s
                     .last
