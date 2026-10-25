@@ -26,15 +26,24 @@ internal object PlayPush : PushProvider {
         BuildConfig.FIREBASE_APP_ID.isNotBlank() && BuildConfig.FIREBASE_API_KEY.isNotBlank() &&
             BuildConfig.FIREBASE_GCM_SENDER_ID.isNotBlank() && BuildConfig.FIREBASE_PROJECT_ID.isNotBlank()
 
+    /** Firebase by hand, at once (FCM's receiver can be what started the process); the Play services check off the main thread. */
+    override fun start(ctx: Context) {
+        if (!configured()) return
+        try { initFirebase(ctx) } catch (e: Throwable) { Log.w(TAG, "firebase: ${e.javaClass.simpleName}") }
+        Thread({ available(ctx) }, "push-check").start()
+    }
+
     @Synchronized
     override fun available(ctx: Context): Boolean {
         checked?.let { return it }
+        val t0 = android.os.SystemClock.elapsedRealtime()
         val ok = try {
             configured() &&
                 GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(ctx) == ConnectionResult.SUCCESS &&
                 initFirebase(ctx)
         } catch (e: Throwable) { Log.w(TAG, "unavailable: ${e.javaClass.simpleName}"); false }
         checked = ok
+        Log.i(TAG, "available=$ok in ${android.os.SystemClock.elapsedRealtime() - t0} ms on ${Thread.currentThread().name}")
         return ok
     }
 

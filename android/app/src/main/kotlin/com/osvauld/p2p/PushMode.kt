@@ -8,6 +8,12 @@ import uniffi.p2pcore.PushTarget
  * with FCM (src/play), `liberum` with nothing (src/liberum); UnifiedPush comes later.
  */
 interface PushProvider {
+    /**
+     * First thing in `Application.onCreate`, on the main thread, so it must stay cheap: whatever the
+     * transport's own entry points need before they run (a push can start the process). Slow checks
+     * go to a background thread here, so [available] is usually answered from cache.
+     */
+    fun start(ctx: Context) {}
     /** This build and phone can receive wake pushes (library present, configured, services available). */
     fun available(ctx: Context): Boolean
     /** Turns the transport's own token handling on or off with the chosen mode. */
@@ -40,6 +46,8 @@ object PushMode {
 
     private val provider: PushProvider by lazy { platformPushProvider() }
     internal fun provider() = provider
+
+    fun start(c: Context) = provider.start(c)
 
     private fun prefs(c: Context) = c.applicationContext.getSharedPreferences(FILE, Context.MODE_PRIVATE)
 

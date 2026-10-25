@@ -99,6 +99,7 @@ class P2pApp : Application(), NodeEvents {
     override fun onCreate() {
         super.onCreate()
         instance = this
+        PushMode.start(this)
         CallTrace.init(filesDir)
         CallTrace.lastExit(this)
         Notifications.createChannels(this)
