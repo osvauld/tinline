@@ -750,7 +750,7 @@ where = [
   "ios group_left_footer: Footer of a group chat after the user left.",
   "desktop group_you_left_this_group_its: Desktop, groups (in group_live_view.rs, live_pane).",
 ]
-text = "Du hast diese Gruppe verlassen. Ihre Nachrichten bleiben hier, nur zum Lesen."
+text = "Du hast diese Gruppe verlassen. Die Nachrichten bleiben hier, nur zum Lesen."
 
 [t_971d5214cb]
 en = "Message"
@@ -965,7 +965,7 @@ en = "Who has it"
 where = [
   "android groups_msg_who_has_it: Accessibility click label on my post: shows who has received or read it.",
 ]
-text = "Wer hat sie"
+text = "Wer sie erhalten hat"
 
 [t_f72c60c98a]
 en = "Written before {name} was removed"
@@ -1483,7 +1483,7 @@ where = [
   "ios people_profile_open_link: Button that opens the link in the browser.",
   "desktop common_open_link: Shared label, used in several places (group_live, profile).",
 ]
-text = "Offener Link"
+text = "Link öffnen"
 
 [t_cbd81d50d4]
 en = "Anyone with the link can join"
@@ -1531,7 +1531,7 @@ where = [
   "android groupsb_turn_on_open: Second line of the Copy link row while the group is not open.",
   "desktop group_turn_on_open_link: Desktop, groups (in group_live_view.rs, group_info_page).",
 ]
-text = "Schalte „Offener Link“ ein, um ihn zu teilen"
+text = "Schalte den offenen Link ein, um ihn zu teilen"
 
 [t_a0332695ed]
 en = "Couldn’t get the link"
@@ -1802,7 +1802,7 @@ en = "Appoint one from a member’s menu, or host calls on this phone. A phone o
 where = [
   "android groupsb_callhosts_note_admin: Extra sentences added after the Call hosts explanation for admins (a space is put before them).",
 ]
-text = "Lege einen über das Menü eines Mitglieds fest oder hoste Anrufe auf diesem Handy. Ein Handy hostet nur Anrufe, die seine Besitzerin oder sein Besitzer startet."
+text = "Lege einen über das Menü eines Mitglieds fest oder hoste Anrufe auf diesem Handy. Ein Handy hostet nur Anrufe, die auf ihm gestartet werden."
 
 [t_dce5cfb1e1]
 en = "Flags on you"
@@ -2071,7 +2071,7 @@ where = [
   "android groupsb_remove_admin: Menu item that removes the member's admin role.",
   "ios group_member_remove_admin: Action row title.",
 ]
-text = "Admin-Rolle entziehen"
+text = "Als Admin entfernen"
 
 [t_48da53145a]
 en = "Make device {device} a host"
@@ -2190,7 +2190,7 @@ where = [
   "android groupsb_flag_removal: Menu item that starts flagging a member for removal.",
   "ios group_member_flag: Action row title that flags a member.",
 ]
-text = "Zur Entfernung markieren"
+text = "Zum Entfernen markieren"
 
 [t_c737734a91]
 en_one = "{count} flag removes {name} from the group"
@@ -2216,7 +2216,7 @@ where = [
   "ios group_flag_title: Title of the flag confirmation. {name} is the member’s first name.",
   "desktop group_flag_for_removal: Desktop, groups (in group_live_view.rs, live_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = "{name} zur Entfernung markieren?"
+text = "{name} zum Entfernen markieren?"
 
 [t_e3730899ef]
 en = "Flag {next} of {total}"
@@ -2281,7 +2281,7 @@ where = [
   "android groupsb_new_group_host_note: Notice on the new group page.",
   "ios group_new_info: Info card on the new group page.",
 ]
-text = "Dieses Handy hostet die Gruppe zuerst: Es hält die Gruppe und gibt Nachrichten weiter. Ein Computer, der an bleibt, ist ein besserer Host – leg ihn in der Gruppeninfo fest, sobald er beigetreten ist."
+text = "Dieses Handy hostet die Gruppe vorerst: Es hält die Gruppe und gibt Nachrichten weiter. Ein Computer, der an bleibt, ist ein besserer Host – leg ihn in der Gruppeninfo fest, sobald er beigetreten ist."
 
 [t_26ac8b3691]
 en = "You’ll own the group. Invite people from Group info."
@@ -2395,7 +2395,7 @@ where = [
   "ios group_join_bad: Hint when the invite link did not work.",
   "desktop group_that_link_didnt_work: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = "Mit diesem Link ging es nicht: Er ist keine Gruppeneinladung, ist abgelaufen, oder sein Host ist offline."
+text = "Dieser Link hat nicht funktioniert: Er ist keine Gruppeneinladung, ist abgelaufen oder sein Host ist offline."
 
 [t_07152d37e7]
 en = "Paste"
@@ -2532,7 +2532,7 @@ where = [
   "ios unlock_wrong_pass: Error under the passphrase field on the unlock screen.",
   "desktop app_that_passphrase_didnt_open: Desktop, app-level notices and notifications (in app.rs, friendly).",
 ]
-text = "Mit dieser Passphrase ging das Konto nicht auf."
+text = "Diese Passphrase hat das Konto nicht geöffnet."
 
 [t_b4a454d8bc]
 en = "Can’t open {name}’s account"
@@ -2819,7 +2819,7 @@ where = [
   "android accounts_not_on_call: Reassuring hint on the switch-confirmation screen when no call is going on.",
   "ios unlock_not_in_call: Hint on the switch-account confirmation.",
 ]
-text = "Du bist in keinem Anruf. Wärst du es, würde der Wechsel ihn beenden."
+text = "Du telefonierst gerade nicht. Sonst würde der Wechsel den Anruf beenden."
 
 [t_b58c7a4f2b]
 en = "Switching…"
@@ -3072,7 +3072,7 @@ where = [
   "ios people_ui_remove_note: Note in the remove field question.",
   "desktop profile_it_disappears_from_your: Desktop, profile and settings (in profile_view.rs, field_row_inner).",
 ]
-text = "Es verschwindet aus deinem Profil. Frühere Versionen können im synchronisierten Verlauf bleiben."
+text = "Die Angabe verschwindet aus deinem Profil. Frühere Versionen können im synchronisierten Verlauf bleiben."
 
 [t_c5160b6a37]
 en = "Open {label}: {link}"
@@ -3476,7 +3476,7 @@ where = [
   "ios people_busy_open: Choice of how long the user is busy.",
   "desktop profile_busy_no_end: Busy duration choice: stays busy until changed.",
 ]
-text = "Ohne Ende"
+text = "Bis auf Weiteres"
 
 [t_55f59058aa]
 en = "tomorrow {time}"
@@ -3511,7 +3511,7 @@ where = [
   "ios people_profile_info_empty: Error when saving empty information.",
   "desktop profile_add_something_to_save: Desktop, profile and settings (in profile_ui.rs, profile_update).",
 ]
-text = "Trag etwas ein, das gespeichert werden kann."
+text = "Trag etwas ein, um es zu speichern."
 
 [t_df4765c3ad]
 en = "Your contacts will see it on your profile."
@@ -3680,7 +3680,7 @@ where = [
   "android profile_err_account_changed: Error when the user switched account while a profile change was being saved.",
   "ios people_account_changed: Profile save refused because the selected account changed meanwhile.",
 ]
-text = "Das ausgewählte Konto hat gewechselt. Im neuen Konto wurde nichts gespeichert."
+text = "Das ausgewählte Konto hat sich geändert. Im neuen Konto wurde nichts gespeichert."
 
 [t_d47674ae7a]
 en = "That picture is {size} MB. Pictures can be up to {max} MB."
@@ -3697,7 +3697,7 @@ where = [
   "ios people_pic_bad_type: Picture refused: not PNG, JPEG or WebP.",
   "desktop profile_tinline_can_use_png: Desktop, profile and settings (in profile_ui.rs, inspect).",
 ]
-text = "Tinline kann PNG-, JPEG- oder WebP-Bilder verwenden. Diese Datei ist von einer anderen Art."
+text = "Tinline kann PNG-, JPEG- oder WebP-Bilder verwenden. Diese Datei hat ein anderes Format."
 
 [t_27a3a26172]
 en = "That file couldn’t be read as a picture. It may be damaged."
@@ -4035,7 +4035,7 @@ where = [
   "ios restore_key_typo: Error when the pasted recovery key fails its checksum.",
   "desktop signup_that_key_has_a: Desktop, sign-up, restore and add contact (in signup.rs, gate_update).",
 ]
-text = "In diesem Schlüssel steckt ein Tippfehler, oder er ist abgeschnitten. Füg ihn nochmal ein, von da, wo du ihn gespeichert hast."
+text = "In diesem Schlüssel steckt ein Tippfehler, oder er ist abgeschnitten. Füg ihn nochmal aus deiner gespeicherten Kopie ein."
 
 [t_b9527e2f4a]
 en = "Couldn’t read the clipboard. Paste into the first box instead."
@@ -4298,7 +4298,7 @@ where = [
   "ios shell_empty_add_first: Home hero button when the user has no contacts.",
   "desktop signup_add_my_first_contact: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = "Meinen ersten Kontakt hinzufügen"
+text = "Ersten Kontakt hinzufügen"
 
 [t_6beaad3bcc]
 en = "Two devices are better than one"
@@ -4316,7 +4316,7 @@ where = [
   "ios onboarding_tip_devices_body: Tip body.",
   "desktop signup_link_another_device_when: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = "Verknüpfe ein weiteres Gerät, wenn du kannst, damit du nie ausgesperrt bist, wenn du eins verlierst."
+text = "Verknüpfe ein weiteres Gerät, sobald es geht. Dann sperrt dich ein verlorenes Gerät nie aus."
 
 [t_ad43e78a15]
 en = "Groups are hosted on a computer"
@@ -4519,7 +4519,7 @@ where = [
   "ios onboarding_saved_key: Button after copying the recovery key.",
   "desktop signup_ive_saved_it: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = "Hab ich gesichert"
+text = "Ich hab ihn gesichert"
 
 [t_c2188486fc]
 en = "I’ve saved them"
@@ -4528,7 +4528,7 @@ where = [
   "ios onboarding_saved_words: Button after copying the recovery words.",
   "desktop signup_ive_saved_them: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = "Hab ich gesichert"
+text = "Ich hab sie gesichert"
 
 [t_a4b3e31ad9]
 en = "Copy again"
@@ -4546,7 +4546,7 @@ where = [
   "ios onboarding_copy_key: Button that copies the recovery key.",
   "desktop common_copy_my_key: Shared label, used in several places (profile, signup).",
 ]
-text = "Meinen Schlüssel kopieren"
+text = "Schlüssel kopieren"
 
 [t_2211d13efd]
 en = "Copy my words"
@@ -4702,7 +4702,7 @@ en = "Your contacts and chats are arriving from {device} and will keep in step o
 where = [
   "android onboarding_linked_lead: Lead after linking. {device} is the other device's name.",
 ]
-text = "Deine Kontakte und Chats kommen von {device} und bleiben auf beiden im Gleichschritt."
+text = "Deine Kontakte und Chats kommen von {device} und bleiben auf beiden Geräten synchron."
 
 [t_ad9e1201a5]
 en = "Contacts"
@@ -4775,7 +4775,7 @@ where = [
   "android onboarding_savefail_trying: Label of the Try again button while retrying.",
   "ios onboarding_trying: Button text while retrying.",
 ]
-text = "Versuche…"
+text = "Neuer Versuch…"
 
 [t_f587adb4ae]
 en = "Add a passphrase instead"
@@ -5246,7 +5246,7 @@ where = [
   "android settings_video_in_calls_off: Small line under the Video in calls switch when it is off.",
   "ios settings_video_in_calls_off: Subtitle when video in calls is off.",
 ]
-text = "Anrufe sind nur Sprache"
+text = "Nur Sprachanrufe"
 
 [t_a1579450e2]
 en = "Link to a device"
@@ -5263,7 +5263,7 @@ where = [
   "android settings_add_restore: Choice in the Add another account sheet: restore an account from its 24 recovery words.",
   "ios settings_add_restore: Choice in the add-account dialog.",
 ]
-text = "Mit Wiederherstellungswörtern wiederherstellen"
+text = "Mit 24 Wörtern wiederherstellen"
 
 [t_17324a9a91]
 en = "Alert me about"
@@ -5272,7 +5272,7 @@ where = [
   "ios settings_notif_alert_me: Section heading above the notification category switches.",
   "desktop profile_alert_me_about: Desktop, profile and settings (in profile_view.rs, notifications_page).",
 ]
-text = "Benachrichtige mich bei"
+text = "Mich benachrichtigen bei"
 
 [t_20060c7c88]
 en = "Messages"
@@ -5440,7 +5440,7 @@ where = [
   "ios settings_quiet: Section heading, row title and switch label for the quiet mode.",
   "desktop profile_quiet: Desktop, profile and settings (in profile_view.rs, sounds_page).",
 ]
-text = "Ruhe"
+text = "Lautlos"
 
 [t_73d5e714e0]
 en = "No sounds from Tinline: ringing, call tones, joins"
@@ -5481,7 +5481,7 @@ where = [
   "android settings_sound_slack_sub: Description of the Slack to taut call sound.",
   "ios settings_sound_slack_sub: Description of the Slack → taut ringtone.",
 ]
-text = "Zwei nahe Töne schweben wie eine lockere Saite, dann zieht einer straff."
+text = "Zwei nahe Töne schweben wie eine lockere Saite, dann spannt sich einer straff."
 
 [t_1a59cd4dd4]
 en = "Triad knock"
@@ -5548,7 +5548,7 @@ where = [
   "ios settings_sounds_note_quiet: Note under the sound previews when quiet mode is on.",
   "desktop profile_quiet_is_on_so: Desktop, profile and settings (in profile_view.rs, sounds_page).",
 ]
-text = "Ruhe ist an, also sind die Vorschauen stumm."
+text = "Lautlos ist an, also sind die Vorschauen stumm."
 
 [t_4bd4717d11]
 en = "Tap a sound to hear it. The choice applies to the next call."
@@ -6180,7 +6180,7 @@ where = [
   "android settings_backup_copied: Message on the recovery backup page after copying the key.",
   "ios security_copied_note: Message after the recovery key was copied.",
 ]
-text = "Kopiert. Bewahre es an einem privaten Ort auf."
+text = "Kopiert. Bewahre ihn an einem privaten Ort auf."
 
 [t_93a19d70aa]
 en = "Copy key"
@@ -6527,7 +6527,7 @@ where = [
   "android devices_syncing: Brief message after tapping Sync now. {name} is the device's name.",
   "ios devices_syncing: Message when a sync starts; {name} is the device label or the words the device.",
 ]
-text = "Gleiche mit {name} ab…"
+text = "Abgleich mit {name}…"
 
 [t_1e44ff1b62]
 en = "the device"
@@ -6635,7 +6635,7 @@ where = [
   "android devices_remove_only: Warning card in the remove dialog when no other device has the account.",
   "ios devices_only_device: Warning card in the remove-account dialog.",
 ]
-text = "Das ist das einzige Gerät mit deinem Konto. Ohne deine Wiederherstellungswörter kann es nichts zurückholen."
+text = "Das ist das einzige Gerät mit deinem Konto. Ohne deine Wiederherstellungswörter lässt es sich nicht zurückholen."
 
 [t_7bd075ae97]
 en = "Your other devices keep everything."
@@ -6661,7 +6661,7 @@ where = [
   "ios devices_unlink_warn: Warning card in the unlink dialog.",
   "desktop link_unlinking_cant_lock_it: Desktop, linking devices (in link_view.rs, unlink_confirm).",
 ]
-text = "Trennen kann es von hier aus nicht sperren. Wer es entsperren kann, kann dein Konto weiter nutzen. Ganz abschneiden kann nur ein neues Konto."
+text = "Trennen kann es von hier aus nicht sperren. Wer es entsperren kann, kann dein Konto weiter nutzen. Ganz aussperren kannst du es nur mit einem neuen Konto."
 
 [t_47505d0245]
 en = "Lost or stolen?"
@@ -6940,7 +6940,7 @@ where = [
   "android link_reaching: Progress line while connecting.",
   "ios link_reaching: Progress line while connecting.",
 ]
-text = "Erreiche das andere Gerät"
+text = "Verbindung zum anderen Gerät"
 
 [t_b9e015ff53]
 en = "Sending your account"
@@ -6948,7 +6948,7 @@ where = [
   "android link_sending: Progress line while the account is sent to the new device.",
   "ios link_sending: Progress line while sending.",
 ]
-text = "Sende dein Konto"
+text = "Dein Konto wird gesendet"
 
 [t_2265cfdb46]
 en = "Working"
@@ -7005,7 +7005,7 @@ where = [
   "android link_scan_step2: Second instruction.",
   "ios link_scan_step2: Step 2 on the scan page.",
 ]
-text = "2.  Es zeigt einen QR-Code und einen kurzen Code. Sie funktionieren 5 Minuten lang, einmal."
+text = "2.  Es zeigt einen QR-Code und einen kurzen Code. Sie gelten 5 Minuten und funktionieren einmal."
 
 [t_878564e3c6]
 en = "Scan QR code"
@@ -7347,7 +7347,7 @@ en = "Offline — reconnecting"
 where = [
   "android notif_idle_offline: Title of the always-on notification when the phone has no connection.",
 ]
-text = "Offline – verbinde neu"
+text = "Offline – verbindet neu"
 
 [t_9259500947]
 en = "Available for calls"
@@ -7414,7 +7414,7 @@ where = [
   "ios call_control_mute: Label and caption of the mute button.",
   "desktop common_mute: Shared label, used in several places (call_screen, gcall).",
 ]
-text = "Stumm"
+text = "Mikro aus"
 
 [t_5e3d155ca5]
 en = "Incoming video call"
@@ -7790,7 +7790,7 @@ en = "Allow the camera to take photos."
 where = [
   "android conv_allow_camera: Toast when camera permission was refused.",
 ]
-text = "Erlaube die Kamera, um Fotos zu machen."
+text = "Erlaube den Kamerazugriff, um Fotos zu machen."
 
 [t_dd3296b705]
 en = "Older messages are on {first}’s phone"
@@ -7806,7 +7806,7 @@ where = [
   "android conv_older_body: Body of the note about older messages at the top of a chat.",
   "ios chat_older_body: Body of the older-messages banner.",
 ]
-text = "Dieses Handy hat sie ab dem Tag, an dem du es zu nutzen begonnen hast. Frühere Tage laden, wenn ihr beide online seid."
+text = "Dieses Handy hat sie ab dem Tag, an dem du es zu nutzen begonnen hast. Frühere Tage werden geladen, wenn ihr beide online seid."
 
 [t_6d056581be]
 en = "You’re offline. Messages send when you’re back online."
@@ -8124,7 +8124,7 @@ where = [
   "android conv_meta_sending: Time line of a bubble while a file is being sent. {percent} is a number, {time} the clock time.",
   "ios chat_meta_sending: Time line under a message that is still being sent. {percent} is a whole number, {time} the clock time.",
 ]
-text = "Sende {percent} % · {time}"
+text = "Senden {percent} % · {time}"
 
 [t_9b5fdf0f83]
 en = "Waiting · {time}"
@@ -8877,14 +8877,14 @@ where = [
   "ios group_sys_unadmin_you: System line. {by} is who removed the user as admin.",
   "ios shell_group_sys_admin_revoked_you: Group chat system line. {by} is who removed the user’s admin role.",
 ]
-text = "{by} hat dir die Admin-Rolle entzogen"
+text = "{by} hat dich als Admin entfernt"
 
 [t_ef018e9c70]
 en = "{by} removed {sub} as admin"
 where = [
   "android groupsc_admin_revoked_other: System line in a group's chat. {by} is who took the admin role away, {sub} is who lost it.",
 ]
-text = "{by} hat {sub} die Admin-Rolle entzogen"
+text = "{by} hat {sub} als Admin entfernt"
 
 [t_660d9ce36e]
 en = "A device of yours now hosts the group"
@@ -8957,7 +8957,7 @@ where = [
   "android groupsc_req_accepted_connecting: State line of a chat request you sent from a group: they accepted, the chat is still connecting. {name} is their first name.",
   "ios group_req_accepted_connecting: Line for an accepted chat request, still connecting. {name} is who accepted.",
 ]
-text = "{name} hat angenommen · verbinde"
+text = "{name} hat angenommen · verbindet"
 
 [t_54372e851e]
 en = "An admin"
@@ -9100,7 +9100,7 @@ where = [
   "ios group_done_left: Confirmation after leaving a group.",
   "desktop group_you_left_the_group: Desktop, groups (in group_live.rs, run).",
 ]
-text = "Du hast die Gruppe verlassen. Ihre Nachrichten bleiben hier."
+text = "Du hast die Gruppe verlassen. Die Nachrichten bleiben hier."
 
 [t_0b3fa117ce]
 en = "Appointed. The device hosts once it agrees."
@@ -9241,7 +9241,7 @@ where = [
   "ios call_status_finding_host: Status of a group call while the call host is being chosen.",
   "desktop gcall_finding_a_call_host: Desktop, group calls (in gcall.rs, status).",
 ]
-text = "Suche einen Anruf-Host…"
+text = "Anruf-Host wird gesucht…"
 
 [t_2b6a69b14f]
 en = "Reconnecting…"
@@ -9251,7 +9251,7 @@ where = [
   "ios call_status_reconnecting: Status line under the contact name while the connection is being re-established.",
   "desktop common_reconnecting_2: Shared label, used in several places (call_screen, gcall).",
 ]
-text = "Verbinde neu…"
+text = "Neu verbinden…"
 
 [t_e8649a596c]
 en = "You’re already in a call."
@@ -9321,7 +9321,7 @@ where = [
   "android gcall_the_host: Stand-in at the start of the About sheet sentence when the host is not known. The app capitalises the first letter.",
   "ios call_host_fallback: Used in a sentence when the call host's name is not known.",
 ]
-text = "der Anruf-Host"
+text = "das Host-Gerät"
 
 [t_5f8be8f403]
 en = "Minimize call"
@@ -9676,7 +9676,7 @@ where = [
   "ios call_mark_connecting: Accessibility label of the animated mark while connecting.",
   "desktop common_connecting: Shared label, used in several places (link, mark).",
 ]
-text = "Verbinde"
+text = "Verbindung wird aufgebaut"
 
 [t_67395f47f6]
 en = "Not connected yet"
@@ -9735,7 +9735,7 @@ where = [
   "android addcontact_many_qr: Hint when a picked image has several QR codes.",
   "ios people_add_hint_many_qr: Hint when the picked image has several QR codes.",
 ]
-text = "Mehr als ein QR-Code. Schneide auf den zu, den du möchtest."
+text = "Mehr als ein QR-Code. Schneide das Bild auf den Code zu, den du möchtest."
 
 [t_214ad8b542]
 en = "Couldn’t read that image. Choose another."
@@ -9799,7 +9799,7 @@ where = [
   "ios people_add_why_slow: Preview note while adding takes long. {name} is their name.",
   "desktop signup_still_trying_s_tinline: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = "Versuche es weiter. Tinline muss dafür bei {name} offen und online sein."
+text = "Wird noch versucht. Tinline muss dafür bei {name} offen und online sein."
 
 [t_4e30991429]
 en = "Reaching {name}’s Tinline…"
@@ -9808,7 +9808,7 @@ where = [
   "ios people_add_why_reaching: Preview note while adding. {name} is their name.",
   "desktop signup_reaching_s_tinline: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = "Erreiche Tinline bei {name}…"
+text = "Verbindung zu Tinline bei {name}…"
 
 [t_39d94924ef]
 en = "Couldn’t reach {name}’s Tinline. It needs to be open and online, so try again when {name}’s around."
@@ -10180,7 +10180,7 @@ where = [
   "android call_flip: Short caption under the flip-camera button on the call screen.",
   "ios call_control_flip: Caption under the camera flip button.",
 ]
-text = "Drehen"
+text = "Wechseln"
 
 [t_567a9f0d30]
 en = "Audio: {route}"
@@ -10200,7 +10200,7 @@ where = [
   "ios call_about_headline_reconnecting: Bold headline on the call details card while reconnecting.",
   "desktop common_reconnecting: Shared label, used in several places (call_screen, mark).",
 ]
-text = "Verbinde neu"
+text = "Neu verbinden"
 
 [t_f72ef90826]
 en = "Back. The call continues"
@@ -10301,7 +10301,7 @@ where = [
   "android call_route_title: Title of the sheet where I choose where call audio plays (phone, speaker, headset).",
   "ios call_route_sheet_title: Title of the sheet where I pick where the call audio plays.",
 ]
-text = "Anruf abspielen über"
+text = "Anruf hören über"
 
 [t_d75a1adddb]
 en = "Phone"
@@ -10433,7 +10433,7 @@ where = [
   "ios call_about_reconnecting: Accessibility label of the info button while reconnecting.",
   "desktop call_about_this_call_reconnecting: Desktop, calls (voice and video) (in call_screen.rs, call_view).",
 ]
-text = "Über diesen Anruf. Verbinde neu."
+text = "Über diesen Anruf. Neu verbinden."
 
 [t_783fcd0df8]
 en = "About this call. {signal} signal, {path}."
@@ -10561,7 +10561,7 @@ where = [
   "android call_info_weak: Extra sentence appended after a space when the signal is the weakest level. {name} is the other person's first name.",
   "ios call_about_line_weak: Extra sentence appended when the signal is weak. {name} is the contact's first name.",
 ]
-text = "Die Leitung ist schwach, die Stimme von {name} kann abbrechen."
+text = "Die Leitung ist schwach, daher kann die Stimme von {name} stocken."
 
 [t_912d92b0c2]
 en = "{rtt} ms round trip · {loss}% lost"
@@ -10676,7 +10676,7 @@ where = [
   "ios shell_mic_body: Explains microphone permission when denied.",
   "ios call_mic_needed_body: Explanation on the microphone permission screen.",
 ]
-text = "Ohne es hört man dich nicht. Tinline hört nur während Anrufen zu – nie im Hintergrund."
+text = "Ohne Mikrofon hört man dich nicht. Tinline hört nur während Anrufen zu – nie im Hintergrund."
 
 [t_6717879327]
 en = "Then go to Permissions › Microphone and allow it."
@@ -10771,7 +10771,7 @@ where = [
   "ios call_status_calling: Status line while the call is being set up, before it rings.",
   "desktop call_calling: Desktop, calls (voice and video) (in call_screen.rs, call_view).",
 ]
-text = "Rufe an…"
+text = "Anrufen…"
 
 [t_44e30f3c68]
 en = "End-to-end encrypted. Your voice is encrypted on this device and only decrypted on {name}’s."
@@ -10788,7 +10788,7 @@ where = [
   "ios call_privacy_connecting: Call card line while connecting; no encryption claim yet. {name} is the contact's name.",
   "desktop call_connecting_to_once_the: Desktop, calls (voice and video) (in call_screen.rs, call_about). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = "Verbinde mit {name}. Sobald der Anruf verbunden ist, ist er Ende-zu-Ende-verschlüsselt."
+text = "Verbindung mit {name} wird aufgebaut. Sobald der Anruf verbunden ist, ist er Ende-zu-Ende-verschlüsselt."
 
 [t_8269587304]
 en = "Missed"
@@ -10813,7 +10813,7 @@ where = [
   "android history_kind_away: Call history title for a call that came in while I had calls turned off.",
   "ios shell_call_what_unavailable: Call list: incoming call that came while the user had set themselves unavailable.",
 ]
-text = "Während nicht erreichbar"
+text = "Während deiner Pause"
 
 [t_29f6680e08]
 en = "Incoming"
@@ -11272,7 +11272,7 @@ en = "Waiting for them to scan — keep this open."
 where = [
   "android home_first_waiting: Status on the first-run add-contact screen while my code is shown.",
 ]
-text = "Wartet, bis gescannt wird – lass das hier offen."
+text = "Wartet aufs Scannen – lass das hier offen."
 
 [t_768662e0b1]
 en = "All"
@@ -11469,7 +11469,7 @@ en = "{name} is told you blocked them"
 where = [
   "android main_told_blocked: Snackbar after I blocked someone. {name} is their first name.",
 ]
-text = "{name} erfährt, dass du blockiert hast"
+text = "{name} erfährt von der Blockierung"
 
 [t_fdfcf0009c]
 en = "Couldn’t save your account safely on this phone."
@@ -11646,7 +11646,7 @@ en = "A call host carries the call. Everyone in a call connects to it, and it pa
 where = [
   "ios group_callhosts_note_admin: Explanation under the call host list, for admins.",
 ]
-text = "Ein Anruf-Host trägt den Anruf. Alle im Anruf verbinden sich mit ihm, und er gibt den Ton weiter, kann den Anruf also hören. Das ist getrennt vom Chat-Hosten: Ein Chat-Host ist kein Anruf-Host, außer du legst ihn auch als solchen fest. Anruf-Hosts sind Mitglieder, denen du vertraust, und jeder entscheidet selbst, ob er zusagt. Lege einen über das Menü eines Mitglieds fest oder hoste Anrufe auf diesem Handy. Ein Handy hostet nur Anrufe, die seine Besitzerin oder sein Besitzer startet."
+text = "Ein Anruf-Host trägt den Anruf. Alle im Anruf verbinden sich mit ihm, und er gibt den Ton weiter, kann den Anruf also hören. Das ist getrennt vom Chat-Hosten: Ein Chat-Host ist kein Anruf-Host, außer du legst ihn auch als solchen fest. Anruf-Hosts sind Mitglieder, denen du vertraust, und jeder entscheidet selbst, ob er zusagt. Lege einen über das Menü eines Mitglieds fest oder hoste Anrufe auf diesem Handy. Ein Handy hostet nur Anrufe, die auf ihm gestartet werden."
 
 [t_a2f22a6fc1]
 en = "{flags} of {total}"
@@ -11756,7 +11756,7 @@ where = [
   "ios group_sys_unadmin: System line. {by} removed {name} as admin.",
   "ios shell_group_sys_admin_revoked: Group chat system line. {by} removed {name}’s admin role.",
 ]
-text = "{by} hat {name} die Admin-Rolle entzogen"
+text = "{by} hat {name} als Admin entfernt"
 
 [t_be5bddaced]
 en = "A device of {name}’s now hosts the group"
@@ -11887,14 +11887,14 @@ en = "Yours will be flag {yours} of {total}. {name} is removed right away: hosts
 where = [
   "ios group_flag_copy_final: Flag dialog sentence for the flag that removes the member. {yours} is which flag it is, {total} flags remove, {name} the member’s first name.",
 ]
-text = "Deine wird Markierung {yours} von {total}. {name} wird sofort entfernt: Hosts nehmen keine neuen Nachrichten mehr an, und die Person sieht, dass sie entfernt wurde."
+text = "Das wird Markierung {yours} von {total}. {name} wird sofort entfernt: Hosts nehmen keine neuen Nachrichten mehr an, und die Person sieht, dass sie entfernt wurde."
 
 [t_a70b928917]
 en = "Yours will be flag {yours} of {total}. Any admin’s flags count, yours again too. At {total} flags {name} is removed right away and sees they were removed."
 where = [
   "ios group_flag_copy: Flag dialog sentence for a flag that does not remove yet. {yours} is which flag it is, {total} flags remove, {name} the member’s first name.",
 ]
-text = "Deine wird Markierung {yours} von {total}. Markierungen aller Admins zählen, auch weitere von dir. Bei {total} Markierungen wird {name} sofort entfernt und sieht, dass die Entfernung passiert ist."
+text = "Das wird Markierung {yours} von {total}. Markierungen aller Admins zählen, auch weitere von dir. Bei {total} Markierungen wird {name} sofort entfernt und sieht das."
 
 [t_083606ee59]
 en = "You were removed from this group."
@@ -12187,7 +12187,7 @@ en = "Your contacts and chats are arriving from {name} and will keep in step on 
 where = [
   "ios onboarding_linked_lead: Explanation after linking; {name} is the other device's name or the words your other device.",
 ]
-text = "Deine Kontakte und Chats kommen von {name} und bleiben auf beiden im Gleichschritt."
+text = "Deine Kontakte und Chats kommen von {name} und bleiben auf beiden Geräten synchron."
 
 [t_9fbe4c80c9]
 en = "By continuing, you agree to the [Terms of Use]({terms_url}) and have read the [Privacy Policy]({privacy_url})."
@@ -12237,7 +12237,7 @@ where = [
   "ios shell_flow_account_changed: Error when the selected account changed while a flow was running.",
   "desktop profile_account_changed: Desktop, profile and settings (in profile_ui.rs, read_profile).",
 ]
-text = "Konto hat gewechselt"
+text = "Konto hat sich geändert"
 
 [t_02df4dcde7]
 en = "You were removed after 3 admin flags"
@@ -12558,7 +12558,7 @@ en = "Decoder for their video"
 where = [
   "desktop common_decoder_for_their_video: Shared label, used in several places (call_screen, profile).",
 ]
-text = "Decoder für ihr Video"
+text = "Decoder für das Video der Gegenseite"
 
 [t_0216ca7dcd]
 en = "Give this computer a name of 1 to 64 characters."
@@ -12579,7 +12579,7 @@ en = "Messages only: calling needs their permission"
 where = [
   "desktop common_messages_only_calling_needs: Shared label, used in several places (chat, view).",
 ]
-text = "Nur Nachrichten: Anrufe brauchen ihre Erlaubnis"
+text = "Nur Nachrichten: Anrufe brauchen die Erlaubnis der Person"
 
 [t_8e994a4caf]
 en = "Name this computer"
@@ -12936,7 +12936,7 @@ en = "{label} disconnected, switching to the system default"
 where = [
   "desktop audio_disconnected_switching_to_the: Desktop, audio devices (in audio.rs, maintain). {label} is a value filled in by the app.",
 ]
-text = "{label} getrennt, wechsle zum Systemstandard"
+text = "{label} getrennt, Wechsel zum Systemstandard"
 
 [t_a171612b25]
 en = "Echo cancellation is unavailable"
@@ -13055,7 +13055,7 @@ en = "Ignore limits (heat, their decoder)"
 where = [
   "desktop call_ignore_limits_heat_their: Desktop, calls (voice and video) (in call_screen.rs, call_nerds).",
 ]
-text = "Grenzen ignorieren (Wärme, ihr Decoder)"
+text = "Grenzen ignorieren (Wärme, Decoder der Gegenseite)"
 
 [t_75e076dea8]
 en = "is calling you"
@@ -13125,7 +13125,7 @@ en = " The line is weak, so {name}’s voice may break up."
 where = [
   "desktop call_the_line_is_weak: Desktop, calls (voice and video) (in call_screen.rs, call_about). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = " Die Leitung ist schwach, die Stimme von {name} kann abbrechen."
+text = " Die Leitung ist schwach, daher kann die Stimme von {name} stocken."
 
 [t_e6b445aa1b]
 en = "These apply to this call now. Settings > Video sets the next call."
@@ -13160,14 +13160,14 @@ en = "Your network changed. Hold on — Tinline is finding the line again."
 where = [
   "desktop call_your_network_changed_hold: Desktop, calls (voice and video) (in view.rs, video_call_view).",
 ]
-text = "Dein Netzwerk hat gewechselt. Einen Moment – Tinline sucht die Leitung wieder."
+text = "Dein Netzwerk hat sich geändert. Einen Moment – Tinline sucht die Leitung wieder."
 
 [t_e80b716ddc]
 en = "Your size"
 where = [
   "desktop call_your_size: Desktop, calls (voice and video) (in call_screen.rs, call_nerds).",
 ]
-text = "Deine Größe"
+text = "Deine Bildgröße"
 
 [t_a2ac53fc12]
 en = "Your video codec"
@@ -13384,7 +13384,7 @@ en = "Older messages are on {name}’s computer. This computer keeps them from w
 where = [
   "desktop chat_older_messages_are_on: Desktop, chats (in chat_view.rs, history_note). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = "Ältere Nachrichten sind auf dem Computer von {name}. Dieser Computer hat sie ab dem Tag, an dem du ihn zu nutzen begonnen hast. Frühere Tage laden, wenn ihr beide online seid."
+text = "Ältere Nachrichten sind auf dem Computer von {name}. Dieser Computer hat sie ab dem Tag, an dem du ihn zu nutzen begonnen hast. Frühere Tage werden geladen, wenn ihr beide online seid."
 
 [t_250a61953d]
 en = "On {name}’s device"
@@ -13496,7 +13496,7 @@ en = "Too short — hold on a little longer."
 where = [
   "desktop chat_too_short_hold_on: Desktop, chats (in chat.rs, update_chat_inner).",
 ]
-text = "Zu kurz – halte ein bisschen länger."
+text = "Zu kurz – halte etwas länger gedrückt."
 
 [t_c21fe6504f]
 en = "Waiting for {name}’s device to confirm"
@@ -13594,14 +13594,14 @@ en = "Anyone who sees these words can become you. Write them down and keep them 
 where = [
   "desktop gate_anyone_who_sees_these: Desktop, sign-in and gate screens (in view.rs, phrase_view).",
 ]
-text = "Wer diese Wörter sieht, kann zu dir werden. Schreib sie auf und bewahre sie an einem sicheren Ort auf."
+text = "Wer diese Wörter sieht, kann dein Konto übernehmen. Schreib sie auf und bewahre sie an einem sicheren Ort auf."
 
 [t_83fb73677c]
 en = "I have saved it"
 where = [
   "desktop gate_i_have_saved_it: Desktop, sign-in and gate screens (in view.rs, phrase_view).",
 ]
-text = "Hab ich gesichert"
+text = "Ich hab sie gesichert"
 
 [t_563bcc7b29]
 en = "Or"
@@ -13622,7 +13622,7 @@ en = "Retry"
 where = [
   "desktop gate_retry: Desktop, sign-in and gate screens (in view.rs, key_failed_view).",
 ]
-text = "Nochmal"
+text = "Nochmal versuchen"
 
 [t_25991ff41c]
 en = "The system keyring did not accept the key."
@@ -13643,7 +13643,7 @@ en = "This computer no longer has the key that opens it, and its keyring entry i
 where = [
   "desktop gate_this_computer_no_longer: Desktop, sign-in and gate screens (in view.rs, key_lost_view).",
 ]
-text = "Dieser Computer hat den Schlüssel nicht mehr, der es öffnet, und sein Eintrag im Schlüsselbund fehlt. Sobald du wiederherstellst, kommen deine Anrufe wieder durch."
+text = "Dieser Computer hat den Schlüssel nicht mehr, der dein Konto öffnet, und sein Eintrag im Schlüsselbund fehlt. Sobald du wiederherstellst, kommen deine Anrufe wieder durch."
 
 [t_46f9d90635]
 en = "Tinline couldn’t store the key that opens your account on this computer, so your account has not been saved yet. Nothing is lost."
@@ -13657,7 +13657,7 @@ en = "Trying..."
 where = [
   "desktop gate_trying: Desktop, sign-in and gate screens (in view.rs, key_failed_view).",
 ]
-text = "Versuche..."
+text = "Neuer Versuch..."
 
 [t_ac7e2468f2]
 en = "Your recovery phrase"
@@ -13713,7 +13713,7 @@ en = "The call host"
 where = [
   "desktop gcall_the_call_host: Desktop, group calls (in gcall_view.rs, gcall_about).",
 ]
-text = "Der Anruf-Host"
+text = "Das Host-Gerät"
 
 [t_dc989edf18]
 en = " {value} this call. Everyone in the call connects to it, and it passes the audio on and chooses who is heard when several people speak."
@@ -13741,14 +13741,14 @@ en = "A call host is a member’s computer or phone that carries the call. An ad
 where = [
   "desktop group_a_call_host_is: Desktop, groups (in group_live_view.rs, live_pane).",
 ]
-text = "Ein Anruf-Host ist der Computer oder das Handy eines Mitglieds, der oder das den Anruf trägt. Ein Admin kann ihn in der Gruppeninfo festlegen."
+text = "Ein Anruf-Host ist ein Computer oder Handy eines Mitglieds und trägt den Anruf. Ein Admin kann ihn in der Gruppeninfo festlegen."
 
 [t_d1b8093efb]
 en = "A call host is a member’s computer or phone that carries the call. You can host calls on this computer, or appoint a member in Group info."
 where = [
   "desktop group_a_call_host_is_a: Desktop, groups (in group_live_view.rs, live_pane).",
 ]
-text = "Ein Anruf-Host ist der Computer oder das Handy eines Mitglieds, der oder das den Anruf trägt. Du kannst Anrufe auf diesem Computer hosten oder in der Gruppeninfo ein Mitglied festlegen."
+text = "Ein Anruf-Host ist ein Computer oder Handy eines Mitglieds und trägt den Anruf. Du kannst Anrufe auf diesem Computer hosten oder in der Gruppeninfo ein Mitglied festlegen."
 
 [t_b9b1d3dfa0]
 en = "A call needs a call host"
@@ -13979,7 +13979,7 @@ en = "Flag to remove"
 where = [
   "desktop group_flag_to_remove: Desktop, groups (in group_live_view.rs, live_menu).",
 ]
-text = "Zur Entfernung markieren"
+text = "Zum Entfernen markieren"
 
 [t_d2cd7397c2]
 en = "Flagged {value}"
@@ -14324,14 +14324,14 @@ en = "Remove as admin"
 where = [
   "desktop group_remove_as_admin: Desktop, groups (in group_live_view.rs, live_menu).",
 ]
-text = "Admin-Rolle entziehen"
+text = "Als Admin entfernen"
 
 [t_63c8449e54]
 en = "Remove {name} as admin?"
 where = [
   "desktop group_remove_as_admin_2: Desktop, groups (in group_live_view.rs, live_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = "{name} die Admin-Rolle entziehen?"
+text = "{name} als Admin entfernen?"
 
 [t_fce4d0716e]
 en = "{value} · removed"
@@ -14401,7 +14401,7 @@ en = "Stop device {value} carrying calls"
 where = [
   "desktop group_stop_device_carrying_calls: Desktop, groups (in group_live_view.rs, live_menu). {value} is a value filled in by the app.",
 ]
-text = "Anrufe auf Gerät {value} beenden"
+text = "Anruf-Hosten auf Gerät {value} beenden"
 
 [t_e2020c4fb2]
 en = "Stop device {value} hosting"
@@ -14653,21 +14653,21 @@ en = "You’ll own the group. This computer hosts it at first: it keeps the grou
 where = [
   "desktop group_youll_own_the_group: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = "Die Gruppe gehört dir. Dieser Computer hostet sie zuerst: Er hält die Gruppe und gibt Nachrichten weiter, während die Handys der Mitglieder schlafen, deshalb klappt es am besten auf einem Computer, der an bleibt."
+text = "Die Gruppe gehört dir. Dieser Computer hostet sie vorerst: Er hält die Gruppe und gibt Nachrichten weiter, während die Handys der Mitglieder schlafen, deshalb klappt es am besten auf einem Computer, der an bleibt."
 
 [t_eae8e245fc]
 en = "Yours will be flag {yours} of {flags_needed}. Any admin’s flags count, yours again too. At {flags_needed} flags {name} is removed right away and sees they were removed."
 where = [
   "desktop group_yours_will_be_flag: Desktop, groups (in group_live_view.rs, live_overlay). {yours} is a value filled in by the app. {flags_needed} is a value filled in by the app. {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = "Deine wird Markierung {yours} von {flags_needed}. Markierungen aller Admins zählen, auch weitere von dir. Bei {flags_needed} Markierungen wird {name} sofort entfernt und sieht, dass die Entfernung passiert ist."
+text = "Das wird Markierung {yours} von {flags_needed}. Markierungen aller Admins zählen, auch weitere von dir. Bei {flags_needed} Markierungen wird {name} sofort entfernt und sieht das."
 
 [t_a2776c67b5]
 en = "Yours will be flag {yours} of {flags_needed}. {name} is removed right away: hosts refuse their new messages and they see they were removed."
 where = [
   "desktop group_yours_will_be_flag_of: Desktop, groups (in group_live_view.rs, live_overlay). {yours} is a value filled in by the app. {flags_needed} is a value filled in by the app. {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = "Deine wird Markierung {yours} von {flags_needed}. {name} wird sofort entfernt: Hosts nehmen keine neuen Nachrichten mehr an, und die Person sieht, dass sie entfernt wurde."
+text = "Das wird Markierung {yours} von {flags_needed}. {name} wird sofort entfernt: Hosts nehmen keine neuen Nachrichten mehr an, und die Person sieht, dass sie entfernt wurde."
 
 [t_b1f15f6576]
 en = "Contacts · {len}"
@@ -14723,7 +14723,7 @@ en = "A linked device becomes you"
 where = [
   "desktop link_a_linked_device_becomes: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = "Ein verknüpftes Gerät wird zu dir"
+text = "Ein verknüpftes Gerät kann alles, was du kannst"
 
 [t_d73b68764a]
 en = "A passphrase encrypts your account on this computer. Optional — leave it empty and Tinline opens straight to your contacts. You can add one later in Settings."
@@ -14793,7 +14793,7 @@ en = "Connecting to the other device…"
 where = [
   "desktop link_connecting_to_the_other: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = "Verbinde mit dem anderen Gerät…"
+text = "Verbindung zum anderen Gerät…"
 
 [t_46161f68a7]
 en = "Desktop"
@@ -14975,7 +14975,7 @@ en = "Restore with recovery phrase instead"
 where = [
   "desktop link_restore_with_recovery_phrase: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = "Lieber mit Wiederherstellungswörtern wiederherstellen"
+text = "Lieber mit 24 Wörtern wiederherstellen"
 
 [t_43fea4daf5]
 en = "Sending your account over…"
@@ -14989,7 +14989,7 @@ en = "Show this to the device you want to add. It becomes you, so only link your
 where = [
   "desktop link_show_this_to_the: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = "Zeig das dem Gerät, das du hinzufügen möchtest. Es wird zu dir, also verknüpfe nur deine eigenen."
+text = "Zeig das dem Gerät, das du hinzufügen möchtest. Es kann dann alles, was du kannst, also verknüpfe nur deine eigenen Geräte."
 
 [t_0826ccb2c7]
 en = "Start using Tinline"
@@ -15178,7 +15178,7 @@ en = " Anyone who still has your recovery phrase, or can unlock {name}, can stil
 where = [
   "desktop profile_anyone_who_still_has: Desktop, profile and settings (in profile_view.rs, devices_layer). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = " Wer deine Wiederherstellungswörter noch hat oder {name} entsperren kann, kann weiter als du auftreten. Wenn es verloren oder gestohlen ist, hilft ganz nur ein neues Konto."
+text = " Wer deine Wiederherstellungswörter noch hat oder {name} entsperren kann, kann weiter als du auftreten. Wenn es verloren oder gestohlen ist, ist ein neues Konto die einzige vollständige Lösung."
 
 [t_9bb58d6614]
 en = "Audio, security and hosting"
@@ -15248,7 +15248,7 @@ en = "Checking…"
 where = [
   "desktop profile_checking: Desktop, profile and settings (in profile_view.rs, phrase_page).",
 ]
-text = "Prüfe…"
+text = "Wird geprüft…"
 
 [t_b5b9d1f203]
 en = "Contacts you haven’t blocked get your updated device list when they’re next online."
@@ -15360,7 +15360,7 @@ en = "It is offline, so it finds out the next time it connects."
 where = [
   "desktop profile_it_is_offline_so: Desktop, profile and settings (in profile_view.rs, devices_layer).",
 ]
-text = "Es ist offline und erfährt es also, wenn es sich das nächste Mal verbindet."
+text = "Es ist offline und erfährt es, sobald es sich das nächste Mal verbindet."
 
 [t_dfa1efbc07]
 en = "{round} KB"
@@ -15632,7 +15632,7 @@ en = "Selected · connecting"
 where = [
   "desktop profile_selected_connecting: Desktop, profile and settings (in profile_view.rs, settings_landing).",
 ]
-text = "Ausgewählt · verbinde"
+text = "Ausgewählt · verbindet"
 
 [t_c3eb6bca8d]
 en = "Send codec"
@@ -15814,7 +15814,7 @@ en = "Told you blocked them"
 where = [
   "desktop profile_told_you_blocked_them: Desktop, profile and settings (in profile_view.rs, blocked_page).",
 ]
-text = "Weiß, dass du blockiert hast"
+text = "Weiß von der Blockierung"
 
 [t_645532a521]
 en = "Trend+probe"
@@ -15947,14 +15947,14 @@ en = "Anyone who sees these words can become you. Check nobody is looking, then 
 where = [
   "desktop settings_anyone_who_sees_these: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = "Wer diese Wörter sieht, kann zu dir werden. Achte darauf, dass niemand zuschaut, und zeig sie dann."
+text = "Wer diese Wörter sieht, kann dein Konto übernehmen. Achte darauf, dass niemand zuschaut, und zeig sie dann."
 
 [t_b943e62fec]
 en = "Anyone who sees these words can become you. Check nobody is looking."
 where = [
   "desktop settings_anyone_who_sees_these_words: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = "Wer diese Wörter sieht, kann zu dir werden. Achte darauf, dass niemand zuschaut."
+text = "Wer diese Wörter sieht, kann dein Konto übernehmen. Achte darauf, dass niemand zuschaut."
 
 [t_007f441e85]
 en = "Asks you to confirm first"
@@ -15989,7 +15989,7 @@ en = "Checking..."
 where = [
   "desktop settings_checking: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = "Prüfe..."
+text = "Wird geprüft..."
 
 [t_458b341145]
 en = "Device changes apply from the next call"
@@ -16171,7 +16171,7 @@ en = "Searching…"
 where = [
   "desktop shell_searching: Desktop, shell: sidebar, search, contacts (in shell_view.rs, shell_search_results).",
 ]
-text = "Suche…"
+text = "Wird gesucht…"
 
 [t_09334bda23]
 en = "WAITING FOR THEM"
@@ -16339,7 +16339,7 @@ en = "Tinline connects your {noun} straight to theirs."
 where = [
   "desktop signup_tinline_connects_your_straight: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {noun} is the word for this device kind (e.g. computer).",
 ]
-text = "Tinline verbindet dein {noun} direkt mit dem der anderen."
+text = "Tinline verbindet deinen {noun} direkt mit dem der anderen."
 
 [t_11ee2c617b]
 en = "Type your 24 recovery words. This {noun} starts with an empty contact list."
@@ -16402,7 +16402,7 @@ en = "Your account is its recovery phrase, so you can bring it to this {noun} tw
 where = [
   "desktop signup_your_account_is_its: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {noun} is the word for this device kind (e.g. computer).",
 ]
-text = "Dein Konto steckt in seinen Wiederherstellungswörtern, also kannst du es auf zwei Wegen auf dein {noun} holen."
+text = "Dein Konto steckt in seinen Wiederherstellungswörtern, also kannst du es auf zwei Wegen auf deinen {noun} holen."
 
 [t_50700bde54]
 en = "Your current account stays on this {noun}."

@@ -52,10 +52,10 @@ text = "Keine Verbindung"
 text = "Mit dem Netz verbunden"
 
 [kit_mark_connecting]
-text = "Verbinde"
+text = "Verbindung wird aufgebaut"
 
 [kit_mark_reconnecting]
-text = "Verbinde neu"
+text = "Neu verbinden"
 
 [kit_back]
 text = "Zurück"
@@ -266,7 +266,7 @@ text = "Ursprüngliche Nachricht nicht verfügbar"
 text = "Nachrichtenaktionen"
 
 [chat_meta_sending]
-text = "Sende {percent} % · {time}"
+text = "Senden {percent} % · {time}"
 
 [chat_meta_waiting]
 text = "Wartet · {time}"
@@ -431,7 +431,7 @@ text = "Chat"
 text = "Ältere Nachrichten sind auf dem Handy von {first}"
 
 [chat_older_body]
-text = "Dieses Handy hat sie ab dem Tag, an dem du es zu nutzen begonnen hast. Frühere Tage laden, wenn ihr beide online seid."
+text = "Dieses Handy hat sie ab dem Tag, an dem du es zu nutzen begonnen hast. Frühere Tage werden geladen, wenn ihr beide online seid."
 
 [chat_composer_placeholder]
 text = "Nachricht"
@@ -754,7 +754,7 @@ text = "Trägt die Anrufe, die du hier startest. Ein Computer, der an bleibt, ka
 text = "Ein Anruf-Host trägt den Anruf. Alle im Anruf verbinden sich mit ihm, und er gibt den Ton weiter, kann den Anruf also hören. Das ist getrennt vom Chat-Hosten: Ein Chat-Host ist kein Anruf-Host, außer du legst ihn auch als solchen fest. Anruf-Hosts sind Mitglieder, denen du vertraust, und jeder entscheidet selbst, ob er zusagt."
 
 [group_callhosts_note_admin]
-text = "Ein Anruf-Host trägt den Anruf. Alle im Anruf verbinden sich mit ihm, und er gibt den Ton weiter, kann den Anruf also hören. Das ist getrennt vom Chat-Hosten: Ein Chat-Host ist kein Anruf-Host, außer du legst ihn auch als solchen fest. Anruf-Hosts sind Mitglieder, denen du vertraust, und jeder entscheidet selbst, ob er zusagt. Lege einen über das Menü eines Mitglieds fest oder hoste Anrufe auf diesem Handy. Ein Handy hostet nur Anrufe, die seine Besitzerin oder sein Besitzer startet."
+text = "Ein Anruf-Host trägt den Anruf. Alle im Anruf verbinden sich mit ihm, und er gibt den Ton weiter, kann den Anruf also hören. Das ist getrennt vom Chat-Hosten: Ein Chat-Host ist kein Anruf-Host, außer du legst ihn auch als solchen fest. Anruf-Hosts sind Mitglieder, denen du vertraust, und jeder entscheidet selbst, ob er zusagt. Lege einen über das Menü eines Mitglieds fest oder hoste Anrufe auf diesem Handy. Ein Handy hostet nur Anrufe, die auf ihm gestartet werden."
 
 [group_flags_on_you]
 text = "Markierungen gegen dich"
@@ -876,7 +876,7 @@ text = "Sendet eine Chat-Anfrage über den Host der Gruppe"
 text = "Zum Admin machen"
 
 [group_member_remove_admin]
-text = "Admin-Rolle entziehen"
+text = "Als Admin entfernen"
 
 [group_member_make_device_host]
 text = "Gerät {device} zum Host machen"
@@ -921,7 +921,7 @@ text = "Ein Admin muss es auch festlegen. Ein Computer, der an bleibt, ist ein b
 text = "Anruf-Hosten auf diesem Gerät beenden"
 
 [group_member_flag]
-text = "Zur Entfernung markieren"
+text = "Zum Entfernen markieren"
 
 [group_member_flag_sub]
 text = "{total} Markierungen entfernen {name} aus der Gruppe"
@@ -933,7 +933,7 @@ text = "Der Eigentümer kann nicht markiert werden"
 text = "Schließen"
 
 [group_flag_title]
-text = "{name} zur Entfernung markieren?"
+text = "{name} zum Entfernen markieren?"
 
 [group_flag_meter_desc]
 text = "Markierung {next} von {total}"
@@ -990,10 +990,10 @@ text = "{by} hat dich zum Admin gemacht"
 text = "{by} hat {name} zum Admin gemacht"
 
 [group_sys_unadmin_you]
-text = "{by} hat dir die Admin-Rolle entzogen"
+text = "{by} hat dich als Admin entfernt"
 
 [group_sys_unadmin]
-text = "{by} hat {name} die Admin-Rolle entzogen"
+text = "{by} hat {name} als Admin entfernt"
 
 [group_sys_host_added_you]
 text = "Ein Gerät von dir hostet jetzt die Gruppe"
@@ -1046,7 +1046,7 @@ text = "Wartet auf {name} · über {group}"
 text = "{name} hat angenommen · nur Nachrichten"
 
 [group_req_accepted_connecting]
-text = "{name} hat angenommen · verbinde"
+text = "{name} hat angenommen · verbindet"
 
 [group_req_declined]
 text = "{name} hat abgelehnt"
@@ -1082,10 +1082,10 @@ text = "Einladung abgelaufen"
 text = "Hat dich blockiert"
 
 [group_flag_copy_final]
-text = "Deine wird Markierung {yours} von {total}. {name} wird sofort entfernt: Hosts nehmen keine neuen Nachrichten mehr an, und die Person sieht, dass sie entfernt wurde."
+text = "Das wird Markierung {yours} von {total}. {name} wird sofort entfernt: Hosts nehmen keine neuen Nachrichten mehr an, und die Person sieht, dass sie entfernt wurde."
 
 [group_flag_copy]
-text = "Deine wird Markierung {yours} von {total}. Markierungen aller Admins zählen, auch weitere von dir. Bei {total} Markierungen wird {name} sofort entfernt und sieht, dass die Entfernung passiert ist."
+text = "Das wird Markierung {yours} von {total}. Markierungen aller Admins zählen, auch weitere von dir. Bei {total} Markierungen wird {name} sofort entfernt und sieht das."
 
 [group_error_generic]
 text = "Da ist etwas schiefgelaufen"
@@ -1149,7 +1149,7 @@ text = "Zum Admin gemacht."
 text = "Nicht mehr Admin."
 
 [group_done_left]
-text = "Du hast die Gruppe verlassen. Ihre Nachrichten bleiben hier."
+text = "Du hast die Gruppe verlassen. Die Nachrichten bleiben hier."
 
 [group_done_appointed]
 text = "Festgelegt. Das Gerät hostet, sobald es zustimmt."
@@ -1245,7 +1245,7 @@ text = "Du wurdest entfernt und kannst dieser Gruppe keine Nachrichten mehr send
 text = "Warum?"
 
 [group_left_footer]
-text = "Du hast diese Gruppe verlassen. Ihre Nachrichten bleiben hier, nur zum Lesen."
+text = "Du hast diese Gruppe verlassen. Die Nachrichten bleiben hier, nur zum Lesen."
 
 [group_message_placeholder]
 text = "Nachricht"
@@ -1355,7 +1355,7 @@ text = "Neue Gruppe"
 text = "Gruppenname"
 
 [group_new_info]
-text = "Dieses Handy hostet die Gruppe zuerst: Es hält die Gruppe und gibt Nachrichten weiter. Ein Computer, der an bleibt, ist ein besserer Host – leg ihn in der Gruppeninfo fest, sobald er beigetreten ist."
+text = "Dieses Handy hostet die Gruppe vorerst: Es hält die Gruppe und gibt Nachrichten weiter. Ein Computer, der an bleibt, ist ein besserer Host – leg ihn in der Gruppeninfo fest, sobald er beigetreten ist."
 
 [group_new_owner_hint]
 text = "Die Gruppe gehört dir. Lade Leute über die Gruppeninfo ein."
@@ -1397,7 +1397,7 @@ text = "Einladungslink oder Code"
 text = "Frage beim Host der Gruppe nach…"
 
 [group_join_bad]
-text = "Mit diesem Link ging es nicht: Er ist keine Gruppeneinladung, ist abgelaufen, oder sein Host ist offline."
+text = "Dieser Link hat nicht funktioniert: Er ist keine Gruppeneinladung, ist abgelaufen oder sein Host ist offline."
 
 [group_paste]
 text = "Einfügen"
@@ -1626,7 +1626,7 @@ text = "Video in Anrufen"
 text = "Du kannst in einem Anruf deine Kamera einschalten"
 
 [settings_video_in_calls_off]
-text = "Anrufe sind nur Sprache"
+text = "Nur Sprachanrufe"
 
 [settings_diagnostics]
 text = "Diagnose"
@@ -1644,7 +1644,7 @@ text = "Neues Konto erstellen"
 text = "Mit einem Gerät verknüpfen"
 
 [settings_add_restore]
-text = "Mit Wiederherstellungswörtern wiederherstellen"
+text = "Mit 24 Wörtern wiederherstellen"
 
 [settings_notif_messages]
 text = "Nachrichten"
@@ -1674,7 +1674,7 @@ text = "Beiträge, Einladungen und Anfragen"
 text = "Benachrichtigungen für Gruppen"
 
 [settings_notif_alert_me]
-text = "Benachrichtige mich bei"
+text = "Mich benachrichtigen bei"
 
 [settings_notif_note]
 text = "Ein stummgeschalteter Chat benachrichtigt dich nie, egal was hier eingeschaltet ist. Verpasste Anrufe von einer Person werden zu einer Benachrichtigung zusammengefasst."
@@ -1710,7 +1710,7 @@ text = "Ein heller Gong aus vier Tönen."
 text = "Locker → straff"
 
 [settings_sound_slack_sub]
-text = "Zwei nahe Töne schweben wie eine lockere Saite, dann zieht einer straff."
+text = "Zwei nahe Töne schweben wie eine lockere Saite, dann spannt sich einer straff."
 
 [settings_sound_triad]
 text = "Dreiklang-Klopfen"
@@ -1719,7 +1719,7 @@ text = "Dreiklang-Klopfen"
 text = "Drei steigende Töne, wie ein Klopfen."
 
 [settings_quiet]
-text = "Ruhe"
+text = "Lautlos"
 
 [settings_quiet_sub]
 text = "Keine Töne von Tinline: Klingeln, Anruftöne, Beitritte"
@@ -1737,7 +1737,7 @@ text = "Verbunden"
 text = "Anruf beendet"
 
 [settings_sounds_note_quiet]
-text = "Ruhe ist an, also sind die Vorschauen stumm."
+text = "Lautlos ist an, also sind die Vorschauen stumm."
 
 [settings_sounds_note]
 text = "Tippe auf einen Ton, um ihn zu hören. Die Wahl gilt ab dem nächsten Anruf."
@@ -1973,7 +1973,7 @@ text = "Verschwindet nach 30 Sekunden. Sperrt sich, wenn du die App verlässt."
 text = "Schlüssel und Wörter stellen dasselbe Konto wieder her. Bewahre eins davon an einem privaten, sicheren Ort auf."
 
 [security_copied_note]
-text = "Kopiert. Bewahre es an einem privaten Ort auf."
+text = "Kopiert. Bewahre ihn an einem privaten Ort auf."
 
 [security_copied]
 text = "Kopiert"
@@ -2096,7 +2096,7 @@ text = "Ja, wenn es an ist"
 text = "Jetzt abgleichen"
 
 [devices_syncing]
-text = "Gleiche mit {name} ab…"
+text = "Abgleich mit {name}…"
 
 [devices_fb_the_device]
 text = "dem Gerät"
@@ -2138,7 +2138,7 @@ text = "Trennen"
 text = "Dieses Handy hört auf abzugleichen und zu klingeln, und dein Konto, deine Kontakte, Chats und Anrufliste werden davon gelöscht."
 
 [devices_only_device]
-text = "Das ist das einzige Gerät mit deinem Konto. Ohne deine Wiederherstellungswörter kann es nichts zurückholen."
+text = "Das ist das einzige Gerät mit deinem Konto. Ohne deine Wiederherstellungswörter lässt es sich nicht zurückholen."
 
 [devices_others_keep]
 text = "Deine anderen Geräte behalten alles."
@@ -2147,7 +2147,7 @@ text = "Deine anderen Geräte behalten alles."
 text = "Es hört auf abzugleichen und klingelt nicht mehr bei deinen Anrufen. Wenn es online ist, entfernt es dein Konto von sich selbst."
 
 [devices_unlink_warn]
-text = "Trennen kann es von hier aus nicht sperren. Wer es entsperren kann, kann dein Konto weiter nutzen. Ganz abschneiden kann nur ein neues Konto."
+text = "Trennen kann es von hier aus nicht sperren. Wer es entsperren kann, kann dein Konto weiter nutzen. Ganz aussperren kannst du es nur mit einem neuen Konto."
 
 [devices_lost]
 text = "Verloren oder gestohlen?"
@@ -2156,7 +2156,7 @@ text = "Verloren oder gestohlen?"
 text = "Deine Passphrase"
 
 [unlock_wrong_pass]
-text = "Mit dieser Passphrase ging das Konto nicht auf."
+text = "Diese Passphrase hat das Konto nicht geöffnet."
 
 [unlock_lost_title]
 text = "Dein Konto lässt sich nicht öffnen"
@@ -2255,7 +2255,7 @@ text = "{name} geht auf diesem Handy offline. Anrufe an {name} klingeln nur auf 
 text = "Passphrase für {name}"
 
 [unlock_not_in_call]
-text = "Du bist in keinem Anruf. Wärst du es, würde der Wechsel ihn beenden."
+text = "Du telefonierst gerade nicht. Sonst würde der Wechsel den Anruf beenden."
 
 [unlock_switching]
 text = "Wechseln…"
@@ -2270,7 +2270,7 @@ text = "Wechseln"
 text = "Abbrechen"
 
 [restore_key_typo]
-text = "In diesem Schlüssel steckt ein Tippfehler, oder er ist abgeschnitten. Füg ihn nochmal ein, von da, wo du ihn gespeichert hast."
+text = "In diesem Schlüssel steckt ein Tippfehler, oder er ist abgeschnitten. Füg ihn nochmal aus deiner gespeicherten Kopie ein."
 
 [restore_title]
 text = "Konto wiederherstellen"
@@ -2408,10 +2408,10 @@ text = "Verbinden…"
 text = "{name} wird verknüpft"
 
 [link_reaching]
-text = "Erreiche das andere Gerät"
+text = "Verbindung zum anderen Gerät"
 
 [link_sending]
-text = "Sende dein Konto"
+text = "Dein Konto wird gesendet"
 
 [link_working]
 text = "Läuft"
@@ -2441,7 +2441,7 @@ text = "1.  Öffne auf dem neuen Gerät Tinline und wähle {action}."
 text = "Mit einem Gerät verknüpfen"
 
 [link_scan_step2]
-text = "2.  Es zeigt einen QR-Code und einen kurzen Code. Sie funktionieren 5 Minuten lang, einmal."
+text = "2.  Es zeigt einen QR-Code und einen kurzen Code. Sie gelten 5 Minuten und funktionieren einmal."
 
 [link_scan_qr]
 text = "QR-Code scannen"
@@ -2588,7 +2588,7 @@ text = "Scanne ihren Code oder teile deinen, dann könnt ihr euch anrufen."
 text = "Zwei Geräte sind besser als eins"
 
 [onboarding_tip_devices_body]
-text = "Verknüpfe ein weiteres Gerät, wenn du kannst, damit du nie ausgesperrt bist, wenn du eins verlierst."
+text = "Verknüpfe ein weiteres Gerät, sobald es geht. Dann sperrt dich ein verlorenes Gerät nie aus."
 
 [onboarding_tip_groups]
 text = "Gruppen werden auf einem Computer gehostet"
@@ -2597,7 +2597,7 @@ text = "Gruppen werden auf einem Computer gehostet"
 text = "Um eine Gruppe zu starten, richte Tinline auf einem Computer ein, der an bleiben kann."
 
 [onboarding_add_contact]
-text = "Meinen ersten Kontakt hinzufügen"
+text = "Ersten Kontakt hinzufügen"
 
 [onboarding_name_title]
 text = "Wie sollen dich die Leute nennen?"
@@ -2669,16 +2669,16 @@ text = "Wenn du mal das Gerät wechselst, bringen diese 24 Wörter dein Konto mi
 text = "Dein Konto"
 
 [onboarding_saved_key]
-text = "Hab ich gesichert"
+text = "Ich hab ihn gesichert"
 
 [onboarding_saved_words]
-text = "Hab ich gesichert"
+text = "Ich hab sie gesichert"
 
 [onboarding_copy_again]
 text = "Nochmal kopieren"
 
 [onboarding_copy_key]
-text = "Meinen Schlüssel kopieren"
+text = "Schlüssel kopieren"
 
 [onboarding_copy_words]
 text = "Meine Wörter kopieren"
@@ -2735,7 +2735,7 @@ text = "Tinline öffnen"
 text = "Verknüpft mit {name}"
 
 [onboarding_linked_lead]
-text = "Deine Kontakte und Chats kommen von {name} und bleiben auf beiden im Gleichschritt."
+text = "Deine Kontakte und Chats kommen von {name} und bleiben auf beiden Geräten synchron."
 
 [onboarding_sync_contacts]
 text = "Kontakte"
@@ -2762,7 +2762,7 @@ text = "Tinline konnte den Schlüssel, der dein Konto öffnet, auf diesem Handy 
 text = "Auf diesem Handy wurde noch nichts abgelegt, also kann nichts verloren gehen. Versuch es nochmal oder schütze das Konto mit einer Passphrase statt mit dem eigenen Schlüssel des Handys."
 
 [onboarding_trying]
-text = "Versuche…"
+text = "Neuer Versuch…"
 
 [onboarding_try_again]
 text = "Nochmal versuchen"
@@ -2885,7 +2885,7 @@ text = "Kein Konto"
 text = "Diese Wiederherstellungswörter gehören zu einer anderen Identität"
 
 [shell_flow_account_changed]
-text = "Konto hat gewechselt"
+text = "Konto hat sich geändert"
 
 [shell_err_wrong_passphrase]
 text = "Das hat nicht gepasst. Prüf Schreibweise und Leerzeichen."
@@ -2915,7 +2915,7 @@ text = "Eingehend"
 text = "Ausgehend"
 
 [shell_call_what_unavailable]
-text = "Während nicht erreichbar"
+text = "Während deiner Pause"
 
 [shell_call_what_missed]
 text = "Verpasst"
@@ -2966,10 +2966,10 @@ text = "{by} hat dich zum Admin gemacht"
 text = "{by} hat {name} zum Admin gemacht"
 
 [shell_group_sys_admin_revoked_you]
-text = "{by} hat dir die Admin-Rolle entzogen"
+text = "{by} hat dich als Admin entfernt"
 
 [shell_group_sys_admin_revoked]
-text = "{by} hat {name} die Admin-Rolle entzogen"
+text = "{by} hat {name} als Admin entfernt"
 
 [shell_group_sys_host_added_you]
 text = "Ein Gerät von dir hostet jetzt die Gruppe"
@@ -3023,7 +3023,7 @@ text = "Weiteren Kontakt hinzufügen"
 text = "Füge jemanden hinzu, mit dem du reden möchtest, dann könnt ihr euch schreiben und anrufen."
 
 [shell_empty_add_first]
-text = "Meinen ersten Kontakt hinzufügen"
+text = "Ersten Kontakt hinzufügen"
 
 [shell_empty_say_hello]
 text = "Sag {name} Hallo, wann immer du magst."
@@ -3168,7 +3168,7 @@ text = "Eingehender Videoanruf"
 text = "Tinline kann das Mikrofon nicht nutzen"
 
 [shell_mic_body]
-text = "Ohne es hört man dich nicht. Tinline hört nur während Anrufen zu – nie im Hintergrund."
+text = "Ohne Mikrofon hört man dich nicht. Tinline hört nur während Anrufen zu – nie im Hintergrund."
 
 [shell_mic_open_settings]
 text = "Einstellungen öffnen"
@@ -3490,7 +3490,7 @@ text = "Das sieht nicht nach einem Tinline-Code aus. Kann die Person ihn nochmal
 text = "Kein QR-Code gefunden. Versuch ein schärferes Bild."
 
 [people_add_hint_many_qr]
-text = "Mehr als ein QR-Code. Schneide auf den zu, den du möchtest."
+text = "Mehr als ein QR-Code. Schneide das Bild auf den Code zu, den du möchtest."
 
 [people_add_hint_unreadable]
 text = "Dieses Bild ließ sich nicht lesen. Wähle ein anderes."
@@ -3499,7 +3499,7 @@ text = "Dieses Bild ließ sich nicht lesen. Wähle ein anderes."
 text = "Verbunden"
 
 [people_line_connecting]
-text = "Verbinde"
+text = "Verbindung wird aufgebaut"
 
 [people_line_not_connected]
 text = "Noch nicht verbunden"
@@ -3517,10 +3517,10 @@ text = "Deine Leitung zu {name} ist offen. Sag Hallo."
 text = "Anfrage gesendet. Deine Leitung öffnet sich, wenn {name} annimmt."
 
 [people_add_why_slow]
-text = "Versuche es weiter. Tinline muss dafür bei {name} offen und online sein."
+text = "Wird noch versucht. Tinline muss dafür bei {name} offen und online sein."
 
 [people_add_why_reaching]
-text = "Erreiche Tinline bei {name}…"
+text = "Verbindung zu Tinline bei {name}…"
 
 [people_add_why_timeout]
 text = "Tinline bei {name} war nicht erreichbar. Es muss offen und online sein, versuch es also nochmal, wenn {name} da ist."
@@ -3664,7 +3664,7 @@ text = "Einrichtung, Schritt {step} von {total}: {label}"
 text = "Dieses Bild hat {size} MB. Bilder dürfen bis zu {max} MB groß sein."
 
 [people_pic_bad_type]
-text = "Tinline kann PNG-, JPEG- oder WebP-Bilder verwenden. Diese Datei ist von einer anderen Art."
+text = "Tinline kann PNG-, JPEG- oder WebP-Bilder verwenden. Diese Datei hat ein anderes Format."
 
 [people_pic_unreadable]
 text = "Diese Datei ließ sich nicht als Bild lesen. Vielleicht ist sie beschädigt."
@@ -3748,7 +3748,7 @@ text = "4 Stunden"
 text = "Morgen früh"
 
 [people_busy_open]
-text = "Ohne Ende"
+text = "Bis auf Weiteres"
 
 [people_picture_help]
 text = "Wenn du dein Bild ersetzt oder entfernst, wird beim nächsten Abgleich darum gebeten, die vorher zwischengespeicherte Kopie auf deinen verknüpften Geräten und bei deinen Kontakten zu löschen. Screenshots, Backups und Kopien, die veränderte Apps behalten, kann die App nicht löschen."
@@ -3763,7 +3763,7 @@ text = "„Beschäftigt“ gibt es noch nicht. Deine Anrufeinstellungen bleiben 
 text = "Das ließ sich nicht speichern. Dein Profil ist unverändert, und was du getippt hast, ist noch da."
 
 [people_account_changed]
-text = "Das ausgewählte Konto hat gewechselt. Im neuen Konto wurde nichts gespeichert."
+text = "Das ausgewählte Konto hat sich geändert. Im neuen Konto wurde nichts gespeichert."
 
 [people_save_picture_failed]
 text = "Dein Bild ließ sich nicht speichern. Dein aktuelles Bild bleibt unverändert."
@@ -3871,7 +3871,7 @@ text = "Wähle eine Zeit, die noch nicht vorbei ist."
 text = "Du hast schon eine Angabe mit diesem Namen."
 
 [people_profile_info_empty]
-text = "Trag etwas ein, das gespeichert werden kann."
+text = "Trag etwas ein, um es zu speichern."
 
 [people_profile_something_else]
 text = "Etwas anderes"
@@ -3901,7 +3901,7 @@ text = "Diesen Link öffnen?"
 text = "Er öffnet sich in deinem Browser, außerhalb von Tinline. Tinline lädt ihn nicht für dich und kann nicht für den Inhalt einstehen."
 
 [people_profile_open_link]
-text = "Offener Link"
+text = "Link öffnen"
 
 [people_crop_title]
 text = "Bild ausrichten"
@@ -3934,7 +3934,7 @@ text = "{bytes} von {limit} Bytes"
 text = "„{label}“ aus deinem Profil entfernen?"
 
 [people_ui_remove_note]
-text = "Es verschwindet aus deinem Profil. Frühere Versionen können im synchronisierten Verlauf bleiben."
+text = "Die Angabe verschwindet aus deinem Profil. Frühere Versionen können im synchronisierten Verlauf bleiben."
 
 [people_ui_row_a11y]
 text = "{label}: {value}. Bearbeiten"
@@ -3970,19 +3970,19 @@ text = "Andere"
 text = "Für einen Anruf braucht Tinline die Mikrofon-Berechtigung"
 
 [call_status_reconnecting]
-text = "Verbinde neu…"
+text = "Neu verbinden…"
 
 [call_status_ringing]
 text = "Klingelt…"
 
 [call_status_calling]
-text = "Rufe an…"
+text = "Anrufen…"
 
 [call_privacy_active]
 text = "Ende-zu-Ende-verschlüsselt. Deine Stimme wird auf diesem Gerät verschlüsselt und erst auf dem Gerät von {name} entschlüsselt."
 
 [call_privacy_connecting]
-text = "Verbinde mit {name}. Sobald der Anruf verbunden ist, ist er Ende-zu-Ende-verschlüsselt."
+text = "Verbindung mit {name} wird aufgebaut. Sobald der Anruf verbunden ist, ist er Ende-zu-Ende-verschlüsselt."
 
 [call_mark_incoming]
 text = "Eingehender Anruf"
@@ -3991,13 +3991,13 @@ text = "Eingehender Anruf"
 text = "Ruft an"
 
 [call_mark_connecting]
-text = "Verbinde"
+text = "Verbindung wird aufgebaut"
 
 [call_mark_active]
 text = "Im Anruf"
 
 [call_mark_reconnecting]
-text = "Verbinde neu"
+text = "Neu verbinden"
 
 [call_unknown_name]
 text = "Unbekannt"
@@ -4018,7 +4018,7 @@ text = "Zurück. Der Anruf läuft weiter"
 text = "Nachricht. Der Anruf läuft weiter"
 
 [call_about_reconnecting]
-text = "Über diesen Anruf. Verbinde neu."
+text = "Über diesen Anruf. Neu verbinden."
 
 [call_about_signal_direct]
 text = "Über diesen Anruf. Signal: {word}, direkt."
@@ -4027,7 +4027,7 @@ text = "Über diesen Anruf. Signal: {word}, direkt."
 text = "Über diesen Anruf. Signal: {word}, weitergeleitet."
 
 [call_control_mute]
-text = "Stumm"
+text = "Mikro aus"
 
 [call_control_muted]
 text = "Stumm"
@@ -4045,7 +4045,7 @@ text = "Auflegen"
 text = "Kamera wechseln"
 
 [call_control_flip]
-text = "Drehen"
+text = "Wechseln"
 
 [call_control_audio_route]
 text = "Audio: {route}"
@@ -4075,7 +4075,7 @@ text = "Deine Stimme wird auf diesem Gerät verschlüsselt und erst auf dem Ger�
 text = "Deine Stimme und dein Bild werden auf diesem Gerät verschlüsselt und erst auf dem Gerät von {name} entschlüsselt."
 
 [call_about_headline_reconnecting]
-text = "Verbinde neu"
+text = "Neu verbinden"
 
 [call_about_headline_direct]
 text = "Signal: {word} · Direkt"
@@ -4096,7 +4096,7 @@ text = "Eure Geräte erreichen sich gerade nicht direkt, also gibt ein Relay den
 text = "Eure Geräte erreichen sich gerade nicht direkt, also gibt ein Relay den Anruf weiter. Es kann weder mithören noch zusehen."
 
 [call_about_line_weak]
-text = "Die Leitung ist schwach, die Stimme von {name} kann abbrechen."
+text = "Die Leitung ist schwach, daher kann die Stimme von {name} stocken."
 
 [call_about_stats]
 text = "{rtt} ms Umlaufzeit · {loss} % verloren"
@@ -4159,7 +4159,7 @@ text = "Mit mobilen Daten braucht HD mehr · tippe auf HD"
 text = "HD · {size}"
 
 [call_status_finding_host]
-text = "Suche einen Anruf-Host…"
+text = "Anruf-Host wird gesucht…"
 
 [call_status_connecting]
 text = "Verbinden…"
@@ -4223,7 +4223,7 @@ text = "Anruf-Host: {host}"
 text = "Verlassen"
 
 [call_host_fallback]
-text = "der Anruf-Host"
+text = "das Host-Gerät"
 
 [call_group_about_carries]
 text = "trägt diesen Anruf. Alle im Anruf verbinden sich damit; es gibt den Ton weiter und wählt aus, wer zu hören ist, wenn mehrere sprechen."
@@ -4310,7 +4310,7 @@ text = "{name} ruft während deines Anrufs an"
 text = "Video startet…"
 
 [call_route_sheet_title]
-text = "Anruf abspielen über"
+text = "Anruf hören über"
 
 [call_route_relayed_hint]
 text = "Weitergeleitet: In diesem Netz war keine direkte Leitung möglich, also gibt ein verschlüsseltes Relay den Anruf weiter. Es kann dich nicht hören."
@@ -4379,7 +4379,7 @@ text = "Nochmal versuchen"
 text = "Tinline kann das Mikrofon nicht nutzen"
 
 [call_mic_needed_body]
-text = "Ohne es hört man dich nicht. Tinline hört nur während Anrufen zu – nie im Hintergrund."
+text = "Ohne Mikrofon hört man dich nicht. Tinline hört nur während Anrufen zu – nie im Hintergrund."
 
 [call_open_settings]
 text = "Einstellungen öffnen"
