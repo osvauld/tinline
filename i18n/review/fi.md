@@ -161,3 +161,49 @@ the platform date formatter, or one string per relative day ("tomorrow at {time}
 
 - `python3 scripts/i18n_tm.py apply fi` and `python3 scripts/i18n_gen.py --check`: pass.
 - Scans: no "!", no formal "Te" register, no "virhe/epäonnistui/virheellinen".
+
+## Round 2 (top-up)
+
+Reviewer: `i18n-review2-fi` (agent, 2026-10-25). Not a native speaker's sign-off.
+Scope: the 273 entries whose Finnish was added or changed between `bb37c83f` and the
+top-up commits (`b088a827`, `ca50d560`), including `common_call` = "Soita".
+
+Counts: reviewed 273 · ok 264 · fixed 9 · plus 1 related entry outside the diff
+(`signup_send_it_to_anyone_youd`, broken by the new weekday names) · native 5.
+
+**Verdict: good.** The you/named/someone variants are consistent ("henkilön {name}",
+"erään jäsenen", "Joku …"), the `**bold**` spans, `[label](terms)` targets and all
+placeholders are intact, numerals take the partitive singular, numeral subjects take a
+singular verb ("{count} merkintää … poistaa"), and round-1 terms are kept
+(ylläpito-oikeudet, puheluisäntä, "ovat yhteydessä siihen", "hänet poistettavaksi").
+
+### Rulings on the translator's notes
+
+| Note | Ruling |
+|---|---|
+| Weekday names capitalised, "only at the start of desktop date templates" | **Not true.** `date::weekday_date` also fills `signup_send_it_to_anyone_youd` ("It works until {value}", `signup_view.rs` `code_until`), so Finnish showed "Se toimii Maanantai 19. lokak. asti" (capital mid-sentence and a nominative before "asti"). Weekday names are now lowercase (Finnish orthography, CLDR), and that sentence is rephrased so the date stands as a nominative predicate. Side effect: the desktop day chip reads "torstai 8. lokak." next to "Tänään"/"Eilen" (native check). |
+| `{flags_needed}` = 1 ungrammatical in `group_will_be_able_to` | Fixed by rephrasing to the adessive, which is grammatical for every number: "jäsen poistetaan {flags_needed} merkinnällä". |
+| iOS `shell_call_desc_other` uses `common_call` as a noun | Noted, not fixable here: with "Soita" the screen reader says "Ana, Soita, …". Needs the separate English key the lead is adding (it should be "Puhelu"). |
+
+### Changes made
+
+| Key | Before | After | Why |
+|---|---|---|---|
+| `android gcall_more` (one) | +{count} muuta | +{count} muu | "+1 muuta" is ungrammatical; numeral 1 takes the nominative. |
+| `desktop group_will_be_able_to` | … merkitä jäseniä ({flags_needed} merkintää poistaa jäsenen) … | … merkitä jäseniä (jäsen poistetaan {flags_needed} merkinnällä) … | Partitive form breaks at 1 (default 3); the adessive works for any number. |
+| `desktop date_weekday_mon` … `_sun` (7 keys) | Maanantai, Tiistai, … Sunnuntai | maanantai, tiistai, … sunnuntai | Weekdays are lowercase in Finnish; the name is also used mid-sentence (see ruling). |
+| `desktop signup_send_it_to_anyone_youd` (outside the diff) | … Se toimii {value} asti. | … Viimeinen voimassaolopäivä on {value}. | {value} is "maanantai 19. lokak."; "asti" needs an illative ("maanantaihin") the app cannot produce. |
+
+### Needs a native speaker
+
+| Key | Current | Concern / candidate |
+|---|---|---|
+| desktop day chip (`date_weekday_date`) | torstai 8. lokak. | Lowercase chip next to "Tänään"/"Eilen". Acceptable in Finnish UIs, but confirm; the alternative is per-use keys so a chip can be capitalised. |
+| `*_busy_until_mon` … `_sun`, `_tomorrow` | Varattu maanantaina {time} asti | Essive + "asti" is natural ("auki maanantaina klo 18 asti"); "maanantaihin {time} asti" is the alternative. No "klo", matching the existing "Varattu {time} asti". |
+| `groupsb_contacts_selected` | YHTEYSTIEDOT · {count} VALITTU | "3 valittu" is common UI shorthand; "VALITTUNA" is fuller. |
+| `group_will_be_able_to` | (jäsen poistetaan {flags_needed} merkinnällä) | Grammatical for all n, a little formal; confirm. |
+| `common_call` in iOS `shell_call_desc_other` | Soita | Verb used as a noun in a call-row screen-reader phrase; waiting on a separate English key. |
+
+### Checks run
+
+- `python3 scripts/i18n_tm.py apply fi` and `python3 scripts/i18n_gen.py --check`: pass.
