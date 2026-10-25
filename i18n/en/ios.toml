@@ -2089,10 +2089,6 @@ note = "Body of the notifications-off warning."
 text = "Available"
 note = "Availability status text under the profile card."
 
-[settings_status_busy_until]
-text = "Busy until {time}"
-note = "Availability status; {time} is a short time label such as 18:30."
-
 [settings_status_busy]
 text = "Busy"
 note = "Availability status when busy with no end time."
@@ -4987,14 +4983,6 @@ note = "Placeholder hint of the location field."
 text = "Website"
 note = "Label of a profile information field."
 
-[people_until_tomorrow]
-text = "tomorrow {time}"
-note = "Busy-until label for tomorrow. {time} is a clock time like 08:00."
-
-[people_until_day]
-text = "{day} {time}"
-note = "Busy-until label for a later day. {day} is the weekday name, {time} a clock time."
-
 [people_busy_30m]
 text = "30 minutes"
 note = "Choice of how long the user is busy."
@@ -5154,10 +5142,6 @@ note = "Availability: the user can be called."
 [people_profile_busy]
 text = "Busy"
 note = "Availability: the user is busy."
-
-[people_profile_busy_until]
-text = "Busy until {time}"
-note = "Availability line. {time} is when busy ends, like “18:00” or “tomorrow 08:00”."
 
 [people_profile_busy_open]
 text = "Busy until you change it"
@@ -6040,3 +6024,66 @@ note = "Group call details card, first sentence. The host’s name at the start 
 text = "**The call host** carries this call. Everyone in the call connects to it, and it passes the audio on and chooses who is heard when several people speak."
 note = "Group call details card, first sentence. The host’s name at the start is bold (markdown stars, keep them around the same words); the whole sentence is one string so the verb can agree with it. The host is not known yet."
 
+[people_busy_until_today]
+text = "Busy until {time}"
+note = "Availability line while busy until a time. {time} is a clock time formatted for the user’s region, such as 18:30. The time is later today."
+
+[people_busy_until_tomorrow]
+text = "Busy until tomorrow {time}"
+note = "Availability line while busy until a time. {time} is a clock time formatted for the user’s region, such as 18:30. The time is tomorrow."
+
+[people_busy_until_mon]
+text = "Busy until Monday {time}"
+note = "Availability line while busy until a time. {time} is a clock time formatted for the user’s region, such as 18:30. The time is on a Monday, a later day this week."
+
+[people_busy_until_tue]
+text = "Busy until Tuesday {time}"
+note = "Availability line while busy until a time. {time} is a clock time formatted for the user’s region, such as 18:30. The time is on a Tuesday, a later day this week."
+
+[people_busy_until_wed]
+text = "Busy until Wednesday {time}"
+note = "Availability line while busy until a time. {time} is a clock time formatted for the user’s region, such as 18:30. The time is on a Wednesday, a later day this week."
+
+[people_busy_until_thu]
+text = "Busy until Thursday {time}"
+note = "Availability line while busy until a time. {time} is a clock time formatted for the user’s region, such as 18:30. The time is on a Thursday, a later day this week."
+
+[people_busy_until_fri]
+text = "Busy until Friday {time}"
+note = "Availability line while busy until a time. {time} is a clock time formatted for the user’s region, such as 18:30. The time is on a Friday, a later day this week."
+
+[people_busy_until_sat]
+text = "Busy until Saturday {time}"
+note = "Availability line while busy until a time. {time} is a clock time formatted for the user’s region, such as 18:30. The time is on a Saturday, a later day this week."
+
+[people_busy_until_sun]
+text = "Busy until Sunday {time}"
+note = "Availability line while busy until a time. {time} is a clock time formatted for the user’s region, such as 18:30. The time is on a Sunday, a later day this week."
+
+[chat_when_today]
+text = "Today, {time}"
+note = "Date and time line in a message detail or the photo viewer title, for today. {time} is a 24-hour clock time such as 16:02."
+
+[chat_when_yesterday]
+text = "Yesterday, {time}"
+note = "Date and time line in a message detail or the photo viewer title, for yesterday. {time} is a 24-hour clock time such as 16:02."
+
+[chat_when_date]
+text = "{date}, {time}"
+note = "Date and time line in a message detail or the photo viewer title, for an older day. {date} is a day formatted for the user’s region, such as Oct 8, {time} a 24-hour clock time."
+
+[group_when_today]
+text = "Today, {time}"
+note = "Date and time line in a group message or a sent request, for today. {time} is a 24-hour clock time such as 16:02."
+
+[group_when_yesterday]
+text = "Yesterday, {time}"
+note = "Date and time line in a group message or a sent request, for yesterday. {time} is a 24-hour clock time such as 16:02."
+
+[group_when_date]
+text = "{date}, {time}"
+note = "Date and time line in a group message or a sent request, for an older day. {date} is a day formatted for the user’s region, such as Oct 8, {time} a 24-hour clock time."
+
+[people_when_date]
+text = "{date}, {time}"
+note = "Date and time of a block, e.g. “You blocked Ana · Oct 10, 13:50”. {date} is a day formatted for the user’s region, {time} a 24-hour clock time."

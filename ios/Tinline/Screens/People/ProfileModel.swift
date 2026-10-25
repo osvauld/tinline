@@ -132,17 +132,28 @@ enum PeopleProfileInfo {
         return s
     }
 
-    /// "18:00", "tomorrow 08:00", "Friday 08:00": a deadline as people say it. `atMs`, `nowMs` in milliseconds.
-    static func untilLabel(atMs: Int64, nowMs: Int64 = nowMillis(), calendar: Calendar = .current, locale: Locale = .current) -> String {
+    /// "Busy until 18:00", "Busy until tomorrow 08:00", "Busy until Friday 08:00": a deadline as people say it, one whole
+    /// sentence per relative day (the weekday is part of the sentence, not a slot). The clock time is formatted for the
+    /// region. `atMs`, `nowMs` in milliseconds.
+    static func busyUntil(atMs: Int64, nowMs: Int64 = nowMillis(), calendar: Calendar = .current, locale: Locale = .current) -> String {
         let a = Date(timeIntervalSince1970: Double(atMs) / 1000)
         let now = Date(timeIntervalSince1970: Double(nowMs) / 1000)
-        let c = calendar.dateComponents([.hour, .minute], from: a)
-        let hm = String(format: "%02d:%02d", c.hour ?? 0, c.minute ?? 0)
-        if calendar.isDate(a, inSameDayAs: now) { return hm }
-        if let tomorrow = calendar.date(byAdding: .day, value: 1, to: now), calendar.isDate(a, inSameDayAs: tomorrow) { return tr("people_until_tomorrow", hm) }
         let f = DateFormatter()
-        f.locale = locale; f.calendar = calendar; f.timeZone = calendar.timeZone; f.dateFormat = "EEEE"
-        return tr("people_until_day", f.string(from: a), hm)
+        f.locale = locale; f.calendar = calendar; f.timeZone = calendar.timeZone; f.dateStyle = .none; f.timeStyle = .short
+        let time = f.string(from: a)
+        if calendar.isDate(a, inSameDayAs: now) { return tr("people_busy_until_today", time) }
+        if let tomorrow = calendar.date(byAdding: .day, value: 1, to: now), calendar.isDate(a, inSameDayAs: tomorrow) { return tr("people_busy_until_tomorrow", time) }
+        let key: String
+        switch calendar.component(.weekday, from: a) {
+        case 1: key = "people_busy_until_sun"
+        case 2: key = "people_busy_until_mon"
+        case 3: key = "people_busy_until_tue"
+        case 4: key = "people_busy_until_wed"
+        case 5: key = "people_busy_until_thu"
+        case 6: key = "people_busy_until_fri"
+        default: key = "people_busy_until_sat"
+        }
+        return tr(key, time)
     }
 
     static func nowMillis() -> Int64 { Int64(Date().timeIntervalSince1970 * 1000) }

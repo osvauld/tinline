@@ -157,8 +157,6 @@ enum ShellWiring {
 
     static func selfView(people: PeopleModel) -> ProfileView? { people.profiles.selfDid.flatMap { people.profiles.views[$0] } }
 
-    /// "Busy until 18:30" (People/ProfileModel.swift).
-    static func busyUntilLabel(_ ms: Int64) -> String { PeopleProfileInfo.untilLabel(atMs: ms) }
 }
 
 /// The Calls area's `GroupCallUi` as the Groups area's `GroupCallLauncher` (android GroupsLive.kt reads `app.groupCallUi`).

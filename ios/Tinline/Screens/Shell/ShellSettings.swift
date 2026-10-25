@@ -75,7 +75,7 @@ struct ShellSettingsRoute: View {
         let name = me?.text("name").flatMap { $0.isEmpty ? nil : $0 } ?? fallback
         let status = me?.text("status").flatMap { $0.isEmpty ? nil : $0 }
         let av = effectiveAvailability(me?.fields, nowMs: nowMs)
-        let avText = av.available ? tr("settings_status_available") : av.untilMs.map { tr("settings_status_busy_until", ShellWiring.busyUntilLabel($0)) } ?? tr("settings_status_busy")
+        let avText = av.available ? tr("settings_status_available") : av.untilMs.map { PeopleProfileInfo.busyUntil(atMs: $0) } ?? tr("settings_status_busy")
         ShellPfPage(title: tr("settings_title"), onBack: onBack) {
             // Permission problems: said once here, with the details on the Notifications page.
             if let pr = shellPermProblems(missing).first {

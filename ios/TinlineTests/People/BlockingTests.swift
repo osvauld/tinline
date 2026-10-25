@@ -59,6 +59,6 @@ final class BlockingTests: XCTestCase {
     }
 
     func testBlockDateIsEnglishMonthDayTime() {
-        XCTAssertEqual(BlockCopy.date(1_791_640_200, zone: TimeZone(identifier: "UTC")!), "Oct 10, 13:50")
+        XCTAssertEqual(BlockCopy.date(1_791_640_200, zone: TimeZone(identifier: "UTC")!, locale: Locale(identifier: "en_US")), "Oct 10, 13:50")
     }
 }

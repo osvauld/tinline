@@ -244,7 +244,7 @@ struct PeopleAvailabilityCard: View {
     var body: some View {
         let av = effectiveAvailability(fields, nowMs: now)
         let active: String? = av.available ? nil : av.untilMs == nil ? "open" : choice
-        let line = av.available ? tr("people_profile_available") : av.untilMs.map { tr("people_profile_busy_until", PeopleProfileInfo.untilLabel(atMs: $0)) } ?? tr("people_profile_busy_open")
+        let line = av.available ? tr("people_profile_available") : av.untilMs.map { PeopleProfileInfo.busyUntil(atMs: $0) } ?? tr("people_profile_busy_open")
         VStack(alignment: .leading, spacing: 10) {
             PeopleSegmented(options: [tr("people_profile_available"), tr("people_profile_busy")], selected: av.available ? 0 : 1, label: tr("people_profile_availability")) { i in
                 if i == 0 { apply(true, nil) } else if av.available { setBusy(choice) }

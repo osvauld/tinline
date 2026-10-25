@@ -90,12 +90,14 @@ enum BlockCopy {
     /// Why the call button is closed (`ComposerState` mapped to the shared words).
     static func cantCall(name: String, state: ComposerState) -> String { cantCallText(name: name, composer: state) }
 
-    static func date(_ secs: Int64, zone: TimeZone = .current) -> String {
-        let f = DateFormatter()
-        f.locale = Locale(identifier: "en_US_POSIX")
-        f.timeZone = zone
-        f.dateFormat = "MMM d, HH:mm"
-        return f.string(from: Date(timeIntervalSince1970: TimeInterval(secs)))
+    static func date(_ secs: Int64, zone: TimeZone = .current, locale: Locale = .current) -> String {
+        let at = Date(timeIntervalSince1970: TimeInterval(secs))
+        let day = DateFormatter()
+        day.locale = locale; day.timeZone = zone
+        day.setLocalizedDateFormatFromTemplate("MMMd")
+        let clock = DateFormatter()
+        clock.locale = Locale(identifier: "en_US_POSIX"); clock.timeZone = zone; clock.dateFormat = "HH:mm"
+        return tr("people_when_date", day.string(from: at), clock.string(from: at))
     }
 }
 
