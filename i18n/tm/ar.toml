@@ -12873,7 +12873,7 @@ en = "Passphrase added. You will need it next time Tinline starts."
 where = [
   "desktop app_passphrase_added_you_will: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = "تمت إضافة عبارة المرور. ستحتاج إليها في المرة القادمة التي يبدأ فيها Tinline."
+text = "تمت إضافة عبارة المرور. ستُطلب منك في المرة القادمة التي يبدأ فيها Tinline."
 
 [t_27499f4548]
 en = "Pick one that is different from the current one."
@@ -13391,749 +13391,749 @@ en = "Encrypted on this computer. Up to 2 GB each. {name} gets it the next time 
 where = [
   "desktop chat_encrypted_on_this_computer: Desktop, chats (in chat_view.rs, conversation_view). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "مشفّر على هذا الحاسوب. حتى غيغابايتين لكل ملف. يصل إلى {name} في المرة القادمة التي يتصل فيها الطرفان."
 
 [t_2ac5e80587]
 en = "Esc to cancel"
 where = [
   "desktop chat_esc_to_cancel: Desktop, chats (in voice.rs, record_bar).",
 ]
-text = ""
+text = "Esc للإلغاء"
 
 [t_1cee9b36cc]
 en = "Find in this chat (Ctrl+F)"
 where = [
   "desktop chat_find_in_this_chat_ctrl: Desktop, chats (in chat_view.rs, conversation_view).",
 ]
-text = ""
+text = "البحث في هذه الدردشة (Ctrl+F)"
 
 [t_817beb6d7c]
 en = "{value} · {name} gets it when you’re both online"
 where = [
   "desktop chat_gets_it_when_youre: Desktop, chats (in chat_view.rs, attachment_view). {value} is a value filled in by the app. {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{value} · يصل إلى {name} عند اتصال الطرفين"
 
 [t_35bf97d035]
 en = "{name} is offline. Delete for everyone reaches their devices when you’re both online."
 where = [
   "desktop chat_is_offline_delete_for: Desktop, chats (in chat_view.rs, delete_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} غير متصل الآن. يصل «الحذف لدى الجميع» إلى أجهزة {name} عند اتصال الطرفين."
 
 [t_d5890c1bc8]
 en = "It was never delivered, so it’s only on this computer."
 where = [
   "desktop chat_it_was_never_delivered: Desktop, chats (in chat_view.rs, delete_overlay).",
 ]
-text = ""
+text = "لم تُسلَّم أبدًا، لذا فهي على هذا الحاسوب فقط."
 
 [t_f60301b05b]
 en = "Load earlier messages"
 where = [
   "desktop chat_load_earlier_messages: Desktop, chats (in chat_view.rs, history_note).",
 ]
-text = ""
+text = "تحميل الرسائل السابقة"
 
 [t_c59d44c923]
 en = "Message deleted"
 where = [
   "desktop chat_message_deleted: Desktop, chats (in chat.rs, preview_of).",
 ]
-text = ""
+text = "رسالة محذوفة"
 
 [t_ae1837c44b]
 en = "Messages go straight to their devices."
 where = [
   "desktop chat_messages_go_straight_to: Desktop, chats (in chat_view.rs, message_list).",
 ]
-text = ""
+text = "تصل الرسائل مباشرة إلى أجهزتهم."
 
 [t_64c071fa58]
 en = "{value} · not downloaded"
 where = [
   "desktop chat_not_downloaded: Desktop, chats (in chat_view.rs, attachment_view). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "{value} · لم يُنزَّل"
 
 [t_0f05bc7174]
 en = "{value} of {len}"
 where = [
   "desktop chat_of: Desktop, chats (in chat_view.rs, viewer_overlay). {value} is a value filled in by the app. {len} is a value filled in by the app.",
 ]
-text = ""
+text = "{value} من {len}"
 
 [t_15c261a695]
 en = "Older messages are on {name}’s computer. This computer keeps them from when you started using it. Earlier days load when you’re both online."
 where = [
   "desktop chat_older_messages_are_on: Desktop, chats (in chat_view.rs, history_note). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "الرسائل الأقدم على حاسوب {name}. يحتفظ هذا الحاسوب بالرسائل منذ بدء استخدامك له. تُحمَّل الأيام السابقة عند اتصال الطرفين."
 
 [t_250a61953d]
 en = "On {name}’s device"
 where = [
   "desktop chat_on_s_device: Desktop, chats (in chat_view.rs, receipt_lines). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "على جهاز {name}"
 
 [t_bc7ea5e146]
 en = "Only files can be sent, not folders."
 where = [
   "desktop chat_only_files_can_be: Desktop, chats (in chat.rs, update_chat_inner).",
 ]
-text = ""
+text = "يمكن إرسال الملفات فقط، لا المجلدات."
 
 [t_3d18972588]
 en = "Only on this computer so far"
 where = [
   "desktop chat_only_on_this_computer: Desktop, chats (in chat_view.rs, receipt_lines).",
 ]
-text = ""
+text = "على هذا الحاسوب فقط حتى الآن"
 
 [t_1265bdede4]
 en = "Open in default app"
 where = [
   "desktop chat_open_in_default_app: Desktop, chats (in chat_view.rs, viewer_overlay).",
 ]
-text = ""
+text = "الفتح في التطبيق الافتراضي"
 
 [t_1041f84698]
 en = "{value} · paused — waiting for {name} to come online"
 where = [
   "desktop chat_paused_waiting_for_to: Desktop, chats (in chat_view.rs, attachment_view). {value} is a value filled in by the app. {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{value} · متوقف مؤقتًا — بانتظار اتصال {name}"
 
 [t_ed90f518b6]
 en = "Read on {name}’s device"
 where = [
   "desktop chat_read_on_s_device: Desktop, chats (in chat_view.rs, receipt_lines). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "تمت القراءة على جهاز {name}"
 
 [t_f100c495e7]
 en = "Replying to {value}"
 where = [
   "desktop chat_replying_to: Desktop, chats (in chat_view.rs, composer). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "رد على {value}"
 
 [t_35f5a8c697]
 en = "Saved to {p}"
 where = [
   "desktop chat_saved_to: Desktop, chats (in chat.rs, update_chat_inner). {p} is a value filled in by the app.",
 ]
-text = ""
+text = "تم الحفظ في {p}"
 
 [t_c29e950a10]
 en = "Say hello to {name}"
 where = [
   "desktop chat_say_hello_to: Desktop, chats (in chat_view.rs, message_list). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "إلقاء التحية على {name}"
 
 [t_8870224962]
 en = "Send a file"
 where = [
   "desktop chat_send_a_file: Desktop, chats (in chat.rs, update_chat_inner).",
 ]
-text = ""
+text = "إرسال ملف"
 
 [t_a53d8bd1db]
 en = "Sends when {name} is online"
 where = [
   "desktop chat_sends_when_is_online: Desktop, chats (in chat_view.rs, image_view). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "يُرسل عند اتصال {name}"
 
 [t_647f422a10]
 en = "Signed by {name} · {value}"
 where = [
   "desktop chat_signed_by: Desktop, chats (in chat_view.rs, block_note). {name} is a person's name (usually the first word of their chosen name). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "بتوقيع {name} · {value}"
 
 [t_8fe87520fd]
 en = "Signed by {value}"
 where = [
   "desktop chat_signed_by_2: Desktop, chats (in chat_view.rs, receipt_lines). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "بتوقيع {value}"
 
 [t_01bc208f24]
 en = "Tap to retry"
 where = [
   "desktop chat_tap_to_retry: Desktop, chats (in chat_view.rs, attachment_view).",
 ]
-text = ""
+text = "النقر لإعادة المحاولة"
 
 [t_75eed69db2]
 en = "That is everything {name} has."
 where = [
   "desktop chat_that_is_everything_has: Desktop, chats (in chat_view.rs, history_note). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "هذا كل ما لدى {name}."
 
 [t_3aeb1ed651]
 en = "Too short — hold on a little longer."
 where = [
   "desktop chat_too_short_hold_on: Desktop, chats (in chat.rs, update_chat_inner).",
 ]
-text = ""
+text = "قصيرة جدًا — يُستحسن الضغط مدة أطول قليلًا."
 
 [t_c21fe6504f]
 en = "Waiting for {name}’s device to confirm"
 where = [
   "desktop chat_waiting_for_s_device: Desktop, chats (in chat_view.rs, receipt_lines). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "بانتظار تأكيد جهاز {name}"
 
 [t_4928d34862]
 en = "You blocked {name}{when}"
 where = [
   "desktop chat_you_blocked: Desktop, chats (in chat_view.rs, block_note). {name} is a person's name (usually the first word of their chosen name). {when} is a value filled in by the app.",
 ]
-text = ""
+text = "حظرت {name}{when}"
 
 [t_4922fd0b5c]
 en = "Added {value}"
 where = [
   "desktop contact_added: Desktop, contact detail (in view.rs, detail_view). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "تمت الإضافة {value}"
 
 [t_81af947f5e]
 en = "Calls themself “{name}” · {added}"
 where = [
   "desktop contact_calls_themself: Desktop, contact detail (in view.rs, detail_view). {name} is a person's name (usually the first word of their chosen name). {added} is a value filled in by the app.",
 ]
-text = ""
+text = "الاسم المختار: «{name}» · {added}"
 
 [t_c40c3cc5e8]
 en = "{name} can ring this computer and your other devices."
 where = [
   "desktop contact_can_ring_this_computer: Desktop, contact detail (in view.rs, detail_view). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "مكالمات {name} ترن على هذا الحاسوب وأجهزتك الأخرى."
 
 [t_42003932c9]
 en = "History stays on this computer only."
 where = [
   "desktop contact_history_stays_on_this: Desktop, contact detail (in view.rs, detail_view).",
 ]
-text = ""
+text = "يبقى السجل على هذا الحاسوب فقط."
 
 [t_8efe069875]
 en = "Home"
 where = [
   "desktop contact_home: Desktop, contact detail (in view.rs, detail_view).",
 ]
-text = ""
+text = "الرئيسية"
 
 [t_573ad42e5f]
 en = "Length"
 where = [
   "desktop contact_length: Desktop, contact detail (in view.rs, detail_view).",
 ]
-text = ""
+text = "المدة"
 
 [t_9a368b022b]
 en = "Name on this computer"
 where = [
   "desktop contact_name_on_this_computer: Desktop, contact detail (in view.rs, detail_view).",
 ]
-text = ""
+text = "الاسم على هذا الحاسوب"
 
 [t_4901b5c982]
 en = "No calls yet."
 where = [
   "desktop contact_no_calls_yet: Desktop, contact detail (in view.rs, detail_view).",
 ]
-text = ""
+text = "لا مكالمات بعد."
 
 [t_70f49db840]
 en = "Only you see this. {name} still calls themself “{name2}”."
 where = [
   "desktop contact_only_you_see_this: Desktop, contact detail (in view.rs, detail_view). {name} is a person's name (usually the first word of their chosen name). {name2} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "هذا الاسم يظهر لك وحدك. الاسم المختار من {name} يبقى «{name2}»."
 
 [t_4c6766fea8]
 en = "Path"
 where = [
   "desktop contact_path: Desktop, contact detail (in view.rs, detail_view).",
 ]
-text = ""
+text = "المسار"
 
 [t_48f2045566]
 en = "When"
 where = [
   "desktop contact_when: Desktop, contact detail (in view.rs, detail_view).",
 ]
-text = ""
+text = "الوقت"
 
 [t_b4ee944a9e]
 en = "Anyone who sees these words can become you. Write them down and keep them somewhere safe."
 where = [
   "desktop gate_anyone_who_sees_these: Desktop, sign-in and gate screens (in view.rs, phrase_view).",
 ]
-text = ""
+text = "أي شخص يرى هذه الكلمات يمكنه انتحال هويتك. يُستحسن كتابتها وحفظها في مكان آمن."
 
 [t_83fb73677c]
 en = "I have saved it"
 where = [
   "desktop gate_i_have_saved_it: Desktop, sign-in and gate screens (in view.rs, phrase_view).",
 ]
-text = ""
+text = "حفظتها"
 
 [t_563bcc7b29]
 en = "Or"
 where = [
   "desktop gate_or: Desktop, sign-in and gate screens (in view.rs, key_failed_view).",
 ]
-text = ""
+text = "أو"
 
 [t_50f37c1422]
 en = "Other accounts"
 where = [
   "desktop gate_other_accounts: Desktop, sign-in and gate screens (in view.rs, other_accounts).",
 ]
-text = ""
+text = "حسابات أخرى"
 
 [t_9f0a2108c4]
 en = "Retry"
 where = [
   "desktop gate_retry: Desktop, sign-in and gate screens (in view.rs, key_failed_view).",
 ]
-text = ""
+text = "إعادة المحاولة"
 
 [t_25991ff41c]
 en = "The system keyring did not accept the key."
 where = [
   "desktop gate_the_system_keyring_did: Desktop, sign-in and gate screens (in view.rs, key_failed_view).",
 ]
-text = ""
+text = "لم تقبل سلسلة مفاتيح النظام المفتاح."
 
 [t_28118ea860]
 en = "These 24 words are the only way to restore your identity on another device."
 where = [
   "desktop gate_these_24_words_are: Desktop, sign-in and gate screens (in view.rs, phrase_view).",
 ]
-text = ""
+text = "هذه الكلمات الأربع والعشرون هي الطريقة الوحيدة لاستعادة هويتك على جهاز آخر."
 
 [t_4999341dad]
 en = "This computer no longer has the key that opens it, and its keyring entry is missing. Once you restore, your calls come through again."
 where = [
   "desktop gate_this_computer_no_longer: Desktop, sign-in and gate screens (in view.rs, key_lost_view).",
 ]
-text = ""
+text = "لم يعد لدى هذا الحاسوب المفتاح الذي يفتح الحساب، وإدخاله في سلسلة المفاتيح مفقود. بعد الاستعادة، تصلك مكالماتك من جديد."
 
 [t_46f9d90635]
 en = "Tinline couldn’t store the key that opens your account on this computer, so your account has not been saved yet. Nothing is lost."
 where = [
   "desktop gate_tinline_couldnt_store_the: Desktop, sign-in and gate screens (in view.rs, key_failed_view).",
 ]
-text = ""
+text = "تعذّر على Tinline تخزين المفتاح الذي يفتح حسابك على هذا الحاسوب، لذا لم يُحفظ حسابك بعد. لم يضِع شيء."
 
 [t_12ec401f93]
 en = "Trying..."
 where = [
   "desktop gate_trying: Desktop, sign-in and gate screens (in view.rs, key_failed_view).",
 ]
-text = ""
+text = "جارٍ المحاولة…"
 
 [t_ac7e2468f2]
 en = "Your recovery phrase"
 where = [
   "desktop gate_your_recovery_phrase: Desktop, sign-in and gate screens (in view.rs, phrase_view).",
 ]
-text = ""
+text = "كلمات الاسترداد الخاصة بك"
 
 [t_7a5c764b79]
 en = "Battery is low or the computer is hot. Hosting is limited: only one person is heard at a time, and no one new can join."
 where = [
   "desktop gcall_battery_is_low_or: Desktop, group calls (in gcall.rs, gcall_event).",
 ]
-text = ""
+text = "البطارية منخفضة أو الحاسوب ساخن. الاستضافة محدودة: يُسمع شخص واحد فقط في كل مرة، ولا يمكن لأحد جديد الانضمام."
 
 [t_c1b5462e8b]
 en = "{value} is calling the group"
 where = [
   "desktop gcall_is_calling_the_group: Desktop, group calls (in gcall.rs, gcall_event). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "مكالمة جماعية من {value}"
 
 [t_e31bac2f34]
 en = "is carrying"
 where = [
   "desktop gcall_is_carrying: Desktop, group calls (in gcall_view.rs, gcall_about).",
 ]
-text = ""
+text = "ينقل"
 
 [t_4d1b70ca13]
 en = "{count} people in the call"
 where = [
   "desktop gcall_people_in_the_call: Desktop, group calls (in gcall_view.rs, gcall_view). {count} is a number.",
 ]
-text = ""
+text = "عدد الأشخاص في المكالمة: {count}"
 
 [t_06c8053807]
 en = "{value}’s device"
 where = [
   "desktop gcall_s_device: Desktop, group calls (in gcall_view.rs, gcall_host_label). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "جهاز {value}"
 
 [t_5882776009]
 en = "Started by {value}"
 where = [
   "desktop gcall_started_by: Desktop, group calls (in gcall_view.rs, gcall_banner). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "بمبادرة من {value}"
 
 [t_d3c223d024]
 en = "The call host"
 where = [
   "desktop gcall_the_call_host: Desktop, group calls (in gcall_view.rs, gcall_about).",
 ]
-text = ""
+text = "مضيف المكالمة"
 
 [t_dc989edf18]
 en = " {value} this call. Everyone in the call connects to it, and it passes the audio on and chooses who is heard when several people speak."
 where = [
   "desktop gcall_this_call_everyone_in: Desktop, group calls (in gcall_view.rs, gcall_about). {value} is a value filled in by the app.",
 ]
-text = ""
+text = " {value} هذه المكالمة. يتصل به كل من في المكالمة، وهو يمرّر الصوت ويختار من يُسمع عندما يتحدث عدة أشخاص."
 
 [t_9982104078]
 en = "this computer"
 where = [
   "desktop gcall_this_computer: Desktop, group calls (in gcall_view.rs, gcall_host_label).",
 ]
-text = ""
+text = "هذا الحاسوب"
 
 [t_fdc94cdb2b]
 en = "A call host carries the call. Everyone in a call connects to it, and it passes the audio on, so it can hear the call. That is separate from chat hosting: a chat host is not a call host unless you also appoint it as one. Call hosts are members you trust, and each one chooses to accept.{value}"
 where = [
   "desktop group_a_call_host_carries: Desktop, groups (in group_live_view.rs, group_info_page). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "مضيف المكالمات ينقل المكالمة. يتصل به كل من في المكالمة، وهو يمرّر الصوت، لذا يمكنه سماع المكالمة. هذا منفصل عن استضافة الدردشة: مضيف الدردشة ليس مضيف مكالمات إلا إذا عيّنته لذلك أيضًا. مضيفو المكالمات أعضاء موضع ثقتك، وكل واحد منهم يختار القبول.{value}"
 
 [t_c72585d311]
 en = "A call host is a member’s computer or phone that carries the call. An admin can appoint one in Group info."
 where = [
   "desktop group_a_call_host_is: Desktop, groups (in group_live_view.rs, live_pane).",
 ]
-text = ""
+text = "مضيف المكالمات حاسوب أو هاتف لأحد الأعضاء ينقل المكالمة. يمكن لأحد المشرفين تعيين واحد من معلومات المجموعة."
 
 [t_d1b8093efb]
 en = "A call host is a member’s computer or phone that carries the call. You can host calls on this computer, or appoint a member in Group info."
 where = [
   "desktop group_a_call_host_is_a: Desktop, groups (in group_live_view.rs, live_pane).",
 ]
-text = ""
+text = "مضيف المكالمات حاسوب أو هاتف لأحد الأعضاء ينقل المكالمة. يمكنك استضافة المكالمات على هذا الحاسوب، أو تعيين عضو من معلومات المجموعة."
 
 [t_b9b1d3dfa0]
 en = "A call needs a call host"
 where = [
   "desktop group_a_call_needs_a: Desktop, groups (in group_live_view.rs, live_pane).",
 ]
-text = ""
+text = "المكالمة تحتاج إلى مضيف مكالمات"
 
 [t_9b6f166f1f]
 en = "A flag is signed by you and can’t be taken back. {name} can see who flagged them and when. Messages {name} wrote before the removal still show, marked."
 where = [
   "desktop group_a_flag_is_signed: Desktop, groups (in group_live_view.rs, live_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "الإبلاغ موقّع باسمك ولا يمكن سحبه. يظهر لدى {name} من أبلغ ومتى. تبقى رسائل {name} المكتوبة قبل الإزالة ظاهرة، مع علامة."
 
 [t_ae23a1918a]
 en = "A host keeps a full copy of a group and passes messages on while members’ phones sleep. Members connect to hosts, not to each other; only hosts learn members’ group addresses. Tinline keeps hosting while the window is closed (it stays in the tray)."
 where = [
   "desktop group_a_host_keeps_a: Desktop, groups (in group_live_view.rs, live_hosting_page).",
 ]
-text = ""
+text = "يحتفظ المضيف بنسخة كاملة من المجموعة وينقل الرسائل بينما هواتف الأعضاء في وضع السكون. يتصل الأعضاء بالمضيفين لا ببعضهم؛ والمضيفون وحدهم يعرفون عناوين الأعضاء في المجموعة. يواصل Tinline الاستضافة بعد إغلاق النافذة (يبقى في علبة النظام)."
 
 [t_0803302453]
 en = "A host keeps a full copy of the group, passes messages on while members’ phones sleep and learns members’ group addresses. It needs to stay running. Hosting doesn’t make you an admin; you can stop any time."
 where = [
   "desktop group_a_host_keeps_a_full: Desktop, groups (in group_live_view.rs, live_pane).",
 ]
-text = ""
+text = "يحتفظ المضيف بنسخة كاملة من المجموعة، وينقل الرسائل بينما هواتف الأعضاء في وضع السكون، ويعرف عناوين الأعضاء في المجموعة. يحتاج إلى البقاء قيد التشغيل. الاستضافة لا تمنحك صلاحيات الإشراف؛ يمكنك التوقف في أي وقت."
 
 [t_6adb8d332d]
 en = "A host lists up to {value} people at a time, so there may be more."
 where = [
   "desktop group_a_host_lists_up: Desktop, groups (in group_live_view.rs, live_overlay). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "يعرض المضيف حتى {value} شخص في المرة الواحدة، لذا قد يكون هناك المزيد."
 
 [t_388413e2e0]
 en = "A host stays on and passes posts on while others are offline"
 where = [
   "desktop group_a_host_stays_on: Desktop, groups (in group_live_view.rs, group_info_page).",
 ]
-text = ""
+text = "يبقى المضيف قيد التشغيل وينقل المنشورات حين يكون الآخرون غير متصلين"
 
 [t_b1f3953010]
 en = "A link for your own other device"
 where = [
   "desktop group_a_link_for_your: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "رابط لجهازك الآخر"
 
 [t_6cbccca6c7]
 en = "a message"
 where = [
   "desktop group_a_message: Desktop, groups (in group_live_view.rs, live_composer).",
 ]
-text = ""
+text = "رسالة"
 
 [t_e9b63fab04]
 en = "A request waits at the group’s hosts for up to 7 days."
 where = [
   "desktop group_a_request_waits_at: Desktop, groups (in group_live_view.rs, live_requests).",
 ]
-text = ""
+text = "ينتظر الطلب لدى مضيفي المجموعة حتى سبعة أيام."
 
 [t_dd48d57724]
 en = "Add to {gname}"
 where = [
   "desktop group_add_to: Desktop, groups (in group_live_view.rs, live_overlay). {gname} is a value filled in by the app.",
 ]
-text = ""
+text = "إضافة إلى {gname}"
 
 [t_01ef28b1f8]
 en = "Admins of a group can make an invite. It works for 7 days."
 where = [
   "desktop group_admins_of_a_group: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "يمكن لمشرفي المجموعة إنشاء دعوة. تعمل لمدة سبعة أيام."
 
 [t_29bf7a72e5]
 en = "Also confirmed: {value}"
 where = [
   "desktop group_also_confirmed: Desktop, groups (in group_live_view.rs, group_receipt_lines). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "أكّد أيضًا: {value}"
 
 [t_9ad14e4ac3]
 en = " · also hosts calls"
 where = [
   "desktop group_also_hosts_calls: Desktop, groups (in group_live_view.rs, group_info_page).",
 ]
-text = ""
+text = " · يستضيف المكالمات أيضًا"
 
 [t_d8f81cb78d]
 en = "An admin asked this computer to carry the group’s calls"
 where = [
   "desktop group_an_admin_asked_this: Desktop, groups (in group_live_view.rs, group_info_page).",
 ]
-text = ""
+text = "طلب أحد المشرفين من هذا الحاسوب نقل مكالمات المجموعة"
 
 [t_8f8adf5a2c]
 en = "{value} and {last}"
 where = [
   "desktop group_and: Desktop, groups (in groups_view.rs, and_list). {value} is a value filled in by the app. {last} is a value filled in by the app.",
 ]
-text = ""
+text = "{value} و {last}"
 
 [t_daab639a96]
 en = "Anyone with this link or QR can join for 7 days. Share it over an app you trust; you see who joined and can flag them out. To invite your contacts directly, use Add members."
 where = [
   "desktop group_anyone_with_this_link: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "يمكن لأي شخص لديه هذا الرابط أو رمز QR الانضمام لمدة سبعة أيام. يمكنك مشاركته عبر تطبيق موضع ثقتك؛ ستظهر لك أسماء من ينضم ويمكنك الإبلاغ عنهم لإزالتهم. لدعوة جهات اتصالك مباشرة، يمكنك استخدام «إضافة أعضاء»."
 
 [t_4732b3a387]
 en = "Appointed. The device hosts once it agrees (Host from this device)."
 where = [
   "desktop group_appointed_the_device_hosts: Desktop, groups (in group_live.rs, run).",
 ]
-text = ""
+text = "تم التعيين. يبدأ الجهاز الاستضافة بعد موافقته («الاستضافة من هذا الجهاز»)."
 
 [t_856dff95d1]
 en = "As a host this computer will:"
 where = [
   "desktop group_as_a_host_this: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "بصفته مضيفًا، سيتولى هذا الحاسوب:"
 
 [t_fa48b44c60]
 en = "{value} asked this computer to host {name}"
 where = [
   "desktop group_asked_this_computer_to: Desktop, groups (in group_live_view.rs, live_pane). {value} is a value filled in by the app. {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "طلب {value} من هذا الحاسوب استضافة {name}"
 
 [t_a367083c08]
 en = "Asks {name} to carry group calls on that device; they have to accept"
 where = [
   "desktop group_asks_to_carry_group: Desktop, groups (in group_live_view.rs, live_menu). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "يطلب من {name} نقل المكالمات الجماعية على ذلك الجهاز؛ يلزم قبول الطلب"
 
 [t_858da13864]
 en = "Block {name}"
 where = [
   "desktop group_block: Desktop, groups (in group_live_view.rs, live_requests). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "حظر {name}"
 
 [t_9c0c00e458]
 en = " · Blocked"
 where = [
   "desktop group_blocked: Desktop, groups (in group_live_view.rs, group_info_page).",
 ]
-text = ""
+text = " · محظور"
 
 [t_c78935c805]
 en = "Blocked {value}"
 where = [
   "desktop group_blocked_2: Desktop, groups (in groups_view.rs, privacy_page). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "تاريخ الحظر: {value}"
 
 [t_e07ade3895]
 en = "Calls go through the other call hosts"
 where = [
   "desktop group_calls_go_through_the: Desktop, groups (in group_live_view.rs, live_menu).",
 ]
-text = ""
+text = "تمر المكالمات عبر مضيفي المكالمات الآخرين"
 
 [t_a88484de1a]
 en = "Can invite, flag members and appoint hosts"
 where = [
   "desktop group_can_invite_flag_members: Desktop, groups (in group_live_view.rs, live_menu).",
 ]
-text = ""
+text = "صلاحية الدعوة والإبلاغ عن الأعضاء وتعيين المضيفين"
 
 [t_30fa20a31a]
 en = "Carries the group’s calls; a computer that stays on is best"
 where = [
   "desktop group_carries_the_groups_calls: Desktop, groups (in group_live_view.rs, group_info_page).",
 ]
-text = ""
+text = "ينقل مكالمات المجموعة؛ الحاسوب الذي يبقى قيد التشغيل هو الأفضل"
 
 [t_3c827bcc06]
 en = "Click anywhere to go back"
 where = [
   "desktop group_click_anywhere_to_go: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "النقر في أي مكان للرجوع"
 
 [t_5635ab6b9a]
 en = "Click the code to show it full size."
 where = [
   "desktop group_click_the_code_to: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "يمكنك النقر على الرمز لعرضه بالحجم الكامل."
 
 [t_9cc7a8bfcc]
 en = "Delivered {delivered}/{eligible}"
 where = [
   "desktop group_delivered: Desktop, groups (in group_live_view.rs, group_receipt_lines). {delivered} is a value filled in by the app. {eligible} is a value filled in by the app.",
 ]
-text = ""
+text = "تم التسليم {delivered}/{eligible}"
 
 [t_82c86fb81b]
 en = "Each flag is signed by the admin who made it and was checked on this computer. Nobody else could have added them."
 where = [
   "desktop group_each_flag_is_signed: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "كل إبلاغ موقّع من المشرف الذي قدّمه، وقد تم التحقق منه على هذا الحاسوب. لا يمكن لأحد غيره إضافته."
 
 [t_e9ce51f8cc]
 en = "Each person gets the invitation in your 1:1 chat and joins when they accept. It is valid for 7 days."
 where = [
   "desktop group_each_person_gets_the: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "يتلقى كل شخص الدعوة في دردشتكما الثنائية، وينضم عند قبولها. الدعوة صالحة لمدة سبعة أيام."
 
 [t_c2fbe1e11e]
 en = " · {value} flag"
 where = [
   "desktop group_flag: Desktop, groups (in group_live_view.rs, live_overlay). {value} is a value filled in by the app.",
 ]
-text = ""
+text = " · إبلاغات: {value}"
 
 [t_0dc79d4817]
 en = "Flag to remove"
 where = [
   "desktop group_flag_to_remove: Desktop, groups (in group_live_view.rs, live_menu).",
 ]
-text = ""
+text = "إبلاغ للإزالة"
 
 [t_d2cd7397c2]
 en = "Flagged {value}"
 where = [
   "desktop group_flagged: Desktop, groups (in group_live_view.rs, live_overlay). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "تاريخ الإبلاغ: {value}"
 
 [t_5493d416d9]
 en = "Flagged by {value}. You can still read what you received before; nothing new will arrive."
 where = [
   "desktop group_flagged_by_you_can: Desktop, groups (in group_live_view.rs, live_removal_card). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "أبلغ عنك: {value}. لا يزال بإمكانك قراءة ما وصلك من قبل؛ لن يصل شيء جديد."
 
 [t_4b1364beef]
 en = "{flags_needed} flags remove {name} from the group"
 where = [
   "desktop group_flags_remove_from_the: Desktop, groups (in group_live_view.rs, live_menu). {flags_needed} is a value filled in by the app. {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "عدد الإبلاغات التي تزيل {name} من المجموعة: {flags_needed}"
 
 [t_65486cb826]
 en = "Group call (needs a call host)"
 where = [
   "desktop group_group_call_needs_a: Desktop, groups (in group_live_view.rs, live_pane).",
 ]
-text = ""
+text = "مكالمة جماعية (تحتاج إلى مضيف مكالمات)"
 
 [t_6388be298b]
 en = "Groups you start or join show up here."
 where = [
   "desktop group_groups_you_start_or: Desktop, groups (in group_live_view.rs, live_list).",
 ]
-text = ""
+text = "تظهر مجموعاتك هنا."
 
 [t_48f711e2f7]
 en = "{gname} has no other host: messages will wait on people’s devices until another one hosts it."
 where = [
   "desktop group_has_no_other_host: Desktop, groups (in group_live_view.rs, live_overlay). {gname} is a value filled in by the app.",
 ]
-text = ""
+text = "ليس لدى {gname} مضيف آخر: ستنتظر الرسائل على أجهزة الأشخاص حتى يستضيفها مضيف آخر."
 
 [t_9cdf625172]
 en = "Host calls on this computer"
 where = [
   "desktop group_host_calls_on_this: Desktop, groups (in group_live_view.rs, live_pane).",
 ]
-text = ""
+text = "استضافة المكالمات على هذا الحاسوب"
 
 [t_ad252c6fb5]
 en = "Host {gname} on this computer?"
 where = [
   "desktop group_host_on_this_computer: Desktop, groups (in group_live_view.rs, live_overlay). {gname} is a value filled in by the app.",
 ]
-text = ""
+text = "استضافة {gname} على هذا الحاسوب؟"
 
 [t_094eb441ac]
 en = "Host this group on this computer"
 where = [
   "desktop group_host_this_group_on: Desktop, groups (in group_live_view.rs, group_info_page).",
 ]
-text = ""
+text = "استضافة هذه المجموعة على هذا الحاسوب"
 
 [t_9e427f34b0]
 en = "Hosts once {name} agrees on that device; a computer that stays on is best"
 where = [
   "desktop group_hosts_once_agrees_on: Desktop, groups (in group_live_view.rs, live_menu). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "يبدأ الاستضافة بعد موافقة {name} على ذلك الجهاز؛ الحاسوب الذي يبقى قيد التشغيل هو الأفضل"
 
 [t_fb1d388f85]
 en_one = "{count} host online{extra}. Posts go through right away."
@@ -14141,860 +14141,866 @@ en_other = "{count} hosts online{extra}. Posts go through right away."
 where = [
   "desktop group_hosts_online: Group info, hosts section. {count} is how many hosts are online; {extra} is empty or the text \"this computer too\".",
 ]
+zero = "{count} مضيف متصل{extra}. تصل المنشورات فورًا."
+one = "مضيف واحد متصل{extra}. تصل المنشورات فورًا."
+two = "مضيفان متصلان{extra}. تصل المنشورات فورًا."
+few = "{count} مضيفين متصلون{extra}. تصل المنشورات فورًا."
+many = "{count} مضيفًا متصلًا{extra}. تصل المنشورات فورًا."
+other = "{count} مضيف متصل{extra}. تصل المنشورات فورًا."
 
 [t_672061e2ff]
 en = "Hosts store the group and pass posts on when others are offline. They are members you trust: a host can read everything posted in this group.{value}"
 where = [
   "desktop group_hosts_store_the_group: Desktop, groups (in group_live_view.rs, group_info_page). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "يخزّن المضيفون المجموعة وينقلون المنشورات حين يكون الآخرون غير متصلين. إنهم أعضاء موضع ثقتك: يمكن للمضيف قراءة كل ما يُنشر في هذه المجموعة.{value}"
 
 [t_c6dea6e199]
 en = "If {name} accepts, you can message each other directly. Calls stay off until one of you allows them."
 where = [
   "desktop group_if_accepts_you_can: Desktop, groups (in group_live_view.rs, live_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "إذا قُبل طلبك إلى {name}، يمكنكما المراسلة مباشرة. تبقى المكالمات متوقفة حتى يسمح بها أحدكما."
 
 [t_76eb534e56]
 en = "Invite link for {gname}"
 where = [
   "desktop group_invite_link_for: Desktop, groups (in group_live_view.rs, live_overlay). {gname} is a value filled in by the app.",
 ]
-text = ""
+text = "رابط دعوة إلى {gname}"
 
 [t_03c8de8b33]
 en = "Invite {len} people"
 where = [
   "desktop group_invite_people: Desktop, groups (in group_live_view.rs, live_overlay). {len} is a value filled in by the app.",
 ]
-text = ""
+text = "دعوة الأشخاص ({len})"
 
 [t_4a66fd03ba]
 en = "Invite valid until {value}"
 where = [
   "desktop group_invite_valid_until: Desktop, groups (in group_live_view.rs, live_overlay). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "الدعوة صالحة حتى {value}"
 
 [t_73662b883a]
 en = " · invited by {b}"
 where = [
   "desktop group_invited_by: Desktop, groups (in group_live_view.rs, live_menu). {b} is a value filled in by the app.",
 ]
-text = ""
+text = " · بدعوة من {b}"
 
 [t_768e15d939]
 en = "Invited by {value}"
 where = [
   "desktop group_invited_by_2: Desktop, groups (in group_live_view.rs, group_info_page). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "بدعوة من {value}"
 
 [t_e970ed7e5a]
 en = " invited you to "
 where = [
   "desktop group_invited_you_to: Desktop, groups (in group_live_view.rs, live_list).",
 ]
-text = ""
+text = " يدعوك إلى "
 
 [t_2ac6ac8895]
 en = "It starts hosting once an admin appoints it (if one already did, right away). Hosting doesn’t make you an admin; you can stop any time."
 where = [
   "desktop group_it_starts_hosting_once: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "تبدأ الاستضافة بعد التعيين من أحد المشرفين (أو فورًا إن تم ذلك مسبقًا). الاستضافة لا تمنحك صلاحيات الإشراف؛ يمكنك التوقف في أي وقت."
 
 [t_ecbb1b9328]
 en = "Joining connects this computer to the group’s hosts. Members see your name; only hosts learn how to reach this computer. It can take up to a minute."
 where = [
   "desktop group_joining_connects_this_computer: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "الانضمام يوصل هذا الحاسوب بمضيفي المجموعة. يرى الأعضاء اسمك؛ والمضيفون وحدهم يعرفون كيفية الوصول إلى هذا الحاسوب. قد يستغرق ذلك دقيقة."
 
 [t_c3fc51db22]
 en = "• keep a full copy of the group\n• pass messages on for members while their phones sleep\n• learn members’ group addresses (only hosts do)\n• need to stay running to be useful"
 where = [
   "desktop group_keep_a_full_copy: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "• الاحتفاظ بنسخة كاملة من المجموعة\n• نقل الرسائل للأعضاء بينما هواتفهم في وضع السكون\n• معرفة عناوين الأعضاء في المجموعة (المضيفون وحدهم يعرفونها)\n• البقاء قيد التشغيل ليكون مفيدًا"
 
 [t_9e0599e783]
 en = "Leave {gname}?"
 where = [
   "desktop group_leave: Desktop, groups (in group_live_view.rs, live_overlay). {gname} is a value filled in by the app.",
 ]
-text = ""
+text = "مغادرة {gname}؟"
 
 [t_48df2befc8]
 en = "Make {name} an admin?"
 where = [
   "desktop group_make_an_admin: Desktop, groups (in group_live_view.rs, live_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "منح {name} صلاحيات الإشراف؟"
 
 [t_a2a3741c1b]
 en = "Make device {value} a call host"
 where = [
   "desktop group_make_device_a_call: Desktop, groups (in group_live_view.rs, live_menu). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "جعل الجهاز {value} مضيفًا للمكالمات"
 
 [t_76ddfb2d19]
 en = "Make device {value} a host"
 where = [
   "desktop group_make_device_a_host: Desktop, groups (in group_live_view.rs, live_menu). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "جعل الجهاز {value} مضيفًا"
 
 [t_569ddfad75]
 en = "Member of {gname}"
 where = [
   "desktop group_member_of: Desktop, groups (in group_live_view.rs, live_overlay). {gname} is a value filled in by the app.",
 ]
-text = ""
+text = "من أعضاء {gname}"
 
 [t_0bae5b80cc]
 en = "Member of {group_name}"
 where = [
   "desktop group_member_of_2: Desktop, groups (in group_live_view.rs, live_requests). {group_name} is a value filled in by the app.",
 ]
-text = ""
+text = "من أعضاء {group_name}"
 
 [t_b595c9bfb0]
 en = "Member since {value}"
 where = [
   "desktop group_member_since: Desktop, groups (in group_live_view.rs, live_menu). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "في المجموعة منذ {value}"
 
 [t_3e3fe2596b]
 en = "{members} · {role}"
 where = [
   "desktop group_members_and_role: Group info header. {members} is e.g. \"3 members\", {role} is \"You are the owner / an admin / a member\".",
 ]
-text = ""
+text = "{members} · {role}"
 
 [t_4f831bb3e8]
 en = "Members see that you left. The messages stay on this computer, read-only. To come back, an admin has to invite you again."
 where = [
   "desktop group_members_see_that_you: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "يرى الأعضاء أنك غادرت. تبقى الرسائل على هذا الحاسوب للقراءة فقط. للعودة، يجب أن يدعوك أحد المشرفين من جديد."
 
 [t_ca2cffd903]
 en = "Members stop going through it"
 where = [
   "desktop group_members_stop_going_through: Desktop, groups (in group_live_view.rs, live_menu).",
 ]
-text = ""
+text = "يتوقف الأعضاء عن المرور عبره"
 
 [t_c68a4d2f95]
 en = "Message from {name}, whom you blocked"
 where = [
   "desktop group_message_from_whom_you: Desktop, groups (in group_live_view.rs, live_item). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "رسالة من {name}، شخص حظرته"
 
 [t_d2290010b5]
 en = "Message privately"
 where = [
   "desktop group_message_privately: Desktop, groups (in group_live_view.rs, live_menu).",
 ]
-text = ""
+text = "مراسلة خاصة"
 
 [t_e63bb44c2f]
 en = "No group matches."
 where = [
   "desktop group_no_group_matches: Desktop, groups (in group_live_view.rs, live_list).",
 ]
-text = ""
+text = "لا مجموعات مطابقة."
 
 [t_178c11fc23]
 en = "Nobody is blocked. To block someone, open them in Contacts and choose Block."
 where = [
   "desktop group_nobody_is_blocked_to: Desktop, groups (in groups_view.rs, privacy_page).",
 ]
-text = ""
+text = "لا أحد محظور. لحظر شخص، يمكنك فتح صفحته في جهات الاتصال واختيار «حظر»."
 
 [t_d8e67bbd2d]
 en = " · {flags} of {flags_needed} flags"
 where = [
   "desktop group_of_flags: Desktop, groups (in group_live_view.rs, live_menu). {flags} is a value filled in by the app. {flags_needed} is a value filled in by the app.",
 ]
-text = ""
+text = " · {flags} من {flags_needed} إبلاغات"
 
 [t_43b101be74]
 en = " · {flags} of {value} flags"
 where = [
   "desktop group_of_flags_2: Desktop, groups (in group_live_view.rs, group_info_page). {flags} is a value filled in by the app. {value} is a value filled in by the app.",
 ]
-text = ""
+text = " · {flags} من {value} إبلاغات"
 
 [t_355dca9b97]
 en = "Offered to host"
 where = [
   "desktop group_offered_to_host: Desktop, groups (in group_live_view.rs, group_info_page).",
 ]
-text = ""
+text = "عرض الاستضافة"
 
 [t_1e5879f244]
 en = "Only admins post here"
 where = [
   "desktop group_only_admins_post_here: Desktop, groups (in group_live_view.rs, live_admins_only_line).",
 ]
-text = ""
+text = "ينشر المشرفون فقط هنا"
 
 [t_1570b9e8c5]
 en = "Only admins post here."
 where = [
   "desktop group_only_admins_post_here_2: Desktop, groups (in group_live.rs, gerr).",
 ]
-text = ""
+text = "ينشر المشرفون فقط هنا."
 
 [t_a5bdc7696e]
 en = "Open chat"
 where = [
   "desktop group_open_chat: Desktop, groups (in group_live_view.rs, live_requests).",
 ]
-text = ""
+text = "فتح الدردشة"
 
 [t_804dcb0928]
 en = "Open {gname} to anyone with the link?"
 where = [
   "desktop group_open_to_anyone_with: Desktop, groups (in group_live_view.rs, live_overlay). {gname} is a value filled in by the app.",
 ]
-text = ""
+text = "فتح {gname} لأي شخص لديه الرابط؟"
 
 [t_297869bd98]
 en = "Opens your chat"
 where = [
   "desktop group_opens_your_chat: Desktop, groups (in group_live_view.rs, live_menu).",
 ]
-text = ""
+text = "يفتح دردشتكما"
 
 [t_b0bfef99a3]
 en = "{inviter} · owner {owner}"
 where = [
   "desktop group_owner_2: Desktop, groups (in group_live_view.rs, live_overlay). {inviter} is a value filled in by the app. {owner} is a value filled in by the app.",
 ]
-text = ""
+text = "{inviter} · المالك {owner}"
 
 [t_612fb3ff04]
 en = "Paste an invite link"
 where = [
   "desktop group_paste_an_invite_link: Desktop, groups (in group_live_view.rs, live_list).",
 ]
-text = ""
+text = "لصق رابط دعوة"
 
 [t_897c2e906d]
 en = "Paste the invite link (tinline://g/…) or code"
 where = [
   "desktop group_paste_the_invite_link: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "لصق رابط الدعوة (tinline://g/…) أو رمزها"
 
 [t_032d14772e]
 en = "Read {read}/{eligible}"
 where = [
   "desktop group_read_2: Desktop, groups (in group_live_view.rs, group_receipt_lines). {read} is a value filled in by the app. {eligible} is a value filled in by the app.",
 ]
-text = ""
+text = "تمت القراءة {read}/{eligible}"
 
 [t_8d11c8dbda]
 en = "Remove as admin"
 where = [
   "desktop group_remove_as_admin: Desktop, groups (in group_live_view.rs, live_menu).",
 ]
-text = ""
+text = "إلغاء الإشراف"
 
 [t_63c8449e54]
 en = "Remove {name} as admin?"
 where = [
   "desktop group_remove_as_admin_2: Desktop, groups (in group_live_view.rs, live_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "إلغاء إشراف {name}؟"
 
 [t_fce4d0716e]
 en = "{value} · removed"
 where = [
   "desktop group_removed_2: Desktop, groups (in group_live_view.rs, live_item). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "{value} · تمت الإزالة"
 
 [t_c3e27c1c1d]
 en = "Removed after {len} admin flags"
 where = [
   "desktop group_removed_after_admin_flags: Desktop, groups (in group_live_view.rs, live_removal_card). {len} is a value filled in by the app.",
 ]
-text = ""
+text = "تمت إزالتك بعد إبلاغات المشرفين ({len})"
 
 [t_995105820a]
 en = "Requests · {len}"
 where = [
   "desktop group_requests: Desktop, groups (in group_live_view.rs, live_requests). {len} is a value filled in by the app.",
 ]
-text = ""
+text = "الطلبات · {len}"
 
 [t_e74c79587a]
 en = "{name} sees your name and the group. The request goes through the group’s host sealed, so the host can’t read it."
 where = [
   "desktop group_sees_your_name_and: Desktop, groups (in group_live_view.rs, live_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "يظهر اسمك والمجموعة عند {name}. يمر الطلب عبر مضيف المجموعة مختومًا، فلا يستطيع المضيف قراءته."
 
 [t_7e0de03aea]
 en = "Sends {name} a chat request through the host"
 where = [
   "desktop group_sends_a_chat_request: Desktop, groups (in group_live_view.rs, live_menu). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "يرسل طلب دردشة إلى {name} عبر المضيف"
 
 [t_d13099d50e]
 en = "Sent requests"
 where = [
   "desktop group_sent_requests: Desktop, groups (in group_live_view.rs, live_requests).",
 ]
-text = ""
+text = "الطلبات المرسلة"
 
 [t_722778e5cb]
 en = "Since {value}"
 where = [
   "desktop group_since: Desktop, groups (in group_live_view.rs, group_info_page). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "منذ {value}"
 
 [t_821f5cc3b9]
 en = "{name} stays a member"
 where = [
   "desktop group_stays_a_member: Desktop, groups (in group_live_view.rs, live_menu). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "تبقى عضوية {name}"
 
 [t_3131b8e845]
 en = "{name} stays in the group as a member. Flags they already made still count."
 where = [
   "desktop group_stays_in_the_group: Desktop, groups (in group_live_view.rs, live_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "تبقى عضوية {name} في المجموعة. الإبلاغات السابقة من {name} تبقى محتسبة."
 
 [t_806b19150f]
 en = "Stop device {value} carrying calls"
 where = [
   "desktop group_stop_device_carrying_calls: Desktop, groups (in group_live_view.rs, live_menu). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "إيقاف نقل الجهاز {value} للمكالمات"
 
 [t_e2020c4fb2]
 en = "Stop device {value} hosting"
 where = [
   "desktop group_stop_device_hosting: Desktop, groups (in group_live_view.rs, live_menu). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "إيقاف استضافة الجهاز {value}"
 
 [t_1723561e8c]
 en = "Stop hosting"
 where = [
   "desktop group_stop_hosting: Desktop, groups (in group_live_view.rs, live_menu).",
 ]
-text = ""
+text = "إيقاف الاستضافة"
 
 [t_25c1a85271]
 en = "Stop hosting calls"
 where = [
   "desktop group_stop_hosting_calls: Desktop, groups (in group_live_view.rs, live_menu).",
 ]
-text = ""
+text = "إيقاف استضافة المكالمات"
 
 [t_f9383a2f6a]
 en = "Stop hosting calls on this computer"
 where = [
   "desktop group_stop_hosting_calls_on: Desktop, groups (in group_live_view.rs, group_info_page).",
 ]
-text = ""
+text = "إيقاف استضافة المكالمات على هذا الحاسوب"
 
 [t_22b8522a44]
 en = "Stop hosting {gname} here?"
 where = [
   "desktop group_stop_hosting_here: Desktop, groups (in group_live_view.rs, live_overlay). {gname} is a value filled in by the app.",
 ]
-text = ""
+text = "إيقاف استضافة {gname} هنا؟"
 
 [t_543bf3e548]
 en = "Stop hosting on this computer"
 where = [
   "desktop group_stop_hosting_on_this: Desktop, groups (in group_live_view.rs, group_info_page).",
 ]
-text = ""
+text = "إيقاف الاستضافة على هذا الحاسوب"
 
 [t_976140c423]
 en = "{label}: {value}"
 where = [
   "desktop group_text: Desktop, groups (in group_live_view.rs, group_receipt_lines). {label} is a value filled in by the app. {value} is a value filled in by the app.",
 ]
-text = ""
+text = "{label}: {value}"
 
 [t_35c74d3978]
 en = "{what} · {value}"
 where = [
   "desktop group_text_2: Desktop, groups (in group_live_view.rs, live_list). {what} is a value filled in by the app. {value} is a value filled in by the app.",
 ]
-text = ""
+text = "{what} · {value}"
 
 [t_c5e67a6475]
 en = "That device no longer carries this group’s calls."
 where = [
   "desktop group_that_device_no_longer: Desktop, groups (in group_live.rs, run).",
 ]
-text = ""
+text = "لم يعد ذلك الجهاز ينقل مكالمات هذه المجموعة."
 
 [t_108d11a4e8]
 en = "That group isn’t on this computer."
 where = [
   "desktop group_that_group_isnt_on: Desktop, groups (in group_live.rs, gerr).",
 ]
-text = ""
+text = "هذه المجموعة ليست على هذا الحاسوب."
 
 [t_45b0032d7d]
 en = "the only host"
 where = [
   "desktop group_the_only_host: Shown after the member count for a group this computer hosts alone.",
 ]
-text = ""
+text = "المضيف الوحيد"
 
 [t_d0b680b900]
 en = "The open link is closed. Everyone already in stays; new people join with an invite."
 where = [
   "desktop group_the_open_link_is: Desktop, groups (in group_live.rs, run).",
 ]
-text = ""
+text = "أُغلق الرابط المفتوح. يبقى كل من انضم؛ وينضم الجدد بدعوة."
 
 [t_bdd0b2326a]
 en = "Then invite people from the members pane."
 where = [
   "desktop group_then_invite_people_from: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "ثم يمكنك دعوة الأشخاص من لوحة الأعضاء."
 
 [t_672fbdc744]
 en = "This computer carries the calls."
 where = [
   "desktop group_this_computer_carries_the: Desktop, groups (in group_live_view.rs, group_info_page).",
 ]
-text = ""
+text = "هذا الحاسوب ينقل المكالمات."
 
 [t_3bbd7b2774]
 en = "This computer carries this group’s calls now."
 where = [
   "desktop group_this_computer_carries_this: Desktop, groups (in group_live.rs, run).",
 ]
-text = ""
+text = "هذا الحاسوب ينقل مكالمات هذه المجموعة الآن."
 
 [t_1ea2e18441]
 en = "This computer doesn’t host any groups. To host one, open it and choose Host from this computer in the members pane."
 where = [
   "desktop group_this_computer_doesnt_host: Desktop, groups (in group_live_view.rs, live_hosting_page).",
 ]
-text = ""
+text = "لا يستضيف هذا الحاسوب أي مجموعة. للاستضافة، يمكنك فتح المجموعة واختيار «الاستضافة من هذا الحاسوب» في لوحة الأعضاء."
 
 [t_66ba1bfba6]
 en = "This computer hosts the group. Posts go through right away."
 where = [
   "desktop group_this_computer_hosts_the: Desktop, groups (in group_live_view.rs, group_info_page).",
 ]
-text = ""
+text = "هذا الحاسوب يستضيف المجموعة. تصل المنشورات فورًا."
 
 [t_6e1d3b27d7]
 en = "This computer stopped carrying this group’s calls."
 where = [
   "desktop group_this_computer_stopped_carrying: Desktop, groups (in group_live.rs, run).",
 ]
-text = ""
+text = "توقف هذا الحاسوب عن نقل مكالمات هذه المجموعة."
 
 [t_fa4003bbee]
 en = "This computer stops passing the group’s messages on. You stay a member."
 where = [
   "desktop group_this_computer_stops_passing: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "يتوقف هذا الحاسوب عن نقل رسائل المجموعة. تبقى عضويتك."
 
 [t_dbd8fa4c7f]
 en = ", this computer too"
 where = [
   "desktop group_this_computer_too: Appended to the hosts-online line when this computer is one of the hosts. Keep the leading comma.",
 ]
-text = ""
+text = "، وهذا الحاسوب أيضًا"
 
 [t_90c7b1d39f]
 en = "This device agreed to host. It hosts as soon as an admin has appointed it."
 where = [
   "desktop group_this_device_agreed_to: Desktop, groups (in group_live.rs, run).",
 ]
-text = ""
+text = "وافق هذا الجهاز على الاستضافة. يبدأ الاستضافة فور تعيينه من أحد المشرفين."
 
 [t_9c2ace7693]
 en = "This device stopped hosting the group."
 where = [
   "desktop group_this_device_stopped_hosting: Desktop, groups (in group_live.rs, run).",
 ]
-text = ""
+text = "توقف هذا الجهاز عن استضافة المجموعة."
 
 [t_133c91b930]
 en = "this member"
 where = [
   "desktop group_this_member: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "هذا العضو"
 
 [t_273944879b]
 en = "Unlock to see your groups."
 where = [
   "desktop group_unlock_to_see_your: Desktop, groups (in group_live_view.rs, live_list).",
 ]
-text = ""
+text = "يلزم فتح القفل لرؤية مجموعاتك."
 
 [t_fc7b6359c4]
 en = "Why was I removed?"
 where = [
   "desktop group_why_was_i_removed: Desktop, groups (in group_live_view.rs, group_info_page).",
 ]
-text = ""
+text = "لماذا أُزلت؟"
 
 [t_0eeae9f4ec]
 en = "Why you were removed"
 where = [
   "desktop group_why_you_were_removed: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "سبب إزالتك"
 
 [t_cd7db50b44]
 en = "{name} will be able to invite people, flag members (3 flags remove someone) and appoint hosts. Only you, the owner, can make or remove admins."
 where = [
   "desktop group_will_be_able_to: Desktop, groups (in group_live_view.rs, live_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "سيصبح بإمكان {name} دعوة الأشخاص والإبلاغ عن الأعضاء (ثلاثة إبلاغات تزيل العضو) وتعيين المضيفين. أنت وحدك، بصفتك المالك، يمكنك تعيين المشرفين أو إزالتهم."
 
 [t_497c9f2f05]
 en = "Withdraw the offer to host"
 where = [
   "desktop group_withdraw_the_offer_to: Desktop, groups (in group_live_view.rs, group_info_page).",
 ]
-text = ""
+text = "سحب عرض الاستضافة"
 
 [t_9465546688]
 en = "written before {value} was removed"
 where = [
   "desktop group_written_before_was_removed: Desktop, groups (in group_live_view.rs, live_item). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "كُتبت قبل إزالة {value}"
 
 [t_75d438ef41]
 en = "You are a member"
 where = [
   "desktop group_you_are_a_member: Desktop, groups (in group_live_view.rs, group_info_page).",
 ]
-text = ""
+text = "دورك: عضو"
 
 [t_09746c824d]
 en = "You are an admin"
 where = [
   "desktop group_you_are_an_admin: Desktop, groups (in group_live_view.rs, group_info_page).",
 ]
-text = ""
+text = "دورك: مشرف"
 
 [t_2e95eb0424]
 en = "You are the owner"
 where = [
   "desktop group_you_are_the_owner: Desktop, groups (in group_live_view.rs, group_info_page).",
 ]
-text = ""
+text = "دورك: المالك"
 
 [t_907733bbb3]
 en = "You block {name}; unblock them first"
 where = [
   "desktop group_you_block_unblock_them: Desktop, groups (in group_live_view.rs, live_menu). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "حظرت {name}؛ يلزم إلغاء الحظر أولًا"
 
 [t_41fbb0d898]
 en = "You keep the messages already here. The group’s hosts refuse your new messages. To rejoin, an admin has to invite you again."
 where = [
   "desktop group_you_keep_the_messages: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "تبقى لديك الرسائل الموجودة هنا. يرفض مضيفو المجموعة رسائلك الجديدة. للعودة، يجب أن يدعوك أحد المشرفين من جديد."
 
 [t_536628e93b]
 en = "You were removed from the group · {value}"
 where = [
   "desktop group_you_were_removed_from: Desktop, groups (in group_live_view.rs, live_removal_card). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "تمت إزالتك من المجموعة · {value}"
 
 [t_6566a09c14]
 en = "You’ll own the group. This computer hosts it at first: it keeps the group and passes messages on while members’ phones sleep, so it works best on a computer that stays on."
 where = [
   "desktop group_youll_own_the_group: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "ستكون المجموعة ملكك. يستضيفها هذا الحاسوب في البداية: فهو يحتفظ بها وينقل الرسائل بينما هواتف الأعضاء في وضع السكون، لذا يعمل بأفضل شكل على حاسوب يبقى قيد التشغيل."
 
 [t_eae8e245fc]
 en = "Yours will be flag {yours} of {flags_needed}. Any admin’s flags count, yours again too. At {flags_needed} flags {name} is removed right away and sees they were removed."
 where = [
   "desktop group_yours_will_be_flag: Desktop, groups (in group_live_view.rs, live_overlay). {yours} is a value filled in by the app. {flags_needed} is a value filled in by the app. {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "سيكون إبلاغك رقم {yours} من {flags_needed}. تُحتسب إبلاغات أي مشرف، بما فيها إبلاغاتك التالية. عند اكتمال العدد ({flags_needed}) تتم إزالة {name} فورًا وتظهر الإزالة لدى {name}."
 
 [t_a2776c67b5]
 en = "Yours will be flag {yours} of {flags_needed}. {name} is removed right away: hosts refuse their new messages and they see they were removed."
 where = [
   "desktop group_yours_will_be_flag_of: Desktop, groups (in group_live_view.rs, live_overlay). {yours} is a value filled in by the app. {flags_needed} is a value filled in by the app. {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "سيكون إبلاغك رقم {yours} من {flags_needed}. تتم إزالة {name} فورًا: يرفض المضيفون أي رسائل جديدة من {name}، وتظهر الإزالة لدى {name}."
 
 [t_b1f15f6576]
 en = "Contacts · {len}"
 where = [
   "desktop home_contacts: Desktop, home, sidebar and call list (in view.rs, list_pane). {len} is a value filled in by the app.",
 ]
-text = ""
+text = "جهات الاتصال · {len}"
 
 [t_1a850f401a]
 en = "Contacts you add appear here."
 where = [
   "desktop home_contacts_you_add_appear: Desktop, home, sidebar and call list (in view.rs, list_pane).",
 ]
-text = ""
+text = "تظهر هنا جهات الاتصال المضافة."
 
 [t_be49ff2081]
 en = "Last call {value}"
 where = [
   "desktop home_last_call: Desktop, home, sidebar and call list (in view.rs, contact_sub). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "آخر مكالمة {value}"
 
 [t_1bf2596e91]
 en = "Not here? Tinline has no directory — add people with their code."
 where = [
   "desktop home_not_here_tinline_has: Desktop, home, sidebar and call list (in view.rs, list_pane).",
 ]
-text = ""
+text = "غير موجود هنا؟ لا يوجد دليل في Tinline — تتم إضافة الأشخاص برموزهم."
 
 [t_2fa8ae469e]
 en = "Start or join a call"
 where = [
   "desktop home_start_or_join_a: Desktop, home, sidebar and call list (in view.rs, calls_list).",
 ]
-text = ""
+text = "بدء مكالمة أو الانضمام إليها"
 
 [t_420265b999]
 en = "{what} · {dur}"
 where = [
   "desktop home_text: Desktop, home, sidebar and call list (in view.rs, calls_list). {what} is a value filled in by the app. {dur} is a duration such as 1:23.",
 ]
-text = ""
+text = "{what} · {dur}"
 
 [t_822e19febe]
 en = "Their card is on your clipboard."
 where = [
   "desktop home_their_card_is_on: Desktop, home, sidebar and call list (in view.rs, offer_bar).",
 ]
-text = ""
+text = "بطاقتهم في الحافظة."
 
 [t_e3db10694d]
 en = "A linked device becomes you"
 where = [
   "desktop link_a_linked_device_becomes: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "الجهاز المرتبط يصبح أنت"
 
 [t_d73b68764a]
 en = "A passphrase encrypts your account on this computer. Optional — leave it empty and Tinline opens straight to your contacts. You can add one later in Settings."
 where = [
   "desktop link_a_passphrase_encrypts_your: Desktop, linking devices (in link_view.rs, link_secure_screen).",
 ]
-text = ""
+text = "عبارة المرور تشفّر حسابك على هذا الحاسوب. اختيارية — يمكنك تركها فارغة فيُفتح Tinline مباشرة على جهات اتصالك. يمكنك إضافتها لاحقًا من الإعدادات."
 
 [t_ca6ecd8e98]
 en = "Back to Settings"
 where = [
   "desktop link_back_to_settings: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "العودة إلى الإعدادات"
 
 [t_a975a5773d]
 en = "Bringing your contacts and history over…"
 where = [
   "desktop link_bringing_your_contacts_and: Desktop, linking devices (in link_view.rs, link_sync_screen).",
 ]
-text = ""
+text = "جارٍ نقل جهات اتصالك وسجلك…"
 
 [t_fb8243b29d]
 en = "Calls in history"
 where = [
   "desktop link_calls_in_history: Desktop, linking devices (in link_view.rs, link_sync_screen).",
 ]
-text = ""
+text = "المكالمات في السجل"
 
 [t_475dd4dd45]
 en = "Check the codes match and approve on your phone."
 where = [
   "desktop link_check_the_codes_match: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = ""
+text = "يمكنك التحقق من تطابق الرمزين والموافقة على هاتفك."
 
 [t_d801726ed0]
 en = "Check the codes match, then approve here."
 where = [
   "desktop link_check_the_codes_match_then: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = ""
+text = "يمكنك التحقق من تطابق الرمزين، ثم الموافقة هنا."
 
 [t_85d2fc8750]
 en = "Codes match, link it"
 where = [
   "desktop link_codes_match_link_it: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "متطابقان، ربط الجهاز"
 
 [t_48b15af5a6]
 en = "Connect"
 where = [
   "desktop link_connect: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = ""
+text = "اتصال"
 
 [t_2513f84ad2]
 en = "Connecting..."
 where = [
   "desktop link_connecting: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = ""
+text = "جارٍ الاتصال…"
 
 [t_892724d737]
 en = "Connecting to the other device…"
 where = [
   "desktop link_connecting_to_the_other: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "جارٍ الاتصال بالجهاز الآخر…"
 
 [t_46161f68a7]
 en = "Desktop"
 where = [
   "desktop link_desktop: Desktop, linking devices (in link_view.rs, ).",
 ]
-text = ""
+text = "حاسوب مكتبي"
 
 [t_d7a8bd2415]
 en = "Device unlinked"
 where = [
   "desktop link_device_unlinked: Desktop, linking devices (in link.rs, link_update).",
 ]
-text = ""
+text = "تم إلغاء ربط الجهاز"
 
 [t_1cc71a82c0]
 en = "Devices sync directly whenever two are online at once. Unlinking stops sync and ringing; it can’t lock a lost device remotely."
 where = [
   "desktop link_devices_sync_directly_whenever: Desktop, linking devices (in link_view.rs, linked_devices_page).",
 ]
-text = ""
+text = "تتزامن الأجهزة مباشرة كلما اتصل اثنان منها في الوقت نفسه. إلغاء الربط يوقف المزامنة والرنين؛ ولا يمكنه قفل جهاز مفقود عن بُعد."
 
 [t_e19f8f0006]
 en = "Different code, or you didn’t start this? Cancel. Someone may be trying to copy your account."
 where = [
   "desktop link_different_code_or_you_didnt: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "الرمز مختلف، أو العملية ليست من طلبك؟ يُستحسن الإلغاء. ربما يحاول شخص نسخ حسابك."
 
 [t_d6c534ecaa]
 en = "Expires in {value} · works once"
 where = [
   "desktop link_expires_in_works_once: Desktop, linking devices (in link_view.rs, link_qr_screen). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "ينتهي خلال {value} · يعمل مرة واحدة"
 
 [t_9dc5adbda5]
 en = "{profile_name} is removed from this computer: its contacts, chats and call history here are deleted. Your other devices are not affected."
 where = [
   "desktop link_is_removed_from_this: Desktop, linking devices (in link_view.rs, unlink_confirm). {profile_name} is a value filled in by the app.",
 ]
-text = ""
+text = "أُزيل {profile_name} من هذا الحاسوب: حُذفت هنا جهات اتصاله ودردشاته وسجل مكالماته. لم تتأثر أجهزتك الأخرى."
 
 [t_f5eaafed77]
 en = "It can call, chat and see your recovery phrase. Only link devices you own."
 where = [
   "desktop link_it_can_call_chat: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "يمكنه الاتصال والدردشة ورؤية كلمات الاسترداد. يُستحسن ربط أجهزتك أنت فقط."
 
 [t_5052507a1a]
 en = "It rings for your calls now. Contacts and call history sync whenever both devices are online."
 where = [
   "desktop link_it_rings_for_your: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "يرن لمكالماتك الآن. تتزامن جهات الاتصال وسجل المكالمات كلما اتصل الجهازان."
 
 [t_16d08f0405]
 en = "It shows a QR code. Tap Scan instead and point it at this screen."
 where = [
   "desktop link_it_shows_a_qr: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = ""
+text = "يعرض رمز QR. يمكنك النقر على «المسح بدلًا من ذلك» وتوجيهه نحو هذه الشاشة."
 
 [t_0dde23f0ec]
 en = "Keep both devices online. If one drops off, it picks up where it left off next time they’re both online."
 where = [
   "desktop link_keep_both_devices_online: Desktop, linking devices (in link_view.rs, link_sync_screen).",
 ]
-text = ""
+text = "يُستحسن إبقاء الجهازين متصلين. إذا انقطع أحدهما، تُستأنف المزامنة من حيث توقفت في المرة القادمة التي يتصلان فيها."
 
 [t_3f8bad0261]
 en = "Link “{name}”?"
 where = [
   "desktop link_link: Desktop, linking devices (in link_view.rs, link_screen). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "ربط «{name}»؟"
 
 [t_38f21d8c2a]
 en = "Link code from the other device"
 where = [
   "desktop link_link_code_from_the: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = ""
+text = "رمز الربط من الجهاز الآخر"
 
 [t_def224ce11]
 en = "Linked {name}"
 where = [
   "desktop link_linked: Desktop, linking devices (in link_view.rs, link_screen). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "تم ربط {name}"
 
 [t_caf3c63402]
 en = "Linking stopped"
 where = [
   "desktop link_linking_stopped: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "توقف الربط"
 
 [t_0e8e99aae4]
 en = "Linux"
 where = [
   "desktop link_linux: Desktop, linking devices (in link_view.rs, ).",
 ]
-text = ""
+text = "Linux"
 
 [t_88b66617f5]
 en = "Make a new code"
 where = [
   "desktop link_make_a_new_code: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = ""
+text = "إنشاء رمز جديد"
 
 [t_9c4702c37d]
 en = "Make sure the other device shows this same code."
 where = [
   "desktop link_make_sure_the_other: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "يُستحسن التأكد من أن الجهاز الآخر يعرض الرمز نفسه."
 
 [t_e7192b462f]
 en = "Making a code…"
