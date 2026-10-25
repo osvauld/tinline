@@ -4920,56 +4920,56 @@ where = [
   "android perms_notifications_off_body: Body of the warning card for switched-off notifications.",
   "ios settings_perm_notif_body: Body of the notifications-off warning.",
 ]
-text = ""
+text = "செய்திகள் அல்லது அழைப்புகள் பற்றி Tinline-ஆல் உங்களுக்குத் தெரிவிக்க முடியாது. அவை வந்துகொண்டுதான் இருக்கும்; ஆப்பைத் திறக்கும்போது பார்ப்பீர்கள். சிஸ்டம் அமைப்புகளில் அறிவிப்புகளை ஆன் செய்யுங்கள்."
 
 [t_7d228fbd99]
 en = "Battery saving may delay calls"
 where = [
   "android perms_battery_title: Title of the warning card shown when Android restricts Tinline's battery use.",
 ]
-text = ""
+text = "பேட்டரி சேமிப்பால் அழைப்புகள் தாமதமாகலாம்"
 
 [t_770eea319c]
 en = "Android can pause Tinline in the background, so calls and messages can arrive late. Set Tinline’s battery use to Unrestricted."
 where = [
   "android perms_battery_body: Body of the battery warning card. Unrestricted is the name of the Android battery setting.",
 ]
-text = ""
+text = "பின்னணியில் Tinline-ஐ Android இடைநிறுத்தக்கூடும், அதனால் அழைப்புகளும் செய்திகளும் தாமதமாக வரலாம். Tinline-இன் பேட்டரி உபயோகத்தை “கட்டுப்பாடற்றது” என அமையுங்கள்."
 
 [t_86979511dc]
 en = "So the other person can hear you"
 where = [
   "android perms_mic_why: Why Tinline needs the microphone permission.",
 ]
-text = ""
+text = "மற்றவர் உங்கள் குரலைக் கேட்க"
 
 [t_e38c9e3a42]
 en = "To show incoming calls"
 where = [
   "android perms_notifications_why: Why Tinline needs the notifications permission.",
 ]
-text = ""
+text = "உள்வரும் அழைப்புகளைக் காட்ட"
 
 [t_83653c9226]
 en = "Exempt from battery optimisation so calls arrive when idle"
 where = [
   "android perms_battery_need_why: Why Tinline asks to be exempt from battery optimisation.",
 ]
-text = ""
+text = "ஃபோன் செயலற்று இருக்கும்போதும் அழைப்புகள் வர, பேட்டரி மேம்படுத்தலிலிருந்து விலக்கு"
 
 [t_e69907b099]
 en = "Full-screen calls"
 where = [
   "android perms_fullscreen_title: Name of the full-screen notification permission (internal label of a permission the app needs).",
 ]
-text = ""
+text = "முழுத் திரை அழைப்புகள்"
 
 [t_47c5032e9f]
 en = "Show incoming calls over the lock screen"
 where = [
   "android perms_fullscreen_why: Why Tinline needs the full-screen notification permission.",
 ]
-text = ""
+text = "பூட்டுத் திரையின் மேல் உள்வரும் அழைப்புகளைக் காட்ட"
 
 [t_6f11bd5837]
 en = "Settings"
@@ -4980,7 +4980,7 @@ where = [
   "ios shell_settings: Accessibility label of the settings (gear) button on the home header.",
   "desktop profile_settings: Desktop, profile and settings (in profile_view.rs, profile_page).",
 ]
-text = ""
+text = "அமைப்புகள்"
 
 [t_fbad1421e3]
 en = "Selected · online"
@@ -4989,7 +4989,7 @@ where = [
   "ios settings_account_selected: Subtitle of the selected account row.",
   "desktop profile_selected_online: Desktop, profile and settings (in profile_view.rs, settings_landing).",
 ]
-text = ""
+text = "தேர்ந்தெடுக்கப்பட்டது · ஆன்லைன்"
 
 [t_f4166c2daf]
 en = "Paused · tap to switch"
@@ -4998,7 +4998,7 @@ where = [
   "ios settings_account_paused: Subtitle of a non-selected account row.",
   "desktop profile_paused_tap_to_switch: Desktop, profile and settings (in profile_view.rs, settings_landing).",
 ]
-text = ""
+text = "இடைநிறுத்தப்பட்டது · மாறத் தட்டவும்"
 
 [t_97d9b1f459]
 en = "Add another account"
@@ -5007,7 +5007,7 @@ where = [
   "ios settings_add_account: Row that opens the add-account choices.",
   "desktop profile_add_another_account: Desktop, profile and settings (in profile_view.rs, settings_landing).",
 ]
-text = ""
+text = "இன்னொரு கணக்கைச் சேர்"
 
 [t_bb4f833bf1]
 en = "Only the selected account is online on this phone. Switching pauses the other one: it receives no calls until you select it again."
@@ -5015,7 +5015,7 @@ where = [
   "android settings_accounts_note: Explanation under the account list on the Settings landing.",
   "ios settings_accounts_note: Explanation under the account list.",
 ]
-text = ""
+text = "தேர்ந்தெடுத்த கணக்கு மட்டுமே இந்த ஃபோனில் ஆன்லைனில் இருக்கும். மாறினால் மற்றது இடைநிறுத்தப்படும்: மீண்டும் அதைத் தேர்ந்தெடுக்கும் வரை அதற்கு அழைப்புகள் வராது."
 
 [t_5cab984542]
 en = "Appearance"
@@ -5024,7 +5024,7 @@ where = [
   "ios settings_appearance: Section heading for the light/dark choice.",
   "desktop profile_appearance: Desktop, profile and settings (in profile_view.rs, settings_landing).",
 ]
-text = ""
+text = "தோற்றம்"
 
 [t_ce3a092efe]
 en = "Match my phone"
@@ -5032,7 +5032,7 @@ where = [
   "android settings_look_match: Appearance option: follow the phone's light or dark setting.",
   "ios settings_appearance_match: Appearance option: follow the phone's light or dark setting.",
 ]
-text = ""
+text = "என் ஃபோனைப் போலவே"
 
 [t_7857115a54]
 en = "Light or dark, as this phone is set"
@@ -5040,7 +5040,7 @@ where = [
   "android settings_look_match_sub: Small line under the Match my phone appearance option.",
   "ios settings_appearance_match_sub: Subtitle of the Match my phone option.",
 ]
-text = ""
+text = "இந்த ஃபோனின் அமைப்புப்படி லைட் அல்லது டார்க்"
 
 [t_6c447396fa]
 en = "Light"
@@ -5049,7 +5049,7 @@ where = [
   "ios settings_appearance_light: Appearance option: always light.",
   "desktop profile_light: Desktop, profile and settings (in profile_view.rs, settings_landing).",
 ]
-text = ""
+text = "லைட்"
 
 [t_e474202d31]
 en = "Dark"
@@ -5058,7 +5058,7 @@ where = [
   "ios settings_appearance_dark: Appearance option: always dark.",
   "desktop profile_dark: Desktop, profile and settings (in profile_view.rs, settings_landing).",
 ]
-text = ""
+text = "டார்க்"
 
 [t_ed363ef678]
 en = "Devices"
@@ -5067,7 +5067,7 @@ where = [
   "ios settings_row_devices: Settings list row.",
   "desktop profile_devices: Desktop, profile and settings (in profile_view.rs, profile_page).",
 ]
-text = ""
+text = "சாதனங்கள்"
 
 [t_9211d6c9bd]
 en = "Privacy"
@@ -5076,7 +5076,7 @@ where = [
   "ios settings_row_privacy: Settings list row.",
   "desktop common_privacy: Shared label, used in several places (profile, view).",
 ]
-text = ""
+text = "தனியுரிமை"
 
 [t_84e0cb5ef5]
 en = "Sounds"
@@ -5085,7 +5085,7 @@ where = [
   "ios settings_row_sounds: Settings list row.",
   "desktop profile_sounds: Desktop, profile and settings (in profile_view.rs, profile_page).",
 ]
-text = ""
+text = "ஒலிகள்"
 
 [t_f3c42ba016]
 en = "Video"
@@ -5096,7 +5096,7 @@ where = [
   "ios call_video_button: Label of the button that answers an incoming video call with my camera on.",
   "desktop common_video: Shared label, used in several places (call_screen, profile).",
 ]
-text = ""
+text = "வீடியோ"
 
 [t_77bb787833]
 en = "Storage"
@@ -5105,7 +5105,7 @@ where = [
   "ios settings_row_storage: Settings list row.",
   "desktop profile_storage: Desktop, profile and settings (in profile_view.rs, profile_page).",
 ]
-text = ""
+text = "சேமிப்பகம்"
 
 [t_dd3831dad6]
 en = "About Tinline"
@@ -5114,7 +5114,7 @@ where = [
   "ios settings_row_about: Settings list row for the About page.",
   "desktop profile_about_tinline: Desktop, profile and settings (in profile_view.rs, profile_page).",
 ]
-text = ""
+text = "Tinline பற்றி"
 
 [t_024848ef1f]
 en = "Video in calls"
@@ -5123,7 +5123,7 @@ where = [
   "ios settings_video_in_calls: Settings row and switch label for allowing video in calls.",
   "desktop settings_video_in_calls: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "அழைப்புகளில் வீடியோ"
 
 [t_316a961ccc]
 en = "You can turn your camera on in a call"
@@ -5131,7 +5131,7 @@ where = [
   "android settings_video_in_calls_on: Small line under the Video in calls switch when it is on.",
   "ios settings_video_in_calls_on: Subtitle when video in calls is allowed.",
 ]
-text = ""
+text = "அழைப்பின்போது உங்கள் கேமராவை ஆன் செய்யலாம்"
 
 [t_5a7ab72466]
 en = "Calls are voice only"
@@ -5139,7 +5139,7 @@ where = [
   "android settings_video_in_calls_off: Small line under the Video in calls switch when it is off.",
   "ios settings_video_in_calls_off: Subtitle when video in calls is off.",
 ]
-text = ""
+text = "அழைப்புகள் குரல் மட்டும்"
 
 [t_a1579450e2]
 en = "Link to a device"
@@ -5147,7 +5147,7 @@ where = [
   "android settings_add_link: Choice in the Add another account sheet: bring an account over from another device. Also named when another screen tells me which button to press on the new device.",
   "ios settings_add_link: Choice in the add-account dialog.",
 ]
-text = ""
+text = "ஒரு சாதனத்துடன் இணை"
 
 [t_a946f790b5]
 en = "Restore from recovery phrase"
@@ -5155,7 +5155,7 @@ where = [
   "android settings_add_restore: Choice in the Add another account sheet: restore an account from its 24 recovery words.",
   "ios settings_add_restore: Choice in the add-account dialog.",
 ]
-text = ""
+text = "மீட்பு வார்த்தைகளிலிருந்து மீட்டெடு"
 
 [t_17324a9a91]
 en = "Alert me about"
@@ -5164,7 +5164,7 @@ where = [
   "ios settings_notif_alert_me: Section heading above the notification category switches.",
   "desktop profile_alert_me_about: Desktop, profile and settings (in profile_view.rs, notifications_page).",
 ]
-text = ""
+text = "இவை பற்றி எனக்குத் தெரிவி"
 
 [t_20060c7c88]
 en = "Messages"
@@ -5177,7 +5177,7 @@ where = [
   "ios shell_search_messages: Search results header for matching messages.",
   "desktop common_messages: Shared label, used in several places (profile, shell).",
 ]
-text = ""
+text = "செய்திகள்"
 
 [t_a00f13dded]
 en = "From people, not groups"
@@ -5186,7 +5186,7 @@ where = [
   "ios settings_notif_messages_sub: Subtitle of the Messages notification row.",
   "desktop profile_from_people_not_groups: Desktop, profile and settings (in profile_view.rs, notifications_page).",
 ]
-text = ""
+text = "நபர்களிடமிருந்து, குழுக்களிலிருந்து அல்ல"
 
 [t_8a17cd599d]
 en = "Calls"
@@ -5197,7 +5197,7 @@ where = [
   "ios shell_tab_calls: Bottom tab title and screen reader label.",
   "desktop common_calls: Shared label, used in several places (profile, shell, view).",
 ]
-text = ""
+text = "அழைப்புகள்"
 
 [t_ed2f334fce]
 en = "Ringing when someone calls"
@@ -5206,7 +5206,7 @@ where = [
   "ios settings_notif_calls_sub: Subtitle of the Calls notification row.",
   "desktop profile_ringing_when_someone_calls: Desktop, profile and settings (in profile_view.rs, notifications_page).",
 ]
-text = ""
+text = "யாராவது அழைக்கும்போது ஒலிக்கும்"
 
 [t_91d94d2c90]
 en = "Groups"
@@ -5217,7 +5217,7 @@ where = [
   "ios shell_tab_groups: Bottom tab title and screen reader label.",
   "desktop common_groups: Shared label, used in several places (profile, shell, view).",
 ]
-text = ""
+text = "குழுக்கள்"
 
 [t_39da3cf549]
 en = "Posts, invites and requests"
@@ -5226,7 +5226,7 @@ where = [
   "ios settings_notif_groups_sub: Subtitle of the Groups notification row.",
   "desktop profile_posts_invites_and_requests: Desktop, profile and settings (in profile_view.rs, notifications_page).",
 ]
-text = ""
+text = "இடுகைகள், அழைப்பிதழ்கள், கோரிக்கைகள்"
 
 [t_e87ceb9af8]
 en = "Message notifications"
@@ -5234,7 +5234,7 @@ where = [
   "android notif_messages_switch: Accessibility label of the Messages notification switch.",
   "ios settings_notif_messages_label: Accessibility label of the message notifications switch.",
 ]
-text = ""
+text = "செய்தி அறிவிப்புகள்"
 
 [t_420c996232]
 en = "Call notifications"
@@ -5242,7 +5242,7 @@ where = [
   "android notif_calls_switch: Accessibility label of the Calls notification switch.",
   "ios settings_notif_calls_label: Accessibility label of the call notifications switch.",
 ]
-text = ""
+text = "அழைப்பு அறிவிப்புகள்"
 
 [t_5d2dce19f0]
 en = "Group notifications"
@@ -5250,7 +5250,7 @@ where = [
   "android notif_groups_switch: Accessibility label of the Groups notification switch.",
   "ios settings_notif_groups_label: Accessibility label of the group notifications switch.",
 ]
-text = ""
+text = "குழு அறிவிப்புகள்"
 
 [t_225bca0960]
 en = "A muted chat never alerts you, whatever is switched on here. Missed calls from one person fold into one notification."
@@ -5259,7 +5259,7 @@ where = [
   "ios settings_notif_note: Note under the notification switches.",
   "desktop profile_a_muted_chat_never: Desktop, profile and settings (in profile_view.rs, notifications_page).",
 ]
-text = ""
+text = "இங்கே எது ஆன் செய்யப்பட்டிருந்தாலும், ஒலியடக்கப்பட்ட அரட்டை உங்களுக்கு ஒருபோதும் தெரிவிக்காது. ஒருவரிடமிருந்து வந்த தவறிய அழைப்புகள் ஒரே அறிவிப்பாகச் சேர்க்கப்படும்."
 
 [t_f9314a645b]
 en = "Allowed"
@@ -5268,7 +5268,7 @@ where = [
   "ios settings_perm_allowed: Permission row state: allowed.",
   "desktop profile_allowed: Desktop, profile and settings (in profile_view.rs, notifications_page).",
 ]
-text = ""
+text = "அனுமதிக்கப்பட்டது"
 
 [t_86b04a353c]
 en = "Off in system settings"
@@ -5276,7 +5276,7 @@ where = [
   "android notif_perm_off: Status of a system permission that is switched off in the phone's settings.",
   "ios settings_perm_off: Permission row state: switched off in the system settings.",
 ]
-text = ""
+text = "சிஸ்டம் அமைப்புகளில் முடக்கப்பட்டுள்ளது"
 
 [t_d867863228]
 en = "Asked when you call"
@@ -5284,28 +5284,28 @@ where = [
   "android notif_perm_mic_asked: Status of the microphone permission when it has not been granted yet: the phone asks when a call needs it.",
   "ios settings_perm_mic_ask: Microphone permission row state: not asked yet.",
 ]
-text = ""
+text = "நீங்கள் அழைக்கும்போது கேட்கப்படும்"
 
 [t_74f5e97a8c]
 en = "Battery use"
 where = [
   "android notif_perm_battery: Permission row on the Notifications page for the Android battery setting.",
 ]
-text = ""
+text = "பேட்டரி உபயோகம்"
 
 [t_9ab6b9677e]
 en = "Unrestricted"
 where = [
   "android notif_perm_unrestricted: Status of the battery setting when Tinline is allowed to run in the background. Matches the Android setting name.",
 ]
-text = ""
+text = "கட்டுப்பாடற்றது"
 
 [t_986948ce6e]
 en = "Restricted"
 where = [
   "android notif_perm_restricted: Status of the battery setting when Android may pause Tinline. Matches the Android setting name.",
 ]
-text = ""
+text = "கட்டுப்படுத்தப்பட்டது"
 
 [t_7f59b79d80]
 en = "Fix"
@@ -5314,7 +5314,7 @@ where = [
   "android home_banner_fix: Banner button that opens the battery setting.",
   "ios settings_perm_fix_btn: Small button that opens system settings for a permission.",
 ]
-text = ""
+text = "சரிசெய்"
 
 [t_75471596a9]
 en = "These are set by your system, not by Tinline. Tinline asks only when it needs one."
@@ -5323,7 +5323,7 @@ where = [
   "ios settings_perms_note: Note under the permission rows.",
   "desktop profile_these_are_set_by: Desktop, profile and settings (in profile_view.rs, notifications_page).",
 ]
-text = ""
+text = "இவை Tinline-ஆல் அல்ல, உங்கள் சிஸ்டத்தால் அமைக்கப்படுகின்றன. தேவைப்படும்போது மட்டுமே Tinline கேட்கும்."
 
 [t_ba3ab5916d]
 en = "Quiet"
@@ -5332,7 +5332,7 @@ where = [
   "ios settings_quiet: Section heading, row title and switch label for the quiet mode.",
   "desktop profile_quiet: Desktop, profile and settings (in profile_view.rs, sounds_page).",
 ]
-text = ""
+text = "அமைதி"
 
 [t_73d5e714e0]
 en = "No sounds from Tinline: ringing, call tones, joins"
@@ -5341,7 +5341,7 @@ where = [
   "ios settings_quiet_sub: Subtitle of the Quiet row.",
   "desktop profile_no_sounds_from_tinline: Desktop, profile and settings (in profile_view.rs, sounds_page).",
 ]
-text = ""
+text = "Tinline-இலிருந்து ஒலிகள் இல்லை: ரிங், அழைப்பு ஒலிகள், சேர்வுகள்"
 
 [t_909bc609cf]
 en = "Classic chime"
@@ -5349,7 +5349,7 @@ where = [
   "android settings_sound_classic: Name of a call sound set.",
   "ios settings_sound_classic: Ringtone choice name.",
 ]
-text = ""
+text = "கிளாசிக் மணியொலி"
 
 [t_973e2907f7]
 en = "A bright four-note chime."
@@ -5357,7 +5357,7 @@ where = [
   "android settings_sound_classic_sub: Description of the Classic chime call sound.",
   "ios settings_sound_classic_sub: Description of the Classic chime ringtone.",
 ]
-text = ""
+text = "பிரகாசமான நான்கு ஸ்வர மணியொலி."
 
 [t_9b9e6e2e8f]
 en = "Slack → taut"
@@ -5365,7 +5365,7 @@ where = [
   "android settings_sound_slack: Name of a call sound set (two notes that beat, then one that pulls tight). The arrow means from loose to tight.",
   "ios settings_sound_slack: Ringtone choice name.",
 ]
-text = ""
+text = "தளர்வு → இறுக்கம்"
 
 [t_d00e0714a4]
 en = "Two close notes beat like a loose string, then one pulls tight."
@@ -5373,7 +5373,7 @@ where = [
   "android settings_sound_slack_sub: Description of the Slack to taut call sound.",
   "ios settings_sound_slack_sub: Description of the Slack → taut ringtone.",
 ]
-text = ""
+text = "நெருக்கமான இரண்டு ஸ்வரங்கள் தளர்ந்த கம்பி போல அதிர்கின்றன, பிறகு ஒன்று இறுக்கமாக இழுக்கிறது."
 
 [t_1a59cd4dd4]
 en = "Triad knock"
@@ -5381,7 +5381,7 @@ where = [
   "android settings_sound_triad: Name of a call sound set.",
   "ios settings_sound_triad: Ringtone choice name.",
 ]
-text = ""
+text = "மூன்று ஸ்வரத் தட்டு"
 
 [t_83563d2f55]
 en = "Three rising notes, like a knock."
@@ -5389,7 +5389,7 @@ where = [
   "android settings_sound_triad_sub: Description of the Triad knock call sound.",
   "ios settings_sound_triad_sub: Description of the Triad knock ringtone.",
 ]
-text = ""
+text = "ஏறும் மூன்று ஸ்வரங்கள், கதவைத் தட்டுவது போல."
 
 [t_f82d18f9cb]
 en = "Call sounds"
@@ -5398,7 +5398,7 @@ where = [
   "ios settings_call_sounds: Section heading for ringtone choices.",
   "desktop profile_call_sounds: Desktop, profile and settings (in profile_view.rs, sounds_page).",
 ]
-text = ""
+text = "அழைப்பு ஒலிகள்"
 
 [t_23d07f2da3]
 en = "Ringtone"
@@ -5407,7 +5407,7 @@ where = [
   "ios settings_cue_ring: Chip that previews the ringtone.",
   "desktop profile_ringtone: Desktop, profile and settings (in profile_view.rs, sounds_page).",
 ]
-text = ""
+text = "ரிங்டோன்"
 
 [t_2f84cdc07a]
 en = "Connected"
@@ -5418,7 +5418,7 @@ where = [
   "ios people_line_connected: Accessibility description of the line between the user and a contact: connected.",
   "desktop profile_connected: Desktop, profile and settings (in profile_view.rs, sounds_page).",
 ]
-text = ""
+text = "இணைந்தது"
 
 [t_2b6544f393]
 en = "Call ended"
@@ -5431,7 +5431,7 @@ where = [
   "ios call_ended_title: Title of the screen shown after a call ends, and the default end reason.",
   "desktop common_call_ended: Shared label, used in several places (call_screen, gcall, profile).",
 ]
-text = ""
+text = "அழைப்பு முடிந்தது"
 
 [t_ead8ff0e51]
 en = "Quiet is on, so previews are silent."
@@ -5440,7 +5440,7 @@ where = [
   "ios settings_sounds_note_quiet: Note under the sound previews when quiet mode is on.",
   "desktop profile_quiet_is_on_so: Desktop, profile and settings (in profile_view.rs, sounds_page).",
 ]
-text = ""
+text = "அமைதி ஆன் செய்யப்பட்டுள்ளதால், முன்னோட்டங்கள் ஒலிக்காது."
 
 [t_4bd4717d11]
 en = "Tap a sound to hear it. The choice applies to the next call."
@@ -5449,7 +5449,7 @@ where = [
   "ios settings_sounds_note: Note under the sound previews.",
   "desktop profile_tap_a_sound_to: Desktop, profile and settings (in profile_view.rs, sounds_page).",
 ]
-text = ""
+text = "கேட்க ஒரு ஒலியைத் தட்டுங்கள். உங்கள் தேர்வு அடுத்த அழைப்பிலிருந்து பொருந்தும்."
 
 [t_1758604677]
 en = "Video quality"
@@ -5458,7 +5458,7 @@ where = [
   "ios settings_video_quality: Section heading on the Video page.",
   "desktop profile_video_quality: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "வீடியோ தரம்"
 
 [t_5b51c78fea]
 en = "Sharper video"
@@ -5467,7 +5467,7 @@ where = [
   "ios settings_video_sharper: Row and switch label for starting video calls in HD.",
   "desktop profile_sharper_video: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "கூர்மையான வீடியோ"
 
 [t_24032afc4c]
 en = "Always starts in HD. Uses more data and battery."
@@ -5476,7 +5476,7 @@ where = [
   "ios settings_video_hd_on: Subtitle of Sharper video when on.",
   "desktop profile_always_starts_in_hd: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "எப்போதும் HD-யில் தொடங்கும். அதிக டேட்டாவையும் பேட்டரியையும் பயன்படுத்தும்."
 
 [t_98d61cac31]
 en = "Goes HD by itself when the connection allows."
@@ -5485,7 +5485,7 @@ where = [
   "ios settings_video_hd_auto: Subtitle of Sharper video when off.",
   "desktop profile_goes_hd_by_itself: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "இணைப்பு அனுமதிக்கும்போது தானாகவே HD-க்கு மாறும்."
 
 [t_e5146ff576]
 en = "Every video call starts this way. During a call, tap HD to change it for that call."
@@ -5494,35 +5494,35 @@ where = [
   "ios settings_video_note: Note under the video quality switch.",
   "desktop profile_every_video_call_starts: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "ஒவ்வொரு வீடியோ அழைப்பும் இப்படியே தொடங்கும். அழைப்பின்போது, அந்த அழைப்புக்கு மட்டும் மாற்ற HD-ஐத் தட்டுங்கள்."
 
 [t_7c81be4f77]
 en = "{value} GB"
 where = [
   "android settings_size_gb: A storage size in gigabytes. {value} is a number with one decimal.",
 ]
-text = ""
+text = "{value} GB"
 
 [t_5a7ea8ccc1]
 en = "{value} MB"
 where = [
   "android settings_size_mb: A storage size in megabytes. {value} is a whole number.",
 ]
-text = ""
+text = "{value} MB"
 
 [t_b9f95541a6]
 en = "{value} KB"
 where = [
   "android settings_size_kb: A storage size in kilobytes. {value} is a whole number.",
 ]
-text = ""
+text = "{value} KB"
 
 [t_98c78e611c]
 en = "{value} B"
 where = [
   "android settings_size_b: A storage size in bytes. {value} is a whole number.",
 ]
-text = ""
+text = "{value} B"
 
 [t_8e7c1c152b]
 en = "Pictures"
@@ -5531,7 +5531,7 @@ where = [
   "ios settings_storage_pictures: Storage breakdown label.",
   "desktop profile_pictures: Desktop, profile and settings (in profile_ui.rs, profile_update).",
 ]
-text = ""
+text = "படங்கள்"
 
 [t_00bfd7b1da]
 en = "Files"
@@ -5540,7 +5540,7 @@ where = [
   "ios settings_storage_files: Storage breakdown label.",
   "desktop profile_files: Desktop, profile and settings (in profile_view.rs, storage_page).",
 ]
-text = ""
+text = "கோப்புகள்"
 
 [t_a51b20dfb2]
 en = "Cache"
@@ -5549,7 +5549,7 @@ where = [
   "ios settings_storage_cache: Storage breakdown label.",
   "desktop profile_cache: Desktop, profile and settings (in profile_view.rs, storage_page).",
 ]
-text = ""
+text = "தற்காலிகச் சேமிப்பு"
 
 [t_c2767071de]
 en = "Download pictures"
@@ -5558,7 +5558,7 @@ where = [
   "ios settings_storage_download: Section heading for picture download choices.",
   "desktop profile_download_pictures: Desktop, profile and settings (in profile_view.rs, storage_page).",
 ]
-text = ""
+text = "படங்களைப் பதிவிறக்கு"
 
 [t_22409bf022]
 en = "Always"
@@ -5567,7 +5567,7 @@ where = [
   "ios settings_dl_always: Picture download choice.",
   "desktop profile_always: Desktop, profile and settings (in profile_view.rs, storage_page).",
 ]
-text = ""
+text = "எப்போதும்"
 
 [t_1a452cd860]
 en = "On Wi-Fi and mobile data"
@@ -5576,7 +5576,7 @@ where = [
   "ios settings_dl_always_sub: Subtitle of the Always download choice.",
   "desktop profile_on_wi_fi_and: Desktop, profile and settings (in profile_view.rs, storage_page).",
 ]
-text = ""
+text = "வைஃபையிலும் மொபைல் டேட்டாவிலும்"
 
 [t_80ec3e590e]
 en = "On Wi-Fi"
@@ -5584,7 +5584,7 @@ where = [
   "android settings_dl_wifi: Picture download choice: download only on Wi-Fi.",
   "ios settings_dl_wifi: Picture download choice.",
 ]
-text = ""
+text = "வைஃபையில்"
 
 [t_ef66911de3]
 en = "On mobile data they wait for a tap"
@@ -5592,7 +5592,7 @@ where = [
   "android settings_dl_wifi_sub: Small line under the On Wi-Fi picture download choice.",
   "ios settings_dl_wifi_sub: Subtitle of the On Wi-Fi download choice.",
 ]
-text = ""
+text = "மொபைல் டேட்டாவில் தட்டும் வரை காத்திருக்கும்"
 
 [t_07c57edfbc]
 en = "When I tap them"
@@ -5601,7 +5601,7 @@ where = [
   "ios settings_dl_tap: Picture download choice.",
   "desktop profile_when_i_tap_them: Desktop, profile and settings (in profile_view.rs, storage_page).",
 ]
-text = ""
+text = "நான் தட்டும்போது"
 
 [t_dce236cb81]
 en = "Each shows a soft preview until then"
@@ -5610,7 +5610,7 @@ where = [
   "ios settings_dl_tap_sub: Subtitle of the When I tap them download choice.",
   "desktop profile_each_shows_a_soft: Desktop, profile and settings (in profile_view.rs, storage_page).",
 ]
-text = ""
+text = "அதுவரை ஒவ்வொன்றும் மங்கலான முன்னோட்டத்தைக் காட்டும்"
 
 [t_6ccfc0822e]
 en = "Clear cache"
@@ -5619,7 +5619,7 @@ where = [
   "ios settings_clear_cache: Row that clears the picture and file cache.",
   "desktop profile_clear_cache: Desktop, profile and settings (in profile_view.rs, storage_page).",
 ]
-text = ""
+text = "தற்காலிகச் சேமிப்பை அழி"
 
 [t_bda6ead116]
 en = "{size} of pictures and files you’ve opened. They’re prepared again when you open them."
@@ -5627,7 +5627,7 @@ where = [
   "android settings_clear_cache_sub: Small line under Clear cache. {size} is a formatted size such as 12 MB.",
   "ios settings_clear_cache_sub: Subtitle of Clear cache; {size} is a size such as 12 MB.",
 ]
-text = ""
+text = "நீங்கள் திறந்த படங்களும் கோப்புகளும்: {size}. மீண்டும் திறக்கும்போது அவை மறுபடி தயார் செய்யப்படும்."
 
 [t_1a905db57c]
 en = "Cleared"
@@ -5636,7 +5636,7 @@ where = [
   "ios settings_cache_cleared: Clear cache subtitle after clearing.",
   "desktop profile_cleared: Desktop, profile and settings (in profile_view.rs, storage_page).",
 ]
-text = ""
+text = "அழிக்கப்பட்டது"
 
 [t_9cc4506644]
 en = "Nothing to clear"
@@ -5645,7 +5645,7 @@ where = [
   "ios settings_cache_empty: Clear cache subtitle when the cache is empty.",
   "desktop profile_nothing_to_clear: Desktop, profile and settings (in profile_view.rs, storage_page).",
 ]
-text = ""
+text = "அழிக்க எதுவும் இல்லை"
 
 [t_a66e3b8971]
 en = "To free more space, remove pictures or files from their chat."
@@ -5654,7 +5654,7 @@ where = [
   "ios settings_storage_note: Note under the Clear cache row.",
   "desktop profile_to_free_more_space: Desktop, profile and settings (in profile_view.rs, storage_page).",
 ]
-text = ""
+text = "மேலும் இடத்தைக் காலியாக்க, படங்களையோ கோப்புகளையோ அவற்றின் அரட்டையிலிருந்து அகற்றுங்கள்."
 
 [t_b61b10150e]
 en_one = "{count} person"
@@ -5664,6 +5664,8 @@ where = [
   "ios settings_blocked_count: Subtitle of Blocked people; {count} is how many are blocked.",
   "desktop profile_blocked_count: Settings > Privacy row: how many people you blocked. {count} is that number.",
 ]
+one = "{count} நபர்"
+other = "{count} நபர்கள்"
 
 [t_dc9d990774]
 en = "No one"
@@ -5672,7 +5674,7 @@ where = [
   "ios settings_blocked_none: Subtitle of Blocked people when nobody is blocked.",
   "desktop profile_no_one: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "யாரும் இல்லை"
 
 [t_ace4d33640]
 en = "Who can call me"
@@ -5681,7 +5683,7 @@ where = [
   "ios settings_who_can_call: Privacy row and page title for call permissions.",
   "desktop profile_who_can_call_me: Desktop, profile and settings (in profile_view.rs, profile_page).",
 ]
-text = ""
+text = "என்னை யார் அழைக்கலாம்"
 
 [t_01ef1acf26]
 en_one = "{count} contact is messages only"
@@ -5691,6 +5693,8 @@ where = [
   "ios settings_msg_only_count: Subtitle of Who can call me; {count} is how many contacts may only message.",
   "desktop profile_messages_only_count: Settings > Privacy row: how many contacts may message you but not call. {count} is that number.",
 ]
+one = "{count} தொடர்பு செய்திகளுக்கு மட்டும்"
+other = "{count} தொடர்புகள் செய்திகளுக்கு மட்டும்"
 
 [t_f32fa3d3d6]
 en = "All contacts can call"
@@ -5699,7 +5703,7 @@ where = [
   "ios settings_all_can_call: Subtitle of Who can call me when every contact may call.",
   "desktop profile_all_contacts_can_call: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "எல்லாத் தொடர்புகளும் அழைக்கலாம்"
 
 [t_364e4d7be9]
 en = "Needs your passphrase"
@@ -5708,7 +5712,7 @@ where = [
   "ios settings_recovery_pass: Subtitle of Account recovery when a passphrase is set.",
   "desktop common_needs_your_passphrase: Shared label, used in several places (profile, view).",
 ]
-text = ""
+text = "உங்கள் கடவுச்சொற்றொடர் தேவை"
 
 [t_da3369bc3f]
 en = "Needs your screen lock"
@@ -5716,7 +5720,7 @@ where = [
   "android settings_recovery_needs_lock: Small line under Account recovery when the phone's screen lock protects the recovery backup.",
   "ios settings_recovery_lock: Subtitle of Account recovery when the phone screen lock is used.",
 ]
-text = ""
+text = "உங்கள் திரைப் பூட்டு தேவை"
 
 [t_db4af04dd1]
 en = "Protects Tinline on this device"
@@ -5725,7 +5729,7 @@ where = [
   "ios settings_passphrase_sub: Subtitle of the Passphrase row.",
   "desktop profile_protects_tinline_on_this: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "இந்தச் சாதனத்தில் Tinline-ஐப் பாதுகாக்கும்"
 
 [t_4171b39021]
 en = "Your contacts see your name, picture and profile. Tinline doesn’t hide who you talk to, and every device linked to your account can read your chats."
@@ -5734,7 +5738,7 @@ where = [
   "ios settings_privacy_note: Note under the privacy rows.",
   "desktop profile_your_contacts_see_your: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "உங்கள் பெயர், படம், சுயவிவரம் ஆகியவற்றை உங்கள் தொடர்புகள் பார்க்கிறார்கள். நீங்கள் யாருடன் பேசுகிறீர்கள் என்பதை Tinline மறைப்பதில்லை, உங்கள் கணக்குடன் இணைக்கப்பட்ட ஒவ்வொரு சாதனமும் உங்கள் அரட்டைகளைப் படிக்க முடியும்."
 
 [t_d13fbdcef3]
 en = "Read receipts"
@@ -5743,7 +5747,7 @@ where = [
   "ios settings_read_receipts: Privacy row and switch label.",
   "desktop profile_read_receipts: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "படித்த ரசீதுகள்"
 
 [t_e33dd40c71]
 en = "People see when you’ve read their messages"
@@ -5752,7 +5756,7 @@ where = [
   "ios settings_reads_on: Read receipts subtitle when on.",
   "desktop profile_people_see_when_youve: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "அவர்களின் செய்திகளை நீங்கள் படித்ததை மற்றவர்கள் பார்ப்பார்கள்"
 
 [t_da8f51f026]
 en = "Your reads stay with you"
@@ -5761,7 +5765,7 @@ where = [
   "ios settings_reads_off: Read receipts subtitle when off.",
   "desktop profile_your_reads_stay_with: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "நீங்கள் படித்தது உங்களுக்குள்ளேயே இருக்கும்"
 
 [t_acbc9673fb]
 en = "Delivered ticks still go out either way, and you still see when others read yours. Messages you read while this is off stay unconfirmed."
@@ -5770,7 +5774,7 @@ where = [
   "ios settings_reads_note: Note under the read receipts switch.",
   "desktop profile_delivered_ticks_still_go: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "எப்படியிருந்தாலும் சேர்ந்த டிக்குகள் அனுப்பப்படும், உங்கள் செய்திகளை மற்றவர்கள் படிக்கும்போது நீங்கள் பார்க்கலாம். இது முடக்கத்தில் இருக்கும்போது நீங்கள் படிக்கும் செய்திகள் உறுதிப்படுத்தப்படாமலே இருக்கும்."
 
 [t_9b92530e61]
 en = "Show me as online in public groups"
@@ -5778,7 +5782,7 @@ where = [
   "android settings_presence_title: Switch title and accessibility label on the Privacy page. The title may wrap to two lines.",
   "desktop profile_show_me_as_online: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "பொதுக் குழுக்களில் நான் ஆன்லைனில் இருப்பதைக் காட்டு"
 
 [t_16d2e3f396]
 en = "Members see when you’re here"
@@ -5786,7 +5790,7 @@ where = [
   "android settings_presence_on: Small line under the public-group presence switch when it is on.",
   "desktop profile_members_see_when_youre: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "நீங்கள் இங்கே இருக்கும்போது உறுப்பினர்களுக்குத் தெரியும்"
 
 [t_e580edbe80]
 en = "You stay off their online lists"
@@ -5794,7 +5798,7 @@ where = [
   "android settings_presence_off: Small line under the public-group presence switch when it is off.",
   "desktop profile_you_stay_off_their: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "அவர்களின் ஆன்லைன் பட்டியல்களில் நீங்கள் இருக்க மாட்டீர்கள்"
 
 [t_d7e9b858a1]
 en = "Public groups are the ones anyone can join with an open link. This applies on this device; your other devices keep their own choice."
@@ -5802,21 +5806,21 @@ where = [
   "android settings_presence_note: Explanation under the public-group presence switch.",
   "desktop profile_public_groups_are_the: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "திறந்த இணைப்பு மூலம் எவரும் சேரக்கூடியவை பொதுக் குழுக்கள். இது இந்தச் சாதனத்துக்கு மட்டும் பொருந்தும்; உங்கள் மற்ற சாதனங்கள் அவற்றின் சொந்தத் தேர்வை வைத்திருக்கும்."
 
 [t_1db1044a1b]
 en = "Group pictures"
 where = [
   "android settings_group_pictures: Section heading on the Privacy page: when pictures in groups download by themselves.",
 ]
-text = ""
+text = "குழுப் படங்கள்"
 
 [t_fae414092c]
 en = "Pictures in groups come from the group’s hosts. This applies on this device."
 where = [
   "android settings_group_pictures_note: Note under the group pictures choices.",
 ]
-text = ""
+text = "குழுக்களில் உள்ள படங்கள் குழுவின் ஹோஸ்ட்களிடமிருந்து வருகின்றன. இது இந்தச் சாதனத்துக்குப் பொருந்தும்."
 
 [t_dba3db1114]
 en = "Can call you"
@@ -5825,7 +5829,7 @@ where = [
   "ios settings_can_call_you: Contact row state on Who can call me.",
   "desktop profile_can_call_you: Desktop, profile and settings (in profile_view.rs, calls_page).",
 ]
-text = ""
+text = "உங்களை அழைக்கலாம்"
 
 [t_c92e880e1e]
 en = "Messages only"
@@ -5836,7 +5840,7 @@ where = [
   "ios settings_messages_only: Contact row state on Who can call me.",
   "desktop common_messages_only: Shared label, used in several places (chat, profile).",
 ]
-text = ""
+text = "செய்திகள் மட்டும்"
 
 [t_411cebb300]
 en = "Allow calls from {name}"
@@ -5844,7 +5848,7 @@ where = [
   "android settings_allow_calls_from: Accessibility label of a contact's switch on the Who can call me page. {name} is the contact's name.",
   "ios settings_allow_calls_from: Accessibility label of a contact's call switch; {name} is the contact's name.",
 ]
-text = ""
+text = "{name} அவர்களிடமிருந்து அழைப்புகளை அனுமதி"
 
 [t_7c48c65cd7]
 en = "Someone you allowed can ring you; someone on messages only can still write. People you blocked can do neither."
@@ -5853,49 +5857,49 @@ where = [
   "ios settings_calls_note: Note under the contacts list on Who can call me.",
   "desktop profile_someone_you_allowed_can: Desktop, profile and settings (in profile_view.rs, calls_page).",
 ]
-text = ""
+text = "நீங்கள் அனுமதித்தவர் உங்களை அழைக்கலாம்; செய்திகள் மட்டும் உள்ளவர் எழுதலாம். நீங்கள் தடுத்தவர்களால் இரண்டும் முடியாது."
 
 [t_8e36a1d522]
 en = "Background & battery"
 where = [
   "android settings_battery_title: Title of the page that checks the settings that keep calls ringing in the background.",
 ]
-text = ""
+text = "பின்னணி & பேட்டரி"
 
 [t_4fdd5e43e0]
 en = "Keep my line open"
 where = [
   "android settings_battery_keep: Heading on the background and battery page.",
 ]
-text = ""
+text = "என் லைனைத் திறந்து வை"
 
 [t_83dbe93842]
 en = "Tinline stays connected in the background so calls ring like a normal phone. It uses a little battery. The checklist below is what Android needs to allow that."
 where = [
   "android settings_battery_hint: Explanation at the top of the background and battery page.",
 ]
-text = ""
+text = "சாதாரண ஃபோன் போல அழைப்புகள் ஒலிக்க, Tinline பின்னணியில் இணைப்பில் இருக்கும். இது சிறிது பேட்டரியைப் பயன்படுத்தும். அதை அனுமதிக்க Android-க்குத் தேவையானவை கீழே உள்ள சரிபார்ப்புப் பட்டியலில் உள்ளன."
 
 [t_3a5e4ab9a1]
 en = "CHECKLIST"
 where = [
   "android settings_checklist: Small all-capitals section label above the permission checklist on the background and battery page.",
 ]
-text = ""
+text = "சரிபார்ப்புப் பட்டியல்"
 
 [t_e41150cd8d]
 en = "Battery"
 where = [
   "android settings_battery_row: Checklist row on the background and battery page.",
 ]
-text = ""
+text = "பேட்டரி"
 
 [t_ce5337ffb2]
 en = "Optimised — Android may pause Tinline"
 where = [
   "android settings_battery_optimised: Small line under the Battery checklist row when Android restricts Tinline's background use.",
 ]
-text = ""
+text = "மேம்படுத்தப்பட்டது — Android, Tinline-ஐ இடைநிறுத்தக்கூடும்"
 
 [t_cb5667ea75]
 en = "On"
@@ -5907,28 +5911,28 @@ where = [
   "ios people_switch_on: Accessibility value of a switch that is on.",
   "ios call_value_on: Accessibility value of a toggle that is on.",
 ]
-text = ""
+text = "ஆன்"
 
 [t_8c2fb128eb]
 en = "Still missing calls?"
 where = [
   "android settings_battery_missing_bold: Bold lead-in of the box at the bottom of the background and battery page.",
 ]
-text = ""
+text = "இன்னும் அழைப்புகள் தவறுகின்றனவா?"
 
 [t_528a43d393]
 en = "Some phones need an extra step to keep apps running."
 where = [
   "android settings_battery_missing: Text that follows the bold lead-in Still missing calls?",
 ]
-text = ""
+text = "சில ஃபோன்களில் ஆப்களை இயங்க வைக்க ஒரு கூடுதல் படி தேவை."
 
 [t_689c143935]
 en = "Steps for your phone"
 where = [
   "android settings_battery_steps: Link that opens a web page with phone-specific background settings.",
 ]
-text = ""
+text = "உங்கள் ஃபோனுக்கான படிகள்"
 
 [t_637c31876f]
 en = "Couldn’t open recovery. Go back and try again."
@@ -5936,7 +5940,7 @@ where = [
   "android settings_recovery_open_failed: Error on the account recovery page when it could not start.",
   "ios security_recovery_failed: Error when the recovery data could not be read.",
 ]
-text = ""
+text = "மீட்பைத் திறக்க முடியவில்லை. பின்செல்லுங்கள், மீண்டும் முயலுங்கள்."
 
 [t_880d401582]
 en = "That didn’t match. Try again."
@@ -5944,7 +5948,7 @@ where = [
   "android settings_recovery_wrong: Error under the passphrase field on the recovery check page when the passphrase is wrong.",
   "ios security_wrong_pass: Error under the passphrase field when the passphrase is wrong.",
 ]
-text = ""
+text = "அது பொருந்தவில்லை. மீண்டும் முயலுங்கள்."
 
 [t_2d03567fc3]
 en = "Couldn’t open your backup. Try again."
@@ -5952,7 +5956,7 @@ where = [
   "android settings_recovery_backup_failed: Error on the recovery check page when the backup could not be opened.",
   "ios security_open_failed: Error when the recovery backup could not be opened.",
 ]
-text = ""
+text = "உங்கள் காப்புப்பிரதியைத் திறக்க முடியவில்லை. மீண்டும் முயலுங்கள்."
 
 [t_d1bb5a0088]
 en = "Add a screen lock or an app passphrase to open your backup."
@@ -5960,7 +5964,7 @@ where = [
   "android settings_recovery_add_lock: Error on the recovery check page when the phone has no screen lock and the app has no passphrase.",
   "ios security_need_lock: Error when the phone has no screen lock and no app passphrase is set.",
 ]
-text = ""
+text = "உங்கள் காப்புப்பிரதியைத் திறக்க, திரைப் பூட்டையோ ஆப் கடவுச்சொற்றொடரையோ சேருங்கள்."
 
 [t_4491e679bd]
 en = "Check it’s you before opening your backup."
@@ -5968,7 +5972,7 @@ where = [
   "android settings_recovery_check: Lead text on the recovery check page.",
   "ios security_check_you: Intro on the account recovery gate.",
 ]
-text = ""
+text = "உங்கள் காப்புப்பிரதியைத் திறக்கும் முன், இது நீங்கள்தான் என்பதை உறுதிசெய்யுங்கள்."
 
 [t_a6551d1fc7]
 en = "Your passphrase"
@@ -5979,7 +5983,7 @@ where = [
   "ios link_your_pass: Label of the passphrase field on the approval step.",
   "desktop link_your_passphrase: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "உங்கள் கடவுச்சொற்றொடர்"
 
 [t_2b3975ca67]
 en = "Use your phone’s screen lock to continue."
@@ -5987,7 +5991,7 @@ where = [
   "android settings_recovery_use_lock: Hint on the recovery check page when there is no passphrase.",
   "ios security_use_lock_hint: Hint on the recovery gate when no app passphrase is set.",
 ]
-text = ""
+text = "தொடர, உங்கள் ஃபோனின் திரைப் பூட்டைப் பயன்படுத்துங்கள்."
 
 [t_554ce7f1cd]
 en = "Use screen lock"
@@ -5995,7 +5999,7 @@ where = [
   "android settings_use_screen_lock: Button on the recovery check page that asks for my fingerprint, face or PIN.",
   "ios security_use_lock: Button on the recovery gate when no passphrase is set.",
 ]
-text = ""
+text = "திரைப் பூட்டைப் பயன்படுத்து"
 
 [t_26b0725965]
 en = "Your recovery backup"
@@ -6003,7 +6007,7 @@ where = [
   "android settings_backup_title: Title of the page that shows my recovery key and 24 words.",
   "ios security_backup_title: Title of the page that shows the recovery key and words.",
 ]
-text = ""
+text = "உங்கள் மீட்புக் காப்புப்பிரதி"
 
 [t_985468e30f]
 en = "Keep this private. Anyone with it can act as you."
@@ -6011,14 +6015,14 @@ where = [
   "android settings_backup_private: Lead text on the recovery backup page.",
   "ios security_keep_private: Warning on the recovery backup page.",
 ]
-text = ""
+text = "இதைத் தனிப்பட்டதாக வையுங்கள். இது உள்ள எவரும் நீங்களாகச் செயல்பட முடியும்."
 
 [t_156815035e]
 en = "{words} words"
 where = [
   "android settings_backup_words: Tab on the recovery backup page: the 24 recovery words. {words} is how many recovery words there are (24).",
 ]
-text = ""
+text = "{words} வார்த்தைகள்"
 
 [t_37b89bcabd]
 en = "Couldn’t prepare the key. Use your {words} words instead."
@@ -6026,7 +6030,7 @@ where = [
   "android settings_backup_key_failed: Hint on the recovery backup page when the key could not be made. {words} is how many recovery words there are (24).",
   "ios security_key_failed: Hint when the recovery key could not be made.  {words} is the number of recovery words (24).",
 ]
-text = ""
+text = "விசையைத் தயார் செய்ய முடியவில்லை. பதிலாக உங்கள் {words} வார்த்தைகளைப் பயன்படுத்துங்கள்."
 
 [t_ef3b9b9e9f]
 en = "Hide"
@@ -6035,7 +6039,7 @@ where = [
   "ios security_hide: Button that hides the recovery key or words.",
   "desktop common_hide: Shared label, used in several places (link, view).",
 ]
-text = ""
+text = "மறை"
 
 [t_783f1bd5a1]
 en = "Reveal"
@@ -6043,7 +6047,7 @@ where = [
   "android settings_reveal: Button on the recovery backup page that shows the key or words.",
   "ios security_reveal: Button that shows the recovery key or words.",
 ]
-text = ""
+text = "காட்டு"
 
 [t_c6af397085]
 en = "Hides after 30 seconds. Locks when you leave the app."
@@ -6051,7 +6055,7 @@ where = [
   "android settings_backup_hides: Hint on the recovery backup page.",
   "ios security_hint_hides: Hint on the recovery backup page.",
 ]
-text = ""
+text = "30 வினாடிகளில் மறையும். ஆப்பை விட்டு வெளியேறும்போது பூட்டப்படும்."
 
 [t_11a94bf685]
 en = "Key or words restore the same account. Keep either in a private, safe place."
@@ -6059,7 +6063,7 @@ where = [
   "android settings_backup_same: Hint on the recovery backup page.",
   "ios security_hint_same: Hint on the recovery backup page.",
 ]
-text = ""
+text = "விசையோ வார்த்தைகளோ அதே கணக்கை மீட்டெடுக்கும். ஏதாவது ஒன்றைத் தனிப்பட்ட, பாதுகாப்பான இடத்தில் வையுங்கள்."
 
 [t_b53710a836]
 en = "Copied. Keep it somewhere private."
@@ -6067,7 +6071,7 @@ where = [
   "android settings_backup_copied: Message on the recovery backup page after copying the key.",
   "ios security_copied_note: Message after the recovery key was copied.",
 ]
-text = ""
+text = "நகலெடுக்கப்பட்டது. தனிப்பட்ட இடத்தில் வையுங்கள்."
 
 [t_93a19d70aa]
 en = "Copy key"
@@ -6075,14 +6079,14 @@ where = [
   "android settings_copy_key: Button on the recovery backup page.",
   "ios security_copy_key: Button that copies the recovery key.",
 ]
-text = ""
+text = "விசையை நகலெடு"
 
 [t_854d49341c]
 en = "Couldn’t copy. Try again."
 where = [
   "android settings_copy_failed: Message on the recovery backup page when copying failed.",
 ]
-text = ""
+text = "நகலெடுக்க முடியவில்லை. மீண்டும் முயலுங்கள்."
 
 [t_c838859bcd]
 en = "Change passphrase"
@@ -6091,7 +6095,7 @@ where = [
   "ios security_change_pass: Title and button when a passphrase exists.",
   "desktop common_change_passphrase: Shared label, used in several places (profile, view).",
 ]
-text = ""
+text = "கடவுச்சொற்றொடரை மாற்று"
 
 [t_b3e0f45116]
 en = "Current passphrase"
@@ -6100,7 +6104,7 @@ where = [
   "ios security_current_pass: Label of the field for the existing passphrase.",
   "desktop common_current_passphrase: Shared label, used in several places (profile, view).",
 ]
-text = ""
+text = "தற்போதைய கடவுச்சொற்றொடர்"
 
 [t_f4f0776b65]
 en = "New passphrase"
@@ -6109,7 +6113,7 @@ where = [
   "ios security_new_pass: Field label when changing the passphrase.",
   "desktop common_new_passphrase: Shared label, used in several places (profile, view).",
 ]
-text = ""
+text = "புதிய கடவுச்சொற்றொடர்"
 
 [t_ca983b7bba]
 en = "Your account lives only on this phone. A passphrase encrypts it, so nobody holding your phone can copy it."
@@ -6117,7 +6121,7 @@ where = [
   "android settings_passphrase_why: Lead text on the page for adding a passphrase.",
   "ios security_pass_intro: Intro on the add-passphrase page.",
 ]
-text = ""
+text = "உங்கள் கணக்கு இந்த ஃபோனில் மட்டுமே உள்ளது. கடவுச்சொற்றொடர் அதை என்க்ரிப்ட் செய்யும், எனவே உங்கள் ஃபோனைக் கையில் வைத்திருக்கும் யாராலும் அதை நகலெடுக்க முடியாது."
 
 [t_8bb3808409]
 en = "Version {version}"
@@ -6125,7 +6129,7 @@ where = [
   "android settings_about_version: App version on the About page. {version} is a number such as 0.2.0.",
   "ios settings_about_version: About page; {version} is the app version such as 0.2.0.",
 ]
-text = ""
+text = "பதிப்பு {version}"
 
 [t_4ab3281957]
 en = "Made by Osvauld"
@@ -6134,7 +6138,7 @@ where = [
   "ios settings_about_made_by: About page credit line.",
   "desktop profile_made_by_osvauld: Desktop, profile and settings (in profile_view.rs, about_page).",
 ]
-text = ""
+text = "Osvauld உருவாக்கியது"
 
 [t_e283f0f7c9]
 en = "Open-source licences"
@@ -6143,7 +6147,7 @@ where = [
   "ios settings_licences: About row and page title for licences.",
   "desktop profile_open_source_licences: Desktop, profile and settings (in profile_view.rs, about_page).",
 ]
-text = ""
+text = "ஓப்பன் சோர்ஸ் உரிமங்கள்"
 
 [t_541e7f6e93]
 en = "The libraries Tinline is built on"
@@ -6152,7 +6156,7 @@ where = [
   "ios settings_licences_sub: Subtitle of the Open-source licences row.",
   "desktop profile_the_libraries_tinline_is: Desktop, profile and settings (in profile_view.rs, about_page).",
 ]
-text = ""
+text = "Tinline உருவாக்கப்பட்டுள்ள நூலகங்கள்"
 
 [t_827ea4031a]
 en = "Full licence texts"
@@ -6160,7 +6164,7 @@ where = [
   "android settings_licences_full: Row on the About page that opens the full licence texts.",
   "ios settings_licence_texts: Row that opens the full licence texts.",
 ]
-text = ""
+text = "முழு உரிம உரைகள்"
 
 [t_1dddbaa123]
 en = "Source code"
@@ -6169,7 +6173,7 @@ where = [
   "ios settings_source: About row that opens the source code website.",
   "desktop profile_source_code: Desktop, profile and settings (in profile_view.rs, about_page).",
 ]
-text = ""
+text = "மூலக் குறியீடு"
 
 [t_6bbcef751d]
 en = "Tinline is open source"
@@ -6178,7 +6182,7 @@ where = [
   "ios settings_source_sub: Subtitle of the Source code row.",
   "desktop profile_tinline_is_open_source: Desktop, profile and settings (in profile_view.rs, about_page).",
 ]
-text = ""
+text = "Tinline ஓப்பன் சோர்ஸ்"
 
 [t_64cb92446a]
 en = "Tinline has no ads and no tracking. Your messages and calls go between your devices and the people you talk to."
@@ -6187,7 +6191,7 @@ where = [
   "ios settings_about_note: Note on the About page.",
   "desktop profile_tinline_has_no_ads: Desktop, profile and settings (in profile_view.rs, about_page).",
 ]
-text = ""
+text = "Tinline-இல் விளம்பரங்களும் இல்லை, கண்காணிப்பும் இல்லை. உங்கள் செய்திகளும் அழைப்புகளும் உங்கள் சாதனங்களுக்கும் நீங்கள் பேசுபவர்களுக்கும் இடையே மட்டுமே செல்கின்றன."
 
 [t_f59458f78e]
 en = "Terms of Use"
@@ -6196,7 +6200,7 @@ where = [
   "ios settings_terms: About row that opens the terms website.",
   "desktop signup_terms_of_use: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "பயன்பாட்டு விதிமுறைகள்"
 
 [t_616628b01c]
 en = "Privacy Policy"
@@ -6205,21 +6209,21 @@ where = [
   "ios settings_privacy_policy: About row that opens the privacy policy website.",
   "desktop signup_privacy_policy: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "தனியுரிமைக் கொள்கை"
 
 [t_afbb8506ee]
 en = "Copy debug log"
 where = [
   "android settings_log_copy: Row on the About page that copies the debug log to the clipboard.",
 ]
-text = ""
+text = "டீபக் பதிவை நகலெடு"
 
 [t_8a3cd9ba60]
 en = "Paste it to whoever is helping you fix a problem"
 where = [
   "android settings_log_copy_sub: Small line under Copy debug log.",
 ]
-text = ""
+text = "சிக்கலைச் சரிசெய்ய உங்களுக்கு உதவுபவரிடம் இதை ஒட்டுங்கள்"
 
 [t_faf274135a]
 en = "Send debug log"
@@ -6227,42 +6231,42 @@ where = [
   "android settings_log_send: Row on the About page that shares the debug log as a file.",
   "android debuglog_send_title: Title of the system share sheet when sending the debug log.",
 ]
-text = ""
+text = "டீபக் பதிவை அனுப்பு"
 
 [t_4520860c09]
 en = "The full log as a file"
 where = [
   "android settings_log_send_sub: Small line under Send debug log.",
 ]
-text = ""
+text = "முழுப் பதிவும் ஒரு கோப்பாக"
 
 [t_3d9f9b3f5f]
 en = "The log has what Tinline did on this phone, with ids of contacts and calls. It never has your messages or your root secret."
 where = [
   "android settings_log_note: Note under the debug log rows.",
 ]
-text = ""
+text = "இந்த ஃபோனில் Tinline என்ன செய்தது என்பது தொடர்புகள், அழைப்புகளின் அடையாள எண்களுடன் பதிவில் இருக்கும். உங்கள் செய்திகளோ உங்கள் மூல ரகசியமோ அதில் ஒருபோதும் இருக்காது."
 
 [t_b284cb7656]
 en = "Collecting the log…"
 where = [
   "android settings_log_collecting: Shown under the debug log rows while the log is read.",
 ]
-text = ""
+text = "பதிவைச் சேகரிக்கிறது…"
 
 [t_beaa931d38]
 en = "Debug log copied. Paste it into a message."
 where = [
   "android settings_log_copied: Shown under the debug log rows after copying.",
 ]
-text = ""
+text = "டீபக் பதிவு நகலெடுக்கப்பட்டது. அதை ஒரு செய்தியில் ஒட்டுங்கள்."
 
 [t_f5cf4026ba]
 en = "Couldn't get the log: {reason}"
 where = [
   "android settings_log_failed: Shown under the debug log rows when the log could not be read. {reason} is a short error description.",
 ]
-text = ""
+text = "பதிவைப் பெற முடியவில்லை: {reason}"
 
 [t_4cce52a906]
 en = "Linked devices"
@@ -6271,7 +6275,7 @@ where = [
   "ios devices_title: Title of the linked devices page.",
   "desktop common_linked_devices: Shared label, used in several places (profile, view).",
 ]
-text = ""
+text = "இணைக்கப்பட்ட சாதனங்கள்"
 
 [t_2d301e6101]
 en = "Calls ring on all of these. People you call never see these names."
@@ -6280,7 +6284,7 @@ where = [
   "ios devices_hint_rings: Hint above the device list.",
   "desktop link_calls_ring_on_all: Desktop, linking devices (in link_view.rs, linked_devices_page).",
 ]
-text = ""
+text = "இவை அனைத்திலும் அழைப்புகள் ஒலிக்கும். நீங்கள் அழைப்பவர்கள் இந்தப் பெயர்களை ஒருபோதும் பார்க்க மாட்டார்கள்."
 
 [t_ec759a6763]
 en = "Link a device"
@@ -6289,7 +6293,7 @@ where = [
   "ios devices_link: Button that starts linking another device.",
   "desktop link_link_a_device: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = ""
+text = "சாதனத்தை இணை"
 
 [t_1eb9848544]
 en = "UNLINKED"
@@ -6297,7 +6301,7 @@ where = [
   "android devices_unlinked_label: Small all-capitals section label above devices that were unlinked.",
   "ios devices_unlinked_label: Small section label above unlinked devices. Capitals are part of the design.",
 ]
-text = ""
+text = "இணைப்பு நீக்கப்பட்டவை"
 
 [t_e1d21be382]
 en = "SYNC"
@@ -6305,7 +6309,7 @@ where = [
   "android devices_sync_label: Small all-capitals section label above the sync explanation.",
   "ios devices_sync_label: Small section label above the sync explanation. Capitals are part of the design.",
 ]
-text = ""
+text = "ஒத்திசைவு"
 
 [t_893cf073bd]
 en = "Devices sync directly with each other whenever two are online at once. There is no copy on any server."
@@ -6313,7 +6317,7 @@ where = [
   "android devices_sync_hint: Explanation under the SYNC label.",
   "ios devices_sync_hint: Hint explaining device sync.",
 ]
-text = ""
+text = "இரண்டு சாதனங்கள் ஒரே நேரத்தில் ஆன்லைனில் இருக்கும்போதெல்லாம் அவை நேரடியாக ஒன்றுக்கொன்று ஒத்திசைக்கின்றன. எந்தச் சர்வரிலும் நகல் இல்லை."
 
 [t_045305fe31]
 en = "This phone — {name}"
@@ -6321,7 +6325,7 @@ where = [
   "android devices_this_phone_named: Title of this phone's row in the linked devices list. {name} is the name I gave this phone.",
   "ios devices_row_this_phone: Device row title for this phone; {name} is its label.",
 ]
-text = ""
+text = "இந்த ஃபோன் — {name}"
 
 [t_fd632ceb14]
 en = "Unnamed"
@@ -6329,7 +6333,7 @@ where = [
   "android devices_unnamed: Name shown for a device that has no name.",
   "ios devices_unnamed: Fallback label for a device without a name.",
 ]
-text = ""
+text = "பெயரிடப்படாதது"
 
 [t_d0fdc4ad24]
 en = "Unnamed device"
@@ -6338,7 +6342,7 @@ where = [
   "ios devices_unnamed_device: Fallback title for a device without a name.",
   "desktop common_unnamed_device: Shared label, used in several places (link, profile).",
 ]
-text = ""
+text = "பெயரிடப்படாத சாதனம்"
 
 [t_a722d3793d]
 en = "Unlinked"
@@ -6346,21 +6350,21 @@ where = [
   "android devices_sub_unlinked: Small line under a device that was unlinked.",
   "ios devices_row_unlinked: Device row subtitle for a device that was unlinked.",
 ]
-text = ""
+text = "இணைப்பு நீக்கப்பட்டது"
 
 [t_f57297dcfd]
 en = "This device · Android"
 where = [
   "android devices_sub_this: Small line under this phone's row in the linked devices list.",
 ]
-text = ""
+text = "இந்தச் சாதனம் · Android"
 
 [t_748db09fcd]
 en = "Synced {time}"
 where = [
   "android devices_sub_synced: Small line under a device row. {time} is a phrase such as 2 min ago.",
 ]
-text = ""
+text = "ஒத்திசைந்தது: {time}"
 
 [t_01692e4fa5]
 en = "Not seen yet"
@@ -6368,7 +6372,7 @@ where = [
   "android devices_sub_not_seen: Small line under a device row when it has not been online since it was linked.",
   "ios devices_row_not_seen: Device row subtitle when the device has not synced yet.",
 ]
-text = ""
+text = "இன்னும் காணப்படவில்லை"
 
 [t_b11e1d1153]
 en = "Device"
@@ -6376,7 +6380,7 @@ where = [
   "android devices_device: Title of a device's page when it has no name, and the fallback title while it loads.",
   "ios devices_device: Title of the device page while loading, and fallback name.",
 ]
-text = ""
+text = "சாதனம்"
 
 [t_e71782d4da]
 en = "This phone"
@@ -6384,7 +6388,7 @@ where = [
   "android devices_this_phone: Title of this phone's device page.",
   "ios devices_this_phone: Title of the device page for this phone.",
 ]
-text = ""
+text = "இந்த ஃபோன்"
 
 [t_8223b67c25]
 en = "Last synced"
@@ -6392,7 +6396,7 @@ where = [
   "android devices_last_synced: Row on a device's page showing when it last synced.",
   "ios devices_prop_synced: Row on the device page: when it last synced.",
 ]
-text = ""
+text = "கடைசியாக ஒத்திசைந்தது"
 
 [t_955ff5a31e]
 en = "Rings for calls"
@@ -6400,7 +6404,7 @@ where = [
   "android devices_rings: Row on a device's page: does it ring when someone calls me.",
   "ios devices_prop_rings: Row on the device page: whether it rings for calls.",
 ]
-text = ""
+text = "அழைப்புகளுக்கு ஒலிக்கும்"
 
 [t_6a7527cf57]
 en = "No, it was unlinked"
@@ -6408,7 +6412,7 @@ where = [
   "android devices_rings_no: Value of Rings for calls for an unlinked device.",
   "ios devices_rings_no: Value of Rings for calls for an unlinked device.",
 ]
-text = ""
+text = "இல்லை, இணைப்பு நீக்கப்பட்டது"
 
 [t_189cef11ad]
 en = "Yes, when it’s on"
@@ -6416,7 +6420,7 @@ where = [
   "android devices_rings_yes: Value of Rings for calls for a linked device.",
   "ios devices_rings_yes: Value of Rings for calls for a linked device.",
 ]
-text = ""
+text = "ஆம், ஆன் ஆக இருக்கும்போது"
 
 [t_823cddfcd3]
 en = "Sync now"
@@ -6424,7 +6428,7 @@ where = [
   "android devices_sync_now: Button on another device's page that asks it to sync.",
   "ios devices_sync_now: Button on the device page.",
 ]
-text = ""
+text = "இப்போது ஒத்திசை"
 
 [t_f265fa67fe]
 en = "Syncing with {name}…"
@@ -6432,7 +6436,7 @@ where = [
   "android devices_syncing: Brief message after tapping Sync now. {name} is the device's name.",
   "ios devices_syncing: Toast when Sync now is pressed; {name} is the device's name.",
 ]
-text = ""
+text = "{name} உடன் ஒத்திசைக்கிறது…"
 
 [t_f5c1bd02f9]
 en = "Remove account from this phone"
@@ -6440,7 +6444,7 @@ where = [
   "android devices_remove_account: Danger button on this phone's device page, and the title of the screen lock prompt for it.",
   "ios devices_remove_account: Reason shown in the screen lock prompt, and the button label.",
 ]
-text = ""
+text = "இந்த ஃபோனிலிருந்து கணக்கை அகற்று"
 
 [t_f55e851092]
 en = "Unlink this device"
@@ -6448,7 +6452,7 @@ where = [
   "android devices_unlink_this: Danger button on another device's page.",
   "ios devices_unlink_this: Button on the device page.",
 ]
-text = ""
+text = "இந்தச் சாதனத்தின் இணைப்பை நீக்கு"
 
 [t_13494adba3]
 en = "Unlink device"
@@ -6456,7 +6460,7 @@ where = [
   "android devices_unlink_device: Title of the phone's screen lock prompt shown before unlinking another device.",
   "ios devices_unlink_device: Reason shown in the screen lock prompt.",
 ]
-text = ""
+text = "சாதனத்தின் இணைப்பை நீக்கு"
 
 [t_6786f49398]
 en = "Rename device"
@@ -6465,7 +6469,7 @@ where = [
   "ios devices_rename: Dialog title for renaming a device.",
   "desktop profile_rename_device: Desktop, profile and settings (in profile_view.rs, devices_layer).",
 ]
-text = ""
+text = "சாதனத்தை மறுபெயரிடு"
 
 [t_3faecb9c5d]
 en = "Remove your account from this phone?"
@@ -6473,7 +6477,7 @@ where = [
   "android devices_confirm_remove_title: Title of the confirmation dialog for removing the account from this phone.",
   "ios devices_remove_q: Dialog title.",
 ]
-text = ""
+text = "இந்த ஃபோனிலிருந்து உங்கள் கணக்கை அகற்றவா?"
 
 [t_4c986a9aa5]
 en = "Unlink {name}?"
@@ -6482,7 +6486,7 @@ where = [
   "ios devices_unlink_q: Dialog title asking to unlink another device; {name} is the device's name.",
   "desktop common_unlink_2: Shared label, used in several places (link, profile). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} சாதனத்தின் இணைப்பை நீக்கவா?"
 
 [t_ffbb50f111]
 en = "Working…"
@@ -6491,7 +6495,7 @@ where = [
   "ios devices_working: Confirm button text while the unlink runs.",
   "desktop group_working: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "செயல்படுகிறது…"
 
 [t_0ae9b16e47]
 en = "Unlink"
@@ -6500,7 +6504,7 @@ where = [
   "ios devices_unlink: Confirm button of the unlink dialog.",
   "desktop common_unlink: Shared label, used in several places (link, profile).",
 ]
-text = ""
+text = "இணைப்பை நீக்கு"
 
 [t_e10a08cbc5]
 en = "This phone stops syncing and ringing, and your account, contacts, chats and call history are deleted from it."
@@ -6508,7 +6512,7 @@ where = [
   "android devices_remove_body: Body of the dialog for removing the account from this phone.",
   "ios devices_remove_body: Body of the remove-account dialog.",
 ]
-text = ""
+text = "இந்த ஃபோன் ஒத்திசைப்பதையும் ஒலிப்பதையும் நிறுத்தும், உங்கள் கணக்கு, தொடர்புகள், அரட்டைகள், அழைப்பு வரலாறு ஆகியவை இதிலிருந்து நீக்கப்படும்."
 
 [t_617985c94e]
 en = "This is the only device with your account. Without your recovery phrase nothing can bring it back."
@@ -6516,7 +6520,7 @@ where = [
   "android devices_remove_only: Warning card in the remove dialog when no other device has the account.",
   "ios devices_only_device: Warning card in the remove-account dialog.",
 ]
-text = ""
+text = "உங்கள் கணக்கு உள்ள ஒரே சாதனம் இதுதான். உங்கள் மீட்பு வார்த்தைகள் இல்லாமல் அதை எதுவும் திரும்பக் கொண்டு வர முடியாது."
 
 [t_7bd075ae97]
 en = "Your other devices keep everything."
@@ -6524,7 +6528,7 @@ where = [
   "android devices_remove_others: Reassurance in the remove dialog when other devices have the account.",
   "ios devices_others_keep: Line in the remove-account dialog.",
 ]
-text = ""
+text = "உங்கள் மற்ற சாதனங்களில் அனைத்தும் அப்படியே இருக்கும்."
 
 [t_cac1a71b2b]
 en = "It stops syncing and stops ringing for your calls. If it’s online, it removes your account from itself."
@@ -6533,7 +6537,7 @@ where = [
   "ios devices_unlink_body: Body of the unlink dialog.",
   "desktop link_it_stops_syncing_and: Desktop, linking devices (in link_view.rs, unlink_confirm).",
 ]
-text = ""
+text = "அது ஒத்திசைப்பதையும் உங்கள் அழைப்புகளுக்கு ஒலிப்பதையும் நிறுத்தும். அது ஆன்லைனில் இருந்தால், உங்கள் கணக்கைத் தன்னிடமிருந்து அகற்றும்."
 
 [t_04c6ed465e]
 en = "Unlinking can’t lock it from here. Anyone who can unlock it can still use your account. The only full cut-off is a new account."
@@ -6542,7 +6546,7 @@ where = [
   "ios devices_unlink_warn: Warning card in the unlink dialog.",
   "desktop link_unlinking_cant_lock_it: Desktop, linking devices (in link_view.rs, unlink_confirm).",
 ]
-text = ""
+text = "இணைப்பை நீக்குவதால் அதை இங்கிருந்து பூட்ட முடியாது. அதைத் திறக்கக்கூடிய எவரும் உங்கள் கணக்கை இன்னும் பயன்படுத்தலாம். முழுமையாகத் துண்டிக்க ஒரே வழி புதிய கணக்குதான்."
 
 [t_47505d0245]
 en = "Lost or stolen?"
@@ -6551,7 +6555,7 @@ where = [
   "ios devices_lost: Bold lead-in of the unlink warning card.",
   "desktop link_lost_or_stolen: Desktop, linking devices (in link_view.rs, unlink_confirm).",
 ]
-text = ""
+text = "தொலைந்ததா அல்லது திருடப்பட்டதா?"
 
 [t_a0e3dfe2d2]
 en = "Unlinked {name}"
@@ -6559,7 +6563,7 @@ where = [
   "android devices_unlinked_msg: Brief message after a device was unlinked. {name} is the device's name.",
   "ios devices_unlinked_msg: Toast after unlinking a device; {name} is the device's name.",
 ]
-text = ""
+text = "{name} சாதனத்தின் இணைப்பு நீக்கப்பட்டது"
 
 [t_72c98f7c55]
 en = "Screen lock check cancelled"
@@ -6568,7 +6572,7 @@ where = [
   "ios devices_lock_cancelled: Error when the screen lock prompt was cancelled.",
   "ios link_lock_cancelled: Error when the screen lock prompt was cancelled.",
 ]
-text = ""
+text = "திரைப் பூட்டுச் சரிபார்ப்பு ரத்துசெய்யப்பட்டது"
 
 [t_e12c86c002]
 en = "Same code on both?"
@@ -6577,7 +6581,7 @@ where = [
   "ios link_same_code: Title when the new device is waiting for approval.",
   "desktop link_same_code_on_both: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "இரண்டிலும் ஒரே குறியீடா?"
 
 [t_30ca790226]
 en = "Check that {name} shows this code, then approve there."
@@ -6586,14 +6590,14 @@ where = [
   "ios link_same_code_lead: Explanation under Same code on both? {name} is the other device's name.",
   "desktop link_check_that_shows_this: Desktop, linking a device (in link_view.rs). {name} is the other device's name.",
 ]
-text = ""
+text = "{name} இந்தக் குறியீட்டைக் காட்டுகிறதா என்று சரிபார்த்து, பிறகு அங்கே அனுமதியுங்கள்."
 
 [t_b04ebc52e8]
 en = "your other device"
 where = [
   "android link_fallback_other_device: Used in place of the other device's name in the lead text when it has no name. Lowercase, mid-sentence.",
 ]
-text = ""
+text = "உங்கள் மற்றொரு சாதனம்"
 
 [t_14565e17d4]
 en = "Different code, or you didn’t start this? Cancel. Someone else may have scanned the QR."
@@ -6602,7 +6606,7 @@ where = [
   "ios link_diff_code: Warning under the big code.",
   "desktop link_different_code_or_you: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "குறியீடு வேறாக உள்ளதா, அல்லது இதை நீங்கள் தொடங்கவில்லையா? ரத்துசெய்யுங்கள். வேறு யாராவது QR-ஐ ஸ்கேன் செய்திருக்கலாம்."
 
 [t_0e911a71b0]
 en = "Waiting for approval…"
@@ -6611,7 +6615,7 @@ where = [
   "ios link_waiting: Status line while the other device approves.",
   "desktop link_waiting_for_approval: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "ஒப்புதலுக்காகக் காத்திருக்கிறது…"
 
 [t_8e11b6442a]
 en = "Linking…"
@@ -6620,7 +6624,7 @@ where = [
   "ios link_linking: Title while the account is being received.",
   "desktop link_linking_2: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "இணைக்கிறது…"
 
 [t_9cba69c0af]
 en = "Receiving your account. Keep both devices open."
@@ -6629,7 +6633,7 @@ where = [
   "ios link_receiving: Explanation while the account is being received.",
   "desktop link_receiving_your_account_keep: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "உங்கள் கணக்கைப் பெறுகிறது. இரண்டு சாதனங்களையும் திறந்து வையுங்கள்."
 
 [t_0883e302a7]
 en = "Couldn’t link"
@@ -6638,7 +6642,7 @@ where = [
   "ios link_failed: Title when linking failed.",
   "desktop link_couldnt_link: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "இணைக்க முடியவில்லை"
 
 [t_caacf98e5d]
 en = "On a device that already has your account, open Settings › Link a device and scan this."
@@ -6647,7 +6651,7 @@ where = [
   "ios link_qr_lead: Explanation above the QR code on the new device.",
   "desktop link_on_a_device_that: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = ""
+text = "உங்கள் கணக்கு ஏற்கெனவே உள்ள சாதனத்தில், அமைப்புகள் › சாதனத்தை இணை என்பதைத் திறந்து இதை ஸ்கேன் செய்யுங்கள்."
 
 [t_36503bbf78]
 en = "New code"
@@ -6660,7 +6664,7 @@ where = [
   "ios people_add_new_code: Button that makes a new contact code and cancels the old one.",
   "desktop common_new_code: Shared label, used in several places (link, signup).",
 ]
-text = ""
+text = "புதிய குறியீடு"
 
 [t_bf26f7ce4d]
 en = "Scan instead"
@@ -6668,7 +6672,7 @@ where = [
   "android link_scan_instead: Button on the new phone, and title of its camera screen: scan the other device's QR code instead of showing one.",
   "ios link_scan_instead: Button that switches to scanning the other device's code.",
 ]
-text = ""
+text = "பதிலாக ஸ்கேன் செய்"
 
 [t_a7578e09f8]
 en = "Anyone who can see this code in the next few minutes could try to use it. Show it only to your own device."
@@ -6677,7 +6681,7 @@ where = [
   "ios link_qr_warn: Warning under the QR code.",
   "desktop link_anyone_who_can_see: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = ""
+text = "அடுத்த சில நிமிடங்களில் இந்தக் குறியீட்டைப் பார்க்கக்கூடிய எவரும் அதைப் பயன்படுத்த முயலலாம். உங்கள் சொந்தச் சாதனத்துக்கு மட்டுமே காட்டுங்கள்."
 
 [t_ccabcfd492]
 en = "QR code to link this device"
@@ -6685,7 +6689,7 @@ where = [
   "android link_qr_desc: Accessibility description of the QR code image.",
   "ios link_qr_label: Accessibility label of the QR code.",
 ]
-text = ""
+text = "இந்தச் சாதனத்தை இணைப்பதற்கான QR குறியீடு"
 
 [t_944ddb4f27]
 en = "Preparing your code…"
@@ -6698,7 +6702,7 @@ where = [
   "ios people_add_preparing: Shown while the user’s contact code is being made.",
   "desktop signup_preparing_your_code: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay).",
 ]
-text = ""
+text = "உங்கள் குறியீட்டைத் தயார் செய்கிறது…"
 
 [t_f64ef123d4]
 en = "Expired. Make a new code."
@@ -6706,21 +6710,21 @@ where = [
   "android link_expired: Line under the QR code after it expired.",
   "ios link_expired: Status under the QR code after it expired.",
 ]
-text = ""
+text = "காலாவதியாகிவிட்டது. புதிய குறியீட்டை உருவாக்குங்கள்."
 
 [t_f226a8a625]
 en = "Expires in {time} · works once"
 where = [
   "android link_expires: Line under the QR code. {time} is the time left as minutes:seconds, such as 4:32.",
 ]
-text = ""
+text = "{time} இல் காலாவதியாகும் · ஒருமுறை மட்டுமே செயல்படும்"
 
 [t_35781a0696]
 en = "Link code {code}"
 where = [
   "android link_code_desc: Accessibility description of the six-digit code. {code} is the digits separated by spaces.",
 ]
-text = ""
+text = "இணைப்புக் குறியீடு {code}"
 
 [t_4a4bbe7e69]
 en = "Link a new device"
@@ -6729,7 +6733,7 @@ where = [
   "ios link_new_title: Title of the settings page that links a new device.",
   "desktop profile_link_a_new_device: Desktop, profile and settings (in profile_view.rs, devices_page).",
 ]
-text = ""
+text = "புதிய சாதனத்தை இணை"
 
 [t_ba00896669]
 en = "Show this code to your new device"
@@ -6737,7 +6741,7 @@ where = [
   "android link_show_h1: Heading above the QR code on the phone that has the account.",
   "ios link_show_title: Heading while this phone shows the QR code.",
 ]
-text = ""
+text = "இந்தக் குறியீட்டை உங்கள் புதிய சாதனத்துக்குக் காட்டுங்கள்"
 
 [t_bb6b539924]
 en = "On the new device choose “Link to a device”, then “Scan instead”, and point it at this code."
@@ -6745,7 +6749,7 @@ where = [
   "android link_show_body: Instructions under the heading. The quoted names are buttons on the new device.",
   "ios link_show_body: Instruction under the QR heading. The quoted names match the buttons on the new device.",
 ]
-text = ""
+text = "புதிய சாதனத்தில் “ஒரு சாதனத்துடன் இணை”, பிறகு “பதிலாக ஸ்கேன் செய்” என்பதைத் தேர்ந்தெடுத்து, இந்தக் குறியீட்டை நோக்கிக் காட்டுங்கள்."
 
 [t_abac8ccb2c]
 en = "Do the codes match?"
@@ -6753,7 +6757,7 @@ where = [
   "android link_match_title: Heading on the phone that has the account, when comparing the six-digit codes.",
   "ios link_match_title: Heading when the user compares codes.",
 ]
-text = ""
+text = "குறியீடுகள் பொருந்துகின்றனவா?"
 
 [t_dd0b3afa3d]
 en = "**{name}** wants to join your account. It should be showing the same six digits as below."
@@ -6761,7 +6765,7 @@ where = [
   "android link_match_body: Sentence under the heading while comparing codes. {name} is the new device's name, shown in bold at the start. The ** marks are the bold; keep them around {name}.",
   "ios link_match_body: Body when comparing codes. The new device's name is bold (markdown stars, keep them around the name); {name} is that name.",
 ]
-text = ""
+text = "**{name}** உங்கள் கணக்கில் சேர விரும்புகிறது. அது கீழே உள்ள அதே ஆறு இலக்கங்களைக் காட்ட வேண்டும்."
 
 [t_13a448230b]
 en = "Compare them yourself. If they differ, someone else may have scanned the code first."
@@ -6769,7 +6773,7 @@ where = [
   "android link_match_note: Note under the six-digit code.",
   "ios link_match_warn: Warning under the six digits.",
 ]
-text = ""
+text = "நீங்களே ஒப்பிட்டுப் பாருங்கள். அவை வேறுபட்டால், வேறு யாராவது முதலில் குறியீட்டை ஸ்கேன் செய்திருக்கலாம்."
 
 [t_c13b853fc2]
 en = "They don’t match"
@@ -6777,7 +6781,7 @@ where = [
   "android link_no_match: Button: the codes are different, cancel linking.",
   "ios link_no_match: Button when the codes differ.",
 ]
-text = ""
+text = "பொருந்தவில்லை"
 
 [t_fd08f40778]
 en = "They match"
@@ -6785,7 +6789,7 @@ where = [
   "android link_match: Button: the codes are the same, continue to approval.",
   "ios link_match: Button when the codes are the same.",
 ]
-text = ""
+text = "பொருந்துகின்றன"
 
 [t_283ccfceb5]
 en = "Connecting…"
@@ -6794,7 +6798,7 @@ where = [
   "ios link_connecting: Heading while connecting to the new device.",
   "desktop gcall_connecting: Desktop, group calls (in gcall.rs, status).",
 ]
-text = ""
+text = "இணைக்கிறது…"
 
 [t_155065875e]
 en = "Linking {name}"
@@ -6803,7 +6807,7 @@ where = [
   "ios link_linking_peer: Heading while linking; {name} is the new device's name.",
   "desktop link_linking: Desktop, linking devices (in link_view.rs, link_screen). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} இணைக்கப்படுகிறது"
 
 [t_87c5199eb4]
 en = "Reaching the other device"
@@ -6811,7 +6815,7 @@ where = [
   "android link_reaching: Progress line while connecting.",
   "ios link_reaching: Progress line while connecting.",
 ]
-text = ""
+text = "மற்றச் சாதனத்தை அடைகிறது"
 
 [t_b9e015ff53]
 en = "Sending your account"
@@ -6819,7 +6823,7 @@ where = [
   "android link_sending: Progress line while the account is sent to the new device.",
   "ios link_sending: Progress line while sending.",
 ]
-text = ""
+text = "உங்கள் கணக்கை அனுப்புகிறது"
 
 [t_2265cfdb46]
 en = "Working"
@@ -6827,7 +6831,7 @@ where = [
   "android link_working: Right-aligned status word on the progress line.",
   "ios link_working: Short status at the end of the progress line.",
 ]
-text = ""
+text = "நடக்கிறது"
 
 [t_4c14646bf4]
 en = "Keep both devices open until this finishes."
@@ -6836,7 +6840,7 @@ where = [
   "ios link_keep_open: Hint while linking.",
   "desktop link_keep_both_devices_open: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "இது முடியும் வரை இரண்டு சாதனங்களையும் திறந்து வையுங்கள்."
 
 [t_9ccb941078]
 en = "{name} is linked"
@@ -6844,7 +6848,7 @@ where = [
   "android link_done_title: Heading after linking succeeded. {name} is the new device's name.",
   "ios link_done_title: Title when linking finished; {name} is the new device's name.",
 ]
-text = ""
+text = "{name} இணைக்கப்பட்டது"
 
 [t_fe3d1bcb4a]
 en = "It syncs when both devices are online at the same time. Contacts you haven’t blocked get your updated device list when they’re next online."
@@ -6852,7 +6856,7 @@ where = [
   "android link_done_body: Body after linking succeeded.",
   "ios link_done_body: Body when linking finished.",
 ]
-text = ""
+text = "இரண்டு சாதனங்களும் ஒரே நேரத்தில் ஆன்லைனில் இருக்கும்போது இது ஒத்திசைக்கும். நீங்கள் தடுக்காத தொடர்புகள் அடுத்த முறை ஆன்லைனுக்கு வரும்போது உங்கள் புதுப்பிக்கப்பட்ட சாதனப் பட்டியலைப் பெறுவார்கள்."
 
 [t_52b9310c11]
 en = "Scan the code on your new device"
@@ -6860,14 +6864,14 @@ where = [
   "android link_scan_h1: Heading on the phone that has the account, before scanning.",
   "ios link_scan_title: Heading of the scan step.",
 ]
-text = ""
+text = "உங்கள் புதிய சாதனத்தில் உள்ள குறியீட்டை ஸ்கேன் செய்யுங்கள்"
 
 [t_8fef6bf573]
 en = "On the new device, open Tinline and choose {action}."
 where = [
   "android link_scan_step1: First instruction. {action} is the name of a button on the new device (Link to a device), shown in bold by the app. The app numbers the steps; do not type numbers.",
 ]
-text = ""
+text = "புதிய சாதனத்தில் Tinline-ஐத் திறந்து {action} என்பதைத் தேர்ந்தெடுங்கள்."
 
 [t_f93a504767]
 en = "It shows a QR code and a short code. They work for 5 minutes, once."
@@ -6875,7 +6879,7 @@ where = [
   "android link_scan_step2: Second instruction. The app numbers the steps; do not type numbers.",
   "ios link_scan_step2: Step 2 on the scan page. Shown as the second of two lines; the number is not part of the text.",
 ]
-text = ""
+text = "அது ஒரு QR குறியீட்டையும் ஒரு சிறிய குறியீட்டையும் காட்டும். அவை 5 நிமிடங்களுக்கு, ஒருமுறை மட்டுமே செயல்படும்."
 
 [t_878564e3c6]
 en = "Scan QR code"
@@ -6883,7 +6887,7 @@ where = [
   "android link_scan_qr: Button that opens the camera.",
   "ios link_scan_qr: Button that opens the camera.",
 ]
-text = ""
+text = "QR குறியீட்டை ஸ்கேன் செய்"
 
 [t_c6e610bfa2]
 en = "Or type the code"
@@ -6891,7 +6895,7 @@ where = [
   "android link_type_code: Label above the field for typing the other device's code.",
   "ios link_or_type: Label above the field for typing the link code.",
 ]
-text = ""
+text = "அல்லது குறியீட்டைத் தட்டச்சு செய்யுங்கள்"
 
 [t_592f2264cd]
 en = "Show a QR code here instead"
@@ -6899,7 +6903,7 @@ where = [
   "android link_show_here: Button that switches from scanning to showing a QR code on this phone.",
   "ios link_show_instead: Button that switches to showing a QR code on this phone.",
 ]
-text = ""
+text = "பதிலாக இங்கே QR குறியீட்டைக் காட்டு"
 
 [t_a747b9c63e]
 en = "That passphrase isn’t right."
@@ -6907,7 +6911,7 @@ where = [
   "android link_wrong_pass: Error under the passphrase field when approving a new device.",
   "ios link_wrong_pass: Error when approving a link with a wrong passphrase.",
 ]
-text = ""
+text = "அந்தக் கடவுச்சொற்றொடர் சரியில்லை."
 
 [t_f33de65a5a]
 en = "Approve {name}?"
@@ -6915,7 +6919,7 @@ where = [
   "android link_approve_title: Heading of the approval step. {name} is the new device's name.",
   "ios link_approve_title: Heading of the approval step; {name} is the new device's name.",
 ]
-text = ""
+text = "{name} சாதனத்தை அனுமதிக்கவா?"
 
 [t_3542da42e9]
 en = "Approving sends your **recovery phrase** to {name}. It becomes a full copy of you: it can read your chats and act as you. Approve only a device you hold."
@@ -6923,7 +6927,7 @@ where = [
   "android link_approve_warning: Warning on the approval step. {name} is the new device's name. The ** marks make 'recovery phrase' bold; keep them around the same words.",
   "ios link_approve_body: Warning on the approval step. The words **recovery phrase** are bold (markdown stars, keep them around the same words); {name} is the new device's name.",
 ]
-text = ""
+text = "அனுமதித்தால் உங்கள் **மீட்பு வார்த்தைகள்** {name} சாதனத்துக்கு அனுப்பப்படும். அது உங்களின் முழு நகலாகிவிடும்: அது உங்கள் அரட்டைகளைப் படிக்கவும் நீங்களாகச் செயல்படவும் முடியும். உங்கள் கையில் உள்ள சாதனத்தை மட்டுமே அனுமதியுங்கள்."
 
 [t_37bba9dbad]
 en = "Don’t link"
@@ -6931,7 +6935,7 @@ where = [
   "android link_dont_link: Button that cancels the approval.",
   "ios link_dont: Button that refuses the link.",
 ]
-text = ""
+text = "இணைக்க வேண்டாம்"
 
 [t_7ea8f5de87]
 en = "Approving…"
@@ -6939,7 +6943,7 @@ where = [
   "android link_approving: Button label while approving.",
   "ios link_approving: Approve button while working.",
 ]
-text = ""
+text = "அனுமதிக்கிறது…"
 
 [t_a2baf51d40]
 en = "Approve"
@@ -6947,7 +6951,7 @@ where = [
   "android link_approve: Button that approves the new device.",
   "ios link_approve: Button that approves the link.",
 ]
-text = ""
+text = "அனுமதி"
 
 [t_4106a4c306]
 en = "Scan the code"
@@ -6955,7 +6959,7 @@ where = [
   "android link_scan_title: Title of the camera screen on the phone that has the account.",
   "ios link_scan_code: Title of the camera screen on the existing device.",
 ]
-text = ""
+text = "குறியீட்டை ஸ்கேன் செய்"
 
 [t_6c6ebd8493]
 en = "Torch"
@@ -6963,7 +6967,7 @@ where = [
   "android link_torch: Accessibility label of the torch button on the camera screen.",
   "ios link_torch: Accessibility label of the torch button.",
 ]
-text = ""
+text = "டார்ச்"
 
 [t_320efe7708]
 en = "Point at the code on your other device"
@@ -6971,7 +6975,7 @@ where = [
   "android link_point_new: Instruction over the camera view on the new phone.",
   "ios link_point_other: Hint on the camera view of the new device.",
 ]
-text = ""
+text = "உங்கள் மற்றொரு சாதனத்தில் உள்ள குறியீட்டை நோக்கிக் காட்டுங்கள்"
 
 [t_5117bf8c8f]
 en = "Point the camera at the QR code on your new device"
@@ -6979,7 +6983,7 @@ where = [
   "android link_point_existing: Instruction over the camera view on the phone that has the account.",
   "ios link_point_new: Hint on the camera view of the existing device.",
 ]
-text = ""
+text = "உங்கள் புதிய சாதனத்தில் உள்ள QR குறியீட்டை நோக்கிக் கேமராவைக் காட்டுங்கள்"
 
 [t_65fa4d35cf]
 en = "Scan again"
@@ -6987,7 +6991,7 @@ where = [
   "android link_scan_again: Button on the camera screen after a bad scan.",
   "ios link_scan_again: Button after a scan failed.",
 ]
-text = ""
+text = "மீண்டும் ஸ்கேன் செய்"
 
 [t_1effc5a522]
 en = "The code works once and expires in 5 minutes."
@@ -6995,7 +6999,7 @@ where = [
   "android link_scan_foot: Note under the camera view.",
   "ios link_code_once: Hint under the camera view.",
 ]
-text = ""
+text = "குறியீடு ஒருமுறை மட்டுமே செயல்படும், 5 நிமிடங்களில் காலாவதியாகும்."
 
 [t_c2b267633e]
 en = "This phone was unlinked"
@@ -7003,7 +7007,7 @@ where = [
   "android link_unlinked_title: Title of the screen shown when another device removed the account from this phone.",
   "ios link_unlinked_title: Title shown when another device removed the account from this phone.",
 ]
-text = ""
+text = "இந்த ஃபோனின் இணைப்பு நீக்கப்பட்டது"
 
 [t_b23c6601b5]
 en = "{name} was removed from this phone by one of your other devices. Its contacts, chats and calls are deleted here. Your other devices are not affected."
@@ -7011,7 +7015,7 @@ where = [
   "android link_unlinked_lead: Lead on the unlinked screen. {name} is the account's name.",
   "ios link_unlinked_lead: Explanation after this phone was unlinked by another device; {name} is the account's name.",
 ]
-text = ""
+text = "உங்கள் மற்ற சாதனங்களில் ஒன்று இந்த ஃபோனிலிருந்து {name} கணக்கை அகற்றியது. அதன் தொடர்புகள், அரட்டைகள், அழைப்புகள் இங்கே நீக்கப்பட்டன. உங்கள் மற்ற சாதனங்கள் பாதிக்கப்படவில்லை."
 
 [t_ffff8cc6e7]
 en = "OK"
@@ -7022,7 +7026,7 @@ where = [
   "ios call_ok: Button that dismisses a note on the call screen.",
   "desktop common_ok: Shared label, used in several places (gcall, link).",
 ]
-text = ""
+text = "சரி"
 
 [t_2ba28c4ed4]
 en = "Link it again"
@@ -7031,7 +7035,7 @@ where = [
   "ios link_again: Button that starts linking again.",
   "desktop link_link_it_again: Desktop, linking devices (in link_view.rs, unlinked_screen).",
 ]
-text = ""
+text = "மீண்டும் இணை"
 
 [t_1c482b7bbb]
 en = "Blocked people"
@@ -7041,7 +7045,7 @@ where = [
   "ios people_blocked_title: Title of the Blocked people screen.",
   "desktop common_blocked_people: Shared label, used in several places (groups, profile).",
 ]
-text = ""
+text = "தடுக்கப்பட்டவர்கள்"
 
 [t_2d53447cd6]
 en = "One list across all your devices: a block made on another device shows here too."
@@ -7050,7 +7054,7 @@ where = [
   "ios people_blocked_list_note: Note at the top of the Blocked people screen.",
   "desktop group_one_list_across_all: Desktop, groups (in groups_view.rs, privacy_page).",
 ]
-text = ""
+text = "உங்கள் எல்லாச் சாதனங்களுக்கும் ஒரே பட்டியல்: வேறு சாதனத்தில் செய்த தடுப்பும் இங்கே தெரியும்."
 
 [t_9af1f83c2d]
 en = "Nobody is blocked. To block someone, open their contact page and tap Block."
@@ -7058,7 +7062,7 @@ where = [
   "android blocking_none: Hint on the blocked people page when the list is empty.",
   "ios people_blocked_empty: Blocked people screen when nobody is blocked.",
 ]
-text = ""
+text = "யாரும் தடுக்கப்படவில்லை. ஒருவரைத் தடுக்க, அவரது தொடர்புப் பக்கத்தைத் திறந்து தடு என்பதைத் தட்டுங்கள்."
 
 [t_1ecbfe4697]
 en = "Blocked {date}"
@@ -7066,7 +7070,7 @@ where = [
   "android blocking_blocked_on: Small line under a blocked person. {date} is a date and time such as Oct 10, 13:50.",
   "ios people_blocked_since: Line under a blocked person. {date} is when the block was made, like “Oct 19, 14:05”.",
 ]
-text = ""
+text = "தடுக்கப்பட்டது: {date}"
 
 [t_d91bf4b22d]
 en = "Unblock {name}"
@@ -7074,7 +7078,7 @@ where = [
   "android blocking_unblock_name: Accessibility label of the Unblock button. {name} is the person's name.",
   "ios people_unblock_a11y: Accessibility label of the Unblock button. {name} is the blocked person.",
 ]
-text = ""
+text = "{name} அவர்களின் தடையை நீக்கு"
 
 [t_9cd03a6e82]
 en = "{name} is told you unblocked them"
@@ -7082,7 +7086,7 @@ where = [
   "android blocking_unblocked_told: Brief message after unblocking. {name} is the person's first name.",
   "ios people_unblock_told: Toast after unblocking. {name} is the person’s first name.",
 ]
-text = ""
+text = "நீங்கள் தடையை நீக்கியது {name} அவர்களுக்குத் தெரிவிக்கப்படும்"
 
 [t_643ddcb6f7]
 en = "Unblock"
@@ -7094,7 +7098,7 @@ where = [
   "ios people_unblock: Button that unblocks a person.",
   "desktop common_unblock: Shared label, used in several places (chat, groups, profile, view).",
 ]
-text = ""
+text = "தடையை நீக்கு"
 
 [t_4d7e2507b3]
 en = "Unblocking"
@@ -7103,84 +7107,84 @@ where = [
   "ios people_unblocking_title: Heading of the note about what unblocking does.",
   "desktop group_unblocking: Desktop, groups (in groups_view.rs, privacy_page).",
 ]
-text = ""
+text = "தடையை நீக்குதல்"
 
 [t_b74841744f]
 en = "Call listener"
 where = [
   "android notif_ch_service: Name of the always-on notification channel in the Android system settings.",
 ]
-text = ""
+text = "அழைப்புக் கேட்பான்"
 
 [t_ff8964c15b]
 en = "Keeps the app reachable for incoming calls"
 where = [
   "android notif_ch_service_desc: Description of the Call listener notification channel in the Android system settings.",
 ]
-text = ""
+text = "உள்வரும் அழைப்புகளுக்கு ஆப்பைத் தொடர்புகொள்ளக்கூடியதாக வைத்திருக்கும்"
 
 [t_e3ab2fe4e6]
 en = "Incoming calls"
 where = [
   "android notif_ch_calls: Name of the incoming call notification channel in the Android system settings.",
 ]
-text = ""
+text = "உள்வரும் அழைப்புகள்"
 
 [t_64282d58a1]
 en = "Rings when a contact calls you"
 where = [
   "android notif_ch_calls_desc: Description of the Incoming calls notification channel.",
 ]
-text = ""
+text = "ஒரு தொடர்பு உங்களை அழைக்கும்போது ஒலிக்கும்"
 
 [t_fe5de7f9b5]
 en = "Ongoing calls"
 where = [
   "android notif_ch_ongoing: Name of the notification channel for a call in progress.",
 ]
-text = ""
+text = "நடப்பு அழைப்புகள்"
 
 [t_b6a75a2d0b]
 en = "Shows your current call and lets you return to it or hang up"
 where = [
   "android notif_ch_ongoing_desc: Description of the Ongoing calls notification channel.",
 ]
-text = ""
+text = "உங்கள் தற்போதைய அழைப்பைக் காட்டும், அதற்குத் திரும்பவோ துண்டிக்கவோ உதவும்"
 
 [t_2647e83d1b]
 en = "Missed calls"
 where = [
   "android notif_ch_missed: Name of the missed call notification channel.",
 ]
-text = ""
+text = "தவறிய அழைப்புகள்"
 
 [t_c8e721f165]
 en = "New messages from your contacts"
 where = [
   "android notif_ch_messages_desc: Description of the Messages notification channel.",
 ]
-text = ""
+text = "உங்கள் தொடர்புகளிடமிருந்து புதிய செய்திகள்"
 
 [t_20b30c022c]
 en = "Posts in your groups and invitations to join one"
 where = [
   "android notif_ch_groups_desc: Description of the Groups notification channel.",
 ]
-text = ""
+text = "உங்கள் குழுக்களில் உள்ள இடுகைகளும் குழுவில் சேருவதற்கான அழைப்பிதழ்களும்"
 
 [t_efdf92af26]
 en = "Contact requests"
 where = [
   "android notif_ch_requests: Name of the contact request notification channel.",
 ]
-text = ""
+text = "தொடர்புக் கோரிக்கைகள்"
 
 [t_e14ecc3f5b]
 en = "When someone asks to add you as a contact"
 where = [
   "android notif_ch_requests_desc: Description of the Contact requests notification channel.",
 ]
-text = ""
+text = "யாராவது உங்களைத் தொடர்பாகச் சேர்க்கக் கேட்கும்போது"
 
 [t_5f725e5908]
 en = "Locked"
@@ -7188,14 +7192,14 @@ where = [
   "android notif_ch_locked: Name of the notification channel shown while the app is locked by a passphrase.",
   "desktop common_locked: Shared label, used in several places (app, view).",
 ]
-text = ""
+text = "பூட்டப்பட்டுள்ளது"
 
 [t_aafc4b7879]
 en = "Shown while the app needs your passphrase to receive calls"
 where = [
   "android notif_ch_locked_desc: Description of the Locked notification channel.",
 ]
-text = ""
+text = "அழைப்புகளைப் பெற ஆப்புக்கு உங்கள் கடவுச்சொற்றொடர் தேவைப்படும்போது காட்டப்படும்"
 
 [t_b246b85fcb]
 en = "Not available"
@@ -7203,14 +7207,14 @@ where = [
   "android notif_idle_unavailable: Title of the always-on notification when I have set myself unavailable.",
   "desktop common_not_available: Shared label, used in several places (app, reason).",
 ]
-text = ""
+text = "கிடைக்கவில்லை"
 
 [t_36ca5e70db]
 en = "Offline — reconnecting"
 where = [
   "android notif_idle_offline: Title of the always-on notification when the phone has no connection.",
 ]
-text = ""
+text = "ஆஃப்லைன் — மீண்டும் இணைக்கிறது"
 
 [t_9259500947]
 en = "Available for calls"
@@ -7219,14 +7223,14 @@ where = [
   "android avail_title: Title of the availability sheet and accessibility label of its switch.",
   "desktop settings_available_for_calls: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "அழைப்புகளுக்குக் கிடைக்கிறேன்"
 
 [t_ca9c4477e4]
 en = "Calls won’t ring. Tap to change."
 where = [
   "android notif_idle_unavailable_text: Text of the always-on notification when I am unavailable.",
 ]
-text = ""
+text = "அழைப்புகள் ஒலிக்காது. மாற்றத் தட்டுங்கள்."
 
 [t_318f27de45]
 en = "Your calls come through again once you’re back online."
@@ -7236,21 +7240,21 @@ where = [
   "ios shell_banner_offline_text: Banner text when offline.",
   "desktop gate_your_calls_come_through: Desktop, sign-in and gate screens (in view.rs, problem).",
 ]
-text = ""
+text = "நீங்கள் மீண்டும் ஆன்லைனுக்கு வந்ததும் உங்கள் அழைப்புகள் மீண்டும் வரும்."
 
 [t_934bb3d62f]
 en = "Your line is open. Tap to change."
 where = [
   "android notif_idle_available_text: Text of the always-on notification when available.",
 ]
-text = ""
+text = "உங்கள் லைன் திறந்திருக்கிறது. மாற்றத் தட்டுங்கள்."
 
 [t_bb5cc13df8]
 en = "Tap to return to the call"
 where = [
   "android notif_return_to_call: Text of the notification shown during a call.",
 ]
-text = ""
+text = "அழைப்புக்குத் திரும்பத் தட்டுங்கள்"
 
 [t_2a6f141e63]
 en = "End call"
