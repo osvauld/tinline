@@ -11124,7 +11124,7 @@ where = [
   "ios kit_mark_offline: Screen-reader label of the mark when the network is down.",
   "desktop status_no_connection: Desktop, status line (in mark.rs, status_look).",
 ]
-text = ""
+text = "Ei yhteyttä"
 
 [t_9f20a24573]
 en = "Connected to the network"
@@ -11133,7 +11133,7 @@ where = [
   "ios kit_mark_online: Screen-reader label of the mark when online.",
   "desktop status_connected_to_the_network: Desktop, status line (in mark.rs, status_look).",
 ]
-text = ""
+text = "Yhdistetty verkkoon"
 
 [t_79aeb35116]
 en = "You’re offline"
@@ -11142,7 +11142,7 @@ where = [
   "ios shell_banner_offline_title: Banner title when the phone has no connection.",
   "desktop gate_youre_offline: Desktop, sign-in and gate screens (in view.rs, problem).",
 ]
-text = ""
+text = "Et ole verkossa"
 
 [t_3aed261ca8]
 en = "Calls won’t ring"
@@ -11150,7 +11150,7 @@ where = [
   "android home_banner_no_ring_title: Banner title when notifications are off.",
   "ios shell_banner_noring_title: Banner title when notifications are off.",
 ]
-text = ""
+text = "Puhelut eivät soi"
 
 [t_b2d76f5fe3]
 en = "Notifications are off for Tinline."
@@ -11158,35 +11158,35 @@ where = [
   "android home_banner_no_ring_body: Banner text when notifications are off.",
   "ios shell_banner_noring_text: Banner text when notifications are off.",
 ]
-text = ""
+text = "Tinlinen ilmoitukset ovat pois päältä."
 
 [t_c20b70bc41]
 en = "Calls may be missed when idle"
 where = [
   "android home_banner_battery_title: Banner title when Android limits the app in the background.",
 ]
-text = ""
+text = "Puheluita voi jäädä huomaamatta laitteen ollessa levossa"
 
 [t_92c3375cdc]
 en = "Android is limiting Tinline in the background."
 where = [
   "android home_banner_battery_body: Banner text when battery optimisation limits the app.",
 ]
-text = ""
+text = "Android rajoittaa Tinlinea taustalla."
 
 [t_a6ffa17a51]
 en = "Calls won’t show on the lock screen"
 where = [
   "android home_banner_lock_title: Banner title when full-screen calls are not allowed.",
 ]
-text = ""
+text = "Puhelut eivät näy lukitusnäytöllä"
 
 [t_e07e3f9756]
 en = "Allow full-screen calls so Tinline rings like the phone app."
 where = [
   "android home_banner_lock_body: Banner text when full-screen calls are not allowed.",
 ]
-text = ""
+text = "Salli koko näytön puhelut, niin Tinline soi kuin puhelinsovellus."
 
 [t_b3eb3ce8d7]
 en = "You’re not available"
@@ -11195,7 +11195,7 @@ where = [
   "ios shell_banner_unavailable_title: Banner title when the user marked themselves not available.",
   "desktop gate_youre_not_available: Desktop, sign-in and gate screens (in view.rs, problem).",
 ]
-text = ""
+text = "Et ole tavoitettavissa"
 
 [t_29f00434f8]
 en = "Calls won’t ring until you turn it back on."
@@ -11204,7 +11204,7 @@ where = [
   "ios shell_banner_unavailable_text: Banner text when the user is not available.",
   "desktop gate_calls_wont_ring_until: Desktop, sign-in and gate screens (in view.rs, problem).",
 ]
-text = ""
+text = "Puhelut eivät soi, ennen kuin otat sen taas käyttöön."
 
 [t_a2b83ef1c7]
 en = "Turn on"
@@ -11213,7 +11213,7 @@ where = [
   "ios shell_banner_turn_on: Banner button that turns a setting back on.",
   "desktop gate_turn_on: Desktop, sign-in and gate screens (in view.rs, problem).",
 ]
-text = ""
+text = "Ota käyttöön"
 
 [t_637c9e5ff1]
 en = "Recent calls"
@@ -11221,7 +11221,7 @@ where = [
   "android home_recent_calls: Title of the full call-log screen.",
   "ios shell_calls_recent: Title of the recent calls screen.",
 ]
-text = ""
+text = "Viimeisimmät puhelut"
 
 [t_1ed0ba9b36]
 en = "No calls yet. History stays on this phone only."
@@ -11229,7 +11229,7 @@ where = [
   "android home_no_calls: Hint on the call log screen when there are no calls.",
   "ios shell_calls_none: Recent calls screen when empty.",
 ]
-text = ""
+text = "Ei vielä puheluita. Historia pysyy vain tällä puhelimella."
 
 [t_5bf77136ab]
 en = "Close search"
@@ -11237,42 +11237,42 @@ where = [
   "android home_close_search: Accessibility label of the back button in the search bar.",
   "ios shell_close_search: Accessibility label of the button that closes the search field.",
 ]
-text = ""
+text = "Sulje haku"
 
 [t_5b5ac20059]
 en = "Call {name}"
 where = [
   "android home_call_name: Accessibility label of the call button in a row. {name} is the contact.",
 ]
-text = ""
+text = "Soita: {name}"
 
 [t_e3d4019266]
 en = "Add your first contact"
 where = [
   "android home_first_title: Title of the first-run add-contact screen.",
 ]
-text = ""
+text = "Lisää ensimmäinen yhteystietosi"
 
 [t_d7b4cb1a04]
 en = "Show your code to a friend, or copy it and send it. Or scan theirs."
 where = [
   "android home_first_lead: Text on the first-run add-contact screen.",
 ]
-text = ""
+text = "Näytä koodisi ystävälle tai kopioi ja lähetä se. Tai skannaa hänen koodinsa."
 
 [t_6c3a34a46b]
 en = "Paste their card"
 where = [
   "android home_first_paste: Button on the first-run add-contact screen.",
 ]
-text = ""
+text = "Liitä hänen käyntikorttinsa"
 
 [t_ff919c7555]
 en = "Waiting for them to scan — keep this open."
 where = [
   "android home_first_waiting: Status on the first-run add-contact screen while my code is shown.",
 ]
-text = ""
+text = "Odotetaan, että hän skannaa — pidä tämä auki."
 
 [t_768662e0b1]
 en = "All"
@@ -11281,7 +11281,7 @@ where = [
   "ios shell_filter_all: Chat list filter chip: all chats.",
   "desktop shell_all: Desktop, shell: sidebar, search, contacts (in shell_view.rs, chat_chips).",
 ]
-text = ""
+text = "Kaikki"
 
 [t_c9def6cf39]
 en = "Unread"
@@ -11290,7 +11290,7 @@ where = [
   "ios shell_filter_unread: Chat list filter chip: only unread chats.",
   "desktop shell_unread: Desktop, shell: sidebar, search, contacts (in shell_view.rs, chat_chips).",
 ]
-text = ""
+text = "Lukemattomat"
 
 [t_8567f1ee2b]
 en = "Draft:"
@@ -11298,7 +11298,7 @@ where = [
   "android chats_draft: Prefix of a chat row's preview when I have an unsent draft; the draft text follows.",
   "ios shell_chats_draft: Chat list preview prefix before an unsent draft. The draft text follows.",
 ]
-text = ""
+text = "Luonnos:"
 
 [t_dc46133a29]
 en = "Cancelled"
@@ -11307,7 +11307,7 @@ where = [
   "ios shell_call_what_cancelled: Call list: call cancelled before it was answered.",
   "desktop common_cancelled: Shared label, used in several places (reason, view).",
 ]
-text = ""
+text = "Peruttu"
 
 [t_a082e480ac]
 en = "{name}’s profile"
@@ -11315,7 +11315,7 @@ where = [
   "android calls_profile_desc: Accessibility label of the avatar on a Calls row. {name} is the contact.",
   "ios shell_calls_profile_a11y: Screen reader label of a call row’s avatar button. {name} is the contact.",
 ]
-text = ""
+text = "Profiili: {name}"
 
 [t_4890385e3c]
 en = "Can’t call"
@@ -11323,21 +11323,21 @@ where = [
   "android calls_cant_call: Accessibility action text at the end of a Calls row when I cannot call this person.",
   "ios shell_calls_action_cant: Screen reader: the contact cannot be called right now.",
 ]
-text = ""
+text = "Ei voi soittaa"
 
 [t_b4407af6cb]
 en = "{name}, {what} call, {time}. {action}"
 where = [
   "android calls_row_desc: Accessibility description of a Calls row. {what} is e.g. Missed, {time} the time of the call, {action} is 'Call' or 'Can’t call'.",
 ]
-text = ""
+text = "{name}, {what} puhelu, {time}. {action}"
 
 [t_46c7c21b75]
 en = "{name}, {what} call, {duration}, {time}. {action}"
 where = [
   "android calls_row_desc_duration: Accessibility description of a Calls row with a duration. {duration} is e.g. 2:31; others as in the row description.",
 ]
-text = ""
+text = "{name}, {what} puhelu, {duration}, {time}. {action}"
 
 [t_e7a879b634]
 en = "{name}, group info"
@@ -11345,14 +11345,14 @@ where = [
   "android calls_group_info_desc: Accessibility label of the avatar on a group call row. {name} is the group.",
   "ios shell_calls_group_info_a11y: Screen reader label of a group call row’s avatar. {name} is the group.",
 ]
-text = ""
+text = "{name}, ryhmän tiedot"
 
 [t_dc916e75d3]
 en = "{name}, {what}, {time}. Start or join a call"
 where = [
   "android calls_group_row_desc: Accessibility description of a group call row. {what} is the group call summary, {time} the time of the call.",
 ]
-text = ""
+text = "{name}, {what}, {time}. Aloita puhelu tai liity siihen"
 
 [t_915083bafb]
 en = "Find a contact"
@@ -11361,7 +11361,7 @@ where = [
   "ios shell_contacts_find: Placeholder and label of the contact filter field on the Contacts tab.",
   "desktop shell_find_a_contact: Desktop, shell: sidebar, search, contacts (in shell_view.rs, new_chat_overlay).",
 ]
-text = ""
+text = "Etsi yhteystieto"
 
 [t_2b1e690ea9]
 en = "Share your code or paste theirs"
@@ -11370,7 +11370,7 @@ where = [
   "ios shell_contacts_add_sub: Second line of the add-contact row.",
   "desktop shell_share_your_code_or: Desktop, shell: sidebar, search, contacts (in shell_view.rs, contacts_list).",
 ]
-text = ""
+text = "Jaa koodisi tai liitä hänen koodinsa"
 
 [t_e7dde6507e]
 en = "Waiting for you"
@@ -11378,7 +11378,7 @@ where = [
   "android contacts_waiting_for_you: Section title for contact requests waiting for my answer.",
   "ios shell_contacts_waiting_you: Section header on the Contacts tab: people who asked to be the user’s contact.",
 ]
-text = ""
+text = "Odottavat sinua"
 
 [t_104927efde]
 en = "Wants to add you as a contact"
@@ -11387,7 +11387,7 @@ where = [
   "ios shell_contacts_wants_add: Line under a contact request received.",
   "desktop shell_wants_to_add_you: Desktop, shell: sidebar, search, contacts (in shell_view.rs, contacts_list).",
 ]
-text = ""
+text = "Haluaa lisätä sinut yhteystiedoksi"
 
 [t_7395746ee0]
 en = "Accepting lets you message and call each other."
@@ -11396,7 +11396,7 @@ where = [
   "ios shell_contacts_accept_hint: Explains what accepting a contact request does.",
   "desktop shell_accepting_lets_you_message: Desktop, shell: sidebar, search, contacts (in shell_view.rs, contacts_list).",
 ]
-text = ""
+text = "Hyväksymällä voitte lähettää viestejä ja soittaa toisillenne."
 
 [t_b956f3e4a0]
 en = "Waiting for them"
@@ -11404,7 +11404,7 @@ where = [
   "android contacts_waiting_for_them: Section title for requests I sent that wait for an answer.",
   "ios shell_contacts_waiting_them: Section header on the Contacts tab: requests the user sent.",
 ]
-text = ""
+text = "Odottavat heitä"
 
 [t_3b8261f1af]
 en = "No one called “{query}” in your contacts."
@@ -11412,7 +11412,7 @@ where = [
   "android contacts_none_found: Footer of the Contacts tab when the search finds nobody. {query} is what I typed.",
   "ios shell_contacts_none_match: Contacts tab message when the filter matches nobody. {query} is what the user typed.",
 ]
-text = ""
+text = "Yhteystiedoissasi ei ole ketään nimellä ”{query}”."
 
 [t_ce5aed0499]
 en_one = "{count} contact"
@@ -11422,6 +11422,8 @@ where = [
   "ios shell_contacts_count: Contacts tab footer: how many contacts.",
   "desktop shell_contacts_count: Footer under the contacts list. {count} is how many contacts you have.",
 ]
+one = "{count} yhteystieto"
+other = "{count} yhteystietoa"
 
 [t_e8cd0add72]
 en = "Delivered to everyone"
@@ -11429,7 +11431,7 @@ where = [
   "android list_tick_delivered: Accessibility description of the receipt mark on a group chat row: delivered to all members.",
   "ios shell_tick_two: Screen reader label. Group row: last message reached everyone.",
 ]
-text = ""
+text = "Toimitettu kaikille"
 
 [t_3798d3c6ff]
 en = "Read by everyone"
@@ -11437,7 +11439,7 @@ where = [
   "android list_tick_read: Accessibility description of the receipt mark on a group chat row: read by all members.",
   "ios shell_tick_read: Screen reader label. Group row: last message was read by everyone.",
 ]
-text = ""
+text = "Kaikki lukeneet"
 
 [t_0812d6c65d]
 en = "Couldn’t start the call"
@@ -11445,14 +11447,14 @@ where = [
   "android main_call_start_failed: Shown under the Calls list when placing a call failed without a reason.",
   "ios shell_err_call_start: Error shown when starting a call failed without a message.",
 ]
-text = ""
+text = "Puhelua ei voitu aloittaa"
 
 [t_e43524af2c]
 en = "You joined the group."
 where = [
   "android main_joined_group: Snackbar after I joined a group by link.",
 ]
-text = ""
+text = "Liityit ryhmään."
 
 [t_6118e29833]
 en = "Last message {time}"
@@ -11460,14 +11462,14 @@ where = [
   "android main_last_message: Sub-line of a person in the New chat list. {time} is a short time, e.g. 12:31 or Mon.",
   "ios shell_new_chat_last_message: New chat list second line. {time} is when the last message was sent.",
 ]
-text = ""
+text = "Viimeisin viesti {time}"
 
 [t_6fba4f6865]
 en = "{name} is told you blocked them"
 where = [
   "android main_told_blocked: Snackbar after I blocked someone. {name} is their first name.",
 ]
-text = ""
+text = "{name} saa tiedon, että estit hänet"
 
 [t_fdfcf0009c]
 en = "Couldn’t save your account safely on this phone."
@@ -11475,7 +11477,7 @@ where = [
   "android app_save_unsafe: Error after creating an account when its key could not be stored in the phone's secure storage.",
   "ios shell_err_save_account_safely: Error when the account key could not be stored safely on this phone.",
 ]
-text = ""
+text = "Tiliäsi ei voitu tallentaa turvallisesti tälle puhelimelle."
 
 [t_fc16498c7b]
 en = "Couldn’t save your account on this phone."
@@ -11483,7 +11485,7 @@ where = [
   "android app_save_failed: Error after creating an account when saving it failed.",
   "ios shell_err_save_account: Error after creating or restoring an account when it could not be stored on this phone.",
 ]
-text = ""
+text = "Tiliäsi ei voitu tallentaa tälle puhelimelle."
 
 [t_6d009aea8f]
 en = "That recovery phrase belongs to a different identity"
@@ -11491,7 +11493,7 @@ where = [
   "android app_phrase_other_identity: Error when the recovery phrase I typed is for another account than the locked one.",
   "ios shell_flow_different_identity: Error when the recovery phrase typed to restore belongs to another identity than the one being restored.",
 ]
-text = ""
+text = "Nämä palautussanat kuuluvat toiselle identiteetille"
 
 [t_447402f66d]
 en = "That didn’t match. Check the spelling and spaces."
@@ -11499,7 +11501,7 @@ where = [
   "android support_err_wrong_passphrase: Error under the passphrase field when it is wrong.",
   "ios shell_err_wrong_passphrase: Error under the passphrase field when the passphrase is wrong.",
 ]
-text = ""
+text = "Se ei täsmännyt. Tarkista kirjoitusasu ja välilyönnit."
 
 [t_c5228116d0]
 en = "Type a passphrase, or skip it"
@@ -11507,7 +11509,7 @@ where = [
   "android support_err_weak_passphrase: Error when the passphrase field is empty.",
   "ios shell_err_weak_passphrase: Error when the passphrase field is empty and a passphrase is required.",
 ]
-text = ""
+text = "Kirjoita salalause tai ohita se"
 
 [t_7b6d48809e]
 en = "Locked — enter your passphrase to unlock"
@@ -11516,7 +11518,7 @@ where = [
   "ios chat_err_locked: Friendly error when the vault is locked.",
   "ios shell_err_locked: Error when something needs the unlocked app.",
 ]
-text = ""
+text = "Lukittu — avaa lukitus salalauseellasi"
 
 [t_f06df71faf]
 en = "That recovery phrase is not valid"
@@ -11524,7 +11526,7 @@ where = [
   "android support_err_bad_phrase: Error when the typed recovery phrase is not valid.",
   "ios shell_err_bad_phrase: Error when the typed recovery phrase is not valid.",
 ]
-text = ""
+text = "Nämä palautussanat eivät kelpaa"
 
 [t_78ca893ba4]
 en = "That account is already on this phone"
@@ -11532,175 +11534,175 @@ where = [
   "android support_err_account_exists: Error when adding an account that is already on this phone.",
   "ios shell_err_account_exists: Error when restoring or linking an account that is already on this phone.",
 ]
-text = ""
+text = "Tili on jo tällä puhelimella"
 
 [t_d55ac1dd3c]
 en = "their"
 where = [
   "ios kit_tick_their: Stand-in for a first name in the tick labels when no name is known (\"On their device\").",
 ]
-text = ""
+text = "hänen"
 
 [t_eb90d80ea2]
 en = "Match {index} of {total}"
 where = [
   "ios chat_find_match_of: Accessibility label of the match counter. {index} is the current match number, {total} how many matches.",
 ]
-text = ""
+text = "Osuma {index}/{total}"
 
 [t_d30c4d9fbd]
 en = "Message actions"
 where = [
   "ios chat_message_actions: Accessibility action name that opens the message actions sheet.",
 ]
-text = ""
+text = "Viestin toiminnot"
 
 [t_84a49c7c1f]
 en = "Read · signed by {first} · device {device}"
 where = [
   "ios chat_proof_read: Line in the message sheet for a signed read receipt. {first} is the other person's first name, {device} the short id of the device that signed.",
 ]
-text = ""
+text = "Luettu · allekirjoittaja {first} · laite {device}"
 
 [t_79cbcaccf4]
 en = "Delivered · signed by {first} · device {device}"
 where = [
   "ios chat_proof_delivered: Line in the message sheet for a signed delivery receipt. {first} first name, {device} short id of the signing device.",
 ]
-text = ""
+text = "Toimitettu · allekirjoittaja {first} · laite {device}"
 
 [t_977acb9243]
 en = "You blocked {first}"
 where = [
   "ios chat_blocked_note: Quiet line under the last message when the user blocked this person. {first} is their first name.",
 ]
-text = ""
+text = "Estit henkilön {first}"
 
 [t_aa71cc755c]
 en = "You blocked {first} · {date}"
 where = [
   "ios chat_blocked_note_date: Quiet line when the user blocked this person. {first} first name, {date} the day of the block.",
 ]
-text = ""
+text = "Estit henkilön {first} · {date}"
 
 [t_348d44de68]
 en = "Signed by {first} · {date}"
 where = [
   "ios chat_blocked_signed: Small print under the notice that someone blocked the user. {first} their first name, {date} the day.",
 ]
-text = ""
+text = "Allekirjoittaja {first} · {date}"
 
 [t_e4d8b823c3]
 en = "Chat"
 where = [
   "ios chat_fallback_name: Header name used when a chat has no known contact name.",
 ]
-text = ""
+text = "Keskustelu"
 
 [t_b266dbd16b]
 en = "Kept encrypted inside Tinline. “Save to phone” copies it to your photos, where other apps can see it."
 where = [
   "ios chat_viewer_photo_hint: Hint at the bottom of the photo viewer. The quoted words match the \"Save to phone\" label.",
 ]
-text = ""
+text = "Säilytetään salattuna Tinlinessa. ”Tallenna puhelimeen” kopioi sen kuviisi, joissa muut sovellukset näkevät sen."
 
 [t_86f638dc40]
 en = "host"
 where = [
   "ios group_member_desc_host: Spoken description part (lower case, joined with commas).",
 ]
-text = ""
+text = "isäntälaite"
 
 [t_21c1c62907]
 en = "call host"
 where = [
   "ios group_member_desc_call_host: Spoken description part (lower case, joined with commas).",
 ]
-text = ""
+text = "puheluisäntä"
 
 [t_00447cd507]
 en = "{summary}. Open actions"
 where = [
   "ios group_member_desc: Spoken description of a member row. {summary} is the comma-separated name, role and host parts.",
 ]
-text = ""
+text = "{summary}. Avaa toiminnot"
 
 [t_bb25ebc0ad]
 en = "{status} · also hosts calls"
 where = [
   "ios group_host_also_calls: Sub line for a host that is also a call host. {status} is Online or Offline.",
 ]
-text = ""
+text = "{status} · isännöi myös puheluita"
 
 [t_f76352b5f0]
 en = "Hosts store the group and pass posts on when others are offline. They are members you trust: a host can read everything posted in this group. Appoint a host from a member’s menu; they have to accept. Removing a host changes the group’s address within 2 days, so that device can no longer reach it."
 where = [
   "ios group_hosts_note_admin: Explanation under the host list, for admins (replaces the plain one).",
 ]
-text = ""
+text = "Isäntälaitteet tallentavat ryhmän ja välittävät viestit eteenpäin, kun muut eivät ole verkossa. Ne ovat jäseniä, joihin luotat: isäntälaite voi lukea kaiken tähän ryhmään kirjoitetun. Nimeä isäntälaite jäsenen valikosta; hänen täytyy hyväksyä. Isäntälaitteen poistaminen vaihtaa ryhmän osoitteen 2 päivän kuluessa, joten se laite ei enää tavoita ryhmää."
 
 [t_8bae39c7cf]
 en = "A call host carries the call. Everyone in a call connects to it, and it passes the audio on, so it can hear the call. That is separate from chat hosting: a chat host is not a call host unless you also appoint it as one. Call hosts are members you trust, and each one chooses to accept. Appoint one from a member’s menu, or host calls on this phone. A phone only hosts calls that its owner starts."
 where = [
   "ios group_callhosts_note_admin: Explanation under the call host list, for admins.",
 ]
-text = ""
+text = "Puheluisäntä välittää puhelun. Kaikki puhelussa olevat yhdistävät siihen, ja se välittää äänen eteenpäin, joten se voi kuulla puhelun. Tämä on erillään keskustelun isännöinnistä: keskustelun isäntälaite ei ole puheluisäntä, ellet nimeä sitä myös sellaiseksi. Puheluisännät ovat jäseniä, joihin luotat, ja jokainen päättää itse hyväksyä tehtävän. Nimeä sellainen jäsenen valikosta tai isännöi puheluita tällä puhelimella. Puhelin isännöi vain omistajansa aloittamia puheluita."
 
 [t_a2f22a6fc1]
 en = "{flags} of {total}"
 where = [
   "ios group_flags_count: Count next to the heading and spoken label of the flag meter. {flags} is flags so far, {total} flags that remove.",
 ]
-text = ""
+text = "{flags}/{total}"
 
 [t_c23190545c]
 en = "Removed after {total} admin flags"
 where = [
   "ios group_removal_title: Headline of the removal page. {total} is the number of flags that remove.",
 ]
-text = ""
+text = "Poistettu {total} ylläpitäjän merkinnän jälkeen"
 
 [t_fd5de9e620]
 en = "Leave {group}?"
 where = [
   "ios group_leave_title: Title of the leave dialog. {group} is the group’s name.",
 ]
-text = ""
+text = "Poistutko ryhmästä {group}?"
 
 [t_c4c1eba891]
 en = "Invite to {group}"
 where = [
   "ios group_invite_title: Title of the invite sheet. {group} is the group’s name.",
 ]
-text = ""
+text = "Kutsu ryhmään {group}"
 
 [t_6a7d19da82]
 en = "Cancel call host request{device}"
 where = [
   "ios group_member_cancel_callhost: Action row title. {device} is a short device id, empty if the member has one device.",
 ]
-text = ""
+text = "Peru puheluisäntäpyyntö{device}"
 
 [t_0d3dc0a631]
 en = "Remove as call host{device}"
 where = [
   "ios group_member_remove_callhost: Action row title. {device} is a short device id, empty if the member has one device.",
 ]
-text = ""
+text = "Poista puheluisännistä{device}"
 
 [t_4c68bd0c07]
 en = "Make call host{device}"
 where = [
   "ios group_member_make_callhost: Action row title. {device} is a short device id, empty if the member has one device.",
 ]
-text = ""
+text = "Tee puheluisännäksi{device}"
 
 [t_2c5d81e205]
 en = "{total} flags remove {name} from the group"
 where = [
   "ios group_member_flag_sub: Sub line. {total} is the number of flags that remove, {name} the member’s first name.",
 ]
-text = ""
+text = "{total} merkintää poistaa henkilön {name} ryhmästä"
 
 [t_cf7c3ae83a]
 en = "{name} joined"
@@ -11708,7 +11710,7 @@ where = [
   "ios group_sys_joined: System line in a group chat. {name} is who joined.",
   "ios shell_group_sys_joined: Group chat system line. {name} is the member who joined.",
 ]
-text = ""
+text = "{name} liittyi"
 
 [t_a7294226a3]
 en = "{name} left"
@@ -11716,21 +11718,21 @@ where = [
   "ios group_sys_left: System line in a group chat. {name} is who left.",
   "ios shell_group_sys_left: Group chat system line. {name} is the member who left.",
 ]
-text = ""
+text = "{name} poistui"
 
 [t_2d2f46e181]
 en = "You were removed after {total} admin flags"
 where = [
   "ios group_sys_removed_you: System line: the user was removed. {total} is the number of flags that remove.",
 ]
-text = ""
+text = "Sinut poistettiin {total} ylläpitäjän merkinnän jälkeen"
 
 [t_cc4e320bf2]
 en = "{name} was removed after {total} admin flags"
 where = [
   "ios group_sys_removed: System line: a member was removed. {name} is the member, {total} the number of flags.",
 ]
-text = ""
+text = "{name} poistettiin {total} ylläpitäjän merkinnän jälkeen"
 
 [t_3e142c9eb0]
 en = "{by} made you an admin"
@@ -11738,7 +11740,7 @@ where = [
   "ios group_sys_admin_you: System line. {by} is who made the user admin.",
   "ios shell_group_sys_admin_granted_you: Group chat system line. {by} is who made the user an admin.",
 ]
-text = ""
+text = "{by} nimesi sinut ylläpitäjäksi"
 
 [t_ea5318e5e0]
 en = "{by} made {name} an admin"
@@ -11746,7 +11748,7 @@ where = [
   "ios group_sys_admin: System line. {by} made {name} an admin.",
   "ios shell_group_sys_admin_granted: Group chat system line. {by} granted admin to {name}.",
 ]
-text = ""
+text = "{by} nimesi ylläpitäjäksi: {name}"
 
 [t_870567c1f4]
 en = "{by} removed {name} as admin"
@@ -11754,7 +11756,7 @@ where = [
   "ios group_sys_unadmin: System line. {by} removed {name} as admin.",
   "ios shell_group_sys_admin_revoked: Group chat system line. {by} removed {name}’s admin role.",
 ]
-text = ""
+text = "{by} poisti ylläpitäjyyden: {name}"
 
 [t_be5bddaced]
 en = "A device of {name}’s now hosts the group"
@@ -11762,7 +11764,7 @@ where = [
   "ios group_sys_host_added: System line. {name} is the member whose device now hosts.",
   "ios shell_group_sys_host_added: Group chat system line. {name} is the member whose device became a host.",
 ]
-text = ""
+text = "Jäsenen {name} laite isännöi nyt ryhmää"
 
 [t_058c17b479]
 en = "A device of {name}’s stopped hosting the group"
@@ -11770,7 +11772,7 @@ where = [
   "ios group_sys_host_removed: System line. {name} is the member whose device stopped hosting.",
   "ios shell_group_sys_host_removed: Group chat system line. {name} is the member whose device stopped hosting.",
 ]
-text = ""
+text = "Jäsenen {name} laite lopetti ryhmän isännöinnin"
 
 [t_36d94817e7]
 en = "You: {text}"
@@ -11778,7 +11780,7 @@ where = [
   "ios group_preview_you: Group list row preview of the user’s own last post. {text} is the post.",
   "ios shell_group_preview_mine: Group row second line: the user’s own last message. {text} is the message text.",
 ]
-text = ""
+text = "Sinä: {text}"
 
 [t_9946335b15]
 en = "{name}: {text}"
@@ -11786,7 +11788,7 @@ where = [
   "ios group_preview_author: Group list row preview of someone’s last post. {name} is the author’s first name, {text} the post.",
   "ios shell_group_preview_other: Group row second line: someone’s last message. {name} is the author’s first name, {text} the message.",
 ]
-text = ""
+text = "{name}: {text}"
 
 [t_28c02cfd31]
 en_one = "{count} member"
@@ -11795,27 +11797,29 @@ where = [
   "ios group_members_count: Member count. {count} is the number of members.",
   "desktop group_members_count: Number of people in a group, in the group summary line. {count} is the member count.",
 ]
+one = "{count} jäsen"
+other = "{count} jäsentä"
 
 [t_7213d47f32]
 en = "{members} · this device hosts the group"
 where = [
   "ios group_status_this_device: Group header sub line. {members} is the member count text.",
 ]
-text = ""
+text = "{members} · tämä laite isännöi ryhmää"
 
 [t_2279140dcc]
 en = "{members} · no host yet"
 where = [
   "ios group_status_no_host: Group header sub line. {members} is the member count text.",
 ]
-text = ""
+text = "{members} · ei vielä isäntälaitetta"
 
 [t_52534f1261]
 en = "{members} · waiting for a host"
 where = [
   "ios group_status_waiting: Group header sub line. {members} is the member count text.",
 ]
-text = ""
+text = "{members} · odottaa isäntälaitetta"
 
 [t_3831cc5788]
 en = "{members} · {hosts}"
@@ -11823,28 +11827,28 @@ where = [
   "ios group_status_hosts: Group header sub line. {members} is the member count text, {hosts} the host count text.",
   "desktop group_members_and_hosts: Group summary line under its name. {members} is e.g. \"3 members\", {hosts} is e.g. \"2 hosts\".",
 ]
-text = ""
+text = "{members} · {hosts}"
 
 [t_829ade1bf9]
 en = "Waiting for {name} · via {group}"
 where = [
   "ios group_req_pending: Line for a chat request the user sent. {name} is who it went to, {group} the group it goes through.",
 ]
-text = ""
+text = "Odotetaan: {name} · ryhmän {group} kautta"
 
 [t_0a675d84aa]
 en = "{name} declined"
 where = [
   "ios group_req_declined: Line for a declined chat request. {name} is who declined.",
 ]
-text = ""
+text = "{name} hylkäsi"
 
 [t_c0ee57d92f]
 en = "{name} blocked you"
 where = [
   "ios group_req_blocked: Line for a chat request that was blocked. {name} is who blocked the user.",
 ]
-text = ""
+text = "{name} esti sinut"
 
 [t_7735823936]
 en = "Already a member"
@@ -11852,7 +11856,7 @@ where = [
   "ios group_pick_already_member: Reason a contact cannot be picked for an invite.",
   "desktop group_already_a_member: Desktop, groups (in group_live.rs, pick_rows).",
 ]
-text = ""
+text = "Jo jäsen"
 
 [t_4d1748bdef]
 en = "Invited · waiting"
@@ -11860,7 +11864,7 @@ where = [
   "ios group_pick_invited_waiting: Reason a contact cannot be picked for an invite.",
   "desktop group_invited_waiting: Desktop, groups (in group_live.rs, pick_rows).",
 ]
-text = ""
+text = "Kutsuttu · odottaa"
 
 [t_a41296ea1e]
 en = "Invited · not delivered yet"
@@ -11868,7 +11872,7 @@ where = [
   "ios group_inv_undelivered: State of an invitation the user sent.",
   "desktop group_invited_not_delivered_yet: Desktop, groups (in group_live.rs, sent_invitation_line).",
 ]
-text = ""
+text = "Kutsuttu · ei vielä toimitettu"
 
 [t_4c7964499e]
 en = "Joined"
@@ -11876,21 +11880,21 @@ where = [
   "ios group_inv_joined: State of an invitation the user sent.",
   "desktop group_joined: Desktop, groups (in group_live.rs, sent_invitation_line).",
 ]
-text = ""
+text = "Liittyi"
 
 [t_7df34dff82]
 en = "Yours will be flag {yours} of {total}. {name} is removed right away: hosts refuse their new messages and they see they were removed."
 where = [
   "ios group_flag_copy_final: Flag dialog sentence for the flag that removes the member. {yours} is which flag it is, {total} flags remove, {name} the member’s first name.",
 ]
-text = ""
+text = "Sinun merkintäsi on {yours}/{total}. {name} poistetaan heti: isäntälaitteet hylkäävät hänen uudet viestinsä, ja hän näkee tulleensa poistetuksi."
 
 [t_a70b928917]
 en = "Yours will be flag {yours} of {total}. Any admin’s flags count, yours again too. At {total} flags {name} is removed right away and sees they were removed."
 where = [
   "ios group_flag_copy: Flag dialog sentence for a flag that does not remove yet. {yours} is which flag it is, {total} flags remove, {name} the member’s first name.",
 ]
-text = ""
+text = "Sinun merkintäsi on {yours}/{total}. Kaikkien ylläpitäjien merkinnät lasketaan, myös sinun uudet merkintäsi. Kun merkintöjä on {total}, {name} poistetaan heti, ja hän näkee tulleensa poistetuksi."
 
 [t_083606ee59]
 en = "You were removed from this group."
@@ -11898,7 +11902,7 @@ where = [
   "ios group_error_removed: Error: the host says the user was removed.",
   "desktop group_you_were_removed_from_this_group: Desktop, groups (in group_live.rs, gerr).",
 ]
-text = ""
+text = "Sinut poistettiin tästä ryhmästä."
 
 [t_fab9e89a7d]
 en = "You already have them as a contact. Message them from Chats."
@@ -11906,7 +11910,7 @@ where = [
   "ios group_error_already_contact: Error when asking for a chat with someone who is already a contact.",
   "desktop group_you_already_have_them: Desktop, groups (in group_live.rs, gerr).",
 ]
-text = ""
+text = "Hän on jo yhteystietosi. Lähetä hänelle viesti Keskustelut-välilehdeltä."
 
 [t_6b6d82084e]
 en = "No host answered in time. Try again when a host is online."
@@ -11914,28 +11918,28 @@ where = [
   "ios group_error_timeout: Error when no host answered.",
   "desktop group_no_host_answered_in: Desktop, groups (in group_live.rs, gerr).",
 ]
-text = ""
+text = "Yksikään isäntälaite ei vastannut ajoissa. Yritä uudelleen, kun jokin isäntälaite on verkossa."
 
 [t_7f2634cd7f]
 en = "Type a message first."
 where = [
   "ios group_err_type_message: Error when sending an empty post.",
 ]
-text = ""
+text = "Kirjoita ensin viesti."
 
 [t_452484335e]
 en = "Pick someone first."
 where = [
   "ios group_err_pick_someone: Error when inviting nobody.",
 ]
-text = ""
+text = "Valitse ensin joku."
 
 [t_c5140aa276]
 en = "Invitation sent to {name}. They join when they accept."
 where = [
   "ios group_done_invite_one: Confirmation after inviting one contact. {name} is their first name.",
 ]
-text = ""
+text = "Kutsu lähetetty: {name}. Hän liittyy hyväksyessään."
 
 [t_d47f830012]
 en_one = "{count} invitation sent. Each person joins when they accept."
@@ -11943,160 +11947,162 @@ en_other = "{count} invitations sent. Each person joins when they accept."
 where = [
   "ios group_done_invite_many: Confirmation after inviting several contacts. {count} is how many.",
 ]
+one = "{count} kutsu lähetetty. Jokainen liittyy hyväksyessään."
+other = "{count} kutsua lähetetty. Jokainen liittyy hyväksyessään."
 
 [t_c5c52c6f16]
 en = "Declined. {name} sees that you declined."
 where = [
   "ios group_done_decline_invite: Confirmation after declining an invitation. {name} is the inviter’s first name.",
 ]
-text = ""
+text = "Hylätty. {name} näkee, että hylkäsit."
 
 [t_01a6680b03]
 en = "Request sent to {name}. It waits in Chats until they answer."
 where = [
   "ios group_done_request_sent: Confirmation after asking for a private chat. {name} is their first name.",
 ]
-text = ""
+text = "Pyyntö lähetetty: {name}. Se odottaa Keskusteluissa, kunnes hän vastaa."
 
 [t_68bf78bb6a]
 en = "Accepted. {name} is added for messages only and shows in Chats once their device connects; calls stay off until you allow them."
 where = [
   "ios group_done_request_accepted: Confirmation after accepting a chat request. {name} is their first name.",
 ]
-text = ""
+text = "Hyväksytty. {name} lisättiin vain viestejä varten ja näkyy Keskusteluissa, kun hänen laitteensa yhdistää; puhelut pysyvät pois päältä, kunnes sallit ne."
 
 [t_bca80056ba]
 en = "{name} is blocked and can’t send more requests."
 where = [
   "ios group_done_request_blocked: Confirmation after blocking a requester. {name} is their first name.",
 ]
-text = ""
+text = "{name} on estetty eikä voi lähettää enempää pyyntöjä."
 
 [t_b0a86cd164]
 en = "{name} accepted your request. You can message each other now; calls stay off until one of you allows them."
 where = [
   "ios group_notice_request_accepted: Notice when someone accepted the user’s chat request. {name} is their first name.",
 ]
-text = ""
+text = "{name} hyväksyi pyyntösi. Voitte nyt lähettää viestejä toisillenne; puhelut pysyvät pois päältä, kunnes jompikumpi teistä sallii ne."
 
 [t_a1c457fbac]
 en = "Group calls aren’t available here yet."
 where = [
   "ios group_calls_unavailable: Error shown when group calls are not wired in.",
 ]
-text = ""
+text = "Ryhmäpuhelut eivät ole vielä käytettävissä täällä."
 
 [t_977b43df48]
 en = "Scanning isn’t available yet. Paste the link instead."
 where = [
   "ios group_scan_unavailable: Shown instead of the QR scanner when scanning is not available.",
 ]
-text = ""
+text = "Skannaus ei ole vielä käytettävissä. Liitä linkki sen sijaan."
 
 [t_504ec79556]
 en = "{rest} and {last}"
 where = [
   "ios group_names_and: Joins a list of names: {rest} is a comma-separated list, {last} the final name.",
 ]
-text = ""
+text = "{rest} ja {last}"
 
 [t_d9be045783]
 en = "Delivered {count}/{total}"
 where = [
   "ios group_receipt_delivered: Receipt summary. {count} is how many have it, {total} how many are eligible.",
 ]
-text = ""
+text = "Toimitettu {count}/{total}"
 
 [t_951c9b0f24]
 en = "Read {count}/{total}"
 where = [
   "ios group_receipt_read: Receipt summary. {count} is how many read it, {total} how many are eligible.",
 ]
-text = ""
+text = "Luettu {count}/{total}"
 
 [t_e765c751bd]
 en = "Read: {names}"
 where = [
   "ios group_receipt_level_read: Receipt line label before the names of members who read the post. {names} is the list.",
 ]
-text = ""
+text = "Luettu: {names}"
 
 [t_abb0f92df9]
 en = "On their device: {names}"
 where = [
   "ios group_receipt_level_delivered: Receipt line label before the names of members whose device has the post. {names} is the list.",
 ]
-text = ""
+text = "Heidän laitteellaan: {names}"
 
 [t_ed319ece3f]
 en = "Not yet: {names}"
 where = [
   "ios group_receipt_level_not_yet: Receipt line label before the names of members who have not confirmed. {names} is the list.",
 ]
-text = ""
+text = "Ei vielä: {names}"
 
 [t_41a0f066bc]
 en = "Add to {group}"
 where = [
   "ios group_add_to_title: Title of the add-people page. {group} is the group’s name.",
 ]
-text = ""
+text = "Lisää ryhmään {group}"
 
 [t_f2a523051d]
 en = "CONTACTS · {count} SELECTED"
 where = [
   "ios group_contacts_selected: Section label of the contact picker. {count} is how many are selected.",
 ]
-text = ""
+text = "YHTEYSTIEDOT · {count} VALITTU"
 
 [t_e2527aaf3f]
 en = "Anyone with this link or QR can join {group} for 7 days. Share it over an app you trust; you see who joined and can flag them out. To invite your contacts directly, use Add members."
 where = [
   "ios group_link_hint: Hint on the invite link page. {group} is the group’s name.",
 ]
-text = ""
+text = "Kuka tahansa, jolla on tämä linkki tai QR-koodi, voi liittyä ryhmään {group} 7 päivän ajan. Jaa se sovelluksella, johon luotat; näet, kuka liittyi, ja voit merkitä hänet pois. Jos haluat kutsua yhteystietojasi suoraan, käytä kohtaa Lisää jäseniä."
 
 [t_5a7b5c3abb]
 en = "Join {group} on Tinline: {link}"
 where = [
   "ios group_share_text: Text shared with an invite link. {group} is the group’s name, {link} the link.",
 ]
-text = ""
+text = "Liity ryhmään {group} Tinlinessa: {link}"
 
 [t_02147a4ac8]
 en = "Diagnostics"
 where = [
   "ios settings_diagnostics: Settings row for the diagnostics page.",
 ]
-text = ""
+text = "Diagnostiikka"
 
 [t_c77e79fea8]
 en = "Test tone, core version"
 where = [
   "ios settings_diagnostics_sub: Subtitle of the Diagnostics row.",
 ]
-text = ""
+text = "Testiääni, ytimen versio"
 
 [t_49b762fe95]
 en = "Test tone"
 where = [
   "ios settings_test_tone: Diagnostics row and switch label.",
 ]
-text = ""
+text = "Testiääni"
 
 [t_433d50e948]
 en = "Send a 440 Hz tone instead of the microphone"
 where = [
   "ios settings_test_tone_sub: Subtitle of the Test tone row.",
 ]
-text = ""
+text = "Lähetä 440 Hz:n ääni mikrofonin sijaan"
 
 [t_aafad48a7f]
 en = "This device · iOS"
 where = [
   "ios devices_row_this_device: Device row subtitle for this device.",
 ]
-text = ""
+text = "Tämä laite · iOS"
 
 [t_a180397df0]
 en = "Synced {ago}"
