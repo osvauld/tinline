@@ -175,7 +175,7 @@ text = "Abgelehnt"
 text = "Anruf abgebrochen"
 
 [chat_call_failed]
-text = "Anruf kam nicht zustande"
+text = "Nicht verbunden"
 
 [chat_err_send_file]
 text = "Die Datei ließ sich nicht senden."
@@ -2930,7 +2930,7 @@ text = "Keine Antwort"
 text = "Abgebrochen"
 
 [shell_call_what_unreachable]
-text = "Verbindung kam nicht zustande"
+text = "Keine Verbindung"
 
 [shell_call_what_other]
 text = "Anrufen"
@@ -4180,7 +4180,7 @@ text = "Akku unter 15 %. Das Hosten ist eingeschränkt: Es ist immer nur eine Pe
 text = "Kein Anruf-Host verfügbar"
 
 [call_group_connect_failed]
-text = "Verbindung kam nicht zustande"
+text = "Keine Verbindung"
 
 [call_person_you]
 text = "Du"

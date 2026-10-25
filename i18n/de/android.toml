@@ -3001,7 +3001,7 @@ text = "Abgelehnt"
 text = "Anruf abgebrochen"
 
 [conv_call_failed]
-text = "Anruf kam nicht zustande"
+text = "Nicht verbunden"
 
 [conv_call_pill_desc]
 text = "{text}, {time}. Zurückrufen"
@@ -3518,7 +3518,7 @@ text = "Akku unter 15 %. Das Hosten ist eingeschränkt: Es ist immer nur eine Pe
 text = "Kein Anruf-Host verfügbar"
 
 [gcall_cant_connect]
-text = "Verbindung kam nicht zustande"
+text = "Keine Verbindung"
 
 [gcall_host_this_phone]
 text = "dieses Handy"
@@ -4469,7 +4469,7 @@ text = "Keine Antwort"
 text = "Abgebrochen"
 
 [calls_what_unreachable]
-text = "Verbindung kam nicht zustande"
+text = "Keine Verbindung"
 
 [calls_profile_desc]
 text = "Profil von {name}"

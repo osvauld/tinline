@@ -94,7 +94,7 @@ text = "Meinen Schlüssel kopieren"
 text = "Wiederherstellungswörter kopieren"
 
 [common_couldnt_connect]
-text = "Verbindung kam nicht zustande"
+text = "Keine Verbindung"
 
 [common_current_passphrase]
 text = "Aktuelle Passphrase"
@@ -667,7 +667,7 @@ text = "Videoanruf abgelehnt"
 text = "Sprachanruf abgelehnt"
 
 [chat_call_failed]
-text = "Anruf kam nicht zustande"
+text = "Nicht verbunden"
 
 [chat_call_missed_video]
 text = "Verpasster Videoanruf"

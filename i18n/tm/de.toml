@@ -8060,7 +8060,7 @@ where = [
   "ios chat_call_failed: Call pill in a chat: a call that failed to connect.",
   "desktop chat_call_failed: Desktop, chats (in chat_view.rs, call_pill).",
 ]
-text = "Anruf kam nicht zustande"
+text = "Nicht verbunden"
 
 [t_90809b6cf7]
 en = "{text}, {time}. Call back"
@@ -9297,7 +9297,7 @@ where = [
   "ios call_group_connect_failed: Group call start failure, generic.",
   "desktop common_couldnt_connect: Shared label, used in several places (gcall, view).",
 ]
-text = "Verbindung kam nicht zustande"
+text = "Keine Verbindung"
 
 [t_40ca86ecae]
 en = "this phone"
