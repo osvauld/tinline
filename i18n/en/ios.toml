@@ -1721,10 +1721,6 @@ note = "Button that makes this phone host the group."
 text = "Declined. The admins see no answer from this phone."
 note = "Confirmation after declining a host request."
 
-[group_names_and]
-text = "{rest} and {last}"
-note = "Joins a list of names: {rest} is a comma-separated list, {last} the final name."
-
 [group_removed_card_title]
 one = "Removed after {count} admin flag"
 other = "Removed after {count} admin flags"
