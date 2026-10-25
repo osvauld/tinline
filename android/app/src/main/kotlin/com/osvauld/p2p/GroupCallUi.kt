@@ -1,6 +1,8 @@
 package com.osvauld.p2p
 
 import android.util.Log
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
@@ -87,9 +89,9 @@ data class GcState(
     val connected get() = phase == GcPhase.Active || phase == GcPhase.Reconnecting
     /** gcall.svelte.ts `statusText`. */
     val status: String get() = when (phase) {
-        GcPhase.Starting -> "Finding a call host…"
-        GcPhase.Connecting -> "Connecting…"
-        GcPhase.Reconnecting -> "Reconnecting…"
+        GcPhase.Starting -> appString(R.string.gcall_finding_host)
+        GcPhase.Connecting -> appString(R.string.gcall_connecting)
+        GcPhase.Reconnecting -> appString(R.string.gcall_reconnecting)
         GcPhase.Ended, GcPhase.Failed -> reason
         else -> ""
     }
@@ -121,7 +123,7 @@ class GroupCallUi(private val app: P2pApp) {
         if (cur.announce?.gid == gid) stopRing()
         _s.update { s -> if (s.announce?.gid == gid) s.copy(announce = null) else s }
         if (cur.gid == gid && cur.active) { _s.update { it.copy(minimized = false) }; return }
-        if (cur.active || app.calls.ui.value != null) { onError("You’re already in a call."); return }
+        if (cur.active || app.calls.ui.value != null) { onError(appString(R.string.gcall_already_in_call)); return }
         app.scope.launch(Dispatchers.IO) {
             refreshLive(gid)
             val live = _s.value.live[gid]
@@ -136,7 +138,7 @@ class GroupCallUi(private val app: P2pApp) {
 
     fun leave() {
         app.groupCalls.leave()
-        end(failed = false, reason = "Call ended", holdMs = 0)
+        end(failed = false, reason = appString(R.string.gcall_ended), holdMs = 0)
     }
 
     fun toggleMute() {
@@ -160,7 +162,7 @@ class GroupCallUi(private val app: P2pApp) {
     private var ringtone: CallSounds.Ring? = null
     private var ringJob: kotlinx.coroutines.Job? = null
 
-    private fun groupLabel(gid: String) = app.groups.list.value.firstOrNull { it.id == gid }?.name ?: "Group"
+    private fun groupLabel(gid: String) = app.groups.list.value.firstOrNull { it.id == gid }?.name ?: appString(R.string.gcall_group_fallback)
 
     private fun startRing(gid: String, callId: String) {
         stopRingSound()
@@ -222,7 +224,7 @@ class GroupCallUi(private val app: P2pApp) {
                 GroupCallEventKind.ENDED -> {
                     if (_s.value.announce?.gid == e.groupId) stopRing()
                     _s.update { it.copy(live = it.live - e.groupId, announce = if (it.announce?.gid == e.groupId) null else it.announce) }
-                    if (mine && s.callId == e.callId) end(false, "Call ended", 900)
+                    if (mine && s.callId == e.callId) end(false, appString(R.string.gcall_ended), 900)
                 }
                 GroupCallEventKind.START_FAILED -> if (mine) end(true, startFailure(e.detail), 2600)
                 GroupCallEventKind.JOINED -> if (mine) {
@@ -238,13 +240,13 @@ class GroupCallUi(private val app: P2pApp) {
                     // The call may be over for everyone (or still going without me): re-read, so Join never lingers or lies.
                     if (e.groupId.isNotEmpty()) app.scope.launch(Dispatchers.IO) { refreshLive(e.groupId) }
                     if (mine && s.phase != GcPhase.Ended && s.phase != GcPhase.Failed) {
-                        end(false, if (e.detail.contains("Lost")) "Call ended — host lost" else "Call ended", 900)
+                        end(false, if (e.detail.contains("Lost")) appString(R.string.gcall_ended_host_lost) else appString(R.string.gcall_ended), 900)
                     }
                 }
                 GroupCallEventKind.HOSTING_STARTED -> _s.update { it.copy(hosting = true) }
                 GroupCallEventKind.HOSTING_ENDED -> _s.update { it.copy(hosting = false) }
                 GroupCallEventKind.HOSTING_LIMITED -> if (mine && s.hosting) _s.update {
-                    it.copy(note = "Battery under 15 %. Hosting is limited: only one person is heard at a time, and no one new can join.")
+                    it.copy(note = appString(R.string.gcall_battery_limited))
                 }
                 GroupCallEventKind.HOSTING_UNLIMITED -> _s.update { it.copy(note = null) }
                 else -> {}
@@ -255,8 +257,8 @@ class GroupCallUi(private val app: P2pApp) {
     /** The core's "no call host available: <why>" shows its why (Rust words); else a short line. */
     private fun startFailure(d: String) = when {
         d.contains("no call host available: ") -> d.substringAfter("no call host available: ")
-        d.lowercase().contains("host") -> "No call host available"
-        else -> "Couldn’t connect"
+        d.lowercase().contains("host") -> appString(R.string.gcall_no_host)
+        else -> appString(R.string.gcall_cant_connect)
     }
 }
 
@@ -264,14 +266,14 @@ internal fun clockOf(secs: Long) = "%02d:%02d".format(secs / 60, secs % 60)
 
 /** A person in a group call: "You", their name in the open group, a contact's name, else "Someone". */
 private fun gcName(app: P2pApp, did: String): String {
-    if (did == app.currentDid()) return "You"
+    if (did == app.currentDid()) return appString(R.string.common_you)
     app.groups.open.value?.detail?.members?.firstOrNull { it.did == did }?.let { return it.name }
-    return app.contacts.value.firstOrNull { it.did == did }?.display() ?: "Someone"
+    return app.contacts.value.firstOrNull { it.did == did }?.display() ?: appString(R.string.common_someone)
 }
 
 private fun gcHost(app: P2pApp, s: GcState): String? = when {
-    s.hosting -> "this phone"
-    s.host != null -> "${gcName(app, s.host).substringBefore(' ')}’s device"
+    s.hosting -> appString(R.string.gcall_host_this_phone)
+    s.host != null -> appString(R.string.gcall_host_device, gcName(app, s.host).substringBefore(' '))
     else -> null
 }
 
@@ -291,15 +293,15 @@ fun GroupCallLayer(app: P2pApp) {
     val c = Tin.c
     val secs = rememberCallSecs(s)
     BackHandler { if (s.about) ui.about(false) else ui.minimize() }
-    val groupName = app.groups.list.collectAsState().value.firstOrNull { it.id == s.gid }?.name ?: "Group call"
+    val groupName = app.groups.list.collectAsState().value.firstOrNull { it.id == s.gid }?.name ?: stringResource(R.string.gcall_name)
     val live = s.phase in listOf(GcPhase.Starting, GcPhase.Connecting, GcPhase.Active, GcPhase.Reconnecting)
     Box(Modifier.fillMaxSize().background(c.bg).clickable(interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, indication = null) {}) {
         Column(Modifier.fillMaxSize().systemBarsPadding().padding(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 36.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             // .top: minimise · the mark · the "i" (no line data from the core yet, so no bars).
             Box(Modifier.fillMaxWidth().height(48.dp)) {
-                if (live) GcTopBtn(Pg.Back, "Minimize call", Modifier.align(Alignment.CenterStart).rotate(-90f)) { ui.minimize() }
+                if (live) GcTopBtn(Pg.Back, stringResource(R.string.gcall_minimize), Modifier.align(Alignment.CenterStart).rotate(-90f)) { ui.minimize() }
                 TinMark(28.dp, live = true, state = if (s.connected) MarkState.Taut else MarkState.Ringing, modifier = Modifier.align(Alignment.Center))
-                if (live && (s.host != null || s.hosting)) GcTopBtn(Pg.Info, "About this call", Modifier.align(Alignment.CenterEnd)) { ui.about(true) }
+                if (live && (s.host != null || s.hosting)) GcTopBtn(Pg.Info, stringResource(R.string.gcall_about_title), Modifier.align(Alignment.CenterEnd)) { ui.about(true) }
             }
             // .head: name 26/32, the status or the timer, the count, the (reserved) speaking line.
             Text(groupName, Modifier.padding(top = 6.dp).fillMaxWidth(), style = PgBodyText.copy(fontSize = 26.sp, lineHeight = 32.sp, fontWeight = FontWeight.SemiBold),
@@ -309,7 +311,7 @@ fun GroupCallLayer(app: P2pApp) {
                 else Text(s.status, style = PgBodyText.copy(fontSize = 17.sp, lineHeight = 24.sp, fontWeight = FontWeight.Medium), color = c.ink)
             }
             val n = s.parts.size
-            Text(if (s.connected && n > 0) (if (n == 1) "Only you so far. Waiting for others." else "$n people in the call") else " ",
+            Text(if (s.connected && n > 0) (if (n == 1) stringResource(R.string.gcall_only_you) else pluralStringResource(R.plurals.gcall_people, n, n)) else " ",
                 Modifier.padding(top = 4.dp).heightIn(min = 20.dp), style = PgBodyText.copy(fontSize = 13.sp, lineHeight = 20.sp, fontFeatureSettings = "tnum"), color = c.ink)
             Spacer(Modifier.height(20.dp))
             // .stage: the roster (phone: up to 2 → 104, up to 4 → 2 cols 92, up to 6 → 3 cols 76, else 3 cols 68).
@@ -320,23 +322,23 @@ fun GroupCallLayer(app: P2pApp) {
                     s.parts.take(if (n > 9) 8 else 9).chunked(cols).forEach { row ->
                         Row {
                             row.forEach { did ->
-                                val name = if (did == app.currentDid()) app.node.profile()?.name ?: "You" else gcName(app, did)
+                                val name = if (did == app.currentDid()) app.node.profile()?.name ?: stringResource(R.string.common_you) else gcName(app, did)
                                 Column(Modifier.width((av + 32).dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                     Avatar(name, did, av.dp)
-                                    Text(if (did == app.currentDid()) "You" else name.substringBefore(' '), style = PgBodyText.copy(fontSize = 13.sp, lineHeight = 18.sp, fontWeight = FontWeight.Medium),
+                                    Text(if (did == app.currentDid()) stringResource(R.string.common_you) else name.substringBefore(' '), style = PgBodyText.copy(fontSize = 13.sp, lineHeight = 18.sp, fontWeight = FontWeight.Medium),
                                         color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                 }
                             }
                         }
                     }
-                    if (n > 9) Text("+${n - 8} more", style = PgBodyText.copy(fontSize = 13.sp, fontWeight = FontWeight.SemiBold), color = c.ink)
+                    if (n > 9) Text(stringResource(R.string.gcall_more, n - 8), style = PgBodyText.copy(fontSize = 13.sp, fontWeight = FontWeight.SemiBold), color = c.ink)
                 }
                 s.note?.let { note ->
                     Row(Modifier.align(Alignment.BottomCenter).padding(bottom = 4.dp).fillMaxWidth().depth(Depth.Pop, RoundedCornerShape(18.dp)).clip(RoundedCornerShape(18.dp)).background(c.warn)
                         .padding(start = 14.dp, end = 8.dp, top = 8.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         Text(note, Modifier.weight(1f), style = PgBodyText.copy(fontSize = 13.sp, lineHeight = 18.sp), color = c.onWarn)
                         Box(Modifier.heightIn(min = 36.dp).clip(RoundedCornerShape(18.dp)).background(c.onWarn.copy(alpha = .14f)).clickable { ui.noteOk() }.padding(horizontal = 14.dp), contentAlignment = Alignment.Center) {
-                            Text("OK", style = PgBodyText.copy(fontSize = 13.sp, fontWeight = FontWeight.Bold), color = c.onWarn)
+                            Text(stringResource(R.string.gcall_ok), style = PgBodyText.copy(fontSize = 13.sp, fontWeight = FontWeight.Bold), color = c.onWarn)
                         }
                     }
                 }
@@ -346,7 +348,7 @@ fun GroupCallLayer(app: P2pApp) {
             Box(Modifier.padding(top = 4.dp, bottom = 12.dp).heightIn(min = 44.dp), contentAlignment = Alignment.Center) {
                 if (host != null && (s.connected || s.phase == GcPhase.Connecting)) Row(Modifier.heightIn(min = 44.dp).clip(RoundedCornerShape(22.dp)).clickable { ui.about(true) }.padding(horizontal = 14.dp),
                     verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(if (s.hosting) "You’re the call host" else "Call host: $host", style = PgBodyText.copy(fontSize = 13.sp, lineHeight = 20.sp), color = c.ink)
+                    Text(if (s.hosting) stringResource(R.string.gcall_you_host) else stringResource(R.string.gcall_host_label, host), style = PgBodyText.copy(fontSize = 13.sp, lineHeight = 20.sp), color = c.ink)
                     Icon(Pg.Info, null, Modifier.size(16.dp).alpha(.75f), tint = c.ink)
                 }
             }
@@ -357,8 +359,8 @@ fun GroupCallLayer(app: P2pApp) {
             val speaker = routes.speaker
             val (routeCaption, routeIcon) = routeSlot(routes)
             Row(horizontalArrangement = Arrangement.spacedBy(36.dp)) {
-                GcControl(if (s.muted) "Muted" else "Mute", if (s.muted) CallGlyphs.MicOff else CallGlyphs.Mic, if (s.muted) c.ink else fill, if (s.muted) c.bg else c.ink, s.connected) { ui.toggleMute() }
-                GcControl("Leave", CallGlyphs.End, c.callButtonEnd, Color.White, live) { ui.leave() }
+                GcControl(if (s.muted) stringResource(R.string.gcall_muted) else stringResource(R.string.gcall_mute), if (s.muted) CallGlyphs.MicOff else CallGlyphs.Mic, if (s.muted) c.ink else fill, if (s.muted) c.bg else c.ink, s.connected) { ui.toggleMute() }
+                GcControl(stringResource(R.string.gcall_leave), CallGlyphs.End, c.callButtonEnd, Color.White, live) { ui.leave() }
                 GcControl(routeCaption, routeIcon, if (speaker) c.ink else fill, if (speaker) c.bg else c.ink, true) { app.groupCalls.setSpeaker(!speaker) }
             }
         }
@@ -389,7 +391,7 @@ private fun GcControl(caption: String, icon: androidx.compose.ui.graphics.vector
 private fun GcAbout(app: P2pApp, s: GcState) {
     val c = Tin.c
     val ui = app.groupCallUi
-    val host = (gcHost(app, s) ?: "the call host").replaceFirstChar { it.uppercase() }
+    val host = (gcHost(app, s) ?: stringResource(R.string.gcall_the_host)).replaceFirstChar { it.uppercase() }
     BackHandler { ui.about(false) }
     Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = .24f)).clickable(interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, indication = null) { ui.about(false) }) {
         Column(Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(start = 16.dp, end = 16.dp, bottom = 24.dp).widthIn(max = 420.dp).fillMaxWidth()
@@ -397,14 +399,15 @@ private fun GcAbout(app: P2pApp, s: GcState) {
             .clickable(interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, indication = null) {}
             .padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             val p = PgBodyText.copy(fontSize = 13.sp, lineHeight = 19.sp)
-            Text("About this call", style = PgBodyText.copy(fontSize = 17.sp, lineHeight = 24.sp, fontWeight = FontWeight.SemiBold), color = c.ink)
+            val carries = stringResource(if (s.hosting) R.string.gcall_about_is_carrying else R.string.gcall_about_carries)
+            Text(stringResource(R.string.gcall_about_title), style = PgBodyText.copy(fontSize = 17.sp, lineHeight = 24.sp, fontWeight = FontWeight.SemiBold), color = c.ink)
             Text(androidx.compose.ui.text.buildAnnotatedString {
                 pushStyle(androidx.compose.ui.text.SpanStyle(color = c.ink, fontWeight = FontWeight.SemiBold)); append(host); pop()
-                append(" ${if (s.hosting) "is carrying" else "carries"} this call. Everyone in the call connects to it, and it passes the audio on and chooses who is heard when several people speak.")
+                append(" "); append(carries)
             }, style = p, color = c.ink2)
-            Text("Your connection to the call host is encrypted, but the call host itself receives the audio, so it can hear this call. You trust it for the call the way you trust a chat host with posts.", style = p, color = c.ink2)
-            Text("A call host is a device a group admin chose and that agreed to it. It is separate from chat hosting. Admins can change call hosts in Group info.", style = p, color = c.ink2)
-            TinButton("Got it", { ui.about(false) }, Modifier.padding(top = 8.dp), height = 44.dp)
+            Text(stringResource(R.string.gcall_about_encrypted), style = p, color = c.ink2)
+            Text(stringResource(R.string.gcall_about_who), style = p, color = c.ink2)
+            TinButton(stringResource(R.string.gcall_got_it), { ui.about(false) }, Modifier.padding(top = 8.dp), height = 44.dp)
         }
     }
 }
@@ -427,14 +430,14 @@ fun OngoingCallBanner(app: P2pApp, gid: String, onError: (String) -> Unit) {
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         Icon(PgIcons.Users, null, Modifier.size(20.dp), tint = fg)
         Column(Modifier.weight(1f)) {
-            Text(if (mine) "You’re in the call" else "Call in progress", style = PgBodyText.copy(fontSize = 15.sp, lineHeight = 20.sp, fontWeight = FontWeight.SemiBold), color = fg, maxLines = 1)
-            Text(if (mine) (if (s.phase == GcPhase.Active) clockOf(secs) else s.status) else "Started by ${gcName(app, call!!.starterDid).substringBefore(' ')}",
+            Text(if (mine) stringResource(R.string.gcall_in_call) else stringResource(R.string.gcall_in_progress), style = PgBodyText.copy(fontSize = 15.sp, lineHeight = 20.sp, fontWeight = FontWeight.SemiBold), color = fg, maxLines = 1)
+            Text(if (mine) (if (s.phase == GcPhase.Active) clockOf(secs) else s.status) else stringResource(R.string.gcall_started_by, gcName(app, call!!.starterDid).substringBefore(' ')),
                 style = PgBodyText.copy(fontSize = 13.sp, lineHeight = 17.sp, fontFeatureSettings = "tnum"), color = fg.copy(alpha = .85f))
         }
         val shape = RoundedCornerShape(18.dp)
         Box(Modifier.widthIn(min = 72.dp).heightIn(min = 36.dp).clip(shape).then(if (mine) Modifier.border(1.5.dp, c.accentInk, shape) else Modifier.background(c.accent))
             .clickable { if (mine) app.groupCallUi.restore() else app.groupCallUi.call(gid, onError) }.padding(horizontal = 18.dp), contentAlignment = Alignment.Center) {
-            Text(if (mine) "Open" else "Join", style = PgBodyText.copy(fontSize = 13.sp, fontWeight = FontWeight.Bold), color = if (mine) c.accentInk else c.onAccent)
+            Text(if (mine) stringResource(R.string.gcall_open) else stringResource(R.string.common_join), style = PgBodyText.copy(fontSize = 13.sp, fontWeight = FontWeight.Bold), color = if (mine) c.accentInk else c.onAccent)
         }
     }
 }
@@ -461,30 +464,32 @@ fun GroupCallAnnounce(app: P2pApp, openGid: String?, onOpen: (String) -> Unit) {
             exit = fadeOut(tween(140, easing = Motion.CubicIn)) + slideOutVertically(tween(140, easing = Motion.CubicIn)) { -(12 * px).toInt() }) {
             val l = last ?: return@AnimatedVisibility
             val c = Tin.c
-            val group = groups.firstOrNull { it.id == l.gid }?.name ?: "Group"
+            val group = groups.firstOrNull { it.id == l.gid }?.name ?: stringResource(R.string.gcall_group_fallback)
             val by = gcName(app, l.by)
+            val bannerDesc = if (l.ringing) stringResource(R.string.gcall_is_calling_group_desc, by, group) else stringResource(R.string.gcall_started_call_desc, by, group)
+            val openDesc = stringResource(R.string.gcall_open_group_desc, group)
             Row(Modifier.fillMaxWidth().depth(Depth.Pop, SmoothCornerShape(20.dp)).clip(SmoothCornerShape(20.dp)).background(c.sfRaised)
                 .border(1.dp, c.ln, SmoothCornerShape(20.dp)).padding(start = 8.dp, end = 10.dp, top = 8.dp, bottom = 8.dp)
-                .semantics { contentDescription = if (l.ringing) "$by is calling the group $group" else "$by started a call in $group"; liveRegion = LiveRegionMode.Polite },
+                .semantics { contentDescription = bannerDesc; liveRegion = LiveRegionMode.Polite },
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 Row(Modifier.weight(1f).heightIn(min = 48.dp).pressable({ app.groupCallUi.dismissAnnounce(); onOpen(l.gid) }, RoundedCornerShape(14.dp))
-                    .semantics { contentDescription = "Open $group" }.padding(horizontal = 4.dp),
+                    .semantics { contentDescription = openDesc }.padding(horizontal = 4.dp),
                     verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Avatar(by, l.by, 44.dp)
                     Column(Modifier.weight(1f)) {
                         Text(group, style = TinFs.body.copy(fontWeight = FontWeight(650), lineHeight = 20.sp), color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        Text(if (l.ringing) "${by.substringBefore(' ')} is calling the group" else "$by started a call", style = TinFs.sub, color = c.ink2, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(if (l.ringing) stringResource(R.string.gcall_is_calling_group, by.substringBefore(' ')) else stringResource(R.string.gcall_started_call, by), style = TinFs.sub, color = c.ink2, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
                 }
                 if (l.ringing) {
                     Box(Modifier.height(44.dp).pressable({ app.groupCallUi.notNow() }, SmoothCornerShape(22.dp), wash = c.sfRaised, rest = c.sf2)
                         .padding(horizontal = 14.dp), contentAlignment = Alignment.Center) {
-                        Text("Not now", style = TinFs.sub.copy(fontWeight = FontWeight.Bold), color = c.ink)
+                        Text(stringResource(R.string.common_not_now), style = TinFs.sub.copy(fontWeight = FontWeight.Bold), color = c.ink)
                     }
-                } else PgIconButton(PgIcons.X, "Dismiss", { app.groupCallUi.dismissAnnounce() }, tint = c.ink2, size = 36.dp, iconSize = 18.dp)
+                } else PgIconButton(PgIcons.X, stringResource(R.string.gcall_dismiss), { app.groupCallUi.dismissAnnounce() }, tint = c.ink2, size = 36.dp, iconSize = 18.dp)
                 Box(Modifier.height(44.dp).pressable({ app.groupCallUi.call(l.gid) {} }, SmoothCornerShape(22.dp), wash = c.callButtonAnswer, rest = c.callButtonAnswer)
                     .padding(horizontal = 20.dp), contentAlignment = Alignment.Center) {
-                    Text("Join", style = TinFs.sub.copy(fontWeight = FontWeight.Bold), color = Color.White)
+                    Text(stringResource(R.string.common_join), style = TinFs.sub.copy(fontWeight = FontWeight.Bold), color = Color.White)
                 }
             }
         }

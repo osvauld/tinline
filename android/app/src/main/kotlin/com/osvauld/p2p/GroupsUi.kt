@@ -1,5 +1,6 @@
 package com.osvauld.p2p
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.tween
@@ -79,7 +80,7 @@ fun PersonAvatar(name: String, did: String, size: Dp, contact: Boolean = true, i
 
 /** Three-segment flag meter (playground `.meter`): 6 dp bars, radius 3, gap 6; [filled] in danger-btn, the next one ([yours]) at 45 %. */
 @Composable
-fun FlagMeter(filled: Int, total: Int = GroupText.FLAGS_TO_REMOVE, yours: Boolean = false, desc: String = "$filled of $total flags") {
+fun FlagMeter(filled: Int, total: Int = GroupText.FLAGS_TO_REMOVE, yours: Boolean = false, desc: String = stringResource(R.string.groupsc_flags_of, filled, total)) {
     val c = Tin.c
     Row(Modifier.fillMaxWidth().semantics { contentDescription = desc }, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         repeat(total) { i ->

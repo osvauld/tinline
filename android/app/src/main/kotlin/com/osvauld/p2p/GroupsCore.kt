@@ -167,6 +167,7 @@ object GroupText {
     fun active(r: CoreRole) = r == CoreRole.OWNER || r == CoreRole.ADMIN || r == CoreRole.MEMBER
     fun isAdmin(r: CoreRole) = r == CoreRole.OWNER || r == CoreRole.ADMIN
 
+    // i18n-deferred: GroupsCoreTest asserts the English of someone/sysText/preview/status/sentLine/pickRows/flagCopy/error/request/accept (JVM, no resources)
     private fun someone(name: String) = name.ifBlank { "Someone" }
     fun shortDev(dev: String) = dev.take(8)
 
@@ -180,18 +181,18 @@ object GroupText {
             GroupItemKind.POST -> m.text
             GroupItemKind.JOINED -> "$sub joined"
             GroupItemKind.LEFT -> "$sub left"
-            GroupItemKind.REMOVED -> if (you) "You were removed after $FLAGS_TO_REMOVE admin flags" else "$sub was removed after $FLAGS_TO_REMOVE admin flags"
-            GroupItemKind.ADMIN_GRANTED -> if (you) "$by made you an admin" else "$by made $sub an admin"
-            GroupItemKind.ADMIN_REVOKED -> if (you) "$by removed you as admin" else "$by removed $sub as admin"
-            GroupItemKind.HOST_ADDED -> if (you) "A device of yours now hosts the group" else "A device of $sub’s now hosts the group"
-            GroupItemKind.HOST_REMOVED -> if (you) "A device of yours stopped hosting the group" else "A device of $sub’s stopped hosting the group"
+            GroupItemKind.REMOVED -> if (you) appString(R.string.groupsc_removed_you_flags, FLAGS_TO_REMOVE) else "$sub was removed after $FLAGS_TO_REMOVE admin flags"
+            GroupItemKind.ADMIN_GRANTED -> if (you) "$by made you an admin" else appString(R.string.groupsc_admin_granted_other, by, sub)
+            GroupItemKind.ADMIN_REVOKED -> if (you) appString(R.string.groupsc_admin_revoked_you, by) else appString(R.string.groupsc_admin_revoked_other, by, sub)
+            GroupItemKind.HOST_ADDED -> if (you) appString(R.string.groupsc_host_added_you) else appString(R.string.groupsc_host_added_other, sub)
+            GroupItemKind.HOST_REMOVED -> if (you) appString(R.string.groupsc_host_removed_you) else appString(R.string.groupsc_host_removed_other, sub)
         }
     }
 
     /** The list row's second line. */
     fun preview(s: GroupSummary, me: String): String = when (s.myRole) {
         CoreRole.REMOVED -> "You were removed from this group"
-        CoreRole.LEFT -> "You left this group"
+        CoreRole.LEFT -> appString(R.string.groupsc_left_you)
         else -> when (val m = s.last) {
             null -> ""
             else -> when {
@@ -216,7 +217,7 @@ object GroupText {
     fun status(d: GroupDetail): String {
         when (d.myRole) {
             CoreRole.REMOVED -> return "You were removed from this group"
-            CoreRole.LEFT -> return "You left this group"
+            CoreRole.LEFT -> return appString(R.string.groupsc_left_you)
             else -> {}
         }
         val n = d.members.size
@@ -225,7 +226,7 @@ object GroupText {
             d.amHost -> "$members · this device hosts the group"
             d.hosts.isEmpty() -> "$members · no host yet"
             d.hosts.none { it.online } -> "$members · waiting for a host"
-            else -> "$members · ${d.hosts.size} host${if (d.hosts.size == 1) "" else "s"}"
+            else -> "$members · ${appPlural(R.plurals.groupsc_hosts, d.hosts.size, d.hosts.size)}"
         }
     }
 
@@ -247,12 +248,12 @@ object GroupText {
     fun adminsOnlyLocked(d: GroupDetail) = d.adminsOnly && d.myRole == CoreRole.MEMBER
 
     const val ADMINS_ONLY = "Only admins post here"
-    const val OPEN_LINK_COPIED = "Copied. Anyone holding the link can join while it’s open."
+    val OPEN_LINK_COPIED: String get() = appString(R.string.groupsc_open_link_copied)
 
     /** The small line under one of our posts, or null when delivered. A refused post says why ([isFailed]); it never reads as delivered. */
     fun deliveryWord(m: GroupMessage): String? = when {
         !m.outgoing || m.kind != GroupItemKind.POST -> null
-        m.delivery == CoreDelivery.FAILED -> m.failure ?: "Not posted"
+        m.delivery == CoreDelivery.FAILED -> m.failure ?: appString(R.string.groupsc_not_posted)
         m.delivery == CoreDelivery.WAITING -> "Waiting for a host"
         else -> null
     }
@@ -265,7 +266,7 @@ object GroupText {
         val f = firstName(someone(r.peerName))
         return when (r.state) {
             ChatRequestState.PENDING -> "Waiting for $f · via ${r.groupName}" to false
-            ChatRequestState.ACCEPTED -> (if (r.contactAdded) "$f accepted · messages only" else "$f accepted · connecting") to false
+            ChatRequestState.ACCEPTED -> (if (r.contactAdded) appString(R.string.groupsc_req_accepted_messages, f) else appString(R.string.groupsc_req_accepted_connecting, f)) to false
             ChatRequestState.DECLINED -> "$f declined" to true
             ChatRequestState.BLOCKED -> "$f blocked you" to true
         }
@@ -275,7 +276,7 @@ object GroupText {
     fun hostAsker(d: GroupDetail): String? {
         if (!d.hostRequestedHere || !active(d.myRole)) return null
         val by = d.hostRequests.firstOrNull { it.isMe }?.appointedBy
-        return by?.let { b -> d.members.firstOrNull { it.did == b }?.name }?.ifBlank { null } ?: "An admin"
+        return by?.let { b -> d.members.firstOrNull { it.did == b }?.name }?.ifBlank { null } ?: appString(R.string.groupsc_an_admin)
     }
 
     /** Unread posts in groups we are still in, plus invitations waiting for an answer: the Groups tab's badge. */
@@ -302,11 +303,11 @@ object GroupText {
 
     /** An invitation we sent, in words, and whether it is bad news. */
     fun sentInvitationLine(i: GroupInvitation): Pair<String, Boolean> = when (i.state) {
-        GroupInvitationState.PENDING -> (if (i.delivered) "Invited · waiting for an answer" else "Invited · not delivered yet") to false
+        GroupInvitationState.PENDING -> (if (i.delivered) appString(R.string.groupsc_invited_waiting_answer) else "Invited · not delivered yet") to false
         GroupInvitationState.JOINED -> "Joined" to false
         GroupInvitationState.DECLINED -> "Declined" to true
-        GroupInvitationState.EXPIRED -> "Invitation expired" to true
-        GroupInvitationState.BLOCKED -> "Blocked you" to true
+        GroupInvitationState.EXPIRED -> appString(R.string.groupsc_invite_expired) to true
+        GroupInvitationState.BLOCKED -> appString(R.string.groupsc_invite_blocked_you) to true
     }
 
     fun actions(d: GroupDetail, m: CoreMember): List<MemberAction> {
@@ -339,20 +340,20 @@ object GroupText {
                 val r = msg.removePrefix("they refused: ").trim()
                 when (r) {
                     "removed" -> "You were removed from this group."
-                    "not a member" -> "You’re not a member of this group."
+                    "not a member" -> appString(R.string.groupsc_err_not_member)
                     "already a contact" -> "You already have them as a contact. Message them from Chats."
-                    "you block them" -> "You block them. Unblock them first to ask for a chat."
-                    "blocked" -> "They blocked you, so you can’t ask them for a chat."
-                    "unknown or expired invite code" -> "That invite isn’t valid any more. Ask for a new one."
+                    "you block them" -> appString(R.string.groupsc_err_you_block)
+                    "blocked" -> appString(R.string.groupsc_err_they_block)
+                    "unknown or expired invite code" -> appString(R.string.groupsc_err_invite_invalid)
                     "admins only" -> "$ADMINS_ONLY."
-                    "" -> "Refused."
+                    "" -> appString(R.string.groupsc_err_refused)
                     else -> r.replaceFirstChar { it.uppercase() }.trimEnd('.') + "."
                 }
             }
             is uniffi.p2pcore.Exception.Timeout -> "No host answered in time. Try again when a host is online."
-            is uniffi.p2pcore.Exception.Locked -> "Unlock first."
-            is uniffi.p2pcore.Exception.NotFound -> "That group isn’t on this phone."
-            else -> msg.ifBlank { "Something went wrong" }
+            is uniffi.p2pcore.Exception.Locked -> appString(R.string.groupsc_err_locked)
+            is uniffi.p2pcore.Exception.NotFound -> appString(R.string.groupsc_err_not_found)
+            else -> msg.ifBlank { appString(R.string.groupsc_err_generic) }
         }
     }
 }
@@ -494,7 +495,7 @@ class GroupsController(private val api: GroupApi, private val me: () -> String?)
     fun imagePath(id: String, messageId: String): String? = try { api.imagePath(id, messageId) } catch (_: Exception) { null }
 
     fun create(name: String): Result<String> {
-        if (name.isBlank()) return Result.failure(IllegalArgumentException("Give the group a name."))
+        if (name.isBlank()) return Result.failure(IllegalArgumentException(appString(R.string.groupsc_name_required)))
         return runCatching { api.create(name.trim()) }.also { refresh() }.mapError()
     }
 
@@ -537,23 +538,23 @@ class GroupsController(private val api: GroupApi, private val me: () -> String?)
 
     override fun onGroupInvitation(invitation: GroupInvitation) { synchronized(this) { reloadInvitations() }; onInvitation?.invoke(invitation) }
 
-    fun flag(id: String, did: String) = act("Flag recorded. It is signed by you and the member can see it.") { api.flag(id, did) }
-    fun setAdmin(id: String, did: String, admin: Boolean) = act(if (admin) "Made admin." else "No longer an admin.") { api.setAdmin(id, did, admin) }
-    fun leave(id: String) = act("You left the group. Its messages stay here.") { api.leave(id) }
-    fun appoint(id: String, did: String, dev: String) = act("Appointed. The device hosts once it agrees.") { api.appointHost(id, did, dev) }
-    fun revoke(id: String, did: String, dev: String) = act("That device no longer hosts the group.") { api.revokeHost(id, did, dev) }
-    fun acceptHost(id: String, accept: Boolean) = act(
-        if (accept) "This phone agreed to host. It hosts as soon as an admin has appointed it." else "This phone stopped hosting the group."
-    ) { api.acceptHost(id, accept) }
+    fun flag(id: String, did: String) = act({ appString(R.string.groupsc_flag_recorded) }) { api.flag(id, did) }
+    fun setAdmin(id: String, did: String, admin: Boolean) = act({ if (admin) appString(R.string.groupsc_made_admin) else appString(R.string.groupsc_no_longer_admin) }) { api.setAdmin(id, did, admin) }
+    fun leave(id: String) = act({ appString(R.string.groupsc_left_group) }) { api.leave(id) }
+    fun appoint(id: String, did: String, dev: String) = act({ appString(R.string.groupsc_appointed) }) { api.appointHost(id, did, dev) }
+    fun revoke(id: String, did: String, dev: String) = act({ appString(R.string.groupsc_host_revoked) }) { api.revokeHost(id, did, dev) }
+    fun acceptHost(id: String, accept: Boolean) = act({
+        if (accept) appString(R.string.groupsc_host_agreed) else appString(R.string.groupsc_host_stopped)
+    }) { api.acceptHost(id, accept) }
 
-    fun appointCall(id: String, did: String, dev: String) = act("Asked. The device carries calls once it accepts.") { api.appointCallHost(id, did, dev) }
-    fun revokeCall(id: String, did: String, dev: String) = act("That device no longer hosts calls for the group.") { api.revokeCallHost(id, did, dev) }
-    fun acceptCallHost(id: String, accept: Boolean) = act(
-        if (accept) "This device now hosts the group’s calls." else "This device won’t host the group’s calls."
-    ) { api.acceptCallHost(id, accept) }
+    fun appointCall(id: String, did: String, dev: String) = act({ appString(R.string.groupsc_call_host_asked) }) { api.appointCallHost(id, did, dev) }
+    fun revokeCall(id: String, did: String, dev: String) = act({ appString(R.string.groupsc_call_host_revoked) }) { api.revokeCallHost(id, did, dev) }
+    fun acceptCallHost(id: String, accept: Boolean) = act({
+        if (accept) appString(R.string.groupsc_call_host_agreed) else appString(R.string.groupsc_call_host_declined)
+    }) { api.acceptCallHost(id, accept) }
 
     /** This phone carries the group's calls: accept when an admin asked; otherwise an admin appoints this device and accepts, in one go. */
-    fun hostCallsHere(id: String, requested: Boolean) = act("This phone carries the calls it starts in this group now.") {
+    fun hostCallsHere(id: String, requested: Boolean) = act({ appString(R.string.groupsc_calls_here) }) {
         if (!requested) api.appointCallHost(id, myDid, api.deviceId())
         api.acceptCallHost(id, true)
     }
@@ -568,10 +569,11 @@ class GroupsController(private val api: GroupApi, private val me: () -> String?)
     fun openLink(id: String): Result<String> = runCatching { api.openLink(id) }
         .onSuccess { _openLink.value = id to it }.also { refresh() }.mapError()
 
+    // i18n-deferred: GroupsPublicTest calls closeLink() on the JVM (no resources)
     fun closeLink(id: String) = act("The open link is closed. Everyone already in stays; new people join with an invite.") { api.setOpen(id, false) }
         .also { r -> if (r.isSuccess) _openLink.update { if (it?.first == id) null else it } }
 
-    fun setAdminsOnly(id: String, on: Boolean) = act(if (on) "Only admins post now. Everyone can still read." else "Everyone can post again.") { api.setAdminsOnly(id, on) }
+    fun setAdminsOnly(id: String, on: Boolean) = act({ if (on) appString(R.string.groupsc_admins_only_on) else appString(R.string.groupsc_admins_only_off) }) { api.setAdminsOnly(id, on) }
 
     /** This account shows in the online lists of public groups (a setting of this install; default on). */
     fun presenceVisible(): Boolean = try { api.presenceVisible() } catch (_: Exception) { true }
@@ -591,7 +593,7 @@ class GroupsController(private val api: GroupApi, private val me: () -> String?)
         .also { reloadRequests() }.mapError()
 
     fun decline(requestId: String): Result<String> = runCatching { api.chatDecline(requestId) }
-        .map { "Declined. ${firstName(it.peerName.ifBlank { "They" })} is told “declined”." }.also { reloadRequests() }.mapError()
+        .map { appString(R.string.groupsc_req_declined, firstName(it.peerName.ifBlank { appString(R.string.groupsc_they) })) }.also { reloadRequests() }.mapError()
 
     /** Block (P5: they are told) and decline. */
     fun blockRequester(requestId: String, did: String): Result<String> = runCatching { api.block(did); api.chatDecline(requestId) }
@@ -603,7 +605,10 @@ class GroupsController(private val api: GroupApi, private val me: () -> String?)
             _notice.value = "${firstName(request.peerName.ifBlank { "They" })} accepted your request. You can message each other now; calls stay off until one of you allows them."
     }
 
-    private fun act(ok: String, f: () -> Unit): Result<String> = runCatching { f(); ok }.also { refresh() }.mapError()
+    /** A fixed text. i18n-deferred callers only: GroupsPublicTest asserts closeLink's success without Android resources. */
+    private fun act(ok: String, f: () -> Unit): Result<String> = act({ ok }, f)
+
+    private fun act(ok: () -> String, f: () -> Unit): Result<String> = runCatching { f(); ok() }.also { refresh() }.mapError()
 
     private fun <T> Result<T>.mapError(): Result<T> = fold({ Result.success(it) }, { Result.failure(GroupFailure(GroupText.error(it))) })
 
