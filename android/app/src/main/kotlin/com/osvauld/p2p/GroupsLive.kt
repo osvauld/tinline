@@ -38,6 +38,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -880,24 +881,27 @@ fun GroupInfoLive(app: P2pApp, id: String, onBack: () -> Unit, onLink: () -> Uni
     val blocks by app.blocks.collectAsState()
     val exec = rememberRunner()
     LaunchedEffect(id) { withContext(Dispatchers.IO) { if (app.groups.open.value?.id != id) app.groups.open(id) } }
-    val d = open?.takeIf { it.id == id }?.detail ?: run { InfoPage("Group info", onBack) {}; return }
+    val d = open?.takeIf { it.id == id }?.detail ?: run { InfoPage(stringResource(R.string.groupsb_info_title), onBack) {}; return }
+    val you = stringResource(R.string.common_you)
+    val cantDo = stringResource(R.string.groupsb_cant_do)
+    val openedMsg = stringResource(R.string.groupsb_opened)
     var sheet by remember { mutableStateOf<InfoSheet?>(null) }
     var pending by remember(id) { mutableStateOf<Pair<PubSetting, Boolean>?>(null) }
     val admin = GroupText.isAdmin(d.myRole)
-    val done: (Result<String>) -> Unit = { r -> r.onSuccess { if (it.isNotEmpty()) say(it) }.onFailure { say(it.message ?: "Couldn’t do that") } }
-    val name: (String, String) -> String = { did, fb -> nameOf(app, did, fb).let { if (it == "You") app.node.profile()?.name?.ifBlank { null } ?: "You" else it } }
-    InfoPage(if (d.myRole == CoreRole.REMOVED) "Removed" else "Group info", onBack) {
+    val done: (Result<String>) -> Unit = { r -> r.onSuccess { if (it.isNotEmpty()) say(it) }.onFailure { say(it.message ?: cantDo) } }
+    val name: (String, String) -> String = { did, fb -> nameOf(app, did, fb).let { if (it == you) app.node.profile()?.name?.ifBlank { null } ?: you else it } }
+    InfoPage(if (d.myRole == CoreRole.REMOVED) stringResource(R.string.groupsb_removed_title) else stringResource(R.string.groupsb_info_title), onBack) {
         item(key = "hero") {
             Column(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 GroupAvatar(0, 72.dp, dim = !GroupText.active(d.myRole), gid = d.id)
                 Text(d.name, Modifier.padding(top = 12.dp).semantics { heading() }, style = GType.hero, color = c.ink, textAlign = TextAlign.Center)
                 Text(
                     when (d.myRole) {
-                        CoreRole.OWNER -> "${plural(d.members.size, "member")} · You are the owner"
-                        CoreRole.ADMIN -> "${plural(d.members.size, "member")} · You are an admin"
-                        CoreRole.MEMBER -> "${plural(d.members.size, "member")} · You are a member"
-                        CoreRole.LEFT -> "You left this group"
-                        CoreRole.REMOVED -> "You’re no longer a member"
+                        CoreRole.OWNER -> pluralStringResource(R.plurals.groupsb_hero_owner, d.members.size, d.members.size)
+                        CoreRole.ADMIN -> pluralStringResource(R.plurals.groupsb_hero_admin, d.members.size, d.members.size)
+                        CoreRole.MEMBER -> pluralStringResource(R.plurals.groupsb_hero_member, d.members.size, d.members.size)
+                        CoreRole.LEFT -> stringResource(R.string.groupsb_hero_left)
+                        CoreRole.REMOVED -> stringResource(R.string.groupsb_hero_removed)
                     },
                     Modifier.padding(top = 2.dp), style = GType.note, color = c.ink2, textAlign = TextAlign.Center,
                 )
@@ -906,7 +910,7 @@ fun GroupInfoLive(app: P2pApp, id: String, onBack: () -> Unit, onLink: () -> Uni
         when (d.myRole) {
             CoreRole.REMOVED -> item(key = "removal") { RemovalBody(app, d.removal, onBack) }
             CoreRole.LEFT -> item(key = "left") {
-                GNote("You can still read the posts on this device. To come back, someone in the group has to invite you again.", Modifier.padding(horizontal = 20.dp, vertical = 24.dp))
+                GNote(stringResource(R.string.groupsb_left_note), Modifier.padding(horizontal = 20.dp, vertical = 24.dp))
             }
             else -> {
                 val mine = d.members.firstOrNull { it.isMe }
@@ -914,11 +918,11 @@ fun GroupInfoLive(app: P2pApp, id: String, onBack: () -> Unit, onLink: () -> Uni
                 if (admin) item(key = "invites") {
                     val shownSent = sent.filter { it.groupId == id && d.members.none { m -> m.did == it.inviteeDid } }
                     val noHost = d.hosts.isEmpty() && !d.amHost
-                    InfoSec("Invites") {
+                    InfoSec(stringResource(R.string.groupsb_invites_sec)) {
                         GCard(Modifier.fillMaxWidth()) {
-                            ActRow(GIcons.UserPlus, "Invite contacts", "A private invite to each person", trailing = GIcons.ChevR) { sheet = InfoSheet.Invite }
+                            ActRow(GIcons.UserPlus, stringResource(R.string.groupsb_invite_contacts), stringResource(R.string.groupsb_invite_contacts_sub), trailing = GIcons.ChevR) { sheet = InfoSheet.Invite }
                             GRule()
-                            ActRow(GIcons.Link, "Create invite link", if (noHost) "Appoint a host first. A link names one host." else "Valid for 7 days",
+                            ActRow(GIcons.Link, stringResource(R.string.groupsb_create_link), if (noHost) stringResource(R.string.groupsb_create_link_nohost) else stringResource(R.string.groupsb_create_link_valid),
                                 trailing = GIcons.Plus, enabled = !noHost, onClick = onLink)
                         }
                         if (shownSent.isNotEmpty()) Column(Modifier.padding(top = 6.dp)) {
@@ -948,36 +952,39 @@ fun GroupInfoLive(app: P2pApp, id: String, onBack: () -> Unit, onLink: () -> Uni
                 item(key = "members") {
                     val order = { m: CoreMember -> if (m.isOwner) 0 else if (m.isAdmin) 1 else 2 }
                     val sorted = d.members.sortedWith(compareBy<CoreMember>({ order(it) }, { !it.isMe }))
-                    InfoSec("Members", count = d.members.size) {
+                    InfoSec(stringResource(R.string.groupsb_members_sec), count = d.members.size) {
                         sorted.forEach { m ->
                             key(m.did) {
                                 val n = name(m.did, m.name)
                                 val req = outgoing.filter { it.peerDid == m.did }.maxByOrNull { it.at }
                                 val reqNote = when (req?.state) {
-                                    ChatRequestState.PENDING -> "Chat request sent"
-                                    ChatRequestState.DECLINED -> "Declined your chat request"
-                                    ChatRequestState.BLOCKED -> "Blocked"
+                                    ChatRequestState.PENDING -> stringResource(R.string.groupsb_req_pending)
+                                    ChatRequestState.DECLINED -> stringResource(R.string.groupsb_req_declined)
+                                    ChatRequestState.BLOCKED -> stringResource(R.string.common_blocked)
                                     else -> null
                                 }
-                                val since = m.invitedBy?.let { "Invited by ${firstName(name(it, ""))} · ${dayOnly(m.joinedAt.toLong())}" } ?: "Since ${dayOnly(m.joinedAt.toLong())}"
+                                val since = m.invitedBy?.let { stringResource(R.string.groupsb_invited_by, firstName(name(it, "")), dayOnly(m.joinedAt.toLong())) } ?: stringResource(R.string.groupsb_since, dayOnly(m.joinedAt.toLong()))
+                                val flagsTxt = stringResource(R.string.groupsb_flags_of, m.flags.toString(), GroupText.FLAGS_TO_REMOVE.toString())
+                                val blockedByYou = stringResource(R.string.groupsb_blocked_by_you)
                                 val showFlags = (admin || m.isMe) && m.flags > 0u && !m.isOwner
-                                val desc = "$n${if (m.isMe) " (you)" else ""}, ${if (m.isOwner) "owner" else if (m.isAdmin) "admin" else "member"}" +
-                                    (if (m.isHost) ", host" else "") + (if (d.callHosts.any { it.did == m.did }) ", call host" else "") + ". Open actions"
+                                val nameYou = if (m.isMe) stringResource(R.string.groupsb_name_you, n) else n
+                                val desc = nameYou + ", " + (if (m.isOwner) stringResource(R.string.groupsb_role_owner_lc) else if (m.isAdmin) stringResource(R.string.groupsb_role_admin_lc) else stringResource(R.string.groupsb_role_member_lc)) +
+                                    (if (m.isHost) stringResource(R.string.groupsb_desc_host) else "") + (if (d.callHosts.any { it.did == m.did }) stringResource(R.string.groupsb_desc_callhost) else "") + stringResource(R.string.groupsb_desc_open)
                                 MRow(onClick = { sheet = InfoSheet.Member(m.did) }, desc = desc) {
                                     Avatar(n, m.did, 40.dp)
                                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
-                                        Text(if (m.isMe) "$n (you)" else n, style = GType.bodyStrong, color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                        Text(nameYou, style = GType.bodyStrong, color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                         Text(androidx.compose.ui.text.buildAnnotatedString {
                                             append(since)
-                                            if (showFlags) { pushStyle(androidx.compose.ui.text.SpanStyle(color = c.er, fontWeight = FontWeight.SemiBold)); append(" · ${m.flags} of ${GroupText.FLAGS_TO_REMOVE} flags"); pop() }
-                                            if (blocks.blockedByMe(m.did)) append(" · Blocked by you")
+                                            if (showFlags) { pushStyle(androidx.compose.ui.text.SpanStyle(color = c.er, fontWeight = FontWeight.SemiBold)); append(" · $flagsTxt"); pop() }
+                                            if (blocks.blockedByMe(m.did)) append(" · $blockedByYou")
                                             else if (reqNote != null) append(" · $reqNote")
                                         }, style = GType.sub, color = c.ink2, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                     }
                                     Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
-                                        if (m.isOwner) GPill("Owner", GTone.Owner) else if (m.isAdmin) GPill("Admin", GTone.Admin)
-                                        if (m.isHost) GMark(GIcons.Server, "Host")
-                                        if (d.callHosts.any { it.did == m.did }) GMark(GIcons.Phone, "Call host", call = true)
+                                        if (m.isOwner) GPill(stringResource(R.string.groupsb_pill_owner), GTone.Owner) else if (m.isAdmin) GPill(stringResource(R.string.groupsb_pill_admin), GTone.Admin)
+                                        if (m.isHost) GMark(GIcons.Server, stringResource(R.string.groupsb_host))
+                                        if (d.callHosts.any { it.did == m.did }) GMark(GIcons.Phone, stringResource(R.string.groupsb_call_host), call = true)
                                     }
                                 }
                             }
@@ -987,8 +994,8 @@ fun GroupInfoLive(app: P2pApp, id: String, onBack: () -> Unit, onLink: () -> Uni
                 item(key = "leave") {
                     Column(Modifier.padding(start = 16.dp, end = 16.dp, top = 24.dp)) {
                         GCard(Modifier.fillMaxWidth()) {
-                            if (d.myRole != CoreRole.OWNER) ActRow(GIcons.Leave, "Leave group", danger = true) { sheet = InfoSheet.Leave }
-                            else ActRow(GIcons.Leave, "Leave group", "The owner can’t leave yet", enabled = false, off = true) {}
+                            if (d.myRole != CoreRole.OWNER) ActRow(GIcons.Leave, stringResource(R.string.groupsb_leave_group), danger = true) { sheet = InfoSheet.Leave }
+                            else ActRow(GIcons.Leave, stringResource(R.string.groupsb_leave_group), stringResource(R.string.groupsb_owner_cant_leave), enabled = false, off = true) {}
                         }
                     }
                 }
@@ -1002,27 +1009,27 @@ fun GroupInfoLive(app: P2pApp, id: String, onBack: () -> Unit, onLink: () -> Uni
                 exec, done, onChat, onDismiss = { sheet = null })
         } ?: run { sheet = null }
         InfoSheet.Invite -> InviteSheet(app, d, sent, exec, say, onDismiss = { sheet = null })
-        InfoSheet.Leave -> GSheet({ sheet = null }, "Leave group") { close ->
-            GDialogBody("Leave ${d.name}?") {
-                GPara("You’ll stop getting posts. What’s already on this device stays, and you can read it. To come back, someone in the group has to invite you again.", top = 4.dp)
-                if (d.myRole == CoreRole.ADMIN) GPara("You’re an admin. The owner and the other admins stay.")
+        InfoSheet.Leave -> GSheet({ sheet = null }, stringResource(R.string.groupsb_leave_group)) { close ->
+            GDialogBody(stringResource(R.string.groupsb_leave_title, d.name)) {
+                GPara(stringResource(R.string.groupsb_leave_body), top = 4.dp)
+                if (d.myRole == CoreRole.ADMIN) GPara(stringResource(R.string.groupsb_leave_admin))
                 GActs {
-                    GBtn("Cancel", close, GBtnKind.Quiet)
-                    GBtn("Leave", { exec({ app.groups.leave(id) }) { r -> done(r); r.onSuccess { sheet = null; onBack() } } }, GBtnKind.Danger)
+                    GBtn(stringResource(R.string.common_cancel), close, GBtnKind.Quiet)
+                    GBtn(stringResource(R.string.groupsb_leave), { exec({ app.groups.leave(id) }) { r -> done(r); r.onSuccess { sheet = null; onBack() } } }, GBtnKind.Danger)
                 }
             }
         }
-        InfoSheet.OpenGroup -> GSheet({ sheet = null }, "Open the group") { close ->
+        InfoSheet.OpenGroup -> GSheet({ sheet = null }, stringResource(R.string.groupsb_open_group)) { close ->
             val busy = pending?.first == PubSetting.Open
-            GDialogBody("Open ${d.name} to anyone with the link?") {
-                GPara("Anyone holding the link can join, with no invite and no expiry. Share it where you’d like people to find the group.", top = 4.dp)
-                GPara("While it’s open, no read receipts are sent in this group, and members see who is online. Each person can hide themselves in their settings.")
-                GPara("You can close the link any time; everyone already in stays.")
+            GDialogBody(stringResource(R.string.groupsb_open_title, d.name)) {
+                GPara(stringResource(R.string.groupsb_open_body1), top = 4.dp)
+                GPara(stringResource(R.string.groupsb_open_body2))
+                GPara(stringResource(R.string.groupsb_open_body3))
                 GActs {
-                    GBtn("Cancel", close, GBtnKind.Quiet)
-                    GBtn(if (busy) "Opening…" else "Open the group", {
+                    GBtn(stringResource(R.string.common_cancel), close, GBtnKind.Quiet)
+                    GBtn(if (busy) stringResource(R.string.groupsb_opening) else stringResource(R.string.groupsb_open_group), {
                         pending = PubSetting.Open to true
-                        exec({ app.groups.openLink(id).map { "Your group is open. Copy the link to share it." } }) { r -> pending = null; done(r); if (r.isSuccess) close() }
+                        exec({ app.groups.openLink(id).map { openedMsg } }) { r -> pending = null; done(r); if (r.isSuccess) close() }
                     }, GBtnKind.Primary, enabled = !busy)
                 }
             }
@@ -1034,10 +1041,11 @@ fun GroupInfoLive(app: P2pApp, id: String, onBack: () -> Unit, onLink: () -> Uni
 @Composable
 private fun InfoPage(title: String, onBack: () -> Unit, content: androidx.compose.foundation.lazy.LazyListScope.() -> Unit) {
     val c = Tin.c
+    val backLabel = stringResource(R.string.common_back)
     Column(Modifier.fillMaxSize().background(c.bg).systemBarsPadding()) {
         Row(Modifier.fillMaxWidth().background(c.sf).heightIn(min = 60.dp).padding(start = 8.dp, end = 12.dp, top = 8.dp, bottom = 8.dp),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            Box(Modifier.size(44.dp).clip(CircleShape).gTap(label = null, onClick = onBack).semantics { contentDescription = "Back" }, contentAlignment = Alignment.Center) {
+            Box(Modifier.size(44.dp).clip(CircleShape).gTap(label = null, onClick = onBack).semantics { contentDescription = backLabel }, contentAlignment = Alignment.Center) {
                 Icon(GIcons.Back, null, tint = c.ink, modifier = Modifier.size(22.dp))
             }
             Text(title, style = GType.title, color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -1125,34 +1133,35 @@ private fun PublicGroupSection(app: P2pApp, d: GroupDetail, pending: Pair<PubSet
     val aoOn = pending?.takeIf { it.first == PubSetting.AdminsOnly }?.second ?: d.adminsOnly
     val fetching = pending?.first == PubSetting.Link
     val link = held?.takeIf { it.first == d.id && d.open }?.second
-    val copy: (String) -> Unit = { copyToClipboard(ctx, "Group link", it, sensitive = false); say(GroupText.OPEN_LINK_COPIED) }
-    InfoSec("Public group") {
+    val cantGetLink = stringResource(R.string.groupsb_cant_get_link)
+    val copy: (String) -> Unit = { copyToClipboard(ctx, ctx.getString(R.string.groupsb_group_link), it, sensitive = false); say(GroupText.OPEN_LINK_COPIED) }
+    InfoSec(stringResource(R.string.groupsb_public_sec)) {
         GCard(Modifier.fillMaxWidth()) {
-            SwitchRow(GIcons.Link, "Open link", "Anyone with the link can join", "Only people you invite can join", openOn) { want ->
+            SwitchRow(GIcons.Link, stringResource(R.string.groupsb_open_link), stringResource(R.string.groupsb_open_link_on), stringResource(R.string.groupsb_open_link_off), openOn) { want ->
                 if (pending == null) {
                     if (want) onAskOpen()
                     else { onPending(PubSetting.Open to false); exec({ app.groups.closeLink(d.id) }) { r -> onPending(null); done(r) } }
                 }
             }
             GRule()
-            ActRow(PgIcons.Copy, "Copy link", when {
-                fetching -> "Getting the link…"
+            ActRow(PgIcons.Copy, stringResource(R.string.groupsb_copy_link), when {
+                fetching -> stringResource(R.string.groupsb_getting_link)
                 link != null -> link
-                openOn -> "A link that doesn’t expire"
-                else -> "Turn on Open link to share it"
+                openOn -> stringResource(R.string.groupsb_link_never_expires)
+                else -> stringResource(R.string.groupsb_turn_on_open)
             }, enabled = openOn && !fetching) {
                 if (link != null) copy(link)
                 else if (pending == null && d.open) {
                     onPending(PubSetting.Link to true)
-                    exec({ app.groups.openLink(d.id) }) { r -> onPending(null); r.onSuccess(copy).onFailure { say(it.message ?: "Couldn’t get the link") } }
+                    exec({ app.groups.openLink(d.id) }) { r -> onPending(null); r.onSuccess(copy).onFailure { say(it.message ?: cantGetLink) } }
                 }
             }
             GRule()
-            SwitchRow(GIcons.Shield, "Admins only", "Only admins post; everyone reads", "Everyone in the group can post", aoOn) { want ->
+            SwitchRow(GIcons.Shield, stringResource(R.string.groupsb_admins_only), stringResource(R.string.groupsb_admins_only_on), stringResource(R.string.groupsb_admins_only_off), aoOn) { want ->
                 if (pending == null) { onPending(PubSetting.AdminsOnly to want); exec({ app.groups.setAdminsOnly(d.id, want) }) { r -> onPending(null); done(r) } }
             }
         }
-        GNote("The open link doesn’t expire. Closing it stops new joins; everyone already in stays. While the group is open, no read receipts are sent in it and members see who is online.",
+        GNote(stringResource(R.string.groupsb_public_note),
             Modifier.padding(start = 4.dp, end = 4.dp, top = 10.dp))
     }
 }
@@ -1185,20 +1194,21 @@ private fun HostsSection(app: P2pApp, d: GroupDetail, admin: Boolean, name: (Str
     val up = d.amHost || d.hosts.any { it.online }
     val online = d.hosts.count { it.online || it.isMe }
     val line = if (noHost) 0 else if (up) 1 else 2
-    val dev = { h: uniffi.p2pcore.GroupHost -> if (h.isMe) "This device" else name(h.did, h.name) + if (d.members.firstOrNull { it.did == h.did }?.deviceIds?.size ?: 1 > 1) " · ${GroupText.shortDev(h.deviceId)}" else "" }
-    InfoSec("Hosts") {
+    val thisDevice = stringResource(R.string.groupsb_this_device)
+    val dev = { h: uniffi.p2pcore.GroupHost -> if (h.isMe) thisDevice else name(h.did, h.name) + if (d.members.firstOrNull { it.did == h.did }?.deviceIds?.size ?: 1 > 1) " · ${GroupText.shortDev(h.deviceId)}" else "" }
+    InfoSec(stringResource(R.string.groupsb_hosts_sec)) {
         StatusLine(listOf(
-            "This group has no host. Posts wait until a host is appointed.",
-            "${plural(online.coerceAtLeast(1), "host")} online. Posts go through right away.",
-            "No host is online. Your posts are saved and send when one is.",
+            stringResource(R.string.groupsb_hosts_none),
+            pluralStringResource(R.plurals.groupsb_hosts_online, online.coerceAtLeast(1), online.coerceAtLeast(1)),
+            stringResource(R.string.groupsb_hosts_offline),
         ), line, line == 1)
         d.hosts.forEach { h ->
             key("h" + h.did + h.deviceId) {
                 MRow {
                     Avatar(name(h.did, h.name), h.did, 40.dp)
                     val on = h.isMe || h.online
-                    TwoLine(dev(h), (if (on) "Online" else "Offline") + if (d.callHosts.any { it.did == h.did && it.deviceId == h.deviceId }) " · also hosts calls" else "", dot = on)
-                    if (admin) TrailBtn("Remove", "Remove ${dev(h)} as host") { exec({ app.groups.revoke(d.id, h.did, h.deviceId) }, done) }
+                    TwoLine(dev(h), (if (on) stringResource(R.string.groupsb_online) else stringResource(R.string.groupsb_offline)) + if (d.callHosts.any { it.did == h.did && it.deviceId == h.deviceId }) " · " + stringResource(R.string.groupsb_also_hosts_calls) else "", dot = on)
+                    if (admin) TrailBtn(stringResource(R.string.common_remove), stringResource(R.string.groupsb_remove_host_desc, dev(h))) { exec({ app.groups.revoke(d.id, h.did, h.deviceId) }, done) }
                 }
             }
         }
@@ -1206,11 +1216,11 @@ private fun HostsSection(app: P2pApp, d: GroupDetail, admin: Boolean, name: (Str
             key("q" + h.did + h.deviceId) {
                 MRow {
                     Avatar(name(h.did, h.name), h.did, 40.dp)
-                    TwoLine(dev(h), "Waiting to accept")
+                    TwoLine(dev(h), stringResource(R.string.groupsb_waiting_accept))
                     if (h.isMe && d.hostRequestedHere) {
-                        GBtn("Decline", { exec({ app.groups.acceptHost(d.id, false) }, done) }, GBtnKind.Quiet)
-                        GBtn("Accept", { exec({ app.groups.acceptHost(d.id, true) }, done) }, GBtnKind.Primary)
-                    } else if (admin) TrailBtn("Cancel", "Cancel host request to ${dev(h)}") { exec({ app.groups.revoke(d.id, h.did, h.deviceId) }, done) }
+                        GBtn(stringResource(R.string.common_decline), { exec({ app.groups.acceptHost(d.id, false) }, done) }, GBtnKind.Quiet)
+                        GBtn(stringResource(R.string.common_accept), { exec({ app.groups.acceptHost(d.id, true) }, done) }, GBtnKind.Primary)
+                    } else if (admin) TrailBtn(stringResource(R.string.common_cancel), stringResource(R.string.groupsb_cancel_host_desc, dev(h))) { exec({ app.groups.revoke(d.id, h.did, h.deviceId) }, done) }
                 }
             }
         }
@@ -1218,13 +1228,13 @@ private fun HostsSection(app: P2pApp, d: GroupDetail, admin: Boolean, name: (Str
             key("o" + h.did + h.deviceId) {
                 MRow {
                     Avatar(name(h.did, h.name), h.did, 40.dp)
-                    TwoLine(dev(h), "Offered to host · needs an admin")
-                    if (admin) GBtn("Appoint", { exec({ app.groups.appoint(d.id, h.did, h.deviceId) }, done) }, GBtnKind.Primary)
+                    TwoLine(dev(h), stringResource(R.string.groupsb_offered_host))
+                    if (admin) GBtn(stringResource(R.string.groupsb_appoint), { exec({ app.groups.appoint(d.id, h.did, h.deviceId) }, done) }, GBtnKind.Primary)
                 }
             }
         }
-        GNote("Hosts store the group and pass posts on when others are offline. They are members you trust: a host can read everything posted in this group." +
-            if (admin) " Appoint a host from a member’s menu; they have to accept. Removing a host changes the group’s address within 2 days, so that device can no longer reach it." else "",
+        GNote(stringResource(R.string.groupsb_hosts_note) +
+            if (admin) " " + stringResource(R.string.groupsb_hosts_note_admin) else "",
             Modifier.padding(start = 4.dp, end = 4.dp, top = 10.dp))
     }
 }
@@ -1237,21 +1247,22 @@ private fun CallHostsSection(app: P2pApp, d: GroupDetail, admin: Boolean, name: 
     // This phone is said in words, not listed as a row: "Stop hosting calls on this phone" below stands for it.
     val onlyMe = d.amCallHost && d.callHosts.size == 1
     val line = if (d.callHosts.isEmpty()) 0 else if (onlyMe) 3 else if (ready > 0) 1 else 2
-    val dev = { h: uniffi.p2pcore.GroupHost -> if (h.isMe) "This device" else name(h.did, h.name) }
-    InfoSec("Call hosts") {
+    val thisDevice = stringResource(R.string.groupsb_this_device)
+    val dev = { h: uniffi.p2pcore.GroupHost -> if (h.isMe) thisDevice else name(h.did, h.name) }
+    InfoSec(stringResource(R.string.groupsb_callhosts_sec)) {
         StatusLine(listOf(
-            "This group has no call host. Nobody can start a call until an admin appoints one.",
-            "${plural(ready.coerceAtLeast(1), "call host")} ready. Calls start through ${if (ready == 1) "it" else "them"}.",
-            "No call host is available right now. A call can’t start until one is back.",
-            "This phone carries the calls you start.",
+            stringResource(R.string.groupsb_callhosts_none),
+            pluralStringResource(R.plurals.groupsb_callhosts_ready, ready.coerceAtLeast(1), ready.coerceAtLeast(1)),
+            stringResource(R.string.groupsb_callhosts_offline),
+            stringResource(R.string.groupsb_callhosts_me),
         ), line, line == 1 || line == 3)
         d.callHosts.filter { !it.isMe }.forEach { h ->
             key("c" + h.did + h.deviceId) {
                 MRow {
                     Avatar(name(h.did, h.name), h.did, 40.dp)
                     val on = h.isMe || h.online
-                    TwoLine(dev(h), if (on) "Online" else "Offline", dot = on)
-                    if (admin) TrailBtn("Remove", "Remove ${dev(h)} as call host") { exec({ app.groups.revokeCall(d.id, h.did, h.deviceId) }, done) }
+                    TwoLine(dev(h), if (on) stringResource(R.string.groupsb_online) else stringResource(R.string.groupsb_offline), dot = on)
+                    if (admin) TrailBtn(stringResource(R.string.common_remove), stringResource(R.string.groupsb_remove_callhost_desc, dev(h))) { exec({ app.groups.revokeCall(d.id, h.did, h.deviceId) }, done) }
                 }
             }
         }
@@ -1259,23 +1270,22 @@ private fun CallHostsSection(app: P2pApp, d: GroupDetail, admin: Boolean, name: 
             key("cq" + h.did + h.deviceId) {
                 MRow {
                     Avatar(name(h.did, h.name), h.did, 40.dp)
-                    TwoLine(dev(h), "Waiting to accept")
+                    TwoLine(dev(h), stringResource(R.string.groupsb_waiting_accept))
                     if (h.isMe && d.callHostRequestedHere) {
-                        GBtn("Decline", { exec({ app.groups.acceptCallHost(d.id, false) }, done) }, GBtnKind.Quiet)
-                        GBtn("Accept", { exec({ app.groups.acceptCallHost(d.id, true) }, done) }, GBtnKind.Primary)
-                    } else if (admin) TrailBtn("Cancel", "Cancel call host request to ${dev(h)}") { exec({ app.groups.revokeCall(d.id, h.did, h.deviceId) }, done) }
+                        GBtn(stringResource(R.string.common_decline), { exec({ app.groups.acceptCallHost(d.id, false) }, done) }, GBtnKind.Quiet)
+                        GBtn(stringResource(R.string.common_accept), { exec({ app.groups.acceptCallHost(d.id, true) }, done) }, GBtnKind.Primary)
+                    } else if (admin) TrailBtn(stringResource(R.string.common_cancel), stringResource(R.string.groupsb_cancel_callhost_desc, dev(h))) { exec({ app.groups.revokeCall(d.id, h.did, h.deviceId) }, done) }
                 }
             }
         }
         // This phone: carry the calls it starts (admin: appoint + accept in one go; asked: the Accept above; already: stop).
-        if (d.amCallHost) ActRow(GIcons.Phone, "Stop hosting calls on this phone") { exec({ app.groups.acceptCallHost(d.id, false) }, done) }
+        if (d.amCallHost) ActRow(GIcons.Phone, stringResource(R.string.groupsb_stop_calls_phone)) { exec({ app.groups.acceptCallHost(d.id, false) }, done) }
         else if (admin && !d.callHostRequestedHere && GroupText.active(d.myRole))
-            ActRow(GIcons.Phone, "Host calls on this phone", "Carries the calls you start here. A computer that stays on can carry everyone’s.") {
+            ActRow(GIcons.Phone, stringResource(R.string.groupsb_host_calls_phone), stringResource(R.string.groupsb_host_calls_phone_sub)) {
                 exec({ app.groups.hostCallsHere(d.id, requested = false) }, done)
             }
-        GNote("A call host carries the call. Everyone in a call connects to it, and it passes the audio on, so it can hear the call. That is separate from chat hosting: " +
-            "a chat host is not a call host unless you also appoint it as one. Call hosts are members you trust, and each one chooses to accept." +
-            if (admin) " Appoint one from a member’s menu, or host calls on this phone. A phone only hosts calls that its owner starts." else "",
+        GNote(stringResource(R.string.groupsb_callhosts_note) +
+            if (admin) " " + stringResource(R.string.groupsb_callhosts_note_admin) else "",
             Modifier.padding(start = 4.dp, end = 4.dp, top = 10.dp))
     }
 }
@@ -1295,9 +1305,9 @@ private fun TrailBtn(text: String, desc: String, onClick: () -> Unit) {
 private fun FlagsOnMe(n: Int) {
     val total = GroupText.FLAGS_TO_REMOVE
     val left = (total - n).coerceAtLeast(0)
-    InfoSec("Flags on you", countText = "$n of $total", countColor = Tin.c.er) {
-        Box(Modifier.padding(start = 4.dp, end = 4.dp, bottom = 4.dp, top = 2.dp)) { FlagMeter(n, total, desc = "$n of $total flags") }
-        GNote((if (left == 1) "One more flag" else "$left more flags") + " from any admin removes you from the group. Flags can’t be taken back. You can still read and post until then.",
+    InfoSec(stringResource(R.string.groupsb_flags_on_you), countText = stringResource(R.string.groupsb_of_total, n.toString(), total.toString()), countColor = Tin.c.er) {
+        Box(Modifier.padding(start = 4.dp, end = 4.dp, bottom = 4.dp, top = 2.dp)) { FlagMeter(n, total, desc = stringResource(R.string.groupsb_flags_of, n.toString(), total.toString())) }
+        GNote(pluralStringResource(R.plurals.groupsb_flags_left_note, left, left),
             Modifier.padding(start = 4.dp, end = 4.dp, top = 6.dp))
     }
 }
@@ -1306,27 +1316,28 @@ private fun FlagsOnMe(n: Int) {
 @Composable
 private fun RemovalBody(app: P2pApp, r: uniffi.p2pcore.GroupRemoval?, onBack: () -> Unit) {
     val c = Tin.c
-    val ord = listOf("First flag", "Second flag", "Third flag")
+    val ord = listOf(stringResource(R.string.groupsb_flag_first), stringResource(R.string.groupsb_flag_second), stringResource(R.string.groupsb_flag_third))
+    val flagFallback = stringResource(R.string.groupsb_flag_n)
     Column(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 32.dp)) {
-        Text("Removed after ${GroupText.FLAGS_TO_REMOVE} admin flags", Modifier.padding(top = 8.dp, bottom = 2.dp).semantics { heading() }, style = GType.hero, color = c.ink)
+        Text(pluralStringResource(R.plurals.groupsb_removed_after, GroupText.FLAGS_TO_REMOVE, GroupText.FLAGS_TO_REMOVE), Modifier.padding(top = 8.dp, bottom = 2.dp).semantics { heading() }, style = GType.hero, color = c.ink)
         if (r != null && r.at > 0u) Text(dayAndTime(r.at.toLong(), System.currentTimeMillis()), style = GType.note, color = c.ink2)
-        RemSec("Who flagged you")
+        RemSec(stringResource(R.string.groupsb_who_flagged))
         r?.flags?.forEachIndexed { i, f ->
             val who = nameOf(app, f.byDid, f.byName)
             Row(Modifier.fillMaxWidth().heightIn(min = 60.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Avatar(who, f.byDid, 40.dp)
                 Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
                     Text(who, style = GType.bodyStrong, color = c.ink)
-                    Text(ord.getOrElse(i) { "Flag" } + if (f.at > 0u) " · " + dayAndTime(f.at.toLong(), System.currentTimeMillis()) else "", style = GType.sub.copy(fontFeatureSettings = "tnum"), color = c.ink2)
+                    Text(ord.getOrElse(i) { flagFallback } + if (f.at > 0u) " · " + dayAndTime(f.at.toLong(), System.currentTimeMillis()) else "", style = GType.sub.copy(fontFeatureSettings = "tnum"), color = c.ink2)
                 }
             }
             if (i < r.flags.lastIndex) GRule()
         }
-        GNote("Each flag was made by an admin of the group, and this device checked them before showing this.", Modifier.padding(top = 6.dp))
-        RemSec("What this means")
-        Text("You keep the posts already on this device, and you can read them. You can’t post, and the group’s hosts no longer accept anything from you. Removal is final: to come back, an admin has to invite you again.",
+        GNote(stringResource(R.string.groupsb_flags_checked_note), Modifier.padding(top = 6.dp))
+        RemSec(stringResource(R.string.groupsb_what_means))
+        Text(stringResource(R.string.groupsb_removal_body),
             style = GType.body.copy(lineHeight = 22.sp), color = c.ink)
-        Box(Modifier.padding(top = 20.dp)) { GBtn("Read the posts", onBack, GBtnKind.Outline) }
+        Box(Modifier.padding(top = 20.dp)) { GBtn(stringResource(R.string.groupsb_read_posts), onBack, GBtnKind.Outline) }
     }
 }
 
@@ -1345,8 +1356,9 @@ private fun InviteSheet(app: P2pApp, d: GroupDetail, sent: List<GroupInvitation>
     }
     val picked = remember { mutableStateListOf<String>() }
     var busy by remember { mutableStateOf(false) }
-    GSheet(onDismiss, "Invite contacts") { close ->
-        GDialogBody("Invite to ${d.name}") {
+    val cantInvite = stringResource(R.string.groupsb_cant_invite)
+    GSheet(onDismiss, stringResource(R.string.groupsb_invite_contacts)) { close ->
+        GDialogBody(stringResource(R.string.groupsb_invite_to, d.name)) {
             if (choices.isNotEmpty()) {
                 Column(Modifier.padding(top = 8.dp).offset(x = (-8).dp).fillMaxWidth().padding(end = 0.dp)) {
                     choices.forEach { p ->
@@ -1365,14 +1377,14 @@ private fun InviteSheet(app: P2pApp, d: GroupDetail, sent: List<GroupInvitation>
                         }
                     }
                 }
-                GPara("Each person gets a private invite that works for 7 days. Anyone you invite can read the group’s posts once they join.", top = 10.dp)
-            } else GPara("Everyone in your contacts is already in this group or has an invite waiting.", top = 10.dp)
+                GPara(stringResource(R.string.groupsb_invite_sheet_note), top = 10.dp)
+            } else GPara(stringResource(R.string.groupsb_invite_none), top = 10.dp)
             GActs {
-                GBtn("Cancel", close, GBtnKind.Quiet)
-                GBtn(if (busy) "Sending…" else if (picked.isEmpty()) "Invite" else "Invite ${plural(picked.size, "person", "people")}", {
+                GBtn(stringResource(R.string.common_cancel), close, GBtnKind.Quiet)
+                GBtn(if (busy) stringResource(R.string.groupsb_sending) else if (picked.isEmpty()) stringResource(R.string.groupsb_invite) else pluralStringResource(R.plurals.groupsb_invite_people, picked.size, picked.size), {
                     busy = true
                     val dids = picked.toList()
-                    exec({ app.groups.inviteContacts(d.id, dids) }) { r -> busy = false; r.onSuccess { say(it); close() }.onFailure { say(it.message ?: "Couldn’t invite") } }
+                    exec({ app.groups.inviteContacts(d.id, dids) }) { r -> busy = false; r.onSuccess { say(it); close() }.onFailure { say(it.message ?: cantInvite) } }
                 }, GBtnKind.Primary, enabled = picked.isNotEmpty() && !busy)
             }
         }
@@ -1407,7 +1419,8 @@ private fun MemberSheet(app: P2pApp, d: GroupDetail, m: CoreMember, n: String, r
     val contact = app.contacts.value.any { it.did == m.did }
     val acts = GroupText.actions(d, m)
     val several = m.deviceIds.size > 1
-    GSheet(onDismiss, if (m.isMe) "Your role in this group" else "$n in ${d.name}") { close ->
+    val nameYou = if (m.isMe) stringResource(R.string.groupsb_name_you, n) else n
+    GSheet(onDismiss, if (m.isMe) stringResource(R.string.groupsb_member_sheet_me) else stringResource(R.string.groupsb_member_in_group, n, d.name)) { close ->
         androidx.compose.animation.Crossfade(view, animationSpec = tween(GMotion.CROSSFADE, easing = GMotion.EaseOut), label = "view") { v ->
             when (v) {
                 MView.Actions -> Column {
@@ -1415,34 +1428,34 @@ private fun MemberSheet(app: P2pApp, d: GroupDetail, m: CoreMember, n: String, r
                         horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         Avatar(n, m.did, 48.dp)
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
-                            Text(if (m.isMe) "$n (you)" else n, style = GType.title.copy(lineHeight = 22.sp), color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            Text(m.invitedBy?.let { "Invited by ${firstName(nameOf(app, it, ""))} · ${dayOnly(m.joinedAt.toLong())}" } ?: "Member since ${dayOnly(m.joinedAt.toLong())}",
+                            Text(nameYou, style = GType.title.copy(lineHeight = 22.sp), color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text(m.invitedBy?.let { stringResource(R.string.groupsb_invited_by, firstName(nameOf(app, it, "")), dayOnly(m.joinedAt.toLong())) } ?: stringResource(R.string.groupsb_member_since, dayOnly(m.joinedAt.toLong())),
                                 style = GType.sub, color = c.ink2, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
                         Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            GPill(if (m.isOwner) "Owner" else if (m.isAdmin) "Admin" else "Member", if (m.isOwner) GTone.Owner else if (m.isAdmin) GTone.Admin else GTone.Muted)
-                            if (m.isHost) GPill("Host", GTone.Host)
-                            if (d.callHosts.any { it.did == m.did }) GPill("Call host", GTone.Call)
+                            GPill(if (m.isOwner) stringResource(R.string.groupsb_pill_owner) else if (m.isAdmin) stringResource(R.string.groupsb_pill_admin) else stringResource(R.string.groupsb_pill_member), if (m.isOwner) GTone.Owner else if (m.isAdmin) GTone.Admin else GTone.Muted)
+                            if (m.isHost) GPill(stringResource(R.string.groupsb_host), GTone.Host)
+                            if (d.callHosts.any { it.did == m.did }) GPill(stringResource(R.string.groupsb_call_host), GTone.Call)
                         }
                     }
-                    if (admin && !m.isMe && !m.isOwner) Text("${m.flags} of ${GroupText.FLAGS_TO_REMOVE} flags", Modifier.padding(start = 20.dp, end = 20.dp, bottom = 4.dp),
+                    if (admin && !m.isMe && !m.isOwner) Text(stringResource(R.string.groupsb_flags_of, m.flags.toString(), GroupText.FLAGS_TO_REMOVE.toString()), Modifier.padding(start = 20.dp, end = 20.dp, bottom = 4.dp),
                         style = GType.sub.copy(fontFeatureSettings = "tnum"), color = c.ink2)
                     Column(Modifier.padding(start = 8.dp, end = 8.dp, top = 4.dp)) {
                         if (!m.isMe) when {
-                            contact && !blockedByMe -> MItem(GIcons.Chat, "Message $fn") { onDismiss(); onChat(m.did) }
-                            blockedByMe -> MItem(GIcons.Off, "You blocked $fn", "They stay in the group. Unblock them in Contacts to chat.", off = true)
-                            req?.state == ChatRequestState.PENDING -> MItem(GIcons.Clock, "Request sent", "Waiting for $fn to answer", off = true)
-                            req?.state == ChatRequestState.BLOCKED -> MItem(GIcons.Off, "Blocked", "$fn can’t receive requests from you.", off = true)
-                            MemberAction.Message in acts -> MItem(GIcons.Chat, if (req?.state == ChatRequestState.DECLINED) "Ask $fn again" else "Ask $fn for a private chat",
-                                if (req?.state == ChatRequestState.DECLINED) "$fn declined your last request" else "Sends a chat request through the group’s host") { view = MView.Ask }
+                            contact && !blockedByMe -> MItem(GIcons.Chat, stringResource(R.string.groupsb_message_fn, fn)) { onDismiss(); onChat(m.did) }
+                            blockedByMe -> MItem(GIcons.Off, stringResource(R.string.groupsb_you_blocked, fn), stringResource(R.string.groupsb_blocked_stay), off = true)
+                            req?.state == ChatRequestState.PENDING -> MItem(GIcons.Clock, stringResource(R.string.groupsb_request_sent), stringResource(R.string.groupsb_waiting_answer, fn), off = true)
+                            req?.state == ChatRequestState.BLOCKED -> MItem(GIcons.Off, stringResource(R.string.common_blocked), stringResource(R.string.groupsb_cant_receive, fn), off = true)
+                            MemberAction.Message in acts -> MItem(GIcons.Chat, if (req?.state == ChatRequestState.DECLINED) stringResource(R.string.groupsb_ask_again, fn) else stringResource(R.string.groupsb_ask_chat, fn),
+                                if (req?.state == ChatRequestState.DECLINED) stringResource(R.string.groupsb_declined_last, fn) else stringResource(R.string.groupsb_sends_request)) { view = MView.Ask }
                         }
                         acts.forEach { a ->
                             when (a) {
-                                MemberAction.MakeAdmin -> MItem(GIcons.Shield, "Make admin") { exec({ app.groups.setAdmin(d.id, m.did, true) }, done); close() }
-                                MemberAction.RevokeAdmin -> MItem(GIcons.Shield, "Remove admin") { exec({ app.groups.setAdmin(d.id, m.did, false) }, done); close() }
-                                is MemberAction.Appoint -> MItem(GIcons.Server, if (several) "Make device ${GroupText.shortDev(a.deviceId)} a host" else "Make host",
-                                    "Asks $fn to host. They have to accept.") { exec({ app.groups.appoint(d.id, m.did, a.deviceId) }, done); close() }
-                                is MemberAction.Revoke -> MItem(GIcons.Server, if (several) "Stop device ${GroupText.shortDev(a.deviceId)} hosting" else "Remove as host") {
+                                MemberAction.MakeAdmin -> MItem(GIcons.Shield, stringResource(R.string.groupsb_make_admin)) { exec({ app.groups.setAdmin(d.id, m.did, true) }, done); close() }
+                                MemberAction.RevokeAdmin -> MItem(GIcons.Shield, stringResource(R.string.groupsb_remove_admin)) { exec({ app.groups.setAdmin(d.id, m.did, false) }, done); close() }
+                                is MemberAction.Appoint -> MItem(GIcons.Server, if (several) stringResource(R.string.groupsb_make_device_host, GroupText.shortDev(a.deviceId)) else stringResource(R.string.groupsb_make_host),
+                                    stringResource(R.string.groupsb_asks_host, fn)) { exec({ app.groups.appoint(d.id, m.did, a.deviceId) }, done); close() }
+                                is MemberAction.Revoke -> MItem(GIcons.Server, if (several) stringResource(R.string.groupsb_stop_device_host, GroupText.shortDev(a.deviceId)) else stringResource(R.string.groupsb_remove_as_host)) {
                                     exec({ app.groups.revoke(d.id, m.did, a.deviceId) }, done); close()
                                 }
                                 else -> {}
@@ -1453,46 +1466,46 @@ private fun MemberSheet(app: P2pApp, d: GroupDetail, m: CoreMember, n: String, r
                             val pend = d.callHostRequests.any { it.did == m.did && it.deviceId == dev }
                             val suffix = if (several) " · ${GroupText.shortDev(dev)}" else ""
                             when {
-                                pend -> MItem(GIcons.Phone, "Cancel call host request$suffix", "Waiting for $fn’s device to accept") { exec({ app.groups.revokeCall(d.id, m.did, dev) }, done); close() }
-                                isCh -> MItem(GIcons.Phone, "Remove as call host$suffix") { exec({ app.groups.revokeCall(d.id, m.did, dev) }, done); close() }
-                                else -> MItem(GIcons.Phone, "Make call host$suffix", "Asks $fn to carry group calls. They have to accept.") { exec({ app.groups.appointCall(d.id, m.did, dev) }, done); close() }
+                                pend -> MItem(GIcons.Phone, stringResource(R.string.groupsb_cancel_callhost_request) + suffix, stringResource(R.string.groupsb_waiting_device, fn)) { exec({ app.groups.revokeCall(d.id, m.did, dev) }, done); close() }
+                                isCh -> MItem(GIcons.Phone, stringResource(R.string.groupsb_remove_as_callhost) + suffix) { exec({ app.groups.revokeCall(d.id, m.did, dev) }, done); close() }
+                                else -> MItem(GIcons.Phone, stringResource(R.string.groupsb_make_callhost) + suffix, stringResource(R.string.groupsb_asks_callhost, fn)) { exec({ app.groups.appointCall(d.id, m.did, dev) }, done); close() }
                             }
                         }
                         if (m.isMe && GroupText.active(d.myRole)) {
-                            if (d.amHost) MItem(GIcons.Server, "Stop hosting on this device") { exec({ app.groups.acceptHost(d.id, false) }, done); close() }
-                            else if (d.hostOffers.none { it.isMe }) MItem(GIcons.Server, "Host on this device", "An admin has to appoint it too. A computer that stays on is a better host.") {
+                            if (d.amHost) MItem(GIcons.Server, stringResource(R.string.groupsb_stop_hosting_device)) { exec({ app.groups.acceptHost(d.id, false) }, done); close() }
+                            else if (d.hostOffers.none { it.isMe }) MItem(GIcons.Server, stringResource(R.string.groupsb_host_device), stringResource(R.string.groupsb_host_device_sub)) {
                                 exec({ app.groups.acceptHost(d.id, true) }, done); close()
                             }
-                            if (d.amCallHost) MItem(GIcons.Phone, "Stop hosting calls on this device") { exec({ app.groups.acceptCallHost(d.id, false) }, done); close() }
+                            if (d.amCallHost) MItem(GIcons.Phone, stringResource(R.string.groupsb_stop_calls_device)) { exec({ app.groups.acceptCallHost(d.id, false) }, done); close() }
                         }
-                        if (MemberAction.Flag in acts) MItem(GIcons.Flag, "Flag for removal", "${GroupText.FLAGS_TO_REMOVE} flags remove $fn from the group", danger = true) { view = MView.Flag }
-                        else if (m.isOwner && !m.isMe) MItem(GIcons.Flag, "The owner can’t be flagged", off = true)
+                        if (MemberAction.Flag in acts) MItem(GIcons.Flag, stringResource(R.string.groupsb_flag_removal), pluralStringResource(R.plurals.groupsb_flag_removal_sub, GroupText.FLAGS_TO_REMOVE, GroupText.FLAGS_TO_REMOVE, fn), danger = true) { view = MView.Flag }
+                        else if (m.isOwner && !m.isMe) MItem(GIcons.Flag, stringResource(R.string.groupsb_owner_cant_flag), off = true)
                     }
                     Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 14.dp), horizontalArrangement = Arrangement.End) {
-                        GBtn("Close", close, GBtnKind.Quiet)
+                        GBtn(stringResource(R.string.common_close), close, GBtnKind.Quiet)
                     }
                 }
                 MView.Flag -> {
                     val (next, lead) = GroupText.flagCopy(n, m.flags.toInt())
                     Column(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 16.dp)) {
-                        Text("Flag $fn for removal?", Modifier.padding(bottom = 12.dp).semantics { heading() }, style = GType.title, color = c.ink)
-                        FlagMeter(m.flags.toInt(), GroupText.FLAGS_TO_REMOVE, yours = true, desc = "Flag $next of ${GroupText.FLAGS_TO_REMOVE}")
+                        Text(stringResource(R.string.groupsb_flag_title, fn), Modifier.padding(bottom = 12.dp).semantics { heading() }, style = GType.title, color = c.ink)
+                        FlagMeter(m.flags.toInt(), GroupText.FLAGS_TO_REMOVE, yours = true, desc = stringResource(R.string.groupsb_flag_next_of, next.toString(), GroupText.FLAGS_TO_REMOVE.toString()))
                         GPara(lead, top = 12.dp, color = c.ink, style = GType.body.copy(lineHeight = 21.sp))
-                        GPara("Flags can’t be taken back, and removal is final. The same admin can flag more than once; each flag counts.")
-                        GPara("Flagging is a decision for the group. It is separate from blocking, which only affects you. $fn sees each flag: who made it and when.")
+                        GPara(stringResource(R.string.groupsb_flag_note1))
+                        GPara(stringResource(R.string.groupsb_flag_note2, fn))
                         GActs {
-                            GBtn("Back", { view = MView.Actions }, GBtnKind.Quiet)
-                            GBtn("Flag $fn", { exec({ app.groups.flag(d.id, m.did) }, done); close() }, if (next >= GroupText.FLAGS_TO_REMOVE) GBtnKind.Danger else GBtnKind.Outline)
+                            GBtn(stringResource(R.string.common_back), { view = MView.Actions }, GBtnKind.Quiet)
+                            GBtn(stringResource(R.string.groupsb_flag_button, fn), { exec({ app.groups.flag(d.id, m.did) }, done); close() }, if (next >= GroupText.FLAGS_TO_REMOVE) GBtnKind.Danger else GBtnKind.Outline)
                         }
                     }
                 }
                 MView.Ask -> Column(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 16.dp)) {
-                    Text("Ask $fn for a private chat", Modifier.padding(bottom = 4.dp).semantics { heading() }, style = GType.title, color = c.ink)
-                    GPara("$fn sees your name and the group. The request goes through the group’s host, sealed, so the host can’t read it.")
-                    GPara("If $fn accepts, you can message each other directly. Calls stay off until one of you allows them. A request expires after 7 days.")
+                    Text(stringResource(R.string.groupsb_ask_chat, fn), Modifier.padding(bottom = 4.dp).semantics { heading() }, style = GType.title, color = c.ink)
+                    GPara(stringResource(R.string.groupsb_ask_note1, fn))
+                    GPara(stringResource(R.string.groupsb_ask_note2, fn))
                     GActs {
-                        GBtn("Back", { view = MView.Actions }, GBtnKind.Quiet)
-                        GBtn("Send request", { exec({ app.groups.request(d.id, m.did) }, done); close() }, GBtnKind.Primary)
+                        GBtn(stringResource(R.string.common_back), { view = MView.Actions }, GBtnKind.Quiet)
+                        GBtn(stringResource(R.string.groupsb_send_request), { exec({ app.groups.request(d.id, m.did) }, done); close() }, GBtnKind.Primary)
                     }
                 }
             }
@@ -1525,7 +1538,7 @@ fun GroupRemovalLive(app: P2pApp, id: String, onBack: () -> Unit) {
     val open by app.groups.open.collectAsState()
     LaunchedEffect(id) { withContext(Dispatchers.IO) { if (app.groups.open.value?.id != id) app.groups.open(id) } }
     val r = open?.takeIf { it.id == id }?.detail?.removal
-    InfoPage("Removed", onBack) { item { RemovalBody(app, r, onBack) } }
+    InfoPage(stringResource(R.string.groupsb_removed_title), onBack) { item { RemovalBody(app, r, onBack) } }
 }
 
 // ------------------------------------------------------------------ new group
@@ -1538,15 +1551,15 @@ fun NewGroupLive(app: P2pApp, onBack: () -> Unit, onCreated: (String) -> Unit) {
     var err by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
     Page {
-        TopBar("New group", onBack)
+        TopBar(stringResource(R.string.groupsb_new_group), onBack)
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            TinField(name, { name = it.take(100) }, "Group name", state = if (err != null) FieldState.Error else FieldState.Normal, hint = err)
-            InfoCard("This phone hosts the group at first: it keeps the group and passes messages on. A computer that stays on is a better host — appoint one from Group info once it has joined.",
+            TinField(name, { name = it.take(100) }, stringResource(R.string.groupsb_group_name), state = if (err != null) FieldState.Error else FieldState.Normal, hint = err)
+            InfoCard(stringResource(R.string.groupsb_new_group_host_note),
                 icon = PgIcons.Server, kind = BannerKind.Warn)
-            Hint("You’ll own the group. Invite people from Group info.")
+            Hint(stringResource(R.string.groupsb_new_group_own))
         }
         Box(Modifier.padding(20.dp)) {
-            TinButton(if (busy) "Making…" else "Create group", {
+            TinButton(if (busy) stringResource(R.string.groupsb_making) else stringResource(R.string.groupsb_create_group), {
                 busy = true; err = null
                 scope.launch {
                     val r = withContext(Dispatchers.IO) { app.groups.create(name) }
@@ -1572,18 +1585,19 @@ fun AddMembersLive(app: P2pApp, id: String, onBack: () -> Unit, say: (String) ->
     val contacts by app.contacts.collectAsState()
     val blocks by app.blocks.collectAsState()
     LaunchedEffect(id) { withContext(Dispatchers.IO) { if (app.groups.open.value?.id != id) app.groups.open(id) } }
-    val d = open?.takeIf { it.id == id }?.detail ?: run { Page { TopBar("Add members", onBack) }; return }
+    val d = open?.takeIf { it.id == id }?.detail ?: run { Page { TopBar(stringResource(R.string.groupsb_add_members), onBack) }; return }
     val picked = remember { mutableStateListOf<String>() }
     var busy by remember { mutableStateOf(false) }
     val exec = rememberRunner()
+    val cantInvite = stringResource(R.string.groupsb_cant_invite)
     val rows = remember(contacts, d, sent, blocks) {
         GroupText.pickRows(contacts.map { InviteCandidate(it.did, it.display()) }, d, sent, { blocks.blockedByMe(it) }, { blocks.blockedMeAt(it) != null })
     }
     Page {
-        TopBar("Add to ${d.name}", onBack)
+        TopBar(stringResource(R.string.groupsb_add_to, d.name), onBack)
         LazyColumn(Modifier.weight(1f), contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            item { SectionLabel("CONTACTS · ${picked.size} SELECTED", Modifier.padding(start = 0.dp)) }
-            if (rows.isEmpty()) item { Hint("No contacts to add. People you block, or who block you, aren’t listed.") }
+            item { SectionLabel(stringResource(R.string.groupsb_contacts_selected, picked.size.toString()), Modifier.padding(start = 0.dp)) }
+            if (rows.isEmpty()) item { Hint(stringResource(R.string.groupsb_no_contacts)) }
             items(rows, key = { it.did }) { r ->
                 val on = r.did in picked
                 val can = r.why == null
@@ -1601,13 +1615,13 @@ fun AddMembersLive(app: P2pApp, id: String, onBack: () -> Unit, say: (String) ->
                     if (can) Checkbox(on, null, colors = CheckboxDefaults.colors(checkedColor = c.pr, uncheckedColor = c.ln2, checkmarkColor = c.onPr))
                 }
             }
-            item { Hint("Each person gets the invitation in your 1:1 chat, and joins when they accept. It is valid for 7 days.", Modifier.padding(top = 8.dp)) }
+            item { Hint(stringResource(R.string.groupsb_add_note), Modifier.padding(top = 8.dp)) }
         }
         Box(Modifier.padding(20.dp)) {
-            TinButton(if (busy) "Sending…" else if (picked.size > 1) "Invite ${picked.size} people" else "Invite", {
+            TinButton(if (busy) stringResource(R.string.groupsb_sending) else if (picked.size > 1) pluralStringResource(R.plurals.groupsb_invite_people, picked.size, picked.size) else stringResource(R.string.groupsb_invite), {
                 busy = true
                 val dids = picked.toList()
-                exec({ app.groups.inviteContacts(id, dids) }) { r -> busy = false; r.onSuccess { say(it); onBack() }.onFailure { say(it.message ?: "Couldn’t invite") } }
+                exec({ app.groups.inviteContacts(id, dids) }) { r -> busy = false; r.onSuccess { say(it); onBack() }.onFailure { say(it.message ?: cantInvite) } }
             }, enabled = picked.isNotEmpty() && !busy)
         }
     }
@@ -1637,24 +1651,24 @@ fun JoinGroupLive(app: P2pApp, initial: String? = null, onBack: () -> Unit, onJo
     }
     if (scanning) {
         Page {
-            TopBar("Scan the invite", { scanning = false })
-            QrCameraBox(Modifier.weight(1f).fillMaxWidth(), "Point at the group invite", false, {}) { t -> token = t.trim(); scanning = false }
+            TopBar(stringResource(R.string.groupsb_scan_invite), { scanning = false })
+            QrCameraBox(Modifier.weight(1f).fillMaxWidth(), stringResource(R.string.groupsb_point_invite), false, {}) { t -> token = t.trim(); scanning = false }
         }
         return
     }
     val bad = token.isNotBlank() && !checking && peek == null
     Page {
-        TopBar("Join a group", onBack)
+        TopBar(stringResource(R.string.groupsb_join_group), onBack)
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            TinField(token, { token = it.trim(); err = null }, "Invite link or code", mono = true, singleLine = false, minHeight = 72.dp, placeholder = "tinline://g/…",
+            TinField(token, { token = it.trim(); err = null }, stringResource(R.string.groupsb_invite_field), mono = true, singleLine = false, minHeight = 72.dp, placeholder = "tinline://g/…",
                 state = if (bad) FieldState.Error else FieldState.Normal,
-                hint = when { checking -> "Checking with the group’s host…"; bad -> "That link didn’t work: it isn’t a group invite, it expired, or its host is offline."; else -> null })
+                hint = when { checking -> stringResource(R.string.groupsb_checking_host); bad -> stringResource(R.string.groupsb_bad_link); else -> null })
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                TinButton("Paste", {
+                TinButton(stringResource(R.string.groupsb_paste), {
                     val cm = ctx.getSystemService(android.content.ClipboardManager::class.java)
                     cm?.primaryClip?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.coerceToText(ctx)?.toString()?.let { token = it.trim() }
                 }, Modifier.weight(1f), style = BtnStyle.Outlined, icon = PgIcons.Paste)
-                TinButton("Scan", { scanning = true }, Modifier.weight(1f), style = BtnStyle.Outlined, icon = PgIcons.Scan)
+                TinButton(stringResource(R.string.groupsb_scan), { scanning = true }, Modifier.weight(1f), style = BtnStyle.Outlined, icon = PgIcons.Scan)
             }
             peek?.let { p ->
                 CardBox(Modifier.fillMaxWidth(), radius = 20.dp) {
@@ -1663,17 +1677,18 @@ fun JoinGroupLive(app: P2pApp, initial: String? = null, onBack: () -> Unit, onJo
                             GroupAvatar(tintOf(p.groupId), 44.dp, radius = 14.dp, gid = p.groupId)
                             Text(p.name, style = TinType.titleM, color = c.ink)
                         }
-                        Text(p.issuerDid?.let { "Invited by ${nameOf(app, it, "someone who isn’t in your contacts")}" } ?: "A link for your own account", style = TinType.bodyM, color = c.ink2)
-                        Text("Owner: ${nameOf(app, p.ownerDid, "someone who isn’t in your contacts")}", style = TinType.bodyM, color = c.ink2)
-                        p.expires?.let { Text("Valid until ${whenFull(it.toLong())}", style = TinType.bodyM, color = c.ink2) }
+                        val notInContacts = stringResource(R.string.groupsb_not_in_contacts)
+                        Text(p.issuerDid?.let { stringResource(R.string.groupsb_join_invited_by, nameOf(app, it, notInContacts)) } ?: stringResource(R.string.groupsb_own_account_link), style = TinType.bodyM, color = c.ink2)
+                        Text(stringResource(R.string.groupsb_join_owner, nameOf(app, p.ownerDid, notInContacts)), style = TinType.bodyM, color = c.ink2)
+                        p.expires?.let { Text(stringResource(R.string.groupsb_valid_until, whenFull(it.toLong())), style = TinType.bodyM, color = c.ink2) }
                     }
                 }
-                Hint("Joining connects this phone to the group’s hosts. Members see your name; only hosts learn how to reach this phone. It can take up to a minute.")
+                Hint(stringResource(R.string.groupsb_join_note))
             }
             err?.let { Text(it, style = TinType.bodyM, color = c.er) }
         }
         Box(Modifier.padding(20.dp)) {
-            TinButton(if (busy) "Joining…" else "Join", {
+            TinButton(if (busy) stringResource(R.string.groupsb_joining) else stringResource(R.string.common_join), {
                 busy = true; err = null
                 scope.launch {
                     val r = withContext(Dispatchers.IO) { app.groups.join(token) }
@@ -1691,36 +1706,37 @@ fun JoinGroupLive(app: P2pApp, initial: String? = null, onBack: () -> Unit, onJo
 fun GroupTokenLive(app: P2pApp, id: String, onBack: () -> Unit) {
     val c = Tin.c
     val ctx = LocalContext.current
-    val name = app.groups.open.collectAsState().value?.takeIf { it.id == id }?.detail?.name ?: "the group"
+    val name = app.groups.open.collectAsState().value?.takeIf { it.id == id }?.detail?.name ?: stringResource(R.string.groupsb_the_group)
     var token by remember { mutableStateOf<String?>(null) }
     var err by remember { mutableStateOf<String?>(null) }
     var full by remember { mutableStateOf(false) }
+    val showFull = stringResource(R.string.groupsb_show_full_screen)
     LaunchedEffect(id) {
         val r = withContext(Dispatchers.IO) { app.groups.invite(id) }
         r.onSuccess { token = it }.onFailure { err = it.message }
     }
     Page {
-        TopBar("Invite link", onBack)
+        TopBar(stringResource(R.string.groupsb_invite_link_title), onBack)
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 20.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            Hint("Anyone with this link or QR can join $name for 7 days. Share it over an app you trust; you see who joined and can flag them out. To invite your contacts directly, use Add members.")
+            Hint(stringResource(R.string.groupsb_link_note, name))
             val t = token
             // Large, high contrast, the full width: easy to scan from another phone. Tap for full screen.
             Box(Modifier.fillMaxWidth().aspectRatio(1f).clip(SmoothCornerShape(16.dp)).background(Color.White)
-                .let { m -> if (t != null) m.clickable(role = Role.Button, onClickLabel = "Show full screen") { full = true } else m },
+                .let { m -> if (t != null) m.clickable(role = Role.Button, onClickLabel = showFull) { full = true } else m },
                 contentAlignment = Alignment.Center) {
                 when {
                     t != null -> {
                         val bmp = remember(t) { qrBitmap(t, 1024, fg = 0xFF000000.toInt()) }
-                        Image(bmp.asImageBitmap(), "QR code of the group invite link", Modifier.fillMaxSize().padding(12.dp))
+                        Image(bmp.asImageBitmap(), stringResource(R.string.groupsb_qr_desc), Modifier.fillMaxSize().padding(12.dp))
                     }
                     err != null -> Text(err!!, Modifier.padding(16.dp), style = TinType.bodyM, color = c.er, textAlign = TextAlign.Center)
-                    else -> Text("Making it…", style = TinType.bodyM, color = Color(0xFF4D5853))
+                    else -> Text(stringResource(R.string.groupsb_making_it), style = TinType.bodyM, color = Color(0xFF4D5853))
                 }
             }
             t?.let { Text(it, style = TinType.bodyM.copy(fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace), color = c.ink2, textAlign = TextAlign.Center) }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                TinButton("Share", {
-                    token?.let { tk -> runCatching { ctx.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, "Join $name on Tinline: $tk"), "Share group invite")) } }
+                TinButton(stringResource(R.string.common_share), {
+                    token?.let { tk -> runCatching { ctx.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, ctx.getString(R.string.groupsb_share_text, name, tk)), ctx.getString(R.string.groupsb_share_title))) } }
                 }, Modifier.weight(1f), style = BtnStyle.Tonal, icon = PgIcons.Share, enabled = token != null)
                 CopyButton(token, Modifier.weight(1f))
             }
@@ -1729,9 +1745,9 @@ fun GroupTokenLive(app: P2pApp, id: String, onBack: () -> Unit) {
     val t = token
     if (full && t != null) {
         Dialog({ full = false }, DialogProperties(usePlatformDefaultWidth = false)) {
-            Box(Modifier.fillMaxSize().background(Color.White).clickable(role = Role.Button, onClickLabel = "Close") { full = false }.padding(16.dp), contentAlignment = Alignment.Center) {
+            Box(Modifier.fillMaxSize().background(Color.White).clickable(role = Role.Button, onClickLabel = stringResource(R.string.common_close)) { full = false }.padding(16.dp), contentAlignment = Alignment.Center) {
                 val bmp = remember(t) { qrBitmap(t, 1024, fg = 0xFF000000.toInt()) }
-                Image(bmp.asImageBitmap(), "QR code of the group invite link, full screen", Modifier.fillMaxWidth().aspectRatio(1f))
+                Image(bmp.asImageBitmap(), stringResource(R.string.groupsb_qr_desc_full), Modifier.fillMaxWidth().aspectRatio(1f))
             }
         }
     }
