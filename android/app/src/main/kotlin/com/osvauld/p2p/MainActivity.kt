@@ -1,5 +1,6 @@
 package com.osvauld.p2p
 
+import androidx.compose.ui.res.stringResource
 import android.content.Context
 import android.content.ContextWrapper
 import android.os.Bundle
@@ -224,7 +225,7 @@ private fun Root(app: P2pApp) {
         }
         scope.launch {
             val r = withContext(Dispatchers.IO) { app.calls.place(did) }
-            r.onFailure { callError = it.message ?: "Couldn\u2019t start the call" }
+            r.onFailure { callError = it.message ?: ctx.getString(R.string.main_call_start_failed) }
         }
     }
     val permLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
@@ -320,11 +321,11 @@ private fun Root(app: P2pApp) {
                 val u = inCall; val w = waitingCall
                 RingHead.ring.value = when {
                     u != null && w != null && u.state is CallState.Active -> RingHead.Ring(
-                        w.peerDid, w.peerName.ifBlank { "Unknown" }, "Calling during your call", waiting = true,
+                        w.peerDid, w.peerName.ifBlank { ctx.getString(R.string.common_unknown) }, ctx.getString(R.string.shell_calling_during_call), waiting = true,
                         onOpen = { ctx.startActivity(Intent(ctx, CallActivity::class.java)) },
                         onDecline = { app.calls.declineWaiting() }, onAnswer = { app.calls.endAndAnswer() })
                     u != null && u.info.incoming && u.state is CallState.Ringing -> RingHead.Ring(
-                        u.info.peerDid, u.info.peerName.ifBlank { "Unknown" }, if (u.info.video) "Incoming video call" else "Incoming call",
+                        u.info.peerDid, u.info.peerName.ifBlank { ctx.getString(R.string.common_unknown) }, if (u.info.video) ctx.getString(R.string.shell_incoming_video_call) else ctx.getString(R.string.shell_incoming_call),
                         onOpen = { ctx.startActivity(Intent(ctx, IncomingCallActivity::class.java)) },
                         onDecline = { app.calls.decline() },
                         onAnswer = { ctx.startActivity(Intent(ctx, CallActivity::class.java).putExtra(CallActivity.EXTRA_ANSWER, true)) })
@@ -373,10 +374,10 @@ private fun Root(app: P2pApp) {
                 is Route.AddMembers -> AddMembersLive(app, r.id, onBack = ::pop, say = ::say)
                 is Route.GroupRemoval -> GroupRemovalLive(app, r.id, onBack = ::pop)
                 Route.NewGroup -> NewGroupLive(app, onBack = ::pop, onCreated = { pop(); stack.add(Route.Group(it)) })
-                is Route.JoinGroup -> JoinGroupLive(app, r.token, onBack = ::pop, onJoined = { pop(); stack.add(Route.Group(it)); say("You joined the group.") })
+                is Route.JoinGroup -> JoinGroupLive(app, r.token, onBack = ::pop, onJoined = { pop(); stack.add(Route.Group(it)); say(ctx.getString(R.string.main_joined_group)) })
                 Route.NewChat -> {
                     val chats by app.chat.chats.collectAsState()
-                    val last = remember(chats) { chats.filter { it.lastActivity > 0UL }.associate { it.peerDid to "Last message ${listTime(it.lastActivity.toLong(), System.currentTimeMillis())}" } }
+                    val last = remember(chats) { chats.filter { it.lastActivity > 0UL }.associate { it.peerDid to ctx.getString(R.string.main_last_message, listTime(it.lastActivity.toLong(), System.currentTimeMillis())) } }
                     NewChatScreen(contacts, last, onBack = ::pop, onPick = { pop(); stack.add(Route.Chat(it.did)) }, onAdd = { pop(); stack.add(Route.Add(true)) })
                 }
                 is Route.Chat -> {
@@ -384,7 +385,7 @@ private fun Root(app: P2pApp) {
                     val status by app.status.collectAsState()
                     val c = contacts.firstOrNull { it.did == r.did }
                     val self = r.did == app.currentDid()
-                    val name = if (self) "You" else c?.display() ?: chats.firstOrNull { it.peerDid == r.did }?.peerName?.ifBlank { null } ?: "Unknown"
+                    val name = if (self) stringResource(R.string.common_you) else c?.display() ?: chats.firstOrNull { it.peerDid == r.did }?.peerName?.ifBlank { null } ?: stringResource(R.string.common_unknown)
                     val blocks by app.blocks.collectAsState()
                     ConversationScreen(app.chat, r.did, name, status?.online == true, onBack = ::pop, onCall = { call(r.did) }, addedAtSecs = c?.addedAt?.toLong(), isSelf = self,
                         block = if (self) null else ConvBlock(blocks.of(r.did), blocks.composer(r.did, c != null), blocks.callGate(r.did, c != null)),
@@ -409,7 +410,7 @@ private fun Root(app: P2pApp) {
                         history = remember(history, contacts) { val now = System.currentTimeMillis() / 1000; val by = contacts.associateBy { it.did }; history.filter { it.peerDid == c.did }.map { it.toRecent(by, now) } },
                         onRename = { a -> scope.launch(Dispatchers.IO) { runCatching { app.node.renameContact(c.did, a) }; app.refresh() } }, onBlock = {
                         // U19/U24: the contact and the chat stay; the page shows Blocked and Unblock.
-                        app.block(c.did); say("${firstName(c.display())} is told you blocked them")
+                        app.block(c.did); say(ctx.getString(R.string.main_told_blocked, firstName(c.display())))
                     })
                 }
                 Route.Settings -> SettingsRoute(
