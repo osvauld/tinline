@@ -5238,7 +5238,7 @@ where = [
   "android settings_video_in_calls_on: Small line under the Video in calls switch when it is on.",
   "ios settings_video_in_calls_on: Subtitle when video in calls is allowed.",
 ]
-text = ""
+text = "Du kannst in einem Anruf deine Kamera einschalten"
 
 [t_5a7ab72466]
 en = "Calls are voice only"
@@ -5246,7 +5246,7 @@ where = [
   "android settings_video_in_calls_off: Small line under the Video in calls switch when it is off.",
   "ios settings_video_in_calls_off: Subtitle when video in calls is off.",
 ]
-text = ""
+text = "Anrufe sind nur Sprache"
 
 [t_a1579450e2]
 en = "Link to a device"
@@ -5255,7 +5255,7 @@ where = [
   "ios settings_add_link: Choice in the add-account dialog.",
   "ios link_scan_step1_action: Bold button name inside step 1. Must match the button on the new device.",
 ]
-text = ""
+text = "Mit einem Gerät verknüpfen"
 
 [t_a946f790b5]
 en = "Restore from recovery phrase"
@@ -5263,7 +5263,7 @@ where = [
   "android settings_add_restore: Choice in the Add another account sheet: restore an account from its 24 recovery words.",
   "ios settings_add_restore: Choice in the add-account dialog.",
 ]
-text = ""
+text = "Mit Wiederherstellungswörtern wiederherstellen"
 
 [t_17324a9a91]
 en = "Alert me about"
@@ -5272,7 +5272,7 @@ where = [
   "ios settings_notif_alert_me: Section heading above the notification category switches.",
   "desktop profile_alert_me_about: Desktop, profile and settings (in profile_view.rs, notifications_page).",
 ]
-text = ""
+text = "Benachrichtige mich bei"
 
 [t_20060c7c88]
 en = "Messages"
@@ -5285,7 +5285,7 @@ where = [
   "ios shell_search_messages: Search results header for matching messages.",
   "desktop common_messages: Shared label, used in several places (profile, shell).",
 ]
-text = ""
+text = "Nachrichten"
 
 [t_a00f13dded]
 en = "From people, not groups"
@@ -5294,7 +5294,7 @@ where = [
   "ios settings_notif_messages_sub: Subtitle of the Messages notification row.",
   "desktop profile_from_people_not_groups: Desktop, profile and settings (in profile_view.rs, notifications_page).",
 ]
-text = ""
+text = "Von Personen, nicht aus Gruppen"
 
 [t_8a17cd599d]
 en = "Calls"
@@ -5305,7 +5305,7 @@ where = [
   "ios shell_tab_calls: Bottom tab title and screen reader label.",
   "desktop common_calls: Shared label, used in several places (profile, shell, view).",
 ]
-text = ""
+text = "Anrufe"
 
 [t_ed2f334fce]
 en = "Ringing when someone calls"
@@ -5314,7 +5314,7 @@ where = [
   "ios settings_notif_calls_sub: Subtitle of the Calls notification row.",
   "desktop profile_ringing_when_someone_calls: Desktop, profile and settings (in profile_view.rs, notifications_page).",
 ]
-text = ""
+text = "Klingeln, wenn jemand anruft"
 
 [t_91d94d2c90]
 en = "Groups"
@@ -5325,7 +5325,7 @@ where = [
   "ios shell_tab_groups: Bottom tab title and screen reader label.",
   "desktop common_groups: Shared label, used in several places (profile, shell, view).",
 ]
-text = ""
+text = "Gruppen"
 
 [t_39da3cf549]
 en = "Posts, invites and requests"
@@ -5334,7 +5334,7 @@ where = [
   "ios settings_notif_groups_sub: Subtitle of the Groups notification row.",
   "desktop profile_posts_invites_and_requests: Desktop, profile and settings (in profile_view.rs, notifications_page).",
 ]
-text = ""
+text = "Beiträge, Einladungen und Anfragen"
 
 [t_e87ceb9af8]
 en = "Message notifications"
@@ -5342,7 +5342,7 @@ where = [
   "android notif_messages_switch: Accessibility label of the Messages notification switch.",
   "ios settings_notif_messages_label: Accessibility label of the message notifications switch.",
 ]
-text = ""
+text = "Benachrichtigungen für Nachrichten"
 
 [t_420c996232]
 en = "Call notifications"
@@ -5350,7 +5350,7 @@ where = [
   "android notif_calls_switch: Accessibility label of the Calls notification switch.",
   "ios settings_notif_calls_label: Accessibility label of the call notifications switch.",
 ]
-text = ""
+text = "Benachrichtigungen für Anrufe"
 
 [t_5d2dce19f0]
 en = "Group notifications"
@@ -5358,7 +5358,7 @@ where = [
   "android notif_groups_switch: Accessibility label of the Groups notification switch.",
   "ios settings_notif_groups_label: Accessibility label of the group notifications switch.",
 ]
-text = ""
+text = "Benachrichtigungen für Gruppen"
 
 [t_225bca0960]
 en = "A muted chat never alerts you, whatever is switched on here. Missed calls from one person fold into one notification."
@@ -5367,7 +5367,7 @@ where = [
   "ios settings_notif_note: Note under the notification switches.",
   "desktop profile_a_muted_chat_never: Desktop, profile and settings (in profile_view.rs, notifications_page).",
 ]
-text = ""
+text = "Ein stummgeschalteter Chat benachrichtigt dich nie, egal was hier eingeschaltet ist. Verpasste Anrufe von einer Person werden zu einer Benachrichtigung zusammengefasst."
 
 [t_f9314a645b]
 en = "Allowed"
@@ -5376,7 +5376,7 @@ where = [
   "ios settings_perm_allowed: Permission row state: allowed.",
   "desktop profile_allowed: Desktop, profile and settings (in profile_view.rs, notifications_page).",
 ]
-text = ""
+text = "Erlaubt"
 
 [t_86b04a353c]
 en = "Off in system settings"
@@ -5384,7 +5384,7 @@ where = [
   "android notif_perm_off: Status of a system permission that is switched off in the phone's settings.",
   "ios settings_perm_off: Permission row state: switched off in the system settings.",
 ]
-text = ""
+text = "In den Systemeinstellungen aus"
 
 [t_d867863228]
 en = "Asked when you call"
@@ -5392,28 +5392,28 @@ where = [
   "android notif_perm_mic_asked: Status of the microphone permission when it has not been granted yet: the phone asks when a call needs it.",
   "ios settings_perm_mic_ask: Microphone permission row state: not asked yet.",
 ]
-text = ""
+text = "Wird beim Anrufen gefragt"
 
 [t_74f5e97a8c]
 en = "Battery use"
 where = [
   "android notif_perm_battery: Permission row on the Notifications page for the Android battery setting.",
 ]
-text = ""
+text = "Akkunutzung"
 
 [t_9ab6b9677e]
 en = "Unrestricted"
 where = [
   "android notif_perm_unrestricted: Status of the battery setting when Tinline is allowed to run in the background. Matches the Android setting name.",
 ]
-text = ""
+text = "Uneingeschränkt"
 
 [t_986948ce6e]
 en = "Restricted"
 where = [
   "android notif_perm_restricted: Status of the battery setting when Android may pause Tinline. Matches the Android setting name.",
 ]
-text = ""
+text = "Eingeschränkt"
 
 [t_7f59b79d80]
 en = "Fix"
@@ -5422,7 +5422,7 @@ where = [
   "android home_banner_fix: Banner button that opens the battery setting.",
   "ios settings_perm_fix_btn: Small button that opens system settings for a permission.",
 ]
-text = ""
+text = "Beheben"
 
 [t_75471596a9]
 en = "These are set by your system, not by Tinline. Tinline asks only when it needs one."
@@ -5431,7 +5431,7 @@ where = [
   "ios settings_perms_note: Note under the permission rows.",
   "desktop profile_these_are_set_by: Desktop, profile and settings (in profile_view.rs, notifications_page).",
 ]
-text = ""
+text = "Diese legt dein System fest, nicht Tinline. Tinline fragt nur, wenn es eine braucht."
 
 [t_ba3ab5916d]
 en = "Quiet"
@@ -5440,7 +5440,7 @@ where = [
   "ios settings_quiet: Section heading, row title and switch label for the quiet mode.",
   "desktop profile_quiet: Desktop, profile and settings (in profile_view.rs, sounds_page).",
 ]
-text = ""
+text = "Ruhe"
 
 [t_73d5e714e0]
 en = "No sounds from Tinline: ringing, call tones, joins"
@@ -5449,7 +5449,7 @@ where = [
   "ios settings_quiet_sub: Subtitle of the Quiet row.",
   "desktop profile_no_sounds_from_tinline: Desktop, profile and settings (in profile_view.rs, sounds_page).",
 ]
-text = ""
+text = "Keine Töne von Tinline: Klingeln, Anruftöne, Beitritte"
 
 [t_909bc609cf]
 en = "Classic chime"
@@ -5457,7 +5457,7 @@ where = [
   "android settings_sound_classic: Name of a call sound set.",
   "ios settings_sound_classic: Ringtone choice name.",
 ]
-text = ""
+text = "Klassischer Gong"
 
 [t_973e2907f7]
 en = "A bright four-note chime."
@@ -5465,7 +5465,7 @@ where = [
   "android settings_sound_classic_sub: Description of the Classic chime call sound.",
   "ios settings_sound_classic_sub: Description of the Classic chime ringtone.",
 ]
-text = ""
+text = "Ein heller Gong aus vier Tönen."
 
 [t_9b9e6e2e8f]
 en = "Slack → taut"
@@ -5473,7 +5473,7 @@ where = [
   "android settings_sound_slack: Name of a call sound set (two notes that beat, then one that pulls tight). The arrow means from loose to tight.",
   "ios settings_sound_slack: Ringtone choice name.",
 ]
-text = ""
+text = "Locker → straff"
 
 [t_d00e0714a4]
 en = "Two close notes beat like a loose string, then one pulls tight."
@@ -5481,7 +5481,7 @@ where = [
   "android settings_sound_slack_sub: Description of the Slack to taut call sound.",
   "ios settings_sound_slack_sub: Description of the Slack → taut ringtone.",
 ]
-text = ""
+text = "Zwei nahe Töne schweben wie eine lockere Saite, dann zieht einer straff."
 
 [t_1a59cd4dd4]
 en = "Triad knock"
@@ -5489,7 +5489,7 @@ where = [
   "android settings_sound_triad: Name of a call sound set.",
   "ios settings_sound_triad: Ringtone choice name.",
 ]
-text = ""
+text = "Dreiklang-Klopfen"
 
 [t_83563d2f55]
 en = "Three rising notes, like a knock."
@@ -5497,7 +5497,7 @@ where = [
   "android settings_sound_triad_sub: Description of the Triad knock call sound.",
   "ios settings_sound_triad_sub: Description of the Triad knock ringtone.",
 ]
-text = ""
+text = "Drei steigende Töne, wie ein Klopfen."
 
 [t_f82d18f9cb]
 en = "Call sounds"
@@ -5506,7 +5506,7 @@ where = [
   "ios settings_call_sounds: Section heading for ringtone choices.",
   "desktop profile_call_sounds: Desktop, profile and settings (in profile_view.rs, sounds_page).",
 ]
-text = ""
+text = "Anruftöne"
 
 [t_23d07f2da3]
 en = "Ringtone"
@@ -5515,7 +5515,7 @@ where = [
   "ios settings_cue_ring: Chip that previews the ringtone.",
   "desktop profile_ringtone: Desktop, profile and settings (in profile_view.rs, sounds_page).",
 ]
-text = ""
+text = "Klingelton"
 
 [t_2f84cdc07a]
 en = "Connected"
@@ -5526,7 +5526,7 @@ where = [
   "ios people_line_connected: Accessibility description of the line between the user and a contact: connected.",
   "desktop profile_connected: Desktop, profile and settings (in profile_view.rs, sounds_page).",
 ]
-text = ""
+text = "Verbunden"
 
 [t_2b6544f393]
 en = "Call ended"
@@ -5539,7 +5539,7 @@ where = [
   "ios call_ended_title: Title of the screen shown after a call ends, and the default end reason.",
   "desktop common_call_ended: Shared label, used in several places (call_screen, gcall, profile).",
 ]
-text = ""
+text = "Anruf beendet"
 
 [t_ead8ff0e51]
 en = "Quiet is on, so previews are silent."
@@ -5548,7 +5548,7 @@ where = [
   "ios settings_sounds_note_quiet: Note under the sound previews when quiet mode is on.",
   "desktop profile_quiet_is_on_so: Desktop, profile and settings (in profile_view.rs, sounds_page).",
 ]
-text = ""
+text = "Ruhe ist an, also sind die Vorschauen stumm."
 
 [t_4bd4717d11]
 en = "Tap a sound to hear it. The choice applies to the next call."
@@ -5557,7 +5557,7 @@ where = [
   "ios settings_sounds_note: Note under the sound previews.",
   "desktop profile_tap_a_sound_to: Desktop, profile and settings (in profile_view.rs, sounds_page).",
 ]
-text = ""
+text = "Tippe auf einen Ton, um ihn zu hören. Die Wahl gilt ab dem nächsten Anruf."
 
 [t_1758604677]
 en = "Video quality"
@@ -5566,7 +5566,7 @@ where = [
   "ios settings_video_quality: Section heading on the Video page.",
   "desktop profile_video_quality: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "Videoqualität"
 
 [t_5b51c78fea]
 en = "Sharper video"
@@ -5575,7 +5575,7 @@ where = [
   "ios settings_video_sharper: Row and switch label for starting video calls in HD.",
   "desktop profile_sharper_video: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "Schärferes Video"
 
 [t_24032afc4c]
 en = "Always starts in HD. Uses more data and battery."
@@ -5584,7 +5584,7 @@ where = [
   "ios settings_video_hd_on: Subtitle of Sharper video when on.",
   "desktop profile_always_starts_in_hd: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "Startet immer in HD. Braucht mehr Daten und Akku."
 
 [t_98d61cac31]
 en = "Goes HD by itself when the connection allows."
@@ -5593,7 +5593,7 @@ where = [
   "ios settings_video_hd_auto: Subtitle of Sharper video when off.",
   "desktop profile_goes_hd_by_itself: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "Wechselt von selbst auf HD, wenn die Verbindung es zulässt."
 
 [t_e5146ff576]
 en = "Every video call starts this way. During a call, tap HD to change it for that call."
@@ -5602,35 +5602,35 @@ where = [
   "ios settings_video_note: Note under the video quality switch.",
   "desktop profile_every_video_call_starts: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "Jeder Videoanruf startet so. Tippe während eines Anrufs auf HD, um es für diesen Anruf zu ändern."
 
 [t_7c81be4f77]
 en = "{value} GB"
 where = [
   "android settings_size_gb: A storage size in gigabytes. {value} is a number with one decimal.",
 ]
-text = ""
+text = "{value} GB"
 
 [t_5a7ea8ccc1]
 en = "{value} MB"
 where = [
   "android settings_size_mb: A storage size in megabytes. {value} is a whole number.",
 ]
-text = ""
+text = "{value} MB"
 
 [t_b9f95541a6]
 en = "{value} KB"
 where = [
   "android settings_size_kb: A storage size in kilobytes. {value} is a whole number.",
 ]
-text = ""
+text = "{value} KB"
 
 [t_98c78e611c]
 en = "{value} B"
 where = [
   "android settings_size_b: A storage size in bytes. {value} is a whole number.",
 ]
-text = ""
+text = "{value} B"
 
 [t_8e7c1c152b]
 en = "Pictures"
@@ -5639,7 +5639,7 @@ where = [
   "ios settings_storage_pictures: Storage breakdown label.",
   "desktop profile_pictures: Desktop, profile and settings (in profile_ui.rs, profile_update).",
 ]
-text = ""
+text = "Bilder"
 
 [t_00bfd7b1da]
 en = "Files"
@@ -5648,7 +5648,7 @@ where = [
   "ios settings_storage_files: Storage breakdown label.",
   "desktop profile_files: Desktop, profile and settings (in profile_view.rs, storage_page).",
 ]
-text = ""
+text = "Dateien"
 
 [t_a51b20dfb2]
 en = "Cache"
@@ -5657,7 +5657,7 @@ where = [
   "ios settings_storage_cache: Storage breakdown label.",
   "desktop profile_cache: Desktop, profile and settings (in profile_view.rs, storage_page).",
 ]
-text = ""
+text = "Cache"
 
 [t_c2767071de]
 en = "Download pictures"
@@ -5666,7 +5666,7 @@ where = [
   "ios settings_storage_download: Section heading for picture download choices.",
   "desktop profile_download_pictures: Desktop, profile and settings (in profile_view.rs, storage_page).",
 ]
-text = ""
+text = "Bilder herunterladen"
 
 [t_22409bf022]
 en = "Always"
@@ -5675,7 +5675,7 @@ where = [
   "ios settings_dl_always: Picture download choice.",
   "desktop profile_always: Desktop, profile and settings (in profile_view.rs, storage_page).",
 ]
-text = ""
+text = "Immer"
 
 [t_1a452cd860]
 en = "On Wi-Fi and mobile data"
@@ -5684,7 +5684,7 @@ where = [
   "ios settings_dl_always_sub: Subtitle of the Always download choice.",
   "desktop profile_on_wi_fi_and: Desktop, profile and settings (in profile_view.rs, storage_page).",
 ]
-text = ""
+text = "Über WLAN und mobile Daten"
 
 [t_80ec3e590e]
 en = "On Wi-Fi"
@@ -5692,7 +5692,7 @@ where = [
   "android settings_dl_wifi: Picture download choice: download only on Wi-Fi.",
   "ios settings_dl_wifi: Picture download choice.",
 ]
-text = ""
+text = "Über WLAN"
 
 [t_ef66911de3]
 en = "On mobile data they wait for a tap"
@@ -5700,7 +5700,7 @@ where = [
   "android settings_dl_wifi_sub: Small line under the On Wi-Fi picture download choice.",
   "ios settings_dl_wifi_sub: Subtitle of the On Wi-Fi download choice.",
 ]
-text = ""
+text = "Bei mobilen Daten warten sie auf ein Tippen"
 
 [t_07c57edfbc]
 en = "When I tap them"
@@ -5709,7 +5709,7 @@ where = [
   "ios settings_dl_tap: Picture download choice.",
   "desktop profile_when_i_tap_them: Desktop, profile and settings (in profile_view.rs, storage_page).",
 ]
-text = ""
+text = "Wenn ich darauf tippe"
 
 [t_dce236cb81]
 en = "Each shows a soft preview until then"
@@ -5718,7 +5718,7 @@ where = [
   "ios settings_dl_tap_sub: Subtitle of the When I tap them download choice.",
   "desktop profile_each_shows_a_soft: Desktop, profile and settings (in profile_view.rs, storage_page).",
 ]
-text = ""
+text = "Bis dahin zeigt jedes eine weiche Vorschau"
 
 [t_6ccfc0822e]
 en = "Clear cache"
@@ -5727,7 +5727,7 @@ where = [
   "ios settings_clear_cache: Row that clears the picture and file cache.",
   "desktop profile_clear_cache: Desktop, profile and settings (in profile_view.rs, storage_page).",
 ]
-text = ""
+text = "Cache leeren"
 
 [t_bda6ead116]
 en = "{size} of pictures and files you’ve opened. They’re prepared again when you open them."
@@ -5735,7 +5735,7 @@ where = [
   "android settings_clear_cache_sub: Small line under Clear cache. {size} is a formatted size such as 12 MB.",
   "ios settings_clear_cache_sub: Subtitle of Clear cache; {size} is a size such as 12 MB.",
 ]
-text = ""
+text = "{size} an Bildern und Dateien, die du geöffnet hast. Sie werden neu vorbereitet, wenn du sie öffnest."
 
 [t_1a905db57c]
 en = "Cleared"
@@ -5744,7 +5744,7 @@ where = [
   "ios settings_cache_cleared: Clear cache subtitle after clearing.",
   "desktop profile_cleared: Desktop, profile and settings (in profile_view.rs, storage_page).",
 ]
-text = ""
+text = "Geleert"
 
 [t_9cc4506644]
 en = "Nothing to clear"
@@ -5753,7 +5753,7 @@ where = [
   "ios settings_cache_empty: Clear cache subtitle when the cache is empty.",
   "desktop profile_nothing_to_clear: Desktop, profile and settings (in profile_view.rs, storage_page).",
 ]
-text = ""
+text = "Nichts zu leeren"
 
 [t_a66e3b8971]
 en = "To free more space, remove pictures or files from their chat."
@@ -5762,7 +5762,7 @@ where = [
   "ios settings_storage_note: Note under the Clear cache row.",
   "desktop profile_to_free_more_space: Desktop, profile and settings (in profile_view.rs, storage_page).",
 ]
-text = ""
+text = "Um mehr Platz frei zu machen, entferne Bilder oder Dateien aus ihrem Chat."
 
 [t_b61b10150e]
 en_one = "{count} person"
@@ -5772,6 +5772,8 @@ where = [
   "ios settings_blocked_count: Subtitle of Blocked people; {count} is how many are blocked.",
   "desktop profile_blocked_count: Settings > Privacy row: how many people you blocked. {count} is that number.",
 ]
+one = "{count} Person"
+other = "{count} Personen"
 
 [t_dc9d990774]
 en = "No one"
@@ -5780,7 +5782,7 @@ where = [
   "ios settings_blocked_none: Subtitle of Blocked people when nobody is blocked.",
   "desktop profile_no_one: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "Niemand"
 
 [t_ace4d33640]
 en = "Who can call me"
@@ -5789,7 +5791,7 @@ where = [
   "ios settings_who_can_call: Privacy row and page title for call permissions.",
   "desktop profile_who_can_call_me: Desktop, profile and settings (in profile_view.rs, profile_page).",
 ]
-text = ""
+text = "Wer mich anrufen darf"
 
 [t_01ef1acf26]
 en_one = "{count} contact is messages only"
@@ -5799,6 +5801,8 @@ where = [
   "ios settings_msg_only_count: Subtitle of Who can call me; {count} is how many contacts may only message.",
   "desktop profile_messages_only_count: Settings > Privacy row: how many contacts may message you but not call. {count} is that number.",
 ]
+one = "{count} Kontakt nur für Nachrichten"
+other = "{count} Kontakte nur für Nachrichten"
 
 [t_f32fa3d3d6]
 en = "All contacts can call"
@@ -5807,7 +5811,7 @@ where = [
   "ios settings_all_can_call: Subtitle of Who can call me when every contact may call.",
   "desktop profile_all_contacts_can_call: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "Alle Kontakte dürfen anrufen"
 
 [t_364e4d7be9]
 en = "Needs your passphrase"
@@ -5816,7 +5820,7 @@ where = [
   "ios settings_recovery_pass: Subtitle of Account recovery when a passphrase is set.",
   "desktop common_needs_your_passphrase: Shared label, used in several places (profile, view).",
 ]
-text = ""
+text = "Braucht deine Passphrase"
 
 [t_da3369bc3f]
 en = "Needs your screen lock"
@@ -5824,7 +5828,7 @@ where = [
   "android settings_recovery_needs_lock: Small line under Account recovery when the phone's screen lock protects the recovery backup.",
   "ios settings_recovery_lock: Subtitle of Account recovery when the phone screen lock is used.",
 ]
-text = ""
+text = "Braucht deine Displaysperre"
 
 [t_db4af04dd1]
 en = "Protects Tinline on this device"
@@ -5833,7 +5837,7 @@ where = [
   "ios settings_passphrase_sub: Subtitle of the Passphrase row.",
   "desktop profile_protects_tinline_on_this: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "Schützt Tinline auf diesem Gerät"
 
 [t_4171b39021]
 en = "Your contacts see your name, picture and profile. Tinline doesn’t hide who you talk to, and every device linked to your account can read your chats."
@@ -5842,7 +5846,7 @@ where = [
   "ios settings_privacy_note: Note under the privacy rows.",
   "desktop profile_your_contacts_see_your: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "Deine Kontakte sehen deinen Namen, dein Bild und dein Profil. Tinline verbirgt nicht, mit wem du sprichst, und jedes Gerät, das mit deinem Konto verknüpft ist, kann deine Chats lesen."
 
 [t_d13fbdcef3]
 en = "Read receipts"
@@ -5851,7 +5855,7 @@ where = [
   "ios settings_read_receipts: Privacy row and switch label.",
   "desktop profile_read_receipts: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "Lesebestätigungen"
 
 [t_e33dd40c71]
 en = "People see when you’ve read their messages"
@@ -5860,7 +5864,7 @@ where = [
   "ios settings_reads_on: Read receipts subtitle when on.",
   "desktop profile_people_see_when_youve: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "Andere sehen, wenn du ihre Nachrichten gelesen hast"
 
 [t_da8f51f026]
 en = "Your reads stay with you"
@@ -5869,7 +5873,7 @@ where = [
   "ios settings_reads_off: Read receipts subtitle when off.",
   "desktop profile_your_reads_stay_with: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "Was du liest, bleibt bei dir"
 
 [t_acbc9673fb]
 en = "Delivered ticks still go out either way, and you still see when others read yours. Messages you read while this is off stay unconfirmed."
@@ -5878,7 +5882,7 @@ where = [
   "ios settings_reads_note: Note under the read receipts switch.",
   "desktop profile_delivered_ticks_still_go: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "Zustellhäkchen gehen trotzdem raus, und du siehst weiterhin, wenn andere deine lesen. Nachrichten, die du liest, während das aus ist, bleiben unbestätigt."
 
 [t_9b92530e61]
 en = "Show me as online in public groups"
@@ -5886,7 +5890,7 @@ where = [
   "android settings_presence_title: Switch title and accessibility label on the Privacy page. The title may wrap to two lines.",
   "desktop profile_show_me_as_online: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "Mich in öffentlichen Gruppen als online zeigen"
 
 [t_16d2e3f396]
 en = "Members see when you’re here"
@@ -5894,7 +5898,7 @@ where = [
   "android settings_presence_on: Small line under the public-group presence switch when it is on.",
   "desktop profile_members_see_when_youre: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "Mitglieder sehen, wenn du da bist"
 
 [t_e580edbe80]
 en = "You stay off their online lists"
@@ -5902,7 +5906,7 @@ where = [
   "android settings_presence_off: Small line under the public-group presence switch when it is off.",
   "desktop profile_you_stay_off_their: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "Du stehst nicht in ihren Online-Listen"
 
 [t_d7e9b858a1]
 en = "Public groups are the ones anyone can join with an open link. This applies on this device; your other devices keep their own choice."
@@ -5910,21 +5914,21 @@ where = [
   "android settings_presence_note: Explanation under the public-group presence switch.",
   "desktop profile_public_groups_are_the: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "Öffentliche Gruppen sind die, denen alle mit einem offenen Link beitreten können. Das gilt auf diesem Gerät; deine anderen Geräte behalten ihre eigene Wahl."
 
 [t_1db1044a1b]
 en = "Group pictures"
 where = [
   "android settings_group_pictures: Section heading on the Privacy page: when pictures in groups download by themselves.",
 ]
-text = ""
+text = "Gruppenbilder"
 
 [t_fae414092c]
 en = "Pictures in groups come from the group’s hosts. This applies on this device."
 where = [
   "android settings_group_pictures_note: Note under the group pictures choices.",
 ]
-text = ""
+text = "Bilder in Gruppen kommen von den Hosts der Gruppe. Das gilt auf diesem Gerät."
 
 [t_dba3db1114]
 en = "Can call you"
@@ -5933,7 +5937,7 @@ where = [
   "ios settings_can_call_you: Contact row state on Who can call me.",
   "desktop profile_can_call_you: Desktop, profile and settings (in profile_view.rs, calls_page).",
 ]
-text = ""
+text = "Darf dich anrufen"
 
 [t_c92e880e1e]
 en = "Messages only"
@@ -5944,7 +5948,7 @@ where = [
   "ios settings_messages_only: Contact row state on Who can call me.",
   "desktop common_messages_only: Shared label, used in several places (chat, profile).",
 ]
-text = ""
+text = "Nur Nachrichten"
 
 [t_411cebb300]
 en = "Allow calls from {name}"
@@ -5952,7 +5956,7 @@ where = [
   "android settings_allow_calls_from: Accessibility label of a contact's switch on the Who can call me page. {name} is the contact's name.",
   "ios settings_allow_calls_from: Accessibility label of a contact's call switch; {name} is the contact's name.",
 ]
-text = ""
+text = "Anrufe von {name} erlauben"
 
 [t_7c48c65cd7]
 en = "Someone you allowed can ring you; someone on messages only can still write. People you blocked can do neither."
@@ -5961,49 +5965,49 @@ where = [
   "ios settings_calls_note: Note under the contacts list on Who can call me.",
   "desktop profile_someone_you_allowed_can: Desktop, profile and settings (in profile_view.rs, calls_page).",
 ]
-text = ""
+text = "Wen du erlaubt hast, kann dich anrufen; wer nur Nachrichten darf, kann dir weiter schreiben. Leute, die du blockiert hast, können beides nicht."
 
 [t_8e36a1d522]
 en = "Background & battery"
 where = [
   "android settings_battery_title: Title of the page that checks the settings that keep calls ringing in the background.",
 ]
-text = ""
+text = "Hintergrund & Akku"
 
 [t_4fdd5e43e0]
 en = "Keep my line open"
 where = [
   "android settings_battery_keep: Heading on the background and battery page.",
 ]
-text = ""
+text = "Meine Leitung offen halten"
 
 [t_83dbe93842]
 en = "Tinline stays connected in the background so calls ring like a normal phone. It uses a little battery. The checklist below is what Android needs to allow that."
 where = [
   "android settings_battery_hint: Explanation at the top of the background and battery page.",
 ]
-text = ""
+text = "Tinline bleibt im Hintergrund verbunden, damit Anrufe wie bei einem normalen Telefon klingeln. Das braucht etwas Akku. Die Checkliste unten zeigt, was Android dafür braucht."
 
 [t_3a5e4ab9a1]
 en = "CHECKLIST"
 where = [
   "android settings_checklist: Small all-capitals section label above the permission checklist on the background and battery page.",
 ]
-text = ""
+text = "CHECKLISTE"
 
 [t_e41150cd8d]
 en = "Battery"
 where = [
   "android settings_battery_row: Checklist row on the background and battery page.",
 ]
-text = ""
+text = "Akku"
 
 [t_ce5337ffb2]
 en = "Optimised — Android may pause Tinline"
 where = [
   "android settings_battery_optimised: Small line under the Battery checklist row when Android restricts Tinline's background use.",
 ]
-text = ""
+text = "Optimiert – Android kann Tinline pausieren"
 
 [t_cb5667ea75]
 en = "On"
@@ -6015,28 +6019,28 @@ where = [
   "ios people_switch_on: Accessibility value of a switch that is on.",
   "ios call_value_on: Accessibility value of a toggle that is on.",
 ]
-text = ""
+text = "An"
 
 [t_8c2fb128eb]
 en = "Still missing calls?"
 where = [
   "android settings_battery_missing_bold: Bold lead-in of the box at the bottom of the background and battery page.",
 ]
-text = ""
+text = "Verpasst du noch Anrufe?"
 
 [t_528a43d393]
 en = "Some phones need an extra step to keep apps running."
 where = [
   "android settings_battery_missing: Text that follows the bold lead-in Still missing calls?",
 ]
-text = ""
+text = "Manche Handys brauchen einen zusätzlichen Schritt, damit Apps weiterlaufen."
 
 [t_689c143935]
 en = "Steps for your phone"
 where = [
   "android settings_battery_steps: Link that opens a web page with phone-specific background settings.",
 ]
-text = ""
+text = "Schritte für dein Handy"
 
 [t_637c31876f]
 en = "Couldn’t open recovery. Go back and try again."
@@ -6044,7 +6048,7 @@ where = [
   "android settings_recovery_open_failed: Error on the account recovery page when it could not start.",
   "ios security_recovery_failed: Error when the recovery data could not be read.",
 ]
-text = ""
+text = "Die Wiederherstellung ließ sich nicht öffnen. Geh zurück und versuch es nochmal."
 
 [t_880d401582]
 en = "That didn’t match. Try again."
@@ -6052,7 +6056,7 @@ where = [
   "android settings_recovery_wrong: Error under the passphrase field on the recovery check page when the passphrase is wrong.",
   "ios security_wrong_pass: Error under the passphrase field when the passphrase is wrong.",
 ]
-text = ""
+text = "Das hat nicht gepasst. Versuch es nochmal."
 
 [t_2d03567fc3]
 en = "Couldn’t open your backup. Try again."
@@ -6060,7 +6064,7 @@ where = [
   "android settings_recovery_backup_failed: Error on the recovery check page when the backup could not be opened.",
   "ios security_open_failed: Error when the recovery backup could not be opened.",
 ]
-text = ""
+text = "Dein Backup ließ sich nicht öffnen. Versuch es nochmal."
 
 [t_d1bb5a0088]
 en = "Add a screen lock or an app passphrase to open your backup."
@@ -6068,7 +6072,7 @@ where = [
   "android settings_recovery_add_lock: Error on the recovery check page when the phone has no screen lock and the app has no passphrase.",
   "ios security_need_lock: Error when the phone has no screen lock and no app passphrase is set.",
 ]
-text = ""
+text = "Richte eine Displaysperre oder eine App-Passphrase ein, um dein Backup zu öffnen."
 
 [t_4491e679bd]
 en = "Check it’s you before opening your backup."
@@ -6076,7 +6080,7 @@ where = [
   "android settings_recovery_check: Lead text on the recovery check page.",
   "ios security_check_you: Intro on the account recovery gate.",
 ]
-text = ""
+text = "Bestätige, dass du es bist, bevor du dein Backup öffnest."
 
 [t_a6551d1fc7]
 en = "Your passphrase"
@@ -6087,7 +6091,7 @@ where = [
   "ios link_your_pass: Label of the passphrase field on the approval step.",
   "desktop link_your_passphrase: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "Deine Passphrase"
 
 [t_2b3975ca67]
 en = "Use your phone’s screen lock to continue."
@@ -6095,7 +6099,7 @@ where = [
   "android settings_recovery_use_lock: Hint on the recovery check page when there is no passphrase.",
   "ios security_use_lock_hint: Hint on the recovery gate when no app passphrase is set.",
 ]
-text = ""
+text = "Nutze die Displaysperre deines Handys, um weiterzumachen."
 
 [t_554ce7f1cd]
 en = "Use screen lock"
@@ -6103,7 +6107,7 @@ where = [
   "android settings_use_screen_lock: Button on the recovery check page that asks for my fingerprint, face or PIN.",
   "ios security_use_lock: Button on the recovery gate when no passphrase is set.",
 ]
-text = ""
+text = "Displaysperre nutzen"
 
 [t_26b0725965]
 en = "Your recovery backup"
@@ -6111,7 +6115,7 @@ where = [
   "android settings_backup_title: Title of the page that shows my recovery key and 24 words.",
   "ios security_backup_title: Title of the page that shows the recovery key and words.",
 ]
-text = ""
+text = "Dein Wiederherstellungs-Backup"
 
 [t_985468e30f]
 en = "Keep this private. Anyone with it can act as you."
@@ -6119,7 +6123,7 @@ where = [
   "android settings_backup_private: Lead text on the recovery backup page.",
   "ios security_keep_private: Warning on the recovery backup page.",
 ]
-text = ""
+text = "Halte das privat. Wer es hat, kann als du auftreten."
 
 [t_9cea364af8]
 en = "24 words"
@@ -6127,7 +6131,7 @@ where = [
   "android settings_backup_words: Tab on the recovery backup page: the 24 recovery words.",
   "ios security_tab_words: Tab on the recovery backup page: the 24 recovery words.",
 ]
-text = ""
+text = "24 Wörter"
 
 [t_acbb96f166]
 en = "Couldn’t prepare the key. Use your 24 words instead."
@@ -6135,7 +6139,7 @@ where = [
   "android settings_backup_key_failed: Hint on the recovery backup page when the key could not be made.",
   "ios security_key_failed: Hint when the recovery key could not be made.",
 ]
-text = ""
+text = "Der Schlüssel ließ sich nicht vorbereiten. Nutze stattdessen deine 24 Wörter."
 
 [t_ef3b9b9e9f]
 en = "Hide"
@@ -6144,7 +6148,7 @@ where = [
   "ios security_hide: Button that hides the recovery key or words.",
   "desktop common_hide: Shared label, used in several places (link, view).",
 ]
-text = ""
+text = "Verbergen"
 
 [t_783f1bd5a1]
 en = "Reveal"
@@ -6152,7 +6156,7 @@ where = [
   "android settings_reveal: Button on the recovery backup page that shows the key or words.",
   "ios security_reveal: Button that shows the recovery key or words.",
 ]
-text = ""
+text = "Zeigen"
 
 [t_c6af397085]
 en = "Hides after 30 seconds. Locks when you leave the app."
@@ -6160,7 +6164,7 @@ where = [
   "android settings_backup_hides: Hint on the recovery backup page.",
   "ios security_hint_hides: Hint on the recovery backup page.",
 ]
-text = ""
+text = "Verschwindet nach 30 Sekunden. Sperrt sich, wenn du die App verlässt."
 
 [t_11a94bf685]
 en = "Key or words restore the same account. Keep either in a private, safe place."
@@ -6168,7 +6172,7 @@ where = [
   "android settings_backup_same: Hint on the recovery backup page.",
   "ios security_hint_same: Hint on the recovery backup page.",
 ]
-text = ""
+text = "Schlüssel und Wörter stellen dasselbe Konto wieder her. Bewahre eins davon an einem privaten, sicheren Ort auf."
 
 [t_b53710a836]
 en = "Copied. Keep it somewhere private."
@@ -6176,7 +6180,7 @@ where = [
   "android settings_backup_copied: Message on the recovery backup page after copying the key.",
   "ios security_copied_note: Message after the recovery key was copied.",
 ]
-text = ""
+text = "Kopiert. Bewahre es an einem privaten Ort auf."
 
 [t_93a19d70aa]
 en = "Copy key"
@@ -6184,14 +6188,14 @@ where = [
   "android settings_copy_key: Button on the recovery backup page.",
   "ios security_copy_key: Button that copies the recovery key.",
 ]
-text = ""
+text = "Schlüssel kopieren"
 
 [t_854d49341c]
 en = "Couldn’t copy. Try again."
 where = [
   "android settings_copy_failed: Message on the recovery backup page when copying failed.",
 ]
-text = ""
+text = "Kopieren ging nicht. Versuch es nochmal."
 
 [t_c838859bcd]
 en = "Change passphrase"
@@ -6200,7 +6204,7 @@ where = [
   "ios security_change_pass: Title and button when a passphrase exists.",
   "desktop common_change_passphrase: Shared label, used in several places (profile, view).",
 ]
-text = ""
+text = "Passphrase ändern"
 
 [t_b3e0f45116]
 en = "Current passphrase"
@@ -6209,7 +6213,7 @@ where = [
   "ios security_current_pass: Label of the field for the existing passphrase.",
   "desktop common_current_passphrase: Shared label, used in several places (profile, view).",
 ]
-text = ""
+text = "Aktuelle Passphrase"
 
 [t_f4f0776b65]
 en = "New passphrase"
@@ -6218,7 +6222,7 @@ where = [
   "ios security_new_pass: Field label when changing the passphrase.",
   "desktop common_new_passphrase: Shared label, used in several places (profile, view).",
 ]
-text = ""
+text = "Neue Passphrase"
 
 [t_ca983b7bba]
 en = "Your account lives only on this phone. A passphrase encrypts it, so nobody holding your phone can copy it."
@@ -6226,7 +6230,7 @@ where = [
   "android settings_passphrase_why: Lead text on the page for adding a passphrase.",
   "ios security_pass_intro: Intro on the add-passphrase page.",
 ]
-text = ""
+text = "Dein Konto lebt nur auf diesem Handy. Eine Passphrase verschlüsselt es, sodass niemand, der dein Handy in der Hand hat, es kopieren kann."
 
 [t_8bb3808409]
 en = "Version {version}"
@@ -6234,7 +6238,7 @@ where = [
   "android settings_about_version: App version on the About page. {version} is a number such as 0.2.0.",
   "ios settings_about_version: About page; {version} is the app version such as 0.2.0.",
 ]
-text = ""
+text = "Version {version}"
 
 [t_4ab3281957]
 en = "Made by Osvauld"
@@ -6243,7 +6247,7 @@ where = [
   "ios settings_about_made_by: About page credit line.",
   "desktop profile_made_by_osvauld: Desktop, profile and settings (in profile_view.rs, about_page).",
 ]
-text = ""
+text = "Gemacht von Osvauld"
 
 [t_e283f0f7c9]
 en = "Open-source licences"
@@ -6252,7 +6256,7 @@ where = [
   "ios settings_licences: About row and page title for licences.",
   "desktop profile_open_source_licences: Desktop, profile and settings (in profile_view.rs, about_page).",
 ]
-text = ""
+text = "Open-Source-Lizenzen"
 
 [t_541e7f6e93]
 en = "The libraries Tinline is built on"
@@ -6261,7 +6265,7 @@ where = [
   "ios settings_licences_sub: Subtitle of the Open-source licences row.",
   "desktop profile_the_libraries_tinline_is: Desktop, profile and settings (in profile_view.rs, about_page).",
 ]
-text = ""
+text = "Die Bibliotheken, auf denen Tinline aufbaut"
 
 [t_827ea4031a]
 en = "Full licence texts"
@@ -6269,7 +6273,7 @@ where = [
   "android settings_licences_full: Row on the About page that opens the full licence texts.",
   "ios settings_licence_texts: Row that opens the full licence texts.",
 ]
-text = ""
+text = "Vollständige Lizenztexte"
 
 [t_1dddbaa123]
 en = "Source code"
@@ -6278,7 +6282,7 @@ where = [
   "ios settings_source: About row that opens the source code website.",
   "desktop profile_source_code: Desktop, profile and settings (in profile_view.rs, about_page).",
 ]
-text = ""
+text = "Quellcode"
 
 [t_6bbcef751d]
 en = "Tinline is open source"
@@ -6287,7 +6291,7 @@ where = [
   "ios settings_source_sub: Subtitle of the Source code row.",
   "desktop profile_tinline_is_open_source: Desktop, profile and settings (in profile_view.rs, about_page).",
 ]
-text = ""
+text = "Tinline ist Open Source"
 
 [t_64cb92446a]
 en = "Tinline has no ads and no tracking. Your messages and calls go between your devices and the people you talk to."
@@ -6296,21 +6300,21 @@ where = [
   "ios settings_about_note: Note on the About page.",
   "desktop profile_tinline_has_no_ads: Desktop, profile and settings (in profile_view.rs, about_page).",
 ]
-text = ""
+text = "Tinline hat keine Werbung und kein Tracking. Deine Nachrichten und Anrufe gehen zwischen deinen Geräten und den Leuten, mit denen du sprichst."
 
 [t_afbb8506ee]
 en = "Copy debug log"
 where = [
   "android settings_log_copy: Row on the About page that copies the debug log to the clipboard.",
 ]
-text = ""
+text = "Debug-Log kopieren"
 
 [t_8a3cd9ba60]
 en = "Paste it to whoever is helping you fix a problem"
 where = [
   "android settings_log_copy_sub: Small line under Copy debug log.",
 ]
-text = ""
+text = "Füg es bei der Person ein, die dir hilft, ein Problem zu lösen"
 
 [t_faf274135a]
 en = "Send debug log"
@@ -6318,42 +6322,42 @@ where = [
   "android settings_log_send: Row on the About page that shares the debug log as a file.",
   "android debuglog_send_title: Title of the system share sheet when sending the debug log.",
 ]
-text = ""
+text = "Debug-Log senden"
 
 [t_4520860c09]
 en = "The full log as a file"
 where = [
   "android settings_log_send_sub: Small line under Send debug log.",
 ]
-text = ""
+text = "Das vollständige Log als Datei"
 
 [t_3d9f9b3f5f]
 en = "The log has what Tinline did on this phone, with ids of contacts and calls. It never has your messages or your root secret."
 where = [
   "android settings_log_note: Note under the debug log rows.",
 ]
-text = ""
+text = "Das Log enthält, was Tinline auf diesem Handy getan hat, mit IDs von Kontakten und Anrufen. Es enthält nie deine Nachrichten oder dein Stammgeheimnis."
 
 [t_b284cb7656]
 en = "Collecting the log…"
 where = [
   "android settings_log_collecting: Shown under the debug log rows while the log is read.",
 ]
-text = ""
+text = "Log wird gesammelt…"
 
 [t_beaa931d38]
 en = "Debug log copied. Paste it into a message."
 where = [
   "android settings_log_copied: Shown under the debug log rows after copying.",
 ]
-text = ""
+text = "Debug-Log kopiert. Füg es in eine Nachricht ein."
 
 [t_f5cf4026ba]
 en = "Couldn't get the log: {reason}"
 where = [
   "android settings_log_failed: Shown under the debug log rows when the log could not be read. {reason} is a short error description.",
 ]
-text = ""
+text = "Das Log ließ sich nicht holen: {reason}"
 
 [t_4cce52a906]
 en = "Linked devices"
@@ -6362,7 +6366,7 @@ where = [
   "ios devices_title: Title of the linked devices page.",
   "desktop common_linked_devices: Shared label, used in several places (profile, view).",
 ]
-text = ""
+text = "Verknüpfte Geräte"
 
 [t_2d301e6101]
 en = "Calls ring on all of these. People you call never see these names."
@@ -6371,7 +6375,7 @@ where = [
   "ios devices_hint_rings: Hint above the device list.",
   "desktop link_calls_ring_on_all: Desktop, linking devices (in link_view.rs, linked_devices_page).",
 ]
-text = ""
+text = "Anrufe klingeln auf all diesen Geräten. Leute, die du anrufst, sehen diese Namen nie."
 
 [t_ec759a6763]
 en = "Link a device"
@@ -6380,7 +6384,7 @@ where = [
   "ios devices_link: Button that starts linking another device.",
   "desktop link_link_a_device: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = ""
+text = "Gerät verknüpfen"
 
 [t_1eb9848544]
 en = "UNLINKED"
@@ -6388,7 +6392,7 @@ where = [
   "android devices_unlinked_label: Small all-capitals section label above devices that were unlinked.",
   "ios devices_unlinked_label: Small section label above unlinked devices. Capitals are part of the design.",
 ]
-text = ""
+text = "GETRENNT"
 
 [t_e1d21be382]
 en = "SYNC"
@@ -6396,7 +6400,7 @@ where = [
   "android devices_sync_label: Small all-capitals section label above the sync explanation.",
   "ios devices_sync_label: Small section label above the sync explanation. Capitals are part of the design.",
 ]
-text = ""
+text = "ABGLEICH"
 
 [t_893cf073bd]
 en = "Devices sync directly with each other whenever two are online at once. There is no copy on any server."
@@ -6404,7 +6408,7 @@ where = [
   "android devices_sync_hint: Explanation under the SYNC label.",
   "ios devices_sync_hint: Hint explaining device sync.",
 ]
-text = ""
+text = "Geräte gleichen sich direkt miteinander ab, sobald zwei gleichzeitig online sind. Es gibt keine Kopie auf einem Server."
 
 [t_045305fe31]
 en = "This phone — {name}"
@@ -6412,7 +6416,7 @@ where = [
   "android devices_this_phone_named: Title of this phone's row in the linked devices list. {name} is the name I gave this phone.",
   "ios devices_row_this_phone: Device row title for this phone; {name} is its label.",
 ]
-text = ""
+text = "Dieses Handy – {name}"
 
 [t_fd632ceb14]
 en = "Unnamed"
@@ -6420,7 +6424,7 @@ where = [
   "android devices_unnamed: Name shown for a device that has no name.",
   "ios devices_unnamed: Fallback label for a device without a name.",
 ]
-text = ""
+text = "Ohne Namen"
 
 [t_d0fdc4ad24]
 en = "Unnamed device"
@@ -6429,7 +6433,7 @@ where = [
   "ios devices_unnamed_device: Fallback title for a device without a name.",
   "desktop common_unnamed_device: Shared label, used in several places (link, profile).",
 ]
-text = ""
+text = "Gerät ohne Namen"
 
 [t_a722d3793d]
 en = "Unlinked"
@@ -6437,21 +6441,21 @@ where = [
   "android devices_sub_unlinked: Small line under a device that was unlinked.",
   "ios devices_row_unlinked: Device row subtitle for a device that was unlinked.",
 ]
-text = ""
+text = "Getrennt"
 
 [t_f57297dcfd]
 en = "This device · Android"
 where = [
   "android devices_sub_this: Small line under this phone's row in the linked devices list.",
 ]
-text = ""
+text = "Dieses Gerät · Android"
 
 [t_748db09fcd]
 en = "Synced {time}"
 where = [
   "android devices_sub_synced: Small line under a device row. {time} is a phrase such as 2 min ago.",
 ]
-text = ""
+text = "Abgeglichen {time}"
 
 [t_01692e4fa5]
 en = "Not seen yet"
@@ -6459,7 +6463,7 @@ where = [
   "android devices_sub_not_seen: Small line under a device row when it has not been online since it was linked.",
   "ios devices_row_not_seen: Device row subtitle when the device has not synced yet.",
 ]
-text = ""
+text = "Noch nicht gesehen"
 
 [t_b11e1d1153]
 en = "Device"
@@ -6467,7 +6471,7 @@ where = [
   "android devices_device: Title of a device's page when it has no name, and the fallback title while it loads.",
   "ios devices_device: Title of the device page while loading, and fallback name.",
 ]
-text = ""
+text = "Gerät"
 
 [t_e71782d4da]
 en = "This phone"
@@ -6475,7 +6479,7 @@ where = [
   "android devices_this_phone: Title of this phone's device page.",
   "ios devices_this_phone: Title of the device page for this phone.",
 ]
-text = ""
+text = "Dieses Handy"
 
 [t_8223b67c25]
 en = "Last synced"
@@ -6483,7 +6487,7 @@ where = [
   "android devices_last_synced: Row on a device's page showing when it last synced.",
   "ios devices_prop_synced: Row on the device page: when it last synced.",
 ]
-text = ""
+text = "Zuletzt abgeglichen"
 
 [t_955ff5a31e]
 en = "Rings for calls"
@@ -6491,7 +6495,7 @@ where = [
   "android devices_rings: Row on a device's page: does it ring when someone calls me.",
   "ios devices_prop_rings: Row on the device page: whether it rings for calls.",
 ]
-text = ""
+text = "Klingelt bei Anrufen"
 
 [t_6a7527cf57]
 en = "No, it was unlinked"
@@ -6499,7 +6503,7 @@ where = [
   "android devices_rings_no: Value of Rings for calls for an unlinked device.",
   "ios devices_rings_no: Value of Rings for calls for an unlinked device.",
 ]
-text = ""
+text = "Nein, es wurde getrennt"
 
 [t_189cef11ad]
 en = "Yes, when it’s on"
@@ -6507,7 +6511,7 @@ where = [
   "android devices_rings_yes: Value of Rings for calls for a linked device.",
   "ios devices_rings_yes: Value of Rings for calls for a linked device.",
 ]
-text = ""
+text = "Ja, wenn es an ist"
 
 [t_823cddfcd3]
 en = "Sync now"
@@ -6515,7 +6519,7 @@ where = [
   "android devices_sync_now: Button on another device's page that asks it to sync.",
   "ios devices_sync_now: Button on the device page.",
 ]
-text = ""
+text = "Jetzt abgleichen"
 
 [t_f265fa67fe]
 en = "Syncing with {name}…"
@@ -6523,7 +6527,7 @@ where = [
   "android devices_syncing: Brief message after tapping Sync now. {name} is the device's name.",
   "ios devices_syncing: Message when a sync starts; {name} is the device label or the words the device.",
 ]
-text = ""
+text = "Gleiche mit {name} ab…"
 
 [t_1e44ff1b62]
 en = "the device"
@@ -6531,7 +6535,7 @@ where = [
   "android devices_fallback_the_device: Used in place of a device name in the Syncing with message when the device has no name. Lowercase, mid-sentence.",
   "ios devices_fb_the_device: Fallback noun for an unnamed device inside the Syncing message.",
 ]
-text = ""
+text = "dem Gerät"
 
 [t_f5c1bd02f9]
 en = "Remove account from this phone"
@@ -6539,7 +6543,7 @@ where = [
   "android devices_remove_account: Danger button on this phone's device page, and the title of the screen lock prompt for it.",
   "ios devices_remove_account: Reason shown in the screen lock prompt, and the button label.",
 ]
-text = ""
+text = "Konto von diesem Handy entfernen"
 
 [t_f55e851092]
 en = "Unlink this device"
@@ -6547,7 +6551,7 @@ where = [
   "android devices_unlink_this: Danger button on another device's page.",
   "ios devices_unlink_this: Button on the device page.",
 ]
-text = ""
+text = "Dieses Gerät trennen"
 
 [t_13494adba3]
 en = "Unlink device"
@@ -6555,7 +6559,7 @@ where = [
   "android devices_unlink_device: Title of the phone's screen lock prompt shown before unlinking another device.",
   "ios devices_unlink_device: Reason shown in the screen lock prompt.",
 ]
-text = ""
+text = "Gerät trennen"
 
 [t_6786f49398]
 en = "Rename device"
@@ -6564,7 +6568,7 @@ where = [
   "ios devices_rename: Dialog title for renaming a device.",
   "desktop profile_rename_device: Desktop, profile and settings (in profile_view.rs, devices_layer).",
 ]
-text = ""
+text = "Gerät umbenennen"
 
 [t_c24333a31e]
 en = "this device"
@@ -6572,7 +6576,7 @@ where = [
   "android devices_fallback_this_device: Used in place of a device name in the unlink question when the device has no name. Lowercase, mid-sentence.",
   "ios devices_fb_this_device: Fallback noun for an unnamed device inside the Unlink question.",
 ]
-text = ""
+text = "dieses Gerät"
 
 [t_9287ec5959]
 en = "device"
@@ -6580,7 +6584,7 @@ where = [
   "android devices_fallback_device: Used in place of a device name in the Unlinked message when the device has no name. Lowercase, mid-sentence.",
   "ios devices_fb_device: Fallback noun for an unnamed device inside the Unlinked message.",
 ]
-text = ""
+text = "Gerät"
 
 [t_3faecb9c5d]
 en = "Remove your account from this phone?"
@@ -6588,7 +6592,7 @@ where = [
   "android devices_confirm_remove_title: Title of the confirmation dialog for removing the account from this phone.",
   "ios devices_remove_q: Dialog title.",
 ]
-text = ""
+text = "Dein Konto von diesem Handy entfernen?"
 
 [t_4c986a9aa5]
 en = "Unlink {name}?"
@@ -6597,7 +6601,7 @@ where = [
   "ios devices_unlink_q: Dialog title; {name} is the device label or the words this device.",
   "desktop common_unlink_2: Shared label, used in several places (link, profile). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} trennen?"
 
 [t_ffbb50f111]
 en = "Working…"
@@ -6606,7 +6610,7 @@ where = [
   "ios devices_working: Confirm button text while the unlink runs.",
   "desktop group_working: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "Moment…"
 
 [t_0ae9b16e47]
 en = "Unlink"
@@ -6615,7 +6619,7 @@ where = [
   "ios devices_unlink: Confirm button of the unlink dialog.",
   "desktop common_unlink: Shared label, used in several places (link, profile).",
 ]
-text = ""
+text = "Trennen"
 
 [t_e10a08cbc5]
 en = "This phone stops syncing and ringing, and your account, contacts, chats and call history are deleted from it."
@@ -6623,7 +6627,7 @@ where = [
   "android devices_remove_body: Body of the dialog for removing the account from this phone.",
   "ios devices_remove_body: Body of the remove-account dialog.",
 ]
-text = ""
+text = "Dieses Handy hört auf abzugleichen und zu klingeln, und dein Konto, deine Kontakte, Chats und Anrufliste werden davon gelöscht."
 
 [t_617985c94e]
 en = "This is the only device with your account. Without your recovery phrase nothing can bring it back."
@@ -6631,7 +6635,7 @@ where = [
   "android devices_remove_only: Warning card in the remove dialog when no other device has the account.",
   "ios devices_only_device: Warning card in the remove-account dialog.",
 ]
-text = ""
+text = "Das ist das einzige Gerät mit deinem Konto. Ohne deine Wiederherstellungswörter kann es nichts zurückholen."
 
 [t_7bd075ae97]
 en = "Your other devices keep everything."
@@ -6639,7 +6643,7 @@ where = [
   "android devices_remove_others: Reassurance in the remove dialog when other devices have the account.",
   "ios devices_others_keep: Line in the remove-account dialog.",
 ]
-text = ""
+text = "Deine anderen Geräte behalten alles."
 
 [t_cac1a71b2b]
 en = "It stops syncing and stops ringing for your calls. If it’s online, it removes your account from itself."
@@ -6648,7 +6652,7 @@ where = [
   "ios devices_unlink_body: Body of the unlink dialog.",
   "desktop link_it_stops_syncing_and: Desktop, linking devices (in link_view.rs, unlink_confirm).",
 ]
-text = ""
+text = "Es hört auf abzugleichen und klingelt nicht mehr bei deinen Anrufen. Wenn es online ist, entfernt es dein Konto von sich selbst."
 
 [t_04c6ed465e]
 en = "Unlinking can’t lock it from here. Anyone who can unlock it can still use your account. The only full cut-off is a new account."
@@ -6657,7 +6661,7 @@ where = [
   "ios devices_unlink_warn: Warning card in the unlink dialog.",
   "desktop link_unlinking_cant_lock_it: Desktop, linking devices (in link_view.rs, unlink_confirm).",
 ]
-text = ""
+text = "Trennen kann es von hier aus nicht sperren. Wer es entsperren kann, kann dein Konto weiter nutzen. Ganz abschneiden kann nur ein neues Konto."
 
 [t_47505d0245]
 en = "Lost or stolen?"
@@ -6666,7 +6670,7 @@ where = [
   "ios devices_lost: Bold lead-in of the unlink warning card.",
   "desktop link_lost_or_stolen: Desktop, linking devices (in link_view.rs, unlink_confirm).",
 ]
-text = ""
+text = "Verloren oder gestohlen?"
 
 [t_a0e3dfe2d2]
 en = "Unlinked {name}"
@@ -6674,7 +6678,7 @@ where = [
   "android devices_unlinked_msg: Brief message after a device was unlinked. {name} is the device's name.",
   "ios devices_unlinked_msg: Message after a device was unlinked; {name} is its label or the word device.",
 ]
-text = ""
+text = "{name} getrennt"
 
 [t_72c98f7c55]
 en = "Screen lock check cancelled"
@@ -6683,7 +6687,7 @@ where = [
   "ios devices_lock_cancelled: Error when the screen lock prompt was cancelled.",
   "ios link_lock_cancelled: Error when the screen lock prompt was cancelled.",
 ]
-text = ""
+text = "Prüfung der Displaysperre abgebrochen"
 
 [t_e12c86c002]
 en = "Same code on both?"
@@ -6692,7 +6696,7 @@ where = [
   "ios link_same_code: Title when the new device is waiting for approval.",
   "desktop link_same_code_on_both: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "Gleicher Code auf beiden?"
 
 [t_30ca790226]
 en = "Check that {name} shows this code, then approve there."
@@ -6701,7 +6705,7 @@ where = [
   "ios link_same_code_lead: Explanation under Same code on both?; {name} is the other device's name or the words your other device.",
   "desktop link_check_that_shows_this: Desktop, linking devices (in link_view.rs, link_screen). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Prüfe, ob {name} diesen Code zeigt, und bestätige dann dort."
 
 [t_14565e17d4]
 en = "Different code, or you didn’t start this? Cancel. Someone else may have scanned the QR."
@@ -6710,7 +6714,7 @@ where = [
   "ios link_diff_code: Warning under the big code.",
   "desktop link_different_code_or_you: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "Anderer Code, oder du hast das nicht gestartet? Brich ab. Vielleicht hat jemand anderes den QR-Code gescannt."
 
 [t_0e911a71b0]
 en = "Waiting for approval…"
@@ -6719,7 +6723,7 @@ where = [
   "ios link_waiting: Status line while the other device approves.",
   "desktop link_waiting_for_approval: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "Wartet auf Bestätigung…"
 
 [t_8e11b6442a]
 en = "Linking…"
@@ -6728,7 +6732,7 @@ where = [
   "ios link_linking: Title while the account is being received.",
   "desktop link_linking_2: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "Verknüpfen…"
 
 [t_9cba69c0af]
 en = "Receiving your account. Keep both devices open."
@@ -6737,7 +6741,7 @@ where = [
   "ios link_receiving: Explanation while the account is being received.",
   "desktop link_receiving_your_account_keep: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "Dein Konto kommt an. Lass beide Geräte offen."
 
 [t_0883e302a7]
 en = "Couldn’t link"
@@ -6746,7 +6750,7 @@ where = [
   "ios link_failed: Title when linking failed.",
   "desktop link_couldnt_link: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "Verknüpfen hat nicht geklappt"
 
 [t_caacf98e5d]
 en = "On a device that already has your account, open Settings › Link a device and scan this."
@@ -6755,7 +6759,7 @@ where = [
   "ios link_qr_lead: Explanation above the QR code on the new device.",
   "desktop link_on_a_device_that: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = ""
+text = "Öffne auf einem Gerät, das dein Konto schon hat, Einstellungen › Gerät verknüpfen und scanne das hier."
 
 [t_36503bbf78]
 en = "New code"
@@ -6768,7 +6772,7 @@ where = [
   "ios people_add_new_code: Button that makes a new contact code and cancels the old one.",
   "desktop common_new_code: Shared label, used in several places (link, signup).",
 ]
-text = ""
+text = "Neuer Code"
 
 [t_bf26f7ce4d]
 en = "Scan instead"
@@ -6776,7 +6780,7 @@ where = [
   "android link_scan_instead: Button on the new phone, and title of its camera screen: scan the other device's QR code instead of showing one.",
   "ios link_scan_instead: Button that switches to scanning the other device's code.",
 ]
-text = ""
+text = "Lieber scannen"
 
 [t_a7578e09f8]
 en = "Anyone who can see this code in the next few minutes could try to use it. Show it only to your own device."
@@ -6785,7 +6789,7 @@ where = [
   "ios link_qr_warn: Warning under the QR code.",
   "desktop link_anyone_who_can_see: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = ""
+text = "Wer diesen Code in den nächsten Minuten sieht, könnte versuchen, ihn zu nutzen. Zeig ihn nur deinem eigenen Gerät."
 
 [t_ccabcfd492]
 en = "QR code to link this device"
@@ -6793,7 +6797,7 @@ where = [
   "android link_qr_desc: Accessibility description of the QR code image.",
   "ios link_qr_label: Accessibility label of the QR code.",
 ]
-text = ""
+text = "QR-Code zum Verknüpfen dieses Geräts"
 
 [t_944ddb4f27]
 en = "Preparing your code…"
@@ -6806,7 +6810,7 @@ where = [
   "ios people_add_preparing: Shown while the user’s contact code is being made.",
   "desktop signup_preparing_your_code: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay).",
 ]
-text = ""
+text = "Dein Code wird vorbereitet…"
 
 [t_f64ef123d4]
 en = "Expired. Make a new code."
@@ -6814,21 +6818,21 @@ where = [
   "android link_expired: Line under the QR code after it expired.",
   "ios link_expired: Status under the QR code after it expired.",
 ]
-text = ""
+text = "Abgelaufen. Erstelle einen neuen Code."
 
 [t_f226a8a625]
 en = "Expires in {time} · works once"
 where = [
   "android link_expires: Line under the QR code. {time} is the time left as minutes:seconds, such as 4:32.",
 ]
-text = ""
+text = "Läuft ab in {time} · funktioniert einmal"
 
 [t_35781a0696]
 en = "Link code {code}"
 where = [
   "android link_code_desc: Accessibility description of the six-digit code. {code} is the digits separated by spaces.",
 ]
-text = ""
+text = "Verknüpfungscode {code}"
 
 [t_4a4bbe7e69]
 en = "Link a new device"
@@ -6837,7 +6841,7 @@ where = [
   "ios link_new_title: Title of the settings page that links a new device.",
   "desktop profile_link_a_new_device: Desktop, profile and settings (in profile_view.rs, devices_page).",
 ]
-text = ""
+text = "Neues Gerät verknüpfen"
 
 [t_ba00896669]
 en = "Show this code to your new device"
@@ -6845,7 +6849,7 @@ where = [
   "android link_show_h1: Heading above the QR code on the phone that has the account.",
   "ios link_show_title: Heading while this phone shows the QR code.",
 ]
-text = ""
+text = "Zeig diesen Code deinem neuen Gerät"
 
 [t_bb6b539924]
 en = "On the new device choose “Link to a device”, then “Scan instead”, and point it at this code."
@@ -6853,7 +6857,7 @@ where = [
   "android link_show_body: Instructions under the heading. The quoted names are buttons on the new device.",
   "ios link_show_body: Instruction under the QR heading. The quoted names match the buttons on the new device.",
 ]
-text = ""
+text = "Wähle auf dem neuen Gerät „Mit einem Gerät verknüpfen“, dann „Lieber scannen“, und richte es auf diesen Code."
 
 [t_3f98abdd49]
 en = "The new device"
@@ -6861,7 +6865,7 @@ where = [
   "android link_fallback_new_device_cap: Used in place of the new device's name at the start of a sentence or title when it has no name.",
   "ios link_fb_new_device_cap: Fallback name for an unnamed new device at the start of a sentence.",
 ]
-text = ""
+text = "Das neue Gerät"
 
 [t_abac8ccb2c]
 en = "Do the codes match?"
@@ -6869,14 +6873,14 @@ where = [
   "android link_match_title: Heading on the phone that has the account, when comparing the six-digit codes.",
   "ios link_match_title: Heading when the user compares codes.",
 ]
-text = ""
+text = "Stimmen die Codes überein?"
 
 [t_51ed7a1dc3]
 en = "wants to join your account. It should be showing the same six digits as below."
 where = [
   "android link_match_body: Sentence that follows the bold device name, such as the new phone's name.",
 ]
-text = ""
+text = "möchte deinem Konto beitreten. Es sollte dieselben sechs Ziffern zeigen wie unten."
 
 [t_13a448230b]
 en = "Compare them yourself. If they differ, someone else may have scanned the code first."
@@ -6884,7 +6888,7 @@ where = [
   "android link_match_note: Note under the six-digit code.",
   "ios link_match_warn: Warning under the six digits.",
 ]
-text = ""
+text = "Vergleiche sie selbst. Wenn sie abweichen, hat vielleicht jemand anderes den Code zuerst gescannt."
 
 [t_c13b853fc2]
 en = "They don’t match"
@@ -6892,7 +6896,7 @@ where = [
   "android link_no_match: Button: the codes are different, cancel linking.",
   "ios link_no_match: Button when the codes differ.",
 ]
-text = ""
+text = "Stimmen nicht überein"
 
 [t_fd08f40778]
 en = "They match"
@@ -6900,7 +6904,7 @@ where = [
   "android link_match: Button: the codes are the same, continue to approval.",
   "ios link_match: Button when the codes are the same.",
 ]
-text = ""
+text = "Stimmen überein"
 
 [t_28081710bf]
 en = "the new device"
@@ -6908,7 +6912,7 @@ where = [
   "android link_fallback_new_device: Used in place of the new device's name in the middle of a sentence when it has no name. Lowercase.",
   "ios link_fb_new_device: Fallback name for an unnamed new device inside a sentence.",
 ]
-text = ""
+text = "das neue Gerät"
 
 [t_283ccfceb5]
 en = "Connecting…"
@@ -6919,7 +6923,7 @@ where = [
   "ios call_status_connecting: Status of a call while connecting.",
   "desktop gcall_connecting: Desktop, group calls (in gcall.rs, status).",
 ]
-text = ""
+text = "Verbinden…"
 
 [t_155065875e]
 en = "Linking {name}"
