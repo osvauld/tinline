@@ -278,6 +278,14 @@ class P2pApp : Application(), NodeEvents {
      * and the node stays Locked; on a transient Keystore/IO error unlock.bin is kept and the next
      * startNode retries. Returns true if usable. Blocking (Keystore): not for the main thread.
      */
+    /**
+     * For a wake push (its own thread, short window): after the first account load, which is queued first on the
+     * lifecycle thread and selects the account, so a push that started the process does not find it still unselected.
+     */
+    fun unlockForWake(): Boolean = try {
+        lifecycle.submit<Boolean> { tryAutoUnlock() }.get(5, java.util.concurrent.TimeUnit.SECONDS)
+    } catch (e: Exception) { Log.w(TAG, "unlockForWake: ${e.javaClass.simpleName}"); false }
+
     fun tryAutoUnlock(): Boolean = synchronized(unlockLock) {
         if (node.lockState() != LockState.LOCKED) return node.lockState() != LockState.NO_IDENTITY
         val did = currentDid() ?: return false

@@ -74,7 +74,7 @@ object WakeHandler {
     fun onWake(ctx: Context, hint: String) {
         val app = P2pApp.get(ctx)
         if (!PushMode.pushOn(app)) return   // always-on: the service is connected already; a stray push is ignored
-        app.tryAutoUnlock()
+        app.unlockForWake()
         val outcome = try {
             app.node.onWake(hint)
         } catch (e: uniffi.p2pcore.Exception.Locked) { Notifications.wakeNotice(app); return }
