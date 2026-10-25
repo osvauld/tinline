@@ -4396,7 +4396,7 @@ where = [
   "ios shell_pass_strength_short: Passphrase strength: short.",
   "desktop signup_short_a_few_more: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "ছোট। আরও কয়েকটি শব্দ দিলে আরও মজবুত হবে।"
 
 [t_8ea7d40fcf]
 en = "Fair"
@@ -4405,7 +4405,7 @@ where = [
   "ios shell_pass_strength_fair: Passphrase strength: fair.",
   "desktop signup_fair: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "মোটামুটি"
 
 [t_e4adf12a36]
 en = "Strong"
@@ -4414,7 +4414,7 @@ where = [
   "ios shell_pass_strength_strong: Passphrase strength: strong.",
   "desktop signup_strong: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "মজবুত"
 
 [t_282faff70f]
 en = "Here is your recovery key"
@@ -4423,7 +4423,7 @@ where = [
   "ios onboarding_rec_title_key: Title when showing the recovery key.",
   "desktop signup_here_is_your_recovery: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "এই নিন আপনার রিকভারি কী"
 
 [t_41d0ce5f7d]
 en = "Here are your recovery words"
@@ -4432,7 +4432,7 @@ where = [
   "ios onboarding_rec_title_words: Title when showing the recovery words.",
   "desktop signup_here_are_your_recovery: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "এই নিন আপনার রিকভারি শব্দ"
 
 [t_2cc8306889]
 en = "Your recovery key is the same as your {words} words, as one line.\nPaste it somewhere safe. A password manager works great."
@@ -4440,7 +4440,7 @@ where = [
   "android onboarding_phrase_lead_key: Lead under the recovery key heading. The line break separates two sentences. {words} is how many recovery words there are (24).",
   "ios onboarding_rec_lead_key: Explanation when showing the recovery key; the line break is intended.  {words} is the number of recovery words (24).",
 ]
-text = ""
+text = "আপনার রিকভারি কী আপনার {words}টি শব্দেরই আরেক রূপ, এক লাইনে।\nকোনো নিরাপদ জায়গায় পেস্ট করে রাখুন। পাসওয়ার্ড ম্যানেজার দারুণ কাজ করে।"
 
 [t_d770639f45]
 en = "If you ever switch devices, these {words} words bring your account along.\nSave a copy somewhere safe. Paper works great."
@@ -4448,7 +4448,7 @@ where = [
   "android onboarding_phrase_lead_words: Lead under the recovery words heading. The line break separates two sentences. {words} is how many recovery words there are (24).",
   "ios onboarding_rec_lead_words: Explanation when showing the recovery words; the line break is intended.  {words} is the number of recovery words (24).",
 ]
-text = ""
+text = "কখনও ডিভাইস বদলালে, এই {words}টি শব্দ আপনার অ্যাকাউন্ট সঙ্গে নিয়ে আসবে।\nকোনো নিরাপদ জায়গায় একটি কপি রাখুন। কাগজে লিখে রাখাও দারুণ।"
 
 [t_776efe724c]
 en = "I’ve saved it"
@@ -4457,7 +4457,7 @@ where = [
   "ios onboarding_saved_key: Button after copying the recovery key.",
   "desktop signup_ive_saved_it: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "আমি সেভ করেছি"
 
 [t_c2188486fc]
 en = "I’ve saved them"
@@ -4466,7 +4466,7 @@ where = [
   "ios onboarding_saved_words: Button after copying the recovery words.",
   "desktop signup_ive_saved_them: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "আমি সেভ করেছি"
 
 [t_a4b3e31ad9]
 en = "Copy again"
@@ -4475,7 +4475,7 @@ where = [
   "ios onboarding_copy_again: Button to copy the recovery key or words again.",
   "desktop signup_copy_again: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "আবার কপি করুন"
 
 [t_8c32c0a444]
 en = "Copy my key"
@@ -4484,7 +4484,7 @@ where = [
   "ios onboarding_copy_key: Button that copies the recovery key.",
   "desktop common_copy_my_key: Shared label, used in several places (profile, signup).",
 ]
-text = ""
+text = "আমার কী কপি করুন"
 
 [t_2211d13efd]
 en = "Copy my words"
@@ -4493,7 +4493,7 @@ where = [
   "ios onboarding_copy_words: Button that copies the recovery words.",
   "desktop signup_copy_my_words: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "আমার শব্দগুলো কপি করুন"
 
 [t_7c5ac76f63]
 en = "I saved it elsewhere"
@@ -4502,7 +4502,7 @@ where = [
   "ios onboarding_elsewhere_key: Button for people who saved the key without copying.",
   "desktop signup_i_saved_it_elsewhere: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "আমি অন্য কোথাও সেভ করেছি"
 
 [t_933ca7fbf2]
 en = "I wrote them down"
@@ -4511,7 +4511,7 @@ where = [
   "ios onboarding_elsewhere_words: Button for people who wrote the words down.",
   "desktop signup_i_wrote_them_down: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "আমি লিখে রেখেছি"
 
 [t_68e1e73803]
 en = "Your account"
@@ -4521,7 +4521,7 @@ where = [
   "ios onboarding_fb_your_account: Name used for the account avatar when no name is set.",
   "desktop common_your_account: Shared label, used in several places (link, shell).",
 ]
-text = ""
+text = "আপনার অ্যাকাউন্ট"
 
 [t_cc10cd93a6]
 en = "Words"
@@ -4530,7 +4530,7 @@ where = [
   "ios onboarding_seg_words: Segment: show the recovery words.",
   "desktop signup_words: Desktop, sign-up, restore and add contact (in signup_view.rs, words_key_seg).",
 ]
-text = ""
+text = "শব্দ"
 
 [t_b4a8a37f34]
 en = "Key"
@@ -4541,7 +4541,7 @@ where = [
   "ios onboarding_seg_key: Segment: show the recovery key.",
   "desktop signup_key: Desktop, sign-up, restore and add contact (in signup_view.rs, words_key_seg).",
 ]
-text = ""
+text = "কী"
 
 [t_2d84bd9d3b]
 en = "Name this phone"
@@ -4551,7 +4551,7 @@ where = [
   "ios devices_name_phone: Dialog title for naming this phone.",
   "ios onboarding_dev_title: Title of the device-name screen.",
 ]
-text = ""
+text = "এই ফোনের একটি নাম দিন"
 
 [t_4880385a9a]
 en = "So you can tell your devices apart in Linked devices. Only your own devices see this name; people you call never do."
@@ -4560,7 +4560,7 @@ where = [
   "ios onboarding_dev_lead: Explanation on the device-name screen.",
   "desktop common_so_you_can_tell: Shared label, used in several places (link, signup, view).",
 ]
-text = ""
+text = "যাতে “লিঙ্ক করা ডিভাইস”-এ আপনার ডিভাইসগুলো আলাদা করে চিনতে পারেন। এই নাম শুধু আপনার নিজের ডিভাইসগুলো দেখে; যাঁদের আপনি কল করেন, তাঁরা কখনও দেখেন না।"
 
 [t_2ca3f0287b]
 en = "You can rename it later."
@@ -4569,7 +4569,7 @@ where = [
   "ios onboarding_dev_hint: Hint under the device-name field.",
   "desktop common_you_can_rename_it: Shared label, used in several places (link, signup, view).",
 ]
-text = ""
+text = "পরে নাম বদলাতে পারবেন।"
 
 [t_39487823d4]
 en = "Added {name} to this phone"
@@ -4577,7 +4577,7 @@ where = [
   "android onboarding_restored_title_adding: Heading after another account was added. {name} is the account's nickname.",
   "ios onboarding_back_added: Title after adding another account; {name} is the account's name.",
 ]
-text = ""
+text = "এই ফোনে {name} যোগ করা হয়েছে"
 
 [t_be0e29252e]
 en = "Only the account you select is online at a time, so {name} is online now and your other account is paused. You can switch in Settings."
@@ -4585,7 +4585,7 @@ where = [
   "android onboarding_restored_lead_adding: Lead after another account was added. {name} is the account's nickname.",
   "ios onboarding_back_added_lead: Explanation after adding another account; {name} is the account's name.",
 ]
-text = ""
+text = "একবারে শুধু বেছে নেওয়া অ্যাকাউন্টটিই অনলাইনে থাকে, তাই এখন {name} অনলাইনে আর আপনার অন্য অ্যাকাউন্টটি থেমে আছে। সেটিংস থেকে বদলাতে পারেন।"
 
 [t_fd864ca933]
 en = "Your account is back on this phone. Your contacts, chats and call history are kept on your other devices, not on a server. This phone starts with an empty contact list."
@@ -4593,7 +4593,7 @@ where = [
   "android onboarding_restored_lead: Lead after restoring an account.",
   "ios onboarding_back_lead: Explanation after restoring an account.",
 ]
-text = ""
+text = "আপনার অ্যাকাউন্ট এই ফোনে ফিরে এসেছে। আপনার পরিচিতি, চ্যাট আর কলের ইতিহাস আপনার অন্য ডিভাইসগুলোতে থাকে, কোনো সার্ভারে নয়। এই ফোনে পরিচিতির তালিকা খালি থেকে শুরু হবে।"
 
 [t_5cb442a921]
 en = "Open Tinline"
@@ -4601,21 +4601,21 @@ where = [
   "android onboarding_open_tinline: Button that leaves the restored and linked screens and opens the app.",
   "ios onboarding_open: Button after adding another account, and after linking.",
 ]
-text = ""
+text = "Tinline খুলুন"
 
 [t_f3ebd14b01]
 en = "Linked to {device}"
 where = [
   "android onboarding_linked_title: Heading after linking. {device} is the other device's name.",
 ]
-text = ""
+text = "{device}-এর সঙ্গে লিঙ্ক হয়েছে"
 
 [t_ba1cd63d8b]
 en = "Your contacts and chats are arriving from {device} and will keep in step on both."
 where = [
   "android onboarding_linked_lead: Lead after linking. {device} is the other device's name.",
 ]
-text = ""
+text = "আপনার পরিচিতি আর চ্যাট {device} থেকে আসছে, আর দুটিতেই মিলিয়ে রাখা হবে।"
 
 [t_ad9e1201a5]
 en = "Contacts"
@@ -4628,7 +4628,7 @@ where = [
   "ios shell_tab_contacts: Bottom tab title and screen reader label.",
   "desktop common_contacts: Shared label, used in several places (link, profile, shell, view).",
 ]
-text = ""
+text = "পরিচিতি"
 
 [t_71c082fb59]
 en = "Call history"
@@ -4636,7 +4636,7 @@ where = [
   "android onboarding_sync_calls: Row on the linked screen showing how many calls arrived.",
   "ios onboarding_sync_calls: Sync progress row label.",
 ]
-text = ""
+text = "কলের ইতিহাস"
 
 [t_913ca6be9c]
 en = "Waiting"
@@ -4647,7 +4647,7 @@ where = [
   "ios shell_chats_waiting: Chat list preview prefix for a message that is waiting to send. The preview follows after a dot.",
   "desktop chat_waiting: Desktop, chats (in chat_view.rs, pg_chat_row).",
 ]
-text = ""
+text = "অপেক্ষায়"
 
 [t_fcaf0c875d]
 en = "Nothing yet. The other device may be offline: it picks up where it left off the next time both are online."
@@ -4655,7 +4655,7 @@ where = [
   "android onboarding_sync_slow: Note on the linked screen after 45 seconds without data.",
   "ios onboarding_sync_slow: Hint when sync is slow to start.",
 ]
-text = ""
+text = "এখনও কিছু আসেনি। অন্য ডিভাইসটি হয়তো অফলাইনে আছে: পরের বার দুটোই অনলাইনে এলে যেখানে থেমেছিল সেখান থেকে আবার শুরু করবে।"
 
 [t_10feb1a6cd]
 en = "Keep both devices online. Sync keeps going in the background."
@@ -4663,7 +4663,7 @@ where = [
   "android onboarding_sync_keep_online: Note on the linked screen while data is arriving.",
   "ios onboarding_sync_keep: Hint while syncing.",
 ]
-text = ""
+text = "দুটো ডিভাইসই অনলাইনে রাখুন। সিঙ্ক ব্যাকগ্রাউন্ডে চলতে থাকবে।"
 
 [t_53dc3b834f]
 en = "Couldn’t save your account"
@@ -4672,7 +4672,7 @@ where = [
   "ios onboarding_nosave_title: Title when the phone's key store failed.",
   "desktop gate_couldnt_save_your_account: Desktop, sign-in and gate screens (in view.rs, key_failed_view).",
 ]
-text = ""
+text = "আপনার অ্যাকাউন্ট সেভ করা গেল না"
 
 [t_835a913e6a]
 en = "Tinline couldn’t store the key that opens your account on this phone, so your account has not been saved yet."
@@ -4680,7 +4680,7 @@ where = [
   "android onboarding_savefail_lead: Lead under the save-failed heading.",
   "ios onboarding_nosave_lead: Explanation when the phone's key store failed.",
 ]
-text = ""
+text = "আপনার অ্যাকাউন্ট খোলার চাবি Tinline এই ফোনে রাখতে পারেনি, তাই আপনার অ্যাকাউন্ট এখনও সেভ হয়নি।"
 
 [t_1fec3e9598]
 en = "Trying…"
@@ -4688,7 +4688,7 @@ where = [
   "android onboarding_savefail_trying: Label of the Try again button while retrying.",
   "ios onboarding_trying: Button text while retrying.",
 ]
-text = ""
+text = "চেষ্টা করা হচ্ছে…"
 
 [t_f587adb4ae]
 en = "Add a passphrase instead"
@@ -4697,7 +4697,7 @@ where = [
   "ios onboarding_pass_instead: Button that protects the account with a passphrase instead.",
   "desktop gate_add_a_passphrase_instead: Desktop, sign-in and gate screens (in view.rs, key_failed_view).",
 ]
-text = ""
+text = "বদলে একটি পাসফ্রেজ যোগ করুন"
 
 [t_b049cff8f6]
 en = "Nothing was kept on this phone yet, so there is nothing to lose. Try again, or protect the account with a passphrase instead of the phone’s own key."
@@ -4705,7 +4705,7 @@ where = [
   "android onboarding_savefail_notice: Reassurance box on the save-failed screen.",
   "ios onboarding_nosave_notice: Notice when the phone's key store failed.",
 ]
-text = ""
+text = "এই ফোনে এখনও কিছু রাখা হয়নি, তাই হারানোর কিছু নেই। আবার চেষ্টা করুন, অথবা ফোনের নিজের চাবির বদলে একটি পাসফ্রেজ দিয়ে অ্যাকাউন্টটি সুরক্ষিত রাখুন।"
 
 [t_75433cfcb6]
 en = "Before you start"
@@ -4714,7 +4714,7 @@ where = [
   "ios onboarding_terms_title: Title of the terms screen.",
   "desktop signup_before_you_start: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "শুরু করার আগে"
 
 [t_62eeadcd02]
 en = "I agree"
@@ -4723,7 +4723,7 @@ where = [
   "ios onboarding_agree: Button that accepts the terms.",
   "desktop signup_i_agree: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "আমি রাজি"
 
 [t_3886adb527]
 en = "Free of ads and tracking."
@@ -4732,7 +4732,7 @@ where = [
   "ios onboarding_terms1: Bold lead of the first point on the terms screen.",
   "desktop signup_free_of_ads_and: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "বিজ্ঞাপন আর ট্র্যাকিং নেই।"
 
 [t_4e39bb7c5c]
 en = "Tinline doesn’t collect your contacts, calls or location."
@@ -4741,7 +4741,7 @@ where = [
   "ios onboarding_terms1_rest: Rest of the first point on the terms screen.",
   "desktop signup_tinline_doesnt_collect_your: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "Tinline আপনার পরিচিতি, কল বা লোকেশন সংগ্রহ করে না।"
 
 [t_3bcfb865c5]
 en = "Calls are end-to-end encrypted."
@@ -4750,7 +4750,7 @@ where = [
   "ios onboarding_terms2: Bold lead of the second point on the terms screen.",
   "desktop signup_calls_are_end_to: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "কল এন্ড-টু-এন্ড এনক্রিপ্টেড।"
 
 [t_e3cf72a054]
 en = "When a direct line isn’t possible, an encrypted relay passes the call along. It can’t hear it."
@@ -4759,7 +4759,7 @@ where = [
   "ios onboarding_terms2_rest: Rest of the second point on the terms screen.",
   "desktop signup_when_a_direct_line: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "সরাসরি লাইন সম্ভব না হলে, একটি এনক্রিপ্টেড রিলে কলটি পৌঁছে দেয়। রিলে কল শুনতে পারে না।"
 
 [t_07e63c57a9]
 en = "Your account is yours."
@@ -4768,7 +4768,7 @@ where = [
   "ios onboarding_terms3: Bold lead of the third point on the terms screen.",
   "desktop signup_your_account_is_yours: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "আপনার অ্যাকাউন্ট আপনারই।"
 
 [t_a67fba4ccf]
 en = "It lives on your devices, not on a server. Your recovery words are the way back in, so keep them safe."
@@ -4777,14 +4777,14 @@ where = [
   "ios onboarding_terms3_rest: Rest of the third point on the terms screen.",
   "desktop signup_it_lives_on_your: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "এটা থাকে আপনার ডিভাইসগুলোতে, কোনো সার্ভারে নয়। আপনার রিকভারি শব্দই ফিরে আসার পথ, তাই সেগুলো যত্নে রাখুন।"
 
 [t_f5d2dcb816]
 en = "By continuing, you agree to the [Terms of Use](terms) and have read the [Privacy Policy](privacy)."
 where = [
   "android onboarding_terms_by_continuing: Sentence under the terms points. Each [label](terms) and [label](privacy) is a tappable link: translate the label, keep the (terms) and (privacy) parts exactly, and move the whole link wherever the sentence needs it. Terms of Use and Privacy Policy are the titles of two documents.",
 ]
-text = ""
+text = "চালিয়ে গেলে আপনি [ব্যবহারের শর্তাবলি](terms)-তে রাজি হচ্ছেন এবং [প্রাইভেসি পলিসি](privacy) পড়েছেন।"
 
 [t_7c4290d283]
 en = "So calls can reach you"
@@ -4792,7 +4792,7 @@ where = [
   "android onboarding_perms_title: Heading of the permissions step.",
   "ios onboarding_perms_title: Title of the permissions screen.",
 ]
-text = ""
+text = "যাতে কল আপনার কাছে পৌঁছায়"
 
 [t_bd94457f30]
 en = "Tinline works like a phone line: it stays open quietly in the background. Each of these is optional, and you can change them later."
@@ -4800,7 +4800,7 @@ where = [
   "android onboarding_perms_lead: Lead on the permissions step.",
   "ios onboarding_perms_lead: Explanation on the permissions screen.",
 ]
-text = ""
+text = "Tinline একটি ফোন লাইনের মতো কাজ করে: ব্যাকগ্রাউন্ডে চুপচাপ খোলা থাকে। এগুলোর প্রতিটিই ঐচ্ছিক, আর পরে বদলাতে পারবেন।"
 
 [t_ff3d541d05]
 en = "Microphone"
@@ -4812,7 +4812,7 @@ where = [
   "ios onboarding_perm_mic: Permission row title.",
   "desktop common_microphone: Shared label, used in several places (audio, call_screen, profile, view).",
 ]
-text = ""
+text = "মাইক্রোফোন"
 
 [t_a79cfadcde]
 en = "So they can hear you. Used only during a call."
@@ -4820,7 +4820,7 @@ where = [
   "android onboarding_perm_mic_why: Why the microphone permission is asked.",
   "ios onboarding_perm_mic_why: Why Tinline asks for the microphone.",
 ]
-text = ""
+text = "যাতে ওঁরা আপনার কথা শুনতে পান। শুধু কলের সময় ব্যবহার হয়।"
 
 [t_f553fde14e]
 en = "Notifications"
@@ -4832,7 +4832,7 @@ where = [
   "ios onboarding_perm_notif: Permission row title.",
   "desktop profile_notifications: Desktop, profile and settings (in profile_view.rs, profile_page).",
 ]
-text = ""
+text = "বিজ্ঞপ্তি"
 
 [t_7674f6ab4f]
 en = "So you see incoming calls and messages."
@@ -4840,7 +4840,7 @@ where = [
   "android onboarding_perm_notifications_why: Why the notifications permission is asked.",
   "ios onboarding_perm_notif_why: Why Tinline asks for notifications.",
 ]
-text = ""
+text = "যাতে আসা কল আর মেসেজ দেখতে পান।"
 
 [t_c2f6535864]
 en = "Ring over lock screen"
@@ -4848,14 +4848,14 @@ where = [
   "android onboarding_perm_fullscreen: Permission name for showing incoming calls over the lock screen.",
   "android notif_ring_lock: Permission row (Android 14 full-screen notification) on the Notifications page and the battery checklist.",
 ]
-text = ""
+text = "লক স্ক্রিনের ওপর রিং"
 
 [t_0918e7bac6]
 en = "Shows incoming calls full screen, like the phone app."
 where = [
   "android onboarding_perm_fullscreen_why: Why the full-screen permission is asked.",
 ]
-text = ""
+text = "আসা কল পুরো স্ক্রিনে দেখায়, ফোন অ্যাপের মতো।"
 
 [t_8060359eb2]
 en = "Run in background"
@@ -4863,14 +4863,14 @@ where = [
   "android onboarding_perm_background: Permission name for staying alive in the background.",
   "android perms_battery_need_title: Name of the battery-exemption permission (internal label of a permission the app needs).",
 ]
-text = ""
+text = "ব্যাকগ্রাউন্ডে চলা"
 
 [t_71c28a78f9]
 en = "Android pauses idle apps to save battery. This keeps your line open, using a little battery."
 where = [
   "android onboarding_perm_background_why: Why the background permission is asked.",
 ]
-text = ""
+text = "ব্যাটারি বাঁচাতে Android অলস অ্যাপ থামিয়ে দেয়। এটি সামান্য ব্যাটারি খরচ করে আপনার লাইন খোলা রাখে।"
 
 [t_854e55f8c7]
 en = "Allow"
@@ -4879,21 +4879,21 @@ where = [
   "android home_banner_allow: Banner button that opens the full-screen call setting.",
   "ios onboarding_allow: Button that asks for a permission.",
 ]
-text = ""
+text = "অনুমতি দিন"
 
 [t_dd9c8cc79f]
 en = "Allow {permission}"
 where = [
   "android onboarding_perm_allow_desc: Screen-reader description of the Allow button. {permission} is the permission name in lower case.",
 ]
-text = ""
+text = "{permission}-এর অনুমতি দিন"
 
 [t_3a4f0ec59d]
 en = "{permission} allowed"
 where = [
   "android onboarding_perm_allowed_desc: Screen-reader description of the tick shown once a permission is granted. {permission} is the permission name.",
 ]
-text = ""
+text = "{permission}-এর অনুমতি দেওয়া হয়েছে"
 
 [t_424c52c0a7]
 en = "Open settings"
@@ -4904,7 +4904,7 @@ where = [
   "ios shell_mic_open_settings: Button that opens the system settings for the microphone permission.",
   "ios call_open_settings: Button that opens the system settings for Tinline.",
 ]
-text = ""
+text = "সেটিংস খুলুন"
 
 [t_b3ae182018]
 en = "Notifications are off"
@@ -4912,7 +4912,7 @@ where = [
   "android perms_notifications_off_title: Title of the warning card shown when the phone blocks Tinline's notifications.",
   "ios settings_perm_notif_title: Title of the warning shown when system notifications are off.",
 ]
-text = ""
+text = "বিজ্ঞপ্তি বন্ধ আছে"
 
 [t_19b434ed57]
 en = "Tinline can’t alert you to messages or calls. They still arrive; you’ll see them when you open the app. Turn notifications on in system settings."
@@ -4920,56 +4920,56 @@ where = [
   "android perms_notifications_off_body: Body of the warning card for switched-off notifications.",
   "ios settings_perm_notif_body: Body of the notifications-off warning.",
 ]
-text = ""
+text = "Tinline আপনাকে মেসেজ বা কলের খবর জানাতে পারছে না। সেগুলো তবুও আসে; অ্যাপ খুললেই দেখতে পাবেন। সিস্টেম সেটিংসে বিজ্ঞপ্তি চালু করুন।"
 
 [t_7d228fbd99]
 en = "Battery saving may delay calls"
 where = [
   "android perms_battery_title: Title of the warning card shown when Android restricts Tinline's battery use.",
 ]
-text = ""
+text = "ব্যাটারি সেভিংয়ের কারণে কল দেরিতে আসতে পারে"
 
 [t_770eea319c]
 en = "Android can pause Tinline in the background, so calls and messages can arrive late. Set Tinline’s battery use to Unrestricted."
 where = [
   "android perms_battery_body: Body of the battery warning card. Unrestricted is the name of the Android battery setting.",
 ]
-text = ""
+text = "Android ব্যাকগ্রাউন্ডে Tinline থামিয়ে দিতে পারে, তাই কল আর মেসেজ দেরিতে আসতে পারে। Tinline-এর ব্যাটারি ব্যবহার “সীমাহীন”-এ সেট করুন।"
 
 [t_86979511dc]
 en = "So the other person can hear you"
 where = [
   "android perms_mic_why: Why Tinline needs the microphone permission.",
 ]
-text = ""
+text = "যাতে অন্যজন আপনার কথা শুনতে পান"
 
 [t_e38c9e3a42]
 en = "To show incoming calls"
 where = [
   "android perms_notifications_why: Why Tinline needs the notifications permission.",
 ]
-text = ""
+text = "আসা কল দেখানোর জন্য"
 
 [t_83653c9226]
 en = "Exempt from battery optimisation so calls arrive when idle"
 where = [
   "android perms_battery_need_why: Why Tinline asks to be exempt from battery optimisation.",
 ]
-text = ""
+text = "ব্যাটারি অপ্টিমাইজেশন থেকে ছাড়, যাতে ফোন অলস থাকলেও কল আসে"
 
 [t_e69907b099]
 en = "Full-screen calls"
 where = [
   "android perms_fullscreen_title: Name of the full-screen notification permission (internal label of a permission the app needs).",
 ]
-text = ""
+text = "পুরো স্ক্রিনে কল"
 
 [t_47c5032e9f]
 en = "Show incoming calls over the lock screen"
 where = [
   "android perms_fullscreen_why: Why Tinline needs the full-screen notification permission.",
 ]
-text = ""
+text = "লক স্ক্রিনের ওপর আসা কল দেখান"
 
 [t_6f11bd5837]
 en = "Settings"
@@ -4980,7 +4980,7 @@ where = [
   "ios shell_settings: Accessibility label of the settings (gear) button on the home header.",
   "desktop profile_settings: Desktop, profile and settings (in profile_view.rs, profile_page).",
 ]
-text = ""
+text = "সেটিংস"
 
 [t_fbad1421e3]
 en = "Selected · online"
@@ -4989,7 +4989,7 @@ where = [
   "ios settings_account_selected: Subtitle of the selected account row.",
   "desktop profile_selected_online: Desktop, profile and settings (in profile_view.rs, settings_landing).",
 ]
-text = ""
+text = "বেছে নেওয়া · অনলাইন"
 
 [t_f4166c2daf]
 en = "Paused · tap to switch"
@@ -4998,7 +4998,7 @@ where = [
   "ios settings_account_paused: Subtitle of a non-selected account row.",
   "desktop profile_paused_tap_to_switch: Desktop, profile and settings (in profile_view.rs, settings_landing).",
 ]
-text = ""
+text = "থেমে আছে · বদলাতে ট্যাপ করুন"
 
 [t_97d9b1f459]
 en = "Add another account"
@@ -5007,7 +5007,7 @@ where = [
   "ios settings_add_account: Row that opens the add-account choices.",
   "desktop profile_add_another_account: Desktop, profile and settings (in profile_view.rs, settings_landing).",
 ]
-text = ""
+text = "আরেকটি অ্যাকাউন্ট যোগ করুন"
 
 [t_bb4f833bf1]
 en = "Only the selected account is online on this phone. Switching pauses the other one: it receives no calls until you select it again."
@@ -5015,7 +5015,7 @@ where = [
   "android settings_accounts_note: Explanation under the account list on the Settings landing.",
   "ios settings_accounts_note: Explanation under the account list.",
 ]
-text = ""
+text = "এই ফোনে শুধু বেছে নেওয়া অ্যাকাউন্টটিই অনলাইনে থাকে। বদলালে অন্যটি থেমে যায়: আবার বেছে না নেওয়া পর্যন্ত সেটিতে কোনো কল আসে না।"
 
 [t_5cab984542]
 en = "Appearance"
@@ -5024,7 +5024,7 @@ where = [
   "ios settings_appearance: Section heading for the light/dark choice.",
   "desktop profile_appearance: Desktop, profile and settings (in profile_view.rs, settings_landing).",
 ]
-text = ""
+text = "চেহারা"
 
 [t_ce3a092efe]
 en = "Match my phone"
@@ -5032,7 +5032,7 @@ where = [
   "android settings_look_match: Appearance option: follow the phone's light or dark setting.",
   "ios settings_appearance_match: Appearance option: follow the phone's light or dark setting.",
 ]
-text = ""
+text = "আমার ফোনের মতো"
 
 [t_7857115a54]
 en = "Light or dark, as this phone is set"
@@ -5040,7 +5040,7 @@ where = [
   "android settings_look_match_sub: Small line under the Match my phone appearance option.",
   "ios settings_appearance_match_sub: Subtitle of the Match my phone option.",
 ]
-text = ""
+text = "এই ফোনে যেমন সেট করা আছে, লাইট বা ডার্ক"
 
 [t_6c447396fa]
 en = "Light"
@@ -5049,7 +5049,7 @@ where = [
   "ios settings_appearance_light: Appearance option: always light.",
   "desktop profile_light: Desktop, profile and settings (in profile_view.rs, settings_landing).",
 ]
-text = ""
+text = "লাইট"
 
 [t_e474202d31]
 en = "Dark"
@@ -5058,7 +5058,7 @@ where = [
   "ios settings_appearance_dark: Appearance option: always dark.",
   "desktop profile_dark: Desktop, profile and settings (in profile_view.rs, settings_landing).",
 ]
-text = ""
+text = "ডার্ক"
 
 [t_ed363ef678]
 en = "Devices"
@@ -5067,7 +5067,7 @@ where = [
   "ios settings_row_devices: Settings list row.",
   "desktop profile_devices: Desktop, profile and settings (in profile_view.rs, profile_page).",
 ]
-text = ""
+text = "ডিভাইস"
 
 [t_9211d6c9bd]
 en = "Privacy"
@@ -5076,7 +5076,7 @@ where = [
   "ios settings_row_privacy: Settings list row.",
   "desktop common_privacy: Shared label, used in several places (profile, view).",
 ]
-text = ""
+text = "প্রাইভেসি"
 
 [t_84e0cb5ef5]
 en = "Sounds"
@@ -5085,7 +5085,7 @@ where = [
   "ios settings_row_sounds: Settings list row.",
   "desktop profile_sounds: Desktop, profile and settings (in profile_view.rs, profile_page).",
 ]
-text = ""
+text = "সাউন্ড"
 
 [t_f3c42ba016]
 en = "Video"
@@ -5096,7 +5096,7 @@ where = [
   "ios call_video_button: Label of the button that answers an incoming video call with my camera on.",
   "desktop common_video: Shared label, used in several places (call_screen, profile).",
 ]
-text = ""
+text = "ভিডিও"
 
 [t_77bb787833]
 en = "Storage"
@@ -5105,7 +5105,7 @@ where = [
   "ios settings_row_storage: Settings list row.",
   "desktop profile_storage: Desktop, profile and settings (in profile_view.rs, profile_page).",
 ]
-text = ""
+text = "স্টোরেজ"
 
 [t_dd3831dad6]
 en = "About Tinline"
@@ -5114,7 +5114,7 @@ where = [
   "ios settings_row_about: Settings list row for the About page.",
   "desktop profile_about_tinline: Desktop, profile and settings (in profile_view.rs, profile_page).",
 ]
-text = ""
+text = "Tinline সম্পর্কে"
 
 [t_024848ef1f]
 en = "Video in calls"
@@ -5123,7 +5123,7 @@ where = [
   "ios settings_video_in_calls: Settings row and switch label for allowing video in calls.",
   "desktop settings_video_in_calls: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "কলে ভিডিও"
 
 [t_316a961ccc]
 en = "You can turn your camera on in a call"
@@ -5131,7 +5131,7 @@ where = [
   "android settings_video_in_calls_on: Small line under the Video in calls switch when it is on.",
   "ios settings_video_in_calls_on: Subtitle when video in calls is allowed.",
 ]
-text = ""
+text = "কলের মধ্যে আপনি ক্যামেরা চালু করতে পারেন"
 
 [t_5a7ab72466]
 en = "Calls are voice only"
@@ -5139,7 +5139,7 @@ where = [
   "android settings_video_in_calls_off: Small line under the Video in calls switch when it is off.",
   "ios settings_video_in_calls_off: Subtitle when video in calls is off.",
 ]
-text = ""
+text = "কল শুধু ভয়েস"
 
 [t_a1579450e2]
 en = "Link to a device"
@@ -5147,7 +5147,7 @@ where = [
   "android settings_add_link: Choice in the Add another account sheet: bring an account over from another device. Also named when another screen tells me which button to press on the new device.",
   "ios settings_add_link: Choice in the add-account dialog.",
 ]
-text = ""
+text = "একটি ডিভাইসে লিঙ্ক করুন"
 
 [t_a946f790b5]
 en = "Restore from recovery phrase"
@@ -5155,7 +5155,7 @@ where = [
   "android settings_add_restore: Choice in the Add another account sheet: restore an account from its 24 recovery words.",
   "ios settings_add_restore: Choice in the add-account dialog.",
 ]
-text = ""
+text = "রিকভারি শব্দ দিয়ে ফিরিয়ে আনুন"
 
 [t_17324a9a91]
 en = "Alert me about"
@@ -5164,7 +5164,7 @@ where = [
   "ios settings_notif_alert_me: Section heading above the notification category switches.",
   "desktop profile_alert_me_about: Desktop, profile and settings (in profile_view.rs, notifications_page).",
 ]
-text = ""
+text = "যেগুলোর জন্য আমাকে জানাবে"
 
 [t_20060c7c88]
 en = "Messages"
@@ -5177,7 +5177,7 @@ where = [
   "ios shell_search_messages: Search results header for matching messages.",
   "desktop common_messages: Shared label, used in several places (profile, shell).",
 ]
-text = ""
+text = "মেসেজ"
 
 [t_a00f13dded]
 en = "From people, not groups"
@@ -5186,7 +5186,7 @@ where = [
   "ios settings_notif_messages_sub: Subtitle of the Messages notification row.",
   "desktop profile_from_people_not_groups: Desktop, profile and settings (in profile_view.rs, notifications_page).",
 ]
-text = ""
+text = "মানুষের কাছ থেকে, গ্রুপ থেকে নয়"
 
 [t_8a17cd599d]
 en = "Calls"
@@ -5197,7 +5197,7 @@ where = [
   "ios shell_tab_calls: Bottom tab title and screen reader label.",
   "desktop common_calls: Shared label, used in several places (profile, shell, view).",
 ]
-text = ""
+text = "কল"
 
 [t_ed2f334fce]
 en = "Ringing when someone calls"
@@ -5206,7 +5206,7 @@ where = [
   "ios settings_notif_calls_sub: Subtitle of the Calls notification row.",
   "desktop profile_ringing_when_someone_calls: Desktop, profile and settings (in profile_view.rs, notifications_page).",
 ]
-text = ""
+text = "কেউ কল করলে রিং"
 
 [t_91d94d2c90]
 en = "Groups"
@@ -5217,7 +5217,7 @@ where = [
   "ios shell_tab_groups: Bottom tab title and screen reader label.",
   "desktop common_groups: Shared label, used in several places (profile, shell, view).",
 ]
-text = ""
+text = "গ্রুপ"
 
 [t_39da3cf549]
 en = "Posts, invites and requests"
@@ -5226,7 +5226,7 @@ where = [
   "ios settings_notif_groups_sub: Subtitle of the Groups notification row.",
   "desktop profile_posts_invites_and_requests: Desktop, profile and settings (in profile_view.rs, notifications_page).",
 ]
-text = ""
+text = "পোস্ট, আমন্ত্রণ আর অনুরোধ"
 
 [t_e87ceb9af8]
 en = "Message notifications"
@@ -5234,7 +5234,7 @@ where = [
   "android notif_messages_switch: Accessibility label of the Messages notification switch.",
   "ios settings_notif_messages_label: Accessibility label of the message notifications switch.",
 ]
-text = ""
+text = "মেসেজের বিজ্ঞপ্তি"
 
 [t_420c996232]
 en = "Call notifications"
@@ -5242,7 +5242,7 @@ where = [
   "android notif_calls_switch: Accessibility label of the Calls notification switch.",
   "ios settings_notif_calls_label: Accessibility label of the call notifications switch.",
 ]
-text = ""
+text = "কলের বিজ্ঞপ্তি"
 
 [t_5d2dce19f0]
 en = "Group notifications"
@@ -5250,7 +5250,7 @@ where = [
   "android notif_groups_switch: Accessibility label of the Groups notification switch.",
   "ios settings_notif_groups_label: Accessibility label of the group notifications switch.",
 ]
-text = ""
+text = "গ্রুপের বিজ্ঞপ্তি"
 
 [t_225bca0960]
 en = "A muted chat never alerts you, whatever is switched on here. Missed calls from one person fold into one notification."
@@ -5259,7 +5259,7 @@ where = [
   "ios settings_notif_note: Note under the notification switches.",
   "desktop profile_a_muted_chat_never: Desktop, profile and settings (in profile_view.rs, notifications_page).",
 ]
-text = ""
+text = "মিউট করা চ্যাট কখনও আপনাকে জানায় না, এখানে যা-ই চালু থাকুক। একজনের কাছ থেকে আসা মিসড কল একটি বিজ্ঞপ্তিতে একসঙ্গে দেখায়।"
 
 [t_f9314a645b]
 en = "Allowed"
@@ -5268,7 +5268,7 @@ where = [
   "ios settings_perm_allowed: Permission row state: allowed.",
   "desktop profile_allowed: Desktop, profile and settings (in profile_view.rs, notifications_page).",
 ]
-text = ""
+text = "অনুমতি আছে"
 
 [t_86b04a353c]
 en = "Off in system settings"
@@ -5276,7 +5276,7 @@ where = [
   "android notif_perm_off: Status of a system permission that is switched off in the phone's settings.",
   "ios settings_perm_off: Permission row state: switched off in the system settings.",
 ]
-text = ""
+text = "সিস্টেম সেটিংসে বন্ধ"
 
 [t_d867863228]
 en = "Asked when you call"
@@ -5284,28 +5284,28 @@ where = [
   "android notif_perm_mic_asked: Status of the microphone permission when it has not been granted yet: the phone asks when a call needs it.",
   "ios settings_perm_mic_ask: Microphone permission row state: not asked yet.",
 ]
-text = ""
+text = "কল করার সময় জিজ্ঞেস করা হবে"
 
 [t_74f5e97a8c]
 en = "Battery use"
 where = [
   "android notif_perm_battery: Permission row on the Notifications page for the Android battery setting.",
 ]
-text = ""
+text = "ব্যাটারি ব্যবহার"
 
 [t_9ab6b9677e]
 en = "Unrestricted"
 where = [
   "android notif_perm_unrestricted: Status of the battery setting when Tinline is allowed to run in the background. Matches the Android setting name.",
 ]
-text = ""
+text = "সীমাহীন"
 
 [t_986948ce6e]
 en = "Restricted"
 where = [
   "android notif_perm_restricted: Status of the battery setting when Android may pause Tinline. Matches the Android setting name.",
 ]
-text = ""
+text = "সীমাবদ্ধ"
 
 [t_7f59b79d80]
 en = "Fix"
@@ -5314,7 +5314,7 @@ where = [
   "android home_banner_fix: Banner button that opens the battery setting.",
   "ios settings_perm_fix_btn: Small button that opens system settings for a permission.",
 ]
-text = ""
+text = "ঠিক করুন"
 
 [t_75471596a9]
 en = "These are set by your system, not by Tinline. Tinline asks only when it needs one."
@@ -5323,7 +5323,7 @@ where = [
   "ios settings_perms_note: Note under the permission rows.",
   "desktop profile_these_are_set_by: Desktop, profile and settings (in profile_view.rs, notifications_page).",
 ]
-text = ""
+text = "এগুলো আপনার সিস্টেম সেট করে, Tinline নয়। দরকার হলেই শুধু Tinline অনুমতি চায়।"
 
 [t_ba3ab5916d]
 en = "Quiet"
@@ -5332,7 +5332,7 @@ where = [
   "ios settings_quiet: Section heading, row title and switch label for the quiet mode.",
   "desktop profile_quiet: Desktop, profile and settings (in profile_view.rs, sounds_page).",
 ]
-text = ""
+text = "নিঃশব্দ"
 
 [t_73d5e714e0]
 en = "No sounds from Tinline: ringing, call tones, joins"
@@ -5341,7 +5341,7 @@ where = [
   "ios settings_quiet_sub: Subtitle of the Quiet row.",
   "desktop profile_no_sounds_from_tinline: Desktop, profile and settings (in profile_view.rs, sounds_page).",
 ]
-text = ""
+text = "Tinline থেকে কোনো সাউন্ড নয়: রিং, কলের টোন, যোগ দেওয়ার শব্দ"
 
 [t_909bc609cf]
 en = "Classic chime"
@@ -5349,7 +5349,7 @@ where = [
   "android settings_sound_classic: Name of a call sound set.",
   "ios settings_sound_classic: Ringtone choice name.",
 ]
-text = ""
+text = "ক্লাসিক টুংটাং"
 
 [t_973e2907f7]
 en = "A bright four-note chime."
@@ -5357,7 +5357,7 @@ where = [
   "android settings_sound_classic_sub: Description of the Classic chime call sound.",
   "ios settings_sound_classic_sub: Description of the Classic chime ringtone.",
 ]
-text = ""
+text = "চার সুরের ঝলমলে টুংটাং।"
 
 [t_9b9e6e2e8f]
 en = "Slack → taut"
@@ -5365,7 +5365,7 @@ where = [
   "android settings_sound_slack: Name of a call sound set (two notes that beat, then one that pulls tight). The arrow means from loose to tight.",
   "ios settings_sound_slack: Ringtone choice name.",
 ]
-text = ""
+text = "ঢিলে → টানটান"
 
 [t_d00e0714a4]
 en = "Two close notes beat like a loose string, then one pulls tight."
@@ -5373,7 +5373,7 @@ where = [
   "android settings_sound_slack_sub: Description of the Slack to taut call sound.",
   "ios settings_sound_slack_sub: Description of the Slack → taut ringtone.",
 ]
-text = ""
+text = "কাছাকাছি দুটি সুর ঢিলে তারের মতো দোলে, তারপর একটি টানটান হয়।"
 
 [t_1a59cd4dd4]
 en = "Triad knock"
@@ -5381,7 +5381,7 @@ where = [
   "android settings_sound_triad: Name of a call sound set.",
   "ios settings_sound_triad: Ringtone choice name.",
 ]
-text = ""
+text = "তিন সুরের টোকা"
 
 [t_83563d2f55]
 en = "Three rising notes, like a knock."
@@ -5389,7 +5389,7 @@ where = [
   "android settings_sound_triad_sub: Description of the Triad knock call sound.",
   "ios settings_sound_triad_sub: Description of the Triad knock ringtone.",
 ]
-text = ""
+text = "ওপরে ওঠা তিনটি সুর, দরজায় টোকার মতো।"
 
 [t_f82d18f9cb]
 en = "Call sounds"
@@ -5398,7 +5398,7 @@ where = [
   "ios settings_call_sounds: Section heading for ringtone choices.",
   "desktop profile_call_sounds: Desktop, profile and settings (in profile_view.rs, sounds_page).",
 ]
-text = ""
+text = "কলের সাউন্ড"
 
 [t_23d07f2da3]
 en = "Ringtone"
@@ -5407,7 +5407,7 @@ where = [
   "ios settings_cue_ring: Chip that previews the ringtone.",
   "desktop profile_ringtone: Desktop, profile and settings (in profile_view.rs, sounds_page).",
 ]
-text = ""
+text = "রিংটোন"
 
 [t_2f84cdc07a]
 en = "Connected"
@@ -5418,7 +5418,7 @@ where = [
   "ios people_line_connected: Accessibility description of the line between the user and a contact: connected.",
   "desktop profile_connected: Desktop, profile and settings (in profile_view.rs, sounds_page).",
 ]
-text = ""
+text = "কানেক্ট হয়েছে"
 
 [t_2b6544f393]
 en = "Call ended"
@@ -5431,7 +5431,7 @@ where = [
   "ios call_ended_title: Title of the screen shown after a call ends, and the default end reason.",
   "desktop common_call_ended: Shared label, used in several places (call_screen, gcall, profile).",
 ]
-text = ""
+text = "কল শেষ হয়েছে"
 
 [t_ead8ff0e51]
 en = "Quiet is on, so previews are silent."
@@ -5440,7 +5440,7 @@ where = [
   "ios settings_sounds_note_quiet: Note under the sound previews when quiet mode is on.",
   "desktop profile_quiet_is_on_so: Desktop, profile and settings (in profile_view.rs, sounds_page).",
 ]
-text = ""
+text = "নিঃশব্দ চালু আছে, তাই প্রিভিউতে কোনো শব্দ হবে না।"
 
 [t_4bd4717d11]
 en = "Tap a sound to hear it. The choice applies to the next call."
@@ -5449,7 +5449,7 @@ where = [
   "ios settings_sounds_note: Note under the sound previews.",
   "desktop profile_tap_a_sound_to: Desktop, profile and settings (in profile_view.rs, sounds_page).",
 ]
-text = ""
+text = "শুনতে কোনো সাউন্ডে ট্যাপ করুন। পরের কল থেকে এটা কাজ করবে।"
 
 [t_1758604677]
 en = "Video quality"
@@ -5458,7 +5458,7 @@ where = [
   "ios settings_video_quality: Section heading on the Video page.",
   "desktop profile_video_quality: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "ভিডিওর মান"
 
 [t_5b51c78fea]
 en = "Sharper video"
@@ -5467,7 +5467,7 @@ where = [
   "ios settings_video_sharper: Row and switch label for starting video calls in HD.",
   "desktop profile_sharper_video: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "আরও ঝকঝকে ভিডিও"
 
 [t_24032afc4c]
 en = "Always starts in HD. Uses more data and battery."
@@ -5476,7 +5476,7 @@ where = [
   "ios settings_video_hd_on: Subtitle of Sharper video when on.",
   "desktop profile_always_starts_in_hd: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "সবসময় HD-তে শুরু হয়। ডেটা আর ব্যাটারি বেশি লাগে।"
 
 [t_98d61cac31]
 en = "Goes HD by itself when the connection allows."
@@ -5485,7 +5485,7 @@ where = [
   "ios settings_video_hd_auto: Subtitle of Sharper video when off.",
   "desktop profile_goes_hd_by_itself: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "কানেকশন ভালো হলে নিজে থেকেই HD-তে যায়।"
 
 [t_e5146ff576]
 en = "Every video call starts this way. During a call, tap HD to change it for that call."
@@ -5494,35 +5494,35 @@ where = [
   "ios settings_video_note: Note under the video quality switch.",
   "desktop profile_every_video_call_starts: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "প্রতিটি ভিডিও কল এভাবেই শুরু হয়। কলের সময় শুধু সেই কলের জন্য বদলাতে HD-তে ট্যাপ করুন।"
 
 [t_7c81be4f77]
 en = "{value} GB"
 where = [
   "android settings_size_gb: A storage size in gigabytes. {value} is a number with one decimal.",
 ]
-text = ""
+text = "{value} GB"
 
 [t_5a7ea8ccc1]
 en = "{value} MB"
 where = [
   "android settings_size_mb: A storage size in megabytes. {value} is a whole number.",
 ]
-text = ""
+text = "{value} MB"
 
 [t_b9f95541a6]
 en = "{value} KB"
 where = [
   "android settings_size_kb: A storage size in kilobytes. {value} is a whole number.",
 ]
-text = ""
+text = "{value} KB"
 
 [t_98c78e611c]
 en = "{value} B"
 where = [
   "android settings_size_b: A storage size in bytes. {value} is a whole number.",
 ]
-text = ""
+text = "{value} B"
 
 [t_8e7c1c152b]
 en = "Pictures"
@@ -5531,7 +5531,7 @@ where = [
   "ios settings_storage_pictures: Storage breakdown label.",
   "desktop profile_pictures: Desktop, profile and settings (in profile_ui.rs, profile_update).",
 ]
-text = ""
+text = "ছবি"
 
 [t_00bfd7b1da]
 en = "Files"
@@ -5540,7 +5540,7 @@ where = [
   "ios settings_storage_files: Storage breakdown label.",
   "desktop profile_files: Desktop, profile and settings (in profile_view.rs, storage_page).",
 ]
-text = ""
+text = "ফাইল"
 
 [t_a51b20dfb2]
 en = "Cache"
@@ -5549,7 +5549,7 @@ where = [
   "ios settings_storage_cache: Storage breakdown label.",
   "desktop profile_cache: Desktop, profile and settings (in profile_view.rs, storage_page).",
 ]
-text = ""
+text = "ক্যাশ"
 
 [t_c2767071de]
 en = "Download pictures"
@@ -5558,7 +5558,7 @@ where = [
   "ios settings_storage_download: Section heading for picture download choices.",
   "desktop profile_download_pictures: Desktop, profile and settings (in profile_view.rs, storage_page).",
 ]
-text = ""
+text = "ছবি ডাউনলোড"
 
 [t_22409bf022]
 en = "Always"
@@ -5567,7 +5567,7 @@ where = [
   "ios settings_dl_always: Picture download choice.",
   "desktop profile_always: Desktop, profile and settings (in profile_view.rs, storage_page).",
 ]
-text = ""
+text = "সবসময়"
 
 [t_1a452cd860]
 en = "On Wi-Fi and mobile data"
@@ -5576,7 +5576,7 @@ where = [
   "ios settings_dl_always_sub: Subtitle of the Always download choice.",
   "desktop profile_on_wi_fi_and: Desktop, profile and settings (in profile_view.rs, storage_page).",
 ]
-text = ""
+text = "Wi-Fi আর মোবাইল ডেটায়"
 
 [t_80ec3e590e]
 en = "On Wi-Fi"
@@ -5584,7 +5584,7 @@ where = [
   "android settings_dl_wifi: Picture download choice: download only on Wi-Fi.",
   "ios settings_dl_wifi: Picture download choice.",
 ]
-text = ""
+text = "Wi-Fi-তে"
 
 [t_ef66911de3]
 en = "On mobile data they wait for a tap"
@@ -5592,7 +5592,7 @@ where = [
   "android settings_dl_wifi_sub: Small line under the On Wi-Fi picture download choice.",
   "ios settings_dl_wifi_sub: Subtitle of the On Wi-Fi download choice.",
 ]
-text = ""
+text = "মোবাইল ডেটায় ট্যাপের অপেক্ষায় থাকে"
 
 [t_07c57edfbc]
 en = "When I tap them"
@@ -5601,7 +5601,7 @@ where = [
   "ios settings_dl_tap: Picture download choice.",
   "desktop profile_when_i_tap_them: Desktop, profile and settings (in profile_view.rs, storage_page).",
 ]
-text = ""
+text = "আমি ট্যাপ করলে"
 
 [t_dce236cb81]
 en = "Each shows a soft preview until then"
@@ -5610,7 +5610,7 @@ where = [
   "ios settings_dl_tap_sub: Subtitle of the When I tap them download choice.",
   "desktop profile_each_shows_a_soft: Desktop, profile and settings (in profile_view.rs, storage_page).",
 ]
-text = ""
+text = "ততক্ষণ প্রতিটির একটি ঝাপসা প্রিভিউ দেখায়"
 
 [t_6ccfc0822e]
 en = "Clear cache"
@@ -5619,7 +5619,7 @@ where = [
   "ios settings_clear_cache: Row that clears the picture and file cache.",
   "desktop profile_clear_cache: Desktop, profile and settings (in profile_view.rs, storage_page).",
 ]
-text = ""
+text = "ক্যাশ মুছুন"
 
 [t_bda6ead116]
 en = "{size} of pictures and files you’ve opened. They’re prepared again when you open them."
@@ -5627,7 +5627,7 @@ where = [
   "android settings_clear_cache_sub: Small line under Clear cache. {size} is a formatted size such as 12 MB.",
   "ios settings_clear_cache_sub: Subtitle of Clear cache; {size} is a size such as 12 MB.",
 ]
-text = ""
+text = "আপনার খোলা ছবি আর ফাইলের {size}। আবার খুললে আবার তৈরি হবে।"
 
 [t_1a905db57c]
 en = "Cleared"
@@ -5636,7 +5636,7 @@ where = [
   "ios settings_cache_cleared: Clear cache subtitle after clearing.",
   "desktop profile_cleared: Desktop, profile and settings (in profile_view.rs, storage_page).",
 ]
-text = ""
+text = "মুছে ফেলা হয়েছে"
 
 [t_9cc4506644]
 en = "Nothing to clear"
@@ -5645,7 +5645,7 @@ where = [
   "ios settings_cache_empty: Clear cache subtitle when the cache is empty.",
   "desktop profile_nothing_to_clear: Desktop, profile and settings (in profile_view.rs, storage_page).",
 ]
-text = ""
+text = "মোছার কিছু নেই"
 
 [t_a66e3b8971]
 en = "To free more space, remove pictures or files from their chat."
@@ -5654,7 +5654,7 @@ where = [
   "ios settings_storage_note: Note under the Clear cache row.",
   "desktop profile_to_free_more_space: Desktop, profile and settings (in profile_view.rs, storage_page).",
 ]
-text = ""
+text = "আরও জায়গা খালি করতে, চ্যাট থেকে ছবি বা ফাইল সরান।"
 
 [t_b61b10150e]
 en_one = "{count} person"
@@ -5664,6 +5664,8 @@ where = [
   "ios settings_blocked_count: Subtitle of Blocked people; {count} is how many are blocked.",
   "desktop profile_blocked_count: Settings > Privacy row: how many people you blocked. {count} is that number.",
 ]
+one = "{count} জন"
+other = "{count} জন"
 
 [t_dc9d990774]
 en = "No one"
@@ -5672,7 +5674,7 @@ where = [
   "ios settings_blocked_none: Subtitle of Blocked people when nobody is blocked.",
   "desktop profile_no_one: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "কেউ নেই"
 
 [t_ace4d33640]
 en = "Who can call me"
@@ -5681,7 +5683,7 @@ where = [
   "ios settings_who_can_call: Privacy row and page title for call permissions.",
   "desktop profile_who_can_call_me: Desktop, profile and settings (in profile_view.rs, profile_page).",
 ]
-text = ""
+text = "কে আমাকে কল করতে পারে"
 
 [t_01ef1acf26]
 en_one = "{count} contact is messages only"
@@ -5691,6 +5693,8 @@ where = [
   "ios settings_msg_only_count: Subtitle of Who can call me; {count} is how many contacts may only message.",
   "desktop profile_messages_only_count: Settings > Privacy row: how many contacts may message you but not call. {count} is that number.",
 ]
+one = "{count} জন পরিচিতি শুধু মেসেজ করতে পারেন"
+other = "{count} জন পরিচিতি শুধু মেসেজ করতে পারেন"
 
 [t_f32fa3d3d6]
 en = "All contacts can call"
@@ -5699,7 +5703,7 @@ where = [
   "ios settings_all_can_call: Subtitle of Who can call me when every contact may call.",
   "desktop profile_all_contacts_can_call: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "সব পরিচিতি কল করতে পারেন"
 
 [t_364e4d7be9]
 en = "Needs your passphrase"
@@ -5708,7 +5712,7 @@ where = [
   "ios settings_recovery_pass: Subtitle of Account recovery when a passphrase is set.",
   "desktop common_needs_your_passphrase: Shared label, used in several places (profile, view).",
 ]
-text = ""
+text = "আপনার পাসফ্রেজ লাগবে"
 
 [t_da3369bc3f]
 en = "Needs your screen lock"
@@ -5716,7 +5720,7 @@ where = [
   "android settings_recovery_needs_lock: Small line under Account recovery when the phone's screen lock protects the recovery backup.",
   "ios settings_recovery_lock: Subtitle of Account recovery when the phone screen lock is used.",
 ]
-text = ""
+text = "আপনার স্ক্রিন লক লাগবে"
 
 [t_db4af04dd1]
 en = "Protects Tinline on this device"
@@ -5725,7 +5729,7 @@ where = [
   "ios settings_passphrase_sub: Subtitle of the Passphrase row.",
   "desktop profile_protects_tinline_on_this: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "এই ডিভাইসে Tinline সুরক্ষিত রাখে"
 
 [t_4171b39021]
 en = "Your contacts see your name, picture and profile. Tinline doesn’t hide who you talk to, and every device linked to your account can read your chats."
@@ -5734,7 +5738,7 @@ where = [
   "ios settings_privacy_note: Note under the privacy rows.",
   "desktop profile_your_contacts_see_your: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "আপনার পরিচিতিরা আপনার নাম, ছবি আর প্রোফাইল দেখতে পান। আপনি কার সঙ্গে কথা বলেন, Tinline তা লুকায় না, আর আপনার অ্যাকাউন্টে লিঙ্ক করা প্রতিটি ডিভাইস আপনার চ্যাট পড়তে পারে।"
 
 [t_d13fbdcef3]
 en = "Read receipts"
@@ -5743,7 +5747,7 @@ where = [
   "ios settings_read_receipts: Privacy row and switch label.",
   "desktop profile_read_receipts: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "রিড রিসিপ্ট"
 
 [t_e33dd40c71]
 en = "People see when you’ve read their messages"
@@ -5752,7 +5756,7 @@ where = [
   "ios settings_reads_on: Read receipts subtitle when on.",
   "desktop profile_people_see_when_youve: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "আপনি কখন ওঁদের মেসেজ পড়েছেন, ওঁরা দেখতে পান"
 
 [t_da8f51f026]
 en = "Your reads stay with you"
@@ -5761,7 +5765,7 @@ where = [
   "ios settings_reads_off: Read receipts subtitle when off.",
   "desktop profile_your_reads_stay_with: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "আপনি কী পড়লেন, তা আপনার কাছেই থাকে"
 
 [t_acbc9673fb]
 en = "Delivered ticks still go out either way, and you still see when others read yours. Messages you read while this is off stay unconfirmed."
@@ -5770,7 +5774,7 @@ where = [
   "ios settings_reads_note: Note under the read receipts switch.",
   "desktop profile_delivered_ticks_still_go: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "পৌঁছানোর টিক তবুও যায়, আর অন্যরা আপনার মেসেজ পড়লে আপনি তা দেখতে পান। এটা বন্ধ থাকার সময় যে মেসেজ পড়েন, সেগুলোর পড়া নিশ্চিত করা হয় না।"
 
 [t_9b92530e61]
 en = "Show me as online in public groups"
@@ -5778,7 +5782,7 @@ where = [
   "android settings_presence_title: Switch title and accessibility label on the Privacy page. The title may wrap to two lines.",
   "desktop profile_show_me_as_online: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "পাবলিক গ্রুপে আমাকে অনলাইন দেখান"
 
 [t_16d2e3f396]
 en = "Members see when you’re here"
@@ -5786,7 +5790,7 @@ where = [
   "android settings_presence_on: Small line under the public-group presence switch when it is on.",
   "desktop profile_members_see_when_youre: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "আপনি কখন আছেন, সদস্যরা দেখতে পান"
 
 [t_e580edbe80]
 en = "You stay off their online lists"
@@ -5794,7 +5798,7 @@ where = [
   "android settings_presence_off: Small line under the public-group presence switch when it is off.",
   "desktop profile_you_stay_off_their: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "ওঁদের অনলাইন তালিকায় আপনি থাকেন না"
 
 [t_d7e9b858a1]
 en = "Public groups are the ones anyone can join with an open link. This applies on this device; your other devices keep their own choice."
@@ -5802,21 +5806,21 @@ where = [
   "android settings_presence_note: Explanation under the public-group presence switch.",
   "desktop profile_public_groups_are_the: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "পাবলিক গ্রুপ হলো সেগুলো, যেখানে খোলা লিঙ্ক দিয়ে যে কেউ যোগ দিতে পারেন। এটা এই ডিভাইসে প্রযোজ্য; আপনার অন্য ডিভাইসগুলো নিজেদের পছন্দ রাখে।"
 
 [t_1db1044a1b]
 en = "Group pictures"
 where = [
   "android settings_group_pictures: Section heading on the Privacy page: when pictures in groups download by themselves.",
 ]
-text = ""
+text = "গ্রুপের ছবি"
 
 [t_fae414092c]
 en = "Pictures in groups come from the group’s hosts. This applies on this device."
 where = [
   "android settings_group_pictures_note: Note under the group pictures choices.",
 ]
-text = ""
+text = "গ্রুপের ছবি আসে গ্রুপের হোস্টদের কাছ থেকে। এটা এই ডিভাইসে প্রযোজ্য।"
 
 [t_dba3db1114]
 en = "Can call you"
@@ -5825,7 +5829,7 @@ where = [
   "ios settings_can_call_you: Contact row state on Who can call me.",
   "desktop profile_can_call_you: Desktop, profile and settings (in profile_view.rs, calls_page).",
 ]
-text = ""
+text = "আপনাকে কল করতে পারেন"
 
 [t_c92e880e1e]
 en = "Messages only"
@@ -5836,7 +5840,7 @@ where = [
   "ios settings_messages_only: Contact row state on Who can call me.",
   "desktop common_messages_only: Shared label, used in several places (chat, profile).",
 ]
-text = ""
+text = "শুধু মেসেজ"
 
 [t_411cebb300]
 en = "Allow calls from {name}"
@@ -5844,7 +5848,7 @@ where = [
   "android settings_allow_calls_from: Accessibility label of a contact's switch on the Who can call me page. {name} is the contact's name.",
   "ios settings_allow_calls_from: Accessibility label of a contact's call switch; {name} is the contact's name.",
 ]
-text = ""
+text = "{name}-এর কল আসতে দিন"
 
 [t_7c48c65cd7]
 en = "Someone you allowed can ring you; someone on messages only can still write. People you blocked can do neither."
@@ -5853,49 +5857,49 @@ where = [
   "ios settings_calls_note: Note under the contacts list on Who can call me.",
   "desktop profile_someone_you_allowed_can: Desktop, profile and settings (in profile_view.rs, calls_page).",
 ]
-text = ""
+text = "যাঁকে অনুমতি দিয়েছেন তিনি আপনাকে কল করতে পারেন; যিনি শুধু মেসেজে আছেন তিনি তবুও লিখতে পারেন। আপনি যাঁদের ব্লক করেছেন, তাঁরা কোনোটাই পারেন না।"
 
 [t_8e36a1d522]
 en = "Background & battery"
 where = [
   "android settings_battery_title: Title of the page that checks the settings that keep calls ringing in the background.",
 ]
-text = ""
+text = "ব্যাকগ্রাউন্ড ও ব্যাটারি"
 
 [t_4fdd5e43e0]
 en = "Keep my line open"
 where = [
   "android settings_battery_keep: Heading on the background and battery page.",
 ]
-text = ""
+text = "আমার লাইন খোলা রাখুন"
 
 [t_83dbe93842]
 en = "Tinline stays connected in the background so calls ring like a normal phone. It uses a little battery. The checklist below is what Android needs to allow that."
 where = [
   "android settings_battery_hint: Explanation at the top of the background and battery page.",
 ]
-text = ""
+text = "Tinline ব্যাকগ্রাউন্ডে কানেক্টেড থাকে, যাতে সাধারণ ফোনের মতো কলে রিং হয়। এতে সামান্য ব্যাটারি খরচ হয়। নিচের চেকলিস্টে আছে Android-এর এর জন্য কী কী দরকার।"
 
 [t_3a5e4ab9a1]
 en = "CHECKLIST"
 where = [
   "android settings_checklist: Small all-capitals section label above the permission checklist on the background and battery page.",
 ]
-text = ""
+text = "চেকলিস্ট"
 
 [t_e41150cd8d]
 en = "Battery"
 where = [
   "android settings_battery_row: Checklist row on the background and battery page.",
 ]
-text = ""
+text = "ব্যাটারি"
 
 [t_ce5337ffb2]
 en = "Optimised — Android may pause Tinline"
 where = [
   "android settings_battery_optimised: Small line under the Battery checklist row when Android restricts Tinline's background use.",
 ]
-text = ""
+text = "অপ্টিমাইজ করা — Android হয়তো Tinline থামিয়ে দেবে"
 
 [t_cb5667ea75]
 en = "On"
@@ -5907,28 +5911,28 @@ where = [
   "ios people_switch_on: Accessibility value of a switch that is on.",
   "ios call_value_on: Accessibility value of a toggle that is on.",
 ]
-text = ""
+text = "চালু"
 
 [t_8c2fb128eb]
 en = "Still missing calls?"
 where = [
   "android settings_battery_missing_bold: Bold lead-in of the box at the bottom of the background and battery page.",
 ]
-text = ""
+text = "এখনও কল মিস হচ্ছে?"
 
 [t_528a43d393]
 en = "Some phones need an extra step to keep apps running."
 where = [
   "android settings_battery_missing: Text that follows the bold lead-in Still missing calls?",
 ]
-text = ""
+text = "কিছু ফোনে অ্যাপ চালু রাখতে আরও একটা ধাপ লাগে।"
 
 [t_689c143935]
 en = "Steps for your phone"
 where = [
   "android settings_battery_steps: Link that opens a web page with phone-specific background settings.",
 ]
-text = ""
+text = "আপনার ফোনের জন্য ধাপগুলো"
 
 [t_637c31876f]
 en = "Couldn’t open recovery. Go back and try again."
@@ -5936,7 +5940,7 @@ where = [
   "android settings_recovery_open_failed: Error on the account recovery page when it could not start.",
   "ios security_recovery_failed: Error when the recovery data could not be read.",
 ]
-text = ""
+text = "রিকভারি খোলা গেল না। ফিরে গিয়ে আবার চেষ্টা করুন।"
 
 [t_880d401582]
 en = "That didn’t match. Try again."
@@ -5944,7 +5948,7 @@ where = [
   "android settings_recovery_wrong: Error under the passphrase field on the recovery check page when the passphrase is wrong.",
   "ios security_wrong_pass: Error under the passphrase field when the passphrase is wrong.",
 ]
-text = ""
+text = "মিলল না। আবার চেষ্টা করুন।"
 
 [t_2d03567fc3]
 en = "Couldn’t open your backup. Try again."
@@ -5952,7 +5956,7 @@ where = [
   "android settings_recovery_backup_failed: Error on the recovery check page when the backup could not be opened.",
   "ios security_open_failed: Error when the recovery backup could not be opened.",
 ]
-text = ""
+text = "আপনার ব্যাকআপ খোলা গেল না। আবার চেষ্টা করুন।"
 
 [t_d1bb5a0088]
 en = "Add a screen lock or an app passphrase to open your backup."
@@ -5960,7 +5964,7 @@ where = [
   "android settings_recovery_add_lock: Error on the recovery check page when the phone has no screen lock and the app has no passphrase.",
   "ios security_need_lock: Error when the phone has no screen lock and no app passphrase is set.",
 ]
-text = ""
+text = "ব্যাকআপ খুলতে একটি স্ক্রিন লক বা অ্যাপের পাসফ্রেজ যোগ করুন।"
 
 [t_4491e679bd]
 en = "Check it’s you before opening your backup."
@@ -5968,7 +5972,7 @@ where = [
   "android settings_recovery_check: Lead text on the recovery check page.",
   "ios security_check_you: Intro on the account recovery gate.",
 ]
-text = ""
+text = "ব্যাকআপ খোলার আগে নিশ্চিত করুন যে এটা আপনিই।"
 
 [t_a6551d1fc7]
 en = "Your passphrase"
@@ -5979,7 +5983,7 @@ where = [
   "ios link_your_pass: Label of the passphrase field on the approval step.",
   "desktop link_your_passphrase: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "আপনার পাসফ্রেজ"
 
 [t_2b3975ca67]
 en = "Use your phone’s screen lock to continue."
@@ -5987,7 +5991,7 @@ where = [
   "android settings_recovery_use_lock: Hint on the recovery check page when there is no passphrase.",
   "ios security_use_lock_hint: Hint on the recovery gate when no app passphrase is set.",
 ]
-text = ""
+text = "চালিয়ে যেতে আপনার ফোনের স্ক্রিন লক ব্যবহার করুন।"
 
 [t_554ce7f1cd]
 en = "Use screen lock"
@@ -5995,7 +5999,7 @@ where = [
   "android settings_use_screen_lock: Button on the recovery check page that asks for my fingerprint, face or PIN.",
   "ios security_use_lock: Button on the recovery gate when no passphrase is set.",
 ]
-text = ""
+text = "স্ক্রিন লক ব্যবহার করুন"
 
 [t_26b0725965]
 en = "Your recovery backup"
@@ -6003,7 +6007,7 @@ where = [
   "android settings_backup_title: Title of the page that shows my recovery key and 24 words.",
   "ios security_backup_title: Title of the page that shows the recovery key and words.",
 ]
-text = ""
+text = "আপনার রিকভারি ব্যাকআপ"
 
 [t_985468e30f]
 en = "Keep this private. Anyone with it can act as you."
@@ -6011,14 +6015,14 @@ where = [
   "android settings_backup_private: Lead text on the recovery backup page.",
   "ios security_keep_private: Warning on the recovery backup page.",
 ]
-text = ""
+text = "এটা গোপন রাখুন। এটা যার কাছে থাকবে, সে আপনার হয়ে সব করতে পারবে।"
 
 [t_156815035e]
 en = "{words} words"
 where = [
   "android settings_backup_words: Tab on the recovery backup page: the 24 recovery words. {words} is how many recovery words there are (24).",
 ]
-text = ""
+text = "{words}টি শব্দ"
 
 [t_37b89bcabd]
 en = "Couldn’t prepare the key. Use your {words} words instead."
@@ -6026,7 +6030,7 @@ where = [
   "android settings_backup_key_failed: Hint on the recovery backup page when the key could not be made. {words} is how many recovery words there are (24).",
   "ios security_key_failed: Hint when the recovery key could not be made.  {words} is the number of recovery words (24).",
 ]
-text = ""
+text = "কী তৈরি করা গেল না। বদলে আপনার {words}টি শব্দ ব্যবহার করুন।"
 
 [t_ef3b9b9e9f]
 en = "Hide"
@@ -6035,7 +6039,7 @@ where = [
   "ios security_hide: Button that hides the recovery key or words.",
   "desktop common_hide: Shared label, used in several places (link, view).",
 ]
-text = ""
+text = "লুকান"
 
 [t_783f1bd5a1]
 en = "Reveal"
@@ -6043,7 +6047,7 @@ where = [
   "android settings_reveal: Button on the recovery backup page that shows the key or words.",
   "ios security_reveal: Button that shows the recovery key or words.",
 ]
-text = ""
+text = "দেখান"
 
 [t_c6af397085]
 en = "Hides after 30 seconds. Locks when you leave the app."
@@ -6051,7 +6055,7 @@ where = [
   "android settings_backup_hides: Hint on the recovery backup page.",
   "ios security_hint_hides: Hint on the recovery backup page.",
 ]
-text = ""
+text = "30 সেকেন্ড পরে লুকিয়ে যায়। অ্যাপ থেকে বেরোলে লক হয়ে যায়।"
 
 [t_11a94bf685]
 en = "Key or words restore the same account. Keep either in a private, safe place."
@@ -6059,7 +6063,7 @@ where = [
   "android settings_backup_same: Hint on the recovery backup page.",
   "ios security_hint_same: Hint on the recovery backup page.",
 ]
-text = ""
+text = "কী বা শব্দ, দুটো দিয়েই একই অ্যাকাউন্ট ফিরিয়ে আনা যায়। যেকোনোটা গোপন, নিরাপদ জায়গায় রাখুন।"
 
 [t_b53710a836]
 en = "Copied. Keep it somewhere private."
@@ -6067,7 +6071,7 @@ where = [
   "android settings_backup_copied: Message on the recovery backup page after copying the key.",
   "ios security_copied_note: Message after the recovery key was copied.",
 ]
-text = ""
+text = "কপি হয়েছে। এটা কোনো গোপন জায়গায় রাখুন।"
 
 [t_93a19d70aa]
 en = "Copy key"
@@ -6075,14 +6079,14 @@ where = [
   "android settings_copy_key: Button on the recovery backup page.",
   "ios security_copy_key: Button that copies the recovery key.",
 ]
-text = ""
+text = "কী কপি করুন"
 
 [t_854d49341c]
 en = "Couldn’t copy. Try again."
 where = [
   "android settings_copy_failed: Message on the recovery backup page when copying failed.",
 ]
-text = ""
+text = "কপি করা গেল না। আবার চেষ্টা করুন।"
 
 [t_c838859bcd]
 en = "Change passphrase"
@@ -6091,7 +6095,7 @@ where = [
   "ios security_change_pass: Title and button when a passphrase exists.",
   "desktop common_change_passphrase: Shared label, used in several places (profile, view).",
 ]
-text = ""
+text = "পাসফ্রেজ বদলান"
 
 [t_b3e0f45116]
 en = "Current passphrase"
@@ -6100,7 +6104,7 @@ where = [
   "ios security_current_pass: Label of the field for the existing passphrase.",
   "desktop common_current_passphrase: Shared label, used in several places (profile, view).",
 ]
-text = ""
+text = "বর্তমান পাসফ্রেজ"
 
 [t_f4f0776b65]
 en = "New passphrase"
@@ -6109,7 +6113,7 @@ where = [
   "ios security_new_pass: Field label when changing the passphrase.",
   "desktop common_new_passphrase: Shared label, used in several places (profile, view).",
 ]
-text = ""
+text = "নতুন পাসফ্রেজ"
 
 [t_ca983b7bba]
 en = "Your account lives only on this phone. A passphrase encrypts it, so nobody holding your phone can copy it."
@@ -6117,7 +6121,7 @@ where = [
   "android settings_passphrase_why: Lead text on the page for adding a passphrase.",
   "ios security_pass_intro: Intro on the add-passphrase page.",
 ]
-text = ""
+text = "আপনার অ্যাকাউন্ট শুধু এই ফোনেই আছে। পাসফ্রেজ এটাকে এনক্রিপ্ট করে, তাই আপনার ফোন হাতে পেলেও কেউ এটা কপি করতে পারবে না।"
 
 [t_8bb3808409]
 en = "Version {version}"
@@ -6125,7 +6129,7 @@ where = [
   "android settings_about_version: App version on the About page. {version} is a number such as 0.2.0.",
   "ios settings_about_version: About page; {version} is the app version such as 0.2.0.",
 ]
-text = ""
+text = "সংস্করণ {version}"
 
 [t_4ab3281957]
 en = "Made by Osvauld"
@@ -6134,7 +6138,7 @@ where = [
   "ios settings_about_made_by: About page credit line.",
   "desktop profile_made_by_osvauld: Desktop, profile and settings (in profile_view.rs, about_page).",
 ]
-text = ""
+text = "তৈরি করেছে Osvauld"
 
 [t_e283f0f7c9]
 en = "Open-source licences"
@@ -6143,7 +6147,7 @@ where = [
   "ios settings_licences: About row and page title for licences.",
   "desktop profile_open_source_licences: Desktop, profile and settings (in profile_view.rs, about_page).",
 ]
-text = ""
+text = "ওপেন-সোর্স লাইসেন্স"
 
 [t_541e7f6e93]
 en = "The libraries Tinline is built on"
@@ -6152,7 +6156,7 @@ where = [
   "ios settings_licences_sub: Subtitle of the Open-source licences row.",
   "desktop profile_the_libraries_tinline_is: Desktop, profile and settings (in profile_view.rs, about_page).",
 ]
-text = ""
+text = "যে লাইব্রেরিগুলোর ওপর Tinline তৈরি"
 
 [t_827ea4031a]
 en = "Full licence texts"
@@ -6160,7 +6164,7 @@ where = [
   "android settings_licences_full: Row on the About page that opens the full licence texts.",
   "ios settings_licence_texts: Row that opens the full licence texts.",
 ]
-text = ""
+text = "লাইসেন্সের পুরো লেখা"
 
 [t_1dddbaa123]
 en = "Source code"
@@ -6169,7 +6173,7 @@ where = [
   "ios settings_source: About row that opens the source code website.",
   "desktop profile_source_code: Desktop, profile and settings (in profile_view.rs, about_page).",
 ]
-text = ""
+text = "সোর্স কোড"
 
 [t_6bbcef751d]
 en = "Tinline is open source"
@@ -6178,7 +6182,7 @@ where = [
   "ios settings_source_sub: Subtitle of the Source code row.",
   "desktop profile_tinline_is_open_source: Desktop, profile and settings (in profile_view.rs, about_page).",
 ]
-text = ""
+text = "Tinline ওপেন সোর্স"
 
 [t_64cb92446a]
 en = "Tinline has no ads and no tracking. Your messages and calls go between your devices and the people you talk to."
@@ -6187,7 +6191,7 @@ where = [
   "ios settings_about_note: Note on the About page.",
   "desktop profile_tinline_has_no_ads: Desktop, profile and settings (in profile_view.rs, about_page).",
 ]
-text = ""
+text = "Tinline-এ কোনো বিজ্ঞাপন বা ট্র্যাকিং নেই। আপনার মেসেজ আর কল যায় আপনার ডিভাইস আর আপনি যাঁদের সঙ্গে কথা বলেন, তাঁদের মধ্যে।"
 
 [t_f59458f78e]
 en = "Terms of Use"
@@ -6196,7 +6200,7 @@ where = [
   "ios settings_terms: About row that opens the terms website.",
   "desktop signup_terms_of_use: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "ব্যবহারের শর্তাবলি"
 
 [t_616628b01c]
 en = "Privacy Policy"
@@ -6205,21 +6209,21 @@ where = [
   "ios settings_privacy_policy: About row that opens the privacy policy website.",
   "desktop signup_privacy_policy: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "প্রাইভেসি পলিসি"
 
 [t_afbb8506ee]
 en = "Copy debug log"
 where = [
   "android settings_log_copy: Row on the About page that copies the debug log to the clipboard.",
 ]
-text = ""
+text = "ডিবাগ লগ কপি করুন"
 
 [t_8a3cd9ba60]
 en = "Paste it to whoever is helping you fix a problem"
 where = [
   "android settings_log_copy_sub: Small line under Copy debug log.",
 ]
-text = ""
+text = "যিনি সমস্যা ঠিক করতে আপনাকে সাহায্য করছেন, তাঁকে পেস্ট করে দিন"
 
 [t_faf274135a]
 en = "Send debug log"
@@ -6227,42 +6231,42 @@ where = [
   "android settings_log_send: Row on the About page that shares the debug log as a file.",
   "android debuglog_send_title: Title of the system share sheet when sending the debug log.",
 ]
-text = ""
+text = "ডিবাগ লগ পাঠান"
 
 [t_4520860c09]
 en = "The full log as a file"
 where = [
   "android settings_log_send_sub: Small line under Send debug log.",
 ]
-text = ""
+text = "পুরো লগ, ফাইল হিসেবে"
 
 [t_3d9f9b3f5f]
 en = "The log has what Tinline did on this phone, with ids of contacts and calls. It never has your messages or your root secret."
 where = [
   "android settings_log_note: Note under the debug log rows.",
 ]
-text = ""
+text = "লগে থাকে এই ফোনে Tinline কী কী করেছে, পরিচিতি আর কলের আইডি সহ। এতে কখনও আপনার মেসেজ বা আপনার রুট সিক্রেট থাকে না।"
 
 [t_b284cb7656]
 en = "Collecting the log…"
 where = [
   "android settings_log_collecting: Shown under the debug log rows while the log is read.",
 ]
-text = ""
+text = "লগ সংগ্রহ করা হচ্ছে…"
 
 [t_beaa931d38]
 en = "Debug log copied. Paste it into a message."
 where = [
   "android settings_log_copied: Shown under the debug log rows after copying.",
 ]
-text = ""
+text = "ডিবাগ লগ কপি হয়েছে। একটি মেসেজে পেস্ট করুন।"
 
 [t_f5cf4026ba]
 en = "Couldn't get the log: {reason}"
 where = [
   "android settings_log_failed: Shown under the debug log rows when the log could not be read. {reason} is a short error description.",
 ]
-text = ""
+text = "লগ পাওয়া গেল না: {reason}"
 
 [t_4cce52a906]
 en = "Linked devices"
@@ -6271,7 +6275,7 @@ where = [
   "ios devices_title: Title of the linked devices page.",
   "desktop common_linked_devices: Shared label, used in several places (profile, view).",
 ]
-text = ""
+text = "লিঙ্ক করা ডিভাইস"
 
 [t_2d301e6101]
 en = "Calls ring on all of these. People you call never see these names."
@@ -6280,7 +6284,7 @@ where = [
   "ios devices_hint_rings: Hint above the device list.",
   "desktop link_calls_ring_on_all: Desktop, linking devices (in link_view.rs, linked_devices_page).",
 ]
-text = ""
+text = "এগুলোর সবকটিতে কলের রিং হয়। আপনি যাঁদের কল করেন, তাঁরা কখনও এই নামগুলো দেখেন না।"
 
 [t_ec759a6763]
 en = "Link a device"
@@ -6289,7 +6293,7 @@ where = [
   "ios devices_link: Button that starts linking another device.",
   "desktop link_link_a_device: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = ""
+text = "ডিভাইস লিঙ্ক করুন"
 
 [t_1eb9848544]
 en = "UNLINKED"
@@ -6297,7 +6301,7 @@ where = [
   "android devices_unlinked_label: Small all-capitals section label above devices that were unlinked.",
   "ios devices_unlinked_label: Small section label above unlinked devices. Capitals are part of the design.",
 ]
-text = ""
+text = "লিঙ্ক সরানো হয়েছে"
 
 [t_e1d21be382]
 en = "SYNC"
@@ -6305,7 +6309,7 @@ where = [
   "android devices_sync_label: Small all-capitals section label above the sync explanation.",
   "ios devices_sync_label: Small section label above the sync explanation. Capitals are part of the design.",
 ]
-text = ""
+text = "সিঙ্ক"
 
 [t_893cf073bd]
 en = "Devices sync directly with each other whenever two are online at once. There is no copy on any server."
@@ -6313,7 +6317,7 @@ where = [
   "android devices_sync_hint: Explanation under the SYNC label.",
   "ios devices_sync_hint: Hint explaining device sync.",
 ]
-text = ""
+text = "যখনই দুটি ডিভাইস একসঙ্গে অনলাইনে থাকে, তারা সরাসরি একে অপরের সঙ্গে সিঙ্ক করে। কোনো সার্ভারে কোনো কপি থাকে না।"
 
 [t_045305fe31]
 en = "This phone — {name}"
@@ -6321,7 +6325,7 @@ where = [
   "android devices_this_phone_named: Title of this phone's row in the linked devices list. {name} is the name I gave this phone.",
   "ios devices_row_this_phone: Device row title for this phone; {name} is its label.",
 ]
-text = ""
+text = "এই ফোন — {name}"
 
 [t_fd632ceb14]
 en = "Unnamed"
@@ -6329,7 +6333,7 @@ where = [
   "android devices_unnamed: Name shown for a device that has no name.",
   "ios devices_unnamed: Fallback label for a device without a name.",
 ]
-text = ""
+text = "নাম নেই"
 
 [t_d0fdc4ad24]
 en = "Unnamed device"
@@ -6338,7 +6342,7 @@ where = [
   "ios devices_unnamed_device: Fallback title for a device without a name.",
   "desktop common_unnamed_device: Shared label, used in several places (link, profile).",
 ]
-text = ""
+text = "নামহীন ডিভাইস"
 
 [t_a722d3793d]
 en = "Unlinked"
@@ -6346,21 +6350,21 @@ where = [
   "android devices_sub_unlinked: Small line under a device that was unlinked.",
   "ios devices_row_unlinked: Device row subtitle for a device that was unlinked.",
 ]
-text = ""
+text = "লিঙ্ক সরানো হয়েছে"
 
 [t_f57297dcfd]
 en = "This device · Android"
 where = [
   "android devices_sub_this: Small line under this phone's row in the linked devices list.",
 ]
-text = ""
+text = "এই ডিভাইস · Android"
 
 [t_748db09fcd]
 en = "Synced {time}"
 where = [
   "android devices_sub_synced: Small line under a device row. {time} is a phrase such as 2 min ago.",
 ]
-text = ""
+text = "সিঙ্ক হয়েছে {time}"
 
 [t_01692e4fa5]
 en = "Not seen yet"
@@ -6368,7 +6372,7 @@ where = [
   "android devices_sub_not_seen: Small line under a device row when it has not been online since it was linked.",
   "ios devices_row_not_seen: Device row subtitle when the device has not synced yet.",
 ]
-text = ""
+text = "এখনও দেখা যায়নি"
 
 [t_b11e1d1153]
 en = "Device"
@@ -6376,7 +6380,7 @@ where = [
   "android devices_device: Title of a device's page when it has no name, and the fallback title while it loads.",
   "ios devices_device: Title of the device page while loading, and fallback name.",
 ]
-text = ""
+text = "ডিভাইস"
 
 [t_e71782d4da]
 en = "This phone"
@@ -6384,7 +6388,7 @@ where = [
   "android devices_this_phone: Title of this phone's device page.",
   "ios devices_this_phone: Title of the device page for this phone.",
 ]
-text = ""
+text = "এই ফোন"
 
 [t_8223b67c25]
 en = "Last synced"
@@ -6392,7 +6396,7 @@ where = [
   "android devices_last_synced: Row on a device's page showing when it last synced.",
   "ios devices_prop_synced: Row on the device page: when it last synced.",
 ]
-text = ""
+text = "শেষ সিঙ্ক"
 
 [t_955ff5a31e]
 en = "Rings for calls"
@@ -6400,7 +6404,7 @@ where = [
   "android devices_rings: Row on a device's page: does it ring when someone calls me.",
   "ios devices_prop_rings: Row on the device page: whether it rings for calls.",
 ]
-text = ""
+text = "কলে রিং হয়"
 
 [t_6a7527cf57]
 en = "No, it was unlinked"
@@ -6408,7 +6412,7 @@ where = [
   "android devices_rings_no: Value of Rings for calls for an unlinked device.",
   "ios devices_rings_no: Value of Rings for calls for an unlinked device.",
 ]
-text = ""
+text = "না, এর লিঙ্ক সরানো হয়েছে"
 
 [t_189cef11ad]
 en = "Yes, when it’s on"
@@ -6416,7 +6420,7 @@ where = [
   "android devices_rings_yes: Value of Rings for calls for a linked device.",
   "ios devices_rings_yes: Value of Rings for calls for a linked device.",
 ]
-text = ""
+text = "হ্যাঁ, চালু থাকলে"
 
 [t_823cddfcd3]
 en = "Sync now"
@@ -6424,7 +6428,7 @@ where = [
   "android devices_sync_now: Button on another device's page that asks it to sync.",
   "ios devices_sync_now: Button on the device page.",
 ]
-text = ""
+text = "এখনই সিঙ্ক করুন"
 
 [t_f265fa67fe]
 en = "Syncing with {name}…"
