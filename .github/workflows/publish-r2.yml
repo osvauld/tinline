@@ -64,6 +64,7 @@ jobs:
           gh release download "$TAG" --pattern "tinline-${TAG#v}-linux-x86_64.tar.gz" --dir "dist/repo/releases/$TAG"
           gh release download "$TAG" --pattern "tinline-${TAG#v}-linux-x86_64.AppImage" --dir "dist/repo/releases/$TAG"
           gh release download "$TAG" --pattern "tinline-liberum-${TAG}.apk" --dir "dist/repo/releases/$TAG"
+          gh release download "$TAG" --pattern "tinline-play-${TAG}.apk" --dir "dist/repo/releases/$TAG"
           aws s3 sync "s3://$R2_BUCKET/apt/pool/" dist/repo/apt/pool/ --endpoint-url "$R2_ENDPOINT"
           # Reject changes to any existing versioned object, including old .deb files.
           python3 - <<'PY'
