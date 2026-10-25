@@ -10,7 +10,7 @@ use iced::{Alignment, Border, Color, ContentFit, Element, Fill, Length, Padding,
 use p2pcore::{CallState, LockState};
 
 use super::{
-    AddPhase, App, Detail, Msg, Qr, Screen, DEFAULT_LABEL, RECENTS, RENAME_ID, SEARCH_ID,
+    AddPhase, App, Detail, Msg, Qr, Screen, default_label, RECENTS, RENAME_ID, SEARCH_ID,
 };
 use crate::ui::{self, Icon, Kind, Tok};
 
@@ -226,7 +226,7 @@ impl App {
     pub(super) fn ring_head(&self, t: Tok) -> Option<El<'_>> {
         if let Some(w) = self.ring_head_waiting(t) { return Some(w); }
         let c = self.incoming_card()?;
-        Some(self.ring_row(t, &c.info.peer_name, &c.info.peer_did, if c.info.video { "Incoming video call" } else { "Incoming call" }, Msg::CallUi(crate::call_ui::Action::Restore), Msg::Decline, Msg::Answer))
+        Some(self.ring_row(t, &c.info.peer_name, &c.info.peer_did, if c.info.video { crate::i18n::tr_str("common_incoming_video_call") } else { crate::i18n::tr_str("common_incoming_call") }, Msg::CallUi(crate::call_ui::Action::Restore), Msg::Decline, Msg::Answer))
     }
 
     fn ring_row(&self, t: Tok, name: &str, did: &str, sub: &str, open: Msg, decline: Msg, answer: Msg) -> El<'_> {
@@ -307,18 +307,18 @@ impl App {
         let col = column![
             field(
                 t,
-                "Device name",
-                text_input("Work desktop", &self.device_in).on_input(Msg::DeviceIn).on_submit(Msg::DeviceGo),
+                crate::i18n::tr_str("common_device_name"),
+                text_input(crate::i18n::tr_str("common_work_desktop"), &self.device_in).on_input(Msg::DeviceIn).on_submit(Msg::DeviceGo),
             ),
-            tx("You can rename it later.", 12.0, t.ink2),
+            tx(crate::i18n::tr_str("common_you_can_rename_it"), 12.0, t.ink2),
             self.notice_bar(t),
-            self.wide(if self.busy { "Saving..." } else { "Continue" }, Kind::Primary, t, (!self.busy).then_some(Msg::DeviceGo)),
+            self.wide(if self.busy { crate::i18n::tr_str("common_saving") } else { crate::i18n::tr_str("common_continue") }, Kind::Primary, t, (!self.busy).then_some(Msg::DeviceGo)),
         ]
         .spacing(12);
         self.shell(
             t,
-            "Name this computer",
-            "So you can tell your devices apart in Linked devices. Only your own devices see this name; people you call never do.",
+            crate::i18n::tr_str("common_name_this_computer"),
+            crate::i18n::tr_str("common_so_you_can_tell"),
             col.into(),
         )
     }
@@ -327,7 +327,7 @@ impl App {
     /// protect it with a passphrase instead.
     fn key_failed_view(&self, t: Tok) -> El<'_> {
         let mut col = column![tx(
-            "Tinline couldn\u{2019}t store the key that opens your account on this computer, so your account has not been saved yet. Nothing is lost.",
+            crate::i18n::tr_str("gate_tinline_couldnt_store_the"),
             14.0,
             t.ink,
         )]
@@ -336,18 +336,18 @@ impl App {
             col = col.push(tx(e.clone(), 12.0, t.error));
         }
         col = col
-            .push(self.wide(if self.busy { "Trying..." } else { "Retry" }, Kind::Primary, t, (!self.busy).then_some(Msg::RetryKey)))
-            .push(label(t, "Or"))
-            .push(self.new_pass_field(t, "Passphrase", Msg::KeyFailPass))
-            .push(self.wide("Add a passphrase instead", Kind::Quiet, t, (!self.busy).then_some(Msg::KeyFailPass)))
+            .push(self.wide(if self.busy { crate::i18n::tr_str("gate_trying") } else { crate::i18n::tr_str("gate_retry") }, Kind::Primary, t, (!self.busy).then_some(Msg::RetryKey)))
+            .push(label(t, crate::i18n::tr_str("gate_or")))
+            .push(self.new_pass_field(t, crate::i18n::tr_str("common_passphrase"), Msg::KeyFailPass))
+            .push(self.wide(crate::i18n::tr_str("gate_add_a_passphrase_instead"), Kind::Quiet, t, (!self.busy).then_some(Msg::KeyFailPass)))
             .push(self.notice_bar(t));
-        self.shell(t, "Couldn\u{2019}t save your account", "The system keyring did not accept the key.", col.into())
+        self.shell(t, crate::i18n::tr_str("gate_couldnt_save_your_account"), crate::i18n::tr_str("gate_the_system_keyring_did"), col.into())
     }
 
     /// Locked with no passphrase: the stored key is gone, so only the 24 words bring the account back.
     fn key_lost_view(&self, t: Tok) -> El<'_> {
         let mut col = column![tx(
-            "You didn\u{2019}t set a passphrase, so the 24-word recovery phrase is the only way back. Your contacts stay.",
+            crate::i18n::tr_str("gate_you_didnt_set_a"),
             14.0,
             t.ink,
         )]
@@ -356,13 +356,13 @@ impl App {
             col = col.push(tx(n.clone(), 13.0, t.error));
         }
         col = col
-            .push(self.wide("Restore with recovery phrase", Kind::Primary, t, (!self.busy).then_some(Msg::GoRestore)))
-            .push(self.wide("Try again", Kind::Ghost, t, (!self.busy).then_some(Msg::Unlock)))
+            .push(self.wide(crate::i18n::tr_str("gate_restore_with_recovery_phrase"), Kind::Primary, t, (!self.busy).then_some(Msg::GoRestore)))
+            .push(self.wide(crate::i18n::tr_str("common_try_again"), Kind::Ghost, t, (!self.busy).then_some(Msg::Unlock)))
             .push(self.other_accounts(t));
         self.shell(
             t,
-            "Can\u{2019}t open your account",
-            "This computer no longer has the key that opens it, and its keyring entry is missing. Once you restore, your calls come through again.",
+            crate::i18n::tr_str("gate_cant_open_your_account"),
+            crate::i18n::tr_str("gate_this_computer_no_longer"),
             col.into(),
         )
     }
@@ -373,7 +373,7 @@ impl App {
         if others.is_empty() {
             return c.into();
         }
-        c = c.push(label(t, "Other accounts"));
+        c = c.push(label(t, crate::i18n::tr_str("gate_other_accounts")));
         for a in others {
             c = c.push(
                 button(
@@ -423,19 +423,19 @@ impl App {
         let col = column![
             grid,
             tx(
-                "Anyone who sees these words can become you. Write them down and keep them somewhere safe.",
+                crate::i18n::tr_str("gate_anyone_who_sees_these"),
                 13.0,
                 t.ink2
             ),
-            self.wide("Copy recovery phrase", Kind::Quiet, t, Some(Msg::CopyPhrase)),
-            tx("Paste only into a trusted password manager; the clipboard contains your account key.", 13.0, t.ink2),
-            self.wide("I have saved it", Kind::Primary, t, Some(Msg::PhraseSaved)),
+            self.wide(crate::i18n::tr_str("common_copy_recovery_phrase"), Kind::Quiet, t, Some(Msg::CopyPhrase)),
+            tx(crate::i18n::tr_str("common_paste_only_into_a"), 13.0, t.ink2),
+            self.wide(crate::i18n::tr_str("gate_i_have_saved_it"), Kind::Primary, t, Some(Msg::PhraseSaved)),
         ]
         .spacing(16);
         self.shell(
             t,
-            "Your recovery phrase",
-            "These 24 words are the only way to restore your identity on another device.",
+            crate::i18n::tr_str("gate_your_recovery_phrase"),
+            crate::i18n::tr_str("gate_these_24_words_are"),
             col.into(),
         )
     }
@@ -447,13 +447,13 @@ impl App {
             return None;
         }
         if self.status.started && !self.status.online {
-            return Some(("You\u{2019}re offline", "Your calls come through again once you\u{2019}re back online.", None, true));
+            return Some((crate::i18n::tr_str("gate_youre_offline"), crate::i18n::tr_str("gate_your_calls_come_through"), None, true));
         }
         if !self.avail.available {
             return Some((
-                "You\u{2019}re not available",
-                "Calls won\u{2019}t ring until you turn it back on.",
-                Some(("Turn on", Msg::SetAvail(true, None))),
+                crate::i18n::tr_str("gate_youre_not_available"),
+                crate::i18n::tr_str("gate_calls_wont_ring_until"),
+                Some((crate::i18n::tr_str("gate_turn_on"), Msg::SetAvail(true, None))),
                 false,
             ));
         }
@@ -465,8 +465,8 @@ impl App {
             return st.to_string();
         }
         match self.recents.iter().find(|r| r.peer_did == did) {
-            Some(r) => format!("Last call {}", ago(now_secs(), r.started_at)),
-            None => "Not called yet".into(),
+            Some(r) => crate::i18n::tr_args("home_last_call", &[("value", &(ago(now_secs(), r.started_at)).to_string())]),
+            None => crate::i18n::tr_str("home_not_called_yet").into(),
         }
     }
 
@@ -504,8 +504,8 @@ impl App {
             return self.sidebar_frame(t, col, self.shell_search_results(t));
         }
         let title = match self.chat.tab {
-            super::chat::SideTab::Chats => "Chats", super::chat::SideTab::Groups => "Groups",
-            super::chat::SideTab::Calls => "Calls", super::chat::SideTab::Contacts => "Contacts",
+            super::chat::SideTab::Chats => crate::i18n::tr_str("common_chats"), super::chat::SideTab::Groups => crate::i18n::tr_str("common_groups"),
+            super::chat::SideTab::Calls => crate::i18n::tr_str("common_calls"), super::chat::SideTab::Contacts => crate::i18n::tr_str("common_contacts"),
         };
         col = col.push(self.list_header(t, title));
         let q = String::new();
@@ -530,7 +530,7 @@ impl App {
             .filter(|c| q.is_empty() || Self::display(c).to_lowercase().contains(&q) || c.name.to_lowercase().contains(&q))
             .collect();
         list = list.push(
-            container(label(t, &format!("Contacts \u{b7} {}", self.contacts.len())))
+            container(label(t, &crate::i18n::tr_args("home_contacts", &[("len", &(self.contacts.len()).to_string())])))
                 .padding(Padding { top: 12.0, bottom: 4.0, left: 12.0, right: 0.0 }),
         );
         let mut count = 0;
@@ -556,10 +556,10 @@ impl App {
             );
         }
         if self.contacts.is_empty() {
-            list = list.push(container(tx("Contacts you add appear here.", 13.0, t.ink2)).padding([4, 12]));
+            list = list.push(container(tx(crate::i18n::tr_str("home_contacts_you_add_appear"), 13.0, t.ink2)).padding([4, 12]));
         } else if !q.is_empty() && count == 0 {
             list = list.push(container(tx(
-                "Not here? Tinline has no directory \u{2014} add people with their code.",
+                crate::i18n::tr_str("home_not_here_tinline_has"),
                 13.0,
                 t.ink2,
             )).padding([4, 12]));
@@ -580,21 +580,21 @@ impl App {
             let answered = r.duration_secs > 0;
             let missed = r.incoming && r.missed;
             let what = match (r.incoming, answered) {
-                (false, true) => "Outgoing",
-                (true, true) => "Incoming",
-                (true, false) => if missed { "Missed" } else { "Declined" },
+                (false, true) => crate::i18n::tr_str("common_outgoing"),
+                (true, true) => crate::i18n::tr_str("common_incoming"),
+                (true, false) => if missed { crate::i18n::tr_str("common_missed") } else { crate::i18n::tr_str("common_declined") },
                 (false, false) => match r.reason.as_str() {
-                    "no_answer" => "No answer",
-                    "declined" => "Declined",
-                    "cancelled" | "hangup_local" => "Cancelled",
-                    _ => "Couldn\u{2019}t connect",
+                    "no_answer" => crate::i18n::tr_str("common_no_answer"),
+                    "declined" => crate::i18n::tr_str("common_declined"),
+                    "cancelled" | "hangup_local" => crate::i18n::tr_str("common_cancelled"),
+                    _ => crate::i18n::tr_str("common_couldnt_connect"),
                 },
             };
             let d = r.duration_secs;
             let dur = present::time::clock(d as i64);
             let sub_c = if missed { t.error } else { t.ink2 };
             let sub = row![crate::pg_icons::pgi(if r.incoming { "call-in" } else { "call-out" }, 15.0, sub_c),
-                tx(if answered { format!("{what} \u{b7} {dur}") } else { what.to_string() }, 13.0, sub_c).line_height(lh(21.0))].spacing(5).align_y(Alignment::Center);
+                tx(if answered { crate::i18n::tr_args("home_text", &[("what", &(what).to_string()),("dur", &(dur).to_string())]) } else { what.to_string() }, 13.0, sub_c).line_height(lh(21.0))].spacing(5).align_y(Alignment::Center);
             let sel = self.sel.as_ref() == Some(&r.peer_did) && self.live.open.is_none();
             let pf = button(self.profile_avatar(t, &name, &r.peer_did, 48.0)).padding(Padding { top: 8.0, right: 0.0, bottom: 8.0, left: 8.0 })
                 .style(wash(t, None, None, 14.0)).on_press(Msg::ShellSearch(super::shell_search::Action::OpenPerson(r.peer_did.clone())));
@@ -611,7 +611,7 @@ impl App {
                 else if ok { Msg::CallPressed(r.peer_did.clone()) }
                 else { Msg::ShellSearch(super::shell_search::Action::OpenPerson(r.peer_did.clone())) };
             let row_ = row_.on_press(press.clone());
-            let why = match gate { CallGate::Ok => "Call".to_string(), CallGate::NotAllowed => "Messages only: calling needs their permission".into(), CallGate::Closed(_) => "Blocked".into() };
+            let why = match gate { CallGate::Ok => crate::i18n::tr_str("common_call").to_string(), CallGate::NotAllowed => crate::i18n::tr_str("common_messages_only_calling_needs").into(), CallGate::Closed(_) => crate::i18n::tr_str("common_blocked").into() };
             let back = button(container(crate::pg_icons::pgi("phone", 22.0, if ok { t.accent_ink } else { ui::alpha(t.ink2, 0.45) })).center_x(44).center_y(44))
                 .padding(0).width(44).height(44).style(wash(t, None, ok.then_some(t.surface2), 22.0))
                 .on_press(press.clone());
@@ -638,13 +638,13 @@ impl App {
                 .style(wash(t, None, None, 14.0)).on_press(press.clone());
             let back = button(container(crate::pg_icons::pgi("phone", 22.0, t.accent_ink)).center_x(44).center_y(44))
                 .padding(0).width(44).height(44).style(wash(t, None, Some(t.surface2), 22.0)).on_press(press.clone());
-            let back = iced::widget::tooltip(back, text("Start or join a call").size(13), iced::widget::tooltip::Position::Left);
+            let back = iced::widget::tooltip(back, text(crate::i18n::tr_str("home_start_or_join_a")).size(13), iced::widget::tooltip::Position::Left);
             let item = button(row![pf, row_, back].spacing(2).align_y(Alignment::Center)).padding(0).width(Fill).on_press(press)
                 .style(wash(t, sel.then_some(t.accent_soft), Some(if sel { t.accent_soft } else { t.surface2 }), 14.0));
             items.push((r.started_at, item.into()));
         }
         if !any {
-            return self.empty_quiet(t, "Calls you make and receive show up here.");
+            return self.empty_quiet(t, crate::i18n::tr_str("home_calls_you_make_and"));
         }
         items.sort_by(|a, b| b.0.cmp(&a.0));
         let list = items.into_iter().fold(column![], |c, (_, e)| c.push(e));
@@ -700,11 +700,11 @@ impl App {
             container(
                 row![
                     avatar(t, &o.name, &o.did, 36.0),
-                    column![semi(format!("Add {}?", o.name), 15.0, t.ink), tx("Their card is on your clipboard.", 13.0, t.ink2)]
+                    column![semi(crate::i18n::tr_args("home_add", &[("name", &(o.name).to_string())]), 15.0, t.ink), tx(crate::i18n::tr_str("home_their_card_is_on"), 13.0, t.ink2)]
                         .spacing(2)
                         .width(Fill),
-                    pill(t, Kind::Primary, None, "Add", Some(Msg::OfferAdd)),
-                    pill(t, Kind::Ghost, None, "Not now", Some(Msg::OfferDismiss)),
+                    pill(t, Kind::Primary, None, crate::i18n::tr_str("common_add"), Some(Msg::OfferAdd)),
+                    pill(t, Kind::Ghost, None, crate::i18n::tr_str("common_not_now"), Some(Msg::OfferDismiss)),
                 ]
                 .spacing(12)
                 .align_y(Alignment::Center),
@@ -718,12 +718,12 @@ impl App {
 
     fn detail_view<'a>(&'a self, t: Tok, c: &'a p2pcore::Contact) -> El<'a> {
         let name = Self::display(c);
-        let back = pill(t, Kind::Ghost, Some(Icon::ArrowLeft), "Home", Some(Msg::Home));
+        let back = pill(t, Kind::Ghost, Some(Icon::ArrowLeft), crate::i18n::tr_str("contact_home"), Some(Msg::Home));
         let mut title = column![bold(name.clone(), 28.0, t.ink)].spacing(4);
-        let added = format!("Added {}", utc_date(c.added_at));
+        let added = crate::i18n::tr_args("contact_added", &[("value", &(utc_date(c.added_at)).to_string())]);
         title = title.push(tx(
             if c.alias.as_ref().is_some_and(|a| !a.is_empty()) {
-                format!("Calls themself \u{201c}{}\u{201d} \u{b7} {added}", c.name)
+                crate::i18n::tr_args("contact_calls_themself", &[("name", &(c.name).to_string()),("added", &(added).to_string())])
             } else {
                 added
             },
@@ -743,14 +743,14 @@ impl App {
             .spacing(20)
             .align_y(Alignment::Center);
         let actions = row![
-            pill(t, Kind::Primary, Some(call_icon), "Call", can_call.then(|| Msg::CallPressed(c.did.clone()))),
-            pill(t, Kind::Quiet, Some(Icon::MessageSquare), "Message", Some(Msg::Chat(super::chat::Cm::Info(false)))),
-            pill(t, Kind::Quiet, Some(Icon::Pencil), "Rename", Some(Msg::SetDetail(Detail::Rename))),
+            pill(t, Kind::Primary, Some(call_icon), crate::i18n::tr_str("common_call"), can_call.then(|| Msg::CallPressed(c.did.clone()))),
+            pill(t, Kind::Quiet, Some(Icon::MessageSquare), crate::i18n::tr_str("common_message"), Some(Msg::Chat(super::chat::Cm::Info(false)))),
+            pill(t, Kind::Quiet, Some(Icon::Pencil), crate::i18n::tr_str("common_rename"), Some(Msg::SetDetail(Detail::Rename))),
             // U19: Block is the contact action; there is no Remove.
             if blocked_by_me {
-                pill(t, Kind::Quiet, None, "Unblock", Some(Msg::Unblock(c.did.clone())))
+                pill(t, Kind::Quiet, None, crate::i18n::tr_str("common_unblock"), Some(Msg::Unblock(c.did.clone())))
             } else {
-                pill(t, Kind::Danger, Some(Icon::PhoneOff), "Block", Some(Msg::SetDetail(Detail::ConfirmBlock)))
+                pill(t, Kind::Danger, Some(Icon::PhoneOff), crate::i18n::tr_str("common_block"), Some(Msg::SetDetail(Detail::ConfirmBlock)))
             },
         ]
         .spacing(10);
@@ -760,16 +760,16 @@ impl App {
             let on = self.blocks.calls_allowed(&c.did);
             let first = present::names::first_word(&name).to_string();
             let sub = if blocked_by_me {
-                "Blocked: nothing gets through until you unblock.".to_string()
+                crate::i18n::tr_str("contact_blocked_nothing_gets_through").to_string()
             } else if on {
-                format!("{first} can ring this computer and your other devices.")
+                crate::i18n::tr_args("contact_can_ring_this_computer", &[("name", &(first).to_string())])
             } else {
-                format!("Off. {first} can message you; their calls don\u{2019}t ring.")
+                crate::i18n::tr_args("contact_off_can_message_you", &[("name", &(first).to_string())])
             };
             let did = c.did.clone();
             let tg = toggler(on).style(ui::toggle_style(t));
             let tg = if blocked_by_me { tg } else { tg.on_toggle(move |v| Msg::AllowCalls(did.clone(), v)) };
-            line(t, "Allow calls", &sub, tg.into())
+            line(t, crate::i18n::tr_str("common_allow_calls"), &sub, tg.into())
         };
 
         let panel: Option<El> = match self.detail {
@@ -777,13 +777,13 @@ impl App {
             Detail::Rename => Some(
                 container(
                     column![
-                        semi("Name on this computer", 15.0, t.ink),
+                        semi(crate::i18n::tr_str("contact_name_on_this_computer"), 15.0, t.ink),
                         tx(
-                            format!("Only you see this. {} still calls themself \u{201c}{}\u{201d}.", name, c.name),
+                            crate::i18n::tr_args("contact_only_you_see_this", &[("name", &(name).to_string()),("name2", &(c.name).to_string())]),
                             13.0,
                             t.ink2
                         ),
-                        text_input("Name", &self.rename_in)
+                        text_input(crate::i18n::tr_str("common_name"), &self.rename_in)
                             .id(RENAME_ID)
                             .on_input(Msg::RenameIn)
                             .on_submit(Msg::RenameSave)
@@ -791,10 +791,10 @@ impl App {
                             .size(15)
                             .style(ui::input_style(t)),
                         row![
-                            pill(t, Kind::Ghost, None, "Use their name", Some(Msg::RenameClear)),
+                            pill(t, Kind::Ghost, None, crate::i18n::tr_str("contact_use_their_name"), Some(Msg::RenameClear)),
                             Space::new().width(Fill),
-                            pill(t, Kind::Ghost, None, "Cancel", Some(Msg::SetDetail(Detail::View))),
-                            pill(t, Kind::Primary, None, "Save", Some(Msg::RenameSave)),
+                            pill(t, Kind::Ghost, None, crate::i18n::tr_str("common_cancel"), Some(Msg::SetDetail(Detail::View))),
+                            pill(t, Kind::Primary, None, crate::i18n::tr_str("common_save"), Some(Msg::RenameSave)),
                         ]
                         .spacing(8)
                         .align_y(Alignment::Center),
@@ -814,8 +814,8 @@ impl App {
                         tx(text_, 14.0, t.ink2),
                         row![
                             Space::new().width(Fill),
-                            pill(t, Kind::Ghost, None, "Cancel", Some(Msg::SetDetail(Detail::View))),
-                            pill(t, Kind::End, None, "Block", Some(Msg::Block(c.did.clone()))),
+                            pill(t, Kind::Ghost, None, crate::i18n::tr_str("common_cancel"), Some(Msg::SetDetail(Detail::View))),
+                            pill(t, Kind::End, None, crate::i18n::tr_str("common_block"), Some(Msg::Block(c.did.clone()))),
                         ]
                         .spacing(8),
                     ]
@@ -829,31 +829,31 @@ impl App {
 
         let cell = |s: String, w: f32, c: Color| container(tx(s, 13.0, c)).width(w);
         let mut hist = column![
-            semi(format!("Calls with {name}"), 16.0, t.ink),
+            semi(crate::i18n::tr_args("contact_calls_with", &[("name", &(name).to_string())]), 16.0, t.ink),
             row![
                 Space::new().width(28),
-                container(label(t, "Call")).width(Fill),
-                container(label(t, "When")).width(150),
-                container(label(t, "Length")).width(80),
-                container(label(t, "Path")).width(90),
+                container(label(t, crate::i18n::tr_str("common_call"))).width(Fill),
+                container(label(t, crate::i18n::tr_str("contact_when"))).width(150),
+                container(label(t, crate::i18n::tr_str("contact_length"))).width(80),
+                container(label(t, crate::i18n::tr_str("contact_path"))).width(90),
             ]
             .spacing(8),
         ]
         .spacing(10);
         if self.detail_calls.is_empty() {
-            hist = hist.push(container(tx("No calls yet.", 14.0, t.ink2)).padding([8, 0]));
+            hist = hist.push(container(tx(crate::i18n::tr_str("contact_no_calls_yet"), 14.0, t.ink2)).padding([8, 0]));
         }
         for r in &self.detail_calls {
             let bad = r.missed || r.reason == "unreachable";
             let fg = if bad { t.error } else { t.ink };
             let what = if r.missed {
-                "Missed".to_string()
+                crate::i18n::tr_str("common_missed").to_string()
             } else if r.duration_secs == 0 {
                 crate::reason::history(&r.reason, r.incoming, r.missed, 0, &name)
             } else if r.incoming {
-                "Incoming".into()
+                crate::i18n::tr_str("common_incoming").into()
             } else {
-                "Outgoing".into()
+                crate::i18n::tr_str("common_outgoing").into()
             };
             let len = if r.duration_secs == 0 {
                 "\u{2014}".to_string()
@@ -863,9 +863,9 @@ impl App {
             let path: El = if r.duration_secs == 0 {
                 cell("\u{2014}".into(), 90.0, t.ink2).into()
             } else if r.direct {
-                container(badge(t.primary_c, t.on_primary_c, None, "Direct")).width(90).into()
+                container(badge(t.primary_c, t.on_primary_c, None, crate::i18n::tr_str("common_direct"))).width(90).into()
             } else {
-                container(badge(t.relay_c, t.on_relay_c, None, "Relayed")).width(90).into()
+                container(badge(t.relay_c, t.on_relay_c, None, crate::i18n::tr_str("common_relayed"))).width(90).into()
             };
             hist = hist.push(
                 row![
@@ -879,7 +879,7 @@ impl App {
                 .align_y(Alignment::Center),
             );
         }
-        hist = hist.push(tx("History stays on this computer only.", 12.0, t.ink2));
+        hist = hist.push(tx(crate::i18n::tr_str("contact_history_stays_on_this"), 12.0, t.ink2));
 
         let mut col = column![back, head, actions].spacing(20);
         col = col.push(container(allow_calls).padding(16).width(Fill).style(ui::card(t)));
@@ -897,11 +897,11 @@ impl App {
 
     fn native_settings_view(&self, t: Tok) -> El<'_> {
         let opts = |v: &Vec<String>| {
-            let mut o = vec![DEFAULT_LABEL.to_string()];
+            let mut o = vec![default_label().to_string()];
             o.extend(v.iter().cloned());
             o
         };
-        let sel = |v: &Option<String>| Some(v.clone().unwrap_or_else(|| DEFAULT_LABEL.to_string()));
+        let sel = |v: &Option<String>| Some(v.clone().unwrap_or_else(|| default_label().to_string()));
         let pick = |opts_: Vec<String>, selected: Option<String>, on: fn(String) -> Msg| -> El<'_> {
             pick_list(opts_, selected, on)
                 .width(280)
@@ -913,29 +913,29 @@ impl App {
         };
 
         let name_row: El = row![
-                text_input("Your name", &self.name_edit)
+                text_input(crate::i18n::tr_str("common_your_name"), &self.name_edit)
                     .on_input(Msg::NameEdit)
                     .on_submit(Msg::SaveName)
                     .padding(11)
                     .size(15)
                     .style(ui::input_style(t)),
-                pill(t, Kind::Tonal, None, "Save", Some(Msg::SaveName)),
+                pill(t, Kind::Tonal, None, crate::i18n::tr_str("common_save"), Some(Msg::SaveName)),
             ]
             .spacing(10)
             .align_y(Alignment::Center)
             .into();
         let mut acct = column![
-            line(t, "Your name", "Shown to the people you add", Space::new().into()),
+            line(t, crate::i18n::tr_str("common_your_name"), crate::i18n::tr_str("settings_shown_to_the_people"), Space::new().into()),
             name_row,
-            line(t, "This computer\u{2019}s name", "Only your own devices see it", Space::new().into()),
+            line(t, crate::i18n::tr_str("settings_this_computers_name"), crate::i18n::tr_str("settings_only_your_own_devices"), Space::new().into()),
             row![
-                text_input("Work desktop", &self.device_edit)
+                text_input(crate::i18n::tr_str("common_work_desktop"), &self.device_edit)
                     .on_input(Msg::DeviceEdit)
                     .on_submit(Msg::SaveDevice)
                     .padding(11)
                     .size(15)
                     .style(ui::input_style(t)),
-                pill(t, Kind::Tonal, None, "Save", Some(Msg::SaveDevice)),
+                pill(t, Kind::Tonal, None, crate::i18n::tr_str("common_save"), Some(Msg::SaveDevice)),
             ]
             .spacing(10)
             .align_y(Alignment::Center),
@@ -943,15 +943,15 @@ impl App {
         .spacing(12);
         let others: Vec<_> = self.accounts.iter().filter(|a| !a.current).collect();
         if !others.is_empty() {
-            acct = acct.push(label(t, "Other accounts on this computer"));
+            acct = acct.push(label(t, crate::i18n::tr_str("settings_other_accounts_on_this")));
             for a in others {
                 if self.remove_ask.as_deref() == Some(a.did.as_str()) {
                     acct = acct.push(
                         column![
-                            tx(format!("Remove {} from this computer? Its contacts, chats and call history here are deleted. Your recovery phrase brings back the identity, not those.", a.name), 13.0, t.error),
+                            tx(crate::i18n::tr_args("settings_remove_from_this_computer", &[("name", &(a.name).to_string())]), 13.0, t.error),
                             row![
-                                pill(t, Kind::Danger, Some(Icon::Trash), "Remove", Some(Msg::RemoveGo(a.did.clone()))),
-                                pill(t, Kind::Ghost, None, "Keep", Some(Msg::RemoveCancel)),
+                                pill(t, Kind::Danger, Some(Icon::Trash), crate::i18n::tr_str("common_remove"), Some(Msg::RemoveGo(a.did.clone()))),
+                                pill(t, Kind::Ghost, None, crate::i18n::tr_str("settings_keep"), Some(Msg::RemoveCancel)),
                             ]
                             .spacing(8),
                         ]
@@ -960,25 +960,25 @@ impl App {
                 } else {
                     acct = acct.push(line(t,
                         &a.name,
-                        if a.has_passphrase { "Locked \u{b7} needs its passphrase" } else { "Locked" },
-                        pill(t, Kind::Danger, Some(Icon::Trash), "Remove", Some(Msg::RemoveAsk(a.did.clone()))),
+                        if a.has_passphrase { crate::i18n::tr_str("settings_locked_needs_its_passphrase") } else { crate::i18n::tr_str("common_locked") },
+                        pill(t, Kind::Danger, Some(Icon::Trash), crate::i18n::tr_str("common_remove"), Some(Msg::RemoveAsk(a.did.clone()))),
                     ));
                 }
             }
         }
-        let profile = section(t, "Account", acct.into());
+        let profile = section(t, crate::i18n::tr_str("settings_account"), acct.into());
         let devices = self.linked_devices_page(t);
         let calls = section(t,
-            "Calls",
+            crate::i18n::tr_str("common_calls"),
             column![
                 line(t,
-                    "Available for calls",
-                    if self.avail.available { "Your line is open" } else { "Calls won\u{2019}t ring until you turn it back on" },
+                    crate::i18n::tr_str("settings_available_for_calls"),
+                    if self.avail.available { crate::i18n::tr_str("common_your_line_is_open") } else { crate::i18n::tr_str("settings_calls_wont_ring_until") },
                     toggler(self.avail.available).on_toggle(|on| Msg::SetAvail(on, None)).style(ui::toggle_style(t)).into(),
                 ),
                 line(t,
-                    "Video in calls",
-                    "Your camera stays off until you turn it on in the call",
+                    crate::i18n::tr_str("settings_video_in_calls"),
+                    crate::i18n::tr_str("settings_your_camera_stays_off"),
                     toggler(!self.settings.no_video).on_toggle(|on| Msg::Video(super::Vm::Enabled(on))).style(ui::toggle_style(t)).into(),
                 ),
             ]
@@ -986,13 +986,13 @@ impl App {
             .into(),
         );
         let audio = section(t,
-            "Audio",
+            crate::i18n::tr_str("settings_audio"),
             column![
-                line(t, "Microphone", "", pick(opts(&self.devices.0), sel(&self.settings.input), Msg::InDev)),
-                line(t, "Speaker", "Device changes apply from the next call", pick(opts(&self.devices.1), sel(&self.settings.output), Msg::OutDev)),
+                line(t, crate::i18n::tr_str("common_microphone"), "", pick(opts(&self.devices.0), sel(&self.settings.input), Msg::InDev)),
+                line(t, crate::i18n::tr_str("common_speaker"), crate::i18n::tr_str("settings_device_changes_apply_from"), pick(opts(&self.devices.1), sel(&self.settings.output), Msg::OutDev)),
                 line(t,
-                    "Send a test tone",
-                    "Instead of the microphone, to check the connection",
+                    crate::i18n::tr_str("settings_send_a_test_tone"),
+                    crate::i18n::tr_str("settings_instead_of_the_microphone"),
                     toggler(self.settings.tone).on_toggle(Msg::ToneToggled).style(ui::toggle_style(t)).into(),
                 ),
             ]
@@ -1017,65 +1017,65 @@ impl App {
                     grid = grid.push(ln);
                 }
                 c = c
-                    .push(tx("Anyone who sees these words can become you. Check nobody is looking.", 13.0, t.error))
+                    .push(tx(crate::i18n::tr_str("settings_anyone_who_sees_these_words"), 13.0, t.error))
                     .push(grid)
-                    .push(pill(t, Kind::Quiet, Some(Icon::Copy), "Copy recovery phrase", Some(Msg::CopyPhrase)))
-                    .push(tx("Paste only into a trusted password manager; the clipboard contains your account key.", 13.0, t.ink2))
-                    .push(pill(t, Kind::Quiet, None, "Hide", Some(Msg::HidePhrase)));
+                    .push(pill(t, Kind::Quiet, Some(Icon::Copy), crate::i18n::tr_str("common_copy_recovery_phrase"), Some(Msg::CopyPhrase)))
+                    .push(tx(crate::i18n::tr_str("common_paste_only_into_a"), 13.0, t.ink2))
+                    .push(pill(t, Kind::Quiet, None, crate::i18n::tr_str("common_hide"), Some(Msg::HidePhrase)));
             } else if self.reveal_form {
                 c = c
                     .push(if self.has_pass {
-                        self.pass_field(t, "Enter your passphrase", &self.pass_in, Msg::PassIn, Some(Msg::RevealSubmit))
+                        self.pass_field(t, crate::i18n::tr_str("settings_enter_your_passphrase"), &self.pass_in, Msg::PassIn, Some(Msg::RevealSubmit))
                     } else {
-                        tx("Anyone who sees these words can become you. Check nobody is looking, then show them.", 13.0, t.error).into()
+                        tx(crate::i18n::tr_str("settings_anyone_who_sees_these"), 13.0, t.error).into()
                     })
                     .push(
                         row![
-                            pill(t, Kind::Primary, None, if self.busy { "Checking..." } else { "Show recovery phrase" }, (!self.busy).then_some(Msg::RevealSubmit)),
-                            pill(t, Kind::Ghost, None, "Cancel", Some(Msg::ToggleReveal)),
+                            pill(t, Kind::Primary, None, if self.busy { crate::i18n::tr_str("settings_checking") } else { crate::i18n::tr_str("settings_show_recovery_phrase") }, (!self.busy).then_some(Msg::RevealSubmit)),
+                            pill(t, Kind::Ghost, None, crate::i18n::tr_str("common_cancel"), Some(Msg::ToggleReveal)),
                         ]
                         .spacing(8),
                     );
             } else {
                 c = c.push(line(t,
-                    "Recovery phrase",
-                    if self.has_pass { "Needs your passphrase" } else { "Asks you to confirm first" },
-                    pill(t, Kind::Quiet, Some(Icon::Key), "Show", Some(Msg::ToggleReveal)),
+                    crate::i18n::tr_str("common_recovery_phrase"),
+                    if self.has_pass { crate::i18n::tr_str("common_needs_your_passphrase") } else { crate::i18n::tr_str("settings_asks_you_to_confirm") },
+                    pill(t, Kind::Quiet, Some(Icon::Key), crate::i18n::tr_str("common_show"), Some(Msg::ToggleReveal)),
                 ));
             }
             if self.change_form {
                 if self.has_pass {
-                    c = c.push(self.pass_field(t, "Current passphrase", &self.old_in, Msg::OldIn, None));
+                    c = c.push(self.pass_field(t, crate::i18n::tr_str("common_current_passphrase"), &self.old_in, Msg::OldIn, None));
                 }
                 c = c
-                    .push(self.new_pass_field(t, if self.has_pass { "New passphrase" } else { "Passphrase" }, Msg::ChangePassSubmit))
+                    .push(self.new_pass_field(t, if self.has_pass { crate::i18n::tr_str("common_new_passphrase") } else { crate::i18n::tr_str("common_passphrase") }, Msg::ChangePassSubmit))
                     .push(
                         row![
-                            pill(t, Kind::Primary, None, if self.busy { "Working..." } else if self.has_pass { "Change passphrase" } else { "Add passphrase" }, (!self.busy).then_some(Msg::ChangePassSubmit)),
-                            pill(t, Kind::Ghost, None, "Cancel", Some(Msg::ToggleChange)),
+                            pill(t, Kind::Primary, None, if self.busy { crate::i18n::tr_str("common_working") } else if self.has_pass { crate::i18n::tr_str("common_change_passphrase") } else { crate::i18n::tr_str("common_add_passphrase") }, (!self.busy).then_some(Msg::ChangePassSubmit)),
+                            pill(t, Kind::Ghost, None, crate::i18n::tr_str("common_cancel"), Some(Msg::ToggleChange)),
                         ]
                         .spacing(8),
                     );
             } else {
                 c = c.push(line(t,
-                    "Passphrase",
-                    if self.has_pass { "Unlocks Tinline when it starts" } else if self.file_key { "Recommended \u{2014} your key is in a plain file" } else { "Optional \u{2014} encrypts your account on this computer" },
-                    pill(t, Kind::Quiet, Some(Icon::Lock), if self.has_pass { "Change" } else { "Add passphrase" }, Some(Msg::ToggleChange)),
+                    crate::i18n::tr_str("common_passphrase"),
+                    if self.has_pass { crate::i18n::tr_str("settings_unlocks_tinline_when_it") } else if self.file_key { crate::i18n::tr_str("settings_recommended_your_key_is") } else { crate::i18n::tr_str("settings_optional_encrypts_your_account") },
+                    pill(t, Kind::Quiet, Some(Icon::Lock), if self.has_pass { crate::i18n::tr_str("settings_change") } else { crate::i18n::tr_str("common_add_passphrase") }, Some(Msg::ToggleChange)),
                 ));
                 if !self.has_pass {
                     c = c.push(tx(self.key_home, 13.0, if self.file_key { t.error } else { t.ink2 }));
                     if self.file_key {
-                        c = c.push(pill(t, Kind::Primary, Some(Icon::Lock), "Add a passphrase", Some(Msg::ToggleChange)));
+                        c = c.push(pill(t, Kind::Primary, Some(Icon::Lock), crate::i18n::tr_str("common_add_a_passphrase"), Some(Msg::ToggleChange)));
                     }
                 }
             }
             c.into()
         };
         // (tab, name) in nav order. Hosting lists the groups this computer hosts.
-        let mut items: Vec<(u8, &str)> = vec![(0, "Account"), (1, "Linked devices"), (7, "Privacy"), (6, "Hosting")];
-        items.extend([(2, "Calls & availability"), (3, "Audio devices"), (4, "Security")]);
+        let mut items: Vec<(u8, &str)> = vec![(0, crate::i18n::tr_str("settings_account")), (1, crate::i18n::tr_str("common_linked_devices")), (7, crate::i18n::tr_str("common_privacy")), (6, crate::i18n::tr_str("common_hosting"))];
+        items.extend([(2, crate::i18n::tr_str("common_calls_availability")), (3, crate::i18n::tr_str("common_audio_devices")), (4, crate::i18n::tr_str("common_security"))]);
         let mut nav = column![
-            button(row![ui::icon(Icon::ArrowLeft, 18.0, t.ink2), semi("Back", 14.0, t.ink2)].spacing(8).align_y(Alignment::Center))
+            button(row![ui::icon(Icon::ArrowLeft, 18.0, t.ink2), semi(crate::i18n::tr_str("common_back"), 14.0, t.ink2)].spacing(8).align_y(Alignment::Center))
                 .padding([8, 12])
                 .style(ui::button_style(t, Kind::Ghost, 999.0))
                 .on_press(Msg::Back),
@@ -1098,12 +1098,12 @@ impl App {
             1 => devices,
             2 => calls,
             3 => audio,
-            4 => section(t, "Security", security),
+            4 => section(t, crate::i18n::tr_str("common_security"), security),
             6 => self.live_hosting_page(t),
             7 => self.privacy_page(t),
             _ => Space::new().into(),
         };
-        let title_ = items.iter().find(|(i, _)| *i == self.settings_tab).map(|(_, n)| *n).unwrap_or("Account");
+        let title_ = items.iter().find(|(i, _)| *i == self.settings_tab).map(|(_, n)| *n).unwrap_or(crate::i18n::tr_str("settings_account"));
         let _ = (nav, title_); // Native-only content stays reachable without a second settings sidebar.
         let content = column![self.notice_bar(t), page].spacing(20);
         scroll(t, container(container(content).max_width(560).width(Fill)).padding(16).center_x(Fill).width(Fill)).height(Fill).into()
@@ -1194,9 +1194,9 @@ impl App {
                 let (n, word) = quality(st.rtt_ms, self.call_ui.loss.pct());
                 row![
                     if st.direct {
-                        badge(t.primary_c, t.on_primary_c, Some(Icon::Direct), "Direct")
+                        badge(t.primary_c, t.on_primary_c, Some(Icon::Direct), crate::i18n::tr_str("common_direct"))
                     } else {
-                        badge(t.relay_c, t.on_relay_c, Some(Icon::Relayed), "Relayed \u{b7} encrypted")
+                        badge(t.relay_c, t.on_relay_c, Some(Icon::Relayed), crate::i18n::tr_str("call_relayed_encrypted"))
                     },
                     container(
                         row![ui::bars(n, t.ink2, ui::alpha(t.ink2, 0.3)), semi(word, 13.0, t.ink2)]
@@ -1219,7 +1219,7 @@ impl App {
                 .height(44)
                 .style(ui::button_style(t, Kind::Ghost, 999.0))
                 .on_press_maybe(active.then_some(Msg::CallUi(crate::call_ui::Action::Minimize))),
-            "Minimize call",
+            crate::i18n::tr_str("call_minimize_call"),
             iced::widget::tooltip::Position::Bottom,
         );
         let top: El = row![minimize, container(top).center_x(Fill), Space::new().width(44)]
@@ -1227,16 +1227,16 @@ impl App {
             .into();
 
         let status: El = match (&c.state, incoming_ring) {
-            (_, true) => tx("is calling you", 18.0, t.ink2).into(),
-            (CallState::Dialing, _) => tx("Calling\u{2026}", 18.0, t.ink2).into(),
-            (CallState::Ringing, _) => tx("Ringing\u{2026}", 18.0, t.ink2).into(),
-            (CallState::Active, _) if reconnecting => semi("Reconnecting\u{2026}", 18.0, t.thread_text).into(),
+            (_, true) => tx(crate::i18n::tr_str("call_is_calling_you"), 18.0, t.ink2).into(),
+            (CallState::Dialing, _) => tx(crate::i18n::tr_str("call_calling"), 18.0, t.ink2).into(),
+            (CallState::Ringing, _) => tx(crate::i18n::tr_str("call_ringing"), 18.0, t.ink2).into(),
+            (CallState::Active, _) if reconnecting => semi(crate::i18n::tr_str("common_reconnecting_2"), 18.0, t.thread_text).into(),
             (CallState::Active, _) => mono(format!("{:02}:{:02}", secs / 60, secs % 60), 22.0, t.ink).into(),
-            (CallState::Ended { .. }, _) => tx("Call ended", 18.0, t.ink2).into(),
+            (CallState::Ended { .. }, _) => tx(crate::i18n::tr_str("common_call_ended"), 18.0, t.ink2).into(),
         };
         let note: El = if reconnecting {
             tx(
-                "Your network changed. Hold on \u{2014} Tinline is finding the line again.",
+                crate::i18n::tr_str("call_your_network_changed_hold"),
                 14.0,
                 t.ink2,
             )
@@ -1245,13 +1245,13 @@ impl App {
             Space::new().height(18).into()
         } else if let Some(st) = c.stats.as_ref().filter(|_| active) {
             if st.direct {
-                row![ui::icon(Icon::Lock, 14.0, t.ink2), tx("End-to-end encrypted", 13.0, t.ink2)]
+                row![ui::icon(Icon::Lock, 14.0, t.ink2), tx(crate::i18n::tr_str("call_end_to_end_encrypted"), 13.0, t.ink2)]
                     .spacing(6)
                     .align_y(Alignment::Center)
                     .into()
             } else {
                 container(tx(
-                    "Relayed: a direct line wasn\u{2019}t possible on this network, so an encrypted relay is passing the call along. It can\u{2019}t hear you.",
+                    crate::i18n::tr_str("call_relayed_a_direct_line"),
                     13.0,
                     t.ink2,
                 ))
@@ -1286,8 +1286,8 @@ impl App {
         let muted = self.ctl.muted.load(Ordering::Relaxed);
         let bottom: El = if incoming_ring {
             row![
-                self.round_btn(t, Kind::End, Icon::PhoneOff, "Decline", Some(Msg::Decline), false),
-                self.round_btn(t, Kind::Accept, Icon::Phone, "Answer", Some(Msg::Answer), false),
+                self.round_btn(t, Kind::End, Icon::PhoneOff, crate::i18n::tr_str("common_decline"), Some(Msg::Decline), false),
+                self.round_btn(t, Kind::Accept, Icon::Phone, crate::i18n::tr_str("call_answer"), Some(Msg::Answer), false),
             ]
             .spacing(48)
             .into()
@@ -1296,16 +1296,16 @@ impl App {
                 t,
                 Kind::Quiet,
                 if muted { Icon::MicOff } else { Icon::Mic },
-                if muted { "Muted" } else { "Mute" },
+                if muted { crate::i18n::tr_str("common_muted") } else { crate::i18n::tr_str("common_mute") },
                 active.then_some(Msg::ToggleMute),
                 muted
             )];
             if active && self.video.negotiated() {
                 let on = self.video.local_on();
                 let label = match (self.video.source.as_ref(), on) {
-                    (Some(None), _) => "No camera",
-                    (_, true) => "Camera on",
-                    _ => "Camera",
+                    (Some(None), _) => crate::i18n::tr_str("call_no_camera"),
+                    (_, true) => crate::i18n::tr_str("call_camera_on"),
+                    _ => crate::i18n::tr_str("common_camera"),
                 };
                 r = r.push(self.round_btn(
                     t,
@@ -1316,22 +1316,22 @@ impl App {
                     on,
                 ));
             }
-            r.push(self.round_btn(t, Kind::End, Icon::PhoneOff, if active { "Hang up" } else { "Cancel" }, Some(Msg::Hangup), false))
+            r.push(self.round_btn(t, Kind::End, Icon::PhoneOff, if active { crate::i18n::tr_str("call_hang_up") } else { crate::i18n::tr_str("common_cancel") }, Some(Msg::Hangup), false))
                 .spacing(48)
                 .into()
         };
         let hint = if incoming_ring {
-            "Enter answers \u{b7} Esc declines"
+            crate::i18n::tr_str("call_enter_answers_esc_declines")
         } else if active {
-            "End-to-end encrypted \u{b7} Ctrl M mute \u{b7} Ctrl E end \u{b7} Esc minimizes"
+            crate::i18n::tr_str("call_end_to_end_encrypted_ctrl")
         } else {
-            "Ctrl E cancels"
+            crate::i18n::tr_str("call_ctrl_e_cancels")
         };
         let mut bottom_col = column![bottom].spacing(18).align_x(Alignment::Center);
         if active && !live {
             let (ins, outs) = &self.devices;
             let opts = |v: &Vec<String>| {
-                let mut o = vec![DEFAULT_LABEL.to_string()];
+                let mut o = vec![default_label().to_string()];
                 o.extend(v.iter().cloned());
                 o
             };
@@ -1345,12 +1345,12 @@ impl App {
             };
             bottom_col = bottom_col.push(
                 row![
-                    pick("Microphone", opts(ins), Some(self.settings.input.clone().unwrap_or_else(|| DEFAULT_LABEL.into())), Msg::InDev),
-                    pick("Speaker", opts(outs), Some(self.settings.output.clone().unwrap_or_else(|| DEFAULT_LABEL.into())), Msg::OutDev),
+                    pick(crate::i18n::tr_str("common_microphone"), opts(ins), Some(self.settings.input.clone().unwrap_or_else(|| default_label().into())), Msg::InDev),
+                    pick(crate::i18n::tr_str("common_speaker"), opts(outs), Some(self.settings.output.clone().unwrap_or_else(|| default_label().into())), Msg::OutDev),
                 ]
                 .spacing(16),
             );
-            bottom_col = bottom_col.push(tx("Device changes apply from the next call.", 12.0, t.ink2));
+            bottom_col = bottom_col.push(tx(crate::i18n::tr_str("call_device_changes_apply_from"), 12.0, t.ink2));
         }
         bottom_col = bottom_col.push(tx(hint, 12.0, t.ink2));
         let shell = self.call_shell(t, top, middle, bottom_col.into(), live);
@@ -1367,7 +1367,7 @@ impl App {
             (Some(p), true) => crate::video_surface::surface(p.clone()),
             (_, on) => column![
                 self.profile_avatar(t, &peer.peer_name, &peer.peer_did, 112.0),
-                tx(if on { "Video is starting\u{2026}" } else { "Camera off" }, 15.0, t.ink2),
+                tx(if on { crate::i18n::tr_str("call_video_is_starting") } else { crate::i18n::tr_str("call_camera_off") }, 15.0, t.ink2),
             ]
             .spacing(14)
             .align_x(Alignment::Center)
@@ -1381,7 +1381,7 @@ impl App {
         if v.local_on() {
             // The short line (the chip's echo, 2.6 s) borrows the picture label; the label's box does not change.
             let label = v.hd_line().map(str::to_string).unwrap_or_else(|| {
-                if v.send_size.is_none() || v.send_label.is_empty() { "Starting video\u{2026}".to_string() } else { v.send_label.clone() }
+                if v.send_size.is_none() || v.send_label.is_empty() { crate::i18n::tr_str("call_starting_video").to_string() } else { v.send_label.clone() }
             });
             // A fixed-width box: the words change, nothing around them moves.
             st = st.push(container(container(tx(label, 13.0, t.ink)).width(300).height(18).clip(true)).padding(14));
@@ -1405,12 +1405,12 @@ impl App {
         let a = if paused { 0.55 } else { 1.0 };
         let (fg, fill) = if on { (Color::from_rgb(0.07, 0.07, 0.07), Color::WHITE) } else { (Color::WHITE, Color::TRANSPARENT) };
         let (fg, fill) = (ui::alpha(fg, a), ui::alpha(fill, if on { a } else { 0.0 }));
-        let pill = container(bold("HD", 12.0, fg)).center_y(24).padding([0, 7]).style(move |_: &Theme| container::Style {
+        let pill = container(bold(crate::i18n::tr_str("call_hd"), 12.0, fg)).center_y(24).padding([0, 7]).style(move |_: &Theme| container::Style {
             background: Some(fill.into()),
             border: Border { color: ui::alpha(if on { Color::WHITE } else { fg }, a), width: 1.5, radius: 7.0.into() },
             ..Default::default()
         });
-        let label = if paused { "Sharper video on, paused while the connection is weak" } else if on { "Sharper video on, up to 720p" } else { "Sharper video off" };
+        let label = if paused { crate::i18n::tr_str("call_sharper_video_on_paused") } else if on { crate::i18n::tr_str("call_sharper_video_on_up") } else { crate::i18n::tr_str("common_sharper_video_off") };
         let b = button(container(pill).center_x(48).center_y(48)).padding(0).width(48).height(48)
             .style(|_: &Theme, _| button::Style::default()).on_press(Msg::Video(super::Vm::ToggleHd));
         iced::widget::tooltip(b, label, iced::widget::tooltip::Position::Top).into()
@@ -1420,7 +1420,7 @@ impl App {
     /// controls: avatar 40, "<name> is calling" over "during your call", Decline and End & answer as two equal 44 px
     /// pills, and what End & answer does. No hold: End & answer ends this call.
     fn waiting_banner<'a>(&'a self, t: Tok, w: &p2pcore::CallInfo) -> El<'a> {
-        let name = if w.peer_name.is_empty() { "Unknown".to_string() } else { w.peer_name.clone() };
+        let name = if w.peer_name.is_empty() { crate::i18n::tr_str("call_unknown").to_string() } else { w.peer_name.clone() };
         let current = self.call.as_ref().map(|c| c.info.peer_name.split_whitespace().next().unwrap_or("").to_string()).unwrap_or_default();
         let pill_style = |bg: Color, hover: Color, fg: Color| move |_: &Theme, st: button::Status| button::Style {
             background: Some(if matches!(st, button::Status::Hovered | button::Status::Pressed) { hover } else { bg }.into()),
@@ -1429,19 +1429,19 @@ impl App {
             ..Default::default()
         };
         let dec_bg = ui::mix(t.surface, t.ink, 0.09);
-        let dec = button(container(semi("Decline", 13.0, t.ink)).center_x(Fill).center_y(44)).padding(0).width(Fill).height(44)
+        let dec = button(container(semi(crate::i18n::tr_str("common_decline"), 13.0, t.ink)).center_x(Fill).center_y(44)).padding(0).width(Fill).height(44)
             .style(pill_style(dec_bg, ui::mix(t.surface, t.ink, 0.15), t.ink)).on_press(Msg::DeclineWaiting);
-        let ans = button(container(semi("End & answer", 13.0, t.on_accent)).center_x(Fill).center_y(44)).padding(0).width(Fill).height(44)
+        let ans = button(container(semi(crate::i18n::tr_str("call_end_answer"), 13.0, t.on_accent)).center_x(Fill).center_y(44)).padding(0).width(Fill).height(44)
             .style(pill_style(t.accent, ui::mix(t.accent, Color::WHITE, 0.08), t.on_accent)).on_press(Msg::EndAnswer);
         let who = row![
             self.profile_avatar(t, &name, &w.peer_did, 40.0),
             column![
-                container(semi(format!("{name} is calling"), 15.0, t.ink).line_height(lh(20.0)).wrapping(iced::widget::text::Wrapping::None)).clip(true).width(Fill),
-                tx("during your call", 13.0, t.ink2).line_height(lh(18.0)),
+                container(semi(crate::i18n::tr_args("common_is_calling", &[("name", &(name).to_string())]), 15.0, t.ink).line_height(lh(20.0)).wrapping(iced::widget::text::Wrapping::None)).clip(true).width(Fill),
+                tx(crate::i18n::tr_str("call_during_your_call"), 13.0, t.ink2).line_height(lh(18.0)),
             ].width(Fill),
         ].spacing(12).align_y(Alignment::Center);
         let hint = container(row![
-            tx("Ends your call with", 12.0, t.ink2).line_height(lh(16.0)).wrapping(iced::widget::text::Wrapping::None),
+            tx(crate::i18n::tr_str("call_ends_your_call_with"), 12.0, t.ink2).line_height(lh(16.0)).wrapping(iced::widget::text::Wrapping::None),
             container(tx(current, 12.0, t.ink2).line_height(lh(16.0)).wrapping(iced::widget::text::Wrapping::None)).clip(true),
         ].spacing(4)).center_x(Fill);
         let card = container(column![who, row![dec, ans].spacing(8), hint].spacing(12))
@@ -1453,7 +1453,7 @@ impl App {
     /// during it ("Calling during your call"); Decline refuses, End & answer swaps. Same box as the incoming form.
     pub(super) fn ring_head_waiting(&self, t: Tok) -> Option<El<'_>> {
         let w = self.waiting.as_ref().filter(|_| self.call_ui.minimized)?;
-        Some(self.ring_row(t, &w.peer_name, &w.peer_did, "Calling during your call", Msg::CallUi(crate::call_ui::Action::Restore), Msg::DeclineWaiting, Msg::EndAnswer))
+        Some(self.ring_row(t, &w.peer_name, &w.peer_did, crate::i18n::tr_str("call_calling_during_your_call"), Msg::CallUi(crate::call_ui::Action::Restore), Msg::DeclineWaiting, Msg::EndAnswer))
     }
 
     /// CallScreen.svelte after the end: the same screen (mark, avatar, name), the reason where the status was and the
@@ -1506,7 +1506,7 @@ fn utc_date(secs: u64) -> String {
     let month = if mp < 10 { mp + 3 } else { mp - 9 };
     let _ = era;
     const M: [&str; 12] = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    format!("{day} {}", M[(month - 1) as usize])
+    crate::i18n::tr_args("call_text", &[("day", &(day).to_string()),("value", &(M[(month - 1) as usize]).to_string())])
 }
 
 pub(super) fn qr_of(t: &str) -> Option<Qr> {

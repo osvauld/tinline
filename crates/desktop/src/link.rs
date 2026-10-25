@@ -191,7 +191,7 @@ impl App {
                     return Task::none();
                 }
                 if !self.status.started {
-                    self.notice = Some("Tinline is still starting. Try again in a moment.".into());
+                    self.notice = Some(crate::i18n::tr_str("common_tinline_is_still_starting").into());
                     return Task::none();
                 }
                 self.link = LinkState::new(Role::Existing);
@@ -232,7 +232,7 @@ impl App {
                     return Task::none();
                 }
                 let Some(label) = flow::valid_label(&self.device_in) else {
-                    self.notice = Some("Give this computer a name of 1 to 64 characters.".into());
+                    self.notice = Some(crate::i18n::tr_str("common_give_this_computer_a").into());
                     return Task::none();
                 };
                 self.device_in = label;
@@ -343,7 +343,7 @@ impl App {
                     return Task::none();
                 }
                 if self.pass_in.is_empty() && !self.keyring_ok {
-                    self.notice = Some(NO_KEYRING.into());
+                    self.notice = Some(no_keyring().into());
                     return Task::none();
                 }
                 self.busy = true;
@@ -376,7 +376,7 @@ impl App {
             Msg::DevRenameSave => {
                 let Some((dev, text)) = self.dev_rename.clone() else { return Task::none() };
                 let Some(label) = flow::valid_label(&text) else {
-                    self.notice = Some("A device name is 1 to 64 characters.".into());
+                    self.notice = Some(crate::i18n::tr_str("common_a_device_name_is").into());
                     return Task::none();
                 };
                 self.dev_rename = None;
@@ -430,7 +430,7 @@ impl App {
                     Ok((false, _)) => {
                         self.unlink_ask = None;
                         self.refresh_linked();
-                        self.notice = Some("Device unlinked".into());
+                        self.notice = Some(crate::i18n::tr_str("link_device_unlinked").into());
                     }
                     // Wrong passphrase etc.: the confirm stays open.
                     Err(e) => self.notice = Some(e),

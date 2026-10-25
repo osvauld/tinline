@@ -25,28 +25,28 @@ impl App {
             let active = c.state == CallState::Active;
             let reconnecting = active && c.stats.as_ref().is_some_and(|s| s.reconnecting);
             let secs = c.stats.as_ref().map_or(0, |s| s.secs);
-            let status = if incoming { if c.info.video { "Incoming video call" } else { "Incoming call" }.to_string() }
-                else if reconnecting { "Reconnecting…".into() }
+            let status = if incoming { if c.info.video { crate::i18n::tr_str("common_incoming_video_call") } else { crate::i18n::tr_str("common_incoming_call") }.to_string() }
+                else if reconnecting { crate::i18n::tr_str("common_reconnecting_2").into() }
                 else { match c.state {
-                    CallState::Dialing => "Calling…".into(),
-                    CallState::Ringing => "Ringing…".into(),
+                    CallState::Dialing => crate::i18n::tr_str("call_calling").into(),
+                    CallState::Ringing => crate::i18n::tr_str("call_ringing").into(),
                     CallState::Active => format!("{:02}:{:02}", secs / 60, secs % 60),
-                    CallState::Ended { .. } => "Call ended".into(),
+                    CallState::Ended { .. } => crate::i18n::tr_str("common_call_ended").into(),
                 }};
-            let path = c.stats.as_ref().map(|s| if s.direct { "Direct" } else { "Relayed" });
+            let path = c.stats.as_ref().map(|s| if s.direct { crate::i18n::tr_str("common_direct") } else { crate::i18n::tr_str("common_relayed") });
             let sub = if reconnecting { format!("{:02}:{:02}", secs / 60, secs % 60) }
-                else if active { path.map_or("End-to-end encrypted".into(), |p| format!("End-to-end encrypted · {p}")) } else { String::new() };
+                else if active { path.map_or(crate::i18n::tr_str("call_end_to_end_encrypted").into(), |p| crate::i18n::tr_args("call_end_to_end_encrypted_2", &[("p", &(p).to_string())])) } else { String::new() };
             // .min.gone: minimize and the bars only while the call is live (not incoming, not ended); the slots stay.
             let live = !incoming && !matches!(c.state, CallState::Ended { .. });
             let (level, _) = self.signal_now();
-            let info_label = if reconnecting { "About this call. Reconnecting.".to_string() }
-                else if level > 0 { format!("About this call. {} signal, {}.", crate::call_ui::signal_word(level), path.unwrap_or("Relayed").to_lowercase()) }
-                else { "About this call".into() };
+            let info_label = if reconnecting { crate::i18n::tr_str("call_about_this_call_reconnecting").to_string() }
+                else if level > 0 { crate::i18n::tr_args("call_about_this_call_signal", &[("value", &(crate::call_ui::signal_word(level)).to_string()),("to_lowercase", &(path.unwrap_or(crate::i18n::tr_str("common_relayed")).to_lowercase()).to_string())]) }
+                else { crate::i18n::tr_str("common_about_this_call").into() };
             let bars = button(container(ui::signal_bars(self.fx.bar_alphas(), 24.0, t.ink)).center_x(44).center_y(44))
                 .padding(0).width(44).height(44).style(ui::button_style(t, Kind::Ghost, 999.0)).on_press(Msg::CallUi(Action::About));
             let slot = |e: El<'static>| -> El<'static> { if live { e } else { Space::new().width(44).height(44).into() } };
             let head: El = container(row![
-                slot(top_button(t, Icon::ChevronDown, "Minimize call", Some(Msg::CallUi(Action::Minimize)))),
+                slot(top_button(t, Icon::ChevronDown, crate::i18n::tr_str("call_minimize_call"), Some(Msg::CallUi(Action::Minimize)))),
                 container(ui::logo_live(28.0, t, self.mark_look())).center_x(Fill),
                 slot(iced::widget::tooltip(bars, text(info_label).size(13), iced::widget::tooltip::Position::Bottom).into()),
             ].align_y(Alignment::Center)).height(48).padding([0, 20]).into();
@@ -66,19 +66,19 @@ impl App {
             let controls: El = if incoming {
                 // A video call can be answered with my camera on ("Video"); Answer keeps it off.
                 let mut r = row![
-                    self.round_btn(t, Kind::End, Icon::Hangup, "Decline", Some(Msg::Decline), false),
-                    self.round_btn(t, Kind::Accept, Icon::Phone, "Answer", Some(Msg::Answer), false),
+                    self.round_btn(t, Kind::End, Icon::Hangup, crate::i18n::tr_str("common_decline"), Some(Msg::Decline), false),
+                    self.round_btn(t, Kind::Accept, Icon::Phone, crate::i18n::tr_str("call_answer"), Some(Msg::Answer), false),
                 ].spacing(36);
                 if c.info.video && !self.settings.no_video {
-                    r = r.push(self.round_btn(t, Kind::Accept, Icon::Video, "Video", Some(Msg::AnswerVideo), false));
+                    r = r.push(self.round_btn(t, Kind::Accept, Icon::Video, crate::i18n::tr_str("common_video"), Some(Msg::AnswerVideo), false));
                 }
                 r.into()
             } else {
                 row![
-                    self.round_btn(t, Kind::Quiet, if muted { Icon::MicOff } else { Icon::Mic }, if muted { "Muted" } else { "Mute" }, active.then_some(Msg::ToggleMute), muted),
-                    self.end_btn(t, "End", Some(Msg::Hangup)),
+                    self.round_btn(t, Kind::Quiet, if muted { Icon::MicOff } else { Icon::Mic }, if muted { crate::i18n::tr_str("common_muted") } else { crate::i18n::tr_str("common_mute") }, active.then_some(Msg::ToggleMute), muted),
+                    self.end_btn(t, crate::i18n::tr_str("call_end"), Some(Msg::Hangup)),
                     self.round_btn(t, Kind::Quiet, if self.video.local_on() { Icon::Video } else { Icon::VideoOff },
-                        if matches!(self.video.source, Some(None)) { "No camera" } else { "Camera" },
+                        if matches!(self.video.source, Some(None)) { crate::i18n::tr_str("call_no_camera") } else { crate::i18n::tr_str("common_camera") },
                         (active && self.video.negotiated() && self.video.has_camera()).then_some(Msg::Video(super::super::Vm::ToggleCamera)), self.video.local_on()),
                 ].spacing(56).into()
             };
@@ -132,31 +132,31 @@ impl App {
         let name = c.info.peer_name.clone();
         let first = name.split_whitespace().next().unwrap_or(&name).to_string();
         let p = |s: String| -> iced::widget::Text<'_> { tx(s, 13.0, t.ink2).line_height(lh(19.0)) };
-        let mut content = column![semi("About this call", 17.0, t.ink).line_height(lh(24.0)), Space::new().height(10)];
+        let mut content = column![semi(crate::i18n::tr_str("common_about_this_call"), 17.0, t.ink).line_height(lh(24.0)), Space::new().height(10)];
         if let Some(st) = c.stats.as_ref().filter(|_| active) {
             content = content.push(iced::widget::rich_text![
-                iced::widget::span::<(), iced::Font>("End-to-end encrypted.").font(ui::SANS_SEMI).color(t.ink),
-                iced::widget::span::<(), iced::Font>(format!(" Your voice is encrypted on this device and only decrypted on {name}’s.")).color(t.ink2),
+                iced::widget::span::<(), iced::Font>(crate::i18n::tr_str("call_end_to_end_encrypted_2")).font(ui::SANS_SEMI).color(t.ink),
+                iced::widget::span::<(), iced::Font>(crate::i18n::tr_args("call_your_voice_is_encrypted", &[("name", &(name).to_string())])).color(t.ink2),
             ].size(13).line_height(lh(19.0)));
             let (level, wave) = self.signal_now();
-            let title = if wave { "Reconnecting".to_string() }
-                else { format!("{} signal · {}", crate::call_ui::signal_word(level), if st.direct { "Direct" } else { "Relayed" }) };
-            let mut line = if wave { format!("The connection dropped for a moment. Tinline is finding a way back to {first}.") }
-                else if st.direct { format!("Your call goes straight between your device and {first}’s.") }
-                else { "Your devices can’t reach each other directly right now, so a relay passes the call along. It can’t listen.".into() };
-            if !wave && level == 1 { line += &format!(" The line is weak, so {first}’s voice may break up."); }
+            let title = if wave { crate::i18n::tr_str("common_reconnecting").to_string() }
+                else { crate::i18n::tr_args("call_signal", &[("value", &(crate::call_ui::signal_word(level)).to_string()),("value2", &(if st.direct { crate::i18n::tr_str("common_direct") } else { crate::i18n::tr_str("common_relayed") }).to_string())]) };
+            let mut line = if wave { crate::i18n::tr_args("call_the_connection_dropped_for", &[("name", &(first).to_string())]) }
+                else if st.direct { crate::i18n::tr_args("call_your_call_goes_straight", &[("name", &(first).to_string())]) }
+                else { crate::i18n::tr_str("call_your_devices_cant_reach").into() };
+            if !wave && level == 1 { line += &crate::i18n::tr_args("call_the_line_is_weak", &[("name", &(first).to_string())]); }
             let conn = row![
                 container(ui::signal_bars(self.fx.bar_alphas(), 22.0, t.ink)).padding(Padding { top: 1.0, ..Padding::ZERO }),
                 container(column![semi(title, 13.0, t.ink).line_height(lh(19.0)), p(line)]).width(Fill).height(95),
             ].spacing(12);
             content = content.push(Space::new().height(12)).push(conn);
             if !wave {
-                content = content.push(container(tx(format!("{} ms round trip · {}% lost", st.rtt_ms, crate::call_ui::pct(self.call_ui.loss.pct())), 11.0, t.ink2))
+                content = content.push(container(tx(crate::i18n::tr_args("call_ms_round_trip_lost", &[("rtt_ms", &(st.rtt_ms).to_string()),("value", &(crate::call_ui::pct(self.call_ui.loss.pct())).to_string())]), 11.0, t.ink2))
                     .padding(Padding { top: 6.0, left: 34.0, ..Padding::ZERO }));
             }
             // Codec per direction while that camera is on. Both rows stay on a video call (blank when off), so nothing moves.
             if self.video.negotiated() {
-                for (who, on, what) in [("Your video", self.video.local_on(), &self.video.send_codec), ("Their video", self.video.remote_on(), &self.video.recv_codec)] {
+                for (who, on, what) in [(crate::i18n::tr_str("call_your_video"), self.video.local_on(), &self.video.send_codec), (crate::i18n::tr_str("call_their_video"), self.video.remote_on(), &self.video.recv_codec)] {
                     let what = if on { what.clone() } else { String::new() };
                     content = content.push(container(row![container(tx(who, 11.0, t.ink2)).width(88), tx(what, 11.0, t.ink)].spacing(12))
                         .padding(Padding { top: 6.0, left: 34.0, ..Padding::ZERO }).height(25));
@@ -169,20 +169,20 @@ impl App {
             }
             // Desktop keeps the real device selectors here, off the focus screen. No immediate-switch claim.
             for (title, devices, selected, on) in [
-                ("Microphone", &self.devices.0, &self.settings.input, Msg::InDev as fn(String) -> Msg),
-                ("Speaker", &self.devices.1, &self.settings.output, Msg::OutDev as fn(String) -> Msg),
+                (crate::i18n::tr_str("common_microphone"), &self.devices.0, &self.settings.input, Msg::InDev as fn(String) -> Msg),
+                (crate::i18n::tr_str("common_speaker"), &self.devices.1, &self.settings.output, Msg::OutDev as fn(String) -> Msg),
             ] {
-                let mut opts = vec![DEFAULT_LABEL.to_string()]; opts.extend(devices.iter().cloned());
+                let mut opts = vec![default_label().to_string()]; opts.extend(devices.iter().cloned());
                 content = content.push(Space::new().height(12)).push(column![tx(title, 13.0, t.ink2),
-                    pick_list(opts, Some(selected.clone().unwrap_or_else(|| DEFAULT_LABEL.into())), on)
+                    pick_list(opts, Some(selected.clone().unwrap_or_else(|| default_label().into())), on)
                         .width(Fill).padding(12).text_size(14).style(ui::pick_style(t)).menu_style(ui::menu_style(t))].spacing(6));
             }
-            content = content.push(Space::new().height(6)).push(tx("Device changes apply from the next call.", 12.0, t.ink2));
+            content = content.push(Space::new().height(6)).push(tx(crate::i18n::tr_str("call_device_changes_apply_from"), 12.0, t.ink2));
         } else {
-            content = content.push(p(format!("Connecting to {name}. Once the call is connected, it is end-to-end encrypted.")));
+            content = content.push(p(crate::i18n::tr_args("call_connecting_to_once_the", &[("name", &(name).to_string())])));
         }
         // .b: full width, 44 tall, radius 22.
-        let got = button(container(semi("Got it", 15.0, t.on_primary)).center_x(Fill).center_y(44)).padding(0).width(Fill).height(44)
+        let got = button(container(semi(crate::i18n::tr_str("common_got_it"), 15.0, t.on_primary)).center_x(Fill).center_y(44)).padding(0).width(Fill).height(44)
             .style(ui::button_style(t, Kind::Primary, 22.0)).on_press(Msg::CallUi(Action::CloseAbout));
         content = content.push(Space::new().height(16)).push(got);
         let card = crate::shaped::shaped(container(content).padding(Padding { top: 20.0, right: 20.0, bottom: 16.0, left: 20.0 }).width(420), [24.0; 4], t.raised);
@@ -199,7 +199,7 @@ impl App {
     fn call_nerds(&self, t: Tok, rtt_ms: u32, loss: f64) -> El<'_> {
         use super::super::Vm;
         let rows = self.node.video_stats().map(|s| p2pcore::video_stat_rows(s, rtt_ms, loss)).unwrap_or_default();
-        let mut c = column![semi("Stats for nerds", 12.0, t.ink2)].spacing(2);
+        let mut c = column![semi(crate::i18n::tr_str("call_stats_for_nerds"), 12.0, t.ink2)].spacing(2);
         for (i, r) in rows.into_iter().enumerate() {
             if i == 6 || i == 9 {
                 c = c.push(Space::new().height(6));
@@ -212,43 +212,43 @@ impl App {
             match msg { Some(m) => b.on_press(m), None => b }
         };
         let live = |next: p2pcore::VideoLive| Some(Msg::Video(Vm::Live(next)));
-        c = c.push(Space::new().height(10)).push(tx("These apply to this call now. Settings > Video sets the next call.", 11.0, t.ink2));
+        c = c.push(Space::new().height(10)).push(tx(crate::i18n::tr_str("call_these_apply_to_this"), 11.0, t.ink2));
         let mut codecs = iced::widget::Row::new().spacing(6);
         for ch in self.node.video_live_codecs() {
             let on = l.send_codec == ch.id || (l.send_codec.is_empty() && ch.id == "auto");
             codecs = codecs.push(chip(ch.label.clone(), on, ch.available.then(|| p2pcore::VideoLive { send_codec: ch.id.clone(), ..l.clone() }).and_then(live)));
         }
-        c = c.push(tx("Your video codec", 11.0, t.ink2)).push(container(codecs.wrap()).height(64));
+        c = c.push(tx(crate::i18n::tr_str("call_your_video_codec"), 11.0, t.ink2)).push(container(codecs.wrap()).height(64));
         let mut sizes = iced::widget::Row::new().spacing(6);
-        for (h, label) in [(0, "Auto"), (360, "360p"), (540, "540p"), (720, "720p")] {
+        for (h, label) in [(0, crate::i18n::tr_str("common_auto")), (360, "360p"), (540, "540p"), (720, "720p")] {
             sizes = sizes.push(chip(label.into(), l.fixed_height == h, live(p2pcore::VideoLive { fixed_height: h, ignore_limits: l.ignore_limits && h != 0, ..l.clone() })));
         }
-        c = c.push(tx("Your size", 11.0, t.ink2)).push(sizes);
+        c = c.push(tx(crate::i18n::tr_str("call_your_size"), 11.0, t.ink2)).push(sizes);
         let mut fps = iced::widget::Row::new().spacing(6);
-        for (f, label) in [(0, "Auto"), (15, "15"), (24, "24"), (30, "30")] {
+        for (f, label) in [(0, crate::i18n::tr_str("common_auto")), (15, "15"), (24, "24"), (30, "30")] {
             fps = fps.push(chip(label.into(), l.fixed_fps == f, live(p2pcore::VideoLive { fixed_fps: f, ..l.clone() })));
         }
-        c = c.push(tx("Your frame rate", 11.0, t.ink2)).push(fps);
+        c = c.push(tx(crate::i18n::tr_str("call_your_frame_rate"), 11.0, t.ink2)).push(fps);
         let mut caps = iced::widget::Row::new().spacing(6);
-        for (b, label) in [(0, "Auto"), (500_000, "0.5M"), (1_000_000, "1M"), (2_000_000, "2M"), (3_000_000, "3M")] {
+        for (b, label) in [(0, crate::i18n::tr_str("common_auto")), (500_000, "0.5M"), (1_000_000, "1M"), (2_000_000, "2M"), (3_000_000, "3M")] {
             caps = caps.push(chip(label.into(), l.max_bps == b, live(p2pcore::VideoLive { max_bps: b, ..l.clone() })));
         }
-        c = c.push(tx("Your bitrate cap (not a promised rate)", 11.0, t.ink2)).push(caps);
+        c = c.push(tx(crate::i18n::tr_str("call_your_bitrate_cap_not"), 11.0, t.ink2)).push(caps);
         let pinned = l.fixed_height != 0;
-        let mut ignore = iced::widget::toggler(l.ignore_limits).label("Ignore limits (heat, their decoder)").text_size(12).style(ui::toggle_style(t));
+        let mut ignore = iced::widget::toggler(l.ignore_limits).label(crate::i18n::tr_str("call_ignore_limits_heat_their")).text_size(12).style(ui::toggle_style(t));
         if pinned {
             let next = l.clone();
             ignore = ignore.on_toggle(move |on| Msg::Video(Vm::Live(p2pcore::VideoLive { ignore_limits: on, ..next.clone() })));
         }
         c = c.push(Space::new().height(4)).push(ignore)
-            .push(tx(if pinned { "For testing. Your picture may stutter or your computer may heat up." } else { "Pin a size first." }, 11.0, t.ink2));
+            .push(tx(if pinned { crate::i18n::tr_str("call_for_testing_your_picture") } else { crate::i18n::tr_str("call_pin_a_size_first") }, 11.0, t.ink2));
         let decoders = self.node.video_live_decoders();
         let mut dec = iced::widget::Row::new().spacing(6);
         for ch in &decoders {
             let on = l.recv_decoder == ch.id || (l.recv_decoder.is_empty() && ch.id == "auto");
             dec = dec.push(chip(ch.label.clone(), on, live(p2pcore::VideoLive { recv_decoder: ch.id.clone(), ..l.clone() })));
         }
-        c = c.push(tx("Decoder for their video", 11.0, t.ink2)).push(container(dec.wrap()).height(64));
+        c = c.push(tx(crate::i18n::tr_str("common_decoder_for_their_video"), 11.0, t.ink2)).push(container(dec.wrap()).height(64));
         let note = self.video.live_note.clone().or_else(|| decoders.first().filter(|_| decoders.len() == 1).map(|d| d.why.clone())).unwrap_or_default();
         c = c.push(container(tx(note, 11.0, t.ink2)).height(30));
         container(iced::widget::scrollable(c.spacing(4)).style(ui::scroll_style(t)).height(360)).padding(Padding { top: 10.0, ..Padding::ZERO }).into()
@@ -261,13 +261,13 @@ impl App {
         let c = self.call.as_ref().filter(|_| self.call_ui.minimized)?;
         let secs = c.stats.as_ref().map_or(0, |s| s.secs);
         let status = if c.state == CallState::Active { format!("{:02}:{:02}", secs / 60, secs % 60) }
-            else if c.state == CallState::Dialing { "Calling…".into() } else { "Ringing…".into() };
+            else if c.state == CallState::Dialing { crate::i18n::tr_str("call_calling").into() } else { crate::i18n::tr_str("call_ringing").into() };
         let open = button(row![crate::pg_icons::pgi("phone", 18.0, t.on_accent),
                 container(semi(c.info.peer_name.clone(), 15.0, t.on_accent).wrapping(iced::widget::text::Wrapping::None)).width(Fill).clip(true),
                 container(tx(status, 13.0, t.on_accent)).width(Length::Shrink)].spacing(10).align_y(Alignment::Center).height(44))
             .padding([0, 12]).height(44).width(Fill).style(|_: &Theme, _| button::Style::default())
             .on_press(Msg::CallUi(Action::Restore));
-        let end = button(container(bold("End", 13.0, t.on_danger_btn)).center_y(32)).padding([0, 14]).height(32)
+        let end = button(container(bold(crate::i18n::tr_str("call_end"), 13.0, t.on_danger_btn)).center_y(32)).padding([0, 14]).height(32)
             .style(move |_: &Theme, _| button::Style { background: Some(t.danger_btn.into()), border: Border { radius: 16.0.into(), ..Default::default() }, ..Default::default() })
             .on_press(Msg::Hangup);
         Some(container(row![open, end].spacing(8).align_y(Alignment::Center)).padding(Padding { top: 0.0, right: 8.0, bottom: 0.0, left: 4.0 })

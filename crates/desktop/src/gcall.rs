@@ -101,9 +101,9 @@ impl State {
     /// gcall.svelte.ts `statusText`.
     pub fn status(&self) -> String {
         match self.phase {
-            Phase::Starting => "Finding a call host\u{2026}".into(),
-            Phase::Connecting => "Connecting\u{2026}".into(),
-            Phase::Reconnecting => "Reconnecting\u{2026}".into(),
+            Phase::Starting => crate::i18n::tr_str("gcall_finding_a_call_host").into(),
+            Phase::Connecting => crate::i18n::tr_str("gcall_connecting").into(),
+            Phase::Reconnecting => crate::i18n::tr_str("common_reconnecting_2").into(),
             Phase::Ended | Phase::Failed => self.reason.clone(),
             _ => String::new(),
         }
@@ -160,7 +160,7 @@ impl App {
                 }
                 if self.gcall.live() || self.call.is_some() {
                     // One line at a time: a group call and a 1:1 call exclude each other.
-                    self.notice = Some("You\u{2019}re already in a call.".into());
+                    self.notice = Some(crate::i18n::tr_str("gcall_youre_already_in_a").into());
                     return Task::none();
                 }
                 self.gcall_refresh_live(&gid);
@@ -195,7 +195,7 @@ impl App {
             Gm::Leave => {
                 self.node.group_call_leave();
                 // My own leaving goes at once (call.svelte.ts #finish: no hold for a local end).
-                return self.gcall_end(false, "Call ended".into(), 0);
+                return self.gcall_end(false, crate::i18n::tr_str("common_call_ended").into(), 0);
             }
             Gm::Mute => {
                 self.gcall.muted = !self.gcall.muted;
@@ -259,9 +259,9 @@ impl App {
                     if rings {
                         self.ctl.ring_group();
                         let who = self.gcall_name(&e.detail);
-                        let group = self.live.list.iter().find(|s| s.id == e.group_id).map(|s| s.name.clone()).unwrap_or_else(|| "Group".into());
+                        let group = self.live.list.iter().find(|s| s.id == e.group_id).map(|s| s.name.clone()).unwrap_or_else(|| crate::i18n::tr_str("gcall_group").into());
                         if !self.focused {
-                            super::notify(&group, &format!("{} is calling the group", who.split_whitespace().next().unwrap_or(&who)), super::Target::Show);
+                            super::notify(&group, &crate::i18n::tr_args("gcall_is_calling_the_group", &[("value", &(who.split_whitespace().next().unwrap_or(&who)).to_string())]), super::Target::Show);
                         }
                         tasks.push(Task::perform(tokio::time::sleep(Duration::from_millis(ring_ms)), move |_| Msg::GCall(Gm::RingEnd(id.clone()))));
                     }
@@ -272,7 +272,7 @@ impl App {
                 self.gcall.live.remove(&e.group_id);
                 if self.gcall.announce.as_ref().is_some_and(|a| a.gid == e.group_id) { self.gcall_stop_ring(); self.gcall.announce = None; }
                 if mine && self.gcall.call_id.as_deref() == Some(e.call_id.as_str()) {
-                    return self.gcall_end(false, "Call ended".into(), 900);
+                    return self.gcall_end(false, crate::i18n::tr_str("common_call_ended").into(), 900);
                 }
             }
             GroupCallEventKind::StartFailed if mine => {
@@ -290,12 +290,12 @@ impl App {
             GroupCallEventKind::Reconnecting if mine => self.gcall.phase = Phase::Reconnecting,
             GroupCallEventKind::Left if mine && !matches!(self.gcall.phase, Phase::Ended | Phase::Failed) => {
                 let host_lost = e.detail.contains("HostLost") || e.detail.contains("Lost");
-                return self.gcall_end(false, if host_lost { "Call ended \u{2014} host lost".into() } else { "Call ended".into() }, 900);
+                return self.gcall_end(false, if host_lost { crate::i18n::tr_str("gcall_call_ended_host_lost").into() } else { crate::i18n::tr_str("common_call_ended").into() }, 900);
             }
             GroupCallEventKind::HostingStarted => self.gcall.hosting = true,
             GroupCallEventKind::HostingEnded => self.gcall.hosting = false,
             GroupCallEventKind::HostingLimited if mine && self.gcall.hosting => {
-                self.gcall.note = Some("Battery is low or the computer is hot. Hosting is limited: only one person is heard at a time, and no one new can join.".into());
+                self.gcall.note = Some(crate::i18n::tr_str("gcall_battery_is_low_or").into());
             }
             GroupCallEventKind::HostingUnlimited => self.gcall.note = None,
             _ => {}
@@ -311,5 +311,5 @@ fn start_failure(detail: &str) -> String {
         return why.to_string();
     }
     let d = detail.to_lowercase();
-    if d.contains("host") { "No call host available".into() } else { "Couldn\u{2019}t connect".into() }
+    if d.contains("host") { crate::i18n::tr_str("gcall_no_call_host_available").into() } else { crate::i18n::tr_str("common_couldnt_connect").into() }
 }

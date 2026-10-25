@@ -12,27 +12,27 @@ impl App {
     /// A person in a group call: "You", their name in the group, a contact's name, else "Someone".
     pub(crate) fn gcall_name(&self, did: &str) -> String {
         if self.is_me(did) {
-            return "You".into();
+            return crate::i18n::tr_str("common_you").into();
         }
         if let Some(m) = self.live.detail.as_ref().and_then(|d| d.members.iter().find(|m| m.did == did)) {
             return m.name.clone();
         }
-        self.contacts.iter().find(|c| c.did == did).map(Self::display).unwrap_or_else(|| "Someone".into())
+        self.contacts.iter().find(|c| c.did == did).map(Self::display).unwrap_or_else(|| crate::i18n::tr_str("common_someone").into())
     }
 
     fn gcall_group_name(&self) -> String {
         let gid = self.gcall.gid.clone().unwrap_or_default();
-        self.live.list.iter().find(|s| s.id == gid).map(|s| s.name.clone()).unwrap_or_else(|| "Group call".into())
+        self.live.list.iter().find(|s| s.id == gid).map(|s| s.name.clone()).unwrap_or_else(|| crate::i18n::tr_str("gcall_group_call").into())
     }
 
     /// gcall.svelte.ts `hostLabel`: "this computer" or "Arjun's device" (the core doesn't say what kind of device).
     fn gcall_host_label(&self) -> Option<String> {
         if self.gcall.hosting {
-            return Some("this computer".into());
+            return Some(crate::i18n::tr_str("gcall_this_computer").into());
         }
         let did = self.gcall.host.as_ref()?;
         let n = self.gcall_name(did);
-        Some(format!("{}\u{2019}s device", n.split_whitespace().next().unwrap_or(&n)))
+        Some(crate::i18n::tr_args("gcall_s_device", &[("value", &(n.split_whitespace().next().unwrap_or(&n)).to_string())]))
     }
 
     /// The full group call screen (not minimised).
@@ -57,7 +57,7 @@ impl App {
         // .head: name 26/32 650, then the status (or the timer), the count and the speaking line, each in a fixed row.
         let n = g.parts.len();
         let count = if connected && n > 0 {
-            if n == 1 { "Only you so far. Waiting for others.".to_string() } else { format!("{n} people in the call") }
+            if n == 1 { crate::i18n::tr_str("gcall_only_you_so_far").to_string() } else { crate::i18n::tr_args("gcall_people_in_the_call", &[("count", &(n).to_string())]) }
         } else { String::new() };
         let status_cell: El = if connected && g.phase == Phase::Active {
             mono(format!("{:02}:{:02}", g.elapsed() / 60, g.elapsed() % 60), 20.0, t.ink).line_height(lh(30.0)).into()
@@ -78,7 +78,7 @@ impl App {
         let dim = !matches!(g.phase, Phase::Active | Phase::Connecting | Phase::Starting);
         let face = |did: &str| -> El<'_> {
             let name = if self.is_me(did) { self.profile_name.clone() } else { self.gcall_name(did) };
-            let first = if self.is_me(did) { "You".to_string() } else { name.split_whitespace().next().unwrap_or(&name).to_string() };
+            let first = if self.is_me(did) { crate::i18n::tr_str("common_you").to_string() } else { name.split_whitespace().next().unwrap_or(&name).to_string() };
             column![self.profile_avatar(t, &name, did, av), container(semi(first, 13.0, t.ink).line_height(lh(18.0)).wrapping(iced::widget::text::Wrapping::None)).width(av + 24.0).center_x(av + 24.0).clip(true)]
                 .spacing(8).align_x(Alignment::Center).width(Length::Fixed(av + 40.0)).into()
         };
@@ -99,14 +99,14 @@ impl App {
         let _ = dim;
         if let Some(note) = &g.note {
             let card = container(row![crate::pg_icons::pgi("battery", 18.0, t.warn_ink), tx(note.clone(), 13.0, t.warn_ink).line_height(lh(18.0)).width(Fill),
-                button(container(bold("OK", 13.0, t.warn_ink)).center_y(36)).padding([0, 14]).height(36)
+                button(container(bold(crate::i18n::tr_str("common_ok"), 13.0, t.warn_ink)).center_y(36)).padding([0, 14]).height(36)
                     .style(move |_: &Theme, _| button::Style { background: Some(ui::alpha(t.warn_ink, 0.14).into()), border: Border { radius: 18.0.into(), ..Default::default() }, ..Default::default() })
                     .on_press(gm(Gm::NoteOk))].spacing(10).align_y(Alignment::Center))
                 .padding(Padding { top: 8.0, right: 8.0, bottom: 8.0, left: 14.0 }).width(Fill);
             stage = stage.push(container(ui::raised(card, t, ui::Depth::Pop, ui::plain(t.warn, 18.0))).width(Fill).height(Fill).align_bottom(Fill).padding(Padding { bottom: 4.0, ..Padding::ZERO }));
         }
         // .host: "Call host: Arjun's device" with the info icon; it opens About this call.
-        let host_text = self.gcall_host_label().map(|h| if g.hosting { "You\u{2019}re the call host".to_string() } else { format!("Call host: {h}") });
+        let host_text = self.gcall_host_label().map(|h| if g.hosting { crate::i18n::tr_str("gcall_youre_the_call_host").to_string() } else { crate::i18n::tr_args("gcall_call_host", &[("host", &(h).to_string())]) });
         let host: El = match host_text.filter(|_| connected || g.phase == Phase::Connecting) {
             Some(h) => button(row![tx(h, 13.0, t.ink).line_height(lh(20.0)), crate::pg_icons::pgi("info", 16.0, ui::alpha(t.ink, 0.75))].spacing(8).align_y(Alignment::Center))
                 .padding([0, 14]).height(44).style(shell_view::wash(t, None, Some(ui::alpha(t.ink, 0.09)), 22.0)).on_press(gm(Gm::About(true))).into(),
@@ -114,8 +114,8 @@ impl App {
         };
         let host = container(host).center_x(Fill).padding(Padding { top: 4.0, bottom: 12.0, ..Padding::ZERO });
         let ctl = row![
-            self.round_btn(t, Kind::Quiet, if g.muted { Icon::MicOff } else { Icon::Mic }, if g.muted { "Muted" } else { "Mute" }, connected.then_some(gm(Gm::Mute)), g.muted),
-            self.round_btn(t, Kind::End, Icon::Hangup, "Leave", live.then_some(gm(Gm::Leave)), false),
+            self.round_btn(t, Kind::Quiet, if g.muted { Icon::MicOff } else { Icon::Mic }, if g.muted { crate::i18n::tr_str("common_muted") } else { crate::i18n::tr_str("common_mute") }, connected.then_some(gm(Gm::Mute)), g.muted),
+            self.round_btn(t, Kind::End, Icon::Hangup, crate::i18n::tr_str("common_leave"), live.then_some(gm(Gm::Leave)), false),
         ].spacing(56);
         let content = column![top, head, stage.height(Fill), host, container(ctl).center_x(Fill)]
             .padding(Padding { top: 8.0, right: 20.0, bottom: 36.0, left: 20.0 }).width(Fill).height(Fill);
@@ -128,21 +128,21 @@ impl App {
 
     /// About this call (group): who carries the call and what that means; honest about the host hearing it.
     fn gcall_about(&self, t: Tok) -> El<'_> {
-        let host = self.gcall_host_label().unwrap_or_else(|| "The call host".into());
+        let host = self.gcall_host_label().unwrap_or_else(|| crate::i18n::tr_str("gcall_the_call_host").into());
         let cap = { let mut c = host.chars(); c.next().map(|f| f.to_uppercase().collect::<String>() + c.as_str()).unwrap_or_default() };
         let p = |s: String| -> El<'_> { tx(s, 13.0, t.ink2).line_height(lh(19.0)).into() };
         let lead = iced::widget::rich_text![
             iced::widget::span::<(), iced::Font>(cap).font(ui::SANS_SEMI).color(t.ink),
-            iced::widget::span::<(), iced::Font>(format!(" {} this call. Everyone in the call connects to it, and it passes the audio on and chooses who is heard when several people speak.", if self.gcall.hosting { "is carrying" } else { "carries" })).color(t.ink2),
+            iced::widget::span::<(), iced::Font>(crate::i18n::tr_args("gcall_this_call_everyone_in", &[("value", &(if self.gcall.hosting { crate::i18n::tr_str("gcall_is_carrying") } else { "carries" }).to_string())])).color(t.ink2),
         ].size(13).line_height(lh(19.0));
-        let got = button(container(semi("Got it", 15.0, t.on_primary)).center_x(Fill).center_y(44)).padding(0).width(Fill).height(44)
+        let got = button(container(semi(crate::i18n::tr_str("common_got_it"), 15.0, t.on_primary)).center_x(Fill).center_y(44)).padding(0).width(Fill).height(44)
             .style(ui::button_style(t, Kind::Primary, 22.0)).on_press(gm(Gm::About(false)));
         let content = column![
-            semi("About this call", 17.0, t.ink).line_height(lh(24.0)),
+            semi(crate::i18n::tr_str("common_about_this_call"), 17.0, t.ink).line_height(lh(24.0)),
             Space::new().height(2),
             lead,
-            p("Your connection to the call host is encrypted, but the call host itself receives the audio, so it can hear this call. You trust it for the call the way you trust a chat host with posts.".into()),
-            p("A call host is a device a group admin chose and that agreed to it. It is separate from chat hosting. Admins can change call hosts in Group info.".into()),
+            p(crate::i18n::tr_str("gcall_your_connection_to_the").into()),
+            p(crate::i18n::tr_str("gcall_a_call_host_is").into()),
             Space::new().height(8),
             got,
         ].spacing(8);
@@ -165,7 +165,7 @@ impl App {
                 container(semi(self.gcall_group_name(), 15.0, t.on_accent).wrapping(iced::widget::text::Wrapping::None)).width(Fill).clip(true),
                 tx(st, 13.0, t.on_accent)].spacing(10).align_y(Alignment::Center).height(44))
             .padding([0, 12]).height(44).width(Fill).style(|_: &Theme, _| button::Style::default()).on_press(gm(Gm::Restore));
-        let end = button(container(bold("Leave", 13.0, t.on_danger_btn)).center_y(32)).padding([0, 14]).height(32)
+        let end = button(container(bold(crate::i18n::tr_str("common_leave"), 13.0, t.on_danger_btn)).center_y(32)).padding([0, 14]).height(32)
             .style(move |_: &Theme, _| button::Style { background: Some(t.danger_btn.into()), border: Border { radius: 16.0.into(), ..Default::default() }, ..Default::default() })
             .on_press(gm(Gm::Leave));
         Some(container(row![open, end].spacing(8).align_y(Alignment::Center)).padding(Padding { top: 0.0, right: 8.0, bottom: 0.0, left: 4.0 })
@@ -182,19 +182,19 @@ impl App {
             return None;
         }
         let (title, sub) = if mine {
-            ("You\u{2019}re in the call", if self.gcall.phase == Phase::Active { format!("{:02}:{:02}", self.gcall.elapsed() / 60, self.gcall.elapsed() % 60) } else { self.gcall.status() })
+            (crate::i18n::tr_str("common_youre_in_the_call"), if self.gcall.phase == Phase::Active { format!("{:02}:{:02}", self.gcall.elapsed() / 60, self.gcall.elapsed() % 60) } else { self.gcall.status() })
         } else {
             let by = c.map(|c| self.gcall_name(&c.starter_did)).unwrap_or_default();
-            ("Call in progress", format!("Started by {}", by.split_whitespace().next().unwrap_or(&by)))
+            (crate::i18n::tr_str("common_call_in_progress"), crate::i18n::tr_args("gcall_started_by", &[("value", &(by.split_whitespace().next().unwrap_or(&by)).to_string())]))
         };
         let fg = if t.dark { t.ink } else { t.accent_ink };
         let bg = if t.dark { ui::mix(t.surface, t.accent, 0.24) } else { t.accent_soft };
         let j = if mine {
-            button(container(bold("Open", 13.0, t.accent_ink)).center_x(Fill).center_y(36)).padding([0, 18]).width(Length::Fixed(80.0)).height(36)
+            button(container(bold(crate::i18n::tr_str("common_open"), 13.0, t.accent_ink)).center_x(Fill).center_y(36)).padding([0, 18]).width(Length::Fixed(80.0)).height(36)
                 .style(move |_: &Theme, _| button::Style { border: Border { color: t.accent_ink, width: 1.5, radius: 18.0.into() }, ..Default::default() })
                 .on_press(gm(Gm::Restore))
         } else {
-            button(container(bold("Join", 13.0, t.on_accent)).center_x(Fill).center_y(36)).padding([0, 18]).width(Length::Fixed(80.0)).height(36)
+            button(container(bold(crate::i18n::tr_str("common_join"), 13.0, t.on_accent)).center_x(Fill).center_y(36)).padding([0, 18]).width(Length::Fixed(80.0)).height(36)
                 .style(move |_: &Theme, _| button::Style { background: Some(t.accent.into()), border: Border { radius: 18.0.into(), ..Default::default() }, ..Default::default() })
                 .on_press(gm(Gm::Call(gid.to_string())))
         };
@@ -216,18 +216,18 @@ impl App {
         let by = self.gcall_name(&a.by);
         let open = button(row![self.profile_avatar(t, &by, &a.by, 44.0),
                 column![container(semi(group.clone(), 15.0, t.ink).line_height(lh(20.0)).wrapping(iced::widget::text::Wrapping::None)).clip(true).width(Fill),
-                    container(tx(if a.ringing { format!("{} is calling the group", by.split_whitespace().next().unwrap_or(&by)) } else { format!("{by} started a call") }, 13.0, t.ink2).line_height(lh(18.0)).wrapping(iced::widget::text::Wrapping::None)).clip(true).width(Fill)].width(Fill)]
+                    container(tx(if a.ringing { crate::i18n::tr_args("gcall_is_calling_the_group", &[("value", &(by.split_whitespace().next().unwrap_or(&by)).to_string())]) } else { crate::i18n::tr_args("gcall_started_a_call", &[("name", &(by).to_string())]) }, 13.0, t.ink2).line_height(lh(18.0)).wrapping(iced::widget::text::Wrapping::None)).clip(true).width(Fill)].width(Fill)]
                 .spacing(12).align_y(Alignment::Center))
             .padding([0, 4]).height(48).width(Fill).style(shell_view::wash(t, None, None, 14.0))
             .on_press(Msg::Live(crate::app::group_live::Lm::Open(a.gid.clone())));
         let x: El<'_> = if a.ringing {
-            button(container(bold("Not now", 13.0, t.ink)).center_x(Fill).center_y(44)).padding([0, 14]).height(44)
+            button(container(bold(crate::i18n::tr_str("common_not_now"), 13.0, t.ink)).center_x(Fill).center_y(44)).padding([0, 14]).height(44)
                 .style(shell_view::wash(t, Some(t.surface2), Some(t.surface3), 22.0)).on_press(gm(Gm::NotNow)).into()
         } else {
             button(container(crate::pg_icons::pgi("x", 18.0, t.ink2)).center_x(36).center_y(36)).padding(0).width(36).height(36)
                 .style(shell_view::wash(t, None, Some(t.surface2), 18.0)).on_press(gm(Gm::DismissAnnounce)).into()
         };
-        let join = button(container(bold("Join", 13.0, t.on_accent)).center_x(Fill).center_y(44)).padding([0, 20]).height(44)
+        let join = button(container(bold(crate::i18n::tr_str("common_join"), 13.0, t.on_accent)).center_x(Fill).center_y(44)).padding([0, 20]).height(44)
             .style(move |_: &Theme, _| button::Style { background: Some(t.accent.into()), border: Border { radius: 22.0.into(), ..Default::default() }, ..Default::default() })
             .on_press(gm(Gm::Call(a.gid.clone())));
         let card = container(row![open, x, join].spacing(4).align_y(Alignment::Center))

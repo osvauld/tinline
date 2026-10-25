@@ -179,14 +179,14 @@ fn pf_act_el<'a>(t: Tok, icon: Option<&'static str>, title: String, sub: Option<
 
 /// people.svelte.ts `lastSeenText`.
 fn last_seen(now: u64, at: Option<u64>) -> String {
-    let Some(at) = at else { return "Not synced yet".into() };
+    let Some(at) = at else { return crate::i18n::tr_str("common_not_synced_yet").into() };
     let m = (now.saturating_sub(at) as f64 / 60.0).round() as u64;
-    if m < 2 { return "Last seen just now".into(); }
-    if m < 60 { return format!("Last seen {m} minutes ago"); }
+    if m < 2 { return crate::i18n::tr_str("profile_last_seen_just_now").into(); }
+    if m < 60 { return crate::i18n::tr_count("profile_last_seen_minutes", m, &[]); }
     let h = (m as f64 / 60.0).round() as u64;
-    if h < 24 { return format!("Last seen {h} {} ago", if h == 1 { "hour" } else { "hours" }); }
+    if h < 24 { return crate::i18n::tr_count("profile_last_seen_hours", h, &[]); }
     let d = (h as f64 / 24.0).round() as u64;
-    format!("Last seen {d} {} ago", if d == 1 { "day" } else { "days" })
+    crate::i18n::tr_count("profile_last_seen_days", d, &[])
 }
 
 fn chevron<'a>(t: Tok) -> El<'a> {
@@ -195,9 +195,9 @@ fn chevron<'a>(t: Tok) -> El<'a> {
 
 /// storage fmtBytes: GB with one decimal, MB and KB whole.
 pub(super) fn fmt_bytes(n: u64) -> String {
-    if n >= 1_000_000_000 { format!("{:.1} GB", n as f64 / 1e9) }
-    else if n >= 1_000_000 { format!("{} MB", (n as f64 / 1e6).round()) }
-    else if n >= 1000 { format!("{} KB", (n as f64 / 1e3).round()) }
+    if n >= 1_000_000_000 { crate::i18n::tr_args("common_size_gb", &[("size", &format!("{:.1}", n as f64 / 1e9))]) }
+    else if n >= 1_000_000 { crate::i18n::tr_args("profile_mb", &[("round", &((n as f64 / 1e6).round()).to_string())]) }
+    else if n >= 1000 { crate::i18n::tr_args("profile_kb", &[("round", &((n as f64 / 1e3).round()).to_string())]) }
     else { format!("{n} B") }
 }
 
@@ -325,31 +325,31 @@ impl App {
     fn profile_page(&self, t: Tok) -> El<'_> {
         let page = self.profiles.page.clone().unwrap_or(Page::Settings);
         let (title, body): (&str, El) = match &page {
-            Page::Settings => ("Settings", self.settings_landing(t)),
-            Page::Notifications => ("Notifications", self.notifications_page(t)),
-            Page::Sounds => ("Sounds", self.sounds_page(t)),
-            Page::Video => ("Video", self.video_page(t)),
-            Page::Storage => ("Storage", self.storage_page(t)),
-            Page::About => ("About Tinline", self.about_page(t)),
-            Page::Me => ("My profile", self.my_profile(t)),
-            Page::Person(did) => ("Profile", self.person_profile(t, did)),
-            Page::Native(1) => ("Devices", self.devices_page(t)),
-            Page::Native(7) => ("Privacy", self.privacy_landing(t)),
-            Page::Native(21) => ("Blocked people", self.blocked_page(t)),
-            Page::Native(22) => ("Who can call me", self.calls_page(t)),
-            Page::Native(23) => ("Recovery phrase", self.phrase_page(t)),
-            Page::Native(24) => ("Passphrase", self.passphrase_page(t)),
+            Page::Settings => (crate::i18n::tr_str("profile_settings"), self.settings_landing(t)),
+            Page::Notifications => (crate::i18n::tr_str("profile_notifications"), self.notifications_page(t)),
+            Page::Sounds => (crate::i18n::tr_str("profile_sounds"), self.sounds_page(t)),
+            Page::Video => (crate::i18n::tr_str("common_video"), self.video_page(t)),
+            Page::Storage => (crate::i18n::tr_str("profile_storage"), self.storage_page(t)),
+            Page::About => (crate::i18n::tr_str("profile_about_tinline"), self.about_page(t)),
+            Page::Me => (crate::i18n::tr_str("profile_my_profile"), self.my_profile(t)),
+            Page::Person(did) => (crate::i18n::tr_str("profile_profile"), self.person_profile(t, did)),
+            Page::Native(1) => (crate::i18n::tr_str("profile_devices"), self.devices_page(t)),
+            Page::Native(7) => (crate::i18n::tr_str("common_privacy"), self.privacy_landing(t)),
+            Page::Native(21) => (crate::i18n::tr_str("common_blocked_people"), self.blocked_page(t)),
+            Page::Native(22) => (crate::i18n::tr_str("profile_who_can_call_me"), self.calls_page(t)),
+            Page::Native(23) => (crate::i18n::tr_str("common_recovery_phrase"), self.phrase_page(t)),
+            Page::Native(24) => (crate::i18n::tr_str("common_passphrase"), self.passphrase_page(t)),
             Page::Native(tab) => (
                 match tab {
-                    0 => "This computer",
-                    1 => "Devices",
-                    2 => "Calls on this computer",
-                    3 => "Audio devices",
-                    4 => "Security",
-                    5 => "About",
-                    6 => "Hosting",
-                    7 => "Privacy",
-                    _ => "Accounts on this computer",
+                    0 => crate::i18n::tr_str("profile_this_computer"),
+                    1 => crate::i18n::tr_str("profile_devices"),
+                    2 => crate::i18n::tr_str("profile_calls_on_this_computer"),
+                    3 => crate::i18n::tr_str("common_audio_devices"),
+                    4 => crate::i18n::tr_str("common_security"),
+                    5 => crate::i18n::tr_str("profile_about"),
+                    6 => crate::i18n::tr_str("common_hosting"),
+                    7 => crate::i18n::tr_str("common_privacy"),
+                    _ => crate::i18n::tr_str("profile_accounts_on_this_computer"),
                 },
                 self.native_page(t, *tab),
             ),
@@ -382,9 +382,9 @@ impl App {
     fn settings_landing(&self, t: Tok) -> El<'_> {
         let status = self.own_profile().and_then(|c| c.fields.get("status")).and_then(Value::as_str).filter(|s| !s.is_empty()).map(str::to_string);
         let (av_text, busy) = if self.avail.available {
-            ("Available".to_string(), false)
+            (crate::i18n::tr_str("common_available").to_string(), false)
         } else {
-            (self.avail.until.map(|u| format!("Busy until {}", pf::until_label(u))).unwrap_or_else(|| "Busy".into()), true)
+            (self.avail.until.map(|u| crate::i18n::tr_args("profile_busy_until", &[("value", &(pf::until_label(u)).to_string())])).unwrap_or_else(|| crate::i18n::tr_str("profile_busy").into()), true)
         };
         let name = self.profile_name.clone();
         let me_row: RowFn = Box::new(move |r: Radius| {
@@ -404,7 +404,7 @@ impl App {
                 .into()
         });
         let mut accounts: Vec<RowFn> = Vec::new();
-        let sel_line = if self.status.online { "Selected \u{b7} online" } else { "Selected \u{b7} connecting" };
+        let sel_line = if self.status.online { crate::i18n::tr_str("profile_selected_online") } else { crate::i18n::tr_str("profile_selected_connecting") };
         accounts.push(Box::new(move |_| {
             let body = row![self.profile_avatar(t, &self.profile_name, "me", 36.0),
                 column![semi(self.profile_name.clone(), 15.0, t.ink).line_height(lh(20.0)), semi(sel_line, 13.0, t.accent_ink).line_height(lh(18.0))].spacing(1).width(Fill),
@@ -417,7 +417,7 @@ impl App {
             let (name, did) = (a.name.clone(), a.did.clone());
             accounts.push(Box::new(move |r| {
                 let face = avatar(t, &name, &did, 36.0);
-                let body = row![face, column![semi(name.clone(), 15.0, t.ink).line_height(lh(20.0)), tx("Paused \u{b7} tap to switch", 13.0, t.ink2).line_height(lh(18.0))].spacing(1).width(Fill)]
+                let body = row![face, column![semi(name.clone(), 15.0, t.ink).line_height(lh(20.0)), tx(crate::i18n::tr_str("profile_paused_tap_to_switch"), 13.0, t.ink2).line_height(lh(18.0))].spacing(1).width(Fill)]
                     .spacing(14)
                     .align_y(Alignment::Center);
                 button(row![Space::new().height(44), body].align_y(Alignment::Center)).padding([8, 16]).width(Fill)
@@ -430,15 +430,15 @@ impl App {
                     .into()
             }));
         }
-        accounts.push(Box::new(move |r| pf_act(t, Some("plus"), "Add another account".into(), None, Some(chevron(t)), Some(Msg::NewAccount(false)), false, r)));
-        let areas: Vec<RowFn> = [("devices", "Devices", Page::Native(1)), ("shield", "Privacy", Page::Native(7)), ("bell", "Notifications", Page::Notifications), ("vol", "Sounds", Page::Sounds),
-        ("video", "Video", Page::Video), ("save", "Storage", Page::Storage), ("info", "About Tinline", Page::About)]
+        accounts.push(Box::new(move |r| pf_act(t, Some("plus"), crate::i18n::tr_str("profile_add_another_account").into(), None, Some(chevron(t)), Some(Msg::NewAccount(false)), false, r)));
+        let areas: Vec<RowFn> = [("devices", crate::i18n::tr_str("profile_devices"), Page::Native(1)), ("shield", crate::i18n::tr_str("common_privacy"), Page::Native(7)), ("bell", crate::i18n::tr_str("profile_notifications"), Page::Notifications), ("vol", crate::i18n::tr_str("profile_sounds"), Page::Sounds),
+        ("video", crate::i18n::tr_str("common_video"), Page::Video), ("save", crate::i18n::tr_str("profile_storage"), Page::Storage), ("info", crate::i18n::tr_str("profile_about_tinline"), Page::About)]
             .into_iter()
             .map(|(icon, label, page)| -> RowFn { Box::new(move |r| pf_act(t, Some(icon), label.into(), None, Some(chevron(t)), Some(m(Action::Open(page))), false, r)) })
             .collect();
         // Settings.svelte LOOKS (2026-10-14): the same choice the sign-up switch makes; switches at once.
         let look = self.settings.appearance;
-        let looks: Vec<RowFn> = [(None, "Match my computer", "Light or dark, as this computer is set"), (Some(false), "Light", ""), (Some(true), "Dark", "")]
+        let looks: Vec<RowFn> = [(None, crate::i18n::tr_str("profile_match_my_computer"), crate::i18n::tr_str("profile_light_or_dark_as")), (Some(false), crate::i18n::tr_str("profile_light"), ""), (Some(true), crate::i18n::tr_str("profile_dark"), "")]
             .into_iter().map(|(v, name, info): (Option<bool>, &'static str, &'static str)| -> RowFn<'_> {
             Box::new(move |r| {
                 let on = look == v;
@@ -458,14 +458,14 @@ impl App {
         let mut c = column![
             pf_sec(16.0, pf_card(t, vec![me_row])),
             pf_sec(24.0, column![pf_card(t, accounts),
-                container(tx(format!("Only the selected account is online on this computer. Switching pauses the other one: it receives no calls until you select it again."), 13.0, t.ink2).line_height(lh(18.0)))
+                container(tx(crate::i18n::tr_args("profile_only_the_selected_account", &[]), 13.0, t.ink2).line_height(lh(18.0)))
                     .padding(Padding { top: 8.0, right: 16.0, bottom: 0.0, left: 16.0 })].into()),
-            pf_sec(24.0, column![pf_h2(t, "Appearance"), pf_card(t, looks)].into()),
+            pf_sec(24.0, column![pf_h2(t, crate::i18n::tr_str("profile_appearance")), pf_card(t, looks)].into()),
             pf_sec(24.0, pf_card(t, areas)),
         ]
         .spacing(0);
         // Native-only, necessary on a computer: device audio, video admission, key storage. Not a playground area.
-        c = c.push(section(t, "This computer", vec![Box::new(move |r| pf_act(t, Some("sliders"), "Audio, security and hosting".into(), Some(("Settings that belong to this computer only".into(), t.ink2, false)), Some(chevron(t)), Some(m(Action::Open(Page::Native(0)))), false, r))], vec![]));
+        c = c.push(section(t, crate::i18n::tr_str("profile_this_computer"), vec![Box::new(move |r| pf_act(t, Some("sliders"), crate::i18n::tr_str("profile_audio_security_and_hosting").into(), Some((crate::i18n::tr_str("profile_settings_that_belong_to").into(), t.ink2, false)), Some(chevron(t)), Some(m(Action::Open(Page::Native(0)))), false, r))], vec![]));
         if self.notice.is_some() {
             c = c.push(container(self.notice_bar(t)).padding(16));
         }
@@ -479,10 +479,10 @@ impl App {
         let live = |d: &p2pcore::LinkedDevice| d.last_seen.is_some_and(|s| now.saturating_sub(s) < 120);
         let stale = |d: &p2pcore::LinkedDevice| d.last_seen.is_none_or(|s| now.saturating_sub(s) >= 30 * 86400);
         let row = |d: &'_ p2pcore::LinkedDevice| -> RowFn<'_> {
-            let name = if d.label.is_empty() { "Unnamed device".to_string() } else { d.label.clone() };
-            let (sub, color, strong) = if d.this_device { ("This device \u{b7} Online".to_string(), t.ink2, false) }
-                else if live(d) { ("Online now".into(), t.accent_ink, true) }
-                else if let Some(s) = d.last_seen.filter(|_| stale(d)) { (format!("Not seen for {} days", now.saturating_sub(s) / 86400), t.warn_ink, true) }
+            let name = if d.label.is_empty() { crate::i18n::tr_str("common_unnamed_device").to_string() } else { d.label.clone() };
+            let (sub, color, strong) = if d.this_device { (crate::i18n::tr_str("profile_this_device_online").to_string(), t.ink2, false) }
+                else if live(d) { (crate::i18n::tr_str("profile_online_now").into(), t.accent_ink, true) }
+                else if let Some(s) = d.last_seen.filter(|_| stale(d)) { (crate::i18n::tr_args("profile_not_seen_for_days", &[("value", &(now.saturating_sub(s) / 86400).to_string())]), t.warn_ink, true) }
                 else { (last_seen(now, d.last_seen), t.ink2, false) };
             let icon = if d.this_device { "laptop" } else { "devices" };
             let dev = d.device.clone();
@@ -491,18 +491,18 @@ impl App {
         let me: Vec<RowFn> = self.linked.iter().filter(|d| d.this_device).map(row).collect();
         let mut others: Vec<RowFn> = self.linked.iter().filter(|d| !d.this_device).map(row).collect();
         let n_others = others.len();
-        others.push(Box::new(move |r| pf_act(t, Some("plus"), "Link a new device".into(), Some(("Show a QR code on the new device, then approve it here".into(), t.ink2, false)),
+        others.push(Box::new(move |r| pf_act(t, Some("plus"), crate::i18n::tr_str("profile_link_a_new_device").into(), Some((crate::i18n::tr_str("profile_show_a_qr_code").into(), t.ink2, false)),
             Some(chevron(t)), (!self.busy).then_some(Msg::LinkStartExisting), false, r)));
         let note = if n_others == 0 {
-            "Only this device has your account. Link another to keep a second copy of your chats. Your recovery phrase brings back your account, not your messages."
+            crate::i18n::tr_str("profile_only_this_device_has")
         } else {
-            "Every linked device is a full copy of you: it can read your chats and act as you. Names here are private to your devices; contacts never see them."
+            crate::i18n::tr_str("profile_every_linked_device_is")
         };
         let mut c = column![];
         if !me.is_empty() {
-            c = c.push(pf_sec(16.0, column![pf_h2(t, "This device"), pf_card(t, me)].into()));
+            c = c.push(pf_sec(16.0, column![pf_h2(t, crate::i18n::tr_str("common_this_device")), pf_card(t, me)].into()));
         }
-        c = c.push(section(t, "Linked devices", others, vec![note.into()]));
+        c = c.push(section(t, crate::i18n::tr_str("common_linked_devices"), others, vec![note.into()]));
         self.pf_scroll(t, c.into(), 40.0)
     }
 
@@ -512,27 +512,27 @@ impl App {
             return None;
         }
         let find = |id: &str| self.linked.iter().find(|d| d.device == id);
-        let name_of = |d: &p2pcore::LinkedDevice| if d.label.is_empty() { "Unnamed device".to_string() } else { d.label.clone() };
+        let name_of = |d: &p2pcore::LinkedDevice| if d.label.is_empty() { crate::i18n::tr_str("common_unnamed_device").to_string() } else { d.label.clone() };
         let now = super::now_secs();
-        let close = |m: Msg| pg_btn(t, Btn::Quiet, None, "Close", Some(m));
+        let close = |m: Msg| pg_btn(t, Btn::Quiet, None, crate::i18n::tr_str("common_close"), Some(m));
         if let Some(id) = &self.dev_menu {
             let d = find(id)?;
             let name = name_of(d);
-            let sub = if d.this_device { "This device".to_string() } else if d.last_seen.is_some_and(|s| now.saturating_sub(s) < 120) { "Online now".into() } else { last_seen(now, d.last_seen) };
-            let mut items = column![hairline(t), pf_act(t, Some("edit"), "Rename".into(), None, None, Some(Msg::DevRenameStart(d.device.clone())), false, 0.0.into())];
+            let sub = if d.this_device { crate::i18n::tr_str("common_this_device").to_string() } else if d.last_seen.is_some_and(|s| now.saturating_sub(s) < 120) { crate::i18n::tr_str("profile_online_now").into() } else { last_seen(now, d.last_seen) };
+            let mut items = column![hairline(t), pf_act(t, Some("edit"), crate::i18n::tr_str("common_rename").into(), None, None, Some(Msg::DevRenameStart(d.device.clone())), false, 0.0.into())];
             if !d.this_device {
-                items = items.push(hairline(t)).push(pf_act(t, Some("leave"), "Unlink".into(), None, None, Some(Msg::UnlinkAsk(d.device.clone())), true, 0.0.into()));
+                items = items.push(hairline(t)).push(pf_act(t, Some("leave"), crate::i18n::tr_str("common_unlink").into(), None, None, Some(Msg::UnlinkAsk(d.device.clone())), true, 0.0.into()));
             }
             let body = vec![para(t, sub), container(items).padding(Padding { top: 4.0, right: -20.0, bottom: 0.0, left: -20.0 }).into()];
             return Some(pg_dialog(t, 1.0, None, pf_dlg(t, name, body, vec![close(Msg::DevMenu(None))]), Msg::DevMenu(None)));
         }
         if let Some((_, text)) = &self.dev_rename {
             let ok = crate::flow::valid_label(text).is_some();
-            let field = column![semi("Name", 13.0, t.ink).line_height(lh(18.0)),
+            let field = column![semi(crate::i18n::tr_str("common_name"), 13.0, t.ink).line_height(lh(18.0)),
                 text_input("", text).on_input(Msg::DevRenameIn).on_submit(Msg::DevRenameSave).padding([10.5, 14.0]).size(15).line_height(lh(21.0)).style(pf_input_style(t))].spacing(6);
-            let body = vec![para(t, "Only your own devices see this name.".into()), container(field).padding(Padding { top: 4.0, ..Padding::ZERO }).into()];
-            return Some(pg_dialog(t, 1.0, None, pf_dlg(t, "Rename device".into(), body,
-                vec![pg_btn(t, Btn::Quiet, None, "Cancel", Some(Msg::DevRenameCancel)), pg_btn(t, Btn::Primary, None, "Save", ok.then_some(Msg::DevRenameSave))]), Msg::DevRenameCancel));
+            let body = vec![para(t, crate::i18n::tr_str("profile_only_your_own_devices").into()), container(field).padding(Padding { top: 4.0, ..Padding::ZERO }).into()];
+            return Some(pg_dialog(t, 1.0, None, pf_dlg(t, crate::i18n::tr_str("profile_rename_device").into(), body,
+                vec![pg_btn(t, Btn::Quiet, None, crate::i18n::tr_str("common_cancel"), Some(Msg::DevRenameCancel)), pg_btn(t, Btn::Primary, None, crate::i18n::tr_str("common_save"), ok.then_some(Msg::DevRenameSave))]), Msg::DevRenameCancel));
         }
         if let Some(id) = &self.unlink_ask {
             let d = find(id)?;
@@ -542,21 +542,21 @@ impl App {
             let name = name_of(d);
             let online = d.last_seen.is_some_and(|s| now.saturating_sub(s) < 120);
             let notlock = container(row![pgi("warning", 18.0, t.warn_ink),
-                    rich_text![span::<(), iced::Font>("This is not a lock.").font(ui::SANS_SEMI).color(t.warn_ink),
-                        span::<(), iced::Font>(format!(" Anyone who still has your recovery phrase, or can unlock {name}, can still act as you. If it is lost or stolen, the only full fix is a new account.")).color(t.warn_ink)]
+                    rich_text![span::<(), iced::Font>(crate::i18n::tr_str("profile_this_is_not_a")).font(ui::SANS_SEMI).color(t.warn_ink),
+                        span::<(), iced::Font>(crate::i18n::tr_args("profile_anyone_who_still_has", &[("name", &(name).to_string())])).color(t.warn_ink)]
                         .size(13).line_height(lh(19.0))].spacing(10))
                 .padding([10, 12]).width(Fill).style(ui::plain(t.warn, 12.0));
             let mut body = vec![
-                lead(t, format!("{name} will stop syncing with your account and stop ringing when you\u{2019}re called. {}", if online { "Tinline tells it now." } else { "It is offline, so it finds out the next time it connects." })),
+                lead(t, crate::i18n::tr_args("profile_will_stop_syncing_with", &[("name", &(name).to_string()),("value", &(if online { crate::i18n::tr_str("profile_tinline_tells_it_now") } else { crate::i18n::tr_str("profile_it_is_offline_so") }).to_string())])),
                 notlock.into(),
-                para(t, "Contacts you haven\u{2019}t blocked get your updated device list when they\u{2019}re next online.".into()),
+                para(t, crate::i18n::tr_str("profile_contacts_you_havent_blocked").into()),
             ];
             if self.has_pass {
-                body.push(self.pf_pass(t, "Enter your passphrase to confirm", &self.link.pass, Msg::LinkPassIn, Some(Msg::UnlinkGo)));
+                body.push(self.pf_pass(t, crate::i18n::tr_str("profile_enter_your_passphrase_to"), &self.link.pass, Msg::LinkPassIn, Some(Msg::UnlinkGo)));
             }
             let go = (!self.busy && (!self.has_pass || !self.link.pass.is_empty())).then_some(Msg::UnlinkGo);
-            return Some(pg_dialog(t, 1.0, None, pf_dlg(t, format!("Unlink {name}?"), body,
-                vec![pg_btn(t, Btn::Quiet, None, "Cancel", Some(Msg::UnlinkCancel)), pg_btn(t, Btn::Danger, None, if self.busy { "Unlinking\u{2026}" } else { "Unlink" }, go)]), Msg::UnlinkCancel));
+            return Some(pg_dialog(t, 1.0, None, pf_dlg(t, crate::i18n::tr_args("common_unlink_2", &[("name", &(name).to_string())]), body,
+                vec![pg_btn(t, Btn::Quiet, None, crate::i18n::tr_str("common_cancel"), Some(Msg::UnlinkCancel)), pg_btn(t, Btn::Danger, None, if self.busy { crate::i18n::tr_str("profile_unlinking") } else { crate::i18n::tr_str("common_unlink") }, go)]), Msg::UnlinkCancel));
         }
         None
     }
@@ -569,35 +569,35 @@ impl App {
         let blocked = self.blocks.list.len();
         let msg_only = self.contacts.iter().filter(|c| !self.blocks.blocked_by_me(&c.did) && !self.blocks.calls_allowed(&c.did)).count();
         let rows_: [(&'static str, &'static str, String, u8); 4] = [
-            ("off", "Blocked people", if blocked == 0 { "No one".into() } else { format!("{blocked} {}", if blocked == 1 { "person" } else { "people" }) }, 21),
-            ("phone", "Who can call me", if msg_only == 0 { "All contacts can call".into() } else { format!("{msg_only} {} messages only", if msg_only == 1 { "contact is" } else { "contacts are" }) }, 22),
-            ("key", "Recovery phrase", if self.has_pass { "Needs your passphrase".into() } else { "Shown after you confirm".into() }, 23),
-            ("lock", "Passphrase", "Protects Tinline on this device".into(), 24),
+            ("off", crate::i18n::tr_str("common_blocked_people"), if blocked == 0 { crate::i18n::tr_str("profile_no_one").into() } else { crate::i18n::tr_count("profile_blocked_count", blocked as u64, &[]) }, 21),
+            ("phone", crate::i18n::tr_str("profile_who_can_call_me"), if msg_only == 0 { crate::i18n::tr_str("profile_all_contacts_can_call").into() } else { crate::i18n::tr_count("profile_messages_only_count", msg_only as u64, &[]) }, 22),
+            ("key", crate::i18n::tr_str("common_recovery_phrase"), if self.has_pass { crate::i18n::tr_str("common_needs_your_passphrase").into() } else { crate::i18n::tr_str("profile_shown_after_you_confirm").into() }, 23),
+            ("lock", crate::i18n::tr_str("common_passphrase"), crate::i18n::tr_str("profile_protects_tinline_on_this").into(), 24),
         ];
         let rows: Vec<RowFn> = rows_.into_iter().map(|(icon, label, sub, id)| -> RowFn<'_> {
             Box::new(move |r| pf_act(t, Some(icon), label.into(), Some((sub, t.ink2, false)), Some(chevron(t)), Some(m(Action::Open(Page::Native(id)))), false, r))
         }).collect();
         let reads = self.profiles.read_receipts.unwrap_or(true);
         // Both lines are laid out and the taller one's height kept: flipping the switch moves nothing.
-        let receipts: Vec<RowFn> = vec![Box::new(move |r| pf_act_reserved(t, Some("check"), "Read receipts".into(),
-            &["People see when you\u{2019}ve read their messages", "Your reads stay with you"], if reads { 0 } else { 1 }, t.ink2,
+        let receipts: Vec<RowFn> = vec![Box::new(move |r| pf_act_reserved(t, Some("check"), crate::i18n::tr_str("profile_read_receipts").into(),
+            &[crate::i18n::tr_str("profile_people_see_when_youve"), crate::i18n::tr_str("profile_your_reads_stay_with")], if reads { 0 } else { 1 }, t.ink2,
             Some(pg_switch(t, reads, m(Action::SetReadReceipts(!reads)))), None, r))];
         let shown = self.profiles.presence_visible.unwrap_or(true);
-        let presence: Vec<RowFn> = vec![Box::new(move |r| pf_act_reserved(t, Some("eye"), "Show me as online in public groups".into(),
-            &["Members see when you\u{2019}re here", "You stay off their online lists"], if shown { 0 } else { 1 }, t.ink2,
+        let presence: Vec<RowFn> = vec![Box::new(move |r| pf_act_reserved(t, Some("eye"), crate::i18n::tr_str("profile_show_me_as_online").into(),
+            &[crate::i18n::tr_str("profile_members_see_when_youre"), crate::i18n::tr_str("profile_you_stay_off_their")], if shown { 0 } else { 1 }, t.ink2,
             Some(pg_switch(t, shown, m(Action::SetPresenceVisible(!shown)))), None, r))];
         let auto = self.profiles.group_images.unwrap_or(true);
-        let pictures: Vec<RowFn> = vec![Box::new(move |r| pf_act_reserved(t, Some("image"), "Load group pictures by themselves".into(),
-            &["Pictures in groups appear as they arrive", "Each shows a soft preview until you tap it"], if auto { 0 } else { 1 }, t.ink2,
+        let pictures: Vec<RowFn> = vec![Box::new(move |r| pf_act_reserved(t, Some("image"), crate::i18n::tr_str("profile_load_group_pictures_by").into(),
+            &[crate::i18n::tr_str("profile_pictures_in_groups_appear"), crate::i18n::tr_str("profile_each_shows_a_soft_preview")], if auto { 0 } else { 1 }, t.ink2,
             Some(pg_switch(t, auto, m(Action::SetGroupImages(!auto)))), None, r))];
         let c = pf_sec(16.0, column![pf_card(t, rows),
-            pf_note(t, "Your contacts see your name, picture and profile. Tinline doesn\u{2019}t hide who you talk to, and every device linked to your account can read your chats."),
+            pf_note(t, crate::i18n::tr_str("profile_your_contacts_see_your")),
             container(pf_card(t, receipts)).padding(Padding { top: 24.0, ..Padding::ZERO }),
-            pf_note(t, "Delivered ticks still go out either way, and you still see when others read yours. Messages you read while this is off stay unconfirmed."),
+            pf_note(t, crate::i18n::tr_str("profile_delivered_ticks_still_go")),
             container(pf_card(t, presence)).padding(Padding { top: 24.0, ..Padding::ZERO }),
-            pf_note(t, "Public groups are the ones anyone can join with an open link. This applies on this device; your other devices keep their own choice."),
+            pf_note(t, crate::i18n::tr_str("profile_public_groups_are_the")),
             container(pf_card(t, pictures)).padding(Padding { top: 24.0, ..Padding::ZERO }),
-            pf_note(t, "Hosts keep every group picture so members can load them. This applies on this device.")].into());
+            pf_note(t, crate::i18n::tr_str("profile_hosts_keep_every_group"))].into());
         self.pf_scroll(t, c, 40.0)
     }
 
@@ -617,15 +617,15 @@ impl App {
         let mut rows: Vec<RowFn> = list.into_iter().map(|b| -> RowFn<'_> {
             let first = b.name.split_whitespace().next().unwrap_or(&b.name).to_string();
             let _ = first;
-            Box::new(move |r| self.person_row(t, &b.did, b.name.clone(), "Told you blocked them".into(),
-                pg_btn(t, Btn::Outline, None, "Unblock", Some(Msg::Privacy(crate::app::PvMsg::Unblock(Some(b.did.clone()))))), r))
+            Box::new(move |r| self.person_row(t, &b.did, b.name.clone(), crate::i18n::tr_str("profile_told_you_blocked_them").into(),
+                pg_btn(t, Btn::Outline, None, crate::i18n::tr_str("common_unblock"), Some(Msg::Privacy(crate::app::PvMsg::Unblock(Some(b.did.clone()))))), r))
         }).collect();
         if rows.is_empty() {
-            rows.push(Box::new(move |_| container(tx("No one is blocked.", 13.0, t.ink2)).padding([18, 16]).width(Fill).center_x(Fill).into()));
+            rows.push(Box::new(move |_| container(tx(crate::i18n::tr_str("profile_no_one_is_blocked"), 13.0, t.ink2)).padding([18, 16]).width(Fill).center_x(Fill).into()));
         }
-        rows.push(Box::new(move |r| pf_act(t, Some("off"), "Block someone".into(), None, None, Some(Msg::Privacy(crate::app::PvMsg::Pick(true))), false, r)));
-        let c = pf_sec(16.0, column![pf_h2(t, "Blocked"), pf_card(t, rows),
-            pf_note(t, "Blocking is not silent. The person is told, their app stops contacting you and removes you from their contacts. Your chat history stays on your devices. Groups you share aren\u{2019}t affected.")].into());
+        rows.push(Box::new(move |r| pf_act(t, Some("off"), crate::i18n::tr_str("profile_block_someone").into(), None, None, Some(Msg::Privacy(crate::app::PvMsg::Pick(true))), false, r)));
+        let c = pf_sec(16.0, column![pf_h2(t, crate::i18n::tr_str("common_blocked")), pf_card(t, rows),
+            pf_note(t, crate::i18n::tr_str("profile_blocking_is_not_silent"))].into());
         self.pf_scroll(t, c, 40.0)
     }
 
@@ -636,11 +636,11 @@ impl App {
         people.sort_by_key(|c| Self::display(c).to_lowercase());
         let rows: Vec<RowFn> = people.into_iter().map(|c| -> RowFn<'_> {
             let on = self.blocks.calls_allowed(&c.did);
-            Box::new(move |r| self.person_row(t, &c.did, Self::display(c), if on { "Can call you".into() } else { "Messages only".into() },
+            Box::new(move |r| self.person_row(t, &c.did, Self::display(c), if on { crate::i18n::tr_str("profile_can_call_you").into() } else { crate::i18n::tr_str("common_messages_only").into() },
                 pg_switch(t, on, Msg::AllowCalls(c.did.clone(), !on)), r))
         }).collect();
-        let c = pf_sec(16.0, column![pf_h2(t, "Contacts"), pf_card(t, rows),
-            pf_note(t, "Someone you allowed can ring you; someone on messages only can still write. People you blocked can do neither.")].into());
+        let c = pf_sec(16.0, column![pf_h2(t, crate::i18n::tr_str("common_contacts")), pf_card(t, rows),
+            pf_note(t, crate::i18n::tr_str("profile_someone_you_allowed_can"))].into());
         self.pf_scroll(t, c, 40.0)
     }
 
@@ -649,14 +649,14 @@ impl App {
     fn phrase_page(&self, t: Tok) -> El<'_> {
         let lead_ = |s: &str| -> El<'_> { container(tx(s.to_string(), 15.0, t.ink).line_height(lh(21.0))).padding(Padding { top: 0.0, right: 4.0, bottom: 12.0, left: 4.0 }).into() };
         let Some(words) = self.revealed.as_ref() else {
-            let mut c = column![lead_("Your recovery phrase is the only way to get your account back if you lose every device. Anyone who has it can act as you.")].spacing(6);
+            let mut c = column![lead_(crate::i18n::tr_str("profile_your_recovery_phrase_is"))].spacing(6);
             if self.has_pass {
-                c = c.push(self.pf_pass(t, "Enter your passphrase to continue", &self.pass_in, Msg::PassIn, Some(Msg::RevealSubmit)));
+                c = c.push(self.pf_pass(t, crate::i18n::tr_str("profile_enter_your_passphrase_to_continue"), &self.pass_in, Msg::PassIn, Some(Msg::RevealSubmit)));
             }
             if let Some(n) = self.notice.as_ref().filter(|_| self.has_pass) {
                 c = c.push(tx(n.clone(), 13.0, t.danger).line_height(lh(19.0)));
             }
-            c = c.push(container(pg_btn(t, Btn::Primary, None, if self.busy { "Checking\u{2026}" } else { "Continue" }, (!self.busy && (!self.has_pass || !self.pass_in.is_empty())).then_some(Msg::RevealSubmit))).align_right(Fill).padding(Padding { top: 6.0, ..Padding::ZERO }));
+            c = c.push(container(pg_btn(t, Btn::Primary, None, if self.busy { crate::i18n::tr_str("profile_checking") } else { crate::i18n::tr_str("common_continue") }, (!self.busy && (!self.has_pass || !self.pass_in.is_empty())).then_some(Msg::RevealSubmit))).align_right(Fill).padding(Padding { top: 6.0, ..Padding::ZERO }));
             return self.pf_scroll(t, pf_sec(16.0, c.into()), 40.0);
         };
         let shown = self.pv.shown;
@@ -667,12 +667,12 @@ impl App {
             let key = p2pcore::recovery_key_from_phrase(words.to_string()).unwrap_or_default();
             let shown_key: El = if shown { super::signup_view::key_box(t, key) } else { super::signup_view::key_box(t, "\u{2022}".repeat(24)) };
             let left = self.pv.shown_at.map(|a| 30u64.saturating_sub(a.elapsed().as_secs())).unwrap_or(30);
-            let bar = row![pg_btn(t, if shown { Btn::Outline } else { Btn::Primary }, Some(if shown { "eyeoff" } else { "eye" }), if shown { "Hide key" } else { "Show key" }, Some(Msg::Privacy(crate::app::PvMsg::Words(!shown)))),
-                pg_btn(t, Btn::Outline, Some("copy"), "Copy my key", Some(Msg::Privacy(crate::app::PvMsg::CopyKey))),
-                tx(if shown { format!("Hides in {left} s") } else { String::new() }, 13.0, t.ink2)].spacing(12).align_y(Alignment::Center);
-            let c = column![lead_("Your recovery key is the same as your 24 words, as one line. A password manager is a good place for it."), container(seg).padding(Padding { bottom: 10.0, ..Padding::ZERO }), shown_key,
+            let bar = row![pg_btn(t, if shown { Btn::Outline } else { Btn::Primary }, Some(if shown { "eyeoff" } else { "eye" }), if shown { crate::i18n::tr_str("profile_hide_key") } else { crate::i18n::tr_str("profile_show_key") }, Some(Msg::Privacy(crate::app::PvMsg::Words(!shown)))),
+                pg_btn(t, Btn::Outline, Some("copy"), crate::i18n::tr_str("common_copy_my_key"), Some(Msg::Privacy(crate::app::PvMsg::CopyKey))),
+                tx(if shown { crate::i18n::tr_args("profile_hides_in_s", &[("seconds", &(left).to_string())]) } else { String::new() }, 13.0, t.ink2)].spacing(12).align_y(Alignment::Center);
+            let c = column![lead_(crate::i18n::tr_str("profile_your_recovery_key_is")), container(seg).padding(Padding { bottom: 10.0, ..Padding::ZERO }), shown_key,
                 container(bar).padding(Padding { top: 12.0, ..Padding::ZERO }),
-                pf_note(t, "Anyone who has it can act as you, just like the words. Tinline never asks for it except to restore your account.")];
+                pf_note(t, crate::i18n::tr_str("profile_anyone_who_has_it"))];
             return self.pf_scroll(t, pf_sec(16.0, c.into()), 40.0);
         }
         let mut grid = column![].spacing(0);
@@ -691,10 +691,10 @@ impl App {
         let card = container(grid).padding([8, 16]).width(Fill).style(move |_: &iced::Theme| iced::widget::container::Style {
             background: Some(t.surface.into()), border: Border { color: t.hairline, width: 1.0, radius: 14.0.into() }, ..Default::default() });
         let left = self.pv.shown_at.map(|a| 30u64.saturating_sub(a.elapsed().as_secs())).unwrap_or(30);
-        let bar = row![pg_btn(t, if shown { Btn::Outline } else { Btn::Primary }, Some(if shown { "eyeoff" } else { "eye" }), if shown { "Hide words" } else { "Show words" }, Some(Msg::Privacy(crate::app::PvMsg::Words(!shown)))),
-            tx(if shown { format!("Hides in {left} s") } else { String::new() }, 13.0, t.ink2)].spacing(12).align_y(Alignment::Center);
-        let c = column![lead_("Write these 24 words down, in order, and keep them somewhere private."), container(seg).padding(Padding { bottom: 10.0, ..Padding::ZERO }), card, container(bar).padding(Padding { top: 12.0, ..Padding::ZERO }),
-            pf_note(t, "There is no copy button on purpose: the phrase stays off the clipboard. Tinline never asks for it except to restore your account. The phrase brings back your account, not your messages.")];
+        let bar = row![pg_btn(t, if shown { Btn::Outline } else { Btn::Primary }, Some(if shown { "eyeoff" } else { "eye" }), if shown { crate::i18n::tr_str("profile_hide_words") } else { crate::i18n::tr_str("profile_show_words") }, Some(Msg::Privacy(crate::app::PvMsg::Words(!shown)))),
+            tx(if shown { crate::i18n::tr_args("profile_hides_in_s", &[("seconds", &(left).to_string())]) } else { String::new() }, 13.0, t.ink2)].spacing(12).align_y(Alignment::Center);
+        let c = column![lead_(crate::i18n::tr_str("profile_write_these_24_words")), container(seg).padding(Padding { bottom: 10.0, ..Padding::ZERO }), card, container(bar).padding(Padding { top: 12.0, ..Padding::ZERO }),
+            pf_note(t, crate::i18n::tr_str("profile_there_is_no_copy"))];
         self.pf_scroll(t, pf_sec(16.0, c.into()), 40.0)
     }
 
@@ -704,27 +704,27 @@ impl App {
         let err = |s: &str| -> El<'_> { container(tx(s.to_string(), 13.0, t.danger).line_height(lh(19.0))).height(19).into() };
         let mut f = column![].spacing(6);
         if self.has_pass {
-            f = f.push(self.pf_pass(t, "Current passphrase", &self.old_in, Msg::OldIn, None)).push(err(&e[0]));
+            f = f.push(self.pf_pass(t, crate::i18n::tr_str("common_current_passphrase"), &self.old_in, Msg::OldIn, None)).push(err(&e[0]));
         }
-        f = f.push(self.pf_pass(t, "New passphrase", &self.pass_in, Msg::PassIn, None)).push(if e[1].is_empty() { container(tx("Any length works. A few words make it stronger.", 13.0, t.ink2).line_height(lh(19.0))).height(19).into() } else { err(&e[1]) })
-            .push(self.pf_pass(t, "New passphrase again", &self.pv.again, |v| Msg::Privacy(crate::app::PvMsg::Again(v)), Some(Msg::Privacy(crate::app::PvMsg::Change)))).push(err(&e[2]));
-        let saved: El = if self.pv.done { row![pgi("check", 16.0, t.accent_ink), semi("Passphrase changed", 13.0, t.accent_ink)].spacing(6).align_y(Alignment::Center).into() } else { Space::new().height(22).into() };
+        f = f.push(self.pf_pass(t, crate::i18n::tr_str("common_new_passphrase"), &self.pass_in, Msg::PassIn, None)).push(if e[1].is_empty() { container(tx(crate::i18n::tr_str("profile_any_length_works_a"), 13.0, t.ink2).line_height(lh(19.0))).height(19).into() } else { err(&e[1]) })
+            .push(self.pf_pass(t, crate::i18n::tr_str("profile_new_passphrase_again"), &self.pv.again, |v| Msg::Privacy(crate::app::PvMsg::Again(v)), Some(Msg::Privacy(crate::app::PvMsg::Change)))).push(err(&e[2]));
+        let saved: El = if self.pv.done { row![pgi("check", 16.0, t.accent_ink), semi(crate::i18n::tr_str("common_passphrase_changed"), 13.0, t.accent_ink)].spacing(6).align_y(Alignment::Center).into() } else { Space::new().height(22).into() };
         let ready = !self.busy && !self.pass_in.is_empty() && !self.pv.again.is_empty();
-        f = f.push(row![container(saved).width(Fill), pg_btn(t, Btn::Primary, None, if self.has_pass { "Change passphrase" } else { "Add passphrase" }, ready.then_some(Msg::Privacy(crate::app::PvMsg::Change)))].align_y(Alignment::Center));
+        f = f.push(row![container(saved).width(Fill), pg_btn(t, Btn::Primary, None, if self.has_pass { crate::i18n::tr_str("common_change_passphrase") } else { crate::i18n::tr_str("common_add_passphrase") }, ready.then_some(Msg::Privacy(crate::app::PvMsg::Change)))].align_y(Alignment::Center));
         // Remember on this computer (ChangePass.svelte): the switch, or why there is none.
         let remember: Option<El> = self.has_pass.then(|| {
             let row_: RowFn = if self.remember_avail == Some(false) {
-                Box::new(move |r| pf_act(t, Some("key"), "Remember on this computer".into(),
-                    Some(("This computer has no keyring, so Tinline asks for your passphrase each time it starts.".into(), t.ink2, false)), None, None, false, r))
+                Box::new(move |r| pf_act(t, Some("key"), crate::i18n::tr_str("common_remember_on_this_computer").into(),
+                    Some((crate::i18n::tr_str("profile_this_computer_has_no").into(), t.ink2, false)), None, None, false, r))
             } else {
                 let on = self.remember;
-                Box::new(move |r| pf_act(t, Some("key"), "Remember on this computer".into(),
-                    Some(("Skips the passphrase when Tinline starts, using this computer\u{2019}s keyring.".into(), t.ink2, false)),
+                Box::new(move |r| pf_act(t, Some("key"), crate::i18n::tr_str("common_remember_on_this_computer").into(),
+                    Some((crate::i18n::tr_str("common_skips_the_passphrase_when").into(), t.ink2, false)),
                     Some(pg_switch(t, on, Msg::Remember(!on))), None, false, r))
             };
             pf_sec(16.0, pf_card(t, vec![row_]))
         });
-        let c = column![f, pf_note(t, "The passphrase protects Tinline on this device only; your other devices keep their own. Tinline can\u{2019}t recover a forgotten passphrase. If that happens, your recovery phrase restores your account, though not your messages.")];
+        let c = column![f, pf_note(t, crate::i18n::tr_str("profile_the_passphrase_protects_tinline"))];
         let mut page = column![].spacing(0);
         if let Some(r) = remember { page = page.push(r); }
         self.pf_scroll(t, page.push(pf_sec(if self.has_pass { 24.0 } else { 16.0 }, c.into())).into(), 40.0)
@@ -756,18 +756,18 @@ impl App {
                     .padding([0, 8]).width(Fill).style(wash(t, None, Some(t.surface2), 14.0)).on_press(Msg::Privacy(PvMsg::PickPerson(c.did.clone()))));
             }
             if people.is_empty() {
-                list = list.push(container(tx("No one left to block.", 13.0, t.ink2)).padding([18, 16]).width(Fill).center_x(Fill));
+                list = list.push(container(tx(crate::i18n::tr_str("profile_no_one_left_to"), 13.0, t.ink2)).padding([18, 16]).width(Fill).center_x(Fill));
             }
-            let body = vec![para(t, "Pick a contact.".into()), container(iced::widget::scrollable(list).height(Length::Shrink)).max_height(320).into()];
-            return Some(pg_dialog(t, 1.0, None, pf_dlg(t, "Block someone".into(), body, vec![pg_btn(t, Btn::Quiet, None, "Cancel", Some(Msg::Privacy(PvMsg::Pick(false))))]), Msg::Privacy(PvMsg::Pick(false))));
+            let body = vec![para(t, crate::i18n::tr_str("profile_pick_a_contact").into()), container(iced::widget::scrollable(list).height(Length::Shrink)).max_height(320).into()];
+            return Some(pg_dialog(t, 1.0, None, pf_dlg(t, crate::i18n::tr_str("profile_block_someone").into(), body, vec![pg_btn(t, Btn::Quiet, None, crate::i18n::tr_str("common_cancel"), Some(Msg::Privacy(PvMsg::Pick(false))))]), Msg::Privacy(PvMsg::Pick(false))));
         }
         if let Some(did) = &self.pv.unblock {
             let name = self.blocks.list.iter().find(|b| &b.did == did).map(|b| b.name.clone()).unwrap_or_default();
             let first = name.split_whitespace().next().unwrap_or(&name).to_string();
-            let body = vec![lead(t, format!("{first}\u{2019}s app can reach you again. It removed you from their contacts when you blocked them, so you\u{2019}ll both need to add each other again before you can message or call.")),
-                para(t, "Your chat history is still here.".into())];
-            return Some(pg_dialog(t, 1.0, None, pf_dlg(t, format!("Unblock {first}?"), body,
-                vec![pg_btn(t, Btn::Quiet, None, "Cancel", Some(Msg::Privacy(PvMsg::Unblock(None)))), pg_btn(t, Btn::Primary, None, "Unblock", Some(Msg::Privacy(PvMsg::UnblockGo)))]), Msg::Privacy(PvMsg::Unblock(None))));
+            let body = vec![lead(t, crate::i18n::tr_args("profile_s_app_can_reach", &[("name", &(first).to_string())])),
+                para(t, crate::i18n::tr_str("profile_your_chat_history_is").into())];
+            return Some(pg_dialog(t, 1.0, None, pf_dlg(t, crate::i18n::tr_args("profile_unblock_2", &[("name", &(first).to_string())]), body,
+                vec![pg_btn(t, Btn::Quiet, None, crate::i18n::tr_str("common_cancel"), Some(Msg::Privacy(PvMsg::Unblock(None)))), pg_btn(t, Btn::Primary, None, crate::i18n::tr_str("common_unblock"), Some(Msg::Privacy(PvMsg::UnblockGo)))]), Msg::Privacy(PvMsg::Unblock(None))));
         }
         None
     }
@@ -782,19 +782,19 @@ impl App {
             Box::new(move |r| pf_act(t, Some(icon), title.into(), Some((sub.into(), t.ink2, false)), Some(pg_switch(t, on, Msg::Alerts(f(!on)))), None, false, r))
         };
         let alerts: Vec<RowFn> = vec![
-            sw("chat", "Messages", "From people, not groups", !st.no_notify_messages, Alerts::Messages),
-            sw("phone", "Calls", "Ringing when someone calls", !st.no_notify_calls, Alerts::Calls),
-            sw("users", "Groups", "Posts, invites and requests", !st.no_notify_groups, Alerts::Groups),
+            sw("chat", crate::i18n::tr_str("common_messages"), crate::i18n::tr_str("profile_from_people_not_groups"), !st.no_notify_messages, Alerts::Messages),
+            sw("phone", crate::i18n::tr_str("common_calls"), crate::i18n::tr_str("profile_ringing_when_someone_calls"), !st.no_notify_calls, Alerts::Calls),
+            sw("users", crate::i18n::tr_str("common_groups"), crate::i18n::tr_str("profile_posts_invites_and_requests"), !st.no_notify_groups, Alerts::Groups),
         ];
         let mic = !self.devices.0.is_empty();
         let perm = |icon: &'static str, title: &'static str, ok: bool, no: &'static str| -> RowFn<'_> {
-            Box::new(move |r| pf_act(t, Some(icon), title.into(), Some((if ok { "Allowed".into() } else { no.into() }, if ok { t.ink2 } else { t.warn_ink }, !ok)), None, None, false, r))
+            Box::new(move |r| pf_act(t, Some(icon), title.into(), Some((if ok { crate::i18n::tr_str("profile_allowed").into() } else { no.into() }, if ok { t.ink2 } else { t.warn_ink }, !ok)), None, None, false, r))
         };
-        let perms: Vec<RowFn> = vec![perm("bell", "Notifications", true, ""), perm("mic", "Microphone", mic, "No microphone found")];
+        let perms: Vec<RowFn> = vec![perm("bell", crate::i18n::tr_str("profile_notifications"), true, ""), perm("mic", crate::i18n::tr_str("common_microphone"), mic, crate::i18n::tr_str("profile_no_microphone_found"))];
         let c = column![
-            pf_sec(12.0, column![pf_h2(t, "Alert me about"), pf_card(t, alerts),
-                pf_note(t, "A muted chat never alerts you, whatever is switched on here. Missed calls from one person fold into one notification.")].into()),
-            section(t, "Permissions", perms, vec!["These are set by your system, not by Tinline. Tinline asks only when it needs one.".into()]),
+            pf_sec(12.0, column![pf_h2(t, crate::i18n::tr_str("profile_alert_me_about")), pf_card(t, alerts),
+                pf_note(t, crate::i18n::tr_str("profile_a_muted_chat_never"))].into()),
+            section(t, crate::i18n::tr_str("profile_permissions"), perms, vec![crate::i18n::tr_str("profile_these_are_set_by").into()]),
         ];
         self.pf_scroll(t, c.into(), 40.0)
     }
@@ -805,7 +805,7 @@ impl App {
         use crate::app::Alerts;
         use crate::cues::Palette;
         let quiet = self.settings.quiet;
-        let quiet_row: Vec<RowFn> = vec![Box::new(move |r| pf_act(t, Some("mute"), "Quiet".into(), Some(("No sounds from Tinline: ringing, call tones, joins".into(), t.ink2, false)),
+        let quiet_row: Vec<RowFn> = vec![Box::new(move |r| pf_act(t, Some("mute"), crate::i18n::tr_str("profile_quiet").into(), Some((crate::i18n::tr_str("profile_no_sounds_from_tinline").into(), t.ink2, false)),
             Some(pg_switch(t, quiet, Msg::Alerts(Alerts::Quiet(!quiet)))), None, false, r))];
         let cur = Palette::from_key(&self.settings.palette);
         let radios: Vec<RowFn> = Palette::ALL.into_iter().map(|p| -> RowFn<'_> {
@@ -834,11 +834,11 @@ impl App {
                     border: Border { color: t.line, width: 1.0, radius: 16.0.into() }, ..Default::default() })
                 .on_press(Msg::Alerts(Alerts::Preview(kind))).into()
         };
-        let chips = container(row![chip("Ringtone", "ring"), chip("Connected", "connected"), chip("Call ended", "ended")].spacing(8)).padding(Padding { top: 12.0, right: 4.0, bottom: 0.0, left: 4.0 });
-        let note = if quiet { "Quiet is on, so previews are silent." } else { "Tap a sound to hear it. The choice applies to the next call." };
+        let chips = container(row![chip(crate::i18n::tr_str("profile_ringtone"), "ring"), chip(crate::i18n::tr_str("profile_connected"), "connected"), chip(crate::i18n::tr_str("common_call_ended"), "ended")].spacing(8)).padding(Padding { top: 12.0, right: 4.0, bottom: 0.0, left: 4.0 });
+        let note = if quiet { crate::i18n::tr_str("profile_quiet_is_on_so") } else { crate::i18n::tr_str("profile_tap_a_sound_to") };
         let c = column![
-            pf_sec(16.0, column![pf_h2(t, "Quiet"), pf_card(t, quiet_row)].into()),
-            pf_sec(24.0, column![pf_h2(t, "Call sounds"), pf_card(t, radios), chips, pf_note(t, note)].into()),
+            pf_sec(16.0, column![pf_h2(t, crate::i18n::tr_str("profile_quiet")), pf_card(t, quiet_row)].into()),
+            pf_sec(24.0, column![pf_h2(t, crate::i18n::tr_str("profile_call_sounds")), pf_card(t, radios), chips, pf_note(t, note)].into()),
         ];
         self.pf_scroll(t, c.into(), 40.0)
     }
@@ -846,32 +846,32 @@ impl App {
     /// Settings > Video (CallsVideo.svelte): "Sharper video" (each call starts this way; the HD chip changes one call), then the computer's cameras.
     fn video_page(&self, t: Tok) -> El<'_> {
         let hd = self.settings.prefer_hd;
-        let sub = if hd { "Always starts in HD. Uses more data and battery." } else { "Goes HD by itself when the connection allows." };
-        let quality: Vec<RowFn> = vec![Box::new(move |r| pf_act(t, Some("video"), "Sharper video".into(), Some((sub.into(), t.ink2, false)),
+        let sub = if hd { crate::i18n::tr_str("profile_always_starts_in_hd") } else { crate::i18n::tr_str("profile_goes_hd_by_itself") };
+        let quality: Vec<RowFn> = vec![Box::new(move |r| pf_act(t, Some("video"), crate::i18n::tr_str("profile_sharper_video").into(), Some((sub.into(), t.ink2, false)),
             Some(pg_switch(t, hd, Msg::Video(super::super::Vm::PreferHd(!hd)))), None, false, r))];
-        let note = "A new camera is used the next time your camera starts.";
+        let note = crate::i18n::tr_str("profile_a_new_camera_is");
         // The saved choice may be unplugged right now; it stays listed (selected) until the person picks another.
         let mut cams: Vec<crate::camera::Info> = self.video.devices.clone();
         if let Some(saved) = self.settings.camera_device.as_ref().filter(|s| !cams.iter().any(|c| &c.path == *s)) {
             cams.push(crate::camera::Info { path: saved.clone(), label: saved.clone(), usb: false });
         }
         let chosen = self.settings.camera_device.clone().or_else(|| cams.first().map(|c| c.path.clone()));
-        let mut c = column![pf_sec(16.0, column![pf_h2(t, "Video quality"), pf_card(t, quality), pf_note(t, "Every video call starts this way. During a call, tap HD to change it for that call.")].into())];
+        let mut c = column![pf_sec(16.0, column![pf_h2(t, crate::i18n::tr_str("profile_video_quality")), pf_card(t, quality), pf_note(t, crate::i18n::tr_str("profile_every_video_call_starts"))].into())];
         let rows: Vec<RowFn> = cams.into_iter().map(|cam| -> RowFn<'_> {
             let on = chosen.as_deref() == Some(cam.path.as_str());
             Box::new(move |r| pf_radio(t, cam.label, cam.usb.then(|| "USB".to_string()), on, Msg::Video(super::super::Vm::SelectCamera(cam.path)), 56.0, r))
         }).collect();
         if rows.is_empty() {
-            c = c.push(pf_sec(24.0, column![pf_h2(t, "Camera"), pf_note(t, "No camera found. Plug one in and open this page again."), pf_note(t, note)].into()));
+            c = c.push(pf_sec(24.0, column![pf_h2(t, crate::i18n::tr_str("common_camera")), pf_note(t, crate::i18n::tr_str("profile_no_camera_found_plug")), pf_note(t, note)].into()));
         } else {
-            c = c.push(pf_sec(24.0, column![pf_h2(t, "Camera"), pf_card(t, rows), pf_note(t, note)].into()));
+            c = c.push(pf_sec(24.0, column![pf_h2(t, crate::i18n::tr_str("common_camera")), pf_card(t, rows), pf_note(t, note)].into()));
         }
         #[cfg(feature = "video-tuning")]
         {
             let tuning = self.node.video_tuning();
-            let mut controls = column![pf_h2(t, "Video tuning"),
-                pf_note(t, "Session only. Changes apply to the next call (About this call changes the current one). Fixed size disables rate/CPU resolution adaptation; peer and thermal caps still win. Use HD capture and compare actual payload rates and dimensions.")].spacing(8);
-            let mut codecs = row![tx("Send codec", 13.0, t.ink2)].spacing(8);
+            let mut controls = column![pf_h2(t, crate::i18n::tr_str("profile_video_tuning")),
+                pf_note(t, crate::i18n::tr_str("profile_session_only_changes_apply"))].spacing(8);
+            let mut codecs = row![tx(crate::i18n::tr_str("profile_send_codec"), 13.0, t.ink2)].spacing(8);
             for codec in self.node.video_tuning_codecs() {
                 let mut next = tuning.clone();
                 next.send_codec = codec.clone();
@@ -880,38 +880,38 @@ impl App {
                     .on_press(Msg::Video(super::super::Vm::Tuning(next))));
             }
             controls = controls.push(codecs);
-            let mut rates = row![tx("Bitrate cap", 13.0, t.ink2)].spacing(8);
-            for (bps, label) in [(0, "Auto"), (500_000, "0.5M"), (1_000_000, "1M"), (2_000_000, "2M"), (3_000_000, "3M")] {
+            let mut rates = row![tx(crate::i18n::tr_str("profile_bitrate_cap"), 13.0, t.ink2)].spacing(8);
+            for (bps, label) in [(0, crate::i18n::tr_str("common_auto")), (500_000, "0.5M"), (1_000_000, "1M"), (2_000_000, "2M"), (3_000_000, "3M")] {
                 let mut next = tuning.clone(); next.max_bps = bps;
                 rates = rates.push(button(tx(format!("{}{label}", if tuning.max_bps == bps { "✓ " } else { "" }), 12.0, t.ink))
                     .on_press(Msg::Video(super::super::Vm::Tuning(next))));
             }
             controls = controls.push(rates);
-            let mut sizes = row![tx("Fixed rung", 13.0, t.ink2)].spacing(8);
-            for (height, label) in [(0, "Auto"), (360, "360p"), (540, "540p"), (720, "720p")] {
+            let mut sizes = row![tx(crate::i18n::tr_str("profile_fixed_rung"), 13.0, t.ink2)].spacing(8);
+            for (height, label) in [(0, crate::i18n::tr_str("common_auto")), (360, "360p"), (540, "540p"), (720, "720p")] {
                 let mut next = tuning.clone(); next.fixed_height = height;
                 sizes = sizes.push(button(tx(format!("{}{label}", if tuning.fixed_height == height { "✓ " } else { "" }), 12.0, t.ink))
                     .on_press(Msg::Video(super::super::Vm::Tuning(next))));
             }
             controls = controls.push(sizes);
-            let mut decoders = row![tx("Decoder for their video", 13.0, t.ink2)].spacing(8);
-            for (id, label) in [("auto", "Auto"), ("hw", "Hardware"), ("sw", "Software")] {
+            let mut decoders = row![tx(crate::i18n::tr_str("common_decoder_for_their_video"), 13.0, t.ink2)].spacing(8);
+            for (id, label) in [("auto", crate::i18n::tr_str("common_auto")), ("hw", crate::i18n::tr_str("profile_hardware")), ("sw", crate::i18n::tr_str("profile_software"))] {
                 let mut next = tuning.clone(); next.recv_decoder = id.into();
                 let selected = tuning.recv_decoder == id || (tuning.recv_decoder.is_empty() && id == "auto");
                 decoders = decoders.push(button(tx(format!("{}{label}", if selected { "✓ " } else { "" }), 12.0, t.ink))
                     .on_press(Msg::Video(super::super::Vm::Tuning(next))));
             }
             controls = controls.push(decoders);
-            let mut rcs = row![tx("Rate control", 13.0, t.ink2)].spacing(8);
-            for (id, label) in [("auto", "Cut+probe"), ("cut", "Cut"), ("plain", "Plain (old)"), ("trend", "Trend+probe")] {
+            let mut rcs = row![tx(crate::i18n::tr_str("profile_rate_control"), 13.0, t.ink2)].spacing(8);
+            for (id, label) in [("auto", crate::i18n::tr_str("profile_cut_probe")), ("cut", crate::i18n::tr_str("profile_cut")), ("plain", crate::i18n::tr_str("profile_plain_old")), ("trend", crate::i18n::tr_str("profile_trend_probe"))] {
                 let mut next = tuning.clone(); next.rate_control = id.into();
                 let selected = tuning.rate_control == id || (matches!(tuning.rate_control.as_str(), "" | "probe") && id == "auto");
                 rcs = rcs.push(button(tx(format!("{}{label}", if selected { "✓ " } else { "" }), 12.0, t.ink))
                     .on_press(Msg::Video(super::super::Vm::Tuning(next))));
             }
             controls = controls.push(rcs)
-                .push(pf_note(t, "Rate control: probing needs the other side on this build too; set both the same for an A/B call."))
-                .push(pf_note(t, "This computer decodes AV1 (rav1d) and VP8 (libvpx) in software only. During a call, About this call has the same controls for that call."));
+                .push(pf_note(t, crate::i18n::tr_str("profile_rate_control_probing_needs")))
+                .push(pf_note(t, crate::i18n::tr_str("profile_this_computer_decodes_av1")));
             c = c.push(pf_sec(24.0, controls.into()));
         }
         self.pf_scroll(t, c.into(), 40.0)
@@ -923,8 +923,8 @@ impl App {
         use p2pcore::PictureDownload as Dl;
         let info = self.profiles.storage;
         let kinds: [(&str, u64, Color); 4] = match info {
-            Some(i) => [("Pictures", i.usage.pictures, t.accent), ("Files", i.usage.files, t.thread), ("Messages", i.usage.messages, t.ink2), ("Cache", i.cache, t.line)],
-            None => [("Pictures", 0, t.accent), ("Files", 0, t.thread), ("Messages", 0, t.ink2), ("Cache", 0, t.line)],
+            Some(i) => [(crate::i18n::tr_str("profile_pictures"), i.usage.pictures, t.accent), (crate::i18n::tr_str("profile_files"), i.usage.files, t.thread), (crate::i18n::tr_str("common_messages"), i.usage.messages, t.ink2), (crate::i18n::tr_str("profile_cache"), i.cache, t.line)],
+            None => [(crate::i18n::tr_str("profile_pictures"), 0, t.accent), (crate::i18n::tr_str("profile_files"), 0, t.thread), (crate::i18n::tr_str("common_messages"), 0, t.ink2), (crate::i18n::tr_str("profile_cache"), 0, t.line)],
         };
         let total: u64 = kinds.iter().map(|k| k.1).sum();
         // .bar: 10 high, 5 radius, 2 gap, a 3px floor per kind present.
@@ -941,17 +941,17 @@ impl App {
         let use_card: RowFn = Box::new(move |_| container(column![tx(fmt_bytes(total), 17.0, t.ink).line_height(lh(24.0)), bar, legend].spacing(12)).padding(16).width(Fill).into());
         let cur = info.map(|i| i.download).unwrap_or_default();
         // The core cannot see whether this computer is on Wi-Fi, so "On Wi-Fi" is a phone choice only.
-        let dl: Vec<RowFn> = [(Dl::Always, "Always", "On Wi-Fi and mobile data"), (Dl::Tap, "When I tap them", "Each shows a soft preview until then")]
+        let dl: Vec<RowFn> = [(Dl::Always, crate::i18n::tr_str("profile_always"), crate::i18n::tr_str("profile_on_wi_fi_and")), (Dl::Tap, crate::i18n::tr_str("profile_when_i_tap_them"), crate::i18n::tr_str("profile_each_shows_a_soft"))]
             .into_iter().map(|(d, name, sub)| -> RowFn<'_> { Box::new(move |r| pf_radio(t, name.into(), Some(sub.into()), cur == d, m(Action::SetDownload(d)), 56.0, r)) }).collect();
         let cache = info.map(|i| i.cache).unwrap_or(0);
         let cleared = self.profiles.cache_cleared;
-        let sub = if cache > 0 { format!("{} of pictures and files you\u{2019}ve opened. They\u{2019}re prepared again when you open them.", fmt_bytes(cache)) }
-            else if cleared { "Cleared".to_string() } else { "Nothing to clear".to_string() };
-        let clear: RowFn = Box::new(move |r| pf_act(t, Some("trash"), "Clear cache".into(), Some((sub, t.ink2, false)), None, (cache > 0).then(|| m(Action::ClearCache)), false, r));
+        let sub = if cache > 0 { crate::i18n::tr_args("profile_of_pictures_and_files", &[("value", &(fmt_bytes(cache)).to_string())]) }
+            else if cleared { crate::i18n::tr_str("profile_cleared").to_string() } else { crate::i18n::tr_str("profile_nothing_to_clear").to_string() };
+        let clear: RowFn = Box::new(move |r| pf_act(t, Some("trash"), crate::i18n::tr_str("profile_clear_cache").into(), Some((sub, t.ink2, false)), None, (cache > 0).then(|| m(Action::ClearCache)), false, r));
         let c = column![
-            pf_sec(16.0, column![pf_h2(t, "On this computer"), pf_card(t, vec![use_card])].into()),
-            pf_sec(24.0, column![pf_h2(t, "Download pictures"), pf_card(t, dl)].into()),
-            pf_sec(24.0, column![pf_card(t, vec![clear]), pf_note(t, "To free more space, remove pictures or files from their chat.")].into()),
+            pf_sec(16.0, column![pf_h2(t, crate::i18n::tr_str("profile_on_this_computer")), pf_card(t, vec![use_card])].into()),
+            pf_sec(24.0, column![pf_h2(t, crate::i18n::tr_str("profile_download_pictures")), pf_card(t, dl)].into()),
+            pf_sec(24.0, column![pf_card(t, vec![clear]), pf_note(t, crate::i18n::tr_str("profile_to_free_more_space"))].into()),
         ];
         self.pf_scroll(t, c.into(), 40.0)
     }
@@ -962,12 +962,12 @@ impl App {
         let hero = container(column![
             ui::logo(56.0, t),
             container(bold("Tinline", 17.0, t.ink).line_height(lh(24.0))).padding(Padding { top: 8.0, ..Padding::ZERO }),
-            tx(format!("Version {}", env!("CARGO_PKG_VERSION")), 13.0, t.ink2).line_height(lh(18.0)),
-            tx("Made by Osvauld", 13.0, t.ink2).line_height(lh(18.0)),
+            tx(crate::i18n::tr_args("profile_version", &[("value", &(env!("CARGO_PKG_VERSION")).to_string())]), 13.0, t.ink2).line_height(lh(18.0)),
+            tx(crate::i18n::tr_str("profile_made_by_osvauld"), 13.0, t.ink2).line_height(lh(18.0)),
         ].spacing(4).align_x(Alignment::Center)).width(Fill).center_x(Fill).padding(Padding { top: 8.0, right: 0.0, bottom: 8.0, left: 0.0 });
         let mut libs = p2pcore::open_source_licences();
-        libs.extend([("Iced", "MIT"), ("WebRTC audio processing", "BSD-3-Clause"), ("libvpx", "BSD-3-Clause")].map(|(n, l)| p2pcore::OpenSourceLicence { name: n.into(), licence: l.into() }));
-        let licences: RowFn = Box::new(move |r| pf_act(t, Some("licence"), "Open-source licences".into(), Some(("The libraries Tinline is built on".into(), t.ink2, false)),
+        libs.extend([("Iced", "MIT"), (crate::i18n::tr_str("profile_webrtc_audio_processing"), "BSD-3-Clause"), ("libvpx", "BSD-3-Clause")].map(|(n, l)| p2pcore::OpenSourceLicence { name: n.into(), licence: l.into() }));
+        let licences: RowFn = Box::new(move |r| pf_act(t, Some("licence"), crate::i18n::tr_str("profile_open_source_licences").into(), Some((crate::i18n::tr_str("profile_the_libraries_tinline_is").into(), t.ink2, false)),
             Some(pgi(if open_ { "chevup" } else { "chev" }, 18.0, t.ink2)), Some(m(Action::ToggleLicences)), false, r));
         let list: RowFn = Box::new(move |_| {
             let mut c = column![].spacing(8);
@@ -976,14 +976,14 @@ impl App {
             }
             container(c).padding(Padding { top: 4.0, right: 16.0, bottom: 12.0, left: 50.0 }).width(Fill).into()
         });
-        let source: RowFn = Box::new(move |r| pf_act(t, Some("code"), "Source code".into(), Some(("Tinline is open source".into(), t.ink2, false)),
+        let source: RowFn = Box::new(move |r| pf_act(t, Some("code"), crate::i18n::tr_str("profile_source_code").into(), Some((crate::i18n::tr_str("profile_tinline_is_open_source").into(), t.ink2, false)),
             Some(chevron(t)), Some(m(Action::OpenSource)), false, r));
         let mut rows = vec![licences];
         if open_ { rows.push(list); }
         rows.push(source);
         let c = column![
             pf_sec(24.0, hero.into()),
-            pf_sec(24.0, column![pf_card(t, rows), pf_note(t, "Tinline has no ads and no tracking. Your messages and calls go between your devices and the people you talk to.")].into()),
+            pf_sec(24.0, column![pf_card(t, rows), pf_note(t, crate::i18n::tr_str("profile_tinline_has_no_ads"))].into()),
         ];
         self.pf_scroll(t, c.into(), 40.0)
     }
@@ -996,10 +996,10 @@ impl App {
         let mut btns = row![].spacing(8);
         let pair = |el: El<'static>| container(el).width(Length::Shrink);
         if has_pic {
-            btns = btns.push(pair(pg_btn(t, Btn::Outline, Some("camera"), "Change photo", Some(m(Action::PickPhoto)))))
-                .push(container(pg_btn(t, Btn::Outline, None, "Remove", Some(m(Action::RemovePhoto)))).width(167));
+            btns = btns.push(pair(pg_btn(t, Btn::Outline, Some("camera"), crate::i18n::tr_str("profile_change_photo"), Some(m(Action::PickPhoto)))))
+                .push(container(pg_btn(t, Btn::Outline, None, crate::i18n::tr_str("common_remove"), Some(m(Action::RemovePhoto)))).width(167));
         } else {
-            btns = btns.push(pair(pg_btn(t, Btn::Outline, Some("camera"), "Add photo", Some(m(Action::PickPhoto)))));
+            btns = btns.push(pair(pg_btn(t, Btn::Outline, Some("camera"), crate::i18n::tr_str("profile_add_photo"), Some(m(Action::PickPhoto)))));
         }
         let hero = container(column![self.profile_avatar(t, &self.profile_name, "me", 112.0), container(btns).padding(Padding { top: 18.0, ..Padding::ZERO })].align_x(Alignment::Center))
             .padding(Padding { top: 24.0, right: 20.0, bottom: 4.0, left: 20.0 })
@@ -1009,13 +1009,13 @@ impl App {
         let status = fields.get("status").cloned();
         let about = fields.get("about").cloned();
         let profile: Vec<RowFn> = vec![
-            Box::new(move |r| self.field_row(t, "name", "Name", Some(name), FieldKind::Text, false, false, "Not set", "Your name", "", r)),
-            Box::new(move |r| self.field_row(t, "status", "Status", status, FieldKind::Text, true, false, "Add a status", "What are you up to?", "", r)),
-            Box::new(move |r| self.field_row(t, "about", "About", about, FieldKind::Multiline, true, false, "Add a few words about you", "", "", r)),
+            Box::new(move |r| self.field_row(t, "name", crate::i18n::tr_str("common_name"), Some(name), FieldKind::Text, false, false, crate::i18n::tr_str("profile_not_set"), crate::i18n::tr_str("common_your_name"), "", r)),
+            Box::new(move |r| self.field_row(t, "status", crate::i18n::tr_str("profile_status"), status, FieldKind::Text, true, false, crate::i18n::tr_str("profile_add_a_status"), crate::i18n::tr_str("profile_what_are_you_up"), "", r)),
+            Box::new(move |r| self.field_row(t, "about", crate::i18n::tr_str("profile_about"), about, FieldKind::Multiline, true, false, crate::i18n::tr_str("profile_add_a_few_words"), "", "", r)),
         ];
-        let mut c = column![hero, section(t, "Profile", profile, vec![])].spacing(0);
-        c = c.push(section(t, "Availability", vec![Box::new(move |r| sep_top(t, r, self.availability(t)))],
-            vec!["Your contacts can see this, and it\u{2019}s the same on all your devices. It affects whether calls reach you, and it\u{2019}s separate from whether you\u{2019}re online.".into()]));
+        let mut c = column![hero, section(t, crate::i18n::tr_str("profile_profile"), profile, vec![])].spacing(0);
+        c = c.push(section(t, crate::i18n::tr_str("profile_availability"), vec![Box::new(move |r| sep_top(t, r, self.availability(t)))],
+            vec![crate::i18n::tr_str("profile_your_contacts_can_see").into()]));
         let mut extras: Vec<RowFn> = Vec::new();
         let keys = pf::extra_keys(&fields);
         let has_other = keys.iter().any(|k| pf::known(k).is_none());
@@ -1023,14 +1023,14 @@ impl App {
             let v = fields.get(&k).cloned();
             let kind = if pf::known(&k).is_some_and(|x| x.1) { FieldKind::Link } else { FieldKind::Text };
             let hint = pf::known(&k).map(|x| x.2).unwrap_or("");
-            extras.push(Box::new(move |r| self.field_row(t, &k, &pf::label(&k), v, kind, true, false, "Not set", "", hint, r)));
+            extras.push(Box::new(move |r| self.field_row(t, &k, &pf::label(&k), v, kind, true, false, crate::i18n::tr_str("profile_not_set"), "", hint, r)));
         }
-        extras.push(Box::new(move |r| pf_act(t, Some("plus"), "Add information".into(), None, None, Some(m(Action::Add)), false, r)));
-        let mut notes = vec![pf::FIELD_HELP.to_string()];
+        extras.push(Box::new(move |r| pf_act(t, Some("plus"), crate::i18n::tr_str("profile_add_information").into(), None, None, Some(m(Action::Add)), false, r)));
+        let mut notes = vec![pf::field_help().to_string()];
         if has_other {
-            notes.push("Some information came from another device or app version. It\u{2019}s shown as stored and kept when you edit anything else.".into());
+            notes.push(crate::i18n::tr_str("profile_some_information_came_from").into());
         }
-        c = c.push(section(t, "Additional information", extras, notes));
+        c = c.push(section(t, crate::i18n::tr_str("profile_additional_information"), extras, notes));
         self.pf_scroll(t, c.into(), 96.0)
     }
 
@@ -1050,9 +1050,9 @@ impl App {
                 .on_press(msg);
             b.into()
         };
-        let seg = container(row![seg("Available", available, m(Action::Available)), seg("Busy", !available, m(Action::Busy))].spacing(4))
+        let seg = container(row![seg(crate::i18n::tr_str("common_available"), available, m(Action::Available)), seg(crate::i18n::tr_str("profile_busy"), !available, m(Action::Busy))].spacing(4))
             .padding(4).width(Fill).style(ui::plain(t.surface2, 16.0));
-        let line = if available { "Available".to_string() } else { self.avail.until.map(|u| format!("Busy until {}", pf::until_label(u))).unwrap_or_else(|| "Busy until you change it".into()) };
+        let line = if available { crate::i18n::tr_str("common_available").to_string() } else { self.avail.until.map(|u| crate::i18n::tr_args("profile_busy_until", &[("value", &(pf::until_label(u)).to_string())])).unwrap_or_else(|| crate::i18n::tr_str("profile_busy_until_you_change").into()) };
         let mut now = row![].spacing(10).align_y(Alignment::Center);
         if self.profiles.av_error.is_empty() {
             now = now.push(tx(line, 13.0, t.ink).line_height(lh(19.0)).wrapping(iced::widget::text::Wrapping::None));
@@ -1060,13 +1060,13 @@ impl App {
             now = now.push(tx(self.profiles.av_error.clone(), 13.0, t.danger).line_height(lh(19.0)).width(Fill).wrapping(iced::widget::text::Wrapping::None));
         }
         if self.profiles.saved.contains_key("availability") {
-            now = now.push(Space::new().width(Fill)).push(row![pgi("check", 13.0, t.accent_ink), semi(if self.status.online { "Saved" } else { "Saved \u{b7} syncs when connected" }, 13.0, t.accent_ink).line_height(lh(19.0))].spacing(3).align_y(Alignment::Center));
+            now = now.push(Space::new().width(Fill)).push(row![pgi("check", 13.0, t.accent_ink), semi(if self.status.online { crate::i18n::tr_str("profile_saved") } else { crate::i18n::tr_str("profile_saved_syncs_when_connected") }, 13.0, t.accent_ink).line_height(lh(19.0))].spacing(3).align_y(Alignment::Center));
         }
         let mut c = column![seg, container(now).height(19)].spacing(10);
         if !available {
             let active = if self.avail.until.is_none() { "open" } else { "1h" };
             let mut chips = row![].spacing(8);
-            for (id, label) in pf::BUSY_CHOICES {
+            for (id, label) in pf::busy_choices() {
                 let on = active == id;
                 chips = chips.push(button(container(semi(label, 13.0, if on { t.accent_ink } else { t.ink }).line_height(lh(21.0))).height(34).center_y(34))
                     .padding(Padding { top: 0.0, right: 15.0, bottom: 0.0, left: 15.0 }).height(36)
@@ -1098,15 +1098,15 @@ impl App {
         if let Some(e) = self.profiles.edit.as_ref().filter(|e| e.key == key) {
             if e.removing {
                 let c = column![
-                    semi(format!("Remove \u{201c}{label_}\u{201d} from your profile?"), 15.0, t.ink).line_height(lh(21.0)),
-                    tx("It disappears from your profile. Earlier versions can remain in synced history.", 13.0, t.ink2).line_height(lh(19.0)),
+                    semi(crate::i18n::tr_args("profile_remove_from_your_profile", &[("label_", &(label_).to_string())]), 15.0, t.ink).line_height(lh(21.0)),
+                    tx(crate::i18n::tr_str("profile_it_disappears_from_your"), 13.0, t.ink2).line_height(lh(19.0)),
                 ]
                 .spacing(6);
                 let mut c = c;
                 if !e.error.is_empty() {
                     c = c.push(tx(e.error.clone(), 13.0, t.danger).line_height(lh(18.0)));
                 }
-                c = c.push(row![Space::new().width(Fill), pg_btn(t, Btn::Quiet, None, "Cancel", Some(m(Action::CancelEdit))), pg_btn(t, Btn::Danger, None, "Remove", (!self.profiles.pending).then(|| m(Action::Remove(key.clone()))))].spacing(8));
+                c = c.push(row![Space::new().width(Fill), pg_btn(t, Btn::Quiet, None, crate::i18n::tr_str("common_cancel"), Some(m(Action::CancelEdit))), pg_btn(t, Btn::Danger, None, crate::i18n::tr_str("common_remove"), (!self.profiles.pending).then(|| m(Action::Remove(key.clone()))))].spacing(8));
                 return container(c).padding(Padding { top: 14.0, right: 16.0, bottom: 12.0, left: 16.0 }).width(Fill).into();
             }
             let input: El = if kind == FieldKind::Multiline {
@@ -1129,7 +1129,7 @@ impl App {
             let limit = if key == "name" || key == "alias" { pf::LIMIT_NAME } else { pf::LIMIT_TEXT };
             let bytes = e.text.len();
             let count: El = if bytes as f32 > limit as f32 * 0.8 {
-                tx(format!("{bytes} of {limit} bytes"), 13.0, if bytes > limit { t.danger } else { t.ink2 }).line_height(lh(18.0)).into()
+                tx(crate::i18n::tr_args("profile_of_bytes", &[("bytes", &(bytes).to_string()),("limit", &(limit).to_string())]), 13.0, if bytes > limit { t.danger } else { t.ink2 }).line_height(lh(18.0)).into()
             } else {
                 Space::new().into()
             };
@@ -1142,9 +1142,9 @@ impl App {
             };
             let mut acts = row![].spacing(8).align_y(Alignment::Center);
             if optional && value.is_some() {
-                acts = acts.push(pg_btn(t, Btn::DangerQuiet, None, "Remove", (!self.profiles.pending).then(|| m(Action::Remove(key.clone())))));
+                acts = acts.push(pg_btn(t, Btn::DangerQuiet, None, crate::i18n::tr_str("common_remove"), (!self.profiles.pending).then(|| m(Action::Remove(key.clone())))));
             }
-            acts = acts.push(Space::new().width(Fill)).push(pg_btn(t, Btn::Quiet, None, "Cancel", Some(m(Action::CancelEdit)))).push(pg_btn(t, Btn::Primary, None, "Save", (!self.profiles.pending).then_some(m(Action::Save))));
+            acts = acts.push(Space::new().width(Fill)).push(pg_btn(t, Btn::Quiet, None, crate::i18n::tr_str("common_cancel"), Some(m(Action::CancelEdit)))).push(pg_btn(t, Btn::Primary, None, crate::i18n::tr_str("common_save"), (!self.profiles.pending).then_some(m(Action::Save))));
             return container(column![row![semi(label_, 13.0, t.ink2).line_height(lh(18.0)).width(Fill), count], input, container(below).height(36).width(Fill), acts].spacing(6))
                 .padding(Padding { top: 14.0, right: 16.0, bottom: 12.0, left: 16.0 })
                 .width(Fill)
@@ -1157,7 +1157,7 @@ impl App {
             lbl = lbl.push(tx(label_.clone(), 13.0, t.ink2).line_height(lh(18.0)));
         }
         if saved {
-            lbl = lbl.push(row![pgi("check", 13.0, t.accent_ink), semi(if self.status.online { "Saved" } else { "Saved \u{b7} syncs when connected" }, 13.0, t.accent_ink).line_height(lh(18.0))].spacing(3).align_y(Alignment::Center));
+            lbl = lbl.push(row![pgi("check", 13.0, t.accent_ink), semi(if self.status.online { crate::i18n::tr_str("profile_saved") } else { crate::i18n::tr_str("profile_saved_syncs_when_connected") }, 13.0, t.accent_ink).line_height(lh(18.0))].spacing(3).align_y(Alignment::Center));
         }
         let mut txt = column![].spacing(1).width(Fill);
         if !label_.is_empty() || saved {
@@ -1172,7 +1172,7 @@ impl App {
             && let Some(p) = self.profile_person()
             && let Some(a) = &p.alias
         {
-            txt = txt.push(container(tx(format!("Shown to you as {a} \u{b7} their name is {}", p.name), 13.0, t.ink2).line_height(lh(18.0))).padding(Padding { top: 2.0, ..Padding::ZERO }));
+            txt = txt.push(container(tx(crate::i18n::tr_args("profile_shown_to_you_as", &[("name", &(a).to_string()),("name2", &(p.name).to_string())]), 13.0, t.ink2).line_height(lh(18.0))).padding(Padding { top: 2.0, ..Padding::ZERO }));
         }
         let bare = label_.is_empty();
         let main: El = if editable {
@@ -1211,7 +1211,7 @@ impl App {
 
     fn person_profile(&self, t: Tok, did: &str) -> El<'_> {
         let Some(p) = self.contacts.iter().chain(self.kept.iter()).find(|c| c.did == did) else {
-            return self.pf_scroll(t, container(tx("Person not found.", 15.0, t.ink2).line_height(lh(21.0))).padding([24, 20]).into(), 40.0);
+            return self.pf_scroll(t, container(tx(crate::i18n::tr_str("profile_person_not_found"), 15.0, t.ink2).line_height(lh(21.0))).padding([24, 20]).into(), 40.0);
         };
         let contact = self.contacts.iter().any(|c| c.did == did);
         let cache = self.profiles.cache.get(did);
@@ -1232,7 +1232,7 @@ impl App {
             let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0);
             let busy = unavailable && until.is_none_or(|u| u > now);
             let chip: El = if busy {
-                let label = until.map(|u| format!("Busy until {}", pf::until_label(u))).unwrap_or_else(|| "Busy".into());
+                let label = until.map(|u| crate::i18n::tr_args("profile_busy_until", &[("value", &(pf::until_label(u)).to_string())])).unwrap_or_else(|| crate::i18n::tr_str("profile_busy").into());
                 container(semi(label, 13.0, t.warn_ink).line_height(lh(20.0))).padding([3, 12]).style(ui::plain(t.warn, 13.0)).into()
             } else {
                 Space::new().into()
@@ -1242,26 +1242,26 @@ impl App {
         if contact {
             use crate::blocks::CallGate;
             let (call_on, why) = match self.blocks.call_gate(did, true) {
-                _ if blocked => (None, "You blocked them".to_string()),
+                _ if blocked => (None, crate::i18n::tr_str("profile_you_blocked_them").to_string()),
                 CallGate::Ok => (self.call.is_none().then(|| Msg::CallPressed(did.to_string())), String::new()),
-                CallGate::NotAllowed => (None, format!("Messages only: calling needs {first}\u{2019}s permission")),
+                CallGate::NotAllowed => (None, crate::i18n::tr_args("profile_messages_only_calling_needs", &[("name", &(first).to_string())])),
                 CallGate::Closed(_) => (None, String::new()),
             };
-            hero = hero.push(container(row![pg_btn(t, Btn::Primary, Some("chat"), "Message", (!blocked).then(|| Msg::Select(did.to_string()))), pg_btn(t, Btn::Outline, Some("phone"), "Call", call_on)].spacing(8)).padding(Padding { top: 14.0, ..Padding::ZERO }));
+            hero = hero.push(container(row![pg_btn(t, Btn::Primary, Some("chat"), crate::i18n::tr_str("common_message"), (!blocked).then(|| Msg::Select(did.to_string()))), pg_btn(t, Btn::Outline, Some("phone"), crate::i18n::tr_str("common_call"), call_on)].spacing(8)).padding(Padding { top: 14.0, ..Padding::ZERO }));
             // `.why`: reserved 19px line, 8 above: flipping Allow calls moves nothing.
             hero = hero.push(container(container(tx(why, 13.0, t.ink2).line_height(lh(19.0))).height(19)).padding(Padding { top: 8.0, ..Padding::ZERO }));
         }
         let mut c = column![container(hero).padding(Padding { top: 24.0, right: 20.0, bottom: 4.0, left: 20.0 }).width(Fill).center_x(Fill)].spacing(0);
         if blocked {
-            c = c.push(container(container(row![pgi("off", 16.0, t.ink2), tx(format!("You blocked {first}. Their profile no longer updates."), 13.0, t.ink).line_height(lh(19.0))].spacing(8).align_y(Alignment::Center))
+            c = c.push(container(container(row![pgi("off", 16.0, t.ink2), tx(crate::i18n::tr_args("profile_you_blocked_their_profile", &[("name", &(first).to_string())]), 13.0, t.ink).line_height(lh(19.0))].spacing(8).align_y(Alignment::Center))
                 .padding([10, 14]).width(Fill).style(ui::plain(t.surface2, 14.0))).padding(Padding { top: 12.0, right: 16.0, bottom: 0.0, left: 16.0 }));
         }
         if cache.is_none() {
-            let line = if contact { format!("{first}\u{2019}s profile hasn\u{2019}t arrived yet. It shows here once it syncs.") } else { "No profile is available.".to_string() };
+            let line = if contact { crate::i18n::tr_args("profile_s_profile_hasnt_arrived", &[("name", &(first).to_string())]) } else { crate::i18n::tr_str("profile_no_profile_is_available").to_string() };
             c = c.push(container(tx(line, 13.0, t.ink2).line_height(lh(19.0)).align_x(Alignment::Center).width(Fill)).padding(Padding { top: 20.0, right: 24.0, bottom: 0.0, left: 24.0 }));
         } else {
             if let Some(about) = fields.get("about").filter(|v| v.as_str().is_some_and(|s| !s.is_empty())).cloned() {
-                c = c.push(section(t, "About", vec![Box::new(move |r| self.field_row(t, "about", "", Some(about), FieldKind::Multiline, false, true, "", "", "", r))], vec![]));
+                c = c.push(section(t, crate::i18n::tr_str("profile_about"), vec![Box::new(move |r| self.field_row(t, "about", "", Some(about), FieldKind::Multiline, false, true, "", "", "", r))], vec![]));
             }
             let keys = pf::extra_keys(&fields);
             if !keys.is_empty() {
@@ -1270,10 +1270,10 @@ impl App {
                     .map(|k| -> RowFn {
                         let v = fields.get(&k).cloned();
                         let kind = if pf::known(&k).is_some_and(|x| x.1) { FieldKind::Link } else { FieldKind::Text };
-                        Box::new(move |r| self.field_row(t, &k, &pf::label(&k), v, kind, false, true, "Not set", "", "", r))
+                        Box::new(move |r| self.field_row(t, &k, &pf::label(&k), v, kind, false, true, crate::i18n::tr_str("profile_not_set"), "", "", r))
                     })
                     .collect();
-                c = c.push(section(t, "Additional information", rows, vec![]));
+                c = c.push(section(t, crate::i18n::tr_str("profile_additional_information"), rows, vec![]));
             }
         }
         if contact {
@@ -1283,25 +1283,25 @@ impl App {
             let d2 = did.to_string();
             let first2 = first.clone();
             let rows: Vec<RowFn> = vec![
-                Box::new(move |r| self.field_row(t, "alias", "Nickname", alias, FieldKind::Text, true, false, "Add a nickname", &self.profile_person().map(|p| p.name.clone()).unwrap_or_default(), "", r)),
-                Box::new(move |r| pf_act(t, Some("phone"), "Allow calls".into(), Some(("Off means messages only".into(), t.ink2, false)), Some(pg_switch(t, allowed, Msg::AllowCalls(d1.clone(), !allowed))), None, false, r)),
+                Box::new(move |r| self.field_row(t, "alias", crate::i18n::tr_str("profile_nickname"), alias, FieldKind::Text, true, false, crate::i18n::tr_str("profile_add_a_nickname"), &self.profile_person().map(|p| p.name.clone()).unwrap_or_default(), "", r)),
+                Box::new(move |r| pf_act(t, Some("phone"), crate::i18n::tr_str("common_allow_calls").into(), Some((crate::i18n::tr_str("profile_off_means_messages_only").into(), t.ink2, false)), Some(pg_switch(t, allowed, Msg::AllowCalls(d1.clone(), !allowed))), None, false, r)),
                 Box::new(move |r| {
                     if blocked {
-                        pf_act(t, Some("off"), format!("Unblock {first2}"), None, None, Some(Msg::Unblock(d2.clone())), false, r)
+                        pf_act(t, Some("off"), crate::i18n::tr_args("profile_unblock", &[("first2", &(first2).to_string())]), None, None, Some(Msg::Unblock(d2.clone())), false, r)
                     } else {
-                        pf_act(t, Some("off"), format!("Block {first2}"), None, None, Some(m(Action::AskBlock(d2.clone()))), true, r)
+                        pf_act(t, Some("off"), crate::i18n::tr_args("profile_block", &[("first2", &(first2).to_string())]), None, None, Some(m(Action::AskBlock(d2.clone()))), true, r)
                     }
                 }),
             ];
             // `.mine`: 36 above, a hairline inset 16, then 22 more before the heading.
             let mine = column![
                 container(hairline(t)).padding([0, 16]),
-                container(column![pf_h2(t, &format!("Your settings for {first}")), pf_card(t, rows), pf_note(t, format!("Only you see these. A nickname changes what you call {first}, not their profile."))])
+                container(column![pf_h2(t, &crate::i18n::tr_args("profile_your_settings_for", &[("name", &(first).to_string())])), pf_card(t, rows), pf_note(t, crate::i18n::tr_args("profile_only_you_see_these", &[("name", &(first).to_string())]))])
                     .padding(Padding { top: 22.0, right: 16.0, bottom: 0.0, left: 16.0 }),
             ];
             c = c.push(container(mine).padding(Padding { top: 36.0, ..Padding::ZERO }));
         } else {
-            c = c.push(container(tx(format!("{first} isn\u{2019}t one of your contacts. You know them through a group. Looking at a profile doesn\u{2019}t add anyone."), 13.0, t.ink2).line_height(lh(19.0)).align_x(Alignment::Center).width(Fill))
+            c = c.push(container(tx(crate::i18n::tr_args("profile_isnt_one_of_your", &[("name", &(first).to_string())]), 13.0, t.ink2).line_height(lh(19.0)).align_x(Alignment::Center).width(Fill))
                 .padding(Padding { top: 20.0, right: 24.0, bottom: 0.0, left: 24.0 }));
         }
         self.pf_scroll(t, c.into(), 40.0)
@@ -1309,12 +1309,12 @@ impl App {
 
     fn native_page(&self, t: Tok, tab: u8) -> El<'_> {
         if tab == 0 {
-            let rows: Vec<RowFn> = [("mic", "Audio devices", 3u8), ("phone", "Calls & availability", 2), ("lock", "Security", 4), ("server", "Hosting", 6), ("trash", "Accounts stored on this computer", 11)]
+            let rows: Vec<RowFn> = [("mic", crate::i18n::tr_str("common_audio_devices"), 3u8), ("phone", crate::i18n::tr_str("common_calls_availability"), 2), ("lock", crate::i18n::tr_str("common_security"), 4), ("server", crate::i18n::tr_str("common_hosting"), 6), ("trash", crate::i18n::tr_str("profile_accounts_stored_on_this"), 11)]
                 .into_iter()
                 .map(|(icon, name, id)| -> RowFn { Box::new(move |r| pf_act(t, Some(icon), name.into(), None, Some(chevron(t)), Some(m(Action::Open(Page::Native(id)))), false, r)) })
                 .collect();
-            let quit = pf_sec(24.0, container(pg_btn(t, Btn::DangerQuiet, Some("leave"), "Quit Tinline", Some(Msg::Quit))).into());
-            return self.pf_scroll(t, column![section(t, "This computer", rows, vec!["These stay on this computer. They aren\u{2019}t part of your account.".into()]), quit].into(), 40.0);
+            let quit = pf_sec(24.0, container(pg_btn(t, Btn::DangerQuiet, Some("leave"), crate::i18n::tr_str("profile_quit_tinline"), Some(Msg::Quit))).into());
+            return self.pf_scroll(t, column![section(t, crate::i18n::tr_str("profile_this_computer"), rows, vec![crate::i18n::tr_str("profile_these_stay_on_this").into()]), quit].into(), 40.0);
         }
         self.native_settings_view(t)
     }
@@ -1335,7 +1335,7 @@ impl App {
                 t, ui::Depth::Pop, ui::plain(t.danger_bg, 12.0))
         } else if self.profiles.offline_saves && !self.status.online {
             ui::raised(
-                container(row![pgi("clock", 16.0, t.ink2), tx("Saved on this device. Will sync when you\u{2019}re connected.", 13.0, t.ink).line_height(lh(19.0))].spacing(8).align_y(Alignment::Center))
+                container(row![pgi("clock", 16.0, t.ink2), tx(crate::i18n::tr_str("profile_saved_on_this_device"), 13.0, t.ink).line_height(lh(19.0))].spacing(8).align_y(Alignment::Center))
                     .padding([10, 14]).max_width(520).width(Fill),
                 t, ui::Depth::Pop, ui::outlined(t.raised, t.hairline, 14.0))
         } else {
@@ -1352,28 +1352,28 @@ impl App {
             Layer::Add { pick: None, .. } => {
                 let have = self.own_profile().map(|c| c.fields.keys().cloned().collect::<Vec<_>>()).unwrap_or_default();
                 let mut list = column![].spacing(0);
-                for (k, label, _, _, icon) in pf::KNOWN.iter().filter(|k| !have.iter().any(|h| h == k.0)) {
+                for (k, label, _, _, icon) in pf::known_fields().iter().filter(|k| !have.iter().any(|h| h == k.0)) {
                     list = list.push(pf_act(t, Some(icon), label.to_string(), None, None, Some(m(Action::AddPick(Some(k.to_string())))), false, 14.0.into()));
                 }
-                list = list.push(pf_act(t, Some("plus"), "Something else".into(), Some(("Name it yourself".into(), t.ink2, false)), None, Some(m(Action::AddPick(Some(String::new())))), false, 14.0.into()));
-                pf_dlg(t, "Add information".into(), vec![para(t, "Your contacts will see it on your profile.".into()), container(list).padding(Padding { top: 2.0, right: -12.0, bottom: 0.0, left: -12.0 }).into()], vec![cancel("Cancel")])
+                list = list.push(pf_act(t, Some("plus"), crate::i18n::tr_str("profile_something_else").into(), Some((crate::i18n::tr_str("profile_name_it_yourself").into(), t.ink2, false)), None, Some(m(Action::AddPick(Some(String::new())))), false, 14.0.into()));
+                pf_dlg(t, crate::i18n::tr_str("profile_add_information").into(), vec![para(t, crate::i18n::tr_str("profile_your_contacts_will_see").into()), container(list).padding(Padding { top: 2.0, right: -12.0, bottom: 0.0, left: -12.0 }).into()], vec![cancel(crate::i18n::tr_str("common_cancel"))])
             }
             Layer::Add { pick: Some(pick), name, value, error } => {
-                let title = if pick.is_empty() { "Something else".to_string() } else { pf::label(pick) };
+                let title = if pick.is_empty() { crate::i18n::tr_str("profile_something_else").to_string() } else { pf::label(pick) };
                 let field_label = |s: String| container(semi(s, 13.0, t.ink2).line_height(lh(18.0))).padding(Padding { top: 6.0, ..Padding::ZERO });
                 let mut form = column![].spacing(6);
                 if pick.is_empty() {
-                    form = form.push(field_label("What is it called?".into())).push(text_input("For example, Favourite tea", name).id(pf::ADD_NAME_ID).on_input(|v| m(Action::AddName(v))).on_submit(m(Action::AddSave))
+                    form = form.push(field_label(crate::i18n::tr_str("profile_what_is_it_called").into())).push(text_input(crate::i18n::tr_str("profile_for_example_favourite_tea"), name).id(pf::ADD_NAME_ID).on_input(|v| m(Action::AddName(v))).on_submit(m(Action::AddSave))
                         .padding([10.5, 14.0]).size(15).line_height(lh(21.0)).font(ui::SANS).style(pf_input_style(t)));
                 }
                 let hint = pf::known(pick).map(|k| k.2).unwrap_or("");
-                form = form.push(field_label(if pick.is_empty() { "Value".into() } else { pf::label(pick) })).push(text_input(hint, value).id(pf::ADD_VALUE_ID).on_input(|v| m(Action::AddValue(v))).on_submit(m(Action::AddSave))
+                form = form.push(field_label(if pick.is_empty() { crate::i18n::tr_str("profile_value").into() } else { pf::label(pick) })).push(text_input(hint, value).id(pf::ADD_VALUE_ID).on_input(|v| m(Action::AddValue(v))).on_submit(m(Action::AddSave))
                     .padding([10.5, 14.0]).size(15).line_height(lh(21.0)).font(ui::SANS).style(pf_input_style(t)));
                 if !error.is_empty() {
                     form = form.push(container(pf_err(t, error.clone())).padding(Padding { top: 4.0, ..Padding::ZERO }));
                 }
                 pf_dlg(t, title, vec![container(form).padding(Padding { top: 4.0, ..Padding::ZERO }).into()],
-                    vec![pg_btn(t, Btn::Quiet, None, "Back", Some(m(Action::AddPick(None)))), pg_btn(t, Btn::Primary, None, "Add", (!self.profiles.pending).then_some(m(Action::AddSave)))])
+                    vec![pg_btn(t, Btn::Quiet, None, crate::i18n::tr_str("common_back"), Some(m(Action::AddPick(None)))), pg_btn(t, Btn::Primary, None, crate::i18n::tr_str("common_add"), (!self.profiles.pending).then_some(m(Action::AddSave)))])
             }
             Layer::Picture { busy, error, crop, .. } => {
                 let stage: El = match &self.profiles.preview {
@@ -1391,35 +1391,35 @@ impl App {
                     });
                 }
                 let mut c = column![
-                    container(bold("Position your picture", 17.0, t.ink).line_height(lh(24.0))).width(Fill).padding(Padding { bottom: 14.0, ..Padding::ZERO }),
-                    column![stage, tx("Drag to move the picture, or use the arrow keys. Plus and minus zoom.", 13.0, t.ink2).line_height(lh(19.0)).align_x(Alignment::Center), zoom].spacing(12).align_x(Alignment::Center),
+                    container(bold(crate::i18n::tr_str("profile_position_your_picture"), 17.0, t.ink).line_height(lh(24.0))).width(Fill).padding(Padding { bottom: 14.0, ..Padding::ZERO }),
+                    column![stage, tx(crate::i18n::tr_str("profile_drag_to_move_the"), 13.0, t.ink2).line_height(lh(19.0)).align_x(Alignment::Center), zoom].spacing(12).align_x(Alignment::Center),
                     container(sizes).padding(Padding { top: 6.0, ..Padding::ZERO }),
                 ]
                 .align_x(Alignment::Center);
                 if self.own_profile().is_some_and(|c| c.hash.is_some()) {
-                    c = c.push(container(tx(pf::PICTURE_HELP, 13.0, t.ink2).line_height(lh(19.0))).padding(Padding { top: 14.0, ..Padding::ZERO }).width(Fill));
+                    c = c.push(container(tx(pf::picture_help(), 13.0, t.ink2).line_height(lh(19.0))).padding(Padding { top: 14.0, ..Padding::ZERO }).width(Fill));
                 }
                 if !error.is_empty() {
                     c = c.push(container(pf_err(t, error.clone())).padding(Padding { top: 10.0, ..Padding::ZERO }));
                 }
-                c = c.push(container(row![Space::new().width(Fill), cancel("Cancel"), pg_btn(t, Btn::Primary, None, "Use photo", (!busy && self.profiles.preview.is_some()).then_some(m(Action::UsePhoto)))].spacing(8)).padding(Padding { top: 18.0, ..Padding::ZERO }));
+                c = c.push(container(row![Space::new().width(Fill), cancel(crate::i18n::tr_str("common_cancel")), pg_btn(t, Btn::Primary, None, crate::i18n::tr_str("profile_use_photo"), (!busy && self.profiles.preview.is_some()).then_some(m(Action::UsePhoto)))].spacing(8)).padding(Padding { top: 18.0, ..Padding::ZERO }));
                 container(c).padding(Padding { top: 20.0, right: 20.0, bottom: 16.0, left: 20.0 }).width(Fill).into()
             }
             Layer::RemovePhoto { error } => {
-                let mut body = vec![lead(t, "Your initials will show instead.".into()), para(t, pf::PICTURE_HELP.into())];
+                let mut body = vec![lead(t, crate::i18n::tr_str("profile_your_initials_will_show").into()), para(t, pf::picture_help().into())];
                 if !error.is_empty() {
                     body.push(pf_err(t, error.clone()));
                 }
-                pf_dlg(t, "Remove your picture?".into(), body, vec![cancel("Cancel"), pg_btn(t, Btn::Danger, None, "Remove picture", (!self.profiles.pending).then_some(m(Action::ConfirmRemovePhoto)))])
+                pf_dlg(t, crate::i18n::tr_str("profile_remove_your_picture").into(), body, vec![cancel(crate::i18n::tr_str("common_cancel")), pg_btn(t, Btn::Danger, None, crate::i18n::tr_str("profile_remove_picture"), (!self.profiles.pending).then_some(m(Action::ConfirmRemovePhoto)))])
             }
-            Layer::Link(u) => pf_dlg(t, "Open this link?".into(),
-                vec![mono(u.clone(), 13.0, t.ink).line_height(lh(18.0)).into(), para(t, "It opens in your browser, outside Tinline. Tinline doesn\u{2019}t load it for you, and can\u{2019}t vouch for what\u{2019}s there.".into())],
-                vec![cancel("Cancel"), pg_btn(t, Btn::Primary, None, "Open link", Some(m(Action::OpenLink)))]),
+            Layer::Link(u) => pf_dlg(t, crate::i18n::tr_str("profile_open_this_link").into(),
+                vec![mono(u.clone(), 13.0, t.ink).line_height(lh(18.0)).into(), para(t, crate::i18n::tr_str("profile_it_opens_in_your").into())],
+                vec![cancel(crate::i18n::tr_str("common_cancel")), pg_btn(t, Btn::Primary, None, crate::i18n::tr_str("common_open_link"), Some(m(Action::OpenLink)))]),
             Layer::Block(did) => {
                 let name = self.contacts.iter().find(|c| &c.did == did).map(|c| c.name.split_whitespace().next().unwrap_or(&c.name).to_string()).unwrap_or_else(|| "them".into());
-                pf_dlg(t, format!("Block {name}?"),
-                    vec![lead(t, format!("You won\u{2019}t get calls or messages from {name}, and their profile updates stop.")), para(t, format!("Groups you share aren\u{2019}t affected. You can unblock {name} here at any time."))],
-                    vec![cancel("Cancel"), pg_btn(t, Btn::Danger, None, "Block", Some(m(Action::ConfirmBlock)))])
+                pf_dlg(t, crate::i18n::tr_args("profile_block_2", &[("name", &(name).to_string())]),
+                    vec![lead(t, crate::i18n::tr_args("profile_you_wont_get_calls", &[("name", &(name).to_string())])), para(t, crate::i18n::tr_args("profile_groups_you_share_arent", &[("name", &(name).to_string())]))],
+                    vec![cancel(crate::i18n::tr_str("common_cancel")), pg_btn(t, Btn::Danger, None, crate::i18n::tr_str("common_block"), Some(m(Action::ConfirmBlock)))])
             }
         };
         Some(pg_dialog(t, 1.0, None, content, close))

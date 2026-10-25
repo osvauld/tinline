@@ -1,0 +1,4608 @@
+# Desktop strings (English source). See i18n/README.md.
+
+# ---- Shared labels
+
+[common_a_device_name_is]
+text = "A device name is 1 to 64 characters."
+note = "Shared label, used in several places (app, link)."
+
+[common_about_this_call]
+text = "About this call"
+note = "Shared label, used in several places (call_screen, gcall)."
+
+[common_accept]
+text = "Accept"
+note = "Shared label, used in several places (group_live, shell, signup)."
+
+[common_add]
+text = "Add"
+note = "Shared label, used in several places (profile, view)."
+
+[common_add_a_passphrase]
+text = "Add a passphrase"
+note = "Shared label, used in several places (signup, view)."
+
+[common_add_contact]
+text = "Add contact"
+note = "Shared label, used in several places (chat, shell, signup)."
+
+[common_add_passphrase]
+text = "Add passphrase"
+note = "Shared label, used in several places (profile, view)."
+
+[common_allow_calls]
+text = "Allow calls"
+note = "Shared label, used in several places (profile, view)."
+
+[common_audio_devices]
+text = "Audio devices"
+note = "Shared label, used in several places (profile, view)."
+
+[common_auto]
+text = "Auto"
+note = "Shared label, used in several places (call_screen, profile)."
+
+[common_available]
+text = "Available"
+note = "Shared label, used in several places (app, profile)."
+
+[common_back]
+text = "Back"
+note = "Shared label, used in several places (link, profile, signup, view)."
+
+[common_block]
+text = "Block"
+note = "Shared label, used in several places (profile, view)."
+
+[common_blocked]
+text = "Blocked"
+note = "Shared label, used in several places (chat, profile, reason, shell, view)."
+
+[common_blocked_people]
+text = "Blocked people"
+note = "Shared label, used in several places (groups, profile)."
+
+[common_call]
+text = "Call"
+note = "Shared label, used in several places (chat, profile, reason, view)."
+
+[common_call_ended]
+text = "Call ended"
+note = "Shared label, used in several places (call_screen, gcall, profile)."
+
+[common_call_in_progress]
+text = "Call in progress"
+note = "Shared label, used in several places (gcall, group_live)."
+
+[common_calls]
+text = "Calls"
+note = "Shared label, used in several places (profile, shell, view)."
+
+[common_calls_availability]
+text = "Calls & availability"
+note = "Shared label, used in several places (profile, view)."
+
+[common_camera]
+text = "Camera"
+note = "Shared label, used in several places (call_screen, profile)."
+
+[common_cancel]
+text = "Cancel"
+note = "Shared label, used in several places (chat, group_live, link, profile, signup, view)."
+
+[common_cancelled]
+text = "Cancelled"
+note = "Shared label, used in several places (reason, view)."
+
+[common_change_passphrase]
+text = "Change passphrase"
+note = "Shared label, used in several places (profile, view)."
+
+[common_chats]
+text = "Chats"
+note = "Shared label, used in several places (group_live, shell, view)."
+
+[common_close]
+text = "Close"
+note = "Shared label, used in several places (group_live, profile, signup)."
+
+[common_connecting]
+text = "Connecting"
+note = "Shared label, used in several places (link, mark)."
+
+[common_contacts]
+text = "Contacts"
+note = "Shared label, used in several places (link, profile, shell, view)."
+
+[common_continue]
+text = "Continue"
+note = "Shared label, used in several places (link, profile, signup, view)."
+
+[common_copy_my_key]
+text = "Copy my key"
+note = "Shared label, used in several places (profile, signup)."
+
+[common_copy_recovery_phrase]
+text = "Copy recovery phrase"
+note = "Shared label, used in several places (view)."
+
+[common_couldnt_connect]
+text = "Couldn’t connect"
+note = "Shared label, used in several places (gcall, view)."
+
+[common_current_passphrase]
+text = "Current passphrase"
+note = "Shared label, used in several places (profile, view)."
+
+[common_decline]
+text = "Decline"
+note = "Shared label, used in several places (call_screen, group_live)."
+
+[common_declined]
+text = "Declined"
+note = "Shared label, used in several places (chat, group_live, reason, view)."
+
+[common_decoder_for_their_video]
+text = "Decoder for their video"
+note = "Shared label, used in several places (call_screen, profile)."
+
+[common_device_name]
+text = "Device name"
+note = "Shared label, used in several places (link, signup, view)."
+
+[common_direct]
+text = "Direct"
+note = "Shared label, used in several places (call_screen, view)."
+
+[common_done]
+text = "Done"
+note = "Shared label, used in several places (link, signup)."
+
+[common_give_this_computer_a]
+text = "Give this computer a name of 1 to 64 characters."
+note = "Shared label, used in several places (app, link)."
+
+[common_got_it]
+text = "Got it"
+note = "Shared label, used in several places (call_screen, gcall)."
+
+[common_groups]
+text = "Groups"
+note = "Shared label, used in several places (profile, shell, view)."
+
+[common_hide]
+text = "Hide"
+note = "Shared label, used in several places (link, view)."
+
+[common_hosting]
+text = "Hosting"
+note = "Shared label, used in several places (profile, view)."
+
+[common_incoming]
+text = "Incoming"
+note = "Shared label, used in several places (reason, view)."
+
+[common_incoming_call]
+text = "Incoming call"
+note = "Shared label, used in several places (call_screen, mark, view)."
+
+[common_incoming_video_call]
+text = "Incoming video call"
+note = "Shared label, used in several places (call_screen, view)."
+
+[common_is_calling]
+text = "{name} is calling"
+note = "Shared label, used in several places (app, view). {name} is a person's name (usually the first word of their chosen name)."
+
+[common_join]
+text = "Join"
+note = "Shared label, used in several places (gcall, group_live)."
+
+[common_leave]
+text = "Leave"
+note = "Shared label, used in several places (gcall, group_live)."
+
+[common_linked_devices]
+text = "Linked devices"
+note = "Shared label, used in several places (profile, view)."
+
+[common_loading]
+text = "Loading…"
+note = "Shared label, used in several places (chat, group_live)."
+
+[common_locked]
+text = "Locked"
+note = "Shared label, used in several places (app, view)."
+
+[common_message]
+text = "Message"
+note = "Shared label, used in several places (chat, group_live, profile, view)."
+
+[common_messages]
+text = "Messages"
+note = "Shared label, used in several places (profile, shell)."
+
+[common_messages_only]
+text = "Messages only"
+note = "Shared label, used in several places (chat, profile)."
+
+[common_messages_only_calling_needs]
+text = "Messages only: calling needs their permission"
+note = "Shared label, used in several places (chat, view)."
+
+[common_microphone]
+text = "Microphone"
+note = "Shared label, used in several places (audio, call_screen, profile, view)."
+
+[common_missed]
+text = "Missed"
+note = "Shared label, used in several places (reason, view)."
+
+[common_mute]
+text = "Mute"
+note = "Shared label, used in several places (call_screen, gcall)."
+
+[common_muted]
+text = "Muted"
+note = "Shared label, used in several places (call_screen, gcall)."
+
+[common_name]
+text = "Name"
+note = "Shared label, used in several places (profile, view)."
+
+[common_name_this_computer]
+text = "Name this computer"
+note = "Shared label, used in several places (link, signup, view)."
+
+[common_needs_your_passphrase]
+text = "Needs your passphrase"
+note = "Shared label, used in several places (profile, view)."
+
+[common_new_code]
+text = "New code"
+note = "Shared label, used in several places (link, signup)."
+
+[common_new_group]
+text = "New group"
+note = "Shared label, used in several places (group_live, shell)."
+
+[common_new_passphrase]
+text = "New passphrase"
+note = "Shared label, used in several places (profile, view)."
+
+[common_no_answer]
+text = "No answer"
+note = "Shared label, used in several places (chat, reason, view)."
+
+[common_no_messages_yet]
+text = "No messages yet"
+note = "Shared label, used in several places (group_live, shell)."
+
+[common_not_available]
+text = "Not available"
+note = "Shared label, used in several places (app, reason)."
+
+[common_not_now]
+text = "Not now"
+note = "Shared label, used in several places (gcall, group_live, shell, signup, view)."
+
+[common_not_synced_yet]
+text = "Not synced yet"
+note = "Shared label, used in several places (link, profile)."
+
+[common_offline]
+text = "Offline"
+note = "Shared label, used in several places (app, group_live)."
+
+[common_ok]
+text = "OK"
+note = "Shared label, used in several places (gcall, link)."
+
+[common_online]
+text = "Online"
+note = "Shared label, used in several places (chat, group_live)."
+
+[common_open]
+text = "Open"
+note = "Shared label, used in several places (app, chat, gcall, group_live)."
+
+[common_open_link]
+text = "Open link"
+note = "Shared label, used in several places (group_live, profile)."
+
+[common_original_message_unavailable]
+text = "Original message unavailable"
+note = "Shared label, used in several places (chat, group_live)."
+
+[common_outgoing]
+text = "Outgoing"
+note = "Shared label, used in several places (reason, view)."
+
+[common_passphrase]
+text = "Passphrase"
+note = "Shared label, used in several places (link, profile, signup, view)."
+
+[common_passphrase_changed]
+text = "Passphrase changed"
+note = "Shared label, used in several places (app, profile)."
+
+[common_paste_only_into_a]
+text = "Paste only into a trusted password manager; the clipboard contains your account key."
+note = "Shared label, used in several places (view)."
+
+[common_photo]
+text = "Photo · {value}"
+note = "Shared label, used in several places (chat, group_live). {value} is a value filled in by the app."
+
+[common_privacy]
+text = "Privacy"
+note = "Shared label, used in several places (profile, view)."
+
+[common_reconnecting]
+text = "Reconnecting"
+note = "Shared label, used in several places (call_screen, mark)."
+
+[common_reconnecting_2]
+text = "Reconnecting…"
+note = "Shared label, used in several places (call_screen, gcall)."
+
+[common_recovery_phrase]
+text = "Recovery phrase"
+note = "Shared label, used in several places (profile, view)."
+
+[common_relayed]
+text = "Relayed"
+note = "Shared label, used in several places (call_screen, view)."
+
+[common_remember_on_this_computer]
+text = "Remember on this computer"
+note = "Shared label, used in several places (profile, signup)."
+
+[common_remove]
+text = "Remove"
+note = "Shared label, used in several places (group_live, profile, view)."
+
+[common_rename]
+text = "Rename"
+note = "Shared label, used in several places (link, profile, view)."
+
+[common_request_sent_your_line]
+text = "Request sent. Your line opens when {name} accepts."
+note = "Shared label, used in several places (shell, signup). {name} is a person's name (usually the first word of their chosen name)."
+
+[common_save]
+text = "Save"
+note = "Shared label, used in several places (chat, link, profile, view)."
+
+[common_saving]
+text = "Saving..."
+note = "Shared label, used in several places (link, view)."
+
+[common_security]
+text = "Security"
+note = "Shared label, used in several places (profile, view)."
+
+[common_sharper_video_off]
+text = "Sharper video off"
+note = "Shared label, used in several places (camera, view)."
+
+[common_show]
+text = "Show"
+note = "Shared label, used in several places (tray, view)."
+
+[common_size_gb]
+text = "{size} GB"
+note = "Storage size in gigabytes. {size} is a number with one decimal."
+
+[common_skips_the_passphrase_when]
+text = "Skips the passphrase when Tinline starts, using this computer’s keyring."
+note = "Shared label, used in several places (profile, signup)."
+
+[common_so_you_can_tell]
+text = "So you can tell your devices apart in Linked devices. Only your own devices see this name; people you call never do."
+note = "Shared label, used in several places (link, signup, view)."
+
+[common_someone]
+text = "Someone"
+note = "Shared label, used in several places (gcall, group_live)."
+
+[common_speaker]
+text = "Speaker"
+note = "Shared label, used in several places (audio, call_screen, view)."
+
+[common_starting]
+text = "Starting..."
+note = "Shared label, used in several places (app, tray)."
+
+[common_this_device]
+text = "This device"
+note = "Shared label, used in several places (group_live, profile)."
+
+[common_tinline_is_still_starting]
+text = "Tinline is still starting. Try again in a moment."
+note = "Shared label, used in several places (app, link)."
+
+[common_today]
+text = "Today"
+note = "Shared label, used in several places (chat, group_live)."
+
+[common_try_again]
+text = "Try again"
+note = "Shared label, used in several places (chat, group_live, link, signup, view)."
+
+[common_unblock]
+text = "Unblock"
+note = "Shared label, used in several places (chat, groups, profile, view)."
+
+[common_unlink]
+text = "Unlink"
+note = "Shared label, used in several places (link, profile)."
+
+[common_unlink_2]
+text = "Unlink {name}?"
+note = "Shared label, used in several places (link, profile). {name} is a person's name (usually the first word of their chosen name)."
+
+[common_unlock_first]
+text = "Unlock first."
+note = "Shared label, used in several places (app, group_live)."
+
+[common_unnamed_device]
+text = "Unnamed device"
+note = "Shared label, used in several places (link, profile)."
+
+[common_video]
+text = "Video"
+note = "Shared label, used in several places (call_screen, profile)."
+
+[common_work_desktop]
+text = "Work desktop"
+note = "Shared label, used in several places (link, view)."
+
+[common_working]
+text = "Working..."
+note = "Shared label, used in several places (link, view)."
+
+[common_yesterday]
+text = "Yesterday"
+note = "Shared label, used in several places (chat, group_live)."
+
+[common_you]
+text = "You"
+note = "Shared label, used in several places (app, chat, gcall, group_live)."
+
+[common_you_can_rename_it]
+text = "You can rename it later."
+note = "Shared label, used in several places (link, signup, view)."
+
+[common_youll_be_the_owner]
+text = "You’ll be the owner"
+note = "Shared label, used in several places (group_live, shell)."
+
+[common_your_account]
+text = "Your account"
+note = "Shared label, used in several places (link, shell)."
+
+[common_your_line_is_open]
+text = "Your line is open"
+note = "Shared label, used in several places (signup, view)."
+
+[common_your_name]
+text = "Your name"
+note = "Shared label, used in several places (profile, view)."
+
+[common_youre_in_the_call]
+text = "You’re in the call"
+note = "Shared label, used in several places (gcall, group_live)."
+
+
+# ---- App-level notices and notifications
+
+[app_a_group]
+text = "A group"
+note = "Desktop, app-level notices and notifications (in app.rs, on_event)."
+
+[app_account_removed_from_this]
+text = "Account removed from this computer"
+note = "Desktop, app-level notices and notifications (in app.rs, update_inner)."
+
+[app_adding_passphrase]
+text = "Adding passphrase..."
+note = "Desktop, app-level notices and notifications (in app.rs, update_inner)."
+
+[app_an_identity_already_exists]
+text = "An identity already exists here."
+note = "Desktop, app-level notices and notifications (in app.rs, friendly)."
+
+[app_changing_passphrase]
+text = "Changing passphrase..."
+note = "Desktop, app-level notices and notifications (in app.rs, update_inner)."
+
+[app_could_not_call]
+text = "Could not call: {error}"
+note = "Desktop, app-level notices and notifications (in app.rs, update_inner). {error} is the underlying error text, not translated."
+
+[app_could_not_start]
+text = "Could not start: {error}"
+note = "Desktop, app-level notices and notifications (in app.rs, update_inner). {error} is the underlying error text, not translated."
+
+[app_couldnt_accept_just_now]
+text = "Couldn’t accept just now. Try again in a moment."
+note = "Desktop, app-level notices and notifications (in app.rs, update_inner)."
+
+[app_device_name_saved]
+text = "Device name saved"
+note = "Desktop, app-level notices and notifications (in app.rs, update_inner)."
+
+[app_enter_a_name_first]
+text = "Enter a name first"
+note = "Desktop, app-level notices and notifications (in app.rs, update_inner)."
+
+[app_enter_your_name_and]
+text = "Enter your name and recovery phrase"
+note = "Desktop, app-level notices and notifications (in app.rs, update_inner)."
+
+[app_ev]
+text = "Ev"
+note = "Desktop, app-level notices and notifications (in app.rs, fmt)."
+
+[app_invited_you_to_the]
+text = "{value} invited you to the group"
+note = "Desktop, app-level notices and notifications (in app.rs, on_event). {value} is a value filled in by the app."
+
+[app_is_already_in_your]
+text = "{name} is already in your contacts"
+note = "Desktop, app-level notices and notifications (in app.rs, update_inner). {name} is a person's name (usually the first word of their chosen name)."
+
+[app_is_calling]
+text = "{peer_name} is calling"
+note = "Desktop, app-level notices and notifications (in app.rs, on_event). {peer_name} is a value filled in by the app."
+
+[app_passphrase_added_you_will]
+text = "Passphrase added. You will need it next time Tinline starts."
+note = "Desktop, app-level notices and notifications (in app.rs, update_inner)."
+
+[app_pick_one_that_is]
+text = "Pick one that is different from the current one."
+note = "Desktop, app-level notices and notifications (in app.rs, update_inner)."
+
+[app_restoring]
+text = "Restoring..."
+note = "Desktop, app-level notices and notifications (in app.rs, update_inner)."
+
+[app_still_cant_find_the]
+text = "Still can’t find the key."
+note = "Desktop, app-level notices and notifications (in app.rs, update_inner)."
+
+[app_task_failed]
+text = "task failed"
+note = "Desktop, app-level notices and notifications (in app.rs, blocking)."
+
+[app_text]
+text = "{name}: {value}"
+note = "Desktop, app-level notices and notifications (in app.rs, on_event). {name} is a person's name (usually the first word of their chosen name). {value} is a value filled in by the app."
+
+[app_that_account_is_already]
+text = "That account is already on this computer."
+note = "Desktop, app-level notices and notifications (in app.rs, friendly)."
+
+[app_that_isnt_your_current]
+text = "That isn’t your current passphrase."
+note = "Desktop, app-level notices and notifications (in app.rs, update_inner)."
+
+[app_that_passphrase_didnt_open]
+text = "That passphrase didn’t open the account."
+note = "Desktop, app-level notices and notifications (in app.rs, friendly)."
+
+[app_that_phrase_isnt_valid]
+text = "That phrase isn’t valid. Check each word and their order."
+note = "Desktop, app-level notices and notifications (in app.rs, friendly)."
+
+[app_the_two_passphrases_differ]
+text = "The two passphrases differ."
+note = "Desktop, app-level notices and notifications (in app.rs, update_inner)."
+
+[app_this_computers_keyring_wouldnt]
+text = "This computer’s keyring wouldn’t keep it, so Tinline will keep asking for your passphrase."
+note = "Desktop, app-level notices and notifications (in app.rs, update_inner)."
+
+[app_ticket]
+text = "Ticket: {error}"
+note = "Desktop, app-level notices and notifications (in app.rs, update_inner). {error} is the underlying error text, not translated."
+
+[app_type_a_new_passphrase]
+text = "Type a new passphrase."
+note = "Desktop, app-level notices and notifications (in app.rs, update_inner)."
+
+[app_type_a_passphrase_first]
+text = "Type a passphrase first."
+note = "Desktop, app-level notices and notifications (in app.rs, friendly)."
+
+[app_type_your_current_passphrase]
+text = "Type your current passphrase."
+note = "Desktop, app-level notices and notifications (in app.rs, update_inner)."
+
+[app_wait_for_the_profile]
+text = "Wait for the profile save to finish."
+note = "Desktop, app-level notices and notifications (in app.rs, update)."
+
+[app_your_key_is_kept]
+text = "Your key is kept in a plain file in Tinline’s data folder. Anyone who copies that folder can open your account. Add a passphrase to protect it; the file is then deleted."
+note = "Desktop, app-level notices and notifications (in app.rs, key_home)."
+
+[app_your_key_is_kept_in]
+text = "Your key is kept in this computer’s keyring, so Tinline opens without asking."
+note = "Desktop, app-level notices and notifications (in app.rs, key_home)."
+
+[app_your_recovery_key_is]
+text = "Your recovery key is copied."
+note = "Desktop, app-level notices and notifications (in app.rs, update_inner)."
+
+[app_your_recovery_words_are]
+text = "Your recovery words are copied."
+note = "Desktop, app-level notices and notifications (in app.rs, update_inner)."
+
+[app_youre_on_a_call]
+text = "You’re on a call. Hang up before switching accounts."
+note = "Desktop, app-level notices and notifications (in app.rs, friendly)."
+
+
+# ---- Audio devices
+
+[audio_disconnected_switching_to_the]
+text = "{label} disconnected, switching to the system default"
+note = "Desktop, audio devices (in audio.rs, maintain). {label} is a value filled in by the app."
+
+[audio_echo_cancellation_is_unavailable]
+text = "Echo cancellation is unavailable"
+note = "Desktop, audio devices (in audio.rs, run_call)."
+
+[audio_is_back]
+text = "{label} is back"
+note = "Desktop, audio devices (in audio.rs, maintain). {label} is a value filled in by the app."
+
+[audio_unavailable]
+text = "{label} unavailable: {error}"
+note = "Desktop, audio devices (in audio.rs, maintain). {label} is a value filled in by the app. {error} is the underlying error text, not translated."
+
+
+# ---- Calls (voice and video)
+
+[call_about_this_call_reconnecting]
+text = "About this call. Reconnecting."
+note = "Desktop, calls (voice and video) (in call_screen.rs, call_view)."
+
+[call_about_this_call_signal]
+text = "About this call. {value} signal, {to_lowercase}."
+note = "Desktop, calls (voice and video) (in call_screen.rs, call_view). {value} is a value filled in by the app. {to_lowercase} is a value filled in by the app."
+
+[call_answer]
+text = "Answer"
+note = "Desktop, calls (voice and video) (in call_screen.rs, call_view)."
+
+[call_answered_on_another_device]
+text = "Answered on another device"
+note = "Desktop, calls (voice and video) (in reason.rs, history)."
+
+[call_calling]
+text = "Calling…"
+note = "Desktop, calls (voice and video) (in call_screen.rs, call_view)."
+
+[call_calling_during_your_call]
+text = "Calling during your call"
+note = "Desktop, calls (voice and video) (in view.rs, ring_head_waiting)."
+
+[call_calls_not_allowed]
+text = "Calls not allowed"
+note = "Desktop, calls (voice and video) (in reason.rs, history)."
+
+[call_camera_off]
+text = "Camera off"
+note = "Desktop, calls (voice and video) (in view.rs, video_stage)."
+
+[call_camera_on]
+text = "Camera on"
+note = "Desktop, calls (voice and video) (in view.rs, video_call_view)."
+
+[call_connecting_to_once_the]
+text = "Connecting to {name}. Once the call is connected, it is end-to-end encrypted."
+note = "Desktop, calls (voice and video) (in call_screen.rs, call_about). {name} is a person's name (usually the first word of their chosen name)."
+
+[call_couldnt_reach]
+text = "Couldn’t reach"
+note = "Desktop, calls (voice and video) (in reason.rs, history)."
+
+[call_ctrl_e_cancels]
+text = "Ctrl E cancels"
+note = "Desktop, calls (voice and video) (in view.rs, video_call_view)."
+
+[call_declined_on_another_device]
+text = "Declined on another device"
+note = "Desktop, calls (voice and video) (in reason.rs, history)."
+
+[call_device_changes_apply_from]
+text = "Device changes apply from the next call."
+note = "Desktop, calls (voice and video) (in call_screen.rs, call_about)."
+
+[call_during_your_call]
+text = "during your call"
+note = "Desktop, calls (voice and video) (in view.rs, waiting_banner)."
+
+[call_end]
+text = "End"
+note = "Desktop, calls (voice and video) (in call_screen.rs, call_view)."
+
+[call_end_answer]
+text = "End & answer"
+note = "Desktop, calls (voice and video) (in view.rs, waiting_banner)."
+
+[call_end_to_end_encrypted]
+text = "End-to-end encrypted"
+note = "Desktop, calls (voice and video) (in call_screen.rs, call_view)."
+
+[call_end_to_end_encrypted_2]
+text = "End-to-end encrypted."
+note = "Desktop, calls (voice and video) (in call_screen.rs, call_about)."
+
+[call_end_to_end_encrypted_ctrl]
+text = "End-to-end encrypted · Ctrl M mute · Ctrl E end · Esc minimizes"
+note = "Desktop, calls (voice and video) (in view.rs, video_call_view)."
+
+[call_ends_your_call_with]
+text = "Ends your call with"
+note = "Desktop, calls (voice and video) (in view.rs, waiting_banner)."
+
+[call_enter_answers_esc_declines]
+text = "Enter answers · Esc declines"
+note = "Desktop, calls (voice and video) (in view.rs, video_call_view)."
+
+[call_for_testing_your_picture]
+text = "For testing. Your picture may stutter or your computer may heat up."
+note = "Desktop, calls (voice and video) (in call_screen.rs, call_nerds)."
+
+[call_hang_up]
+text = "Hang up"
+note = "Desktop, calls (voice and video) (in view.rs, video_call_view)."
+
+[call_hd]
+text = "HD"
+note = "Desktop, calls (voice and video) (in view.rs, hd_chip)."
+
+[call_ignore_limits_heat_their]
+text = "Ignore limits (heat, their decoder)"
+note = "Desktop, calls (voice and video) (in call_screen.rs, call_nerds)."
+
+[call_is_calling_you]
+text = "is calling you"
+note = "Desktop, calls (voice and video) (in view.rs, video_call_view)."
+
+[call_minimize_call]
+text = "Minimize call"
+note = "Desktop, calls (voice and video) (in call_screen.rs, call_view)."
+
+[call_ms_round_trip_lost]
+text = "{rtt_ms} ms round trip · {value}% lost"
+note = "Desktop, calls (voice and video) (in call_screen.rs, call_about). {rtt_ms} is a value filled in by the app. {value} is a value filled in by the app."
+
+[call_no_camera]
+text = "No camera"
+note = "Desktop, calls (voice and video) (in call_screen.rs, call_view)."
+
+[call_pin_a_size_first]
+text = "Pin a size first."
+note = "Desktop, calls (voice and video) (in call_screen.rs, call_nerds)."
+
+[call_relayed_a_direct_line]
+text = "Relayed: a direct line wasn’t possible on this network, so an encrypted relay is passing the call along. It can’t hear you."
+note = "Desktop, calls (voice and video) (in view.rs, video_call_view)."
+
+[call_relayed_encrypted]
+text = "Relayed · encrypted"
+note = "Desktop, calls (voice and video) (in view.rs, video_call_view)."
+
+[call_ringing]
+text = "Ringing…"
+note = "Desktop, calls (voice and video) (in call_screen.rs, call_view)."
+
+[call_sharper_video_on_paused]
+text = "Sharper video on, paused while the connection is weak"
+note = "Desktop, calls (voice and video) (in view.rs, hd_chip)."
+
+[call_sharper_video_on_up]
+text = "Sharper video on, up to 720p"
+note = "Desktop, calls (voice and video) (in view.rs, hd_chip)."
+
+[call_signal]
+text = "{value} signal · {value2}"
+note = "Desktop, calls (voice and video) (in call_screen.rs, call_about). {value} is a value filled in by the app. {value2} is a value filled in by the app."
+
+[call_starting_video]
+text = "Starting video…"
+note = "Desktop, calls (voice and video) (in view.rs, video_stage)."
+
+[call_stats_for_nerds]
+text = "Stats for nerds"
+note = "Desktop, calls (voice and video) (in call_screen.rs, call_nerds)."
+
+[call_text]
+text = "{day} {value}"
+note = "Desktop, calls (voice and video) (in view.rs, utc_date). {day} is a value filled in by the app. {value} is a value filled in by the app."
+
+[call_the_connection_dropped_for]
+text = "The connection dropped for a moment. Tinline is finding a way back to {name}."
+note = "Desktop, calls (voice and video) (in call_screen.rs, call_about). {name} is a person's name (usually the first word of their chosen name)."
+
+[call_the_line_is_weak]
+text = " The line is weak, so {name}’s voice may break up."
+note = "Desktop, calls (voice and video) (in call_screen.rs, call_about). {name} is a person's name (usually the first word of their chosen name)."
+
+[call_their_video]
+text = "Their video"
+note = "Desktop, calls (voice and video) (in call_screen.rs, call_about)."
+
+[call_these_apply_to_this]
+text = "These apply to this call now. Settings > Video sets the next call."
+note = "Desktop, calls (voice and video) (in call_screen.rs, call_nerds)."
+
+[call_unknown]
+text = "Unknown"
+note = "Desktop, calls (voice and video) (in view.rs, waiting_banner)."
+
+[call_video_is_starting]
+text = "Video is starting…"
+note = "Desktop, calls (voice and video) (in view.rs, video_stage)."
+
+[call_your_bitrate_cap_not]
+text = "Your bitrate cap (not a promised rate)"
+note = "Desktop, calls (voice and video) (in call_screen.rs, call_nerds)."
+
+[call_your_call_goes_straight]
+text = "Your call goes straight between your device and {name}’s."
+note = "Desktop, calls (voice and video) (in call_screen.rs, call_about). {name} is a person's name (usually the first word of their chosen name)."
+
+[call_your_devices_cant_reach]
+text = "Your devices can’t reach each other directly right now, so a relay passes the call along. It can’t listen."
+note = "Desktop, calls (voice and video) (in call_screen.rs, call_about)."
+
+[call_your_frame_rate]
+text = "Your frame rate"
+note = "Desktop, calls (voice and video) (in call_screen.rs, call_nerds)."
+
+[call_your_network_changed_hold]
+text = "Your network changed. Hold on — Tinline is finding the line again."
+note = "Desktop, calls (voice and video) (in view.rs, video_call_view)."
+
+[call_your_size]
+text = "Your size"
+note = "Desktop, calls (voice and video) (in call_screen.rs, call_nerds)."
+
+[call_your_video]
+text = "Your video"
+note = "Desktop, calls (voice and video) (in call_screen.rs, call_about)."
+
+[call_your_video_codec]
+text = "Your video codec"
+note = "Desktop, calls (voice and video) (in call_screen.rs, call_nerds)."
+
+[call_your_voice_is_encrypted]
+text = " Your voice is encrypted on this device and only decrypted on {name}’s."
+note = "Desktop, calls (voice and video) (in call_screen.rs, call_about). {name} is a person's name (usually the first word of their chosen name)."
+
+
+# ---- Chats
+
+[chat_ask_for_earlier_messages]
+text = "Ask for earlier messages"
+note = "Desktop, chats (in chat_view.rs, history_note)."
+
+[chat_call_declined_video]
+text = "Declined video call"
+note = "Call record pill in a chat: you declined an incoming video call."
+
+[chat_call_declined_voice]
+text = "Declined voice call"
+note = "Call record pill in a chat: you declined an incoming voice call."
+
+[chat_call_failed]
+text = "Call failed"
+note = "Desktop, chats (in chat_view.rs, call_pill)."
+
+[chat_call_missed_video]
+text = "Missed video call"
+note = "Call record pill in a chat: an incoming video call you did not answer."
+
+[chat_call_missed_voice]
+text = "Missed voice call"
+note = "Call record pill in a chat: an incoming voice call you did not answer."
+
+[chat_call_video_length]
+text = "Video call · {duration}"
+note = "Call record pill in a chat for an answered video call. {duration} is minutes:seconds."
+
+[chat_call_voice_length]
+text = "Voice call · {duration}"
+note = "Call record pill in a chat for an answered voice call. {duration} is minutes:seconds."
+
+[chat_cancelled_call]
+text = "Cancelled call"
+note = "Desktop, chats (in chat_view.rs, call_pill)."
+
+[chat_chat_details]
+text = "Chat details"
+note = "Desktop, chats (in chat_view.rs, conversation_view)."
+
+[chat_copy]
+text = "Copy"
+note = "Desktop, chats (in chat_view.rs, message_menu)."
+
+[chat_could_not_open]
+text = "Could not open: {error}"
+note = "Desktop, chats (in chat.rs, update_chat_inner). {error} is the underlying error text, not translated."
+
+[chat_could_not_play]
+text = "Could not play: {error}"
+note = "Desktop, chats (in chat.rs, update_chat_inner). {error} is the underlying error text, not translated."
+
+[chat_could_not_record]
+text = "Could not record: {error}"
+note = "Desktop, chats (in chat.rs, update_chat_inner). {error} is the underlying error text, not translated."
+
+[chat_could_not_save]
+text = "Could not save: {error}"
+note = "Desktop, chats (in chat.rs, update_chat_inner). {error} is the underlying error text, not translated."
+
+[chat_could_not_send]
+text = "Could not send: {error}"
+note = "Desktop, chats (in chat.rs, update_chat_inner). {error} is the underlying error text, not translated."
+
+[chat_could_not_show_this]
+text = "Could not show this: {error}"
+note = "Desktop, chats (in chat_view.rs, viewer_overlay). {error} is the underlying error text, not translated."
+
+[chat_couldnt_download_tap_to]
+text = "{value} · couldn’t download — tap to retry"
+note = "Desktop, chats (in chat_view.rs, attachment_view). {value} is a value filled in by the app."
+
+[chat_delete]
+text = "Delete"
+note = "Desktop, chats (in chat_view.rs, message_menu)."
+
+[chat_delete_for_everyone]
+text = "Delete for everyone"
+note = "Desktop, chats (in chat_view.rs, delete_overlay)."
+
+[chat_delete_for_everyone_asks]
+text = "Delete for everyone asks {name}’s devices to remove it too. Copies elsewhere can’t be recalled."
+note = "Desktop, chats (in chat_view.rs, delete_overlay). {name} is a person's name (usually the first word of their chosen name)."
+
+[chat_delete_message]
+text = "Delete message?"
+note = "Desktop, chats (in chat_view.rs, delete_overlay)."
+
+[chat_deleted_this_message]
+text = "{name} deleted this message"
+note = "Desktop, chats (in chat_view.rs, message_row). {name} is a person's name (usually the first word of their chosen name)."
+
+[chat_device]
+text = "Device {device} · {value}"
+note = "Desktop, chats (in chat_view.rs, receipt_lines). {device} is a value filled in by the app. {value} is a value filled in by the app."
+
+[chat_download]
+text = "Download"
+note = "Desktop, chats (in chat_view.rs, attachment_view)."
+
+[chat_downloading_of]
+text = "Downloading · {value} of {value2}"
+note = "Desktop, chats (in chat_view.rs, attachment_view). {value} is a value filled in by the app. {value2} is a value filled in by the app."
+
+[chat_draft]
+text = "Draft: "
+note = "Desktop, chats (in chat_view.rs, pg_chat_row)."
+
+[chat_drop_to_send_to]
+text = "Drop to send to {name}"
+note = "Desktop, chats (in chat_view.rs, conversation_view). {name} is a person's name (usually the first word of their chosen name)."
+
+[chat_edit]
+text = "Edit"
+note = "Desktop, chats (in chat_view.rs, message_menu)."
+
+[chat_editing_message]
+text = "Editing message"
+note = "Desktop, chats (in chat_view.rs, composer)."
+
+[chat_encrypted_on_this_computer]
+text = "Encrypted on this computer. Up to 2 GB each. {name} gets it the next time you’re both online."
+note = "Desktop, chats (in chat_view.rs, conversation_view). {name} is a person's name (usually the first word of their chosen name)."
+
+[chat_esc_to_cancel]
+text = "Esc to cancel"
+note = "Desktop, chats (in voice.rs, record_bar)."
+
+[chat_find_in_this_chat]
+text = "Find in this chat"
+note = "Desktop, chats (in chat_view.rs, find_bar)."
+
+[chat_find_in_this_chat_ctrl]
+text = "Find in this chat (Ctrl+F)"
+note = "Desktop, chats (in chat_view.rs, conversation_view)."
+
+[chat_gets_it_when_youre]
+text = "{value} · {name} gets it when you’re both online"
+note = "Desktop, chats (in chat_view.rs, attachment_view). {value} is a value filled in by the app. {name} is a person's name (usually the first word of their chosen name)."
+
+[chat_is_offline_delete_for]
+text = "{name} is offline. Delete for everyone reaches their devices when you’re both online."
+note = "Desktop, chats (in chat_view.rs, delete_overlay). {name} is a person's name (usually the first word of their chosen name)."
+
+[chat_it_was_never_delivered]
+text = "It was never delivered, so it’s only on this computer."
+note = "Desktop, chats (in chat_view.rs, delete_overlay)."
+
+[chat_load_earlier_messages]
+text = "Load earlier messages"
+note = "Desktop, chats (in chat_view.rs, history_note)."
+
+[chat_message_deleted]
+text = "Message deleted"
+note = "Desktop, chats (in chat.rs, preview_of)."
+
+[chat_messages_go_straight_to]
+text = "Messages go straight to their devices."
+note = "Desktop, chats (in chat_view.rs, message_list)."
+
+[chat_new_messages]
+one = "{count} new message"
+other = "{count} new messages"
+note = "Divider line in a chat above the first unread message. {count} is how many are unread."
+
+[chat_not_downloaded]
+text = "{value} · not downloaded"
+note = "Desktop, chats (in chat_view.rs, attachment_view). {value} is a value filled in by the app."
+
+[chat_not_in_your_contacts]
+text = "Not in your contacts"
+note = "Desktop, chats (in chat_view.rs, conversation_view)."
+
+[chat_of]
+text = "{value} of {len}"
+note = "Desktop, chats (in chat_view.rs, viewer_overlay). {value} is a value filled in by the app. {len} is a value filled in by the app."
+
+[chat_older_messages_are_on]
+text = "Older messages are on {name}’s computer. This computer keeps them from when you started using it. Earlier days load when you’re both online."
+note = "Desktop, chats (in chat_view.rs, history_note). {name} is a person's name (usually the first word of their chosen name)."
+
+[chat_on_s_device]
+text = "On {name}’s device"
+note = "Desktop, chats (in chat_view.rs, receipt_lines). {name} is a person's name (usually the first word of their chosen name)."
+
+[chat_online_messages_only]
+text = "Online · messages only"
+note = "Desktop, chats (in chat_view.rs, conversation_view)."
+
+[chat_only_files_can_be]
+text = "Only files can be sent, not folders."
+note = "Desktop, chats (in chat.rs, update_chat_inner)."
+
+[chat_only_on_this_computer]
+text = "Only on this computer so far"
+note = "Desktop, chats (in chat_view.rs, receipt_lines)."
+
+[chat_open_in_default_app]
+text = "Open in default app"
+note = "Desktop, chats (in chat_view.rs, viewer_overlay)."
+
+[chat_paused_waiting_for_to]
+text = "{value} · paused — waiting for {name} to come online"
+note = "Desktop, chats (in chat_view.rs, attachment_view). {value} is a value filled in by the app. {name} is a person's name (usually the first word of their chosen name)."
+
+[chat_read_on_s_device]
+text = "Read on {name}’s device"
+note = "Desktop, chats (in chat_view.rs, receipt_lines). {name} is a person's name (usually the first word of their chosen name)."
+
+[chat_reply]
+text = "Reply"
+note = "Desktop, chats (in chat_view.rs, message_menu)."
+
+[chat_replying_to]
+text = "Replying to {value}"
+note = "Desktop, chats (in chat_view.rs, composer). {value} is a value filled in by the app."
+
+[chat_return_to_call]
+text = "Return to call"
+note = "Desktop, chats (in chat_view.rs, conversation_view)."
+
+[chat_saved_to]
+text = "Saved to {p}"
+note = "Desktop, chats (in chat.rs, update_chat_inner). {p} is a value filled in by the app."
+
+[chat_say_hello_to]
+text = "Say hello to {name}"
+note = "Desktop, chats (in chat_view.rs, message_list). {name} is a person's name (usually the first word of their chosen name)."
+
+[chat_send_a_file]
+text = "Send a file"
+note = "Desktop, chats (in chat.rs, update_chat_inner)."
+
+[chat_sends_when_is_online]
+text = "Sends when {name} is online"
+note = "Desktop, chats (in chat_view.rs, image_view). {name} is a person's name (usually the first word of their chosen name)."
+
+[chat_signed_by]
+text = "Signed by {name} · {value}"
+note = "Desktop, chats (in chat_view.rs, block_note). {name} is a person's name (usually the first word of their chosen name). {value} is a value filled in by the app."
+
+[chat_signed_by_2]
+text = "Signed by {value}"
+note = "Desktop, chats (in chat_view.rs, receipt_lines). {value} is a value filled in by the app."
+
+[chat_tap_to_retry]
+text = "Tap to retry"
+note = "Desktop, chats (in chat_view.rs, attachment_view)."
+
+[chat_that_is_everything_has]
+text = "That is everything {name} has."
+note = "Desktop, chats (in chat_view.rs, history_note). {name} is a person's name (usually the first word of their chosen name)."
+
+[chat_too_short_hold_on]
+text = "Too short — hold on a little longer."
+note = "Desktop, chats (in chat.rs, update_chat_inner)."
+
+[chat_video_call]
+text = "Video call"
+note = "Desktop, chats (in chat_view.rs, conversation_view)."
+
+[chat_voice_message]
+text = "Voice message"
+note = "Desktop, chats (in chat.rs, preview_of)."
+
+[chat_waiting]
+text = "Waiting"
+note = "Desktop, chats (in chat_view.rs, pg_chat_row)."
+
+[chat_waiting_for_connection]
+text = "Waiting for connection"
+note = "Desktop, chats (in chat_view.rs, conversation_view)."
+
+[chat_waiting_for_s_device]
+text = "Waiting for {name}’s device to confirm"
+note = "Desktop, chats (in chat_view.rs, receipt_lines). {name} is a person's name (usually the first word of their chosen name)."
+
+[chat_you_blocked]
+text = "You blocked {name}{when}"
+note = "Desktop, chats (in chat_view.rs, block_note). {name} is a person's name (usually the first word of their chosen name). {when} is a value filled in by the app."
+
+[chat_you_deleted_this_message]
+text = "You deleted this message"
+note = "Desktop, chats (in chat_view.rs, message_row)."
+
+[chat_your_chats_show_up]
+text = "Your chats show up here."
+note = "Desktop, chats (in chat_view.rs, chat_list)."
+
+[chat_youre_all_caught_up]
+text = "You’re all caught up."
+note = "Desktop, chats (in chat_view.rs, chat_list)."
+
+[chat_youre_offline_messages_send]
+text = "You’re offline. Messages send when you’re back online."
+note = "Desktop, chats (in chat_view.rs, strip_text)."
+
+
+# ---- Contact detail
+
+[contact_added]
+text = "Added {value}"
+note = "Desktop, contact detail (in view.rs, detail_view). {value} is a value filled in by the app."
+
+[contact_blocked_nothing_gets_through]
+text = "Blocked: nothing gets through until you unblock."
+note = "Desktop, contact detail (in view.rs, detail_view)."
+
+[contact_calls_themself]
+text = "Calls themself “{name}” · {added}"
+note = "Desktop, contact detail (in view.rs, detail_view). {name} is a person's name (usually the first word of their chosen name). {added} is a value filled in by the app."
+
+[contact_calls_with]
+text = "Calls with {name}"
+note = "Desktop, contact detail (in view.rs, detail_view). {name} is a person's name (usually the first word of their chosen name)."
+
+[contact_can_ring_this_computer]
+text = "{name} can ring this computer and your other devices."
+note = "Desktop, contact detail (in view.rs, detail_view). {name} is a person's name (usually the first word of their chosen name)."
+
+[contact_history_stays_on_this]
+text = "History stays on this computer only."
+note = "Desktop, contact detail (in view.rs, detail_view)."
+
+[contact_home]
+text = "Home"
+note = "Desktop, contact detail (in view.rs, detail_view)."
+
+[contact_length]
+text = "Length"
+note = "Desktop, contact detail (in view.rs, detail_view)."
+
+[contact_name_on_this_computer]
+text = "Name on this computer"
+note = "Desktop, contact detail (in view.rs, detail_view)."
+
+[contact_no_calls_yet]
+text = "No calls yet."
+note = "Desktop, contact detail (in view.rs, detail_view)."
+
+[contact_off_can_message_you]
+text = "Off. {name} can message you; their calls don’t ring."
+note = "Desktop, contact detail (in view.rs, detail_view). {name} is a person's name (usually the first word of their chosen name)."
+
+[contact_only_you_see_this]
+text = "Only you see this. {name} still calls themself “{name2}”."
+note = "Desktop, contact detail (in view.rs, detail_view). {name} is a person's name (usually the first word of their chosen name). {name2} is a person's name (usually the first word of their chosen name)."
+
+[contact_path]
+text = "Path"
+note = "Desktop, contact detail (in view.rs, detail_view)."
+
+[contact_use_their_name]
+text = "Use their name"
+note = "Desktop, contact detail (in view.rs, detail_view)."
+
+[contact_when]
+text = "When"
+note = "Desktop, contact detail (in view.rs, detail_view)."
+
+
+# ---- Sign-in and gate screens
+
+[gate_add_a_passphrase_instead]
+text = "Add a passphrase instead"
+note = "Desktop, sign-in and gate screens (in view.rs, key_failed_view)."
+
+[gate_anyone_who_sees_these]
+text = "Anyone who sees these words can become you. Write them down and keep them somewhere safe."
+note = "Desktop, sign-in and gate screens (in view.rs, phrase_view)."
+
+[gate_calls_wont_ring_until]
+text = "Calls won’t ring until you turn it back on."
+note = "Desktop, sign-in and gate screens (in view.rs, problem)."
+
+[gate_cant_open_your_account]
+text = "Can’t open your account"
+note = "Desktop, sign-in and gate screens (in view.rs, key_lost_view)."
+
+[gate_couldnt_save_your_account]
+text = "Couldn’t save your account"
+note = "Desktop, sign-in and gate screens (in view.rs, key_failed_view)."
+
+[gate_i_have_saved_it]
+text = "I have saved it"
+note = "Desktop, sign-in and gate screens (in view.rs, phrase_view)."
+
+[gate_or]
+text = "Or"
+note = "Desktop, sign-in and gate screens (in view.rs, key_failed_view)."
+
+[gate_other_accounts]
+text = "Other accounts"
+note = "Desktop, sign-in and gate screens (in view.rs, other_accounts)."
+
+[gate_restore_with_recovery_phrase]
+text = "Restore with recovery phrase"
+note = "Desktop, sign-in and gate screens (in view.rs, key_lost_view)."
+
+[gate_retry]
+text = "Retry"
+note = "Desktop, sign-in and gate screens (in view.rs, key_failed_view)."
+
+[gate_the_system_keyring_did]
+text = "The system keyring did not accept the key."
+note = "Desktop, sign-in and gate screens (in view.rs, key_failed_view)."
+
+[gate_these_24_words_are]
+text = "These 24 words are the only way to restore your identity on another device."
+note = "Desktop, sign-in and gate screens (in view.rs, phrase_view)."
+
+[gate_this_computer_no_longer]
+text = "This computer no longer has the key that opens it, and its keyring entry is missing. Once you restore, your calls come through again."
+note = "Desktop, sign-in and gate screens (in view.rs, key_lost_view)."
+
+[gate_tinline_couldnt_store_the]
+text = "Tinline couldn’t store the key that opens your account on this computer, so your account has not been saved yet. Nothing is lost."
+note = "Desktop, sign-in and gate screens (in view.rs, key_failed_view)."
+
+[gate_trying]
+text = "Trying..."
+note = "Desktop, sign-in and gate screens (in view.rs, key_failed_view)."
+
+[gate_turn_on]
+text = "Turn on"
+note = "Desktop, sign-in and gate screens (in view.rs, problem)."
+
+[gate_you_didnt_set_a]
+text = "You didn’t set a passphrase, so the 24-word recovery phrase is the only way back. Your contacts stay."
+note = "Desktop, sign-in and gate screens (in view.rs, key_lost_view)."
+
+[gate_your_calls_come_through]
+text = "Your calls come through again once you’re back online."
+note = "Desktop, sign-in and gate screens (in view.rs, problem)."
+
+[gate_your_recovery_phrase]
+text = "Your recovery phrase"
+note = "Desktop, sign-in and gate screens (in view.rs, phrase_view)."
+
+[gate_youre_not_available]
+text = "You’re not available"
+note = "Desktop, sign-in and gate screens (in view.rs, problem)."
+
+[gate_youre_offline]
+text = "You’re offline"
+note = "Desktop, sign-in and gate screens (in view.rs, problem)."
+
+
+# ---- Group calls
+
+[gcall_a_call_host_is]
+text = "A call host is a device a group admin chose and that agreed to it. It is separate from chat hosting. Admins can change call hosts in Group info."
+note = "Desktop, group calls (in gcall_view.rs, gcall_about)."
+
+[gcall_battery_is_low_or]
+text = "Battery is low or the computer is hot. Hosting is limited: only one person is heard at a time, and no one new can join."
+note = "Desktop, group calls (in gcall.rs, gcall_event)."
+
+[gcall_call_ended_host_lost]
+text = "Call ended — host lost"
+note = "Desktop, group calls (in gcall.rs, gcall_event)."
+
+[gcall_call_host]
+text = "Call host: {host}"
+note = "Desktop, group calls (in gcall_view.rs, gcall_view). {host} is a value filled in by the app."
+
+[gcall_connecting]
+text = "Connecting…"
+note = "Desktop, group calls (in gcall.rs, status)."
+
+[gcall_finding_a_call_host]
+text = "Finding a call host…"
+note = "Desktop, group calls (in gcall.rs, status)."
+
+[gcall_group]
+text = "Group"
+note = "Desktop, group calls (in gcall.rs, gcall_event)."
+
+[gcall_group_call]
+text = "Group call"
+note = "Desktop, group calls (in gcall_view.rs, gcall_group_name)."
+
+[gcall_is_calling_the_group]
+text = "{value} is calling the group"
+note = "Desktop, group calls (in gcall.rs, gcall_event). {value} is a value filled in by the app."
+
+[gcall_is_carrying]
+text = "is carrying"
+note = "Desktop, group calls (in gcall_view.rs, gcall_about)."
+
+[gcall_no_call_host_available]
+text = "No call host available"
+note = "Desktop, group calls (in gcall.rs, start_failure)."
+
+[gcall_only_you_so_far]
+text = "Only you so far. Waiting for others."
+note = "Desktop, group calls (in gcall_view.rs, gcall_view)."
+
+[gcall_people_in_the_call]
+text = "{count} people in the call"
+note = "Desktop, group calls (in gcall_view.rs, gcall_view). {count} is a number."
+
+[gcall_s_device]
+text = "{value}’s device"
+note = "Desktop, group calls (in gcall_view.rs, gcall_host_label). {value} is a value filled in by the app."
+
+[gcall_started_a_call]
+text = "{name} started a call"
+note = "Desktop, group calls (in gcall_view.rs, gcall_announce). {name} is a person's name (usually the first word of their chosen name)."
+
+[gcall_started_by]
+text = "Started by {value}"
+note = "Desktop, group calls (in gcall_view.rs, gcall_banner). {value} is a value filled in by the app."
+
+[gcall_the_call_host]
+text = "The call host"
+note = "Desktop, group calls (in gcall_view.rs, gcall_about)."
+
+[gcall_this_call_everyone_in]
+text = " {value} this call. Everyone in the call connects to it, and it passes the audio on and chooses who is heard when several people speak."
+note = "Desktop, group calls (in gcall_view.rs, gcall_about). {value} is a value filled in by the app."
+
+[gcall_this_computer]
+text = "this computer"
+note = "Desktop, group calls (in gcall_view.rs, gcall_host_label)."
+
+[gcall_your_connection_to_the]
+text = "Your connection to the call host is encrypted, but the call host itself receives the audio, so it can hear this call. You trust it for the call the way you trust a chat host with posts."
+note = "Desktop, group calls (in gcall_view.rs, gcall_about)."
+
+[gcall_youre_already_in_a]
+text = "You’re already in a call."
+note = "Desktop, group calls (in gcall.rs, gcall_update)."
+
+[gcall_youre_the_call_host]
+text = "You’re the call host"
+note = "Desktop, group calls (in gcall_view.rs, gcall_view)."
+
+
+# ---- Groups
+
+[group_a_call_host_carries]
+text = "A call host carries the call. Everyone in a call connects to it, and it passes the audio on, so it can hear the call. That is separate from chat hosting: a chat host is not a call host unless you also appoint it as one. Call hosts are members you trust, and each one chooses to accept.{value}"
+note = "Desktop, groups (in group_live_view.rs, group_info_page). {value} is a value filled in by the app."
+
+[group_a_call_host_is]
+text = "A call host is a member’s computer or phone that carries the call. An admin can appoint one in Group info."
+note = "Desktop, groups (in group_live_view.rs, live_pane)."
+
+[group_a_call_host_is_a]
+text = "A call host is a member’s computer or phone that carries the call. You can host calls on this computer, or appoint a member in Group info."
+note = "Desktop, groups (in group_live_view.rs, live_pane)."
+
+[group_a_call_needs_a]
+text = "A call needs a call host"
+note = "Desktop, groups (in group_live_view.rs, live_pane)."
+
+[group_a_flag_is_signed]
+text = "A flag is signed by you and can’t be taken back. {name} can see who flagged them and when. Messages {name} wrote before the removal still show, marked."
+note = "Desktop, groups (in group_live_view.rs, live_overlay). {name} is a person's name (usually the first word of their chosen name)."
+
+[group_a_host_keeps_a]
+text = "A host keeps a full copy of a group and passes messages on while members’ phones sleep. Members connect to hosts, not to each other; only hosts learn members’ group addresses. Tinline keeps hosting while the window is closed (it stays in the tray)."
+note = "Desktop, groups (in group_live_view.rs, live_hosting_page)."
+
+[group_a_host_keeps_a_full]
+text = "A host keeps a full copy of the group, passes messages on while members’ phones sleep and learns members’ group addresses. It needs to stay running. Hosting doesn’t make you an admin; you can stop any time."
+note = "Desktop, groups (in group_live_view.rs, live_pane)."
+
+[group_a_host_lists_up]
+text = "A host lists up to {value} people at a time, so there may be more."
+note = "Desktop, groups (in group_live_view.rs, live_overlay). {value} is a value filled in by the app."
+
+[group_a_host_stays_on]
+text = "A host stays on and passes posts on while others are offline"
+note = "Desktop, groups (in group_live_view.rs, group_info_page)."
+
+[group_a_link_for_your]
+text = "A link for your own other device"
+note = "Desktop, groups (in group_live_view.rs, live_overlay)."
+
+[group_a_link_that_doesnt]
+text = "A link that doesn’t expire"
+note = "Desktop, groups (in group_live_view.rs, group_info_page)."
+
+[group_a_message]
+text = "a message"
+note = "Desktop, groups (in group_live_view.rs, live_composer)."
+
+[group_a_private_invite_to]
+text = "A private invite to each person"
+note = "Desktop, groups (in group_live_view.rs, group_info_page)."
+
+[group_a_request_waits_at]
+text = "A request waits at the group’s hosts for up to 7 days."
+note = "Desktop, groups (in group_live_view.rs, live_requests)."
+
+[group_accepting_adds_as_a]
+text = "Accepting adds {name} as a contact for messages only. You can allow calls later."
+note = "Desktop, groups (in group_live_view.rs, live_requests). {name} is a person's name (usually the first word of their chosen name)."
+
+[group_add_to]
+text = "Add to {gname}"
+note = "Desktop, groups (in group_live_view.rs, live_overlay). {gname} is a value filled in by the app."
+
+[group_admin]
+text = "Admin"
+note = "Desktop, groups (in group_live_view.rs, group_info_page)."
+
+[group_admins_of_a_group]
+text = "Admins of a group can make an invite. It works for 7 days."
+note = "Desktop, groups (in group_live_view.rs, live_overlay)."
+
+[group_admins_only]
+text = "Admins only"
+note = "Desktop, groups (in group_live_view.rs, group_info_page)."
+
+[group_already_a_member]
+text = "Already a member"
+note = "Desktop, groups (in group_live.rs, pick_rows)."
+
+[group_also_confirmed]
+text = "Also confirmed: {value}"
+note = "Desktop, groups (in group_live_view.rs, group_receipt_lines). {value} is a value filled in by the app."
+
+[group_also_hosts_calls]
+text = " · also hosts calls"
+note = "Desktop, groups (in group_live_view.rs, group_info_page)."
+
+[group_an_admin_asked_this]
+text = "An admin asked this computer to carry the group’s calls"
+note = "Desktop, groups (in group_live_view.rs, group_info_page)."
+
+[group_and]
+text = "{value} and {last}"
+note = "Desktop, groups (in groups_view.rs, and_list). {value} is a value filled in by the app. {last} is a value filled in by the app."
+
+[group_anyone_holding_the_link]
+text = "Anyone holding the link can join, with no invite and no expiry. Share it where you’d like people to find the group."
+note = "Desktop, groups (in group_live_view.rs, live_overlay)."
+
+[group_anyone_with_the_link]
+text = "Anyone with the link can join"
+note = "Desktop, groups (in group_live_view.rs, group_info_page)."
+
+[group_anyone_with_this_link]
+text = "Anyone with this link or QR can join for 7 days. Share it over an app you trust; you see who joined and can flag them out. To invite your contacts directly, use Add members."
+note = "Desktop, groups (in group_live_view.rs, live_overlay)."
+
+[group_appoint]
+text = "Appoint"
+note = "Desktop, groups (in group_live_view.rs, group_info_page)."
+
+[group_appoint_a_host_first]
+text = "Appoint a host first. A link names one host."
+note = "Desktop, groups (in group_live_view.rs, group_info_page)."
+
+[group_appointed_the_device_hosts]
+text = "Appointed. The device hosts once it agrees (Host from this device)."
+note = "Desktop, groups (in group_live.rs, run)."
+
+[group_as_a_host_this]
+text = "As a host this computer will:"
+note = "Desktop, groups (in group_live_view.rs, live_overlay)."
+
+[group_ask_for_a_private]
+text = "Ask {name} for a private chat"
+note = "Desktop, groups (in group_live_view.rs, live_overlay). {name} is a person's name (usually the first word of their chosen name)."
+
+[group_asked_the_device_carries]
+text = "Asked. The device carries calls once it accepts."
+note = "Desktop, groups (in group_live.rs, run)."
+
+[group_asked_this_computer_to]
+text = "{value} asked this computer to host {name}"
+note = "Desktop, groups (in group_live_view.rs, live_pane). {value} is a value filled in by the app. {name} is a person's name (usually the first word of their chosen name)."
+
+[group_asks_to_carry_group]
+text = "Asks {name} to carry group calls on that device; they have to accept"
+note = "Desktop, groups (in group_live_view.rs, live_menu). {name} is a person's name (usually the first word of their chosen name)."
+
+[group_block]
+text = "Block {name}"
+note = "Desktop, groups (in group_live_view.rs, live_requests). {name} is a person's name (usually the first word of their chosen name)."
+
+[group_blocked]
+text = " · Blocked"
+note = "Desktop, groups (in group_live_view.rs, group_info_page)."
+
+[group_blocked_2]
+text = "Blocked {value}"
+note = "Desktop, groups (in groups_view.rs, privacy_page). {value} is a value filled in by the app."
+
+[group_blocked_you]
+text = "Blocked you"
+note = "Desktop, groups (in group_live.rs, sent_invitation_line)."
+
+[group_call_hosts]
+text = "Call hosts"
+note = "Desktop, groups (in group_live_view.rs, group_info_page)."
+
+[group_call_hosts_ready]
+one = "{count} call host ready. Calls start through it."
+other = "{count} call hosts ready. Calls start through them."
+note = "Group info, call hosts section. {count} is how many call hosts are ready."
+
+[group_calls_go_through_the]
+text = "Calls go through the other call hosts"
+note = "Desktop, groups (in group_live_view.rs, live_menu)."
+
+[group_can_invite_flag_members]
+text = "Can invite, flag members and appoint hosts"
+note = "Desktop, groups (in group_live_view.rs, live_menu)."
+
+[group_carries_the_groups_calls]
+text = "Carries the group’s calls; a computer that stays on is best"
+note = "Desktop, groups (in group_live_view.rs, group_info_page)."
+
+[group_checking_with_the_groups]
+text = "Checking with the group’s host…"
+note = "Desktop, groups (in group_live_view.rs, live_overlay)."
+
+[group_click_anywhere_to_go]
+text = "Click anywhere to go back"
+note = "Desktop, groups (in group_live_view.rs, live_overlay)."
+
+[group_click_the_code_to]
+text = "Click the code to show it full size."
+note = "Desktop, groups (in group_live_view.rs, live_overlay)."
+
+[group_copy_link]
+text = "Copy link"
+note = "Desktop, groups (in group_live_view.rs, group_info_page)."
+
+[group_create]
+text = "Create"
+note = "Desktop, groups (in group_live_view.rs, live_overlay)."
+
+[group_create_invite_link]
+text = "Create invite link"
+note = "Desktop, groups (in group_live_view.rs, group_info_page)."
+
+[group_delivered]
+text = "Delivered {delivered}/{eligible}"
+note = "Desktop, groups (in group_live_view.rs, group_receipt_lines). {delivered} is a value filled in by the app. {eligible} is a value filled in by the app."
+
+[group_each_flag_is_signed]
+text = "Each flag is signed by the admin who made it and was checked on this computer. Nobody else could have added them."
+note = "Desktop, groups (in group_live_view.rs, live_overlay)."
+
+[group_each_person_gets_the]
+text = "Each person gets the invitation in your 1:1 chat and joins when they accept. It is valid for 7 days."
+note = "Desktop, groups (in group_live_view.rs, live_overlay)."
+
+[group_everyone_can_post_again]
+text = "Everyone can post again."
+note = "Desktop, groups (in group_live.rs, run)."
+
+[group_everyone_in_the_group]
+text = "Everyone in the group can post"
+note = "Desktop, groups (in group_live_view.rs, group_info_page)."
+
+[group_flag]
+text = " · {value} flag"
+note = "Desktop, groups (in group_live_view.rs, live_overlay). {value} is a value filled in by the app."
+
+[group_flag_2]
+text = "Flag"
+note = "Desktop, groups (in group_live_view.rs, live_overlay)."
+
+[group_flag_for_removal]
+text = "Flag {name} for removal?"
+note = "Desktop, groups (in group_live_view.rs, live_overlay). {name} is a person's name (usually the first word of their chosen name)."
+
+[group_flag_recorded_it_is]
+text = "Flag recorded. It is signed by you and the member can see it."
+note = "Desktop, groups (in group_live.rs, run)."
+
+[group_flag_to_remove]
+text = "Flag to remove"
+note = "Desktop, groups (in group_live_view.rs, live_menu)."
+
+[group_flagged]
+text = "Flagged {value}"
+note = "Desktop, groups (in group_live_view.rs, live_overlay). {value} is a value filled in by the app."
+
+[group_flagged_by_you_can]
+text = "Flagged by {value}. You can still read what you received before; nothing new will arrive."
+note = "Desktop, groups (in group_live_view.rs, live_removal_card). {value} is a value filled in by the app."
+
+[group_flags_remove_from_the]
+text = "{flags_needed} flags remove {name} from the group"
+note = "Desktop, groups (in group_live_view.rs, live_menu). {flags_needed} is a value filled in by the app. {name} is a person's name (usually the first word of their chosen name)."
+
+[group_getting_the_link]
+text = "Getting the link…"
+note = "Desktop, groups (in group_live_view.rs, group_info_page)."
+
+[group_group_call_needs_a]
+text = "Group call (needs a call host)"
+note = "Desktop, groups (in group_live_view.rs, live_pane)."
+
+[group_group_info]
+text = "Group info"
+note = "Desktop, groups (in group_live_view.rs, group_info_page)."
+
+[group_group_name]
+text = "Group name"
+note = "Desktop, groups (in group_live_view.rs, live_overlay)."
+
+[group_groups_you_start_or]
+text = "Groups you start or join show up here."
+note = "Desktop, groups (in group_live_view.rs, live_list)."
+
+[group_has_no_other_host]
+text = "{gname} has no other host: messages will wait on people’s devices until another one hosts it."
+note = "Desktop, groups (in group_live_view.rs, live_overlay). {gname} is a value filled in by the app."
+
+[group_host_calls_on_this]
+text = "Host calls on this computer"
+note = "Desktop, groups (in group_live_view.rs, live_pane)."
+
+[group_host_here]
+text = "Host here"
+note = "Desktop, groups (in group_live_view.rs, live_pane)."
+
+[group_host_on_this_computer]
+text = "Host {gname} on this computer?"
+note = "Desktop, groups (in group_live_view.rs, live_overlay). {gname} is a value filled in by the app."
+
+[group_host_this_group_on]
+text = "Host this group on this computer"
+note = "Desktop, groups (in group_live_view.rs, group_info_page)."
+
+[group_hosts]
+text = "Hosts"
+note = "Desktop, groups (in group_live_view.rs, group_info_page)."
+
+[group_hosts_count]
+one = "{count} host"
+other = "{count} hosts"
+note = "Number of hosts of a group. {count} is the host count."
+
+[group_hosts_once_agrees_on]
+text = "Hosts once {name} agrees on that device; a computer that stays on is best"
+note = "Desktop, groups (in group_live_view.rs, live_menu). {name} is a person's name (usually the first word of their chosen name)."
+
+[group_hosts_online]
+one = "{count} host online{extra}. Posts go through right away."
+other = "{count} hosts online{extra}. Posts go through right away."
+note = "Group info, hosts section. {count} is how many hosts are online; {extra} is empty or the text \"this computer too\"."
+
+[group_hosts_store_the_group]
+text = "Hosts store the group and pass posts on when others are offline. They are members you trust: a host can read everything posted in this group.{value}"
+note = "Desktop, groups (in group_live_view.rs, group_info_page). {value} is a value filled in by the app."
+
+[group_if_accepts_you_can]
+text = "If {name} accepts, you can message each other directly. Calls stay off until one of you allows them."
+note = "Desktop, groups (in group_live_view.rs, live_overlay). {name} is a person's name (usually the first word of their chosen name)."
+
+[group_invitation_expired]
+text = "Invitation expired"
+note = "Desktop, groups (in group_live.rs, sent_invitation_line)."
+
+[group_invitations_to_you]
+text = "Invitations to you"
+note = "Desktop, groups (in group_live_view.rs, live_list)."
+
+[group_invite]
+text = "Invite"
+note = "Desktop, groups (in group_live_view.rs, live_overlay)."
+
+[group_invite_contacts]
+text = "Invite contacts"
+note = "Desktop, groups (in group_live_view.rs, group_info_page)."
+
+[group_invite_link_for]
+text = "Invite link for {gname}"
+note = "Desktop, groups (in group_live_view.rs, live_overlay). {gname} is a value filled in by the app."
+
+[group_invite_people]
+text = "Invite {len} people"
+note = "Desktop, groups (in group_live_view.rs, live_overlay). {len} is a value filled in by the app."
+
+[group_invite_valid_until]
+text = "Invite valid until {value}"
+note = "Desktop, groups (in group_live_view.rs, live_overlay). {value} is a value filled in by the app."
+
+[group_invited_by]
+text = " · invited by {b}"
+note = "Desktop, groups (in group_live_view.rs, live_menu). {b} is a value filled in by the app."
+
+[group_invited_by_2]
+text = "Invited by {value}"
+note = "Desktop, groups (in group_live_view.rs, group_info_page). {value} is a value filled in by the app."
+
+[group_invited_not_delivered_yet]
+text = "Invited · not delivered yet"
+note = "Desktop, groups (in group_live.rs, sent_invitation_line)."
+
+[group_invited_waiting]
+text = "Invited · waiting"
+note = "Desktop, groups (in group_live.rs, pick_rows)."
+
+[group_invited_waiting_for_an]
+text = "Invited · waiting for an answer"
+note = "Desktop, groups (in group_live.rs, sent_invitation_line)."
+
+[group_invited_you_to]
+text = " invited you to "
+note = "Desktop, groups (in group_live_view.rs, live_list)."
+
+[group_invites]
+text = "Invites"
+note = "Desktop, groups (in group_live_view.rs, group_info_page)."
+
+[group_it_starts_hosting_once]
+text = "It starts hosting once an admin appoints it (if one already did, right away). Hosting doesn’t make you an admin; you can stop any time."
+note = "Desktop, groups (in group_live_view.rs, live_overlay)."
+
+[group_join_a_group]
+text = "Join a group"
+note = "Desktop, groups (in group_live_view.rs, live_list)."
+
+[group_join_group_call]
+text = "Join group call"
+note = "Desktop, groups (in group_live_view.rs, live_pane)."
+
+[group_joined]
+text = "Joined"
+note = "Desktop, groups (in group_live.rs, sent_invitation_line)."
+
+[group_joining]
+text = "Joining…"
+note = "Desktop, groups (in group_live_view.rs, live_list)."
+
+[group_joining_connects_this_computer]
+text = "Joining connects this computer to the group’s hosts. Members see your name; only hosts learn how to reach this computer. It can take up to a minute."
+note = "Desktop, groups (in group_live_view.rs, live_overlay)."
+
+[group_keep_a_full_copy]
+text = "• keep a full copy of the group\n• pass messages on for members while their phones sleep\n• learn members’ group addresses (only hosts do)\n• need to stay running to be useful"
+note = "Desktop, groups (in group_live_view.rs, live_overlay)."
+
+[group_leave]
+text = "Leave {gname}?"
+note = "Desktop, groups (in group_live_view.rs, live_overlay). {gname} is a value filled in by the app."
+
+[group_leave_group]
+text = "Leave group"
+note = "Desktop, groups (in group_live_view.rs, group_info_page)."
+
+[group_left_or_removed]
+text = "Left or removed"
+note = "Desktop, groups (in group_live_view.rs, live_list)."
+
+[group_load_photo]
+text = "Load photo"
+note = "Desktop, groups (in group_live_view.rs, live_image)."
+
+[group_made_admin]
+text = "Made admin."
+note = "Desktop, groups (in group_live.rs, run)."
+
+[group_make_admin]
+text = "Make admin"
+note = "Desktop, groups (in group_live_view.rs, live_menu)."
+
+[group_make_an_admin]
+text = "Make {name} an admin?"
+note = "Desktop, groups (in group_live_view.rs, live_overlay). {name} is a person's name (usually the first word of their chosen name)."
+
+[group_make_call_host]
+text = "Make call host"
+note = "Desktop, groups (in group_live_view.rs, live_menu)."
+
+[group_make_device_a_call]
+text = "Make device {value} a call host"
+note = "Desktop, groups (in group_live_view.rs, live_menu). {value} is a value filled in by the app."
+
+[group_make_device_a_host]
+text = "Make device {value} a host"
+note = "Desktop, groups (in group_live_view.rs, live_menu). {value} is a value filled in by the app."
+
+[group_make_host]
+text = "Make host"
+note = "Desktop, groups (in group_live_view.rs, live_menu)."
+
+[group_making_it]
+text = "Making it…"
+note = "Desktop, groups (in group_live_view.rs, live_overlay)."
+
+[group_member_of]
+text = "Member of {gname}"
+note = "Desktop, groups (in group_live_view.rs, live_overlay). {gname} is a value filled in by the app."
+
+[group_member_of_2]
+text = "Member of {group_name}"
+note = "Desktop, groups (in group_live_view.rs, live_requests). {group_name} is a value filled in by the app."
+
+[group_member_since]
+text = "Member since {value}"
+note = "Desktop, groups (in group_live_view.rs, live_menu). {value} is a value filled in by the app."
+
+[group_members]
+text = "Members"
+note = "Desktop, groups (in group_live_view.rs, group_info_page)."
+
+[group_members_a_host_has]
+text = "Members a host has seen in the last minute. It can be a few seconds behind."
+note = "Desktop, groups (in group_live_view.rs, live_overlay)."
+
+[group_members_and_hosts]
+text = "{members} · {hosts}"
+note = "Group summary line under its name. {members} is e.g. \"3 members\", {hosts} is e.g. \"2 hosts\"."
+
+[group_members_and_role]
+text = "{members} · {role}"
+note = "Group info header. {members} is e.g. \"3 members\", {role} is \"You are the owner / an admin / a member\"."
+
+[group_members_count]
+one = "{count} member"
+other = "{count} members"
+note = "Number of people in a group, in the group summary line. {count} is the member count."
+
+[group_members_see_that_you]
+text = "Members see that you left. The messages stay on this computer, read-only. To come back, an admin has to invite you again."
+note = "Desktop, groups (in group_live_view.rs, live_overlay)."
+
+[group_members_stop_going_through]
+text = "Members stop going through it"
+note = "Desktop, groups (in group_live_view.rs, live_menu)."
+
+[group_message_from_whom_you]
+text = "Message from {name}, whom you blocked"
+note = "Desktop, groups (in group_live_view.rs, live_item). {name} is a person's name (usually the first word of their chosen name)."
+
+[group_message_privately]
+text = "Message privately"
+note = "Desktop, groups (in group_live_view.rs, live_menu)."
+
+[group_no_contacts_to_add]
+text = "No contacts to add. People you block, or who block you, aren’t listed."
+note = "Desktop, groups (in group_live_view.rs, live_overlay)."
+
+[group_no_group_matches]
+text = "No group matches."
+note = "Desktop, groups (in group_live_view.rs, live_list)."
+
+[group_no_host_answered_in]
+text = "No host answered in time. Try again when a host is online."
+note = "Desktop, groups (in group_live.rs, gerr)."
+
+[group_no_host_is_online]
+text = "No host is online. Your posts are saved and send when one is."
+note = "Desktop, groups (in group_live_view.rs, group_info_page)."
+
+[group_no_longer_an_admin]
+text = "No longer an admin."
+note = "Desktop, groups (in group_live.rs, run)."
+
+[group_no_one_is_online]
+text = "No one is online right now. People show here while they’re connected."
+note = "Desktop, groups (in group_live_view.rs, live_overlay)."
+
+[group_nobody_is_blocked_to]
+text = "Nobody is blocked. To block someone, open them in Contacts and choose Block."
+note = "Desktop, groups (in groups_view.rs, privacy_page)."
+
+[group_not_yet]
+text = "Not yet"
+note = "Desktop, groups (in group_live_view.rs, group_receipt_lines)."
+
+[group_of_flags]
+text = " · {flags} of {flags_needed} flags"
+note = "Desktop, groups (in group_live_view.rs, live_menu). {flags} is a value filled in by the app. {flags_needed} is a value filled in by the app."
+
+[group_of_flags_2]
+text = " · {flags} of {value} flags"
+note = "Desktop, groups (in group_live_view.rs, group_info_page). {flags} is a value filled in by the app. {value} is a value filled in by the app."
+
+[group_offered_to_host]
+text = "Offered to host"
+note = "Desktop, groups (in group_live_view.rs, group_info_page)."
+
+[group_on_their_device]
+text = "On their device"
+note = "Desktop, groups (in group_live_view.rs, group_receipt_lines)."
+
+[group_one_list_across_all]
+text = "One list across all your devices: a block made on another device shows here too."
+note = "Desktop, groups (in groups_view.rs, privacy_page)."
+
+[group_only_admins_post_everyone]
+text = "Only admins post; everyone reads"
+note = "Desktop, groups (in group_live_view.rs, group_info_page)."
+
+[group_only_admins_post_here]
+text = "Only admins post here"
+note = "Desktop, groups (in group_live_view.rs, live_admins_only_line)."
+
+[group_only_admins_post_here_2]
+text = "Only admins post here."
+note = "Desktop, groups (in group_live.rs, gerr)."
+
+[group_only_admins_post_now]
+text = "Only admins post now. Everyone can still read."
+note = "Desktop, groups (in group_live.rs, run)."
+
+[group_only_people_you_invite]
+text = "Only people you invite can join"
+note = "Desktop, groups (in group_live_view.rs, group_info_page)."
+
+[group_open_chat]
+text = "Open chat"
+note = "Desktop, groups (in group_live_view.rs, live_requests)."
+
+[group_open_the_group]
+text = "Open the group"
+note = "Desktop, groups (in group_live_view.rs, live_overlay)."
+
+[group_open_to_anyone_with]
+text = "Open {gname} to anyone with the link?"
+note = "Desktop, groups (in group_live_view.rs, live_overlay). {gname} is a value filled in by the app."
+
+[group_opens_your_chat]
+text = "Opens your chat"
+note = "Desktop, groups (in group_live_view.rs, live_menu)."
+
+[group_owner]
+text = "Owner"
+note = "Desktop, groups (in group_live_view.rs, group_info_page)."
+
+[group_owner_2]
+text = "{inviter} · owner {owner}"
+note = "Desktop, groups (in group_live_view.rs, live_overlay). {inviter} is a value filled in by the app. {owner} is a value filled in by the app."
+
+[group_paste_an_invite_link]
+text = "Paste an invite link"
+note = "Desktop, groups (in group_live_view.rs, live_list)."
+
+[group_paste_the_invite_link]
+text = "Paste the invite link (tinline://g/…) or code"
+note = "Desktop, groups (in group_live_view.rs, live_overlay)."
+
+[group_public_group]
+text = "Public group"
+note = "Desktop, groups (in group_live_view.rs, group_info_page)."
+
+[group_read]
+text = "Read"
+note = "Desktop, groups (in group_live_view.rs, group_receipt_lines)."
+
+[group_read_2]
+text = "Read {read}/{eligible}"
+note = "Desktop, groups (in group_live_view.rs, group_receipt_lines). {read} is a value filled in by the app. {eligible} is a value filled in by the app."
+
+[group_refused]
+text = "Refused."
+note = "Desktop, groups (in group_live.rs, gerr)."
+
+[group_remove_as_admin]
+text = "Remove as admin"
+note = "Desktop, groups (in group_live_view.rs, live_menu)."
+
+[group_remove_as_admin_2]
+text = "Remove {name} as admin?"
+note = "Desktop, groups (in group_live_view.rs, live_overlay). {name} is a person's name (usually the first word of their chosen name)."
+
+[group_removed]
+text = "Removed"
+note = "Desktop, groups (in group_live_view.rs, live_list)."
+
+[group_removed_2]
+text = "{value} · removed"
+note = "Desktop, groups (in group_live_view.rs, live_item). {value} is a value filled in by the app."
+
+[group_removed_after_admin_flags]
+text = "Removed after {len} admin flags"
+note = "Desktop, groups (in group_live_view.rs, live_removal_card). {len} is a value filled in by the app."
+
+[group_replying_to]
+text = "Replying to {name}"
+note = "Desktop, groups (in group_live_view.rs, live_composer). {name} is a person's name (usually the first word of their chosen name)."
+
+[group_requests]
+text = "Requests · {len}"
+note = "Desktop, groups (in group_live_view.rs, live_requests). {len} is a value filled in by the app."
+
+[group_return_to_group_call]
+text = "Return to group call"
+note = "Desktop, groups (in group_live_view.rs, live_pane)."
+
+[group_see_details]
+text = "See details"
+note = "Desktop, groups (in group_live_view.rs, live_removal_card)."
+
+[group_sees_your_name_and]
+text = "{name} sees your name and the group. The request goes through the group’s host sealed, so the host can’t read it."
+note = "Desktop, groups (in group_live_view.rs, live_overlay). {name} is a person's name (usually the first word of their chosen name)."
+
+[group_send_request]
+text = "Send request"
+note = "Desktop, groups (in group_live_view.rs, live_overlay)."
+
+[group_sending]
+text = "Sending…"
+note = "Desktop, groups (in group_live_view.rs, live_overlay)."
+
+[group_sends_a_chat_request]
+text = "Sends {name} a chat request through the host"
+note = "Desktop, groups (in group_live_view.rs, live_menu). {name} is a person's name (usually the first word of their chosen name)."
+
+[group_sent_requests]
+text = "Sent requests"
+note = "Desktop, groups (in group_live_view.rs, live_requests)."
+
+[group_show_earlier_messages]
+text = "Show earlier messages"
+note = "Desktop, groups (in group_live_view.rs, live_pane)."
+
+[group_since]
+text = "Since {value}"
+note = "Desktop, groups (in group_live_view.rs, group_info_page). {value} is a value filled in by the app."
+
+[group_someone_who_isnt_in]
+text = "someone who isn’t in your contacts"
+note = "Desktop, groups (in group_live_view.rs, live_overlay)."
+
+[group_start_group_call]
+text = "Start group call"
+note = "Desktop, groups (in group_live_view.rs, live_pane)."
+
+[group_stays_a_member]
+text = "{name} stays a member"
+note = "Desktop, groups (in group_live_view.rs, live_menu). {name} is a person's name (usually the first word of their chosen name)."
+
+[group_stays_in_the_group]
+text = "{name} stays in the group as a member. Flags they already made still count."
+note = "Desktop, groups (in group_live_view.rs, live_overlay). {name} is a person's name (usually the first word of their chosen name)."
+
+[group_stop_device_carrying_calls]
+text = "Stop device {value} carrying calls"
+note = "Desktop, groups (in group_live_view.rs, live_menu). {value} is a value filled in by the app."
+
+[group_stop_device_hosting]
+text = "Stop device {value} hosting"
+note = "Desktop, groups (in group_live_view.rs, live_menu). {value} is a value filled in by the app."
+
+[group_stop_hosting]
+text = "Stop hosting"
+note = "Desktop, groups (in group_live_view.rs, live_menu)."
+
+[group_stop_hosting_calls]
+text = "Stop hosting calls"
+note = "Desktop, groups (in group_live_view.rs, live_menu)."
+
+[group_stop_hosting_calls_on]
+text = "Stop hosting calls on this computer"
+note = "Desktop, groups (in group_live_view.rs, group_info_page)."
+
+[group_stop_hosting_here]
+text = "Stop hosting {gname} here?"
+note = "Desktop, groups (in group_live_view.rs, live_overlay). {gname} is a value filled in by the app."
+
+[group_stop_hosting_on_this]
+text = "Stop hosting on this computer"
+note = "Desktop, groups (in group_live_view.rs, group_info_page)."
+
+[group_text]
+text = "{label}: {value}"
+note = "Desktop, groups (in group_live_view.rs, group_receipt_lines). {label} is a value filled in by the app. {value} is a value filled in by the app."
+
+[group_text_2]
+text = "{what} · {value}"
+note = "Desktop, groups (in group_live_view.rs, live_list). {what} is a value filled in by the app. {value} is a value filled in by the app."
+
+[group_that_device_no_longer]
+text = "That device no longer carries this group’s calls."
+note = "Desktop, groups (in group_live.rs, run)."
+
+[group_that_device_no_longer_hosts]
+text = "That device no longer hosts the group."
+note = "Desktop, groups (in group_live.rs, run)."
+
+[group_that_group_isnt_on]
+text = "That group isn’t on this computer."
+note = "Desktop, groups (in group_live.rs, gerr)."
+
+[group_that_invite_isnt_valid]
+text = "That invite isn’t valid any more. Ask for a new one."
+note = "Desktop, groups (in group_live.rs, gerr)."
+
+[group_that_link_didnt_work]
+text = "That link didn’t work: it isn’t a group invite, it expired, or its host is offline."
+note = "Desktop, groups (in group_live_view.rs, live_overlay)."
+
+[group_the_only_host]
+text = "the only host"
+note = "Shown after the member count for a group this computer hosts alone."
+
+[group_the_open_link_doesnt]
+text = "The open link doesn’t expire. Closing it stops new joins; everyone already in stays. While the group is open, no read receipts are sent in it and members see who is online."
+note = "Desktop, groups (in group_live_view.rs, group_info_page)."
+
+[group_the_open_link_is]
+text = "The open link is closed. Everyone already in stays; new people join with an invite."
+note = "Desktop, groups (in group_live.rs, run)."
+
+[group_the_owner_cant_leave]
+text = "The owner can’t leave yet"
+note = "Desktop, groups (in group_live_view.rs, group_info_page)."
+
+[group_then_invite_people_from]
+text = "Then invite people from the members pane."
+note = "Desktop, groups (in group_live_view.rs, live_overlay)."
+
+[group_they_blocked_you_so]
+text = "They blocked you, so you can’t ask them for a chat."
+note = "Desktop, groups (in group_live.rs, gerr)."
+
+[group_this_computer_carries_the]
+text = "This computer carries the calls."
+note = "Desktop, groups (in group_live_view.rs, group_info_page)."
+
+[group_this_computer_carries_this]
+text = "This computer carries this group’s calls now."
+note = "Desktop, groups (in group_live.rs, run)."
+
+[group_this_computer_doesnt_host]
+text = "This computer doesn’t host any groups. To host one, open it and choose Host from this computer in the members pane."
+note = "Desktop, groups (in group_live_view.rs, live_hosting_page)."
+
+[group_this_computer_hosts_the]
+text = "This computer hosts the group. Posts go through right away."
+note = "Desktop, groups (in group_live_view.rs, group_info_page)."
+
+[group_this_computer_stopped_carrying]
+text = "This computer stopped carrying this group’s calls."
+note = "Desktop, groups (in group_live.rs, run)."
+
+[group_this_computer_stops_passing]
+text = "This computer stops passing the group’s messages on. You stay a member."
+note = "Desktop, groups (in group_live_view.rs, live_overlay)."
+
+[group_this_computer_too]
+text = ", this computer too"
+note = "Appended to the hosts-online line when this computer is one of the hosts. Keep the leading comma."
+
+[group_this_device_agreed_to]
+text = "This device agreed to host. It hosts as soon as an admin has appointed it."
+note = "Desktop, groups (in group_live.rs, run)."
+
+[group_this_device_stopped_hosting]
+text = "This device stopped hosting the group."
+note = "Desktop, groups (in group_live.rs, run)."
+
+[group_this_group_has_no]
+text = "This group has no call host. Nobody can start a call until an admin appoints one."
+note = "Desktop, groups (in group_live_view.rs, group_info_page)."
+
+[group_this_group_has_no_host]
+text = "This group has no host. Posts wait until a host is appointed."
+note = "Desktop, groups (in group_live_view.rs, group_info_page)."
+
+[group_this_member]
+text = "this member"
+note = "Desktop, groups (in group_live_view.rs, live_overlay)."
+
+[group_turn_on_open_link]
+text = "Turn on Open link to share it"
+note = "Desktop, groups (in group_live_view.rs, group_info_page)."
+
+[group_unblocking]
+text = "Unblocking"
+note = "Desktop, groups (in groups_view.rs, privacy_page)."
+
+[group_unlock_to_see_your]
+text = "Unlock to see your groups."
+note = "Desktop, groups (in group_live_view.rs, live_list)."
+
+[group_valid_for_7_days]
+text = "Valid for 7 days"
+note = "Desktop, groups (in group_live_view.rs, group_info_page)."
+
+[group_waiting_for_a_host]
+text = "Waiting for a host"
+note = "Desktop, groups (in group_live_view.rs, live_item)."
+
+[group_waiting_for_a_host_no]
+text = "Waiting for a host. No group host is online; your posts are saved and send when one is."
+note = "Desktop, groups (in group_live_view.rs, live_pane)."
+
+[group_waiting_to_accept]
+text = "Waiting to accept"
+note = "Desktop, groups (in group_live_view.rs, group_info_page)."
+
+[group_while_its_open_no]
+text = "While it’s open, no read receipts are sent in this group, and members see who is online. Each person can hide themselves in their settings."
+note = "Desktop, groups (in group_live_view.rs, live_overlay)."
+
+[group_whos_online]
+text = "Who’s online"
+note = "Desktop, groups (in group_live_view.rs, live_pane)."
+
+[group_why]
+text = "Why?"
+note = "Desktop, groups (in group_live_view.rs, live_pane)."
+
+[group_why_was_i_removed]
+text = "Why was I removed?"
+note = "Desktop, groups (in group_live_view.rs, group_info_page)."
+
+[group_why_you_were_removed]
+text = "Why you were removed"
+note = "Desktop, groups (in group_live_view.rs, live_overlay)."
+
+[group_will_be_able_to]
+text = "{name} will be able to invite people, flag members (3 flags remove someone) and appoint hosts. Only you, the owner, can make or remove admins."
+note = "Desktop, groups (in group_live_view.rs, live_overlay). {name} is a person's name (usually the first word of their chosen name)."
+
+[group_withdraw_the_offer_to]
+text = "Withdraw the offer to host"
+note = "Desktop, groups (in group_live_view.rs, group_info_page)."
+
+[group_working]
+text = "Working…"
+note = "Desktop, groups (in group_live_view.rs, live_overlay)."
+
+[group_written_before_was_removed]
+text = "written before {value} was removed"
+note = "Desktop, groups (in group_live_view.rs, live_item). {value} is a value filled in by the app."
+
+[group_you]
+text = "{name} (you)"
+note = "Desktop, groups (in group_live_view.rs, group_info_page). {name} is a person's name (usually the first word of their chosen name)."
+
+[group_you_already_have_them]
+text = "You already have them as a contact. Message them from Chats."
+note = "Desktop, groups (in group_live.rs, gerr)."
+
+[group_you_are_a_member]
+text = "You are a member"
+note = "Desktop, groups (in group_live_view.rs, group_info_page)."
+
+[group_you_are_an_admin]
+text = "You are an admin"
+note = "Desktop, groups (in group_live_view.rs, group_info_page)."
+
+[group_you_are_the_owner]
+text = "You are the owner"
+note = "Desktop, groups (in group_live_view.rs, group_info_page)."
+
+[group_you_block_them_unblock]
+text = "You block them. Unblock them first to ask for a chat."
+note = "Desktop, groups (in group_live.rs, gerr)."
+
+[group_you_block_unblock_them]
+text = "You block {name}; unblock them first"
+note = "Desktop, groups (in group_live_view.rs, live_menu). {name} is a person's name (usually the first word of their chosen name)."
+
+[group_you_can_close_the]
+text = "You can close the link any time; everyone already in stays."
+note = "Desktop, groups (in group_live_view.rs, live_overlay)."
+
+[group_you_can_still_read]
+text = "You can still read the posts on this device. To come back, someone in the group has to invite you again."
+note = "Desktop, groups (in group_live_view.rs, group_info_page)."
+
+[group_you_keep_the_messages]
+text = "You keep the messages already here. The group’s hosts refuse your new messages. To rejoin, an admin has to invite you again."
+note = "Desktop, groups (in group_live_view.rs, live_overlay)."
+
+[group_you_left]
+text = "You left"
+note = "Desktop, groups (in group_live_view.rs, live_list)."
+
+[group_you_left_the_group]
+text = "You left the group. Its messages stay here."
+note = "Desktop, groups (in group_live.rs, run)."
+
+[group_you_left_this_group]
+text = "You left this group"
+note = "Desktop, groups (in group_live_view.rs, group_info_page)."
+
+[group_you_left_this_group_its]
+text = "You left this group. Its messages stay here, read-only."
+note = "Desktop, groups (in group_live_view.rs, live_pane)."
+
+[group_you_were_removed_and]
+text = "You were removed and can’t send messages to this group."
+note = "Desktop, groups (in group_live_view.rs, live_pane)."
+
+[group_you_were_removed_from]
+text = "You were removed from the group · {value}"
+note = "Desktop, groups (in group_live_view.rs, live_removal_card). {value} is a value filled in by the app."
+
+[group_you_were_removed_from_this]
+text = "You were removed from this group"
+note = "Desktop, groups (in group_live_view.rs, live_removal_card)."
+
+[group_you_were_removed_from_this_group]
+text = "You were removed from this group."
+note = "Desktop, groups (in group_live.rs, gerr)."
+
+[group_youll_own_the_group]
+text = "You’ll own the group. This computer hosts it at first: it keeps the group and passes messages on while members’ phones sleep, so it works best on a computer that stays on."
+note = "Desktop, groups (in group_live_view.rs, live_overlay)."
+
+[group_your_groups]
+text = "Your groups"
+note = "Desktop, groups (in group_live_view.rs, live_list)."
+
+[group_youre_no_longer_a]
+text = "You’re no longer a member"
+note = "Desktop, groups (in group_live_view.rs, group_info_page)."
+
+[group_youre_not_a_member]
+text = "You’re not a member of this group."
+note = "Desktop, groups (in group_live.rs, gerr)."
+
+[group_youre_not_shown_to]
+text = "You’re not shown to others here. You can change that in Settings › Privacy."
+note = "Desktop, groups (in group_live_view.rs, live_overlay)."
+
+[group_yours_will_be_flag]
+text = "Yours will be flag {yours} of {flags_needed}. Any admin’s flags count, yours again too. At {flags_needed} flags {name} is removed right away and sees they were removed."
+note = "Desktop, groups (in group_live_view.rs, live_overlay). {yours} is a value filled in by the app. {flags_needed} is a value filled in by the app. {name} is a person's name (usually the first word of their chosen name)."
+
+[group_yours_will_be_flag_of]
+text = "Yours will be flag {yours} of {flags_needed}. {name} is removed right away: hosts refuse their new messages and they see they were removed."
+note = "Desktop, groups (in group_live_view.rs, live_overlay). {yours} is a value filled in by the app. {flags_needed} is a value filled in by the app. {name} is a person's name (usually the first word of their chosen name)."
+
+
+# ---- Home, sidebar and call list
+
+[home_add]
+text = "Add {name}?"
+note = "Desktop, home, sidebar and call list (in view.rs, offer_bar). {name} is a person's name (usually the first word of their chosen name)."
+
+[home_calls_you_make_and]
+text = "Calls you make and receive show up here."
+note = "Desktop, home, sidebar and call list (in view.rs, calls_list)."
+
+[home_contacts]
+text = "Contacts · {len}"
+note = "Desktop, home, sidebar and call list (in view.rs, list_pane). {len} is a value filled in by the app."
+
+[home_contacts_you_add_appear]
+text = "Contacts you add appear here."
+note = "Desktop, home, sidebar and call list (in view.rs, list_pane)."
+
+[home_last_call]
+text = "Last call {value}"
+note = "Desktop, home, sidebar and call list (in view.rs, contact_sub). {value} is a value filled in by the app."
+
+[home_not_called_yet]
+text = "Not called yet"
+note = "Desktop, home, sidebar and call list (in view.rs, contact_sub)."
+
+[home_not_here_tinline_has]
+text = "Not here? Tinline has no directory — add people with their code."
+note = "Desktop, home, sidebar and call list (in view.rs, list_pane)."
+
+[home_start_or_join_a]
+text = "Start or join a call"
+note = "Desktop, home, sidebar and call list (in view.rs, calls_list)."
+
+[home_text]
+text = "{what} · {dur}"
+note = "Desktop, home, sidebar and call list (in view.rs, calls_list). {what} is a value filled in by the app. {dur} is a duration such as 1:23."
+
+[home_their_card_is_on]
+text = "Their card is on your clipboard."
+note = "Desktop, home, sidebar and call list (in view.rs, offer_bar)."
+
+
+# ---- Linking devices
+
+[link_a_linked_device_becomes]
+text = "A linked device becomes you"
+note = "Desktop, linking devices (in link_view.rs, link_screen)."
+
+[link_a_passphrase_encrypts_your]
+text = "A passphrase encrypts your account on this computer. Optional — leave it empty and Tinline opens straight to your contacts. You can add one later in Settings."
+note = "Desktop, linking devices (in link_view.rs, link_secure_screen)."
+
+[link_anyone_who_can_see]
+text = "Anyone who can see this code in the next few minutes could try to use it. Show it only to your own device."
+note = "Desktop, linking devices (in link_view.rs, link_qr_screen)."
+
+[link_back_to_settings]
+text = "Back to Settings"
+note = "Desktop, linking devices (in link_view.rs, link_screen)."
+
+[link_bringing_your_contacts_and]
+text = "Bringing your contacts and history over…"
+note = "Desktop, linking devices (in link_view.rs, link_sync_screen)."
+
+[link_calls_in_history]
+text = "Calls in history"
+note = "Desktop, linking devices (in link_view.rs, link_sync_screen)."
+
+[link_calls_ring_on_all]
+text = "Calls ring on all of these. People you call never see these names."
+note = "Desktop, linking devices (in link_view.rs, linked_devices_page)."
+
+[link_check_that_shows_this]
+text = "Check that {name} shows this code, then approve there."
+note = "Desktop, linking devices (in link_view.rs, link_screen). {name} is a person's name (usually the first word of their chosen name)."
+
+[link_check_the_codes_match]
+text = "Check the codes match and approve on your phone."
+note = "Desktop, linking devices (in link_view.rs, link_qr_screen)."
+
+[link_check_the_codes_match_then]
+text = "Check the codes match, then approve here."
+note = "Desktop, linking devices (in link_view.rs, link_qr_screen)."
+
+[link_codes_match_link_it]
+text = "Codes match, link it"
+note = "Desktop, linking devices (in link_view.rs, link_screen)."
+
+[link_connect]
+text = "Connect"
+note = "Desktop, linking devices (in link_view.rs, link_qr_screen)."
+
+[link_connecting]
+text = "Connecting..."
+note = "Desktop, linking devices (in link_view.rs, link_qr_screen)."
+
+[link_connecting_to_the_other]
+text = "Connecting to the other device…"
+note = "Desktop, linking devices (in link_view.rs, link_screen)."
+
+[link_couldnt_link]
+text = "Couldn’t link"
+note = "Desktop, linking devices (in link_view.rs, link_screen)."
+
+[link_desktop]
+text = "Desktop"
+note = "Desktop, linking devices (in link_view.rs, )."
+
+[link_device_unlinked]
+text = "Device unlinked"
+note = "Desktop, linking devices (in link.rs, link_update)."
+
+[link_devices_sync_directly_whenever]
+text = "Devices sync directly whenever two are online at once. Unlinking stops sync and ringing; it can’t lock a lost device remotely."
+note = "Desktop, linking devices (in link_view.rs, linked_devices_page)."
+
+[link_different_code_or_you]
+text = "Different code, or you didn’t start this? Cancel. Someone else may have scanned the QR."
+note = "Desktop, linking devices (in link_view.rs, link_screen)."
+
+[link_different_code_or_you_didnt]
+text = "Different code, or you didn’t start this? Cancel. Someone may be trying to copy your account."
+note = "Desktop, linking devices (in link_view.rs, link_screen)."
+
+[link_expires_in_works_once]
+text = "Expires in {value} · works once"
+note = "Desktop, linking devices (in link_view.rs, link_qr_screen). {value} is a value filled in by the app."
+
+[link_is_removed_from_this]
+text = "{profile_name} is removed from this computer: its contacts, chats and call history here are deleted. Your other devices are not affected."
+note = "Desktop, linking devices (in link_view.rs, unlink_confirm). {profile_name} is a value filled in by the app."
+
+[link_it_can_call_chat]
+text = "It can call, chat and see your recovery phrase. Only link devices you own."
+note = "Desktop, linking devices (in link_view.rs, link_screen)."
+
+[link_it_rings_for_your]
+text = "It rings for your calls now. Contacts and call history sync whenever both devices are online."
+note = "Desktop, linking devices (in link_view.rs, link_screen)."
+
+[link_it_shows_a_qr]
+text = "It shows a QR code. Tap Scan instead and point it at this screen."
+note = "Desktop, linking devices (in link_view.rs, link_qr_screen)."
+
+[link_it_stops_syncing_and]
+text = "It stops syncing and stops ringing for your calls. If it’s online, it removes your account from itself."
+note = "Desktop, linking devices (in link_view.rs, unlink_confirm)."
+
+[link_keep_both_devices_online]
+text = "Keep both devices online. If one drops off, it picks up where it left off next time they’re both online."
+note = "Desktop, linking devices (in link_view.rs, link_sync_screen)."
+
+[link_keep_both_devices_open]
+text = "Keep both devices open until this finishes."
+note = "Desktop, linking devices (in link_view.rs, link_screen)."
+
+[link_link]
+text = "Link “{name}”?"
+note = "Desktop, linking devices (in link_view.rs, link_screen). {name} is a person's name (usually the first word of their chosen name)."
+
+[link_link_a_device]
+text = "Link a device"
+note = "Desktop, linking devices (in link_view.rs, link_qr_screen)."
+
+[link_link_code_from_the]
+text = "Link code from the other device"
+note = "Desktop, linking devices (in link_view.rs, link_qr_screen)."
+
+[link_link_it_again]
+text = "Link it again"
+note = "Desktop, linking devices (in link_view.rs, unlinked_screen)."
+
+[link_link_to_your_account]
+text = "Link to your account"
+note = "Desktop, linking devices (in link_view.rs, link_qr_screen)."
+
+[link_linked]
+text = "Linked {name}"
+note = "Desktop, linking devices (in link_view.rs, link_screen). {name} is a person's name (usually the first word of their chosen name)."
+
+[link_linked_to]
+text = "Linked to {name}"
+note = "Desktop, linking devices (in link_view.rs, link_secure_screen). {name} is a person's name (usually the first word of their chosen name)."
+
+[link_linking]
+text = "Linking {name}"
+note = "Desktop, linking devices (in link_view.rs, link_screen). {name} is a person's name (usually the first word of their chosen name)."
+
+[link_linking_2]
+text = "Linking…"
+note = "Desktop, linking devices (in link_view.rs, link_screen)."
+
+[link_linking_stopped]
+text = "Linking stopped"
+note = "Desktop, linking devices (in link_view.rs, link_screen)."
+
+[link_linux]
+text = "Linux"
+note = "Desktop, linking devices (in link_view.rs, )."
+
+[link_lost_or_stolen]
+text = "Lost or stolen?"
+note = "Desktop, linking devices (in link_view.rs, unlink_confirm)."
+
+[link_make_a_new_code]
+text = "Make a new code"
+note = "Desktop, linking devices (in link_view.rs, link_qr_screen)."
+
+[link_make_sure_the_other]
+text = "Make sure the other device shows this same code."
+note = "Desktop, linking devices (in link_view.rs, link_screen)."
+
+[link_making_a_code]
+text = "Making a code…"
+note = "Desktop, linking devices (in link_view.rs, link_qr_screen)."
+
+[link_not_linked]
+text = "Not linked"
+note = "Desktop, linking devices (in link_view.rs, link_screen)."
+
+[link_nothing_was_changed_on]
+text = "Nothing was changed on either device."
+note = "Desktop, linking devices (in link_view.rs, link_screen)."
+
+[link_on_a_device_that]
+text = "On a device that already has your account, open Settings › Link a device and scan this."
+note = "Desktop, linking devices (in link_view.rs, link_qr_screen)."
+
+[link_on_the_new_device]
+text = "On the new device, install Tinline and choose Link to an existing account."
+note = "Desktop, linking devices (in link_view.rs, link_qr_screen)."
+
+[link_on_your_phone_open]
+text = "On your phone, open Tinline › Settings › Link a device."
+note = "Desktop, linking devices (in link_view.rs, link_qr_screen)."
+
+[link_passphrase_optional]
+text = "Passphrase (optional)"
+note = "Desktop, linking devices (in link_view.rs, link_secure_screen)."
+
+[link_paste_a_link_code]
+text = "Paste a link code instead"
+note = "Desktop, linking devices (in link_view.rs, link_qr_screen)."
+
+[link_protect_the_account_on]
+text = "Protect the account on this computer before it is saved."
+note = "Desktop, linking devices (in link_view.rs, link_secure_screen)."
+
+[link_receiving_your_account_keep]
+text = "Receiving your account. Keep both devices open."
+note = "Desktop, linking devices (in link_view.rs, link_screen)."
+
+[link_restore_with_recovery_phrase]
+text = "Restore with recovery phrase instead"
+note = "Desktop, linking devices (in link_view.rs, link_screen)."
+
+[link_same_code_on_both]
+text = "Same code on both?"
+note = "Desktop, linking devices (in link_view.rs, link_screen)."
+
+[link_sending_your_account_over]
+text = "Sending your account over…"
+note = "Desktop, linking devices (in link_view.rs, link_screen)."
+
+[link_show_this_to_the]
+text = "Show this to the device you want to add. It becomes you, so only link your own."
+note = "Desktop, linking devices (in link_view.rs, link_qr_screen)."
+
+[link_start_using_tinline]
+text = "Start using Tinline"
+note = "Desktop, linking devices (in link_view.rs, link_sync_screen)."
+
+[link_sync_keeps_going_in]
+text = "Sync keeps going in the background."
+note = "Desktop, linking devices (in link_view.rs, link_sync_screen)."
+
+[link_synced]
+text = "Synced {value}"
+note = "Desktop, linking devices (in link_view.rs, linked_devices_page). {value} is a value filled in by the app."
+
+[link_tap_scan_qr_code]
+text = "Tap Scan QR code and point it at this screen."
+note = "Desktop, linking devices (in link_view.rs, link_qr_screen)."
+
+[link_the_other_device]
+text = "the other device"
+note = "Desktop, linking devices (in link_view.rs, link_screen)."
+
+[link_there_is_no_code]
+text = "There is no code yet."
+note = "Desktop, linking devices (in link_view.rs, link_qr_screen)."
+
+[link_this_account_has_no]
+text = "This account has no passphrase, and this computer can’t ask for a screen lock. By continuing you confirm you started this and the codes match."
+note = "Desktop, linking devices (in link_view.rs, link_screen)."
+
+[link_this_account_has_no_passphrase]
+text = "This account has no passphrase, so confirming here is the only check."
+note = "Desktop, linking devices (in link_view.rs, unlink_confirm)."
+
+[link_this_code_expired]
+text = "This code expired."
+note = "Desktop, linking devices (in link_view.rs, link_qr_screen)."
+
+[link_this_computer_os]
+text = "This computer · {os}"
+note = "Linked devices list, the row for this computer. {os} is the operating system name (Linux, macOS, Windows)."
+
+[link_this_computer_was_unlinked]
+text = "This computer was unlinked"
+note = "Desktop, linking devices (in link_view.rs, unlinked_screen)."
+
+[link_this_takes_a_few]
+text = "This takes a few seconds."
+note = "Desktop, linking devices (in link_view.rs, link_screen)."
+
+[link_unlink_this_computer]
+text = "Unlink this computer?"
+note = "Desktop, linking devices (in link_view.rs, unlink_confirm)."
+
+[link_unlinking]
+text = "Unlinking..."
+note = "Desktop, linking devices (in link_view.rs, unlink_confirm)."
+
+[link_unlinking_cant_lock_it]
+text = "Unlinking can’t lock it from here. Anyone who can unlock it can still use your account. The only full cut-off is a new account."
+note = "Desktop, linking devices (in link_view.rs, unlink_confirm)."
+
+[link_waiting_for_approval]
+text = "Waiting for approval…"
+note = "Desktop, linking devices (in link_view.rs, link_screen)."
+
+[link_was_removed_from_this]
+text = "{name} was removed from this computer by another of your devices. Its contacts, chats and calls are deleted here. Your other devices are not affected."
+note = "Desktop, linking devices (in link_view.rs, unlinked_screen). {name} is a person's name (usually the first word of their chosen name)."
+
+[link_was_removed_from_this_computer]
+text = "{name} was removed from this computer. Its contacts, chats and calls are deleted here. Your other devices are not affected."
+note = "Desktop, linking devices (in link_view.rs, unlinked_screen). {name} is a person's name (usually the first word of their chosen name)."
+
+[link_windows]
+text = "Windows"
+note = "Desktop, linking devices (in link_view.rs, )."
+
+[link_you_type_it_each]
+text = "You type it each time Tinline starts."
+note = "Desktop, linking devices (in link_view.rs, link_secure_screen)."
+
+[link_your_account]
+text = "your account"
+note = "Desktop, linking devices (in link_view.rs, link_secure_screen)."
+
+[link_your_account_is_on]
+text = "Your account is on the other device."
+note = "Desktop, linking devices (in link_view.rs, link_screen)."
+
+[link_your_passphrase]
+text = "Your passphrase"
+note = "Desktop, linking devices (in link_view.rs, link_screen)."
+
+
+# ---- Profile and settings
+
+[profile_a_muted_chat_never]
+text = "A muted chat never alerts you, whatever is switched on here. Missed calls from one person fold into one notification."
+note = "Desktop, profile and settings (in profile_view.rs, notifications_page)."
+
+[profile_a_new_camera_is]
+text = "A new camera is used the next time your camera starts."
+note = "Desktop, profile and settings (in profile_view.rs, video_page)."
+
+[profile_a_status]
+text = "a status"
+note = "Desktop, profile and settings (in profile_ui.rs, profile_update)."
+
+[profile_about]
+text = "About"
+note = "Desktop, profile and settings (in profile_view.rs, profile_page)."
+
+[profile_about_tinline]
+text = "About Tinline"
+note = "Desktop, profile and settings (in profile_view.rs, profile_page)."
+
+[profile_account_changed]
+text = "Account changed"
+note = "Desktop, profile and settings (in profile_ui.rs, read_profile)."
+
+[profile_accounts_on_this_computer]
+text = "Accounts on this computer"
+note = "Desktop, profile and settings (in profile_view.rs, profile_page)."
+
+[profile_accounts_stored_on_this]
+text = "Accounts stored on this computer"
+note = "Desktop, profile and settings (in profile_view.rs, native_page)."
+
+[profile_add_a_few_words]
+text = "Add a few words about you"
+note = "Desktop, profile and settings (in profile_view.rs, my_profile)."
+
+[profile_add_a_nickname]
+text = "Add a nickname"
+note = "Desktop, profile and settings (in profile_view.rs, person_profile)."
+
+[profile_add_a_status]
+text = "Add a status"
+note = "Desktop, profile and settings (in profile_view.rs, my_profile)."
+
+[profile_add_another_account]
+text = "Add another account"
+note = "Desktop, profile and settings (in profile_view.rs, settings_landing)."
+
+[profile_add_information]
+text = "Add information"
+note = "Desktop, profile and settings (in profile_view.rs, my_profile)."
+
+[profile_add_photo]
+text = "Add photo"
+note = "Desktop, profile and settings (in profile_view.rs, my_profile)."
+
+[profile_add_something_to_save]
+text = "Add something to save."
+note = "Desktop, profile and settings (in profile_ui.rs, profile_update)."
+
+[profile_additional_information]
+text = "Additional information"
+note = "Desktop, profile and settings (in profile_view.rs, my_profile)."
+
+[profile_alert_me_about]
+text = "Alert me about"
+note = "Desktop, profile and settings (in profile_view.rs, notifications_page)."
+
+[profile_all_contacts_can_call]
+text = "All contacts can call"
+note = "Desktop, profile and settings (in profile_view.rs, privacy_landing)."
+
+[profile_allowed]
+text = "Allowed"
+note = "Desktop, profile and settings (in profile_view.rs, notifications_page)."
+
+[profile_always]
+text = "Always"
+note = "Desktop, profile and settings (in profile_view.rs, storage_page)."
+
+[profile_always_starts_in_hd]
+text = "Always starts in HD. Uses more data and battery."
+note = "Desktop, profile and settings (in profile_view.rs, video_page)."
+
+[profile_any_length_works_a]
+text = "Any length works. A few words make it stronger."
+note = "Desktop, profile and settings (in profile_view.rs, passphrase_page)."
+
+[profile_anyone_who_has_it]
+text = "Anyone who has it can act as you, just like the words. Tinline never asks for it except to restore your account."
+note = "Desktop, profile and settings (in profile_view.rs, phrase_page)."
+
+[profile_anyone_who_still_has]
+text = " Anyone who still has your recovery phrase, or can unlock {name}, can still act as you. If it is lost or stolen, the only full fix is a new account."
+note = "Desktop, profile and settings (in profile_view.rs, devices_layer). {name} is a person's name (usually the first word of their chosen name)."
+
+[profile_appearance]
+text = "Appearance"
+note = "Desktop, profile and settings (in profile_view.rs, settings_landing)."
+
+[profile_audio_security_and_hosting]
+text = "Audio, security and hosting"
+note = "Desktop, profile and settings (in profile_view.rs, settings_landing)."
+
+[profile_availability]
+text = "Availability"
+note = "Desktop, profile and settings (in profile_view.rs, my_profile)."
+
+[profile_bitrate_cap]
+text = "Bitrate cap"
+note = "Desktop, profile and settings (in profile_view.rs, video_page)."
+
+[profile_block]
+text = "Block {first2}"
+note = "Desktop, profile and settings (in profile_view.rs, person_profile). {first2} is a value filled in by the app."
+
+[profile_block_2]
+text = "Block {name}?"
+note = "Desktop, profile and settings (in profile_view.rs, profile_layer). {name} is a person's name (usually the first word of their chosen name)."
+
+[profile_block_someone]
+text = "Block someone"
+note = "Desktop, profile and settings (in profile_view.rs, blocked_page)."
+
+[profile_blocked_count]
+one = "{count} person"
+other = "{count} people"
+note = "Settings > Privacy row: how many people you blocked. {count} is that number."
+
+[profile_blocking_is_not_silent]
+text = "Blocking is not silent. The person is told, their app stops contacting you and removes you from their contacts. Your chat history stays on your devices. Groups you share aren’t affected."
+note = "Desktop, profile and settings (in profile_view.rs, blocked_page)."
+
+[profile_busy]
+text = "Busy"
+note = "Desktop, profile and settings (in profile_view.rs, settings_landing)."
+
+[profile_busy_until]
+text = "Busy until {value}"
+note = "Desktop, profile and settings (in profile_view.rs, settings_landing). {value} is a value filled in by the app."
+
+[profile_busy_until_you_change]
+text = "Busy until you change it"
+note = "Desktop, profile and settings (in profile_view.rs, availability)."
+
+[profile_cache]
+text = "Cache"
+note = "Desktop, profile and settings (in profile_view.rs, storage_page)."
+
+[profile_call_sounds]
+text = "Call sounds"
+note = "Desktop, profile and settings (in profile_view.rs, sounds_page)."
+
+[profile_calls_on_this_computer]
+text = "Calls on this computer"
+note = "Desktop, profile and settings (in profile_view.rs, profile_page)."
+
+[profile_can_call_you]
+text = "Can call you"
+note = "Desktop, profile and settings (in profile_view.rs, calls_page)."
+
+[profile_cant_contain_control_or]
+text = "{cap} can’t contain control or text-direction characters."
+note = "Desktop, profile and settings (in profile_ui.rs, check_text). {cap} is a value filled in by the app."
+
+[profile_change_photo]
+text = "Change photo"
+note = "Desktop, profile and settings (in profile_view.rs, my_profile)."
+
+[profile_checking]
+text = "Checking…"
+note = "Desktop, profile and settings (in profile_view.rs, phrase_page)."
+
+[profile_city_or_region]
+text = "City or region"
+note = "Desktop, profile and settings (in profile_ui.rs, mutation_allowed)."
+
+[profile_clear_cache]
+text = "Clear cache"
+note = "Desktop, profile and settings (in profile_view.rs, storage_page)."
+
+[profile_cleared]
+text = "Cleared"
+note = "Desktop, profile and settings (in profile_view.rs, storage_page)."
+
+[profile_connected]
+text = "Connected"
+note = "Desktop, profile and settings (in profile_view.rs, sounds_page)."
+
+[profile_contacts_you_havent_blocked]
+text = "Contacts you haven’t blocked get your updated device list when they’re next online."
+note = "Desktop, profile and settings (in profile_view.rs, devices_layer)."
+
+[profile_couldnt_prepare_that_picture]
+text = "Couldn’t prepare that picture. Try a different one."
+note = "Desktop, profile and settings (in profile_ui.rs, profile_update)."
+
+[profile_cut]
+text = "Cut"
+note = "Desktop, profile and settings (in profile_view.rs, video_page)."
+
+[profile_cut_probe]
+text = "Cut+probe"
+note = "Desktop, profile and settings (in profile_view.rs, video_page)."
+
+[profile_dark]
+text = "Dark"
+note = "Desktop, profile and settings (in profile_view.rs, settings_landing)."
+
+[profile_delivered_ticks_still_go]
+text = "Delivered ticks still go out either way, and you still see when others read yours. Messages you read while this is off stay unconfirmed."
+note = "Desktop, profile and settings (in profile_view.rs, privacy_landing)."
+
+[profile_devices]
+text = "Devices"
+note = "Desktop, profile and settings (in profile_view.rs, profile_page)."
+
+[profile_download_pictures]
+text = "Download pictures"
+note = "Desktop, profile and settings (in profile_view.rs, storage_page)."
+
+[profile_drag_to_move_the]
+text = "Drag to move the picture, or use the arrow keys. Plus and minus zoom."
+note = "Desktop, profile and settings (in profile_view.rs, profile_layer)."
+
+[profile_each_shows_a_soft]
+text = "Each shows a soft preview until then"
+note = "Desktop, profile and settings (in profile_view.rs, storage_page)."
+
+[profile_each_shows_a_soft_preview]
+text = "Each shows a soft preview until you tap it"
+note = "Desktop, profile and settings (in profile_view.rs, privacy_landing)."
+
+[profile_enter_a_web_address]
+text = "Enter a web address that starts with http:// or https://."
+note = "Desktop, profile and settings (in profile_ui.rs, profile_update)."
+
+[profile_enter_your_passphrase_to]
+text = "Enter your passphrase to confirm"
+note = "Desktop, profile and settings (in profile_view.rs, devices_layer)."
+
+[profile_enter_your_passphrase_to_continue]
+text = "Enter your passphrase to continue"
+note = "Desktop, profile and settings (in profile_view.rs, phrase_page)."
+
+[profile_every_linked_device_is]
+text = "Every linked device is a full copy of you: it can read your chats and act as you. Names here are private to your devices; contacts never see them."
+note = "Desktop, profile and settings (in profile_view.rs, devices_page)."
+
+[profile_every_video_call_starts]
+text = "Every video call starts this way. During a call, tap HD to change it for that call."
+note = "Desktop, profile and settings (in profile_view.rs, video_page)."
+
+[profile_files]
+text = "Files"
+note = "Desktop, profile and settings (in profile_view.rs, storage_page)."
+
+[profile_fixed_rung]
+text = "Fixed rung"
+note = "Desktop, profile and settings (in profile_view.rs, video_page)."
+
+[profile_for_example_favourite_tea]
+text = "For example, Favourite tea"
+note = "Desktop, profile and settings (in profile_view.rs, profile_layer)."
+
+[profile_for_example_she_her]
+text = "For example, she/her"
+note = "Desktop, profile and settings (in profile_ui.rs, mutation_allowed)."
+
+[profile_from_people_not_groups]
+text = "From people, not groups"
+note = "Desktop, profile and settings (in profile_view.rs, notifications_page)."
+
+[profile_give_the_information_a]
+text = "Give the information a name."
+note = "Desktop, profile and settings (in profile_ui.rs, profile_update)."
+
+[profile_goes_hd_by_itself]
+text = "Goes HD by itself when the connection allows."
+note = "Desktop, profile and settings (in profile_view.rs, video_page)."
+
+[profile_groups_you_share_arent]
+text = "Groups you share aren’t affected. You can unblock {name} here at any time."
+note = "Desktop, profile and settings (in profile_view.rs, profile_layer). {name} is a person's name (usually the first word of their chosen name)."
+
+[profile_hardware]
+text = "Hardware"
+note = "Desktop, profile and settings (in profile_view.rs, video_page)."
+
+[profile_hide_key]
+text = "Hide key"
+note = "Desktop, profile and settings (in profile_view.rs, phrase_page)."
+
+[profile_hide_words]
+text = "Hide words"
+note = "Desktop, profile and settings (in profile_view.rs, phrase_page)."
+
+[profile_hides_in_s]
+text = "Hides in {seconds} s"
+note = "Desktop, profile and settings (in profile_view.rs, phrase_page). {seconds} is a value filled in by the app."
+
+[profile_hosts_keep_every_group]
+text = "Hosts keep every group picture so members can load them. This applies on this device."
+note = "Desktop, profile and settings (in profile_view.rs, privacy_landing)."
+
+[profile_isnt_one_of_your]
+text = "{name} isn’t one of your contacts. You know them through a group. Looking at a profile doesn’t add anyone."
+note = "Desktop, profile and settings (in profile_view.rs, person_profile). {name} is a person's name (usually the first word of their chosen name)."
+
+[profile_it_disappears_from_your]
+text = "It disappears from your profile. Earlier versions can remain in synced history."
+note = "Desktop, profile and settings (in profile_view.rs, field_row_inner)."
+
+[profile_it_is_offline_so]
+text = "It is offline, so it finds out the next time it connects."
+note = "Desktop, profile and settings (in profile_view.rs, devices_layer)."
+
+[profile_it_opens_in_your]
+text = "It opens in your browser, outside Tinline. Tinline doesn’t load it for you, and can’t vouch for what’s there."
+note = "Desktop, profile and settings (in profile_view.rs, profile_layer)."
+
+[profile_kb]
+text = "{round} KB"
+note = "Desktop, profile and settings (in profile_view.rs, fmt_bytes). {round} is a value filled in by the app."
+
+[profile_last_seen_days]
+one = "Last seen {count} day ago"
+other = "Last seen {count} days ago"
+note = "Under a contact profile when they were last online. {count} is the number of days."
+
+[profile_last_seen_hours]
+one = "Last seen {count} hour ago"
+other = "Last seen {count} hours ago"
+note = "Under a contact profile when they were last online. {count} is the number of hours."
+
+[profile_last_seen_just_now]
+text = "Last seen just now"
+note = "Desktop, profile and settings (in profile_view.rs, last_seen)."
+
+[profile_last_seen_minutes]
+one = "Last seen {count} minute ago"
+other = "Last seen {count} minutes ago"
+note = "Under a contact profile when they were last online. {count} is the number of minutes."
+
+[profile_light]
+text = "Light"
+note = "Desktop, profile and settings (in profile_view.rs, settings_landing)."
+
+[profile_light_or_dark_as]
+text = "Light or dark, as this computer is set"
+note = "Desktop, profile and settings (in profile_view.rs, settings_landing)."
+
+[profile_link_a_new_device]
+text = "Link a new device"
+note = "Desktop, profile and settings (in profile_view.rs, devices_page)."
+
+[profile_load_group_pictures_by]
+text = "Load group pictures by themselves"
+note = "Desktop, profile and settings (in profile_view.rs, privacy_landing)."
+
+[profile_location]
+text = "Location"
+note = "Desktop, profile and settings (in profile_ui.rs, mutation_allowed)."
+
+[profile_made_by_osvauld]
+text = "Made by Osvauld"
+note = "Desktop, profile and settings (in profile_view.rs, about_page)."
+
+[profile_match_my_computer]
+text = "Match my computer"
+note = "Desktop, profile and settings (in profile_view.rs, settings_landing)."
+
+[profile_mb]
+text = "{round} MB"
+note = "Desktop, profile and settings (in profile_view.rs, fmt_bytes). {round} is a value filled in by the app."
+
+[profile_members_see_when_youre]
+text = "Members see when you’re here"
+note = "Desktop, profile and settings (in profile_view.rs, privacy_landing)."
+
+[profile_messages_only_calling_needs]
+text = "Messages only: calling needs {name}’s permission"
+note = "Desktop, profile and settings (in profile_view.rs, person_profile). {name} is a person's name (usually the first word of their chosen name)."
+
+[profile_messages_only_count]
+one = "{count} contact is messages only"
+other = "{count} contacts are messages only"
+note = "Settings > Privacy row: how many contacts may message you but not call. {count} is that number."
+
+[profile_my_profile]
+text = "My profile"
+note = "Desktop, profile and settings (in profile_view.rs, profile_page)."
+
+[profile_name_it_yourself]
+text = "Name it yourself"
+note = "Desktop, profile and settings (in profile_view.rs, profile_layer)."
+
+[profile_new_passphrase_again]
+text = "New passphrase again"
+note = "Desktop, profile and settings (in profile_view.rs, passphrase_page)."
+
+[profile_nickname]
+text = "Nickname"
+note = "Desktop, profile and settings (in profile_view.rs, person_profile)."
+
+[profile_no]
+text = "No"
+note = "Desktop, profile and settings (in profile_ui.rs, scalar)."
+
+[profile_no_camera_found_plug]
+text = "No camera found. Plug one in and open this page again."
+note = "Desktop, profile and settings (in profile_view.rs, video_page)."
+
+[profile_no_microphone_found]
+text = "No microphone found"
+note = "Desktop, profile and settings (in profile_view.rs, notifications_page)."
+
+[profile_no_one]
+text = "No one"
+note = "Desktop, profile and settings (in profile_view.rs, privacy_landing)."
+
+[profile_no_one_is_blocked]
+text = "No one is blocked."
+note = "Desktop, profile and settings (in profile_view.rs, blocked_page)."
+
+[profile_no_one_left_to]
+text = "No one left to block."
+note = "Desktop, profile and settings (in profile_view.rs, privacy_layer)."
+
+[profile_no_profile_is_available]
+text = "No profile is available."
+note = "Desktop, profile and settings (in profile_view.rs, person_profile)."
+
+[profile_no_sounds_from_tinline]
+text = "No sounds from Tinline: ringing, call tones, joins"
+note = "Desktop, profile and settings (in profile_view.rs, sounds_page)."
+
+[profile_not_seen_for_days]
+text = "Not seen for {value} days"
+note = "Desktop, profile and settings (in profile_view.rs, devices_page). {value} is a value filled in by the app."
+
+[profile_not_set]
+text = "Not set"
+note = "Desktop, profile and settings (in profile_view.rs, my_profile)."
+
+[profile_nothing_to_clear]
+text = "Nothing to clear"
+note = "Desktop, profile and settings (in profile_view.rs, storage_page)."
+
+[profile_notifications]
+text = "Notifications"
+note = "Desktop, profile and settings (in profile_view.rs, profile_page)."
+
+[profile_of_bytes]
+text = "{bytes} of {limit} bytes"
+note = "Desktop, profile and settings (in profile_view.rs, field_row_inner). {bytes} is a value filled in by the app. {limit} is a value filled in by the app."
+
+[profile_of_pictures_and_files]
+text = "{value} of pictures and files you’ve opened. They’re prepared again when you open them."
+note = "Desktop, profile and settings (in profile_view.rs, storage_page). {value} is a value filled in by the app."
+
+[profile_off_means_messages_only]
+text = "Off means messages only"
+note = "Desktop, profile and settings (in profile_view.rs, person_profile)."
+
+[profile_on_this_computer]
+text = "On this computer"
+note = "Desktop, profile and settings (in profile_view.rs, storage_page)."
+
+[profile_on_wi_fi_and]
+text = "On Wi-Fi and mobile data"
+note = "Desktop, profile and settings (in profile_view.rs, storage_page)."
+
+[profile_online_now]
+text = "Online now"
+note = "Desktop, profile and settings (in profile_view.rs, devices_page)."
+
+[profile_only_the_selected_account]
+text = "Only the selected account is online on this computer. Switching pauses the other one: it receives no calls until you select it again."
+note = "Desktop, profile and settings (in profile_view.rs, settings_landing)."
+
+[profile_only_this_device_has]
+text = "Only this device has your account. Link another to keep a second copy of your chats. Your recovery phrase brings back your account, not your messages."
+note = "Desktop, profile and settings (in profile_view.rs, devices_page)."
+
+[profile_only_you_see_these]
+text = "Only you see these. A nickname changes what you call {name}, not their profile."
+note = "Desktop, profile and settings (in profile_view.rs, person_profile). {name} is a person's name (usually the first word of their chosen name)."
+
+[profile_only_your_own_devices]
+text = "Only your own devices see this name."
+note = "Desktop, profile and settings (in profile_view.rs, devices_layer)."
+
+[profile_open_source_licences]
+text = "Open-source licences"
+note = "Desktop, profile and settings (in profile_view.rs, about_page)."
+
+[profile_open_this_link]
+text = "Open this link?"
+note = "Desktop, profile and settings (in profile_view.rs, profile_layer)."
+
+[profile_paused_tap_to_switch]
+text = "Paused · tap to switch"
+note = "Desktop, profile and settings (in profile_view.rs, settings_landing)."
+
+[profile_people_see_when_youve]
+text = "People see when you’ve read their messages"
+note = "Desktop, profile and settings (in profile_view.rs, privacy_landing)."
+
+[profile_permissions]
+text = "Permissions"
+note = "Desktop, profile and settings (in profile_view.rs, notifications_page)."
+
+[profile_person_not_found]
+text = "Person not found."
+note = "Desktop, profile and settings (in profile_view.rs, person_profile)."
+
+[profile_pick_a_contact]
+text = "Pick a contact."
+note = "Desktop, profile and settings (in profile_view.rs, privacy_layer)."
+
+[profile_pictures]
+text = "Pictures"
+note = "Desktop, profile and settings (in profile_ui.rs, profile_update)."
+
+[profile_pictures_in_groups_appear]
+text = "Pictures in groups appear as they arrive"
+note = "Desktop, profile and settings (in profile_view.rs, privacy_landing)."
+
+[profile_plain_old]
+text = "Plain (old)"
+note = "Desktop, profile and settings (in profile_view.rs, video_page)."
+
+[profile_position_your_picture]
+text = "Position your picture"
+note = "Desktop, profile and settings (in profile_view.rs, profile_layer)."
+
+[profile_posts_invites_and_requests]
+text = "Posts, invites and requests"
+note = "Desktop, profile and settings (in profile_view.rs, notifications_page)."
+
+[profile_profile]
+text = "Profile"
+note = "Desktop, profile and settings (in profile_view.rs, profile_page)."
+
+[profile_profile_picture_changed_while]
+text = "Profile picture changed while loading"
+note = "Desktop, profile and settings (in profile_ui.rs, read_profile)."
+
+[profile_pronouns]
+text = "Pronouns"
+note = "Desktop, profile and settings (in profile_ui.rs, mutation_allowed)."
+
+[profile_protects_tinline_on_this]
+text = "Protects Tinline on this device"
+note = "Desktop, profile and settings (in profile_view.rs, privacy_landing)."
+
+[profile_public_groups_are_the]
+text = "Public groups are the ones anyone can join with an open link. This applies on this device; your other devices keep their own choice."
+note = "Desktop, profile and settings (in profile_view.rs, privacy_landing)."
+
+[profile_quiet]
+text = "Quiet"
+note = "Desktop, profile and settings (in profile_view.rs, sounds_page)."
+
+[profile_quiet_is_on_so]
+text = "Quiet is on, so previews are silent."
+note = "Desktop, profile and settings (in profile_view.rs, sounds_page)."
+
+[profile_quit_tinline]
+text = "Quit Tinline"
+note = "Desktop, profile and settings (in profile_view.rs, native_page)."
+
+[profile_rate_control]
+text = "Rate control"
+note = "Desktop, profile and settings (in profile_view.rs, video_page)."
+
+[profile_rate_control_probing_needs]
+text = "Rate control: probing needs the other side on this build too; set both the same for an A/B call."
+note = "Desktop, profile and settings (in profile_view.rs, video_page)."
+
+[profile_read_receipts]
+text = "Read receipts"
+note = "Desktop, profile and settings (in profile_view.rs, privacy_landing)."
+
+[profile_remove_from_your_profile]
+text = "Remove “{label_}” from your profile?"
+note = "Desktop, profile and settings (in profile_view.rs, field_row_inner). {label_} is a value filled in by the app."
+
+[profile_remove_picture]
+text = "Remove picture"
+note = "Desktop, profile and settings (in profile_view.rs, profile_layer)."
+
+[profile_remove_your_picture]
+text = "Remove your picture?"
+note = "Desktop, profile and settings (in profile_view.rs, profile_layer)."
+
+[profile_rename_device]
+text = "Rename device"
+note = "Desktop, profile and settings (in profile_view.rs, devices_layer)."
+
+[profile_ringing_when_someone_calls]
+text = "Ringing when someone calls"
+note = "Desktop, profile and settings (in profile_view.rs, notifications_page)."
+
+[profile_ringtone]
+text = "Ringtone"
+note = "Desktop, profile and settings (in profile_view.rs, sounds_page)."
+
+[profile_s_app_can_reach]
+text = "{name}’s app can reach you again. It removed you from their contacts when you blocked them, so you’ll both need to add each other again before you can message or call."
+note = "Desktop, profile and settings (in profile_view.rs, privacy_layer). {name} is a person's name (usually the first word of their chosen name)."
+
+[profile_s_profile_hasnt_arrived]
+text = "{name}’s profile hasn’t arrived yet. It shows here once it syncs."
+note = "Desktop, profile and settings (in profile_view.rs, person_profile). {name} is a person's name (usually the first word of their chosen name)."
+
+[profile_saved]
+text = "Saved"
+note = "Desktop, profile and settings (in profile_view.rs, availability)."
+
+[profile_saved_on_this_device]
+text = "Saved on this device. Will sync when you’re connected."
+note = "Desktop, profile and settings (in profile_view.rs, profile_float)."
+
+[profile_saved_syncs_when_connected]
+text = "Saved · syncs when connected"
+note = "Desktop, profile and settings (in profile_view.rs, availability)."
+
+[profile_selected_connecting]
+text = "Selected · connecting"
+note = "Desktop, profile and settings (in profile_view.rs, settings_landing)."
+
+[profile_selected_online]
+text = "Selected · online"
+note = "Desktop, profile and settings (in profile_view.rs, settings_landing)."
+
+[profile_send_codec]
+text = "Send codec"
+note = "Desktop, profile and settings (in profile_view.rs, video_page)."
+
+[profile_session_only_changes_apply]
+text = "Session only. Changes apply to the next call (About this call changes the current one). Fixed size disables rate/CPU resolution adaptation; peer and thermal caps still win. Use HD capture and compare actual payload rates and dimensions."
+note = "Desktop, profile and settings (in profile_view.rs, video_page)."
+
+[profile_settings]
+text = "Settings"
+note = "Desktop, profile and settings (in profile_view.rs, profile_page)."
+
+[profile_settings_that_belong_to]
+text = "Settings that belong to this computer only"
+note = "Desktop, profile and settings (in profile_view.rs, settings_landing)."
+
+[profile_sharper_video]
+text = "Sharper video"
+note = "Desktop, profile and settings (in profile_view.rs, video_page)."
+
+[profile_show_a_qr_code]
+text = "Show a QR code on the new device, then approve it here"
+note = "Desktop, profile and settings (in profile_view.rs, devices_page)."
+
+[profile_show_key]
+text = "Show key"
+note = "Desktop, profile and settings (in profile_view.rs, phrase_page)."
+
+[profile_show_me_as_online]
+text = "Show me as online in public groups"
+note = "Desktop, profile and settings (in profile_view.rs, privacy_landing)."
+
+[profile_show_words]
+text = "Show words"
+note = "Desktop, profile and settings (in profile_view.rs, phrase_page)."
+
+[profile_shown_after_you_confirm]
+text = "Shown after you confirm"
+note = "Desktop, profile and settings (in profile_view.rs, privacy_landing)."
+
+[profile_shown_to_you_as]
+text = "Shown to you as {name} · their name is {name2}"
+note = "Desktop, profile and settings (in profile_view.rs, field_row_inner). {name} is a person's name (usually the first word of their chosen name). {name2} is a person's name (usually the first word of their chosen name)."
+
+[profile_software]
+text = "Software"
+note = "Desktop, profile and settings (in profile_view.rs, video_page)."
+
+[profile_some_information_came_from]
+text = "Some information came from another device or app version. It’s shown as stored and kept when you edit anything else."
+note = "Desktop, profile and settings (in profile_view.rs, my_profile)."
+
+[profile_someone_you_allowed_can]
+text = "Someone you allowed can ring you; someone on messages only can still write. People you blocked can do neither."
+note = "Desktop, profile and settings (in profile_view.rs, calls_page)."
+
+[profile_something_else]
+text = "Something else"
+note = "Desktop, profile and settings (in profile_view.rs, profile_layer)."
+
+[profile_sounds]
+text = "Sounds"
+note = "Desktop, profile and settings (in profile_view.rs, profile_page)."
+
+[profile_source_code]
+text = "Source code"
+note = "Desktop, profile and settings (in profile_view.rs, about_page)."
+
+[profile_status]
+text = "Status"
+note = "Desktop, profile and settings (in profile_view.rs, my_profile)."
+
+[profile_storage]
+text = "Storage"
+note = "Desktop, profile and settings (in profile_view.rs, profile_page)."
+
+[profile_tap_a_sound_to]
+text = "Tap a sound to hear it. The choice applies to the next call."
+note = "Desktop, profile and settings (in profile_view.rs, sounds_page)."
+
+[profile_text]
+text = "{value} {time}"
+note = "Desktop, profile and settings (in profile_ui.rs, until_label). {value} is a value filled in by the app. {time} is a time."
+
+[profile_that_file_couldnt_be]
+text = "That file couldn’t be read as a picture. It may be damaged."
+note = "Desktop, profile and settings (in profile_ui.rs, inspect)."
+
+[profile_that_is_too_long]
+text = "That is too long for {what}: up to {limit} bytes, and some characters take more than one."
+note = "Desktop, profile and settings (in profile_ui.rs, check_text). {what} is a value filled in by the app. {limit} is a value filled in by the app."
+
+[profile_that_is_too_long_up]
+text = "That {what} is too long. Up to {limit} bytes; some characters take more than one."
+note = "Desktop, profile and settings (in profile_ui.rs, check_name). {what} is a value filled in by the app. {limit} is a value filled in by the app."
+
+[profile_that_name_cant_be]
+text = "That name can’t be used. Keep it short, without control characters."
+note = "Desktop, profile and settings (in profile_ui.rs, profile_update)."
+
+[profile_that_picture_is_mb]
+text = "That picture is {value} MB. Pictures can be up to {value2} MB."
+note = "Desktop, profile and settings (in profile_ui.rs, inspect). {value} is a value filled in by the app. {value2} is a value filled in by the app."
+
+[profile_that_picture_is_pixels]
+text = "That picture is {status} × {host} pixels. Tinline accepts up to 4096 pixels on a side."
+note = "Desktop, profile and settings (in profile_ui.rs, inspect). {status} is a value filled in by the app. {host} is a value filled in by the app."
+
+[profile_the_cant_be_empty]
+text = "The {what} can’t be empty."
+note = "Desktop, profile and settings (in profile_ui.rs, check_name). {what} is a value filled in by the app."
+
+[profile_the_cant_contain_control]
+text = "The {what} can’t contain control or text-direction characters."
+note = "Desktop, profile and settings (in profile_ui.rs, check_name). {what} is a value filled in by the app."
+
+[profile_the_libraries_tinline_is]
+text = "The libraries Tinline is built on"
+note = "Desktop, profile and settings (in profile_view.rs, about_page)."
+
+[profile_the_passphrase_protects_tinline]
+text = "The passphrase protects Tinline on this device only; your other devices keep their own. Tinline can’t recover a forgotten passphrase. If that happens, your recovery phrase restores your account, though not your messages."
+note = "Desktop, profile and settings (in profile_view.rs, passphrase_page)."
+
+[profile_there_is_no_copy]
+text = "There is no copy button on purpose: the phrase stays off the clipboard. Tinline never asks for it except to restore your account. The phrase brings back your account, not your messages."
+note = "Desktop, profile and settings (in profile_view.rs, phrase_page)."
+
+[profile_these_are_set_by]
+text = "These are set by your system, not by Tinline. Tinline asks only when it needs one."
+note = "Desktop, profile and settings (in profile_view.rs, notifications_page)."
+
+[profile_these_stay_on_this]
+text = "These stay on this computer. They aren’t part of your account."
+note = "Desktop, profile and settings (in profile_view.rs, native_page)."
+
+[profile_this_computer]
+text = "This computer"
+note = "Desktop, profile and settings (in profile_view.rs, profile_page)."
+
+[profile_this_computer_decodes_av1]
+text = "This computer decodes AV1 (rav1d) and VP8 (libvpx) in software only. During a call, About this call has the same controls for that call."
+note = "Desktop, profile and settings (in profile_view.rs, video_page)."
+
+[profile_this_computer_has_no]
+text = "This computer has no keyring, so Tinline asks for your passphrase each time it starts."
+note = "Desktop, profile and settings (in profile_view.rs, passphrase_page)."
+
+[profile_this_device_online]
+text = "This device · Online"
+note = "Desktop, profile and settings (in profile_view.rs, devices_page)."
+
+[profile_this_is_not_a]
+text = "This is not a lock."
+note = "Desktop, profile and settings (in profile_view.rs, devices_layer)."
+
+[profile_tinline_can_use_png]
+text = "Tinline can use PNG, JPEG or WebP pictures. That file is a different kind of file."
+note = "Desktop, profile and settings (in profile_ui.rs, inspect)."
+
+[profile_tinline_has_no_ads]
+text = "Tinline has no ads and no tracking. Your messages and calls go between your devices and the people you talk to."
+note = "Desktop, profile and settings (in profile_view.rs, about_page)."
+
+[profile_tinline_is_open_source]
+text = "Tinline is open source"
+note = "Desktop, profile and settings (in profile_view.rs, about_page)."
+
+[profile_tinline_tells_it_now]
+text = "Tinline tells it now."
+note = "Desktop, profile and settings (in profile_view.rs, devices_layer)."
+
+[profile_to_free_more_space]
+text = "To free more space, remove pictures or files from their chat."
+note = "Desktop, profile and settings (in profile_view.rs, storage_page)."
+
+[profile_told_you_blocked_them]
+text = "Told you blocked them"
+note = "Desktop, profile and settings (in profile_view.rs, blocked_page)."
+
+[profile_tomorrow]
+text = "tomorrow {time}"
+note = "Desktop, profile and settings (in profile_ui.rs, until_label). {time} is a time."
+
+[profile_trend_probe]
+text = "Trend+probe"
+note = "Desktop, profile and settings (in profile_view.rs, video_page)."
+
+[profile_unblock]
+text = "Unblock {first2}"
+note = "Desktop, profile and settings (in profile_view.rs, person_profile). {first2} is a value filled in by the app."
+
+[profile_unblock_2]
+text = "Unblock {name}?"
+note = "Desktop, profile and settings (in profile_view.rs, privacy_layer). {name} is a person's name (usually the first word of their chosen name)."
+
+[profile_unlinking]
+text = "Unlinking…"
+note = "Desktop, profile and settings (in profile_view.rs, devices_layer)."
+
+[profile_use_photo]
+text = "Use photo"
+note = "Desktop, profile and settings (in profile_view.rs, profile_layer)."
+
+[profile_value]
+text = "Value"
+note = "Desktop, profile and settings (in profile_view.rs, profile_layer)."
+
+[profile_version]
+text = "Version {value}"
+note = "Desktop, profile and settings (in profile_view.rs, about_page). {value} is a value filled in by the app."
+
+[profile_video_quality]
+text = "Video quality"
+note = "Desktop, profile and settings (in profile_view.rs, video_page)."
+
+[profile_video_tuning]
+text = "Video tuning"
+note = "Desktop, profile and settings (in profile_view.rs, video_page)."
+
+[profile_wait_for_the_current]
+text = "Wait for the current account operation to finish."
+note = "Desktop, profile and settings (in profile_ui.rs, profile_write)."
+
+[profile_webrtc_audio_processing]
+text = "WebRTC audio processing"
+note = "Desktop, profile and settings (in profile_view.rs, about_page)."
+
+[profile_website]
+text = "Website"
+note = "Desktop, profile and settings (in profile_ui.rs, mutation_allowed)."
+
+[profile_what_are_you_up]
+text = "What are you up to?"
+note = "Desktop, profile and settings (in profile_view.rs, my_profile)."
+
+[profile_what_is_it_called]
+text = "What is it called?"
+note = "Desktop, profile and settings (in profile_view.rs, profile_layer)."
+
+[profile_when_i_tap_them]
+text = "When I tap them"
+note = "Desktop, profile and settings (in profile_view.rs, storage_page)."
+
+[profile_who_can_call_me]
+text = "Who can call me"
+note = "Desktop, profile and settings (in profile_view.rs, profile_page)."
+
+[profile_will_stop_syncing_with]
+text = "{name} will stop syncing with your account and stop ringing when you’re called. {value}"
+note = "Desktop, profile and settings (in profile_view.rs, devices_layer). {name} is a person's name (usually the first word of their chosen name). {value} is a value filled in by the app."
+
+[profile_write_these_24_words]
+text = "Write these 24 words down, in order, and keep them somewhere private."
+note = "Desktop, profile and settings (in profile_view.rs, phrase_page)."
+
+[profile_yes]
+text = "Yes"
+note = "Desktop, profile and settings (in profile_ui.rs, scalar)."
+
+[profile_you_already_have_information]
+text = "You already have information with that name."
+note = "Desktop, profile and settings (in profile_ui.rs, profile_update)."
+
+[profile_you_blocked_their_profile]
+text = "You blocked {name}. Their profile no longer updates."
+note = "Desktop, profile and settings (in profile_view.rs, person_profile). {name} is a person's name (usually the first word of their chosen name)."
+
+[profile_you_blocked_them]
+text = "You blocked them"
+note = "Desktop, profile and settings (in profile_view.rs, person_profile)."
+
+[profile_you_stay_off_their]
+text = "You stay off their online lists"
+note = "Desktop, profile and settings (in profile_view.rs, privacy_landing)."
+
+[profile_you_wont_get_calls]
+text = "You won’t get calls or messages from {name}, and their profile updates stop."
+note = "Desktop, profile and settings (in profile_view.rs, profile_layer). {name} is a person's name (usually the first word of their chosen name)."
+
+[profile_your_chat_history_is]
+text = "Your chat history is still here."
+note = "Desktop, profile and settings (in profile_view.rs, privacy_layer)."
+
+[profile_your_contacts_can_see]
+text = "Your contacts can see this, and it’s the same on all your devices. It affects whether calls reach you, and it’s separate from whether you’re online."
+note = "Desktop, profile and settings (in profile_view.rs, my_profile)."
+
+[profile_your_contacts_see_your]
+text = "Your contacts see your name, picture and profile. Tinline doesn’t hide who you talk to, and every device linked to your account can read your chats."
+note = "Desktop, profile and settings (in profile_view.rs, privacy_landing)."
+
+[profile_your_contacts_will_see]
+text = "Your contacts will see it on your profile."
+note = "Desktop, profile and settings (in profile_view.rs, profile_layer)."
+
+[profile_your_initials_will_show]
+text = "Your initials will show instead."
+note = "Desktop, profile and settings (in profile_view.rs, profile_layer)."
+
+[profile_your_reads_stay_with]
+text = "Your reads stay with you"
+note = "Desktop, profile and settings (in profile_view.rs, privacy_landing)."
+
+[profile_your_recovery_key_is]
+text = "Your recovery key is the same as your 24 words, as one line. A password manager is a good place for it."
+note = "Desktop, profile and settings (in profile_view.rs, phrase_page)."
+
+[profile_your_recovery_phrase_is]
+text = "Your recovery phrase is the only way to get your account back if you lose every device. Anyone who has it can act as you."
+note = "Desktop, profile and settings (in profile_view.rs, phrase_page)."
+
+[profile_your_settings_for]
+text = "Your settings for {name}"
+note = "Desktop, profile and settings (in profile_view.rs, person_profile). {name} is a person's name (usually the first word of their chosen name)."
+
+
+# ---- Settings (older page)
+
+[settings_account]
+text = "Account"
+note = "Desktop, settings (older page) (in view.rs, native_settings_view)."
+
+[settings_anyone_who_sees_these]
+text = "Anyone who sees these words can become you. Check nobody is looking, then show them."
+note = "Desktop, settings (older page) (in view.rs, native_settings_view)."
+
+[settings_anyone_who_sees_these_words]
+text = "Anyone who sees these words can become you. Check nobody is looking."
+note = "Desktop, settings (older page) (in view.rs, native_settings_view)."
+
+[settings_asks_you_to_confirm]
+text = "Asks you to confirm first"
+note = "Desktop, settings (older page) (in view.rs, native_settings_view)."
+
+[settings_audio]
+text = "Audio"
+note = "Desktop, settings (older page) (in view.rs, native_settings_view)."
+
+[settings_available_for_calls]
+text = "Available for calls"
+note = "Desktop, settings (older page) (in view.rs, native_settings_view)."
+
+[settings_calls_wont_ring_until]
+text = "Calls won’t ring until you turn it back on"
+note = "Desktop, settings (older page) (in view.rs, native_settings_view)."
+
+[settings_change]
+text = "Change"
+note = "Desktop, settings (older page) (in view.rs, native_settings_view)."
+
+[settings_checking]
+text = "Checking..."
+note = "Desktop, settings (older page) (in view.rs, native_settings_view)."
+
+[settings_device_changes_apply_from]
+text = "Device changes apply from the next call"
+note = "Desktop, settings (older page) (in view.rs, native_settings_view)."
+
+[settings_enter_your_passphrase]
+text = "Enter your passphrase"
+note = "Desktop, settings (older page) (in view.rs, native_settings_view)."
+
+[settings_instead_of_the_microphone]
+text = "Instead of the microphone, to check the connection"
+note = "Desktop, settings (older page) (in view.rs, native_settings_view)."
+
+[settings_keep]
+text = "Keep"
+note = "Desktop, settings (older page) (in view.rs, native_settings_view)."
+
+[settings_locked_needs_its_passphrase]
+text = "Locked · needs its passphrase"
+note = "Desktop, settings (older page) (in view.rs, native_settings_view)."
+
+[settings_only_your_own_devices]
+text = "Only your own devices see it"
+note = "Desktop, settings (older page) (in view.rs, native_settings_view)."
+
+[settings_optional_encrypts_your_account]
+text = "Optional — encrypts your account on this computer"
+note = "Desktop, settings (older page) (in view.rs, native_settings_view)."
+
+[settings_other_accounts_on_this]
+text = "Other accounts on this computer"
+note = "Desktop, settings (older page) (in view.rs, native_settings_view)."
+
+[settings_recommended_your_key_is]
+text = "Recommended — your key is in a plain file"
+note = "Desktop, settings (older page) (in view.rs, native_settings_view)."
+
+[settings_remove_from_this_computer]
+text = "Remove {name} from this computer? Its contacts, chats and call history here are deleted. Your recovery phrase brings back the identity, not those."
+note = "Desktop, settings (older page) (in view.rs, native_settings_view). {name} is a person's name (usually the first word of their chosen name)."
+
+[settings_send_a_test_tone]
+text = "Send a test tone"
+note = "Desktop, settings (older page) (in view.rs, native_settings_view)."
+
+[settings_show_recovery_phrase]
+text = "Show recovery phrase"
+note = "Desktop, settings (older page) (in view.rs, native_settings_view)."
+
+[settings_shown_to_the_people]
+text = "Shown to the people you add"
+note = "Desktop, settings (older page) (in view.rs, native_settings_view)."
+
+[settings_this_computers_name]
+text = "This computer’s name"
+note = "Desktop, settings (older page) (in view.rs, native_settings_view)."
+
+[settings_unlocks_tinline_when_it]
+text = "Unlocks Tinline when it starts"
+note = "Desktop, settings (older page) (in view.rs, native_settings_view)."
+
+[settings_video_in_calls]
+text = "Video in calls"
+note = "Desktop, settings (older page) (in view.rs, native_settings_view)."
+
+[settings_your_camera_stays_off]
+text = "Your camera stays off until you turn it on in the call"
+note = "Desktop, settings (older page) (in view.rs, native_settings_view)."
+
+
+# ---- Shell: sidebar, search, contacts
+
+[shell_accepting_lets_you_message]
+text = "Accepting lets you message and call each other."
+note = "Desktop, shell: sidebar, search, contacts (in shell_view.rs, contacts_list)."
+
+[shell_all]
+text = "All"
+note = "Desktop, shell: sidebar, search, contacts (in shell_view.rs, chat_chips)."
+
+[shell_blocked]
+text = "BLOCKED"
+note = "Desktop, shell: sidebar, search, contacts (in shell_view.rs, contacts_list)."
+
+[shell_choose_a_chat]
+text = "Choose a chat"
+note = "Desktop, shell: sidebar, search, contacts (in shell_view.rs, shell_empty_detail)."
+
+[shell_contacts_count]
+one = "{count} contact"
+other = "{count} contacts"
+note = "Footer under the contacts list. {count} is how many contacts you have."
+
+[shell_find_a_contact]
+text = "Find a contact"
+note = "Desktop, shell: sidebar, search, contacts (in shell_view.rs, new_chat_overlay)."
+
+[shell_messages_stay_on_your]
+text = "Messages stay on your devices."
+note = "Desktop, shell: sidebar, search, contacts (in shell_view.rs, shell_empty_detail)."
+
+[shell_more_messages]
+text = "More messages"
+note = "Desktop, shell: sidebar, search, contacts (in shell_view.rs, shell_search_results)."
+
+[shell_new_chat]
+text = "New chat"
+note = "Desktop, shell: sidebar, search, contacts (in shell_view.rs, new_chat_overlay)."
+
+[shell_no_contact_called]
+text = "No contact called “{trim}”."
+note = "Desktop, shell: sidebar, search, contacts (in shell_view.rs, new_chat_overlay). {trim} is a value filled in by the app."
+
+[shell_no_messages_match]
+text = "No messages match"
+note = "Desktop, shell: sidebar, search, contacts (in shell_view.rs, shell_search_results)."
+
+[shell_no_one_called_in]
+text = "No one called “{trim}” in your contacts."
+note = "Desktop, shell: sidebar, search, contacts (in shell_view.rs, contacts_list). {trim} is a value filled in by the app."
+
+[shell_no_people_or_groups]
+text = "No people or groups match"
+note = "Desktop, shell: sidebar, search, contacts (in shell_view.rs, shell_search_results)."
+
+[shell_people_groups]
+text = "People & groups"
+note = "Desktop, shell: sidebar, search, contacts (in shell_view.rs, shell_search_results)."
+
+[shell_scan_a_code_or]
+text = "Scan a code or paste an invite"
+note = "Desktop, shell: sidebar, search, contacts (in shell_view.rs, new_chat_overlay)."
+
+[shell_search_ctrl_k]
+text = "Search (Ctrl+K)"
+note = "Desktop, shell: sidebar, search, contacts (in shell_view.rs, desktop_search_field)."
+
+[shell_search_messages_people_and]
+text = "Search messages, people and groups."
+note = "Desktop, shell: sidebar, search, contacts (in shell_view.rs, shell_search_results)."
+
+[shell_searching]
+text = "Searching…"
+note = "Desktop, shell: sidebar, search, contacts (in shell_view.rs, shell_search_results)."
+
+[shell_share_your_code_or]
+text = "Share your code or paste theirs"
+note = "Desktop, shell: sidebar, search, contacts (in shell_view.rs, contacts_list)."
+
+[shell_the_people_you_add]
+text = "The people you add show up here."
+note = "Desktop, shell: sidebar, search, contacts (in shell_view.rs, contacts_list)."
+
+[shell_type_2_or_more]
+text = "Type 2 or more characters to search messages."
+note = "Desktop, shell: sidebar, search, contacts (in shell_view.rs, shell_search_results)."
+
+[shell_unread]
+text = "Unread"
+note = "Desktop, shell: sidebar, search, contacts (in shell_view.rs, chat_chips)."
+
+[shell_waiting_for_them]
+text = "WAITING FOR THEM"
+note = "Desktop, shell: sidebar, search, contacts (in shell_view.rs, contacts_list)."
+
+[shell_waiting_for_you]
+text = "WAITING FOR YOU"
+note = "Desktop, shell: sidebar, search, contacts (in shell_view.rs, contacts_list)."
+
+[shell_wants_to_add_you]
+text = "Wants to add you as a contact"
+note = "Desktop, shell: sidebar, search, contacts (in shell_view.rs, contacts_list)."
+
+
+# ---- Sign-up, restore and add contact
+
+[signup_a_direct_line_to]
+text = "A direct line to your people"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
+
+[signup_a_lock_so_only]
+text = "A lock, so only you can open Tinline on this computer."
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
+
+[signup_accepted_your_line_to]
+text = "{name} accepted. Your line to {name} is open. Say hello."
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay). {name} is a person's name (usually the first word of their chosen name)."
+
+[signup_accepted_your_request]
+text = "Accepted your request"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay)."
+
+[signup_accepted_your_request_your]
+text = "Accepted your request. Your line is open."
+note = "Desktop, sign-up, restore and add contact (in signup.rs, request_accepted)."
+
+[signup_add]
+text = "Add {name}"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay). {name} is a person's name (usually the first word of their chosen name)."
+
+[signup_add_an_account]
+text = "Add an account"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
+
+[signup_add_another_contact]
+text = "Add another contact"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, empty_hero)."
+
+[signup_add_another_name]
+text = "Add another name"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, open_as_menu)."
+
+[signup_add_my_first_contact]
+text = "Add my first contact"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
+
+[signup_add_someone_youd_like]
+text = "Add someone you’d like to talk to, and you can message and call each other."
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, empty_hero)."
+
+[signup_adding]
+text = "Adding…"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay)."
+
+[signup_and_have_read_the]
+text = " and have read the "
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
+
+[signup_any_length_works_a]
+text = "Any length works. A few random words are easy to remember."
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
+
+[signup_asks_for_your_passphrase]
+text = "Asks for your passphrase"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, open_as_menu)."
+
+[signup_before_you_start]
+text = "Before you start"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
+
+[signup_calls_are_end_to]
+text = "Calls are end-to-end encrypted."
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
+
+[signup_checking_takes_a_second]
+text = "Checking takes a second. It’s deliberately slow to stop guessing."
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, unlock_card)."
+
+[signup_code]
+text = "Code"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay)."
+
+[signup_contact_request]
+text = "Contact request"
+note = "Desktop, sign-up, restore and add contact (in signup.rs, contact_request)."
+
+[signup_copied]
+text = "Copied"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay)."
+
+[signup_copy_again]
+text = "Copy again"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
+
+[signup_copy_my_code]
+text = "Copy my code"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay)."
+
+[signup_copy_my_words]
+text = "Copy my words"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
+
+[signup_couldnt_make_a_new]
+text = "Couldn’t make a new code just now. Try again in a moment."
+note = "Desktop, sign-up, restore and add contact (in signup.rs, gate_update)."
+
+[signup_couldnt_reach_s_tinline]
+text = "Couldn’t reach {name}’s Tinline. It needs to be open and online, so try again when {name}’s around."
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay). {name} is a person's name (usually the first word of their chosen name)."
+
+[signup_couldnt_read_the_clipboard]
+text = "Couldn’t read the clipboard. Paste into the first box instead."
+note = "Desktop, sign-up, restore and add contact (in signup.rs, gate_update)."
+
+[signup_create_a_new_account]
+text = "Create a new account or bring one you already have."
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
+
+[signup_create_my_account]
+text = "Create my account"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
+
+[signup_encrypting]
+text = "Encrypting…"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
+
+[signup_encrypts_your_account_on]
+text = "Encrypts your account on this computer. You type it each time Tinline starts. If you forget it, your recovery words let you set a new one."
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
+
+[signup_fair]
+text = "Fair"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
+
+[signup_free_of_ads_and]
+text = "Free of ads and tracking."
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
+
+[signup_groups_are_hosted_on]
+text = "Groups are hosted on a computer. Keep Tinline open and your groups stay reachable."
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
+
+[signup_has_your_code]
+text = "Has your code"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay)."
+
+[signup_here_are_your_recovery]
+text = "Here are your recovery words"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
+
+[signup_here_is_your_recovery]
+text = "Here is your recovery key"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
+
+[signup_home_computer]
+text = "Home computer"
+note = "Desktop, sign-up, restore and add contact (in signup.rs, gate_created)."
+
+[signup_i_agree]
+text = "I agree"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
+
+[signup_i_forgot_it]
+text = "I forgot it"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, unlock_card)."
+
+[signup_i_have_an_account]
+text = "I have an account"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
+
+[signup_i_saved_it_elsewhere]
+text = "I saved it elsewhere"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
+
+[signup_i_wrote_them_down]
+text = "I wrote them down"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
+
+[signup_if_you_ever_switch]
+text = "If you ever switch devices, these 24 words bring your account along."
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
+
+[signup_is_already_in_your]
+text = "{name} is already in your contacts."
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay). {name} is a person's name (usually the first word of their chosen name)."
+
+[signup_is_this_the_you]
+text = "Is this the {name} you expected? If you’re not sure, check with them first."
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay). {name} is a person's name (usually the first word of their chosen name)."
+
+[signup_it_lives_on_your]
+text = "It lives on your devices, not on a server. Your recovery words are the way back in, so keep them safe."
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
+
+[signup_ive_saved_it]
+text = "I’ve saved it"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
+
+[signup_ive_saved_them]
+text = "I’ve saved them"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
+
+[signup_key]
+text = "Key"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, words_key_seg)."
+
+[signup_laptop]
+text = "Laptop"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
+
+[signup_let_them_scan_this]
+text = "Let them scan this with Tinline."
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay)."
+
+[signup_link_another_device_when]
+text = "Link another device when you can, so losing one never locks you out."
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
+
+[signup_link_my_other_device]
+text = "Link my other device"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
+
+[signup_message]
+text = "Message {name}"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay). {name} is a person's name (usually the first word of their chosen name)."
+
+[signup_message_2]
+text = "Message {value}"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, empty_hero). {value} is a value filled in by the app."
+
+[signup_new_contact]
+text = "New contact"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay)."
+
+[signup_next_youll_choose_a]
+text = "Next, you’ll choose a passphrase for this account."
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
+
+[signup_not_for_emergency_calls]
+text = "Not for emergency calls."
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
+
+[signup_of]
+text = "{count} of {total}"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_head). {count} is a number. {total} is a value filled in by the app."
+
+[signup_of_24]
+text = "{filled} of 24"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {filled} is a value filled in by the app."
+
+[signup_only_the_people_you]
+text = "Only the people you add will see it."
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
+
+[signup_open_as]
+text = "Open as"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, open_as_menu)."
+
+[signup_open_profile]
+text = "Open profile"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay)."
+
+[signup_opens_right_away]
+text = "Opens right away"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, open_as_menu)."
+
+[signup_optional_a_lock_so]
+text = "Optional. A lock, so only you can open Tinline on this computer."
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
+
+[signup_paste_a_new_code]
+text = "Paste a new code"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay)."
+
+[signup_paste_from_clipboard]
+text = "Paste from clipboard"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
+
+[signup_paste_it_somewhere_safe]
+text = "Paste it somewhere safe. A password manager works great."
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
+
+[signup_paste_their_code]
+text = "Paste their code"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay)."
+
+[signup_pick_someone_and_say]
+text = "Pick someone and say hello whenever you like."
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, empty_hero)."
+
+[signup_preparing_your_code]
+text = "Preparing your code…"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay)."
+
+[signup_privacy_policy]
+text = "Privacy Policy"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
+
+[signup_qr]
+text = "QR"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay)."
+
+[signup_reaching_s_tinline]
+text = "Reaching {name}’s Tinline…"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay). {name} is a person's name (usually the first word of their chosen name)."
+
+[signup_recovery_key]
+text = "Recovery key"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
+
+[signup_restore_account]
+text = "Restore account"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
+
+[signup_restore_my_account]
+text = "Restore my account"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
+
+[signup_s_code_isnt_valid]
+text = "{name}’s code isn’t valid any more. They may have made a new one, so ask {name} for their newest code."
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay). {name} is a person's name (usually the first word of their chosen name)."
+
+[signup_save_a_copy_somewhere]
+text = "Save a copy somewhere safe. Paper works great."
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
+
+[signup_say_hello_to_whenever]
+text = "Say hello to {value} whenever you like."
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, empty_hero). {value} is a value filled in by the app."
+
+[signup_scan_a_code_on]
+text = "Scan a code on a device that already has your account. Your contacts and chats come along."
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
+
+[signup_scan_their_code_or]
+text = "Scan their code or share yours, and you can call each other."
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
+
+[signup_send_it_to_anyone]
+text = "Send it to anyone you’d like to talk to, in any app."
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay)."
+
+[signup_send_it_to_anyone_youd]
+text = "Send it to anyone you’d like to talk to, in any app. It works until {value}."
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay). {value} is a value filled in by the app."
+
+[signup_short_a_few_more]
+text = "Short. A few more words make it stronger."
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
+
+[signup_skip_for_now]
+text = "Skip for now"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
+
+[signup_start_a_chat]
+text = "Start a chat"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, empty_hero)."
+
+[signup_still_trying_s_tinline]
+text = "Still trying. {name}’s Tinline needs to be open and online for this."
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay). {name} is a person's name (usually the first word of their chosen name)."
+
+[signup_strong]
+text = "Strong"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
+
+[signup_switch_to_dark]
+text = "Switch to dark"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_head)."
+
+[signup_switch_to_light]
+text = "Switch to light"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_head)."
+
+[signup_terms_of_use]
+text = "Terms of Use"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
+
+[signup_that_code_from_has]
+text = "That code from {value} has expired. Codes last 7 days, so ask them for a fresh one."
+note = "Desktop, sign-up, restore and add contact (in signup.rs, ac_pasted). {value} is a value filled in by the app."
+
+[signup_that_doesnt_look_like]
+text = "That doesn’t look like a Tinline code. Could they copy it again for you?"
+note = "Desktop, sign-up, restore and add contact (in signup.rs, ac_pasted)."
+
+[signup_that_key_has_a]
+text = "That key has a typo or is cut short. Paste it again from where you saved it."
+note = "Desktop, sign-up, restore and add contact (in signup.rs, gate_update)."
+
+[signup_thats_your_own_code]
+text = "That’s your own code. Send it to them, and paste theirs here."
+note = "Desktop, sign-up, restore and add contact (in signup.rs, ac_pasted)."
+
+[signup_their_code]
+text = "Their code"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay)."
+
+[signup_this_computer_can_host]
+text = "This computer can host your groups"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
+
+[signup_tinline_connects_your_straight]
+text = "Tinline connects your {noun} straight to theirs."
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {noun} is the word for this device kind (e.g. computer)."
+
+[signup_tinline_doesnt_collect_your]
+text = "Tinline doesn’t collect your contacts, calls or location."
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
+
+[signup_two_devices_are_better]
+text = "Two devices are better than one"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
+
+[signup_type_your_24_recovery]
+text = "Type your 24 recovery words. This {noun} starts with an empty contact list."
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {noun} is the word for this device kind (e.g. computer)."
+
+[signup_type_your_24_words]
+text = "Type your 24 words in order, or paste them, or your recovery key, into the first box. They stay on this {noun}."
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {noun} is the word for this device kind (e.g. computer)."
+
+[signup_unlock]
+text = "Unlock"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, unlock_card)."
+
+[signup_unlocking]
+text = "Unlocking…"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, unlock_card)."
+
+[signup_use_my_words_instead]
+text = "Use my words instead"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
+
+[signup_use_your_account_here]
+text = "Use your account here"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
+
+[signup_use_your_phone_to]
+text = "Use your phone to reach emergency services."
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
+
+[signup_wants_to_add_you]
+text = "{name} wants to add you as a contact. Accepting lets you message and call each other."
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay). {name} is a person's name (usually the first word of their chosen name)."
+
+[signup_welcome_back]
+text = "Welcome back"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, welcome_title)."
+
+[signup_welcome_back_2]
+text = "Welcome back,"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, welcome_title)."
+
+[signup_what_should_people_call]
+text = "What should people call you?"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
+
+[signup_when_a_direct_line]
+text = "When a direct line isn’t possible, an encrypted relay passes the call along. It can’t hear it."
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
+
+[signup_word_in_the_recovery]
+text = "Word {value}{value2} {value3} in the recovery word list. Check the spelling."
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {value} is a value filled in by the app. {value2} is a value filled in by the app. {value3} is a value filled in by the app."
+
+[signup_words]
+text = "Words"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, words_key_seg)."
+
+[signup_words_are_still_missing]
+text = "{filled} words are still missing."
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {filled} is a value filled in by the app."
+
+[signup_work_computer]
+text = "Work computer"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
+
+[signup_would_like_to_add]
+text = "{name} would like to add you"
+note = "Desktop, sign-up, restore and add contact (in signup.rs, contact_request). {name} is a person's name (usually the first word of their chosen name)."
+
+[signup_you_blocked_unblock_them]
+text = "You blocked {name}. Unblock them in Privacy before adding them again."
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay). {name} is a person's name (usually the first word of their chosen name)."
+
+[signup_you_can_change_it]
+text = "You can change it any time in Settings."
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
+
+[signup_you_cant_add_right]
+text = "You can’t add {name} right now. They’ve chosen not to be in touch here."
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay). {name} is a person's name (usually the first word of their chosen name)."
+
+[signup_you_just_need_a]
+text = "You just need a nickname. Encrypted end to end."
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
+
+[signup_you_type_it_each]
+text = "{value} You type it each time Tinline starts. If you forget it, your recovery words let you set a new one."
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {value} is a value filled in by the app."
+
+[signup_your_account_is_its]
+text = "Your account is its recovery phrase, so you can bring it to this {noun} two ways."
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {noun} is the word for this device kind (e.g. computer)."
+
+[signup_your_account_is_yours]
+text = "Your account is yours."
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
+
+[signup_your_clipboard_is_empty]
+text = "Your clipboard is empty right now. When their code arrives, copy it and paste it here."
+note = "Desktop, sign-up, restore and add contact (in signup.rs, ac_pasted)."
+
+[signup_your_code]
+text = "Your code"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay)."
+
+[signup_your_current_account_stays]
+text = "Your current account stays on this {noun}."
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {noun} is the word for this device kind (e.g. computer)."
+
+[signup_your_line_is_open]
+text = "Your line is open, {name}"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {name} is a person's name (usually the first word of their chosen name)."
+
+[signup_your_line_is_ready]
+text = "Your line is ready"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, empty_hero)."
+
+[signup_your_line_to_is]
+text = "Your line to {name} is open. Say hello."
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay). {name} is a person's name (usually the first word of their chosen name)."
+
+[signup_your_nickname]
+text = "Your nickname"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
+
+[signup_your_recovery_key_is]
+text = "Your recovery key is in. It stays on this {noun}."
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {noun} is the word for this device kind (e.g. computer)."
+
+[signup_your_recovery_key_is_the]
+text = "Your recovery key is the same as your 24 words, as one line."
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
+
+[signup_your_request_to_is]
+text = "Your request to {value} is waiting. Your line opens when they accept."
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, empty_hero). {value} is a value filled in by the app."
+
+[signup_youre_offline_once_youre]
+text = "You’re offline. Once you’re connected, try again."
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay)."
+
+
+# ---- Status line
+
+[status_calling]
+text = "Calling"
+note = "Desktop, status line (in mark.rs, status_look)."
+
+[status_connected_to_the_network]
+text = "Connected to the network"
+note = "Desktop, status line (in mark.rs, status_look)."
+
+[status_in_a_call]
+text = "In a call"
+note = "Desktop, status line (in mark.rs, status_look)."
+
+[status_no_connection]
+text = "No connection"
+note = "Desktop, status line (in mark.rs, status_look)."
+
+
+# ---- System tray
+
+[tray_quit]
+text = "Quit"
+note = "Desktop, system tray (in tray.rs, build)."
+
+[tray_tinline]
+text = "Tinline - {status}"
+note = "Desktop, system tray (in tray.rs, refresh). {status} is a value filled in by the app."
+
+
+# ---- Video
+
+[video_camera]
+text = "Camera: {error}"
+note = "Desktop, video (in vcall.rs, video_update). {error} is the underlying error text, not translated."
+
+[video_hd_paused_weak_connection]
+text = "HD paused · weak connection"
+note = "Desktop, video (in camera.rs, hd_line)."
+
+[video_sharper_video_on]
+text = "Sharper video on"
+note = "Desktop, video (in camera.rs, hd_line)."
+
+[video_video_tuning]
+text = "Video tuning: {error}"
+note = "Desktop, video (in vcall.rs, video_update). {error} is the underlying error text, not translated."
+
+[video_your_chosen_camera_isnt]
+text = "Your chosen camera isn't connected. Pick one in Settings → Video."
+note = "Desktop, video (in vcall.rs, found)."
+
+# ---- Former constants
+
+[app_system_default]
+text = "System default"
+note = "Entry at the top of the microphone, speaker and camera pick lists: use the system default device."
+
+[app_no_secure_keyring]
+text = "This computer has no secure keyring, so Tinline needs a passphrase to protect your account."
+note = "Shown when this computer has no secure keyring, so a passphrase is required."
+
+[chat_saved_items_only_on]
+text = "Saved items · only on your devices"
+note = "Subtitle of the saved-items chat with yourself."
+
+[profile_picture_help]
+text = "Replacing or removing your picture requests deletion of the previous cached copy on your linked devices and contacts when they sync. Screenshots, backups, and copies retained by modified clients cannot be erased by the app."
+note = "Help text under the profile picture settings."
+
+[profile_field_help]
+text = "Your contacts can see your profile. Removing information hides it from your profile; earlier versions can remain in synced history."
+note = "Help text under the additional-information fields of the profile."
+
+[profile_save_failed]
+text = "Couldn’t save that. Your profile is unchanged and what you typed is still here."
+note = "Error shown when saving the profile failed."
+
+[profile_busy_unsupported]
+text = "Busy is not available yet. Your call settings are unchanged."
+note = "Shown when the Busy availability option is not available."
+
+[profile_busy_30m]
+text = "30 minutes"
+note = "Busy duration choice."
+
+[profile_busy_1h]
+text = "1 hour"
+note = "Busy duration choice."
+
+[profile_busy_4h]
+text = "4 hours"
+note = "Busy duration choice."
+
+[profile_busy_tomorrow]
+text = "Tomorrow morning"
+note = "Busy duration choice."
+
+[profile_busy_no_end]
+text = "No end time"
+note = "Busy duration choice: stays busy until changed."
+

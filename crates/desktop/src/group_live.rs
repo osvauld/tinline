@@ -222,24 +222,24 @@ impl GroupApi for Node {
 pub(super) fn gerr(e: Error) -> String {
     match e {
         Error::Rejected(r) => match r.as_str() {
-            "removed" => "You were removed from this group.".into(),
-            "not a member" => "You\u{2019}re not a member of this group.".into(),
-            "already a contact" => "You already have them as a contact. Message them from Chats.".into(),
-            "you block them" => "You block them. Unblock them first to ask for a chat.".into(),
-            "unknown or expired invite code" => "That invite isn\u{2019}t valid any more. Ask for a new one.".into(),
-            "admins only" => "Only admins post here.".into(),
-            r if r == p2pcore::BLOCKED => "They blocked you, so you can\u{2019}t ask them for a chat.".into(),
+            "removed" => crate::i18n::tr_str("group_you_were_removed_from_this_group").into(),
+            "not a member" => crate::i18n::tr_str("group_youre_not_a_member").into(),
+            "already a contact" => crate::i18n::tr_str("group_you_already_have_them").into(),
+            "you block them" => crate::i18n::tr_str("group_you_block_them_unblock").into(),
+            "unknown or expired invite code" => crate::i18n::tr_str("group_that_invite_isnt_valid").into(),
+            "admins only" => crate::i18n::tr_str("group_only_admins_post_here_2").into(),
+            r if r == p2pcore::BLOCKED => crate::i18n::tr_str("group_they_blocked_you_so").into(),
             r => {
                 let mut c = r.chars();
                 match c.next() {
                     Some(f) => format!("{}{}.", f.to_uppercase(), c.as_str().trim_end_matches('.')),
-                    None => "Refused.".into(),
+                    None => crate::i18n::tr_str("group_refused").into(),
                 }
             }
         },
-        Error::Timeout => "No host answered in time. Try again when a host is online.".into(),
-        Error::Locked => "Unlock first.".into(),
-        Error::NotFound => "That group isn\u{2019}t on this computer.".into(),
+        Error::Timeout => crate::i18n::tr_str("group_no_host_answered_in").into(),
+        Error::Locked => crate::i18n::tr_str("common_unlock_first").into(),
+        Error::NotFound => crate::i18n::tr_str("group_that_group_isnt_on").into(),
         e => e.to_string(),
     }
 }
@@ -262,9 +262,9 @@ pub(super) fn pick_rows(contacts: &[(String, String)], d: &GroupDetail, sent: &[
         .map(|(did, name)| {
             let invited = sent.iter().filter(|i| &i.invitee_did == did).max_by_key(|i| i.at).cloned();
             let why = if d.members.iter().any(|m| &m.did == did) {
-                Some("Already a member")
+                Some(crate::i18n::tr_str("group_already_a_member"))
             } else if invited.as_ref().is_some_and(|i| i.state == GroupInvitationState::Pending) {
-                Some("Invited \u{b7} waiting")
+                Some(crate::i18n::tr_str("group_invited_waiting"))
             } else {
                 None
             };
@@ -278,12 +278,12 @@ pub(super) fn pick_rows(contacts: &[(String, String)], d: &GroupDetail, sent: &[
 /// An invitation we sent, in words, and whether it is bad news.
 pub(super) fn sent_invitation_line(i: &GroupInvitation) -> (&'static str, bool) {
     match i.state {
-        GroupInvitationState::Pending if i.delivered => ("Invited \u{b7} waiting for an answer", false),
-        GroupInvitationState::Pending => ("Invited \u{b7} not delivered yet", false),
-        GroupInvitationState::Joined => ("Joined", false),
-        GroupInvitationState::Declined => ("Declined", true),
-        GroupInvitationState::Expired => ("Invitation expired", true),
-        GroupInvitationState::Blocked => ("Blocked you", true),
+        GroupInvitationState::Pending if i.delivered => (crate::i18n::tr_str("group_invited_waiting_for_an"), false),
+        GroupInvitationState::Pending => (crate::i18n::tr_str("group_invited_not_delivered_yet"), false),
+        GroupInvitationState::Joined => (crate::i18n::tr_str("group_joined"), false),
+        GroupInvitationState::Declined => (crate::i18n::tr_str("common_declined"), true),
+        GroupInvitationState::Expired => (crate::i18n::tr_str("group_invitation_expired"), true),
+        GroupInvitationState::Blocked => (crate::i18n::tr_str("group_blocked_you"), true),
     }
 }
 
@@ -385,29 +385,29 @@ impl Job {
                 let paths = ids.into_iter().map(|id| (id.clone(), api.group_image_path(gid.clone(), id))).collect();
                 Lm::ImagePaths(paths)
             }
-            Job::Flag { gid, did: who } => did(api.group_flag(gid, who), "Flag recorded. It is signed by you and the member can see it.".into()),
+            Job::Flag { gid, did: who } => did(api.group_flag(gid, who), crate::i18n::tr_str("group_flag_recorded_it_is").into()),
             Job::SetAdmin { gid, did: who, admin } => did(
                 api.group_set_admin(gid, who, admin),
-                if admin { "Made admin.".into() } else { "No longer an admin.".into() },
+                if admin { crate::i18n::tr_str("group_made_admin").into() } else { crate::i18n::tr_str("group_no_longer_an_admin").into() },
             ),
-            Job::Leave(gid) => did(api.group_leave(gid), "You left the group. Its messages stay here.".into()),
+            Job::Leave(gid) => did(api.group_leave(gid), crate::i18n::tr_str("group_you_left_the_group").into()),
             Job::Appoint { gid, did: who, dev } => did(
                 api.group_appoint_host(gid, who, dev),
-                "Appointed. The device hosts once it agrees (Host from this device).".into(),
+                crate::i18n::tr_str("group_appointed_the_device_hosts").into(),
             ),
-            Job::Revoke { gid, did: who, dev } => did(api.group_revoke_host(gid, who, dev), "That device no longer hosts the group.".into()),
+            Job::Revoke { gid, did: who, dev } => did(api.group_revoke_host(gid, who, dev), crate::i18n::tr_str("group_that_device_no_longer_hosts").into()),
             Job::AppointCall { gid, did: who, dev } => did(
                 api.group_appoint_call_host(gid, who, dev),
-                "Asked. The device carries calls once it accepts.".into(),
+                crate::i18n::tr_str("group_asked_the_device_carries").into(),
             ),
-            Job::RevokeCall { gid, did: who, dev } => did(api.group_revoke_call_host(gid, who, dev), "That device no longer carries this group\u{2019}s calls.".into()),
+            Job::RevokeCall { gid, did: who, dev } => did(api.group_revoke_call_host(gid, who, dev), crate::i18n::tr_str("group_that_device_no_longer").into()),
             Job::AcceptCall { gid, accept } => did(
                 api.group_accept_call_host(gid, accept),
-                if accept { "This computer carries this group\u{2019}s calls now.".into() } else { "This computer stopped carrying this group\u{2019}s calls.".into() },
+                if accept { crate::i18n::tr_str("group_this_computer_carries_this").into() } else { crate::i18n::tr_str("group_this_computer_stopped_carrying").into() },
             ),
             Job::HostCallsHere { gid, did: me } => {
                 let r = api.group_device_id().and_then(|dev| api.group_appoint_call_host(gid.clone(), me, dev)).and_then(|_| api.group_accept_call_host(gid, true));
-                did(r, "This computer carries this group\u{2019}s calls now.".into())
+                did(r, crate::i18n::tr_str("group_this_computer_carries_this").into())
             }
             Job::Request { gid, did: who } => Lm::Requested(api.group_chat_request(gid, who).map_err(gerr)),
             Job::AcceptReq(id) => Lm::Answered(api.group_chat_accept(id).map_err(gerr)),
@@ -421,18 +421,18 @@ impl Job {
             Job::OpenLink { gid, copy } => Lm::OpenLinked(gid.clone(), copy, api.group_open_link(gid).map_err(gerr)),
             Job::CloseLink(gid) => did(
                 api.group_set_open(gid, false),
-                "The open link is closed. Everyone already in stays; new people join with an invite.".into(),
+                crate::i18n::tr_str("group_the_open_link_is").into(),
             ),
             Job::AdminsOnly { gid, on } => did(
                 api.group_set_admins_only(gid, on),
-                if on { "Only admins post now. Everyone can still read.".into() } else { "Everyone can post again.".into() },
+                if on { crate::i18n::tr_str("group_only_admins_post_now").into() } else { crate::i18n::tr_str("group_everyone_can_post_again").into() },
             ),
             Job::AcceptHost { gid, accept } => did(
                 api.group_accept_host(gid, accept),
                 if accept {
-                    "This device agreed to host. It hosts as soon as an admin has appointed it.".into()
+                    crate::i18n::tr_str("group_this_device_agreed_to").into()
                 } else {
-                    "This device stopped hosting the group.".into()
+                    crate::i18n::tr_str("group_this_device_stopped_hosting").into()
                 },
             ),
         }
@@ -636,7 +636,7 @@ pub(super) fn first_name(name: &str) -> &str {
 }
 
 fn or_someone(name: &str) -> &str {
-    if name.trim().is_empty() { "Someone" } else { name }
+    if name.trim().is_empty() { crate::i18n::tr_str("common_someone") } else { name }
 }
 
 /// "a1b2c3d4": enough of a device ID to tell devices apart.
@@ -756,7 +756,7 @@ impl GroupsLive {
             _ => {}
         }
         let n = d.members.len();
-        let members = format!("{n} member{}", if n == 1 { "" } else { "s" });
+        let members = crate::i18n::tr_count("group_members_count", n as u64, &[]);
         if d.am_host {
             return format!("{members} \u{b7} this computer hosts the group");
         }
@@ -767,7 +767,7 @@ impl GroupsLive {
             return format!("{members} \u{b7} waiting for a host");
         }
         let h = d.hosts.len();
-        format!("{members} \u{b7} {h} host{}", if h == 1 { "" } else { "s" })
+        crate::i18n::tr_args("group_members_and_hosts", &[("members", &members), ("hosts", &crate::i18n::tr_count("group_hosts_count", h as u64, &[]))])
     }
 
     /// An admin asked this device to host the open group: (who asked).
