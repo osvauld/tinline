@@ -1,7 +1,7 @@
 import XCTest
 @testable import Tinline
 
-/// The block model the screens read (filled from Node.blockState / blockedContacts in PeopleModel). Port of android BlockingTest.kt.
+/// The block model the screens read (filled from Node.peerBlocks / blockedContacts in PeopleModel). Port of android BlockingTest.kt.
 final class BlockingTests: XCTestCase {
     private func blocks(_ views: [String: BlockView], _ list: [BlockedRow] = []) -> Blocks { Blocks.from(views, list) }
 
