@@ -7263,14 +7263,14 @@ where = [
   "android call_end_call: Accessibility label of the red hang-up button on the call screen.",
   "ios call_control_end_label: Accessibility label of the red hang-up button.",
 ]
-text = ""
+text = "அழைப்பை முடி"
 
 [t_436d29fdc3]
 en = "Unmute"
 where = [
   "android notif_unmute: Notification action: turn the microphone on in a group call.",
 ]
-text = ""
+text = "ஒலியடக்கத்தை நீக்கு"
 
 [t_f3a8fd3eed]
 en = "Mute"
@@ -7281,7 +7281,7 @@ where = [
   "ios call_control_mute: Label and caption of the mute button.",
   "desktop common_mute: Shared label, used in several places (call_screen, gcall).",
 ]
-text = ""
+text = "ஒலியடக்கு"
 
 [t_5e3d155ca5]
 en = "Incoming video call"
@@ -7291,7 +7291,7 @@ where = [
   "ios shell_ring_incoming_video: Ringing banner subtitle for an incoming video call.",
   "desktop common_incoming_video_call: Shared label, used in several places (call_screen, view).",
 ]
-text = ""
+text = "உள்வரும் வீடியோ அழைப்பு"
 
 [t_247c6a01a8]
 en = "Incoming call"
@@ -7306,7 +7306,7 @@ where = [
   "ios call_mark_incoming: Accessibility label of the animated mark on an incoming call.",
   "desktop common_incoming_call: Shared label, used in several places (call_screen, mark, view).",
 ]
-text = ""
+text = "உள்வரும் அழைப்பு"
 
 [t_b35ae71c8f]
 en = "{name} is calling the group"
@@ -7315,7 +7315,7 @@ where = [
   "android gcall_is_calling_group: Second line of the group call card while it rings. {name} is the caller's first name.",
   "ios call_group_announce_ringing: Group call announcement. {name} is the member's first name.",
 ]
-text = ""
+text = "{name} குழுவை அழைக்கிறார்"
 
 [t_157bc965a5]
 en = "{name} is calling"
@@ -7325,14 +7325,14 @@ where = [
   "ios call_waiting_title: Title of the card shown when a second call arrives during a call. {name} is the caller.",
   "desktop common_is_calling: Shared label: notification and call waiting card title. {name} is a person's name.",
 ]
-text = ""
+text = "{name} அழைக்கிறார்"
 
 [t_8aae3ee3e7]
 en = "Your call continues until you choose."
 where = [
   "android notif_waiting_text: Text of the second-call notification.",
 ]
-text = ""
+text = "நீங்கள் முடிவு செய்யும் வரை உங்கள் அழைப்பு தொடரும்."
 
 [t_c2597b3d54]
 en = "End & answer"
@@ -7343,21 +7343,21 @@ where = [
   "android shell_end_and_answer: Accessibility label of the answer button when a second call arrives during a call: ends the current call and answers.",
   "desktop call_end_answer: Desktop, calls (voice and video) (in view.rs, waiting_banner).",
 ]
-text = ""
+text = "முடித்துப் பதிலளி"
 
 [t_fc6653bd25]
 en = "Unlock to receive calls"
 where = [
   "android notif_locked_title: Title of the notification shown while the app is locked.",
 ]
-text = ""
+text = "அழைப்புகளைப் பெறத் திறங்கள்"
 
 [t_b3ecd22aaf]
 en = "Tap to enter your passphrase"
 where = [
   "android notif_locked_text: Text of the locked notification.",
 ]
-text = ""
+text = "உங்கள் கடவுச்சொற்றொடரை உள்ளிடத் தட்டுங்கள்"
 
 [t_bfa2f70ef5]
 en = "Contact request"
@@ -7367,7 +7367,7 @@ where = [
   "ios people_add_title_request: Sheet title when someone wants to add the user.",
   "desktop signup_contact_request: Desktop, sign-up, restore and add contact (in signup.rs, contact_request).",
 ]
-text = ""
+text = "தொடர்புக் கோரிக்கை"
 
 [t_a7e9021b5e]
 en = "{name} would like to add you"
@@ -7375,14 +7375,14 @@ where = [
   "android notif_request_text: Text of the contact request notification. {name} is the person's name.",
   "desktop signup_would_like_to_add: Desktop, sign-up, restore and add contact (in signup.rs, contact_request). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} உங்களைச் சேர்க்க விரும்புகிறார்"
 
 [t_8577ec1eb9]
 en = "{name} accepted your request. Your line is open."
 where = [
   "android notif_accepted_text: Text of the notification when someone accepted my request. {name} is the person's name.",
 ]
-text = ""
+text = "{name} உங்கள் கோரிக்கையை ஏற்றுக்கொண்டார். உங்கள் லைன் திறந்திருக்கிறது."
 
 [t_21d8c8de7c]
 en = "Missed call"
@@ -7391,7 +7391,7 @@ where = [
   "android calls_desc_missed: Spoken kind of a Calls row: a call I did not pick up.",
   "ios shell_call_desc_missed: Screen reader phrase for a call row, a whole phrase used as {what} in the row label: incoming call the user did not answer. Reads like “Missed call”.",
 ]
-text = ""
+text = "தவறிய அழைப்பு"
 
 [t_b888e730cf]
 en = "edited"
@@ -7399,7 +7399,7 @@ where = [
   "android chat_edited: Small label in a message bubble's time line after a message was edited.",
   "ios chat_edited: Small \"edited\" marker beside the time of an edited message.",
 ]
-text = ""
+text = "திருத்தப்பட்டது"
 
 [t_1c651aea2b]
 en = "Jump to message"
@@ -7407,7 +7407,7 @@ where = [
   "android chat_jump_to_message: Screen-reader action on the quoted message inside a reply bubble: taps scroll to the original.",
   "ios chat_jump_hint: Accessibility hint on a quoted message: jumps to the original.",
 ]
-text = ""
+text = "செய்திக்குச் செல்"
 
 [t_ef14928ac4]
 en = "Attach a file"
@@ -7415,7 +7415,7 @@ where = [
   "android chat_attach_file: Screen-reader label of the paperclip button next to the message field.",
   "ios chat_attach: Accessibility label of the paperclip button next to the message field.",
 ]
-text = ""
+text = "கோப்பை இணை"
 
 [t_304341c917]
 en = "Save edit"
@@ -7423,7 +7423,7 @@ where = [
   "android chat_save_edit: Screen-reader label of the send button while an edit is in progress.",
   "ios chat_save_edit: Accessibility label of the send button while editing a message.",
 ]
-text = ""
+text = "திருத்தத்தைச் சேமி"
 
 [t_c7bef86aa9]
 en = "Send"
@@ -7432,7 +7432,7 @@ where = [
   "ios chat_send: Accessibility label of the button that sends the typed message.",
   "ios group_send: Spoken label of the send button.",
 ]
-text = ""
+text = "அனுப்பு"
 
 [t_d91d418127]
 en = "Waiting to send"
@@ -7442,7 +7442,7 @@ where = [
   "ios kit_tick_waiting: Screen-reader label of a message tick: not sent yet.",
   "ios shell_tick_slack: Screen reader label. Group row: last message is waiting to send.",
 ]
-text = ""
+text = "அனுப்பக் காத்திருக்கிறது"
 
 [t_aff352add7]
 en = "Sent, waiting for {first}’s device to confirm"
@@ -7450,7 +7450,7 @@ where = [
   "android chat_tick_one: Screen-reader words for the receipt mark. {first} is the contact's first name.",
   "ios kit_tick_sent: Screen-reader label of a message tick: sent, no confirmation yet. {first} is the other person's first name.",
 ]
-text = ""
+text = "அனுப்பப்பட்டது, {first} அவர்களின் சாதனம் உறுதிசெய்யக் காத்திருக்கிறது"
 
 [t_3fbf0b6f52]
 en = "On {first}’s device"
@@ -7458,7 +7458,7 @@ where = [
   "android chat_tick_two: Screen-reader words for the receipt mark: delivered. {first} is the contact's first name.",
   "ios kit_tick_delivered: Screen-reader label of a message tick: reached the other person's device. {first} is their first name.",
 ]
-text = ""
+text = "{first} அவர்களின் சாதனத்தில்"
 
 [t_67916d528c]
 en = "Read on {first}’s device"
@@ -7466,7 +7466,7 @@ where = [
   "android chat_tick_read: Screen-reader words for the receipt mark: read. {first} is the contact's first name.",
   "ios kit_tick_read: Screen-reader label of a message tick: read. {first} is the other person's first name.",
 ]
-text = ""
+text = "{first} அவர்களின் சாதனத்தில் படிக்கப்பட்டது"
 
 [t_22050b35af]
 en = "Not delivered"
@@ -7476,7 +7476,7 @@ where = [
   "ios kit_tick_bad: Screen-reader label of a message tick: could not be delivered.",
   "ios shell_tick_bad: Screen reader label. Group row: last message was not delivered.",
 ]
-text = ""
+text = "சேரவில்லை"
 
 [t_9be5d9ce63]
 en = "Today"
@@ -7486,7 +7486,7 @@ where = [
   "ios group_today: Day label.",
   "desktop common_today: Shared label, used in several places (chat, group_live).",
 ]
-text = ""
+text = "இன்று"
 
 [t_84299fd082]
 en = "Yesterday"
@@ -7496,7 +7496,7 @@ where = [
   "ios group_yesterday: Day label.",
   "desktop common_yesterday: Shared label, used in several places (chat, group_live).",
 ]
-text = ""
+text = "நேற்று"
 
 [t_ea31e6872d]
 en = "Saved items · only on your devices"
@@ -7505,7 +7505,7 @@ where = [
   "ios chat_self_sub: Subtitle of the \"You\" conversation (saved items) in the chat list and its header.",
   "desktop chat_saved_items_only_on: Subtitle of the saved-items chat with yourself.",
 ]
-text = ""
+text = "சேமித்தவை · உங்கள் சாதனங்களில் மட்டும்"
 
 [t_51f5f09ec3]
 en = "Waiting to send — {name} isn’t reachable yet"
@@ -7513,7 +7513,7 @@ where = [
   "android chat_waiting_unreachable: Preview line in the chat list when the last message waits to be sent. {name} is the contact's first name.",
   "ios shell_chat_waiting_unreachable: Chat list preview of a message that is waiting to send. {name} is the contact’s first name.",
 ]
-text = ""
+text = "அனுப்பக் காத்திருக்கிறது — {name} அவர்களை இன்னும் அடைய முடியவில்லை"
 
 [t_efc80b09d7]
 en = "Search contacts"
@@ -7522,7 +7522,7 @@ where = [
   "android home_search_contacts: Default placeholder of the search bar.",
   "ios shell_new_chat_search_contacts: Placeholder and label of the contact search on the New chat screen.",
 ]
-text = ""
+text = "தொடர்புகளைத் தேடு"
 
 [t_7006d2ffb9]
 en = "New chat"
@@ -7532,7 +7532,7 @@ where = [
   "ios shell_home_new_chat: Label of the add button on the Chats tab dock.",
   "desktop shell_new_chat: Desktop, shell: sidebar, search, contacts (in shell_view.rs, new_chat_overlay).",
 ]
-text = ""
+text = "புதிய அரட்டை"
 
 [t_8d3fbed3a0]
 en = "Add a contact"
@@ -7540,7 +7540,7 @@ where = [
   "android chat_add_contact: Row on the New chat screen that leads to adding a contact.",
   "ios shell_new_chat_add: Row on the New chat screen that opens add contact.",
 ]
-text = ""
+text = "தொடர்பைச் சேர்"
 
 [t_39613ad35e]
 en = "Scan their code or paste their card"
@@ -7548,7 +7548,7 @@ where = [
   "android chat_add_contact_sub: Second line of the Add a contact row on the New chat screen.",
   "ios shell_new_chat_add_sub: Second line of that row.",
 ]
-text = ""
+text = "அவர்களின் குறியீட்டை ஸ்கேன் செய்யுங்கள் அல்லது அட்டையை ஒட்டுங்கள்"
 
 [t_20c0fc5f07]
 en = "CONTACTS · {count}"
@@ -7556,7 +7556,7 @@ where = [
   "android chat_contacts_count: Small uppercase section label on the New chat screen. {count} is the number of contacts.",
   "ios shell_new_chat_contacts_header: Section label above the contact list on New chat. {count} is how many contacts.",
 ]
-text = ""
+text = "தொடர்புகள் · {count}"
 
 [t_d95af94074]
 en = "Voice message"
@@ -7565,7 +7565,7 @@ where = [
   "ios chat_preview_voice: Preview of a message that is only a voice message (notification, quote, chat list).",
   "desktop chat_voice_message: Desktop, chats (in chat.rs, preview_of).",
 ]
-text = ""
+text = "குரல் செய்தி"
 
 [t_99c2265f43]
 en = "A group"
@@ -7573,14 +7573,14 @@ where = [
   "android chat_notif_a_group: Fallback title of a group invitation notification when the group has no name.",
   "desktop app_a_group: Desktop, app-level notices and notifications (in app.rs, on_event).",
 ]
-text = ""
+text = "ஒரு குழு"
 
 [t_66d9e71b13]
 en = "{name} invited you to the group"
 where = [
   "android chat_notif_invited: Text of a group invitation notification. {name} is the inviter's first name.",
 ]
-text = ""
+text = "{name} உங்களைக் குழுவுக்கு அழைத்துள்ளார்"
 
 [t_2ce4042846]
 en_one = "{count} new message"
@@ -7591,6 +7591,8 @@ where = [
   "ios group_unread_divider: Divider before unread posts. {count} is how many.",
   "desktop chat_new_messages: Divider line in a chat above the first unread message. {count} is how many are unread.",
 ]
+one = "{count} புதிய செய்தி"
+other = "{count} புதிய செய்திகள்"
 
 [t_1a302f502a]
 en = "Couldn’t send that file."
@@ -7598,7 +7600,7 @@ where = [
   "android conv_send_file_failed: Toast when sending a file in a chat failed.",
   "ios chat_err_send_file: Toast when sending a file fails.",
 ]
-text = ""
+text = "அந்தக் கோப்பை அனுப்ப முடியவில்லை."
 
 [t_bed1bc4b5e]
 en = "Couldn’t read that file."
@@ -7606,7 +7608,7 @@ where = [
   "android conv_read_file_failed: Toast when the picked file could not be read.",
   "ios chat_err_read_file: Toast when a picked file cannot be read.",
 ]
-text = ""
+text = "அந்தக் கோப்பைப் படிக்க முடியவில்லை."
 
 [t_28e3631aad]
 en = "Couldn’t start the download."
@@ -7614,7 +7616,7 @@ where = [
   "android conv_download_failed: Toast when a file download could not be started.",
   "ios chat_err_download: Toast when a file download cannot start.",
 ]
-text = ""
+text = "பதிவிறக்கத்தைத் தொடங்க முடியவில்லை."
 
 [t_10e7696603]
 en = "Saved to your phone"
@@ -7622,7 +7624,7 @@ where = [
   "android conv_saved_to_phone: Toast after a file was saved to the phone's gallery or Downloads.",
   "ios chat_saved: Toast after a file was saved to the phone's photos or files.",
 ]
-text = ""
+text = "உங்கள் ஃபோனில் சேமிக்கப்பட்டது"
 
 [t_cd1f0dea33]
 en = "Couldn’t save that file."
@@ -7630,14 +7632,14 @@ where = [
   "android conv_save_failed: Toast when saving a file to the phone failed.",
   "ios chat_err_save: Toast when saving a file to the phone fails.",
 ]
-text = ""
+text = "அந்தக் கோப்பைச் சேமிக்க முடியவில்லை."
 
 [t_e6ad09f42e]
 en = "No app on this phone opens .{ext} files — Save it instead"
 where = [
   "android conv_no_app_opens: Toast when no installed app can open a file. {ext} is the file extension without the dot.",
 ]
-text = ""
+text = ".{ext} கோப்புகளைத் திறக்கும் ஆப் இந்த ஃபோனில் இல்லை — பதிலாக அதைச் சேமியுங்கள்"
 
 [t_5daf5e2fcf]
 en = "No camera available."
@@ -7645,14 +7647,14 @@ where = [
   "android conv_no_camera: Toast when the camera app could not be opened.",
   "ios chat_err_no_camera: Toast when the device has no camera.",
 ]
-text = ""
+text = "கேமரா கிடைக்கவில்லை."
 
 [t_464735847b]
 en = "Allow the camera to take photos."
 where = [
   "android conv_allow_camera: Toast when camera permission was refused.",
 ]
-text = ""
+text = "படங்கள் எடுக்க கேமராவை அனுமதியுங்கள்."
 
 [t_dd3296b705]
 en = "Older messages are on {first}’s phone"
@@ -7660,7 +7662,7 @@ where = [
   "android conv_older_title: Heading of the note at the top of a chat when earlier messages live only on the contact's phone. {first} is their first name.",
   "ios chat_older_title: Title of the banner at the top of a chat whose earlier history is on the other phone. {first} is their first name.",
 ]
-text = ""
+text = "பழைய செய்திகள் {first} அவர்களின் ஃபோனில் உள்ளன"
 
 [t_d9b53f3b73]
 en = "This phone keeps them from when you started using it. Earlier days load when you’re both online."
@@ -7668,7 +7670,7 @@ where = [
   "android conv_older_body: Body of the note about older messages at the top of a chat.",
   "ios chat_older_body: Body of the older-messages banner.",
 ]
-text = ""
+text = "நீங்கள் இந்த ஃபோனைப் பயன்படுத்தத் தொடங்கியதிலிருந்து உள்ளவை இதில் இருக்கும். நீங்கள் இருவரும் ஆன்லைனில் இருக்கும்போது முந்தைய நாட்களின் செய்திகள் ஏற்றப்படும்."
 
 [t_6d056581be]
 en = "You’re offline. Messages send when you’re back online."
@@ -7677,7 +7679,7 @@ where = [
   "ios chat_strip_me_offline: Strip above the composer when the user's phone is offline.",
   "desktop chat_youre_offline_messages_send: Desktop, chats (in chat_view.rs, strip_text).",
 ]
-text = ""
+text = "நீங்கள் ஆஃப்லைனில் இருக்கிறீர்கள். மீண்டும் ஆன்லைனுக்கு வந்ததும் செய்திகள் அனுப்பப்படும்."
 
 [t_3970e070d1]
 en = "{first} is offline. Messages send when you’re both online."
@@ -7685,7 +7687,7 @@ where = [
   "android conv_offline_peer: Status strip over a chat when the contact is offline. {first} is their first name.",
   "ios chat_strip_peer_offline: Strip above the composer when the other person is offline. {first} is their first name.",
 ]
-text = ""
+text = "{first} ஆஃப்லைனில் இருக்கிறார். நீங்கள் இருவரும் ஆன்லைனில் இருக்கும்போது செய்திகள் அனுப்பப்படும்."
 
 [t_12ba578cd4]
 en = "Replying to {first}"
@@ -7693,7 +7695,7 @@ where = [
   "android conv_replying_to: Title of the banner over the message field while replying. {first} is the contact's first name.",
   "ios chat_composer_reply: Title of the banner above the composer when replying. {first} is the other person's first name.",
 ]
-text = ""
+text = "பதிலளிக்கிறீர்கள்: {first}"
 
 [t_0a106892ef]
 en = "Editing message"
@@ -7702,7 +7704,7 @@ where = [
   "ios chat_composer_editing: Title of the banner above the composer while editing a message.",
   "desktop chat_editing_message: Desktop, chats (in chat_view.rs, composer).",
 ]
-text = ""
+text = "செய்தியைத் திருத்துகிறீர்கள்"
 
 [t_cd2c9b7691]
 en = "Couldn’t send that voice message."
@@ -7710,7 +7712,7 @@ where = [
   "android conv_voice_send_failed: Toast when sending a recorded voice message failed.",
   "ios chat_err_send_voice: Toast when sending a voice message fails.",
 ]
-text = ""
+text = "அந்தக் குரல் செய்தியை அனுப்ப முடியவில்லை."
 
 [t_a309d6871b]
 en = "Couldn’t delete that message."
@@ -7718,7 +7720,7 @@ where = [
   "android conv_delete_failed: Toast when deleting a message failed.",
   "ios chat_err_delete: Toast when deleting a message fails.",
 ]
-text = ""
+text = "அந்தச் செய்தியை நீக்க முடியவில்லை."
 
 [t_0112ff6da5]
 en = "Back to chats"
@@ -7726,7 +7728,7 @@ where = [
   "android conv_back_to_chats: Screen-reader label of the back arrow in a chat's top bar.",
   "ios chat_back: Accessibility label of the back button in a chat header.",
 ]
-text = ""
+text = "அரட்டைகளுக்குத் திரும்பு"
 
 [t_2989a32c8a]
 en = "Blocked you"
@@ -7740,7 +7742,7 @@ where = [
   "ios people_blocked_you: Label of a person who has blocked the user.",
   "desktop group_blocked_you: Desktop, groups (in group_live.rs, sent_invitation_line).",
 ]
-text = ""
+text = "உங்களைத் தடுத்துள்ளார்"
 
 [t_a1ce28f490]
 en = "Not in your contacts"
@@ -7749,7 +7751,7 @@ where = [
   "ios chat_status_not_contact: Line under the name in a chat header: no longer a contact.",
   "desktop chat_not_in_your_contacts: Desktop, chats (in chat_view.rs, conversation_view).",
 ]
-text = ""
+text = "உங்கள் தொடர்புகளில் இல்லை"
 
 [t_4742401a49]
 en = "Waiting for connection"
@@ -7758,7 +7760,7 @@ where = [
   "ios chat_status_waiting: Line under the name in a chat header while the phone has no connection.",
   "desktop chat_waiting_for_connection: Desktop, chats (in chat_view.rs, conversation_view).",
 ]
-text = ""
+text = "இணைப்புக்காகக் காத்திருக்கிறது"
 
 [t_70b94c871c]
 en = "Online"
@@ -7769,7 +7771,7 @@ where = [
   "desktop common_online: Shared label, used in several places (chat, group_live).",
   "desktop group_host_online: Desktop, group info, a HOST DEVICE of the group is online (describes a device, not a person).",
 ]
-text = ""
+text = "ஆன்லைன்"
 
 [t_f8ab0430dc]
 en = "Online · messages only"
@@ -7778,7 +7780,7 @@ where = [
   "ios chat_status_online_messages: Line under the name in a chat header: online, but this person is not allowed to call.",
   "desktop chat_online_messages_only: Desktop, chats (in chat_view.rs, conversation_view).",
 ]
-text = ""
+text = "ஆன்லைன் · செய்திகள் மட்டும்"
 
 [t_d83899b692]
 en = "{name}. {status}. Chat details"
@@ -7786,7 +7788,7 @@ where = [
   "android conv_header_desc_status: Screen-reader description of the chat header. {name} is the contact, {status} their status line.",
   "ios chat_header_a11y_status: Accessibility label of the chat header. {name} is the contact's name, {status} the line under it (like \"Online\").",
 ]
-text = ""
+text = "{name}. {status}. அரட்டை விவரங்கள்"
 
 [t_5aac8bef83]
 en = "{name}. Chat details"
@@ -7794,7 +7796,7 @@ where = [
   "android conv_header_desc: Screen-reader description of the chat header when there is no status line. {name} is the contact.",
   "ios chat_header_a11y: Accessibility label of the chat header when there is no status line. {name} is the contact's name.",
 ]
-text = ""
+text = "{name}. அரட்டை விவரங்கள்"
 
 [t_d43ae1453b]
 en = "Return to call"
@@ -7803,7 +7805,7 @@ where = [
   "ios chat_return_to_call: Accessibility label of the phone button in the chat header while a call is live.",
   "desktop chat_return_to_call: Desktop, chats (in chat_view.rs, conversation_view).",
 ]
-text = ""
+text = "அழைப்புக்குத் திரும்பு"
 
 [t_5a8b253e53]
 en = "Can’t call {first}"
@@ -7811,7 +7813,7 @@ where = [
   "android conv_cant_call: Screen-reader label of the dimmed call and video buttons. {first} is the contact's first name.",
   "ios chat_cant_call: Accessibility label of a dimmed call button. {first} is the other person's first name.",
 ]
-text = ""
+text = "{first} அவர்களை அழைக்க முடியாது"
 
 [t_5b028e9be7]
 en = "Video call"
@@ -7820,7 +7822,7 @@ where = [
   "ios chat_video_call: Accessibility label of the video call button in a chat header.",
   "desktop chat_video_call: Desktop, chats (in chat_view.rs, conversation_view).",
 ]
-text = ""
+text = "வீடியோ அழைப்பு"
 
 [t_8c9028903c]
 en = "Find in this chat"
@@ -7830,7 +7832,7 @@ where = [
   "ios chat_find_placeholder: Placeholder and accessibility label of the search field inside a chat.",
   "desktop chat_find_in_this_chat: Desktop, chats (in chat_view.rs, find_bar).",
 ]
-text = ""
+text = "இந்த அரட்டையில் தேடு"
 
 [t_00571186d8]
 en = "Chat details"
@@ -7839,7 +7841,7 @@ where = [
   "ios chat_details: Accessibility label of the info button in a chat header.",
   "desktop chat_chat_details: Desktop, chats (in chat_view.rs, conversation_view).",
 ]
-text = ""
+text = "அரட்டை விவரங்கள்"
 
 [t_2a461b9d71]
 en = "Video call · {duration}"
@@ -7848,7 +7850,7 @@ where = [
   "ios chat_call_video_done: Call pill in a chat for an answered video call. {duration} is minutes:seconds, like 3:07.",
   "desktop chat_call_video_length: Call record pill in a chat for an answered video call. {duration} is minutes:seconds.",
 ]
-text = ""
+text = "வீடியோ அழைப்பு · {duration}"
 
 [t_43f4ca0ac6]
 en = "Voice call · {duration}"
@@ -7857,7 +7859,7 @@ where = [
   "ios chat_call_voice_done: Call pill in a chat for an answered voice call. {duration} is minutes:seconds, like 3:07.",
   "desktop chat_call_voice_length: Call record pill in a chat for an answered voice call. {duration} is minutes:seconds.",
 ]
-text = ""
+text = "குரல் அழைப்பு · {duration}"
 
 [t_3508689eb0]
 en = "Declined video call"
@@ -7866,7 +7868,7 @@ where = [
   "ios chat_call_video_declined: Call pill in a chat: an incoming video call the user declined.",
   "desktop chat_call_declined_video: Call record pill in a chat: you declined an incoming video call.",
 ]
-text = ""
+text = "நிராகரித்த வீடியோ அழைப்பு"
 
 [t_b3d9c4ad1c]
 en = "Declined voice call"
@@ -7875,7 +7877,7 @@ where = [
   "ios chat_call_voice_declined: Call pill in a chat: an incoming voice call the user declined.",
   "desktop chat_call_declined_voice: Call record pill in a chat: you declined an incoming voice call.",
 ]
-text = ""
+text = "நிராகரித்த குரல் அழைப்பு"
 
 [t_df1206e551]
 en = "Missed video call"
@@ -7884,7 +7886,7 @@ where = [
   "ios chat_call_video_missed: Call pill in a chat: an incoming video call the user did not pick up.",
   "desktop chat_call_missed_video: Call record pill in a chat: an incoming video call you did not answer.",
 ]
-text = ""
+text = "தவறிய வீடியோ அழைப்பு"
 
 [t_ad9a1e61c9]
 en = "Missed voice call"
@@ -7893,7 +7895,7 @@ where = [
   "ios chat_call_voice_missed: Call pill in a chat: an incoming voice call the user did not pick up.",
   "desktop chat_call_missed_voice: Call record pill in a chat: an incoming voice call you did not answer.",
 ]
-text = ""
+text = "தவறிய குரல் அழைப்பு"
 
 [t_0a2e27ec58]
 en = "No answer"
@@ -7904,7 +7906,7 @@ where = [
   "ios shell_call_what_no_answer: Call list: outgoing call nobody picked up.",
   "desktop common_no_answer: Shared label, used in several places (chat, reason, view).",
 ]
-text = ""
+text = "பதில் இல்லை"
 
 [t_e3837cdde5]
 en = "Declined"
@@ -7917,7 +7919,7 @@ where = [
   "desktop common_declined: Shared label, used in several places (chat, group_live, reason, view).",
   "desktop group_sent_declined_unnamed: Desktop, group requests I sent (in group_live.rs, sent_line): the state line of a private-chat request. Someone declined.",
 ]
-text = ""
+text = "நிராகரிக்கப்பட்டது"
 
 [t_786abde508]
 en = "Cancelled call"
@@ -7928,7 +7930,7 @@ where = [
   "ios shell_call_desc_cancelled: Screen reader phrase for a call row, a whole phrase used as {what} in the row label: call cancelled before it was answered. Reads like “Missed call”.",
   "desktop chat_cancelled_call: Desktop, chats (in chat_view.rs, call_pill).",
 ]
-text = ""
+text = "ரத்துசெய்த அழைப்பு"
 
 [t_ea4f088084]
 en = "Call failed"
@@ -7937,7 +7939,7 @@ where = [
   "ios chat_call_failed: Call pill in a chat: a call that failed to connect.",
   "desktop chat_call_failed: Desktop, chats (in chat_view.rs, call_pill).",
 ]
-text = ""
+text = "அழைப்பு இணையவில்லை"
 
 [t_90809b6cf7]
 en = "{text}, {time}. Call back"
@@ -7945,7 +7947,7 @@ where = [
   "android conv_call_pill_desc: Screen-reader description of a call pill. {text} is the pill text, {time} the clock time. Tapping it calls back.",
   "ios chat_call_back_a11y: Accessibility label of a call pill that calls back. {text} is the pill text (like \"Missed voice call\"), {time} the clock time.",
 ]
-text = ""
+text = "{text}, {time}. திரும்ப அழை"
 
 [t_671218216a]
 en = "Cancel edit"
@@ -7953,7 +7955,7 @@ where = [
   "android conv_cancel_edit: Screen-reader label of the button that closes the edit banner.",
   "ios chat_composer_cancel_edit: Accessibility label of the button that cancels editing.",
 ]
-text = ""
+text = "திருத்தத்தை ரத்துசெய்"
 
 [t_df1b4215d2]
 en = "You deleted this message"
@@ -7962,7 +7964,7 @@ where = [
   "ios chat_deleted_by_me: Placeholder shown where the user deleted a message.",
   "desktop chat_you_deleted_this_message: Desktop, chats (in chat_view.rs, message_row).",
 ]
-text = ""
+text = "இந்தச் செய்தியை நீக்கிவிட்டீர்கள்"
 
 [t_5d52afde34]
 en = "{first} deleted this message"
@@ -7970,7 +7972,7 @@ where = [
   "android conv_they_deleted: Italic placeholder where the contact's message was deleted. {first} is their first name.",
   "ios chat_deleted_by_them: Placeholder shown where the other person deleted a message. {first} is their first name.",
 ]
-text = ""
+text = "{first} இந்தச் செய்தியை நீக்கிவிட்டார்"
 
 [t_17ffe46e80]
 en = "Earlier message"
@@ -7978,7 +7980,7 @@ where = [
   "android conv_earlier_message: Quote heading when the message replied to is not loaded.",
   "ios chat_quote_earlier: Quote header when the quoted message is older than what this phone has.",
 ]
-text = ""
+text = "முந்தைய செய்தி"
 
 [t_ba70e88e13]
 en = "Message unavailable"
@@ -7986,14 +7988,14 @@ where = [
   "android conv_message_unavailable: Quote text inside a reply bubble when the original is not available.",
   "ios chat_quote_gone: Quote text inside a bubble when the quoted message is not available.",
 ]
-text = ""
+text = "செய்தி கிடைக்கவில்லை"
 
 [t_a8d397d00d]
 en = "{status} · {time}"
 where = [
   "android conv_meta_status: Time line of a bubble that has a delivery problem. {status} is the reason, {time} the clock time.",
 ]
-text = ""
+text = "{status} · {time}"
 
 [t_7a2ad862ad]
 en = "Sending {percent}% · {time}"
@@ -8001,7 +8003,7 @@ where = [
   "android conv_meta_sending: Time line of a bubble while a file is being sent. {percent} is a number, {time} the clock time.",
   "ios chat_meta_sending: Time line under a message that is still being sent. {percent} is a whole number, {time} the clock time.",
 ]
-text = ""
+text = "அனுப்புகிறது {percent}% · {time}"
 
 [t_9b5fdf0f83]
 en = "Waiting · {time}"
@@ -8009,7 +8011,7 @@ where = [
   "android conv_meta_waiting: Time line of a bubble that waits to be sent. {time} is the clock time.",
   "ios chat_meta_waiting: Time line under a message waiting to be sent. {time} is the clock time.",
 ]
-text = ""
+text = "காத்திருக்கிறது · {time}"
 
 [t_5655870496]
 en = "edited · {time}"
@@ -8017,7 +8019,7 @@ where = [
   "android conv_meta_edited: Time line of an edited bubble that has an attachment. {time} is the clock time.",
   "ios chat_meta_edited: Time line under a message that was edited. {time} is the clock time.",
 ]
-text = ""
+text = "திருத்தப்பட்டது · {time}"
 
 [t_b653aab95e]
 en = "Cancel sending"
@@ -8025,7 +8027,7 @@ where = [
   "android conv_cancel_sending: Screen-reader label of the cancel button on a photo that is being sent.",
   "ios chat_cancel_sending: Accessibility label of the cancel button on a photo being sent.",
 ]
-text = ""
+text = "அனுப்புவதை ரத்துசெய்"
 
 [t_97590a3009]
 en = "Cancel download"
@@ -8033,7 +8035,7 @@ where = [
   "android conv_cancel_download: Screen-reader label of the cancel button on a photo that is downloading.",
   "ios chat_cancel_download: Accessibility label of the cancel button on a photo being downloaded.",
 ]
-text = ""
+text = "பதிவிறக்கத்தை ரத்துசெய்"
 
 [t_c0b559419f]
 en = "Download"
@@ -8042,7 +8044,7 @@ where = [
   "ios chat_download: Button on a photo that downloads it.",
   "desktop chat_download: Desktop, chats (in chat_view.rs, attachment_view).",
 ]
-text = ""
+text = "பதிவிறக்கு"
 
 [t_68faa1516f]
 en = "Retry download"
@@ -8050,7 +8052,7 @@ where = [
   "android conv_retry_download: Screen-reader label of the retry button on a photo whose download failed.",
   "ios chat_retry_download: Accessibility label of the retry button on a photo whose download failed.",
 ]
-text = ""
+text = "மீண்டும் பதிவிறக்கு"
 
 [t_660dab004e]
 en = "Sends when {first} is online"
@@ -8058,7 +8060,7 @@ where = [
   "android conv_sends_when_online: Chip on a photo that waits to be sent. {first} is the contact's first name.",
   "ios chat_sends_when_online: Chip on a photo waiting to be sent. {first} is the other person's first name.",
 ]
-text = ""
+text = "{first} ஆன்லைனுக்கு வந்ததும் அனுப்பப்படும்"
 
 [t_62e2c511f3]
 en = "{size} · {type} · tap to open"
@@ -8066,7 +8068,7 @@ where = [
   "android conv_file_tap_open: Second line of a file in a chat that can be opened. {size} is the file size, {type} the short type such as PDF.",
   "ios chat_file_open: Sub line of a file bubble that can be opened. {size} like 2.4 MB, {type} like PDF.",
 ]
-text = ""
+text = "{size} · {type} · திறக்கத் தட்டவும்"
 
 [t_eb0ae0ccd3]
 en = "{size} · {type} · tap to save"
@@ -8074,7 +8076,7 @@ where = [
   "android conv_file_tap_save: Second line of a file in a chat that can only be saved. {size} is the file size, {type} the short type such as PDF.",
   "ios chat_file_save: Sub line of a file bubble that can only be saved. {size} like 2.4 MB, {type} like ZIP.",
 ]
-text = ""
+text = "{size} · {type} · சேமிக்கத் தட்டவும்"
 
 [t_f2a6b4281c]
 en = "Downloading · {done} of {size}"
@@ -8082,7 +8084,7 @@ where = [
   "android conv_file_downloading: Second line of a file that is downloading. {done} and {size} are file sizes such as 2.4 MB.",
   "ios chat_file_downloading: Sub line of a file bubble while downloading. {done} is the part received, {size} the whole, like 1.2 MB.",
 ]
-text = ""
+text = "பதிவிறக்குகிறது · {size}-இல் {done}"
 
 [t_4e07aad658]
 en = "{size} · paused — waiting for {first} to come online"
@@ -8090,7 +8092,7 @@ where = [
   "android conv_file_paused: Second line of a file whose download waits for the contact. {size} is the file size, {first} their first name.",
   "ios chat_file_paused: Sub line of a file bubble whose transfer is paused. {size} like 2.4 MB, {first} the other person's first name.",
 ]
-text = ""
+text = "{size} · இடைநிறுத்தப்பட்டது — {first} ஆன்லைனுக்கு வரக் காத்திருக்கிறது"
 
 [t_bb35886daf]
 en = "{size} · starting…"
@@ -8098,7 +8100,7 @@ where = [
   "android conv_file_starting: Second line of a file whose download was just requested. {size} is the file size.",
   "ios chat_file_starting: Sub line of a file bubble right after tapping download. {size} like 2.4 MB.",
 ]
-text = ""
+text = "{size} · தொடங்குகிறது…"
 
 [t_2b4dc82020]
 en = "{size} · couldn’t download — tap to retry"
@@ -8106,7 +8108,7 @@ where = [
   "android conv_file_failed: Second line of a file whose download failed. {size} is the file size.",
   "ios chat_file_failed: Sub line of a file bubble whose download failed. {size} like 2.4 MB.",
 ]
-text = ""
+text = "{size} · பதிவிறக்க முடியவில்லை — மீண்டும் முயலத் தட்டவும்"
 
 [t_744bf11a93]
 en = "{size} · not downloaded"
@@ -8114,7 +8116,7 @@ where = [
   "android conv_file_not_downloaded: Second line of a file that has not been downloaded. {size} is the file size.",
   "ios chat_file_remote: Sub line of a file bubble not downloaded yet. {size} like 2.4 MB.",
 ]
-text = ""
+text = "{size} · பதிவிறக்கப்படவில்லை"
 
 [t_e89f516efe]
 en = "Download {name}"
@@ -8122,7 +8124,7 @@ where = [
   "android conv_download_name: Screen-reader label of the download button on a file. {name} is the file name.",
   "ios chat_file_download_a11y: Accessibility label of the download button on a file. {name} is the file name.",
 ]
-text = ""
+text = "{name} பதிவிறக்கு"
 
 [t_07617323a2]
 en = "Cancel download of {name}"
@@ -8130,7 +8132,7 @@ where = [
   "android conv_cancel_download_name: Screen-reader label of the cancel button on a file download. {name} is the file name.",
   "ios chat_file_cancel_a11y: Accessibility label of the cancel button on a file download. {name} is the file name.",
 ]
-text = ""
+text = "{name} பதிவிறக்கத்தை ரத்துசெய்"
 
 [t_9da4610fa6]
 en = "Save {name} to phone"
@@ -8138,7 +8140,7 @@ where = [
   "android conv_save_name_to_phone: Screen-reader label of the save button on a file. {name} is the file name.",
   "ios chat_file_save_a11y: Accessibility label of the save button on a file. {name} is the file name.",
 ]
-text = ""
+text = "{name} ஃபோனில் சேமி"
 
 [t_879708511c]
 en = "Saved {time} · on your devices"
@@ -8146,7 +8148,7 @@ where = [
   "android conv_info_saved: Top line of the message sheet in the 'You' chat. {time} is the clock time.",
   "ios chat_head_saved: First line of the message sheet for a saved item. {time} is the clock time.",
 ]
-text = ""
+text = "சேமிக்கப்பட்டது {time} · உங்கள் சாதனங்களில்"
 
 [t_024fed3498]
 en = "Received {time}"
@@ -8154,7 +8156,7 @@ where = [
   "android conv_info_received: Top line of the message sheet for a message you received. {time} is the clock time.",
   "ios chat_head_received: First line of the message sheet for a received message. {time} is the clock time.",
 ]
-text = ""
+text = "பெறப்பட்டது {time}"
 
 [t_88da3750d0]
 en = "Sent {time} · read on {first}’s device"
@@ -8162,7 +8164,7 @@ where = [
   "android conv_info_sent_read: Top line of the message sheet for a sent message that was read. {time} is the clock time, {first} the contact's first name.",
   "ios chat_head_read: First line of the message sheet for a read message. {time} clock time, {first} the other person's first name.",
 ]
-text = ""
+text = "அனுப்பப்பட்டது {time} · {first} அவர்களின் சாதனத்தில் படிக்கப்பட்டது"
 
 [t_a4079ed593]
 en = "Sent {time} · on {first}’s device"
@@ -8170,7 +8172,7 @@ where = [
   "android conv_info_sent_delivered: Top line of the message sheet for a delivered message. {time} is the clock time, {first} the contact's first name.",
   "ios chat_head_delivered: First line of the message sheet for a delivered message. {time} clock time, {first} first name.",
 ]
-text = ""
+text = "அனுப்பப்பட்டது {time} · {first} அவர்களின் சாதனத்தில்"
 
 [t_f03bc2cf6f]
 en = "Sent {time} · only on this phone so far"
@@ -8178,7 +8180,7 @@ where = [
   "android conv_info_sent_only_here: Top line of the message sheet for a message that has only reached this phone. {time} is the clock time.",
   "ios chat_head_only_here: First line of the message sheet for a message only on this phone. {time} clock time.",
 ]
-text = ""
+text = "அனுப்பப்பட்டது {time} · இதுவரை இந்த ஃபோனில் மட்டும்"
 
 [t_a0c3acc9a5]
 en = "Sent {time} · waiting for {first}’s device to confirm"
@@ -8186,21 +8188,21 @@ where = [
   "android conv_info_sent_waiting: Top line of the message sheet for a message not yet confirmed. {time} is the clock time, {first} the contact's first name.",
   "ios chat_head_sent: First line of the message sheet for a sent message without confirmation. {time} clock time, {first} first name.",
 ]
-text = ""
+text = "அனுப்பப்பட்டது {time} · {first} அவர்களின் சாதனம் உறுதிசெய்யக் காத்திருக்கிறது"
 
 [t_914cbd7944]
 en = "Read · signed by {name} · device {device}"
 where = [
   "android conv_proof_read: Line in the message sheet about a signed read receipt. {name} is the contact's first name, {device} a short device id.",
 ]
-text = ""
+text = "படிக்கப்பட்டது · கையொப்பமிட்டவர் {name} · சாதனம் {device}"
 
 [t_6a60dbc25c]
 en = "Delivered · signed by {name} · device {device}"
 where = [
   "android conv_proof_delivered: Line in the message sheet about a signed delivery receipt. {name} is the contact's first name, {device} a short device id.",
 ]
-text = ""
+text = "சேர்ந்தது · கையொப்பமிட்டவர் {name} · சாதனம் {device}"
 
 [t_a713a48f0b]
 en = "Copy text"
@@ -8208,7 +8210,7 @@ where = [
   "android conv_copy_text: Action in the message sheet that copies the message text.",
   "ios chat_copy_text: Action in the message sheet that copies the message text.",
 ]
-text = ""
+text = "உரையை நகலெடு"
 
 [t_9284e3b1e5]
 en = "Save to phone"
@@ -8217,7 +8219,7 @@ where = [
   "android file_save_to_phone: Button in the document viewer that saves the file to the phone.",
   "ios chat_save_to_phone: Action in the message sheet that saves the file to the phone.",
 ]
-text = ""
+text = "ஃபோனில் சேமி"
 
 [t_be25d3e36d]
 en = "Delete on all your devices"
@@ -8225,7 +8227,7 @@ where = [
   "android conv_delete_self: Action in the message sheet of the 'You' chat that deletes the note everywhere.",
   "ios chat_delete_self: Action in the message sheet for a saved item: deletes it everywhere.",
 ]
-text = ""
+text = "உங்கள் எல்லாச் சாதனங்களிலும் நீக்கு"
 
 [t_123da13187]
 en = "Delete for both of you"
@@ -8233,7 +8235,7 @@ where = [
   "android conv_delete_both: Action in the message sheet that deletes your message for you and the contact.",
   "ios chat_delete_both: Action in the message sheet: deletes the message for both people.",
 ]
-text = ""
+text = "இருவருக்கும் நீக்கு"
 
 [t_15ca626483]
 en = "Edits and deletes reach your other devices when they’re online."
@@ -8241,7 +8243,7 @@ where = [
   "android conv_edits_reach_self: Hint at the bottom of the message sheet in the 'You' chat.",
   "ios chat_sheet_hint_self: Hint at the bottom of the message sheet for a saved item.",
 ]
-text = ""
+text = "உங்கள் மற்ற சாதனங்கள் ஆன்லைனில் இருக்கும்போது திருத்தங்களும் நீக்கங்களும் அவற்றைச் சேரும்."
 
 [t_7c20d84ae7]
 en = "Edits and deletes reach {first}’s phone the next time you’re both online."
@@ -8249,7 +8251,7 @@ where = [
   "android conv_edits_reach_peer: Hint at the bottom of the message sheet. {first} is the contact's first name.",
   "ios chat_sheet_hint: Hint at the bottom of the message sheet. {first} is the other person's first name.",
 ]
-text = ""
+text = "அடுத்த முறை நீங்கள் இருவரும் ஆன்லைனில் இருக்கும்போது திருத்தங்களும் நீக்கங்களும் {first} அவர்களின் ஃபோனைச் சேரும்."
 
 [t_6a9b6c8bea]
 en = "Save for yourself"
@@ -8257,7 +8259,7 @@ where = [
   "android conv_attach_title_self: Title of the attach sheet in the 'You' chat.",
   "ios chat_attach_title_self: Title of the attach sheet in the saved-items chat.",
 ]
-text = ""
+text = "உங்களுக்காகச் சேமி"
 
 [t_2694545b6b]
 en = "Send to {first}"
@@ -8265,7 +8267,7 @@ where = [
   "android conv_attach_title: Title of the attach sheet. {first} is the contact's first name.",
   "ios chat_attach_title: Title of the attach sheet. {first} is the other person's first name.",
 ]
-text = ""
+text = "{first} அவர்களுக்கு அனுப்பு"
 
 [t_c1f6b1c17b]
 en = "Photos & videos"
@@ -8273,7 +8275,7 @@ where = [
   "android conv_attach_photos: Option in the attach sheet that picks from the gallery.",
   "ios chat_attach_photos: Option in the attach sheet: pick photos and videos.",
 ]
-text = ""
+text = "படங்கள் & வீடியோக்கள்"
 
 [t_50ad995a3d]
 en = "Camera"
@@ -8284,7 +8286,7 @@ where = [
   "ios call_control_camera: Label and caption of the camera button.",
   "desktop common_camera: Shared label, used in several places (call_screen, profile).",
 ]
-text = ""
+text = "கேமரா"
 
 [t_0587e6e5d5]
 en = "File"
@@ -8294,7 +8296,7 @@ where = [
   "ios chat_attach_file: Option in the attach sheet: pick a file.",
   "ios chat_viewer_file: Title in the file viewer when the file has no name.",
 ]
-text = ""
+text = "கோப்பு"
 
 [t_d68cce602d]
 en = "Files stay encrypted on your devices and copy to the others when they’re online. Up to 2 GB each."
@@ -8302,7 +8304,7 @@ where = [
   "android conv_attach_hint_self: Hint at the bottom of the attach sheet in the 'You' chat.",
   "ios chat_attach_hint_self: Hint in the attach sheet of the saved-items chat.",
 ]
-text = ""
+text = "கோப்புகள் உங்கள் சாதனங்களில் என்க்ரிப்ட் செய்யப்பட்டே இருக்கும், மற்றவை ஆன்லைனில் இருக்கும்போது அவற்றுக்கு நகலெடுக்கப்படும். ஒவ்வொன்றும் 2 GB வரை."
 
 [t_3ed613c33d]
 en = "Files are end-to-end encrypted. Up to 2 GB each. Both of you need to be online while it transfers."
@@ -8310,14 +8312,14 @@ where = [
   "android conv_attach_hint: Hint at the bottom of the attach sheet.",
   "ios chat_attach_hint: Hint in the attach sheet.",
 ]
-text = ""
+text = "கோப்புகள் எண்ட்-டு-எண்ட் என்க்ரிப்ட் செய்யப்பட்டவை. ஒவ்வொன்றும் 2 GB வரை. அனுப்பப்படும்போது நீங்கள் இருவரும் ஆன்லைனில் இருக்க வேண்டும்."
 
 [t_93d3c32a03]
 en = "Kept encrypted inside Tinline. “Save to phone” copies it to your gallery, where other apps can see it."
 where = [
   "android conv_viewer_note: Note at the bottom of the full-screen photo viewer. 'Save to phone' refers to the viewer's save button.",
 ]
-text = ""
+text = "Tinline-க்குள் என்க்ரிப்ட் செய்யப்பட்டு வைக்கப்பட்டுள்ளது. “ஃபோனில் சேமி” இதை உங்கள் கேலரிக்கு நகலெடுக்கும், அங்கே மற்ற ஆப்கள் பார்க்க முடியும்."
 
 [t_9bfc169a37]
 en = "Download voice message"
@@ -8325,7 +8327,7 @@ where = [
   "android conv_voice_download: Screen-reader label of the download button on a voice message that has not been downloaded.",
   "ios chat_voice_download: Accessibility label of the button on a voice message that is not downloaded.",
 ]
-text = ""
+text = "குரல் செய்தியைப் பதிவிறக்கு"
 
 [t_ed65be7240]
 en = "Voice message loading"
@@ -8333,21 +8335,21 @@ where = [
   "android conv_voice_loading: Screen-reader label of the play button on a voice message that is loading.",
   "ios chat_voice_loading: Accessibility label of a voice message that is loading.",
 ]
-text = ""
+text = "குரல் செய்தி ஏற்றப்படுகிறது"
 
 [t_1591e88140]
 en = "You blocked {name} · {date}"
 where = [
   "android conv_you_blocked_date: Small pill under the last message when you blocked the contact. {name} is their first name, {date} when.",
 ]
-text = ""
+text = "{name} அவர்களை நீங்கள் தடுத்தீர்கள் · {date}"
 
 [t_e956596e00]
 en = "Signed by {name} · {date}"
 where = [
   "android conv_signed_by: Line in the notice that the contact blocked you. {name} is their first name, {date} when.",
 ]
-text = ""
+text = "கையொப்பமிட்டவர் {name} · {date}"
 
 [t_70af75ba10]
 en = "Send voice message"
@@ -8355,7 +8357,7 @@ where = [
   "android voice_send: Screen-reader label of the mic button once a recording is locked.",
   "ios chat_voice_send: Accessibility label of the mic button once recording is locked: sends the voice message.",
 ]
-text = ""
+text = "குரல் செய்தியை அனுப்பு"
 
 [t_1773cfff61]
 en = "Recording, release to send"
@@ -8363,7 +8365,7 @@ where = [
   "android voice_recording: Screen-reader label of the mic button while recording.",
   "ios chat_voice_recording: Accessibility label of the mic button while recording.",
 ]
-text = ""
+text = "பதிவாகிறது, அனுப்ப விடுவியுங்கள்"
 
 [t_0d88cc97a5]
 en = "Hold to record a voice message"
@@ -8371,7 +8373,7 @@ where = [
   "android voice_hold: Screen-reader label of the mic button when idle.",
   "ios chat_voice_hold: Accessibility label of the mic button at rest.",
 ]
-text = ""
+text = "குரல் செய்தியைப் பதிவுசெய்ய அழுத்திப் பிடியுங்கள்"
 
 [t_c9b6965045]
 en = "Discard recording"
@@ -8379,7 +8381,7 @@ where = [
   "android voice_discard: Screen-reader label of the trash button on a locked recording.",
   "ios chat_voice_discard: Accessibility label of the trash button while a voice message is being recorded hands-free.",
 ]
-text = ""
+text = "பதிவை நிராகரி"
 
 [t_710621fa84]
 en = "Slide to cancel"
@@ -8387,7 +8389,7 @@ where = [
   "android voice_slide_cancel: Hint in the recording bar while the mic button is held.",
   "ios chat_voice_slide_cancel: Hint beside the recording timer: slide left to cancel the voice message.",
 ]
-text = ""
+text = "ரத்துசெய்ய நகர்த்துங்கள்"
 
 [t_83f9f53fbf]
 en = "Pause voice message"
@@ -8395,7 +8397,7 @@ where = [
   "android voice_pause: Screen-reader label of the play button while a voice message plays.",
   "ios chat_voice_pause: Accessibility label of the pause button on a voice message bubble.",
 ]
-text = ""
+text = "குரல் செய்தியை இடைநிறுத்து"
 
 [t_73e9960d09]
 en = "Play voice message"
@@ -8403,7 +8405,7 @@ where = [
   "android voice_play: Screen-reader label of the play button of a voice message.",
   "ios chat_voice_play: Accessibility label of the play button on a voice message bubble.",
 ]
-text = ""
+text = "குரல் செய்தியை இயக்கு"
 
 [t_3ecf5b544d]
 en = "Voice message waveform, tap to seek"
@@ -8411,7 +8413,7 @@ where = [
   "android voice_waveform: Screen-reader label of the waveform of a voice message.",
   "ios chat_voice_waveform: Accessibility label of the voice message waveform.",
 ]
-text = ""
+text = "குரல் செய்தியின் அலைவடிவம், நகர்த்தத் தட்டவும்"
 
 [t_ca71d58a9e]
 en = "This PDF is password-protected, so Tinline can’t show it. Save it to open it in another app."
@@ -8419,7 +8421,7 @@ where = [
   "android file_pdf_protected: Message in the document viewer for a PDF that needs a password.",
   "ios chat_viewer_pdf_locked: Shown in the file viewer when a PDF needs a password.",
 ]
-text = ""
+text = "இந்த PDF கடவுச்சொல்லால் பாதுகாக்கப்பட்டுள்ளதால் Tinline-ஆல் அதைக் காட்ட முடியாது. வேறு ஆப்பில் திறக்க அதைச் சேமியுங்கள்."
 
 [t_c685acd02b]
 en = "Tinline can’t read this PDF. It may be damaged. You can still save it."
@@ -8427,7 +8429,7 @@ where = [
   "android file_pdf_unreadable: Message in the document viewer for a PDF that cannot be read.",
   "ios chat_viewer_pdf_damaged: Shown in the file viewer when a PDF cannot be read.",
 ]
-text = ""
+text = "Tinline-ஆல் இந்த PDF-ஐப் படிக்க முடியவில்லை. அது சேதமடைந்திருக்கலாம். இருந்தாலும் அதைச் சேமிக்கலாம்."
 
 [t_d128ff7b39]
 en = "Couldn’t open that file."
@@ -8435,7 +8437,7 @@ where = [
   "android file_open_failed: Message in the document viewer when a file could not be opened.",
   "ios chat_err_open_file: Toast when a file cannot be opened.",
 ]
-text = ""
+text = "அந்தக் கோப்பைத் திறக்க முடியவில்லை."
 
 [t_209f5b2f84]
 en = "Page {page} of {total}"
@@ -8443,14 +8445,14 @@ where = [
   "android file_page_of: Subtitle in the PDF viewer. {page} is the current page, {total} the page count.",
   "ios chat_viewer_page: Subtitle of the PDF viewer. {page} is the current page number, {total} the page count.",
 ]
-text = ""
+text = "பக்கம் {page} / {total}"
 
 [t_3b42eb965f]
 en = "Page {number}"
 where = [
   "android file_page_n: Screen-reader label of one page image in the PDF viewer.",
 ]
-text = ""
+text = "பக்கம் {number}"
 
 [t_40bbed517a]
 en = "This file is too big to show here. Save it to open it in another app."
@@ -8458,7 +8460,7 @@ where = [
   "android file_too_big: Message in the document viewer for a text file that is too large.",
   "ios chat_viewer_too_big: Shown in the file viewer when a text file is too large.",
 ]
-text = ""
+text = "இந்தக் கோப்பு இங்கே காட்ட முடியாத அளவுக்குப் பெரியது. வேறு ஆப்பில் திறக்க அதைச் சேமியுங்கள்."
 
 [t_08c555cb9b]
 en = "This doesn’t look like a text file. Save it to open it in another app."
@@ -8466,14 +8468,14 @@ where = [
   "android file_not_text: Message in the document viewer for a file that is not text.",
   "ios chat_viewer_not_text: Shown in the file viewer when a file is not text.",
 ]
-text = ""
+text = "இது உரைக் கோப்பாகத் தெரியவில்லை. வேறு ஆப்பில் திறக்க அதைச் சேமியுங்கள்."
 
 [t_954e2b54af]
 en = "Match {shown} of {total}"
 where = [
   "android find_match_of: Screen-reader description of the match counter. {shown} is the current match, {total} how many.",
 ]
-text = ""
+text = "பொருத்தம் {shown} / {total}"
 
 [t_ec4cc94892]
 en = "No matches"
@@ -8481,7 +8483,7 @@ where = [
   "android find_no_matches: Screen-reader description of the match counter when nothing matches.",
   "ios chat_find_none: Accessibility label of the match counter when nothing matched.",
 ]
-text = ""
+text = "பொருத்தங்கள் இல்லை"
 
 [t_0999d8e47d]
 en = "Older match"
@@ -8489,7 +8491,7 @@ where = [
   "android find_older: Screen-reader label of the button that jumps to the previous (older) match.",
   "ios chat_find_older: Accessibility label of the button that jumps to the previous (older) search match.",
 ]
-text = ""
+text = "பழைய பொருத்தம்"
 
 [t_f7d51e7c2a]
 en = "Newer match"
@@ -8497,7 +8499,7 @@ where = [
   "android find_newer: Screen-reader label of the button that jumps to the next (newer) match.",
   "ios chat_find_newer: Accessibility label of the button that jumps to the next (newer) search match.",
 ]
-text = ""
+text = "புதிய பொருத்தம்"
 
 [t_aa3794a14d]
 en = "Close find"
@@ -8505,7 +8507,7 @@ where = [
   "android find_close: Screen-reader label of the button that closes the find bar.",
   "ios chat_find_close: Accessibility label of the button that closes the in-chat search bar.",
 ]
-text = ""
+text = "தேடலை மூடு"
 
 [t_c6e11c3bbe]
 en = "People & groups"
@@ -8514,7 +8516,7 @@ where = [
   "ios shell_search_people_groups: Search results header for matching people and groups.",
   "desktop shell_people_groups: Desktop, shell: sidebar, search, contacts (in shell_view.rs, shell_search_results).",
 ]
-text = ""
+text = "நபர்கள் & குழுக்கள்"
 
 [t_c003298a35]
 en = "No people or groups match"
@@ -8523,7 +8525,7 @@ where = [
   "ios shell_search_no_names: Search results message when no person or group matches.",
   "desktop shell_no_people_or_groups: Desktop, shell: sidebar, search, contacts (in shell_view.rs, shell_search_results).",
 ]
-text = ""
+text = "பொருந்தும் நபர்களோ குழுக்களோ இல்லை"
 
 [t_3e4f74a22c]
 en = "Type 2 or more characters to search messages."
@@ -8532,7 +8534,7 @@ where = [
   "ios shell_search_min_chars: Search screen hint when fewer than two characters were typed.",
   "desktop shell_type_2_or_more: Desktop, shell: sidebar, search, contacts (in shell_view.rs, shell_search_results).",
 ]
-text = ""
+text = "செய்திகளைத் தேட 2 அல்லது அதற்கு மேற்பட்ட எழுத்துகளைத் தட்டச்சு செய்யுங்கள்."
 
 [t_2ffb6134f0]
 en = "No messages match “{query}”"
@@ -8540,7 +8542,7 @@ where = [
   "android search_no_messages: Shown in search when no message matches. {query} is what was typed.",
   "ios shell_search_no_messages: Search screen hint when no message matches. {query} is what the user typed.",
 ]
-text = ""
+text = "“{query}” என்பதுடன் பொருந்தும் செய்திகள் இல்லை"
 
 [t_f04d04eb7a]
 en = "Clear search"
@@ -8548,7 +8550,7 @@ where = [
   "android search_clear_field: Screen-reader label of the button that clears the search field.",
   "ios shell_search_clear: Accessibility label of the button that clears the typed search.",
 ]
-text = ""
+text = "தேடலை அழி"
 
 [t_a0c11359f5]
 en = "Recent"
@@ -8556,7 +8558,7 @@ where = [
   "android search_recent: Heading of the recent searches list.",
   "ios shell_search_recent: Header of the list of recent searches.",
 ]
-text = ""
+text = "சமீபத்தியவை"
 
 [t_f8f4fec065]
 en = "Clear"
@@ -8565,7 +8567,7 @@ where = [
   "android home_clear: Accessibility label of the button that clears the search text.",
   "ios shell_clear: Accessibility label of the button that clears the search field.",
 ]
-text = ""
+text = "அழி"
 
 [t_1d2b33b48c]
 en = "Search messages, people and groups."
@@ -8574,7 +8576,7 @@ where = [
   "ios shell_search_empty_title: Search screen line before typing.",
   "desktop shell_search_messages_people_and: Desktop, shell: sidebar, search, contacts (in shell_view.rs, shell_search_results).",
 ]
-text = ""
+text = "செய்திகள், நபர்கள், குழுக்களைத் தேடுங்கள்."
 
 [t_8b2bc3214e]
 en = "Everything stays on this device."
@@ -8582,7 +8584,7 @@ where = [
   "android search_blank_2: Second line of the empty search screen.",
   "ios shell_search_empty_sub: Search screen reassurance before typing.",
 ]
-text = ""
+text = "அனைத்தும் இந்தச் சாதனத்திலேயே இருக்கும்."
 
 [t_71bb727632]
 en = "group"
@@ -8590,7 +8592,7 @@ where = [
   "android search_kind_group: Screen-reader word after a name in the people strip of search: this result is a group.",
   "ios shell_search_kind_group: Screen reader: kind of a search result tile (a group).",
 ]
-text = ""
+text = "குழு"
 
 [t_e5220e7327]
 en = "your profile"
@@ -8598,7 +8600,7 @@ where = [
   "android search_kind_me: Screen-reader word after a name in the people strip of search: this result is your own profile.",
   "ios shell_search_kind_me: Screen reader: kind of a search result tile (the user’s own profile).",
 ]
-text = ""
+text = "உங்கள் சுயவிவரம்"
 
 [t_18b446d780]
 en = "contact"
@@ -8606,21 +8608,21 @@ where = [
   "android search_kind_contact: Screen-reader word after a name in the people strip of search: this result is a contact.",
   "ios shell_search_kind_contact: Screen reader: kind of a search result tile (a contact).",
 ]
-text = ""
+text = "தொடர்பு"
 
 [t_773c15bb8e]
 en = "{name}, {what}"
 where = [
   "android search_tile_desc: Screen-reader description of a search result tile. {name} is the result, {what} the kind (group, your profile, contact).",
 ]
-text = ""
+text = "{name}, {what}"
 
 [t_7c9cb5cf0a]
 en = "{name}:"
 where = [
   "android search_author_prefix: Start of a message result's snippet, naming who wrote it. {name} is 'You' or a first name. A space follows.",
 ]
-text = ""
+text = "{name}:"
 
 [t_0557a2e5a6]
 en = "Copy"
@@ -8630,7 +8632,7 @@ where = [
   "ios group_copy: Copy button.",
   "desktop chat_copy: Desktop, chats (in chat_view.rs, message_menu).",
 ]
-text = ""
+text = "நகலெடு"
 
 [t_fef1bb0539]
 en = "Share contact card"
@@ -8638,14 +8640,14 @@ where = [
   "android card_share_chooser: Title of the system share chooser when sharing your contact card.",
   "ios chat_card_share_subject: Subject line of the system share sheet when sharing the contact card.",
 ]
-text = ""
+text = "தொடர்பு அட்டையைப் பகிர்"
 
 [t_46b50a6760]
 en = "Nothing to share with"
 where = [
   "android card_nothing_to_share: Shown under the QR code when no app can receive the shared card.",
 ]
-text = ""
+text = "பகிர ஆப் எதுவும் இல்லை"
 
 [t_18db989a07]
 en = "QR code of your contact card"
@@ -8653,7 +8655,7 @@ where = [
   "android card_qr_desc: Screen-reader label of your QR code.",
   "ios chat_card_qr_label: Accessibility label of the QR image of the user's own contact card.",
 ]
-text = ""
+text = "உங்கள் தொடர்பு அட்டையின் QR குறியீடு"
 
 [t_9adce76732]
 en = "Works once. Making a new code cancels this one."
@@ -8661,14 +8663,14 @@ where = [
   "android card_works_once: Hint under your QR code.",
   "ios chat_card_once: Hint under the contact card QR code.",
 ]
-text = ""
+text = "ஒருமுறை மட்டுமே செயல்படும். புதிய குறியீட்டை உருவாக்கினால் இது ரத்தாகும்."
 
 [t_e0f29c1088]
 en = "No Tinline contact card in that message"
 where = [
   "android card_none_found: Toast when text shared into the app holds no contact card.",
 ]
-text = ""
+text = "அந்தச் செய்தியில் Tinline தொடர்பு அட்டை இல்லை"
 
 [t_c29c6188f0]
 en = "Chat with {name}?"
@@ -8676,7 +8678,7 @@ where = [
   "android card_chat_with: Title of the prompt shown when a card of someone already in your contacts is found. {name} is their name.",
   "ios chat_card_chat_with: Title of the clipboard card prompt for a known contact. {name} is the contact's name, or \"them\".",
 ]
-text = ""
+text = "{name} அவர்களுடன் அரட்டையடிக்கவா?"
 
 [t_a5d04da81c]
 en = "Add {name}?"
@@ -8685,7 +8687,7 @@ where = [
   "ios chat_card_add_name: Title of the clipboard card prompt for a new contact. {name} is the name on the card, or \"this contact\".",
   "desktop home_add: Desktop, home, sidebar and call list (in view.rs, offer_bar). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} அவர்களைச் சேர்க்கவா?"
 
 [t_386b7cb30a]
 en = "They are already in your contacts."
@@ -8693,7 +8695,7 @@ where = [
   "android card_already_contact: Second line of the card prompt for an existing contact.",
   "ios chat_card_known_sub: Second line of the clipboard card prompt when the person is already a contact.",
 ]
-text = ""
+text = "அவர் ஏற்கெனவே உங்கள் தொடர்புகளில் இருக்கிறார்."
 
 [t_1b951d0bdb]
 en = "Tinline found their card."
@@ -8701,7 +8703,7 @@ where = [
   "android card_found: Second line of the card prompt for a new contact.",
   "ios chat_card_found_sub: Second line of the clipboard card prompt when the card is new.",
 ]
-text = ""
+text = "Tinline அவர்களின் அட்டையைக் கண்டுபிடித்தது."
 
 [t_e080edf7e4]
 en = "Open"
@@ -8713,7 +8715,7 @@ where = [
   "ios call_open: Button on the group chat call banner that returns to my call.",
   "desktop common_open: Shared label, used in several places (app, chat, gcall, group_live).",
 ]
-text = ""
+text = "திற"
 
 [t_26bcab9d45]
 en_one = "You were removed after {count} admin flag"
@@ -8723,13 +8725,15 @@ where = [
   "ios group_sys_removed_you: System line: the user was removed. {count} is how many admin flags remove a member.",
   "desktop group_sys_removed_you: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). I was removed. {count} is how many admin flags remove a member.",
 ]
+one = "{count} நிர்வாகிக் கொடிக்குப் பிறகு நீங்கள் நீக்கப்பட்டீர்கள்"
+other = "{count} நிர்வாகிக் கொடிகளுக்குப் பிறகு நீங்கள் நீக்கப்பட்டீர்கள்"
 
 [t_b70ffe7657]
 en = "{by} made {sub} an admin"
 where = [
   "android groupsc_admin_granted_other: System line in a group's chat. {by} is who granted it, {sub} is the new admin.",
 ]
-text = ""
+text = "{by}, {sub} அவர்களை நிர்வாகி ஆக்கினார்"
 
 [t_81cb36972a]
 en = "{by} removed you as admin"
@@ -8738,14 +8742,14 @@ where = [
   "ios group_sys_unadmin_named_you: System line in a group chat (the centred grey line). Admin role taken away. Actor: a named member. Subject: the user. {by} is who did it (their name).",
   "desktop group_sys_unadmin_other_you: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Admin role taken away: {by} is the first name of the person who did it, to me.",
 ]
-text = ""
+text = "{by} உங்களை நிர்வாகிப் பொறுப்பிலிருந்து நீக்கினார்"
 
 [t_ef018e9c70]
 en = "{by} removed {sub} as admin"
 where = [
   "android groupsc_admin_revoked_other: System line in a group's chat. {by} is who took the admin role away, {sub} is who lost it.",
 ]
-text = ""
+text = "{by}, {sub} அவர்களை நிர்வாகிப் பொறுப்பிலிருந்து நீக்கினார்"
 
 [t_660d9ce36e]
 en = "A device of yours now hosts the group"
@@ -8754,14 +8758,14 @@ where = [
   "ios group_sys_host_added_you: System line when one of the user’s devices became a host.",
   "desktop group_sys_host_added_you: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). One of my devices became a host.",
 ]
-text = ""
+text = "உங்கள் சாதனம் ஒன்று இப்போது குழுவை ஹோஸ்ட் செய்கிறது"
 
 [t_f103ed482c]
 en = "A device of {sub}’s now hosts the group"
 where = [
   "android groupsc_host_added_other: System line in a group's chat: a member's device became a host. {sub} is the member's name.",
 ]
-text = ""
+text = "{sub} அவர்களின் சாதனம் ஒன்று இப்போது குழுவை ஹோஸ்ட் செய்கிறது"
 
 [t_c225709d3d]
 en = "A device of yours stopped hosting the group"
@@ -8770,14 +8774,14 @@ where = [
   "ios group_sys_host_removed_you: System line when one of the user’s devices stopped hosting.",
   "desktop group_sys_host_removed_you: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). One of my devices stopped hosting.",
 ]
-text = ""
+text = "உங்கள் சாதனம் ஒன்று குழுவை ஹோஸ்ட் செய்வதை நிறுத்தியது"
 
 [t_9e8b593eeb]
 en = "A device of {sub}’s stopped hosting the group"
 where = [
   "android groupsc_host_removed_other: System line in a group's chat: a member's device stopped hosting. {sub} is the member's name.",
 ]
-text = ""
+text = "{sub} அவர்களின் சாதனம் ஒன்று குழுவை ஹோஸ்ட் செய்வதை நிறுத்தியது"
 
 [t_620f224720]
 en_one = "{count} host"
@@ -8787,6 +8791,8 @@ where = [
   "ios group_hosts_count: Host count. {count} is the number of hosts.",
   "desktop group_hosts_count: Number of hosts of a group. {count} is the host count.",
 ]
+one = "{count} ஹோஸ்ட்"
+other = "{count} ஹோஸ்ட்கள்"
 
 [t_6f72c0f10c]
 en = "Copied. Anyone holding the link can join while it’s open."
@@ -8794,14 +8800,14 @@ where = [
   "android groupsc_open_link_copied: Confirmation after copying a public group's open link.",
   "desktop group_notice_link_copied: Desktop, group notice line (in group_live.rs). The public link was copied to the clipboard.",
 ]
-text = ""
+text = "நகலெடுக்கப்பட்டது. குழு திறந்திருக்கும்வரை இணைப்பு வைத்திருக்கும் எவரும் சேரலாம்."
 
 [t_9d537b6e28]
 en = "Not posted"
 where = [
   "android groupsc_not_posted: Small line under one of your group posts that the hosts refused, when the core gave no reason.",
 ]
-text = ""
+text = "இடுகையிடப்படவில்லை"
 
 [t_410727b674]
 en = "{name} accepted · messages only"
@@ -8810,7 +8816,7 @@ where = [
   "ios group_req_accepted_msgs: Line for an accepted chat request when the contact was added. {name} is who accepted.",
   "desktop group_sent_accepted_messages: Desktop, group requests I sent (in group_live.rs, sent_line): the state line of a private-chat request. {name} accepted; messages only for now.",
 ]
-text = ""
+text = "{name} ஏற்றுக்கொண்டார் · செய்திகள் மட்டும்"
 
 [t_772dbfcfd8]
 en = "{name} accepted · connecting"
@@ -8819,14 +8825,14 @@ where = [
   "ios group_req_accepted_connecting: Line for an accepted chat request, still connecting. {name} is who accepted.",
   "desktop group_sent_accepted_connecting: Desktop, group requests I sent (in group_live.rs, sent_line): the state line of a private-chat request. {name} accepted; connecting.",
 ]
-text = ""
+text = "{name} ஏற்றுக்கொண்டார் · இணைக்கிறது"
 
 [t_54372e851e]
 en = "An admin"
 where = [
   "android groupsc_an_admin: Who asked this device to host a group, when the admin's name is not known.",
 ]
-text = ""
+text = "ஒரு நிர்வாகி"
 
 [t_440c6e7ff9]
 en = "Invited · waiting for an answer"
@@ -8835,7 +8841,7 @@ where = [
   "ios group_inv_waiting: State of an invitation the user sent.",
   "desktop group_invited_waiting_for_an: Desktop, groups (in group_live.rs, sent_invitation_line).",
 ]
-text = ""
+text = "அழைக்கப்பட்டார் · பதிலுக்காகக் காத்திருக்கிறது"
 
 [t_17266cf5ef]
 en = "Invitation expired"
@@ -8844,7 +8850,7 @@ where = [
   "ios group_inv_expired: State of an invitation the user sent.",
   "desktop group_invitation_expired: Desktop, groups (in group_live.rs, sent_invitation_line).",
 ]
-text = ""
+text = "அழைப்பிதழ் காலாவதியானது"
 
 [t_cb5fedd705]
 en = "You’re not a member of this group."
@@ -8853,7 +8859,7 @@ where = [
   "ios group_error_not_member: Error: the host says the user is not a member.",
   "desktop group_youre_not_a_member: Desktop, groups (in group_live.rs, gerr).",
 ]
-text = ""
+text = "நீங்கள் இந்தக் குழுவின் உறுப்பினர் அல்ல."
 
 [t_35abbdf4d4]
 en = "You block them. Unblock them first to ask for a chat."
@@ -8862,7 +8868,7 @@ where = [
   "ios group_error_you_block: Error when asking for a chat with someone the user blocked.",
   "desktop group_you_block_them_unblock: Desktop, groups (in group_live.rs, gerr).",
 ]
-text = ""
+text = "நீங்கள் அவர்களைத் தடுத்துள்ளீர்கள். அரட்டைக்குக் கேட்க, முதலில் தடையை நீக்குங்கள்."
 
 [t_9b01c592b6]
 en = "They blocked you, so you can’t ask them for a chat."
@@ -8871,7 +8877,7 @@ where = [
   "ios group_error_they_block: Error when the other person blocked the user.",
   "desktop group_they_blocked_you_so: Desktop, groups (in group_live.rs, gerr).",
 ]
-text = ""
+text = "அவர்கள் உங்களைத் தடுத்துள்ளதால், அவர்களிடம் அரட்டைக்குக் கேட்க முடியாது."
 
 [t_d26a0ed1b3]
 en = "That invite isn’t valid any more. Ask for a new one."
@@ -8880,7 +8886,7 @@ where = [
   "ios group_error_invite_invalid: Error for an invite code that is wrong or expired.",
   "desktop group_that_invite_isnt_valid: Desktop, groups (in group_live.rs, gerr).",
 ]
-text = ""
+text = "அந்த அழைப்பிதழ் இனி செல்லாது. புதியதைக் கேளுங்கள்."
 
 [t_35816314a4]
 en = "Refused."
@@ -8889,7 +8895,7 @@ where = [
   "ios group_error_refused: Error when a host refused without a reason.",
   "desktop group_refused: Desktop, groups (in group_live.rs, gerr).",
 ]
-text = ""
+text = "மறுக்கப்பட்டது."
 
 [t_b28082329a]
 en = "Unlock first."
@@ -8898,7 +8904,7 @@ where = [
   "ios group_error_locked: Error when the app is locked.",
   "desktop common_unlock_first: Shared label, used in several places (app, group_live).",
 ]
-text = ""
+text = "முதலில் திறங்கள்."
 
 [t_6c070f13f0]
 en = "That group isn’t on this phone."
@@ -8906,7 +8912,7 @@ where = [
   "android groupsc_err_not_found: Error when a group the action refers to is not on this device.",
   "ios group_error_not_found: Error when the group is not on this phone.",
 ]
-text = ""
+text = "அந்தக் குழு இந்த ஃபோனில் இல்லை."
 
 [t_487cc9dfdd]
 en = "Something went wrong"
@@ -8917,7 +8923,7 @@ where = [
   "ios group_error_generic: Fallback error message.",
   "ios shell_err_generic: Fallback error text when nothing more specific is known.",
 ]
-text = ""
+text = "ஏதோ சரியாக நடக்கவில்லை"
 
 [t_1a10d97bdd]
 en = "Give the group a name."
@@ -8926,7 +8932,7 @@ where = [
   "ios group_err_name_group: Error when creating a group without a name.",
   "desktop group_give_the_group_a_name: Desktop, new group dialog (in group_live.rs): error when the name is empty.",
 ]
-text = ""
+text = "குழுவுக்கு ஒரு பெயர் கொடுங்கள்."
 
 [t_accd902e1c]
 en = "Flag recorded. It is signed by you and the member can see it."
@@ -8935,7 +8941,7 @@ where = [
   "ios group_done_flag: Confirmation after flagging a member.",
   "desktop group_flag_recorded_it_is: Desktop, groups (in group_live.rs, run).",
 ]
-text = ""
+text = "கொடி பதிவானது. அதில் உங்கள் கையொப்பம் உள்ளது, அந்த உறுப்பினர் அதைப் பார்க்க முடியும்."
 
 [t_3a9582fd20]
 en = "Made admin."
@@ -8944,7 +8950,7 @@ where = [
   "ios group_done_admin_made: Confirmation after making someone admin.",
   "desktop group_made_admin: Desktop, groups (in group_live.rs, run).",
 ]
-text = ""
+text = "நிர்வாகி ஆக்கப்பட்டார்."
 
 [t_14a1559cdf]
 en = "No longer an admin."
@@ -8953,7 +8959,7 @@ where = [
   "ios group_done_admin_removed: Confirmation after removing an admin.",
   "desktop group_no_longer_an_admin: Desktop, groups (in group_live.rs, run).",
 ]
-text = ""
+text = "இனி நிர்வாகி அல்ல."
 
 [t_cfcf961486]
 en = "You left the group. Its messages stay here."
@@ -8962,7 +8968,7 @@ where = [
   "ios group_done_left: Confirmation after leaving a group.",
   "desktop group_you_left_the_group: Desktop, groups (in group_live.rs, run).",
 ]
-text = ""
+text = "நீங்கள் குழுவிலிருந்து வெளியேறிவிட்டீர்கள். அதன் செய்திகள் இங்கேயே இருக்கும்."
 
 [t_0b3fa117ce]
 en = "Appointed. The device hosts once it agrees."
@@ -8970,7 +8976,7 @@ where = [
   "android groupsc_appointed: Confirmation after an admin appoints a member's device as a chat host.",
   "ios group_done_appointed: Confirmation after appointing a host.",
 ]
-text = ""
+text = "நியமிக்கப்பட்டது. சாதனம் ஒப்புக்கொண்டதும் ஹோஸ்ட் செய்யும்."
 
 [t_c5fa5537be]
 en = "That device no longer hosts the group."
@@ -8979,7 +8985,7 @@ where = [
   "ios group_done_host_revoked: Confirmation after removing a host.",
   "desktop group_that_device_no_longer_hosts: Desktop, groups (in group_live.rs, run).",
 ]
-text = ""
+text = "அந்தச் சாதனம் இனி குழுவை ஹோஸ்ட் செய்யாது."
 
 [t_1b00e39cb9]
 en = "This phone agreed to host. It hosts as soon as an admin has appointed it."
@@ -8987,7 +8993,7 @@ where = [
   "android groupsc_host_agreed: Confirmation after this phone accepts a request to host a group's chat.",
   "ios group_done_host_accepted: Confirmation after this phone agreed to host.",
 ]
-text = ""
+text = "இந்த ஃபோன் ஹோஸ்ட் செய்ய ஒப்புக்கொண்டது. ஒரு நிர்வாகி நியமித்தவுடன் ஹோஸ்ட் செய்யும்."
 
 [t_21e3c580de]
 en = "This phone stopped hosting the group."
@@ -8995,7 +9001,7 @@ where = [
   "android groupsc_host_stopped: Confirmation after this phone stops hosting a group's chat.",
   "ios group_done_host_stopped: Confirmation after this phone stopped hosting.",
 ]
-text = ""
+text = "இந்த ஃபோன் குழுவை ஹோஸ்ட் செய்வதை நிறுத்தியது."
 
 [t_741f4c366c]
 en = "Asked. The device carries calls once it accepts."
@@ -9004,7 +9010,7 @@ where = [
   "ios group_done_callhost_asked: Confirmation after asking a device to host calls.",
   "desktop group_asked_the_device_carries: Desktop, groups (in group_live.rs, run).",
 ]
-text = ""
+text = "கேட்கப்பட்டது. சாதனம் ஏற்றதும் அழைப்புகளை நடத்தும்."
 
 [t_4c58d81a5f]
 en = "That device no longer hosts calls for the group."
@@ -9012,7 +9018,7 @@ where = [
   "android groupsc_call_host_revoked: Confirmation after an admin removes a device as the group's call host.",
   "ios group_done_callhost_revoked: Confirmation after removing a call host.",
 ]
-text = ""
+text = "அந்தச் சாதனம் இனி குழுவின் அழைப்புகளை ஹோஸ்ட் செய்யாது."
 
 [t_3ef8ce6200]
 en = "This device now hosts the group’s calls."
@@ -9020,7 +9026,7 @@ where = [
   "android groupsc_call_host_agreed: Confirmation after this device accepts to host the group's calls.",
   "ios group_done_callhost_accepted: Confirmation after this device agreed to host calls.",
 ]
-text = ""
+text = "இந்தச் சாதனம் இப்போது குழுவின் அழைப்புகளை ஹோஸ்ட் செய்கிறது."
 
 [t_6658f7590d]
 en = "This device won’t host the group’s calls."
@@ -9028,7 +9034,7 @@ where = [
   "android groupsc_call_host_declined: Confirmation after this device declines to host the group's calls.",
   "ios group_done_callhost_stopped: Confirmation after this device stopped hosting calls.",
 ]
-text = ""
+text = "இந்தச் சாதனம் குழுவின் அழைப்புகளை ஹோஸ்ட் செய்யாது."
 
 [t_becf26bc30]
 en = "This phone carries the calls it starts in this group now."
@@ -9036,7 +9042,7 @@ where = [
   "android groupsc_calls_here: Confirmation after an admin lets this phone carry group calls.",
   "ios group_done_callhost_here: Confirmation after this phone started hosting its own calls.",
 ]
-text = ""
+text = "இந்தக் குழுவில் இந்த ஃபோன் தான் தொடங்கும் அழைப்புகளை இனி நடத்தும்."
 
 [t_4fb7808151]
 en = "Only admins post now. Everyone can still read."
@@ -9044,7 +9050,7 @@ where = [
   "android groupsc_admins_only_on: Confirmation after an admin switches the group to admins-only posting (a channel).",
   "desktop group_only_admins_post_now: Desktop, groups (in group_live.rs, run).",
 ]
-text = ""
+text = "இனி நிர்வாகிகள் மட்டுமே இடுகையிடுவார்கள். அனைவரும் தொடர்ந்து படிக்கலாம்."
 
 [t_fbf81e28a7]
 en = "Everyone can post again."
@@ -9052,7 +9058,7 @@ where = [
   "android groupsc_admins_only_off: Confirmation after an admin lets all members post again.",
   "desktop group_everyone_can_post_again: Desktop, groups (in group_live.rs, run).",
 ]
-text = ""
+text = "அனைவரும் மீண்டும் இடுகையிடலாம்."
 
 [t_bb7ca9edf2]
 en = "Declined. {name} is told “declined”."
@@ -9061,7 +9067,7 @@ where = [
   "ios group_done_request_declined: Toast after declining a private chat request. {name} is the requester's first name.",
   "desktop group_notice_declined_req: Desktop, group notice line (in group_live.rs). I declined a private-chat request. {name} is their first name.",
 ]
-text = ""
+text = "நிராகரிக்கப்பட்டது. {name} அவர்களுக்கு “நிராகரிக்கப்பட்டது” எனத் தெரிவிக்கப்படும்."
 
 [t_342e60a5c5]
 en_one = "{count} unread"
@@ -9072,6 +9078,8 @@ where = [
   "ios group_unread_badge_desc: Spoken label of the unread badge. {count} is the number of unread posts.",
   "ios shell_tab_unread: Screen reader value of a tab badge. {count} unread chats.",
 ]
+one = "{count} படிக்காதது"
+other = "{count} படிக்காதவை"
 
 [t_9ab267ffaa]
 en_one = "{filled} of {count} flag"
@@ -9079,6 +9087,8 @@ en_other = "{filled} of {count} flags"
 where = [
   "android groupsc_flags_of: Spoken description of the flag meter: how many of the flags needed to remove a member are filled. {count} is the number needed.",
 ]
+one = "{count} கொடியில் {filled}"
+other = "{count} கொடிகளில் {filled}"
 
 [t_9df27ec5da]
 en = "Group call"
@@ -9088,7 +9098,7 @@ where = [
   "ios call_group_call_name: Fallback title of a group call when the group has no name.",
   "desktop gcall_group_call: Desktop, group calls (in gcall_view.rs, gcall_group_name).",
 ]
-text = ""
+text = "குழு அழைப்பு"
 
 [t_c6880bc1b2]
 en = "Finding a call host…"
@@ -9097,7 +9107,7 @@ where = [
   "ios call_status_finding_host: Status of a group call while the call host is being chosen.",
   "desktop gcall_finding_a_call_host: Desktop, group calls (in gcall.rs, status).",
 ]
-text = ""
+text = "அழைப்பு ஹோஸ்ட்டைத் தேடுகிறது…"
 
 [t_79e4f5c09b]
 en = "Connecting the call…"
@@ -9105,7 +9115,7 @@ where = [
   "android gcall_connecting: Status under the group name while joining a group call.",
   "ios call_status_connecting: Status of a call while connecting; the call is the subject, not a device.",
 ]
-text = ""
+text = "அழைப்பை இணைக்கிறது…"
 
 [t_51e2c52c18]
 en = "Reconnecting the call…"
@@ -9115,7 +9125,7 @@ where = [
   "ios call_status_reconnecting: Status line under the contact name while the call’s connection is being re-established; the call is the subject.",
   "desktop call_reconnecting_2: Desktop, call screens (1:1 and group): status line while the CALL is reconnecting (not a device link).",
 ]
-text = ""
+text = "அழைப்பை மீண்டும் இணைக்கிறது…"
 
 [t_e8649a596c]
 en = "You’re already in a call."
@@ -9124,7 +9134,7 @@ where = [
   "ios call_group_already_in_call: Error when starting or joining a group call while another call is running.",
   "desktop gcall_youre_already_in_a: Desktop, group calls (in gcall.rs, gcall_update).",
 ]
-text = ""
+text = "நீங்கள் ஏற்கெனவே ஓர் அழைப்பில் இருக்கிறீர்கள்."
 
 [t_7097e1d5bd]
 en = "Call ended — host lost"
@@ -9133,7 +9143,7 @@ where = [
   "ios call_group_ended_host_lost: Reason shown when a group call ends because its call host disappeared.",
   "desktop gcall_call_ended_host_lost: Desktop, group calls (in gcall.rs, gcall_event).",
 ]
-text = ""
+text = "அழைப்பு முடிந்தது — ஹோஸ்ட் தொடர்பு இழந்தது"
 
 [t_dd457a86c8]
 en = "Battery under {percent} %. Hosting is limited: only one person is heard at a time, and no one new can join."
@@ -9141,7 +9151,7 @@ where = [
   "android gcall_battery_limited: Notice on the group call screen of the phone that hosts the call, when its battery is low. {percent} is the battery level below which hosting is limited (15).",
   "ios call_group_battery_limited: Note on the group call screen when this phone is the call host and its battery is low. {percent} is the battery level below which hosting is limited.",
 ]
-text = ""
+text = "பேட்டரி {percent} %-க்குக் கீழ் உள்ளது. ஹோஸ்டிங் வரம்புக்குட்பட்டது: ஒரே நேரத்தில் ஒருவர் மட்டுமே கேட்கப்படுவார், புதிதாக யாரும் சேர முடியாது."
 
 [t_30a80bae46]
 en = "No call host available"
@@ -9150,14 +9160,14 @@ where = [
   "ios call_group_no_host: Group call start failure when no device can host the call.",
   "desktop gcall_no_call_host_available: Desktop, group calls (in gcall.rs, start_failure).",
 ]
-text = ""
+text = "அழைப்பு ஹோஸ்ட் கிடைக்கவில்லை"
 
 [t_e1a3d97776]
 en = "Couldn’t join the call"
 where = [
   "android gcall_cant_connect: Group call failed for another reason.",
 ]
-text = ""
+text = "அழைப்பில் சேர முடியவில்லை"
 
 [t_5f8be8f403]
 en = "Minimize call"
@@ -9166,7 +9176,7 @@ where = [
   "ios call_group_minimize: Accessibility label of the button that minimizes the group call screen.",
   "desktop call_minimize_call: Desktop, calls (voice and video) (in call_screen.rs, call_view).",
 ]
-text = ""
+text = "அழைப்பைச் சிறிதாக்கு"
 
 [t_480d196afb]
 en = "About this call"
@@ -9176,7 +9186,7 @@ where = [
   "ios call_about_title: Title of the call details card, and accessibility label of the info button.",
   "desktop common_about_this_call: Shared label, used in several places (call_screen, gcall).",
 ]
-text = ""
+text = "இந்த அழைப்பு பற்றி"
 
 [t_77fbbf7912]
 en = "Only you so far. Waiting for others."
@@ -9185,7 +9195,7 @@ where = [
   "ios call_group_only_you: Line under the group call mark when I am the only one in the call.",
   "desktop gcall_only_you_so_far: Desktop, group calls (in gcall_view.rs, gcall_view).",
 ]
-text = ""
+text = "இதுவரை நீங்கள் மட்டும். மற்றவர்களுக்காகக் காத்திருக்கிறது."
 
 [t_547832726d]
 en_one = "{count} person in the call"
@@ -9195,6 +9205,8 @@ where = [
   "ios call_group_people_count: Line under the group call mark with the number of people in the call.",
   "desktop gcall_people_in_the_call: Desktop, group call screen (in gcall_view.rs). {count} is how many people are in the call (2 or more).",
 ]
+one = "அழைப்பில் {count} நபர்"
+other = "அழைப்பில் {count} நபர்கள்"
 
 [t_12fd9c9866]
 en_one = "+{count} more"
@@ -9203,6 +9215,8 @@ where = [
   "android gcall_more: Under the participants' faces when there are more than nine. {count} is how many are not shown.",
   "ios call_group_more: Shown when more people are in a group call than fit on screen. {count} is how many are not shown.",
 ]
+one = "+{count} பேர்"
+other = "+{count} பேர்"
 
 [t_570080b5f0]
 en = "You’re the call host"
@@ -9211,7 +9225,7 @@ where = [
   "ios call_group_you_host: Pill on the group call screen when this phone carries the call.",
   "desktop gcall_youre_the_call_host: Desktop, group calls (in gcall_view.rs, gcall_view).",
 ]
-text = ""
+text = "நீங்கள்தான் அழைப்பு ஹோஸ்ட்"
 
 [t_8b0999173b]
 en = "Muted"
@@ -9221,7 +9235,7 @@ where = [
   "ios call_control_muted: Caption of the mute button while the microphone is muted.",
   "desktop common_muted: Shared label, used in several places (call_screen, gcall).",
 ]
-text = ""
+text = "ஒலியடக்கப்பட்டது"
 
 [t_ef8cfbe08a]
 en = "Your connection to the call host is encrypted, but the call host itself receives the audio, so it can hear this call. You trust it for the call the way you trust a chat host with posts."
@@ -9230,7 +9244,7 @@ where = [
   "ios call_group_about_trust: Paragraph on the group call details card about trusting the call host.",
   "desktop gcall_your_connection_to_the: Desktop, group calls (in gcall_view.rs, gcall_about).",
 ]
-text = ""
+text = "அழைப்பு ஹோஸ்ட்டுடனான உங்கள் இணைப்பு என்க்ரிப்ட் செய்யப்பட்டுள்ளது, ஆனால் அழைப்பு ஹோஸ்ட்டே ஒலியைப் பெறுவதால், அதனால் இந்த அழைப்பைக் கேட்க முடியும். குழு ஹோஸ்ட்டை இடுகைகளுக்கு நம்புவது போலவே, அழைப்புக்கு இதை நம்புகிறீர்கள்."
 
 [t_58d3e5c07e]
 en = "A call host is a device a group admin chose and that agreed to it. It is separate from chat hosting. Admins can change call hosts in Group info."
@@ -9239,7 +9253,7 @@ where = [
   "ios call_group_about_who: Paragraph on the group call details card about who can be a call host.",
   "desktop gcall_a_call_host_is: Desktop, group calls (in gcall_view.rs, gcall_about).",
 ]
-text = ""
+text = "அழைப்பு ஹோஸ்ட் என்பது குழு நிர்வாகி ஒருவர் தேர்ந்தெடுத்து, அதற்கு ஒப்புக்கொண்ட ஒரு சாதனம். இது குழு ஹோஸ்டிங்கிலிருந்து தனி. குழுத் தகவலில் நிர்வாகிகள் அழைப்பு ஹோஸ்ட்களை மாற்றலாம்."
 
 [t_c38df51058]
 en = "Got it"
@@ -9249,7 +9263,7 @@ where = [
   "ios call_got_it: Button that closes the call details card.",
   "desktop common_got_it: Shared label, used in several places (call_screen, gcall).",
 ]
-text = ""
+text = "புரிந்தது"
 
 [t_866d75dd14]
 en = "Started by {name}"
@@ -9258,21 +9272,21 @@ where = [
   "ios group_call_started_by: Call card sub line. {name} is who started the call.",
   "ios call_group_started_by: Subtitle of the group chat call banner. {name} is the member who started the call.",
 ]
-text = ""
+text = "தொடங்கியவர்: {name}"
 
 [t_18c9d7e3f7]
 en = "{by} is calling the group {group}"
 where = [
   "android gcall_is_calling_group_desc: Screen reader description of the ringing group call card at the top. {by} is who, {group} the group's name.",
 ]
-text = ""
+text = "{by}, {group} குழுவை அழைக்கிறார்"
 
 [t_8ebb8f77bf]
 en = "{by} started a call in {group}"
 where = [
   "android gcall_started_call_desc: Screen reader description of the group call card at the top. {by} is who, {group} the group's name.",
 ]
-text = ""
+text = "{by}, {group} குழுவில் அழைப்பைத் தொடங்கினார்"
 
 [t_ea752daaeb]
 en = "Open {group}"
@@ -9280,7 +9294,7 @@ where = [
   "android gcall_open_group_desc: Screen reader label of the tappable part of the group call card; opens the group. {group} is its name.",
   "ios call_group_open_label: Accessibility label of the group call announcement. {group} is the group name.",
 ]
-text = ""
+text = "{group} குழுவைத் திற"
 
 [t_ced1211a28]
 en = "{name} started a call"
@@ -9289,7 +9303,7 @@ where = [
   "ios call_group_announce_started: Group call announcement. {name} is the member who started the call.",
   "desktop gcall_started_a_call: Desktop, group calls (in gcall_view.rs, gcall_announce). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} அழைப்பைத் தொடங்கினார்"
 
 [t_8ae74aaae3]
 en = "Microphone unavailable - you can't be heard"
@@ -9298,7 +9312,7 @@ where = [
   "android call_mic_unavailable: Problem line on the call screen when the microphone cannot be opened even though it is allowed.",
   "ios call_mic_unavailable: Problem line on the call screen when the microphone could not be opened.",
 ]
-text = ""
+text = "மைக்ரோஃபோன் கிடைக்கவில்லை - உங்கள் குரல் கேட்காது"
 
 [t_2fe2a7bfe7]
 en = "Microphone permission needed - you can't be heard"
@@ -9307,7 +9321,7 @@ where = [
   "android call_mic_permission: Problem line on the call screen when the microphone permission is missing during a call.",
   "ios call_mic_permission_needed: Problem line on the call screen when microphone permission is denied.",
 ]
-text = ""
+text = "மைக்ரோஃபோன் அனுமதி தேவை - உங்கள் குரல் கேட்காது"
 
 [t_c36d6f222a]
 en = "Add contact"
@@ -9319,7 +9333,7 @@ where = [
   "ios people_add_title: Title of the add-contact sheet, and the button that adds the contact.",
   "desktop common_add_contact: Shared label, used in several places (chat, shell, signup).",
 ]
-text = ""
+text = "தொடர்பைச் சேர்"
 
 [t_4faedb5f4f]
 en = "New contact"
@@ -9328,7 +9342,7 @@ where = [
   "ios people_add_title_new: Sheet title when a contact joined.",
   "desktop signup_new_contact: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay).",
 ]
-text = ""
+text = "புதிய தொடர்பு"
 
 [t_8363b5fb29]
 en = "Code"
@@ -9337,7 +9351,7 @@ where = [
   "ios people_add_tab_code: Tab: add a contact by pasting a code.",
   "desktop signup_code: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay).",
 ]
-text = ""
+text = "குறியீடு"
 
 [t_8826672b86]
 en = "QR"
@@ -9346,7 +9360,7 @@ where = [
   "ios people_add_tab_qr: Tab: add a contact with a QR code.",
   "desktop signup_qr: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay).",
 ]
-text = ""
+text = "QR"
 
 [t_97f7e1c1e0]
 en = "Point at their Tinline code."
@@ -9354,7 +9368,7 @@ where = [
   "android addcontact_point_camera: Hint under the camera view while scanning someone's QR code; also spoken label of the camera.",
   "ios people_add_point_camera: Camera hint and accessibility label while scanning a contact QR code.",
 ]
-text = ""
+text = "அவர்களின் Tinline குறியீட்டை நோக்கிக் காட்டுங்கள்."
 
 [t_8abf1ecdd3]
 en = "Your QR code"
@@ -9362,7 +9376,7 @@ where = [
   "android addcontact_my_qr_desc: Screen reader description of your own QR code image.",
   "ios people_add_my_qr_a11y: Accessibility label of the user’s own contact QR code image.",
 ]
-text = ""
+text = "உங்கள் QR குறியீடு"
 
 [t_289b64fb1e]
 en = "Reading image…"
@@ -9370,7 +9384,7 @@ where = [
   "android addcontact_reading_image: Hint while a picked image is searched for a QR code.",
   "ios people_add_reading_image: Shown while a picked image is searched for a QR code.",
 ]
-text = ""
+text = "படத்தைப் படிக்கிறது…"
 
 [t_a67faf6bd8]
 en = "Show my code"
@@ -9378,7 +9392,7 @@ where = [
   "android addcontact_show_mine: Button that switches the QR tab from the camera back to your own QR.",
   "ios people_add_show_mine: Button that switches from scanning back to the user’s own code.",
 ]
-text = ""
+text = "என் குறியீட்டைக் காட்டு"
 
 [t_e1561d9f4a]
 en = "Scan their code"
@@ -9387,7 +9401,7 @@ where = [
   "android home_first_scan: Button on the first-run add-contact screen.",
   "ios people_add_scan_theirs: Button that starts the camera to scan a contact code.",
 ]
-text = ""
+text = "அவர்களின் குறியீட்டை ஸ்கேன் செய்"
 
 [t_18bdfc1acf]
 en = "Choose image"
@@ -9395,7 +9409,7 @@ where = [
   "android addcontact_choose_image: Button that picks an image containing someone's QR code.",
   "ios people_add_choose_image: Button that picks an image containing a QR code.",
 ]
-text = ""
+text = "படத்தைத் தேர்ந்தெடு"
 
 [t_5788cd4a54]
 en = "Your code"
@@ -9404,7 +9418,7 @@ where = [
   "ios people_add_your_code: Heading above the user’s own contact code.",
   "desktop signup_your_code: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay).",
 ]
-text = ""
+text = "உங்கள் குறியீடு"
 
 [t_0f40835ee7]
 en = "Send it to anyone you’d like to talk to, in any app. It works until {date}."
@@ -9412,7 +9426,7 @@ where = [
   "android addcontact_send_until: Explains your code. {date} is the day it stops working, like 'Mon 19 Oct'.",
   "ios people_add_send_until: Explains the user’s code. {date} is a short date like “Mon 19 Oct”.",
 ]
-text = ""
+text = "நீங்கள் பேச விரும்பும் எவருக்கும், எந்த ஆப்பிலும் இதை அனுப்புங்கள். இது {date} வரை செயல்படும்."
 
 [t_8ede9e1980]
 en = "Send it to anyone you’d like to talk to, in any app."
@@ -9421,7 +9435,7 @@ where = [
   "ios people_add_send: Explains the user’s code when it has no expiry.",
   "desktop signup_send_it_to_anyone: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay).",
 ]
-text = ""
+text = "நீங்கள் பேச விரும்பும் எவருக்கும், எந்த ஆப்பிலும் இதை அனுப்புங்கள்."
 
 [t_2e2e879e73]
 en = "or"
@@ -9429,7 +9443,7 @@ where = [
   "android addcontact_or: Divider between 'your code' and 'their code' on the Code tab.",
   "ios people_add_or: Small divider word between the scan option and the paste-a-code option on the add contact sheet.",
 ]
-text = ""
+text = "அல்லது"
 
 [t_9a07e6f0f6]
 en = "Their code"
@@ -9438,7 +9452,7 @@ where = [
   "ios people_add_their_code: Heading above the paste area for another person’s code.",
   "desktop signup_their_code: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay).",
 ]
-text = ""
+text = "அவர்களின் குறியீடு"
 
 [t_73da04ae6f]
 en = "Paste their code"
@@ -9447,7 +9461,7 @@ where = [
   "ios people_add_paste_theirs: Button that pastes the contact code from the clipboard.",
   "desktop signup_paste_their_code: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay).",
 ]
-text = ""
+text = "அவர்களின் குறியீட்டை ஒட்டு"
 
 [t_d2aa3d83d4]
 en = "Open profile"
@@ -9456,7 +9470,7 @@ where = [
   "ios people_add_open_profile: Button that opens an existing contact’s profile.",
   "desktop signup_open_profile: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay).",
 ]
-text = ""
+text = "சுயவிவரத்தைத் திற"
 
 [t_9ceabd52ba]
 en = "Paste a new code"
@@ -9465,7 +9479,7 @@ where = [
   "ios people_add_paste_new: Button that goes back to paste another code.",
   "desktop signup_paste_a_new_code: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay).",
 ]
-text = ""
+text = "புதிய குறியீட்டை ஒட்டு"
 
 [t_ca948bad76]
 en = "Adding…"
@@ -9474,7 +9488,7 @@ where = [
   "ios people_add_adding: Button label while a contact is being added.",
   "desktop signup_adding: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay).",
 ]
-text = ""
+text = "சேர்க்கிறது…"
 
 [t_d7d94c99f3]
 en = "Connecting"
@@ -9486,7 +9500,7 @@ where = [
   "ios call_mark_connecting: Accessibility label of the animated mark while connecting.",
   "desktop common_connecting: Desktop, linking a device and the network status label (in link_view.rs, mark.rs): connecting to another device or the network. Not about a call.",
 ]
-text = ""
+text = "இணைக்கிறது"
 
 [t_67395f47f6]
 en = "Not connected yet"
@@ -9494,7 +9508,7 @@ where = [
   "android addcontact_line_not_yet: Screen reader description of the line drawing: not connected.",
   "ios people_line_not_connected: Accessibility description of the line: not connected yet.",
 ]
-text = ""
+text = "இன்னும் இணையவில்லை"
 
 [t_01dcdb1052]
 en = "Your clipboard is empty right now. When their code arrives, copy it and paste it here."
@@ -9503,7 +9517,7 @@ where = [
   "ios people_add_hint_empty_clipboard: Hint when Paste is pressed with an empty clipboard.",
   "desktop signup_your_clipboard_is_empty: Desktop, sign-up, restore and add contact (in signup.rs, ac_pasted).",
 ]
-text = ""
+text = "உங்கள் கிளிப்போர்டு இப்போது காலியாக உள்ளது. அவர்களின் குறியீடு வந்ததும், அதை நகலெடுத்து இங்கே ஒட்டுங்கள்."
 
 [t_355541804b]
 en = "That’s your own code. Send it to them, and paste theirs here."
@@ -9512,7 +9526,7 @@ where = [
   "ios people_add_hint_own_code: Hint when the pasted code is the user’s own.",
   "desktop signup_thats_your_own_code: Desktop, sign-up, restore and add contact (in signup.rs, ac_pasted).",
 ]
-text = ""
+text = "அது உங்கள் சொந்தக் குறியீடு. அதை அவர்களுக்கு அனுப்புங்கள், அவர்களுடையதை இங்கே ஒட்டுங்கள்."
 
 [t_47c69c935c]
 en = "That code from {name} has expired. Ask them for a fresh one."
@@ -9520,7 +9534,7 @@ where = [
   "android addcontact_code_expired: Hint when a code has expired. {name} is who made it.",
   "ios people_add_hint_expired: Hint when the pasted code has expired. {name} is the person who made it.",
 ]
-text = ""
+text = "{name} அனுப்பிய அந்தக் குறியீடு காலாவதியாகிவிட்டது. புதியதைக் கேளுங்கள்."
 
 [t_e7e0a62b44]
 en = "That doesn’t look like a Tinline code. Could they copy it again for you?"
@@ -9529,7 +9543,7 @@ where = [
   "ios people_add_hint_not_code: Hint when the pasted text is not a contact code.",
   "desktop signup_that_doesnt_look_like: Desktop, sign-up, restore and add contact (in signup.rs, ac_pasted).",
 ]
-text = ""
+text = "அது Tinline குறியீடாகத் தெரியவில்லை. அவர்கள் உங்களுக்காக மீண்டும் நகலெடுக்க முடியுமா?"
 
 [t_f92a068145]
 en = "No QR found. Try a clearer image."
@@ -9537,7 +9551,7 @@ where = [
   "android addcontact_no_qr: Hint when a picked image has no QR code.",
   "ios people_add_hint_no_qr: Hint when the picked image has no QR code.",
 ]
-text = ""
+text = "QR கிடைக்கவில்லை. இன்னும் தெளிவான படத்தை முயலுங்கள்."
 
 [t_a9bb534440]
 en = "More than one QR. Crop to the one you want."
@@ -9545,7 +9559,7 @@ where = [
   "android addcontact_many_qr: Hint when a picked image has several QR codes.",
   "ios people_add_hint_many_qr: Hint when the picked image has several QR codes.",
 ]
-text = ""
+text = "ஒன்றுக்கு மேற்பட்ட QR உள்ளன. உங்களுக்கு வேண்டியதை மட்டும் செதுக்குங்கள்."
 
 [t_214ad8b542]
 en = "Couldn’t read that image. Choose another."
@@ -9553,14 +9567,14 @@ where = [
   "android addcontact_unreadable_image: Hint when a picked image cannot be read.",
   "ios people_add_hint_unreadable: Hint when the picked image could not be read.",
 ]
-text = ""
+text = "அந்தப் படத்தைப் படிக்க முடியவில்லை. வேறொன்றைத் தேர்ந்தெடுங்கள்."
 
 [t_4ccbe5fea4]
 en = "Couldn’t open sharing. You can copy your code instead."
 where = [
   "android addcontact_share_failed: Hint when the system share sheet could not open.",
 ]
-text = ""
+text = "பகிர்வதைத் திறக்க முடியவில்லை. பதிலாக உங்கள் குறியீட்டை நகலெடுக்கலாம்."
 
 [t_6a7f43281a]
 en = "You blocked {name}. Unblock them in Privacy before adding them again."
@@ -9569,7 +9583,7 @@ where = [
   "ios people_add_why_blocked: Preview note when the found person is blocked. {name} is their name.",
   "desktop signup_you_blocked_unblock_them: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} அவர்களை நீங்கள் தடுத்துள்ளீர்கள். மீண்டும் சேர்க்கும் முன், தனியுரிமையில் தடையை நீக்குங்கள்."
 
 [t_6f62bbc738]
 en = "{name} is already in your contacts."
@@ -9578,7 +9592,7 @@ where = [
   "ios people_add_why_known: Preview note when the person is already a contact. {name} is their name.",
   "desktop signup_is_already_in_your: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} ஏற்கெனவே உங்கள் தொடர்புகளில் இருக்கிறார்."
 
 [t_a36e1b41e2]
 en = "Your line to {name} is open. Say hello."
@@ -9589,7 +9603,7 @@ where = [
   "ios people_add_inc_open: Request note when the line is open. {name} is their name.",
   "desktop signup_your_line_to_is: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} அவர்களுடனான உங்கள் லைன் திறந்துள்ளது. வணக்கம் சொல்லுங்கள்."
 
 [t_4880a21001]
 en = "Request sent. Your line opens when {name} accepts."
@@ -9600,7 +9614,7 @@ where = [
   "ios people_add_why_requested: Preview note after the request was sent. {name} is their name.",
   "desktop common_request_sent_your_line: Shared label, used in several places (shell, signup). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "கோரிக்கை அனுப்பப்பட்டது. {name} ஏற்றுக்கொண்டதும் உங்கள் லைன் திறக்கும்."
 
 [t_20a964e6d6]
 en = "Still trying. {name}’s Tinline needs to be open and online for this."
@@ -9609,7 +9623,7 @@ where = [
   "ios people_add_why_slow: Preview note while adding takes long. {name} is their name.",
   "desktop signup_still_trying_s_tinline: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "இன்னும் முயல்கிறது. இதற்கு {name} அவர்களின் Tinline திறந்து ஆன்லைனில் இருக்க வேண்டும்."
 
 [t_4e30991429]
 en = "Reaching {name}’s Tinline…"
@@ -9618,7 +9632,7 @@ where = [
   "ios people_add_why_reaching: Preview note while adding. {name} is their name.",
   "desktop signup_reaching_s_tinline: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} அவர்களின் Tinline-ஐ அடைகிறது…"
 
 [t_39d94924ef]
 en = "Couldn’t reach {name}’s Tinline. It needs to be open and online, so try again when {name}’s around."
@@ -9627,7 +9641,7 @@ where = [
   "ios people_add_why_timeout: Preview note when the person could not be reached. {name} is their name.",
   "desktop signup_couldnt_reach_s_tinline: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} அவர்களின் Tinline-ஐ அடைய முடியவில்லை. அது திறந்து ஆன்லைனில் இருக்க வேண்டும், எனவே {name} இருக்கும்போது மீண்டும் முயலுங்கள்."
 
 [t_f6beee9855]
 en = "{name}’s code isn’t valid any more. They may have made a new one, so ask {name} for their newest code."
@@ -9636,7 +9650,7 @@ where = [
   "ios people_add_why_refused: Preview note when their code is no longer valid. {name} is their name.",
   "desktop signup_s_code_isnt_valid: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} அவர்களின் குறியீடு இனி செல்லாது. அவர்கள் புதியதை உருவாக்கியிருக்கலாம், எனவே {name} அவர்களிடம் சமீபத்திய குறியீட்டைக் கேளுங்கள்."
 
 [t_be591c648f]
 en = "You can’t add {name} right now. They’ve chosen not to be in touch here."
@@ -9645,7 +9659,7 @@ where = [
   "ios people_add_why_blocked_by: Preview note when the person blocked the user. {name} is their name.",
   "desktop signup_you_cant_add_right: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "இப்போது {name} அவர்களைச் சேர்க்க முடியாது. இங்கே தொடர்பில் இருக்க வேண்டாம் என்று அவர்கள் தேர்ந்தெடுத்துள்ளனர்."
 
 [t_4f7c2c6b21]
 en = "You’re offline. Once you’re connected, try again."
