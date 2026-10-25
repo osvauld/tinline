@@ -8916,7 +8916,7 @@ en = "A device of {sub}’s stopped hosting the group"
 where = [
   "android groupsc_host_removed_other: System line in a group's chat: a member's device stopped hosting. {sub} is the member's name.",
 ]
-text = ""
+text = "Jäsenen {sub} laite lopetti ryhmän isännöinnin"
 
 [t_620f224720]
 en_one = "{count} host"
@@ -8926,20 +8926,22 @@ where = [
   "ios group_hosts_count: Host count. {count} is the number of hosts.",
   "desktop group_hosts_count: Number of hosts of a group. {count} is the host count.",
 ]
+one = "{count} isäntälaite"
+other = "{count} isäntälaitetta"
 
 [t_6f72c0f10c]
 en = "Copied. Anyone holding the link can join while it’s open."
 where = [
   "android groupsc_open_link_copied: Confirmation after copying a public group's open link.",
 ]
-text = ""
+text = "Kopioitu. Kuka tahansa, jolla on linkki, voi liittyä, kun ryhmä on avoin."
 
 [t_9d537b6e28]
 en = "Not posted"
 where = [
   "android groupsc_not_posted: Small line under one of your group posts that the hosts refused, when the core gave no reason.",
 ]
-text = ""
+text = "Ei julkaistu"
 
 [t_410727b674]
 en = "{name} accepted · messages only"
@@ -8947,7 +8949,7 @@ where = [
   "android groupsc_req_accepted_messages: State line of a chat request you sent from a group: they accepted and were added for messages only. {name} is their first name.",
   "ios group_req_accepted_msgs: Line for an accepted chat request when the contact was added. {name} is who accepted.",
 ]
-text = ""
+text = "{name} hyväksyi · vain viestit"
 
 [t_772dbfcfd8]
 en = "{name} accepted · connecting"
@@ -8955,7 +8957,7 @@ where = [
   "android groupsc_req_accepted_connecting: State line of a chat request you sent from a group: they accepted, the chat is still connecting. {name} is their first name.",
   "ios group_req_accepted_connecting: Line for an accepted chat request, still connecting. {name} is who accepted.",
 ]
-text = ""
+text = "{name} hyväksyi · yhdistetään"
 
 [t_54372e851e]
 en = "An admin"
@@ -8963,7 +8965,7 @@ where = [
   "android groupsc_an_admin: Who asked this device to host a group, when the admin's name is not known.",
   "ios group_an_admin: Name used when an unnamed admin asked this device to host.",
 ]
-text = ""
+text = "Ylläpitäjä"
 
 [t_440c6e7ff9]
 en = "Invited · waiting for an answer"
@@ -8972,7 +8974,7 @@ where = [
   "ios group_inv_waiting: State of an invitation the user sent.",
   "desktop group_invited_waiting_for_an: Desktop, groups (in group_live.rs, sent_invitation_line).",
 ]
-text = ""
+text = "Kutsuttu · odotetaan vastausta"
 
 [t_17266cf5ef]
 en = "Invitation expired"
@@ -8981,7 +8983,7 @@ where = [
   "ios group_inv_expired: State of an invitation the user sent.",
   "desktop group_invitation_expired: Desktop, groups (in group_live.rs, sent_invitation_line).",
 ]
-text = ""
+text = "Kutsu vanhentui"
 
 [t_cb5fedd705]
 en = "You’re not a member of this group."
@@ -8990,7 +8992,7 @@ where = [
   "ios group_error_not_member: Error: the host says the user is not a member.",
   "desktop group_youre_not_a_member: Desktop, groups (in group_live.rs, gerr).",
 ]
-text = ""
+text = "Et ole tämän ryhmän jäsen."
 
 [t_35abbdf4d4]
 en = "You block them. Unblock them first to ask for a chat."
@@ -8999,7 +9001,7 @@ where = [
   "ios group_error_you_block: Error when asking for a chat with someone the user blocked.",
   "desktop group_you_block_them_unblock: Desktop, groups (in group_live.rs, gerr).",
 ]
-text = ""
+text = "Olet estänyt hänet. Poista esto ensin pyytääksesi keskustelua."
 
 [t_9b01c592b6]
 en = "They blocked you, so you can’t ask them for a chat."
@@ -9008,7 +9010,7 @@ where = [
   "ios group_error_they_block: Error when the other person blocked the user.",
   "desktop group_they_blocked_you_so: Desktop, groups (in group_live.rs, gerr).",
 ]
-text = ""
+text = "Hän on estänyt sinut, joten et voi pyytää häneltä keskustelua."
 
 [t_d26a0ed1b3]
 en = "That invite isn’t valid any more. Ask for a new one."
@@ -9017,7 +9019,7 @@ where = [
   "ios group_error_invite_invalid: Error for an invite code that is wrong or expired.",
   "desktop group_that_invite_isnt_valid: Desktop, groups (in group_live.rs, gerr).",
 ]
-text = ""
+text = "Kutsu ei ole enää voimassa. Pyydä uusi."
 
 [t_35816314a4]
 en = "Refused."
@@ -9026,7 +9028,7 @@ where = [
   "ios group_error_refused: Error when a host refused without a reason.",
   "desktop group_refused: Desktop, groups (in group_live.rs, gerr).",
 ]
-text = ""
+text = "Ei hyväksytty."
 
 [t_b28082329a]
 en = "Unlock first."
@@ -9035,7 +9037,7 @@ where = [
   "ios group_error_locked: Error when the app is locked.",
   "desktop common_unlock_first: Shared label, used in several places (app, group_live).",
 ]
-text = ""
+text = "Avaa lukitus ensin."
 
 [t_6c070f13f0]
 en = "That group isn’t on this phone."
@@ -9043,7 +9045,7 @@ where = [
   "android groupsc_err_not_found: Error when a group the action refers to is not on this device.",
   "ios group_error_not_found: Error when the group is not on this phone.",
 ]
-text = ""
+text = "Ryhmää ei ole tällä puhelimella."
 
 [t_487cc9dfdd]
 en = "Something went wrong"
@@ -9054,7 +9056,7 @@ where = [
   "ios group_error_generic: Fallback error message.",
   "ios shell_err_generic: Fallback error text when nothing more specific is known.",
 ]
-text = ""
+text = "Jokin meni pieleen"
 
 [t_1a10d97bdd]
 en = "Give the group a name."
@@ -9062,7 +9064,7 @@ where = [
   "android groupsc_name_required: Error when creating a group with an empty name.",
   "ios group_err_name_group: Error when creating a group without a name.",
 ]
-text = ""
+text = "Anna ryhmälle nimi."
 
 [t_accd902e1c]
 en = "Flag recorded. It is signed by you and the member can see it."
@@ -9071,7 +9073,7 @@ where = [
   "ios group_done_flag: Confirmation after flagging a member.",
   "desktop group_flag_recorded_it_is: Desktop, groups (in group_live.rs, run).",
 ]
-text = ""
+text = "Merkintä tallennettu. Se on allekirjoitettu sinun nimissäsi, ja jäsen näkee sen."
 
 [t_3a9582fd20]
 en = "Made admin."
@@ -9080,7 +9082,7 @@ where = [
   "ios group_done_admin_made: Confirmation after making someone admin.",
   "desktop group_made_admin: Desktop, groups (in group_live.rs, run).",
 ]
-text = ""
+text = "Nimetty ylläpitäjäksi."
 
 [t_14a1559cdf]
 en = "No longer an admin."
@@ -9089,7 +9091,7 @@ where = [
   "ios group_done_admin_removed: Confirmation after removing an admin.",
   "desktop group_no_longer_an_admin: Desktop, groups (in group_live.rs, run).",
 ]
-text = ""
+text = "Ei enää ylläpitäjä."
 
 [t_cfcf961486]
 en = "You left the group. Its messages stay here."
@@ -9098,7 +9100,7 @@ where = [
   "ios group_done_left: Confirmation after leaving a group.",
   "desktop group_you_left_the_group: Desktop, groups (in group_live.rs, run).",
 ]
-text = ""
+text = "Poistuit ryhmästä. Sen viestit jäävät tänne."
 
 [t_0b3fa117ce]
 en = "Appointed. The device hosts once it agrees."
@@ -9106,7 +9108,7 @@ where = [
   "android groupsc_appointed: Confirmation after an admin appoints a member's device as a chat host.",
   "ios group_done_appointed: Confirmation after appointing a host.",
 ]
-text = ""
+text = "Nimetty. Laite alkaa isännöidä, kun se suostuu."
 
 [t_c5fa5537be]
 en = "That device no longer hosts the group."
@@ -9115,7 +9117,7 @@ where = [
   "ios group_done_host_revoked: Confirmation after removing a host.",
   "desktop group_that_device_no_longer_hosts: Desktop, groups (in group_live.rs, run).",
 ]
-text = ""
+text = "Se laite ei enää isännöi ryhmää."
 
 [t_1b00e39cb9]
 en = "This phone agreed to host. It hosts as soon as an admin has appointed it."
@@ -9123,7 +9125,7 @@ where = [
   "android groupsc_host_agreed: Confirmation after this phone accepts a request to host a group's chat.",
   "ios group_done_host_accepted: Confirmation after this phone agreed to host.",
 ]
-text = ""
+text = "Tämä puhelin suostui isännöimään. Se alkaa isännöidä heti, kun ylläpitäjä on nimennyt sen."
 
 [t_21e3c580de]
 en = "This phone stopped hosting the group."
@@ -9131,7 +9133,7 @@ where = [
   "android groupsc_host_stopped: Confirmation after this phone stops hosting a group's chat.",
   "ios group_done_host_stopped: Confirmation after this phone stopped hosting.",
 ]
-text = ""
+text = "Tämä puhelin lopetti ryhmän isännöinnin."
 
 [t_741f4c366c]
 en = "Asked. The device carries calls once it accepts."
@@ -9140,7 +9142,7 @@ where = [
   "ios group_done_callhost_asked: Confirmation after asking a device to host calls.",
   "desktop group_asked_the_device_carries: Desktop, groups (in group_live.rs, run).",
 ]
-text = ""
+text = "Pyydetty. Laite välittää puhelut, kun se hyväksyy."
 
 [t_4c58d81a5f]
 en = "That device no longer hosts calls for the group."
@@ -9148,7 +9150,7 @@ where = [
   "android groupsc_call_host_revoked: Confirmation after an admin removes a device as the group's call host.",
   "ios group_done_callhost_revoked: Confirmation after removing a call host.",
 ]
-text = ""
+text = "Se laite ei enää isännöi ryhmän puheluita."
 
 [t_3ef8ce6200]
 en = "This device now hosts the group’s calls."
@@ -9156,7 +9158,7 @@ where = [
   "android groupsc_call_host_agreed: Confirmation after this device accepts to host the group's calls.",
   "ios group_done_callhost_accepted: Confirmation after this device agreed to host calls.",
 ]
-text = ""
+text = "Tämä laite isännöi nyt ryhmän puheluita."
 
 [t_6658f7590d]
 en = "This device won’t host the group’s calls."
@@ -9164,7 +9166,7 @@ where = [
   "android groupsc_call_host_declined: Confirmation after this device declines to host the group's calls.",
   "ios group_done_callhost_stopped: Confirmation after this device stopped hosting calls.",
 ]
-text = ""
+text = "Tämä laite ei isännöi ryhmän puheluita."
 
 [t_becf26bc30]
 en = "This phone carries the calls it starts in this group now."
@@ -9172,7 +9174,7 @@ where = [
   "android groupsc_calls_here: Confirmation after an admin lets this phone carry group calls.",
   "ios group_done_callhost_here: Confirmation after this phone started hosting its own calls.",
 ]
-text = ""
+text = "Tämä puhelin välittää nyt itse aloittamansa puhelut tässä ryhmässä."
 
 [t_4fb7808151]
 en = "Only admins post now. Everyone can still read."
@@ -9180,7 +9182,7 @@ where = [
   "android groupsc_admins_only_on: Confirmation after an admin switches the group to admins-only posting (a channel).",
   "desktop group_only_admins_post_now: Desktop, groups (in group_live.rs, run).",
 ]
-text = ""
+text = "Nyt vain ylläpitäjät kirjoittavat. Kaikki voivat yhä lukea."
 
 [t_fbf81e28a7]
 en = "Everyone can post again."
@@ -9188,7 +9190,7 @@ where = [
   "android groupsc_admins_only_off: Confirmation after an admin lets all members post again.",
   "desktop group_everyone_can_post_again: Desktop, groups (in group_live.rs, run).",
 ]
-text = ""
+text = "Kaikki voivat taas kirjoittaa."
 
 [t_bb7ca9edf2]
 en = "Declined. {name} is told “declined”."
@@ -9196,7 +9198,7 @@ where = [
   "android groupsc_req_declined: Confirmation after declining a chat request from a group member. {name} is their first name.",
   "ios group_done_request_declined: Confirmation after declining a chat request. {name} is their first name.",
 ]
-text = ""
+text = "Hylätty. {name} saa tiedon ”hylätty”."
 
 [t_b6b906e762]
 en = "They"
@@ -9205,7 +9207,7 @@ where = [
   "android call_they: Stands in for a caller's name at the start of a sentence when the contact has no name.",
   "ios group_fallback_they: Fallback for a name at the start of a sentence (\"They join…\"), used when the person has no name.",
 ]
-text = ""
+text = "Hän"
 
 [t_97e2f2b6e4]
 en = "{count} unread"
@@ -9213,14 +9215,14 @@ where = [
   "android groupsc_unread: Spoken description (screen reader) of the unread badge on a group row. {count} is the number of unread posts.",
   "ios shell_tab_unread: Screen reader value of a tab badge. {count} unread chats.",
 ]
-text = ""
+text = "{count} lukematonta"
 
 [t_69ec5f24a8]
 en = "{filled} of {total} flags"
 where = [
   "android groupsc_flags_of: Spoken description of the flag meter: how many of the flags needed to remove a member are filled.",
 ]
-text = ""
+text = "{filled}/{total} merkintää"
 
 [t_9df27ec5da]
 en = "Group call"
@@ -9230,7 +9232,7 @@ where = [
   "ios call_group_call_name: Fallback title of a group call when the group has no name.",
   "desktop gcall_group_call: Desktop, group calls (in gcall_view.rs, gcall_group_name).",
 ]
-text = ""
+text = "Ryhmäpuhelu"
 
 [t_c6880bc1b2]
 en = "Finding a call host…"
@@ -9239,7 +9241,7 @@ where = [
   "ios call_status_finding_host: Status of a group call while the call host is being chosen.",
   "desktop gcall_finding_a_call_host: Desktop, group calls (in gcall.rs, status).",
 ]
-text = ""
+text = "Etsitään puheluisäntää…"
 
 [t_2b6a69b14f]
 en = "Reconnecting…"
@@ -9249,7 +9251,7 @@ where = [
   "ios call_status_reconnecting: Status line under the contact name while the connection is being re-established.",
   "desktop common_reconnecting_2: Shared label, used in several places (call_screen, gcall).",
 ]
-text = ""
+text = "Yhdistetään uudelleen…"
 
 [t_e8649a596c]
 en = "You’re already in a call."
@@ -9258,7 +9260,7 @@ where = [
   "ios call_group_already_in_call: Error when starting or joining a group call while another call is running.",
   "desktop gcall_youre_already_in_a: Desktop, group calls (in gcall.rs, gcall_update).",
 ]
-text = ""
+text = "Olet jo puhelussa."
 
 [t_7097e1d5bd]
 en = "Call ended — host lost"
@@ -9267,7 +9269,7 @@ where = [
   "ios call_group_ended_host_lost: Reason shown when a group call ends because its call host disappeared.",
   "desktop gcall_call_ended_host_lost: Desktop, group calls (in gcall.rs, gcall_event).",
 ]
-text = ""
+text = "Puhelu päättyi — isäntä katosi"
 
 [t_970dcb83b1]
 en = "Battery under 15 %. Hosting is limited: only one person is heard at a time, and no one new can join."
@@ -9275,7 +9277,7 @@ where = [
   "android gcall_battery_limited: Notice on the group call screen of the phone that hosts the call, when its battery is low.",
   "ios call_group_battery_limited: Note on the group call screen when this phone is the call host and its battery is low.",
 ]
-text = ""
+text = "Akun varaus alle 15 %. Isännöintiä on rajoitettu: vain yksi henkilö kuuluu kerrallaan, eikä kukaan uusi voi liittyä."
 
 [t_30a80bae46]
 en = "No call host available"
@@ -9284,7 +9286,7 @@ where = [
   "ios call_group_no_host: Group call start failure when no device can host the call.",
   "desktop gcall_no_call_host_available: Desktop, group calls (in gcall.rs, start_failure).",
 ]
-text = ""
+text = "Puheluisäntää ei ole saatavilla"
 
 [t_499b756381]
 en = "Couldn’t connect"
@@ -9295,7 +9297,7 @@ where = [
   "ios call_group_connect_failed: Group call start failure, generic.",
   "desktop common_couldnt_connect: Shared label, used in several places (gcall, view).",
 ]
-text = ""
+text = "Yhteys ei onnistunut"
 
 [t_40ca86ecae]
 en = "this phone"
@@ -9303,7 +9305,7 @@ where = [
   "android gcall_host_this_phone: Who carries the group call, when it is this phone. Used in 'Call host: ...' and as the start of the About sheet's first sentence, so it may be capitalised by the app.",
   "ios call_host_this_phone: Names the call host when it is this phone; used in a sentence, lowercase.",
 ]
-text = ""
+text = "tämä puhelin"
 
 [t_61369250ba]
 en = "{name}’s device"
@@ -9311,7 +9313,7 @@ where = [
   "android gcall_host_device: Who carries the group call, when it is another member's device. {name} is their first name.",
   "ios call_host_device: Names the call host when it is another member's device. {name} is the member's first name.",
 ]
-text = ""
+text = "jäsenen {name} laite"
 
 [t_20b8c92cff]
 en = "the call host"
@@ -9319,7 +9321,7 @@ where = [
   "android gcall_the_host: Stand-in at the start of the About sheet sentence when the host is not known. The app capitalises the first letter.",
   "ios call_host_fallback: Used in a sentence when the call host's name is not known.",
 ]
-text = ""
+text = "puheluisäntä"
 
 [t_5f8be8f403]
 en = "Minimize call"
@@ -9328,7 +9330,7 @@ where = [
   "ios call_group_minimize: Accessibility label of the button that minimizes the group call screen.",
   "desktop call_minimize_call: Desktop, calls (voice and video) (in call_screen.rs, call_view).",
 ]
-text = ""
+text = "Pienennä puhelu"
 
 [t_480d196afb]
 en = "About this call"
@@ -9338,7 +9340,7 @@ where = [
   "ios call_about_title: Title of the call details card, and accessibility label of the info button.",
   "desktop common_about_this_call: Shared label, used in several places (call_screen, gcall).",
 ]
-text = ""
+text = "Tietoja tästä puhelusta"
 
 [t_77fbbf7912]
 en = "Only you so far. Waiting for others."
@@ -9347,7 +9349,7 @@ where = [
   "ios call_group_only_you: Line under the group call mark when I am the only one in the call.",
   "desktop gcall_only_you_so_far: Desktop, group calls (in gcall_view.rs, gcall_view).",
 ]
-text = ""
+text = "Toistaiseksi vain sinä. Odotetaan muita."
 
 [t_547832726d]
 en_one = "{count} person in the call"
@@ -9356,6 +9358,8 @@ where = [
   "android gcall_people: Line under the call status: how many people are in the group call.",
   "ios call_group_people_count: Line under the group call mark with the number of people in the call.",
 ]
+one = "{count} henkilö puhelussa"
+other = "{count} henkilöä puhelussa"
 
 [t_dac996d3e9]
 en = "+{count} more"
@@ -9363,7 +9367,7 @@ where = [
   "android gcall_more: Under the participants' faces when there are more than nine. {count} is how many are not shown.",
   "ios call_group_more: Shown when more people are in a group call than fit on screen. {count} is how many are not shown.",
 ]
-text = ""
+text = "+{count} muuta"
 
 [t_570080b5f0]
 en = "You’re the call host"
@@ -9372,7 +9376,7 @@ where = [
   "ios call_group_you_host: Pill on the group call screen when this phone carries the call.",
   "desktop gcall_youre_the_call_host: Desktop, group calls (in gcall_view.rs, gcall_view).",
 ]
-text = ""
+text = "Olet puheluisäntä"
 
 [t_253e46de4f]
 en = "Call host: {host}"
@@ -9381,7 +9385,7 @@ where = [
   "ios call_group_host_is: Pill on the group call screen. {host} is the host's device, such as \"Arjun’s device\".",
   "desktop gcall_call_host: Desktop, group calls (in gcall_view.rs, gcall_view). {host} is a value filled in by the app.",
 ]
-text = ""
+text = "Puheluisäntä: {host}"
 
 [t_8b0999173b]
 en = "Muted"
@@ -9391,7 +9395,7 @@ where = [
   "ios call_control_muted: Caption of the mute button while the microphone is muted.",
   "desktop common_muted: Shared label, used in several places (call_screen, gcall).",
 ]
-text = ""
+text = "Mykistetty"
 
 [t_e51dccd872]
 en = "is carrying this call. Everyone in the call connects to it, and it passes the audio on and chooses who is heard when several people speak."
@@ -9399,7 +9403,7 @@ where = [
   "android gcall_about_is_carrying: First paragraph of the group call About sheet, when this phone is the call host. Follows the host name in bold, so it continues that sentence (after a space added by the app).",
   "ios call_group_about_carrying: Continues the bold host name when this phone is the host: \"This phone is carrying this call...\".",
 ]
-text = ""
+text = "välittää tätä puhelua. Kaikki puhelussa olevat yhdistävät siihen, ja se välittää äänen eteenpäin ja valitsee, kuka kuuluu, kun useampi puhuu yhtä aikaa."
 
 [t_7ad320e095]
 en = "carries this call. Everyone in the call connects to it, and it passes the audio on and chooses who is heard when several people speak."
@@ -9407,7 +9411,7 @@ where = [
   "android gcall_about_carries: First paragraph of the group call About sheet. Follows the host name in bold ('Sam’s device', after a space added by the app), so it continues that sentence.",
   "ios call_group_about_carries: Continues the bold host name on the group call details card, e.g. \"Arjun’s device carries this call...\".",
 ]
-text = ""
+text = "välittää tämän puhelun. Kaikki puhelussa olevat yhdistävät siihen, ja se välittää äänen eteenpäin ja valitsee, kuka kuuluu, kun useampi puhuu yhtä aikaa."
 
 [t_ef8cfbe08a]
 en = "Your connection to the call host is encrypted, but the call host itself receives the audio, so it can hear this call. You trust it for the call the way you trust a chat host with posts."
@@ -9416,7 +9420,7 @@ where = [
   "ios call_group_about_trust: Paragraph on the group call details card about trusting the call host.",
   "desktop gcall_your_connection_to_the: Desktop, group calls (in gcall_view.rs, gcall_about).",
 ]
-text = ""
+text = "Yhteytesi puheluisäntään on salattu, mutta puheluisäntä itse vastaanottaa äänen, joten se voi kuulla tämän puhelun. Luotat siihen puhelussa samalla tavalla kuin keskustelun isäntälaitteeseen viesteissä."
 
 [t_58d3e5c07e]
 en = "A call host is a device a group admin chose and that agreed to it. It is separate from chat hosting. Admins can change call hosts in Group info."
@@ -9425,7 +9429,7 @@ where = [
   "ios call_group_about_who: Paragraph on the group call details card about who can be a call host.",
   "desktop gcall_a_call_host_is: Desktop, group calls (in gcall_view.rs, gcall_about).",
 ]
-text = ""
+text = "Puheluisäntä on laite, jonka ryhmän ylläpitäjä valitsi ja joka suostui siihen. Se on erillään keskustelun isännöinnistä. Ylläpitäjät voivat vaihtaa puheluisäntiä ryhmän tiedoissa."
 
 [t_c38df51058]
 en = "Got it"
@@ -9435,7 +9439,7 @@ where = [
   "ios call_got_it: Button that closes the call details card.",
   "desktop common_got_it: Shared label, used in several places (call_screen, gcall).",
 ]
-text = ""
+text = "Selvä"
 
 [t_866d75dd14]
 en = "Started by {name}"
@@ -9444,21 +9448,21 @@ where = [
   "ios group_call_started_by: Call card sub line. {name} is who started the call.",
   "ios call_group_started_by: Subtitle of the group chat call banner. {name} is the member who started the call.",
 ]
-text = ""
+text = "Aloittaja: {name}"
 
 [t_18c9d7e3f7]
 en = "{by} is calling the group {group}"
 where = [
   "android gcall_is_calling_group_desc: Screen reader description of the ringing group call card at the top. {by} is who, {group} the group's name.",
 ]
-text = ""
+text = "{by} soittaa ryhmälle {group}"
 
 [t_8ebb8f77bf]
 en = "{by} started a call in {group}"
 where = [
   "android gcall_started_call_desc: Screen reader description of the group call card at the top. {by} is who, {group} the group's name.",
 ]
-text = ""
+text = "{by} aloitti puhelun ryhmässä {group}"
 
 [t_ea752daaeb]
 en = "Open {group}"
@@ -9466,7 +9470,7 @@ where = [
   "android gcall_open_group_desc: Screen reader label of the tappable part of the group call card; opens the group. {group} is its name.",
   "ios call_group_open_label: Accessibility label of the group call announcement. {group} is the group name.",
 ]
-text = ""
+text = "Avaa {group}"
 
 [t_ced1211a28]
 en = "{name} started a call"
@@ -9475,7 +9479,7 @@ where = [
   "ios call_group_announce_started: Group call announcement. {name} is the member who started the call.",
   "desktop gcall_started_a_call: Desktop, group calls (in gcall_view.rs, gcall_announce). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} aloitti puhelun"
 
 [t_8ae74aaae3]
 en = "Microphone unavailable - you can't be heard"
@@ -9484,7 +9488,7 @@ where = [
   "android call_mic_unavailable: Problem line on the call screen when the microphone cannot be opened even though it is allowed.",
   "ios call_mic_unavailable: Problem line on the call screen when the microphone could not be opened.",
 ]
-text = ""
+text = "Mikrofoni ei ole käytettävissä - sinua ei kuulla"
 
 [t_2fe2a7bfe7]
 en = "Microphone permission needed - you can't be heard"
@@ -9493,7 +9497,7 @@ where = [
   "android call_mic_permission: Problem line on the call screen when the microphone permission is missing during a call.",
   "ios call_mic_permission_needed: Problem line on the call screen when microphone permission is denied.",
 ]
-text = ""
+text = "Mikrofonin lupa tarvitaan - sinua ei kuulla"
 
 [t_c36d6f222a]
 en = "Add contact"
@@ -9505,7 +9509,7 @@ where = [
   "ios people_add_title: Title of the add-contact sheet, and the button that adds the contact.",
   "desktop common_add_contact: Shared label, used in several places (chat, shell, signup).",
 ]
-text = ""
+text = "Lisää yhteystieto"
 
 [t_4faedb5f4f]
 en = "New contact"
@@ -9514,7 +9518,7 @@ where = [
   "ios people_add_title_new: Sheet title when a contact joined.",
   "desktop signup_new_contact: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay).",
 ]
-text = ""
+text = "Uusi yhteystieto"
 
 [t_8363b5fb29]
 en = "Code"
@@ -9523,7 +9527,7 @@ where = [
   "ios people_add_tab_code: Tab: add a contact by pasting a code.",
   "desktop signup_code: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay).",
 ]
-text = ""
+text = "Koodi"
 
 [t_8826672b86]
 en = "QR"
@@ -9532,7 +9536,7 @@ where = [
   "ios people_add_tab_qr: Tab: add a contact with a QR code.",
   "desktop signup_qr: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay).",
 ]
-text = ""
+text = "QR"
 
 [t_97f7e1c1e0]
 en = "Point at their Tinline code."
@@ -9540,7 +9544,7 @@ where = [
   "android addcontact_point_camera: Hint under the camera view while scanning someone's QR code; also spoken label of the camera.",
   "ios people_add_point_camera: Camera hint and accessibility label while scanning a contact QR code.",
 ]
-text = ""
+text = "Osoita heidän Tinline-koodiaan."
 
 [t_8abf1ecdd3]
 en = "Your QR code"
@@ -9548,7 +9552,7 @@ where = [
   "android addcontact_my_qr_desc: Screen reader description of your own QR code image.",
   "ios people_add_my_qr_a11y: Accessibility label of the user’s own contact QR code image.",
 ]
-text = ""
+text = "QR-koodisi"
 
 [t_289b64fb1e]
 en = "Reading image…"
@@ -9556,7 +9560,7 @@ where = [
   "android addcontact_reading_image: Hint while a picked image is searched for a QR code.",
   "ios people_add_reading_image: Shown while a picked image is searched for a QR code.",
 ]
-text = ""
+text = "Luetaan kuvaa…"
 
 [t_a67faf6bd8]
 en = "Show my code"
@@ -9564,7 +9568,7 @@ where = [
   "android addcontact_show_mine: Button that switches the QR tab from the camera back to your own QR.",
   "ios people_add_show_mine: Button that switches from scanning back to the user’s own code.",
 ]
-text = ""
+text = "Näytä koodini"
 
 [t_e1561d9f4a]
 en = "Scan their code"
@@ -9573,7 +9577,7 @@ where = [
   "android home_first_scan: Button on the first-run add-contact screen.",
   "ios people_add_scan_theirs: Button that starts the camera to scan a contact code.",
 ]
-text = ""
+text = "Skannaa heidän koodinsa"
 
 [t_18bdfc1acf]
 en = "Choose image"
@@ -9581,7 +9585,7 @@ where = [
   "android addcontact_choose_image: Button that picks an image containing someone's QR code.",
   "ios people_add_choose_image: Button that picks an image containing a QR code.",
 ]
-text = ""
+text = "Valitse kuva"
 
 [t_5788cd4a54]
 en = "Your code"
@@ -9590,7 +9594,7 @@ where = [
   "ios people_add_your_code: Heading above the user’s own contact code.",
   "desktop signup_your_code: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay).",
 ]
-text = ""
+text = "Koodisi"
 
 [t_0f40835ee7]
 en = "Send it to anyone you’d like to talk to, in any app. It works until {date}."
@@ -9598,7 +9602,7 @@ where = [
   "android addcontact_send_until: Explains your code. {date} is the day it stops working, like 'Mon 19 Oct'.",
   "ios people_add_send_until: Explains the user’s code. {date} is a short date like “Mon 19 Oct”.",
 ]
-text = ""
+text = "Lähetä se kenelle tahansa, jonka kanssa haluat puhua, millä tahansa sovelluksella. Se toimii {date} asti."
 
 [t_8ede9e1980]
 en = "Send it to anyone you’d like to talk to, in any app."
@@ -9607,7 +9611,7 @@ where = [
   "ios people_add_send: Explains the user’s code when it has no expiry.",
   "desktop signup_send_it_to_anyone: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay).",
 ]
-text = ""
+text = "Lähetä se kenelle tahansa, jonka kanssa haluat puhua, millä tahansa sovelluksella."
 
 [t_2e2e879e73]
 en = "or"
@@ -9615,7 +9619,7 @@ where = [
   "android addcontact_or: Divider between 'your code' and 'their code' on the Code tab.",
   "ios people_add_or: Small divider word between the scan option and the paste-a-code option on the add contact sheet.",
 ]
-text = ""
+text = "tai"
 
 [t_9a07e6f0f6]
 en = "Their code"
@@ -9624,7 +9628,7 @@ where = [
   "ios people_add_their_code: Heading above the paste area for another person’s code.",
   "desktop signup_their_code: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay).",
 ]
-text = ""
+text = "Heidän koodinsa"
 
 [t_73da04ae6f]
 en = "Paste their code"
@@ -9633,7 +9637,7 @@ where = [
   "ios people_add_paste_theirs: Button that pastes the contact code from the clipboard.",
   "desktop signup_paste_their_code: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay).",
 ]
-text = ""
+text = "Liitä heidän koodinsa"
 
 [t_d2aa3d83d4]
 en = "Open profile"
@@ -9642,7 +9646,7 @@ where = [
   "ios people_add_open_profile: Button that opens an existing contact’s profile.",
   "desktop signup_open_profile: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay).",
 ]
-text = ""
+text = "Avaa profiili"
 
 [t_9ceabd52ba]
 en = "Paste a new code"
@@ -9651,7 +9655,7 @@ where = [
   "ios people_add_paste_new: Button that goes back to paste another code.",
   "desktop signup_paste_a_new_code: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay).",
 ]
-text = ""
+text = "Liitä uusi koodi"
 
 [t_ca948bad76]
 en = "Adding…"
@@ -9660,7 +9664,7 @@ where = [
   "ios people_add_adding: Button label while a contact is being added.",
   "desktop signup_adding: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay).",
 ]
-text = ""
+text = "Lisätään…"
 
 [t_d7d94c99f3]
 en = "Connecting"
@@ -9672,7 +9676,7 @@ where = [
   "ios call_mark_connecting: Accessibility label of the animated mark while connecting.",
   "desktop common_connecting: Shared label, used in several places (link, mark).",
 ]
-text = ""
+text = "Yhdistetään"
 
 [t_67395f47f6]
 en = "Not connected yet"
@@ -9680,7 +9684,7 @@ where = [
   "android addcontact_line_not_yet: Screen reader description of the line drawing: not connected.",
   "ios people_line_not_connected: Accessibility description of the line: not connected yet.",
 ]
-text = ""
+text = "Ei vielä yhdistetty"
 
 [t_01dcdb1052]
 en = "Your clipboard is empty right now. When their code arrives, copy it and paste it here."
@@ -9689,7 +9693,7 @@ where = [
   "ios people_add_hint_empty_clipboard: Hint when Paste is pressed with an empty clipboard.",
   "desktop signup_your_clipboard_is_empty: Desktop, sign-up, restore and add contact (in signup.rs, ac_pasted).",
 ]
-text = ""
+text = "Leikepöytäsi on nyt tyhjä. Kun heidän koodinsa saapuu, kopioi se ja liitä tähän."
 
 [t_355541804b]
 en = "That’s your own code. Send it to them, and paste theirs here."
@@ -9698,7 +9702,7 @@ where = [
   "ios people_add_hint_own_code: Hint when the pasted code is the user’s own.",
   "desktop signup_thats_your_own_code: Desktop, sign-up, restore and add contact (in signup.rs, ac_pasted).",
 ]
-text = ""
+text = "Tämä on oma koodisi. Lähetä se heille ja liitä heidän koodinsa tähän."
 
 [t_47c69c935c]
 en = "That code from {name} has expired. Ask them for a fresh one."
@@ -9706,7 +9710,7 @@ where = [
   "android addcontact_code_expired: Hint when a code has expired. {name} is who made it.",
   "ios people_add_hint_expired: Hint when the pasted code has expired. {name} is the person who made it.",
 ]
-text = ""
+text = "Tämä koodi on vanhentunut (lähettäjä {name}). Pyydä häneltä uusi."
 
 [t_e7e0a62b44]
 en = "That doesn’t look like a Tinline code. Could they copy it again for you?"
@@ -9715,7 +9719,7 @@ where = [
   "ios people_add_hint_not_code: Hint when the pasted text is not a contact code.",
   "desktop signup_that_doesnt_look_like: Desktop, sign-up, restore and add contact (in signup.rs, ac_pasted).",
 ]
-text = ""
+text = "Tämä ei näytä Tinline-koodilta. Voisiko hän kopioida sen sinulle uudelleen?"
 
 [t_f92a068145]
 en = "No QR found. Try a clearer image."
@@ -9723,7 +9727,7 @@ where = [
   "android addcontact_no_qr: Hint when a picked image has no QR code.",
   "ios people_add_hint_no_qr: Hint when the picked image has no QR code.",
 ]
-text = ""
+text = "QR-koodia ei löytynyt. Kokeile selkeämpää kuvaa."
 
 [t_a9bb534440]
 en = "More than one QR. Crop to the one you want."
@@ -9731,7 +9735,7 @@ where = [
   "android addcontact_many_qr: Hint when a picked image has several QR codes.",
   "ios people_add_hint_many_qr: Hint when the picked image has several QR codes.",
 ]
-text = ""
+text = "Useampi kuin yksi QR-koodi. Rajaa kuva haluamaasi koodiin."
 
 [t_214ad8b542]
 en = "Couldn’t read that image. Choose another."
@@ -9739,14 +9743,14 @@ where = [
   "android addcontact_unreadable_image: Hint when a picked image cannot be read.",
   "ios people_add_hint_unreadable: Hint when the picked image could not be read.",
 ]
-text = ""
+text = "Kuvaa ei voitu lukea. Valitse toinen."
 
 [t_4ccbe5fea4]
 en = "Couldn’t open sharing. You can copy your code instead."
 where = [
   "android addcontact_share_failed: Hint when the system share sheet could not open.",
 ]
-text = ""
+text = "Jakaminen ei auennut. Voit kopioida koodisi sen sijaan."
 
 [t_6a7f43281a]
 en = "You blocked {name}. Unblock them in Privacy before adding them again."
@@ -9755,7 +9759,7 @@ where = [
   "ios people_add_why_blocked: Preview note when the found person is blocked. {name} is their name.",
   "desktop signup_you_blocked_unblock_them: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Estit henkilön {name}. Poista esto Yksityisyys-asetuksista ennen kuin lisäät hänet uudelleen."
 
 [t_6f62bbc738]
 en = "{name} is already in your contacts."
@@ -9764,7 +9768,7 @@ where = [
   "ios people_add_why_known: Preview note when the person is already a contact. {name} is their name.",
   "desktop signup_is_already_in_your: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} on jo yhteystiedoissasi."
 
 [t_a36e1b41e2]
 en = "Your line to {name} is open. Say hello."
@@ -9775,7 +9779,7 @@ where = [
   "ios people_add_inc_open: Request note when the line is open. {name} is their name.",
   "desktop signup_your_line_to_is: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Linjasi henkilöön {name} on auki. Sano hei."
 
 [t_4880a21001]
 en = "Request sent. Your line opens when {name} accepts."
@@ -9786,7 +9790,7 @@ where = [
   "ios people_add_why_requested: Preview note after the request was sent. {name} is their name.",
   "desktop common_request_sent_your_line: Shared label, used in several places (shell, signup). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Pyyntö lähetetty. Linjasi aukeaa, kun {name} hyväksyy."
 
 [t_20a964e6d6]
 en = "Still trying. {name}’s Tinline needs to be open and online for this."
@@ -9795,7 +9799,7 @@ where = [
   "ios people_add_why_slow: Preview note while adding takes long. {name} is their name.",
   "desktop signup_still_trying_s_tinline: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Yritetään yhä. Henkilön {name} Tinlinen täytyy olla auki ja verkossa tätä varten."
 
 [t_4e30991429]
 en = "Reaching {name}’s Tinline…"
@@ -9804,7 +9808,7 @@ where = [
   "ios people_add_why_reaching: Preview note while adding. {name} is their name.",
   "desktop signup_reaching_s_tinline: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Tavoitetaan henkilön {name} Tinlinea…"
 
 [t_39d94924ef]
 en = "Couldn’t reach {name}’s Tinline. It needs to be open and online, so try again when {name}’s around."
@@ -9813,7 +9817,7 @@ where = [
   "ios people_add_why_timeout: Preview note when the person could not be reached. {name} is their name.",
   "desktop signup_couldnt_reach_s_tinline: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Henkilön {name} Tinlinea ei tavoitettu. Sen täytyy olla auki ja verkossa, joten yritä uudelleen, kun {name} on paikalla."
 
 [t_f6beee9855]
 en = "{name}’s code isn’t valid any more. They may have made a new one, so ask {name} for their newest code."
@@ -9822,7 +9826,7 @@ where = [
   "ios people_add_why_refused: Preview note when their code is no longer valid. {name} is their name.",
   "desktop signup_s_code_isnt_valid: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Henkilön {name} koodi ei ole enää voimassa. Hän on ehkä luonut uuden, joten pyydä henkilöltä {name} hänen uusin koodinsa."
 
 [t_be591c648f]
 en = "You can’t add {name} right now. They’ve chosen not to be in touch here."
@@ -9831,7 +9835,7 @@ where = [
   "ios people_add_why_blocked_by: Preview note when the person blocked the user. {name} is their name.",
   "desktop signup_you_cant_add_right: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Et voi lisätä henkilöä {name} juuri nyt. Hän on valinnut olla olematta yhteydessä täällä."
 
 [t_4f7c2c6b21]
 en = "You’re offline. Once you’re connected, try again."
@@ -9840,7 +9844,7 @@ where = [
   "ios people_add_why_offline: Preview note when the user is offline while adding.",
   "desktop signup_youre_offline_once_youre: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay).",
 ]
-text = ""
+text = "Et ole verkossa. Yritä uudelleen, kun olet yhteydessä."
 
 [t_2e40817502]
 en = "Is this {name}? If you’re not sure, check with them first."
@@ -9848,7 +9852,7 @@ where = [
   "android addcontact_why_check: Reason line under a found person's name before you add them.",
   "ios people_add_why_confirm: Preview note before adding. {name} is their name.",
 ]
-text = ""
+text = "Onko tämä {name}? Jos et ole varma, tarkista asia häneltä ensin."
 
 [t_e81557b008]
 en = "Read with camera"
@@ -9856,7 +9860,7 @@ where = [
   "android addcontact_read_camera: Chip under the found person's name: the code came from the camera.",
   "ios people_add_read_camera: Chip: the code was read with the camera.",
 ]
-text = ""
+text = "Luettu kameralla"
 
 [t_f778dc6325]
 en = "Read from image"
@@ -9864,7 +9868,7 @@ where = [
   "android addcontact_read_image: Chip under the found person's name: the code came from a picked image.",
   "ios people_add_read_image: Chip: the code was read from an image.",
 ]
-text = ""
+text = "Luettu kuvasta"
 
 [t_5e989ba654]
 en = "Accepted your request"
@@ -9873,7 +9877,7 @@ where = [
   "ios people_add_accepted_you: Chip: the person accepted the user’s request.",
   "desktop signup_accepted_your_request: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay).",
 ]
-text = ""
+text = "Hyväksyi pyyntösi"
 
 [t_11442471e3]
 en = "Has your code"
@@ -9882,7 +9886,7 @@ where = [
   "ios people_add_has_your_code: Chip: the person has the user’s code.",
   "desktop signup_has_your_code: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay).",
 ]
-text = ""
+text = "Hänellä on koodisi"
 
 [t_1358b91f51]
 en = "{name} wants to add you as a contact. Accepting lets you message and call each other."
@@ -9891,7 +9895,7 @@ where = [
   "ios people_add_inc_wants: Request note. {name} is who wants to add the user.",
   "desktop signup_wants_to_add_you: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} haluaa lisätä sinut yhteystiedoksi. Hyväksymällä voitte lähettää viestejä ja soittaa toisillenne."
 
 [t_450ebac8dd]
 en = "{name} accepted. Your line to {name} is open. Say hello."
@@ -9900,7 +9904,7 @@ where = [
   "ios people_add_inc_accepted: Request note when they accepted. {name} is their name.",
   "desktop signup_accepted_your_line_to: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} hyväksyi. Linjasi henkilöön {name} on auki. Sano hei."
 
 [t_8677dd930a]
 en = "Calls themselves “{name}”"
@@ -9908,7 +9912,7 @@ where = [
   "android contact_calls_themselves: Under a contact's name when you renamed them: the name they use for themselves.",
   "ios people_detail_calls_themselves: Contact page: what the contact calls themselves. {name} is their own chosen name.",
 ]
-text = ""
+text = "Kutsuu itseään nimellä ”{name}”"
 
 [t_f4faf0845c]
 en = "Rename"
@@ -9917,14 +9921,14 @@ where = [
   "ios people_detail_rename: Contact page: button and title to rename the contact on this phone.",
   "desktop common_rename: Shared label, used in several places (link, profile, view).",
 ]
-text = ""
+text = "Nimeä uudelleen"
 
 [t_77677381e3]
 en = "What {name} can do"
 where = [
   "android contact_what_they_can_do: Section label on a contact's page; the app shows it in capitals. {name} is their first name.",
 ]
-text = ""
+text = "Mitä {name} voi tehdä"
 
 [t_8a65dd6de3]
 en = "Allow calls"
@@ -9933,7 +9937,7 @@ where = [
   "ios people_detail_allow_calls: Contact page: switch that lets the contact call the user.",
   "desktop common_allow_calls: Shared label, used in several places (profile, view).",
 ]
-text = ""
+text = "Salli puhelut"
 
 [t_598a6c9b28]
 en = "Blocked: nothing gets through until you unblock."
@@ -9942,7 +9946,7 @@ where = [
   "ios people_detail_allow_blocked: Contact page: note under Allow calls when the contact is blocked.",
   "desktop contact_blocked_nothing_gets_through: Desktop, contact detail (in view.rs, detail_view).",
 ]
-text = ""
+text = "Estetty: mitään ei tule perille, ennen kuin poistat eston."
 
 [t_4905bb6884]
 en = "{name} can ring this phone and your other devices."
@@ -9950,7 +9954,7 @@ where = [
   "android contact_calls_sub_on: Under the Allow calls row when calls are allowed. {name} is their first name.",
   "ios people_detail_allow_on: Contact page: note under Allow calls when on. {name} is the contact’s first name.",
 ]
-text = ""
+text = "{name} voi soittaa tähän puhelimeen ja muihin laitteisiisi."
 
 [t_7227928705]
 en = "Off. {name} can message you; their calls don’t ring."
@@ -9959,7 +9963,7 @@ where = [
   "ios people_detail_allow_off: Contact page: note under Allow calls when off. {name} is the contact’s first name.",
   "desktop contact_off_can_message_you: Desktop, contact detail (in view.rs, detail_view). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Pois päältä. {name} voi lähettää sinulle viestejä; hänen puhelunsa eivät soi."
 
 [t_f9f8349908]
 en = "Calls with {name}"
@@ -9967,7 +9971,7 @@ where = [
   "android contact_calls_with: Section label above a contact's call history; the app shows it in capitals.",
   "desktop contact_calls_with: Desktop, contact detail (in view.rs, detail_view). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Puhelut: {name}"
 
 [t_f848d1ce7d]
 en = "History stays on this phone only."
@@ -9977,7 +9981,7 @@ where = [
   "ios shell_calls_history_note: Footer of the recent calls screen.",
   "ios people_history_note: Note under a call history list.",
 ]
-text = ""
+text = "Historia pysyy vain tällä puhelimella."
 
 [t_70c1c83433]
 en = "Direct"
@@ -9988,7 +9992,7 @@ where = [
   "ios call_badge_direct: Badge on the call-ended screen: the call went straight between the phones.",
   "desktop common_direct: Shared label, used in several places (call_screen, view).",
 ]
-text = ""
+text = "Suora"
 
 [t_c085a68575]
 en = "Relayed"
@@ -9999,7 +10003,7 @@ where = [
   "ios call_badge_relayed: Badge on the call-ended screen: the call went through a relay.",
   "desktop common_relayed: Shared label, used in several places (call_screen, view).",
 ]
-text = ""
+text = "Välitetty"
 
 [t_9375279532]
 en = "Name on this phone"
@@ -10007,7 +10011,7 @@ where = [
   "android contact_name_here: Label of the field in the rename sheet.",
   "ios people_detail_name_field: Label of the rename field.",
 ]
-text = ""
+text = "Nimi tällä puhelimella"
 
 [t_4d487d284f]
 en = "Only you see this. They still call themselves “{name}”."
@@ -10015,7 +10019,7 @@ where = [
   "android contact_rename_hint: Hint under the rename field. {name} is the name they chose.",
   "ios people_detail_rename_note: Rename dialog note. {name} is the contact’s own chosen name.",
 ]
-text = ""
+text = "Vain sinä näet tämän. He kutsuvat itseään yhä nimellä ”{name}”."
 
 [t_3ac2cc1d48]
 en = "Use their name"
@@ -10024,7 +10028,7 @@ where = [
   "ios people_detail_use_theirs: Rename dialog button that removes the nickname and shows their own name.",
   "desktop contact_use_their_name: Desktop, contact detail (in view.rs, detail_view).",
 ]
-text = ""
+text = "Käytä hänen nimeään"
 
 [t_33e0f0d8e6]
 en = "Off"
@@ -10035,7 +10039,7 @@ where = [
   "ios people_switch_off: Accessibility value of a switch that is off.",
   "ios call_value_off: Accessibility value of a toggle that is off.",
 ]
-text = ""
+text = "Pois"
 
 [t_bd3781b604]
 en = "Selected"
@@ -10046,7 +10050,7 @@ where = [
   "ios people_chip_selected: Accessibility value of a selected chip.",
   "ios call_selected: Accessibility label of the check mark on the chosen audio route.",
 ]
-text = ""
+text = "Valittu"
 
 [t_b571e5c8e1]
 en = "Hide {label}"
