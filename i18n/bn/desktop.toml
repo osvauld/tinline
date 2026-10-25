@@ -1,0 +1,3817 @@
+# Generated from i18n/tm/bn.toml by scripts/i18n_tm.py apply. Edit the tm file.
+
+[common_a_device_name_is]
+text = "ডিভাইসের নাম {min} থেকে {max} অক্ষরের হতে হবে।"
+
+[common_about_this_call]
+text = "এই কল সম্পর্কে"
+
+[common_accept]
+text = "গ্রহণ করুন"
+
+[common_add]
+text = "যোগ করুন"
+
+[common_add_a_passphrase]
+text = "একটি পাসফ্রেজ যোগ করুন"
+
+[common_add_contact]
+text = "পরিচিতি যোগ করুন"
+
+[common_add_passphrase]
+text = "পাসফ্রেজ যোগ করুন"
+
+[common_allow_calls]
+text = "কল আসতে দিন"
+
+[common_audio_devices]
+text = "অডিও ডিভাইস"
+
+[common_auto]
+text = "অটো"
+
+[common_available]
+text = "ফ্রি"
+
+[common_back]
+text = "ফিরে যান"
+
+[common_block]
+text = "ব্লক করুন"
+
+[common_blocked]
+text = "ব্লক করা"
+
+[common_blocked_people]
+text = "ব্লক করা মানুষ"
+
+[common_call]
+text = "কল করুন"
+
+[common_call_ended]
+text = "কল শেষ হয়েছে"
+
+[common_call_in_progress]
+text = "কল চলছে"
+
+[common_calls]
+text = "কল"
+
+[common_calls_availability]
+text = "কল ও উপস্থিতি"
+
+[common_camera]
+text = "ক্যামেরা"
+
+[common_cancel]
+text = "বাতিল করুন"
+
+[common_cancelled]
+text = "বাতিল"
+
+[common_change_passphrase]
+text = "পাসফ্রেজ বদলান"
+
+[common_chats]
+text = "চ্যাট"
+
+[common_close]
+text = "বন্ধ করুন"
+
+[common_connecting]
+text = "কানেক্ট হচ্ছে"
+
+[common_contacts]
+text = "পরিচিতি"
+
+[common_continue]
+text = "চালিয়ে যান"
+
+[common_copy_my_key]
+text = "আমার কী কপি করুন"
+
+[common_copy_recovery_phrase]
+text = "রিকভারি শব্দ কপি করুন"
+
+[common_current_passphrase]
+text = "বর্তমান পাসফ্রেজ"
+
+[common_decline]
+text = "ফিরিয়ে দিন"
+
+[common_declined]
+text = "ফিরিয়ে দেওয়া হয়েছে"
+
+[common_decoder_for_their_video]
+text = "ওঁদের ভিডিওর ডিকোডার"
+
+[common_device_name]
+text = "ডিভাইসের নাম"
+
+[common_direct]
+text = "সরাসরি"
+
+[common_done]
+text = "হয়ে গেছে"
+
+[common_give_this_computer_a]
+text = "এই কম্পিউটারের {min} থেকে {max} অক্ষরের একটি নাম দিন।"
+
+[common_got_it]
+text = "বুঝেছি"
+
+[common_groups]
+text = "গ্রুপ"
+
+[common_hide]
+text = "লুকান"
+
+[common_hosting]
+text = "হোস্টিং"
+
+[common_incoming]
+text = "ইনকামিং"
+
+[common_incoming_call]
+text = "কল আসছে"
+
+[common_incoming_video_call]
+text = "ভিডিও কল আসছে"
+
+[common_is_calling]
+text = "{name} কল করছেন"
+
+[common_join]
+text = "যোগ দিন"
+
+[common_leave]
+text = "ছেড়ে দিন"
+
+[common_linked_devices]
+text = "লিঙ্ক করা ডিভাইস"
+
+[common_loading]
+text = "লোড হচ্ছে…"
+
+[common_locked]
+text = "লক করা"
+
+[common_message]
+text = "মেসেজ"
+
+[common_messages]
+text = "মেসেজ"
+
+[common_messages_only]
+text = "শুধু মেসেজ"
+
+[common_messages_only_calling_needs]
+text = "শুধু মেসেজ: কল করতে ওঁদের অনুমতি লাগবে"
+
+[common_microphone]
+text = "মাইক্রোফোন"
+
+[common_missed]
+text = "মিসড"
+
+[common_mute]
+text = "মিউট"
+
+[common_muted]
+text = "মিউট করা"
+
+[common_name]
+text = "নাম"
+
+[common_name_this_computer]
+text = "এই কম্পিউটারের নাম দিন"
+
+[common_needs_your_passphrase]
+text = "আপনার পাসফ্রেজ লাগবে"
+
+[common_new_code]
+text = "নতুন কোড"
+
+[common_new_group]
+text = "নতুন গ্রুপ"
+
+[common_new_passphrase]
+text = "নতুন পাসফ্রেজ"
+
+[common_no_answer]
+text = "কেউ ধরেননি"
+
+[common_no_messages_yet]
+text = "এখনও কোনো মেসেজ নেই"
+
+[common_not_available]
+text = "পাওয়া যাচ্ছে না"
+
+[common_not_now]
+text = "এখন নয়"
+
+[common_not_synced_yet]
+text = "এখনও সিঙ্ক হয়নি"
+
+[common_offline]
+text = "অফলাইন"
+
+[common_ok]
+text = "ঠিক আছে"
+
+[common_online]
+text = "অনলাইন"
+
+[common_open]
+text = "খুলুন"
+
+[common_open_link]
+text = "লিঙ্ক খুলুন"
+
+[common_original_message_unavailable]
+text = "আসল মেসেজটি পাওয়া যাচ্ছে না"
+
+[common_outgoing]
+text = "আউটগোয়িং"
+
+[common_passphrase]
+text = "পাসফ্রেজ"
+
+[common_passphrase_changed]
+text = "পাসফ্রেজ বদলানো হয়েছে"
+
+[common_paste_only_into_a]
+text = "শুধু ভরসার কোনো পাসওয়ার্ড ম্যানেজারে পেস্ট করুন; ক্লিপবোর্ডে আপনার অ্যাকাউন্টের কী আছে।"
+
+[common_photo]
+text = "ছবি · {value}"
+
+[common_privacy]
+text = "প্রাইভেসি"
+
+[common_recovery_phrase]
+text = "রিকভারি শব্দ"
+
+[common_relayed]
+text = "রিলে হয়ে"
+
+[common_remember_on_this_computer]
+text = "এই কম্পিউটারে মনে রাখুন"
+
+[common_remove]
+text = "সরান"
+
+[common_rename]
+text = "নাম বদলান"
+
+[common_request_sent_your_line]
+text = "অনুরোধ পাঠানো হয়েছে। {name} গ্রহণ করলেই আপনার লাইন খুলে যাবে।"
+
+[common_save]
+text = "সেভ করুন"
+
+[common_saving]
+text = "সেভ হচ্ছে..."
+
+[common_security]
+text = "নিরাপত্তা"
+
+[common_sharper_video_off]
+text = "ঝকঝকে ভিডিও বন্ধ"
+
+[common_show]
+text = "দেখান"
+
+[common_size_gb]
+text = "{size} GB"
+
+[common_skips_the_passphrase_when]
+text = "এই কম্পিউটারের কি-রিং ব্যবহার করে, Tinline চালু হওয়ার সময় পাসফ্রেজ চায় না।"
+
+[common_so_you_can_tell]
+text = "যাতে “লিঙ্ক করা ডিভাইস”-এ আপনার ডিভাইসগুলো আলাদা করে চিনতে পারেন। এই নাম শুধু আপনার নিজের ডিভাইসগুলো দেখে; যাঁদের আপনি কল করেন, তাঁরা কখনও দেখেন না।"
+
+[common_someone]
+text = "কেউ একজন"
+
+[common_speaker]
+text = "স্পিকার"
+
+[common_starting]
+text = "চালু হচ্ছে..."
+
+[common_this_device]
+text = "এই ডিভাইস"
+
+[common_tinline_is_still_starting]
+text = "Tinline এখনও চালু হচ্ছে। একটু পরে আবার চেষ্টা করুন।"
+
+[common_today]
+text = "আজ"
+
+[common_try_again]
+text = "আবার চেষ্টা করুন"
+
+[common_unblock]
+text = "আনব্লক করুন"
+
+[common_unlink]
+text = "লিঙ্ক সরান"
+
+[common_unlink_2]
+text = "{name}-এর লিঙ্ক সরাবেন?"
+
+[common_unlock_first]
+text = "আগে আনলক করুন।"
+
+[common_unnamed_device]
+text = "নামহীন ডিভাইস"
+
+[common_video]
+text = "ভিডিও"
+
+[common_work_desktop]
+text = "অফিসের ডেস্কটপ"
+
+[common_working]
+text = "কাজ চলছে..."
+
+[common_yesterday]
+text = "গতকাল"
+
+[common_you]
+text = "আপনি"
+
+[common_you_can_rename_it]
+text = "পরে নাম বদলাতে পারবেন।"
+
+[common_youll_be_the_owner]
+text = "আপনি হবেন মালিক"
+
+[common_your_account]
+text = "আপনার অ্যাকাউন্ট"
+
+[common_your_line_is_open]
+text = "আপনার লাইন খোলা আছে"
+
+[common_your_name]
+text = "আপনার নাম"
+
+[common_youre_in_the_call]
+text = "আপনি কলে আছেন"
+
+[app_a_group]
+text = "একটি গ্রুপ"
+
+[app_account_removed_from_this]
+text = "এই কম্পিউটার থেকে অ্যাকাউন্ট সরানো হয়েছে"
+
+[app_adding_passphrase]
+text = "পাসফ্রেজ যোগ করা হচ্ছে..."
+
+[app_an_identity_already_exists]
+text = "এখানে আগে থেকেই একটি পরিচয় আছে।"
+
+[app_changing_passphrase]
+text = "পাসফ্রেজ বদলানো হচ্ছে..."
+
+[app_could_not_call]
+text = "কল করা গেল না: {error}"
+
+[app_could_not_start]
+text = "চালু করা গেল না: {error}"
+
+[app_couldnt_accept_just_now]
+text = "এই মুহূর্তে গ্রহণ করা গেল না। একটু পরে আবার চেষ্টা করুন।"
+
+[app_device_name_saved]
+text = "ডিভাইসের নাম সেভ হয়েছে"
+
+[app_enter_a_name_first]
+text = "আগে একটি নাম লিখুন"
+
+[app_enter_your_name_and]
+text = "আপনার নাম আর রিকভারি শব্দ লিখুন"
+
+[app_invited_you_to_the]
+text = "{value} আপনাকে গ্রুপে আমন্ত্রণ জানিয়েছেন"
+
+[app_is_already_in_your]
+text = "{name} আগে থেকেই আপনার পরিচিতিতে আছেন"
+
+[app_is_calling]
+text = "{peer_name} কল করছেন"
+
+[app_passphrase_added_you_will]
+text = "পাসফ্রেজ যোগ করা হয়েছে। পরের বার Tinline চালু হলে এটা লাগবে।"
+
+[app_pick_one_that_is]
+text = "এখনকারটা থেকে আলাদা একটি বেছে নিন।"
+
+[app_restoring]
+text = "ফিরিয়ে আনা হচ্ছে..."
+
+[app_still_cant_find_the]
+text = "এখনও চাবিটি খুঁজে পাওয়া যাচ্ছে না।"
+
+[app_task_failed]
+text = "কাজটি শেষ করা যায়নি"
+
+[app_text]
+text = "{name}: {value}"
+
+[app_that_account_is_already]
+text = "ওই অ্যাকাউন্ট আগে থেকেই এই কম্পিউটারে আছে।"
+
+[app_that_isnt_your_current]
+text = "এটা আপনার বর্তমান পাসফ্রেজ নয়।"
+
+[app_that_passphrase_didnt_open]
+text = "এই পাসফ্রেজ দিয়ে অ্যাকাউন্টটি খুলল না।"
+
+[app_that_phrase_isnt_valid]
+text = "শব্দগুলো মিলছে না। প্রতিটি শব্দ আর তাদের ক্রম দেখে নিন।"
+
+[app_the_two_passphrases_differ]
+text = "দুটো পাসফ্রেজ আলাদা।"
+
+[app_this_computers_keyring_wouldnt]
+text = "এই কম্পিউটারের কি-রিং এটা রাখতে পারেনি, তাই Tinline আপনার পাসফ্রেজ চাইতে থাকবে।"
+
+[app_ticket]
+text = "টিকিট: {error}"
+
+[app_type_a_new_passphrase]
+text = "একটি নতুন পাসফ্রেজ লিখুন।"
+
+[app_type_a_passphrase_first]
+text = "আগে একটি পাসফ্রেজ লিখুন।"
+
+[app_type_your_current_passphrase]
+text = "আপনার বর্তমান পাসফ্রেজ লিখুন।"
+
+[app_wait_for_the_profile]
+text = "প্রোফাইল সেভ হওয়া শেষ হওয়া পর্যন্ত অপেক্ষা করুন।"
+
+[app_your_key_is_kept]
+text = "আপনার চাবি Tinline-এর ডেটা ফোল্ডারে একটি সাধারণ ফাইলে রাখা আছে। ওই ফোল্ডার যে কপি করবে, সে আপনার অ্যাকাউন্ট খুলতে পারবে। সুরক্ষার জন্য একটি পাসফ্রেজ যোগ করুন; তখন ফাইলটি মুছে ফেলা হবে।"
+
+[app_your_key_is_kept_in]
+text = "আপনার চাবি এই কম্পিউটারের কি-রিং-এ রাখা আছে, তাই Tinline কিছু না চেয়েই খোলে।"
+
+[app_your_recovery_key_is]
+text = "আপনার রিকভারি কী কপি হয়েছে।"
+
+[app_your_recovery_words_are]
+text = "আপনার রিকভারি শব্দ কপি হয়েছে।"
+
+[app_youre_on_a_call]
+text = "আপনি একটি কলে আছেন। অ্যাকাউন্ট বদলানোর আগে কল শেষ করুন।"
+
+[audio_disconnected_switching_to_the]
+text = "{label}-এর সংযোগ কেটে গেছে, সিস্টেমের ডিফল্টে বদলানো হচ্ছে"
+
+[audio_echo_cancellation_is_unavailable]
+text = "ইকো ক্যানসেলেশন পাওয়া যাচ্ছে না"
+
+[audio_is_back]
+text = "{label} ফিরে এসেছে"
+
+[audio_unavailable]
+text = "{label} পাওয়া যাচ্ছে না: {error}"
+
+[call_about_this_call_reconnecting]
+text = "এই কল সম্পর্কে। আবার কানেক্ট হচ্ছে।"
+
+[call_about_this_call_signal]
+text = "এই কল সম্পর্কে। {value} সিগন্যাল, {to_lowercase}।"
+
+[call_answer]
+text = "উত্তর দিন"
+
+[call_answered_on_another_device]
+text = "অন্য ডিভাইসে ধরা হয়েছে"
+
+[call_calling]
+text = "কল করা হচ্ছে…"
+
+[call_calling_during_your_call]
+text = "আপনার কলের মধ্যে কল করছেন"
+
+[call_calls_not_allowed]
+text = "কলের অনুমতি নেই"
+
+[call_camera_off]
+text = "ক্যামেরা বন্ধ"
+
+[call_camera_on]
+text = "ক্যামেরা চালু"
+
+[call_connecting_to_once_the]
+text = "{name}-এর সঙ্গে কানেক্ট হচ্ছে। কল কানেক্ট হলেই সেটি এন্ড-টু-এন্ড এনক্রিপ্টেড।"
+
+[call_couldnt_reach]
+text = "পৌঁছানো যায়নি"
+
+[call_ctrl_e_cancels]
+text = "Ctrl E দিয়ে বাতিল"
+
+[call_declined_on_another_device]
+text = "অন্য ডিভাইসে ফিরিয়ে দেওয়া হয়েছে"
+
+[call_device_changes_apply_from]
+text = "ডিভাইসের পরিবর্তন পরের কল থেকে কাজ করবে।"
+
+[call_during_your_call]
+text = "আপনি এই কলে থাকার সময়"
+
+[call_end]
+text = "শেষ"
+
+[call_end_answer]
+text = "শেষ করে ধরুন"
+
+[call_end_to_end_encrypted]
+text = "এন্ড-টু-এন্ড এনক্রিপ্টেড"
+
+[call_end_to_end_encrypted_2]
+text = "এন্ড-টু-এন্ড এনক্রিপ্টেড।"
+
+[call_end_to_end_encrypted_ctrl]
+text = "এন্ড-টু-এন্ড এনক্রিপ্টেড · Ctrl M মিউট · Ctrl E শেষ · Esc ছোট করে"
+
+[call_ends_your_call_with]
+text = "উত্তর দিলে {name}-এর সঙ্গে আপনার কল শেষ হবে।"
+
+[call_enter_answers_esc_declines]
+text = "Enter উত্তর দেয় · Esc ফিরিয়ে দেয়"
+
+[call_for_testing_your_picture]
+text = "পরীক্ষার জন্য। আপনার ভিডিও আটকে আটকে চলতে পারে বা কম্পিউটার গরম হতে পারে।"
+
+[call_hang_up]
+text = "কল শেষ করুন"
+
+[call_hd]
+text = "HD"
+
+[call_ignore_limits_heat_their]
+text = "সীমা উপেক্ষা করুন (তাপ, ওঁদের ডিকোডার)"
+
+[call_is_calling_you]
+text = "আপনাকে কল করছেন…"
+
+[call_minimize_call]
+text = "কল ছোট করুন"
+
+[call_ms_round_trip_lost]
+text = "{rtt_ms} ms রাউন্ড ট্রিপ · {value}% হারিয়েছে"
+
+[call_no_camera]
+text = "ক্যামেরা নেই"
+
+[call_pin_a_size_first]
+text = "আগে একটি সাইজ পিন করুন।"
+
+[call_relayed_a_direct_line]
+text = "রিলে হয়ে: এই নেটওয়ার্কে সরাসরি লাইন সম্ভব হয়নি, তাই একটি এনক্রিপ্টেড রিলে কলটি পৌঁছে দিচ্ছে। রিলে আপনার কথা শুনতে পারে না।"
+
+[call_relayed_encrypted]
+text = "রিলে হয়ে · এনক্রিপ্টেড"
+
+[call_ringing]
+text = "রিং হচ্ছে…"
+
+[call_sharper_video_on_paused]
+text = "ঝকঝকে ভিডিও চালু, কানেকশন দুর্বল থাকায় থেমে আছে"
+
+[call_sharper_video_on_up]
+text = "ঝকঝকে ভিডিও চালু, 720p পর্যন্ত"
+
+[call_signal]
+text = "{value} সিগন্যাল · {value2}"
+
+[call_starting_video]
+text = "ভিডিও শুরু হচ্ছে…"
+
+[call_stats_for_nerds]
+text = "খুঁটিনাটি পরিসংখ্যান"
+
+[call_the_connection_dropped_for]
+text = "কানেকশন কিছুক্ষণের জন্য কেটে গেছে। Tinline {name}-এর কাছে ফেরার পথ খুঁজছে।"
+
+[call_the_line_is_weak]
+text = " লাইন দুর্বল, তাই {name}-এর কথা কেটে কেটে আসতে পারে।"
+
+[call_their_video]
+text = "ওঁদের ভিডিও"
+
+[call_these_apply_to_this]
+text = "এগুলো এখন এই কলে কাজ করবে। সেটিংস > ভিডিও থেকে পরের কল ঠিক হয়।"
+
+[call_video_is_starting]
+text = "ভিডিও শুরু হচ্ছে…"
+
+[call_your_bitrate_cap_not]
+text = "আপনার বিটরেটের সর্বোচ্চ সীমা (প্রতিশ্রুত হার নয়)"
+
+[call_your_call_goes_straight]
+text = "আপনার কল সরাসরি আপনার ডিভাইস আর {name}-এর ডিভাইসের মধ্যে যায়।"
+
+[call_your_devices_cant_reach]
+text = "আপনার ডিভাইসগুলো এখন সরাসরি একে অপরের কাছে পৌঁছাতে পারছে না, তাই একটি রিলে কলটি পৌঁছে দিচ্ছে। রিলে শুনতে পারে না।"
+
+[call_your_frame_rate]
+text = "আপনার ফ্রেম রেট"
+
+[call_your_network_changed_hold]
+text = "আপনার নেটওয়ার্ক বদলে গেছে। একটু অপেক্ষা করুন — Tinline আবার লাইন খুঁজছে।"
+
+[call_your_size]
+text = "আপনার সাইজ"
+
+[call_your_video]
+text = "আপনার ভিডিও"
+
+[call_your_video_codec]
+text = "আপনার ভিডিও কোডেক"
+
+[call_your_voice_is_encrypted]
+text = " আপনার কণ্ঠস্বর এই ডিভাইসে এনক্রিপ্ট হয়, আর শুধু {name}-এর ডিভাইসেই ডিক্রিপ্ট হয়।"
+
+[chat_ask_for_earlier_messages]
+text = "আগের মেসেজ চেয়ে নিন"
+
+[chat_call_declined_video]
+text = "ফিরিয়ে দেওয়া ভিডিও কল"
+
+[chat_call_declined_voice]
+text = "ফিরিয়ে দেওয়া ভয়েস কল"
+
+[chat_call_failed]
+text = "কল কানেক্ট হয়নি"
+
+[chat_call_missed_video]
+text = "মিসড ভিডিও কল"
+
+[chat_call_missed_voice]
+text = "মিসড ভয়েস কল"
+
+[chat_call_video_length]
+text = "ভিডিও কল · {duration}"
+
+[chat_call_voice_length]
+text = "ভয়েস কল · {duration}"
+
+[chat_cancelled_call]
+text = "বাতিল করা কল"
+
+[chat_chat_details]
+text = "চ্যাটের বিবরণ"
+
+[chat_copy]
+text = "কপি করুন"
+
+[chat_could_not_open]
+text = "খোলা গেল না: {error}"
+
+[chat_could_not_play]
+text = "চালানো গেল না: {error}"
+
+[chat_could_not_record]
+text = "রেকর্ড করা গেল না: {error}"
+
+[chat_could_not_save]
+text = "সেভ করা গেল না: {error}"
+
+[chat_could_not_send]
+text = "পাঠানো গেল না: {error}"
+
+[chat_could_not_show_this]
+text = "এটা দেখানো গেল না: {error}"
+
+[chat_couldnt_download_tap_to]
+text = "{value} · ডাউনলোড করা গেল না — আবার চেষ্টা করতে ট্যাপ করুন"
+
+[chat_delete]
+text = "মুছুন"
+
+[chat_delete_for_everyone]
+text = "সবার জন্য মুছুন"
+
+[chat_delete_for_everyone_asks]
+text = "“সবার জন্য মুছুন” {name}-এর ডিভাইসগুলোকেও এটা মুছে ফেলতে বলে। অন্য কোথাও থাকা কপি ফেরানো যায় না।"
+
+[chat_delete_message]
+text = "মেসেজটি মুছবেন?"
+
+[chat_deleted_this_message]
+text = "{name} এই মেসেজটি মুছে দিয়েছেন"
+
+[chat_device]
+text = "ডিভাইস {device} · {value}"
+
+[chat_download]
+text = "ডাউনলোড করুন"
+
+[chat_downloading_of]
+text = "ডাউনলোড হচ্ছে · {value2}-এর মধ্যে {value}"
+
+[chat_draft]
+text = "খসড়া: "
+
+[chat_drop_to_send_to]
+text = "{name}-কে পাঠাতে এখানে ছেড়ে দিন"
+
+[chat_edit]
+text = "এডিট করুন"
+
+[chat_editing_message]
+text = "মেসেজ এডিট করছেন"
+
+[chat_encrypted_on_this_computer]
+text = "এই কম্পিউটারে এনক্রিপ্টেড। প্রতিটি 2 GB পর্যন্ত। পরের বার আপনারা দুজনেই অনলাইনে থাকলে {name} এটা পাবেন।"
+
+[chat_esc_to_cancel]
+text = "বাতিল করতে Esc"
+
+[chat_find_in_this_chat]
+text = "এই চ্যাটে খুঁজুন"
+
+[chat_find_in_this_chat_ctrl]
+text = "এই চ্যাটে খুঁজুন (Ctrl+F)"
+
+[chat_gets_it_when_youre]
+text = "{value} · আপনারা দুজনেই অনলাইনে থাকলে {name} এটা পাবেন"
+
+[chat_is_offline_delete_for]
+text = "{name} অফলাইনে আছেন। “সবার জন্য মুছুন” ওঁর ডিভাইসে পৌঁছাবে, যখন আপনারা দুজনেই অনলাইনে থাকবেন।"
+
+[chat_it_was_never_delivered]
+text = "এটা কখনও পৌঁছায়নি, তাই শুধু এই কম্পিউটারেই আছে।"
+
+[chat_load_earlier_messages]
+text = "আগের মেসেজ লোড করুন"
+
+[chat_message_deleted]
+text = "মেসেজ মুছে ফেলা হয়েছে"
+
+[chat_messages_go_straight_to]
+text = "মেসেজ সরাসরি ওঁদের ডিভাইসে যায়।"
+
+[chat_new_messages]
+one = "{count}টি নতুন মেসেজ"
+other = "{count}টি নতুন মেসেজ"
+
+[chat_not_downloaded]
+text = "{value} · ডাউনলোড করা হয়নি"
+
+[chat_not_in_your_contacts]
+text = "আপনার পরিচিতিতে নেই"
+
+[chat_of]
+text = "{len}-এর মধ্যে {value}"
+
+[chat_older_messages_are_on]
+text = "পুরোনো মেসেজ {name}-এর কম্পিউটারে আছে। আপনি যবে থেকে এই কম্পিউটার ব্যবহার করছেন, তখন থেকের মেসেজ এটা রাখে। আপনারা দুজনেই অনলাইনে থাকলে আগের দিনগুলো লোড হবে।"
+
+[chat_on_s_device]
+text = "{name}-এর ডিভাইসে পৌঁছেছে"
+
+[chat_online_messages_only]
+text = "অনলাইন · শুধু মেসেজ"
+
+[chat_only_files_can_be]
+text = "শুধু ফাইল পাঠানো যায়, ফোল্ডার নয়।"
+
+[chat_only_on_this_computer]
+text = "এখন পর্যন্ত শুধু এই কম্পিউটারে"
+
+[chat_open_in_default_app]
+text = "ডিফল্ট অ্যাপে খুলুন"
+
+[chat_paused_waiting_for_to]
+text = "{value} · থেমে আছে — {name} অনলাইনে আসার অপেক্ষায়"
+
+[chat_read_on_s_device]
+text = "{name}-এর ডিভাইসে পড়া হয়েছে"
+
+[chat_reply]
+text = "উত্তর দিন"
+
+[chat_replying_to]
+text = "{name}-কে উত্তর দিচ্ছেন"
+
+[chat_return_to_call]
+text = "কলে ফিরে যান"
+
+[chat_saved_to]
+text = "{p}-এ সেভ হয়েছে"
+
+[chat_say_hello_to]
+text = "{name}-কে হ্যালো বলুন"
+
+[chat_send_a_file]
+text = "একটি ফাইল পাঠান"
+
+[chat_sends_when_is_online]
+text = "{name} অনলাইনে এলে যাবে"
+
+[chat_signed_by]
+text = "{name}-এর স্বাক্ষর · {value}"
+
+[chat_signed_by_2]
+text = "{value}-এর স্বাক্ষর"
+
+[chat_tap_to_retry]
+text = "আবার চেষ্টা করতে ট্যাপ করুন"
+
+[chat_that_is_everything_has]
+text = "{name}-এর কাছে যা আছে, এই সবটুকুই।"
+
+[chat_too_short_hold_on]
+text = "খুব ছোট — আরেকটু বেশিক্ষণ চেপে ধরে রাখুন।"
+
+[chat_video_call]
+text = "ভিডিও কল"
+
+[chat_voice_message]
+text = "ভয়েস মেসেজ"
+
+[chat_waiting]
+text = "অপেক্ষায়"
+
+[chat_waiting_for_connection]
+text = "কানেকশনের অপেক্ষায়"
+
+[chat_waiting_for_s_device]
+text = "{name}-এর ডিভাইসের নিশ্চিতকরণের অপেক্ষায়"
+
+[chat_you_blocked]
+text = "আপনি {name}-কে ব্লক করেছেন"
+
+[chat_you_deleted_this_message]
+text = "আপনি এই মেসেজটি মুছে দিয়েছেন"
+
+[chat_your_chats_show_up]
+text = "আপনার চ্যাটগুলো এখানে দেখা যাবে।"
+
+[chat_youre_all_caught_up]
+text = "সব পড়া হয়ে গেছে।"
+
+[chat_youre_offline_messages_send]
+text = "আপনি অফলাইনে আছেন। আবার অনলাইনে এলে মেসেজ চলে যাবে।"
+
+[contact_added]
+text = "যোগ করা হয়েছে {value}"
+
+[contact_blocked_nothing_gets_through]
+text = "ব্লক করা: আনব্লক না করা পর্যন্ত কিছুই আসবে না।"
+
+[contact_calls_themself]
+text = "নিজেকে বলেন “{name}” · {added}"
+
+[contact_calls_with]
+text = "{name}-এর সঙ্গে কল"
+
+[contact_can_ring_this_computer]
+text = "{name} এই কম্পিউটারে আর আপনার অন্য ডিভাইসগুলোতে রিং করাতে পারেন।"
+
+[contact_history_stays_on_this]
+text = "ইতিহাস শুধু এই কম্পিউটারেই থাকে।"
+
+[contact_home]
+text = "হোম"
+
+[contact_length]
+text = "সময়কাল"
+
+[contact_name_on_this_computer]
+text = "এই কম্পিউটারে নাম"
+
+[contact_no_calls_yet]
+text = "এখনও কোনো কল নেই।"
+
+[contact_off_can_message_you]
+text = "বন্ধ। {name} আপনাকে মেসেজ করতে পারেন; ওঁর কলে রিং হয় না।"
+
+[contact_only_you_see_this]
+text = "এটা শুধু আপনি দেখেন। {name} নিজেকে এখনও “{name2}” বলেন।"
+
+[contact_path]
+text = "পথ"
+
+[contact_use_their_name]
+text = "ওঁদের নামটাই রাখুন"
+
+[contact_when]
+text = "কখন"
+
+[gate_add_a_passphrase_instead]
+text = "বদলে একটি পাসফ্রেজ যোগ করুন"
+
+[gate_anyone_who_sees_these]
+text = "এই শব্দগুলো যে দেখবে, সে আপনার পরিচয়ে সবকিছু করতে পারবে। লিখে রাখুন, আর কোনো নিরাপদ জায়গায় রাখুন।"
+
+[gate_calls_wont_ring_until]
+text = "আবার চালু না করা পর্যন্ত কলে রিং হবে না।"
+
+[gate_cant_open_your_account]
+text = "আপনার অ্যাকাউন্ট খোলা যাচ্ছে না"
+
+[gate_couldnt_save_your_account]
+text = "আপনার অ্যাকাউন্ট সেভ করা গেল না"
+
+[gate_i_have_saved_it]
+text = "আমি সেভ করেছি"
+
+[gate_or]
+text = "অথবা"
+
+[gate_other_accounts]
+text = "অন্য অ্যাকাউন্ট"
+
+[gate_restore_with_recovery_phrase]
+text = "রিকভারি শব্দ দিয়ে ফিরিয়ে আনুন"
+
+[gate_retry]
+text = "আবার চেষ্টা করুন"
+
+[gate_the_system_keyring_did]
+text = "সিস্টেমের কি-রিং চাবিটি নেয়নি।"
+
+[gate_these_24_words_are]
+text = "অন্য ডিভাইসে আপনার পরিচয় ফিরিয়ে আনার একমাত্র উপায় এই {words}টি শব্দ।"
+
+[gate_this_computer_no_longer]
+text = "এই কম্পিউটারে আর অ্যাকাউন্ট খোলার চাবি নেই, আর কি-রিং-এও এর এন্ট্রি নেই। অ্যাকাউন্ট ফিরিয়ে আনলেই আপনার কল আবার আসবে।"
+
+[gate_tinline_couldnt_store_the]
+text = "আপনার অ্যাকাউন্ট খোলার চাবি Tinline এই কম্পিউটারে রাখতে পারেনি, তাই আপনার অ্যাকাউন্ট এখনও সেভ হয়নি। কিছুই হারায়নি।"
+
+[gate_trying]
+text = "চেষ্টা করা হচ্ছে..."
+
+[gate_turn_on]
+text = "চালু করুন"
+
+[gate_you_didnt_set_a]
+text = "আপনি কোনো পাসফ্রেজ সেট করেননি, তাই {words}টি রিকভারি শব্দই ফিরে আসার একমাত্র উপায়। আপনার পরিচিতিরা থেকে যাবেন।"
+
+[gate_your_calls_come_through]
+text = "আবার অনলাইনে এলেই আপনার কল আসতে শুরু করবে।"
+
+[gate_your_recovery_phrase]
+text = "আপনার রিকভারি শব্দ"
+
+[gate_youre_not_available]
+text = "আপনাকে এখন পাওয়া যাবে না"
+
+[gate_youre_offline]
+text = "আপনি অফলাইনে আছেন"
+
+[gcall_a_call_host_is]
+text = "কল হোস্ট এমন একটি ডিভাইস, যাকে গ্রুপের কোনো অ্যাডমিন বেছে নিয়েছেন এবং যেটি তাতে রাজি হয়েছে। এটা চ্যাট হোস্ট করা থেকে আলাদা। অ্যাডমিনরা গ্রুপের তথ্য থেকে কল হোস্ট বদলাতে পারেন।"
+
+[gcall_battery_is_low_or]
+text = "ব্যাটারি কম বা কম্পিউটার গরম হয়ে গেছে। হোস্টিং সীমিত: একবারে শুধু একজনের কথা শোনা যাবে, আর নতুন কেউ যোগ দিতে পারবেন না।"
+
+[gcall_call_ended_host_lost]
+text = "কল শেষ — হোস্টের সঙ্গে যোগাযোগ নেই"
+
+[gcall_connecting]
+text = "কানেক্ট হচ্ছে…"
+
+[gcall_finding_a_call_host]
+text = "কল হোস্ট খোঁজা হচ্ছে…"
+
+[gcall_group]
+text = "গ্রুপ"
+
+[gcall_group_call]
+text = "গ্রুপ কল"
+
+[gcall_is_calling_the_group]
+text = "{value} গ্রুপে কল করছেন"
+
+[gcall_no_call_host_available]
+text = "কোনো কল হোস্ট পাওয়া যাচ্ছে না"
+
+[gcall_only_you_so_far]
+text = "এখন পর্যন্ত শুধু আপনি। অন্যদের অপেক্ষায়।"
+
+[gcall_people_in_the_call]
+one = "কলে {count} জন আছেন"
+other = "কলে {count} জন আছেন"
+
+[gcall_started_a_call]
+text = "{name} একটি কল শুরু করেছেন"
+
+[gcall_started_by]
+text = "শুরু করেছেন {value}"
+
+[gcall_your_connection_to_the]
+text = "কল হোস্টের সঙ্গে আপনার কানেকশন এনক্রিপ্টেড, কিন্তু কল হোস্ট নিজে অডিও পায়, তাই এটি এই কল শুনতে পারে। চ্যাট হোস্টকে যেমন পোস্টের ব্যাপারে ভরসা করেন, কলের ব্যাপারে এটিকেও তেমনই ভরসা করেন।"
+
+[gcall_youre_already_in_a]
+text = "আপনি আগে থেকেই একটি কলে আছেন।"
+
+[gcall_youre_the_call_host]
+text = "আপনিই কল হোস্ট"
+
+[group_a_call_host_carries]
+text = "কল হোস্ট কলটি চালায়। কলের সবাই এর সঙ্গে কানেক্ট হন, আর এটি অডিও পৌঁছে দেয়, তাই এটি কল শুনতে পারে। এটা চ্যাট হোস্ট করা থেকে আলাদা: চ্যাট হোস্টকে আপনি কল হোস্ট হিসেবেও ঠিক না করলে সেটি কল হোস্ট নয়। কল হোস্টরা আপনার ভরসার সদস্য, আর প্রত্যেকে নিজে গ্রহণ করতে বেছে নেন।"
+
+[group_a_call_host_is]
+text = "কল হোস্ট হলো কোনো সদস্যের কম্পিউটার বা ফোন, যা কলটি চালায়। গ্রুপের তথ্য থেকে একজন অ্যাডমিন কাউকে নিযুক্ত করতে পারেন।"
+
+[group_a_call_host_is_a]
+text = "কল হোস্ট হলো কোনো সদস্যের কম্পিউটার বা ফোন, যা কলটি চালায়। আপনি এই কম্পিউটারে কল হোস্ট করতে পারেন, অথবা গ্রুপের তথ্য থেকে কোনো সদস্যকে নিযুক্ত করতে পারেন।"
+
+[group_a_call_needs_a]
+text = "কলের জন্য একজন কল হোস্ট দরকার"
+
+[group_a_flag_is_signed]
+text = "ফ্ল্যাগে আপনার স্বাক্ষর থাকে, আর এটা ফিরিয়ে নেওয়া যায় না। কে কখন ফ্ল্যাগ করেছেন, {name} তা দেখতে পান। সরানোর আগে {name} যে মেসেজ লিখেছিলেন, সেগুলো চিহ্নিত অবস্থায় দেখা যাবে।"
+
+[group_a_host_keeps_a]
+text = "হোস্ট গ্রুপের একটি পুরো কপি রাখে আর সদস্যদের ফোন ঘুমিয়ে থাকলে মেসেজ পৌঁছে দেয়। সদস্যরা একে অপরের সঙ্গে নয়, হোস্টের সঙ্গে কানেক্ট হন; শুধু হোস্টরাই সদস্যদের গ্রুপ ঠিকানা জানতে পারে। উইন্ডো বন্ধ থাকলেও Tinline হোস্ট করতে থাকে (এটা ট্রে-তে থাকে)।"
+
+[group_a_host_keeps_a_full]
+text = "হোস্ট গ্রুপের একটি পুরো কপি রাখে, সদস্যদের ফোন ঘুমিয়ে থাকলে মেসেজ পৌঁছে দেয় এবং সদস্যদের গ্রুপ ঠিকানা জানতে পারে। এটিকে চালু থাকতে হয়। হোস্ট করলে আপনি অ্যাডমিন হয়ে যান না; যেকোনো সময় বন্ধ করতে পারেন।"
+
+[group_a_host_lists_up]
+one = "একজন হোস্ট একবারে {count} জন পর্যন্ত দেখায়, তাই আরও কেউ থাকতে পারেন।"
+other = "একজন হোস্ট একবারে {count} জন পর্যন্ত দেখায়, তাই আরও কেউ থাকতে পারেন।"
+
+[group_a_host_stays_on]
+text = "হোস্ট চালু থাকে, আর অন্যরা অফলাইনে থাকলে পোস্ট পৌঁছে দেয়"
+
+[group_a_link_that_doesnt]
+text = "এমন লিঙ্ক যার মেয়াদ শেষ হয় না"
+
+[group_a_private_invite_to]
+text = "প্রত্যেকের জন্য আলাদা ব্যক্তিগত আমন্ত্রণ"
+
+[group_a_request_waits_at]
+text = "অনুরোধ গ্রুপের হোস্টদের কাছে 7 দিন পর্যন্ত অপেক্ষা করে।"
+
+[group_accepting_adds_as_a]
+text = "গ্রহণ করলে {name} শুধু মেসেজের জন্য আপনার পরিচিতিতে যুক্ত হবেন। কল পরে চালু করতে পারবেন।"
+
+[group_add_to]
+text = "{gname}-এ যোগ করুন"
+
+[group_admin]
+text = "অ্যাডমিন"
+
+[group_admins_of_a_group]
+text = "গ্রুপের অ্যাডমিনরা আমন্ত্রণ তৈরি করতে পারেন। এটা 7 দিন কাজ করে।"
+
+[group_admins_only]
+text = "শুধু অ্যাডমিন"
+
+[group_already_a_member]
+text = "আগে থেকেই সদস্য"
+
+[group_also_confirmed]
+text = "আরও যাঁরা নিশ্চিত করেছেন: {value}"
+
+[group_also_hosts_calls]
+text = "কলও হোস্ট করে"
+
+[group_an_admin_asked_this]
+text = "একজন অ্যাডমিন এই কম্পিউটারকে গ্রুপের কল চালাতে বলেছেন"
+
+[group_anyone_holding_the_link]
+text = "লিঙ্ক যার কাছে আছে, সে-ই যোগ দিতে পারবে, আমন্ত্রণ লাগবে না, মেয়াদও শেষ হবে না। যেখানে চান মানুষ গ্রুপটি খুঁজে পাক, সেখানে শেয়ার করুন।"
+
+[group_anyone_with_the_link]
+text = "লিঙ্ক থাকলে যে কেউ যোগ দিতে পারেন"
+
+[group_anyone_with_this_link]
+text = "এই লিঙ্ক বা QR যার কাছে আছে, সে 7 দিন ধরে যোগ দিতে পারবে। ভরসার কোনো অ্যাপে শেয়ার করুন; কে যোগ দিল তা আপনি দেখতে পাবেন, আর ফ্ল্যাগ করে সরাতে পারবেন। পরিচিতিদের সরাসরি আমন্ত্রণ জানাতে “সদস্য যোগ করুন” ব্যবহার করুন।"
+
+[group_appoint]
+text = "নিযুক্ত করুন"
+
+[group_appoint_a_host_first]
+text = "আগে একজন হোস্ট ঠিক করুন। প্রতিটি লিঙ্কে একজন হোস্টের নাম থাকে।"
+
+[group_appointed_the_device_hosts]
+text = "নিযুক্ত করা হয়েছে। ডিভাইসটি রাজি হলেই হোস্ট করবে (এই ডিভাইস থেকে হোস্ট করুন)।"
+
+[group_as_a_host_this]
+text = "হোস্ট হিসেবে এই কম্পিউটার:"
+
+[group_ask_for_a_private]
+text = "{name}-কে ব্যক্তিগত চ্যাটের অনুরোধ পাঠান"
+
+[group_asked_the_device_carries]
+text = "বলা হয়েছে। ডিভাইসটি গ্রহণ করলেই কল চালাবে।"
+
+[group_asked_this_computer_to]
+text = "{name} এই কম্পিউটারকে {group} হোস্ট করতে বলেছেন"
+
+[group_asks_to_carry_group]
+text = "{name}-কে ওই ডিভাইসে গ্রুপ কল চালাতে বলে; তাঁকে গ্রহণ করতে হবে"
+
+[group_block]
+text = "{name}-কে ব্লক করুন"
+
+[group_blocked]
+text = "ব্লক করা"
+
+[group_blocked_2]
+text = "ব্লক করা হয়েছে {value}"
+
+[group_blocked_you]
+text = "আপনাকে ব্লক করেছেন"
+
+[group_call_hosts]
+text = "কল হোস্ট"
+
+[group_call_hosts_ready]
+one = "{count}টি কল হোস্ট তৈরি। কল এর মাধ্যমেই শুরু হয়।"
+other = "{count}টি কল হোস্ট তৈরি। কল এগুলোর মাধ্যমেই শুরু হয়।"
+
+[group_calls_go_through_the]
+text = "কল অন্য কল হোস্টদের মাধ্যমে যায়"
+
+[group_can_invite_flag_members]
+text = "আমন্ত্রণ জানাতে, সদস্যদের ফ্ল্যাগ করতে আর হোস্ট নিযুক্ত করতে পারেন"
+
+[group_carries_the_groups_calls]
+text = "গ্রুপের কল চালায়; সবসময় চালু থাকা কম্পিউটারই সবচেয়ে ভালো"
+
+[group_checking_with_the_groups]
+text = "গ্রুপের হোস্টের সঙ্গে যাচাই করা হচ্ছে…"
+
+[group_click_anywhere_to_go]
+text = "ফিরে যেতে যেকোনো জায়গায় ক্লিক করুন"
+
+[group_click_the_code_to]
+text = "পুরো সাইজে দেখতে কোডটিতে ক্লিক করুন।"
+
+[group_copy_link]
+text = "লিঙ্ক কপি করুন"
+
+[group_create]
+text = "তৈরি করুন"
+
+[group_create_invite_link]
+text = "আমন্ত্রণ লিঙ্ক তৈরি করুন"
+
+[group_delivered]
+text = "পৌঁছেছে {delivered}/{eligible}"
+
+[group_each_flag_is_signed]
+text = "প্রতিটি ফ্ল্যাগে সেটি দেওয়া অ্যাডমিনের স্বাক্ষর আছে, আর এই কম্পিউটারে যাচাই করা হয়েছে। অন্য কেউ এগুলো যোগ করতে পারত না।"
+
+[group_each_person_gets_the]
+text = "প্রত্যেকে আপনার সঙ্গে 1:1 চ্যাটে আমন্ত্রণটি পাবেন, আর গ্রহণ করলেই যোগ দেবেন। এটি 7 দিন কাজ করবে।"
+
+[group_everyone_can_post_again]
+text = "সবাই আবার পোস্ট করতে পারবেন।"
+
+[group_everyone_in_the_group]
+text = "গ্রুপের সবাই পোস্ট করতে পারেন"
+
+[group_flag]
+text = " · ফ্ল্যাগ {n}"
+
+[group_flag_2]
+text = "ফ্ল্যাগ"
+
+[group_flag_for_removal]
+text = "{name}-কে সরানোর জন্য ফ্ল্যাগ করবেন?"
+
+[group_flag_recorded_it_is]
+text = "ফ্ল্যাগ নথিভুক্ত হয়েছে। এতে আপনার স্বাক্ষর আছে, আর সদস্যটি এটা দেখতে পাবেন।"
+
+[group_flag_to_remove]
+text = "সরাতে ফ্ল্যাগ করুন"
+
+[group_flagged]
+text = "ফ্ল্যাগ করা হয়েছে {value}"
+
+[group_flagged_by_you_can]
+text = "ফ্ল্যাগ করেছেন {value}। আগে যা পেয়েছেন তা এখনও পড়তে পারবেন; নতুন কিছু আর আসবে না।"
+
+[group_flags_remove_from_the]
+one = "{count}টি ফ্ল্যাগ পড়লে {name}-কে গ্রুপ থেকে সরানো হবে"
+other = "{count}টি ফ্ল্যাগ পড়লে {name}-কে গ্রুপ থেকে সরানো হবে"
+
+[group_getting_the_link]
+text = "লিঙ্ক আনা হচ্ছে…"
+
+[group_group_call_needs_a]
+text = "গ্রুপ কল (কল হোস্ট দরকার)"
+
+[group_group_info]
+text = "গ্রুপের তথ্য"
+
+[group_group_name]
+text = "গ্রুপের নাম"
+
+[group_groups_you_start_or]
+text = "আপনি যে গ্রুপ শুরু করবেন বা যাতে যোগ দেবেন, সেগুলো এখানে দেখা যাবে।"
+
+[group_has_no_other_host]
+text = "{gname}-এর আর কোনো হোস্ট নেই: অন্য কেউ হোস্ট না করা পর্যন্ত মেসেজগুলো সবার ডিভাইসে অপেক্ষা করবে।"
+
+[group_host_calls_on_this]
+text = "এই কম্পিউটারে কল হোস্ট করুন"
+
+[group_host_here]
+text = "এখানে হোস্ট করুন"
+
+[group_host_on_this_computer]
+text = "এই কম্পিউটারে {gname} হোস্ট করবেন?"
+
+[group_host_this_group_on]
+text = "এই কম্পিউটারে গ্রুপটি হোস্ট করুন"
+
+[group_hosts]
+text = "হোস্ট"
+
+[group_hosts_count]
+one = "{count}টি হোস্ট"
+other = "{count}টি হোস্ট"
+
+[group_hosts_once_agrees_on]
+text = "{name} ওই ডিভাইসে রাজি হলেই সেটি হোস্ট করবে; সবসময় চালু থাকা কম্পিউটারই সবচেয়ে ভালো"
+
+[group_hosts_online]
+one = "{count}টি হোস্ট অনলাইনে আছে। পোস্ট সঙ্গে সঙ্গে পৌঁছে যাবে।"
+other = "{count}টি হোস্ট অনলাইনে আছে। পোস্ট সঙ্গে সঙ্গে পৌঁছে যাবে।"
+
+[group_hosts_store_the_group]
+text = "অন্যরা অফলাইনে থাকলে হোস্টরা গ্রুপটি রাখে আর পোস্ট পৌঁছে দেয়। তাঁরা আপনার ভরসার সদস্য: একজন হোস্ট এই গ্রুপে পোস্ট করা সবকিছু পড়তে পারেন।"
+
+[group_if_accepts_you_can]
+text = "{name} গ্রহণ করলে আপনারা সরাসরি একে অপরকে মেসেজ করতে পারবেন। আপনাদের কেউ একজন অনুমতি না দেওয়া পর্যন্ত কল বন্ধ থাকবে।"
+
+[group_invitation_expired]
+text = "আমন্ত্রণের মেয়াদ শেষ"
+
+[group_invitations_to_you]
+text = "আপনার জন্য আমন্ত্রণ"
+
+[group_invite]
+text = "আমন্ত্রণ জানান"
+
+[group_invite_contacts]
+text = "পরিচিতিদের আমন্ত্রণ জানান"
+
+[group_invite_link_for]
+text = "{gname}-এর আমন্ত্রণ লিঙ্ক"
+
+[group_invite_people]
+one = "{count} জনকে আমন্ত্রণ জানান"
+other = "{count} জনকে আমন্ত্রণ জানান"
+
+[group_invite_valid_until]
+text = "আমন্ত্রণ {value} পর্যন্ত কাজ করবে"
+
+[group_invited_by_2]
+text = "আমন্ত্রণ জানিয়েছেন {name}"
+
+[group_invited_not_delivered_yet]
+text = "আমন্ত্রিত · এখনও পৌঁছায়নি"
+
+[group_invited_waiting]
+text = "আমন্ত্রিত · অপেক্ষায়"
+
+[group_invited_waiting_for_an]
+text = "আমন্ত্রণ পাঠানো হয়েছে · উত্তরের অপেক্ষায়"
+
+[group_invites]
+text = "আমন্ত্রণ"
+
+[group_it_starts_hosting_once]
+text = "কোনো অ্যাডমিন নিযুক্ত করলেই এটি হোস্ট করা শুরু করবে (আগেই করে থাকলে, সঙ্গে সঙ্গে)। হোস্ট করলে আপনি অ্যাডমিন হয়ে যান না; যেকোনো সময় বন্ধ করতে পারেন।"
+
+[group_join_a_group]
+text = "গ্রুপে যোগ দিন"
+
+[group_join_group_call]
+text = "গ্রুপ কলে যোগ দিন"
+
+[group_joined]
+text = "যোগ দিয়েছেন"
+
+[group_joining]
+text = "যোগ দেওয়া হচ্ছে…"
+
+[group_joining_connects_this_computer]
+text = "যোগ দিলে এই কম্পিউটার গ্রুপের হোস্টদের সঙ্গে কানেক্ট হবে। সদস্যরা আপনার নাম দেখবেন; এই কম্পিউটারে কীভাবে পৌঁছাতে হয় তা শুধু হোস্টরা জানবে। এতে এক মিনিট পর্যন্ত লাগতে পারে।"
+
+[group_keep_a_full_copy]
+text = "• গ্রুপের একটি পুরো কপি রাখবে\n• সদস্যদের ফোন ঘুমিয়ে থাকলে তাঁদের জন্য মেসেজ পৌঁছে দেবে\n• সদস্যদের গ্রুপ ঠিকানা জানতে পারবে (শুধু হোস্টরাই জানে)\n• কাজে লাগতে হলে চালু থাকতে হবে"
+
+[group_leave]
+text = "{gname} ছেড়ে দেবেন?"
+
+[group_leave_group]
+text = "গ্রুপ ছেড়ে দিন"
+
+[group_left_or_removed]
+text = "ছেড়েছেন বা সরানো হয়েছে"
+
+[group_load_photo]
+text = "ছবি লোড করুন"
+
+[group_made_admin]
+text = "অ্যাডমিন করা হয়েছে।"
+
+[group_make_admin]
+text = "অ্যাডমিন করুন"
+
+[group_make_an_admin]
+text = "{name}-কে অ্যাডমিন করবেন?"
+
+[group_make_call_host]
+text = "কল হোস্ট করুন"
+
+[group_make_device_a_call]
+text = "ডিভাইস {value}-কে কল হোস্ট করুন"
+
+[group_make_device_a_host]
+text = "ডিভাইস {value}-কে হোস্ট করুন"
+
+[group_make_host]
+text = "হোস্ট করুন"
+
+[group_making_it]
+text = "তৈরি হচ্ছে…"
+
+[group_member_of]
+text = "{gname}-এর সদস্য"
+
+[group_member_of_2]
+text = "{group_name}-এর সদস্য"
+
+[group_member_since]
+text = "{value} থেকে সদস্য"
+
+[group_members]
+text = "সদস্য"
+
+[group_members_a_host_has]
+text = "গত এক মিনিটে হোস্ট যে সদস্যদের দেখেছে। কয়েক সেকেন্ড পিছিয়ে থাকতে পারে।"
+
+[group_members_and_hosts]
+text = "{members} · {hosts}"
+
+[group_members_and_role]
+text = "{members} · {role}"
+
+[group_members_count]
+one = "{count} জন সদস্য"
+other = "{count} জন সদস্য"
+
+[group_members_see_that_you]
+text = "সদস্যরা দেখবেন যে আপনি গ্রুপ ছেড়েছেন। মেসেজগুলো এই কম্পিউটারে থাকবে, শুধু পড়ার জন্য। ফিরে আসতে হলে একজন অ্যাডমিনকে আবার আপনাকে আমন্ত্রণ জানাতে হবে।"
+
+[group_members_stop_going_through]
+text = "সদস্যরা আর এর মাধ্যমে যাবেন না"
+
+[group_message_from_whom_you]
+text = "{name}-এর মেসেজ, যাঁকে আপনি ব্লক করেছেন"
+
+[group_message_privately]
+text = "আলাদা করে মেসেজ করুন"
+
+[group_no_contacts_to_add]
+text = "যোগ করার মতো কোনো পরিচিতি নেই। আপনি যাঁদের ব্লক করেছেন, বা যাঁরা আপনাকে ব্লক করেছেন, তাঁরা তালিকায় নেই।"
+
+[group_no_group_matches]
+text = "কোনো গ্রুপ মেলেনি।"
+
+[group_no_host_answered_in]
+text = "সময়মতো কোনো হোস্ট উত্তর দেয়নি। কোনো হোস্ট অনলাইনে এলে আবার চেষ্টা করুন।"
+
+[group_no_host_is_online]
+text = "কোনো হোস্ট অনলাইনে নেই। আপনার পোস্ট সেভ করা আছে, হোস্ট এলেই পাঠানো হবে।"
+
+[group_no_longer_an_admin]
+text = "আর অ্যাডমিন নন।"
+
+[group_no_one_is_online]
+text = "এখন কেউ অনলাইনে নেই। কেউ কানেক্টেড থাকলে এখানে দেখা যাবে।"
+
+[group_nobody_is_blocked_to]
+text = "কেউ ব্লক করা নেই। কাউকে ব্লক করতে পরিচিতিতে তাঁকে খুলে “ব্লক করুন” বেছে নিন।"
+
+[group_not_yet]
+text = "এখনও নয়"
+
+[group_offered_to_host]
+text = "হোস্ট হতে চেয়েছে"
+
+[group_on_their_device]
+text = "ওঁদের ডিভাইসে আছে"
+
+[group_one_list_across_all]
+text = "আপনার সব ডিভাইসে একটিই তালিকা: অন্য ডিভাইসে কাউকে ব্লক করলে তা এখানেও দেখা যায়।"
+
+[group_only_admins_post_everyone]
+text = "শুধু অ্যাডমিনরা পোস্ট করেন; সবাই পড়েন"
+
+[group_only_admins_post_here]
+text = "এখানে শুধু অ্যাডমিনরা পোস্ট করেন"
+
+[group_only_admins_post_here_2]
+text = "এখানে শুধু অ্যাডমিনরা পোস্ট করেন।"
+
+[group_only_admins_post_now]
+text = "এখন শুধু অ্যাডমিনরা পোস্ট করবেন। সবাই আগের মতোই পড়তে পারবেন।"
+
+[group_only_people_you_invite]
+text = "শুধু আপনার আমন্ত্রিতরাই যোগ দিতে পারেন"
+
+[group_open_chat]
+text = "চ্যাট খুলুন"
+
+[group_open_the_group]
+text = "গ্রুপটি খুলে দিন"
+
+[group_open_to_anyone_with]
+text = "লিঙ্ক আছে এমন যে কারও জন্য {gname} খুলে দেবেন?"
+
+[group_opens_your_chat]
+text = "আপনাদের চ্যাট খোলে"
+
+[group_owner]
+text = "মালিক"
+
+[group_paste_an_invite_link]
+text = "আমন্ত্রণ লিঙ্ক পেস্ট করুন"
+
+[group_paste_the_invite_link]
+text = "আমন্ত্রণ লিঙ্ক (tinline://g/…) বা কোড পেস্ট করুন"
+
+[group_public_group]
+text = "পাবলিক গ্রুপ"
+
+[group_read]
+text = "পড়া হয়েছে"
+
+[group_read_2]
+text = "পড়া হয়েছে {read}/{eligible}"
+
+[group_refused]
+text = "গ্রহণ করা হয়নি।"
+
+[group_remove_as_admin]
+text = "অ্যাডমিন থেকে সরান"
+
+[group_remove_as_admin_2]
+text = "{name}-কে অ্যাডমিন থেকে সরাবেন?"
+
+[group_removed]
+text = "সরানো হয়েছে"
+
+[group_removed_2]
+text = "{value} · সরানো হয়েছে"
+
+[group_removed_after_admin_flags]
+one = "{count}টি অ্যাডমিন ফ্ল্যাগের পর সরানো হয়েছে"
+other = "{count}টি অ্যাডমিন ফ্ল্যাগের পর সরানো হয়েছে"
+
+[group_replying_to]
+text = "{name}-কে উত্তর দিচ্ছেন"
+
+[group_requests]
+text = "অনুরোধ · {len}"
+
+[group_return_to_group_call]
+text = "গ্রুপ কলে ফিরে যান"
+
+[group_see_details]
+text = "বিস্তারিত দেখুন"
+
+[group_sees_your_name_and]
+text = "{name} আপনার নাম আর গ্রুপটি দেখতে পাবেন। অনুরোধটি সিল করা অবস্থায় গ্রুপের হোস্টের মাধ্যমে যায়, তাই হোস্ট এটা পড়তে পারে না।"
+
+[group_send_request]
+text = "অনুরোধ পাঠান"
+
+[group_sending]
+text = "পাঠানো হচ্ছে…"
+
+[group_sends_a_chat_request]
+text = "হোস্টের মাধ্যমে {name}-কে চ্যাটের অনুরোধ পাঠায়"
+
+[group_sent_requests]
+text = "পাঠানো অনুরোধ"
+
+[group_show_earlier_messages]
+text = "আগের মেসেজ দেখান"
+
+[group_since]
+text = "{value} থেকে"
+
+[group_start_group_call]
+text = "গ্রুপ কল শুরু করুন"
+
+[group_stays_a_member]
+text = "{name} সদস্য থাকবেন"
+
+[group_stays_in_the_group]
+text = "{name} গ্রুপে সদস্য হিসেবে থাকবেন। ওঁর আগে দেওয়া ফ্ল্যাগগুলো তবুও গোনা হবে।"
+
+[group_stop_device_carrying_calls]
+text = "ডিভাইস {value}-এর কল চালানো বন্ধ করুন"
+
+[group_stop_device_hosting]
+text = "ডিভাইস {value}-এর হোস্টিং বন্ধ করুন"
+
+[group_stop_hosting]
+text = "হোস্টিং বন্ধ করুন"
+
+[group_stop_hosting_calls]
+text = "কল হোস্ট করা বন্ধ করুন"
+
+[group_stop_hosting_calls_on]
+text = "এই কম্পিউটারে কল হোস্ট করা বন্ধ করুন"
+
+[group_stop_hosting_here]
+text = "এখানে {gname} হোস্ট করা বন্ধ করবেন?"
+
+[group_stop_hosting_on_this]
+text = "এই কম্পিউটারে হোস্ট করা বন্ধ করুন"
+
+[group_text]
+text = "{label}: {value}"
+
+[group_that_device_no_longer]
+text = "ওই ডিভাইস আর এই গ্রুপের কল চালায় না।"
+
+[group_that_device_no_longer_hosts]
+text = "ওই ডিভাইস আর গ্রুপটি হোস্ট করে না।"
+
+[group_that_group_isnt_on]
+text = "এই গ্রুপটি এই কম্পিউটারে নেই।"
+
+[group_that_invite_isnt_valid]
+text = "এই আমন্ত্রণ আর কাজ করে না। একটি নতুন আমন্ত্রণ চেয়ে নিন।"
+
+[group_that_link_didnt_work]
+text = "লিঙ্কটি কাজ করেনি: এটা গ্রুপের আমন্ত্রণ নয়, মেয়াদ শেষ হয়ে গেছে, অথবা এর হোস্ট অফলাইনে।"
+
+[group_the_only_host]
+text = "একমাত্র হোস্ট"
+
+[group_the_open_link_doesnt]
+text = "খোলা লিঙ্কের মেয়াদ শেষ হয় না। এটি বন্ধ করলে নতুন কেউ যোগ দিতে পারবেন না; যাঁরা আগেই আছেন তাঁরা থেকে যাবেন। গ্রুপ খোলা থাকার সময় এখানে কোনো রিড রিসিপ্ট পাঠানো হয় না, আর সদস্যরা দেখতে পান কে অনলাইনে আছেন।"
+
+[group_the_open_link_is]
+text = "খোলা লিঙ্ক বন্ধ করা হয়েছে। যাঁরা আগেই আছেন তাঁরা থেকে যাবেন; নতুনরা আমন্ত্রণ পেয়ে যোগ দেবেন।"
+
+[group_the_owner_cant_leave]
+text = "মালিক এখনই গ্রুপ ছাড়তে পারবেন না"
+
+[group_then_invite_people_from]
+text = "তারপর সদস্যদের প্যানেল থেকে লোকজনকে আমন্ত্রণ জানান।"
+
+[group_they_blocked_you_so]
+text = "উনি আপনাকে ব্লক করেছেন, তাই ওঁকে চ্যাটের অনুরোধ পাঠানো যাবে না।"
+
+[group_this_computer_carries_the]
+text = "এই কম্পিউটার কল চালায়।"
+
+[group_this_computer_carries_this]
+text = "এখন থেকে এই কম্পিউটার এই গ্রুপের কল চালাবে।"
+
+[group_this_computer_doesnt_host]
+text = "এই কম্পিউটার কোনো গ্রুপ হোস্ট করে না। হোস্ট করতে গ্রুপটি খুলে সদস্যদের প্যানেলে “এই কম্পিউটার থেকে হোস্ট করুন” বেছে নিন।"
+
+[group_this_computer_hosts_the]
+text = "এই কম্পিউটার গ্রুপটি হোস্ট করে। পোস্ট সঙ্গে সঙ্গে পৌঁছে যায়।"
+
+[group_this_computer_stopped_carrying]
+text = "এই কম্পিউটার এই গ্রুপের কল চালানো বন্ধ করেছে।"
+
+[group_this_computer_stops_passing]
+text = "এই কম্পিউটার আর গ্রুপের মেসেজ পৌঁছে দেবে না। আপনি সদস্য থাকবেন।"
+
+[group_this_device_agreed_to]
+text = "এই ডিভাইস হোস্ট করতে রাজি হয়েছে। কোনো অ্যাডমিন নিযুক্ত করলেই হোস্ট করবে।"
+
+[group_this_device_stopped_hosting]
+text = "এই ডিভাইস গ্রুপটি হোস্ট করা বন্ধ করেছে।"
+
+[group_this_group_has_no]
+text = "এই গ্রুপের কোনো কল হোস্ট নেই। একজন অ্যাডমিন কাউকে ঠিক না করা পর্যন্ত কেউ কল শুরু করতে পারবেন না।"
+
+[group_this_group_has_no_host]
+text = "এই গ্রুপের কোনো হোস্ট নেই। হোস্ট ঠিক না হওয়া পর্যন্ত পোস্টগুলো অপেক্ষা করবে।"
+
+[group_turn_on_open_link]
+text = "শেয়ার করতে “পাবলিক লিঙ্ক” চালু করুন"
+
+[group_unblocking]
+text = "আনব্লক করলে"
+
+[group_unlock_to_see_your]
+text = "আপনার গ্রুপ দেখতে আনলক করুন।"
+
+[group_valid_for_7_days]
+text = "7 দিন কাজ করবে"
+
+[group_waiting_for_a_host]
+text = "হোস্টের অপেক্ষায়"
+
+[group_waiting_for_a_host_no]
+text = "হোস্টের অপেক্ষায়। গ্রুপের কোনো হোস্ট এখন অনলাইনে নেই; আপনার পোস্ট সেভ করা আছে, হোস্ট এলেই পাঠানো হবে।"
+
+[group_waiting_to_accept]
+text = "গ্রহণের অপেক্ষায়"
+
+[group_while_its_open_no]
+text = "গ্রুপ খোলা থাকার সময় এখানে কোনো রিড রিসিপ্ট পাঠানো হয় না, আর সদস্যরা দেখতে পান কে অনলাইনে আছেন। প্রত্যেকে নিজের সেটিংসে নিজেকে লুকিয়ে রাখতে পারেন।"
+
+[group_whos_online]
+text = "কে অনলাইনে আছেন"
+
+[group_why]
+text = "কেন?"
+
+[group_why_was_i_removed]
+text = "আমাকে কেন সরানো হলো?"
+
+[group_why_you_were_removed]
+text = "আপনাকে কেন সরানো হয়েছে"
+
+[group_will_be_able_to]
+one = "{name} লোকজনকে আমন্ত্রণ জানাতে, সদস্যদের ফ্ল্যাগ করতে ({count}টি ফ্ল্যাগে কাউকে সরানো হয়) আর হোস্ট নিযুক্ত করতে পারবেন। শুধু আপনি, মালিক হিসেবে, অ্যাডমিন করতে বা সরাতে পারেন।"
+other = "{name} লোকজনকে আমন্ত্রণ জানাতে, সদস্যদের ফ্ল্যাগ করতে ({count}টি ফ্ল্যাগে কাউকে সরানো হয়) আর হোস্ট নিযুক্ত করতে পারবেন। শুধু আপনি, মালিক হিসেবে, অ্যাডমিন করতে বা সরাতে পারেন।"
+
+[group_withdraw_the_offer_to]
+text = "হোস্ট হওয়ার প্রস্তাব ফিরিয়ে নিন"
+
+[group_working]
+text = "কাজ চলছে…"
+
+[group_written_before_was_removed]
+text = "{value}-কে সরানোর আগে লেখা"
+
+[group_you]
+text = "{name} (আপনি)"
+
+[group_you_already_have_them]
+text = "উনি আগে থেকেই আপনার পরিচিতি। চ্যাট থেকে ওঁকে মেসেজ করুন।"
+
+[group_you_are_a_member]
+text = "আপনি সদস্য"
+
+[group_you_are_an_admin]
+text = "আপনি অ্যাডমিন"
+
+[group_you_are_the_owner]
+text = "আপনি মালিক"
+
+[group_you_block_them_unblock]
+text = "আপনি ওঁকে ব্লক করে রেখেছেন। চ্যাটের অনুরোধ পাঠাতে আগে আনব্লক করুন।"
+
+[group_you_block_unblock_them]
+text = "আপনি {name}-কে ব্লক করে রেখেছেন; আগে আনব্লক করুন"
+
+[group_you_can_close_the]
+text = "লিঙ্কটি যেকোনো সময় বন্ধ করতে পারেন; যাঁরা আগেই যোগ দিয়েছেন তাঁরা থেকে যাবেন।"
+
+[group_you_can_still_read]
+text = "এই ডিভাইসে পোস্টগুলো এখনও পড়তে পারবেন। ফিরে আসতে হলে গ্রুপের কাউকে আবার আপনাকে আমন্ত্রণ জানাতে হবে।"
+
+[group_you_keep_the_messages]
+text = "এখানে যে মেসেজগুলো আছে, সেগুলো আপনার কাছেই থাকবে। গ্রুপের হোস্টরা আপনার নতুন মেসেজ নেবে না। আবার যোগ দিতে হলে একজন অ্যাডমিনকে আবার আপনাকে আমন্ত্রণ জানাতে হবে।"
+
+[group_you_left]
+text = "আপনি ছেড়ে দিয়েছেন"
+
+[group_you_left_the_group]
+text = "আপনি গ্রুপ ছেড়ে দিয়েছেন। এর মেসেজগুলো এখানে থাকবে।"
+
+[group_you_left_this_group]
+text = "আপনি এই গ্রুপ ছেড়ে দিয়েছেন"
+
+[group_you_left_this_group_its]
+text = "আপনি এই গ্রুপ ছেড়ে দিয়েছেন। এর মেসেজগুলো এখানে থাকবে, শুধু পড়ার জন্য।"
+
+[group_you_were_removed_and]
+text = "আপনাকে সরানো হয়েছে, তাই এই গ্রুপে আর মেসেজ পাঠাতে পারবেন না।"
+
+[group_you_were_removed_from]
+text = "আপনাকে গ্রুপ থেকে সরানো হয়েছে · {value}"
+
+[group_you_were_removed_from_this]
+text = "আপনাকে এই গ্রুপ থেকে সরানো হয়েছে"
+
+[group_you_were_removed_from_this_group]
+text = "আপনাকে এই গ্রুপ থেকে সরানো হয়েছে।"
+
+[group_youll_own_the_group]
+text = "গ্রুপের মালিক হবেন আপনি। শুরুতে এই কম্পিউটারই এটি হোস্ট করবে: গ্রুপটি রাখবে আর সদস্যদের ফোন ঘুমিয়ে থাকলে মেসেজ পৌঁছে দেবে, তাই সবসময় চালু থাকা কম্পিউটারেই এটা সবচেয়ে ভালো কাজ করে।"
+
+[group_your_groups]
+text = "আপনার গ্রুপ"
+
+[group_youre_no_longer_a]
+text = "আপনি আর সদস্য নন"
+
+[group_youre_not_a_member]
+text = "আপনি এই গ্রুপের সদস্য নন।"
+
+[group_youre_not_shown_to]
+text = "এখানে অন্যরা আপনাকে দেখতে পান না। সেটিংস › প্রাইভেসি থেকে এটা বদলাতে পারেন।"
+
+[group_yours_will_be_flag]
+text = "আপনারটি হবে {flags_needed}টির মধ্যে {yours} নম্বর ফ্ল্যাগ। যেকোনো অ্যাডমিনের ফ্ল্যাগ গোনা হয়, আপনার পরের ফ্ল্যাগও। {flags_needed}টি ফ্ল্যাগ হলেই {name}-কে সঙ্গে সঙ্গে সরানো হবে, আর উনি দেখতে পাবেন যে ওঁকে সরানো হয়েছে।"
+
+[group_yours_will_be_flag_of]
+text = "আপনারটি হবে {flags_needed}টির মধ্যে {yours} নম্বর ফ্ল্যাগ। {name}-কে সঙ্গে সঙ্গে সরানো হবে: হোস্টরা ওঁর নতুন মেসেজ আর নেবে না, আর উনি দেখতে পাবেন যে ওঁকে সরানো হয়েছে।"
+
+[home_add]
+text = "{name}-কে যোগ করবেন?"
+
+[home_calls_you_make_and]
+text = "আপনার করা আর আসা কল এখানে দেখা যাবে।"
+
+[home_contacts]
+text = "পরিচিতি · {len}"
+
+[home_contacts_you_add_appear]
+text = "আপনি যাঁদের যোগ করবেন, তাঁরা এখানে দেখা যাবেন।"
+
+[home_last_call]
+text = "শেষ কল {value}"
+
+[home_not_called_yet]
+text = "এখনও কল হয়নি"
+
+[home_not_here_tinline_has]
+text = "এখানে নেই? Tinline-এ কোনো ডিরেক্টরি নেই — কোড দিয়ে লোকজনকে যোগ করুন।"
+
+[home_start_or_join_a]
+text = "কল শুরু করুন বা যোগ দিন"
+
+[home_text]
+text = "{what} · {dur}"
+
+[home_their_card_is_on]
+text = "ওঁদের কার্ড আপনার ক্লিপবোর্ডে আছে।"
+
+[link_a_linked_device_becomes]
+text = "লিঙ্ক করা ডিভাইস আপনার পুরো একটি কপি হয়ে যায়"
+
+[link_a_passphrase_encrypts_your]
+text = "পাসফ্রেজ এই কম্পিউটারে আপনার অ্যাকাউন্ট এনক্রিপ্ট করে। ঐচ্ছিক — খালি রাখলে Tinline সরাসরি আপনার পরিচিতিতে খুলবে। পরে সেটিংস থেকে যোগ করতে পারবেন।"
+
+[link_anyone_who_can_see]
+text = "আগামী কয়েক মিনিটে যে কেউ এই কোড দেখতে পেলে সেটা ব্যবহারের চেষ্টা করতে পারে। শুধু নিজের ডিভাইসকেই দেখান।"
+
+[link_back_to_settings]
+text = "সেটিংসে ফিরে যান"
+
+[link_bringing_your_contacts_and]
+text = "আপনার পরিচিতি আর ইতিহাস নিয়ে আসা হচ্ছে…"
+
+[link_calls_in_history]
+text = "ইতিহাসে থাকা কল"
+
+[link_calls_ring_on_all]
+text = "এগুলোর সবকটিতে কলের রিং হয়। আপনি যাঁদের কল করেন, তাঁরা কখনও এই নামগুলো দেখেন না।"
+
+[link_check_that_shows_this]
+text = "{name}-এ এই কোডটাই দেখাচ্ছে কি না দেখে নিন, তারপর সেখানে অনুমোদন দিন।"
+
+[link_check_the_codes_match]
+text = "কোড মিলছে কি না দেখে আপনার ফোনে অনুমোদন দিন।"
+
+[link_check_the_codes_match_then]
+text = "কোড মিলছে কি না দেখুন, তারপর এখানে অনুমোদন দিন।"
+
+[link_codes_match_link_it]
+text = "কোড মিলছে, লিঙ্ক করুন"
+
+[link_connect]
+text = "কানেক্ট করুন"
+
+[link_connecting]
+text = "কানেক্ট হচ্ছে..."
+
+[link_connecting_to_the_other]
+text = "অন্য ডিভাইসের সঙ্গে কানেক্ট হচ্ছে…"
+
+[link_couldnt_link]
+text = "লিঙ্ক করা গেল না"
+
+[link_desktop]
+text = "ডেস্কটপ"
+
+[link_device_unlinked]
+text = "ডিভাইসের লিঙ্ক সরানো হয়েছে"
+
+[link_devices_sync_directly_whenever]
+text = "যখনই দুটি ডিভাইস একসঙ্গে অনলাইনে থাকে, তারা সরাসরি সিঙ্ক করে। লিঙ্ক সরালে সিঙ্ক আর রিং বন্ধ হয়; হারানো ডিভাইস দূর থেকে লক করা যায় না।"
+
+[link_different_code_or_you]
+text = "কোড আলাদা, বা আপনি এটা শুরু করেননি? বাতিল করুন। হয়তো অন্য কেউ QR-টি স্ক্যান করেছে।"
+
+[link_different_code_or_you_didnt]
+text = "কোড আলাদা, বা আপনি এটা শুরু করেননি? বাতিল করুন। হয়তো কেউ আপনার অ্যাকাউন্ট কপি করার চেষ্টা করছে।"
+
+[link_expires_in_works_once]
+text = "{value}-এ মেয়াদ শেষ · একবারই কাজ করে"
+
+[link_is_removed_from_this]
+text = "এই কম্পিউটার থেকে {profile_name} সরানো হয়েছে: এখানে এর পরিচিতি, চ্যাট আর কলের ইতিহাস মুছে গেছে। আপনার অন্য ডিভাইসগুলোতে কোনো প্রভাব পড়েনি।"
+
+[link_it_can_call_chat]
+text = "এটা কল আর চ্যাট করতে পারবে, আর আপনার রিকভারি শব্দ দেখতে পাবে। শুধু নিজের ডিভাইসই লিঙ্ক করুন।"
+
+[link_it_rings_for_your]
+text = "এখন থেকে আপনার কলে এতে রিং হবে। দুটো ডিভাইস অনলাইনে থাকলেই পরিচিতি আর কলের ইতিহাস সিঙ্ক হয়।"
+
+[link_it_shows_a_qr]
+text = "এতে একটি QR কোড দেখাবে। “বদলে স্ক্যান করুন”-এ ট্যাপ করে এই স্ক্রিনের দিকে ধরুন।"
+
+[link_it_stops_syncing_and]
+text = "এতে সিঙ্ক বন্ধ হয়ে যাবে, আর আপনার কলে আর রিং হবে না। এটা অনলাইনে থাকলে নিজের থেকে আপনার অ্যাকাউন্ট সরিয়ে দেবে।"
+
+[link_keep_both_devices_online]
+text = "দুটো ডিভাইসই অনলাইনে রাখুন। একটি বিচ্ছিন্ন হয়ে গেলে, পরের বার দুটোই অনলাইনে এলে যেখানে থেমেছিল সেখান থেকে আবার শুরু করবে।"
+
+[link_keep_both_devices_open]
+text = "এটা শেষ না হওয়া পর্যন্ত দুটো ডিভাইসই খোলা রাখুন।"
+
+[link_link]
+text = "“{name}” লিঙ্ক করবেন?"
+
+[link_link_a_device]
+text = "ডিভাইস লিঙ্ক করুন"
+
+[link_link_code_from_the]
+text = "অন্য ডিভাইসের লিঙ্ক কোড"
+
+[link_link_it_again]
+text = "আবার লিঙ্ক করুন"
+
+[link_link_to_your_account]
+text = "আপনার অ্যাকাউন্টে লিঙ্ক করুন"
+
+[link_linked]
+text = "{name} লিঙ্ক হয়েছে"
+
+[link_linked_to]
+text = "{name}-এর সঙ্গে লিঙ্ক হয়েছে"
+
+[link_linking]
+text = "{name} লিঙ্ক হচ্ছে"
+
+[link_linking_2]
+text = "লিঙ্ক হচ্ছে…"
+
+[link_linking_stopped]
+text = "লিঙ্ক করা থেমে গেছে"
+
+[link_linux]
+text = "Linux"
+
+[link_lost_or_stolen]
+text = "হারিয়ে গেছে বা চুরি হয়েছে?"
+
+[link_make_a_new_code]
+text = "নতুন কোড তৈরি করুন"
+
+[link_make_sure_the_other]
+text = "অন্য ডিভাইসেও এই একই কোড দেখাচ্ছে কি না নিশ্চিত হয়ে নিন।"
+
+[link_making_a_code]
+text = "কোড তৈরি হচ্ছে…"
+
+[link_not_linked]
+text = "লিঙ্ক হয়নি"
+
+[link_nothing_was_changed_on]
+text = "কোনো ডিভাইসেই কিছু বদলায়নি।"
+
+[link_on_a_device_that]
+text = "যে ডিভাইসে আপনার অ্যাকাউন্ট আগে থেকেই আছে, সেখানে সেটিংস › ডিভাইস লিঙ্ক করুন খুলে এটা স্ক্যান করুন।"
+
+[link_on_the_new_device]
+text = "নতুন ডিভাইসে Tinline ইনস্টল করে “আগের অ্যাকাউন্টে লিঙ্ক করুন” বেছে নিন।"
+
+[link_on_your_phone_open]
+text = "আপনার ফোনে Tinline › সেটিংস › ডিভাইস লিঙ্ক করুন খুলুন।"
+
+[link_passphrase_optional]
+text = "পাসফ্রেজ (ঐচ্ছিক)"
+
+[link_paste_a_link_code]
+text = "বদলে লিঙ্ক কোড পেস্ট করুন"
+
+[link_protect_the_account_on]
+text = "সেভ হওয়ার আগে এই কম্পিউটারে অ্যাকাউন্টটি সুরক্ষিত করুন।"
+
+[link_receiving_your_account_keep]
+text = "আপনার অ্যাকাউন্ট আসছে। দুটো ডিভাইসই খোলা রাখুন।"
+
+[link_restore_with_recovery_phrase]
+text = "বদলে রিকভারি শব্দ দিয়ে ফিরিয়ে আনুন"
+
+[link_same_code_on_both]
+text = "দুটোতেই কি একই কোড?"
+
+[link_sending_your_account_over]
+text = "আপনার অ্যাকাউন্ট পাঠানো হচ্ছে…"
+
+[link_show_this_to_the]
+text = "যে ডিভাইস যোগ করতে চান, তাকে এটা দেখান। সেটি আপনার পুরো একটি কপি হয়ে যাবে, তাই শুধু নিজের ডিভাইসই লিঙ্ক করুন।"
+
+[link_start_using_tinline]
+text = "Tinline ব্যবহার শুরু করুন"
+
+[link_sync_keeps_going_in]
+text = "সিঙ্ক ব্যাকগ্রাউন্ডে চলতে থাকবে।"
+
+[link_synced]
+text = "সিঙ্ক হয়েছে {value}"
+
+[link_tap_scan_qr_code]
+text = "“QR কোড স্ক্যান করুন”-এ ট্যাপ করে এই স্ক্রিনের দিকে ধরুন।"
+
+[link_there_is_no_code]
+text = "এখনও কোনো কোড নেই।"
+
+[link_this_account_has_no]
+text = "এই অ্যাকাউন্টের কোনো পাসফ্রেজ নেই, আর এই কম্পিউটার স্ক্রিন লক চাইতে পারে না। চালিয়ে গেলে আপনি নিশ্চিত করছেন যে এটা আপনিই শুরু করেছেন আর কোড মিলছে।"
+
+[link_this_account_has_no_passphrase]
+text = "এই অ্যাকাউন্টের কোনো পাসফ্রেজ নেই, তাই এখানে নিশ্চিত করাই একমাত্র যাচাই।"
+
+[link_this_code_expired]
+text = "এই কোডের মেয়াদ শেষ হয়ে গেছে।"
+
+[link_this_computer_os]
+text = "এই কম্পিউটার · {os}"
+
+[link_this_computer_was_unlinked]
+text = "এই কম্পিউটারের লিঙ্ক সরানো হয়েছে"
+
+[link_this_takes_a_few]
+text = "এতে কয়েক সেকেন্ড লাগে।"
+
+[link_unlink_this_computer]
+text = "এই কম্পিউটারের লিঙ্ক সরাবেন?"
+
+[link_unlinking]
+text = "লিঙ্ক সরানো হচ্ছে..."
+
+[link_unlinking_cant_lock_it]
+text = "লিঙ্ক সরালেও এখান থেকে ওটা লক করা যায় না। যিনি ওটা আনলক করতে পারেন, তিনি তবুও আপনার অ্যাকাউন্ট ব্যবহার করতে পারবেন। পুরোপুরি আলাদা হওয়ার একমাত্র উপায় একটি নতুন অ্যাকাউন্ট।"
+
+[link_waiting_for_approval]
+text = "অনুমোদনের অপেক্ষায়…"
+
+[link_was_removed_from_this]
+text = "আপনার অন্য একটি ডিভাইস এই কম্পিউটার থেকে {name} সরিয়ে দিয়েছে। এর পরিচিতি, চ্যাট আর কল এখান থেকে মুছে গেছে। আপনার অন্য ডিভাইসগুলোতে কোনো প্রভাব পড়েনি।"
+
+[link_was_removed_from_this_computer]
+text = "এই কম্পিউটার থেকে {name} সরানো হয়েছে। এর পরিচিতি, চ্যাট আর কল এখান থেকে মুছে গেছে। আপনার অন্য ডিভাইসগুলোতে কোনো প্রভাব পড়েনি।"
+
+[link_windows]
+text = "Windows"
+
+[link_you_type_it_each]
+text = "Tinline চালু হওয়ার সময় প্রতিবার এটা লিখতে হবে।"
+
+[link_your_account_is_on]
+text = "আপনার অ্যাকাউন্ট অন্য ডিভাইসে আছে।"
+
+[link_your_passphrase]
+text = "আপনার পাসফ্রেজ"
+
+[profile_a_muted_chat_never]
+text = "মিউট করা চ্যাট কখনও আপনাকে জানায় না, এখানে যা-ই চালু থাকুক। একজনের কাছ থেকে আসা মিসড কল একটি বিজ্ঞপ্তিতে একসঙ্গে দেখায়।"
+
+[profile_a_new_camera_is]
+text = "পরের বার ক্যামেরা চালু হলে নতুন ক্যামেরা ব্যবহার হবে।"
+
+[profile_about]
+text = "নিজের সম্পর্কে"
+
+[profile_about_tinline]
+text = "Tinline সম্পর্কে"
+
+[profile_account_changed]
+text = "অ্যাকাউন্ট বদলে গেছে"
+
+[profile_accounts_on_this_computer]
+text = "এই কম্পিউটারে থাকা অ্যাকাউন্ট"
+
+[profile_accounts_stored_on_this]
+text = "এই কম্পিউটারে রাখা অ্যাকাউন্ট"
+
+[profile_add_a_few_words]
+text = "নিজের সম্পর্কে দু-চার কথা লিখুন"
+
+[profile_add_a_nickname]
+text = "একটি ডাকনাম যোগ করুন"
+
+[profile_add_a_status]
+text = "একটি স্ট্যাটাস যোগ করুন"
+
+[profile_add_another_account]
+text = "আরেকটি অ্যাকাউন্ট যোগ করুন"
+
+[profile_add_information]
+text = "তথ্য যোগ করুন"
+
+[profile_add_photo]
+text = "ছবি যোগ করুন"
+
+[profile_add_something_to_save]
+text = "সেভ করার জন্য কিছু লিখুন।"
+
+[profile_additional_information]
+text = "আরও তথ্য"
+
+[profile_alert_me_about]
+text = "যেগুলোর জন্য আমাকে জানাবে"
+
+[profile_all_contacts_can_call]
+text = "সব পরিচিতি কল করতে পারেন"
+
+[profile_allowed]
+text = "অনুমতি আছে"
+
+[profile_always]
+text = "সবসময়"
+
+[profile_always_starts_in_hd]
+text = "সবসময় HD-তে শুরু হয়। ডেটা আর ব্যাটারি বেশি লাগে।"
+
+[profile_any_length_works_a]
+text = "যেকোনো দৈর্ঘ্য চলবে। কয়েকটি শব্দ দিলে আরও মজবুত হয়।"
+
+[profile_anyone_who_has_it]
+text = "এটা যার কাছে থাকবে, সে শব্দগুলোর মতোই আপনার হয়ে সব করতে পারবে। অ্যাকাউন্ট ফিরিয়ে আনা ছাড়া Tinline কখনও এটা চায় না।"
+
+[profile_anyone_who_still_has]
+text = " যার কাছে এখনও আপনার রিকভারি শব্দ আছে, বা যে {name} আনলক করতে পারে, সে তবুও আপনার হয়ে সব করতে পারবে। এটা হারিয়ে গেলে বা চুরি হলে, পুরোপুরি সমাধানের একমাত্র উপায় একটি নতুন অ্যাকাউন্ট।"
+
+[profile_appearance]
+text = "চেহারা"
+
+[profile_audio_security_and_hosting]
+text = "অডিও, নিরাপত্তা আর হোস্টিং"
+
+[profile_availability]
+text = "উপস্থিতি"
+
+[profile_bitrate_cap]
+text = "বিটরেটের সীমা"
+
+[profile_block]
+text = "{first2}-কে ব্লক করুন"
+
+[profile_block_2]
+text = "{name}-কে ব্লক করবেন?"
+
+[profile_block_someone]
+text = "কাউকে ব্লক করুন"
+
+[profile_blocked_count]
+one = "{count} জন"
+other = "{count} জন"
+
+[profile_blocking_is_not_silent]
+text = "ব্লক করা চুপিচুপি হয় না। ওঁকে জানানো হয়, ওঁর অ্যাপ আপনার সঙ্গে যোগাযোগ বন্ধ করে আর ওঁর পরিচিতি থেকে আপনাকে সরিয়ে দেয়। আপনার চ্যাটের ইতিহাস আপনার ডিভাইসেই থাকে। একসঙ্গে থাকা গ্রুপগুলোতে কোনো প্রভাব পড়ে না।"
+
+[profile_busy]
+text = "ব্যস্ত"
+
+[profile_busy_until]
+text = "{time} পর্যন্ত ব্যস্ত"
+
+[profile_busy_until_you_change]
+text = "আপনি না বদলানো পর্যন্ত ব্যস্ত"
+
+[profile_cache]
+text = "ক্যাশ"
+
+[profile_call_sounds]
+text = "কলের সাউন্ড"
+
+[profile_calls_on_this_computer]
+text = "এই কম্পিউটারে কল"
+
+[profile_can_call_you]
+text = "আপনাকে কল করতে পারেন"
+
+[profile_change_photo]
+text = "ছবি বদলান"
+
+[profile_checking]
+text = "যাচাই করা হচ্ছে…"
+
+[profile_city_or_region]
+text = "শহর বা অঞ্চল"
+
+[profile_clear_cache]
+text = "ক্যাশ মুছুন"
+
+[profile_cleared]
+text = "মুছে ফেলা হয়েছে"
+
+[profile_connected]
+text = "কানেক্ট হয়েছে"
+
+[profile_contacts_you_havent_blocked]
+text = "যে পরিচিতিদের আপনি ব্লক করেননি, তাঁরা পরের বার অনলাইনে এলে আপনার ডিভাইসের নতুন তালিকা পাবেন।"
+
+[profile_couldnt_prepare_that_picture]
+text = "ছবিটা তৈরি করা গেল না। অন্য একটি ছবি দিয়ে দেখুন।"
+
+[profile_cut]
+text = "Cut"
+
+[profile_cut_probe]
+text = "Cut+probe"
+
+[profile_dark]
+text = "ডার্ক"
+
+[profile_delivered_ticks_still_go]
+text = "পৌঁছানোর টিক তবুও যায়, আর অন্যরা আপনার মেসেজ পড়লে আপনি তা দেখতে পান। এটা বন্ধ থাকার সময় যে মেসেজ পড়েন, সেগুলোর পড়া নিশ্চিত করা হয় না।"
+
+[profile_devices]
+text = "ডিভাইস"
+
+[profile_download_pictures]
+text = "ছবি ডাউনলোড"
+
+[profile_drag_to_move_the]
+text = "ছবি সরাতে টেনে আনুন, বা অ্যারো কী ব্যবহার করুন। প্লাস আর মাইনাস দিয়ে জুম করুন।"
+
+[profile_each_shows_a_soft]
+text = "ততক্ষণ প্রতিটির একটি ঝাপসা প্রিভিউ দেখায়"
+
+[profile_each_shows_a_soft_preview]
+text = "ট্যাপ না করা পর্যন্ত প্রতিটির একটি ঝাপসা প্রিভিউ দেখায়"
+
+[profile_enter_a_web_address]
+text = "http:// বা https:// দিয়ে শুরু হয় এমন একটি ওয়েব ঠিকানা লিখুন।"
+
+[profile_enter_your_passphrase_to]
+text = "নিশ্চিত করতে আপনার পাসফ্রেজ দিন"
+
+[profile_enter_your_passphrase_to_continue]
+text = "চালিয়ে যেতে আপনার পাসফ্রেজ দিন"
+
+[profile_every_linked_device_is]
+text = "প্রতিটি লিঙ্ক করা ডিভাইস আপনার পুরো একটি কপি: এটা আপনার চ্যাট পড়তে পারে আর আপনার হয়ে কাজ করতে পারে। এখানকার নামগুলো শুধু আপনার ডিভাইসের জন্য; পরিচিতিরা কখনও দেখেন না।"
+
+[profile_every_video_call_starts]
+text = "প্রতিটি ভিডিও কল এভাবেই শুরু হয়। কলের সময় শুধু সেই কলের জন্য বদলাতে HD-তে ট্যাপ করুন।"
+
+[profile_files]
+text = "ফাইল"
+
+[profile_fixed_rung]
+text = "Fixed rung"
+
+[profile_for_example_favourite_tea]
+text = "যেমন, প্রিয় চা"
+
+[profile_for_example_she_her]
+text = "যেমন, she/her"
+
+[profile_from_people_not_groups]
+text = "মানুষের কাছ থেকে, গ্রুপ থেকে নয়"
+
+[profile_give_the_information_a]
+text = "তথ্যটির একটি নাম দিন।"
+
+[profile_goes_hd_by_itself]
+text = "কানেকশন ভালো হলে নিজে থেকেই HD-তে যায়।"
+
+[profile_groups_you_share_arent]
+text = "একসঙ্গে থাকা গ্রুপগুলোতে কোনো প্রভাব পড়বে না। যেকোনো সময় এখান থেকে {name}-কে আনব্লক করতে পারেন।"
+
+[profile_hardware]
+text = "হার্ডওয়্যার"
+
+[profile_hide_key]
+text = "কী লুকান"
+
+[profile_hide_words]
+text = "শব্দগুলো লুকান"
+
+[profile_hides_in_s]
+text = "{seconds} সেকেন্ডে লুকিয়ে যাবে"
+
+[profile_hosts_keep_every_group]
+text = "হোস্টরা গ্রুপের প্রতিটি ছবি রাখে, যাতে সদস্যরা লোড করতে পারেন। এটা এই ডিভাইসে প্রযোজ্য।"
+
+[profile_isnt_one_of_your]
+text = "{name} আপনার পরিচিতিতে নেই। আপনি ওঁকে একটি গ্রুপের মাধ্যমে চেনেন। প্রোফাইল দেখলে কেউ যোগ হয়ে যায় না।"
+
+[profile_it_disappears_from_your]
+text = "এটি আপনার প্রোফাইল থেকে চলে যাবে। আগের সংস্করণ সিঙ্ক করা ইতিহাসে থেকে যেতে পারে।"
+
+[profile_it_is_offline_so]
+text = "এটা অফলাইনে আছে, তাই পরের বার কানেক্ট হলে জানতে পারবে।"
+
+[profile_it_opens_in_your]
+text = "এটা Tinline-এর বাইরে, আপনার ব্রাউজারে খুলবে। Tinline এটা আপনার জন্য লোড করে না, আর সেখানে কী আছে তার দায়িত্ব নিতে পারে না।"
+
+[profile_kb]
+text = "{round} KB"
+
+[profile_last_seen_days]
+one = "শেষ দেখা গেছে {count} দিন আগে"
+other = "শেষ দেখা গেছে {count} দিন আগে"
+
+[profile_last_seen_hours]
+one = "শেষ দেখা গেছে {count} ঘণ্টা আগে"
+other = "শেষ দেখা গেছে {count} ঘণ্টা আগে"
+
+[profile_last_seen_just_now]
+text = "এইমাত্র দেখা গেছে"
+
+[profile_last_seen_minutes]
+one = "শেষ দেখা গেছে {count} মিনিট আগে"
+other = "শেষ দেখা গেছে {count} মিনিট আগে"
+
+[profile_light]
+text = "লাইট"
+
+[profile_light_or_dark_as]
+text = "এই কম্পিউটারে যেমন সেট করা আছে, লাইট বা ডার্ক"
+
+[profile_link_a_new_device]
+text = "নতুন ডিভাইস লিঙ্ক করুন"
+
+[profile_load_group_pictures_by]
+text = "গ্রুপের ছবি নিজে থেকে লোড করুন"
+
+[profile_location]
+text = "লোকেশন"
+
+[profile_made_by_osvauld]
+text = "তৈরি করেছে Osvauld"
+
+[profile_match_my_computer]
+text = "আমার কম্পিউটারের মতো"
+
+[profile_mb]
+text = "{round} MB"
+
+[profile_members_see_when_youre]
+text = "আপনি কখন আছেন, সদস্যরা দেখতে পান"
+
+[profile_messages_only_calling_needs]
+text = "শুধু মেসেজ: কল করতে {name}-এর অনুমতি লাগবে"
+
+[profile_messages_only_count]
+one = "{count} জন পরিচিতি শুধু মেসেজ করতে পারেন"
+other = "{count} জন পরিচিতি শুধু মেসেজ করতে পারেন"
+
+[profile_my_profile]
+text = "আমার প্রোফাইল"
+
+[profile_name_it_yourself]
+text = "নিজেই নাম দিন"
+
+[profile_new_passphrase_again]
+text = "নতুন পাসফ্রেজ আবার"
+
+[profile_nickname]
+text = "ডাকনাম"
+
+[profile_no]
+text = "না"
+
+[profile_no_camera_found_plug]
+text = "কোনো ক্যামেরা পাওয়া যায়নি। একটি লাগিয়ে এই পেজটি আবার খুলুন।"
+
+[profile_no_microphone_found]
+text = "কোনো মাইক্রোফোন পাওয়া যায়নি"
+
+[profile_no_one]
+text = "কেউ নেই"
+
+[profile_no_one_is_blocked]
+text = "কেউ ব্লক করা নেই।"
+
+[profile_no_one_left_to]
+text = "ব্লক করার মতো আর কেউ নেই।"
+
+[profile_no_profile_is_available]
+text = "কোনো প্রোফাইল পাওয়া যাচ্ছে না।"
+
+[profile_no_sounds_from_tinline]
+text = "Tinline থেকে কোনো সাউন্ড নয়: রিং, কলের টোন, যোগ দেওয়ার শব্দ"
+
+[profile_not_seen_for_days]
+one = "{count} দিন দেখা যায়নি"
+other = "{count} দিন দেখা যায়নি"
+
+[profile_not_set]
+text = "সেট করা নেই"
+
+[profile_nothing_to_clear]
+text = "মোছার কিছু নেই"
+
+[profile_notifications]
+text = "বিজ্ঞপ্তি"
+
+[profile_of_bytes]
+text = "{limit} বাইটের মধ্যে {bytes} বাইট"
+
+[profile_of_pictures_and_files]
+text = "আপনার খোলা ছবি আর ফাইলের {value}। আবার খুললে আবার তৈরি হবে।"
+
+[profile_off_means_messages_only]
+text = "বন্ধ মানে শুধু মেসেজ"
+
+[profile_on_this_computer]
+text = "এই কম্পিউটারে"
+
+[profile_on_wi_fi_and]
+text = "Wi-Fi আর মোবাইল ডেটায়"
+
+[profile_online_now]
+text = "এখন অনলাইনে"
+
+[profile_only_the_selected_account]
+text = "এই কম্পিউটারে শুধু বেছে নেওয়া অ্যাকাউন্টটিই অনলাইনে থাকে। বদলালে অন্যটি থেমে যায়: আবার বেছে না নেওয়া পর্যন্ত সেটিতে কোনো কল আসে না।"
+
+[profile_only_this_device_has]
+text = "শুধু এই ডিভাইসেই আপনার অ্যাকাউন্ট আছে। আপনার চ্যাটের দ্বিতীয় একটি কপি রাখতে আরেকটি ডিভাইস লিঙ্ক করুন। রিকভারি শব্দ আপনার অ্যাকাউন্ট ফিরিয়ে আনে, মেসেজ নয়।"
+
+[profile_only_you_see_these]
+text = "এগুলো শুধু আপনি দেখেন। ডাকনাম দিলে আপনি {name}-কে কী নামে দেখবেন তা বদলায়, ওঁর প্রোফাইল নয়।"
+
+[profile_only_your_own_devices]
+text = "এই নাম শুধু আপনার নিজের ডিভাইসগুলো দেখে।"
+
+[profile_open_source_licences]
+text = "ওপেন-সোর্স লাইসেন্স"
+
+[profile_open_this_link]
+text = "এই লিঙ্কটি খুলবেন?"
+
+[profile_paused_tap_to_switch]
+text = "থেমে আছে · বদলাতে ট্যাপ করুন"
+
+[profile_people_see_when_youve]
+text = "আপনি কখন ওঁদের মেসেজ পড়েছেন, ওঁরা দেখতে পান"
+
+[profile_permissions]
+text = "অনুমতি"
+
+[profile_person_not_found]
+text = "মানুষটিকে পাওয়া যায়নি।"
+
+[profile_pick_a_contact]
+text = "একজন পরিচিতি বেছে নিন।"
+
+[profile_pictures]
+text = "ছবি"
+
+[profile_pictures_in_groups_appear]
+text = "গ্রুপের ছবি আসার সঙ্গে সঙ্গে দেখা যায়"
+
+[profile_plain_old]
+text = "সাধারণ (পুরোনো)"
+
+[profile_position_your_picture]
+text = "ছবিটা ঠিক জায়গায় বসান"
+
+[profile_posts_invites_and_requests]
+text = "পোস্ট, আমন্ত্রণ আর অনুরোধ"
+
+[profile_profile]
+text = "প্রোফাইল"
+
+[profile_profile_picture_changed_while]
+text = "লোড হওয়ার সময় প্রোফাইলের ছবি বদলে গেছে"
+
+[profile_pronouns]
+text = "সর্বনাম"
+
+[profile_protects_tinline_on_this]
+text = "এই ডিভাইসে Tinline সুরক্ষিত রাখে"
+
+[profile_public_groups_are_the]
+text = "পাবলিক গ্রুপ হলো সেগুলো, যেখানে খোলা লিঙ্ক দিয়ে যে কেউ যোগ দিতে পারেন। এটা এই ডিভাইসে প্রযোজ্য; আপনার অন্য ডিভাইসগুলো নিজেদের পছন্দ রাখে।"
+
+[profile_quiet]
+text = "নিঃশব্দ"
+
+[profile_quiet_is_on_so]
+text = "নিঃশব্দ চালু আছে, তাই প্রিভিউতে কোনো শব্দ হবে না।"
+
+[profile_quit_tinline]
+text = "Tinline বন্ধ করুন"
+
+[profile_rate_control]
+text = "রেট কন্ট্রোল"
+
+[profile_rate_control_probing_needs]
+text = "রেট কন্ট্রোল: প্রোবিংয়ের জন্য অন্য দিকেও এই বিল্ড লাগবে; A/B কলের জন্য দুদিকে একই সেট করুন।"
+
+[profile_read_receipts]
+text = "রিড রিসিপ্ট"
+
+[profile_remove_from_your_profile]
+text = "প্রোফাইল থেকে “{label_}” সরাবেন?"
+
+[profile_remove_picture]
+text = "ছবি সরান"
+
+[profile_remove_your_picture]
+text = "আপনার ছবি সরাবেন?"
+
+[profile_rename_device]
+text = "ডিভাইসের নাম বদলান"
+
+[profile_ringing_when_someone_calls]
+text = "কেউ কল করলে রিং"
+
+[profile_ringtone]
+text = "রিংটোন"
+
+[profile_s_app_can_reach]
+text = "{name}-এর অ্যাপ আবার আপনার কাছে পৌঁছাতে পারবে। আপনি ব্লক করার সময় এটা ওঁর পরিচিতি থেকে আপনাকে সরিয়ে দিয়েছিল, তাই মেসেজ বা কল করার আগে আপনাদের দুজনকেই আবার একে অপরকে যোগ করতে হবে।"
+
+[profile_s_profile_hasnt_arrived]
+text = "{name}-এর প্রোফাইল এখনও আসেনি। সিঙ্ক হলেই এখানে দেখা যাবে।"
+
+[profile_saved]
+text = "সেভ হয়েছে"
+
+[profile_saved_on_this_device]
+text = "এই ডিভাইসে সেভ হয়েছে। কানেক্ট হলে সিঙ্ক হবে।"
+
+[profile_saved_syncs_when_connected]
+text = "সেভ হয়েছে · কানেক্ট হলে সিঙ্ক হবে"
+
+[profile_selected_connecting]
+text = "বেছে নেওয়া · কানেক্ট হচ্ছে"
+
+[profile_selected_online]
+text = "বেছে নেওয়া · অনলাইন"
+
+[profile_send_codec]
+text = "পাঠানোর কোডেক"
+
+[profile_session_only_changes_apply]
+text = "শুধু এই সেশনের জন্য। পরিবর্তন পরের কল থেকে কাজ করবে (“এই কল সম্পর্কে” থেকে চলতি কল বদলায়)। ফিক্সড সাইজ রেট/CPU অনুযায়ী রেজোলিউশন বদলানো বন্ধ করে; তবে অন্য দিকের আর তাপের সীমাই প্রাধান্য পায়। HD ক্যাপচার ব্যবহার করে আসল পেলোড রেট আর মাপ তুলনা করুন।"
+
+[profile_settings]
+text = "সেটিংস"
+
+[profile_settings_that_belong_to]
+text = "যে সেটিংস শুধু এই কম্পিউটারের"
+
+[profile_sharper_video]
+text = "আরও ঝকঝকে ভিডিও"
+
+[profile_show_a_qr_code]
+text = "নতুন ডিভাইসে একটি QR কোড দেখান, তারপর এখানে অনুমোদন দিন"
+
+[profile_show_key]
+text = "কী দেখান"
+
+[profile_show_me_as_online]
+text = "পাবলিক গ্রুপে আমাকে অনলাইন দেখান"
+
+[profile_show_words]
+text = "শব্দগুলো দেখান"
+
+[profile_shown_after_you_confirm]
+text = "নিশ্চিত করার পর দেখানো হয়"
+
+[profile_shown_to_you_as]
+text = "আপনার কাছে {name} নামে দেখায় · ওঁর নিজের নাম {name2}"
+
+[profile_software]
+text = "সফটওয়্যার"
+
+[profile_some_information_came_from]
+text = "কিছু তথ্য অন্য ডিভাইস বা অ্যাপের অন্য সংস্করণ থেকে এসেছে। এগুলো যেমন সেভ করা আছে তেমনই দেখানো হয়, আর আপনি অন্য কিছু এডিট করলেও থেকে যায়।"
+
+[profile_someone_you_allowed_can]
+text = "যাঁকে অনুমতি দিয়েছেন তিনি আপনাকে কল করতে পারেন; যিনি শুধু মেসেজে আছেন তিনি তবুও লিখতে পারেন। আপনি যাঁদের ব্লক করেছেন, তাঁরা কোনোটাই পারেন না।"
+
+[profile_something_else]
+text = "অন্য কিছু"
+
+[profile_sounds]
+text = "সাউন্ড"
+
+[profile_source_code]
+text = "সোর্স কোড"
+
+[profile_status]
+text = "স্ট্যাটাস"
+
+[profile_storage]
+text = "স্টোরেজ"
+
+[profile_tap_a_sound_to]
+text = "শুনতে কোনো সাউন্ডে ট্যাপ করুন। পরের কল থেকে এটা কাজ করবে।"
+
+[profile_that_file_couldnt_be]
+text = "ফাইলটি ছবি হিসেবে পড়া গেল না। হয়তো এটি নষ্ট হয়ে গেছে।"
+
+[profile_that_name_cant_be]
+text = "এই নামটি ব্যবহার করা যাবে না। ছোট রাখুন, কন্ট্রোল অক্ষর ছাড়া।"
+
+[profile_that_picture_is_mb]
+text = "ছবিটি {size} MB। ছবি {max} MB পর্যন্ত হতে পারে।"
+
+[profile_that_picture_is_pixels]
+text = "ছবিটি {width} × {height} পিক্সেল। Tinline প্রতিটি দিকে {max} পিক্সেল পর্যন্ত নেয়।"
+
+[profile_the_libraries_tinline_is]
+text = "যে লাইব্রেরিগুলোর ওপর Tinline তৈরি"
+
+[profile_the_passphrase_protects_tinline]
+text = "পাসফ্রেজ শুধু এই ডিভাইসে Tinline সুরক্ষিত রাখে; আপনার অন্য ডিভাইসগুলোর নিজেদের পাসফ্রেজ থাকে। ভুলে যাওয়া পাসফ্রেজ Tinline ফিরিয়ে আনতে পারে না। তেমন হলে রিকভারি শব্দ দিয়ে আপনার অ্যাকাউন্ট ফিরিয়ে আনা যায়, তবে মেসেজ নয়।"
+
+[profile_there_is_no_copy]
+text = "ইচ্ছে করেই কোনো কপি বোতাম রাখা হয়নি: শব্দগুলো ক্লিপবোর্ডে যায় না। অ্যাকাউন্ট ফিরিয়ে আনা ছাড়া Tinline কখনও এগুলো চায় না। এই শব্দগুলো আপনার অ্যাকাউন্ট ফিরিয়ে আনে, মেসেজ নয়।"
+
+[profile_these_are_set_by]
+text = "এগুলো আপনার সিস্টেম সেট করে, Tinline নয়। দরকার হলেই শুধু Tinline অনুমতি চায়।"
+
+[profile_these_stay_on_this]
+text = "এগুলো এই কম্পিউটারেই থাকে। এগুলো আপনার অ্যাকাউন্টের অংশ নয়।"
+
+[profile_this_computer]
+text = "এই কম্পিউটার"
+
+[profile_this_computer_decodes_av1]
+text = "এই কম্পিউটার AV1 (rav1d) আর VP8 (libvpx) শুধু সফটওয়্যারে ডিকোড করে। কলের সময় “এই কল সম্পর্কে”-তে সেই কলের জন্য একই কন্ট্রোল আছে।"
+
+[profile_this_computer_has_no]
+text = "এই কম্পিউটারে কোনো কি-রিং নেই, তাই Tinline চালু হওয়ার সময় প্রতিবার আপনার পাসফ্রেজ চায়।"
+
+[profile_this_device_online]
+text = "এই ডিভাইস · অনলাইন"
+
+[profile_this_is_not_a]
+text = "এটা কোনো তালা নয়।"
+
+[profile_tinline_can_use_png]
+text = "Tinline PNG, JPEG বা WebP ছবি ব্যবহার করতে পারে। এই ফাইলটি অন্য ধরনের।"
+
+[profile_tinline_has_no_ads]
+text = "Tinline-এ কোনো বিজ্ঞাপন বা ট্র্যাকিং নেই। আপনার মেসেজ আর কল যায় আপনার ডিভাইস আর আপনি যাঁদের সঙ্গে কথা বলেন, তাঁদের মধ্যে।"
+
+[profile_tinline_is_open_source]
+text = "Tinline ওপেন সোর্স"
+
+[profile_tinline_tells_it_now]
+text = "Tinline এখনই ওটাকে জানাচ্ছে।"
+
+[profile_to_free_more_space]
+text = "আরও জায়গা খালি করতে, চ্যাট থেকে ছবি বা ফাইল সরান।"
+
+[profile_told_you_blocked_them]
+text = "ব্লক করার কথা জানানো হয়েছে"
+
+[profile_trend_probe]
+text = "Trend+probe"
+
+[profile_unblock]
+text = "{first2}-কে আনব্লক করুন"
+
+[profile_unblock_2]
+text = "{name}-কে আনব্লক করবেন?"
+
+[profile_unlinking]
+text = "লিঙ্ক সরানো হচ্ছে…"
+
+[profile_use_photo]
+text = "এই ছবিটা নিন"
+
+[profile_value]
+text = "মান"
+
+[profile_version]
+text = "সংস্করণ {value}"
+
+[profile_video_quality]
+text = "ভিডিওর মান"
+
+[profile_video_tuning]
+text = "ভিডিও টিউনিং"
+
+[profile_wait_for_the_current]
+text = "অ্যাকাউন্টের চলতি কাজটি শেষ হওয়া পর্যন্ত অপেক্ষা করুন।"
+
+[profile_webrtc_audio_processing]
+text = "WebRTC অডিও প্রসেসিং"
+
+[profile_website]
+text = "ওয়েবসাইট"
+
+[profile_what_are_you_up]
+text = "এখন কী করছেন?"
+
+[profile_what_is_it_called]
+text = "এর নাম কী?"
+
+[profile_when_i_tap_them]
+text = "আমি ট্যাপ করলে"
+
+[profile_who_can_call_me]
+text = "কে আমাকে কল করতে পারে"
+
+[profile_will_stop_syncing_with]
+text = "{name} আর আপনার অ্যাকাউন্টের সঙ্গে সিঙ্ক করবে না, আর আপনাকে কেউ কল করলে রিং হবে না। {value}"
+
+[profile_write_these_24_words]
+text = "এই {words}টি শব্দ ক্রম অনুযায়ী লিখে রাখুন, আর কোনো গোপন জায়গায় রাখুন।"
+
+[profile_yes]
+text = "হ্যাঁ"
+
+[profile_you_already_have_information]
+text = "এই নামে আপনার একটি তথ্য আগে থেকেই আছে।"
+
+[profile_you_blocked_their_profile]
+text = "আপনি {name}-কে ব্লক করেছেন। ওঁর প্রোফাইল আর আপডেট হয় না।"
+
+[profile_you_blocked_them]
+text = "আপনি ওঁকে ব্লক করেছেন"
+
+[profile_you_stay_off_their]
+text = "ওঁদের অনলাইন তালিকায় আপনি থাকেন না"
+
+[profile_you_wont_get_calls]
+text = "আপনি {name}-এর কাছ থেকে আর কল বা মেসেজ পাবেন না, আর ওঁর প্রোফাইলের আপডেটও বন্ধ হয়ে যাবে।"
+
+[profile_your_chat_history_is]
+text = "আপনার চ্যাটের ইতিহাস এখনও এখানে আছে।"
+
+[profile_your_contacts_can_see]
+text = "আপনার পরিচিতিরা এটা দেখতে পান, আর আপনার সব ডিভাইসে এটা একই থাকে। কল আপনার কাছে পৌঁছাবে কি না, তা এর ওপর নির্ভর করে; আপনি অনলাইনে আছেন কি না, তার থেকে এটা আলাদা।"
+
+[profile_your_contacts_see_your]
+text = "আপনার পরিচিতিরা আপনার নাম, ছবি আর প্রোফাইল দেখতে পান। আপনি কার সঙ্গে কথা বলেন, Tinline তা লুকায় না, আর আপনার অ্যাকাউন্টে লিঙ্ক করা প্রতিটি ডিভাইস আপনার চ্যাট পড়তে পারে।"
+
+[profile_your_contacts_will_see]
+text = "আপনার পরিচিতিরা এটা আপনার প্রোফাইলে দেখতে পাবেন।"
+
+[profile_your_initials_will_show]
+text = "বদলে আপনার নামের আদ্যক্ষর দেখাবে।"
+
+[profile_your_reads_stay_with]
+text = "আপনি কী পড়লেন, তা আপনার কাছেই থাকে"
+
+[profile_your_recovery_key_is]
+text = "আপনার রিকভারি কী আপনার {words}টি শব্দেরই আরেক রূপ, এক লাইনে। এটা রাখার ভালো জায়গা হলো পাসওয়ার্ড ম্যানেজার।"
+
+[profile_your_recovery_phrase_is]
+text = "সব ডিভাইস হারিয়ে ফেললে আপনার অ্যাকাউন্ট ফিরে পাওয়ার একমাত্র উপায় আপনার রিকভারি শব্দ। এগুলো যার কাছে থাকবে, সে আপনার হয়ে সব করতে পারবে।"
+
+[profile_your_settings_for]
+text = "{name}-এর জন্য আপনার সেটিংস"
+
+[settings_account]
+text = "অ্যাকাউন্ট"
+
+[settings_anyone_who_sees_these]
+text = "এই শব্দগুলো যে দেখবে, সে আপনার পরিচয়ে সবকিছু করতে পারবে। কেউ দেখছে না তা নিশ্চিত করে তবেই দেখান।"
+
+[settings_anyone_who_sees_these_words]
+text = "এই শব্দগুলো যে দেখবে, সে আপনার পরিচয়ে সবকিছু করতে পারবে। কেউ দেখছে না তা নিশ্চিত করুন।"
+
+[settings_asks_you_to_confirm]
+text = "আগে আপনাকে নিশ্চিত করতে বলে"
+
+[settings_audio]
+text = "অডিও"
+
+[settings_available_for_calls]
+text = "কলের জন্য ফ্রি"
+
+[settings_calls_wont_ring_until]
+text = "আবার চালু না করা পর্যন্ত কলে রিং হবে না"
+
+[settings_change]
+text = "বদলান"
+
+[settings_checking]
+text = "যাচাই করা হচ্ছে..."
+
+[settings_device_changes_apply_from]
+text = "ডিভাইসের পরিবর্তন পরের কল থেকে কাজ করবে"
+
+[settings_enter_your_passphrase]
+text = "আপনার পাসফ্রেজ দিন"
+
+[settings_instead_of_the_microphone]
+text = "কানেকশন যাচাই করতে, মাইক্রোফোনের বদলে"
+
+[settings_keep]
+text = "রেখে দিন"
+
+[settings_locked_needs_its_passphrase]
+text = "লক করা · এর পাসফ্রেজ লাগবে"
+
+[settings_only_your_own_devices]
+text = "শুধু আপনার নিজের ডিভাইসগুলো এটা দেখে"
+
+[settings_optional_encrypts_your_account]
+text = "ঐচ্ছিক — এই কম্পিউটারে আপনার অ্যাকাউন্ট এনক্রিপ্ট করে"
+
+[settings_other_accounts_on_this]
+text = "এই কম্পিউটারে থাকা অন্য অ্যাকাউন্ট"
+
+[settings_recommended_your_key_is]
+text = "করে রাখা ভালো — আপনার চাবি একটি সাধারণ ফাইলে আছে"
+
+[settings_remove_from_this_computer]
+text = "এই কম্পিউটার থেকে {name} সরাবেন? এখানে এর পরিচিতি, চ্যাট আর কলের ইতিহাস মুছে যাবে। রিকভারি শব্দ পরিচয়টি ফিরিয়ে আনে, এগুলো নয়।"
+
+[settings_send_a_test_tone]
+text = "একটি টেস্ট টোন পাঠান"
+
+[settings_show_recovery_phrase]
+text = "রিকভারি শব্দ দেখান"
+
+[settings_shown_to_the_people]
+text = "আপনি যাঁদের যোগ করেন, তাঁরা দেখতে পান"
+
+[settings_this_computers_name]
+text = "এই কম্পিউটারের নাম"
+
+[settings_unlocks_tinline_when_it]
+text = "চালু হওয়ার সময় Tinline আনলক করে"
+
+[settings_video_in_calls]
+text = "কলে ভিডিও"
+
+[settings_your_camera_stays_off]
+text = "কলের মধ্যে আপনি চালু না করা পর্যন্ত ক্যামেরা বন্ধ থাকে"
+
+[shell_accepting_lets_you_message]
+text = "গ্রহণ করলে আপনারা একে অপরকে মেসেজ আর কল করতে পারবেন।"
+
+[shell_all]
+text = "সব"
+
+[shell_blocked]
+text = "ব্লক করা"
+
+[shell_choose_a_chat]
+text = "একটি চ্যাট বেছে নিন"
+
+[shell_contacts_count]
+one = "{count} জন পরিচিতি"
+other = "{count} জন পরিচিতি"
+
+[shell_find_a_contact]
+text = "পরিচিতি খুঁজুন"
+
+[shell_messages_stay_on_your]
+text = "মেসেজ আপনার ডিভাইসেই থাকে।"
+
+[shell_more_messages]
+text = "আরও মেসেজ"
+
+[shell_new_chat]
+text = "নতুন চ্যাট"
+
+[shell_no_contact_called]
+text = "“{trim}” নামে কোনো পরিচিতি নেই।"
+
+[shell_no_messages_match]
+text = "কোনো মেসেজ মেলেনি"
+
+[shell_no_one_called_in]
+text = "আপনার পরিচিতিতে “{trim}” নামে কেউ নেই।"
+
+[shell_no_people_or_groups]
+text = "কোনো মানুষ বা গ্রুপ মেলেনি"
+
+[shell_people_groups]
+text = "মানুষ ও গ্রুপ"
+
+[shell_scan_a_code_or]
+text = "কোড স্ক্যান করুন বা আমন্ত্রণ পেস্ট করুন"
+
+[shell_search_ctrl_k]
+text = "খুঁজুন (Ctrl+K)"
+
+[shell_search_messages_people_and]
+text = "মেসেজ, মানুষ আর গ্রুপ খুঁজুন।"
+
+[shell_searching]
+text = "খোঁজা হচ্ছে…"
+
+[shell_share_your_code_or]
+text = "আপনার কোড শেয়ার করুন বা ওঁদেরটা পেস্ট করুন"
+
+[shell_the_people_you_add]
+text = "আপনি যাঁদের যোগ করবেন, তাঁরা এখানে দেখা যাবেন।"
+
+[shell_type_2_or_more]
+text = "মেসেজ খুঁজতে অন্তত 2টি অক্ষর টাইপ করুন।"
+
+[shell_unread]
+text = "না-পড়া"
+
+[shell_waiting_for_them]
+text = "ওঁদের অপেক্ষায়"
+
+[shell_waiting_for_you]
+text = "আপনার অপেক্ষায়"
+
+[shell_wants_to_add_you]
+text = "আপনাকে পরিচিতি হিসেবে যোগ করতে চান"
+
+[signup_a_direct_line_to]
+text = "আপনার মানুষদের কাছে সরাসরি লাইন"
+
+[signup_a_lock_so_only]
+text = "একটি তালা, যাতে এই কম্পিউটারে শুধু আপনিই Tinline খুলতে পারেন।"
+
+[signup_accepted_your_line_to]
+text = "{name} গ্রহণ করেছেন। {name}-এর সঙ্গে আপনার লাইন খোলা। হ্যালো বলুন।"
+
+[signup_accepted_your_request]
+text = "আপনার অনুরোধ গ্রহণ করেছেন"
+
+[signup_accepted_your_request_your]
+text = "আপনার অনুরোধ গ্রহণ করেছেন। আপনার লাইন খোলা।"
+
+[signup_add]
+text = "{name}-কে যোগ করুন"
+
+[signup_add_an_account]
+text = "একটি অ্যাকাউন্ট যোগ করুন"
+
+[signup_add_another_contact]
+text = "আরেকজন পরিচিতি যোগ করুন"
+
+[signup_add_another_name]
+text = "আরেকটি নাম যোগ করুন"
+
+[signup_add_my_first_contact]
+text = "আমার প্রথম পরিচিতি যোগ করুন"
+
+[signup_add_someone_youd_like]
+text = "যাঁর সঙ্গে কথা বলতে চান তাঁকে যোগ করুন, তাহলে আপনারা একে অপরকে মেসেজ আর কল করতে পারবেন।"
+
+[signup_adding]
+text = "যোগ করা হচ্ছে…"
+
+[signup_any_length_works_a]
+text = "যেকোনো দৈর্ঘ্য চলবে। এলোমেলো কয়েকটি শব্দ মনে রাখা সহজ।"
+
+[signup_asks_for_your_passphrase]
+text = "পাসফ্রেজ চায়"
+
+[signup_before_you_start]
+text = "শুরু করার আগে"
+
+[signup_calls_are_end_to]
+text = "কল এন্ড-টু-এন্ড এনক্রিপ্টেড।"
+
+[signup_checking_takes_a_second]
+text = "যাচাই করতে এক সেকেন্ড লাগে। আন্দাজে চেষ্টা আটকাতে এটা ইচ্ছে করেই ধীর।"
+
+[signup_code]
+text = "কোড"
+
+[signup_contact_request]
+text = "পরিচিতির অনুরোধ"
+
+[signup_copied]
+text = "কপি হয়েছে"
+
+[signup_copy_again]
+text = "আবার কপি করুন"
+
+[signup_copy_my_code]
+text = "আমার কোড কপি করুন"
+
+[signup_copy_my_words]
+text = "আমার শব্দগুলো কপি করুন"
+
+[signup_couldnt_make_a_new]
+text = "এই মুহূর্তে নতুন কোড তৈরি করা গেল না। একটু পরে আবার চেষ্টা করুন।"
+
+[signup_couldnt_reach_s_tinline]
+text = "{name}-এর Tinline-এ পৌঁছানো গেল না। এটা খোলা আর অনলাইনে থাকা দরকার, তাই {name} কাছাকাছি থাকলে আবার চেষ্টা করুন।"
+
+[signup_couldnt_read_the_clipboard]
+text = "ক্লিপবোর্ড পড়া গেল না। বদলে প্রথম ঘরে পেস্ট করুন।"
+
+[signup_create_a_new_account]
+text = "নতুন অ্যাকাউন্ট তৈরি করুন, অথবা আপনার আগের অ্যাকাউন্ট নিয়ে আসুন।"
+
+[signup_create_my_account]
+text = "আমার অ্যাকাউন্ট তৈরি করুন"
+
+[signup_encrypting]
+text = "এনক্রিপ্ট হচ্ছে…"
+
+[signup_encrypts_your_account_on]
+text = "এই কম্পিউটারে আপনার অ্যাকাউন্ট এনক্রিপ্ট করে। Tinline চালু হওয়ার সময় প্রতিবার এটা লিখতে হবে। ভুলে গেলে রিকভারি শব্দ দিয়ে নতুন একটি সেট করতে পারবেন।"
+
+[signup_fair]
+text = "মোটামুটি"
+
+[signup_free_of_ads_and]
+text = "বিজ্ঞাপন আর ট্র্যাকিং নেই।"
+
+[signup_groups_are_hosted_on]
+text = "গ্রুপ হোস্ট হয় কম্পিউটারে। Tinline খোলা রাখুন, তাহলে আপনার গ্রুপগুলো নাগালে থাকবে।"
+
+[signup_has_your_code]
+text = "আপনার কোড আছে"
+
+[signup_here_are_your_recovery]
+text = "এই নিন আপনার রিকভারি শব্দ"
+
+[signup_here_is_your_recovery]
+text = "এই নিন আপনার রিকভারি কী"
+
+[signup_home_computer]
+text = "বাড়ির কম্পিউটার"
+
+[signup_i_agree]
+text = "আমি রাজি"
+
+[signup_i_forgot_it]
+text = "আমি ভুলে গেছি"
+
+[signup_i_have_an_account]
+text = "আমার অ্যাকাউন্ট আছে"
+
+[signup_i_saved_it_elsewhere]
+text = "আমি অন্য কোথাও সেভ করেছি"
+
+[signup_i_wrote_them_down]
+text = "আমি লিখে রেখেছি"
+
+[signup_if_you_ever_switch]
+text = "কখনও ডিভাইস বদলালে, এই {words}টি শব্দ আপনার অ্যাকাউন্ট সঙ্গে নিয়ে আসবে।"
+
+[signup_is_already_in_your]
+text = "{name} আগে থেকেই আপনার পরিচিতিতে আছেন।"
+
+[signup_is_this_the_you]
+text = "ইনিই কি আপনার প্রত্যাশিত {name}? নিশ্চিত না হলে আগে ওঁর সঙ্গে কথা বলে নিন।"
+
+[signup_it_lives_on_your]
+text = "এটা থাকে আপনার ডিভাইসগুলোতে, কোনো সার্ভারে নয়। আপনার রিকভারি শব্দই ফিরে আসার পথ, তাই সেগুলো যত্নে রাখুন।"
+
+[signup_ive_saved_it]
+text = "আমি সেভ করেছি"
+
+[signup_ive_saved_them]
+text = "আমি সেভ করেছি"
+
+[signup_key]
+text = "কী"
+
+[signup_laptop]
+text = "ল্যাপটপ"
+
+[signup_let_them_scan_this]
+text = "ওঁদের Tinline দিয়ে এটা স্ক্যান করতে বলুন।"
+
+[signup_link_another_device_when]
+text = "সুযোগ পেলে আরেকটি ডিভাইস লিঙ্ক করুন, যাতে একটি হারালেও কখনও আটকে না যান।"
+
+[signup_link_my_other_device]
+text = "আমার অন্য ডিভাইস লিঙ্ক করুন"
+
+[signup_message]
+text = "{name}-কে মেসেজ করুন"
+
+[signup_message_2]
+text = "{value}-কে মেসেজ করুন"
+
+[signup_new_contact]
+text = "নতুন পরিচিতি"
+
+[signup_next_youll_choose_a]
+text = "এরপর আপনি এই অ্যাকাউন্টের জন্য একটি পাসফ্রেজ বেছে নেবেন।"
+
+[signup_not_for_emergency_calls]
+text = "জরুরি কলের জন্য নয়।"
+
+[signup_of]
+text = "{total}টির মধ্যে {count}টি"
+
+[signup_of_24]
+text = "{total}টির মধ্যে {filled}টি"
+
+[signup_only_the_people_you]
+text = "শুধু আপনি যাঁদের যোগ করবেন, তাঁরাই এটা দেখবেন।"
+
+[signup_open_as]
+text = "কোন অ্যাকাউন্টে খুলবেন"
+
+[signup_open_profile]
+text = "প্রোফাইল খুলুন"
+
+[signup_opens_right_away]
+text = "সঙ্গে সঙ্গে খোলে"
+
+[signup_optional_a_lock_so]
+text = "ঐচ্ছিক। একটি তালা, যাতে এই কম্পিউটারে শুধু আপনিই Tinline খুলতে পারেন।"
+
+[signup_paste_a_new_code]
+text = "নতুন কোড পেস্ট করুন"
+
+[signup_paste_from_clipboard]
+text = "ক্লিপবোর্ড থেকে পেস্ট করুন"
+
+[signup_paste_it_somewhere_safe]
+text = "কোনো নিরাপদ জায়গায় পেস্ট করে রাখুন। পাসওয়ার্ড ম্যানেজার দারুণ কাজ করে।"
+
+[signup_paste_their_code]
+text = "ওঁদের কোড পেস্ট করুন"
+
+[signup_pick_someone_and_say]
+text = "যাকে খুশি বেছে নিয়ে যখন খুশি হ্যালো বলুন।"
+
+[signup_preparing_your_code]
+text = "আপনার কোড তৈরি হচ্ছে…"
+
+[signup_privacy_policy]
+text = "প্রাইভেসি পলিসি"
+
+[signup_qr]
+text = "QR"
+
+[signup_reaching_s_tinline]
+text = "{name}-এর Tinline-এ পৌঁছানো হচ্ছে…"
+
+[signup_recovery_key]
+text = "রিকভারি কী"
+
+[signup_restore_account]
+text = "অ্যাকাউন্ট ফিরিয়ে আনুন"
+
+[signup_restore_my_account]
+text = "আমার অ্যাকাউন্ট ফিরিয়ে আনুন"
+
+[signup_s_code_isnt_valid]
+text = "{name}-এর কোডটি আর কাজ করে না। হয়তো ওঁরা নতুন একটা তৈরি করেছেন, তাই {name}-এর কাছে সবচেয়ে নতুন কোডটি চেয়ে নিন।"
+
+[signup_save_a_copy_somewhere]
+text = "কোনো নিরাপদ জায়গায় একটি কপি রাখুন। কাগজে লিখে রাখাও দারুণ।"
+
+[signup_say_hello_to_whenever]
+text = "যখন খুশি {value}-কে হ্যালো বলুন।"
+
+[signup_scan_a_code_on]
+text = "যে ডিভাইসে আপনার অ্যাকাউন্ট আগে থেকেই আছে, তাতে একটি কোড স্ক্যান করুন। আপনার পরিচিতি আর চ্যাট সঙ্গে চলে আসবে।"
+
+[signup_scan_their_code_or]
+text = "ওঁদের কোড স্ক্যান করুন বা আপনারটা শেয়ার করুন, তাহলেই একে অপরকে কল করতে পারবেন।"
+
+[signup_send_it_to_anyone]
+text = "যাঁর সঙ্গে কথা বলতে চান, যেকোনো অ্যাপে তাঁকে এটা পাঠান।"
+
+[signup_send_it_to_anyone_youd]
+text = "যাঁর সঙ্গে কথা বলতে চান, যেকোনো অ্যাপে তাঁকে এটা পাঠান। এটা {value} পর্যন্ত কাজ করবে।"
+
+[signup_short_a_few_more]
+text = "ছোট। আরও কয়েকটি শব্দ দিলে আরও মজবুত হবে।"
+
+[signup_skip_for_now]
+text = "আপাতত থাক"
+
+[signup_start_a_chat]
+text = "চ্যাট শুরু করুন"
+
+[signup_still_trying_s_tinline]
+text = "এখনও চেষ্টা চলছে। এর জন্য {name}-এর Tinline খোলা আর অনলাইনে থাকা দরকার।"
+
+[signup_strong]
+text = "মজবুত"
+
+[signup_switch_to_dark]
+text = "ডার্কে বদলান"
+
+[signup_switch_to_light]
+text = "লাইটে বদলান"
+
+[signup_terms_of_use]
+text = "ব্যবহারের শর্তাবলি"
+
+[signup_that_code_from_has]
+text = "{value}-এর দেওয়া কোডটির মেয়াদ শেষ হয়ে গেছে। কোড 7 দিন কাজ করে, তাই ওঁর কাছে নতুন একটা চেয়ে নিন।"
+
+[signup_that_doesnt_look_like]
+text = "এটা Tinline কোড বলে মনে হচ্ছে না। ওঁরা কি আপনার জন্য আবার কপি করে দিতে পারবেন?"
+
+[signup_that_key_has_a]
+text = "কী-তে টাইপের ভুল আছে বা এটি কেটে গেছে। যেখানে সেভ করেছিলেন, সেখান থেকে আবার পেস্ট করুন।"
+
+[signup_thats_your_own_code]
+text = "এটা আপনার নিজের কোড। এটা ওঁদের পাঠান, আর ওঁদেরটা এখানে পেস্ট করুন।"
+
+[signup_their_code]
+text = "ওঁদের কোড"
+
+[signup_this_computer_can_host]
+text = "এই কম্পিউটার আপনার গ্রুপ হোস্ট করতে পারে"
+
+[signup_tinline_connects_your_straight]
+text = "Tinline আপনার কম্পিউটারকে সরাসরি ওঁদের ডিভাইসের সঙ্গে জুড়ে দেয়।"
+
+[signup_tinline_doesnt_collect_your]
+text = "Tinline আপনার পরিচিতি, কল বা লোকেশন সংগ্রহ করে না।"
+
+[signup_two_devices_are_better]
+text = "একের চেয়ে দুটো ডিভাইস ভালো"
+
+[signup_type_your_24_recovery]
+text = "আপনার {words}টি রিকভারি শব্দ টাইপ করুন। এই কম্পিউটারে পরিচিতির তালিকা খালি থেকে শুরু হবে।"
+
+[signup_type_your_24_words]
+text = "আপনার {words}টি শব্দ ক্রম অনুযায়ী টাইপ করুন, অথবা সেগুলো বা আপনার রিকভারি কী প্রথম ঘরে পেস্ট করুন। এগুলো এই কম্পিউটারেই থাকবে।"
+
+[signup_unlock]
+text = "আনলক করুন"
+
+[signup_unlocking]
+text = "আনলক হচ্ছে…"
+
+[signup_use_my_words_instead]
+text = "বদলে আমার শব্দগুলো ব্যবহার করুন"
+
+[signup_use_your_account_here]
+text = "এখানে আপনার অ্যাকাউন্ট ব্যবহার করুন"
+
+[signup_use_your_phone_to]
+text = "জরুরি পরিষেবায় যোগাযোগ করতে আপনার ফোন ব্যবহার করুন।"
+
+[signup_wants_to_add_you]
+text = "{name} আপনাকে পরিচিতি হিসেবে যোগ করতে চান। গ্রহণ করলে আপনারা একে অপরকে মেসেজ আর কল করতে পারবেন।"
+
+[signup_welcome_back]
+text = "আবার স্বাগত"
+
+[signup_welcome_back_2]
+text = "আবার স্বাগত,"
+
+[signup_what_should_people_call]
+text = "লোকে আপনাকে কী নামে ডাকবে?"
+
+[signup_when_a_direct_line]
+text = "সরাসরি লাইন সম্ভব না হলে, একটি এনক্রিপ্টেড রিলে কলটি পৌঁছে দেয়। রিলে কল শুনতে পারে না।"
+
+[signup_word_in_the_recovery]
+text = "{value} নম্বর শব্দটি রিকভারি শব্দের তালিকায় নেই। বানানটা দেখে নিন।"
+
+[signup_words]
+text = "শব্দ"
+
+[signup_words_are_still_missing]
+one = "এখনও {count}টি শব্দ বাকি আছে।"
+other = "এখনও {count}টি শব্দ বাকি আছে।"
+
+[signup_work_computer]
+text = "অফিসের কম্পিউটার"
+
+[signup_would_like_to_add]
+text = "{name} আপনাকে যোগ করতে চান"
+
+[signup_you_blocked_unblock_them]
+text = "আপনি {name}-কে ব্লক করেছেন। আবার যোগ করার আগে প্রাইভেসি থেকে আনব্লক করুন।"
+
+[signup_you_can_change_it]
+text = "সেটিংসে গিয়ে যেকোনো সময় এটা বদলাতে পারেন।"
+
+[signup_you_cant_add_right]
+text = "এখন আপনি {name}-কে যোগ করতে পারবেন না। ওঁরা এখানে যোগাযোগ না রাখার সিদ্ধান্ত নিয়েছেন।"
+
+[signup_you_just_need_a]
+text = "শুধু একটি ডাকনাম লাগবে। এন্ড-টু-এন্ড এনক্রিপ্টেড।"
+
+[signup_you_type_it_each]
+text = "{value} Tinline চালু হওয়ার সময় প্রতিবার এটা লিখতে হবে। ভুলে গেলে রিকভারি শব্দ দিয়ে নতুন একটি সেট করতে পারবেন।"
+
+[signup_your_account_is_its]
+text = "আপনার অ্যাকাউন্ট মানেই তার রিকভারি শব্দ, তাই দুইভাবে এটা এই কম্পিউটারে আনতে পারেন।"
+
+[signup_your_account_is_yours]
+text = "আপনার অ্যাকাউন্ট আপনারই।"
+
+[signup_your_clipboard_is_empty]
+text = "আপনার ক্লিপবোর্ড এখন খালি। ওঁদের কোড এলে, কপি করে এখানে পেস্ট করুন।"
+
+[signup_your_code]
+text = "আপনার কোড"
+
+[signup_your_current_account_stays]
+text = "আপনার এখনকার অ্যাকাউন্ট এই কম্পিউটারেই থাকবে।"
+
+[signup_your_line_is_open]
+text = "আপনার লাইন খোলা আছে, {name}"
+
+[signup_your_line_is_ready]
+text = "আপনার লাইন তৈরি"
+
+[signup_your_line_to_is]
+text = "{name}-এর সঙ্গে আপনার লাইন খোলা। হ্যালো বলুন।"
+
+[signup_your_nickname]
+text = "আপনার ডাকনাম"
+
+[signup_your_recovery_key_is]
+text = "আপনার রিকভারি কী বসানো হয়েছে। এটা এই কম্পিউটারেই থাকবে।"
+
+[signup_your_recovery_key_is_the]
+text = "আপনার রিকভারি কী আপনার {words}টি শব্দেরই আরেক রূপ, এক লাইনে।"
+
+[signup_your_request_to_is]
+text = "{value}-কে পাঠানো আপনার অনুরোধ অপেক্ষায় আছে। ওঁরা গ্রহণ করলেই আপনার লাইন খুলে যাবে।"
+
+[signup_youre_offline_once_youre]
+text = "আপনি অফলাইনে আছেন। কানেক্ট হলে আবার চেষ্টা করুন।"
+
+[status_calling]
+text = "কল করা হচ্ছে"
+
+[status_connected_to_the_network]
+text = "নেটওয়ার্কে কানেক্টেড"
+
+[status_in_a_call]
+text = "কলে আছেন"
+
+[status_no_connection]
+text = "কোনো কানেকশন নেই"
+
+[tray_quit]
+text = "বন্ধ করুন"
+
+[tray_tinline]
+text = "Tinline - {status}"
+
+[video_camera]
+text = "ক্যামেরা: {error}"
+
+[video_hd_paused_weak_connection]
+text = "HD থেমে আছে · দুর্বল কানেকশন"
+
+[video_sharper_video_on]
+text = "ঝকঝকে ভিডিও চালু"
+
+[video_video_tuning]
+text = "ভিডিও টিউনিং: {error}"
+
+[video_your_chosen_camera_isnt]
+text = "আপনার বেছে নেওয়া ক্যামেরা কানেক্টেড নেই। সেটিংস → ভিডিও থেকে একটি বেছে নিন।"
+
+[app_system_default]
+text = "সিস্টেমের ডিফল্ট"
+
+[app_no_secure_keyring]
+text = "এই কম্পিউটারে কোনো সুরক্ষিত কি-রিং নেই, তাই আপনার অ্যাকাউন্ট সুরক্ষিত রাখতে Tinline-এর একটি পাসফ্রেজ দরকার।"
+
+[chat_saved_items_only_on]
+text = "সেভ করা জিনিস · শুধু আপনার ডিভাইসে"
+
+[profile_picture_help]
+text = "ছবি বদলালে বা সরালে, আপনার লিঙ্ক করা ডিভাইস আর পরিচিতিরা সিঙ্ক করার সময় আগের ক্যাশ করা কপি মুছে ফেলার অনুরোধ যায়। স্ক্রিনশট, ব্যাকআপ, আর পরিবর্তিত ক্লায়েন্টে রেখে দেওয়া কপি অ্যাপ মুছতে পারে না।"
+
+[profile_field_help]
+text = "আপনার পরিচিতিরা আপনার প্রোফাইল দেখতে পান। কোনো তথ্য সরালে সেটা প্রোফাইল থেকে লুকিয়ে যায়; আগের সংস্করণ সিঙ্ক করা ইতিহাসে থেকে যেতে পারে।"
+
+[profile_save_failed]
+text = "এটা সেভ করা গেল না। আপনার প্রোফাইল বদলায়নি, আর আপনি যা লিখেছেন তা এখনও এখানে আছে।"
+
+[profile_busy_unsupported]
+text = "“ব্যস্ত” এখনও চালু হয়নি। আপনার কলের সেটিংস বদলায়নি।"
+
+[profile_busy_30m]
+text = "30 মিনিট"
+
+[profile_busy_1h]
+text = "1 ঘণ্টা"
+
+[profile_busy_4h]
+text = "4 ঘণ্টা"
+
+[profile_busy_tomorrow]
+text = "কাল সকাল"
+
+[profile_busy_no_end]
+text = "শেষ সময় নেই"
+
+[signup_word_in_the_recovery_more]
+one = "{value} নম্বর শব্দ এবং আরও {count}টি শব্দ রিকভারি শব্দের তালিকায় নেই। বানানটা দেখে নিন।"
+other = "{value} নম্বর শব্দ এবং আরও {count}টি শব্দ রিকভারি শব্দের তালিকায় নেই। বানানটা দেখে নিন।"
+
+[signup_by_continuing_you_agree]
+text = "চালিয়ে গেলে আপনি {terms}-এ রাজি হচ্ছেন এবং {privacy} পড়েছেন।"
+
+[profile_err_name_empty]
+text = "নাম ফাঁকা রাখা যাবে না।"
+
+[profile_err_name_chars]
+text = "নামে কন্ট্রোল বা লেখার দিক বদলানোর অক্ষর রাখা যাবে না।"
+
+[profile_err_name_long]
+text = "নামটি খুব লম্বা। {limit} বাইট পর্যন্ত চলবে; কিছু অক্ষর একাধিক বাইট নেয়।"
+
+[profile_err_nickname_chars]
+text = "ডাকনামে কন্ট্রোল বা লেখার দিক বদলানোর অক্ষর রাখা যাবে না।"
+
+[profile_err_nickname_long]
+text = "ডাকনামটি খুব লম্বা। {limit} বাইট পর্যন্ত চলবে; কিছু অক্ষর একাধিক বাইট নেয়।"
+
+[profile_err_status_long]
+text = "স্ট্যাটাসের জন্য এটা খুব লম্বা: {limit} বাইট পর্যন্ত চলবে, আর কিছু অক্ষর একাধিক বাইট নেয়।"
+
+[profile_err_status_chars]
+text = "স্ট্যাটাসে কন্ট্রোল বা লেখার দিক বদলানোর অক্ষর রাখা যাবে না।"
+
+[profile_err_about_long]
+text = "“নিজের সম্পর্কে”-র জন্য এটা খুব লম্বা: {limit} বাইট পর্যন্ত চলবে, আর কিছু অক্ষর একাধিক বাইট নেয়।"
+
+[profile_err_about_chars]
+text = "“নিজের সম্পর্কে”-তে কন্ট্রোল বা লেখার দিক বদলানোর অক্ষর রাখা যাবে না।"
+
+[profile_err_text_long]
+text = "এটা খুব লম্বা: {limit} বাইট পর্যন্ত চলবে, আর কিছু অক্ষর একাধিক বাইট নেয়।"
+
+[profile_err_text_chars]
+text = "এতে কন্ট্রোল বা লেখার দিক বদলানোর অক্ষর রাখা যাবে না।"
+
+[common_list_separator]
+text = ", "
+
+[common_list_and]
+text = "{list} এবং {last}"
+
+[common_list_two]
+text = "{first} এবং {last}"
+
+[common_dot_separator]
+text = " · "
+
+[date_month_1]
+text = "জানু"
+
+[date_month_2]
+text = "ফেব"
+
+[date_month_3]
+text = "মার্চ"
+
+[date_month_4]
+text = "এপ্রি"
+
+[date_month_5]
+text = "মে"
+
+[date_month_6]
+text = "জুন"
+
+[date_month_7]
+text = "জুল"
+
+[date_month_8]
+text = "আগ"
+
+[date_month_9]
+text = "সেপ"
+
+[date_month_10]
+text = "অক্টো"
+
+[date_month_11]
+text = "নভে"
+
+[date_month_12]
+text = "ডিসে"
+
+[date_weekday_mon]
+text = "সোমবার"
+
+[date_weekday_tue]
+text = "মঙ্গলবার"
+
+[date_weekday_wed]
+text = "বুধবার"
+
+[date_weekday_thu]
+text = "বৃহস্পতিবার"
+
+[date_weekday_fri]
+text = "শুক্রবার"
+
+[date_weekday_sat]
+text = "শনিবার"
+
+[date_weekday_sun]
+text = "রবিবার"
+
+[date_month_day]
+text = "{day} {month}"
+
+[date_day_month]
+text = "{day} {month}"
+
+[date_month_day_time]
+text = "{day} {month}, {time}"
+
+[date_weekday_date]
+text = "{weekday}, {day} {month}"
+
+[date_weekday_date_year]
+text = "{weekday}, {day} {month}, {year}"
+
+[profile_busy_until_tomorrow]
+text = "কাল {time} পর্যন্ত ব্যস্ত"
+
+[profile_busy_until_mon]
+text = "সোমবার {time} পর্যন্ত ব্যস্ত"
+
+[profile_busy_until_tue]
+text = "মঙ্গলবার {time} পর্যন্ত ব্যস্ত"
+
+[profile_busy_until_wed]
+text = "বুধবার {time} পর্যন্ত ব্যস্ত"
+
+[profile_busy_until_thu]
+text = "বৃহস্পতিবার {time} পর্যন্ত ব্যস্ত"
+
+[profile_busy_until_fri]
+text = "শুক্রবার {time} পর্যন্ত ব্যস্ত"
+
+[profile_busy_until_sat]
+text = "শনিবার {time} পর্যন্ত ব্যস্ত"
+
+[profile_busy_until_sun]
+text = "রবিবার {time} পর্যন্ত ব্যস্ত"
+
+[call_ends_your_call]
+text = "উত্তর দিলে আপনার এখনকার কল শেষ হবে।"
+
+[common_someone_is_calling]
+text = "কেউ একজন কল করছেন"
+
+[call_reconnecting]
+text = "কল আবার কানেক্ট হচ্ছে"
+
+[call_reconnecting_2]
+text = "কল আবার কানেক্ট হচ্ছে…"
+
+[call_couldnt_connect]
+text = "কল কানেক্ট করা গেল না"
+
+[call_history_fallback]
+text = "Tinline কল"
+
+[gcall_about_this_computer]
+text = "**এই কম্পিউটারটি** এই কল চালাচ্ছে। কলের সবাই এর সঙ্গে কানেক্ট হন, আর এটি অডিও পৌঁছে দেয় এবং একসঙ্গে কয়েকজন কথা বললে কার কথা শোনা যাবে তা বেছে নেয়।"
+
+[gcall_about_device]
+text = "**{name}-এর ডিভাইস** এই কল চালাচ্ছে। কলের সবাই এর সঙ্গে কানেক্ট হন, আর এটি অডিও পৌঁছে দেয় এবং একসঙ্গে কয়েকজন কথা বললে কার কথা শোনা যাবে তা বেছে নেয়।"
+
+[gcall_about_unnamed]
+text = "**কল হোস্ট** এই কল চালাচ্ছে। কলের সবাই এর সঙ্গে কানেক্ট হন, আর এটি অডিও পৌঁছে দেয় এবং একসঙ্গে কয়েকজন কথা বললে কার কথা শোনা যাবে তা বেছে নেয়।"
+
+[gcall_call_host_device]
+text = "কল হোস্ট: {name}-এর ডিভাইস"
+
+[gcall_call_host_unnamed]
+text = "কল হোস্ট: অন্য একটি ডিভাইস"
+
+[group_invitation_line]
+text = "**{name}** আপনাকে **{group}**-এ আমন্ত্রণ জানিয়েছেন"
+
+[group_invitation_line_unnamed]
+text = "কেউ একজন আপনাকে **{group}**-এ আমন্ত্রণ জানিয়েছেন"
+
+[group_replying_to_yourself]
+text = "নিজেকে উত্তর দিচ্ছেন"
+
+[group_replying_to_a_message]
+text = "একটি মেসেজের উত্তর দিচ্ছেন"
+
+[chat_replying_to_yourself]
+text = "নিজেকে উত্তর দিচ্ছেন"
+
+[group_invited_by_you]
+text = "আমন্ত্রণ জানিয়েছেন আপনি"
+
+[group_invited_by_someone]
+text = "আমন্ত্রণ জানিয়েছেন কেউ একজন"
+
+[group_flags_of]
+one = "{count}টির মধ্যে {flags}টি ফ্ল্যাগ"
+other = "{count}টির মধ্যে {flags}টি ফ্ল্যাগ"
+
+[group_link_own]
+text = "আপনার নিজের অন্য ডিভাইসের জন্য একটি লিঙ্ক"
+
+[group_link_own_owner]
+text = "আপনার নিজের অন্য ডিভাইসের জন্য একটি লিঙ্ক · মালিক {owner}"
+
+[group_owner_by_you]
+text = "আমন্ত্রণ জানিয়েছেন আপনি · মালিক {owner}"
+
+[group_owner_by_you_unnamed]
+text = "আমন্ত্রণ জানিয়েছেন আপনি"
+
+[group_owner_by_named]
+text = "আমন্ত্রণ জানিয়েছেন {inviter} · মালিক {owner}"
+
+[group_owner_by_named_unnamed]
+text = "আমন্ত্রণ জানিয়েছেন {inviter}"
+
+[group_owner_by_unnamed]
+text = "আমন্ত্রণ জানিয়েছেন কেউ একজন · মালিক {owner}"
+
+[group_owner_by_unnamed_unnamed]
+text = "আমন্ত্রণ জানিয়েছেন কেউ একজন"
+
+[group_host_online]
+text = "অনলাইন"
+
+[group_host_offline]
+text = "অফলাইন"
+
+[group_hosts_online_here]
+one = "{count}টি হোস্ট অনলাইনে আছে, এই কম্পিউটারও। পোস্ট সঙ্গে সঙ্গে পৌঁছে যাবে।"
+other = "{count}টি হোস্ট অনলাইনে আছে, এই কম্পিউটারও। পোস্ট সঙ্গে সঙ্গে পৌঁছে যাবে।"
+
+[group_hosts_store_the_group_admin]
+text = "অন্যরা অফলাইনে থাকলে হোস্টরা গ্রুপটি রাখে আর পোস্ট পৌঁছে দেয়। তাঁরা আপনার ভরসার সদস্য: একজন হোস্ট এই গ্রুপে পোস্ট করা সবকিছু পড়তে পারেন। কোনো সদস্যের মেনু থেকে হোস্ট ঠিক করুন; তাঁকে গ্রহণ করতে হবে। কোনো হোস্টকে সরালে 2 দিনের মধ্যে গ্রুপের ঠিকানা বদলে যায়, তাই সেই ডিভাইস আর গ্রুপে পৌঁছাতে পারে না।"
+
+[group_a_call_host_carries_admin]
+text = "কল হোস্ট কলটি চালায়। কলের সবাই এর সঙ্গে কানেক্ট হন, আর এটি অডিও পৌঁছে দেয়, তাই এটি কল শুনতে পারে। এটা চ্যাট হোস্ট করা থেকে আলাদা: চ্যাট হোস্টকে আপনি কল হোস্ট হিসেবেও ঠিক না করলে সেটি কল হোস্ট নয়। কল হোস্টরা আপনার ভরসার সদস্য, আর প্রত্যেকে নিজে গ্রহণ করতে বেছে নেন। কোনো সদস্যের মেনু থেকে একজনকে ঠিক করুন, অথবা এই কম্পিউটারে কল হোস্ট করুন।"
+
+[group_asked_this_computer_to_unnamed]
+text = "একজন অ্যাডমিন এই কম্পিউটারকে {group} হোস্ট করতে বলেছেন"
+
+[group_public_link]
+text = "পাবলিক লিঙ্ক"
+
+[group_status_this_computer_hosts]
+text = "এই কম্পিউটার গ্রুপটি হোস্ট করে"
+
+[group_status_no_host_yet]
+text = "এখনও হোস্ট নেই"
+
+[group_status_waiting_for_a_host]
+text = "হোস্টের অপেক্ষায়"
+
+[group_online_count]
+one = "{count} জন অনলাইনে"
+other = "{count} জন অনলাইনে"
+
+[group_online_capped]
+text = "{count}+ জন অনলাইনে"
+
+[group_post_photo]
+text = "ছবি"
+
+[group_post_photo_caption]
+text = "ছবি · {caption}"
+
+[group_preview_you]
+text = "আপনি: {text}"
+
+[group_preview_author]
+text = "{name}: {text}"
+
+[group_preview_someone]
+text = "একজন সদস্য: {text}"
+
+[group_sys_joined_you]
+text = "আপনি যোগ দিয়েছেন"
+
+[group_sys_joined]
+text = "{name} যোগ দিয়েছেন"
+
+[group_sys_joined_someone]
+text = "কেউ একজন যোগ দিয়েছেন"
+
+[group_sys_left_you]
+text = "আপনি ছেড়ে দিয়েছেন"
+
+[group_sys_left]
+text = "{name} গ্রুপ ছেড়েছেন"
+
+[group_sys_left_someone]
+text = "কেউ একজন গ্রুপ ছেড়েছেন"
+
+[group_sys_removed_you]
+one = "{count}টি অ্যাডমিন ফ্ল্যাগের পর আপনাকে সরানো হয়েছে"
+other = "{count}টি অ্যাডমিন ফ্ল্যাগের পর আপনাকে সরানো হয়েছে"
+
+[group_sys_removed]
+one = "{count}টি অ্যাডমিন ফ্ল্যাগের পর {name}-কে সরানো হয়েছে"
+other = "{count}টি অ্যাডমিন ফ্ল্যাগের পর {name}-কে সরানো হয়েছে"
+
+[group_sys_removed_someone]
+one = "{count}টি অ্যাডমিন ফ্ল্যাগের পর একজনকে সরানো হয়েছে"
+other = "{count}টি অ্যাডমিন ফ্ল্যাগের পর একজনকে সরানো হয়েছে"
+
+[group_sys_host_added_you]
+text = "আপনার একটি ডিভাইস এখন গ্রুপটি হোস্ট করছে"
+
+[group_sys_host_added]
+text = "{name}-এর একটি ডিভাইস এখন গ্রুপটি হোস্ট করছে"
+
+[group_sys_host_added_someone]
+text = "একজন সদস্যের ডিভাইস এখন গ্রুপটি হোস্ট করছে"
+
+[group_sys_host_removed_you]
+text = "আপনার একটি ডিভাইস গ্রুপটি হোস্ট করা বন্ধ করেছে"
+
+[group_sys_host_removed]
+text = "{name}-এর একটি ডিভাইস গ্রুপটি হোস্ট করা বন্ধ করেছে"
+
+[group_sys_host_removed_someone]
+text = "একজন সদস্যের ডিভাইস গ্রুপটি হোস্ট করা বন্ধ করেছে"
+
+[group_sys_admin_you_you]
+text = "আপনি নিজেকে অ্যাডমিন করেছেন"
+
+[group_sys_admin_you_other]
+text = "আপনি {name}-কে অ্যাডমিন করেছেন"
+
+[group_sys_admin_you_someone]
+text = "আপনি একজনকে অ্যাডমিন করেছেন"
+
+[group_sys_admin_other_you]
+text = "{by} আপনাকে অ্যাডমিন করেছেন"
+
+[group_sys_admin_other_other]
+text = "{by} {name}-কে অ্যাডমিন করেছেন"
+
+[group_sys_admin_other_someone]
+text = "{by} একজনকে অ্যাডমিন করেছেন"
+
+[group_sys_admin_someone_you]
+text = "কেউ একজন আপনাকে অ্যাডমিন করেছেন"
+
+[group_sys_admin_someone_other]
+text = "কেউ একজন {name}-কে অ্যাডমিন করেছেন"
+
+[group_sys_admin_someone_someone]
+text = "কেউ একজন আরেকজনকে অ্যাডমিন করেছেন"
+
+[group_sys_unadmin_you_you]
+text = "আপনি নিজেকে অ্যাডমিন থেকে সরিয়েছেন"
+
+[group_sys_unadmin_you_other]
+text = "আপনি {name}-কে অ্যাডমিন থেকে সরিয়েছেন"
+
+[group_sys_unadmin_you_someone]
+text = "আপনি একজনকে অ্যাডমিন থেকে সরিয়েছেন"
+
+[group_sys_unadmin_other_you]
+text = "{by} আপনাকে অ্যাডমিন থেকে সরিয়েছেন"
+
+[group_sys_unadmin_other_other]
+text = "{by} {name}-কে অ্যাডমিন থেকে সরিয়েছেন"
+
+[group_sys_unadmin_other_someone]
+text = "{by} একজনকে অ্যাডমিন থেকে সরিয়েছেন"
+
+[group_sys_unadmin_someone_you]
+text = "কেউ একজন আপনাকে অ্যাডমিন থেকে সরিয়েছেন"
+
+[group_sys_unadmin_someone_other]
+text = "কেউ একজন {name}-কে অ্যাডমিন থেকে সরিয়েছেন"
+
+[group_sys_unadmin_someone_someone]
+text = "কেউ একজন আরেকজনকে অ্যাডমিন থেকে সরিয়েছেন"
+
+[group_sent_waiting]
+text = "{name}-এর অপেক্ষায় · {group}-এর মাধ্যমে"
+
+[group_sent_waiting_unnamed]
+text = "একজনের অপেক্ষায় · {group}-এর মাধ্যমে"
+
+[group_sent_accepted_messages]
+text = "{name} গ্রহণ করেছেন · শুধু মেসেজ"
+
+[group_sent_accepted_messages_unnamed]
+text = "গ্রহণ করেছেন · শুধু মেসেজ"
+
+[group_sent_accepted_connecting]
+text = "{name} গ্রহণ করেছেন · কানেক্ট হচ্ছে"
+
+[group_sent_accepted_connecting_unnamed]
+text = "গ্রহণ করেছেন · কানেক্ট হচ্ছে"
+
+[group_sent_declined]
+text = "{name} ফিরিয়ে দিয়েছেন"
+
+[group_sent_declined_unnamed]
+text = "ফিরিয়ে দেওয়া হয়েছে"
+
+[group_sent_blocked]
+text = "{name} আপনাকে ব্লক করেছেন"
+
+[group_sent_blocked_unnamed]
+text = "ওঁরা ব্লক করেছেন"
+
+[group_notice_cant_send]
+text = "আপনি এই গ্রুপে মেসেজ পাঠাতে পারবেন না।"
+
+[group_notice_invitation_sent]
+text = "{name}-কে আমন্ত্রণ পাঠানো হয়েছে। গ্রহণ করলেই উনি যোগ দেবেন।"
+
+[group_notice_invitation_sent_unnamed]
+text = "আমন্ত্রণ পাঠানো হয়েছে। গ্রহণ করলেই উনি যোগ দেবেন।"
+
+[group_notice_invitations_sent]
+one = "{count}টি আমন্ত্রণ পাঠানো হয়েছে। প্রত্যেকে গ্রহণ করলেই যোগ দেবেন।"
+other = "{count}টি আমন্ত্রণ পাঠানো হয়েছে। প্রত্যেকে গ্রহণ করলেই যোগ দেবেন।"
+
+[group_notice_you_joined]
+text = "আপনি {group}-এ যোগ দিয়েছেন।"
+
+[group_notice_you_joined_the_group]
+text = "আপনি গ্রুপে যোগ দিয়েছেন।"
+
+[group_notice_declined_inv]
+text = "ফিরিয়ে দেওয়া হয়েছে। {name} দেখতে পাবেন যে আপনি ফিরিয়ে দিয়েছেন।"
+
+[group_notice_declined_inv_unnamed]
+text = "ফিরিয়ে দেওয়া হয়েছে। ওঁরা দেখতে পাবেন যে আপনি ফিরিয়ে দিয়েছেন।"
+
+[group_notice_accepted_yours]
+text = "{name} আপনার অনুরোধ গ্রহণ করেছেন। এখন আপনারা একে অপরকে মেসেজ করতে পারবেন; আপনাদের কেউ একজন অনুমতি না দেওয়া পর্যন্ত কল বন্ধ থাকবে।"
+
+[group_notice_accepted_yours_unnamed]
+text = "আপনার অনুরোধ গ্রহণ করা হয়েছে। এখন আপনারা একে অপরকে মেসেজ করতে পারবেন; আপনাদের কেউ একজন অনুমতি না দেওয়া পর্যন্ত কল বন্ধ থাকবে।"
+
+[group_notice_request_sent]
+text = "{name}-কে অনুরোধ পাঠানো হয়েছে। উনি উত্তর না দেওয়া পর্যন্ত এটা চ্যাটে অপেক্ষা করবে।"
+
+[group_notice_request_sent_unnamed]
+text = "অনুরোধ পাঠানো হয়েছে। ওঁরা উত্তর না দেওয়া পর্যন্ত এটা চ্যাটে অপেক্ষা করবে।"
+
+[group_notice_accepted]
+text = "গ্রহণ করা হয়েছে। {name}-কে শুধু মেসেজের জন্য যোগ করা হয়েছে, ওঁর ডিভাইস কানেক্ট হলেই চ্যাটে দেখা যাবে; আপনি অনুমতি না দেওয়া পর্যন্ত কল বন্ধ থাকবে।"
+
+[group_notice_accepted_unnamed]
+text = "গ্রহণ করা হয়েছে। ওঁকে শুধু মেসেজের জন্য যোগ করা হয়েছে, ওঁর ডিভাইস কানেক্ট হলেই চ্যাটে দেখা যাবে; আপনি অনুমতি না দেওয়া পর্যন্ত কল বন্ধ থাকবে।"
+
+[group_notice_declined_req]
+text = "ফিরিয়ে দেওয়া হয়েছে। {name}-কে জানানো হবে “ফিরিয়ে দেওয়া হয়েছে”।"
+
+[group_notice_declined_req_unnamed]
+text = "ফিরিয়ে দেওয়া হয়েছে। ওঁকে জানানো হবে “ফিরিয়ে দেওয়া হয়েছে”।"
+
+[group_notice_link_copied]
+text = "কপি হয়েছে। লিঙ্ক খোলা থাকার সময় এটা যার কাছে আছে, সে-ই যোগ দিতে পারবে।"
+
+[group_notice_group_is_open]
+text = "আপনার গ্রুপ এখন খোলা। শেয়ার করতে লিঙ্কটি কপি করুন।"
+
+[group_notice_group_made]
+text = "গ্রুপ তৈরি হয়েছে। এই কম্পিউটার এটি হোস্ট করে; সদস্যদের প্যানেল থেকে লোকজনকে আমন্ত্রণ জানান।"
+
+[group_give_the_group_a_name]
+text = "গ্রুপের একটি নাম দিন।"
+
+[group_pick_someone_first]
+text = "আগে কাউকে বেছে নিন।"
+
+[link_check_that_other_shows_this]
+text = "অন্য ডিভাইসে এই কোডটাই দেখাচ্ছে কি না দেখে নিন, তারপর সেখানে অনুমোদন দিন।"
+
+[link_link_other]
+text = "অন্য ডিভাইসটি লিঙ্ক করবেন?"
+
+[link_linking_other]
+text = "অন্য ডিভাইসটি লিঙ্ক হচ্ছে"
+
+[link_linked_other]
+text = "অন্য ডিভাইসটি লিঙ্ক হয়েছে"
+
+[link_linked_to_account]
+text = "আপনার অ্যাকাউন্টে লিঙ্ক হয়েছে"
+
+[chat_you_blocked_on]
+text = "আপনি {name}-কে ব্লক করেছেন · {when}"

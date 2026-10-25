@@ -3578,7 +3578,7 @@ where = [
   "ios people_crop_use: Button that uses the cropped picture.",
   "desktop profile_use_photo: Desktop, profile and settings (in profile_view.rs, profile_layer).",
 ]
-text = "ছবিটা ব্যবহার করুন"
+text = "এই ছবিটা নিন"
 
 [t_ab628fe2c2]
 en = "Couldn’t prepare that picture. Try a different one."
@@ -9852,7 +9852,7 @@ where = [
   "ios people_detail_use_theirs: Rename dialog button that removes the nickname and shows their own name.",
   "desktop contact_use_their_name: Desktop, contact detail (in view.rs, detail_view).",
 ]
-text = "ওঁদের দেওয়া নাম ব্যবহার করুন"
+text = "ওঁদের নামটাই রাখুন"
 
 [t_33e0f0d8e6]
 en = "Off"
@@ -15867,273 +15867,273 @@ en = "Unlink this computer?"
 where = [
   "desktop link_unlink_this_computer: Desktop, linking devices (in link_view.rs, unlink_confirm).",
 ]
-text = ""
+text = "এই কম্পিউটারের লিঙ্ক সরাবেন?"
 
 [t_8878bbf53e]
 en = "Unlinking..."
 where = [
   "desktop link_unlinking: Desktop, linking devices (in link_view.rs, unlink_confirm).",
 ]
-text = ""
+text = "লিঙ্ক সরানো হচ্ছে..."
 
 [t_14f5ecac2d]
 en = "{name} was removed from this computer by another of your devices. Its contacts, chats and calls are deleted here. Your other devices are not affected."
 where = [
   "desktop link_was_removed_from_this: Desktop, linking devices (in link_view.rs, unlinked_screen). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "আপনার অন্য একটি ডিভাইস এই কম্পিউটার থেকে {name} সরিয়ে দিয়েছে। এর পরিচিতি, চ্যাট আর কল এখান থেকে মুছে গেছে। আপনার অন্য ডিভাইসগুলোতে কোনো প্রভাব পড়েনি।"
 
 [t_1a1688094f]
 en = "{name} was removed from this computer. Its contacts, chats and calls are deleted here. Your other devices are not affected."
 where = [
   "desktop link_was_removed_from_this_computer: Desktop, linking devices (in link_view.rs, unlinked_screen). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "এই কম্পিউটার থেকে {name} সরানো হয়েছে। এর পরিচিতি, চ্যাট আর কল এখান থেকে মুছে গেছে। আপনার অন্য ডিভাইসগুলোতে কোনো প্রভাব পড়েনি।"
 
 [t_809c8177da]
 en = "Windows"
 where = [
   "desktop link_windows: Desktop, linking devices (in link_view.rs, ).",
 ]
-text = ""
+text = "Windows"
 
 [t_14bedc27c0]
 en = "You type it each time Tinline starts."
 where = [
   "desktop link_you_type_it_each: Desktop, linking devices (in link_view.rs, link_secure_screen).",
 ]
-text = ""
+text = "Tinline চালু হওয়ার সময় প্রতিবার এটা লিখতে হবে।"
 
 [t_ffd65be7e1]
 en = "Your account is on the other device."
 where = [
   "desktop link_your_account_is_on: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "আপনার অ্যাকাউন্ট অন্য ডিভাইসে আছে।"
 
 [t_a3963415c6]
 en = "A new camera is used the next time your camera starts."
 where = [
   "desktop profile_a_new_camera_is: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "পরের বার ক্যামেরা চালু হলে নতুন ক্যামেরা ব্যবহার হবে।"
 
 [t_830cdd8bf7]
 en = "Accounts on this computer"
 where = [
   "desktop profile_accounts_on_this_computer: Desktop, profile and settings (in profile_view.rs, profile_page).",
 ]
-text = ""
+text = "এই কম্পিউটারে থাকা অ্যাকাউন্ট"
 
 [t_8ca5d6cba5]
 en = "Accounts stored on this computer"
 where = [
   "desktop profile_accounts_stored_on_this: Desktop, profile and settings (in profile_view.rs, native_page).",
 ]
-text = ""
+text = "এই কম্পিউটারে রাখা অ্যাকাউন্ট"
 
 [t_dd2dfa0aa3]
 en = "Add a nickname"
 where = [
   "desktop profile_add_a_nickname: Desktop, profile and settings (in profile_view.rs, person_profile).",
 ]
-text = ""
+text = "একটি ডাকনাম যোগ করুন"
 
 [t_437baa96ef]
 en = "Any length works. A few words make it stronger."
 where = [
   "desktop profile_any_length_works_a: Desktop, profile and settings (in profile_view.rs, passphrase_page).",
 ]
-text = ""
+text = "যেকোনো দৈর্ঘ্য চলবে। কয়েকটি শব্দ দিলে আরও মজবুত হয়।"
 
 [t_a197e8d110]
 en = "Anyone who has it can act as you, just like the words. Tinline never asks for it except to restore your account."
 where = [
   "desktop profile_anyone_who_has_it: Desktop, profile and settings (in profile_view.rs, phrase_page).",
 ]
-text = ""
+text = "এটা যার কাছে থাকবে, সে শব্দগুলোর মতোই আপনার হয়ে সব করতে পারবে। অ্যাকাউন্ট ফিরিয়ে আনা ছাড়া Tinline কখনও এটা চায় না।"
 
 [t_2c40fa833f]
 en = " Anyone who still has your recovery phrase, or can unlock {name}, can still act as you. If it is lost or stolen, the only full fix is a new account."
 where = [
   "desktop profile_anyone_who_still_has: Desktop, profile and settings (in profile_view.rs, devices_layer). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = " যার কাছে এখনও আপনার রিকভারি শব্দ আছে, বা যে {name} আনলক করতে পারে, সে তবুও আপনার হয়ে সব করতে পারবে। এটা হারিয়ে গেলে বা চুরি হলে, পুরোপুরি সমাধানের একমাত্র উপায় একটি নতুন অ্যাকাউন্ট।"
 
 [t_9bb58d6614]
 en = "Audio, security and hosting"
 where = [
   "desktop profile_audio_security_and_hosting: Desktop, profile and settings (in profile_view.rs, settings_landing).",
 ]
-text = ""
+text = "অডিও, নিরাপত্তা আর হোস্টিং"
 
 [t_a0f9f18ca6]
 en = "Bitrate cap"
 where = [
   "desktop profile_bitrate_cap: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "বিটরেটের সীমা"
 
 [t_a2c759c438]
 en = "Block {first2}"
 where = [
   "desktop profile_block: Desktop, profile and settings (in profile_view.rs, person_profile). {first2} is a value filled in by the app.",
 ]
-text = ""
+text = "{first2}-কে ব্লক করুন"
 
 [t_e3cdf7ca3e]
 en = "Block {name}?"
 where = [
   "desktop profile_block_2: Desktop, profile and settings (in profile_view.rs, profile_layer). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name}-কে ব্লক করবেন?"
 
 [t_0c1589aabf]
 en = "Block someone"
 where = [
   "desktop profile_block_someone: Desktop, profile and settings (in profile_view.rs, blocked_page).",
 ]
-text = ""
+text = "কাউকে ব্লক করুন"
 
 [t_58a99e3d8f]
 en = "Blocking is not silent. The person is told, their app stops contacting you and removes you from their contacts. Your chat history stays on your devices. Groups you share aren’t affected."
 where = [
   "desktop profile_blocking_is_not_silent: Desktop, profile and settings (in profile_view.rs, blocked_page).",
 ]
-text = ""
+text = "ব্লক করা চুপিচুপি হয় না। ওঁকে জানানো হয়, ওঁর অ্যাপ আপনার সঙ্গে যোগাযোগ বন্ধ করে আর ওঁর পরিচিতি থেকে আপনাকে সরিয়ে দেয়। আপনার চ্যাটের ইতিহাস আপনার ডিভাইসেই থাকে। একসঙ্গে থাকা গ্রুপগুলোতে কোনো প্রভাব পড়ে না।"
 
 [t_dfe389f837]
 en = "Calls on this computer"
 where = [
   "desktop profile_calls_on_this_computer: Desktop, profile and settings (in profile_view.rs, profile_page).",
 ]
-text = ""
+text = "এই কম্পিউটারে কল"
 
 [t_4c3f0aabaf]
 en = "Checking…"
 where = [
   "desktop profile_checking: Desktop, profile and settings (in profile_view.rs, phrase_page).",
 ]
-text = ""
+text = "যাচাই করা হচ্ছে…"
 
 [t_b5b9d1f203]
 en = "Contacts you haven’t blocked get your updated device list when they’re next online."
 where = [
   "desktop profile_contacts_you_havent_blocked: Desktop, profile and settings (in profile_view.rs, devices_layer).",
 ]
-text = ""
+text = "যে পরিচিতিদের আপনি ব্লক করেননি, তাঁরা পরের বার অনলাইনে এলে আপনার ডিভাইসের নতুন তালিকা পাবেন।"
 
 [t_6e98940bd0]
 en = "Cut"
 where = [
   "desktop profile_cut: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "Cut"
 
 [t_fabff01ef6]
 en = "Cut+probe"
 where = [
   "desktop profile_cut_probe: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "Cut+probe"
 
 [t_d25ee7b4b0]
 en = "Each shows a soft preview until you tap it"
 where = [
   "desktop profile_each_shows_a_soft_preview: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "ট্যাপ না করা পর্যন্ত প্রতিটির একটি ঝাপসা প্রিভিউ দেখায়"
 
 [t_2b81c6b647]
 en = "Enter your passphrase to confirm"
 where = [
   "desktop profile_enter_your_passphrase_to: Desktop, profile and settings (in profile_view.rs, devices_layer).",
 ]
-text = ""
+text = "নিশ্চিত করতে আপনার পাসফ্রেজ দিন"
 
 [t_23bc418acf]
 en = "Enter your passphrase to continue"
 where = [
   "desktop profile_enter_your_passphrase_to_continue: Desktop, profile and settings (in profile_view.rs, phrase_page).",
 ]
-text = ""
+text = "চালিয়ে যেতে আপনার পাসফ্রেজ দিন"
 
 [t_2c745833e1]
 en = "Every linked device is a full copy of you: it can read your chats and act as you. Names here are private to your devices; contacts never see them."
 where = [
   "desktop profile_every_linked_device_is: Desktop, profile and settings (in profile_view.rs, devices_page).",
 ]
-text = ""
+text = "প্রতিটি লিঙ্ক করা ডিভাইস আপনার পুরো একটি কপি: এটা আপনার চ্যাট পড়তে পারে আর আপনার হয়ে কাজ করতে পারে। এখানকার নামগুলো শুধু আপনার ডিভাইসের জন্য; পরিচিতিরা কখনও দেখেন না।"
 
 [t_87fd46df46]
 en = "Fixed rung"
 where = [
   "desktop profile_fixed_rung: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "Fixed rung"
 
 [t_97ecbd9279]
 en = "Groups you share aren’t affected. You can unblock {name} here at any time."
 where = [
   "desktop profile_groups_you_share_arent: Desktop, profile and settings (in profile_view.rs, profile_layer). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "একসঙ্গে থাকা গ্রুপগুলোতে কোনো প্রভাব পড়বে না। যেকোনো সময় এখান থেকে {name}-কে আনব্লক করতে পারেন।"
 
 [t_48ff9eddd1]
 en = "Hardware"
 where = [
   "desktop profile_hardware: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "হার্ডওয়্যার"
 
 [t_80515997ef]
 en = "Hide key"
 where = [
   "desktop profile_hide_key: Desktop, profile and settings (in profile_view.rs, phrase_page).",
 ]
-text = ""
+text = "কী লুকান"
 
 [t_e1fa8e6a72]
 en = "Hide words"
 where = [
   "desktop profile_hide_words: Desktop, profile and settings (in profile_view.rs, phrase_page).",
 ]
-text = ""
+text = "শব্দগুলো লুকান"
 
 [t_639081c198]
 en = "Hides in {seconds} s"
 where = [
   "desktop profile_hides_in_s: Desktop, profile and settings (in profile_view.rs, phrase_page). {seconds} is a value filled in by the app.",
 ]
-text = ""
+text = "{seconds} সেকেন্ডে লুকিয়ে যাবে"
 
 [t_bca16c3e78]
 en = "Hosts keep every group picture so members can load them. This applies on this device."
 where = [
   "desktop profile_hosts_keep_every_group: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "হোস্টরা গ্রুপের প্রতিটি ছবি রাখে, যাতে সদস্যরা লোড করতে পারেন। এটা এই ডিভাইসে প্রযোজ্য।"
 
 [t_6523fe005e]
 en = "{name} isn’t one of your contacts. You know them through a group. Looking at a profile doesn’t add anyone."
 where = [
   "desktop profile_isnt_one_of_your: Desktop, profile and settings (in profile_view.rs, person_profile). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} আপনার পরিচিতিতে নেই। আপনি ওঁকে একটি গ্রুপের মাধ্যমে চেনেন। প্রোফাইল দেখলে কেউ যোগ হয়ে যায় না।"
 
 [t_33776c2f81]
 en = "It is offline, so it finds out the next time it connects."
 where = [
   "desktop profile_it_is_offline_so: Desktop, profile and settings (in profile_view.rs, devices_layer).",
 ]
-text = ""
+text = "এটা অফলাইনে আছে, তাই পরের বার কানেক্ট হলে জানতে পারবে।"
 
 [t_dfa1efbc07]
 en = "{round} KB"
 where = [
   "desktop profile_kb: Desktop, profile and settings (in profile_view.rs, fmt_bytes). {round} is a value filled in by the app.",
 ]
-text = ""
+text = "{round} KB"
 
 [t_ae83393da3]
 en_one = "Last seen {count} day ago"
@@ -16141,6 +16141,8 @@ en_other = "Last seen {count} days ago"
 where = [
   "desktop profile_last_seen_days: Under a contact profile when they were last online. {count} is the number of days.",
 ]
+one = "শেষ দেখা গেছে {count} দিন আগে"
+other = "শেষ দেখা গেছে {count} দিন আগে"
 
 [t_e11bdbbee3]
 en_one = "Last seen {count} hour ago"
@@ -16148,13 +16150,15 @@ en_other = "Last seen {count} hours ago"
 where = [
   "desktop profile_last_seen_hours: Under a contact profile when they were last online. {count} is the number of hours.",
 ]
+one = "শেষ দেখা গেছে {count} ঘণ্টা আগে"
+other = "শেষ দেখা গেছে {count} ঘণ্টা আগে"
 
 [t_4385d29350]
 en = "Last seen just now"
 where = [
   "desktop profile_last_seen_just_now: Desktop, profile and settings (in profile_view.rs, last_seen).",
 ]
-text = ""
+text = "এইমাত্র দেখা গেছে"
 
 [t_8f77fe1d28]
 en_one = "Last seen {count} minute ago"
@@ -16162,90 +16166,92 @@ en_other = "Last seen {count} minutes ago"
 where = [
   "desktop profile_last_seen_minutes: Under a contact profile when they were last online. {count} is the number of minutes.",
 ]
+one = "শেষ দেখা গেছে {count} মিনিট আগে"
+other = "শেষ দেখা গেছে {count} মিনিট আগে"
 
 [t_d1a0dcbb30]
 en = "Light or dark, as this computer is set"
 where = [
   "desktop profile_light_or_dark_as: Desktop, profile and settings (in profile_view.rs, settings_landing).",
 ]
-text = ""
+text = "এই কম্পিউটারে যেমন সেট করা আছে, লাইট বা ডার্ক"
 
 [t_5814a07b57]
 en = "Load group pictures by themselves"
 where = [
   "desktop profile_load_group_pictures_by: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "গ্রুপের ছবি নিজে থেকে লোড করুন"
 
 [t_b711ca0977]
 en = "Match my computer"
 where = [
   "desktop profile_match_my_computer: Desktop, profile and settings (in profile_view.rs, settings_landing).",
 ]
-text = ""
+text = "আমার কম্পিউটারের মতো"
 
 [t_3577d58ddb]
 en = "{round} MB"
 where = [
   "desktop profile_mb: Desktop, profile and settings (in profile_view.rs, fmt_bytes). {round} is a value filled in by the app.",
 ]
-text = ""
+text = "{round} MB"
 
 [t_c1a3ac1d46]
 en = "Messages only: calling needs {name}’s permission"
 where = [
   "desktop profile_messages_only_calling_needs: Desktop, profile and settings (in profile_view.rs, person_profile). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "শুধু মেসেজ: কল করতে {name}-এর অনুমতি লাগবে"
 
 [t_f422fbec3c]
 en = "New passphrase again"
 where = [
   "desktop profile_new_passphrase_again: Desktop, profile and settings (in profile_view.rs, passphrase_page).",
 ]
-text = ""
+text = "নতুন পাসফ্রেজ আবার"
 
 [t_2be53fc862]
 en = "Nickname"
 where = [
   "desktop profile_nickname: Desktop, profile and settings (in profile_view.rs, person_profile).",
 ]
-text = ""
+text = "ডাকনাম"
 
 [t_3ca88f3098]
 en = "No camera found. Plug one in and open this page again."
 where = [
   "desktop profile_no_camera_found_plug: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "কোনো ক্যামেরা পাওয়া যায়নি। একটি লাগিয়ে এই পেজটি আবার খুলুন।"
 
 [t_925929dc39]
 en = "No microphone found"
 where = [
   "desktop profile_no_microphone_found: Desktop, profile and settings (in profile_view.rs, notifications_page).",
 ]
-text = ""
+text = "কোনো মাইক্রোফোন পাওয়া যায়নি"
 
 [t_6682826533]
 en = "No one is blocked."
 where = [
   "desktop profile_no_one_is_blocked: Desktop, profile and settings (in profile_view.rs, blocked_page).",
 ]
-text = ""
+text = "কেউ ব্লক করা নেই।"
 
 [t_e3c3df9286]
 en = "No one left to block."
 where = [
   "desktop profile_no_one_left_to: Desktop, profile and settings (in profile_view.rs, privacy_layer).",
 ]
-text = ""
+text = "ব্লক করার মতো আর কেউ নেই।"
 
 [t_c40e38a466]
 en = "No profile is available."
 where = [
   "desktop profile_no_profile_is_available: Desktop, profile and settings (in profile_view.rs, person_profile).",
 ]
-text = ""
+text = "কোনো প্রোফাইল পাওয়া যাচ্ছে না।"
 
 [t_449d519303]
 en_one = "Not seen for {count} day"
@@ -16253,937 +16259,939 @@ en_other = "Not seen for {count} days"
 where = [
   "desktop profile_not_seen_for_days: Desktop, profile devices list (in profile_view.rs, devices_page). {count} is how many whole days since the device was last seen.",
 ]
+one = "{count} দিন দেখা যায়নি"
+other = "{count} দিন দেখা যায়নি"
 
 [t_bc6df257c5]
 en = "{value} of pictures and files you’ve opened. They’re prepared again when you open them."
 where = [
   "desktop profile_of_pictures_and_files: Desktop, profile and settings (in profile_view.rs, storage_page). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "আপনার খোলা ছবি আর ফাইলের {value}। আবার খুললে আবার তৈরি হবে।"
 
 [t_d060fc5ab7]
 en = "Off means messages only"
 where = [
   "desktop profile_off_means_messages_only: Desktop, profile and settings (in profile_view.rs, person_profile).",
 ]
-text = ""
+text = "বন্ধ মানে শুধু মেসেজ"
 
 [t_5d478e8506]
 en = "On this computer"
 where = [
   "desktop profile_on_this_computer: Desktop, profile and settings (in profile_view.rs, storage_page).",
 ]
-text = ""
+text = "এই কম্পিউটারে"
 
 [t_cdfa63e232]
 en = "Online now"
 where = [
   "desktop profile_online_now: Desktop, profile and settings (in profile_view.rs, devices_page).",
 ]
-text = ""
+text = "এখন অনলাইনে"
 
 [t_11b4ba4260]
 en = "Only the selected account is online on this computer. Switching pauses the other one: it receives no calls until you select it again."
 where = [
   "desktop profile_only_the_selected_account: Desktop, profile and settings (in profile_view.rs, settings_landing).",
 ]
-text = ""
+text = "এই কম্পিউটারে শুধু বেছে নেওয়া অ্যাকাউন্টটিই অনলাইনে থাকে। বদলালে অন্যটি থেমে যায়: আবার বেছে না নেওয়া পর্যন্ত সেটিতে কোনো কল আসে না।"
 
 [t_0ed74faf85]
 en = "Only this device has your account. Link another to keep a second copy of your chats. Your recovery phrase brings back your account, not your messages."
 where = [
   "desktop profile_only_this_device_has: Desktop, profile and settings (in profile_view.rs, devices_page).",
 ]
-text = ""
+text = "শুধু এই ডিভাইসেই আপনার অ্যাকাউন্ট আছে। আপনার চ্যাটের দ্বিতীয় একটি কপি রাখতে আরেকটি ডিভাইস লিঙ্ক করুন। রিকভারি শব্দ আপনার অ্যাকাউন্ট ফিরিয়ে আনে, মেসেজ নয়।"
 
 [t_b2c190e6e0]
 en = "Only you see these. A nickname changes what you call {name}, not their profile."
 where = [
   "desktop profile_only_you_see_these: Desktop, profile and settings (in profile_view.rs, person_profile). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "এগুলো শুধু আপনি দেখেন। ডাকনাম দিলে আপনি {name}-কে কী নামে দেখবেন তা বদলায়, ওঁর প্রোফাইল নয়।"
 
 [t_1a9e8ecade]
 en = "Only your own devices see this name."
 where = [
   "desktop profile_only_your_own_devices: Desktop, profile and settings (in profile_view.rs, devices_layer).",
 ]
-text = ""
+text = "এই নাম শুধু আপনার নিজের ডিভাইসগুলো দেখে।"
 
 [t_e1f70eccfa]
 en = "Person not found."
 where = [
   "desktop profile_person_not_found: Desktop, profile and settings (in profile_view.rs, person_profile).",
 ]
-text = ""
+text = "মানুষটিকে পাওয়া যায়নি।"
 
 [t_20137e067f]
 en = "Pick a contact."
 where = [
   "desktop profile_pick_a_contact: Desktop, profile and settings (in profile_view.rs, privacy_layer).",
 ]
-text = ""
+text = "একজন পরিচিতি বেছে নিন।"
 
 [t_81ee822845]
 en = "Pictures in groups appear as they arrive"
 where = [
   "desktop profile_pictures_in_groups_appear: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "গ্রুপের ছবি আসার সঙ্গে সঙ্গে দেখা যায়"
 
 [t_6281bd7fc7]
 en = "Plain (old)"
 where = [
   "desktop profile_plain_old: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "সাধারণ (পুরোনো)"
 
 [t_2903aaba1d]
 en = "Profile picture changed while loading"
 where = [
   "desktop profile_profile_picture_changed_while: Desktop, profile and settings (in profile_ui.rs, read_profile).",
 ]
-text = ""
+text = "লোড হওয়ার সময় প্রোফাইলের ছবি বদলে গেছে"
 
 [t_784f3ae6ac]
 en = "Quit Tinline"
 where = [
   "desktop profile_quit_tinline: Desktop, profile and settings (in profile_view.rs, native_page).",
 ]
-text = ""
+text = "Tinline বন্ধ করুন"
 
 [t_2b5999b60c]
 en = "Rate control"
 where = [
   "desktop profile_rate_control: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "রেট কন্ট্রোল"
 
 [t_1712035de1]
 en = "Rate control: probing needs the other side on this build too; set both the same for an A/B call."
 where = [
   "desktop profile_rate_control_probing_needs: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "রেট কন্ট্রোল: প্রোবিংয়ের জন্য অন্য দিকেও এই বিল্ড লাগবে; A/B কলের জন্য দুদিকে একই সেট করুন।"
 
 [t_f6b0eb5b3a]
 en = "Remove “{label_}” from your profile?"
 where = [
   "desktop profile_remove_from_your_profile: Desktop, profile and settings (in profile_view.rs, field_row_inner). {label_} is a value filled in by the app.",
 ]
-text = ""
+text = "প্রোফাইল থেকে “{label_}” সরাবেন?"
 
 [t_ea0d1f95ed]
 en = "{name}’s app can reach you again. It removed you from their contacts when you blocked them, so you’ll both need to add each other again before you can message or call."
 where = [
   "desktop profile_s_app_can_reach: Desktop, profile and settings (in profile_view.rs, privacy_layer). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name}-এর অ্যাপ আবার আপনার কাছে পৌঁছাতে পারবে। আপনি ব্লক করার সময় এটা ওঁর পরিচিতি থেকে আপনাকে সরিয়ে দিয়েছিল, তাই মেসেজ বা কল করার আগে আপনাদের দুজনকেই আবার একে অপরকে যোগ করতে হবে।"
 
 [t_f10a13dfa8]
 en = "{name}’s profile hasn’t arrived yet. It shows here once it syncs."
 where = [
   "desktop profile_s_profile_hasnt_arrived: Desktop, profile and settings (in profile_view.rs, person_profile). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name}-এর প্রোফাইল এখনও আসেনি। সিঙ্ক হলেই এখানে দেখা যাবে।"
 
 [t_0b53f94a6c]
 en = "Selected · connecting"
 where = [
   "desktop profile_selected_connecting: Desktop, profile and settings (in profile_view.rs, settings_landing).",
 ]
-text = ""
+text = "বেছে নেওয়া · কানেক্ট হচ্ছে"
 
 [t_c3eb6bca8d]
 en = "Send codec"
 where = [
   "desktop profile_send_codec: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "পাঠানোর কোডেক"
 
 [t_e7a3ee89e1]
 en = "Session only. Changes apply to the next call (About this call changes the current one). Fixed size disables rate/CPU resolution adaptation; peer and thermal caps still win. Use HD capture and compare actual payload rates and dimensions."
 where = [
   "desktop profile_session_only_changes_apply: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "শুধু এই সেশনের জন্য। পরিবর্তন পরের কল থেকে কাজ করবে (“এই কল সম্পর্কে” থেকে চলতি কল বদলায়)। ফিক্সড সাইজ রেট/CPU অনুযায়ী রেজোলিউশন বদলানো বন্ধ করে; তবে অন্য দিকের আর তাপের সীমাই প্রাধান্য পায়। HD ক্যাপচার ব্যবহার করে আসল পেলোড রেট আর মাপ তুলনা করুন।"
 
 [t_50654bf33c]
 en = "Settings that belong to this computer only"
 where = [
   "desktop profile_settings_that_belong_to: Desktop, profile and settings (in profile_view.rs, settings_landing).",
 ]
-text = ""
+text = "যে সেটিংস শুধু এই কম্পিউটারের"
 
 [t_9c944ff0b2]
 en = "Show a QR code on the new device, then approve it here"
 where = [
   "desktop profile_show_a_qr_code: Desktop, profile and settings (in profile_view.rs, devices_page).",
 ]
-text = ""
+text = "নতুন ডিভাইসে একটি QR কোড দেখান, তারপর এখানে অনুমোদন দিন"
 
 [t_9c40d34486]
 en = "Show key"
 where = [
   "desktop profile_show_key: Desktop, profile and settings (in profile_view.rs, phrase_page).",
 ]
-text = ""
+text = "কী দেখান"
 
 [t_af70bc522d]
 en = "Show words"
 where = [
   "desktop profile_show_words: Desktop, profile and settings (in profile_view.rs, phrase_page).",
 ]
-text = ""
+text = "শব্দগুলো দেখান"
 
 [t_c0c19a8034]
 en = "Shown after you confirm"
 where = [
   "desktop profile_shown_after_you_confirm: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "নিশ্চিত করার পর দেখানো হয়"
 
 [t_bd82fe332b]
 en = "Shown to you as {name} · their name is {name2}"
 where = [
   "desktop profile_shown_to_you_as: Desktop, profile and settings (in profile_view.rs, field_row_inner). {name} is a person's name (usually the first word of their chosen name). {name2} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "আপনার কাছে {name} নামে দেখায় · ওঁর নিজের নাম {name2}"
 
 [t_b8e582229a]
 en = "Software"
 where = [
   "desktop profile_software: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "সফটওয়্যার"
 
 [t_30c1c86ee5]
 en = "The passphrase protects Tinline on this device only; your other devices keep their own. Tinline can’t recover a forgotten passphrase. If that happens, your recovery phrase restores your account, though not your messages."
 where = [
   "desktop profile_the_passphrase_protects_tinline: Desktop, profile and settings (in profile_view.rs, passphrase_page).",
 ]
-text = ""
+text = "পাসফ্রেজ শুধু এই ডিভাইসে Tinline সুরক্ষিত রাখে; আপনার অন্য ডিভাইসগুলোর নিজেদের পাসফ্রেজ থাকে। ভুলে যাওয়া পাসফ্রেজ Tinline ফিরিয়ে আনতে পারে না। তেমন হলে রিকভারি শব্দ দিয়ে আপনার অ্যাকাউন্ট ফিরিয়ে আনা যায়, তবে মেসেজ নয়।"
 
 [t_ad1986c0d4]
 en = "There is no copy button on purpose: the phrase stays off the clipboard. Tinline never asks for it except to restore your account. The phrase brings back your account, not your messages."
 where = [
   "desktop profile_there_is_no_copy: Desktop, profile and settings (in profile_view.rs, phrase_page).",
 ]
-text = ""
+text = "ইচ্ছে করেই কোনো কপি বোতাম রাখা হয়নি: শব্দগুলো ক্লিপবোর্ডে যায় না। অ্যাকাউন্ট ফিরিয়ে আনা ছাড়া Tinline কখনও এগুলো চায় না। এই শব্দগুলো আপনার অ্যাকাউন্ট ফিরিয়ে আনে, মেসেজ নয়।"
 
 [t_057c54d1e7]
 en = "These stay on this computer. They aren’t part of your account."
 where = [
   "desktop profile_these_stay_on_this: Desktop, profile and settings (in profile_view.rs, native_page).",
 ]
-text = ""
+text = "এগুলো এই কম্পিউটারেই থাকে। এগুলো আপনার অ্যাকাউন্টের অংশ নয়।"
 
 [t_69f5484518]
 en = "This computer"
 where = [
   "desktop profile_this_computer: Desktop, profile and settings (in profile_view.rs, profile_page).",
 ]
-text = ""
+text = "এই কম্পিউটার"
 
 [t_c4d705c661]
 en = "This computer decodes AV1 (rav1d) and VP8 (libvpx) in software only. During a call, About this call has the same controls for that call."
 where = [
   "desktop profile_this_computer_decodes_av1: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "এই কম্পিউটার AV1 (rav1d) আর VP8 (libvpx) শুধু সফটওয়্যারে ডিকোড করে। কলের সময় “এই কল সম্পর্কে”-তে সেই কলের জন্য একই কন্ট্রোল আছে।"
 
 [t_52795ba2e7]
 en = "This computer has no keyring, so Tinline asks for your passphrase each time it starts."
 where = [
   "desktop profile_this_computer_has_no: Desktop, profile and settings (in profile_view.rs, passphrase_page).",
 ]
-text = ""
+text = "এই কম্পিউটারে কোনো কি-রিং নেই, তাই Tinline চালু হওয়ার সময় প্রতিবার আপনার পাসফ্রেজ চায়।"
 
 [t_86dd1e0638]
 en = "This device · Online"
 where = [
   "desktop profile_this_device_online: Desktop, profile and settings (in profile_view.rs, devices_page).",
 ]
-text = ""
+text = "এই ডিভাইস · অনলাইন"
 
 [t_d6a83681ca]
 en = "This is not a lock."
 where = [
   "desktop profile_this_is_not_a: Desktop, profile and settings (in profile_view.rs, devices_layer).",
 ]
-text = ""
+text = "এটা কোনো তালা নয়।"
 
 [t_b62ccd7a6a]
 en = "Tinline tells it now."
 where = [
   "desktop profile_tinline_tells_it_now: Desktop, profile and settings (in profile_view.rs, devices_layer).",
 ]
-text = ""
+text = "Tinline এখনই ওটাকে জানাচ্ছে।"
 
 [t_85188a2676]
 en = "Told you blocked them"
 where = [
   "desktop profile_told_you_blocked_them: Desktop, profile and settings (in profile_view.rs, blocked_page).",
 ]
-text = ""
+text = "ব্লক করার কথা জানানো হয়েছে"
 
 [t_645532a521]
 en = "Trend+probe"
 where = [
   "desktop profile_trend_probe: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "Trend+probe"
 
 [t_cdb835ad27]
 en = "Unblock {first2}"
 where = [
   "desktop profile_unblock: Desktop, profile and settings (in profile_view.rs, person_profile). {first2} is a value filled in by the app.",
 ]
-text = ""
+text = "{first2}-কে আনব্লক করুন"
 
 [t_f0fb307e02]
 en = "Unblock {name}?"
 where = [
   "desktop profile_unblock_2: Desktop, profile and settings (in profile_view.rs, privacy_layer). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name}-কে আনব্লক করবেন?"
 
 [t_69ca4cd424]
 en = "Unlinking…"
 where = [
   "desktop profile_unlinking: Desktop, profile and settings (in profile_view.rs, devices_layer).",
 ]
-text = ""
+text = "লিঙ্ক সরানো হচ্ছে…"
 
 [t_62b2918318]
 en = "Version {value}"
 where = [
   "desktop profile_version: Desktop, profile and settings (in profile_view.rs, about_page). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "সংস্করণ {value}"
 
 [t_9e49a9bbf2]
 en = "Video tuning"
 where = [
   "desktop profile_video_tuning: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "ভিডিও টিউনিং"
 
 [t_40f558f53e]
 en = "Wait for the current account operation to finish."
 where = [
   "desktop profile_wait_for_the_current: Desktop, profile and settings (in profile_ui.rs, profile_write).",
 ]
-text = ""
+text = "অ্যাকাউন্টের চলতি কাজটি শেষ হওয়া পর্যন্ত অপেক্ষা করুন।"
 
 [t_ce72295675]
 en = "WebRTC audio processing"
 where = [
   "desktop profile_webrtc_audio_processing: Desktop, profile and settings (in profile_view.rs, about_page).",
 ]
-text = ""
+text = "WebRTC অডিও প্রসেসিং"
 
 [t_4d02b4bdcd]
 en = "{name} will stop syncing with your account and stop ringing when you’re called. {value}"
 where = [
   "desktop profile_will_stop_syncing_with: Desktop, profile and settings (in profile_view.rs, devices_layer). {name} is a person's name (usually the first word of their chosen name). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "{name} আর আপনার অ্যাকাউন্টের সঙ্গে সিঙ্ক করবে না, আর আপনাকে কেউ কল করলে রিং হবে না। {value}"
 
 [t_e92045b085]
 en = "Write these {words} words down, in order, and keep them somewhere private."
 where = [
   "desktop profile_write_these_24_words: Desktop, profile and settings (in profile_view.rs, phrase_page). {words} is the number of recovery words (24), a number.",
 ]
-text = ""
+text = "এই {words}টি শব্দ ক্রম অনুযায়ী লিখে রাখুন, আর কোনো গোপন জায়গায় রাখুন।"
 
 [t_af2d0dcbe5]
 en = "You blocked {name}. Their profile no longer updates."
 where = [
   "desktop profile_you_blocked_their_profile: Desktop, profile and settings (in profile_view.rs, person_profile). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "আপনি {name}-কে ব্লক করেছেন। ওঁর প্রোফাইল আর আপডেট হয় না।"
 
 [t_c071e74cd1]
 en = "You blocked them"
 where = [
   "desktop profile_you_blocked_them: Desktop, profile and settings (in profile_view.rs, person_profile).",
 ]
-text = ""
+text = "আপনি ওঁকে ব্লক করেছেন"
 
 [t_0810d6d484]
 en = "You won’t get calls or messages from {name}, and their profile updates stop."
 where = [
   "desktop profile_you_wont_get_calls: Desktop, profile and settings (in profile_view.rs, profile_layer). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "আপনি {name}-এর কাছ থেকে আর কল বা মেসেজ পাবেন না, আর ওঁর প্রোফাইলের আপডেটও বন্ধ হয়ে যাবে।"
 
 [t_9f41b4f49e]
 en = "Your chat history is still here."
 where = [
   "desktop profile_your_chat_history_is: Desktop, profile and settings (in profile_view.rs, privacy_layer).",
 ]
-text = ""
+text = "আপনার চ্যাটের ইতিহাস এখনও এখানে আছে।"
 
 [t_14f1270f78]
 en = "Your recovery key is the same as your {words} words, as one line. A password manager is a good place for it."
 where = [
   "desktop profile_your_recovery_key_is: Desktop, profile and settings (in profile_view.rs, phrase_page). {words} is the number of recovery words (24), a number.",
 ]
-text = ""
+text = "আপনার রিকভারি কী আপনার {words}টি শব্দেরই আরেক রূপ, এক লাইনে। এটা রাখার ভালো জায়গা হলো পাসওয়ার্ড ম্যানেজার।"
 
 [t_044cdbfc11]
 en = "Your recovery phrase is the only way to get your account back if you lose every device. Anyone who has it can act as you."
 where = [
   "desktop profile_your_recovery_phrase_is: Desktop, profile and settings (in profile_view.rs, phrase_page).",
 ]
-text = ""
+text = "সব ডিভাইস হারিয়ে ফেললে আপনার অ্যাকাউন্ট ফিরে পাওয়ার একমাত্র উপায় আপনার রিকভারি শব্দ। এগুলো যার কাছে থাকবে, সে আপনার হয়ে সব করতে পারবে।"
 
 [t_25988f1d9a]
 en = "Your settings for {name}"
 where = [
   "desktop profile_your_settings_for: Desktop, profile and settings (in profile_view.rs, person_profile). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name}-এর জন্য আপনার সেটিংস"
 
 [t_1a0a38d265]
 en = "Account"
 where = [
   "desktop settings_account: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "অ্যাকাউন্ট"
 
 [t_96c9d2bee5]
 en = "Anyone who sees these words can become you. Check nobody is looking, then show them."
 where = [
   "desktop settings_anyone_who_sees_these: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "এই শব্দগুলো যে দেখবে, সে আপনার পরিচয়ে সবকিছু করতে পারবে। কেউ দেখছে না তা নিশ্চিত করে তবেই দেখান।"
 
 [t_b943e62fec]
 en = "Anyone who sees these words can become you. Check nobody is looking."
 where = [
   "desktop settings_anyone_who_sees_these_words: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "এই শব্দগুলো যে দেখবে, সে আপনার পরিচয়ে সবকিছু করতে পারবে। কেউ দেখছে না তা নিশ্চিত করুন।"
 
 [t_007f441e85]
 en = "Asks you to confirm first"
 where = [
   "desktop settings_asks_you_to_confirm: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "আগে আপনাকে নিশ্চিত করতে বলে"
 
 [t_811da6b443]
 en = "Audio"
 where = [
   "desktop settings_audio: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "অডিও"
 
 [t_9fb4995484]
 en = "Calls won’t ring until you turn it back on"
 where = [
   "desktop settings_calls_wont_ring_until: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "আবার চালু না করা পর্যন্ত কলে রিং হবে না"
 
 [t_3261bdf0e1]
 en = "Change"
 where = [
   "desktop settings_change: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "বদলান"
 
 [t_90ebfd544e]
 en = "Checking..."
 where = [
   "desktop settings_checking: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "যাচাই করা হচ্ছে..."
 
 [t_458b341145]
 en = "Device changes apply from the next call"
 where = [
   "desktop settings_device_changes_apply_from: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "ডিভাইসের পরিবর্তন পরের কল থেকে কাজ করবে"
 
 [t_a7394c8f06]
 en = "Enter your passphrase"
 where = [
   "desktop settings_enter_your_passphrase: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "আপনার পাসফ্রেজ দিন"
 
 [t_bb48a50610]
 en = "Instead of the microphone, to check the connection"
 where = [
   "desktop settings_instead_of_the_microphone: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "কানেকশন যাচাই করতে, মাইক্রোফোনের বদলে"
 
 [t_6cde4fb02a]
 en = "Keep"
 where = [
   "desktop settings_keep: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "রেখে দিন"
 
 [t_8494e68bf4]
 en = "Locked · needs its passphrase"
 where = [
   "desktop settings_locked_needs_its_passphrase: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "লক করা · এর পাসফ্রেজ লাগবে"
 
 [t_d87befa574]
 en = "Only your own devices see it"
 where = [
   "desktop settings_only_your_own_devices: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "শুধু আপনার নিজের ডিভাইসগুলো এটা দেখে"
 
 [t_5910a9281c]
 en = "Optional — encrypts your account on this computer"
 where = [
   "desktop settings_optional_encrypts_your_account: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "ঐচ্ছিক — এই কম্পিউটারে আপনার অ্যাকাউন্ট এনক্রিপ্ট করে"
 
 [t_50b9a9cd8e]
 en = "Other accounts on this computer"
 where = [
   "desktop settings_other_accounts_on_this: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "এই কম্পিউটারে থাকা অন্য অ্যাকাউন্ট"
 
 [t_040256ef93]
 en = "Recommended — your key is in a plain file"
 where = [
   "desktop settings_recommended_your_key_is: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "করে রাখা ভালো — আপনার চাবি একটি সাধারণ ফাইলে আছে"
 
 [t_99d98f7cf9]
 en = "Remove {name} from this computer? Its contacts, chats and call history here are deleted. Your recovery phrase brings back the identity, not those."
 where = [
   "desktop settings_remove_from_this_computer: Desktop, settings (older page) (in view.rs, native_settings_view). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "এই কম্পিউটার থেকে {name} সরাবেন? এখানে এর পরিচিতি, চ্যাট আর কলের ইতিহাস মুছে যাবে। রিকভারি শব্দ পরিচয়টি ফিরিয়ে আনে, এগুলো নয়।"
 
 [t_5cd6c5f390]
 en = "Send a test tone"
 where = [
   "desktop settings_send_a_test_tone: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "একটি টেস্ট টোন পাঠান"
 
 [t_b9cce40003]
 en = "Show recovery phrase"
 where = [
   "desktop settings_show_recovery_phrase: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "রিকভারি শব্দ দেখান"
 
 [t_0c6d910d36]
 en = "Shown to the people you add"
 where = [
   "desktop settings_shown_to_the_people: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "আপনি যাঁদের যোগ করেন, তাঁরা দেখতে পান"
 
 [t_c26dcc4ffd]
 en = "This computer’s name"
 where = [
   "desktop settings_this_computers_name: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "এই কম্পিউটারের নাম"
 
 [t_fedfb70e58]
 en = "Unlocks Tinline when it starts"
 where = [
   "desktop settings_unlocks_tinline_when_it: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "চালু হওয়ার সময় Tinline আনলক করে"
 
 [t_cdcc50b2f7]
 en = "Your camera stays off until you turn it on in the call"
 where = [
   "desktop settings_your_camera_stays_off: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "কলের মধ্যে আপনি চালু না করা পর্যন্ত ক্যামেরা বন্ধ থাকে"
 
 [t_90bdebb782]
 en = "BLOCKED"
 where = [
   "desktop shell_blocked: Desktop, shell: sidebar, search, contacts (in shell_view.rs, contacts_list).",
 ]
-text = ""
+text = "ব্লক করা"
 
 [t_c2c5a73746]
 en = "Choose a chat"
 where = [
   "desktop shell_choose_a_chat: Desktop, shell: sidebar, search, contacts (in shell_view.rs, shell_empty_detail).",
 ]
-text = ""
+text = "একটি চ্যাট বেছে নিন"
 
 [t_8456b9462d]
 en = "Messages stay on your devices."
 where = [
   "desktop shell_messages_stay_on_your: Desktop, shell: sidebar, search, contacts (in shell_view.rs, shell_empty_detail).",
 ]
-text = ""
+text = "মেসেজ আপনার ডিভাইসেই থাকে।"
 
 [t_2511179a74]
 en = "More messages"
 where = [
   "desktop shell_more_messages: Desktop, shell: sidebar, search, contacts (in shell_view.rs, shell_search_results).",
 ]
-text = ""
+text = "আরও মেসেজ"
 
 [t_5b37e08e60]
 en = "No contact called “{trim}”."
 where = [
   "desktop shell_no_contact_called: Desktop, shell: sidebar, search, contacts (in shell_view.rs, new_chat_overlay). {trim} is a value filled in by the app.",
 ]
-text = ""
+text = "“{trim}” নামে কোনো পরিচিতি নেই।"
 
 [t_998b1844f6]
 en = "No messages match"
 where = [
   "desktop shell_no_messages_match: Desktop, shell: sidebar, search, contacts (in shell_view.rs, shell_search_results).",
 ]
-text = ""
+text = "কোনো মেসেজ মেলেনি"
 
 [t_7278323591]
 en = "No one called “{trim}” in your contacts."
 where = [
   "desktop shell_no_one_called_in: Desktop, shell: sidebar, search, contacts (in shell_view.rs, contacts_list). {trim} is a value filled in by the app.",
 ]
-text = ""
+text = "আপনার পরিচিতিতে “{trim}” নামে কেউ নেই।"
 
 [t_a878978527]
 en = "Scan a code or paste an invite"
 where = [
   "desktop shell_scan_a_code_or: Desktop, shell: sidebar, search, contacts (in shell_view.rs, new_chat_overlay).",
 ]
-text = ""
+text = "কোড স্ক্যান করুন বা আমন্ত্রণ পেস্ট করুন"
 
 [t_f4e09c2bbf]
 en = "Search (Ctrl+K)"
 where = [
   "desktop shell_search_ctrl_k: Desktop, shell: sidebar, search, contacts (in shell_view.rs, desktop_search_field).",
 ]
-text = ""
+text = "খুঁজুন (Ctrl+K)"
 
 [t_f7a95b3438]
 en = "Searching…"
 where = [
   "desktop shell_searching: Desktop, shell: sidebar, search, contacts (in shell_view.rs, shell_search_results).",
 ]
-text = ""
+text = "খোঁজা হচ্ছে…"
 
 [t_09334bda23]
 en = "WAITING FOR THEM"
 where = [
   "desktop shell_waiting_for_them: Desktop, shell: sidebar, search, contacts (in shell_view.rs, contacts_list).",
 ]
-text = ""
+text = "ওঁদের অপেক্ষায়"
 
 [t_83e7098628]
 en = "WAITING FOR YOU"
 where = [
   "desktop shell_waiting_for_you: Desktop, shell: sidebar, search, contacts (in shell_view.rs, contacts_list).",
 ]
-text = ""
+text = "আপনার অপেক্ষায়"
 
 [t_977fda7ea5]
 en = "A lock, so only you can open Tinline on this computer."
 where = [
   "desktop signup_a_lock_so_only: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "একটি তালা, যাতে এই কম্পিউটারে শুধু আপনিই Tinline খুলতে পারেন।"
 
 [t_0f29049271]
 en = "Accepted your request. Your line is open."
 where = [
   "desktop signup_accepted_your_request_your: Desktop, sign-up, restore and add contact (in signup.rs, request_accepted).",
 ]
-text = ""
+text = "আপনার অনুরোধ গ্রহণ করেছেন। আপনার লাইন খোলা।"
 
 [t_1f0d4d7cb3]
 en = "Add {name}"
 where = [
   "desktop signup_add: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name}-কে যোগ করুন"
 
 [t_cbe48ef105]
 en = "Add another name"
 where = [
   "desktop signup_add_another_name: Desktop, sign-up, restore and add contact (in signup_view.rs, open_as_menu).",
 ]
-text = ""
+text = "আরেকটি নাম যোগ করুন"
 
 [t_4630a76192]
 en = "Couldn’t make a new code just now. Try again in a moment."
 where = [
   "desktop signup_couldnt_make_a_new: Desktop, sign-up, restore and add contact (in signup.rs, gate_update).",
 ]
-text = ""
+text = "এই মুহূর্তে নতুন কোড তৈরি করা গেল না। একটু পরে আবার চেষ্টা করুন।"
 
 [t_5e800d7c99]
 en = "Create a new account or bring one you already have."
 where = [
   "desktop signup_create_a_new_account: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "নতুন অ্যাকাউন্ট তৈরি করুন, অথবা আপনার আগের অ্যাকাউন্ট নিয়ে আসুন।"
 
 [t_0af5893864]
 en = "Encrypts your account on this computer. You type it each time Tinline starts. If you forget it, your recovery words let you set a new one."
 where = [
   "desktop signup_encrypts_your_account_on: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "এই কম্পিউটারে আপনার অ্যাকাউন্ট এনক্রিপ্ট করে। Tinline চালু হওয়ার সময় প্রতিবার এটা লিখতে হবে। ভুলে গেলে রিকভারি শব্দ দিয়ে নতুন একটি সেট করতে পারবেন।"
 
 [t_c89a3beeba]
 en = "Groups are hosted on a computer. Keep Tinline open and your groups stay reachable."
 where = [
   "desktop signup_groups_are_hosted_on: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "গ্রুপ হোস্ট হয় কম্পিউটারে। Tinline খোলা রাখুন, তাহলে আপনার গ্রুপগুলো নাগালে থাকবে।"
 
 [t_51feac3631]
 en = "Home computer"
 where = [
   "desktop signup_home_computer: Desktop, sign-up, restore and add contact (in signup.rs, gate_created).",
 ]
-text = ""
+text = "বাড়ির কম্পিউটার"
 
 [t_075bd28bc4]
 en = "If you ever switch devices, these {words} words bring your account along."
 where = [
   "desktop signup_if_you_ever_switch: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {words} is the number of recovery words (24), a number.",
 ]
-text = ""
+text = "কখনও ডিভাইস বদলালে, এই {words}টি শব্দ আপনার অ্যাকাউন্ট সঙ্গে নিয়ে আসবে।"
 
 [t_60e00617a2]
 en = "Is this the {name} you expected? If you’re not sure, check with them first."
 where = [
   "desktop signup_is_this_the_you: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "ইনিই কি আপনার প্রত্যাশিত {name}? নিশ্চিত না হলে আগে ওঁর সঙ্গে কথা বলে নিন।"
 
 [t_01a5bbebc5]
 en = "Laptop"
 where = [
   "desktop signup_laptop: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "ল্যাপটপ"
 
 [t_118c865bad]
 en = "Message {value}"
 where = [
   "desktop signup_message_2: Desktop, sign-up, restore and add contact (in signup_view.rs, empty_hero). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "{value}-কে মেসেজ করুন"
 
 [t_e55f51ab05]
 en = "{filled} of {total}"
 where = [
   "desktop signup_of_24: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {filled} is a value filled in by the app. {total} is how many recovery words there are (24), a number.",
 ]
-text = ""
+text = "{total}টির মধ্যে {filled}টি"
 
 [t_874cf4e616]
 en = "Optional. A lock, so only you can open Tinline on this computer."
 where = [
   "desktop signup_optional_a_lock_so: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "ঐচ্ছিক। একটি তালা, যাতে এই কম্পিউটারে শুধু আপনিই Tinline খুলতে পারেন।"
 
 [t_2f46bf8b88]
 en = "Paste it somewhere safe. A password manager works great."
 where = [
   "desktop signup_paste_it_somewhere_safe: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "কোনো নিরাপদ জায়গায় পেস্ট করে রাখুন। পাসওয়ার্ড ম্যানেজার দারুণ কাজ করে।"
 
 [t_73f6fcb372]
 en = "Save a copy somewhere safe. Paper works great."
 where = [
   "desktop signup_save_a_copy_somewhere: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "কোনো নিরাপদ জায়গায় একটি কপি রাখুন। কাগজে লিখে রাখাও দারুণ।"
 
 [t_90efd61b03]
 en = "Say hello to {value} whenever you like."
 where = [
   "desktop signup_say_hello_to_whenever: Desktop, sign-up, restore and add contact (in signup_view.rs, empty_hero). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "যখন খুশি {value}-কে হ্যালো বলুন।"
 
 [t_7e31fba9bb]
 en = "Send it to anyone you’d like to talk to, in any app. It works until {value}."
 where = [
   "desktop signup_send_it_to_anyone_youd: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "যাঁর সঙ্গে কথা বলতে চান, যেকোনো অ্যাপে তাঁকে এটা পাঠান। এটা {value} পর্যন্ত কাজ করবে।"
 
 [t_e42886dfd5]
 en = "That code from {value} has expired. Codes last 7 days, so ask them for a fresh one."
 where = [
   "desktop signup_that_code_from_has: Desktop, sign-up, restore and add contact (in signup.rs, ac_pasted). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "{value}-এর দেওয়া কোডটির মেয়াদ শেষ হয়ে গেছে। কোড 7 দিন কাজ করে, তাই ওঁর কাছে নতুন একটা চেয়ে নিন।"
 
 [t_c26085963d]
 en = "This computer can host your groups"
 where = [
   "desktop signup_this_computer_can_host: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "এই কম্পিউটার আপনার গ্রুপ হোস্ট করতে পারে"
 
 [t_07f4585e09]
 en = "Tinline connects your computer straight to theirs."
 where = [
   "desktop signup_tinline_connects_your_straight: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "Tinline আপনার কম্পিউটারকে সরাসরি ওঁদের ডিভাইসের সঙ্গে জুড়ে দেয়।"
 
 [t_5660c32aef]
 en = "Type your {words} recovery words. This computer starts with an empty contact list."
 where = [
   "desktop signup_type_your_24_recovery: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {words} is the number of recovery words (24), a number.",
 ]
-text = ""
+text = "আপনার {words}টি রিকভারি শব্দ টাইপ করুন। এই কম্পিউটারে পরিচিতির তালিকা খালি থেকে শুরু হবে।"
 
 [t_2c3e291ab1]
 en = "Type your {words} words in order, or paste them, or your recovery key, into the first box. They stay on this computer."
 where = [
   "desktop signup_type_your_24_words: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {words} is the number of recovery words (24), a number.",
 ]
-text = ""
+text = "আপনার {words}টি শব্দ ক্রম অনুযায়ী টাইপ করুন, অথবা সেগুলো বা আপনার রিকভারি কী প্রথম ঘরে পেস্ট করুন। এগুলো এই কম্পিউটারেই থাকবে।"
 
 [t_89cb7b48e0]
 en = "Use your phone to reach emergency services."
 where = [
   "desktop signup_use_your_phone_to: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "জরুরি পরিষেবায় যোগাযোগ করতে আপনার ফোন ব্যবহার করুন।"
 
 [t_f72f9d664d]
 en = "Word {value} isn’t in the recovery word list. Check the spelling."
 where = [
   "desktop signup_word_in_the_recovery: Desktop, sign-up (in signup_view.rs, gate_step, Restore step). {value} is the number (1 to 24) of the first word that is not in the recovery word list. Shown when exactly one word is wrong.",
 ]
-text = ""
+text = "{value} নম্বর শব্দটি রিকভারি শব্দের তালিকায় নেই। বানানটা দেখে নিন।"
 
 [t_50284ec479]
 en = "Work computer"
 where = [
   "desktop signup_work_computer: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "অফিসের কম্পিউটার"
 
 [t_d00ea827d7]
 en = "You just need a nickname. Encrypted end to end."
 where = [
   "desktop signup_you_just_need_a: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "শুধু একটি ডাকনাম লাগবে। এন্ড-টু-এন্ড এনক্রিপ্টেড।"
 
 [t_bfd0aa5282]
 en = "{value} You type it each time Tinline starts. If you forget it, your recovery words let you set a new one."
 where = [
   "desktop signup_you_type_it_each: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "{value} Tinline চালু হওয়ার সময় প্রতিবার এটা লিখতে হবে। ভুলে গেলে রিকভারি শব্দ দিয়ে নতুন একটি সেট করতে পারবেন।"
 
 [t_2219f303c1]
 en = "Your account is its recovery phrase, so you can bring it to this computer two ways."
 where = [
   "desktop signup_your_account_is_its: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "আপনার অ্যাকাউন্ট মানেই তার রিকভারি শব্দ, তাই দুইভাবে এটা এই কম্পিউটারে আনতে পারেন।"
 
 [t_9ff24cc852]
 en = "Your current account stays on this computer."
 where = [
   "desktop signup_your_current_account_stays: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "আপনার এখনকার অ্যাকাউন্ট এই কম্পিউটারেই থাকবে।"
 
 [t_8734239b76]
 en = "Your recovery key is in. It stays on this computer."
 where = [
   "desktop signup_your_recovery_key_is: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "আপনার রিকভারি কী বসানো হয়েছে। এটা এই কম্পিউটারেই থাকবে।"
 
 [t_aacdf28414]
 en = "Your recovery key is the same as your {words} words, as one line."
 where = [
   "desktop signup_your_recovery_key_is_the: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {words} is the number of recovery words (24), a number.",
 ]
-text = ""
+text = "আপনার রিকভারি কী আপনার {words}টি শব্দেরই আরেক রূপ, এক লাইনে।"
 
 [t_be60e742e9]
 en = "Your request to {value} is waiting. Your line opens when they accept."
 where = [
   "desktop signup_your_request_to_is: Desktop, sign-up, restore and add contact (in signup_view.rs, empty_hero). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "{value}-কে পাঠানো আপনার অনুরোধ অপেক্ষায় আছে। ওঁরা গ্রহণ করলেই আপনার লাইন খুলে যাবে।"
 
 [t_23aa6f9dd7]
 en = "Quit"
 where = [
   "desktop tray_quit: Desktop, system tray (in tray.rs, build).",
 ]
-text = ""
+text = "বন্ধ করুন"
 
 [t_a8432fcc64]
 en = "Tinline - {status}"
 where = [
   "desktop tray_tinline: Desktop, system tray (in tray.rs, refresh). {status} is a value filled in by the app.",
 ]
-text = ""
+text = "Tinline - {status}"
 
 [t_82d3373306]
 en = "Camera: {error}"
 where = [
   "desktop video_camera: Desktop, video (in vcall.rs, video_update). {error} is the underlying error text, not translated.",
 ]
-text = ""
+text = "ক্যামেরা: {error}"
 
 [t_fe64fb27a3]
 en = "Video tuning: {error}"
 where = [
   "desktop video_video_tuning: Desktop, video (in vcall.rs, video_update). {error} is the underlying error text, not translated.",
 ]
-text = ""
+text = "ভিডিও টিউনিং: {error}"
 
 [t_d7ef28d854]
 en = "Your chosen camera isn't connected. Pick one in Settings → Video."
 where = [
   "desktop video_your_chosen_camera_isnt: Desktop, video (in vcall.rs, found).",
 ]
-text = ""
+text = "আপনার বেছে নেওয়া ক্যামেরা কানেক্টেড নেই। সেটিংস → ভিডিও থেকে একটি বেছে নিন।"
 
 [t_4d707b1137]
 en = "System default"
 where = [
   "desktop app_system_default: Entry at the top of the microphone, speaker and camera pick lists: use the system default device.",
 ]
-text = ""
+text = "সিস্টেমের ডিফল্ট"
 
 [t_cf682df833]
 en = "This computer has no secure keyring, so Tinline needs a passphrase to protect your account."
 where = [
   "desktop app_no_secure_keyring: Shown when this computer has no secure keyring, so a passphrase is required.",
 ]
-text = ""
+text = "এই কম্পিউটারে কোনো সুরক্ষিত কি-রিং নেই, তাই আপনার অ্যাকাউন্ট সুরক্ষিত রাখতে Tinline-এর একটি পাসফ্রেজ দরকার।"
 
 [t_959c3e05f4]
 en_one = "Word {value} and {count} more aren’t in the recovery word list. Check the spelling."
@@ -17191,272 +17199,274 @@ en_other = "Word {value} and {count} more aren’t in the recovery word list. Ch
 where = [
   "desktop signup_word_in_the_recovery_more: Desktop, sign-up (in signup_view.rs, gate_step, Restore step). Shown when several words are wrong. {value} is the number (1 to 24) of the first wrong word; {count} is how many other words are also wrong (at least 1).",
 ]
+one = "{value} নম্বর শব্দ এবং আরও {count}টি শব্দ রিকভারি শব্দের তালিকায় নেই। বানানটা দেখে নিন।"
+other = "{value} নম্বর শব্দ এবং আরও {count}টি শব্দ রিকভারি শব্দের তালিকায় নেই। বানানটা দেখে নিন।"
 
 [t_71508df1e3]
 en = "By continuing, you agree to the {terms} and have read the {privacy}."
 where = [
   "desktop signup_by_continuing_you_agree: Desktop, sign-up, \"Before you start\" step (in signup_view.rs), small line above the Agree button. {terms} is replaced by a link that shows the text of Terms of use (signup_terms_of_use), {privacy} by a link that shows Privacy policy (signup_privacy_policy). Keep both placeholders; they can move.",
 ]
-text = ""
+text = "চালিয়ে গেলে আপনি {terms}-এ রাজি হচ্ছেন এবং {privacy} পড়েছেন।"
 
 [t_f8a7b024d2]
 en = "A nickname can’t contain control or text-direction characters."
 where = [
   "desktop profile_err_nickname_chars: Desktop, profile edit (in profile_ui.rs, check_name / check_text). Error when the nickname I give a contact has invisible control or text-direction characters.",
 ]
-text = ""
+text = "ডাকনামে কন্ট্রোল বা লেখার দিক বদলানোর অক্ষর রাখা যাবে না।"
 
 [t_5ebcb73db1]
 en = "That nickname is too long. Up to {limit} bytes; some characters take more than one."
 where = [
   "desktop profile_err_nickname_long: Desktop, profile edit (in profile_ui.rs, check_name / check_text). Error when a nickname is too long. {limit} is the maximum size in bytes.",
 ]
-text = ""
+text = "ডাকনামটি খুব লম্বা। {limit} বাইট পর্যন্ত চলবে; কিছু অক্ষর একাধিক বাইট নেয়।"
 
 [t_54327f7aaf]
 en = "That is too long: up to {limit} bytes, and some characters take more than one."
 where = [
   "desktop profile_err_text_long: Desktop, profile edit (in profile_ui.rs, check_name / check_text). Error when a custom profile field value is too long. {limit} is the maximum size in bytes.",
 ]
-text = ""
+text = "এটা খুব লম্বা: {limit} বাইট পর্যন্ত চলবে, আর কিছু অক্ষর একাধিক বাইট নেয়।"
 
 [t_53d1dcceb7]
 en = "That can’t contain control or text-direction characters."
 where = [
   "desktop profile_err_text_chars: Desktop, profile edit (in profile_ui.rs, check_name / check_text). Error when a custom profile field value has invisible control or text-direction characters.",
 ]
-text = ""
+text = "এতে কন্ট্রোল বা লেখার দিক বদলানোর অক্ষর রাখা যাবে না।"
 
 [t_00a97f2c8f]
 en = "{list} and {last}"
 where = [
   "desktop common_list_and: End of a list of three or more names: {list} is the earlier items already joined with the list separator, {last} the final item. English \"A, B and C\".",
 ]
-text = ""
+text = "{list} এবং {last}"
 
 [t_fed8e6ea3e]
 en = "{first} and {last}"
 where = [
   "desktop common_list_two: A list of exactly two names. {first} and {last} are names.",
 ]
-text = ""
+text = "{first} এবং {last}"
 
 [t_2f27018b89]
 en = " · "
 where = [
   "desktop common_dot_separator: Between short whole phrases on one line, e.g. \"Invited by Ana · 1 of 3 flags\". Keep the spaces.",
 ]
-text = ""
+text = " · "
 
 [t_068c9a83c8]
 en = "Jan"
 where = [
   "desktop date_month_1: Short month name inside dates such as \"Sep 12\" (month 1 of 12). A word or abbreviation, nothing else.",
 ]
-text = ""
+text = "জানু"
 
 [t_2fc789c4d5]
 en = "Feb"
 where = [
   "desktop date_month_2: Short month name inside dates such as \"Sep 12\" (month 2 of 12). A word or abbreviation, nothing else.",
 ]
-text = ""
+text = "ফেব"
 
 [t_b066d8f5ef]
 en = "Mar"
 where = [
   "desktop date_month_3: Short month name inside dates such as \"Sep 12\" (month 3 of 12). A word or abbreviation, nothing else.",
 ]
-text = ""
+text = "মার্চ"
 
 [t_74a7ff087e]
 en = "Apr"
 where = [
   "desktop date_month_4: Short month name inside dates such as \"Sep 12\" (month 4 of 12). A word or abbreviation, nothing else.",
 ]
-text = ""
+text = "এপ্রি"
 
 [t_e532d1d3fa]
 en = "May"
 where = [
   "desktop date_month_5: Short month name inside dates such as \"Sep 12\" (month 5 of 12). A word or abbreviation, nothing else.",
 ]
-text = ""
+text = "মে"
 
 [t_1bfac4c565]
 en = "Jun"
 where = [
   "desktop date_month_6: Short month name inside dates such as \"Sep 12\" (month 6 of 12). A word or abbreviation, nothing else.",
 ]
-text = ""
+text = "জুন"
 
 [t_b0624225dc]
 en = "Jul"
 where = [
   "desktop date_month_7: Short month name inside dates such as \"Sep 12\" (month 7 of 12). A word or abbreviation, nothing else.",
 ]
-text = ""
+text = "জুল"
 
 [t_e7f1e3d854]
 en = "Aug"
 where = [
   "desktop date_month_8: Short month name inside dates such as \"Sep 12\" (month 8 of 12). A word or abbreviation, nothing else.",
 ]
-text = ""
+text = "আগ"
 
 [t_2cd1a9363c]
 en = "Sep"
 where = [
   "desktop date_month_9: Short month name inside dates such as \"Sep 12\" (month 9 of 12). A word or abbreviation, nothing else.",
 ]
-text = ""
+text = "সেপ"
 
 [t_9fb8e4095f]
 en = "Oct"
 where = [
   "desktop date_month_10: Short month name inside dates such as \"Sep 12\" (month 10 of 12). A word or abbreviation, nothing else.",
 ]
-text = ""
+text = "অক্টো"
 
 [t_babad4d09a]
 en = "Nov"
 where = [
   "desktop date_month_11: Short month name inside dates such as \"Sep 12\" (month 11 of 12). A word or abbreviation, nothing else.",
 ]
-text = ""
+text = "নভে"
 
 [t_71dfdc0e04]
 en = "Dec"
 where = [
   "desktop date_month_12: Short month name inside dates such as \"Sep 12\" (month 12 of 12). A word or abbreviation, nothing else.",
 ]
-text = ""
+text = "ডিসে"
 
 [t_27ab80e757]
 en = "Monday"
 where = [
   "desktop date_weekday_mon: Weekday name inside dates such as \"Thursday 8 Oct\". Just the day name.",
 ]
-text = ""
+text = "সোমবার"
 
 [t_83f75a6a3d]
 en = "Tuesday"
 where = [
   "desktop date_weekday_tue: Weekday name inside dates such as \"Thursday 8 Oct\". Just the day name.",
 ]
-text = ""
+text = "মঙ্গলবার"
 
 [t_38d4808009]
 en = "Wednesday"
 where = [
   "desktop date_weekday_wed: Weekday name inside dates such as \"Thursday 8 Oct\". Just the day name.",
 ]
-text = ""
+text = "বুধবার"
 
 [t_21149a2390]
 en = "Thursday"
 where = [
   "desktop date_weekday_thu: Weekday name inside dates such as \"Thursday 8 Oct\". Just the day name.",
 ]
-text = ""
+text = "বৃহস্পতিবার"
 
 [t_148abe3f88]
 en = "Friday"
 where = [
   "desktop date_weekday_fri: Weekday name inside dates such as \"Thursday 8 Oct\". Just the day name.",
 ]
-text = ""
+text = "শুক্রবার"
 
 [t_0968e86bdc]
 en = "Saturday"
 where = [
   "desktop date_weekday_sat: Weekday name inside dates such as \"Thursday 8 Oct\". Just the day name.",
 ]
-text = ""
+text = "শনিবার"
 
 [t_cc55d792bc]
 en = "Sunday"
 where = [
   "desktop date_weekday_sun: Weekday name inside dates such as \"Thursday 8 Oct\". Just the day name.",
 ]
-text = ""
+text = "রবিবার"
 
 [t_a3673dec81]
 en = "{month} {day}"
 where = [
   "desktop date_month_day: A date without a year. {month} is the short month name, {day} the day number. English \"Sep 12\".",
 ]
-text = ""
+text = "{day} {month}"
 
 [t_5fd8e248d3]
 en = "{day} {month}"
 where = [
   "desktop date_day_month: A date without a year, day first. {day} is the day number, {month} the short month name. English \"12 Sep\".",
 ]
-text = ""
+text = "{day} {month}"
 
 [t_7a357641e5]
 en = "{month} {day}, {time}"
 where = [
   "desktop date_month_day_time: A date and the clock time. {month} short month name, {day} day number, {time} the time like 15:20. English \"Oct 10, 15:20\".",
 ]
-text = ""
+text = "{day} {month}, {time}"
 
 [t_f0d5b4190a]
 en = "{weekday} {day} {month}"
 where = [
   "desktop date_weekday_date: A date with its weekday, this year. {weekday} the day name, {day} the day number, {month} the short month name. English \"Thursday 8 Oct\".",
 ]
-text = ""
+text = "{weekday}, {day} {month}"
 
 [t_99e3037c80]
 en = "{weekday} {day} {month} {year}"
 where = [
   "desktop date_weekday_date_year: A date with its weekday and year. {weekday} day name, {day} day number, {month} short month name, {year} the year. English \"Thursday 8 Oct 2025\".",
 ]
-text = ""
+text = "{weekday}, {day} {month}, {year}"
 
 [t_52db4d10a3]
 en = "Answering ends your current call."
 where = [
   "desktop call_ends_your_call: Desktop, call waiting card (in view.rs, waiting_banner), small line under the buttons, when the current caller has no name.",
 ]
-text = ""
+text = "উত্তর দিলে আপনার এখনকার কল শেষ হবে।"
 
 [t_b2f4b04b14]
 en = "Someone is calling"
 where = [
   "desktop common_someone_is_calling: Desktop, incoming call: notification and call waiting card title when the caller has no name.",
 ]
-text = ""
+text = "কেউ একজন কল করছেন"
 
 [t_705fd514d9]
 en = "Reconnecting the call"
 where = [
   "desktop call_reconnecting: Desktop, call screen and mark label: the CALL lost its connection and is trying again (not a device link).",
 ]
-text = ""
+text = "কল আবার কানেক্ট হচ্ছে"
 
 [t_8927d78059]
 en = "**This computer** is carrying this call. Everyone in the call connects to it, and it passes the audio on and chooses who is heard when several people speak."
 where = [
   "desktop gcall_about_this_computer: Desktop, group call \"About this call\" sheet (in gcall_view.rs, gcall_about). The call is carried by this computer. **…** is shown bold.",
 ]
-text = ""
+text = "**এই কম্পিউটারটি** এই কল চালাচ্ছে। কলের সবাই এর সঙ্গে কানেক্ট হন, আর এটি অডিও পৌঁছে দেয় এবং একসঙ্গে কয়েকজন কথা বললে কার কথা শোনা যাবে তা বেছে নেয়।"
 
 [t_90a84c0267]
 en = "Call host: another device"
 where = [
   "desktop gcall_call_host_unnamed: Desktop, group call screen (in gcall_view.rs), small line that opens \"About this call\", when the host's owner has no known name.",
 ]
-text = ""
+text = "কল হোস্ট: অন্য একটি ডিভাইস"
 
 [t_33d5002404]
 en = "Replying to a message"
 where = [
   "desktop group_replying_to_a_message: Desktop, group composer: shown above the field while I reply to a message whose author I cannot name.",
 ]
-text = ""
+text = "একটি মেসেজের উত্তর দিচ্ছেন"
 
 [t_479631b28d]
 en = "Invited by someone"
@@ -17464,49 +17474,49 @@ where = [
   "desktop group_invited_by_someone: Desktop, group member row: invited by someone I cannot name.",
   "desktop group_owner_by_unnamed_unnamed: Desktop, group join dialog (in group_live_view.rs, live_overlay): the line under the group name saying who invited me and who owns the group. Someone I cannot name made the link and the owner has no known name.",
 ]
-text = ""
+text = "আমন্ত্রণ জানিয়েছেন কেউ একজন"
 
 [t_b1f3953010]
 en = "A link for your own other device"
 where = [
   "desktop group_link_own: Desktop, group join dialog (in group_live_view.rs, live_overlay): the line under the group name saying who invited me and who owns the group. The link is for my own other device.",
 ]
-text = ""
+text = "আপনার নিজের অন্য ডিভাইসের জন্য একটি লিঙ্ক"
 
 [t_d0331beb91]
 en = "A link for your own other device · owner {owner}"
 where = [
   "desktop group_link_own_owner: Desktop, group join dialog (in group_live_view.rs, live_overlay): the line under the group name saying who invited me and who owns the group. The link is for my own other device. {owner} is the owner's name.",
 ]
-text = ""
+text = "আপনার নিজের অন্য ডিভাইসের জন্য একটি লিঙ্ক · মালিক {owner}"
 
 [t_fdd5e8b563]
 en = "Invited by you · owner {owner}"
 where = [
   "desktop group_owner_by_you: Desktop, group join dialog (in group_live_view.rs, live_overlay): the line under the group name saying who invited me and who owns the group. I made the link. {owner} is the owner's name.",
 ]
-text = ""
+text = "আমন্ত্রণ জানিয়েছেন আপনি · মালিক {owner}"
 
 [t_44728366f9]
 en = "Invited by {inviter} · owner {owner}"
 where = [
   "desktop group_owner_by_named: Desktop, group join dialog (in group_live_view.rs, live_overlay): the line under the group name saying who invited me and who owns the group. {inviter} is the first name of who made the link, {owner} the owner's name.",
 ]
-text = ""
+text = "আমন্ত্রণ জানিয়েছেন {inviter} · মালিক {owner}"
 
 [t_f86f5cbd4e]
 en = "Invited by {inviter}"
 where = [
   "desktop group_owner_by_named_unnamed: Desktop, group join dialog (in group_live_view.rs, live_overlay): the line under the group name saying who invited me and who owns the group. {inviter} made the link; the owner has no known name.",
 ]
-text = ""
+text = "আমন্ত্রণ জানিয়েছেন {inviter}"
 
 [t_25d7a50fc3]
 en = "Invited by someone · owner {owner}"
 where = [
   "desktop group_owner_by_unnamed: Desktop, group join dialog (in group_live_view.rs, live_overlay): the line under the group name saying who invited me and who owns the group. Someone I cannot name made the link. {owner} is the owner's name.",
 ]
-text = ""
+text = "আমন্ত্রণ জানিয়েছেন কেউ একজন · মালিক {owner}"
 
 [t_5a341ece46]
 en_one = "{count} host online, this computer too. Posts go through right away."
@@ -17514,48 +17524,50 @@ en_other = "{count} hosts online, this computer too. Posts go through right away
 where = [
   "desktop group_hosts_online_here: Desktop, group info, hosts section, when this computer is one of the hosts. {count} is how many hosts are online, including this computer.",
 ]
+one = "{count}টি হোস্ট অনলাইনে আছে, এই কম্পিউটারও। পোস্ট সঙ্গে সঙ্গে পৌঁছে যাবে।"
+other = "{count}টি হোস্ট অনলাইনে আছে, এই কম্পিউটারও। পোস্ট সঙ্গে সঙ্গে পৌঁছে যাবে।"
 
 [t_a3446fca89]
 en = "A call host carries the call. Everyone in a call connects to it, and it passes the audio on, so it can hear the call. That is separate from chat hosting: a chat host is not a call host unless you also appoint it as one. Call hosts are members you trust, and each one chooses to accept. Appoint one from a member’s menu, or host calls on this computer."
 where = [
   "desktop group_a_call_host_carries_admin: Desktop, group info, call hosts section note, for admins.",
 ]
-text = ""
+text = "কল হোস্ট কলটি চালায়। কলের সবাই এর সঙ্গে কানেক্ট হন, আর এটি অডিও পৌঁছে দেয়, তাই এটি কল শুনতে পারে। এটা চ্যাট হোস্ট করা থেকে আলাদা: চ্যাট হোস্টকে আপনি কল হোস্ট হিসেবেও ঠিক না করলে সেটি কল হোস্ট নয়। কল হোস্টরা আপনার ভরসার সদস্য, আর প্রত্যেকে নিজে গ্রহণ করতে বেছে নেন। কোনো সদস্যের মেনু থেকে একজনকে ঠিক করুন, অথবা এই কম্পিউটারে কল হোস্ট করুন।"
 
 [t_a84095ecdc]
 en = "An admin asked this computer to host {group}"
 where = [
   "desktop group_asked_this_computer_to_unnamed: Desktop, group banner when an admin I cannot name asks this computer to host. {group} is the group name.",
 ]
-text = ""
+text = "একজন অ্যাডমিন এই কম্পিউটারকে {group} হোস্ট করতে বলেছেন"
 
 [t_c892a25b97]
 en = "this computer hosts the group"
 where = [
   "desktop group_status_this_computer_hosts: Desktop, group header (in group_live.rs, status_line): after the member count and a separator. This computer hosts the group.",
 ]
-text = ""
+text = "এই কম্পিউটার গ্রুপটি হোস্ট করে"
 
 [t_b30c122b4c]
 en = "Waiting for someone · via {group}"
 where = [
   "desktop group_sent_waiting_unnamed: Desktop, group requests I sent (in group_live.rs, sent_line): the state line of a private-chat request. The person has no known name. {group} is the group name.",
 ]
-text = ""
+text = "একজনের অপেক্ষায় · {group}-এর মাধ্যমে"
 
 [t_84ecf54979]
 en = "Blocked by them"
 where = [
   "desktop group_sent_blocked_unnamed: Desktop, group requests I sent (in group_live.rs, sent_line): the state line of a private-chat request. Someone blocked me.",
 ]
-text = ""
+text = "ওঁরা ব্লক করেছেন"
 
 [t_85e9c7a5d8]
 en = "You can’t send messages to this group."
 where = [
   "desktop group_notice_cant_send: Desktop, group notice line (in group_live.rs). Shown when I try to post but may not.",
 ]
-text = ""
+text = "আপনি এই গ্রুপে মেসেজ পাঠাতে পারবেন না।"
 
 [t_4f6585901b]
 en_one = "{count} invitation sent. They join when they accept."
@@ -17563,52 +17575,54 @@ en_other = "{count} invitations sent. Each person joins when they accept."
 where = [
   "desktop group_notice_invitations_sent: Desktop, group notice line (in group_live.rs). Several invitations were sent. {count} is how many (2 or more).",
 ]
+one = "{count}টি আমন্ত্রণ পাঠানো হয়েছে। প্রত্যেকে গ্রহণ করলেই যোগ দেবেন।"
+other = "{count}টি আমন্ত্রণ পাঠানো হয়েছে। প্রত্যেকে গ্রহণ করলেই যোগ দেবেন।"
 
 [t_a353a995d6]
 en = "Group made. This computer hosts it; invite people from the members pane."
 where = [
   "desktop group_notice_group_made: Desktop, group notice line (in group_live.rs). A new group was created on this computer.",
 ]
-text = ""
+text = "গ্রুপ তৈরি হয়েছে। এই কম্পিউটার এটি হোস্ট করে; সদস্যদের প্যানেল থেকে লোকজনকে আমন্ত্রণ জানান।"
 
 [t_5459a31053]
 en = "Check that the other device shows this code, then approve there."
 where = [
   "desktop link_check_that_other_shows_this: Desktop, linking a device (in link_view.rs). Same as link_check_that_shows_this when the other device has no name.",
 ]
-text = ""
+text = "অন্য ডিভাইসে এই কোডটাই দেখাচ্ছে কি না দেখে নিন, তারপর সেখানে অনুমোদন দিন।"
 
 [t_77384a97d1]
 en = "Link the other device?"
 where = [
   "desktop link_link_other: Desktop, linking a device (in link_view.rs). Same as link_link when the other device has no name.",
 ]
-text = ""
+text = "অন্য ডিভাইসটি লিঙ্ক করবেন?"
 
 [t_a7e710aea7]
 en = "Linking the other device"
 where = [
   "desktop link_linking_other: Desktop, linking a device (in link_view.rs). Same as link_linking when the other device has no name.",
 ]
-text = ""
+text = "অন্য ডিভাইসটি লিঙ্ক হচ্ছে"
 
 [t_73260a10c6]
 en = "Linked the other device"
 where = [
   "desktop link_linked_other: Desktop, linking a device (in link_view.rs). Same as link_linked when the other device has no name.",
 ]
-text = ""
+text = "অন্য ডিভাইসটি লিঙ্ক হয়েছে"
 
 [t_fdf764a472]
 en = "Linked to your account"
 where = [
   "desktop link_linked_to_account: Desktop, linking a device (in link_view.rs). Same as link_linked_to when the other device has no name.",
 ]
-text = ""
+text = "আপনার অ্যাকাউন্টে লিঙ্ক হয়েছে"
 
 [t_fae437985e]
 en = "You blocked {name} · {when}"
 where = [
   "desktop chat_you_blocked_on: Desktop, chat (in chat_view.rs, block_note): same line with the date. {name} is the first name, {when} a date and time such as \"Oct 10, 15:20\".",
 ]
-text = ""
+text = "আপনি {name}-কে ব্লক করেছেন · {when}"
