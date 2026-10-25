@@ -318,7 +318,7 @@ where = [
   "ios group_list_new_sub: Sub line under New group.",
   "desktop common_youll_be_the_owner: Shared label, used in several places (group_live, shell).",
 ]
-text = "ग्रुप के मालिक आप होंगे"
+text = "ग्रुप आपका होगा"
 
 [t_1788f8ccec]
 en = "Join with a link"
@@ -378,7 +378,7 @@ where = [
   "android groups_list_joined: Snackbar after accepting a group invitation. {group} is the group name.",
   "ios group_joined_toast: Confirmation after joining. {group} is the group’s name.",
 ]
-text = "आप {group} से जुड़ गए हैं।"
+text = "अब आप {group} के सदस्य हैं।"
 
 [t_b8713f8d2c]
 en = "Couldn’t join"
@@ -386,7 +386,7 @@ where = [
   "android groups_list_cant_join: Snackbar fallback when accepting an invitation fails.",
   "ios group_cant_join: Fallback error when joining fails.",
 ]
-text = "जुड़ नहीं पाए"
+text = "ग्रुप से जुड़ना नहीं हो पाया"
 
 [t_39eb5f673c]
 en = "Chat requests"
@@ -410,7 +410,7 @@ where = [
   "android groups_list_member_of: Chat request card sub-line. {group} is the group the requester shares with me.",
   "ios group_member_of: Chat request card sub line. {group} is the group.",
 ]
-text = "{group} में सदस्य"
+text = "{group} के सदस्य"
 
 [t_a431a91991]
 en = "Accepting adds {name} as a contact for messages only. You can allow calls later."
@@ -579,7 +579,7 @@ where = [
   "android groups_new_note: Explanation in the new group sheet.",
   "ios group_new_dialog_text: Body of the new group dialog.",
 ]
-text = "ग्रुप के मालिक आप होंगे। यह डिवाइस ग्रुप का पहला होस्ट है, इसलिए यह ग्रुप को सहेजता है और पोस्ट आगे पहुँचाता है।"
+text = "यह ग्रुप आपका होगा। यह डिवाइस ग्रुप का पहला होस्ट है, इसलिए यह ग्रुप को सहेजता है और पोस्ट आगे पहुँचाता है।"
 
 [t_00c5c8ab7e]
 en = "Creating…"
@@ -683,7 +683,7 @@ where = [
   "android groups_chat_no_call_host: Snackbar when I tap the dimmed call button of a group without a call host.",
   "ios group_call_no_host: Message when the user taps call but the group has no call host.",
 ]
-text = "अभी कोई कॉल होस्ट नहीं है: कोई एडमिन ग्रुप की जानकारी में कॉल होस्ट नियुक्त कर सकते हैं"
+text = "अभी कोई कॉल होस्ट नहीं है: एडमिन ग्रुप की जानकारी में कॉल होस्ट नियुक्त कर सकते हैं"
 
 [t_70b5eaa511]
 en = "Group info"
@@ -1410,7 +1410,7 @@ where = [
   "android groupsb_open_group: Label of the sheet that opens the group to anyone with the link, and its confirm button.",
   "desktop group_open_the_group: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = "ग्रुप खोलें"
+text = "ग्रुप सबके लिए खोलें"
 
 [t_4ee1bf34dd]
 en = "Open {name} to anyone with the link?"
@@ -1720,7 +1720,7 @@ where = [
   "ios group_callhosts_none: Status line when the group has no call host.",
   "desktop group_this_group_has_no: Desktop, groups (in group_live_view.rs, group_info_page).",
 ]
-text = "इस ग्रुप का कोई कॉल होस्ट नहीं है। कोई एडमिन कॉल होस्ट नियुक्त करें, तब कॉल शुरू हो सकेगी।"
+text = "इस ग्रुप का कोई कॉल होस्ट नहीं है। किसी एडमिन के कॉल होस्ट नियुक्त करने पर ही कॉल शुरू हो सकेगी।"
 
 [t_b47b6ff4d2]
 en_one = "{count} call host ready. Calls start through it."
@@ -1795,7 +1795,7 @@ where = [
   "android groupsb_callhosts_note: Explanation under the Call hosts section.",
   "ios group_callhosts_note_base: Explanation under the call host list.",
 ]
-text = "कॉल होस्ट कॉल को चलाता है। कॉल में सभी इससे जुड़ते हैं और यह आवाज़ आगे पहुँचाता है, इसलिए यह कॉल सुन सकता है। यह चैट होस्टिंग से अलग है: चैट होस्ट तब तक कॉल होस्ट नहीं होता जब तक आप उसे कॉल होस्ट भी नियुक्त न करें। कॉल होस्ट वे सदस्य हैं जिन पर आप भरोसा करते हैं, और हर एक खुद स्वीकार करता है।"
+text = "कॉल होस्ट कॉल को चलाता है। कॉल में सभी इससे जुड़ते हैं और यह आवाज़ आगे पहुँचाता है, इसलिए यह कॉल सुन सकता है। यह ग्रुप होस्टिंग से अलग है: ग्रुप होस्ट तब तक कॉल होस्ट नहीं होता जब तक आप उसे कॉल होस्ट भी नियुक्त न करें। कॉल होस्ट वे सदस्य हैं जिन पर आप भरोसा करते हैं, और हर एक खुद स्वीकार करता है।"
 
 [t_4e4a80a8ec]
 en = "Appoint one from a member’s menu, or host calls on this phone. A phone only hosts calls that its owner starts."
@@ -1885,7 +1885,7 @@ where = [
   "android groupsb_removal_body: Explanation on the removal page.",
   "ios group_removal_text: Explanation on the removal page.",
 ]
-text = "जो पोस्ट पहले से इस डिवाइस पर हैं, वे आपके पास रहेंगी और आप उन्हें पढ़ सकते हैं। आप पोस्ट नहीं कर सकते, और ग्रुप के होस्ट अब आपसे कुछ स्वीकार नहीं करते। हटाया जाना अंतिम है: वापस आने के लिए किसी एडमिन को आपको फिर से आमंत्रित करना होगा।"
+text = "जो पोस्ट पहले से इस डिवाइस पर हैं, वे आपके पास रहेंगी और आप उन्हें पढ़ सकते हैं। आप पोस्ट नहीं कर सकते, और ग्रुप के होस्ट अब आपसे कुछ स्वीकार नहीं करते। ग्रुप से हटाना स्थायी है: वापस आने के लिए किसी एडमिन को आपको फिर से आमंत्रित करना होगा।"
 
 [t_639bd50c24]
 en = "Read the posts"
@@ -2232,7 +2232,7 @@ where = [
   "android groupsb_flag_note1: Paragraph in the flag confirmation.",
   "ios group_flag_text1: First paragraph of the flag confirmation.",
 ]
-text = "फ़्लैग वापस नहीं लिए जा सकते, और हटाया जाना अंतिम है। एक ही एडमिन एक से ज़्यादा बार फ़्लैग कर सकते हैं; हर फ़्लैग गिना जाता है।"
+text = "फ़्लैग वापस नहीं लिए जा सकते, और ग्रुप से हटाना स्थायी है। एक ही एडमिन एक से ज़्यादा बार फ़्लैग कर सकते हैं; हर फ़्लैग गिना जाता है।"
 
 [t_8e44c0f4ea]
 en = "Flagging is a decision for the group. It is separate from blocking, which only affects you. {name} sees each flag: who made it and when."
@@ -2289,7 +2289,7 @@ where = [
   "android groupsb_new_group_own: Hint on the new group page.",
   "ios group_new_owner_hint: Hint on the new group page.",
 ]
-text = "ग्रुप के मालिक आप होंगे। ग्रुप की जानकारी से लोगों को आमंत्रित करें।"
+text = "यह ग्रुप आपका होगा। ग्रुप की जानकारी से लोगों को आमंत्रित करें।"
 
 [t_756bb6e1e0]
 en = "Making…"
@@ -2395,7 +2395,7 @@ where = [
   "ios group_join_bad: Hint when the invite link did not work.",
   "desktop group_that_link_didnt_work: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = "यह लिंक काम नहीं किया: यह ग्रुप आमंत्रण नहीं है, इसकी समय-सीमा खत्म हो गई है, या इसका होस्ट ऑफ़लाइन है।"
+text = "इस लिंक ने काम नहीं किया: यह ग्रुप आमंत्रण नहीं है, इसकी समय-सीमा खत्म हो गई है, या इसका होस्ट ऑफ़लाइन है।"
 
 [t_07152d37e7]
 en = "Paste"
@@ -2532,7 +2532,7 @@ where = [
   "ios unlock_wrong_pass: Error under the passphrase field on the unlock screen.",
   "desktop app_that_passphrase_didnt_open: Desktop, app-level notices and notifications (in app.rs, friendly).",
 ]
-text = "उस पासफ़्रेज़ से खाता नहीं खुला।"
+text = "इस पासफ़्रेज़ से खाता नहीं खुला।"
 
 [t_b4a454d8bc]
 en = "Can’t open {name}’s account"
@@ -2689,7 +2689,7 @@ where = [
   "ios unlock_open_as: Title of the account picker at login.",
   "desktop signup_open_as: Desktop, sign-up, restore and add contact (in signup_view.rs, open_as_menu).",
 ]
-text = "इस रूप में खोलें"
+text = "कौन-सा खाता खोलें"
 
 [t_a3c01b8533]
 en = "Accounts"
@@ -2803,7 +2803,7 @@ en = "{current} goes offline on this phone. Calls to {current} will ring only on
 where = [
   "android accounts_switch_lead: Explanation on the switch-confirmation screen. {current} is the nickname of the account that is open now (it appears twice but is passed once).",
 ]
-text = "इस फ़ोन पर {current} ऑफ़लाइन हो जाएगा। जब तक आप वापस नहीं आते, {current} की कॉल सिर्फ़ आपके दूसरे लिंक किए गए डिवाइस पर बजेंगी।"
+text = "इस फ़ोन पर {current} ऑफ़लाइन हो जाएगा। जब तक आप वापस इस खाते पर न आएँ, {current} की कॉल सिर्फ़ आपके दूसरे लिंक किए गए डिवाइस पर बजेंगी।"
 
 [t_e96b3bac70]
 en = "Passphrase for {name}"
@@ -2819,7 +2819,7 @@ where = [
   "android accounts_not_on_call: Reassuring hint on the switch-confirmation screen when no call is going on.",
   "ios unlock_not_in_call: Hint on the switch-account confirmation.",
 ]
-text = "आप किसी कॉल पर नहीं हैं। अगर होते, तो खाता बदलने से वह कॉल कट जाती।"
+text = "अभी कोई कॉल नहीं चल रही। अगर चल रही होती, तो खाता बदलने से वह कट जाती।"
 
 [t_b58c7a4f2b]
 en = "Switching…"
@@ -2984,7 +2984,7 @@ en = "Couldn’t open sharing. Copy your code instead."
 where = [
   "android profile_code_share_failed: Message under the code when the system share sheet could not open.",
 ]
-text = "शेयर करना नहीं खुल पाया। इसके बजाय अपना कोड कॉपी करें।"
+text = "शेयर करने का विकल्प नहीं खुल पाया। इसके बजाय अपना कोड कॉपी करें।"
 
 [t_8a28a69a04]
 en = "Contact code"
@@ -3146,7 +3146,7 @@ where = [
   "android profile_err_too_detailed: Error when the cropped picture is still too large to store.",
   "ios people_profile_too_detailed: Error when the cropped picture is too large to store.",
 ]
-text = "वह तस्वीर सहेजने के लिए बहुत भारी है। कोई दूसरी तस्वीर आज़माएँ।"
+text = "वह फ़ोटो सहेजने के लिए बहुत भारी है। कोई दूसरी फ़ोटो आज़माएँ।"
 
 [t_67397e7f8f]
 en = "Picture updated"
@@ -3154,7 +3154,7 @@ where = [
   "android profile_announce_updated: Spoken confirmation (screen reader only) after a new profile picture was saved.",
   "ios people_profile_picture_updated: Screen reader announcement after the picture changed.",
 ]
-text = "तस्वीर बदल गई"
+text = "फ़ोटो बदल गई"
 
 [t_7dedaeb6f2]
 en = "Picture removed"
@@ -3162,7 +3162,7 @@ where = [
   "android profile_announce_removed: Spoken confirmation (screen reader only) after the profile picture was removed.",
   "ios people_profile_picture_removed: Screen reader announcement after the picture was removed.",
 ]
-text = "तस्वीर हटा दी गई"
+text = "फ़ोटो हटा दी गई"
 
 [t_011c8e04fa]
 en = "Picture"
@@ -3170,7 +3170,7 @@ where = [
   "android profile_picture_desc: Screen-reader description of the picture area at the top of the profile editor.",
   "ios people_profile_picture: Accessibility label of the profile picture area.",
 ]
-text = "तस्वीर"
+text = "फ़ोटो"
 
 [t_b746d800be]
 en = "Saved on this device. Will sync when you’re connected."
@@ -3321,14 +3321,14 @@ en = "Choose your picture"
 where = [
   "android profile_layer_choose_picture: Screen-reader label of the picture-cropping sheet.",
 ]
-text = "अपनी तस्वीर चुनें"
+text = "अपनी फ़ोटो चुनें"
 
 [t_d53faf1679]
 en = "Remove your picture"
 where = [
   "android profile_remove_picture_title: Screen-reader label of the remove-picture sheet.",
 ]
-text = "अपनी तस्वीर हटाएँ"
+text = "अपनी फ़ोटो हटाएँ"
 
 [t_dd50c89f8b]
 en = "Remove your picture?"
@@ -3337,7 +3337,7 @@ where = [
   "ios people_profile_remove_title: Title of the remove picture dialog.",
   "desktop profile_remove_your_picture: Desktop, profile and settings (in profile_view.rs, profile_layer).",
 ]
-text = "अपनी तस्वीर हटाएँ?"
+text = "अपनी फ़ोटो हटाएँ?"
 
 [t_9a1be52acf]
 en = "Your initials will show instead."
@@ -3355,7 +3355,7 @@ where = [
   "ios people_picture_help: Explains what removing or replacing the profile picture can and cannot do.",
   "desktop profile_picture_help: Help text under the profile picture settings.",
 ]
-text = "तस्वीर बदलने या हटाने पर, आपके लिंक किए गए डिवाइस और संपर्कों से सिंक होते समय पिछली सहेजी कॉपी मिटाने का अनुरोध जाता है। स्क्रीनशॉट, बैकअप और बदले हुए ऐप में रखी गई कॉपी यह ऐप नहीं मिटा सकता।"
+text = "फ़ोटो बदलने या हटाने पर, आपके लिंक किए गए डिवाइस और संपर्कों से सिंक होते समय पिछली सहेजी कॉपी मिटाने का अनुरोध जाता है। स्क्रीनशॉट, बैकअप और बदले हुए ऐप में रखी गई कॉपी यह ऐप नहीं मिटा सकता।"
 
 [t_a2d356b0cd]
 en = "Remove picture"
@@ -3364,7 +3364,7 @@ where = [
   "ios people_profile_remove_picture: Button that removes the profile picture.",
   "desktop profile_remove_picture: Desktop, profile and settings (in profile_view.rs, profile_layer).",
 ]
-text = "तस्वीर हटाएँ"
+text = "फ़ोटो हटाएँ"
 
 [t_ca149949bf]
 en = "Dismiss"
@@ -3415,7 +3415,7 @@ where = [
   "ios people_profile_busy_open: Availability line when busy has no end time.",
   "desktop profile_busy_until_you_change: Desktop, profile and settings (in profile_view.rs, availability).",
 ]
-text = "जब तक आप न बदलें, व्यस्त"
+text = "आपके बदलने तक व्यस्त"
 
 [t_37ec906a0a]
 en = "Choose a time that hasn’t passed yet."
@@ -3555,7 +3555,7 @@ where = [
   "ios people_profile_what_called: Label of the field for the name of a custom information item.",
   "desktop profile_what_is_it_called: Desktop, profile and settings (in profile_view.rs, profile_layer).",
 ]
-text = "इसे क्या कहते हैं?"
+text = "इसका नाम क्या है?"
 
 [t_aecf4a8011]
 en = "For example, Favourite tea"
@@ -3613,7 +3613,7 @@ where = [
   "ios people_crop_title: Title and accessibility label of the picture crop screen.",
   "desktop profile_position_your_picture: Desktop, profile and settings (in profile_view.rs, profile_layer).",
 ]
-text = "अपनी तस्वीर ठीक से रखें"
+text = "अपनी फ़ोटो ठीक से रखें"
 
 [t_5187eb6518]
 en = "Drag to move the picture, or use the arrow keys. Plus and minus zoom."
@@ -3621,7 +3621,7 @@ where = [
   "android profile_crop_hint: Instruction under the picture cropper.",
   "desktop profile_drag_to_move_the: Desktop, profile and settings (in profile_view.rs, profile_layer).",
 ]
-text = "तस्वीर खिसकाने के लिए खींचें या तीर वाली कुंजियाँ इस्तेमाल करें। प्लस और माइनस से ज़ूम करें।"
+text = "फ़ोटो खिसकाने के लिए खींचें या तीर वाली कुंजियाँ इस्तेमाल करें। प्लस और माइनस से ज़ूम करें।"
 
 [t_4b71415535]
 en = "Zoom"
@@ -3647,7 +3647,7 @@ where = [
   "ios people_crop_failed: Error when the crop could not be made.",
   "desktop profile_couldnt_prepare_that_picture: Desktop, profile and settings (in profile_ui.rs, profile_update).",
 ]
-text = "वह तस्वीर तैयार नहीं हो पाई। कोई दूसरी आज़माएँ।"
+text = "वह फ़ोटो तैयार नहीं हो पाई। कोई दूसरी आज़माएँ।"
 
 [t_6ef71f7234]
 en = "Couldn’t save your picture. Your current picture is unchanged."
@@ -3655,7 +3655,7 @@ where = [
   "android profile_err_picture_save: Error when saving a new profile picture failed.",
   "ios people_save_picture_failed: Profile picture could not be saved.",
 ]
-text = "आपकी तस्वीर सहेजी नहीं जा सकी। आपकी मौजूदा तस्वीर पहले जैसी है।"
+text = "आपकी फ़ोटो सहेजी नहीं जा सकी। आपकी मौजूदा फ़ोटो पहले जैसी है।"
 
 [t_2b186de649]
 en = "Couldn’t remove your picture. It is unchanged."
@@ -3663,7 +3663,7 @@ where = [
   "android profile_err_picture_remove: Error when removing the profile picture failed.",
   "ios people_remove_picture_failed: Profile picture could not be removed.",
 ]
-text = "आपकी तस्वीर हटाई नहीं जा सकी। वह पहले जैसी है।"
+text = "आपकी फ़ोटो हटाई नहीं जा सकी। वह पहले जैसी है।"
 
 [t_a087c5a4aa]
 en = "Couldn’t save that. Your profile is unchanged and what you typed is still here."
@@ -3688,7 +3688,7 @@ where = [
   "android profile_pick_too_big: Error when the picked picture file is too large. {size} and {max} are numbers of megabytes, such as 3.2 and 2.",
   "ios people_pic_too_big: Picture refused: too big. {size} is the file size in MB, {max} the limit in MB.",
 ]
-text = "वह तस्वीर {size} MB की है। तस्वीर {max} MB तक की हो सकती है।"
+text = "वह फ़ोटो {size} MB की है। फ़ोटो {max} MB तक की हो सकती है।"
 
 [t_2133a72bde]
 en = "Tinline can use PNG, JPEG or WebP pictures. That file is a different kind of file."
@@ -3697,7 +3697,7 @@ where = [
   "ios people_pic_bad_type: Picture refused: not PNG, JPEG or WebP.",
   "desktop profile_tinline_can_use_png: Desktop, profile and settings (in profile_ui.rs, inspect).",
 ]
-text = "Tinline में PNG, JPEG या WebP तस्वीरें चलती हैं। वह फ़ाइल किसी और तरह की है।"
+text = "Tinline में PNG, JPEG या WebP फ़ोटो चलती हैं। वह फ़ाइल किसी और तरह की है।"
 
 [t_27a3a26172]
 en = "That file couldn’t be read as a picture. It may be damaged."
@@ -3706,14 +3706,14 @@ where = [
   "ios people_pic_unreadable: Picture refused: it could not be decoded.",
   "desktop profile_that_file_couldnt_be: Desktop, profile and settings (in profile_ui.rs, inspect).",
 ]
-text = "वह फ़ाइल तस्वीर के रूप में पढ़ी नहीं जा सकी। हो सकता है वह खराब हो।"
+text = "वह फ़ाइल फ़ोटो के रूप में पढ़ी नहीं जा सकी। हो सकता है वह खराब हो।"
 
 [t_eabe302ef0]
 en = "That picture is {width} × {height} pixels. Tinline accepts up to {max} pixels on a side."
 where = [
   "android profile_pick_too_wide: Error when the picked picture has too many pixels. {width} and {height} are the picture's size, {max} the longest side allowed.",
 ]
-text = "वह तस्वीर {width} × {height} पिक्सेल की है। Tinline हर तरफ़ {max} पिक्सेल तक लेता है।"
+text = "वह फ़ोटो {width} × {height} पिक्सेल की है। Tinline हर तरफ़ {max} पिक्सेल तक लेता है।"
 
 [t_4b7a9203ca]
 en = "The name can’t be empty."
@@ -3819,7 +3819,7 @@ where = [
   "android profile_err_use_picture_controls: Error when someone tries to set the picture as an ordinary field.",
   "ios people_rule_picture: Profile check: the picture cannot be set as plain information.",
 ]
-text = "इसके लिए तस्वीर वाले बटन इस्तेमाल करें।"
+text = "इसके लिए फ़ोटो वाले बटन इस्तेमाल करें।"
 
 [t_3cfbc5f218]
 en = "Availability can be changed but not removed."
@@ -4074,8 +4074,8 @@ en_other = "Word {number} and {count} more aren’t in the recovery word list. C
 where = [
   "android onboarding_restore_bad_words_more: Error when several typed words are not recovery words. {number} is the position of the first wrong word, {count} how many others are wrong.",
 ]
-one = "शब्द {number} और {count} और शब्द रिकवरी शब्दों की सूची में नहीं हैं। वर्तनी जाँचें।"
-other = "शब्द {number} और {count} और शब्द रिकवरी शब्दों की सूची में नहीं हैं। वर्तनी जाँचें।"
+one = "शब्द {number} और {count} दूसरे शब्द रिकवरी शब्दों की सूची में नहीं हैं। वर्तनी जाँचें।"
+other = "शब्द {number} और {count} दूसरे शब्द रिकवरी शब्दों की सूची में नहीं हैं। वर्तनी जाँचें।"
 
 [t_2de75251a6]
 en_one = "{count} word is still missing."
@@ -4101,7 +4101,7 @@ where = [
   "android onboarding_restore_lead_words: Lead on the restore step.",
   "ios restore_lead_words: Intro on the restore screen before a key is pasted.",
 ]
-text = "अपने 24 शब्द क्रम से टाइप करें, या उन्हें या अपनी रिकवरी कुंजी पहले बॉक्स में पेस्ट करें। ये इसी फ़ोन पर रहते हैं।"
+text = "अपने 24 शब्द क्रम से टाइप करें, या पहले बॉक्स में शब्द या अपनी रिकवरी कुंजी पेस्ट करें। ये इसी फ़ोन पर रहते हैं।"
 
 [t_e91162bfae]
 en = "Recovery key"
@@ -4332,7 +4332,7 @@ where = [
   "android onboarding_tip_groups_body: Tip text about hosting groups on a computer.",
   "ios onboarding_tip_groups_body: Tip body.",
 ]
-text = "ग्रुप शुरू करने के लिए Tinline को ऐसे कंप्यूटर पर जोड़ें जो चालू रह सके।"
+text = "ग्रुप शुरू करने के लिए ऐसे कंप्यूटर पर भी Tinline इंस्टॉल करें जो चालू रह सके।"
 
 [t_0681cf989c]
 en = "What should people call you?"
@@ -4871,7 +4871,7 @@ en = "By continuing, you agree to the {terms} and have read the {privacy}."
 where = [
   "android onboarding_terms_by_continuing: Sentence under the terms points. {terms} and {privacy} are replaced by tappable links labelled with the next two entries; word order may change.",
 ]
-text = "आगे बढ़ने पर आप {terms} से सहमत होते हैं और आपने {privacy} पढ़ ली है।"
+text = "आगे बढ़ने का मतलब है कि आप {terms} से सहमत हैं और आपने {privacy} पढ़ ली है।"
 
 [t_f59458f78e]
 en = "Terms of Use"
@@ -4907,7 +4907,7 @@ where = [
   "android onboarding_perms_lead: Lead on the permissions step.",
   "ios onboarding_perms_lead: Explanation on the permissions screen.",
 ]
-text = "Tinline एक फ़ोन लाइन की तरह काम करता है: यह बैकग्राउंड में चुपचाप खुला रहता है। इनमें से हर एक ज़रूरी नहीं है, और आप इन्हें बाद में बदल सकते हैं।"
+text = "Tinline एक फ़ोन लाइन की तरह काम करता है: यह बैकग्राउंड में चुपचाप खुला रहता है। इनमें से कोई भी ज़रूरी नहीं है, और आप इन्हें बाद में बदल सकते हैं।"
 
 [t_ff3d541d05]
 en = "Microphone"
@@ -4970,7 +4970,7 @@ where = [
   "android onboarding_perm_background: Permission name for staying alive in the background.",
   "android perms_battery_need_title: Name of the battery-exemption permission (internal label of a permission the app needs).",
 ]
-text = "बैकग्राउंड में चलें"
+text = "बैकग्राउंड में चलना"
 
 [t_71c28a78f9]
 en = "Android pauses idle apps to save battery. This keeps your line open, using a little battery."
@@ -5122,7 +5122,7 @@ where = [
   "android settings_accounts_note: Explanation under the account list on the Settings landing.",
   "ios settings_accounts_note: Explanation under the account list.",
 ]
-text = "इस फ़ोन पर सिर्फ़ चुना हुआ खाता ऑनलाइन रहता है। खाता बदलने पर दूसरा रुक जाता है: जब तक आप उसे फिर से नहीं चुनते, उस पर कॉल नहीं आतीं।"
+text = "इस फ़ोन पर सिर्फ़ चुना हुआ खाता ऑनलाइन रहता है। खाता बदलने पर दूसरा रुक जाता है: जब तक आप उसे फिर से न चुनें, उस पर कॉल नहीं आतीं।"
 
 [t_5cab984542]
 en = "Appearance"
@@ -5457,7 +5457,7 @@ where = [
   "android settings_sound_classic: Name of a call sound set.",
   "ios settings_sound_classic: Ringtone choice name.",
 ]
-text = "क्लासिक चाइम"
+text = "क्लासिक झंकार"
 
 [t_973e2907f7]
 en = "A bright four-note chime."
@@ -5465,7 +5465,7 @@ where = [
   "android settings_sound_classic_sub: Description of the Classic chime call sound.",
   "ios settings_sound_classic_sub: Description of the Classic chime ringtone.",
 ]
-text = "चार सुरों वाली खिली हुई चाइम।"
+text = "चार सुरों की चमकीली झंकार।"
 
 [t_9b9e6e2e8f]
 en = "Slack → taut"
@@ -5548,7 +5548,7 @@ where = [
   "ios settings_sounds_note_quiet: Note under the sound previews when quiet mode is on.",
   "desktop profile_quiet_is_on_so: Desktop, profile and settings (in profile_view.rs, sounds_page).",
 ]
-text = "शांत चालू है, इसलिए प्रीव्यू में आवाज़ नहीं आएगी।"
+text = "“शांत” चालू है, इसलिए प्रीव्यू में आवाज़ नहीं आएगी।"
 
 [t_4bd4717d11]
 en = "Tap a sound to hear it. The choice applies to the next call."
@@ -5639,7 +5639,7 @@ where = [
   "ios settings_storage_pictures: Storage breakdown label.",
   "desktop profile_pictures: Desktop, profile and settings (in profile_ui.rs, profile_update).",
 ]
-text = "तस्वीरें"
+text = "फ़ोटो"
 
 [t_00bfd7b1da]
 en = "Files"
@@ -5666,7 +5666,7 @@ where = [
   "ios settings_storage_download: Section heading for picture download choices.",
   "desktop profile_download_pictures: Desktop, profile and settings (in profile_view.rs, storage_page).",
 ]
-text = "तस्वीरें डाउनलोड करें"
+text = "फ़ोटो डाउनलोड करें"
 
 [t_22409bf022]
 en = "Always"
@@ -5735,7 +5735,7 @@ where = [
   "android settings_clear_cache_sub: Small line under Clear cache. {size} is a formatted size such as 12 MB.",
   "ios settings_clear_cache_sub: Subtitle of Clear cache; {size} is a size such as 12 MB.",
 ]
-text = "आपकी खोली गई तस्वीरें और फ़ाइलें, {size}। खोलने पर ये फिर से तैयार हो जाती हैं।"
+text = "आपकी खोली गई फ़ोटो और फ़ाइलें, {size}। खोलने पर ये फिर से तैयार हो जाती हैं।"
 
 [t_1a905db57c]
 en = "Cleared"
@@ -5762,7 +5762,7 @@ where = [
   "ios settings_storage_note: Note under the Clear cache row.",
   "desktop profile_to_free_more_space: Desktop, profile and settings (in profile_view.rs, storage_page).",
 ]
-text = "और जगह खाली करने के लिए उनकी चैट से तस्वीरें या फ़ाइलें हटाएँ।"
+text = "और जगह खाली करने के लिए उनकी चैट से फ़ोटो या फ़ाइलें हटाएँ।"
 
 [t_b61b10150e]
 en_one = "{count} person"
@@ -5846,7 +5846,7 @@ where = [
   "ios settings_privacy_note: Note under the privacy rows.",
   "desktop profile_your_contacts_see_your: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = "आपके संपर्क आपका नाम, तस्वीर और प्रोफ़ाइल देखते हैं। Tinline यह नहीं छिपाता कि आप किससे बात करते हैं, और आपके खाते से लिंक किया हर डिवाइस आपकी चैट पढ़ सकता है।"
+text = "आपके संपर्क आपका नाम, फ़ोटो और प्रोफ़ाइल देखते हैं। Tinline यह नहीं छिपाता कि आप किससे बात करते हैं, और आपके खाते से लिंक किया हर डिवाइस आपकी चैट पढ़ सकता है।"
 
 [t_d13fbdcef3]
 en = "Read receipts"
@@ -5906,7 +5906,7 @@ where = [
   "android settings_presence_off: Small line under the public-group presence switch when it is off.",
   "desktop profile_you_stay_off_their: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = "आप उनकी ऑनलाइन सूची में नहीं दिखते"
+text = "उनकी ऑनलाइन सूची में आपका नाम नहीं दिखता"
 
 [t_d7e9b858a1]
 en = "Public groups are the ones anyone can join with an open link. This applies on this device; your other devices keep their own choice."
@@ -5921,14 +5921,14 @@ en = "Group pictures"
 where = [
   "android settings_group_pictures: Section heading on the Privacy page: when pictures in groups download by themselves.",
 ]
-text = "ग्रुप की तस्वीरें"
+text = "ग्रुप की फ़ोटो"
 
 [t_fae414092c]
 en = "Pictures in groups come from the group’s hosts. This applies on this device."
 where = [
   "android settings_group_pictures_note: Note under the group pictures choices.",
 ]
-text = "ग्रुप की तस्वीरें ग्रुप के होस्ट से आती हैं। यह इस डिवाइस पर लागू होता है।"
+text = "ग्रुप की फ़ोटो ग्रुप के होस्ट से आती हैं। यह इस डिवाइस पर लागू होता है।"
 
 [t_dba3db1114]
 en = "Can call you"
@@ -5986,7 +5986,7 @@ en = "Tinline stays connected in the background so calls ring like a normal phon
 where = [
   "android settings_battery_hint: Explanation at the top of the background and battery page.",
 ]
-text = "Tinline बैकग्राउंड में जुड़ा रहता है ताकि आम फ़ोन की तरह कॉल की घंटी बजे। इसमें थोड़ी बैटरी लगती है। नीचे दी गई सूची वह है जो Android को इसकी अनुमति देने के लिए चाहिए।"
+text = "Tinline बैकग्राउंड में जुड़ा रहता है ताकि आम फ़ोन की तरह कॉल की घंटी बजे। इसमें थोड़ी बैटरी लगती है। Android से इसकी अनुमति पाने के लिए नीचे दी गई चीज़ें ज़रूरी हैं।"
 
 [t_3a5e4ab9a1]
 en = "CHECKLIST"
@@ -6123,7 +6123,7 @@ where = [
   "android settings_backup_private: Lead text on the recovery backup page.",
   "ios security_keep_private: Warning on the recovery backup page.",
 ]
-text = "इसे निजी रखें। जिसके पास यह है, वह आपकी तरह काम कर सकता है।"
+text = "इसे निजी रखें। जिसके पास यह है, वह आपके नाम से काम कर सकता है।"
 
 [t_9cea364af8]
 en = "24 words"
@@ -6314,7 +6314,7 @@ en = "Paste it to whoever is helping you fix a problem"
 where = [
   "android settings_log_copy_sub: Small line under Copy debug log.",
 ]
-text = "इसे उन्हें पेस्ट करें जो समस्या ठीक करने में आपकी मदद कर रहे हैं"
+text = "जो समस्या सुलझाने में आपकी मदद कर रहे हैं, उनके लिए इसे पेस्ट करें"
 
 [t_faf274135a]
 en = "Send debug log"
@@ -6652,7 +6652,7 @@ where = [
   "ios devices_unlink_body: Body of the unlink dialog.",
   "desktop link_it_stops_syncing_and: Desktop, linking devices (in link_view.rs, unlink_confirm).",
 ]
-text = "यह सिंक होना और आपकी कॉल पर घंटी बजना बंद कर देगा। अगर यह ऑनलाइन है, तो यह अपने-आप से आपका खाता हटा देगा।"
+text = "यह सिंक होना और आपकी कॉल पर घंटी बजना बंद कर देगा। अगर यह ऑनलाइन है, तो यह आपका खाता अपने यहाँ से हटा देगा।"
 
 [t_04c6ed465e]
 en = "Unlinking can’t lock it from here. Anyone who can unlock it can still use your account. The only full cut-off is a new account."
@@ -7052,7 +7052,7 @@ en = "Approving sends your {bold} to {name}. It becomes a full copy of you: it c
 where = [
   "android link_approve_warning: Warning on the approval step. {bold} is the words recovery phrase, shown in bold; {name} is the new device's name.",
 ]
-text = "मंज़ूरी देने पर आपके {bold} {name} को भेजे जाएँगे। वह पूरी तरह आपकी कॉपी बन जाता है: वह आपकी चैट पढ़ सकता है और आपकी तरह काम कर सकता है। सिर्फ़ उसी डिवाइस को मंज़ूरी दें जो आपके हाथ में है।"
+text = "मंज़ूरी देने पर आपके {bold} {name} को भेजे जाएँगे। वह पूरी तरह आपकी कॉपी बन जाता है: वह आपकी चैट पढ़ सकता है और आपके नाम से काम कर सकता है। सिर्फ़ उसी डिवाइस को मंज़ूरी दें जो आपके हाथ में है।"
 
 [t_5362d277d1]
 en = "recovery phrase"
@@ -7806,7 +7806,7 @@ where = [
   "android conv_older_body: Body of the note about older messages at the top of a chat.",
   "ios chat_older_body: Body of the older-messages banner.",
 ]
-text = "यह फ़ोन संदेश तब से रखता है जब से आपने इसे इस्तेमाल करना शुरू किया। पहले के दिन तब लोड होंगे जब आप दोनों ऑनलाइन होंगे।"
+text = "यह फ़ोन संदेश तब से रखता है जब से आपने इसे इस्तेमाल करना शुरू किया। पहले के दिन आप दोनों के ऑनलाइन होने पर लोड होंगे।"
 
 [t_6d056581be]
 en = "You’re offline. Messages send when you’re back online."
@@ -8181,7 +8181,7 @@ where = [
   "android conv_sends_when_online: Chip on a photo that waits to be sent. {first} is the contact's first name.",
   "ios chat_sends_when_online: Chip on a photo waiting to be sent. {first} is the other person's first name.",
 ]
-text = "{first} के ऑनलाइन होने पर जाएगा"
+text = "{first} के ऑनलाइन होने पर जाएगी"
 
 [t_62e2c511f3]
 en = "{size} · {type} · tap to open"
@@ -8364,7 +8364,7 @@ where = [
   "android conv_edits_reach_self: Hint at the bottom of the message sheet in the 'You' chat.",
   "ios chat_sheet_hint_self: Hint at the bottom of the message sheet for a saved item.",
 ]
-text = "बदलाव और मिटाना आपके दूसरे डिवाइस तक तब पहुँचते हैं जब वे ऑनलाइन होते हैं।"
+text = "बदलाव और मिटाए गए संदेश आपके दूसरे डिवाइस तक तब पहुँचते हैं जब वे ऑनलाइन होते हैं।"
 
 [t_7c20d84ae7]
 en = "Edits and deletes reach {first}’s phone the next time you’re both online."
@@ -8372,7 +8372,7 @@ where = [
   "android conv_edits_reach_peer: Hint at the bottom of the message sheet. {first} is the contact's first name.",
   "ios chat_sheet_hint: Hint at the bottom of the message sheet. {first} is the other person's first name.",
 ]
-text = "बदलाव और मिटाना {first} के फ़ोन तक तब पहुँचते हैं जब आप दोनों अगली बार ऑनलाइन होते हैं।"
+text = "बदलाव और मिटाए गए संदेश अगली बार आप दोनों के ऑनलाइन होने पर {first} के फ़ोन तक पहुँचते हैं।"
 
 [t_6a9b6c8bea]
 en = "Save for yourself"
@@ -8679,7 +8679,7 @@ where = [
   "android search_recent: Heading of the recent searches list.",
   "ios shell_search_recent: Header of the list of recent searches.",
 ]
-text = "हाल की"
+text = "हाल की खोजें"
 
 [t_f8f4fec065]
 en = "Clear"
@@ -9198,7 +9198,7 @@ where = [
   "android groupsc_req_declined: Confirmation after declining a chat request from a group member. {name} is their first name.",
   "ios group_done_request_declined: Confirmation after declining a chat request. {name} is their first name.",
 ]
-text = "अस्वीकार किया। {name} को “अस्वीकार” बताया गया है।"
+text = "अस्वीकार कर दिया। {name} को बताया गया है कि अनुरोध अस्वीकार हुआ।"
 
 [t_b6b906e762]
 en = "They"
@@ -9215,7 +9215,7 @@ where = [
   "android groupsc_unread: Spoken description (screen reader) of the unread badge on a group row. {count} is the number of unread posts.",
   "ios shell_tab_unread: Screen reader value of a tab badge. {count} unread chats.",
 ]
-text = "{count} बिना पढ़े"
+text = "बिना पढ़े: {count}"
 
 [t_69ec5f24a8]
 en = "{filled} of {total} flags"
@@ -9269,7 +9269,7 @@ where = [
   "ios call_group_ended_host_lost: Reason shown when a group call ends because its call host disappeared.",
   "desktop gcall_call_ended_host_lost: Desktop, group calls (in gcall.rs, gcall_event).",
 ]
-text = "कॉल खत्म — होस्ट नहीं रहा"
+text = "कॉल खत्म — होस्ट चला गया"
 
 [t_970dcb83b1]
 en = "Battery under 15 %. Hosting is limited: only one person is heard at a time, and no one new can join."
@@ -9420,7 +9420,7 @@ where = [
   "ios call_group_about_trust: Paragraph on the group call details card about trusting the call host.",
   "desktop gcall_your_connection_to_the: Desktop, group calls (in gcall_view.rs, gcall_about).",
 ]
-text = "कॉल होस्ट से आपका कनेक्शन एन्क्रिप्टेड है, लेकिन आवाज़ कॉल होस्ट तक पहुँचती है, इसलिए वह यह कॉल सुन सकता है। कॉल के लिए आप उस पर वैसे ही भरोसा करते हैं जैसे पोस्ट के लिए चैट होस्ट पर।"
+text = "कॉल होस्ट से आपका कनेक्शन एन्क्रिप्टेड है, लेकिन आवाज़ कॉल होस्ट तक पहुँचती है, इसलिए वह यह कॉल सुन सकता है। कॉल के लिए आप उस पर वैसे ही भरोसा करते हैं जैसे पोस्ट के लिए ग्रुप होस्ट पर।"
 
 [t_58d3e5c07e]
 en = "A call host is a device a group admin chose and that agreed to it. It is separate from chat hosting. Admins can change call hosts in Group info."
@@ -9429,7 +9429,7 @@ where = [
   "ios call_group_about_who: Paragraph on the group call details card about who can be a call host.",
   "desktop gcall_a_call_host_is: Desktop, group calls (in gcall_view.rs, gcall_about).",
 ]
-text = "कॉल होस्ट वह डिवाइस है जिसे ग्रुप के किसी एडमिन ने चुना और जिसने इसे स्वीकार किया। यह चैट होस्टिंग से अलग है। एडमिन ग्रुप की जानकारी में कॉल होस्ट बदल सकते हैं।"
+text = "कॉल होस्ट वह डिवाइस है जिसे ग्रुप के किसी एडमिन ने चुना और जिसने इसे स्वीकार किया। यह ग्रुप होस्टिंग से अलग है। एडमिन ग्रुप की जानकारी में कॉल होस्ट बदल सकते हैं।"
 
 [t_c38df51058]
 en = "Got it"
@@ -9560,7 +9560,7 @@ where = [
   "android addcontact_reading_image: Hint while a picked image is searched for a QR code.",
   "ios people_add_reading_image: Shown while a picked image is searched for a QR code.",
 ]
-text = "तस्वीर पढ़ी जा रही है…"
+text = "फ़ोटो पढ़ी जा रही है…"
 
 [t_a67faf6bd8]
 en = "Show my code"
@@ -9585,7 +9585,7 @@ where = [
   "android addcontact_choose_image: Button that picks an image containing someone's QR code.",
   "ios people_add_choose_image: Button that picks an image containing a QR code.",
 ]
-text = "तस्वीर चुनें"
+text = "फ़ोटो चुनें"
 
 [t_5788cd4a54]
 en = "Your code"
@@ -9727,7 +9727,7 @@ where = [
   "android addcontact_no_qr: Hint when a picked image has no QR code.",
   "ios people_add_hint_no_qr: Hint when the picked image has no QR code.",
 ]
-text = "कोई QR नहीं मिला। कोई साफ़ तस्वीर आज़माएँ।"
+text = "कोई QR नहीं मिला। कोई साफ़ फ़ोटो आज़माएँ।"
 
 [t_a9bb534440]
 en = "More than one QR. Crop to the one you want."
@@ -9743,14 +9743,14 @@ where = [
   "android addcontact_unreadable_image: Hint when a picked image cannot be read.",
   "ios people_add_hint_unreadable: Hint when the picked image could not be read.",
 ]
-text = "वह तस्वीर पढ़ी नहीं जा सकी। कोई दूसरी चुनें।"
+text = "वह फ़ोटो पढ़ी नहीं जा सकी। कोई दूसरी चुनें।"
 
 [t_4ccbe5fea4]
 en = "Couldn’t open sharing. You can copy your code instead."
 where = [
   "android addcontact_share_failed: Hint when the system share sheet could not open.",
 ]
-text = "शेयर करना नहीं खुल पाया। इसके बजाय आप अपना कोड कॉपी कर सकते हैं।"
+text = "शेयर करने का विकल्प नहीं खुल पाया। इसके बजाय आप अपना कोड कॉपी कर सकते हैं।"
 
 [t_6a7f43281a]
 en = "You blocked {name}. Unblock them in Privacy before adding them again."
@@ -9868,7 +9868,7 @@ where = [
   "android addcontact_read_image: Chip under the found person's name: the code came from a picked image.",
   "ios people_add_read_image: Chip: the code was read from an image.",
 ]
-text = "तस्वीर से पढ़ा गया"
+text = "फ़ोटो से पढ़ा गया"
 
 [t_5e989ba654]
 en = "Accepted your request"
@@ -10389,7 +10389,7 @@ where = [
   "android video_hd_on: Accessibility label of the HD chip while sharper video is on.",
   "ios call_hd_label_on: Accessibility label of the HD chip when HD is on.",
 ]
-text = "साफ़ वीडियो चालू, 540p तक"
+text = "ज़्यादा साफ़ वीडियो चालू, 540p तक"
 
 [t_94ad82fe0b]
 en = "Sharper video off"
@@ -10399,7 +10399,7 @@ where = [
   "ios call_hd_label_off: Accessibility label of the HD chip when HD is off.",
   "desktop common_sharper_video_off: Shared label, used in several places (camera, view).",
 ]
-text = "साफ़ वीडियो बंद"
+text = "ज़्यादा साफ़ वीडियो बंद"
 
 [t_367cbada8e]
 en = "Sharper video on, paused while the connection is weak"
@@ -10408,7 +10408,7 @@ where = [
   "ios call_hd_label_paused: Accessibility label of the HD chip when HD is paused.",
   "desktop call_sharper_video_on_paused: Desktop, calls (voice and video) (in view.rs, hd_chip).",
 ]
-text = "साफ़ वीडियो चालू, कमज़ोर कनेक्शन की वजह से रुका है"
+text = "ज़्यादा साफ़ वीडियो चालू, कमज़ोर कनेक्शन की वजह से रुका है"
 
 [t_f13857c248]
 en = "Camera permission needed - they can still hear you"
@@ -10658,7 +10658,7 @@ where = [
   "android call_unreachable_body: Explanation under the Couldn’t reach heading. {name} is the contact's name (or 'They').",
   "ios call_unreachable_body: Explanation when a call could not connect. {name} is the contact.",
 ]
-text = "हो सकता है {name} ऑफ़लाइन हों, सिग्नल न हो, या अभी कॉल न ले रहे हों। Tinline मैसेज नहीं छोड़ सकता।"
+text = "हो सकता है {name} ऑफ़लाइन हों, सिग्नल न हो, या अभी कॉल न ले रहे हों। Tinline में संदेश छोड़ने की सुविधा नहीं है।"
 
 [t_4b691ade90]
 en = "Tinline can’t use the microphone"
@@ -11204,7 +11204,7 @@ where = [
   "ios shell_banner_unavailable_text: Banner text when the user is not available.",
   "desktop gate_calls_wont_ring_until: Desktop, sign-in and gate screens (in view.rs, problem).",
 ]
-text = "जब तक आप इसे फिर से चालू नहीं करते, कॉल की घंटी नहीं बजेगी।"
+text = "जब तक आप इसे फिर से चालू न करें, कॉल की घंटी नहीं बजेगी।"
 
 [t_a2b83ef1c7]
 en = "Turn on"
@@ -11454,7 +11454,7 @@ en = "You joined the group."
 where = [
   "android main_joined_group: Snackbar after I joined a group by link.",
 ]
-text = "आप ग्रुप से जुड़ गए हैं।"
+text = "अब आप ग्रुप के सदस्य हैं।"
 
 [t_6118e29833]
 en = "Last message {time}"
@@ -11646,7 +11646,7 @@ en = "A call host carries the call. Everyone in a call connects to it, and it pa
 where = [
   "ios group_callhosts_note_admin: Explanation under the call host list, for admins.",
 ]
-text = "कॉल होस्ट कॉल को चलाता है। कॉल में सभी इससे जुड़ते हैं और यह आवाज़ आगे पहुँचाता है, इसलिए यह कॉल सुन सकता है। यह चैट होस्टिंग से अलग है: चैट होस्ट तब तक कॉल होस्ट नहीं होता जब तक आप उसे कॉल होस्ट भी नियुक्त न करें। कॉल होस्ट वे सदस्य हैं जिन पर आप भरोसा करते हैं, और हर एक खुद स्वीकार करता है। किसी सदस्य के मेनू से कॉल होस्ट नियुक्त करें, या इस फ़ोन पर कॉल होस्ट करें। फ़ोन सिर्फ़ वही कॉल होस्ट करता है जो उसका मालिक शुरू करता है।"
+text = "कॉल होस्ट कॉल को चलाता है। कॉल में सभी इससे जुड़ते हैं और यह आवाज़ आगे पहुँचाता है, इसलिए यह कॉल सुन सकता है। यह ग्रुप होस्टिंग से अलग है: ग्रुप होस्ट तब तक कॉल होस्ट नहीं होता जब तक आप उसे कॉल होस्ट भी नियुक्त न करें। कॉल होस्ट वे सदस्य हैं जिन पर आप भरोसा करते हैं, और हर एक खुद स्वीकार करता है। किसी सदस्य के मेनू से कॉल होस्ट नियुक्त करें, या इस फ़ोन पर कॉल होस्ट करें। फ़ोन सिर्फ़ वही कॉल होस्ट करता है जो उसका मालिक शुरू करता है।"
 
 [t_a2f22a6fc1]
 en = "{flags} of {total}"
@@ -12130,7 +12130,7 @@ en = "{name} goes offline on this phone. Calls to {name} will ring only on your 
 where = [
   "ios unlock_switch_body: Body of the switch-account confirmation; {name} is the current account's name.",
 ]
-text = "इस फ़ोन पर {name} ऑफ़लाइन हो जाएगा। जब तक आप वापस नहीं आते, {name} की कॉल सिर्फ़ आपके दूसरे लिंक किए गए डिवाइस पर बजेंगी।"
+text = "इस फ़ोन पर {name} ऑफ़लाइन हो जाएगा। जब तक आप वापस इस खाते पर न आएँ, {name} की कॉल सिर्फ़ आपके दूसरे लिंक किए गए डिवाइस पर बजेंगी।"
 
 [t_049066acc6]
 en = "{count} of 24"
@@ -12172,7 +12172,7 @@ en = "Approving sends your {phrase} to {name}. It becomes a full copy of you: it
 where = [
   "ios link_approve_body: Warning on the approval step; {phrase} is the bold words recovery phrase and {name} is the new device's name.",
 ]
-text = "मंज़ूरी देने पर आपके {phrase} {name} को भेजे जाएँगे। वह पूरी तरह आपकी कॉपी बन जाता है: वह आपकी चैट पढ़ सकता है और आपकी तरह काम कर सकता है। सिर्फ़ उसी डिवाइस को मंज़ूरी दें जो आपके हाथ में है।"
+text = "मंज़ूरी देने पर आपके {phrase} {name} को भेजे जाएँगे। वह पूरी तरह आपकी कॉपी बन जाता है: वह आपकी चैट पढ़ सकता है और आपके नाम से काम कर सकता है। सिर्फ़ उसी डिवाइस को मंज़ूरी दें जो आपके हाथ में है।"
 
 [t_9fa27bd052]
 en = "Linked to {name}"
@@ -12194,7 +12194,7 @@ en = "By continuing, you agree to the [Terms of Use]({terms_url}) and have read 
 where = [
   "ios onboarding_terms_consent: Consent line above the I agree button. Markdown links: keep the [text](url) shape, translate only the link text; {terms_url} and {privacy_url} are web addresses.",
 ]
-text = "आगे बढ़ने पर आप [इस्तेमाल की शर्तों]({terms_url}) से सहमत होते हैं और आपने [प्राइवेसी पॉलिसी]({privacy_url}) पढ़ ली है।"
+text = "आगे बढ़ने का मतलब है कि आप [इस्तेमाल की शर्तों]({terms_url}) से सहमत हैं और आपने [प्राइवेसी पॉलिसी]({privacy_url}) पढ़ ली है।"
 
 [t_3f7e7c2a80]
 en = "{name} allowed"
@@ -12265,7 +12265,7 @@ en = "Word {n} and {more} more aren’t in the recovery word list. Check the spe
 where = [
   "ios shell_restore_bad_many: Restore screen message. {n} is the first wrong word’s position, {more} how many other words are also wrong.",
 ]
-text = "शब्द {n} और {more} और शब्द रिकवरी शब्दों की सूची में नहीं हैं। वर्तनी जाँचें।"
+text = "शब्द {n} और {more} दूसरे शब्द रिकवरी शब्दों की सूची में नहीं हैं। वर्तनी जाँचें।"
 
 [t_814973bf24]
 en = "{sub} from {name}"
@@ -12371,7 +12371,7 @@ en = "That picture is {w} × {h} pixels. Tinline accepts up to {max} pixels on a
 where = [
   "ios people_pic_too_large_px: Picture refused: too many pixels. {w} and {h} are its width and height, {max} the limit per side.",
 ]
-text = "वह तस्वीर {w} × {h} पिक्सेल की है। Tinline हर तरफ़ {max} पिक्सेल तक लेता है।"
+text = "वह फ़ोटो {w} × {h} पिक्सेल की है। Tinline हर तरफ़ {max} पिक्सेल तक लेता है।"
 
 [t_77c8c02847]
 en = "Busy is not available yet. Your call settings are unchanged."
@@ -12379,14 +12379,14 @@ where = [
   "ios people_busy_unsupported: Shown when the user picks Busy, which the call path does not support yet.",
   "desktop profile_busy_unsupported: Shown when the Busy availability option is not available.",
 ]
-text = "व्यस्त अभी उपलब्ध नहीं है। आपकी कॉल सेटिंग पहले जैसी हैं।"
+text = "“व्यस्त” अभी उपलब्ध नहीं है। आपकी कॉल सेटिंग पहले जैसी हैं।"
 
 [t_767555f71c]
 en = "Drag to move the picture. Use the slider to zoom."
 where = [
   "ios people_crop_help: Help text under the crop area.",
 ]
-text = "तस्वीर खिसकाने के लिए खींचें। ज़ूम के लिए स्लाइडर इस्तेमाल करें।"
+text = "फ़ोटो खिसकाने के लिए खींचें। ज़ूम के लिए स्लाइडर इस्तेमाल करें।"
 
 [t_32daee4811]
 en = "{bytes} of {limit} bytes"
@@ -12467,7 +12467,7 @@ where = [
   "ios call_hd_on: Short note under the call header after turning the HD chip on.",
   "desktop video_sharper_video_on: Desktop, video (in camera.rs, hd_line).",
 ]
-text = "साफ़ वीडियो चालू"
+text = "ज़्यादा साफ़ वीडियो चालू"
 
 [t_7cb3c69eef]
 en = "On mobile data, HD uses more · tap HD"
@@ -12523,7 +12523,7 @@ en = "They may be offline, out of signal, or not taking calls right now. Tinline
 where = [
   "ios call_unreachable_body_blank: Explanation when a call could not connect and the contact has no name.",
 ]
-text = "हो सकता है वे ऑफ़लाइन हों, सिग्नल न हो, या अभी कॉल न ले रहे हों। Tinline मैसेज नहीं छोड़ सकता।"
+text = "हो सकता है वे ऑफ़लाइन हों, सिग्नल न हो, या अभी कॉल न ले रहे हों। Tinline में संदेश छोड़ने की सुविधा नहीं है।"
 
 [t_d70797cc69]
 en = "A device name is 1 to 64 characters."
@@ -13034,7 +13034,7 @@ en = "For testing. Your picture may stutter or your computer may heat up."
 where = [
   "desktop call_for_testing_your_picture: Desktop, calls (voice and video) (in call_screen.rs, call_nerds).",
 ]
-text = "टेस्टिंग के लिए। आपकी तस्वीर अटक सकती है या कंप्यूटर गरम हो सकता है।"
+text = "टेस्टिंग के लिए। आपका वीडियो अटक सकता है या कंप्यूटर गरम हो सकता है।"
 
 [t_1e415b4258]
 en = "Hang up"
@@ -13097,7 +13097,7 @@ en = "Sharper video on, up to 720p"
 where = [
   "desktop call_sharper_video_on_up: Desktop, calls (voice and video) (in view.rs, hd_chip).",
 ]
-text = "साफ़ वीडियो चालू, 720p तक"
+text = "ज़्यादा साफ़ वीडियो चालू, 720p तक"
 
 [t_3981b6e3cf]
 en = "{value} signal · {value2}"
@@ -13335,7 +13335,7 @@ en = "{name} is offline. Delete for everyone reaches their devices when you’re
 where = [
   "desktop chat_is_offline_delete_for: Desktop, chats (in chat_view.rs, delete_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = "{name} ऑफ़लाइन हैं। सबके लिए मिटाना उनके डिवाइस तक तब पहुँचेगा जब आप दोनों ऑनलाइन होंगे।"
+text = "{name} ऑफ़लाइन हैं। आप दोनों के ऑनलाइन होने पर “सबके लिए मिटाएँ” उनके डिवाइस तक पहुँचेगा।"
 
 [t_d5890c1bc8]
 en = "It was never delivered, so it’s only on this computer."
@@ -13384,7 +13384,7 @@ en = "Older messages are on {name}’s computer. This computer keeps them from w
 where = [
   "desktop chat_older_messages_are_on: Desktop, chats (in chat_view.rs, history_note). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = "पुराने संदेश {name} के कंप्यूटर पर हैं। यह कंप्यूटर संदेश तब से रखता है जब से आपने इसे इस्तेमाल करना शुरू किया। पहले के दिन तब लोड होंगे जब आप दोनों ऑनलाइन होंगे।"
+text = "पुराने संदेश {name} के कंप्यूटर पर हैं। यह कंप्यूटर संदेश तब से रखता है जब से आपने इसे इस्तेमाल करना शुरू किया। पहले के दिन आप दोनों के ऑनलाइन होने पर लोड होंगे।"
 
 [t_250a61953d]
 en = "On {name}’s device"
@@ -13461,7 +13461,7 @@ en = "Sends when {name} is online"
 where = [
   "desktop chat_sends_when_is_online: Desktop, chats (in chat_view.rs, image_view). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = "{name} के ऑनलाइन होने पर जाएगा"
+text = "{name} के ऑनलाइन होने पर जाएगी"
 
 [t_647f422a10]
 en = "Signed by {name} · {value}"
@@ -13517,7 +13517,7 @@ en = "Added {value}"
 where = [
   "desktop contact_added: Desktop, contact detail (in view.rs, detail_view). {value} is a value filled in by the app.",
 ]
-text = "{value} जोड़ा गया"
+text = "{value} को जोड़ा गया"
 
 [t_81af947f5e]
 en = "Calls themself “{name}” · {added}"
@@ -13594,7 +13594,7 @@ en = "Anyone who sees these words can become you. Write them down and keep them 
 where = [
   "desktop gate_anyone_who_sees_these: Desktop, sign-in and gate screens (in view.rs, phrase_view).",
 ]
-text = "जो भी ये शब्द देख ले, वह आप बन सकता है। इन्हें लिख लें और किसी सुरक्षित जगह रखें।"
+text = "जो भी ये शब्द देख ले, वह आपकी जगह ले सकता है। इन्हें लिख लें और किसी सुरक्षित जगह रखें।"
 
 [t_83fb73677c]
 en = "I have saved it"
@@ -13734,14 +13734,14 @@ en = "A call host carries the call. Everyone in a call connects to it, and it pa
 where = [
   "desktop group_a_call_host_carries: Desktop, groups (in group_live_view.rs, group_info_page). {value} is a value filled in by the app.",
 ]
-text = "कॉल होस्ट कॉल को चलाता है। कॉल में सभी इससे जुड़ते हैं और यह आवाज़ आगे पहुँचाता है, इसलिए यह कॉल सुन सकता है। यह चैट होस्टिंग से अलग है: चैट होस्ट तब तक कॉल होस्ट नहीं होता जब तक आप उसे कॉल होस्ट भी नियुक्त न करें। कॉल होस्ट वे सदस्य हैं जिन पर आप भरोसा करते हैं, और हर एक खुद स्वीकार करता है।{value}"
+text = "कॉल होस्ट कॉल को चलाता है। कॉल में सभी इससे जुड़ते हैं और यह आवाज़ आगे पहुँचाता है, इसलिए यह कॉल सुन सकता है। यह ग्रुप होस्टिंग से अलग है: ग्रुप होस्ट तब तक कॉल होस्ट नहीं होता जब तक आप उसे कॉल होस्ट भी नियुक्त न करें। कॉल होस्ट वे सदस्य हैं जिन पर आप भरोसा करते हैं, और हर एक खुद स्वीकार करता है।{value}"
 
 [t_c72585d311]
 en = "A call host is a member’s computer or phone that carries the call. An admin can appoint one in Group info."
 where = [
   "desktop group_a_call_host_is: Desktop, groups (in group_live_view.rs, live_pane).",
 ]
-text = "कॉल होस्ट किसी सदस्य का कंप्यूटर या फ़ोन होता है जो कॉल चलाता है। कोई एडमिन ग्रुप की जानकारी में इसे नियुक्त कर सकते हैं।"
+text = "कॉल होस्ट किसी सदस्य का कंप्यूटर या फ़ोन होता है जो कॉल चलाता है। एडमिन ग्रुप की जानकारी में इसे नियुक्त कर सकते हैं।"
 
 [t_d1b8093efb]
 en = "A call host is a member’s computer or phone that carries the call. You can host calls on this computer, or appoint a member in Group info."
@@ -14170,14 +14170,14 @@ en = "Member of {gname}"
 where = [
   "desktop group_member_of: Desktop, groups (in group_live_view.rs, live_overlay). {gname} is a value filled in by the app.",
 ]
-text = "{gname} में सदस्य"
+text = "{gname} के सदस्य"
 
 [t_0bae5b80cc]
 en = "Member of {group_name}"
 where = [
   "desktop group_member_of_2: Desktop, groups (in group_live_view.rs, live_requests). {group_name} is a value filled in by the app.",
 ]
-text = "{group_name} में सदस्य"
+text = "{group_name} के सदस्य"
 
 [t_b595c9bfb0]
 en = "Member since {value}"
@@ -14653,7 +14653,7 @@ en = "You’ll own the group. This computer hosts it at first: it keeps the grou
 where = [
   "desktop group_youll_own_the_group: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = "ग्रुप के मालिक आप होंगे। शुरुआत में यह कंप्यूटर इसे होस्ट करता है: यह ग्रुप को रखता है और सदस्यों के फ़ोन सोते समय संदेश आगे पहुँचाता है, इसलिए यह हमेशा चालू रहने वाले कंप्यूटर पर सबसे अच्छा चलता है।"
+text = "यह ग्रुप आपका होगा। शुरुआत में यह कंप्यूटर इसे होस्ट करता है: यह ग्रुप को रखता है और सदस्यों के फ़ोन सोते समय संदेश आगे पहुँचाता है, इसलिए यह हमेशा चालू रहने वाले कंप्यूटर पर सबसे अच्छा चलता है।"
 
 [t_eae8e245fc]
 en = "Yours will be flag {yours} of {flags_needed}. Any admin’s flags count, yours again too. At {flags_needed} flags {name} is removed right away and sees they were removed."
@@ -14723,7 +14723,7 @@ en = "A linked device becomes you"
 where = [
   "desktop link_a_linked_device_becomes: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = "लिंक किया गया डिवाइस आप बन जाता है"
+text = "लिंक किया गया डिवाइस पूरी तरह आपकी कॉपी बन जाता है"
 
 [t_d73b68764a]
 en = "A passphrase encrypts your account on this computer. Optional — leave it empty and Tinline opens straight to your contacts. You can add one later in Settings."
@@ -14989,7 +14989,7 @@ en = "Show this to the device you want to add. It becomes you, so only link your
 where = [
   "desktop link_show_this_to_the: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = "इसे उस डिवाइस को दिखाएँ जिसे आप जोड़ना चाहते हैं। वह आप बन जाता है, इसलिए सिर्फ़ अपना ही डिवाइस लिंक करें।"
+text = "इसे उस डिवाइस को दिखाएँ जिसे आप जोड़ना चाहते हैं। वह पूरी तरह आपकी कॉपी बन जाता है, इसलिए सिर्फ़ अपना ही डिवाइस लिंक करें।"
 
 [t_0826ccb2c7]
 en = "Start using Tinline"
@@ -15115,7 +15115,7 @@ en = "You type it each time Tinline starts."
 where = [
   "desktop link_you_type_it_each: Desktop, linking devices (in link_view.rs, link_secure_screen).",
 ]
-text = "Tinline शुरू होने पर हर बार आप इसे टाइप करेंगे।"
+text = "Tinline हर बार शुरू होने पर इसे माँगेगा।"
 
 [t_ffd65be7e1]
 en = "Your account is on the other device."
@@ -15171,14 +15171,14 @@ en = "Anyone who has it can act as you, just like the words. Tinline never asks 
 where = [
   "desktop profile_anyone_who_has_it: Desktop, profile and settings (in profile_view.rs, phrase_page).",
 ]
-text = "जिसके पास यह है, वह शब्दों की तरह ही आपकी तरह काम कर सकता है। Tinline इसे सिर्फ़ आपका खाता वापस लाने के लिए माँगता है, और कभी नहीं।"
+text = "जिसके पास यह है, वह शब्दों की ही तरह आपके नाम से काम कर सकता है। Tinline इसे सिर्फ़ आपका खाता वापस लाने के लिए माँगता है, और कभी नहीं।"
 
 [t_2c40fa833f]
 en = " Anyone who still has your recovery phrase, or can unlock {name}, can still act as you. If it is lost or stolen, the only full fix is a new account."
 where = [
   "desktop profile_anyone_who_still_has: Desktop, profile and settings (in profile_view.rs, devices_layer). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = " जिसके पास अब भी आपके रिकवरी शब्द हैं, या जो {name} को अनलॉक कर सकता है, वह अब भी आपकी तरह काम कर सकता है। अगर यह खो जाए या चोरी हो जाए, तो पूरी तरह ठीक करने का एक ही तरीका है: नया खाता।"
+text = " जिसके पास अब भी आपके रिकवरी शब्द हैं, या जो {name} को अनलॉक कर सकता है, वह अब भी आपके नाम से काम कर सकता है। अगर यह खो जाए या चोरी हो जाए, तो पूरी तरह ठीक करने का एक ही तरीका है: नया खाता।"
 
 [t_9bb58d6614]
 en = "Audio, security and hosting"
@@ -15297,7 +15297,7 @@ en = "Every linked device is a full copy of you: it can read your chats and act 
 where = [
   "desktop profile_every_linked_device_is: Desktop, profile and settings (in profile_view.rs, devices_page).",
 ]
-text = "हर लिंक किया गया डिवाइस पूरी तरह आपकी कॉपी है: वह आपकी चैट पढ़ सकता है और आपकी तरह काम कर सकता है। यहाँ के नाम सिर्फ़ आपके डिवाइस के लिए हैं; संपर्क इन्हें कभी नहीं देखते।"
+text = "हर लिंक किया गया डिवाइस पूरी तरह आपकी कॉपी है: वह आपकी चैट पढ़ सकता है और आपके नाम से काम कर सकता है। यहाँ के नाम सिर्फ़ आपके डिवाइस के लिए हैं; संपर्क इन्हें कभी नहीं देखते।"
 
 [t_87fd46df46]
 en = "Fixed rung"
@@ -15339,14 +15339,14 @@ en = "Hides in {seconds} s"
 where = [
   "desktop profile_hides_in_s: Desktop, profile and settings (in profile_view.rs, phrase_page). {seconds} is a value filled in by the app.",
 ]
-text = "{seconds} से. में छिप जाएगा"
+text = "{seconds} सेकंड में छिप जाएगा"
 
 [t_bca16c3e78]
 en = "Hosts keep every group picture so members can load them. This applies on this device."
 where = [
   "desktop profile_hosts_keep_every_group: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = "होस्ट ग्रुप की हर तस्वीर रखते हैं ताकि सदस्य उन्हें लोड कर सकें। यह इस डिवाइस पर लागू होता है।"
+text = "होस्ट ग्रुप की हर फ़ोटो रखते हैं ताकि सदस्य उन्हें लोड कर सकें। यह इस डिवाइस पर लागू होता है।"
 
 [t_6523fe005e]
 en = "{name} isn’t one of your contacts. You know them through a group. Looking at a profile doesn’t add anyone."
@@ -15415,7 +15415,7 @@ en = "Load group pictures by themselves"
 where = [
   "desktop profile_load_group_pictures_by: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = "ग्रुप की तस्वीरें अपने-आप लोड करें"
+text = "ग्रुप की फ़ोटो अपने-आप लोड करें"
 
 [t_b711ca0977]
 en = "Match my computer"
@@ -15499,7 +15499,7 @@ en = "{value} of pictures and files you’ve opened. They’re prepared again wh
 where = [
   "desktop profile_of_pictures_and_files: Desktop, profile and settings (in profile_view.rs, storage_page). {value} is a value filled in by the app.",
 ]
-text = "आपकी खोली गई तस्वीरें और फ़ाइलें, {value}। खोलने पर ये फिर से तैयार हो जाती हैं।"
+text = "आपकी खोली गई फ़ोटो और फ़ाइलें, {value}। खोलने पर ये फिर से तैयार हो जाती हैं।"
 
 [t_d060fc5ab7]
 en = "Off means messages only"
@@ -15527,7 +15527,7 @@ en = "Only the selected account is online on this computer. Switching pauses the
 where = [
   "desktop profile_only_the_selected_account: Desktop, profile and settings (in profile_view.rs, settings_landing).",
 ]
-text = "इस कंप्यूटर पर सिर्फ़ चुना हुआ खाता ऑनलाइन रहता है। खाता बदलने पर दूसरा रुक जाता है: जब तक आप उसे फिर से नहीं चुनते, उस पर कॉल नहीं आतीं।"
+text = "इस कंप्यूटर पर सिर्फ़ चुना हुआ खाता ऑनलाइन रहता है। खाता बदलने पर दूसरा रुक जाता है: जब तक आप उसे फिर से न चुनें, उस पर कॉल नहीं आतीं।"
 
 [t_0ed74faf85]
 en = "Only this device has your account. Link another to keep a second copy of your chats. Your recovery phrase brings back your account, not your messages."
@@ -15569,7 +15569,7 @@ en = "Pictures in groups appear as they arrive"
 where = [
   "desktop profile_pictures_in_groups_appear: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = "ग्रुप की तस्वीरें आते ही दिखती हैं"
+text = "ग्रुप की फ़ोटो आते ही दिखती हैं"
 
 [t_6281bd7fc7]
 en = "Plain (old)"
@@ -15583,7 +15583,7 @@ en = "Profile picture changed while loading"
 where = [
   "desktop profile_profile_picture_changed_while: Desktop, profile and settings (in profile_ui.rs, read_profile).",
 ]
-text = "लोड होते समय प्रोफ़ाइल तस्वीर बदल गई"
+text = "लोड होते समय प्रोफ़ाइल फ़ोटो बदल गई"
 
 [t_784f3ae6ac]
 en = "Quit Tinline"
@@ -15723,14 +15723,14 @@ en = "That picture is {value} MB. Pictures can be up to {value2} MB."
 where = [
   "desktop profile_that_picture_is_mb: Desktop, profile and settings (in profile_ui.rs, inspect). {value} is a value filled in by the app. {value2} is a value filled in by the app.",
 ]
-text = "वह तस्वीर {value} MB की है। तस्वीर {value2} MB तक की हो सकती है।"
+text = "वह फ़ोटो {value} MB की है। फ़ोटो {value2} MB तक की हो सकती है।"
 
 [t_c93b8484c2]
 en = "That picture is {status} × {host} pixels. Tinline accepts up to 4096 pixels on a side."
 where = [
   "desktop profile_that_picture_is_pixels: Desktop, profile and settings (in profile_ui.rs, inspect). {status} is a value filled in by the app. {host} is a value filled in by the app.",
 ]
-text = "वह तस्वीर {status} × {host} पिक्सेल की है। Tinline हर तरफ़ 4096 पिक्सेल तक लेता है।"
+text = "वह फ़ोटो {status} × {host} पिक्सेल की है। Tinline हर तरफ़ 4096 पिक्सेल तक लेता है।"
 
 [t_5fc61ddfab]
 en = "The {what} can’t be empty."
@@ -15926,7 +15926,7 @@ en = "Your recovery phrase is the only way to get your account back if you lose 
 where = [
   "desktop profile_your_recovery_phrase_is: Desktop, profile and settings (in profile_view.rs, phrase_page).",
 ]
-text = "अगर आपके सारे डिवाइस खो जाएँ, तो खाता वापस पाने का एकमात्र तरीका आपके रिकवरी शब्द हैं। जिसके पास ये हैं, वह आपकी तरह काम कर सकता है।"
+text = "अगर आपके सारे डिवाइस खो जाएँ, तो खाता वापस पाने का एकमात्र तरीका आपके रिकवरी शब्द हैं। जिसके पास ये हैं, वह आपके नाम से काम कर सकता है।"
 
 [t_25988f1d9a]
 en = "Your settings for {name}"
@@ -15947,14 +15947,14 @@ en = "Anyone who sees these words can become you. Check nobody is looking, then 
 where = [
   "desktop settings_anyone_who_sees_these: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = "जो भी ये शब्द देख ले, वह आप बन सकता है। देख लें कि कोई झाँक नहीं रहा, फिर इन्हें दिखाएँ।"
+text = "जो भी ये शब्द देख ले, वह आपकी जगह ले सकता है। देख लें कि कोई झाँक नहीं रहा, फिर इन्हें दिखाएँ।"
 
 [t_b943e62fec]
 en = "Anyone who sees these words can become you. Check nobody is looking."
 where = [
   "desktop settings_anyone_who_sees_these_words: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = "जो भी ये शब्द देख ले, वह आप बन सकता है। देख लें कि कोई झाँक नहीं रहा।"
+text = "जो भी ये शब्द देख ले, वह आपकी जगह ले सकता है। देख लें कि कोई झाँक नहीं रहा।"
 
 [t_007f441e85]
 en = "Asks you to confirm first"
@@ -15975,7 +15975,7 @@ en = "Calls won’t ring until you turn it back on"
 where = [
   "desktop settings_calls_wont_ring_until: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = "जब तक आप इसे फिर से चालू नहीं करते, कॉल की घंटी नहीं बजेगी"
+text = "जब तक आप इसे फिर से चालू न करें, कॉल की घंटी नहीं बजेगी"
 
 [t_3261bdf0e1]
 en = "Change"
@@ -16213,7 +16213,7 @@ en = " and have read the "
 where = [
   "desktop signup_and_have_read_the: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = " से सहमत होते हैं और आपने यह पढ़ ली है: "
+text = " से सहमत हैं और आपने यह पढ़ ली है: "
 
 [t_4630a76192]
 en = "Couldn’t make a new code just now. Try again in a moment."
@@ -16234,7 +16234,7 @@ en = "Encrypts your account on this computer. You type it each time Tinline star
 where = [
   "desktop signup_encrypts_your_account_on: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = "इस कंप्यूटर पर आपके खाते को एन्क्रिप्ट करता है। Tinline शुरू होने पर हर बार आप इसे टाइप करेंगे। अगर आप इसे भूल जाएँ, तो रिकवरी शब्दों से नया रख सकते हैं।"
+text = "इस कंप्यूटर पर आपके खाते को एन्क्रिप्ट करता है। Tinline हर बार शुरू होने पर इसे माँगेगा। अगर आप इसे भूल जाएँ, तो रिकवरी शब्दों से नया रख सकते हैं।"
 
 [t_c89a3beeba]
 en = "Groups are hosted on a computer. Keep Tinline open and your groups stay reachable."
@@ -16353,7 +16353,7 @@ en = "Type your 24 words in order, or paste them, or your recovery key, into the
 where = [
   "desktop signup_type_your_24_words: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {noun} is the word for this device kind (e.g. computer).",
 ]
-text = "अपने 24 शब्द क्रम से टाइप करें, या उन्हें या अपनी रिकवरी कुंजी पहले बॉक्स में पेस्ट करें। ये इसी {noun} पर रहते हैं।"
+text = "अपने 24 शब्द क्रम से टाइप करें, या पहले बॉक्स में शब्द या अपनी रिकवरी कुंजी पेस्ट करें। ये इसी {noun} पर रहते हैं।"
 
 [t_89cb7b48e0]
 en = "Use your phone to reach emergency services."
@@ -16395,7 +16395,7 @@ en = "{value} You type it each time Tinline starts. If you forget it, your recov
 where = [
   "desktop signup_you_type_it_each: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {value} is a value filled in by the app.",
 ]
-text = "{value} Tinline शुरू होने पर हर बार आप इसे टाइप करेंगे। अगर आप इसे भूल जाएँ, तो रिकवरी शब्दों से नया रख सकते हैं।"
+text = "{value} Tinline हर बार शुरू होने पर इसे माँगेगा। अगर आप इसे भूल जाएँ, तो रिकवरी शब्दों से नया रख सकते हैं।"
 
 [t_2e013de2a8]
 en = "Your account is its recovery phrase, so you can bring it to this {noun} two ways."
