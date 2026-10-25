@@ -26,8 +26,8 @@ struct ShellChatsTabBody<Top: View, Empty: View>: View {
                 // With no chats at all the filters mean nothing yet: the whole row goes, so the hero sits at the same height as on Calls.
                 if !rows.isEmpty {
                     HStack(spacing: 8) {
-                        ShellFilterChip(label: "All", on: !unreadOnly) { unreadOnly = false }
-                        ShellFilterChip(label: "Unread", on: unreadOnly) { unreadOnly = true }
+                        ShellFilterChip(label: tr("shell_filter_all"), on: !unreadOnly) { unreadOnly = false }
+                        ShellFilterChip(label: tr("shell_filter_unread"), on: unreadOnly) { unreadOnly = true }
                         Spacer(minLength: 0)
                     }
                     .padding(.horizontal, 16).padding(.top, 4).padding(.bottom, 8)
@@ -90,8 +90,8 @@ struct ShellChatListRow: View {
 
     private func preview(p: ShellPalette, hasDraft: Bool) -> Text {
         if r.alert { return Text(r.preview).foregroundColor(p.danger).fontWeight(.semibold) }
-        if hasDraft, let d = draft { return Text("Draft:").foregroundColor(p.accentInk).fontWeight(.semibold) + Text(" " + d.replacingOccurrences(of: "\n", with: " ")) }
-        if r.tick == .clock { return Text("Waiting").foregroundColor(tin.threadText).fontWeight(.semibold) + Text(" \u{00B7} " + r.preview) }
+        if hasDraft, let d = draft { return Text(tr("shell_chats_draft")).foregroundColor(p.accentInk).fontWeight(.semibold) + Text(" " + d.replacingOccurrences(of: "\n", with: " ")) }
+        if r.tick == .clock { return Text(tr("shell_chats_waiting")).foregroundColor(tin.threadText).fontWeight(.semibold) + Text(" \u{00B7} " + r.preview) }
         return Text(r.preview)
     }
 }
@@ -99,11 +99,11 @@ struct ShellChatListRow: View {
 /// A group row's mark in words (screen reader).
 func shellListTickLabel(_ v: TickVis) -> String {
     switch v {
-    case .slack: return "Waiting to send"
-    case .one: return "Sent"
-    case .two: return "Delivered to everyone"
-    case .read: return "Read by everyone"
-    case .bad: return "Not delivered"
+    case .slack: return tr("shell_tick_slack")
+    case .one: return tr("shell_tick_one")
+    case .two: return tr("shell_tick_two")
+    case .read: return tr("shell_tick_read")
+    case .bad: return tr("shell_tick_bad")
     }
 }
 
@@ -155,7 +155,7 @@ struct ShellCallsTabBody<Top: View>: View {
     }
 
     private func nameOf(_ r: CallRecord) -> String {
-        contacts.first { $0.did == r.peerDid }.map(ShellText.display) ?? ShellText.ifBlank(r.peerName, "Unknown")
+        contacts.first { $0.did == r.peerDid }.map(ShellText.display) ?? ShellText.ifBlank(r.peerName, tr("shell_unknown"))
     }
 
     @ViewBuilder private func oneRow(_ r: CallRecord, now: Int64) -> some View {
@@ -166,14 +166,14 @@ struct ShellCallsTabBody<Top: View>: View {
         let fg = r.missed ? p.danger : tin.ink2
         HStack(spacing: 2) {
             Button { onProfile(r.peerDid) } label: { ShellAvatar(did: r.peerDid, name: name, size: 48).padding(.leading, 8).padding(.vertical, 8) }
-                .buttonStyle(ShellPressStyle()).accessibilityLabel("\(name)\u{2019}s profile")
+                .buttonStyle(ShellPressStyle()).accessibilityLabel(tr("shell_calls_profile_a11y", name))
             Button { if callable { onCall(r.peerDid) } else { onProfile(r.peerDid) } } label: {
                 HStack(spacing: 12) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(name).shellStyle(.body, weight: .semibold).foregroundStyle(tin.ink).lineLimit(1)
                         HStack(spacing: 5) {
                             ShellIcon(glyph: r.incoming ? .callIn : .callOut, size: 15, color: fg)
-                            Text(dur.map { "\(what) \u{00B7} \($0)" } ?? what).shellStyle(.sub).monospacedDigit().foregroundStyle(fg).lineLimit(1)
+                            Text(dur.map { tr("shell_calls_what_duration", what, $0) } ?? what).shellStyle(.sub).monospacedDigit().foregroundStyle(fg).lineLimit(1)
                         }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -183,7 +183,7 @@ struct ShellCallsTabBody<Top: View>: View {
                 .padding(.leading, 12).padding(.vertical, 8).frame(minHeight: 68)
             }
             .buttonStyle(ShellPressStyle())
-            .accessibilityLabel("\(name), \(what) call" + (dur.map { ", \($0)" } ?? "") + ", \(stamp). " + (callable ? "Call" : "Can\u{2019}t call"))
+            .accessibilityLabel(dur.map { tr("shell_calls_row_a11y_duration", name, what, $0, stamp, callable ? tr("shell_calls_action_call") : tr("shell_calls_action_cant")) } ?? tr("shell_calls_row_a11y", name, what, stamp, callable ? tr("shell_calls_action_call") : tr("shell_calls_action_cant")))
         }
         .padding(.horizontal, 8)
     }
@@ -195,7 +195,7 @@ struct ShellCallsTabBody<Top: View>: View {
         let stamp = ShellText.listTime(Int64(r.startedAt) * 1000, now)
         HStack(spacing: 2) {
             Button { onGroupInfo(r.groupId) } label: { TinGroupAvatar(groupID: r.groupId, size: 48).padding(.leading, 8).padding(.vertical, 8) }
-                .buttonStyle(ShellPressStyle()).accessibilityLabel("\(name), group info")
+                .buttonStyle(ShellPressStyle()).accessibilityLabel(tr("shell_calls_group_info_a11y", name))
             Button { onGroupCall(r.groupId) } label: {
                 HStack(spacing: 12) {
                     VStack(alignment: .leading, spacing: 2) {
@@ -211,7 +211,7 @@ struct ShellCallsTabBody<Top: View>: View {
                 }
                 .padding(.leading, 12).padding(.vertical, 8).frame(minHeight: 68)
             }
-            .buttonStyle(ShellPressStyle()).accessibilityLabel("\(name), \(what), \(stamp). Start or join a call")
+            .buttonStyle(ShellPressStyle()).accessibilityLabel(tr("shell_calls_group_row_a11y", name, what, stamp))
         }
         .padding(.horizontal, 8)
     }
@@ -278,9 +278,9 @@ struct ShellContactsTabBody<Top: View>: View {
                 top()
                 HStack(spacing: 8) {
                     ShellIcon(glyph: .search, size: 18, color: tin.ink2)
-                    TextField("", text: $q, prompt: Text("Find a contact").foregroundColor(tin.ink2))
+                    TextField("", text: $q, prompt: Text(tr("shell_contacts_find")).foregroundColor(tin.ink2))
                         .font(ShellFont.of(.body)).foregroundStyle(tin.ink).tint(p.accentInk).focused($focused)
-                        .autocorrectionDisabled(true).accessibilityLabel("Find a contact")
+                        .autocorrectionDisabled(true).accessibilityLabel(tr("shell_contacts_find"))
                 }
                 .padding(.horizontal, 14).frame(height: 44)
                 .background(Capsule().fill(tin.sf2)).overlay(Capsule().stroke(focused ? p.accent : .clear, lineWidth: 2))
@@ -289,8 +289,8 @@ struct ShellContactsTabBody<Top: View>: View {
                     HStack(spacing: 12) {
                         ShellIcon(glyph: .userPlus, size: 22, color: p.accentInk).frame(width: 44, height: 44).background(Circle().fill(p.accentSoft))
                         VStack(alignment: .leading, spacing: 1) {
-                            Text("Add contact").shellStyle(.body, weight: .semibold).foregroundStyle(tin.ink)
-                            Text("Share your code or paste theirs").shellStyle(.sub).foregroundStyle(tin.ink2)
+                            Text(tr("shell_contacts_add")).shellStyle(.body, weight: .semibold).foregroundStyle(tin.ink)
+                            Text(tr("shell_contacts_add_sub")).shellStyle(.sub).foregroundStyle(tin.ink2)
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }
@@ -298,21 +298,21 @@ struct ShellContactsTabBody<Top: View>: View {
                 }
                 .buttonStyle(ShellPressStyle()).padding(.horizontal, 8)
                 if !waitingIn.isEmpty {
-                    section("Waiting for you")
+                    section(tr("shell_contacts_waiting_you"))
                     ForEach(waitingIn, id: \.did) { r in
                         VStack(alignment: .leading, spacing: 10) {
                             HStack(spacing: 12) {
                                 ShellAvatar(did: r.did, name: ShellText.ifBlank(r.name, "?"), size: 44)
                                 VStack(alignment: .leading, spacing: 1) {
                                     Text(r.name).shellStyle(.body, weight: .semibold).foregroundStyle(tin.ink).lineLimit(1)
-                                    Text("Wants to add you as a contact").shellStyle(.sub).foregroundStyle(tin.ink2)
+                                    Text(tr("shell_contacts_wants_add")).shellStyle(.sub).foregroundStyle(tin.ink2)
                                 }
                             }
                             HStack(spacing: 8) {
-                                ShellPBtn(text: "Accept", variant: .primary) { onAccept(r.did) }
-                                ShellPBtn(text: "Not now", variant: .quiet) { onNotNow(r.did) }
+                                ShellPBtn(text: tr("shell_contacts_accept"), variant: .primary) { onAccept(r.did) }
+                                ShellPBtn(text: tr("shell_not_now"), variant: .quiet) { onNotNow(r.did) }
                             }
-                            Text("Accepting lets you message and call each other.").shellStyle(.sub19).foregroundStyle(tin.ink2)
+                            Text(tr("shell_contacts_accept_hint")).shellStyle(.sub19).foregroundStyle(tin.ink2)
                         }
                         .padding(14).frame(maxWidth: .infinity, alignment: .leading)
                         .background(RoundedRectangle(cornerRadius: 14).fill(tin.sf))
@@ -321,13 +321,13 @@ struct ShellContactsTabBody<Top: View>: View {
                     }
                 }
                 if !waitingOut.isEmpty {
-                    section("Waiting for them")
+                    section(tr("shell_contacts_waiting_them"))
                     ForEach(waitingOut, id: \.did) { x in
                         HStack(spacing: 12) {
                             ShellAvatar(did: x.did, name: ShellText.ifBlank(x.name, "?"), size: 40)
                             VStack(alignment: .leading, spacing: 0) {
                                 Text(x.name).shellStyle(.body, weight: .semibold).foregroundStyle(tin.ink).lineLimit(1)
-                                Text("Request sent. Your line opens when \(ShellText.firstName(x.name)) accepts.").shellStyle(.sub).foregroundStyle(tin.ink2)
+                                Text(tr("shell_contacts_request_sent", ShellText.firstName(x.name))).shellStyle(.sub).foregroundStyle(tin.ink2)
                             }
                         }
                         .padding(8).frame(minHeight: 64).padding(.horizontal, 8)
@@ -340,16 +340,16 @@ struct ShellContactsTabBody<Top: View>: View {
                     }
                 }
                 if !gone.isEmpty {
-                    section("Blocked")
+                    section(tr("shell_blocked"))
                     ForEach(gone, id: \.did) { ct in
-                        ShellPersonRow(name: ShellText.display(ct), did: ct.did, sub: "Blocked", dim: true) { onOpen(ct.did) }.padding(.horizontal, 8)
+                        ShellPersonRow(name: ShellText.display(ct), did: ct.did, sub: tr("shell_blocked"), dim: true) { onOpen(ct.did) }.padding(.horizontal, 8)
                     }
                 }
                 if total == 0 && gone.isEmpty && waitingOut.isEmpty && qBlank {
                     ShellEmptyQuietLine(text: ShellEmpty.contacts)
                 } else if !(total == 0 && qBlank) {
-                    let t = !qBlank && mine.isEmpty && gone.isEmpty ? "No one called \u{201C}\(q.trimmingCharacters(in: .whitespaces))\u{201D} in your contacts."
-                        : "\(total) \(total == 1 ? "contact" : "contacts")"
+                    let t = !qBlank && mine.isEmpty && gone.isEmpty ? tr("shell_contacts_none_match", q.trimmingCharacters(in: .whitespaces))
+                        : trn("shell_contacts_count", total)
                     Text(t).shellStyle(.sub19).foregroundStyle(tin.ink2).multilineTextAlignment(.center)
                         .frame(maxWidth: .infinity, minHeight: 19).padding(.horizontal, 16).padding(.top, 14)
                 }
@@ -378,16 +378,16 @@ struct ShellNewChatScreen: View {
 
     var body: some View {
         let now = ShellText.nowMs()
-        let last = Dictionary(app.chats.filter { $0.lastActivity > 0 }.map { ($0.peerDid, "Last message \(ShellText.listTime(Int64($0.lastActivity), now))") },
+        let last = Dictionary(app.chats.filter { $0.lastActivity > 0 }.map { ($0.peerDid, tr("shell_new_chat_last_message", ShellText.listTime(Int64($0.lastActivity), now))) },
                               uniquingKeysWith: { a, _ in a })
         let sorted = people.contacts.sorted { ShellText.display($0).lowercased() < ShellText.display($1).lowercased() }
         let t = query.trimmingCharacters(in: .whitespaces)
         let shown = sorted.filter { t.isEmpty || ShellText.display($0).localizedCaseInsensitiveContains(t) || $0.name.localizedCaseInsensitiveContains(t) }
         ShellPage {
             if searching {
-                ShellSearchBar(query: $query, hint: "Search contacts", onClose: { searching = false; query = "" })
+                ShellSearchBar(query: $query, hint: tr("shell_new_chat_search_contacts"), onClose: { searching = false; query = "" })
             } else {
-                ShellTopBar("New chat", onBack: onBack)
+                ShellTopBar(tr("shell_home_new_chat"), onBack: onBack)
             }
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 0) {
@@ -395,7 +395,7 @@ struct ShellNewChatScreen: View {
                         Button { searching = true } label: {
                             HStack(spacing: 12) {
                                 ShellIcon(glyph: .search, size: 24, color: tin.ink2)
-                                Text("Search contacts").font(TinType.bodyL).foregroundStyle(tin.ink2)
+                                Text(tr("shell_new_chat_search_contacts")).font(TinType.bodyL).foregroundStyle(tin.ink2)
                                 Spacer(minLength: 0)
                             }
                             .padding(.horizontal, 16).frame(minHeight: 52).background(Capsule().fill(tin.sf2))
@@ -405,8 +405,8 @@ struct ShellNewChatScreen: View {
                             HStack(spacing: 14) {
                                 ShellIcon(glyph: .userPlus, size: 24, color: tin.onPr).frame(width: 48, height: 48).background(Circle().fill(tin.pr))
                                 VStack(alignment: .leading, spacing: 0) {
-                                    Text("Add a contact").font(TinType.bodyL.weight(.semibold)).foregroundStyle(tin.ink)
-                                    Text("Scan their code or paste their card").font(TinType.bodyM).foregroundStyle(tin.ink2)
+                                    Text(tr("shell_new_chat_add")).font(TinType.bodyL.weight(.semibold)).foregroundStyle(tin.ink)
+                                    Text(tr("shell_new_chat_add_sub")).font(TinType.bodyM).foregroundStyle(tin.ink2)
                                 }
                                 Spacer(minLength: 0)
                             }
@@ -414,14 +414,14 @@ struct ShellNewChatScreen: View {
                         }
                         .buttonStyle(ShellPressStyle(radius: 0))
                     }
-                    if !people.contacts.isEmpty { ShellSectionLabel("CONTACTS \u{00B7} \(people.contacts.count)") }
+                    if !people.contacts.isEmpty { ShellSectionLabel(tr("shell_new_chat_contacts_header", people.contacts.count)) }
                     ForEach(shown, id: \.did) { ct in
                         Button { onPick(ct.did) } label: {
                             HStack(spacing: 14) {
                                 ShellAvatar(did: ct.did, name: ShellText.display(ct), size: 48)
                                 VStack(alignment: .leading, spacing: 0) {
                                     Text(ShellText.display(ct)).font(TinType.bodyL.weight(.semibold)).foregroundStyle(tin.ink).lineLimit(1)
-                                    Text(last[ct.did] ?? "No messages yet").font(TinType.bodyM).foregroundStyle(tin.ink2)
+                                    Text(last[ct.did] ?? tr("shell_new_chat_no_messages")).font(TinType.bodyM).foregroundStyle(tin.ink2)
                                 }
                                 Spacer(minLength: 0)
                             }
@@ -439,18 +439,18 @@ struct ShellNewChatScreen: View {
 /// Home.kt SearchBar: back, the 18 pt field (focused on open), clear; a line below.
 struct ShellSearchBar: View {
     @Binding var query: String
-    var hint = "Search contacts"
+    var hint = tr("shell_new_chat_search_contacts")
     let onClose: () -> Void
     @FocusState private var focused: Bool
     @Environment(\.tin) private var tin
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 0) {
-                ShellIconButton(glyph: .back, label: "Close search", size: 48, iconSize: 24, action: onClose)
+                ShellIconButton(glyph: .back, label: tr("shell_close_search"), size: 48, iconSize: 24, action: onClose)
                 TextField("", text: $query, prompt: Text(hint).foregroundColor(tin.ink2))
                     .font(ShellFont.figtree(18)).foregroundStyle(tin.ink).tint(tin.pr).focused($focused).submitLabel(.search)
                     .frame(maxWidth: .infinity, minHeight: 48)
-                if !query.isEmpty { ShellIconButton(glyph: .x, label: "Clear", size: 48, iconSize: 24) { query = "" } }
+                if !query.isEmpty { ShellIconButton(glyph: .x, label: tr("shell_clear"), size: 48, iconSize: 24) { query = "" } }
             }
             .frame(minHeight: 64).padding(.leading, 4).padding(.trailing, 8)
             tin.ln.frame(height: 1)
@@ -471,14 +471,14 @@ struct ShellHistoryScreen: View {
     var body: some View {
         let now = ShellText.nowSecs()
         ShellPage {
-            ShellTopBar("Recent calls", onBack: onBack)
+            ShellTopBar(tr("shell_calls_recent"), onBack: onBack)
             if app.history.isEmpty {
-                ShellHint("No calls yet. History stays on this phone only.").padding(24)
+                ShellHint(tr("shell_calls_none")).padding(24)
             } else {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 0) {
                         ForEach(app.history, id: \.callId) { r in
-                            let name = people.contacts.first { $0.did == r.peerDid }.map(ShellText.display) ?? ShellText.ifBlank(r.peerName, "Unknown")
+                            let name = people.contacts.first { $0.did == r.peerDid }.map(ShellText.display) ?? ShellText.ifBlank(r.peerName, tr("shell_unknown"))
                             let red = r.missed
                             Button { if people.contacts.contains(where: { $0.did == r.peerDid }) { onContact(r.peerDid) } } label: {
                                 HStack(spacing: 14) {
@@ -497,7 +497,7 @@ struct ShellHistoryScreen: View {
                             }
                             .buttonStyle(ShellPressStyle(radius: 0))
                         }
-                        ShellHint("History stays on this phone only.").padding(.horizontal, 20).padding(.vertical, 12)
+                        ShellHint(tr("shell_calls_history_note")).padding(.horizontal, 20).padding(.vertical, 12)
                     }
                     .padding(.bottom, 24)
                 }

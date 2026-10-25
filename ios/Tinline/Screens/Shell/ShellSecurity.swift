@@ -35,7 +35,7 @@ struct ShellPhraseGateScreen: View {
             guard phase == .active else { return }
             switch result {
             case .success(let p): onPhrase(p)
-            case .failure(let e): error = ShellText.isWrongPassphrase(e) ? "That didn\u{2019}t match. Try again." : "Couldn\u{2019}t open your backup. Try again."
+            case .failure(let e): error = ShellText.isWrongPassphrase(e) ? tr("security_wrong_pass") : tr("security_open_failed")
             }
         }
     }
@@ -46,11 +46,11 @@ struct ShellPhraseGateScreen: View {
         if hasPass == true { if !pass.isEmpty { reveal() }; return }
         // Recovery must not treat "no prompt" as authentication.
         let auth = ShellWiring.deviceAuth
-        guard auth.available else { error = "Add a screen lock or an app passphrase to open your backup."; return }
+        guard auth.available else { error = tr("security_need_lock"); return }
         guard let ticket = core.profiles.session.ticket() else { return }
         busy = true; prompting = true
         Task {
-            let ok = await auth.ask(reason: "Account recovery")
+            let ok = await auth.ask(reason: tr("security_recovery_title"))
             guard alive else { return }
             prompting = false; busy = false
             if ok && core.profiles.session.accepts(ticket) && phase == .active { reveal() }
@@ -59,22 +59,22 @@ struct ShellPhraseGateScreen: View {
 
     var body: some View {
         ShellPage {
-            ShellTopBar("Account recovery", onBack: onBack)
+            ShellTopBar(tr("security_recovery_title"), onBack: onBack)
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    ShellHint("Only you")
-                    Text("Check it\u{2019}s you before opening your backup.").font(TinType.bodyL).foregroundStyle(tin.ink2)
+                    ShellHint(tr("security_only_you"))
+                    Text(tr("security_check_you")).font(TinType.bodyL).foregroundStyle(tin.ink2)
                     if hasPass == true {
-                        ShellPassField(label: "Your passphrase", text: $pass, enabled: !busy, msgLines: 0, onDone: go)
+                        ShellPassField(label: tr("security_your_pass"), text: $pass, enabled: !busy, msgLines: 0, onDone: go)
                             .onChange(of: pass) { _, _ in error = nil }
                     } else if hasPass == false {
-                        ShellHint("Use your phone\u{2019}s screen lock to continue.")
+                        ShellHint(tr("security_use_lock_hint"))
                     }
                     Text(error ?? "").font(TinType.bodyM).foregroundStyle(tin.er).accessibilityAddTraits(.updatesFrequently)
                 }
                 .padding(24).frame(maxWidth: .infinity, alignment: .leading)
             }
-            ShellTinButton(text: hasPass == false ? "Use screen lock" : "Continue",
+            ShellTinButton(text: hasPass == false ? tr("security_use_lock") : tr("security_continue"),
                            enabled: hasPass != nil && (hasPass == false || !pass.isEmpty) && !busy, action: go)
                 .padding(.horizontal, 24).padding(.bottom, 24)
         }
@@ -82,7 +82,7 @@ struct ShellPhraseGateScreen: View {
             guard let ticket = core.profiles.session.ticket() else { return }
             let result = try? await core.profileWork(ticket) { $0.hasPassphrase() }
             if core.profiles.session.accepts(ticket) { hasPass = result }
-            if result == nil { error = "Couldn\u{2019}t open recovery. Go back and try again." }
+            if result == nil { error = tr("security_recovery_failed") }
         }
         // Leaving the app forgets what was typed and any answer still on its way.
         .onChange(of: phase) { _, p in if p != .active { pass = ""; generation += 1; if !prompting { busy = false } } }
@@ -111,13 +111,13 @@ struct ShellPhraseShownScreen: View {
         let key = (try? recoveryKeyFromPhrase(phrase: phrase)) ?? ""
         let shown = state.visible(now)
         ShellPage {
-            ShellTopBar("Your recovery backup", onBack: onHide)
+            ShellTopBar(tr("security_backup_title"), onBack: onHide)
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    ShellHint("Only you")
-                    Text("Keep this private. Anyone with it can act as you.").font(TinType.bodyL).foregroundStyle(tin.ink2)
+                    ShellHint(tr("security_only_you"))
+                    Text(tr("security_keep_private")).font(TinType.bodyL).foregroundStyle(tin.ink2)
                     HStack(spacing: 8) {
-                        ForEach([(true, "Key"), (false, "24 words")], id: \.1) { asKey, label in
+                        ForEach([(true, tr("security_tab_key")), (false, tr("security_tab_words"))], id: \.1) { asKey, label in
                             let on = state.asKey == asKey
                             Button { state = state.select(asKey); copied = false; error = "" } label: {
                                 Text(label).font(TinType.label).foregroundStyle(on ? tin.onPrc : tin.ink).padding(12)
@@ -128,27 +128,27 @@ struct ShellPhraseShownScreen: View {
                     }
                     if state.asKey { ShellKeyCard(key: shown ? key : "\u{2022}\u{2022}\u{2022}\u{2022} \u{2022}\u{2022}\u{2022}\u{2022} \u{2022}\u{2022}\u{2022}\u{2022} \u{2022}\u{2022}\u{2022}\u{2022}") }
                     else { ShellWordGrid(phrase: phrase, hidden: !shown) }
-                    if state.asKey && key.isEmpty { ShellHint("Couldn\u{2019}t prepare the key. Use your 24 words instead.") }
-                    ShellTinButton(text: shown ? "Hide" : "Reveal", style: .outlined, enabled: !state.asKey || !key.isEmpty) {
+                    if state.asKey && key.isEmpty { ShellHint(tr("security_key_failed")) }
+                    ShellTinButton(text: shown ? tr("security_hide") : tr("security_reveal"), style: .outlined, enabled: !state.asKey || !key.isEmpty) {
                         state = shown ? state.hide() : state.reveal(ShellClock.monoMs()); now = ShellClock.monoMs(); copied = false; error = ""
                     }
-                    ShellHint("Hides after 30 seconds. Locks when you leave the app.")
-                    ShellHint("Key or words restore the same account. Keep either in a private, safe place.")
+                    ShellHint(tr("security_hint_hides"))
+                    ShellHint(tr("security_hint_same"))
                 }
                 .padding(.horizontal, 24).padding(.vertical, 16)
             }
             VStack(spacing: 8) {
-                Text(error.isEmpty ? (copied && shown ? "Copied. Keep it somewhere private." : "") : error)
+                Text(error.isEmpty ? (copied && shown ? tr("security_copied_note") : "") : error)
                     .font(TinType.bodyM).foregroundStyle(tin.ink2).frame(maxWidth: .infinity, minHeight: 20, alignment: .leading)
                 if state.asKey {
-                    ShellTinButton(text: copied ? "Copied" : "Copy key", enabled: shown && !key.isEmpty) {
+                    ShellTinButton(text: copied ? tr("security_copied") : tr("security_copy_key"), enabled: shown && !key.isEmpty) {
                         // Check the monotonic deadline at the gesture, not just at the last render.
                         if state.canCopyKey(ShellClock.monoMs()) && !key.isEmpty && phase == .active {
                             ShellClipboard.copySensitive(key); copied = true; error = ""
                         }
                     }
                 } else {
-                    ShellTinButton(text: "Done", action: onHide)
+                    ShellTinButton(text: tr("security_done"), action: onHide)
                 }
             }
             .padding(.horizontal, 24).padding(.bottom, 24)
@@ -178,29 +178,29 @@ struct ShellChangePassphraseScreen: View {
 
     var body: some View {
         let has = self.has ?? false
-        let title = has ? "Change passphrase" : "Add passphrase"
+        let title = has ? tr("security_change_pass") : tr("security_add_pass")
         ShellPage {
             ShellTopBar(title, onBack: onBack)
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     if has {
-                        ShellPassField(label: "Current passphrase", text: $old, error: error ?? "", enabled: !busy, mono: true)
+                        ShellPassField(label: tr("security_current_pass"), text: $old, error: error ?? "", enabled: !busy, mono: true)
                             .onChange(of: old) { _, _ in error = nil }
                     } else {
-                        Text("Your account lives only on this phone. A passphrase encrypts it, so nobody holding your phone can copy it.")
+                        Text(tr("security_pass_intro"))
                             .font(TinType.bodyL).foregroundStyle(tin.ink2)
                     }
-                    ShellGField(label: has ? "New passphrase" : "Passphrase", text: $pass, secret: true, enabled: !busy)
+                    ShellGField(label: has ? tr("security_new_pass") : tr("security_pass"), text: $pass, secret: true, enabled: !busy)
                         .onChange(of: pass) { _, _ in error = nil }
                     if !has {
-                        ShellNotice("Encrypts your account on this phone. Your phone remembers it, so calls still ring after a restart. If you forget it, your recovery words let you set a new one.", glyph: .lock)
+                        ShellNotice(tr("security_pass_notice"), glyph: .lock)
                         if let error { Text(error).font(TinType.bodyM).foregroundStyle(tin.er) }
                     }
                     if busy { ProgressView().progressViewStyle(.linear).tint(tin.pr) }
                 }
                 .padding(.horizontal, 24).padding(.vertical, 8)
             }
-            ShellTinButton(text: busy ? "Encrypting\u{2026}" : title, enabled: self.has != nil && (!has || !old.isEmpty) && !pass.isEmpty && !busy) {
+            ShellTinButton(text: busy ? tr("security_encrypting") : title, enabled: self.has != nil && (!has || !old.isEmpty) && !pass.isEmpty && !busy) {
                 busy = true; error = nil
                 let o = has ? old : nil, n = pass
                 Task {

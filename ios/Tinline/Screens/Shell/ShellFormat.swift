@@ -12,17 +12,17 @@ enum ShellText {
     static func friendly(_ e: Swift.Error) -> String {
         if let core = e as? Error {
             switch core {
-            case .WrongPassphrase: return "That didn\u{2019}t match. Check the spelling and spaces."
-            case .WeakPassphrase: return "Type a passphrase, or skip it"
-            case .Locked: return "Locked \u{2014} enter your passphrase to unlock"
-            case .BadPhrase: return "That recovery phrase is not valid"
-            case .AccountExists: return "That account is already on this phone"
-            case .InCall: return "Finish your call first"
-            default: return core.errorDescription ?? "Something went wrong"
+            case .WrongPassphrase: return tr("shell_err_wrong_passphrase")
+            case .WeakPassphrase: return tr("shell_err_weak_passphrase")
+            case .Locked: return tr("shell_err_locked")
+            case .BadPhrase: return tr("shell_err_bad_phrase")
+            case .AccountExists: return tr("shell_err_account_exists")
+            case .InCall: return tr("shell_err_in_call")
+            default: return core.errorDescription ?? tr("shell_err_generic")
             }
         }
         if let s = e as? ShellFlowError, let d = s.errorDescription { return d }
-        return "Something went wrong"
+        return tr("shell_err_generic")
     }
 
     static func isWrongPassphrase(_ e: Swift.Error) -> Bool { if case .WrongPassphrase? = e as? Error { return true }; return false }
@@ -55,15 +55,15 @@ enum ShellText {
 
     /// "Outgoing", "Missed", "No answer"...: CallsList.svelte `what()`, over the core's reasons.
     static func callWhat(_ r: CallRecord) -> String {
-        if r.durationSecs > 0 { return r.incoming ? "Incoming" : "Outgoing" }
-        if r.incoming && r.reason == "unavailable" { return "While not available" }
-        if r.incoming { return r.missed ? "Missed" : "Declined" }
+        if r.durationSecs > 0 { return r.incoming ? tr("shell_call_what_incoming") : tr("shell_call_what_outgoing") }
+        if r.incoming && r.reason == "unavailable" { return tr("shell_call_what_unavailable") }
+        if r.incoming { return r.missed ? tr("shell_call_what_missed") : tr("shell_call_what_declined") }
         switch r.reason {
-        case "no_answer": return "No answer"
-        case "declined", "busy": return "Declined"
-        case "cancelled": return "Cancelled"
-        case "unreachable": return "Couldn\u{2019}t connect"
-        default: return "Call"
+        case "no_answer": return tr("shell_call_what_no_answer")
+        case "declined", "busy": return tr("shell_call_what_declined")
+        case "cancelled": return tr("shell_call_what_cancelled")
+        case "unreachable": return tr("shell_call_what_unreachable")
+        default: return tr("shell_call_what_other")
         }
     }
 
@@ -116,11 +116,11 @@ enum ShellRows {
         var out: [ShellChatRow] = []
         if let ch = chats.first(where: { $0.peerDid == myDid }) {
             let at = Int64(ch.lastActivity)
-            out.append(ShellChatRow(did: ch.peerDid, name: "You", preview: ShellText.ifBlank(ch.preview, chatSelfSub),
+            out.append(ShellChatRow(did: ch.peerDid, name: tr("shell_you"), preview: ShellText.ifBlank(ch.preview, chatSelfSub),
                                     time: at > 0 ? ShellText.listTime(at, nowMs) : "", mine: false, tick: .two, unread: Int(ch.unread), atMs: at))
         }
         for ch in chats where ch.lastActivity > 0 && ch.peerDid != myDid {
-            let name = by[ch.peerDid].map(ShellText.display) ?? ShellText.ifBlank(ch.peerName, "Unknown")
+            let name = by[ch.peerDid].map(ShellText.display) ?? ShellText.ifBlank(ch.peerName, tr("shell_unknown"))
             let at = Int64(ch.lastActivity)
             let pending = ch.lastOutgoing && ch.lastDelivery == .pending
             let link = links[ch.peerDid]
@@ -129,7 +129,7 @@ enum ShellRows {
             let status = blocks.status(ch.peerDid)
             out.append(ShellChatRow(
                 did: ch.peerDid, name: name,
-                preview: status ?? (waiting ? "Waiting to send \u{2014} \(ShellText.firstName(name)) isn\u{2019}t reachable yet" : ch.preview),
+                preview: status ?? (waiting ? tr("shell_chat_waiting_unreachable", ShellText.firstName(name)) : ch.preview),
                 time: ShellText.listTime(at, nowMs), mine: ch.lastOutgoing,
                 // The list only draws the clock; delivered/read marks come from signed receipts in the conversation.
                 tick: waiting ? .clock : .one, unread: Int(ch.unread), alert: status != nil, atMs: at, lastId: ch.lastId))
@@ -155,30 +155,30 @@ enum ShellRows {
 
     /// A system line in plain words (GroupsCore.kt `sysText`); `me` is our DID.
     static func groupSysText(_ m: GroupMessage, me: String) -> String {
-        func who(_ did: String, _ name: String) -> String { did == me ? "You" : ShellText.ifBlank(name, "Someone") }
+        func who(_ did: String, _ name: String) -> String { did == me ? tr("shell_you") : ShellText.ifBlank(name, tr("shell_someone")) }
         let by = who(m.authorDid, m.authorName), sub = who(m.subjectDid, m.subjectName), you = m.subjectDid == me
         switch m.kind {
         case .post: return m.text
-        case .joined: return "\(sub) joined"
-        case .left: return "\(sub) left"
-        case .removed: return you ? "You were removed after 3 admin flags" : "\(sub) was removed after 3 admin flags"
-        case .adminGranted: return you ? "\(by) made you an admin" : "\(by) made \(sub) an admin"
-        case .adminRevoked: return you ? "\(by) removed you as admin" : "\(by) removed \(sub) as admin"
-        case .hostAdded: return you ? "A device of yours now hosts the group" : "A device of \(sub)\u{2019}s now hosts the group"
-        case .hostRemoved: return you ? "A device of yours stopped hosting the group" : "A device of \(sub)\u{2019}s stopped hosting the group"
+        case .joined: return tr("shell_group_sys_joined", sub)
+        case .left: return tr("shell_group_sys_left", sub)
+        case .removed: return you ? tr("shell_group_sys_removed_you") : tr("shell_group_sys_removed", sub)
+        case .adminGranted: return you ? tr("shell_group_sys_admin_granted_you", by) : tr("shell_group_sys_admin_granted", by, sub)
+        case .adminRevoked: return you ? tr("shell_group_sys_admin_revoked_you", by) : tr("shell_group_sys_admin_revoked", by, sub)
+        case .hostAdded: return you ? tr("shell_group_sys_host_added_you") : tr("shell_group_sys_host_added", sub)
+        case .hostRemoved: return you ? tr("shell_group_sys_host_removed_you") : tr("shell_group_sys_host_removed", sub)
         }
     }
 
     /// The group row's second line (GroupsCore.kt `preview`).
     static func groupPreview(_ s: GroupSummary, me: String) -> String {
         switch s.myRole {
-        case .removed: return "You were removed from this group"
-        case .left: return "You left this group"
+        case .removed: return tr("shell_group_preview_removed")
+        case .left: return tr("shell_group_preview_left")
         default:
             guard let m = s.last else { return "" }
             if m.kind != .post { return groupSysText(m, me: me) }
-            if m.outgoing { return "You: \(m.text)" }
-            return "\(ShellText.firstName(ShellText.ifBlank(m.authorName, "Someone"))): \(m.text)"
+            if m.outgoing { return tr("shell_group_preview_mine", m.text) }
+            return tr("shell_group_preview_other", ShellText.firstName(ShellText.ifBlank(m.authorName, tr("shell_someone"))), m.text)
         }
     }
 
@@ -208,24 +208,24 @@ enum ShellRows {
 struct ShellEmptyCopy: Equatable { let title: String; let line: String; let act: String }
 
 enum ShellEmpty {
-    static let chats = "Your chats show up here."
-    static let unread = "You\u{2019}re all caught up."
-    static let calls = "Calls you make and receive show up here."
-    static let contacts = "The people you add show up here."
+    static var chats: String { tr("shell_empty_chats") }
+    static var unread: String { tr("shell_empty_unread") }
+    static var calls: String { tr("shell_empty_calls") }
+    static var contacts: String { tr("shell_empty_contacts") }
 
     /// The one function that decides the hero's copy from who you have (and the requests you sent, waiting for an answer).
     static func heroCopy(contacts: [Contact], sent: [ContactRequest] = []) -> ShellEmptyCopy {
         if contacts.isEmpty, let s = sent.first {
-            return ShellEmptyCopy(title: "Your line is ready", line: "Your request to \(ShellText.firstName(s.name)) is waiting. Your line opens when they accept.", act: "Add another contact")
+            return ShellEmptyCopy(title: tr("shell_empty_hero_ready"), line: tr("shell_empty_request_waiting", ShellText.firstName(s.name)), act: tr("shell_empty_add_another"))
         }
         if contacts.isEmpty {
-            return ShellEmptyCopy(title: "Your line is ready", line: "Add someone you\u{2019}d like to talk to, and you can message and call each other.", act: "Add my first contact")
+            return ShellEmptyCopy(title: tr("shell_empty_hero_ready"), line: tr("shell_empty_add_someone"), act: tr("shell_empty_add_first"))
         }
         if contacts.count == 1 {
             let f = ShellText.display(contacts[0]).trimmingCharacters(in: .whitespaces).split(separator: " ").first.map(String.init) ?? ""
-            return ShellEmptyCopy(title: "Your line is open", line: "Say hello to \(f) whenever you like.", act: "Message \(f)")
+            return ShellEmptyCopy(title: tr("shell_empty_hero_open"), line: tr("shell_empty_say_hello", f), act: tr("shell_empty_message", f))
         }
-        return ShellEmptyCopy(title: "Your line is open", line: "Pick someone and say hello whenever you like.", act: "Start a chat")
+        return ShellEmptyCopy(title: tr("shell_empty_hero_open"), line: tr("shell_empty_pick"), act: tr("shell_empty_start_chat"))
     }
 }
 
@@ -242,14 +242,14 @@ enum ShellStep: String, CaseIterable {
 
     var label: String {
         switch self {
-        case .name: return "Your nickname"
-        case .pass, .linkPass: return "Passphrase"
-        case .phrase: return "Recovery phrase"
-        case .device, .linkName: return "Device name"
-        case .terms: return "Terms"
-        case .perms: return "Permissions"
-        case .restore: return "Restore account"
-        case .linkQr: return "Link to your account"
+        case .name: return tr("shell_step_name")
+        case .pass, .linkPass: return tr("shell_step_pass")
+        case .phrase: return tr("shell_step_phrase")
+        case .device, .linkName: return tr("shell_step_device")
+        case .terms: return tr("shell_step_terms")
+        case .perms: return tr("shell_step_perms")
+        case .restore: return tr("shell_step_restore")
+        case .linkQr: return tr("shell_step_link_qr")
         default: return ""
         }
     }
@@ -279,7 +279,7 @@ enum ShellGate {
         return 1
     }
 
-    static let strengthSays = ["Any length works. A few random words are easy to remember.", "Short. A few more words make it stronger.", "Fair", "Strong"]
+    static var strengthSays: [String] { [tr("shell_pass_strength_empty"), tr("shell_pass_strength_short"), tr("shell_pass_strength_fair"), tr("shell_pass_strength_strong")] }
 
     /// The first word of a nickname for "Your line is open, Maya".
     static func first(_ name: String) -> String {
@@ -334,10 +334,9 @@ struct ShellRestoreWords {
     func message(error: String?) -> String {
         let b = badList
         if let first = b.first {
-            let more = b.count > 1 ? " and \(b.count - 1) more" : ""
-            return "Word \(first + 1)\(more) \(b.count > 1 ? "aren\u{2019}t" : "isn\u{2019}t") in the recovery word list. Check the spelling."
+            return b.count > 1 ? tr("shell_restore_bad_many", String(first + 1), String(b.count - 1)) : tr("shell_restore_bad_one", String(first + 1))
         }
-        if recKey.isEmpty && tried && filled < 24 { return "\(24 - filled) words are still missing." }
+        if recKey.isEmpty && tried && filled < 24 { return trn("shell_restore_missing", 24 - filled) }
         return error ?? ""
     }
 

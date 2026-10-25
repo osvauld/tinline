@@ -113,7 +113,7 @@ struct ShellHomeScreen: View {
                                           empty: people.contacts.isEmpty ? AnyView(hero) : nil)
                     case .contacts:
                         ShellContactsTabBody(contacts: people.contacts, blocked: { people.blocks.blockedByMe($0) },
-                                             sub: { did in people.blocks.blockedByMe(did) ? "Blocked" : (people.blocks.status(did) ?? "") },
+                                             sub: { did in people.blocks.blockedByMe(did) ? tr("shell_blocked") : (people.blocks.status(did) ?? "") },
                                              onOpen: { nav.push(.contact($0)) }, onAdd: { nav.openAdd(ShellAddArgs()) }, top: { banner },
                                              waitingIn: waitingIn, waitingOut: people.requestsOut,
                                              onAccept: { did in Task { _ = await people.acceptRequest(did) } }, onNotNow: { hiddenRequests.insert($0) })
@@ -122,7 +122,7 @@ struct ShellHomeScreen: View {
             }
             .frame(maxHeight: .infinity)
             if dock {
-                ShellSearchDock(addLabel: tab == .groups ? "New group" : "New chat", onSearch: { nav.push(.search) },
+                ShellSearchDock(addLabel: tab == .groups ? tr("shell_home_new_group") : tr("shell_home_new_chat"), onSearch: { nav.push(.search) },
                                 onAdd: { if tab == .groups { nav.push(group: ShellWiring.newGroupRoute) } else { nav.push(.newChat) } })
             }
             ShellTabBar(tab: tab, onTab: { nav.tab = $0 }, chatBadge: rows.reduce(0) { $0 + $1.unread }, groupBadge: groupBadge,
@@ -163,11 +163,11 @@ struct ShellHomeScreen: View {
     /// Banner priority: offline, notifications, then availability. Only one shows. (iOS has no battery or full-screen switch.)
     @ViewBuilder private var banner: some View {
         if !online && !grace {
-            ShellBanner(kind: .error, glyph: .off, title: "You\u{2019}re offline", text: "Your calls come through again once you\u{2019}re back online.")
+            ShellBanner(kind: .error, glyph: .off, title: tr("shell_banner_offline_title"), text: tr("shell_banner_offline_text"))
         } else if missing.contains(.notifications) {
-            ShellBanner(kind: .warn, glyph: .mute, title: "Calls won\u{2019}t ring", text: "Notifications are off for Tinline.", action: "Turn on") { fix(.notifications) }
+            ShellBanner(kind: .warn, glyph: .mute, title: tr("shell_banner_noring_title"), text: tr("shell_banner_noring_text"), action: tr("shell_banner_turn_on")) { fix(.notifications) }
         } else if !app.availability.available {
-            ShellBanner(kind: .neutral, glyph: .callEnd, title: "You\u{2019}re not available", text: "Calls won\u{2019}t ring until you turn it back on.", action: "Turn on") {
+            ShellBanner(kind: .neutral, glyph: .callEnd, title: tr("shell_banner_unavailable_title"), text: tr("shell_banner_unavailable_text"), action: tr("shell_banner_turn_on")) {
                 core.setAvailable(true)
             }
         }
@@ -208,8 +208,8 @@ struct ShellHomeAppBar: View {
                     Text("Tinline").font(ShellFont.figtree(19, .bold, relativeTo: .title3)).foregroundStyle(tin.ink)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                if showSearch { ShellIconButton(glyph: .search, label: "Search", enabled: !ringing, action: onSearch) }
-                ShellIconButton(glyph: .gear, label: "Settings", enabled: !ringing, action: onSettings)
+                if showSearch { ShellIconButton(glyph: .search, label: tr("shell_search"), enabled: !ringing, action: onSearch) }
+                ShellIconButton(glyph: .gear, label: tr("shell_settings"), enabled: !ringing, action: onSettings)
             }
             .opacity(ringing ? 0 : 1)
             if let r = ring ?? last {
@@ -241,10 +241,10 @@ struct ShellRingHeadRow: View {
                 }
                 .frame(maxHeight: .infinity)
             }
-            .buttonStyle(ShellPressStyle()).accessibilityLabel(r.waiting ? "\(r.name) is calling during your call" : "\(r.sub) from \(r.name)")
-            .accessibilityHint("Open call from \(r.name)")
-            ShellRingButton(label: "Decline", bg: p.dangerBtn, fg: .white, hang: true, action: r.onDecline)
-            ShellRingButton(label: r.waiting ? "End and answer" : "Answer", bg: p.accent, fg: p.onAccent, hang: false, action: r.onAnswer)
+            .buttonStyle(ShellPressStyle()).accessibilityLabel(r.waiting ? tr("shell_ring_a11y_waiting", r.name) : tr("shell_ring_a11y", r.sub, r.name))
+            .accessibilityHint(tr("shell_ring_a11y_hint", r.name))
+            ShellRingButton(label: tr("shell_ring_decline"), bg: p.dangerBtn, fg: .white, hang: true, action: r.onDecline)
+            ShellRingButton(label: r.waiting ? tr("shell_ring_end_answer") : tr("shell_ring_answer"), bg: p.accent, fg: p.onAccent, hang: false, action: r.onAnswer)
         }
         .background(tin.bg)
     }
@@ -308,12 +308,12 @@ struct ShellSearchDock: View {
             Button(action: onSearch) {
                 HStack(spacing: 10) {
                     ShellIcon(glyph: .search, size: 20, color: tin.ink2)
-                    Text("Search").shellStyle(.body).foregroundStyle(tin.ink2)
+                    Text(tr("shell_search")).shellStyle(.body).foregroundStyle(tin.ink2)
                     Spacer(minLength: 0)
                 }
                 .padding(.horizontal, 16).frame(height: 48)
             }
-            .buttonStyle(ShellPressStyle(wash: p.hairline, rest: tin.sf2, radius: 24)).accessibilityLabel("Search")
+            .buttonStyle(ShellPressStyle(wash: p.hairline, rest: tin.sf2, radius: 24)).accessibilityLabel(tr("shell_search"))
             Button(action: onAdd) { ShellIcon(glyph: .plus, size: 24, color: p.accentInk).frame(width: 48, height: 48) }
                 .buttonStyle(ShellPressStyle(wash: p.accentSoft, rest: p.accentSoft, radius: 24)).accessibilityLabel(addLabel)
         }
@@ -364,7 +364,7 @@ struct ShellTabBar: View {
                     }
                     .buttonStyle(ShellPressStyle(wash: .clear, radius: 0))
                     .accessibilityLabel(t.title).accessibilityAddTraits(on ? [.isSelected, .isButton] : .isButton)
-                    .accessibilityValue(badge > 0 ? (t == .contacts ? "\(badge) waiting" : "\(badge) unread") : "")
+                    .accessibilityValue(badge > 0 ? (t == .contacts ? tr("shell_tab_waiting", badge) : tr("shell_tab_unread", badge)) : "")
                     .animation(reduced ? nil : TinMotion.easeOut(TinMotion.indicator), value: on)
                 }
             }

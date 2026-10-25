@@ -393,7 +393,7 @@ struct ShellGField: View {
                 .focused($focused).disabled(!enabled)
                 .padding(.leading, 14).padding(.trailing, secret ? 4 : 14)
                 if secret {
-                    ShellIconButton(glyph: shown ? .eyeoff : .eye, label: shown ? "Hide \(label.lowercased())" : "Show \(label.lowercased())",
+                    ShellIconButton(glyph: shown ? .eyeoff : .eye, label: shown ? tr("shellkit_hide_field", label.lowercased()) : tr("shellkit_show_field", label.lowercased()),
                                     tint: tin.ink2, iconSize: 20) { shown.toggle() }
                 }
             }
@@ -421,7 +421,7 @@ struct ShellGField: View {
 /// people/PassField.svelte (pages and dialogs): label 13 px 600, a 44 tall input with the eye inside, focus = accent border, and a
 /// message line that is always there (19 px), so an error never moves the buttons.
 struct ShellPassField: View {
-    var label = "Passphrase"
+    var label = tr("shellkit_passphrase")
     @Binding var text: String
     var error = ""
     var hint = ""
@@ -449,7 +449,7 @@ struct ShellPassField: View {
                 .submitLabel(.done).onSubmit { onDone?() }.focused($focused).disabled(!enabled)
                 .padding(.leading, 14).padding(.trailing, secret ? 0 : 14)
                 if secret {
-                    ShellIconButton(glyph: shown ? .eyeoff : .eye, label: shown ? "Hide passphrase" : "Show passphrase", tint: tin.ink2, iconSize: 20) { shown.toggle() }
+                    ShellIconButton(glyph: shown ? .eyeoff : .eye, label: shown ? tr("shellkit_hide_pass") : tr("shellkit_show_pass"), tint: tin.ink2, iconSize: 20) { shown.toggle() }
                 }
             }
             .frame(minHeight: 44)
@@ -536,14 +536,14 @@ struct ShellGateHead: View {
     var body: some View {
         let p = ShellPalette(tin)
         // Light/dark right in sign-up (Gate.svelte): the first screens are where someone decides if this feels like theirs.
-        let theme = ShellIconButton(glyph: tin.dark ? .sun : .moon, label: tin.dark ? "Switch to light" : "Switch to dark",
+        let theme = ShellIconButton(glyph: tin.dark ? .sun : .moon, label: tin.dark ? tr("shellkit_to_light") : tr("shellkit_to_dark"),
                                     tint: tin.ink2, size: 40, iconSize: 20) { appearanceDark = !tin.dark }
             .offset(x: 10)
         if onBack == nil && progress == nil {
             HStack { Spacer(); theme }.frame(minHeight: 40).padding(.leading, 8).padding(.trailing, 20)
         } else {
             HStack(spacing: 12) {
-                ZStack { if let onBack { ShellIconButton(glyph: .back, label: "Back", action: onBack) } }.frame(width: 44)
+                ZStack { if let onBack { ShellIconButton(glyph: .back, label: tr("shellkit_back"), action: onBack) } }.frame(width: 44)
                 Spacer(minLength: 0)
                 if let progress {
                     HStack(spacing: 10) {
@@ -554,11 +554,11 @@ struct ShellGateHead: View {
                             }
                         }
                         // step 0 (Welcome, Choose): the count keeps its width, hidden, so "1 of 6" appears in place
-                        Text("\(progress.0) of \(progress.1)").shellStyle(.sub).monospacedDigit().foregroundStyle(tin.ink2)
+                        Text(tr("shellkit_progress", String(progress.0), String(progress.1))).shellStyle(.sub).monospacedDigit().foregroundStyle(tin.ink2)
                             .frame(minWidth: 42).opacity(progress.0 == 0 ? 0 : 1)
                     }
                     .accessibilityElement(children: .ignore)
-                    .accessibilityLabel("Setup progress, step \(progress.0) of \(progress.1)" + (label.isEmpty ? "" : ": \(label)"))
+                    .accessibilityLabel(label.isEmpty ? tr("shellkit_progress_a11y", String(progress.0), String(progress.1)) : tr("shellkit_progress_a11y_label", String(progress.0), String(progress.1), label))
                 }
                 theme
             }
@@ -660,7 +660,7 @@ struct ShellTopBar<Actions: View>: View {
     @Environment(\.tin) private var tin
     var body: some View {
         HStack(spacing: 0) {
-            if let onBack { ShellIconButton(glyph: .back, label: "Back", size: 48, iconSize: 24, action: onBack) } else { Spacer().frame(width: 16) }
+            if let onBack { ShellIconButton(glyph: .back, label: tr("shellkit_back"), size: 48, iconSize: 24, action: onBack) } else { Spacer().frame(width: 16) }
             Text(title).shellStyle(.topBar).foregroundStyle(tin.ink).lineLimit(1).frame(maxWidth: .infinity, alignment: .leading)
                 .accessibilityAddTraits(.isHeader)
             actions()
@@ -767,7 +767,7 @@ struct ShellPfPage<Content: View>: View {
         ShellPage {
             VStack(spacing: 0) {
                 HStack(spacing: 4) {
-                    ShellIconButton(glyph: .back, label: "Back", action: onBack)
+                    ShellIconButton(glyph: .back, label: tr("shellkit_back"), action: onBack)
                     Text(title).shellStyle(.barTitle).foregroundStyle(tin.ink).lineLimit(1).frame(maxWidth: .infinity, alignment: .leading)
                         .accessibilityAddTraits(.isHeader)
                 }
@@ -933,7 +933,7 @@ struct ShellSwitch: View {
             .frame(width: 44, height: 44).contentShape(Rectangle())
         }
         .buttonStyle(.plain).disabled(!enabled)
-        .accessibilityLabel(label).accessibilityValue(isOn ? "On" : "Off").accessibilityAddTraits(.isToggle)
+        .accessibilityLabel(label).accessibilityValue(isOn ? tr("shellkit_on") : tr("shellkit_off")).accessibilityAddTraits(.isToggle)
     }
 }
 
@@ -957,7 +957,7 @@ struct ShellChip: View {
             .background(Capsule().fill(pressed ? p.accentSoft : .clear))
             .overlay(Capsule().stroke(pressed ? .clear : tin.ln, lineWidth: 1))
         }
-        .buttonStyle(ShellPressStyle(wash: .clear, radius: minHeight / 2)).accessibilityValue(pressed ? "Selected" : "")
+        .buttonStyle(ShellPressStyle(wash: .clear, radius: minHeight / 2)).accessibilityValue(pressed ? tr("shellkit_selected") : "")
     }
 }
 
@@ -1009,7 +1009,7 @@ struct ShellListSection: View {
 struct ShellDialog<Content: View>: View {
     let title: String
     var confirm: String
-    var dismiss: String? = "Cancel"
+    var dismiss: String? = tr("shellkit_cancel")
     var destructive = false
     var glyph: ShellGlyph? = nil
     var confirmEnabled = true
