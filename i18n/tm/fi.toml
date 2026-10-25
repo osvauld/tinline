@@ -4546,7 +4546,7 @@ where = [
   "ios onboarding_copy_key: Button that copies the recovery key.",
   "desktop common_copy_my_key: Shared label, used in several places (profile, signup).",
 ]
-text = ""
+text = "Kopioi avaimeni"
 
 [t_2211d13efd]
 en = "Copy my words"
@@ -4555,7 +4555,7 @@ where = [
   "ios onboarding_copy_words: Button that copies the recovery words.",
   "desktop signup_copy_my_words: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "Kopioi sanani"
 
 [t_7c5ac76f63]
 en = "I saved it elsewhere"
@@ -4564,7 +4564,7 @@ where = [
   "ios onboarding_elsewhere_key: Button for people who saved the key without copying.",
   "desktop signup_i_saved_it_elsewhere: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "Tallensin sen muualle"
 
 [t_933ca7fbf2]
 en = "I wrote them down"
@@ -4573,14 +4573,14 @@ where = [
   "ios onboarding_elsewhere_words: Button for people who wrote the words down.",
   "desktop signup_i_wrote_them_down: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "Kirjoitin ne muistiin"
 
 [t_8302bfa652]
 en = "Recovery words"
 where = [
   "android onboarding_clip_words: Name the clipboard gives to the copied recovery words (the system may show it).",
 ]
-text = ""
+text = "Palautussanat"
 
 [t_68e1e73803]
 en = "Your account"
@@ -4591,7 +4591,7 @@ where = [
   "ios onboarding_fb_your_account: Name used for the account avatar when no name is set.",
   "desktop common_your_account: Shared label, used in several places (link, shell).",
 ]
-text = ""
+text = "Tilisi"
 
 [t_cc10cd93a6]
 en = "Words"
@@ -4600,7 +4600,7 @@ where = [
   "ios onboarding_seg_words: Segment: show the recovery words.",
   "desktop signup_words: Desktop, sign-up, restore and add contact (in signup_view.rs, words_key_seg).",
 ]
-text = ""
+text = "Sanat"
 
 [t_b4a8a37f34]
 en = "Key"
@@ -4611,7 +4611,7 @@ where = [
   "ios onboarding_seg_key: Segment: show the recovery key.",
   "desktop signup_key: Desktop, sign-up, restore and add contact (in signup_view.rs, words_key_seg).",
 ]
-text = ""
+text = "Avain"
 
 [t_2d84bd9d3b]
 en = "Name this phone"
@@ -4621,7 +4621,7 @@ where = [
   "ios devices_name_phone: Dialog title for naming this phone.",
   "ios onboarding_dev_title: Title of the device-name screen.",
 ]
-text = ""
+text = "Nimeä tämä puhelin"
 
 [t_4880385a9a]
 en = "So you can tell your devices apart in Linked devices. Only your own devices see this name; people you call never do."
@@ -4630,7 +4630,7 @@ where = [
   "ios onboarding_dev_lead: Explanation on the device-name screen.",
   "desktop common_so_you_can_tell: Shared label, used in several places (link, signup, view).",
 ]
-text = ""
+text = "Jotta erotat laitteesi toisistaan kohdassa Linkitetyt laitteet. Vain omat laitteesi näkevät tämän nimen; ne, joille soitat, eivät koskaan."
 
 [t_2ca3f0287b]
 en = "You can rename it later."
@@ -4639,7 +4639,7 @@ where = [
   "ios onboarding_dev_hint: Hint under the device-name field.",
   "desktop common_you_can_rename_it: Shared label, used in several places (link, signup, view).",
 ]
-text = ""
+text = "Voit nimetä sen myöhemmin uudelleen."
 
 [t_39487823d4]
 en = "Added {name} to this phone"
@@ -4647,7 +4647,7 @@ where = [
   "android onboarding_restored_title_adding: Heading after another account was added. {name} is the account's nickname.",
   "ios onboarding_back_added: Title after adding another account; {name} is the account's name or the words your account.",
 ]
-text = ""
+text = "Lisätty tälle puhelimelle: {name}"
 
 [t_d0c701e6ed]
 en = "your account"
@@ -4656,7 +4656,7 @@ where = [
   "ios onboarding_fb_your_account_lc: Fallback for an unnamed account inside a sentence.",
   "desktop link_your_account: Desktop, linking devices (in link_view.rs, link_secure_screen).",
 ]
-text = ""
+text = "tilisi"
 
 [t_be0e29252e]
 en = "Only the account you select is online at a time, so {name} is online now and your other account is paused. You can switch in Settings."
@@ -4664,7 +4664,7 @@ where = [
   "android onboarding_restored_lead_adding: Lead after another account was added. {name} is the account's nickname.",
   "ios onboarding_back_added_lead: Explanation after adding another account; {name} is the account's name or the words this account.",
 ]
-text = ""
+text = "Vain valitsemasi tili on kerrallaan verkossa, joten {name} on nyt verkossa ja toinen tilisi on tauolla. Voit vaihtaa asetuksista."
 
 [t_19342f6dde]
 en = "this account"
@@ -4672,7 +4672,7 @@ where = [
   "android onboarding_restored_name_fallback_lead: Stand-in for the nickname in the lead after adding an account when the nickname is empty.",
   "ios onboarding_fb_this_account: Fallback for an unnamed account inside a sentence.",
 ]
-text = ""
+text = "tämä tili"
 
 [t_e9172d3ef4]
 en = "Your account is back on this phone. Your contacts, chats and call history are kept on your other devices, not with us. This phone starts with an empty contact list."
@@ -4680,7 +4680,7 @@ where = [
   "android onboarding_restored_lead: Lead after restoring an account.",
   "ios onboarding_back_lead: Explanation after restoring an account.",
 ]
-text = ""
+text = "Tilisi on taas tällä puhelimella. Yhteystietosi, keskustelusi ja puheluhistoriasi säilyvät muilla laitteillasi, eivät meillä. Tämä puhelin aloittaa tyhjällä yhteystietolistalla."
 
 [t_5cb442a921]
 en = "Open Tinline"
@@ -4688,21 +4688,21 @@ where = [
   "android onboarding_open_tinline: Button that leaves the restored and linked screens and opens the app.",
   "ios onboarding_open: Button after adding another account, and after linking.",
 ]
-text = ""
+text = "Avaa Tinline"
 
 [t_f3ebd14b01]
 en = "Linked to {device}"
 where = [
   "android onboarding_linked_title: Heading after linking. {device} is the other device's name.",
 ]
-text = ""
+text = "Linkitetty: {device}"
 
 [t_ba1cd63d8b]
 en = "Your contacts and chats are arriving from {device} and will keep in step on both."
 where = [
   "android onboarding_linked_lead: Lead after linking. {device} is the other device's name.",
 ]
-text = ""
+text = "Yhteystietosi ja keskustelusi saapuvat laitteelta {device} ja pysyvät ajan tasalla molemmissa."
 
 [t_ad9e1201a5]
 en = "Contacts"
@@ -4715,7 +4715,7 @@ where = [
   "ios shell_tab_contacts: Bottom tab title and screen reader label.",
   "desktop common_contacts: Shared label, used in several places (link, profile, shell, view).",
 ]
-text = ""
+text = "Yhteystiedot"
 
 [t_71c082fb59]
 en = "Call history"
@@ -4723,7 +4723,7 @@ where = [
   "android onboarding_sync_calls: Row on the linked screen showing how many calls arrived.",
   "ios onboarding_sync_calls: Sync progress row label.",
 ]
-text = ""
+text = "Puheluhistoria"
 
 [t_913ca6be9c]
 en = "Waiting"
@@ -4734,7 +4734,7 @@ where = [
   "ios shell_chats_waiting: Chat list preview prefix for a message that is waiting to send. The preview follows after a dot.",
   "desktop chat_waiting: Desktop, chats (in chat_view.rs, pg_chat_row).",
 ]
-text = ""
+text = "Odottaa"
 
 [t_fcaf0c875d]
 en = "Nothing yet. The other device may be offline: it picks up where it left off the next time both are online."
@@ -4742,7 +4742,7 @@ where = [
   "android onboarding_sync_slow: Note on the linked screen after 45 seconds without data.",
   "ios onboarding_sync_slow: Hint when sync is slow to start.",
 ]
-text = ""
+text = "Ei vielä mitään. Toinen laite ei ehkä ole verkossa: se jatkaa siitä, mihin jäi, kun molemmat ovat seuraavan kerran verkossa."
 
 [t_10feb1a6cd]
 en = "Keep both devices online. Sync keeps going in the background."
@@ -4750,7 +4750,7 @@ where = [
   "android onboarding_sync_keep_online: Note on the linked screen while data is arriving.",
   "ios onboarding_sync_keep: Hint while syncing.",
 ]
-text = ""
+text = "Pidä molemmat laitteet verkossa. Synkronointi jatkuu taustalla."
 
 [t_53dc3b834f]
 en = "Couldn’t save your account"
@@ -4759,7 +4759,7 @@ where = [
   "ios onboarding_nosave_title: Title when the phone's key store failed.",
   "desktop gate_couldnt_save_your_account: Desktop, sign-in and gate screens (in view.rs, key_failed_view).",
 ]
-text = ""
+text = "Tiliäsi ei voitu tallentaa"
 
 [t_835a913e6a]
 en = "Tinline couldn’t store the key that opens your account on this phone, so your account has not been saved yet."
@@ -4767,7 +4767,7 @@ where = [
   "android onboarding_savefail_lead: Lead under the save-failed heading.",
   "ios onboarding_nosave_lead: Explanation when the phone's key store failed.",
 ]
-text = ""
+text = "Tinline ei voinut tallentaa tilisi avaavaa avainta tälle puhelimelle, joten tiliäsi ei ole vielä tallennettu."
 
 [t_1fec3e9598]
 en = "Trying…"
@@ -4775,7 +4775,7 @@ where = [
   "android onboarding_savefail_trying: Label of the Try again button while retrying.",
   "ios onboarding_trying: Button text while retrying.",
 ]
-text = ""
+text = "Yritetään…"
 
 [t_f587adb4ae]
 en = "Add a passphrase instead"
@@ -4784,7 +4784,7 @@ where = [
   "ios onboarding_pass_instead: Button that protects the account with a passphrase instead.",
   "desktop gate_add_a_passphrase_instead: Desktop, sign-in and gate screens (in view.rs, key_failed_view).",
 ]
-text = ""
+text = "Lisää salalause sen sijaan"
 
 [t_b049cff8f6]
 en = "Nothing was kept on this phone yet, so there is nothing to lose. Try again, or protect the account with a passphrase instead of the phone’s own key."
@@ -4792,7 +4792,7 @@ where = [
   "android onboarding_savefail_notice: Reassurance box on the save-failed screen.",
   "ios onboarding_nosave_notice: Notice when the phone's key store failed.",
 ]
-text = ""
+text = "Tälle puhelimelle ei ole vielä tallennettu mitään, joten mitään ei menetetä. Yritä uudelleen tai suojaa tili salalauseella puhelimen oman avaimen sijaan."
 
 [t_75433cfcb6]
 en = "Before you start"
@@ -4801,7 +4801,7 @@ where = [
   "ios onboarding_terms_title: Title of the terms screen.",
   "desktop signup_before_you_start: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "Ennen kuin aloitat"
 
 [t_62eeadcd02]
 en = "I agree"
@@ -4810,7 +4810,7 @@ where = [
   "ios onboarding_agree: Button that accepts the terms.",
   "desktop signup_i_agree: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "Hyväksyn"
 
 [t_3886adb527]
 en = "Free of ads and tracking."
@@ -4819,7 +4819,7 @@ where = [
   "ios onboarding_terms1: Bold lead of the first point on the terms screen.",
   "desktop signup_free_of_ads_and: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "Ei mainoksia eikä seurantaa."
 
 [t_4e39bb7c5c]
 en = "Tinline doesn’t collect your contacts, calls or location."
@@ -4828,7 +4828,7 @@ where = [
   "ios onboarding_terms1_rest: Rest of the first point on the terms screen.",
   "desktop signup_tinline_doesnt_collect_your: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "Tinline ei kerää yhteystietojasi, puheluitasi eikä sijaintiasi."
 
 [t_3bcfb865c5]
 en = "Calls are end-to-end encrypted."
@@ -4837,7 +4837,7 @@ where = [
   "ios onboarding_terms2: Bold lead of the second point on the terms screen.",
   "desktop signup_calls_are_end_to: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "Puhelut on salattu päästä päähän."
 
 [t_e3cf72a054]
 en = "When a direct line isn’t possible, an encrypted relay passes the call along. It can’t hear it."
@@ -4846,7 +4846,7 @@ where = [
   "ios onboarding_terms2_rest: Rest of the second point on the terms screen.",
   "desktop signup_when_a_direct_line: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "Kun suora linja ei ole mahdollinen, salattu välityspalvelin välittää puhelun. Se ei voi kuulla sitä."
 
 [t_07e63c57a9]
 en = "Your account is yours."
@@ -4855,7 +4855,7 @@ where = [
   "ios onboarding_terms3: Bold lead of the third point on the terms screen.",
   "desktop signup_your_account_is_yours: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "Tilisi on sinun."
 
 [t_a67fba4ccf]
 en = "It lives on your devices, not on a server. Your recovery words are the way back in, so keep them safe."
@@ -4864,14 +4864,14 @@ where = [
   "ios onboarding_terms3_rest: Rest of the third point on the terms screen.",
   "desktop signup_it_lives_on_your: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "Se on laitteillasi, ei palvelimella. Palautussanasi ovat tiesi takaisin, joten pidä ne tallessa."
 
 [t_71508df1e3]
 en = "By continuing, you agree to the {terms} and have read the {privacy}."
 where = [
   "android onboarding_terms_by_continuing: Sentence under the terms points. {terms} and {privacy} are replaced by tappable links labelled with the next two entries; word order may change.",
 ]
-text = ""
+text = "Jatkamalla hyväksyt dokumentin {terms} ja olet lukenut dokumentin {privacy}."
 
 [t_f59458f78e]
 en = "Terms of Use"
@@ -4881,7 +4881,7 @@ where = [
   "ios settings_terms: About row that opens the terms website.",
   "desktop signup_terms_of_use: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "Käyttöehdot"
 
 [t_616628b01c]
 en = "Privacy Policy"
@@ -4891,7 +4891,7 @@ where = [
   "ios settings_privacy_policy: About row that opens the privacy policy website.",
   "desktop signup_privacy_policy: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "Tietosuojakäytäntö"
 
 [t_7c4290d283]
 en = "So calls can reach you"
@@ -4899,7 +4899,7 @@ where = [
   "android onboarding_perms_title: Heading of the permissions step.",
   "ios onboarding_perms_title: Title of the permissions screen.",
 ]
-text = ""
+text = "Jotta puhelut tavoittavat sinut"
 
 [t_bd94457f30]
 en = "Tinline works like a phone line: it stays open quietly in the background. Each of these is optional, and you can change them later."
@@ -4907,7 +4907,7 @@ where = [
   "android onboarding_perms_lead: Lead on the permissions step.",
   "ios onboarding_perms_lead: Explanation on the permissions screen.",
 ]
-text = ""
+text = "Tinline toimii kuin puhelinlinja: se pysyy hiljaa auki taustalla. Jokainen näistä on valinnainen, ja voit muuttaa niitä myöhemmin."
 
 [t_ff3d541d05]
 en = "Microphone"
@@ -4919,7 +4919,7 @@ where = [
   "ios onboarding_perm_mic: Permission row title.",
   "desktop common_microphone: Shared label, used in several places (audio, call_screen, profile, view).",
 ]
-text = ""
+text = "Mikrofoni"
 
 [t_a79cfadcde]
 en = "So they can hear you. Used only during a call."
@@ -4927,7 +4927,7 @@ where = [
   "android onboarding_perm_mic_why: Why the microphone permission is asked.",
   "ios onboarding_perm_mic_why: Why Tinline asks for the microphone.",
 ]
-text = ""
+text = "Jotta sinut kuullaan. Käytössä vain puhelun aikana."
 
 [t_f553fde14e]
 en = "Notifications"
@@ -4939,7 +4939,7 @@ where = [
   "ios onboarding_perm_notif: Permission row title.",
   "desktop profile_notifications: Desktop, profile and settings (in profile_view.rs, profile_page).",
 ]
-text = ""
+text = "Ilmoitukset"
 
 [t_7674f6ab4f]
 en = "So you see incoming calls and messages."
@@ -4947,7 +4947,7 @@ where = [
   "android onboarding_perm_notifications_why: Why the notifications permission is asked.",
   "ios onboarding_perm_notif_why: Why Tinline asks for notifications.",
 ]
-text = ""
+text = "Jotta näet saapuvat puhelut ja viestit."
 
 [t_c2f6535864]
 en = "Ring over lock screen"
@@ -4955,14 +4955,14 @@ where = [
   "android onboarding_perm_fullscreen: Permission name for showing incoming calls over the lock screen.",
   "android notif_ring_lock: Permission row (Android 14 full-screen notification) on the Notifications page and the battery checklist.",
 ]
-text = ""
+text = "Soitto lukitusnäytön päällä"
 
 [t_0918e7bac6]
 en = "Shows incoming calls full screen, like the phone app."
 where = [
   "android onboarding_perm_fullscreen_why: Why the full-screen permission is asked.",
 ]
-text = ""
+text = "Näyttää saapuvat puhelut koko näytöllä kuten puhelinsovellus."
 
 [t_8060359eb2]
 en = "Run in background"
@@ -4970,14 +4970,14 @@ where = [
   "android onboarding_perm_background: Permission name for staying alive in the background.",
   "android perms_battery_need_title: Name of the battery-exemption permission (internal label of a permission the app needs).",
 ]
-text = ""
+text = "Toiminta taustalla"
 
 [t_71c28a78f9]
 en = "Android pauses idle apps to save battery. This keeps your line open, using a little battery."
 where = [
   "android onboarding_perm_background_why: Why the background permission is asked.",
 ]
-text = ""
+text = "Android pysäyttää käyttämättömät sovellukset akun säästämiseksi. Tämä pitää linjasi auki ja kuluttaa hieman akkua."
 
 [t_854e55f8c7]
 en = "Allow"
@@ -4986,21 +4986,21 @@ where = [
   "android home_banner_allow: Banner button that opens the full-screen call setting.",
   "ios onboarding_allow: Button that asks for a permission.",
 ]
-text = ""
+text = "Salli"
 
 [t_dd9c8cc79f]
 en = "Allow {permission}"
 where = [
   "android onboarding_perm_allow_desc: Screen-reader description of the Allow button. {permission} is the permission name in lower case.",
 ]
-text = ""
+text = "Salli: {permission}"
 
 [t_3a4f0ec59d]
 en = "{permission} allowed"
 where = [
   "android onboarding_perm_allowed_desc: Screen-reader description of the tick shown once a permission is granted. {permission} is the permission name.",
 ]
-text = ""
+text = "Sallittu: {permission}"
 
 [t_424c52c0a7]
 en = "Open settings"
@@ -5011,7 +5011,7 @@ where = [
   "ios shell_mic_open_settings: Button that opens the system settings for the microphone permission.",
   "ios call_open_settings: Button that opens the system settings for Tinline.",
 ]
-text = ""
+text = "Avaa asetukset"
 
 [t_b3ae182018]
 en = "Notifications are off"
@@ -5019,7 +5019,7 @@ where = [
   "android perms_notifications_off_title: Title of the warning card shown when the phone blocks Tinline's notifications.",
   "ios settings_perm_notif_title: Title of the warning shown when system notifications are off.",
 ]
-text = ""
+text = "Ilmoitukset ovat pois päältä"
 
 [t_19b434ed57]
 en = "Tinline can’t alert you to messages or calls. They still arrive; you’ll see them when you open the app. Turn notifications on in system settings."
@@ -5027,56 +5027,56 @@ where = [
   "android perms_notifications_off_body: Body of the warning card for switched-off notifications.",
   "ios settings_perm_notif_body: Body of the notifications-off warning.",
 ]
-text = ""
+text = "Tinline ei voi ilmoittaa viesteistä tai puheluista. Ne saapuvat silti; näet ne, kun avaat sovelluksen. Ota ilmoitukset käyttöön järjestelmän asetuksista."
 
 [t_7d228fbd99]
 en = "Battery saving may delay calls"
 where = [
   "android perms_battery_title: Title of the warning card shown when Android restricts Tinline's battery use.",
 ]
-text = ""
+text = "Virransäästö voi viivästyttää puheluita"
 
 [t_770eea319c]
 en = "Android can pause Tinline in the background, so calls and messages can arrive late. Set Tinline’s battery use to Unrestricted."
 where = [
   "android perms_battery_body: Body of the battery warning card. Unrestricted is the name of the Android battery setting.",
 ]
-text = ""
+text = "Android voi pysäyttää Tinlinen taustalla, joten puhelut ja viestit voivat saapua myöhässä. Aseta Tinlinen akun käytöksi Rajoittamaton."
 
 [t_86979511dc]
 en = "So the other person can hear you"
 where = [
   "android perms_mic_why: Why Tinline needs the microphone permission.",
 ]
-text = ""
+text = "Jotta toinen kuulee sinut"
 
 [t_e38c9e3a42]
 en = "To show incoming calls"
 where = [
   "android perms_notifications_why: Why Tinline needs the notifications permission.",
 ]
-text = ""
+text = "Saapuvien puheluiden näyttämiseen"
 
 [t_83653c9226]
 en = "Exempt from battery optimisation so calls arrive when idle"
 where = [
   "android perms_battery_need_why: Why Tinline asks to be exempt from battery optimisation.",
 ]
-text = ""
+text = "Vapautus akun optimoinnista, jotta puhelut tulevat perille laitteen ollessa levossa"
 
 [t_e69907b099]
 en = "Full-screen calls"
 where = [
   "android perms_fullscreen_title: Name of the full-screen notification permission (internal label of a permission the app needs).",
 ]
-text = ""
+text = "Koko näytön puhelut"
 
 [t_47c5032e9f]
 en = "Show incoming calls over the lock screen"
 where = [
   "android perms_fullscreen_why: Why Tinline needs the full-screen notification permission.",
 ]
-text = ""
+text = "Näytä saapuvat puhelut lukitusnäytön päällä"
 
 [t_6f11bd5837]
 en = "Settings"
@@ -5087,7 +5087,7 @@ where = [
   "ios shell_settings: Accessibility label of the settings (gear) button on the home header.",
   "desktop profile_settings: Desktop, profile and settings (in profile_view.rs, profile_page).",
 ]
-text = ""
+text = "Asetukset"
 
 [t_fbad1421e3]
 en = "Selected · online"
@@ -5096,7 +5096,7 @@ where = [
   "ios settings_account_selected: Subtitle of the selected account row.",
   "desktop profile_selected_online: Desktop, profile and settings (in profile_view.rs, settings_landing).",
 ]
-text = ""
+text = "Valittu · verkossa"
 
 [t_f4166c2daf]
 en = "Paused · tap to switch"
@@ -5105,7 +5105,7 @@ where = [
   "ios settings_account_paused: Subtitle of a non-selected account row.",
   "desktop profile_paused_tap_to_switch: Desktop, profile and settings (in profile_view.rs, settings_landing).",
 ]
-text = ""
+text = "Tauolla · vaihda napauttamalla"
 
 [t_97d9b1f459]
 en = "Add another account"
@@ -5114,7 +5114,7 @@ where = [
   "ios settings_add_account: Row that opens the add-account choices.",
   "desktop profile_add_another_account: Desktop, profile and settings (in profile_view.rs, settings_landing).",
 ]
-text = ""
+text = "Lisää toinen tili"
 
 [t_bb4f833bf1]
 en = "Only the selected account is online on this phone. Switching pauses the other one: it receives no calls until you select it again."
@@ -5122,7 +5122,7 @@ where = [
   "android settings_accounts_note: Explanation under the account list on the Settings landing.",
   "ios settings_accounts_note: Explanation under the account list.",
 ]
-text = ""
+text = "Vain valittu tili on verkossa tällä puhelimella. Vaihtaminen laittaa toisen tauolle: se ei vastaanota puheluita, ennen kuin valitset sen uudelleen."
 
 [t_5cab984542]
 en = "Appearance"
@@ -5131,7 +5131,7 @@ where = [
   "ios settings_appearance: Section heading for the light/dark choice.",
   "desktop profile_appearance: Desktop, profile and settings (in profile_view.rs, settings_landing).",
 ]
-text = ""
+text = "Ulkoasu"
 
 [t_ce3a092efe]
 en = "Match my phone"
@@ -5139,7 +5139,7 @@ where = [
   "android settings_look_match: Appearance option: follow the phone's light or dark setting.",
   "ios settings_appearance_match: Appearance option: follow the phone's light or dark setting.",
 ]
-text = ""
+text = "Sama kuin puhelimessani"
 
 [t_7857115a54]
 en = "Light or dark, as this phone is set"
@@ -5147,7 +5147,7 @@ where = [
   "android settings_look_match_sub: Small line under the Match my phone appearance option.",
   "ios settings_appearance_match_sub: Subtitle of the Match my phone option.",
 ]
-text = ""
+text = "Vaalea tai tumma puhelimen asetuksen mukaan"
 
 [t_6c447396fa]
 en = "Light"
@@ -5156,7 +5156,7 @@ where = [
   "ios settings_appearance_light: Appearance option: always light.",
   "desktop profile_light: Desktop, profile and settings (in profile_view.rs, settings_landing).",
 ]
-text = ""
+text = "Vaalea"
 
 [t_e474202d31]
 en = "Dark"
@@ -5165,7 +5165,7 @@ where = [
   "ios settings_appearance_dark: Appearance option: always dark.",
   "desktop profile_dark: Desktop, profile and settings (in profile_view.rs, settings_landing).",
 ]
-text = ""
+text = "Tumma"
 
 [t_ed363ef678]
 en = "Devices"
@@ -5174,7 +5174,7 @@ where = [
   "ios settings_row_devices: Settings list row.",
   "desktop profile_devices: Desktop, profile and settings (in profile_view.rs, profile_page).",
 ]
-text = ""
+text = "Laitteet"
 
 [t_9211d6c9bd]
 en = "Privacy"
@@ -5183,7 +5183,7 @@ where = [
   "ios settings_row_privacy: Settings list row.",
   "desktop common_privacy: Shared label, used in several places (profile, view).",
 ]
-text = ""
+text = "Yksityisyys"
 
 [t_84e0cb5ef5]
 en = "Sounds"
@@ -5192,7 +5192,7 @@ where = [
   "ios settings_row_sounds: Settings list row.",
   "desktop profile_sounds: Desktop, profile and settings (in profile_view.rs, profile_page).",
 ]
-text = ""
+text = "Äänet"
 
 [t_f3c42ba016]
 en = "Video"
@@ -5203,7 +5203,7 @@ where = [
   "ios call_video_button: Label of the button that answers an incoming video call with my camera on.",
   "desktop common_video: Shared label, used in several places (call_screen, profile).",
 ]
-text = ""
+text = "Video"
 
 [t_77bb787833]
 en = "Storage"
@@ -5212,7 +5212,7 @@ where = [
   "ios settings_row_storage: Settings list row.",
   "desktop profile_storage: Desktop, profile and settings (in profile_view.rs, profile_page).",
 ]
-text = ""
+text = "Tallennustila"
 
 [t_dd3831dad6]
 en = "About Tinline"
@@ -5221,7 +5221,7 @@ where = [
   "ios settings_row_about: Settings list row for the About page.",
   "desktop profile_about_tinline: Desktop, profile and settings (in profile_view.rs, profile_page).",
 ]
-text = ""
+text = "Tietoja Tinlinesta"
 
 [t_024848ef1f]
 en = "Video in calls"
@@ -5230,7 +5230,7 @@ where = [
   "ios settings_video_in_calls: Settings row and switch label for allowing video in calls.",
   "desktop settings_video_in_calls: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "Video puheluissa"
 
 [t_316a961ccc]
 en = "You can turn your camera on in a call"
@@ -5238,7 +5238,7 @@ where = [
   "android settings_video_in_calls_on: Small line under the Video in calls switch when it is on.",
   "ios settings_video_in_calls_on: Subtitle when video in calls is allowed.",
 ]
-text = ""
+text = "Voit laittaa kameran päälle puhelun aikana"
 
 [t_5a7ab72466]
 en = "Calls are voice only"
@@ -5246,7 +5246,7 @@ where = [
   "android settings_video_in_calls_off: Small line under the Video in calls switch when it is off.",
   "ios settings_video_in_calls_off: Subtitle when video in calls is off.",
 ]
-text = ""
+text = "Puhelut ovat vain äänipuheluita"
 
 [t_a1579450e2]
 en = "Link to a device"
@@ -5255,7 +5255,7 @@ where = [
   "ios settings_add_link: Choice in the add-account dialog.",
   "ios link_scan_step1_action: Bold button name inside step 1. Must match the button on the new device.",
 ]
-text = ""
+text = "Linkitä laitteeseen"
 
 [t_a946f790b5]
 en = "Restore from recovery phrase"
@@ -5263,7 +5263,7 @@ where = [
   "android settings_add_restore: Choice in the Add another account sheet: restore an account from its 24 recovery words.",
   "ios settings_add_restore: Choice in the add-account dialog.",
 ]
-text = ""
+text = "Palauta palautussanoilla"
 
 [t_17324a9a91]
 en = "Alert me about"
@@ -5272,7 +5272,7 @@ where = [
   "ios settings_notif_alert_me: Section heading above the notification category switches.",
   "desktop profile_alert_me_about: Desktop, profile and settings (in profile_view.rs, notifications_page).",
 ]
-text = ""
+text = "Ilmoita minulle"
 
 [t_20060c7c88]
 en = "Messages"
@@ -5285,7 +5285,7 @@ where = [
   "ios shell_search_messages: Search results header for matching messages.",
   "desktop common_messages: Shared label, used in several places (profile, shell).",
 ]
-text = ""
+text = "Viestit"
 
 [t_a00f13dded]
 en = "From people, not groups"
@@ -5294,7 +5294,7 @@ where = [
   "ios settings_notif_messages_sub: Subtitle of the Messages notification row.",
   "desktop profile_from_people_not_groups: Desktop, profile and settings (in profile_view.rs, notifications_page).",
 ]
-text = ""
+text = "Ihmisiltä, ei ryhmistä"
 
 [t_8a17cd599d]
 en = "Calls"
@@ -5305,7 +5305,7 @@ where = [
   "ios shell_tab_calls: Bottom tab title and screen reader label.",
   "desktop common_calls: Shared label, used in several places (profile, shell, view).",
 ]
-text = ""
+text = "Puhelut"
 
 [t_ed2f334fce]
 en = "Ringing when someone calls"
@@ -5314,7 +5314,7 @@ where = [
   "ios settings_notif_calls_sub: Subtitle of the Calls notification row.",
   "desktop profile_ringing_when_someone_calls: Desktop, profile and settings (in profile_view.rs, notifications_page).",
 ]
-text = ""
+text = "Soi, kun joku soittaa"
 
 [t_91d94d2c90]
 en = "Groups"
@@ -5325,7 +5325,7 @@ where = [
   "ios shell_tab_groups: Bottom tab title and screen reader label.",
   "desktop common_groups: Shared label, used in several places (profile, shell, view).",
 ]
-text = ""
+text = "Ryhmät"
 
 [t_39da3cf549]
 en = "Posts, invites and requests"
@@ -5334,7 +5334,7 @@ where = [
   "ios settings_notif_groups_sub: Subtitle of the Groups notification row.",
   "desktop profile_posts_invites_and_requests: Desktop, profile and settings (in profile_view.rs, notifications_page).",
 ]
-text = ""
+text = "Viestit, kutsut ja pyynnöt"
 
 [t_e87ceb9af8]
 en = "Message notifications"
@@ -5342,7 +5342,7 @@ where = [
   "android notif_messages_switch: Accessibility label of the Messages notification switch.",
   "ios settings_notif_messages_label: Accessibility label of the message notifications switch.",
 ]
-text = ""
+text = "Viesti-ilmoitukset"
 
 [t_420c996232]
 en = "Call notifications"
@@ -5350,7 +5350,7 @@ where = [
   "android notif_calls_switch: Accessibility label of the Calls notification switch.",
   "ios settings_notif_calls_label: Accessibility label of the call notifications switch.",
 ]
-text = ""
+text = "Puheluilmoitukset"
 
 [t_5d2dce19f0]
 en = "Group notifications"
@@ -5358,7 +5358,7 @@ where = [
   "android notif_groups_switch: Accessibility label of the Groups notification switch.",
   "ios settings_notif_groups_label: Accessibility label of the group notifications switch.",
 ]
-text = ""
+text = "Ryhmäilmoitukset"
 
 [t_225bca0960]
 en = "A muted chat never alerts you, whatever is switched on here. Missed calls from one person fold into one notification."
@@ -5367,7 +5367,7 @@ where = [
   "ios settings_notif_note: Note under the notification switches.",
   "desktop profile_a_muted_chat_never: Desktop, profile and settings (in profile_view.rs, notifications_page).",
 ]
-text = ""
+text = "Mykistetty keskustelu ei koskaan ilmoita sinulle, vaikka täällä olisi mitä päällä. Saman henkilön vastaamattomat puhelut kootaan yhteen ilmoitukseen."
 
 [t_f9314a645b]
 en = "Allowed"
@@ -5376,7 +5376,7 @@ where = [
   "ios settings_perm_allowed: Permission row state: allowed.",
   "desktop profile_allowed: Desktop, profile and settings (in profile_view.rs, notifications_page).",
 ]
-text = ""
+text = "Sallittu"
 
 [t_86b04a353c]
 en = "Off in system settings"
@@ -5384,7 +5384,7 @@ where = [
   "android notif_perm_off: Status of a system permission that is switched off in the phone's settings.",
   "ios settings_perm_off: Permission row state: switched off in the system settings.",
 ]
-text = ""
+text = "Pois päältä järjestelmän asetuksissa"
 
 [t_d867863228]
 en = "Asked when you call"
@@ -5392,28 +5392,28 @@ where = [
   "android notif_perm_mic_asked: Status of the microphone permission when it has not been granted yet: the phone asks when a call needs it.",
   "ios settings_perm_mic_ask: Microphone permission row state: not asked yet.",
 ]
-text = ""
+text = "Kysytään, kun soitat"
 
 [t_74f5e97a8c]
 en = "Battery use"
 where = [
   "android notif_perm_battery: Permission row on the Notifications page for the Android battery setting.",
 ]
-text = ""
+text = "Akun käyttö"
 
 [t_9ab6b9677e]
 en = "Unrestricted"
 where = [
   "android notif_perm_unrestricted: Status of the battery setting when Tinline is allowed to run in the background. Matches the Android setting name.",
 ]
-text = ""
+text = "Rajoittamaton"
 
 [t_986948ce6e]
 en = "Restricted"
 where = [
   "android notif_perm_restricted: Status of the battery setting when Android may pause Tinline. Matches the Android setting name.",
 ]
-text = ""
+text = "Rajoitettu"
 
 [t_7f59b79d80]
 en = "Fix"
@@ -5422,7 +5422,7 @@ where = [
   "android home_banner_fix: Banner button that opens the battery setting.",
   "ios settings_perm_fix_btn: Small button that opens system settings for a permission.",
 ]
-text = ""
+text = "Korjaa"
 
 [t_75471596a9]
 en = "These are set by your system, not by Tinline. Tinline asks only when it needs one."
@@ -5431,7 +5431,7 @@ where = [
   "ios settings_perms_note: Note under the permission rows.",
   "desktop profile_these_are_set_by: Desktop, profile and settings (in profile_view.rs, notifications_page).",
 ]
-text = ""
+text = "Nämä asettaa järjestelmäsi, ei Tinline. Tinline kysyy vain, kun tarvitsee jotain niistä."
 
 [t_ba3ab5916d]
 en = "Quiet"
@@ -5440,7 +5440,7 @@ where = [
   "ios settings_quiet: Section heading, row title and switch label for the quiet mode.",
   "desktop profile_quiet: Desktop, profile and settings (in profile_view.rs, sounds_page).",
 ]
-text = ""
+text = "Hiljainen"
 
 [t_73d5e714e0]
 en = "No sounds from Tinline: ringing, call tones, joins"
@@ -5449,7 +5449,7 @@ where = [
   "ios settings_quiet_sub: Subtitle of the Quiet row.",
   "desktop profile_no_sounds_from_tinline: Desktop, profile and settings (in profile_view.rs, sounds_page).",
 ]
-text = ""
+text = "Ei ääniä Tinlinesta: soittoa, puheluääniä eikä liittymisääniä"
 
 [t_909bc609cf]
 en = "Classic chime"
@@ -5457,7 +5457,7 @@ where = [
   "android settings_sound_classic: Name of a call sound set.",
   "ios settings_sound_classic: Ringtone choice name.",
 ]
-text = ""
+text = "Klassinen kilahdus"
 
 [t_973e2907f7]
 en = "A bright four-note chime."
@@ -5465,7 +5465,7 @@ where = [
   "android settings_sound_classic_sub: Description of the Classic chime call sound.",
   "ios settings_sound_classic_sub: Description of the Classic chime ringtone.",
 ]
-text = ""
+text = "Kirkas neljän sävelen kilahdus."
 
 [t_9b9e6e2e8f]
 en = "Slack → taut"
@@ -5473,7 +5473,7 @@ where = [
   "android settings_sound_slack: Name of a call sound set (two notes that beat, then one that pulls tight). The arrow means from loose to tight.",
   "ios settings_sound_slack: Ringtone choice name.",
 ]
-text = ""
+text = "Löysä → kireä"
 
 [t_d00e0714a4]
 en = "Two close notes beat like a loose string, then one pulls tight."
@@ -5481,7 +5481,7 @@ where = [
   "android settings_sound_slack_sub: Description of the Slack to taut call sound.",
   "ios settings_sound_slack_sub: Description of the Slack → taut ringtone.",
 ]
-text = ""
+text = "Kaksi lähekkäistä säveltä huojuu kuin löysä kieli, sitten yksi kiristyy."
 
 [t_1a59cd4dd4]
 en = "Triad knock"
@@ -5489,7 +5489,7 @@ where = [
   "android settings_sound_triad: Name of a call sound set.",
   "ios settings_sound_triad: Ringtone choice name.",
 ]
-text = ""
+text = "Kolmisointukoputus"
 
 [t_83563d2f55]
 en = "Three rising notes, like a knock."
@@ -5497,7 +5497,7 @@ where = [
   "android settings_sound_triad_sub: Description of the Triad knock call sound.",
   "ios settings_sound_triad_sub: Description of the Triad knock ringtone.",
 ]
-text = ""
+text = "Kolme nousevaa säveltä, kuin koputus."
 
 [t_f82d18f9cb]
 en = "Call sounds"
@@ -5506,7 +5506,7 @@ where = [
   "ios settings_call_sounds: Section heading for ringtone choices.",
   "desktop profile_call_sounds: Desktop, profile and settings (in profile_view.rs, sounds_page).",
 ]
-text = ""
+text = "Puheluäänet"
 
 [t_23d07f2da3]
 en = "Ringtone"
@@ -5515,7 +5515,7 @@ where = [
   "ios settings_cue_ring: Chip that previews the ringtone.",
   "desktop profile_ringtone: Desktop, profile and settings (in profile_view.rs, sounds_page).",
 ]
-text = ""
+text = "Soittoääni"
 
 [t_2f84cdc07a]
 en = "Connected"
@@ -5526,7 +5526,7 @@ where = [
   "ios people_line_connected: Accessibility description of the line between the user and a contact: connected.",
   "desktop profile_connected: Desktop, profile and settings (in profile_view.rs, sounds_page).",
 ]
-text = ""
+text = "Yhdistetty"
 
 [t_2b6544f393]
 en = "Call ended"
@@ -5539,7 +5539,7 @@ where = [
   "ios call_ended_title: Title of the screen shown after a call ends, and the default end reason.",
   "desktop common_call_ended: Shared label, used in several places (call_screen, gcall, profile).",
 ]
-text = ""
+text = "Puhelu päättyi"
 
 [t_ead8ff0e51]
 en = "Quiet is on, so previews are silent."
@@ -5548,7 +5548,7 @@ where = [
   "ios settings_sounds_note_quiet: Note under the sound previews when quiet mode is on.",
   "desktop profile_quiet_is_on_so: Desktop, profile and settings (in profile_view.rs, sounds_page).",
 ]
-text = ""
+text = "Hiljainen tila on päällä, joten esikuuntelut ovat äänettömiä."
 
 [t_4bd4717d11]
 en = "Tap a sound to hear it. The choice applies to the next call."
@@ -5557,7 +5557,7 @@ where = [
   "ios settings_sounds_note: Note under the sound previews.",
   "desktop profile_tap_a_sound_to: Desktop, profile and settings (in profile_view.rs, sounds_page).",
 ]
-text = ""
+text = "Napauta ääntä kuullaksesi sen. Valinta koskee seuraavaa puhelua."
 
 [t_1758604677]
 en = "Video quality"
@@ -5566,7 +5566,7 @@ where = [
   "ios settings_video_quality: Section heading on the Video page.",
   "desktop profile_video_quality: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "Videon laatu"
 
 [t_5b51c78fea]
 en = "Sharper video"
@@ -5575,7 +5575,7 @@ where = [
   "ios settings_video_sharper: Row and switch label for starting video calls in HD.",
   "desktop profile_sharper_video: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "Terävämpi video"
 
 [t_24032afc4c]
 en = "Always starts in HD. Uses more data and battery."
@@ -5584,7 +5584,7 @@ where = [
   "ios settings_video_hd_on: Subtitle of Sharper video when on.",
   "desktop profile_always_starts_in_hd: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "Alkaa aina HD-laatuisena. Kuluttaa enemmän dataa ja akkua."
 
 [t_98d61cac31]
 en = "Goes HD by itself when the connection allows."
@@ -5593,7 +5593,7 @@ where = [
   "ios settings_video_hd_auto: Subtitle of Sharper video when off.",
   "desktop profile_goes_hd_by_itself: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "Siirtyy itse HD-laatuun, kun yhteys sallii."
 
 [t_e5146ff576]
 en = "Every video call starts this way. During a call, tap HD to change it for that call."
@@ -5602,35 +5602,35 @@ where = [
   "ios settings_video_note: Note under the video quality switch.",
   "desktop profile_every_video_call_starts: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "Jokainen videopuhelu alkaa näin. Puhelun aikana voit muuttaa sitä kyseiselle puhelulle napauttamalla HD."
 
 [t_7c81be4f77]
 en = "{value} GB"
 where = [
   "android settings_size_gb: A storage size in gigabytes. {value} is a number with one decimal.",
 ]
-text = ""
+text = "{value} Gt"
 
 [t_5a7ea8ccc1]
 en = "{value} MB"
 where = [
   "android settings_size_mb: A storage size in megabytes. {value} is a whole number.",
 ]
-text = ""
+text = "{value} Mt"
 
 [t_b9f95541a6]
 en = "{value} KB"
 where = [
   "android settings_size_kb: A storage size in kilobytes. {value} is a whole number.",
 ]
-text = ""
+text = "{value} kt"
 
 [t_98c78e611c]
 en = "{value} B"
 where = [
   "android settings_size_b: A storage size in bytes. {value} is a whole number.",
 ]
-text = ""
+text = "{value} t"
 
 [t_8e7c1c152b]
 en = "Pictures"
@@ -5639,7 +5639,7 @@ where = [
   "ios settings_storage_pictures: Storage breakdown label.",
   "desktop profile_pictures: Desktop, profile and settings (in profile_ui.rs, profile_update).",
 ]
-text = ""
+text = "Kuvat"
 
 [t_00bfd7b1da]
 en = "Files"
@@ -5648,7 +5648,7 @@ where = [
   "ios settings_storage_files: Storage breakdown label.",
   "desktop profile_files: Desktop, profile and settings (in profile_view.rs, storage_page).",
 ]
-text = ""
+text = "Tiedostot"
 
 [t_a51b20dfb2]
 en = "Cache"
@@ -5657,7 +5657,7 @@ where = [
   "ios settings_storage_cache: Storage breakdown label.",
   "desktop profile_cache: Desktop, profile and settings (in profile_view.rs, storage_page).",
 ]
-text = ""
+text = "Välimuisti"
 
 [t_c2767071de]
 en = "Download pictures"
@@ -5666,7 +5666,7 @@ where = [
   "ios settings_storage_download: Section heading for picture download choices.",
   "desktop profile_download_pictures: Desktop, profile and settings (in profile_view.rs, storage_page).",
 ]
-text = ""
+text = "Lataa kuvat"
 
 [t_22409bf022]
 en = "Always"
@@ -5675,7 +5675,7 @@ where = [
   "ios settings_dl_always: Picture download choice.",
   "desktop profile_always: Desktop, profile and settings (in profile_view.rs, storage_page).",
 ]
-text = ""
+text = "Aina"
 
 [t_1a452cd860]
 en = "On Wi-Fi and mobile data"
@@ -5684,7 +5684,7 @@ where = [
   "ios settings_dl_always_sub: Subtitle of the Always download choice.",
   "desktop profile_on_wi_fi_and: Desktop, profile and settings (in profile_view.rs, storage_page).",
 ]
-text = ""
+text = "Wi-Fi-yhteydellä ja mobiilidatalla"
 
 [t_80ec3e590e]
 en = "On Wi-Fi"
@@ -5692,7 +5692,7 @@ where = [
   "android settings_dl_wifi: Picture download choice: download only on Wi-Fi.",
   "ios settings_dl_wifi: Picture download choice.",
 ]
-text = ""
+text = "Wi-Fi-yhteydellä"
 
 [t_ef66911de3]
 en = "On mobile data they wait for a tap"
@@ -5700,7 +5700,7 @@ where = [
   "android settings_dl_wifi_sub: Small line under the On Wi-Fi picture download choice.",
   "ios settings_dl_wifi_sub: Subtitle of the On Wi-Fi download choice.",
 ]
-text = ""
+text = "Mobiilidatalla ne odottavat napautusta"
 
 [t_07c57edfbc]
 en = "When I tap them"
@@ -5709,7 +5709,7 @@ where = [
   "ios settings_dl_tap: Picture download choice.",
   "desktop profile_when_i_tap_them: Desktop, profile and settings (in profile_view.rs, storage_page).",
 ]
-text = ""
+text = "Kun napautan niitä"
 
 [t_dce236cb81]
 en = "Each shows a soft preview until then"
@@ -5718,7 +5718,7 @@ where = [
   "ios settings_dl_tap_sub: Subtitle of the When I tap them download choice.",
   "desktop profile_each_shows_a_soft: Desktop, profile and settings (in profile_view.rs, storage_page).",
 ]
-text = ""
+text = "Siihen asti kustakin näkyy pehmeä esikatselu"
 
 [t_6ccfc0822e]
 en = "Clear cache"
@@ -5727,7 +5727,7 @@ where = [
   "ios settings_clear_cache: Row that clears the picture and file cache.",
   "desktop profile_clear_cache: Desktop, profile and settings (in profile_view.rs, storage_page).",
 ]
-text = ""
+text = "Tyhjennä välimuisti"
 
 [t_bda6ead116]
 en = "{size} of pictures and files you’ve opened. They’re prepared again when you open them."
@@ -5735,7 +5735,7 @@ where = [
   "android settings_clear_cache_sub: Small line under Clear cache. {size} is a formatted size such as 12 MB.",
   "ios settings_clear_cache_sub: Subtitle of Clear cache; {size} is a size such as 12 MB.",
 ]
-text = ""
+text = "{size} avaamiasi kuvia ja tiedostoja. Ne valmistellaan uudelleen, kun avaat ne."
 
 [t_1a905db57c]
 en = "Cleared"
@@ -5744,7 +5744,7 @@ where = [
   "ios settings_cache_cleared: Clear cache subtitle after clearing.",
   "desktop profile_cleared: Desktop, profile and settings (in profile_view.rs, storage_page).",
 ]
-text = ""
+text = "Tyhjennetty"
 
 [t_9cc4506644]
 en = "Nothing to clear"
@@ -5753,7 +5753,7 @@ where = [
   "ios settings_cache_empty: Clear cache subtitle when the cache is empty.",
   "desktop profile_nothing_to_clear: Desktop, profile and settings (in profile_view.rs, storage_page).",
 ]
-text = ""
+text = "Ei tyhjennettävää"
 
 [t_a66e3b8971]
 en = "To free more space, remove pictures or files from their chat."
@@ -5762,7 +5762,7 @@ where = [
   "ios settings_storage_note: Note under the Clear cache row.",
   "desktop profile_to_free_more_space: Desktop, profile and settings (in profile_view.rs, storage_page).",
 ]
-text = ""
+text = "Vapauttaaksesi lisää tilaa poista kuvia tai tiedostoja niiden keskustelusta."
 
 [t_b61b10150e]
 en_one = "{count} person"
@@ -5772,6 +5772,8 @@ where = [
   "ios settings_blocked_count: Subtitle of Blocked people; {count} is how many are blocked.",
   "desktop profile_blocked_count: Settings > Privacy row: how many people you blocked. {count} is that number.",
 ]
+one = "{count} henkilö"
+other = "{count} henkilöä"
 
 [t_dc9d990774]
 en = "No one"
@@ -5780,7 +5782,7 @@ where = [
   "ios settings_blocked_none: Subtitle of Blocked people when nobody is blocked.",
   "desktop profile_no_one: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "Ei ketään"
 
 [t_ace4d33640]
 en = "Who can call me"
@@ -5789,7 +5791,7 @@ where = [
   "ios settings_who_can_call: Privacy row and page title for call permissions.",
   "desktop profile_who_can_call_me: Desktop, profile and settings (in profile_view.rs, profile_page).",
 ]
-text = ""
+text = "Kuka voi soittaa minulle"
 
 [t_01ef1acf26]
 en_one = "{count} contact is messages only"
@@ -5799,6 +5801,8 @@ where = [
   "ios settings_msg_only_count: Subtitle of Who can call me; {count} is how many contacts may only message.",
   "desktop profile_messages_only_count: Settings > Privacy row: how many contacts may message you but not call. {count} is that number.",
 ]
+one = "{count} yhteystieto vain viesteille"
+other = "{count} yhteystietoa vain viesteille"
 
 [t_f32fa3d3d6]
 en = "All contacts can call"
@@ -5807,7 +5811,7 @@ where = [
   "ios settings_all_can_call: Subtitle of Who can call me when every contact may call.",
   "desktop profile_all_contacts_can_call: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "Kaikki yhteystiedot voivat soittaa"
 
 [t_364e4d7be9]
 en = "Needs your passphrase"
@@ -5816,7 +5820,7 @@ where = [
   "ios settings_recovery_pass: Subtitle of Account recovery when a passphrase is set.",
   "desktop common_needs_your_passphrase: Shared label, used in several places (profile, view).",
 ]
-text = ""
+text = "Vaatii salalauseesi"
 
 [t_da3369bc3f]
 en = "Needs your screen lock"
@@ -5824,7 +5828,7 @@ where = [
   "android settings_recovery_needs_lock: Small line under Account recovery when the phone's screen lock protects the recovery backup.",
   "ios settings_recovery_lock: Subtitle of Account recovery when the phone screen lock is used.",
 ]
-text = ""
+text = "Vaatii näytön lukituksen"
 
 [t_db4af04dd1]
 en = "Protects Tinline on this device"
@@ -5833,7 +5837,7 @@ where = [
   "ios settings_passphrase_sub: Subtitle of the Passphrase row.",
   "desktop profile_protects_tinline_on_this: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "Suojaa Tinlinen tällä laitteella"
 
 [t_4171b39021]
 en = "Your contacts see your name, picture and profile. Tinline doesn’t hide who you talk to, and every device linked to your account can read your chats."
@@ -5842,7 +5846,7 @@ where = [
   "ios settings_privacy_note: Note under the privacy rows.",
   "desktop profile_your_contacts_see_your: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "Yhteystietosi näkevät nimesi, kuvasi ja profiilisi. Tinline ei piilota, kenen kanssa puhut, ja jokainen tiliisi linkitetty laite voi lukea keskustelusi."
 
 [t_d13fbdcef3]
 en = "Read receipts"
@@ -5851,7 +5855,7 @@ where = [
   "ios settings_read_receipts: Privacy row and switch label.",
   "desktop profile_read_receipts: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "Lukukuittaukset"
 
 [t_e33dd40c71]
 en = "People see when you’ve read their messages"
@@ -5860,7 +5864,7 @@ where = [
   "ios settings_reads_on: Read receipts subtitle when on.",
   "desktop profile_people_see_when_youve: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "Ihmiset näkevät, kun olet lukenut heidän viestinsä"
 
 [t_da8f51f026]
 en = "Your reads stay with you"
@@ -5869,7 +5873,7 @@ where = [
   "ios settings_reads_off: Read receipts subtitle when off.",
   "desktop profile_your_reads_stay_with: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "Lukemisesi pysyvät omana tietonasi"
 
 [t_acbc9673fb]
 en = "Delivered ticks still go out either way, and you still see when others read yours. Messages you read while this is off stay unconfirmed."
@@ -5878,7 +5882,7 @@ where = [
   "ios settings_reads_note: Note under the read receipts switch.",
   "desktop profile_delivered_ticks_still_go: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "Toimituskuittaukset lähtevät joka tapauksessa, ja näet yhä, kun muut lukevat viestisi. Viestit, jotka luet tämän ollessa pois päältä, jäävät vahvistamatta."
 
 [t_9b92530e61]
 en = "Show me as online in public groups"
@@ -5886,7 +5890,7 @@ where = [
   "android settings_presence_title: Switch title and accessibility label on the Privacy page. The title may wrap to two lines.",
   "desktop profile_show_me_as_online: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "Näytä minut paikalla olevana julkisissa ryhmissä"
 
 [t_16d2e3f396]
 en = "Members see when you’re here"
@@ -5894,7 +5898,7 @@ where = [
   "android settings_presence_on: Small line under the public-group presence switch when it is on.",
   "desktop profile_members_see_when_youre: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "Jäsenet näkevät, kun olet paikalla"
 
 [t_e580edbe80]
 en = "You stay off their online lists"
@@ -5902,7 +5906,7 @@ where = [
   "android settings_presence_off: Small line under the public-group presence switch when it is off.",
   "desktop profile_you_stay_off_their: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "Et näy heidän paikallaololistoissaan"
 
 [t_d7e9b858a1]
 en = "Public groups are the ones anyone can join with an open link. This applies on this device; your other devices keep their own choice."
@@ -5910,21 +5914,21 @@ where = [
   "android settings_presence_note: Explanation under the public-group presence switch.",
   "desktop profile_public_groups_are_the: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "Julkisiin ryhmiin voi liittyä kuka tahansa avoimella linkillä. Tämä koskee tätä laitetta; muut laitteesi pitävät oman valintansa."
 
 [t_1db1044a1b]
 en = "Group pictures"
 where = [
   "android settings_group_pictures: Section heading on the Privacy page: when pictures in groups download by themselves.",
 ]
-text = ""
+text = "Ryhmien kuvat"
 
 [t_fae414092c]
 en = "Pictures in groups come from the group’s hosts. This applies on this device."
 where = [
   "android settings_group_pictures_note: Note under the group pictures choices.",
 ]
-text = ""
+text = "Ryhmien kuvat tulevat ryhmän isäntälaitteilta. Tämä koskee tätä laitetta."
 
 [t_dba3db1114]
 en = "Can call you"
@@ -5933,7 +5937,7 @@ where = [
   "ios settings_can_call_you: Contact row state on Who can call me.",
   "desktop profile_can_call_you: Desktop, profile and settings (in profile_view.rs, calls_page).",
 ]
-text = ""
+text = "Voi soittaa sinulle"
 
 [t_c92e880e1e]
 en = "Messages only"
@@ -5944,7 +5948,7 @@ where = [
   "ios settings_messages_only: Contact row state on Who can call me.",
   "desktop common_messages_only: Shared label, used in several places (chat, profile).",
 ]
-text = ""
+text = "Vain viestit"
 
 [t_411cebb300]
 en = "Allow calls from {name}"
@@ -5952,7 +5956,7 @@ where = [
   "android settings_allow_calls_from: Accessibility label of a contact's switch on the Who can call me page. {name} is the contact's name.",
   "ios settings_allow_calls_from: Accessibility label of a contact's call switch; {name} is the contact's name.",
 ]
-text = ""
+text = "Salli puhelut: {name}"
 
 [t_7c48c65cd7]
 en = "Someone you allowed can ring you; someone on messages only can still write. People you blocked can do neither."
@@ -5961,49 +5965,49 @@ where = [
   "ios settings_calls_note: Note under the contacts list on Who can call me.",
   "desktop profile_someone_you_allowed_can: Desktop, profile and settings (in profile_view.rs, calls_page).",
 ]
-text = ""
+text = "Sallimasi henkilö voi soittaa sinulle; vain viestejä lähettävä voi yhä kirjoittaa. Estämäsi ihmiset eivät voi kumpaakaan."
 
 [t_8e36a1d522]
 en = "Background & battery"
 where = [
   "android settings_battery_title: Title of the page that checks the settings that keep calls ringing in the background.",
 ]
-text = ""
+text = "Tausta ja akku"
 
 [t_4fdd5e43e0]
 en = "Keep my line open"
 where = [
   "android settings_battery_keep: Heading on the background and battery page.",
 ]
-text = ""
+text = "Pidä linjani auki"
 
 [t_83dbe93842]
 en = "Tinline stays connected in the background so calls ring like a normal phone. It uses a little battery. The checklist below is what Android needs to allow that."
 where = [
   "android settings_battery_hint: Explanation at the top of the background and battery page.",
 ]
-text = ""
+text = "Tinline pysyy yhteydessä taustalla, jotta puhelut soivat kuin tavallisessa puhelimessa. Se kuluttaa hieman akkua. Alla oleva tarkistuslista kertoo, mitä Android tarvitsee sen sallimiseen."
 
 [t_3a5e4ab9a1]
 en = "CHECKLIST"
 where = [
   "android settings_checklist: Small all-capitals section label above the permission checklist on the background and battery page.",
 ]
-text = ""
+text = "TARKISTUSLISTA"
 
 [t_e41150cd8d]
 en = "Battery"
 where = [
   "android settings_battery_row: Checklist row on the background and battery page.",
 ]
-text = ""
+text = "Akku"
 
 [t_ce5337ffb2]
 en = "Optimised — Android may pause Tinline"
 where = [
   "android settings_battery_optimised: Small line under the Battery checklist row when Android restricts Tinline's background use.",
 ]
-text = ""
+text = "Optimoitu — Android voi pysäyttää Tinlinen"
 
 [t_cb5667ea75]
 en = "On"
@@ -6015,28 +6019,28 @@ where = [
   "ios people_switch_on: Accessibility value of a switch that is on.",
   "ios call_value_on: Accessibility value of a toggle that is on.",
 ]
-text = ""
+text = "Päällä"
 
 [t_8c2fb128eb]
 en = "Still missing calls?"
 where = [
   "android settings_battery_missing_bold: Bold lead-in of the box at the bottom of the background and battery page.",
 ]
-text = ""
+text = "Jääkö puheluita yhä tulematta?"
 
 [t_528a43d393]
 en = "Some phones need an extra step to keep apps running."
 where = [
   "android settings_battery_missing: Text that follows the bold lead-in Still missing calls?",
 ]
-text = ""
+text = "Jotkin puhelimet tarvitsevat lisävaiheen pitääkseen sovelluksia käynnissä."
 
 [t_689c143935]
 en = "Steps for your phone"
 where = [
   "android settings_battery_steps: Link that opens a web page with phone-specific background settings.",
 ]
-text = ""
+text = "Ohjeet puhelimellesi"
 
 [t_637c31876f]
 en = "Couldn’t open recovery. Go back and try again."
@@ -6044,7 +6048,7 @@ where = [
   "android settings_recovery_open_failed: Error on the account recovery page when it could not start.",
   "ios security_recovery_failed: Error when the recovery data could not be read.",
 ]
-text = ""
+text = "Palautusta ei voitu avata. Palaa takaisin ja yritä uudelleen."
 
 [t_880d401582]
 en = "That didn’t match. Try again."
@@ -6052,7 +6056,7 @@ where = [
   "android settings_recovery_wrong: Error under the passphrase field on the recovery check page when the passphrase is wrong.",
   "ios security_wrong_pass: Error under the passphrase field when the passphrase is wrong.",
 ]
-text = ""
+text = "Se ei täsmännyt. Yritä uudelleen."
 
 [t_2d03567fc3]
 en = "Couldn’t open your backup. Try again."
@@ -6060,7 +6064,7 @@ where = [
   "android settings_recovery_backup_failed: Error on the recovery check page when the backup could not be opened.",
   "ios security_open_failed: Error when the recovery backup could not be opened.",
 ]
-text = ""
+text = "Varmuuskopiotasi ei voitu avata. Yritä uudelleen."
 
 [t_d1bb5a0088]
 en = "Add a screen lock or an app passphrase to open your backup."
@@ -6068,7 +6072,7 @@ where = [
   "android settings_recovery_add_lock: Error on the recovery check page when the phone has no screen lock and the app has no passphrase.",
   "ios security_need_lock: Error when the phone has no screen lock and no app passphrase is set.",
 ]
-text = ""
+text = "Lisää näytön lukitus tai sovelluksen salalause avataksesi varmuuskopiosi."
 
 [t_4491e679bd]
 en = "Check it’s you before opening your backup."
@@ -6076,7 +6080,7 @@ where = [
   "android settings_recovery_check: Lead text on the recovery check page.",
   "ios security_check_you: Intro on the account recovery gate.",
 ]
-text = ""
+text = "Varmista, että se olet sinä, ennen kuin avaat varmuuskopiosi."
 
 [t_a6551d1fc7]
 en = "Your passphrase"
@@ -6087,7 +6091,7 @@ where = [
   "ios link_your_pass: Label of the passphrase field on the approval step.",
   "desktop link_your_passphrase: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "Salalauseesi"
 
 [t_2b3975ca67]
 en = "Use your phone’s screen lock to continue."
@@ -6095,7 +6099,7 @@ where = [
   "android settings_recovery_use_lock: Hint on the recovery check page when there is no passphrase.",
   "ios security_use_lock_hint: Hint on the recovery gate when no app passphrase is set.",
 ]
-text = ""
+text = "Jatka puhelimesi näytön lukituksella."
 
 [t_554ce7f1cd]
 en = "Use screen lock"
@@ -6103,7 +6107,7 @@ where = [
   "android settings_use_screen_lock: Button on the recovery check page that asks for my fingerprint, face or PIN.",
   "ios security_use_lock: Button on the recovery gate when no passphrase is set.",
 ]
-text = ""
+text = "Käytä näytön lukitusta"
 
 [t_26b0725965]
 en = "Your recovery backup"
@@ -6111,7 +6115,7 @@ where = [
   "android settings_backup_title: Title of the page that shows my recovery key and 24 words.",
   "ios security_backup_title: Title of the page that shows the recovery key and words.",
 ]
-text = ""
+text = "Palautusvarmuuskopiosi"
 
 [t_985468e30f]
 en = "Keep this private. Anyone with it can act as you."
@@ -6119,7 +6123,7 @@ where = [
   "android settings_backup_private: Lead text on the recovery backup page.",
   "ios security_keep_private: Warning on the recovery backup page.",
 ]
-text = ""
+text = "Pidä tämä omana tietonasi. Kuka tahansa, jolla se on, voi toimia sinuna."
 
 [t_9cea364af8]
 en = "24 words"
@@ -6127,7 +6131,7 @@ where = [
   "android settings_backup_words: Tab on the recovery backup page: the 24 recovery words.",
   "ios security_tab_words: Tab on the recovery backup page: the 24 recovery words.",
 ]
-text = ""
+text = "24 sanaa"
 
 [t_acbb96f166]
 en = "Couldn’t prepare the key. Use your 24 words instead."
@@ -6135,7 +6139,7 @@ where = [
   "android settings_backup_key_failed: Hint on the recovery backup page when the key could not be made.",
   "ios security_key_failed: Hint when the recovery key could not be made.",
 ]
-text = ""
+text = "Avainta ei voitu valmistella. Käytä 24 sanaasi sen sijaan."
 
 [t_ef3b9b9e9f]
 en = "Hide"
@@ -6144,7 +6148,7 @@ where = [
   "ios security_hide: Button that hides the recovery key or words.",
   "desktop common_hide: Shared label, used in several places (link, view).",
 ]
-text = ""
+text = "Piilota"
 
 [t_783f1bd5a1]
 en = "Reveal"
@@ -6152,7 +6156,7 @@ where = [
   "android settings_reveal: Button on the recovery backup page that shows the key or words.",
   "ios security_reveal: Button that shows the recovery key or words.",
 ]
-text = ""
+text = "Näytä"
 
 [t_c6af397085]
 en = "Hides after 30 seconds. Locks when you leave the app."
@@ -6160,7 +6164,7 @@ where = [
   "android settings_backup_hides: Hint on the recovery backup page.",
   "ios security_hint_hides: Hint on the recovery backup page.",
 ]
-text = ""
+text = "Piiloutuu 30 sekunnin kuluttua. Lukittuu, kun poistut sovelluksesta."
 
 [t_11a94bf685]
 en = "Key or words restore the same account. Keep either in a private, safe place."
@@ -6168,7 +6172,7 @@ where = [
   "android settings_backup_same: Hint on the recovery backup page.",
   "ios security_hint_same: Hint on the recovery backup page.",
 ]
-text = ""
+text = "Avain ja sanat palauttavat saman tilin. Säilytä kumpi tahansa yksityisessä, turvallisessa paikassa."
 
 [t_b53710a836]
 en = "Copied. Keep it somewhere private."
@@ -6176,7 +6180,7 @@ where = [
   "android settings_backup_copied: Message on the recovery backup page after copying the key.",
   "ios security_copied_note: Message after the recovery key was copied.",
 ]
-text = ""
+text = "Kopioitu. Säilytä se jossain yksityisessä paikassa."
 
 [t_93a19d70aa]
 en = "Copy key"
@@ -6184,14 +6188,14 @@ where = [
   "android settings_copy_key: Button on the recovery backup page.",
   "ios security_copy_key: Button that copies the recovery key.",
 ]
-text = ""
+text = "Kopioi avain"
 
 [t_854d49341c]
 en = "Couldn’t copy. Try again."
 where = [
   "android settings_copy_failed: Message on the recovery backup page when copying failed.",
 ]
-text = ""
+text = "Kopiointi ei onnistunut. Yritä uudelleen."
 
 [t_c838859bcd]
 en = "Change passphrase"
@@ -6200,7 +6204,7 @@ where = [
   "ios security_change_pass: Title and button when a passphrase exists.",
   "desktop common_change_passphrase: Shared label, used in several places (profile, view).",
 ]
-text = ""
+text = "Vaihda salalause"
 
 [t_b3e0f45116]
 en = "Current passphrase"
@@ -6209,7 +6213,7 @@ where = [
   "ios security_current_pass: Label of the field for the existing passphrase.",
   "desktop common_current_passphrase: Shared label, used in several places (profile, view).",
 ]
-text = ""
+text = "Nykyinen salalause"
 
 [t_f4f0776b65]
 en = "New passphrase"
@@ -6218,7 +6222,7 @@ where = [
   "ios security_new_pass: Field label when changing the passphrase.",
   "desktop common_new_passphrase: Shared label, used in several places (profile, view).",
 ]
-text = ""
+text = "Uusi salalause"
 
 [t_ca983b7bba]
 en = "Your account lives only on this phone. A passphrase encrypts it, so nobody holding your phone can copy it."
@@ -6226,7 +6230,7 @@ where = [
   "android settings_passphrase_why: Lead text on the page for adding a passphrase.",
   "ios security_pass_intro: Intro on the add-passphrase page.",
 ]
-text = ""
+text = "Tilisi on vain tällä puhelimella. Salalause salaa sen, joten kukaan puhelimesi haltija ei voi kopioida sitä."
 
 [t_8bb3808409]
 en = "Version {version}"
@@ -6234,7 +6238,7 @@ where = [
   "android settings_about_version: App version on the About page. {version} is a number such as 0.2.0.",
   "ios settings_about_version: About page; {version} is the app version such as 0.2.0.",
 ]
-text = ""
+text = "Versio {version}"
 
 [t_4ab3281957]
 en = "Made by Osvauld"
@@ -6243,7 +6247,7 @@ where = [
   "ios settings_about_made_by: About page credit line.",
   "desktop profile_made_by_osvauld: Desktop, profile and settings (in profile_view.rs, about_page).",
 ]
-text = ""
+text = "Tekijä: Osvauld"
 
 [t_e283f0f7c9]
 en = "Open-source licences"
@@ -6252,7 +6256,7 @@ where = [
   "ios settings_licences: About row and page title for licences.",
   "desktop profile_open_source_licences: Desktop, profile and settings (in profile_view.rs, about_page).",
 ]
-text = ""
+text = "Avoimen lähdekoodin lisenssit"
 
 [t_541e7f6e93]
 en = "The libraries Tinline is built on"
@@ -6261,7 +6265,7 @@ where = [
   "ios settings_licences_sub: Subtitle of the Open-source licences row.",
   "desktop profile_the_libraries_tinline_is: Desktop, profile and settings (in profile_view.rs, about_page).",
 ]
-text = ""
+text = "Kirjastot, joiden varaan Tinline on rakennettu"
 
 [t_827ea4031a]
 en = "Full licence texts"
@@ -6269,7 +6273,7 @@ where = [
   "android settings_licences_full: Row on the About page that opens the full licence texts.",
   "ios settings_licence_texts: Row that opens the full licence texts.",
 ]
-text = ""
+text = "Lisenssien koko tekstit"
 
 [t_1dddbaa123]
 en = "Source code"
@@ -6278,7 +6282,7 @@ where = [
   "ios settings_source: About row that opens the source code website.",
   "desktop profile_source_code: Desktop, profile and settings (in profile_view.rs, about_page).",
 ]
-text = ""
+text = "Lähdekoodi"
 
 [t_6bbcef751d]
 en = "Tinline is open source"
@@ -6287,7 +6291,7 @@ where = [
   "ios settings_source_sub: Subtitle of the Source code row.",
   "desktop profile_tinline_is_open_source: Desktop, profile and settings (in profile_view.rs, about_page).",
 ]
-text = ""
+text = "Tinline on avointa lähdekoodia"
 
 [t_64cb92446a]
 en = "Tinline has no ads and no tracking. Your messages and calls go between your devices and the people you talk to."
@@ -6296,21 +6300,21 @@ where = [
   "ios settings_about_note: Note on the About page.",
   "desktop profile_tinline_has_no_ads: Desktop, profile and settings (in profile_view.rs, about_page).",
 ]
-text = ""
+text = "Tinlinessa ei ole mainoksia eikä seurantaa. Viestisi ja puhelusi kulkevat laitteidesi ja niiden ihmisten välillä, joiden kanssa puhut."
 
 [t_afbb8506ee]
 en = "Copy debug log"
 where = [
   "android settings_log_copy: Row on the About page that copies the debug log to the clipboard.",
 ]
-text = ""
+text = "Kopioi vianetsintäloki"
 
 [t_8a3cd9ba60]
 en = "Paste it to whoever is helping you fix a problem"
 where = [
   "android settings_log_copy_sub: Small line under Copy debug log.",
 ]
-text = ""
+text = "Liitä se sille, joka auttaa sinua korjaamaan ongelman"
 
 [t_faf274135a]
 en = "Send debug log"
@@ -6318,42 +6322,42 @@ where = [
   "android settings_log_send: Row on the About page that shares the debug log as a file.",
   "android debuglog_send_title: Title of the system share sheet when sending the debug log.",
 ]
-text = ""
+text = "Lähetä vianetsintäloki"
 
 [t_4520860c09]
 en = "The full log as a file"
 where = [
   "android settings_log_send_sub: Small line under Send debug log.",
 ]
-text = ""
+text = "Koko loki tiedostona"
 
 [t_3d9f9b3f5f]
 en = "The log has what Tinline did on this phone, with ids of contacts and calls. It never has your messages or your root secret."
 where = [
   "android settings_log_note: Note under the debug log rows.",
 ]
-text = ""
+text = "Lokissa on se, mitä Tinline teki tällä puhelimella, sekä yhteystietojen ja puheluiden tunnisteet. Siinä ei koskaan ole viestejäsi eikä juurisalaisuuttasi."
 
 [t_b284cb7656]
 en = "Collecting the log…"
 where = [
   "android settings_log_collecting: Shown under the debug log rows while the log is read.",
 ]
-text = ""
+text = "Kerätään lokia…"
 
 [t_beaa931d38]
 en = "Debug log copied. Paste it into a message."
 where = [
   "android settings_log_copied: Shown under the debug log rows after copying.",
 ]
-text = ""
+text = "Vianetsintäloki kopioitu. Liitä se viestiin."
 
 [t_f5cf4026ba]
 en = "Couldn't get the log: {reason}"
 where = [
   "android settings_log_failed: Shown under the debug log rows when the log could not be read. {reason} is a short error description.",
 ]
-text = ""
+text = "Lokia ei saatu: {reason}"
 
 [t_4cce52a906]
 en = "Linked devices"
@@ -6362,7 +6366,7 @@ where = [
   "ios devices_title: Title of the linked devices page.",
   "desktop common_linked_devices: Shared label, used in several places (profile, view).",
 ]
-text = ""
+text = "Linkitetyt laitteet"
 
 [t_2d301e6101]
 en = "Calls ring on all of these. People you call never see these names."
@@ -6371,7 +6375,7 @@ where = [
   "ios devices_hint_rings: Hint above the device list.",
   "desktop link_calls_ring_on_all: Desktop, linking devices (in link_view.rs, linked_devices_page).",
 ]
-text = ""
+text = "Puhelut soivat kaikilla näillä. Ne, joille soitat, eivät koskaan näe näitä nimiä."
 
 [t_ec759a6763]
 en = "Link a device"
@@ -6380,7 +6384,7 @@ where = [
   "ios devices_link: Button that starts linking another device.",
   "desktop link_link_a_device: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = ""
+text = "Linkitä laite"
 
 [t_1eb9848544]
 en = "UNLINKED"
@@ -6388,7 +6392,7 @@ where = [
   "android devices_unlinked_label: Small all-capitals section label above devices that were unlinked.",
   "ios devices_unlinked_label: Small section label above unlinked devices. Capitals are part of the design.",
 ]
-text = ""
+text = "LINKITYS POISTETTU"
 
 [t_e1d21be382]
 en = "SYNC"
@@ -6396,7 +6400,7 @@ where = [
   "android devices_sync_label: Small all-capitals section label above the sync explanation.",
   "ios devices_sync_label: Small section label above the sync explanation. Capitals are part of the design.",
 ]
-text = ""
+text = "SYNKRONOINTI"
 
 [t_893cf073bd]
 en = "Devices sync directly with each other whenever two are online at once. There is no copy on any server."
@@ -6404,7 +6408,7 @@ where = [
   "android devices_sync_hint: Explanation under the SYNC label.",
   "ios devices_sync_hint: Hint explaining device sync.",
 ]
-text = ""
+text = "Laitteet synkronoituvat suoraan keskenään aina, kun kaksi on verkossa yhtä aikaa. Millään palvelimella ei ole kopiota."
 
 [t_045305fe31]
 en = "This phone — {name}"
@@ -6412,7 +6416,7 @@ where = [
   "android devices_this_phone_named: Title of this phone's row in the linked devices list. {name} is the name I gave this phone.",
   "ios devices_row_this_phone: Device row title for this phone; {name} is its label.",
 ]
-text = ""
+text = "Tämä puhelin — {name}"
 
 [t_fd632ceb14]
 en = "Unnamed"
@@ -6420,7 +6424,7 @@ where = [
   "android devices_unnamed: Name shown for a device that has no name.",
   "ios devices_unnamed: Fallback label for a device without a name.",
 ]
-text = ""
+text = "Nimetön"
 
 [t_d0fdc4ad24]
 en = "Unnamed device"
@@ -6429,7 +6433,7 @@ where = [
   "ios devices_unnamed_device: Fallback title for a device without a name.",
   "desktop common_unnamed_device: Shared label, used in several places (link, profile).",
 ]
-text = ""
+text = "Nimetön laite"
 
 [t_a722d3793d]
 en = "Unlinked"
@@ -6437,21 +6441,21 @@ where = [
   "android devices_sub_unlinked: Small line under a device that was unlinked.",
   "ios devices_row_unlinked: Device row subtitle for a device that was unlinked.",
 ]
-text = ""
+text = "Linkitys poistettu"
 
 [t_f57297dcfd]
 en = "This device · Android"
 where = [
   "android devices_sub_this: Small line under this phone's row in the linked devices list.",
 ]
-text = ""
+text = "Tämä laite · Android"
 
 [t_748db09fcd]
 en = "Synced {time}"
 where = [
   "android devices_sub_synced: Small line under a device row. {time} is a phrase such as 2 min ago.",
 ]
-text = ""
+text = "Synkronoitu {time}"
 
 [t_01692e4fa5]
 en = "Not seen yet"
@@ -6459,7 +6463,7 @@ where = [
   "android devices_sub_not_seen: Small line under a device row when it has not been online since it was linked.",
   "ios devices_row_not_seen: Device row subtitle when the device has not synced yet.",
 ]
-text = ""
+text = "Ei vielä nähty"
 
 [t_b11e1d1153]
 en = "Device"
@@ -6467,7 +6471,7 @@ where = [
   "android devices_device: Title of a device's page when it has no name, and the fallback title while it loads.",
   "ios devices_device: Title of the device page while loading, and fallback name.",
 ]
-text = ""
+text = "Laite"
 
 [t_e71782d4da]
 en = "This phone"
@@ -6475,7 +6479,7 @@ where = [
   "android devices_this_phone: Title of this phone's device page.",
   "ios devices_this_phone: Title of the device page for this phone.",
 ]
-text = ""
+text = "Tämä puhelin"
 
 [t_8223b67c25]
 en = "Last synced"
@@ -6483,7 +6487,7 @@ where = [
   "android devices_last_synced: Row on a device's page showing when it last synced.",
   "ios devices_prop_synced: Row on the device page: when it last synced.",
 ]
-text = ""
+text = "Viimeksi synkronoitu"
 
 [t_955ff5a31e]
 en = "Rings for calls"
@@ -6491,7 +6495,7 @@ where = [
   "android devices_rings: Row on a device's page: does it ring when someone calls me.",
   "ios devices_prop_rings: Row on the device page: whether it rings for calls.",
 ]
-text = ""
+text = "Soi puheluille"
 
 [t_6a7527cf57]
 en = "No, it was unlinked"
@@ -6499,7 +6503,7 @@ where = [
   "android devices_rings_no: Value of Rings for calls for an unlinked device.",
   "ios devices_rings_no: Value of Rings for calls for an unlinked device.",
 ]
-text = ""
+text = "Ei, sen linkitys poistettiin"
 
 [t_189cef11ad]
 en = "Yes, when it’s on"
@@ -6507,7 +6511,7 @@ where = [
   "android devices_rings_yes: Value of Rings for calls for a linked device.",
   "ios devices_rings_yes: Value of Rings for calls for a linked device.",
 ]
-text = ""
+text = "Kyllä, kun se on päällä"
 
 [t_823cddfcd3]
 en = "Sync now"
@@ -6515,7 +6519,7 @@ where = [
   "android devices_sync_now: Button on another device's page that asks it to sync.",
   "ios devices_sync_now: Button on the device page.",
 ]
-text = ""
+text = "Synkronoi nyt"
 
 [t_f265fa67fe]
 en = "Syncing with {name}…"
@@ -6523,7 +6527,7 @@ where = [
   "android devices_syncing: Brief message after tapping Sync now. {name} is the device's name.",
   "ios devices_syncing: Message when a sync starts; {name} is the device label or the words the device.",
 ]
-text = ""
+text = "Synkronoidaan: {name}…"
 
 [t_1e44ff1b62]
 en = "the device"
@@ -6531,7 +6535,7 @@ where = [
   "android devices_fallback_the_device: Used in place of a device name in the Syncing with message when the device has no name. Lowercase, mid-sentence.",
   "ios devices_fb_the_device: Fallback noun for an unnamed device inside the Syncing message.",
 ]
-text = ""
+text = "laite"
 
 [t_f5c1bd02f9]
 en = "Remove account from this phone"
@@ -6539,7 +6543,7 @@ where = [
   "android devices_remove_account: Danger button on this phone's device page, and the title of the screen lock prompt for it.",
   "ios devices_remove_account: Reason shown in the screen lock prompt, and the button label.",
 ]
-text = ""
+text = "Poista tili tältä puhelimelta"
 
 [t_f55e851092]
 en = "Unlink this device"
@@ -6547,7 +6551,7 @@ where = [
   "android devices_unlink_this: Danger button on another device's page.",
   "ios devices_unlink_this: Button on the device page.",
 ]
-text = ""
+text = "Poista tämän laitteen linkitys"
 
 [t_13494adba3]
 en = "Unlink device"
@@ -6555,7 +6559,7 @@ where = [
   "android devices_unlink_device: Title of the phone's screen lock prompt shown before unlinking another device.",
   "ios devices_unlink_device: Reason shown in the screen lock prompt.",
 ]
-text = ""
+text = "Poista laitteen linkitys"
 
 [t_6786f49398]
 en = "Rename device"
@@ -6564,7 +6568,7 @@ where = [
   "ios devices_rename: Dialog title for renaming a device.",
   "desktop profile_rename_device: Desktop, profile and settings (in profile_view.rs, devices_layer).",
 ]
-text = ""
+text = "Nimeä laite uudelleen"
 
 [t_c24333a31e]
 en = "this device"
@@ -6572,7 +6576,7 @@ where = [
   "android devices_fallback_this_device: Used in place of a device name in the unlink question when the device has no name. Lowercase, mid-sentence.",
   "ios devices_fb_this_device: Fallback noun for an unnamed device inside the Unlink question.",
 ]
-text = ""
+text = "tämä laite"
 
 [t_9287ec5959]
 en = "device"
@@ -6580,7 +6584,7 @@ where = [
   "android devices_fallback_device: Used in place of a device name in the Unlinked message when the device has no name. Lowercase, mid-sentence.",
   "ios devices_fb_device: Fallback noun for an unnamed device inside the Unlinked message.",
 ]
-text = ""
+text = "laite"
 
 [t_3faecb9c5d]
 en = "Remove your account from this phone?"
@@ -6588,7 +6592,7 @@ where = [
   "android devices_confirm_remove_title: Title of the confirmation dialog for removing the account from this phone.",
   "ios devices_remove_q: Dialog title.",
 ]
-text = ""
+text = "Poistetaanko tilisi tältä puhelimelta?"
 
 [t_4c986a9aa5]
 en = "Unlink {name}?"
@@ -6597,7 +6601,7 @@ where = [
   "ios devices_unlink_q: Dialog title; {name} is the device label or the words this device.",
   "desktop common_unlink_2: Shared label, used in several places (link, profile). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Poistetaanko linkitys: {name}?"
 
 [t_ffbb50f111]
 en = "Working…"
@@ -6606,7 +6610,7 @@ where = [
   "ios devices_working: Confirm button text while the unlink runs.",
   "desktop group_working: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "Käsitellään…"
 
 [t_0ae9b16e47]
 en = "Unlink"
@@ -6615,7 +6619,7 @@ where = [
   "ios devices_unlink: Confirm button of the unlink dialog.",
   "desktop common_unlink: Shared label, used in several places (link, profile).",
 ]
-text = ""
+text = "Poista linkitys"
 
 [t_e10a08cbc5]
 en = "This phone stops syncing and ringing, and your account, contacts, chats and call history are deleted from it."
@@ -6623,7 +6627,7 @@ where = [
   "android devices_remove_body: Body of the dialog for removing the account from this phone.",
   "ios devices_remove_body: Body of the remove-account dialog.",
 ]
-text = ""
+text = "Tämä puhelin lopettaa synkronoinnin ja soimisen, ja tilisi, yhteystietosi, keskustelusi ja puheluhistoriasi poistetaan siltä."
 
 [t_617985c94e]
 en = "This is the only device with your account. Without your recovery phrase nothing can bring it back."
@@ -6631,7 +6635,7 @@ where = [
   "android devices_remove_only: Warning card in the remove dialog when no other device has the account.",
   "ios devices_only_device: Warning card in the remove-account dialog.",
 ]
-text = ""
+text = "Tämä on ainoa laite, jolla tilisi on. Ilman palautussanojasi mikään ei voi tuoda sitä takaisin."
 
 [t_7bd075ae97]
 en = "Your other devices keep everything."
@@ -6639,7 +6643,7 @@ where = [
   "android devices_remove_others: Reassurance in the remove dialog when other devices have the account.",
   "ios devices_others_keep: Line in the remove-account dialog.",
 ]
-text = ""
+text = "Muut laitteesi säilyttävät kaiken."
 
 [t_cac1a71b2b]
 en = "It stops syncing and stops ringing for your calls. If it’s online, it removes your account from itself."
@@ -6648,7 +6652,7 @@ where = [
   "ios devices_unlink_body: Body of the unlink dialog.",
   "desktop link_it_stops_syncing_and: Desktop, linking devices (in link_view.rs, unlink_confirm).",
 ]
-text = ""
+text = "Se lopettaa synkronoinnin eikä enää soi puheluillesi. Jos se on verkossa, se poistaa tilisi itseltään."
 
 [t_04c6ed465e]
 en = "Unlinking can’t lock it from here. Anyone who can unlock it can still use your account. The only full cut-off is a new account."
@@ -6657,7 +6661,7 @@ where = [
   "ios devices_unlink_warn: Warning card in the unlink dialog.",
   "desktop link_unlinking_cant_lock_it: Desktop, linking devices (in link_view.rs, unlink_confirm).",
 ]
-text = ""
+text = "Linkityksen poisto ei voi lukita sitä täältä. Kuka tahansa, joka saa sen auki, voi yhä käyttää tiliäsi. Ainoa täysi katkaisu on uusi tili."
 
 [t_47505d0245]
 en = "Lost or stolen?"
@@ -6666,7 +6670,7 @@ where = [
   "ios devices_lost: Bold lead-in of the unlink warning card.",
   "desktop link_lost_or_stolen: Desktop, linking devices (in link_view.rs, unlink_confirm).",
 ]
-text = ""
+text = "Kadonnut tai varastettu?"
 
 [t_a0e3dfe2d2]
 en = "Unlinked {name}"
@@ -6674,7 +6678,7 @@ where = [
   "android devices_unlinked_msg: Brief message after a device was unlinked. {name} is the device's name.",
   "ios devices_unlinked_msg: Message after a device was unlinked; {name} is its label or the word device.",
 ]
-text = ""
+text = "Linkitys poistettu: {name}"
 
 [t_72c98f7c55]
 en = "Screen lock check cancelled"
@@ -6683,7 +6687,7 @@ where = [
   "ios devices_lock_cancelled: Error when the screen lock prompt was cancelled.",
   "ios link_lock_cancelled: Error when the screen lock prompt was cancelled.",
 ]
-text = ""
+text = "Näytön lukituksen tarkistus peruttu"
 
 [t_e12c86c002]
 en = "Same code on both?"
@@ -6692,7 +6696,7 @@ where = [
   "ios link_same_code: Title when the new device is waiting for approval.",
   "desktop link_same_code_on_both: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "Sama koodi molemmissa?"
 
 [t_30ca790226]
 en = "Check that {name} shows this code, then approve there."
@@ -6701,7 +6705,7 @@ where = [
   "ios link_same_code_lead: Explanation under Same code on both?; {name} is the other device's name or the words your other device.",
   "desktop link_check_that_shows_this: Desktop, linking devices (in link_view.rs, link_screen). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Tarkista, että {name} näyttää tämän koodin, ja hyväksy siellä."
 
 [t_14565e17d4]
 en = "Different code, or you didn’t start this? Cancel. Someone else may have scanned the QR."
@@ -6710,7 +6714,7 @@ where = [
   "ios link_diff_code: Warning under the big code.",
   "desktop link_different_code_or_you: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "Eri koodi, tai et aloittanut tätä? Peruuta. Joku muu on ehkä skannannut QR-koodin."
 
 [t_0e911a71b0]
 en = "Waiting for approval…"
@@ -6719,7 +6723,7 @@ where = [
   "ios link_waiting: Status line while the other device approves.",
   "desktop link_waiting_for_approval: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "Odotetaan hyväksyntää…"
 
 [t_8e11b6442a]
 en = "Linking…"
@@ -6728,7 +6732,7 @@ where = [
   "ios link_linking: Title while the account is being received.",
   "desktop link_linking_2: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "Linkitetään…"
 
 [t_9cba69c0af]
 en = "Receiving your account. Keep both devices open."
@@ -6737,7 +6741,7 @@ where = [
   "ios link_receiving: Explanation while the account is being received.",
   "desktop link_receiving_your_account_keep: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "Tiliäsi vastaanotetaan. Pidä molemmat laitteet auki."
 
 [t_0883e302a7]
 en = "Couldn’t link"
@@ -6746,7 +6750,7 @@ where = [
   "ios link_failed: Title when linking failed.",
   "desktop link_couldnt_link: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "Linkitys ei onnistunut"
 
 [t_caacf98e5d]
 en = "On a device that already has your account, open Settings › Link a device and scan this."
