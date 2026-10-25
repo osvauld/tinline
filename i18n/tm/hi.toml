@@ -1802,7 +1802,7 @@ en = "Appoint one from a member’s menu, or host calls on this phone. A phone o
 where = [
   "android groupsb_callhosts_note_admin: Extra sentences added after the Call hosts explanation for admins (a space is put before them).",
 ]
-text = ""
+text = "किसी सदस्य के मेनू से कॉल होस्ट नियुक्त करें, या इस फ़ोन पर कॉल होस्ट करें। फ़ोन सिर्फ़ वही कॉल होस्ट करता है जो उसका मालिक शुरू करता है।"
 
 [t_dce5cfb1e1]
 en = "Flags on you"
@@ -1810,7 +1810,7 @@ where = [
   "android groupsb_flags_on_you: Section heading on Group info when admins have flagged me for removal.",
   "ios group_flags_on_you: Section heading when the user has flags against them.",
 ]
-text = ""
+text = "आप पर लगे फ़्लैग"
 
 [t_fae19ecdd9]
 en_one = "One more flag from any admin removes you from the group. Flags can’t be taken back. You can still read and post until then."
@@ -1819,6 +1819,8 @@ where = [
   "android groupsb_flags_left_note: Explanation under Flags on you. {count} is how many more flags would remove me.",
   "ios group_flags_left: Note under the flag meter. {count} is how many more flags remove the user.",
 ]
+one = "किसी भी एडमिन का {count} और फ़्लैग आपको ग्रुप से हटा देगा। फ़्लैग वापस नहीं लिए जा सकते। तब तक आप पढ़ और पोस्ट कर सकते हैं।"
+other = "किसी भी एडमिन के {count} और फ़्लैग आपको ग्रुप से हटा देंगे। फ़्लैग वापस नहीं लिए जा सकते। तब तक आप पढ़ और पोस्ट कर सकते हैं।"
 
 [t_4d5cbb93e0]
 en = "First flag"
@@ -1826,7 +1828,7 @@ where = [
   "android groupsb_flag_first: Label of the first flag in the list of who flagged me.",
   "ios group_removal_flag_first: Label of the first flag on the removal page.",
 ]
-text = ""
+text = "पहला फ़्लैग"
 
 [t_226f4e37b4]
 en = "Second flag"
@@ -1834,7 +1836,7 @@ where = [
   "android groupsb_flag_second: Label of the second flag in the list of who flagged me.",
   "ios group_removal_flag_second: Label of the second flag.",
 ]
-text = ""
+text = "दूसरा फ़्लैग"
 
 [t_9bfd3ed1e7]
 en = "Third flag"
@@ -1842,7 +1844,7 @@ where = [
   "android groupsb_flag_third: Label of the third flag in the list of who flagged me.",
   "ios group_removal_flag_third: Label of the third flag.",
 ]
-text = ""
+text = "तीसरा फ़्लैग"
 
 [t_b3a066fedd]
 en = "Flag"
@@ -1851,7 +1853,7 @@ where = [
   "ios group_removal_flag: Label of any later flag.",
   "desktop group_flag_2: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "फ़्लैग"
 
 [t_3ed7c188d3]
 en = "Who flagged you"
@@ -1859,7 +1861,7 @@ where = [
   "android groupsb_who_flagged: Subheading of the removal page, above the list of flags. Shown in capitals.",
   "ios group_removal_who: Section label on the removal page.",
 ]
-text = ""
+text = "किसने फ़्लैग किया"
 
 [t_ef6d09ddc2]
 en = "Each flag was made by an admin of the group, and this device checked them before showing this."
@@ -1867,7 +1869,7 @@ where = [
   "android groupsb_flags_checked_note: Note under the list of flags on the removal page.",
   "ios group_removal_checked: Note on the removal page.",
 ]
-text = ""
+text = "हर फ़्लैग ग्रुप के किसी एडमिन ने लगाया था, और यह दिखाने से पहले इस डिवाइस ने उनकी जाँच की है।"
 
 [t_5b9c46831c]
 en = "What this means"
@@ -1875,7 +1877,7 @@ where = [
   "android groupsb_what_means: Subheading of the removal page. Shown in capitals.",
   "ios group_removal_means: Section label on the removal page.",
 ]
-text = ""
+text = "इसका मतलब"
 
 [t_4fd34ee091]
 en = "You keep the posts already on this device, and you can read them. You can’t post, and the group’s hosts no longer accept anything from you. Removal is final: to come back, an admin has to invite you again."
@@ -1883,7 +1885,7 @@ where = [
   "android groupsb_removal_body: Explanation on the removal page.",
   "ios group_removal_text: Explanation on the removal page.",
 ]
-text = ""
+text = "जो पोस्ट पहले से इस डिवाइस पर हैं, वे आपके पास रहेंगी और आप उन्हें पढ़ सकते हैं। आप पोस्ट नहीं कर सकते, और ग्रुप के होस्ट अब आपसे कुछ स्वीकार नहीं करते। हटाया जाना अंतिम है: वापस आने के लिए किसी एडमिन को आपको फिर से आमंत्रित करना होगा।"
 
 [t_639bd50c24]
 en = "Read the posts"
@@ -1891,14 +1893,14 @@ where = [
   "android groupsb_read_posts: Button on the removal page that goes back to the posts I still have.",
   "ios group_removal_read: Button on the removal page that goes back to the posts.",
 ]
-text = ""
+text = "पोस्ट पढ़ें"
 
 [t_0cc87a0fbb]
 en = "Invite to {name}"
 where = [
   "android groupsb_invite_to: Title of the invite-contacts sheet. {name} is the group's name.",
 ]
-text = ""
+text = "{name} में आमंत्रित करें"
 
 [t_87747c4063]
 en = "Each person gets a private invite that works for 7 days. Anyone you invite can read the group’s posts once they join."
@@ -1906,7 +1908,7 @@ where = [
   "android groupsb_invite_sheet_note: Paragraph under the list of contacts in the invite sheet.",
   "ios group_invite_text: Body of the invite sheet.",
 ]
-text = ""
+text = "हर व्यक्ति को एक निजी आमंत्रण मिलता है जो 7 दिन तक काम करता है। जिन्हें आप आमंत्रित करते हैं, वे जुड़ने के बाद ग्रुप की पोस्ट पढ़ सकते हैं।"
 
 [t_57832cb53f]
 en = "Everyone in your contacts is already in this group or has an invite waiting."
@@ -1914,7 +1916,7 @@ where = [
   "android groupsb_invite_none: Shown in the invite sheet when there is nobody left to invite.",
   "ios group_invite_none: Shown on the invite sheet when there is nobody left to invite.",
 ]
-text = ""
+text = "आपके सभी संपर्क या तो पहले से इस ग्रुप में हैं या उनका आमंत्रण इंतज़ार में है।"
 
 [t_08e61a1305]
 en = "Sending…"
@@ -1923,7 +1925,7 @@ where = [
   "ios group_invite_sending: Label of the invite button while sending.",
   "desktop group_sending: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "भेजा जा रहा है…"
 
 [t_57624c6c17]
 en = "Invite"
@@ -1932,7 +1934,7 @@ where = [
   "ios group_invite_button: Invite button with nobody picked.",
   "desktop group_invite: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "आमंत्रित करें"
 
 [t_ad745ca536]
 en_one = "Invite {count} person"
@@ -1941,6 +1943,8 @@ where = [
   "android groupsb_invite_people: Button that sends invitations. {count} is the number of contacts picked.",
   "ios group_invite_people: Invite button label. {count} is how many contacts are picked.",
 ]
+one = "{count} व्यक्ति को आमंत्रित करें"
+other = "{count} लोगों को आमंत्रित करें"
 
 [t_546f4630e1]
 en = "Couldn’t invite"
@@ -1948,7 +1952,7 @@ where = [
   "android groupsb_cant_invite: Message shown when sending invitations failed and the core gave no reason.",
   "ios group_invite_failed: Fallback message when an invite fails.",
 ]
-text = ""
+text = "आमंत्रण नहीं भेजा जा सका"
 
 [t_22d53f4f6b]
 en = "Your role in this group"
@@ -1956,7 +1960,7 @@ where = [
   "android groupsb_member_sheet_me: Label of my own member sheet.",
   "ios group_member_role_desc_you: Spoken label of the role row on the member sheet for the user.",
 ]
-text = ""
+text = "इस ग्रुप में आपकी भूमिका"
 
 [t_c7437b59dc]
 en = "{name} in {group}"
@@ -1964,7 +1968,7 @@ where = [
   "android groupsb_member_in_group: Label of another member's sheet. {name} is the member's name, {group} the group's name.",
   "ios group_member_in_group_desc: Spoken label of a member on their sheet. {name} is the member, {group} the group.",
 ]
-text = ""
+text = "{group} में {name}"
 
 [t_d543a00377]
 en = "Message {name}"
@@ -1975,7 +1979,7 @@ where = [
   "ios shell_empty_message: Home hero button with one contact. {name} is their first name.",
   "desktop signup_message: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} को संदेश भेजें"
 
 [t_fd3e384186]
 en = "You blocked {name}"
@@ -1984,7 +1988,7 @@ where = [
   "android conv_you_blocked: Small pill under the last message when you blocked the contact. {name} is their first name.",
   "ios group_member_you_blocked: Action row title. {name} is the first name of the blocked member.",
 ]
-text = ""
+text = "आपने {name} को ब्लॉक किया है"
 
 [t_a074d2c830]
 en = "They stay in the group. Unblock them in Contacts to chat."
@@ -1992,7 +1996,7 @@ where = [
   "android groupsb_blocked_stay: Second line under You blocked.",
   "ios group_member_blocked_sub: Sub line under You blocked.",
 ]
-text = ""
+text = "वे ग्रुप में बने रहेंगे। चैट करने के लिए संपर्क में जाकर उन्हें अनब्लॉक करें।"
 
 [t_05ad7b6297]
 en = "Request sent"
@@ -2000,7 +2004,7 @@ where = [
   "android groupsb_request_sent: Disabled menu item: my chat request to this member is pending.",
   "ios group_member_request_sent: Action row title when a chat request is pending.",
 ]
-text = ""
+text = "अनुरोध भेजा गया"
 
 [t_d90fb9126f]
 en = "Waiting for {name} to answer"
@@ -2008,7 +2012,7 @@ where = [
   "android groupsb_waiting_answer: Second line under Request sent. {name} is their first name.",
   "ios group_member_request_waiting: Sub line. {name} is the first name of the member who has to answer.",
 ]
-text = ""
+text = "{name} के जवाब का इंतज़ार"
 
 [t_e94e3d1cca]
 en = "{name} can’t receive requests from you."
@@ -2016,7 +2020,7 @@ where = [
   "android groupsb_cant_receive: Second line of the disabled Blocked menu item. {name} is their first name.",
   "ios group_member_cant_receive: Sub line. {name} is the first name of the member.",
 ]
-text = ""
+text = "{name} तक आपके अनुरोध नहीं पहुँच सकते।"
 
 [t_51096b2922]
 en = "Ask {name} again"
@@ -2024,7 +2028,7 @@ where = [
   "android groupsb_ask_again: Menu item to send another chat request. {name} is their first name.",
   "ios group_member_ask_again: Action row title. {name} is the member’s first name.",
 ]
-text = ""
+text = "{name} से फिर पूछें"
 
 [t_ce139b4f5a]
 en = "Ask {name} for a private chat"
@@ -2034,7 +2038,7 @@ where = [
   "ios group_ask_title: Title of the private-chat request screen. {name} is the member’s first name.",
   "desktop group_ask_for_a_private: Desktop, groups (in group_live_view.rs, live_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} से निजी चैट के लिए पूछें"
 
 [t_d566007dfe]
 en = "{name} declined your last request"
@@ -2042,7 +2046,7 @@ where = [
   "android groupsb_declined_last: Second line under Ask again. {name} is their first name.",
   "ios group_member_declined_last: Sub line. {name} is the member’s first name.",
 ]
-text = ""
+text = "{name} ने आपका पिछला अनुरोध अस्वीकार किया"
 
 [t_af110b0139]
 en = "Sends a chat request through the group’s host"
@@ -2050,7 +2054,7 @@ where = [
   "android groupsb_sends_request: Second line under the Ask for a private chat menu item.",
   "ios group_member_ask_sub: Sub line under Ask for a private chat.",
 ]
-text = ""
+text = "ग्रुप के होस्ट के ज़रिए चैट अनुरोध भेजता है"
 
 [t_3fd2dadcca]
 en = "Make admin"
@@ -2059,7 +2063,7 @@ where = [
   "ios group_member_make_admin: Action row title.",
   "desktop group_make_admin: Desktop, groups (in group_live_view.rs, live_menu).",
 ]
-text = ""
+text = "एडमिन बनाएँ"
 
 [t_67e0ad762a]
 en = "Remove admin"
@@ -2067,7 +2071,7 @@ where = [
   "android groupsb_remove_admin: Menu item that removes the member's admin role.",
   "ios group_member_remove_admin: Action row title.",
 ]
-text = ""
+text = "एडमिन से हटाएँ"
 
 [t_48da53145a]
 en = "Make device {device} a host"
@@ -2075,7 +2079,7 @@ where = [
   "android groupsb_make_device_host: Menu item for a member with several devices. {device} is a short device id.",
   "ios group_member_make_device_host: Action row title. {device} is a short device id.",
 ]
-text = ""
+text = "डिवाइस {device} को होस्ट बनाएँ"
 
 [t_36b15a5c2b]
 en = "Make host"
@@ -2084,7 +2088,7 @@ where = [
   "ios group_member_make_host: Action row title.",
   "desktop group_make_host: Desktop, groups (in group_live_view.rs, live_menu).",
 ]
-text = ""
+text = "होस्ट बनाएँ"
 
 [t_935d7fa572]
 en = "Asks {name} to host. They have to accept."
@@ -2092,7 +2096,7 @@ where = [
   "android groupsb_asks_host: Second line under Make host. {name} is their first name.",
   "ios group_member_make_host_sub: Sub line. {name} is the member’s first name.",
 ]
-text = ""
+text = "{name} से होस्ट करने के लिए कहता है। उन्हें स्वीकार करना होगा।"
 
 [t_c99576192f]
 en = "Stop device {device} hosting"
@@ -2100,7 +2104,7 @@ where = [
   "android groupsb_stop_device_host: Menu item for a member with several devices. {device} is a short device id.",
   "ios group_member_stop_device_host: Action row title. {device} is a short device id.",
 ]
-text = ""
+text = "डिवाइस {device} की होस्टिंग बंद करें"
 
 [t_e022c17f13]
 en = "Remove as host"
@@ -2108,14 +2112,14 @@ where = [
   "android groupsb_remove_as_host: Menu item that stops the member's device hosting.",
   "ios group_member_remove_host: Action row title.",
 ]
-text = ""
+text = "होस्ट से हटाएँ"
 
 [t_bde5a4bce5]
 en = "Cancel call host request"
 where = [
   "android groupsb_cancel_callhost_request: Menu item that cancels a pending call host request. For members with several devices a short device id is added after it.",
 ]
-text = ""
+text = "कॉल होस्ट अनुरोध रद्द करें"
 
 [t_f8a0e2436c]
 en = "Waiting for {name}’s device to accept"
@@ -2123,14 +2127,14 @@ where = [
   "android groupsb_waiting_device: Second line under Cancel call host request. {name} is their first name.",
   "ios group_member_cancel_callhost_sub: Sub line. {name} is the member’s first name.",
 ]
-text = ""
+text = "{name} के डिवाइस के स्वीकार करने का इंतज़ार"
 
 [t_881017d43e]
 en = "Remove as call host"
 where = [
   "android groupsb_remove_as_callhost: Menu item that stops the member's device hosting calls. A short device id may follow it.",
 ]
-text = ""
+text = "कॉल होस्ट से हटाएँ"
 
 [t_bd85d6efcb]
 en = "Make call host"
@@ -2138,7 +2142,7 @@ where = [
   "android groupsb_make_callhost: Menu item that asks the member's device to carry calls. A short device id may follow it.",
   "desktop group_make_call_host: Desktop, groups (in group_live_view.rs, live_menu).",
 ]
-text = ""
+text = "कॉल होस्ट बनाएँ"
 
 [t_333b0c3903]
 en = "Asks {name} to carry group calls. They have to accept."
@@ -2146,7 +2150,7 @@ where = [
   "android groupsb_asks_callhost: Second line under Make call host. {name} is their first name.",
   "ios group_member_make_callhost_sub: Sub line. {name} is the member’s first name.",
 ]
-text = ""
+text = "{name} से ग्रुप कॉल चलाने के लिए कहता है। उन्हें स्वीकार करना होगा।"
 
 [t_103ead6c24]
 en = "Stop hosting on this device"
@@ -2154,7 +2158,7 @@ where = [
   "android groupsb_stop_hosting_device: Menu item in my own sheet to stop hosting the group on this device.",
   "ios group_host_stop_device: Action row title for this device.",
 ]
-text = ""
+text = "इस डिवाइस पर होस्टिंग बंद करें"
 
 [t_b74eaf63a2]
 en = "Host on this device"
@@ -2162,7 +2166,7 @@ where = [
   "android groupsb_host_device: Menu item in my own sheet to offer this device as host.",
   "ios group_host_device: Action row title for this device.",
 ]
-text = ""
+text = "इस डिवाइस पर होस्ट करें"
 
 [t_b9b46099fe]
 en = "An admin has to appoint it too. A computer that stays on is a better host."
@@ -2170,7 +2174,7 @@ where = [
   "android groupsb_host_device_sub: Second line under Host on this device.",
   "ios group_host_device_sub: Sub line under Host on this device.",
 ]
-text = ""
+text = "किसी एडमिन को भी इसे नियुक्त करना होगा। हमेशा चालू रहने वाला कंप्यूटर बेहतर होस्ट है।"
 
 [t_af8409d91f]
 en = "Stop hosting calls on this device"
@@ -2178,7 +2182,7 @@ where = [
   "android groupsb_stop_calls_device: Menu item in my own sheet to stop carrying calls on this device.",
   "ios group_callhost_stop_device: Action row title for this device.",
 ]
-text = ""
+text = "इस डिवाइस पर कॉल होस्ट करना बंद करें"
 
 [t_95490aaec7]
 en = "Flag for removal"
@@ -2186,7 +2190,7 @@ where = [
   "android groupsb_flag_removal: Menu item that starts flagging a member for removal.",
   "ios group_member_flag: Action row title that flags a member.",
 ]
-text = ""
+text = "हटाने के लिए फ़्लैग करें"
 
 [t_c737734a91]
 en_one = "{count} flag removes {name} from the group"
@@ -2194,6 +2198,8 @@ en_other = "{count} flags remove {name} from the group"
 where = [
   "android groupsb_flag_removal_sub: Second line under Flag for removal. {count} is how many flags remove a member, {name} their first name.",
 ]
+one = "{count} फ़्लैग से {name} ग्रुप से हट जाते हैं"
+other = "{count} फ़्लैग से {name} ग्रुप से हट जाते हैं"
 
 [t_a9b87a7920]
 en = "The owner can’t be flagged"
@@ -2201,7 +2207,7 @@ where = [
   "android groupsb_owner_cant_flag: Disabled menu item shown for the group owner.",
   "ios group_member_owner_no_flag: Disabled action row for the owner.",
 ]
-text = ""
+text = "मालिक को फ़्लैग नहीं किया जा सकता"
 
 [t_2d8f5faeae]
 en = "Flag {name} for removal?"
@@ -2210,7 +2216,7 @@ where = [
   "ios group_flag_title: Title of the flag confirmation. {name} is the member’s first name.",
   "desktop group_flag_for_removal: Desktop, groups (in group_live_view.rs, live_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} को हटाने के लिए फ़्लैग करें?"
 
 [t_e3730899ef]
 en = "Flag {next} of {total}"
@@ -2218,7 +2224,7 @@ where = [
   "android groupsb_flag_next_of: Screen-reader description of the flag meter in the flag confirmation. {next} is the flag about to be made, {total} the number that removes a member.",
   "ios group_flag_meter_desc: Spoken label of the flag meter. {next} is which flag this would be, {total} flags that remove.",
 ]
-text = ""
+text = "{total} में से फ़्लैग {next}"
 
 [t_de256d36f4]
 en = "Flags can’t be taken back, and removal is final. The same admin can flag more than once; each flag counts."
@@ -2226,7 +2232,7 @@ where = [
   "android groupsb_flag_note1: Paragraph in the flag confirmation.",
   "ios group_flag_text1: First paragraph of the flag confirmation.",
 ]
-text = ""
+text = "फ़्लैग वापस नहीं लिए जा सकते, और हटाया जाना अंतिम है। एक ही एडमिन एक से ज़्यादा बार फ़्लैग कर सकते हैं; हर फ़्लैग गिना जाता है।"
 
 [t_8e44c0f4ea]
 en = "Flagging is a decision for the group. It is separate from blocking, which only affects you. {name} sees each flag: who made it and when."
@@ -2234,7 +2240,7 @@ where = [
   "android groupsb_flag_note2: Paragraph in the flag confirmation. {name} is the member's first name.",
   "ios group_flag_text2: Second paragraph of the flag confirmation. {name} is the member’s first name.",
 ]
-text = ""
+text = "फ़्लैग करना ग्रुप का फ़ैसला है। यह ब्लॉक करने से अलग है, जिसका असर सिर्फ़ आप पर होता है। {name} हर फ़्लैग देख सकते हैं: किसने लगाया और कब।"
 
 [t_3660dd7b10]
 en = "Flag {name}"
@@ -2242,7 +2248,7 @@ where = [
   "android groupsb_flag_button: Confirm button of the flag confirmation. {name} is the member's first name.",
   "ios group_flag_button: Button that flags a member. {name} is the member’s first name.",
 ]
-text = ""
+text = "{name} को फ़्लैग करें"
 
 [t_4599f39831]
 en = "{name} sees your name and the group. The request goes through the group’s host, sealed, so the host can’t read it."
@@ -2250,7 +2256,7 @@ where = [
   "android groupsb_ask_note1: Paragraph in the chat-request step. {name} is the member's first name.",
   "ios group_ask_text1: First paragraph of the private-chat request. {name} is the member’s first name.",
 ]
-text = ""
+text = "{name} को आपका नाम और ग्रुप दिखेगा। अनुरोध ग्रुप के होस्ट से होकर बंद लिफ़ाफ़े की तरह जाता है, इसलिए होस्ट उसे पढ़ नहीं सकता।"
 
 [t_4833c73b7c]
 en = "If {name} accepts, you can message each other directly. Calls stay off until one of you allows them. A request expires after 7 days."
@@ -2258,7 +2264,7 @@ where = [
   "android groupsb_ask_note2: Paragraph in the chat-request step. {name} is the member's first name.",
   "ios group_ask_text2: Second paragraph. {name} is the member’s first name.",
 ]
-text = ""
+text = "अगर {name} स्वीकार करते हैं, तो आप एक-दूसरे को सीधे संदेश भेज सकेंगे। कॉल तब तक बंद रहेंगी जब तक आप में से कोई उन्हें अनुमति न दे। अनुरोध 7 दिन बाद खत्म हो जाता है।"
 
 [t_0a2698df59]
 en = "Send request"
@@ -2267,7 +2273,7 @@ where = [
   "ios group_ask_send: Button that sends the private-chat request.",
   "desktop group_send_request: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "अनुरोध भेजें"
 
 [t_fbd164b99b]
 en = "This phone hosts the group at first: it keeps the group and passes messages on. A computer that stays on is a better host — appoint one from Group info once it has joined."
@@ -2275,7 +2281,7 @@ where = [
   "android groupsb_new_group_host_note: Notice on the new group page.",
   "ios group_new_info: Info card on the new group page.",
 ]
-text = ""
+text = "शुरुआत में यह फ़ोन ग्रुप को होस्ट करता है: यह ग्रुप को रखता है और संदेश आगे पहुँचाता है। हमेशा चालू रहने वाला कंप्यूटर बेहतर होस्ट है — उसके जुड़ जाने पर ग्रुप की जानकारी से उसे नियुक्त करें।"
 
 [t_26ac8b3691]
 en = "You’ll own the group. Invite people from Group info."
@@ -2283,7 +2289,7 @@ where = [
   "android groupsb_new_group_own: Hint on the new group page.",
   "ios group_new_owner_hint: Hint on the new group page.",
 ]
-text = ""
+text = "ग्रुप के मालिक आप होंगे। ग्रुप की जानकारी से लोगों को आमंत्रित करें।"
 
 [t_756bb6e1e0]
 en = "Making…"
@@ -2291,7 +2297,7 @@ where = [
   "android groupsb_making: Create group button while the group is being made.",
   "ios group_making: Label of the create button while working.",
 ]
-text = ""
+text = "बन रहा है…"
 
 [t_925cddf9f3]
 en = "Create group"
@@ -2299,7 +2305,7 @@ where = [
   "android groupsb_create_group: Button that creates the group.",
   "ios group_create_button: Button that creates the group (page).",
 ]
-text = ""
+text = "ग्रुप बनाएँ"
 
 [t_ad8fd6d767]
 en = "Add members"
@@ -2307,21 +2313,21 @@ where = [
   "android groupsb_add_members: Title of the page that adds contacts to a group.",
   "ios group_add_members_title: Title of the add members page while it loads.",
 ]
-text = ""
+text = "सदस्य जोड़ें"
 
 [t_4ef3846290]
 en = "Add to {name}"
 where = [
   "android groupsb_add_to: Title of the add-members page. {name} is the group's name.",
 ]
-text = ""
+text = "{name} में जोड़ें"
 
 [t_f0889b9aa0]
 en = "CONTACTS · {n} SELECTED"
 where = [
   "android groupsb_contacts_selected: Heading above the contact list on the add-members page, in capitals. {n} is how many are picked.",
 ]
-text = ""
+text = "संपर्क · {n} चुने गए"
 
 [t_b42309263e]
 en = "No contacts to add. People you block, or who block you, aren’t listed."
@@ -2330,7 +2336,7 @@ where = [
   "ios group_add_no_contacts: Hint when there is nobody to add.",
   "desktop group_no_contacts_to_add: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "जोड़ने के लिए कोई संपर्क नहीं है। जिन्हें आपने ब्लॉक किया है या जिन्होंने आपको ब्लॉक किया है, वे यहाँ नहीं दिखते।"
 
 [t_7987a82f87]
 en = "Each person gets the invitation in your 1:1 chat, and joins when they accept. It is valid for 7 days."
@@ -2338,7 +2344,7 @@ where = [
   "android groupsb_add_note: Hint under the contact list on the add-members page.",
   "ios group_add_hint: Hint under the contact picker.",
 ]
-text = ""
+text = "हर व्यक्ति को आमंत्रण आपकी 1:1 चैट में मिलता है, और स्वीकार करने पर वे जुड़ जाते हैं। यह 7 दिन तक मान्य है।"
 
 [t_414d78896a]
 en = "Scan the invite"
@@ -2346,7 +2352,7 @@ where = [
   "android groupsb_scan_invite: Title of the camera page that scans a group invite QR code.",
   "ios group_scan_title: Title of the invite scanner page.",
 ]
-text = ""
+text = "आमंत्रण स्कैन करें"
 
 [t_05a6066e8c]
 en = "Point at the group invite"
@@ -2354,7 +2360,7 @@ where = [
   "android groupsb_point_invite: Screen-reader label of the camera view that scans a group invite.",
   "ios group_scan_prompt: Prompt on the camera view when scanning a group invite.",
 ]
-text = ""
+text = "कैमरा ग्रुप आमंत्रण की ओर करें"
 
 [t_9924bccd9b]
 en = "Join a group"
@@ -2363,7 +2369,7 @@ where = [
   "ios group_join_title: Title of the join a group page.",
   "desktop group_join_a_group: Desktop, groups (in group_live_view.rs, live_list).",
 ]
-text = ""
+text = "ग्रुप से जुड़ें"
 
 [t_0c2c988bae]
 en = "Invite link or code"
@@ -2371,7 +2377,7 @@ where = [
   "android groupsb_invite_field: Label of the field where I paste a group invite.",
   "ios group_join_field: Label of the invite link field.",
 ]
-text = ""
+text = "आमंत्रण लिंक या कोड"
 
 [t_1e15ae520e]
 en = "Checking with the group’s host…"
@@ -2380,7 +2386,7 @@ where = [
   "ios group_join_checking: Hint while the invite is being checked.",
   "desktop group_checking_with_the_groups: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "ग्रुप के होस्ट से जाँच हो रही है…"
 
 [t_7acbf4a24a]
 en = "That link didn’t work: it isn’t a group invite, it expired, or its host is offline."
@@ -2389,7 +2395,7 @@ where = [
   "ios group_join_bad: Hint when the invite link did not work.",
   "desktop group_that_link_didnt_work: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "यह लिंक काम नहीं किया: यह ग्रुप आमंत्रण नहीं है, इसकी समय-सीमा खत्म हो गई है, या इसका होस्ट ऑफ़लाइन है।"
 
 [t_07152d37e7]
 en = "Paste"
@@ -2397,7 +2403,7 @@ where = [
   "android groupsb_paste: Button that pastes the invite from the clipboard.",
   "ios group_paste: Button that pastes from the clipboard.",
 ]
-text = ""
+text = "पेस्ट करें"
 
 [t_776a02047b]
 en = "Scan"
@@ -2405,7 +2411,7 @@ where = [
   "android groupsb_scan: Button that scans a group invite with the camera.",
   "ios group_scan: Button that opens the QR scanner.",
 ]
-text = ""
+text = "स्कैन करें"
 
 [t_5bd9f8306f]
 en = "someone who isn’t in your contacts"
@@ -2414,7 +2420,7 @@ where = [
   "ios group_fallback_unknown_contact: Name used for a person the user does not know, inside a sentence.",
   "desktop group_someone_who_isnt_in: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "कोई ऐसा व्यक्ति जो आपके संपर्कों में नहीं है"
 
 [t_093b8a51fd]
 en = "Invited by {name}"
@@ -2422,7 +2428,7 @@ where = [
   "android groupsb_join_invited_by: Line on the join preview. {name} is who invited me, or a stand-in.",
   "ios group_join_invited_by: Invite preview line. {name} is who made the link.",
 ]
-text = ""
+text = "{name} ने आमंत्रित किया"
 
 [t_5a42d7ce32]
 en = "A link for your own account"
@@ -2430,7 +2436,7 @@ where = [
   "android groupsb_own_account_link: Line on the join preview when the invite was made for my own account.",
   "ios group_join_own_link: Invite preview line for a link the user made on their own account.",
 ]
-text = ""
+text = "आपके अपने खाते के लिए लिंक"
 
 [t_53616c9c17]
 en = "Owner: {name}"
@@ -2438,7 +2444,7 @@ where = [
   "android groupsb_join_owner: Line on the join preview. {name} is the group owner's name, or a stand-in.",
   "ios group_join_owner: Invite preview line. {name} is the group owner.",
 ]
-text = ""
+text = "मालिक: {name}"
 
 [t_cdc370ca3b]
 en = "Joining connects this phone to the group’s hosts. Members see your name; only hosts learn how to reach this phone. It can take up to a minute."
@@ -2446,7 +2452,7 @@ where = [
   "android groupsb_join_note: Hint under the join preview.",
   "ios group_join_hint: Hint on the join page.",
 ]
-text = ""
+text = "जुड़ने पर यह फ़ोन ग्रुप के होस्ट से जुड़ता है। सदस्यों को आपका नाम दिखता है; इस फ़ोन तक पहुँचने का तरीका सिर्फ़ होस्ट जानते हैं। इसमें एक मिनट तक लग सकता है।"
 
 [t_0ac85e397c]
 en = "the group"
@@ -2454,7 +2460,7 @@ where = [
   "android groupsb_the_group: Stands in for the group's name, mid-sentence, while it has not loaded.",
   "ios group_fallback_the_group: Fallback group name inside a sentence.",
 ]
-text = ""
+text = "ग्रुप"
 
 [t_cf5d629e2c]
 en = "Invite link"
@@ -2462,14 +2468,14 @@ where = [
   "android groupsb_invite_link_title: Title of the page that shows the group invite link and QR code.",
   "ios group_link_title: Title of the invite link page.",
 ]
-text = ""
+text = "आमंत्रण लिंक"
 
 [t_adb8ec2424]
 en = "Anyone with this link or QR can join {name} for 7 days. Share it over an app you trust; you see who joined and can flag them out. To invite your contacts directly, use Add members."
 where = [
   "android groupsb_link_note: Hint on the invite link page. {name} is the group's name. 'Add members' is the title of another page.",
 ]
-text = ""
+text = "इस लिंक या QR वाला कोई भी 7 दिन तक {name} से जुड़ सकता है। इसे किसी भरोसेमंद ऐप से शेयर करें; कौन जुड़ा यह आपको दिखेगा और आप उन्हें फ़्लैग करके हटा सकते हैं। अपने संपर्कों को सीधे आमंत्रित करने के लिए “सदस्य जोड़ें” का इस्तेमाल करें।"
 
 [t_1a8ed8b194]
 en = "Show full screen"
@@ -2477,7 +2483,7 @@ where = [
   "android groupsb_show_full_screen: Screen-reader action label of the QR code (tap to enlarge).",
   "ios group_link_show_full: Spoken hint to show the QR full screen.",
 ]
-text = ""
+text = "पूरी स्क्रीन पर दिखाएँ"
 
 [t_833c82e552]
 en = "QR code of the group invite link"
@@ -2485,7 +2491,7 @@ where = [
   "android groupsb_qr_desc: Screen-reader description of the invite QR code.",
   "ios group_link_qr_desc: Spoken label of the invite QR code.",
 ]
-text = ""
+text = "ग्रुप आमंत्रण लिंक का QR कोड"
 
 [t_d52b664a78]
 en = "QR code of the group invite link, full screen"
@@ -2493,7 +2499,7 @@ where = [
   "android groupsb_qr_desc_full: Screen-reader description of the full-screen invite QR code.",
   "ios group_link_qr_full_desc: Spoken label of the full-screen invite QR code.",
 ]
-text = ""
+text = "ग्रुप आमंत्रण लिंक का QR कोड, पूरी स्क्रीन पर"
 
 [t_f26cf6f8ca]
 en = "Making it…"
@@ -2502,14 +2508,14 @@ where = [
   "ios group_link_making: Shown while the invite link is being made.",
   "desktop group_making_it: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "बन रहा है…"
 
 [t_c6be932adc]
 en = "Join {name} on Tinline: {link}"
 where = [
   "android groupsb_share_text: Text of the shared invite message. {name} is the group's name, {link} the invite link.",
 ]
-text = ""
+text = "Tinline पर {name} से जुड़ें: {link}"
 
 [t_14f63f7c74]
 en = "Share group invite"
@@ -2517,7 +2523,7 @@ where = [
   "android groupsb_share_title: Title of the system share sheet for the invite.",
   "ios group_share_subject: Subject of the shared invite.",
 ]
-text = ""
+text = "ग्रुप आमंत्रण शेयर करें"
 
 [t_c5a5e04768]
 en = "That passphrase didn’t open the account."
@@ -2526,7 +2532,7 @@ where = [
   "ios unlock_wrong_pass: Error under the passphrase field on the unlock screen.",
   "desktop app_that_passphrase_didnt_open: Desktop, app-level notices and notifications (in app.rs, friendly).",
 ]
-text = ""
+text = "उस पासफ़्रेज़ से खाता नहीं खुला।"
 
 [t_b4a454d8bc]
 en = "Can’t open {name}’s account"
@@ -2534,7 +2540,7 @@ where = [
   "android unlock_keylost_title_named: Heading when this phone lost the key for an account that has no passphrase. {name} is the account's nickname.",
   "ios unlock_lost_title_named: Same title with the account name; {name} is the account's name.",
 ]
-text = ""
+text = "{name} का खाता नहीं खुल पा रहा"
 
 [t_789700fa70]
 en = "Can’t open your account"
@@ -2543,7 +2549,7 @@ where = [
   "ios unlock_lost_title: Title when this phone lost the key to the account.",
   "desktop gate_cant_open_your_account: Desktop, sign-in and gate screens (in view.rs, key_lost_view).",
 ]
-text = ""
+text = "आपका खाता नहीं खुल पा रहा"
 
 [t_cbbecd7414]
 en = "This phone no longer has the key that opens your account. That happens after a screen-lock reset or a restored backup. Once you restore, your calls come through again."
@@ -2551,7 +2557,7 @@ where = [
   "android unlock_keylost_lead: Explanation under the key-lost heading.",
   "ios unlock_lost_lead: Explanation under the lost-key title.",
 ]
-text = ""
+text = "इस फ़ोन में अब वह कुंजी नहीं है जिससे आपका खाता खुलता है। ऐसा स्क्रीन लॉक रीसेट होने या बैकअप वापस लाने के बाद होता है। खाता वापस लाते ही आपकी कॉल फिर से आने लगेंगी।"
 
 [t_19e4003e15]
 en = "Restore with recovery phrase"
@@ -2561,7 +2567,7 @@ where = [
   "ios unlock_restore: Button on the lost-key screen.",
   "desktop gate_restore_with_recovery_phrase: Desktop, sign-in and gate screens (in view.rs, key_lost_view).",
 ]
-text = ""
+text = "रिकवरी शब्दों से वापस लाएँ"
 
 [t_98a44cce37]
 en = "You didn’t set a passphrase, so the 24-word recovery phrase is the only way back. Your contacts stay."
@@ -2570,7 +2576,7 @@ where = [
   "ios unlock_lost_notice: Warning on the lost-key screen.",
   "desktop gate_you_didnt_set_a: Desktop, sign-in and gate screens (in view.rs, key_lost_view).",
 ]
-text = ""
+text = "आपने पासफ़्रेज़ नहीं रखा था, इसलिए 24 रिकवरी शब्द ही वापसी का एकमात्र तरीका हैं। आपके संपर्क बने रहेंगे।"
 
 [t_612f9aaa42]
 en = "Switch account"
@@ -2578,7 +2584,7 @@ where = [
   "android accounts_switch_account: Button on the unlock and key-lost screens that opens the account list, and the title of the switch-confirmation screen.",
   "ios unlock_switch: Button on the lost-key screen.",
 ]
-text = ""
+text = "खाता बदलें"
 
 [t_3e901c9123]
 en = "Welcome back, {name}"
@@ -2587,7 +2593,7 @@ where = [
   "ios unlock_welcome_named: Title of the unlock screen; {name} is the account's nickname.",
   "ios onboarding_back_title_named: Title after restoring an account; {name} is the first name.",
 ]
-text = ""
+text = "फिर से स्वागत है, {name}"
 
 [t_b77817dbb4]
 en = "Welcome back"
@@ -2597,7 +2603,7 @@ where = [
   "ios onboarding_back_title: Title after restoring an account.",
   "desktop signup_welcome_back: Desktop, sign-up, restore and add contact (in signup_view.rs, welcome_title).",
 ]
-text = ""
+text = "फिर से स्वागत है"
 
 [t_d99041b02e]
 en = "Welcome back,"
@@ -2605,7 +2611,7 @@ where = [
   "android unlock_welcome_back_prefix: First part of the unlock heading when the nickname is a button that opens the account switcher; the nickname follows after a space, so no trailing space here.",
   "desktop signup_welcome_back_2: Desktop, sign-up, restore and add contact (in signup_view.rs, welcome_title).",
 ]
-text = ""
+text = "फिर से स्वागत है,"
 
 [t_e634cb1eb4]
 en = "Unlocking…"
@@ -2614,7 +2620,7 @@ where = [
   "ios unlock_unlocking: Unlock button while checking.",
   "desktop signup_unlocking: Desktop, sign-up, restore and add contact (in signup_view.rs, unlock_card).",
 ]
-text = ""
+text = "अनलॉक हो रहा है…"
 
 [t_d0d04e2952]
 en = "Unlock"
@@ -2623,7 +2629,7 @@ where = [
   "ios unlock_unlock: Unlock button.",
   "desktop signup_unlock: Desktop, sign-up, restore and add contact (in signup_view.rs, unlock_card).",
 ]
-text = ""
+text = "अनलॉक करें"
 
 [t_9d6873f660]
 en = "I forgot it"
@@ -2632,7 +2638,7 @@ where = [
   "ios unlock_forgot: Button on the unlock screen.",
   "desktop signup_i_forgot_it: Desktop, sign-up, restore and add contact (in signup_view.rs, unlock_card).",
 ]
-text = ""
+text = "मुझे याद नहीं"
 
 [t_8b71bbd070]
 en = "Passphrase"
@@ -2650,7 +2656,7 @@ where = [
   "ios people_passphrase: Default label of the passphrase field.",
   "desktop common_passphrase: Shared label, used in several places (link, profile, signup, view).",
 ]
-text = ""
+text = "पासफ़्रेज़"
 
 [t_08f19e1004]
 en = "Checking takes a second. It’s deliberately slow to stop guessing."
@@ -2659,7 +2665,7 @@ where = [
   "ios unlock_slow_hint: Hint under the passphrase field after a wrong try.",
   "desktop signup_checking_takes_a_second: Desktop, sign-up, restore and add contact (in signup_view.rs, unlock_card).",
 ]
-text = ""
+text = "जाँच में एक पल लगता है। अंदाज़ा लगाने से रोकने के लिए यह जान-बूझकर धीमा है।"
 
 [t_f038a0e9d0]
 en = "Open as another identity"
@@ -2667,14 +2673,14 @@ where = [
   "android unlock_open_as_label: Screen-reader action label for the nickname button on the unlock heading.",
   "ios unlock_switch_identity_hint: Accessibility hint of the nickname switcher.",
 ]
-text = ""
+text = "दूसरी पहचान से खोलें"
 
 [t_47e902fed9]
 en = "{nick}, switch identity"
 where = [
   "android unlock_switch_identity_desc: Screen-reader description of the nickname button on the unlock heading. {nick} is the account's nickname.",
 ]
-text = ""
+text = "{nick}, पहचान बदलें"
 
 [t_a3eb0daa2b]
 en = "Open as"
@@ -2683,7 +2689,7 @@ where = [
   "ios unlock_open_as: Title of the account picker at login.",
   "desktop signup_open_as: Desktop, sign-up, restore and add contact (in signup_view.rs, open_as_menu).",
 ]
-text = ""
+text = "इस रूप में खोलें"
 
 [t_a3c01b8533]
 en = "Accounts"
@@ -2691,7 +2697,7 @@ where = [
   "android accounts_title: Title of the account switcher sheet in the app.",
   "ios unlock_accounts: Title of the account picker sheet.",
 ]
-text = ""
+text = "खाते"
 
 [t_68bb7f8ef2]
 en = "Opens right away"
@@ -2700,7 +2706,7 @@ where = [
   "ios unlock_opens_now: Account picker row subtitle at login.",
   "desktop signup_opens_right_away: Desktop, sign-up, restore and add contact (in signup_view.rs, open_as_menu).",
 ]
-text = ""
+text = "तुरंत खुलता है"
 
 [t_979f222fd4]
 en = "Asks for your passphrase"
@@ -2709,7 +2715,7 @@ where = [
   "ios unlock_asks_pass: Account picker row subtitle at login.",
   "desktop signup_asks_for_your_passphrase: Desktop, sign-up, restore and add contact (in signup_view.rs, open_as_menu).",
 ]
-text = ""
+text = "पासफ़्रेज़ माँगता है"
 
 [t_eb03bdf6bc]
 en = "Online on this phone"
@@ -2717,7 +2723,7 @@ where = [
   "android accounts_online_here: Line under the current account in the switcher while it is connected.",
   "ios unlock_acc_online: Account picker row subtitle for the open account.",
 ]
-text = ""
+text = "इस फ़ोन पर ऑनलाइन"
 
 [t_73c1ea0dd7]
 en = "On this phone"
@@ -2727,7 +2733,7 @@ where = [
   "ios settings_storage_on_phone: Section heading on the Storage page.",
   "ios unlock_acc_here: Account picker row subtitle for the current account when offline.",
 ]
-text = ""
+text = "इस फ़ोन पर"
 
 [t_9953ca6184]
 en = "Locked · not ringing here"
@@ -2735,7 +2741,7 @@ where = [
   "android accounts_locked_not_ringing: Line under another account in the switcher: it is locked, so calls do not ring on this phone.",
   "ios unlock_acc_locked: Account picker row subtitle for a locked account.",
 ]
-text = ""
+text = "लॉक है · यहाँ घंटी नहीं बजेगी"
 
 [t_99bdf00f79]
 en = "Current account"
@@ -2743,7 +2749,7 @@ where = [
   "android accounts_current_desc: Screen-reader description of the tick next to the current account.",
   "ios unlock_current_account: Accessibility label of the check mark on the current account.",
 ]
-text = ""
+text = "मौजूदा खाता"
 
 [t_4f9042977e]
 en = "Create a new account"
@@ -2753,7 +2759,7 @@ where = [
   "ios settings_add_create: Choice in the add-account dialog.",
   "ios unlock_create: Row in the account picker.",
 ]
-text = ""
+text = "नया खाता बनाएँ"
 
 [t_8f89eb0eb8]
 en = "Link an account from another device"
@@ -2761,7 +2767,7 @@ where = [
   "android accounts_link: Row in the account sheet that links an account that lives on another device.",
   "ios unlock_link: Row in the account picker.",
 ]
-text = ""
+text = "दूसरे डिवाइस से खाता लिंक करें"
 
 [t_9383e00485]
 en = "One account is online at a time. Calls to a locked account ring only on your other devices."
@@ -2769,7 +2775,7 @@ where = [
   "android accounts_one_online_hint: Hint at the bottom of the account switcher.",
   "ios unlock_one_online: Hint at the bottom of the account picker.",
 ]
-text = ""
+text = "एक समय में एक खाता ऑनलाइन रहता है। लॉक खाते की कॉल सिर्फ़ आपके दूसरे डिवाइस पर बजती हैं।"
 
 [t_3da64cb0b1]
 en = "Finish your call first"
@@ -2782,7 +2788,7 @@ where = [
   "ios unlock_finish_call: Message when switching accounts during a call.",
   "ios shell_err_in_call: Error when an action is refused because a call is in progress.",
 ]
-text = ""
+text = "पहले अपनी कॉल पूरी करें"
 
 [t_a648286e76]
 en = "Switch to {name}?"
@@ -2790,14 +2796,14 @@ where = [
   "android accounts_switch_to: Heading of the switch-confirmation screen. {name} is the nickname of the account to switch to.",
   "ios unlock_switch_to: Title of the switch-account confirmation; {name} is the account's name.",
 ]
-text = ""
+text = "{name} पर जाएँ?"
 
 [t_88ecc04c6a]
 en = "{current} goes offline on this phone. Calls to {current} will ring only on your other linked devices until you switch back."
 where = [
   "android accounts_switch_lead: Explanation on the switch-confirmation screen. {current} is the nickname of the account that is open now (it appears twice but is passed once).",
 ]
-text = ""
+text = "इस फ़ोन पर {current} ऑफ़लाइन हो जाएगा। जब तक आप वापस नहीं आते, {current} की कॉल सिर्फ़ आपके दूसरे लिंक किए गए डिवाइस पर बजेंगी।"
 
 [t_e96b3bac70]
 en = "Passphrase for {name}"
@@ -2805,7 +2811,7 @@ where = [
   "android accounts_passphrase_for: Label of the passphrase field on the switch-confirmation screen. {name} is the account's nickname.",
   "ios unlock_pass_for: Field label on the switch-account confirmation.",
 ]
-text = ""
+text = "{name} का पासफ़्रेज़"
 
 [t_7e67b93ace]
 en = "You’re not on a call. If you were, switching would end it."
@@ -2813,7 +2819,7 @@ where = [
   "android accounts_not_on_call: Reassuring hint on the switch-confirmation screen when no call is going on.",
   "ios unlock_not_in_call: Hint on the switch-account confirmation.",
 ]
-text = ""
+text = "आप किसी कॉल पर नहीं हैं। अगर होते, तो खाता बदलने से वह कॉल कट जाती।"
 
 [t_b58c7a4f2b]
 en = "Switching…"
@@ -2821,7 +2827,7 @@ where = [
   "android accounts_switching: Label of the confirm button while the account is being switched.",
   "ios unlock_switching: Button text while switching accounts.",
 ]
-text = ""
+text = "खाता बदल रहा है…"
 
 [t_fa2601e642]
 en = "Unlock and switch"
@@ -2829,7 +2835,7 @@ where = [
   "android accounts_unlock_and_switch: Confirm button on the switch screen when the target account needs its passphrase.",
   "ios unlock_unlock_switch: Button when the other account needs its passphrase.",
 ]
-text = ""
+text = "अनलॉक करके बदलें"
 
 [t_803a8cf3d6]
 en = "Switch"
@@ -2837,7 +2843,7 @@ where = [
   "android accounts_switch: Confirm button on the switch screen when no passphrase is needed.",
   "ios unlock_switch_btn: Button that switches accounts.",
 ]
-text = ""
+text = "बदलें"
 
 [t_027af1f310]
 en = "My profile"
@@ -2847,7 +2853,7 @@ where = [
   "ios people_my_profile: Title of the user’s own profile screen.",
   "desktop profile_my_profile: Desktop, profile and settings (in profile_view.rs, profile_page).",
 ]
-text = ""
+text = "मेरी प्रोफ़ाइल"
 
 [t_1ce73daf10]
 en = "Edit profile"
@@ -2855,21 +2861,21 @@ where = [
   "android profile_edit_profile: Button on the account profile page that opens the editable profile.",
   "android settings_edit_profile: Title of the page where I edit my own profile.",
 ]
-text = ""
+text = "प्रोफ़ाइल बदलें"
 
 [t_1e8e40f88a]
 en = "Share my code"
 where = [
   "android profile_share_my_code: Row on the account profile page that opens the contact code.",
 ]
-text = ""
+text = "मेरा कोड शेयर करें"
 
 [t_2c7a4beb0c]
 en = "For people you’d like to add"
 where = [
   "android profile_share_my_code_sub: Line under the Share my code row.",
 ]
-text = ""
+text = "उन लोगों के लिए जिन्हें आप जोड़ना चाहते हैं"
 
 [t_6327439c63]
 en = "Only you"
@@ -2878,7 +2884,7 @@ where = [
   "android settings_only_you: Small hint at the top of the recovery check page and of the recovery backup page.",
   "ios security_only_you: Small label above the recovery pages: only the owner should see them.",
 ]
-text = ""
+text = "सिर्फ़ आपके लिए"
 
 [t_dc136667fb]
 en = "Account recovery"
@@ -2888,21 +2894,21 @@ where = [
   "ios settings_recovery: Privacy row that opens the recovery backup.",
   "ios security_recovery_title: Page title, and the reason shown in the screen lock prompt.",
 ]
-text = ""
+text = "खाता रिकवरी"
 
 [t_31f978ce75]
 en = "Your key and 24 words"
 where = [
   "android profile_account_recovery_sub: Line under the Account recovery row.",
 ]
-text = ""
+text = "आपकी कुंजी और 24 शब्द"
 
 [t_6f9a91cdc0]
 en = "Your contact code"
 where = [
   "android profile_code_title: Title of the page that shows the user's contact code.",
 ]
-text = ""
+text = "आपका संपर्क कोड"
 
 [t_e5df5334ea]
 en = "Let them scan this with Tinline."
@@ -2912,49 +2918,49 @@ where = [
   "ios people_add_let_scan: Hint under the user’s own QR code.",
   "desktop signup_let_them_scan_this: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay).",
 ]
-text = ""
+text = "उनसे कहें कि इसे Tinline से स्कैन करें।"
 
 [t_a1e5d6d309]
 en = "Send it to someone you’d like to add."
 where = [
   "android profile_code_lead_text: Lead on the contact code page while the text code is shown.",
 ]
-text = ""
+text = "इसे उन्हें भेजें जिन्हें आप जोड़ना चाहते हैं।"
 
 [t_71a67a514b]
 en = "Couldn’t load your code."
 where = [
   "android profile_code_load_failed: Shown when the contact code could not be created.",
 ]
-text = ""
+text = "आपका कोड लोड नहीं हो पाया।"
 
 [t_05543e1d05]
 en = "Getting your code…"
 where = [
   "android profile_code_loading: Shown while the contact code is being created.",
 ]
-text = ""
+text = "आपका कोड तैयार हो रहा है…"
 
 [t_2ee7e1c118]
 en = "Your contact QR"
 where = [
   "android profile_code_qr_desc: Screen-reader description of the QR code image.",
 ]
-text = ""
+text = "आपका संपर्क QR"
 
 [t_9a8d6c6208]
 en = "Use a code instead"
 where = [
   "android profile_code_use_code: Button that switches from the QR code to the text code.",
 ]
-text = ""
+text = "इसके बजाय कोड इस्तेमाल करें"
 
 [t_fa0187e58c]
 en = "Show QR instead"
 where = [
   "android profile_code_show_qr: Button that switches from the text code to the QR code.",
 ]
-text = ""
+text = "इसके बजाय QR दिखाएँ"
 
 [t_6908950f8d]
 en = "Copy my code"
@@ -2964,28 +2970,28 @@ where = [
   "ios people_add_copy_mine: Button that copies the user’s contact code.",
   "desktop signup_copy_my_code: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay).",
 ]
-text = ""
+text = "मेरा कोड कॉपी करें"
 
 [t_aa27b5be39]
 en = "Couldn’t copy. Try Share instead."
 where = [
   "android profile_code_copy_failed: Message under the code when copying to the clipboard failed.",
 ]
-text = ""
+text = "कॉपी नहीं हो पाया। इसके बजाय शेयर करके देखें।"
 
 [t_7dc40ec784]
 en = "Couldn’t open sharing. Copy your code instead."
 where = [
   "android profile_code_share_failed: Message under the code when the system share sheet could not open.",
 ]
-text = ""
+text = "शेयर करना नहीं खुल पाया। इसके बजाय अपना कोड कॉपी करें।"
 
 [t_8a28a69a04]
 en = "Contact code"
 where = [
   "android profile_code_clip_label: Name the clipboard gives to the copied contact code (the system may show it).",
 ]
-text = ""
+text = "संपर्क कोड"
 
 [t_ed690e8e24]
 en = "Saved"
@@ -2994,7 +3000,7 @@ where = [
   "ios people_ui_saved: Confirmation after saving.",
   "desktop profile_saved: Desktop, profile and settings (in profile_view.rs, availability).",
 ]
-text = ""
+text = "सहेजा गया"
 
 [t_3ac3182077]
 en = "Saved · syncs when connected"
@@ -3003,7 +3009,7 @@ where = [
   "ios people_ui_saved_offline: Confirmation after saving while offline.",
   "desktop profile_saved_syncs_when_connected: Desktop, profile and settings (in profile_view.rs, availability).",
 ]
-text = ""
+text = "सहेजा गया · जुड़ने पर सिंक होगा"
 
 [t_6bb05ae0fa]
 en = "Not set"
@@ -3012,7 +3018,7 @@ where = [
   "ios people_ui_not_set: Shown for an empty profile field.",
   "desktop profile_not_set: Desktop, profile and settings (in profile_view.rs, my_profile).",
 ]
-text = ""
+text = "सेट नहीं है"
 
 [t_64ce8f9b54]
 en = "{label}: {value}. Edit"
@@ -3020,7 +3026,7 @@ where = [
   "android profile_field_edit_desc: Screen-reader description of a profile field row. {label} is the field name, {value} its current value (or the empty placeholder).",
   "ios people_ui_row_a11y: Screen reader label of an editable profile row. {label} is the field name, {value} its value or “Not set”.",
 ]
-text = ""
+text = "{label}: {value}। बदलें"
 
 [t_fc05230365]
 en = "Edit"
@@ -3030,7 +3036,7 @@ where = [
   "ios chat_edit: Action in the message sheet that edits the message.",
   "desktop chat_edit: Desktop, chats (in chat_view.rs, message_menu).",
 ]
-text = ""
+text = "बदलें"
 
 [t_9080074320]
 en = "Save"
@@ -3042,14 +3048,14 @@ where = [
   "ios people_save: Button that saves an edit.",
   "desktop common_save: Shared label, used in several places (chat, link, profile, view).",
 ]
-text = ""
+text = "सहेजें"
 
 [t_665692620b]
 en = "{used} of {limit} bytes"
 where = [
   "android profile_bytes_of_limit: Counter shown when a profile text is close to its size limit. {used} bytes used, {limit} the maximum.",
 ]
-text = ""
+text = "{limit} में से {used} बाइट"
 
 [t_4e0cc89b5d]
 en = "Remove “{label}” from your profile?"
@@ -3057,7 +3063,7 @@ where = [
   "android profile_remove_field_title: Question when removing an extra profile field. {label} is the field name.",
   "ios people_ui_remove_title: Question when removing a profile field. {label} is the field name.",
 ]
-text = ""
+text = "अपनी प्रोफ़ाइल से “{label}” हटाएँ?"
 
 [t_5d243f11aa]
 en = "It disappears from your profile. Earlier versions can remain in synced history."
@@ -3066,14 +3072,14 @@ where = [
   "ios people_ui_remove_note: Note in the remove field question.",
   "desktop profile_it_disappears_from_your: Desktop, profile and settings (in profile_view.rs, field_row_inner).",
 ]
-text = ""
+text = "यह आपकी प्रोफ़ाइल से हट जाएगा। पुराने संस्करण सिंक किए गए इतिहास में रह सकते हैं।"
 
 [t_c5160b6a37]
 en = "Open {label}: {link}"
 where = [
   "android profile_open_link_desc: Screen-reader description of the button that opens a link field. {label} is the field name, {link} the shortened address.",
 ]
-text = ""
+text = "{label} खोलें: {link}"
 
 [t_cdd08715b7]
 en = "Remove {label}"
@@ -3081,7 +3087,7 @@ where = [
   "android profile_remove_field_desc: Screen-reader description of the trash button on a profile field. {label} is the field name.",
   "ios people_ui_remove_a11y: Screen reader label of the button that removes a field. {label} is the field name.",
 ]
-text = ""
+text = "{label} हटाएँ"
 
 [t_dbf51573cf]
 en = "Yes"
@@ -3090,7 +3096,7 @@ where = [
   "ios people_yes: Value shown for a true profile value.",
   "desktop profile_yes: Desktop, profile and settings (in profile_ui.rs, scalar).",
 ]
-text = ""
+text = "हाँ"
 
 [t_52d0aa4de6]
 en = "No"
@@ -3099,7 +3105,7 @@ where = [
   "ios people_no: Value shown for a false profile value.",
   "desktop profile_no: Desktop, profile and settings (in profile_ui.rs, scalar).",
 ]
-text = ""
+text = "नहीं"
 
 [t_72991ed0f4]
 en = "View photo"
@@ -3107,7 +3113,7 @@ where = [
   "android profile_view_photo: Screen-reader action label on an avatar that has a photo; opens it full screen.",
   "ios kit_avatar_view_photo: Accessibility hint on an avatar that has a photo: opens it full screen.",
 ]
-text = ""
+text = "फ़ोटो देखें"
 
 [t_7d7ece72a3]
 en = "View identity geometry"
@@ -3115,7 +3121,7 @@ where = [
   "android profile_view_geometry: Screen-reader action label on an avatar without a photo; opens its identity pattern full screen.",
   "ios kit_avatar_view_geometry: Accessibility hint on an avatar without a photo: opens the identity geometry drawing.",
 ]
-text = ""
+text = "पहचान की आकृति देखें"
 
 [t_274cb9dc84]
 en = "{name}’s photo"
@@ -3123,7 +3129,7 @@ where = [
   "android profile_photo_desc: Screen-reader description of a person's full-screen photo. {name} is their name.",
   "ios kit_avatar_photo_of: Accessibility label of a contact's full-screen photo. {name} is the contact's name.",
 ]
-text = ""
+text = "{name} की फ़ोटो"
 
 [t_935af8d623]
 en = "Enter a web address that starts with http:// or https://."
@@ -3132,7 +3138,7 @@ where = [
   "ios people_profile_bad_link: Error when a typed link is not a web address.",
   "desktop profile_enter_a_web_address: Desktop, profile and settings (in profile_ui.rs, profile_update).",
 ]
-text = ""
+text = "ऐसा वेब पता डालें जो http:// या https:// से शुरू होता हो।"
 
 [t_0e85d98ad3]
 en = "That picture is too detailed to save. Try a different one."
@@ -3140,7 +3146,7 @@ where = [
   "android profile_err_too_detailed: Error when the cropped picture is still too large to store.",
   "ios people_profile_too_detailed: Error when the cropped picture is too large to store.",
 ]
-text = ""
+text = "वह तस्वीर सहेजने के लिए बहुत भारी है। कोई दूसरी तस्वीर आज़माएँ।"
 
 [t_67397e7f8f]
 en = "Picture updated"
@@ -3148,7 +3154,7 @@ where = [
   "android profile_announce_updated: Spoken confirmation (screen reader only) after a new profile picture was saved.",
   "ios people_profile_picture_updated: Screen reader announcement after the picture changed.",
 ]
-text = ""
+text = "तस्वीर बदल गई"
 
 [t_7dedaeb6f2]
 en = "Picture removed"
@@ -3156,7 +3162,7 @@ where = [
   "android profile_announce_removed: Spoken confirmation (screen reader only) after the profile picture was removed.",
   "ios people_profile_picture_removed: Screen reader announcement after the picture was removed.",
 ]
-text = ""
+text = "तस्वीर हटा दी गई"
 
 [t_011c8e04fa]
 en = "Picture"
@@ -3164,7 +3170,7 @@ where = [
   "android profile_picture_desc: Screen-reader description of the picture area at the top of the profile editor.",
   "ios people_profile_picture: Accessibility label of the profile picture area.",
 ]
-text = ""
+text = "तस्वीर"
 
 [t_b746d800be]
 en = "Saved on this device. Will sync when you’re connected."
@@ -3173,7 +3179,7 @@ where = [
   "ios people_profile_saved_offline: Strip shown after saving while offline.",
   "desktop profile_saved_on_this_device: Desktop, profile and settings (in profile_view.rs, profile_float).",
 ]
-text = ""
+text = "इस डिवाइस पर सहेजा गया। जुड़ने पर सिंक हो जाएगा।"
 
 [t_502a8e4d57]
 en = "Change photo"
@@ -3182,7 +3188,7 @@ where = [
   "ios people_profile_change_photo: Button that picks a new profile photo.",
   "desktop profile_change_photo: Desktop, profile and settings (in profile_view.rs, my_profile).",
 ]
-text = ""
+text = "फ़ोटो बदलें"
 
 [t_fa6d46cafa]
 en = "Add photo"
@@ -3191,7 +3197,7 @@ where = [
   "ios people_profile_add_photo: Button that picks a first profile photo.",
   "desktop profile_add_photo: Desktop, profile and settings (in profile_view.rs, my_profile).",
 ]
-text = ""
+text = "फ़ोटो जोड़ें"
 
 [t_f001568477]
 en = "Profile"
@@ -3200,7 +3206,7 @@ where = [
   "ios people_profile_section: Heading of the profile fields section.",
   "desktop profile_profile: Desktop, profile and settings (in profile_view.rs, profile_page).",
 ]
-text = ""
+text = "प्रोफ़ाइल"
 
 [t_76c3d8da11]
 en = "Your name"
@@ -3209,7 +3215,7 @@ where = [
   "ios people_profile_name_placeholder: Placeholder of the name field.",
   "desktop common_your_name: Shared label, used in several places (profile, view).",
 ]
-text = ""
+text = "आपका नाम"
 
 [t_b5e59673b2]
 en = "Status"
@@ -3218,7 +3224,7 @@ where = [
   "ios people_profile_status: Label of the status field.",
   "desktop profile_status: Desktop, profile and settings (in profile_view.rs, my_profile).",
 ]
-text = ""
+text = "स्टेटस"
 
 [t_19b5a68c9b]
 en = "Add a status"
@@ -3227,7 +3233,7 @@ where = [
   "ios people_profile_status_empty: Shown when the status is empty.",
   "desktop profile_add_a_status: Desktop, profile and settings (in profile_view.rs, my_profile).",
 ]
-text = ""
+text = "स्टेटस जोड़ें"
 
 [t_20bae467e8]
 en = "What are you up to?"
@@ -3236,7 +3242,7 @@ where = [
   "ios people_profile_status_placeholder: Placeholder of the status field.",
   "desktop profile_what_are_you_up: Desktop, profile and settings (in profile_view.rs, my_profile).",
 ]
-text = ""
+text = "आजकल क्या चल रहा है?"
 
 [t_a65f16b027]
 en = "About"
@@ -3245,7 +3251,7 @@ where = [
   "ios people_profile_about: Label of the about field.",
   "desktop profile_about: Desktop, profile and settings (in profile_view.rs, profile_page).",
 ]
-text = ""
+text = "परिचय"
 
 [t_29cac70038]
 en = "Add a few words about you"
@@ -3254,7 +3260,7 @@ where = [
   "ios people_profile_about_empty: Shown when the about text is empty.",
   "desktop profile_add_a_few_words: Desktop, profile and settings (in profile_view.rs, my_profile).",
 ]
-text = ""
+text = "अपने बारे में कुछ शब्द लिखें"
 
 [t_b458721630]
 en = "Availability"
@@ -3263,7 +3269,7 @@ where = [
   "ios people_profile_availability: Heading and label of the availability section.",
   "desktop profile_availability: Desktop, profile and settings (in profile_view.rs, my_profile).",
 ]
-text = ""
+text = "उपलब्धता"
 
 [t_55f913267d]
 en = "Your contacts can see this, and it’s the same on all your devices. It affects whether calls reach you, and it’s separate from whether you’re online."
@@ -3272,7 +3278,7 @@ where = [
   "ios people_profile_availability_note: Note under the availability section.",
   "desktop profile_your_contacts_can_see: Desktop, profile and settings (in profile_view.rs, my_profile).",
 ]
-text = ""
+text = "यह आपके संपर्कों को दिखता है और आपके सभी डिवाइस पर एक जैसा रहता है। इससे तय होता है कि कॉल आप तक पहुँचें या नहीं, और यह आपके ऑनलाइन होने से अलग है।"
 
 [t_c1e05dab71]
 en = "Additional information"
@@ -3281,7 +3287,7 @@ where = [
   "ios people_profile_additional: Heading of the section with extra profile information.",
   "desktop profile_additional_information: Desktop, profile and settings (in profile_view.rs, my_profile).",
 ]
-text = ""
+text = "और जानकारी"
 
 [t_29c68f31e7]
 en = "Add information"
@@ -3290,7 +3296,7 @@ where = [
   "ios people_profile_add_info: Button and dialog title for adding a piece of profile information.",
   "desktop profile_add_information: Desktop, profile and settings (in profile_view.rs, my_profile).",
 ]
-text = ""
+text = "जानकारी जोड़ें"
 
 [t_6d69588d0e]
 en = "Your contacts can see your profile. Removing information hides it from your profile; earlier versions can remain in synced history."
@@ -3299,7 +3305,7 @@ where = [
   "ios people_field_help: Explains who sees profile information.",
   "desktop profile_field_help: Help text under the additional-information fields of the profile.",
 ]
-text = ""
+text = "आपके संपर्क आपकी प्रोफ़ाइल देख सकते हैं। जानकारी हटाने पर वह आपकी प्रोफ़ाइल से छिप जाती है; पुराने संस्करण सिंक किए गए इतिहास में रह सकते हैं।"
 
 [t_fae03066fb]
 en = "Some information came from another device or app version. It’s shown as stored and kept when you edit anything else."
@@ -3308,21 +3314,21 @@ where = [
   "ios people_profile_other_note: Note when the profile has information this app does not know.",
   "desktop profile_some_information_came_from: Desktop, profile and settings (in profile_view.rs, my_profile).",
 ]
-text = ""
+text = "कुछ जानकारी किसी दूसरे डिवाइस या ऐप संस्करण से आई है। यह जैसी सहेजी गई है वैसी दिखती है, और कुछ और बदलने पर भी बनी रहती है।"
 
 [t_7bb3949488]
 en = "Choose your picture"
 where = [
   "android profile_layer_choose_picture: Screen-reader label of the picture-cropping sheet.",
 ]
-text = ""
+text = "अपनी तस्वीर चुनें"
 
 [t_d53faf1679]
 en = "Remove your picture"
 where = [
   "android profile_remove_picture_title: Screen-reader label of the remove-picture sheet.",
 ]
-text = ""
+text = "अपनी तस्वीर हटाएँ"
 
 [t_dd50c89f8b]
 en = "Remove your picture?"
@@ -3331,7 +3337,7 @@ where = [
   "ios people_profile_remove_title: Title of the remove picture dialog.",
   "desktop profile_remove_your_picture: Desktop, profile and settings (in profile_view.rs, profile_layer).",
 ]
-text = ""
+text = "अपनी तस्वीर हटाएँ?"
 
 [t_9a1be52acf]
 en = "Your initials will show instead."
@@ -3340,7 +3346,7 @@ where = [
   "ios people_profile_remove_note: Note in the remove picture dialog.",
   "desktop profile_your_initials_will_show: Desktop, profile and settings (in profile_view.rs, profile_layer).",
 ]
-text = ""
+text = "इसकी जगह आपके नाम के पहले अक्षर दिखेंगे।"
 
 [t_af74f48f2b]
 en = "Replacing or removing your picture requests deletion of the previous cached copy on your linked devices and contacts when they sync. Screenshots, backups, and copies retained by modified clients cannot be erased by the app."
@@ -3349,7 +3355,7 @@ where = [
   "ios people_picture_help: Explains what removing or replacing the profile picture can and cannot do.",
   "desktop profile_picture_help: Help text under the profile picture settings.",
 ]
-text = ""
+text = "तस्वीर बदलने या हटाने पर, आपके लिंक किए गए डिवाइस और संपर्कों से सिंक होते समय पिछली सहेजी कॉपी मिटाने का अनुरोध जाता है। स्क्रीनशॉट, बैकअप और बदले हुए ऐप में रखी गई कॉपी यह ऐप नहीं मिटा सकता।"
 
 [t_a2d356b0cd]
 en = "Remove picture"
@@ -3358,7 +3364,7 @@ where = [
   "ios people_profile_remove_picture: Button that removes the profile picture.",
   "desktop profile_remove_picture: Desktop, profile and settings (in profile_view.rs, profile_layer).",
 ]
-text = ""
+text = "तस्वीर हटाएँ"
 
 [t_ca149949bf]
 en = "Dismiss"
@@ -3368,7 +3374,7 @@ where = [
   "ios people_profile_dismiss: Accessibility label of the button that dismisses an error.",
   "ios call_dismiss: Accessibility label of the button that closes the group call announcement.",
 ]
-text = ""
+text = "बंद करें"
 
 [t_f327a22e58]
 en = "Available"
@@ -3379,7 +3385,7 @@ where = [
   "ios people_profile_available: Availability: the user can be called.",
   "desktop common_available: Shared label, used in several places (app, profile).",
 ]
-text = ""
+text = "उपलब्ध"
 
 [t_b4655002da]
 en = "Busy"
@@ -3390,7 +3396,7 @@ where = [
   "ios people_profile_busy: Availability: the user is busy.",
   "desktop profile_busy: Desktop, profile and settings (in profile_view.rs, settings_landing).",
 ]
-text = ""
+text = "व्यस्त"
 
 [t_48d602e576]
 en = "Busy until {time}"
@@ -3400,7 +3406,7 @@ where = [
   "ios settings_status_busy_until: Availability status; {time} is a short time label such as 18:30.",
   "ios people_profile_busy_until: Availability line. {time} is when busy ends, like “18:00” or “tomorrow 08:00”.",
 ]
-text = ""
+text = "{time} तक व्यस्त"
 
 [t_119d66c55d]
 en = "Busy until you change it"
@@ -3409,7 +3415,7 @@ where = [
   "ios people_profile_busy_open: Availability line when busy has no end time.",
   "desktop profile_busy_until_you_change: Desktop, profile and settings (in profile_view.rs, availability).",
 ]
-text = ""
+text = "जब तक आप न बदलें, व्यस्त"
 
 [t_37ec906a0a]
 en = "Choose a time that hasn’t passed yet."
@@ -3417,7 +3423,7 @@ where = [
   "android profile_err_time_passed: Error when a chosen busy end time is already in the past.",
   "ios people_profile_time_passed: Error when the chosen busy end time is in the past.",
 ]
-text = ""
+text = "ऐसा समय चुनें जो अभी बीता न हो।"
 
 [t_5fb7288b1e]
 en = "For how long"
@@ -3425,7 +3431,7 @@ where = [
   "android profile_busy_how_long: Screen-reader label of the row of end-time choices shown while busy.",
   "ios people_profile_for_how_long: Accessibility label of the list of busy durations.",
 ]
-text = ""
+text = "कितनी देर के लिए"
 
 [t_71566d0f8b]
 en = "30 minutes"
@@ -3434,7 +3440,7 @@ where = [
   "ios people_busy_30m: Choice of how long the user is busy.",
   "desktop profile_busy_30m: Busy duration choice.",
 ]
-text = ""
+text = "30 मिनट"
 
 [t_d932268fbd]
 en = "1 hour"
@@ -3443,7 +3449,7 @@ where = [
   "ios people_busy_1h: Choice of how long the user is busy.",
   "desktop profile_busy_1h: Busy duration choice.",
 ]
-text = ""
+text = "1 घंटा"
 
 [t_f95042291b]
 en = "4 hours"
@@ -3452,7 +3458,7 @@ where = [
   "ios people_busy_4h: Choice of how long the user is busy.",
   "desktop profile_busy_4h: Busy duration choice.",
 ]
-text = ""
+text = "4 घंटे"
 
 [t_83c9cd32c8]
 en = "Tomorrow morning"
@@ -3461,7 +3467,7 @@ where = [
   "ios people_busy_tom: Choice of how long the user is busy.",
   "desktop profile_busy_tomorrow: Busy duration choice.",
 ]
-text = ""
+text = "कल सुबह"
 
 [t_c62fdbd2c0]
 en = "No end time"
@@ -3470,7 +3476,7 @@ where = [
   "ios people_busy_open: Choice of how long the user is busy.",
   "desktop profile_busy_no_end: Busy duration choice: stays busy until changed.",
 ]
-text = ""
+text = "कोई तय समय नहीं"
 
 [t_55f59058aa]
 en = "tomorrow {time}"
@@ -3479,7 +3485,7 @@ where = [
   "ios people_until_tomorrow: Busy-until label for tomorrow. {time} is a clock time like 08:00.",
   "desktop profile_tomorrow: Desktop, profile and settings (in profile_ui.rs, until_label). {time} is a time.",
 ]
-text = ""
+text = "कल {time}"
 
 [t_2800ffc400]
 en = "{day} {time}"
