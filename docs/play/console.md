@@ -40,12 +40,17 @@ Shares location: No. Digital purchases: No.
 
 ### Data safety
 
-- Does your app collect or share any of the required user data types? **No.**
-  (Everything is stored only on the device; calls are end-to-end encrypted; nothing reaches our
-  servers. Google's definition of "collect" is data transmitted off the device to the developer or a
-  third party. Relays only forward end-to-end encrypted traffic, which Google exempts.)
+- Does your app collect or share any of the required user data types? **Yes**: one type.
+  - **Device or other IDs** (the Firebase push token): collected, transmitted off the device to our wake
+    service (`push.osvauld.com`) inside a sealed wake token. Purpose: **App functionality** (wake the phone
+    for a call or message). **Not shared** (Google's delivery of the push is a service provider acting for
+    us). **Optional:** the user can turn on "Stay connected all the time". Processed ephemerally: **Yes**
+    (the wake service keeps no record of wakes).
+  - Nothing else: messages and calls are end-to-end encrypted and never reach our servers; relays only
+    forward encrypted traffic, which Google exempts.
 - Is all data encrypted in transit? **Yes.**
-- Do you provide a way to request deletion? **Data is never sent to us; uninstalling deletes it.**
+- Do you provide a way to request deletion? **Uninstalling deletes everything; the wake service holds no
+  per-user data to delete.**
 
 ### Foreground service
 
@@ -54,10 +59,12 @@ Types used: `microphone` and `specialUse`. The form asks per permission: FOREGRO
 
 - **microphone** — "Active voice call. The service records the microphone only while a call the
   user started or answered is in progress, with an ongoing call notification."
-- **specialUse** — "Tinline is a peer-to-peer calling app with no push server. To receive incoming
-  calls it keeps one encrypted network connection open in a foreground service, shown by a
-  persistent notification. There is no FCM or server-side wake-up, so without this service calls cannot ring."
-  User impact if deferred: "Incoming calls would be missed."
+- **specialUse** — "Tinline is a peer-to-peer calling and messaging app. By default it rests and is
+  woken by a content-free FCM message; the service then runs briefly to connect to the contact and
+  receive the call or message, shown by a notification, and stops by itself. If the user turns on
+  'Stay connected all the time', the service keeps one encrypted connection open, shown by a
+  persistent notification."
+  User impact if deferred: "Incoming calls and messages would be missed."
   Video: record the phone showing the persistent notification, then a second device calling and the
   locked phone ringing full-screen.
 
@@ -68,10 +75,10 @@ calls."
 
 ### Battery optimisation exemption (`REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`)
 
-Acceptable use: **VoIP / calling app whose core function is broken by Doze, and that cannot use FCM
-high-priority messages**. "Tinline has no server and no push messages; peers connect directly. Doze
-would cut the connection and incoming calls would not ring. The user is asked in onboarding and can
-skip."
+Acceptable use: **VoIP / calling app whose core function is broken by Doze**. "By default Tinline is
+woken by FCM high-priority messages. Users who turn on 'Stay connected all the time' (or whose phone
+has no Google Play services) keep a direct connection instead; Doze would cut it and incoming calls
+would not ring. The user is asked in onboarding and can skip."
 
 ### Camera
 
@@ -84,30 +91,10 @@ Only for scanning contact QR codes (no declaration form; mentioned in the privac
 - Icon 512×512, feature graphic 1024×500, at least 2 phone screenshots.
 - Category: Communication. Contact email: osvauld@gmail.com. Website: https://tinline.osvauld.com
 
-## Push wake-ups: texts that must change before the first release with FCM (docs/push.md)
+## Push wake-ups (docs/push.md)
 
-The `play` edition now ships `firebase-messaging` (and only that: no analytics, no crashlytics, analytics
-collection and the ad id switched off, token auto-init off until the user is in wake-by-push mode). Firebase
-Messaging receives an opaque wake token and returns an empty data push carrying a sealed hint; no message text,
-name or call detail ever goes through it. These existing lines say "no FCM / no push" and are no longer true for
-`play`; change only the facts, not the surrounding copy:
-
-1. **Foreground service > specialUse** (above): "Tinline is a peer-to-peer calling app with no push server. To receive
-   incoming calls it keeps one encrypted network connection open in a foreground service, shown by a persistent
-   notification. There is no FCM or server-side wake-up, so without this service calls cannot ring."
-   Now: wake-by-push is the default and the persistent service is the opt-in "Stay connected all the time" setting
-   (the service also starts briefly after a wake and for calls). Drop "no push server" and "There is no FCM or
-   server-side wake-up"; say the connection is kept open when the user turns on "Stay connected all the time".
-2. **Battery optimisation exemption** (above): "Acceptable use: VoIP / calling app whose core function is broken by
-   Doze, and that cannot use FCM high-priority messages. 'Tinline has no server and no push messages; peers connect
-   directly. Doze would cut the connection and incoming calls would not ring...'"
-   Now Tinline can use FCM high-priority messages by default. The exemption applies only to the always-on option;
-   rewrite the justification around that, or drop the exemption for `play` if the push mode is enough.
-3. **Data safety**: "Does your app collect or share any of the required user data types? No." and "nothing reaches
-   our servers". Re-check with the wake relay (`push.osvauld.com`) in mind: it sees a device push token, timing and
-   the sender's IP, and no DIDs, names or content. Declare Device or other IDs (the FCM token) as collected,
-   transmitted off device, purpose App functionality, not shared with third parties other than Google's delivery
-   service, not optional for wake-by-push (the user can avoid it with "Stay connected all the time"). Decide with the
-   privacy policy text (`docs/play/privacy.md`), which must say the same.
-4. **Store listing / description**: any line that says "no push", "no servers", "nothing leaves your phone" or
-   "no Google services" needs the same fix (the Liberum edition on GitHub and the site is where "no Google code" stays true).
+The `play` edition ships `firebase-messaging` only (no analytics or crashlytics, ad id off, token
+auto-init off until the user is in wake-by-push mode). Done on 25 October 2026: foreground service,
+battery exemption, data safety (above) and the privacy policy (`docs/play/privacy.md`) now describe it.
+Still to check when the store listing is written: no line may say "no push", "no servers", "nothing
+leaves your phone" or "no Google services" for `play` (that stays true only for Liberum).

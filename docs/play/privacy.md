@@ -1,6 +1,6 @@
 # Tinline privacy policy
 
-_Last updated: 8 October 2026_
+_Last updated: 25 October 2026_
 
 Tinline is a calling app made by Osvauld ("we"). It connects your device directly to the device of
 the person you call. This policy explains what that means for your data. Short version: we do not
@@ -37,20 +37,41 @@ added.
   relay address and network addresses to a discovery service, also run by number 0, Inc. This
   record contains no name, phone number or contact list.
 
+## Wake-ups (Tinline from Google Play)
+
+So Tinline does not have to keep a connection open all day, it can rest until someone reaches you.
+When a contact's device cannot reach yours, it asks our wake service (`push.osvauld.com`) to send
+your phone a nudge through Google (Firebase Cloud Messaging). The nudge carries no message, name, phone number or call detail.
+
+- **What your phone hands out.** It gives each contact a sealed wake token. Only our wake service
+  can open it. Inside is your phone's push address from Google and a random tag.
+  Your contacts cannot read it.
+- **What our wake service sees.** When a nudge is asked for: the push address, the random tag, the
+  kind (message or call), the time and the IP address of the device asking. It does not learn who
+  you are, who the contact is, or anything you send. It keeps no record of nudges. It stores only
+  random tags that have been switched off (for example after you block someone), until those
+  tokens would have expired anyway, and the access key it needs to talk to Google.
+- **What Google sees.** Your phone's push address, the time of each nudge and a small sealed
+  blob only your phone can open. They deliver it as they do for any app.
+- **Your choice.** You can turn on "Stay connected all the time". Tinline then keeps its
+  own connection open instead and stops using wake-ups. The Tinline build from GitHub and our
+  website (Liberum) contains no Google code and never uses wake-ups.
+
 ## Permissions
 
 - **Microphone:** to send your voice during a call. It is used only during calls.
 - **Camera:** to scan a contact's QR code. Images are not saved or sent.
 - **Notifications and full-screen notifications:** to ring when someone calls, including on the
   lock screen.
-- **Run in the background, start at boot, ignore battery optimisation:** so the app can keep its
-  connection open and receive calls when it is not on screen, like a phone line.
+- **Run in the background, start at boot, ignore battery optimisation:** so the app can wake up
+  for a call or message, or keep its connection open all the time if you choose "Stay connected
+  all the time".
 
 ## What we do not do
 
 - No account registration, phone number or email is required.
 - No ads, analytics, crash reporting or tracking SDKs.
-- We do not sell or share data, because we do not have it.
+- We do not sell or share data. The only thing our wake service handles is described above.
 
 ## Children
 

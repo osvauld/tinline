@@ -8,6 +8,11 @@ routes = [{ pattern = "push.osvauld.com", custom_domain = true }]
 workers_dev = false
 preview_urls = false
 
+# No stored request logs (docs/play/privacy.md: "It keeps no record of nudges"). Errors are seen
+# only live with `wrangler tail`.
+[observability]
+enabled = false
+
 [build]
 command = "cargo install -q worker-build && worker-build --release"
 
