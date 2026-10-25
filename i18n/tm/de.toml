@@ -8784,7 +8784,7 @@ where = [
   "android card_works_once: Hint under your QR code.",
   "ios chat_card_once: Hint under the contact card QR code.",
 ]
-text = "Funktioniert einmal. Ein neuer Code macht diesen ungültig."
+text = "Funktioniert einmal. Ein neuer Code ersetzt diesen."
 
 [t_e0f29c1088]
 en = "No Tinline contact card in that message"
@@ -9577,7 +9577,7 @@ where = [
   "android home_first_scan: Button on the first-run add-contact screen.",
   "ios people_add_scan_theirs: Button that starts the camera to scan a contact code.",
 ]
-text = "Ihren Code scannen"
+text = "Code der Person scannen"
 
 [t_18bdfc1acf]
 en = "Choose image"
@@ -9628,7 +9628,7 @@ where = [
   "ios people_add_their_code: Heading above the paste area for another person’s code.",
   "desktop signup_their_code: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay).",
 ]
-text = "Ihr Code"
+text = "Code der Person"
 
 [t_73da04ae6f]
 en = "Paste their code"
@@ -9637,7 +9637,7 @@ where = [
   "ios people_add_paste_theirs: Button that pastes the contact code from the clipboard.",
   "desktop signup_paste_their_code: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay).",
 ]
-text = "Ihren Code einfügen"
+text = "Code der Person einfügen"
 
 [t_d2aa3d83d4]
 en = "Open profile"
@@ -10028,7 +10028,7 @@ where = [
   "ios people_detail_use_theirs: Rename dialog button that removes the nickname and shows their own name.",
   "desktop contact_use_their_name: Desktop, contact detail (in view.rs, detail_view).",
 ]
-text = "Ihren Namen nutzen"
+text = "Name der Person nutzen"
 
 [t_33e0f0d8e6]
 en = "Off"
@@ -10587,7 +10587,7 @@ where = [
   "ios call_about_their_video: Row label on the call details card for the codec the contact sends.",
   "desktop call_their_video: Desktop, calls (voice and video) (in call_screen.rs, call_about).",
 ]
-text = "Ihr Video"
+text = "Video der Gegenseite"
 
 [t_225ce61bf7]
 en = "Return to call with {name}"
@@ -11265,7 +11265,7 @@ en = "Paste their card"
 where = [
   "android home_first_paste: Button on the first-run add-contact screen.",
 ]
-text = "Ihre Karte einfügen"
+text = "Karte der Person einfügen"
 
 [t_ff919c7555]
 en = "Waiting for them to scan — keep this open."
@@ -14716,7 +14716,7 @@ en = "Their card is on your clipboard."
 where = [
   "desktop home_their_card_is_on: Desktop, home, sidebar and call list (in view.rs, offer_bar).",
 ]
-text = "Ihre Karte ist in deiner Zwischenablage."
+text = "Die Karte der Person ist in deiner Zwischenablage."
 
 [t_e3db10694d]
 en = "A linked device becomes you"
@@ -15485,998 +15485,998 @@ en = "No profile is available."
 where = [
   "desktop profile_no_profile_is_available: Desktop, profile and settings (in profile_view.rs, person_profile).",
 ]
-text = ""
+text = "Kein Profil verfügbar."
 
 [t_9b84ab3c9a]
 en = "Not seen for {value} days"
 where = [
   "desktop profile_not_seen_for_days: Desktop, profile and settings (in profile_view.rs, devices_page). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "Seit {value} Tagen nicht gesehen"
 
 [t_bc6df257c5]
 en = "{value} of pictures and files you’ve opened. They’re prepared again when you open them."
 where = [
   "desktop profile_of_pictures_and_files: Desktop, profile and settings (in profile_view.rs, storage_page). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "{value} an Bildern und Dateien, die du geöffnet hast. Sie werden neu vorbereitet, wenn du sie öffnest."
 
 [t_d060fc5ab7]
 en = "Off means messages only"
 where = [
   "desktop profile_off_means_messages_only: Desktop, profile and settings (in profile_view.rs, person_profile).",
 ]
-text = ""
+text = "Aus heißt nur Nachrichten"
 
 [t_5d478e8506]
 en = "On this computer"
 where = [
   "desktop profile_on_this_computer: Desktop, profile and settings (in profile_view.rs, storage_page).",
 ]
-text = ""
+text = "Auf diesem Computer"
 
 [t_cdfa63e232]
 en = "Online now"
 where = [
   "desktop profile_online_now: Desktop, profile and settings (in profile_view.rs, devices_page).",
 ]
-text = ""
+text = "Gerade online"
 
 [t_11b4ba4260]
 en = "Only the selected account is online on this computer. Switching pauses the other one: it receives no calls until you select it again."
 where = [
   "desktop profile_only_the_selected_account: Desktop, profile and settings (in profile_view.rs, settings_landing).",
 ]
-text = ""
+text = "Nur das ausgewählte Konto ist auf diesem Computer online. Ein Wechsel pausiert das andere: Es bekommt keine Anrufe, bis du es wieder auswählst."
 
 [t_0ed74faf85]
 en = "Only this device has your account. Link another to keep a second copy of your chats. Your recovery phrase brings back your account, not your messages."
 where = [
   "desktop profile_only_this_device_has: Desktop, profile and settings (in profile_view.rs, devices_page).",
 ]
-text = ""
+text = "Nur dieses Gerät hat dein Konto. Verknüpfe ein weiteres, um eine zweite Kopie deiner Chats zu haben. Deine Wiederherstellungswörter holen dein Konto zurück, nicht deine Nachrichten."
 
 [t_b2c190e6e0]
 en = "Only you see these. A nickname changes what you call {name}, not their profile."
 where = [
   "desktop profile_only_you_see_these: Desktop, profile and settings (in profile_view.rs, person_profile). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Nur du siehst das. Ein Spitzname ändert, wie du {name} nennst, nicht das Profil der Person."
 
 [t_1a9e8ecade]
 en = "Only your own devices see this name."
 where = [
   "desktop profile_only_your_own_devices: Desktop, profile and settings (in profile_view.rs, devices_layer).",
 ]
-text = ""
+text = "Nur deine eigenen Geräte sehen diesen Namen."
 
 [t_e1f70eccfa]
 en = "Person not found."
 where = [
   "desktop profile_person_not_found: Desktop, profile and settings (in profile_view.rs, person_profile).",
 ]
-text = ""
+text = "Person nicht gefunden."
 
 [t_20137e067f]
 en = "Pick a contact."
 where = [
   "desktop profile_pick_a_contact: Desktop, profile and settings (in profile_view.rs, privacy_layer).",
 ]
-text = ""
+text = "Wähle einen Kontakt."
 
 [t_81ee822845]
 en = "Pictures in groups appear as they arrive"
 where = [
   "desktop profile_pictures_in_groups_appear: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "Bilder in Gruppen erscheinen, sobald sie ankommen"
 
 [t_6281bd7fc7]
 en = "Plain (old)"
 where = [
   "desktop profile_plain_old: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "Einfach (alt)"
 
 [t_2903aaba1d]
 en = "Profile picture changed while loading"
 where = [
   "desktop profile_profile_picture_changed_while: Desktop, profile and settings (in profile_ui.rs, read_profile).",
 ]
-text = ""
+text = "Das Profilbild hat sich beim Laden geändert"
 
 [t_784f3ae6ac]
 en = "Quit Tinline"
 where = [
   "desktop profile_quit_tinline: Desktop, profile and settings (in profile_view.rs, native_page).",
 ]
-text = ""
+text = "Tinline beenden"
 
 [t_2b5999b60c]
 en = "Rate control"
 where = [
   "desktop profile_rate_control: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "Ratensteuerung"
 
 [t_1712035de1]
 en = "Rate control: probing needs the other side on this build too; set both the same for an A/B call."
 where = [
   "desktop profile_rate_control_probing_needs: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "Ratensteuerung: Testen braucht auch auf der anderen Seite diesen Build; stell beide gleich ein für einen A/B-Anruf."
 
 [t_f6b0eb5b3a]
 en = "Remove “{label_}” from your profile?"
 where = [
   "desktop profile_remove_from_your_profile: Desktop, profile and settings (in profile_view.rs, field_row_inner). {label_} is a value filled in by the app.",
 ]
-text = ""
+text = "„{label_}“ aus deinem Profil entfernen?"
 
 [t_ea0d1f95ed]
 en = "{name}’s app can reach you again. It removed you from their contacts when you blocked them, so you’ll both need to add each other again before you can message or call."
 where = [
   "desktop profile_s_app_can_reach: Desktop, profile and settings (in profile_view.rs, privacy_layer). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Die App von {name} kann dich wieder erreichen. Sie hat dich aus den Kontakten entfernt, als du blockiert hast, also müsst ihr euch beide neu hinzufügen, bevor ihr schreiben oder anrufen könnt."
 
 [t_f10a13dfa8]
 en = "{name}’s profile hasn’t arrived yet. It shows here once it syncs."
 where = [
   "desktop profile_s_profile_hasnt_arrived: Desktop, profile and settings (in profile_view.rs, person_profile). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Das Profil von {name} ist noch nicht angekommen. Es erscheint hier, sobald es abgeglichen ist."
 
 [t_0b53f94a6c]
 en = "Selected · connecting"
 where = [
   "desktop profile_selected_connecting: Desktop, profile and settings (in profile_view.rs, settings_landing).",
 ]
-text = ""
+text = "Ausgewählt · verbinde"
 
 [t_c3eb6bca8d]
 en = "Send codec"
 where = [
   "desktop profile_send_codec: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "Sende-Codec"
 
 [t_e7a3ee89e1]
 en = "Session only. Changes apply to the next call (About this call changes the current one). Fixed size disables rate/CPU resolution adaptation; peer and thermal caps still win. Use HD capture and compare actual payload rates and dimensions."
 where = [
   "desktop profile_session_only_changes_apply: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "Nur für diese Sitzung. Änderungen gelten ab dem nächsten Anruf („Über diesen Anruf“ ändert den aktuellen). Eine feste Größe schaltet die Auflösungsanpassung nach Rate/CPU ab; Grenzen der Gegenseite und Wärmegrenzen gelten weiter. Nutze HD-Aufnahme und vergleiche tatsächliche Datenraten und Abmessungen."
 
 [t_50654bf33c]
 en = "Settings that belong to this computer only"
 where = [
   "desktop profile_settings_that_belong_to: Desktop, profile and settings (in profile_view.rs, settings_landing).",
 ]
-text = ""
+text = "Einstellungen, die nur zu diesem Computer gehören"
 
 [t_9c944ff0b2]
 en = "Show a QR code on the new device, then approve it here"
 where = [
   "desktop profile_show_a_qr_code: Desktop, profile and settings (in profile_view.rs, devices_page).",
 ]
-text = ""
+text = "Zeig einen QR-Code auf dem neuen Gerät und bestätige es dann hier"
 
 [t_9c40d34486]
 en = "Show key"
 where = [
   "desktop profile_show_key: Desktop, profile and settings (in profile_view.rs, phrase_page).",
 ]
-text = ""
+text = "Schlüssel zeigen"
 
 [t_af70bc522d]
 en = "Show words"
 where = [
   "desktop profile_show_words: Desktop, profile and settings (in profile_view.rs, phrase_page).",
 ]
-text = ""
+text = "Wörter zeigen"
 
 [t_c0c19a8034]
 en = "Shown after you confirm"
 where = [
   "desktop profile_shown_after_you_confirm: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "Wird gezeigt, nachdem du bestätigst"
 
 [t_bd82fe332b]
 en = "Shown to you as {name} · their name is {name2}"
 where = [
   "desktop profile_shown_to_you_as: Desktop, profile and settings (in profile_view.rs, field_row_inner). {name} is a person's name (usually the first word of their chosen name). {name2} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Für dich angezeigt als {name} · eigener Name: {name2}"
 
 [t_b8e582229a]
 en = "Software"
 where = [
   "desktop profile_software: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "Software"
 
 [t_3df3d8bc73]
 en = "{value} {time}"
 where = [
   "desktop profile_text: Desktop, profile and settings (in profile_ui.rs, until_label). {value} is a value filled in by the app. {time} is a time.",
 ]
-text = ""
+text = "{value} {time}"
 
 [t_89ddb04770]
 en = "That is too long for {what}: up to {limit} bytes, and some characters take more than one."
 where = [
   "desktop profile_that_is_too_long: Desktop, profile and settings (in profile_ui.rs, check_text). {what} is a value filled in by the app. {limit} is a value filled in by the app.",
 ]
-text = ""
+text = "Das ist zu lang für {what}: bis zu {limit} Bytes, und manche Zeichen brauchen mehr als eins."
 
 [t_cb69175dc2]
 en = "That {what} is too long. Up to {limit} bytes; some characters take more than one."
 where = [
   "desktop profile_that_is_too_long_up: Desktop, profile and settings (in profile_ui.rs, check_name). {what} is a value filled in by the app. {limit} is a value filled in by the app.",
 ]
-text = ""
+text = "{what} ist zu lang. Bis zu {limit} Bytes; manche Zeichen brauchen mehr als eins."
 
 [t_f0ad76df80]
 en = "That picture is {value} MB. Pictures can be up to {value2} MB."
 where = [
   "desktop profile_that_picture_is_mb: Desktop, profile and settings (in profile_ui.rs, inspect). {value} is a value filled in by the app. {value2} is a value filled in by the app.",
 ]
-text = ""
+text = "Dieses Bild hat {value} MB. Bilder dürfen bis zu {value2} MB groß sein."
 
 [t_c93b8484c2]
 en = "That picture is {status} × {host} pixels. Tinline accepts up to 4096 pixels on a side."
 where = [
   "desktop profile_that_picture_is_pixels: Desktop, profile and settings (in profile_ui.rs, inspect). {status} is a value filled in by the app. {host} is a value filled in by the app.",
 ]
-text = ""
+text = "Dieses Bild hat {status} × {host} Pixel. Tinline nimmt bis zu 4096 Pixel pro Seite."
 
 [t_5fc61ddfab]
 en = "The {what} can’t be empty."
 where = [
   "desktop profile_the_cant_be_empty: Desktop, profile and settings (in profile_ui.rs, check_name). {what} is a value filled in by the app.",
 ]
-text = ""
+text = "{what} darf nicht leer sein."
 
 [t_1245e21c0c]
 en = "The {what} can’t contain control or text-direction characters."
 where = [
   "desktop profile_the_cant_contain_control: Desktop, profile and settings (in profile_ui.rs, check_name). {what} is a value filled in by the app.",
 ]
-text = ""
+text = "{what} darf keine Steuer- oder Textrichtungszeichen enthalten."
 
 [t_30c1c86ee5]
 en = "The passphrase protects Tinline on this device only; your other devices keep their own. Tinline can’t recover a forgotten passphrase. If that happens, your recovery phrase restores your account, though not your messages."
 where = [
   "desktop profile_the_passphrase_protects_tinline: Desktop, profile and settings (in profile_view.rs, passphrase_page).",
 ]
-text = ""
+text = "Die Passphrase schützt Tinline nur auf diesem Gerät; deine anderen Geräte behalten ihre eigene. Tinline kann eine vergessene Passphrase nicht wiederherstellen. Wenn das passiert, stellen deine Wiederherstellungswörter dein Konto wieder her, deine Nachrichten aber nicht."
 
 [t_ad1986c0d4]
 en = "There is no copy button on purpose: the phrase stays off the clipboard. Tinline never asks for it except to restore your account. The phrase brings back your account, not your messages."
 where = [
   "desktop profile_there_is_no_copy: Desktop, profile and settings (in profile_view.rs, phrase_page).",
 ]
-text = ""
+text = "Es gibt absichtlich keinen Kopieren-Knopf: Die Wörter bleiben aus der Zwischenablage heraus. Tinline fragt nie danach, außer um dein Konto wiederherzustellen. Die Wörter holen dein Konto zurück, nicht deine Nachrichten."
 
 [t_057c54d1e7]
 en = "These stay on this computer. They aren’t part of your account."
 where = [
   "desktop profile_these_stay_on_this: Desktop, profile and settings (in profile_view.rs, native_page).",
 ]
-text = ""
+text = "Diese bleiben auf diesem Computer. Sie gehören nicht zu deinem Konto."
 
 [t_69f5484518]
 en = "This computer"
 where = [
   "desktop profile_this_computer: Desktop, profile and settings (in profile_view.rs, profile_page).",
 ]
-text = ""
+text = "Dieser Computer"
 
 [t_c4d705c661]
 en = "This computer decodes AV1 (rav1d) and VP8 (libvpx) in software only. During a call, About this call has the same controls for that call."
 where = [
   "desktop profile_this_computer_decodes_av1: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "Dieser Computer dekodiert AV1 (rav1d) und VP8 (libvpx) nur in Software. Während eines Anrufs findest du dieselben Regler unter „Über diesen Anruf“."
 
 [t_52795ba2e7]
 en = "This computer has no keyring, so Tinline asks for your passphrase each time it starts."
 where = [
   "desktop profile_this_computer_has_no: Desktop, profile and settings (in profile_view.rs, passphrase_page).",
 ]
-text = ""
+text = "Dieser Computer hat keinen Schlüsselbund, also fragt Tinline bei jedem Start nach deiner Passphrase."
 
 [t_86dd1e0638]
 en = "This device · Online"
 where = [
   "desktop profile_this_device_online: Desktop, profile and settings (in profile_view.rs, devices_page).",
 ]
-text = ""
+text = "Dieses Gerät · Online"
 
 [t_d6a83681ca]
 en = "This is not a lock."
 where = [
   "desktop profile_this_is_not_a: Desktop, profile and settings (in profile_view.rs, devices_layer).",
 ]
-text = ""
+text = "Das ist keine Sperre."
 
 [t_b62ccd7a6a]
 en = "Tinline tells it now."
 where = [
   "desktop profile_tinline_tells_it_now: Desktop, profile and settings (in profile_view.rs, devices_layer).",
 ]
-text = ""
+text = "Tinline sagt es ihm jetzt."
 
 [t_85188a2676]
 en = "Told you blocked them"
 where = [
   "desktop profile_told_you_blocked_them: Desktop, profile and settings (in profile_view.rs, blocked_page).",
 ]
-text = ""
+text = "Weiß, dass du blockiert hast"
 
 [t_645532a521]
 en = "Trend+probe"
 where = [
   "desktop profile_trend_probe: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "Trend+Test"
 
 [t_cdb835ad27]
 en = "Unblock {first2}"
 where = [
   "desktop profile_unblock: Desktop, profile and settings (in profile_view.rs, person_profile). {first2} is a value filled in by the app.",
 ]
-text = ""
+text = "{first2} nicht mehr blockieren"
 
 [t_f0fb307e02]
 en = "Unblock {name}?"
 where = [
   "desktop profile_unblock_2: Desktop, profile and settings (in profile_view.rs, privacy_layer). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} nicht mehr blockieren?"
 
 [t_69ca4cd424]
 en = "Unlinking…"
 where = [
   "desktop profile_unlinking: Desktop, profile and settings (in profile_view.rs, devices_layer).",
 ]
-text = ""
+text = "Trennen…"
 
 [t_62b2918318]
 en = "Version {value}"
 where = [
   "desktop profile_version: Desktop, profile and settings (in profile_view.rs, about_page). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "Version {value}"
 
 [t_9e49a9bbf2]
 en = "Video tuning"
 where = [
   "desktop profile_video_tuning: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "Video-Feinabstimmung"
 
 [t_40f558f53e]
 en = "Wait for the current account operation to finish."
 where = [
   "desktop profile_wait_for_the_current: Desktop, profile and settings (in profile_ui.rs, profile_write).",
 ]
-text = ""
+text = "Warte, bis der aktuelle Kontovorgang fertig ist."
 
 [t_ce72295675]
 en = "WebRTC audio processing"
 where = [
   "desktop profile_webrtc_audio_processing: Desktop, profile and settings (in profile_view.rs, about_page).",
 ]
-text = ""
+text = "WebRTC-Audioverarbeitung"
 
 [t_4d02b4bdcd]
 en = "{name} will stop syncing with your account and stop ringing when you’re called. {value}"
 where = [
   "desktop profile_will_stop_syncing_with: Desktop, profile and settings (in profile_view.rs, devices_layer). {name} is a person's name (usually the first word of their chosen name). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "{name} hört auf, sich mit deinem Konto abzugleichen, und klingelt nicht mehr, wenn du angerufen wirst. {value}"
 
 [t_d7dd1efe73]
 en = "Write these 24 words down, in order, and keep them somewhere private."
 where = [
   "desktop profile_write_these_24_words: Desktop, profile and settings (in profile_view.rs, phrase_page).",
 ]
-text = ""
+text = "Schreib diese 24 Wörter der Reihe nach auf und bewahre sie an einem privaten Ort auf."
 
 [t_af2d0dcbe5]
 en = "You blocked {name}. Their profile no longer updates."
 where = [
   "desktop profile_you_blocked_their_profile: Desktop, profile and settings (in profile_view.rs, person_profile). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Du hast {name} blockiert. Das Profil wird nicht mehr aktualisiert."
 
 [t_c071e74cd1]
 en = "You blocked them"
 where = [
   "desktop profile_you_blocked_them: Desktop, profile and settings (in profile_view.rs, person_profile).",
 ]
-text = ""
+text = "Von dir blockiert"
 
 [t_0810d6d484]
 en = "You won’t get calls or messages from {name}, and their profile updates stop."
 where = [
   "desktop profile_you_wont_get_calls: Desktop, profile and settings (in profile_view.rs, profile_layer). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Du bekommst keine Anrufe oder Nachrichten mehr von {name}, und das Profil wird nicht mehr aktualisiert."
 
 [t_9f41b4f49e]
 en = "Your chat history is still here."
 where = [
   "desktop profile_your_chat_history_is: Desktop, profile and settings (in profile_view.rs, privacy_layer).",
 ]
-text = ""
+text = "Dein Chatverlauf ist noch da."
 
 [t_94fb56f848]
 en = "Your recovery key is the same as your 24 words, as one line. A password manager is a good place for it."
 where = [
   "desktop profile_your_recovery_key_is: Desktop, profile and settings (in profile_view.rs, phrase_page).",
 ]
-text = ""
+text = "Dein Wiederherstellungsschlüssel entspricht deinen 24 Wörtern, nur in einer Zeile. Ein Passwortmanager ist ein guter Ort dafür."
 
 [t_044cdbfc11]
 en = "Your recovery phrase is the only way to get your account back if you lose every device. Anyone who has it can act as you."
 where = [
   "desktop profile_your_recovery_phrase_is: Desktop, profile and settings (in profile_view.rs, phrase_page).",
 ]
-text = ""
+text = "Deine Wiederherstellungswörter sind der einzige Weg, dein Konto zurückzubekommen, wenn du jedes Gerät verlierst. Wer sie hat, kann als du auftreten."
 
 [t_25988f1d9a]
 en = "Your settings for {name}"
 where = [
   "desktop profile_your_settings_for: Desktop, profile and settings (in profile_view.rs, person_profile). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Deine Einstellungen für {name}"
 
 [t_1a0a38d265]
 en = "Account"
 where = [
   "desktop settings_account: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "Konto"
 
 [t_96c9d2bee5]
 en = "Anyone who sees these words can become you. Check nobody is looking, then show them."
 where = [
   "desktop settings_anyone_who_sees_these: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "Wer diese Wörter sieht, kann zu dir werden. Achte darauf, dass niemand zuschaut, und zeig sie dann."
 
 [t_b943e62fec]
 en = "Anyone who sees these words can become you. Check nobody is looking."
 where = [
   "desktop settings_anyone_who_sees_these_words: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "Wer diese Wörter sieht, kann zu dir werden. Achte darauf, dass niemand zuschaut."
 
 [t_007f441e85]
 en = "Asks you to confirm first"
 where = [
   "desktop settings_asks_you_to_confirm: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "Fragt zuerst nach deiner Bestätigung"
 
 [t_811da6b443]
 en = "Audio"
 where = [
   "desktop settings_audio: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "Audio"
 
 [t_9fb4995484]
 en = "Calls won’t ring until you turn it back on"
 where = [
   "desktop settings_calls_wont_ring_until: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "Anrufe klingeln erst wieder, wenn du es einschaltest"
 
 [t_3261bdf0e1]
 en = "Change"
 where = [
   "desktop settings_change: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "Ändern"
 
 [t_90ebfd544e]
 en = "Checking..."
 where = [
   "desktop settings_checking: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "Prüfe..."
 
 [t_458b341145]
 en = "Device changes apply from the next call"
 where = [
   "desktop settings_device_changes_apply_from: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "Geräteänderungen gelten ab dem nächsten Anruf"
 
 [t_a7394c8f06]
 en = "Enter your passphrase"
 where = [
   "desktop settings_enter_your_passphrase: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "Gib deine Passphrase ein"
 
 [t_bb48a50610]
 en = "Instead of the microphone, to check the connection"
 where = [
   "desktop settings_instead_of_the_microphone: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "Statt des Mikrofons, um die Verbindung zu prüfen"
 
 [t_6cde4fb02a]
 en = "Keep"
 where = [
   "desktop settings_keep: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "Behalten"
 
 [t_8494e68bf4]
 en = "Locked · needs its passphrase"
 where = [
   "desktop settings_locked_needs_its_passphrase: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "Gesperrt · braucht seine Passphrase"
 
 [t_d87befa574]
 en = "Only your own devices see it"
 where = [
   "desktop settings_only_your_own_devices: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "Nur deine eigenen Geräte sehen ihn"
 
 [t_5910a9281c]
 en = "Optional — encrypts your account on this computer"
 where = [
   "desktop settings_optional_encrypts_your_account: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "Optional – verschlüsselt dein Konto auf diesem Computer"
 
 [t_50b9a9cd8e]
 en = "Other accounts on this computer"
 where = [
   "desktop settings_other_accounts_on_this: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "Andere Konten auf diesem Computer"
 
 [t_040256ef93]
 en = "Recommended — your key is in a plain file"
 where = [
   "desktop settings_recommended_your_key_is: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "Empfohlen – dein Schlüssel liegt in einer einfachen Datei"
 
 [t_99d98f7cf9]
 en = "Remove {name} from this computer? Its contacts, chats and call history here are deleted. Your recovery phrase brings back the identity, not those."
 where = [
   "desktop settings_remove_from_this_computer: Desktop, settings (older page) (in view.rs, native_settings_view). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} von diesem Computer entfernen? Kontakte, Chats und Anrufliste des Kontos werden hier gelöscht. Deine Wiederherstellungswörter holen die Identität zurück, aber nicht diese."
 
 [t_5cd6c5f390]
 en = "Send a test tone"
 where = [
   "desktop settings_send_a_test_tone: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "Testton senden"
 
 [t_b9cce40003]
 en = "Show recovery phrase"
 where = [
   "desktop settings_show_recovery_phrase: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "Wiederherstellungswörter zeigen"
 
 [t_0c6d910d36]
 en = "Shown to the people you add"
 where = [
   "desktop settings_shown_to_the_people: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "Für die Leute sichtbar, die du hinzufügst"
 
 [t_c26dcc4ffd]
 en = "This computer’s name"
 where = [
   "desktop settings_this_computers_name: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "Name dieses Computers"
 
 [t_fedfb70e58]
 en = "Unlocks Tinline when it starts"
 where = [
   "desktop settings_unlocks_tinline_when_it: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "Entsperrt Tinline beim Start"
 
 [t_cdcc50b2f7]
 en = "Your camera stays off until you turn it on in the call"
 where = [
   "desktop settings_your_camera_stays_off: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "Deine Kamera bleibt aus, bis du sie im Anruf einschaltest"
 
 [t_90bdebb782]
 en = "BLOCKED"
 where = [
   "desktop shell_blocked: Desktop, shell: sidebar, search, contacts (in shell_view.rs, contacts_list).",
 ]
-text = ""
+text = "BLOCKIERT"
 
 [t_c2c5a73746]
 en = "Choose a chat"
 where = [
   "desktop shell_choose_a_chat: Desktop, shell: sidebar, search, contacts (in shell_view.rs, shell_empty_detail).",
 ]
-text = ""
+text = "Wähle einen Chat"
 
 [t_8456b9462d]
 en = "Messages stay on your devices."
 where = [
   "desktop shell_messages_stay_on_your: Desktop, shell: sidebar, search, contacts (in shell_view.rs, shell_empty_detail).",
 ]
-text = ""
+text = "Nachrichten bleiben auf deinen Geräten."
 
 [t_2511179a74]
 en = "More messages"
 where = [
   "desktop shell_more_messages: Desktop, shell: sidebar, search, contacts (in shell_view.rs, shell_search_results).",
 ]
-text = ""
+text = "Weitere Nachrichten"
 
 [t_5b37e08e60]
 en = "No contact called “{trim}”."
 where = [
   "desktop shell_no_contact_called: Desktop, shell: sidebar, search, contacts (in shell_view.rs, new_chat_overlay). {trim} is a value filled in by the app.",
 ]
-text = ""
+text = "Kein Kontakt namens „{trim}“."
 
 [t_998b1844f6]
 en = "No messages match"
 where = [
   "desktop shell_no_messages_match: Desktop, shell: sidebar, search, contacts (in shell_view.rs, shell_search_results).",
 ]
-text = ""
+text = "Keine passenden Nachrichten"
 
 [t_7278323591]
 en = "No one called “{trim}” in your contacts."
 where = [
   "desktop shell_no_one_called_in: Desktop, shell: sidebar, search, contacts (in shell_view.rs, contacts_list). {trim} is a value filled in by the app.",
 ]
-text = ""
+text = "Niemand namens „{trim}“ in deinen Kontakten."
 
 [t_a878978527]
 en = "Scan a code or paste an invite"
 where = [
   "desktop shell_scan_a_code_or: Desktop, shell: sidebar, search, contacts (in shell_view.rs, new_chat_overlay).",
 ]
-text = ""
+text = "Code scannen oder Einladung einfügen"
 
 [t_f4e09c2bbf]
 en = "Search (Ctrl+K)"
 where = [
   "desktop shell_search_ctrl_k: Desktop, shell: sidebar, search, contacts (in shell_view.rs, desktop_search_field).",
 ]
-text = ""
+text = "Suchen (Strg+K)"
 
 [t_f7a95b3438]
 en = "Searching…"
 where = [
   "desktop shell_searching: Desktop, shell: sidebar, search, contacts (in shell_view.rs, shell_search_results).",
 ]
-text = ""
+text = "Suche…"
 
 [t_09334bda23]
 en = "WAITING FOR THEM"
 where = [
   "desktop shell_waiting_for_them: Desktop, shell: sidebar, search, contacts (in shell_view.rs, contacts_list).",
 ]
-text = ""
+text = "WARTEN AUF ANTWORT"
 
 [t_83e7098628]
 en = "WAITING FOR YOU"
 where = [
   "desktop shell_waiting_for_you: Desktop, shell: sidebar, search, contacts (in shell_view.rs, contacts_list).",
 ]
-text = ""
+text = "WARTEN AUF DICH"
 
 [t_977fda7ea5]
 en = "A lock, so only you can open Tinline on this computer."
 where = [
   "desktop signup_a_lock_so_only: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "Ein Schloss, damit nur du Tinline auf diesem Computer öffnen kannst."
 
 [t_1f0d4d7cb3]
 en = "Add {name}"
 where = [
   "desktop signup_add: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} hinzufügen"
 
 [t_cbe48ef105]
 en = "Add another name"
 where = [
   "desktop signup_add_another_name: Desktop, sign-up, restore and add contact (in signup_view.rs, open_as_menu).",
 ]
-text = ""
+text = "Weiteren Namen hinzufügen"
 
 [t_cfe61741af]
 en = " and have read the "
 where = [
   "desktop signup_and_have_read_the: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = " zu und hast gelesen: "
 
 [t_4630a76192]
 en = "Couldn’t make a new code just now. Try again in a moment."
 where = [
   "desktop signup_couldnt_make_a_new: Desktop, sign-up, restore and add contact (in signup.rs, gate_update).",
 ]
-text = ""
+text = "Gerade ließ sich kein neuer Code erstellen. Versuch es gleich nochmal."
 
 [t_5e800d7c99]
 en = "Create a new account or bring one you already have."
 where = [
   "desktop signup_create_a_new_account: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "Erstelle ein neues Konto oder bring eins mit, das du schon hast."
 
 [t_0af5893864]
 en = "Encrypts your account on this computer. You type it each time Tinline starts. If you forget it, your recovery words let you set a new one."
 where = [
   "desktop signup_encrypts_your_account_on: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "Verschlüsselt dein Konto auf diesem Computer. Du gibst sie bei jedem Start von Tinline ein. Wenn du sie vergisst, kannst du mit deinen Wiederherstellungswörtern eine neue festlegen."
 
 [t_c89a3beeba]
 en = "Groups are hosted on a computer. Keep Tinline open and your groups stay reachable."
 where = [
   "desktop signup_groups_are_hosted_on: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "Gruppen werden auf einem Computer gehostet. Lass Tinline offen, dann bleiben deine Gruppen erreichbar."
 
 [t_51feac3631]
 en = "Home computer"
 where = [
   "desktop signup_home_computer: Desktop, sign-up, restore and add contact (in signup.rs, gate_created).",
 ]
-text = ""
+text = "Computer zu Hause"
 
 [t_a62ba0b2eb]
 en = "If you ever switch devices, these 24 words bring your account along."
 where = [
   "desktop signup_if_you_ever_switch: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "Wenn du mal das Gerät wechselst, bringen diese 24 Wörter dein Konto mit."
 
 [t_60e00617a2]
 en = "Is this the {name} you expected? If you’re not sure, check with them first."
 where = [
   "desktop signup_is_this_the_you: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Ist das die Person {name}, die du erwartet hast? Wenn du unsicher bist, frag lieber erst nach."
 
 [t_01a5bbebc5]
 en = "Laptop"
 where = [
   "desktop signup_laptop: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "Laptop"
 
 [t_118c865bad]
 en = "Message {value}"
 where = [
   "desktop signup_message_2: Desktop, sign-up, restore and add contact (in signup_view.rs, empty_hero). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "{value} schreiben"
 
 [t_b265bd4d52]
 en = "{count} of {total}"
 where = [
   "desktop signup_of: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_head). {count} is a number. {total} is a value filled in by the app.",
 ]
-text = ""
+text = "{count} von {total}"
 
 [t_874cf4e616]
 en = "Optional. A lock, so only you can open Tinline on this computer."
 where = [
   "desktop signup_optional_a_lock_so: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "Optional. Ein Schloss, damit nur du Tinline auf diesem Computer öffnen kannst."
 
 [t_2f46bf8b88]
 en = "Paste it somewhere safe. A password manager works great."
 where = [
   "desktop signup_paste_it_somewhere_safe: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "Füg ihn an einem sicheren Ort ein. Ein Passwortmanager eignet sich gut."
 
 [t_73f6fcb372]
 en = "Save a copy somewhere safe. Paper works great."
 where = [
   "desktop signup_save_a_copy_somewhere: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "Speichere eine Kopie an einem sicheren Ort. Papier eignet sich gut."
 
 [t_90efd61b03]
 en = "Say hello to {value} whenever you like."
 where = [
   "desktop signup_say_hello_to_whenever: Desktop, sign-up, restore and add contact (in signup_view.rs, empty_hero). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "Sag {value} Hallo, wann immer du magst."
 
 [t_7e31fba9bb]
 en = "Send it to anyone you’d like to talk to, in any app. It works until {value}."
 where = [
   "desktop signup_send_it_to_anyone_youd: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "Schick ihn an alle, mit denen du reden möchtest, über jede App. Er funktioniert bis {value}."
 
 [t_e42886dfd5]
 en = "That code from {value} has expired. Codes last 7 days, so ask them for a fresh one."
 where = [
   "desktop signup_that_code_from_has: Desktop, sign-up, restore and add contact (in signup.rs, ac_pasted). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "Dieser Code von {value} ist abgelaufen. Codes gelten 7 Tage, also frag nach einem neuen."
 
 [t_c26085963d]
 en = "This computer can host your groups"
 where = [
   "desktop signup_this_computer_can_host: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "Dieser Computer kann deine Gruppen hosten"
 
 [t_a356e70e97]
 en = "Tinline connects your {noun} straight to theirs."
 where = [
   "desktop signup_tinline_connects_your_straight: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {noun} is the word for this device kind (e.g. computer).",
 ]
-text = ""
+text = "Tinline verbindet dein {noun} direkt mit dem der anderen."
 
 [t_11ee2c617b]
 en = "Type your 24 recovery words. This {noun} starts with an empty contact list."
 where = [
   "desktop signup_type_your_24_recovery: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {noun} is the word for this device kind (e.g. computer).",
 ]
-text = ""
+text = "Tipp deine 24 Wiederherstellungswörter ein. Dein {noun} startet mit einer leeren Kontaktliste."
 
 [t_3b93466452]
 en = "Type your 24 words in order, or paste them, or your recovery key, into the first box. They stay on this {noun}."
 where = [
   "desktop signup_type_your_24_words: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {noun} is the word for this device kind (e.g. computer).",
 ]
-text = ""
+text = "Tipp deine 24 Wörter der Reihe nach ein, oder füge sie oder deinen Wiederherstellungsschlüssel ins erste Feld ein. Sie bleiben auf diesem {noun}."
 
 [t_89cb7b48e0]
 en = "Use your phone to reach emergency services."
 where = [
   "desktop signup_use_your_phone_to: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "Nutze dein Handy, um den Notruf zu erreichen."
 
 [t_636ae913d6]
 en = "Word {value}{value2} {value3} in the recovery word list. Check the spelling."
 where = [
   "desktop signup_word_in_the_recovery: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {value} is a value filled in by the app. {value2} is a value filled in by the app. {value3} is a value filled in by the app.",
 ]
-text = ""
+text = "Wort {value}{value2} {value3} in der Liste der Wiederherstellungswörter. Prüf die Schreibweise."
 
 [t_a311c6ef10]
 en = "{filled} words are still missing."
 where = [
   "desktop signup_words_are_still_missing: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {filled} is a value filled in by the app.",
 ]
-text = ""
+text = "{filled} Wörter fehlen noch."
 
 [t_50284ec479]
 en = "Work computer"
 where = [
   "desktop signup_work_computer: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "Arbeitscomputer"
 
 [t_d00ea827d7]
 en = "You just need a nickname. Encrypted end to end."
 where = [
   "desktop signup_you_just_need_a: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "Du brauchst nur einen Spitznamen. Ende-zu-Ende-verschlüsselt."
 
 [t_bfd0aa5282]
 en = "{value} You type it each time Tinline starts. If you forget it, your recovery words let you set a new one."
 where = [
   "desktop signup_you_type_it_each: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "{value} Du gibst sie bei jedem Start von Tinline ein. Wenn du sie vergisst, kannst du mit deinen Wiederherstellungswörtern eine neue festlegen."
 
 [t_2e013de2a8]
 en = "Your account is its recovery phrase, so you can bring it to this {noun} two ways."
 where = [
   "desktop signup_your_account_is_its: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {noun} is the word for this device kind (e.g. computer).",
 ]
-text = ""
+text = "Dein Konto steckt in seinen Wiederherstellungswörtern, also kannst du es auf zwei Wegen auf dein {noun} holen."
 
 [t_50700bde54]
 en = "Your current account stays on this {noun}."
 where = [
   "desktop signup_your_current_account_stays: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {noun} is the word for this device kind (e.g. computer).",
 ]
-text = ""
+text = "Dein aktuelles Konto bleibt auf diesem {noun}."
 
 [t_10e5979f60]
 en = "Your recovery key is in. It stays on this {noun}."
 where = [
   "desktop signup_your_recovery_key_is: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {noun} is the word for this device kind (e.g. computer).",
 ]
-text = ""
+text = "Dein Wiederherstellungsschlüssel ist drin. Er bleibt auf diesem {noun}."
 
 [t_75ff90b9e6]
 en = "Your recovery key is the same as your 24 words, as one line."
 where = [
   "desktop signup_your_recovery_key_is_the: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "Dein Wiederherstellungsschlüssel entspricht deinen 24 Wörtern, nur in einer Zeile."
 
 [t_be60e742e9]
 en = "Your request to {value} is waiting. Your line opens when they accept."
 where = [
   "desktop signup_your_request_to_is: Desktop, sign-up, restore and add contact (in signup_view.rs, empty_hero). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "Deine Anfrage an {value} wartet. Deine Leitung öffnet sich, wenn die Person annimmt."
 
 [t_23aa6f9dd7]
 en = "Quit"
 where = [
   "desktop tray_quit: Desktop, system tray (in tray.rs, build).",
 ]
-text = ""
+text = "Beenden"
 
 [t_a8432fcc64]
 en = "Tinline - {status}"
 where = [
   "desktop tray_tinline: Desktop, system tray (in tray.rs, refresh). {status} is a value filled in by the app.",
 ]
-text = ""
+text = "Tinline – {status}"
 
 [t_82d3373306]
 en = "Camera: {error}"
 where = [
   "desktop video_camera: Desktop, video (in vcall.rs, video_update). {error} is the underlying error text, not translated.",
 ]
-text = ""
+text = "Kamera: {error}"
 
 [t_fe64fb27a3]
 en = "Video tuning: {error}"
 where = [
   "desktop video_video_tuning: Desktop, video (in vcall.rs, video_update). {error} is the underlying error text, not translated.",
 ]
-text = ""
+text = "Video-Feinabstimmung: {error}"
 
 [t_d7ef28d854]
 en = "Your chosen camera isn't connected. Pick one in Settings → Video."
 where = [
   "desktop video_your_chosen_camera_isnt: Desktop, video (in vcall.rs, found).",
 ]
-text = ""
+text = "Die gewählte Kamera ist nicht angeschlossen. Wähle eine unter Einstellungen → Video."
 
 [t_4d707b1137]
 en = "System default"
 where = [
   "desktop app_system_default: Entry at the top of the microphone, speaker and camera pick lists: use the system default device.",
 ]
-text = ""
+text = "Systemstandard"
 
 [t_cf682df833]
 en = "This computer has no secure keyring, so Tinline needs a passphrase to protect your account."
 where = [
   "desktop app_no_secure_keyring: Shown when this computer has no secure keyring, so a passphrase is required.",
 ]
-text = ""
+text = "Dieser Computer hat keinen sicheren Schlüsselbund, deshalb braucht Tinline eine Passphrase, um dein Konto zu schützen."
