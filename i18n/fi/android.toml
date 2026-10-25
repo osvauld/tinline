@@ -923,7 +923,7 @@ text = "Tällä puhelimella ei enää ole avainta, joka avaa tilisi. Näin käy 
 text = "Palauta palautussanoilla"
 
 [unlock_keylost_notice]
-text = "Et asettanut salalausetta, joten 24 palautussanaa ovat ainoa tie takaisin. Yhteystietosi säilyvät."
+text = "Et asettanut salalausetta, joten 24 palautussanaa on ainoa tie takaisin. Yhteystietosi säilyvät."
 
 [accounts_switch_account]
 text = "Vaihda tiliä"
@@ -1175,7 +1175,7 @@ text = "Kerro muutamalla sanalla itsestäsi"
 text = "Tavoitettavuus"
 
 [profile_availability_note]
-text = "Yhteystietosi näkevät tämän, ja se on sama kaikilla laitteillasi. Se vaikuttaa siihen, tulevatko puhelut perille, ja on erillään siitä, oletko verkossa."
+text = "Yhteystietosi näkevät tämän, ja se on sama kaikilla laitteillasi. Se vaikuttaa siihen, tulevatko puhelut perille, eikä se riipu siitä, oletko verkossa."
 
 [profile_section_additional]
 text = "Lisätiedot"
@@ -1187,7 +1187,7 @@ text = "Lisää tietoja"
 text = "Yhteystietosi näkevät profiilisi. Tiedon poistaminen piilottaa sen profiilistasi; aiemmat versiot voivat jäädä synkronoituun historiaan."
 
 [profile_other_info_note]
-text = "Osa tiedoista tuli toiselta laitteelta tai sovellusversiolta. Ne näytetään tallennettuina ja säilyvät, kun muokkaat muuta."
+text = "Osa tiedoista tuli toiselta laitteelta tai sovellusversiolta. Ne näytetään sellaisinaan ja säilyvät, kun muokkaat muuta."
 
 [profile_layer_choose_picture]
 text = "Valitse kuvasi"
@@ -1211,7 +1211,7 @@ text = "Poista kuva"
 text = "Avoin linkki"
 
 [profile_dismiss]
-text = "Ohita"
+text = "Sulje"
 
 [profile_available]
 text = "Tavoitettavissa"
@@ -1486,7 +1486,7 @@ text = "{filled}/24"
 text = "Lisää tili"
 
 [onboarding_welcome_title]
-text = "Suora linja ihmisiisi"
+text = "Suora linja läheisiisi"
 
 [onboarding_welcome_lead_adding]
 text = "Luo uusi tili tai tuo jo olemassa oleva.\nNykyinen tilisi pysyy tällä puhelimella."
@@ -1540,13 +1540,13 @@ text = "Lisää ensimmäinen yhteystietoni"
 text = "Kaksi laitetta on parempi kuin yksi"
 
 [onboarding_tip_devices_body]
-text = "Linkitä toinen laite, kun ehdit, niin yhden menettäminen ei koskaan lukitse sinua ulos."
+text = "Linkitä toinen laite, kun ehdit, niin pääset tilillesi, vaikka yksi laite katoaisi."
 
 [onboarding_tip_groups_title]
 text = "Ryhmiä isännöidään tietokoneella"
 
 [onboarding_tip_groups_body]
-text = "Aloittaaksesi ryhmän lisää Tinline tietokoneelle, joka voi olla jatkuvasti päällä."
+text = "Jos haluat aloittaa ryhmän, asenna Tinline tietokoneelle, joka voi olla jatkuvasti päällä."
 
 [onboarding_name_title]
 text = "Millä nimellä ihmiset voivat kutsua sinua?"
@@ -1603,10 +1603,10 @@ text = "Tässä on palautusavaimesi"
 text = "Tässä ovat palautussanasi"
 
 [onboarding_phrase_lead_key]
-text = "Palautusavaimesi on sama kuin 24 sanaasi, yhtenä rivinä.\nLiitä se johonkin turvalliseen paikkaan. Salasanojen hallinta sopii hyvin."
+text = "Palautusavaimesi on sama kuin 24 sanaasi, yhtenä rivinä.\nLiitä se johonkin turvalliseen paikkaan. Salasanojen hallintasovellus sopii hyvin."
 
 [onboarding_phrase_lead_words]
-text = "Jos joskus vaihdat laitetta, nämä 24 sanaa tuovat tilisi mukanasi.\nTallenna kopio turvalliseen paikkaan. Paperi toimii hyvin."
+text = "Jos joskus vaihdat laitetta, nämä 24 sanaa tuovat tilisi mukaan.\nTallenna kopio turvalliseen paikkaan. Paperi toimii hyvin."
 
 [onboarding_phrase_saved_key]
 text = "Tallensin sen"
@@ -1933,7 +1933,7 @@ text = "Puheluilmoitukset"
 text = "Ryhmäilmoitukset"
 
 [notif_muted_note]
-text = "Mykistetty keskustelu ei koskaan ilmoita sinulle, vaikka täällä olisi mitä päällä. Saman henkilön vastaamattomat puhelut kootaan yhteen ilmoitukseen."
+text = "Mykistetty keskustelu ei koskaan ilmoita sinulle, riippumatta siitä, mitä täällä on päällä. Saman henkilön vastaamattomat puhelut kootaan yhteen ilmoitukseen."
 
 [notif_permissions]
 text = "Luvat"
@@ -1972,7 +1972,7 @@ text = "Nämä asettaa järjestelmäsi, ei Tinline. Tinline kysyy vain, kun tarv
 text = "Hiljainen"
 
 [settings_quiet_sub]
-text = "Ei ääniä Tinlinesta: soittoa, puheluääniä eikä liittymisääniä"
+text = "Tinline on äänetön: ei soittoääntä, puheluääniä eikä liittymisääniä"
 
 [settings_sound_classic]
 text = "Klassinen kilahdus"
@@ -2142,7 +2142,7 @@ text = "Näytä minut paikalla olevana julkisissa ryhmissä"
 text = "Jäsenet näkevät, kun olet paikalla"
 
 [settings_presence_off]
-text = "Et näy heidän paikallaololistoissaan"
+text = "Et näy heille paikalla olevana"
 
 [settings_presence_note]
 text = "Julkisiin ryhmiin voi liittyä kuka tahansa avoimella linkillä. Tämä koskee tätä laitetta; muut laitteesi pitävät oman valintansa."
@@ -2166,7 +2166,7 @@ text = "Vain viestit"
 text = "Salli puhelut: {name}"
 
 [settings_calls_allowed_note]
-text = "Sallimasi henkilö voi soittaa sinulle; vain viestejä lähettävä voi yhä kirjoittaa. Estämäsi ihmiset eivät voi kumpaakaan."
+text = "Sallimasi henkilöt voivat soittaa sinulle; ne, joilla on vain viestit, voivat silti kirjoittaa. Estämäsi henkilöt eivät voi kumpaakaan."
 
 [settings_battery_title]
 text = "Tausta ja akku"
@@ -2274,7 +2274,7 @@ text = "Nykyinen salalause"
 text = "Uusi salalause"
 
 [settings_passphrase_why]
-text = "Tilisi on vain tällä puhelimella. Salalause salaa sen, joten kukaan puhelimesi haltija ei voi kopioida sitä."
+text = "Tilisi on vain tällä puhelimella. Salalause salaa sen, joten kukaan, jolla puhelimesi on käsissään, ei voi kopioida sitä."
 
 [settings_encrypting]
 text = "Salataan…"
@@ -2394,7 +2394,7 @@ text = "Tämä laite"
 text = "Ei vielä"
 
 [devices_rings]
-text = "Soi puheluille"
+text = "Soi puheluissa"
 
 [devices_rings_no]
 text = "Ei, sen linkitys poistettiin"
@@ -2463,7 +2463,7 @@ text = "Muut laitteesi säilyttävät kaiken."
 text = "Se lopettaa synkronoinnin eikä enää soi puheluillesi. Jos se on verkossa, se poistaa tilisi itseltään."
 
 [devices_unlink_warn]
-text = "Linkityksen poisto ei voi lukita sitä täältä. Kuka tahansa, joka saa sen auki, voi yhä käyttää tiliäsi. Ainoa täysi katkaisu on uusi tili."
+text = "Linkityksen poisto ei voi lukita sitä täältä. Kuka tahansa, joka saa sen auki, voi yhä käyttää tiliäsi. Ainoa tapa katkaista kaikki kokonaan on uusi tili."
 
 [devices_lost_stolen]
 text = "Kadonnut tai varastettu?"
@@ -2538,7 +2538,7 @@ text = "Linkitä uusi laite"
 text = "Näytä tämä koodi uudelle laitteellesi"
 
 [link_show_body]
-text = "Valitse uudella laitteella ”Linkitä laitteeseen”, sitten ”Skannaa sen sijaan” ja osoita tätä koodia."
+text = "Valitse uudella laitteella ”Linkitä laitteeseen”, sitten ”Skannaa sen sijaan”, ja osoita sillä tätä koodia."
 
 [link_fallback_new_device_cap]
 text = "Uusi laite"
@@ -2631,7 +2631,7 @@ text = "Skannaa koodi"
 text = "Taskulamppu"
 
 [link_point_new]
-text = "Osoita toisen laitteesi koodia"
+text = "Osoita kameralla toisen laitteesi koodia"
 
 [link_point_existing]
 text = "Osoita kameralla uuden laitteesi QR-koodia"
@@ -2700,7 +2700,7 @@ text = "Soi, kun yhteystieto soittaa sinulle"
 text = "Käynnissä olevat puhelut"
 
 [notif_ch_ongoing_desc]
-text = "Näyttää nykyisen puhelusi ja antaa palata siihen tai lopettaa sen"
+text = "Näyttää nykyisen puhelusi, ja voit palata siihen tai lopettaa sen"
 
 [notif_ch_missed]
 text = "Vastaamattomat puhelut"
@@ -3518,7 +3518,7 @@ text = "Akun varaus alle 15 %. Isännöintiä on rajoitettu: vain yksi henkilö 
 text = "Puheluisäntää ei ole saatavilla"
 
 [gcall_cant_connect]
-text = "Yhteys ei onnistunut"
+text = "Yhdistäminen ei onnistunut"
 
 [gcall_host_this_phone]
 text = "tämä puhelin"
@@ -3606,13 +3606,13 @@ text = "{name} soittaa ryhmälle"
 text = "{name} aloitti puhelun"
 
 [gcall_dismiss]
-text = "Ohita"
+text = "Sulje"
 
 [gcall_mic_unavailable]
 text = "Mikrofoni ei ole käytettävissä - sinua ei kuulla"
 
 [gcall_mic_permission]
-text = "Mikrofonin lupa tarvitaan - sinua ei kuulla"
+text = "Mikrofonille tarvitaan lupa - sinua ei kuulla"
 
 [addcontact_title]
 text = "Lisää yhteystieto"
@@ -3630,7 +3630,7 @@ text = "Koodi"
 text = "QR"
 
 [addcontact_point_camera]
-text = "Osoita hänen Tinline-koodiaan."
+text = "Osoita kameralla hänen Tinline-koodiaan."
 
 [addcontact_my_qr_desc]
 text = "QR-koodisi"
@@ -3708,7 +3708,7 @@ text = "Leikepöytäsi on nyt tyhjä. Kun hänen koodinsa saapuu, kopioi se ja l
 text = "Tämä on oma koodisi. Lähetä se hänelle ja liitä hänen koodinsa tähän."
 
 [addcontact_code_expired]
-text = "Tämä koodi on vanhentunut (lähettäjä {name}). Pyydä häneltä uusi."
+text = "Henkilön {name} koodi on vanhentunut. Pyydä häneltä uusi."
 
 [addcontact_not_a_code]
 text = "Tämä ei näytä Tinline-koodilta. Voisiko hän kopioida sen sinulle uudelleen?"
@@ -3750,7 +3750,7 @@ text = "Henkilön {name} Tinlinea ei tavoitettu. Sen täytyy olla auki ja verkos
 text = "Henkilön {name} koodi ei ole enää voimassa. Hän on ehkä luonut uuden, joten pyydä henkilöltä {name} hänen uusin koodinsa."
 
 [addcontact_why_blocked_them]
-text = "Et voi lisätä henkilöä {name} juuri nyt. Hän on valinnut olla olematta yhteydessä täällä."
+text = "Et voi lisätä henkilöä {name} juuri nyt. Hän on päättänyt olla pitämättä yhteyttä täällä."
 
 [addcontact_why_offline]
 text = "Et ole verkossa. Yritä uudelleen, kun olet yhteydessä."
@@ -3840,7 +3840,7 @@ text = "Tallenna"
 text = "Päällä"
 
 [people_off]
-text = "Pois"
+text = "Pois päältä"
 
 [people_selected]
 text = "Valittu"
@@ -3969,13 +3969,13 @@ text = "Lopettaa puhelusi:"
 text = "Pidossa, kun toinen puhelusi on käynnissä"
 
 [call_route_title]
-text = "Toista puhelu laitteella"
+text = "Puhelun ääni"
 
 [call_route_phone]
 text = "Puhelin"
 
 [call_route_headset]
-text = "Kuulokemikrofoni"
+text = "Kuulokkeet"
 
 [call_route_bluetooth]
 text = "Bluetooth"
@@ -3993,7 +3993,7 @@ text = "Näytä kuulokkeideni nimet"
 text = "Välitetty: suora linja ei ollut mahdollinen tässä verkossa, joten salattu välityspalvelin välittää puhelun. Se ei voi kuulla sinua."
 
 [video_camera_off]
-text = "Kamera on pois päältä: {name}"
+text = "Henkilön {name} kamera on pois päältä"
 
 [video_connecting]
 text = "Yhdistetään videota…"
@@ -4014,10 +4014,10 @@ text = "Terävämpi video päällä, tauolla heikon yhteyden vuoksi"
 text = "Päällä"
 
 [video_state_off]
-text = "Pois"
+text = "Pois päältä"
 
 [video_camera_permission]
-text = "Kameran lupa tarvitaan - sinut kuullaan silti"
+text = "Kameralle tarvitaan lupa - sinut kuullaan silti"
 
 [video_camera_unavailable]
 text = "Kamera ei ole käytettävissä"
@@ -4062,7 +4062,7 @@ text = "Signaali: {signal} · Suora"
 text = "Signaali: {signal} · Välitetty"
 
 [call_info_reconnect_body]
-text = "Yhteys katkesi hetkeksi. Tinline etsii tietä takaisin: {name}."
+text = "Yhteys katkesi hetkeksi. Tinline etsii yhteyttä takaisin henkilöön {name}."
 
 [call_info_direct_body]
 text = "Puhelusi kulkee suoraan sinun laitteesi ja henkilön {name} laitteen välillä."
@@ -4125,7 +4125,7 @@ text = "Sulkeutuu itsestään 4 sekunnin kuluttua."
 text = "Yhteyttä ei saatu: {name}"
 
 [call_unreachable_body]
-text = "{name} voi olla poissa verkosta, kuuluvuusalueen ulkopuolella tai ei juuri nyt ota puheluita vastaan. Tinline ei voi jättää viestejä."
+text = "{name} ei ehkä ole verkossa tai kuuluvuusalueella, tai hän ei ota puheluita vastaan juuri nyt. Tinline ei voi jättää viestejä."
 
 [call_mic_needed_title]
 text = "Tinline ei voi käyttää mikrofonia"
@@ -4143,7 +4143,7 @@ text = "Siirry sitten kohtaan Luvat › Mikrofoni ja salli se."
 text = "Mikrofoni ei ole käytettävissä - sinua ei kuulla"
 
 [call_mic_permission]
-text = "Mikrofonin lupa tarvitaan - sinua ei kuulla"
+text = "Mikrofonille tarvitaan lupa - sinua ei kuulla"
 
 [avail_title]
 text = "Tavoitettavissa puheluille"
@@ -4379,7 +4379,7 @@ text = "Puhelut eivät soi"
 text = "Tinlinen ilmoitukset ovat pois päältä."
 
 [home_banner_battery_title]
-text = "Puheluita voi jäädä huomaamatta laitteen ollessa levossa"
+text = "Lepotilassa puheluita voi jäädä väliin"
 
 [home_banner_battery_body]
 text = "Android rajoittaa Tinlinea taustalla."
@@ -4469,7 +4469,7 @@ text = "Ei vastausta"
 text = "Peruttu"
 
 [calls_what_unreachable]
-text = "Yhteys ei onnistunut"
+text = "Yhdistäminen ei onnistunut"
 
 [calls_profile_desc]
 text = "Profiili: {name}"

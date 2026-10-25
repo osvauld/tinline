@@ -2576,7 +2576,7 @@ where = [
   "ios unlock_lost_notice: Warning on the lost-key screen.",
   "desktop gate_you_didnt_set_a: Desktop, sign-in and gate screens (in view.rs, key_lost_view).",
 ]
-text = "Et asettanut salalausetta, joten 24 palautussanaa ovat ainoa tie takaisin. Yhteystietosi säilyvät."
+text = "Et asettanut salalausetta, joten 24 palautussanaa on ainoa tie takaisin. Yhteystietosi säilyvät."
 
 [t_612f9aaa42]
 en = "Switch account"
@@ -3278,7 +3278,7 @@ where = [
   "ios people_profile_availability_note: Note under the availability section.",
   "desktop profile_your_contacts_can_see: Desktop, profile and settings (in profile_view.rs, my_profile).",
 ]
-text = "Yhteystietosi näkevät tämän, ja se on sama kaikilla laitteillasi. Se vaikuttaa siihen, tulevatko puhelut perille, ja on erillään siitä, oletko verkossa."
+text = "Yhteystietosi näkevät tämän, ja se on sama kaikilla laitteillasi. Se vaikuttaa siihen, tulevatko puhelut perille, eikä se riipu siitä, oletko verkossa."
 
 [t_c1e05dab71]
 en = "Additional information"
@@ -3314,7 +3314,7 @@ where = [
   "ios people_profile_other_note: Note when the profile has information this app does not know.",
   "desktop profile_some_information_came_from: Desktop, profile and settings (in profile_view.rs, my_profile).",
 ]
-text = "Osa tiedoista tuli toiselta laitteelta tai sovellusversiolta. Ne näytetään tallennettuina ja säilyvät, kun muokkaat muuta."
+text = "Osa tiedoista tuli toiselta laitteelta tai sovellusversiolta. Ne näytetään sellaisinaan ja säilyvät, kun muokkaat muuta."
 
 [t_7bb3949488]
 en = "Choose your picture"
@@ -3374,7 +3374,7 @@ where = [
   "ios people_profile_dismiss: Accessibility label of the button that dismisses an error.",
   "ios call_dismiss: Accessibility label of the button that closes the group call announcement.",
 ]
-text = "Ohita"
+text = "Sulje"
 
 [t_f327a22e58]
 en = "Available"
@@ -4154,7 +4154,7 @@ where = [
   "ios onboarding_welcome_title: Title of the first screen.",
   "desktop signup_a_direct_line_to: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = "Suora linja ihmisiisi"
+text = "Suora linja läheisiisi"
 
 [t_a1676ea1be]
 en = "Create a new account or bring one you already have.\nYour current account stays on this phone."
@@ -4316,7 +4316,7 @@ where = [
   "ios onboarding_tip_devices_body: Tip body.",
   "desktop signup_link_another_device_when: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = "Linkitä toinen laite, kun ehdit, niin yhden menettäminen ei koskaan lukitse sinua ulos."
+text = "Linkitä toinen laite, kun ehdit, niin pääset tilillesi, vaikka yksi laite katoaisi."
 
 [t_ad43e78a15]
 en = "Groups are hosted on a computer"
@@ -4332,7 +4332,7 @@ where = [
   "android onboarding_tip_groups_body: Tip text about hosting groups on a computer.",
   "ios onboarding_tip_groups_body: Tip body.",
 ]
-text = "Aloittaaksesi ryhmän lisää Tinline tietokoneelle, joka voi olla jatkuvasti päällä."
+text = "Jos haluat aloittaa ryhmän, asenna Tinline tietokoneelle, joka voi olla jatkuvasti päällä."
 
 [t_0681cf989c]
 en = "What should people call you?"
@@ -4502,7 +4502,7 @@ where = [
   "android onboarding_phrase_lead_key: Lead under the recovery key heading. The line break separates two sentences.",
   "ios onboarding_rec_lead_key: Explanation when showing the recovery key; the line break is intended.",
 ]
-text = "Palautusavaimesi on sama kuin 24 sanaasi, yhtenä rivinä.\nLiitä se johonkin turvalliseen paikkaan. Salasanojen hallinta sopii hyvin."
+text = "Palautusavaimesi on sama kuin 24 sanaasi, yhtenä rivinä.\nLiitä se johonkin turvalliseen paikkaan. Salasanojen hallintasovellus sopii hyvin."
 
 [t_bb4f15cf75]
 en = "If you ever switch devices, these 24 words bring your account along.\nSave a copy somewhere safe. Paper works great."
@@ -4510,7 +4510,7 @@ where = [
   "android onboarding_phrase_lead_words: Lead under the recovery words heading. The line break separates two sentences.",
   "ios onboarding_rec_lead_words: Explanation when showing the recovery words; the line break is intended.",
 ]
-text = "Jos joskus vaihdat laitetta, nämä 24 sanaa tuovat tilisi mukanasi.\nTallenna kopio turvalliseen paikkaan. Paperi toimii hyvin."
+text = "Jos joskus vaihdat laitetta, nämä 24 sanaa tuovat tilisi mukaan.\nTallenna kopio turvalliseen paikkaan. Paperi toimii hyvin."
 
 [t_776efe724c]
 en = "I’ve saved it"
@@ -5367,7 +5367,7 @@ where = [
   "ios settings_notif_note: Note under the notification switches.",
   "desktop profile_a_muted_chat_never: Desktop, profile and settings (in profile_view.rs, notifications_page).",
 ]
-text = "Mykistetty keskustelu ei koskaan ilmoita sinulle, vaikka täällä olisi mitä päällä. Saman henkilön vastaamattomat puhelut kootaan yhteen ilmoitukseen."
+text = "Mykistetty keskustelu ei koskaan ilmoita sinulle, riippumatta siitä, mitä täällä on päällä. Saman henkilön vastaamattomat puhelut kootaan yhteen ilmoitukseen."
 
 [t_f9314a645b]
 en = "Allowed"
@@ -5449,7 +5449,7 @@ where = [
   "ios settings_quiet_sub: Subtitle of the Quiet row.",
   "desktop profile_no_sounds_from_tinline: Desktop, profile and settings (in profile_view.rs, sounds_page).",
 ]
-text = "Ei ääniä Tinlinesta: soittoa, puheluääniä eikä liittymisääniä"
+text = "Tinline on äänetön: ei soittoääntä, puheluääniä eikä liittymisääniä"
 
 [t_909bc609cf]
 en = "Classic chime"
@@ -5906,7 +5906,7 @@ where = [
   "android settings_presence_off: Small line under the public-group presence switch when it is off.",
   "desktop profile_you_stay_off_their: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = "Et näy heidän paikallaololistoissaan"
+text = "Et näy heille paikalla olevana"
 
 [t_d7e9b858a1]
 en = "Public groups are the ones anyone can join with an open link. This applies on this device; your other devices keep their own choice."
@@ -5965,7 +5965,7 @@ where = [
   "ios settings_calls_note: Note under the contacts list on Who can call me.",
   "desktop profile_someone_you_allowed_can: Desktop, profile and settings (in profile_view.rs, calls_page).",
 ]
-text = "Sallimasi henkilö voi soittaa sinulle; vain viestejä lähettävä voi yhä kirjoittaa. Estämäsi ihmiset eivät voi kumpaakaan."
+text = "Sallimasi henkilöt voivat soittaa sinulle; ne, joilla on vain viestit, voivat silti kirjoittaa. Estämäsi henkilöt eivät voi kumpaakaan."
 
 [t_8e36a1d522]
 en = "Background & battery"
@@ -6230,7 +6230,7 @@ where = [
   "android settings_passphrase_why: Lead text on the page for adding a passphrase.",
   "ios security_pass_intro: Intro on the add-passphrase page.",
 ]
-text = "Tilisi on vain tällä puhelimella. Salalause salaa sen, joten kukaan puhelimesi haltija ei voi kopioida sitä."
+text = "Tilisi on vain tällä puhelimella. Salalause salaa sen, joten kukaan, jolla puhelimesi on käsissään, ei voi kopioida sitä."
 
 [t_8bb3808409]
 en = "Version {version}"
@@ -6495,7 +6495,7 @@ where = [
   "android devices_rings: Row on a device's page: does it ring when someone calls me.",
   "ios devices_prop_rings: Row on the device page: whether it rings for calls.",
 ]
-text = "Soi puheluille"
+text = "Soi puheluissa"
 
 [t_6a7527cf57]
 en = "No, it was unlinked"
@@ -6661,7 +6661,7 @@ where = [
   "ios devices_unlink_warn: Warning card in the unlink dialog.",
   "desktop link_unlinking_cant_lock_it: Desktop, linking devices (in link_view.rs, unlink_confirm).",
 ]
-text = "Linkityksen poisto ei voi lukita sitä täältä. Kuka tahansa, joka saa sen auki, voi yhä käyttää tiliäsi. Ainoa täysi katkaisu on uusi tili."
+text = "Linkityksen poisto ei voi lukita sitä täältä. Kuka tahansa, joka saa sen auki, voi yhä käyttää tiliäsi. Ainoa tapa katkaista kaikki kokonaan on uusi tili."
 
 [t_47505d0245]
 en = "Lost or stolen?"
@@ -6857,7 +6857,7 @@ where = [
   "android link_show_body: Instructions under the heading. The quoted names are buttons on the new device.",
   "ios link_show_body: Instruction under the QR heading. The quoted names match the buttons on the new device.",
 ]
-text = "Valitse uudella laitteella ”Linkitä laitteeseen”, sitten ”Skannaa sen sijaan” ja osoita tätä koodia."
+text = "Valitse uudella laitteella ”Linkitä laitteeseen”, sitten ”Skannaa sen sijaan”, ja osoita sillä tätä koodia."
 
 [t_3f98abdd49]
 en = "The new device"
@@ -7108,7 +7108,7 @@ where = [
   "android link_point_new: Instruction over the camera view on the new phone.",
   "ios link_point_other: Hint on the camera view of the new device.",
 ]
-text = "Osoita toisen laitteesi koodia"
+text = "Osoita kameralla toisen laitteesi koodia"
 
 [t_5117bf8c8f]
 en = "Point the camera at the QR code on your new device"
@@ -7282,7 +7282,7 @@ en = "Shows your current call and lets you return to it or hang up"
 where = [
   "android notif_ch_ongoing_desc: Description of the Ongoing calls notification channel.",
 ]
-text = "Näyttää nykyisen puhelusi ja antaa palata siihen tai lopettaa sen"
+text = "Näyttää nykyisen puhelusi, ja voit palata siihen tai lopettaa sen"
 
 [t_2647e83d1b]
 en = "Missed calls"
@@ -9297,7 +9297,7 @@ where = [
   "ios call_group_connect_failed: Group call start failure, generic.",
   "desktop common_couldnt_connect: Shared label, used in several places (gcall, view).",
 ]
-text = "Yhteys ei onnistunut"
+text = "Yhdistäminen ei onnistunut"
 
 [t_40ca86ecae]
 en = "this phone"
@@ -9497,7 +9497,7 @@ where = [
   "android call_mic_permission: Problem line on the call screen when the microphone permission is missing during a call.",
   "ios call_mic_permission_needed: Problem line on the call screen when microphone permission is denied.",
 ]
-text = "Mikrofonin lupa tarvitaan - sinua ei kuulla"
+text = "Mikrofonille tarvitaan lupa - sinua ei kuulla"
 
 [t_c36d6f222a]
 en = "Add contact"
@@ -9544,7 +9544,7 @@ where = [
   "android addcontact_point_camera: Hint under the camera view while scanning someone's QR code; also spoken label of the camera.",
   "ios people_add_point_camera: Camera hint and accessibility label while scanning a contact QR code.",
 ]
-text = "Osoita hänen Tinline-koodiaan."
+text = "Osoita kameralla hänen Tinline-koodiaan."
 
 [t_8abf1ecdd3]
 en = "Your QR code"
@@ -9710,7 +9710,7 @@ where = [
   "android addcontact_code_expired: Hint when a code has expired. {name} is who made it.",
   "ios people_add_hint_expired: Hint when the pasted code has expired. {name} is the person who made it.",
 ]
-text = "Tämä koodi on vanhentunut (lähettäjä {name}). Pyydä häneltä uusi."
+text = "Henkilön {name} koodi on vanhentunut. Pyydä häneltä uusi."
 
 [t_e7e0a62b44]
 en = "That doesn’t look like a Tinline code. Could they copy it again for you?"
@@ -9835,7 +9835,7 @@ where = [
   "ios people_add_why_blocked_by: Preview note when the person blocked the user. {name} is their name.",
   "desktop signup_you_cant_add_right: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = "Et voi lisätä henkilöä {name} juuri nyt. Hän on valinnut olla olematta yhteydessä täällä."
+text = "Et voi lisätä henkilöä {name} juuri nyt. Hän on päättänyt olla pitämättä yhteyttä täällä."
 
 [t_4f7c2c6b21]
 en = "You’re offline. Once you’re connected, try again."
@@ -10039,7 +10039,7 @@ where = [
   "ios people_switch_off: Accessibility value of a switch that is off.",
   "ios call_value_off: Accessibility value of a toggle that is off.",
 ]
-text = "Pois"
+text = "Pois päältä"
 
 [t_bd3781b604]
 en = "Selected"
@@ -10301,7 +10301,7 @@ where = [
   "android call_route_title: Title of the sheet where I choose where call audio plays (phone, speaker, headset).",
   "ios call_route_sheet_title: Title of the sheet where I pick where the call audio plays.",
 ]
-text = "Toista puhelu laitteella"
+text = "Puhelun ääni"
 
 [t_d75a1adddb]
 en = "Phone"
@@ -10317,7 +10317,7 @@ where = [
   "android call_route_headset: Audio route option: a wired headset without a name.",
   "ios call_route_headset: Audio route name for a wired headset with no name of its own.",
 ]
-text = "Kuulokemikrofoni"
+text = "Kuulokkeet"
 
 [t_86179776e0]
 en = "Bluetooth"
@@ -10364,7 +10364,7 @@ where = [
   "android video_camera_off: Shown under the avatar on a video call while the other person's camera is off. {name} is their name.",
   "ios call_camera_off: Shown on a video call when the contact's camera is off. {name} is the contact.",
 ]
-text = "Kamera on pois päältä: {name}"
+text = "Henkilön {name} kamera on pois päältä"
 
 [t_9497c00e69]
 en = "Connecting video…"
@@ -10416,7 +10416,7 @@ where = [
   "android video_camera_permission: Problem line on the call screen when I turn the camera on without the camera permission. The call itself carries on.",
   "ios call_camera_permission_needed: Problem line when camera permission is denied.",
 ]
-text = "Kameran lupa tarvitaan - sinut kuullaan silti"
+text = "Kameralle tarvitaan lupa - sinut kuullaan silti"
 
 [t_e0dc020054]
 en = "Camera unavailable"
@@ -10527,7 +10527,7 @@ where = [
   "ios call_about_line_reconnecting: Explanation while reconnecting. {name} is the contact's first name.",
   "desktop call_the_connection_dropped_for: Desktop, calls (voice and video) (in call_screen.rs, call_about). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = "Yhteys katkesi hetkeksi. Tinline etsii tietä takaisin: {name}."
+text = "Yhteys katkesi hetkeksi. Tinline etsii yhteyttä takaisin henkilöön {name}."
 
 [t_a6ed340bd0]
 en = "Your call goes straight between your device and {name}’s."
@@ -10658,7 +10658,7 @@ where = [
   "android call_unreachable_body: Explanation under the Couldn’t reach heading. {name} is the contact's name (or 'They').",
   "ios call_unreachable_body: Explanation when a call could not connect. {name} is the contact.",
 ]
-text = "{name} voi olla poissa verkosta, kuuluvuusalueen ulkopuolella tai ei juuri nyt ota puheluita vastaan. Tinline ei voi jättää viestejä."
+text = "{name} ei ehkä ole verkossa tai kuuluvuusalueella, tai hän ei ota puheluita vastaan juuri nyt. Tinline ei voi jättää viestejä."
 
 [t_4b691ade90]
 en = "Tinline can’t use the microphone"
@@ -11165,7 +11165,7 @@ en = "Calls may be missed when idle"
 where = [
   "android home_banner_battery_title: Banner title when Android limits the app in the background.",
 ]
-text = "Puheluita voi jäädä huomaamatta laitteen ollessa levossa"
+text = "Lepotilassa puheluita voi jäädä väliin"
 
 [t_92c3375cdc]
 en = "Android is limiting Tinline in the background."
@@ -12194,7 +12194,7 @@ en = "By continuing, you agree to the [Terms of Use]({terms_url}) and have read 
 where = [
   "ios onboarding_terms_consent: Consent line above the I agree button. Markdown links: keep the [text](url) shape, translate only the link text; {terms_url} and {privacy_url} are web addresses.",
 ]
-text = "Jatkamalla hyväksyt [käyttöehdot]({terms_url}) ja vahvistat lukeneesi [tietosuojakäytännön]({privacy_url})."
+text = "Jatkamalla hyväksyt [käyttöehdot]({terms_url}) ja olet lukenut [tietosuojakäytännön]({privacy_url})."
 
 [t_3f7e7c2a80]
 en = "{name} allowed"
@@ -12408,7 +12408,7 @@ en = "Microphone permission needed to place a call"
 where = [
   "ios call_mic_permission_needed_place: Error shown when the user tries to place a call without microphone permission.",
 ]
-text = "Soittamiseen tarvitaan mikrofonin lupa"
+text = "Soittamiseen tarvitaan mikrofonin käyttölupa"
 
 [t_8b860e25a4]
 en = "About this call. {word} signal, direct."
@@ -12523,14 +12523,14 @@ en = "They may be offline, out of signal, or not taking calls right now. Tinline
 where = [
   "ios call_unreachable_body_blank: Explanation when a call could not connect and the contact has no name.",
 ]
-text = "Hän voi olla poissa verkosta, kuuluvuusalueen ulkopuolella tai ei juuri nyt ota puheluita vastaan. Tinline ei voi jättää viestejä."
+text = "Hän ei ehkä ole verkossa tai kuuluvuusalueella, tai hän ei ota puheluita vastaan juuri nyt. Tinline ei voi jättää viestejä."
 
 [t_d70797cc69]
 en = "A device name is 1 to 64 characters."
 where = [
   "desktop common_a_device_name_is: Shared label, used in several places (app, link).",
 ]
-text = "Laitteen nimessä on 1–64 merkkiä."
+text = "Laitteen nimen pituus on 1–64 merkkiä."
 
 [t_4a7397331d]
 en = "Audio devices"
@@ -12607,7 +12607,7 @@ en = "Paste only into a trusted password manager; the clipboard contains your ac
 where = [
   "desktop common_paste_only_into_a: Shared label, used in several places (view).",
 ]
-text = "Liitä vain luotettuun salasanojen hallintaan; leikepöydällä on tilisi avain."
+text = "Liitä vain luotettuun salasanojen hallintasovellukseen; leikepöydällä on tilisi avain."
 
 [t_3c78840fd7]
 en = "Photo · {value}"
@@ -12985,7 +12985,7 @@ en = "Camera off"
 where = [
   "desktop call_camera_off: Desktop, calls (voice and video) (in view.rs, video_stage).",
 ]
-text = "Kamera pois"
+text = "Kamera pois päältä"
 
 [t_4855360c05]
 en = "Camera on"
@@ -13258,7 +13258,7 @@ en = "Delete for everyone asks {name}’s devices to remove it too. Copies elsew
 where = [
   "desktop chat_delete_for_everyone_asks: Desktop, chats (in chat_view.rs, delete_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = "Poista kaikilta pyytää henkilön {name} laitteita poistamaan sen myös. Muualla olevia kopioita ei voi kutsua takaisin."
+text = "”Poista kaikilta” pyytää henkilön {name} laitteita poistamaan sen myös. Muualla olevia kopioita ei voi kutsua takaisin."
 
 [t_a0d1400553]
 en = "Delete message?"
@@ -13335,7 +13335,7 @@ en = "{name} is offline. Delete for everyone reaches their devices when you’re
 where = [
   "desktop chat_is_offline_delete_for: Desktop, chats (in chat_view.rs, delete_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = "{name} ei ole verkossa. Poista kaikilta ulottuu hänen laitteisiinsa, kun olette molemmat verkossa."
+text = "{name} ei ole verkossa. ”Poista kaikilta” ulottuu hänen laitteisiinsa, kun olette molemmat verkossa."
 
 [t_d5890c1bc8]
 en = "It was never delivered, so it’s only on this computer."
@@ -14863,7 +14863,7 @@ en = "Keep both devices online. If one drops off, it picks up where it left off 
 where = [
   "desktop link_keep_both_devices_online: Desktop, linking devices (in link_view.rs, link_sync_screen).",
 ]
-text = "Pidä molemmat laitteet verkossa. Jos toinen putoaa, se jatkaa siitä, mihin jäi, kun molemmat ovat taas verkossa."
+text = "Pidä molemmat laitteet verkossa. Jos toisen yhteys katkeaa, se jatkaa siitä, mihin jäi, kun molemmat ovat taas verkossa."
 
 [t_3f8bad0261]
 en = "Link “{name}”?"
@@ -15360,7 +15360,7 @@ en = "It is offline, so it finds out the next time it connects."
 where = [
   "desktop profile_it_is_offline_so: Desktop, profile and settings (in profile_view.rs, devices_layer).",
 ]
-text = "Se ei ole verkossa, joten se saa tiedon, kun se seuraavan kerran yhdistää."
+text = "Se ei ole verkossa, joten se saa tiedon, kun se seuraavan kerran saa yhteyden."
 
 [t_dfa1efbc07]
 en = "{round} KB"
@@ -15919,7 +15919,7 @@ en = "Your recovery key is the same as your 24 words, as one line. A password ma
 where = [
   "desktop profile_your_recovery_key_is: Desktop, profile and settings (in profile_view.rs, phrase_page).",
 ]
-text = "Palautusavaimesi on sama kuin 24 sanaasi, yhtenä rivinä. Salasanojen hallinta on hyvä paikka sille."
+text = "Palautusavaimesi on sama kuin 24 sanaasi, yhtenä rivinä. Salasanojen hallintasovellus on hyvä paikka sille."
 
 [t_044cdbfc11]
 en = "Your recovery phrase is the only way to get your account back if you lose every device. Anyone who has it can act as you."
@@ -16213,7 +16213,7 @@ en = " and have read the "
 where = [
   "desktop signup_and_have_read_the: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = " ja vahvistat lukeneesi dokumentin "
+text = " ja olet lukenut dokumentin "
 
 [t_4630a76192]
 en = "Couldn’t make a new code just now. Try again in a moment."
@@ -16255,7 +16255,7 @@ en = "If you ever switch devices, these 24 words bring your account along."
 where = [
   "desktop signup_if_you_ever_switch: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = "Jos joskus vaihdat laitetta, nämä 24 sanaa tuovat tilisi mukanasi."
+text = "Jos joskus vaihdat laitetta, nämä 24 sanaa tuovat tilisi mukaan."
 
 [t_60e00617a2]
 en = "Is this the {name} you expected? If you’re not sure, check with them first."
@@ -16297,7 +16297,7 @@ en = "Paste it somewhere safe. A password manager works great."
 where = [
   "desktop signup_paste_it_somewhere_safe: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = "Liitä se johonkin turvalliseen paikkaan. Salasanojen hallinta sopii hyvin."
+text = "Liitä se johonkin turvalliseen paikkaan. Salasanojen hallintasovellus sopii hyvin."
 
 [t_73f6fcb372]
 en = "Save a copy somewhere safe. Paper works great."
@@ -16325,7 +16325,7 @@ en = "That code from {value} has expired. Codes last 7 days, so ask them for a f
 where = [
   "desktop signup_that_code_from_has: Desktop, sign-up, restore and add contact (in signup.rs, ac_pasted). {value} is a value filled in by the app.",
 ]
-text = "Tämä koodi on vanhentunut (lähettäjä {value}). Koodit ovat voimassa 7 päivää, joten pyydä häneltä uusi."
+text = "Henkilön {value} koodi on vanhentunut. Koodit ovat voimassa 7 päivää, joten pyydä häneltä uusi."
 
 [t_c26085963d]
 en = "This computer can host your groups"

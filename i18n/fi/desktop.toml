@@ -1,7 +1,7 @@
 # Generated from i18n/tm/fi.toml by scripts/i18n_tm.py apply. Edit the tm file.
 
 [common_a_device_name_is]
-text = "Laitteen nimessä on 1–64 merkkiä."
+text = "Laitteen nimen pituus on 1–64 merkkiä."
 
 [common_about_this_call]
 text = "Tietoja tästä puhelusta"
@@ -94,7 +94,7 @@ text = "Kopioi avaimeni"
 text = "Kopioi palautussanat"
 
 [common_couldnt_connect]
-text = "Yhteys ei onnistunut"
+text = "Yhdistäminen ei onnistunut"
 
 [common_current_passphrase]
 text = "Nykyinen salalause"
@@ -244,7 +244,7 @@ text = "Salalause"
 text = "Salalause vaihdettu"
 
 [common_paste_only_into_a]
-text = "Liitä vain luotettuun salasanojen hallintaan; leikepöydällä on tilisi avain."
+text = "Liitä vain luotettuun salasanojen hallintasovellukseen; leikepöydällä on tilisi avain."
 
 [common_photo]
 text = "Kuva · {value}"
@@ -514,7 +514,7 @@ text = "Soittaa puhelusi aikana"
 text = "Puhelut eivät ole sallittuja"
 
 [call_camera_off]
-text = "Kamera pois"
+text = "Kamera pois päältä"
 
 [call_camera_on]
 text = "Kamera päällä"
@@ -613,7 +613,7 @@ text = "Tilastoja nörteille"
 text = "{day} {value}"
 
 [call_the_connection_dropped_for]
-text = "Yhteys katkesi hetkeksi. Tinline etsii tietä takaisin: {name}."
+text = "Yhteys katkesi hetkeksi. Tinline etsii yhteyttä takaisin henkilöön {name}."
 
 [call_the_line_is_weak]
 text = " Linja on heikko, joten henkilön {name} ääni voi katkeilla."
@@ -718,7 +718,7 @@ text = "Poista"
 text = "Poista kaikilta"
 
 [chat_delete_for_everyone_asks]
-text = "Poista kaikilta pyytää henkilön {name} laitteita poistamaan sen myös. Muualla olevia kopioita ei voi kutsua takaisin."
+text = "”Poista kaikilta” pyytää henkilön {name} laitteita poistamaan sen myös. Muualla olevia kopioita ei voi kutsua takaisin."
 
 [chat_delete_message]
 text = "Poistetaanko viesti?"
@@ -763,7 +763,7 @@ text = "Hae tästä keskustelusta (Ctrl+F)"
 text = "{value} · {name} saa sen, kun olette molemmat verkossa"
 
 [chat_is_offline_delete_for]
-text = "{name} ei ole verkossa. Poista kaikilta ulottuu hänen laitteisiinsa, kun olette molemmat verkossa."
+text = "{name} ei ole verkossa. ”Poista kaikilta” ulottuu hänen laitteisiinsa, kun olette molemmat verkossa."
 
 [chat_it_was_never_delivered]
 text = "Sitä ei koskaan toimitettu, joten se on vain tällä tietokoneella."
@@ -974,7 +974,7 @@ text = "Yritetään..."
 text = "Ota käyttöön"
 
 [gate_you_didnt_set_a]
-text = "Et asettanut salalausetta, joten 24 palautussanaa ovat ainoa tie takaisin. Yhteystietosi säilyvät."
+text = "Et asettanut salalausetta, joten 24 palautussanaa on ainoa tie takaisin. Yhteystietosi säilyvät."
 
 [gate_your_calls_come_through]
 text = "Puhelusi tulevat taas perille, kun olet taas verkossa."
@@ -1908,7 +1908,7 @@ text = "Se näyttää QR-koodin. Napauta Skannaa sen sijaan ja osoita sillä tä
 text = "Se lopettaa synkronoinnin eikä enää soi puheluillesi. Jos se on verkossa, se poistaa tilisi itseltään."
 
 [link_keep_both_devices_online]
-text = "Pidä molemmat laitteet verkossa. Jos toinen putoaa, se jatkaa siitä, mihin jäi, kun molemmat ovat taas verkossa."
+text = "Pidä molemmat laitteet verkossa. Jos toisen yhteys katkeaa, se jatkaa siitä, mihin jäi, kun molemmat ovat taas verkossa."
 
 [link_keep_both_devices_open]
 text = "Pidä molemmat laitteet auki, kunnes tämä valmistuu."
@@ -2040,7 +2040,7 @@ text = "Poistetaanko tämän tietokoneen linkitys?"
 text = "Poistetaan linkitystä..."
 
 [link_unlinking_cant_lock_it]
-text = "Linkityksen poisto ei voi lukita sitä täältä. Kuka tahansa, joka saa sen auki, voi yhä käyttää tiliäsi. Ainoa täysi katkaisu on uusi tili."
+text = "Linkityksen poisto ei voi lukita sitä täältä. Kuka tahansa, joka saa sen auki, voi yhä käyttää tiliäsi. Ainoa tapa katkaista kaikki kokonaan on uusi tili."
 
 [link_waiting_for_approval]
 text = "Odotetaan hyväksyntää…"
@@ -2067,7 +2067,7 @@ text = "Tilisi on toisella laitteella."
 text = "Salalauseesi"
 
 [profile_a_muted_chat_never]
-text = "Mykistetty keskustelu ei koskaan ilmoita sinulle, vaikka täällä olisi mitä päällä. Saman henkilön vastaamattomat puhelut kootaan yhteen ilmoitukseen."
+text = "Mykistetty keskustelu ei koskaan ilmoita sinulle, riippumatta siitä, mitä täällä on päällä. Saman henkilön vastaamattomat puhelut kootaan yhteen ilmoitukseen."
 
 [profile_a_new_camera_is]
 text = "Uusi kamera otetaan käyttöön, kun kamerasi seuraavan kerran käynnistyy."
@@ -2302,7 +2302,7 @@ text = "{name} ei ole yhteystietosi. Tunnet hänet ryhmän kautta. Profiilin kat
 text = "Se katoaa profiilistasi. Aiemmat versiot voivat jäädä synkronoituun historiaan."
 
 [profile_it_is_offline_so]
-text = "Se ei ole verkossa, joten se saa tiedon, kun se seuraavan kerran yhdistää."
+text = "Se ei ole verkossa, joten se saa tiedon, kun se seuraavan kerran saa yhteyden."
 
 [profile_it_opens_in_your]
 text = "Se avautuu selaimessasi Tinlinen ulkopuolella. Tinline ei lataa sitä puolestasi eikä voi taata, mitä siellä on."
@@ -2393,7 +2393,7 @@ text = "Ei ketään estettävää."
 text = "Profiilia ei ole saatavilla."
 
 [profile_no_sounds_from_tinline]
-text = "Ei ääniä Tinlinesta: soittoa, puheluääniä eikä liittymisääniä"
+text = "Tinline on äänetön: ei soittoääntä, puheluääniä eikä liittymisääniä"
 
 [profile_not_seen_for_days]
 text = "Ei nähty {value} päivään"
@@ -2582,10 +2582,10 @@ text = "Näkyy sinulle nimellä {name} · hänen nimensä on {name2}"
 text = "Ohjelmisto"
 
 [profile_some_information_came_from]
-text = "Osa tiedoista tuli toiselta laitteelta tai sovellusversiolta. Ne näytetään tallennettuina ja säilyvät, kun muokkaat muuta."
+text = "Osa tiedoista tuli toiselta laitteelta tai sovellusversiolta. Ne näytetään sellaisinaan ja säilyvät, kun muokkaat muuta."
 
 [profile_someone_you_allowed_can]
-text = "Sallimasi henkilö voi soittaa sinulle; vain viestejä lähettävä voi yhä kirjoittaa. Estämäsi ihmiset eivät voi kumpaakaan."
+text = "Sallimasi henkilöt voivat soittaa sinulle; ne, joilla on vain viestit, voivat silti kirjoittaa. Estämäsi henkilöt eivät voi kumpaakaan."
 
 [profile_something_else]
 text = "Jotain muuta"
@@ -2750,7 +2750,7 @@ text = "Estit henkilön {name}. Hänen profiilinsa ei enää päivity."
 text = "Estit hänet"
 
 [profile_you_stay_off_their]
-text = "Et näy heidän paikallaololistoissaan"
+text = "Et näy heille paikalla olevana"
 
 [profile_you_wont_get_calls]
 text = "Et saa puheluita etkä viestejä henkilöltä {name}, ja hänen profiilinsa päivitykset loppuvat."
@@ -2759,7 +2759,7 @@ text = "Et saa puheluita etkä viestejä henkilöltä {name}, ja hänen profiili
 text = "Keskusteluhistoriasi on yhä täällä."
 
 [profile_your_contacts_can_see]
-text = "Yhteystietosi näkevät tämän, ja se on sama kaikilla laitteillasi. Se vaikuttaa siihen, tulevatko puhelut perille, ja on erillään siitä, oletko verkossa."
+text = "Yhteystietosi näkevät tämän, ja se on sama kaikilla laitteillasi. Se vaikuttaa siihen, tulevatko puhelut perille, eikä se riipu siitä, oletko verkossa."
 
 [profile_your_contacts_see_your]
 text = "Yhteystietosi näkevät nimesi, kuvasi ja profiilisi. Tinline ei piilota, kenen kanssa puhut, ja jokainen tiliisi linkitetty laite voi lukea keskustelusi."
@@ -2774,7 +2774,7 @@ text = "Sen tilalla näkyvät nimikirjaimesi."
 text = "Lukemisesi pysyvät omana tietonasi"
 
 [profile_your_recovery_key_is]
-text = "Palautusavaimesi on sama kuin 24 sanaasi, yhtenä rivinä. Salasanojen hallinta on hyvä paikka sille."
+text = "Palautusavaimesi on sama kuin 24 sanaasi, yhtenä rivinä. Salasanojen hallintasovellus on hyvä paikka sille."
 
 [profile_your_recovery_phrase_is]
 text = "Palautussanasi ovat ainoa tapa saada tilisi takaisin, jos menetät kaikki laitteesi. Kuka tahansa, jolla ne ovat, voi toimia sinuna."
@@ -2937,7 +2937,7 @@ text = "ODOTTAVAT VASTAUSTASI"
 text = "Haluaa lisätä sinut yhteystiedoksi"
 
 [signup_a_direct_line_to]
-text = "Suora linja ihmisiisi"
+text = "Suora linja läheisiisi"
 
 [signup_a_lock_so_only]
 text = "Lukko, jotta vain sinä voit avata Tinlinen tällä tietokoneella."
@@ -2973,7 +2973,7 @@ text = "Lisää joku, jonka kanssa haluat puhua, niin voitte lähettää viestej
 text = "Lisätään…"
 
 [signup_and_have_read_the]
-text = " ja vahvistat lukeneesi dokumentin "
+text = " ja olet lukenut dokumentin "
 
 [signup_any_length_works_a]
 text = "Mikä tahansa pituus käy. Muutama satunnainen sana on helppo muistaa."
@@ -3066,7 +3066,7 @@ text = "Tallensin sen muualle"
 text = "Kirjoitin ne muistiin"
 
 [signup_if_you_ever_switch]
-text = "Jos joskus vaihdat laitetta, nämä 24 sanaa tuovat tilisi mukanasi."
+text = "Jos joskus vaihdat laitetta, nämä 24 sanaa tuovat tilisi mukaan."
 
 [signup_is_already_in_your]
 text = "{name} on jo yhteystiedoissasi."
@@ -3093,7 +3093,7 @@ text = "Kannettava"
 text = "Anna heidän skannata tämä Tinlinella."
 
 [signup_link_another_device_when]
-text = "Linkitä toinen laite, kun ehdit, niin yhden menettäminen ei koskaan lukitse sinua ulos."
+text = "Linkitä toinen laite, kun ehdit, niin pääset tilillesi, vaikka yksi laite katoaisi."
 
 [signup_link_my_other_device]
 text = "Linkitä toinen laitteeni"
@@ -3141,7 +3141,7 @@ text = "Liitä uusi koodi"
 text = "Liitä leikepöydältä"
 
 [signup_paste_it_somewhere_safe]
-text = "Liitä se johonkin turvalliseen paikkaan. Salasanojen hallinta sopii hyvin."
+text = "Liitä se johonkin turvalliseen paikkaan. Salasanojen hallintasovellus sopii hyvin."
 
 [signup_paste_their_code]
 text = "Liitä hänen koodinsa"
@@ -3216,7 +3216,7 @@ text = "Vaihda vaaleaan"
 text = "Käyttöehdot"
 
 [signup_that_code_from_has]
-text = "Tämä koodi on vanhentunut (lähettäjä {value}). Koodit ovat voimassa 7 päivää, joten pyydä häneltä uusi."
+text = "Henkilön {value} koodi on vanhentunut. Koodit ovat voimassa 7 päivää, joten pyydä häneltä uusi."
 
 [signup_that_doesnt_look_like]
 text = "Tämä ei näytä Tinline-koodilta. Voisiko hän kopioida sen sinulle uudelleen?"
@@ -3300,7 +3300,7 @@ text = "Estit henkilön {name}. Poista esto Yksityisyys-asetuksista ennen kuin l
 text = "Voit muuttaa sen milloin tahansa asetuksista."
 
 [signup_you_cant_add_right]
-text = "Et voi lisätä henkilöä {name} juuri nyt. Hän on valinnut olla olematta yhteydessä täällä."
+text = "Et voi lisätä henkilöä {name} juuri nyt. Hän on päättänyt olla pitämättä yhteyttä täällä."
 
 [signup_you_just_need_a]
 text = "Tarvitset vain kutsumanimen. Päästä päähän salattu."
