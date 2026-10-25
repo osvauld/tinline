@@ -7,7 +7,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.ZoneOffset
 
-/** The block model the screens read (filled from Node.blockState / blockedContacts in P2pApp). */
+/** The block model the screens read (filled from Node.peerBlocks / blockedContacts in P2pApp). */
 class BlockingTest {
     private fun blocks(views: Map<String, BlockView>, list: List<BlockedRow> = emptyList()) = Blocks.from(views, list)
 
