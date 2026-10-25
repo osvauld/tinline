@@ -196,3 +196,44 @@ Each item: what breaks in German, the best German now in the file, and a suggest
 | 108 | `notif_mute` | Stumm | Mikro aus | "Stumm" was also the label for the Muted state, so the button never changed; pairs with "Mikro an" (glossary option) |
 | 109 | `onboarding_done_add_contact` | Meinen ersten Kontakt hinzufügen | Ersten Kontakt hinzufügen | 32 -> 25 chars on a primary button; infinitive keeps the user's voice |
 | 110 | `onboarding_phrase_copy_key` | Meinen Schlüssel kopieren | Schlüssel kopieren | 25 -> 18 chars (English 11); same label as the recovery-backup page |
+
+## Round 2 (top-up)
+
+Reviewer: `i18n-review2-de`, 2026-10-25. Scope: the 272 TM entries whose German was added after `bb37c83f` (restructured you/named/someone variants, unnamed fallbacks, `**bold**`, `[label](terms)` links, plurals, desktop date patterns and month names), plus consistency with the existing entries for the same terms. `python3 scripts/i18n_tm.py apply de` and `python3 scripts/i18n_gen.py --check` pass.
+
+**Verdict: ship as draft.** The restructure did what it was meant to: every you/someone/named system line now has a correct German verb ("Du hast …", "Jemand hat dich …", "{by} hat jemanden …"), the unnamed fallbacks use "die Person" consistently with its own pronoun "sie", bold markers, link targets and placeholders are intact, plural forms are complete, *du* throughout, glossary terms match round 1 (Markierung, Anruf-Host, Host-Gerät, Eigentümer, Abgleich, trennen, Wiederherstellungswörter). Desktop month abbreviations match CLDR de ("Jan.", "März", "Juni", "Sept." …) and the date patterns use German order ("Donnerstag, 8. Okt. 2025").
+
+| verdict | entries |
+|---|---|
+| reviewed | 272 |
+| ok | 260 |
+| fixed (in scope) | 12 |
+| fixed for consistency (older entries) | 3 |
+| needs native speaker | 4 |
+
+### Changes
+
+| key (first of entry) | before | after | why |
+|---|---|---|---|
+| `people_busy_until_tomorrow` … `_sun` (8 entries, iOS + desktop) | Beschäftigt bis Montag, {time} | Beschäftigt bis Montag um {time} | "bis Montag, 18:30" reads like a date stamp; "bis Montag um 18:30" is how German says it (same for morgen and every weekday) |
+| `groupsb_join_owner_unknown` | Eigentümer: jemand, der nicht in deinen Kontakten ist | Die Gruppe gehört jemandem, der nicht in deinen Kontakten ist | translator's doubt: "Eigentümer: jemand, …" is a label followed by a clause; this mirrors "Die Gruppe gehört dir" (Owner: you) and the "Eingeladen von jemandem, der …" line above it, and is gender-neutral |
+| `group_join_owner_unknown` (iOS) | Eigentümer ist nicht in deinen Kontakten | Die Gruppe gehört jemandem außerhalb deiner Kontakte | missing article ("Eigentümer ist …"); same shape as the Android line and the iOS "Eingeladen von jemandem außerhalb deiner Kontakte" |
+| `link_unlinked_lead_unnamed` (iOS) | Dein Konto wurde von einem deiner anderen Geräte von diesem Handy entfernt. Kontakte, Chats und Anrufe des Kontos sind hier gelöscht. … | Eines deiner anderen Geräte hat dein Konto von diesem Handy entfernt. Kontakte, Chats und Anrufe des Kontos wurden hier gelöscht. … | passive with two "von" was hard to parse; active voice; "wurden gelöscht" for the event |
+| `link_unlinked_lead` (Android + iOS, older) | {name} wurde von einem deiner anderen Geräte von diesem Handy entfernt. … sind hier gelöscht. … | Eines deiner anderen Geräte hat {name} von diesem Handy entfernt. … wurden hier gelöscht. … | consistency with the unnamed variant |
+| `group_request_accept_note_unnamed` (iOS) | Wenn du annimmst, wird die Person ein Kontakt nur für Nachrichten. … | Wenn du annimmst, wird die Person als Kontakt nur für Nachrichten hinzugefügt. … | "wird ein Kontakt nur für Nachrichten" is a calque; matches "Die Person ist nur für Nachrichten hinzugefügt" |
+| `group_request_accept_note` (iOS, older) | Wenn du annimmst, wird {name} ein Kontakt nur für Nachrichten. … | Wenn du annimmst, wird {name} als Kontakt nur für Nachrichten hinzugefügt. … | consistency with the unnamed variant |
+| `groupsb_turn_on_open` (Android, older) | Schalte den offenen Link ein, um ihn zu teilen | Schalte den öffentlichen Link ein, um ihn zu teilen | the switch is now "Öffentlicher Link" (`groupsb_public_link`); English of this key still says "Open link" (see below) |
+
+### Needs a native speaker (text left as is)
+
+| key | current | concern / candidate |
+|---|---|---|
+| `groupsb_join_owner_unknown`, `group_join_owner_unknown` | Die Gruppe gehört jemandem, … (changed) | Translator's doubt resolved by rephrasing; confirm it reads well next to "Eigentümer: {name}" on the same preview (product: the named line could become "Die Gruppe gehört {name}" for symmetry and neutrality). |
+| `link_linked_other` (desktop) | Anderes Gerät verknüpft | Translator's doubt. Article-less status title, same shape as "{name} verknüpft" and "Gerät getrennt"; ruling **keep**. Alt. "Das andere Gerät ist verknüpft" if it stands alone as a heading. |
+| `gcall_cant_connect` | Beitritt zum Anruf hat nicht geklappt | Translator's doubt. Grammatical, calm; slightly nominal. Alt. "Dem Anruf beizutreten hat nicht geklappt" or "Du konntest dem Anruf nicht beitreten". Generic "Couldn't join" is "Beitreten hat nicht geklappt", so the current text is consistent. |
+| `groupsc_req_declined_told_anon` + named | Abgelehnt. Die Person erfährt „abgelehnt“. | Quoted status word after "erfährt" is a little stiff; alt. "Abgelehnt. Die Person sieht „Abgelehnt“." Kept for consistency with the named form. |
+
+### English issues noticed (not changed in German)
+
+- `groupsb_turn_on_open` (Android) still says "Turn on Open link to share it" although the switch is now "Public link" (desktop `group_turn_on_open_link` already updated).
+- iOS `onboarding_back_lead` says "not with us" (VOICE: never "we" for the app); German follows it ("nicht bei uns"). Android `onboarding_restored_lead` says "not on a server"; suggest the same on iOS.

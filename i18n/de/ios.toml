@@ -1433,7 +1433,7 @@ text = "Ein Link für dein eigenes Konto"
 text = "Eigentümer: {name}"
 
 [group_join_owner_unknown]
-text = "Eigentümer ist nicht in deinen Kontakten"
+text = "Die Gruppe gehört jemandem außerhalb deiner Kontakte"
 
 [group_join_owner_you]
 text = "Die Gruppe gehört dir"
@@ -1532,10 +1532,10 @@ text = "**Jemand** möchte chatten"
 text = "Mitglied von {group}"
 
 [group_request_accept_note]
-text = "Wenn du annimmst, wird {name} ein Kontakt nur für Nachrichten. Anrufe kannst du später erlauben."
+text = "Wenn du annimmst, wird {name} als Kontakt nur für Nachrichten hinzugefügt. Anrufe kannst du später erlauben."
 
 [group_request_accept_note_unnamed]
-text = "Wenn du annimmst, wird die Person ein Kontakt nur für Nachrichten. Anrufe kannst du später erlauben."
+text = "Wenn du annimmst, wird die Person als Kontakt nur für Nachrichten hinzugefügt. Anrufe kannst du später erlauben."
 
 [group_block]
 text = "Blockieren"
@@ -2535,10 +2535,10 @@ text = "Der Code funktioniert einmal und läuft nach 5 Minuten ab."
 text = "Dieses Handy wurde getrennt"
 
 [link_unlinked_lead]
-text = "{name} wurde von einem deiner anderen Geräte von diesem Handy entfernt. Kontakte, Chats und Anrufe des Kontos sind hier gelöscht. Deine anderen Geräte sind nicht betroffen."
+text = "Eines deiner anderen Geräte hat {name} von diesem Handy entfernt. Kontakte, Chats und Anrufe des Kontos wurden hier gelöscht. Deine anderen Geräte sind nicht betroffen."
 
 [link_unlinked_lead_unnamed]
-text = "Dein Konto wurde von einem deiner anderen Geräte von diesem Handy entfernt. Kontakte, Chats und Anrufe des Kontos sind hier gelöscht. Deine anderen Geräte sind nicht betroffen."
+text = "Eines deiner anderen Geräte hat dein Konto von diesem Handy entfernt. Kontakte, Chats und Anrufe des Kontos wurden hier gelöscht. Deine anderen Geräte sind nicht betroffen."
 
 [link_ok]
 text = "OK"
@@ -4538,28 +4538,28 @@ text = "**Das Host-Gerät** trägt diesen Anruf. Alle im Anruf verbinden sich da
 text = "Beschäftigt bis {time}"
 
 [people_busy_until_tomorrow]
-text = "Beschäftigt bis morgen, {time}"
+text = "Beschäftigt bis morgen um {time}"
 
 [people_busy_until_mon]
-text = "Beschäftigt bis Montag, {time}"
+text = "Beschäftigt bis Montag um {time}"
 
 [people_busy_until_tue]
-text = "Beschäftigt bis Dienstag, {time}"
+text = "Beschäftigt bis Dienstag um {time}"
 
 [people_busy_until_wed]
-text = "Beschäftigt bis Mittwoch, {time}"
+text = "Beschäftigt bis Mittwoch um {time}"
 
 [people_busy_until_thu]
-text = "Beschäftigt bis Donnerstag, {time}"
+text = "Beschäftigt bis Donnerstag um {time}"
 
 [people_busy_until_fri]
-text = "Beschäftigt bis Freitag, {time}"
+text = "Beschäftigt bis Freitag um {time}"
 
 [people_busy_until_sat]
-text = "Beschäftigt bis Samstag, {time}"
+text = "Beschäftigt bis Samstag um {time}"
 
 [people_busy_until_sun]
-text = "Beschäftigt bis Sonntag, {time}"
+text = "Beschäftigt bis Sonntag um {time}"
 
 [chat_when_today]
 text = "Heute, {time}"

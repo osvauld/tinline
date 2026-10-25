@@ -415,7 +415,7 @@ where = [
   "ios group_request_accept_note: Chat request card note. {name} is their first name.",
   "desktop group_accepting_adds_as_a: Desktop, groups (in group_live_view.rs, live_requests). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = "Wenn du annimmst, wird {name} ein Kontakt nur für Nachrichten. Anrufe kannst du später erlauben."
+text = "Wenn du annimmst, wird {name} als Kontakt nur für Nachrichten hinzugefügt. Anrufe kannst du später erlauben."
 
 [t_6c654c2827]
 en = "Block"
@@ -1496,7 +1496,7 @@ en = "Turn on Open link to share it"
 where = [
   "android groupsb_turn_on_open: Second line of the Copy link row while the group is not open.",
 ]
-text = "Schalte den offenen Link ein, um ihn zu teilen"
+text = "Schalte den öffentlichen Link ein, um ihn zu teilen"
 
 [t_a0332695ed]
 en = "Couldn’t get the link"
@@ -7014,7 +7014,7 @@ where = [
   "android link_unlinked_lead: Lead on the unlinked screen. {name} is the account's name.",
   "ios link_unlinked_lead: Explanation after this phone was unlinked by another device; {name} is the account's name.",
 ]
-text = "{name} wurde von einem deiner anderen Geräte von diesem Handy entfernt. Kontakte, Chats und Anrufe des Kontos sind hier gelöscht. Deine anderen Geräte sind nicht betroffen."
+text = "Eines deiner anderen Geräte hat {name} von diesem Handy entfernt. Kontakte, Chats und Anrufe des Kontos wurden hier gelöscht. Deine anderen Geräte sind nicht betroffen."
 
 [t_ffff8cc6e7]
 en = "OK"
@@ -12106,7 +12106,7 @@ en = "Owner: someone who isn’t in your contacts"
 where = [
   "android groupsb_join_owner_unknown: Line on the join preview when the group's owner is not one of my contacts.",
 ]
-text = "Eigentümer: jemand, der nicht in deinen Kontakten ist"
+text = "Die Gruppe gehört jemandem, der nicht in deinen Kontakten ist"
 
 [t_77afb8501a]
 en = "Anyone with this link or QR can join this group for 7 days. Share it over an app you trust; you see who joined and can flag them out. To invite your contacts directly, use Add members."
@@ -12730,7 +12730,7 @@ en = "Owner isn’t in your contacts"
 where = [
   "ios group_join_owner_unknown: Line on the join preview when the owner is not in your contacts.",
 ]
-text = "Eigentümer ist nicht in deinen Kontakten"
+text = "Die Gruppe gehört jemandem außerhalb deiner Kontakte"
 
 [t_e2527aaf3f]
 en = "Anyone with this link or QR can join {group} for 7 days. Share it over an app you trust; you see who joined and can flag them out. To invite your contacts directly, use Add members."
@@ -12788,7 +12788,7 @@ en = "Accepting adds them as a contact for messages only. You can allow calls la
 where = [
   "ios group_request_accept_note_unnamed: Note on a chat request card when the requester's name is not known.",
 ]
-text = "Wenn du annimmst, wird die Person ein Kontakt nur für Nachrichten. Anrufe kannst du später erlauben."
+text = "Wenn du annimmst, wird die Person als Kontakt nur für Nachrichten hinzugefügt. Anrufe kannst du später erlauben."
 
 [t_02147a4ac8]
 en = "Diagnostics"
@@ -12923,7 +12923,7 @@ en = "Your account was removed from this phone by one of your other devices. Its
 where = [
   "ios link_unlinked_lead_unnamed: Explanation after this phone was unlinked by another device, when the account has no name.",
 ]
-text = "Dein Konto wurde von einem deiner anderen Geräte von diesem Handy entfernt. Kontakte, Chats und Anrufe des Kontos sind hier gelöscht. Deine anderen Geräte sind nicht betroffen."
+text = "Eines deiner anderen Geräte hat dein Konto von diesem Handy entfernt. Kontakte, Chats und Anrufe des Kontos wurden hier gelöscht. Deine anderen Geräte sind nicht betroffen."
 
 [t_e9172d3ef4]
 en = "Your account is back on this phone. Your contacts, chats and call history are kept on your other devices, not with us. This phone starts with an empty contact list."
@@ -13473,7 +13473,7 @@ where = [
   "ios people_busy_until_tomorrow: Availability line while busy until a time. {time} is a clock time formatted for the user’s region, such as 18:30. The time is tomorrow.",
   "desktop profile_busy_until_tomorrow: Desktop, profile availability (in profile_ui.rs, busy_until). Shown while I am marked busy. {time} is a clock time such as 18:00. This one is for a time tomorrow.",
 ]
-text = "Beschäftigt bis morgen, {time}"
+text = "Beschäftigt bis morgen um {time}"
 
 [t_1b7eba8ee8]
 en = "Busy until Monday {time}"
@@ -13481,7 +13481,7 @@ where = [
   "ios people_busy_until_mon: Availability line while busy until a time. {time} is a clock time formatted for the user’s region, such as 18:30. The time is on a Monday, a later day this week.",
   "desktop profile_busy_until_mon: Desktop, profile availability (in profile_ui.rs, busy_until). Shown while I am marked busy. {time} is a clock time such as 18:00. This one is for a time on Monday (within the next week).",
 ]
-text = "Beschäftigt bis Montag, {time}"
+text = "Beschäftigt bis Montag um {time}"
 
 [t_a8cafb2a3d]
 en = "Busy until Tuesday {time}"
@@ -13489,7 +13489,7 @@ where = [
   "ios people_busy_until_tue: Availability line while busy until a time. {time} is a clock time formatted for the user’s region, such as 18:30. The time is on a Tuesday, a later day this week.",
   "desktop profile_busy_until_tue: Desktop, profile availability (in profile_ui.rs, busy_until). Shown while I am marked busy. {time} is a clock time such as 18:00. This one is for a time on Tuesday (within the next week).",
 ]
-text = "Beschäftigt bis Dienstag, {time}"
+text = "Beschäftigt bis Dienstag um {time}"
 
 [t_852e51c301]
 en = "Busy until Wednesday {time}"
@@ -13497,7 +13497,7 @@ where = [
   "ios people_busy_until_wed: Availability line while busy until a time. {time} is a clock time formatted for the user’s region, such as 18:30. The time is on a Wednesday, a later day this week.",
   "desktop profile_busy_until_wed: Desktop, profile availability (in profile_ui.rs, busy_until). Shown while I am marked busy. {time} is a clock time such as 18:00. This one is for a time on Wednesday (within the next week).",
 ]
-text = "Beschäftigt bis Mittwoch, {time}"
+text = "Beschäftigt bis Mittwoch um {time}"
 
 [t_8100f9a12f]
 en = "Busy until Thursday {time}"
@@ -13505,7 +13505,7 @@ where = [
   "ios people_busy_until_thu: Availability line while busy until a time. {time} is a clock time formatted for the user’s region, such as 18:30. The time is on a Thursday, a later day this week.",
   "desktop profile_busy_until_thu: Desktop, profile availability (in profile_ui.rs, busy_until). Shown while I am marked busy. {time} is a clock time such as 18:00. This one is for a time on Thursday (within the next week).",
 ]
-text = "Beschäftigt bis Donnerstag, {time}"
+text = "Beschäftigt bis Donnerstag um {time}"
 
 [t_54ac93afbc]
 en = "Busy until Friday {time}"
@@ -13513,7 +13513,7 @@ where = [
   "ios people_busy_until_fri: Availability line while busy until a time. {time} is a clock time formatted for the user’s region, such as 18:30. The time is on a Friday, a later day this week.",
   "desktop profile_busy_until_fri: Desktop, profile availability (in profile_ui.rs, busy_until). Shown while I am marked busy. {time} is a clock time such as 18:00. This one is for a time on Friday (within the next week).",
 ]
-text = "Beschäftigt bis Freitag, {time}"
+text = "Beschäftigt bis Freitag um {time}"
 
 [t_5641afbd38]
 en = "Busy until Saturday {time}"
@@ -13521,7 +13521,7 @@ where = [
   "ios people_busy_until_sat: Availability line while busy until a time. {time} is a clock time formatted for the user’s region, such as 18:30. The time is on a Saturday, a later day this week.",
   "desktop profile_busy_until_sat: Desktop, profile availability (in profile_ui.rs, busy_until). Shown while I am marked busy. {time} is a clock time such as 18:00. This one is for a time on Saturday (within the next week).",
 ]
-text = "Beschäftigt bis Samstag, {time}"
+text = "Beschäftigt bis Samstag um {time}"
 
 [t_43b0917c92]
 en = "Busy until Sunday {time}"
@@ -13529,7 +13529,7 @@ where = [
   "ios people_busy_until_sun: Availability line while busy until a time. {time} is a clock time formatted for the user’s region, such as 18:30. The time is on a Sunday, a later day this week.",
   "desktop profile_busy_until_sun: Desktop, profile availability (in profile_ui.rs, busy_until). Shown while I am marked busy. {time} is a clock time such as 18:00. This one is for a time on Sunday (within the next week).",
 ]
-text = "Beschäftigt bis Sonntag, {time}"
+text = "Beschäftigt bis Sonntag um {time}"
 
 [t_493d670f89]
 en = "Today, {time}"

@@ -1057,7 +1057,7 @@ text = "Eine private Einladung an jede Person"
 text = "Eine Anfrage wartet bis zu 7 Tage bei den Hosts der Gruppe."
 
 [group_accepting_adds_as_a]
-text = "Wenn du annimmst, wird {name} ein Kontakt nur für Nachrichten. Anrufe kannst du später erlauben."
+text = "Wenn du annimmst, wird {name} als Kontakt nur für Nachrichten hinzugefügt. Anrufe kannst du später erlauben."
 
 [group_add_to]
 text = "Zu {gname} hinzufügen"
@@ -3443,28 +3443,28 @@ text = "{weekday}, {day}. {month}"
 text = "{weekday}, {day}. {month} {year}"
 
 [profile_busy_until_tomorrow]
-text = "Beschäftigt bis morgen, {time}"
+text = "Beschäftigt bis morgen um {time}"
 
 [profile_busy_until_mon]
-text = "Beschäftigt bis Montag, {time}"
+text = "Beschäftigt bis Montag um {time}"
 
 [profile_busy_until_tue]
-text = "Beschäftigt bis Dienstag, {time}"
+text = "Beschäftigt bis Dienstag um {time}"
 
 [profile_busy_until_wed]
-text = "Beschäftigt bis Mittwoch, {time}"
+text = "Beschäftigt bis Mittwoch um {time}"
 
 [profile_busy_until_thu]
-text = "Beschäftigt bis Donnerstag, {time}"
+text = "Beschäftigt bis Donnerstag um {time}"
 
 [profile_busy_until_fri]
-text = "Beschäftigt bis Freitag, {time}"
+text = "Beschäftigt bis Freitag um {time}"
 
 [profile_busy_until_sat]
-text = "Beschäftigt bis Samstag, {time}"
+text = "Beschäftigt bis Samstag um {time}"
 
 [profile_busy_until_sun]
-text = "Beschäftigt bis Sonntag, {time}"
+text = "Beschäftigt bis Sonntag um {time}"
 
 [call_ends_your_call]
 text = "Wenn du annimmst, endet dein aktueller Anruf."

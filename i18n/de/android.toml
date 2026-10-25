@@ -121,7 +121,7 @@ text = "{name} möchte chatten"
 text = "Mitglied von {group}"
 
 [groups_list_accepting_adds]
-text = "Wenn du annimmst, wird {name} ein Kontakt nur für Nachrichten. Anrufe kannst du später erlauben."
+text = "Wenn du annimmst, wird {name} als Kontakt nur für Nachrichten hinzugefügt. Anrufe kannst du später erlauben."
 
 [groups_list_block]
 text = "Blockieren"
@@ -508,7 +508,7 @@ text = "Link wird geholt…"
 text = "Ein Link, der nicht abläuft"
 
 [groupsb_turn_on_open]
-text = "Schalte den offenen Link ein, um ihn zu teilen"
+text = "Schalte den öffentlichen Link ein, um ihn zu teilen"
 
 [groupsb_cant_get_link]
 text = "Der Link ließ sich nicht holen"
@@ -2583,7 +2583,7 @@ text = "Der Code funktioniert einmal und läuft nach 5 Minuten ab."
 text = "Dieses Handy wurde getrennt"
 
 [link_unlinked_lead]
-text = "{name} wurde von einem deiner anderen Geräte von diesem Handy entfernt. Kontakte, Chats und Anrufe des Kontos sind hier gelöscht. Deine anderen Geräte sind nicht betroffen."
+text = "Eines deiner anderen Geräte hat {name} von diesem Handy entfernt. Kontakte, Chats und Anrufe des Kontos wurden hier gelöscht. Deine anderen Geräte sind nicht betroffen."
 
 [link_your_account]
 text = "Dein Konto"
@@ -4767,7 +4767,7 @@ text = "Eingeladen von jemandem, der nicht in deinen Kontakten ist"
 text = "Die Gruppe gehört dir"
 
 [groupsb_join_owner_unknown]
-text = "Eigentümer: jemand, der nicht in deinen Kontakten ist"
+text = "Die Gruppe gehört jemandem, der nicht in deinen Kontakten ist"
 
 [groupsb_link_note_unnamed]
 text = "Alle mit diesem Link oder QR-Code können dieser Gruppe 7 Tage lang beitreten. Teile ihn über eine App, der du vertraust; du siehst, wer beigetreten ist, und kannst Leute per Markierung entfernen. Um deine Kontakte direkt einzuladen, nutze „Mitglieder hinzufügen“."
