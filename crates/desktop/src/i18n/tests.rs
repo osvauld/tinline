@@ -1,5 +1,13 @@
 use super::*;
 
+/// The language is process-wide and tests run in parallel: every test that sets it holds this lock,
+/// so one test switching to Finnish can't change another's English assertions.
+static LANG: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+fn lang_lock() -> std::sync::MutexGuard<'static, ()> {
+    LANG.lock().unwrap_or_else(|e| e.into_inner())
+}
+
 #[test]
 fn locale_matching() {
     assert_eq!(match_tag("en_US.UTF-8"), "en");
@@ -9,6 +17,7 @@ fn locale_matching() {
 
 #[test]
 fn plural_picks_form() {
+    let _lang = lang_lock();
     set_language("en");
     assert_eq!(tr_count("chat_new_messages", 1, &[]), "1 new message");
     assert_eq!(tr_count("chat_new_messages", 3, &[]), "3 new messages");
@@ -17,6 +26,7 @@ fn plural_picks_form() {
 
 #[test]
 fn args_fill() {
+    let _lang = lang_lock();
     set_language("en");
     assert_eq!(tr_args("link_this_computer_os", &[("os", "Linux")]), "This computer · Linux");
     assert_eq!(tr("shell_contacts_count"), "{count} contacts", "plain tr on a plural uses 'other'");
@@ -24,18 +34,21 @@ fn args_fill() {
 
 #[test]
 fn static_strings_match_owned() {
+    let _lang = lang_lock();
     set_language("en");
     assert_eq!(tr_str("tray_quit"), tr("tray_quit"));
 }
 
 #[test]
 fn unknown_language_is_english() {
+    let _lang = lang_lock();
     set_language("zz");
     assert_eq!(language(), "en");
 }
 
 #[test]
 fn every_language_has_english_fallback_for_every_key() {
+    let _lang = lang_lock();
     // Whatever language is picked, a key the language lacks resolves from English.
     for (tag, _, _) in LANGUAGES {
         set_language(tag);
@@ -46,6 +59,7 @@ fn every_language_has_english_fallback_for_every_key() {
 
 #[test]
 fn list_joins_with_language_patterns() {
+    let _lang = lang_lock();
     set_language("en");
     assert_eq!(tr_list(&[]), "");
     assert_eq!(tr_list(&["Ana"]), "Ana");
@@ -56,6 +70,7 @@ fn list_joins_with_language_patterns() {
 
 #[test]
 fn rich_text_pieces() {
+    let _lang = lang_lock();
     set_language("en");
     let p = tr_rich("signup_by_continuing_you_agree", &[]);
     assert!(p.contains(&Piece::Slot("terms".into())) && p.contains(&Piece::Slot("privacy".into())));
@@ -65,6 +80,7 @@ fn rich_text_pieces() {
 
 #[test]
 fn month_and_weekday_keys_exist() {
+    let _lang = lang_lock();
     set_language("en");
     assert_eq!(date::month_day(9, 12), "Sep 12");
     assert_eq!(date::day_month(12, 9), "12 Sep");
