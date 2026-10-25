@@ -298,6 +298,27 @@ pub fn data_dir() -> PathBuf {
     INIT.get().map(|i| i.data.clone()).unwrap_or_else(std::env::temp_dir)
 }
 
+/// SIGTERM (logout, shutdown, `kill`) quits like the tray's Quit: the node stops and the stores
+/// close cleanly instead of being repaired at the next start.
+fn quit_on_sigterm(tx: mpsc::UnboundedSender<Ev>) {
+    #[cfg(unix)]
+    std::thread::Builder::new()
+        .name("sigterm".into())
+        .spawn(move || {
+            let Ok(rt) = tokio::runtime::Builder::new_current_thread().enable_all().build() else { return };
+            rt.block_on(async {
+                use tokio::signal::unix::{signal, SignalKind};
+                if let Ok(mut term) = signal(SignalKind::terminate()) {
+                    term.recv().await;
+                    let _ = tx.send(Ev::Tray(tray::TrayCmd::Quit));
+                }
+            });
+        })
+        .ok();
+    #[cfg(not(unix))]
+    let _ = tx;
+}
+
 fn default_data_dir() -> PathBuf {
     directories::ProjectDirs::from("com", "osvauld", "Tinline")
         .map(|d| d.data_dir().to_path_buf())
@@ -436,6 +457,7 @@ fn main() -> Result<(), String> {
         return Ok(());
     }
 
+    quit_on_sigterm(tx.clone());
     let show_tx = tx.clone();
     single::listen(&data, move || {
         let _ = show_tx.send(Ev::Tray(tray::TrayCmd::Show));
