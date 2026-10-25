@@ -2297,7 +2297,7 @@ where = [
   "android groupsb_making: Create group button while the group is being made.",
   "ios group_making: Label of the create button while working.",
 ]
-text = ""
+text = "Luodaan…"
 
 [t_925cddf9f3]
 en = "Create group"
@@ -2305,7 +2305,7 @@ where = [
   "android groupsb_create_group: Button that creates the group.",
   "ios group_create_button: Button that creates the group (page).",
 ]
-text = ""
+text = "Luo ryhmä"
 
 [t_ad8fd6d767]
 en = "Add members"
@@ -2313,21 +2313,21 @@ where = [
   "android groupsb_add_members: Title of the page that adds contacts to a group.",
   "ios group_add_members_title: Title of the add members page while it loads.",
 ]
-text = ""
+text = "Lisää jäseniä"
 
 [t_4ef3846290]
 en = "Add to {name}"
 where = [
   "android groupsb_add_to: Title of the add-members page. {name} is the group's name.",
 ]
-text = ""
+text = "Lisää ryhmään {name}"
 
 [t_f0889b9aa0]
 en = "CONTACTS · {n} SELECTED"
 where = [
   "android groupsb_contacts_selected: Heading above the contact list on the add-members page, in capitals. {n} is how many are picked.",
 ]
-text = ""
+text = "YHTEYSTIEDOT · {n} VALITTU"
 
 [t_b42309263e]
 en = "No contacts to add. People you block, or who block you, aren’t listed."
@@ -2336,7 +2336,7 @@ where = [
   "ios group_add_no_contacts: Hint when there is nobody to add.",
   "desktop group_no_contacts_to_add: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "Ei lisättäviä yhteystietoja. Estämäsi ja sinut estäneet eivät näy listalla."
 
 [t_7987a82f87]
 en = "Each person gets the invitation in your 1:1 chat, and joins when they accept. It is valid for 7 days."
@@ -2344,7 +2344,7 @@ where = [
   "android groupsb_add_note: Hint under the contact list on the add-members page.",
   "ios group_add_hint: Hint under the contact picker.",
 ]
-text = ""
+text = "Jokainen saa kutsun teidän kahdenkeskiseen keskusteluunne ja liittyy hyväksyessään sen. Kutsu on voimassa 7 päivää."
 
 [t_414d78896a]
 en = "Scan the invite"
@@ -2352,7 +2352,7 @@ where = [
   "android groupsb_scan_invite: Title of the camera page that scans a group invite QR code.",
   "ios group_scan_title: Title of the invite scanner page.",
 ]
-text = ""
+text = "Skannaa kutsu"
 
 [t_05a6066e8c]
 en = "Point at the group invite"
@@ -2360,7 +2360,7 @@ where = [
   "android groupsb_point_invite: Screen-reader label of the camera view that scans a group invite.",
   "ios group_scan_prompt: Prompt on the camera view when scanning a group invite.",
 ]
-text = ""
+text = "Osoita ryhmäkutsua"
 
 [t_9924bccd9b]
 en = "Join a group"
@@ -2369,7 +2369,7 @@ where = [
   "ios group_join_title: Title of the join a group page.",
   "desktop group_join_a_group: Desktop, groups (in group_live_view.rs, live_list).",
 ]
-text = ""
+text = "Liity ryhmään"
 
 [t_0c2c988bae]
 en = "Invite link or code"
@@ -2377,7 +2377,7 @@ where = [
   "android groupsb_invite_field: Label of the field where I paste a group invite.",
   "ios group_join_field: Label of the invite link field.",
 ]
-text = ""
+text = "Kutsulinkki tai -koodi"
 
 [t_1e15ae520e]
 en = "Checking with the group’s host…"
@@ -2386,7 +2386,7 @@ where = [
   "ios group_join_checking: Hint while the invite is being checked.",
   "desktop group_checking_with_the_groups: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "Tarkistetaan ryhmän isäntälaitteelta…"
 
 [t_7acbf4a24a]
 en = "That link didn’t work: it isn’t a group invite, it expired, or its host is offline."
@@ -2395,7 +2395,7 @@ where = [
   "ios group_join_bad: Hint when the invite link did not work.",
   "desktop group_that_link_didnt_work: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "Linkki ei toiminut: se ei ole ryhmäkutsu, se on vanhentunut tai sen isäntälaite ei ole verkossa."
 
 [t_07152d37e7]
 en = "Paste"
@@ -2403,7 +2403,7 @@ where = [
   "android groupsb_paste: Button that pastes the invite from the clipboard.",
   "ios group_paste: Button that pastes from the clipboard.",
 ]
-text = ""
+text = "Liitä"
 
 [t_776a02047b]
 en = "Scan"
@@ -2411,7 +2411,7 @@ where = [
   "android groupsb_scan: Button that scans a group invite with the camera.",
   "ios group_scan: Button that opens the QR scanner.",
 ]
-text = ""
+text = "Skannaa"
 
 [t_5bd9f8306f]
 en = "someone who isn’t in your contacts"
@@ -2420,7 +2420,7 @@ where = [
   "ios group_fallback_unknown_contact: Name used for a person the user does not know, inside a sentence.",
   "desktop group_someone_who_isnt_in: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "joku, joka ei ole yhteystiedoissasi"
 
 [t_093b8a51fd]
 en = "Invited by {name}"
@@ -2428,7 +2428,7 @@ where = [
   "android groupsb_join_invited_by: Line on the join preview. {name} is who invited me, or a stand-in.",
   "ios group_join_invited_by: Invite preview line. {name} is who made the link.",
 ]
-text = ""
+text = "Kutsuja: {name}"
 
 [t_5a42d7ce32]
 en = "A link for your own account"
@@ -2436,7 +2436,7 @@ where = [
   "android groupsb_own_account_link: Line on the join preview when the invite was made for my own account.",
   "ios group_join_own_link: Invite preview line for a link the user made on their own account.",
 ]
-text = ""
+text = "Linkki omalle tilillesi"
 
 [t_53616c9c17]
 en = "Owner: {name}"
@@ -2444,7 +2444,7 @@ where = [
   "android groupsb_join_owner: Line on the join preview. {name} is the group owner's name, or a stand-in.",
   "ios group_join_owner: Invite preview line. {name} is the group owner.",
 ]
-text = ""
+text = "Omistaja: {name}"
 
 [t_cdc370ca3b]
 en = "Joining connects this phone to the group’s hosts. Members see your name; only hosts learn how to reach this phone. It can take up to a minute."
@@ -2452,7 +2452,7 @@ where = [
   "android groupsb_join_note: Hint under the join preview.",
   "ios group_join_hint: Hint on the join page.",
 ]
-text = ""
+text = "Liittyminen yhdistää tämän puhelimen ryhmän isäntälaitteisiin. Jäsenet näkevät nimesi; vain isäntälaitteet saavat tietää, miten tämän puhelimen tavoittaa. Tämä voi kestää minuutin."
 
 [t_0ac85e397c]
 en = "the group"
@@ -2460,7 +2460,7 @@ where = [
   "android groupsb_the_group: Stands in for the group's name, mid-sentence, while it has not loaded.",
   "ios group_fallback_the_group: Fallback group name inside a sentence.",
 ]
-text = ""
+text = "ryhmä"
 
 [t_cf5d629e2c]
 en = "Invite link"
@@ -2468,14 +2468,14 @@ where = [
   "android groupsb_invite_link_title: Title of the page that shows the group invite link and QR code.",
   "ios group_link_title: Title of the invite link page.",
 ]
-text = ""
+text = "Kutsulinkki"
 
 [t_adb8ec2424]
 en = "Anyone with this link or QR can join {name} for 7 days. Share it over an app you trust; you see who joined and can flag them out. To invite your contacts directly, use Add members."
 where = [
   "android groupsb_link_note: Hint on the invite link page. {name} is the group's name. 'Add members' is the title of another page.",
 ]
-text = ""
+text = "Kuka tahansa, jolla on tämä linkki tai QR-koodi, voi liittyä ryhmään {name} 7 päivän ajan. Jaa se sovelluksella, johon luotat; näet, kuka liittyi, ja voit merkitä hänet pois. Jos haluat kutsua yhteystietojasi suoraan, käytä kohtaa Lisää jäseniä."
 
 [t_1a8ed8b194]
 en = "Show full screen"
@@ -2483,7 +2483,7 @@ where = [
   "android groupsb_show_full_screen: Screen-reader action label of the QR code (tap to enlarge).",
   "ios group_link_show_full: Spoken hint to show the QR full screen.",
 ]
-text = ""
+text = "Näytä koko näytöllä"
 
 [t_833c82e552]
 en = "QR code of the group invite link"
@@ -2491,7 +2491,7 @@ where = [
   "android groupsb_qr_desc: Screen-reader description of the invite QR code.",
   "ios group_link_qr_desc: Spoken label of the invite QR code.",
 ]
-text = ""
+text = "Ryhmän kutsulinkin QR-koodi"
 
 [t_d52b664a78]
 en = "QR code of the group invite link, full screen"
@@ -2499,7 +2499,7 @@ where = [
   "android groupsb_qr_desc_full: Screen-reader description of the full-screen invite QR code.",
   "ios group_link_qr_full_desc: Spoken label of the full-screen invite QR code.",
 ]
-text = ""
+text = "Ryhmän kutsulinkin QR-koodi koko näytöllä"
 
 [t_f26cf6f8ca]
 en = "Making it…"
@@ -2508,14 +2508,14 @@ where = [
   "ios group_link_making: Shown while the invite link is being made.",
   "desktop group_making_it: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "Luodaan…"
 
 [t_c6be932adc]
 en = "Join {name} on Tinline: {link}"
 where = [
   "android groupsb_share_text: Text of the shared invite message. {name} is the group's name, {link} the invite link.",
 ]
-text = ""
+text = "Liity ryhmään {name} Tinlinessa: {link}"
 
 [t_14f63f7c74]
 en = "Share group invite"
@@ -2523,7 +2523,7 @@ where = [
   "android groupsb_share_title: Title of the system share sheet for the invite.",
   "ios group_share_subject: Subject of the shared invite.",
 ]
-text = ""
+text = "Jaa ryhmäkutsu"
 
 [t_c5a5e04768]
 en = "That passphrase didn’t open the account."
@@ -2532,7 +2532,7 @@ where = [
   "ios unlock_wrong_pass: Error under the passphrase field on the unlock screen.",
   "desktop app_that_passphrase_didnt_open: Desktop, app-level notices and notifications (in app.rs, friendly).",
 ]
-text = ""
+text = "Tällä salalauseella tili ei auennut."
 
 [t_b4a454d8bc]
 en = "Can’t open {name}’s account"
@@ -2540,7 +2540,7 @@ where = [
   "android unlock_keylost_title_named: Heading when this phone lost the key for an account that has no passphrase. {name} is the account's nickname.",
   "ios unlock_lost_title_named: Same title with the account name; {name} is the account's name.",
 ]
-text = ""
+text = "Tiliä ei voi avata: {name}"
 
 [t_789700fa70]
 en = "Can’t open your account"
@@ -2549,7 +2549,7 @@ where = [
   "ios unlock_lost_title: Title when this phone lost the key to the account.",
   "desktop gate_cant_open_your_account: Desktop, sign-in and gate screens (in view.rs, key_lost_view).",
 ]
-text = ""
+text = "Tiliäsi ei voi avata"
 
 [t_cbbecd7414]
 en = "This phone no longer has the key that opens your account. That happens after a screen-lock reset or a restored backup. Once you restore, your calls come through again."
@@ -2557,7 +2557,7 @@ where = [
   "android unlock_keylost_lead: Explanation under the key-lost heading.",
   "ios unlock_lost_lead: Explanation under the lost-key title.",
 ]
-text = ""
+text = "Tällä puhelimella ei enää ole avainta, joka avaa tilisi. Näin käy näytön lukituksen nollauksen tai varmuuskopion palautuksen jälkeen. Kun palautat tilin, puhelusi tulevat taas perille."
 
 [t_19e4003e15]
 en = "Restore with recovery phrase"
@@ -2567,7 +2567,7 @@ where = [
   "ios unlock_restore: Button on the lost-key screen.",
   "desktop gate_restore_with_recovery_phrase: Desktop, sign-in and gate screens (in view.rs, key_lost_view).",
 ]
-text = ""
+text = "Palauta palautussanoilla"
 
 [t_98a44cce37]
 en = "You didn’t set a passphrase, so the 24-word recovery phrase is the only way back. Your contacts stay."
@@ -2576,7 +2576,7 @@ where = [
   "ios unlock_lost_notice: Warning on the lost-key screen.",
   "desktop gate_you_didnt_set_a: Desktop, sign-in and gate screens (in view.rs, key_lost_view).",
 ]
-text = ""
+text = "Et asettanut salalausetta, joten 24 palautussanaa ovat ainoa tie takaisin. Yhteystietosi säilyvät."
 
 [t_612f9aaa42]
 en = "Switch account"
@@ -2584,7 +2584,7 @@ where = [
   "android accounts_switch_account: Button on the unlock and key-lost screens that opens the account list, and the title of the switch-confirmation screen.",
   "ios unlock_switch: Button on the lost-key screen.",
 ]
-text = ""
+text = "Vaihda tiliä"
 
 [t_3e901c9123]
 en = "Welcome back, {name}"
@@ -2593,7 +2593,7 @@ where = [
   "ios unlock_welcome_named: Title of the unlock screen; {name} is the account's nickname.",
   "ios onboarding_back_title_named: Title after restoring an account; {name} is the first name.",
 ]
-text = ""
+text = "Tervetuloa takaisin, {name}"
 
 [t_b77817dbb4]
 en = "Welcome back"
@@ -2603,7 +2603,7 @@ where = [
   "ios onboarding_back_title: Title after restoring an account.",
   "desktop signup_welcome_back: Desktop, sign-up, restore and add contact (in signup_view.rs, welcome_title).",
 ]
-text = ""
+text = "Tervetuloa takaisin"
 
 [t_d99041b02e]
 en = "Welcome back,"
@@ -2611,7 +2611,7 @@ where = [
   "android unlock_welcome_back_prefix: First part of the unlock heading when the nickname is a button that opens the account switcher; the nickname follows after a space, so no trailing space here.",
   "desktop signup_welcome_back_2: Desktop, sign-up, restore and add contact (in signup_view.rs, welcome_title).",
 ]
-text = ""
+text = "Tervetuloa takaisin,"
 
 [t_e634cb1eb4]
 en = "Unlocking…"
@@ -2620,7 +2620,7 @@ where = [
   "ios unlock_unlocking: Unlock button while checking.",
   "desktop signup_unlocking: Desktop, sign-up, restore and add contact (in signup_view.rs, unlock_card).",
 ]
-text = ""
+text = "Avataan…"
 
 [t_d0d04e2952]
 en = "Unlock"
@@ -2629,7 +2629,7 @@ where = [
   "ios unlock_unlock: Unlock button.",
   "desktop signup_unlock: Desktop, sign-up, restore and add contact (in signup_view.rs, unlock_card).",
 ]
-text = ""
+text = "Avaa"
 
 [t_9d6873f660]
 en = "I forgot it"
@@ -2638,7 +2638,7 @@ where = [
   "ios unlock_forgot: Button on the unlock screen.",
   "desktop signup_i_forgot_it: Desktop, sign-up, restore and add contact (in signup_view.rs, unlock_card).",
 ]
-text = ""
+text = "Unohdin sen"
 
 [t_8b71bbd070]
 en = "Passphrase"
@@ -2656,7 +2656,7 @@ where = [
   "ios people_passphrase: Default label of the passphrase field.",
   "desktop common_passphrase: Shared label, used in several places (link, profile, signup, view).",
 ]
-text = ""
+text = "Salalause"
 
 [t_08f19e1004]
 en = "Checking takes a second. It’s deliberately slow to stop guessing."
@@ -2665,7 +2665,7 @@ where = [
   "ios unlock_slow_hint: Hint under the passphrase field after a wrong try.",
   "desktop signup_checking_takes_a_second: Desktop, sign-up, restore and add contact (in signup_view.rs, unlock_card).",
 ]
-text = ""
+text = "Tarkistus kestää hetken. Se on tarkoituksella hidas, jotta arvaaminen olisi vaikeaa."
 
 [t_f038a0e9d0]
 en = "Open as another identity"
@@ -2673,14 +2673,14 @@ where = [
   "android unlock_open_as_label: Screen-reader action label for the nickname button on the unlock heading.",
   "ios unlock_switch_identity_hint: Accessibility hint of the nickname switcher.",
 ]
-text = ""
+text = "Avaa toisena identiteettinä"
 
 [t_47e902fed9]
 en = "{nick}, switch identity"
 where = [
   "android unlock_switch_identity_desc: Screen-reader description of the nickname button on the unlock heading. {nick} is the account's nickname.",
 ]
-text = ""
+text = "{nick}, vaihda identiteettiä"
 
 [t_a3eb0daa2b]
 en = "Open as"
@@ -2689,7 +2689,7 @@ where = [
   "ios unlock_open_as: Title of the account picker at login.",
   "desktop signup_open_as: Desktop, sign-up, restore and add contact (in signup_view.rs, open_as_menu).",
 ]
-text = ""
+text = "Avaa tili"
 
 [t_a3c01b8533]
 en = "Accounts"
@@ -2697,7 +2697,7 @@ where = [
   "android accounts_title: Title of the account switcher sheet in the app.",
   "ios unlock_accounts: Title of the account picker sheet.",
 ]
-text = ""
+text = "Tilit"
 
 [t_68bb7f8ef2]
 en = "Opens right away"
@@ -2706,7 +2706,7 @@ where = [
   "ios unlock_opens_now: Account picker row subtitle at login.",
   "desktop signup_opens_right_away: Desktop, sign-up, restore and add contact (in signup_view.rs, open_as_menu).",
 ]
-text = ""
+text = "Aukeaa heti"
 
 [t_979f222fd4]
 en = "Asks for your passphrase"
@@ -2715,7 +2715,7 @@ where = [
   "ios unlock_asks_pass: Account picker row subtitle at login.",
   "desktop signup_asks_for_your_passphrase: Desktop, sign-up, restore and add contact (in signup_view.rs, open_as_menu).",
 ]
-text = ""
+text = "Kysyy salalausettasi"
 
 [t_eb03bdf6bc]
 en = "Online on this phone"
@@ -2723,7 +2723,7 @@ where = [
   "android accounts_online_here: Line under the current account in the switcher while it is connected.",
   "ios unlock_acc_online: Account picker row subtitle for the open account.",
 ]
-text = ""
+text = "Verkossa tällä puhelimella"
 
 [t_73c1ea0dd7]
 en = "On this phone"
@@ -2733,7 +2733,7 @@ where = [
   "ios settings_storage_on_phone: Section heading on the Storage page.",
   "ios unlock_acc_here: Account picker row subtitle for the current account when offline.",
 ]
-text = ""
+text = "Tällä puhelimella"
 
 [t_9953ca6184]
 en = "Locked · not ringing here"
@@ -2741,7 +2741,7 @@ where = [
   "android accounts_locked_not_ringing: Line under another account in the switcher: it is locked, so calls do not ring on this phone.",
   "ios unlock_acc_locked: Account picker row subtitle for a locked account.",
 ]
-text = ""
+text = "Lukittu · ei soi täällä"
 
 [t_99bdf00f79]
 en = "Current account"
@@ -2749,7 +2749,7 @@ where = [
   "android accounts_current_desc: Screen-reader description of the tick next to the current account.",
   "ios unlock_current_account: Accessibility label of the check mark on the current account.",
 ]
-text = ""
+text = "Nykyinen tili"
 
 [t_4f9042977e]
 en = "Create a new account"
@@ -2759,7 +2759,7 @@ where = [
   "ios settings_add_create: Choice in the add-account dialog.",
   "ios unlock_create: Row in the account picker.",
 ]
-text = ""
+text = "Luo uusi tili"
 
 [t_8f89eb0eb8]
 en = "Link an account from another device"
@@ -2767,7 +2767,7 @@ where = [
   "android accounts_link: Row in the account sheet that links an account that lives on another device.",
   "ios unlock_link: Row in the account picker.",
 ]
-text = ""
+text = "Linkitä tili toiselta laitteelta"
 
 [t_9383e00485]
 en = "One account is online at a time. Calls to a locked account ring only on your other devices."
@@ -2775,7 +2775,7 @@ where = [
   "android accounts_one_online_hint: Hint at the bottom of the account switcher.",
   "ios unlock_one_online: Hint at the bottom of the account picker.",
 ]
-text = ""
+text = "Yksi tili on kerrallaan verkossa. Puhelut lukittuun tiliin soivat vain muilla laitteillasi."
 
 [t_3da64cb0b1]
 en = "Finish your call first"
@@ -2788,7 +2788,7 @@ where = [
   "ios unlock_finish_call: Message when switching accounts during a call.",
   "ios shell_err_in_call: Error when an action is refused because a call is in progress.",
 ]
-text = ""
+text = "Lopeta ensin puhelusi"
 
 [t_a648286e76]
 en = "Switch to {name}?"
@@ -2796,14 +2796,14 @@ where = [
   "android accounts_switch_to: Heading of the switch-confirmation screen. {name} is the nickname of the account to switch to.",
   "ios unlock_switch_to: Title of the switch-account confirmation; {name} is the account's name.",
 ]
-text = ""
+text = "Vaihdetaanko tiliin {name}?"
 
 [t_88ecc04c6a]
 en = "{current} goes offline on this phone. Calls to {current} will ring only on your other linked devices until you switch back."
 where = [
   "android accounts_switch_lead: Explanation on the switch-confirmation screen. {current} is the nickname of the account that is open now (it appears twice but is passed once).",
 ]
-text = ""
+text = "{current} siirtyy pois verkosta tällä puhelimella. Puhelut tilille {current} soivat vain muilla linkitetyillä laitteillasi, kunnes vaihdat takaisin."
 
 [t_e96b3bac70]
 en = "Passphrase for {name}"
@@ -2811,7 +2811,7 @@ where = [
   "android accounts_passphrase_for: Label of the passphrase field on the switch-confirmation screen. {name} is the account's nickname.",
   "ios unlock_pass_for: Field label on the switch-account confirmation.",
 ]
-text = ""
+text = "Salalause: {name}"
 
 [t_7e67b93ace]
 en = "You’re not on a call. If you were, switching would end it."
@@ -2819,7 +2819,7 @@ where = [
   "android accounts_not_on_call: Reassuring hint on the switch-confirmation screen when no call is going on.",
   "ios unlock_not_in_call: Hint on the switch-account confirmation.",
 ]
-text = ""
+text = "Et ole puhelussa. Jos olisit, vaihto lopettaisi sen."
 
 [t_b58c7a4f2b]
 en = "Switching…"
@@ -2827,7 +2827,7 @@ where = [
   "android accounts_switching: Label of the confirm button while the account is being switched.",
   "ios unlock_switching: Button text while switching accounts.",
 ]
-text = ""
+text = "Vaihdetaan…"
 
 [t_fa2601e642]
 en = "Unlock and switch"
@@ -2835,7 +2835,7 @@ where = [
   "android accounts_unlock_and_switch: Confirm button on the switch screen when the target account needs its passphrase.",
   "ios unlock_unlock_switch: Button when the other account needs its passphrase.",
 ]
-text = ""
+text = "Avaa ja vaihda"
 
 [t_803a8cf3d6]
 en = "Switch"
@@ -2843,7 +2843,7 @@ where = [
   "android accounts_switch: Confirm button on the switch screen when no passphrase is needed.",
   "ios unlock_switch_btn: Button that switches accounts.",
 ]
-text = ""
+text = "Vaihda"
 
 [t_027af1f310]
 en = "My profile"
@@ -2853,7 +2853,7 @@ where = [
   "ios people_my_profile: Title of the user’s own profile screen.",
   "desktop profile_my_profile: Desktop, profile and settings (in profile_view.rs, profile_page).",
 ]
-text = ""
+text = "Oma profiili"
 
 [t_1ce73daf10]
 en = "Edit profile"
@@ -2861,21 +2861,21 @@ where = [
   "android profile_edit_profile: Button on the account profile page that opens the editable profile.",
   "android settings_edit_profile: Title of the page where I edit my own profile.",
 ]
-text = ""
+text = "Muokkaa profiilia"
 
 [t_1e8e40f88a]
 en = "Share my code"
 where = [
   "android profile_share_my_code: Row on the account profile page that opens the contact code.",
 ]
-text = ""
+text = "Jaa koodini"
 
 [t_2c7a4beb0c]
 en = "For people you’d like to add"
 where = [
   "android profile_share_my_code_sub: Line under the Share my code row.",
 ]
-text = ""
+text = "Ihmisille, jotka haluat lisätä"
 
 [t_6327439c63]
 en = "Only you"
@@ -2884,7 +2884,7 @@ where = [
   "android settings_only_you: Small hint at the top of the recovery check page and of the recovery backup page.",
   "ios security_only_you: Small label above the recovery pages: only the owner should see them.",
 ]
-text = ""
+text = "Vain sinulle"
 
 [t_dc136667fb]
 en = "Account recovery"
@@ -2894,21 +2894,21 @@ where = [
   "ios settings_recovery: Privacy row that opens the recovery backup.",
   "ios security_recovery_title: Page title, and the reason shown in the screen lock prompt.",
 ]
-text = ""
+text = "Tilin palautus"
 
 [t_31f978ce75]
 en = "Your key and 24 words"
 where = [
   "android profile_account_recovery_sub: Line under the Account recovery row.",
 ]
-text = ""
+text = "Avaimesi ja 24 sanaa"
 
 [t_6f9a91cdc0]
 en = "Your contact code"
 where = [
   "android profile_code_title: Title of the page that shows the user's contact code.",
 ]
-text = ""
+text = "Yhteystietokoodisi"
 
 [t_e5df5334ea]
 en = "Let them scan this with Tinline."
@@ -2918,49 +2918,49 @@ where = [
   "ios people_add_let_scan: Hint under the user’s own QR code.",
   "desktop signup_let_them_scan_this: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay).",
 ]
-text = ""
+text = "Anna heidän skannata tämä Tinlinella."
 
 [t_a1e5d6d309]
 en = "Send it to someone you’d like to add."
 where = [
   "android profile_code_lead_text: Lead on the contact code page while the text code is shown.",
 ]
-text = ""
+text = "Lähetä se jollekulle, jonka haluat lisätä."
 
 [t_71a67a514b]
 en = "Couldn’t load your code."
 where = [
   "android profile_code_load_failed: Shown when the contact code could not be created.",
 ]
-text = ""
+text = "Koodiasi ei voitu ladata."
 
 [t_05543e1d05]
 en = "Getting your code…"
 where = [
   "android profile_code_loading: Shown while the contact code is being created.",
 ]
-text = ""
+text = "Haetaan koodiasi…"
 
 [t_2ee7e1c118]
 en = "Your contact QR"
 where = [
   "android profile_code_qr_desc: Screen-reader description of the QR code image.",
 ]
-text = ""
+text = "Yhteystietosi QR-koodi"
 
 [t_9a8d6c6208]
 en = "Use a code instead"
 where = [
   "android profile_code_use_code: Button that switches from the QR code to the text code.",
 ]
-text = ""
+text = "Käytä koodia"
 
 [t_fa0187e58c]
 en = "Show QR instead"
 where = [
   "android profile_code_show_qr: Button that switches from the text code to the QR code.",
 ]
-text = ""
+text = "Näytä QR-koodi"
 
 [t_6908950f8d]
 en = "Copy my code"
@@ -2970,28 +2970,28 @@ where = [
   "ios people_add_copy_mine: Button that copies the user’s contact code.",
   "desktop signup_copy_my_code: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay).",
 ]
-text = ""
+text = "Kopioi koodini"
 
 [t_aa27b5be39]
 en = "Couldn’t copy. Try Share instead."
 where = [
   "android profile_code_copy_failed: Message under the code when copying to the clipboard failed.",
 ]
-text = ""
+text = "Kopiointi ei onnistunut. Kokeile jakamista."
 
 [t_7dc40ec784]
 en = "Couldn’t open sharing. Copy your code instead."
 where = [
   "android profile_code_share_failed: Message under the code when the system share sheet could not open.",
 ]
-text = ""
+text = "Jakaminen ei auennut. Kopioi koodisi sen sijaan."
 
 [t_8a28a69a04]
 en = "Contact code"
 where = [
   "android profile_code_clip_label: Name the clipboard gives to the copied contact code (the system may show it).",
 ]
-text = ""
+text = "Yhteystietokoodi"
 
 [t_ed690e8e24]
 en = "Saved"
@@ -3000,7 +3000,7 @@ where = [
   "ios people_ui_saved: Confirmation after saving.",
   "desktop profile_saved: Desktop, profile and settings (in profile_view.rs, availability).",
 ]
-text = ""
+text = "Tallennettu"
 
 [t_3ac3182077]
 en = "Saved · syncs when connected"
@@ -3009,7 +3009,7 @@ where = [
   "ios people_ui_saved_offline: Confirmation after saving while offline.",
   "desktop profile_saved_syncs_when_connected: Desktop, profile and settings (in profile_view.rs, availability).",
 ]
-text = ""
+text = "Tallennettu · synkronoituu yhteyden palattua"
 
 [t_6bb05ae0fa]
 en = "Not set"
@@ -3018,7 +3018,7 @@ where = [
   "ios people_ui_not_set: Shown for an empty profile field.",
   "desktop profile_not_set: Desktop, profile and settings (in profile_view.rs, my_profile).",
 ]
-text = ""
+text = "Ei asetettu"
 
 [t_64ce8f9b54]
 en = "{label}: {value}. Edit"
@@ -3026,7 +3026,7 @@ where = [
   "android profile_field_edit_desc: Screen-reader description of a profile field row. {label} is the field name, {value} its current value (or the empty placeholder).",
   "ios people_ui_row_a11y: Screen reader label of an editable profile row. {label} is the field name, {value} its value or “Not set”.",
 ]
-text = ""
+text = "{label}: {value}. Muokkaa"
 
 [t_fc05230365]
 en = "Edit"
@@ -3036,7 +3036,7 @@ where = [
   "ios chat_edit: Action in the message sheet that edits the message.",
   "desktop chat_edit: Desktop, chats (in chat_view.rs, message_menu).",
 ]
-text = ""
+text = "Muokkaa"
 
 [t_9080074320]
 en = "Save"
@@ -3048,14 +3048,14 @@ where = [
   "ios people_save: Button that saves an edit.",
   "desktop common_save: Shared label, used in several places (chat, link, profile, view).",
 ]
-text = ""
+text = "Tallenna"
 
 [t_665692620b]
 en = "{used} of {limit} bytes"
 where = [
   "android profile_bytes_of_limit: Counter shown when a profile text is close to its size limit. {used} bytes used, {limit} the maximum.",
 ]
-text = ""
+text = "{used}/{limit} tavua"
 
 [t_4e0cc89b5d]
 en = "Remove “{label}” from your profile?"
@@ -3063,7 +3063,7 @@ where = [
   "android profile_remove_field_title: Question when removing an extra profile field. {label} is the field name.",
   "ios people_ui_remove_title: Question when removing a profile field. {label} is the field name.",
 ]
-text = ""
+text = "Poistetaanko ”{label}” profiilistasi?"
 
 [t_5d243f11aa]
 en = "It disappears from your profile. Earlier versions can remain in synced history."
@@ -3072,14 +3072,14 @@ where = [
   "ios people_ui_remove_note: Note in the remove field question.",
   "desktop profile_it_disappears_from_your: Desktop, profile and settings (in profile_view.rs, field_row_inner).",
 ]
-text = ""
+text = "Se katoaa profiilistasi. Aiemmat versiot voivat jäädä synkronoituun historiaan."
 
 [t_c5160b6a37]
 en = "Open {label}: {link}"
 where = [
   "android profile_open_link_desc: Screen-reader description of the button that opens a link field. {label} is the field name, {link} the shortened address.",
 ]
-text = ""
+text = "Avaa {label}: {link}"
 
 [t_cdd08715b7]
 en = "Remove {label}"
@@ -3087,7 +3087,7 @@ where = [
   "android profile_remove_field_desc: Screen-reader description of the trash button on a profile field. {label} is the field name.",
   "ios people_ui_remove_a11y: Screen reader label of the button that removes a field. {label} is the field name.",
 ]
-text = ""
+text = "Poista {label}"
 
 [t_dbf51573cf]
 en = "Yes"
@@ -3096,7 +3096,7 @@ where = [
   "ios people_yes: Value shown for a true profile value.",
   "desktop profile_yes: Desktop, profile and settings (in profile_ui.rs, scalar).",
 ]
-text = ""
+text = "Kyllä"
 
 [t_52d0aa4de6]
 en = "No"
@@ -3105,7 +3105,7 @@ where = [
   "ios people_no: Value shown for a false profile value.",
   "desktop profile_no: Desktop, profile and settings (in profile_ui.rs, scalar).",
 ]
-text = ""
+text = "Ei"
 
 [t_72991ed0f4]
 en = "View photo"
@@ -3113,7 +3113,7 @@ where = [
   "android profile_view_photo: Screen-reader action label on an avatar that has a photo; opens it full screen.",
   "ios kit_avatar_view_photo: Accessibility hint on an avatar that has a photo: opens it full screen.",
 ]
-text = ""
+text = "Näytä kuva"
 
 [t_7d7ece72a3]
 en = "View identity geometry"
@@ -3121,7 +3121,7 @@ where = [
   "android profile_view_geometry: Screen-reader action label on an avatar without a photo; opens its identity pattern full screen.",
   "ios kit_avatar_view_geometry: Accessibility hint on an avatar without a photo: opens the identity geometry drawing.",
 ]
-text = ""
+text = "Näytä identiteetin geometria"
 
 [t_274cb9dc84]
 en = "{name}’s photo"
@@ -3129,7 +3129,7 @@ where = [
   "android profile_photo_desc: Screen-reader description of a person's full-screen photo. {name} is their name.",
   "ios kit_avatar_photo_of: Accessibility label of a contact's full-screen photo. {name} is the contact's name.",
 ]
-text = ""
+text = "Kuva: {name}"
 
 [t_935af8d623]
 en = "Enter a web address that starts with http:// or https://."
@@ -3138,7 +3138,7 @@ where = [
   "ios people_profile_bad_link: Error when a typed link is not a web address.",
   "desktop profile_enter_a_web_address: Desktop, profile and settings (in profile_ui.rs, profile_update).",
 ]
-text = ""
+text = "Kirjoita verkko-osoite, joka alkaa http:// tai https://."
 
 [t_0e85d98ad3]
 en = "That picture is too detailed to save. Try a different one."
@@ -3146,7 +3146,7 @@ where = [
   "android profile_err_too_detailed: Error when the cropped picture is still too large to store.",
   "ios people_profile_too_detailed: Error when the cropped picture is too large to store.",
 ]
-text = ""
+text = "Kuvassa on liikaa yksityiskohtia tallennettavaksi. Kokeile toista kuvaa."
 
 [t_67397e7f8f]
 en = "Picture updated"
@@ -3154,7 +3154,7 @@ where = [
   "android profile_announce_updated: Spoken confirmation (screen reader only) after a new profile picture was saved.",
   "ios people_profile_picture_updated: Screen reader announcement after the picture changed.",
 ]
-text = ""
+text = "Kuva päivitetty"
 
 [t_7dedaeb6f2]
 en = "Picture removed"
@@ -3162,7 +3162,7 @@ where = [
   "android profile_announce_removed: Spoken confirmation (screen reader only) after the profile picture was removed.",
   "ios people_profile_picture_removed: Screen reader announcement after the picture was removed.",
 ]
-text = ""
+text = "Kuva poistettu"
 
 [t_011c8e04fa]
 en = "Picture"
@@ -3170,7 +3170,7 @@ where = [
   "android profile_picture_desc: Screen-reader description of the picture area at the top of the profile editor.",
   "ios people_profile_picture: Accessibility label of the profile picture area.",
 ]
-text = ""
+text = "Kuva"
 
 [t_b746d800be]
 en = "Saved on this device. Will sync when you’re connected."
@@ -3179,7 +3179,7 @@ where = [
   "ios people_profile_saved_offline: Strip shown after saving while offline.",
   "desktop profile_saved_on_this_device: Desktop, profile and settings (in profile_view.rs, profile_float).",
 ]
-text = ""
+text = "Tallennettu tälle laitteelle. Synkronoituu, kun olet yhteydessä."
 
 [t_502a8e4d57]
 en = "Change photo"
@@ -3188,7 +3188,7 @@ where = [
   "ios people_profile_change_photo: Button that picks a new profile photo.",
   "desktop profile_change_photo: Desktop, profile and settings (in profile_view.rs, my_profile).",
 ]
-text = ""
+text = "Vaihda kuva"
 
 [t_fa6d46cafa]
 en = "Add photo"
@@ -3197,7 +3197,7 @@ where = [
   "ios people_profile_add_photo: Button that picks a first profile photo.",
   "desktop profile_add_photo: Desktop, profile and settings (in profile_view.rs, my_profile).",
 ]
-text = ""
+text = "Lisää kuva"
 
 [t_f001568477]
 en = "Profile"
@@ -3206,7 +3206,7 @@ where = [
   "ios people_profile_section: Heading of the profile fields section.",
   "desktop profile_profile: Desktop, profile and settings (in profile_view.rs, profile_page).",
 ]
-text = ""
+text = "Profiili"
 
 [t_76c3d8da11]
 en = "Your name"
@@ -3215,7 +3215,7 @@ where = [
   "ios people_profile_name_placeholder: Placeholder of the name field.",
   "desktop common_your_name: Shared label, used in several places (profile, view).",
 ]
-text = ""
+text = "Nimesi"
 
 [t_b5e59673b2]
 en = "Status"
@@ -3224,7 +3224,7 @@ where = [
   "ios people_profile_status: Label of the status field.",
   "desktop profile_status: Desktop, profile and settings (in profile_view.rs, my_profile).",
 ]
-text = ""
+text = "Tila"
 
 [t_19b5a68c9b]
 en = "Add a status"
@@ -3233,7 +3233,7 @@ where = [
   "ios people_profile_status_empty: Shown when the status is empty.",
   "desktop profile_add_a_status: Desktop, profile and settings (in profile_view.rs, my_profile).",
 ]
-text = ""
+text = "Lisää tila"
 
 [t_20bae467e8]
 en = "What are you up to?"
@@ -3242,7 +3242,7 @@ where = [
   "ios people_profile_status_placeholder: Placeholder of the status field.",
   "desktop profile_what_are_you_up: Desktop, profile and settings (in profile_view.rs, my_profile).",
 ]
-text = ""
+text = "Mitä puuhaat?"
 
 [t_a65f16b027]
 en = "About"
@@ -3251,7 +3251,7 @@ where = [
   "ios people_profile_about: Label of the about field.",
   "desktop profile_about: Desktop, profile and settings (in profile_view.rs, profile_page).",
 ]
-text = ""
+text = "Tietoja"
 
 [t_29cac70038]
 en = "Add a few words about you"
@@ -3260,7 +3260,7 @@ where = [
   "ios people_profile_about_empty: Shown when the about text is empty.",
   "desktop profile_add_a_few_words: Desktop, profile and settings (in profile_view.rs, my_profile).",
 ]
-text = ""
+text = "Kerro muutamalla sanalla itsestäsi"
 
 [t_b458721630]
 en = "Availability"
@@ -3269,7 +3269,7 @@ where = [
   "ios people_profile_availability: Heading and label of the availability section.",
   "desktop profile_availability: Desktop, profile and settings (in profile_view.rs, my_profile).",
 ]
-text = ""
+text = "Tavoitettavuus"
 
 [t_55f913267d]
 en = "Your contacts can see this, and it’s the same on all your devices. It affects whether calls reach you, and it’s separate from whether you’re online."
@@ -3278,7 +3278,7 @@ where = [
   "ios people_profile_availability_note: Note under the availability section.",
   "desktop profile_your_contacts_can_see: Desktop, profile and settings (in profile_view.rs, my_profile).",
 ]
-text = ""
+text = "Yhteystietosi näkevät tämän, ja se on sama kaikilla laitteillasi. Se vaikuttaa siihen, tulevatko puhelut perille, ja on erillään siitä, oletko verkossa."
 
 [t_c1e05dab71]
 en = "Additional information"
@@ -3287,7 +3287,7 @@ where = [
   "ios people_profile_additional: Heading of the section with extra profile information.",
   "desktop profile_additional_information: Desktop, profile and settings (in profile_view.rs, my_profile).",
 ]
-text = ""
+text = "Lisätiedot"
 
 [t_29c68f31e7]
 en = "Add information"
@@ -3296,7 +3296,7 @@ where = [
   "ios people_profile_add_info: Button and dialog title for adding a piece of profile information.",
   "desktop profile_add_information: Desktop, profile and settings (in profile_view.rs, my_profile).",
 ]
-text = ""
+text = "Lisää tietoja"
 
 [t_6d69588d0e]
 en = "Your contacts can see your profile. Removing information hides it from your profile; earlier versions can remain in synced history."
@@ -3305,7 +3305,7 @@ where = [
   "ios people_field_help: Explains who sees profile information.",
   "desktop profile_field_help: Help text under the additional-information fields of the profile.",
 ]
-text = ""
+text = "Yhteystietosi näkevät profiilisi. Tiedon poistaminen piilottaa sen profiilistasi; aiemmat versiot voivat jäädä synkronoituun historiaan."
 
 [t_fae03066fb]
 en = "Some information came from another device or app version. It’s shown as stored and kept when you edit anything else."
@@ -3314,21 +3314,21 @@ where = [
   "ios people_profile_other_note: Note when the profile has information this app does not know.",
   "desktop profile_some_information_came_from: Desktop, profile and settings (in profile_view.rs, my_profile).",
 ]
-text = ""
+text = "Osa tiedoista tuli toiselta laitteelta tai sovellusversiolta. Ne näytetään tallennettuina ja säilyvät, kun muokkaat muuta."
 
 [t_7bb3949488]
 en = "Choose your picture"
 where = [
   "android profile_layer_choose_picture: Screen-reader label of the picture-cropping sheet.",
 ]
-text = ""
+text = "Valitse kuvasi"
 
 [t_d53faf1679]
 en = "Remove your picture"
 where = [
   "android profile_remove_picture_title: Screen-reader label of the remove-picture sheet.",
 ]
-text = ""
+text = "Poista kuvasi"
 
 [t_dd50c89f8b]
 en = "Remove your picture?"
@@ -3337,7 +3337,7 @@ where = [
   "ios people_profile_remove_title: Title of the remove picture dialog.",
   "desktop profile_remove_your_picture: Desktop, profile and settings (in profile_view.rs, profile_layer).",
 ]
-text = ""
+text = "Poistetaanko kuvasi?"
 
 [t_9a1be52acf]
 en = "Your initials will show instead."
@@ -3346,7 +3346,7 @@ where = [
   "ios people_profile_remove_note: Note in the remove picture dialog.",
   "desktop profile_your_initials_will_show: Desktop, profile and settings (in profile_view.rs, profile_layer).",
 ]
-text = ""
+text = "Sen tilalla näkyvät nimikirjaimesi."
 
 [t_af74f48f2b]
 en = "Replacing or removing your picture requests deletion of the previous cached copy on your linked devices and contacts when they sync. Screenshots, backups, and copies retained by modified clients cannot be erased by the app."
@@ -3355,7 +3355,7 @@ where = [
   "ios people_picture_help: Explains what removing or replacing the profile picture can and cannot do.",
   "desktop profile_picture_help: Help text under the profile picture settings.",
 ]
-text = ""
+text = "Kuvan vaihtaminen tai poistaminen pyytää linkitettyjä laitteitasi ja yhteystietojasi poistamaan aiemman välimuistikopion, kun ne synkronoituvat. Sovellus ei voi poistaa kuvakaappauksia, varmuuskopioita eikä muokattujen sovellusten säilyttämiä kopioita."
 
 [t_a2d356b0cd]
 en = "Remove picture"
@@ -3364,7 +3364,7 @@ where = [
   "ios people_profile_remove_picture: Button that removes the profile picture.",
   "desktop profile_remove_picture: Desktop, profile and settings (in profile_view.rs, profile_layer).",
 ]
-text = ""
+text = "Poista kuva"
 
 [t_ca149949bf]
 en = "Dismiss"
@@ -3374,7 +3374,7 @@ where = [
   "ios people_profile_dismiss: Accessibility label of the button that dismisses an error.",
   "ios call_dismiss: Accessibility label of the button that closes the group call announcement.",
 ]
-text = ""
+text = "Ohita"
 
 [t_f327a22e58]
 en = "Available"
@@ -3385,7 +3385,7 @@ where = [
   "ios people_profile_available: Availability: the user can be called.",
   "desktop common_available: Shared label, used in several places (app, profile).",
 ]
-text = ""
+text = "Tavoitettavissa"
 
 [t_b4655002da]
 en = "Busy"
@@ -3396,7 +3396,7 @@ where = [
   "ios people_profile_busy: Availability: the user is busy.",
   "desktop profile_busy: Desktop, profile and settings (in profile_view.rs, settings_landing).",
 ]
-text = ""
+text = "Varattu"
 
 [t_48d602e576]
 en = "Busy until {time}"
@@ -3406,7 +3406,7 @@ where = [
   "ios settings_status_busy_until: Availability status; {time} is a short time label such as 18:30.",
   "ios people_profile_busy_until: Availability line. {time} is when busy ends, like “18:00” or “tomorrow 08:00”.",
 ]
-text = ""
+text = "Varattu {time} asti"
 
 [t_119d66c55d]
 en = "Busy until you change it"
@@ -3415,7 +3415,7 @@ where = [
   "ios people_profile_busy_open: Availability line when busy has no end time.",
   "desktop profile_busy_until_you_change: Desktop, profile and settings (in profile_view.rs, availability).",
 ]
-text = ""
+text = "Varattu, kunnes muutat sen"
 
 [t_37ec906a0a]
 en = "Choose a time that hasn’t passed yet."
@@ -3423,7 +3423,7 @@ where = [
   "android profile_err_time_passed: Error when a chosen busy end time is already in the past.",
   "ios people_profile_time_passed: Error when the chosen busy end time is in the past.",
 ]
-text = ""
+text = "Valitse aika, joka ei ole vielä mennyt."
 
 [t_5fb7288b1e]
 en = "For how long"
@@ -3431,7 +3431,7 @@ where = [
   "android profile_busy_how_long: Screen-reader label of the row of end-time choices shown while busy.",
   "ios people_profile_for_how_long: Accessibility label of the list of busy durations.",
 ]
-text = ""
+text = "Kuinka kauan"
 
 [t_71566d0f8b]
 en = "30 minutes"
@@ -3440,7 +3440,7 @@ where = [
   "ios people_busy_30m: Choice of how long the user is busy.",
   "desktop profile_busy_30m: Busy duration choice.",
 ]
-text = ""
+text = "30 minuuttia"
 
 [t_d932268fbd]
 en = "1 hour"
@@ -3449,7 +3449,7 @@ where = [
   "ios people_busy_1h: Choice of how long the user is busy.",
   "desktop profile_busy_1h: Busy duration choice.",
 ]
-text = ""
+text = "1 tunti"
 
 [t_f95042291b]
 en = "4 hours"
@@ -3458,7 +3458,7 @@ where = [
   "ios people_busy_4h: Choice of how long the user is busy.",
   "desktop profile_busy_4h: Busy duration choice.",
 ]
-text = ""
+text = "4 tuntia"
 
 [t_83c9cd32c8]
 en = "Tomorrow morning"
@@ -3467,7 +3467,7 @@ where = [
   "ios people_busy_tom: Choice of how long the user is busy.",
   "desktop profile_busy_tomorrow: Busy duration choice.",
 ]
-text = ""
+text = "Huomisaamuun"
 
 [t_c62fdbd2c0]
 en = "No end time"
@@ -3476,7 +3476,7 @@ where = [
   "ios people_busy_open: Choice of how long the user is busy.",
   "desktop profile_busy_no_end: Busy duration choice: stays busy until changed.",
 ]
-text = ""
+text = "Ei päättymisaikaa"
 
 [t_55f59058aa]
 en = "tomorrow {time}"
@@ -3485,7 +3485,7 @@ where = [
   "ios people_until_tomorrow: Busy-until label for tomorrow. {time} is a clock time like 08:00.",
   "desktop profile_tomorrow: Desktop, profile and settings (in profile_ui.rs, until_label). {time} is a time.",
 ]
-text = ""
+text = "huomenna {time}"
 
 [t_2800ffc400]
 en = "{day} {time}"
@@ -3493,7 +3493,7 @@ where = [
   "android profile_until_weekday: Clock time for an end time on a later day, as in 'Busy until Friday 08:00'. {day} is the full weekday name, {time} like 08:00.",
   "ios people_until_day: Busy-until label for a later day. {day} is the weekday name, {time} a clock time.",
 ]
-text = ""
+text = "{day} {time}"
 
 [t_92b04f0016]
 en = "You already have information with that name."
@@ -3502,7 +3502,7 @@ where = [
   "ios people_profile_info_dup: Error when adding information with a name already used.",
   "desktop profile_you_already_have_information: Desktop, profile and settings (in profile_ui.rs, profile_update).",
 ]
-text = ""
+text = "Sinulla on jo tieto tällä nimellä."
 
 [t_6eb707854a]
 en = "Add something to save."
@@ -3511,7 +3511,7 @@ where = [
   "ios people_profile_info_empty: Error when saving empty information.",
   "desktop profile_add_something_to_save: Desktop, profile and settings (in profile_ui.rs, profile_update).",
 ]
-text = ""
+text = "Kirjoita jotain tallennettavaksi."
 
 [t_df4765c3ad]
 en = "Your contacts will see it on your profile."
@@ -3520,7 +3520,7 @@ where = [
   "ios people_profile_add_note: Note in the add information dialog.",
   "desktop profile_your_contacts_will_see: Desktop, profile and settings (in profile_view.rs, profile_layer).",
 ]
-text = ""
+text = "Yhteystietosi näkevät sen profiilissasi."
 
 [t_ec6eb5f1f3]
 en = "Kinds of information"
@@ -3528,7 +3528,7 @@ where = [
   "android profile_add_kinds_desc: Screen-reader label of the list of kinds of information that can be added.",
   "ios people_profile_kinds: Accessibility label of the list of information kinds.",
 ]
-text = ""
+text = "Tietotyypit"
 
 [t_49cd559100]
 en = "Something else"
@@ -3537,7 +3537,7 @@ where = [
   "ios people_profile_something_else: Choice and title to add information with a name of the user’s own.",
   "desktop profile_something_else: Desktop, profile and settings (in profile_view.rs, profile_layer).",
 ]
-text = ""
+text = "Jotain muuta"
 
 [t_870585e627]
 en = "Name it yourself"
@@ -3546,7 +3546,7 @@ where = [
   "ios people_profile_name_it: Second line of the Something else choice.",
   "desktop profile_name_it_yourself: Desktop, profile and settings (in profile_view.rs, profile_layer).",
 ]
-text = ""
+text = "Nimeä itse"
 
 [t_0e56444786]
 en = "What is it called?"
@@ -3555,7 +3555,7 @@ where = [
   "ios people_profile_what_called: Label of the field for the name of a custom information item.",
   "desktop profile_what_is_it_called: Desktop, profile and settings (in profile_view.rs, profile_layer).",
 ]
-text = ""
+text = "Mikä sen nimi on?"
 
 [t_aecf4a8011]
 en = "For example, Favourite tea"
@@ -3564,7 +3564,7 @@ where = [
   "ios people_profile_called_placeholder: Placeholder of that field.",
   "desktop profile_for_example_favourite_tea: Desktop, profile and settings (in profile_view.rs, profile_layer).",
 ]
-text = ""
+text = "Esimerkiksi Lempitee"
 
 [t_5e22631db1]
 en = "Value"
@@ -3573,7 +3573,7 @@ where = [
   "ios people_profile_value: Label of the value field of a custom information item.",
   "desktop profile_value: Desktop, profile and settings (in profile_view.rs, profile_layer).",
 ]
-text = ""
+text = "Arvo"
 
 [t_e8dc46dacb]
 en = "Add"
@@ -3586,7 +3586,7 @@ where = [
   "ios people_add: Button that adds an item.",
   "desktop common_add: Shared label, used in several places (profile, view).",
 ]
-text = ""
+text = "Lisää"
 
 [t_3cd1144512]
 en = "Open this link?"
@@ -3595,7 +3595,7 @@ where = [
   "ios people_profile_link_title: Title of the dialog before opening a link.",
   "desktop profile_open_this_link: Desktop, profile and settings (in profile_view.rs, profile_layer).",
 ]
-text = ""
+text = "Avataanko tämä linkki?"
 
 [t_33058b8678]
 en = "It opens in your browser, outside Tinline. Tinline doesn’t load it for you, and can’t vouch for what’s there."
@@ -3604,7 +3604,7 @@ where = [
   "ios people_profile_link_note: Note in that dialog.",
   "desktop profile_it_opens_in_your: Desktop, profile and settings (in profile_view.rs, profile_layer).",
 ]
-text = ""
+text = "Se avautuu selaimessasi Tinlinen ulkopuolella. Tinline ei lataa sitä puolestasi eikä voi taata, mitä siellä on."
 
 [t_6fe0368189]
 en = "Position your picture"
@@ -3613,7 +3613,7 @@ where = [
   "ios people_crop_title: Title and accessibility label of the picture crop screen.",
   "desktop profile_position_your_picture: Desktop, profile and settings (in profile_view.rs, profile_layer).",
 ]
-text = ""
+text = "Asettele kuvasi"
 
 [t_5187eb6518]
 en = "Drag to move the picture, or use the arrow keys. Plus and minus zoom."
@@ -3621,7 +3621,7 @@ where = [
   "android profile_crop_hint: Instruction under the picture cropper.",
   "desktop profile_drag_to_move_the: Desktop, profile and settings (in profile_view.rs, profile_layer).",
 ]
-text = ""
+text = "Siirrä kuvaa vetämällä tai nuolinäppäimillä. Plus ja miinus zoomaavat."
 
 [t_4b71415535]
 en = "Zoom"
@@ -3629,7 +3629,7 @@ where = [
   "android profile_crop_zoom: Screen-reader label of the zoom slider in the picture cropper.",
   "ios people_crop_zoom: Accessibility label of the zoom slider.",
 ]
-text = ""
+text = "Zoomaus"
 
 [t_d484eba42e]
 en = "Use photo"
@@ -3638,7 +3638,7 @@ where = [
   "ios people_crop_use: Button that uses the cropped picture.",
   "desktop profile_use_photo: Desktop, profile and settings (in profile_view.rs, profile_layer).",
 ]
-text = ""
+text = "Käytä kuvaa"
 
 [t_ab628fe2c2]
 en = "Couldn’t prepare that picture. Try a different one."
@@ -3647,7 +3647,7 @@ where = [
   "ios people_crop_failed: Error when the crop could not be made.",
   "desktop profile_couldnt_prepare_that_picture: Desktop, profile and settings (in profile_ui.rs, profile_update).",
 ]
-text = ""
+text = "Kuvaa ei voitu valmistella. Kokeile toista kuvaa."
 
 [t_6ef71f7234]
 en = "Couldn’t save your picture. Your current picture is unchanged."
@@ -3655,7 +3655,7 @@ where = [
   "android profile_err_picture_save: Error when saving a new profile picture failed.",
   "ios people_save_picture_failed: Profile picture could not be saved.",
 ]
-text = ""
+text = "Kuvaasi ei voitu tallentaa. Nykyinen kuvasi on ennallaan."
 
 [t_2b186de649]
 en = "Couldn’t remove your picture. It is unchanged."
@@ -3663,7 +3663,7 @@ where = [
   "android profile_err_picture_remove: Error when removing the profile picture failed.",
   "ios people_remove_picture_failed: Profile picture could not be removed.",
 ]
-text = ""
+text = "Kuvaasi ei voitu poistaa. Se on ennallaan."
 
 [t_a087c5a4aa]
 en = "Couldn’t save that. Your profile is unchanged and what you typed is still here."
@@ -3672,7 +3672,7 @@ where = [
   "ios people_save_failed: Profile save failed.",
   "desktop profile_save_failed: Error shown when saving the profile failed.",
 ]
-text = ""
+text = "Tallennus ei onnistunut. Profiilisi on ennallaan, ja kirjoittamasi teksti on yhä tässä."
 
 [t_1248a08c96]
 en = "The selected account changed. Nothing was saved to the new account."
@@ -3680,7 +3680,7 @@ where = [
   "android profile_err_account_changed: Error when the user switched account while a profile change was being saved.",
   "ios people_account_changed: Profile save refused because the selected account changed meanwhile.",
 ]
-text = ""
+text = "Valittu tili vaihtui. Uuteen tiliin ei tallennettu mitään."
 
 [t_d47674ae7a]
 en = "That picture is {size} MB. Pictures can be up to {max} MB."
@@ -3688,7 +3688,7 @@ where = [
   "android profile_pick_too_big: Error when the picked picture file is too large. {size} and {max} are numbers of megabytes, such as 3.2 and 2.",
   "ios people_pic_too_big: Picture refused: too big. {size} is the file size in MB, {max} the limit in MB.",
 ]
-text = ""
+text = "Kuvan koko on {size} Mt. Kuva voi olla enintään {max} Mt."
 
 [t_2133a72bde]
 en = "Tinline can use PNG, JPEG or WebP pictures. That file is a different kind of file."
@@ -3697,7 +3697,7 @@ where = [
   "ios people_pic_bad_type: Picture refused: not PNG, JPEG or WebP.",
   "desktop profile_tinline_can_use_png: Desktop, profile and settings (in profile_ui.rs, inspect).",
 ]
-text = ""
+text = "Tinline voi käyttää PNG-, JPEG- tai WebP-kuvia. Tämä tiedosto on eri tyyppiä."
 
 [t_27a3a26172]
 en = "That file couldn’t be read as a picture. It may be damaged."
@@ -3706,14 +3706,14 @@ where = [
   "ios people_pic_unreadable: Picture refused: it could not be decoded.",
   "desktop profile_that_file_couldnt_be: Desktop, profile and settings (in profile_ui.rs, inspect).",
 ]
-text = ""
+text = "Tiedostoa ei voitu lukea kuvana. Se voi olla vioittunut."
 
 [t_eabe302ef0]
 en = "That picture is {width} × {height} pixels. Tinline accepts up to {max} pixels on a side."
 where = [
   "android profile_pick_too_wide: Error when the picked picture has too many pixels. {width} and {height} are the picture's size, {max} the longest side allowed.",
 ]
-text = ""
+text = "Kuvan koko on {width} × {height} pikseliä. Tinline hyväksyy enintään {max} pikseliä sivua kohden."
 
 [t_4b7a9203ca]
 en = "The name can’t be empty."
@@ -3721,7 +3721,7 @@ where = [
   "android profile_err_name_empty: Error when saving an empty name.",
   "ios people_rule_name_empty: Profile check: the name is empty.",
 ]
-text = ""
+text = "Nimi ei voi olla tyhjä."
 
 [t_a7eb6e3908]
 en = "The name can’t contain control or text-direction characters."
@@ -3729,7 +3729,7 @@ where = [
   "android profile_err_name_chars: Error when the name has invisible control characters.",
   "ios people_rule_name_control: Profile check: the name has control characters.",
 ]
-text = ""
+text = "Nimessä ei voi olla ohjaus- tai tekstisuuntamerkkejä."
 
 [t_82ec74f78e]
 en = "That name is too long. Up to {limit} bytes; some characters take more than one."
@@ -3737,7 +3737,7 @@ where = [
   "android profile_err_name_long: Error when the name is too long. {limit} is the maximum size in bytes.",
   "ios people_rule_name_long: Profile check: the name is too long. {limit} is the byte limit.",
 ]
-text = ""
+text = "Nimi on liian pitkä. Enintään {limit} tavua; jotkin merkit vievät enemmän kuin yhden."
 
 [t_aae290ad95]
 en = "That is too long for a status: up to {limit} bytes, and some characters take more than one."
@@ -3745,7 +3745,7 @@ where = [
   "android profile_err_status_long: Error when the status text is too long. {limit} is the maximum size in bytes.",
   "ios people_rule_status_long: Profile check: the status is too long. {limit} is the byte limit.",
 ]
-text = ""
+text = "Tämä on liian pitkä tilaksi: enintään {limit} tavua, ja jotkin merkit vievät enemmän kuin yhden."
 
 [t_c78fd246a2]
 en = "That is too long for about: up to {limit} bytes, and some characters take more than one."
@@ -3753,7 +3753,7 @@ where = [
   "android profile_err_about_long: Error when the about text is too long. {limit} is the maximum size in bytes.",
   "ios people_rule_about_long: Profile check: the about text is too long. {limit} is the byte limit.",
 ]
-text = ""
+text = "Tämä on liian pitkä Tietoja-kenttään: enintään {limit} tavua, ja jotkin merkit vievät enemmän kuin yhden."
 
 [t_3405000279]
 en = "A status can’t contain control or text-direction characters."
@@ -3761,7 +3761,7 @@ where = [
   "android profile_err_status_chars: Error when the status has invisible control characters.",
   "ios people_rule_status_control: Profile check: the status has control characters.",
 ]
-text = ""
+text = "Tilassa ei voi olla ohjaus- tai tekstisuuntamerkkejä."
 
 [t_2023402646]
 en = "About can’t contain control or text-direction characters."
@@ -3769,7 +3769,7 @@ where = [
   "android profile_err_about_chars: Error when the about text has invisible control characters.",
   "ios people_rule_about_control: Profile check: the about text has control characters.",
 ]
-text = ""
+text = "Tietoja-kentässä ei voi olla ohjaus- tai tekstisuuntamerkkejä."
 
 [t_f60a13207e]
 en = "Give the information a name."
@@ -3778,7 +3778,7 @@ where = [
   "ios people_rule_key_empty: Profile check: a custom information item has no name.",
   "desktop profile_give_the_information_a: Desktop, profile and settings (in profile_ui.rs, profile_update).",
 ]
-text = ""
+text = "Anna tiedolle nimi."
 
 [t_c55d93f164]
 en = "That name can’t be used. Keep it short, without control characters."
@@ -3787,7 +3787,7 @@ where = [
   "ios people_rule_key_bad: Profile check: the name of a custom information item is not allowed.",
   "desktop profile_that_name_cant_be: Desktop, profile and settings (in profile_ui.rs, profile_update).",
 ]
-text = ""
+text = "Tätä nimeä ei voi käyttää. Pidä se lyhyenä ja ilman ohjausmerkkejä."
 
 [t_27eded2454]
 en = "That is too long. Each piece of information can be up to 16 KiB."
@@ -3795,7 +3795,7 @@ where = [
   "android profile_err_value_long: Error when one profile field's value is too large.",
   "ios people_rule_value_long: Profile check: a value is too long.",
 ]
-text = ""
+text = "Tämä on liian pitkä. Kukin tieto voi olla enintään 16 KiB."
 
 [t_c60d4cb730]
 en = "You’ve reached 64 pieces of information. Remove one to add another."
@@ -3803,7 +3803,7 @@ where = [
   "android profile_err_fields_full: Error when the profile already has the maximum number of extra fields.",
   "ios people_rule_too_many: Profile check: too many information items.",
 ]
-text = ""
+text = "Sinulla on jo 64 tietoa. Poista yksi lisätäksesi uuden."
 
 [t_4b4e905279]
 en = "Your profile is full. Remove some information to add more."
@@ -3811,7 +3811,7 @@ where = [
   "android profile_err_profile_full: Error when the whole profile is at its size limit.",
   "ios people_rule_full: Profile check: the whole profile is too big.",
 ]
-text = ""
+text = "Profiilisi on täynnä. Poista tietoja lisätäksesi uusia."
 
 [t_f28a8716e6]
 en = "Use the picture controls for that."
@@ -3819,7 +3819,7 @@ where = [
   "android profile_err_use_picture_controls: Error when someone tries to set the picture as an ordinary field.",
   "ios people_rule_picture: Profile check: the picture cannot be set as plain information.",
 ]
-text = ""
+text = "Käytä siihen kuvan säätimiä."
 
 [t_3cfbc5f218]
 en = "Availability can be changed but not removed."
@@ -3827,7 +3827,7 @@ where = [
   "android profile_err_availability_remove: Error when someone tries to remove the availability field.",
   "ios people_rule_availability: Profile check: availability cannot be removed.",
 ]
-text = ""
+text = "Tavoitettavuutta voi muuttaa, mutta sitä ei voi poistaa."
 
 [t_c99f5c88b2]
 en = "Pronouns"
@@ -3836,7 +3836,7 @@ where = [
   "ios people_info_pronouns: Label of a profile information field.",
   "desktop profile_pronouns: Desktop, profile and settings (in profile_ui.rs, mutation_allowed).",
 ]
-text = ""
+text = "Pronominit"
 
 [t_031673ee99]
 en = "For example, she/her"
@@ -3845,7 +3845,7 @@ where = [
   "ios people_info_pronouns_hint: Placeholder hint of the pronouns field.",
   "desktop profile_for_example_she_her: Desktop, profile and settings (in profile_ui.rs, mutation_allowed).",
 ]
-text = ""
+text = "Esimerkiksi hän"
 
 [t_2c4e3e9327]
 en = "Location"
@@ -3854,7 +3854,7 @@ where = [
   "ios people_info_location: Label of a profile information field.",
   "desktop profile_location: Desktop, profile and settings (in profile_ui.rs, mutation_allowed).",
 ]
-text = ""
+text = "Sijainti"
 
 [t_8f2a784b6b]
 en = "City or region"
@@ -3863,7 +3863,7 @@ where = [
   "ios people_info_location_hint: Placeholder hint of the location field.",
   "desktop profile_city_or_region: Desktop, profile and settings (in profile_ui.rs, mutation_allowed).",
 ]
-text = ""
+text = "Kaupunki tai alue"
 
 [t_d5aafda4c7]
 en = "Website"
@@ -3872,14 +3872,14 @@ where = [
   "ios people_info_website: Label of a profile information field.",
   "desktop profile_website: Desktop, profile and settings (in profile_ui.rs, mutation_allowed).",
 ]
-text = ""
+text = "Verkkosivusto"
 
 [t_27f37cbb67]
 en = "https://"
 where = [
   "android profile_known_website_hint: Hint in the website field while editing: how a web address starts. Keep as is unless the script needs it changed.",
 ]
-text = ""
+text = "https://"
 
 [t_23c532d490]
 en = "Your nickname"
@@ -3889,7 +3889,7 @@ where = [
   "ios shell_step_name: Onboarding step label read out for the step header (accessibility).",
   "desktop signup_your_nickname: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "Kutsumanimesi"
 
 [t_1fdf30c038]
 en = "Recovery phrase"
@@ -3898,7 +3898,7 @@ where = [
   "ios shell_step_phrase: Onboarding step label read out for the step header (accessibility).",
   "desktop common_recovery_phrase: Shared label, used in several places (profile, view).",
 ]
-text = ""
+text = "Palautussanat"
 
 [t_5f64b48fae]
 en = "Device name"
@@ -3910,7 +3910,7 @@ where = [
   "ios shell_step_device: Onboarding step label read out for the step header (accessibility).",
   "desktop common_device_name: Shared label, used in several places (link, signup, view).",
 ]
-text = ""
+text = "Laitteen nimi"
 
 [t_95b45293e6]
 en = "Terms"
@@ -3918,7 +3918,7 @@ where = [
   "android onboarding_step_terms: Header label of the terms step.",
   "ios shell_step_terms: Onboarding step label read out for the step header (accessibility).",
 ]
-text = ""
+text = "Ehdot"
 
 [t_e689e56480]
 en = "Permissions"
@@ -3929,7 +3929,7 @@ where = [
   "ios shell_step_perms: Onboarding step label read out for the step header (accessibility).",
   "desktop profile_permissions: Desktop, profile and settings (in profile_view.rs, notifications_page).",
 ]
-text = ""
+text = "Luvat"
 
 [t_b170444708]
 en = "Restore account"
@@ -3940,7 +3940,7 @@ where = [
   "ios shell_step_restore: Onboarding step label read out for the step header (accessibility).",
   "desktop signup_restore_account: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "Palauta tili"
 
 [t_244aad3d35]
 en = "Link to your account"
@@ -3951,7 +3951,7 @@ where = [
   "ios shell_step_link_qr: Onboarding step label read out for the step header (accessibility).",
   "desktop link_link_to_your_account: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = ""
+text = "Linkitä tiliisi"
 
 [t_b04ebc52e8]
 en = "your other device"
@@ -3961,7 +3961,7 @@ where = [
   "ios link_fb_other_device: Fallback for an unnamed other device inside a sentence.",
   "ios onboarding_fb_other_device: Fallback name for an unnamed other device inside a sentence.",
 ]
-text = ""
+text = "toinen laitteesi"
 
 [t_aedf592006]
 en = "Personal phone"
@@ -3969,7 +3969,7 @@ where = [
   "android onboarding_device_personal: Suggested device name (chip and default); the user can edit it.",
   "ios onboarding_dev_personal: Suggested device name chip, and the default name of this phone.",
 ]
-text = ""
+text = "Oma puhelin"
 
 [t_f9af369d3b]
 en = "Work phone"
@@ -3977,7 +3977,7 @@ where = [
   "android onboarding_device_work: Suggested device name chip.",
   "ios onboarding_dev_work: Suggested device name chip.",
 ]
-text = ""
+text = "Työpuhelin"
 
 [t_90d9f368a5]
 en = "Tablet"
@@ -3985,7 +3985,7 @@ where = [
   "android onboarding_device_tablet: Suggested device name chip.",
   "ios onboarding_dev_tablet: Suggested device name chip.",
 ]
-text = ""
+text = "Tabletti"
 
 [t_bf9ca1f0cb]
 en = "Restoring keeps the same identity: use the recovery phrase of this account. You’ll set a new passphrase."
@@ -3993,7 +3993,7 @@ where = [
   "android onboarding_restore_warning_forgot: Warning on the restore step when the user forgot their passphrase.",
   "ios onboarding_restore_warn_forgot: Notice on the restore screen after I forgot my passphrase.",
 ]
-text = ""
+text = "Palautus säilyttää saman identiteetin: käytä tämän tilin palautussanoja. Asetat uuden salalauseen."
 
 [t_8b574f9d94]
 en = "Next, you’ll choose a passphrase for this account."
@@ -4002,7 +4002,7 @@ where = [
   "ios onboarding_restore_warn: Notice on the restore screen during sign-up.",
   "desktop signup_next_youll_choose_a: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "Seuraavaksi valitset tälle tilille salalauseen."
 
 [t_4260fa7705]
 en = "Already on this phone"
@@ -4010,7 +4010,7 @@ where = [
   "android onboarding_exists_title: Dialog title when the restored account is already on this phone.",
   "ios onboarding_exists_title: Dialog title when the restored account is already on this phone.",
 ]
-text = ""
+text = "On jo tällä puhelimella"
 
 [t_f5a1fad78c]
 en = "Choose account"
@@ -4018,7 +4018,7 @@ where = [
   "android onboarding_exists_choose: Dialog button that opens the account list.",
   "ios onboarding_exists_confirm: Dialog button that opens the account picker.",
 ]
-text = ""
+text = "Valitse tili"
 
 [t_1f84a8d44a]
 en = "That recovery phrase belongs to an account that is already here. Switch to it instead of adding it again."
@@ -4026,7 +4026,7 @@ where = [
   "android onboarding_exists_body: Dialog text when the restored account is already on this phone.",
   "ios onboarding_exists_body: Dialog body when the restored account is already on this phone.",
 ]
-text = ""
+text = "Nämä palautussanat kuuluvat tilille, joka on jo täällä. Vaihda siihen sen sijaan, että lisäisit sen uudelleen."
 
 [t_e4868d01e2]
 en = "That key has a typo or is cut short. Paste it again from where you saved it."
@@ -4035,7 +4035,7 @@ where = [
   "ios restore_key_typo: Error when the pasted recovery key fails its checksum.",
   "desktop signup_that_key_has_a: Desktop, sign-up, restore and add contact (in signup.rs, gate_update).",
 ]
-text = ""
+text = "Avaimessa on kirjoitusvirhe tai se on katkennut. Liitä se uudelleen sieltä, minne tallensit sen."
 
 [t_b9527e2f4a]
 en = "Couldn’t read the clipboard. Paste into the first box instead."
@@ -4044,7 +4044,7 @@ where = [
   "ios restore_paste_failed: Error when the clipboard could not be read.",
   "desktop signup_couldnt_read_the_clipboard: Desktop, sign-up, restore and add contact (in signup.rs, gate_update).",
 ]
-text = ""
+text = "Leikepöytää ei voitu lukea. Liitä ensimmäiseen ruutuun sen sijaan."
 
 [t_ae367631f0]
 en = "Recovery phrase words"
@@ -4052,21 +4052,21 @@ where = [
   "android onboarding_restore_words_desc: Screen-reader label of the grid of 24 word boxes.",
   "ios restore_words_label: Accessibility label of the group of 24 word fields.",
 ]
-text = ""
+text = "Palautussanat"
 
 [t_e0bf087eda]
 en = "Word {number}"
 where = [
   "android onboarding_restore_word_desc: Screen-reader label of one word box. {number} is its position, 1 to 24.",
 ]
-text = ""
+text = "Sana {number}"
 
 [t_7ccb29b826]
 en = "Word {number} isn’t in the recovery word list. Check the spelling."
 where = [
   "android onboarding_restore_bad_word: Error when one typed word is not a recovery word. {number} is its position, 1 to 24.",
 ]
-text = ""
+text = "Sana {number} ei ole palautussanojen listassa. Tarkista kirjoitusasu."
 
 [t_42a51efec5]
 en_one = "Word {number} and {count} more aren’t in the recovery word list. Check the spelling."
@@ -4074,6 +4074,8 @@ en_other = "Word {number} and {count} more aren’t in the recovery word list. C
 where = [
   "android onboarding_restore_bad_words_more: Error when several typed words are not recovery words. {number} is the position of the first wrong word, {count} how many others are wrong.",
 ]
+one = "Sana {number} ja {count} muu eivät ole palautussanojen listassa. Tarkista kirjoitusasu."
+other = "Sana {number} ja {count} muuta eivät ole palautussanojen listassa. Tarkista kirjoitusasu."
 
 [t_2de75251a6]
 en_one = "{count} word is still missing."
@@ -4082,6 +4084,8 @@ where = [
   "android onboarding_restore_missing: Error when Continue is pressed with some of the 24 words empty. {count} is how many are missing.",
   "ios shell_restore_missing: Restore screen message: how many of the 24 words are not filled in yet.",
 ]
+one = "{count} sana puuttuu vielä."
+other = "{count} sanaa puuttuu vielä."
 
 [t_dd17db34e4]
 en = "Your recovery key is in. It stays on this phone."
@@ -4089,7 +4093,7 @@ where = [
   "android onboarding_restore_lead_key: Lead on the restore step after a recovery key was pasted.",
   "ios restore_lead_key: Intro on the restore screen once a recovery key was pasted.",
 ]
-text = ""
+text = "Palautusavaimesi on syötetty. Se pysyy tällä puhelimella."
 
 [t_d584b18ef5]
 en = "Type your 24 words in order, or paste them, or your recovery key, into the first box. They stay on this phone."
@@ -4097,7 +4101,7 @@ where = [
   "android onboarding_restore_lead_words: Lead on the restore step.",
   "ios restore_lead_words: Intro on the restore screen before a key is pasted.",
 ]
-text = ""
+text = "Kirjoita 24 sanaasi järjestyksessä tai liitä ne tai palautusavaimesi ensimmäiseen ruutuun. Ne pysyvät tällä puhelimella."
 
 [t_e91162bfae]
 en = "Recovery key"
@@ -4107,7 +4111,7 @@ where = [
   "ios restore_key_label: Small label above the pasted recovery key.",
   "desktop signup_recovery_key: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "Palautusavain"
 
 [t_ec83e75324]
 en = "Use my words instead"
@@ -4116,7 +4120,7 @@ where = [
   "ios restore_use_words: Button that discards the pasted key to type words instead.",
   "desktop signup_use_my_words_instead: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "Käytän mieluummin sanoja"
 
 [t_2d078dee86]
 en = "Paste from clipboard"
@@ -4125,7 +4129,7 @@ where = [
   "ios restore_paste: Button that pastes the words or key from the clipboard.",
   "desktop signup_paste_from_clipboard: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "Liitä leikepöydältä"
 
 [t_18f5681178]
 en = "{filled} of 24"
@@ -4133,7 +4137,7 @@ where = [
   "android onboarding_restore_filled: Counter of recovery words typed so far. {filled} is how many of the 24 are filled in.",
   "desktop signup_of_24: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {filled} is a value filled in by the app.",
 ]
-text = ""
+text = "{filled}/24"
 
 [t_943a622429]
 en = "Add an account"
@@ -4141,7 +4145,7 @@ where = [
   "android onboarding_welcome_title_adding: Heading of the welcome step when adding another account.",
   "desktop signup_add_an_account: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "Lisää tili"
 
 [t_8b4b8dfee0]
 en = "A direct line to your people"
@@ -4150,14 +4154,14 @@ where = [
   "ios onboarding_welcome_title: Title of the first screen.",
   "desktop signup_a_direct_line_to: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "Suora linja ihmisiisi"
 
 [t_a1676ea1be]
 en = "Create a new account or bring one you already have.\nYour current account stays on this phone."
 where = [
   "android onboarding_welcome_lead_adding: Lead under the heading when adding another account. The line break separates two sentences.",
 ]
-text = ""
+text = "Luo uusi tili tai tuo jo olemassa oleva.\nNykyinen tilisi pysyy tällä puhelimella."
 
 [t_b2f1f8e2c0]
 en = "Tinline connects your phone straight to theirs.\nYou just need a nickname. Encrypted end to end."
@@ -4165,7 +4169,7 @@ where = [
   "android onboarding_welcome_lead: Lead on the first screen. The line break separates the two parts.",
   "ios onboarding_welcome_lead: Explanation on the first screen; the line break is intended.",
 ]
-text = ""
+text = "Tinline yhdistää puhelimesi suoraan heidän puhelimeensa.\nTarvitset vain kutsumanimen. Päästä päähän salattu."
 
 [t_3592449353]
 en = "Create my account"
@@ -4174,7 +4178,7 @@ where = [
   "ios onboarding_create: Button on the first screen.",
   "desktop signup_create_my_account: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "Luo tilini"
 
 [t_85f7918feb]
 en = "I have an account"
@@ -4183,7 +4187,7 @@ where = [
   "ios onboarding_have: Button on the first screen.",
   "desktop signup_i_have_an_account: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "Minulla on tili"
 
 [t_55e7249a5f]
 en = "Not for emergency calls."
@@ -4194,7 +4198,7 @@ where = [
   "ios onboarding_emergency: Bold line on the first screen.",
   "desktop signup_not_for_emergency_calls: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "Ei hätäpuheluihin."
 
 [t_224dd02d53]
 en = "Use your phone’s dialer to reach emergency services."
@@ -4202,7 +4206,7 @@ where = [
   "android onboarding_dialer_note: Second line of the emergency-calls note on the first screen.",
   "ios onboarding_emergency_rest: Second line under Not for emergency calls. on the first screen.",
 ]
-text = ""
+text = "Soita hätänumeroon puhelimesi omalla puhelusovelluksella."
 
 [t_1ddc7c9468]
 en = "Use your account here"
@@ -4211,7 +4215,7 @@ where = [
   "ios onboarding_choose_title: Title of the screen that offers to link or restore.",
   "desktop signup_use_your_account_here: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "Käytä tiliäsi täällä"
 
 [t_f1fcf3419a]
 en = "Your account is its recovery phrase, so you can bring it to this phone two ways."
@@ -4219,7 +4223,7 @@ where = [
   "android onboarding_choose_lead: Lead under the choose heading.",
   "ios onboarding_choose_lead: Explanation under the Use your account here title.",
 ]
-text = ""
+text = "Tilisi on sen palautussanat, joten voit tuoda sen tälle puhelimelle kahdella tavalla."
 
 [t_39cf14ca62]
 en = "Link my other device"
@@ -4228,7 +4232,7 @@ where = [
   "ios onboarding_opt_link: Option on the Use your account here screen.",
   "desktop signup_link_my_other_device: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "Linkitä toinen laitteeni"
 
 [t_ffc67693b5]
 en = "Scan a code on a device that already has your account. Your contacts and chats come along."
@@ -4237,7 +4241,7 @@ where = [
   "ios onboarding_opt_link_sub: Description of the link option.",
   "desktop signup_scan_a_code_on: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "Skannaa koodi laitteella, jolla tilisi jo on. Yhteystietosi ja keskustelusi tulevat mukana."
 
 [t_3950ee3ee9]
 en = "Restore my account"
@@ -4246,7 +4250,7 @@ where = [
   "ios onboarding_opt_restore: Option on the Use your account here screen.",
   "desktop signup_restore_my_account: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "Palauta tilini"
 
 [t_149580a68c]
 en = "Type your 24 recovery words. This phone starts with an empty contact list."
@@ -4254,7 +4258,7 @@ where = [
   "android onboarding_choose_restore_sub: Description under the restore option.",
   "ios onboarding_opt_restore_sub: Description of the restore option.",
 ]
-text = ""
+text = "Kirjoita 24 palautussanaasi. Tämä puhelin aloittaa tyhjällä yhteystietolistalla."
 
 [t_6c95ac0891]
 en = "Your line is open, {name}"
@@ -4263,7 +4267,7 @@ where = [
   "ios onboarding_done_title_named: Title when the account is ready; {name} is the first name.",
   "desktop signup_your_line_is_open: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Linjasi on auki, {name}"
 
 [t_5bc130796e]
 en = "Your line is open"
@@ -4274,7 +4278,7 @@ where = [
   "ios shell_empty_hero_open: Home hero title when the user has contacts.",
   "desktop common_your_line_is_open: Shared label, used in several places (signup, view).",
 ]
-text = ""
+text = "Linjasi on auki"
 
 [t_7b526495bb]
 en = "Scan their code or share yours, and you can call each other."
@@ -4283,7 +4287,7 @@ where = [
   "ios onboarding_done_lead: Explanation when the account is ready.",
   "desktop signup_scan_their_code_or: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "Skannaa heidän koodinsa tai jaa omasi, niin voitte soittaa toisillenne."
 
 [t_b73b03ce83]
 en = "Add my first contact"
@@ -4294,7 +4298,7 @@ where = [
   "ios shell_empty_add_first: Home hero button when the user has no contacts.",
   "desktop signup_add_my_first_contact: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "Lisää ensimmäinen yhteystietoni"
 
 [t_6beaad3bcc]
 en = "Two devices are better than one"
@@ -4303,7 +4307,7 @@ where = [
   "ios onboarding_tip_devices: Tip title on the account-ready screen.",
   "desktop signup_two_devices_are_better: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "Kaksi laitetta on parempi kuin yksi"
 
 [t_5cd859f48d]
 en = "Link another device when you can, so losing one never locks you out."
@@ -4312,7 +4316,7 @@ where = [
   "ios onboarding_tip_devices_body: Tip body.",
   "desktop signup_link_another_device_when: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "Linkitä toinen laite, kun ehdit, niin yhden menettäminen ei koskaan lukitse sinua ulos."
 
 [t_ad43e78a15]
 en = "Groups are hosted on a computer"
@@ -4320,7 +4324,7 @@ where = [
   "android onboarding_tip_groups_title: Tip title on the final onboarding screen.",
   "ios onboarding_tip_groups: Tip title on the account-ready screen.",
 ]
-text = ""
+text = "Ryhmiä isännöidään tietokoneella"
 
 [t_52c2f25c1c]
 en = "To start a group, add Tinline on a computer that can stay on."
@@ -4328,7 +4332,7 @@ where = [
   "android onboarding_tip_groups_body: Tip text about hosting groups on a computer.",
   "ios onboarding_tip_groups_body: Tip body.",
 ]
-text = ""
+text = "Aloittaaksesi ryhmän lisää Tinline tietokoneelle, joka voi olla jatkuvasti päällä."
 
 [t_0681cf989c]
 en = "What should people call you?"
@@ -4337,7 +4341,7 @@ where = [
   "ios onboarding_name_title: Title of the nickname screen.",
   "desktop signup_what_should_people_call: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "Millä nimellä ihmiset voivat kutsua sinua?"
 
 [t_0a135ac856]
 en = "Only the people you add will see it."
@@ -4346,7 +4350,7 @@ where = [
   "ios onboarding_name_lead: Explanation on the nickname screen.",
   "desktop signup_only_the_people_you: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "Vain lisäämäsi ihmiset näkevät sen."
 
 [t_7b62ae8f16]
 en = "You can change it any time in Settings."
@@ -4355,7 +4359,7 @@ where = [
   "ios onboarding_nickname_hint: Hint under the nickname field.",
   "desktop signup_you_can_change_it: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "Voit muuttaa sen milloin tahansa asetuksista."
 
 [t_c3ae1bfe8b]
 en = "Choose a new passphrase"
@@ -4363,7 +4367,7 @@ where = [
   "android onboarding_pass_title_forgot: Heading of the passphrase step when the old passphrase was forgotten.",
   "ios onboarding_pass_title_forgot: Title of the passphrase screen after I forgot it.",
 ]
-text = ""
+text = "Valitse uusi salalause"
 
 [t_3100057bf9]
 en = "Protect this phone"
@@ -4371,7 +4375,7 @@ where = [
   "android onboarding_pass_title_link: Heading of the passphrase step after linking to another device.",
   "ios onboarding_pass_title_link: Title of the passphrase screen after linking.",
 ]
-text = ""
+text = "Suojaa tämä puhelin"
 
 [t_75f11c8398]
 en = "Add a passphrase"
@@ -4380,7 +4384,7 @@ where = [
   "ios onboarding_pass_title: Title of the passphrase screen.",
   "desktop common_add_a_passphrase: Shared label, used in several places (signup, view).",
 ]
-text = ""
+text = "Lisää salalause"
 
 [t_d0db7f4ccc]
 en = "Add passphrase"
@@ -4391,7 +4395,7 @@ where = [
   "ios onboarding_cta_add: Button on the passphrase screen after linking.",
   "desktop common_add_passphrase: Shared label, used in several places (profile, view).",
 ]
-text = ""
+text = "Lisää salalause"
 
 [t_a59167be82]
 en = "Save account"
@@ -4399,7 +4403,7 @@ where = [
   "android onboarding_pass_cta_save: Button on the passphrase step when saving the account failed and a passphrase is used instead.",
   "ios onboarding_cta_save: Button on the passphrase screen when saving.",
 ]
-text = ""
+text = "Tallenna tili"
 
 [t_670f495a48]
 en = "Optional. A lock, so only you can open Tinline on this phone."
@@ -4407,7 +4411,7 @@ where = [
   "android onboarding_pass_lead: Lead on the passphrase step.",
   "ios onboarding_pass_lead: Explanation on the passphrase screen.",
 ]
-text = ""
+text = "Valinnainen. Lukko, jotta vain sinä voit avata Tinlinen tällä puhelimella."
 
 [t_bb52d395ca]
 en = "Skip for now"
@@ -4416,7 +4420,7 @@ where = [
   "ios onboarding_skip: Button that skips the passphrase.",
   "desktop signup_skip_for_now: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "Ohita toistaiseksi"
 
 [t_647428ff94]
 en = "Encrypting…"
@@ -4427,7 +4431,7 @@ where = [
   "ios onboarding_encrypting: Button text while the passphrase is applied.",
   "desktop signup_encrypting: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "Salataan…"
 
 [t_0c3aa921d4]
 en = "Encrypts your account on this phone. Your phone remembers it, so calls still ring after a restart. If you forget it, your recovery words let you set a new one."
@@ -4436,7 +4440,7 @@ where = [
   "ios security_pass_notice: Notice on the add-passphrase page.",
   "ios onboarding_pass_notice: Notice on the passphrase screen.",
 ]
-text = ""
+text = "Salaa tilisi tällä puhelimella. Puhelimesi muistaa sen, joten puhelut soivat myös uudelleenkäynnistyksen jälkeen. Jos unohdat sen, palautussanoilla voit asettaa uuden."
 
 [t_16239e2343]
 en = "Any length works. A few random words are easy to remember."
@@ -4445,7 +4449,7 @@ where = [
   "ios shell_pass_strength_empty: Passphrase hint while the field is empty.",
   "desktop signup_any_length_works_a: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "Mikä tahansa pituus käy. Muutama satunnainen sana on helppo muistaa."
 
 [t_d84665bbe7]
 en = "Short. A few more words make it stronger."
@@ -4454,7 +4458,7 @@ where = [
   "ios shell_pass_strength_short: Passphrase strength: short.",
   "desktop signup_short_a_few_more: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "Lyhyt. Muutama sana lisää tekee siitä vahvemman."
 
 [t_8ea7d40fcf]
 en = "Fair"
@@ -4463,7 +4467,7 @@ where = [
   "ios shell_pass_strength_fair: Passphrase strength: fair.",
   "desktop signup_fair: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "Kohtalainen"
 
 [t_e4adf12a36]
 en = "Strong"
@@ -4472,7 +4476,7 @@ where = [
   "ios shell_pass_strength_strong: Passphrase strength: strong.",
   "desktop signup_strong: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "Vahva"
 
 [t_282faff70f]
 en = "Here is your recovery key"
@@ -4481,7 +4485,7 @@ where = [
   "ios onboarding_rec_title_key: Title when showing the recovery key.",
   "desktop signup_here_is_your_recovery: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "Tässä on palautusavaimesi"
 
 [t_41d0ce5f7d]
 en = "Here are your recovery words"
@@ -4490,7 +4494,7 @@ where = [
   "ios onboarding_rec_title_words: Title when showing the recovery words.",
   "desktop signup_here_are_your_recovery: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "Tässä ovat palautussanasi"
 
 [t_69e5059a90]
 en = "Your recovery key is the same as your 24 words, as one line.\nPaste it somewhere safe. A password manager works great."
@@ -4498,7 +4502,7 @@ where = [
   "android onboarding_phrase_lead_key: Lead under the recovery key heading. The line break separates two sentences.",
   "ios onboarding_rec_lead_key: Explanation when showing the recovery key; the line break is intended.",
 ]
-text = ""
+text = "Palautusavaimesi on sama kuin 24 sanaasi, yhtenä rivinä.\nLiitä se johonkin turvalliseen paikkaan. Salasanojen hallinta sopii hyvin."
 
 [t_bb4f15cf75]
 en = "If you ever switch devices, these 24 words bring your account along.\nSave a copy somewhere safe. Paper works great."
@@ -4506,7 +4510,7 @@ where = [
   "android onboarding_phrase_lead_words: Lead under the recovery words heading. The line break separates two sentences.",
   "ios onboarding_rec_lead_words: Explanation when showing the recovery words; the line break is intended.",
 ]
-text = ""
+text = "Jos joskus vaihdat laitetta, nämä 24 sanaa tuovat tilisi mukanasi.\nTallenna kopio turvalliseen paikkaan. Paperi toimii hyvin."
 
 [t_776efe724c]
 en = "I’ve saved it"
@@ -4515,7 +4519,7 @@ where = [
   "ios onboarding_saved_key: Button after copying the recovery key.",
   "desktop signup_ive_saved_it: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "Tallensin sen"
 
 [t_c2188486fc]
 en = "I’ve saved them"
@@ -4524,7 +4528,7 @@ where = [
   "ios onboarding_saved_words: Button after copying the recovery words.",
   "desktop signup_ive_saved_them: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "Tallensin ne"
 
 [t_a4b3e31ad9]
 en = "Copy again"
@@ -4533,7 +4537,7 @@ where = [
   "ios onboarding_copy_again: Button to copy the recovery key or words again.",
   "desktop signup_copy_again: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "Kopioi uudelleen"
 
 [t_8c32c0a444]
 en = "Copy my key"
