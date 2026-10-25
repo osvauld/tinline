@@ -14,6 +14,8 @@ A tm entry (translator fills `text`, or the plural forms the language needs):
 
 Plural entries carry `en_one`/`en_other` instead of `en`, and the translator
 writes the language's CLDR forms (zero/one/two/few/many/other; `other` required).
+When the same English means different things (the button "Call" vs the noun
+"Call"), give the English entry a `context = "noun"` and it gets its own entry.
 When one platform needs different wording (French "Settings" is Paramètres on
 Android, Réglages on iOS), add `text_ios = "..."` (or `one_ios`, ...) to override it.
 Export keeps existing translations; apply rewrites the per-platform files.
@@ -45,6 +47,9 @@ def tm_id(entry):
         src = "t\0" + entry["text"]
     else:
         src = "p\0" + "\0".join(f"{f}={entry[f]}" for f in FORMS if f in entry)
+    if entry.get("context"):
+        # Same English, different meaning (verb vs noun): translated separately.
+        src += "\0c=" + entry["context"]
     return "t_" + hashlib.sha1(src.encode()).hexdigest()[:10]
 
 

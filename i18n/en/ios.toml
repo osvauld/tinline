@@ -3997,6 +3997,7 @@ note = "Call list: fallback label for a call. Noun, the name of any Tinline call
 
 [shell_call_desc_other]
 text = "Call"
+context = "noun"
 note = "Screen reader phrase for a call row, a whole phrase used as {what} in the row label: any other call. Reads like “Missed call”."
 
 [shell_you]

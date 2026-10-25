@@ -28,6 +28,8 @@ text = "Calling {name}…"
 note = "{name} is the contact's chosen name."
 ```
 
+- Same English, different meaning (button "Call" vs a call as a noun): add
+  `context = "noun"` (any short word) so translators see it as a separate phrase.
 - Placeholders are `{name}`; `{count}` is the integer one. The generator turns
   them into `%1$s`/`%1$d` (Android), `%1$@`/`%1$lld` (iOS) and keeps `{name}`
   for desktop.
