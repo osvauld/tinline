@@ -12152,14 +12152,14 @@ where = [
   "android calls_desc_outgoing: Spoken kind of a Calls row: a call I made and was answered.",
   "ios shell_call_desc_outgoing: Screen reader phrase for a call row, a whole phrase used as {what} in the row label: answered outgoing call. Reads like “Missed call”.",
 ]
-text = ""
+text = "जाने वाली कॉल"
 
 [t_3c2da8482e]
 en = "Call while you were not available"
 where = [
   "android calls_desc_away: Spoken kind of a Calls row: a call that came in while I had turned availability off.",
 ]
-text = ""
+text = "आपके उपलब्ध न होने पर आई कॉल"
 
 [t_342070990f]
 en = "Declined call"
@@ -12167,14 +12167,14 @@ where = [
   "android calls_desc_declined: Spoken kind of a Calls row: a call that was declined.",
   "ios shell_call_desc_declined: Screen reader phrase for a call row, a whole phrase used as {what} in the row label: call that was declined. Reads like “Missed call”.",
 ]
-text = ""
+text = "अस्वीकार की गई कॉल"
 
 [t_2a8e1bc41d]
 en = "Call nobody answered"
 where = [
   "android calls_desc_no_answer: Spoken kind of a Calls row: an outgoing call nobody answered.",
 ]
-text = ""
+text = "बिना जवाब की कॉल"
 
 [t_f9f088ec90]
 en = "Call that couldn’t connect"
@@ -12182,7 +12182,7 @@ where = [
   "android calls_desc_unreachable: Spoken kind of a Calls row: a call that could not connect.",
   "ios shell_call_desc_unreachable: Screen reader phrase for a call row: call that could not reach the other person.",
 ]
-text = ""
+text = "कॉल जो जुड़ नहीं पाई"
 
 [t_fb71c5fddb]
 en = "Public link"
@@ -12190,7 +12190,7 @@ where = [
   "android groupsb_public_link: Title of the switch that opens the group to anyone with the link. A name for the link, not an instruction to open anything.",
   "desktop group_public_link: Desktop, group info: title of the switch that turns the group's public (open) invite link on or off. A noun phrase, not a button.",
 ]
-text = ""
+text = "पब्लिक लिंक"
 
 [t_d13099d50e]
 en = "Sent requests"
@@ -12215,21 +12215,21 @@ en = "Someone would like to add you"
 where = [
   "android notif_request_text_unnamed: Text of the contact request notification when the person has no name.",
 ]
-text = ""
+text = "आपके लिए एक नया संपर्क अनुरोध"
 
 [t_0027a2215b]
 en = "Request accepted"
 where = [
   "android notif_accepted_title: Title of the notification when someone accepted my request.",
 ]
-text = ""
+text = "अनुरोध स्वीकार हुआ"
 
 [t_0e41c3df81]
 en = "Your contact accepted your request. Your line is open."
 where = [
   "android notif_accepted_text_unnamed: Text of the notification when someone accepted my request and has no name.",
 ]
-text = ""
+text = "आपके संपर्क ने आपका अनुरोध स्वीकार कर लिया। आपकी लाइन खुली है।"
 
 [t_b866c0b674]
 en = "Call host: {name}’s device"
@@ -12238,7 +12238,7 @@ where = [
   "ios call_group_host_is: Pill on the group call screen naming the call host. {name} is the member’s first name.",
   "desktop gcall_call_host_device: Desktop, group call screen (in gcall_view.rs), small line that opens \"About this call\". {name} is the first name of the person whose device carries the call.",
 ]
-text = ""
+text = "कॉल होस्ट: {name} का डिवाइस"
 
 [t_07348c8e25]
 en = "Call host: a member’s device"
@@ -12246,7 +12246,7 @@ where = [
   "android gcall_host_label_unnamed: Pill on the group call screen when another member's device carries the call and the member's name is not known.",
   "ios call_group_host_is_someone: Pill on the group call screen naming the call host. A member whose name is not known.",
 ]
-text = ""
+text = "कॉल होस्ट: किसी सदस्य का डिवाइस"
 
 [t_4c02b33d24]
 en = "**This phone** is carrying this call. Everyone in the call connects to it, and it passes the audio on and chooses who is heard when several people speak."
@@ -12254,7 +12254,7 @@ where = [
   "android gcall_about_this_phone: First paragraph of the group call About sheet, when this phone is the call host. The ** marks make 'This phone' bold; keep them around the host.",
   "ios call_group_about_this_phone: Group call details card, first sentence. The host’s name at the start is bold (markdown stars, keep them around the same words); the whole sentence is one string so the verb can agree with it. This phone is the call host.",
 ]
-text = ""
+text = "**यह फ़ोन** इस कॉल को चला रहा है। कॉल में सभी इससे जुड़ते हैं, यह आवाज़ आगे पहुँचाता है और कई लोगों के एक साथ बोलने पर तय करता है कि कौन सुनाई दे।"
 
 [t_5ddff93ea5]
 en = "**{name}’s device** carries this call. Everyone in the call connects to it, and it passes the audio on and chooses who is heard when several people speak."
@@ -12263,7 +12263,7 @@ where = [
   "ios call_group_about_member: Group call details card, first sentence. The host’s name at the start is bold (markdown stars, keep them around the same words); the whole sentence is one string so the verb can agree with it. A member’s device is the call host. {name} is the member’s first name.",
   "desktop gcall_about_device: Desktop, group call \"About this call\" sheet (in gcall_view.rs, gcall_about). The call is carried by another person's device. {name} is that person's first name. **…** is shown bold.",
 ]
-text = ""
+text = "**{name} का डिवाइस** यह कॉल चलाता है। कॉल में सभी इससे जुड़ते हैं, यह आवाज़ आगे पहुँचाता है और कई लोगों के एक साथ बोलने पर तय करता है कि कौन सुनाई दे।"
 
 [t_5d46353eea]
 en = "**The call host** carries this call. Everyone in the call connects to it, and it passes the audio on and chooses who is heard when several people speak."
@@ -12272,28 +12272,28 @@ where = [
   "ios call_group_about_unknown: Group call details card, first sentence. The host’s name at the start is bold (markdown stars, keep them around the same words); the whole sentence is one string so the verb can agree with it. The host is not known yet.",
   "desktop gcall_about_unnamed: Desktop, group call \"About this call\" sheet (in gcall_view.rs, gcall_about). The call host is another device whose owner has no known name. **…** is shown bold.",
 ]
-text = ""
+text = "**कॉल होस्ट** यह कॉल चलाता है। कॉल में सभी इससे जुड़ते हैं, यह आवाज़ आगे पहुँचाता है और कई लोगों के एक साथ बोलने पर तय करता है कि कौन सुनाई दे।"
 
 [t_c54c6d646f]
 en = "Started by someone"
 where = [
   "android gcall_started_by_unnamed: Second line of the call-in-progress bar when the person who started it is not known.",
 ]
-text = ""
+text = "किसी ने शुरू की"
 
 [t_7886102212]
 en = "Someone is calling the group {group}"
 where = [
   "android gcall_is_calling_group_desc_unnamed: Screen reader description of the ringing group call card when the caller is not known. {group} is the group's name.",
 ]
-text = ""
+text = "किसी ने ग्रुप {group} में कॉल की है"
 
 [t_87c17e37a0]
 en = "Someone started a call in {group}"
 where = [
   "android gcall_started_call_desc_unnamed: Screen reader description of the group call card when the person who started it is not known. {group} is the group's name.",
 ]
-text = ""
+text = "किसी ने {group} में कॉल शुरू की"
 
 [t_45bcb20cef]
 en = "Someone is calling the group"
@@ -12301,7 +12301,7 @@ where = [
   "android notif_group_calling_unnamed: Text of the notification when someone whose name is not known starts a group call.",
   "android gcall_is_calling_group_unnamed: Second line of the group call card while it rings, when the caller is not known.",
 ]
-text = ""
+text = "किसी ने ग्रुप कॉल शुरू की है"
 
 [t_64fc08250f]
 en = ", "
@@ -12309,14 +12309,14 @@ where = [
   "android common_list_separator: Joins items in a list on phones older than Android 10, which cannot format lists by language: 'Ana, Sam'. Use the comma (and any space) your language puts between list items.",
   "desktop common_list_separator: Between items of a list of three or more names (the last two are joined with common_list_and). Keep the trailing space if the language needs one.",
 ]
-text = ""
+text = ", "
 
 [t_821622c40b]
 en = "{list}. Open actions"
 where = [
   "android groupsb_member_desc: Screen-reader description of a member row. {list} is the member's name, role and what they host, already joined into a list in the app's language, such as 'Maya, owner, host'.",
 ]
-text = ""
+text = "{list}। विकल्प खोलें"
 
 [t_86f638dc40]
 en = "host"
@@ -12337,7 +12337,7 @@ en = "While you’re away, people who call see that they couldn’t reach you. N
 where = [
   "android avail_note_unnamed: Hint at the bottom of the availability sheet when my name is empty.",
 ]
-text = ""
+text = "जब आप दूर हों, तब कॉल करने वालों को दिखता है कि आपसे संपर्क नहीं हो पाया। कुछ भी कतार में नहीं रखा जाता और किसी को वजह नहीं बताई जाती।"
 
 [t_f0ff6a4c21]
 en = "Your contacts and chats are arriving from your other device and will keep in step on both."
@@ -12345,35 +12345,35 @@ where = [
   "android onboarding_linked_lead_unnamed: Lead after linking, when the other device has no name.",
   "ios onboarding_linked_lead_unnamed: Explanation after linking when the other device has no name.",
 ]
-text = ""
+text = "आपके संपर्क और चैट आपके दूसरे डिवाइस से आ रहे हैं और दोनों पर एक जैसे बने रहेंगे।"
 
 [t_72ddbf5adc]
 en = "Someone started a call"
 where = [
   "android gcall_started_call_unnamed: Second line of the group call card, when the person who started the call is not known.",
 ]
-text = ""
+text = "किसी ने कॉल शुरू की"
 
 [t_7db0ce736c]
 en = "Sent, waiting for their device to confirm"
 where = [
   "ios kit_tick_sent_their: Screen-reader label of a message tick: sent, no confirmation yet. Used when the other person's name is not known; their means the other person's.",
 ]
-text = ""
+text = "भेजा गया, सामने वाले के डिवाइस की पुष्टि का इंतज़ार"
 
 [t_affe0a3a21]
 en = "Read on their device"
 where = [
   "ios kit_tick_read_their: Screen-reader label of a message tick: read. Used when the other person's name is not known.",
 ]
-text = ""
+text = "सामने वाले के डिवाइस पर पढ़ लिया गया"
 
 [t_944f47e9e0]
 en = "Chat with this contact?"
 where = [
   "ios chat_card_chat_with_unnamed: Banner on a found contact card whose name is not known, for a contact already in Tinline.",
 ]
-text = ""
+text = "इस संपर्क से चैट करें?"
 
 [t_eb90d80ea2]
 en = "Match {index} of {total}"
@@ -12445,27 +12445,29 @@ where = [
   "ios group_member_flags: Part of a member row sub line. {count} is how many flags the member has, {total} how many remove them.",
   "ios group_flags_count_desc: Spoken label of the flag meter. {count} is flags so far, {total} flags that remove.",
 ]
+one = "{total} में से {count} फ़्लैग"
+other = "{total} में से {count} फ़्लैग"
 
 [t_579c5fced0]
 en = "{name}, owner. Open actions"
 where = [
   "ios group_member_desc_owner: Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is owner.",
 ]
-text = ""
+text = "{name}, मालिक। विकल्प खोलें"
 
 [t_3cba27b06c]
 en = "{name}, admin. Open actions"
 where = [
   "ios group_member_desc_admin: Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is admin.",
 ]
-text = ""
+text = "{name}, एडमिन। विकल्प खोलें"
 
 [t_56b783b353]
 en = "{name}, member. Open actions"
 where = [
   "ios group_member_desc_member: Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is member.",
 ]
-text = ""
+text = "{name}, सदस्य। विकल्प खोलें"
 
 [t_f76352b5f0]
 en = "Hosts store the group and pass posts on when others are offline. They are members you trust: a host can read everything posted in this group. Appoint a host from a member’s menu; they have to accept. Removing a host changes the group’s address within 2 days, so that device can no longer reach it."
@@ -12497,6 +12499,8 @@ en_other = "{count} more flags from any admin remove you from the group. Flags c
 where = [
   "ios group_flags_left: Note under the flag meter. {count} is how many more flags remove the user.",
 ]
+one = "किसी भी एडमिन का {count} और फ़्लैग आपको ग्रुप से हटा देगा। फ़्लैग वापस नहीं लिए जा सकते। तब तक आप पढ़ और पोस्ट कर सकते हैं।"
+other = "किसी भी एडमिन के {count} और फ़्लैग आपको ग्रुप से हटा देंगे। फ़्लैग वापस नहीं लिए जा सकते। तब तक आप पढ़ और पोस्ट कर सकते हैं।"
 
 [t_c23190545c]
 en = "Removed after {total} admin flags"
@@ -12524,21 +12528,21 @@ en = "Cancel call host request · {device}"
 where = [
   "ios group_member_cancel_callhost_device: Action row title when the member has several devices. {device} is a short device id.",
 ]
-text = ""
+text = "कॉल होस्ट अनुरोध रद्द करें · {device}"
 
 [t_a1cf59a01f]
 en = "Remove as call host · {device}"
 where = [
   "ios group_member_remove_callhost_device: Action row title when the member has several devices. {device} is a short device id.",
 ]
-text = ""
+text = "कॉल होस्ट से हटाएँ · {device}"
 
 [t_634583160a]
 en = "Make call host · {device}"
 where = [
   "ios group_member_make_callhost_device: Action row title when the member has several devices. {device} is a short device id.",
 ]
-text = ""
+text = "कॉल होस्ट बनाएँ · {device}"
 
 [t_2c5d81e205]
 en = "{total} flags remove {name} from the group"
@@ -12611,7 +12615,7 @@ en = "Waiting for them · via {group}"
 where = [
   "ios group_req_pending_unnamed: State line of a chat request you sent, when the person’s name is not known. {group} is the group.",
 ]
-text = ""
+text = "उनके जवाब का इंतज़ार · {group} के ज़रिए"
 
 [t_b5f5c33f07]
 en = "Accepted · messages only"
@@ -12619,7 +12623,7 @@ where = [
   "ios group_req_accepted_msgs_unnamed: State line of a chat request you sent, when the person’s name is not known: accepted, messages only.",
   "desktop group_sent_accepted_messages_unnamed: Desktop, group requests I sent (in group_live.rs, sent_line): the state line of a private-chat request. Someone accepted; messages only for now.",
 ]
-text = ""
+text = "स्वीकार किया · सिर्फ़ संदेश"
 
 [t_ab33c3e6a5]
 en = "Accepted · connecting"
@@ -12627,7 +12631,7 @@ where = [
   "ios group_req_accepted_connecting_unnamed: State line of a chat request you sent, when the person’s name is not known: accepted, connecting.",
   "desktop group_sent_accepted_connecting_unnamed: Desktop, group requests I sent (in group_live.rs, sent_line): the state line of a private-chat request. Someone accepted; connecting.",
 ]
-text = ""
+text = "स्वीकार किया · जुड़ रहा है"
 
 [t_7df34dff82]
 en = "Yours will be flag {yours} of {total}. {name} is removed right away: hosts refuse their new messages and they see they were removed."
@@ -12649,7 +12653,7 @@ where = [
   "ios group_notice_request_accepted_unnamed: Notice when your private chat request was accepted by someone whose name is not known.",
   "desktop group_notice_accepted_yours_unnamed: Desktop, group notice line (in group_live.rs). Someone with no known name accepted my private-chat request.",
 ]
-text = ""
+text = "आपका अनुरोध स्वीकार कर लिया गया। अब आप एक-दूसरे को संदेश भेज सकते हैं; जब तक आप में से कोई अनुमति न दे, कॉल बंद रहेंगी।"
 
 [t_a1c457fbac]
 en = "Group calls aren’t available here yet."
@@ -12670,7 +12674,7 @@ en = "An admin asked this phone to host {group}"
 where = [
   "ios group_host_asked_title_admin: Card title: an admin whose name is not known asked this phone to host. {group} is the group.",
 ]
-text = ""
+text = "एक एडमिन ने इस फ़ोन से {group} को होस्ट करने के लिए कहा है"
 
 [t_d9be045783]
 en = "Delivered {count}/{total}"
@@ -12719,14 +12723,14 @@ en = "Invited by someone outside your contacts"
 where = [
   "ios group_join_invited_by_unknown: Line on the join preview when the inviter is not in your contacts.",
 ]
-text = ""
+text = "आपके संपर्कों से बाहर के किसी व्यक्ति ने आमंत्रित किया"
 
 [t_0bc2a89e30]
 en = "Owner isn’t in your contacts"
 where = [
   "ios group_join_owner_unknown: Line on the join preview when the owner is not in your contacts.",
 ]
-text = ""
+text = "मालिक आपके संपर्कों में नहीं हैं"
 
 [t_e2527aaf3f]
 en = "Anyone with this link or QR can join {group} for 7 days. Share it over an app you trust; you see who joined and can flag them out. To invite your contacts directly, use Add members."
@@ -12747,7 +12751,7 @@ en = "Join this group on Tinline: {link}"
 where = [
   "ios group_share_text_unnamed: Text shared with the invite link when the group's name is not known. {link} is the invite link.",
 ]
-text = ""
+text = "Tinline पर इस ग्रुप से जुड़ें: {link}"
 
 [t_5cd5123974]
 en = "**{name}** invited you to **{group}**"
@@ -12755,7 +12759,7 @@ where = [
   "ios group_invited_you: Invitation card. The inviter's name and the group's name are bold (markdown stars, keep them around the same words). {name} is the inviter's first name, {group} the group.",
   "desktop group_invitation_line: Desktop, groups list (in group_live_view.rs): an invitation card. {name} is the first name of who invited me, {group} the group name. **…** is shown bold.",
 ]
-text = ""
+text = "**{name}** ने आपको **{group}** में आमंत्रित किया"
 
 [t_b187abdb8a]
 en = "Someone invited you to **{group}**"
@@ -12763,28 +12767,28 @@ where = [
   "ios group_invited_you_someone: Invitation card when the inviter's name is not known. The group's name is bold (markdown stars). {group} is the group.",
   "desktop group_invitation_line_unnamed: Desktop, groups list (in group_live_view.rs): an invitation card when I cannot name who invited me. {group} is the group name. **…** is shown bold.",
 ]
-text = ""
+text = "किसी ने आपको **{group}** में आमंत्रित किया"
 
 [t_403876cddd]
 en = "**{name}** wants to chat"
 where = [
   "ios group_wants_to_chat: Chat request card. The requester's name is bold (markdown stars, keep them around the name). {name} is the requester's name.",
 ]
-text = ""
+text = "**{name}** की ओर से चैट अनुरोध"
 
 [t_1dd936cf82]
 en = "**Someone** wants to chat"
 where = [
   "ios group_wants_to_chat_someone: Chat request card when the requester's name is not known. The word Someone is bold (markdown stars).",
 ]
-text = ""
+text = "**किसी** की ओर से चैट अनुरोध"
 
 [t_14c772ceb8]
 en = "Accepting adds them as a contact for messages only. You can allow calls later."
 where = [
   "ios group_request_accept_note_unnamed: Note on a chat request card when the requester's name is not known.",
 ]
-text = ""
+text = "स्वीकार करने पर वे सिर्फ़ संदेशों के लिए आपके संपर्क बनेंगे। कॉल की अनुमति आप बाद में दे सकते हैं।"
 
 [t_02147a4ac8]
 en = "Diagnostics"
@@ -12812,7 +12816,7 @@ en = "Send a {hz} Hz tone instead of the microphone"
 where = [
   "ios settings_test_tone_sub: Subtitle of the Test tone row. {hz} is the tone’s frequency in hertz.",
 ]
-text = ""
+text = "माइक्रोफ़ोन की जगह {hz} Hz की टोन भेजें"
 
 [t_0a5f4a65a3]
 en_one = "{count} word"
@@ -12820,6 +12824,8 @@ en_other = "{count} words"
 where = [
   "ios security_tab_words: Tab on the recovery backup page: the recovery words. {count} is the number of words (24).",
 ]
+one = "{count} शब्द"
+other = "{count} शब्द"
 
 [t_aafad48a7f]
 en = "This device · iOS"
@@ -12840,14 +12846,14 @@ en = "Unlinked the device"
 where = [
   "ios devices_unlinked_msg_unnamed: Toast after unlinking a device that has no name.",
 ]
-text = ""
+text = "डिवाइस का लिंक हटा दिया गया"
 
 [t_4357f2aa44]
 en = "Syncing…"
 where = [
   "ios devices_syncing_unnamed: Toast when Sync now is pressed for a device that has no name.",
 ]
-text = ""
+text = "सिंक हो रहा है…"
 
 [t_bcd7a64a42]
 en = "Welcome back, "
@@ -12882,7 +12888,7 @@ en = "Check that your other device shows this code, then approve there."
 where = [
   "ios link_same_code_lead_unnamed: Explanation under Same code on both? Used when the other device has no name; says your other device.",
 ]
-text = ""
+text = "देखें कि आपके दूसरे डिवाइस पर यही कोड दिख रहा है, फिर वहाँ मंज़ूरी दें।"
 
 [t_f6a2aab1ac]
 en = "Expires in {minutes}:{seconds} · works once"
@@ -12903,21 +12909,21 @@ en = "**The new device** wants to join your account. It should be showing the sa
 where = [
   "ios link_match_body_unnamed: Body when comparing codes and the new device has no name. The words **The new device** are bold (markdown stars, keep them around them).",
 ]
-text = ""
+text = "**नया डिवाइस** आपके खाते से जुड़ना चाहता है। उस पर नीचे जैसे ही छह अंक दिखने चाहिए।"
 
 [t_19b46952f6]
 en = "On the new device, open Tinline and choose **Link to a device**."
 where = [
   "ios link_scan_step1: Step 1 on the scan page. The button name **Link to a device** is bold (markdown stars, keep them around the button name); it must match the button's label on the new device. Shown as the first of two lines; the number is not part of the text.",
 ]
-text = ""
+text = "नए डिवाइस पर Tinline खोलें और **किसी डिवाइस से लिंक करें** चुनें।"
 
 [t_039fa6990e]
 en = "Your account was removed from this phone by one of your other devices. Its contacts, chats and calls are deleted here. Your other devices are not affected."
 where = [
   "ios link_unlinked_lead_unnamed: Explanation after this phone was unlinked by another device, when the account has no name.",
 ]
-text = ""
+text = "आपके किसी दूसरे डिवाइस ने इस फ़ोन से आपका खाता हटा दिया। इसके संपर्क, चैट और कॉल यहाँ से मिटा दिए गए हैं। आपके दूसरे डिवाइस पर इसका कोई असर नहीं है।"
 
 [t_e9172d3ef4]
 en = "Your account is back on this phone. Your contacts, chats and call history are kept on your other devices, not with us. This phone starts with an empty contact list."
@@ -12996,21 +13002,21 @@ en = "Call while not available"
 where = [
   "ios shell_call_desc_unavailable: Screen reader phrase for a call row, a whole phrase used as {what} in the row label: incoming call that came while the user had set themselves unavailable. Reads like “Missed call”.",
 ]
-text = ""
+text = "उपलब्ध न होने के दौरान आई कॉल"
 
 [t_7286c55835]
 en = "Call with no answer"
 where = [
   "ios shell_call_desc_no_answer: Screen reader phrase for a call row, a whole phrase used as {what} in the row label: outgoing call nobody picked up. Reads like “Missed call”.",
 ]
-text = ""
+text = "बिना जवाब की कॉल"
 
 [t_b70d3c6bb5]
 en = "Call couldn’t connect"
 where = [
   "ios shell_call_what_unreachable: Call list: call that could not reach the other person.",
 ]
-text = ""
+text = "कॉल जुड़ नहीं पाई"
 
 [t_46bad378f1]
 en = "Word {n} isn’t in the recovery word list. Check the spelling."
@@ -13062,14 +13068,14 @@ en = "{name}, {what}, {stamp}. {action}"
 where = [
   "ios shell_calls_row_a11y: Screen reader label of a call row. {name} is the contact, {what} a whole phrase such as “Missed call”, {stamp} when, {action} what tapping does.",
 ]
-text = ""
+text = "{name}, {what}, {stamp}। {action}"
 
 [t_f443d6d138]
 en = "{name}, {what}, {duration}, {stamp}. {action}"
 where = [
   "ios shell_calls_row_a11y_duration: Screen reader label of an answered call row. {name} is the contact, {what} a whole phrase such as “Incoming call”, {duration} how long, {stamp} when, {action} what tapping does.",
 ]
-text = ""
+text = "{name}, {what}, {duration}, {stamp}। {action}"
 
 [t_6c3d485347]
 en = "{name}, {what}, {stamp}. Start or join a call"
@@ -13139,7 +13145,7 @@ en = "That is too long. Each piece of information can be up to {limit}."
 where = [
   "ios people_rule_value_long: Profile check: a value is too long. {limit} is the size limit with its unit, such as 16 KiB.",
 ]
-text = ""
+text = "यह बहुत लंबा है। हर जानकारी {limit} तक हो सकती है।"
 
 [t_767555f71c]
 en = "Drag to move the picture. Use the slider to zoom."
@@ -13225,7 +13231,7 @@ en = "The call couldn’t connect"
 where = [
   "ios call_group_connect_failed: Group call start failure, generic; the call is the subject.",
 ]
-text = ""
+text = "कॉल जुड़ नहीं पाई"
 
 [t_dac996d3e9]
 en = "+{count} more"
@@ -13239,7 +13245,7 @@ en = "Call host: your other device"
 where = [
   "ios call_group_host_is_yours: Pill on the group call screen naming the call host. Another device of the user’s.",
 ]
-text = ""
+text = "कॉल होस्ट: आपका दूसरा डिवाइस"
 
 [t_7cda722e2e]
 en = "{name} is calling the group {group}"
@@ -13274,7 +13280,7 @@ en = "Someone was removed after {total} admin flags"
 where = [
   "ios group_sys_removed_someone: System line in a group chat (the centred grey line). A member whose name is unknown was removed. {total} is the number of admin flags that remove.",
 ]
-text = ""
+text = "{total} एडमिन फ़्लैग के बाद किसी सदस्य को हटा दिया गया"
 
 [t_6663ab075c]
 en = "You made yourself an admin"
@@ -13282,7 +13288,7 @@ where = [
   "ios group_sys_admin_you_you: System line in a group chat (the centred grey line). Admin role given. Actor: the user. Subject: the user.",
   "desktop group_sys_admin_you_you: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Admin role given: I did it, to me.",
 ]
-text = ""
+text = "आपने खुद को एडमिन बनाया"
 
 [t_49d670362c]
 en = "You made {name} an admin"
@@ -13290,7 +13296,7 @@ where = [
   "ios group_sys_admin_you_named: System line in a group chat (the centred grey line). Admin role given. Actor: the user. Subject: a named member. {name} is the member it was done to.",
   "desktop group_sys_admin_you_other: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Admin role given: I did it, to {name}, a person.",
 ]
-text = ""
+text = "आपने {name} को एडमिन बनाया"
 
 [t_ea5318e5e0]
 en = "{by} made {name} an admin"
@@ -13306,7 +13312,7 @@ where = [
   "ios group_sys_admin_someone_named: System line in a group chat (the centred grey line). Admin role given. Actor: a member whose name is unknown. Subject: a named member. {name} is the member it was done to.",
   "desktop group_sys_admin_someone_other: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Admin role given: someone I cannot name did it, to {name}, a person.",
 ]
-text = ""
+text = "किसी ने {name} को एडमिन बनाया"
 
 [t_5773dfd4ed]
 en = "You removed yourself as admin"
@@ -13314,7 +13320,7 @@ where = [
   "ios group_sys_unadmin_you_you: System line in a group chat (the centred grey line). Admin role taken away. Actor: the user. Subject: the user.",
   "desktop group_sys_unadmin_you_you: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Admin role taken away: I did it, to me.",
 ]
-text = ""
+text = "आपने खुद को एडमिन से हटाया"
 
 [t_6e2111b0ea]
 en = "You removed {name} as admin"
@@ -13322,7 +13328,7 @@ where = [
   "ios group_sys_unadmin_you_named: System line in a group chat (the centred grey line). Admin role taken away. Actor: the user. Subject: a named member. {name} is the member it was done to.",
   "desktop group_sys_unadmin_you_other: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Admin role taken away: I did it, to {name}, a person.",
 ]
-text = ""
+text = "आपने {name} को एडमिन से हटाया"
 
 [t_870567c1f4]
 en = "{by} removed {name} as admin"
@@ -13338,7 +13344,7 @@ where = [
   "ios group_sys_unadmin_someone_named: System line in a group chat (the centred grey line). Admin role taken away. Actor: a member whose name is unknown. Subject: a named member. {name} is the member it was done to.",
   "desktop group_sys_unadmin_someone_other: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Admin role taken away: someone I cannot name did it, to {name}, a person.",
 ]
-text = ""
+text = "किसी ने {name} को एडमिन से हटाया"
 
 [t_c3c984737b]
 en = "A member’s device now hosts the group"
@@ -13346,7 +13352,7 @@ where = [
   "ios group_sys_host_added_someone: System line in a group chat (the centred grey line). A device of a member whose name is unknown now hosts the group.",
   "desktop group_sys_host_added_someone: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). One device of someone I cannot name became a host.",
 ]
-text = ""
+text = "अब किसी सदस्य का एक डिवाइस ग्रुप को होस्ट करता है"
 
 [t_bf5df7a742]
 en = "A member’s device stopped hosting the group"
@@ -13354,112 +13360,112 @@ where = [
   "ios group_sys_host_removed_someone: System line in a group chat (the centred grey line). A device of a member whose name is unknown stopped hosting the group.",
   "desktop group_sys_host_removed_someone: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). One device of someone I cannot name stopped hosting.",
 ]
-text = ""
+text = "किसी सदस्य के एक डिवाइस ने ग्रुप को होस्ट करना बंद कर दिया"
 
 [t_50e0e3a61f]
 en = "{name}, owner and call host. Open actions"
 where = [
   "ios group_member_desc_owner_callhost: Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is owner and call host.",
 ]
-text = ""
+text = "{name}, मालिक और कॉल होस्ट। विकल्प खोलें"
 
 [t_9ecb0422e1]
 en = "{name}, owner and host. Open actions"
 where = [
   "ios group_member_desc_owner_host: Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is owner and host.",
 ]
-text = ""
+text = "{name}, मालिक और होस्ट। विकल्प खोलें"
 
 [t_8645192669]
 en = "{name}, owner, host and call host. Open actions"
 where = [
   "ios group_member_desc_owner_host_callhost: Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is owner, host and call host.",
 ]
-text = ""
+text = "{name}, मालिक, होस्ट और कॉल होस्ट। विकल्प खोलें"
 
 [t_c861ad6117]
 en = "{name}, admin and call host. Open actions"
 where = [
   "ios group_member_desc_admin_callhost: Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is admin and call host.",
 ]
-text = ""
+text = "{name}, एडमिन और कॉल होस्ट। विकल्प खोलें"
 
 [t_9296b31c8f]
 en = "{name}, admin and host. Open actions"
 where = [
   "ios group_member_desc_admin_host: Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is admin and host.",
 ]
-text = ""
+text = "{name}, एडमिन और होस्ट। विकल्प खोलें"
 
 [t_7df5a10cb5]
 en = "{name}, admin, host and call host. Open actions"
 where = [
   "ios group_member_desc_admin_host_callhost: Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is admin, host and call host.",
 ]
-text = ""
+text = "{name}, एडमिन, होस्ट और कॉल होस्ट। विकल्प खोलें"
 
 [t_51c0282c1c]
 en = "{name}, member and call host. Open actions"
 where = [
   "ios group_member_desc_member_callhost: Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is member and call host.",
 ]
-text = ""
+text = "{name}, सदस्य और कॉल होस्ट। विकल्प खोलें"
 
 [t_e66e085198]
 en = "{name}, member and host. Open actions"
 where = [
   "ios group_member_desc_member_host: Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is member and host.",
 ]
-text = ""
+text = "{name}, सदस्य और होस्ट। विकल्प खोलें"
 
 [t_4ccca82c9f]
 en = "{name}, member, host and call host. Open actions"
 where = [
   "ios group_member_desc_member_host_callhost: Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is member, host and call host.",
 ]
-text = ""
+text = "{name}, सदस्य, होस्ट और कॉल होस्ट। विकल्प खोलें"
 
 [t_bab452c602]
 en = "Host online"
 where = [
   "ios group_host_online: Presence under a host or call host device in group info: that device is online.",
 ]
-text = ""
+text = "होस्ट ऑनलाइन"
 
 [t_fca7141b23]
 en = "Host offline"
 where = [
   "ios group_host_offline: Presence under a host or call host device in group info: that device is offline.",
 ]
-text = ""
+text = "होस्ट ऑफ़लाइन"
 
 [t_c19eb247f5]
 en = "Online · also hosts calls"
 where = [
   "ios group_host_online_calls: Presence under a device that is a chat host and also a call host: online.",
 ]
-text = ""
+text = "ऑनलाइन · कॉल भी होस्ट करता है"
 
 [t_7444310255]
 en = "Offline · also hosts calls"
 where = [
   "ios group_host_offline_calls: Presence under a device that is a chat host and also a call host: offline.",
 ]
-text = ""
+text = "ऑफ़लाइन · कॉल भी होस्ट करता है"
 
 [t_4b3dcfea10]
 en = "**Your other device** carries this call. Everyone in the call connects to it, and it passes the audio on and chooses who is heard when several people speak."
 where = [
   "ios call_group_about_your_other: Group call details card, first sentence. The host’s name at the start is bold (markdown stars, keep them around the same words); the whole sentence is one string so the verb can agree with it. Another device of the user’s is the call host.",
 ]
-text = ""
+text = "**आपका दूसरा डिवाइस** यह कॉल चलाता है। कॉल में सभी इससे जुड़ते हैं, यह आवाज़ आगे पहुँचाता है और कई लोगों के एक साथ बोलने पर तय करता है कि कौन सुनाई दे।"
 
 [t_5431505ef8]
 en = "**A member’s device** carries this call. Everyone in the call connects to it, and it passes the audio on and chooses who is heard when several people speak."
 where = [
   "ios call_group_about_someone: Group call details card, first sentence. The host’s name at the start is bold (markdown stars, keep them around the same words); the whole sentence is one string so the verb can agree with it. A member whose name is not known hosts the call.",
 ]
-text = ""
+text = "**किसी सदस्य का डिवाइस** यह कॉल चलाता है। कॉल में सभी इससे जुड़ते हैं, यह आवाज़ आगे पहुँचाता है और कई लोगों के एक साथ बोलने पर तय करता है कि कौन सुनाई दे।"
 
 [t_3c5ad294ce]
 en = "Busy until tomorrow {time}"
@@ -13467,7 +13473,7 @@ where = [
   "ios people_busy_until_tomorrow: Availability line while busy until a time. {time} is a clock time formatted for the user’s region, such as 18:30. The time is tomorrow.",
   "desktop profile_busy_until_tomorrow: Desktop, profile availability (in profile_ui.rs, busy_until). Shown while I am marked busy. {time} is a clock time such as 18:00. This one is for a time tomorrow.",
 ]
-text = ""
+text = "कल {time} तक व्यस्त"
 
 [t_1b7eba8ee8]
 en = "Busy until Monday {time}"
@@ -13475,7 +13481,7 @@ where = [
   "ios people_busy_until_mon: Availability line while busy until a time. {time} is a clock time formatted for the user’s region, such as 18:30. The time is on a Monday, a later day this week.",
   "desktop profile_busy_until_mon: Desktop, profile availability (in profile_ui.rs, busy_until). Shown while I am marked busy. {time} is a clock time such as 18:00. This one is for a time on Monday (within the next week).",
 ]
-text = ""
+text = "सोमवार {time} तक व्यस्त"
 
 [t_a8cafb2a3d]
 en = "Busy until Tuesday {time}"
@@ -13483,7 +13489,7 @@ where = [
   "ios people_busy_until_tue: Availability line while busy until a time. {time} is a clock time formatted for the user’s region, such as 18:30. The time is on a Tuesday, a later day this week.",
   "desktop profile_busy_until_tue: Desktop, profile availability (in profile_ui.rs, busy_until). Shown while I am marked busy. {time} is a clock time such as 18:00. This one is for a time on Tuesday (within the next week).",
 ]
-text = ""
+text = "मंगलवार {time} तक व्यस्त"
 
 [t_852e51c301]
 en = "Busy until Wednesday {time}"
@@ -13491,7 +13497,7 @@ where = [
   "ios people_busy_until_wed: Availability line while busy until a time. {time} is a clock time formatted for the user’s region, such as 18:30. The time is on a Wednesday, a later day this week.",
   "desktop profile_busy_until_wed: Desktop, profile availability (in profile_ui.rs, busy_until). Shown while I am marked busy. {time} is a clock time such as 18:00. This one is for a time on Wednesday (within the next week).",
 ]
-text = ""
+text = "बुधवार {time} तक व्यस्त"
 
 [t_8100f9a12f]
 en = "Busy until Thursday {time}"
@@ -13499,7 +13505,7 @@ where = [
   "ios people_busy_until_thu: Availability line while busy until a time. {time} is a clock time formatted for the user’s region, such as 18:30. The time is on a Thursday, a later day this week.",
   "desktop profile_busy_until_thu: Desktop, profile availability (in profile_ui.rs, busy_until). Shown while I am marked busy. {time} is a clock time such as 18:00. This one is for a time on Thursday (within the next week).",
 ]
-text = ""
+text = "गुरुवार {time} तक व्यस्त"
 
 [t_54ac93afbc]
 en = "Busy until Friday {time}"
@@ -13507,7 +13513,7 @@ where = [
   "ios people_busy_until_fri: Availability line while busy until a time. {time} is a clock time formatted for the user’s region, such as 18:30. The time is on a Friday, a later day this week.",
   "desktop profile_busy_until_fri: Desktop, profile availability (in profile_ui.rs, busy_until). Shown while I am marked busy. {time} is a clock time such as 18:00. This one is for a time on Friday (within the next week).",
 ]
-text = ""
+text = "शुक्रवार {time} तक व्यस्त"
 
 [t_5641afbd38]
 en = "Busy until Saturday {time}"
@@ -13515,7 +13521,7 @@ where = [
   "ios people_busy_until_sat: Availability line while busy until a time. {time} is a clock time formatted for the user’s region, such as 18:30. The time is on a Saturday, a later day this week.",
   "desktop profile_busy_until_sat: Desktop, profile availability (in profile_ui.rs, busy_until). Shown while I am marked busy. {time} is a clock time such as 18:00. This one is for a time on Saturday (within the next week).",
 ]
-text = ""
+text = "शनिवार {time} तक व्यस्त"
 
 [t_43b0917c92]
 en = "Busy until Sunday {time}"
@@ -13523,7 +13529,7 @@ where = [
   "ios people_busy_until_sun: Availability line while busy until a time. {time} is a clock time formatted for the user’s region, such as 18:30. The time is on a Sunday, a later day this week.",
   "desktop profile_busy_until_sun: Desktop, profile availability (in profile_ui.rs, busy_until). Shown while I am marked busy. {time} is a clock time such as 18:00. This one is for a time on Sunday (within the next week).",
 ]
-text = ""
+text = "रविवार {time} तक व्यस्त"
 
 [t_493d670f89]
 en = "Today, {time}"
@@ -13531,7 +13537,7 @@ where = [
   "ios chat_when_today: Date and time line in a message detail or the photo viewer title, for today. {time} is a 24-hour clock time such as 16:02.",
   "ios group_when_today: Date and time line in a group message or a sent request, for today. {time} is a 24-hour clock time such as 16:02.",
 ]
-text = ""
+text = "आज, {time}"
 
 [t_507ac7d2de]
 en = "Yesterday, {time}"
@@ -13539,7 +13545,7 @@ where = [
   "ios chat_when_yesterday: Date and time line in a message detail or the photo viewer title, for yesterday. {time} is a 24-hour clock time such as 16:02.",
   "ios group_when_yesterday: Date and time line in a group message or a sent request, for yesterday. {time} is a 24-hour clock time such as 16:02.",
 ]
-text = ""
+text = "कल, {time}"
 
 [t_8a351f5983]
 en = "{date}, {time}"
@@ -13548,14 +13554,14 @@ where = [
   "ios group_when_date: Date and time line in a group message or a sent request, for an older day. {date} is a day formatted for the user’s region, such as Oct 8, {time} a 24-hour clock time.",
   "ios people_when_date: Date and time of a block, e.g. “You blocked Ana · Oct 10, 13:50”. {date} is a day formatted for the user’s region, {time} a 24-hour clock time.",
 ]
-text = ""
+text = "{date}, {time}"
 
 [t_1406c5139e]
 en = "A device name is {min} to {max} characters."
 where = [
   "desktop common_a_device_name_is: Shared label, used in several places (app, link). {min} and {max} are the shortest and longest allowed length, numbers.",
 ]
-text = ""
+text = "डिवाइस का नाम {min} से {max} वर्णों का होता है।"
 
 [t_4a7397331d]
 en = "Audio devices"
@@ -13590,7 +13596,7 @@ en = "Give this computer a name of {min} to {max} characters."
 where = [
   "desktop common_give_this_computer_a: Shared label, used in several places (app, link). {min} and {max} are the shortest and longest allowed length, numbers.",
 ]
-text = ""
+text = "इस कंप्यूटर को {min} से {max} वर्णों का नाम दें।"
 
 [t_6d8e87ae5e]
 en = "Hosting"
@@ -14045,7 +14051,7 @@ en = "While you’re on this call"
 where = [
   "desktop call_during_your_call: Desktop, call waiting card (in view.rs, waiting_banner), second line under \"{name} is calling\". A complete line saying the other call arrives while I am on this one.",
 ]
-text = ""
+text = "आपकी इस कॉल के दौरान"
 
 [t_b19e015d90]
 en = "End-to-end encrypted · Ctrl M mute · Ctrl E end · Esc minimizes"
@@ -14059,7 +14065,7 @@ en = "Answering ends your call with {name}."
 where = [
   "desktop call_ends_your_call_with: Desktop, call waiting card (in view.rs, waiting_banner), small line under the buttons. {name} is the first name of the person I am talking to now.",
 ]
-text = ""
+text = "जवाब देने पर {name} के साथ आपकी कॉल कट जाएगी।"
 
 [t_4af8cd18a6]
 en = "Enter answers · Esc declines"
@@ -14101,7 +14107,7 @@ en = "Calling you…"
 where = [
   "desktop call_is_calling_you: Desktop, incoming call screen (in view.rs, video_call_view), status line under the caller's name, which is shown above it. A complete short line.",
 ]
-text = ""
+text = "आपको कॉल आ रही है…"
 
 [t_8f764feef1]
 en = "{rtt_ms} ms round trip · {value}% lost"
@@ -14654,7 +14660,7 @@ en = "These {words} words are the only way to restore your identity on another d
 where = [
   "desktop gate_these_24_words_are: Desktop, sign-in and gate screens (in view.rs, phrase_view). {words} is the number of recovery words (24), a number.",
 ]
-text = ""
+text = "किसी दूसरे डिवाइस पर आपकी पहचान वापस लाने का एकमात्र तरीका ये {words} शब्द हैं।"
 
 [t_4999341dad]
 en = "This computer no longer has the key that opens it, and its keyring entry is missing. Once you restore, your calls come through again."
@@ -14787,7 +14793,7 @@ en = "Also hosts calls"
 where = [
   "desktop group_also_hosts_calls: Desktop, group info (in group_live_view.rs), a host device row, joined after Online/Offline with a separator: this device also hosts calls.",
 ]
-text = ""
+text = "कॉल भी होस्ट करता है"
 
 [t_d8f81cb78d]
 en = "An admin asked this computer to carry the group’s calls"
@@ -14822,7 +14828,7 @@ en = "{name} asked this computer to host {group}"
 where = [
   "desktop group_asked_this_computer_to: Desktop, group (in group_live_view.rs): banner when an admin asks this computer to host. {name} is the admin's first name, {group} the group name.",
 ]
-text = ""
+text = "{name} ने इस कंप्यूटर से {group} को होस्ट करने के लिए कहा है"
 
 [t_a367083c08]
 en = "Asks {name} to carry group calls on that device; they have to accept"
@@ -14906,7 +14912,7 @@ en = " · flag {n}"
 where = [
   "desktop group_flag: Desktop, group \"Why you were removed\" dialog (in group_live_view.rs), added after the last flag's date to show it was the one that removed me. {n} is the number of that flag (the number of flags that remove a member).",
 ]
-text = ""
+text = " · फ़्लैग {n}"
 
 [t_0dc79d4817]
 en = "Flag to remove"
@@ -15375,7 +15381,7 @@ en = "Turn on Public link to share it"
 where = [
   "desktop group_turn_on_open_link: Desktop, group info, under the Public link switch. \"Public link\" is the title of that switch.",
 ]
-text = ""
+text = "शेयर करने के लिए “पब्लिक लिंक” चालू करें"
 
 [t_273944879b]
 en = "Unlock to see your groups."
@@ -15403,7 +15409,7 @@ en = "{name} will be able to invite people, flag members ({flags_needed} flags r
 where = [
   "desktop group_will_be_able_to: Desktop, group admin dialog (in group_live_view.rs, live_overlay). {name} is a person's first name; {flags_needed} is how many admin flags remove a member.",
 ]
-text = ""
+text = "{name} लोगों को आमंत्रित कर सकेंगे, सदस्यों को फ़्लैग कर सकेंगे ({flags_needed} फ़्लैग से कोई हट जाता है) और होस्ट नियुक्त कर सकेंगे। एडमिन बनाना या हटाना सिर्फ़ आप, यानी मालिक, कर सकते हैं।"
 
 [t_497c9f2f05]
 en = "Withdraw the offer to host"
@@ -16271,6 +16277,8 @@ en_other = "Not seen for {count} days"
 where = [
   "desktop profile_not_seen_for_days: Desktop, profile devices list (in profile_view.rs, devices_page). {count} is how many whole days since the device was last seen.",
 ]
+one = "{count} दिन से नहीं दिखा"
+other = "{count} दिन से नहीं दिखा"
 
 [t_bc6df257c5]
 en = "{value} of pictures and files you’ve opened. They’re prepared again when you open them."
@@ -16613,7 +16621,7 @@ en = "Write these {words} words down, in order, and keep them somewhere private.
 where = [
   "desktop profile_write_these_24_words: Desktop, profile and settings (in profile_view.rs, phrase_page). {words} is the number of recovery words (24), a number.",
 ]
-text = ""
+text = "ये {words} शब्द क्रम से लिख लें और किसी निजी जगह रखें।"
 
 [t_af2d0dcbe5]
 en = "You blocked {name}. Their profile no longer updates."
@@ -16648,7 +16656,7 @@ en = "Your recovery key is the same as your {words} words, as one line. A passwo
 where = [
   "desktop profile_your_recovery_key_is: Desktop, profile and settings (in profile_view.rs, phrase_page). {words} is the number of recovery words (24), a number.",
 ]
-text = ""
+text = "आपकी रिकवरी कुंजी आपके {words} शब्द ही हैं, एक लाइन में। पासवर्ड मैनेजर इसके लिए अच्छी जगह है।"
 
 [t_044cdbfc11]
 en = "Your recovery phrase is the only way to get your account back if you lose every device. Anyone who has it can act as you."
@@ -16984,7 +16992,7 @@ en = "If you ever switch devices, these {words} words bring your account along."
 where = [
   "desktop signup_if_you_ever_switch: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {words} is the number of recovery words (24), a number.",
 ]
-text = ""
+text = "अगर आप कभी डिवाइस बदलें, तो ये {words} शब्द आपका खाता साथ ले आते हैं।"
 
 [t_60e00617a2]
 en = "Is this the {name} you expected? If you’re not sure, check with them first."
@@ -17012,7 +17020,7 @@ en = "{filled} of {total}"
 where = [
   "desktop signup_of_24: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {filled} is a value filled in by the app. {total} is how many recovery words there are (24), a number.",
 ]
-text = ""
+text = "{total} में से {filled}"
 
 [t_874cf4e616]
 en = "Optional. A lock, so only you can open Tinline on this computer."
@@ -17068,21 +17076,21 @@ en = "Tinline connects your computer straight to theirs."
 where = [
   "desktop signup_tinline_connects_your_straight: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "Tinline आपके कंप्यूटर को सीधे उनके डिवाइस से जोड़ता है।"
 
 [t_5660c32aef]
 en = "Type your {words} recovery words. This computer starts with an empty contact list."
 where = [
   "desktop signup_type_your_24_recovery: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {words} is the number of recovery words (24), a number.",
 ]
-text = ""
+text = "अपने {words} रिकवरी शब्द टाइप करें। यह कंप्यूटर खाली संपर्क सूची से शुरू होगा।"
 
 [t_2c3e291ab1]
 en = "Type your {words} words in order, or paste them, or your recovery key, into the first box. They stay on this computer."
 where = [
   "desktop signup_type_your_24_words: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {words} is the number of recovery words (24), a number.",
 ]
-text = ""
+text = "अपने {words} शब्द क्रम से टाइप करें, या पहले बॉक्स में शब्द या अपनी रिकवरी कुंजी पेस्ट करें। ये इसी कंप्यूटर पर रहते हैं।"
 
 [t_89cb7b48e0]
 en = "Use your phone to reach emergency services."
@@ -17096,7 +17104,7 @@ en = "Word {value} isn’t in the recovery word list. Check the spelling."
 where = [
   "desktop signup_word_in_the_recovery: Desktop, sign-up (in signup_view.rs, gate_step, Restore step). {value} is the number (1 to 24) of the first word that is not in the recovery word list. Shown when exactly one word is wrong.",
 ]
-text = ""
+text = "शब्द {value} रिकवरी शब्दों की सूची में नहीं है। वर्तनी जाँचें।"
 
 [t_50284ec479]
 en = "Work computer"
@@ -17124,28 +17132,28 @@ en = "Your account is its recovery phrase, so you can bring it to this computer 
 where = [
   "desktop signup_your_account_is_its: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "आपका खाता उसके रिकवरी शब्दों में है, इसलिए आप इसे इस कंप्यूटर पर दो तरह से ला सकते हैं।"
 
 [t_9ff24cc852]
 en = "Your current account stays on this computer."
 where = [
   "desktop signup_your_current_account_stays: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "आपका अभी का खाता इस कंप्यूटर पर बना रहेगा।"
 
 [t_8734239b76]
 en = "Your recovery key is in. It stays on this computer."
 where = [
   "desktop signup_your_recovery_key_is: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "आपकी रिकवरी कुंजी आ गई है। यह इसी कंप्यूटर पर रहती है।"
 
 [t_aacdf28414]
 en = "Your recovery key is the same as your {words} words, as one line."
 where = [
   "desktop signup_your_recovery_key_is_the: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {words} is the number of recovery words (24), a number.",
 ]
-text = ""
+text = "आपकी रिकवरी कुंजी आपके {words} शब्द ही हैं, एक लाइन में।"
 
 [t_be60e742e9]
 en = "Your request to {value} is waiting. Your line opens when they accept."
@@ -17209,6 +17217,8 @@ en_other = "Word {value} and {count} more aren’t in the recovery word list. Ch
 where = [
   "desktop signup_word_in_the_recovery_more: Desktop, sign-up (in signup_view.rs, gate_step, Restore step). Shown when several words are wrong. {value} is the number (1 to 24) of the first wrong word; {count} is how many other words are also wrong (at least 1).",
 ]
+one = "शब्द {value} और {count} दूसरा शब्द रिकवरी शब्दों की सूची में नहीं हैं। वर्तनी जाँचें।"
+other = "शब्द {value} और {count} दूसरे शब्द रिकवरी शब्दों की सूची में नहीं हैं। वर्तनी जाँचें।"
 
 [t_71508df1e3]
 en = "By continuing, you agree to the {terms} and have read the {privacy}."
@@ -17222,28 +17232,28 @@ en = "A nickname can’t contain control or text-direction characters."
 where = [
   "desktop profile_err_nickname_chars: Desktop, profile edit (in profile_ui.rs, check_name / check_text). Error when the nickname I give a contact has invisible control or text-direction characters.",
 ]
-text = ""
+text = "निकनेम में कंट्रोल या टेक्स्ट-दिशा वाले वर्ण नहीं हो सकते।"
 
 [t_5ebcb73db1]
 en = "That nickname is too long. Up to {limit} bytes; some characters take more than one."
 where = [
   "desktop profile_err_nickname_long: Desktop, profile edit (in profile_ui.rs, check_name / check_text). Error when a nickname is too long. {limit} is the maximum size in bytes.",
 ]
-text = ""
+text = "यह निकनेम बहुत लंबा है। {limit} बाइट तक; कुछ वर्ण एक से ज़्यादा बाइट लेते हैं।"
 
 [t_54327f7aaf]
 en = "That is too long: up to {limit} bytes, and some characters take more than one."
 where = [
   "desktop profile_err_text_long: Desktop, profile edit (in profile_ui.rs, check_name / check_text). Error when a custom profile field value is too long. {limit} is the maximum size in bytes.",
 ]
-text = ""
+text = "यह बहुत लंबा है: {limit} बाइट तक, और कुछ वर्ण एक से ज़्यादा बाइट लेते हैं।"
 
 [t_53d1dcceb7]
 en = "That can’t contain control or text-direction characters."
 where = [
   "desktop profile_err_text_chars: Desktop, profile edit (in profile_ui.rs, check_name / check_text). Error when a custom profile field value has invisible control or text-direction characters.",
 ]
-text = ""
+text = "इसमें कंट्रोल या टेक्स्ट-दिशा वाले वर्ण नहीं हो सकते।"
 
 [t_00a97f2c8f]
 en = "{list} and {last}"
@@ -17257,224 +17267,224 @@ en = "{first} and {last}"
 where = [
   "desktop common_list_two: A list of exactly two names. {first} and {last} are names.",
 ]
-text = ""
+text = "{first} और {last}"
 
 [t_2f27018b89]
 en = " · "
 where = [
   "desktop common_dot_separator: Between short whole phrases on one line, e.g. \"Invited by Ana · 1 of 3 flags\". Keep the spaces.",
 ]
-text = ""
+text = " · "
 
 [t_068c9a83c8]
 en = "Jan"
 where = [
   "desktop date_month_1: Short month name inside dates such as \"Sep 12\" (month 1 of 12). A word or abbreviation, nothing else.",
 ]
-text = ""
+text = "जन॰"
 
 [t_2fc789c4d5]
 en = "Feb"
 where = [
   "desktop date_month_2: Short month name inside dates such as \"Sep 12\" (month 2 of 12). A word or abbreviation, nothing else.",
 ]
-text = ""
+text = "फ़र॰"
 
 [t_b066d8f5ef]
 en = "Mar"
 where = [
   "desktop date_month_3: Short month name inside dates such as \"Sep 12\" (month 3 of 12). A word or abbreviation, nothing else.",
 ]
-text = ""
+text = "मार्च"
 
 [t_74a7ff087e]
 en = "Apr"
 where = [
   "desktop date_month_4: Short month name inside dates such as \"Sep 12\" (month 4 of 12). A word or abbreviation, nothing else.",
 ]
-text = ""
+text = "अप्रैल"
 
 [t_e532d1d3fa]
 en = "May"
 where = [
   "desktop date_month_5: Short month name inside dates such as \"Sep 12\" (month 5 of 12). A word or abbreviation, nothing else.",
 ]
-text = ""
+text = "मई"
 
 [t_1bfac4c565]
 en = "Jun"
 where = [
   "desktop date_month_6: Short month name inside dates such as \"Sep 12\" (month 6 of 12). A word or abbreviation, nothing else.",
 ]
-text = ""
+text = "जून"
 
 [t_b0624225dc]
 en = "Jul"
 where = [
   "desktop date_month_7: Short month name inside dates such as \"Sep 12\" (month 7 of 12). A word or abbreviation, nothing else.",
 ]
-text = ""
+text = "जुल॰"
 
 [t_e7f1e3d854]
 en = "Aug"
 where = [
   "desktop date_month_8: Short month name inside dates such as \"Sep 12\" (month 8 of 12). A word or abbreviation, nothing else.",
 ]
-text = ""
+text = "अग॰"
 
 [t_2cd1a9363c]
 en = "Sep"
 where = [
   "desktop date_month_9: Short month name inside dates such as \"Sep 12\" (month 9 of 12). A word or abbreviation, nothing else.",
 ]
-text = ""
+text = "सित॰"
 
 [t_9fb8e4095f]
 en = "Oct"
 where = [
   "desktop date_month_10: Short month name inside dates such as \"Sep 12\" (month 10 of 12). A word or abbreviation, nothing else.",
 ]
-text = ""
+text = "अक्तू॰"
 
 [t_babad4d09a]
 en = "Nov"
 where = [
   "desktop date_month_11: Short month name inside dates such as \"Sep 12\" (month 11 of 12). A word or abbreviation, nothing else.",
 ]
-text = ""
+text = "नव॰"
 
 [t_71dfdc0e04]
 en = "Dec"
 where = [
   "desktop date_month_12: Short month name inside dates such as \"Sep 12\" (month 12 of 12). A word or abbreviation, nothing else.",
 ]
-text = ""
+text = "दिस॰"
 
 [t_27ab80e757]
 en = "Monday"
 where = [
   "desktop date_weekday_mon: Weekday name inside dates such as \"Thursday 8 Oct\". Just the day name.",
 ]
-text = ""
+text = "सोमवार"
 
 [t_83f75a6a3d]
 en = "Tuesday"
 where = [
   "desktop date_weekday_tue: Weekday name inside dates such as \"Thursday 8 Oct\". Just the day name.",
 ]
-text = ""
+text = "मंगलवार"
 
 [t_38d4808009]
 en = "Wednesday"
 where = [
   "desktop date_weekday_wed: Weekday name inside dates such as \"Thursday 8 Oct\". Just the day name.",
 ]
-text = ""
+text = "बुधवार"
 
 [t_21149a2390]
 en = "Thursday"
 where = [
   "desktop date_weekday_thu: Weekday name inside dates such as \"Thursday 8 Oct\". Just the day name.",
 ]
-text = ""
+text = "गुरुवार"
 
 [t_148abe3f88]
 en = "Friday"
 where = [
   "desktop date_weekday_fri: Weekday name inside dates such as \"Thursday 8 Oct\". Just the day name.",
 ]
-text = ""
+text = "शुक्रवार"
 
 [t_0968e86bdc]
 en = "Saturday"
 where = [
   "desktop date_weekday_sat: Weekday name inside dates such as \"Thursday 8 Oct\". Just the day name.",
 ]
-text = ""
+text = "शनिवार"
 
 [t_cc55d792bc]
 en = "Sunday"
 where = [
   "desktop date_weekday_sun: Weekday name inside dates such as \"Thursday 8 Oct\". Just the day name.",
 ]
-text = ""
+text = "रविवार"
 
 [t_a3673dec81]
 en = "{month} {day}"
 where = [
   "desktop date_month_day: A date without a year. {month} is the short month name, {day} the day number. English \"Sep 12\".",
 ]
-text = ""
+text = "{day} {month}"
 
 [t_5fd8e248d3]
 en = "{day} {month}"
 where = [
   "desktop date_day_month: A date without a year, day first. {day} is the day number, {month} the short month name. English \"12 Sep\".",
 ]
-text = ""
+text = "{day} {month}"
 
 [t_7a357641e5]
 en = "{month} {day}, {time}"
 where = [
   "desktop date_month_day_time: A date and the clock time. {month} short month name, {day} day number, {time} the time like 15:20. English \"Oct 10, 15:20\".",
 ]
-text = ""
+text = "{day} {month}, {time}"
 
 [t_f0d5b4190a]
 en = "{weekday} {day} {month}"
 where = [
   "desktop date_weekday_date: A date with its weekday, this year. {weekday} the day name, {day} the day number, {month} the short month name. English \"Thursday 8 Oct\".",
 ]
-text = ""
+text = "{weekday}, {day} {month}"
 
 [t_99e3037c80]
 en = "{weekday} {day} {month} {year}"
 where = [
   "desktop date_weekday_date_year: A date with its weekday and year. {weekday} day name, {day} day number, {month} short month name, {year} the year. English \"Thursday 8 Oct 2025\".",
 ]
-text = ""
+text = "{weekday}, {day} {month} {year}"
 
 [t_52db4d10a3]
 en = "Answering ends your current call."
 where = [
   "desktop call_ends_your_call: Desktop, call waiting card (in view.rs, waiting_banner), small line under the buttons, when the current caller has no name.",
 ]
-text = ""
+text = "जवाब देने पर आपकी मौजूदा कॉल कट जाएगी।"
 
 [t_b2f4b04b14]
 en = "Someone is calling"
 where = [
   "desktop common_someone_is_calling: Desktop, incoming call: notification and call waiting card title when the caller has no name.",
 ]
-text = ""
+text = "किसी की कॉल आ रही है"
 
 [t_705fd514d9]
 en = "Reconnecting the call"
 where = [
   "desktop call_reconnecting: Desktop, call screen and mark label: the CALL lost its connection and is trying again (not a device link).",
 ]
-text = ""
+text = "कॉल फिर से जुड़ रही है"
 
 [t_8927d78059]
 en = "**This computer** is carrying this call. Everyone in the call connects to it, and it passes the audio on and chooses who is heard when several people speak."
 where = [
   "desktop gcall_about_this_computer: Desktop, group call \"About this call\" sheet (in gcall_view.rs, gcall_about). The call is carried by this computer. **…** is shown bold.",
 ]
-text = ""
+text = "**यह कंप्यूटर** इस कॉल को चला रहा है। कॉल में सभी इससे जुड़ते हैं, यह आवाज़ आगे पहुँचाता है और कई लोगों के एक साथ बोलने पर तय करता है कि कौन सुनाई दे।"
 
 [t_90a84c0267]
 en = "Call host: another device"
 where = [
   "desktop gcall_call_host_unnamed: Desktop, group call screen (in gcall_view.rs), small line that opens \"About this call\", when the host's owner has no known name.",
 ]
-text = ""
+text = "कॉल होस्ट: दूसरा डिवाइस"
 
 [t_33d5002404]
 en = "Replying to a message"
 where = [
   "desktop group_replying_to_a_message: Desktop, group composer: shown above the field while I reply to a message whose author I cannot name.",
 ]
-text = ""
+text = "एक संदेश को जवाब"
 
 [t_479631b28d]
 en = "Invited by someone"
@@ -17482,7 +17492,7 @@ where = [
   "desktop group_invited_by_someone: Desktop, group member row: invited by someone I cannot name.",
   "desktop group_owner_by_unnamed_unnamed: Desktop, group join dialog (in group_live_view.rs, live_overlay): the line under the group name saying who invited me and who owns the group. Someone I cannot name made the link and the owner has no known name.",
 ]
-text = ""
+text = "किसी ने आमंत्रित किया"
 
 [t_b1f3953010]
 en = "A link for your own other device"
@@ -17496,35 +17506,35 @@ en = "A link for your own other device · owner {owner}"
 where = [
   "desktop group_link_own_owner: Desktop, group join dialog (in group_live_view.rs, live_overlay): the line under the group name saying who invited me and who owns the group. The link is for my own other device. {owner} is the owner's name.",
 ]
-text = ""
+text = "आपके अपने दूसरे डिवाइस के लिए लिंक · मालिक {owner}"
 
 [t_fdd5e8b563]
 en = "Invited by you · owner {owner}"
 where = [
   "desktop group_owner_by_you: Desktop, group join dialog (in group_live_view.rs, live_overlay): the line under the group name saying who invited me and who owns the group. I made the link. {owner} is the owner's name.",
 ]
-text = ""
+text = "आपने आमंत्रित किया · मालिक {owner}"
 
 [t_44728366f9]
 en = "Invited by {inviter} · owner {owner}"
 where = [
   "desktop group_owner_by_named: Desktop, group join dialog (in group_live_view.rs, live_overlay): the line under the group name saying who invited me and who owns the group. {inviter} is the first name of who made the link, {owner} the owner's name.",
 ]
-text = ""
+text = "{inviter} ने आमंत्रित किया · मालिक {owner}"
 
 [t_f86f5cbd4e]
 en = "Invited by {inviter}"
 where = [
   "desktop group_owner_by_named_unnamed: Desktop, group join dialog (in group_live_view.rs, live_overlay): the line under the group name saying who invited me and who owns the group. {inviter} made the link; the owner has no known name.",
 ]
-text = ""
+text = "{inviter} ने आमंत्रित किया"
 
 [t_25d7a50fc3]
 en = "Invited by someone · owner {owner}"
 where = [
   "desktop group_owner_by_unnamed: Desktop, group join dialog (in group_live_view.rs, live_overlay): the line under the group name saying who invited me and who owns the group. Someone I cannot name made the link. {owner} is the owner's name.",
 ]
-text = ""
+text = "किसी ने आमंत्रित किया · मालिक {owner}"
 
 [t_5a341ece46]
 en_one = "{count} host online, this computer too. Posts go through right away."
@@ -17532,48 +17542,50 @@ en_other = "{count} hosts online, this computer too. Posts go through right away
 where = [
   "desktop group_hosts_online_here: Desktop, group info, hosts section, when this computer is one of the hosts. {count} is how many hosts are online, including this computer.",
 ]
+one = "{count} होस्ट ऑनलाइन है, यह कंप्यूटर भी। पोस्ट तुरंत पहुँच रही हैं।"
+other = "{count} होस्ट ऑनलाइन हैं, यह कंप्यूटर भी। पोस्ट तुरंत पहुँच रही हैं।"
 
 [t_a3446fca89]
 en = "A call host carries the call. Everyone in a call connects to it, and it passes the audio on, so it can hear the call. That is separate from chat hosting: a chat host is not a call host unless you also appoint it as one. Call hosts are members you trust, and each one chooses to accept. Appoint one from a member’s menu, or host calls on this computer."
 where = [
   "desktop group_a_call_host_carries_admin: Desktop, group info, call hosts section note, for admins.",
 ]
-text = ""
+text = "कॉल होस्ट कॉल को चलाता है। कॉल में सभी इससे जुड़ते हैं और यह आवाज़ आगे पहुँचाता है, इसलिए यह कॉल सुन सकता है। यह ग्रुप होस्टिंग से अलग है: ग्रुप होस्ट तब तक कॉल होस्ट नहीं होता जब तक आप उसे कॉल होस्ट भी नियुक्त न करें। कॉल होस्ट वे सदस्य हैं जिन पर आप भरोसा करते हैं, और हर एक खुद स्वीकार करता है। किसी सदस्य के मेनू से कॉल होस्ट नियुक्त करें, या इस कंप्यूटर पर कॉल होस्ट करें।"
 
 [t_a84095ecdc]
 en = "An admin asked this computer to host {group}"
 where = [
   "desktop group_asked_this_computer_to_unnamed: Desktop, group banner when an admin I cannot name asks this computer to host. {group} is the group name.",
 ]
-text = ""
+text = "एक एडमिन ने इस कंप्यूटर से {group} को होस्ट करने के लिए कहा है"
 
 [t_c892a25b97]
 en = "this computer hosts the group"
 where = [
   "desktop group_status_this_computer_hosts: Desktop, group header (in group_live.rs, status_line): after the member count and a separator. This computer hosts the group.",
 ]
-text = ""
+text = "यह कंप्यूटर ग्रुप को होस्ट करता है"
 
 [t_b30c122b4c]
 en = "Waiting for someone · via {group}"
 where = [
   "desktop group_sent_waiting_unnamed: Desktop, group requests I sent (in group_live.rs, sent_line): the state line of a private-chat request. The person has no known name. {group} is the group name.",
 ]
-text = ""
+text = "जवाब का इंतज़ार · {group} के ज़रिए"
 
 [t_84ecf54979]
 en = "Blocked by them"
 where = [
   "desktop group_sent_blocked_unnamed: Desktop, group requests I sent (in group_live.rs, sent_line): the state line of a private-chat request. Someone blocked me.",
 ]
-text = ""
+text = "उन्होंने आपको ब्लॉक किया है"
 
 [t_85e9c7a5d8]
 en = "You can’t send messages to this group."
 where = [
   "desktop group_notice_cant_send: Desktop, group notice line (in group_live.rs). Shown when I try to post but may not.",
 ]
-text = ""
+text = "आप इस ग्रुप में संदेश नहीं भेज सकते।"
 
 [t_4f6585901b]
 en_one = "{count} invitation sent. They join when they accept."
@@ -17581,52 +17593,54 @@ en_other = "{count} invitations sent. Each person joins when they accept."
 where = [
   "desktop group_notice_invitations_sent: Desktop, group notice line (in group_live.rs). Several invitations were sent. {count} is how many (2 or more).",
 ]
+one = "{count} आमंत्रण भेज दिया। स्वीकार करते ही वे जुड़ जाएँगे।"
+other = "{count} आमंत्रण भेज दिए। हर व्यक्ति स्वीकार करते ही जुड़ जाएगा।"
 
 [t_a353a995d6]
 en = "Group made. This computer hosts it; invite people from the members pane."
 where = [
   "desktop group_notice_group_made: Desktop, group notice line (in group_live.rs). A new group was created on this computer.",
 ]
-text = ""
+text = "ग्रुप बन गया। यह कंप्यूटर इसे होस्ट करता है; सदस्यों वाले हिस्से से लोगों को आमंत्रित करें।"
 
 [t_5459a31053]
 en = "Check that the other device shows this code, then approve there."
 where = [
   "desktop link_check_that_other_shows_this: Desktop, linking a device (in link_view.rs). Same as link_check_that_shows_this when the other device has no name.",
 ]
-text = ""
+text = "देखें कि दूसरे डिवाइस पर यही कोड दिख रहा है, फिर वहाँ मंज़ूरी दें।"
 
 [t_77384a97d1]
 en = "Link the other device?"
 where = [
   "desktop link_link_other: Desktop, linking a device (in link_view.rs). Same as link_link when the other device has no name.",
 ]
-text = ""
+text = "दूसरा डिवाइस लिंक करें?"
 
 [t_a7e710aea7]
 en = "Linking the other device"
 where = [
   "desktop link_linking_other: Desktop, linking a device (in link_view.rs). Same as link_linking when the other device has no name.",
 ]
-text = ""
+text = "दूसरा डिवाइस लिंक हो रहा है"
 
 [t_73260a10c6]
 en = "Linked the other device"
 where = [
   "desktop link_linked_other: Desktop, linking a device (in link_view.rs). Same as link_linked when the other device has no name.",
 ]
-text = ""
+text = "दूसरा डिवाइस लिंक हो गया"
 
 [t_fdf764a472]
 en = "Linked to your account"
 where = [
   "desktop link_linked_to_account: Desktop, linking a device (in link_view.rs). Same as link_linked_to when the other device has no name.",
 ]
-text = ""
+text = "आपके खाते से लिंक हो गया"
 
 [t_fae437985e]
 en = "You blocked {name} · {when}"
 where = [
   "desktop chat_you_blocked_on: Desktop, chat (in chat_view.rs, block_note): same line with the date. {name} is the first name, {when} a date and time such as \"Oct 10, 15:20\".",
 ]
-text = ""
+text = "आपने {name} को ब्लॉक किया · {when}"

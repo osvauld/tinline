@@ -4787,14 +4787,32 @@ text = "उनसे संपर्क नहीं हो पाया"
 [calls_desc_incoming]
 text = "आने वाली कॉल"
 
+[calls_desc_outgoing]
+text = "जाने वाली कॉल"
+
+[calls_desc_away]
+text = "आपके उपलब्ध न होने पर आई कॉल"
+
 [calls_desc_missed]
 text = "मिस्ड कॉल"
+
+[calls_desc_declined]
+text = "अस्वीकार की गई कॉल"
+
+[calls_desc_no_answer]
+text = "बिना जवाब की कॉल"
 
 [calls_desc_cancelled]
 text = "रद्द की गई कॉल"
 
+[calls_desc_unreachable]
+text = "कॉल जो जुड़ नहीं पाई"
+
 [calls_desc_other]
 text = "Tinline कॉल"
+
+[groupsb_public_link]
+text = "पब्लिक लिंक"
 
 [groups_list_sent_requests]
 text = "भेजे गए अनुरोध"
@@ -4808,8 +4826,62 @@ text = "ऑफ़लाइन"
 [calls_what_other]
 text = "Tinline कॉल"
 
+[notif_request_text_unnamed]
+text = "आपके लिए एक नया संपर्क अनुरोध"
+
+[notif_accepted_title]
+text = "अनुरोध स्वीकार हुआ"
+
+[notif_accepted_text_unnamed]
+text = "आपके संपर्क ने आपका अनुरोध स्वीकार कर लिया। आपकी लाइन खुली है।"
+
+[gcall_host_label_device]
+text = "कॉल होस्ट: {name} का डिवाइस"
+
+[gcall_host_label_unnamed]
+text = "कॉल होस्ट: किसी सदस्य का डिवाइस"
+
+[gcall_about_this_phone]
+text = "**यह फ़ोन** इस कॉल को चला रहा है। कॉल में सभी इससे जुड़ते हैं, यह आवाज़ आगे पहुँचाता है और कई लोगों के एक साथ बोलने पर तय करता है कि कौन सुनाई दे।"
+
+[gcall_about_device]
+text = "**{name} का डिवाइस** यह कॉल चलाता है। कॉल में सभी इससे जुड़ते हैं, यह आवाज़ आगे पहुँचाता है और कई लोगों के एक साथ बोलने पर तय करता है कि कौन सुनाई दे।"
+
+[gcall_about_unnamed]
+text = "**कॉल होस्ट** यह कॉल चलाता है। कॉल में सभी इससे जुड़ते हैं, यह आवाज़ आगे पहुँचाता है और कई लोगों के एक साथ बोलने पर तय करता है कि कौन सुनाई दे।"
+
+[gcall_started_by_unnamed]
+text = "किसी ने शुरू की"
+
+[gcall_is_calling_group_desc_unnamed]
+text = "किसी ने ग्रुप {group} में कॉल की है"
+
+[gcall_started_call_desc_unnamed]
+text = "किसी ने {group} में कॉल शुरू की"
+
+[notif_group_calling_unnamed]
+text = "किसी ने ग्रुप कॉल शुरू की है"
+
+[common_list_separator]
+text = ", "
+
+[groupsb_member_desc]
+text = "{list}। विकल्प खोलें"
+
 [groupsb_role_host_lc]
 text = "होस्ट"
 
 [groupsb_role_callhost_lc]
 text = "कॉल होस्ट"
+
+[avail_note_unnamed]
+text = "जब आप दूर हों, तब कॉल करने वालों को दिखता है कि आपसे संपर्क नहीं हो पाया। कुछ भी कतार में नहीं रखा जाता और किसी को वजह नहीं बताई जाती।"
+
+[onboarding_linked_lead_unnamed]
+text = "आपके संपर्क और चैट आपके दूसरे डिवाइस से आ रहे हैं और दोनों पर एक जैसे बने रहेंगे।"
+
+[gcall_is_calling_group_unnamed]
+text = "किसी ने ग्रुप कॉल शुरू की है"
+
+[gcall_started_call_unnamed]
+text = "किसी ने कॉल शुरू की"
