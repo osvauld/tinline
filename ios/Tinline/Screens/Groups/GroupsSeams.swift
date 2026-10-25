@@ -85,7 +85,7 @@ final class GroupCallWatcher: ObservableObject {
 struct GroupsContact: Equatable { var did: String; var name: String }
 
 /// The contact list and the block state the group screens read while rendering (android `app.contacts`, `app.blocks`).
-/// Cheap reads: the node's in-memory state, never a network call.
+/// Read per row and per redraw, so they come from what is already loaded, never from a core call.
 protocol GroupsDirectory: AnyObject {
     var contacts: [GroupsContact] { get }
     func blockedByMe(_ did: String) -> Bool
@@ -95,12 +95,21 @@ protocol GroupsDirectory: AnyObject {
     var myName: String? { get }
 }
 
-final class NodeGroupsDirectory: GroupsDirectory {
+/// The contacts and blocks the People area already loaded (the `AppEnv` mirrors, fed in by `GroupsSession.shared`).
+/// Locked because group actions also read it off the main thread.
+final class LoadedGroupsDirectory: GroupsDirectory {
     private let node: Node
+    private let lock = NSLock()
+    private var loaded: [GroupsContact] = []
+    private var blocks = Blocks()
     init(_ node: Node) { self.node = node }
-    var contacts: [GroupsContact] { node.contacts().map { GroupsContact(did: $0.did, name: displayName(alias: $0.alias, name: $0.name)) } }
-    func blockedByMe(_ did: String) -> Bool { node.blockState(did: did).blockedByMe }
-    func blocksMe(_ did: String) -> Bool { node.blockState(did: did).blockedMe != nil }
+    func update(contacts: [Contact], blocks: Blocks) {
+        let c = contacts.map { GroupsContact(did: $0.did, name: displayName(alias: $0.alias, name: $0.name)) }
+        lock.lock(); loaded = c; self.blocks = blocks; lock.unlock()
+    }
+    var contacts: [GroupsContact] { lock.lock(); defer { lock.unlock() }; return loaded }
+    func blockedByMe(_ did: String) -> Bool { lock.lock(); defer { lock.unlock() }; return blocks.blockedByMe(did) }
+    func blocksMe(_ did: String) -> Bool { lock.lock(); defer { lock.unlock() }; return blocks.blockedMeAt(did) != nil }
     var myName: String? { node.profile()?.name }
 }
 
