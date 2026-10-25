@@ -48,7 +48,7 @@ struct ConversationView: View {
 
     var body: some View {
         if let src = source ?? ChatBackend.current(node: app.node) {
-            ConversationScreen(chatId: chatId, name: name ?? src.chats.first { $0.peerDid == chatId }?.peerName ?? "Chat", online: online, isSelf: isSelf,
+            ConversationScreen(chatId: chatId, name: name ?? src.chats.first { $0.peerDid == chatId }?.peerName ?? tr("chat_fallback_name"), online: online, isSelf: isSelf,
                                block: block, notDelivered: notDelivered, calls: calls, addedAtSecs: addedAtSecs, searchHit: searchHit, callLive: callLive,
                                source: src, onBack: onBack, onCall: onCall, onVideo: onVideo, onReturnToCall: onReturnToCall, onInfo: onInfo,
                                onUnblock: onUnblock, onAddContact: onAddContact)
@@ -142,7 +142,7 @@ private struct ConversationScreen: View {
             ZStack(alignment: .top) {
                 thread(p)
                 if (!online || model.link == .offline) && composerState == .open {
-                    ChatStrip(text: online ? "\(first) is offline. Messages send when you’re both online." : "You’re offline. Messages send when you’re back online.", glyph: .off)
+                    ChatStrip(text: online ? tr("chat_strip_peer_offline", first) : tr("chat_strip_me_offline"), glyph: .off)
                 }
             }
             .frame(maxHeight: .infinity).background(p.canvas)
@@ -170,7 +170,7 @@ private struct ConversationScreen: View {
             guard let item else { return }
             pickedPhoto = nil
             Task {
-                if let f = try? await item.loadTransferable(type: ChatPickedFile.self) { model.sendFile(f.url, mime: f.mime) } else { model.toast = "Couldn’t read that file." }
+                if let f = try? await item.loadTransferable(type: ChatPickedFile.self) { model.sendFile(f.url, mime: f.mime) } else { model.toast = tr("chat_err_read_file") }
             }
         }
         .fileImporter(isPresented: $filePicker, allowedContentTypes: [.item]) { result in
@@ -269,8 +269,8 @@ private struct ConversationScreen: View {
         HStack(alignment: .top, spacing: 12) {
             ChatIcon(glyph: .clock, size: 24, color: tin.ink2)
             VStack(alignment: .leading, spacing: 4) {
-                Text("Older messages are on \(first)’s phone").font(TinType.bodyM.weight(.semibold)).foregroundStyle(tin.ink)
-                Text("This phone keeps them from when you started using it. Earlier days load when you’re both online.").font(TinType.bodyM).foregroundStyle(tin.ink2)
+                Text(tr("chat_older_title", first)).font(TinType.bodyM.weight(.semibold)).foregroundStyle(tin.ink)
+                Text(tr("chat_older_body")).font(TinType.bodyM).foregroundStyle(tin.ink2)
             }
         }
         .padding(16).overlay(SmoothRoundedRectangle(cornerRadius: 14).stroke(tin.ln2, lineWidth: 1)).padding(.vertical, 8)
@@ -305,13 +305,13 @@ private struct ConversationScreen: View {
 
     private var composer: some View {
         let banner: ChatComposerCtx? = {
-            if let e = model.message(draft.edit) { return ChatComposerCtx(title: "Editing message", text: e.text, cancelLabel: "Cancel edit") }
+            if let e = model.message(draft.edit) { return ChatComposerCtx(title: tr("chat_composer_editing"), text: e.text, cancelLabel: tr("chat_composer_cancel_edit")) }
             if let r = model.message(draft.reply) {
-                return ChatComposerCtx(title: "Replying to \(r.outgoing ? "yourself" : first)", text: chatPreviewOf(r), cancelLabel: "Cancel reply")
+                return ChatComposerCtx(title: r.outgoing ? tr("chat_composer_reply_self") : tr("chat_composer_reply", first), text: chatPreviewOf(r), cancelLabel: tr("chat_composer_cancel_reply"))
             }
             return nil
         }()
-        return ChatComposer(draft: $draft.text, placeholder: "Message", ctx: banner, editing: draft.edit != nil, recording: voice.recording,
+        return ChatComposer(draft: $draft.text, placeholder: tr("chat_composer_placeholder"), ctx: banner, editing: draft.edit != nil, recording: voice.recording,
                             onCancelCtx: { draft.cancel() }, onSend: { model.send(draft) }, onAttach: { attachOpen = true }, focus: $composerFocus,
                             recordingBar: { VoiceRecordingBar(state: voice) }, trailing: { VoiceMicButton(state: voice) })
     }
@@ -323,7 +323,7 @@ private struct ConversationScreen: View {
             ChatActionsSheet(
                 m: am, first: first, isSelf: isSelf, receipt: model.receipts[am.id], name: name,
                 onReply: { actionsFor = nil; draft.beginReply(id: am.id); composerFocus = true },
-                onCopy: { actionsFor = nil; UIPasteboard.general.string = am.text; model.toast = "Copied" },
+                onCopy: { actionsFor = nil; UIPasteboard.general.string = am.text; model.toast = tr("chat_card_copied") },
                 onEdit: { actionsFor = nil; draft.beginEdit(id: am.id, body: am.text); composerFocus = true },
                 onDelete: { actionsFor = nil; model.delete(am.id) },
                 onSave: { actionsFor = nil; model.saveToPhone(am) })
@@ -338,12 +338,12 @@ private struct ConversationScreen: View {
         case .pdf, .text: docViewer = ChatViewerItem(id: m.id)
         case .external:
             // Android hands the file to another app; QuickLook shows what iOS can, with a share button for the rest.
-            Task { if let f = try? await ChatMedia.decrypt(source: source, message: m) { quickLook = f } else { model.toast = "Couldn’t open that file." } }
+            Task { if let f = try? await ChatMedia.decrypt(source: source, message: m) { quickLook = f } else { model.toast = tr("chat_err_open_file") } }
         }
     }
 
     private func openCamera() {
-        if UIImagePickerController.isSourceTypeAvailable(.camera) { cameraOpen = true } else { model.toast = "No camera available." }
+        if UIImagePickerController.isSourceTypeAvailable(.camera) { cameraOpen = true } else { model.toast = tr("chat_err_no_camera") }
     }
 
     private func olderMatch() {
@@ -398,14 +398,14 @@ struct ConversationHeader: View {
     var status: String {
         if isSelf { return chatSelfSub }
         switch blockState {
-        case .blockedByMe: return "Blocked"
-        case .blockedMe: return "Blocked you"
-        case .notContact: return "Not in your contacts"
+        case .blockedByMe: return tr("chat_status_blocked")
+        case .blockedMe: return tr("chat_status_blocked_me")
+        case .notContact: return tr("chat_status_not_contact")
         case .open: break
         }
-        if !online { return "Waiting for connection" }
-        if link == .connected || link == .relayed { return "Online" + (callGate == .notAllowed ? " · messages only" : "") }
-        if callGate == .notAllowed { return "Messages only" }
+        if !online { return tr("chat_status_waiting") }
+        if link == .connected || link == .relayed { return callGate == .notAllowed ? tr("chat_status_online_messages") : tr("chat_status_online") }
+        if callGate == .notAllowed { return tr("chat_status_messages_only") }
         return ""
     }
 
@@ -414,7 +414,7 @@ struct ConversationHeader: View {
         let blocked = blockState == .blockedByMe || blockState == .blockedMe
         let first = ChatFmt.firstName(name)
         HStack(spacing: 2) {
-            ChatIconButton(glyph: .back, label: "Back to chats", action: onBack)
+            ChatIconButton(glyph: .back, label: tr("chat_back"), action: onBack)
             Button { onInfo?() } label: {
                 HStack(spacing: 10) {
                     TinAvatar(did: did, size: 36, name: name)
@@ -427,20 +427,20 @@ struct ConversationHeader: View {
                 .padding(.leading, 6).padding(.trailing, 10).padding(.vertical, 4).frame(minHeight: 44).contentShape(Rectangle())
             }
             .buttonStyle(.plain).disabled(onInfo == nil)
-            .accessibilityLabel("\(name). \(status.isEmpty ? "" : status + ". ")Chat details")
+            .accessibilityLabel(status.isEmpty ? tr("chat_header_a11y", name) : tr("chat_header_a11y_status", name, status))
             if !isSelf {
                 let ok = blockState == .open && callGate == .ok
                 // Dimmed buttons still answer a tap: the call path says why it can't call.
                 if callLive {
-                    ChatIconButton(glyph: .phone, label: "Return to call", tint: p.accentInk, action: onReturnToCall)
+                    ChatIconButton(glyph: .phone, label: tr("chat_return_to_call"), tint: p.accentInk, action: onReturnToCall)
                         .background(p.accentSoft, in: Circle())
                 } else {
-                    ChatIconButton(glyph: .phone, label: ok ? "Call" : "Can’t call \(first)", enabled: true, action: onCall).opacity(ok ? 1 : 0.45)
+                    ChatIconButton(glyph: .phone, label: ok ? tr("chat_call") : tr("chat_cant_call", first), enabled: true, action: onCall).opacity(ok ? 1 : 0.45)
                 }
-                if hasVideo { ChatIconButton(glyph: .video, label: ok ? "Video call" : "Can’t call \(first)", action: ok ? onVideo : onCall).opacity(ok ? 1 : 0.45) }
+                if hasVideo { ChatIconButton(glyph: .video, label: ok ? tr("chat_video_call") : tr("chat_cant_call", first), action: ok ? onVideo : onCall).opacity(ok ? 1 : 0.45) }
             }
-            ChatIconButton(glyph: .search, label: "Find in this chat", action: onFind)
-            if let onInfo { ChatIconButton(glyph: .info, label: "Chat details", action: onInfo) }
+            ChatIconButton(glyph: .search, label: tr("chat_find_placeholder"), action: onFind)
+            if let onInfo { ChatIconButton(glyph: .info, label: tr("chat_details"), action: onInfo) }
         }
         .padding(.horizontal, 6).padding(.vertical, 4)
     }

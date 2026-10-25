@@ -25,7 +25,7 @@ func chatTickOf(_ m: Message, receipt: ReceiptTick?, link: ChatLink, online: Boo
 }
 
 /// Subtitle of the "You" conversation (saved items) in the list and its header.
-let chatSelfSub = "Saved items · only on your devices"
+let chatSelfSub = tr("chat_self_sub")
 
 /// Time and date wording for the conversation (android ChatUi.kt).
 enum ChatFmt {
@@ -50,9 +50,9 @@ enum ChatFmt {
     /// year when it isn't this year).
     static func dayLabel(_ ms: Int64, now nowMs: Int64) -> String {
         let n = daysAgo(ms, nowMs)
-        if n == 0 { return "Today" }
-        if n == 1 { return "Yesterday" }
-        if n < 0 { return "Today" }
+        if n == 0 { return tr("chat_day_today") }
+        if n == 1 { return tr("chat_day_yesterday") }
+        if n < 0 { return tr("chat_day_today") }
         let sameYear = calendar.component(.year, from: date(ms)) == calendar.component(.year, from: date(nowMs))
         let f = DateFormatter()
         f.calendar = calendar
@@ -88,13 +88,19 @@ enum ChatFmt {
     /// Call pill wording (Conversation.kt `CallPill`).
     static func callPillText(_ r: CallRecord) -> String {
         let answered = r.durationSecs > 0
-        if answered { return "\(r.video ? "Video" : "Voice") call · \(Int(r.durationSecs) / 60):\(String(format: "%02d", Int(r.durationSecs) % 60))" }
-        if r.incoming { return "\(r.reason == "declined_local" ? "Declined" : "Missed") \(r.video ? "video" : "voice") call" }
+        if answered {
+            let dur = "\(Int(r.durationSecs) / 60):\(String(format: "%02d", Int(r.durationSecs) % 60))"
+            return tr(r.video ? "chat_call_video_done" : "chat_call_voice_done", dur)
+        }
+        if r.incoming {
+            let declined = r.reason == "declined_local"
+            return tr(declined ? (r.video ? "chat_call_video_declined" : "chat_call_voice_declined") : (r.video ? "chat_call_video_missed" : "chat_call_voice_missed"))
+        }
         switch r.reason {
-        case "no_answer": return "No answer"
-        case "declined": return "Declined"
-        case "cancelled", "hangup_local": return "Cancelled call"
-        default: return "Call failed"
+        case "no_answer": return tr("chat_call_no_answer")
+        case "declined": return tr("chat_call_declined")
+        case "cancelled", "hangup_local": return tr("chat_call_cancelled")
+        default: return tr("chat_call_failed")
         }
     }
 

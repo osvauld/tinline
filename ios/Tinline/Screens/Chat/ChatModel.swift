@@ -257,34 +257,34 @@ final class ConversationModel: ObservableObject {
             do {
                 let m = try await source.sendFile(peerDid: peerDid, path: url.path, mime: mime, text: nil)
                 upsert(m); requestScroll(nil)
-            } catch { toast = "Couldn’t send that file." }
+            } catch { toast = tr("chat_err_send_file") }
             ChatMedia.discardOut(url)
         }
     }
 
     func sendPicked(_ url: URL) {
         Task {
-            do { let (f, mime) = try ChatMedia.copyIn(url); sendFile(f, mime: mime) } catch { toast = "Couldn’t read that file." }
+            do { let (f, mime) = try ChatMedia.copyIn(url); sendFile(f, mime: mime) } catch { toast = tr("chat_err_read_file") }
         }
     }
 
     func sendVoice(_ v: RecordedVoice) {
         Task {
             do { upsert(try await source.sendVoice(peerDid: peerDid, path: v.path, durationMs: v.durationMs, waveform: v.waveform)); requestScroll(nil) }
-            catch { toast = "Couldn’t send that voice message." }
+            catch { toast = tr("chat_err_send_voice") }
         }
     }
 
     func delete(_ id: String) {
         Task {
             do { let m = try await source.delete(peerDid: peerDid, messageId: id); upsert(m); loadReceipt(m.id) }
-            catch { toast = "Couldn’t delete that message." }
+            catch { toast = tr("chat_err_delete") }
         }
     }
 
     func download(_ m: Message) {
         requested.insert(m.id)
-        Task { do { try await source.download(peerDid: peerDid, messageId: m.id) } catch { requested.remove(m.id); toast = "Couldn’t start the download." } }
+        Task { do { try await source.download(peerDid: peerDid, messageId: m.id) } catch { requested.remove(m.id); toast = tr("chat_err_download") } }
     }
 
     func cancelDownload(_ m: Message) {
@@ -297,7 +297,7 @@ final class ConversationModel: ObservableObject {
         Task {
             let ok: Bool
             if let f = try? await ChatMedia.decrypt(source: source, message: m) { ok = await ChatMedia.saveToPhone(f, name: a.name, mime: a.mime) } else { ok = false }
-            toast = ok ? "Saved to your phone" : "Couldn’t save that file."
+            toast = ok ? tr("chat_saved") : tr("chat_err_save")
         }
     }
 
@@ -371,9 +371,9 @@ final class ConversationModel: ObservableObject {
 enum ChatErrors {
     static func friendly(_ e: Swift.Error) -> String {
         let s = String(describing: e)
-        if s.contains("inCall") { return "Finish your call first" }
-        if s.contains("locked") { return "Locked — enter your passphrase to unlock" }
+        if s.contains("inCall") { return tr("chat_err_in_call") }
+        if s.contains("locked") { return tr("chat_err_locked") }
         let m = (e as NSError).localizedDescription
-        return m.isEmpty || m.hasPrefix("The operation") ? "Something went wrong" : m
+        return m.isEmpty || m.hasPrefix("The operation") ? tr("chat_err_generic") : m
     }
 }
