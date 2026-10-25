@@ -1,8 +1,5 @@
 # Generated from i18n/tm/ar.toml by scripts/i18n_tm.py apply. Edit the tm file.
 
-[common_a_device_name_is]
-text = "يتكون اسم الجهاز من حرف واحد إلى 64 حرفًا."
-
 [common_about_this_call]
 text = "حول هذه المكالمة"
 
@@ -93,9 +90,6 @@ text = "نسخ مفتاحي"
 [common_copy_recovery_phrase]
 text = "نسخ كلمات الاسترداد"
 
-[common_couldnt_connect]
-text = "تعذّر الاتصال"
-
 [common_current_passphrase]
 text = "عبارة المرور الحالية"
 
@@ -116,9 +110,6 @@ text = "مباشرة"
 
 [common_done]
 text = "تم"
-
-[common_give_this_computer_a]
-text = "يلزم اسم لهذا الحاسوب من حرف واحد إلى 64 حرفًا."
 
 [common_got_it]
 text = "فهمت"
@@ -251,12 +242,6 @@ text = "صورة · {value}"
 
 [common_privacy]
 text = "الخصوصية"
-
-[common_reconnecting]
-text = "جارٍ إعادة الاتصال"
-
-[common_reconnecting_2]
-text = "جارٍ إعادة الاتصال…"
 
 [common_recovery_phrase]
 text = "كلمات الاسترداد"
@@ -402,9 +387,6 @@ text = "يلزم إدخال اسم أولًا"
 [app_enter_your_name_and]
 text = "يلزم إدخال اسمك وكلمات الاسترداد"
 
-[app_ev]
-text = "Ev"
-
 [app_invited_you_to_the]
 text = "دعوة من {value} للانضمام إلى المجموعة"
 
@@ -534,9 +516,6 @@ text = "تم الرفض على جهاز آخر"
 [call_device_changes_apply_from]
 text = "تُطبَّق تغييرات الأجهزة بدءًا من المكالمة التالية."
 
-[call_during_your_call]
-text = "أثناء مكالمتك"
-
 [call_end]
 text = "إنهاء"
 
@@ -552,9 +531,6 @@ text = "مشفّرة تمامًا بين الطرفين."
 [call_end_to_end_encrypted_ctrl]
 text = "مشفّرة تمامًا بين الطرفين · Ctrl M لكتم الصوت · Ctrl E للإنهاء · Esc للتصغير"
 
-[call_ends_your_call_with]
-text = "تنتهي مكالمتك مع"
-
 [call_enter_answers_esc_declines]
 text = "للرد: Enter · للرفض: Esc"
 
@@ -569,9 +545,6 @@ text = "HD"
 
 [call_ignore_limits_heat_their]
 text = "تجاهل الحدود (الحرارة، ومفكك ترميز الطرف الآخر)"
-
-[call_is_calling_you]
-text = "يتصل بك"
 
 [call_minimize_call]
 text = "تصغير المكالمة"
@@ -609,9 +582,6 @@ text = "جارٍ بدء الفيديو…"
 [call_stats_for_nerds]
 text = "إحصاءات للمهتمين بالتفاصيل"
 
-[call_text]
-text = "{day} {value}"
-
 [call_the_connection_dropped_for]
 text = "انقطع الاتصال لحظة. يبحث Tinline عن طريق للعودة إلى {name}."
 
@@ -623,9 +593,6 @@ text = "فيديو الطرف الآخر"
 
 [call_these_apply_to_this]
 text = "تُطبَّق هذه على هذه المكالمة الآن. الإعدادات › الفيديو تحدد المكالمة التالية."
-
-[call_unknown]
-text = "غير معروف"
 
 [call_video_is_starting]
 text = "جارٍ بدء الفيديو…"
@@ -822,7 +789,7 @@ text = "تمت القراءة على جهاز {name}"
 text = "رد"
 
 [chat_replying_to]
-text = "رد على {value}"
+text = "رد على {name}"
 
 [chat_return_to_call]
 text = "العودة إلى المكالمة"
@@ -870,7 +837,7 @@ text = "بانتظار الاتصال"
 text = "بانتظار تأكيد جهاز {name}"
 
 [chat_you_blocked]
-text = "حظرت {name}{when}"
+text = "حظرت {name}"
 
 [chat_you_deleted_this_message]
 text = "حذفت هذه الرسالة"
@@ -962,9 +929,6 @@ text = "إعادة المحاولة"
 [gate_the_system_keyring_did]
 text = "لم تقبل سلسلة مفاتيح النظام المفتاح."
 
-[gate_these_24_words_are]
-text = "هذه الكلمات الأربع والعشرون هي الطريقة الوحيدة لاستعادة هويتك على جهاز آخر."
-
 [gate_this_computer_no_longer]
 text = "لم يعد لدى هذا الحاسوب المفتاح الذي يفتح الحساب، ولم يعد قيده موجودًا في سلسلة المفاتيح. بعد الاستعادة، تصلك مكالماتك من جديد."
 
@@ -976,9 +940,6 @@ text = "جارٍ المحاولة…"
 
 [gate_turn_on]
 text = "تشغيل"
-
-[gate_you_didnt_set_a]
-text = "لم تُعيَّن عبارة مرور لهذا الحساب، لذا فكلمات الاسترداد الأربع والعشرون هي طريق العودة الوحيد. تبقى جهات اتصالك كما هي."
 
 [gate_your_calls_come_through]
 text = "تصلك مكالماتك من جديد عند عودة اتصالك."
@@ -1001,9 +962,6 @@ text = "البطارية منخفضة أو الحاسوب ساخن. الاستض
 [gcall_call_ended_host_lost]
 text = "انتهت المكالمة — فُقد المضيف"
 
-[gcall_call_host]
-text = "مضيف المكالمة: {host}"
-
 [gcall_connecting]
 text = "جارٍ الاتصال…"
 
@@ -1019,9 +977,6 @@ text = "مكالمة جماعية"
 [gcall_is_calling_the_group]
 text = "مكالمة جماعية من {value}"
 
-[gcall_is_carrying]
-text = "ينقل"
-
 [gcall_no_call_host_available]
 text = "لا يتوفر مضيف للمكالمة"
 
@@ -1029,25 +984,18 @@ text = "لا يتوفر مضيف للمكالمة"
 text = "أنت وحدك حتى الآن. بانتظار الآخرين."
 
 [gcall_people_in_the_call]
-text = "عدد الأشخاص في المكالمة: {count}"
-
-[gcall_s_device]
-text = "جهاز {value}"
+zero = "لا أحد في المكالمة"
+one = "شخص واحد في المكالمة"
+two = "شخصان في المكالمة"
+few = "{count} أشخاص في المكالمة"
+many = "{count} شخصًا في المكالمة"
+other = "{count} شخص في المكالمة"
 
 [gcall_started_a_call]
 text = "مكالمة جديدة من {name}"
 
 [gcall_started_by]
 text = "بمبادرة من {value}"
-
-[gcall_the_call_host]
-text = "مضيف المكالمة"
-
-[gcall_this_call_everyone_in]
-text = " {value} هذه المكالمة. يتصل به كل من في المكالمة، وهو يمرّر الصوت ويختار من يُسمع عندما يتحدث عدة أشخاص."
-
-[gcall_this_computer]
-text = "هذا الحاسوب"
 
 [gcall_your_connection_to_the]
 text = "اتصالك بمضيف المكالمة مشفّر، لكن مضيف المكالمة نفسه يستقبل الصوت، لذا يمكنه سماع هذه المكالمة. ثقتك به في المكالمة كثقتك بمضيف الدردشة في المنشورات."
@@ -1059,7 +1007,7 @@ text = "أنت في مكالمة بالفعل."
 text = "جهازك يستضيف المكالمة"
 
 [group_a_call_host_carries]
-text = "مضيف المكالمات ينقل المكالمة. يتصل به كل من في المكالمة، وهو يمرّر الصوت، لذا يمكنه سماع المكالمة. هذا منفصل عن استضافة الدردشة: مضيف الدردشة ليس مضيف مكالمات إلا إذا عيّنته لذلك أيضًا. مضيفو المكالمات أعضاء موضع ثقتك، وكل واحد منهم يختار القبول.{value}"
+text = "مضيف المكالمات ينقل المكالمة. يتصل به كل من في المكالمة، وهو يمرّر الصوت، لذا يمكنه سماع المكالمة. هذا منفصل عن استضافة الدردشة: مضيف الدردشة ليس مضيف مكالمات إلا إذا عيّنته لذلك أيضًا. مضيفو المكالمات أعضاء موضع ثقتك، وكل واحد منهم يختار القبول."
 
 [group_a_call_host_is]
 text = "مضيف المكالمات حاسوب أو هاتف لأحد الأعضاء ينقل المكالمة. يمكن لأحد المشرفين تعيين واحد من معلومات المجموعة."
@@ -1079,20 +1027,11 @@ text = "يحتفظ المضيف بنسخة كاملة من المجموعة وي
 [group_a_host_keeps_a_full]
 text = "يحتفظ المضيف بنسخة كاملة من المجموعة، وينقل الرسائل بينما هواتف الأعضاء في وضع السكون، ويعرف عناوين الأعضاء في المجموعة. يحتاج إلى البقاء قيد التشغيل. الاستضافة لا تمنحك صلاحيات الإشراف؛ يمكنك التوقف في أي وقت."
 
-[group_a_host_lists_up]
-text = "يعرض المضيف حتى {value} شخص في المرة الواحدة، لذا قد يكون هناك المزيد."
-
 [group_a_host_stays_on]
 text = "يبقى المضيف قيد التشغيل وينقل المنشورات حين يكون الآخرون غير متصلين"
 
-[group_a_link_for_your]
-text = "رابط لجهازك الآخر"
-
 [group_a_link_that_doesnt]
 text = "رابط لا تنتهي صلاحيته"
-
-[group_a_message]
-text = "رسالة"
 
 [group_a_private_invite_to]
 text = "دعوة خاصة لكل شخص"
@@ -1121,14 +1060,8 @@ text = "في المجموعة بالفعل"
 [group_also_confirmed]
 text = "أكّد أيضًا: {value}"
 
-[group_also_hosts_calls]
-text = " · يستضيف المكالمات أيضًا"
-
 [group_an_admin_asked_this]
 text = "طلب أحد المشرفين من هذا الحاسوب نقل مكالمات المجموعة"
-
-[group_and]
-text = "{value} و {last}"
 
 [group_anyone_holding_the_link]
 text = "يمكن لأي شخص لديه الرابط الانضمام، دون دعوة ودون تاريخ انتهاء. يمكنك مشاركته في المكان الذي يناسبك ليجد الناس المجموعة."
@@ -1157,9 +1090,6 @@ text = "طلب دردشة خاصة مع {name}"
 [group_asked_the_device_carries]
 text = "تم الطلب. ينقل الجهاز المكالمات بعد قبوله."
 
-[group_asked_this_computer_to]
-text = "طلب {value} من هذا الحاسوب استضافة {name}"
-
 [group_asks_to_carry_group]
 text = "يطلب من {name} نقل المكالمات الجماعية على ذلك الجهاز؛ يلزم قبول الطلب"
 
@@ -1167,7 +1097,7 @@ text = "يطلب من {name} نقل المكالمات الجماعية على �
 text = "حظر {name}"
 
 [group_blocked]
-text = " · محظور"
+text = "محظور"
 
 [group_blocked_2]
 text = "تاريخ الحظر: {value}"
@@ -1228,9 +1158,6 @@ text = "يمكن للجميع النشر من جديد."
 [group_everyone_in_the_group]
 text = "يمكن لكل أعضاء المجموعة النشر"
 
-[group_flag]
-text = " · إبلاغات: {value}"
-
 [group_flag_2]
 text = "إبلاغ"
 
@@ -1250,7 +1177,12 @@ text = "تاريخ الإبلاغ: {value}"
 text = "أبلغ عنك: {value}. لا يزال بإمكانك قراءة ما وصلك من قبل؛ لن يصل شيء جديد."
 
 [group_flags_remove_from_the]
-text = "عدد الإبلاغات التي تزيل {name} من المجموعة: {flags_needed}"
+zero = "{count} إبلاغ يزيل {name} من المجموعة"
+one = "إبلاغ واحد يزيل {name} من المجموعة"
+two = "إبلاغان يزيلان {name} من المجموعة"
+few = "{count} إبلاغات تزيل {name} من المجموعة"
+many = "{count} إبلاغًا تزيل {name} من المجموعة"
+other = "{count} إبلاغ تزيل {name} من المجموعة"
 
 [group_getting_the_link]
 text = "جارٍ جلب الرابط…"
@@ -1297,15 +1229,15 @@ other = "{count} مضيف"
 text = "يبدأ الاستضافة بعد موافقة {name} على ذلك الجهاز؛ الحاسوب الذي يبقى قيد التشغيل هو الأفضل"
 
 [group_hosts_online]
-zero = "{count} مضيف متصل{extra}. تصل المنشورات فورًا."
-one = "مضيف واحد متصل{extra}. تصل المنشورات فورًا."
-two = "مضيفان متصلان{extra}. تصل المنشورات فورًا."
-few = "{count} مضيفين متصلين{extra}. تصل المنشورات فورًا."
-many = "{count} مضيفًا متصلًا{extra}. تصل المنشورات فورًا."
-other = "{count} مضيف متصل{extra}. تصل المنشورات فورًا."
+zero = "{count} مضيف متصل. تصل المنشورات فورًا."
+one = "مضيف واحد متصل. تصل المنشورات فورًا."
+two = "مضيفان متصلان. تصل المنشورات فورًا."
+few = "{count} مضيفين متصلين. تصل المنشورات فورًا."
+many = "{count} مضيفًا متصلًا. تصل المنشورات فورًا."
+other = "{count} مضيف متصل. تصل المنشورات فورًا."
 
 [group_hosts_store_the_group]
-text = "يخزّن المضيفون المجموعة وينقلون المنشورات حين يكون الآخرون غير متصلين. إنهم أعضاء موضع ثقتك: يمكن للمضيف قراءة كل ما يُنشر في هذه المجموعة.{value}"
+text = "يخزّن المضيفون المجموعة وينقلون المنشورات حين يكون الآخرون غير متصلين. إنهم أعضاء موضع ثقتك: يمكن للمضيف قراءة كل ما يُنشر في هذه المجموعة."
 
 [group_if_accepts_you_can]
 text = "إذا قُبل طلبك إلى {name}، يمكنكما المراسلة مباشرة. تبقى المكالمات متوقفة حتى يسمح بها أحدكما."
@@ -1326,16 +1258,18 @@ text = "دعوة جهات الاتصال"
 text = "رابط دعوة إلى {gname}"
 
 [group_invite_people]
-text = "دعوة الأشخاص ({len})"
+zero = "دعوة {count} شخص"
+one = "دعوة شخص واحد"
+two = "دعوة شخصين"
+few = "دعوة {count} أشخاص"
+many = "دعوة {count} شخصًا"
+other = "دعوة {count} شخص"
 
 [group_invite_valid_until]
 text = "الدعوة صالحة حتى {value}"
 
-[group_invited_by]
-text = " · بدعوة من {b}"
-
 [group_invited_by_2]
-text = "بدعوة من {value}"
+text = "بدعوة من {name}"
 
 [group_invited_not_delivered_yet]
 text = "تمت الدعوة · لم تُسلَّم بعد"
@@ -1345,9 +1279,6 @@ text = "تمت الدعوة · بالانتظار"
 
 [group_invited_waiting_for_an]
 text = "تمت الدعوة · بانتظار الرد"
-
-[group_invited_you_to]
-text = " يدعوك إلى "
 
 [group_invites]
 text = "الدعوات"
@@ -1474,12 +1405,6 @@ text = "لا أحد محظور. لحظر شخص، يمكنك فتح صفحته �
 [group_not_yet]
 text = "ليس بعد"
 
-[group_of_flags]
-text = " · الإبلاغات: {flags} من {flags_needed}"
-
-[group_of_flags_2]
-text = " · الإبلاغات: {flags} من {value}"
-
 [group_offered_to_host]
 text = "عرض الاستضافة"
 
@@ -1519,9 +1444,6 @@ text = "يفتح دردشتكما"
 [group_owner]
 text = "المالك"
 
-[group_owner_2]
-text = "{inviter} · المالك {owner}"
-
 [group_paste_an_invite_link]
 text = "لصق رابط دعوة"
 
@@ -1553,7 +1475,12 @@ text = "تمت الإزالة"
 text = "{value} · تمت الإزالة"
 
 [group_removed_after_admin_flags]
-text = "تمت إزالتك بعد إبلاغات المشرفين ({len})"
+zero = "تمت إزالتك بعد {count} إبلاغ من المشرفين"
+one = "تمت إزالتك بعد إبلاغ واحد من المشرفين"
+two = "تمت إزالتك بعد إبلاغين من المشرفين"
+few = "تمت إزالتك بعد {count} إبلاغات من المشرفين"
+many = "تمت إزالتك بعد {count} إبلاغًا من المشرفين"
+other = "تمت إزالتك بعد {count} إبلاغ من المشرفين"
 
 [group_replying_to]
 text = "رد على {name}"
@@ -1588,9 +1515,6 @@ text = "عرض الرسائل السابقة"
 [group_since]
 text = "منذ {value}"
 
-[group_someone_who_isnt_in]
-text = "شخص ليس من جهات اتصالك"
-
 [group_start_group_call]
 text = "بدء مكالمة جماعية"
 
@@ -1623,9 +1547,6 @@ text = "إيقاف الاستضافة على هذا الحاسوب"
 
 [group_text]
 text = "{label}: {value}"
-
-[group_text_2]
-text = "{what} · {value}"
 
 [group_that_device_no_longer]
 text = "لم يعد ذلك الجهاز ينقل مكالمات هذه المجموعة."
@@ -1678,9 +1599,6 @@ text = "توقف هذا الحاسوب عن نقل مكالمات هذه الم�
 [group_this_computer_stops_passing]
 text = "يتوقف هذا الحاسوب عن نقل رسائل المجموعة. تبقى عضويتك."
 
-[group_this_computer_too]
-text = "، وهذا الحاسوب أيضًا"
-
 [group_this_device_agreed_to]
 text = "وافق هذا الجهاز على الاستضافة. يبدأ الاستضافة فور تعيينه من أحد المشرفين."
 
@@ -1692,12 +1610,6 @@ text = "لا يوجد مضيف مكالمات لهذه المجموعة. لا ي
 
 [group_this_group_has_no_host]
 text = "لا يوجد مضيف لهذه المجموعة. تنتظر المنشورات حتى يُعيَّن مضيف."
-
-[group_this_member]
-text = "هذا العضو"
-
-[group_turn_on_open_link]
-text = "يلزم تشغيل الرابط المفتوح لمشاركته"
 
 [group_unblocking]
 text = "إلغاء الحظر"
@@ -1731,9 +1643,6 @@ text = "لماذا أُزلت؟"
 
 [group_why_you_were_removed]
 text = "سبب إزالتك"
-
-[group_will_be_able_to]
-text = "سيصبح بإمكان {name} دعوة الأشخاص والإبلاغ عن الأعضاء (ثلاثة إبلاغات تزيل العضو) وتعيين المضيفين. أنت وحدك، بصفتك المالك، يمكنك تعيين المشرفين أو إزالتهم."
 
 [group_withdraw_the_offer_to]
 text = "سحب عرض الاستضافة"
@@ -2029,9 +1938,6 @@ text = "آخر مزامنة {value}"
 [link_tap_scan_qr_code]
 text = "يمكنك النقر على «مسح رمز QR» وتوجيهه نحو هذه الشاشة."
 
-[link_the_other_device]
-text = "الجهاز الآخر"
-
 [link_there_is_no_code]
 text = "لا يوجد رمز بعد."
 
@@ -2077,9 +1983,6 @@ text = "Windows"
 [link_you_type_it_each]
 text = "تُكتب في كل مرة يبدأ فيها Tinline."
 
-[link_your_account]
-text = "حسابك"
-
 [link_your_account_is_on]
 text = "حسابك على الجهاز الآخر."
 
@@ -2091,9 +1994,6 @@ text = "الدردشة المكتومة لا تنبّهك أبدًا، مهما 
 
 [profile_a_new_camera_is]
 text = "تُستخدم الكاميرا الجديدة في المرة القادمة التي تبدأ فيها الكاميرا."
-
-[profile_a_status]
-text = "حالة"
 
 [profile_about]
 text = "نبذة"
@@ -2194,7 +2094,7 @@ text = "الحظر ليس صامتًا. يُبلَّغ الشخص، ويتوقف
 text = "مشغول"
 
 [profile_busy_until]
-text = "مشغول حتى {value}"
+text = "مشغول حتى {time}"
 
 [profile_busy_until_you_change]
 text = "مشغول حتى التغيير"
@@ -2210,9 +2110,6 @@ text = "المكالمات على هذا الحاسوب"
 
 [profile_can_call_you]
 text = "المكالمات مسموحة"
-
-[profile_cant_contain_control_or]
-text = "لا يمكن أن يحتوي {cap} على أحرف تحكم أو أحرف اتجاه النص."
 
 [profile_change_photo]
 text = "تغيير الصورة"
@@ -2435,9 +2332,6 @@ text = "لا يتوفر ملف شخصي."
 [profile_no_sounds_from_tinline]
 text = "لا أصوات من Tinline: لا رنين ولا نغمات مكالمات ولا أصوات انضمام"
 
-[profile_not_seen_for_days]
-text = "عدد أيام الغياب: {value}"
-
 [profile_not_set]
 text = "غير محدد"
 
@@ -2645,32 +2539,17 @@ text = "التخزين"
 [profile_tap_a_sound_to]
 text = "يمكنك النقر على صوت لسماعه. يُطبَّق الاختيار على المكالمة التالية."
 
-[profile_text]
-text = "{value} {time}"
-
 [profile_that_file_couldnt_be]
 text = "تعذّرت قراءة هذا الملف كصورة. ربما يكون تالفًا."
-
-[profile_that_is_too_long]
-text = "هذا طويل جدًا على {what}: الحد {limit} بايت، وبعض الأحرف يشغل أكثر من بايت."
-
-[profile_that_is_too_long_up]
-text = "{what} طويل جدًا. الحد {limit} بايت؛ وبعض الأحرف يشغل أكثر من بايت."
 
 [profile_that_name_cant_be]
 text = "لا يمكن استخدام هذا الاسم. يُفضَّل اسم قصير بلا أحرف تحكم."
 
 [profile_that_picture_is_mb]
-text = "حجم هذه الصورة {value} ميغابايت. الحد الأقصى للصور {value2} ميغابايت."
+text = "حجم هذه الصورة {size} ميغابايت. الحد الأقصى للصور {max} ميغابايت."
 
 [profile_that_picture_is_pixels]
-text = "أبعاد هذه الصورة {status} × {host} بكسل. يقبل Tinline حتى 4096 بكسل لكل جانب."
-
-[profile_the_cant_be_empty]
-text = "لا يمكن أن يكون {what} فارغًا."
-
-[profile_the_cant_contain_control]
-text = "لا يمكن أن يحتوي {what} على أحرف تحكم أو أحرف اتجاه النص."
+text = "أبعاد هذه الصورة {width} × {height} بكسل. يقبل Tinline حتى {max} بكسل لكل جانب."
 
 [profile_the_libraries_tinline_is]
 text = "المكتبات التي بُني عليها Tinline"
@@ -2719,9 +2598,6 @@ text = "لتوفير مساحة أكبر، يمكنك إزالة الصور أو
 
 [profile_told_you_blocked_them]
 text = "تم الإبلاغ بالحظر"
-
-[profile_tomorrow]
-text = "غدًا {time}"
 
 [profile_trend_probe]
 text = "اتجاه+استكشاف"
@@ -2774,9 +2650,6 @@ text = "من يمكنه الاتصال بي"
 [profile_will_stop_syncing_with]
 text = "سيتوقف {name} عن المزامنة مع حسابك وعن الرنين عند ورود مكالمات لك. {value}"
 
-[profile_write_these_24_words]
-text = "يُستحسن كتابة هذه الكلمات الأربع والعشرين بالترتيب وحفظها في مكان خاص."
-
 [profile_yes]
 text = "نعم"
 
@@ -2812,9 +2685,6 @@ text = "ستظهر الأحرف الأولى من اسمك بدلًا منها."
 
 [profile_your_reads_stay_with]
 text = "قراءتك للرسائل تبقى خاصة بك"
-
-[profile_your_recovery_key_is]
-text = "مفتاح الاسترداد هو نفسه كلماتك الأربع والعشرون، في سطر واحد. مدير كلمات المرور مكان مناسب له."
 
 [profile_your_recovery_phrase_is]
 text = "كلمات الاسترداد هي الطريقة الوحيدة لاستعادة حسابك إذا فقدت كل أجهزتك. أي شخص يحصل عليها يمكنه التصرف باسمك."
@@ -3016,9 +2886,6 @@ text = "يمكنك إضافة من يهمك التحدث معه، لتتمكنا
 [signup_adding]
 text = "جارٍ الإضافة…"
 
-[signup_and_have_read_the]
-text = " واطلاعك على "
-
 [signup_any_length_works_a]
 text = "أي طول مقبول. بضع كلمات عشوائية سهلة التذكر."
 
@@ -3109,9 +2976,6 @@ text = "حفظته في مكان آخر"
 [signup_i_wrote_them_down]
 text = "كتبتها على ورق"
 
-[signup_if_you_ever_switch]
-text = "إذا انتقلت يومًا إلى جهاز آخر، فهذه الكلمات الأربع والعشرون تُحضر حسابك معك."
-
 [signup_is_already_in_your]
 text = "{name} من جهات اتصالك بالفعل."
 
@@ -3159,9 +3023,6 @@ text = "ليس لمكالمات الطوارئ."
 
 [signup_of]
 text = "{count} من {total}"
-
-[signup_of_24]
-text = "{filled} من 24"
 
 [signup_only_the_people_you]
 text = "لا يراه إلا من تمت إضافتهم إلى جهات اتصالك."
@@ -3277,20 +3138,11 @@ text = "رمزهم"
 [signup_this_computer_can_host]
 text = "يمكن لهذا الحاسوب استضافة مجموعاتك"
 
-[signup_tinline_connects_your_straight]
-text = "يصل Tinline {noun} الخاص بك بأجهزتهم مباشرة."
-
 [signup_tinline_doesnt_collect_your]
 text = "لا يجمع Tinline جهات اتصالك ولا مكالماتك ولا موقعك."
 
 [signup_two_devices_are_better]
 text = "جهازان أفضل من جهاز واحد"
-
-[signup_type_your_24_recovery]
-text = "كتابة كلمات الاسترداد الأربع والعشرين. يبدأ هذا {noun} بقائمة جهات اتصال فارغة."
-
-[signup_type_your_24_words]
-text = "يمكنك كتابة كلماتك الأربع والعشرين بالترتيب، أو لصقها أو لصق مفتاح الاسترداد في المربع الأول. تبقى على هذا {noun}."
 
 [signup_unlock]
 text = "فتح القفل"
@@ -3322,14 +3174,16 @@ text = "بأي اسم يناديك الناس؟"
 [signup_when_a_direct_line]
 text = "حين يتعذّر الخط المباشر، ينقل خادم ترحيل مشفّر المكالمة. لا يمكنه سماعها."
 
-[signup_word_in_the_recovery]
-text = "الكلمة {value}{value2} {value3} في قائمة كلمات الاسترداد. يمكنك التحقق من الإملاء."
-
 [signup_words]
 text = "الكلمات"
 
 [signup_words_are_still_missing]
-text = "عدد الكلمات الناقصة: {filled}."
+zero = "لا كلمات ناقصة."
+one = "لا تزال كلمة واحدة ناقصة."
+two = "لا تزال كلمتان ناقصتين."
+few = "لا تزال {count} كلمات ناقصة."
+many = "لا تزال {count} كلمة ناقصة."
+other = "لا تزال {count} كلمة ناقصة."
 
 [signup_work_computer]
 text = "حاسوب العمل"
@@ -3352,9 +3206,6 @@ text = "كل ما يلزم اسم مستعار. مشفّر تمامًا بين �
 [signup_you_type_it_each]
 text = "{value} تُكتب في كل مرة يبدأ فيها Tinline. إذا نسيتها، تتيح لك كلمات الاسترداد تعيين عبارة جديدة."
 
-[signup_your_account_is_its]
-text = "حسابك هو كلمات الاسترداد الخاصة به، لذا يمكنك إحضاره إلى هذا {noun} بطريقتين."
-
 [signup_your_account_is_yours]
 text = "حسابك ملكك."
 
@@ -3363,9 +3214,6 @@ text = "الحافظة فارغة الآن. عندما يصل رمزهم، يم�
 
 [signup_your_code]
 text = "رمزك"
-
-[signup_your_current_account_stays]
-text = "يبقى حسابك الحالي على هذا {noun}."
 
 [signup_your_line_is_open]
 text = "خطك مفتوح يا {name}"
@@ -3378,12 +3226,6 @@ text = "خطك إلى {name} مفتوح. يمكنك إلقاء التحية."
 
 [signup_your_nickname]
 text = "اسمك المستعار"
-
-[signup_your_recovery_key_is]
-text = "تم إدخال مفتاح الاسترداد. يبقى على هذا {noun}."
-
-[signup_your_recovery_key_is_the]
-text = "مفتاح الاسترداد هو نفسه كلماتك الأربع والعشرون، في سطر واحد."
 
 [signup_your_request_to_is]
 text = "طلبك إلى {value} بالانتظار. يُفتح خطك عند القبول."
@@ -3459,3 +3301,147 @@ text = "صباح الغد"
 
 [profile_busy_no_end]
 text = "دون وقت انتهاء"
+
+[signup_by_continuing_you_agree]
+text = "المتابعة تعني موافقتك على {terms} واطلاعك على {privacy}."
+
+[profile_err_name_empty]
+text = "لا يمكن أن يكون الاسم فارغًا."
+
+[profile_err_name_chars]
+text = "لا يمكن أن يحتوي الاسم على أحرف تحكم أو أحرف اتجاه النص."
+
+[profile_err_name_long]
+text = "هذا الاسم طويل جدًا. الحد {limit} بايت، وبعض الأحرف يشغل أكثر من بايت."
+
+[profile_err_status_long]
+text = "هذا طويل جدًا على الحالة: الحد {limit} بايت، وبعض الأحرف يشغل أكثر من بايت."
+
+[profile_err_status_chars]
+text = "لا يمكن أن تحتوي الحالة على أحرف تحكم أو أحرف اتجاه النص."
+
+[profile_err_about_long]
+text = "هذا طويل جدًا على النبذة: الحد {limit} بايت، وبعض الأحرف يشغل أكثر من بايت."
+
+[profile_err_about_chars]
+text = "لا يمكن أن تحتوي النبذة على أحرف تحكم أو أحرف اتجاه النص."
+
+[common_list_and]
+text = "{list} و {last}"
+
+[call_history_fallback]
+text = "مكالمة Tinline"
+
+[group_replying_to_yourself]
+text = "رد على نفسك"
+
+[chat_replying_to_yourself]
+text = "رد على نفسك"
+
+[group_link_own]
+text = "رابط لجهازك الآخر"
+
+[group_host_online]
+text = "متصل"
+
+[group_host_offline]
+text = "غير متصل"
+
+[group_hosts_store_the_group_admin]
+text = "يخزّن المضيفون المجموعة وينقلون المنشورات حين يكون الآخرون غير متصلين. إنهم أعضاء موضع ثقتك: يمكن للمضيف قراءة كل ما يُنشر في هذه المجموعة. يمكن تعيين مضيف من قائمة العضو، وعليه أن يقبل. إزالة مضيف تغيّر عنوان المجموعة خلال يومين، فلا يعود ذلك الجهاز قادرًا على الوصول إليها."
+
+[group_post_photo]
+text = "صورة"
+
+[group_preview_you]
+text = "أنت: {text}"
+
+[group_preview_author]
+text = "{name}: {text}"
+
+[group_sys_joined]
+text = "انضمام {name} إلى المجموعة"
+
+[group_sys_left_you]
+text = "غادرت المجموعة"
+
+[group_sys_left]
+text = "مغادرة {name} للمجموعة"
+
+[group_sys_host_added_you]
+text = "أحد أجهزتك يستضيف المجموعة الآن"
+
+[group_sys_host_added]
+text = "أحد أجهزة {name} يستضيف المجموعة الآن"
+
+[group_sys_host_removed_you]
+text = "توقف أحد أجهزتك عن استضافة المجموعة"
+
+[group_sys_host_removed]
+text = "توقف أحد أجهزة {name} عن استضافة المجموعة"
+
+[group_sys_admin_other_you]
+text = "تم تعيينك مشرفًا بواسطة {by}"
+
+[group_sys_admin_other_other]
+text = "تم تعيين {name} مشرفًا بواسطة {by}"
+
+[group_sys_unadmin_other_you]
+text = "أُلغي إشرافك بواسطة {by}"
+
+[group_sys_unadmin_other_other]
+text = "أُلغي إشراف {name} بواسطة {by}"
+
+[group_sent_waiting]
+text = "بانتظار {name} · عبر {group}"
+
+[group_sent_accepted_messages]
+text = "تم القبول من {name} · الرسائل فقط"
+
+[group_sent_accepted_connecting]
+text = "تم القبول من {name} · جارٍ الاتصال"
+
+[group_sent_declined]
+text = "تم الرفض من {name}"
+
+[group_sent_declined_unnamed]
+text = "مرفوضة"
+
+[group_sent_blocked]
+text = "تم حظرك من {name}"
+
+[group_notice_invitation_sent]
+text = "تم إرسال الدعوة إلى {name}. يتم الانضمام عند القبول."
+
+[group_notice_you_joined]
+text = "تم انضمامك إلى {group}."
+
+[group_notice_you_joined_the_group]
+text = "تم انضمامك إلى المجموعة."
+
+[group_notice_declined_inv]
+text = "تم الرفض. سيظهر الرفض لدى {name}."
+
+[group_notice_accepted_yours]
+text = "تم قبول طلبك من {name}. يمكنكما المراسلة الآن؛ تبقى المكالمات متوقفة حتى يسمح بها أحدكما."
+
+[group_notice_request_sent]
+text = "تم إرسال الطلب إلى {name}. ينتظر في الدردشات حتى الرد."
+
+[group_notice_accepted]
+text = "تم القبول. أُضيف {name} للرسائل فقط، ويظهر في الدردشات عند اتصال جهازه؛ تبقى المكالمات متوقفة حتى السماح بها."
+
+[group_notice_declined_req]
+text = "تم الرفض. سيُبلَّغ {name} بالرفض."
+
+[group_notice_link_copied]
+text = "تم النسخ. يمكن لأي شخص لديه الرابط الانضمام ما دام مفتوحًا."
+
+[group_notice_group_is_open]
+text = "مجموعتك مفتوحة. يمكنك نسخ الرابط لمشاركته."
+
+[group_give_the_group_a_name]
+text = "يلزم اسم للمجموعة."
+
+[group_pick_someone_first]
+text = "يلزم اختيار شخص أولًا."
