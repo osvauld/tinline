@@ -4545,16 +4545,17 @@ note = "Button of the card prompt that adds the new contact."
 # ---- groups: core texts (GroupsCore.kt; the ones GroupsCoreTest asserts stay deferred in Kotlin)
 
 [groupsc_removed_you_flags]
-text = "You were removed after {flags} admin flags"
-note = "System line in a group's chat: you were removed after enough admin flags. {flags} is the number of flags needed (3)."
+one = "You were removed after {count} admin flag"
+other = "You were removed after {count} admin flags"
+note = "System line in a group's chat: I was removed after enough admin flags. {count} is the number of flags needed."
 
 [groupsc_admin_granted_other]
 text = "{by} made {sub} an admin"
-note = "System line in a group's chat. {by} is who granted it, {sub} is the new admin (either may be 'You' or a name)."
+note = "System line in a group's chat. {by} is who granted it, {sub} is the new admin."
 
 [groupsc_admin_revoked_you]
 text = "{by} removed you as admin"
-note = "System line in a group's chat: someone took away your admin role. {by} is who did it."
+note = "System line in a group's chat: someone took away my admin role. {by} is who did it."
 
 [groupsc_admin_revoked_other]
 text = "{by} removed {sub} as admin"
@@ -4717,12 +4718,6 @@ note = "Confirmation after an admin lets all members post again."
 text = "Declined. {name} is told “declined”."
 note = "Confirmation after declining a chat request from a group member. {name} is their first name."
 
-[groupsc_they]
-text = "They"
-note = "Stand-in name at the start of a group confirmation sentence when the person's name is unknown."
-
-# ---- groups: kit and shared pieces (GroupsKit.kt, GroupsUi.kt)
-
 [groupsc_unread]
 text = "{count} unread"
 note = "Spoken description (screen reader) of the unread badge on a group row. {count} is the number of unread posts."
@@ -4746,11 +4741,11 @@ text = "Finding a call host…"
 note = "Status under the group name while a call is starting."
 
 [gcall_connecting]
-text = "Connecting…"
+text = "Connecting the call…"
 note = "Status under the group name while joining a group call."
 
 [gcall_reconnecting]
-text = "Reconnecting…"
+text = "Reconnecting the call…"
 note = "Status under the group name while the group call connection is being restored."
 
 [gcall_already_in_call]
@@ -4774,7 +4769,7 @@ text = "No call host available"
 note = "Group call failed: no device could host the call."
 
 [gcall_cant_connect]
-text = "Couldn’t connect"
+text = "Couldn’t join the call"
 note = "Group call failed for another reason."
 
 [gcall_host_this_phone]
@@ -5302,7 +5297,7 @@ text = "Audio: {route}"
 note = "Accessibility label of the audio route button while a headset is connected. {route} is the route's name, such as a Bluetooth headset's name."
 
 [call_reconnecting]
-text = "Reconnecting…"
+text = "Reconnecting the call…"
 note = "Status line on the call screen while the connection dropped and Tinline is finding a way back."
 
 [call_reconnecting_plain]
@@ -6079,7 +6074,7 @@ text = "Cancelled"
 note = "Calls tab row text for a call that was cancelled before it was answered."
 
 [calls_what_unreachable]
-text = "Couldn’t connect"
+text = "Couldn’t connect the call"
 note = "Calls tab row text for a call that could not connect."
 
 [calls_profile_desc]
@@ -6228,3 +6223,299 @@ note = "Fallback error text."
 [debuglog_send_title]
 text = "Send debug log"
 note = "Title of the system share sheet when sending the debug log."
+[groupsc_sys_joined_you]
+text = "You joined"
+note = "System line in a group's chat when I joined the group."
+
+[groupsc_sys_joined_other]
+text = "{name} joined"
+note = "System line in a group's chat. {name} is the member who joined."
+
+[groupsc_sys_joined_someone]
+text = "Someone joined"
+note = "System line in a group's chat when a member whose name is not known joined."
+
+[groupsc_sys_left_you]
+text = "You left"
+note = "System line in a group's chat when I left the group."
+
+[groupsc_sys_left_other]
+text = "{name} left"
+note = "System line in a group's chat. {name} is the member who left."
+
+[groupsc_sys_left_someone]
+text = "Someone left"
+note = "System line in a group's chat when a member whose name is not known left."
+
+[groupsc_removed_other_flags]
+one = "{name} was removed after {count} admin flag"
+other = "{name} was removed after {count} admin flags"
+note = "System line in a group's chat. {name} is the member who was removed, {count} the number of flags needed."
+
+[groupsc_removed_someone_flags]
+one = "Someone was removed after {count} admin flag"
+other = "Someone was removed after {count} admin flags"
+note = "System line in a group's chat when the removed member's name is not known. {count} is the number of flags needed."
+
+[groupsc_admin_granted_you]
+text = "{by} made you an admin"
+note = "System line in a group's chat: someone made me an admin. {by} is who did it."
+
+[groupsc_admin_granted_you_by_someone]
+text = "Someone made you an admin"
+note = "System line in a group's chat: someone whose name is not known made me an admin."
+
+[groupsc_admin_granted_by_you]
+text = "You made {sub} an admin"
+note = "System line in a group's chat: I made a member an admin. {sub} is the new admin."
+
+[groupsc_admin_granted_by_you_someone]
+text = "You made someone an admin"
+note = "System line in a group's chat: I made a member an admin whose name is not known."
+
+[groupsc_admin_granted_other_someone]
+text = "{by} made someone an admin"
+note = "System line in a group's chat. {by} is who granted it; the new admin's name is not known."
+
+[groupsc_admin_granted_by_someone]
+text = "Someone made {sub} an admin"
+note = "System line in a group's chat. Who granted it is not known; {sub} is the new admin."
+
+[groupsc_admin_granted_by_someone_someone]
+text = "Someone made someone an admin"
+note = "System line in a group's chat when neither the person who granted it nor the new admin has a known name."
+
+[groupsc_admin_revoked_you_by_someone]
+text = "Someone removed you as admin"
+note = "System line in a group's chat: someone whose name is not known took away my admin role."
+
+[groupsc_admin_revoked_by_you]
+text = "You removed {sub} as admin"
+note = "System line in a group's chat: I took away a member's admin role. {sub} is who lost it."
+
+[groupsc_admin_revoked_by_you_someone]
+text = "You removed someone as admin"
+note = "System line in a group's chat: I took away the admin role of a member whose name is not known."
+
+[groupsc_admin_revoked_other_someone]
+text = "{by} removed someone as admin"
+note = "System line in a group's chat. {by} took the admin role away; the member's name is not known."
+
+[groupsc_admin_revoked_by_someone]
+text = "Someone removed {sub} as admin"
+note = "System line in a group's chat. Who did it is not known; {sub} is who lost the admin role."
+
+[groupsc_admin_revoked_by_someone_someone]
+text = "Someone removed someone as admin"
+note = "System line in a group's chat when neither the person who did it nor the member who lost the admin role has a known name."
+
+[groupsc_host_added_someone]
+text = "A device of someone’s now hosts the group"
+note = "System line in a group's chat: a device of a member whose name is not known became a host."
+
+[groupsc_host_removed_someone]
+text = "A device of someone’s stopped hosting the group"
+note = "System line in a group's chat: a device of a member whose name is not known stopped hosting."
+
+[groupsc_removed_you_group]
+text = "You were removed from this group"
+note = "Second line of a group's row in the list and under its header after I was removed."
+
+[groupsc_preview_you]
+text = "You: {text}"
+note = "Group row preview when my post is the latest. {text} is the start of my post."
+
+[groupsc_preview_other]
+text = "{name}: {text}"
+note = "Group row preview when a member's post is the latest. {name} is their first name, {text} the start of the post."
+
+[groupsc_preview_someone]
+text = "Someone: {text}"
+note = "Group row preview when the latest post is from a member whose name is not known. {text} is the start of the post."
+
+[groupsc_photo_caption_line]
+text = "Photo · {caption}"
+note = "One-line summary of a group post that is a picture with a caption. {caption} is the caption."
+
+[groupsc_members]
+one = "{count} member"
+other = "{count} members"
+note = "How many members a group has, at the start of the group header sub-line."
+
+[groupsc_status_this_device]
+text = "this device hosts the group"
+note = "Group header sub-line after the member count: this device is a host."
+
+[groupsc_status_no_host]
+text = "no host yet"
+note = "Group header sub-line after the member count: the group has no host."
+
+[groupsc_status_waiting]
+text = "waiting for a host"
+note = "Group header sub-line after the member count: hosts exist but none is online."
+
+[groupsc_status_join]
+text = "{members} · {state}"
+note = "Group header sub-line. {members} is the member count such as '3 members', {state} the host state such as 'no host yet'."
+
+[groupsc_online_count]
+one = "{count} online"
+other = "{count} online"
+note = "Number of people online in a public group, shown in its top bar."
+
+[groupsc_online_cap]
+text = "{count}+ online"
+note = "Number of people online in a public group when the list was cut short at the limit, such as 500+."
+
+[groupsc_admins_only_post]
+text = "Only admins post here"
+note = "Calm line in place of the composer in a group where only admins may post."
+
+[groupsc_admins_only_error]
+text = "Only admins post here."
+note = "Error when I try to post in a group where only admins may post."
+
+[groupsc_req_pending_named]
+text = "Waiting for {name} · via {group}"
+note = "State line of a chat request I sent from a group. {name} is their first name, {group} the group name."
+
+[groupsc_req_pending_anon]
+text = "Waiting for an answer · via {group}"
+note = "State line of a chat request I sent from a group when the person's name is not known. {group} is the group name."
+
+[groupsc_req_accepted_messages_anon]
+text = "They accepted · messages only"
+note = "State line of a chat request I sent from a group: a person with no known name accepted and was added for messages only."
+
+[groupsc_req_accepted_connecting_anon]
+text = "They accepted · connecting"
+note = "State line of a chat request I sent from a group: a person with no known name accepted, the chat is still connecting."
+
+[groupsc_req_declined_named]
+text = "{name} declined"
+note = "State line of a chat request I sent from a group. {name} is their first name."
+
+[groupsc_req_declined_anon]
+text = "They declined"
+note = "State line of a chat request I sent from a group, when the person's name is not known."
+
+[groupsc_req_blocked_named]
+text = "{name} blocked you"
+note = "State line of a chat request I sent from a group: the person blocked me. {name} is their first name."
+
+[groupsc_req_blocked_anon]
+text = "They blocked you"
+note = "State line of a chat request I sent from a group: the person, whose name is not known, blocked me."
+
+[groupsc_pick_member]
+text = "Already a member"
+note = "Shown under a contact in the Add members picker when they are already in the group."
+
+[groupsc_pick_invited_waiting]
+text = "Invited · waiting"
+note = "Shown under a contact in the Add members picker when an invitation to them is waiting for an answer."
+
+[groupsc_invited_not_delivered]
+text = "Invited · not delivered yet"
+note = "State of a group invitation I sent that has not reached the person's phone yet."
+
+[groupsc_invite_joined]
+text = "Joined"
+note = "State of a group invitation I sent: the person joined the group."
+
+[groupsc_invite_declined]
+text = "Invitation declined"
+note = "State of a group invitation I sent: the person declined it."
+
+[groupsc_flag_final]
+text = "Yours will be flag {n} of {total}. {name} is removed right away: hosts refuse their new messages and they see they were removed."
+note = "Admin's dialog before flagging a member, when my flag is the one that removes them. {n} is my flag's number, {total} the flags needed (3), {name} the member's first name."
+
+[groupsc_flag_more]
+text = "Yours will be flag {n} of {total}. Any admin’s flags count, yours again too. At {total} flags {name} is removed right away and sees they were removed."
+note = "Admin's dialog before flagging a member, when more flags are needed. {n} is my flag's number, {total} the flags needed (3), {name} the member's first name."
+
+[groupsc_err_removed]
+text = "You were removed from this group."
+note = "Error when an action is refused because I was removed from the group."
+
+[groupsc_err_already_contact]
+text = "You already have them as a contact. Message them from Chats."
+note = "Error when asking a private chat from a group member who is already a contact."
+
+[groupsc_err_timeout]
+text = "No host answered in time. Try again when a host is online."
+note = "Error when a group action times out because no host answered."
+
+[groupsc_type_first]
+text = "Type a message first."
+note = "Error when I try to send an empty group post."
+
+[groupsc_picture_too_large]
+text = "That picture is too large to post."
+note = "Error when the picture chosen for a group post is too large."
+
+[groupsc_pick_first]
+text = "Pick someone first."
+note = "Error when I try to invite contacts to a group without picking any."
+
+[groupsc_invited_one_named]
+text = "Invitation sent to {name}. They join when they accept."
+note = "Confirmation after inviting one contact to a group. {name} is their first name."
+
+[groupsc_invited_one_anon]
+text = "Invitation sent. They join when they accept."
+note = "Confirmation after inviting one contact to a group, when the contact's name is not known."
+
+[groupsc_invited_many]
+one = "{count} invitation sent. Each person joins when they accept."
+other = "{count} invitations sent. Each person joins when they accept."
+note = "Confirmation after inviting several contacts to a group. {count} is how many invitations went out."
+
+[groupsc_decline_inv_named]
+text = "Declined. {name} sees that you declined."
+note = "Confirmation after I decline a group invitation. {name} is the first name of who invited me."
+
+[groupsc_decline_inv_anon]
+text = "Declined. They see that you declined."
+note = "Confirmation after I decline a group invitation, when the inviter's name is not known."
+
+[groupsc_link_closed]
+text = "The open link is closed. Everyone already in stays; new people join with an invite."
+note = "Confirmation after I close a public group's open link."
+
+[groupsc_request_sent_named]
+text = "Request sent to {name}. It waits in Chats until they answer."
+note = "Confirmation after asking a group member for a private chat. {name} is their first name."
+
+[groupsc_request_sent_anon]
+text = "Request sent. It waits in Chats until they answer."
+note = "Confirmation after asking a group member for a private chat, when their name is not known."
+
+[groupsc_req_accept_named]
+text = "Accepted. {name} is added for messages only and shows in Chats once their device connects; calls stay off until you allow them."
+note = "Confirmation after I accept a chat request from a group member. {name} is their first name."
+
+[groupsc_req_accept_anon]
+text = "Accepted. They are added for messages only and show in Chats once their device connects; calls stay off until you allow them."
+note = "Confirmation after I accept a chat request from a person whose name is not known."
+
+[groupsc_req_declined_told_anon]
+text = "Declined. They are told “declined”."
+note = "Confirmation after declining a chat request from a person whose name is not known."
+
+[groupsc_req_block_named]
+text = "{name} is blocked and can’t send more requests."
+note = "Confirmation after blocking a person who asked me for a chat from a group. {name} is their first name."
+
+[groupsc_req_block_anon]
+text = "They are blocked and can’t send more requests."
+note = "Confirmation after blocking a person, whose name is not known, who asked me for a chat from a group."
+
+[groupsc_notice_accepted_named]
+text = "{name} accepted your request. You can message each other now; calls stay off until one of you allows them."
+note = "Notice when a group member accepted my chat request. {name} is their first name."
+
+[groupsc_notice_accepted_anon]
+text = "They accepted your request. You can message each other now; calls stay off until one of you allows them."
+note = "Notice when a person, whose name is not known, accepted my chat request."
