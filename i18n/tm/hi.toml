@@ -12116,7 +12116,7 @@ en = "Welcome back, "
 where = [
   "ios unlock_welcome_prefix: Start of the title when the nickname is a tappable switcher; the nickname button follows directly after it.",
 ]
-text = "फिर से स्वागत है,"
+text = "फिर से स्वागत है, "
 
 [t_19852ede17]
 en = "{name}, switch identity"
@@ -12329,7 +12329,7 @@ en = "{name}: "
 where = [
   "ios shell_search_author_prefix: Prefix of a message search hit snippet: who wrote it. {name} is the author’s first name or “You”. Keep the trailing space.",
 ]
-text = "{name}:"
+text = "{name}: "
 
 [t_720d4af996]
 en = "WHAT {name} CAN DO"
@@ -13293,7 +13293,7 @@ en = "Draft: "
 where = [
   "desktop chat_draft: Desktop, chats (in chat_view.rs, pg_chat_row).",
 ]
-text = "ड्राफ़्ट:"
+text = "ड्राफ़्ट: "
 
 [t_ef98461b5f]
 en = "Drop to send to {name}"
