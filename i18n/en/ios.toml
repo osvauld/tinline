@@ -1,0 +1,5863 @@
+[kit_tick_waiting]
+text = "Waiting to send"
+note = "Screen-reader label of a message tick: not sent yet."
+
+[kit_tick_sent]
+text = "Sent, waiting for {first}’s device to confirm"
+note = "Screen-reader label of a message tick: sent, no confirmation yet. {first} is the other person's first name."
+
+[kit_tick_delivered]
+text = "On {first}’s device"
+note = "Screen-reader label of a message tick: reached the other person's device. {first} is their first name."
+
+[kit_tick_read]
+text = "Read on {first}’s device"
+note = "Screen-reader label of a message tick: read. {first} is the other person's first name."
+
+[kit_tick_bad]
+text = "Not delivered"
+note = "Screen-reader label of a message tick: could not be delivered."
+
+[kit_tick_their]
+text = "their"
+note = "Stand-in for a first name in the tick labels when no name is known (\"On their device\")."
+
+[kit_avatar_view_photo]
+text = "View photo"
+note = "Accessibility hint on an avatar that has a photo: opens it full screen."
+
+[kit_avatar_view_geometry]
+text = "View identity geometry"
+note = "Accessibility hint on an avatar without a photo: opens the identity geometry drawing."
+
+[kit_avatar_photo_of]
+text = "{name}’s photo"
+note = "Accessibility label of a contact's full-screen photo. {name} is the contact's name."
+
+[kit_avatar_close]
+text = "Close"
+note = "Accessibility label of the close button on the full-screen avatar viewer."
+
+[kit_mark_incoming]
+text = "Incoming call"
+note = "Screen-reader label of the Tinline mark while a call is ringing in."
+
+[kit_mark_calling]
+text = "Calling"
+note = "Screen-reader label of the mark while we are calling someone."
+
+[kit_mark_in_call]
+text = "In a call"
+note = "Screen-reader label of the mark during a call."
+
+[kit_mark_group_starting]
+text = "Starting a group call"
+note = "Screen-reader label of the mark while a group call starts."
+
+[kit_mark_in_group_call]
+text = "In a group call"
+note = "Screen-reader label of the mark during a group call."
+
+[kit_mark_offline]
+text = "No connection"
+note = "Screen-reader label of the mark when the network is down."
+
+[kit_mark_online]
+text = "Connected to the network"
+note = "Screen-reader label of the mark when online."
+
+[kit_mark_connecting]
+text = "Connecting"
+note = "Screen-reader label of the mark while a call, group call or the network is connecting."
+
+[kit_mark_reconnecting]
+text = "Reconnecting"
+note = "Screen-reader label of the mark while a call is reconnecting."
+
+[kit_back]
+text = "Back"
+note = "Accessibility label of the back button in the top bar."
+
+[kit_passphrase_hide]
+text = "Hide passphrase"
+note = "Accessibility label of the eye button that hides the typed passphrase."
+
+[kit_passphrase_show]
+text = "Show passphrase"
+note = "Accessibility label of the eye button that shows the typed passphrase."
+
+[kit_cancel]
+text = "Cancel"
+note = "Default label of the cancel button in a dialog."
+
+[chat_card_copy]
+text = "Copy"
+note = "Button that copies the contact card code to the clipboard."
+
+[chat_card_copied]
+text = "Copied"
+note = "Copy button label for two seconds after copying."
+
+[chat_card_qr_label]
+text = "QR code of your contact card"
+note = "Accessibility label of the QR image of the user's own contact card."
+
+[chat_card_preparing]
+text = "Preparing your code…"
+note = "Shown in the QR box while the contact card code is being made."
+
+[chat_card_once]
+text = "Works once. Making a new code cancels this one."
+note = "Hint under the contact card QR code."
+
+[chat_card_share_subject]
+text = "Share contact card"
+note = "Subject line of the system share sheet when sharing the contact card."
+
+[chat_card_share]
+text = "Share"
+note = "Button that opens the share sheet for the contact card."
+
+[chat_card_new_code]
+text = "New code"
+note = "Button that makes a fresh contact card code and cancels the old one."
+
+[chat_card_not_now]
+text = "Not now"
+note = "Button that dismisses the \"add this contact\" prompt for a card found on the clipboard."
+
+[chat_card_known_sub]
+text = "They are already in your contacts."
+note = "Second line of the clipboard card prompt when the person is already a contact."
+
+[chat_card_found_sub]
+text = "Tinline found their card."
+note = "Second line of the clipboard card prompt when the card is new."
+
+[chat_card_open]
+text = "Open"
+note = "Button of the clipboard card prompt that opens the existing chat."
+
+[chat_card_add]
+text = "Add"
+note = "Button of the clipboard card prompt that adds the new contact."
+
+[chat_card_chat_with]
+text = "Chat with {name}?"
+note = "Title of the clipboard card prompt for a known contact. {name} is the contact's name, or \"them\"."
+
+[chat_card_add_name]
+text = "Add {name}?"
+note = "Title of the clipboard card prompt for a new contact. {name} is the name on the card, or \"this contact\"."
+
+[chat_card_them]
+text = "them"
+note = "Stand-in for a nameless contact in \"Chat with them?\"."
+
+[chat_card_this_contact]
+text = "this contact"
+note = "Stand-in for a nameless card in \"Add this contact?\"."
+
+[chat_find_placeholder]
+text = "Find in this chat"
+note = "Placeholder and accessibility label of the search field inside a chat."
+
+[chat_find_match_of]
+text = "Match {index} of {total}"
+note = "Accessibility label of the match counter. {index} is the current match number, {total} how many matches."
+
+[chat_find_none]
+text = "No matches"
+note = "Accessibility label of the match counter when nothing matched."
+
+[chat_find_older]
+text = "Older match"
+note = "Accessibility label of the button that jumps to the previous (older) search match."
+
+[chat_find_newer]
+text = "Newer match"
+note = "Accessibility label of the button that jumps to the next (newer) search match."
+
+[chat_find_close]
+text = "Close find"
+note = "Accessibility label of the button that closes the in-chat search bar."
+
+[chat_self_sub]
+text = "Saved items · only on your devices"
+note = "Subtitle of the \"You\" conversation (saved items) in the chat list and its header."
+
+[chat_day_today]
+text = "Today"
+note = "Day pill in a conversation for messages from today."
+
+[chat_day_yesterday]
+text = "Yesterday"
+note = "Day pill in a conversation for messages from yesterday."
+
+[chat_call_video_done]
+text = "Video call · {duration}"
+note = "Call pill in a chat for an answered video call. {duration} is minutes:seconds, like 3:07."
+
+[chat_call_voice_done]
+text = "Voice call · {duration}"
+note = "Call pill in a chat for an answered voice call. {duration} is minutes:seconds, like 3:07."
+
+[chat_call_video_declined]
+text = "Declined video call"
+note = "Call pill in a chat: an incoming video call the user declined."
+
+[chat_call_voice_declined]
+text = "Declined voice call"
+note = "Call pill in a chat: an incoming voice call the user declined."
+
+[chat_call_video_missed]
+text = "Missed video call"
+note = "Call pill in a chat: an incoming video call the user did not pick up."
+
+[chat_call_voice_missed]
+text = "Missed voice call"
+note = "Call pill in a chat: an incoming voice call the user did not pick up."
+
+[chat_call_no_answer]
+text = "No answer"
+note = "Call pill in a chat: an outgoing call nobody answered."
+
+[chat_call_declined]
+text = "Declined"
+note = "Call pill in a chat: an outgoing call the other person declined."
+
+[chat_call_cancelled]
+text = "Cancelled call"
+note = "Call pill in a chat: an outgoing call the user hung up before it was answered."
+
+[chat_call_failed]
+text = "Call failed"
+note = "Call pill in a chat: a call that failed to connect."
+
+[chat_err_send_file]
+text = "Couldn’t send that file."
+note = "Toast when sending a file fails."
+
+[chat_err_read_file]
+text = "Couldn’t read that file."
+note = "Toast when a picked file cannot be read."
+
+[chat_err_send_voice]
+text = "Couldn’t send that voice message."
+note = "Toast when sending a voice message fails."
+
+[chat_err_delete]
+text = "Couldn’t delete that message."
+note = "Toast when deleting a message fails."
+
+[chat_err_download]
+text = "Couldn’t start the download."
+note = "Toast when a file download cannot start."
+
+[chat_saved]
+text = "Saved to your phone"
+note = "Toast after a file was saved to the phone's photos or files."
+
+[chat_err_save]
+text = "Couldn’t save that file."
+note = "Toast when saving a file to the phone fails."
+
+[chat_err_in_call]
+text = "Finish your call first"
+note = "Friendly error when an action needs the user to end the current call first."
+
+[chat_err_locked]
+text = "Locked — enter your passphrase to unlock"
+note = "Friendly error when the vault is locked."
+
+[chat_err_generic]
+text = "Something went wrong"
+note = "Friendly error when the cause is unknown."
+
+[chat_preview_voice]
+text = "Voice message"
+note = "Preview of a message that is only a voice message (notification, quote, chat list)."
+
+[chat_preview_photo]
+text = "Photo"
+note = "Preview of a message that is only a photo (notification, quote, chat list)."
+
+[chat_unread_divider]
+one = "{count} new message"
+other = "{count} new messages"
+note = "Divider line in a conversation above the messages not yet read."
+
+[chat_jump_hint]
+text = "Jump to message"
+note = "Accessibility hint on a quoted message: jumps to the original."
+
+[chat_attach]
+text = "Attach a file"
+note = "Accessibility label of the paperclip button next to the message field."
+
+[chat_save_edit]
+text = "Save edit"
+note = "Accessibility label of the send button while editing a message."
+
+[chat_send]
+text = "Send"
+note = "Accessibility label of the button that sends the typed message."
+
+[chat_voice_discard]
+text = "Discard recording"
+note = "Accessibility label of the trash button while a voice message is being recorded hands-free."
+
+[chat_voice_slide_cancel]
+text = "Slide to cancel"
+note = "Hint beside the recording timer: slide left to cancel the voice message."
+
+[chat_voice_waveform]
+text = "Voice message waveform, tap to seek"
+note = "Accessibility label of the voice message waveform."
+
+[chat_voice_send]
+text = "Send voice message"
+note = "Accessibility label of the mic button once recording is locked: sends the voice message."
+
+[chat_voice_recording]
+text = "Recording, release to send"
+note = "Accessibility label of the mic button while recording."
+
+[chat_voice_hold]
+text = "Hold to record a voice message"
+note = "Accessibility label of the mic button at rest."
+
+[chat_voice_pause]
+text = "Pause voice message"
+note = "Accessibility label of the pause button on a voice message bubble."
+
+[chat_voice_play]
+text = "Play voice message"
+note = "Accessibility label of the play button on a voice message bubble."
+
+[chat_reply]
+text = "Reply"
+note = "Accessibility label of the reply icon shown while swiping a message, and the Reply action in the message sheet."
+
+[chat_you]
+text = "You"
+note = "Label for the user in a quote header (\"You\") and in the file viewer."
+
+[chat_quote_unavailable]
+text = "Original message unavailable"
+note = "Quote text when the original message cannot be found."
+
+[chat_message_actions]
+text = "Message actions"
+note = "Accessibility action name that opens the message actions sheet."
+
+[chat_meta_sending]
+text = "Sending {percent}% · {time}"
+note = "Time line under a message that is still being sent. {percent} is a whole number, {time} the clock time."
+
+[chat_meta_waiting]
+text = "Waiting · {time}"
+note = "Time line under a message waiting to be sent. {time} is the clock time."
+
+[chat_meta_edited]
+text = "edited · {time}"
+note = "Time line under a message that was edited. {time} is the clock time."
+
+[chat_quote_earlier]
+text = "Earlier message"
+note = "Quote header when the quoted message is older than what this phone has."
+
+[chat_quote_gone]
+text = "Message unavailable"
+note = "Quote text inside a bubble when the quoted message is not available."
+
+[chat_photo_chip]
+text = "Photo · {size}"
+note = "Chip on a photo that is not downloaded yet. {size} is the file size, like 2.4 MB."
+
+[chat_download]
+text = "Download"
+note = "Button on a photo that downloads it."
+
+[chat_retry_download]
+text = "Retry download"
+note = "Accessibility label of the retry button on a photo whose download failed."
+
+[chat_sends_when_online]
+text = "Sends when {first} is online"
+note = "Chip on a photo waiting to be sent. {first} is the other person's first name."
+
+[chat_file_open]
+text = "{size} · {type} · tap to open"
+note = "Sub line of a file bubble that can be opened. {size} like 2.4 MB, {type} like PDF."
+
+[chat_file_save]
+text = "{size} · {type} · tap to save"
+note = "Sub line of a file bubble that can only be saved. {size} like 2.4 MB, {type} like ZIP."
+
+[chat_file_downloading]
+text = "Downloading · {done} of {size}"
+note = "Sub line of a file bubble while downloading. {done} is the part received, {size} the whole, like 1.2 MB."
+
+[chat_file_paused]
+text = "{size} · paused — waiting for {first} to come online"
+note = "Sub line of a file bubble whose transfer is paused. {size} like 2.4 MB, {first} the other person's first name."
+
+[chat_file_starting]
+text = "{size} · starting…"
+note = "Sub line of a file bubble right after tapping download. {size} like 2.4 MB."
+
+[chat_file_failed]
+text = "{size} · couldn’t download — tap to retry"
+note = "Sub line of a file bubble whose download failed. {size} like 2.4 MB."
+
+[chat_file_remote]
+text = "{size} · not downloaded"
+note = "Sub line of a file bubble not downloaded yet. {size} like 2.4 MB."
+
+[chat_file_download_a11y]
+text = "Download {name}"
+note = "Accessibility label of the download button on a file. {name} is the file name."
+
+[chat_file_cancel_a11y]
+text = "Cancel download of {name}"
+note = "Accessibility label of the cancel button on a file download. {name} is the file name."
+
+[chat_file_save_a11y]
+text = "Save {name} to phone"
+note = "Accessibility label of the save button on a file. {name} is the file name."
+
+[chat_call_back_a11y]
+text = "{text}, {time}. Call back"
+note = "Accessibility label of a call pill that calls back. {text} is the pill text (like \"Missed voice call\"), {time} the clock time."
+
+[chat_unblock]
+text = "Unblock"
+note = "Button in place of the composer that unblocks the person."
+
+[chat_add_contact]
+text = "Add"
+note = "Button in place of the composer that adds a former contact again."
+
+[chat_copy_text]
+text = "Copy text"
+note = "Action in the message sheet that copies the message text."
+
+[chat_save_to_phone]
+text = "Save to phone"
+note = "Action in the message sheet that saves the file to the phone."
+
+[chat_edit]
+text = "Edit"
+note = "Action in the message sheet that edits the message."
+
+[chat_head_saved]
+text = "Saved {time} · on your devices"
+note = "First line of the message sheet for a saved item. {time} is the clock time."
+
+[chat_head_received]
+text = "Received {time}"
+note = "First line of the message sheet for a received message. {time} is the clock time."
+
+[chat_head_read]
+text = "Sent {time} · read on {first}’s device"
+note = "First line of the message sheet for a read message. {time} clock time, {first} the other person's first name."
+
+[chat_head_delivered]
+text = "Sent {time} · on {first}’s device"
+note = "First line of the message sheet for a delivered message. {time} clock time, {first} first name."
+
+[chat_head_only_here]
+text = "Sent {time} · only on this phone so far"
+note = "First line of the message sheet for a message only on this phone. {time} clock time."
+
+[chat_head_sent]
+text = "Sent {time} · waiting for {first}’s device to confirm"
+note = "First line of the message sheet for a sent message without confirmation. {time} clock time, {first} first name."
+
+[chat_deleted_by_me]
+text = "You deleted this message"
+note = "Placeholder shown where the user deleted a message."
+
+[chat_deleted_by_them]
+text = "{first} deleted this message"
+note = "Placeholder shown where the other person deleted a message. {first} is their first name."
+
+[chat_cancel_sending]
+text = "Cancel sending"
+note = "Accessibility label of the cancel button on a photo being sent."
+
+[chat_cancel_download]
+text = "Cancel download"
+note = "Accessibility label of the cancel button on a photo being downloaded."
+
+[chat_voice_download]
+text = "Download voice message"
+note = "Accessibility label of the button on a voice message that is not downloaded."
+
+[chat_voice_loading]
+text = "Voice message loading"
+note = "Accessibility label of a voice message that is loading."
+
+[chat_delete_self]
+text = "Delete on all your devices"
+note = "Action in the message sheet for a saved item: deletes it everywhere."
+
+[chat_delete_both]
+text = "Delete for both of you"
+note = "Action in the message sheet: deletes the message for both people."
+
+[chat_sheet_hint_self]
+text = "Edits and deletes reach your other devices when they’re online."
+note = "Hint at the bottom of the message sheet for a saved item."
+
+[chat_sheet_hint]
+text = "Edits and deletes reach {first}’s phone the next time you’re both online."
+note = "Hint at the bottom of the message sheet. {first} is the other person's first name."
+
+[chat_attach_title_self]
+text = "Save for yourself"
+note = "Title of the attach sheet in the saved-items chat."
+
+[chat_attach_title]
+text = "Send to {first}"
+note = "Title of the attach sheet. {first} is the other person's first name."
+
+[chat_attach_photos]
+text = "Photos & videos"
+note = "Option in the attach sheet: pick photos and videos."
+
+[chat_attach_camera]
+text = "Camera"
+note = "Option in the attach sheet: take a photo."
+
+[chat_attach_file]
+text = "File"
+note = "Option in the attach sheet: pick a file."
+
+[chat_attach_hint_self]
+text = "Files stay encrypted on your devices and copy to the others when they’re online. Up to 2 GB each."
+note = "Hint in the attach sheet of the saved-items chat."
+
+[chat_attach_hint]
+text = "Files are end-to-end encrypted. Up to 2 GB each. Both of you need to be online while it transfers."
+note = "Hint in the attach sheet."
+
+[chat_proof_read]
+text = "Read · signed by {first} · device {device}"
+note = "Line in the message sheet for a signed read receipt. {first} is the other person's first name, {device} the short id of the device that signed."
+
+[chat_proof_delivered]
+text = "Delivered · signed by {first} · device {device}"
+note = "Line in the message sheet for a signed delivery receipt. {first} first name, {device} short id of the signing device."
+
+[chat_blocked_note]
+text = "You blocked {first}"
+note = "Quiet line under the last message when the user blocked this person. {first} is their first name."
+
+[chat_blocked_note_date]
+text = "You blocked {first} · {date}"
+note = "Quiet line when the user blocked this person. {first} first name, {date} the day of the block."
+
+[chat_blocked_signed]
+text = "Signed by {first} · {date}"
+note = "Small print under the notice that someone blocked the user. {first} their first name, {date} the day."
+
+[chat_fallback_name]
+text = "Chat"
+note = "Header name used when a chat has no known contact name."
+
+[chat_older_title]
+text = "Older messages are on {first}’s phone"
+note = "Title of the banner at the top of a chat whose earlier history is on the other phone. {first} is their first name."
+
+[chat_older_body]
+text = "This phone keeps them from when you started using it. Earlier days load when you’re both online."
+note = "Body of the older-messages banner."
+
+[chat_composer_placeholder]
+text = "Message"
+note = "Placeholder of the message field."
+
+[chat_err_open_file]
+text = "Couldn’t open that file."
+note = "Toast when a file cannot be opened."
+
+[chat_err_no_camera]
+text = "No camera available."
+note = "Toast when the device has no camera."
+
+[chat_status_blocked]
+text = "Blocked"
+note = "Line under the name in a chat header: the user blocked this person."
+
+[chat_status_blocked_me]
+text = "Blocked you"
+note = "Line under the name in a chat header: this person blocked the user."
+
+[chat_status_not_contact]
+text = "Not in your contacts"
+note = "Line under the name in a chat header: no longer a contact."
+
+[chat_status_waiting]
+text = "Waiting for connection"
+note = "Line under the name in a chat header while the phone has no connection."
+
+[chat_status_messages_only]
+text = "Messages only"
+note = "Line under the name in a chat header: this person is not allowed to call."
+
+[chat_back]
+text = "Back to chats"
+note = "Accessibility label of the back button in a chat header."
+
+[chat_return_to_call]
+text = "Return to call"
+note = "Accessibility label of the phone button in the chat header while a call is live."
+
+[chat_call]
+text = "Call"
+note = "Accessibility label of the voice call button in a chat header."
+
+[chat_video_call]
+text = "Video call"
+note = "Accessibility label of the video call button in a chat header."
+
+[chat_details]
+text = "Chat details"
+note = "Accessibility label of the info button in a chat header."
+
+[chat_strip_peer_offline]
+text = "{first} is offline. Messages send when you’re both online."
+note = "Strip above the composer when the other person is offline. {first} is their first name."
+
+[chat_strip_me_offline]
+text = "You’re offline. Messages send when you’re back online."
+note = "Strip above the composer when the user's phone is offline."
+
+[chat_composer_editing]
+text = "Editing message"
+note = "Title of the banner above the composer while editing a message."
+
+[chat_composer_cancel_edit]
+text = "Cancel edit"
+note = "Accessibility label of the button that cancels editing."
+
+[chat_composer_reply_self]
+text = "Replying to yourself"
+note = "Title of the banner above the composer when replying to the user's own message."
+
+[chat_composer_reply]
+text = "Replying to {first}"
+note = "Title of the banner above the composer when replying. {first} is the other person's first name."
+
+[chat_composer_cancel_reply]
+text = "Cancel reply"
+note = "Accessibility label of the button that cancels a reply."
+
+[chat_status_online]
+text = "Online"
+note = "Line under the name in a chat header: the person is online."
+
+[chat_status_online_messages]
+text = "Online · messages only"
+note = "Line under the name in a chat header: online, but this person is not allowed to call."
+
+[chat_header_a11y]
+text = "{name}. Chat details"
+note = "Accessibility label of the chat header when there is no status line. {name} is the contact's name."
+
+[chat_header_a11y_status]
+text = "{name}. {status}. Chat details"
+note = "Accessibility label of the chat header. {name} is the contact's name, {status} the line under it (like \"Online\")."
+
+[chat_cant_call]
+text = "Can’t call {first}"
+note = "Accessibility label of a dimmed call button. {first} is the other person's first name."
+
+[chat_viewer_pdf_damaged]
+text = "Tinline can’t read this PDF. It may be damaged. You can still save it."
+note = "Shown in the file viewer when a PDF cannot be read."
+
+[chat_viewer_pdf_locked]
+text = "This PDF is password-protected, so Tinline can’t show it. Save it to open it in another app."
+note = "Shown in the file viewer when a PDF needs a password."
+
+[chat_viewer_too_big]
+text = "This file is too big to show here. Save it to open it in another app."
+note = "Shown in the file viewer when a text file is too large."
+
+[chat_viewer_not_text]
+text = "This doesn’t look like a text file. Save it to open it in another app."
+note = "Shown in the file viewer when a file is not text."
+
+[chat_close]
+text = "Close"
+note = "Accessibility label of the close button in the file and photo viewer."
+
+[chat_viewer_file]
+text = "File"
+note = "Title in the file viewer when the file has no name."
+
+[chat_share]
+text = "Share"
+note = "Accessibility label of the share button in the file and photo viewer."
+
+[chat_viewer_opening]
+text = "Opening…"
+note = "Shown in the file viewer while the file is being decrypted."
+
+[chat_viewer_photo_hint]
+text = "Kept encrypted inside Tinline. “Save to phone” copies it to your photos, where other apps can see it."
+note = "Hint at the bottom of the photo viewer. The quoted words match the \"Save to phone\" label."
+
+[chat_viewer_page]
+text = "Page {page} of {total}"
+note = "Subtitle of the PDF viewer. {page} is the current page number, {total} the page count."
+
+[chat_edited]
+text = "edited"
+note = "Small \"edited\" marker beside the time of an edited message."
+
+
+[group_you]
+text = "You"
+note = "The word for the user in group lines (\"You deleted…\", \"You\" as an author). Also compared against, so it must be one fixed word."
+
+[group_info_title]
+text = "Group info"
+note = "Title of the group info page."
+
+[group_info_removed_title]
+text = "Removed"
+note = "Title of the info page when the user was removed from the group, and of the removal page."
+
+[group_info_left_note]
+text = "You can still read the posts on this device. To come back, someone in the group has to invite you again."
+note = "Note on the info page after the user left the group."
+
+[group_info_leave]
+text = "Leave group"
+note = "Row on group info that opens the leave dialog."
+
+[group_info_owner_cant_leave]
+text = "The owner can’t leave yet"
+note = "Sub line under the disabled Leave group row for the owner."
+
+[group_info_hero_owner]
+one = "{count} member · You are the owner"
+other = "{count} members · You are the owner"
+note = "Line under the group name on group info, for the owner. {count} is the number of members."
+
+[group_info_hero_admin]
+one = "{count} member · You are an admin"
+other = "{count} members · You are an admin"
+note = "Line under the group name on group info, for an admin. {count} is the number of members."
+
+[group_info_hero_member]
+one = "{count} member · You are a member"
+other = "{count} members · You are a member"
+note = "Line under the group name on group info, for a plain member. {count} is the number of members."
+
+[group_info_hero_left]
+text = "You left this group"
+note = "Line under the group name after the user left."
+
+[group_info_hero_removed]
+text = "You’re no longer a member"
+note = "Line under the group name after the user was removed."
+
+[group_invites_title]
+text = "Invites"
+note = "Section heading on group info for invites (admins only)."
+
+[group_invites_contacts]
+text = "Invite contacts"
+note = "Row title that opens the invite-contacts sheet."
+
+[group_invites_contacts_sub]
+text = "A private invite to each person"
+note = "Sub line under Invite contacts."
+
+[group_invites_link]
+text = "Create invite link"
+note = "Row title that opens the create-invite-link screen."
+
+[group_invites_link_need_host]
+text = "Appoint a host first. A link names one host."
+note = "Sub line under Create invite link when the group has no host yet."
+
+[group_invites_link_valid]
+text = "Valid for 7 days"
+note = "Sub line under Create invite link: how long a link works."
+
+[group_member_flags]
+text = "{flags} of {total} flags"
+note = "Part of a member row sub line. {flags} is how many flags the member has, {total} how many remove them."
+
+[group_member_blocked_by_you]
+text = "Blocked by you"
+note = "Part of a member row sub line: the user blocked this member personally."
+
+[group_members_title]
+text = "Members"
+note = "Section heading for the member list on group info."
+
+[group_member_req_pending]
+text = "Chat request sent"
+note = "Part of a member row sub line: the user asked this member for a private chat and is waiting."
+
+[group_member_req_declined]
+text = "Declined your chat request"
+note = "Part of a member row sub line: this member declined the user’s chat request."
+
+[group_member_req_blocked]
+text = "Blocked"
+note = "Part of a member row sub line: this member blocked the user’s chat requests."
+
+[group_member_invited_by]
+text = "Invited by {name} · {date}"
+note = "Member row sub line. {name} is who invited them, {date} is the day they joined."
+
+[group_member_since]
+text = "Since {date}"
+note = "Member row sub line. {date} is the day they joined."
+
+[group_member_since_long]
+text = "Member since {date}"
+note = "Member sheet sub line. {date} is the day they joined."
+
+[group_member_name_you]
+text = "{name} (you)"
+note = "A member’s name when the member is the user. {name} is the user’s own name."
+
+[group_role_owner]
+text = "Owner"
+note = "Role label (pill and spoken description)."
+
+[group_role_admin]
+text = "Admin"
+note = "Role label (pill and spoken description)."
+
+[group_role_member]
+text = "Member"
+note = "Role label on the member sheet pill."
+
+[group_role_host]
+text = "Host"
+note = "Label for a member who hosts the group’s chat."
+
+[group_role_call_host]
+text = "Call host"
+note = "Label for a member who hosts the group’s calls."
+
+[group_member_desc_you]
+text = "{name} (you)"
+note = "Spoken description of a member row: the name part when the member is the user. {name} is the user’s name."
+
+[group_member_desc_owner]
+text = "owner"
+note = "Spoken description part: role (lower case, joined with commas)."
+
+[group_member_desc_admin]
+text = "admin"
+note = "Spoken description part: role (lower case, joined with commas)."
+
+[group_member_desc_member]
+text = "member"
+note = "Spoken description part: role (lower case, joined with commas)."
+
+[group_member_desc_host]
+text = "host"
+note = "Spoken description part (lower case, joined with commas)."
+
+[group_member_desc_call_host]
+text = "call host"
+note = "Spoken description part (lower case, joined with commas)."
+
+[group_member_desc]
+text = "{summary}. Open actions"
+note = "Spoken description of a member row. {summary} is the comma-separated name, role and host parts."
+
+[group_this_device]
+text = "This device"
+note = "Name of the user’s own device in host lists."
+
+[group_hosts_title]
+text = "Hosts"
+note = "Section heading for chat hosts on group info."
+
+[group_hosts_none]
+text = "This group has no host. Posts wait until a host is appointed."
+note = "Status line when the group has no host."
+
+[group_hosts_online]
+one = "{count} host online. Posts go through right away."
+other = "{count} hosts online. Posts go through right away."
+note = "Status line when hosts are online. {count} is the number of hosts online (at least 1)."
+
+[group_hosts_offline]
+text = "No host is online. Your posts are saved and send when one is."
+note = "Status line when no host is online."
+
+[group_online]
+text = "Online"
+note = "Presence word under a host or call host."
+
+[group_offline]
+text = "Offline"
+note = "Presence word under a host or call host."
+
+[group_host_also_calls]
+text = "{status} · also hosts calls"
+note = "Sub line for a host that is also a call host. {status} is Online or Offline."
+
+[group_remove]
+text = "Remove"
+note = "Small button that removes a host or call host."
+
+[group_remove_host_desc]
+text = "Remove {device} as host"
+note = "Spoken label of the Remove button on a host row. {device} is the host’s name."
+
+[group_waiting_accept]
+text = "Waiting to accept"
+note = "Sub line for a host or call host who was asked and has not accepted yet."
+
+[group_decline]
+text = "Decline"
+note = "Button declining a host or call-host request."
+
+[group_accept]
+text = "Accept"
+note = "Button accepting a host or call-host request."
+
+[group_cancel]
+text = "Cancel"
+note = "Cancel button."
+
+[group_cancel_host_request_desc]
+text = "Cancel host request to {device}"
+note = "Spoken label of the Cancel button on a pending host request. {device} is the host’s name."
+
+[group_host_offered]
+text = "Offered to host · needs an admin"
+note = "Sub line for a device that offered to host and needs an admin to appoint it."
+
+[group_appoint]
+text = "Appoint"
+note = "Button an admin presses to appoint a host."
+
+[group_hosts_note_base]
+text = "Hosts store the group and pass posts on when others are offline. They are members you trust: a host can read everything posted in this group."
+note = "Explanation under the host list."
+
+[group_hosts_note_admin]
+text = "Hosts store the group and pass posts on when others are offline. They are members you trust: a host can read everything posted in this group. Appoint a host from a member’s menu; they have to accept. Removing a host changes the group’s address within 2 days, so that device can no longer reach it."
+note = "Explanation under the host list, for admins (replaces the plain one)."
+
+[group_callhosts_title]
+text = "Call hosts"
+note = "Section heading for call hosts on group info."
+
+[group_callhosts_none]
+text = "This group has no call host. Nobody can start a call until an admin appoints one."
+note = "Status line when the group has no call host."
+
+[group_callhosts_ready]
+one = "{count} call host ready. Calls start through it."
+other = "{count} call hosts ready. Calls start through them."
+note = "Status line when call hosts are ready. {count} is the number ready (at least 1)."
+
+[group_callhosts_unavailable]
+text = "No call host is available right now. A call can’t start until one is back."
+note = "Status line when no call host is available."
+
+[group_callhosts_this_phone]
+text = "This phone carries the calls you start."
+note = "Status line when this phone is the call host."
+
+[group_remove_callhost_desc]
+text = "Remove {device} as call host"
+note = "Spoken label of the Remove button on a call host row. {device} is the host’s name."
+
+[group_cancel_callhost_request_desc]
+text = "Cancel call host request to {device}"
+note = "Spoken label of the Cancel button on a pending call host request. {device} is the host’s name."
+
+[group_callhost_stop_here]
+text = "Stop hosting calls on this phone"
+note = "Row that stops this phone hosting calls."
+
+[group_callhost_here]
+text = "Host calls on this phone"
+note = "Row that makes this phone host calls."
+
+[group_callhost_here_sub]
+text = "Carries the calls you start here. A computer that stays on can carry everyone’s."
+note = "Sub line under Host calls on this phone."
+
+[group_callhosts_note_base]
+text = "A call host carries the call. Everyone in a call connects to it, and it passes the audio on, so it can hear the call. That is separate from chat hosting: a chat host is not a call host unless you also appoint it as one. Call hosts are members you trust, and each one chooses to accept."
+note = "Explanation under the call host list."
+
+[group_callhosts_note_admin]
+text = "A call host carries the call. Everyone in a call connects to it, and it passes the audio on, so it can hear the call. That is separate from chat hosting: a chat host is not a call host unless you also appoint it as one. Call hosts are members you trust, and each one chooses to accept. Appoint one from a member’s menu, or host calls on this phone. A phone only hosts calls that its owner starts."
+note = "Explanation under the call host list, for admins."
+
+[group_flags_on_you]
+text = "Flags on you"
+note = "Section heading when the user has flags against them."
+
+[group_flags_count]
+text = "{flags} of {total}"
+note = "Count next to the heading and spoken label of the flag meter. {flags} is flags so far, {total} flags that remove."
+
+[group_flags_count_desc]
+text = "{flags} of {total} flags"
+note = "Spoken label of the flag meter. {flags} is flags so far, {total} flags that remove."
+
+[group_flags_left]
+one = "One more flag from any admin removes you from the group. Flags can’t be taken back. You can still read and post until then."
+other = "{count} more flags from any admin removes you from the group. Flags can’t be taken back. You can still read and post until then."
+note = "Note under the flag meter. {count} is how many more flags remove the user."
+
+[group_removal_title]
+text = "Removed after {total} admin flags"
+note = "Headline of the removal page. {total} is the number of flags that remove."
+
+[group_removal_who]
+text = "Who flagged you"
+note = "Section label on the removal page."
+
+[group_removal_flag_first]
+text = "First flag"
+note = "Label of the first flag on the removal page."
+
+[group_removal_flag_second]
+text = "Second flag"
+note = "Label of the second flag."
+
+[group_removal_flag_third]
+text = "Third flag"
+note = "Label of the third flag."
+
+[group_removal_flag]
+text = "Flag"
+note = "Label of any later flag."
+
+[group_removal_checked]
+text = "Each flag was made by an admin of the group, and this device checked them before showing this."
+note = "Note on the removal page."
+
+[group_removal_means]
+text = "What this means"
+note = "Section label on the removal page."
+
+[group_removal_text]
+text = "You keep the posts already on this device, and you can read them. You can’t post, and the group’s hosts no longer accept anything from you. Removal is final: to come back, an admin has to invite you again."
+note = "Explanation on the removal page."
+
+[group_removal_read]
+text = "Read the posts"
+note = "Button on the removal page that goes back to the posts."
+
+[group_leave_title]
+text = "Leave {group}?"
+note = "Title of the leave dialog. {group} is the group’s name."
+
+[group_leave_text]
+text = "You’ll stop getting posts. What’s already on this device stays, and you can read it. To come back, someone in the group has to invite you again."
+note = "Body of the leave dialog."
+
+[group_leave_admin]
+text = "You’re an admin. The owner and the other admins stay."
+note = "Extra line in the leave dialog for admins."
+
+[group_leave]
+text = "Leave"
+note = "Button that leaves the group."
+
+[group_invite_title]
+text = "Invite to {group}"
+note = "Title of the invite sheet. {group} is the group’s name."
+
+[group_invite_text]
+text = "Each person gets a private invite that works for 7 days. Anyone you invite can read the group’s posts once they join."
+note = "Body of the invite sheet."
+
+[group_invite_none]
+text = "Everyone in your contacts is already in this group or has an invite waiting."
+note = "Shown on the invite sheet when there is nobody left to invite."
+
+[group_invite_sending]
+text = "Sending…"
+note = "Label of the invite button while sending."
+
+[group_invite_button]
+text = "Invite"
+note = "Invite button with nobody picked."
+
+[group_invite_people]
+one = "Invite {count} person"
+other = "Invite {count} people"
+note = "Invite button label. {count} is how many contacts are picked."
+
+[group_invite_failed]
+text = "Couldn’t invite"
+note = "Fallback message when an invite fails."
+
+[group_member_role_desc_you]
+text = "Your role in this group"
+note = "Spoken label of the role row on the member sheet for the user."
+
+[group_member_in_group_desc]
+text = "{name} in {group}"
+note = "Spoken label of a member on their sheet. {name} is the member, {group} the group."
+
+[group_member_message]
+text = "Message {name}"
+note = "Action to message a member. {name} is their first name."
+
+[group_member_you_blocked]
+text = "You blocked {name}"
+note = "Action row title. {name} is the first name of the blocked member."
+
+[group_member_blocked_sub]
+text = "They stay in the group. Unblock them in Contacts to chat."
+note = "Sub line under You blocked."
+
+[group_member_request_sent]
+text = "Request sent"
+note = "Action row title when a chat request is pending."
+
+[group_member_request_waiting]
+text = "Waiting for {name} to answer"
+note = "Sub line. {name} is the first name of the member who has to answer."
+
+[group_member_blocked_title]
+text = "Blocked"
+note = "Action row title when the member blocked the user’s requests."
+
+[group_member_cant_receive]
+text = "{name} can’t receive requests from you."
+note = "Sub line. {name} is the first name of the member."
+
+[group_member_ask_again]
+text = "Ask {name} again"
+note = "Action row title. {name} is the member’s first name."
+
+[group_member_ask]
+text = "Ask {name} for a private chat"
+note = "Action row title. {name} is the member’s first name."
+
+[group_member_declined_last]
+text = "{name} declined your last request"
+note = "Sub line. {name} is the member’s first name."
+
+[group_member_ask_sub]
+text = "Sends a chat request through the group’s host"
+note = "Sub line under Ask for a private chat."
+
+[group_member_make_admin]
+text = "Make admin"
+note = "Action row title."
+
+[group_member_remove_admin]
+text = "Remove admin"
+note = "Action row title."
+
+[group_member_make_device_host]
+text = "Make device {device} a host"
+note = "Action row title. {device} is a short device id."
+
+[group_member_make_host]
+text = "Make host"
+note = "Action row title."
+
+[group_member_make_host_sub]
+text = "Asks {name} to host. They have to accept."
+note = "Sub line. {name} is the member’s first name."
+
+[group_member_stop_device_host]
+text = "Stop device {device} hosting"
+note = "Action row title. {device} is a short device id."
+
+[group_member_remove_host]
+text = "Remove as host"
+note = "Action row title."
+
+[group_member_cancel_callhost]
+text = "Cancel call host request{device}"
+note = "Action row title. {device} is a short device id, empty if the member has one device."
+
+[group_member_cancel_callhost_sub]
+text = "Waiting for {name}’s device to accept"
+note = "Sub line. {name} is the member’s first name."
+
+[group_member_remove_callhost]
+text = "Remove as call host{device}"
+note = "Action row title. {device} is a short device id, empty if the member has one device."
+
+[group_member_make_callhost]
+text = "Make call host{device}"
+note = "Action row title. {device} is a short device id, empty if the member has one device."
+
+[group_member_make_callhost_sub]
+text = "Asks {name} to carry group calls. They have to accept."
+note = "Sub line. {name} is the member’s first name."
+
+[group_host_stop_device]
+text = "Stop hosting on this device"
+note = "Action row title for this device."
+
+[group_host_device]
+text = "Host on this device"
+note = "Action row title for this device."
+
+[group_host_device_sub]
+text = "An admin has to appoint it too. A computer that stays on is a better host."
+note = "Sub line under Host on this device."
+
+[group_callhost_stop_device]
+text = "Stop hosting calls on this device"
+note = "Action row title for this device."
+
+[group_member_flag]
+text = "Flag for removal"
+note = "Action row title that flags a member."
+
+[group_member_flag_sub]
+text = "{total} flags remove {name} from the group"
+note = "Sub line. {total} is the number of flags that remove, {name} the member’s first name."
+
+[group_member_owner_no_flag]
+text = "The owner can’t be flagged"
+note = "Disabled action row for the owner."
+
+[group_close]
+text = "Close"
+note = "Close button."
+
+[group_flag_title]
+text = "Flag {name} for removal?"
+note = "Title of the flag confirmation. {name} is the member’s first name."
+
+[group_flag_meter_desc]
+text = "Flag {next} of {total}"
+note = "Spoken label of the flag meter. {next} is which flag this would be, {total} flags that remove."
+
+[group_flag_text1]
+text = "Flags can’t be taken back, and removal is final. The same admin can flag more than once; each flag counts."
+note = "First paragraph of the flag confirmation."
+
+[group_flag_text2]
+text = "Flagging is a decision for the group. It is separate from blocking, which only affects you. {name} sees each flag: who made it and when."
+note = "Second paragraph of the flag confirmation. {name} is the member’s first name."
+
+[group_back]
+text = "Back"
+note = "Back button in a sheet."
+
+[group_flag_button]
+text = "Flag {name}"
+note = "Button that flags a member. {name} is the member’s first name."
+
+[group_ask_title]
+text = "Ask {name} for a private chat"
+note = "Title of the private-chat request screen. {name} is the member’s first name."
+
+[group_ask_text1]
+text = "{name} sees your name and the group. The request goes through the group’s host, sealed, so the host can’t read it."
+note = "First paragraph of the private-chat request. {name} is the member’s first name."
+
+[group_ask_text2]
+text = "If {name} accepts, you can message each other directly. Calls stay off until one of you allows them. A request expires after 7 days."
+note = "Second paragraph. {name} is the member’s first name."
+
+[group_ask_send]
+text = "Send request"
+note = "Button that sends the private-chat request."
+
+[group_someone]
+text = "Someone"
+note = "Fallback name for a group member whose name is unknown, e.g. \"Someone joined\"."
+
+[group_fallback_them]
+text = "them"
+note = "Fallback for a name inside a sentence (\"Invitation sent to them\"), used when the person has no name."
+
+[group_fallback_they]
+text = "They"
+note = "Fallback for a name at the start of a sentence (\"They join…\"), used when the person has no name."
+
+[group_sys_joined]
+text = "{name} joined"
+note = "System line in a group chat. {name} is who joined."
+
+[group_sys_left]
+text = "{name} left"
+note = "System line in a group chat. {name} is who left."
+
+[group_sys_removed_you]
+text = "You were removed after {total} admin flags"
+note = "System line: the user was removed. {total} is the number of flags that remove."
+
+[group_sys_removed]
+text = "{name} was removed after {total} admin flags"
+note = "System line: a member was removed. {name} is the member, {total} the number of flags."
+
+[group_sys_admin_you]
+text = "{by} made you an admin"
+note = "System line. {by} is who made the user admin."
+
+[group_sys_admin]
+text = "{by} made {name} an admin"
+note = "System line. {by} made {name} an admin."
+
+[group_sys_unadmin_you]
+text = "{by} removed you as admin"
+note = "System line. {by} is who removed the user as admin."
+
+[group_sys_unadmin]
+text = "{by} removed {name} as admin"
+note = "System line. {by} removed {name} as admin."
+
+[group_sys_host_added_you]
+text = "A device of yours now hosts the group"
+note = "System line when one of the user’s devices became a host."
+
+[group_sys_host_added]
+text = "A device of {name}’s now hosts the group"
+note = "System line. {name} is the member whose device now hosts."
+
+[group_sys_host_removed_you]
+text = "A device of yours stopped hosting the group"
+note = "System line when one of the user’s devices stopped hosting."
+
+[group_sys_host_removed]
+text = "A device of {name}’s stopped hosting the group"
+note = "System line. {name} is the member whose device stopped hosting."
+
+[group_preview_removed]
+text = "You were removed from this group"
+note = "Group list row second line, and header sub line, after the user was removed."
+
+[group_preview_you]
+text = "You: {text}"
+note = "Group list row preview of the user’s own last post. {text} is the post."
+
+[group_preview_author]
+text = "{name}: {text}"
+note = "Group list row preview of someone’s last post. {name} is the author’s first name, {text} the post."
+
+[group_members_count]
+one = "{count} member"
+other = "{count} members"
+note = "Member count. {count} is the number of members."
+
+[group_hosts_count]
+one = "{count} host"
+other = "{count} hosts"
+note = "Host count. {count} is the number of hosts."
+
+[group_status_this_device]
+text = "{members} · this device hosts the group"
+note = "Group header sub line. {members} is the member count text."
+
+[group_status_no_host]
+text = "{members} · no host yet"
+note = "Group header sub line. {members} is the member count text."
+
+[group_status_waiting]
+text = "{members} · waiting for a host"
+note = "Group header sub line. {members} is the member count text."
+
+[group_status_hosts]
+text = "{members} · {hosts}"
+note = "Group header sub line. {members} is the member count text, {hosts} the host count text."
+
+[group_waiting_for_host]
+text = "Waiting for a host"
+note = "Small line under the user’s post that no host has taken yet."
+
+[group_req_pending]
+text = "Waiting for {name} · via {group}"
+note = "Line for a chat request the user sent. {name} is who it went to, {group} the group it goes through."
+
+[group_req_accepted_msgs]
+text = "{name} accepted · messages only"
+note = "Line for an accepted chat request when the contact was added. {name} is who accepted."
+
+[group_req_accepted_connecting]
+text = "{name} accepted · connecting"
+note = "Line for an accepted chat request, still connecting. {name} is who accepted."
+
+[group_req_declined]
+text = "{name} declined"
+note = "Line for a declined chat request. {name} is who declined."
+
+[group_req_blocked]
+text = "{name} blocked you"
+note = "Line for a chat request that was blocked. {name} is who blocked the user."
+
+[group_an_admin]
+text = "An admin"
+note = "Name used when an unnamed admin asked this device to host."
+
+[group_pick_already_member]
+text = "Already a member"
+note = "Reason a contact cannot be picked for an invite."
+
+[group_pick_invited_waiting]
+text = "Invited · waiting"
+note = "Reason a contact cannot be picked for an invite."
+
+[group_inv_waiting]
+text = "Invited · waiting for an answer"
+note = "State of an invitation the user sent."
+
+[group_inv_undelivered]
+text = "Invited · not delivered yet"
+note = "State of an invitation the user sent."
+
+[group_inv_joined]
+text = "Joined"
+note = "State of an invitation the user sent."
+
+[group_inv_declined]
+text = "Declined"
+note = "State of an invitation the user sent."
+
+[group_inv_expired]
+text = "Invitation expired"
+note = "State of an invitation the user sent."
+
+[group_inv_blocked]
+text = "Blocked you"
+note = "State of an invitation the user sent."
+
+[group_flag_copy_final]
+text = "Yours will be flag {yours} of {total}. {name} is removed right away: hosts refuse their new messages and they see they were removed."
+note = "Flag dialog sentence for the flag that removes the member. {yours} is which flag it is, {total} flags remove, {name} the member’s first name."
+
+[group_flag_copy]
+text = "Yours will be flag {yours} of {total}. Any admin’s flags count, yours again too. At {total} flags {name} is removed right away and sees they were removed."
+note = "Flag dialog sentence for a flag that does not remove yet. {yours} is which flag it is, {total} flags remove, {name} the member’s first name."
+
+[group_error_generic]
+text = "Something went wrong"
+note = "Fallback error message."
+
+[group_error_removed]
+text = "You were removed from this group."
+note = "Error: the host says the user was removed."
+
+[group_error_not_member]
+text = "You’re not a member of this group."
+note = "Error: the host says the user is not a member."
+
+[group_error_already_contact]
+text = "You already have them as a contact. Message them from Chats."
+note = "Error when asking for a chat with someone who is already a contact."
+
+[group_error_you_block]
+text = "You block them. Unblock them first to ask for a chat."
+note = "Error when asking for a chat with someone the user blocked."
+
+[group_error_they_block]
+text = "They blocked you, so you can’t ask them for a chat."
+note = "Error when the other person blocked the user."
+
+[group_error_invite_invalid]
+text = "That invite isn’t valid any more. Ask for a new one."
+note = "Error for an invite code that is wrong or expired."
+
+[group_error_refused]
+text = "Refused."
+note = "Error when a host refused without a reason."
+
+[group_error_timeout]
+text = "No host answered in time. Try again when a host is online."
+note = "Error when no host answered."
+
+[group_error_locked]
+text = "Unlock first."
+note = "Error when the app is locked."
+
+[group_error_not_found]
+text = "That group isn’t on this phone."
+note = "Error when the group is not on this phone."
+
+[group_err_type_message]
+text = "Type a message first."
+note = "Error when sending an empty post."
+
+[group_err_name_group]
+text = "Give the group a name."
+note = "Error when creating a group without a name."
+
+[group_err_pick_someone]
+text = "Pick someone first."
+note = "Error when inviting nobody."
+
+[group_done_invite_one]
+text = "Invitation sent to {name}. They join when they accept."
+note = "Confirmation after inviting one contact. {name} is their first name."
+
+[group_done_invite_many]
+one = "{count} invitation sent. Each person joins when they accept."
+other = "{count} invitations sent. Each person joins when they accept."
+note = "Confirmation after inviting several contacts. {count} is how many."
+
+[group_done_decline_invite]
+text = "Declined. {name} sees that you declined."
+note = "Confirmation after declining an invitation. {name} is the inviter’s first name."
+
+[group_done_flag]
+text = "Flag recorded. It is signed by you and the member can see it."
+note = "Confirmation after flagging a member."
+
+[group_done_admin_made]
+text = "Made admin."
+note = "Confirmation after making someone admin."
+
+[group_done_admin_removed]
+text = "No longer an admin."
+note = "Confirmation after removing an admin."
+
+[group_done_left]
+text = "You left the group. Its messages stay here."
+note = "Confirmation after leaving a group."
+
+[group_done_appointed]
+text = "Appointed. The device hosts once it agrees."
+note = "Confirmation after appointing a host."
+
+[group_done_host_revoked]
+text = "That device no longer hosts the group."
+note = "Confirmation after removing a host."
+
+[group_done_host_accepted]
+text = "This phone agreed to host. It hosts as soon as an admin has appointed it."
+note = "Confirmation after this phone agreed to host."
+
+[group_done_host_stopped]
+text = "This phone stopped hosting the group."
+note = "Confirmation after this phone stopped hosting."
+
+[group_done_callhost_asked]
+text = "Asked. The device carries calls once it accepts."
+note = "Confirmation after asking a device to host calls."
+
+[group_done_callhost_revoked]
+text = "That device no longer hosts calls for the group."
+note = "Confirmation after removing a call host."
+
+[group_done_callhost_accepted]
+text = "This device now hosts the group’s calls."
+note = "Confirmation after this device agreed to host calls."
+
+[group_done_callhost_stopped]
+text = "This device won’t host the group’s calls."
+note = "Confirmation after this device stopped hosting calls."
+
+[group_done_callhost_here]
+text = "This phone carries the calls it starts in this group now."
+note = "Confirmation after this phone started hosting its own calls."
+
+[group_done_request_sent]
+text = "Request sent to {name}. It waits in Chats until they answer."
+note = "Confirmation after asking for a private chat. {name} is their first name."
+
+[group_done_request_accepted]
+text = "Accepted. {name} is added for messages only and shows in Chats once their device connects; calls stay off until you allow them."
+note = "Confirmation after accepting a chat request. {name} is their first name."
+
+[group_done_request_declined]
+text = "Declined. {name} is told “declined”."
+note = "Confirmation after declining a chat request. {name} is their first name."
+
+[group_done_request_blocked]
+text = "{name} is blocked and can’t send more requests."
+note = "Confirmation after blocking a requester. {name} is their first name."
+
+[group_notice_request_accepted]
+text = "{name} accepted your request. You can message each other now; calls stay off until one of you allows them."
+note = "Notice when someone accepted the user’s chat request. {name} is their first name."
+
+[group_calls_unavailable]
+text = "Group calls aren’t available here yet."
+note = "Error shown when group calls are not wired in."
+
+[group_scan_unavailable]
+text = "Scanning isn’t available yet. Paste the link instead."
+note = "Shown instead of the QR scanner when scanning is not available."
+
+[group_cant_do_that]
+text = "Couldn’t do that"
+note = "Fallback error message."
+
+[group_title]
+text = "Group"
+note = "Title of the group chat page while it loads."
+
+[group_loading]
+text = "Loading…"
+note = "Shown while a group loads."
+
+[group_older]
+text = "Show earlier messages"
+note = "Button that loads older posts in a group chat."
+
+[group_no_messages]
+text = "No messages yet"
+note = "Line in an empty group chat."
+
+[group_strip_waiting]
+text = "Waiting for a host. No group host is online; your posts are saved and send when one is."
+note = "Strip above the composer when no host is online."
+
+[group_back_to_groups]
+text = "Back to groups"
+note = "Spoken label of the back button in a group chat."
+
+[group_chat_header_desc]
+text = "{name}. {status}. Group info"
+note = "Spoken label of the group chat header. {name} is the group, {status} its status line."
+
+[group_call_return]
+text = "Return to group call"
+note = "Spoken label of the call button when the user is in the group call."
+
+[group_call_join]
+text = "Join group call"
+note = "Spoken label of the call button when a call is running."
+
+[group_call_start]
+text = "Start group call"
+note = "Spoken label of the call button when no call runs."
+
+[group_call_no_host]
+text = "No call host yet: an admin can appoint one in Group info"
+note = "Message when the user taps call but the group has no call host."
+
+[group_info_desc]
+text = "Group info"
+note = "Spoken label of the group info button."
+
+[group_removed_footer]
+text = "You were removed and can’t send messages to this group."
+note = "Footer of a group chat after the user was removed."
+
+[group_why]
+text = "Why?"
+note = "Link in the removed footer that explains why."
+
+[group_left_footer]
+text = "You left this group. Its messages stay here, read-only."
+note = "Footer of a group chat after the user left."
+
+[group_message_placeholder]
+text = "Message"
+note = "Placeholder of the group message field."
+
+[group_replying_to]
+text = "Replying to {name}"
+note = "Banner above the composer. {name} is who the user is replying to."
+
+[group_replying_to_self]
+text = "Replying to yourself"
+note = "Banner above the composer when the user replies to their own post."
+
+[group_cant_send]
+text = "Couldn’t send"
+note = "Fallback error when a post fails."
+
+[group_unread_divider]
+one = "{count} new message"
+other = "{count} new messages"
+note = "Divider before unread posts. {count} is how many."
+
+[group_call_you_in]
+text = "You’re in the call"
+note = "Call card title when the user is in the call."
+
+[group_call_in_progress]
+text = "Call in progress"
+note = "Call card title when a call runs and the user is not in it."
+
+[group_call_started_by]
+text = "Started by {name}"
+note = "Call card sub line. {name} is who started the call."
+
+[group_call_open]
+text = "Open"
+note = "Button on the call card when the user is in the call."
+
+[group_join]
+text = "Join"
+note = "Button that joins a group or group call."
+
+[group_call_line_desc]
+text = "{text}, {time}. Start or join a call"
+note = "Spoken label of a call line in the chat. {text} is its text, {time} its time."
+
+[group_host_asked_title]
+text = "{name} asked this phone to host {group}"
+note = "Notice title. {name} is who asked, {group} the group."
+
+[group_host_asked_text]
+text = "A host keeps a full copy of the group, passes messages on while members’ phones sleep and learns members’ group addresses. It needs to stay online and uses battery: a computer that stays on is a better host. Hosting doesn’t make you an admin."
+note = "Notice text explaining what hosting means."
+
+[group_host_here]
+text = "Host here"
+note = "Button that makes this phone host the group."
+
+[group_done_host_declined]
+text = "Declined. The admins see no answer from this phone."
+note = "Confirmation after declining a host request."
+
+[group_names_and]
+text = "{rest} and {last}"
+note = "Joins a list of names: {rest} is a comma-separated list, {last} the final name."
+
+[group_removed_card_title]
+one = "Removed after {count} admin flag"
+other = "Removed after {count} admin flags"
+note = "Notice card in the chat after removal. {count} is the number of flags."
+
+[group_removed_card_text]
+text = "Flagged by {names}. You can still read what you received before; nothing new will arrive."
+note = "Notice card text. {names} is who flagged the user."
+
+[group_see_details]
+text = "See details"
+note = "Link on the removal notice card."
+
+[group_receipt_sent]
+text = "Sent"
+note = "Spoken receipt text for a sent group post with no further detail."
+
+[group_blocked_message]
+text = "Message from {name}, who you blocked · Show"
+note = "Row for a post from someone the user blocked. {name} is their first name."
+
+[group_sender_removed]
+text = "{name} · removed"
+note = "Sender line for a post written before the member was removed. {name} is their first name."
+
+[group_quote_unavailable]
+text = "Original message unavailable"
+note = "Quote preview when the original post is missing."
+
+[group_reply]
+text = "Reply"
+note = "Context menu item that replies to a post."
+
+[group_written_before]
+text = "Written before {name} was removed"
+note = "Note under a post by a removed member. {name} is their first name."
+
+[group_receipt_delivered]
+text = "Delivered {count}/{total}"
+note = "Receipt summary. {count} is how many have it, {total} how many are eligible."
+
+[group_receipt_read]
+text = "Read {count}/{total}"
+note = "Receipt summary. {count} is how many read it, {total} how many are eligible."
+
+[group_receipt_level_read]
+text = "Read: {names}"
+note = "Receipt line label before the names of members who read the post. {names} is the list."
+
+[group_receipt_level_delivered]
+text = "On their device: {names}"
+note = "Receipt line label before the names of members whose device has the post. {names} is the list."
+
+[group_receipt_level_not_yet]
+text = "Not yet: {names}"
+note = "Receipt line label before the names of members who have not confirmed. {names} is the list."
+
+[group_receipt_also]
+text = "Also confirmed: {names}"
+note = "Receipt line for members no longer counted. {names} is the list."
+
+[group_cancel_reply]
+text = "Cancel reply"
+note = "Spoken label of the cancel-reply button."
+
+[group_send]
+text = "Send"
+note = "Spoken label of the send button."
+
+[group_new_title]
+text = "New group"
+note = "Title of the new group page and dialog."
+
+[group_name_label]
+text = "Group name"
+note = "Label of the group name field."
+
+[group_new_info]
+text = "This phone hosts the group at first: it keeps the group and passes messages on. A computer that stays on is a better host — appoint one from Group info once it has joined."
+note = "Info card on the new group page."
+
+[group_new_owner_hint]
+text = "You’ll own the group. Invite people from Group info."
+note = "Hint on the new group page."
+
+[group_making]
+text = "Making…"
+note = "Label of the create button while working."
+
+[group_create_button]
+text = "Create group"
+note = "Button that creates the group (page)."
+
+[group_add_to_title]
+text = "Add to {group}"
+note = "Title of the add-people page. {group} is the group’s name."
+
+[group_contacts_selected]
+text = "CONTACTS · {count} SELECTED"
+note = "Section label of the contact picker. {count} is how many are selected."
+
+[group_add_no_contacts]
+text = "No contacts to add. People you block, or who block you, aren’t listed."
+note = "Hint when there is nobody to add."
+
+[group_add_hint]
+text = "Each person gets the invitation in your 1:1 chat, and joins when they accept. It is valid for 7 days."
+note = "Hint under the contact picker."
+
+[group_add_members_title]
+text = "Add members"
+note = "Title of the add members page while it loads."
+
+[group_scan_title]
+text = "Scan the invite"
+note = "Title of the invite scanner page."
+
+[group_scan_prompt]
+text = "Point at the group invite"
+note = "Prompt on the camera view when scanning a group invite."
+
+[group_join_title]
+text = "Join a group"
+note = "Title of the join a group page."
+
+[group_join_field]
+text = "Invite link or code"
+note = "Label of the invite link field."
+
+[group_join_checking]
+text = "Checking with the group’s host…"
+note = "Hint while the invite is being checked."
+
+[group_join_bad]
+text = "That link didn’t work: it isn’t a group invite, it expired, or its host is offline."
+note = "Hint when the invite link did not work."
+
+[group_paste]
+text = "Paste"
+note = "Button that pastes from the clipboard."
+
+[group_scan]
+text = "Scan"
+note = "Button that opens the QR scanner."
+
+[group_joining]
+text = "Joining…"
+note = "Label of the join button while working."
+
+[group_fallback_unknown_contact]
+text = "someone who isn’t in your contacts"
+note = "Name used for a person the user does not know, inside a sentence."
+
+[group_join_invited_by]
+text = "Invited by {name}"
+note = "Invite preview line. {name} is who made the link."
+
+[group_join_own_link]
+text = "A link for your own account"
+note = "Invite preview line for a link the user made on their own account."
+
+[group_join_owner]
+text = "Owner: {name}"
+note = "Invite preview line. {name} is the group owner."
+
+[group_valid_until]
+text = "Valid until {date}"
+note = "Line under an invitation or link. {date} is the day it stops working."
+
+[group_join_hint]
+text = "Joining connects this phone to the group’s hosts. Members see your name; only hosts learn how to reach this phone. It can take up to a minute."
+note = "Hint on the join page."
+
+[group_fallback_the_group]
+text = "the group"
+note = "Fallback group name inside a sentence."
+
+[group_link_title]
+text = "Invite link"
+note = "Title of the invite link page."
+
+[group_link_hint]
+text = "Anyone with this link or QR can join {group} for 7 days. Share it over an app you trust; you see who joined and can flag them out. To invite your contacts directly, use Add members."
+note = "Hint on the invite link page. {group} is the group’s name."
+
+[group_link_qr_desc]
+text = "QR code of the group invite link"
+note = "Spoken label of the invite QR code."
+
+[group_link_making]
+text = "Making it…"
+note = "Shown while the invite link is being made."
+
+[group_link_show_full]
+text = "Show full screen"
+note = "Spoken hint to show the QR full screen."
+
+[group_share_text]
+text = "Join {group} on Tinline: {link}"
+note = "Text shared with an invite link. {group} is the group’s name, {link} the link."
+
+[group_share_subject]
+text = "Share group invite"
+note = "Subject of the shared invite."
+
+[group_share]
+text = "Share"
+note = "Share button."
+
+[group_copy]
+text = "Copy"
+note = "Copy button."
+
+[group_copied]
+text = "Copied"
+note = "Copy button after copying."
+
+[group_link_qr_full_desc]
+text = "QR code of the group invite link, full screen"
+note = "Spoken label of the full-screen invite QR code."
+
+[group_list_new]
+text = "New group"
+note = "Row on the Groups list that starts a new group."
+
+[group_list_new_sub]
+text = "You’ll be the owner"
+note = "Sub line under New group."
+
+[group_list_join]
+text = "Join with a link"
+note = "Row on the Groups list that joins with a link."
+
+[group_list_join_sub]
+text = "Paste or scan a group invite"
+note = "Sub line under Join with a link."
+
+[group_section_invitations]
+text = "Invitations to you"
+note = "Section heading on the Groups list."
+
+[group_section_requests]
+text = "Chat requests"
+note = "Section heading on the Groups list."
+
+[group_section_sent]
+text = "Sent"
+note = "Sub heading for sent chat requests."
+
+[group_section_groups]
+text = "Your groups"
+note = "Section heading on the Groups list."
+
+[group_list_empty]
+text = "No groups yet. Create one, or accept an invitation."
+note = "Shown when the user has no groups."
+
+[group_invited_you]
+text = "{name} invited you to {group}"
+note = "Invitation card. {name} is who invited, {group} the group (both shown in bold)."
+
+[group_joined_toast]
+text = "You joined {group}."
+note = "Confirmation after joining. {group} is the group’s name."
+
+[group_cant_join]
+text = "Couldn’t join"
+note = "Fallback error when joining fails."
+
+[group_wants_to_chat]
+text = "{name} wants to chat"
+note = "Chat request card. {name} is who asks (shown in bold)."
+
+[group_member_of]
+text = "Member of {group}"
+note = "Chat request card sub line. {group} is the group."
+
+[group_request_accept_note]
+text = "Accepting adds {name} as a contact for messages only. You can allow calls later."
+note = "Chat request card note. {name} is their first name."
+
+[group_block]
+text = "Block"
+note = "Button that blocks a requester."
+
+[group_section_gone]
+text = "Left or removed"
+note = "Section heading, and its spoken label, for groups the user left or was removed from."
+
+[group_expanded]
+text = "Expanded"
+note = "Spoken state of an open section."
+
+[group_collapsed]
+text = "Collapsed"
+note = "Spoken state of a closed section."
+
+[group_gone_left]
+text = "You left"
+note = "Row label for a group the user left."
+
+[group_no_posts]
+text = "No posts yet"
+note = "Group row preview when there are no posts."
+
+[group_name_placeholder]
+text = "Name"
+note = "Placeholder of the group name field in the new group dialog."
+
+[group_new_dialog_text]
+text = "You’ll be the owner. This device is the group’s first host, so it stores the group and passes posts on."
+note = "Body of the new group dialog."
+
+[group_creating]
+text = "Creating…"
+note = "Label of the create button while working."
+
+[group_create]
+text = "Create"
+note = "Create button in the new group dialog."
+
+[group_unread_badge_desc]
+one = "{count} unread"
+other = "{count} unread"
+note = "Spoken label of the unread badge. {count} is the number of unread posts."
+
+[group_today]
+text = "Today"
+note = "Day label."
+
+[group_yesterday]
+text = "Yesterday"
+note = "Day label."
+
+# ---- settings / security / devices
+
+[settings_perm_fix]
+text = "Open settings"
+note = "Button on the notifications-off warning; opens the system settings."
+
+[settings_perm_notif_title]
+text = "Notifications are off"
+note = "Title of the warning shown when system notifications are off."
+
+[settings_perm_notif_body]
+text = "Tinline can’t alert you to messages or calls. They still arrive; you’ll see them when you open the app. Turn notifications on in system settings."
+note = "Body of the notifications-off warning."
+
+[settings_status_available]
+text = "Available"
+note = "Availability status text under the profile card."
+
+[settings_status_busy_until]
+text = "Busy until {time}"
+note = "Availability status; {time} is a short time label such as 18:30."
+
+[settings_status_busy]
+text = "Busy"
+note = "Availability status when busy with no end time."
+
+[settings_title]
+text = "Settings"
+note = "Title of the Settings page."
+
+[settings_perm_see_details]
+text = "See details"
+note = "Button on the notifications warning banner on the Settings page."
+
+[settings_account_selected]
+text = "Selected · online"
+note = "Subtitle of the selected account row."
+
+[settings_account_paused]
+text = "Paused · tap to switch"
+note = "Subtitle of a non-selected account row."
+
+[settings_add_account]
+text = "Add another account"
+note = "Row that opens the add-account choices."
+
+[settings_accounts_note]
+text = "Only the selected account is online on this phone. Switching pauses the other one: it receives no calls until you select it again."
+note = "Explanation under the account list."
+
+[settings_appearance]
+text = "Appearance"
+note = "Section heading for the light/dark choice."
+
+[settings_appearance_match]
+text = "Match my phone"
+note = "Appearance option: follow the phone's light or dark setting."
+
+[settings_appearance_match_sub]
+text = "Light or dark, as this phone is set"
+note = "Subtitle of the Match my phone option."
+
+[settings_appearance_light]
+text = "Light"
+note = "Appearance option: always light."
+
+[settings_appearance_dark]
+text = "Dark"
+note = "Appearance option: always dark."
+
+[settings_row_devices]
+text = "Devices"
+note = "Settings list row."
+
+[settings_row_privacy]
+text = "Privacy"
+note = "Settings list row."
+
+[settings_row_sounds]
+text = "Sounds"
+note = "Settings list row."
+
+[settings_row_video]
+text = "Video"
+note = "Settings list row."
+
+[settings_row_storage]
+text = "Storage"
+note = "Settings list row."
+
+[settings_row_about]
+text = "About Tinline"
+note = "Settings list row for the About page."
+
+[settings_notifications]
+text = "Notifications"
+note = "Settings list row, page title and permissions row for notifications."
+
+[settings_video_in_calls]
+text = "Video in calls"
+note = "Settings row and switch label for allowing video in calls."
+
+[settings_video_in_calls_on]
+text = "You can turn your camera on in a call"
+note = "Subtitle when video in calls is allowed."
+
+[settings_video_in_calls_off]
+text = "Calls are voice only"
+note = "Subtitle when video in calls is off."
+
+[settings_diagnostics]
+text = "Diagnostics"
+note = "Settings row for the diagnostics page."
+
+[settings_diagnostics_sub]
+text = "Test tone, core version"
+note = "Subtitle of the Diagnostics row."
+
+[settings_cancel]
+text = "Cancel"
+note = "Cancel button of the add-account dialog."
+
+[settings_add_create]
+text = "Create a new account"
+note = "Choice in the add-account dialog."
+
+[settings_add_link]
+text = "Link to a device"
+note = "Choice in the add-account dialog."
+
+[settings_add_restore]
+text = "Restore from recovery phrase"
+note = "Choice in the add-account dialog."
+
+[settings_notif_messages]
+text = "Messages"
+note = "Notification category row."
+
+[settings_notif_messages_sub]
+text = "From people, not groups"
+note = "Subtitle of the Messages notification row."
+
+[settings_notif_messages_label]
+text = "Message notifications"
+note = "Accessibility label of the message notifications switch."
+
+[settings_notif_calls]
+text = "Calls"
+note = "Notification category row."
+
+[settings_notif_calls_sub]
+text = "Ringing when someone calls"
+note = "Subtitle of the Calls notification row."
+
+[settings_notif_calls_label]
+text = "Call notifications"
+note = "Accessibility label of the call notifications switch."
+
+[settings_notif_groups]
+text = "Groups"
+note = "Notification category row."
+
+[settings_notif_groups_sub]
+text = "Posts, invites and requests"
+note = "Subtitle of the Groups notification row."
+
+[settings_notif_groups_label]
+text = "Group notifications"
+note = "Accessibility label of the group notifications switch."
+
+[settings_notif_alert_me]
+text = "Alert me about"
+note = "Section heading above the notification category switches."
+
+[settings_notif_note]
+text = "A muted chat never alerts you, whatever is switched on here. Missed calls from one person fold into one notification."
+note = "Note under the notification switches."
+
+[settings_perms]
+text = "Permissions"
+note = "Section heading for system permission rows."
+
+[settings_perm_off]
+text = "Off in system settings"
+note = "Permission row state: switched off in the system settings."
+
+[settings_perm_allowed]
+text = "Allowed"
+note = "Permission row state: allowed."
+
+[settings_perm_fix_btn]
+text = "Fix"
+note = "Small button that opens system settings for a permission."
+
+[settings_perm_mic]
+text = "Microphone"
+note = "Permission row for the microphone."
+
+[settings_perm_mic_ask]
+text = "Asked when you call"
+note = "Microphone permission row state: not asked yet."
+
+[settings_perms_note]
+text = "These are set by your system, not by Tinline. Tinline asks only when it needs one."
+note = "Note under the permission rows."
+
+[settings_sound_classic]
+text = "Classic chime"
+note = "Ringtone choice name."
+
+[settings_sound_classic_sub]
+text = "A bright four-note chime."
+note = "Description of the Classic chime ringtone."
+
+[settings_sound_slack]
+text = "Slack → taut"
+note = "Ringtone choice name."
+
+[settings_sound_slack_sub]
+text = "Two close notes beat like a loose string, then one pulls tight."
+note = "Description of the Slack → taut ringtone."
+
+[settings_sound_triad]
+text = "Triad knock"
+note = "Ringtone choice name."
+
+[settings_sound_triad_sub]
+text = "Three rising notes, like a knock."
+note = "Description of the Triad knock ringtone."
+
+[settings_quiet]
+text = "Quiet"
+note = "Section heading, row title and switch label for the quiet mode."
+
+[settings_quiet_sub]
+text = "No sounds from Tinline: ringing, call tones, joins"
+note = "Subtitle of the Quiet row."
+
+[settings_call_sounds]
+text = "Call sounds"
+note = "Section heading for ringtone choices."
+
+[settings_cue_ring]
+text = "Ringtone"
+note = "Chip that previews the ringtone."
+
+[settings_cue_connected]
+text = "Connected"
+note = "Chip that previews the call-connected sound."
+
+[settings_cue_ended]
+text = "Call ended"
+note = "Chip that previews the call-ended sound."
+
+[settings_sounds_note_quiet]
+text = "Quiet is on, so previews are silent."
+note = "Note under the sound previews when quiet mode is on."
+
+[settings_sounds_note]
+text = "Tap a sound to hear it. The choice applies to the next call."
+note = "Note under the sound previews."
+
+[settings_video_quality]
+text = "Video quality"
+note = "Section heading on the Video page."
+
+[settings_video_sharper]
+text = "Sharper video"
+note = "Row and switch label for starting video calls in HD."
+
+[settings_video_hd_on]
+text = "Always starts in HD. Uses more data and battery."
+note = "Subtitle of Sharper video when on."
+
+[settings_video_hd_auto]
+text = "Goes HD by itself when the connection allows."
+note = "Subtitle of Sharper video when off."
+
+[settings_video_note]
+text = "Every video call starts this way. During a call, tap HD to change it for that call."
+note = "Note under the video quality switch."
+
+[settings_storage_pictures]
+text = "Pictures"
+note = "Storage breakdown label."
+
+[settings_storage_files]
+text = "Files"
+note = "Storage breakdown label."
+
+[settings_storage_messages]
+text = "Messages"
+note = "Storage breakdown label."
+
+[settings_storage_cache]
+text = "Cache"
+note = "Storage breakdown label."
+
+[settings_storage_on_phone]
+text = "On this phone"
+note = "Section heading on the Storage page."
+
+[settings_storage_download]
+text = "Download pictures"
+note = "Section heading for picture download choices."
+
+[settings_dl_always]
+text = "Always"
+note = "Picture download choice."
+
+[settings_dl_always_sub]
+text = "On Wi-Fi and mobile data"
+note = "Subtitle of the Always download choice."
+
+[settings_dl_wifi]
+text = "On Wi-Fi"
+note = "Picture download choice."
+
+[settings_dl_wifi_sub]
+text = "On mobile data they wait for a tap"
+note = "Subtitle of the On Wi-Fi download choice."
+
+[settings_dl_tap]
+text = "When I tap them"
+note = "Picture download choice."
+
+[settings_dl_tap_sub]
+text = "Each shows a soft preview until then"
+note = "Subtitle of the When I tap them download choice."
+
+[settings_clear_cache]
+text = "Clear cache"
+note = "Row that clears the picture and file cache."
+
+[settings_clear_cache_sub]
+text = "{size} of pictures and files you’ve opened. They’re prepared again when you open them."
+note = "Subtitle of Clear cache; {size} is a size such as 12 MB."
+
+[settings_cache_cleared]
+text = "Cleared"
+note = "Clear cache subtitle after clearing."
+
+[settings_cache_empty]
+text = "Nothing to clear"
+note = "Clear cache subtitle when the cache is empty."
+
+[settings_storage_note]
+text = "To free more space, remove pictures or files from their chat."
+note = "Note under the Clear cache row."
+
+[settings_reads_on]
+text = "People see when you’ve read their messages"
+note = "Read receipts subtitle when on."
+
+[settings_reads_off]
+text = "Your reads stay with you"
+note = "Read receipts subtitle when off."
+
+[settings_blocked_people]
+text = "Blocked people"
+note = "Privacy row for the blocked list."
+
+[settings_blocked_count]
+one = "{count} person"
+other = "{count} people"
+note = "Subtitle of Blocked people; {count} is how many are blocked."
+
+[settings_blocked_none]
+text = "No one"
+note = "Subtitle of Blocked people when nobody is blocked."
+
+[settings_who_can_call]
+text = "Who can call me"
+note = "Privacy row and page title for call permissions."
+
+[settings_msg_only_count]
+one = "{count} contact is messages only"
+other = "{count} contacts are messages only"
+note = "Subtitle of Who can call me; {count} is how many contacts may only message."
+
+[settings_all_can_call]
+text = "All contacts can call"
+note = "Subtitle of Who can call me when every contact may call."
+
+[settings_recovery]
+text = "Account recovery"
+note = "Privacy row that opens the recovery backup."
+
+[settings_recovery_pass]
+text = "Needs your passphrase"
+note = "Subtitle of Account recovery when a passphrase is set."
+
+[settings_recovery_lock]
+text = "Needs your screen lock"
+note = "Subtitle of Account recovery when the phone screen lock is used."
+
+[settings_passphrase]
+text = "Passphrase"
+note = "Privacy row for the app passphrase."
+
+[settings_passphrase_sub]
+text = "Protects Tinline on this device"
+note = "Subtitle of the Passphrase row."
+
+[settings_privacy_note]
+text = "Your contacts see your name, picture and profile. Tinline doesn’t hide who you talk to, and every device linked to your account can read your chats."
+note = "Note under the privacy rows."
+
+[settings_read_receipts]
+text = "Read receipts"
+note = "Privacy row and switch label."
+
+[settings_reads_note]
+text = "Delivered ticks still go out either way, and you still see when others read yours. Messages you read while this is off stay unconfirmed."
+note = "Note under the read receipts switch."
+
+[settings_contacts]
+text = "Contacts"
+note = "Section heading on the Who can call me page."
+
+[settings_can_call_you]
+text = "Can call you"
+note = "Contact row state on Who can call me."
+
+[settings_messages_only]
+text = "Messages only"
+note = "Contact row state on Who can call me."
+
+[settings_allow_calls_from]
+text = "Allow calls from {name}"
+note = "Accessibility label of a contact's call switch; {name} is the contact's name."
+
+[settings_calls_note]
+text = "Someone you allowed can ring you; someone on messages only can still write. People you blocked can do neither."
+note = "Note under the contacts list on Who can call me."
+
+[settings_about_version]
+text = "Version {version}"
+note = "About page; {version} is the app version such as 0.2.0."
+
+[settings_about_made_by]
+text = "Made by Osvauld"
+note = "About page credit line."
+
+[settings_licences]
+text = "Open-source licences"
+note = "About row and page title for licences."
+
+[settings_licences_sub]
+text = "The libraries Tinline is built on"
+note = "Subtitle of the Open-source licences row."
+
+[settings_licence_texts]
+text = "Full licence texts"
+note = "Row that opens the full licence texts."
+
+[settings_source]
+text = "Source code"
+note = "About row that opens the source code website."
+
+[settings_source_sub]
+text = "Tinline is open source"
+note = "Subtitle of the Source code row."
+
+[settings_about_note]
+text = "Tinline has no ads and no tracking. Your messages and calls go between your devices and the people you talk to."
+note = "Note on the About page."
+
+[settings_terms]
+text = "Terms of Use"
+note = "About row that opens the terms website."
+
+[settings_privacy_policy]
+text = "Privacy Policy"
+note = "About row that opens the privacy policy website."
+
+[settings_not_emergency]
+text = "Not for emergency calls."
+note = "Note on the About page."
+
+[settings_test_tone]
+text = "Test tone"
+note = "Diagnostics row and switch label."
+
+[settings_test_tone_sub]
+text = "Send a 440 Hz tone instead of the microphone"
+note = "Subtitle of the Test tone row."
+
+[security_wrong_pass]
+text = "That didn’t match. Try again."
+note = "Error under the passphrase field when the passphrase is wrong."
+
+[security_open_failed]
+text = "Couldn’t open your backup. Try again."
+note = "Error when the recovery backup could not be opened."
+
+[security_need_lock]
+text = "Add a screen lock or an app passphrase to open your backup."
+note = "Error when the phone has no screen lock and no app passphrase is set."
+
+[security_recovery_title]
+text = "Account recovery"
+note = "Page title, and the reason shown in the screen lock prompt."
+
+[security_only_you]
+text = "Only you"
+note = "Small label above the recovery pages: only the owner should see them."
+
+[security_check_you]
+text = "Check it’s you before opening your backup."
+note = "Intro on the account recovery gate."
+
+[security_your_pass]
+text = "Your passphrase"
+note = "Label of the passphrase field on the recovery gate."
+
+[security_use_lock_hint]
+text = "Use your phone’s screen lock to continue."
+note = "Hint on the recovery gate when no app passphrase is set."
+
+[security_use_lock]
+text = "Use screen lock"
+note = "Button on the recovery gate when no passphrase is set."
+
+[security_continue]
+text = "Continue"
+note = "Button on the recovery gate."
+
+[security_recovery_failed]
+text = "Couldn’t open recovery. Go back and try again."
+note = "Error when the recovery data could not be read."
+
+[security_backup_title]
+text = "Your recovery backup"
+note = "Title of the page that shows the recovery key and words."
+
+[security_keep_private]
+text = "Keep this private. Anyone with it can act as you."
+note = "Warning on the recovery backup page."
+
+[security_tab_key]
+text = "Key"
+note = "Tab on the recovery backup page: the recovery key."
+
+[security_tab_words]
+text = "24 words"
+note = "Tab on the recovery backup page: the 24 recovery words."
+
+[security_key_failed]
+text = "Couldn’t prepare the key. Use your 24 words instead."
+note = "Hint when the recovery key could not be made."
+
+[security_hide]
+text = "Hide"
+note = "Button that hides the recovery key or words."
+
+[security_reveal]
+text = "Reveal"
+note = "Button that shows the recovery key or words."
+
+[security_hint_hides]
+text = "Hides after 30 seconds. Locks when you leave the app."
+note = "Hint on the recovery backup page."
+
+[security_hint_same]
+text = "Key or words restore the same account. Keep either in a private, safe place."
+note = "Hint on the recovery backup page."
+
+[security_copied_note]
+text = "Copied. Keep it somewhere private."
+note = "Message after the recovery key was copied."
+
+[security_copied]
+text = "Copied"
+note = "Copy key button after copying."
+
+[security_copy_key]
+text = "Copy key"
+note = "Button that copies the recovery key."
+
+[security_done]
+text = "Done"
+note = "Button that closes the recovery backup page."
+
+[security_change_pass]
+text = "Change passphrase"
+note = "Title and button when a passphrase exists."
+
+[security_add_pass]
+text = "Add passphrase"
+note = "Title and button when no passphrase exists yet."
+
+[security_current_pass]
+text = "Current passphrase"
+note = "Label of the field for the existing passphrase."
+
+[security_pass_intro]
+text = "Your account lives only on this phone. A passphrase encrypts it, so nobody holding your phone can copy it."
+note = "Intro on the add-passphrase page."
+
+[security_new_pass]
+text = "New passphrase"
+note = "Field label when changing the passphrase."
+
+[security_pass]
+text = "Passphrase"
+note = "Field label when adding a passphrase."
+
+[security_pass_notice]
+text = "Encrypts your account on this phone. Your phone remembers it, so calls still ring after a restart. If you forget it, your recovery words let you set a new one."
+note = "Notice on the add-passphrase page."
+
+[security_encrypting]
+text = "Encrypting…"
+note = "Button text while the passphrase is being applied."
+
+[devices_title]
+text = "Linked devices"
+note = "Title of the linked devices page."
+
+[devices_hint_rings]
+text = "Calls ring on all of these. People you call never see these names."
+note = "Hint above the device list."
+
+[devices_link]
+text = "Link a device"
+note = "Button that starts linking another device."
+
+[devices_unlinked_label]
+text = "UNLINKED"
+note = "Small section label above unlinked devices. Capitals are part of the design."
+
+[devices_sync_label]
+text = "SYNC"
+note = "Small section label above the sync explanation. Capitals are part of the design."
+
+[devices_sync_hint]
+text = "Devices sync directly with each other whenever two are online at once. There is no copy on any server."
+note = "Hint explaining device sync."
+
+[devices_row_this_phone]
+text = "This phone — {name}"
+note = "Device row title for this phone; {name} is its label."
+
+[devices_unnamed]
+text = "Unnamed"
+note = "Fallback label for a device without a name."
+
+[devices_unnamed_device]
+text = "Unnamed device"
+note = "Fallback title for a device without a name."
+
+[devices_row_unlinked]
+text = "Unlinked"
+note = "Device row subtitle for a device that was unlinked."
+
+[devices_row_this_device]
+text = "This device · iOS"
+note = "Device row subtitle for this device."
+
+[devices_row_synced]
+text = "Synced {ago}"
+note = "Device row subtitle; {ago} is a relative time such as 5 min ago."
+
+[devices_row_not_seen]
+text = "Not seen yet"
+note = "Device row subtitle when the device has not synced yet."
+
+[devices_device]
+text = "Device"
+note = "Title of the device page while loading, and fallback name."
+
+[devices_unlinked_msg]
+text = "Unlinked {name}"
+note = "Message after a device was unlinked; {name} is its label or the word device."
+
+[devices_fb_device]
+text = "device"
+note = "Fallback noun for an unnamed device inside the Unlinked message."
+
+[devices_finish_call]
+text = "Finish your call first"
+note = "Error when unlinking a device during a call."
+
+[devices_remove_account]
+text = "Remove account from this phone"
+note = "Reason shown in the screen lock prompt, and the button label."
+
+[devices_unlink_device]
+text = "Unlink device"
+note = "Reason shown in the screen lock prompt."
+
+[devices_lock_cancelled]
+text = "Screen lock check cancelled"
+note = "Error when the screen lock prompt was cancelled."
+
+[devices_this_phone]
+text = "This phone"
+note = "Title of the device page for this phone."
+
+[devices_prop_name]
+text = "Name"
+note = "Row on the device page: the device name."
+
+[devices_prop_synced]
+text = "Last synced"
+note = "Row on the device page: when it last synced."
+
+[devices_this_device]
+text = "This device"
+note = "Value of Last synced for this device."
+
+[devices_not_yet]
+text = "Not yet"
+note = "Value of Last synced when never."
+
+[devices_prop_rings]
+text = "Rings for calls"
+note = "Row on the device page: whether it rings for calls."
+
+[devices_rings_no]
+text = "No, it was unlinked"
+note = "Value of Rings for calls for an unlinked device."
+
+[devices_rings_yes]
+text = "Yes, when it’s on"
+note = "Value of Rings for calls for a linked device."
+
+[devices_sync_now]
+text = "Sync now"
+note = "Button on the device page."
+
+[devices_syncing]
+text = "Syncing with {name}…"
+note = "Message when a sync starts; {name} is the device label or the words the device."
+
+[devices_fb_the_device]
+text = "the device"
+note = "Fallback noun for an unnamed device inside the Syncing message."
+
+[devices_unlink_this]
+text = "Unlink this device"
+note = "Button on the device page."
+
+[devices_name_phone]
+text = "Name this phone"
+note = "Dialog title for naming this phone."
+
+[devices_rename]
+text = "Rename device"
+note = "Dialog title for renaming a device."
+
+[devices_save]
+text = "Save"
+note = "Save button of the rename dialog."
+
+[devices_name_field]
+text = "Device name"
+note = "Field label in the rename dialog."
+
+[devices_fb_this_device]
+text = "this device"
+note = "Fallback noun for an unnamed device inside the Unlink question."
+
+[devices_remove_q]
+text = "Remove your account from this phone?"
+note = "Dialog title."
+
+[devices_unlink_q]
+text = "Unlink {name}?"
+note = "Dialog title; {name} is the device label or the words this device."
+
+[devices_working]
+text = "Working…"
+note = "Confirm button text while the unlink runs."
+
+[devices_remove]
+text = "Remove"
+note = "Confirm button of the remove-account dialog."
+
+[devices_unlink]
+text = "Unlink"
+note = "Confirm button of the unlink dialog."
+
+[devices_remove_body]
+text = "This phone stops syncing and ringing, and your account, contacts, chats and call history are deleted from it."
+note = "Body of the remove-account dialog."
+
+[devices_only_device]
+text = "This is the only device with your account. Without your recovery phrase nothing can bring it back."
+note = "Warning card in the remove-account dialog."
+
+[devices_others_keep]
+text = "Your other devices keep everything."
+note = "Line in the remove-account dialog."
+
+[devices_unlink_body]
+text = "It stops syncing and stops ringing for your calls. If it’s online, it removes your account from itself."
+note = "Body of the unlink dialog."
+
+[devices_unlink_warn]
+text = "Unlinking can’t lock it from here. Anyone who can unlock it can still use your account. The only full cut-off is a new account."
+note = "Warning card in the unlink dialog."
+
+[devices_lost]
+text = "Lost or stolen?"
+note = "Bold lead-in of the unlink warning card."
+
+[devices_your_pass]
+text = "Your passphrase"
+note = "Label of the passphrase field in the unlink dialog."
+
+# ---- unlock
+
+[unlock_wrong_pass]
+text = "That passphrase didn’t open the account."
+note = "Error under the passphrase field on the unlock screen."
+
+[unlock_lost_title]
+text = "Can’t open your account"
+note = "Title when this phone lost the key to the account."
+
+[unlock_lost_title_named]
+text = "Can’t open {name}’s account"
+note = "Same title with the account name; {name} is the account's name."
+
+[unlock_lost_lead]
+text = "This phone no longer has the key that opens your account. That happens after a screen-lock reset or a restored backup. Once you restore, your calls come through again."
+note = "Explanation under the lost-key title."
+
+[unlock_lost_notice]
+text = "You didn’t set a passphrase, so the 24-word recovery phrase is the only way back. Your contacts stay."
+note = "Warning on the lost-key screen."
+
+[unlock_restore]
+text = "Restore with recovery phrase"
+note = "Button on the lost-key screen."
+
+[unlock_try_again]
+text = "Try again"
+note = "Button on the lost-key screen."
+
+[unlock_switch]
+text = "Switch account"
+note = "Button on the lost-key screen."
+
+[unlock_welcome]
+text = "Welcome back"
+note = "Title of the unlock screen."
+
+[unlock_welcome_named]
+text = "Welcome back, {name}"
+note = "Title of the unlock screen; {name} is the account's nickname."
+
+[unlock_pass]
+text = "Passphrase"
+note = "Field label on the unlock screen."
+
+[unlock_slow_hint]
+text = "Checking takes a second. It’s deliberately slow to stop guessing."
+note = "Hint under the passphrase field after a wrong try."
+
+[unlock_unlocking]
+text = "Unlocking…"
+note = "Unlock button while checking."
+
+[unlock_unlock]
+text = "Unlock"
+note = "Unlock button."
+
+[unlock_forgot]
+text = "I forgot it"
+note = "Button on the unlock screen."
+
+[unlock_welcome_prefix]
+text = "Welcome back, "
+note = "Start of the title when the nickname is a tappable switcher; the nickname button follows directly after it."
+
+[unlock_switch_identity]
+text = "{name}, switch identity"
+note = "Accessibility label of the nickname switcher; {name} is the nickname."
+
+[unlock_switch_identity_hint]
+text = "Open as another identity"
+note = "Accessibility hint of the nickname switcher."
+
+[unlock_open_as]
+text = "Open as"
+note = "Title of the account picker at login."
+
+[unlock_accounts]
+text = "Accounts"
+note = "Title of the account picker sheet."
+
+[unlock_opens_now]
+text = "Opens right away"
+note = "Account picker row subtitle at login."
+
+[unlock_asks_pass]
+text = "Asks for your passphrase"
+note = "Account picker row subtitle at login."
+
+[unlock_acc_online]
+text = "Online on this phone"
+note = "Account picker row subtitle for the open account."
+
+[unlock_acc_here]
+text = "On this phone"
+note = "Account picker row subtitle for the current account when offline."
+
+[unlock_acc_locked]
+text = "Locked · not ringing here"
+note = "Account picker row subtitle for a locked account."
+
+[unlock_current_account]
+text = "Current account"
+note = "Accessibility label of the check mark on the current account."
+
+[unlock_create]
+text = "Create a new account"
+note = "Row in the account picker."
+
+[unlock_link]
+text = "Link an account from another device"
+note = "Row in the account picker."
+
+[unlock_one_online]
+text = "One account is online at a time. Calls to a locked account ring only on your other devices."
+note = "Hint at the bottom of the account picker."
+
+[unlock_finish_call]
+text = "Finish your call first"
+note = "Message when switching accounts during a call."
+
+[unlock_switch_to]
+text = "Switch to {name}?"
+note = "Title of the switch-account confirmation; {name} is the account's name."
+
+[unlock_switch_body]
+text = "{name} goes offline on this phone. Calls to {name} will ring only on your other linked devices until you switch back."
+note = "Body of the switch-account confirmation; {name} is the current account's name."
+
+[unlock_pass_for]
+text = "Passphrase for {name}"
+note = "Field label on the switch-account confirmation."
+
+[unlock_not_in_call]
+text = "You’re not on a call. If you were, switching would end it."
+note = "Hint on the switch-account confirmation."
+
+[unlock_switching]
+text = "Switching…"
+note = "Button text while switching accounts."
+
+[unlock_unlock_switch]
+text = "Unlock and switch"
+note = "Button when the other account needs its passphrase."
+
+[unlock_switch_btn]
+text = "Switch"
+note = "Button that switches accounts."
+
+[unlock_cancel]
+text = "Cancel"
+note = "Cancel button of the switch-account confirmation."
+
+# ---- restore
+
+[restore_key_typo]
+text = "That key has a typo or is cut short. Paste it again from where you saved it."
+note = "Error when the pasted recovery key fails its checksum."
+
+[restore_title]
+text = "Restore account"
+note = "Title of the restore screen."
+
+[restore_lead_words]
+text = "Type your 24 words in order, or paste them, or your recovery key, into the first box. They stay on this phone."
+note = "Intro on the restore screen before a key is pasted."
+
+[restore_lead_key]
+text = "Your recovery key is in. It stays on this phone."
+note = "Intro on the restore screen once a recovery key was pasted."
+
+[restore_key_label]
+text = "Recovery key"
+note = "Small label above the pasted recovery key."
+
+[restore_use_words]
+text = "Use my words instead"
+note = "Button that discards the pasted key to type words instead."
+
+[restore_paste]
+text = "Paste from clipboard"
+note = "Button that pastes the words or key from the clipboard."
+
+[restore_paste_failed]
+text = "Couldn’t read the clipboard. Paste into the first box instead."
+note = "Error when the clipboard could not be read."
+
+[restore_progress]
+text = "{count} of 24"
+note = "Counter of recovery words typed so far; {count} is how many are filled."
+
+[restore_words_label]
+text = "Recovery phrase words"
+note = "Accessibility label of the group of 24 word fields."
+
+[restore_continue]
+text = "Continue"
+note = "Button on the restore screen."
+
+[restore_word_n]
+text = "Word {count}"
+note = "Accessibility label of one recovery word field; {count} is its position, 1 to 24."
+
+# ---- link
+
+[link_gate_label]
+text = "Link to your account"
+note = "Header label of the link flow on this phone (accessibility); also the title of the QR step."
+
+[link_same_code]
+text = "Same code on both?"
+note = "Title when the new device is waiting for approval."
+
+[link_same_code_lead]
+text = "Check that {name} shows this code, then approve there."
+note = "Explanation under Same code on both?; {name} is the other device's name or the words your other device."
+
+[link_fb_other_device]
+text = "your other device"
+note = "Fallback for an unnamed other device inside a sentence."
+
+[link_diff_code]
+text = "Different code, or you didn’t start this? Cancel. Someone else may have scanned the QR."
+note = "Warning under the big code."
+
+[link_waiting]
+text = "Waiting for approval…"
+note = "Status line while the other device approves."
+
+[link_cancel]
+text = "Cancel"
+note = "Cancel button of the link flow."
+
+[link_linking]
+text = "Linking…"
+note = "Title while the account is being received."
+
+[link_receiving]
+text = "Receiving your account. Keep both devices open."
+note = "Explanation while the account is being received."
+
+[link_failed]
+text = "Couldn’t link"
+note = "Title when linking failed."
+
+[link_try_again]
+text = "Try again"
+note = "Button after linking failed."
+
+[link_not_now]
+text = "Not now"
+note = "Button after linking failed."
+
+[link_qr_lead]
+text = "On a device that already has your account, open Settings › Link a device and scan this."
+note = "Explanation above the QR code on the new device."
+
+[link_qr_warn]
+text = "Anyone who can see this code in the next few minutes could try to use it. Show it only to your own device."
+note = "Warning under the QR code."
+
+[link_new_code]
+text = "New code"
+note = "Button that makes a fresh link code."
+
+[link_scan_instead]
+text = "Scan instead"
+note = "Button that switches to scanning the other device's code."
+
+[link_qr_label]
+text = "QR code to link this device"
+note = "Accessibility label of the QR code."
+
+[link_preparing]
+text = "Preparing your code…"
+note = "Status under the QR code while it is made."
+
+[link_expired]
+text = "Expired. Make a new code."
+note = "Status under the QR code after it expired."
+
+[link_expires]
+text = "Expires in {minutes}:{seconds} · works once"
+note = "Countdown under the QR code; {minutes} and {seconds} are digits, seconds with two digits."
+
+[link_code_label]
+text = "Link code {digits}"
+note = "Accessibility label of the six-digit code; {digits} are the digits separated by spaces."
+
+[link_new_title]
+text = "Link a new device"
+note = "Title of the settings page that links a new device."
+
+[link_show_title]
+text = "Show this code to your new device"
+note = "Heading while this phone shows the QR code."
+
+[link_show_body]
+text = "On the new device choose “Link to a device”, then “Scan instead”, and point it at this code."
+note = "Instruction under the QR heading. The quoted names match the buttons on the new device."
+
+[link_back]
+text = "Back"
+note = "Button that goes back while showing the code."
+
+[link_fb_new_device_cap]
+text = "The new device"
+note = "Fallback name for an unnamed new device at the start of a sentence."
+
+[link_match_title]
+text = "Do the codes match?"
+note = "Heading when the user compares codes."
+
+[link_match_body]
+text = "{name} wants to join your account. It should be showing the same six digits as below."
+note = "Body when comparing codes; {name} is the new device's name, shown in bold."
+
+[link_match_warn]
+text = "Compare them yourself. If they differ, someone else may have scanned the code first."
+note = "Warning under the six digits."
+
+[link_no_match]
+text = "They don’t match"
+note = "Button when the codes differ."
+
+[link_match]
+text = "They match"
+note = "Button when the codes are the same."
+
+[link_fb_new_device]
+text = "the new device"
+note = "Fallback name for an unnamed new device inside a sentence."
+
+[link_connecting]
+text = "Connecting…"
+note = "Heading while connecting to the new device."
+
+[link_linking_peer]
+text = "Linking {name}"
+note = "Heading while linking; {name} is the new device's name."
+
+[link_reaching]
+text = "Reaching the other device"
+note = "Progress line while connecting."
+
+[link_sending]
+text = "Sending your account"
+note = "Progress line while sending."
+
+[link_working]
+text = "Working"
+note = "Short status at the end of the progress line."
+
+[link_keep_open]
+text = "Keep both devices open until this finishes."
+note = "Hint while linking."
+
+[link_done_title]
+text = "{name} is linked"
+note = "Title when linking finished; {name} is the new device's name."
+
+[link_done_body]
+text = "It syncs when both devices are online at the same time. Contacts you haven’t blocked get your updated device list when they’re next online."
+note = "Body when linking finished."
+
+[link_done]
+text = "Done"
+note = "Button when linking finished."
+
+[link_close]
+text = "Close"
+note = "Button after linking failed."
+
+[link_scan_title]
+text = "Scan the code on your new device"
+note = "Heading of the scan step."
+
+[link_scan_step1]
+text = "1.  On the new device, open Tinline and choose {action}."
+note = "Step 1 on the scan page; {action} is the bold button name Link to a device."
+
+[link_scan_step1_action]
+text = "Link to a device"
+note = "Bold button name inside step 1. Must match the button on the new device."
+
+[link_scan_step2]
+text = "2.  It shows a QR code and a short code. They work for 5 minutes, once."
+note = "Step 2 on the scan page."
+
+[link_scan_qr]
+text = "Scan QR code"
+note = "Button that opens the camera."
+
+[link_or_type]
+text = "Or type the code"
+note = "Label above the field for typing the link code."
+
+[link_continue]
+text = "Continue"
+note = "Button next to the code field."
+
+[link_show_instead]
+text = "Show a QR code here instead"
+note = "Button that switches to showing a QR code on this phone."
+
+[link_wrong_pass]
+text = "That passphrase isn’t right."
+note = "Error when approving a link with a wrong passphrase."
+
+[link_lock_cancelled]
+text = "Screen lock check cancelled"
+note = "Error when the screen lock prompt was cancelled."
+
+[link_approve_title]
+text = "Approve {name}?"
+note = "Heading of the approval step; {name} is the new device's name."
+
+[link_approve_body]
+text = "Approving sends your {phrase} to {name}. It becomes a full copy of you: it can read your chats and act as you. Approve only a device you hold."
+note = "Warning on the approval step; {phrase} is the bold words recovery phrase and {name} is the new device's name."
+
+[link_approve_phrase]
+text = "recovery phrase"
+note = "Bold words inside the approval warning."
+
+[link_your_pass]
+text = "Your passphrase"
+note = "Label of the passphrase field on the approval step."
+
+[link_dont]
+text = "Don’t link"
+note = "Button that refuses the link."
+
+[link_approving]
+text = "Approving…"
+note = "Approve button while working."
+
+[link_approve]
+text = "Approve"
+note = "Button that approves the link."
+
+[link_scan_code]
+text = "Scan the code"
+note = "Title of the camera screen on the existing device."
+
+[link_torch]
+text = "Torch"
+note = "Accessibility label of the torch button."
+
+[link_point_other]
+text = "Point at the code on your other device"
+note = "Hint on the camera view of the new device."
+
+[link_point_new]
+text = "Point the camera at the QR code on your new device"
+note = "Hint on the camera view of the existing device."
+
+[link_scan_again]
+text = "Scan again"
+note = "Button after a scan failed."
+
+[link_code_once]
+text = "The code works once and expires in 5 minutes."
+note = "Hint under the camera view."
+
+[link_unlinked_title]
+text = "This phone was unlinked"
+note = "Title shown when another device removed the account from this phone."
+
+[link_unlinked_lead]
+text = "{name} was removed from this phone by one of your other devices. Its contacts, chats and calls are deleted here. Your other devices are not affected."
+note = "Explanation; {name} is the account's name or the words Your account."
+
+[link_fb_your_account]
+text = "Your account"
+note = "Fallback for an unnamed account at the start of a sentence."
+
+[link_ok]
+text = "OK"
+note = "Button after the account was unlinked."
+
+[link_again]
+text = "Link it again"
+note = "Button that starts linking again."
+
+# ---- onboarding
+
+[onboarding_dev_personal]
+text = "Personal phone"
+note = "Suggested device name chip, and the default name of this phone."
+
+[onboarding_exists_title]
+text = "Already on this phone"
+note = "Dialog title when the restored account is already on this phone."
+
+[onboarding_exists_confirm]
+text = "Choose account"
+note = "Dialog button that opens the account picker."
+
+[onboarding_not_now]
+text = "Not now"
+note = "Secondary button on several onboarding screens."
+
+[onboarding_exists_body]
+text = "That recovery phrase belongs to an account that is already here. Switch to it instead of adding it again."
+note = "Dialog body when the restored account is already on this phone."
+
+[onboarding_fb_other_device]
+text = "your other device"
+note = "Fallback name for an unnamed other device inside a sentence."
+
+[onboarding_restore_warn_forgot]
+text = "Restoring keeps the same identity: use the recovery phrase of this account. You’ll set a new passphrase."
+note = "Notice on the restore screen after I forgot my passphrase."
+
+[onboarding_restore_warn]
+text = "Next, you’ll choose a passphrase for this account."
+note = "Notice on the restore screen during sign-up."
+
+[onboarding_welcome_title]
+text = "A direct line to your people"
+note = "Title of the first screen."
+
+[onboarding_welcome_lead]
+text = "Tinline connects your phone straight to theirs.\nYou just need a nickname. Encrypted end to end."
+note = "Explanation on the first screen; the line break is intended."
+
+[onboarding_emergency]
+text = "Not for emergency calls."
+note = "Bold line on the first screen."
+
+[onboarding_emergency_rest]
+text = "Use your phone’s dialer to reach emergency services."
+note = "Second line under Not for emergency calls. on the first screen."
+
+[onboarding_create]
+text = "Create my account"
+note = "Button on the first screen."
+
+[onboarding_have]
+text = "I have an account"
+note = "Button on the first screen."
+
+[onboarding_choose_title]
+text = "Use your account here"
+note = "Title of the screen that offers to link or restore."
+
+[onboarding_choose_lead]
+text = "Your account is its recovery phrase, so you can bring it to this phone two ways."
+note = "Explanation under the Use your account here title."
+
+[onboarding_opt_link]
+text = "Link my other device"
+note = "Option on the Use your account here screen."
+
+[onboarding_opt_link_sub]
+text = "Scan a code on a device that already has your account. Your contacts and chats come along."
+note = "Description of the link option."
+
+[onboarding_opt_restore]
+text = "Restore my account"
+note = "Option on the Use your account here screen."
+
+[onboarding_opt_restore_sub]
+text = "Type your 24 recovery words. This phone starts with an empty contact list."
+note = "Description of the restore option."
+
+[onboarding_done_title]
+text = "Your line is open"
+note = "Title when the account is ready."
+
+[onboarding_done_title_named]
+text = "Your line is open, {name}"
+note = "Title when the account is ready; {name} is the first name."
+
+[onboarding_done_lead]
+text = "Scan their code or share yours, and you can call each other."
+note = "Explanation when the account is ready."
+
+[onboarding_tip_devices]
+text = "Two devices are better than one"
+note = "Tip title on the account-ready screen."
+
+[onboarding_tip_devices_body]
+text = "Link another device when you can, so losing one never locks you out."
+note = "Tip body."
+
+[onboarding_tip_groups]
+text = "Groups are hosted on a computer"
+note = "Tip title on the account-ready screen."
+
+[onboarding_tip_groups_body]
+text = "To start a group, add Tinline on a computer that can stay on."
+note = "Tip body."
+
+[onboarding_add_contact]
+text = "Add my first contact"
+note = "Button on the account-ready screen."
+
+[onboarding_name_title]
+text = "What should people call you?"
+note = "Title of the nickname screen."
+
+[onboarding_name_lead]
+text = "Only the people you add will see it."
+note = "Explanation on the nickname screen."
+
+[onboarding_nickname]
+text = "Your nickname"
+note = "Field label on the nickname screen."
+
+[onboarding_nickname_hint]
+text = "You can change it any time in Settings."
+note = "Hint under the nickname field."
+
+[onboarding_continue]
+text = "Continue"
+note = "Next button on onboarding screens."
+
+[onboarding_pass_title_forgot]
+text = "Choose a new passphrase"
+note = "Title of the passphrase screen after I forgot it."
+
+[onboarding_pass_title_link]
+text = "Protect this phone"
+note = "Title of the passphrase screen after linking."
+
+[onboarding_pass_title]
+text = "Add a passphrase"
+note = "Title of the passphrase screen."
+
+[onboarding_cta_restore]
+text = "Restore account"
+note = "Button on the passphrase screen when restoring."
+
+[onboarding_cta_add]
+text = "Add passphrase"
+note = "Button on the passphrase screen after linking."
+
+[onboarding_cta_save]
+text = "Save account"
+note = "Button on the passphrase screen when saving."
+
+[onboarding_pass_lead]
+text = "Optional. A lock, so only you can open Tinline on this phone."
+note = "Explanation on the passphrase screen."
+
+[onboarding_pass]
+text = "Passphrase"
+note = "Field label on the passphrase screen."
+
+[onboarding_pass_notice]
+text = "Encrypts your account on this phone. Your phone remembers it, so calls still ring after a restart. If you forget it, your recovery words let you set a new one."
+note = "Notice on the passphrase screen."
+
+[onboarding_encrypting]
+text = "Encrypting…"
+note = "Button text while the passphrase is applied."
+
+[onboarding_skip]
+text = "Skip for now"
+note = "Button that skips the passphrase."
+
+[onboarding_seg_key]
+text = "Key"
+note = "Segment: show the recovery key."
+
+[onboarding_seg_words]
+text = "Words"
+note = "Segment: show the recovery words."
+
+[onboarding_rec_title_key]
+text = "Here is your recovery key"
+note = "Title when showing the recovery key."
+
+[onboarding_rec_title_words]
+text = "Here are your recovery words"
+note = "Title when showing the recovery words."
+
+[onboarding_rec_lead_key]
+text = "Your recovery key is the same as your 24 words, as one line.\nPaste it somewhere safe. A password manager works great."
+note = "Explanation when showing the recovery key; the line break is intended."
+
+[onboarding_rec_lead_words]
+text = "If you ever switch devices, these 24 words bring your account along.\nSave a copy somewhere safe. Paper works great."
+note = "Explanation when showing the recovery words; the line break is intended."
+
+[onboarding_fb_your_account]
+text = "Your account"
+note = "Name used for the account avatar when no name is set."
+
+[onboarding_saved_key]
+text = "I’ve saved it"
+note = "Button after copying the recovery key."
+
+[onboarding_saved_words]
+text = "I’ve saved them"
+note = "Button after copying the recovery words."
+
+[onboarding_copy_again]
+text = "Copy again"
+note = "Button to copy the recovery key or words again."
+
+[onboarding_copy_key]
+text = "Copy my key"
+note = "Button that copies the recovery key."
+
+[onboarding_copy_words]
+text = "Copy my words"
+note = "Button that copies the recovery words."
+
+[onboarding_elsewhere_key]
+text = "I saved it elsewhere"
+note = "Button for people who saved the key without copying."
+
+[onboarding_elsewhere_words]
+text = "I wrote them down"
+note = "Button for people who wrote the words down."
+
+[onboarding_dev_title]
+text = "Name this phone"
+note = "Title of the device-name screen."
+
+[onboarding_dev_lead]
+text = "So you can tell your devices apart in Linked devices. Only your own devices see this name; people you call never do."
+note = "Explanation on the device-name screen."
+
+[onboarding_dev_field]
+text = "Device name"
+note = "Field label on the device-name screen."
+
+[onboarding_dev_hint]
+text = "You can rename it later."
+note = "Hint under the device-name field."
+
+[onboarding_dev_work]
+text = "Work phone"
+note = "Suggested device name chip."
+
+[onboarding_dev_tablet]
+text = "Tablet"
+note = "Suggested device name chip."
+
+[onboarding_back_added]
+text = "Added {name} to this phone"
+note = "Title after adding another account; {name} is the account's name or the words your account."
+
+[onboarding_fb_your_account_lc]
+text = "your account"
+note = "Fallback for an unnamed account inside a sentence."
+
+[onboarding_back_title]
+text = "Welcome back"
+note = "Title after restoring an account."
+
+[onboarding_back_title_named]
+text = "Welcome back, {name}"
+note = "Title after restoring an account; {name} is the first name."
+
+[onboarding_back_added_lead]
+text = "Only the account you select is online at a time, so {name} is online now and your other account is paused. You can switch in Settings."
+note = "Explanation after adding another account; {name} is the account's name or the words this account."
+
+[onboarding_fb_this_account]
+text = "this account"
+note = "Fallback for an unnamed account inside a sentence."
+
+[onboarding_back_lead]
+text = "Your account is back on this phone. Your contacts, chats and call history are kept on your other devices, not with us. This phone starts with an empty contact list."
+note = "Explanation after restoring an account."
+
+[onboarding_open]
+text = "Open Tinline"
+note = "Button after adding another account, and after linking."
+
+[onboarding_linked_title]
+text = "Linked to {name}"
+note = "Title after linking; {name} is the other device's name or the words your other device."
+
+[onboarding_linked_lead]
+text = "Your contacts and chats are arriving from {name} and will keep in step on both."
+note = "Explanation after linking; {name} is the other device's name or the words your other device."
+
+[onboarding_sync_contacts]
+text = "Contacts"
+note = "Sync progress row label."
+
+[onboarding_sync_waiting]
+text = "Waiting"
+note = "Sync progress value while nothing arrived yet."
+
+[onboarding_sync_calls]
+text = "Call history"
+note = "Sync progress row label."
+
+[onboarding_sync_slow]
+text = "Nothing yet. The other device may be offline: it picks up where it left off the next time both are online."
+note = "Hint when sync is slow to start."
+
+[onboarding_sync_keep]
+text = "Keep both devices online. Sync keeps going in the background."
+note = "Hint while syncing."
+
+[onboarding_nosave_title]
+text = "Couldn’t save your account"
+note = "Title when the phone's key store failed."
+
+[onboarding_nosave_lead]
+text = "Tinline couldn’t store the key that opens your account on this phone, so your account has not been saved yet."
+note = "Explanation when the phone's key store failed."
+
+[onboarding_nosave_notice]
+text = "Nothing was kept on this phone yet, so there is nothing to lose. Try again, or protect the account with a passphrase instead of the phone’s own key."
+note = "Notice when the phone's key store failed."
+
+[onboarding_trying]
+text = "Trying…"
+note = "Button text while retrying."
+
+[onboarding_try_again]
+text = "Try again"
+note = "Button that retries saving the account."
+
+[onboarding_pass_instead]
+text = "Add a passphrase instead"
+note = "Button that protects the account with a passphrase instead."
+
+[onboarding_terms_title]
+text = "Before you start"
+note = "Title of the terms screen."
+
+[onboarding_terms1]
+text = "Free of ads and tracking."
+note = "Bold lead of the first point on the terms screen."
+
+[onboarding_terms1_rest]
+text = "Tinline doesn’t collect your contacts, calls or location."
+note = "Rest of the first point on the terms screen."
+
+[onboarding_terms2]
+text = "Calls are end-to-end encrypted."
+note = "Bold lead of the second point on the terms screen."
+
+[onboarding_terms2_rest]
+text = "When a direct line isn’t possible, an encrypted relay passes the call along. It can’t hear it."
+note = "Rest of the second point on the terms screen."
+
+[onboarding_terms3]
+text = "Your account is yours."
+note = "Bold lead of the third point on the terms screen."
+
+[onboarding_terms3_rest]
+text = "It lives on your devices, not on a server. Your recovery words are the way back in, so keep them safe."
+note = "Rest of the third point on the terms screen."
+
+[onboarding_terms_consent]
+text = "By continuing, you agree to the [Terms of Use]({terms_url}) and have read the [Privacy Policy]({privacy_url})."
+note = "Consent line above the I agree button. Markdown links: keep the [text](url) shape, translate only the link text; {terms_url} and {privacy_url} are web addresses."
+
+[onboarding_agree]
+text = "I agree"
+note = "Button that accepts the terms."
+
+[onboarding_perm_mic]
+text = "Microphone"
+note = "Permission row title."
+
+[onboarding_perm_mic_why]
+text = "So they can hear you. Used only during a call."
+note = "Why Tinline asks for the microphone."
+
+[onboarding_perm_notif]
+text = "Notifications"
+note = "Permission row title."
+
+[onboarding_perm_notif_why]
+text = "So you see incoming calls and messages."
+note = "Why Tinline asks for notifications."
+
+[onboarding_perms_title]
+text = "So calls can reach you"
+note = "Title of the permissions screen."
+
+[onboarding_perms_lead]
+text = "Tinline works like a phone line: it stays open quietly in the background. Each of these is optional, and you can change them later."
+note = "Explanation on the permissions screen."
+
+[onboarding_perm_allowed]
+text = "{name} allowed"
+note = "Accessibility label of the check mark on an allowed permission; {name} is the permission title."
+
+[onboarding_allow]
+text = "Allow"
+note = "Button that asks for a permission."
+
+[onboarding_allow_a11y]
+text = "Allow {name}"
+note = "Accessibility label of the Allow button; {name} is the permission title in lower case."
+
+# ---- shell kit
+
+[shellkit_hide_field]
+text = "Hide {name}"
+note = "Accessibility label of the eye button on a secret field; {name} is the field label in lower case."
+
+[shellkit_show_field]
+text = "Show {name}"
+note = "Accessibility label of the eye button on a secret field; {name} is the field label in lower case."
+
+[shellkit_passphrase]
+text = "Passphrase"
+note = "Default label of a passphrase field."
+
+[shellkit_hide_pass]
+text = "Hide passphrase"
+note = "Accessibility label of the eye button that hides the passphrase."
+
+[shellkit_show_pass]
+text = "Show passphrase"
+note = "Accessibility label of the eye button that shows the passphrase."
+
+[shellkit_to_light]
+text = "Switch to light"
+note = "Accessibility label of the light/dark button in sign-up while dark is on."
+
+[shellkit_to_dark]
+text = "Switch to dark"
+note = "Accessibility label of the light/dark button in sign-up while light is on."
+
+[shellkit_back]
+text = "Back"
+note = "Accessibility label of the back buttons."
+
+[shellkit_progress]
+text = "{current} of {total}"
+note = "Sign-up progress next to the segments; {current} is the step, {total} the number of steps."
+
+[shellkit_progress_a11y]
+text = "Setup progress, step {current} of {total}"
+note = "Accessibility label of the sign-up progress; {current} is the step, {total} the number of steps."
+
+[shellkit_progress_a11y_label]
+text = "Setup progress, step {current} of {total}: {label}"
+note = "Accessibility label of the sign-up progress with the step name; {label} is the name of the step."
+
+[shellkit_on]
+text = "On"
+note = "Accessibility value of a switch that is on."
+
+[shellkit_off]
+text = "Off"
+note = "Accessibility value of a switch that is off."
+
+[shellkit_selected]
+text = "Selected"
+note = "Accessibility value of a chip that is chosen."
+
+[shellkit_cancel]
+text = "Cancel"
+note = "Default dismiss button of dialogs."
+
+[shell_ring_incoming]
+text = "Incoming call"
+note = "Subtitle of a ringing call in the home header."
+
+[shell_err_save_account]
+text = "Couldn’t save your account on this phone."
+note = "Error after creating or restoring an account when it could not be stored on this phone."
+
+[shell_err_save_account_safely]
+text = "Couldn’t save your account safely on this phone."
+note = "Error when the account key could not be stored safely on this phone."
+
+[shell_flow_no_account]
+text = "No account"
+note = "Error shown when an account flow finds no account."
+
+[shell_flow_different_identity]
+text = "That recovery phrase belongs to a different identity"
+note = "Error when the recovery phrase typed to restore belongs to another identity than the one being restored."
+
+[shell_flow_account_changed]
+text = "Account changed"
+note = "Error when the selected account changed while a flow was running."
+
+[shell_err_wrong_passphrase]
+text = "That didn’t match. Check the spelling and spaces."
+note = "Error under the passphrase field when the passphrase is wrong."
+
+[shell_err_weak_passphrase]
+text = "Type a passphrase, or skip it"
+note = "Error when the passphrase field is empty and a passphrase is required."
+
+[shell_err_locked]
+text = "Locked — enter your passphrase to unlock"
+note = "Error when something needs the unlocked app."
+
+[shell_err_bad_phrase]
+text = "That recovery phrase is not valid"
+note = "Error when the typed recovery phrase is not valid."
+
+[shell_err_account_exists]
+text = "That account is already on this phone"
+note = "Error when restoring or linking an account that is already on this phone."
+
+[shell_err_in_call]
+text = "Finish your call first"
+note = "Error when an action is refused because a call is in progress."
+
+[shell_err_generic]
+text = "Something went wrong"
+note = "Fallback error text when nothing more specific is known."
+
+[shell_call_what_incoming]
+text = "Incoming"
+note = "Call list: answered incoming call."
+
+[shell_call_what_outgoing]
+text = "Outgoing"
+note = "Call list: answered outgoing call."
+
+[shell_call_what_unavailable]
+text = "While not available"
+note = "Call list: incoming call that came while the user had set themselves unavailable."
+
+[shell_call_what_missed]
+text = "Missed"
+note = "Call list: incoming call the user did not answer."
+
+[shell_call_what_declined]
+text = "Declined"
+note = "Call list: call that was declined."
+
+[shell_call_what_no_answer]
+text = "No answer"
+note = "Call list: outgoing call nobody picked up."
+
+[shell_call_what_cancelled]
+text = "Cancelled"
+note = "Call list: call cancelled before it was answered."
+
+[shell_call_what_unreachable]
+text = "Couldn’t connect"
+note = "Call list: call that could not reach the other person."
+
+[shell_call_what_other]
+text = "Call"
+note = "Call list: fallback label for a call."
+
+[shell_you]
+text = "You"
+note = "Name used for the user themselves, e.g. the saved-items chat row or the author of a group line."
+
+[shell_unknown]
+text = "Unknown"
+note = "Name shown for a person with no known name."
+
+[shell_someone]
+text = "Someone"
+note = "Name shown for a group member with no known name."
+
+[shell_chat_waiting_unreachable]
+text = "Waiting to send — {name} isn’t reachable yet"
+note = "Chat list preview of a message that is waiting to send. {name} is the contact’s first name."
+
+[shell_group_sys_joined]
+text = "{name} joined"
+note = "Group chat system line. {name} is the member who joined."
+
+[shell_group_sys_left]
+text = "{name} left"
+note = "Group chat system line. {name} is the member who left."
+
+[shell_group_sys_removed_you]
+text = "You were removed after 3 admin flags"
+note = "Group chat system line. The user was removed after being flagged by admins."
+
+[shell_group_sys_removed]
+text = "{name} was removed after 3 admin flags"
+note = "Group chat system line. {name} is the removed member."
+
+[shell_group_sys_admin_granted_you]
+text = "{by} made you an admin"
+note = "Group chat system line. {by} is who made the user an admin."
+
+[shell_group_sys_admin_granted]
+text = "{by} made {name} an admin"
+note = "Group chat system line. {by} granted admin to {name}."
+
+[shell_group_sys_admin_revoked_you]
+text = "{by} removed you as admin"
+note = "Group chat system line. {by} is who removed the user’s admin role."
+
+[shell_group_sys_admin_revoked]
+text = "{by} removed {name} as admin"
+note = "Group chat system line. {by} removed {name}’s admin role."
+
+[shell_group_sys_host_added_you]
+text = "A device of yours now hosts the group"
+note = "Group chat system line. The user’s device became a group host."
+
+[shell_group_sys_host_added]
+text = "A device of {name}’s now hosts the group"
+note = "Group chat system line. {name} is the member whose device became a host."
+
+[shell_group_sys_host_removed_you]
+text = "A device of yours stopped hosting the group"
+note = "Group chat system line. The user’s device stopped hosting."
+
+[shell_group_sys_host_removed]
+text = "A device of {name}’s stopped hosting the group"
+note = "Group chat system line. {name} is the member whose device stopped hosting."
+
+[shell_group_preview_removed]
+text = "You were removed from this group"
+note = "Group row second line when the user was removed."
+
+[shell_group_preview_left]
+text = "You left this group"
+note = "Group row second line when the user left."
+
+[shell_group_preview_mine]
+text = "You: {text}"
+note = "Group row second line: the user’s own last message. {text} is the message text."
+
+[shell_group_preview_other]
+text = "{name}: {text}"
+note = "Group row second line: someone’s last message. {name} is the author’s first name, {text} the message."
+
+[shell_empty_chats]
+text = "Your chats show up here."
+note = "Empty Chats list line."
+
+[shell_empty_unread]
+text = "You’re all caught up."
+note = "Empty Unread filter line."
+
+[shell_empty_calls]
+text = "Calls you make and receive show up here."
+note = "Empty Calls list line."
+
+[shell_empty_contacts]
+text = "The people you add show up here."
+note = "Empty Contacts list line."
+
+[shell_empty_hero_ready]
+text = "Your line is ready"
+note = "Home hero title when the user has no contacts yet."
+
+[shell_empty_hero_open]
+text = "Your line is open"
+note = "Home hero title when the user has contacts."
+
+[shell_empty_request_waiting]
+text = "Your request to {name} is waiting. Your line opens when they accept."
+note = "Home hero line after the user sent a contact request. {name} is the first name of the person asked."
+
+[shell_empty_add_another]
+text = "Add another contact"
+note = "Home hero button after a request was sent."
+
+[shell_empty_add_someone]
+text = "Add someone you’d like to talk to, and you can message and call each other."
+note = "Home hero line when the user has no contacts."
+
+[shell_empty_add_first]
+text = "Add my first contact"
+note = "Home hero button when the user has no contacts."
+
+[shell_empty_say_hello]
+text = "Say hello to {name} whenever you like."
+note = "Home hero line with one contact. {name} is their first name."
+
+[shell_empty_message]
+text = "Message {name}"
+note = "Home hero button with one contact. {name} is their first name."
+
+[shell_empty_pick]
+text = "Pick someone and say hello whenever you like."
+note = "Home hero line with several contacts."
+
+[shell_empty_start_chat]
+text = "Start a chat"
+note = "Home hero button with several contacts."
+
+[shell_step_name]
+text = "Your nickname"
+note = "Onboarding step label read out for the step header (accessibility)."
+
+[shell_step_pass]
+text = "Passphrase"
+note = "Onboarding step label read out for the step header (accessibility)."
+
+[shell_step_phrase]
+text = "Recovery phrase"
+note = "Onboarding step label read out for the step header (accessibility)."
+
+[shell_step_device]
+text = "Device name"
+note = "Onboarding step label read out for the step header (accessibility)."
+
+[shell_step_terms]
+text = "Terms"
+note = "Onboarding step label read out for the step header (accessibility)."
+
+[shell_step_perms]
+text = "Permissions"
+note = "Onboarding step label read out for the step header (accessibility)."
+
+[shell_step_restore]
+text = "Restore account"
+note = "Onboarding step label read out for the step header (accessibility)."
+
+[shell_step_link_qr]
+text = "Link to your account"
+note = "Onboarding step label read out for the step header (accessibility)."
+
+[shell_pass_strength_empty]
+text = "Any length works. A few random words are easy to remember."
+note = "Passphrase hint while the field is empty."
+
+[shell_pass_strength_short]
+text = "Short. A few more words make it stronger."
+note = "Passphrase strength: short."
+
+[shell_pass_strength_fair]
+text = "Fair"
+note = "Passphrase strength: fair."
+
+[shell_pass_strength_strong]
+text = "Strong"
+note = "Passphrase strength: strong."
+
+[shell_restore_bad_one]
+text = "Word {n} isn’t in the recovery word list. Check the spelling."
+note = "Restore screen message under the 24 word boxes. {n} is the word’s position (1 to 24)."
+
+[shell_restore_bad_many]
+text = "Word {n} and {more} more aren’t in the recovery word list. Check the spelling."
+note = "Restore screen message. {n} is the first wrong word’s position, {more} how many other words are also wrong."
+
+[shell_restore_missing]
+one = "{count} word is still missing."
+other = "{count} words are still missing."
+note = "Restore screen message: how many of the 24 words are not filled in yet."
+
+[shell_blocked]
+text = "Blocked"
+note = "Label for a person the user has blocked (chat row, contact row, section header)."
+
+[shell_home_new_group]
+text = "New group"
+note = "Label of the add button on the Groups tab dock."
+
+[shell_home_new_chat]
+text = "New chat"
+note = "Label of the add button on the Chats tab dock."
+
+[shell_banner_offline_title]
+text = "You’re offline"
+note = "Banner title when the phone has no connection."
+
+[shell_banner_offline_text]
+text = "Your calls come through again once you’re back online."
+note = "Banner text when offline."
+
+[shell_banner_noring_title]
+text = "Calls won’t ring"
+note = "Banner title when notifications are off."
+
+[shell_banner_noring_text]
+text = "Notifications are off for Tinline."
+note = "Banner text when notifications are off."
+
+[shell_banner_turn_on]
+text = "Turn on"
+note = "Banner button that turns a setting back on."
+
+[shell_banner_unavailable_title]
+text = "You’re not available"
+note = "Banner title when the user marked themselves not available."
+
+[shell_banner_unavailable_text]
+text = "Calls won’t ring until you turn it back on."
+note = "Banner text when the user is not available."
+
+[shell_search]
+text = "Search"
+note = "Search button label and placeholder on the home header and dock."
+
+[shell_settings]
+text = "Settings"
+note = "Accessibility label of the settings (gear) button on the home header."
+
+[shell_ring_a11y_waiting]
+text = "{name} is calling during your call"
+note = "Screen reader label of the call-waiting banner. {name} is the second caller."
+
+[shell_ring_a11y]
+text = "{sub} from {name}"
+note = "Screen reader label of the ringing banner. {sub} is “Incoming call” or similar, {name} the caller."
+
+[shell_ring_a11y_hint]
+text = "Open call from {name}"
+note = "Screen reader hint of the ringing banner. {name} is the caller."
+
+[shell_ring_decline]
+text = "Decline"
+note = "Button that declines a ringing call."
+
+[shell_ring_end_answer]
+text = "End and answer"
+note = "Button that ends the current call and answers the second one."
+
+[shell_ring_answer]
+text = "Answer"
+note = "Button that answers a ringing call."
+
+[shell_tab_waiting]
+text = "{count} waiting"
+note = "Screen reader value of the Contacts tab badge. {count} requests are waiting."
+
+[shell_tab_unread]
+text = "{count} unread"
+note = "Screen reader value of a tab badge. {count} unread chats."
+
+[shell_tab_chats]
+text = "Chats"
+note = "Bottom tab title and screen reader label."
+
+[shell_tab_groups]
+text = "Groups"
+note = "Bottom tab title and screen reader label."
+
+[shell_tab_calls]
+text = "Calls"
+note = "Bottom tab title and screen reader label."
+
+[shell_tab_contacts]
+text = "Contacts"
+note = "Bottom tab title and screen reader label."
+
+[shell_err_call_start]
+text = "Couldn’t start the call"
+note = "Error shown when starting a call failed without a message."
+
+[shell_ring_waiting]
+text = "Calling during your call"
+note = "Ringing banner subtitle when a second person calls during the user’s call."
+
+[shell_ring_incoming_video]
+text = "Incoming video call"
+note = "Ringing banner subtitle for an incoming video call."
+
+[shell_mic_title]
+text = "Tinline can’t use the microphone"
+note = "Title of the screen shown when microphone access is denied."
+
+[shell_mic_body]
+text = "Without it, they won’t hear you. Tinline only listens during calls — never in the background."
+note = "Explains microphone permission when denied."
+
+[shell_mic_open_settings]
+text = "Open settings"
+note = "Button that opens the system settings for the microphone permission."
+
+[shell_mic_hint]
+text = "Then go to Settings › Tinline › Microphone and allow it."
+note = "Hint with the path to the microphone permission in iOS Settings."
+
+[shell_not_now]
+text = "Not now"
+note = "Button that dismisses a prompt without acting."
+
+[shell_my_profile]
+text = "My profile"
+note = "Title of the user’s own profile screen."
+
+[shell_filter_all]
+text = "All"
+note = "Chat list filter chip: all chats."
+
+[shell_filter_unread]
+text = "Unread"
+note = "Chat list filter chip: only unread chats."
+
+[shell_chats_draft]
+text = "Draft:"
+note = "Chat list preview prefix before an unsent draft. The draft text follows."
+
+[shell_chats_waiting]
+text = "Waiting"
+note = "Chat list preview prefix for a message that is waiting to send. The preview follows after a dot."
+
+[shell_tick_slack]
+text = "Waiting to send"
+note = "Screen reader label. Group row: last message is waiting to send."
+
+[shell_tick_one]
+text = "Sent"
+note = "Screen reader label. Group row: last message was sent."
+
+[shell_tick_two]
+text = "Delivered to everyone"
+note = "Screen reader label. Group row: last message reached everyone."
+
+[shell_tick_read]
+text = "Read by everyone"
+note = "Screen reader label. Group row: last message was read by everyone."
+
+[shell_tick_bad]
+text = "Not delivered"
+note = "Screen reader label. Group row: last message was not delivered."
+
+[shell_calls_profile_a11y]
+text = "{name}’s profile"
+note = "Screen reader label of a call row’s avatar button. {name} is the contact."
+
+[shell_calls_what_duration]
+text = "{what} · {duration}"
+note = "Call row second line. {what} is the call outcome (Missed, Outgoing…), {duration} the call length."
+
+[shell_calls_row_a11y]
+text = "{name}, {what} call, {stamp}. {action}"
+note = "Screen reader label of a call row. {name} contact, {what} outcome (Missed…), {stamp} time, {action} “Call” or “Can’t call”."
+
+[shell_calls_row_a11y_duration]
+text = "{name}, {what} call, {duration}, {stamp}. {action}"
+note = "Screen reader label of an answered call row. {name} contact, {what} outcome, {duration} call length, {stamp} time, {action} “Call” or “Can’t call”."
+
+[shell_calls_action_call]
+text = "Call"
+note = "Screen reader: tapping a call row calls the contact."
+
+[shell_calls_action_cant]
+text = "Can’t call"
+note = "Screen reader: the contact cannot be called right now."
+
+[shell_calls_group_info_a11y]
+text = "{name}, group info"
+note = "Screen reader label of a group call row’s avatar. {name} is the group."
+
+[shell_calls_group_row_a11y]
+text = "{name}, {what}, {stamp}. Start or join a call"
+note = "Screen reader label of a group call row. {name} group, {what} summary, {stamp} time."
+
+[shell_contacts_find]
+text = "Find a contact"
+note = "Placeholder and label of the contact filter field on the Contacts tab."
+
+[shell_contacts_add]
+text = "Add contact"
+note = "Row on the Contacts tab that opens the add-contact screen."
+
+[shell_contacts_add_sub]
+text = "Share your code or paste theirs"
+note = "Second line of the add-contact row."
+
+[shell_contacts_waiting_you]
+text = "Waiting for you"
+note = "Section header on the Contacts tab: people who asked to be the user’s contact."
+
+[shell_contacts_waiting_them]
+text = "Waiting for them"
+note = "Section header on the Contacts tab: requests the user sent."
+
+[shell_contacts_wants_add]
+text = "Wants to add you as a contact"
+note = "Line under a contact request received."
+
+[shell_contacts_accept]
+text = "Accept"
+note = "Button that accepts a contact request."
+
+[shell_contacts_accept_hint]
+text = "Accepting lets you message and call each other."
+note = "Explains what accepting a contact request does."
+
+[shell_contacts_request_sent]
+text = "Request sent. Your line opens when {name} accepts."
+note = "Line under a contact request the user sent. {name} is the person’s first name."
+
+[shell_contacts_none_match]
+text = "No one called “{query}” in your contacts."
+note = "Contacts tab message when the filter matches nobody. {query} is what the user typed."
+
+[shell_contacts_count]
+one = "{count} contact"
+other = "{count} contacts"
+note = "Contacts tab footer: how many contacts."
+
+[shell_new_chat_last_message]
+text = "Last message {time}"
+note = "New chat list second line. {time} is when the last message was sent."
+
+[shell_new_chat_search_contacts]
+text = "Search contacts"
+note = "Placeholder and label of the contact search on the New chat screen."
+
+[shell_new_chat_add]
+text = "Add a contact"
+note = "Row on the New chat screen that opens add contact."
+
+[shell_new_chat_add_sub]
+text = "Scan their code or paste their card"
+note = "Second line of that row."
+
+[shell_new_chat_contacts_header]
+text = "CONTACTS · {count}"
+note = "Section label above the contact list on New chat. {count} is how many contacts."
+
+[shell_new_chat_no_messages]
+text = "No messages yet"
+note = "New chat list second line for a contact with no messages yet."
+
+[shell_close_search]
+text = "Close search"
+note = "Accessibility label of the button that closes the search field."
+
+[shell_clear]
+text = "Clear"
+note = "Accessibility label of the button that clears the search field."
+
+[shell_calls_recent]
+text = "Recent calls"
+note = "Title of the recent calls screen."
+
+[shell_calls_none]
+text = "No calls yet. History stays on this phone only."
+note = "Recent calls screen when empty."
+
+[shell_calls_history_note]
+text = "History stays on this phone only."
+note = "Footer of the recent calls screen."
+
+[shell_search_min_chars]
+text = "Type 2 or more characters to search messages."
+note = "Search screen hint when fewer than two characters were typed."
+
+[shell_search_no_messages]
+text = "No messages match “{query}”"
+note = "Search screen hint when no message matches. {query} is what the user typed."
+
+[shell_search_people_groups]
+text = "People & groups"
+note = "Search results header for matching people and groups."
+
+[shell_search_no_names]
+text = "No people or groups match"
+note = "Search results message when no person or group matches."
+
+[shell_search_messages]
+text = "Messages"
+note = "Search results header for matching messages."
+
+[shell_back]
+text = "Back"
+note = "Accessibility label of a back button."
+
+[shell_search_clear]
+text = "Clear search"
+note = "Accessibility label of the button that clears the typed search."
+
+[shell_search_recent]
+text = "Recent"
+note = "Header of the list of recent searches."
+
+[shell_search_empty_title]
+text = "Search messages, people and groups."
+note = "Search screen line before typing."
+
+[shell_search_empty_sub]
+text = "Everything stays on this device."
+note = "Search screen reassurance before typing."
+
+[shell_search_kind_group]
+text = "group"
+note = "Screen reader: kind of a search result tile (a group)."
+
+[shell_search_kind_me]
+text = "your profile"
+note = "Screen reader: kind of a search result tile (the user’s own profile)."
+
+[shell_search_kind_contact]
+text = "contact"
+note = "Screen reader: kind of a search result tile (a contact)."
+
+[shell_search_tile_a11y]
+text = "{name}, {kind}"
+note = "Screen reader label of a search result tile. {name} is the person or group, {kind} what it is."
+
+[shell_search_author_prefix]
+text = "{name}: "
+note = "Prefix of a message search hit snippet: who wrote it. {name} is the author’s first name or “You”. Keep the trailing space."
+
+[people_done]
+text = "Done"
+note = "Button that closes a finished sheet."
+
+[people_cancel]
+text = "Cancel"
+note = "Button that dismisses a dialog without changes."
+
+[people_close]
+text = "Close"
+note = "Button that closes a sheet."
+
+[people_back]
+text = "Back"
+note = "Button or accessibility label that goes back one step."
+
+[people_save]
+text = "Save"
+note = "Button that saves an edit."
+
+[people_remove]
+text = "Remove"
+note = "Button that removes an item."
+
+[people_not_now]
+text = "Not now"
+note = "Button that dismisses a request without answering."
+
+[people_accept]
+text = "Accept"
+note = "Button that accepts a contact request."
+
+[people_message]
+text = "Message"
+note = "Button that opens a chat with the person."
+
+[people_share]
+text = "Share"
+note = "Button that opens the system share sheet."
+
+[people_copied]
+text = "Copied"
+note = "Button label shortly after the text was copied."
+
+[people_call]
+text = "Call"
+note = "Button that calls the person."
+
+[people_add]
+text = "Add"
+note = "Button that adds an item."
+
+[people_block]
+text = "Block"
+note = "Button that blocks a person."
+
+[people_unblock]
+text = "Unblock"
+note = "Button that unblocks a person."
+
+[people_blocked]
+text = "Blocked"
+note = "Label of a person the user has blocked."
+
+[people_blocked_you]
+text = "Blocked you"
+note = "Label of a person who has blocked the user."
+
+[people_someone]
+text = "Someone"
+note = "Name used when a person has no name."
+
+[people_history_note]
+text = "History stays on this phone only."
+note = "Note under a call history list."
+
+[people_add_title]
+text = "Add contact"
+note = "Title of the add-contact sheet, and the button that adds the contact."
+
+[people_add_title_new]
+text = "New contact"
+note = "Sheet title when a contact joined."
+
+[people_add_title_request]
+text = "Contact request"
+note = "Sheet title when someone wants to add the user."
+
+[people_add_tab_code]
+text = "Code"
+note = "Tab: add a contact by pasting a code."
+
+[people_add_tab_qr]
+text = "QR"
+note = "Tab: add a contact with a QR code."
+
+[people_add_point_camera]
+text = "Point at their Tinline code."
+note = "Camera hint and accessibility label while scanning a contact QR code."
+
+[people_add_my_qr_a11y]
+text = "Your QR code"
+note = "Accessibility label of the user’s own contact QR code image."
+
+[people_add_preparing]
+text = "Preparing your code…"
+note = "Shown while the user’s contact code is being made."
+
+[people_add_reading_image]
+text = "Reading image…"
+note = "Shown while a picked image is searched for a QR code."
+
+[people_add_let_scan]
+text = "Let them scan this with Tinline."
+note = "Hint under the user’s own QR code."
+
+[people_add_show_mine]
+text = "Show my code"
+note = "Button that switches from scanning back to the user’s own code."
+
+[people_add_scan_theirs]
+text = "Scan their code"
+note = "Button that starts the camera to scan a contact code."
+
+[people_add_choose_image]
+text = "Choose image"
+note = "Button that picks an image containing a QR code."
+
+[people_add_your_code]
+text = "Your code"
+note = "Heading above the user’s own contact code."
+
+[people_add_new_code]
+text = "New code"
+note = "Button that makes a new contact code and cancels the old one."
+
+[people_add_send_until]
+text = "Send it to anyone you’d like to talk to, in any app. It works until {date}."
+note = "Explains the user’s code. {date} is a short date like “Mon 19 Oct”."
+
+[people_add_send]
+text = "Send it to anyone you’d like to talk to, in any app."
+note = "Explains the user’s code when it has no expiry."
+
+[people_add_copy_mine]
+text = "Copy my code"
+note = "Button that copies the user’s contact code."
+
+[people_add_their_code]
+text = "Their code"
+note = "Heading above the paste area for another person’s code."
+
+[people_add_paste_theirs]
+text = "Paste their code"
+note = "Button that pastes the contact code from the clipboard."
+
+[people_add_open_profile]
+text = "Open profile"
+note = "Button that opens an existing contact’s profile."
+
+[people_add_paste_new]
+text = "Paste a new code"
+note = "Button that goes back to paste another code."
+
+[people_add_adding]
+text = "Adding…"
+note = "Button label while a contact is being added."
+
+[people_add_try_again]
+text = "Try again"
+note = "Button that retries adding a contact."
+
+[people_add_hint_empty_clipboard]
+text = "Your clipboard is empty right now. When their code arrives, copy it and paste it here."
+note = "Hint when Paste is pressed with an empty clipboard."
+
+[people_add_hint_own_code]
+text = "That’s your own code. Send it to them, and paste theirs here."
+note = "Hint when the pasted code is the user’s own."
+
+[people_add_hint_expired]
+text = "That code from {name} has expired. Ask them for a fresh one."
+note = "Hint when the pasted code has expired. {name} is the person who made it."
+
+[people_add_hint_not_code]
+text = "That doesn’t look like a Tinline code. Could they copy it again for you?"
+note = "Hint when the pasted text is not a contact code."
+
+[people_add_hint_no_qr]
+text = "No QR found. Try a clearer image."
+note = "Hint when the picked image has no QR code."
+
+[people_add_hint_many_qr]
+text = "More than one QR. Crop to the one you want."
+note = "Hint when the picked image has several QR codes."
+
+[people_add_hint_unreadable]
+text = "Couldn’t read that image. Choose another."
+note = "Hint when the picked image could not be read."
+
+[people_line_connected]
+text = "Connected"
+note = "Accessibility description of the line between the user and a contact: connected."
+
+[people_line_connecting]
+text = "Connecting"
+note = "Accessibility description of the line: connecting."
+
+[people_line_not_connected]
+text = "Not connected yet"
+note = "Accessibility description of the line: not connected yet."
+
+[people_add_why_blocked]
+text = "You blocked {name}. Unblock them in Privacy before adding them again."
+note = "Preview note when the found person is blocked. {name} is their name."
+
+[people_add_why_known]
+text = "{name} is already in your contacts."
+note = "Preview note when the person is already a contact. {name} is their name."
+
+[people_add_why_added]
+text = "Your line to {name} is open. Say hello."
+note = "Preview note after adding. {name} is their name."
+
+[people_add_why_requested]
+text = "Request sent. Your line opens when {name} accepts."
+note = "Preview note after the request was sent. {name} is their name."
+
+[people_add_why_slow]
+text = "Still trying. {name}’s Tinline needs to be open and online for this."
+note = "Preview note while adding takes long. {name} is their name."
+
+[people_add_why_reaching]
+text = "Reaching {name}’s Tinline…"
+note = "Preview note while adding. {name} is their name."
+
+[people_add_why_timeout]
+text = "Couldn’t reach {name}’s Tinline. It needs to be open and online, so try again when {name}’s around."
+note = "Preview note when the person could not be reached. {name} is their name."
+
+[people_add_why_refused]
+text = "{name}’s code isn’t valid any more. They may have made a new one, so ask {name} for their newest code."
+note = "Preview note when their code is no longer valid. {name} is their name."
+
+[people_add_why_blocked_by]
+text = "You can’t add {name} right now. They’ve chosen not to be in touch here."
+note = "Preview note when the person blocked the user. {name} is their name."
+
+[people_add_why_offline]
+text = "You’re offline. Once you’re connected, try again."
+note = "Preview note when the user is offline while adding."
+
+[people_add_why_confirm]
+text = "Is this {name}? If you’re not sure, check with them first."
+note = "Preview note before adding. {name} is their name."
+
+[people_add_read_camera]
+text = "Read with camera"
+note = "Chip: the code was read with the camera."
+
+[people_add_read_image]
+text = "Read from image"
+note = "Chip: the code was read from an image."
+
+[people_add_accepted_you]
+text = "Accepted your request"
+note = "Chip: the person accepted the user’s request."
+
+[people_add_has_your_code]
+text = "Has your code"
+note = "Chip: the person has the user’s code."
+
+[people_add_inc_wants]
+text = "{name} wants to add you as a contact. Accepting lets you message and call each other."
+note = "Request note. {name} is who wants to add the user."
+
+[people_add_inc_accepted]
+text = "{name} accepted. Your line to {name} is open. Say hello."
+note = "Request note when they accepted. {name} is their name."
+
+[people_add_inc_open]
+text = "Your line to {name} is open. Say hello."
+note = "Request note when the line is open. {name} is their name."
+
+[people_blocked_title]
+text = "Blocked people"
+note = "Title of the Blocked people screen."
+
+[people_blocked_list_note]
+text = "One list across all your devices: a block made on another device shows here too."
+note = "Note at the top of the Blocked people screen."
+
+[people_blocked_empty]
+text = "Nobody is blocked. To block someone, open their contact page and tap Block."
+note = "Blocked people screen when nobody is blocked."
+
+[people_blocked_since]
+text = "Blocked {date}"
+note = "Line under a blocked person. {date} is when the block was made, like “Oct 19, 14:05”."
+
+[people_unblock_told]
+text = "{name} is told you unblocked them"
+note = "Toast after unblocking. {name} is the person’s first name."
+
+[people_unblock_a11y]
+text = "Unblock {name}"
+note = "Accessibility label of the Unblock button. {name} is the blocked person."
+
+[people_unblocking_title]
+text = "Unblocking"
+note = "Heading of the note about what unblocking does."
+
+[people_detail_calls_themselves]
+text = "Calls themselves “{name}”"
+note = "Contact page: what the contact calls themselves. {name} is their own chosen name."
+
+[people_detail_rename]
+text = "Rename"
+note = "Contact page: button and title to rename the contact on this phone."
+
+[people_detail_can_do]
+text = "WHAT {name} CAN DO"
+note = "Contact page section header, upper case. {name} is the contact’s first name in capitals."
+
+[people_detail_allow_calls]
+text = "Allow calls"
+note = "Contact page: switch that lets the contact call the user."
+
+[people_detail_allow_blocked]
+text = "Blocked: nothing gets through until you unblock."
+note = "Contact page: note under Allow calls when the contact is blocked."
+
+[people_detail_allow_on]
+text = "{name} can ring this phone and your other devices."
+note = "Contact page: note under Allow calls when on. {name} is the contact’s first name."
+
+[people_detail_allow_off]
+text = "Off. {name} can message you; their calls don’t ring."
+note = "Contact page: note under Allow calls when off. {name} is the contact’s first name."
+
+[people_detail_calls_with]
+text = "CALLS WITH {name}"
+note = "Contact page section header, upper case. {name} is the contact’s name in capitals."
+
+[people_detail_call]
+text = "Call"
+note = "Fallback title of a call in the contact’s call history."
+
+[people_detail_direct]
+text = "Direct"
+note = "Badge on a call: it ran directly between the two phones."
+
+[people_detail_relayed]
+text = "Relayed"
+note = "Badge on a call: it ran through a relay."
+
+[people_detail_name_field]
+text = "Name on this phone"
+note = "Label of the rename field."
+
+[people_detail_rename_note]
+text = "Only you see this. They still call themselves “{name}”."
+note = "Rename dialog note. {name} is the contact’s own chosen name."
+
+[people_detail_use_theirs]
+text = "Use their name"
+note = "Rename dialog button that removes the nickname and shows their own name."
+
+[people_switch_on]
+text = "On"
+note = "Accessibility value of a switch that is on."
+
+[people_switch_off]
+text = "Off"
+note = "Accessibility value of a switch that is off."
+
+[people_chip_selected]
+text = "Selected"
+note = "Accessibility value of a selected chip."
+
+[people_field_hide]
+text = "Hide {label}"
+note = "Accessibility label that hides a secret field’s text. {label} is the field name in lower case, e.g. “passphrase”."
+
+[people_field_show]
+text = "Show {label}"
+note = "Accessibility label that shows a secret field’s text. {label} is the field name in lower case."
+
+[people_passphrase]
+text = "Passphrase"
+note = "Default label of the passphrase field."
+
+[people_passphrase_hide]
+text = "Hide passphrase"
+note = "Accessibility label of the button that hides the typed passphrase."
+
+[people_passphrase_show]
+text = "Show passphrase"
+note = "Accessibility label of the button that shows the typed passphrase."
+
+[people_theme_light]
+text = "Switch to light"
+note = "Accessibility label of the button that switches to the light theme."
+
+[people_theme_dark]
+text = "Switch to dark"
+note = "Accessibility label of the button that switches to the dark theme."
+
+[people_step_of]
+text = "{step} of {total}"
+note = "Sign-up progress text. {step} is the current step, {total} how many steps there are."
+
+[people_step_a11y]
+text = "Setup progress, step {step} of {total}"
+note = "Screen reader label of sign-up progress. {step} and {total} as above."
+
+[people_step_a11y_label]
+text = "Setup progress, step {step} of {total}: {label}"
+note = "Screen reader label of sign-up progress with the step’s name. {step}, {total}, and {label} the name of the step."
+
+[people_pic_too_big]
+text = "That picture is {size} MB. Pictures can be up to {max} MB."
+note = "Picture refused: too big. {size} is the file size in MB, {max} the limit in MB."
+
+[people_pic_bad_type]
+text = "Tinline can use PNG, JPEG or WebP pictures. That file is a different kind of file."
+note = "Picture refused: not PNG, JPEG or WebP."
+
+[people_pic_unreadable]
+text = "That file couldn’t be read as a picture. It may be damaged."
+note = "Picture refused: it could not be decoded."
+
+[people_pic_too_large_px]
+text = "That picture is {w} × {h} pixels. Tinline accepts up to {max} pixels on a side."
+note = "Picture refused: too many pixels. {w} and {h} are its width and height, {max} the limit per side."
+
+[people_rule_name_empty]
+text = "The name can’t be empty."
+note = "Profile check: the name is empty."
+
+[people_rule_name_control]
+text = "The name can’t contain control or text-direction characters."
+note = "Profile check: the name has control characters."
+
+[people_rule_name_long]
+text = "That name is too long. Up to {limit} bytes; some characters take more than one."
+note = "Profile check: the name is too long. {limit} is the byte limit."
+
+[people_rule_status_long]
+text = "That is too long for a status: up to {limit} bytes, and some characters take more than one."
+note = "Profile check: the status is too long. {limit} is the byte limit."
+
+[people_rule_about_long]
+text = "That is too long for about: up to {limit} bytes, and some characters take more than one."
+note = "Profile check: the about text is too long. {limit} is the byte limit."
+
+[people_rule_status_control]
+text = "A status can’t contain control or text-direction characters."
+note = "Profile check: the status has control characters."
+
+[people_rule_about_control]
+text = "About can’t contain control or text-direction characters."
+note = "Profile check: the about text has control characters."
+
+[people_rule_key_empty]
+text = "Give the information a name."
+note = "Profile check: a custom information item has no name."
+
+[people_rule_key_bad]
+text = "That name can’t be used. Keep it short, without control characters."
+note = "Profile check: the name of a custom information item is not allowed."
+
+[people_rule_value_long]
+text = "That is too long. Each piece of information can be up to 16 KiB."
+note = "Profile check: a value is too long."
+
+[people_rule_too_many]
+text = "You’ve reached 64 pieces of information. Remove one to add another."
+note = "Profile check: too many information items."
+
+[people_rule_full]
+text = "Your profile is full. Remove some information to add more."
+note = "Profile check: the whole profile is too big."
+
+[people_rule_picture]
+text = "Use the picture controls for that."
+note = "Profile check: the picture cannot be set as plain information."
+
+[people_rule_availability]
+text = "Availability can be changed but not removed."
+note = "Profile check: availability cannot be removed."
+
+[people_info_pronouns]
+text = "Pronouns"
+note = "Label of a profile information field."
+
+[people_info_pronouns_hint]
+text = "For example, she/her"
+note = "Placeholder hint of the pronouns field."
+
+[people_info_location]
+text = "Location"
+note = "Label of a profile information field."
+
+[people_info_location_hint]
+text = "City or region"
+note = "Placeholder hint of the location field."
+
+[people_info_website]
+text = "Website"
+note = "Label of a profile information field."
+
+[people_until_tomorrow]
+text = "tomorrow {time}"
+note = "Busy-until label for tomorrow. {time} is a clock time like 08:00."
+
+[people_until_day]
+text = "{day} {time}"
+note = "Busy-until label for a later day. {day} is the weekday name, {time} a clock time."
+
+[people_busy_30m]
+text = "30 minutes"
+note = "Choice of how long the user is busy."
+
+[people_busy_1h]
+text = "1 hour"
+note = "Choice of how long the user is busy."
+
+[people_busy_4h]
+text = "4 hours"
+note = "Choice of how long the user is busy."
+
+[people_busy_tom]
+text = "Tomorrow morning"
+note = "Choice of how long the user is busy."
+
+[people_busy_open]
+text = "No end time"
+note = "Choice of how long the user is busy."
+
+[people_picture_help]
+text = "Replacing or removing your picture requests deletion of the previous cached copy on your linked devices and contacts when they sync. Screenshots, backups, and copies retained by modified clients cannot be erased by the app."
+note = "Explains what removing or replacing the profile picture can and cannot do."
+
+[people_field_help]
+text = "Your contacts can see your profile. Removing information hides it from your profile; earlier versions can remain in synced history."
+note = "Explains who sees profile information."
+
+[people_busy_unsupported]
+text = "Busy is not available yet. Your call settings are unchanged."
+note = "Shown when the user picks Busy, which the call path does not support yet."
+
+[people_save_failed]
+text = "Couldn’t save that. Your profile is unchanged and what you typed is still here."
+note = "Profile save failed."
+
+[people_account_changed]
+text = "The selected account changed. Nothing was saved to the new account."
+note = "Profile save refused because the selected account changed meanwhile."
+
+[people_save_picture_failed]
+text = "Couldn’t save your picture. Your current picture is unchanged."
+note = "Profile picture could not be saved."
+
+[people_remove_picture_failed]
+text = "Couldn’t remove your picture. It is unchanged."
+note = "Profile picture could not be removed."
+
+[people_my_profile]
+text = "My profile"
+note = "Title of the user’s own profile screen."
+
+[people_profile_bad_link]
+text = "Enter a web address that starts with http:// or https://."
+note = "Error when a typed link is not a web address."
+
+[people_profile_section]
+text = "Profile"
+note = "Heading of the profile fields section."
+
+[people_profile_name]
+text = "Name"
+note = "Label of the name field."
+
+[people_profile_name_placeholder]
+text = "Your name"
+note = "Placeholder of the name field."
+
+[people_profile_status]
+text = "Status"
+note = "Label of the status field."
+
+[people_profile_status_placeholder]
+text = "What are you up to?"
+note = "Placeholder of the status field."
+
+[people_profile_status_empty]
+text = "Add a status"
+note = "Shown when the status is empty."
+
+[people_profile_about]
+text = "About"
+note = "Label of the about field."
+
+[people_profile_about_empty]
+text = "Add a few words about you"
+note = "Shown when the about text is empty."
+
+[people_profile_availability]
+text = "Availability"
+note = "Heading and label of the availability section."
+
+[people_profile_availability_note]
+text = "Your contacts can see this, and it’s the same on all your devices. It affects whether calls reach you, and it’s separate from whether you’re online."
+note = "Note under the availability section."
+
+[people_profile_additional]
+text = "Additional information"
+note = "Heading of the section with extra profile information."
+
+[people_profile_add_info]
+text = "Add information"
+note = "Button and dialog title for adding a piece of profile information."
+
+[people_profile_other_note]
+text = "Some information came from another device or app version. It’s shown as stored and kept when you edit anything else."
+note = "Note when the profile has information this app does not know."
+
+[people_profile_change_photo]
+text = "Change photo"
+note = "Button that picks a new profile photo."
+
+[people_profile_add_photo]
+text = "Add photo"
+note = "Button that picks a first profile photo."
+
+[people_profile_picture]
+text = "Picture"
+note = "Accessibility label of the profile picture area."
+
+[people_profile_dismiss]
+text = "Dismiss"
+note = "Accessibility label of the button that dismisses an error."
+
+[people_profile_saved_offline]
+text = "Saved on this device. Will sync when you’re connected."
+note = "Strip shown after saving while offline."
+
+[people_profile_too_detailed]
+text = "That picture is too detailed to save. Try a different one."
+note = "Error when the cropped picture is too large to store."
+
+[people_profile_picture_updated]
+text = "Picture updated"
+note = "Screen reader announcement after the picture changed."
+
+[people_profile_picture_removed]
+text = "Picture removed"
+note = "Screen reader announcement after the picture was removed."
+
+[people_profile_remove_title]
+text = "Remove your picture?"
+note = "Title of the remove picture dialog."
+
+[people_profile_remove_note]
+text = "Your initials will show instead."
+note = "Note in the remove picture dialog."
+
+[people_profile_remove_picture]
+text = "Remove picture"
+note = "Button that removes the profile picture."
+
+[people_profile_available]
+text = "Available"
+note = "Availability: the user can be called."
+
+[people_profile_busy]
+text = "Busy"
+note = "Availability: the user is busy."
+
+[people_profile_busy_until]
+text = "Busy until {time}"
+note = "Availability line. {time} is when busy ends, like “18:00” or “tomorrow 08:00”."
+
+[people_profile_busy_open]
+text = "Busy until you change it"
+note = "Availability line when busy has no end time."
+
+[people_profile_for_how_long]
+text = "For how long"
+note = "Accessibility label of the list of busy durations."
+
+[people_profile_time_passed]
+text = "Choose a time that hasn’t passed yet."
+note = "Error when the chosen busy end time is in the past."
+
+[people_profile_info_dup]
+text = "You already have information with that name."
+note = "Error when adding information with a name already used."
+
+[people_profile_info_empty]
+text = "Add something to save."
+note = "Error when saving empty information."
+
+[people_profile_something_else]
+text = "Something else"
+note = "Choice and title to add information with a name of the user’s own."
+
+[people_profile_what_called]
+text = "What is it called?"
+note = "Label of the field for the name of a custom information item."
+
+[people_profile_called_placeholder]
+text = "For example, Favourite tea"
+note = "Placeholder of that field."
+
+[people_profile_value]
+text = "Value"
+note = "Label of the value field of a custom information item."
+
+[people_profile_name_it]
+text = "Name it yourself"
+note = "Second line of the Something else choice."
+
+[people_profile_kinds]
+text = "Kinds of information"
+note = "Accessibility label of the list of information kinds."
+
+[people_profile_add_note]
+text = "Your contacts will see it on your profile."
+note = "Note in the add information dialog."
+
+[people_profile_link_title]
+text = "Open this link?"
+note = "Title of the dialog before opening a link."
+
+[people_profile_link_note]
+text = "It opens in your browser, outside Tinline. Tinline doesn’t load it for you, and can’t vouch for what’s there."
+note = "Note in that dialog."
+
+[people_profile_open_link]
+text = "Open link"
+note = "Button that opens the link in the browser."
+
+[people_crop_title]
+text = "Position your picture"
+note = "Title and accessibility label of the picture crop screen."
+
+[people_crop_use]
+text = "Use photo"
+note = "Button that uses the cropped picture."
+
+[people_crop_failed]
+text = "Couldn’t prepare that picture. Try a different one."
+note = "Error when the crop could not be made."
+
+[people_crop_help]
+text = "Drag to move the picture. Use the slider to zoom."
+note = "Help text under the crop area."
+
+[people_crop_zoom]
+text = "Zoom"
+note = "Accessibility label of the zoom slider."
+
+[people_ui_saved_offline]
+text = "Saved · syncs when connected"
+note = "Confirmation after saving while offline."
+
+[people_ui_saved]
+text = "Saved"
+note = "Confirmation after saving."
+
+[people_ui_not_set]
+text = "Not set"
+note = "Shown for an empty profile field."
+
+[people_ui_bytes]
+text = "{bytes} of {limit} bytes"
+note = "Counter under a profile field. {bytes} is how many bytes are used, {limit} the maximum."
+
+[people_ui_remove_title]
+text = "Remove “{label}” from your profile?"
+note = "Question when removing a profile field. {label} is the field name."
+
+[people_ui_remove_note]
+text = "It disappears from your profile. Earlier versions can remain in synced history."
+note = "Note in the remove field question."
+
+[people_ui_row_a11y]
+text = "{label}: {value}. Edit"
+note = "Screen reader label of an editable profile row. {label} is the field name, {value} its value or “Not set”."
+
+[people_ui_open_a11y]
+text = "Open {label}: {url}"
+note = "Screen reader label of the button that opens a link field. {label} is the field name, {url} the shortened address."
+
+[people_ui_remove_a11y]
+text = "Remove {label}"
+note = "Screen reader label of the button that removes a field. {label} is the field name."
+
+[people_yes]
+text = "Yes"
+note = "Value shown for a true profile value."
+
+[people_no]
+text = "No"
+note = "Value shown for a false profile value."
+
+
+# ---- calls
+
+[call_route_phone]
+text = "Phone"
+note = "Audio route name for the phone earpiece, on the route button and sheet."
+
+[call_route_speaker]
+text = "Speaker"
+note = "Audio route name for the loudspeaker, on the route button and sheet."
+
+[call_route_headset]
+text = "Headset"
+note = "Audio route name for a wired headset with no name of its own."
+
+[call_route_bluetooth]
+text = "Bluetooth"
+note = "Audio route name for a Bluetooth device with no name of its own."
+
+[call_route_other]
+text = "Other"
+note = "Audio route name for an unnamed route of another kind."
+
+[call_mic_permission_needed_place]
+text = "Microphone permission needed to place a call"
+note = "Error shown when the user tries to place a call without microphone permission."
+
+[call_status_reconnecting]
+text = "Reconnecting…"
+note = "Status line under the contact name while the connection is being re-established."
+
+[call_status_ringing]
+text = "Ringing…"
+note = "Status line while the other phone is ringing."
+
+[call_status_calling]
+text = "Calling…"
+note = "Status line while the call is being set up, before it rings."
+
+[call_privacy_active]
+text = "End-to-end encrypted. Your voice is encrypted on this device and only decrypted on {name}’s."
+note = "Call card line once the call is connected. {name} is the contact's first or full name."
+
+[call_privacy_connecting]
+text = "Connecting to {name}. Once the call is connected, it is end-to-end encrypted."
+note = "Call card line while connecting; no encryption claim yet. {name} is the contact's name."
+
+[call_mark_incoming]
+text = "Incoming call"
+note = "Accessibility label of the animated mark on an incoming call."
+
+[call_mark_outgoing]
+text = "Calling"
+note = "Accessibility label of the animated mark on an outgoing call."
+
+[call_mark_connecting]
+text = "Connecting"
+note = "Accessibility label of the animated mark while connecting."
+
+[call_mark_active]
+text = "In a call"
+note = "Accessibility label of the animated mark during a call."
+
+[call_mark_reconnecting]
+text = "Reconnecting"
+note = "Accessibility label of the animated mark while reconnecting."
+
+[call_unknown_name]
+text = "Unknown"
+note = "Fallback name when a caller has no name."
+
+[call_system_call_name]
+text = "Tinline call"
+note = "Name shown in the system call UI when the contact has no name."
+
+[call_notification_name]
+text = "Call"
+note = "Fallback call name in the ongoing-call notification when the contact has no name."
+
+[call_about_title]
+text = "About this call"
+note = "Title of the call details card, and accessibility label of the info button."
+
+[call_back_continues]
+text = "Back. The call continues"
+note = "Accessibility label of the Back button on the call screen."
+
+[call_message_continues]
+text = "Message. The call continues"
+note = "Accessibility label of the button that opens the chat during a call."
+
+[call_about_reconnecting]
+text = "About this call. Reconnecting."
+note = "Accessibility label of the info button while reconnecting."
+
+[call_about_signal_direct]
+text = "About this call. {word} signal, direct."
+note = "Accessibility label of the info button. {word} is a signal strength word such as Weak or Strong."
+
+[call_about_signal_relayed]
+text = "About this call. {word} signal, relayed."
+note = "Accessibility label of the info button. {word} is a signal strength word such as Weak or Strong."
+
+[call_control_mute]
+text = "Mute"
+note = "Label and caption of the mute button."
+
+[call_control_muted]
+text = "Muted"
+note = "Caption of the mute button while the microphone is muted."
+
+[call_control_camera]
+text = "Camera"
+note = "Label and caption of the camera button."
+
+[call_control_end_label]
+text = "End call"
+note = "Accessibility label of the red hang-up button."
+
+[call_control_end]
+text = "End"
+note = "Caption under the hang-up button."
+
+[call_control_flip_label]
+text = "Flip camera"
+note = "Accessibility label of the camera flip button."
+
+[call_control_flip]
+text = "Flip"
+note = "Caption under the camera flip button."
+
+[call_control_audio_route]
+text = "Audio: {route}"
+note = "Accessibility label of the audio route button when a headset or Bluetooth device is in use. {route} is its name."
+
+[call_status_incoming_video]
+text = "Tinline video call"
+note = "Status line on an incoming video call."
+
+[call_status_incoming_voice]
+text = "Tinline voice call"
+note = "Status line on an incoming voice call."
+
+[call_path_encrypted]
+text = "End-to-end encrypted"
+note = "Line under the call status once connected, before the path is known."
+
+[call_path_direct]
+text = "End-to-end encrypted · Direct"
+note = "Line under the call status when the call goes straight between the two phones."
+
+[call_path_relayed]
+text = "End-to-end encrypted · Relayed"
+note = "Line under the call status when a relay passes the call along."
+
+[call_about_encrypted_lead]
+text = "End-to-end encrypted."
+note = "Bold first words of the encryption explanation on the call details card."
+
+[call_about_encrypted_voice]
+text = "Your voice is encrypted on this device and only decrypted on {name}’s."
+note = "Rest of the encryption explanation on a voice call. {name} is the contact."
+
+[call_about_encrypted_video]
+text = "Your voice and picture are encrypted on this device and only decrypted on {name}’s."
+note = "Rest of the encryption explanation on a video call. {name} is the contact."
+
+[call_about_headline_reconnecting]
+text = "Reconnecting"
+note = "Bold headline on the call details card while reconnecting."
+
+[call_about_headline_direct]
+text = "{word} signal · Direct"
+note = "Bold headline on the call details card. {word} is a signal strength word such as Weak or Strong."
+
+[call_about_headline_relayed]
+text = "{word} signal · Relayed"
+note = "Bold headline on the call details card. {word} is a signal strength word such as Weak or Strong."
+
+[call_about_line_reconnecting]
+text = "The connection dropped for a moment. Tinline is finding a way back to {name}."
+note = "Explanation while reconnecting. {name} is the contact's first name."
+
+[call_about_line_direct]
+text = "Your call goes straight between your device and {name}’s."
+note = "Explanation for a direct connection. {name} is the contact's first name."
+
+[call_about_line_relayed_voice]
+text = "Your devices can’t reach each other directly right now, so a relay passes the call along. It can’t listen."
+note = "Explanation for a relayed voice call."
+
+[call_about_line_relayed_video]
+text = "Your devices can’t reach each other directly right now, so a relay passes the call along. It can’t listen or watch."
+note = "Explanation for a relayed video call."
+
+[call_about_line_weak]
+text = "The line is weak, so {name}’s voice may break up."
+note = "Extra sentence appended when the signal is weak. {name} is the contact's first name."
+
+[call_about_stats]
+text = "{rtt} ms round trip · {loss}% lost"
+note = "Network numbers on the call details card. {rtt} is round-trip time in milliseconds, {loss} is the percentage of lost packets."
+
+[call_about_your_video]
+text = "Your video"
+note = "Row label on the call details card for the codec my camera sends."
+
+[call_about_their_video]
+text = "Their video"
+note = "Row label on the call details card for the codec the contact sends."
+
+[call_got_it]
+text = "Got it"
+note = "Button that closes the call details card."
+
+[call_strip_return]
+text = "Return to call with {name}"
+note = "Accessibility label of the strip that returns to the running call. {name} is the contact."
+
+[call_strip_return_group]
+text = "Return to group call in {name}"
+note = "Accessibility label of the strip that returns to the running group call. {name} is the group."
+
+[call_strip_return_video]
+text = "Return to video call with {name}"
+note = "Accessibility label of the small video window that returns to the call. {name} is the contact."
+
+[call_strip_label]
+text = "{label}. {status}"
+note = "Accessibility label of the call strip. {label} is what tapping does, {status} is the clock or status."
+
+[call_mic_unavailable]
+text = "Microphone unavailable - you can't be heard"
+note = "Problem line on the call screen when the microphone could not be opened."
+
+[call_mic_permission_needed]
+text = "Microphone permission needed - you can't be heard"
+note = "Problem line on the call screen when microphone permission is denied."
+
+[call_camera_permission_needed]
+text = "Camera permission needed - they can still hear you"
+note = "Problem line when camera permission is denied."
+
+[call_camera_unavailable]
+text = "Camera unavailable"
+note = "Problem line when the camera could not be started."
+
+[call_group_call_name]
+text = "Group call"
+note = "Fallback title of a group call when the group has no name."
+
+[call_quality_auto]
+text = "Auto"
+note = "Video quality setting: let Tinline choose."
+
+[call_quality_prefer_hd]
+text = "Prefer HD"
+note = "Video quality setting: prefer sharper HD video."
+
+[call_hd_off]
+text = "Sharper video off"
+note = "Short note under the call header after turning the HD chip off."
+
+[call_hd_paused]
+text = "HD paused · weak connection"
+note = "Short note when HD is on but paused because the connection is weak."
+
+[call_hd_on]
+text = "Sharper video on"
+note = "Short note under the call header after turning the HD chip on."
+
+[call_hd_metered]
+text = "On mobile data, HD uses more · tap HD"
+note = "Note shown once per call when HD is on over mobile data; \"tap HD\" refers to the HD chip."
+
+[call_resolution_hd]
+text = "HD · {size}"
+note = "Video size label for HD video. {size} is width×height such as 1280×720."
+
+[call_status_finding_host]
+text = "Finding a call host…"
+note = "Status of a group call while the call host is being chosen."
+
+[call_status_connecting]
+text = "Connecting…"
+note = "Status of a call while connecting."
+
+[call_group_already_in_call]
+text = "You’re already in a call."
+note = "Error when starting or joining a group call while another call is running."
+
+[call_group_ended]
+text = "Call ended"
+note = "Reason shown when a group call ends."
+
+[call_group_ended_host_lost]
+text = "Call ended — host lost"
+note = "Reason shown when a group call ends because its call host disappeared."
+
+[call_group_battery_limited]
+text = "Battery under 15 %. Hosting is limited: only one person is heard at a time, and no one new can join."
+note = "Note on the group call screen when this phone is the call host and its battery is low."
+
+[call_group_no_host]
+text = "No call host available"
+note = "Group call start failure when no device can host the call."
+
+[call_group_connect_failed]
+text = "Couldn’t connect"
+note = "Group call start failure, generic."
+
+[call_person_you]
+text = "You"
+note = "Name used for myself in a group call."
+
+[call_person_someone]
+text = "Someone"
+note = "Name used for an unknown person in a group call."
+
+[call_group_fallback]
+text = "Group"
+note = "Fallback group name."
+
+[call_host_this_phone]
+text = "this phone"
+note = "Names the call host when it is this phone; used in a sentence, lowercase."
+
+[call_host_device]
+text = "{name}’s device"
+note = "Names the call host when it is another member's device. {name} is the member's first name."
+
+[call_group_minimize]
+text = "Minimize call"
+note = "Accessibility label of the button that minimizes the group call screen."
+
+[call_group_only_you]
+text = "Only you so far. Waiting for others."
+note = "Line under the group call mark when I am the only one in the call."
+
+[call_group_people_count]
+one = "{count} person in the call"
+other = "{count} people in the call"
+note = "Line under the group call mark with the number of people in the call."
+
+[call_group_more]
+text = "+{count} more"
+note = "Shown when more people are in a group call than fit on screen. {count} is how many are not shown."
+
+[call_ok]
+text = "OK"
+note = "Button that dismisses a note on the call screen."
+
+[call_group_you_host]
+text = "You’re the call host"
+note = "Pill on the group call screen when this phone carries the call."
+
+[call_group_host_is]
+text = "Call host: {host}"
+note = "Pill on the group call screen. {host} is the host's device, such as \"Arjun’s device\"."
+
+[call_control_leave]
+text = "Leave"
+note = "Caption under the button that leaves a group call."
+
+[call_host_fallback]
+text = "the call host"
+note = "Used in a sentence when the call host's name is not known."
+
+[call_group_about_carries]
+text = "carries this call. Everyone in the call connects to it, and it passes the audio on and chooses who is heard when several people speak."
+note = "Continues the bold host name on the group call details card, e.g. \"Arjun’s device carries this call...\"."
+
+[call_group_about_carrying]
+text = "is carrying this call. Everyone in the call connects to it, and it passes the audio on and chooses who is heard when several people speak."
+note = "Continues the bold host name when this phone is the host: \"This phone is carrying this call...\"."
+
+[call_group_about_trust]
+text = "Your connection to the call host is encrypted, but the call host itself receives the audio, so it can hear this call. You trust it for the call the way you trust a chat host with posts."
+note = "Paragraph on the group call details card about trusting the call host."
+
+[call_group_about_who]
+text = "A call host is a device a group admin chose and that agreed to it. It is separate from chat hosting. Admins can change call hosts in Group info."
+note = "Paragraph on the group call details card about who can be a call host."
+
+[call_group_in_call]
+text = "You’re in the call"
+note = "Title of the banner in a group chat when I am in the group call."
+
+[call_group_in_progress]
+text = "Call in progress"
+note = "Title of the banner in a group chat while a group call runs."
+
+[call_group_started_by]
+text = "Started by {name}"
+note = "Subtitle of the group chat call banner. {name} is the member who started the call."
+
+[call_open]
+text = "Open"
+note = "Button on the group chat call banner that returns to my call."
+
+[call_join]
+text = "Join"
+note = "Button that joins a group call."
+
+[call_group_open_label]
+text = "Open {group}"
+note = "Accessibility label of the group call announcement. {group} is the group name."
+
+[call_not_now]
+text = "Not now"
+note = "Button that declines an offer without a decision."
+
+[call_dismiss]
+text = "Dismiss"
+note = "Accessibility label of the button that closes the group call announcement."
+
+[call_group_announce_ringing]
+text = "{name} is calling the group"
+note = "Group call announcement. {name} is the member's first name."
+
+[call_group_announce_started]
+text = "{name} started a call"
+note = "Group call announcement. {name} is the member who started the call."
+
+[call_group_announce_ringing_label]
+text = "{name} is calling the group {group}"
+note = "Accessibility label of the group call announcement while ringing. {name} is the member, {group} the group."
+
+[call_group_announce_started_label]
+text = "{name} started a call in {group}"
+note = "Accessibility label of the group call announcement. {name} is the member, {group} the group."
+
+[call_held]
+text = "On hold while your other call is on"
+note = "Problem line on the call screen while another call (for example a phone call) has taken over."
+
+[call_decline]
+text = "Decline"
+note = "Button and accessibility label that declines an incoming call."
+
+[call_answer]
+text = "Answer"
+note = "Button and accessibility label that answers an incoming call."
+
+[call_video_button]
+text = "Video"
+note = "Label of the button that answers an incoming video call with my camera on."
+
+[call_answer_with_video]
+text = "Answer with video"
+note = "Accessibility description of the Video answer button."
+
+[call_waiting_title]
+text = "{name} is calling"
+note = "Title of the card shown when a second call arrives during a call. {name} is the caller."
+
+[call_waiting_sub]
+text = "during your call"
+note = "Second line of the call-waiting card."
+
+[call_waiting_end_answer]
+text = "End & answer"
+note = "Button on the call-waiting card that ends the current call and answers the new one."
+
+[call_waiting_end_answer_desc]
+text = "End and answer"
+note = "Accessibility description of the End & answer button."
+
+[call_waiting_ends]
+text = "Ends your call with {name}"
+note = "Small line under the call-waiting buttons. {name} is the person in my current call."
+
+[call_waiting_label]
+text = "{name} is calling during your call"
+note = "Accessibility label of the call-waiting card. {name} is the caller."
+
+[call_starting_video]
+text = "Starting video…"
+note = "Video quality line while my camera is starting."
+
+[call_route_sheet_title]
+text = "Play call through"
+note = "Title of the sheet where I pick where the call audio plays."
+
+[call_route_relayed_hint]
+text = "Relayed: a direct line wasn’t possible on this network, so an encrypted relay is passing the call along. It can’t hear you."
+note = "Hint in the audio route sheet when the call goes through a relay."
+
+[call_selected]
+text = "Selected"
+note = "Accessibility label of the check mark on the chosen audio route."
+
+[call_camera_off]
+text = "{name}’s camera is off"
+note = "Shown on a video call when the contact's camera is off. {name} is the contact."
+
+[call_connecting_video]
+text = "Connecting video…"
+note = "Shown on a video call while the picture is being set up."
+
+[call_hd_label_paused]
+text = "Sharper video on, paused while the connection is weak"
+note = "Accessibility label of the HD chip when HD is paused."
+
+[call_hd_label_on]
+text = "Sharper video on, up to 540p"
+note = "Accessibility label of the HD chip when HD is on."
+
+[call_hd_label_off]
+text = "Sharper video off"
+note = "Accessibility label of the HD chip when HD is off."
+
+[call_value_on]
+text = "On"
+note = "Accessibility value of a toggle that is on."
+
+[call_value_off]
+text = "Off"
+note = "Accessibility value of a toggle that is off."
+
+[call_ended_title]
+text = "Call ended"
+note = "Title of the screen shown after a call ends, and the default end reason."
+
+[call_badge_direct]
+text = "Direct"
+note = "Badge on the call-ended screen: the call went straight between the phones."
+
+[call_badge_relayed]
+text = "Relayed"
+note = "Badge on the call-ended screen: the call went through a relay."
+
+[call_badge_signal]
+text = "{word} signal"
+note = "Badge on the call-ended screen. {word} is a signal strength word such as Weak or Strong."
+
+[call_call_again]
+text = "Call again"
+note = "Button on the call-ended screen that calls the contact again."
+
+[call_close]
+text = "Close"
+note = "Button that closes a call screen."
+
+[call_auto_close]
+text = "Closes by itself after 4 seconds."
+note = "Hint on the call-ended screen."
+
+[call_unreachable_title]
+text = "Couldn’t reach {name}"
+note = "Title when a call was not answered or could not connect. {name} is the contact."
+
+[call_unreachable_title_blank]
+text = "Couldn’t reach them"
+note = "Title when a call could not connect and the contact has no name."
+
+[call_unreachable_body]
+text = "{name} may be offline, out of signal, or not taking calls right now. Tinline can’t leave messages."
+note = "Explanation when a call could not connect. {name} is the contact."
+
+[call_unreachable_body_blank]
+text = "They may be offline, out of signal, or not taking calls right now. Tinline can’t leave messages."
+note = "Explanation when a call could not connect and the contact has no name."
+
+[call_try_again]
+text = "Try again"
+note = "Button that places the call again."
+
+[call_mic_needed_title]
+text = "Tinline can’t use the microphone"
+note = "Title of the screen shown when the microphone permission is missing."
+
+[call_mic_needed_body]
+text = "Without it, they won’t hear you. Tinline only listens during calls — never in the background."
+note = "Explanation on the microphone permission screen."
+
+[call_open_settings]
+text = "Open settings"
+note = "Button that opens the system settings for Tinline."
+
+[call_mic_needed_hint]
+text = "Then go to Settings › Tinline › Microphone and allow it."
+note = "Hint under the Open settings button on the microphone permission screen."
+
+
+[people_add_or]
+text = "or"
+note = "Small divider word between the scan option and the paste-a-code option on the add contact sheet."
