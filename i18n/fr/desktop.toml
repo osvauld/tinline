@@ -1,7 +1,7 @@
 # Generated from i18n/tm/fr.toml by scripts/i18n_tm.py apply. Edit the tm file.
 
 [common_a_device_name_is]
-text = "Un nom d’appareil fait de {min} à {max} caractères."
+text = "Un nom d’appareil compte entre {min} et {max} caractères."
 
 [common_about_this_call]
 text = "À propos de cet appel"
@@ -957,7 +957,7 @@ text = "Nouvel essai…"
 text = "Activer"
 
 [gate_you_didnt_set_a]
-text = "Vous n’avez pas défini de phrase secrète, donc vos {words} mots de récupération sont le seul moyen de revenir. Vos contacts restent."
+text = "Vous n’avez pas défini de phrase secrète, donc vos {words} mots de récupération sont le seul moyen de récupérer votre compte. Vos contacts sont conservés."
 
 [gate_your_calls_come_through]
 text = "Vos appels arrivent à nouveau dès que vous êtes de retour en ligne."

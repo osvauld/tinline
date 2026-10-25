@@ -2528,7 +2528,7 @@ where = [
   "ios unlock_lost_notice: Warning on the lost-key screen.  {words} is the number of recovery words (24).",
   "desktop gate_you_didnt_set_a: Desktop, sign-in and gate screens (in view.rs, key_lost_view). {words} is the number of recovery words (24), a number.",
 ]
-text = "Vous n’avez pas défini de phrase secrète, donc vos {words} mots de récupération sont le seul moyen de revenir. Vos contacts restent."
+text = "Vous n’avez pas défini de phrase secrète, donc vos {words} mots de récupération sont le seul moyen de récupérer votre compte. Vos contacts sont conservés."
 
 [t_612f9aaa42]
 en = "Switch account"
@@ -6787,7 +6787,7 @@ where = [
   "android link_match_body: Sentence under the heading while comparing codes. {name} is the new device's name, shown in bold at the start. The ** marks are the bold; keep them around {name}.",
   "ios link_match_body: Body when comparing codes. The new device's name is bold (markdown stars, keep them around the name); {name} is that name.",
 ]
-text = "**{name}** veut rejoindre votre compte. Il devrait afficher les six mêmes chiffres que ci-dessous."
+text = "**{name}** veut rejoindre votre compte. Cet appareil devrait afficher les six mêmes chiffres que ci-dessous."
 
 [t_13a448230b]
 en = "Compare them yourself. If they differ, someone else may have scanned the code first."
@@ -6901,7 +6901,7 @@ where = [
   "android link_scan_step2: Second instruction. The app numbers the steps; do not type numbers.",
   "ios link_scan_step2: Step 2 on the scan page. Shown as the second of two lines; the number is not part of the text.",
 ]
-text = "Il affiche un QR code et un code court. Ils fonctionnent 5 minutes, une seule fois."
+text = "Il affiche un QR code et un code court. Ils fonctionnent une fois et expirent au bout de 5 minutes."
 
 [t_878564e3c6]
 en = "Scan QR code"
@@ -12089,6 +12089,7 @@ where = [
   "ios onboarding_back_added_lead_unnamed: Explanation after adding another account that has no name.",
 ]
 text = "Seul le compte sélectionné est en ligne à la fois : ce compte est donc en ligne et votre autre compte est en pause. Vous pouvez changer dans Paramètres."
+text_ios = "Seul le compte sélectionné est en ligne à la fois : ce compte est donc en ligne et votre autre compte est en pause. Vous pouvez changer dans Réglages."
 
 [t_08e34fcb96]
 en = "Syncing with the device…"
@@ -13042,7 +13043,7 @@ en = "Call while not available"
 where = [
   "ios shell_call_desc_unavailable: Screen reader phrase for a call row, a whole phrase used as {what} in the row label: incoming call that came while the user had set themselves unavailable. Reads like “Missed call”.",
 ]
-text = "Appel pendant une indisponibilité"
+text = "Appel pendant votre indisponibilité"
 
 [t_7286c55835]
 en = "Call with no answer"
@@ -13271,7 +13272,7 @@ en = "The call couldn’t connect"
 where = [
   "ios call_group_connect_failed: Group call start failure, generic; the call is the subject.",
 ]
-text = "L’appel n’a pas pu être connecté"
+text = "L’appel n’a pas pu être établi"
 
 [t_dac996d3e9]
 en = "+{count} more"
@@ -13601,7 +13602,7 @@ en = "A device name is {min} to {max} characters."
 where = [
   "desktop common_a_device_name_is: Shared label, used in several places (app, link). {min} and {max} are the shortest and longest allowed length, numbers.",
 ]
-text = "Un nom d’appareil fait de {min} à {max} caractères."
+text = "Un nom d’appareil compte entre {min} et {max} caractères."
 
 [t_4a7397331d]
 en = "Audio devices"

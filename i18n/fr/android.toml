@@ -909,7 +909,7 @@ text = "Ce téléphone n’a plus la clé qui ouvre votre compte. Cela arrive ap
 text = "Restaurer avec mes mots de récupération"
 
 [unlock_keylost_notice]
-text = "Vous n’avez pas défini de phrase secrète, donc vos {words} mots de récupération sont le seul moyen de revenir. Vos contacts restent."
+text = "Vous n’avez pas défini de phrase secrète, donc vos {words} mots de récupération sont le seul moyen de récupérer votre compte. Vos contacts sont conservés."
 
 [accounts_switch_account]
 text = "Changer de compte"
@@ -2507,7 +2507,7 @@ text = "Sur le nouvel appareil, choisissez « Associer à un appareil », pu
 text = "Les codes correspondent-ils ?"
 
 [link_match_body]
-text = "**{name}** veut rejoindre votre compte. Il devrait afficher les six mêmes chiffres que ci-dessous."
+text = "**{name}** veut rejoindre votre compte. Cet appareil devrait afficher les six mêmes chiffres que ci-dessous."
 
 [link_match_note]
 text = "Comparez-les vous-même. S’ils diffèrent, quelqu’un d’autre a peut-être scanné le code avant vous."
@@ -2549,7 +2549,7 @@ text = "Scannez le code sur votre nouvel appareil"
 text = "Sur le nouvel appareil, ouvrez Tinline et choisissez {action}."
 
 [link_scan_step2]
-text = "Il affiche un QR code et un code court. Ils fonctionnent 5 minutes, une seule fois."
+text = "Il affiche un QR code et un code court. Ils fonctionnent une fois et expirent au bout de 5 minutes."
 
 [link_scan_qr]
 text = "Scanner le QR code"

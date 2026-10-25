@@ -2216,7 +2216,7 @@ text = "Impossible d’ouvrir le compte de {name}"
 text = "Ce téléphone n’a plus la clé qui ouvre votre compte. Cela arrive après une réinitialisation du verrouillage de l’écran ou la restauration d’une sauvegarde. Dès que vous restaurez, vos appels arrivent à nouveau."
 
 [unlock_lost_notice]
-text = "Vous n’avez pas défini de phrase secrète, donc vos {words} mots de récupération sont le seul moyen de revenir. Vos contacts restent."
+text = "Vous n’avez pas défini de phrase secrète, donc vos {words} mots de récupération sont le seul moyen de récupérer votre compte. Vos contacts sont conservés."
 
 [unlock_restore]
 text = "Restaurer avec mes mots de récupération"
@@ -2432,7 +2432,7 @@ text = "Retour"
 text = "Les codes correspondent-ils ?"
 
 [link_match_body]
-text = "**{name}** veut rejoindre votre compte. Il devrait afficher les six mêmes chiffres que ci-dessous."
+text = "**{name}** veut rejoindre votre compte. Cet appareil devrait afficher les six mêmes chiffres que ci-dessous."
 
 [link_match_body_unnamed]
 text = "**Le nouvel appareil** veut rejoindre votre compte. Il devrait afficher les six mêmes chiffres que ci-dessous."
@@ -2489,7 +2489,7 @@ text = "Scannez le code sur votre nouvel appareil"
 text = "Sur le nouvel appareil, ouvrez Tinline et choisissez **Associer à un appareil**."
 
 [link_scan_step2]
-text = "Il affiche un QR code et un code court. Ils fonctionnent 5 minutes, une seule fois."
+text = "Il affiche un QR code et un code court. Ils fonctionnent une fois et expirent au bout de 5 minutes."
 
 [link_scan_qr]
 text = "Scanner le QR code"
@@ -2771,7 +2771,7 @@ text = "Bienvenue, {name}"
 text = "Seul le compte sélectionné est en ligne à la fois : {name} est donc en ligne et votre autre compte est en pause. Vous pouvez changer dans Réglages."
 
 [onboarding_back_added_lead_unnamed]
-text = "Seul le compte sélectionné est en ligne à la fois : ce compte est donc en ligne et votre autre compte est en pause. Vous pouvez changer dans Paramètres."
+text = "Seul le compte sélectionné est en ligne à la fois : ce compte est donc en ligne et votre autre compte est en pause. Vous pouvez changer dans Réglages."
 
 [onboarding_back_lead]
 text = "Votre compte est de retour sur ce téléphone. Vos contacts, discussions et historique d’appels sont gardés sur vos autres appareils, pas chez nous. Ce téléphone démarre avec une liste de contacts vide."
@@ -2978,7 +2978,7 @@ text = "Appel sortant"
 text = "Pendant une indisponibilité"
 
 [shell_call_desc_unavailable]
-text = "Appel pendant une indisponibilité"
+text = "Appel pendant votre indisponibilité"
 
 [shell_call_what_missed]
 text = "Manqué"
@@ -4222,7 +4222,7 @@ text = "Batterie sous {percent} %. L’hébergement est limité : une seule 
 text = "Aucun hôte d’appel disponible"
 
 [call_group_connect_failed]
-text = "L’appel n’a pas pu être connecté"
+text = "L’appel n’a pas pu être établi"
 
 [call_person_you]
 text = "Vous"

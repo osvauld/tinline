@@ -156,3 +156,47 @@ The translator's list, verified against the code (`crates/desktop/src/*.rs`, `an
 | R12 | `groups_list_sent`, `group_section_sent` vs `groups_msg_sent`, `list_tick_sent`, `group_receipt_sent`, `shell_tick_one` (all English “Sent”) | **New** | One TM entry serves a header above chat *requests* (fem. pl. “Envoyées”) and a receipt word on a *message* (masc. sg. “Envoyé”). Now set to “Envoyé”, which suits the receipts. | Header text “Sent requests” (desktop already has `group_sent_requests`). |
 | R13 | `common_call` group: `call_notif_fallback_title`, ios `people_detail_call`, `shell_call_what_other`, `call_notification_name` (English “Call”) | **New** | The same TM entry is a verb on buttons (“Appeler”) and a noun used as a notification or call-history title, where it should be “Appel”. | Use a noun string for the titles, e.g. the existing “Tinline call” (`call_default_name`) or a new “Call (noun)” key. |
 | R14 | non-plural count strings: desktop `group_invite_people` (“Invite {len} people”), `group_flag` (“ · {value} flag”), `signup_words_are_still_missing`, `gcall_people_in_the_call`; ios `shell_restore_bad_many`; also ios `group_inv_declined` sharing “Declined” with call pills | **New, minor** | French needs singular for 0 and 1 (“1 personne”, “1 mot”). “Refusé” is masculine but an invitation is feminine. | Make them plural entries (one/other), and give the invitation state its own text: “Invitation declined”. |
+
+## Round 2 (top-up)
+
+Reviewer: `i18n-review2-fr` (2026-10-25), independent of the translator. Scope: the 272 TM entries whose French was added between `bb37c83f` and `i18n/topup-fr` (all new TM ids: restructured whole sentences, you/named/someone variants, unnamed variants, `**bold**`, `[label](terms)` links, plurals, desktop dates, month/weekday names, list separators).
+Entries: 272 · ok 265 · fix 7 · native 3 · restructure 3
+Checks after the edits: `python3 scripts/i18n_tm.py apply fr` (1618 / 1519 / 1263 entries) and `python3 scripts/i18n_gen.py --check` (exit 0). Placeholder sets match English in every entry; no plain space before `? ! : ; » %`, no straight apostrophe, no `...` in the new strings. `**…**` spans and `(terms)`/`(privacy)` link targets are intact.
+
+Overall: clean and consistent with round 1. The new per-actor lines avoid gender agreement where it is cheap (“Quelqu’un vous a donné le rôle d’admin”, “Vous vous êtes retiré le rôle d’admin”, where *retiré* is invariable because the direct object follows), the unnamed variants use “cette personne” / “un membre” / “votre contact” consistently, and the plurals keep `{count}` in `one` (0 and 1).
+
+### Translator's choices, ruled
+
+| Choice | Ruling |
+|---|---|
+| Desktop weekday names lower case (`lundi` … `dimanche`), months `janv.` … `déc.` | **Keep lower case.** These are the CLDR forms, and `weekday_date` is also used mid-sentence (`signup_send_it_to_anyone_youd`: “… jusqu’à jeudi 8 oct.”), where a capital would be wrong. The pattern cannot capitalise a placeholder. But the same output is the chat/group day chip (`chat_view.rs` / `group_live_view.rs` `chip_day`), a standalone label next to “Aujourd’hui” / “Hier”, where French capitalises: “Jeudi 8 oct.”. **Code fix requested:** upper-case the first character in `chip_day` (or give the chip its own key). Until then the chip reads “jeudi 8 oct.”, which is acceptable, not wrong. |
+| Unnamed “Only the account you select is online…” says *Paramètres* on iOS | **Fixed:** added `text_ios` with *Réglages* on `t_3293cb0453`. The named version `t_be0e29252e` already had its `text_ios`. |
+| Masculine default (“Invité par vous”, “Vous avez été retiré…”, “Cette personne vous a bloqué”, “Vous seul…”) | **Keep**, as ruled in round 1 (native item 1). It matches the named siblings (“Invité par {name}”) and the existing “Vous seul” strings. |
+
+### Changes made (7)
+
+| TM id · keys | Before | After | Why |
+|---|---|---|---|
+| `t_3293cb0453` · android onboarding_restored_lead_adding_unnamed, ios onboarding_back_added_lead_unnamed | (no iOS override) … Vous pouvez changer dans Paramètres. | `text_ios`: … Vous pouvez changer dans Réglages. | iOS calls Settings *Réglages* (glossary); matches the named version |
+| `t_93d833ac96` · ios shell_call_desc_unavailable | Appel pendant une indisponibilité | Appel pendant votre indisponibilité | “une indisponibilité” reads like an outage; matches Android `calls_desc_away` |
+| `t_dd0b3afa3d` · android/ios link_match_body | … Il devrait afficher les six mêmes chiffres… | … Cet appareil devrait afficher les six mêmes chiffres… | *Il* agrees with `{name}`, which may be a feminine noun (“Tablette de Léa”) |
+| `t_681ed3e097` · ios call_group_connect_failed | L’appel n’a pas pu être connecté | L’appel n’a pas pu être établi | *établir un appel* is the idiomatic telecom verb; *connecter un appel* is a calque |
+| `t_1406c5139e` · desktop common_a_device_name_is | Un nom d’appareil fait de {min} à {max} caractères. | Un nom d’appareil compte entre {min} et {max} caractères. | more natural |
+| `t_f93a504767` · android/ios link_scan_step2 | … Ils fonctionnent 5 minutes, une seule fois. | … Ils fonctionnent une fois et expirent au bout de 5 minutes. | “fonctionnent 5 minutes” is a calque; now matches the existing “Le code fonctionne une fois et expire au bout de 5 minutes.” |
+| `t_e478e77da1` · android unlock_keylost_notice, ios unlock_lost_notice, desktop gate_you_didnt_set_a | … sont le seul moyen de revenir. Vos contacts restent. | … sont le seul moyen de récupérer votre compte. Vos contacts sont conservés. | “revenir” has no destination; “Vos contacts restent” is terse to the point of unclear |
+
+### Needs a native speaker (3)
+
+| # | Keys | Current | Concern / candidate |
+|---|---|---|---|
+| N1 | `t_5459a31053` desktop link_check_that_other_shows_this, `t_521086b2d1` ios link_same_code_lead_unnamed (and the named `t_30ca790226`) | … puis validez là-bas. | Kept for consistency with the named version. “là-bas” is colloquial for a device in your hand; candidate for all three: “… puis validez sur cet appareil.” |
+| N2 | `t_71ca4e589f`, `t_ab33c3e6a5` (and named `t_772dbfcfd8`) | Demande acceptée · connexion | Bare “connexion” may read as a noun label rather than a state; candidate “connexion en cours” (longer: check the request row width). |
+| N3 | `t_5a341ece46` desktop group_hosts_online_here | {count} hôte(s) en ligne, cet ordinateur compris. | Fine; “dont cet ordinateur” is a slightly more natural alternative. |
+
+### Needs restructure: English source (3)
+
+| # | Keys | What goes wrong in French | Suggested English / code |
+|---|---|---|---|
+| R15 | desktop `chip_day` output (`date_weekday_date`, `date_weekday_date_year`) | Same string is a sentence-initial chip and a mid-sentence date; French capitalises only the chip. | Capitalise the first letter in `chip_day`, or a separate `date_weekday_date_chip` key. |
+| R16 | ios `group_sys_removed_someone` (`t_fde9089394`), with the existing `group_sys_removed`, `group_sys_removed_you` | Not plural entries: “après 1 signalements d’admins” if the threshold is 1. Android/desktop siblings are already plural entries. | Make the iOS keys plural (one/other) like `groupsc_removed_*_flags`. |
+| R17 | desktop `group_will_be_able_to` (`t_2ea8f25938`) | “({flags_needed} signalements retirent quelqu’un)” is not a plural entry; wrong for a threshold of 1. | Plural entry, or move the count out: “… flag members (see the flag threshold) …”. |
