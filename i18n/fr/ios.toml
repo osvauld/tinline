@@ -3126,9 +3126,9 @@ text = "Solide"
 text = "Le mot {n} n’est pas dans la liste des mots de récupération. Vérifiez l’orthographe."
 
 [shell_restore_bad_many]
-one = "{count} mot n’est pas dans la liste des mots de récupération, à partir du mot {number}. Vérifiez l’orthographe."
-many = "{count} mots ne sont pas dans la liste des mots de récupération, à partir du mot {number}. Vérifiez l’orthographe."
-other = "{count} mots ne sont pas dans la liste des mots de récupération, à partir du mot {number}. Vérifiez l’orthographe."
+one = "{count} mot n’est pas dans la liste des mots de récupération : le mot {number}. Vérifiez l’orthographe."
+many = "{count} mots ne sont pas dans la liste des mots de récupération ; le premier est le mot {number}. Vérifiez l’orthographe."
+other = "{count} mots ne sont pas dans la liste des mots de récupération ; le premier est le mot {number}. Vérifiez l’orthographe."
 
 [shell_restore_missing]
 one = "Il manque encore {count} mot."

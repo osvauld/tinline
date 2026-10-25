@@ -13024,9 +13024,9 @@ where = [
 ]
 text = "शब्द {n} रिकवरी शब्दों की सूची में नहीं है। वर्तनी जाँचें।"
 
-[t_348aaf02da]
-en_one = "{count} words aren’t in the recovery word list, starting with word {number}. Check the spelling."
-en_other = "{count} words aren’t in the recovery word list, starting with word {number}. Check the spelling."
+[t_db53e5c15f]
+en_one = "{count} words aren’t in the recovery word list. The first is word {number}. Check the spelling."
+en_other = "{count} words aren’t in the recovery word list. The first is word {number}. Check the spelling."
 where = [
   "ios shell_restore_bad_many: Restore screen message under the 24 word boxes. {count} is how many typed words are not recovery words (always 2 or more); {number} is the position (1 to 24) of the first one.",
 ]
@@ -15390,8 +15390,8 @@ en_other = "{name} will be able to invite people, flag members ({count} flags re
 where = [
   "desktop group_will_be_able_to: Desktop, group admin dialog (in group_live_view.rs, live_overlay). {name} is a person's first name; {count} is how many admin flags remove a member.",
 ]
-one = "{name} लोगों को आमंत्रित कर सकेंगे, सदस्यों को फ़्लैग कर सकेंगे ({count} फ़्लैग से कोई हट जाता है) और होस्ट नियुक्त कर सकेंगे। एडमिन बनाना या हटाना सिर्फ़ आप, यानी मालिक, कर सकते हैं।"
-other = "{name} लोगों को आमंत्रित कर सकेंगे, सदस्यों को फ़्लैग कर सकेंगे ({count} फ़्लैग से कोई हट जाता है) और होस्ट नियुक्त कर सकेंगे। एडमिन बनाना या हटाना सिर्फ़ आप, यानी मालिक, कर सकते हैं।"
+one = "{name} को लोगों को आमंत्रित करने, सदस्यों को फ़्लैग करने ({count} फ़्लैग से कोई हट जाता है) और होस्ट नियुक्त करने का अधिकार मिलेगा। एडमिन बनाना या हटाना सिर्फ़ आप, यानी मालिक, कर सकते हैं।"
+other = "{name} को लोगों को आमंत्रित करने, सदस्यों को फ़्लैग करने ({count} फ़्लैग से कोई हट जाता है) और होस्ट नियुक्त करने का अधिकार मिलेगा। एडमिन बनाना या हटाना सिर्फ़ आप, यानी मालिक, कर सकते हैं।"
 
 [t_497c9f2f05]
 en = "Withdraw the offer to host"

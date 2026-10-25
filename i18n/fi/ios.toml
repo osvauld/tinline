@@ -3104,8 +3104,8 @@ text = "Vahva"
 text = "Sana {n} ei ole palautussanojen listassa. Tarkista kirjoitusasu."
 
 [shell_restore_bad_many]
-one = "{count} sana ei ole palautussanojen listassa, alkaen sanasta {number}. Tarkista kirjoitusasu."
-other = "{count} sanaa ei ole palautussanojen listassa, alkaen sanasta {number}. Tarkista kirjoitusasu."
+one = "{count} sana ei ole palautussanojen listassa: sana {number}. Tarkista kirjoitusasu."
+other = "{count} sanaa ei ole palautussanojen listassa, ensimmäinen on sana {number}. Tarkista kirjoitusasu."
 
 [shell_restore_missing]
 one = "{count} sana puuttuu vielä."

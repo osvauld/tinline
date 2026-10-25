@@ -13024,14 +13024,14 @@ where = [
 ]
 text = "Sana {n} ei ole palautussanojen listassa. Tarkista kirjoitusasu."
 
-[t_348aaf02da]
-en_one = "{count} words aren’t in the recovery word list, starting with word {number}. Check the spelling."
-en_other = "{count} words aren’t in the recovery word list, starting with word {number}. Check the spelling."
+[t_db53e5c15f]
+en_one = "{count} words aren’t in the recovery word list. The first is word {number}. Check the spelling."
+en_other = "{count} words aren’t in the recovery word list. The first is word {number}. Check the spelling."
 where = [
   "ios shell_restore_bad_many: Restore screen message under the 24 word boxes. {count} is how many typed words are not recovery words (always 2 or more); {number} is the position (1 to 24) of the first one.",
 ]
-one = "{count} sana ei ole palautussanojen listassa, alkaen sanasta {number}. Tarkista kirjoitusasu."
-other = "{count} sanaa ei ole palautussanojen listassa, alkaen sanasta {number}. Tarkista kirjoitusasu."
+one = "{count} sana ei ole palautussanojen listassa: sana {number}. Tarkista kirjoitusasu."
+other = "{count} sanaa ei ole palautussanojen listassa, ensimmäinen on sana {number}. Tarkista kirjoitusasu."
 
 [t_814973bf24]
 en = "{sub} from {name}"

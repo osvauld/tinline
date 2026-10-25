@@ -52703,13 +52703,13 @@
               "one": {
                 "stringUnit": {
                   "state": "needs_review",
-                  "value": "%1$lld Wort steht nicht in der Liste der Wiederherstellungswörter, ab Wort %2$@. Prüf die Schreibweise."
+                  "value": "%1$lld Wort steht nicht in der Liste der Wiederherstellungswörter: Wort %2$@. Prüf die Schreibweise."
                 }
               },
               "other": {
                 "stringUnit": {
                   "state": "needs_review",
-                  "value": "%1$lld Wörter stehen nicht in der Liste der Wiederherstellungswörter, ab Wort %2$@. Prüf die Schreibweise."
+                  "value": "%1$lld Wörter stehen nicht in der Liste der Wiederherstellungswörter, das erste ist Wort %2$@. Prüf die Schreibweise."
                 }
               }
             }
@@ -52721,13 +52721,13 @@
               "one": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "%1$lld words aren’t in the recovery word list, starting with word %2$@. Check the spelling."
+                  "value": "%1$lld words aren’t in the recovery word list. The first is word %2$@. Check the spelling."
                 }
               },
               "other": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "%1$lld words aren’t in the recovery word list, starting with word %2$@. Check the spelling."
+                  "value": "%1$lld words aren’t in the recovery word list. The first is word %2$@. Check the spelling."
                 }
               }
             }
@@ -52739,13 +52739,13 @@
               "one": {
                 "stringUnit": {
                   "state": "needs_review",
-                  "value": "%1$lld sana ei ole palautussanojen listassa, alkaen sanasta %2$@. Tarkista kirjoitusasu."
+                  "value": "%1$lld sana ei ole palautussanojen listassa: sana %2$@. Tarkista kirjoitusasu."
                 }
               },
               "other": {
                 "stringUnit": {
                   "state": "needs_review",
-                  "value": "%1$lld sanaa ei ole palautussanojen listassa, alkaen sanasta %2$@. Tarkista kirjoitusasu."
+                  "value": "%1$lld sanaa ei ole palautussanojen listassa, ensimmäinen on sana %2$@. Tarkista kirjoitusasu."
                 }
               }
             }
@@ -52757,19 +52757,19 @@
               "many": {
                 "stringUnit": {
                   "state": "needs_review",
-                  "value": "%1$lld mots ne sont pas dans la liste des mots de récupération, à partir du mot %2$@. Vérifiez l’orthographe."
+                  "value": "%1$lld mots ne sont pas dans la liste des mots de récupération ; le premier est le mot %2$@. Vérifiez l’orthographe."
                 }
               },
               "one": {
                 "stringUnit": {
                   "state": "needs_review",
-                  "value": "%1$lld mot n’est pas dans la liste des mots de récupération, à partir du mot %2$@. Vérifiez l’orthographe."
+                  "value": "%1$lld mot n’est pas dans la liste des mots de récupération : le mot %2$@. Vérifiez l’orthographe."
                 }
               },
               "other": {
                 "stringUnit": {
                   "state": "needs_review",
-                  "value": "%1$lld mots ne sont pas dans la liste des mots de récupération, à partir du mot %2$@. Vérifiez l’orthographe."
+                  "value": "%1$lld mots ne sont pas dans la liste des mots de récupération ; le premier est le mot %2$@. Vérifiez l’orthographe."
                 }
               }
             }

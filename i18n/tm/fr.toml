@@ -13066,15 +13066,15 @@ where = [
 ]
 text = "Le mot {n} n’est pas dans la liste des mots de récupération. Vérifiez l’orthographe."
 
-[t_348aaf02da]
-en_one = "{count} words aren’t in the recovery word list, starting with word {number}. Check the spelling."
-en_other = "{count} words aren’t in the recovery word list, starting with word {number}. Check the spelling."
+[t_db53e5c15f]
+en_one = "{count} words aren’t in the recovery word list. The first is word {number}. Check the spelling."
+en_other = "{count} words aren’t in the recovery word list. The first is word {number}. Check the spelling."
 where = [
   "ios shell_restore_bad_many: Restore screen message under the 24 word boxes. {count} is how many typed words are not recovery words (always 2 or more); {number} is the position (1 to 24) of the first one.",
 ]
-one = "{count} mot n’est pas dans la liste des mots de récupération, à partir du mot {number}. Vérifiez l’orthographe."
-many = "{count} mots ne sont pas dans la liste des mots de récupération, à partir du mot {number}. Vérifiez l’orthographe."
-other = "{count} mots ne sont pas dans la liste des mots de récupération, à partir du mot {number}. Vérifiez l’orthographe."
+one = "{count} mot n’est pas dans la liste des mots de récupération : le mot {number}. Vérifiez l’orthographe."
+many = "{count} mots ne sont pas dans la liste des mots de récupération ; le premier est le mot {number}. Vérifiez l’orthographe."
+other = "{count} mots ne sont pas dans la liste des mots de récupération ; le premier est le mot {number}. Vérifiez l’orthographe."
 
 [t_814973bf24]
 en = "{sub} from {name}"

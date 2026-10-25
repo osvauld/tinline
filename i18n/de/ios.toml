@@ -3104,8 +3104,8 @@ text = "Stark"
 text = "Wort {n} steht nicht in der Liste der Wiederherstellungswörter. Prüf die Schreibweise."
 
 [shell_restore_bad_many]
-one = "{count} Wort steht nicht in der Liste der Wiederherstellungswörter, ab Wort {number}. Prüf die Schreibweise."
-other = "{count} Wörter stehen nicht in der Liste der Wiederherstellungswörter, ab Wort {number}. Prüf die Schreibweise."
+one = "{count} Wort steht nicht in der Liste der Wiederherstellungswörter: Wort {number}. Prüf die Schreibweise."
+other = "{count} Wörter stehen nicht in der Liste der Wiederherstellungswörter, das erste ist Wort {number}. Prüf die Schreibweise."
 
 [shell_restore_missing]
 one = "{count} Wort fehlt noch."

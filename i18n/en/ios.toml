@@ -4143,8 +4143,8 @@ text = "Word {n} isn’t in the recovery word list. Check the spelling."
 note = "Restore screen message under the 24 word boxes. {n} is the word’s position (1 to 24)."
 
 [shell_restore_bad_many]
-one = "{count} words aren’t in the recovery word list, starting with word {number}. Check the spelling."
-other = "{count} words aren’t in the recovery word list, starting with word {number}. Check the spelling."
+one = "{count} words aren’t in the recovery word list. The first is word {number}. Check the spelling."
+other = "{count} words aren’t in the recovery word list. The first is word {number}. Check the spelling."
 note = "Restore screen message under the 24 word boxes. {count} is how many typed words are not recovery words (always 2 or more); {number} is the position (1 to 24) of the first one."
 
 [shell_restore_missing]
