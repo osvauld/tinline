@@ -10742,14 +10742,14 @@ en = "today"
 where = [
   "android history_day_today: Lowercase day word in 'Last call today'.",
 ]
-text = ""
+text = "आज"
 
 [t_9892b1d19e]
 en = "yesterday"
 where = [
   "android history_day_yesterday: Lowercase day word in 'Last call yesterday'.",
 ]
-text = ""
+text = "काल"
 
 [t_271a8a2630]
 en = "Your line is ready"
@@ -10758,7 +10758,7 @@ where = [
   "ios shell_empty_hero_ready: Home hero title when the user has no contacts yet.",
   "desktop signup_your_line_is_ready: Desktop, sign-up, restore and add contact (in signup_view.rs, empty_hero).",
 ]
-text = ""
+text = "तुमची लाइन तयार आहे"
 
 [t_d5f172a19f]
 en = "Your request to {name} is waiting. Your line opens when they accept."
@@ -10766,7 +10766,7 @@ where = [
   "android empty_hero_request_waiting: Empty-state text after I sent a contact request. {name} is the first name of the person I asked.",
   "ios shell_empty_request_waiting: Home hero line after the user sent a contact request. {name} is the first name of the person asked.",
 ]
-text = ""
+text = "{name} ला पाठवलेली तुमची विनंती प्रतीक्षेत आहे. त्यांनी स्वीकारल्यावर तुमची लाइन खुली होईल."
 
 [t_422b46cfc4]
 en = "Add another contact"
@@ -10775,7 +10775,7 @@ where = [
   "ios shell_empty_add_another: Home hero button after a request was sent.",
   "desktop signup_add_another_contact: Desktop, sign-up, restore and add contact (in signup_view.rs, empty_hero).",
 ]
-text = ""
+text = "आणखी एक संपर्क जोडा"
 
 [t_10e897512d]
 en = "Add someone you’d like to talk to, and you can message and call each other."
@@ -10784,7 +10784,7 @@ where = [
   "ios shell_empty_add_someone: Home hero line when the user has no contacts.",
   "desktop signup_add_someone_youd_like: Desktop, sign-up, restore and add contact (in signup_view.rs, empty_hero).",
 ]
-text = ""
+text = "ज्यांच्याशी बोलायला आवडेल त्यांना जोडा, मग तुम्ही एकमेकांना संदेश आणि कॉल करू शकता."
 
 [t_25cea9cf1a]
 en = "Say hello to {name} whenever you like."
@@ -10792,7 +10792,7 @@ where = [
   "android empty_hero_say_hello: Empty-state text with exactly one contact. {name} is their first name.",
   "ios shell_empty_say_hello: Home hero line with one contact. {name} is their first name.",
 ]
-text = ""
+text = "तुम्हाला वाटेल तेव्हा {name} ला नमस्कार म्हणा."
 
 [t_924a60561a]
 en = "Pick someone and say hello whenever you like."
@@ -10801,7 +10801,7 @@ where = [
   "ios shell_empty_pick: Home hero line with several contacts.",
   "desktop signup_pick_someone_and_say: Desktop, sign-up, restore and add contact (in signup_view.rs, empty_hero).",
 ]
-text = ""
+text = "कोणालाही निवडा आणि वाटेल तेव्हा नमस्कार म्हणा."
 
 [t_dbf04096a9]
 en = "Start a chat"
@@ -10810,7 +10810,7 @@ where = [
   "ios shell_empty_start_chat: Home hero button with several contacts.",
   "desktop signup_start_a_chat: Desktop, sign-up, restore and add contact (in signup_view.rs, empty_hero).",
 ]
-text = ""
+text = "चॅट सुरू करा"
 
 [t_6ace595737]
 en = "Your chats show up here."
@@ -10819,7 +10819,7 @@ where = [
   "ios shell_empty_chats: Empty Chats list line.",
   "desktop chat_your_chats_show_up: Desktop, chats (in chat_view.rs, chat_list).",
 ]
-text = ""
+text = "तुमच्या चॅट इथे दिसतील."
 
 [t_4ca7b34626]
 en = "You’re all caught up."
@@ -10828,7 +10828,7 @@ where = [
   "ios shell_empty_unread: Empty Unread filter line.",
   "desktop chat_youre_all_caught_up: Desktop, chats (in chat_view.rs, chat_list).",
 ]
-text = ""
+text = "सगळे संदेश वाचून झाले आहेत."
 
 [t_1586bac225]
 en = "Calls you make and receive show up here."
@@ -10837,7 +10837,7 @@ where = [
   "ios shell_empty_calls: Empty Calls list line.",
   "desktop home_calls_you_make_and: Desktop, home, sidebar and call list (in view.rs, calls_list).",
 ]
-text = ""
+text = "तुम्ही केलेले आणि तुम्हाला आलेले कॉल इथे दिसतील."
 
 [t_09a39a8351]
 en = "The people you add show up here."
@@ -10846,7 +10846,7 @@ where = [
   "ios shell_empty_contacts: Empty Contacts list line.",
   "desktop shell_the_people_you_add: Desktop, shell: sidebar, search, contacts (in shell_view.rs, contacts_list).",
 ]
-text = ""
+text = "तुम्ही जोडलेले लोक इथे दिसतील."
 
 [t_3e1ae38304]
 en = "Calling during your call"
@@ -10855,14 +10855,14 @@ where = [
   "ios shell_ring_waiting: Ringing banner subtitle when a second person calls during the user’s call.",
   "desktop call_calling_during_your_call: Desktop, calls (voice and video) (in view.rs, ring_head_waiting).",
 ]
-text = ""
+text = "तुमच्या कॉलदरम्यान कॉल करत आहे"
 
 [t_e000895cf7]
 en = "{call} from {name}"
 where = [
   "android shell_ring_desc: Accessibility description of the ringing header. {call} is 'Incoming call' or 'Incoming video call', {name} the caller.",
 ]
-text = ""
+text = "{name} कडून {call}"
 
 [t_936ec492f1]
 en = "Open call from {name}"
@@ -10870,7 +10870,7 @@ where = [
   "android shell_ring_open: Accessibility click label on the ringing header. {name} is the caller.",
   "ios shell_ring_a11y_hint: Screen reader hint of the ringing banner. {name} is the caller.",
 ]
-text = ""
+text = "{name} कडून आलेला कॉल उघडा"
 
 [t_43657afcbe]
 en = "Chats"
@@ -10879,7 +10879,7 @@ where = [
   "ios shell_tab_chats: Bottom tab title and screen reader label.",
   "desktop common_chats: Shared label, used in several places (group_live, shell, view).",
 ]
-text = ""
+text = "चॅट"
 
 [t_d65062e6dc]
 en_one = "{count} waiting"
@@ -10888,6 +10888,8 @@ where = [
   "android shell_badge_waiting: Accessibility state of the Contacts tab: number of contact requests waiting for my answer.",
   "ios shell_tab_waiting: Screen reader value of the Contacts tab badge. {count} requests are waiting.",
 ]
+one = "{count} प्रतीक्षेत"
+other = "{count} प्रतीक्षेत"
 
 [t_d9e4173fb4]
 en = "Calling"
@@ -10897,7 +10899,7 @@ where = [
   "ios call_mark_outgoing: Accessibility label of the animated mark on an outgoing call.",
   "desktop status_calling: Desktop, status line (in mark.rs, status_look).",
 ]
-text = ""
+text = "कॉल करत आहे"
 
 [t_c3606df9c5]
 en = "In a call"
@@ -10907,7 +10909,7 @@ where = [
   "ios call_mark_active: Accessibility label of the animated mark during a call.",
   "desktop status_in_a_call: Desktop, status line (in mark.rs, status_look).",
 ]
-text = ""
+text = "कॉलमध्ये"
 
 [t_da0e66bff9]
 en = "Starting a group call"
@@ -10915,7 +10917,7 @@ where = [
   "android mark_starting_group_call: Spoken description of the mark while a group call starts.",
   "ios kit_mark_group_starting: Screen-reader label of the mark while a group call starts.",
 ]
-text = ""
+text = "ग्रुप कॉल सुरू होत आहे"
 
 [t_b2a398d7f8]
 en = "In a group call"
@@ -10923,7 +10925,7 @@ where = [
   "android mark_in_group_call: Spoken description of the mark during a group call.",
   "ios kit_mark_in_group_call: Screen-reader label of the mark during a group call.",
 ]
-text = ""
+text = "ग्रुप कॉलमध्ये"
 
 [t_a44284db0a]
 en = "No connection"
@@ -10932,7 +10934,7 @@ where = [
   "ios kit_mark_offline: Screen-reader label of the mark when the network is down.",
   "desktop status_no_connection: Desktop, status line (in mark.rs, status_look).",
 ]
-text = ""
+text = "कनेक्शन नाही"
 
 [t_9f20a24573]
 en = "Connected to the network"
@@ -10941,7 +10943,7 @@ where = [
   "ios kit_mark_online: Screen-reader label of the mark when online.",
   "desktop status_connected_to_the_network: Desktop, status line (in mark.rs, status_look).",
 ]
-text = ""
+text = "नेटवर्कशी कनेक्ट आहे"
 
 [t_79aeb35116]
 en = "You’re offline"
@@ -10950,7 +10952,7 @@ where = [
   "ios shell_banner_offline_title: Banner title when the phone has no connection.",
   "desktop gate_youre_offline: Desktop, sign-in and gate screens (in view.rs, problem).",
 ]
-text = ""
+text = "तुम्ही ऑफलाइन आहात"
 
 [t_3aed261ca8]
 en = "Calls won’t ring"
@@ -10958,7 +10960,7 @@ where = [
   "android home_banner_no_ring_title: Banner title when notifications are off.",
   "ios shell_banner_noring_title: Banner title when notifications are off.",
 ]
-text = ""
+text = "कॉल रिंग होणार नाहीत"
 
 [t_b2d76f5fe3]
 en = "Notifications are off for Tinline."
@@ -10966,35 +10968,35 @@ where = [
   "android home_banner_no_ring_body: Banner text when notifications are off.",
   "ios shell_banner_noring_text: Banner text when notifications are off.",
 ]
-text = ""
+text = "Tinline साठी सूचना बंद आहेत."
 
 [t_c20b70bc41]
 en = "Calls may be missed when idle"
 where = [
   "android home_banner_battery_title: Banner title when Android limits the app in the background.",
 ]
-text = ""
+text = "फोन वापरात नसताना कॉल चुकू शकतात"
 
 [t_92c3375cdc]
 en = "Android is limiting Tinline in the background."
 where = [
   "android home_banner_battery_body: Banner text when battery optimisation limits the app.",
 ]
-text = ""
+text = "Android बॅकग्राउंडमध्ये Tinline वर मर्यादा घालत आहे."
 
 [t_a6ffa17a51]
 en = "Calls won’t show on the lock screen"
 where = [
   "android home_banner_lock_title: Banner title when full-screen calls are not allowed.",
 ]
-text = ""
+text = "लॉक स्क्रीनवर कॉल दिसणार नाहीत"
 
 [t_e07e3f9756]
 en = "Allow full-screen calls so Tinline rings like the phone app."
 where = [
   "android home_banner_lock_body: Banner text when full-screen calls are not allowed.",
 ]
-text = ""
+text = "पूर्ण स्क्रीन कॉलला परवानगी द्या, म्हणजे Tinline फोन ॲपसारखे रिंग होईल."
 
 [t_b3eb3ce8d7]
 en = "You’re not available"
@@ -11003,7 +11005,7 @@ where = [
   "ios shell_banner_unavailable_title: Banner title when the user marked themselves not available.",
   "desktop gate_youre_not_available: Desktop, sign-in and gate screens (in view.rs, problem).",
 ]
-text = ""
+text = "तुम्ही उपलब्ध नाही"
 
 [t_29f00434f8]
 en = "Calls won’t ring until you turn it back on."
@@ -11012,7 +11014,7 @@ where = [
   "ios shell_banner_unavailable_text: Banner text when the user is not available.",
   "desktop gate_calls_wont_ring_until: Desktop, sign-in and gate screens (in view.rs, problem).",
 ]
-text = ""
+text = "तुम्ही पुन्हा सुरू करेपर्यंत कॉल रिंग होणार नाहीत."
 
 [t_a2b83ef1c7]
 en = "Turn on"
@@ -11021,7 +11023,7 @@ where = [
   "ios shell_banner_turn_on: Banner button that turns a setting back on.",
   "desktop gate_turn_on: Desktop, sign-in and gate screens (in view.rs, problem).",
 ]
-text = ""
+text = "सुरू करा"
 
 [t_637c9e5ff1]
 en = "Recent calls"
@@ -11029,7 +11031,7 @@ where = [
   "android home_recent_calls: Title of the full call-log screen.",
   "ios shell_calls_recent: Title of the recent calls screen.",
 ]
-text = ""
+text = "अलीकडचे कॉल"
 
 [t_1ed0ba9b36]
 en = "No calls yet. History stays on this phone only."
@@ -11037,7 +11039,7 @@ where = [
   "android home_no_calls: Hint on the call log screen when there are no calls.",
   "ios shell_calls_none: Recent calls screen when empty.",
 ]
-text = ""
+text = "अजून कोणताही कॉल नाही. इतिहास फक्त या फोनवर राहतो."
 
 [t_5bf77136ab]
 en = "Close search"
@@ -11045,42 +11047,42 @@ where = [
   "android home_close_search: Accessibility label of the back button in the search bar.",
   "ios shell_close_search: Accessibility label of the button that closes the search field.",
 ]
-text = ""
+text = "शोध बंद करा"
 
 [t_5b5ac20059]
 en = "Call {name}"
 where = [
   "android home_call_name: Accessibility label of the call button in a row. {name} is the contact.",
 ]
-text = ""
+text = "{name} ला कॉल करा"
 
 [t_e3d4019266]
 en = "Add your first contact"
 where = [
   "android home_first_title: Title of the first-run add-contact screen.",
 ]
-text = ""
+text = "तुमचा पहिला संपर्क जोडा"
 
 [t_d7b4cb1a04]
 en = "Show your code to a friend, or copy it and send it. Or scan theirs."
 where = [
   "android home_first_lead: Text on the first-run add-contact screen.",
 ]
-text = ""
+text = "तुमचा कोड मित्राला दाखवा, किंवा कॉपी करून पाठवा. किंवा त्यांचा कोड स्कॅन करा."
 
 [t_6c3a34a46b]
 en = "Paste their card"
 where = [
   "android home_first_paste: Button on the first-run add-contact screen.",
 ]
-text = ""
+text = "त्यांचे कार्ड पेस्ट करा"
 
 [t_ff919c7555]
 en = "Waiting for them to scan — keep this open."
 where = [
   "android home_first_waiting: Status on the first-run add-contact screen while my code is shown.",
 ]
-text = ""
+text = "ते स्कॅन करेपर्यंत वाट पाहत आहे — हे उघडे ठेवा."
 
 [t_768662e0b1]
 en = "All"
@@ -11089,7 +11091,7 @@ where = [
   "ios shell_filter_all: Chat list filter chip: all chats.",
   "desktop shell_all: Desktop, shell: sidebar, search, contacts (in shell_view.rs, chat_chips).",
 ]
-text = ""
+text = "सर्व"
 
 [t_c9def6cf39]
 en = "Unread"
@@ -11098,7 +11100,7 @@ where = [
   "ios shell_filter_unread: Chat list filter chip: only unread chats.",
   "desktop shell_unread: Desktop, shell: sidebar, search, contacts (in shell_view.rs, chat_chips).",
 ]
-text = ""
+text = "न वाचलेले"
 
 [t_8567f1ee2b]
 en = "Draft:"
@@ -11106,7 +11108,7 @@ where = [
   "android chats_draft: Prefix of a chat row's preview when I have an unsent draft; the draft text follows.",
   "ios shell_chats_draft: Chat list preview prefix before an unsent draft. The draft text follows.",
 ]
-text = ""
+text = "मसुदा:"
 
 [t_dc46133a29]
 en = "Cancelled"
@@ -11115,7 +11117,7 @@ where = [
   "ios shell_call_what_cancelled: Call list: call cancelled before it was answered.",
   "desktop common_cancelled: Shared label, used in several places (reason, view).",
 ]
-text = ""
+text = "रद्द केला"
 
 [t_1c59c42a29]
 en = "Couldn’t connect the call"
@@ -11123,7 +11125,7 @@ where = [
   "android calls_what_unreachable: Calls tab row text for a call that could not connect.",
   "desktop call_couldnt_connect: Desktop, call screens and call history: the CALL could not be connected (not a device link).",
 ]
-text = ""
+text = "कॉल कनेक्ट करता आला नाही"
 
 [t_a082e480ac]
 en = "{name}’s profile"
@@ -11131,7 +11133,7 @@ where = [
   "android calls_profile_desc: Accessibility label of the avatar on a Calls row. {name} is the contact.",
   "ios shell_calls_profile_a11y: Screen reader label of a call row’s avatar button. {name} is the contact.",
 ]
-text = ""
+text = "{name} चे प्रोफाइल"
 
 [t_4890385e3c]
 en = "Can’t call"
@@ -11139,21 +11141,21 @@ where = [
   "android calls_cant_call: Accessibility action text at the end of a Calls row when I cannot call this person.",
   "ios shell_calls_action_cant: Screen reader: the contact cannot be called right now.",
 ]
-text = ""
+text = "कॉल करता येत नाही"
 
 [t_b0ba9d423e]
 en = "{name}, {what}, {time}. {action}"
 where = [
   "android calls_row_desc: Accessibility description of a Calls row. {what} is a full phrase such as 'Missed call', {time} the time of the call, {action} is 'Call' or 'Can’t call'.",
 ]
-text = ""
+text = "{name}, {what}, {time}. {action}"
 
 [t_53231bda5e]
 en = "{name}, {what}, {duration}, {time}. {action}"
 where = [
   "android calls_row_desc_duration: Accessibility description of a Calls row with a duration. {what} is a full phrase such as 'Incoming call', {duration} is e.g. 2:31; others as in the row description.",
 ]
-text = ""
+text = "{name}, {what}, {duration}, {time}. {action}"
 
 [t_e7a879b634]
 en = "{name}, group info"
@@ -11161,14 +11163,14 @@ where = [
   "android calls_group_info_desc: Accessibility label of the avatar on a group call row. {name} is the group.",
   "ios shell_calls_group_info_a11y: Screen reader label of a group call row’s avatar. {name} is the group.",
 ]
-text = ""
+text = "{name}, ग्रुपची माहिती"
 
 [t_dc916e75d3]
 en = "{name}, {what}, {time}. Start or join a call"
 where = [
   "android calls_group_row_desc: Accessibility description of a group call row. {what} is the group call summary, {time} the time of the call.",
 ]
-text = ""
+text = "{name}, {what}, {time}. कॉल सुरू करा किंवा त्यात सामील व्हा"
 
 [t_915083bafb]
 en = "Find a contact"
@@ -11177,7 +11179,7 @@ where = [
   "ios shell_contacts_find: Placeholder and label of the contact filter field on the Contacts tab.",
   "desktop shell_find_a_contact: Desktop, shell: sidebar, search, contacts (in shell_view.rs, new_chat_overlay).",
 ]
-text = ""
+text = "संपर्क शोधा"
 
 [t_2b1e690ea9]
 en = "Share your code or paste theirs"
@@ -11186,7 +11188,7 @@ where = [
   "ios shell_contacts_add_sub: Second line of the add-contact row.",
   "desktop shell_share_your_code_or: Desktop, shell: sidebar, search, contacts (in shell_view.rs, contacts_list).",
 ]
-text = ""
+text = "तुमचा कोड शेअर करा किंवा त्यांचा पेस्ट करा"
 
 [t_e7dde6507e]
 en = "Waiting for you"
@@ -11194,7 +11196,7 @@ where = [
   "android contacts_waiting_for_you: Section title for contact requests waiting for my answer.",
   "ios shell_contacts_waiting_you: Section header on the Contacts tab: people who asked to be the user’s contact.",
 ]
-text = ""
+text = "तुमच्या उत्तराच्या प्रतीक्षेत"
 
 [t_104927efde]
 en = "Wants to add you as a contact"
@@ -11203,7 +11205,7 @@ where = [
   "ios shell_contacts_wants_add: Line under a contact request received.",
   "desktop shell_wants_to_add_you: Desktop, shell: sidebar, search, contacts (in shell_view.rs, contacts_list).",
 ]
-text = ""
+text = "तुम्हाला संपर्क म्हणून जोडायचे आहे"
 
 [t_7395746ee0]
 en = "Accepting lets you message and call each other."
@@ -11212,7 +11214,7 @@ where = [
   "ios shell_contacts_accept_hint: Explains what accepting a contact request does.",
   "desktop shell_accepting_lets_you_message: Desktop, shell: sidebar, search, contacts (in shell_view.rs, contacts_list).",
 ]
-text = ""
+text = "स्वीकारल्यावर तुम्ही एकमेकांना संदेश आणि कॉल करू शकता."
 
 [t_b956f3e4a0]
 en = "Waiting for them"
@@ -11220,7 +11222,7 @@ where = [
   "android contacts_waiting_for_them: Section title for requests I sent that wait for an answer.",
   "ios shell_contacts_waiting_them: Section header on the Contacts tab: requests the user sent.",
 ]
-text = ""
+text = "त्यांच्या उत्तराच्या प्रतीक्षेत"
 
 [t_3b8261f1af]
 en = "No one called “{query}” in your contacts."
@@ -11228,7 +11230,7 @@ where = [
   "android contacts_none_found: Footer of the Contacts tab when the search finds nobody. {query} is what I typed.",
   "ios shell_contacts_none_match: Contacts tab message when the filter matches nobody. {query} is what the user typed.",
 ]
-text = ""
+text = "तुमच्या संपर्कांमध्ये “{query}” नावाचे कोणीही नाही."
 
 [t_ce5aed0499]
 en_one = "{count} contact"
@@ -11238,6 +11240,8 @@ where = [
   "ios shell_contacts_count: Contacts tab footer: how many contacts.",
   "desktop shell_contacts_count: Footer under the contacts list. {count} is how many contacts you have.",
 ]
+one = "{count} संपर्क"
+other = "{count} संपर्क"
 
 [t_e8cd0add72]
 en = "Delivered to everyone"
@@ -11245,7 +11249,7 @@ where = [
   "android list_tick_delivered: Accessibility description of the receipt mark on a group chat row: delivered to all members.",
   "ios shell_tick_two: Screen reader label. Group row: last message reached everyone.",
 ]
-text = ""
+text = "सर्वांपर्यंत पोहोचला"
 
 [t_3798d3c6ff]
 en = "Read by everyone"
@@ -11253,7 +11257,7 @@ where = [
   "android list_tick_read: Accessibility description of the receipt mark on a group chat row: read by all members.",
   "ios shell_tick_read: Screen reader label. Group row: last message was read by everyone.",
 ]
-text = ""
+text = "सर्वांनी वाचला"
 
 [t_0812d6c65d]
 en = "Couldn’t start the call"
@@ -11261,7 +11265,7 @@ where = [
   "android main_call_start_failed: Shown under the Calls list when placing a call failed without a reason.",
   "ios shell_err_call_start: Error shown when starting a call failed without a message.",
 ]
-text = ""
+text = "कॉल सुरू करता आला नाही"
 
 [t_e43524af2c]
 en = "You joined the group."
@@ -11269,7 +11273,7 @@ where = [
   "android main_joined_group: Snackbar after I joined a group by link.",
   "desktop group_notice_you_joined_the_group: Desktop, group notice line (in group_live.rs). I joined with a link.",
 ]
-text = ""
+text = "तुम्ही ग्रुपमध्ये सामील झालात."
 
 [t_6118e29833]
 en = "Last message {time}"
@@ -11277,14 +11281,14 @@ where = [
   "android main_last_message: Sub-line of a person in the New chat list. {time} is a short time, e.g. 12:31 or Mon.",
   "ios shell_new_chat_last_message: New chat list second line. {time} is when the last message was sent.",
 ]
-text = ""
+text = "शेवटचा संदेश {time}"
 
 [t_6fba4f6865]
 en = "{name} is told you blocked them"
 where = [
   "android main_told_blocked: Snackbar after I blocked someone. {name} is their first name.",
 ]
-text = ""
+text = "तुम्ही ब्लॉक केल्याचे {name} ला कळवले आहे"
 
 [t_fdfcf0009c]
 en = "Couldn’t save your account safely on this phone."
@@ -11292,7 +11296,7 @@ where = [
   "android app_save_unsafe: Error after creating an account when its key could not be stored in the phone's secure storage.",
   "ios shell_err_save_account_safely: Error when the account key could not be stored safely on this phone.",
 ]
-text = ""
+text = "तुमचे खाते या फोनवर सुरक्षितपणे जतन करता आले नाही."
 
 [t_fc16498c7b]
 en = "Couldn’t save your account on this phone."
@@ -11300,7 +11304,7 @@ where = [
   "android app_save_failed: Error after creating an account when saving it failed.",
   "ios shell_err_save_account: Error after creating or restoring an account when it could not be stored on this phone.",
 ]
-text = ""
+text = "तुमचे खाते या फोनवर जतन करता आले नाही."
 
 [t_6d009aea8f]
 en = "That recovery phrase belongs to a different identity"
@@ -11308,7 +11312,7 @@ where = [
   "android app_phrase_other_identity: Error when the recovery phrase I typed is for another account than the locked one.",
   "ios shell_flow_different_identity: Error when the recovery phrase typed to restore belongs to another identity than the one being restored.",
 ]
-text = ""
+text = "ते रिकव्हरी शब्द दुसऱ्या ओळखीचे आहेत"
 
 [t_447402f66d]
 en = "That didn’t match. Check the spelling and spaces."
@@ -11316,7 +11320,7 @@ where = [
   "android support_err_wrong_passphrase: Error under the passphrase field when it is wrong.",
   "ios shell_err_wrong_passphrase: Error under the passphrase field when the passphrase is wrong.",
 ]
-text = ""
+text = "ते जुळले नाही. स्पेलिंग आणि स्पेस तपासा."
 
 [t_c5228116d0]
 en = "Type a passphrase, or skip it"
@@ -11324,7 +11328,7 @@ where = [
   "android support_err_weak_passphrase: Error when the passphrase field is empty.",
   "ios shell_err_weak_passphrase: Error when the passphrase field is empty and a passphrase is required.",
 ]
-text = ""
+text = "पासफ्रेज टाइप करा, किंवा ही पायरी वगळा"
 
 [t_7b6d48809e]
 en = "Locked — enter your passphrase to unlock"
@@ -11333,7 +11337,7 @@ where = [
   "ios chat_err_locked: Friendly error when the vault is locked.",
   "ios shell_err_locked: Error when something needs the unlocked app.",
 ]
-text = ""
+text = "लॉक आहे — अनलॉक करण्यासाठी तुमचा पासफ्रेज टाका"
 
 [t_f06df71faf]
 en = "That recovery phrase is not valid"
@@ -11341,7 +11345,7 @@ where = [
   "android support_err_bad_phrase: Error when the typed recovery phrase is not valid.",
   "ios shell_err_bad_phrase: Error when the typed recovery phrase is not valid.",
 ]
-text = ""
+text = "ते रिकव्हरी शब्द वैध नाहीत"
 
 [t_78ca893ba4]
 en = "That account is already on this phone"
@@ -11349,7 +11353,7 @@ where = [
   "android support_err_account_exists: Error when adding an account that is already on this phone.",
   "ios shell_err_account_exists: Error when restoring or linking an account that is already on this phone.",
 ]
-text = ""
+text = "ते खाते या फोनवर आधीपासून आहे"
 
 [t_f5e167d18d]
 en = "You joined"
@@ -11358,7 +11362,7 @@ where = [
   "ios group_sys_joined_you: System line in a group chat (the centred grey line). The user themself joined.",
   "desktop group_sys_joined_you: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). I joined.",
 ]
-text = ""
+text = "तुम्ही सामील झालात"
 
 [t_cf7c3ae83a]
 en = "{name} joined"
@@ -11367,7 +11371,7 @@ where = [
   "ios group_sys_joined_named: System line in a group chat (the centred grey line). {name} is the member who joined.",
   "desktop group_sys_joined: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). {name} joined.",
 ]
-text = ""
+text = "{name} आता ग्रुपमध्ये आहे"
 
 [t_6e81650bc7]
 en = "Someone joined"
@@ -11376,7 +11380,7 @@ where = [
   "ios group_sys_joined_someone: System line in a group chat (the centred grey line). A member whose name is unknown joined.",
   "desktop group_sys_joined_someone: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Someone I cannot name joined.",
 ]
-text = ""
+text = "कोणीतरी ग्रुपमध्ये सामील झाले"
 
 [t_a7294226a3]
 en = "{name} left"
@@ -11385,7 +11389,7 @@ where = [
   "ios group_sys_left_named: System line in a group chat (the centred grey line). {name} is the member who left.",
   "desktop group_sys_left: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). {name} left.",
 ]
-text = ""
+text = "{name} ने ग्रुप सोडला"
 
 [t_4cb9ecb704]
 en = "Someone left"
@@ -11394,7 +11398,7 @@ where = [
   "ios group_sys_left_someone: System line in a group chat (the centred grey line). A member whose name is unknown left.",
   "desktop group_sys_left_someone: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Someone I cannot name left.",
 ]
-text = ""
+text = "कोणीतरी ग्रुप सोडला"
 
 [t_ebc520d3f7]
 en_one = "{name} was removed after {count} admin flag"
@@ -11403,6 +11407,8 @@ where = [
   "android groupsc_removed_other_flags: System line in a group's chat. {name} is the member who was removed, {count} the number of flags needed.",
   "desktop group_sys_removed: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). {name} was removed. {count} is how many admin flags remove a member.",
 ]
+one = "{count} ॲडमिन फ्लॅगनंतर {name} ला काढून टाकले"
+other = "{count} ॲडमिन फ्लॅगनंतर {name} ला काढून टाकले"
 
 [t_50ad8bf6d9]
 en_one = "Someone was removed after {count} admin flag"
@@ -11412,6 +11418,8 @@ where = [
   "ios group_sys_removed_someone: System line in a group chat (the centred grey line). A member whose name is unknown was removed. {count} is how many admin flags remove a member.",
   "desktop group_sys_removed_someone: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Someone I cannot name was removed. {count} is how many admin flags remove a member.",
 ]
+one = "{count} ॲडमिन फ्लॅगनंतर एका सदस्याला काढून टाकले"
+other = "{count} ॲडमिन फ्लॅगनंतर एका सदस्याला काढून टाकले"
 
 [t_3e142c9eb0]
 en = "{by} made you an admin"
@@ -11420,7 +11428,7 @@ where = [
   "ios group_sys_admin_named_you: System line in a group chat (the centred grey line). Admin role given. Actor: a named member. Subject: the user. {by} is who did it (their name).",
   "desktop group_sys_admin_other_you: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Admin role given: {by} is the first name of the person who did it, to me.",
 ]
-text = ""
+text = "{by} ने तुम्हाला ॲडमिन बनवले"
 
 [t_be99782d54]
 en = "Someone made you an admin"
@@ -11429,14 +11437,14 @@ where = [
   "ios group_sys_admin_someone_you: System line in a group chat (the centred grey line). Admin role given. Actor: a member whose name is unknown. Subject: the user.",
   "desktop group_sys_admin_someone_you: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Admin role given: someone I cannot name did it, to me.",
 ]
-text = ""
+text = "कोणीतरी तुम्हाला ॲडमिन बनवले"
 
 [t_fa350c1279]
 en = "You made {sub} an admin"
 where = [
   "android groupsc_admin_granted_by_you: System line in a group's chat: I made a member an admin. {sub} is the new admin.",
 ]
-text = ""
+text = "तुम्ही {sub} ला ॲडमिन बनवले"
 
 [t_418df27dfb]
 en = "You made someone an admin"
@@ -11445,7 +11453,7 @@ where = [
   "ios group_sys_admin_you_someone: System line in a group chat (the centred grey line). Admin role given. Actor: the user. Subject: a member whose name is unknown.",
   "desktop group_sys_admin_you_someone: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Admin role given: I did it, to someone I cannot name.",
 ]
-text = ""
+text = "तुम्ही एका सदस्याला ॲडमिन बनवले"
 
 [t_8c5e48132c]
 en = "{by} made someone an admin"
@@ -11454,14 +11462,14 @@ where = [
   "ios group_sys_admin_named_someone: System line in a group chat (the centred grey line). Admin role given. Actor: a named member. Subject: a member whose name is unknown. {by} is who did it (their name).",
   "desktop group_sys_admin_other_someone: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Admin role given: {by} is the first name of the person who did it, to someone I cannot name.",
 ]
-text = ""
+text = "{by} ने एका सदस्याला ॲडमिन बनवले"
 
 [t_3fe2038516]
 en = "Someone made {sub} an admin"
 where = [
   "android groupsc_admin_granted_by_someone: System line in a group's chat. Who granted it is not known; {sub} is the new admin.",
 ]
-text = ""
+text = "कोणीतरी {sub} ला ॲडमिन बनवले"
 
 [t_4cae0bd442]
 en = "Someone made someone an admin"
@@ -11470,7 +11478,7 @@ where = [
   "ios group_sys_admin_someone_someone: System line in a group chat (the centred grey line). Admin role given. Actor: a member whose name is unknown. Subject: a member whose name is unknown.",
   "desktop group_sys_admin_someone_someone: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Admin role given: someone I cannot name did it, to someone I cannot name.",
 ]
-text = ""
+text = "कोणीतरी एका सदस्याला ॲडमिन बनवले"
 
 [t_c8fa27c671]
 en = "Someone removed you as admin"
@@ -11479,14 +11487,14 @@ where = [
   "ios group_sys_unadmin_someone_you: System line in a group chat (the centred grey line). Admin role taken away. Actor: a member whose name is unknown. Subject: the user.",
   "desktop group_sys_unadmin_someone_you: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Admin role taken away: someone I cannot name did it, to me.",
 ]
-text = ""
+text = "कोणीतरी तुम्हाला ॲडमिनपदावरून काढले"
 
 [t_1f9d679b2a]
 en = "You removed {sub} as admin"
 where = [
   "android groupsc_admin_revoked_by_you: System line in a group's chat: I took away a member's admin role. {sub} is who lost it.",
 ]
-text = ""
+text = "तुम्ही {sub} ला ॲडमिनपदावरून काढले"
 
 [t_9dad8cf0d0]
 en = "You removed someone as admin"
@@ -11495,7 +11503,7 @@ where = [
   "ios group_sys_unadmin_you_someone: System line in a group chat (the centred grey line). Admin role taken away. Actor: the user. Subject: a member whose name is unknown.",
   "desktop group_sys_unadmin_you_someone: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Admin role taken away: I did it, to someone I cannot name.",
 ]
-text = ""
+text = "तुम्ही एका सदस्याला ॲडमिनपदावरून काढले"
 
 [t_7cc792c708]
 en = "{by} removed someone as admin"
@@ -11504,14 +11512,14 @@ where = [
   "ios group_sys_unadmin_named_someone: System line in a group chat (the centred grey line). Admin role taken away. Actor: a named member. Subject: a member whose name is unknown. {by} is who did it (their name).",
   "desktop group_sys_unadmin_other_someone: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Admin role taken away: {by} is the first name of the person who did it, to someone I cannot name.",
 ]
-text = ""
+text = "{by} ने एका सदस्याला ॲडमिनपदावरून काढले"
 
 [t_dcc1bbe8c6]
 en = "Someone removed {sub} as admin"
 where = [
   "android groupsc_admin_revoked_by_someone: System line in a group's chat. Who did it is not known; {sub} is who lost the admin role.",
 ]
-text = ""
+text = "कोणीतरी {sub} ला ॲडमिनपदावरून काढले"
 
 [t_1721c9ae2b]
 en = "Someone removed someone as admin"
@@ -11520,21 +11528,21 @@ where = [
   "ios group_sys_unadmin_someone_someone: System line in a group chat (the centred grey line). Admin role taken away. Actor: a member whose name is unknown. Subject: a member whose name is unknown.",
   "desktop group_sys_unadmin_someone_someone: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Admin role taken away: someone I cannot name did it, to someone I cannot name.",
 ]
-text = ""
+text = "कोणीतरी एका सदस्याला ॲडमिनपदावरून काढले"
 
 [t_1219f457f8]
 en = "A device of someone’s now hosts the group"
 where = [
   "android groupsc_host_added_someone: System line in a group's chat: a device of a member whose name is not known became a host.",
 ]
-text = ""
+text = "एका सदस्याचे डिव्हाइस आता ग्रुप होस्ट करते"
 
 [t_b0d44ea2e4]
 en = "A device of someone’s stopped hosting the group"
 where = [
   "android groupsc_host_removed_someone: System line in a group's chat: a device of a member whose name is not known stopped hosting.",
 ]
-text = ""
+text = "एका सदस्याच्या डिव्हाइसने ग्रुप होस्ट करणे थांबवले"
 
 [t_36d94817e7]
 en = "You: {text}"
@@ -11544,7 +11552,7 @@ where = [
   "ios shell_group_preview_mine: Group row second line: the user’s own last message. {text} is the message text.",
   "desktop group_preview_you: Desktop, groups list second line: the last post was mine. {text} is its one-line text.",
 ]
-text = ""
+text = "तुम्ही: {text}"
 
 [t_9946335b15]
 en = "{name}: {text}"
@@ -11554,7 +11562,7 @@ where = [
   "ios shell_group_preview_other: Group row second line: someone’s last message. {name} is the author’s first name, {text} the message.",
   "desktop group_preview_author: Desktop, groups list second line: the last post. {name} is the author's first name, {text} its one-line text.",
 ]
-text = ""
+text = "{name}: {text}"
 
 [t_24d8164c85]
 en = "Someone: {text}"
@@ -11563,7 +11571,7 @@ where = [
   "ios group_preview_someone: Group list row preview of the last post by a member whose name is not known. {text} is the post.",
   "desktop group_preview_someone: Desktop, groups list second line: the last post, author unknown. {text} is its one-line text.",
 ]
-text = ""
+text = "कोणीतरी: {text}"
 
 [t_33a7fac61c]
 en = "Photo · {caption}"
@@ -11571,7 +11579,7 @@ where = [
   "android groupsc_photo_caption_line: One-line summary of a group post that is a picture with a caption. {caption} is the caption.",
   "desktop group_post_photo_caption: Desktop, group: one-line summary of a picture with a caption. {caption} is what I or they typed.",
 ]
-text = ""
+text = "फोटो · {caption}"
 
 [t_28c02cfd31]
 en_one = "{count} member"
@@ -11581,13 +11589,15 @@ where = [
   "ios group_members_count: Member count. {count} is the number of members.",
   "desktop group_members_count: Number of people in a group, in the group summary line. {count} is the member count.",
 ]
+one = "{count} सदस्य"
+other = "{count} सदस्य"
 
 [t_6d4e1ee552]
 en = "this device hosts the group"
 where = [
   "android groupsc_status_this_device: Group header sub-line after the member count: this device is a host.",
 ]
-text = ""
+text = "हे डिव्हाइस ग्रुप होस्ट करते"
 
 [t_a43a3d0493]
 en = "no host yet"
@@ -11595,7 +11605,7 @@ where = [
   "android groupsc_status_no_host: Group header sub-line after the member count: the group has no host.",
   "desktop group_status_no_host_yet: Desktop, group header: after the member count and a separator. The group has no host.",
 ]
-text = ""
+text = "अजून होस्ट नाही"
 
 [t_b82a06b460]
 en = "waiting for a host"
@@ -11603,14 +11613,14 @@ where = [
   "android groupsc_status_waiting: Group header sub-line after the member count: hosts exist but none is online.",
   "desktop group_status_waiting_for_a_host: Desktop, group header: after the member count and a separator. No host is online.",
 ]
-text = ""
+text = "होस्टची वाट पाहत आहे"
 
 [t_21d5c68cc1]
 en = "{members} · {state}"
 where = [
   "android groupsc_status_join: Group header sub-line. {members} is the member count such as '3 members', {state} the host state such as 'no host yet'.",
 ]
-text = ""
+text = "{members} · {state}"
 
 [t_f0ccd6148b]
 en_one = "{count} online"
@@ -11619,6 +11629,8 @@ where = [
   "android groupsc_online_count: Number of people online in a public group, shown in its top bar.",
   "desktop group_online_count: Desktop, public group (in group_live.rs, online_label). {count} is how many members are online.",
 ]
+one = "{count} ऑनलाइन"
+other = "{count} ऑनलाइन"
 
 [t_7ab5e10687]
 en = "{count}+ online"
@@ -11626,7 +11638,7 @@ where = [
   "android groupsc_online_cap: Number of people online in a public group when the list was cut short at the limit, such as 500+.",
   "desktop group_online_capped: Desktop, public group: the count stops at a cap. {count} is the cap (shown with a plus).",
 ]
-text = ""
+text = "{count}+ ऑनलाइन"
 
 [t_1e5879f244]
 en = "Only admins post here"
@@ -11634,7 +11646,7 @@ where = [
   "android groupsc_admins_only_post: Calm line in place of the composer in a group where only admins may post.",
   "desktop group_only_admins_post_here: Desktop, groups (in group_live_view.rs, live_admins_only_line).",
 ]
-text = ""
+text = "इथे फक्त ॲडमिन पोस्ट करतात"
 
 [t_1570b9e8c5]
 en = "Only admins post here."
@@ -11642,7 +11654,7 @@ where = [
   "android groupsc_admins_only_error: Error when I try to post in a group where only admins may post.",
   "desktop group_only_admins_post_here_2: Desktop, groups (in group_live.rs, gerr).",
 ]
-text = ""
+text = "इथे फक्त ॲडमिन पोस्ट करतात."
 
 [t_829ade1bf9]
 en = "Waiting for {name} · via {group}"
@@ -11651,28 +11663,28 @@ where = [
   "ios group_req_pending: Line for a chat request the user sent. {name} is who it went to, {group} the group it goes through.",
   "desktop group_sent_waiting: Desktop, group requests I sent (in group_live.rs, sent_line): the state line of a private-chat request. {name} is the first name, {group} the group they were reached through.",
 ]
-text = ""
+text = "{name} च्या उत्तराची वाट · {group} मार्फत"
 
 [t_219f3fca6f]
 en = "Waiting for an answer · via {group}"
 where = [
   "android groupsc_req_pending_anon: State line of a chat request I sent from a group when the person's name is not known. {group} is the group name.",
 ]
-text = ""
+text = "उत्तराची वाट · {group} मार्फत"
 
 [t_8d60716835]
 en = "They accepted · messages only"
 where = [
   "android groupsc_req_accepted_messages_anon: State line of a chat request I sent from a group: a person with no known name accepted and was added for messages only.",
 ]
-text = ""
+text = "त्यांनी स्वीकारले · फक्त संदेश"
 
 [t_71ca4e589f]
 en = "They accepted · connecting"
 where = [
   "android groupsc_req_accepted_connecting_anon: State line of a chat request I sent from a group: a person with no known name accepted, the chat is still connecting.",
 ]
-text = ""
+text = "त्यांनी स्वीकारले · कनेक्ट होत आहे"
 
 [t_0a675d84aa]
 en = "{name} declined"
@@ -11681,14 +11693,14 @@ where = [
   "ios group_req_declined: Line for a declined chat request. {name} is who declined.",
   "desktop group_sent_declined: Desktop, group requests I sent (in group_live.rs, sent_line): the state line of a private-chat request. {name} declined.",
 ]
-text = ""
+text = "{name} ने नाकारले"
 
 [t_7b30428623]
 en = "They declined"
 where = [
   "android groupsc_req_declined_anon: State line of a chat request I sent from a group, when the person's name is not known.",
 ]
-text = ""
+text = "त्यांनी नाकारले"
 
 [t_c0ee57d92f]
 en = "{name} blocked you"
@@ -11697,7 +11709,7 @@ where = [
   "ios group_req_blocked: Line for a chat request that was blocked. {name} is who blocked the user.",
   "desktop group_sent_blocked: Desktop, group requests I sent (in group_live.rs, sent_line): the state line of a private-chat request. {name} blocked me.",
 ]
-text = ""
+text = "{name} ने तुम्हाला ब्लॉक केले"
 
 [t_10d5b59c72]
 en = "They blocked you"
@@ -11705,7 +11717,7 @@ where = [
   "android groupsc_req_blocked_anon: State line of a chat request I sent from a group: the person, whose name is not known, blocked me.",
   "ios group_req_blocked_unnamed: State line of a chat request you sent, when the person’s name is not known: they blocked you.",
 ]
-text = ""
+text = "त्यांनी तुम्हाला ब्लॉक केले"
 
 [t_7735823936]
 en = "Already a member"
@@ -11714,7 +11726,7 @@ where = [
   "ios group_pick_already_member: Reason a contact cannot be picked for an invite.",
   "desktop group_already_a_member: Desktop, groups (in group_live.rs, pick_rows).",
 ]
-text = ""
+text = "आधीपासून सदस्य"
 
 [t_4d1748bdef]
 en = "Invited · waiting"
@@ -11723,7 +11735,7 @@ where = [
   "ios group_pick_invited_waiting: Reason a contact cannot be picked for an invite.",
   "desktop group_invited_waiting: Desktop, groups (in group_live.rs, pick_rows).",
 ]
-text = ""
+text = "आमंत्रित · प्रतीक्षेत"
 
 [t_a41296ea1e]
 en = "Invited · not delivered yet"
@@ -11732,7 +11744,7 @@ where = [
   "ios group_inv_undelivered: State of an invitation the user sent.",
   "desktop group_invited_not_delivered_yet: Desktop, groups (in group_live.rs, sent_invitation_line).",
 ]
-text = ""
+text = "आमंत्रित · अजून पोहोचले नाही"
 
 [t_4c7964499e]
 en = "Joined"
@@ -11741,7 +11753,7 @@ where = [
   "ios group_inv_joined: State of an invitation the user sent.",
   "desktop group_joined: Desktop, groups (in group_live.rs, sent_invitation_line).",
 ]
-text = ""
+text = "सामील झाले"
 
 [t_fe73b46c34]
 en = "Invitation declined"
@@ -11749,21 +11761,21 @@ where = [
   "android groupsc_invite_declined: State of a group invitation I sent: the person declined it.",
   "ios group_inv_declined: State of an invitation the user sent: the invited person said no.",
 ]
-text = ""
+text = "आमंत्रण नाकारले"
 
 [t_2860c9d0b0]
 en = "Yours will be flag {n} of {total}. {name} is removed right away: hosts refuse their new messages and they see they were removed."
 where = [
   "android groupsc_flag_final: Admin's dialog before flagging a member, when my flag is the one that removes them. {n} is my flag's number, {total} the flags needed (3), {name} the member's first name.",
 ]
-text = ""
+text = "तुमचा फ्लॅग {total} पैकी क्रमांक {n} असेल. {name} ला लगेच काढले जाईल: होस्ट त्यांचे नवीन संदेश नाकारतील आणि त्यांना काढल्याचे त्यांना दिसेल."
 
 [t_81b97ce04a]
 en = "Yours will be flag {n} of {total}. Any admin’s flags count, yours again too. At {total} flags {name} is removed right away and sees they were removed."
 where = [
   "android groupsc_flag_more: Admin's dialog before flagging a member, when more flags are needed. {n} is my flag's number, {total} the flags needed (3), {name} the member's first name.",
 ]
-text = ""
+text = "तुमचा फ्लॅग {total} पैकी क्रमांक {n} असेल. कोणत्याही ॲडमिनचे फ्लॅग मोजले जातात, तुमचे पुढचे फ्लॅगही. {total} फ्लॅग झाल्यावर {name} ला लगेच काढले जाईल आणि त्यांना ते दिसेल."
 
 [t_083606ee59]
 en = "You were removed from this group."
@@ -11772,7 +11784,7 @@ where = [
   "ios group_error_removed: Error: the host says the user was removed.",
   "desktop group_you_were_removed_from_this_group: Desktop, groups (in group_live.rs, gerr).",
 ]
-text = ""
+text = "तुम्हाला या ग्रुपमधून काढून टाकले आहे."
 
 [t_fab9e89a7d]
 en = "You already have them as a contact. Message them from Chats."
@@ -11781,7 +11793,7 @@ where = [
   "ios group_error_already_contact: Error when asking for a chat with someone who is already a contact.",
   "desktop group_you_already_have_them: Desktop, groups (in group_live.rs, gerr).",
 ]
-text = ""
+text = "ते आधीपासून तुमचे संपर्क आहेत. चॅटमधून त्यांना संदेश पाठवा."
 
 [t_6b6d82084e]
 en = "No host answered in time. Try again when a host is online."
@@ -11790,7 +11802,7 @@ where = [
   "ios group_error_timeout: Error when no host answered.",
   "desktop group_no_host_answered_in: Desktop, groups (in group_live.rs, gerr).",
 ]
-text = ""
+text = "कोणत्याही होस्टने वेळेत उत्तर दिले नाही. होस्ट ऑनलाइन असताना पुन्हा प्रयत्न करा."
 
 [t_7f2634cd7f]
 en = "Type a message first."
@@ -11798,14 +11810,14 @@ where = [
   "android groupsc_type_first: Error when I try to send an empty group post.",
   "ios group_err_type_message: Error when sending an empty post.",
 ]
-text = ""
+text = "आधी संदेश टाइप करा."
 
 [t_f677db182d]
 en = "That picture is too large to post."
 where = [
   "android groupsc_picture_too_large: Error when the picture chosen for a group post is too large.",
 ]
-text = ""
+text = "तो फोटो पोस्ट करण्यासाठी खूप मोठा आहे."
 
 [t_452484335e]
 en = "Pick someone first."
@@ -11814,7 +11826,7 @@ where = [
   "ios group_err_pick_someone: Error when inviting nobody.",
   "desktop group_pick_someone_first: Desktop, group \"Add members\" dialog (in group_live.rs): error when nobody is picked.",
 ]
-text = ""
+text = "आधी कोणालातरी निवडा."
 
 [t_c5140aa276]
 en = "Invitation sent to {name}. They join when they accept."
@@ -11823,7 +11835,7 @@ where = [
   "ios group_done_invite_one: Toast after inviting one contact. {name} is the invited person's first name.",
   "desktop group_notice_invitation_sent: Desktop, group notice line (in group_live.rs). One invitation was sent. {name} is the invited person's first name.",
 ]
-text = ""
+text = "{name} ला आमंत्रण पाठवले. त्यांनी स्वीकारल्यावर ते सामील होतील."
 
 [t_ff687d1cb0]
 en = "Invitation sent. They join when they accept."
@@ -11832,7 +11844,7 @@ where = [
   "ios group_done_invite_one_unnamed: Toast after inviting one contact whose name is not known.",
   "desktop group_notice_invitation_sent_unnamed: Desktop, group notice line (in group_live.rs). One invitation was sent to someone with no known name.",
 ]
-text = ""
+text = "आमंत्रण पाठवले. त्यांनी स्वीकारल्यावर ते सामील होतील."
 
 [t_d47f830012]
 en_one = "{count} invitation sent. Each person joins when they accept."
@@ -11841,6 +11853,8 @@ where = [
   "android groupsc_invited_many: Confirmation after inviting several contacts to a group. {count} is how many invitations went out.",
   "ios group_done_invite_many: Confirmation after inviting several contacts. {count} is how many.",
 ]
+one = "{count} आमंत्रण पाठवले. प्रत्येक जण स्वीकारल्यावर सामील होईल."
+other = "{count} आमंत्रणे पाठवली. प्रत्येक जण स्वीकारल्यावर सामील होईल."
 
 [t_c5c52c6f16]
 en = "Declined. {name} sees that you declined."
@@ -11849,7 +11863,7 @@ where = [
   "ios group_done_decline_invite: Toast after declining an invitation. {name} is the person who invited you.",
   "desktop group_notice_declined_inv: Desktop, group notice line (in group_live.rs). I declined an invitation. {name} is the inviter's first name.",
 ]
-text = ""
+text = "नाकारले. तुम्ही नाकारल्याचे {name} ला दिसते."
 
 [t_37ffc1e020]
 en = "Declined. They see that you declined."
@@ -11858,7 +11872,7 @@ where = [
   "ios group_done_decline_invite_unnamed: Toast after declining an invitation from someone whose name is not known.",
   "desktop group_notice_declined_inv_unnamed: Desktop, group notice line (in group_live.rs). I declined an invitation from someone with no known name.",
 ]
-text = ""
+text = "नाकारले. तुम्ही नाकारल्याचे त्यांना दिसते."
 
 [t_d0b680b900]
 en = "The open link is closed. Everyone already in stays; new people join with an invite."
@@ -11866,7 +11880,7 @@ where = [
   "android groupsc_link_closed: Confirmation after I close a public group's open link.",
   "desktop group_the_open_link_is: Desktop, groups (in group_live.rs, run).",
 ]
-text = ""
+text = "खुली लिंक बंद झाली. आधीपासून असलेले सर्व जण राहतात; नवीन लोक आमंत्रणाने सामील होतात."
 
 [t_01a6680b03]
 en = "Request sent to {name}. It waits in Chats until they answer."
@@ -11875,7 +11889,7 @@ where = [
   "ios group_done_request_sent: Toast after asking a member for a private chat. {name} is that member's first name.",
   "desktop group_notice_request_sent: Desktop, group notice line (in group_live.rs). I asked for a private chat. {name} is their first name.",
 ]
-text = ""
+text = "{name} ला विनंती पाठवली. त्यांनी उत्तर देईपर्यंत ती चॅटमध्ये थांबून राहते."
 
 [t_e25a0948b7]
 en = "Request sent. It waits in Chats until they answer."
@@ -11884,7 +11898,7 @@ where = [
   "ios group_done_request_sent_unnamed: Toast after asking a member for a private chat; the member's name is not known.",
   "desktop group_notice_request_sent_unnamed: Desktop, group notice line (in group_live.rs). I asked for a private chat with someone with no known name.",
 ]
-text = ""
+text = "विनंती पाठवली. त्यांनी उत्तर देईपर्यंत ती चॅटमध्ये थांबून राहते."
 
 [t_68bf78bb6a]
 en = "Accepted. {name} is added for messages only and shows in Chats once their device connects; calls stay off until you allow them."
@@ -11893,7 +11907,7 @@ where = [
   "ios group_done_request_accepted: Toast after accepting a private chat request. {name} is the requester's first name.",
   "desktop group_notice_accepted: Desktop, group notice line (in group_live.rs). I accepted a private-chat request. {name} is their first name.",
 ]
-text = ""
+text = "स्वीकारले. {name} ला फक्त संदेशांसाठी जोडले आहे, आणि त्यांचे डिव्हाइस कनेक्ट झाल्यावर ते चॅटमध्ये दिसतील; तुम्ही परवानगी देईपर्यंत कॉल बंद राहतात."
 
 [t_cd89dc8f6b]
 en = "Accepted. They are added for messages only and show in Chats once their device connects; calls stay off until you allow them."
@@ -11902,7 +11916,7 @@ where = [
   "ios group_done_request_accepted_unnamed: Toast after accepting a private chat request from someone whose name is not known.",
   "desktop group_notice_accepted_unnamed: Desktop, group notice line (in group_live.rs). I accepted a request from someone with no known name.",
 ]
-text = ""
+text = "स्वीकारले. त्यांना फक्त संदेशांसाठी जोडले आहे, आणि त्यांचे डिव्हाइस कनेक्ट झाल्यावर ते चॅटमध्ये दिसतील; तुम्ही परवानगी देईपर्यंत कॉल बंद राहतात."
 
 [t_7b63712b94]
 en = "Declined. They are told “declined”."
@@ -11911,7 +11925,7 @@ where = [
   "ios group_done_request_declined_unnamed: Toast after declining a private chat request from someone whose name is not known.",
   "desktop group_notice_declined_req_unnamed: Desktop, group notice line (in group_live.rs). I declined a request from someone with no known name.",
 ]
-text = ""
+text = "नाकारले. त्यांना “नाकारले” असे कळवले जाते."
 
 [t_bca80056ba]
 en = "{name} is blocked and can’t send more requests."
@@ -11919,7 +11933,7 @@ where = [
   "android groupsc_req_block_named: Confirmation after blocking a person who asked me for a chat from a group. {name} is their first name.",
   "ios group_done_request_blocked: Toast after blocking a requester. {name} is the requester's first name.",
 ]
-text = ""
+text = "{name} ला ब्लॉक केले आहे, आता ते आणखी विनंत्या पाठवू शकत नाहीत."
 
 [t_0675660fe5]
 en = "They are blocked and can’t send more requests."
@@ -11927,7 +11941,7 @@ where = [
   "android groupsc_req_block_anon: Confirmation after blocking a person, whose name is not known, who asked me for a chat from a group.",
   "ios group_done_request_blocked_unnamed: Toast after blocking a requester whose name is not known.",
 ]
-text = ""
+text = "त्यांना ब्लॉक केले आहे, आता ते आणखी विनंत्या पाठवू शकत नाहीत."
 
 [t_b0a86cd164]
 en = "{name} accepted your request. You can message each other now; calls stay off until one of you allows them."
@@ -11936,14 +11950,14 @@ where = [
   "ios group_notice_request_accepted: Notice when your private chat request was accepted. {name} is the other member's first name.",
   "desktop group_notice_accepted_yours: Desktop, group notice line (in group_live.rs). Someone accepted my private-chat request. {name} is their first name.",
 ]
-text = ""
+text = "{name} ने तुमची विनंती स्वीकारली. आता तुम्ही एकमेकांना संदेश पाठवू शकता; तुमच्यापैकी कोणीतरी परवानगी देईपर्यंत कॉल बंद राहतात."
 
 [t_32b161fc71]
 en = "They accepted your request. You can message each other now; calls stay off until one of you allows them."
 where = [
   "android groupsc_notice_accepted_anon: Notice when a person, whose name is not known, accepted my chat request.",
 ]
-text = ""
+text = "त्यांनी तुमची विनंती स्वीकारली. आता तुम्ही एकमेकांना संदेश पाठवू शकता; तुमच्यापैकी कोणीतरी परवानगी देईपर्यंत कॉल बंद राहतात."
 
 [t_2c18ab3299]
 en = "Sharper video on"
@@ -11952,7 +11966,7 @@ where = [
   "ios call_hd_on: Short note under the call header after turning the HD chip on.",
   "desktop video_sharper_video_on: Desktop, video (in camera.rs, hd_line).",
 ]
-text = ""
+text = "अधिक स्पष्ट व्हिडिओ सुरू"
 
 [t_aab4f778af]
 en = "HD paused · weak connection"
@@ -11961,7 +11975,7 @@ where = [
   "ios call_hd_paused: Short note when HD is on but paused because the connection is weak.",
   "desktop video_hd_paused_weak_connection: Desktop, video (in camera.rs, hd_line).",
 ]
-text = ""
+text = "HD थांबवला · कनेक्शन कमकुवत"
 
 [t_7cb3c69eef]
 en = "On mobile data, HD uses more · tap HD"
@@ -11969,7 +11983,7 @@ where = [
   "android video_hd_metered: Short line under the call header once per call when Sharper video is on over mobile data. 'HD' is the name of a button on the call screen.",
   "ios call_hd_metered: Note shown once per call when HD is on over mobile data; \"tap HD\" refers to the HD chip.",
 ]
-text = ""
+text = "मोबाइल डेटावर HD जास्त डेटा वापरतो · HD वर टॅप करा"
 
 [t_77c8c02847]
 en = "Busy is not available yet. Your call settings are unchanged."
@@ -11978,14 +11992,14 @@ where = [
   "ios people_busy_unsupported: Shown when the user picks Busy, which the call path does not support yet.",
   "desktop profile_busy_unsupported: Shown when the Busy availability option is not available.",
 ]
-text = ""
+text = "\"व्यस्त\" अजून उपलब्ध नाही. तुमच्या कॉल सेटिंग्ज बदललेल्या नाहीत."
 
 [t_ff0f1d833b]
 en = "The new device wants to join your account. It should be showing the same six digits as below."
 where = [
   "android link_match_body_unnamed: Sentence under the heading while comparing codes, when the new device has no name.",
 ]
-text = ""
+text = "नवीन डिव्हाइसला तुमच्या खात्यात सामील व्हायचे आहे. त्यावर खाली दिलेलेच सहा अंक दिसायला हवेत."
 
 [t_2f19c61331]
 en = "Approve the new device?"
@@ -11993,7 +12007,7 @@ where = [
   "android link_approve_title_unnamed: Heading of the approval step when the new device has no name.",
   "ios link_approve_title_unnamed: Heading of the approval step when the new device has no name.",
 ]
-text = ""
+text = "नवीन डिव्हाइसला मंजुरी द्यायची?"
 
 [t_affd9f679d]
 en = "Approving sends your **recovery phrase** to the new device. It becomes a full copy of you: it can read your chats and act as you. Approve only a device you hold."
@@ -12001,7 +12015,7 @@ where = [
   "android link_approve_warning_unnamed: Warning on the approval step when the new device has no name. The ** marks make 'recovery phrase' bold; keep them around the same words.",
   "ios link_approve_body_unnamed: Warning on the approval step when the new device has no name. The words **recovery phrase** are bold (markdown stars, keep them around the same words).",
 ]
-text = ""
+text = "मंजुरी दिल्यावर तुमचे **रिकव्हरी शब्द** नवीन डिव्हाइसला पाठवले जातात. ते तुमची पूर्ण प्रत बनते: ते तुमच्या चॅट वाचू शकते आणि तुमच्या नावाने काहीही करू शकते. फक्त तुमच्या हातात असलेल्या डिव्हाइसलाच मंजुरी द्या."
 
 [t_2bc0ef71a7]
 en = "Linking the new device"
@@ -12009,7 +12023,7 @@ where = [
   "android link_linking_unnamed: Heading while linking, when the new device has no name.",
   "ios link_linking_peer_unnamed: Heading while linking when the new device has no name.",
 ]
-text = ""
+text = "नवीन डिव्हाइस लिंक करत आहे"
 
 [t_75f4637fe8]
 en = "The new device is linked"
@@ -12017,7 +12031,7 @@ where = [
   "android link_done_title_unnamed: Heading after linking succeeded, when the new device has no name.",
   "ios link_done_title_unnamed: Title when linking finished and the new device has no name.",
 ]
-text = ""
+text = "नवीन डिव्हाइस लिंक झाले"
 
 [t_0caa6ce97f]
 en = "Linked to your other device"
@@ -12025,7 +12039,7 @@ where = [
   "android onboarding_linked_title_unnamed: Heading after linking, when the other device has no name.",
   "ios onboarding_linked_title_unnamed: Title after linking when the other device has no name.",
 ]
-text = ""
+text = "तुमच्या दुसऱ्या डिव्हाइसशी लिंक झाले"
 
 [t_50772fee63]
 en = "Added your account to this phone"
@@ -12033,7 +12047,7 @@ where = [
   "android onboarding_restored_title_adding_unnamed: Heading after another account was added, when its nickname is empty.",
   "ios onboarding_back_added_unnamed: Title after adding another account that has no name.",
 ]
-text = ""
+text = "तुमचे खाते या फोनवर जोडले"
 
 [t_3293cb0453]
 en = "Only the account you select is online at a time, so this account is online now and your other account is paused. You can switch in Settings."
@@ -12041,14 +12055,14 @@ where = [
   "android onboarding_restored_lead_adding_unnamed: Lead after another account was added, when its nickname is empty.",
   "ios onboarding_back_added_lead_unnamed: Explanation after adding another account that has no name.",
 ]
-text = ""
+text = "एका वेळी फक्त तुम्ही निवडलेले खाते ऑनलाइन असते, त्यामुळे आता हे खाते ऑनलाइन आहे आणि तुमचे दुसरे खाते थांबवले आहे. तुम्ही सेटिंग्जमध्ये खाते बदलू शकता."
 
 [t_08e34fcb96]
 en = "Syncing with the device…"
 where = [
   "android devices_syncing_unnamed: Brief message after tapping Sync now, when the device has no name.",
 ]
-text = ""
+text = "डिव्हाइसशी सिंक करत आहे…"
 
 [t_e0b3577b7d]
 en = "Unlink this device?"
@@ -12056,7 +12070,7 @@ where = [
   "android devices_confirm_unlink_title_unnamed: Title of the confirmation dialog for unlinking another device, when it has no name.",
   "ios devices_unlink_q_unnamed: Dialog title asking to unlink another device that has no name.",
 ]
-text = ""
+text = "या डिव्हाइसची लिंक काढायची?"
 
 [t_d7a8bd2415]
 en = "Device unlinked"
@@ -12064,7 +12078,7 @@ where = [
   "android devices_unlinked_msg_unnamed: Brief message after a device was unlinked, when it had no name.",
   "desktop link_device_unlinked: Desktop, linking devices (in link.rs, link_update).",
 ]
-text = ""
+text = "डिव्हाइसची लिंक काढली"
 
 [t_d218347a83]
 en = "Invited by you"
@@ -12074,14 +12088,14 @@ where = [
   "desktop group_invited_by_you: Desktop, group member row: I invited this member.",
   "desktop group_owner_by_you_unnamed: Desktop, group join dialog (in group_live_view.rs, live_overlay): the line under the group name saying who invited me and who owns the group. I made the link; the owner has no known name.",
 ]
-text = ""
+text = "तुम्ही आमंत्रित केले"
 
 [t_41fd0fe81c]
 en = "Invited by someone who isn’t in your contacts"
 where = [
   "android groupsb_join_invited_by_unknown: Line on the join preview when the person who invited me is not one of my contacts.",
 ]
-text = ""
+text = "तुमच्या संपर्कांमध्ये नसलेल्या व्यक्तीने आमंत्रित केले"
 
 [t_7888447303]
 en = "Owner: you"
@@ -12089,14 +12103,14 @@ where = [
   "android groupsb_join_owner_you: Line on the join preview when I own the group.",
   "ios group_join_owner_you: Line on the join preview when you are the owner.",
 ]
-text = ""
+text = "मालक: तुम्ही"
 
 [t_ed2dece829]
 en = "Owner: someone who isn’t in your contacts"
 where = [
   "android groupsb_join_owner_unknown: Line on the join preview when the group's owner is not one of my contacts.",
 ]
-text = ""
+text = "मालक: तुमच्या संपर्कांमध्ये नसलेली व्यक्ती"
 
 [t_77afb8501a]
 en = "Anyone with this link or QR can join this group for 7 days. Share it over an app you trust; you see who joined and can flag them out. To invite your contacts directly, use Add members."
@@ -12104,21 +12118,21 @@ where = [
   "android groupsb_link_note_unnamed: Hint on the invite link page while the group's name has not loaded. 'Add members' is the title of another page.",
   "ios group_link_hint_unnamed: Hint above the group invite link QR when the group's name is not known.",
 ]
-text = ""
+text = "ही लिंक किंवा QR असलेले कोणीही 7 दिवसांपर्यंत या ग्रुपमध्ये सामील होऊ शकतात. तुमच्या विश्वासाच्या ॲपमधून ती शेअर करा; कोण सामील झाले ते तुम्हाला दिसते आणि तुम्ही त्यांना फ्लॅग करून काढू शकता. तुमच्या संपर्कांना थेट आमंत्रित करण्यासाठी \"सदस्य जोडा\" वापरा."
 
 [t_e3943d1191]
 en = "Join my group on Tinline: {link}"
 where = [
   "android groupsb_share_text_unnamed: Text of the shared invite message while the group's name has not loaded. {link} is the invite link.",
 ]
-text = ""
+text = "Tinline वर माझ्या ग्रुपमध्ये सामील व्हा: {link}"
 
 [t_e9a7070779]
 en = "Chat with them?"
 where = [
   "android card_chat_with_unnamed: Title of the prompt shown when a card of someone already in your contacts is found and the card has no name.",
 ]
-text = ""
+text = "त्यांच्याशी चॅट करायचे?"
 
 [t_b919b75049]
 en = "Add this contact?"
@@ -12126,7 +12140,7 @@ where = [
   "android card_add_unnamed: Title of the prompt shown when a new contact card is found and the card has no name.",
   "ios chat_card_add_name_unnamed: Banner on a found contact card whose name is not known, for someone not yet a contact.",
 ]
-text = ""
+text = "हा संपर्क जोडायचा?"
 
 [t_272be16cd4]
 en = "Couldn’t reach them"
@@ -12134,7 +12148,7 @@ where = [
   "android call_unreachable_title_unnamed: Heading when an outgoing call did not connect and the contact has no name.",
   "ios call_unreachable_title_blank: Title when a call could not connect and the contact has no name.",
 ]
-text = ""
+text = "त्यांच्यापर्यंत पोहोचता आले नाही"
 
 [t_4d01fb421d]
 en = "Outgoing call"
@@ -12142,14 +12156,14 @@ where = [
   "android calls_desc_outgoing: Spoken kind of a Calls row: a call I made and was answered.",
   "ios shell_call_desc_outgoing: Screen reader phrase for a call row, a whole phrase used as {what} in the row label: answered outgoing call. Reads like “Missed call”.",
 ]
-text = ""
+text = "केलेला कॉल"
 
 [t_3c2da8482e]
 en = "Call while you were not available"
 where = [
   "android calls_desc_away: Spoken kind of a Calls row: a call that came in while I had turned availability off.",
 ]
-text = ""
+text = "तुम्ही उपलब्ध नसताना आलेला कॉल"
 
 [t_342070990f]
 en = "Declined call"
@@ -12157,14 +12171,14 @@ where = [
   "android calls_desc_declined: Spoken kind of a Calls row: a call that was declined.",
   "ios shell_call_desc_declined: Screen reader phrase for a call row, a whole phrase used as {what} in the row label: call that was declined. Reads like “Missed call”.",
 ]
-text = ""
+text = "नाकारलेला कॉल"
 
 [t_2a8e1bc41d]
 en = "Call nobody answered"
 where = [
   "android calls_desc_no_answer: Spoken kind of a Calls row: an outgoing call nobody answered.",
 ]
-text = ""
+text = "कोणीही न उचललेला कॉल"
 
 [t_f9f088ec90]
 en = "Call that couldn’t connect"
@@ -12172,7 +12186,7 @@ where = [
   "android calls_desc_unreachable: Spoken kind of a Calls row: a call that could not connect.",
   "ios shell_call_desc_unreachable: Screen reader phrase for a call row: call that could not reach the other person.",
 ]
-text = ""
+text = "कनेक्ट न झालेला कॉल"
 
 [t_fb71c5fddb]
 en = "Public link"
@@ -12180,7 +12194,7 @@ where = [
   "android groupsb_public_link: Title of the switch that opens the group to anyone with the link. A name for the link, not an instruction to open anything.",
   "desktop group_public_link: Desktop, group info: title of the switch that turns the group's public (open) invite link on or off. A noun phrase, not a button.",
 ]
-text = ""
+text = "सार्वजनिक लिंक"
 
 [t_d13099d50e]
 en = "Sent requests"
@@ -12189,7 +12203,7 @@ where = [
   "ios group_section_sent: Sub heading above the chat requests the user sent.",
   "desktop group_sent_requests: Desktop, groups (in group_live_view.rs, live_requests).",
 ]
-text = ""
+text = "पाठवलेल्या विनंत्या"
 
 [t_59dbd823ff]
 en = "Offline"
@@ -12198,28 +12212,28 @@ where = [
   "desktop common_offline: Shared label, used in several places (app, group_live).",
   "desktop group_host_offline: Desktop, group info, a HOST DEVICE of the group is offline (describes a device, not a person).",
 ]
-text = ""
+text = "ऑफलाइन"
 
 [t_a058cb9c6a]
 en = "Someone would like to add you"
 where = [
   "android notif_request_text_unnamed: Text of the contact request notification when the person has no name.",
 ]
-text = ""
+text = "कोणालातरी तुम्हाला जोडायचे आहे"
 
 [t_0027a2215b]
 en = "Request accepted"
 where = [
   "android notif_accepted_title: Title of the notification when someone accepted my request.",
 ]
-text = ""
+text = "विनंती स्वीकारली"
 
 [t_0e41c3df81]
 en = "Your contact accepted your request. Your line is open."
 where = [
   "android notif_accepted_text_unnamed: Text of the notification when someone accepted my request and has no name.",
 ]
-text = ""
+text = "तुमच्या संपर्काने तुमची विनंती स्वीकारली. तुमची लाइन खुली आहे."
 
 [t_b866c0b674]
 en = "Call host: {name}’s device"
@@ -12228,7 +12242,7 @@ where = [
   "ios call_group_host_is: Pill on the group call screen naming the call host. {name} is the member’s first name.",
   "desktop gcall_call_host_device: Desktop, group call screen (in gcall_view.rs), small line that opens \"About this call\". {name} is the first name of the person whose device carries the call.",
 ]
-text = ""
+text = "कॉल होस्ट: {name} चे डिव्हाइस"
 
 [t_07348c8e25]
 en = "Call host: a member’s device"
@@ -12236,7 +12250,7 @@ where = [
   "android gcall_host_label_unnamed: Pill on the group call screen when another member's device carries the call and the member's name is not known.",
   "ios call_group_host_is_someone: Pill on the group call screen naming the call host. A member whose name is not known.",
 ]
-text = ""
+text = "कॉल होस्ट: एका सदस्याचे डिव्हाइस"
 
 [t_4c02b33d24]
 en = "**This phone** is carrying this call. Everyone in the call connects to it, and it passes the audio on and chooses who is heard when several people speak."
@@ -12244,7 +12258,7 @@ where = [
   "android gcall_about_this_phone: First paragraph of the group call About sheet, when this phone is the call host. The ** marks make 'This phone' bold; keep them around the host.",
   "ios call_group_about_this_phone: Group call details card, first sentence. The host’s name at the start is bold (markdown stars, keep them around the same words); the whole sentence is one string so the verb can agree with it. This phone is the call host.",
 ]
-text = ""
+text = "**हा फोन** हा कॉल चालवत आहे. कॉलमधील सर्व जण त्याच्याशी जोडले जातात, आणि तो आवाज पुढे पाठवतो आणि अनेक जण बोलत असताना कोणाचा आवाज ऐकू येईल ते ठरवतो."
 
 [t_5ddff93ea5]
 en = "**{name}’s device** carries this call. Everyone in the call connects to it, and it passes the audio on and chooses who is heard when several people speak."
@@ -12253,7 +12267,7 @@ where = [
   "ios call_group_about_member: Group call details card, first sentence. The host’s name at the start is bold (markdown stars, keep them around the same words); the whole sentence is one string so the verb can agree with it. A member’s device is the call host. {name} is the member’s first name.",
   "desktop gcall_about_device: Desktop, group call \"About this call\" sheet (in gcall_view.rs, gcall_about). The call is carried by another person's device. {name} is that person's first name. **…** is shown bold.",
 ]
-text = ""
+text = "**{name} चे डिव्हाइस** हा कॉल चालवते. कॉलमधील सर्व जण त्याच्याशी जोडले जातात, आणि ते आवाज पुढे पाठवते आणि अनेक जण बोलत असताना कोणाचा आवाज ऐकू येईल ते ठरवते."
 
 [t_5d46353eea]
 en = "**The call host** carries this call. Everyone in the call connects to it, and it passes the audio on and chooses who is heard when several people speak."
@@ -12262,28 +12276,28 @@ where = [
   "ios call_group_about_unknown: Group call details card, first sentence. The host’s name at the start is bold (markdown stars, keep them around the same words); the whole sentence is one string so the verb can agree with it. The host is not known yet.",
   "desktop gcall_about_unnamed: Desktop, group call \"About this call\" sheet (in gcall_view.rs, gcall_about). The call host is another device whose owner has no known name. **…** is shown bold.",
 ]
-text = ""
+text = "**कॉल होस्ट** हा कॉल चालवतो. कॉलमधील सर्व जण त्याच्याशी जोडले जातात, आणि तो आवाज पुढे पाठवतो आणि अनेक जण बोलत असताना कोणाचा आवाज ऐकू येईल ते ठरवतो."
 
 [t_c54c6d646f]
 en = "Started by someone"
 where = [
   "android gcall_started_by_unnamed: Second line of the call-in-progress bar when the person who started it is not known.",
 ]
-text = ""
+text = "कोणीतरी सुरू केला"
 
 [t_7886102212]
 en = "Someone is calling the group {group}"
 where = [
   "android gcall_is_calling_group_desc_unnamed: Screen reader description of the ringing group call card when the caller is not known. {group} is the group's name.",
 ]
-text = ""
+text = "कोणीतरी {group} ग्रुपला कॉल करत आहे"
 
 [t_87c17e37a0]
 en = "Someone started a call in {group}"
 where = [
   "android gcall_started_call_desc_unnamed: Screen reader description of the group call card when the person who started it is not known. {group} is the group's name.",
 ]
-text = ""
+text = "कोणीतरी {group} मध्ये कॉल सुरू केला"
 
 [t_45bcb20cef]
 en = "Someone is calling the group"
@@ -12291,7 +12305,7 @@ where = [
   "android notif_group_calling_unnamed: Text of the notification when someone whose name is not known starts a group call.",
   "android gcall_is_calling_group_unnamed: Second line of the group call card while it rings, when the caller is not known.",
 ]
-text = ""
+text = "कोणीतरी ग्रुपला कॉल करत आहे"
 
 [t_64fc08250f]
 en = ", "
@@ -12299,35 +12313,35 @@ where = [
   "android common_list_separator: Joins items in a list on phones older than Android 10, which cannot format lists by language: 'Ana, Sam'. Use the comma (and any space) your language puts between list items.",
   "desktop common_list_separator: Between items of a list of three or more names (the last two are joined with common_list_and). Keep the trailing space if the language needs one.",
 ]
-text = ""
+text = ", "
 
 [t_821622c40b]
 en = "{list}. Open actions"
 where = [
   "android groupsb_member_desc: Screen-reader description of a member row. {list} is the member's name, role and what they host, already joined into a list in the app's language, such as 'Maya, owner, host'.",
 ]
-text = ""
+text = "{list}. पर्याय उघडा"
 
 [t_86f638dc40]
 en = "host"
 where = [
   "android groupsb_role_host_lc: Spoken in a member row description when they host the group, for example 'Maya, owner, host'. Lowercase, one item of a list.",
 ]
-text = ""
+text = "होस्ट"
 
 [t_21c1c62907]
 en = "call host"
 where = [
   "android groupsb_role_callhost_lc: Spoken in a member row description when they host calls, for example 'Maya, owner, call host'. Lowercase, one item of a list.",
 ]
-text = ""
+text = "कॉल होस्ट"
 
 [t_41dbf4702d]
 en = "While you’re away, people who call see that they couldn’t reach you. Nothing is queued and nobody is told why."
 where = [
   "android avail_note_unnamed: Hint at the bottom of the availability sheet when my name is empty.",
 ]
-text = ""
+text = "तुम्ही दूर असताना, कॉल करणाऱ्यांना तुमच्यापर्यंत पोहोचता आले नाही असे दिसते. काहीही रांगेत ठेवले जात नाही आणि कोणालाही कारण सांगितले जात नाही."
 
 [t_f0ff6a4c21]
 en = "Your contacts and chats are arriving from your other device and will keep in step on both."
@@ -12335,98 +12349,98 @@ where = [
   "android onboarding_linked_lead_unnamed: Lead after linking, when the other device has no name.",
   "ios onboarding_linked_lead_unnamed: Explanation after linking when the other device has no name.",
 ]
-text = ""
+text = "तुमचे संपर्क आणि चॅट तुमच्या दुसऱ्या डिव्हाइसवरून येत आहेत आणि दोन्हीकडे जुळलेले राहतील."
 
 [t_72ddbf5adc]
 en = "Someone started a call"
 where = [
   "android gcall_started_call_unnamed: Second line of the group call card, when the person who started the call is not known.",
 ]
-text = ""
+text = "कोणीतरी कॉल सुरू केला"
 
 [t_7db0ce736c]
 en = "Sent, waiting for their device to confirm"
 where = [
   "ios kit_tick_sent_their: Screen-reader label of a message tick: sent, no confirmation yet. Used when the other person's name is not known; their means the other person's.",
 ]
-text = ""
+text = "पाठवला, त्यांच्या डिव्हाइसकडून पुष्टीची वाट पाहत आहे"
 
 [t_affe0a3a21]
 en = "Read on their device"
 where = [
   "ios kit_tick_read_their: Screen-reader label of a message tick: read. Used when the other person's name is not known.",
 ]
-text = ""
+text = "त्यांच्या डिव्हाइसवर वाचला"
 
 [t_944f47e9e0]
 en = "Chat with this contact?"
 where = [
   "ios chat_card_chat_with_unnamed: Banner on a found contact card whose name is not known, for a contact already in Tinline.",
 ]
-text = ""
+text = "या संपर्काशी चॅट करायचे?"
 
 [t_eb90d80ea2]
 en = "Match {index} of {total}"
 where = [
   "ios chat_find_match_of: Accessibility label of the match counter. {index} is the current match number, {total} how many matches.",
 ]
-text = ""
+text = "{total} पैकी जुळणारे {index}"
 
 [t_d30c4d9fbd]
 en = "Message actions"
 where = [
   "ios chat_message_actions: Accessibility action name that opens the message actions sheet.",
 ]
-text = ""
+text = "संदेशाचे पर्याय"
 
 [t_84a49c7c1f]
 en = "Read · signed by {first} · device {device}"
 where = [
   "ios chat_proof_read: Line in the message sheet for a signed read receipt. {first} is the other person's first name, {device} the short id of the device that signed.",
 ]
-text = ""
+text = "वाचला · {first} ची स्वाक्षरी · डिव्हाइस {device}"
 
 [t_79cbcaccf4]
 en = "Delivered · signed by {first} · device {device}"
 where = [
   "ios chat_proof_delivered: Line in the message sheet for a signed delivery receipt. {first} first name, {device} short id of the signing device.",
 ]
-text = ""
+text = "पोहोचला · {first} ची स्वाक्षरी · डिव्हाइस {device}"
 
 [t_977acb9243]
 en = "You blocked {first}"
 where = [
   "ios chat_blocked_note: Quiet line under the last message when the user blocked this person. {first} is their first name.",
 ]
-text = ""
+text = "तुम्ही {first} ला ब्लॉक केले"
 
 [t_aa71cc755c]
 en = "You blocked {first} · {date}"
 where = [
   "ios chat_blocked_note_date: Quiet line when the user blocked this person. {first} first name, {date} the day of the block.",
 ]
-text = ""
+text = "तुम्ही {first} ला ब्लॉक केले · {date}"
 
 [t_348d44de68]
 en = "Signed by {first} · {date}"
 where = [
   "ios chat_blocked_signed: Small print under the notice that someone blocked the user. {first} their first name, {date} the day.",
 ]
-text = ""
+text = "{first} ची स्वाक्षरी · {date}"
 
 [t_e4d8b823c3]
 en = "Chat"
 where = [
   "ios chat_fallback_name: Header name used when a chat has no known contact name.",
 ]
-text = ""
+text = "चॅट"
 
 [t_b266dbd16b]
 en = "Kept encrypted inside Tinline. “Save to phone” copies it to your photos, where other apps can see it."
 where = [
   "ios chat_viewer_photo_hint: Hint at the bottom of the photo viewer. The quoted words match the \"Save to phone\" label.",
 ]
-text = ""
+text = "Tinline मध्ये एन्क्रिप्टेड ठेवले आहे. “फोनवर जतन करा” ते तुमच्या फोटोंमध्ये कॉपी करते, जिथे इतर ॲप ते पाहू शकतात."
 
 [t_f78c35a17b]
 en_one = "{count} of {total} flags"
@@ -12435,27 +12449,29 @@ where = [
   "ios group_member_flags: Part of a member row sub line. {count} is how many flags the member has, {total} how many remove them.",
   "ios group_flags_count_desc: Spoken label of the flag meter. {count} is flags so far, {total} flags that remove.",
 ]
+one = "{total} पैकी {count} फ्लॅग"
+other = "{total} पैकी {count} फ्लॅग"
 
 [t_579c5fced0]
 en = "{name}, owner. Open actions"
 where = [
   "ios group_member_desc_owner: Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is owner.",
 ]
-text = ""
+text = "{name}, मालक. पर्याय उघडा"
 
 [t_3cba27b06c]
 en = "{name}, admin. Open actions"
 where = [
   "ios group_member_desc_admin: Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is admin.",
 ]
-text = ""
+text = "{name}, ॲडमिन. पर्याय उघडा"
 
 [t_56b783b353]
 en = "{name}, member. Open actions"
 where = [
   "ios group_member_desc_member: Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is member.",
 ]
-text = ""
+text = "{name}, सदस्य. पर्याय उघडा"
 
 [t_f76352b5f0]
 en = "Hosts store the group and pass posts on when others are offline. They are members you trust: a host can read everything posted in this group. Appoint a host from a member’s menu; they have to accept. Removing a host changes the group’s address within 2 days, so that device can no longer reach it."
@@ -12463,14 +12479,14 @@ where = [
   "ios group_hosts_note_admin: Explanation under the host list, for admins (replaces the plain one).",
   "desktop group_hosts_store_the_group_admin: Desktop, group info, hosts section note, for admins.",
 ]
-text = ""
+text = "होस्ट ग्रुप साठवतात आणि इतर ऑफलाइन असताना पोस्ट पुढे पाठवतात. ते तुमच्या विश्वासातले सदस्य असतात: होस्ट या ग्रुपमध्ये पोस्ट केलेले सर्व काही वाचू शकतो. सदस्याच्या मेनूमधून होस्ट नेमा; त्यांना ते स्वीकारावे लागेल. होस्ट काढल्यावर 2 दिवसांत ग्रुपचा पत्ता बदलतो, त्यामुळे ते डिव्हाइस ग्रुपपर्यंत पोहोचू शकत नाही."
 
 [t_8bae39c7cf]
 en = "A call host carries the call. Everyone in a call connects to it, and it passes the audio on, so it can hear the call. That is separate from chat hosting: a chat host is not a call host unless you also appoint it as one. Call hosts are members you trust, and each one chooses to accept. Appoint one from a member’s menu, or host calls on this phone. A phone only hosts calls that its owner starts."
 where = [
   "ios group_callhosts_note_admin: Explanation under the call host list, for admins.",
 ]
-text = ""
+text = "कॉल होस्ट कॉल चालवतो. कॉलमधील सर्व जण त्याच्याशी जोडले जातात आणि तो आवाज पुढे पाठवतो, त्यामुळे तो कॉल ऐकू शकतो. हे चॅट होस्टिंगपेक्षा वेगळे आहे: चॅट होस्टला तुम्ही कॉल होस्ट म्हणूनही नेमल्याशिवाय तो कॉल होस्ट होत नाही. कॉल होस्ट हे तुमच्या विश्वासातले सदस्य असतात, आणि स्वीकारायचे की नाही हे प्रत्येकाच्या हातात असते. सदस्याच्या मेनूमधून एखादा नेमा, किंवा या फोनवर कॉल होस्ट करा. फोन फक्त त्याच्या मालकाने सुरू केलेले कॉलच होस्ट करतो."
 
 [t_b265bd4d52]
 en = "{count} of {total}"
@@ -12479,7 +12495,7 @@ where = [
   "ios restore_progress: Counter of recovery words typed so far; {count} is how many are filled. {total} is the number of recovery words (24).",
   "desktop signup_of: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_head). {count} is a number. {total} is a value filled in by the app.",
 ]
-text = ""
+text = "{total} पैकी {count}"
 
 [t_fd423f904b]
 en_one = "One more flag from any admin removes you from the group. Flags can’t be taken back. You can still read and post until then."
@@ -12487,55 +12503,57 @@ en_other = "{count} more flags from any admin remove you from the group. Flags c
 where = [
   "ios group_flags_left: Note under the flag meter. {count} is how many more flags remove the user.",
 ]
+one = "कोणत्याही ॲडमिनचा आणखी एक फ्लॅग तुम्हाला ग्रुपमधून काढून टाकेल. फ्लॅग मागे घेता येत नाहीत. तोपर्यंत तुम्ही वाचू आणि पोस्ट करू शकता."
+other = "कोणत्याही ॲडमिनचे आणखी {count} फ्लॅग तुम्हाला ग्रुपमधून काढून टाकतील. फ्लॅग मागे घेता येत नाहीत. तोपर्यंत तुम्ही वाचू आणि पोस्ट करू शकता."
 
 [t_c23190545c]
 en = "Removed after {total} admin flags"
 where = [
   "ios group_removal_title: Headline of the removal page. {total} is the number of flags that remove.",
 ]
-text = ""
+text = "{total} ॲडमिन फ्लॅगनंतर काढून टाकले"
 
 [t_fd5de9e620]
 en = "Leave {group}?"
 where = [
   "ios group_leave_title: Title of the leave dialog. {group} is the group’s name.",
 ]
-text = ""
+text = "{group} सोडायचा?"
 
 [t_c4c1eba891]
 en = "Invite to {group}"
 where = [
   "ios group_invite_title: Title of the invite sheet. {group} is the group’s name.",
 ]
-text = ""
+text = "{group} मध्ये आमंत्रित करा"
 
 [t_1dbeb21046]
 en = "Cancel call host request · {device}"
 where = [
   "ios group_member_cancel_callhost_device: Action row title when the member has several devices. {device} is a short device id.",
 ]
-text = ""
+text = "कॉल होस्ट विनंती रद्द करा · {device}"
 
 [t_a1cf59a01f]
 en = "Remove as call host · {device}"
 where = [
   "ios group_member_remove_callhost_device: Action row title when the member has several devices. {device} is a short device id.",
 ]
-text = ""
+text = "कॉल होस्टमधून काढा · {device}"
 
 [t_634583160a]
 en = "Make call host · {device}"
 where = [
   "ios group_member_make_callhost_device: Action row title when the member has several devices. {device} is a short device id.",
 ]
-text = ""
+text = "कॉल होस्ट बनवा · {device}"
 
 [t_2c5d81e205]
 en = "{total} flags remove {name} from the group"
 where = [
   "ios group_member_flag_sub: Sub line. {total} is the number of flags that remove, {name} the member’s first name.",
 ]
-text = ""
+text = "{total} फ्लॅग {name} ला ग्रुपमधून काढतात"
 
 [t_45fcf2dff4]
 en_one = "After {count} admin flag, {name} was removed"
@@ -12543,6 +12561,8 @@ en_other = "After {count} admin flags, {name} was removed"
 where = [
   "ios group_sys_removed: System line in a group chat (the centred grey line). A named member was removed. {name} is the member, {count} how many admin flags remove a member. Same meaning as desktop \"{name} was removed after {count} admin flags\"; iOS needs {count} first in the English.",
 ]
+one = "{count} ॲडमिन फ्लॅगनंतर {name} ला काढून टाकले"
+other = "{count} ॲडमिन फ्लॅगनंतर {name} ला काढून टाकले"
 
 [t_be5bddaced]
 en = "A device of {name}’s now hosts the group"
@@ -12550,7 +12570,7 @@ where = [
   "ios group_sys_host_added: System line. {name} is the member whose device now hosts.",
   "desktop group_sys_host_added: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). {name} is a person; one of their devices became a host.",
 ]
-text = ""
+text = "{name} चे एक डिव्हाइस आता ग्रुप होस्ट करते"
 
 [t_058c17b479]
 en = "A device of {name}’s stopped hosting the group"
@@ -12558,28 +12578,28 @@ where = [
   "ios group_sys_host_removed: System line. {name} is the member whose device stopped hosting.",
   "desktop group_sys_host_removed: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). {name} is a person; one of their devices stopped hosting.",
 ]
-text = ""
+text = "{name} च्या एका डिव्हाइसने ग्रुप होस्ट करणे थांबवले"
 
 [t_7213d47f32]
 en = "{members} · this device hosts the group"
 where = [
   "ios group_status_this_device: Group header sub line. {members} is the member count text.",
 ]
-text = ""
+text = "{members} · हे डिव्हाइस ग्रुप होस्ट करते"
 
 [t_2279140dcc]
 en = "{members} · no host yet"
 where = [
   "ios group_status_no_host: Group header sub line. {members} is the member count text.",
 ]
-text = ""
+text = "{members} · अजून होस्ट नाही"
 
 [t_52534f1261]
 en = "{members} · waiting for a host"
 where = [
   "ios group_status_waiting: Group header sub line. {members} is the member count text.",
 ]
-text = ""
+text = "{members} · होस्टची वाट पाहत आहे"
 
 [t_3831cc5788]
 en = "{members} · {hosts}"
@@ -12587,14 +12607,14 @@ where = [
   "ios group_status_hosts: Group header sub line. {members} is the member count text, {hosts} the host count text.",
   "desktop group_members_and_hosts: Group summary line under its name. {members} is e.g. \"3 members\", {hosts} is e.g. \"2 hosts\".",
 ]
-text = ""
+text = "{members} · {hosts}"
 
 [t_5c5dc151c2]
 en = "Waiting for them · via {group}"
 where = [
   "ios group_req_pending_unnamed: State line of a chat request you sent, when the person’s name is not known. {group} is the group.",
 ]
-text = ""
+text = "त्यांच्या उत्तराची वाट · {group} मार्फत"
 
 [t_b5f5c33f07]
 en = "Accepted · messages only"
@@ -12602,7 +12622,7 @@ where = [
   "ios group_req_accepted_msgs_unnamed: State line of a chat request you sent, when the person’s name is not known: accepted, messages only.",
   "desktop group_sent_accepted_messages_unnamed: Desktop, group requests I sent (in group_live.rs, sent_line): the state line of a private-chat request. Someone accepted; messages only for now.",
 ]
-text = ""
+text = "स्वीकारले · फक्त संदेश"
 
 [t_ab33c3e6a5]
 en = "Accepted · connecting"
@@ -12610,21 +12630,21 @@ where = [
   "ios group_req_accepted_connecting_unnamed: State line of a chat request you sent, when the person’s name is not known: accepted, connecting.",
   "desktop group_sent_accepted_connecting_unnamed: Desktop, group requests I sent (in group_live.rs, sent_line): the state line of a private-chat request. Someone accepted; connecting.",
 ]
-text = ""
+text = "स्वीकारले · कनेक्ट होत आहे"
 
 [t_7df34dff82]
 en = "Yours will be flag {yours} of {total}. {name} is removed right away: hosts refuse their new messages and they see they were removed."
 where = [
   "ios group_flag_copy_final: Flag dialog sentence for the flag that removes the member. {yours} is which flag it is, {total} flags remove, {name} the member’s first name.",
 ]
-text = ""
+text = "तुमचा फ्लॅग {total} पैकी क्रमांक {yours} असेल. {name} ला लगेच काढले जाईल: होस्ट त्यांचे नवीन संदेश नाकारतील आणि त्यांना काढल्याचे त्यांना दिसेल."
 
 [t_a70b928917]
 en = "Yours will be flag {yours} of {total}. Any admin’s flags count, yours again too. At {total} flags {name} is removed right away and sees they were removed."
 where = [
   "ios group_flag_copy: Flag dialog sentence for a flag that does not remove yet. {yours} is which flag it is, {total} flags remove, {name} the member’s first name.",
 ]
-text = ""
+text = "तुमचा फ्लॅग {total} पैकी क्रमांक {yours} असेल. कोणत्याही ॲडमिनचे फ्लॅग मोजले जातात, तुमचे पुढचे फ्लॅगही. {total} फ्लॅग झाल्यावर {name} ला लगेच काढले जाईल आणि त्यांना ते दिसेल."
 
 [t_393c39c333]
 en = "Your request was accepted. You can message each other now; calls stay off until one of you allows them."
@@ -12632,98 +12652,98 @@ where = [
   "ios group_notice_request_accepted_unnamed: Notice when your private chat request was accepted by someone whose name is not known.",
   "desktop group_notice_accepted_yours_unnamed: Desktop, group notice line (in group_live.rs). Someone with no known name accepted my private-chat request.",
 ]
-text = ""
+text = "तुमची विनंती स्वीकारली गेली. आता तुम्ही एकमेकांना संदेश पाठवू शकता; तुमच्यापैकी कोणीतरी परवानगी देईपर्यंत कॉल बंद राहतात."
 
 [t_a1c457fbac]
 en = "Group calls aren’t available here yet."
 where = [
   "ios group_calls_unavailable: Error shown when group calls are not wired in.",
 ]
-text = ""
+text = "ग्रुप कॉल इथे अजून उपलब्ध नाहीत."
 
 [t_977b43df48]
 en = "Scanning isn’t available yet. Paste the link instead."
 where = [
   "ios group_scan_unavailable: Shown instead of the QR scanner when scanning is not available.",
 ]
-text = ""
+text = "स्कॅन करणे अजून उपलब्ध नाही. त्याऐवजी लिंक पेस्ट करा."
 
 [t_387c1a55a4]
 en = "An admin asked this phone to host {group}"
 where = [
   "ios group_host_asked_title_admin: Card title: an admin whose name is not known asked this phone to host. {group} is the group.",
 ]
-text = ""
+text = "एका ॲडमिनने या फोनला {group} होस्ट करण्यास सांगितले"
 
 [t_d9be045783]
 en = "Delivered {count}/{total}"
 where = [
   "ios group_receipt_delivered: Receipt summary. {count} is how many have it, {total} how many are eligible.",
 ]
-text = ""
+text = "पोहोचला {count}/{total}"
 
 [t_951c9b0f24]
 en = "Read {count}/{total}"
 where = [
   "ios group_receipt_read: Receipt summary. {count} is how many read it, {total} how many are eligible.",
 ]
-text = ""
+text = "वाचला {count}/{total}"
 
 [t_e765c751bd]
 en = "Read: {names}"
 where = [
   "ios group_receipt_level_read: Receipt line label before the names of members who read the post. {names} is the list.",
 ]
-text = ""
+text = "वाचला: {names}"
 
 [t_abb0f92df9]
 en = "On their device: {names}"
 where = [
   "ios group_receipt_level_delivered: Receipt line label before the names of members whose device has the post. {names} is the list.",
 ]
-text = ""
+text = "त्यांच्या डिव्हाइसवर: {names}"
 
 [t_ed319ece3f]
 en = "Not yet: {names}"
 where = [
   "ios group_receipt_level_not_yet: Receipt line label before the names of members who have not confirmed. {names} is the list.",
 ]
-text = ""
+text = "अजून नाही: {names}"
 
 [t_41a0f066bc]
 en = "Add to {group}"
 where = [
   "ios group_add_to_title: Title of the add-people page. {group} is the group’s name.",
 ]
-text = ""
+text = "{group} मध्ये जोडा"
 
 [t_487ce062f4]
 en = "Invited by someone outside your contacts"
 where = [
   "ios group_join_invited_by_unknown: Line on the join preview when the inviter is not in your contacts.",
 ]
-text = ""
+text = "तुमच्या संपर्कांबाहेरील व्यक्तीने आमंत्रित केले"
 
 [t_0bc2a89e30]
 en = "Owner isn’t in your contacts"
 where = [
   "ios group_join_owner_unknown: Line on the join preview when the owner is not in your contacts.",
 ]
-text = ""
+text = "मालक तुमच्या संपर्कांमध्ये नाही"
 
 [t_e2527aaf3f]
 en = "Anyone with this link or QR can join {group} for 7 days. Share it over an app you trust; you see who joined and can flag them out. To invite your contacts directly, use Add members."
 where = [
   "ios group_link_hint: Hint above the group invite link QR. {group} is the group's name.",
 ]
-text = ""
+text = "ही लिंक किंवा QR असलेले कोणीही 7 दिवसांपर्यंत {group} मध्ये सामील होऊ शकतात. तुमच्या विश्वासाच्या ॲपमधून ती शेअर करा; कोण सामील झाले ते तुम्हाला दिसते आणि तुम्ही त्यांना फ्लॅग करून काढू शकता. तुमच्या संपर्कांना थेट आमंत्रित करण्यासाठी \"सदस्य जोडा\" वापरा."
 
 [t_5a7b5c3abb]
 en = "Join {group} on Tinline: {link}"
 where = [
   "ios group_share_text: Text shared with the invite link. {group} is the group's name, {link} the invite link.",
 ]
-text = ""
+text = "Tinline वर {group} मध्ये सामील व्हा: {link}"
 
 [t_031fd35992]
 en = "Join this group on Tinline: {link}"
