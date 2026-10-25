@@ -10317,7 +10317,7 @@ where = [
   "android call_route_headset: Audio route option: a wired headset without a name.",
   "ios call_route_headset: Audio route name for a wired headset with no name of its own.",
 ]
-text = ""
+text = "Headset"
 
 [t_86179776e0]
 en = "Bluetooth"
@@ -10325,7 +10325,7 @@ where = [
   "android call_route_bluetooth: Audio route option: a Bluetooth device whose name is not known.",
   "ios call_route_bluetooth: Audio route name for a Bluetooth device with no name of its own.",
 ]
-text = ""
+text = "Bluetooth"
 
 [t_152037e40b]
 en = "Other"
@@ -10333,21 +10333,21 @@ where = [
   "android call_route_other: Audio route option: some other audio device without a name.",
   "ios call_route_other: Audio route name for an unnamed route of another kind.",
 ]
-text = ""
+text = "Andere"
 
 [t_d6326c7800]
 en = "Allow nearby devices and Tinline can show your headset’s name and switch between headsets."
 where = [
   "android call_route_bt_hint: Hint in the audio route sheet when a Bluetooth headset shows without a name because the Nearby devices permission is missing.",
 ]
-text = ""
+text = "Erlaube „Geräte in der Nähe“, dann kann Tinline den Namen deines Headsets zeigen und zwischen Headsets wechseln."
 
 [t_8ca683abc4]
 en = "Show my headset names"
 where = [
   "android call_route_bt_button: Button in the audio route sheet that asks for the Nearby devices permission.",
 ]
-text = ""
+text = "Meine Headset-Namen zeigen"
 
 [t_c639e9d903]
 en = "Relayed: a direct line wasn’t possible on this network, so an encrypted relay is passing the call along. It can’t hear you."
@@ -10356,7 +10356,7 @@ where = [
   "ios call_route_relayed_hint: Hint in the audio route sheet when the call goes through a relay.",
   "desktop call_relayed_a_direct_line: Desktop, calls (voice and video) (in view.rs, video_call_view).",
 ]
-text = ""
+text = "Weitergeleitet: In diesem Netz war keine direkte Leitung möglich, also gibt ein verschlüsseltes Relay den Anruf weiter. Es kann dich nicht hören."
 
 [t_ada1b5511c]
 en = "{name}’s camera is off"
@@ -10364,7 +10364,7 @@ where = [
   "android video_camera_off: Shown under the avatar on a video call while the other person's camera is off. {name} is their name.",
   "ios call_camera_off: Shown on a video call when the contact's camera is off. {name} is the contact.",
 ]
-text = ""
+text = "Die Kamera von {name} ist aus"
 
 [t_9497c00e69]
 en = "Connecting video…"
@@ -10372,7 +10372,7 @@ where = [
   "android video_connecting: Shown on the video call screen until their first picture arrives.",
   "ios call_connecting_video: Shown on a video call while the picture is being set up.",
 ]
-text = ""
+text = "Video verbindet…"
 
 [t_ae3fd0b7b3]
 en = "Starting video…"
@@ -10381,7 +10381,7 @@ where = [
   "ios call_starting_video: Video quality line while my camera is starting.",
   "desktop call_starting_video: Desktop, calls (voice and video) (in view.rs, video_stage).",
 ]
-text = ""
+text = "Video startet…"
 
 [t_2b55b3329e]
 en = "Sharper video on, up to 540p"
@@ -10389,7 +10389,7 @@ where = [
   "android video_hd_on: Accessibility label of the HD chip while sharper video is on.",
   "ios call_hd_label_on: Accessibility label of the HD chip when HD is on.",
 ]
-text = ""
+text = "Schärferes Video an, bis 540p"
 
 [t_94ad82fe0b]
 en = "Sharper video off"
@@ -10399,7 +10399,7 @@ where = [
   "ios call_hd_label_off: Accessibility label of the HD chip when HD is off.",
   "desktop common_sharper_video_off: Shared label, used in several places (camera, view).",
 ]
-text = ""
+text = "Schärferes Video aus"
 
 [t_367cbada8e]
 en = "Sharper video on, paused while the connection is weak"
@@ -10408,7 +10408,7 @@ where = [
   "ios call_hd_label_paused: Accessibility label of the HD chip when HD is paused.",
   "desktop call_sharper_video_on_paused: Desktop, calls (voice and video) (in view.rs, hd_chip).",
 ]
-text = ""
+text = "Schärferes Video an, pausiert, solange die Verbindung schwach ist"
 
 [t_f13857c248]
 en = "Camera permission needed - they can still hear you"
@@ -10416,7 +10416,7 @@ where = [
   "android video_camera_permission: Problem line on the call screen when I turn the camera on without the camera permission. The call itself carries on.",
   "ios call_camera_permission_needed: Problem line when camera permission is denied.",
 ]
-text = ""
+text = "Kamera-Berechtigung nötig – hören kann man dich weiterhin"
 
 [t_e0dc020054]
 en = "Camera unavailable"
@@ -10424,7 +10424,7 @@ where = [
   "android video_camera_unavailable: Problem line on the call screen when the camera could not be started.",
   "ios call_camera_unavailable: Problem line when the camera could not be started.",
 ]
-text = ""
+text = "Kamera nicht verfügbar"
 
 [t_74f59d6988]
 en = "About this call. Reconnecting."
@@ -10433,28 +10433,28 @@ where = [
   "ios call_about_reconnecting: Accessibility label of the info button while reconnecting.",
   "desktop call_about_this_call_reconnecting: Desktop, calls (voice and video) (in call_screen.rs, call_view).",
 ]
-text = ""
+text = "Über diesen Anruf. Verbinde neu."
 
 [t_783fcd0df8]
 en = "About this call. {signal} signal, {path}."
 where = [
   "android call_about_signal: Accessibility label of the signal icon. {signal} is a word like Strong or Weak; {path} is 'direct' or 'relayed'.",
 ]
-text = ""
+text = "Über diesen Anruf. Signal: {signal}, {path}."
 
 [t_6253bb32f6]
 en = "direct"
 where = [
   "android call_path_direct: Lowercase word inside an accessibility sentence: the call goes straight between the two phones.",
 ]
-text = ""
+text = "direkt"
 
 [t_e04409b0f7]
 en = "relayed"
 where = [
   "android call_path_relayed: Lowercase word inside an accessibility sentence: the call goes through a relay.",
 ]
-text = ""
+text = "weitergeleitet"
 
 [t_b1d17f484d]
 en = "End-to-end encrypted"
@@ -10463,7 +10463,7 @@ where = [
   "ios call_path_encrypted: Line under the call status once connected, before the path is known.",
   "desktop call_end_to_end_encrypted: Desktop, calls (voice and video) (in call_screen.rs, call_view).",
 ]
-text = ""
+text = "Ende-zu-Ende-verschlüsselt"
 
 [t_cbff617e0e]
 en = "End-to-end encrypted · Direct"
@@ -10471,7 +10471,7 @@ where = [
   "android call_e2ee_direct: Line on the call screen once the call is connected over a direct path.",
   "ios call_path_direct: Line under the call status when the call goes straight between the two phones.",
 ]
-text = ""
+text = "Ende-zu-Ende-verschlüsselt · Direkt"
 
 [t_76d948e78a]
 en = "End-to-end encrypted · Relayed"
@@ -10479,7 +10479,7 @@ where = [
   "android call_e2ee_relayed: Line on the call screen once the call is connected through a relay.",
   "ios call_path_relayed: Line under the call status when a relay passes the call along.",
 ]
-text = ""
+text = "Ende-zu-Ende-verschlüsselt · Weitergeleitet"
 
 [t_8bd8d5490e]
 en = "End-to-end encrypted."
@@ -10488,7 +10488,7 @@ where = [
   "ios call_about_encrypted_lead: Bold first words of the encryption explanation on the call details card.",
   "desktop call_end_to_end_encrypted_2: Desktop, calls (voice and video) (in call_screen.rs, call_about).",
 ]
-text = ""
+text = "Ende-zu-Ende-verschlüsselt."
 
 [t_953b0eb2a3]
 en = "Your voice is encrypted on this device and only decrypted on {name}’s."
@@ -10496,7 +10496,7 @@ where = [
   "android call_info_enc_voice: Second sentence of the encryption paragraph for a voice call. {name} is the other person's name.",
   "ios call_about_encrypted_voice: Rest of the encryption explanation on a voice call. {name} is the contact.",
 ]
-text = ""
+text = "Deine Stimme wird auf diesem Gerät verschlüsselt und erst auf dem Gerät von {name} entschlüsselt."
 
 [t_5af3be31b9]
 en = "Your voice and picture are encrypted on this device and only decrypted on {name}’s."
@@ -10504,21 +10504,21 @@ where = [
   "android call_info_enc_video: Second sentence of the encryption paragraph for a video call. {name} is the other person's name.",
   "ios call_about_encrypted_video: Rest of the encryption explanation on a video call. {name} is the contact.",
 ]
-text = ""
+text = "Deine Stimme und dein Bild werden auf diesem Gerät verschlüsselt und erst auf dem Gerät von {name} entschlüsselt."
 
 [t_b242e18aa9]
 en = "{signal} signal · Direct"
 where = [
   "android call_info_signal_direct: Bold heading of the connection row in About this call. {signal} is a word like Strong or Weak.",
 ]
-text = ""
+text = "Signal: {signal} · Direkt"
 
 [t_840c286bdc]
 en = "{signal} signal · Relayed"
 where = [
   "android call_info_signal_relayed: Bold heading of the connection row in About this call, when a relay carries the call. {signal} is a word like Strong or Weak.",
 ]
-text = ""
+text = "Signal: {signal} · Weitergeleitet"
 
 [t_f69ab95059]
 en = "The connection dropped for a moment. Tinline is finding a way back to {name}."
@@ -10527,7 +10527,7 @@ where = [
   "ios call_about_line_reconnecting: Explanation while reconnecting. {name} is the contact's first name.",
   "desktop call_the_connection_dropped_for: Desktop, calls (voice and video) (in call_screen.rs, call_about). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Die Verbindung war kurz weg. Tinline sucht einen Weg zurück zu {name}."
 
 [t_a6ed340bd0]
 en = "Your call goes straight between your device and {name}’s."
@@ -10536,7 +10536,7 @@ where = [
   "ios call_about_line_direct: Explanation for a direct connection. {name} is the contact's first name.",
   "desktop call_your_call_goes_straight: Desktop, calls (voice and video) (in call_screen.rs, call_about). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Dein Anruf geht direkt zwischen deinem Gerät und dem von {name}."
 
 [t_266fb7b847]
 en = "Your devices can’t reach each other directly right now, so a relay passes the call along. It can’t listen."
@@ -10545,7 +10545,7 @@ where = [
   "ios call_about_line_relayed_voice: Explanation for a relayed voice call.",
   "desktop call_your_devices_cant_reach: Desktop, calls (voice and video) (in call_screen.rs, call_about).",
 ]
-text = ""
+text = "Eure Geräte erreichen sich gerade nicht direkt, also gibt ein Relay den Anruf weiter. Es kann nicht mithören."
 
 [t_cbf1be729e]
 en = "Your devices can’t reach each other directly right now, so a relay passes the call along. It can’t listen or watch."
@@ -10553,7 +10553,7 @@ where = [
   "android call_info_relay_body_video: Explanation in About this call for a relayed video call.",
   "ios call_about_line_relayed_video: Explanation for a relayed video call.",
 ]
-text = ""
+text = "Eure Geräte erreichen sich gerade nicht direkt, also gibt ein Relay den Anruf weiter. Es kann weder mithören noch zusehen."
 
 [t_79f9a8e7fe]
 en = "The line is weak, so {name}’s voice may break up."
@@ -10561,7 +10561,7 @@ where = [
   "android call_info_weak: Extra sentence appended after a space when the signal is the weakest level. {name} is the other person's first name.",
   "ios call_about_line_weak: Extra sentence appended when the signal is weak. {name} is the contact's first name.",
 ]
-text = ""
+text = "Die Leitung ist schwach, die Stimme von {name} kann abbrechen."
 
 [t_912d92b0c2]
 en = "{rtt} ms round trip · {loss}% lost"
@@ -10569,7 +10569,7 @@ where = [
   "android call_info_rtt: Numbers line in About this call. {rtt} is milliseconds, {loss} is the recent packet loss percentage.",
   "ios call_about_stats: Network numbers on the call details card. {rtt} is round-trip time in milliseconds, {loss} is the percentage of lost packets.",
 ]
-text = ""
+text = "{rtt} ms Umlaufzeit · {loss} % verloren"
 
 [t_fb730075f0]
 en = "Your video"
@@ -10578,7 +10578,7 @@ where = [
   "ios call_about_your_video: Row label on the call details card for the codec my camera sends.",
   "desktop call_your_video: Desktop, calls (voice and video) (in call_screen.rs, call_about).",
 ]
-text = ""
+text = "Dein Video"
 
 [t_ad5a1647a6]
 en = "Their video"
@@ -10587,7 +10587,7 @@ where = [
   "ios call_about_their_video: Row label on the call details card for the codec the contact sends.",
   "desktop call_their_video: Desktop, calls (voice and video) (in call_screen.rs, call_about).",
 ]
-text = ""
+text = "Ihr Video"
 
 [t_225ce61bf7]
 en = "Return to call with {name}"
@@ -10595,7 +10595,7 @@ where = [
   "android call_strip_return: Accessibility label of the strip at the top of the app during a call. {name} is the other person's name.",
   "ios call_strip_return: Accessibility label of the strip that returns to the running call. {name} is the contact.",
 ]
-text = ""
+text = "Zurück zum Anruf mit {name}"
 
 [t_33bf09e7fd]
 en = "Return to group call in {name}"
@@ -10603,7 +10603,7 @@ where = [
   "android call_strip_return_group: Accessibility label of the strip at the top of the app during a group call. {name} is the group's name.",
   "ios call_strip_return_group: Accessibility label of the strip that returns to the running group call. {name} is the group.",
 ]
-text = ""
+text = "Zurück zum Gruppenanruf in {name}"
 
 [t_9d9f4cfd33]
 en = "{label}. {status}"
@@ -10611,7 +10611,7 @@ where = [
   "android call_strip_desc: Accessibility description of the call strip. {label} is the 'Return to call...' sentence, {status} the timer or status.",
   "ios call_strip_label: Accessibility label of the call strip. {label} is what tapping does, {status} is the clock or status.",
 ]
-text = ""
+text = "{label}. {status}"
 
 [t_ac55752ea2]
 en = "Return to video call with {name}"
@@ -10619,14 +10619,14 @@ where = [
   "android call_strip_return_video: Accessibility label of the small floating video tile shown over the app during a video call. {name} is the other person's name.",
   "ios call_strip_return_video: Accessibility label of the small video window that returns to the call. {name} is the contact.",
 ]
-text = ""
+text = "Zurück zum Videoanruf mit {name}"
 
 [t_4f5ccb5ad9]
 en = "{signal} signal"
 where = [
   "android call_signal_label: Badge on the Call ended screen. {signal} is a word like Strong or Weak.",
 ]
-text = ""
+text = "Signal: {signal}"
 
 [t_276643a3f8]
 en = "Call again"
@@ -10634,7 +10634,7 @@ where = [
   "android call_again: Button on the Call ended screen that places the call again.",
   "ios call_call_again: Button on the call-ended screen that calls the contact again.",
 ]
-text = ""
+text = "Nochmal anrufen"
 
 [t_8e83cc24ed]
 en = "Closes by itself after 4 seconds."
@@ -10642,7 +10642,7 @@ where = [
   "android call_ended_autoclose: Hint at the bottom of the Call ended screen.",
   "ios call_auto_close: Hint on the call-ended screen.",
 ]
-text = ""
+text = "Schließt sich nach 4 Sekunden von selbst."
 
 [t_27e8136d8e]
 en = "Couldn’t reach {name}"
@@ -10650,7 +10650,7 @@ where = [
   "android call_unreachable_title: Heading when an outgoing call did not connect. {name} is the contact's name (or 'them').",
   "ios call_unreachable_title: Title when a call was not answered or could not connect. {name} is the contact.",
 ]
-text = ""
+text = "{name} nicht erreichbar"
 
 [t_b0d2cf397f]
 en = "{name} may be offline, out of signal, or not taking calls right now. Tinline can’t leave messages."
@@ -10658,7 +10658,7 @@ where = [
   "android call_unreachable_body: Explanation under the Couldn’t reach heading. {name} is the contact's name (or 'They').",
   "ios call_unreachable_body: Explanation when a call could not connect. {name} is the contact.",
 ]
-text = ""
+text = "{name} ist vielleicht offline, ohne Empfang oder nimmt gerade keine Anrufe an. Tinline kann keine Nachrichten hinterlassen."
 
 [t_4b691ade90]
 en = "Tinline can’t use the microphone"
@@ -10667,7 +10667,7 @@ where = [
   "ios shell_mic_title: Title of the screen shown when microphone access is denied.",
   "ios call_mic_needed_title: Title of the screen shown when the microphone permission is missing.",
 ]
-text = ""
+text = "Tinline kann das Mikrofon nicht nutzen"
 
 [t_51a190d802]
 en = "Without it, they won’t hear you. Tinline only listens during calls — never in the background."
@@ -10676,84 +10676,84 @@ where = [
   "ios shell_mic_body: Explains microphone permission when denied.",
   "ios call_mic_needed_body: Explanation on the microphone permission screen.",
 ]
-text = ""
+text = "Ohne es hört man dich nicht. Tinline hört nur während Anrufen zu – nie im Hintergrund."
 
 [t_6717879327]
 en = "Then go to Permissions › Microphone and allow it."
 where = [
   "android call_mic_needed_hint: Hint under the Open settings button; the names Permissions and Microphone are the system settings labels.",
 ]
-text = ""
+text = "Geh dann zu Berechtigungen › Mikrofon und erlaube es."
 
 [t_45e67545ae]
 en = "Your line stays open in the background so calls ring like a normal phone."
 where = [
   "android avail_subtitle: Line under the availability sheet's title.",
 ]
-text = ""
+text = "Deine Leitung bleibt im Hintergrund offen, damit Anrufe wie bei einem normalen Telefon klingeln."
 
 [t_c865b5b93b]
 en = "Not available until {time}."
 where = [
   "android avail_until: Shown while I am on a break. {time} is a clock time such as 7:30 AM.",
 ]
-text = ""
+text = "Nicht erreichbar bis {time}."
 
 [t_fa3750b6ec]
 en = "Not available until {time} tomorrow."
 where = [
   "android avail_until_tomorrow: Shown while I am on a break that ends more than twelve hours from now. {time} is a clock time such as 7:30 AM.",
 ]
-text = ""
+text = "Nicht erreichbar bis morgen {time}."
 
 [t_a5734b0516]
 en = "Not available until you turn it back on."
 where = [
   "android avail_until_manual: Shown while I am on a break without an end time.",
 ]
-text = ""
+text = "Nicht erreichbar, bis du es wieder einschaltest."
 
 [t_3b67f72e64]
 en = "TAKE A BREAK"
 where = [
   "android avail_take_break: Small uppercase section label above the break options in the availability sheet.",
 ]
-text = ""
+text = "PAUSE MACHEN"
 
 [t_43eb8c32e8]
 en = "For 1 hour"
 where = [
   "android avail_one_hour: Break option in the availability sheet.",
 ]
-text = ""
+text = "Für 1 Stunde"
 
 [t_4e8ac174be]
 en = "Until tomorrow morning"
 where = [
   "android avail_tomorrow_morning: Break option in the availability sheet.",
 ]
-text = ""
+text = "Bis morgen früh"
 
 [t_ffff6bb1ed]
 en = "Until I turn it back on"
 where = [
   "android avail_until_on: Break option in the availability sheet.",
 ]
-text = ""
+text = "Bis ich es wieder einschalte"
 
 [t_04849bbbc7]
 en = "you"
 where = [
   "android avail_you: Lowercase stand-in for my own name inside the availability hint when my name is empty.",
 ]
-text = ""
+text = "du"
 
 [t_722d093bd3]
 en = "While you’re away, people who call see “Couldn’t reach {name}”. Nothing is queued and nobody is told why."
 where = [
   "android avail_note: Hint at the bottom of the availability sheet. {name} is my own name (or 'you').",
 ]
-text = ""
+text = "Solange du weg bist, sehen Leute, die anrufen, „{name} nicht erreichbar“. Nichts wird gesammelt, und niemand erfährt, warum."
 
 [t_390bb7681a]
 en = "Ringing…"
@@ -10762,7 +10762,7 @@ where = [
   "ios call_status_ringing: Status line while the other phone is ringing.",
   "desktop call_ringing: Desktop, calls (voice and video) (in call_screen.rs, call_view).",
 ]
-text = ""
+text = "Klingelt…"
 
 [t_ccd261a9cc]
 en = "Calling…"
@@ -10771,7 +10771,7 @@ where = [
   "ios call_status_calling: Status line while the call is being set up, before it rings.",
   "desktop call_calling: Desktop, calls (voice and video) (in call_screen.rs, call_view).",
 ]
-text = ""
+text = "Rufe an…"
 
 [t_44e30f3c68]
 en = "End-to-end encrypted. Your voice is encrypted on this device and only decrypted on {name}’s."
@@ -10779,7 +10779,7 @@ where = [
   "android call_privacy_active: Encryption note once the call is connected. {name} is the other person's name.",
   "ios call_privacy_active: Call card line once the call is connected. {name} is the contact's first or full name.",
 ]
-text = ""
+text = "Ende-zu-Ende-verschlüsselt. Deine Stimme wird auf diesem Gerät verschlüsselt und erst auf dem Gerät von {name} entschlüsselt."
 
 [t_5ef58454ea]
 en = "Connecting to {name}. Once the call is connected, it is end-to-end encrypted."
@@ -10788,7 +10788,7 @@ where = [
   "ios call_privacy_connecting: Call card line while connecting; no encryption claim yet. {name} is the contact's name.",
   "desktop call_connecting_to_once_the: Desktop, calls (voice and video) (in call_screen.rs, call_about). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Verbinde mit {name}. Sobald der Anruf verbunden ist, ist er Ende-zu-Ende-verschlüsselt."
 
 [t_8269587304]
 en = "Missed"
@@ -10797,7 +10797,7 @@ where = [
   "ios shell_call_what_missed: Call list: incoming call the user did not answer.",
   "desktop common_missed: Shared label, used in several places (reason, view).",
 ]
-text = ""
+text = "Verpasst"
 
 [t_19971946a3]
 en = "Couldn’t reach"
@@ -10805,7 +10805,7 @@ where = [
   "android history_kind_unreached: Call history title for an outgoing call that never reached the other person.",
   "desktop call_couldnt_reach: Desktop, calls (voice and video) (in reason.rs, history).",
 ]
-text = ""
+text = "Nicht erreicht"
 
 [t_f879bd7cfe]
 en = "While not available"
@@ -10813,7 +10813,7 @@ where = [
   "android history_kind_away: Call history title for a call that came in while I had calls turned off.",
   "ios shell_call_what_unavailable: Call list: incoming call that came while the user had set themselves unavailable.",
 ]
-text = ""
+text = "Während nicht erreichbar"
 
 [t_29f6680e08]
 en = "Incoming"
@@ -10822,7 +10822,7 @@ where = [
   "ios shell_call_what_incoming: Call list: answered incoming call.",
   "desktop common_incoming: Shared label, used in several places (reason, view).",
 ]
-text = ""
+text = "Eingehend"
 
 [t_9258e751e3]
 en = "Outgoing"
@@ -10831,63 +10831,63 @@ where = [
   "ios shell_call_what_outgoing: Call list: answered outgoing call.",
   "desktop common_outgoing: Shared label, used in several places (reason, view).",
 ]
-text = ""
+text = "Ausgehend"
 
 [t_8fbe164bcf]
 en = "declined"
 where = [
   "android history_detail_declined: Lowercase detail after the call title, e.g. 'Outgoing · declined'.",
 ]
-text = ""
+text = "abgelehnt"
 
 [t_3f5e057c74]
 en = "cancelled"
 where = [
   "android history_detail_cancelled: Lowercase detail after the call title, e.g. 'Outgoing · cancelled'.",
 ]
-text = ""
+text = "abgebrochen"
 
 [t_e43d94eac3]
 en = "no answer"
 where = [
   "android history_detail_no_answer: Lowercase detail after the call title, e.g. 'Outgoing · no answer'.",
 ]
-text = ""
+text = "keine Antwort"
 
 [t_5f9763c953]
 en = "busy"
 where = [
   "android history_detail_busy: Lowercase detail after the call title: the other person was busy.",
 ]
-text = ""
+text = "besetzt"
 
 [t_1b35ab069f]
 en = "answered on another device"
 where = [
   "android history_detail_answered_elsewhere: Lowercase detail after the call title: another of my devices answered.",
 ]
-text = ""
+text = "auf einem anderen Gerät angenommen"
 
 [t_a97b949a1c]
 en = "declined on another device"
 where = [
   "android history_detail_declined_elsewhere: Lowercase detail after the call title: another of my devices declined.",
 ]
-text = ""
+text = "auf einem anderen Gerät abgelehnt"
 
 [t_ec4ce60a26]
 en = "{label} · {time}"
 where = [
   "android history_label_when: Call history sub-line. {label} is the call kind (e.g. Missed), {time} a short relative time (e.g. 4 min ago).",
 ]
-text = ""
+text = "{label} · {time}"
 
 [t_ceaeb98ec1]
 en = "{label} · {detail}"
 where = [
   "android history_label_detail: Call history title with a detail. {label} is the call kind, {detail} e.g. 'declined' or a duration.",
 ]
-text = ""
+text = "{label} · {detail}"
 
 [t_8d695e8257]
 en = "Not called yet"
@@ -10895,42 +10895,42 @@ where = [
   "android history_not_called: Sub-line under a contact's name on Home when there is no call with them yet.",
   "desktop home_not_called_yet: Desktop, home, sidebar and call list (in view.rs, contact_sub).",
 ]
-text = ""
+text = "Noch nicht angerufen"
 
 [t_929986a69e]
 en = "Last call {day}"
 where = [
   "android history_last_call: Sub-line under a contact's name. {day} is today, yesterday, a weekday name or a date.",
 ]
-text = ""
+text = "Letzter Anruf {day}"
 
 [t_08217d7172]
 en = "Missed call · {time}"
 where = [
   "android history_missed_call_when: Sub-line under a contact's name. {time} is a short relative time.",
 ]
-text = ""
+text = "Verpasster Anruf · {time}"
 
 [t_0c9ec95d3a]
 en = "Couldn’t reach · {time}"
 where = [
   "android history_unreached_when: Sub-line under a contact's name. {time} is a short relative time.",
 ]
-text = ""
+text = "Nicht erreicht · {time}"
 
 [t_ea50b037f8]
 en = "today"
 where = [
   "android history_day_today: Lowercase day word in 'Last call today'.",
 ]
-text = ""
+text = "heute"
 
 [t_9892b1d19e]
 en = "yesterday"
 where = [
   "android history_day_yesterday: Lowercase day word in 'Last call yesterday'.",
 ]
-text = ""
+text = "gestern"
 
 [t_271a8a2630]
 en = "Your line is ready"
@@ -10939,7 +10939,7 @@ where = [
   "ios shell_empty_hero_ready: Home hero title when the user has no contacts yet.",
   "desktop signup_your_line_is_ready: Desktop, sign-up, restore and add contact (in signup_view.rs, empty_hero).",
 ]
-text = ""
+text = "Deine Leitung ist bereit"
 
 [t_d5f172a19f]
 en = "Your request to {name} is waiting. Your line opens when they accept."
@@ -10947,7 +10947,7 @@ where = [
   "android empty_hero_request_waiting: Empty-state text after I sent a contact request. {name} is the first name of the person I asked.",
   "ios shell_empty_request_waiting: Home hero line after the user sent a contact request. {name} is the first name of the person asked.",
 ]
-text = ""
+text = "Deine Anfrage an {name} wartet. Deine Leitung öffnet sich, wenn die Person annimmt."
 
 [t_422b46cfc4]
 en = "Add another contact"
@@ -10956,7 +10956,7 @@ where = [
   "ios shell_empty_add_another: Home hero button after a request was sent.",
   "desktop signup_add_another_contact: Desktop, sign-up, restore and add contact (in signup_view.rs, empty_hero).",
 ]
-text = ""
+text = "Weiteren Kontakt hinzufügen"
 
 [t_10e897512d]
 en = "Add someone you’d like to talk to, and you can message and call each other."
@@ -10965,7 +10965,7 @@ where = [
   "ios shell_empty_add_someone: Home hero line when the user has no contacts.",
   "desktop signup_add_someone_youd_like: Desktop, sign-up, restore and add contact (in signup_view.rs, empty_hero).",
 ]
-text = ""
+text = "Füge jemanden hinzu, mit dem du reden möchtest, dann könnt ihr euch schreiben und anrufen."
 
 [t_25cea9cf1a]
 en = "Say hello to {name} whenever you like."
@@ -10973,7 +10973,7 @@ where = [
   "android empty_hero_say_hello: Empty-state text with exactly one contact. {name} is their first name.",
   "ios shell_empty_say_hello: Home hero line with one contact. {name} is their first name.",
 ]
-text = ""
+text = "Sag {name} Hallo, wann immer du magst."
 
 [t_924a60561a]
 en = "Pick someone and say hello whenever you like."
@@ -10982,7 +10982,7 @@ where = [
   "ios shell_empty_pick: Home hero line with several contacts.",
   "desktop signup_pick_someone_and_say: Desktop, sign-up, restore and add contact (in signup_view.rs, empty_hero).",
 ]
-text = ""
+text = "Such dir jemanden aus und sag Hallo, wann immer du magst."
 
 [t_dbf04096a9]
 en = "Start a chat"
@@ -10991,7 +10991,7 @@ where = [
   "ios shell_empty_start_chat: Home hero button with several contacts.",
   "desktop signup_start_a_chat: Desktop, sign-up, restore and add contact (in signup_view.rs, empty_hero).",
 ]
-text = ""
+text = "Chat starten"
 
 [t_6ace595737]
 en = "Your chats show up here."
@@ -11000,7 +11000,7 @@ where = [
   "ios shell_empty_chats: Empty Chats list line.",
   "desktop chat_your_chats_show_up: Desktop, chats (in chat_view.rs, chat_list).",
 ]
-text = ""
+text = "Hier erscheinen deine Chats."
 
 [t_4ca7b34626]
 en = "You’re all caught up."
@@ -11009,7 +11009,7 @@ where = [
   "ios shell_empty_unread: Empty Unread filter line.",
   "desktop chat_youre_all_caught_up: Desktop, chats (in chat_view.rs, chat_list).",
 ]
-text = ""
+text = "Du bist auf dem neuesten Stand."
 
 [t_1586bac225]
 en = "Calls you make and receive show up here."
@@ -11018,7 +11018,7 @@ where = [
   "ios shell_empty_calls: Empty Calls list line.",
   "desktop home_calls_you_make_and: Desktop, home, sidebar and call list (in view.rs, calls_list).",
 ]
-text = ""
+text = "Hier erscheinen Anrufe, die du machst und bekommst."
 
 [t_09a39a8351]
 en = "The people you add show up here."
@@ -11027,7 +11027,7 @@ where = [
   "ios shell_empty_contacts: Empty Contacts list line.",
   "desktop shell_the_people_you_add: Desktop, shell: sidebar, search, contacts (in shell_view.rs, contacts_list).",
 ]
-text = ""
+text = "Hier erscheinen die Leute, die du hinzufügst."
 
 [t_3e1ae38304]
 en = "Calling during your call"
@@ -11036,14 +11036,14 @@ where = [
   "ios shell_ring_waiting: Ringing banner subtitle when a second person calls during the user’s call.",
   "desktop call_calling_during_your_call: Desktop, calls (voice and video) (in view.rs, ring_head_waiting).",
 ]
-text = ""
+text = "Ruft während deines Anrufs an"
 
 [t_e000895cf7]
 en = "{call} from {name}"
 where = [
   "android shell_ring_desc: Accessibility description of the ringing header. {call} is 'Incoming call' or 'Incoming video call', {name} the caller.",
 ]
-text = ""
+text = "{call} von {name}"
 
 [t_936ec492f1]
 en = "Open call from {name}"
@@ -11051,7 +11051,7 @@ where = [
   "android shell_ring_open: Accessibility click label on the ringing header. {name} is the caller.",
   "ios shell_ring_a11y_hint: Screen reader hint of the ringing banner. {name} is the caller.",
 ]
-text = ""
+text = "Anruf von {name} öffnen"
 
 [t_43657afcbe]
 en = "Chats"
@@ -11060,7 +11060,7 @@ where = [
   "ios shell_tab_chats: Bottom tab title and screen reader label.",
   "desktop common_chats: Shared label, used in several places (group_live, shell, view).",
 ]
-text = ""
+text = "Chats"
 
 [t_d65062e6dc]
 en_one = "{count} waiting"
@@ -11068,6 +11068,8 @@ en_other = "{count} waiting"
 where = [
   "android shell_badge_waiting: Accessibility state of the Contacts tab: number of contact requests waiting for my answer.",
 ]
+one = "{count} wartet"
+other = "{count} warten"
 
 [t_342e60a5c5]
 en_one = "{count} unread"
@@ -11076,6 +11078,8 @@ where = [
   "android shell_badge_unread: Accessibility state of a tab: number of unread chats or messages.",
   "ios group_unread_badge_desc: Spoken label of the unread badge. {count} is the number of unread posts.",
 ]
+one = "{count} ungelesen"
+other = "{count} ungelesen"
 
 [t_d9e4173fb4]
 en = "Calling"
@@ -11085,7 +11089,7 @@ where = [
   "ios call_mark_outgoing: Accessibility label of the animated mark on an outgoing call.",
   "desktop status_calling: Desktop, status line (in mark.rs, status_look).",
 ]
-text = ""
+text = "Ruft an"
 
 [t_c3606df9c5]
 en = "In a call"
@@ -11095,7 +11099,7 @@ where = [
   "ios call_mark_active: Accessibility label of the animated mark during a call.",
   "desktop status_in_a_call: Desktop, status line (in mark.rs, status_look).",
 ]
-text = ""
+text = "Im Anruf"
 
 [t_da0e66bff9]
 en = "Starting a group call"
@@ -11103,7 +11107,7 @@ where = [
   "android mark_starting_group_call: Spoken description of the mark while a group call starts.",
   "ios kit_mark_group_starting: Screen-reader label of the mark while a group call starts.",
 ]
-text = ""
+text = "Gruppenanruf startet"
 
 [t_b2a398d7f8]
 en = "In a group call"
@@ -11111,7 +11115,7 @@ where = [
   "android mark_in_group_call: Spoken description of the mark during a group call.",
   "ios kit_mark_in_group_call: Screen-reader label of the mark during a group call.",
 ]
-text = ""
+text = "Im Gruppenanruf"
 
 [t_a44284db0a]
 en = "No connection"
@@ -11120,7 +11124,7 @@ where = [
   "ios kit_mark_offline: Screen-reader label of the mark when the network is down.",
   "desktop status_no_connection: Desktop, status line (in mark.rs, status_look).",
 ]
-text = ""
+text = "Keine Verbindung"
 
 [t_9f20a24573]
 en = "Connected to the network"
@@ -11129,7 +11133,7 @@ where = [
   "ios kit_mark_online: Screen-reader label of the mark when online.",
   "desktop status_connected_to_the_network: Desktop, status line (in mark.rs, status_look).",
 ]
-text = ""
+text = "Mit dem Netz verbunden"
 
 [t_79aeb35116]
 en = "You’re offline"
@@ -11138,7 +11142,7 @@ where = [
   "ios shell_banner_offline_title: Banner title when the phone has no connection.",
   "desktop gate_youre_offline: Desktop, sign-in and gate screens (in view.rs, problem).",
 ]
-text = ""
+text = "Du bist offline"
 
 [t_3aed261ca8]
 en = "Calls won’t ring"
@@ -11146,7 +11150,7 @@ where = [
   "android home_banner_no_ring_title: Banner title when notifications are off.",
   "ios shell_banner_noring_title: Banner title when notifications are off.",
 ]
-text = ""
+text = "Anrufe klingeln nicht"
 
 [t_b2d76f5fe3]
 en = "Notifications are off for Tinline."
@@ -11154,35 +11158,35 @@ where = [
   "android home_banner_no_ring_body: Banner text when notifications are off.",
   "ios shell_banner_noring_text: Banner text when notifications are off.",
 ]
-text = ""
+text = "Benachrichtigungen für Tinline sind aus."
 
 [t_c20b70bc41]
 en = "Calls may be missed when idle"
 where = [
   "android home_banner_battery_title: Banner title when Android limits the app in the background.",
 ]
-text = ""
+text = "Im Ruhezustand können Anrufe verpasst werden"
 
 [t_92c3375cdc]
 en = "Android is limiting Tinline in the background."
 where = [
   "android home_banner_battery_body: Banner text when battery optimisation limits the app.",
 ]
-text = ""
+text = "Android schränkt Tinline im Hintergrund ein."
 
 [t_a6ffa17a51]
 en = "Calls won’t show on the lock screen"
 where = [
   "android home_banner_lock_title: Banner title when full-screen calls are not allowed.",
 ]
-text = ""
+text = "Anrufe erscheinen nicht auf dem Sperrbildschirm"
 
 [t_e07e3f9756]
 en = "Allow full-screen calls so Tinline rings like the phone app."
 where = [
   "android home_banner_lock_body: Banner text when full-screen calls are not allowed.",
 ]
-text = ""
+text = "Erlaube Anrufe im Vollbild, damit Tinline wie die Telefon-App klingelt."
 
 [t_b3eb3ce8d7]
 en = "You’re not available"
@@ -11191,7 +11195,7 @@ where = [
   "ios shell_banner_unavailable_title: Banner title when the user marked themselves not available.",
   "desktop gate_youre_not_available: Desktop, sign-in and gate screens (in view.rs, problem).",
 ]
-text = ""
+text = "Du bist nicht erreichbar"
 
 [t_29f00434f8]
 en = "Calls won’t ring until you turn it back on."
@@ -11200,7 +11204,7 @@ where = [
   "ios shell_banner_unavailable_text: Banner text when the user is not available.",
   "desktop gate_calls_wont_ring_until: Desktop, sign-in and gate screens (in view.rs, problem).",
 ]
-text = ""
+text = "Anrufe klingeln erst wieder, wenn du es einschaltest."
 
 [t_a2b83ef1c7]
 en = "Turn on"
@@ -11209,7 +11213,7 @@ where = [
   "ios shell_banner_turn_on: Banner button that turns a setting back on.",
   "desktop gate_turn_on: Desktop, sign-in and gate screens (in view.rs, problem).",
 ]
-text = ""
+text = "Einschalten"
 
 [t_637c9e5ff1]
 en = "Recent calls"
@@ -11217,7 +11221,7 @@ where = [
   "android home_recent_calls: Title of the full call-log screen.",
   "ios shell_calls_recent: Title of the recent calls screen.",
 ]
-text = ""
+text = "Letzte Anrufe"
 
 [t_1ed0ba9b36]
 en = "No calls yet. History stays on this phone only."
@@ -11225,7 +11229,7 @@ where = [
   "android home_no_calls: Hint on the call log screen when there are no calls.",
   "ios shell_calls_none: Recent calls screen when empty.",
 ]
-text = ""
+text = "Noch keine Anrufe. Der Verlauf bleibt nur auf diesem Handy."
 
 [t_5bf77136ab]
 en = "Close search"
@@ -11233,42 +11237,42 @@ where = [
   "android home_close_search: Accessibility label of the back button in the search bar.",
   "ios shell_close_search: Accessibility label of the button that closes the search field.",
 ]
-text = ""
+text = "Suche schließen"
 
 [t_5b5ac20059]
 en = "Call {name}"
 where = [
   "android home_call_name: Accessibility label of the call button in a row. {name} is the contact.",
 ]
-text = ""
+text = "{name} anrufen"
 
 [t_e3d4019266]
 en = "Add your first contact"
 where = [
   "android home_first_title: Title of the first-run add-contact screen.",
 ]
-text = ""
+text = "Füge deinen ersten Kontakt hinzu"
 
 [t_d7b4cb1a04]
 en = "Show your code to a friend, or copy it and send it. Or scan theirs."
 where = [
   "android home_first_lead: Text on the first-run add-contact screen.",
 ]
-text = ""
+text = "Zeig deinen Code einer Freundin oder einem Freund, oder kopiere ihn und schick ihn. Oder scanne ihren."
 
 [t_6c3a34a46b]
 en = "Paste their card"
 where = [
   "android home_first_paste: Button on the first-run add-contact screen.",
 ]
-text = ""
+text = "Ihre Karte einfügen"
 
 [t_ff919c7555]
 en = "Waiting for them to scan — keep this open."
 where = [
   "android home_first_waiting: Status on the first-run add-contact screen while my code is shown.",
 ]
-text = ""
+text = "Wartet, bis gescannt wird – lass das hier offen."
 
 [t_768662e0b1]
 en = "All"
@@ -11277,7 +11281,7 @@ where = [
   "ios shell_filter_all: Chat list filter chip: all chats.",
   "desktop shell_all: Desktop, shell: sidebar, search, contacts (in shell_view.rs, chat_chips).",
 ]
-text = ""
+text = "Alle"
 
 [t_c9def6cf39]
 en = "Unread"
@@ -11286,7 +11290,7 @@ where = [
   "ios shell_filter_unread: Chat list filter chip: only unread chats.",
   "desktop shell_unread: Desktop, shell: sidebar, search, contacts (in shell_view.rs, chat_chips).",
 ]
-text = ""
+text = "Ungelesen"
 
 [t_8567f1ee2b]
 en = "Draft:"
@@ -11294,7 +11298,7 @@ where = [
   "android chats_draft: Prefix of a chat row's preview when I have an unsent draft; the draft text follows.",
   "ios shell_chats_draft: Chat list preview prefix before an unsent draft. The draft text follows.",
 ]
-text = ""
+text = "Entwurf:"
 
 [t_dc46133a29]
 en = "Cancelled"
@@ -11303,7 +11307,7 @@ where = [
   "ios shell_call_what_cancelled: Call list: call cancelled before it was answered.",
   "desktop common_cancelled: Shared label, used in several places (reason, view).",
 ]
-text = ""
+text = "Abgebrochen"
 
 [t_a082e480ac]
 en = "{name}’s profile"
@@ -11311,7 +11315,7 @@ where = [
   "android calls_profile_desc: Accessibility label of the avatar on a Calls row. {name} is the contact.",
   "ios shell_calls_profile_a11y: Screen reader label of a call row’s avatar button. {name} is the contact.",
 ]
-text = ""
+text = "Profil von {name}"
 
 [t_4890385e3c]
 en = "Can’t call"
@@ -11319,21 +11323,21 @@ where = [
   "android calls_cant_call: Accessibility action text at the end of a Calls row when I cannot call this person.",
   "ios shell_calls_action_cant: Screen reader: the contact cannot be called right now.",
 ]
-text = ""
+text = "Anrufen nicht möglich"
 
 [t_b4407af6cb]
 en = "{name}, {what} call, {time}. {action}"
 where = [
   "android calls_row_desc: Accessibility description of a Calls row. {what} is e.g. Missed, {time} the time of the call, {action} is 'Call' or 'Can’t call'.",
 ]
-text = ""
+text = "{name}, Anruf: {what}, {time}. {action}"
 
 [t_46c7c21b75]
 en = "{name}, {what} call, {duration}, {time}. {action}"
 where = [
   "android calls_row_desc_duration: Accessibility description of a Calls row with a duration. {duration} is e.g. 2:31; others as in the row description.",
 ]
-text = ""
+text = "{name}, Anruf: {what}, {duration}, {time}. {action}"
 
 [t_e7a879b634]
 en = "{name}, group info"
@@ -11341,14 +11345,14 @@ where = [
   "android calls_group_info_desc: Accessibility label of the avatar on a group call row. {name} is the group.",
   "ios shell_calls_group_info_a11y: Screen reader label of a group call row’s avatar. {name} is the group.",
 ]
-text = ""
+text = "{name}, Gruppeninfo"
 
 [t_dc916e75d3]
 en = "{name}, {what}, {time}. Start or join a call"
 where = [
   "android calls_group_row_desc: Accessibility description of a group call row. {what} is the group call summary, {time} the time of the call.",
 ]
-text = ""
+text = "{name}, {what}, {time}. Anruf starten oder beitreten"
 
 [t_915083bafb]
 en = "Find a contact"
@@ -11357,7 +11361,7 @@ where = [
   "ios shell_contacts_find: Placeholder and label of the contact filter field on the Contacts tab.",
   "desktop shell_find_a_contact: Desktop, shell: sidebar, search, contacts (in shell_view.rs, new_chat_overlay).",
 ]
-text = ""
+text = "Kontakt finden"
 
 [t_2b1e690ea9]
 en = "Share your code or paste theirs"
@@ -11366,7 +11370,7 @@ where = [
   "ios shell_contacts_add_sub: Second line of the add-contact row.",
   "desktop shell_share_your_code_or: Desktop, shell: sidebar, search, contacts (in shell_view.rs, contacts_list).",
 ]
-text = ""
+text = "Teile deinen Code oder füge ihren ein"
 
 [t_e7dde6507e]
 en = "Waiting for you"
@@ -11374,7 +11378,7 @@ where = [
   "android contacts_waiting_for_you: Section title for contact requests waiting for my answer.",
   "ios shell_contacts_waiting_you: Section header on the Contacts tab: people who asked to be the user’s contact.",
 ]
-text = ""
+text = "Warten auf dich"
 
 [t_104927efde]
 en = "Wants to add you as a contact"
@@ -11383,7 +11387,7 @@ where = [
   "ios shell_contacts_wants_add: Line under a contact request received.",
   "desktop shell_wants_to_add_you: Desktop, shell: sidebar, search, contacts (in shell_view.rs, contacts_list).",
 ]
-text = ""
+text = "Möchte dich als Kontakt hinzufügen"
 
 [t_7395746ee0]
 en = "Accepting lets you message and call each other."
@@ -11392,7 +11396,7 @@ where = [
   "ios shell_contacts_accept_hint: Explains what accepting a contact request does.",
   "desktop shell_accepting_lets_you_message: Desktop, shell: sidebar, search, contacts (in shell_view.rs, contacts_list).",
 ]
-text = ""
+text = "Wenn du annimmst, könnt ihr euch schreiben und anrufen."
 
 [t_b956f3e4a0]
 en = "Waiting for them"
@@ -11400,7 +11404,7 @@ where = [
   "android contacts_waiting_for_them: Section title for requests I sent that wait for an answer.",
   "ios shell_contacts_waiting_them: Section header on the Contacts tab: requests the user sent.",
 ]
-text = ""
+text = "Warten auf Antwort"
 
 [t_3b8261f1af]
 en = "No one called “{query}” in your contacts."
@@ -11408,7 +11412,7 @@ where = [
   "android contacts_none_found: Footer of the Contacts tab when the search finds nobody. {query} is what I typed.",
   "ios shell_contacts_none_match: Contacts tab message when the filter matches nobody. {query} is what the user typed.",
 ]
-text = ""
+text = "Niemand namens „{query}“ in deinen Kontakten."
 
 [t_ce5aed0499]
 en_one = "{count} contact"
@@ -11418,6 +11422,8 @@ where = [
   "ios shell_contacts_count: Contacts tab footer: how many contacts.",
   "desktop shell_contacts_count: Footer under the contacts list. {count} is how many contacts you have.",
 ]
+one = "{count} Kontakt"
+other = "{count} Kontakte"
 
 [t_e8cd0add72]
 en = "Delivered to everyone"
@@ -11425,7 +11431,7 @@ where = [
   "android list_tick_delivered: Accessibility description of the receipt mark on a group chat row: delivered to all members.",
   "ios shell_tick_two: Screen reader label. Group row: last message reached everyone.",
 ]
-text = ""
+text = "An alle zugestellt"
 
 [t_3798d3c6ff]
 en = "Read by everyone"
@@ -11433,7 +11439,7 @@ where = [
   "android list_tick_read: Accessibility description of the receipt mark on a group chat row: read by all members.",
   "ios shell_tick_read: Screen reader label. Group row: last message was read by everyone.",
 ]
-text = ""
+text = "Von allen gelesen"
 
 [t_0812d6c65d]
 en = "Couldn’t start the call"
@@ -11441,14 +11447,14 @@ where = [
   "android main_call_start_failed: Shown under the Calls list when placing a call failed without a reason.",
   "ios shell_err_call_start: Error shown when starting a call failed without a message.",
 ]
-text = ""
+text = "Der Anruf ließ sich nicht starten"
 
 [t_e43524af2c]
 en = "You joined the group."
 where = [
   "android main_joined_group: Snackbar after I joined a group by link.",
 ]
-text = ""
+text = "Du bist der Gruppe beigetreten."
 
 [t_6118e29833]
 en = "Last message {time}"
@@ -11456,14 +11462,14 @@ where = [
   "android main_last_message: Sub-line of a person in the New chat list. {time} is a short time, e.g. 12:31 or Mon.",
   "ios shell_new_chat_last_message: New chat list second line. {time} is when the last message was sent.",
 ]
-text = ""
+text = "Letzte Nachricht {time}"
 
 [t_6fba4f6865]
 en = "{name} is told you blocked them"
 where = [
   "android main_told_blocked: Snackbar after I blocked someone. {name} is their first name.",
 ]
-text = ""
+text = "{name} erfährt, dass du blockiert hast"
 
 [t_fdfcf0009c]
 en = "Couldn’t save your account safely on this phone."
@@ -11471,7 +11477,7 @@ where = [
   "android app_save_unsafe: Error after creating an account when its key could not be stored in the phone's secure storage.",
   "ios shell_err_save_account_safely: Error when the account key could not be stored safely on this phone.",
 ]
-text = ""
+text = "Dein Konto ließ sich auf diesem Handy nicht sicher speichern."
 
 [t_fc16498c7b]
 en = "Couldn’t save your account on this phone."
@@ -11479,7 +11485,7 @@ where = [
   "android app_save_failed: Error after creating an account when saving it failed.",
   "ios shell_err_save_account: Error after creating or restoring an account when it could not be stored on this phone.",
 ]
-text = ""
+text = "Dein Konto ließ sich auf diesem Handy nicht speichern."
 
 [t_6d009aea8f]
 en = "That recovery phrase belongs to a different identity"
@@ -11487,7 +11493,7 @@ where = [
   "android app_phrase_other_identity: Error when the recovery phrase I typed is for another account than the locked one.",
   "ios shell_flow_different_identity: Error when the recovery phrase typed to restore belongs to another identity than the one being restored.",
 ]
-text = ""
+text = "Diese Wiederherstellungswörter gehören zu einer anderen Identität"
 
 [t_447402f66d]
 en = "That didn’t match. Check the spelling and spaces."
@@ -11495,7 +11501,7 @@ where = [
   "android support_err_wrong_passphrase: Error under the passphrase field when it is wrong.",
   "ios shell_err_wrong_passphrase: Error under the passphrase field when the passphrase is wrong.",
 ]
-text = ""
+text = "Das hat nicht gepasst. Prüf Schreibweise und Leerzeichen."
 
 [t_c5228116d0]
 en = "Type a passphrase, or skip it"
@@ -11503,7 +11509,7 @@ where = [
   "android support_err_weak_passphrase: Error when the passphrase field is empty.",
   "ios shell_err_weak_passphrase: Error when the passphrase field is empty and a passphrase is required.",
 ]
-text = ""
+text = "Gib eine Passphrase ein oder überspring sie"
 
 [t_7b6d48809e]
 en = "Locked — enter your passphrase to unlock"
@@ -11512,7 +11518,7 @@ where = [
   "ios chat_err_locked: Friendly error when the vault is locked.",
   "ios shell_err_locked: Error when something needs the unlocked app.",
 ]
-text = ""
+text = "Gesperrt – gib deine Passphrase ein, um zu entsperren"
 
 [t_f06df71faf]
 en = "That recovery phrase is not valid"
@@ -11520,7 +11526,7 @@ where = [
   "android support_err_bad_phrase: Error when the typed recovery phrase is not valid.",
   "ios shell_err_bad_phrase: Error when the typed recovery phrase is not valid.",
 ]
-text = ""
+text = "Diese Wiederherstellungswörter passen nicht"
 
 [t_78ca893ba4]
 en = "That account is already on this phone"
@@ -11528,175 +11534,175 @@ where = [
   "android support_err_account_exists: Error when adding an account that is already on this phone.",
   "ios shell_err_account_exists: Error when restoring or linking an account that is already on this phone.",
 ]
-text = ""
+text = "Dieses Konto ist schon auf diesem Handy"
 
 [t_d55ac1dd3c]
 en = "their"
 where = [
   "ios kit_tick_their: Stand-in for a first name in the tick labels when no name is known (\"On their device\").",
 ]
-text = ""
+text = "ihrem"
 
 [t_eb90d80ea2]
 en = "Match {index} of {total}"
 where = [
   "ios chat_find_match_of: Accessibility label of the match counter. {index} is the current match number, {total} how many matches.",
 ]
-text = ""
+text = "Treffer {index} von {total}"
 
 [t_d30c4d9fbd]
 en = "Message actions"
 where = [
   "ios chat_message_actions: Accessibility action name that opens the message actions sheet.",
 ]
-text = ""
+text = "Nachrichtenaktionen"
 
 [t_84a49c7c1f]
 en = "Read · signed by {first} · device {device}"
 where = [
   "ios chat_proof_read: Line in the message sheet for a signed read receipt. {first} is the other person's first name, {device} the short id of the device that signed.",
 ]
-text = ""
+text = "Gelesen · signiert von {first} · Gerät {device}"
 
 [t_79cbcaccf4]
 en = "Delivered · signed by {first} · device {device}"
 where = [
   "ios chat_proof_delivered: Line in the message sheet for a signed delivery receipt. {first} first name, {device} short id of the signing device.",
 ]
-text = ""
+text = "Zugestellt · signiert von {first} · Gerät {device}"
 
 [t_977acb9243]
 en = "You blocked {first}"
 where = [
   "ios chat_blocked_note: Quiet line under the last message when the user blocked this person. {first} is their first name.",
 ]
-text = ""
+text = "Du hast {first} blockiert"
 
 [t_aa71cc755c]
 en = "You blocked {first} · {date}"
 where = [
   "ios chat_blocked_note_date: Quiet line when the user blocked this person. {first} first name, {date} the day of the block.",
 ]
-text = ""
+text = "Du hast {first} blockiert · {date}"
 
 [t_348d44de68]
 en = "Signed by {first} · {date}"
 where = [
   "ios chat_blocked_signed: Small print under the notice that someone blocked the user. {first} their first name, {date} the day.",
 ]
-text = ""
+text = "Signiert von {first} · {date}"
 
 [t_e4d8b823c3]
 en = "Chat"
 where = [
   "ios chat_fallback_name: Header name used when a chat has no known contact name.",
 ]
-text = ""
+text = "Chat"
 
 [t_b266dbd16b]
 en = "Kept encrypted inside Tinline. “Save to phone” copies it to your photos, where other apps can see it."
 where = [
   "ios chat_viewer_photo_hint: Hint at the bottom of the photo viewer. The quoted words match the \"Save to phone\" label.",
 ]
-text = ""
+text = "Bleibt verschlüsselt in Tinline. „Aufs Handy speichern“ kopiert es in deine Fotos, wo andere Apps es sehen können."
 
 [t_86f638dc40]
 en = "host"
 where = [
   "ios group_member_desc_host: Spoken description part (lower case, joined with commas).",
 ]
-text = ""
+text = "Host"
 
 [t_21c1c62907]
 en = "call host"
 where = [
   "ios group_member_desc_call_host: Spoken description part (lower case, joined with commas).",
 ]
-text = ""
+text = "Anruf-Host"
 
 [t_00447cd507]
 en = "{summary}. Open actions"
 where = [
   "ios group_member_desc: Spoken description of a member row. {summary} is the comma-separated name, role and host parts.",
 ]
-text = ""
+text = "{summary}. Aktionen öffnen"
 
 [t_bb25ebc0ad]
 en = "{status} · also hosts calls"
 where = [
   "ios group_host_also_calls: Sub line for a host that is also a call host. {status} is Online or Offline.",
 ]
-text = ""
+text = "{status} · hostet auch Anrufe"
 
 [t_f76352b5f0]
 en = "Hosts store the group and pass posts on when others are offline. They are members you trust: a host can read everything posted in this group. Appoint a host from a member’s menu; they have to accept. Removing a host changes the group’s address within 2 days, so that device can no longer reach it."
 where = [
   "ios group_hosts_note_admin: Explanation under the host list, for admins (replaces the plain one).",
 ]
-text = ""
+text = "Hosts speichern die Gruppe und geben Beiträge weiter, wenn andere offline sind. Es sind Mitglieder, denen du vertraust: Ein Host kann alles lesen, was in dieser Gruppe gepostet wird. Lege einen Host über das Menü eines Mitglieds fest; die Person muss zustimmen. Wenn du einen Host entfernst, ändert sich die Adresse der Gruppe innerhalb von 2 Tagen, sodass dieses Gerät sie nicht mehr erreicht."
 
 [t_8bae39c7cf]
 en = "A call host carries the call. Everyone in a call connects to it, and it passes the audio on, so it can hear the call. That is separate from chat hosting: a chat host is not a call host unless you also appoint it as one. Call hosts are members you trust, and each one chooses to accept. Appoint one from a member’s menu, or host calls on this phone. A phone only hosts calls that its owner starts."
 where = [
   "ios group_callhosts_note_admin: Explanation under the call host list, for admins.",
 ]
-text = ""
+text = "Ein Anruf-Host trägt den Anruf. Alle im Anruf verbinden sich mit ihm, und er gibt den Ton weiter, kann den Anruf also hören. Das ist getrennt vom Chat-Hosten: Ein Chat-Host ist kein Anruf-Host, außer du legst ihn auch als solchen fest. Anruf-Hosts sind Mitglieder, denen du vertraust, und jeder entscheidet selbst, ob er zusagt. Lege einen über das Menü eines Mitglieds fest oder hoste Anrufe auf diesem Handy. Ein Handy hostet nur Anrufe, die seine Besitzerin oder sein Besitzer startet."
 
 [t_a2f22a6fc1]
 en = "{flags} of {total}"
 where = [
   "ios group_flags_count: Count next to the heading and spoken label of the flag meter. {flags} is flags so far, {total} flags that remove.",
 ]
-text = ""
+text = "{flags} von {total}"
 
 [t_c23190545c]
 en = "Removed after {total} admin flags"
 where = [
   "ios group_removal_title: Headline of the removal page. {total} is the number of flags that remove.",
 ]
-text = ""
+text = "Nach {total} Admin-Markierungen entfernt"
 
 [t_fd5de9e620]
 en = "Leave {group}?"
 where = [
   "ios group_leave_title: Title of the leave dialog. {group} is the group’s name.",
 ]
-text = ""
+text = "{group} verlassen?"
 
 [t_c4c1eba891]
 en = "Invite to {group}"
 where = [
   "ios group_invite_title: Title of the invite sheet. {group} is the group’s name.",
 ]
-text = ""
+text = "Zu {group} einladen"
 
 [t_6a7d19da82]
 en = "Cancel call host request{device}"
 where = [
   "ios group_member_cancel_callhost: Action row title. {device} is a short device id, empty if the member has one device.",
 ]
-text = ""
+text = "Anruf-Host-Anfrage zurückziehen{device}"
 
 [t_0d3dc0a631]
 en = "Remove as call host{device}"
 where = [
   "ios group_member_remove_callhost: Action row title. {device} is a short device id, empty if the member has one device.",
 ]
-text = ""
+text = "Als Anruf-Host entfernen{device}"
 
 [t_4c68bd0c07]
 en = "Make call host{device}"
 where = [
   "ios group_member_make_callhost: Action row title. {device} is a short device id, empty if the member has one device.",
 ]
-text = ""
+text = "Zum Anruf-Host machen{device}"
 
 [t_2c5d81e205]
 en = "{total} flags remove {name} from the group"
 where = [
   "ios group_member_flag_sub: Sub line. {total} is the number of flags that remove, {name} the member’s first name.",
 ]
-text = ""
+text = "{total} Markierungen entfernen {name} aus der Gruppe"
 
 [t_cf7c3ae83a]
 en = "{name} joined"
@@ -11704,7 +11710,7 @@ where = [
   "ios group_sys_joined: System line in a group chat. {name} is who joined.",
   "ios shell_group_sys_joined: Group chat system line. {name} is the member who joined.",
 ]
-text = ""
+text = "{name} ist beigetreten"
 
 [t_a7294226a3]
 en = "{name} left"
@@ -11712,21 +11718,21 @@ where = [
   "ios group_sys_left: System line in a group chat. {name} is who left.",
   "ios shell_group_sys_left: Group chat system line. {name} is the member who left.",
 ]
-text = ""
+text = "{name} hat die Gruppe verlassen"
 
 [t_2d2f46e181]
 en = "You were removed after {total} admin flags"
 where = [
   "ios group_sys_removed_you: System line: the user was removed. {total} is the number of flags that remove.",
 ]
-text = ""
+text = "Du wurdest nach {total} Admin-Markierungen entfernt"
 
 [t_cc4e320bf2]
 en = "{name} was removed after {total} admin flags"
 where = [
   "ios group_sys_removed: System line: a member was removed. {name} is the member, {total} the number of flags.",
 ]
-text = ""
+text = "{name} wurde nach {total} Admin-Markierungen entfernt"
 
 [t_3e142c9eb0]
 en = "{by} made you an admin"
@@ -11734,7 +11740,7 @@ where = [
   "ios group_sys_admin_you: System line. {by} is who made the user admin.",
   "ios shell_group_sys_admin_granted_you: Group chat system line. {by} is who made the user an admin.",
 ]
-text = ""
+text = "{by} hat dich zum Admin gemacht"
 
 [t_ea5318e5e0]
 en = "{by} made {name} an admin"
@@ -11742,7 +11748,7 @@ where = [
   "ios group_sys_admin: System line. {by} made {name} an admin.",
   "ios shell_group_sys_admin_granted: Group chat system line. {by} granted admin to {name}.",
 ]
-text = ""
+text = "{by} hat {name} zum Admin gemacht"
 
 [t_870567c1f4]
 en = "{by} removed {name} as admin"
@@ -11750,7 +11756,7 @@ where = [
   "ios group_sys_unadmin: System line. {by} removed {name} as admin.",
   "ios shell_group_sys_admin_revoked: Group chat system line. {by} removed {name}’s admin role.",
 ]
-text = ""
+text = "{by} hat {name} die Admin-Rolle entzogen"
 
 [t_be5bddaced]
 en = "A device of {name}’s now hosts the group"
@@ -11758,7 +11764,7 @@ where = [
   "ios group_sys_host_added: System line. {name} is the member whose device now hosts.",
   "ios shell_group_sys_host_added: Group chat system line. {name} is the member whose device became a host.",
 ]
-text = ""
+text = "Ein Gerät von {name} hostet jetzt die Gruppe"
 
 [t_058c17b479]
 en = "A device of {name}’s stopped hosting the group"
@@ -11766,7 +11772,7 @@ where = [
   "ios group_sys_host_removed: System line. {name} is the member whose device stopped hosting.",
   "ios shell_group_sys_host_removed: Group chat system line. {name} is the member whose device stopped hosting.",
 ]
-text = ""
+text = "Ein Gerät von {name} hostet die Gruppe nicht mehr"
 
 [t_36d94817e7]
 en = "You: {text}"
@@ -11774,7 +11780,7 @@ where = [
   "ios group_preview_you: Group list row preview of the user’s own last post. {text} is the post.",
   "ios shell_group_preview_mine: Group row second line: the user’s own last message. {text} is the message text.",
 ]
-text = ""
+text = "Du: {text}"
 
 [t_9946335b15]
 en = "{name}: {text}"
@@ -11782,7 +11788,7 @@ where = [
   "ios group_preview_author: Group list row preview of someone’s last post. {name} is the author’s first name, {text} the post.",
   "ios shell_group_preview_other: Group row second line: someone’s last message. {name} is the author’s first name, {text} the message.",
 ]
-text = ""
+text = "{name}: {text}"
 
 [t_28c02cfd31]
 en_one = "{count} member"
@@ -11791,27 +11797,29 @@ where = [
   "ios group_members_count: Member count. {count} is the number of members.",
   "desktop group_members_count: Number of people in a group, in the group summary line. {count} is the member count.",
 ]
+one = "{count} Mitglied"
+other = "{count} Mitglieder"
 
 [t_7213d47f32]
 en = "{members} · this device hosts the group"
 where = [
   "ios group_status_this_device: Group header sub line. {members} is the member count text.",
 ]
-text = ""
+text = "{members} · dieses Gerät hostet die Gruppe"
 
 [t_2279140dcc]
 en = "{members} · no host yet"
 where = [
   "ios group_status_no_host: Group header sub line. {members} is the member count text.",
 ]
-text = ""
+text = "{members} · noch kein Host"
 
 [t_52534f1261]
 en = "{members} · waiting for a host"
 where = [
   "ios group_status_waiting: Group header sub line. {members} is the member count text.",
 ]
-text = ""
+text = "{members} · wartet auf einen Host"
 
 [t_3831cc5788]
 en = "{members} · {hosts}"
@@ -11819,28 +11827,28 @@ where = [
   "ios group_status_hosts: Group header sub line. {members} is the member count text, {hosts} the host count text.",
   "desktop group_members_and_hosts: Group summary line under its name. {members} is e.g. \"3 members\", {hosts} is e.g. \"2 hosts\".",
 ]
-text = ""
+text = "{members} · {hosts}"
 
 [t_829ade1bf9]
 en = "Waiting for {name} · via {group}"
 where = [
   "ios group_req_pending: Line for a chat request the user sent. {name} is who it went to, {group} the group it goes through.",
 ]
-text = ""
+text = "Wartet auf {name} · über {group}"
 
 [t_0a675d84aa]
 en = "{name} declined"
 where = [
   "ios group_req_declined: Line for a declined chat request. {name} is who declined.",
 ]
-text = ""
+text = "{name} hat abgelehnt"
 
 [t_c0ee57d92f]
 en = "{name} blocked you"
 where = [
   "ios group_req_blocked: Line for a chat request that was blocked. {name} is who blocked the user.",
 ]
-text = ""
+text = "{name} hat dich blockiert"
 
 [t_7735823936]
 en = "Already a member"
@@ -11848,7 +11856,7 @@ where = [
   "ios group_pick_already_member: Reason a contact cannot be picked for an invite.",
   "desktop group_already_a_member: Desktop, groups (in group_live.rs, pick_rows).",
 ]
-text = ""
+text = "Schon Mitglied"
 
 [t_4d1748bdef]
 en = "Invited · waiting"
@@ -11856,7 +11864,7 @@ where = [
   "ios group_pick_invited_waiting: Reason a contact cannot be picked for an invite.",
   "desktop group_invited_waiting: Desktop, groups (in group_live.rs, pick_rows).",
 ]
-text = ""
+text = "Eingeladen · wartet"
 
 [t_a41296ea1e]
 en = "Invited · not delivered yet"
@@ -11864,7 +11872,7 @@ where = [
   "ios group_inv_undelivered: State of an invitation the user sent.",
   "desktop group_invited_not_delivered_yet: Desktop, groups (in group_live.rs, sent_invitation_line).",
 ]
-text = ""
+text = "Eingeladen · noch nicht zugestellt"
 
 [t_4c7964499e]
 en = "Joined"
@@ -11872,14 +11880,14 @@ where = [
   "ios group_inv_joined: State of an invitation the user sent.",
   "desktop group_joined: Desktop, groups (in group_live.rs, sent_invitation_line).",
 ]
-text = ""
+text = "Beigetreten"
 
 [t_7df34dff82]
 en = "Yours will be flag {yours} of {total}. {name} is removed right away: hosts refuse their new messages and they see they were removed."
 where = [
   "ios group_flag_copy_final: Flag dialog sentence for the flag that removes the member. {yours} is which flag it is, {total} flags remove, {name} the member’s first name.",
 ]
-text = ""
+text = "Deine wird Markierung {yours} von {total}. {name} wird sofort entfernt: Hosts nehmen keine neuen Nachrichten mehr an, und die Person sieht, dass sie entfernt wurde."
 
 [t_a70b928917]
 en = "Yours will be flag {yours} of {total}. Any admin’s flags count, yours again too. At {total} flags {name} is removed right away and sees they were removed."
