@@ -118,6 +118,17 @@ Arabic needs «،», and other scripts have their own separators.
 Fix: join with the platform list formatter (Android `ListFormatter`, iOS
 `ListFormatter`/`formatted(.list)`, desktop: a translated separator key), never a literal.
 
+## 9e. Found in review (de)
+
+- Rename the group "Open link" switch to "Public link" so it no longer shares an
+  entry with the browser button (also hi).
+- `onboarding_step_phrase` header "Recovery phrase" → "Recovery words", one term per screen.
+- `gcall_about_*`: one sentence per host kind ("{name}'s device carries this call."),
+  since a bold device name at sentence start can't take an article.
+- `group_a_message` glued into the desktop composer placeholder: full placeholder strings.
+- Desktop `check_name`/`check_text` (`profile_ui.rs`): reuse the Android/iOS
+  `profile_err_name_*` per-field strings.
+
 ## 10. Not translatable
 
 - `app_ev` "Ev" is a Debug format string: remove it from the catalog.
