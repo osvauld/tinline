@@ -6,6 +6,9 @@ text = "Wartet aufs Senden"
 [kit_tick_sent]
 text = "Gesendet, wartet auf Bestätigung vom Gerät von {first}"
 
+[kit_tick_sent_their]
+text = "Gesendet, wartet auf Bestätigung vom Gerät der Person"
+
 [kit_tick_delivered]
 text = "Auf dem Gerät von {first}"
 
@@ -14,6 +17,9 @@ text = "Auf ihrem Gerät"
 
 [kit_tick_read]
 text = "Gelesen auf dem Gerät von {first}"
+
+[kit_tick_read_their]
+text = "Gelesen auf dem Gerät der Person"
 
 [kit_tick_bad]
 text = "Nicht zugestellt"
@@ -110,6 +116,9 @@ text = "Hinzufügen"
 
 [chat_card_chat_with]
 text = "Mit {name} chatten?"
+
+[chat_card_chat_with_unnamed]
+text = "Mit diesem Kontakt chatten?"
 
 [chat_card_add_name]
 text = "{name} hinzufügen?"
@@ -592,6 +601,10 @@ text = "Lege zuerst einen Host fest. Ein Link nennt einen Host."
 [group_invites_link_valid]
 text = "7 Tage gültig"
 
+[group_member_flags]
+one = "{count} von {total} Markierungen"
+other = "{count} von {total} Markierungen"
+
 [group_member_blocked_by_you]
 text = "Von dir blockiert"
 
@@ -633,6 +646,15 @@ text = "Host"
 
 [group_role_call_host]
 text = "Anruf-Host"
+
+[group_member_desc_owner]
+text = "{name}, Eigentümer. Aktionen öffnen"
+
+[group_member_desc_admin]
+text = "{name}, Admin. Aktionen öffnen"
+
+[group_member_desc_member]
+text = "{name}, Mitglied. Aktionen öffnen"
 
 [group_this_device]
 text = "Dieses Gerät"
@@ -725,6 +747,14 @@ text = "Markierungen gegen dich"
 
 [group_flags_count]
 text = "{count} von {total}"
+
+[group_flags_count_desc]
+one = "{count} von {total} Markierungen"
+other = "{count} von {total} Markierungen"
+
+[group_flags_left]
+one = "Noch eine Markierung von einem Admin entfernt dich aus der Gruppe. Markierungen lassen sich nicht zurücknehmen. Bis dahin kannst du weiter lesen und posten."
+other = "Noch {count} Markierungen von Admins entfernen dich aus der Gruppe. Markierungen lassen sich nicht zurücknehmen. Bis dahin kannst du weiter lesen und posten."
 
 [group_removal_title]
 text = "Nach {total} Admin-Markierungen entfernt"
@@ -853,14 +883,23 @@ text = "Als Host entfernen"
 [group_member_cancel_callhost]
 text = "Anruf-Host-Anfrage zurückziehen"
 
+[group_member_cancel_callhost_device]
+text = "Anruf-Host-Anfrage zurückziehen · {device}"
+
 [group_member_cancel_callhost_sub]
 text = "Wartet auf Zusage vom Gerät von {name}"
 
 [group_member_remove_callhost]
 text = "Als Anruf-Host entfernen"
 
+[group_member_remove_callhost_device]
+text = "Als Anruf-Host entfernen · {device}"
+
 [group_member_make_callhost]
 text = "Zum Anruf-Host machen"
+
+[group_member_make_callhost_device]
+text = "Zum Anruf-Host machen · {device}"
 
 [group_member_make_callhost_sub]
 text = "Bittet {name}, Gruppenanrufe zu tragen. Die Person muss zustimmen."
@@ -978,11 +1017,20 @@ text = "Wartet auf einen Host"
 [group_req_pending]
 text = "Wartet auf {name} · über {group}"
 
+[group_req_pending_unnamed]
+text = "Wartet auf Antwort · über {group}"
+
 [group_req_accepted_msgs]
 text = "{name} hat angenommen · nur Nachrichten"
 
+[group_req_accepted_msgs_unnamed]
+text = "Angenommen · nur Nachrichten"
+
 [group_req_accepted_connecting]
 text = "{name} hat angenommen · verbindet"
+
+[group_req_accepted_connecting_unnamed]
+text = "Angenommen · verbindet"
 
 [group_req_declined]
 text = "{name} hat abgelehnt"
@@ -1150,6 +1198,9 @@ text = "Die Person ist blockiert und kann keine weiteren Anfragen senden."
 [group_notice_request_accepted]
 text = "{name} hat deine Anfrage angenommen. Ihr könnt euch jetzt schreiben; Anrufe bleiben aus, bis einer von euch sie erlaubt."
 
+[group_notice_request_accepted_unnamed]
+text = "Deine Anfrage wurde angenommen. Ihr könnt euch jetzt schreiben; Anrufe bleiben aus, bis einer von euch sie erlaubt."
+
 [group_calls_unavailable]
 text = "Gruppenanrufe gibt es hier noch nicht."
 
@@ -1240,6 +1291,9 @@ text = "{text}, {time}. Anruf starten oder beitreten"
 
 [group_host_asked_title]
 text = "{name} bittet dieses Handy, {group} zu hosten"
+
+[group_host_asked_title_admin]
+text = "Ein Admin bittet dieses Handy, {group} zu hosten"
 
 [group_host_asked_text]
 text = "Ein Host hält eine vollständige Kopie der Gruppe, gibt Nachrichten weiter, während die Handys der Mitglieder schlafen, und kennt die Gruppenadressen der Mitglieder. Er muss online bleiben und braucht Akku: Ein Computer, der an bleibt, ist ein besserer Host. Hosten macht dich nicht zum Admin."
@@ -1366,6 +1420,9 @@ text = "Beitreten…"
 [group_join_invited_by]
 text = "Eingeladen von {name}"
 
+[group_join_invited_by_unknown]
+text = "Eingeladen von jemandem außerhalb deiner Kontakte"
+
 [group_join_invited_by_you]
 text = "Von dir eingeladen"
 
@@ -1374,6 +1431,9 @@ text = "Ein Link für dein eigenes Konto"
 
 [group_join_owner]
 text = "Eigentümer: {name}"
+
+[group_join_owner_unknown]
+text = "Eigentümer ist nicht in deinen Kontakten"
 
 [group_join_owner_you]
 text = "Die Gruppe gehört dir"
@@ -1404,6 +1464,9 @@ text = "Vollbild zeigen"
 
 [group_share_text]
 text = "Tritt {group} auf Tinline bei: {link}"
+
+[group_share_text_unnamed]
+text = "Tritt dieser Gruppe auf Tinline bei: {link}"
 
 [group_share_subject]
 text = "Gruppeneinladung teilen"
@@ -1447,17 +1510,32 @@ text = "Deine Gruppen"
 [group_list_empty]
 text = "Noch keine Gruppen. Erstelle eine oder nimm eine Einladung an."
 
+[group_invited_you]
+text = "**{name}** hat dich zu **{group}** eingeladen"
+
+[group_invited_you_someone]
+text = "Jemand hat dich zu **{group}** eingeladen"
+
 [group_joined_toast]
 text = "Du bist {group} beigetreten."
 
 [group_cant_join]
 text = "Beitreten hat nicht geklappt"
 
+[group_wants_to_chat]
+text = "**{name}** möchte chatten"
+
+[group_wants_to_chat_someone]
+text = "**Jemand** möchte chatten"
+
 [group_member_of]
 text = "Mitglied von {group}"
 
 [group_request_accept_note]
 text = "Wenn du annimmst, wird {name} ein Kontakt nur für Nachrichten. Anrufe kannst du später erlauben."
+
+[group_request_accept_note_unnamed]
+text = "Wenn du annimmst, wird die Person ein Kontakt nur für Nachrichten. Anrufe kannst du später erlauben."
 
 [group_block]
 text = "Blockieren"
@@ -1858,6 +1936,9 @@ text = "Nicht für Notrufe."
 [settings_test_tone]
 text = "Testton"
 
+[settings_test_tone_sub]
+text = "Einen {hz}-Hz-Ton statt des Mikrofons senden"
+
 [security_wrong_pass]
 text = "Das hat nicht gepasst. Versuch es nochmal."
 
@@ -1899,6 +1980,10 @@ text = "Halte das privat. Wer es hat, kann als du auftreten."
 
 [security_tab_key]
 text = "Schlüssel"
+
+[security_tab_words]
+one = "{count} Wort"
+other = "{count} Wörter"
 
 [security_key_failed]
 text = "Der Schlüssel ließ sich nicht vorbereiten. Nutze stattdessen deine {words} Wörter."
@@ -1996,6 +2081,9 @@ text = "Gerät"
 [devices_unlinked_msg]
 text = "{name} getrennt"
 
+[devices_unlinked_msg_unnamed]
+text = "Gerät getrennt"
+
 [devices_finish_call]
 text = "Beende zuerst deinen Anruf"
 
@@ -2037,6 +2125,9 @@ text = "Jetzt abgleichen"
 
 [devices_syncing]
 text = "Abgleich mit {name}…"
+
+[devices_syncing_unnamed]
+text = "Abgleich…"
 
 [devices_unlink_this]
 text = "Dieses Gerät trennen"
@@ -2251,6 +2342,9 @@ text = "Gleicher Code auf beiden?"
 [link_same_code_lead]
 text = "Prüfe, ob {name} diesen Code zeigt, und bestätige dann dort."
 
+[link_same_code_lead_unnamed]
+text = "Prüfe, ob dein anderes Gerät diesen Code zeigt, und bestätige dann dort."
+
 [link_diff_code]
 text = "Anderer Code, oder du hast das nicht gestartet? Brich ab. Vielleicht hat jemand anderes den QR-Code gescannt."
 
@@ -2320,6 +2414,9 @@ text = "Stimmen die Codes überein?"
 [link_match_body]
 text = "**{name}** möchte deinem Konto beitreten. Es sollte dieselben sechs Ziffern zeigen wie unten."
 
+[link_match_body_unnamed]
+text = "**Das neue Gerät** möchte deinem Konto beitreten. Es sollte dieselben sechs Ziffern zeigen wie unten."
+
 [link_match_warn]
 text = "Vergleiche sie selbst. Wenn sie abweichen, hat vielleicht jemand anderes den Code zuerst gescannt."
 
@@ -2367,6 +2464,9 @@ text = "Schließen"
 
 [link_scan_title]
 text = "Scanne den Code auf deinem neuen Gerät"
+
+[link_scan_step1]
+text = "Öffne auf dem neuen Gerät Tinline und wähle **Mit einem Gerät verknüpfen**."
 
 [link_scan_step2]
 text = "Es zeigt einen QR-Code und einen kurzen Code. Sie gelten 5 Minuten und funktionieren einmal."
@@ -2436,6 +2536,9 @@ text = "Dieses Handy wurde getrennt"
 
 [link_unlinked_lead]
 text = "{name} wurde von einem deiner anderen Geräte von diesem Handy entfernt. Kontakte, Chats und Anrufe des Kontos sind hier gelöscht. Deine anderen Geräte sind nicht betroffen."
+
+[link_unlinked_lead_unnamed]
+text = "Dein Konto wurde von einem deiner anderen Geräte von diesem Handy entfernt. Kontakte, Chats und Anrufe des Kontos sind hier gelöscht. Deine anderen Geräte sind nicht betroffen."
 
 [link_ok]
 text = "OK"
@@ -2854,6 +2957,9 @@ text = "Ausgehender Anruf"
 [shell_call_what_unavailable]
 text = "Während deiner Pause"
 
+[shell_call_desc_unavailable]
+text = "Anruf während deiner Pause"
+
 [shell_call_what_missed]
 text = "Verpasst"
 
@@ -2869,11 +2975,17 @@ text = "Abgelehnter Anruf"
 [shell_call_what_no_answer]
 text = "Keine Antwort"
 
+[shell_call_desc_no_answer]
+text = "Anruf ohne Antwort"
+
 [shell_call_what_cancelled]
 text = "Abgebrochen"
 
 [shell_call_desc_cancelled]
 text = "Anruf abgebrochen"
+
+[shell_call_what_unreachable]
+text = "Anruf ließ sich nicht verbinden"
 
 [shell_call_desc_unreachable]
 text = "Anruf, der nicht verbunden werden konnte"
@@ -3129,6 +3241,12 @@ text = "Profil von {name}"
 
 [shell_calls_what_duration]
 text = "{what} · {duration}"
+
+[shell_calls_row_a11y]
+text = "{name}, {what}, {stamp}. {action}"
+
+[shell_calls_row_a11y_duration]
+text = "{name}, {what}, {duration}, {stamp}. {action}"
 
 [shell_calls_action_call]
 text = "Anrufen"
@@ -3608,6 +3726,9 @@ text = "Gib der Angabe einen Namen."
 [people_rule_key_bad]
 text = "Dieser Name geht nicht. Halte ihn kurz, ohne Steuerzeichen."
 
+[people_rule_value_long]
+text = "Das ist zu lang. Jede Angabe darf bis zu {limit} groß sein."
+
 [people_rule_too_many]
 text = "Du hast {max} Angaben erreicht. Entferne eine, um eine neue hinzuzufügen."
 
@@ -4076,6 +4197,9 @@ text = "Akku unter {percent} %. Das Hosten ist eingeschränkt: Es ist immer nur 
 [call_group_no_host]
 text = "Kein Anruf-Host verfügbar"
 
+[call_group_connect_failed]
+text = "Der Anruf ließ sich nicht verbinden"
+
 [call_person_you]
 text = "Du"
 
@@ -4106,6 +4230,9 @@ text = "Du bist der Anruf-Host"
 
 [call_group_host_is]
 text = "Anruf-Host: Gerät von {name}"
+
+[call_group_host_is_yours]
+text = "Anruf-Host: dein anderes Gerät"
 
 [call_group_host_is_someone]
 text = "Anruf-Host: Gerät eines Mitglieds"
@@ -4290,6 +4417,15 @@ text = "{name} hat die Gruppe verlassen"
 [group_sys_left_someone]
 text = "Jemand hat die Gruppe verlassen"
 
+[group_sys_removed_someone]
+text = "Jemand wurde nach {total} Admin-Markierungen entfernt"
+
+[group_sys_admin_you_you]
+text = "Du hast dich selbst zum Admin gemacht"
+
+[group_sys_admin_you_named]
+text = "Du hast {name} zum Admin gemacht"
+
 [group_sys_admin_you_someone]
 text = "Du hast jemanden zum Admin gemacht"
 
@@ -4305,8 +4441,17 @@ text = "{by} hat jemanden zum Admin gemacht"
 [group_sys_admin_someone_you]
 text = "Jemand hat dich zum Admin gemacht"
 
+[group_sys_admin_someone_named]
+text = "Jemand hat {name} zum Admin gemacht"
+
 [group_sys_admin_someone_someone]
 text = "Jemand hat jemanden zum Admin gemacht"
+
+[group_sys_unadmin_you_you]
+text = "Du hast dich selbst als Admin entfernt"
+
+[group_sys_unadmin_you_named]
+text = "Du hast {name} als Admin entfernt"
 
 [group_sys_unadmin_you_someone]
 text = "Du hast jemanden als Admin entfernt"
@@ -4323,17 +4468,116 @@ text = "{by} hat jemanden als Admin entfernt"
 [group_sys_unadmin_someone_you]
 text = "Jemand hat dich als Admin entfernt"
 
+[group_sys_unadmin_someone_named]
+text = "Jemand hat {name} als Admin entfernt"
+
 [group_sys_unadmin_someone_someone]
 text = "Jemand hat jemanden als Admin entfernt"
+
+[group_sys_host_added_someone]
+text = "Ein Gerät eines Mitglieds hostet jetzt die Gruppe"
+
+[group_sys_host_removed_someone]
+text = "Ein Gerät eines Mitglieds hostet die Gruppe nicht mehr"
+
+[group_member_desc_owner_callhost]
+text = "{name}, Eigentümer und Anruf-Host. Aktionen öffnen"
+
+[group_member_desc_owner_host]
+text = "{name}, Eigentümer und Host. Aktionen öffnen"
+
+[group_member_desc_owner_host_callhost]
+text = "{name}, Eigentümer, Host und Anruf-Host. Aktionen öffnen"
+
+[group_member_desc_admin_callhost]
+text = "{name}, Admin und Anruf-Host. Aktionen öffnen"
+
+[group_member_desc_admin_host]
+text = "{name}, Admin und Host. Aktionen öffnen"
+
+[group_member_desc_admin_host_callhost]
+text = "{name}, Admin, Host und Anruf-Host. Aktionen öffnen"
+
+[group_member_desc_member_callhost]
+text = "{name}, Mitglied und Anruf-Host. Aktionen öffnen"
+
+[group_member_desc_member_host]
+text = "{name}, Mitglied und Host. Aktionen öffnen"
+
+[group_member_desc_member_host_callhost]
+text = "{name}, Mitglied, Host und Anruf-Host. Aktionen öffnen"
+
+[group_host_online]
+text = "Host online"
+
+[group_host_offline]
+text = "Host offline"
+
+[group_host_online_calls]
+text = "Online · hostet auch Anrufe"
+
+[group_host_offline_calls]
+text = "Offline · hostet auch Anrufe"
 
 [call_group_about_this_phone]
 text = "**Dieses Handy** trägt diesen Anruf. Alle im Anruf verbinden sich damit; es gibt den Ton weiter und wählt aus, wer zu hören ist, wenn mehrere sprechen."
 
+[call_group_about_your_other]
+text = "**Dein anderes Gerät** trägt diesen Anruf. Alle im Anruf verbinden sich damit; es gibt den Ton weiter und wählt aus, wer zu hören ist, wenn mehrere sprechen."
+
 [call_group_about_member]
 text = "**Das Gerät von {name}** trägt diesen Anruf. Alle im Anruf verbinden sich damit; es gibt den Ton weiter und wählt aus, wer zu hören ist, wenn mehrere sprechen."
+
+[call_group_about_someone]
+text = "**Das Gerät eines Mitglieds** trägt diesen Anruf. Alle im Anruf verbinden sich damit; es gibt den Ton weiter und wählt aus, wer zu hören ist, wenn mehrere sprechen."
 
 [call_group_about_unknown]
 text = "**Das Host-Gerät** trägt diesen Anruf. Alle im Anruf verbinden sich damit; es gibt den Ton weiter und wählt aus, wer zu hören ist, wenn mehrere sprechen."
 
 [people_busy_until_today]
 text = "Beschäftigt bis {time}"
+
+[people_busy_until_tomorrow]
+text = "Beschäftigt bis morgen, {time}"
+
+[people_busy_until_mon]
+text = "Beschäftigt bis Montag, {time}"
+
+[people_busy_until_tue]
+text = "Beschäftigt bis Dienstag, {time}"
+
+[people_busy_until_wed]
+text = "Beschäftigt bis Mittwoch, {time}"
+
+[people_busy_until_thu]
+text = "Beschäftigt bis Donnerstag, {time}"
+
+[people_busy_until_fri]
+text = "Beschäftigt bis Freitag, {time}"
+
+[people_busy_until_sat]
+text = "Beschäftigt bis Samstag, {time}"
+
+[people_busy_until_sun]
+text = "Beschäftigt bis Sonntag, {time}"
+
+[chat_when_today]
+text = "Heute, {time}"
+
+[chat_when_yesterday]
+text = "Gestern, {time}"
+
+[chat_when_date]
+text = "{date}, {time}"
+
+[group_when_today]
+text = "Heute, {time}"
+
+[group_when_yesterday]
+text = "Gestern, {time}"
+
+[group_when_date]
+text = "{date}, {time}"
+
+[people_when_date]
+text = "{date}, {time}"
