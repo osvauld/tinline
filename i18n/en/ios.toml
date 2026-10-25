@@ -3674,7 +3674,7 @@ text = "Only the account you select is online at a time, so this account is onli
 note = "Explanation after adding another account that has no name."
 
 [onboarding_back_lead]
-text = "Your account is back on this phone. Your contacts, chats and call history are kept on your other devices, not with us. This phone starts with an empty contact list."
+text = "Your account is back on this phone. Your contacts, chats and call history are kept on your other devices, not on a server. This phone starts with an empty contact list."
 note = "Explanation after restoring an account."
 
 [onboarding_open]

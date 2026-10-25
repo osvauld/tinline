@@ -664,11 +664,11 @@ note = "Section heading on Group info (admins) for the open link and admins-only
 
 [groupsb_open_link_on]
 text = "Anyone with the link can join"
-note = "Second line of the Open link switch while it is on."
+note = "Second line of the Public link switch while it is on."
 
 [groupsb_open_link_off]
 text = "Only people you invite can join"
-note = "Second line of the Open link switch while it is off."
+note = "Second line of the Public link switch while it is off."
 
 [groupsb_copy_link]
 text = "Copy link"
@@ -683,7 +683,7 @@ text = "A link that doesn’t expire"
 note = "Second line of the Copy link row when the link is not yet in hand."
 
 [groupsb_turn_on_open]
-text = "Turn on Open link to share it"
+text = "Turn on Public link to share it"
 note = "Second line of the Copy link row while the group is not open."
 
 [groupsb_cant_get_link]
