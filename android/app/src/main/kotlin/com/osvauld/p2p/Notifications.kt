@@ -43,6 +43,10 @@ object Notifications {
      * left "in call" showing on Pixel 8 / moto after the log said idle, 2026-10-19).
      */
     const val ID_CALL = 7
+    /** The content-free "you may have a new message" notice after a wake the app could not open (locked). */
+    const val ID_WAKE_NOTICE = 8
+    /** Opens the wake ring screen and answers it (the wake notification's Answer). */
+    const val EXTRA_WAKE_ANSWER = "wake_answer"
 
     private fun nm(c: Context) = c.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
@@ -117,18 +121,23 @@ object Notifications {
     private fun service(c: Context, action: String, code: Int): PendingIntent =
         PendingIntent.getService(c, code, Intent(c, CoreService::class.java).setAction(action), flags())
 
-    private fun idleTitle(): String {
+    /** Push mode (no always-on service): the service only runs for a wake, so it says what it is doing. */
+    private fun wakeOnly(c: Context) = PushMode.pushOn(c)
+
+    private fun idleTitle(c: Context): String {
         val app = P2pApp.instance
         return when {
+            wakeOnly(c) -> c.getString(R.string.notif_wake_service_title)
             !app.availability.value.available -> appString(R.string.notif_idle_unavailable)
             app.status.value?.online == false -> appString(R.string.notif_idle_offline)
             else -> appString(R.string.notif_idle_available)
         }
     }
 
-    private fun idleText(): String {
+    private fun idleText(c: Context): String {
         val app = P2pApp.instance
         return when {
+            wakeOnly(c) -> c.getString(R.string.notif_wake_service_text)
             !app.availability.value.available -> appString(R.string.notif_idle_unavailable_text)
             app.status.value?.online == false -> appString(R.string.notif_idle_offline_text)
             else -> appString(R.string.notif_idle_available_text)
@@ -145,8 +154,8 @@ object Notifications {
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setColor(0xFF0B6B5B.toInt())
-            .setContentTitle(inCall ?: idleTitle())
-            .setContentText(if (inCall != null) c.getString(R.string.notif_return_to_call) else idleText())
+            .setContentTitle(inCall ?: idleTitle(c))
+            .setContentText(if (inCall != null) c.getString(R.string.notif_return_to_call) else idleText(c))
             .setContentIntent(
                 if (groupCall) activity(c, MainActivity::class.java, 13) { it.putExtra(EXTRA_GCALL_OPEN, true) }
                 else if (inCall != null) activity(c, CallActivity::class.java, 10)
@@ -181,10 +190,38 @@ object Notifications {
 
     fun incoming(c: Context, call: CallInfo) {
         if (!AlertPrefs.calls(c)) return   // Settings › Notifications › Calls off
-        val name = call.peerName.ifBlank { c.getString(R.string.common_unknown) }
+        ring(c, call.peerName.ifBlank { c.getString(R.string.common_unknown) }, call.video,
+            answer = activity(c, CallActivity::class.java, 21) { it.putExtra(CallActivity.EXTRA_ANSWER, true) },
+            decline = service(c, CoreService.ACTION_DECLINE, 22))
+    }
+
+    /**
+     * A call wake (docs/push.md): rings before the call itself has arrived, with the user's own name for the contact.
+     * Same look and id as [incoming], so the real call replaces it in place. Answer opens the wake screen (it asks for the
+     * microphone first); Decline goes to the service. Nothing here carries message text; the name is looked up locally.
+     */
+    fun wakeRing(c: Context, name: String) {
+        if (!AlertPrefs.calls(c)) return
+        ring(c, name.ifBlank { c.getString(R.string.common_someone) }, false,
+            answer = activity(c, IncomingCallActivity::class.java, 23) { it.putExtra(EXTRA_WAKE_ANSWER, true) },
+            decline = service(c, CoreService.ACTION_WAKE_DECLINE, 24))
+    }
+
+    /** A wake the app could not open (still locked): names nobody and says nothing, only that something may be waiting. */
+    fun wakeNotice(c: Context) {
+        if (!AlertPrefs.messages(c)) return
+        val n = Notification.Builder(c, CH_MESSAGES)
+            .setSmallIcon(R.drawable.ic_stat_tinline)
+            .setAutoCancel(true)
+            .setContentTitle(c.getString(R.string.notif_wake_notice_title))
+            .setContentText(c.getString(R.string.notif_wake_notice_text))
+            .setContentIntent(activity(c, MainActivity::class.java, 41))
+            .build()
+        try { nm(c).notify(ID_WAKE_NOTICE, n) } catch (e: SecurityException) { }
+    }
+
+    private fun ring(c: Context, name: String, video: Boolean, answer: PendingIntent, decline: PendingIntent) {
         val full = activity(c, IncomingCallActivity::class.java, 20)
-        val answer = activity(c, CallActivity::class.java, 21) { it.putExtra(CallActivity.EXTRA_ANSWER, true) }
-        val decline = service(c, CoreService.ACTION_DECLINE, 22)
         val b = Notification.Builder(c, CH_CALLS)
             .setSmallIcon(R.drawable.ic_stat_tinline)
             .setCategory(Notification.CATEGORY_CALL)
@@ -196,9 +233,9 @@ object Notifications {
             .setTimeoutAfter(CallController.RING_TIMEOUT_MS)
         if (Build.VERSION.SDK_INT >= 31) {
             val p = Person.Builder().setName(name).setImportant(true).build()
-            b.style = Notification.CallStyle.forIncomingCall(p, decline, answer).setIsVideo(call.video)
+            b.style = Notification.CallStyle.forIncomingCall(p, decline, answer).setIsVideo(video)
         } else {
-            b.setContentTitle(name).setContentText(if (call.video) c.getString(R.string.notif_incoming_video) else c.getString(R.string.notif_incoming))
+            b.setContentTitle(name).setContentText(if (video) c.getString(R.string.notif_incoming_video) else c.getString(R.string.notif_incoming))
             b.addAction(Notification.Action.Builder(Icon.createWithResource(c, android.R.drawable.ic_menu_close_clear_cancel), c.getString(R.string.common_decline), decline).build())
             b.addAction(Notification.Action.Builder(Icon.createWithResource(c, android.R.drawable.sym_action_call), c.getString(R.string.common_answer), answer).build())
         }

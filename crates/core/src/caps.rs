@@ -41,6 +41,8 @@ impl Node {
         if deliver {
             self.inner.ctx.tokens_kick(did);
         }
+        // The contact's wake token follows its call permission.
+        self.inner.ctx.wake_kick();
         self.inner.sink.on_contacts_changed();
         saved.map_err(Error::from)
     }

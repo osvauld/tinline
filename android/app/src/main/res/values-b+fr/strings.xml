@@ -623,6 +623,7 @@
     <string name="onboarding_terms_by_continuing">En continuant, vous acceptez les [Conditions d’utilisation](terms) et confirmez avoir lu la [Politique de confidentialité](privacy).</string>
     <string name="onboarding_perms_title">Pour que les appels vous parviennent</string>
     <string name="onboarding_perms_lead">Tinline fonctionne comme une ligne téléphonique : elle reste ouverte discrètement en arrière-plan. Chacune de ces autorisations est facultative, et vous pourrez les changer plus tard.</string>
+    <string name="onboarding_perms_lead_push">Tinline se repose jusqu’à ce que quelqu’un vous joigne, puis un petit signal le réveille. Chacune de ces autorisations est facultative, et vous pourrez les changer plus tard.</string>
     <string name="onboarding_perm_mic">Micro</string>
     <string name="onboarding_perm_mic_why">Pour qu’on puisse vous entendre. Utilisé uniquement pendant un appel.</string>
     <string name="onboarding_perm_notifications">Notifications</string>
@@ -774,6 +775,10 @@
     <string name="settings_battery_title">Arrière-plan et batterie</string>
     <string name="settings_battery_keep">Garder ma ligne ouverte</string>
     <string name="settings_battery_hint">Tinline reste connecté en arrière-plan pour que les appels sonnent comme sur un téléphone normal. Cela consomme un peu de batterie. La liste ci-dessous indique ce dont Android a besoin pour le permettre.</string>
+    <string name="settings_battery_hint_push">Tinline se repose jusqu’à ce que quelqu’un vous joigne, puis un petit signal le réveille : il n’a donc pas besoin d’exception pour la batterie. La liste ci-dessous indique ce dont Android a besoin pour sonner.</string>
+    <string name="settings_stay_connected">Rester connecté en permanence</string>
+    <string name="settings_stay_connected_on">Tinline garde votre ligne ouverte, pour que les appels et les messages arrivent tout de suite. Cela consomme un peu plus de batterie.</string>
+    <string name="settings_stay_connected_off">Tinline se repose jusqu’à ce que quelqu’un vous joigne, puis se réveille. Le signal de réveil ne contient aucun message, c’est un simple petit signal.</string>
     <string name="settings_checklist">VÉRIFICATIONS</string>
     <string name="settings_battery_row">Batterie</string>
     <string name="settings_battery_optimised">Optimisée — Android peut mettre Tinline en pause</string>
@@ -956,6 +961,10 @@
     <string name="notif_idle_unavailable_text">Les appels ne sonneront pas. Touchez pour changer.</string>
     <string name="notif_idle_offline_text">Vos appels arrivent à nouveau dès que vous êtes de retour en ligne.</string>
     <string name="notif_idle_available_text">Votre ligne est ouverte. Touchez pour changer.</string>
+    <string name="notif_wake_service_title">Récupération de vos messages…</string>
+    <string name="notif_wake_service_text">Tinline se remettra en veille tout seul.</string>
+    <string name="notif_wake_notice_title">Vous avez peut-être un nouveau message</string>
+    <string name="notif_wake_notice_text">Ouvrez Tinline et déverrouillez-le pour voir ce qui est arrivé.</string>
     <string name="notif_return_to_call">Touchez pour revenir à l’appel</string>
     <string name="notif_leave">Quitter</string>
     <string name="notif_end_call">Raccrocher</string>
@@ -1441,7 +1450,7 @@
     <string name="call_mic_unavailable">Micro indisponible — on ne peut pas vous entendre</string>
     <string name="call_mic_permission">Autorisation du micro nécessaire — on ne peut pas vous entendre</string>
     <string name="avail_title">Disponible pour les appels</string>
-    <string name="avail_subtitle">Votre ligne reste ouverte en arrière-plan pour que les appels sonnent comme sur un téléphone normal.</string>
+    <string name="avail_subtitle">Quand c’est activé, les appels sonnent comme sur un téléphone normal.</string>
     <string name="avail_until">Indisponible jusqu’à %1$s.</string>
     <string name="avail_until_tomorrow">Indisponible jusqu’à demain à %1$s.</string>
     <string name="avail_until_manual">Indisponible jusqu’à ce que vous réactiviez les appels.</string>
@@ -1452,6 +1461,8 @@
     <string name="avail_note">Pendant votre absence, les personnes qui appellent voient « Impossible de joindre %1$s ». Rien n’est mis en attente et personne n’est informé de la raison.</string>
     <string name="call_status_ringing">Sonnerie…</string>
     <string name="call_status_calling">Appel…</string>
+    <string name="call_status_waking">Réveil de son téléphone…</string>
+    <string name="call_wake_connecting">Connexion…</string>
     <string name="call_privacy_active">Chiffré de bout en bout. Votre voix est chiffrée sur cet appareil et déchiffrée uniquement sur celui de %1$s.</string>
     <string name="call_privacy_connecting">Connexion à %1$s. Une fois l’appel connecté, il est chiffré de bout en bout.</string>
     <string name="history_kind_missed">Manqué</string>

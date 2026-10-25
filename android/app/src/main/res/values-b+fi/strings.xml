@@ -608,6 +608,7 @@
     <string name="onboarding_terms_by_continuing">Jatkamalla hyväksyt [käyttöehdot](terms) ja olet lukenut [tietosuojakäytännön](privacy).</string>
     <string name="onboarding_perms_title">Jotta puhelut tavoittavat sinut</string>
     <string name="onboarding_perms_lead">Tinline toimii kuin puhelinlinja: se pysyy hiljaa auki taustalla. Jokainen näistä on valinnainen, ja voit muuttaa niitä myöhemmin.</string>
+    <string name="onboarding_perms_lead_push">Tinline lepää, kunnes joku tavoittelee sinua, ja pieni herätys käynnistää sen. Jokainen näistä on valinnainen, ja voit muuttaa niitä myöhemmin.</string>
     <string name="onboarding_perm_mic">Mikrofoni</string>
     <string name="onboarding_perm_mic_why">Jotta sinut kuullaan. Käytössä vain puhelun aikana.</string>
     <string name="onboarding_perm_notifications">Ilmoitukset</string>
@@ -757,6 +758,10 @@
     <string name="settings_battery_title">Tausta ja akku</string>
     <string name="settings_battery_keep">Pidä linjani auki</string>
     <string name="settings_battery_hint">Tinline pysyy yhteydessä taustalla, jotta puhelut soivat kuin tavallisessa puhelimessa. Se kuluttaa hieman akkua. Alla oleva tarkistuslista kertoo, mitä Android tarvitsee sen sallimiseen.</string>
+    <string name="settings_battery_hint_push">Tinline lepää, kunnes joku tavoittelee sinua, ja pieni herätys käynnistää sen, joten se ei tarvitse akkupoikkeusta. Alla oleva tarkistuslista kertoo, mitä Android tarvitsee soidakseen.</string>
+    <string name="settings_stay_connected">Pysy aina yhteydessä</string>
+    <string name="settings_stay_connected_on">Tinline pitää linjasi auki, joten puhelut ja viestit tulevat heti perille. Se kuluttaa hieman enemmän akkua.</string>
+    <string name="settings_stay_connected_off">Tinline lepää, kunnes joku tavoittelee sinua, ja herää sitten. Herätys ei sisällä viestiä, se on vain pieni tönäisy.</string>
     <string name="settings_checklist">TARKISTUSLISTA</string>
     <string name="settings_battery_row">Akku</string>
     <string name="settings_battery_optimised">Optimoitu — Android voi pysäyttää Tinlinen</string>
@@ -939,6 +944,10 @@
     <string name="notif_idle_unavailable_text">Puhelut eivät soi. Muuta napauttamalla.</string>
     <string name="notif_idle_offline_text">Puhelusi tulevat taas perille, kun olet taas verkossa.</string>
     <string name="notif_idle_available_text">Linjasi on auki. Muuta napauttamalla.</string>
+    <string name="notif_wake_service_title">Haetaan viestejäsi…</string>
+    <string name="notif_wake_service_text">Tinline palaa lepotilaan itsestään.</string>
+    <string name="notif_wake_notice_title">Sinulle voi olla uusi viesti</string>
+    <string name="notif_wake_notice_text">Avaa Tinline ja avaa lukitus, niin näet, mitä on tullut.</string>
     <string name="notif_return_to_call">Palaa puheluun napauttamalla</string>
     <string name="notif_leave">Poistu</string>
     <string name="notif_end_call">Lopeta puhelu</string>
@@ -1417,7 +1426,7 @@
     <string name="call_mic_unavailable">Mikrofoni ei ole käytettävissä - sinua ei kuulla</string>
     <string name="call_mic_permission">Mikrofonille tarvitaan lupa - sinua ei kuulla</string>
     <string name="avail_title">Tavoitettavissa puheluille</string>
-    <string name="avail_subtitle">Linjasi pysyy auki taustalla, jotta puhelut soivat kuin tavallisessa puhelimessa.</string>
+    <string name="avail_subtitle">Kun tämä on päällä, puhelut soivat kuin tavallisessa puhelimessa.</string>
     <string name="avail_until">Ei tavoitettavissa %1$s asti.</string>
     <string name="avail_until_tomorrow">Ei tavoitettavissa huomenna %1$s asti.</string>
     <string name="avail_until_manual">Ei tavoitettavissa, kunnes otat sen taas käyttöön.</string>
@@ -1428,6 +1437,8 @@
     <string name="avail_note">Kun olet poissa, soittajat näkevät ilmoituksen ”Yhteyttä ei saatu: %1$s”. Mitään ei jää jonoon, eikä kenellekään kerrota syytä.</string>
     <string name="call_status_ringing">Soi…</string>
     <string name="call_status_calling">Soitetaan…</string>
+    <string name="call_status_waking">Hänen puhelintaan herätetään…</string>
+    <string name="call_wake_connecting">Yhdistetään…</string>
     <string name="call_privacy_active">Salattu päästä päähän. Äänesi salataan tällä laitteella ja puretaan vain henkilön %1$s laitteella.</string>
     <string name="call_privacy_connecting">Yhdistetään: %1$s. Kun puhelu on yhdistetty, se on salattu päästä päähän.</string>
     <string name="history_kind_missed">Vastaamaton</string>

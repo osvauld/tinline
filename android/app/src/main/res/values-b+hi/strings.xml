@@ -608,6 +608,7 @@
     <string name="onboarding_terms_by_continuing">आगे बढ़ने का मतलब है कि आप [इस्तेमाल की शर्तों](terms) से सहमत हैं और आपने [प्राइवेसी पॉलिसी](privacy) पढ़ ली है।</string>
     <string name="onboarding_perms_title">ताकि कॉल आप तक पहुँच सकें</string>
     <string name="onboarding_perms_lead">Tinline एक फ़ोन लाइन की तरह काम करता है: यह बैकग्राउंड में चुपचाप खुला रहता है। इनमें से कोई भी ज़रूरी नहीं है, और आप इन्हें बाद में बदल सकते हैं।</string>
+    <string name="onboarding_perms_lead_push">जब तक कोई आपसे संपर्क न करे, Tinline आराम करता है, फिर एक छोटा-सा संकेत उसे जगा देता है। इनमें से कोई भी ज़रूरी नहीं है, और आप इन्हें बाद में बदल सकते हैं।</string>
     <string name="onboarding_perm_mic">माइक्रोफ़ोन</string>
     <string name="onboarding_perm_mic_why">ताकि वे आपको सुन सकें। सिर्फ़ कॉल के दौरान इस्तेमाल होता है।</string>
     <string name="onboarding_perm_notifications">सूचनाएँ</string>
@@ -757,6 +758,10 @@
     <string name="settings_battery_title">बैकग्राउंड और बैटरी</string>
     <string name="settings_battery_keep">मेरी लाइन खुली रखें</string>
     <string name="settings_battery_hint">Tinline बैकग्राउंड में जुड़ा रहता है ताकि आम फ़ोन की तरह कॉल की घंटी बजे। इसमें थोड़ी बैटरी लगती है। Android से इसकी अनुमति पाने के लिए नीचे दी गई चीज़ें ज़रूरी हैं।</string>
+    <string name="settings_battery_hint_push">जब तक कोई आपसे संपर्क न करे, Tinline आराम करता है, फिर एक छोटा-सा संकेत उसे जगा देता है, इसलिए उसे बैटरी की छूट की ज़रूरत नहीं होती। घंटी बजाने के लिए Android को नीचे दी गई चीज़ें चाहिए।</string>
+    <string name="settings_stay_connected">हमेशा जुड़े रहें</string>
+    <string name="settings_stay_connected_on">Tinline आपकी लाइन खुली रखता है, ताकि कॉल और संदेश तुरंत पहुँचें। इसमें थोड़ी ज़्यादा बैटरी लगती है।</string>
+    <string name="settings_stay_connected_off">जब तक कोई आपसे संपर्क न करे, Tinline आराम करता है, फिर जाग जाता है। जगाने वाले संकेत में कोई संदेश नहीं होता, बस एक छोटा-सा इशारा।</string>
     <string name="settings_checklist">जाँच सूची</string>
     <string name="settings_battery_row">बैटरी</string>
     <string name="settings_battery_optimised">ऑप्टिमाइज़्ड — Android, Tinline को रोक सकता है</string>
@@ -939,6 +944,10 @@
     <string name="notif_idle_unavailable_text">कॉल की घंटी नहीं बजेगी। बदलने के लिए टैप करें।</string>
     <string name="notif_idle_offline_text">आपके वापस ऑनलाइन आते ही आपकी कॉल फिर से आने लगेंगी।</string>
     <string name="notif_idle_available_text">आपकी लाइन खुली है। बदलने के लिए टैप करें।</string>
+    <string name="notif_wake_service_title">आपके संदेश लाए जा रहे हैं…</string>
+    <string name="notif_wake_service_text">Tinline अपने-आप फिर से सो जाएगा।</string>
+    <string name="notif_wake_notice_title">आपके लिए शायद कोई नया संदेश है</string>
+    <string name="notif_wake_notice_text">देखने के लिए Tinline खोलें और अनलॉक करें।</string>
     <string name="notif_return_to_call">कॉल पर लौटने के लिए टैप करें</string>
     <string name="notif_leave">छोड़ें</string>
     <string name="notif_end_call">कॉल काटें</string>
@@ -1417,7 +1426,7 @@
     <string name="call_mic_unavailable">माइक्रोफ़ोन उपलब्ध नहीं - आपकी आवाज़ नहीं जा रही</string>
     <string name="call_mic_permission">माइक्रोफ़ोन की अनुमति चाहिए - आपकी आवाज़ नहीं जा रही</string>
     <string name="avail_title">कॉल के लिए उपलब्ध</string>
-    <string name="avail_subtitle">आपकी लाइन बैकग्राउंड में खुली रहती है, ताकि आम फ़ोन की तरह कॉल की घंटी बजे।</string>
+    <string name="avail_subtitle">इसे चालू रखने पर आम फ़ोन की तरह कॉल की घंटी बजती है।</string>
     <string name="avail_until">%1$s तक उपलब्ध नहीं।</string>
     <string name="avail_until_tomorrow">कल %1$s तक उपलब्ध नहीं।</string>
     <string name="avail_until_manual">जब तक आप इसे फिर से चालू न करें, उपलब्ध नहीं।</string>
@@ -1428,6 +1437,8 @@
     <string name="avail_note">जब आप दूर हों, तब कॉल करने वालों को “%1$s से संपर्क नहीं हो पाया” दिखता है। कुछ भी कतार में नहीं रखा जाता और किसी को वजह नहीं बताई जाती।</string>
     <string name="call_status_ringing">घंटी बज रही है…</string>
     <string name="call_status_calling">कॉल लग रही है…</string>
+    <string name="call_status_waking">उनका फ़ोन जगाया जा रहा है…</string>
+    <string name="call_wake_connecting">जुड़ रहा है…</string>
     <string name="call_privacy_active">एंड-टू-एंड एन्क्रिप्टेड। आपकी आवाज़ इस डिवाइस पर एन्क्रिप्ट होती है और सिर्फ़ %1$s के डिवाइस पर डिक्रिप्ट होती है।</string>
     <string name="call_privacy_connecting">%1$s से जुड़ रहा है। कॉल जुड़ते ही यह एंड-टू-एंड एन्क्रिप्टेड होगी।</string>
     <string name="history_kind_missed">मिस्ड</string>

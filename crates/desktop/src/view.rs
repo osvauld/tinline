@@ -1188,6 +1188,7 @@ impl App {
         let incoming_ring = c.info.incoming && !c.answered && c.state == CallState::Ringing;
         let active = c.state == CallState::Active;
         let reconnecting = active && c.stats.as_ref().is_some_and(|s| s.reconnecting);
+        let waking = c.stats.as_ref().is_some_and(|s| s.waking);
 
         let top: El = match (&c.state, &c.stats) {
             (CallState::Active, Some(st)) => {
@@ -1228,6 +1229,8 @@ impl App {
 
         let status: El = match (&c.state, incoming_ring) {
             (_, true) => tx(crate::i18n::tr_str("call_is_calling_you"), 18.0, t.ink2).into(),
+            // While dialling, once the relay took a wake for the callee's phone (`CallStats::waking`).
+            (CallState::Dialing, _) if waking => tx(crate::i18n::tr_str("call_waking"), 18.0, t.ink2).into(),
             (CallState::Dialing, _) => tx(crate::i18n::tr_str("call_calling"), 18.0, t.ink2).into(),
             (CallState::Ringing, _) => tx(crate::i18n::tr_str("call_ringing"), 18.0, t.ink2).into(),
             (CallState::Active, _) if reconnecting => semi(crate::i18n::tr_str("call_reconnecting_2"), 18.0, t.thread_text).into(),

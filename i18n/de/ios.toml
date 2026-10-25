@@ -3999,6 +3999,9 @@ text = "Klingelt…"
 [call_status_calling]
 text = "Anrufen…"
 
+[call_status_waking]
+text = "Das Handy wird geweckt…"
+
 [call_privacy_active]
 text = "Ende-zu-Ende-verschlüsselt. Deine Stimme wird auf diesem Gerät verschlüsselt und erst auf dem Gerät von {name} entschlüsselt."
 

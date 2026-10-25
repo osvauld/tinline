@@ -1701,6 +1701,9 @@ text = "Damit Anrufe dich erreichen"
 [onboarding_perms_lead]
 text = "Tinline funktioniert wie eine Telefonleitung: Sie bleibt still im Hintergrund offen. Alles hier ist optional, und du kannst es später ändern."
 
+[onboarding_perms_lead_push]
+text = "Tinline ruht, bis dich jemand erreichen will, dann weckt es ein kleiner Anstoß. Alles hier ist optional, und du kannst es später ändern."
+
 [onboarding_perm_mic]
 text = "Mikrofon"
 
@@ -2131,6 +2134,18 @@ text = "Meine Leitung offen halten"
 
 [settings_battery_hint]
 text = "Tinline bleibt im Hintergrund verbunden, damit Anrufe wie bei einem normalen Telefon klingeln. Das braucht etwas Akku. Die Checkliste unten zeigt, was Android dafür braucht."
+
+[settings_battery_hint_push]
+text = "Tinline ruht, bis dich jemand erreichen will, dann weckt es ein kleiner Anstoß. Darum braucht es keine Akku-Ausnahme. Die Checkliste unten zeigt, was Android zum Klingeln braucht."
+
+[settings_stay_connected]
+text = "Immer verbunden bleiben"
+
+[settings_stay_connected_on]
+text = "Tinline hält deine Leitung offen, damit Anrufe und Nachrichten sofort ankommen. Das braucht etwas mehr Akku."
+
+[settings_stay_connected_off]
+text = "Tinline ruht, bis dich jemand erreichen will, und wacht dann auf. Das Wecksignal enthält keine Nachricht, nur einen Anstoß."
 
 [settings_checklist]
 text = "CHECKLISTE"
@@ -2677,6 +2692,18 @@ text = "Deine Anrufe kommen wieder durch, sobald du wieder online bist."
 
 [notif_idle_available_text]
 text = "Deine Leitung ist offen. Tippe zum Ändern."
+
+[notif_wake_service_title]
+text = "Deine Nachrichten werden geholt…"
+
+[notif_wake_service_text]
+text = "Tinline schläft danach von selbst wieder ein."
+
+[notif_wake_notice_title]
+text = "Vielleicht hast du eine neue Nachricht"
+
+[notif_wake_notice_text]
+text = "Öffne Tinline und entsperre es, um alles zu sehen."
 
 [notif_return_to_call]
 text = "Tippe, um zum Anruf zurückzukehren"
@@ -4057,7 +4084,7 @@ text = "Mikrofon-Berechtigung nötig – du bist nicht zu hören"
 text = "Für Anrufe erreichbar"
 
 [avail_subtitle]
-text = "Deine Leitung bleibt im Hintergrund offen, damit Anrufe wie bei einem normalen Telefon klingeln."
+text = "Wenn das an ist, klingeln Anrufe wie bei einem normalen Telefon."
 
 [avail_until]
 text = "Nicht erreichbar bis {time}."
@@ -4088,6 +4115,12 @@ text = "Klingelt…"
 
 [call_status_calling]
 text = "Anrufen…"
+
+[call_status_waking]
+text = "Das Handy wird geweckt…"
+
+[call_wake_connecting]
+text = "Verbinden…"
 
 [call_privacy_active]
 text = "Ende-zu-Ende-verschlüsselt. Deine Stimme wird auf diesem Gerät verschlüsselt und erst auf dem Gerät von {name} entschlüsselt."

@@ -12,6 +12,7 @@ testkit = []
 
 [dependencies]
 proto.workspace = true
+wake = { path = "../wake" }
 identity.workspace = true
 cryptography.workspace = true
 crdt.workspace = true

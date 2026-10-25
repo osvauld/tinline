@@ -53,7 +53,7 @@ class MainActivity : ComponentActivity() {
         secureWindow()
         enableEdgeToEdge()
         val app = P2pApp.get(this)
-        if (app.node.hasIdentity()) CoreService.ensureRunning(this)
+        if (app.node.hasIdentity()) CoreService.ensureAlwaysOn(this)
         intent?.getStringExtra(ChatNotifier.EXTRA_PEER)?.let { OpenChat.request.value = it }
         if (intent?.getBooleanExtra(Notifications.EXTRA_GROUPS, false) == true) OpenChat.groupsTab.value = true
         groupCallFrom(intent)

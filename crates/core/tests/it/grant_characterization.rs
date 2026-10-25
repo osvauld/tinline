@@ -524,9 +524,14 @@ fn tokens_are_taken_back_per_did_never_by_id() {
         walk(&core.join("..").join(rt).join("src"), &mut files);
     }
     assert!(files.len() > 50, "source scan found only {} files", files.len());
+    // `.revoked` as a whole name (a field or set), not a longer one such as the wake outbox's
+    // `revoked_ok` (it drops a relay revoke once acknowledged, `docs/push.md`).
+    let names_revoked = |l: &str| {
+        l.match_indices(".revoked").any(|(i, m)| !l[i + m.len()..].starts_with(|c: char| c.is_alphanumeric() || c == '_'))
+    };
     let ids: Vec<_> = files
         .iter()
-        .flat_map(|(f, t)| t.lines().filter(|l| !l.trim().starts_with("//") && l.contains(".revoked")).map(move |l| (f, l)))
+        .flat_map(|(f, t)| t.lines().filter(|l| !l.trim().starts_with("//") && names_revoked(l)).map(move |l| (f, l)))
         .collect();
     assert!(ids.is_empty(), "something keeps a revoked-id set: {ids:?}");
     // The cut-offs are what a block and "disallow calls" raise.

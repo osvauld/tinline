@@ -44,6 +44,8 @@ impl NodeCtx {
         if self.unblock_inner(&claim.iss)? {
             self.persist_async(me.epoch).await?;
             self.notice_kick(claim.iss.clone());
+            // Wanted again: a fresh token (new tag) once they hold us as a contact.
+            self.wake_kick();
         }
         let policy = crate::caps::policy_for(&self.shared.lock().state, &claim.iss, origin);
         let (mut hello, pending) = proto::contact_hello_with(

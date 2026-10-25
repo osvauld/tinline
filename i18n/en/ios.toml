@@ -5338,6 +5338,10 @@ note = "Status line while the other phone is ringing."
 text = "Calling…"
 note = "Status line while the call is being set up, before it rings."
 
+[call_status_waking]
+text = "Waking their phone…"
+note = "Status line while an outgoing call waits: the other person's phone was asleep and is being woken by a push. Never claims encryption yet."
+
 [call_privacy_active]
 text = "End-to-end encrypted. Your voice is encrypted on this device and only decrypted on {name}’s."
 note = "Call card line once the call is connected. {name} is the contact's first or full name."

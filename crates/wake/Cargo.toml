@@ -1,0 +1,14 @@
+[package]
+name = "wake"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+description = "Push wake-ups for one device (docs/push.md): which tokens we issued and hold, when to wake a contact, what to do when woken; pure decisions, no I/O"
+
+[dependencies]
+wake-relay-core = { path = "../wake-relay-core" }
+serde.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true

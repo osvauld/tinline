@@ -4802,6 +4802,13 @@ where = [
 ]
 text = "Tinline toimii kuin puhelinlinja: se pysyy hiljaa auki taustalla. Jokainen näistä on valinnainen, ja voit muuttaa niitä myöhemmin."
 
+[t_42aaf400ac]
+en = "Tinline rests until someone reaches you, then a small nudge wakes it. Each of these is optional, and you can change them later."
+where = [
+  "android onboarding_perms_lead_push: Lead on the permissions step when Tinline wakes by push instead of staying connected all the time. A nudge is a content-free wake-up push.",
+]
+text = "Tinline lepää, kunnes joku tavoittelee sinua, ja pieni herätys käynnistää sen. Jokainen näistä on valinnainen, ja voit muuttaa niitä myöhemmin."
+
 [t_ff3d541d05]
 en = "Microphone"
 where = [
@@ -5880,6 +5887,34 @@ where = [
 ]
 text = "Tinline pysyy yhteydessä taustalla, jotta puhelut soivat kuin tavallisessa puhelimessa. Se kuluttaa hieman akkua. Alla oleva tarkistuslista kertoo, mitä Android tarvitsee sen sallimiseen."
 
+[t_94b5ffeb4a]
+en = "Tinline rests until someone reaches you, then a small nudge wakes it, so it needs no battery exemption. The checklist below is what Android needs to ring."
+where = [
+  "android settings_battery_hint_push: Explanation at the top of the background and battery page when Tinline wakes by push instead of staying connected. A nudge is a content-free wake-up push.",
+]
+text = "Tinline lepää, kunnes joku tavoittelee sinua, ja pieni herätys käynnistää sen, joten se ei tarvitse akkupoikkeusta. Alla oleva tarkistuslista kertoo, mitä Android tarvitsee soidakseen."
+
+[t_f9d8fe5ee3]
+en = "Stay connected all the time"
+where = [
+  "android settings_stay_connected: Switch row on the background and battery page (also its screen-reader label). On: Tinline keeps its line open; off: it rests and a push wakes it.",
+]
+text = "Pysy aina yhteydessä"
+
+[t_2659692d22]
+en = "Tinline keeps your line open, so calls and messages arrive straight away. It uses a little more battery."
+where = [
+  "android settings_stay_connected_on: Line under the Stay connected all the time switch when it is on.",
+]
+text = "Tinline pitää linjasi auki, joten puhelut ja viestit tulevat heti perille. Se kuluttaa hieman enemmän akkua."
+
+[t_4ec7dd392b]
+en = "Tinline rests until someone reaches you, then wakes up. The wake-up carries no message, only a nudge."
+where = [
+  "android settings_stay_connected_off: Line under the Stay connected all the time switch when it is off. A nudge is a content-free wake-up push.",
+]
+text = "Tinline lepää, kunnes joku tavoittelee sinua, ja herää sitten. Herätys ei sisällä viestiä, se on vain pieni tönäisy."
+
 [t_3a5e4ab9a1]
 en = "CHECKLIST"
 where = [
@@ -6795,6 +6830,7 @@ text = "Ne täsmäävät"
 en = "Connecting…"
 where = [
   "android link_connecting: Heading while connecting to the new device.",
+  "android call_wake_connecting: Status line on the incoming-call screen after you answered a call that woke your phone, while the call itself is still arriving.",
   "ios link_connecting: Heading while connecting to the new device.",
   "desktop gcall_connecting: Desktop, group calls (in gcall.rs, status).",
 ]
@@ -7248,6 +7284,34 @@ where = [
   "android notif_idle_available_text: Text of the always-on notification when available.",
 ]
 text = "Linjasi on auki. Muuta napauttamalla."
+
+[t_27eaf5b596]
+en = "Getting your messages…"
+where = [
+  "android notif_wake_service_title: Title of the brief notification Android shows while a push has woken Tinline to fetch what is waiting.",
+]
+text = "Haetaan viestejäsi…"
+
+[t_e7908d07a7]
+en = "Tinline will go back to sleep by itself."
+where = [
+  "android notif_wake_service_text: Text of the brief notification while Tinline is woken by a push: it stops on its own when done.",
+]
+text = "Tinline palaa lepotilaan itsestään."
+
+[t_9501651b03]
+en = "You may have a new message"
+where = [
+  "android notif_wake_notice_title: Title of a notification after a wake-up while Tinline is still locked. It names nobody and shows no message text.",
+]
+text = "Sinulle voi olla uusi viesti"
+
+[t_e9548850fb]
+en = "Open Tinline and unlock to catch up."
+where = [
+  "android notif_wake_notice_text: Text of the notification after a wake-up while Tinline is locked: open the app and unlock it to see what arrived.",
+]
+text = "Avaa Tinline ja avaa lukitus, niin näet, mitä on tullut."
 
 [t_bb5cc13df8]
 en = "Tap to return to the call"
@@ -10511,12 +10575,12 @@ where = [
 ]
 text = "Siirry sitten kohtaan Luvat › Mikrofoni ja salli se."
 
-[t_45e67545ae]
-en = "Your line stays open in the background so calls ring like a normal phone."
+[t_ca60790c0b]
+en = "When this is on, calls ring like a normal phone."
 where = [
   "android avail_subtitle: Line under the availability sheet's title.",
 ]
-text = "Linjasi pysyy auki taustalla, jotta puhelut soivat kuin tavallisessa puhelimessa."
+text = "Kun tämä on päällä, puhelut soivat kuin tavallisessa puhelimessa."
 
 [t_c865b5b93b]
 en = "Not available until {time}."
@@ -10591,6 +10655,15 @@ where = [
   "desktop call_calling: Desktop, calls (voice and video) (in call_screen.rs, call_view).",
 ]
 text = "Soitetaan…"
+
+[t_41d8e1e3cd]
+en = "Waking their phone…"
+where = [
+  "android call_status_waking: Status line on the call screen while an outgoing call waits: the other person's phone was asleep and is being woken by a push. Never claims encryption yet.",
+  "ios call_status_waking: Status line while an outgoing call waits: the other person's phone was asleep and is being woken by a push. Never claims encryption yet.",
+  "desktop call_waking: Desktop, calls: status while an outgoing call waits because the other person's phone was asleep and is being woken by a push (in call_screen.rs, call_view).",
+]
+text = "Hänen puhelintaan herätetään…"
 
 [t_44e30f3c68]
 en = "End-to-end encrypted. Your voice is encrypted on this device and only decrypted on {name}’s."

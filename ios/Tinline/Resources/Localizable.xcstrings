@@ -4705,6 +4705,42 @@
         }
       }
     },
+    "call_status_waking": {
+      "comment": "Status line while an outgoing call waits: the other person's phone was asleep and is being woken by a push. Never claims encryption yet.",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Das Handy wird geweckt…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waking their phone…"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Hänen puhelintaan herätetään…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Réveil de son téléphone…"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "उनका फ़ोन जगाया जा रहा है…"
+          }
+        }
+      }
+    },
     "call_strip_label": {
       "comment": "Accessibility label of the call strip. {label} is what tapping does, {status} is the clock or status.",
       "extractionState": "manual",

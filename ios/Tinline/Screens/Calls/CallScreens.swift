@@ -308,7 +308,7 @@ struct InCallScreen: View {
                     onMinimise: onMinimise, reconnecting: s?.reconnecting == true,
                     onCamera: v != nil ? onCamera : nil, routes: ui.routes, onRoute: { controller.selectRoute($0) },
                     rttMs: s.map { Int($0.rttMs) }, lossPct: loss, onMessage: onMessage,
-                    waiting: controller.waiting != nil, waitingCard: waitingCard, ending: ending)
+                    waiting: controller.waiting != nil, waitingCard: waitingCard, ending: ending, waking: s?.waking == true)
             }
         }
         .onChange(of: inVideo, initial: true) { _, on in budget(on) }
@@ -408,6 +408,8 @@ struct InCallContent: View {
     var ending = false
     var startWithSheet = false
     var startWithInfo = false
+    /** Still dialling and the callee's phone is being woken (`CallStats.waking`). */
+    var waking = false
 
     @State var routeSheet = false
     @State var info = false
@@ -417,7 +419,7 @@ struct InCallContent: View {
         ZStack {
             CallFocus(name: callOr(name, tr("call_unknown_name")), did: did, active: active, ringing: ringing, secs: secs, reconnecting: reconnecting,
                       problem: micProblem, onMinimise: onMinimise, onInfo: { info = true }, signal: bars ?? 0, direct: direct,
-                      onMessage: onMessage, waiting: waiting, muted: muted, waitingCard: waitingCard) {
+                      onMessage: onMessage, waiting: waiting, muted: muted, waitingCard: waitingCard, waking: waking) {
                 CallControls(muted: muted, speaker: speaker, camera: false, onMute: onMute,
                              onSpeaker: { if routes?.hasHeadset == true { routeSheet = true } else { onSpeaker() } },
                              onCamera: onCamera, onFlip: nil, onEnd: onEnd, routeCaption: slot.caption, routeIcon: slot.icon, ending: ending)

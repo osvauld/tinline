@@ -3999,6 +3999,9 @@ text = "Soi…"
 [call_status_calling]
 text = "Soitetaan…"
 
+[call_status_waking]
+text = "Hänen puhelintaan herätetään…"
+
 [call_privacy_active]
 text = "Salattu päästä päähän. Äänesi salataan tällä laitteella ja puretaan vain henkilön {name} laitteella."
 

@@ -671,6 +671,10 @@ note = "Desktop, calls (voice and video) (in reason.rs, history)."
 text = "Calling…"
 note = "Desktop, calls (voice and video) (in call_screen.rs, call_view)."
 
+[call_waking]
+text = "Waking their phone…"
+note = "Desktop, calls: status while an outgoing call waits because the other person's phone was asleep and is being woken by a push (in call_screen.rs, call_view)."
+
 [call_calling_during_your_call]
 text = "Calling during your call"
 note = "Desktop, calls (voice and video) (in view.rs, ring_head_waiting)."

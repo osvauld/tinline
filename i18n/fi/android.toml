@@ -1701,6 +1701,9 @@ text = "Jotta puhelut tavoittavat sinut"
 [onboarding_perms_lead]
 text = "Tinline toimii kuin puhelinlinja: se pysyy hiljaa auki taustalla. Jokainen näistä on valinnainen, ja voit muuttaa niitä myöhemmin."
 
+[onboarding_perms_lead_push]
+text = "Tinline lepää, kunnes joku tavoittelee sinua, ja pieni herätys käynnistää sen. Jokainen näistä on valinnainen, ja voit muuttaa niitä myöhemmin."
+
 [onboarding_perm_mic]
 text = "Mikrofoni"
 
@@ -2131,6 +2134,18 @@ text = "Pidä linjani auki"
 
 [settings_battery_hint]
 text = "Tinline pysyy yhteydessä taustalla, jotta puhelut soivat kuin tavallisessa puhelimessa. Se kuluttaa hieman akkua. Alla oleva tarkistuslista kertoo, mitä Android tarvitsee sen sallimiseen."
+
+[settings_battery_hint_push]
+text = "Tinline lepää, kunnes joku tavoittelee sinua, ja pieni herätys käynnistää sen, joten se ei tarvitse akkupoikkeusta. Alla oleva tarkistuslista kertoo, mitä Android tarvitsee soidakseen."
+
+[settings_stay_connected]
+text = "Pysy aina yhteydessä"
+
+[settings_stay_connected_on]
+text = "Tinline pitää linjasi auki, joten puhelut ja viestit tulevat heti perille. Se kuluttaa hieman enemmän akkua."
+
+[settings_stay_connected_off]
+text = "Tinline lepää, kunnes joku tavoittelee sinua, ja herää sitten. Herätys ei sisällä viestiä, se on vain pieni tönäisy."
 
 [settings_checklist]
 text = "TARKISTUSLISTA"
@@ -2677,6 +2692,18 @@ text = "Puhelusi tulevat taas perille, kun olet taas verkossa."
 
 [notif_idle_available_text]
 text = "Linjasi on auki. Muuta napauttamalla."
+
+[notif_wake_service_title]
+text = "Haetaan viestejäsi…"
+
+[notif_wake_service_text]
+text = "Tinline palaa lepotilaan itsestään."
+
+[notif_wake_notice_title]
+text = "Sinulle voi olla uusi viesti"
+
+[notif_wake_notice_text]
+text = "Avaa Tinline ja avaa lukitus, niin näet, mitä on tullut."
 
 [notif_return_to_call]
 text = "Palaa puheluun napauttamalla"
@@ -4057,7 +4084,7 @@ text = "Mikrofonille tarvitaan lupa - sinua ei kuulla"
 text = "Tavoitettavissa puheluille"
 
 [avail_subtitle]
-text = "Linjasi pysyy auki taustalla, jotta puhelut soivat kuin tavallisessa puhelimessa."
+text = "Kun tämä on päällä, puhelut soivat kuin tavallisessa puhelimessa."
 
 [avail_until]
 text = "Ei tavoitettavissa {time} asti."
@@ -4088,6 +4115,12 @@ text = "Soi…"
 
 [call_status_calling]
 text = "Soitetaan…"
+
+[call_status_waking]
+text = "Hänen puhelintaan herätetään…"
+
+[call_wake_connecting]
+text = "Yhdistetään…"
 
 [call_privacy_active]
 text = "Salattu päästä päähän. Äänesi salataan tällä laitteella ja puretaan vain henkilön {name} laitteella."

@@ -114,6 +114,8 @@ impl SyncRt {
         self.save_doc();
         if ch.contacts {
             self.sink.on_contacts_changed();
+            // A sibling blocked, unblocked or changed call permission: wake tokens follow.
+            self.ctx.wake_kick();
             let dids = self
                 .shared
                 .lock()

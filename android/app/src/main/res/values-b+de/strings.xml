@@ -608,6 +608,7 @@
     <string name="onboarding_terms_by_continuing">Wenn du weitermachst, stimmst du den [Nutzungsbedingungen](terms) zu und hast die [Datenschutzerklärung](privacy) gelesen.</string>
     <string name="onboarding_perms_title">Damit Anrufe dich erreichen</string>
     <string name="onboarding_perms_lead">Tinline funktioniert wie eine Telefonleitung: Sie bleibt still im Hintergrund offen. Alles hier ist optional, und du kannst es später ändern.</string>
+    <string name="onboarding_perms_lead_push">Tinline ruht, bis dich jemand erreichen will, dann weckt es ein kleiner Anstoß. Alles hier ist optional, und du kannst es später ändern.</string>
     <string name="onboarding_perm_mic">Mikrofon</string>
     <string name="onboarding_perm_mic_why">Damit man dich hören kann. Nur während eines Anrufs.</string>
     <string name="onboarding_perm_notifications">Benachrichtigungen</string>
@@ -757,6 +758,10 @@
     <string name="settings_battery_title">Hintergrund &amp; Akku</string>
     <string name="settings_battery_keep">Meine Leitung offen halten</string>
     <string name="settings_battery_hint">Tinline bleibt im Hintergrund verbunden, damit Anrufe wie bei einem normalen Telefon klingeln. Das braucht etwas Akku. Die Checkliste unten zeigt, was Android dafür braucht.</string>
+    <string name="settings_battery_hint_push">Tinline ruht, bis dich jemand erreichen will, dann weckt es ein kleiner Anstoß. Darum braucht es keine Akku-Ausnahme. Die Checkliste unten zeigt, was Android zum Klingeln braucht.</string>
+    <string name="settings_stay_connected">Immer verbunden bleiben</string>
+    <string name="settings_stay_connected_on">Tinline hält deine Leitung offen, damit Anrufe und Nachrichten sofort ankommen. Das braucht etwas mehr Akku.</string>
+    <string name="settings_stay_connected_off">Tinline ruht, bis dich jemand erreichen will, und wacht dann auf. Das Wecksignal enthält keine Nachricht, nur einen Anstoß.</string>
     <string name="settings_checklist">CHECKLISTE</string>
     <string name="settings_battery_row">Akku</string>
     <string name="settings_battery_optimised">Optimiert – Android kann Tinline pausieren</string>
@@ -939,6 +944,10 @@
     <string name="notif_idle_unavailable_text">Anrufe klingeln nicht. Tippe zum Ändern.</string>
     <string name="notif_idle_offline_text">Deine Anrufe kommen wieder durch, sobald du wieder online bist.</string>
     <string name="notif_idle_available_text">Deine Leitung ist offen. Tippe zum Ändern.</string>
+    <string name="notif_wake_service_title">Deine Nachrichten werden geholt…</string>
+    <string name="notif_wake_service_text">Tinline schläft danach von selbst wieder ein.</string>
+    <string name="notif_wake_notice_title">Vielleicht hast du eine neue Nachricht</string>
+    <string name="notif_wake_notice_text">Öffne Tinline und entsperre es, um alles zu sehen.</string>
     <string name="notif_return_to_call">Tippe, um zum Anruf zurückzukehren</string>
     <string name="notif_leave">Verlassen</string>
     <string name="notif_end_call">Auflegen</string>
@@ -1417,7 +1426,7 @@
     <string name="call_mic_unavailable">Mikrofon nicht verfügbar – du bist nicht zu hören</string>
     <string name="call_mic_permission">Mikrofon-Berechtigung nötig – du bist nicht zu hören</string>
     <string name="avail_title">Für Anrufe erreichbar</string>
-    <string name="avail_subtitle">Deine Leitung bleibt im Hintergrund offen, damit Anrufe wie bei einem normalen Telefon klingeln.</string>
+    <string name="avail_subtitle">Wenn das an ist, klingeln Anrufe wie bei einem normalen Telefon.</string>
     <string name="avail_until">Nicht erreichbar bis %1$s.</string>
     <string name="avail_until_tomorrow">Nicht erreichbar bis morgen %1$s.</string>
     <string name="avail_until_manual">Nicht erreichbar, bis du es wieder einschaltest.</string>
@@ -1428,6 +1437,8 @@
     <string name="avail_note">Solange du weg bist, sehen Leute, die anrufen, „%1$s nicht erreichbar“. Nichts wird gesammelt, und niemand erfährt, warum.</string>
     <string name="call_status_ringing">Klingelt…</string>
     <string name="call_status_calling">Anrufen…</string>
+    <string name="call_status_waking">Das Handy wird geweckt…</string>
+    <string name="call_wake_connecting">Verbinden…</string>
     <string name="call_privacy_active">Ende-zu-Ende-verschlüsselt. Deine Stimme wird auf diesem Gerät verschlüsselt und erst auf dem Gerät von %1$s entschlüsselt.</string>
     <string name="call_privacy_connecting">Verbindung mit %1$s wird aufgebaut. Sobald der Anruf verbunden ist, ist er Ende-zu-Ende-verschlüsselt.</string>
     <string name="history_kind_missed">Verpasst</string>

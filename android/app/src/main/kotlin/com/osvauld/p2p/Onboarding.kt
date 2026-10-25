@@ -681,14 +681,16 @@ fun TermsScreen(progress: Int?, onBack: (() -> Unit)?, onAgree: () -> Unit) = Pa
 
 @Composable
 private fun PermsStep(missing: List<Need>, onFix: (Need) -> Unit, onDone: () -> Unit) {
-    val rows = listOf(
+    val alwaysOn = Perms.keepsLineOpen(LocalContext.current)
+    val rows = listOfNotNull(
         Triple(Need.Mic, PgIcons.Mic, stringResource(R.string.onboarding_perm_mic) to stringResource(R.string.onboarding_perm_mic_why)),
         Triple(Need.Notifications, PgIcons.Bell, stringResource(R.string.onboarding_perm_notifications) to stringResource(R.string.onboarding_perm_notifications_why)),
         Triple(Need.FullScreen, PgIcons.Phone, stringResource(R.string.onboarding_perm_fullscreen) to stringResource(R.string.onboarding_perm_fullscreen_why)),
-        Triple(Need.Battery, PgIcons.Battery, stringResource(R.string.onboarding_perm_background) to stringResource(R.string.onboarding_perm_background_why)),
+        if (alwaysOn) Triple(Need.Battery, PgIcons.Battery, stringResource(R.string.onboarding_perm_background) to stringResource(R.string.onboarding_perm_background_why)) else null,
     )
     val touched = rows.any { it.first !in missing }
-    GateStep(stringResource(R.string.onboarding_perms_title), lead = stringResource(R.string.onboarding_perms_lead),
+    GateStep(stringResource(R.string.onboarding_perms_title),
+        lead = stringResource(if (alwaysOn) R.string.onboarding_perms_lead else R.string.onboarding_perms_lead_push),
         foot = { GBtn(if (touched) stringResource(R.string.common_continue) else stringResource(R.string.common_not_now), onDone, kind = if (touched) GKind.Primary else GKind.Secondary) }) {
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             rows.forEach { (need, icon, t) -> PermRow(icon, t.first, t.second, need !in missing) { onFix(need) } }

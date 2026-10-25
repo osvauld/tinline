@@ -495,6 +495,9 @@ text = "Vastattu toisella laitteella"
 [call_calling]
 text = "Soitetaan…"
 
+[call_waking]
+text = "Hänen puhelintaan herätetään…"
+
 [call_calling_during_your_call]
 text = "Soittaa puhelusi aikana"
 

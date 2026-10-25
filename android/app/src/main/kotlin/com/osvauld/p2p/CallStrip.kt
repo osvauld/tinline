@@ -72,7 +72,7 @@ fun CallStrips(app: P2pApp) {
             val vi by app.video.info.collectAsState()
             val video = vi?.let { it.callId == c.info.callId && (it.localCamera || it.remoteCamera) } == true
             val name = c.info.peerName.ifBlank { stringResource(R.string.common_unknown) }
-            val status = callStatusText(c.state is CallState.Active, c.state is CallState.Ringing, c.stats?.reconnecting == true, secs)
+            val status = callStatusText(c.state is CallState.Active, c.state is CallState.Ringing, c.stats?.reconnecting == true, secs, c.stats?.waking == true)
             StripRow(if (video) PgIcons.Video else PgIcons.Phone, name, status, slim, stringResource(R.string.call_strip_return, name)) {
                 ctx.startActivity(Intent(ctx, CallActivity::class.java))
             }

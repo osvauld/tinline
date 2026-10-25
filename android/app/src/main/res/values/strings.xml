@@ -1170,6 +1170,8 @@
     <string name="onboarding_perms_title">So calls can reach you</string>
     <!-- Lead on the permissions step. -->
     <string name="onboarding_perms_lead">Tinline works like a phone line: it stays open quietly in the background. Each of these is optional, and you can change them later.</string>
+    <!-- Lead on the permissions step when Tinline wakes by push instead of staying connected all the time. A nudge is a content-free wake-up push. -->
+    <string name="onboarding_perms_lead_push">Tinline rests until someone reaches you, then a small nudge wakes it. Each of these is optional, and you can change them later.</string>
     <!-- Permission name. -->
     <string name="onboarding_perm_mic">Microphone</string>
     <!-- Why the microphone permission is asked. -->
@@ -1462,6 +1464,14 @@
     <string name="settings_battery_keep">Keep my line open</string>
     <!-- Explanation at the top of the background and battery page. -->
     <string name="settings_battery_hint">Tinline stays connected in the background so calls ring like a normal phone. It uses a little battery. The checklist below is what Android needs to allow that.</string>
+    <!-- Explanation at the top of the background and battery page when Tinline wakes by push instead of staying connected. A nudge is a content-free wake-up push. -->
+    <string name="settings_battery_hint_push">Tinline rests until someone reaches you, then a small nudge wakes it, so it needs no battery exemption. The checklist below is what Android needs to ring.</string>
+    <!-- Switch row on the background and battery page (also its screen-reader label). On: Tinline keeps its line open; off: it rests and a push wakes it. -->
+    <string name="settings_stay_connected">Stay connected all the time</string>
+    <!-- Line under the Stay connected all the time switch when it is on. -->
+    <string name="settings_stay_connected_on">Tinline keeps your line open, so calls and messages arrive straight away. It uses a little more battery.</string>
+    <!-- Line under the Stay connected all the time switch when it is off. A nudge is a content-free wake-up push. -->
+    <string name="settings_stay_connected_off">Tinline rests until someone reaches you, then wakes up. The wake-up carries no message, only a nudge.</string>
     <!-- Small all-capitals section label above the permission checklist on the background and battery page. -->
     <string name="settings_checklist">CHECKLIST</string>
     <!-- Checklist row on the background and battery page. -->
@@ -1826,6 +1836,14 @@
     <string name="notif_idle_offline_text">Your calls come through again once you’re back online.</string>
     <!-- Text of the always-on notification when available. -->
     <string name="notif_idle_available_text">Your line is open. Tap to change.</string>
+    <!-- Title of the brief notification Android shows while a push has woken Tinline to fetch what is waiting. -->
+    <string name="notif_wake_service_title">Getting your messages…</string>
+    <!-- Text of the brief notification while Tinline is woken by a push: it stops on its own when done. -->
+    <string name="notif_wake_service_text">Tinline will go back to sleep by itself.</string>
+    <!-- Title of a notification after a wake-up while Tinline is still locked. It names nobody and shows no message text. -->
+    <string name="notif_wake_notice_title">You may have a new message</string>
+    <!-- Text of the notification after a wake-up while Tinline is locked: open the app and unlock it to see what arrived. -->
+    <string name="notif_wake_notice_text">Open Tinline and unlock to catch up.</string>
     <!-- Text of the notification shown during a call. -->
     <string name="notif_return_to_call">Tap to return to the call</string>
     <!-- Notification action: leave a group call. -->
@@ -2762,7 +2780,7 @@
     <!-- Title of the availability sheet and accessibility label of its switch. -->
     <string name="avail_title">Available for calls</string>
     <!-- Line under the availability sheet's title. -->
-    <string name="avail_subtitle">Your line stays open in the background so calls ring like a normal phone.</string>
+    <string name="avail_subtitle">When this is on, calls ring like a normal phone.</string>
     <!-- Shown while I am on a break. {time} is a clock time such as 7:30 AM. -->
     <string name="avail_until">Not available until %1$s.</string>
     <!-- Shown while I am on a break that ends more than twelve hours from now. {time} is a clock time such as 7:30 AM. -->
@@ -2783,6 +2801,10 @@
     <string name="call_status_ringing">Ringing…</string>
     <!-- Status line on the call screen while an outgoing call is being set up. Never claims encryption yet. -->
     <string name="call_status_calling">Calling…</string>
+    <!-- Status line on the call screen while an outgoing call waits: the other person's phone was asleep and is being woken by a push. Never claims encryption yet. -->
+    <string name="call_status_waking">Waking their phone…</string>
+    <!-- Status line on the incoming-call screen after you answered a call that woke your phone, while the call itself is still arriving. -->
+    <string name="call_wake_connecting">Connecting…</string>
     <!-- Encryption note once the call is connected. {name} is the other person's name. -->
     <string name="call_privacy_active">End-to-end encrypted. Your voice is encrypted on this device and only decrypted on %1$s’s.</string>
     <!-- Encryption note shown in About this call while the call is still connecting. {name} is the other person's name. -->

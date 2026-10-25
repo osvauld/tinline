@@ -63,15 +63,21 @@ fun TinSwitch(checked: Boolean, onChange: (Boolean) -> Unit, desc: String) {
 fun BatteryScreen(missing: List<Need>, onBack: () -> Unit, onFix: (Need) -> Unit) {
     val c = Tin.c
     val ctx = LocalContext.current
+    // Follows the "Stay connected" switch at once: the battery row is only for the always-on line.
+    var alwaysOn by remember { mutableStateOf(Perms.keepsLineOpen(ctx)) }
     Page {
         TopBar(stringResource(R.string.settings_battery_title), onBack)
         Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())) {
             Column(Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
                 Text(stringResource(R.string.settings_battery_keep), style = TinType.bodyL.copy(fontWeight = FontWeight.SemiBold), color = c.ink)
-                Hint(stringResource(R.string.settings_battery_hint))
+                Hint(stringResource(if (alwaysOn) R.string.settings_battery_hint else R.string.settings_battery_hint_push))
             }
+            StayConnectedRow(alwaysOn) { alwaysOn = it }
             SectionLabel(stringResource(R.string.settings_checklist))
-            CheckRow(PgIcons.Battery, stringResource(R.string.settings_battery_row), if (Need.Battery in missing) stringResource(R.string.settings_battery_optimised) else null, Need.Battery !in missing, stringResource(R.string.settings_on)) { onFix(Need.Battery) }
+            if (alwaysOn) {
+                val exempt = Perms.batteryExempt(ctx)
+                CheckRow(PgIcons.Battery, stringResource(R.string.settings_battery_row), if (!exempt) stringResource(R.string.settings_battery_optimised) else null, exempt, stringResource(R.string.settings_on)) { onFix(Need.Battery) }
+            }
             CheckRow(PgIcons.Bell, stringResource(R.string.settings_notifications), null, Need.Notifications !in missing, stringResource(R.string.settings_on)) { onFix(Need.Notifications) }
             CheckRow(PgIcons.Lock, stringResource(R.string.notif_ring_lock), null, Need.FullScreen !in missing, stringResource(R.string.settings_on)) { onFix(Need.FullScreen) }
             Column(
@@ -83,6 +89,30 @@ fun BatteryScreen(missing: List<Need>, onBack: () -> Unit, onFix: (Need) -> Unit
             }
         }
     }
+}
+
+/**
+ * "Stay connected all the time" (docs/push.md): off = Tinline rests and a wake-up nudge starts it; on = the always-on
+ * service, as before. Only where the edition can wake by push (Play, configured); Liberum shows nothing new.
+ */
+@Composable
+private fun StayConnectedRow(alwaysOn: Boolean, onChange: (Boolean) -> Unit) {
+    val ctx = LocalContext.current
+    val canChoose = remember { PushMode.canChoose(ctx) }
+    if (!canChoose) return
+    ListItem(stringResource(R.string.settings_stay_connected), icon = PgIcons.Phone,
+        sub = stringResource(if (alwaysOn) R.string.settings_stay_connected_on else R.string.settings_stay_connected_off),
+        trailing = {
+            TinSwitch(alwaysOn, { on ->
+                PushMode.setAlwaysOn(ctx, on)
+                onChange(on)
+                val app = P2pApp.get(ctx)
+                app.scope.launch {
+                    WakeHandler.syncTarget(app)
+                    if (on) CoreService.ensureRunning(ctx) else CoreService.poke("push mode")
+                }
+            }, stringResource(R.string.settings_stay_connected))
+        })
 }
 
 @Composable

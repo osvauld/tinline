@@ -89,6 +89,8 @@ impl Node {
         self.inner.chat.chat_close_sessions(&did);
         self.inner.calls_blocked(&did, &notice);
         self.inner.ctx.notice_kick(did);
+        // Their wake token is taken back at the relay.
+        self.inner.ctx.wake_kick();
         self.inner.sink.on_contacts_changed();
         saved.map_err(Error::from)
     }
@@ -103,6 +105,7 @@ impl Node {
         }
         let saved = self.inner.persist();
         self.inner.ctx.notice_kick(did.clone());
+        self.inner.ctx.wake_kick();
         self.inner.chat.chat_kick(did);
         self.inner.sink.on_contacts_changed();
         saved.map_err(Error::from)

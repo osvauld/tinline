@@ -1716,6 +1716,9 @@ text = "Pour que les appels vous parviennent"
 [onboarding_perms_lead]
 text = "Tinline fonctionne comme une ligne téléphonique : elle reste ouverte discrètement en arrière-plan. Chacune de ces autorisations est facultative, et vous pourrez les changer plus tard."
 
+[onboarding_perms_lead_push]
+text = "Tinline se repose jusqu’à ce que quelqu’un vous joigne, puis un petit signal le réveille. Chacune de ces autorisations est facultative, et vous pourrez les changer plus tard."
+
 [onboarding_perm_mic]
 text = "Micro"
 
@@ -2148,6 +2151,18 @@ text = "Garder ma ligne ouverte"
 
 [settings_battery_hint]
 text = "Tinline reste connecté en arrière-plan pour que les appels sonnent comme sur un téléphone normal. Cela consomme un peu de batterie. La liste ci-dessous indique ce dont Android a besoin pour le permettre."
+
+[settings_battery_hint_push]
+text = "Tinline se repose jusqu’à ce que quelqu’un vous joigne, puis un petit signal le réveille : il n’a donc pas besoin d’exception pour la batterie. La liste ci-dessous indique ce dont Android a besoin pour sonner."
+
+[settings_stay_connected]
+text = "Rester connecté en permanence"
+
+[settings_stay_connected_on]
+text = "Tinline garde votre ligne ouverte, pour que les appels et les messages arrivent tout de suite. Cela consomme un peu plus de batterie."
+
+[settings_stay_connected_off]
+text = "Tinline se repose jusqu’à ce que quelqu’un vous joigne, puis se réveille. Le signal de réveil ne contient aucun message, c’est un simple petit signal."
 
 [settings_checklist]
 text = "VÉRIFICATIONS"
@@ -2694,6 +2709,18 @@ text = "Vos appels arrivent à nouveau dès que vous êtes de retour en ligne."
 
 [notif_idle_available_text]
 text = "Votre ligne est ouverte. Touchez pour changer."
+
+[notif_wake_service_title]
+text = "Récupération de vos messages…"
+
+[notif_wake_service_text]
+text = "Tinline se remettra en veille tout seul."
+
+[notif_wake_notice_title]
+text = "Vous avez peut-être un nouveau message"
+
+[notif_wake_notice_text]
+text = "Ouvrez Tinline et déverrouillez-le pour voir ce qui est arrivé."
 
 [notif_return_to_call]
 text = "Touchez pour revenir à l’appel"
@@ -4081,7 +4108,7 @@ text = "Autorisation du micro nécessaire — on ne peut pas vous entendre"
 text = "Disponible pour les appels"
 
 [avail_subtitle]
-text = "Votre ligne reste ouverte en arrière-plan pour que les appels sonnent comme sur un téléphone normal."
+text = "Quand c’est activé, les appels sonnent comme sur un téléphone normal."
 
 [avail_until]
 text = "Indisponible jusqu’à {time}."
@@ -4112,6 +4139,12 @@ text = "Sonnerie…"
 
 [call_status_calling]
 text = "Appel…"
+
+[call_status_waking]
+text = "Réveil de son téléphone…"
+
+[call_wake_connecting]
+text = "Connexion…"
 
 [call_privacy_active]
 text = "Chiffré de bout en bout. Votre voix est chiffrée sur cet appareil et déchiffrée uniquement sur celui de {name}."

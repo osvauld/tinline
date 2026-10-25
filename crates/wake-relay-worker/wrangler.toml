@@ -1,0 +1,46 @@
+# The push wake relay (docs/push.md "Relay on Cloudflare"). Deploy guide: README.md.
+name = "tinline-wake"
+main = "build/worker/shim.mjs"
+compatibility_date = "2026-10-01"
+# Cloudflare creates the DNS record and certificate for this custom domain.
+routes = [{ pattern = "push.osvauld.com", custom_domain = true }]
+# Only push.osvauld.com answers; no workers.dev or preview URLs.
+workers_dev = false
+preview_urls = false
+
+# No stored request logs (docs/play/privacy.md: "It keeps no record of nudges"). Errors are seen
+# only live with `wrangler tail`.
+[observability]
+enabled = false
+
+[build]
+command = "cargo install -q worker-build && worker-build --release"
+
+[vars]
+APNS_TOPIC = "com.osvauld.tinline"
+# "1" turns on GET /v1/probe/apns (the HTTP/2 check). Set to "0" once confirmed.
+PROBE = "0"
+
+# Revoke list and the shared provider bearers. Fill in the id from
+# `npx wrangler kv namespace create WAKE_KV`.
+[[kv_namespaces]]
+binding = "WAKE_KV"
+id = "2556036f9a844472be3e8e91a43d9fad"
+
+# Per-token limits (PROVISIONAL, wake-relay-core relay.rs). namespace_id is any number unique
+# in the account.
+[[ratelimits]]
+name = "MSG_LIMITER"
+namespace_id = "7101"
+simple = { limit = 2, period = 60 }
+
+[[ratelimits]]
+name = "CALL_LIMITER"
+namespace_id = "7102"
+simple = { limit = 3, period = 60 }
+
+# Per caller IP, for /v1/register.
+[[ratelimits]]
+name = "REGISTER_LIMITER"
+namespace_id = "7103"
+simple = { limit = 20, period = 60 }

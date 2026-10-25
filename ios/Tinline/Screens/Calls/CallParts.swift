@@ -199,6 +199,8 @@ struct CallFocus<Controls: View>: View {
     var waiting = false
     var muted = false
     var waitingCard: AnyView?
+    /** Still dialling and the callee's phone is being woken (`CallStats.waking`). */
+    var waking = false
     @State var frames: [String: CGRect] = [:]
     @ViewBuilder let controls: () -> Controls
 
@@ -238,7 +240,7 @@ struct CallFocus<Controls: View>: View {
                                     .multilineTextAlignment(.center).lineLimit(1).truncationMode(.tail)
                                     .frame(maxWidth: .infinity, minHeight: 34).padding(.top, 22)
                                 let status = incoming ? (video ? tr("call_status_incoming_video") : tr("call_status_incoming_voice"))
-                                    : callStatus(active: active, ringing: ringing, reconnecting: reconnecting, secs: secs)
+                                    : callStatus(active: active, ringing: ringing, reconnecting: reconnecting, secs: secs, waking: waking)
                                 Text(status).font(CallFont.figtree(active && !reconnecting ? 20 : 17, .medium).monospacedDigit())
                                     .foregroundStyle(tin.ink).lineLimit(1)
                                     .frame(minHeight: 30).padding(.top, 6)

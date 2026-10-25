@@ -4818,6 +4818,13 @@ where = [
 ]
 text = "Tinline fonctionne comme une ligne téléphonique : elle reste ouverte discrètement en arrière-plan. Chacune de ces autorisations est facultative, et vous pourrez les changer plus tard."
 
+[t_42aaf400ac]
+en = "Tinline rests until someone reaches you, then a small nudge wakes it. Each of these is optional, and you can change them later."
+where = [
+  "android onboarding_perms_lead_push: Lead on the permissions step when Tinline wakes by push instead of staying connected all the time. A nudge is a content-free wake-up push.",
+]
+text = "Tinline se repose jusqu’à ce que quelqu’un vous joigne, puis un petit signal le réveille. Chacune de ces autorisations est facultative, et vous pourrez les changer plus tard."
+
 [t_ff3d541d05]
 en = "Microphone"
 where = [
@@ -5902,6 +5909,34 @@ where = [
 ]
 text = "Tinline reste connecté en arrière-plan pour que les appels sonnent comme sur un téléphone normal. Cela consomme un peu de batterie. La liste ci-dessous indique ce dont Android a besoin pour le permettre."
 
+[t_94b5ffeb4a]
+en = "Tinline rests until someone reaches you, then a small nudge wakes it, so it needs no battery exemption. The checklist below is what Android needs to ring."
+where = [
+  "android settings_battery_hint_push: Explanation at the top of the background and battery page when Tinline wakes by push instead of staying connected. A nudge is a content-free wake-up push.",
+]
+text = "Tinline se repose jusqu’à ce que quelqu’un vous joigne, puis un petit signal le réveille : il n’a donc pas besoin d’exception pour la batterie. La liste ci-dessous indique ce dont Android a besoin pour sonner."
+
+[t_f9d8fe5ee3]
+en = "Stay connected all the time"
+where = [
+  "android settings_stay_connected: Switch row on the background and battery page (also its screen-reader label). On: Tinline keeps its line open; off: it rests and a push wakes it.",
+]
+text = "Rester connecté en permanence"
+
+[t_2659692d22]
+en = "Tinline keeps your line open, so calls and messages arrive straight away. It uses a little more battery."
+where = [
+  "android settings_stay_connected_on: Line under the Stay connected all the time switch when it is on.",
+]
+text = "Tinline garde votre ligne ouverte, pour que les appels et les messages arrivent tout de suite. Cela consomme un peu plus de batterie."
+
+[t_4ec7dd392b]
+en = "Tinline rests until someone reaches you, then wakes up. The wake-up carries no message, only a nudge."
+where = [
+  "android settings_stay_connected_off: Line under the Stay connected all the time switch when it is off. A nudge is a content-free wake-up push.",
+]
+text = "Tinline se repose jusqu’à ce que quelqu’un vous joigne, puis se réveille. Le signal de réveil ne contient aucun message, c’est un simple petit signal."
+
 [t_3a5e4ab9a1]
 en = "CHECKLIST"
 where = [
@@ -6818,6 +6853,7 @@ text = "Ils correspondent"
 en = "Connecting…"
 where = [
   "android link_connecting: Heading while connecting to the new device.",
+  "android call_wake_connecting: Status line on the incoming-call screen after you answered a call that woke your phone, while the call itself is still arriving.",
   "ios link_connecting: Heading while connecting to the new device.",
   "desktop gcall_connecting: Desktop, group calls (in gcall.rs, status).",
 ]
@@ -7271,6 +7307,34 @@ where = [
   "android notif_idle_available_text: Text of the always-on notification when available.",
 ]
 text = "Votre ligne est ouverte. Touchez pour changer."
+
+[t_27eaf5b596]
+en = "Getting your messages…"
+where = [
+  "android notif_wake_service_title: Title of the brief notification Android shows while a push has woken Tinline to fetch what is waiting.",
+]
+text = "Récupération de vos messages…"
+
+[t_e7908d07a7]
+en = "Tinline will go back to sleep by itself."
+where = [
+  "android notif_wake_service_text: Text of the brief notification while Tinline is woken by a push: it stops on its own when done.",
+]
+text = "Tinline se remettra en veille tout seul."
+
+[t_9501651b03]
+en = "You may have a new message"
+where = [
+  "android notif_wake_notice_title: Title of a notification after a wake-up while Tinline is still locked. It names nobody and shows no message text.",
+]
+text = "Vous avez peut-être un nouveau message"
+
+[t_e9548850fb]
+en = "Open Tinline and unlock to catch up."
+where = [
+  "android notif_wake_notice_text: Text of the notification after a wake-up while Tinline is locked: open the app and unlock it to see what arrived.",
+]
+text = "Ouvrez Tinline et déverrouillez-le pour voir ce qui est arrivé."
 
 [t_bb5cc13df8]
 en = "Tap to return to the call"
@@ -10541,12 +10605,12 @@ where = [
 ]
 text = "Allez ensuite dans Autorisations › Micro et autorisez-le."
 
-[t_45e67545ae]
-en = "Your line stays open in the background so calls ring like a normal phone."
+[t_ca60790c0b]
+en = "When this is on, calls ring like a normal phone."
 where = [
   "android avail_subtitle: Line under the availability sheet's title.",
 ]
-text = "Votre ligne reste ouverte en arrière-plan pour que les appels sonnent comme sur un téléphone normal."
+text = "Quand c’est activé, les appels sonnent comme sur un téléphone normal."
 
 [t_c865b5b93b]
 en = "Not available until {time}."
@@ -10621,6 +10685,15 @@ where = [
   "desktop call_calling: Desktop, calls (voice and video) (in call_screen.rs, call_view).",
 ]
 text = "Appel…"
+
+[t_41d8e1e3cd]
+en = "Waking their phone…"
+where = [
+  "android call_status_waking: Status line on the call screen while an outgoing call waits: the other person's phone was asleep and is being woken by a push. Never claims encryption yet.",
+  "ios call_status_waking: Status line while an outgoing call waits: the other person's phone was asleep and is being woken by a push. Never claims encryption yet.",
+  "desktop call_waking: Desktop, calls: status while an outgoing call waits because the other person's phone was asleep and is being woken by a push (in call_screen.rs, call_view).",
+]
+text = "Réveil de son téléphone…"
 
 [t_44e30f3c68]
 en = "End-to-end encrypted. Your voice is encrypted on this device and only decrypted on {name}’s."

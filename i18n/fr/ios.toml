@@ -4026,6 +4026,9 @@ text = "Sonnerie…"
 [call_status_calling]
 text = "Appel…"
 
+[call_status_waking]
+text = "Réveil de son téléphone…"
+
 [call_privacy_active]
 text = "Chiffré de bout en bout. Votre voix est chiffrée sur cet appareil et déchiffrée uniquement sur celui de {name}."
 

@@ -24,10 +24,12 @@ impl App {
             let incoming = c.info.incoming && !c.answered && c.state == CallState::Ringing;
             let active = c.state == CallState::Active;
             let reconnecting = active && c.stats.as_ref().is_some_and(|s| s.reconnecting);
+            let waking = c.stats.as_ref().is_some_and(|s| s.waking);
             let secs = c.stats.as_ref().map_or(0, |s| s.secs);
             let status = if incoming { if c.info.video { crate::i18n::tr_str("common_incoming_video_call") } else { crate::i18n::tr_str("common_incoming_call") }.to_string() }
                 else if reconnecting { crate::i18n::tr_str("call_reconnecting_2").into() }
                 else { match c.state {
+                    CallState::Dialing if waking => crate::i18n::tr_str("call_waking").into(),
                     CallState::Dialing => crate::i18n::tr_str("call_calling").into(),
                     CallState::Ringing => crate::i18n::tr_str("call_ringing").into(),
                     CallState::Active => format!("{:02}:{:02}", secs / 60, secs % 60),
@@ -261,7 +263,9 @@ impl App {
         let c = self.call.as_ref().filter(|_| self.call_ui.minimized)?;
         let secs = c.stats.as_ref().map_or(0, |s| s.secs);
         let status = if c.state == CallState::Active { format!("{:02}:{:02}", secs / 60, secs % 60) }
-            else if c.state == CallState::Dialing { crate::i18n::tr_str("call_calling").into() } else { crate::i18n::tr_str("call_ringing").into() };
+            else if c.state == CallState::Dialing {
+                if c.stats.as_ref().is_some_and(|s| s.waking) { crate::i18n::tr_str("call_waking").into() } else { crate::i18n::tr_str("call_calling").into() }
+            } else { crate::i18n::tr_str("call_ringing").into() };
         let open = button(row![crate::pg_icons::pgi("phone", 18.0, t.on_accent),
                 container(semi(c.info.peer_name.clone(), 15.0, t.on_accent).wrapping(iced::widget::text::Wrapping::None)).width(Fill).clip(true),
                 container(tx(status, 13.0, t.on_accent)).width(Length::Shrink)].spacing(10).align_y(Alignment::Center).height(44))

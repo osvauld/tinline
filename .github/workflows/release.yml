@@ -142,25 +142,39 @@ jobs:
           test -n "$KEYSTORE_BASE64" || { echo 'Missing Android release keystore secret'; exit 1; }
           umask 077
           printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/tinline-release.jks"
-      - name: Build signed release APK
+      # Two editions (docs/push.md "Editions"): Liberum (no Google code, always connected) and Play (wake-ups by
+      # FCM, with the Firebase settings from secrets). Both APKs go on GitHub Releases and the site; the Play
+      # bundle is for the Play Store. Without the secrets the Play build would silently be always-on, so stop.
+      - name: Build signed release APKs (Liberum, Play) and bundle (Play)
         working-directory: android
         env:
           ORG_GRADLE_PROJECT_RELEASE_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
           ORG_GRADLE_PROJECT_RELEASE_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ORG_GRADLE_PROJECT_RELEASE_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
+          FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
+          FIREBASE_GCM_SENDER_ID: ${{ secrets.FIREBASE_GCM_SENDER_ID }}
         run: |
+          for v in FIREBASE_APP_ID FIREBASE_API_KEY FIREBASE_GCM_SENDER_ID; do
+            test -n "${!v}" || { echo "Missing $v secret: the Play build would have no wake-ups"; exit 1; }
+          done
           export ORG_GRADLE_PROJECT_RELEASE_STORE_FILE="$RUNNER_TEMP/tinline-release.jks"
-          ./gradlew --no-daemon --console=plain :app:assembleRelease \
+          ./gradlew --no-daemon --console=plain :app:assembleLiberumRelease :app:assemblePlayRelease :app:bundlePlayRelease \
             -PrequireReleaseSigning=true -PversionName="$VERSION" -PversionCode="$VERSION_CODE" \
             -Pabis=x86_64,arm64-v8a
-      - name: Verify APK signature and collect artifact
+      - name: Verify the Liberum APK has no Google code
+        run: python3 scripts/check_no_google.py android/app/build/outputs/apk/liberum/release/app-liberum-release.apk
+      - name: Verify APK signatures and collect artifacts
         run: |
-          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs \
-            android/app/build/outputs/apk/release/app-release.apk
+          for apk in liberum/release/app-liberum-release.apk play/release/app-play-release.apk; do
+            "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs "android/app/build/outputs/apk/$apk"
+          done
           mkdir -p dist/android
-          cp android/app/build/outputs/apk/release/app-release.apk "dist/android/tinline-v${VERSION}.apk"
+          cp android/app/build/outputs/apk/liberum/release/app-liberum-release.apk "dist/android/tinline-liberum-v${VERSION}.apk"
+          cp android/app/build/outputs/apk/play/release/app-play-release.apk "dist/android/tinline-play-v${VERSION}.apk"
+          cp android/app/build/outputs/bundle/playRelease/app-play-release.aab "dist/android/tinline-play-v${VERSION}.aab"
           cd dist/android
-          sha256sum *.apk > SHA256SUMS
+          sha256sum *.apk *.aab > SHA256SUMS
       - name: Remove keystore
         if: always()
         run: rm -f "$RUNNER_TEMP/tinline-release.jks"
@@ -198,7 +212,7 @@ jobs:
             if [ "$GITHUB_REF_TYPE" = tag ]; then from=(--verify-tag); else from=(--target "$GITHUB_SHA"); fi
             # The release's own notes when docs/releases/<tag>.md exists, else a generic candidate note.
             if [ -f "docs/releases/$TAG.md" ]; then notes=(--notes-file "docs/releases/$TAG.md"); else
-              notes=(--notes 'Candidate Linux tarball, Debian package, AppImage, and signed Android APK. Test before publishing. Linux build baseline: Ubuntu 24.04; older distros are not verified.'); fi
+              notes=(--notes 'Candidate Linux tarball, Debian package, AppImage, signed Android APKs (Tinline Liberum, Tinline Play) and Play bundle. Test before publishing. Linux build baseline: Ubuntu 24.04; older distros are not verified.'); fi
             gh release create "$TAG" "${from[@]}" --draft --title "Tinline $TAG" "${notes[@]}"
           fi
           mapfile -d '' files < <(find artifacts -type f -print0)

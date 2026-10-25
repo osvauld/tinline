@@ -7,6 +7,8 @@ class ScreenCallsTest {
     @Test fun realPhaseFlagsChooseStatusWithoutInventingTiming() {
         assertEquals(appString(R.string.call_status_calling), callStatusText(false, false, false, 0))
         assertEquals(appString(R.string.call_status_ringing), callStatusText(false, true, false, 0))
+        assertEquals(appString(R.string.call_status_waking), callStatusText(false, false, false, 0, waking = true))
+        assertEquals(appString(R.string.call_status_ringing), callStatusText(false, true, false, 0, waking = true))
         assertEquals(appString(R.string.call_reconnecting), callStatusText(true, false, true, 65))
     }
     @Test fun encryptionClaimIsConditionalOnConnection() {

@@ -224,19 +224,43 @@ class IncomingCallActivity : ComponentActivity() {
             app.calls.answerWithVideo()
             startActivity(Intent(this@IncomingCallActivity, CallActivity::class.java)); finish()
         }
+        // A call wake rings before the call has arrived (WakeRing); Answer asks for the microphone, then waits for the call.
+        val answerWake = registerMicThen { WakeRing.answer(app) }
+        if (savedInstanceState == null) takeWakeAnswer(intent, answerWake)
+        wakeAnswer = answerWake
         setContent {
             TinlineTheme(dark = true) {
                 val ui by app.calls.ui.collectAsState()
+                val wake by WakeRing.state.collectAsState()
                 val u = ui
-                LaunchedEffect(u?.state) {
-                    if (u == null) finish()
-                    else if (u.state is CallState.Active) {
+                val w = wake
+                LaunchedEffect(u?.state, u?.answered, w == null) {
+                    if (u == null && w == null) finish()
+                    // Answered on the wake screen: the call is in, carry on to the call screen.
+                    else if (u != null && (u.state is CallState.Active || u.answered)) {
                         startActivity(Intent(this@IncomingCallActivity, CallActivity::class.java)); finish()
                     }
+                }
+                if (u == null && w != null) {
+                    if (w.answered) CallFocus(w.name, w.did, active = false, ringing = false, incoming = true) {
+                        Text(stringResource(R.string.call_wake_connecting), style = TinType.bodyL, color = Tin.c.ink)
+                    } else IncomingContent(w.name, w.did, onDecline = { WakeRing.decline(app); finish() }, onAnswer = { answerWake() })
                 }
                 if (u != null) IncomingContent(u.info.peerName, u.info.peerDid, onDecline = { app.calls.decline(); finish() }, onAnswer = { answerWithMic() }, video = u.info.video,
                     onVideo = { answerWithVideo() })
             }
+        }
+    }
+
+    private var wakeAnswer: (() -> Unit)? = null
+
+    override fun onNewIntent(intent: Intent) { super.onNewIntent(intent); setIntent(intent); wakeAnswer?.let { takeWakeAnswer(intent, it) } }
+
+    /** The wake notification's Answer: answer once (the extra is taken so a recreation does not answer again). */
+    private fun takeWakeAnswer(i: Intent?, answer: () -> Unit) {
+        if (i?.getBooleanExtra(Notifications.EXTRA_WAKE_ANSWER, false) == true) {
+            i.removeExtra(Notifications.EXTRA_WAKE_ANSWER)
+            if (WakeRing.active) answer()
         }
     }
 }
@@ -435,6 +459,7 @@ fun InCallScreen(ui: CallUi, meName: String, app: P2pApp, onCameraOn: () -> Unit
         active = active, ringing = ui.state is CallState.Ringing, secs = secs,
         direct = s?.direct, bars = bars,
         muted = ui.muted, speaker = ui.speaker, micProblem = if (ui.held) held else ui.micProblem ?: videoProblem, reconnecting = s?.reconnecting == true,
+        waking = s?.waking == true,
         onMute = { calls.toggleMute() }, onSpeaker = { calls.toggleSpeaker() }, onEnd = { calls.hangup() }, onMinimise = onMinimise,
         onCamera = if (v != null) onCamera else null, rttMs = s?.rttMs?.toInt(), lossPct = loss,
         routes = ui.routes, onRoute = { calls.selectRoute(it) }, onAllowBtNames = onAllowBtNames, onMessage = onMessage,
@@ -451,6 +476,8 @@ fun InCallContent(
     muted: Boolean, speaker: Boolean, micProblem: String?,
     onMute: () -> Unit, onSpeaker: () -> Unit, onEnd: () -> Unit, onMinimise: () -> Unit, startWithSheet: Boolean = false,
     reconnecting: Boolean = false,
+    /** Still dialling and the callee's phone is being woken (`CallStats.waking`). */
+    waking: Boolean = false,
     /** Set when the call has video: the camera button (the camera is off on this screen). */
     onCamera: (() -> Unit)? = null,
     /** The live routes; with a headset connected the speaker slot opens the route sheet instead of toggling. */
@@ -474,7 +501,7 @@ fun InCallContent(
     val (caption, icon) = routeSlot(routes)
     Box(Modifier.fillMaxSize()) {
         CallFocus(name.ifBlank { stringResource(R.string.common_unknown) }, did, active, ringing, secs, reconnecting, micProblem,
-            onMinimise = onMinimise, onInfo = { info = true }, signal = bars ?: 0, direct = direct, onMessage = onMessage, waiting = waiting, muted = muted, waitingCard = waitingCard) {
+            onMinimise = onMinimise, onInfo = { info = true }, signal = bars ?: 0, direct = direct, onMessage = onMessage, waiting = waiting, muted = muted, waitingCard = waitingCard, waking = waking) {
             CallControls(muted, speaker, camera = false, onMute, { if (routes?.hasHeadset == true) routeSheet = true else onSpeaker() },
                 onCamera, onFlip = null, onEnd, caption, icon, ending = ending)
         }

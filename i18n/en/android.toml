@@ -2296,6 +2296,10 @@ note = "Heading of the permissions step."
 text = "Tinline works like a phone line: it stays open quietly in the background. Each of these is optional, and you can change them later."
 note = "Lead on the permissions step."
 
+[onboarding_perms_lead_push]
+text = "Tinline rests until someone reaches you, then a small nudge wakes it. Each of these is optional, and you can change them later."
+note = "Lead on the permissions step when Tinline wakes by push instead of staying connected all the time. A nudge is a content-free wake-up push."
+
 [onboarding_perm_mic]
 text = "Microphone"
 note = "Permission name."
@@ -2884,6 +2888,22 @@ note = "Heading on the background and battery page."
 [settings_battery_hint]
 text = "Tinline stays connected in the background so calls ring like a normal phone. It uses a little battery. The checklist below is what Android needs to allow that."
 note = "Explanation at the top of the background and battery page."
+
+[settings_battery_hint_push]
+text = "Tinline rests until someone reaches you, then a small nudge wakes it, so it needs no battery exemption. The checklist below is what Android needs to ring."
+note = "Explanation at the top of the background and battery page when Tinline wakes by push instead of staying connected. A nudge is a content-free wake-up push."
+
+[settings_stay_connected]
+text = "Stay connected all the time"
+note = "Switch row on the background and battery page (also its screen-reader label). On: Tinline keeps its line open; off: it rests and a push wakes it."
+
+[settings_stay_connected_on]
+text = "Tinline keeps your line open, so calls and messages arrive straight away. It uses a little more battery."
+note = "Line under the Stay connected all the time switch when it is on."
+
+[settings_stay_connected_off]
+text = "Tinline rests until someone reaches you, then wakes up. The wake-up carries no message, only a nudge."
+note = "Line under the Stay connected all the time switch when it is off. A nudge is a content-free wake-up push."
 
 [settings_checklist]
 text = "CHECKLIST"
@@ -3624,6 +3644,22 @@ note = "Text of the always-on notification when offline."
 [notif_idle_available_text]
 text = "Your line is open. Tap to change."
 note = "Text of the always-on notification when available."
+
+[notif_wake_service_title]
+text = "Getting your messages…"
+note = "Title of the brief notification Android shows while a push has woken Tinline to fetch what is waiting."
+
+[notif_wake_service_text]
+text = "Tinline will go back to sleep by itself."
+note = "Text of the brief notification while Tinline is woken by a push: it stops on its own when done."
+
+[notif_wake_notice_title]
+text = "You may have a new message"
+note = "Title of a notification after a wake-up while Tinline is still locked. It names nobody and shows no message text."
+
+[notif_wake_notice_text]
+text = "Open Tinline and unlock to catch up."
+note = "Text of the notification after a wake-up while Tinline is locked: open the app and unlock it to see what arrived."
 
 [notif_return_to_call]
 text = "Tap to return to the call"
@@ -5505,7 +5541,7 @@ text = "Available for calls"
 note = "Title of the availability sheet and accessibility label of its switch."
 
 [avail_subtitle]
-text = "Your line stays open in the background so calls ring like a normal phone."
+text = "When this is on, calls ring like a normal phone."
 note = "Line under the availability sheet's title."
 
 [avail_until]
@@ -5547,6 +5583,14 @@ note = "Status line on the call screen while an outgoing call rings on the other
 [call_status_calling]
 text = "Calling…"
 note = "Status line on the call screen while an outgoing call is being set up. Never claims encryption yet."
+
+[call_status_waking]
+text = "Waking their phone…"
+note = "Status line on the call screen while an outgoing call waits: the other person's phone was asleep and is being woken by a push. Never claims encryption yet."
+
+[call_wake_connecting]
+text = "Connecting…"
+note = "Status line on the incoming-call screen after you answered a call that woke your phone, while the call itself is still arriving."
 
 [call_privacy_active]
 text = "End-to-end encrypted. Your voice is encrypted on this device and only decrypted on {name}’s."
