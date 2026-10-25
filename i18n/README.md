@@ -39,3 +39,8 @@ note = "{name} is the contact's chosen name."
   (iOS marks them `needs_review`).
 
 `--check` validates keys and placeholders; `--report` prints coverage.
+
+Right-to-left languages (`rtl = true`: ar, ur, ks, sd) are translated and checked
+but not shipped: the generator leaves them out unless `--include-rtl` is passed.
+The apps aren't RTL-ready yet (user decision, 2026-10-25). Bidi notes for later
+are in `i18n/review/ar.md`.

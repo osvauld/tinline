@@ -149,6 +149,20 @@ Fix: join with the platform list formatter (Android `ListFormatter`, iOS
 - Desktop `groups_view.rs` `when()`/`day()` format with `%b` → English month names
   inside translated strings ("Flagged {value}"). Use the locale date formatter.
 
+## 9h. Found in review (ar), apply to all languages
+
+- `onboarding_restored_lead` "…not with us" uses "we" (VOICE rules it out) →
+  "…kept on your other devices, not on a server."
+- `groups_online_cap`, `group_a_host_lists_up`: make `{max}` a plural entry.
+- `conv_info_*`: document whether `{time}` is a clock time or a full date-time.
+- `link_scan_step1/2`: drop the typed "1. " / "2. " numbering (render it in UI).
+- Hard-coded numbers → placeholders formatted with the locale: "24 words",
+  "{filled} of 24", "15 %", "64", "16 KiB", "1 to 64", "440 Hz", "4096".
+- One label for "End & answer" / "End and answer".
+- `avail_note`: separate "you" string (Arabic attaches "you" to the word).
+- Bidi code fixes (FSI/PDI isolation, RLM) are parked: no RTL work for now
+  (user, 2026-10-25). See `i18n/review/ar.md`.
+
 ## 10. Not translatable
 
 - `app_ev` "Ev" is a Debug format string: remove it from the catalog.

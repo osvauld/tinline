@@ -290,6 +290,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--check", action="store_true")
     ap.add_argument("--report", action="store_true")
+    ap.add_argument("--include-rtl", action="store_true",
+                    help="also ship right-to-left languages (layouts aren't RTL-ready yet)")
     args = ap.parse_args()
     langs = load_languages()
     errors, master = check(langs)
@@ -301,6 +303,8 @@ def main():
         report(langs, master)
     if args.check or args.report:
         return
+    if not args.include_rtl:
+        langs = [l for l in langs if not l.get("rtl")]
     if master["android"]["en"]:
         write_android(langs, master)
     if master["ios"]["en"]:
