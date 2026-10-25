@@ -85,7 +85,7 @@ struct ShellKeyLostContent: View {
                           center: true, anchor: true,
                           hero: { ShellIconDisc(glyph: .key, size: 72, iconSize: 32).padding(.top, 12) },
                           content: {
-                ShellNotice(tr("unlock_lost_notice"), kind: .warn, glyph: .info)
+                ShellNotice(tr("unlock_lost_notice", "24"), kind: .warn, glyph: .info)
             }, foot: {
                 ShellGBtn(text: tr("unlock_restore"), enabled: !busy, action: onRestore)
                 ShellGBtn(text: tr("unlock_try_again"), kind: .text, busy: busy, action: onRetry)

@@ -6,21 +6,29 @@ note = "Screen-reader label of a message tick: not sent yet."
 text = "Sent, waiting for {first}’s device to confirm"
 note = "Screen-reader label of a message tick: sent, no confirmation yet. {first} is the other person's first name."
 
+[kit_tick_sent_their]
+text = "Sent, waiting for their device to confirm"
+note = "Screen-reader label of a message tick: sent, no confirmation yet. Used when the other person's name is not known; their means the other person's."
+
 [kit_tick_delivered]
 text = "On {first}’s device"
 note = "Screen-reader label of a message tick: reached the other person's device. {first} is their first name."
+
+[kit_tick_delivered_their]
+text = "On their device"
+note = "Screen-reader label of a message tick: reached the other person's device. Used when their name is not known."
 
 [kit_tick_read]
 text = "Read on {first}’s device"
 note = "Screen-reader label of a message tick: read. {first} is the other person's first name."
 
+[kit_tick_read_their]
+text = "Read on their device"
+note = "Screen-reader label of a message tick: read. Used when the other person's name is not known."
+
 [kit_tick_bad]
 text = "Not delivered"
 note = "Screen-reader label of a message tick: could not be delivered."
-
-[kit_tick_their]
-text = "their"
-note = "Stand-in for a first name in the tick labels when no name is known (\"On their device\")."
 
 [kit_avatar_view_photo]
 text = "View photo"
@@ -146,17 +154,17 @@ note = "Button of the clipboard card prompt that adds the new contact."
 text = "Chat with {name}?"
 note = "Title of the clipboard card prompt for a known contact. {name} is the contact's name, or \"them\"."
 
+[chat_card_chat_with_unnamed]
+text = "Chat with this contact?"
+note = "Banner on a found contact card whose name is not known, for a contact already in Tinline."
+
 [chat_card_add_name]
 text = "Add {name}?"
 note = "Title of the clipboard card prompt for a new contact. {name} is the name on the card, or \"this contact\"."
 
-[chat_card_them]
-text = "them"
-note = "Stand-in for a nameless contact in \"Chat with them?\"."
-
-[chat_card_this_contact]
-text = "this contact"
-note = "Stand-in for a nameless card in \"Add this contact?\"."
+[chat_card_add_name_unnamed]
+text = "Add this contact?"
+note = "Banner on a found contact card whose name is not known, for someone not yet a contact."
 
 [chat_find_placeholder]
 text = "Find in this chat"
@@ -792,8 +800,9 @@ text = "Valid for 7 days"
 note = "Sub line under Create invite link: how long a link works."
 
 [group_member_flags]
-text = "{flags} of {total} flags"
-note = "Part of a member row sub line. {flags} is how many flags the member has, {total} how many remove them."
+one = "{count} of {total} flags"
+other = "{count} of {total} flags"
+note = "Part of a member row sub line. {count} is how many flags the member has, {total} how many remove them."
 
 [group_member_blocked_by_you]
 text = "Blocked by you"
@@ -851,33 +860,17 @@ note = "Label for a member who hosts the group’s chat."
 text = "Call host"
 note = "Label for a member who hosts the group’s calls."
 
-[group_member_desc_you]
-text = "{name} (you)"
-note = "Spoken description of a member row: the name part when the member is the user. {name} is the user’s name."
-
 [group_member_desc_owner]
-text = "owner"
-note = "Spoken description part: role (lower case, joined with commas)."
+text = "{name}, owner. Open actions"
+note = "Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is owner."
 
 [group_member_desc_admin]
-text = "admin"
-note = "Spoken description part: role (lower case, joined with commas)."
+text = "{name}, admin. Open actions"
+note = "Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is admin."
 
 [group_member_desc_member]
-text = "member"
-note = "Spoken description part: role (lower case, joined with commas)."
-
-[group_member_desc_host]
-text = "host"
-note = "Spoken description part (lower case, joined with commas)."
-
-[group_member_desc_call_host]
-text = "call host"
-note = "Spoken description part (lower case, joined with commas)."
-
-[group_member_desc]
-text = "{summary}. Open actions"
-note = "Spoken description of a member row. {summary} is the comma-separated name, role and host parts."
+text = "{name}, member. Open actions"
+note = "Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is member."
 
 [group_this_device]
 text = "This device"
@@ -899,18 +892,6 @@ note = "Status line when hosts are online. {count} is the number of hosts online
 [group_hosts_offline]
 text = "No host is online. Your posts are saved and send when one is."
 note = "Status line when no host is online."
-
-[group_online]
-text = "Online"
-note = "Presence word under a host or call host."
-
-[group_offline]
-text = "Offline"
-note = "Presence word under a host or call host."
-
-[group_host_also_calls]
-text = "{status} · also hosts calls"
-note = "Sub line for a host that is also a call host. {status} is Online or Offline."
 
 [group_remove]
 text = "Remove"
@@ -1010,16 +991,17 @@ text = "Flags on you"
 note = "Section heading when the user has flags against them."
 
 [group_flags_count]
-text = "{flags} of {total}"
-note = "Count next to the heading and spoken label of the flag meter. {flags} is flags so far, {total} flags that remove."
+text = "{count} of {total}"
+note = "Count next to the heading of the flag meter. {count} is flags so far, {total} flags that remove."
 
 [group_flags_count_desc]
-text = "{flags} of {total} flags"
-note = "Spoken label of the flag meter. {flags} is flags so far, {total} flags that remove."
+one = "{count} of {total} flags"
+other = "{count} of {total} flags"
+note = "Spoken label of the flag meter. {count} is flags so far, {total} flags that remove."
 
 [group_flags_left]
 one = "One more flag from any admin removes you from the group. Flags can’t be taken back. You can still read and post until then."
-other = "{count} more flags from any admin removes you from the group. Flags can’t be taken back. You can still read and post until then."
+other = "{count} more flags from any admin remove you from the group. Flags can’t be taken back. You can still read and post until then."
 note = "Note under the flag meter. {count} is how many more flags remove the user."
 
 [group_removal_title]
@@ -1188,20 +1170,32 @@ text = "Remove as host"
 note = "Action row title."
 
 [group_member_cancel_callhost]
-text = "Cancel call host request{device}"
-note = "Action row title. {device} is a short device id, empty if the member has one device."
+text = "Cancel call host request"
+note = "Action row title: cancel a pending call host request."
+
+[group_member_cancel_callhost_device]
+text = "Cancel call host request · {device}"
+note = "Action row title when the member has several devices. {device} is a short device id."
 
 [group_member_cancel_callhost_sub]
 text = "Waiting for {name}’s device to accept"
 note = "Sub line. {name} is the member’s first name."
 
 [group_member_remove_callhost]
-text = "Remove as call host{device}"
-note = "Action row title. {device} is a short device id, empty if the member has one device."
+text = "Remove as call host"
+note = "Action row title: stop a device hosting calls."
+
+[group_member_remove_callhost_device]
+text = "Remove as call host · {device}"
+note = "Action row title when the member has several devices. {device} is a short device id."
 
 [group_member_make_callhost]
-text = "Make call host{device}"
-note = "Action row title. {device} is a short device id, empty if the member has one device."
+text = "Make call host"
+note = "Action row title: appoint a device to host calls."
+
+[group_member_make_callhost_device]
+text = "Make call host · {device}"
+note = "Action row title when the member has several devices. {device} is a short device id."
 
 [group_member_make_callhost_sub]
 text = "Asks {name} to carry group calls. They have to accept."
@@ -1283,45 +1277,13 @@ note = "Button that sends the private-chat request."
 text = "Someone"
 note = "Fallback name for a group member whose name is unknown, e.g. \"Someone joined\"."
 
-[group_fallback_them]
-text = "them"
-note = "Fallback for a name inside a sentence (\"Invitation sent to them\"), used when the person has no name."
-
-[group_fallback_they]
-text = "They"
-note = "Fallback for a name at the start of a sentence (\"They join…\"), used when the person has no name."
-
-[group_sys_joined]
-text = "{name} joined"
-note = "System line in a group chat. {name} is who joined."
-
-[group_sys_left]
-text = "{name} left"
-note = "System line in a group chat. {name} is who left."
-
 [group_sys_removed_you]
 text = "You were removed after {total} admin flags"
 note = "System line: the user was removed. {total} is the number of flags that remove."
 
 [group_sys_removed]
 text = "{name} was removed after {total} admin flags"
-note = "System line: a member was removed. {name} is the member, {total} the number of flags."
-
-[group_sys_admin_you]
-text = "{by} made you an admin"
-note = "System line. {by} is who made the user admin."
-
-[group_sys_admin]
-text = "{by} made {name} an admin"
-note = "System line. {by} made {name} an admin."
-
-[group_sys_unadmin_you]
-text = "{by} removed you as admin"
-note = "System line. {by} is who removed the user as admin."
-
-[group_sys_unadmin]
-text = "{by} removed {name} as admin"
-note = "System line. {by} removed {name} as admin."
+note = "System line in a group chat (the centred grey line). A named member was removed. {name} is the member, {total} the number of admin flags that remove."
 
 [group_sys_host_added_you]
 text = "A device of yours now hosts the group"
@@ -1350,6 +1312,10 @@ note = "Group list row preview of the user’s own last post. {text} is the post
 [group_preview_author]
 text = "{name}: {text}"
 note = "Group list row preview of someone’s last post. {name} is the author’s first name, {text} the post."
+
+[group_preview_someone]
+text = "Someone: {text}"
+note = "Group list row preview of the last post by a member whose name is not known. {text} is the post."
 
 [group_members_count]
 one = "{count} member"
@@ -1385,25 +1351,41 @@ note = "Small line under the user’s post that no host has taken yet."
 text = "Waiting for {name} · via {group}"
 note = "Line for a chat request the user sent. {name} is who it went to, {group} the group it goes through."
 
+[group_req_pending_unnamed]
+text = "Waiting for them · via {group}"
+note = "State line of a chat request you sent, when the person’s name is not known. {group} is the group."
+
 [group_req_accepted_msgs]
 text = "{name} accepted · messages only"
 note = "Line for an accepted chat request when the contact was added. {name} is who accepted."
+
+[group_req_accepted_msgs_unnamed]
+text = "Accepted · messages only"
+note = "State line of a chat request you sent, when the person’s name is not known: accepted, messages only."
 
 [group_req_accepted_connecting]
 text = "{name} accepted · connecting"
 note = "Line for an accepted chat request, still connecting. {name} is who accepted."
 
+[group_req_accepted_connecting_unnamed]
+text = "Accepted · connecting"
+note = "State line of a chat request you sent, when the person’s name is not known: accepted, connecting."
+
 [group_req_declined]
 text = "{name} declined"
 note = "Line for a declined chat request. {name} is who declined."
+
+[group_req_declined_unnamed]
+text = "Declined"
+note = "State line of a chat request you sent, when the person’s name is not known: declined."
 
 [group_req_blocked]
 text = "{name} blocked you"
 note = "Line for a chat request that was blocked. {name} is who blocked the user."
 
-[group_an_admin]
-text = "An admin"
-note = "Name used when an unnamed admin asked this device to host."
+[group_req_blocked_unnamed]
+text = "They blocked you"
+note = "State line of a chat request you sent, when the person’s name is not known: they blocked you."
 
 [group_pick_already_member]
 text = "Already a member"
@@ -1426,8 +1408,8 @@ text = "Joined"
 note = "State of an invitation the user sent."
 
 [group_inv_declined]
-text = "Declined"
-note = "State of an invitation the user sent."
+text = "Invitation declined"
+note = "State of an invitation the user sent: the invited person said no."
 
 [group_inv_expired]
 text = "Invitation expired"
@@ -1503,7 +1485,11 @@ note = "Error when inviting nobody."
 
 [group_done_invite_one]
 text = "Invitation sent to {name}. They join when they accept."
-note = "Confirmation after inviting one contact. {name} is their first name."
+note = "Toast after inviting one contact. {name} is the invited person's first name."
+
+[group_done_invite_one_unnamed]
+text = "Invitation sent. They join when they accept."
+note = "Toast after inviting one contact whose name is not known."
 
 [group_done_invite_many]
 one = "{count} invitation sent. Each person joins when they accept."
@@ -1512,7 +1498,11 @@ note = "Confirmation after inviting several contacts. {count} is how many."
 
 [group_done_decline_invite]
 text = "Declined. {name} sees that you declined."
-note = "Confirmation after declining an invitation. {name} is the inviter’s first name."
+note = "Toast after declining an invitation. {name} is the person who invited you."
+
+[group_done_decline_invite_unnamed]
+text = "Declined. They see that you declined."
+note = "Toast after declining an invitation from someone whose name is not known."
 
 [group_done_flag]
 text = "Flag recorded. It is signed by you and the member can see it."
@@ -1568,23 +1558,43 @@ note = "Confirmation after this phone started hosting its own calls."
 
 [group_done_request_sent]
 text = "Request sent to {name}. It waits in Chats until they answer."
-note = "Confirmation after asking for a private chat. {name} is their first name."
+note = "Toast after asking a member for a private chat. {name} is that member's first name."
+
+[group_done_request_sent_unnamed]
+text = "Request sent. It waits in Chats until they answer."
+note = "Toast after asking a member for a private chat; the member's name is not known."
 
 [group_done_request_accepted]
 text = "Accepted. {name} is added for messages only and shows in Chats once their device connects; calls stay off until you allow them."
-note = "Confirmation after accepting a chat request. {name} is their first name."
+note = "Toast after accepting a private chat request. {name} is the requester's first name."
+
+[group_done_request_accepted_unnamed]
+text = "Accepted. They are added for messages only and show in Chats once their device connects; calls stay off until you allow them."
+note = "Toast after accepting a private chat request from someone whose name is not known."
 
 [group_done_request_declined]
 text = "Declined. {name} is told “declined”."
-note = "Confirmation after declining a chat request. {name} is their first name."
+note = "Toast after declining a private chat request. {name} is the requester's first name."
+
+[group_done_request_declined_unnamed]
+text = "Declined. They are told “declined”."
+note = "Toast after declining a private chat request from someone whose name is not known."
 
 [group_done_request_blocked]
 text = "{name} is blocked and can’t send more requests."
-note = "Confirmation after blocking a requester. {name} is their first name."
+note = "Toast after blocking a requester. {name} is the requester's first name."
+
+[group_done_request_blocked_unnamed]
+text = "They are blocked and can’t send more requests."
+note = "Toast after blocking a requester whose name is not known."
 
 [group_notice_request_accepted]
 text = "{name} accepted your request. You can message each other now; calls stay off until one of you allows them."
-note = "Notice when someone accepted the user’s chat request. {name} is their first name."
+note = "Notice when your private chat request was accepted. {name} is the other member's first name."
+
+[group_notice_request_accepted_unnamed]
+text = "Your request was accepted. You can message each other now; calls stay off until one of you allows them."
+note = "Notice when your private chat request was accepted by someone whose name is not known."
 
 [group_calls_unavailable]
 text = "Group calls aren’t available here yet."
@@ -1705,7 +1715,11 @@ note = "Spoken label of a call line in the chat. {text} is its text, {time} its 
 
 [group_host_asked_title]
 text = "{name} asked this phone to host {group}"
-note = "Notice title. {name} is who asked, {group} the group."
+note = "Card title: a named admin asked this phone to host. {name} is the admin's first name, {group} the group."
+
+[group_host_asked_title_admin]
+text = "An admin asked this phone to host {group}"
+note = "Card title: an admin whose name is not known asked this phone to host. {group} is the group."
 
 [group_host_asked_text]
 text = "A host keeps a full copy of the group, passes messages on while members’ phones sleep and learns members’ group addresses. It needs to stay online and uses battery: a computer that stays on is a better host. Hosting doesn’t make you an admin."
@@ -1718,10 +1732,6 @@ note = "Button that makes this phone host the group."
 [group_done_host_declined]
 text = "Declined. The admins see no answer from this phone."
 note = "Confirmation after declining a host request."
-
-[group_names_and]
-text = "{rest} and {last}"
-note = "Joins a list of names: {rest} is a comma-separated list, {last} the final name."
 
 [group_removed_card_title]
 one = "Removed after {count} admin flag"
@@ -1821,7 +1831,8 @@ text = "Add to {group}"
 note = "Title of the add-people page. {group} is the group’s name."
 
 [group_contacts_selected]
-text = "CONTACTS · {count} SELECTED"
+one = "CONTACTS · {count} SELECTED"
+other = "CONTACTS · {count} SELECTED"
 note = "Section label of the contact picker. {count} is how many are selected."
 
 [group_add_no_contacts]
@@ -1872,13 +1883,17 @@ note = "Button that opens the QR scanner."
 text = "Joining…"
 note = "Label of the join button while working."
 
-[group_fallback_unknown_contact]
-text = "someone who isn’t in your contacts"
-note = "Name used for a person the user does not know, inside a sentence."
-
 [group_join_invited_by]
 text = "Invited by {name}"
-note = "Invite preview line. {name} is who made the link."
+note = "Line on the join preview: who made the invite link. {name} is a contact's name."
+
+[group_join_invited_by_unknown]
+text = "Invited by someone outside your contacts"
+note = "Line on the join preview when the inviter is not in your contacts."
+
+[group_join_invited_by_you]
+text = "Invited by you"
+note = "Line on the join preview when you made the invite link yourself."
 
 [group_join_own_link]
 text = "A link for your own account"
@@ -1886,7 +1901,15 @@ note = "Invite preview line for a link the user made on their own account."
 
 [group_join_owner]
 text = "Owner: {name}"
-note = "Invite preview line. {name} is the group owner."
+note = "Line on the join preview: the group's owner. {name} is a contact's name."
+
+[group_join_owner_unknown]
+text = "Owner isn’t in your contacts"
+note = "Line on the join preview when the owner is not in your contacts."
+
+[group_join_owner_you]
+text = "Owner: you"
+note = "Line on the join preview when you are the owner."
 
 [group_valid_until]
 text = "Valid until {date}"
@@ -1896,17 +1919,17 @@ note = "Line under an invitation or link. {date} is the day it stops working."
 text = "Joining connects this phone to the group’s hosts. Members see your name; only hosts learn how to reach this phone. It can take up to a minute."
 note = "Hint on the join page."
 
-[group_fallback_the_group]
-text = "the group"
-note = "Fallback group name inside a sentence."
-
 [group_link_title]
 text = "Invite link"
 note = "Title of the invite link page."
 
 [group_link_hint]
 text = "Anyone with this link or QR can join {group} for 7 days. Share it over an app you trust; you see who joined and can flag them out. To invite your contacts directly, use Add members."
-note = "Hint on the invite link page. {group} is the group’s name."
+note = "Hint above the group invite link QR. {group} is the group's name."
+
+[group_link_hint_unnamed]
+text = "Anyone with this link or QR can join this group for 7 days. Share it over an app you trust; you see who joined and can flag them out. To invite your contacts directly, use Add members."
+note = "Hint above the group invite link QR when the group's name is not known."
 
 [group_link_qr_desc]
 text = "QR code of the group invite link"
@@ -1922,7 +1945,11 @@ note = "Spoken hint to show the QR full screen."
 
 [group_share_text]
 text = "Join {group} on Tinline: {link}"
-note = "Text shared with an invite link. {group} is the group’s name, {link} the link."
+note = "Text shared with the invite link. {group} is the group's name, {link} the invite link."
+
+[group_share_text_unnamed]
+text = "Join this group on Tinline: {link}"
+note = "Text shared with the invite link when the group's name is not known. {link} is the invite link."
 
 [group_share_subject]
 text = "Share group invite"
@@ -1969,8 +1996,8 @@ text = "Chat requests"
 note = "Section heading on the Groups list."
 
 [group_section_sent]
-text = "Sent"
-note = "Sub heading for sent chat requests."
+text = "Sent requests"
+note = "Sub heading above the chat requests the user sent."
 
 [group_section_groups]
 text = "Your groups"
@@ -1981,8 +2008,12 @@ text = "No groups yet. Create one, or accept an invitation."
 note = "Shown when the user has no groups."
 
 [group_invited_you]
-text = "{name} invited you to {group}"
-note = "Invitation card. {name} is who invited, {group} the group (both shown in bold)."
+text = "**{name}** invited you to **{group}**"
+note = "Invitation card. The inviter's name and the group's name are bold (markdown stars, keep them around the same words). {name} is the inviter's first name, {group} the group."
+
+[group_invited_you_someone]
+text = "Someone invited you to **{group}**"
+note = "Invitation card when the inviter's name is not known. The group's name is bold (markdown stars). {group} is the group."
 
 [group_joined_toast]
 text = "You joined {group}."
@@ -1993,8 +2024,12 @@ text = "Couldn’t join"
 note = "Fallback error when joining fails."
 
 [group_wants_to_chat]
-text = "{name} wants to chat"
-note = "Chat request card. {name} is who asks (shown in bold)."
+text = "**{name}** wants to chat"
+note = "Chat request card. The requester's name is bold (markdown stars, keep them around the name). {name} is the requester's name."
+
+[group_wants_to_chat_someone]
+text = "**Someone** wants to chat"
+note = "Chat request card when the requester's name is not known. The word Someone is bold (markdown stars)."
 
 [group_member_of]
 text = "Member of {group}"
@@ -2003,6 +2038,10 @@ note = "Chat request card sub line. {group} is the group."
 [group_request_accept_note]
 text = "Accepting adds {name} as a contact for messages only. You can allow calls later."
 note = "Chat request card note. {name} is their first name."
+
+[group_request_accept_note_unnamed]
+text = "Accepting adds them as a contact for messages only. You can allow calls later."
+note = "Note on a chat request card when the requester's name is not known."
 
 [group_block]
 text = "Block"
@@ -2074,10 +2113,6 @@ note = "Body of the notifications-off warning."
 [settings_status_available]
 text = "Available"
 note = "Availability status text under the profile card."
-
-[settings_status_busy_until]
-text = "Busy until {time}"
-note = "Availability status; {time} is a short time label such as 18:30."
 
 [settings_status_busy]
 text = "Busy"
@@ -2542,8 +2577,8 @@ text = "Test tone"
 note = "Diagnostics row and switch label."
 
 [settings_test_tone_sub]
-text = "Send a 440 Hz tone instead of the microphone"
-note = "Subtitle of the Test tone row."
+text = "Send a {hz} Hz tone instead of the microphone"
+note = "Subtitle of the Test tone row. {hz} is the tone’s frequency in hertz."
 
 [security_wrong_pass]
 text = "That didn’t match. Try again."
@@ -2602,12 +2637,13 @@ text = "Key"
 note = "Tab on the recovery backup page: the recovery key."
 
 [security_tab_words]
-text = "24 words"
-note = "Tab on the recovery backup page: the 24 recovery words."
+one = "{count} word"
+other = "{count} words"
+note = "Tab on the recovery backup page: the recovery words. {count} is the number of words (24)."
 
 [security_key_failed]
-text = "Couldn’t prepare the key. Use your 24 words instead."
-note = "Hint when the recovery key could not be made."
+text = "Couldn’t prepare the key. Use your {words} words instead."
+note = "Hint when the recovery key could not be made.  {words} is the number of recovery words (24)."
 
 [security_hide]
 text = "Hide"
@@ -2731,11 +2767,11 @@ note = "Title of the device page while loading, and fallback name."
 
 [devices_unlinked_msg]
 text = "Unlinked {name}"
-note = "Message after a device was unlinked; {name} is its label or the word device."
+note = "Toast after unlinking a device; {name} is the device's name."
 
-[devices_fb_device]
-text = "device"
-note = "Fallback noun for an unnamed device inside the Unlinked message."
+[devices_unlinked_msg_unnamed]
+text = "Unlinked the device"
+note = "Toast after unlinking a device that has no name."
 
 [devices_finish_call]
 text = "Finish your call first"
@@ -2791,11 +2827,11 @@ note = "Button on the device page."
 
 [devices_syncing]
 text = "Syncing with {name}…"
-note = "Message when a sync starts; {name} is the device label or the words the device."
+note = "Toast when Sync now is pressed; {name} is the device's name."
 
-[devices_fb_the_device]
-text = "the device"
-note = "Fallback noun for an unnamed device inside the Syncing message."
+[devices_syncing_unnamed]
+text = "Syncing…"
+note = "Toast when Sync now is pressed for a device that has no name."
 
 [devices_unlink_this]
 text = "Unlink this device"
@@ -2817,17 +2853,17 @@ note = "Save button of the rename dialog."
 text = "Device name"
 note = "Field label in the rename dialog."
 
-[devices_fb_this_device]
-text = "this device"
-note = "Fallback noun for an unnamed device inside the Unlink question."
-
 [devices_remove_q]
 text = "Remove your account from this phone?"
 note = "Dialog title."
 
 [devices_unlink_q]
 text = "Unlink {name}?"
-note = "Dialog title; {name} is the device label or the words this device."
+note = "Dialog title asking to unlink another device; {name} is the device's name."
+
+[devices_unlink_q_unnamed]
+text = "Unlink this device?"
+note = "Dialog title asking to unlink another device that has no name."
 
 [devices_working]
 text = "Working…"
@@ -2888,8 +2924,8 @@ text = "This phone no longer has the key that opens your account. That happens a
 note = "Explanation under the lost-key title."
 
 [unlock_lost_notice]
-text = "You didn’t set a passphrase, so the 24-word recovery phrase is the only way back. Your contacts stay."
-note = "Warning on the lost-key screen."
+text = "You didn’t set a passphrase, so the {words}-word recovery phrase is the only way back. Your contacts stay."
+note = "Warning on the lost-key screen.  {words} is the number of recovery words (24)."
 
 [unlock_restore]
 text = "Restore with recovery phrase"
@@ -3034,8 +3070,8 @@ text = "Restore account"
 note = "Title of the restore screen."
 
 [restore_lead_words]
-text = "Type your 24 words in order, or paste them, or your recovery key, into the first box. They stay on this phone."
-note = "Intro on the restore screen before a key is pasted."
+text = "Type your {words} words in order, or paste them, or your recovery key, into the first box. They stay on this phone."
+note = "Intro on the restore screen before a key is pasted.  {words} is the number of recovery words (24)."
 
 [restore_lead_key]
 text = "Your recovery key is in. It stays on this phone."
@@ -3058,8 +3094,8 @@ text = "Couldn’t read the clipboard. Paste into the first box instead."
 note = "Error when the clipboard could not be read."
 
 [restore_progress]
-text = "{count} of 24"
-note = "Counter of recovery words typed so far; {count} is how many are filled."
+text = "{count} of {total}"
+note = "Counter of recovery words typed so far; {count} is how many are filled. {total} is the number of recovery words (24)."
 
 [restore_words_label]
 text = "Recovery phrase words"
@@ -3085,11 +3121,11 @@ note = "Title when the new device is waiting for approval."
 
 [link_same_code_lead]
 text = "Check that {name} shows this code, then approve there."
-note = "Explanation under Same code on both?; {name} is the other device's name or the words your other device."
+note = "Explanation under Same code on both? {name} is the other device's name."
 
-[link_fb_other_device]
-text = "your other device"
-note = "Fallback for an unnamed other device inside a sentence."
+[link_same_code_lead_unnamed]
+text = "Check that your other device shows this code, then approve there."
+note = "Explanation under Same code on both? Used when the other device has no name; says your other device."
 
 [link_diff_code]
 text = "Different code, or you didn’t start this? Cancel. Someone else may have scanned the QR."
@@ -3175,17 +3211,17 @@ note = "Instruction under the QR heading. The quoted names match the buttons on 
 text = "Back"
 note = "Button that goes back while showing the code."
 
-[link_fb_new_device_cap]
-text = "The new device"
-note = "Fallback name for an unnamed new device at the start of a sentence."
-
 [link_match_title]
 text = "Do the codes match?"
 note = "Heading when the user compares codes."
 
 [link_match_body]
-text = "{name} wants to join your account. It should be showing the same six digits as below."
-note = "Body when comparing codes; {name} is the new device's name, shown in bold."
+text = "**{name}** wants to join your account. It should be showing the same six digits as below."
+note = "Body when comparing codes. The new device's name is bold (markdown stars, keep them around the name); {name} is that name."
+
+[link_match_body_unnamed]
+text = "**The new device** wants to join your account. It should be showing the same six digits as below."
+note = "Body when comparing codes and the new device has no name. The words **The new device** are bold (markdown stars, keep them around them)."
 
 [link_match_warn]
 text = "Compare them yourself. If they differ, someone else may have scanned the code first."
@@ -3199,10 +3235,6 @@ note = "Button when the codes differ."
 text = "They match"
 note = "Button when the codes are the same."
 
-[link_fb_new_device]
-text = "the new device"
-note = "Fallback name for an unnamed new device inside a sentence."
-
 [link_connecting]
 text = "Connecting…"
 note = "Heading while connecting to the new device."
@@ -3210,6 +3242,10 @@ note = "Heading while connecting to the new device."
 [link_linking_peer]
 text = "Linking {name}"
 note = "Heading while linking; {name} is the new device's name."
+
+[link_linking_peer_unnamed]
+text = "Linking the new device"
+note = "Heading while linking when the new device has no name."
 
 [link_reaching]
 text = "Reaching the other device"
@@ -3231,6 +3267,10 @@ note = "Hint while linking."
 text = "{name} is linked"
 note = "Title when linking finished; {name} is the new device's name."
 
+[link_done_title_unnamed]
+text = "The new device is linked"
+note = "Title when linking finished and the new device has no name."
+
 [link_done_body]
 text = "It syncs when both devices are online at the same time. Contacts you haven’t blocked get your updated device list when they’re next online."
 note = "Body when linking finished."
@@ -3248,16 +3288,12 @@ text = "Scan the code on your new device"
 note = "Heading of the scan step."
 
 [link_scan_step1]
-text = "1.  On the new device, open Tinline and choose {action}."
-note = "Step 1 on the scan page; {action} is the bold button name Link to a device."
-
-[link_scan_step1_action]
-text = "Link to a device"
-note = "Bold button name inside step 1. Must match the button on the new device."
+text = "On the new device, open Tinline and choose **Link to a device**."
+note = "Step 1 on the scan page. The button name **Link to a device** is bold (markdown stars, keep them around the button name); it must match the button's label on the new device. Shown as the first of two lines; the number is not part of the text."
 
 [link_scan_step2]
-text = "2.  It shows a QR code and a short code. They work for 5 minutes, once."
-note = "Step 2 on the scan page."
+text = "It shows a QR code and a short code. They work for 5 minutes, once."
+note = "Step 2 on the scan page. Shown as the second of two lines; the number is not part of the text."
 
 [link_scan_qr]
 text = "Scan QR code"
@@ -3287,13 +3323,17 @@ note = "Error when the screen lock prompt was cancelled."
 text = "Approve {name}?"
 note = "Heading of the approval step; {name} is the new device's name."
 
-[link_approve_body]
-text = "Approving sends your {phrase} to {name}. It becomes a full copy of you: it can read your chats and act as you. Approve only a device you hold."
-note = "Warning on the approval step; {phrase} is the bold words recovery phrase and {name} is the new device's name."
+[link_approve_title_unnamed]
+text = "Approve the new device?"
+note = "Heading of the approval step when the new device has no name."
 
-[link_approve_phrase]
-text = "recovery phrase"
-note = "Bold words inside the approval warning."
+[link_approve_body]
+text = "Approving sends your **recovery phrase** to {name}. It becomes a full copy of you: it can read your chats and act as you. Approve only a device you hold."
+note = "Warning on the approval step. The words **recovery phrase** are bold (markdown stars, keep them around the same words); {name} is the new device's name."
+
+[link_approve_body_unnamed]
+text = "Approving sends your **recovery phrase** to the new device. It becomes a full copy of you: it can read your chats and act as you. Approve only a device you hold."
+note = "Warning on the approval step when the new device has no name. The words **recovery phrase** are bold (markdown stars, keep them around the same words)."
 
 [link_your_pass]
 text = "Your passphrase"
@@ -3341,11 +3381,11 @@ note = "Title shown when another device removed the account from this phone."
 
 [link_unlinked_lead]
 text = "{name} was removed from this phone by one of your other devices. Its contacts, chats and calls are deleted here. Your other devices are not affected."
-note = "Explanation; {name} is the account's name or the words Your account."
+note = "Explanation after this phone was unlinked by another device; {name} is the account's name."
 
-[link_fb_your_account]
-text = "Your account"
-note = "Fallback for an unnamed account at the start of a sentence."
+[link_unlinked_lead_unnamed]
+text = "Your account was removed from this phone by one of your other devices. Its contacts, chats and calls are deleted here. Your other devices are not affected."
+note = "Explanation after this phone was unlinked by another device, when the account has no name."
 
 [link_ok]
 text = "OK"
@@ -3376,10 +3416,6 @@ note = "Secondary button on several onboarding screens."
 [onboarding_exists_body]
 text = "That recovery phrase belongs to an account that is already here. Switch to it instead of adding it again."
 note = "Dialog body when the restored account is already on this phone."
-
-[onboarding_fb_other_device]
-text = "your other device"
-note = "Fallback name for an unnamed other device inside a sentence."
 
 [onboarding_restore_warn_forgot]
 text = "Restoring keeps the same identity: use the recovery phrase of this account. You’ll set a new passphrase."
@@ -3434,8 +3470,8 @@ text = "Restore my account"
 note = "Option on the Use your account here screen."
 
 [onboarding_opt_restore_sub]
-text = "Type your 24 recovery words. This phone starts with an empty contact list."
-note = "Description of the restore option."
+text = "Type your {words} recovery words. This phone starts with an empty contact list."
+note = "Description of the restore option.  {words} is the number of recovery words (24)."
 
 [onboarding_done_title]
 text = "Your line is open"
@@ -3550,12 +3586,12 @@ text = "Here are your recovery words"
 note = "Title when showing the recovery words."
 
 [onboarding_rec_lead_key]
-text = "Your recovery key is the same as your 24 words, as one line.\nPaste it somewhere safe. A password manager works great."
-note = "Explanation when showing the recovery key; the line break is intended."
+text = "Your recovery key is the same as your {words} words, as one line.\nPaste it somewhere safe. A password manager works great."
+note = "Explanation when showing the recovery key; the line break is intended.  {words} is the number of recovery words (24)."
 
 [onboarding_rec_lead_words]
-text = "If you ever switch devices, these 24 words bring your account along.\nSave a copy somewhere safe. Paper works great."
-note = "Explanation when showing the recovery words; the line break is intended."
+text = "If you ever switch devices, these {words} words bring your account along.\nSave a copy somewhere safe. Paper works great."
+note = "Explanation when showing the recovery words; the line break is intended.  {words} is the number of recovery words (24)."
 
 [onboarding_fb_your_account]
 text = "Your account"
@@ -3615,11 +3651,11 @@ note = "Suggested device name chip."
 
 [onboarding_back_added]
 text = "Added {name} to this phone"
-note = "Title after adding another account; {name} is the account's name or the words your account."
+note = "Title after adding another account; {name} is the account's name."
 
-[onboarding_fb_your_account_lc]
-text = "your account"
-note = "Fallback for an unnamed account inside a sentence."
+[onboarding_back_added_unnamed]
+text = "Added your account to this phone"
+note = "Title after adding another account that has no name."
 
 [onboarding_back_title]
 text = "Welcome back"
@@ -3631,11 +3667,11 @@ note = "Title after restoring an account; {name} is the first name."
 
 [onboarding_back_added_lead]
 text = "Only the account you select is online at a time, so {name} is online now and your other account is paused. You can switch in Settings."
-note = "Explanation after adding another account; {name} is the account's name or the words this account."
+note = "Explanation after adding another account; {name} is the account's name."
 
-[onboarding_fb_this_account]
-text = "this account"
-note = "Fallback for an unnamed account inside a sentence."
+[onboarding_back_added_lead_unnamed]
+text = "Only the account you select is online at a time, so this account is online now and your other account is paused. You can switch in Settings."
+note = "Explanation after adding another account that has no name."
 
 [onboarding_back_lead]
 text = "Your account is back on this phone. Your contacts, chats and call history are kept on your other devices, not with us. This phone starts with an empty contact list."
@@ -3647,11 +3683,19 @@ note = "Button after adding another account, and after linking."
 
 [onboarding_linked_title]
 text = "Linked to {name}"
-note = "Title after linking; {name} is the other device's name or the words your other device."
+note = "Title after linking; {name} is the other device's name."
+
+[onboarding_linked_title_unnamed]
+text = "Linked to your other device"
+note = "Title after linking when the other device has no name."
 
 [onboarding_linked_lead]
 text = "Your contacts and chats are arriving from {name} and will keep in step on both."
-note = "Explanation after linking; {name} is the other device's name or the words your other device."
+note = "Explanation after linking; {name} is the other device's name."
+
+[onboarding_linked_lead_unnamed]
+text = "Your contacts and chats are arriving from your other device and will keep in step on both."
+note = "Explanation after linking when the other device has no name."
 
 [onboarding_sync_contacts]
 text = "Contacts"
@@ -3887,37 +3931,73 @@ note = "Fallback error text when nothing more specific is known."
 text = "Incoming"
 note = "Call list: answered incoming call."
 
+[shell_call_desc_incoming]
+text = "Incoming call"
+note = "Screen reader phrase for a call row, a whole phrase used as {what} in the row label: answered incoming call. Reads like “Missed call”."
+
 [shell_call_what_outgoing]
 text = "Outgoing"
 note = "Call list: answered outgoing call."
+
+[shell_call_desc_outgoing]
+text = "Outgoing call"
+note = "Screen reader phrase for a call row, a whole phrase used as {what} in the row label: answered outgoing call. Reads like “Missed call”."
 
 [shell_call_what_unavailable]
 text = "While not available"
 note = "Call list: incoming call that came while the user had set themselves unavailable."
 
+[shell_call_desc_unavailable]
+text = "Call while not available"
+note = "Screen reader phrase for a call row, a whole phrase used as {what} in the row label: incoming call that came while the user had set themselves unavailable. Reads like “Missed call”."
+
 [shell_call_what_missed]
 text = "Missed"
 note = "Call list: incoming call the user did not answer."
+
+[shell_call_desc_missed]
+text = "Missed call"
+note = "Screen reader phrase for a call row, a whole phrase used as {what} in the row label: incoming call the user did not answer. Reads like “Missed call”."
 
 [shell_call_what_declined]
 text = "Declined"
 note = "Call list: call that was declined."
 
+[shell_call_desc_declined]
+text = "Declined call"
+note = "Screen reader phrase for a call row, a whole phrase used as {what} in the row label: call that was declined. Reads like “Missed call”."
+
 [shell_call_what_no_answer]
 text = "No answer"
 note = "Call list: outgoing call nobody picked up."
+
+[shell_call_desc_no_answer]
+text = "Call with no answer"
+note = "Screen reader phrase for a call row, a whole phrase used as {what} in the row label: outgoing call nobody picked up. Reads like “Missed call”."
 
 [shell_call_what_cancelled]
 text = "Cancelled"
 note = "Call list: call cancelled before it was answered."
 
+[shell_call_desc_cancelled]
+text = "Cancelled call"
+note = "Screen reader phrase for a call row, a whole phrase used as {what} in the row label: call cancelled before it was answered. Reads like “Missed call”."
+
 [shell_call_what_unreachable]
-text = "Couldn’t connect"
+text = "Call couldn’t connect"
 note = "Call list: call that could not reach the other person."
 
+[shell_call_desc_unreachable]
+text = "Call that couldn’t connect"
+note = "Screen reader phrase for a call row: call that could not reach the other person."
+
 [shell_call_what_other]
+text = "Tinline call"
+note = "Call list: fallback label for a call. Noun, the name of any Tinline call."
+
+[shell_call_desc_other]
 text = "Call"
-note = "Call list: fallback label for a call."
+note = "Screen reader phrase for a call row, a whole phrase used as {what} in the row label: any other call. Reads like “Missed call”."
 
 [shell_you]
 text = "You"
@@ -3934,54 +4014,6 @@ note = "Name shown for a group member with no known name."
 [shell_chat_waiting_unreachable]
 text = "Waiting to send — {name} isn’t reachable yet"
 note = "Chat list preview of a message that is waiting to send. {name} is the contact’s first name."
-
-[shell_group_sys_joined]
-text = "{name} joined"
-note = "Group chat system line. {name} is the member who joined."
-
-[shell_group_sys_left]
-text = "{name} left"
-note = "Group chat system line. {name} is the member who left."
-
-[shell_group_sys_removed_you]
-text = "You were removed after 3 admin flags"
-note = "Group chat system line. The user was removed after being flagged by admins."
-
-[shell_group_sys_removed]
-text = "{name} was removed after 3 admin flags"
-note = "Group chat system line. {name} is the removed member."
-
-[shell_group_sys_admin_granted_you]
-text = "{by} made you an admin"
-note = "Group chat system line. {by} is who made the user an admin."
-
-[shell_group_sys_admin_granted]
-text = "{by} made {name} an admin"
-note = "Group chat system line. {by} granted admin to {name}."
-
-[shell_group_sys_admin_revoked_you]
-text = "{by} removed you as admin"
-note = "Group chat system line. {by} is who removed the user’s admin role."
-
-[shell_group_sys_admin_revoked]
-text = "{by} removed {name} as admin"
-note = "Group chat system line. {by} removed {name}’s admin role."
-
-[shell_group_sys_host_added_you]
-text = "A device of yours now hosts the group"
-note = "Group chat system line. The user’s device became a group host."
-
-[shell_group_sys_host_added]
-text = "A device of {name}’s now hosts the group"
-note = "Group chat system line. {name} is the member whose device became a host."
-
-[shell_group_sys_host_removed_you]
-text = "A device of yours stopped hosting the group"
-note = "Group chat system line. The user’s device stopped hosting."
-
-[shell_group_sys_host_removed]
-text = "A device of {name}’s stopped hosting the group"
-note = "Group chat system line. {name} is the member whose device stopped hosting."
 
 [shell_group_preview_removed]
 text = "You were removed from this group"
@@ -4064,8 +4096,8 @@ text = "Passphrase"
 note = "Onboarding step label read out for the step header (accessibility)."
 
 [shell_step_phrase]
-text = "Recovery phrase"
-note = "Onboarding step label read out for the step header (accessibility)."
+text = "Recovery words"
+note = "Onboarding step label read out for the step header (accessibility). Same term as the recovery words screen."
 
 [shell_step_device]
 text = "Device name"
@@ -4189,11 +4221,13 @@ text = "Answer"
 note = "Button that answers a ringing call."
 
 [shell_tab_waiting]
-text = "{count} waiting"
+one = "{count} waiting"
+other = "{count} waiting"
 note = "Screen reader value of the Contacts tab badge. {count} requests are waiting."
 
 [shell_tab_unread]
-text = "{count} unread"
+one = "{count} unread"
+other = "{count} unread"
 note = "Screen reader value of a tab badge. {count} unread chats."
 
 [shell_tab_chats]
@@ -4293,12 +4327,12 @@ text = "{what} · {duration}"
 note = "Call row second line. {what} is the call outcome (Missed, Outgoing…), {duration} the call length."
 
 [shell_calls_row_a11y]
-text = "{name}, {what} call, {stamp}. {action}"
-note = "Screen reader label of a call row. {name} contact, {what} outcome (Missed…), {stamp} time, {action} “Call” or “Can’t call”."
+text = "{name}, {what}, {stamp}. {action}"
+note = "Screen reader label of a call row. {name} is the contact, {what} a whole phrase such as “Missed call”, {stamp} when, {action} what tapping does."
 
 [shell_calls_row_a11y_duration]
-text = "{name}, {what} call, {duration}, {stamp}. {action}"
-note = "Screen reader label of an answered call row. {name} contact, {what} outcome, {duration} call length, {stamp} time, {action} “Call” or “Can’t call”."
+text = "{name}, {what}, {duration}, {stamp}. {action}"
+note = "Screen reader label of an answered call row. {name} is the contact, {what} a whole phrase such as “Incoming call”, {duration} how long, {stamp} when, {action} what tapping does."
 
 [shell_calls_action_call]
 text = "Call"
@@ -4810,8 +4844,8 @@ text = "CALLS WITH {name}"
 note = "Contact page section header, upper case. {name} is the contact’s name in capitals."
 
 [people_detail_call]
-text = "Call"
-note = "Fallback title of a call in the contact’s call history."
+text = "Tinline call"
+note = "Fallback title of a call in the contact’s call history. Noun: the call itself."
 
 [people_detail_direct]
 text = "Direct"
@@ -4938,12 +4972,12 @@ text = "That name can’t be used. Keep it short, without control characters."
 note = "Profile check: the name of a custom information item is not allowed."
 
 [people_rule_value_long]
-text = "That is too long. Each piece of information can be up to 16 KiB."
-note = "Profile check: a value is too long."
+text = "That is too long. Each piece of information can be up to {limit}."
+note = "Profile check: a value is too long. {limit} is the size limit with its unit, such as 16 KiB."
 
 [people_rule_too_many]
-text = "You’ve reached 64 pieces of information. Remove one to add another."
-note = "Profile check: too many information items."
+text = "You’ve reached {max} pieces of information. Remove one to add another."
+note = "Profile check: too many information items. {max} is the most pieces of information allowed."
 
 [people_rule_full]
 text = "Your profile is full. Remove some information to add more."
@@ -4976,14 +5010,6 @@ note = "Placeholder hint of the location field."
 [people_info_website]
 text = "Website"
 note = "Label of a profile information field."
-
-[people_until_tomorrow]
-text = "tomorrow {time}"
-note = "Busy-until label for tomorrow. {time} is a clock time like 08:00."
-
-[people_until_day]
-text = "{day} {time}"
-note = "Busy-until label for a later day. {day} is the weekday name, {time} a clock time."
 
 [people_busy_30m]
 text = "30 minutes"
@@ -5145,10 +5171,6 @@ note = "Availability: the user can be called."
 text = "Busy"
 note = "Availability: the user is busy."
 
-[people_profile_busy_until]
-text = "Busy until {time}"
-note = "Availability line. {time} is when busy ends, like “18:00” or “tomorrow 08:00”."
-
 [people_profile_busy_open]
 text = "Busy until you change it"
 note = "Availability line when busy has no end time."
@@ -5301,8 +5323,8 @@ text = "Microphone permission needed to place a call"
 note = "Error shown when the user tries to place a call without microphone permission."
 
 [call_status_reconnecting]
-text = "Reconnecting…"
-note = "Status line under the contact name while the connection is being re-established."
+text = "Reconnecting the call…"
+note = "Status line under the contact name while the call’s connection is being re-established; the call is the subject."
 
 [call_status_ringing]
 text = "Ringing…"
@@ -5349,8 +5371,8 @@ text = "Tinline call"
 note = "Name shown in the system call UI when the contact has no name."
 
 [call_notification_name]
-text = "Call"
-note = "Fallback call name in the ongoing-call notification when the contact has no name."
+text = "Tinline call"
+note = "Fallback call name in the ongoing-call notification when the contact has no name. Noun: the call itself."
 
 [call_about_title]
 text = "About this call"
@@ -5557,8 +5579,8 @@ text = "Finding a call host…"
 note = "Status of a group call while the call host is being chosen."
 
 [call_status_connecting]
-text = "Connecting…"
-note = "Status of a call while connecting."
+text = "Connecting the call…"
+note = "Status of a call while connecting; the call is the subject, not a device."
 
 [call_group_already_in_call]
 text = "You’re already in a call."
@@ -5573,16 +5595,16 @@ text = "Call ended — host lost"
 note = "Reason shown when a group call ends because its call host disappeared."
 
 [call_group_battery_limited]
-text = "Battery under 15 %. Hosting is limited: only one person is heard at a time, and no one new can join."
-note = "Note on the group call screen when this phone is the call host and its battery is low."
+text = "Battery under {percent} %. Hosting is limited: only one person is heard at a time, and no one new can join."
+note = "Note on the group call screen when this phone is the call host and its battery is low. {percent} is the battery level below which hosting is limited."
 
 [call_group_no_host]
 text = "No call host available"
 note = "Group call start failure when no device can host the call."
 
 [call_group_connect_failed]
-text = "Couldn’t connect"
-note = "Group call start failure, generic."
+text = "The call couldn’t connect"
+note = "Group call start failure, generic; the call is the subject."
 
 [call_person_you]
 text = "You"
@@ -5595,14 +5617,6 @@ note = "Name used for an unknown person in a group call."
 [call_group_fallback]
 text = "Group"
 note = "Fallback group name."
-
-[call_host_this_phone]
-text = "this phone"
-note = "Names the call host when it is this phone; used in a sentence, lowercase."
-
-[call_host_device]
-text = "{name}’s device"
-note = "Names the call host when it is another member's device. {name} is the member's first name."
 
 [call_group_minimize]
 text = "Minimize call"
@@ -5630,24 +5644,20 @@ text = "You’re the call host"
 note = "Pill on the group call screen when this phone carries the call."
 
 [call_group_host_is]
-text = "Call host: {host}"
-note = "Pill on the group call screen. {host} is the host's device, such as \"Arjun’s device\"."
+text = "Call host: {name}’s device"
+note = "Pill on the group call screen naming the call host. {name} is the member’s first name."
+
+[call_group_host_is_yours]
+text = "Call host: your other device"
+note = "Pill on the group call screen naming the call host. Another device of the user’s."
+
+[call_group_host_is_someone]
+text = "Call host: a member’s device"
+note = "Pill on the group call screen naming the call host. A member whose name is not known."
 
 [call_control_leave]
 text = "Leave"
 note = "Caption under the button that leaves a group call."
-
-[call_host_fallback]
-text = "the call host"
-note = "Used in a sentence when the call host's name is not known."
-
-[call_group_about_carries]
-text = "carries this call. Everyone in the call connects to it, and it passes the audio on and chooses who is heard when several people speak."
-note = "Continues the bold host name on the group call details card, e.g. \"Arjun’s device carries this call...\"."
-
-[call_group_about_carrying]
-text = "is carrying this call. Everyone in the call connects to it, and it passes the audio on and chooses who is heard when several people speak."
-note = "Continues the bold host name when this phone is the host: \"This phone is carrying this call...\"."
 
 [call_group_about_trust]
 text = "Your connection to the call host is encrypted, but the call host itself receives the audio, so it can hear this call. You trust it for the call the way you trust a chat host with posts."
@@ -5734,7 +5744,7 @@ text = "during your call"
 note = "Second line of the call-waiting card."
 
 [call_waiting_end_answer]
-text = "End & answer"
+text = "End and answer"
 note = "Button on the call-waiting card that ends the current call and answers the new one."
 
 [call_waiting_end_answer_desc]
@@ -5861,3 +5871,247 @@ note = "Hint under the Open settings button on the microphone permission screen.
 [people_add_or]
 text = "or"
 note = "Small divider word between the scan option and the paste-a-code option on the add contact sheet."
+
+[group_sys_joined_you]
+text = "You joined"
+note = "System line in a group chat (the centred grey line). The user themself joined."
+
+[group_sys_joined_named]
+text = "{name} joined"
+note = "System line in a group chat (the centred grey line). {name} is the member who joined."
+
+[group_sys_joined_someone]
+text = "Someone joined"
+note = "System line in a group chat (the centred grey line). A member whose name is unknown joined."
+
+[group_sys_left_you]
+text = "You left"
+note = "System line in a group chat (the centred grey line). The user themself left."
+
+[group_sys_left_named]
+text = "{name} left"
+note = "System line in a group chat (the centred grey line). {name} is the member who left."
+
+[group_sys_left_someone]
+text = "Someone left"
+note = "System line in a group chat (the centred grey line). A member whose name is unknown left."
+
+[group_sys_removed_someone]
+text = "Someone was removed after {total} admin flags"
+note = "System line in a group chat (the centred grey line). A member whose name is unknown was removed. {total} is the number of admin flags that remove."
+
+[group_sys_admin_you_you]
+text = "You made yourself an admin"
+note = "System line in a group chat (the centred grey line). Admin role given. Actor: the user. Subject: the user."
+
+[group_sys_admin_you_named]
+text = "You made {name} an admin"
+note = "System line in a group chat (the centred grey line). Admin role given. Actor: the user. Subject: a named member. {name} is the member it was done to."
+
+[group_sys_admin_you_someone]
+text = "You made someone an admin"
+note = "System line in a group chat (the centred grey line). Admin role given. Actor: the user. Subject: a member whose name is unknown."
+
+[group_sys_admin_named_you]
+text = "{by} made you an admin"
+note = "System line in a group chat (the centred grey line). Admin role given. Actor: a named member. Subject: the user. {by} is who did it (their name)."
+
+[group_sys_admin_named_named]
+text = "{by} made {name} an admin"
+note = "System line in a group chat (the centred grey line). Admin role given. Actor: a named member. Subject: a named member. {by} is who did it (their name); {name} is the member it was done to."
+
+[group_sys_admin_named_someone]
+text = "{by} made someone an admin"
+note = "System line in a group chat (the centred grey line). Admin role given. Actor: a named member. Subject: a member whose name is unknown. {by} is who did it (their name)."
+
+[group_sys_admin_someone_you]
+text = "Someone made you an admin"
+note = "System line in a group chat (the centred grey line). Admin role given. Actor: a member whose name is unknown. Subject: the user."
+
+[group_sys_admin_someone_named]
+text = "Someone made {name} an admin"
+note = "System line in a group chat (the centred grey line). Admin role given. Actor: a member whose name is unknown. Subject: a named member. {name} is the member it was done to."
+
+[group_sys_admin_someone_someone]
+text = "Someone made someone an admin"
+note = "System line in a group chat (the centred grey line). Admin role given. Actor: a member whose name is unknown. Subject: a member whose name is unknown."
+
+[group_sys_unadmin_you_you]
+text = "You removed yourself as admin"
+note = "System line in a group chat (the centred grey line). Admin role taken away. Actor: the user. Subject: the user."
+
+[group_sys_unadmin_you_named]
+text = "You removed {name} as admin"
+note = "System line in a group chat (the centred grey line). Admin role taken away. Actor: the user. Subject: a named member. {name} is the member it was done to."
+
+[group_sys_unadmin_you_someone]
+text = "You removed someone as admin"
+note = "System line in a group chat (the centred grey line). Admin role taken away. Actor: the user. Subject: a member whose name is unknown."
+
+[group_sys_unadmin_named_you]
+text = "{by} removed you as admin"
+note = "System line in a group chat (the centred grey line). Admin role taken away. Actor: a named member. Subject: the user. {by} is who did it (their name)."
+
+[group_sys_unadmin_named_named]
+text = "{by} removed {name} as admin"
+note = "System line in a group chat (the centred grey line). Admin role taken away. Actor: a named member. Subject: a named member. {by} is who did it (their name); {name} is the member it was done to."
+
+[group_sys_unadmin_named_someone]
+text = "{by} removed someone as admin"
+note = "System line in a group chat (the centred grey line). Admin role taken away. Actor: a named member. Subject: a member whose name is unknown. {by} is who did it (their name)."
+
+[group_sys_unadmin_someone_you]
+text = "Someone removed you as admin"
+note = "System line in a group chat (the centred grey line). Admin role taken away. Actor: a member whose name is unknown. Subject: the user."
+
+[group_sys_unadmin_someone_named]
+text = "Someone removed {name} as admin"
+note = "System line in a group chat (the centred grey line). Admin role taken away. Actor: a member whose name is unknown. Subject: a named member. {name} is the member it was done to."
+
+[group_sys_unadmin_someone_someone]
+text = "Someone removed someone as admin"
+note = "System line in a group chat (the centred grey line). Admin role taken away. Actor: a member whose name is unknown. Subject: a member whose name is unknown."
+
+[group_sys_host_added_someone]
+text = "A member’s device now hosts the group"
+note = "System line in a group chat (the centred grey line). A device of a member whose name is unknown now hosts the group."
+
+[group_sys_host_removed_someone]
+text = "A member’s device stopped hosting the group"
+note = "System line in a group chat (the centred grey line). A device of a member whose name is unknown stopped hosting the group."
+
+[group_member_desc_owner_callhost]
+text = "{name}, owner and call host. Open actions"
+note = "Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is owner and call host."
+
+[group_member_desc_owner_host]
+text = "{name}, owner and host. Open actions"
+note = "Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is owner and host."
+
+[group_member_desc_owner_host_callhost]
+text = "{name}, owner, host and call host. Open actions"
+note = "Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is owner, host and call host."
+
+[group_member_desc_admin_callhost]
+text = "{name}, admin and call host. Open actions"
+note = "Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is admin and call host."
+
+[group_member_desc_admin_host]
+text = "{name}, admin and host. Open actions"
+note = "Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is admin and host."
+
+[group_member_desc_admin_host_callhost]
+text = "{name}, admin, host and call host. Open actions"
+note = "Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is admin, host and call host."
+
+[group_member_desc_member_callhost]
+text = "{name}, member and call host. Open actions"
+note = "Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is member and call host."
+
+[group_member_desc_member_host]
+text = "{name}, member and host. Open actions"
+note = "Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is member and host."
+
+[group_member_desc_member_host_callhost]
+text = "{name}, member, host and call host. Open actions"
+note = "Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is member, host and call host."
+
+[group_host_online]
+text = "Host online"
+note = "Presence under a host or call host device in group info: that device is online."
+
+[group_host_offline]
+text = "Host offline"
+note = "Presence under a host or call host device in group info: that device is offline."
+
+[group_host_online_calls]
+text = "Online · also hosts calls"
+note = "Presence under a device that is a chat host and also a call host: online."
+
+[group_host_offline_calls]
+text = "Offline · also hosts calls"
+note = "Presence under a device that is a chat host and also a call host: offline."
+
+[call_group_about_this_phone]
+text = "**This phone** is carrying this call. Everyone in the call connects to it, and it passes the audio on and chooses who is heard when several people speak."
+note = "Group call details card, first sentence. The host’s name at the start is bold (markdown stars, keep them around the same words); the whole sentence is one string so the verb can agree with it. This phone is the call host."
+
+[call_group_about_your_other]
+text = "**Your other device** carries this call. Everyone in the call connects to it, and it passes the audio on and chooses who is heard when several people speak."
+note = "Group call details card, first sentence. The host’s name at the start is bold (markdown stars, keep them around the same words); the whole sentence is one string so the verb can agree with it. Another device of the user’s is the call host."
+
+[call_group_about_member]
+text = "**{name}’s device** carries this call. Everyone in the call connects to it, and it passes the audio on and chooses who is heard when several people speak."
+note = "Group call details card, first sentence. The host’s name at the start is bold (markdown stars, keep them around the same words); the whole sentence is one string so the verb can agree with it. A member’s device is the call host. {name} is the member’s first name."
+
+[call_group_about_someone]
+text = "**A member’s device** carries this call. Everyone in the call connects to it, and it passes the audio on and chooses who is heard when several people speak."
+note = "Group call details card, first sentence. The host’s name at the start is bold (markdown stars, keep them around the same words); the whole sentence is one string so the verb can agree with it. A member whose name is not known hosts the call."
+
+[call_group_about_unknown]
+text = "**The call host** carries this call. Everyone in the call connects to it, and it passes the audio on and chooses who is heard when several people speak."
+note = "Group call details card, first sentence. The host’s name at the start is bold (markdown stars, keep them around the same words); the whole sentence is one string so the verb can agree with it. The host is not known yet."
+
+[people_busy_until_today]
+text = "Busy until {time}"
+note = "Availability line while busy until a time. {time} is a clock time formatted for the user’s region, such as 18:30. The time is later today."
+
+[people_busy_until_tomorrow]
+text = "Busy until tomorrow {time}"
+note = "Availability line while busy until a time. {time} is a clock time formatted for the user’s region, such as 18:30. The time is tomorrow."
+
+[people_busy_until_mon]
+text = "Busy until Monday {time}"
+note = "Availability line while busy until a time. {time} is a clock time formatted for the user’s region, such as 18:30. The time is on a Monday, a later day this week."
+
+[people_busy_until_tue]
+text = "Busy until Tuesday {time}"
+note = "Availability line while busy until a time. {time} is a clock time formatted for the user’s region, such as 18:30. The time is on a Tuesday, a later day this week."
+
+[people_busy_until_wed]
+text = "Busy until Wednesday {time}"
+note = "Availability line while busy until a time. {time} is a clock time formatted for the user’s region, such as 18:30. The time is on a Wednesday, a later day this week."
+
+[people_busy_until_thu]
+text = "Busy until Thursday {time}"
+note = "Availability line while busy until a time. {time} is a clock time formatted for the user’s region, such as 18:30. The time is on a Thursday, a later day this week."
+
+[people_busy_until_fri]
+text = "Busy until Friday {time}"
+note = "Availability line while busy until a time. {time} is a clock time formatted for the user’s region, such as 18:30. The time is on a Friday, a later day this week."
+
+[people_busy_until_sat]
+text = "Busy until Saturday {time}"
+note = "Availability line while busy until a time. {time} is a clock time formatted for the user’s region, such as 18:30. The time is on a Saturday, a later day this week."
+
+[people_busy_until_sun]
+text = "Busy until Sunday {time}"
+note = "Availability line while busy until a time. {time} is a clock time formatted for the user’s region, such as 18:30. The time is on a Sunday, a later day this week."
+
+[chat_when_today]
+text = "Today, {time}"
+note = "Date and time line in a message detail or the photo viewer title, for today. {time} is a 24-hour clock time such as 16:02."
+
+[chat_when_yesterday]
+text = "Yesterday, {time}"
+note = "Date and time line in a message detail or the photo viewer title, for yesterday. {time} is a 24-hour clock time such as 16:02."
+
+[chat_when_date]
+text = "{date}, {time}"
+note = "Date and time line in a message detail or the photo viewer title, for an older day. {date} is a day formatted for the user’s region, such as Oct 8, {time} a 24-hour clock time."
+
+[group_when_today]
+text = "Today, {time}"
+note = "Date and time line in a group message or a sent request, for today. {time} is a 24-hour clock time such as 16:02."
+
+[group_when_yesterday]
+text = "Yesterday, {time}"
+note = "Date and time line in a group message or a sent request, for yesterday. {time} is a 24-hour clock time such as 16:02."
+
+[group_when_date]
+text = "{date}, {time}"
+note = "Date and time line in a group message or a sent request, for an older day. {date} is a day formatted for the user’s region, such as Oct 8, {time} a 24-hour clock time."
+
+[people_when_date]
+text = "{date}, {time}"
+note = "Date and time of a block, e.g. “You blocked Ana · Oct 10, 13:50”. {date} is a day formatted for the user’s region, {time} a 24-hour clock time."

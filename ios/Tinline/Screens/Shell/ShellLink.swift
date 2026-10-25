@@ -3,16 +3,6 @@ import SwiftUI
 /// Device linking (docs/design/device-linking.md): one link at a time, driven by the core's `LinkEvents`. `ui` is the state the
 /// screens render; `newDevice` says which side this phone is (N = new, shows or scans with `link_new_*`; E = existing,
 /// `link_*`). Core callbacks arrive on core threads: they only hop to the main actor.
-/// A sentence with one styled run: the key's first placeholder is replaced by `rich` (kept as its own `Text`), the other
-/// placeholders by `args`, so translators keep word order and the emphasis stays on the right words.
-func shellLinkRich(_ key: String, _ rich: Text, _ args: CVarArg...) -> Text {
-    let mark = "\u{1}"
-    let all: [CVarArg] = [mark] + args
-    let parts = String(format: NSLocalizedString(key, comment: ""), arguments: all).components(separatedBy: mark)
-    guard parts.count == 2 else { return Text(parts.joined()) }
-    return Text(parts[0]) + rich + Text(parts[1])
-}
-
 @MainActor
 final class ShellLinkController: ObservableObject, LinkEvents, @unchecked Sendable {
     enum Ui: Equatable {
@@ -197,7 +187,7 @@ private struct ShellNewDeviceLink: View {
             ShellGateHead(onBack: canBack ? onBack : nil, progress: progress, label: tr("link_gate_label"))
             switch ui {
             case .code(let code, let peer):
-                ShellGateStep(tr("link_same_code"), lead: tr("link_same_code_lead", ShellText.ifBlank(peer, tr("link_fb_other_device"))),
+                ShellGateStep(tr("link_same_code"), lead: ShellText.isBlank(peer) ? tr("link_same_code_lead_unnamed") : tr("link_same_code_lead", peer),
                               center: true, anchor: true, content: {
                     ShellBigCode(code: code)
                     ShellNotice(tr("link_diff_code"), kind: .warn)
@@ -339,20 +329,19 @@ private struct ShellExistingDeviceLink: View {
                     ShellActs { ShellPBtn(text: tr("link_back"), variant: .quiet, action: onCancel); ShellPBtn(text: tr("link_new_code"), action: onNew) }
                 case "verify":
                     if case .code(let code, let peer) = links.ui {
-                        let who = ShellText.ifBlank(peer, tr("link_fb_new_device_cap"))
                         ShellPageH1(text: tr("link_match_title"))
-                        shellLinkRich("link_match_body", Text(who).bold())
+                        Text(ShellText.isBlank(peer) ? trRich("link_match_body_unnamed") : trRich("link_match_body", peer))
                             .shellStyle(.body).foregroundStyle(tin.ink)
                         ShellBigCode(code: code, weight: .bold)
                         Text(tr("link_match_warn")).shellStyle(.sub19).foregroundStyle(tin.ink2)
                         ShellActs { ShellPBtn(text: tr("link_no_match"), action: onCancel); ShellPBtn(text: tr("link_match"), variant: .primary) { matched = true } }
                     }
                 case "auth":
-                    if case .code(_, let peer) = links.ui { ShellApproveStep(links: links, who: ShellText.ifBlank(peer, tr("link_fb_new_device")), onCancel: onCancel) }
+                    if case .code(_, let peer) = links.ui { ShellApproveStep(links: links, who: peer, onCancel: onCancel) }
                 case "transfer":
                     let connecting = links.ui == .connecting
-                    let peer: String = { if case .approving(_, let p) = links.ui, !p.isEmpty { return p }; return tr("link_fb_new_device") }()
-                    ShellPageH1(text: connecting ? tr("link_connecting") : tr("link_linking_peer", peer))
+                    let peer: String = { if case .approving(_, let p) = links.ui { return p }; return "" }()
+                    ShellPageH1(text: connecting ? tr("link_connecting") : ShellText.isBlank(peer) ? tr("link_linking_peer_unnamed") : tr("link_linking_peer", peer))
                     HStack(spacing: 12) {
                         ShellSpinner(size: 14, color: ShellPalette(tin).accent).frame(width: 24, height: 24)
                         Text(connecting ? tr("link_reaching") : tr("link_sending")).shellStyle(.body).foregroundStyle(tin.ink)
@@ -363,8 +352,8 @@ private struct ShellExistingDeviceLink: View {
                     Text(tr("link_keep_open")).shellStyle(.sub19).foregroundStyle(tin.ink2)
                     if connecting { ShellActs { ShellPBtn(text: tr("link_cancel"), variant: .quiet, action: onCancel) } }
                 case "done":
-                    let peer: String = { if case .done(_, _, let p) = links.ui, !p.isEmpty { return p }; return tr("link_fb_new_device_cap") }()
-                    ShellResultBlock(glyph: .check, ok: true, title: tr("link_done_title", peer),
+                    let peer: String = { if case .done(_, _, let p) = links.ui { return p }; return "" }()
+                    ShellResultBlock(glyph: .check, ok: true, title: ShellText.isBlank(peer) ? tr("link_done_title_unnamed") : tr("link_done_title", peer),
                                      text: tr("link_done_body"))
                     ShellActs { ShellPBtn(text: tr("link_done"), variant: .primary, action: onClose) }
                 default:
@@ -411,7 +400,7 @@ private struct ShellLinkScanStep: View {
         let p = ShellPalette(tin)
         ShellPageH1(text: tr("link_scan_title"))
         VStack(alignment: .leading, spacing: 4) {
-            shellLinkRich("link_scan_step1", Text(tr("link_scan_step1_action")).foregroundColor(tin.ink).fontWeight(.semibold))
+            Text(trRich("link_scan_step1") { s, r in s[r].foregroundColor = tin.ink; s[r].font = ShellFont.of(.sub19, weight: .semibold) })
                 .shellStyle(.sub19).foregroundStyle(tin.ink2)
             Text(tr("link_scan_step2")).shellStyle(.sub19).foregroundStyle(tin.ink2)
         }
@@ -464,10 +453,10 @@ private struct ShellApproveStep: View {
     }
 
     var body: some View {
-        ShellPageH1(text: tr("link_approve_title", who))
+        ShellPageH1(text: ShellText.isBlank(who) ? tr("link_approve_title_unnamed") : tr("link_approve_title", who))
         HStack(alignment: .top, spacing: 10) {
             ShellIcon(glyph: .warning, size: 18, color: tin.onWarn).padding(.top, 1)
-            shellLinkRich("link_approve_body", Text(tr("link_approve_phrase")).bold(), who)
+            Text(ShellText.isBlank(who) ? trRich("link_approve_body_unnamed") : trRich("link_approve_body", who))
                 .font(ShellFont.of(.body)).lineSpacing(2).foregroundStyle(tin.onWarn)
         }
         .padding(12).background(SmoothRoundedRectangle(cornerRadius: 12).fill(tin.warn))
@@ -564,7 +553,7 @@ struct ShellUnlinkedScreen: View {
         ShellPage {
             ShellGateHead(onBack: nil, progress: nil)
             ShellGateStep(tr("link_unlinked_title"),
-                          lead: tr("link_unlinked_lead", ShellText.ifBlank(name, tr("link_fb_your_account"))),
+                          lead: ShellText.isBlank(name) ? tr("link_unlinked_lead_unnamed") : tr("link_unlinked_lead", name),
                           center: true, anchor: true,
                           hero: { ShellIconDisc(glyph: .off, size: 72, iconSize: 32, danger: true).padding(.top, 12) },
                           content: { EmptyView() },

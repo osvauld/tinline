@@ -131,7 +131,7 @@ private struct GroupInfoScreen: View {
     private func memberSub(_ since: String, flags: Int?, blocked: Bool, reqNote: String?) -> AttributedString {
         var sub = AttributedString(since)
         if let flags {
-            var f = AttributedString(" · " + tr("group_member_flags", String(flags), String(GroupText.flagsToRemove)))
+            var f = AttributedString(" · " + trn("group_member_flags", flags, String(GroupText.flagsToRemove)))
             f.foregroundColor = tin.er; f.font = GroupsType.subStrong
             sub += f
         }
@@ -162,10 +162,7 @@ private struct GroupInfoScreen: View {
                 let since = m.invitedBy.map { tr("group_member_invited_by", groupsFirstName(name($0, "")), GroupsTime.dayOnly(m.joinedAt)) } ?? tr("group_member_since", GroupsTime.dayOnly(m.joinedAt))
                 let showFlags = (admin || m.isMe) && m.flags > 0 && !m.isOwner
                 let isCallHost = d.callHosts.contains(where: { $0.did == m.did })
-                let descParts = [m.isMe ? tr("group_member_desc_you", n) : n,
-                                 m.isOwner ? tr("group_member_desc_owner") : (m.isAdmin ? tr("group_member_desc_admin") : tr("group_member_desc_member"))]
-                    + (m.isHost ? [tr("group_member_desc_host")] : []) + (isCallHost ? [tr("group_member_desc_call_host")] : [])
-                let desc = tr("group_member_desc", descParts.joined(separator: ", "))
+                let desc = GroupText.memberDesc(m.isMe ? tr("group_member_name_you", n) : n, owner: m.isOwner, admin: m.isAdmin, host: m.isHost, callHost: isCallHost)
                 let sub = memberSub(since, flags: showFlags ? Int(m.flags) : nil, blocked: session.dir.blockedByMe(m.did), reqNote: reqNote)
                 MRow(onTap: { sheet = .member(m.did) }, desc: desc) {
                     TinAvatar(did: m.did, size: 40)
@@ -337,7 +334,7 @@ private struct HostsSection: View {
                 let on = h.isMe || h.online
                 MRow {
                     TinAvatar(did: h.did, size: 40)
-                    TwoLine(title: dev(h), sub: d.callHosts.contains(where: { $0.did == h.did && $0.deviceId == h.deviceId }) ? tr("group_host_also_calls", on ? tr("group_online") : tr("group_offline")) : (on ? tr("group_online") : tr("group_offline")), dot: on)
+                    TwoLine(title: dev(h), sub: d.callHosts.contains(where: { $0.did == h.did && $0.deviceId == h.deviceId }) ? (on ? tr("group_host_online_calls") : tr("group_host_offline_calls")) : (on ? tr("group_host_online") : tr("group_host_offline")), dot: on)
                     if admin { TrailBtn(text: tr("group_remove"), desc: tr("group_remove_host_desc", dev(h))) { session.exec({ session.ctl.revoke(d.id, did: h.did, dev: h.deviceId) }, session.sayDone) } }
                 }
             }
@@ -389,7 +386,7 @@ private struct CallHostsSection: View {
                 let on = h.isMe || h.online
                 MRow {
                     TinAvatar(did: h.did, size: 40)
-                    TwoLine(title: dev(h), sub: on ? tr("group_online") : tr("group_offline"), dot: on)
+                    TwoLine(title: dev(h), sub: on ? tr("group_host_online") : tr("group_host_offline"), dot: on)
                     if admin { TrailBtn(text: tr("group_remove"), desc: tr("group_remove_callhost_desc", dev(h))) { session.exec({ session.ctl.revokeCall(d.id, did: h.did, dev: h.deviceId) }, session.sayDone) } }
                 }
             }
@@ -426,8 +423,8 @@ private struct FlagsOnMe: View {
     var body: some View {
         let total = GroupText.flagsToRemove
         let left = max(total - n, 0)
-        InfoSec(title: tr("group_flags_on_you"), countText: tr("group_flags_count", String(n), String(total)), countColor: tin.er) {
-            GroupsFlagMeter(filled: n, total: total, desc: tr("group_flags_count_desc", String(n), String(total))).padding(.init(top: 2, leading: 4, bottom: 4, trailing: 4))
+        InfoSec(title: tr("group_flags_on_you"), countText: tr("group_flags_count", n, String(total)), countColor: tin.er) {
+            GroupsFlagMeter(filled: n, total: total, desc: trn("group_flags_count_desc", n, String(total))).padding(.init(top: 2, leading: 4, bottom: 4, trailing: 4))
             GroupsNote(trn("group_flags_left", left))
                 .padding(.horizontal, 4).padding(.top, 6)
         }
@@ -627,7 +624,7 @@ private struct MemberSheet: View {
                 }
             }.padding(.init(top: 18, leading: 20, bottom: 10, trailing: 20))
             if admin && !m.isMe && !m.isOwner {
-                Text(tr("group_member_flags", String(m.flags), String(GroupText.flagsToRemove))).font(GroupsType.sub.monospacedDigit()).foregroundStyle(tin.ink2).padding(.horizontal, 20).padding(.bottom, 4)
+                Text(trn("group_member_flags", Int(m.flags), String(GroupText.flagsToRemove))).font(GroupsType.sub.monospacedDigit()).foregroundStyle(tin.ink2).padding(.horizontal, 20).padding(.bottom, 4)
             }
             VStack(spacing: 0) {
                 if !m.isMe {
@@ -657,10 +654,9 @@ private struct MemberSheet: View {
                     ForEach(m.deviceIds, id: \.self) { dev in
                         let isCh = d.callHosts.contains(where: { $0.did == m.did && $0.deviceId == dev })
                         let pend = d.callHostRequests.contains(where: { $0.did == m.did && $0.deviceId == dev })
-                        let suffix = several ? " · \(GroupText.shortDev(dev))" : ""
-                        if pend { MItem(icon: GroupsIcons.phone, title: tr("group_member_cancel_callhost", suffix), sub: tr("group_member_cancel_callhost_sub", fn)) { run { session.ctl.revokeCall(d.id, did: m.did, dev: dev) } } }
-                        else if isCh { MItem(icon: GroupsIcons.phone, title: tr("group_member_remove_callhost", suffix)) { run { session.ctl.revokeCall(d.id, did: m.did, dev: dev) } } }
-                        else { MItem(icon: GroupsIcons.phone, title: tr("group_member_make_callhost", suffix), sub: tr("group_member_make_callhost_sub", fn)) { run { session.ctl.appointCall(d.id, did: m.did, dev: dev) } } }
+                        if pend { MItem(icon: GroupsIcons.phone, title: several ? tr("group_member_cancel_callhost_device", GroupText.shortDev(dev)) : tr("group_member_cancel_callhost"), sub: tr("group_member_cancel_callhost_sub", fn)) { run { session.ctl.revokeCall(d.id, did: m.did, dev: dev) } } }
+                        else if isCh { MItem(icon: GroupsIcons.phone, title: several ? tr("group_member_remove_callhost_device", GroupText.shortDev(dev)) : tr("group_member_remove_callhost")) { run { session.ctl.revokeCall(d.id, did: m.did, dev: dev) } } }
+                        else { MItem(icon: GroupsIcons.phone, title: several ? tr("group_member_make_callhost_device", GroupText.shortDev(dev)) : tr("group_member_make_callhost"), sub: tr("group_member_make_callhost_sub", fn)) { run { session.ctl.appointCall(d.id, did: m.did, dev: dev) } } }
                     }
                 }
                 if m.isMe && GroupText.active(d.myRole) {

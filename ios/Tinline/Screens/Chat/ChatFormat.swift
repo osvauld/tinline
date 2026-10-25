@@ -57,12 +57,17 @@ enum ChatFmt {
         let f = DateFormatter()
         f.calendar = calendar
         f.locale = .current
-        f.dateFormat = sameYear ? "EEEE d MMM" : "EEEE d MMM yyyy"
+        f.setLocalizedDateFormatFromTemplate(sameYear ? "EEEEdMMM" : "EEEEdMMMyyyy")
         return f.string(from: date(ms))
     }
 
-    /// The viewer's top line: "Today, 16:02".
-    static func viewerWhen(_ ms: Int64, now nowMs: Int64) -> String { "\(dayLabel(ms, now: nowMs)), \(clock(ms))" }
+    /// The viewer's top line: "Today, 16:02" (one whole string per relative day, so the separator is the language's).
+    static func viewerWhen(_ ms: Int64, now nowMs: Int64) -> String {
+        let n = daysAgo(ms, nowMs)
+        if n <= 0 { return tr("chat_when_today", clock(ms)) }
+        if n == 1 { return tr("chat_when_yesterday", clock(ms)) }
+        return tr("chat_when_date", dayLabel(ms, now: nowMs), clock(ms))
+    }
 
     /// "2.4 MB", "34 MB", "812 KB" (`present.bytes`).
     static func size(_ count: Int64) -> String { bytes(n: UInt64(max(0, count))) }

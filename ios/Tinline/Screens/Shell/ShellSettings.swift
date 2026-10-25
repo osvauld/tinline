@@ -75,7 +75,7 @@ struct ShellSettingsRoute: View {
         let name = me?.text("name").flatMap { $0.isEmpty ? nil : $0 } ?? fallback
         let status = me?.text("status").flatMap { $0.isEmpty ? nil : $0 }
         let av = effectiveAvailability(me?.fields, nowMs: nowMs)
-        let avText = av.available ? tr("settings_status_available") : av.untilMs.map { tr("settings_status_busy_until", ShellWiring.busyUntilLabel($0)) } ?? tr("settings_status_busy")
+        let avText = av.available ? tr("settings_status_available") : av.untilMs.map { PeopleProfileInfo.busyUntil(atMs: $0) } ?? tr("settings_status_busy")
         ShellPfPage(title: tr("settings_title"), onBack: onBack) {
             // Permission problems: said once here, with the details on the Notifications page.
             if let pr = shellPermProblems(missing).first {
@@ -545,7 +545,7 @@ struct ShellDiagnosticsScreen: View {
             ShellTopBar(tr("settings_diagnostics"), onBack: onBack)
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
-                    ShellListItem(title: tr("settings_test_tone"), sub: tr("settings_test_tone_sub")) {
+                    ShellListItem(title: tr("settings_test_tone"), sub: tr("settings_test_tone_sub", "440")) {
                         ShellSwitch(isOn: tone, label: tr("settings_test_tone")) { on in tone = on; core.node?.setTestTone(hz: on ? 440 : nil) }
                     }
                     ShellHint("p2pcore \(coreVersion())").padding(.horizontal, 20).padding(.vertical, 8)

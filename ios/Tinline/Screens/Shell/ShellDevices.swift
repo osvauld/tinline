@@ -100,7 +100,7 @@ struct ShellDeviceDetailScreen: View {
                 try await core.work { try $0.unlinkDevice(device: d.device, passphrase: p) }
                 busy = false; pass = ""; confirm = false
                 if d.thisDevice, let did { await core.accountGone(did, notify: false) }
-                else { onMessage(tr("devices_unlinked_msg", ShellText.ifBlank(d.label, tr("devices_fb_device")))); onBack() }
+                else { onMessage(ShellText.isBlank(d.label) ? tr("devices_unlinked_msg_unnamed") : tr("devices_unlinked_msg", d.label)); onBack() }
             } catch {
                 busy = false
                 let msg = ShellText.isInCall(error) ? tr("devices_finish_call") : ShellText.friendly(error)
@@ -133,7 +133,7 @@ struct ShellDeviceDetailScreen: View {
                         VStack(spacing: 8) {
                             if !d.thisDevice {
                                 ShellTinButton(text: tr("devices_sync_now"), style: .outlined, glyph: .retry) {
-                                    core.node?.networkChanged(); onMessage(tr("devices_syncing", ShellText.ifBlank(d.label, tr("devices_fb_the_device"))))
+                                    core.node?.networkChanged(); onMessage(ShellText.isBlank(d.label) ? tr("devices_syncing_unnamed") : tr("devices_syncing", d.label))
                                 }
                             }
                             ShellTinButton(text: d.thisDevice ? tr("devices_remove_account") : tr("devices_unlink_this"), style: .danger, glyph: .off) {
@@ -158,8 +158,7 @@ struct ShellDeviceDetailScreen: View {
                 }) { ShellGField(label: tr("devices_name_field"), text: $renameText, capitalization: .words, autofocus: true) }
             }
             if confirm {
-                let name = ShellText.ifBlank(d.label, tr("devices_fb_this_device"))
-                ShellDialog(title: d.thisDevice ? tr("devices_remove_q") : tr("devices_unlink_q", name),
+                ShellDialog(title: d.thisDevice ? tr("devices_remove_q") : ShellText.isBlank(d.label) ? tr("devices_unlink_q_unnamed") : tr("devices_unlink_q", d.label),
                             confirm: busy ? tr("devices_working") : d.thisDevice ? tr("devices_remove") : tr("devices_unlink"), destructive: true, glyph: .off,
                             confirmEnabled: !busy && (!hasPass || !pass.isEmpty), onDismiss: { if !busy { confirm = false } }, onConfirm: { confirmed(d) }) {
                     if d.thisDevice {

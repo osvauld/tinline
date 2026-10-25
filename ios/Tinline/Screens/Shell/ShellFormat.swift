@@ -39,6 +39,7 @@ enum ShellText {
 
     static func display(_ c: Contact) -> String { displayName(alias: c.alias, name: c.name) }
 
+    static func isBlank(_ s: String) -> Bool { s.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
     static func ifBlank(_ s: String, _ other: String) -> String { s.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? other : s }
 
     /// Chat list time: "12:41", "Yesterday", "Monday", "12 Sep" (`present.listTime`).
@@ -64,6 +65,20 @@ enum ShellText {
         case "cancelled": return tr("shell_call_what_cancelled")
         case "unreachable": return tr("shell_call_what_unreachable")
         default: return tr("shell_call_what_other")
+        }
+    }
+
+    /// The same outcome as a whole phrase for a screen reader ("Missed call"), never an adjective for a slot.
+    static func callDesc(_ r: CallRecord) -> String {
+        if r.durationSecs > 0 { return r.incoming ? tr("shell_call_desc_incoming") : tr("shell_call_desc_outgoing") }
+        if r.incoming && r.reason == "unavailable" { return tr("shell_call_desc_unavailable") }
+        if r.incoming { return r.missed ? tr("shell_call_desc_missed") : tr("shell_call_desc_declined") }
+        switch r.reason {
+        case "no_answer": return tr("shell_call_desc_no_answer")
+        case "declined", "busy": return tr("shell_call_desc_declined")
+        case "cancelled": return tr("shell_call_desc_cancelled")
+        case "unreachable": return tr("shell_call_desc_unreachable")
+        default: return tr("shell_call_desc_other")
         }
     }
 
@@ -153,21 +168,8 @@ enum ShellRows {
     /// Owner, admin and member are in the group; removed and left keep only an archive (GroupsCore.kt `active`).
     static func groupActive(_ r: GroupRole) -> Bool { r == .owner || r == .admin || r == .member }
 
-    /// A system line in plain words (GroupsCore.kt `sysText`); `me` is our DID.
-    static func groupSysText(_ m: GroupMessage, me: String) -> String {
-        func who(_ did: String, _ name: String) -> String { did == me ? tr("shell_you") : ShellText.ifBlank(name, tr("shell_someone")) }
-        let by = who(m.authorDid, m.authorName), sub = who(m.subjectDid, m.subjectName), you = m.subjectDid == me
-        switch m.kind {
-        case .post: return m.text
-        case .joined: return tr("shell_group_sys_joined", sub)
-        case .left: return tr("shell_group_sys_left", sub)
-        case .removed: return you ? tr("shell_group_sys_removed_you") : tr("shell_group_sys_removed", sub)
-        case .adminGranted: return you ? tr("shell_group_sys_admin_granted_you", by) : tr("shell_group_sys_admin_granted", by, sub)
-        case .adminRevoked: return you ? tr("shell_group_sys_admin_revoked_you", by) : tr("shell_group_sys_admin_revoked", by, sub)
-        case .hostAdded: return you ? tr("shell_group_sys_host_added_you") : tr("shell_group_sys_host_added", sub)
-        case .hostRemoved: return you ? tr("shell_group_sys_host_removed_you") : tr("shell_group_sys_host_removed", sub)
-        }
-    }
+    /// A system line in plain words; the sentences live with `GroupText` so the two lists never drift apart.
+    static func groupSysText(_ m: GroupMessage, me: String) -> String { GroupText.sysText(m, me: me) }
 
     /// The group row's second line (GroupsCore.kt `preview`).
     static func groupPreview(_ s: GroupSummary, me: String) -> String {

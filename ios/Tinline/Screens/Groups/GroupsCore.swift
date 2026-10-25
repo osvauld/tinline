@@ -163,23 +163,101 @@ enum GroupText {
     static func isAdmin(_ r: GroupRole) -> Bool { r == .owner || r == .admin }
 
     private static func someone(_ name: String) -> String { name.groupsIfBlank(tr("group_someone")) }
+    /// A sentence about a person whose name may be unknown: the named sentence, or its whole-sentence twin.
+    static func named(_ name: String, _ named: String, _ unnamed: String) -> String {
+        name.groupsIsBlank ? tr(unnamed) : tr(named, groupsFirstName(name))
+    }
     static func shortDev(_ dev: String) -> String { String(dev.prefix(8)) }
+
+    /// Who a system line is about: the user, a named member, or a member whose name is unknown. Each combination has its
+    /// own whole sentence, so no stand-in word is ever slotted into one.
+    private enum Who {
+        case you, named(String), unknown
+        init(_ did: String, _ name: String, me: String) {
+            self = did == me ? .you : (name.groupsIsBlank ? .unknown : .named(name))
+        }
+    }
 
     /// A system line in plain words. `me` is our DID.
     static func sysText(_ m: GroupMessage, me: String) -> String {
-        func who(_ did: String, _ name: String) -> String { did == me ? groupsYou : someone(name) }
-        let by = who(m.authorDid, m.authorName)
-        let sub = who(m.subjectDid, m.subjectName)
-        let you = m.subjectDid == me
+        let by = Who(m.authorDid, m.authorName, me: me)
+        let sub = Who(m.subjectDid, m.subjectName, me: me)
+        let total = String(flagsToRemove)
         switch m.kind {
         case .post: return m.text
-        case .joined: return tr("group_sys_joined", sub)
-        case .left: return tr("group_sys_left", sub)
-        case .removed: return you ? tr("group_sys_removed_you", String(flagsToRemove)) : tr("group_sys_removed", sub, String(flagsToRemove))
-        case .adminGranted: return you ? tr("group_sys_admin_you", by) : tr("group_sys_admin", by, sub)
-        case .adminRevoked: return you ? tr("group_sys_unadmin_you", by) : tr("group_sys_unadmin", by, sub)
-        case .hostAdded: return you ? tr("group_sys_host_added_you") : tr("group_sys_host_added", sub)
-        case .hostRemoved: return you ? tr("group_sys_host_removed_you") : tr("group_sys_host_removed", sub)
+        case .joined:
+            switch sub {
+            case .you: return tr("group_sys_joined_you")
+            case .named(let n): return tr("group_sys_joined_named", n)
+            case .unknown: return tr("group_sys_joined_someone")
+            }
+        case .left:
+            switch sub {
+            case .you: return tr("group_sys_left_you")
+            case .named(let n): return tr("group_sys_left_named", n)
+            case .unknown: return tr("group_sys_left_someone")
+            }
+        case .removed:
+            switch sub {
+            case .you: return tr("group_sys_removed_you", total)
+            case .named(let n): return tr("group_sys_removed", n, total)
+            case .unknown: return tr("group_sys_removed_someone", total)
+            }
+        case .adminGranted:
+            switch (by, sub) {
+            case (.you, .you): return tr("group_sys_admin_you_you")
+            case (.you, .named(let n)): return tr("group_sys_admin_you_named", n)
+            case (.you, .unknown): return tr("group_sys_admin_you_someone")
+            case (.named(let b), .you): return tr("group_sys_admin_named_you", b)
+            case (.named(let b), .named(let n)): return tr("group_sys_admin_named_named", b, n)
+            case (.named(let b), .unknown): return tr("group_sys_admin_named_someone", b)
+            case (.unknown, .you): return tr("group_sys_admin_someone_you")
+            case (.unknown, .named(let n)): return tr("group_sys_admin_someone_named", n)
+            case (.unknown, .unknown): return tr("group_sys_admin_someone_someone")
+            }
+        case .adminRevoked:
+            switch (by, sub) {
+            case (.you, .you): return tr("group_sys_unadmin_you_you")
+            case (.you, .named(let n)): return tr("group_sys_unadmin_you_named", n)
+            case (.you, .unknown): return tr("group_sys_unadmin_you_someone")
+            case (.named(let b), .you): return tr("group_sys_unadmin_named_you", b)
+            case (.named(let b), .named(let n)): return tr("group_sys_unadmin_named_named", b, n)
+            case (.named(let b), .unknown): return tr("group_sys_unadmin_named_someone", b)
+            case (.unknown, .you): return tr("group_sys_unadmin_someone_you")
+            case (.unknown, .named(let n)): return tr("group_sys_unadmin_someone_named", n)
+            case (.unknown, .unknown): return tr("group_sys_unadmin_someone_someone")
+            }
+        case .hostAdded:
+            switch sub {
+            case .you: return tr("group_sys_host_added_you")
+            case .named(let n): return tr("group_sys_host_added", n)
+            case .unknown: return tr("group_sys_host_added_someone")
+            }
+        case .hostRemoved:
+            switch sub {
+            case .you: return tr("group_sys_host_removed_you")
+            case .named(let n): return tr("group_sys_host_removed", n)
+            case .unknown: return tr("group_sys_host_removed_someone")
+            }
+        }
+    }
+
+    /// The spoken description of a member row: one whole sentence per role and hosting combination.
+    static func memberDesc(_ name: String, owner: Bool, admin: Bool, host: Bool, callHost: Bool) -> String {
+        switch (owner ? 0 : (admin ? 1 : 2), host, callHost) {
+        case (0, false, false): return tr("group_member_desc_owner", name)
+        case (0, false, true): return tr("group_member_desc_owner_callhost", name)
+        case (0, true, false): return tr("group_member_desc_owner_host", name)
+        case (0, true, true): return tr("group_member_desc_owner_host_callhost", name)
+        case (1, false, false): return tr("group_member_desc_admin", name)
+        case (1, false, true): return tr("group_member_desc_admin_callhost", name)
+        case (1, true, false): return tr("group_member_desc_admin_host", name)
+        case (1, true, true): return tr("group_member_desc_admin_host_callhost", name)
+        case (2, false, false): return tr("group_member_desc_member", name)
+        case (2, false, true): return tr("group_member_desc_member_callhost", name)
+        case (2, true, false): return tr("group_member_desc_member_host", name)
+        case (2, true, true): return tr("group_member_desc_member_host_callhost", name)
+        default: return tr("group_member_desc_member", name)
         }
     }
 
@@ -192,7 +270,8 @@ enum GroupText {
             guard let m = s.last else { return "" }
             if m.kind != .post { return sysText(m, me: me) }
             if m.outgoing { return tr("group_preview_you", m.text) }
-            return tr("group_preview_author", groupsFirstName(someone(m.authorName)), m.text)
+            if m.authorName.groupsIsBlank { return tr("group_preview_someone", m.text) }
+            return tr("group_preview_author", groupsFirstName(m.authorName), m.text)
         }
     }
 
@@ -220,21 +299,24 @@ enum GroupText {
 
     /// A sent request's state line and whether it is bad news. A block is visible (U5 revised, P5).
     static func sentLine(_ r: GroupChatRequest) -> (String, Bool) {
-        let f = groupsFirstName(someone(r.peerName))
+        let f = groupsFirstName(r.peerName)
+        let named = !r.peerName.groupsIsBlank
         switch r.state {
-        case .pending: return (tr("group_req_pending", f, r.groupName), false)
-        case .accepted: return (r.contactAdded ? tr("group_req_accepted_msgs", f) : tr("group_req_accepted_connecting", f), false)
-        case .declined: return (tr("group_req_declined", f), true)
-        case .blocked: return (tr("group_req_blocked", f), true)
+        case .pending: return (named ? tr("group_req_pending", f, r.groupName) : tr("group_req_pending_unnamed", r.groupName), false)
+        case .accepted:
+            if r.contactAdded { return (named ? tr("group_req_accepted_msgs", f) : tr("group_req_accepted_msgs_unnamed"), false) }
+            return (named ? tr("group_req_accepted_connecting", f) : tr("group_req_accepted_connecting_unnamed"), false)
+        case .declined: return (named ? tr("group_req_declined", f) : tr("group_req_declined_unnamed"), true)
+        case .blocked: return (named ? tr("group_req_blocked", f) : tr("group_req_blocked_unnamed"), true)
         }
     }
 
-    /// Who asked this device to host `d`, or nil when nobody did.
+    /// Who asked this device to host `d`: nil when nobody did, an empty string when an admin asked whose name is unknown.
     static func hostAsker(_ d: GroupDetail) -> String? {
         if !d.hostRequestedHere || !active(d.myRole) { return nil }
         let by = d.hostRequests.first(where: { $0.isMe })?.appointedBy
         if let b = by, let name = d.members.first(where: { $0.did == b })?.name, !name.groupsIsBlank { return name }
-        return tr("group_an_admin")
+        return ""
     }
 
     /// Unread posts in groups we are still in, plus invitations waiting for an answer: the Groups tab's badge.
@@ -570,7 +652,7 @@ final class GroupsController: ObservableObject, GroupEvents, GroupRequestEvents,
     func inviteContacts(_ id: String, dids: [String]) -> GroupResult<String> {
         if dids.isEmpty { return .failure(GroupFailure(tr("group_err_pick_someone"))) }
         let r = Result { try api.inviteContacts(id, dids: dids) }.map { (made: [GroupInvitation]) -> String in
-            if made.count == 1 { return tr("group_done_invite_one", groupsFirstName(made[0].inviteeName.groupsIfBlank(tr("group_fallback_them")))) }
+            if made.count == 1 { return GroupText.named(made[0].inviteeName, "group_done_invite_one", "group_done_invite_one_unnamed") }
             return trn("group_done_invite_many", made.count)
         }
         locked { reloadInvitations() }
@@ -586,7 +668,7 @@ final class GroupsController: ObservableObject, GroupEvents, GroupRequestEvents,
 
     func declineInvitation(_ invitationId: String) -> GroupResult<String> {
         let r = Result { try api.invitationDecline(invitationId) }
-            .map { tr("group_done_decline_invite", groupsFirstName($0.inviterName.groupsIfBlank(tr("group_fallback_they")))) }
+            .map { GroupText.named($0.inviterName, "group_done_decline_invite", "group_done_decline_invite_unnamed") }
         locked { reloadInvitations() }
         return r.mapError { GroupFailure(GroupText.error($0)) }
     }
@@ -629,21 +711,21 @@ final class GroupsController: ObservableObject, GroupEvents, GroupRequestEvents,
     /// "Message privately" for a member who is not a contact.
     func request(_ groupId: String, did: String) -> GroupResult<String> {
         let r = Result { try api.chatRequest(groupId, did: did) }
-            .map { tr("group_done_request_sent", groupsFirstName($0.peerName.groupsIfBlank(tr("group_fallback_them")))) }
+            .map { GroupText.named($0.peerName, "group_done_request_sent", "group_done_request_sent_unnamed") }
         locked { reloadRequests() }
         return r.mapError { GroupFailure(GroupText.error($0)) }
     }
 
     func accept(_ requestId: String) -> GroupResult<String> {
         let r = Result { try api.chatAccept(requestId) }
-            .map { tr("group_done_request_accepted", groupsFirstName($0.peerName.groupsIfBlank(tr("group_fallback_they")))) }
+            .map { GroupText.named($0.peerName, "group_done_request_accepted", "group_done_request_accepted_unnamed") }
         locked { reloadRequests() }
         return r.mapError { GroupFailure(GroupText.error($0)) }
     }
 
     func decline(_ requestId: String) -> GroupResult<String> {
         let r = Result { try api.chatDecline(requestId) }
-            .map { tr("group_done_request_declined", groupsFirstName($0.peerName.groupsIfBlank(tr("group_fallback_they")))) }
+            .map { GroupText.named($0.peerName, "group_done_request_declined", "group_done_request_declined_unnamed") }
         locked { reloadRequests() }
         return r.mapError { GroupFailure(GroupText.error($0)) }
     }
@@ -651,7 +733,7 @@ final class GroupsController: ObservableObject, GroupEvents, GroupRequestEvents,
     /// Block (P5: they are told) and decline.
     func blockRequester(_ requestId: String, did: String) -> GroupResult<String> {
         let r = Result { () -> GroupChatRequest in try api.block(did); return try api.chatDecline(requestId) }
-            .map { tr("group_done_request_blocked", groupsFirstName($0.peerName.groupsIfBlank(tr("group_fallback_they")))) }
+            .map { GroupText.named($0.peerName, "group_done_request_blocked", "group_done_request_blocked_unnamed") }
         locked { reloadRequests() }
         return r.mapError { GroupFailure(GroupText.error($0)) }
     }
@@ -659,7 +741,7 @@ final class GroupsController: ObservableObject, GroupEvents, GroupRequestEvents,
     func onChatRequest(request: GroupChatRequest) {
         locked { reloadRequests() }
         if request.outgoing && request.state == .accepted && request.contactAdded {
-            write { _notice = tr("group_notice_request_accepted", groupsFirstName(request.peerName.groupsIfBlank(tr("group_fallback_they")))) }
+            write { _notice = GroupText.named(request.peerName, "group_notice_request_accepted", "group_notice_request_accepted_unnamed") }
         }
     }
 

@@ -337,7 +337,7 @@ private struct HostAskCard: View {
     let d: GroupDetail
     var body: some View {
         if let by = GroupText.hostAsker(d) {
-            GroupsNoticeCard(bg: tin.warn, fg: tin.onWarn, title: tr("group_host_asked_title", groupsFirstName(by), d.name),
+            GroupsNoticeCard(bg: tin.warn, fg: tin.onWarn, title: by.groupsIsBlank ? tr("group_host_asked_title_admin", d.name) : tr("group_host_asked_title", groupsFirstName(by), d.name),
                 text: tr("group_host_asked_text")) {
                 HStack(spacing: 8) {
                     GroupsFlowButton(text: tr("group_host_here"), style: .filled, height: 44) { session.exec({ session.ctl.acceptHost(d.id, accept: true) }, session.sayDone) }
@@ -383,7 +383,7 @@ private struct GroupItem: View {
     @ViewBuilder private var removedItem: some View {
         if let r = d.removal {
             let names = r.flags.map { session.name($0.byDid, $0.byName) }.reduce(into: [String]()) { if !$0.contains($1) { $0.append($1) } }
-            let who = names.count > 1 ? tr("group_names_and", names.dropLast().joined(separator: ", "), names.last!) : names.joined(separator: ", ")
+            let who = trList(names)
             GroupsNoticeCard(bg: tin.erc, fg: tin.onErc, title: trn("group_removed_card_title", r.flags.count),
                 text: tr("group_removed_card_text", who)) {
                 NavigationLink(value: GroupsRoute.removal(d.id)) {
@@ -399,7 +399,7 @@ private struct GroupItem: View {
         if m.delivery == .waiting { return (ReceiptTick.waiting, tr("group_waiting_for_host")) }
         var t = ReceiptTick.onlyHere
         if let r = receipt, r.tick != ReceiptTick.none { t = r.tick }
-        return (t, lines.map { $0.prefix(2).joined(separator: ", ") } ?? tr("group_receipt_sent"))
+        return (t, lines.map { trList(Array($0.prefix(2))) } ?? tr("group_receipt_sent"))
     }
 
     /// Runs: same author, same day, within 5 minutes (Conversation.svelte `join`).
@@ -469,10 +469,10 @@ func groupReceiptLines(_ r: GroupReceiptStatus) -> [String] {
     var out = [tr("group_receipt_delivered", Int(r.delivered), String(r.eligible)), tr("group_receipt_read", Int(r.read), String(r.eligible))]
     for (key, want) in [("group_receipt_level_read", ReceiptLevel.read), ("group_receipt_level_delivered", .delivered), ("group_receipt_level_not_yet", .unconfirmed)] {
         let n = r.members.filter { $0.eligible && $0.receipts.level == want }.map(who)
-        if !n.isEmpty { out.append(tr(key, n.joined(separator: ", "))) }
+        if !n.isEmpty { out.append(tr(key, trList(n))) }
     }
     let gone = r.members.filter { !$0.eligible }.map(who)
-    if !gone.isEmpty { out.append(tr("group_receipt_also", gone.joined(separator: ", "))) }
+    if !gone.isEmpty { out.append(tr("group_receipt_also", trList(gone))) }
     return out
 }
 

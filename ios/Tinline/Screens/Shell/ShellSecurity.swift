@@ -117,7 +117,7 @@ struct ShellPhraseShownScreen: View {
                     ShellHint(tr("security_only_you"))
                     Text(tr("security_keep_private")).font(TinType.bodyL).foregroundStyle(tin.ink2)
                     HStack(spacing: 8) {
-                        ForEach([(true, tr("security_tab_key")), (false, tr("security_tab_words"))], id: \.1) { asKey, label in
+                        ForEach([(true, tr("security_tab_key")), (false, trn("security_tab_words", 24))], id: \.1) { asKey, label in
                             let on = state.asKey == asKey
                             Button { state = state.select(asKey); copied = false; error = "" } label: {
                                 Text(label).font(TinType.label).foregroundStyle(on ? tin.onPrc : tin.ink).padding(12)
@@ -128,7 +128,7 @@ struct ShellPhraseShownScreen: View {
                     }
                     if state.asKey { ShellKeyCard(key: shown ? key : "\u{2022}\u{2022}\u{2022}\u{2022} \u{2022}\u{2022}\u{2022}\u{2022} \u{2022}\u{2022}\u{2022}\u{2022} \u{2022}\u{2022}\u{2022}\u{2022}") }
                     else { ShellWordGrid(phrase: phrase, hidden: !shown) }
-                    if state.asKey && key.isEmpty { ShellHint(tr("security_key_failed")) }
+                    if state.asKey && key.isEmpty { ShellHint(tr("security_key_failed", "24")) }
                     ShellTinButton(text: shown ? tr("security_hide") : tr("security_reveal"), style: .outlined, enabled: !state.asKey || !key.isEmpty) {
                         state = shown ? state.hide() : state.reveal(ShellClock.monoMs()); now = ShellClock.monoMs(); copied = false; error = ""
                     }

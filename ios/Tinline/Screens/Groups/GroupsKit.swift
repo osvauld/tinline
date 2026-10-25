@@ -598,7 +598,7 @@ struct GroupsFlagMeter: View {
                     .animation(GroupsMotion.enterAnim(reduced), value: filled)
             }
         }
-        .accessibilityElement(children: .ignore).accessibilityLabel(desc ?? tr("group_flags_count_desc", String(filled), String(total)))
+        .accessibilityElement(children: .ignore).accessibilityLabel(desc ?? trn("group_flags_count_desc", filled, String(total)))
     }
     private func color(_ i: Int) -> Color {
         if i < filled { return tin.grpDangerBtn }
@@ -706,18 +706,21 @@ enum GroupsTime {
     static func dayOnly(_ ms: UInt64) -> String { format("d MMM", ms) }
 
     /// "Oct 10, 14:02"
-    static func whenFull(_ ms: UInt64) -> String { format("MMM d, HH:mm", ms) }
+    static func whenFull(_ ms: UInt64) -> String { tr("group_when_date", format("MMMd", ms), clock(ms)) }
 
     /// "Yesterday, 03:12" / "Today, 09:00" / "Oct 3, 10:00"
     static func dayAndTime(_ ms: UInt64, _ nowMs: UInt64) -> String {
-        (0...1).contains(daysAgo(ms, nowMs)) ? "\(dayLabel(ms, nowMs)), \(clock(ms))" : whenFull(ms)
+        switch daysAgo(ms, nowMs) {
+        case ...0: return tr("group_when_today", clock(ms))
+        case 1: return tr("group_when_yesterday", clock(ms))
+        default: return whenFull(ms)
+        }
     }
 
     private static func format(_ pattern: String, _ ms: UInt64) -> String {
         let f = DateFormatter()
         f.locale = .current
         f.setLocalizedDateFormatFromTemplate(pattern)
-        if pattern.hasSuffix("HH:mm") { f.dateFormat = pattern }
         return f.string(from: date(ms))
     }
 }

@@ -108,6 +108,13 @@ final class NodeGroupsDirectory: GroupsDirectory {
 var groupsYou: String { tr("group_you") }
 
 extension GroupsDirectory {
+    /// Like `name(of:)`, but nil when nobody can name them (not a contact, no name given by the group), so the caller can
+    /// pick a whole sentence for an unknown person instead of slotting a stand-in word.
+    func knownName(of did: String, fallback: String) -> String? {
+        if let c = contacts.first(where: { $0.did == did }), !c.name.groupsIsBlank { return c.name }
+        return fallback.groupsIsBlank ? nil : fallback
+    }
+
     /// A DID as the user knows it: their contact name, else what the group calls them (android `nameOf`).
     func name(of did: String, fallback: String, me: String) -> String {
         if did == me { return groupsYou }

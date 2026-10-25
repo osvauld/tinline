@@ -186,7 +186,7 @@ struct ChatCardPrompts: View {
                     HStack(spacing: 12) {
                         TinAvatar(did: p.did, size: 44)
                         VStack(alignment: .leading, spacing: 0) {
-                            Text(p.known ? tr("chat_card_chat_with", p.name.isEmpty ? tr("chat_card_them") : p.name) : tr("chat_card_add_name", p.name.isEmpty ? tr("chat_card_this_contact") : p.name))
+                            Text(p.known ? (p.name.isEmpty ? tr("chat_card_chat_with_unnamed") : tr("chat_card_chat_with", p.name)) : (p.name.isEmpty ? tr("chat_card_add_name_unnamed") : tr("chat_card_add_name", p.name)))
                                 .font(TinType.bodyL.weight(.bold)).foregroundStyle(tin.ink).lineLimit(1)
                             Text(p.known ? tr("chat_card_known_sub") : tr("chat_card_found_sub"))
                                 .font(TinType.bodyM).foregroundStyle(tin.ink2)

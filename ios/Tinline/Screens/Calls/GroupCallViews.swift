@@ -111,14 +111,25 @@ struct GroupCallLayer: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
+    private func hostPill(_ k: GroupCallUi.GcHostKind) -> String {
+        switch k {
+        case .thisPhone: return tr("call_group_you_host")
+        case .yourOtherDevice: return tr("call_group_host_is_yours")
+        case .member(let n): return tr("call_group_host_is", n)
+        case .unknownMember: return tr("call_group_host_is_someone")
+        case .none: return ""
+        }
+    }
+
     /** .host: "Call host: Arjun's device" with the info icon; it opens About this call. */
     private func host(_ s: GcState) -> some View {
-        let host = ui.gcHost(s)
+        let host = ui.gcHostKind(s)
+        let hasHost: Bool = { if case .none = host { return false }; return true }()
         return ZStack {
-            if let host, s.connected || s.phase == .connecting {
+            if hasHost, s.connected || s.phase == .connecting {
                 Button { ui.about(true) } label: {
                     HStack(spacing: 8) {
-                        Text(s.hosting ? tr("call_group_you_host") : tr("call_group_host_is", host)).font(CallFont.figtree(13)).foregroundStyle(tin.ink)
+                        Text(hostPill(host)).font(CallFont.figtree(13)).foregroundStyle(tin.ink)
                         CallIcon.info.image.font(.system(size: 14)).foregroundStyle(tin.ink).opacity(0.75)
                     }
                     .padding(.horizontal, 14).frame(minHeight: 44).contentShape(Capsule())
@@ -178,16 +189,22 @@ private struct GcAboutCard: View {
     let s: GcState
     @Environment(\.tin) var tin
     var body: some View {
-        let h = ui.gcHost(s) ?? tr("call_host_fallback")
-        let host = h.prefix(1).uppercased() + h.dropFirst()
         let p = CallFont.figtree(13)
+        let about: AttributedString = {
+            let strong: (inout AttributedString, Range<AttributedString.Index>) -> Void = { s, r in s[r].foregroundColor = tin.ink; s[r].font = CallFont.figtree(13, .semibold) }
+            switch ui.gcHostKind(s) {
+            case .thisPhone: return trRich("call_group_about_this_phone", style: strong)
+            case .yourOtherDevice: return trRich("call_group_about_your_other", style: strong)
+            case .member(let n): return trRich("call_group_about_member", n, style: strong)
+            case .unknownMember: return trRich("call_group_about_someone", style: strong)
+            case .none: return trRich("call_group_about_unknown", style: strong)
+            }
+        }()
         CallScrimCard(onDismiss: { ui.about(false) }) {
             VStack(alignment: .leading, spacing: 8) {
                 Text(tr("call_about_title")).font(CallFont.figtree(17, .semibold)).foregroundStyle(tin.ink)
-                (Text(host).foregroundStyle(tin.ink).fontWeight(.semibold)
-                 + Text(" " + tr(s.hosting ? "call_group_about_carrying" : "call_group_about_carries"))
-                    .foregroundStyle(tin.ink2))
-                    .font(p)
+                Text(about)
+                    .font(p).foregroundStyle(tin.ink2)
                 Text(tr("call_group_about_trust"))
                     .font(p).foregroundStyle(tin.ink2)
                 Text(tr("call_group_about_who"))

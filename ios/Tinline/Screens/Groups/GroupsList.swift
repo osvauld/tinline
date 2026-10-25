@@ -158,13 +158,13 @@ private struct GroupsTab: View {
     }
 
     private func invitationCard(_ inv: GroupInvitation) -> some View {
-        let who = session.name(inv.inviterDid, inv.inviterName)
+        let who = session.dir.knownName(of: inv.inviterDid, fallback: inv.inviterName)
         let busy = joining == inv.id
         return GroupsReqCard {
             HStack(spacing: 12) {
                 TinAvatar(did: inv.inviterDid, size: 40)
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(groupsBoldIn(tr("group_invited_you", groupsFirstName(who), inv.groupName), groupsFirstName(who), inv.groupName)).font(GroupsType.body).foregroundStyle(tin.ink)
+                    Text(who.map { trRich("group_invited_you", groupsFirstName($0), inv.groupName, style: groupsStrong) } ?? trRich("group_invited_you_someone", inv.groupName, style: groupsStrong)).font(GroupsType.body).foregroundStyle(tin.ink)
                     Text(tr("group_valid_until", GroupsTime.dayOnly(inv.expires))).font(GroupsType.sub).foregroundStyle(tin.ink2)
                 }
                 Spacer(minLength: 0)
@@ -188,17 +188,17 @@ private struct GroupsTab: View {
     }
 
     private func requestCard(_ r: GroupChatRequest) -> some View {
-        let name = session.name(r.peerDid, r.peerName)
+        let name = session.dir.knownName(of: r.peerDid, fallback: r.peerName)
         return GroupsReqCard {
             HStack(spacing: 12) {
                 TinAvatar(did: r.peerDid, size: 40)
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(groupsBoldIn(tr("group_wants_to_chat", name), name)).font(GroupsType.body).foregroundStyle(tin.ink)
+                    Text(name.map { trRich("group_wants_to_chat", $0, style: groupsStrong) } ?? trRich("group_wants_to_chat_someone", style: groupsStrong)).font(GroupsType.body).foregroundStyle(tin.ink)
                     Text(tr("group_member_of", r.groupName)).font(GroupsType.sub).foregroundStyle(tin.ink2)
                 }
                 Spacer(minLength: 0)
             }
-            Text(tr("group_request_accept_note", groupsFirstName(name))).font(GroupsType.sub).foregroundStyle(tin.ink2)
+            Text(name.map { tr("group_request_accept_note", groupsFirstName($0)) } ?? tr("group_request_accept_note_unnamed")).font(GroupsType.sub).foregroundStyle(tin.ink2)
             GroupsActs(top: 0) {
                 GroupsButton(text: tr("group_block"), kind: .dangerQuiet) { session.exec({ session.ctl.blockRequester(r.id, did: r.peerDid) }, session.sayDone) }
                 GroupsButton(text: tr("group_decline"), kind: .quiet) { session.exec({ session.ctl.decline(r.id) }, session.sayDone) }
@@ -258,25 +258,8 @@ private struct GroupsTab: View {
     }
 }
 
-/// "**a** b **c**": the playground's `<b>` runs inside a line (650 there, 600 here). Odd parts are plain.
-/// `text` with the first occurrence of each `bold` substring in the body-strong font (the names in "A invited you to B").
-func groupsBoldIn(_ text: String, _ bold: String...) -> AttributedString {
-    var out = AttributedString(text)
-    for b in bold where !b.isEmpty {
-        if let r = out.range(of: b) { out[r].font = GroupsType.bodyStrong }
-    }
-    return out
-}
-
-func groupsBold(_ parts: String...) -> AttributedString {
-    var out = AttributedString()
-    for (i, p) in parts.enumerated() {
-        var a = AttributedString(p)
-        if i % 2 == 0 { a.font = GroupsType.bodyStrong }
-        out += a
-    }
-    return out
-}
+/// Restyles the `**bold**` runs of a markdown sentence in the groups body-strong font (`trRich(key, args) { groupsStrong($0, $1) }`).
+func groupsStrong(_ s: inout AttributedString, _ r: Range<AttributedString.Index>) { s[r].font = GroupsType.bodyStrong }
 
 /// The tab's top rows (`.wrap > .row`): a 48 pt accent-soft disc with a 22 pt glyph, a title and a sub-line, 64 pt.
 private struct TopRowLabel: View {
