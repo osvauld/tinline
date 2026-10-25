@@ -113,6 +113,9 @@ dependencies {
     // analytics, no crashlytics). `check` for the liberum edition: scripts/check_no_google.py.
     "playImplementation"("com.google.firebase:firebase-messaging:24.1.2")
     "playImplementation"("com.google.android.gms:play-services-base:18.5.0")
+    // play-services-base pulls androidx.fragment 1.1; the permission launchers need >= 1.3 (lint
+    // InvalidFragmentVersionForActivityResult fails the release build otherwise).
+    "playImplementation"("androidx.fragment:fragment:1.8.9")
     implementation(platform("androidx.compose:compose-bom:2026.09.00"))
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.ui:ui")

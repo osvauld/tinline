@@ -32,7 +32,7 @@ fun AvailabilitySheet(
             Column(Modifier.weight(1f)) {
                 Text("Available for calls", style = TinType.titleL.copy(fontSize = 20.sp, lineHeight = 26.sp), color = c.ink)
                 Text(
-                    "Your line stays open in the background so calls ring like a normal phone.",
+                    "When this is on, calls ring like a normal phone.",
                     Modifier.padding(top = 4.dp), style = TinType.bodyM, color = c.ink2,
                 )
             }
