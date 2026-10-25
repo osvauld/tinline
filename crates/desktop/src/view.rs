@@ -176,6 +176,8 @@ impl App {
     }
 
     pub(super) fn view(&self, _id: iced::window::Id) -> El<'_> {
+        static SEEN: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+        crate::startup::mark_once(&SEEN, "first view");
         let t = self.t();
         let body: El = if self.call.is_some() && !self.call_ui.minimized && self.incoming_card().is_none() {
             self.call_view(t)

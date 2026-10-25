@@ -55,6 +55,7 @@ mod frames;
 mod video_surface;
 mod reason;
 mod single;
+mod startup;
 mod tray;
 mod ui;
 mod voice;
@@ -318,6 +319,7 @@ fn test_env_f(k: &str) -> Option<f64> {
 }
 
 fn main() -> Result<(), String> {
+    startup::begin();
     let mut args: Vec<String> = std::env::args().skip(1).collect();
     let mut data = None;
     if let Some(i) = args.iter().position(|a| a == "--data") {
@@ -365,6 +367,7 @@ fn main() -> Result<(), String> {
     let audio = Arc::new(audio::Ctl::default());
     let node = Node::new(data.to_string_lossy().into(), Arc::new(Events { tx: tx.clone(), audio: audio.clone() }))
         .map_err(|e| e.to_string())?;
+    startup::mark("node");
     audio.attach(&node);
     node.set_chat_events(Arc::new(ChatBridge(tx.clone())));
     node.set_group_events(Arc::new(GroupBridge(tx.clone())));
@@ -377,6 +380,7 @@ fn main() -> Result<(), String> {
     hostcond::spawn(&node);
     // No passphrase: the key kept in the keyring opens it, so launch goes straight to Home.
     keystore::auto_unlock(keystore::system(), &data, &node);
+    startup::mark("auto_unlock");
     let notice_tx = tx.clone();
     audio.set_notice(move |m| {
         let _ = notice_tx.send(Ev::AudioNotice(m));
@@ -455,5 +459,6 @@ fn main() -> Result<(), String> {
         test_pass: test_env("P2P_PASSPHRASE").filter(|p| !p.is_empty()),
         audio,
     });
+    startup::mark("run");
     app::run().map_err(|e| e.to_string())
 }
