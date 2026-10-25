@@ -99,12 +99,12 @@ class CallVideo(private val app: P2pApp) : VideoEvents {
 
     fun setCamera(on: Boolean) {
         paused = false
-        if (on && !Perms.granted(app, Manifest.permission.CAMERA)) { _problem.value = "Camera permission needed - they can still hear you"; return }
+        if (on && !Perms.granted(app, Manifest.permission.CAMERA)) { _problem.value = appString(R.string.video_camera_permission); return }
         _problem.value = null
         try { app.node.setCamera(on) } catch (e: Exception) { Log.w(TAG, "setCamera($on): $e") }
     }
 
-    fun cameraDenied() { _problem.value = "Camera permission needed - they can still hear you" }
+    fun cameraDenied() { _problem.value = appString(R.string.video_camera_permission) }
 
     fun flip() { _front.value = !_front.value }
 
@@ -227,7 +227,7 @@ class CallVideo(private val app: P2pApp) : VideoEvents {
                 testLog("camera started front=$front preference=$capturePreference (actual size from analysis frames)")
             } catch (e: Exception) {
                 Log.w(TAG, "bind camera: $e")
-                _problem.value = "Camera unavailable"
+                _problem.value = appString(R.string.video_camera_unavailable)
             }
         }, ContextCompat.getMainExecutor(app))
     }

@@ -19,6 +19,7 @@ import kotlin.math.min
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -31,7 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.withStyle
 
-/** CallScreen.svelte's copy: never claim encryption while dialling or ringing. */
+/** CallScreen.svelte's copy: never claim encryption while dialling or ringing. i18n-deferred: HostCondTest asserts this English text; the screens use [callStatusText]. */
 internal fun callStatus(active: Boolean, ringing: Boolean, reconnecting: Boolean, secs: Long): String = when {
     active && reconnecting -> "Reconnecting…"
     active -> uniffi.present.clock(secs)
@@ -39,9 +40,22 @@ internal fun callStatus(active: Boolean, ringing: Boolean, reconnecting: Boolean
     else -> "Calling…"
 }
 
+/** i18n-deferred: HostCondTest asserts this English text; the screens use [callPrivacyText]. */
 internal fun callPrivacy(active: Boolean, name: String): String = if (active)
     "End-to-end encrypted. Your voice is encrypted on this device and only decrypted on $name’s."
 else "Connecting to $name. Once the call is connected, it is end-to-end encrypted."
+
+/** [callStatus] in the app's language (same cases; needs the running app). */
+internal fun callStatusText(active: Boolean, ringing: Boolean, reconnecting: Boolean, secs: Long): String = when {
+    active && reconnecting -> appString(R.string.call_reconnecting)
+    active -> uniffi.present.clock(secs)
+    ringing -> appString(R.string.call_status_ringing)
+    else -> appString(R.string.call_status_calling)
+}
+
+/** [callPrivacy] in the app's language (needs the running app). */
+internal fun callPrivacyText(active: Boolean, name: String): String =
+    if (active) appString(R.string.call_privacy_active, name) else appString(R.string.call_privacy_connecting, name)
 
 /** Fixed, mirrored 44 dp action cells with the 28 dp live mark independently centered. The end cell is the
  *  signal (SignalBars, where the "i" was): tapping it opens About this call. */
@@ -60,19 +74,20 @@ internal fun CallTop(active: Boolean, ringing: Boolean, onMinimise: (() -> Unit)
     Box(Modifier.fillMaxWidth().height(48.dp)) {
         if (onMinimise != null) Box(Modifier.align(Alignment.CenterStart)) {
             // ← back, like every other screen: to where I was; the call goes on in the strip.
-            CallTopButton(PgIcons.Back, "Back. The call continues", onMinimise)
+            CallTopButton(PgIcons.Back, stringResource(R.string.call_back_continues), onMinimise)
         }
         if (onMessage != null) Box(Modifier.align(Alignment.CenterEnd).padding(end = 44.dp)) {
-            CallTopButton(PgIcons.Chat, "Message. The call continues", onMessage)
+            CallTopButton(PgIcons.Chat, stringResource(R.string.call_message_continues), onMessage)
         }
         TinMark(28.dp, live = true, state = look.state, sway = look.sway, description = look.label,
             modifier = Modifier.align(Alignment.Center))
         if (onInfo != null) Box(Modifier.align(Alignment.CenterEnd)) {
             val up = active && !reconnecting && signal > 0
             val label = when {
-                active && reconnecting -> "About this call. Reconnecting."
-                up -> "About this call. ${signalWord(signal)} signal, ${if (direct == true) "direct" else "relayed"}."
-                else -> "About this call"
+                active && reconnecting -> stringResource(R.string.call_about_reconnecting)
+                up -> stringResource(R.string.call_about_signal, signalWord(signal),
+                    stringResource(if (direct == true) R.string.call_path_direct else R.string.call_path_relayed))
+                else -> stringResource(R.string.call_about)
             }
             Box(Modifier.size(44.dp).clip(CircleShape).clickable(role = Role.Button, onClick = onInfo)
                 .semantics { contentDescription = label }, contentAlignment = Alignment.Center) {
@@ -95,20 +110,21 @@ private fun CallTopButton(icon: ImageVector, label: String, onClick: () -> Unit)
 internal fun CallControls(muted: Boolean, speaker: Boolean, camera: Boolean, onMute: () -> Unit,
     onSpeaker: () -> Unit, onCamera: (() -> Unit)?, onFlip: (() -> Unit)?, onEnd: () -> Unit,
     /** With a headset connected the speaker slot becomes the route picker: its name and icon. */
-    routeCaption: String = "Speaker", routeIcon: ImageVector = CallGlyphs.Speaker,
+    routeCaption: String = stringResource(R.string.call_speaker), routeIcon: ImageVector = CallGlyphs.Speaker,
     /** I pressed End: its glyph plays the cut string letting go (HangupGlyph.kt). */
     ending: Boolean = false) {
     val c = Tin.c
     val fill = if (c.dark) lerp(c.sf, c.ink, .14f) else c.sf
+    val speakerText = stringResource(R.string.call_speaker)
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        CallControl("Mute", if (muted) "Muted" else "Mute", if (muted) CallGlyphs.MicOff else CallGlyphs.Mic,
+        CallControl(stringResource(R.string.call_mute), stringResource(if (muted) R.string.call_muted else R.string.call_mute), if (muted) CallGlyphs.MicOff else CallGlyphs.Mic,
             if (muted) c.ink else fill, if (muted) c.bg else c.ink, onMute, selected = muted)
-        CallControl("Camera", "Camera", if (camera) CallGlyphs.Video else CallGlyphs.VideoOff,
+        CallControl(stringResource(R.string.call_camera), stringResource(R.string.call_camera), if (camera) CallGlyphs.Video else CallGlyphs.VideoOff,
             if (camera) c.ink else fill, if (camera) c.bg else c.ink, onCamera ?: {}, enabled = onCamera != null, selected = camera)
-        CallControl("End call", "End", CallGlyphs.End, c.callButtonEnd, Color.White, onEnd,
+        CallControl(stringResource(R.string.call_end_call), stringResource(R.string.call_end), CallGlyphs.End, c.callButtonEnd, Color.White, onEnd,
             glyph = { HangupGlyph(ending, Color.White, Modifier.size(28.dp)) })
-        CallControl("Flip camera", "Flip", CallGlyphs.Flip, fill, c.ink, onFlip ?: {}, enabled = camera && onFlip != null)
-        CallControl(if (routeCaption == "Speaker") "Speaker" else "Audio: $routeCaption", routeCaption, routeIcon, if (speaker) c.ink else fill,
+        CallControl(stringResource(R.string.call_flip_camera), stringResource(R.string.call_flip), CallGlyphs.Flip, fill, c.ink, onFlip ?: {}, enabled = camera && onFlip != null)
+        CallControl(if (routeCaption == speakerText) speakerText else stringResource(R.string.call_audio_route, routeCaption), routeCaption, routeIcon, if (speaker) c.ink else fill,
             if (speaker) c.bg else c.ink, onSpeaker, selected = speaker)
     }
 }
@@ -175,12 +191,12 @@ internal fun CallFocus(name: String, did: String, active: Boolean, ringing: Bool
                         style = TinType.h1.copy(fontSize = 28.sp, lineHeight = 34.sp, fontWeight = FontWeight.SemiBold),
                         color = c.ink, textAlign = TextAlign.Center, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Box(Modifier.padding(top = 6.dp).heightIn(min = 30.dp), contentAlignment = Alignment.Center) {
-                        Text(if (incoming) (if (video) "Tinline video call" else "Tinline voice call") else callStatus(active, ringing, reconnecting, secs),
+                        Text(if (incoming) stringResource(if (video) R.string.call_incoming_video else R.string.call_incoming_voice) else callStatusText(active, ringing, reconnecting, secs),
                             style = TinType.bodyL.copy(fontSize = if (active && !reconnecting) 20.sp else 17.sp, lineHeight = 30.sp,
                                 fontWeight = FontWeight.Medium, fontFeatureSettings = "tnum"), color = c.ink, maxLines = 1)
                     }
                     // The path, on the main screen: honest, and About this call explains it.
-                    Text(if (active && !reconnecting) "End-to-end encrypted" + (direct?.let { if (it) " · Direct" else " · Relayed" } ?: "") else " ", Modifier.padding(top = 10.dp).heightIn(min = 18.dp),
+                    Text(if (active && !reconnecting) stringResource(when (direct) { true -> R.string.call_e2ee_direct; false -> R.string.call_e2ee_relayed; null -> R.string.call_e2ee }) else " ", Modifier.padding(top = 10.dp).heightIn(min = 18.dp),
                         style = TinType.bodyM.copy(fontSize = 13.sp, lineHeight = 18.sp), color = c.ink, maxLines = 1)
                     // Keep a two-line error cell even when there is no microphone/video problem.
                     Text(problem ?: " ", Modifier.padding(top = 8.dp).fillMaxWidth().heightIn(min = 38.dp),
@@ -211,6 +227,7 @@ internal fun CallInfo(name: String, active: Boolean, onDismiss: () -> Unit, reco
     nerds: (@Composable () -> Unit)? = null) {
     val c = Tin.c
     val first = name.trim().substringBefore(' ')
+    val aboutDesc = stringResource(R.string.call_about)
     // An overlay in the call screen's own window (not a dialog window), so the system bar insets apply.
     androidx.activity.compose.BackHandler(onBack = onDismiss)
     run {
@@ -222,42 +239,44 @@ internal fun CallInfo(name: String, active: Boolean, onDismiss: () -> Unit, reco
                 .depth(Depth.Sheet, SmoothCornerShape(24.dp)).clip(SmoothCornerShape(24.dp))
                 .background(c.sfRaised).verticalScroll(rememberScrollState()).clickable(interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, indication = null, onClick = {})
                 .padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 16.dp)
-                .semantics { contentDescription = "About this call" }) {
+                .semantics { contentDescription = aboutDesc }) {
                 val p = TinType.bodyM.copy(fontSize = 13.sp, lineHeight = 19.sp)
-                Text("About this call", style = TinType.titleM.copy(fontSize = 17.sp, lineHeight = 24.sp), color = c.ink)
+                Text(aboutDesc, style = TinType.titleM.copy(fontSize = 17.sp, lineHeight = 24.sp), color = c.ink)
                 if (active) {
                     Text(androidx.compose.ui.text.buildAnnotatedString {
-                        withStyle(androidx.compose.ui.text.SpanStyle(color = c.ink, fontWeight = FontWeight.SemiBold)) { append("End-to-end encrypted.") }
-                        append(" ${if (video) "Your voice and picture are" else "Your voice is"} encrypted on this device and only decrypted on $name’s.")
+                        withStyle(androidx.compose.ui.text.SpanStyle(color = c.ink, fontWeight = FontWeight.SemiBold)) { append(stringResource(R.string.call_info_e2ee)) }
+                        append(" ")
+                        append(stringResource(if (video) R.string.call_info_enc_video else R.string.call_info_enc_voice, name))
                     }, Modifier.padding(top = 10.dp), style = p, color = c.ink2)
                     val up = !reconnecting && signal > 0
                     Row(Modifier.padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         SignalBars(if (up) signal else 0, c.ink, Modifier.padding(top = 1.dp), wave = reconnecting, size = 22.dp)
                         Text(androidx.compose.ui.text.buildAnnotatedString {
                             withStyle(androidx.compose.ui.text.SpanStyle(color = c.ink, fontWeight = FontWeight.SemiBold)) {
-                                append(if (reconnecting) "Reconnecting" else "${signalWord(signal)} signal · ${if (direct == true) "Direct" else "Relayed"}")
+                                append(if (reconnecting) stringResource(R.string.call_reconnecting_plain)
+                                    else stringResource(if (direct == true) R.string.call_info_signal_direct else R.string.call_info_signal_relayed, signalWord(signal)))
                             }
                             append("\n")
                             append(when {
-                                reconnecting -> "The connection dropped for a moment. Tinline is finding a way back to $first."
-                                direct == true -> "Your call goes straight between your device and $first’s."
-                                else -> "Your devices can’t reach each other directly right now, so a relay passes the call along. It can’t ${if (video) "listen or watch" else "listen"}."
+                                reconnecting -> stringResource(R.string.call_info_reconnect_body, first)
+                                direct == true -> stringResource(R.string.call_info_direct_body, first)
+                                else -> stringResource(if (video) R.string.call_info_relay_body_video else R.string.call_info_relay_body_voice)
                             })
-                            if (up && signal == 1) append(" The line is weak, so $first’s voice may break up.")
+                            if (up && signal == 1) { append(" "); append(stringResource(R.string.call_info_weak, first)) }
                         }, Modifier.weight(1f).heightIn(min = 95.dp), style = p, color = c.ink2)
                     }
-                    if (up && rttMs != null) Text("$rttMs ms round trip · ${lossText(lossPct ?: 0.0)}% lost",
+                    if (up && rttMs != null) Text(stringResource(R.string.call_info_rtt, rttMs.toString(), lossText(lossPct ?: 0.0)),
                         Modifier.padding(top = 6.dp, start = 34.dp), style = TinFs.meta, color = c.ink2)
                     // Codec per direction while that camera is on. Both rows are always there on a video call
                     // (blank when off), so the card never changes height.
                     if (nerds != null) nerds()
-                    else if (video) for ((who, what) in listOf("Your video" to sendCodec, "Their video" to recvCodec)) Row(
+                    else if (video) for ((who, what) in listOf(stringResource(R.string.call_info_your_video) to sendCodec, stringResource(R.string.call_info_their_video) to recvCodec)) Row(
                         Modifier.padding(top = 6.dp, start = 34.dp).heightIn(min = 19.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         Text(who, Modifier.width(88.dp), style = TinFs.meta, color = c.ink2)
                         Text(what, style = TinFs.meta, color = c.ink)
                     }
-                } else Text(callPrivacy(false, name), Modifier.padding(top = 10.dp), style = p, color = c.ink2)
-                TinButton("Got it", onDismiss, Modifier.padding(top = 16.dp), height = 44.dp)
+                } else Text(callPrivacyText(false, name), Modifier.padding(top = 10.dp), style = p, color = c.ink2)
+                TinButton(stringResource(R.string.call_got_it), onDismiss, Modifier.padding(top = 16.dp), height = 44.dp)
             }
         }
     }

@@ -59,7 +59,19 @@ object Routes {
     fun unnamedBluetooth(st: RouteState): Boolean =
         st.available.any { it.kind == AudioRoute.Kind.Bluetooth && (it.name.isBlank() || it.name == GENERIC_BT) }
 
-    /** Short label for the route button and sheet. */
+    /**
+     * Short label for the route button and sheet, in the app's language (needs the running app).
+     * Same choices as [label], which keeps its English text because the JVM unit tests assert it.
+     */
+    fun display(r: AudioRoute): String = when (r.kind) {
+        AudioRoute.Kind.Earpiece -> appString(R.string.call_route_phone)
+        AudioRoute.Kind.Speaker -> appString(R.string.call_speaker)
+        AudioRoute.Kind.Wired -> r.name.ifBlank { appString(R.string.call_route_headset) }
+        AudioRoute.Kind.Bluetooth -> r.name.takeUnless { it.isBlank() || it == GENERIC_BT } ?: appString(R.string.call_route_bluetooth)
+        AudioRoute.Kind.Other -> r.name.ifBlank { appString(R.string.call_route_other) }
+    }
+
+    /** English label, asserted by AudioRoutesTest. // i18n-deferred: JVM tests assert the English text; the UI uses [display]. */
     fun label(r: AudioRoute): String = when (r.kind) {
         AudioRoute.Kind.Earpiece -> "Phone"
         AudioRoute.Kind.Speaker -> "Speaker"
