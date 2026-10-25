@@ -4120,7 +4120,7 @@ where = [
   "ios restore_use_words: Button that discards the pasted key to type words instead.",
   "desktop signup_use_my_words_instead: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = "इसके बजाय मेरे शब्द इस्तेमाल करें"
+text = "मेरे शब्द इस्तेमाल करें"
 
 [t_2d078dee86]
 en = "Paste from clipboard"

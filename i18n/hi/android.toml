@@ -1474,7 +1474,7 @@ text = "अपने 24 शब्द क्रम से टाइप करे�
 text = "रिकवरी कुंजी"
 
 [onboarding_restore_use_words]
-text = "इसके बजाय मेरे शब्द इस्तेमाल करें"
+text = "मेरे शब्द इस्तेमाल करें"
 
 [onboarding_restore_paste]
 text = "क्लिपबोर्ड से पेस्ट करें"
