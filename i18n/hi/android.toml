@@ -126,9 +126,6 @@ text = "स्वीकार करने पर {name} सिर्फ़ स�
 [groups_list_block]
 text = "ब्लॉक करें"
 
-[groups_list_sent]
-text = "भेजा गया"
-
 [groups_list_yours]
 text = "आपके ग्रुप"
 
@@ -255,9 +252,6 @@ text = "{group} में कौन ऑनलाइन है"
 [groups_online_lag]
 text = "वे सदस्य जिन्हें होस्ट ने पिछले एक मिनट में देखा है। यह सूची कुछ सेकंड पीछे हो सकती है।"
 
-[groups_online_cap]
-text = "होस्ट एक बार में {max} लोगों तक दिखाता है, इसलिए और लोग भी हो सकते हैं।"
-
 [groups_online_hidden]
 text = "यहाँ दूसरों को आपका नाम नहीं दिखता। इसे आप सेटिंग › प्राइवेसी में बदल सकते हैं।"
 
@@ -276,9 +270,6 @@ other = "{count} एडमिन फ़्लैग के बाद हटा�
 
 [groups_msg_removed_by]
 text = "{names} ने फ़्लैग किया। पहले मिले संदेश आप अब भी पढ़ सकते हैं; अब कुछ नया नहीं आएगा।"
-
-[groups_msg_and]
-text = "{list} और {last}"
 
 [groups_msg_see_details]
 text = "जानकारी देखें"
@@ -427,18 +418,6 @@ text = "एडमिन"
 [groupsb_role_member_lc]
 text = "सदस्य"
 
-[groupsb_desc_host]
-text = ", होस्ट"
-
-[groupsb_desc_callhost]
-text = ", कॉल होस्ट"
-
-[groupsb_desc_open]
-text = "। विकल्प खोलें"
-
-[groupsb_flags_of]
-text = "{total} में से {flags} फ़्लैग"
-
 [groupsb_of_total]
 text = "{total} में से {n}"
 
@@ -505,9 +484,6 @@ text = "ग्रुप लिंक"
 [groupsb_public_sec]
 text = "पब्लिक ग्रुप"
 
-[groupsb_open_link]
-text = "लिंक खोलें"
-
 [groupsb_open_link_on]
 text = "लिंक वाला कोई भी जुड़ सकता है"
 
@@ -556,12 +532,6 @@ other = "{count} होस्ट ऑनलाइन हैं। पोस्ट
 
 [groupsb_hosts_offline]
 text = "कोई होस्ट ऑनलाइन नहीं है। आपकी पोस्ट सहेजी गई हैं और होस्ट के आते ही भेज दी जाएँगी।"
-
-[groupsb_online]
-text = "ऑनलाइन"
-
-[groupsb_offline]
-text = "ऑफ़लाइन"
 
 [groupsb_also_hosts_calls]
 text = "कॉल भी होस्ट करता है"
@@ -826,9 +796,6 @@ text = "सदस्य जोड़ें"
 [groupsb_add_to]
 text = "{name} में जोड़ें"
 
-[groupsb_contacts_selected]
-text = "संपर्क · {n} चुने गए"
-
 [groupsb_no_contacts]
 text = "जोड़ने के लिए कोई संपर्क नहीं है। जिन्हें आपने ब्लॉक किया है या जिन्होंने आपको ब्लॉक किया है, वे यहाँ नहीं दिखते।"
 
@@ -859,9 +826,6 @@ text = "पेस्ट करें"
 [groupsb_scan]
 text = "स्कैन करें"
 
-[groupsb_not_in_contacts]
-text = "कोई ऐसा व्यक्ति जो आपके संपर्कों में नहीं है"
-
 [groupsb_join_invited_by]
 text = "{name} ने आमंत्रित किया"
 
@@ -879,9 +843,6 @@ text = "जुड़ने पर यह फ़ोन ग्रुप के ह
 
 [groupsb_joining]
 text = "जुड़ रहे हैं…"
-
-[groupsb_the_group]
-text = "ग्रुप"
 
 [groupsb_invite_link_title]
 text = "आमंत्रण लिंक"
@@ -921,9 +882,6 @@ text = "इस फ़ोन में अब वह कुंजी नहीं
 
 [unlock_keylost_restore]
 text = "रिकवरी शब्दों से वापस लाएँ"
-
-[unlock_keylost_notice]
-text = "आपने पासफ़्रेज़ नहीं रखा था, इसलिए 24 रिकवरी शब्द ही वापसी का एकमात्र तरीका हैं। आपके संपर्क बने रहेंगे।"
 
 [accounts_switch_account]
 text = "खाता बदलें"
@@ -1035,9 +993,6 @@ text = "सिर्फ़ आपके लिए"
 
 [profile_account_recovery]
 text = "खाता रिकवरी"
-
-[profile_account_recovery_sub]
-text = "आपकी कुंजी और 24 शब्द"
 
 [profile_code_title]
 text = "आपका संपर्क कोड"
@@ -1249,9 +1204,6 @@ text = "कोई तय समय नहीं"
 [profile_until_tomorrow]
 text = "कल {time}"
 
-[profile_until_weekday]
-text = "{day} {time}"
-
 [profile_err_name_taken]
 text = "इस नाम की जानकारी पहले से है।"
 
@@ -1357,12 +1309,6 @@ text = "जानकारी को एक नाम दें।"
 [profile_err_key_bad]
 text = "यह नाम नहीं चल सकता। इसे छोटा रखें, बिना कंट्रोल वर्णों के।"
 
-[profile_err_value_long]
-text = "यह बहुत लंबा है। हर जानकारी 16 KiB तक हो सकती है।"
-
-[profile_err_fields_full]
-text = "आपकी 64 जानकारियाँ पूरी हो गई हैं। नई जोड़ने के लिए एक हटाएँ।"
-
 [profile_err_profile_full]
 text = "आपकी प्रोफ़ाइल भर गई है। और जोड़ने के लिए कुछ जानकारी हटाएँ।"
 
@@ -1414,9 +1360,6 @@ text = "खाता वापस लाएँ"
 [onboarding_step_link]
 text = "अपने खाते से लिंक करें"
 
-[onboarding_other_device]
-text = "आपका दूसरा डिवाइस"
-
 [onboarding_device_personal]
 text = "निजी फ़ोन"
 
@@ -1467,9 +1410,6 @@ other = "{count} शब्द अभी बाकी हैं।"
 [onboarding_restore_lead_key]
 text = "आपकी रिकवरी कुंजी आ गई है। यह इसी फ़ोन पर रहती है।"
 
-[onboarding_restore_lead_words]
-text = "अपने 24 शब्द क्रम से टाइप करें, या पहले बॉक्स में शब्द या अपनी रिकवरी कुंजी पेस्ट करें। ये इसी फ़ोन पर रहते हैं।"
-
 [onboarding_restore_key_caption]
 text = "रिकवरी कुंजी"
 
@@ -1478,9 +1418,6 @@ text = "मेरे शब्द इस्तेमाल करें"
 
 [onboarding_restore_paste]
 text = "क्लिपबोर्ड से पेस्ट करें"
-
-[onboarding_restore_filled]
-text = "24 में से {filled}"
 
 [onboarding_welcome_title_adding]
 text = "खाता जोड़ें"
@@ -1520,9 +1457,6 @@ text = "जिस डिवाइस पर आपका खाता पहल�
 
 [onboarding_choose_restore]
 text = "मेरा खाता वापस लाएँ"
-
-[onboarding_choose_restore_sub]
-text = "अपने 24 रिकवरी शब्द टाइप करें। यह फ़ोन खाली संपर्क सूची से शुरू होगा।"
 
 [onboarding_done_title_named]
 text = "आपकी लाइन खुली है, {name}"
@@ -1602,12 +1536,6 @@ text = "यह रही आपकी रिकवरी कुंजी"
 [onboarding_phrase_title_words]
 text = "ये रहे आपके रिकवरी शब्द"
 
-[onboarding_phrase_lead_key]
-text = "आपकी रिकवरी कुंजी आपके 24 शब्द ही हैं, एक लाइन में।\nइसे किसी सुरक्षित जगह पेस्ट करें। पासवर्ड मैनेजर बढ़िया रहता है।"
-
-[onboarding_phrase_lead_words]
-text = "अगर आप कभी डिवाइस बदलें, तो ये 24 शब्द आपका खाता साथ ले आते हैं।\nइनकी एक कॉपी किसी सुरक्षित जगह रखें। कागज़ बढ़िया रहता है।"
-
 [onboarding_phrase_saved_key]
 text = "मैंने सहेज ली"
 
@@ -1656,17 +1584,8 @@ text = "आप इसका नाम बाद में बदल सकते
 [onboarding_restored_title_adding]
 text = "{name} इस फ़ोन में जुड़ गया"
 
-[onboarding_restored_name_fallback_title]
-text = "आपका खाता"
-
 [onboarding_restored_lead_adding]
 text = "एक समय में सिर्फ़ चुना हुआ खाता ऑनलाइन रहता है, इसलिए अभी {name} ऑनलाइन है और आपका दूसरा खाता रुका हुआ है। आप सेटिंग में खाता बदल सकते हैं।"
-
-[onboarding_restored_name_fallback_lead]
-text = "यह खाता"
-
-[onboarding_restored_lead]
-text = "आपका खाता इस फ़ोन पर वापस आ गया है। आपके संपर्क, चैट और कॉल हिस्ट्री आपके दूसरे डिवाइस पर रहते हैं, हमारे पास नहीं। यह फ़ोन खाली संपर्क सूची से शुरू होगा।"
 
 [onboarding_open_tinline]
 text = "Tinline खोलें"
@@ -1730,15 +1649,6 @@ text = "आपका खाता आपका है।"
 
 [onboarding_terms_account_body]
 text = "यह आपके डिवाइस पर रहता है, किसी सर्वर पर नहीं। आपके रिकवरी शब्द ही वापस आने का रास्ता हैं, इसलिए उन्हें संभालकर रखें।"
-
-[onboarding_terms_by_continuing]
-text = "आगे बढ़ने का मतलब है कि आप {terms} से सहमत हैं और आपने {privacy} पढ़ ली है।"
-
-[onboarding_terms_link_terms]
-text = "इस्तेमाल की शर्तें"
-
-[onboarding_terms_link_privacy]
-text = "प्राइवेसी पॉलिसी"
 
 [onboarding_perms_title]
 text = "ताकि कॉल आप तक पहुँच सकें"
@@ -2234,12 +2144,6 @@ text = "इसे निजी रखें। जिसके पास यह 
 [settings_backup_key]
 text = "कुंजी"
 
-[settings_backup_words]
-text = "24 शब्द"
-
-[settings_backup_key_failed]
-text = "कुंजी तैयार नहीं हो पाई। इसके बजाय अपने 24 शब्द इस्तेमाल करें।"
-
 [settings_hide]
 text = "छिपाएँ"
 
@@ -2408,9 +2312,6 @@ text = "अभी सिंक करें"
 [devices_syncing]
 text = "{name} के साथ सिंक हो रहा है…"
 
-[devices_fallback_the_device]
-text = "डिवाइस"
-
 [devices_remove_account]
 text = "इस फ़ोन से खाता हटाएँ"
 
@@ -2431,12 +2332,6 @@ text = "सहेजें"
 
 [devices_name_field]
 text = "डिवाइस का नाम"
-
-[devices_fallback_this_device]
-text = "यह डिवाइस"
-
-[devices_fallback_device]
-text = "डिवाइस"
 
 [devices_confirm_remove_title]
 text = "इस फ़ोन से अपना खाता हटाएँ?"
@@ -2540,14 +2435,8 @@ text = "यह कोड अपने नए डिवाइस को दिख
 [link_show_body]
 text = "नए डिवाइस पर “किसी डिवाइस से लिंक करें” चुनें, फिर “इसके बजाय स्कैन करें”, और उसे इस कोड की ओर करें।"
 
-[link_fallback_new_device_cap]
-text = "नया डिवाइस"
-
 [link_match_title]
 text = "क्या कोड मेल खाते हैं?"
-
-[link_match_body]
-text = "आपके खाते से जुड़ना चाहता है। उस पर नीचे जैसे ही छह अंक दिखने चाहिए।"
 
 [link_match_note]
 text = "खुद मिलाकर देखें। अगर अलग हैं, तो हो सकता है किसी और ने पहले कोड स्कैन कर लिया हो।"
@@ -2557,9 +2446,6 @@ text = "मेल नहीं खाते"
 
 [link_match]
 text = "मेल खाते हैं"
-
-[link_fallback_new_device]
-text = "नया डिवाइस"
 
 [link_connecting]
 text = "जुड़ रहा है…"
@@ -2588,12 +2474,6 @@ text = "जब दोनों डिवाइस एक साथ ऑनला�
 [link_scan_h1]
 text = "अपने नए डिवाइस का कोड स्कैन करें"
 
-[link_scan_step1]
-text = "1.  नए डिवाइस पर Tinline खोलें और {action} चुनें।"
-
-[link_scan_step2]
-text = "2.  उस पर एक QR कोड और एक छोटा कोड दिखेगा। ये 5 मिनट तक, एक बार काम करते हैं।"
-
 [link_scan_qr]
 text = "QR कोड स्कैन करें"
 
@@ -2608,12 +2488,6 @@ text = "यह पासफ़्रेज़ सही नहीं है।"
 
 [link_approve_title]
 text = "{name} को मंज़ूरी दें?"
-
-[link_approve_warning]
-text = "मंज़ूरी देने पर आपके {bold} {name} को भेजे जाएँगे। वह पूरी तरह आपकी कॉपी बन जाता है: वह आपकी चैट पढ़ सकता है और आपके नाम से काम कर सकता है। सिर्फ़ उसी डिवाइस को मंज़ूरी दें जो आपके हाथ में है।"
-
-[link_approve_bold]
-text = "रिकवरी शब्द"
 
 [link_dont_link]
 text = "लिंक न करें"
@@ -2785,12 +2659,6 @@ text = "संपर्क अनुरोध"
 
 [notif_request_text]
 text = "{name} आपको संपर्क में जोड़ना चाहते हैं"
-
-[notif_accepted_fallback]
-text = "आपका संपर्क"
-
-[notif_accepted_text]
-text = "आपका अनुरोध स्वीकार किया। आपकी लाइन खुली है।"
 
 [notif_missed_title]
 text = "मिस्ड कॉल"
@@ -3324,12 +3192,6 @@ text = "नया कोड"
 [card_none_found]
 text = "उस संदेश में कोई Tinline संपर्क कार्ड नहीं है"
 
-[card_them]
-text = "उन"
-
-[card_this_contact]
-text = "इस संपर्क"
-
 [card_chat_with]
 text = "{name} से चैट करें?"
 
@@ -3347,9 +3209,6 @@ text = "खोलें"
 
 [card_add]
 text = "जोड़ें"
-
-[groupsc_removed_you_flags]
-text = "{flags} एडमिन फ़्लैग के बाद आपको हटा दिया गया"
 
 [groupsc_admin_granted_other]
 text = "{by} ने {sub} को एडमिन बनाया"
@@ -3478,14 +3337,9 @@ text = "अब सब फिर से पोस्ट कर सकते ह�
 [groupsc_req_declined]
 text = "अस्वीकार कर दिया। {name} को बताया गया है कि अनुरोध अस्वीकार हुआ।"
 
-[groupsc_they]
-text = "वे"
-
 [groupsc_unread]
-text = "बिना पढ़े: {count}"
-
-[groupsc_flags_of]
-text = "{total} में से {filled} फ़्लैग"
+one = "{count} बिना पढ़ा"
+other = "{count} बिना पढ़े"
 
 [gcall_name]
 text = "ग्रुप कॉल"
@@ -3496,12 +3350,6 @@ text = "ग्रुप"
 [gcall_finding_host]
 text = "कॉल होस्ट ढूँढ़ा जा रहा है…"
 
-[gcall_connecting]
-text = "जुड़ रहा है…"
-
-[gcall_reconnecting]
-text = "फिर से जुड़ रहा है…"
-
 [gcall_already_in_call]
 text = "आप पहले से एक कॉल में हैं।"
 
@@ -3511,23 +3359,8 @@ text = "कॉल खत्म"
 [gcall_ended_host_lost]
 text = "कॉल खत्म — होस्ट चला गया"
 
-[gcall_battery_limited]
-text = "बैटरी 15 % से कम। होस्टिंग सीमित है: एक समय में एक ही व्यक्ति सुनाई देगा, और कोई नया नहीं जुड़ सकता।"
-
 [gcall_no_host]
 text = "कोई कॉल होस्ट उपलब्ध नहीं"
-
-[gcall_cant_connect]
-text = "जुड़ नहीं पाया"
-
-[gcall_host_this_phone]
-text = "यह फ़ोन"
-
-[gcall_host_device]
-text = "{name} का डिवाइस"
-
-[gcall_the_host]
-text = "कॉल होस्ट"
 
 [gcall_minimize]
 text = "कॉल छोटी करें"
@@ -3542,17 +3375,11 @@ text = "अभी सिर्फ़ आप हैं। दूसरों क�
 one = "कॉल में {count} व्यक्ति"
 other = "कॉल में {count} लोग"
 
-[gcall_more]
-text = "+{count} और"
-
 [gcall_ok]
 text = "ठीक है"
 
 [gcall_you_host]
 text = "कॉल होस्ट आप हैं"
-
-[gcall_host_label]
-text = "कॉल होस्ट: {host}"
 
 [gcall_muted]
 text = "म्यूट है"
@@ -3562,12 +3389,6 @@ text = "म्यूट करें"
 
 [gcall_leave]
 text = "छोड़ें"
-
-[gcall_about_is_carrying]
-text = "यह कॉल चला रहा है। कॉल में सभी इससे जुड़ते हैं, यह आवाज़ आगे पहुँचाता है और कई लोगों के एक साथ बोलने पर तय करता है कि कौन सुनाई दे।"
-
-[gcall_about_carries]
-text = "यह कॉल चलाता है। कॉल में सभी इससे जुड़ते हैं, यह आवाज़ आगे पहुँचाता है और कई लोगों के एक साथ बोलने पर तय करता है कि कौन सुनाई दे।"
 
 [gcall_about_encrypted]
 text = "कॉल होस्ट से आपका कनेक्शन एन्क्रिप्टेड है, लेकिन आवाज़ कॉल होस्ट तक पहुँचती है, इसलिए वह यह कॉल सुन सकता है। कॉल के लिए आप उस पर वैसे ही भरोसा करते हैं जैसे पोस्ट के लिए ग्रुप होस्ट पर।"
@@ -3908,9 +3729,6 @@ text = "पलटें"
 [call_audio_route]
 text = "ऑडियो: {route}"
 
-[call_reconnecting]
-text = "फिर से जुड़ रहा है…"
-
 [call_reconnecting_plain]
 text = "फिर से जुड़ रहा है"
 
@@ -3926,14 +3744,11 @@ text = "चुना गया"
 [call_they]
 text = "वे"
 
-[call_them]
-text = "उन"
-
 [call_default_name]
 text = "Tinline कॉल"
 
 [call_notif_fallback_title]
-text = "कॉल"
+text = "Tinline कॉल"
 
 [call_answer_video_label]
 text = "वीडियो"
@@ -3960,10 +3775,10 @@ text = "आपकी कॉल के दौरान {name} की कॉल �
 text = "काटें और जवाब दें"
 
 [call_waiting_end_answer_desc]
-text = "कॉल काटकर जवाब दें"
+text = "काटें और जवाब दें"
 
 [call_waiting_ends_with]
-text = "इनके साथ आपकी कॉल कटेगी:"
+text = "{name} के साथ आपकी कॉल कट जाएगी"
 
 [call_on_hold]
 text = "आपकी दूसरी कॉल चलने तक होल्ड पर"
@@ -4172,9 +3987,6 @@ text = "कल सुबह तक"
 [avail_until_on]
 text = "जब तक मैं फिर से चालू न करूँ"
 
-[avail_you]
-text = "आप"
-
 [avail_note]
 text = "जब आप दूर हों, तब कॉल करने वालों को “{name} से संपर्क नहीं हो पाया” दिखता है। कुछ भी कतार में नहीं रखा जाता और किसी को वजह नहीं बताई जाती।"
 
@@ -4317,7 +4129,7 @@ text = "{name} की ओर से {call}"
 text = "{name} की कॉल खोलें"
 
 [shell_end_and_answer]
-text = "कॉल काटकर जवाब दें"
+text = "काटें और जवाब दें"
 
 [shell_tab_chats]
 text = "चैट"
@@ -4468,20 +4280,11 @@ text = "जवाब नहीं मिला"
 [calls_what_cancelled]
 text = "रद्द की गई"
 
-[calls_what_unreachable]
-text = "जुड़ नहीं पाया"
-
 [calls_profile_desc]
 text = "{name} की प्रोफ़ाइल"
 
 [calls_cant_call]
 text = "कॉल नहीं कर सकते"
-
-[calls_row_desc]
-text = "{name}, {what} कॉल, {time}। {action}"
-
-[calls_row_desc_duration]
-text = "{name}, {what} कॉल, {duration}, {time}। {action}"
 
 [calls_group_info_desc]
 text = "{name}, ग्रुप की जानकारी"
@@ -4579,3 +4382,146 @@ text = "कुछ गड़बड़ हो गई"
 
 [debuglog_send_title]
 text = "डीबग लॉग भेजें"
+
+[groupsc_sys_joined_other]
+text = "{name} अब ग्रुप में हैं"
+
+[groupsc_sys_left_you]
+text = "आपने छोड़ दिया"
+
+[groupsc_sys_left_other]
+text = "{name} ने ग्रुप छोड़ दिया"
+
+[groupsc_admin_granted_you]
+text = "{by} ने आपको एडमिन बनाया"
+
+[groupsc_removed_you_group]
+text = "आपको इस ग्रुप से हटा दिया गया"
+
+[groupsc_preview_you]
+text = "आप: {text}"
+
+[groupsc_preview_other]
+text = "{name}: {text}"
+
+[groupsc_members]
+one = "{count} सदस्य"
+other = "{count} सदस्य"
+
+[groupsc_admins_only_post]
+text = "यहाँ सिर्फ़ एडमिन पोस्ट करते हैं"
+
+[groupsc_admins_only_error]
+text = "यहाँ सिर्फ़ एडमिन पोस्ट करते हैं।"
+
+[groupsc_req_pending_named]
+text = "{name} का इंतज़ार · {group} के ज़रिए"
+
+[groupsc_req_declined_named]
+text = "{name} ने अस्वीकार किया"
+
+[groupsc_req_blocked_named]
+text = "{name} ने आपको ब्लॉक किया"
+
+[groupsc_pick_member]
+text = "पहले से सदस्य"
+
+[groupsc_pick_invited_waiting]
+text = "आमंत्रित · इंतज़ार"
+
+[groupsc_invited_not_delivered]
+text = "आमंत्रित · अभी नहीं पहुँचा"
+
+[groupsc_invite_joined]
+text = "जुड़ गए"
+
+[groupsc_err_removed]
+text = "आपको इस ग्रुप से हटा दिया गया है।"
+
+[groupsc_err_already_contact]
+text = "ये पहले से आपके संपर्क हैं। चैट से इन्हें संदेश भेजें।"
+
+[groupsc_err_timeout]
+text = "किसी होस्ट ने समय पर जवाब नहीं दिया। जब कोई होस्ट ऑनलाइन हो, तब फिर से कोशिश करें।"
+
+[groupsc_type_first]
+text = "पहले कोई संदेश लिखें।"
+
+[groupsc_pick_first]
+text = "पहले किसी को चुनें।"
+
+[groupsc_invited_one_named]
+text = "{name} को आमंत्रण भेज दिया। स्वीकार करते ही वे जुड़ जाएँगे।"
+
+[groupsc_invited_many]
+one = "{count} आमंत्रण भेजा गया। हर व्यक्ति स्वीकार करते ही जुड़ जाएगा।"
+other = "{count} आमंत्रण भेजे गए। हर व्यक्ति स्वीकार करते ही जुड़ जाएगा।"
+
+[groupsc_decline_inv_named]
+text = "अस्वीकार किया। {name} को दिखेगा कि आपने अस्वीकार किया।"
+
+[groupsc_link_closed]
+text = "खुला लिंक बंद हो गया। जो पहले से हैं, वे बने रहेंगे; नए लोग आमंत्रण से जुड़ेंगे।"
+
+[groupsc_request_sent_named]
+text = "{name} को अनुरोध भेज दिया। उनके जवाब तक यह चैट में इंतज़ार करेगा।"
+
+[groupsc_req_accept_named]
+text = "स्वीकार किया। {name} सिर्फ़ संदेशों के लिए जोड़े गए हैं और उनका डिवाइस जुड़ते ही चैट में दिखेंगे; जब तक आप अनुमति न दें, कॉल बंद रहेंगी।"
+
+[groupsc_req_block_named]
+text = "{name} ब्लॉक हैं और अब और अनुरोध नहीं भेज सकते।"
+
+[groupsc_notice_accepted_named]
+text = "{name} ने आपका अनुरोध स्वीकार कर लिया। अब आप एक-दूसरे को संदेश भेज सकते हैं; जब तक आप में से कोई अनुमति न दे, कॉल बंद रहेंगी।"
+
+[video_hd_line_on]
+text = "ज़्यादा साफ़ वीडियो चालू"
+
+[video_hd_line_paused]
+text = "HD रुका है · कमज़ोर कनेक्शन"
+
+[video_hd_metered]
+text = "मोबाइल डेटा पर HD ज़्यादा डेटा लेता है · HD पर टैप करें"
+
+[profile_busy_unsupported]
+text = "“व्यस्त” अभी उपलब्ध नहीं है। आपकी कॉल सेटिंग पहले जैसी हैं।"
+
+[blocking_row_blocked_you]
+text = "आपको ब्लॉक किया है"
+
+[devices_unlinked_msg_unnamed]
+text = "डिवाइस का लिंक हटा दिया गया"
+
+[call_unreachable_title_unnamed]
+text = "उनसे संपर्क नहीं हो पाया"
+
+[calls_desc_incoming]
+text = "आने वाली कॉल"
+
+[calls_desc_missed]
+text = "मिस्ड कॉल"
+
+[calls_desc_cancelled]
+text = "रद्द की गई कॉल"
+
+[calls_desc_other]
+text = "Tinline कॉल"
+
+[groups_list_sent_requests]
+text = "भेजे गए अनुरोध"
+
+[groupsb_host_online]
+text = "ऑनलाइन"
+
+[groupsb_host_offline]
+text = "ऑफ़लाइन"
+
+[calls_what_other]
+text = "Tinline कॉल"
+
+[groupsb_role_host_lc]
+text = "होस्ट"
+
+[groupsb_role_callhost_lc]
+text = "कॉल होस्ट"
