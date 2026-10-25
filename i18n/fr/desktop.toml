@@ -1,5 +1,8 @@
 # Generated from i18n/tm/fr.toml by scripts/i18n_tm.py apply. Edit the tm file.
 
+[common_a_device_name_is]
+text = "Un nom d’appareil fait de {min} à {max} caractères."
+
 [common_about_this_call]
 text = "À propos de cet appel"
 
@@ -110,6 +113,9 @@ text = "Direct"
 
 [common_done]
 text = "OK"
+
+[common_give_this_computer_a]
+text = "Donnez à cet ordinateur un nom de {min} à {max} caractères."
 
 [common_got_it]
 text = "Compris"
@@ -926,6 +932,9 @@ text = "Réessayer"
 [gate_the_system_keyring_did]
 text = "Le trousseau du système n’a pas accepté la clé."
 
+[gate_these_24_words_are]
+text = "Ces {words} mots sont le seul moyen de restaurer votre identité sur un autre appareil."
+
 [gate_this_computer_no_longer]
 text = "Cet ordinateur n’a plus la clé qui l’ouvre, et son entrée dans le trousseau a disparu. Dès que vous restaurez, vos appels arrivent à nouveau."
 
@@ -937,6 +946,9 @@ text = "Nouvel essai…"
 
 [gate_turn_on]
 text = "Activer"
+
+[gate_you_didnt_set_a]
+text = "Vous n’avez pas défini de phrase secrète, donc vos {words} mots de récupération sont le seul moyen de revenir. Vos contacts restent."
 
 [gate_your_calls_come_through]
 text = "Vos appels arrivent à nouveau dès que vous êtes de retour en ligne."
@@ -1020,6 +1032,11 @@ text = "Un hôte garde une copie complète d’un groupe et transmet les message
 
 [group_a_host_keeps_a_full]
 text = "Un hôte garde une copie complète du groupe, transmet les messages pendant que les téléphones des membres sont en veille et connaît les adresses de groupe des membres. Il doit rester en marche. Héberger ne fait pas de vous un admin ; vous pouvez arrêter à tout moment."
+
+[group_a_host_lists_up]
+one = "Un hôte affiche jusqu’à {count} personne à la fois, il peut donc y en avoir d’autres."
+many = "Un hôte affiche jusqu’à {count} personnes à la fois, il peut donc y en avoir d’autres."
+other = "Un hôte affiche jusqu’à {count} personnes à la fois, il peut donc y en avoir d’autres."
 
 [group_a_host_stays_on]
 text = "Un hôte reste allumé et transmet les publications quand les autres sont hors ligne"
@@ -2290,6 +2307,11 @@ text = "Aucun profil disponible."
 [profile_no_sounds_from_tinline]
 text = "Aucun son de Tinline : sonnerie, tonalités d’appel, arrivées"
 
+[profile_not_seen_for_days]
+one = "Pas vu depuis {count} jour"
+many = "Pas vu depuis {count} jours"
+other = "Pas vu depuis {count} jours"
+
 [profile_not_set]
 text = "Non renseigné"
 
@@ -2608,6 +2630,9 @@ text = "Qui peut m’appeler"
 [profile_will_stop_syncing_with]
 text = "{name} cessera de se synchroniser avec votre compte et de sonner quand on vous appelle. {value}"
 
+[profile_write_these_24_words]
+text = "Notez ces {words} mots, dans l’ordre, et gardez-les dans un endroit privé."
+
 [profile_yes]
 text = "Oui"
 
@@ -2643,6 +2668,9 @@ text = "Vos initiales s’afficheront à la place."
 
 [profile_your_reads_stay_with]
 text = "Vos lectures restent privées"
+
+[profile_your_recovery_key_is]
+text = "Votre clé de récupération équivaut à vos {words} mots, en une seule ligne. Un gestionnaire de mots de passe est un bon endroit pour la ranger."
 
 [profile_your_recovery_phrase_is]
 text = "Vos mots de récupération sont le seul moyen de récupérer votre compte si vous perdez tous vos appareils. Toute personne qui les a peut agir en votre nom."
@@ -2931,6 +2959,9 @@ text = "Je l’ai enregistrée ailleurs"
 [signup_i_wrote_them_down]
 text = "Je les ai notés"
 
+[signup_if_you_ever_switch]
+text = "Si vous changez un jour d’appareil, ces {words} mots emportent votre compte avec vous."
+
 [signup_is_already_in_your]
 text = "{name} est déjà dans vos contacts."
 
@@ -2978,6 +3009,9 @@ text = "Pas pour les appels d’urgence."
 
 [signup_of]
 text = "{count} sur {total}"
+
+[signup_of_24]
+text = "{filled} sur {total}"
 
 [signup_only_the_people_you]
 text = "Seules les personnes que vous ajoutez le verront."
@@ -3093,11 +3127,20 @@ text = "Son code"
 [signup_this_computer_can_host]
 text = "Cet ordinateur peut héberger vos groupes"
 
+[signup_tinline_connects_your_straight]
+text = "Tinline relie votre ordinateur directement à celui de vos proches."
+
 [signup_tinline_doesnt_collect_your]
 text = "Tinline ne collecte pas vos contacts, vos appels ni votre position."
 
 [signup_two_devices_are_better]
 text = "Deux appareils valent mieux qu’un"
+
+[signup_type_your_24_recovery]
+text = "Saisissez vos {words} mots de récupération. Cet ordinateur démarre avec une liste de contacts vide."
+
+[signup_type_your_24_words]
+text = "Saisissez vos {words} mots dans l’ordre, ou collez-les, ou votre clé de récupération, dans la première case. Ils restent sur cet ordinateur."
 
 [signup_unlock]
 text = "Déverrouiller"
@@ -3129,6 +3172,9 @@ text = "Comment voulez-vous qu’on vous appelle ?"
 [signup_when_a_direct_line]
 text = "Quand une ligne directe n’est pas possible, un relais chiffré transmet l’appel. Il ne peut pas l’entendre."
 
+[signup_word_in_the_recovery]
+text = "Le mot {value} n’est pas dans la liste des mots de récupération. Vérifiez l’orthographe."
+
 [signup_words]
 text = "Mots"
 
@@ -3158,6 +3204,9 @@ text = "Il vous suffit d’un pseudo. Chiffré de bout en bout."
 [signup_you_type_it_each]
 text = "{value} Vous la saisissez à chaque démarrage de Tinline. Si vous l’oubliez, vos mots de récupération vous permettent d’en choisir une nouvelle."
 
+[signup_your_account_is_its]
+text = "Votre compte, ce sont ses mots de récupération : vous pouvez donc le retrouver sur cet ordinateur de deux façons."
+
 [signup_your_account_is_yours]
 text = "Votre compte vous appartient."
 
@@ -3166,6 +3215,9 @@ text = "Votre presse-papiers est vide pour le moment. Quand son code arrivera, c
 
 [signup_your_code]
 text = "Votre code"
+
+[signup_your_current_account_stays]
+text = "Votre compte actuel reste sur cet ordinateur."
 
 [signup_your_line_is_open]
 text = "Votre ligne est ouverte, {name}"
@@ -3178,6 +3230,12 @@ text = "Votre ligne avec {name} est ouverte. Dites bonjour."
 
 [signup_your_nickname]
 text = "Votre pseudo"
+
+[signup_your_recovery_key_is]
+text = "Votre clé de récupération est saisie. Elle reste sur cet ordinateur."
+
+[signup_your_recovery_key_is_the]
+text = "Votre clé de récupération équivaut à vos {words} mots, en une seule ligne."
 
 [signup_your_request_to_is]
 text = "Votre demande à {value} est en attente. Votre ligne s’ouvre quand cette personne accepte."
@@ -3254,6 +3312,11 @@ text = "Demain matin"
 [profile_busy_no_end]
 text = "Sans heure de fin"
 
+[signup_word_in_the_recovery_more]
+one = "Le mot {value} et {count} autre ne sont pas dans la liste des mots de récupération. Vérifiez l’orthographe."
+many = "Le mot {value} et {count} autres ne sont pas dans la liste des mots de récupération. Vérifiez l’orthographe."
+other = "Le mot {value} et {count} autres ne sont pas dans la liste des mots de récupération. Vérifiez l’orthographe."
+
 [signup_by_continuing_you_agree]
 text = "En continuant, vous acceptez les {terms} et confirmez avoir lu la {privacy}."
 
@@ -3265,6 +3328,12 @@ text = "Le nom ne peut pas contenir de caractères de contrôle ou de sens d’�
 
 [profile_err_name_long]
 text = "Ce nom est trop long. {limit} octets au maximum ; certains caractères en prennent plus d’un."
+
+[profile_err_nickname_chars]
+text = "Un surnom ne peut pas contenir de caractères de contrôle ou de sens d’écriture."
+
+[profile_err_nickname_long]
+text = "Ce surnom est trop long. {limit} octets au maximum ; certains caractères en prennent plus d’un."
 
 [profile_err_status_long]
 text = "C’est trop long pour un statut : {limit} octets au maximum, et certains caractères en prennent plus d’un."
@@ -3278,6 +3347,12 @@ text = "C’est trop long pour la section À propos : {limit} octets au maximu
 [profile_err_about_chars]
 text = "La section À propos ne peut pas contenir de caractères de contrôle ou de sens d’écriture."
 
+[profile_err_text_long]
+text = "C’est trop long : {limit} octets au maximum, et certains caractères en prennent plus d’un."
+
+[profile_err_text_chars]
+text = "Ce champ ne peut pas contenir de caractères de contrôle ou de sens d’écriture."
+
 [common_list_and]
 text = "{list} et {last}"
 
@@ -3289,6 +3364,11 @@ text = "Réponse à vous-même"
 
 [chat_replying_to_yourself]
 text = "Réponse à vous-même"
+
+[group_flags_of]
+one = "Signalements : {flags} sur {count}"
+many = "Signalements : {flags} sur {count}"
+other = "Signalements : {flags} sur {count}"
 
 [group_link_own]
 text = "Un lien pour un autre de vos appareils"
@@ -3397,3 +3477,18 @@ text = "Donnez un nom au groupe."
 
 [group_pick_someone_first]
 text = "Choisissez d’abord quelqu’un."
+
+[link_check_that_other_shows_this]
+text = "Vérifiez que l’autre appareil affiche ce code, puis validez là-bas."
+
+[link_link_other]
+text = "Associer l’autre appareil ?"
+
+[link_linking_other]
+text = "Association de l’autre appareil"
+
+[link_linked_other]
+text = "Autre appareil associé"
+
+[link_linked_to_account]
+text = "Associé à votre compte"

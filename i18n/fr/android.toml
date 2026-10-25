@@ -252,6 +252,11 @@ text = "Qui est en ligne dans {group}"
 [groups_online_lag]
 text = "Membres vus par un hôte dans la dernière minute. L’affichage peut avoir quelques secondes de retard."
 
+[groups_online_cap]
+one = "Un hôte affiche jusqu’à {count} personne à la fois, il peut donc y en avoir d’autres."
+many = "Un hôte affiche jusqu’à {count} personnes à la fois, il peut donc y en avoir d’autres."
+other = "Un hôte affiche jusqu’à {count} personnes à la fois, il peut donc y en avoir d’autres."
+
 [groups_online_hidden]
 text = "Les autres ne vous voient pas ici. Vous pouvez changer cela dans Paramètres › Confidentialité."
 
@@ -421,6 +426,11 @@ text = "admin"
 
 [groupsb_role_member_lc]
 text = "membre"
+
+[groupsb_flags_of]
+one = "Signalements : {flags} sur {count}"
+many = "Signalements : {flags} sur {count}"
+other = "Signalements : {flags} sur {count}"
 
 [groupsb_of_total]
 text = "{n} sur {total}"
@@ -806,6 +816,11 @@ text = "Ajouter des membres"
 [groupsb_add_to]
 text = "Ajouter à {name}"
 
+[groupsb_contacts_selected]
+one = "CONTACTS · {count} SÉLECTIONNÉ"
+many = "CONTACTS · {count} SÉLECTIONNÉS"
+other = "CONTACTS · {count} SÉLECTIONNÉS"
+
 [groupsb_no_contacts]
 text = "Aucun contact à ajouter. Les personnes que vous bloquez, ou qui vous bloquent, n’apparaissent pas."
 
@@ -892,6 +907,9 @@ text = "Ce téléphone n’a plus la clé qui ouvre votre compte. Cela arrive ap
 
 [unlock_keylost_restore]
 text = "Restaurer avec mes mots de récupération"
+
+[unlock_keylost_notice]
+text = "Vous n’avez pas défini de phrase secrète, donc vos {words} mots de récupération sont le seul moyen de revenir. Vos contacts restent."
 
 [accounts_switch_account]
 text = "Changer de compte"
@@ -1003,6 +1021,9 @@ text = "Vous seul"
 
 [profile_account_recovery]
 text = "Récupération du compte"
+
+[profile_account_recovery_sub]
+text = "Votre clé et vos {words} mots"
 
 [profile_code_title]
 text = "Votre code contact"
@@ -1319,6 +1340,12 @@ text = "Donnez un nom à l’information."
 [profile_err_key_bad]
 text = "Ce nom ne peut pas être utilisé. Gardez-le court, sans caractères de contrôle."
 
+[profile_err_value_long]
+text = "C’est trop long. Chaque information peut faire jusqu’à {max} Kio."
+
+[profile_err_fields_full]
+text = "Vous avez atteint {max} informations. Retirez-en une pour en ajouter une autre."
+
 [profile_err_profile_full]
 text = "Votre profil est plein. Retirez des informations pour en ajouter d’autres."
 
@@ -1422,6 +1449,9 @@ other = "Il manque encore {count} mots."
 [onboarding_restore_lead_key]
 text = "Votre clé de récupération est saisie. Elle reste sur ce téléphone."
 
+[onboarding_restore_lead_words]
+text = "Saisissez vos {words} mots dans l’ordre, ou collez-les, ou votre clé de récupération, dans la première case. Ils restent sur ce téléphone."
+
 [onboarding_restore_key_caption]
 text = "Clé de récupération"
 
@@ -1430,6 +1460,9 @@ text = "Utiliser plutôt mes mots"
 
 [onboarding_restore_paste]
 text = "Coller depuis le presse-papiers"
+
+[onboarding_restore_filled]
+text = "{filled} sur {words}"
 
 [onboarding_welcome_title_adding]
 text = "Ajouter un compte"
@@ -1469,6 +1502,9 @@ text = "Scannez un code sur un appareil qui a déjà votre compte. Vos contacts 
 
 [onboarding_choose_restore]
 text = "Restaurer mon compte"
+
+[onboarding_choose_restore_sub]
+text = "Saisissez vos {words} mots de récupération. Ce téléphone démarre avec une liste de contacts vide."
 
 [onboarding_done_title_named]
 text = "Votre ligne est ouverte, {name}"
@@ -1548,6 +1584,12 @@ text = "Voici votre clé de récupération"
 [onboarding_phrase_title_words]
 text = "Voici vos mots de récupération"
 
+[onboarding_phrase_lead_key]
+text = "Votre clé de récupération équivaut à vos {words} mots, en une seule ligne.\nCollez-la dans un endroit sûr. Un gestionnaire de mots de passe convient très bien."
+
+[onboarding_phrase_lead_words]
+text = "Si vous changez un jour d’appareil, ces {words} mots emportent votre compte avec vous.\nGardez-en une copie en lieu sûr. Le papier, c’est très bien."
+
 [onboarding_phrase_saved_key]
 text = "Je l’ai enregistrée"
 
@@ -1598,6 +1640,9 @@ text = "{name} est maintenant sur ce téléphone"
 
 [onboarding_restored_lead_adding]
 text = "Seul le compte sélectionné est en ligne à la fois : {name} est donc en ligne et votre autre compte est en pause. Vous pouvez changer dans Paramètres."
+
+[onboarding_restored_lead]
+text = "Votre compte est de retour sur ce téléphone. Vos contacts, discussions et historique d’appels sont gardés sur vos autres appareils, pas sur un serveur. Ce téléphone démarre avec une liste de contacts vide."
 
 [onboarding_open_tinline]
 text = "Ouvrir Tinline"
@@ -1661,6 +1706,9 @@ text = "Votre compte vous appartient."
 
 [onboarding_terms_account_body]
 text = "Il vit sur vos appareils, pas sur un serveur. Vos mots de récupération sont le moyen d’y revenir, alors gardez-les en lieu sûr."
+
+[onboarding_terms_by_continuing]
+text = "En continuant, vous acceptez les [Conditions d’utilisation](terms) et confirmez avoir lu la [Politique de confidentialité](privacy)."
 
 [onboarding_perms_title]
 text = "Pour que les appels vous parviennent"
@@ -2158,6 +2206,12 @@ text = "Gardez-la privée. Toute personne qui l’a peut agir en votre nom."
 [settings_backup_key]
 text = "Clé"
 
+[settings_backup_words]
+text = "{words} mots"
+
+[settings_backup_key_failed]
+text = "Impossible de préparer la clé. Utilisez plutôt vos {words} mots."
+
 [settings_hide]
 text = "Masquer"
 
@@ -2452,6 +2506,9 @@ text = "Sur le nouvel appareil, choisissez « Associer à un appareil », pu
 [link_match_title]
 text = "Les codes correspondent-ils ?"
 
+[link_match_body]
+text = "**{name}** veut rejoindre votre compte. Il devrait afficher les six mêmes chiffres que ci-dessous."
+
 [link_match_note]
 text = "Comparez-les vous-même. S’ils diffèrent, quelqu’un d’autre a peut-être scanné le code avant vous."
 
@@ -2488,6 +2545,12 @@ text = "Il se synchronise quand les deux appareils sont en ligne en même temps.
 [link_scan_h1]
 text = "Scannez le code sur votre nouvel appareil"
 
+[link_scan_step1]
+text = "Sur le nouvel appareil, ouvrez Tinline et choisissez {action}."
+
+[link_scan_step2]
+text = "Il affiche un QR code et un code court. Ils fonctionnent 5 minutes, une seule fois."
+
 [link_scan_qr]
 text = "Scanner le QR code"
 
@@ -2502,6 +2565,9 @@ text = "Ce n’est pas la bonne phrase secrète."
 
 [link_approve_title]
 text = "Valider {name} ?"
+
+[link_approve_warning]
+text = "Valider envoie vos **mots de récupération** à {name}. Cet appareil devient une copie complète de votre compte : il peut lire vos discussions et agir en votre nom. Ne validez qu’un appareil que vous avez en main."
 
 [link_dont_link]
 text = "Ne pas associer"
@@ -2673,6 +2739,9 @@ text = "Demande de contact"
 
 [notif_request_text]
 text = "{name} aimerait vous ajouter"
+
+[notif_accepted_text]
+text = "{name} a accepté votre demande. Votre ligne est ouverte."
 
 [notif_missed_title]
 text = "Appel manqué"
@@ -4513,6 +4582,36 @@ text = "Le statut Occupé n’est pas encore disponible. Vos réglages d’appel
 [blocking_row_blocked_you]
 text = "Vous a bloqué"
 
+[link_match_body_unnamed]
+text = "Le nouvel appareil veut rejoindre votre compte. Il devrait afficher les six mêmes chiffres que ci-dessous."
+
+[link_approve_title_unnamed]
+text = "Valider le nouvel appareil ?"
+
+[link_approve_warning_unnamed]
+text = "Valider envoie vos **mots de récupération** au nouvel appareil. Il devient une copie complète de votre compte : il peut lire vos discussions et agir en votre nom. Ne validez qu’un appareil que vous avez en main."
+
+[link_linking_unnamed]
+text = "Association du nouvel appareil"
+
+[link_done_title_unnamed]
+text = "Le nouvel appareil est associé"
+
+[onboarding_linked_title_unnamed]
+text = "Associé à votre autre appareil"
+
+[onboarding_restored_title_adding_unnamed]
+text = "Votre compte est maintenant sur ce téléphone"
+
+[onboarding_restored_lead_adding_unnamed]
+text = "Seul le compte sélectionné est en ligne à la fois : ce compte est donc en ligne et votre autre compte est en pause. Vous pouvez changer dans Paramètres."
+
+[devices_syncing_unnamed]
+text = "Synchronisation avec l’appareil…"
+
+[devices_confirm_unlink_title_unnamed]
+text = "Dissocier cet appareil ?"
+
 [devices_unlinked_msg_unnamed]
 text = "Appareil dissocié"
 
@@ -4548,3 +4647,6 @@ text = "hôte"
 
 [groupsb_role_callhost_lc]
 text = "hôte d’appel"
+
+[onboarding_linked_lead_unnamed]
+text = "Vos contacts et discussions arrivent depuis votre autre appareil et resteront synchronisés sur les deux."
