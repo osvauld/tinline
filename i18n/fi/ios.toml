@@ -6,6 +6,9 @@ text = "Odottaa lähetystä"
 [kit_tick_sent]
 text = "Lähetetty, odotetaan vahvistusta henkilön {first} laitteelta"
 
+[kit_tick_sent_their]
+text = "Lähetetty, odotetaan vahvistusta hänen laitteeltaan"
+
 [kit_tick_delivered]
 text = "Henkilön {first} laitteella"
 
@@ -14,6 +17,9 @@ text = "Heidän laitteellaan"
 
 [kit_tick_read]
 text = "Luettu henkilön {first} laitteella"
+
+[kit_tick_read_their]
+text = "Luettu hänen laitteellaan"
 
 [kit_tick_bad]
 text = "Ei toimitettu"
@@ -110,6 +116,9 @@ text = "Lisää"
 
 [chat_card_chat_with]
 text = "Avataanko keskustelu: {name}?"
+
+[chat_card_chat_with_unnamed]
+text = "Avataanko keskustelu tämän henkilön kanssa?"
 
 [chat_card_add_name]
 text = "Lisätäänkö {name}?"
@@ -592,6 +601,10 @@ text = "Nimeä ensin isäntälaite. Linkissä on yksi isäntälaite."
 [group_invites_link_valid]
 text = "Voimassa 7 päivää"
 
+[group_member_flags]
+one = "Merkinnät {count}/{total}"
+other = "Merkinnät {count}/{total}"
+
 [group_member_blocked_by_you]
 text = "Estit hänet"
 
@@ -633,6 +646,15 @@ text = "Isäntälaite"
 
 [group_role_call_host]
 text = "Puheluisäntä"
+
+[group_member_desc_owner]
+text = "{name}, omistaja. Avaa toiminnot"
+
+[group_member_desc_admin]
+text = "{name}, ylläpitäjä. Avaa toiminnot"
+
+[group_member_desc_member]
+text = "{name}, jäsen. Avaa toiminnot"
 
 [group_this_device]
 text = "Tämä laite"
@@ -725,6 +747,14 @@ text = "Sinuun kohdistuvat merkinnät"
 
 [group_flags_count]
 text = "{count}/{total}"
+
+[group_flags_count_desc]
+one = "Merkinnät {count}/{total}"
+other = "Merkinnät {count}/{total}"
+
+[group_flags_left]
+one = "Vielä yksi merkintä keneltä tahansa ylläpitäjältä poistaa sinut ryhmästä. Merkintöjä ei voi perua. Voit lukea ja kirjoittaa siihen asti."
+other = "Vielä {count} merkintää keneltä tahansa ylläpitäjältä poistaa sinut ryhmästä. Merkintöjä ei voi perua. Voit lukea ja kirjoittaa siihen asti."
 
 [group_removal_title]
 text = "Poistettu {total} ylläpitäjän merkinnän jälkeen"
@@ -853,14 +883,23 @@ text = "Poista isäntälaitteista"
 [group_member_cancel_callhost]
 text = "Peru puheluisäntäpyyntö"
 
+[group_member_cancel_callhost_device]
+text = "Peru puheluisäntäpyyntö · {device}"
+
 [group_member_cancel_callhost_sub]
 text = "Odotetaan, että henkilön {name} laite hyväksyy"
 
 [group_member_remove_callhost]
 text = "Poista puheluisännistä"
 
+[group_member_remove_callhost_device]
+text = "Poista puheluisännistä · {device}"
+
 [group_member_make_callhost]
 text = "Tee puheluisännäksi"
+
+[group_member_make_callhost_device]
+text = "Tee puheluisännäksi · {device}"
 
 [group_member_make_callhost_sub]
 text = "Pyytää henkilöä {name} välittämään ryhmäpuhelut. Hänen täytyy hyväksyä."
@@ -978,11 +1017,20 @@ text = "Odottaa isäntälaitetta"
 [group_req_pending]
 text = "Odotetaan: {name} · ryhmän {group} kautta"
 
+[group_req_pending_unnamed]
+text = "Odotetaan vastausta · ryhmän {group} kautta"
+
 [group_req_accepted_msgs]
 text = "{name} hyväksyi · vain viestit"
 
+[group_req_accepted_msgs_unnamed]
+text = "Hyväksytty · vain viestit"
+
 [group_req_accepted_connecting]
 text = "{name} hyväksyi · yhdistetään"
+
+[group_req_accepted_connecting_unnamed]
+text = "Hyväksytty · yhdistetään"
 
 [group_req_declined]
 text = "{name} hylkäsi"
@@ -1150,6 +1198,9 @@ text = "Hän on estetty eikä voi lähettää enempää pyyntöjä."
 [group_notice_request_accepted]
 text = "{name} hyväksyi pyyntösi. Voitte nyt lähettää viestejä toisillenne; puhelut pysyvät pois päältä, kunnes jompikumpi teistä sallii ne."
 
+[group_notice_request_accepted_unnamed]
+text = "Pyyntösi hyväksyttiin. Voitte nyt lähettää viestejä toisillenne; puhelut pysyvät pois päältä, kunnes jompikumpi teistä sallii ne."
+
 [group_calls_unavailable]
 text = "Ryhmäpuhelut eivät ole vielä käytettävissä täällä."
 
@@ -1240,6 +1291,9 @@ text = "{text}, {time}. Aloita puhelu tai liity siihen"
 
 [group_host_asked_title]
 text = "{name} pyysi tätä puhelinta isännöimään ryhmää {group}"
+
+[group_host_asked_title_admin]
+text = "Ylläpitäjä pyysi tätä puhelinta isännöimään ryhmää {group}"
 
 [group_host_asked_text]
 text = "Isäntälaite pitää täyden kopion ryhmästä, välittää viestit eteenpäin jäsenten puhelinten nukkuessa ja oppii jäsenten ryhmäosoitteet. Sen pitää pysyä verkossa, ja se kuluttaa akkua: jatkuvasti päällä oleva tietokone on parempi isäntälaite. Isännöinti ei tee sinusta ylläpitäjää."
@@ -1366,6 +1420,9 @@ text = "Liitytään…"
 [group_join_invited_by]
 text = "Kutsuja: {name}"
 
+[group_join_invited_by_unknown]
+text = "Kutsuja ei ole yhteystiedoissasi"
+
 [group_join_invited_by_you]
 text = "Kutsuja: sinä"
 
@@ -1374,6 +1431,9 @@ text = "Linkki omalle tilillesi"
 
 [group_join_owner]
 text = "Omistaja: {name}"
+
+[group_join_owner_unknown]
+text = "Omistaja ei ole yhteystiedoissasi"
 
 [group_join_owner_you]
 text = "Omistaja: sinä"
@@ -1404,6 +1464,9 @@ text = "Näytä koko näytöllä"
 
 [group_share_text]
 text = "Liity ryhmään {group} Tinlinessa: {link}"
+
+[group_share_text_unnamed]
+text = "Liity tähän ryhmään Tinlinessa: {link}"
 
 [group_share_subject]
 text = "Jaa ryhmäkutsu"
@@ -1447,17 +1510,32 @@ text = "Ryhmäsi"
 [group_list_empty]
 text = "Ei vielä ryhmiä. Luo ryhmä tai hyväksy kutsu."
 
+[group_invited_you]
+text = "**{name}** kutsui sinut ryhmään **{group}**"
+
+[group_invited_you_someone]
+text = "Joku kutsui sinut ryhmään **{group}**"
+
 [group_joined_toast]
 text = "Liityit ryhmään {group}."
 
 [group_cant_join]
 text = "Liittyminen ei onnistunut"
 
+[group_wants_to_chat]
+text = "**{name}** haluaa keskustella"
+
+[group_wants_to_chat_someone]
+text = "**Joku** haluaa keskustella"
+
 [group_member_of]
 text = "Ryhmän {group} jäsen"
 
 [group_request_accept_note]
 text = "Hyväksyminen lisää henkilön {name} yhteystiedoksi vain viestejä varten. Voit sallia puhelut myöhemmin."
+
+[group_request_accept_note_unnamed]
+text = "Hyväksyminen lisää hänet yhteystiedoksi vain viestejä varten. Voit sallia puhelut myöhemmin."
 
 [group_block]
 text = "Estä"
@@ -1858,6 +1936,9 @@ text = "Ei hätäpuheluihin."
 [settings_test_tone]
 text = "Testiääni"
 
+[settings_test_tone_sub]
+text = "Lähetä mikrofonin sijaan testiääni ({hz} Hz)"
+
 [security_wrong_pass]
 text = "Se ei täsmännyt. Yritä uudelleen."
 
@@ -1899,6 +1980,10 @@ text = "Pidä tämä omana tietonasi. Kuka tahansa, jolla se on, voi toimia sinu
 
 [security_tab_key]
 text = "Avain"
+
+[security_tab_words]
+one = "{count} sana"
+other = "{count} sanaa"
 
 [security_key_failed]
 text = "Avainta ei voitu valmistella. Käytä sen sijaan {words} sanaasi."
@@ -1996,6 +2081,9 @@ text = "Laite"
 [devices_unlinked_msg]
 text = "Linkitys poistettu: {name}"
 
+[devices_unlinked_msg_unnamed]
+text = "Laitteen linkitys poistettu"
+
 [devices_finish_call]
 text = "Lopeta ensin puhelusi"
 
@@ -2037,6 +2125,9 @@ text = "Synkronoi nyt"
 
 [devices_syncing]
 text = "Synkronoidaan: {name}…"
+
+[devices_syncing_unnamed]
+text = "Synkronoidaan…"
 
 [devices_unlink_this]
 text = "Poista tämän laitteen linkitys"
@@ -2251,6 +2342,9 @@ text = "Sama koodi molemmissa?"
 [link_same_code_lead]
 text = "Tarkista, että {name} näyttää tämän koodin, ja hyväksy siellä."
 
+[link_same_code_lead_unnamed]
+text = "Tarkista, että toinen laitteesi näyttää tämän koodin, ja hyväksy siellä."
+
 [link_diff_code]
 text = "Eri koodi, tai et aloittanut tätä? Peruuta. Joku muu on ehkä skannannut QR-koodin."
 
@@ -2320,6 +2414,9 @@ text = "Täsmäävätkö koodit?"
 [link_match_body]
 text = "**{name}** haluaa liittyä tiliisi. Sen pitäisi näyttää samat kuusi numeroa kuin alla."
 
+[link_match_body_unnamed]
+text = "**Uusi laite** haluaa liittyä tiliisi. Sen pitäisi näyttää samat kuusi numeroa kuin alla."
+
 [link_match_warn]
 text = "Vertaa niitä itse. Jos ne eroavat, joku muu on ehkä skannannut koodin ensin."
 
@@ -2367,6 +2464,9 @@ text = "Sulje"
 
 [link_scan_title]
 text = "Skannaa koodi uudelta laitteeltasi"
+
+[link_scan_step1]
+text = "Avaa Tinline uudella laitteella ja valitse **Linkitä laitteeseen**."
 
 [link_scan_step2]
 text = "Se näyttää QR-koodin ja lyhyen koodin. Ne ovat voimassa 5 minuuttia ja toimivat kerran."
@@ -2436,6 +2536,9 @@ text = "Tämän puhelimen linkitys poistettiin"
 
 [link_unlinked_lead]
 text = "Yksi muista laitteistasi poisti tältä puhelimelta tilin {name}. Sen yhteystiedot, keskustelut ja puhelut on poistettu täältä. Muihin laitteisiisi tämä ei vaikuta."
+
+[link_unlinked_lead_unnamed]
+text = "Yksi muista laitteistasi poisti tilisi tältä puhelimelta. Sen yhteystiedot, keskustelut ja puhelut on poistettu täältä. Muihin laitteisiisi tämä ei vaikuta."
 
 [link_ok]
 text = "OK"
@@ -2665,6 +2768,9 @@ text = "Linkitetty toiseen laitteeseesi"
 [onboarding_linked_lead]
 text = "Yhteystietosi ja keskustelusi saapuvat laitteelta {name} ja pysyvät ajan tasalla molemmissa."
 
+[onboarding_linked_lead_unnamed]
+text = "Yhteystietosi ja keskustelusi saapuvat toiselta laitteeltasi ja pysyvät ajan tasalla molemmissa."
+
 [onboarding_sync_contacts]
 text = "Yhteystiedot"
 
@@ -2851,6 +2957,9 @@ text = "Lähtevä puhelu"
 [shell_call_what_unavailable]
 text = "Kun et ollut tavoitettavissa"
 
+[shell_call_desc_unavailable]
+text = "Puhelu, kun et ollut tavoitettavissa"
+
 [shell_call_what_missed]
 text = "Vastaamaton"
 
@@ -2866,11 +2975,17 @@ text = "Hylätty puhelu"
 [shell_call_what_no_answer]
 text = "Ei vastausta"
 
+[shell_call_desc_no_answer]
+text = "Puhelu, johon ei vastattu"
+
 [shell_call_what_cancelled]
 text = "Peruttu"
 
 [shell_call_desc_cancelled]
 text = "Peruttu puhelu"
+
+[shell_call_what_unreachable]
+text = "Puhelu ei yhdistynyt"
 
 [shell_call_desc_unreachable]
 text = "Puhelu, joka ei yhdistynyt"
@@ -3126,6 +3241,12 @@ text = "Profiili: {name}"
 
 [shell_calls_what_duration]
 text = "{what} · {duration}"
+
+[shell_calls_row_a11y]
+text = "{name}, {what}, {stamp}. {action}"
+
+[shell_calls_row_a11y_duration]
+text = "{name}, {what}, {duration}, {stamp}. {action}"
 
 [shell_calls_action_call]
 text = "Soita"
@@ -3605,6 +3726,9 @@ text = "Anna tiedolle nimi."
 [people_rule_key_bad]
 text = "Tätä nimeä ei voi käyttää. Pidä se lyhyenä ja ilman ohjausmerkkejä."
 
+[people_rule_value_long]
+text = "Tämä on liian pitkä. Kukin tieto voi olla enintään {limit}."
+
 [people_rule_too_many]
 text = "Sinulla on jo {max} tietoa. Poista yksi, jos haluat lisätä uuden."
 
@@ -4073,6 +4197,9 @@ text = "Akun varaus on alle {percent} %. Isännöintiä on rajoitettu: vain yksi
 [call_group_no_host]
 text = "Puheluisäntää ei ole saatavilla"
 
+[call_group_connect_failed]
+text = "Puhelu ei yhdistynyt"
+
 [call_person_you]
 text = "Sinä"
 
@@ -4103,6 +4230,9 @@ text = "Olet puheluisäntä"
 
 [call_group_host_is]
 text = "Puheluisäntä: jäsenen {name} laite"
+
+[call_group_host_is_yours]
+text = "Puheluisäntä: toinen laitteesi"
 
 [call_group_host_is_someone]
 text = "Puheluisäntä: jäsenen laite"
@@ -4287,6 +4417,15 @@ text = "{name} poistui"
 [group_sys_left_someone]
 text = "Joku poistui"
 
+[group_sys_removed_someone]
+text = "Eräs jäsen poistettiin {total} ylläpitäjän merkinnän jälkeen"
+
+[group_sys_admin_you_you]
+text = "Nimesit itsesi ylläpitäjäksi"
+
+[group_sys_admin_you_named]
+text = "Nimesit henkilön {name} ylläpitäjäksi"
+
 [group_sys_admin_you_someone]
 text = "Nimesit erään jäsenen ylläpitäjäksi"
 
@@ -4302,8 +4441,17 @@ text = "{by} nimesi erään jäsenen ylläpitäjäksi"
 [group_sys_admin_someone_you]
 text = "Joku nimesi sinut ylläpitäjäksi"
 
+[group_sys_admin_someone_named]
+text = "Joku nimesi henkilön {name} ylläpitäjäksi"
+
 [group_sys_admin_someone_someone]
 text = "Joku nimesi erään jäsenen ylläpitäjäksi"
+
+[group_sys_unadmin_you_you]
+text = "Poistit omat ylläpito-oikeutesi"
+
+[group_sys_unadmin_you_named]
+text = "Poistit henkilön {name} ylläpito-oikeudet"
 
 [group_sys_unadmin_you_someone]
 text = "Poistit erään jäsenen ylläpito-oikeudet"
@@ -4320,17 +4468,116 @@ text = "{by} poisti erään jäsenen ylläpito-oikeudet"
 [group_sys_unadmin_someone_you]
 text = "Joku poisti ylläpito-oikeutesi"
 
+[group_sys_unadmin_someone_named]
+text = "Joku poisti henkilön {name} ylläpito-oikeudet"
+
 [group_sys_unadmin_someone_someone]
 text = "Joku poisti erään jäsenen ylläpito-oikeudet"
+
+[group_sys_host_added_someone]
+text = "Erään jäsenen laite isännöi nyt ryhmää"
+
+[group_sys_host_removed_someone]
+text = "Erään jäsenen laite lopetti ryhmän isännöinnin"
+
+[group_member_desc_owner_callhost]
+text = "{name}, omistaja ja puheluisäntä. Avaa toiminnot"
+
+[group_member_desc_owner_host]
+text = "{name}, omistaja ja isäntälaite. Avaa toiminnot"
+
+[group_member_desc_owner_host_callhost]
+text = "{name}, omistaja, isäntälaite ja puheluisäntä. Avaa toiminnot"
+
+[group_member_desc_admin_callhost]
+text = "{name}, ylläpitäjä ja puheluisäntä. Avaa toiminnot"
+
+[group_member_desc_admin_host]
+text = "{name}, ylläpitäjä ja isäntälaite. Avaa toiminnot"
+
+[group_member_desc_admin_host_callhost]
+text = "{name}, ylläpitäjä, isäntälaite ja puheluisäntä. Avaa toiminnot"
+
+[group_member_desc_member_callhost]
+text = "{name}, jäsen ja puheluisäntä. Avaa toiminnot"
+
+[group_member_desc_member_host]
+text = "{name}, jäsen ja isäntälaite. Avaa toiminnot"
+
+[group_member_desc_member_host_callhost]
+text = "{name}, jäsen, isäntälaite ja puheluisäntä. Avaa toiminnot"
+
+[group_host_online]
+text = "Isäntälaite verkossa"
+
+[group_host_offline]
+text = "Isäntälaite poissa verkosta"
+
+[group_host_online_calls]
+text = "Verkossa · isännöi myös puheluita"
+
+[group_host_offline_calls]
+text = "Ei verkossa · isännöi myös puheluita"
 
 [call_group_about_this_phone]
 text = "**Tämä puhelin** välittää tätä puhelua. Kaikki puhelussa olevat ovat yhteydessä siihen, ja se välittää äänen eteenpäin ja valitsee, kuka kuuluu, kun useampi puhuu yhtä aikaa."
 
+[call_group_about_your_other]
+text = "**Toinen laitteesi** välittää tämän puhelun. Kaikki puhelussa olevat ovat yhteydessä siihen, ja se välittää äänen eteenpäin ja valitsee, kuka kuuluu, kun useampi puhuu yhtä aikaa."
+
 [call_group_about_member]
 text = "**Jäsenen {name} laite** välittää tämän puhelun. Kaikki puhelussa olevat ovat yhteydessä siihen, ja se välittää äänen eteenpäin ja valitsee, kuka kuuluu, kun useampi puhuu yhtä aikaa."
+
+[call_group_about_someone]
+text = "**Erään jäsenen laite** välittää tämän puhelun. Kaikki puhelussa olevat ovat yhteydessä siihen, ja se välittää äänen eteenpäin ja valitsee, kuka kuuluu, kun useampi puhuu yhtä aikaa."
 
 [call_group_about_unknown]
 text = "**Puheluisäntä** välittää tämän puhelun. Kaikki puhelussa olevat ovat yhteydessä siihen, ja se välittää äänen eteenpäin ja valitsee, kuka kuuluu, kun useampi puhuu yhtä aikaa."
 
 [people_busy_until_today]
 text = "Varattu {time} asti"
+
+[people_busy_until_tomorrow]
+text = "Varattu huomenna {time} asti"
+
+[people_busy_until_mon]
+text = "Varattu maanantaina {time} asti"
+
+[people_busy_until_tue]
+text = "Varattu tiistaina {time} asti"
+
+[people_busy_until_wed]
+text = "Varattu keskiviikkona {time} asti"
+
+[people_busy_until_thu]
+text = "Varattu torstaina {time} asti"
+
+[people_busy_until_fri]
+text = "Varattu perjantaina {time} asti"
+
+[people_busy_until_sat]
+text = "Varattu lauantaina {time} asti"
+
+[people_busy_until_sun]
+text = "Varattu sunnuntaina {time} asti"
+
+[chat_when_today]
+text = "Tänään klo {time}"
+
+[chat_when_yesterday]
+text = "Eilen klo {time}"
+
+[chat_when_date]
+text = "{date} klo {time}"
+
+[group_when_today]
+text = "Tänään klo {time}"
+
+[group_when_yesterday]
+text = "Eilen klo {time}"
+
+[group_when_date]
+text = "{date} klo {time}"
+
+[people_when_date]
+text = "{date} klo {time}"

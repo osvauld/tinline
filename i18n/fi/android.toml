@@ -4862,11 +4862,26 @@ text = "Joku aloitti puhelun ryhmässä {group}"
 [notif_group_calling_unnamed]
 text = "Joku soittaa ryhmälle"
 
+[common_list_separator]
+text = ", "
+
+[groupsb_member_desc]
+text = "{list}. Avaa toiminnot"
+
 [groupsb_role_host_lc]
 text = "isäntälaite"
 
 [groupsb_role_callhost_lc]
 text = "puheluisäntä"
 
+[avail_note_unnamed]
+text = "Kun olet poissa, soittajat näkevät, ettei sinua tavoitettu. Mitään ei jää jonoon, eikä kenellekään kerrota syytä."
+
+[onboarding_linked_lead_unnamed]
+text = "Yhteystietosi ja keskustelusi saapuvat toiselta laitteeltasi ja pysyvät ajan tasalla molemmissa."
+
 [gcall_is_calling_group_unnamed]
 text = "Joku soittaa ryhmälle"
+
+[gcall_started_call_unnamed]
+text = "Joku aloitti puhelun"
