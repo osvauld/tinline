@@ -278,10 +278,15 @@ final class GroupCallUi: ObservableObject {
         return directory.personName(did) ?? tr("call_person_someone")
     }
 
-    func gcHost(_ s: GcState) -> String? {
-        if s.hosting { return tr("call_host_this_phone") }
-        if let h = s.host { return tr("call_host_device", callFirstName(gcName(h))) }
-        return nil
+    /// Who carries the call, as a case: each has its own whole sentence, so no name or noun is slotted into a translated one.
+    enum GcHostKind { case thisPhone, yourOtherDevice, member(String), unknownMember, none }
+
+    func gcHostKind(_ s: GcState) -> GcHostKind {
+        if s.hosting { return .thisPhone }
+        guard let h = s.host else { return .none }
+        if h == directory.currentDid { return .yourOtherDevice }
+        guard let name = directory.personName(h), !name.trimmingCharacters(in: .whitespaces).isEmpty else { return .unknownMember }
+        return .member(callFirstName(name))
     }
 
     func groupName(_ gid: String?) -> String { gid.flatMap(directory.groupName) ?? tr("call_group_call_name") }

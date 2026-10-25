@@ -5606,14 +5606,6 @@ note = "Name used for an unknown person in a group call."
 text = "Group"
 note = "Fallback group name."
 
-[call_host_this_phone]
-text = "this phone"
-note = "Names the call host when it is this phone; used in a sentence, lowercase."
-
-[call_host_device]
-text = "{name}’s device"
-note = "Names the call host when it is another member's device. {name} is the member's first name."
-
 [call_group_minimize]
 text = "Minimize call"
 note = "Accessibility label of the button that minimizes the group call screen."
@@ -5640,24 +5632,20 @@ text = "You’re the call host"
 note = "Pill on the group call screen when this phone carries the call."
 
 [call_group_host_is]
-text = "Call host: {host}"
-note = "Pill on the group call screen. {host} is the host's device, such as \"Arjun’s device\"."
+text = "Call host: {name}’s device"
+note = "Pill on the group call screen naming the call host. {name} is the member’s first name."
+
+[call_group_host_is_yours]
+text = "Call host: your other device"
+note = "Pill on the group call screen naming the call host. Another device of the user’s."
+
+[call_group_host_is_someone]
+text = "Call host: a member’s device"
+note = "Pill on the group call screen naming the call host. A member whose name is not known."
 
 [call_control_leave]
 text = "Leave"
 note = "Caption under the button that leaves a group call."
-
-[call_host_fallback]
-text = "the call host"
-note = "Used in a sentence when the call host's name is not known."
-
-[call_group_about_carries]
-text = "carries this call. Everyone in the call connects to it, and it passes the audio on and chooses who is heard when several people speak."
-note = "Continues the bold host name on the group call details card, e.g. \"Arjun’s device carries this call...\"."
-
-[call_group_about_carrying]
-text = "is carrying this call. Everyone in the call connects to it, and it passes the audio on and chooses who is heard when several people speak."
-note = "Continues the bold host name when this phone is the host: \"This phone is carrying this call...\"."
 
 [call_group_about_trust]
 text = "Your connection to the call host is encrypted, but the call host itself receives the audio, so it can hear this call. You trust it for the call the way you trust a chat host with posts."
@@ -6031,3 +6019,24 @@ note = "Presence under a device that is a chat host and also a call host: online
 [group_host_offline_calls]
 text = "Offline · also hosts calls"
 note = "Presence under a device that is a chat host and also a call host: offline."
+
+[call_group_about_this_phone]
+text = "**This phone** is carrying this call. Everyone in the call connects to it, and it passes the audio on and chooses who is heard when several people speak."
+note = "Group call details card, first sentence. The host’s name at the start is bold (markdown stars, keep them around the same words); the whole sentence is one string so the verb can agree with it. This phone is the call host."
+
+[call_group_about_your_other]
+text = "**Your other device** carries this call. Everyone in the call connects to it, and it passes the audio on and chooses who is heard when several people speak."
+note = "Group call details card, first sentence. The host’s name at the start is bold (markdown stars, keep them around the same words); the whole sentence is one string so the verb can agree with it. Another device of the user’s is the call host."
+
+[call_group_about_member]
+text = "**{name}’s device** carries this call. Everyone in the call connects to it, and it passes the audio on and chooses who is heard when several people speak."
+note = "Group call details card, first sentence. The host’s name at the start is bold (markdown stars, keep them around the same words); the whole sentence is one string so the verb can agree with it. A member’s device is the call host. {name} is the member’s first name."
+
+[call_group_about_someone]
+text = "**A member’s device** carries this call. Everyone in the call connects to it, and it passes the audio on and chooses who is heard when several people speak."
+note = "Group call details card, first sentence. The host’s name at the start is bold (markdown stars, keep them around the same words); the whole sentence is one string so the verb can agree with it. A member whose name is not known hosts the call."
+
+[call_group_about_unknown]
+text = "**The call host** carries this call. Everyone in the call connects to it, and it passes the audio on and chooses who is heard when several people speak."
+note = "Group call details card, first sentence. The host’s name at the start is bold (markdown stars, keep them around the same words); the whole sentence is one string so the verb can agree with it. The host is not known yet."
+
