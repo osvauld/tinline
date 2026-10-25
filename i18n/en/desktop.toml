@@ -3,8 +3,8 @@
 # ---- Shared labels
 
 [common_a_device_name_is]
-text = "A device name is 1 to 64 characters."
-note = "Shared label, used in several places (app, link)."
+text = "A device name is {min} to {max} characters."
+note = "Shared label, used in several places (app, link). {min} and {max} are the shortest and longest allowed length, numbers."
 
 [common_about_this_call]
 text = "About this call"
@@ -64,7 +64,7 @@ note = "Shared label, used in several places (groups, profile)."
 
 [common_call]
 text = "Call"
-note = "Shared label, used in several places (chat, profile, reason, view)."
+note = "Shared label: a button that starts a call (a verb, \"Call Ana\"). Not used as a title."
 
 [common_call_ended]
 text = "Call ended"
@@ -108,7 +108,7 @@ note = "Shared label, used in several places (group_live, profile, signup)."
 
 [common_connecting]
 text = "Connecting"
-note = "Shared label, used in several places (link, mark)."
+note = "Desktop, linking a device and the network status label (in link_view.rs, mark.rs): connecting to another device or the network. Not about a call."
 
 [common_contacts]
 text = "Contacts"
@@ -125,10 +125,6 @@ note = "Shared label, used in several places (profile, signup)."
 [common_copy_recovery_phrase]
 text = "Copy recovery phrase"
 note = "Shared label, used in several places (view)."
-
-[common_couldnt_connect]
-text = "Couldn’t connect"
-note = "Shared label, used in several places (gcall, view)."
 
 [common_current_passphrase]
 text = "Current passphrase"
@@ -159,8 +155,8 @@ text = "Done"
 note = "Shared label, used in several places (link, signup)."
 
 [common_give_this_computer_a]
-text = "Give this computer a name of 1 to 64 characters."
-note = "Shared label, used in several places (app, link)."
+text = "Give this computer a name of {min} to {max} characters."
+note = "Shared label, used in several places (app, link). {min} and {max} are the shortest and longest allowed length, numbers."
 
 [common_got_it]
 text = "Got it"
@@ -192,7 +188,7 @@ note = "Shared label, used in several places (call_screen, view)."
 
 [common_is_calling]
 text = "{name} is calling"
-note = "Shared label, used in several places (app, view). {name} is a person's name (usually the first word of their chosen name)."
+note = "Shared label: notification and call waiting card title. {name} is a person's name."
 
 [common_join]
 text = "Join"
@@ -308,7 +304,7 @@ note = "Shared label, used in several places (app, chat, gcall, group_live)."
 
 [common_open_link]
 text = "Open link"
-note = "Shared label, used in several places (group_live, profile)."
+note = "Shared label: button that opens a web link in the browser (a verb)."
 
 [common_original_message_unavailable]
 text = "Original message unavailable"
@@ -337,14 +333,6 @@ note = "Shared label, used in several places (chat, group_live). {value} is a va
 [common_privacy]
 text = "Privacy"
 note = "Shared label, used in several places (profile, view)."
-
-[common_reconnecting]
-text = "Reconnecting"
-note = "Shared label, used in several places (call_screen, mark)."
-
-[common_reconnecting_2]
-text = "Reconnecting…"
-note = "Shared label, used in several places (call_screen, gcall)."
 
 [common_recovery_phrase]
 text = "Recovery phrase"
@@ -541,10 +529,6 @@ note = "Desktop, app-level notices and notifications (in app.rs, update_inner)."
 text = "Enter your name and recovery phrase"
 note = "Desktop, app-level notices and notifications (in app.rs, update_inner)."
 
-[app_ev]
-text = "Ev"
-note = "Desktop, app-level notices and notifications (in app.rs, fmt)."
-
 [app_invited_you_to_the]
 text = "{value} invited you to the group"
 note = "Desktop, app-level notices and notifications (in app.rs, on_event). {value} is a value filled in by the app."
@@ -724,8 +708,8 @@ text = "Device changes apply from the next call."
 note = "Desktop, calls (voice and video) (in call_screen.rs, call_about)."
 
 [call_during_your_call]
-text = "during your call"
-note = "Desktop, calls (voice and video) (in view.rs, waiting_banner)."
+text = "While you’re on this call"
+note = "Desktop, call waiting card (in view.rs, waiting_banner), second line under \"{name} is calling\". A complete line saying the other call arrives while I am on this one."
 
 [call_end]
 text = "End"
@@ -748,8 +732,8 @@ text = "End-to-end encrypted · Ctrl M mute · Ctrl E end · Esc minimizes"
 note = "Desktop, calls (voice and video) (in view.rs, video_call_view)."
 
 [call_ends_your_call_with]
-text = "Ends your call with"
-note = "Desktop, calls (voice and video) (in view.rs, waiting_banner)."
+text = "Answering ends your call with {name}."
+note = "Desktop, call waiting card (in view.rs, waiting_banner), small line under the buttons. {name} is the first name of the person I am talking to now."
 
 [call_enter_answers_esc_declines]
 text = "Enter answers · Esc declines"
@@ -772,8 +756,8 @@ text = "Ignore limits (heat, their decoder)"
 note = "Desktop, calls (voice and video) (in call_screen.rs, call_nerds)."
 
 [call_is_calling_you]
-text = "is calling you"
-note = "Desktop, calls (voice and video) (in view.rs, video_call_view)."
+text = "Calling you…"
+note = "Desktop, incoming call screen (in view.rs, video_call_view), status line under the caller's name, which is shown above it. A complete short line."
 
 [call_minimize_call]
 text = "Minimize call"
@@ -823,10 +807,6 @@ note = "Desktop, calls (voice and video) (in view.rs, video_stage)."
 text = "Stats for nerds"
 note = "Desktop, calls (voice and video) (in call_screen.rs, call_nerds)."
 
-[call_text]
-text = "{day} {value}"
-note = "Desktop, calls (voice and video) (in view.rs, utc_date). {day} is a value filled in by the app. {value} is a value filled in by the app."
-
 [call_the_connection_dropped_for]
 text = "The connection dropped for a moment. Tinline is finding a way back to {name}."
 note = "Desktop, calls (voice and video) (in call_screen.rs, call_about). {name} is a person's name (usually the first word of their chosen name)."
@@ -842,10 +822,6 @@ note = "Desktop, calls (voice and video) (in call_screen.rs, call_about)."
 [call_these_apply_to_this]
 text = "These apply to this call now. Settings > Video sets the next call."
 note = "Desktop, calls (voice and video) (in call_screen.rs, call_nerds)."
-
-[call_unknown]
-text = "Unknown"
-note = "Desktop, calls (voice and video) (in view.rs, waiting_banner)."
 
 [call_video_is_starting]
 text = "Video is starting…"
@@ -1104,8 +1080,8 @@ text = "Reply"
 note = "Desktop, chats (in chat_view.rs, message_menu)."
 
 [chat_replying_to]
-text = "Replying to {value}"
-note = "Desktop, chats (in chat_view.rs, composer). {value} is a value filled in by the app."
+text = "Replying to {name}"
+note = "Desktop, chat composer (in chat_view.rs): shown above the field while I reply to the other person's message. {name} is their first name."
 
 [chat_return_to_call]
 text = "Return to call"
@@ -1168,8 +1144,8 @@ text = "Waiting for {name}’s device to confirm"
 note = "Desktop, chats (in chat_view.rs, receipt_lines). {name} is a person's name (usually the first word of their chosen name)."
 
 [chat_you_blocked]
-text = "You blocked {name}{when}"
-note = "Desktop, chats (in chat_view.rs, block_note). {name} is a person's name (usually the first word of their chosen name). {when} is a value filled in by the app."
+text = "You blocked {name}"
+note = "Desktop, chat (in chat_view.rs, block_note): quiet line under the messages. {name} is the first name of the person I blocked."
 
 [chat_you_deleted_this_message]
 text = "You deleted this message"
@@ -1298,8 +1274,8 @@ text = "The system keyring did not accept the key."
 note = "Desktop, sign-in and gate screens (in view.rs, key_failed_view)."
 
 [gate_these_24_words_are]
-text = "These 24 words are the only way to restore your identity on another device."
-note = "Desktop, sign-in and gate screens (in view.rs, phrase_view)."
+text = "These {words} words are the only way to restore your identity on another device."
+note = "Desktop, sign-in and gate screens (in view.rs, phrase_view). {words} is the number of recovery words (24), a number."
 
 [gate_this_computer_no_longer]
 text = "This computer no longer has the key that opens it, and its keyring entry is missing. Once you restore, your calls come through again."
@@ -1318,8 +1294,8 @@ text = "Turn on"
 note = "Desktop, sign-in and gate screens (in view.rs, problem)."
 
 [gate_you_didnt_set_a]
-text = "You didn’t set a passphrase, so the 24-word recovery phrase is the only way back. Your contacts stay."
-note = "Desktop, sign-in and gate screens (in view.rs, key_lost_view)."
+text = "You didn’t set a passphrase, so the {words}-word recovery phrase is the only way back. Your contacts stay."
+note = "Desktop, sign-in and gate screens (in view.rs, key_lost_view). {words} is the number of recovery words (24), a number."
 
 [gate_your_calls_come_through]
 text = "Your calls come through again once you’re back online."
@@ -1352,10 +1328,6 @@ note = "Desktop, group calls (in gcall.rs, gcall_event)."
 text = "Call ended — host lost"
 note = "Desktop, group calls (in gcall.rs, gcall_event)."
 
-[gcall_call_host]
-text = "Call host: {host}"
-note = "Desktop, group calls (in gcall_view.rs, gcall_view). {host} is a value filled in by the app."
-
 [gcall_connecting]
 text = "Connecting…"
 note = "Desktop, group calls (in gcall.rs, status)."
@@ -1376,10 +1348,6 @@ note = "Desktop, group calls (in gcall_view.rs, gcall_group_name)."
 text = "{value} is calling the group"
 note = "Desktop, group calls (in gcall.rs, gcall_event). {value} is a value filled in by the app."
 
-[gcall_is_carrying]
-text = "is carrying"
-note = "Desktop, group calls (in gcall_view.rs, gcall_about)."
-
 [gcall_no_call_host_available]
 text = "No call host available"
 note = "Desktop, group calls (in gcall.rs, start_failure)."
@@ -1389,12 +1357,9 @@ text = "Only you so far. Waiting for others."
 note = "Desktop, group calls (in gcall_view.rs, gcall_view)."
 
 [gcall_people_in_the_call]
-text = "{count} people in the call"
-note = "Desktop, group calls (in gcall_view.rs, gcall_view). {count} is a number."
-
-[gcall_s_device]
-text = "{value}’s device"
-note = "Desktop, group calls (in gcall_view.rs, gcall_host_label). {value} is a value filled in by the app."
+one = "{count} person in the call"
+other = "{count} people in the call"
+note = "Desktop, group call screen (in gcall_view.rs). {count} is how many people are in the call (2 or more)."
 
 [gcall_started_a_call]
 text = "{name} started a call"
@@ -1403,18 +1368,6 @@ note = "Desktop, group calls (in gcall_view.rs, gcall_announce). {name} is a per
 [gcall_started_by]
 text = "Started by {value}"
 note = "Desktop, group calls (in gcall_view.rs, gcall_banner). {value} is a value filled in by the app."
-
-[gcall_the_call_host]
-text = "The call host"
-note = "Desktop, group calls (in gcall_view.rs, gcall_about)."
-
-[gcall_this_call_everyone_in]
-text = " {value} this call. Everyone in the call connects to it, and it passes the audio on and chooses who is heard when several people speak."
-note = "Desktop, group calls (in gcall_view.rs, gcall_about). {value} is a value filled in by the app."
-
-[gcall_this_computer]
-text = "this computer"
-note = "Desktop, group calls (in gcall_view.rs, gcall_host_label)."
 
 [gcall_your_connection_to_the]
 text = "Your connection to the call host is encrypted, but the call host itself receives the audio, so it can hear this call. You trust it for the call the way you trust a chat host with posts."
@@ -1432,8 +1385,8 @@ note = "Desktop, group calls (in gcall_view.rs, gcall_view)."
 # ---- Groups
 
 [group_a_call_host_carries]
-text = "A call host carries the call. Everyone in a call connects to it, and it passes the audio on, so it can hear the call. That is separate from chat hosting: a chat host is not a call host unless you also appoint it as one. Call hosts are members you trust, and each one chooses to accept.{value}"
-note = "Desktop, groups (in group_live_view.rs, group_info_page). {value} is a value filled in by the app."
+text = "A call host carries the call. Everyone in a call connects to it, and it passes the audio on, so it can hear the call. That is separate from chat hosting: a chat host is not a call host unless you also appoint it as one. Call hosts are members you trust, and each one chooses to accept."
+note = "Desktop, group info, call hosts section note, for members."
 
 [group_a_call_host_is]
 text = "A call host is a member’s computer or phone that carries the call. An admin can appoint one in Group info."
@@ -1460,24 +1413,17 @@ text = "A host keeps a full copy of the group, passes messages on while members�
 note = "Desktop, groups (in group_live_view.rs, live_pane)."
 
 [group_a_host_lists_up]
-text = "A host lists up to {value} people at a time, so there may be more."
-note = "Desktop, groups (in group_live_view.rs, live_overlay). {value} is a value filled in by the app."
+one = "A host lists up to {count} person at a time, so there may be more."
+other = "A host lists up to {count} people at a time, so there may be more."
+note = "Desktop, group \"Who's online\" dialog (in group_live_view.rs). {count} is the most people a host lists at a time (a number)."
 
 [group_a_host_stays_on]
 text = "A host stays on and passes posts on while others are offline"
 note = "Desktop, groups (in group_live_view.rs, group_info_page)."
 
-[group_a_link_for_your]
-text = "A link for your own other device"
-note = "Desktop, groups (in group_live_view.rs, live_overlay)."
-
 [group_a_link_that_doesnt]
 text = "A link that doesn’t expire"
 note = "Desktop, groups (in group_live_view.rs, group_info_page)."
-
-[group_a_message]
-text = "a message"
-note = "Desktop, groups (in group_live_view.rs, live_composer)."
 
 [group_a_private_invite_to]
 text = "A private invite to each person"
@@ -1516,16 +1462,12 @@ text = "Also confirmed: {value}"
 note = "Desktop, groups (in group_live_view.rs, group_receipt_lines). {value} is a value filled in by the app."
 
 [group_also_hosts_calls]
-text = " · also hosts calls"
-note = "Desktop, groups (in group_live_view.rs, group_info_page)."
+text = "Also hosts calls"
+note = "Desktop, group info (in group_live_view.rs), a host device row, joined after Online/Offline with a separator: this device also hosts calls."
 
 [group_an_admin_asked_this]
 text = "An admin asked this computer to carry the group’s calls"
 note = "Desktop, groups (in group_live_view.rs, group_info_page)."
-
-[group_and]
-text = "{value} and {last}"
-note = "Desktop, groups (in groups_view.rs, and_list). {value} is a value filled in by the app. {last} is a value filled in by the app."
 
 [group_anyone_holding_the_link]
 text = "Anyone holding the link can join, with no invite and no expiry. Share it where you’d like people to find the group."
@@ -1564,8 +1506,8 @@ text = "Asked. The device carries calls once it accepts."
 note = "Desktop, groups (in group_live.rs, run)."
 
 [group_asked_this_computer_to]
-text = "{value} asked this computer to host {name}"
-note = "Desktop, groups (in group_live_view.rs, live_pane). {value} is a value filled in by the app. {name} is a person's name (usually the first word of their chosen name)."
+text = "{name} asked this computer to host {group}"
+note = "Desktop, group (in group_live_view.rs): banner when an admin asks this computer to host. {name} is the admin's first name, {group} the group name."
 
 [group_asks_to_carry_group]
 text = "Asks {name} to carry group calls on that device; they have to accept"
@@ -1576,8 +1518,8 @@ text = "Block {name}"
 note = "Desktop, groups (in group_live_view.rs, live_requests). {name} is a person's name (usually the first word of their chosen name)."
 
 [group_blocked]
-text = " · Blocked"
-note = "Desktop, groups (in group_live_view.rs, group_info_page)."
+text = "Blocked"
+note = "Desktop, group member row (in group_live_view.rs), joined after other facts with a separator: I blocked this member."
 
 [group_blocked_2]
 text = "Blocked {value}"
@@ -1653,8 +1595,8 @@ text = "Everyone in the group can post"
 note = "Desktop, groups (in group_live_view.rs, group_info_page)."
 
 [group_flag]
-text = " · {value} flag"
-note = "Desktop, groups (in group_live_view.rs, live_overlay). {value} is a value filled in by the app."
+text = " · flag {n}"
+note = "Desktop, group \"Why you were removed\" dialog (in group_live_view.rs), added after the last flag's date to show it was the one that removed me. {n} is the number of that flag (the number of flags that remove a member)."
 
 [group_flag_2]
 text = "Flag"
@@ -1681,8 +1623,9 @@ text = "Flagged by {value}. You can still read what you received before; nothing
 note = "Desktop, groups (in group_live_view.rs, live_removal_card). {value} is a value filled in by the app."
 
 [group_flags_remove_from_the]
-text = "{flags_needed} flags remove {name} from the group"
-note = "Desktop, groups (in group_live_view.rs, live_menu). {flags_needed} is a value filled in by the app. {name} is a person's name (usually the first word of their chosen name)."
+one = "{count} flag removes {name} from the group"
+other = "{count} flags remove {name} from the group"
+note = "Desktop, group member menu (in group_live_view.rs, live_menu). {count} is how many flags remove a member, {name} is the member's first name."
 
 [group_getting_the_link]
 text = "Getting the link…"
@@ -1738,13 +1681,13 @@ text = "Hosts once {name} agrees on that device; a computer that stays on is bes
 note = "Desktop, groups (in group_live_view.rs, live_menu). {name} is a person's name (usually the first word of their chosen name)."
 
 [group_hosts_online]
-one = "{count} host online{extra}. Posts go through right away."
-other = "{count} hosts online{extra}. Posts go through right away."
-note = "Group info, hosts section. {count} is how many hosts are online; {extra} is empty or the text \"this computer too\"."
+one = "{count} host online. Posts go through right away."
+other = "{count} hosts online. Posts go through right away."
+note = "Desktop, group info, hosts section. {count} is how many hosts are online."
 
 [group_hosts_store_the_group]
-text = "Hosts store the group and pass posts on when others are offline. They are members you trust: a host can read everything posted in this group.{value}"
-note = "Desktop, groups (in group_live_view.rs, group_info_page). {value} is a value filled in by the app."
+text = "Hosts store the group and pass posts on when others are offline. They are members you trust: a host can read everything posted in this group."
+note = "Desktop, group info, hosts section note, for members."
 
 [group_if_accepts_you_can]
 text = "If {name} accepts, you can message each other directly. Calls stay off until one of you allows them."
@@ -1771,20 +1714,17 @@ text = "Invite link for {gname}"
 note = "Desktop, groups (in group_live_view.rs, live_overlay). {gname} is a value filled in by the app."
 
 [group_invite_people]
-text = "Invite {len} people"
-note = "Desktop, groups (in group_live_view.rs, live_overlay). {len} is a value filled in by the app."
+one = "Invite {count} person"
+other = "Invite {count} people"
+note = "Desktop, group \"Add members\" dialog button. {count} is how many contacts are picked (2 or more)."
 
 [group_invite_valid_until]
 text = "Invite valid until {value}"
 note = "Desktop, groups (in group_live_view.rs, live_overlay). {value} is a value filled in by the app."
 
-[group_invited_by]
-text = " · invited by {b}"
-note = "Desktop, groups (in group_live_view.rs, live_menu). {b} is a value filled in by the app."
-
 [group_invited_by_2]
-text = "Invited by {value}"
-note = "Desktop, groups (in group_live_view.rs, group_info_page). {value} is a value filled in by the app."
+text = "Invited by {name}"
+note = "Desktop, group member row and join dialog (in group_live_view.rs). {name} is the first name of who invited."
 
 [group_invited_not_delivered_yet]
 text = "Invited · not delivered yet"
@@ -1797,10 +1737,6 @@ note = "Desktop, groups (in group_live.rs, pick_rows)."
 [group_invited_waiting_for_an]
 text = "Invited · waiting for an answer"
 note = "Desktop, groups (in group_live.rs, sent_invitation_line)."
-
-[group_invited_you_to]
-text = " invited you to "
-note = "Desktop, groups (in group_live_view.rs, live_list)."
 
 [group_invites]
 text = "Invites"
@@ -1963,14 +1899,6 @@ note = "Desktop, groups (in groups_view.rs, privacy_page)."
 text = "Not yet"
 note = "Desktop, groups (in group_live_view.rs, group_receipt_lines)."
 
-[group_of_flags]
-text = " · {flags} of {flags_needed} flags"
-note = "Desktop, groups (in group_live_view.rs, live_menu). {flags} is a value filled in by the app. {flags_needed} is a value filled in by the app."
-
-[group_of_flags_2]
-text = " · {flags} of {value} flags"
-note = "Desktop, groups (in group_live_view.rs, group_info_page). {flags} is a value filled in by the app. {value} is a value filled in by the app."
-
 [group_offered_to_host]
 text = "Offered to host"
 note = "Desktop, groups (in group_live_view.rs, group_info_page)."
@@ -2023,10 +1951,6 @@ note = "Desktop, groups (in group_live_view.rs, live_menu)."
 text = "Owner"
 note = "Desktop, groups (in group_live_view.rs, group_info_page)."
 
-[group_owner_2]
-text = "{inviter} · owner {owner}"
-note = "Desktop, groups (in group_live_view.rs, live_overlay). {inviter} is a value filled in by the app. {owner} is a value filled in by the app."
-
 [group_paste_an_invite_link]
 text = "Paste an invite link"
 note = "Desktop, groups (in group_live_view.rs, live_list)."
@@ -2068,12 +1992,13 @@ text = "{value} · removed"
 note = "Desktop, groups (in group_live_view.rs, live_item). {value} is a value filled in by the app."
 
 [group_removed_after_admin_flags]
-text = "Removed after {len} admin flags"
-note = "Desktop, groups (in group_live_view.rs, live_removal_card). {len} is a value filled in by the app."
+one = "Removed after {count} admin flag"
+other = "Removed after {count} admin flags"
+note = "Desktop, group removal card (in group_live_view.rs, live_removal_card). {count} is how many admin flags removed me."
 
 [group_replying_to]
 text = "Replying to {name}"
-note = "Desktop, groups (in group_live_view.rs, live_composer). {name} is a person's name (usually the first word of their chosen name)."
+note = "Desktop, group composer (in group_live_view.rs): shown above the field while I reply to someone else's message. {name} is their first name."
 
 [group_requests]
 text = "Requests · {len}"
@@ -2114,10 +2039,6 @@ note = "Desktop, groups (in group_live_view.rs, live_pane)."
 [group_since]
 text = "Since {value}"
 note = "Desktop, groups (in group_live_view.rs, group_info_page). {value} is a value filled in by the app."
-
-[group_someone_who_isnt_in]
-text = "someone who isn’t in your contacts"
-note = "Desktop, groups (in group_live_view.rs, live_overlay)."
 
 [group_start_group_call]
 text = "Start group call"
@@ -2161,11 +2082,7 @@ note = "Desktop, groups (in group_live_view.rs, group_info_page)."
 
 [group_text]
 text = "{label}: {value}"
-note = "Desktop, groups (in group_live_view.rs, group_receipt_lines). {label} is a value filled in by the app. {value} is a value filled in by the app."
-
-[group_text_2]
-text = "{what} · {value}"
-note = "Desktop, groups (in group_live_view.rs, live_list). {what} is a value filled in by the app. {value} is a value filled in by the app."
+note = "Desktop, group message receipts (in group_live_view.rs, group_receipt_lines). {label} is a receipt word such as Delivered or Read, {value} is a list of names."
 
 [group_that_device_no_longer]
 text = "That device no longer carries this group’s calls."
@@ -2235,10 +2152,6 @@ note = "Desktop, groups (in group_live.rs, run)."
 text = "This computer stops passing the group’s messages on. You stay a member."
 note = "Desktop, groups (in group_live_view.rs, live_overlay)."
 
-[group_this_computer_too]
-text = ", this computer too"
-note = "Appended to the hosts-online line when this computer is one of the hosts. Keep the leading comma."
-
 [group_this_device_agreed_to]
 text = "This device agreed to host. It hosts as soon as an admin has appointed it."
 note = "Desktop, groups (in group_live.rs, run)."
@@ -2255,13 +2168,9 @@ note = "Desktop, groups (in group_live_view.rs, group_info_page)."
 text = "This group has no host. Posts wait until a host is appointed."
 note = "Desktop, groups (in group_live_view.rs, group_info_page)."
 
-[group_this_member]
-text = "this member"
-note = "Desktop, groups (in group_live_view.rs, live_overlay)."
-
 [group_turn_on_open_link]
-text = "Turn on Open link to share it"
-note = "Desktop, groups (in group_live_view.rs, group_info_page)."
+text = "Turn on Public link to share it"
+note = "Desktop, group info, under the Public link switch. \"Public link\" is the title of that switch."
 
 [group_unblocking]
 text = "Unblocking"
@@ -2308,8 +2217,8 @@ text = "Why you were removed"
 note = "Desktop, groups (in group_live_view.rs, live_overlay)."
 
 [group_will_be_able_to]
-text = "{name} will be able to invite people, flag members (3 flags remove someone) and appoint hosts. Only you, the owner, can make or remove admins."
-note = "Desktop, groups (in group_live_view.rs, live_overlay). {name} is a person's name (usually the first word of their chosen name)."
+text = "{name} will be able to invite people, flag members ({flags_needed} flags remove someone) and appoint hosts. Only you, the owner, can make or remove admins."
+note = "Desktop, group admin dialog (in group_live_view.rs, live_overlay). {name} is a person's first name; {flags_needed} is how many admin flags remove a member."
 
 [group_withdraw_the_offer_to]
 text = "Withdraw the offer to host"
@@ -2499,7 +2408,7 @@ note = "Desktop, linking devices (in link_view.rs, linked_devices_page)."
 
 [link_check_that_shows_this]
 text = "Check that {name} shows this code, then approve there."
-note = "Desktop, linking devices (in link_view.rs, link_screen). {name} is a person's name (usually the first word of their chosen name)."
+note = "Desktop, linking a device (in link_view.rs). {name} is the other device's name."
 
 [link_check_the_codes_match]
 text = "Check the codes match and approve on your phone."
@@ -2709,10 +2618,6 @@ note = "Desktop, linking devices (in link_view.rs, linked_devices_page). {value}
 text = "Tap Scan QR code and point it at this screen."
 note = "Desktop, linking devices (in link_view.rs, link_qr_screen)."
 
-[link_the_other_device]
-text = "the other device"
-note = "Desktop, linking devices (in link_view.rs, link_screen)."
-
 [link_there_is_no_code]
 text = "There is no code yet."
 note = "Desktop, linking devices (in link_view.rs, link_qr_screen)."
@@ -2773,10 +2678,6 @@ note = "Desktop, linking devices (in link_view.rs, )."
 text = "You type it each time Tinline starts."
 note = "Desktop, linking devices (in link_view.rs, link_secure_screen)."
 
-[link_your_account]
-text = "your account"
-note = "Desktop, linking devices (in link_view.rs, link_secure_screen)."
-
 [link_your_account_is_on]
 text = "Your account is on the other device."
 note = "Desktop, linking devices (in link_view.rs, link_screen)."
@@ -2795,10 +2696,6 @@ note = "Desktop, profile and settings (in profile_view.rs, notifications_page)."
 [profile_a_new_camera_is]
 text = "A new camera is used the next time your camera starts."
 note = "Desktop, profile and settings (in profile_view.rs, video_page)."
-
-[profile_a_status]
-text = "a status"
-note = "Desktop, profile and settings (in profile_ui.rs, profile_update)."
 
 [profile_about]
 text = "About"
@@ -2926,8 +2823,8 @@ text = "Busy"
 note = "Desktop, profile and settings (in profile_view.rs, settings_landing)."
 
 [profile_busy_until]
-text = "Busy until {value}"
-note = "Desktop, profile and settings (in profile_view.rs, settings_landing). {value} is a value filled in by the app."
+text = "Busy until {time}"
+note = "Desktop, profile availability (in profile_ui.rs, busy_until). Shown while I am marked busy. {time} is a clock time such as 18:00. This one is for a time later today."
 
 [profile_busy_until_you_change]
 text = "Busy until you change it"
@@ -2948,10 +2845,6 @@ note = "Desktop, profile and settings (in profile_view.rs, profile_page)."
 [profile_can_call_you]
 text = "Can call you"
 note = "Desktop, profile and settings (in profile_view.rs, calls_page)."
-
-[profile_cant_contain_control_or]
-text = "{cap} can’t contain control or text-direction characters."
-note = "Desktop, profile and settings (in profile_ui.rs, check_text). {cap} is a value filled in by the app."
 
 [profile_change_photo]
 text = "Change photo"
@@ -3226,8 +3119,9 @@ text = "No sounds from Tinline: ringing, call tones, joins"
 note = "Desktop, profile and settings (in profile_view.rs, sounds_page)."
 
 [profile_not_seen_for_days]
-text = "Not seen for {value} days"
-note = "Desktop, profile and settings (in profile_view.rs, devices_page). {value} is a value filled in by the app."
+one = "Not seen for {count} day"
+other = "Not seen for {count} days"
+note = "Desktop, profile devices list (in profile_view.rs, devices_page). {count} is how many whole days since the device was last seen."
 
 [profile_not_set]
 text = "Not set"
@@ -3505,41 +3399,21 @@ note = "Desktop, profile and settings (in profile_view.rs, profile_page)."
 text = "Tap a sound to hear it. The choice applies to the next call."
 note = "Desktop, profile and settings (in profile_view.rs, sounds_page)."
 
-[profile_text]
-text = "{value} {time}"
-note = "Desktop, profile and settings (in profile_ui.rs, until_label). {value} is a value filled in by the app. {time} is a time."
-
 [profile_that_file_couldnt_be]
 text = "That file couldn’t be read as a picture. It may be damaged."
 note = "Desktop, profile and settings (in profile_ui.rs, inspect)."
-
-[profile_that_is_too_long]
-text = "That is too long for {what}: up to {limit} bytes, and some characters take more than one."
-note = "Desktop, profile and settings (in profile_ui.rs, check_text). {what} is a value filled in by the app. {limit} is a value filled in by the app."
-
-[profile_that_is_too_long_up]
-text = "That {what} is too long. Up to {limit} bytes; some characters take more than one."
-note = "Desktop, profile and settings (in profile_ui.rs, check_name). {what} is a value filled in by the app. {limit} is a value filled in by the app."
 
 [profile_that_name_cant_be]
 text = "That name can’t be used. Keep it short, without control characters."
 note = "Desktop, profile and settings (in profile_ui.rs, profile_update)."
 
 [profile_that_picture_is_mb]
-text = "That picture is {value} MB. Pictures can be up to {value2} MB."
-note = "Desktop, profile and settings (in profile_ui.rs, inspect). {value} is a value filled in by the app. {value2} is a value filled in by the app."
+text = "That picture is {size} MB. Pictures can be up to {max} MB."
+note = "Desktop, profile picture (in profile_ui.rs, inspect). {size} is the file size in megabytes, {max} the largest allowed size in megabytes."
 
 [profile_that_picture_is_pixels]
-text = "That picture is {status} × {host} pixels. Tinline accepts up to 4096 pixels on a side."
-note = "Desktop, profile and settings (in profile_ui.rs, inspect). {status} is a value filled in by the app. {host} is a value filled in by the app."
-
-[profile_the_cant_be_empty]
-text = "The {what} can’t be empty."
-note = "Desktop, profile and settings (in profile_ui.rs, check_name). {what} is a value filled in by the app."
-
-[profile_the_cant_contain_control]
-text = "The {what} can’t contain control or text-direction characters."
-note = "Desktop, profile and settings (in profile_ui.rs, check_name). {what} is a value filled in by the app."
+text = "That picture is {width} × {height} pixels. Tinline accepts up to {max} pixels on a side."
+note = "Desktop, profile picture (in profile_ui.rs, inspect). {width} and {height} are the picture size in pixels; {max} is the largest allowed length of a side in pixels."
 
 [profile_the_libraries_tinline_is]
 text = "The libraries Tinline is built on"
@@ -3604,10 +3478,6 @@ note = "Desktop, profile and settings (in profile_view.rs, storage_page)."
 [profile_told_you_blocked_them]
 text = "Told you blocked them"
 note = "Desktop, profile and settings (in profile_view.rs, blocked_page)."
-
-[profile_tomorrow]
-text = "tomorrow {time}"
-note = "Desktop, profile and settings (in profile_ui.rs, until_label). {time} is a time."
 
 [profile_trend_probe]
 text = "Trend+probe"
@@ -3678,8 +3548,8 @@ text = "{name} will stop syncing with your account and stop ringing when you’r
 note = "Desktop, profile and settings (in profile_view.rs, devices_layer). {name} is a person's name (usually the first word of their chosen name). {value} is a value filled in by the app."
 
 [profile_write_these_24_words]
-text = "Write these 24 words down, in order, and keep them somewhere private."
-note = "Desktop, profile and settings (in profile_view.rs, phrase_page)."
+text = "Write these {words} words down, in order, and keep them somewhere private."
+note = "Desktop, profile and settings (in profile_view.rs, phrase_page). {words} is the number of recovery words (24), a number."
 
 [profile_yes]
 text = "Yes"
@@ -3730,8 +3600,8 @@ text = "Your reads stay with you"
 note = "Desktop, profile and settings (in profile_view.rs, privacy_landing)."
 
 [profile_your_recovery_key_is]
-text = "Your recovery key is the same as your 24 words, as one line. A password manager is a good place for it."
-note = "Desktop, profile and settings (in profile_view.rs, phrase_page)."
+text = "Your recovery key is the same as your {words} words, as one line. A password manager is a good place for it."
+note = "Desktop, profile and settings (in profile_view.rs, phrase_page). {words} is the number of recovery words (24), a number."
 
 [profile_your_recovery_phrase_is]
 text = "Your recovery phrase is the only way to get your account back if you lose every device. Anyone who has it can act as you."
@@ -4003,10 +3873,6 @@ note = "Desktop, sign-up, restore and add contact (in signup_view.rs, empty_hero
 text = "Adding…"
 note = "Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay)."
 
-[signup_and_have_read_the]
-text = " and have read the "
-note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
-
 [signup_any_length_works_a]
 text = "Any length works. A few random words are easy to remember."
 note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
@@ -4128,8 +3994,8 @@ text = "I wrote them down"
 note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
 
 [signup_if_you_ever_switch]
-text = "If you ever switch devices, these 24 words bring your account along."
-note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
+text = "If you ever switch devices, these {words} words bring your account along."
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {words} is the number of recovery words (24), a number."
 
 [signup_is_already_in_your]
 text = "{name} is already in your contacts."
@@ -4196,8 +4062,8 @@ text = "{count} of {total}"
 note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_head). {count} is a number. {total} is a value filled in by the app."
 
 [signup_of_24]
-text = "{filled} of 24"
-note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {filled} is a value filled in by the app."
+text = "{filled} of {total}"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {filled} is a value filled in by the app. {total} is how many recovery words there are (24), a number."
 
 [signup_only_the_people_you]
 text = "Only the people you add will see it."
@@ -4352,8 +4218,8 @@ text = "This computer can host your groups"
 note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
 
 [signup_tinline_connects_your_straight]
-text = "Tinline connects your {noun} straight to theirs."
-note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {noun} is the word for this device kind (e.g. computer)."
+text = "Tinline connects your computer straight to theirs."
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
 
 [signup_tinline_doesnt_collect_your]
 text = "Tinline doesn’t collect your contacts, calls or location."
@@ -4364,12 +4230,12 @@ text = "Two devices are better than one"
 note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
 
 [signup_type_your_24_recovery]
-text = "Type your 24 recovery words. This {noun} starts with an empty contact list."
-note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {noun} is the word for this device kind (e.g. computer)."
+text = "Type your {words} recovery words. This computer starts with an empty contact list."
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {words} is the number of recovery words (24), a number."
 
 [signup_type_your_24_words]
-text = "Type your 24 words in order, or paste them, or your recovery key, into the first box. They stay on this {noun}."
-note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {noun} is the word for this device kind (e.g. computer)."
+text = "Type your {words} words in order, or paste them, or your recovery key, into the first box. They stay on this computer."
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {words} is the number of recovery words (24), a number."
 
 [signup_unlock]
 text = "Unlock"
@@ -4412,16 +4278,17 @@ text = "When a direct line isn’t possible, an encrypted relay passes the call 
 note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
 
 [signup_word_in_the_recovery]
-text = "Word {value}{value2} {value3} in the recovery word list. Check the spelling."
-note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {value} is a value filled in by the app. {value2} is a value filled in by the app. {value3} is a value filled in by the app."
+text = "Word {value} isn’t in the recovery word list. Check the spelling."
+note = "Desktop, sign-up (in signup_view.rs, gate_step, Restore step). {value} is the number (1 to 24) of the first word that is not in the recovery word list. Shown when exactly one word is wrong."
 
 [signup_words]
 text = "Words"
 note = "Desktop, sign-up, restore and add contact (in signup_view.rs, words_key_seg)."
 
 [signup_words_are_still_missing]
-text = "{filled} words are still missing."
-note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {filled} is a value filled in by the app."
+one = "{count} word is still missing."
+other = "{count} words are still missing."
+note = "Desktop, sign-up, restore step (in signup_view.rs). Shown after I press Continue with too few words. {count} is how many of the 24 words are still empty."
 
 [signup_work_computer]
 text = "Work computer"
@@ -4452,8 +4319,8 @@ text = "{value} You type it each time Tinline starts. If you forget it, your rec
 note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {value} is a value filled in by the app."
 
 [signup_your_account_is_its]
-text = "Your account is its recovery phrase, so you can bring it to this {noun} two ways."
-note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {noun} is the word for this device kind (e.g. computer)."
+text = "Your account is its recovery phrase, so you can bring it to this computer two ways."
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
 
 [signup_your_account_is_yours]
 text = "Your account is yours."
@@ -4468,8 +4335,8 @@ text = "Your code"
 note = "Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay)."
 
 [signup_your_current_account_stays]
-text = "Your current account stays on this {noun}."
-note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {noun} is the word for this device kind (e.g. computer)."
+text = "Your current account stays on this computer."
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
 
 [signup_your_line_is_open]
 text = "Your line is open, {name}"
@@ -4488,12 +4355,12 @@ text = "Your nickname"
 note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
 
 [signup_your_recovery_key_is]
-text = "Your recovery key is in. It stays on this {noun}."
-note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {noun} is the word for this device kind (e.g. computer)."
+text = "Your recovery key is in. It stays on this computer."
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
 
 [signup_your_recovery_key_is_the]
-text = "Your recovery key is the same as your 24 words, as one line."
-note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
+text = "Your recovery key is the same as your {words} words, as one line."
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {words} is the number of recovery words (24), a number."
 
 [signup_your_request_to_is]
 text = "Your request to {value} is waiting. Your line opens when they accept."
@@ -4605,4 +4472,664 @@ note = "Busy duration choice."
 [profile_busy_no_end]
 text = "No end time"
 note = "Busy duration choice: stays busy until changed."
+
+[signup_word_in_the_recovery_more]
+one = "Word {value} and {count} more aren’t in the recovery word list. Check the spelling."
+other = "Word {value} and {count} more aren’t in the recovery word list. Check the spelling."
+note = "Desktop, sign-up (in signup_view.rs, gate_step, Restore step). Shown when several words are wrong. {value} is the number (1 to 24) of the first wrong word; {count} is how many other words are also wrong (at least 1)."
+
+[signup_by_continuing_you_agree]
+text = "By continuing, you agree to the {terms} and have read the {privacy}."
+note = "Desktop, sign-up, \"Before you start\" step (in signup_view.rs), small line above the Agree button. {terms} is replaced by a link that shows the text of Terms of use (signup_terms_of_use), {privacy} by a link that shows Privacy policy (signup_privacy_policy). Keep both placeholders; they can move."
+
+[profile_err_name_empty]
+text = "The name can’t be empty."
+note = "Desktop, profile edit (in profile_ui.rs, check_name / check_text). Error when saving an empty name."
+
+[profile_err_name_chars]
+text = "The name can’t contain control or text-direction characters."
+note = "Desktop, profile edit (in profile_ui.rs, check_name / check_text). Error when my name has invisible control or text-direction characters."
+
+[profile_err_name_long]
+text = "That name is too long. Up to {limit} bytes; some characters take more than one."
+note = "Desktop, profile edit (in profile_ui.rs, check_name / check_text). Error when my name is too long. {limit} is the maximum size in bytes."
+
+[profile_err_nickname_chars]
+text = "A nickname can’t contain control or text-direction characters."
+note = "Desktop, profile edit (in profile_ui.rs, check_name / check_text). Error when the nickname I give a contact has invisible control or text-direction characters."
+
+[profile_err_nickname_long]
+text = "That nickname is too long. Up to {limit} bytes; some characters take more than one."
+note = "Desktop, profile edit (in profile_ui.rs, check_name / check_text). Error when a nickname is too long. {limit} is the maximum size in bytes."
+
+[profile_err_status_long]
+text = "That is too long for a status: up to {limit} bytes, and some characters take more than one."
+note = "Desktop, profile edit (in profile_ui.rs, check_name / check_text). Error when my status is too long. {limit} is the maximum size in bytes."
+
+[profile_err_status_chars]
+text = "A status can’t contain control or text-direction characters."
+note = "Desktop, profile edit (in profile_ui.rs, check_name / check_text). Error when my status has invisible control or text-direction characters."
+
+[profile_err_about_long]
+text = "That is too long for about: up to {limit} bytes, and some characters take more than one."
+note = "Desktop, profile edit (in profile_ui.rs, check_name / check_text). Error when my \"about\" text is too long. {limit} is the maximum size in bytes."
+
+[profile_err_about_chars]
+text = "About can’t contain control or text-direction characters."
+note = "Desktop, profile edit (in profile_ui.rs, check_name / check_text). Error when my \"about\" text has invisible control or text-direction characters."
+
+[profile_err_text_long]
+text = "That is too long: up to {limit} bytes, and some characters take more than one."
+note = "Desktop, profile edit (in profile_ui.rs, check_name / check_text). Error when a custom profile field value is too long. {limit} is the maximum size in bytes."
+
+[profile_err_text_chars]
+text = "That can’t contain control or text-direction characters."
+note = "Desktop, profile edit (in profile_ui.rs, check_name / check_text). Error when a custom profile field value has invisible control or text-direction characters."
+
+[common_list_separator]
+text = ", "
+note = "Between items of a list of three or more names (the last two are joined with common_list_and). Keep the trailing space if the language needs one."
+
+[common_list_and]
+text = "{list} and {last}"
+note = "End of a list of three or more names: {list} is the earlier items already joined with the list separator, {last} the final item. English \"A, B and C\"."
+
+[common_list_two]
+text = "{first} and {last}"
+note = "A list of exactly two names. {first} and {last} are names."
+
+[common_dot_separator]
+text = " · "
+note = "Between short whole phrases on one line, e.g. \"Invited by Ana · 1 of 3 flags\". Keep the spaces."
+
+[date_month_1]
+text = "Jan"
+note = "Short month name inside dates such as \"Sep 12\" (month 1 of 12). A word or abbreviation, nothing else."
+
+[date_month_2]
+text = "Feb"
+note = "Short month name inside dates such as \"Sep 12\" (month 2 of 12). A word or abbreviation, nothing else."
+
+[date_month_3]
+text = "Mar"
+note = "Short month name inside dates such as \"Sep 12\" (month 3 of 12). A word or abbreviation, nothing else."
+
+[date_month_4]
+text = "Apr"
+note = "Short month name inside dates such as \"Sep 12\" (month 4 of 12). A word or abbreviation, nothing else."
+
+[date_month_5]
+text = "May"
+note = "Short month name inside dates such as \"Sep 12\" (month 5 of 12). A word or abbreviation, nothing else."
+
+[date_month_6]
+text = "Jun"
+note = "Short month name inside dates such as \"Sep 12\" (month 6 of 12). A word or abbreviation, nothing else."
+
+[date_month_7]
+text = "Jul"
+note = "Short month name inside dates such as \"Sep 12\" (month 7 of 12). A word or abbreviation, nothing else."
+
+[date_month_8]
+text = "Aug"
+note = "Short month name inside dates such as \"Sep 12\" (month 8 of 12). A word or abbreviation, nothing else."
+
+[date_month_9]
+text = "Sep"
+note = "Short month name inside dates such as \"Sep 12\" (month 9 of 12). A word or abbreviation, nothing else."
+
+[date_month_10]
+text = "Oct"
+note = "Short month name inside dates such as \"Sep 12\" (month 10 of 12). A word or abbreviation, nothing else."
+
+[date_month_11]
+text = "Nov"
+note = "Short month name inside dates such as \"Sep 12\" (month 11 of 12). A word or abbreviation, nothing else."
+
+[date_month_12]
+text = "Dec"
+note = "Short month name inside dates such as \"Sep 12\" (month 12 of 12). A word or abbreviation, nothing else."
+
+[date_weekday_mon]
+text = "Monday"
+note = "Weekday name inside dates such as \"Thursday 8 Oct\". Just the day name."
+
+[date_weekday_tue]
+text = "Tuesday"
+note = "Weekday name inside dates such as \"Thursday 8 Oct\". Just the day name."
+
+[date_weekday_wed]
+text = "Wednesday"
+note = "Weekday name inside dates such as \"Thursday 8 Oct\". Just the day name."
+
+[date_weekday_thu]
+text = "Thursday"
+note = "Weekday name inside dates such as \"Thursday 8 Oct\". Just the day name."
+
+[date_weekday_fri]
+text = "Friday"
+note = "Weekday name inside dates such as \"Thursday 8 Oct\". Just the day name."
+
+[date_weekday_sat]
+text = "Saturday"
+note = "Weekday name inside dates such as \"Thursday 8 Oct\". Just the day name."
+
+[date_weekday_sun]
+text = "Sunday"
+note = "Weekday name inside dates such as \"Thursday 8 Oct\". Just the day name."
+
+[date_month_day]
+text = "{month} {day}"
+note = "A date without a year. {month} is the short month name, {day} the day number. English \"Sep 12\"."
+
+[date_day_month]
+text = "{day} {month}"
+note = "A date without a year, day first. {day} is the day number, {month} the short month name. English \"12 Sep\"."
+
+[date_month_day_time]
+text = "{month} {day}, {time}"
+note = "A date and the clock time. {month} short month name, {day} day number, {time} the time like 15:20. English \"Oct 10, 15:20\"."
+
+[date_weekday_date]
+text = "{weekday} {day} {month}"
+note = "A date with its weekday, this year. {weekday} the day name, {day} the day number, {month} the short month name. English \"Thursday 8 Oct\"."
+
+[date_weekday_date_year]
+text = "{weekday} {day} {month} {year}"
+note = "A date with its weekday and year. {weekday} day name, {day} day number, {month} short month name, {year} the year. English \"Thursday 8 Oct 2025\"."
+
+[profile_busy_until_tomorrow]
+text = "Busy until tomorrow {time}"
+note = "Desktop, profile availability (in profile_ui.rs, busy_until). Shown while I am marked busy. {time} is a clock time such as 18:00. This one is for a time tomorrow."
+
+[profile_busy_until_mon]
+text = "Busy until Monday {time}"
+note = "Desktop, profile availability (in profile_ui.rs, busy_until). Shown while I am marked busy. {time} is a clock time such as 18:00. This one is for a time on Monday (within the next week)."
+
+[profile_busy_until_tue]
+text = "Busy until Tuesday {time}"
+note = "Desktop, profile availability (in profile_ui.rs, busy_until). Shown while I am marked busy. {time} is a clock time such as 18:00. This one is for a time on Tuesday (within the next week)."
+
+[profile_busy_until_wed]
+text = "Busy until Wednesday {time}"
+note = "Desktop, profile availability (in profile_ui.rs, busy_until). Shown while I am marked busy. {time} is a clock time such as 18:00. This one is for a time on Wednesday (within the next week)."
+
+[profile_busy_until_thu]
+text = "Busy until Thursday {time}"
+note = "Desktop, profile availability (in profile_ui.rs, busy_until). Shown while I am marked busy. {time} is a clock time such as 18:00. This one is for a time on Thursday (within the next week)."
+
+[profile_busy_until_fri]
+text = "Busy until Friday {time}"
+note = "Desktop, profile availability (in profile_ui.rs, busy_until). Shown while I am marked busy. {time} is a clock time such as 18:00. This one is for a time on Friday (within the next week)."
+
+[profile_busy_until_sat]
+text = "Busy until Saturday {time}"
+note = "Desktop, profile availability (in profile_ui.rs, busy_until). Shown while I am marked busy. {time} is a clock time such as 18:00. This one is for a time on Saturday (within the next week)."
+
+[profile_busy_until_sun]
+text = "Busy until Sunday {time}"
+note = "Desktop, profile availability (in profile_ui.rs, busy_until). Shown while I am marked busy. {time} is a clock time such as 18:00. This one is for a time on Sunday (within the next week)."
+
+[call_ends_your_call]
+text = "Answering ends your current call."
+note = "Desktop, call waiting card (in view.rs, waiting_banner), small line under the buttons, when the current caller has no name."
+
+[common_someone_is_calling]
+text = "Someone is calling"
+note = "Desktop, incoming call: notification and call waiting card title when the caller has no name."
+
+[call_reconnecting]
+text = "Reconnecting the call"
+note = "Desktop, call screen and mark label: the CALL lost its connection and is trying again (not a device link)."
+
+[call_reconnecting_2]
+text = "Reconnecting the call…"
+note = "Desktop, call screens (1:1 and group): status line while the CALL is reconnecting (not a device link)."
+
+[call_couldnt_connect]
+text = "Couldn’t connect the call"
+note = "Desktop, call screens and call history: the CALL could not be connected (not a device link)."
+
+[call_history_fallback]
+text = "Tinline call"
+note = "Desktop, call history row (in reason.rs) when a call ended for a reason with no wording of its own. A noun: the title of a call."
+
+[gcall_about_this_computer]
+text = "**This computer** is carrying this call. Everyone in the call connects to it, and it passes the audio on and chooses who is heard when several people speak."
+note = "Desktop, group call \"About this call\" sheet (in gcall_view.rs, gcall_about). The call is carried by this computer. **…** is shown bold."
+
+[gcall_about_device]
+text = "**{name}’s device** carries this call. Everyone in the call connects to it, and it passes the audio on and chooses who is heard when several people speak."
+note = "Desktop, group call \"About this call\" sheet (in gcall_view.rs, gcall_about). The call is carried by another person's device. {name} is that person's first name. **…** is shown bold."
+
+[gcall_about_unnamed]
+text = "**The call host** carries this call. Everyone in the call connects to it, and it passes the audio on and chooses who is heard when several people speak."
+note = "Desktop, group call \"About this call\" sheet (in gcall_view.rs, gcall_about). The call host is another device whose owner has no known name. **…** is shown bold."
+
+[gcall_call_host_device]
+text = "Call host: {name}’s device"
+note = "Desktop, group call screen (in gcall_view.rs), small line that opens \"About this call\". {name} is the first name of the person whose device carries the call."
+
+[gcall_call_host_unnamed]
+text = "Call host: another device"
+note = "Desktop, group call screen (in gcall_view.rs), small line that opens \"About this call\", when the host's owner has no known name."
+
+[group_invitation_line]
+text = "**{name}** invited you to **{group}**"
+note = "Desktop, groups list (in group_live_view.rs): an invitation card. {name} is the first name of who invited me, {group} the group name. **…** is shown bold."
+
+[group_invitation_line_unnamed]
+text = "Someone invited you to **{group}**"
+note = "Desktop, groups list (in group_live_view.rs): an invitation card when I cannot name who invited me. {group} is the group name. **…** is shown bold."
+
+[group_replying_to_yourself]
+text = "Replying to yourself"
+note = "Desktop, group composer: shown above the field while I reply to my own message."
+
+[group_replying_to_a_message]
+text = "Replying to a message"
+note = "Desktop, group composer: shown above the field while I reply to a message whose author I cannot name."
+
+[chat_replying_to_yourself]
+text = "Replying to yourself"
+note = "Desktop, chat composer: shown above the field while I reply to my own message."
+
+[group_invited_by_you]
+text = "Invited by you"
+note = "Desktop, group member row: I invited this member."
+
+[group_invited_by_someone]
+text = "Invited by someone"
+note = "Desktop, group member row: invited by someone I cannot name."
+
+[group_flags_of]
+one = "{flags} of {count} flag"
+other = "{flags} of {count} flags"
+note = "Desktop, group member menu and row (in group_live_view.rs), admins only. {flags} is how many admin flags this member has; {count} is how many flags remove a member."
+
+[group_link_own]
+text = "A link for your own other device"
+note = "Desktop, group join dialog (in group_live_view.rs, live_overlay): the line under the group name saying who invited me and who owns the group. The link is for my own other device."
+
+[group_link_own_owner]
+text = "A link for your own other device · owner {owner}"
+note = "Desktop, group join dialog (in group_live_view.rs, live_overlay): the line under the group name saying who invited me and who owns the group. The link is for my own other device. {owner} is the owner's name."
+
+[group_owner_by_you]
+text = "Invited by you · owner {owner}"
+note = "Desktop, group join dialog (in group_live_view.rs, live_overlay): the line under the group name saying who invited me and who owns the group. I made the link. {owner} is the owner's name."
+
+[group_owner_by_you_unnamed]
+text = "Invited by you"
+note = "Desktop, group join dialog (in group_live_view.rs, live_overlay): the line under the group name saying who invited me and who owns the group. I made the link; the owner has no known name."
+
+[group_owner_by_named]
+text = "Invited by {inviter} · owner {owner}"
+note = "Desktop, group join dialog (in group_live_view.rs, live_overlay): the line under the group name saying who invited me and who owns the group. {inviter} is the first name of who made the link, {owner} the owner's name."
+
+[group_owner_by_named_unnamed]
+text = "Invited by {inviter}"
+note = "Desktop, group join dialog (in group_live_view.rs, live_overlay): the line under the group name saying who invited me and who owns the group. {inviter} made the link; the owner has no known name."
+
+[group_owner_by_unnamed]
+text = "Invited by someone · owner {owner}"
+note = "Desktop, group join dialog (in group_live_view.rs, live_overlay): the line under the group name saying who invited me and who owns the group. Someone I cannot name made the link. {owner} is the owner's name."
+
+[group_owner_by_unnamed_unnamed]
+text = "Invited by someone"
+note = "Desktop, group join dialog (in group_live_view.rs, live_overlay): the line under the group name saying who invited me and who owns the group. Someone I cannot name made the link and the owner has no known name."
+
+[group_host_online]
+text = "Online"
+note = "Desktop, group info, a HOST DEVICE of the group is online (describes a device, not a person)."
+
+[group_host_offline]
+text = "Offline"
+note = "Desktop, group info, a HOST DEVICE of the group is offline (describes a device, not a person)."
+
+[group_hosts_online_here]
+one = "{count} host online, this computer too. Posts go through right away."
+other = "{count} hosts online, this computer too. Posts go through right away."
+note = "Desktop, group info, hosts section, when this computer is one of the hosts. {count} is how many hosts are online, including this computer."
+
+[group_hosts_store_the_group_admin]
+text = "Hosts store the group and pass posts on when others are offline. They are members you trust: a host can read everything posted in this group. Appoint a host from a member’s menu; they have to accept. Removing a host changes the group’s address within 2 days, so that device can no longer reach it."
+note = "Desktop, group info, hosts section note, for admins."
+
+[group_a_call_host_carries_admin]
+text = "A call host carries the call. Everyone in a call connects to it, and it passes the audio on, so it can hear the call. That is separate from chat hosting: a chat host is not a call host unless you also appoint it as one. Call hosts are members you trust, and each one chooses to accept. Appoint one from a member’s menu, or host calls on this computer."
+note = "Desktop, group info, call hosts section note, for admins."
+
+[group_asked_this_computer_to_unnamed]
+text = "An admin asked this computer to host {group}"
+note = "Desktop, group banner when an admin I cannot name asks this computer to host. {group} is the group name."
+
+[group_public_link]
+text = "Public link"
+note = "Desktop, group info: title of the switch that turns the group's public (open) invite link on or off. A noun phrase, not a button."
+
+[group_status_this_computer_hosts]
+text = "this computer hosts the group"
+note = "Desktop, group header (in group_live.rs, status_line): after the member count and a separator. This computer hosts the group."
+
+[group_status_no_host_yet]
+text = "no host yet"
+note = "Desktop, group header: after the member count and a separator. The group has no host."
+
+[group_status_waiting_for_a_host]
+text = "waiting for a host"
+note = "Desktop, group header: after the member count and a separator. No host is online."
+
+[group_online_count]
+one = "{count} online"
+other = "{count} online"
+note = "Desktop, public group (in group_live.rs, online_label). {count} is how many members are online."
+
+[group_online_capped]
+text = "{count}+ online"
+note = "Desktop, public group: the count stops at a cap. {count} is the cap (shown with a plus)."
+
+[group_post_photo]
+text = "Photo"
+note = "Desktop, group (in group_live.rs, post_line): one-line summary of a message that is only a picture."
+
+[group_post_photo_caption]
+text = "Photo · {caption}"
+note = "Desktop, group: one-line summary of a picture with a caption. {caption} is what I or they typed."
+
+[group_preview_you]
+text = "You: {text}"
+note = "Desktop, groups list second line: the last post was mine. {text} is its one-line text."
+
+[group_preview_author]
+text = "{name}: {text}"
+note = "Desktop, groups list second line: the last post. {name} is the author's first name, {text} its one-line text."
+
+[group_preview_someone]
+text = "Someone: {text}"
+note = "Desktop, groups list second line: the last post, author unknown. {text} is its one-line text."
+
+[group_sys_joined_you]
+text = "You joined"
+note = "Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). I joined."
+
+[group_sys_joined]
+text = "{name} joined"
+note = "Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). {name} joined."
+
+[group_sys_joined_someone]
+text = "Someone joined"
+note = "Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Someone I cannot name joined."
+
+[group_sys_left_you]
+text = "You left"
+note = "Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). I left."
+
+[group_sys_left]
+text = "{name} left"
+note = "Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). {name} left."
+
+[group_sys_left_someone]
+text = "Someone left"
+note = "Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Someone I cannot name left."
+
+[group_sys_removed_you]
+one = "You were removed after {count} admin flag"
+other = "You were removed after {count} admin flags"
+note = "Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). I was removed. {count} is how many admin flags remove a member."
+
+[group_sys_removed]
+one = "{name} was removed after {count} admin flag"
+other = "{name} was removed after {count} admin flags"
+note = "Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). {name} was removed. {count} is how many admin flags remove a member."
+
+[group_sys_removed_someone]
+one = "Someone was removed after {count} admin flag"
+other = "Someone was removed after {count} admin flags"
+note = "Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Someone I cannot name was removed. {count} is how many admin flags remove a member."
+
+[group_sys_host_added_you]
+text = "A device of yours now hosts the group"
+note = "Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). One of my devices became a host."
+
+[group_sys_host_added]
+text = "A device of {name}’s now hosts the group"
+note = "Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). {name} is a person; one of their devices became a host."
+
+[group_sys_host_added_someone]
+text = "A member’s device now hosts the group"
+note = "Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). One device of someone I cannot name became a host."
+
+[group_sys_host_removed_you]
+text = "A device of yours stopped hosting the group"
+note = "Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). One of my devices stopped hosting."
+
+[group_sys_host_removed]
+text = "A device of {name}’s stopped hosting the group"
+note = "Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). {name} is a person; one of their devices stopped hosting."
+
+[group_sys_host_removed_someone]
+text = "A member’s device stopped hosting the group"
+note = "Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). One device of someone I cannot name stopped hosting."
+
+[group_sys_admin_you_you]
+text = "You made yourself an admin"
+note = "Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Admin role given: I did it, to me."
+
+[group_sys_admin_you_other]
+text = "You made {name} an admin"
+note = "Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Admin role given: I did it, to {name}, a person."
+
+[group_sys_admin_you_someone]
+text = "You made someone an admin"
+note = "Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Admin role given: I did it, to someone I cannot name."
+
+[group_sys_admin_other_you]
+text = "{by} made you an admin"
+note = "Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Admin role given: {by} is the first name of the person who did it, to me."
+
+[group_sys_admin_other_other]
+text = "{by} made {name} an admin"
+note = "Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Admin role given: {by} is the first name of the person who did it, to {name}, a person."
+
+[group_sys_admin_other_someone]
+text = "{by} made someone an admin"
+note = "Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Admin role given: {by} is the first name of the person who did it, to someone I cannot name."
+
+[group_sys_admin_someone_you]
+text = "Someone made you an admin"
+note = "Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Admin role given: someone I cannot name did it, to me."
+
+[group_sys_admin_someone_other]
+text = "Someone made {name} an admin"
+note = "Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Admin role given: someone I cannot name did it, to {name}, a person."
+
+[group_sys_admin_someone_someone]
+text = "Someone made someone an admin"
+note = "Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Admin role given: someone I cannot name did it, to someone I cannot name."
+
+[group_sys_unadmin_you_you]
+text = "You removed yourself as admin"
+note = "Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Admin role taken away: I did it, to me."
+
+[group_sys_unadmin_you_other]
+text = "You removed {name} as admin"
+note = "Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Admin role taken away: I did it, to {name}, a person."
+
+[group_sys_unadmin_you_someone]
+text = "You removed someone as admin"
+note = "Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Admin role taken away: I did it, to someone I cannot name."
+
+[group_sys_unadmin_other_you]
+text = "{by} removed you as admin"
+note = "Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Admin role taken away: {by} is the first name of the person who did it, to me."
+
+[group_sys_unadmin_other_other]
+text = "{by} removed {name} as admin"
+note = "Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Admin role taken away: {by} is the first name of the person who did it, to {name}, a person."
+
+[group_sys_unadmin_other_someone]
+text = "{by} removed someone as admin"
+note = "Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Admin role taken away: {by} is the first name of the person who did it, to someone I cannot name."
+
+[group_sys_unadmin_someone_you]
+text = "Someone removed you as admin"
+note = "Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Admin role taken away: someone I cannot name did it, to me."
+
+[group_sys_unadmin_someone_other]
+text = "Someone removed {name} as admin"
+note = "Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Admin role taken away: someone I cannot name did it, to {name}, a person."
+
+[group_sys_unadmin_someone_someone]
+text = "Someone removed someone as admin"
+note = "Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Admin role taken away: someone I cannot name did it, to someone I cannot name."
+
+[group_sent_waiting]
+text = "Waiting for {name} · via {group}"
+note = "Desktop, group requests I sent (in group_live.rs, sent_line): the state line of a private-chat request. {name} is the first name, {group} the group they were reached through."
+
+[group_sent_waiting_unnamed]
+text = "Waiting for someone · via {group}"
+note = "Desktop, group requests I sent (in group_live.rs, sent_line): the state line of a private-chat request. The person has no known name. {group} is the group name."
+
+[group_sent_accepted_messages]
+text = "{name} accepted · messages only"
+note = "Desktop, group requests I sent (in group_live.rs, sent_line): the state line of a private-chat request. {name} accepted; messages only for now."
+
+[group_sent_accepted_messages_unnamed]
+text = "Accepted · messages only"
+note = "Desktop, group requests I sent (in group_live.rs, sent_line): the state line of a private-chat request. Someone accepted; messages only for now."
+
+[group_sent_accepted_connecting]
+text = "{name} accepted · connecting"
+note = "Desktop, group requests I sent (in group_live.rs, sent_line): the state line of a private-chat request. {name} accepted; connecting."
+
+[group_sent_accepted_connecting_unnamed]
+text = "Accepted · connecting"
+note = "Desktop, group requests I sent (in group_live.rs, sent_line): the state line of a private-chat request. Someone accepted; connecting."
+
+[group_sent_declined]
+text = "{name} declined"
+note = "Desktop, group requests I sent (in group_live.rs, sent_line): the state line of a private-chat request. {name} declined."
+
+[group_sent_declined_unnamed]
+text = "Declined"
+note = "Desktop, group requests I sent (in group_live.rs, sent_line): the state line of a private-chat request. Someone declined."
+
+[group_sent_blocked]
+text = "{name} blocked you"
+note = "Desktop, group requests I sent (in group_live.rs, sent_line): the state line of a private-chat request. {name} blocked me."
+
+[group_sent_blocked_unnamed]
+text = "Blocked by them"
+note = "Desktop, group requests I sent (in group_live.rs, sent_line): the state line of a private-chat request. Someone blocked me."
+
+[group_notice_cant_send]
+text = "You can’t send messages to this group."
+note = "Desktop, group notice line (in group_live.rs). Shown when I try to post but may not."
+
+[group_notice_invitation_sent]
+text = "Invitation sent to {name}. They join when they accept."
+note = "Desktop, group notice line (in group_live.rs). One invitation was sent. {name} is the invited person's first name."
+
+[group_notice_invitation_sent_unnamed]
+text = "Invitation sent. They join when they accept."
+note = "Desktop, group notice line (in group_live.rs). One invitation was sent to someone with no known name."
+
+[group_notice_invitations_sent]
+one = "{count} invitation sent. They join when they accept."
+other = "{count} invitations sent. Each person joins when they accept."
+note = "Desktop, group notice line (in group_live.rs). Several invitations were sent. {count} is how many (2 or more)."
+
+[group_notice_you_joined]
+text = "You joined {group}."
+note = "Desktop, group notice line (in group_live.rs). I accepted an invitation. {group} is the group name."
+
+[group_notice_you_joined_the_group]
+text = "You joined the group."
+note = "Desktop, group notice line (in group_live.rs). I joined with a link."
+
+[group_notice_declined_inv]
+text = "Declined. {name} sees that you declined."
+note = "Desktop, group notice line (in group_live.rs). I declined an invitation. {name} is the inviter's first name."
+
+[group_notice_declined_inv_unnamed]
+text = "Declined. They see that you declined."
+note = "Desktop, group notice line (in group_live.rs). I declined an invitation from someone with no known name."
+
+[group_notice_accepted_yours]
+text = "{name} accepted your request. You can message each other now; calls stay off until one of you allows them."
+note = "Desktop, group notice line (in group_live.rs). Someone accepted my private-chat request. {name} is their first name."
+
+[group_notice_accepted_yours_unnamed]
+text = "Your request was accepted. You can message each other now; calls stay off until one of you allows them."
+note = "Desktop, group notice line (in group_live.rs). Someone with no known name accepted my private-chat request."
+
+[group_notice_request_sent]
+text = "Request sent to {name}. It waits in Chats until they answer."
+note = "Desktop, group notice line (in group_live.rs). I asked for a private chat. {name} is their first name."
+
+[group_notice_request_sent_unnamed]
+text = "Request sent. It waits in Chats until they answer."
+note = "Desktop, group notice line (in group_live.rs). I asked for a private chat with someone with no known name."
+
+[group_notice_accepted]
+text = "Accepted. {name} is added for messages only and shows in Chats once their device connects; calls stay off until you allow them."
+note = "Desktop, group notice line (in group_live.rs). I accepted a private-chat request. {name} is their first name."
+
+[group_notice_accepted_unnamed]
+text = "Accepted. They are added for messages only and show in Chats once their device connects; calls stay off until you allow them."
+note = "Desktop, group notice line (in group_live.rs). I accepted a request from someone with no known name."
+
+[group_notice_declined_req]
+text = "Declined. {name} is told “declined”."
+note = "Desktop, group notice line (in group_live.rs). I declined a private-chat request. {name} is their first name."
+
+[group_notice_declined_req_unnamed]
+text = "Declined. They are told “declined”."
+note = "Desktop, group notice line (in group_live.rs). I declined a request from someone with no known name."
+
+[group_notice_link_copied]
+text = "Copied. Anyone holding the link can join while it’s open."
+note = "Desktop, group notice line (in group_live.rs). The public link was copied to the clipboard."
+
+[group_notice_group_is_open]
+text = "Your group is open. Copy the link to share it."
+note = "Desktop, group notice line (in group_live.rs). The group was made public; the link is not copied yet."
+
+[group_notice_group_made]
+text = "Group made. This computer hosts it; invite people from the members pane."
+note = "Desktop, group notice line (in group_live.rs). A new group was created on this computer."
+
+[group_give_the_group_a_name]
+text = "Give the group a name."
+note = "Desktop, new group dialog (in group_live.rs): error when the name is empty."
+
+[group_pick_someone_first]
+text = "Pick someone first."
+note = "Desktop, group \"Add members\" dialog (in group_live.rs): error when nobody is picked."
+
+[link_check_that_other_shows_this]
+text = "Check that the other device shows this code, then approve there."
+note = "Desktop, linking a device (in link_view.rs). Same as link_check_that_shows_this when the other device has no name."
+
+[link_link_other]
+text = "Link the other device?"
+note = "Desktop, linking a device (in link_view.rs). Same as link_link when the other device has no name."
+
+[link_linking_other]
+text = "Linking the other device"
+note = "Desktop, linking a device (in link_view.rs). Same as link_linking when the other device has no name."
+
+[link_linked_other]
+text = "Linked the other device"
+note = "Desktop, linking a device (in link_view.rs). Same as link_linked when the other device has no name."
+
+[link_linked_to_account]
+text = "Linked to your account"
+note = "Desktop, linking a device (in link_view.rs). Same as link_linked_to when the other device has no name."
+
+[chat_you_blocked_on]
+text = "You blocked {name} · {when}"
+note = "Desktop, chat (in chat_view.rs, block_note): same line with the date. {name} is the first name, {when} a date and time such as \"Oct 10, 15:20\"."
 

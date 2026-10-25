@@ -330,29 +330,48 @@ fn has_control(s: &str, allow_newline: bool) -> bool {
         bidi || (c.is_control() && !(allow_newline && matches!(c, '\n' | '\r' | '\t')))
     })
 }
-/// profile.ts checkName.
-pub fn check_name(raw: &str, what: &str) -> Result<(), String> {
+/// Which profile text field a check is for; each has its own messages.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum Field {
+    Name,
+    Nickname,
+    Status,
+    About,
+    Other,
+}
+/// profile.ts checkName (for the name or a contact's nickname).
+pub fn check_name(raw: &str, field: Field) -> Result<(), String> {
+    use crate::i18n::{tr, tr_args};
     let s = raw.trim();
+    let nick = field == Field::Nickname;
     if s.is_empty() {
-        return Err(crate::i18n::tr_args("profile_the_cant_be_empty", &[("what", &(what).to_string())]));
+        return Err(tr("profile_err_name_empty"));
     }
     if has_control(s, false) {
-        return Err(crate::i18n::tr_args("profile_the_cant_contain_control", &[("what", &(what).to_string())]));
+        return Err(tr(if nick { "profile_err_nickname_chars" } else { "profile_err_name_chars" }));
     }
     if s.len() > LIMIT_NAME {
-        return Err(crate::i18n::tr_args("profile_that_is_too_long_up", &[("what", &(what).to_string()),("limit", &(LIMIT_NAME).to_string())]));
+        return Err(tr_args(if nick { "profile_err_nickname_long" } else { "profile_err_name_long" }, &[("limit", &LIMIT_NAME.to_string())]));
     }
     Ok(())
 }
-/// profile.ts checkText.
-pub fn check_text(s: &str, what: &str) -> Result<(), String> {
+/// profile.ts checkText (status, about, or any other free text).
+pub fn check_text(s: &str, field: Field) -> Result<(), String> {
+    use crate::i18n::{tr, tr_args};
     if s.len() > LIMIT_TEXT {
-        return Err(crate::i18n::tr_args("profile_that_is_too_long", &[("what", &(what).to_string()),("limit", &(LIMIT_TEXT).to_string())]));
+        let key = match field {
+            Field::Status => "profile_err_status_long",
+            Field::About => "profile_err_about_long",
+            _ => "profile_err_text_long",
+        };
+        return Err(tr_args(key, &[("limit", &LIMIT_TEXT.to_string())]));
     }
     if has_control(s, true) {
-        let mut c = what.chars();
-        let cap = c.next().map(|f| f.to_uppercase().collect::<String>() + c.as_str()).unwrap_or_default();
-        return Err(crate::i18n::tr_args("profile_cant_contain_control_or", &[("cap", &(cap).to_string())]));
+        return Err(tr(match field {
+            Field::Status => "profile_err_status_chars",
+            Field::About => "profile_err_about_chars",
+            _ => "profile_err_text_chars",
+        }));
     }
     Ok(())
 }
@@ -366,7 +385,7 @@ pub fn inspect(bytes: &[u8]) -> Result<image::RgbaImage, String> {
         v.trim_end_matches(".0").to_string()
     };
     if bytes.len() > MAX {
-        return Err(crate::i18n::tr_args("profile_that_picture_is_mb", &[("value", &(mb(bytes.len())).to_string()),("value2", &(mb(MAX)).to_string())]));
+        return Err(crate::i18n::tr_args("profile_that_picture_is_mb", &[("size", &mb(bytes.len())), ("max", &mb(MAX))]));
     }
     let kind = match bytes {
         [0x89, 0x50, 0x4E, 0x47, ..] => ImageFormat::Png,
@@ -382,7 +401,7 @@ pub fn inspect(bytes: &[u8]) -> Result<image::RgbaImage, String> {
     let dec = r.into_decoder().map_err(|_| damaged())?;
     let (w, h) = dec.dimensions();
     if w > 4096 || h > 4096 {
-        return Err(crate::i18n::tr_args("profile_that_picture_is_pixels", &[("status", &(w).to_string()),("host", &(h).to_string())]));
+        return Err(crate::i18n::tr_args("profile_that_picture_is_pixels", &[("width", &w.to_string()), ("height", &h.to_string()), ("max", "4096")]));
     }
     if w == 0 || h == 0 {
         return Err(damaged());
@@ -697,21 +716,21 @@ impl App {
                 let key = e.key.clone();
                 let raw = e.text.clone();
                 let checked = match key.as_str() {
-                    "name" => check_name(&raw, "name").map(|_| Some(raw.trim().to_string())),
+                    "name" => check_name(&raw, Field::Name).map(|_| Some(raw.trim().to_string())),
                     "alias" => {
                         let v = raw.trim().to_string();
-                        if v.is_empty() { Ok(None) } else { check_name(&v, "nickname").map(|_| Some(v)) }
+                        if v.is_empty() { Ok(None) } else { check_name(&v, Field::Nickname).map(|_| Some(v)) }
                     }
                     "status" | "about" => {
                         let v = raw.trim().to_string();
-                        if v.is_empty() { Ok(None) } else { check_text(&v, if key == "status" { crate::i18n::tr_str("profile_a_status") } else { "about" }).map(|_| Some(v)) }
+                        if v.is_empty() { Ok(None) } else { check_text(&v, if key == "status" { Field::Status } else { Field::About }).map(|_| Some(v)) }
                     }
                     k if known(k).is_some_and(|k| k.1) => {
                         if raw.trim().is_empty() { Ok(None) } else { normalise_link(&raw).map(Some).ok_or_else(|| crate::i18n::tr_str("profile_enter_a_web_address").to_string()) }
                     }
                     _ => {
                         let v = raw.trim().to_string();
-                        if v.is_empty() { Ok(None) } else { check_text(&v, "this").map(|_| Some(v)) }
+                        if v.is_empty() { Ok(None) } else { check_text(&v, Field::Other).map(|_| Some(v)) }
                     }
                 };
                 let value = match checked {
@@ -1000,19 +1019,29 @@ impl App {
 pub const ADD_NAME_ID: &str = "add-info-name";
 pub const ADD_VALUE_ID: &str = "add-info-value";
 
-/// info.ts untilLabel: "18:00", "tomorrow 08:00", "Friday 08:00".
-pub fn until_label(until_secs: u64) -> String {
-    use chrono::{Local, TimeZone};
+/// info.ts untilLabel as a whole phrase: "Busy until 18:00", "Busy until tomorrow 08:00",
+/// "Busy until Friday 08:00". One string per case; the weekday is never slotted into a sentence.
+pub fn busy_until(until_secs: u64) -> String {
+    use chrono::{Datelike, Local, TimeZone, Weekday};
     let Some(a) = Local.timestamp_opt(until_secs as i64, 0).single() else { return String::new() };
     let today = Local::now().date_naive();
-    let hm = a.format("%H:%M").to_string();
-    if a.date_naive() == today {
-        hm
+    let time = a.format("%H:%M").to_string();
+    let key = if a.date_naive() == today {
+        "profile_busy_until"
     } else if a.date_naive() == today + chrono::Duration::days(1) {
-        crate::i18n::tr_args("profile_tomorrow", &[("time", &(hm).to_string())])
+        "profile_busy_until_tomorrow"
     } else {
-        crate::i18n::tr_args("profile_text", &[("value", &(a.format("%A")).to_string()),("time", &(hm).to_string())])
-    }
+        match a.weekday() {
+            Weekday::Mon => "profile_busy_until_mon",
+            Weekday::Tue => "profile_busy_until_tue",
+            Weekday::Wed => "profile_busy_until_wed",
+            Weekday::Thu => "profile_busy_until_thu",
+            Weekday::Fri => "profile_busy_until_fri",
+            Weekday::Sat => "profile_busy_until_sat",
+            Weekday::Sun => "profile_busy_until_sun",
+        }
+    };
+    crate::i18n::tr_args(key, &[("time", &time)])
 }
 
 #[cfg(test)]

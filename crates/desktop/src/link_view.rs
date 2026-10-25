@@ -18,7 +18,12 @@ impl App {
     pub(super) fn link_screen(&self, t: Tok) -> El<'_> {
         let l = &self.link;
         let existing = l.role == Role::Existing;
-        let peer = if l.peer.is_empty() { crate::i18n::tr_str("link_the_other_device").to_string() } else { l.peer.clone() };
+        // A named device or not: each sentence has a named and an unnamed form.
+        let peer = l.peer.clone();
+        let named = !peer.is_empty();
+        let pick = |named_key: &str, other_key: &str| -> String {
+            if named { crate::i18n::tr_args(named_key, &[("name", &peer)]) } else { crate::i18n::tr(other_key) }
+        };
         match &l.step {
             Step::Name => {
                 let col = column![
@@ -56,7 +61,7 @@ impl App {
                     self.wide(crate::i18n::tr_str("common_cancel"), Kind::Quiet, t, Some(Msg::LinkCancel)),
                 ]
                 .spacing(16);
-                self.shell(t, crate::i18n::tr_str("link_same_code_on_both"), &crate::i18n::tr_args("link_check_that_shows_this", &[("name", &(peer).to_string())]), col.into())
+                self.shell(t, crate::i18n::tr_str("link_same_code_on_both"), &pick("link_check_that_shows_this", "link_check_that_other_shows_this"), col.into())
             }
             Step::Code => {
                 let mut col = column![
@@ -88,7 +93,7 @@ impl App {
                     (!self.busy && (!self.has_pass || !l.pass.is_empty())).then_some(Msg::LinkApprove),
                 ));
                 col = col.push(self.wide(crate::i18n::tr_str("common_cancel"), Kind::Quiet, t, Some(Msg::LinkCancel)));
-                self.shell(t, &crate::i18n::tr_args("link_link", &[("name", &(peer).to_string())]), crate::i18n::tr_str("link_make_sure_the_other"), col.into())
+                self.shell(t, &pick("link_link", "link_link_other"), crate::i18n::tr_str("link_make_sure_the_other"), col.into())
             }
             Step::Approving if !existing => {
                 let col = column![container(tx("\u{2026}", 28.0, t.accent)).center_x(Fill).padding([40, 0])];
@@ -100,7 +105,7 @@ impl App {
                     self.wide(crate::i18n::tr_str("common_cancel"), Kind::Quiet, t, Some(Msg::LinkCancel)),
                 ]
                 .spacing(14);
-                self.shell(t, &crate::i18n::tr_args("link_linking", &[("name", &(peer).to_string())]), crate::i18n::tr_str("link_keep_both_devices_open"), col.into())
+                self.shell(t, &pick("link_linking", "link_linking_other"), crate::i18n::tr_str("link_keep_both_devices_open"), col.into())
             }
             Step::Done => {
                 let col = column![
@@ -112,7 +117,7 @@ impl App {
                     self.wide(crate::i18n::tr_str("common_done"), Kind::Primary, t, Some(Msg::LinkDoneOk)),
                 ]
                 .spacing(16);
-                self.shell(t, &crate::i18n::tr_args("link_linked", &[("name", &(peer).to_string())]), crate::i18n::tr_str("link_your_account_is_on"), col.into())
+                self.shell(t, &pick("link_linked", "link_linked_other"), crate::i18n::tr_str("link_your_account_is_on"), col.into())
             }
             Step::Failed(reason) if !existing => {
                 let err = container(tx(failure_text(reason), 13.0, t.danger).line_height(lh(19.0))).padding([12, 14]).width(Fill).style(ui::plain(t.danger_bg, 14.0));
@@ -235,7 +240,8 @@ impl App {
 
     /// New device linked: optional passphrase, then the S1 commit (key saved, then identity).
     pub(super) fn link_secure_screen(&self, t: Tok) -> El<'_> {
-        let who = if self.link.peer.is_empty() { crate::i18n::tr_str("link_your_account").to_string() } else { self.link.peer.clone() };
+        let who = self.link.peer.clone();
+        let linked_to = if who.is_empty() { crate::i18n::tr("link_linked_to_account") } else { crate::i18n::tr_args("link_linked_to", &[("name", &who)]) };
         let col = if self.keyring_ok {
             column![
                 self.new_pass_field(t, crate::i18n::tr_str("link_passphrase_optional"), Msg::LinkSecureGo),
@@ -255,11 +261,12 @@ impl App {
         .spacing(12)
         .push(self.notice_bar(t))
         .push(self.wide(if self.busy { crate::i18n::tr_str("common_saving") } else { crate::i18n::tr_str("common_continue") }, Kind::Primary, t, (!self.busy).then_some(Msg::LinkSecureGo)));
-        self.shell(t, &crate::i18n::tr_args("link_linked_to", &[("name", &(who).to_string())]), crate::i18n::tr_str("link_protect_the_account_on"), col.into())
+        self.shell(t, &linked_to, crate::i18n::tr_str("link_protect_the_account_on"), col.into())
     }
 
     pub(super) fn link_sync_screen(&self, t: Tok) -> El<'_> {
-        let who = if self.link.peer.is_empty() { crate::i18n::tr_str("link_your_account").to_string() } else { self.link.peer.clone() };
+        let who = self.link.peer.clone();
+        let linked_to = if who.is_empty() { crate::i18n::tr("link_linked_to_account") } else { crate::i18n::tr_args("link_linked_to", &[("name", &who)]) };
         let count = |n: usize, what: &str| -> El<'_> {
             row![semi(what.to_string(), 15.0, t.ink), Space::new().width(Fill), mono(n.to_string(), 15.0, t.ink)].into()
         };
@@ -283,7 +290,7 @@ impl App {
             tx(crate::i18n::tr_str("link_sync_keeps_going_in"), 12.0, t.ink2),
         ]
         .spacing(14);
-        self.shell(t, &crate::i18n::tr_args("link_linked_to", &[("name", &(who).to_string())]), crate::i18n::tr_str("link_bringing_your_contacts_and"), col.into())
+        self.shell(t, &linked_to, crate::i18n::tr_str("link_bringing_your_contacts_and"), col.into())
     }
 
     pub(super) fn unlinked_screen(&self, t: Tok) -> El<'_> {

@@ -44,3 +44,30 @@ fn every_language_has_english_fallback_for_every_key() {
     }
     set_language("en");
 }
+
+#[test]
+fn list_joins_with_language_patterns() {
+    set_language("en");
+    assert_eq!(tr_list(&[]), "");
+    assert_eq!(tr_list(&["Ana"]), "Ana");
+    assert_eq!(tr_list(&["Ana", "Bo"]), "Ana and Bo");
+    assert_eq!(tr_list(&["Ana", "Bo", "Cy"]), "Ana, Bo and Cy");
+    assert_eq!(tr_dots(&["a", "", "b"]), "a · b");
+}
+
+#[test]
+fn rich_text_pieces() {
+    set_language("en");
+    let p = tr_rich("signup_by_continuing_you_agree", &[]);
+    assert!(p.contains(&Piece::Slot("terms".into())) && p.contains(&Piece::Slot("privacy".into())));
+    let p = tr_rich("group_invitation_line", &[("name", "Ana"), ("group", "Hike")]);
+    assert_eq!(p, vec![Piece::Bold("Ana".into()), Piece::Text(" invited you to ".into()), Piece::Bold("Hike".into())]);
+}
+
+#[test]
+fn month_and_weekday_keys_exist() {
+    set_language("en");
+    assert_eq!(date::month_day(9, 12), "Sep 12");
+    assert_eq!(date::day_month(12, 9), "12 Sep");
+    assert_eq!(date::weekday(chrono::Weekday::Thu), "Thursday");
+}

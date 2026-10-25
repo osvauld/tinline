@@ -384,7 +384,7 @@ impl App {
         let (av_text, busy) = if self.avail.available {
             (crate::i18n::tr_str("common_available").to_string(), false)
         } else {
-            (self.avail.until.map(|u| crate::i18n::tr_args("profile_busy_until", &[("value", &(pf::until_label(u)).to_string())])).unwrap_or_else(|| crate::i18n::tr_str("profile_busy").into()), true)
+            (self.avail.until.map(|u| pf::busy_until(u)).unwrap_or_else(|| crate::i18n::tr_str("profile_busy").into()), true)
         };
         let name = self.profile_name.clone();
         let me_row: RowFn = Box::new(move |r: Radius| {
@@ -482,7 +482,7 @@ impl App {
             let name = if d.label.is_empty() { crate::i18n::tr_str("common_unnamed_device").to_string() } else { d.label.clone() };
             let (sub, color, strong) = if d.this_device { (crate::i18n::tr_str("profile_this_device_online").to_string(), t.ink2, false) }
                 else if live(d) { (crate::i18n::tr_str("profile_online_now").into(), t.accent_ink, true) }
-                else if let Some(s) = d.last_seen.filter(|_| stale(d)) { (crate::i18n::tr_args("profile_not_seen_for_days", &[("value", &(now.saturating_sub(s) / 86400).to_string())]), t.warn_ink, true) }
+                else if let Some(s) = d.last_seen.filter(|_| stale(d)) { (crate::i18n::tr_count("profile_not_seen_for_days", now.saturating_sub(s) / 86400, &[]), t.warn_ink, true) }
                 else { (last_seen(now, d.last_seen), t.ink2, false) };
             let icon = if d.this_device { "laptop" } else { "devices" };
             let dev = d.device.clone();
@@ -670,7 +670,7 @@ impl App {
             let bar = row![pg_btn(t, if shown { Btn::Outline } else { Btn::Primary }, Some(if shown { "eyeoff" } else { "eye" }), if shown { crate::i18n::tr_str("profile_hide_key") } else { crate::i18n::tr_str("profile_show_key") }, Some(Msg::Privacy(crate::app::PvMsg::Words(!shown)))),
                 pg_btn(t, Btn::Outline, Some("copy"), crate::i18n::tr_str("common_copy_my_key"), Some(Msg::Privacy(crate::app::PvMsg::CopyKey))),
                 tx(if shown { crate::i18n::tr_args("profile_hides_in_s", &[("seconds", &(left).to_string())]) } else { String::new() }, 13.0, t.ink2)].spacing(12).align_y(Alignment::Center);
-            let c = column![lead_(crate::i18n::tr_str("profile_your_recovery_key_is")), container(seg).padding(Padding { bottom: 10.0, ..Padding::ZERO }), shown_key,
+            let c = column![lead_(&crate::i18n::tr_args("profile_your_recovery_key_is", &[("words", crate::i18n::WORDS)])), container(seg).padding(Padding { bottom: 10.0, ..Padding::ZERO }), shown_key,
                 container(bar).padding(Padding { top: 12.0, ..Padding::ZERO }),
                 pf_note(t, crate::i18n::tr_str("profile_anyone_who_has_it"))];
             return self.pf_scroll(t, pf_sec(16.0, c.into()), 40.0);
@@ -693,7 +693,7 @@ impl App {
         let left = self.pv.shown_at.map(|a| 30u64.saturating_sub(a.elapsed().as_secs())).unwrap_or(30);
         let bar = row![pg_btn(t, if shown { Btn::Outline } else { Btn::Primary }, Some(if shown { "eyeoff" } else { "eye" }), if shown { crate::i18n::tr_str("profile_hide_words") } else { crate::i18n::tr_str("profile_show_words") }, Some(Msg::Privacy(crate::app::PvMsg::Words(!shown)))),
             tx(if shown { crate::i18n::tr_args("profile_hides_in_s", &[("seconds", &(left).to_string())]) } else { String::new() }, 13.0, t.ink2)].spacing(12).align_y(Alignment::Center);
-        let c = column![lead_(crate::i18n::tr_str("profile_write_these_24_words")), container(seg).padding(Padding { bottom: 10.0, ..Padding::ZERO }), card, container(bar).padding(Padding { top: 12.0, ..Padding::ZERO }),
+        let c = column![lead_(&crate::i18n::tr_args("profile_write_these_24_words", &[("words", crate::i18n::WORDS)])), container(seg).padding(Padding { bottom: 10.0, ..Padding::ZERO }), card, container(bar).padding(Padding { top: 12.0, ..Padding::ZERO }),
             pf_note(t, crate::i18n::tr_str("profile_there_is_no_copy"))];
         self.pf_scroll(t, pf_sec(16.0, c.into()), 40.0)
     }
@@ -1052,7 +1052,7 @@ impl App {
         };
         let seg = container(row![seg(crate::i18n::tr_str("common_available"), available, m(Action::Available)), seg(crate::i18n::tr_str("profile_busy"), !available, m(Action::Busy))].spacing(4))
             .padding(4).width(Fill).style(ui::plain(t.surface2, 16.0));
-        let line = if available { crate::i18n::tr_str("common_available").to_string() } else { self.avail.until.map(|u| crate::i18n::tr_args("profile_busy_until", &[("value", &(pf::until_label(u)).to_string())])).unwrap_or_else(|| crate::i18n::tr_str("profile_busy_until_you_change").into()) };
+        let line = if available { crate::i18n::tr_str("common_available").to_string() } else { self.avail.until.map(|u| pf::busy_until(u)).unwrap_or_else(|| crate::i18n::tr_str("profile_busy_until_you_change").into()) };
         let mut now = row![].spacing(10).align_y(Alignment::Center);
         if self.profiles.av_error.is_empty() {
             now = now.push(tx(line, 13.0, t.ink).line_height(lh(19.0)).wrapping(iced::widget::text::Wrapping::None));
@@ -1232,7 +1232,7 @@ impl App {
             let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0);
             let busy = unavailable && until.is_none_or(|u| u > now);
             let chip: El = if busy {
-                let label = until.map(|u| crate::i18n::tr_args("profile_busy_until", &[("value", &(pf::until_label(u)).to_string())])).unwrap_or_else(|| crate::i18n::tr_str("profile_busy").into());
+                let label = until.map(|u| pf::busy_until(u)).unwrap_or_else(|| crate::i18n::tr_str("profile_busy").into());
                 container(semi(label, 13.0, t.warn_ink).line_height(lh(20.0))).padding([3, 12]).style(ui::plain(t.warn, 13.0)).into()
             } else {
                 Space::new().into()

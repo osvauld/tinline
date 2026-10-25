@@ -1,8 +1,5 @@
 # Generated from i18n/tm/fr.toml by scripts/i18n_tm.py apply. Edit the tm file.
 
-[common_a_device_name_is]
-text = "Un nom d’appareil fait de 1 à 64 caractères."
-
 [common_about_this_call]
 text = "À propos de cet appel"
 
@@ -93,9 +90,6 @@ text = "Copier ma clé"
 [common_copy_recovery_phrase]
 text = "Copier les mots de récupération"
 
-[common_couldnt_connect]
-text = "Connexion impossible"
-
 [common_current_passphrase]
 text = "Phrase secrète actuelle"
 
@@ -116,9 +110,6 @@ text = "Direct"
 
 [common_done]
 text = "OK"
-
-[common_give_this_computer_a]
-text = "Donnez à cet ordinateur un nom de 1 à 64 caractères."
 
 [common_got_it]
 text = "Compris"
@@ -251,12 +242,6 @@ text = "Photo · {value}"
 
 [common_privacy]
 text = "Confidentialité"
-
-[common_reconnecting]
-text = "Reconnexion"
-
-[common_reconnecting_2]
-text = "Reconnexion…"
 
 [common_recovery_phrase]
 text = "Mots de récupération"
@@ -402,9 +387,6 @@ text = "Saisissez d’abord un nom"
 [app_enter_your_name_and]
 text = "Saisissez votre nom et vos mots de récupération"
 
-[app_ev]
-text = "Ev"
-
 [app_invited_you_to_the]
 text = "{value} vous a invité dans le groupe"
 
@@ -534,9 +516,6 @@ text = "Refusé sur un autre appareil"
 [call_device_changes_apply_from]
 text = "Les changements de périphérique s’appliquent à partir du prochain appel."
 
-[call_during_your_call]
-text = "pendant votre appel"
-
 [call_end]
 text = "Raccrocher"
 
@@ -552,9 +531,6 @@ text = "Chiffré de bout en bout."
 [call_end_to_end_encrypted_ctrl]
 text = "Chiffré de bout en bout · Ctrl M micro · Ctrl E raccrocher · Échap réduire"
 
-[call_ends_your_call_with]
-text = "Met fin à votre appel avec"
-
 [call_enter_answers_esc_declines]
 text = "Entrée pour répondre · Échap pour refuser"
 
@@ -569,9 +545,6 @@ text = "HD"
 
 [call_ignore_limits_heat_their]
 text = "Ignorer les limites (chaleur, son décodeur)"
-
-[call_is_calling_you]
-text = "vous appelle"
 
 [call_minimize_call]
 text = "Réduire l’appel"
@@ -609,9 +582,6 @@ text = "Démarrage de la vidéo…"
 [call_stats_for_nerds]
 text = "Stats pour les curieux"
 
-[call_text]
-text = "{day} {value}"
-
 [call_the_connection_dropped_for]
 text = "La connexion a été coupée un instant. Tinline cherche à rejoindre {name}."
 
@@ -623,9 +593,6 @@ text = "Sa vidéo"
 
 [call_these_apply_to_this]
 text = "Ces réglages s’appliquent à cet appel. Paramètres > Vidéo définit le prochain appel."
-
-[call_unknown]
-text = "Inconnu"
 
 [call_video_is_starting]
 text = "La vidéo démarre…"
@@ -819,7 +786,7 @@ text = "Lu sur l’appareil de {name}"
 text = "Répondre"
 
 [chat_replying_to]
-text = "Réponse à {value}"
+text = "Réponse à {name}"
 
 [chat_return_to_call]
 text = "Revenir à l’appel"
@@ -867,7 +834,7 @@ text = "En attente de connexion"
 text = "En attente de confirmation de l’appareil de {name}"
 
 [chat_you_blocked]
-text = "Vous avez bloqué {name}{when}"
+text = "Vous avez bloqué {name}"
 
 [chat_you_deleted_this_message]
 text = "Vous avez supprimé ce message"
@@ -959,9 +926,6 @@ text = "Réessayer"
 [gate_the_system_keyring_did]
 text = "Le trousseau du système n’a pas accepté la clé."
 
-[gate_these_24_words_are]
-text = "Ces 24 mots sont le seul moyen de restaurer votre identité sur un autre appareil."
-
 [gate_this_computer_no_longer]
 text = "Cet ordinateur n’a plus la clé qui l’ouvre, et son entrée dans le trousseau a disparu. Dès que vous restaurez, vos appels arrivent à nouveau."
 
@@ -973,9 +937,6 @@ text = "Nouvel essai…"
 
 [gate_turn_on]
 text = "Activer"
-
-[gate_you_didnt_set_a]
-text = "Vous n’avez pas défini de phrase secrète, donc les 24 mots de récupération sont le seul moyen de revenir. Vos contacts restent."
 
 [gate_your_calls_come_through]
 text = "Vos appels arrivent à nouveau dès que vous êtes de retour en ligne."
@@ -998,9 +959,6 @@ text = "La batterie est faible ou l’ordinateur chauffe. L’hébergement est l
 [gcall_call_ended_host_lost]
 text = "Appel terminé — hôte perdu"
 
-[gcall_call_host]
-text = "Hôte d’appel : {host}"
-
 [gcall_connecting]
 text = "Connexion…"
 
@@ -1016,9 +974,6 @@ text = "Appel de groupe"
 [gcall_is_calling_the_group]
 text = "{value} appelle le groupe"
 
-[gcall_is_carrying]
-text = "héberge"
-
 [gcall_no_call_host_available]
 text = "Aucun hôte d’appel disponible"
 
@@ -1026,25 +981,15 @@ text = "Aucun hôte d’appel disponible"
 text = "Vous seul pour l’instant. En attente des autres."
 
 [gcall_people_in_the_call]
-text = "{count} personnes dans l’appel"
-
-[gcall_s_device]
-text = "l’appareil de {value}"
+one = "{count} personne dans l’appel"
+many = "{count} personnes dans l’appel"
+other = "{count} personnes dans l’appel"
 
 [gcall_started_a_call]
 text = "{name} a lancé un appel"
 
 [gcall_started_by]
 text = "Lancé par {value}"
-
-[gcall_the_call_host]
-text = "L’hôte d’appel"
-
-[gcall_this_call_everyone_in]
-text = " {value} cet appel. Chaque participant s’y connecte ; il transmet l’audio et choisit qui est entendu quand plusieurs personnes parlent."
-
-[gcall_this_computer]
-text = "cet ordinateur"
 
 [gcall_your_connection_to_the]
 text = "Votre connexion à l’hôte d’appel est chiffrée, mais l’hôte d’appel lui-même reçoit l’audio, il peut donc entendre cet appel. Vous lui faites confiance pour l’appel comme vous faites confiance à un hôte de groupe pour les publications."
@@ -1056,7 +1001,7 @@ text = "Vous êtes déjà en appel."
 text = "Vous êtes l’hôte d’appel"
 
 [group_a_call_host_carries]
-text = "Un hôte d’appel héberge l’appel. Chaque participant s’y connecte et il transmet l’audio, il peut donc entendre l’appel. C’est distinct de l’hébergement du groupe : un hôte de groupe n’est pas hôte d’appel, sauf si vous le désignez aussi comme tel. Les hôtes d’appel sont des membres de confiance, et chacun choisit d’accepter.{value}"
+text = "Un hôte d’appel héberge l’appel. Chaque participant s’y connecte et il transmet l’audio, il peut donc entendre l’appel. C’est distinct de l’hébergement du groupe : un hôte de groupe n’est pas hôte d’appel, sauf si vous le désignez aussi comme tel. Les hôtes d’appel sont des membres de confiance, et chacun choisit d’accepter."
 
 [group_a_call_host_is]
 text = "Un hôte d’appel est l’ordinateur ou le téléphone d’un membre qui héberge l’appel. Un admin peut en désigner un dans Infos du groupe."
@@ -1076,20 +1021,11 @@ text = "Un hôte garde une copie complète d’un groupe et transmet les message
 [group_a_host_keeps_a_full]
 text = "Un hôte garde une copie complète du groupe, transmet les messages pendant que les téléphones des membres sont en veille et connaît les adresses de groupe des membres. Il doit rester en marche. Héberger ne fait pas de vous un admin ; vous pouvez arrêter à tout moment."
 
-[group_a_host_lists_up]
-text = "Un hôte affiche jusqu’à {value} personnes à la fois, il peut donc y en avoir d’autres."
-
 [group_a_host_stays_on]
 text = "Un hôte reste allumé et transmet les publications quand les autres sont hors ligne"
 
-[group_a_link_for_your]
-text = "Un lien pour un autre de vos appareils"
-
 [group_a_link_that_doesnt]
 text = "Un lien qui n’expire pas"
-
-[group_a_message]
-text = "un message"
 
 [group_a_private_invite_to]
 text = "Une invitation privée pour chaque personne"
@@ -1118,14 +1054,8 @@ text = "Déjà membre"
 [group_also_confirmed]
 text = "Ont aussi confirmé : {value}"
 
-[group_also_hosts_calls]
-text = " · héberge aussi les appels"
-
 [group_an_admin_asked_this]
 text = "Un admin a demandé à cet ordinateur d’héberger les appels du groupe"
-
-[group_and]
-text = "{value} et {last}"
 
 [group_anyone_holding_the_link]
 text = "Toute personne qui a le lien peut rejoindre, sans invitation ni date limite. Partagez-le là où vous aimeriez qu’on trouve le groupe."
@@ -1154,9 +1084,6 @@ text = "Proposer une discussion privée à {name}"
 [group_asked_the_device_carries]
 text = "Demande envoyée. L’appareil héberge les appels dès qu’il accepte."
 
-[group_asked_this_computer_to]
-text = "{value} demande à cet ordinateur d’héberger {name}"
-
 [group_asks_to_carry_group]
 text = "Demande à {name} d’héberger les appels de groupe sur cet appareil ; il faut son accord"
 
@@ -1164,7 +1091,7 @@ text = "Demande à {name} d’héberger les appels de groupe sur cet appareil 
 text = "Bloquer {name}"
 
 [group_blocked]
-text = " · Bloqué"
+text = "Bloqué"
 
 [group_blocked_2]
 text = "Bloqué {value}"
@@ -1222,9 +1149,6 @@ text = "Tout le monde peut à nouveau publier."
 [group_everyone_in_the_group]
 text = "Tout le monde dans le groupe peut publier"
 
-[group_flag]
-text = " · {value} signalement"
-
 [group_flag_2]
 text = "Signalement"
 
@@ -1244,7 +1168,9 @@ text = "Signalé {value}"
 text = "Signalé par {value}. Vous pouvez toujours lire ce que vous avez reçu avant ; rien de nouveau n’arrivera."
 
 [group_flags_remove_from_the]
-text = "{flags_needed} signalements retirent {name} du groupe"
+one = "{count} signalement retire {name} du groupe"
+many = "{count} signalements retirent {name} du groupe"
+other = "{count} signalements retirent {name} du groupe"
 
 [group_getting_the_link]
 text = "Récupération du lien…"
@@ -1288,12 +1214,12 @@ other = "{count} hôtes"
 text = "Héberge dès que {name} accepte sur cet appareil ; un ordinateur qui reste allumé est idéal"
 
 [group_hosts_online]
-one = "{count} hôte en ligne{extra}. Les publications passent tout de suite."
-many = "{count} hôtes en ligne{extra}. Les publications passent tout de suite."
-other = "{count} hôtes en ligne{extra}. Les publications passent tout de suite."
+one = "{count} hôte en ligne. Les publications passent tout de suite."
+many = "{count} hôtes en ligne. Les publications passent tout de suite."
+other = "{count} hôtes en ligne. Les publications passent tout de suite."
 
 [group_hosts_store_the_group]
-text = "Les hôtes conservent le groupe et transmettent les publications quand les autres sont hors ligne. Ce sont des membres de confiance : un hôte peut lire tout ce qui est publié dans ce groupe.{value}"
+text = "Les hôtes conservent le groupe et transmettent les publications quand les autres sont hors ligne. Ce sont des membres de confiance : un hôte peut lire tout ce qui est publié dans ce groupe."
 
 [group_if_accepts_you_can]
 text = "Si {name} accepte, vous pourrez vous écrire directement. Les appels restent désactivés jusqu’à ce que l’un de vous les autorise."
@@ -1314,16 +1240,15 @@ text = "Inviter des contacts"
 text = "Lien d’invitation pour {gname}"
 
 [group_invite_people]
-text = "Inviter {len} personnes"
+one = "Inviter {count} personne"
+many = "Inviter {count} personnes"
+other = "Inviter {count} personnes"
 
 [group_invite_valid_until]
 text = "Invitation valable jusqu’au {value}"
 
-[group_invited_by]
-text = " · invité par {b}"
-
 [group_invited_by_2]
-text = "Invité par {value}"
+text = "Invité par {name}"
 
 [group_invited_not_delivered_yet]
 text = "Invité · pas encore distribué"
@@ -1333,9 +1258,6 @@ text = "Invité · en attente"
 
 [group_invited_waiting_for_an]
 text = "Invité · en attente de réponse"
-
-[group_invited_you_to]
-text = " vous a invité dans "
 
 [group_invites]
 text = "Invitations"
@@ -1459,12 +1381,6 @@ text = "Personne n’est bloqué. Pour bloquer quelqu’un, ouvrez sa fiche dans
 [group_not_yet]
 text = "Pas encore"
 
-[group_of_flags]
-text = " · signalements : {flags} sur {flags_needed}"
-
-[group_of_flags_2]
-text = " · signalements : {flags} sur {value}"
-
 [group_offered_to_host]
 text = "Propose d’héberger"
 
@@ -1504,9 +1420,6 @@ text = "Ouvre votre discussion"
 [group_owner]
 text = "Propriétaire"
 
-[group_owner_2]
-text = "{inviter} · propriétaire : {owner}"
-
 [group_paste_an_invite_link]
 text = "Coller un lien d’invitation"
 
@@ -1538,7 +1451,9 @@ text = "Retiré"
 text = "{value} · hors du groupe"
 
 [group_removed_after_admin_flags]
-text = "Retrait après {len} signalements d’admins"
+one = "Retrait après {count} signalement d’admin"
+many = "Retrait après {count} signalements d’admins"
+other = "Retrait après {count} signalements d’admins"
 
 [group_replying_to]
 text = "Réponse à {name}"
@@ -1573,9 +1488,6 @@ text = "Afficher les messages précédents"
 [group_since]
 text = "Depuis le {value}"
 
-[group_someone_who_isnt_in]
-text = "quelqu’un qui n’est pas dans vos contacts"
-
 [group_start_group_call]
 text = "Lancer un appel de groupe"
 
@@ -1608,9 +1520,6 @@ text = "Arrêter d’héberger sur cet ordinateur"
 
 [group_text]
 text = "{label} : {value}"
-
-[group_text_2]
-text = "{what} · {value}"
 
 [group_that_device_no_longer]
 text = "Cet appareil n’héberge plus les appels de ce groupe."
@@ -1663,9 +1572,6 @@ text = "Cet ordinateur n’héberge plus les appels de ce groupe."
 [group_this_computer_stops_passing]
 text = "Cet ordinateur cesse de transmettre les messages du groupe. Vous restez membre."
 
-[group_this_computer_too]
-text = ", cet ordinateur compris"
-
 [group_this_device_agreed_to]
 text = "Cet appareil a accepté d’héberger. Il héberge dès qu’un admin l’a désigné."
 
@@ -1677,12 +1583,6 @@ text = "Ce groupe n’a pas d’hôte d’appel. Personne ne peut lancer d’app
 
 [group_this_group_has_no_host]
 text = "Ce groupe n’a pas d’hôte. Les publications attendent qu’un hôte soit désigné."
-
-[group_this_member]
-text = "ce membre"
-
-[group_turn_on_open_link]
-text = "Activez Lien ouvert pour le partager"
 
 [group_unblocking]
 text = "Déblocage"
@@ -1716,9 +1616,6 @@ text = "Pourquoi ce retrait ?"
 
 [group_why_you_were_removed]
 text = "Pourquoi vous avez été retiré"
-
-[group_will_be_able_to]
-text = "{name} pourra inviter des personnes, signaler des membres (3 signalements retirent quelqu’un) et désigner des hôtes. Vous seul, en tant que propriétaire, pouvez nommer ou retirer des admins."
 
 [group_withdraw_the_offer_to]
 text = "Retirer la proposition d’hébergement"
@@ -2014,9 +1911,6 @@ text = "Synchronisé {value}"
 [link_tap_scan_qr_code]
 text = "Touchez Scanner le QR code et visez cet écran."
 
-[link_the_other_device]
-text = "l’autre appareil"
-
 [link_there_is_no_code]
 text = "Il n’y a pas encore de code."
 
@@ -2062,9 +1956,6 @@ text = "Windows"
 [link_you_type_it_each]
 text = "Vous la saisissez à chaque démarrage de Tinline."
 
-[link_your_account]
-text = "votre compte"
-
 [link_your_account_is_on]
 text = "Votre compte est sur l’autre appareil."
 
@@ -2076,9 +1967,6 @@ text = "Une discussion en sourdine ne vous prévient jamais, quels que soient le
 
 [profile_a_new_camera_is]
 text = "Une nouvelle caméra est utilisée au prochain démarrage de votre caméra."
-
-[profile_a_status]
-text = "un statut"
 
 [profile_about]
 text = "À propos"
@@ -2176,7 +2064,7 @@ text = "Le blocage n’est pas discret. La personne est prévenue, son app cesse
 text = "Occupé"
 
 [profile_busy_until]
-text = "Occupé jusqu’à {value}"
+text = "Occupé jusqu’à {time}"
 
 [profile_busy_until_you_change]
 text = "Occupé jusqu’à nouvel ordre"
@@ -2192,9 +2080,6 @@ text = "Appels sur cet ordinateur"
 
 [profile_can_call_you]
 text = "Peut vous appeler"
-
-[profile_cant_contain_control_or]
-text = "{cap} ne peut pas contenir de caractères de contrôle ou de sens d’écriture."
 
 [profile_change_photo]
 text = "Changer de photo"
@@ -2405,9 +2290,6 @@ text = "Aucun profil disponible."
 [profile_no_sounds_from_tinline]
 text = "Aucun son de Tinline : sonnerie, tonalités d’appel, arrivées"
 
-[profile_not_seen_for_days]
-text = "Pas vu depuis {value} jours"
-
 [profile_not_set]
 text = "Non renseigné"
 
@@ -2615,32 +2497,17 @@ text = "Stockage"
 [profile_tap_a_sound_to]
 text = "Touchez un son pour l’écouter. Le choix s’applique au prochain appel."
 
-[profile_text]
-text = "{value} {time}"
-
 [profile_that_file_couldnt_be]
 text = "Ce fichier n’a pas pu être lu comme une image. Il est peut-être endommagé."
-
-[profile_that_is_too_long]
-text = "C’est trop long pour {what} : {limit} octets au maximum, et certains caractères en prennent plus d’un."
-
-[profile_that_is_too_long_up]
-text = "Le champ « {what} » est trop long. {limit} octets au maximum ; certains caractères en prennent plus d’un."
 
 [profile_that_name_cant_be]
 text = "Ce nom ne peut pas être utilisé. Gardez-le court, sans caractères de contrôle."
 
 [profile_that_picture_is_mb]
-text = "Cette image fait {value} Mo. Les images peuvent faire jusqu’à {value2} Mo."
+text = "Cette image fait {size} Mo. Les images peuvent faire jusqu’à {max} Mo."
 
 [profile_that_picture_is_pixels]
-text = "Cette image fait {status} × {host} pixels. Tinline accepte jusqu’à 4096 pixels de côté."
-
-[profile_the_cant_be_empty]
-text = "Le champ « {what} » ne peut pas être vide."
-
-[profile_the_cant_contain_control]
-text = "Le champ « {what} » ne peut pas contenir de caractères de contrôle ou de sens d’écriture."
+text = "Cette image fait {width} × {height} pixels. Tinline accepte jusqu’à {max} pixels de côté."
 
 [profile_the_libraries_tinline_is]
 text = "Les bibliothèques sur lesquelles Tinline repose"
@@ -2689,9 +2556,6 @@ text = "Pour libérer plus d’espace, retirez des images ou des fichiers de leu
 
 [profile_told_you_blocked_them]
 text = "Informé de votre blocage"
-
-[profile_tomorrow]
-text = "demain à {time}"
 
 [profile_trend_probe]
 text = "Tendance+sondage"
@@ -2744,9 +2608,6 @@ text = "Qui peut m’appeler"
 [profile_will_stop_syncing_with]
 text = "{name} cessera de se synchroniser avec votre compte et de sonner quand on vous appelle. {value}"
 
-[profile_write_these_24_words]
-text = "Notez ces 24 mots, dans l’ordre, et gardez-les dans un endroit privé."
-
 [profile_yes]
 text = "Oui"
 
@@ -2782,9 +2643,6 @@ text = "Vos initiales s’afficheront à la place."
 
 [profile_your_reads_stay_with]
 text = "Vos lectures restent privées"
-
-[profile_your_recovery_key_is]
-text = "Votre clé de récupération équivaut à vos 24 mots, en une seule ligne. Un gestionnaire de mots de passe est un bon endroit pour la ranger."
 
 [profile_your_recovery_phrase_is]
 text = "Vos mots de récupération sont le seul moyen de récupérer votre compte si vous perdez tous vos appareils. Toute personne qui les a peut agir en votre nom."
@@ -2983,9 +2841,6 @@ text = "Ajoutez quelqu’un avec qui vous aimeriez parler, et vous pourrez vous 
 [signup_adding]
 text = "Ajout…"
 
-[signup_and_have_read_the]
-text = " et confirmez avoir lu la "
-
 [signup_any_length_works_a]
 text = "Toutes les longueurs conviennent. Quelques mots au hasard sont faciles à retenir."
 
@@ -3076,9 +2931,6 @@ text = "Je l’ai enregistrée ailleurs"
 [signup_i_wrote_them_down]
 text = "Je les ai notés"
 
-[signup_if_you_ever_switch]
-text = "Si vous changez un jour d’appareil, ces 24 mots emportent votre compte avec vous."
-
 [signup_is_already_in_your]
 text = "{name} est déjà dans vos contacts."
 
@@ -3126,9 +2978,6 @@ text = "Pas pour les appels d’urgence."
 
 [signup_of]
 text = "{count} sur {total}"
-
-[signup_of_24]
-text = "{filled} sur 24"
 
 [signup_only_the_people_you]
 text = "Seules les personnes que vous ajoutez le verront."
@@ -3244,20 +3093,11 @@ text = "Son code"
 [signup_this_computer_can_host]
 text = "Cet ordinateur peut héberger vos groupes"
 
-[signup_tinline_connects_your_straight]
-text = "Tinline relie votre {noun} directement à celui de vos proches."
-
 [signup_tinline_doesnt_collect_your]
 text = "Tinline ne collecte pas vos contacts, vos appels ni votre position."
 
 [signup_two_devices_are_better]
 text = "Deux appareils valent mieux qu’un"
-
-[signup_type_your_24_recovery]
-text = "Saisissez vos 24 mots de récupération. Cet {noun} démarre avec une liste de contacts vide."
-
-[signup_type_your_24_words]
-text = "Saisissez vos 24 mots dans l’ordre, ou collez-les, ou votre clé de récupération, dans la première case. Ils restent sur cet {noun}."
 
 [signup_unlock]
 text = "Déverrouiller"
@@ -3289,14 +3129,13 @@ text = "Comment voulez-vous qu’on vous appelle ?"
 [signup_when_a_direct_line]
 text = "Quand une ligne directe n’est pas possible, un relais chiffré transmet l’appel. Il ne peut pas l’entendre."
 
-[signup_word_in_the_recovery]
-text = "Mot {value}{value2} {value3} dans la liste des mots de récupération. Vérifiez l’orthographe."
-
 [signup_words]
 text = "Mots"
 
 [signup_words_are_still_missing]
-text = "Il manque encore {filled} mots."
+one = "Il manque encore {count} mot."
+many = "Il manque encore {count} mots."
+other = "Il manque encore {count} mots."
 
 [signup_work_computer]
 text = "Ordinateur pro"
@@ -3319,9 +3158,6 @@ text = "Il vous suffit d’un pseudo. Chiffré de bout en bout."
 [signup_you_type_it_each]
 text = "{value} Vous la saisissez à chaque démarrage de Tinline. Si vous l’oubliez, vos mots de récupération vous permettent d’en choisir une nouvelle."
 
-[signup_your_account_is_its]
-text = "Votre compte, ce sont ses mots de récupération : vous pouvez donc le retrouver sur cet {noun} de deux façons."
-
 [signup_your_account_is_yours]
 text = "Votre compte vous appartient."
 
@@ -3330,9 +3166,6 @@ text = "Votre presse-papiers est vide pour le moment. Quand son code arrivera, c
 
 [signup_your_code]
 text = "Votre code"
-
-[signup_your_current_account_stays]
-text = "Votre compte actuel reste sur cet {noun}."
 
 [signup_your_line_is_open]
 text = "Votre ligne est ouverte, {name}"
@@ -3345,12 +3178,6 @@ text = "Votre ligne avec {name} est ouverte. Dites bonjour."
 
 [signup_your_nickname]
 text = "Votre pseudo"
-
-[signup_your_recovery_key_is]
-text = "Votre clé de récupération est saisie. Elle reste sur cet {noun}."
-
-[signup_your_recovery_key_is_the]
-text = "Votre clé de récupération équivaut à vos 24 mots, en une seule ligne."
 
 [signup_your_request_to_is]
 text = "Votre demande à {value} est en attente. Votre ligne s’ouvre quand cette personne accepte."
@@ -3426,3 +3253,147 @@ text = "Demain matin"
 
 [profile_busy_no_end]
 text = "Sans heure de fin"
+
+[signup_by_continuing_you_agree]
+text = "En continuant, vous acceptez les {terms} et confirmez avoir lu la {privacy}."
+
+[profile_err_name_empty]
+text = "Le nom ne peut pas être vide."
+
+[profile_err_name_chars]
+text = "Le nom ne peut pas contenir de caractères de contrôle ou de sens d’écriture."
+
+[profile_err_name_long]
+text = "Ce nom est trop long. {limit} octets au maximum ; certains caractères en prennent plus d’un."
+
+[profile_err_status_long]
+text = "C’est trop long pour un statut : {limit} octets au maximum, et certains caractères en prennent plus d’un."
+
+[profile_err_status_chars]
+text = "Un statut ne peut pas contenir de caractères de contrôle ou de sens d’écriture."
+
+[profile_err_about_long]
+text = "C’est trop long pour la section À propos : {limit} octets au maximum, et certains caractères en prennent plus d’un."
+
+[profile_err_about_chars]
+text = "La section À propos ne peut pas contenir de caractères de contrôle ou de sens d’écriture."
+
+[common_list_and]
+text = "{list} et {last}"
+
+[call_history_fallback]
+text = "Appel Tinline"
+
+[group_replying_to_yourself]
+text = "Réponse à vous-même"
+
+[chat_replying_to_yourself]
+text = "Réponse à vous-même"
+
+[group_link_own]
+text = "Un lien pour un autre de vos appareils"
+
+[group_host_online]
+text = "En ligne"
+
+[group_host_offline]
+text = "Hors ligne"
+
+[group_hosts_store_the_group_admin]
+text = "Les hôtes conservent le groupe et transmettent les publications quand les autres sont hors ligne. Ce sont des membres de confiance : un hôte peut lire tout ce qui est publié dans ce groupe. Désignez un hôte depuis le menu d’un membre ; il doit accepter. Retirer un hôte change l’adresse du groupe sous 2 jours, pour que cet appareil ne puisse plus le joindre."
+
+[group_post_photo]
+text = "Photo"
+
+[group_preview_you]
+text = "Vous : {text}"
+
+[group_preview_author]
+text = "{name} : {text}"
+
+[group_sys_joined]
+text = "{name} a rejoint le groupe"
+
+[group_sys_left_you]
+text = "Vous l’avez quitté"
+
+[group_sys_left]
+text = "{name} a quitté le groupe"
+
+[group_sys_host_added_you]
+text = "Un de vos appareils héberge maintenant le groupe"
+
+[group_sys_host_added]
+text = "Un appareil de {name} héberge maintenant le groupe"
+
+[group_sys_host_removed_you]
+text = "Un de vos appareils n’héberge plus le groupe"
+
+[group_sys_host_removed]
+text = "Un appareil de {name} n’héberge plus le groupe"
+
+[group_sys_admin_other_you]
+text = "{by} vous a donné le rôle d’admin"
+
+[group_sys_admin_other_other]
+text = "{by} a nommé {name} admin"
+
+[group_sys_unadmin_other_you]
+text = "{by} vous a retiré le rôle d’admin"
+
+[group_sys_unadmin_other_other]
+text = "{by} a retiré le rôle d’admin à {name}"
+
+[group_sent_waiting]
+text = "En attente de {name} · via {group}"
+
+[group_sent_accepted_messages]
+text = "{name} a accepté · messages uniquement"
+
+[group_sent_accepted_connecting]
+text = "{name} a accepté · connexion"
+
+[group_sent_declined]
+text = "{name} a refusé"
+
+[group_sent_declined_unnamed]
+text = "Refusé"
+
+[group_sent_blocked]
+text = "{name} vous a bloqué"
+
+[group_notice_invitation_sent]
+text = "Invitation envoyée à {name}. Cette personne rejoindra le groupe en acceptant."
+
+[group_notice_you_joined]
+text = "Vous avez rejoint {group}."
+
+[group_notice_you_joined_the_group]
+text = "Vous avez rejoint le groupe."
+
+[group_notice_declined_inv]
+text = "Refusé. {name} voit que vous avez refusé."
+
+[group_notice_accepted_yours]
+text = "{name} a accepté votre demande. Vous pouvez maintenant vous écrire ; les appels restent désactivés jusqu’à ce que l’un de vous les autorise."
+
+[group_notice_request_sent]
+text = "Demande envoyée à {name}. Elle attend dans Discussions jusqu’à sa réponse."
+
+[group_notice_accepted]
+text = "Accepté. {name} fait maintenant partie de vos contacts pour les messages uniquement et apparaît dans Discussions dès que son appareil se connecte ; les appels restent désactivés jusqu’à ce que vous les autorisiez."
+
+[group_notice_declined_req]
+text = "Refusé. {name} verra « refusé »."
+
+[group_notice_link_copied]
+text = "Copié. Toute personne qui a le lien peut rejoindre tant qu’il est ouvert."
+
+[group_notice_group_is_open]
+text = "Votre groupe est ouvert. Copiez le lien pour le partager."
+
+[group_give_the_group_a_name]
+text = "Donnez un nom au groupe."
+
+[group_pick_someone_first]
+text = "Choisissez d’abord quelqu’un."

@@ -347,7 +347,7 @@ impl App {
     /// Locked with no passphrase: the stored key is gone, so only the 24 words bring the account back.
     fn key_lost_view(&self, t: Tok) -> El<'_> {
         let mut col = column![tx(
-            crate::i18n::tr_str("gate_you_didnt_set_a"),
+            crate::i18n::tr_args("gate_you_didnt_set_a", &[("words", crate::i18n::WORDS)]),
             14.0,
             t.ink,
         )]
@@ -435,7 +435,7 @@ impl App {
         self.shell(
             t,
             crate::i18n::tr_str("gate_your_recovery_phrase"),
-            crate::i18n::tr_str("gate_these_24_words_are"),
+            &crate::i18n::tr_args("gate_these_24_words_are", &[("words", crate::i18n::WORDS)]),
             col.into(),
         )
     }
@@ -587,7 +587,7 @@ impl App {
                     "no_answer" => crate::i18n::tr_str("common_no_answer"),
                     "declined" => crate::i18n::tr_str("common_declined"),
                     "cancelled" | "hangup_local" => crate::i18n::tr_str("common_cancelled"),
-                    _ => crate::i18n::tr_str("common_couldnt_connect"),
+                    _ => crate::i18n::tr_str("call_couldnt_connect"),
                 },
             };
             let d = r.duration_secs;
@@ -1230,7 +1230,7 @@ impl App {
             (_, true) => tx(crate::i18n::tr_str("call_is_calling_you"), 18.0, t.ink2).into(),
             (CallState::Dialing, _) => tx(crate::i18n::tr_str("call_calling"), 18.0, t.ink2).into(),
             (CallState::Ringing, _) => tx(crate::i18n::tr_str("call_ringing"), 18.0, t.ink2).into(),
-            (CallState::Active, _) if reconnecting => semi(crate::i18n::tr_str("common_reconnecting_2"), 18.0, t.thread_text).into(),
+            (CallState::Active, _) if reconnecting => semi(crate::i18n::tr_str("call_reconnecting_2"), 18.0, t.thread_text).into(),
             (CallState::Active, _) => mono(format!("{:02}:{:02}", secs / 60, secs % 60), 22.0, t.ink).into(),
             (CallState::Ended { .. }, _) => tx(crate::i18n::tr_str("common_call_ended"), 18.0, t.ink2).into(),
         };
@@ -1420,7 +1420,7 @@ impl App {
     /// controls: avatar 40, "<name> is calling" over "during your call", Decline and End & answer as two equal 44 px
     /// pills, and what End & answer does. No hold: End & answer ends this call.
     fn waiting_banner<'a>(&'a self, t: Tok, w: &p2pcore::CallInfo) -> El<'a> {
-        let name = if w.peer_name.is_empty() { crate::i18n::tr_str("call_unknown").to_string() } else { w.peer_name.clone() };
+        let name = w.peer_name.clone();
         let current = self.call.as_ref().map(|c| c.info.peer_name.split_whitespace().next().unwrap_or("").to_string()).unwrap_or_default();
         let pill_style = |bg: Color, hover: Color, fg: Color| move |_: &Theme, st: button::Status| button::Style {
             background: Some(if matches!(st, button::Status::Hovered | button::Status::Pressed) { hover } else { bg }.into()),
@@ -1436,14 +1436,13 @@ impl App {
         let who = row![
             self.profile_avatar(t, &name, &w.peer_did, 40.0),
             column![
-                container(semi(crate::i18n::tr_args("common_is_calling", &[("name", &(name).to_string())]), 15.0, t.ink).line_height(lh(20.0)).wrapping(iced::widget::text::Wrapping::None)).clip(true).width(Fill),
+                container(semi(is_calling_line(&name), 15.0, t.ink).line_height(lh(20.0)).wrapping(iced::widget::text::Wrapping::None)).clip(true).width(Fill),
                 tx(crate::i18n::tr_str("call_during_your_call"), 13.0, t.ink2).line_height(lh(18.0)),
             ].width(Fill),
         ].spacing(12).align_y(Alignment::Center);
         let hint = container(row![
-            tx(crate::i18n::tr_str("call_ends_your_call_with"), 12.0, t.ink2).line_height(lh(16.0)).wrapping(iced::widget::text::Wrapping::None),
-            container(tx(current, 12.0, t.ink2).line_height(lh(16.0)).wrapping(iced::widget::text::Wrapping::None)).clip(true),
-        ].spacing(4)).center_x(Fill);
+            container(tx(if current.is_empty() { crate::i18n::tr("call_ends_your_call") } else { crate::i18n::tr_args("call_ends_your_call_with", &[("name", &current)]) }, 12.0, t.ink2).line_height(lh(16.0)).wrapping(iced::widget::text::Wrapping::None)).clip(true),
+        ]).center_x(Fill);
         let card = container(column![who, row![dec, ans].spacing(8), hint].spacing(12))
             .padding(Padding { top: 14.0, right: 14.0, bottom: 12.0, left: 14.0 }).width(Fill).max_width(360);
         container(ui::raised(card, t, ui::Depth::Pop, ui::pop_surface(t, 22.0))).center_x(Fill).into()
@@ -1505,8 +1504,7 @@ fn utc_date(secs: u64) -> String {
     let day = doy - (153 * mp + 2) / 5 + 1;
     let month = if mp < 10 { mp + 3 } else { mp - 9 };
     let _ = era;
-    const M: [&str; 12] = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    crate::i18n::tr_args("call_text", &[("day", &(day).to_string()),("value", &(M[(month - 1) as usize]).to_string())])
+    crate::i18n::date::day_month(day as u32, month as u32)
 }
 
 pub(super) fn qr_of(t: &str) -> Option<Qr> {
@@ -1549,4 +1547,9 @@ impl canvas::Program<Msg> for QrView<'_> {
         }
         vec![frame.into_geometry()]
     }
+}
+
+/// "Ana is calling", or "Someone is calling" when the caller has no name.
+pub(super) fn is_calling_line(name: &str) -> String {
+    if name.trim().is_empty() { crate::i18n::tr("common_someone_is_calling") } else { crate::i18n::tr_args("common_is_calling", &[("name", name)]) }
 }

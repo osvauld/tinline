@@ -34,8 +34,8 @@ fn chip_day(ms: u64) -> String {
     match (now.date_naive() - d.date_naive()).num_days() {
         0 => crate::i18n::tr_str("common_today").into(),
         1 => crate::i18n::tr_str("common_yesterday").into(),
-        _ if d.year() == now.year() => d.format("%A %-d %b").to_string(),
-        _ => d.format("%A %-d %b %Y").to_string(),
+        _ if d.year() == now.year() => crate::i18n::date::weekday_date(&d, false),
+        _ => crate::i18n::date::weekday_date(&d, true),
     }
 }
 
@@ -55,7 +55,7 @@ fn kind_label(name: &str) -> String {
 
 /// "Oct 10, 15:20" for a block's unix seconds.
 fn block_when(secs: u64) -> String {
-    local(secs.saturating_mul(1000)).map(|d| d.format("%b %-d, %H:%M").to_string()).unwrap_or_default()
+    local(secs.saturating_mul(1000)).map(|d| crate::i18n::date::month_day_time(&d)).unwrap_or_default()
 }
 
 /// What a chat row's second line says (ChatsList `preview()` and its draft / waiting forms).
@@ -339,8 +339,8 @@ impl App {
         let first = present::names::first_word(name).to_string();
         if self.blocks.blocked_by_me(peer) {
             let at = self.blocks.list.iter().find(|b| b.did == peer).map(|b| b.blocked_at).unwrap_or(0);
-            let when = if at > 0 { format!(" \u{b7} {}", block_when(at)) } else { String::new() };
-            return container(container(tx(crate::i18n::tr_args("chat_you_blocked", &[("name", &(first).to_string()),("when", &(when).to_string())]), 12.0, t.ink2)).padding([4, 12]).style(ui::plain(t.surface2, 999.0)))
+            let line = if at > 0 { crate::i18n::tr_args("chat_you_blocked_on", &[("name", &first), ("when", &block_when(at))]) } else { crate::i18n::tr_args("chat_you_blocked", &[("name", &first)]) };
+            return container(container(tx(line, 12.0, t.ink2)).padding([4, 12]).style(ui::plain(t.surface2, 999.0)))
                 .center_x(Fill)
                 .padding([8, 0])
                 .into();
@@ -1032,7 +1032,7 @@ impl App {
                 .width(Fill).clip(true).style(ui::plain(t.surface2, 12.0)).into()
         };
         let chip: Option<El> = if let Some(m) = self.chat.reply.as_deref().and_then(|id| self.chat.find(id)) {
-            Some(ctx(crate::i18n::tr_args("chat_replying_to", &[("value", &(if m.outgoing { "yourself".to_string() } else { first.clone() }).to_string())]), preview_of(m)))
+            Some(ctx(if m.outgoing { crate::i18n::tr("chat_replying_to_yourself") } else { crate::i18n::tr_args("chat_replying_to", &[("name", &first)]) }, preview_of(m)))
         } else {
             self.chat.editing.as_deref().and_then(|id| self.chat.find(id)).map(|m| ctx(crate::i18n::tr_str("chat_editing_message").to_string(), preview_of(m)))
         };

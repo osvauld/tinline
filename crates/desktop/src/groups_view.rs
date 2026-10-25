@@ -12,26 +12,18 @@ fn local_fmt(ms: u64, fmt: &str) -> String {
 
 /// "Oct 10, 15:20".
 pub(super) fn when(ms: u64) -> String {
-    local_fmt(ms, "%b %-d, %H:%M")
+    Local.timestamp_millis_opt(ms as i64).single().map(|d| crate::i18n::date::month_day_time(&d)).unwrap_or_default()
 }
 
 /// "Oct 12".
 pub(super) fn day(ms: u64) -> String {
-    local_fmt(ms, "%b %-d")
+    crate::i18n::date::local_month_day(ms)
 }
 
 pub(super) fn hhmm(ms: u64) -> String {
     local_fmt(ms, "%H:%M")
 }
 
-/// "Sam Rao, Meera K and Priya N".
-pub(super) fn and_list(names: &[String]) -> String {
-    match names {
-        [] => String::new(),
-        [a] => a.clone(),
-        [rest @ .., last] => crate::i18n::tr_args("group_and", &[("value", &(rest.join(", ")).to_string()),("last", &(last).to_string())]),
-    }
-}
 
 pub(super) fn rule<'a>(t: Tok) -> El<'a> {
     container(Space::new()).width(Fill).height(1).style(ui::plain(t.line, 0.0)).into()
@@ -71,15 +63,6 @@ pub(super) fn footer<'a>(t: Tok, body: El<'a>) -> El<'a> {
     column![rule(t), container(body).padding([12, 20]).width(Fill)].into()
 }
 
-pub(super) fn ordinal(n: usize) -> String {
-    match n {
-        1 => "1st".into(),
-        2 => "2nd".into(),
-        3 => "3rd".into(),
-        n => format!("{n}th"),
-    }
-}
-
 /// The time today, else the day, like the real chat list.
 pub(super) fn short_time(ms: u64) -> String {
     if ms == 0 {
@@ -89,7 +72,7 @@ pub(super) fn short_time(ms: u64) -> String {
     match Local.timestamp_millis_opt(ms as i64).single() {
         Some(d) if d.date_naive() == today => d.format("%H:%M").to_string(),
         Some(d) if (today - d.date_naive()).num_days() == 1 => crate::i18n::tr_str("common_yesterday").into(),
-        Some(d) => d.format("%b %-d").to_string(),
+        Some(d) => crate::i18n::date::month_day(chrono::Datelike::month(&d), chrono::Datelike::day(&d)),
         None => String::new(),
     }
 }

@@ -8,6 +8,7 @@ use std::sync::RwLock;
 
 use intl_pluralrules::{PluralCategory, PluralRuleType, PluralRules};
 
+pub mod date;
 mod strings;
 pub use strings::{LANGUAGES, Msg};
 
@@ -15,6 +16,12 @@ pub use strings::{LANGUAGES, Msg};
 mod tests;
 
 const SOURCE: &str = "en";
+
+/// Numbers that appear in sentences, passed as placeholders so the translator can
+/// place (and, in some scripts, write) them: recovery words, device-name length.
+pub const WORDS: &str = "24";
+pub const NAME_MIN: &str = "1";
+pub const NAME_MAX: &str = "64";
 
 static CURRENT: RwLock<Option<String>> = RwLock::new(None);
 
@@ -110,6 +117,89 @@ pub fn tr_count(key: &str, count: u64, args: &[(&str, &str)]) -> String {
     let mut all: Vec<(&str, &str)> = vec![("count", n.as_str())];
     all.extend_from_slice(args);
     fill(text, &all)
+}
+
+/// A piece of a message with inline markup: plain text, `**bold**` text, or a
+/// `{slot}` the caller fills with its own widget (a link, a name chip).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Piece {
+    Text(String),
+    Bold(String),
+    Slot(String),
+}
+
+/// Split a template into pieces. `**x**` is bold; `{name}` found in `args` is
+/// replaced by its value (user data), any other `{name}` stays a `Slot`.
+fn split_pieces(template: &str, args: &[(&str, &str)]) -> Vec<Piece> {
+    let mut out: Vec<Piece> = Vec::new();
+    let mut bold = false;
+    for (i, chunk) in template.split("**").enumerate() {
+        if i > 0 {
+            bold = !bold;
+        }
+        let mut rest = chunk;
+        while !rest.is_empty() {
+            let Some(open) = rest.find('{') else {
+                push_text(&mut out, rest, bold);
+                break;
+            };
+            let Some(close) = rest[open..].find('}').map(|c| open + c) else {
+                push_text(&mut out, rest, bold);
+                break;
+            };
+            push_text(&mut out, &rest[..open], bold);
+            let name = &rest[open + 1..close];
+            match args.iter().find(|(n, _)| *n == name) {
+                Some((_, v)) => push_text(&mut out, v, bold),
+                None => out.push(Piece::Slot(name.to_string())),
+            }
+            rest = &rest[close + 1..];
+        }
+    }
+    out
+}
+
+fn push_text(out: &mut Vec<Piece>, text: &str, bold: bool) {
+    if text.is_empty() {
+        return;
+    }
+    match out.last_mut() {
+        Some(Piece::Text(t)) if !bold => t.push_str(text),
+        Some(Piece::Bold(t)) if bold => t.push_str(text),
+        _ => out.push(if bold { Piece::Bold(text.into()) } else { Piece::Text(text.into()) }),
+    }
+}
+
+/// A message with inline emphasis or widget slots, as pieces for a rich-text row.
+/// Never splits a sentence across keys: the translator orders the pieces.
+pub fn tr_rich(key: &str, args: &[(&str, &str)]) -> Vec<Piece> {
+    match lookup(&language(), key) {
+        Some(Msg::Text(t)) => split_pieces(t, args),
+        Some(Msg::Plural(forms)) => split_pieces(other(forms), args),
+        None => vec![Piece::Text(missing(key))],
+    }
+}
+
+/// Join names or labels as a list in the language's own way: a separator key
+/// for 3+ items and a final "{list} and {last}" pattern (`common_list_separator`,
+/// `common_list_and`; the two-item form is `common_list_two`).
+pub fn tr_list(items: &[&str]) -> String {
+    match items {
+        [] => String::new(),
+        [one] => (*one).to_string(),
+        [a, b] => tr_args("common_list_two", &[("first", a), ("last", b)]),
+        _ => {
+            let sep = tr_str("common_list_separator");
+            let head = items[..items.len() - 1].join(sep);
+            tr_args("common_list_and", &[("list", &head), ("last", items[items.len() - 1])])
+        }
+    }
+}
+
+/// Join whole phrases (each already a complete label) with the language's own
+/// separator, usually " · " (`common_dot_separator`).
+pub fn tr_dots(parts: &[&str]) -> String {
+    parts.iter().copied().filter(|p| !p.is_empty()).collect::<Vec<_>>().join(tr_str("common_dot_separator"))
 }
 
 fn other(forms: &'static [(&'static str, &'static str)]) -> &'static str {

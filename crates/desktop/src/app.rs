@@ -541,7 +541,7 @@ impl Clone for EvBox {
 }
 impl std::fmt::Debug for EvBox {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(crate::i18n::tr_str("app_ev"))
+        f.write_str("Ev")
     }
 }
 
@@ -1434,7 +1434,7 @@ impl App {
                     return Task::none();
                 }
                 let Some(label) = flow::valid_label(&self.device_in) else {
-                    self.notice = Some(crate::i18n::tr_str("common_give_this_computer_a").into());
+                    self.notice = Some(crate::i18n::tr_args("common_give_this_computer_a", &[("min", crate::i18n::NAME_MIN), ("max", crate::i18n::NAME_MAX)]).into());
                     return Task::none();
                 };
                 self.busy = true;
@@ -2295,7 +2295,7 @@ impl App {
             Msg::DeviceEdit(v) => self.device_edit = v,
             Msg::SaveDevice => {
                 let Some(label) = flow::valid_label(&self.device_edit) else {
-                    self.notice = Some(crate::i18n::tr_str("common_a_device_name_is").into());
+                    self.notice = Some(crate::i18n::tr_args("common_a_device_name_is", &[("min", crate::i18n::NAME_MIN), ("max", crate::i18n::NAME_MAX)]).into());
                     return Task::none();
                 };
                 let node = self.node.clone();
@@ -2505,7 +2505,7 @@ impl App {
                     stats: None,
                 });
                 self.ended = None;
-                if crate::audio::RING_CALLS.load(Ordering::Relaxed) { notify("Tinline", &crate::i18n::tr_args("common_is_calling", &[("name", &(name).to_string())]), Target::Show); }
+                if crate::audio::RING_CALLS.load(Ordering::Relaxed) { notify("Tinline", &view::is_calling_line(&name), Target::Show); }
                 // The camera is looked up while it rings (no streaming, so no camera light): the Camera and
                 // "Video" buttons work the moment they are pressed.
                 let mut tasks = vec![self.show_window(), self.find_camera()];

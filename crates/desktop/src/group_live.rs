@@ -635,10 +635,6 @@ pub(super) fn first_name(name: &str) -> &str {
     name.split_whitespace().next().unwrap_or(name)
 }
 
-fn or_someone(name: &str) -> &str {
-    if name.trim().is_empty() { crate::i18n::tr_str("common_someone") } else { name }
-}
-
 /// "a1b2c3d4": enough of a device ID to tell devices apart.
 pub(super) fn short_dev(dev: &str) -> &str {
     &dev[..dev.len().min(8)]
@@ -751,33 +747,33 @@ impl GroupsLive {
     pub fn status_line(&self) -> String {
         let Some(d) = &self.detail else { return String::new() };
         match d.my_role {
-            GroupRole::Removed => return "You were removed from this group".into(),
-            GroupRole::Left => return "You left this group".into(),
+            GroupRole::Removed => return crate::i18n::tr("group_you_were_removed_from_this"),
+            GroupRole::Left => return crate::i18n::tr("group_you_left_this_group"),
             _ => {}
         }
         let n = d.members.len();
         let members = crate::i18n::tr_count("group_members_count", n as u64, &[]);
         if d.am_host {
-            return format!("{members} \u{b7} this computer hosts the group");
+            return crate::i18n::tr_dots(&[&members, crate::i18n::tr_str("group_status_this_computer_hosts")]);
         }
         if d.hosts.is_empty() {
-            return format!("{members} \u{b7} no host yet");
+            return crate::i18n::tr_dots(&[&members, crate::i18n::tr_str("group_status_no_host_yet")]);
         }
         if !d.hosts.iter().any(|h| h.online) {
-            return format!("{members} \u{b7} waiting for a host");
+            return crate::i18n::tr_dots(&[&members, crate::i18n::tr_str("group_status_waiting_for_a_host")]);
         }
         let h = d.hosts.len();
         crate::i18n::tr_args("group_members_and_hosts", &[("members", &members), ("hosts", &crate::i18n::tr_count("group_hosts_count", h as u64, &[]))])
     }
 
-    /// An admin asked this device to host the open group: (who asked).
+    /// An admin asked this device to host the open group: who asked (empty when no name is known).
     pub fn host_asked(&self) -> Option<String> {
         let d = self.detail.as_ref()?;
         if !d.host_requested_here || !active(d.my_role) {
             return None;
         }
         let by = d.host_requests.iter().find(|h| h.is_me).and_then(|h| h.appointed_by.clone());
-        Some(by.map(|did| self.member(&did).map(|m| m.name.clone()).unwrap_or_default()).filter(|n| !n.trim().is_empty()).unwrap_or_else(|| "An admin".into()))
+        Some(by.map(|did| self.member(&did).map(|m| m.name.clone()).unwrap_or_default()).filter(|n| !n.trim().is_empty()).unwrap_or_default())
     }
 
     /// No host is reachable (and we are still in the group).
@@ -837,11 +833,11 @@ impl GroupsLive {
                 }
                 let Some(gid) = self.open.clone() else { return out };
                 if !self.can_post() {
-                    out.notice = Some("You can\u{2019}t send messages to this group.".into());
+                    out.notice = Some(crate::i18n::tr("group_notice_cant_send"));
                     return out;
                 }
                 if self.admins_only_locked() {
-                    out.notice = Some("Only admins post here.".into());
+                    out.notice = Some(crate::i18n::tr("group_only_admins_post_here_2"));
                     return out;
                 }
                 self.input.clear();
@@ -855,11 +851,11 @@ impl GroupsLive {
                     return out;
                 }
                 if !self.can_post() {
-                    out.notice = Some("You can\u{2019}t send messages to this group.".into());
+                    out.notice = Some(crate::i18n::tr("group_notice_cant_send"));
                     return out;
                 }
                 if self.admins_only_locked() {
-                    out.notice = Some("Only admins post here.".into());
+                    out.notice = Some(crate::i18n::tr("group_only_admins_post_here_2"));
                     return out;
                 }
                 // The composer's text goes with the picture as its caption.
@@ -987,8 +983,9 @@ impl GroupsLive {
                     Ok(v) => {
                         self.dialog = None;
                         out.notice = Some(match v.as_slice() {
-                            [one] => format!("Invitation sent to {}. They join when they accept.", first_name(or_someone(&one.invitee_name))),
-                            v => format!("{} invitations sent. Each person joins when they accept.", v.len()),
+                            [one] if !one.invitee_name.trim().is_empty() => crate::i18n::tr_args("group_notice_invitation_sent", &[("name", first_name(&one.invitee_name))]),
+                            [_] => crate::i18n::tr("group_notice_invitation_sent_unnamed"),
+                            v => crate::i18n::tr_count("group_notice_invitations_sent", v.len() as u64, &[]),
                         });
                     }
                     Err(e) => self.error = Some(e),
@@ -1007,7 +1004,7 @@ impl GroupsLive {
                 match r {
                     Ok(i) => {
                         out = self.step(api, Lm::Open(i.group_id.clone()));
-                        out.notice = Some(format!("You joined {}.", i.group_name));
+                        out.notice = Some(crate::i18n::tr_args("group_notice_you_joined", &[("group", &i.group_name)]));
                     }
                     Err(e) => out.notice = Some(e),
                 }
@@ -1015,7 +1012,7 @@ impl GroupsLive {
             }
             Lm::InvDeclined(r) => {
                 match r {
-                    Ok(i) => out.notice = Some(format!("Declined. {} sees that you declined.", first_name(or_someone(&i.inviter_name)))),
+                    Ok(i) => out.notice = Some(if i.inviter_name.trim().is_empty() { crate::i18n::tr("group_notice_declined_inv_unnamed") } else { crate::i18n::tr_args("group_notice_declined_inv", &[("name", first_name(&i.inviter_name))]) }),
                     Err(e) => out.notice = Some(e),
                 }
                 self.reload_invitations(api);
@@ -1115,7 +1112,7 @@ impl GroupsLive {
                     Ok(gid) => {
                         self.dialog = None;
                         out = self.step(api, Lm::Open(gid));
-                        out.notice = Some("Group made. This computer hosts it; invite people from the members pane.".into());
+                        out.notice = Some(crate::i18n::tr("group_notice_group_made"));
                     }
                     Err(e) => self.error = Some(e),
                 }
@@ -1126,7 +1123,7 @@ impl GroupsLive {
                     Ok(gid) => {
                         self.dialog = None;
                         out = self.step(api, Lm::Open(gid));
-                        out.notice = Some("You joined the group.".into());
+                        out.notice = Some(crate::i18n::tr("group_notice_you_joined_the_group"));
                     }
                     Err(e) => self.error = Some(e),
                 }
@@ -1141,7 +1138,7 @@ impl GroupsLive {
             Lm::RequestChanged(r) => {
                 self.reload_requests(api);
                 if r.outgoing && r.state == ChatRequestState::Accepted && r.contact_added {
-                    out.notice = Some(format!("{} accepted your request. You can message each other now; calls stay off until one of you allows them.", first_name(or_someone(&r.peer_name))));
+                    out.notice = Some(if r.peer_name.trim().is_empty() { crate::i18n::tr("group_notice_accepted_yours_unnamed") } else { crate::i18n::tr_args("group_notice_accepted_yours", &[("name", first_name(&r.peer_name))]) });
                 }
             }
             Lm::Requested(r) => {
@@ -1149,10 +1146,7 @@ impl GroupsLive {
                 match r {
                     Ok(req) => {
                         self.dialog = None;
-                        out.notice = Some(format!(
-                            "Request sent to {}. It waits in Chats until they answer.",
-                            first_name(or_someone(&req.peer_name))
-                        ));
+                        out.notice = Some(if req.peer_name.trim().is_empty() { crate::i18n::tr("group_notice_request_sent_unnamed") } else { crate::i18n::tr_args("group_notice_request_sent", &[("name", first_name(&req.peer_name))]) });
                     }
                     Err(e) => self.error = Some(e),
                 }
@@ -1162,13 +1156,10 @@ impl GroupsLive {
                 match r {
                     Ok(req) => match req.state {
                         ChatRequestState::Accepted => {
-                            out.notice = Some(format!(
-                                "Accepted. {} is added for messages only and shows in Chats once their device connects; calls stay off until you allow them.",
-                                first_name(or_someone(&req.peer_name))
-                            ));
+                            out.notice = Some(if req.peer_name.trim().is_empty() { crate::i18n::tr("group_notice_accepted_unnamed") } else { crate::i18n::tr_args("group_notice_accepted", &[("name", first_name(&req.peer_name))]) });
                             out.chat = Some(req.peer_did);
                         }
-                        _ => out.notice = Some(format!("Declined. {} is told \u{201c}declined\u{201d}.", first_name(or_someone(&req.peer_name)))),
+                        _ => out.notice = Some(if req.peer_name.trim().is_empty() { crate::i18n::tr("group_notice_declined_req_unnamed") } else { crate::i18n::tr_args("group_notice_declined_req", &[("name", first_name(&req.peer_name))]) }),
                     },
                     Err(e) => out.notice = Some(e),
                 }
@@ -1225,7 +1216,7 @@ impl GroupsLive {
                 let Some(gid) = self.open.clone() else { return out };
                 if let Some(link) = self.open_link_of_open() {
                     out.copy = Some(link.to_string());
-                    out.notice = Some(OPEN_LINK_COPIED.into());
+                    out.notice = Some(crate::i18n::tr("group_notice_link_copied"));
                 } else if self.pending.is_none() && self.setting_on(Setting::Open) {
                     self.pending = Some((Setting::Link, true));
                     out.job = Some(Job::OpenLink { gid, copy: true });
@@ -1243,9 +1234,9 @@ impl GroupsLive {
                         self.open_link = Some((gid, link.clone()));
                         if copy {
                             out.copy = Some(link);
-                            out.notice = Some(OPEN_LINK_COPIED.into());
+                            out.notice = Some(crate::i18n::tr("group_notice_link_copied"));
                         } else {
-                            out.notice = Some("Your group is open. Copy the link to share it.".into());
+                            out.notice = Some(crate::i18n::tr("group_notice_group_is_open"));
                         }
                     }
                     Err(e) if self.dialog.is_some() => self.error = Some(e),
@@ -1274,21 +1265,21 @@ impl GroupsLive {
             LDialog::NewGroup { name } => {
                 let name = name.trim().to_string();
                 if name.is_empty() {
-                    self.error = Some("Give the group a name.".into());
+                    self.error = Some(crate::i18n::tr("group_give_the_group_a_name"));
                     return None;
                 }
                 Job::Create(name)
             }
             LDialog::Join { token, peek, .. } => {
                 if peek.is_none() {
-                    self.error = Some("That link didn\u{2019}t work: it isn\u{2019}t a group invite, it expired, or its host is offline.".into());
+                    self.error = Some(crate::i18n::tr("group_that_link_didnt_work"));
                     return None;
                 }
                 Job::Join(token)
             }
             LDialog::AddMembers { picked } => {
                 if picked.is_empty() {
-                    self.error = Some("Pick someone first.".into());
+                    self.error = Some(crate::i18n::tr("group_pick_someone_first"));
                     return None;
                 }
                 Job::InviteContacts { gid, dids: picked }
@@ -1450,11 +1441,9 @@ impl GroupsLive {
     }
 }
 
-const OPEN_LINK_COPIED: &str = "Copied. Anyone holding the link can join while it\u{2019}s open.";
-
 /// "12 online"; at the presence cap the count may be cut short: "500+ online".
 pub(super) fn online_label(n: usize) -> String {
-    if n >= ONLINE_CAP { format!("{ONLINE_CAP}+ online") } else { format!("{n} online") }
+    if n >= ONLINE_CAP { crate::i18n::tr_args("group_online_capped", &[("count", &ONLINE_CAP.to_string())]) } else { crate::i18n::tr_count("group_online_count", n as u64, &[]) }
 }
 
 /// The online list's order: admins first, then by name (case-insensitive), then DID.
@@ -1479,49 +1468,109 @@ pub(super) fn upsert(msgs: &mut Vec<GroupMessage>, m: GroupMessage) {
     msgs.insert(at, m);
 }
 
+/// Who a system line names: me, a person with a name, or someone without one.
+enum Who {
+    Me,
+    Named(String),
+    Unknown,
+}
+
+fn who_of(did: &str, name: &str, me: &str) -> Who {
+    if did == me {
+        Who::Me
+    } else if name.trim().is_empty() {
+        Who::Unknown
+    } else {
+        Who::Named(name.to_string())
+    }
+}
+
+fn who_name(w: &Who) -> String {
+    match w {
+        Who::Named(n) => n.clone(),
+        _ => String::new(),
+    }
+}
+
+/// One whole sentence per actor and subject: `keys[actor][subject]`, each in the order
+/// me, named, unknown. Names are the only things slotted in.
+fn sys_pair(keys: &[[&str; 3]; 3], by: &Who, sub: &Who) -> String {
+    let idx = |w: &Who| match w {
+        Who::Me => 0,
+        Who::Named(_) => 1,
+        Who::Unknown => 2,
+    };
+    crate::i18n::tr_args(keys[idx(by)][idx(sub)], &[("by", &who_name(by)), ("name", &who_name(sub))])
+}
+
 /// A system line in plain words. `me` is our DID.
 pub(super) fn sys_text(m: &GroupMessage, me: &str) -> String {
-    let who = |did: &str, name: &str| if did == me { "You".to_string() } else { or_someone(name).to_string() };
-    let by = who(&m.author_did, &m.author_name);
-    let sub = who(&m.subject_did, &m.subject_name);
-    let you = m.subject_did == me;
+    let by = who_of(&m.author_did, &m.author_name, me);
+    let sub = who_of(&m.subject_did, &m.subject_name, me);
+    let one = |keys: [&str; 3], w: &Who| -> String {
+        let key = match w {
+            Who::Me => keys[0],
+            Who::Named(_) => keys[1],
+            Who::Unknown => keys[2],
+        };
+        crate::i18n::tr_args(key, &[("name", &who_name(w))])
+    };
     match m.kind {
         GroupItemKind::Post => m.text.clone(),
-        GroupItemKind::Joined => format!("{sub} joined"),
-        GroupItemKind::Left => format!("{sub} left"),
-        GroupItemKind::Removed if you => format!("You were removed after {FLAGS_TO_REMOVE} admin flags"),
-        GroupItemKind::Removed => format!("{sub} was removed after {FLAGS_TO_REMOVE} admin flags"),
-        GroupItemKind::AdminGranted if you => format!("{by} made you an admin"),
-        GroupItemKind::AdminGranted => format!("{by} made {sub} an admin"),
-        GroupItemKind::AdminRevoked if you => format!("{by} removed you as admin"),
-        GroupItemKind::AdminRevoked => format!("{by} removed {sub} as admin"),
-        GroupItemKind::HostAdded if you => "A device of yours now hosts the group".into(),
-        GroupItemKind::HostAdded => format!("A device of {sub}\u{2019}s now hosts the group"),
-        GroupItemKind::HostRemoved if you => "A device of yours stopped hosting the group".into(),
-        GroupItemKind::HostRemoved => format!("A device of {sub}\u{2019}s stopped hosting the group"),
+        GroupItemKind::Joined => one(["group_sys_joined_you", "group_sys_joined", "group_sys_joined_someone"], &sub),
+        GroupItemKind::Left => one(["group_sys_left_you", "group_sys_left", "group_sys_left_someone"], &sub),
+        GroupItemKind::Removed => {
+            let key = match &sub {
+                Who::Me => "group_sys_removed_you",
+                Who::Named(_) => "group_sys_removed",
+                Who::Unknown => "group_sys_removed_someone",
+            };
+            crate::i18n::tr_count(key, FLAGS_TO_REMOVE as u64, &[("name", &who_name(&sub))])
+        }
+        GroupItemKind::AdminGranted => sys_pair(
+            &[
+                ["group_sys_admin_you_you", "group_sys_admin_you_other", "group_sys_admin_you_someone"],
+                ["group_sys_admin_other_you", "group_sys_admin_other_other", "group_sys_admin_other_someone"],
+                ["group_sys_admin_someone_you", "group_sys_admin_someone_other", "group_sys_admin_someone_someone"],
+            ],
+            &by,
+            &sub,
+        ),
+        GroupItemKind::AdminRevoked => sys_pair(
+            &[
+                ["group_sys_unadmin_you_you", "group_sys_unadmin_you_other", "group_sys_unadmin_you_someone"],
+                ["group_sys_unadmin_other_you", "group_sys_unadmin_other_other", "group_sys_unadmin_other_someone"],
+                ["group_sys_unadmin_someone_you", "group_sys_unadmin_someone_other", "group_sys_unadmin_someone_someone"],
+            ],
+            &by,
+            &sub,
+        ),
+        GroupItemKind::HostAdded => one(["group_sys_host_added_you", "group_sys_host_added", "group_sys_host_added_someone"], &sub),
+        GroupItemKind::HostRemoved => one(["group_sys_host_removed_you", "group_sys_host_removed", "group_sys_host_removed_someone"], &sub),
     }
 }
 
 /// The list row's second line.
 pub(super) fn preview(s: &GroupSummary, me: &str) -> String {
     match s.my_role {
-        GroupRole::Removed => return "You were removed from this group".into(),
-        GroupRole::Left => return "You left this group".into(),
+        GroupRole::Removed => return crate::i18n::tr("group_you_were_removed_from_this"),
+        GroupRole::Left => return crate::i18n::tr("group_you_left_this_group"),
         _ => {}
     }
     match &s.last {
         None => String::new(),
         Some(m) if m.kind != GroupItemKind::Post => sys_text(m, me),
-        Some(m) if m.outgoing => format!("You: {}", post_line(m)),
-        Some(m) => format!("{}: {}", first_name(or_someone(&m.author_name)), post_line(m)),
+        Some(m) if m.outgoing => crate::i18n::tr_args("group_preview_you", &[("text", &post_line(m))]),
+        Some(m) if m.author_name.trim().is_empty() => crate::i18n::tr_args("group_preview_someone", &[("text", &post_line(m))]),
+        Some(m) => crate::i18n::tr_args("group_preview_author", &[("name", first_name(&m.author_name)), ("text", &post_line(m))]),
     }
 }
 
 /// A post in one line: its text, "Photo" for a picture alone, "Photo · caption" with one.
 pub(super) fn post_line(m: &GroupMessage) -> String {
     match (&m.image, m.text.is_empty()) {
-        (Some(_), true) => "Photo".into(),
-        (Some(_), false) => format!("Photo \u{b7} {}", m.text),
+        (Some(_), true) => crate::i18n::tr("group_post_photo"),
+        (Some(_), false) => crate::i18n::tr_args("group_post_photo_caption", &[("caption", &m.text)]),
         (None, _) => m.text.clone(),
     }
 }
@@ -1529,13 +1578,15 @@ pub(super) fn post_line(m: &GroupMessage) -> String {
 /// The state line of a request we sent ("Waiting for Leo · via Hike"), and whether it is bad news.
 /// A block is visible (U5 revised, P5): the requester is told, as on the board.
 pub(super) fn sent_line(r: &GroupChatRequest) -> (String, bool) {
-    let f = first_name(or_someone(&r.peer_name)).to_string();
+    let named = !r.peer_name.trim().is_empty();
+    let f = first_name(&r.peer_name).to_string();
+    let t = |named_key: &str, other: &str| crate::i18n::tr_args(if named { named_key } else { other }, &[("name", &f), ("group", &r.group_name)]);
     match r.state {
-        ChatRequestState::Pending => (format!("Waiting for {f} \u{b7} via {}", r.group_name), false),
-        ChatRequestState::Accepted if r.contact_added => (format!("{f} accepted \u{b7} messages only"), false),
-        ChatRequestState::Accepted => (format!("{f} accepted \u{b7} connecting"), false),
-        ChatRequestState::Declined => (format!("{f} declined"), true),
-        ChatRequestState::Blocked => (format!("{f} blocked you"), true),
+        ChatRequestState::Pending => (t("group_sent_waiting", "group_sent_waiting_unnamed"), false),
+        ChatRequestState::Accepted if r.contact_added => (t("group_sent_accepted_messages", "group_sent_accepted_messages_unnamed"), false),
+        ChatRequestState::Accepted => (t("group_sent_accepted_connecting", "group_sent_accepted_connecting_unnamed"), false),
+        ChatRequestState::Declined => (t("group_sent_declined", "group_sent_declined_unnamed"), true),
+        ChatRequestState::Blocked => (t("group_sent_blocked", "group_sent_blocked_unnamed"), true),
     }
 }
 
