@@ -1,5 +1,8 @@
 # Generated from i18n/tm/hi.toml by scripts/i18n_tm.py apply. Edit the tm file.
 
+[common_a_device_name_is]
+text = "डिवाइस का नाम {min} से {max} वर्णों का होता है।"
+
 [common_about_this_call]
 text = "इस कॉल के बारे में"
 
@@ -110,6 +113,9 @@ text = "सीधी"
 
 [common_done]
 text = "हो गया"
+
+[common_give_this_computer_a]
+text = "इस कंप्यूटर को {min} से {max} वर्णों का नाम दें।"
 
 [common_got_it]
 text = "ठीक है"
@@ -516,6 +522,9 @@ text = "दूसरे डिवाइस पर अस्वीकार क�
 [call_device_changes_apply_from]
 text = "डिवाइस के बदलाव अगली कॉल से लागू होंगे।"
 
+[call_during_your_call]
+text = "आपकी इस कॉल के दौरान"
+
 [call_end]
 text = "काटें"
 
@@ -531,6 +540,9 @@ text = "एंड-टू-एंड एन्क्रिप्टेड।"
 [call_end_to_end_encrypted_ctrl]
 text = "एंड-टू-एंड एन्क्रिप्टेड · Ctrl M म्यूट · Ctrl E कॉल काटें · Esc छोटा करें"
 
+[call_ends_your_call_with]
+text = "जवाब देने पर {name} के साथ आपकी कॉल कट जाएगी।"
+
 [call_enter_answers_esc_declines]
 text = "Enter जवाब दें · Esc अस्वीकार करें"
 
@@ -545,6 +557,9 @@ text = "HD"
 
 [call_ignore_limits_heat_their]
 text = "सीमाएँ अनदेखी करें (गर्मी, उनका डिकोडर)"
+
+[call_is_calling_you]
+text = "आपको कॉल आ रही है…"
 
 [call_minimize_call]
 text = "कॉल छोटी करें"
@@ -925,6 +940,9 @@ text = "फिर से कोशिश करें"
 [gate_the_system_keyring_did]
 text = "सिस्टम कीरिंग ने कुंजी स्वीकार नहीं की।"
 
+[gate_these_24_words_are]
+text = "किसी दूसरे डिवाइस पर आपकी पहचान वापस लाने का एकमात्र तरीका ये {words} शब्द हैं।"
+
 [gate_this_computer_no_longer]
 text = "इस कंप्यूटर में अब वह कुंजी नहीं है जिससे खाता खुलता है, और इसकी कीरिंग एंट्री भी नहीं है। खाता वापस लाते ही आपकी कॉल फिर से आने लगेंगी।"
 
@@ -936,6 +954,9 @@ text = "कोशिश जारी है..."
 
 [gate_turn_on]
 text = "चालू करें"
+
+[gate_you_didnt_set_a]
+text = "आपने पासफ़्रेज़ नहीं रखा था, इसलिए {words} रिकवरी शब्द ही वापसी का एकमात्र तरीका हैं। आपके संपर्क बने रहेंगे।"
 
 [gate_your_calls_come_through]
 text = "आपके वापस ऑनलाइन आते ही आपकी कॉल फिर से आने लगेंगी।"
@@ -1019,6 +1040,10 @@ text = "होस्ट ग्रुप की पूरी कॉपी रख�
 [group_a_host_keeps_a_full]
 text = "होस्ट ग्रुप की पूरी कॉपी रखता है, सदस्यों के फ़ोन सोते समय संदेश आगे पहुँचाता है और सदस्यों के ग्रुप पते जान लेता है। इसे चालू रहना होता है। होस्ट करने से आप एडमिन नहीं बन जाते; आप कभी भी रोक सकते हैं।"
 
+[group_a_host_lists_up]
+one = "होस्ट एक बार में ज़्यादा से ज़्यादा {count} व्यक्ति दिखाता है, इसलिए और लोग भी हो सकते हैं।"
+other = "होस्ट एक बार में {count} लोगों तक दिखाता है, इसलिए और लोग भी हो सकते हैं।"
+
 [group_a_host_stays_on]
 text = "होस्ट चालू रहता है और दूसरों के ऑफ़लाइन होने पर पोस्ट आगे पहुँचाता है"
 
@@ -1032,7 +1057,7 @@ text = "हर व्यक्ति को अलग निजी आमंत�
 text = "अनुरोध ग्रुप के होस्ट के पास 7 दिन तक इंतज़ार करता है।"
 
 [group_accepting_adds_as_a]
-text = "स्वीकार करने पर {name} सिर्फ़ संदेशों के लिए आपके संपर्क बनेंगे। कॉल की अनुमति आप बाद में दे सकते हैं।"
+text = "स्वीकार करने पर {name} को सिर्फ़ संदेशों के लिए संपर्क में जोड़ा जाएगा। कॉल की अनुमति आप बाद में दे सकते हैं।"
 
 [group_add_to]
 text = "{gname} में जोड़ें"
@@ -1051,6 +1076,9 @@ text = "पहले से सदस्य"
 
 [group_also_confirmed]
 text = "इन्होंने भी पुष्टि की: {value}"
+
+[group_also_hosts_calls]
+text = "कॉल भी होस्ट करता है"
 
 [group_an_admin_asked_this]
 text = "एक एडमिन ने इस कंप्यूटर से ग्रुप की कॉल चलाने के लिए कहा है"
@@ -1081,6 +1109,9 @@ text = "{name} से निजी चैट के लिए पूछें"
 
 [group_asked_the_device_carries]
 text = "पूछ लिया। डिवाइस के स्वीकार करते ही वह कॉल चलाएगा।"
+
+[group_asked_this_computer_to]
+text = "{name} ने इस कंप्यूटर से {group} को होस्ट करने के लिए कहा है"
 
 [group_asks_to_carry_group]
 text = "{name} से उस डिवाइस पर ग्रुप कॉल चलाने के लिए कहता है; उन्हें स्वीकार करना होगा"
@@ -1145,6 +1176,9 @@ text = "अब सब फिर से पोस्ट कर सकते ह�
 
 [group_everyone_in_the_group]
 text = "ग्रुप में हर कोई पोस्ट कर सकता है"
+
+[group_flag]
+text = " · फ़्लैग {n}"
 
 [group_flag_2]
 text = "फ़्लैग"
@@ -1575,6 +1609,9 @@ text = "इस ग्रुप का कोई कॉल होस्ट नह
 [group_this_group_has_no_host]
 text = "इस ग्रुप का कोई होस्ट नहीं है। होस्ट नियुक्त होने तक पोस्ट रुकी रहेंगी।"
 
+[group_turn_on_open_link]
+text = "शेयर करने के लिए “पब्लिक लिंक” चालू करें"
+
 [group_unblocking]
 text = "अनब्लॉक करना"
 
@@ -1607,6 +1644,9 @@ text = "मुझे क्यों हटाया गया?"
 
 [group_why_you_were_removed]
 text = "आपको क्यों हटाया गया"
+
+[group_will_be_able_to]
+text = "{name} लोगों को आमंत्रित कर सकेंगे, सदस्यों को फ़्लैग कर सकेंगे ({flags_needed} फ़्लैग से कोई हट जाता है) और होस्ट नियुक्त कर सकेंगे। एडमिन बनाना या हटाना सिर्फ़ आप, यानी मालिक, कर सकते हैं।"
 
 [group_withdraw_the_offer_to]
 text = "होस्ट करने की पेशकश वापस लें"
@@ -2276,6 +2316,10 @@ text = "कोई प्रोफ़ाइल उपलब्ध नहीं �
 [profile_no_sounds_from_tinline]
 text = "Tinline से कोई आवाज़ नहीं: घंटी, कॉल टोन, जुड़ने की आवाज़"
 
+[profile_not_seen_for_days]
+one = "{count} दिन से नहीं दिखा"
+other = "{count} दिन से नहीं दिखा"
+
 [profile_not_set]
 text = "सेट नहीं है"
 
@@ -2594,6 +2638,9 @@ text = "मुझे कौन कॉल कर सकता है"
 [profile_will_stop_syncing_with]
 text = "{name} आपके खाते से सिंक होना बंद कर देगा और आपको कॉल आने पर उसकी घंटी नहीं बजेगी। {value}"
 
+[profile_write_these_24_words]
+text = "ये {words} शब्द क्रम से लिख लें और किसी निजी जगह रखें।"
+
 [profile_yes]
 text = "हाँ"
 
@@ -2629,6 +2676,9 @@ text = "इसकी जगह आपके नाम के पहले अक
 
 [profile_your_reads_stay_with]
 text = "आपने क्या पढ़ा, यह आप तक ही रहता है"
+
+[profile_your_recovery_key_is]
+text = "आपकी रिकवरी कुंजी आपके {words} शब्द ही हैं, एक लाइन में। पासवर्ड मैनेजर इसके लिए अच्छी जगह है।"
 
 [profile_your_recovery_phrase_is]
 text = "अगर आपके सारे डिवाइस खो जाएँ, तो खाता वापस पाने का एकमात्र तरीका आपके रिकवरी शब्द हैं। जिसके पास ये हैं, वह आपके नाम से काम कर सकता है।"
@@ -2916,6 +2966,9 @@ text = "मैंने कहीं और सहेज ली"
 [signup_i_wrote_them_down]
 text = "मैंने लिख लिए"
 
+[signup_if_you_ever_switch]
+text = "अगर आप कभी डिवाइस बदलें, तो ये {words} शब्द आपका खाता साथ ले आते हैं।"
+
 [signup_is_already_in_your]
 text = "{name} पहले से आपके संपर्कों में हैं।"
 
@@ -2963,6 +3016,9 @@ text = "इमरजेंसी कॉल के लिए नहीं।"
 
 [signup_of]
 text = "{total} में से {count}"
+
+[signup_of_24]
+text = "{total} में से {filled}"
 
 [signup_only_the_people_you]
 text = "यह सिर्फ़ उन्हीं को दिखेगा जिन्हें आप जोड़ेंगे।"
@@ -3078,11 +3134,20 @@ text = "उनका कोड"
 [signup_this_computer_can_host]
 text = "यह कंप्यूटर आपके ग्रुप होस्ट कर सकता है"
 
+[signup_tinline_connects_your_straight]
+text = "Tinline आपके कंप्यूटर को सीधे उनके डिवाइस से जोड़ता है।"
+
 [signup_tinline_doesnt_collect_your]
 text = "Tinline आपके संपर्क, कॉल या लोकेशन इकट्ठा नहीं करता।"
 
 [signup_two_devices_are_better]
 text = "एक से भले दो डिवाइस"
+
+[signup_type_your_24_recovery]
+text = "अपने {words} रिकवरी शब्द टाइप करें। यह कंप्यूटर खाली संपर्क सूची से शुरू होगा।"
+
+[signup_type_your_24_words]
+text = "अपने {words} शब्द क्रम से टाइप करें, या पहले बॉक्स में शब्द या अपनी रिकवरी कुंजी पेस्ट करें। ये इसी कंप्यूटर पर रहते हैं।"
 
 [signup_unlock]
 text = "अनलॉक करें"
@@ -3114,6 +3179,9 @@ text = "लोग आपको किस नाम से बुलाएँ?"
 [signup_when_a_direct_line]
 text = "जब सीधी लाइन मुमकिन न हो, तो एक एन्क्रिप्टेड रिले कॉल को आगे पहुँचाता है। वह उसे सुन नहीं सकता।"
 
+[signup_word_in_the_recovery]
+text = "शब्द {value} रिकवरी शब्दों की सूची में नहीं है। वर्तनी जाँचें।"
+
 [signup_words]
 text = "शब्द"
 
@@ -3142,6 +3210,9 @@ text = "बस एक निकनेम चाहिए। एंड-टू-ए
 [signup_you_type_it_each]
 text = "{value} Tinline हर बार शुरू होने पर इसे माँगेगा। अगर आप इसे भूल जाएँ, तो रिकवरी शब्दों से नया रख सकते हैं।"
 
+[signup_your_account_is_its]
+text = "आपका खाता उसके रिकवरी शब्दों में है, इसलिए आप इसे इस कंप्यूटर पर दो तरह से ला सकते हैं।"
+
 [signup_your_account_is_yours]
 text = "आपका खाता आपका है।"
 
@@ -3150,6 +3221,9 @@ text = "आपका क्लिपबोर्ड अभी खाली ह�
 
 [signup_your_code]
 text = "आपका कोड"
+
+[signup_your_current_account_stays]
+text = "आपका अभी का खाता इस कंप्यूटर पर बना रहेगा।"
 
 [signup_your_line_is_open]
 text = "आपकी लाइन खुली है, {name}"
@@ -3162,6 +3236,12 @@ text = "{name} तक आपकी लाइन खुली है। नमस
 
 [signup_your_nickname]
 text = "आपका निकनेम"
+
+[signup_your_recovery_key_is]
+text = "आपकी रिकवरी कुंजी आ गई है। यह इसी कंप्यूटर पर रहती है।"
+
+[signup_your_recovery_key_is_the]
+text = "आपकी रिकवरी कुंजी आपके {words} शब्द ही हैं, एक लाइन में।"
 
 [signup_your_request_to_is]
 text = "{value} को भेजा आपका अनुरोध इंतज़ार में है। उनके स्वीकार करते ही आपकी लाइन खुल जाएगी।"
@@ -3238,6 +3318,10 @@ text = "कल सुबह"
 [profile_busy_no_end]
 text = "कोई तय समय नहीं"
 
+[signup_word_in_the_recovery_more]
+one = "शब्द {value} और {count} दूसरा शब्द रिकवरी शब्दों की सूची में नहीं हैं। वर्तनी जाँचें।"
+other = "शब्द {value} और {count} दूसरे शब्द रिकवरी शब्दों की सूची में नहीं हैं। वर्तनी जाँचें।"
+
 [signup_by_continuing_you_agree]
 text = "आगे बढ़ने का मतलब है कि आप {terms} से सहमत हैं और आपने {privacy} पढ़ ली है।"
 
@@ -3249,6 +3333,12 @@ text = "नाम में कंट्रोल या टेक्स्ट-�
 
 [profile_err_name_long]
 text = "यह नाम बहुत लंबा है। {limit} बाइट तक; कुछ वर्ण एक से ज़्यादा बाइट लेते हैं।"
+
+[profile_err_nickname_chars]
+text = "निकनेम में कंट्रोल या टेक्स्ट-दिशा वाले वर्ण नहीं हो सकते।"
+
+[profile_err_nickname_long]
+text = "यह निकनेम बहुत लंबा है। {limit} बाइट तक; कुछ वर्ण एक से ज़्यादा बाइट लेते हैं।"
 
 [profile_err_status_long]
 text = "स्टेटस के लिए यह बहुत लंबा है: {limit} बाइट तक, और कुछ वर्ण एक से ज़्यादा बाइट लेते हैं।"
@@ -3262,20 +3352,201 @@ text = "परिचय के लिए यह बहुत लंबा है
 [profile_err_about_chars]
 text = "परिचय में कंट्रोल या टेक्स्ट-दिशा वाले वर्ण नहीं हो सकते।"
 
+[profile_err_text_long]
+text = "यह बहुत लंबा है: {limit} बाइट तक, और कुछ वर्ण एक से ज़्यादा बाइट लेते हैं।"
+
+[profile_err_text_chars]
+text = "इसमें कंट्रोल या टेक्स्ट-दिशा वाले वर्ण नहीं हो सकते।"
+
+[common_list_separator]
+text = ", "
+
 [common_list_and]
 text = "{list} और {last}"
+
+[common_list_two]
+text = "{first} और {last}"
+
+[common_dot_separator]
+text = " · "
+
+[date_month_1]
+text = "जन॰"
+
+[date_month_2]
+text = "फ़र॰"
+
+[date_month_3]
+text = "मार्च"
+
+[date_month_4]
+text = "अप्रैल"
+
+[date_month_5]
+text = "मई"
+
+[date_month_6]
+text = "जून"
+
+[date_month_7]
+text = "जुल॰"
+
+[date_month_8]
+text = "अग॰"
+
+[date_month_9]
+text = "सित॰"
+
+[date_month_10]
+text = "अक्तू॰"
+
+[date_month_11]
+text = "नव॰"
+
+[date_month_12]
+text = "दिस॰"
+
+[date_weekday_mon]
+text = "सोमवार"
+
+[date_weekday_tue]
+text = "मंगलवार"
+
+[date_weekday_wed]
+text = "बुधवार"
+
+[date_weekday_thu]
+text = "गुरुवार"
+
+[date_weekday_fri]
+text = "शुक्रवार"
+
+[date_weekday_sat]
+text = "शनिवार"
+
+[date_weekday_sun]
+text = "रविवार"
+
+[date_month_day]
+text = "{day} {month}"
+
+[date_day_month]
+text = "{day} {month}"
+
+[date_month_day_time]
+text = "{day} {month}, {time}"
+
+[date_weekday_date]
+text = "{weekday}, {day} {month}"
+
+[date_weekday_date_year]
+text = "{weekday}, {day} {month} {year}"
+
+[profile_busy_until_tomorrow]
+text = "कल {time} तक व्यस्त"
+
+[profile_busy_until_mon]
+text = "सोमवार {time} तक व्यस्त"
+
+[profile_busy_until_tue]
+text = "मंगलवार {time} तक व्यस्त"
+
+[profile_busy_until_wed]
+text = "बुधवार {time} तक व्यस्त"
+
+[profile_busy_until_thu]
+text = "गुरुवार {time} तक व्यस्त"
+
+[profile_busy_until_fri]
+text = "शुक्रवार {time} तक व्यस्त"
+
+[profile_busy_until_sat]
+text = "शनिवार {time} तक व्यस्त"
+
+[profile_busy_until_sun]
+text = "रविवार {time} तक व्यस्त"
+
+[call_ends_your_call]
+text = "जवाब देने पर आपकी मौजूदा कॉल कट जाएगी।"
+
+[common_someone_is_calling]
+text = "किसी की कॉल आ रही है"
+
+[call_reconnecting]
+text = "कॉल फिर से जुड़ रही है"
+
+[call_reconnecting_2]
+text = "कॉल फिर से जुड़ रही है…"
+
+[call_couldnt_connect]
+text = "कॉल जुड़ नहीं पाई"
 
 [call_history_fallback]
 text = "Tinline कॉल"
 
+[gcall_about_this_computer]
+text = "**यह कंप्यूटर** इस कॉल को चला रहा है। कॉल में सभी इससे जुड़ते हैं, यह आवाज़ आगे पहुँचाता है और कई लोगों के एक साथ बोलने पर तय करता है कि कौन सुनाई दे।"
+
+[gcall_about_device]
+text = "**{name} का डिवाइस** यह कॉल चलाता है। कॉल में सभी इससे जुड़ते हैं, यह आवाज़ आगे पहुँचाता है और कई लोगों के एक साथ बोलने पर तय करता है कि कौन सुनाई दे।"
+
+[gcall_about_unnamed]
+text = "**कॉल होस्ट** यह कॉल चलाता है। कॉल में सभी इससे जुड़ते हैं, यह आवाज़ आगे पहुँचाता है और कई लोगों के एक साथ बोलने पर तय करता है कि कौन सुनाई दे।"
+
+[gcall_call_host_device]
+text = "कॉल होस्ट: {name} का डिवाइस"
+
+[gcall_call_host_unnamed]
+text = "कॉल होस्ट: दूसरा डिवाइस"
+
+[group_invitation_line]
+text = "**{name}** ने आपको **{group}** में आमंत्रित किया"
+
+[group_invitation_line_unnamed]
+text = "किसी ने आपको **{group}** में आमंत्रित किया"
+
 [group_replying_to_yourself]
 text = "खुद को जवाब"
+
+[group_replying_to_a_message]
+text = "एक संदेश का जवाब"
 
 [chat_replying_to_yourself]
 text = "खुद को जवाब"
 
+[group_invited_by_you]
+text = "आपने आमंत्रित किया"
+
+[group_invited_by_someone]
+text = "किसी ने आमंत्रित किया"
+
+[group_flags_of]
+one = "{count} में से {flags} फ़्लैग"
+other = "{count} में से {flags} फ़्लैग"
+
 [group_link_own]
 text = "आपके अपने दूसरे डिवाइस के लिए लिंक"
+
+[group_link_own_owner]
+text = "आपके अपने दूसरे डिवाइस के लिए लिंक · मालिक {owner}"
+
+[group_owner_by_you]
+text = "आपने आमंत्रित किया · मालिक {owner}"
+
+[group_owner_by_you_unnamed]
+text = "आपने आमंत्रित किया"
+
+[group_owner_by_named]
+text = "{inviter} ने आमंत्रित किया · मालिक {owner}"
+
+[group_owner_by_named_unnamed]
+text = "{inviter} ने आमंत्रित किया"
+
+[group_owner_by_unnamed]
+text = "किसी ने आमंत्रित किया · मालिक {owner}"
+
+[group_owner_by_unnamed_unnamed]
+text = "किसी ने आमंत्रित किया"
 
 [group_host_online]
 text = "ऑनलाइन"
@@ -3283,11 +3554,43 @@ text = "ऑनलाइन"
 [group_host_offline]
 text = "ऑफ़लाइन"
 
+[group_hosts_online_here]
+one = "{count} होस्ट ऑनलाइन है, यह कंप्यूटर भी। पोस्ट तुरंत पहुँच रही हैं।"
+other = "{count} होस्ट ऑनलाइन हैं, यह कंप्यूटर भी। पोस्ट तुरंत पहुँच रही हैं।"
+
 [group_hosts_store_the_group_admin]
 text = "होस्ट ग्रुप को सहेजते हैं और दूसरों के ऑफ़लाइन होने पर पोस्ट आगे पहुँचाते हैं। ये वे सदस्य हैं जिन पर आप भरोसा करते हैं: होस्ट इस ग्रुप में पोस्ट की गई हर चीज़ पढ़ सकता है। किसी सदस्य के मेनू से होस्ट नियुक्त करें; उन्हें स्वीकार करना होगा। होस्ट हटाने पर 2 दिन के अंदर ग्रुप का पता बदल जाता है, ताकि वह डिवाइस फिर उस तक न पहुँच सके।"
 
+[group_a_call_host_carries_admin]
+text = "कॉल होस्ट कॉल को चलाता है। कॉल में सभी इससे जुड़ते हैं और यह आवाज़ आगे पहुँचाता है, इसलिए यह कॉल सुन सकता है। यह ग्रुप होस्टिंग से अलग है: ग्रुप होस्ट तब तक कॉल होस्ट नहीं होता जब तक आप उसे कॉल होस्ट भी नियुक्त न करें। कॉल होस्ट वे सदस्य हैं जिन पर आप भरोसा करते हैं, और हर एक खुद स्वीकार करता है। किसी सदस्य के मेनू से कॉल होस्ट नियुक्त करें, या इस कंप्यूटर पर कॉल होस्ट करें।"
+
+[group_asked_this_computer_to_unnamed]
+text = "एक एडमिन ने इस कंप्यूटर से {group} को होस्ट करने के लिए कहा है"
+
+[group_public_link]
+text = "पब्लिक लिंक"
+
+[group_status_this_computer_hosts]
+text = "यह कंप्यूटर ग्रुप को होस्ट करता है"
+
+[group_status_no_host_yet]
+text = "अभी कोई होस्ट नहीं"
+
+[group_status_waiting_for_a_host]
+text = "होस्ट का इंतज़ार"
+
+[group_online_count]
+one = "{count} ऑनलाइन"
+other = "{count} ऑनलाइन"
+
+[group_online_capped]
+text = "{count}+ ऑनलाइन"
+
 [group_post_photo]
 text = "फ़ोटो"
+
+[group_post_photo_caption]
+text = "फ़ोटो · {caption}"
 
 [group_preview_you]
 text = "आप: {text}"
@@ -3295,8 +3598,17 @@ text = "आप: {text}"
 [group_preview_author]
 text = "{name}: {text}"
 
+[group_preview_someone]
+text = "कोई सदस्य: {text}"
+
+[group_sys_joined_you]
+text = "अब आप ग्रुप में हैं"
+
 [group_sys_joined]
 text = "{name} अब ग्रुप में हैं"
+
+[group_sys_joined_someone]
+text = "ग्रुप में एक नया सदस्य जुड़ा"
 
 [group_sys_left_you]
 text = "आपने छोड़ दिया"
@@ -3304,11 +3616,29 @@ text = "आपने छोड़ दिया"
 [group_sys_left]
 text = "{name} ने ग्रुप छोड़ दिया"
 
+[group_sys_left_someone]
+text = "किसी ने ग्रुप छोड़ दिया"
+
+[group_sys_removed_you]
+one = "{count} एडमिन फ़्लैग के बाद आपको हटा दिया गया"
+other = "{count} एडमिन फ़्लैग के बाद आपको हटा दिया गया"
+
+[group_sys_removed]
+one = "{count} एडमिन फ़्लैग के बाद {name} को हटा दिया गया"
+other = "{count} एडमिन फ़्लैग के बाद {name} को हटा दिया गया"
+
+[group_sys_removed_someone]
+one = "{count} एडमिन फ़्लैग के बाद किसी सदस्य को हटा दिया गया"
+other = "{count} एडमिन फ़्लैग के बाद किसी सदस्य को हटा दिया गया"
+
 [group_sys_host_added_you]
 text = "अब आपका एक डिवाइस ग्रुप को होस्ट करता है"
 
 [group_sys_host_added]
 text = "अब {name} का एक डिवाइस ग्रुप को होस्ट करता है"
+
+[group_sys_host_added_someone]
+text = "अब किसी सदस्य का एक डिवाइस ग्रुप को होस्ट करता है"
 
 [group_sys_host_removed_you]
 text = "आपके एक डिवाइस ने ग्रुप को होस्ट करना बंद कर दिया"
@@ -3316,11 +3646,44 @@ text = "आपके एक डिवाइस ने ग्रुप को ह
 [group_sys_host_removed]
 text = "{name} के एक डिवाइस ने ग्रुप को होस्ट करना बंद कर दिया"
 
+[group_sys_host_removed_someone]
+text = "किसी सदस्य के एक डिवाइस ने ग्रुप को होस्ट करना बंद कर दिया"
+
+[group_sys_admin_you_you]
+text = "आपने खुद को एडमिन बनाया"
+
+[group_sys_admin_you_other]
+text = "आपने {name} को एडमिन बनाया"
+
+[group_sys_admin_you_someone]
+text = "आपने किसी सदस्य को एडमिन बनाया"
+
 [group_sys_admin_other_you]
 text = "{by} ने आपको एडमिन बनाया"
 
 [group_sys_admin_other_other]
 text = "{by} ने {name} को एडमिन बनाया"
+
+[group_sys_admin_other_someone]
+text = "{by} ने किसी सदस्य को एडमिन बनाया"
+
+[group_sys_admin_someone_you]
+text = "किसी ने आपको एडमिन बनाया"
+
+[group_sys_admin_someone_other]
+text = "किसी ने {name} को एडमिन बनाया"
+
+[group_sys_admin_someone_someone]
+text = "किसी ने एक सदस्य को एडमिन बनाया"
+
+[group_sys_unadmin_you_you]
+text = "आपने खुद को एडमिन से हटाया"
+
+[group_sys_unadmin_you_other]
+text = "आपने {name} को एडमिन से हटाया"
+
+[group_sys_unadmin_you_someone]
+text = "आपने किसी सदस्य को एडमिन से हटाया"
 
 [group_sys_unadmin_other_you]
 text = "{by} ने आपको एडमिन से हटाया"
@@ -3328,14 +3691,35 @@ text = "{by} ने आपको एडमिन से हटाया"
 [group_sys_unadmin_other_other]
 text = "{by} ने {name} को एडमिन से हटाया"
 
+[group_sys_unadmin_other_someone]
+text = "{by} ने किसी सदस्य को एडमिन से हटाया"
+
+[group_sys_unadmin_someone_you]
+text = "किसी ने आपको एडमिन से हटाया"
+
+[group_sys_unadmin_someone_other]
+text = "किसी ने {name} को एडमिन से हटाया"
+
+[group_sys_unadmin_someone_someone]
+text = "किसी ने एक सदस्य को एडमिन से हटाया"
+
 [group_sent_waiting]
 text = "{name} का इंतज़ार · {group} के ज़रिए"
+
+[group_sent_waiting_unnamed]
+text = "जवाब का इंतज़ार · {group} के ज़रिए"
 
 [group_sent_accepted_messages]
 text = "{name} ने स्वीकार किया · सिर्फ़ संदेश"
 
+[group_sent_accepted_messages_unnamed]
+text = "स्वीकार किया · सिर्फ़ संदेश"
+
 [group_sent_accepted_connecting]
 text = "{name} ने स्वीकार किया · जुड़ रहा है"
+
+[group_sent_accepted_connecting_unnamed]
+text = "स्वीकार किया · जुड़ रहा है"
 
 [group_sent_declined]
 text = "{name} ने अस्वीकार किया"
@@ -3346,8 +3730,21 @@ text = "अस्वीकार की गई"
 [group_sent_blocked]
 text = "{name} ने आपको ब्लॉक किया"
 
+[group_sent_blocked_unnamed]
+text = "उन्होंने आपको ब्लॉक किया है"
+
+[group_notice_cant_send]
+text = "आप इस ग्रुप में संदेश नहीं भेज सकते।"
+
 [group_notice_invitation_sent]
 text = "{name} को आमंत्रण भेज दिया। स्वीकार करते ही वे जुड़ जाएँगे।"
+
+[group_notice_invitation_sent_unnamed]
+text = "आमंत्रण भेज दिया। स्वीकार करते ही वे जुड़ जाएँगे।"
+
+[group_notice_invitations_sent]
+one = "{count} आमंत्रण भेज दिया। स्वीकार करते ही वे जुड़ जाएँगे।"
+other = "{count} आमंत्रण भेज दिए। हर व्यक्ति स्वीकार करते ही जुड़ जाएगा।"
 
 [group_notice_you_joined]
 text = "अब आप {group} के सदस्य हैं।"
@@ -3358,17 +3755,32 @@ text = "अब आप ग्रुप के सदस्य हैं।"
 [group_notice_declined_inv]
 text = "अस्वीकार किया। {name} को दिखेगा कि आपने अस्वीकार किया।"
 
+[group_notice_declined_inv_unnamed]
+text = "अस्वीकार किया। उन्हें दिखेगा कि आपने अस्वीकार किया।"
+
 [group_notice_accepted_yours]
 text = "{name} ने आपका अनुरोध स्वीकार कर लिया। अब आप एक-दूसरे को संदेश भेज सकते हैं; जब तक आप में से कोई अनुमति न दे, कॉल बंद रहेंगी।"
+
+[group_notice_accepted_yours_unnamed]
+text = "आपका अनुरोध स्वीकार कर लिया गया। अब आप एक-दूसरे को संदेश भेज सकते हैं; जब तक आप में से कोई अनुमति न दे, कॉल बंद रहेंगी।"
 
 [group_notice_request_sent]
 text = "{name} को अनुरोध भेज दिया। उनके जवाब तक यह चैट में इंतज़ार करेगा।"
 
+[group_notice_request_sent_unnamed]
+text = "अनुरोध भेज दिया। उनके जवाब तक यह चैट में इंतज़ार करेगा।"
+
 [group_notice_accepted]
 text = "स्वीकार किया। {name} सिर्फ़ संदेशों के लिए जोड़े गए हैं और उनका डिवाइस जुड़ते ही चैट में दिखेंगे; जब तक आप अनुमति न दें, कॉल बंद रहेंगी।"
 
+[group_notice_accepted_unnamed]
+text = "स्वीकार किया। वे सिर्फ़ संदेशों के लिए जोड़े गए हैं और उनका डिवाइस जुड़ते ही चैट में दिखेंगे; जब तक आप अनुमति न दें, कॉल बंद रहेंगी।"
+
 [group_notice_declined_req]
 text = "अस्वीकार कर दिया। {name} को बताया गया है कि अनुरोध अस्वीकार हुआ।"
+
+[group_notice_declined_req_unnamed]
+text = "अस्वीकार कर दिया। उन्हें बताया गया है कि अनुरोध अस्वीकार हुआ।"
 
 [group_notice_link_copied]
 text = "कॉपी हो गया। लिंक खुला रहने तक जिसके पास भी यह है, वह जुड़ सकता है।"
@@ -3376,8 +3788,29 @@ text = "कॉपी हो गया। लिंक खुला रहने 
 [group_notice_group_is_open]
 text = "आपका ग्रुप खुला है। शेयर करने के लिए लिंक कॉपी करें।"
 
+[group_notice_group_made]
+text = "ग्रुप बन गया। यह कंप्यूटर इसे होस्ट करता है; सदस्यों वाले हिस्से से लोगों को आमंत्रित करें।"
+
 [group_give_the_group_a_name]
 text = "ग्रुप को एक नाम दें।"
 
 [group_pick_someone_first]
 text = "पहले किसी को चुनें।"
+
+[link_check_that_other_shows_this]
+text = "देखें कि दूसरे डिवाइस पर यही कोड दिख रहा है, फिर वहाँ मंज़ूरी दें।"
+
+[link_link_other]
+text = "दूसरा डिवाइस लिंक करें?"
+
+[link_linking_other]
+text = "दूसरा डिवाइस लिंक हो रहा है"
+
+[link_linked_other]
+text = "दूसरा डिवाइस लिंक हो गया"
+
+[link_linked_to_account]
+text = "आपके खाते से लिंक हो गया"
+
+[chat_you_blocked_on]
+text = "आपने {name} को ब्लॉक किया · {when}"
