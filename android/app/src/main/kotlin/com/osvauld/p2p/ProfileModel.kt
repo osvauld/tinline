@@ -53,9 +53,9 @@ object ProfileRules {
     /** profile.ts checkValue: per value 16 KiB, 64 fields, 64 KiB in all. [json] is the value's JSON text. */
     fun checkValue(key: String, json: String, fields: JSONObject): String? {
         val size = utf8(json)
-        if (size > VALUE_LIMIT) return appString(R.string.profile_err_value_long)
+        if (size > VALUE_LIMIT) return appString(R.string.profile_err_value_long, VALUE_LIMIT / 1024)
         val others = fields.keys().asSequence().filter { it != key }.toList()
-        if (others.size >= FIELDS && !fields.has(key)) return appString(R.string.profile_err_fields_full)
+        if (others.size >= FIELDS && !fields.has(key)) return appString(R.string.profile_err_fields_full, FIELDS)
         val total = others.sumOf { utf8(it) + utf8(jsonOf(fields.opt(it))) } + utf8(key) + size
         if (total > ALL_LIMIT) return appString(R.string.profile_err_profile_full)
         return null
@@ -132,7 +132,7 @@ object ProfileInfo {
         return when (a.toLocalDate()) {
             today -> hm
             today.plusDays(1) -> appString(R.string.profile_until_tomorrow, hm)
-            else -> appString(R.string.profile_until_weekday, a.dayOfWeek.getDisplayName(TextStyle.FULL, Locale.getDefault()), hm)
+            else -> a.format(localFormatter("EEEEHm", "EEEE HH:mm"))
         }
     }
 }

@@ -32,6 +32,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
@@ -326,6 +327,20 @@ fun boldText(text: String, weight: FontWeight = FontWeight.SemiBold, color: Colo
         }
     }
     if (open) pop()
+}
+
+/** A line whose `[label](key)` parts are links; [urls] maps each key to its address. Unknown keys stay plain text. */
+fun linkedText(text: String, urls: Map<String, String>, styles: androidx.compose.ui.text.TextLinkStyles) = androidx.compose.ui.text.buildAnnotatedString {
+    val re = Regex("""\[([^\]]+)]\(([a-z]+)\)""")
+    var at = 0
+    for (m in re.findAll(text)) {
+        append(text.substring(at, m.range.first))
+        val url = urls[m.groupValues[2]]
+        if (url == null) append(m.value)
+        else withLink(androidx.compose.ui.text.LinkAnnotation.Url(url, styles)) { append(m.groupValues[1]) }
+        at = m.range.last + 1
+    }
+    append(text.substring(at))
 }
 
 fun buildAnnotatedStringBold(bold: String?, rest: String) = androidx.compose.ui.text.buildAnnotatedString {

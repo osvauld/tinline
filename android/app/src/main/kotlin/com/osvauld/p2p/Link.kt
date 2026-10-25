@@ -360,8 +360,14 @@ private fun ScanStep(note: String?, onScan: () -> Unit, onShow: () -> Unit, onTy
     PageH1(stringResource(R.string.link_scan_h1))
     val step1 = boldText(stringResource(R.string.link_scan_step1, mark(stringResource(R.string.settings_add_link))), color = c.ink)
     Column(Modifier.padding(start = 4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(step1, style = PgType.sub19, color = c.ink2)
-        Text(stringResource(R.string.link_scan_step2), style = PgType.sub19, color = c.ink2)
+        // The steps are numbered here, with the language's own digits, so the strings carry no typed numbers.
+        val nf = java.text.NumberFormat.getIntegerInstance()
+        listOf(step1, androidx.compose.ui.text.AnnotatedString(stringResource(R.string.link_scan_step2))).forEachIndexed { i, t ->
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(nf.format(i + 1L) + ".", Modifier.widthIn(min = 18.dp), style = PgType.sub19, color = c.ink2)
+                Text(t, style = PgType.sub19, color = c.ink2)
+            }
+        }
     }
     Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
         Column(Modifier.size(220.dp).clip(SmoothCornerShape(20.dp)).background(Color(0xFF0E1513)), horizontalAlignment = Alignment.CenterHorizontally,

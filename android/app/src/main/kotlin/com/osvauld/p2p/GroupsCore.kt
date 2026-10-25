@@ -173,7 +173,7 @@ object GroupText {
     fun shortDev(dev: String) = dev.take(8)
 
     /** [named] or the unnamed text: whole-sentence variants, never a translated "someone" slotted into a name. */
-    private fun withName(name: String, @StringRes named: Int, @StringRes anon: Int, vararg more: Any): String =
+    internal fun withName(name: String, @StringRes named: Int, @StringRes anon: Int, vararg more: Any): String =
         named(name)?.let { appString(named, it, *more) } ?: appString(anon, *more)
 
     /** A person in a system line: me, a known name, or nobody we know. */
@@ -551,7 +551,7 @@ class GroupsController(private val api: GroupApi, private val me: () -> String?)
     fun inviteContacts(id: String, dids: List<String>): Result<String> {
         if (dids.isEmpty()) return Result.failure(GroupFailure(appString(R.string.groupsc_pick_first)))
         return runCatching { api.inviteContacts(id, dids) }.map {
-            if (it.size == 1) withName(firstName(it[0].inviteeName), R.string.groupsc_invited_one_named, R.string.groupsc_invited_one_anon)
+            if (it.size == 1) GroupText.withName(firstName(it[0].inviteeName), R.string.groupsc_invited_one_named, R.string.groupsc_invited_one_anon)
             else appPlural(R.plurals.groupsc_invited_many, it.size, it.size)
         }.also { synchronized(this) { reloadInvitations() } }.mapError()
     }
@@ -561,7 +561,7 @@ class GroupsController(private val api: GroupApi, private val me: () -> String?)
         runCatching { api.invitationAccept(invitationId).groupId }.also { refresh() }.mapError()
 
     fun declineInvitation(invitationId: String): Result<String> = runCatching { api.invitationDecline(invitationId) }
-        .map { withName(firstName(it.inviterName), R.string.groupsc_decline_inv_named, R.string.groupsc_decline_inv_anon) }.also { synchronized(this) { reloadInvitations() } }.mapError()
+        .map { GroupText.withName(firstName(it.inviterName), R.string.groupsc_decline_inv_named, R.string.groupsc_decline_inv_anon) }.also { synchronized(this) { reloadInvitations() } }.mapError()
 
     /** Set by the app: an invitation arrived or changed (notifications; called on a core thread). */
     @Volatile var onInvitation: ((GroupInvitation) -> Unit)? = null
@@ -614,24 +614,24 @@ class GroupsController(private val api: GroupApi, private val me: () -> String?)
 
     /** "Message privately" for a member who is not a contact. */
     fun request(groupId: String, did: String): Result<String> =
-        runCatching { api.chatRequest(groupId, did) }.map { withName(firstName(it.peerName), R.string.groupsc_request_sent_named, R.string.groupsc_request_sent_anon) }
+        runCatching { api.chatRequest(groupId, did) }.map { GroupText.withName(firstName(it.peerName), R.string.groupsc_request_sent_named, R.string.groupsc_request_sent_anon) }
             .also { reloadRequests() }.mapError()
 
     fun accept(requestId: String): Result<String> = runCatching { api.chatAccept(requestId) }
-        .map { withName(firstName(it.peerName), R.string.groupsc_req_accept_named, R.string.groupsc_req_accept_anon) }
+        .map { GroupText.withName(firstName(it.peerName), R.string.groupsc_req_accept_named, R.string.groupsc_req_accept_anon) }
         .also { reloadRequests() }.mapError()
 
     fun decline(requestId: String): Result<String> = runCatching { api.chatDecline(requestId) }
-        .map { withName(firstName(it.peerName), R.string.groupsc_req_declined, R.string.groupsc_req_declined_told_anon) }.also { reloadRequests() }.mapError()
+        .map { GroupText.withName(firstName(it.peerName), R.string.groupsc_req_declined, R.string.groupsc_req_declined_told_anon) }.also { reloadRequests() }.mapError()
 
     /** Block (P5: they are told) and decline. */
     fun blockRequester(requestId: String, did: String): Result<String> = runCatching { api.block(did); api.chatDecline(requestId) }
-        .map { withName(firstName(it.peerName), R.string.groupsc_req_block_named, R.string.groupsc_req_block_anon) }.also { reloadRequests() }.mapError()
+        .map { GroupText.withName(firstName(it.peerName), R.string.groupsc_req_block_named, R.string.groupsc_req_block_anon) }.also { reloadRequests() }.mapError()
 
     override fun onChatRequest(request: GroupChatRequest) {
         reloadRequests()
         if (request.outgoing && request.state == ChatRequestState.ACCEPTED && request.contactAdded)
-            _notice.value = withName(firstName(request.peerName), R.string.groupsc_notice_accepted_named, R.string.groupsc_notice_accepted_anon)
+            _notice.value = GroupText.withName(firstName(request.peerName), R.string.groupsc_notice_accepted_named, R.string.groupsc_notice_accepted_anon)
     }
 
     private fun act(ok: () -> String, f: () -> Unit): Result<String> = runCatching { f(); ok() }.also { refresh() }.mapError()

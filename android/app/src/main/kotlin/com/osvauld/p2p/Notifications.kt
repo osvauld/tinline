@@ -209,7 +209,7 @@ object Notifications {
      * A group call someone else started rings (up to 30 s): the group's name over "<First name> is calling the group",
      * Join / Not now, on the calls channel (heads-up, no full-screen). Posted only while the app is not in front.
      */
-    fun groupRing(c: Context, gid: String, group: String, by: String, ringMs: Long) {
+    fun groupRing(c: Context, gid: String, group: String, by: String?, ringMs: Long) {
         if (!AlertPrefs.calls(c)) return
         val b = Notification.Builder(c, CH_CALLS)
             .setSmallIcon(R.drawable.ic_stat_tinline)
@@ -217,7 +217,7 @@ object Notifications {
             .setAutoCancel(true)
             .setOnlyAlertOnce(true)
             .setContentTitle(group)
-            .setContentText(c.getString(R.string.notif_group_calling, by))
+            .setContentText(if (by != null) c.getString(R.string.notif_group_calling, by) else c.getString(R.string.notif_group_calling_unnamed))
             .setContentIntent(activity(c, MainActivity::class.java, 60) { it.putExtra(EXTRA_GROUPS, true) })
             .setTimeoutAfter(ringMs)
             .addAction(Notification.Action.Builder(Icon.createWithResource(c, android.R.drawable.sym_action_call), c.getString(R.string.common_join),
@@ -279,7 +279,7 @@ object Notifications {
             .setSilent(AlertPrefs.quiet(c))
             .setSmallIcon(R.drawable.ic_stat_tinline)
             .setContentTitle(c.getString(R.string.notif_request_title))
-            .setContentText(c.getString(R.string.notif_request_text, name.ifBlank { c.getString(R.string.common_someone) }))
+            .setContentText(if (name.isBlank()) c.getString(R.string.notif_request_text_unnamed) else c.getString(R.string.notif_request_text, name))
             .setCategory(Notification.CATEGORY_SOCIAL)
             .setPriority(androidx.core.app.NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
@@ -293,8 +293,8 @@ object Notifications {
         val n = androidx.core.app.NotificationCompat.Builder(c, CH_REQUESTS)
             .setSilent(AlertPrefs.quiet(c))
             .setSmallIcon(R.drawable.ic_stat_tinline)
-            .setContentTitle(name.ifBlank { c.getString(R.string.notif_accepted_fallback) })
-            .setContentText(c.getString(R.string.notif_accepted_text))
+            .setContentTitle(c.getString(R.string.notif_accepted_title))
+            .setContentText(if (name.isBlank()) c.getString(R.string.notif_accepted_text_unnamed) else c.getString(R.string.notif_accepted_text, name))
             .setAutoCancel(true)
             .setContentIntent(activity(c, MainActivity::class.java, 60 + (did.hashCode() and 0xfff)) { it.putExtra(ChatNotifier.EXTRA_PEER, did) })
             .build()

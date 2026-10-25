@@ -625,7 +625,7 @@ private fun OnlineSheet(app: P2pApp, d: GroupDetail, online: List<OnlineMember>,
             Text(d.name, style = GType.sub, color = c.ink2, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(GroupText.onlineLabel(rows.size), Modifier.padding(top = 2.dp).semantics { heading() }, style = GType.title, color = c.ink)
             GPara(stringResource(R.string.groups_online_lag))
-            if (rows.size >= GroupText.ONLINE_CAP) GPara(stringResource(R.string.groups_online_cap, GroupText.ONLINE_CAP.toString()))
+            if (rows.size >= GroupText.ONLINE_CAP) GPara(pluralStringResource(R.plurals.groups_online_cap, GroupText.ONLINE_CAP, GroupText.ONLINE_CAP))
             if (hidden) GPara(stringResource(R.string.groups_online_hidden))
             if (rows.isEmpty()) GPara(stringResource(R.string.groups_online_none), top = 14.dp)
             else Column(Modifier.padding(top = 10.dp)) {
@@ -701,7 +701,7 @@ private fun ColumnScope.GroupItemLive(
         val r = d.removal
         if (r == null) SysLine(stringResource(R.string.groups_msg_removed_system))
         else NoticeCard(c.erc, c.onErc, ctx.resources.getQuantityString(R.plurals.groups_msg_removed_title, r.flags.size, r.flags.size),
-            stringResource(R.string.groups_msg_removed_by, r.flags.map { nameOf(app, it.byDid, it.byName) }.distinct().let { if (it.size > 1) ctx.getString(R.string.groups_msg_and, it.dropLast(1).joinToString(", "), it.last()) else it.joinToString() })) {
+            stringResource(R.string.groups_msg_removed_by, r.flags.map { nameOf(app, it.byDid, it.byName) }.distinct().let(::listText))) {
             Text(stringResource(R.string.groups_msg_see_details), Modifier.heightIn(min = 48.dp).clickable(role = Role.Button, onClick = onRemoval).wrapContentHeight(Alignment.CenterVertically),
                 style = TinType.label.copy(fontWeight = FontWeight.Bold, textDecoration = androidx.compose.ui.text.style.TextDecoration.Underline), color = c.onErc)
         }
@@ -950,12 +950,14 @@ fun GroupInfoLive(app: P2pApp, id: String, onBack: () -> Unit, onLink: () -> Uni
                                     else -> null
                                 }
                                 val since = m.invitedBy?.let { stringResource(R.string.groupsb_invited_by, firstName(name(it, "")), dayOnly(m.joinedAt.toLong())) } ?: stringResource(R.string.groupsb_since, dayOnly(m.joinedAt.toLong()))
-                                val flagsTxt = stringResource(R.string.groupsb_flags_of, m.flags.toString(), GroupText.FLAGS_TO_REMOVE.toString())
+                                val flagsTxt = pluralStringResource(R.plurals.groupsb_flags_of, GroupText.FLAGS_TO_REMOVE, m.flags.toInt(), GroupText.FLAGS_TO_REMOVE)
                                 val blockedByYou = stringResource(R.string.groupsb_blocked_by_you)
                                 val showFlags = (admin || m.isMe) && m.flags > 0u && !m.isOwner
                                 val nameYou = if (m.isMe) stringResource(R.string.groupsb_name_you, n) else n
-                                val desc = nameYou + ", " + (if (m.isOwner) stringResource(R.string.groupsb_role_owner_lc) else if (m.isAdmin) stringResource(R.string.groupsb_role_admin_lc) else stringResource(R.string.groupsb_role_member_lc)) +
-                                    (if (m.isHost) stringResource(R.string.groupsb_desc_host) else "") + (if (d.callHosts.any { it.did == m.did }) stringResource(R.string.groupsb_desc_callhost) else "") + stringResource(R.string.groupsb_desc_open)
+                                val desc = stringResource(R.string.groupsb_member_desc, listText(listOfNotNull(nameYou,
+                                    if (m.isOwner) stringResource(R.string.groupsb_role_owner_lc) else if (m.isAdmin) stringResource(R.string.groupsb_role_admin_lc) else stringResource(R.string.groupsb_role_member_lc),
+                                    if (m.isHost) stringResource(R.string.groupsb_role_host_lc) else null,
+                                    if (d.callHosts.any { it.did == m.did }) stringResource(R.string.groupsb_role_callhost_lc) else null)))
                                 MRow(onClick = { sheet = InfoSheet.Member(m.did) }, desc = desc) {
                                     Avatar(n, m.did, 40.dp)
                                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
@@ -1292,7 +1294,7 @@ private fun FlagsOnMe(n: Int) {
     val total = GroupText.FLAGS_TO_REMOVE
     val left = (total - n).coerceAtLeast(0)
     InfoSec(stringResource(R.string.groupsb_flags_on_you), countText = stringResource(R.string.groupsb_of_total, n.toString(), total.toString()), countColor = Tin.c.er) {
-        Box(Modifier.padding(start = 4.dp, end = 4.dp, bottom = 4.dp, top = 2.dp)) { FlagMeter(n, total, desc = stringResource(R.string.groupsb_flags_of, n.toString(), total.toString())) }
+        Box(Modifier.padding(start = 4.dp, end = 4.dp, bottom = 4.dp, top = 2.dp)) { FlagMeter(n, total, desc = pluralStringResource(R.plurals.groupsb_flags_of, total, n, total)) }
         GNote(pluralStringResource(R.plurals.groupsb_flags_left_note, left, left),
             Modifier.padding(start = 4.dp, end = 4.dp, top = 6.dp))
     }
@@ -1424,7 +1426,7 @@ private fun MemberSheet(app: P2pApp, d: GroupDetail, m: CoreMember, n: String, r
                             if (d.callHosts.any { it.did == m.did }) GPill(stringResource(R.string.groupsb_call_host), GTone.Call)
                         }
                     }
-                    if (admin && !m.isMe && !m.isOwner) Text(stringResource(R.string.groupsb_flags_of, m.flags.toString(), GroupText.FLAGS_TO_REMOVE.toString()), Modifier.padding(start = 20.dp, end = 20.dp, bottom = 4.dp),
+                    if (admin && !m.isMe && !m.isOwner) Text(pluralStringResource(R.plurals.groupsb_flags_of, GroupText.FLAGS_TO_REMOVE, m.flags.toInt(), GroupText.FLAGS_TO_REMOVE), Modifier.padding(start = 20.dp, end = 20.dp, bottom = 4.dp),
                         style = GType.sub.copy(fontFeatureSettings = "tnum"), color = c.ink2)
                     Column(Modifier.padding(start = 8.dp, end = 8.dp, top = 4.dp)) {
                         if (!m.isMe) when {
@@ -1582,7 +1584,7 @@ fun AddMembersLive(app: P2pApp, id: String, onBack: () -> Unit, say: (String) ->
     Page {
         TopBar(stringResource(R.string.groupsb_add_to, d.name), onBack)
         LazyColumn(Modifier.weight(1f), contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            item { SectionLabel(stringResource(R.string.groupsb_contacts_selected, picked.size.toString()), Modifier.padding(start = 0.dp)) }
+            item { SectionLabel(pluralStringResource(R.plurals.groupsb_contacts_selected, picked.size, picked.size), Modifier.padding(start = 0.dp)) }
             if (rows.isEmpty()) item { Hint(stringResource(R.string.groupsb_no_contacts)) }
             items(rows, key = { it.did }) { r ->
                 val on = r.did in picked

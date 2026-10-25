@@ -204,7 +204,7 @@ fun PhraseShownScreen(phrase: String, onHide: () -> Unit, onRelock: () -> Unit =
             Hint(stringResource(R.string.settings_only_you))
             Lead(stringResource(R.string.settings_backup_private))
             Row(Modifier.fillMaxWidth().selectableGroup(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                listOf(true to stringResource(R.string.settings_backup_key), false to stringResource(R.string.settings_backup_words)).forEach { (asKey, label) ->
+                listOf(true to stringResource(R.string.settings_backup_key), false to stringResource(R.string.settings_backup_words, RECOVERY_WORDS)).forEach { (asKey, label) ->
                     Box(Modifier.weight(1f).heightIn(min = 44.dp).clip(RoundedCornerShape(12.dp)).background(if (state.asKey == asKey) Tin.c.prc else Tin.c.sf)
                         .selectable(state.asKey == asKey, role = Role.Tab) { state = state.select(asKey); copied = false; error = "" }.padding(12.dp), contentAlignment = Alignment.Center) {
                         Text(label, style = TinType.label, color = if (state.asKey == asKey) Tin.c.onPrc else Tin.c.ink)
@@ -212,7 +212,7 @@ fun PhraseShownScreen(phrase: String, onHide: () -> Unit, onRelock: () -> Unit =
                 }
             }
             if (state.asKey) KeyCard(if (shown) key else "•••• •••• •••• ••••") else WordGrid(phrase, hidden = !shown)
-            if (state.asKey && key.isEmpty()) Hint(stringResource(R.string.settings_backup_key_failed))
+            if (state.asKey && key.isEmpty()) Hint(stringResource(R.string.settings_backup_key_failed, RECOVERY_WORDS))
             TinButton(if (shown) stringResource(R.string.settings_hide) else stringResource(R.string.settings_reveal), {
                 state = if (shown) state.hide() else state.reveal(SystemClock.elapsedRealtime()); copied = false; error = ""
             }, style = BtnStyle.Outlined, enabled = !state.asKey || key.isNotEmpty())

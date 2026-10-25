@@ -312,8 +312,7 @@ fun WaitingCard(w: CallInfo?, currentName: String, onDecline: () -> Unit, onEndA
                 WaitingPill(stringResource(R.string.call_waiting_end_answer), c.callButtonAnswer, c.callButtonAnswer, Color.White, stringResource(R.string.call_waiting_end_answer_desc), onEndAnswer, Modifier.weight(1f))
             }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally)) {
-                Text(stringResource(R.string.call_waiting_ends_with), style = TinFs.meta.copy(fontSize = 12.sp, lineHeight = 16.sp), color = c.ink2, maxLines = 1)
-                Text(first, Modifier.weight(1f, fill = false), style = TinFs.meta.copy(fontSize = 12.sp, lineHeight = 16.sp), color = c.ink2, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(stringResource(R.string.call_waiting_ends_with, first), style = TinFs.meta.copy(fontSize = 12.sp, lineHeight = 16.sp), color = c.ink2, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
     }

@@ -51,9 +51,8 @@ fun AvailabilitySheet(
         BreakOption(stringResource(R.string.avail_one_hour), false) { onPick(false, now + 3600) }
         BreakOption(stringResource(R.string.avail_tomorrow_morning), false) { onPick(false, tomorrowMorning(now)) }
         BreakOption(stringResource(R.string.avail_until_on), !available && until == null) { onPick(false, null) }
-        val who = myName.ifBlank { stringResource(R.string.avail_you) }
         Hint(
-            stringResource(R.string.avail_note, who),
+            if (myName.isBlank()) stringResource(R.string.avail_note_unnamed) else stringResource(R.string.avail_note, myName),
             Modifier.padding(top = 8.dp),
         )
     }
