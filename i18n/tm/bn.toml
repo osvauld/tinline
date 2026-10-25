@@ -314,7 +314,7 @@ where = [
   "ios group_list_new_sub: Sub line under New group.",
   "desktop common_youll_be_the_owner: Shared label, used in several places (group_live, shell).",
 ]
-text = "আপনি হবেন মালিক"
+text = "আপনি মালিক হবেন"
 
 [t_1788f8ccec]
 en = "Join with a link"
@@ -565,7 +565,7 @@ where = [
   "android groups_new_note: Explanation in the new group sheet.",
   "ios group_new_dialog_text: Body of the new group dialog.",
 ]
-text = "আপনি হবেন মালিক। এই ডিভাইসটি গ্রুপের প্রথম হোস্ট, তাই এটি গ্রুপটি রাখে এবং পোস্ট পৌঁছে দেয়।"
+text = "আপনি মালিক হবেন। এই ডিভাইসটি গ্রুপের প্রথম হোস্ট, তাই এটি গ্রুপটি রাখে এবং পোস্ট পৌঁছে দেয়।"
 
 [t_00c5c8ab7e]
 en = "Creating…"
@@ -626,7 +626,7 @@ where = [
   "android groups_chat_back: Accessibility label of the back arrow in a group chat top bar.",
   "ios group_back_to_groups: Spoken label of the back button in a group chat.",
 ]
-text = "গ্রুপে ফিরে যান"
+text = "গ্রুপের তালিকায় ফিরে যান"
 
 [t_67a2594bcf]
 en = "{name}. {status}. Group info"
@@ -877,7 +877,7 @@ where = [
   "android groups_msg_removed_by: Body of my removal card. {names} is a list of admin names such as Ana, Ben and Cy.",
   "ios group_removed_card_text: Notice card text. {names} is who flagged the user.",
 ]
-text = "ফ্ল্যাগ করেছেন {names}। আগে যা পেয়েছেন তা এখনও পড়তে পারবেন; নতুন কিছু আর আসবে না।"
+text = "{names} ফ্ল্যাগ করেছেন। আগে যা পেয়েছেন তা এখনও পড়তে পারবেন; নতুন কিছু আর আসবে না।"
 
 [t_60a42f42c7]
 en = "See details"
@@ -1049,7 +1049,7 @@ where = [
   "ios kit_tick_delivered_their: Screen-reader label of a message tick: reached the other person's device. Used when their name is not known.",
   "desktop group_on_their_device: Desktop, groups (in group_live_view.rs, group_receipt_lines).",
 ]
-text = "ওঁদের ডিভাইসে আছে"
+text = "ডিভাইসে পৌঁছেছে"
 
 [t_0c6d625d56]
 en = "Not yet"
@@ -1178,7 +1178,7 @@ where = [
   "ios group_invites_link_need_host: Sub line under Create invite link when the group has no host yet.",
   "desktop group_appoint_a_host_first: Desktop, groups (in group_live_view.rs, group_info_page).",
 ]
-text = "আগে একজন হোস্ট ঠিক করুন। প্রতিটি লিঙ্কে একজন হোস্টের নাম থাকে।"
+text = "আগে একজন হোস্ট নিযুক্ত করুন। প্রতিটি লিঙ্কে একজন হোস্টের নাম থাকে।"
 
 [t_bb58a7f445]
 en = "Valid for 7 days"
@@ -1220,7 +1220,7 @@ where = [
   "android groupsb_invited_by: Second line of a member row. {name} is the first name of who invited them, {date} the day they joined.",
   "ios group_member_invited_by: Member row sub line. {name} is who invited them, {date} is the day they joined.",
 ]
-text = "আমন্ত্রণ জানিয়েছেন {name} · {date}"
+text = "{name}-এর আমন্ত্রণে · {date}"
 
 [t_bbdbe743a7]
 en = "Since {date}"
@@ -1385,7 +1385,7 @@ where = [
   "android groupsb_open_group: Label of the sheet that opens the group to anyone with the link, and its confirm button.",
   "desktop group_open_the_group: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = "গ্রুপটি খুলে দিন"
+text = "গ্রুপটি সবার জন্য খুলে দিন"
 
 [t_4ee1bf34dd]
 en = "Open {name} to anyone with the link?"
@@ -1400,7 +1400,7 @@ where = [
   "android groupsb_open_body1: First paragraph of the open-the-group confirmation.",
   "desktop group_anyone_holding_the_link: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = "লিঙ্ক যার কাছে আছে, সে-ই যোগ দিতে পারবে, আমন্ত্রণ লাগবে না, মেয়াদও শেষ হবে না। যেখানে চান মানুষ গ্রুপটি খুঁজে পাক, সেখানে শেয়ার করুন।"
+text = "লিঙ্ক যাঁর কাছে আছে, তিনিই যোগ দিতে পারবেন, আমন্ত্রণ লাগবে না, মেয়াদও শেষ হবে না। যেখানে চান মানুষ গ্রুপটি খুঁজে পাক, সেখানে শেয়ার করুন।"
 
 [t_b82c48c5c1]
 en = "While it’s open, no read receipts are sent in this group, and members see who is online. Each person can hide themselves in their settings."
@@ -1564,7 +1564,7 @@ where = [
   "ios group_hosts_none: Status line when the group has no host.",
   "desktop group_this_group_has_no_host: Desktop, groups (in group_live_view.rs, group_info_page).",
 ]
-text = "এই গ্রুপের কোনো হোস্ট নেই। হোস্ট ঠিক না হওয়া পর্যন্ত পোস্টগুলো অপেক্ষা করবে।"
+text = "এই গ্রুপের কোনো হোস্ট নেই। হোস্ট নিযুক্ত না হওয়া পর্যন্ত পোস্টগুলো অপেক্ষা করবে।"
 
 [t_1a48b438fb]
 en_one = "{count} host online. Posts go through right away."
@@ -1649,7 +1649,7 @@ en = "Appoint a host from a member’s menu; they have to accept. Removing a hos
 where = [
   "android groupsb_hosts_note_admin: Extra sentence added after the Hosts explanation for admins (a space is put before it).",
 ]
-text = "কোনো সদস্যের মেনু থেকে হোস্ট ঠিক করুন; তাঁকে গ্রহণ করতে হবে। কোনো হোস্টকে সরালে 2 দিনের মধ্যে গ্রুপের ঠিকানা বদলে যায়, তাই সেই ডিভাইস আর গ্রুপে পৌঁছাতে পারে না।"
+text = "কোনো সদস্যের মেনু থেকে হোস্ট নিযুক্ত করুন; তাঁকে গ্রহণ করতে হবে। কোনো হোস্টকে সরালে 2 দিনের মধ্যে গ্রুপের ঠিকানা বদলে যায়, তাই সেই ডিভাইস আর গ্রুপে পৌঁছাতে পারে না।"
 
 [t_dacc74a624]
 en = "Call hosts"
@@ -1667,7 +1667,7 @@ where = [
   "ios group_callhosts_none: Status line when the group has no call host.",
   "desktop group_this_group_has_no: Desktop, groups (in group_live_view.rs, group_info_page).",
 ]
-text = "এই গ্রুপের কোনো কল হোস্ট নেই। একজন অ্যাডমিন কাউকে ঠিক না করা পর্যন্ত কেউ কল শুরু করতে পারবেন না।"
+text = "এই গ্রুপের কোনো কল হোস্ট নেই। একজন অ্যাডমিন কাউকে নিযুক্ত না করা পর্যন্ত কেউ কল শুরু করতে পারবেন না।"
 
 [t_b47b6ff4d2]
 en_one = "{count} call host ready. Calls start through it."
@@ -1677,8 +1677,8 @@ where = [
   "ios group_callhosts_ready: Status line when call hosts are ready. {count} is the number ready (at least 1).",
   "desktop group_call_hosts_ready: Group info, call hosts section. {count} is how many call hosts are ready.",
 ]
-one = "{count}টি কল হোস্ট তৈরি। কল এর মাধ্যমেই শুরু হয়।"
-other = "{count}টি কল হোস্ট তৈরি। কল এগুলোর মাধ্যমেই শুরু হয়।"
+one = "{count}টি কল হোস্ট তৈরি। এর মাধ্যমেই কল শুরু হয়।"
+other = "{count}টি কল হোস্ট তৈরি। এগুলোর মাধ্যমেই কল শুরু হয়।"
 
 [t_c76e6e7611]
 en = "No call host is available right now. A call can’t start until one is back."
@@ -1743,14 +1743,14 @@ where = [
   "ios group_callhosts_note_base: Explanation under the call host list.",
   "desktop group_a_call_host_carries: Desktop, group info, call hosts section note, for members.",
 ]
-text = "কল হোস্ট কলটি চালায়। কলের সবাই এর সঙ্গে কানেক্ট হন, আর এটি অডিও পৌঁছে দেয়, তাই এটি কল শুনতে পারে। এটা চ্যাট হোস্ট করা থেকে আলাদা: চ্যাট হোস্টকে আপনি কল হোস্ট হিসেবেও ঠিক না করলে সেটি কল হোস্ট নয়। কল হোস্টরা আপনার ভরসার সদস্য, আর প্রত্যেকে নিজে গ্রহণ করতে বেছে নেন।"
+text = "কল হোস্ট কলটি চালায়। কলের সবাই এর সঙ্গে কানেক্ট হন, আর এটি অডিও পৌঁছে দেয়, তাই এটি কল শুনতে পারে। এটা গ্রুপ হোস্ট করা থেকে আলাদা: গ্রুপ হোস্টকে আপনি কল হোস্ট হিসেবেও নিযুক্ত না করলে সেটি কল হোস্ট নয়। কল হোস্টরা আপনার ভরসার সদস্য, আর প্রত্যেকে নিজে গ্রহণ করতে বেছে নেন।"
 
 [t_4e4a80a8ec]
 en = "Appoint one from a member’s menu, or host calls on this phone. A phone only hosts calls that its owner starts."
 where = [
   "android groupsb_callhosts_note_admin: Extra sentences added after the Call hosts explanation for admins (a space is put before them).",
 ]
-text = "কোনো সদস্যের মেনু থেকে একজনকে ঠিক করুন, অথবা এই ফোনে কল হোস্ট করুন। একটি ফোন শুধু তার মালিকের শুরু করা কলই হোস্ট করে।"
+text = "কোনো সদস্যের মেনু থেকে একজনকে নিযুক্ত করুন, অথবা এই ফোনে কল হোস্ট করুন। একটি ফোন শুধু তার মালিকের শুরু করা কলই হোস্ট করে।"
 
 [t_dce5cfb1e1]
 en = "Flags on you"
@@ -1945,7 +1945,7 @@ where = [
   "android groupsb_blocked_stay: Second line under You blocked.",
   "ios group_member_blocked_sub: Sub line under You blocked.",
 ]
-text = "তাঁরা গ্রুপে থেকে যাবেন। চ্যাট করতে পরিচিতি থেকে আনব্লক করুন।"
+text = "উনি গ্রুপেই থাকবেন। চ্যাট করতে পরিচিতি থেকে ওঁকে আনব্লক করুন।"
 
 [t_05ad7b6297]
 en = "Request sent"
@@ -1977,7 +1977,7 @@ where = [
   "android groupsb_ask_again: Menu item to send another chat request. {name} is their first name.",
   "ios group_member_ask_again: Action row title. {name} is the member’s first name.",
 ]
-text = "{name}-কে আবার বলুন"
+text = "{name}-কে আবার অনুরোধ পাঠান"
 
 [t_ce139b4f5a]
 en = "Ask {name} for a private chat"
@@ -2028,7 +2028,7 @@ where = [
   "android groupsb_make_device_host: Menu item for a member with several devices. {device} is a short device id.",
   "ios group_member_make_device_host: Action row title. {device} is a short device id.",
 ]
-text = "ডিভাইস {device}-কে হোস্ট করুন"
+text = "ডিভাইস {device}-কে হোস্ট বানান"
 
 [t_36b15a5c2b]
 en = "Make host"
@@ -2037,7 +2037,7 @@ where = [
   "ios group_member_make_host: Action row title.",
   "desktop group_make_host: Desktop, groups (in group_live_view.rs, live_menu).",
 ]
-text = "হোস্ট করুন"
+text = "হোস্ট বানান"
 
 [t_935d7fa572]
 en = "Asks {name} to host. They have to accept."
@@ -2094,7 +2094,7 @@ where = [
   "ios group_member_make_callhost: Action row title: appoint a device to host calls.",
   "desktop group_make_call_host: Desktop, groups (in group_live_view.rs, live_menu).",
 ]
-text = "কল হোস্ট করুন"
+text = "কল হোস্ট বানান"
 
 [t_333b0c3903]
 en = "Asks {name} to carry group calls. They have to accept."
@@ -2126,7 +2126,7 @@ where = [
   "android groupsb_host_device_sub: Second line under Host on this device.",
   "ios group_host_device_sub: Sub line under Host on this device.",
 ]
-text = "একজন অ্যাডমিনকেও এটি ঠিক করতে হবে। যে কম্পিউটার সবসময় চালু থাকে, সেটি ভালো হোস্ট।"
+text = "একজন অ্যাডমিনকেও এটি নিযুক্ত করতে হবে। যে কম্পিউটার সবসময় চালু থাকে, সেটি ভালো হোস্ট।"
 
 [t_af8409d91f]
 en = "Stop hosting calls on this device"
@@ -2234,7 +2234,7 @@ where = [
   "android groupsb_new_group_host_note: Notice on the new group page.",
   "ios group_new_info: Info card on the new group page.",
 ]
-text = "শুরুতে এই ফোনটিই গ্রুপ হোস্ট করবে: গ্রুপটি রাখবে আর মেসেজ পৌঁছে দেবে। যে কম্পিউটার সবসময় চালু থাকে, সেটি ভালো হোস্ট — সেটি যোগ দিলে গ্রুপের তথ্য থেকে তাকে হোস্ট করুন।"
+text = "শুরুতে এই ফোনটিই গ্রুপ হোস্ট করবে: গ্রুপটি রাখবে আর মেসেজ পৌঁছে দেবে। যে কম্পিউটার সবসময় চালু থাকে, সেটি ভালো হোস্ট — সেটি যোগ দিলে গ্রুপের তথ্য থেকে সেটিকে হোস্ট হিসেবে নিযুক্ত করুন।"
 
 [t_26ac8b3691]
 en = "You’ll own the group. Invite people from Group info."
@@ -2376,7 +2376,7 @@ where = [
   "ios group_join_invited_by: Line on the join preview: who made the invite link. {name} is a contact's name.",
   "desktop group_invited_by_2: Desktop, group member row and join dialog (in group_live_view.rs). {name} is the first name of who invited.",
 ]
-text = "আমন্ত্রণ জানিয়েছেন {name}"
+text = "{name}-এর আমন্ত্রণে"
 
 [t_5a42d7ce32]
 en = "A link for your own account"
@@ -2415,7 +2415,7 @@ en = "Anyone with this link or QR can join {name} for 7 days. Share it over an a
 where = [
   "android groupsb_link_note: Hint on the invite link page. {name} is the group's name. 'Add members' is the title of another page.",
 ]
-text = "এই লিঙ্ক বা QR যার কাছে আছে, সে 7 দিন ধরে {name}-এ যোগ দিতে পারবে। ভরসার কোনো অ্যাপে শেয়ার করুন; কে যোগ দিল তা আপনি দেখতে পাবেন, আর ফ্ল্যাগ করে সরাতে পারবেন। পরিচিতিদের সরাসরি আমন্ত্রণ জানাতে “সদস্য যোগ করুন” ব্যবহার করুন।"
+text = "এই লিঙ্ক বা QR যাঁর কাছে আছে, তিনিই 7 দিন ধরে {name}-এ যোগ দিতে পারবেন। ভরসার কোনো অ্যাপে শেয়ার করুন; কে যোগ দিলেন তা আপনি দেখতে পাবেন, আর ফ্ল্যাগ করে সরাতে পারবেন। পরিচিতিদের সরাসরি আমন্ত্রণ জানাতে “সদস্য যোগ করুন” ব্যবহার করুন।"
 
 [t_1a8ed8b194]
 en = "Show full screen"
@@ -2455,7 +2455,7 @@ en = "Join {name} on Tinline: {link}"
 where = [
   "android groupsb_share_text: Text of the shared invite message. {name} is the group's name, {link} the invite link.",
 ]
-text = "Tinline-এ {name}-এ যোগ দিন: {link}"
+text = "Tinline-এ {name} গ্রুপে যোগ দিন: {link}"
 
 [t_14f63f7c74]
 en = "Share group invite"
@@ -2533,7 +2533,7 @@ where = [
   "ios unlock_welcome_named: Title of the unlock screen; {name} is the account's nickname.",
   "ios onboarding_back_title_named: Title after restoring an account; {name} is the first name.",
 ]
-text = "আবার স্বাগত, {name}"
+text = "আবার স্বাগতম, {name}"
 
 [t_b77817dbb4]
 en = "Welcome back"
@@ -2543,7 +2543,7 @@ where = [
   "ios onboarding_back_title: Title after restoring an account.",
   "desktop signup_welcome_back: Desktop, sign-up, restore and add contact (in signup_view.rs, welcome_title).",
 ]
-text = "আবার স্বাগত"
+text = "আবার স্বাগতম"
 
 [t_d99041b02e]
 en = "Welcome back,"
@@ -2551,7 +2551,7 @@ where = [
   "android unlock_welcome_back_prefix: First part of the unlock heading when the nickname is a button that opens the account switcher; the nickname follows after a space, so no trailing space here.",
   "desktop signup_welcome_back_2: Desktop, sign-up, restore and add contact (in signup_view.rs, welcome_title).",
 ]
-text = "আবার স্বাগত,"
+text = "আবার স্বাগতম,"
 
 [t_e634cb1eb4]
 en = "Unlocking…"
@@ -2629,7 +2629,7 @@ where = [
   "ios unlock_open_as: Title of the account picker at login.",
   "desktop signup_open_as: Desktop, sign-up, restore and add contact (in signup_view.rs, open_as_menu).",
 ]
-text = "কোন অ্যাকাউন্টে খুলবেন"
+text = "কোন অ্যাকাউন্ট খুলবেন"
 
 [t_a3c01b8533]
 en = "Accounts"
@@ -2858,7 +2858,7 @@ where = [
   "ios people_add_let_scan: Hint under the user’s own QR code.",
   "desktop signup_let_them_scan_this: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay).",
 ]
-text = "ওঁদের Tinline দিয়ে এটা স্ক্যান করতে বলুন।"
+text = "ওঁকে Tinline দিয়ে এটা স্ক্যান করতে বলুন।"
 
 [t_a1e5d6d309]
 en = "Send it to someone you’d like to add."
@@ -2893,14 +2893,14 @@ en = "Use a code instead"
 where = [
   "android profile_code_use_code: Button that switches from the QR code to the text code.",
 ]
-text = "বদলে কোড ব্যবহার করুন"
+text = "বরং কোড ব্যবহার করুন"
 
 [t_fa0187e58c]
 en = "Show QR instead"
 where = [
   "android profile_code_show_qr: Button that switches from the text code to the QR code.",
 ]
-text = "বদলে QR দেখান"
+text = "বরং QR দেখান"
 
 [t_6908950f8d]
 en = "Copy my code"
@@ -2917,14 +2917,14 @@ en = "Couldn’t copy. Try Share instead."
 where = [
   "android profile_code_copy_failed: Message under the code when copying to the clipboard failed.",
 ]
-text = "কপি করা গেল না। বদলে শেয়ার করে দেখুন।"
+text = "কপি করা গেল না। তার বদলে শেয়ার করে দেখুন।"
 
 [t_7dc40ec784]
 en = "Couldn’t open sharing. Copy your code instead."
 where = [
   "android profile_code_share_failed: Message under the code when the system share sheet could not open.",
 ]
-text = "শেয়ার করার অপশন খোলা গেল না। বদলে আপনার কোড কপি করুন।"
+text = "শেয়ার করার অপশন খোলা গেল না। তার বদলে আপনার কোড কপি করুন।"
 
 [t_8a28a69a04]
 en = "Contact code"
@@ -3086,7 +3086,7 @@ where = [
   "android profile_err_too_detailed: Error when the cropped picture is still too large to store.",
   "ios people_profile_too_detailed: Error when the cropped picture is too large to store.",
 ]
-text = "এই ছবিটি সেভ করার পক্ষে খুব বেশি খুঁটিনাটিভরা। অন্য একটি ছবি দিয়ে দেখুন।"
+text = "এই ছবিটিতে এত খুঁটিনাটি যে সেভ করা যাচ্ছে না। অন্য একটি ছবি দিয়ে দেখুন।"
 
 [t_67397e7f8f]
 en = "Picture updated"
@@ -3209,7 +3209,7 @@ where = [
   "ios people_profile_availability: Heading and label of the availability section.",
   "desktop profile_availability: Desktop, profile and settings (in profile_view.rs, my_profile).",
 ]
-text = "উপস্থিতি"
+text = "ফ্রি/ব্যস্ত"
 
 [t_55f913267d]
 en = "Your contacts can see this, and it’s the same on all your devices. It affects whether calls reach you, and it’s separate from whether you’re online."
@@ -3286,7 +3286,7 @@ where = [
   "ios people_profile_remove_note: Note in the remove picture dialog.",
   "desktop profile_your_initials_will_show: Desktop, profile and settings (in profile_view.rs, profile_layer).",
 ]
-text = "বদলে আপনার নামের আদ্যক্ষর দেখাবে।"
+text = "বরং আপনার নামের আদ্যক্ষর দেখাবে।"
 
 [t_af74f48f2b]
 en = "Replacing or removing your picture requests deletion of the previous cached copy on your linked devices and contacts when they sync. Screenshots, backups, and copies retained by modified clients cannot be erased by the app."
@@ -3775,7 +3775,7 @@ where = [
   "android profile_err_availability_remove: Error when someone tries to remove the availability field.",
   "ios people_rule_availability: Profile check: availability cannot be removed.",
 ]
-text = "উপস্থিতি বদলানো যায়, কিন্তু সরানো যায় না।"
+text = "ফ্রি/ব্যস্ত বদলানো যায়, কিন্তু সরানো যায় না।"
 
 [t_c99f5c88b2]
 en = "Pronouns"
@@ -3973,7 +3973,7 @@ where = [
   "ios restore_key_typo: Error when the pasted recovery key fails its checksum.",
   "desktop signup_that_key_has_a: Desktop, sign-up, restore and add contact (in signup.rs, gate_update).",
 ]
-text = "কী-তে টাইপের ভুল আছে বা এটি কেটে গেছে। যেখানে সেভ করেছিলেন, সেখান থেকে আবার পেস্ট করুন।"
+text = "এই রিকভারি কী-তে টাইপের ভুল আছে, বা এটি পুরোটা কপি হয়নি। যেখানে সেভ করেছিলেন, সেখান থেকে আবার পেস্ট করুন।"
 
 [t_b9527e2f4a]
 en = "Couldn’t read the clipboard. Paste into the first box instead."
@@ -3982,7 +3982,7 @@ where = [
   "ios restore_paste_failed: Error when the clipboard could not be read.",
   "desktop signup_couldnt_read_the_clipboard: Desktop, sign-up, restore and add contact (in signup.rs, gate_update).",
 ]
-text = "ক্লিপবোর্ড পড়া গেল না। বদলে প্রথম ঘরে পেস্ট করুন।"
+text = "ক্লিপবোর্ড পড়া গেল না। তার বদলে প্রথম ঘরে পেস্ট করুন।"
 
 [t_ae367631f0]
 en = "Recovery phrase words"
@@ -4059,7 +4059,7 @@ where = [
   "ios restore_use_words: Button that discards the pasted key to type words instead.",
   "desktop signup_use_my_words_instead: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = "বদলে আমার শব্দগুলো ব্যবহার করুন"
+text = "বরং আমার শব্দগুলো ব্যবহার করুন"
 
 [t_2d078dee86]
 en = "Paste from clipboard"
@@ -4092,7 +4092,7 @@ where = [
   "ios onboarding_welcome_title: Title of the first screen.",
   "desktop signup_a_direct_line_to: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = "আপনার মানুষদের কাছে সরাসরি লাইন"
+text = "আপনার আপনজনদের কাছে সরাসরি লাইন"
 
 [t_a1676ea1be]
 en = "Create a new account or bring one you already have.\nYour current account stays on this phone."
@@ -4225,7 +4225,7 @@ where = [
   "ios onboarding_done_lead: Explanation when the account is ready.",
   "desktop signup_scan_their_code_or: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = "ওঁদের কোড স্ক্যান করুন বা আপনারটা শেয়ার করুন, তাহলেই একে অপরকে কল করতে পারবেন।"
+text = "ওঁর কোড স্ক্যান করুন বা আপনারটা শেয়ার করুন, তাহলেই একে অপরকে কল করতে পারবেন।"
 
 [t_b73b03ce83]
 en = "Add my first contact"
@@ -4270,7 +4270,7 @@ where = [
   "android onboarding_tip_groups_body: Tip text about hosting groups on a computer.",
   "ios onboarding_tip_groups_body: Tip body.",
 ]
-text = "গ্রুপ শুরু করতে, এমন একটি কম্পিউটারে Tinline যোগ করুন যা চালু থাকতে পারে।"
+text = "গ্রুপ শুরু করতে, এমন একটি কম্পিউটারেও Tinline ইনস্টল করুন, যেটি চালু থাকতে পারে।"
 
 [t_0681cf989c]
 en = "What should people call you?"
@@ -4697,7 +4697,7 @@ where = [
   "ios onboarding_pass_instead: Button that protects the account with a passphrase instead.",
   "desktop gate_add_a_passphrase_instead: Desktop, sign-in and gate screens (in view.rs, key_failed_view).",
 ]
-text = "বদলে একটি পাসফ্রেজ যোগ করুন"
+text = "বরং একটি পাসফ্রেজ যোগ করুন"
 
 [t_b049cff8f6]
 en = "Nothing was kept on this phone yet, so there is nothing to lose. Try again, or protect the account with a passphrase instead of the phone’s own key."
@@ -4784,7 +4784,7 @@ en = "By continuing, you agree to the [Terms of Use](terms) and have read the [P
 where = [
   "android onboarding_terms_by_continuing: Sentence under the terms points. Each [label](terms) and [label](privacy) is a tappable link: translate the label, keep the (terms) and (privacy) parts exactly, and move the whole link wherever the sentence needs it. Terms of Use and Privacy Policy are the titles of two documents.",
 ]
-text = "চালিয়ে গেলে আপনি [ব্যবহারের শর্তাবলি](terms)-তে রাজি হচ্ছেন এবং [প্রাইভেসি পলিসি](privacy) পড়েছেন।"
+text = "চালিয়ে গেলে আপনি [ব্যবহারের শর্তাবলি](terms) মেনে নিচ্ছেন এবং [প্রাইভেসি পলিসি](privacy) পড়েছেন।"
 
 [t_7c4290d283]
 en = "So calls can reach you"
@@ -4870,7 +4870,7 @@ en = "Android pauses idle apps to save battery. This keeps your line open, using
 where = [
   "android onboarding_perm_background_why: Why the background permission is asked.",
 ]
-text = "ব্যাটারি বাঁচাতে Android অলস অ্যাপ থামিয়ে দেয়। এটি সামান্য ব্যাটারি খরচ করে আপনার লাইন খোলা রাখে।"
+text = "ব্যাটারি বাঁচাতে Android অব্যবহৃত অ্যাপ থামিয়ে দেয়। এটি সামান্য ব্যাটারি খরচ করে আপনার লাইন খোলা রাখে।"
 
 [t_854e55f8c7]
 en = "Allow"
@@ -4955,7 +4955,7 @@ en = "Exempt from battery optimisation so calls arrive when idle"
 where = [
   "android perms_battery_need_why: Why Tinline asks to be exempt from battery optimisation.",
 ]
-text = "ব্যাটারি অপ্টিমাইজেশন থেকে ছাড়, যাতে ফোন অলস থাকলেও কল আসে"
+text = "ব্যাটারি অপ্টিমাইজেশন থেকে ছাড়, যাতে ফোন ব্যবহার না হলেও কল আসে"
 
 [t_e69907b099]
 en = "Full-screen calls"
@@ -5440,7 +5440,7 @@ where = [
   "ios settings_sounds_note_quiet: Note under the sound previews when quiet mode is on.",
   "desktop profile_quiet_is_on_so: Desktop, profile and settings (in profile_view.rs, sounds_page).",
 ]
-text = "নিঃশব্দ চালু আছে, তাই প্রিভিউতে কোনো শব্দ হবে না।"
+text = "“নিঃশব্দ” চালু আছে, তাই প্রিভিউতে কোনো শব্দ হবে না।"
 
 [t_4bd4717d11]
 en = "Tap a sound to hear it. The choice applies to the next call."
@@ -5627,7 +5627,7 @@ where = [
   "android settings_clear_cache_sub: Small line under Clear cache. {size} is a formatted size such as 12 MB.",
   "ios settings_clear_cache_sub: Subtitle of Clear cache; {size} is a size such as 12 MB.",
 ]
-text = "আপনার খোলা ছবি আর ফাইলের {size}। আবার খুললে আবার তৈরি হবে।"
+text = "আপনার খোলা ছবি আর ফাইল মিলিয়ে {size}। আবার খুললে সেগুলো নতুন করে তৈরি হবে।"
 
 [t_1a905db57c]
 en = "Cleared"
@@ -5765,7 +5765,7 @@ where = [
   "ios settings_reads_off: Read receipts subtitle when off.",
   "desktop profile_your_reads_stay_with: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = "আপনি কী পড়লেন, তা আপনার কাছেই থাকে"
+text = "আপনি পড়েছেন কি না, তা আপনার কাছেই থাকে"
 
 [t_acbc9673fb]
 en = "Delivered ticks still go out either way, and you still see when others read yours. Messages you read while this is off stay unconfirmed."
@@ -5878,7 +5878,7 @@ en = "Tinline stays connected in the background so calls ring like a normal phon
 where = [
   "android settings_battery_hint: Explanation at the top of the background and battery page.",
 ]
-text = "Tinline ব্যাকগ্রাউন্ডে কানেক্টেড থাকে, যাতে সাধারণ ফোনের মতো কলে রিং হয়। এতে সামান্য ব্যাটারি খরচ হয়। নিচের চেকলিস্টে আছে Android-এর এর জন্য কী কী দরকার।"
+text = "Tinline ব্যাকগ্রাউন্ডে কানেক্টেড থাকে, যাতে সাধারণ ফোনের মতো কলে রিং হয়। এতে সামান্য ব্যাটারি খরচ হয়। এর জন্য Android-এর কী কী দরকার, তা নিচের চেকলিস্টে আছে।"
 
 [t_3a5e4ab9a1]
 en = "CHECKLIST"
@@ -6030,7 +6030,7 @@ where = [
   "android settings_backup_key_failed: Hint on the recovery backup page when the key could not be made. {words} is how many recovery words there are (24).",
   "ios security_key_failed: Hint when the recovery key could not be made.  {words} is the number of recovery words (24).",
 ]
-text = "কী তৈরি করা গেল না। বদলে আপনার {words}টি শব্দ ব্যবহার করুন।"
+text = "রিকভারি কী তৈরি করা গেল না। তার বদলে আপনার {words}টি শব্দ ব্যবহার করুন।"
 
 [t_ef3b9b9e9f]
 en = "Hide"
@@ -6063,7 +6063,7 @@ where = [
   "android settings_backup_same: Hint on the recovery backup page.",
   "ios security_hint_same: Hint on the recovery backup page.",
 ]
-text = "কী বা শব্দ, দুটো দিয়েই একই অ্যাকাউন্ট ফিরিয়ে আনা যায়। যেকোনোটা গোপন, নিরাপদ জায়গায় রাখুন।"
+text = "রিকভারি কী বা শব্দ, দুটো দিয়েই একই অ্যাকাউন্ট ফিরিয়ে আনা যায়। যেকোনোটা গোপন, নিরাপদ জায়গায় রাখুন।"
 
 [t_b53710a836]
 en = "Copied. Keep it somewhere private."
@@ -6138,7 +6138,7 @@ where = [
   "ios settings_about_made_by: About page credit line.",
   "desktop profile_made_by_osvauld: Desktop, profile and settings (in profile_view.rs, about_page).",
 ]
-text = "তৈরি করেছে Osvauld"
+text = "Osvauld-এর তৈরি"
 
 [t_e283f0f7c9]
 en = "Open-source licences"
@@ -6223,7 +6223,7 @@ en = "Paste it to whoever is helping you fix a problem"
 where = [
   "android settings_log_copy_sub: Small line under Copy debug log.",
 ]
-text = "যিনি সমস্যা ঠিক করতে আপনাকে সাহায্য করছেন, তাঁকে পেস্ট করে দিন"
+text = "যিনি সমস্যা মেটাতে সাহায্য করছেন, তাঁকে পাঠাতে পেস্ট করুন"
 
 [t_faf274135a]
 en = "Send debug log"
@@ -6364,7 +6364,7 @@ en = "Synced {time}"
 where = [
   "android devices_sub_synced: Small line under a device row. {time} is a phrase such as 2 min ago.",
 ]
-text = "সিঙ্ক হয়েছে {time}"
+text = "{time} সিঙ্ক হয়েছে"
 
 [t_01692e4fa5]
 en = "Not seen yet"
@@ -6672,7 +6672,7 @@ where = [
   "android link_scan_instead: Button on the new phone, and title of its camera screen: scan the other device's QR code instead of showing one.",
   "ios link_scan_instead: Button that switches to scanning the other device's code.",
 ]
-text = "বদলে স্ক্যান করুন"
+text = "বরং স্ক্যান করুন"
 
 [t_a7578e09f8]
 en = "Anyone who can see this code in the next few minutes could try to use it. Show it only to your own device."
@@ -6717,7 +6717,7 @@ en = "Expires in {time} · works once"
 where = [
   "android link_expires: Line under the QR code. {time} is the time left as minutes:seconds, such as 4:32.",
 ]
-text = "{time}-এ মেয়াদ শেষ · একবারই কাজ করে"
+text = "{time} পরে মেয়াদ শেষ · একবারই কাজ করে"
 
 [t_35781a0696]
 en = "Link code {code}"
@@ -6749,7 +6749,7 @@ where = [
   "android link_show_body: Instructions under the heading. The quoted names are buttons on the new device.",
   "ios link_show_body: Instruction under the QR heading. The quoted names match the buttons on the new device.",
 ]
-text = "নতুন ডিভাইসে “একটি ডিভাইসে লিঙ্ক করুন”, তারপর “বদলে স্ক্যান করুন” বেছে নিন, আর এই কোডের দিকে ধরুন।"
+text = "নতুন ডিভাইসে “একটি ডিভাইসে লিঙ্ক করুন”, তারপর “বরং স্ক্যান করুন” বেছে নিন, আর এই কোডের দিকে ধরুন।"
 
 [t_abac8ccb2c]
 en = "Do the codes match?"
@@ -6903,7 +6903,7 @@ where = [
   "android link_show_here: Button that switches from scanning to showing a QR code on this phone.",
   "ios link_show_instead: Button that switches to showing a QR code on this phone.",
 ]
-text = "বদলে এখানে একটি QR কোড দেখান"
+text = "বরং এখানে একটি QR কোড দেখান"
 
 [t_a747b9c63e]
 en = "That passphrase isn’t right."
@@ -7045,7 +7045,7 @@ where = [
   "ios people_blocked_title: Title of the Blocked people screen.",
   "desktop common_blocked_people: Shared label, used in several places (groups, profile).",
 ]
-text = "ব্লক করা মানুষ"
+text = "যাঁদের ব্লক করেছেন"
 
 [t_2d53447cd6]
 en = "One list across all your devices: a block made on another device shows here too."
@@ -7070,7 +7070,7 @@ where = [
   "android blocking_blocked_on: Small line under a blocked person. {date} is a date and time such as Oct 10, 13:50.",
   "ios people_blocked_since: Line under a blocked person. {date} is when the block was made, like “Oct 19, 14:05”.",
 ]
-text = "ব্লক করা হয়েছে {date}"
+text = "{date} থেকে ব্লক করা"
 
 [t_d91bf4b22d]
 en = "Unblock {name}"
@@ -7343,7 +7343,7 @@ where = [
   "android shell_end_and_answer: Accessibility label of the answer button when a second call arrives during a call: ends the current call and answers.",
   "desktop call_end_answer: Desktop, calls (voice and video) (in view.rs, waiting_banner).",
 ]
-text = "শেষ করে ধরুন"
+text = "শেষ করে উত্তর দিন"
 
 [t_fc6653bd25]
 en = "Unlock to receive calls"
@@ -7548,7 +7548,7 @@ where = [
   "android chat_add_contact_sub: Second line of the Add a contact row on the New chat screen.",
   "ios shell_new_chat_add_sub: Second line of that row.",
 ]
-text = "ওঁদের কোড স্ক্যান করুন বা কার্ড পেস্ট করুন"
+text = "ওঁর কোড স্ক্যান করুন বা কার্ড পেস্ট করুন"
 
 [t_20c0fc5f07]
 en = "CONTACTS · {count}"
@@ -7639,7 +7639,7 @@ en = "No app on this phone opens .{ext} files — Save it instead"
 where = [
   "android conv_no_app_opens: Toast when no installed app can open a file. {ext} is the file extension without the dot.",
 ]
-text = "এই ফোনের কোনো অ্যাপ .{ext} ফাইল খোলে না — বদলে সেভ করুন"
+text = "এই ফোনের কোনো অ্যাপ .{ext} ফাইল খোলে না — বরং সেভ করুন"
 
 [t_5daf5e2fcf]
 en = "No camera available."
@@ -7670,7 +7670,7 @@ where = [
   "android conv_older_body: Body of the note about older messages at the top of a chat.",
   "ios chat_older_body: Body of the older-messages banner.",
 ]
-text = "আপনি যবে থেকে এই ফোন ব্যবহার করছেন, তখন থেকের মেসেজ এটা রাখে। আপনারা দুজনেই অনলাইনে থাকলে আগের দিনগুলো লোড হবে।"
+text = "আপনি যবে থেকে এই ফোন ব্যবহার করছেন, তখন থেকে মেসেজগুলো এখানে থাকে। আপনারা দুজনেই অনলাইনে থাকলে আগের দিনগুলো লোড হবে।"
 
 [t_6d056581be]
 en = "You’re offline. Messages send when you’re back online."
@@ -7728,7 +7728,7 @@ where = [
   "android conv_back_to_chats: Screen-reader label of the back arrow in a chat's top bar.",
   "ios chat_back: Accessibility label of the back button in a chat header.",
 ]
-text = "চ্যাটে ফিরে যান"
+text = "চ্যাটের তালিকায় ফিরে যান"
 
 [t_2989a32c8a]
 en = "Blocked you"
@@ -8148,7 +8148,7 @@ where = [
   "android conv_info_saved: Top line of the message sheet in the 'You' chat. {time} is the clock time.",
   "ios chat_head_saved: First line of the message sheet for a saved item. {time} is the clock time.",
 ]
-text = "সেভ হয়েছে {time} · আপনার ডিভাইসগুলোতে"
+text = "{time}-এ সেভ হয়েছে · আপনার ডিভাইসগুলোতে"
 
 [t_024fed3498]
 en = "Received {time}"
@@ -8156,7 +8156,7 @@ where = [
   "android conv_info_received: Top line of the message sheet for a message you received. {time} is the clock time.",
   "ios chat_head_received: First line of the message sheet for a received message. {time} is the clock time.",
 ]
-text = "পেয়েছেন {time}"
+text = "{time}-এ পেয়েছেন"
 
 [t_88da3750d0]
 en = "Sent {time} · read on {first}’s device"
@@ -8164,7 +8164,7 @@ where = [
   "android conv_info_sent_read: Top line of the message sheet for a sent message that was read. {time} is the clock time, {first} the contact's first name.",
   "ios chat_head_read: First line of the message sheet for a read message. {time} clock time, {first} the other person's first name.",
 ]
-text = "পাঠানো হয়েছে {time} · {first}-এর ডিভাইসে পড়া হয়েছে"
+text = "{time}-এ পাঠানো হয়েছে · {first}-এর ডিভাইসে পড়া হয়েছে"
 
 [t_a4079ed593]
 en = "Sent {time} · on {first}’s device"
@@ -8172,7 +8172,7 @@ where = [
   "android conv_info_sent_delivered: Top line of the message sheet for a delivered message. {time} is the clock time, {first} the contact's first name.",
   "ios chat_head_delivered: First line of the message sheet for a delivered message. {time} clock time, {first} first name.",
 ]
-text = "পাঠানো হয়েছে {time} · {first}-এর ডিভাইসে পৌঁছেছে"
+text = "{time}-এ পাঠানো হয়েছে · {first}-এর ডিভাইসে পৌঁছেছে"
 
 [t_f03bc2cf6f]
 en = "Sent {time} · only on this phone so far"
@@ -8180,7 +8180,7 @@ where = [
   "android conv_info_sent_only_here: Top line of the message sheet for a message that has only reached this phone. {time} is the clock time.",
   "ios chat_head_only_here: First line of the message sheet for a message only on this phone. {time} clock time.",
 ]
-text = "পাঠানো হয়েছে {time} · এখন পর্যন্ত শুধু এই ফোনে"
+text = "{time}-এ পাঠানো হয়েছে · এখন পর্যন্ত শুধু এই ফোনে"
 
 [t_a0c3acc9a5]
 en = "Sent {time} · waiting for {first}’s device to confirm"
@@ -8188,7 +8188,7 @@ where = [
   "android conv_info_sent_waiting: Top line of the message sheet for a message not yet confirmed. {time} is the clock time, {first} the contact's first name.",
   "ios chat_head_sent: First line of the message sheet for a sent message without confirmation. {time} clock time, {first} first name.",
 ]
-text = "পাঠানো হয়েছে {time} · {first}-এর ডিভাইসের নিশ্চিতকরণের অপেক্ষায়"
+text = "{time}-এ পাঠানো হয়েছে · {first}-এর ডিভাইসের নিশ্চিতকরণের অপেক্ষায়"
 
 [t_914cbd7944]
 en = "Read · signed by {name} · device {device}"
@@ -8389,7 +8389,7 @@ where = [
   "android voice_slide_cancel: Hint in the recording bar while the mic button is held.",
   "ios chat_voice_slide_cancel: Hint beside the recording timer: slide left to cancel the voice message.",
 ]
-text = "বাতিল করতে সরান"
+text = "বাতিল করতে পাশে টানুন"
 
 [t_83f9f53fbf]
 en = "Pause voice message"
@@ -8695,7 +8695,7 @@ where = [
   "android card_already_contact: Second line of the card prompt for an existing contact.",
   "ios chat_card_known_sub: Second line of the clipboard card prompt when the person is already a contact.",
 ]
-text = "ওঁরা আগে থেকেই আপনার পরিচিতিতে আছেন।"
+text = "উনি আগে থেকেই আপনার পরিচিতিতে আছেন।"
 
 [t_1b951d0bdb]
 en = "Tinline found their card."
@@ -8703,7 +8703,7 @@ where = [
   "android card_found: Second line of the card prompt for a new contact.",
   "ios chat_card_found_sub: Second line of the clipboard card prompt when the card is new.",
 ]
-text = "Tinline ওঁদের কার্ড খুঁজে পেয়েছে।"
+text = "Tinline ওঁর কার্ড খুঁজে পেয়েছে।"
 
 [t_e080edf7e4]
 en = "Open"
@@ -8800,7 +8800,7 @@ where = [
   "android groupsc_open_link_copied: Confirmation after copying a public group's open link.",
   "desktop group_notice_link_copied: Desktop, group notice line (in group_live.rs). The public link was copied to the clipboard.",
 ]
-text = "কপি হয়েছে। লিঙ্ক খোলা থাকার সময় এটা যার কাছে আছে, সে-ই যোগ দিতে পারবে।"
+text = "কপি হয়েছে। লিঙ্ক খোলা থাকার সময় এটা যাঁর কাছে আছে, তিনিই যোগ দিতে পারবেন।"
 
 [t_9d537b6e28]
 en = "Not posted"
@@ -8941,7 +8941,7 @@ where = [
   "ios group_done_flag: Confirmation after flagging a member.",
   "desktop group_flag_recorded_it_is: Desktop, groups (in group_live.rs, run).",
 ]
-text = "ফ্ল্যাগ নথিভুক্ত হয়েছে। এতে আপনার স্বাক্ষর আছে, আর সদস্যটি এটা দেখতে পাবেন।"
+text = "ফ্ল্যাগ দেওয়া হয়েছে। এতে আপনার স্বাক্ষর আছে, আর ওই সদস্য এটা দেখতে পাবেন।"
 
 [t_3a9582fd20]
 en = "Made admin."
@@ -9010,7 +9010,7 @@ where = [
   "ios group_done_callhost_asked: Confirmation after asking a device to host calls.",
   "desktop group_asked_the_device_carries: Desktop, groups (in group_live.rs, run).",
 ]
-text = "বলা হয়েছে। ডিভাইসটি গ্রহণ করলেই কল চালাবে।"
+text = "অনুরোধ পাঠানো হয়েছে। ডিভাইসটি গ্রহণ করলেই কল চালাবে।"
 
 [t_4c58d81a5f]
 en = "That device no longer hosts calls for the group."
@@ -9244,7 +9244,7 @@ where = [
   "ios call_group_about_trust: Paragraph on the group call details card about trusting the call host.",
   "desktop gcall_your_connection_to_the: Desktop, group calls (in gcall_view.rs, gcall_about).",
 ]
-text = "কল হোস্টের সঙ্গে আপনার কানেকশন এনক্রিপ্টেড, কিন্তু কল হোস্ট নিজে অডিও পায়, তাই এটি এই কল শুনতে পারে। চ্যাট হোস্টকে যেমন পোস্টের ব্যাপারে ভরসা করেন, কলের ব্যাপারে এটিকেও তেমনই ভরসা করেন।"
+text = "কল হোস্টের সঙ্গে আপনার কানেকশন এনক্রিপ্টেড, কিন্তু কল হোস্ট নিজে অডিও পায়, তাই এটি এই কল শুনতে পারে। গ্রুপ হোস্টকে যেমন পোস্টের ব্যাপারে ভরসা করেন, কলের ব্যাপারে এটিকেও তেমনই ভরসা করেন।"
 
 [t_58d3e5c07e]
 en = "A call host is a device a group admin chose and that agreed to it. It is separate from chat hosting. Admins can change call hosts in Group info."
@@ -9253,7 +9253,7 @@ where = [
   "ios call_group_about_who: Paragraph on the group call details card about who can be a call host.",
   "desktop gcall_a_call_host_is: Desktop, group calls (in gcall_view.rs, gcall_about).",
 ]
-text = "কল হোস্ট এমন একটি ডিভাইস, যাকে গ্রুপের কোনো অ্যাডমিন বেছে নিয়েছেন এবং যেটি তাতে রাজি হয়েছে। এটা চ্যাট হোস্ট করা থেকে আলাদা। অ্যাডমিনরা গ্রুপের তথ্য থেকে কল হোস্ট বদলাতে পারেন।"
+text = "কল হোস্ট এমন একটি ডিভাইস, যাকে গ্রুপের কোনো অ্যাডমিন বেছে নিয়েছেন এবং যেটি তাতে রাজি হয়েছে। এটা গ্রুপ হোস্ট করা থেকে আলাদা। অ্যাডমিনরা গ্রুপের তথ্য থেকে কল হোস্ট বদলাতে পারেন।"
 
 [t_c38df51058]
 en = "Got it"
@@ -9272,7 +9272,7 @@ where = [
   "ios group_call_started_by: Call card sub line. {name} is who started the call.",
   "ios call_group_started_by: Subtitle of the group chat call banner. {name} is the member who started the call.",
 ]
-text = "শুরু করেছেন {name}"
+text = "{name} শুরু করেছেন"
 
 [t_18c9d7e3f7]
 en = "{by} is calling the group {group}"
@@ -9368,7 +9368,7 @@ where = [
   "android addcontact_point_camera: Hint under the camera view while scanning someone's QR code; also spoken label of the camera.",
   "ios people_add_point_camera: Camera hint and accessibility label while scanning a contact QR code.",
 ]
-text = "ওঁদের Tinline কোডের দিকে ধরুন।"
+text = "ওঁর Tinline কোডের দিকে ধরুন।"
 
 [t_8abf1ecdd3]
 en = "Your QR code"
@@ -9401,7 +9401,7 @@ where = [
   "android home_first_scan: Button on the first-run add-contact screen.",
   "ios people_add_scan_theirs: Button that starts the camera to scan a contact code.",
 ]
-text = "ওঁদের কোড স্ক্যান করুন"
+text = "ওঁর কোড স্ক্যান করুন"
 
 [t_18bdfc1acf]
 en = "Choose image"
@@ -9452,7 +9452,7 @@ where = [
   "ios people_add_their_code: Heading above the paste area for another person’s code.",
   "desktop signup_their_code: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay).",
 ]
-text = "ওঁদের কোড"
+text = "ওঁর কোড"
 
 [t_73da04ae6f]
 en = "Paste their code"
@@ -9461,7 +9461,7 @@ where = [
   "ios people_add_paste_theirs: Button that pastes the contact code from the clipboard.",
   "desktop signup_paste_their_code: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay).",
 ]
-text = "ওঁদের কোড পেস্ট করুন"
+text = "ওঁর কোড পেস্ট করুন"
 
 [t_d2aa3d83d4]
 en = "Open profile"
@@ -9517,7 +9517,7 @@ where = [
   "ios people_add_hint_empty_clipboard: Hint when Paste is pressed with an empty clipboard.",
   "desktop signup_your_clipboard_is_empty: Desktop, sign-up, restore and add contact (in signup.rs, ac_pasted).",
 ]
-text = "আপনার ক্লিপবোর্ড এখন খালি। ওঁদের কোড এলে, কপি করে এখানে পেস্ট করুন।"
+text = "আপনার ক্লিপবোর্ড এখন খালি। ওঁর কোড এলে কপি করে এখানে পেস্ট করুন।"
 
 [t_355541804b]
 en = "That’s your own code. Send it to them, and paste theirs here."
@@ -9526,7 +9526,7 @@ where = [
   "ios people_add_hint_own_code: Hint when the pasted code is the user’s own.",
   "desktop signup_thats_your_own_code: Desktop, sign-up, restore and add contact (in signup.rs, ac_pasted).",
 ]
-text = "এটা আপনার নিজের কোড। এটা ওঁদের পাঠান, আর ওঁদেরটা এখানে পেস্ট করুন।"
+text = "এটা আপনার নিজের কোড। এটা ওঁকে পাঠান, আর ওঁরটা এখানে পেস্ট করুন।"
 
 [t_47c69c935c]
 en = "That code from {name} has expired. Ask them for a fresh one."
@@ -9543,7 +9543,7 @@ where = [
   "ios people_add_hint_not_code: Hint when the pasted text is not a contact code.",
   "desktop signup_that_doesnt_look_like: Desktop, sign-up, restore and add contact (in signup.rs, ac_pasted).",
 ]
-text = "এটা Tinline কোড বলে মনে হচ্ছে না। ওঁরা কি আপনার জন্য আবার কপি করে দিতে পারবেন?"
+text = "এটা Tinline কোড বলে মনে হচ্ছে না। উনি কি আপনার জন্য আবার কপি করে দিতে পারবেন?"
 
 [t_f92a068145]
 en = "No QR found. Try a clearer image."
@@ -9574,7 +9574,7 @@ en = "Couldn’t open sharing. You can copy your code instead."
 where = [
   "android addcontact_share_failed: Hint when the system share sheet could not open.",
 ]
-text = "শেয়ার করার অপশন খোলা গেল না। বদলে আপনার কোড কপি করতে পারেন।"
+text = "শেয়ার করার অপশন খোলা গেল না। তার বদলে আপনার কোড কপি করতে পারেন।"
 
 [t_6a7f43281a]
 en = "You blocked {name}. Unblock them in Privacy before adding them again."
@@ -9650,7 +9650,7 @@ where = [
   "ios people_add_why_refused: Preview note when their code is no longer valid. {name} is their name.",
   "desktop signup_s_code_isnt_valid: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = "{name}-এর কোডটি আর কাজ করে না। হয়তো ওঁরা নতুন একটা তৈরি করেছেন, তাই {name}-এর কাছে সবচেয়ে নতুন কোডটি চেয়ে নিন।"
+text = "{name}-এর কোডটি আর কাজ করে না। হয়তো উনি নতুন একটা তৈরি করেছেন, তাই {name}-এর কাছে সবচেয়ে নতুন কোডটি চেয়ে নিন।"
 
 [t_be591c648f]
 en = "You can’t add {name} right now. They’ve chosen not to be in touch here."
@@ -9659,7 +9659,7 @@ where = [
   "ios people_add_why_blocked_by: Preview note when the person blocked the user. {name} is their name.",
   "desktop signup_you_cant_add_right: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = "এখন আপনি {name}-কে যোগ করতে পারবেন না। ওঁরা এখানে যোগাযোগ না রাখার সিদ্ধান্ত নিয়েছেন।"
+text = "এখন আপনি {name}-কে যোগ করতে পারবেন না। উনি এখানে যোগাযোগ না রাখার সিদ্ধান্ত নিয়েছেন।"
 
 [t_4f7c2c6b21]
 en = "You’re offline. Once you’re connected, try again."
@@ -9843,7 +9843,7 @@ where = [
   "android contact_rename_hint: Hint under the rename field. {name} is the name they chose.",
   "ios people_detail_rename_note: Rename dialog note. {name} is the contact’s own chosen name.",
 ]
-text = "এটা শুধু আপনি দেখেন। ওঁরা নিজেকে এখনও “{name}” বলেন।"
+text = "এটা শুধু আপনি দেখেন। উনি নিজেকে এখনও “{name}” বলেন।"
 
 [t_3ac2cc1d48]
 en = "Use their name"
@@ -9852,7 +9852,7 @@ where = [
   "ios people_detail_use_theirs: Rename dialog button that removes the nickname and shows their own name.",
   "desktop contact_use_their_name: Desktop, contact detail (in view.rs, detail_view).",
 ]
-text = "ওঁদের নামটাই রাখুন"
+text = "ওঁর নামটাই রাখুন"
 
 [t_33e0f0d8e6]
 en = "Off"
@@ -10151,7 +10151,7 @@ where = [
   "android call_route_bluetooth: Audio route option: a Bluetooth device whose name is not known.",
   "ios call_route_bluetooth: Audio route name for a Bluetooth device with no name of its own.",
 ]
-text = "Bluetooth"
+text = "ব্লুটুথ"
 
 [t_152037e40b]
 en = "Other"
@@ -10215,7 +10215,7 @@ where = [
   "android video_hd_on: Accessibility label of the HD chip while sharper video is on.",
   "ios call_hd_label_on: Accessibility label of the HD chip when HD is on.",
 ]
-text = "ঝকঝকে ভিডিও চালু, 540p পর্যন্ত"
+text = "আরও ঝকঝকে ভিডিও চালু, 540p পর্যন্ত"
 
 [t_94ad82fe0b]
 en = "Sharper video off"
@@ -10225,7 +10225,7 @@ where = [
   "ios call_hd_label_off: Accessibility label of the HD chip when HD is off.",
   "desktop common_sharper_video_off: Shared label, used in several places (camera, view).",
 ]
-text = "ঝকঝকে ভিডিও বন্ধ"
+text = "আরও ঝকঝকে ভিডিও বন্ধ"
 
 [t_367cbada8e]
 en = "Sharper video on, paused while the connection is weak"
@@ -10234,7 +10234,7 @@ where = [
   "ios call_hd_label_paused: Accessibility label of the HD chip when HD is paused.",
   "desktop call_sharper_video_on_paused: Desktop, calls (voice and video) (in view.rs, hd_chip).",
 ]
-text = "ঝকঝকে ভিডিও চালু, কানেকশন দুর্বল থাকায় থেমে আছে"
+text = "আরও ঝকঝকে ভিডিও চালু, কানেকশন দুর্বল থাকায় থেমে আছে"
 
 [t_f13857c248]
 en = "Camera permission needed - they can still hear you"
@@ -10242,7 +10242,7 @@ where = [
   "android video_camera_permission: Problem line on the call screen when I turn the camera on without the camera permission. The call itself carries on.",
   "ios call_camera_permission_needed: Problem line when camera permission is denied.",
 ]
-text = "ক্যামেরার অনুমতি দরকার - ওঁরা তবুও আপনার কথা শুনতে পাচ্ছেন"
+text = "ক্যামেরার অনুমতি দরকার - উনি তবুও আপনার কথা শুনতে পাচ্ছেন"
 
 [t_e0dc020054]
 en = "Camera unavailable"
@@ -10413,7 +10413,7 @@ where = [
   "ios call_about_their_video: Row label on the call details card for the codec the contact sends.",
   "desktop call_their_video: Desktop, calls (voice and video) (in call_screen.rs, call_about).",
 ]
-text = "ওঁদের ভিডিও"
+text = "ওঁর ভিডিও"
 
 [t_225ce61bf7]
 en = "Return to call with {name}"
@@ -10484,7 +10484,7 @@ where = [
   "android call_unreachable_body: Explanation under the Couldn’t reach heading. {name} is the contact's name (or 'They').",
   "ios call_unreachable_body: Explanation when a call could not connect. {name} is the contact.",
 ]
-text = "{name} হয়তো অফলাইনে, নেটওয়ার্কের বাইরে, বা এখন কল ধরছেন না। Tinline মেসেজ রেখে দিতে পারে না।"
+text = "{name} হয়তো অফলাইনে, নেটওয়ার্কের বাইরে, বা এখন কল ধরছেন না। Tinline-এ মেসেজ রেখে যাওয়ার ব্যবস্থা নেই।"
 
 [t_4b691ade90]
 en = "Tinline can’t use the microphone"
@@ -10766,7 +10766,7 @@ where = [
   "android empty_hero_request_waiting: Empty-state text after I sent a contact request. {name} is the first name of the person I asked.",
   "ios shell_empty_request_waiting: Home hero line after the user sent a contact request. {name} is the first name of the person asked.",
 ]
-text = "{name}-কে পাঠানো আপনার অনুরোধ অপেক্ষায় আছে। ওঁরা গ্রহণ করলেই আপনার লাইন খুলে যাবে।"
+text = "{name}-কে পাঠানো আপনার অনুরোধ অপেক্ষায় আছে। উনি গ্রহণ করলেই আপনার লাইন খুলে যাবে।"
 
 [t_422b46cfc4]
 en = "Add another contact"
@@ -10801,7 +10801,7 @@ where = [
   "ios shell_empty_pick: Home hero line with several contacts.",
   "desktop signup_pick_someone_and_say: Desktop, sign-up, restore and add contact (in signup_view.rs, empty_hero).",
 ]
-text = "যাকে খুশি বেছে নিয়ে যখন খুশি হ্যালো বলুন।"
+text = "যাঁকে খুশি বেছে নিয়ে যখন খুশি হ্যালো বলুন।"
 
 [t_dbf04096a9]
 en = "Start a chat"
@@ -10975,7 +10975,7 @@ en = "Calls may be missed when idle"
 where = [
   "android home_banner_battery_title: Banner title when Android limits the app in the background.",
 ]
-text = "ফোন অলস থাকলে কল মিস হতে পারে"
+text = "ফোন ব্যবহার না হলে কল মিস হতে পারে"
 
 [t_92c3375cdc]
 en = "Android is limiting Tinline in the background."
@@ -11068,21 +11068,21 @@ en = "Show your code to a friend, or copy it and send it. Or scan theirs."
 where = [
   "android home_first_lead: Text on the first-run add-contact screen.",
 ]
-text = "আপনার কোড কোনো বন্ধুকে দেখান, অথবা কপি করে পাঠান। কিংবা ওঁদেরটা স্ক্যান করুন।"
+text = "আপনার কোড কোনো বন্ধুকে দেখান, অথবা কপি করে পাঠান। কিংবা ওঁরটা স্ক্যান করুন।"
 
 [t_6c3a34a46b]
 en = "Paste their card"
 where = [
   "android home_first_paste: Button on the first-run add-contact screen.",
 ]
-text = "ওঁদের কার্ড পেস্ট করুন"
+text = "ওঁর কার্ড পেস্ট করুন"
 
 [t_ff919c7555]
 en = "Waiting for them to scan — keep this open."
 where = [
   "android home_first_waiting: Status on the first-run add-contact screen while my code is shown.",
 ]
-text = "ওঁদের স্ক্যান করার অপেক্ষায় — এটা খোলা রাখুন।"
+text = "ওঁর স্ক্যানের অপেক্ষায় — এটা খোলা রাখুন।"
 
 [t_768662e0b1]
 en = "All"
@@ -11188,7 +11188,7 @@ where = [
   "ios shell_contacts_add_sub: Second line of the add-contact row.",
   "desktop shell_share_your_code_or: Desktop, shell: sidebar, search, contacts (in shell_view.rs, contacts_list).",
 ]
-text = "আপনার কোড শেয়ার করুন বা ওঁদেরটা পেস্ট করুন"
+text = "আপনার কোড শেয়ার করুন বা ওঁরটা পেস্ট করুন"
 
 [t_e7dde6507e]
 en = "Waiting for you"
@@ -11677,14 +11677,14 @@ en = "They accepted · messages only"
 where = [
   "android groupsc_req_accepted_messages_anon: State line of a chat request I sent from a group: a person with no known name accepted and was added for messages only.",
 ]
-text = "ওঁরা গ্রহণ করেছেন · শুধু মেসেজ"
+text = "উনি গ্রহণ করেছেন · শুধু মেসেজ"
 
 [t_71ca4e589f]
 en = "They accepted · connecting"
 where = [
   "android groupsc_req_accepted_connecting_anon: State line of a chat request I sent from a group: a person with no known name accepted, the chat is still connecting.",
 ]
-text = "ওঁরা গ্রহণ করেছেন · কানেক্ট হচ্ছে"
+text = "উনি গ্রহণ করেছেন · কানেক্ট হচ্ছে"
 
 [t_0a675d84aa]
 en = "{name} declined"
@@ -11700,7 +11700,7 @@ en = "They declined"
 where = [
   "android groupsc_req_declined_anon: State line of a chat request I sent from a group, when the person's name is not known.",
 ]
-text = "ওঁরা ফিরিয়ে দিয়েছেন"
+text = "উনি ফিরিয়ে দিয়েছেন"
 
 [t_c0ee57d92f]
 en = "{name} blocked you"
@@ -11717,7 +11717,7 @@ where = [
   "android groupsc_req_blocked_anon: State line of a chat request I sent from a group: the person, whose name is not known, blocked me.",
   "ios group_req_blocked_unnamed: State line of a chat request you sent, when the person’s name is not known: they blocked you.",
 ]
-text = "ওঁরা আপনাকে ব্লক করেছেন"
+text = "উনি আপনাকে ব্লক করেছেন"
 
 [t_7735823936]
 en = "Already a member"
@@ -11872,7 +11872,7 @@ where = [
   "ios group_done_decline_invite_unnamed: Toast after declining an invitation from someone whose name is not known.",
   "desktop group_notice_declined_inv_unnamed: Desktop, group notice line (in group_live.rs). I declined an invitation from someone with no known name.",
 ]
-text = "ফিরিয়ে দেওয়া হয়েছে। ওঁরা দেখতে পাবেন যে আপনি ফিরিয়ে দিয়েছেন।"
+text = "ফিরিয়ে দেওয়া হয়েছে। উনি দেখতে পাবেন যে আপনি ফিরিয়ে দিয়েছেন।"
 
 [t_d0b680b900]
 en = "The open link is closed. Everyone already in stays; new people join with an invite."
@@ -11898,7 +11898,7 @@ where = [
   "ios group_done_request_sent_unnamed: Toast after asking a member for a private chat; the member's name is not known.",
   "desktop group_notice_request_sent_unnamed: Desktop, group notice line (in group_live.rs). I asked for a private chat with someone with no known name.",
 ]
-text = "অনুরোধ পাঠানো হয়েছে। ওঁরা উত্তর না দেওয়া পর্যন্ত এটা চ্যাটে অপেক্ষা করবে।"
+text = "অনুরোধ পাঠানো হয়েছে। উনি উত্তর না দেওয়া পর্যন্ত এটা চ্যাটে অপেক্ষা করবে।"
 
 [t_68bf78bb6a]
 en = "Accepted. {name} is added for messages only and shows in Chats once their device connects; calls stay off until you allow them."
@@ -11957,7 +11957,7 @@ en = "They accepted your request. You can message each other now; calls stay off
 where = [
   "android groupsc_notice_accepted_anon: Notice when a person, whose name is not known, accepted my chat request.",
 ]
-text = "ওঁরা আপনার অনুরোধ গ্রহণ করেছেন। এখন আপনারা একে অপরকে মেসেজ করতে পারবেন; আপনাদের কেউ একজন অনুমতি না দেওয়া পর্যন্ত কল বন্ধ থাকবে।"
+text = "উনি আপনার অনুরোধ গ্রহণ করেছেন। এখন আপনারা একে অপরকে মেসেজ করতে পারবেন; আপনাদের কেউ একজন অনুমতি না দেওয়া পর্যন্ত কল বন্ধ থাকবে।"
 
 [t_2c18ab3299]
 en = "Sharper video on"
@@ -11966,7 +11966,7 @@ where = [
   "ios call_hd_on: Short note under the call header after turning the HD chip on.",
   "desktop video_sharper_video_on: Desktop, video (in camera.rs, hd_line).",
 ]
-text = "ঝকঝকে ভিডিও চালু"
+text = "আরও ঝকঝকে ভিডিও চালু"
 
 [t_aab4f778af]
 en = "HD paused · weak connection"
@@ -12088,14 +12088,14 @@ where = [
   "desktop group_invited_by_you: Desktop, group member row: I invited this member.",
   "desktop group_owner_by_you_unnamed: Desktop, group join dialog (in group_live_view.rs, live_overlay): the line under the group name saying who invited me and who owns the group. I made the link; the owner has no known name.",
 ]
-text = "আমন্ত্রণ জানিয়েছেন আপনি"
+text = "আপনার আমন্ত্রণে"
 
 [t_41fd0fe81c]
 en = "Invited by someone who isn’t in your contacts"
 where = [
   "android groupsb_join_invited_by_unknown: Line on the join preview when the person who invited me is not one of my contacts.",
 ]
-text = "আমন্ত্রণ জানিয়েছেন এমন কেউ, যিনি আপনার পরিচিতিতে নেই"
+text = "আপনার পরিচিতিতে নেই এমন একজনের আমন্ত্রণে"
 
 [t_7888447303]
 en = "Owner: you"
@@ -12118,7 +12118,7 @@ where = [
   "android groupsb_link_note_unnamed: Hint on the invite link page while the group's name has not loaded. 'Add members' is the title of another page.",
   "ios group_link_hint_unnamed: Hint above the group invite link QR when the group's name is not known.",
 ]
-text = "এই লিঙ্ক বা QR যার কাছে আছে, সে 7 দিন ধরে এই গ্রুপে যোগ দিতে পারবে। ভরসার কোনো অ্যাপে শেয়ার করুন; কে যোগ দিল তা আপনি দেখতে পাবেন, আর ফ্ল্যাগ করে সরাতে পারবেন। পরিচিতিদের সরাসরি আমন্ত্রণ জানাতে “সদস্য যোগ করুন” ব্যবহার করুন।"
+text = "এই লিঙ্ক বা QR যাঁর কাছে আছে, তিনিই 7 দিন ধরে এই গ্রুপে যোগ দিতে পারবেন। ভরসার কোনো অ্যাপে শেয়ার করুন; কে যোগ দিলেন তা আপনি দেখতে পাবেন, আর ফ্ল্যাগ করে সরাতে পারবেন। পরিচিতিদের সরাসরি আমন্ত্রণ জানাতে “সদস্য যোগ করুন” ব্যবহার করুন।"
 
 [t_e3943d1191]
 en = "Join my group on Tinline: {link}"
@@ -12283,7 +12283,7 @@ en = "Started by someone"
 where = [
   "android gcall_started_by_unnamed: Second line of the call-in-progress bar when the person who started it is not known.",
 ]
-text = "শুরু করেছেন কেউ একজন"
+text = "কেউ একজন শুরু করেছেন"
 
 [t_7886102212]
 en = "Someone is calling the group {group}"
@@ -12363,14 +12363,14 @@ en = "Sent, waiting for their device to confirm"
 where = [
   "ios kit_tick_sent_their: Screen-reader label of a message tick: sent, no confirmation yet. Used when the other person's name is not known; their means the other person's.",
 ]
-text = "পাঠানো হয়েছে, ওঁদের ডিভাইসের নিশ্চিতকরণের অপেক্ষায়"
+text = "পাঠানো হয়েছে, ওঁর ডিভাইসের নিশ্চিতকরণের অপেক্ষায়"
 
 [t_affe0a3a21]
 en = "Read on their device"
 where = [
   "ios kit_tick_read_their: Screen-reader label of a message tick: read. Used when the other person's name is not known.",
 ]
-text = "ওঁদের ডিভাইসে পড়া হয়েছে"
+text = "ওঁর ডিভাইসে পড়া হয়েছে"
 
 [t_944f47e9e0]
 en = "Chat with this contact?"
@@ -12479,14 +12479,14 @@ where = [
   "ios group_hosts_note_admin: Explanation under the host list, for admins (replaces the plain one).",
   "desktop group_hosts_store_the_group_admin: Desktop, group info, hosts section note, for admins.",
 ]
-text = "অন্যরা অফলাইনে থাকলে হোস্টরা গ্রুপটি রাখে আর পোস্ট পৌঁছে দেয়। তাঁরা আপনার ভরসার সদস্য: একজন হোস্ট এই গ্রুপে পোস্ট করা সবকিছু পড়তে পারেন। কোনো সদস্যের মেনু থেকে হোস্ট ঠিক করুন; তাঁকে গ্রহণ করতে হবে। কোনো হোস্টকে সরালে 2 দিনের মধ্যে গ্রুপের ঠিকানা বদলে যায়, তাই সেই ডিভাইস আর গ্রুপে পৌঁছাতে পারে না।"
+text = "অন্যরা অফলাইনে থাকলে হোস্টরা গ্রুপটি রাখে আর পোস্ট পৌঁছে দেয়। তাঁরা আপনার ভরসার সদস্য: একজন হোস্ট এই গ্রুপে পোস্ট করা সবকিছু পড়তে পারেন। কোনো সদস্যের মেনু থেকে হোস্ট নিযুক্ত করুন; তাঁকে গ্রহণ করতে হবে। কোনো হোস্টকে সরালে 2 দিনের মধ্যে গ্রুপের ঠিকানা বদলে যায়, তাই সেই ডিভাইস আর গ্রুপে পৌঁছাতে পারে না।"
 
 [t_8bae39c7cf]
 en = "A call host carries the call. Everyone in a call connects to it, and it passes the audio on, so it can hear the call. That is separate from chat hosting: a chat host is not a call host unless you also appoint it as one. Call hosts are members you trust, and each one chooses to accept. Appoint one from a member’s menu, or host calls on this phone. A phone only hosts calls that its owner starts."
 where = [
   "ios group_callhosts_note_admin: Explanation under the call host list, for admins.",
 ]
-text = "কল হোস্ট কলটি চালায়। কলের সবাই এর সঙ্গে কানেক্ট হন, আর এটি অডিও পৌঁছে দেয়, তাই এটি কল শুনতে পারে। এটা চ্যাট হোস্ট করা থেকে আলাদা: চ্যাট হোস্টকে আপনি কল হোস্ট হিসেবেও ঠিক না করলে সেটি কল হোস্ট নয়। কল হোস্টরা আপনার ভরসার সদস্য, আর প্রত্যেকে নিজে গ্রহণ করতে বেছে নেন। কোনো সদস্যের মেনু থেকে একজনকে ঠিক করুন, অথবা এই ফোনে কল হোস্ট করুন। একটি ফোন শুধু তার মালিকের শুরু করা কলই হোস্ট করে।"
+text = "কল হোস্ট কলটি চালায়। কলের সবাই এর সঙ্গে কানেক্ট হন, আর এটি অডিও পৌঁছে দেয়, তাই এটি কল শুনতে পারে। এটা গ্রুপ হোস্ট করা থেকে আলাদা: গ্রুপ হোস্টকে আপনি কল হোস্ট হিসেবেও নিযুক্ত না করলে সেটি কল হোস্ট নয়। কল হোস্টরা আপনার ভরসার সদস্য, আর প্রত্যেকে নিজে গ্রহণ করতে বেছে নেন। কোনো সদস্যের মেনু থেকে একজনকে নিযুক্ত করুন, অথবা এই ফোনে কল হোস্ট করুন। একটি ফোন শুধু তার মালিকের শুরু করা কলই হোস্ট করে।"
 
 [t_b265bd4d52]
 en = "{count} of {total}"
@@ -12546,7 +12546,7 @@ en = "Make call host · {device}"
 where = [
   "ios group_member_make_callhost_device: Action row title when the member has several devices. {device} is a short device id.",
 ]
-text = "কল হোস্ট করুন · {device}"
+text = "কল হোস্ট বানান · {device}"
 
 [t_2c5d81e205]
 en = "{total} flags remove {name} from the group"
@@ -12614,7 +12614,7 @@ en = "Waiting for them · via {group}"
 where = [
   "ios group_req_pending_unnamed: State line of a chat request you sent, when the person’s name is not known. {group} is the group.",
 ]
-text = "ওঁদের অপেক্ষায় · {group}-এর মাধ্যমে"
+text = "ওঁর উত্তরের অপেক্ষায় · {group}-এর মাধ্যমে"
 
 [t_b5f5c33f07]
 en = "Accepted · messages only"
@@ -12666,7 +12666,7 @@ en = "Scanning isn’t available yet. Paste the link instead."
 where = [
   "ios group_scan_unavailable: Shown instead of the QR scanner when scanning is not available.",
 ]
-text = "স্ক্যান করার সুবিধা এখনও নেই। বদলে লিঙ্কটি পেস্ট করুন।"
+text = "স্ক্যান করার সুবিধা এখনও নেই। তার বদলে লিঙ্কটি পেস্ট করুন।"
 
 [t_387c1a55a4]
 en = "An admin asked this phone to host {group}"
@@ -12701,7 +12701,7 @@ en = "On their device: {names}"
 where = [
   "ios group_receipt_level_delivered: Receipt line label before the names of members whose device has the post. {names} is the list.",
 ]
-text = "ওঁদের ডিভাইসে আছে: {names}"
+text = "ডিভাইসে পৌঁছেছে: {names}"
 
 [t_ed319ece3f]
 en = "Not yet: {names}"
@@ -12722,7 +12722,7 @@ en = "Invited by someone outside your contacts"
 where = [
   "ios group_join_invited_by_unknown: Line on the join preview when the inviter is not in your contacts.",
 ]
-text = "আমন্ত্রণ জানিয়েছেন আপনার পরিচিতির বাইরের কেউ"
+text = "আপনার পরিচিতির বাইরের একজনের আমন্ত্রণে"
 
 [t_0bc2a89e30]
 en = "Owner isn’t in your contacts"
@@ -12736,14 +12736,14 @@ en = "Anyone with this link or QR can join {group} for 7 days. Share it over an 
 where = [
   "ios group_link_hint: Hint above the group invite link QR. {group} is the group's name.",
 ]
-text = "এই লিঙ্ক বা QR যার কাছে আছে, সে 7 দিন ধরে {group}-এ যোগ দিতে পারবে। ভরসার কোনো অ্যাপে শেয়ার করুন; কে যোগ দিল তা আপনি দেখতে পাবেন, আর ফ্ল্যাগ করে সরাতে পারবেন। পরিচিতিদের সরাসরি আমন্ত্রণ জানাতে “সদস্য যোগ করুন” ব্যবহার করুন।"
+text = "এই লিঙ্ক বা QR যাঁর কাছে আছে, তিনিই 7 দিন ধরে {group}-এ যোগ দিতে পারবেন। ভরসার কোনো অ্যাপে শেয়ার করুন; কে যোগ দিলেন তা আপনি দেখতে পাবেন, আর ফ্ল্যাগ করে সরাতে পারবেন। পরিচিতিদের সরাসরি আমন্ত্রণ জানাতে “সদস্য যোগ করুন” ব্যবহার করুন।"
 
 [t_5a7b5c3abb]
 en = "Join {group} on Tinline: {link}"
 where = [
   "ios group_share_text: Text shared with the invite link. {group} is the group's name, {link} the invite link.",
 ]
-text = "Tinline-এ {group}-এ যোগ দিন: {link}"
+text = "Tinline-এ {group} গ্রুপে যোগ দিন: {link}"
 
 [t_031fd35992]
 en = "Join this group on Tinline: {link}"
@@ -12838,7 +12838,7 @@ en = "Synced {ago}"
 where = [
   "ios devices_row_synced: Device row subtitle; {ago} is a relative time such as 5 min ago.",
 ]
-text = "সিঙ্ক হয়েছে {ago}"
+text = "{ago} সিঙ্ক হয়েছে"
 
 [t_81f91aff8a]
 en = "Unlinked the device"
@@ -12859,7 +12859,7 @@ en = "Welcome back, "
 where = [
   "ios unlock_welcome_prefix: Start of the title when the nickname is a tappable switcher; the nickname button follows directly after it.",
 ]
-text = "আবার স্বাগত, "
+text = "আবার স্বাগতম, "
 
 [t_19852ede17]
 en = "{name}, switch identity"
@@ -12894,7 +12894,7 @@ en = "Expires in {minutes}:{seconds} · works once"
 where = [
   "ios link_expires: Countdown under the QR code; {minutes} and {seconds} are digits, seconds with two digits.",
 ]
-text = "{minutes}:{seconds}-এ মেয়াদ শেষ · একবারই কাজ করে"
+text = "{minutes}:{seconds} পরে মেয়াদ শেষ · একবারই কাজ করে"
 
 [t_15a6286cb0]
 en = "Link code {digits}"
@@ -12944,7 +12944,7 @@ en = "By continuing, you agree to the [Terms of Use]({terms_url}) and have read 
 where = [
   "ios onboarding_terms_consent: Consent line above the I agree button. Markdown links: keep the [text](url) shape, translate only the link text; {terms_url} and {privacy_url} are web addresses.",
 ]
-text = "চালিয়ে গেলে আপনি [ব্যবহারের শর্তাবলি]({terms_url})-তে রাজি হচ্ছেন এবং [প্রাইভেসি পলিসি]({privacy_url}) পড়েছেন।"
+text = "চালিয়ে গেলে আপনি [ব্যবহারের শর্তাবলি]({terms_url}) মেনে নিচ্ছেন এবং [প্রাইভেসি পলিসি]({privacy_url}) পড়েছেন।"
 
 [t_3f7e7c2a80]
 en = "{name} allowed"
@@ -13218,7 +13218,7 @@ en = "Prefer HD"
 where = [
   "ios call_quality_prefer_hd: Video quality setting: prefer sharper HD video.",
 ]
-text = "HD পছন্দ"
+text = "যতটা সম্ভব HD"
 
 [t_fb52348fb1]
 en = "HD · {size}"
@@ -13267,7 +13267,7 @@ en = "They may be offline, out of signal, or not taking calls right now. Tinline
 where = [
   "ios call_unreachable_body_blank: Explanation when a call could not connect and the contact has no name.",
 ]
-text = "উনি হয়তো অফলাইনে, নেটওয়ার্কের বাইরে, বা এখন কল ধরছেন না। Tinline মেসেজ রেখে দিতে পারে না।"
+text = "উনি হয়তো অফলাইনে, নেটওয়ার্কের বাইরে, বা এখন কল ধরছেন না। Tinline-এ মেসেজ রেখে যাওয়ার ব্যবস্থা নেই।"
 
 [t_6663ab075c]
 en = "You made yourself an admin"
@@ -13562,7 +13562,7 @@ en = "Calls & availability"
 where = [
   "desktop common_calls_availability: Shared label, used in several places (profile, view).",
 ]
-text = "কল ও উপস্থিতি"
+text = "কল ও ফ্রি/ব্যস্ত"
 
 [t_164b84d7d3]
 en = "Copy recovery phrase"
@@ -13576,7 +13576,7 @@ en = "Decoder for their video"
 where = [
   "desktop common_decoder_for_their_video: Shared label, used in several places (call_screen, profile).",
 ]
-text = "ওঁদের ভিডিওর ডিকোডার"
+text = "ওঁর ভিডিওর ডিকোডার"
 
 [t_bfbb0a83d7]
 en = "Give this computer a name of {min} to {max} characters."
@@ -13597,7 +13597,7 @@ en = "Messages only: calling needs their permission"
 where = [
   "desktop common_messages_only_calling_needs: Shared label, used in several places (chat, view).",
 ]
-text = "শুধু মেসেজ: কল করতে ওঁদের অনুমতি লাগবে"
+text = "শুধু মেসেজ: কল করতে ওঁর অনুমতি লাগবে"
 
 [t_8e994a4caf]
 en = "Name this computer"
@@ -13625,7 +13625,7 @@ en = "Paste only into a trusted password manager; the clipboard contains your ac
 where = [
   "desktop common_paste_only_into_a: Shared label, used in several places (view).",
 ]
-text = "শুধু ভরসার কোনো পাসওয়ার্ড ম্যানেজারে পেস্ট করুন; ক্লিপবোর্ডে আপনার অ্যাকাউন্টের কী আছে।"
+text = "শুধু ভরসার কোনো পাসওয়ার্ড ম্যানেজারে পেস্ট করুন; ক্লিপবোর্ডে এখন আপনার অ্যাকাউন্টের চাবি রয়েছে।"
 
 [t_3c78840fd7]
 en = "Photo · {value}"
@@ -14087,7 +14087,7 @@ en = "Ignore limits (heat, their decoder)"
 where = [
   "desktop call_ignore_limits_heat_their: Desktop, calls (voice and video) (in call_screen.rs, call_nerds).",
 ]
-text = "সীমা উপেক্ষা করুন (তাপ, ওঁদের ডিকোডার)"
+text = "সীমা উপেক্ষা করুন (তাপ, ওঁর ডিকোডার)"
 
 [t_b5cd3d149c]
 en = "Calling you…"
@@ -14129,7 +14129,7 @@ en = "Sharper video on, up to 720p"
 where = [
   "desktop call_sharper_video_on_up: Desktop, calls (voice and video) (in view.rs, hd_chip).",
 ]
-text = "ঝকঝকে ভিডিও চালু, 720p পর্যন্ত"
+text = "আরও ঝকঝকে ভিডিও চালু, 720p পর্যন্ত"
 
 [t_3981b6e3cf]
 en = "{value} signal · {value2}"
@@ -14388,7 +14388,7 @@ en = "Messages go straight to their devices."
 where = [
   "desktop chat_messages_go_straight_to: Desktop, chats (in chat_view.rs, message_list).",
 ]
-text = "মেসেজ সরাসরি ওঁদের ডিভাইসে যায়।"
+text = "মেসেজ সরাসরি ওঁর ডিভাইসে যায়।"
 
 [t_64c071fa58]
 en = "{value} · not downloaded"
@@ -14409,7 +14409,7 @@ en = "Older messages are on {name}’s computer. This computer keeps them from w
 where = [
   "desktop chat_older_messages_are_on: Desktop, chats (in chat_view.rs, history_note). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = "পুরোনো মেসেজ {name}-এর কম্পিউটারে আছে। আপনি যবে থেকে এই কম্পিউটার ব্যবহার করছেন, তখন থেকের মেসেজ এটা রাখে। আপনারা দুজনেই অনলাইনে থাকলে আগের দিনগুলো লোড হবে।"
+text = "পুরোনো মেসেজ {name}-এর কম্পিউটারে আছে। আপনি যবে থেকে এই কম্পিউটার ব্যবহার করছেন, তখন থেকে মেসেজগুলো এখানে থাকে। আপনারা দুজনেই অনলাইনে থাকলে আগের দিনগুলো লোড হবে।"
 
 [t_250a61953d]
 en = "On {name}’s device"
@@ -14528,7 +14528,7 @@ en = "Added {value}"
 where = [
   "desktop contact_added: Desktop, contact detail (in view.rs, detail_view). {value} is a value filled in by the app.",
 ]
-text = "যোগ করা হয়েছে {value}"
+text = "{value}-এ যোগ করা হয়েছে"
 
 [t_81af947f5e]
 en = "Calls themself “{name}” · {added}"
@@ -14696,7 +14696,7 @@ en = "Started by {value}"
 where = [
   "desktop gcall_started_by: Desktop, group calls (in gcall_view.rs, gcall_banner). {value} is a value filled in by the app.",
 ]
-text = "শুরু করেছেন {value}"
+text = "{value} শুরু করেছেন"
 
 [t_c72585d311]
 en = "A call host is a member’s computer or phone that carries the call. An admin can appoint one in Group info."
@@ -14794,7 +14794,7 @@ en = "Anyone with this link or QR can join for 7 days. Share it over an app you 
 where = [
   "desktop group_anyone_with_this_link: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = "এই লিঙ্ক বা QR যার কাছে আছে, সে 7 দিন ধরে যোগ দিতে পারবে। ভরসার কোনো অ্যাপে শেয়ার করুন; কে যোগ দিল তা আপনি দেখতে পাবেন, আর ফ্ল্যাগ করে সরাতে পারবেন। পরিচিতিদের সরাসরি আমন্ত্রণ জানাতে “সদস্য যোগ করুন” ব্যবহার করুন।"
+text = "এই লিঙ্ক বা QR যাঁর কাছে আছে, তিনিই 7 দিন ধরে যোগ দিতে পারবেন। ভরসার কোনো অ্যাপে শেয়ার করুন; কে যোগ দিলেন তা আপনি দেখতে পাবেন, আর ফ্ল্যাগ করে সরাতে পারবেন। পরিচিতিদের সরাসরি আমন্ত্রণ জানাতে “সদস্য যোগ করুন” ব্যবহার করুন।"
 
 [t_4732b3a387]
 en = "Appointed. The device hosts once it agrees (Host from this device)."
@@ -14836,7 +14836,7 @@ en = "Blocked {value}"
 where = [
   "desktop group_blocked_2: Desktop, groups (in groups_view.rs, privacy_page). {value} is a value filled in by the app.",
 ]
-text = "ব্লক করা হয়েছে {value}"
+text = "{value} থেকে ব্লক করা"
 
 [t_e07ade3895]
 en = "Calls go through the other call hosts"
@@ -14913,14 +14913,14 @@ en = "Flagged {value}"
 where = [
   "desktop group_flagged: Desktop, groups (in group_live_view.rs, live_overlay). {value} is a value filled in by the app.",
 ]
-text = "ফ্ল্যাগ করা হয়েছে {value}"
+text = "{value}-এ ফ্ল্যাগ করা হয়েছে"
 
 [t_5493d416d9]
 en = "Flagged by {value}. You can still read what you received before; nothing new will arrive."
 where = [
   "desktop group_flagged_by_you_can: Desktop, groups (in group_live_view.rs, live_removal_card). {value} is a value filled in by the app.",
 ]
-text = "ফ্ল্যাগ করেছেন {value}। আগে যা পেয়েছেন তা এখনও পড়তে পারবেন; নতুন কিছু আর আসবে না।"
+text = "{value} ফ্ল্যাগ করেছেন। আগে যা পেয়েছেন তা এখনও পড়তে পারবেন; নতুন কিছু আর আসবে না।"
 
 [t_65486cb826]
 en = "Group call (needs a call host)"
@@ -15032,14 +15032,14 @@ en = "Make device {value} a call host"
 where = [
   "desktop group_make_device_a_call: Desktop, groups (in group_live_view.rs, live_menu). {value} is a value filled in by the app.",
 ]
-text = "ডিভাইস {value}-কে কল হোস্ট করুন"
+text = "ডিভাইস {value}-কে কল হোস্ট বানান"
 
 [t_76ddfb2d19]
 en = "Make device {value} a host"
 where = [
   "desktop group_make_device_a_host: Desktop, groups (in group_live_view.rs, live_menu). {value} is a value filled in by the app.",
 ]
-text = "ডিভাইস {value}-কে হোস্ট করুন"
+text = "ডিভাইস {value}-কে হোস্ট বানান"
 
 [t_569ddfad75]
 en = "Member of {gname}"
@@ -15517,7 +15517,7 @@ en = "Their card is on your clipboard."
 where = [
   "desktop home_their_card_is_on: Desktop, home, sidebar and call list (in view.rs, offer_bar).",
 ]
-text = "ওঁদের কার্ড আপনার ক্লিপবোর্ডে আছে।"
+text = "ওঁর কার্ড আপনার ক্লিপবোর্ডে আছে।"
 
 [t_e3db10694d]
 en = "A linked device becomes you"
@@ -15622,7 +15622,7 @@ en = "Expires in {value} · works once"
 where = [
   "desktop link_expires_in_works_once: Desktop, linking devices (in link_view.rs, link_qr_screen). {value} is a value filled in by the app.",
 ]
-text = "{value}-এ মেয়াদ শেষ · একবারই কাজ করে"
+text = "{value} পরে মেয়াদ শেষ · একবারই কাজ করে"
 
 [t_9dc5adbda5]
 en = "{profile_name} is removed from this computer: its contacts, chats and call history here are deleted. Your other devices are not affected."
@@ -15650,7 +15650,7 @@ en = "It shows a QR code. Tap Scan instead and point it at this screen."
 where = [
   "desktop link_it_shows_a_qr: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = "এতে একটি QR কোড দেখাবে। “বদলে স্ক্যান করুন”-এ ট্যাপ করে এই স্ক্রিনের দিকে ধরুন।"
+text = "এতে একটি QR কোড দেখাবে। “বরং স্ক্যান করুন”-এ ট্যাপ করে এই স্ক্রিনের দিকে ধরুন।"
 
 [t_0dde23f0ec]
 en = "Keep both devices online. If one drops off, it picks up where it left off next time they’re both online."
@@ -15755,7 +15755,7 @@ en = "Paste a link code instead"
 where = [
   "desktop link_paste_a_link_code: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = "বদলে লিঙ্ক কোড পেস্ট করুন"
+text = "বরং লিঙ্ক কোড পেস্ট করুন"
 
 [t_14d0722730]
 en = "Protect the account on this computer before it is saved."
@@ -15769,7 +15769,7 @@ en = "Restore with recovery phrase instead"
 where = [
   "desktop link_restore_with_recovery_phrase: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = "বদলে রিকভারি শব্দ দিয়ে ফিরিয়ে আনুন"
+text = "বরং রিকভারি শব্দ দিয়ে ফিরিয়ে আনুন"
 
 [t_43fea4daf5]
 en = "Sending your account over…"
@@ -15804,7 +15804,7 @@ en = "Synced {value}"
 where = [
   "desktop link_synced: Desktop, linking devices (in link_view.rs, linked_devices_page). {value} is a value filled in by the app.",
 ]
-text = "সিঙ্ক হয়েছে {value}"
+text = "{value} সিঙ্ক হয়েছে"
 
 [t_a4c809843c]
 en = "Tap Scan QR code and point it at this screen."
@@ -16209,7 +16209,7 @@ en = "New passphrase again"
 where = [
   "desktop profile_new_passphrase_again: Desktop, profile and settings (in profile_view.rs, passphrase_page).",
 ]
-text = "নতুন পাসফ্রেজ আবার"
+text = "নতুন পাসফ্রেজ আবার লিখুন"
 
 [t_2be53fc862]
 en = "Nickname"
@@ -16267,7 +16267,7 @@ en = "{value} of pictures and files you’ve opened. They’re prepared again wh
 where = [
   "desktop profile_of_pictures_and_files: Desktop, profile and settings (in profile_view.rs, storage_page). {value} is a value filled in by the app.",
 ]
-text = "আপনার খোলা ছবি আর ফাইলের {value}। আবার খুললে আবার তৈরি হবে।"
+text = "আপনার খোলা ছবি আর ফাইল মিলিয়ে {value}। আবার খুললে সেগুলো নতুন করে তৈরি হবে।"
 
 [t_d060fc5ab7]
 en = "Off means messages only"
@@ -17142,14 +17142,14 @@ en = "Your request to {value} is waiting. Your line opens when they accept."
 where = [
   "desktop signup_your_request_to_is: Desktop, sign-up, restore and add contact (in signup_view.rs, empty_hero). {value} is a value filled in by the app.",
 ]
-text = "{value}-কে পাঠানো আপনার অনুরোধ অপেক্ষায় আছে। ওঁরা গ্রহণ করলেই আপনার লাইন খুলে যাবে।"
+text = "{value}-কে পাঠানো আপনার অনুরোধ অপেক্ষায় আছে। উনি গ্রহণ করলেই আপনার লাইন খুলে যাবে।"
 
 [t_23aa6f9dd7]
 en = "Quit"
 where = [
   "desktop tray_quit: Desktop, system tray (in tray.rs, build).",
 ]
-text = "বন্ধ করুন"
+text = "পুরোপুরি বন্ধ করুন"
 
 [t_a8432fcc64]
 en = "Tinline - {status}"
@@ -17207,7 +17207,7 @@ en = "By continuing, you agree to the {terms} and have read the {privacy}."
 where = [
   "desktop signup_by_continuing_you_agree: Desktop, sign-up, \"Before you start\" step (in signup_view.rs), small line above the Agree button. {terms} is replaced by a link that shows the text of Terms of use (signup_terms_of_use), {privacy} by a link that shows Privacy policy (signup_privacy_policy). Keep both placeholders; they can move.",
 ]
-text = "চালিয়ে গেলে আপনি {terms}-এ রাজি হচ্ছেন এবং {privacy} পড়েছেন।"
+text = "চালিয়ে গেলে আপনি {terms} মেনে নিচ্ছেন এবং {privacy} পড়েছেন।"
 
 [t_f8a7b024d2]
 en = "A nickname can’t contain control or text-direction characters."
@@ -17474,7 +17474,7 @@ where = [
   "desktop group_invited_by_someone: Desktop, group member row: invited by someone I cannot name.",
   "desktop group_owner_by_unnamed_unnamed: Desktop, group join dialog (in group_live_view.rs, live_overlay): the line under the group name saying who invited me and who owns the group. Someone I cannot name made the link and the owner has no known name.",
 ]
-text = "আমন্ত্রণ জানিয়েছেন কেউ একজন"
+text = "একজনের আমন্ত্রণে"
 
 [t_b1f3953010]
 en = "A link for your own other device"
@@ -17495,28 +17495,28 @@ en = "Invited by you · owner {owner}"
 where = [
   "desktop group_owner_by_you: Desktop, group join dialog (in group_live_view.rs, live_overlay): the line under the group name saying who invited me and who owns the group. I made the link. {owner} is the owner's name.",
 ]
-text = "আমন্ত্রণ জানিয়েছেন আপনি · মালিক {owner}"
+text = "আপনার আমন্ত্রণে · মালিক {owner}"
 
 [t_44728366f9]
 en = "Invited by {inviter} · owner {owner}"
 where = [
   "desktop group_owner_by_named: Desktop, group join dialog (in group_live_view.rs, live_overlay): the line under the group name saying who invited me and who owns the group. {inviter} is the first name of who made the link, {owner} the owner's name.",
 ]
-text = "আমন্ত্রণ জানিয়েছেন {inviter} · মালিক {owner}"
+text = "{inviter}-এর আমন্ত্রণে · মালিক {owner}"
 
 [t_f86f5cbd4e]
 en = "Invited by {inviter}"
 where = [
   "desktop group_owner_by_named_unnamed: Desktop, group join dialog (in group_live_view.rs, live_overlay): the line under the group name saying who invited me and who owns the group. {inviter} made the link; the owner has no known name.",
 ]
-text = "আমন্ত্রণ জানিয়েছেন {inviter}"
+text = "{inviter}-এর আমন্ত্রণে"
 
 [t_25d7a50fc3]
 en = "Invited by someone · owner {owner}"
 where = [
   "desktop group_owner_by_unnamed: Desktop, group join dialog (in group_live_view.rs, live_overlay): the line under the group name saying who invited me and who owns the group. Someone I cannot name made the link. {owner} is the owner's name.",
 ]
-text = "আমন্ত্রণ জানিয়েছেন কেউ একজন · মালিক {owner}"
+text = "একজনের আমন্ত্রণে · মালিক {owner}"
 
 [t_5a341ece46]
 en_one = "{count} host online, this computer too. Posts go through right away."
@@ -17532,7 +17532,7 @@ en = "A call host carries the call. Everyone in a call connects to it, and it pa
 where = [
   "desktop group_a_call_host_carries_admin: Desktop, group info, call hosts section note, for admins.",
 ]
-text = "কল হোস্ট কলটি চালায়। কলের সবাই এর সঙ্গে কানেক্ট হন, আর এটি অডিও পৌঁছে দেয়, তাই এটি কল শুনতে পারে। এটা চ্যাট হোস্ট করা থেকে আলাদা: চ্যাট হোস্টকে আপনি কল হোস্ট হিসেবেও ঠিক না করলে সেটি কল হোস্ট নয়। কল হোস্টরা আপনার ভরসার সদস্য, আর প্রত্যেকে নিজে গ্রহণ করতে বেছে নেন। কোনো সদস্যের মেনু থেকে একজনকে ঠিক করুন, অথবা এই কম্পিউটারে কল হোস্ট করুন।"
+text = "কল হোস্ট কলটি চালায়। কলের সবাই এর সঙ্গে কানেক্ট হন, আর এটি অডিও পৌঁছে দেয়, তাই এটি কল শুনতে পারে। এটা গ্রুপ হোস্ট করা থেকে আলাদা: গ্রুপ হোস্টকে আপনি কল হোস্ট হিসেবেও নিযুক্ত না করলে সেটি কল হোস্ট নয়। কল হোস্টরা আপনার ভরসার সদস্য, আর প্রত্যেকে নিজে গ্রহণ করতে বেছে নেন। কোনো সদস্যের মেনু থেকে একজনকে নিযুক্ত করুন, অথবা এই কম্পিউটারে কল হোস্ট করুন।"
 
 [t_a84095ecdc]
 en = "An admin asked this computer to host {group}"
@@ -17560,7 +17560,7 @@ en = "Blocked by them"
 where = [
   "desktop group_sent_blocked_unnamed: Desktop, group requests I sent (in group_live.rs, sent_line): the state line of a private-chat request. Someone blocked me.",
 ]
-text = "ওঁরা ব্লক করেছেন"
+text = "উনি ব্লক করেছেন"
 
 [t_85e9c7a5d8]
 en = "You can’t send messages to this group."
