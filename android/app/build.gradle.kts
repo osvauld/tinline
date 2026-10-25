@@ -109,8 +109,15 @@ require(rustAbis.isNotEmpty() && rustAbis.all { it in setOf("x86_64", "arm64-v8a
 val rustRelease = (findProperty("rustRelease") as String? ?: "true").toBoolean()
 // Debug-only Rust entry points (`dev-tools`: video_bench for DebugReceiver). Off for release/bundle/benchmark
 // tasks so the shipped libp2pcore.so does not carry them; -PdevTools=true|false overrides.
-val devTools = (findProperty("devTools") as String?)?.toBoolean()
-    ?: gradle.startParameter.taskNames.none { listOf("release", "bundle", "benchmark").any { w -> it.contains(w, ignoreCase = true) } }
+val askedTasks = gradle.startParameter.taskNames
+val releaseLike = askedTasks.any { t -> listOf("release", "bundle", "benchmark").any { t.contains(it, ignoreCase = true) } }
+val devTools = (findProperty("devTools") as String?)?.toBoolean() ?: !releaseLike
+// One core build serves the whole run, so its dev-tools can't suit both kinds of task; fail now
+// rather than with unresolved references in the debug Kotlin compile minutes later.
+require(findProperty("devTools") != null || !releaseLike || askedTasks.none { it.contains("debug", ignoreCase = true) }) {
+    "Debug tasks need the core's dev-tools and release/bundle/benchmark tasks must not carry them: " +
+        "run them as separate Gradle commands (asked: ${askedTasks.joinToString(" ")})"
+}
 val profileDir = if (rustRelease) "release" else "debug"
 val jniOut = layout.buildDirectory.dir("rustJniLibs")
 val uniffiOut = layout.buildDirectory.dir("generated/uniffi/kotlin")
