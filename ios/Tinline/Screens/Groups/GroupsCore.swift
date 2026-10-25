@@ -242,6 +242,25 @@ enum GroupText {
         }
     }
 
+    /// The spoken description of a member row: one whole sentence per role and hosting combination.
+    static func memberDesc(_ name: String, owner: Bool, admin: Bool, host: Bool, callHost: Bool) -> String {
+        switch (owner ? 0 : (admin ? 1 : 2), host, callHost) {
+        case (0, false, false): return tr("group_member_desc_owner", name)
+        case (0, false, true): return tr("group_member_desc_owner_callhost", name)
+        case (0, true, false): return tr("group_member_desc_owner_host", name)
+        case (0, true, true): return tr("group_member_desc_owner_host_callhost", name)
+        case (1, false, false): return tr("group_member_desc_admin", name)
+        case (1, false, true): return tr("group_member_desc_admin_callhost", name)
+        case (1, true, false): return tr("group_member_desc_admin_host", name)
+        case (1, true, true): return tr("group_member_desc_admin_host_callhost", name)
+        case (2, false, false): return tr("group_member_desc_member", name)
+        case (2, false, true): return tr("group_member_desc_member_callhost", name)
+        case (2, true, false): return tr("group_member_desc_member_host", name)
+        case (2, true, true): return tr("group_member_desc_member_host_callhost", name)
+        default: return tr("group_member_desc_member", name)
+        }
+    }
+
     /// The list row's second line.
     static func preview(_ s: GroupSummary, me: String) -> String {
         switch s.myRole {

@@ -800,8 +800,9 @@ text = "Valid for 7 days"
 note = "Sub line under Create invite link: how long a link works."
 
 [group_member_flags]
-text = "{flags} of {total} flags"
-note = "Part of a member row sub line. {flags} is how many flags the member has, {total} how many remove them."
+one = "{count} of {total} flags"
+other = "{count} of {total} flags"
+note = "Part of a member row sub line. {count} is how many flags the member has, {total} how many remove them."
 
 [group_member_blocked_by_you]
 text = "Blocked by you"
@@ -859,33 +860,17 @@ note = "Label for a member who hosts the group’s chat."
 text = "Call host"
 note = "Label for a member who hosts the group’s calls."
 
-[group_member_desc_you]
-text = "{name} (you)"
-note = "Spoken description of a member row: the name part when the member is the user. {name} is the user’s name."
-
 [group_member_desc_owner]
-text = "owner"
-note = "Spoken description part: role (lower case, joined with commas)."
+text = "{name}, owner. Open actions"
+note = "Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is owner."
 
 [group_member_desc_admin]
-text = "admin"
-note = "Spoken description part: role (lower case, joined with commas)."
+text = "{name}, admin. Open actions"
+note = "Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is admin."
 
 [group_member_desc_member]
-text = "member"
-note = "Spoken description part: role (lower case, joined with commas)."
-
-[group_member_desc_host]
-text = "host"
-note = "Spoken description part (lower case, joined with commas)."
-
-[group_member_desc_call_host]
-text = "call host"
-note = "Spoken description part (lower case, joined with commas)."
-
-[group_member_desc]
-text = "{summary}. Open actions"
-note = "Spoken description of a member row. {summary} is the comma-separated name, role and host parts."
+text = "{name}, member. Open actions"
+note = "Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is member."
 
 [group_this_device]
 text = "This device"
@@ -1018,16 +1003,17 @@ text = "Flags on you"
 note = "Section heading when the user has flags against them."
 
 [group_flags_count]
-text = "{flags} of {total}"
-note = "Count next to the heading and spoken label of the flag meter. {flags} is flags so far, {total} flags that remove."
+text = "{count} of {total}"
+note = "Count next to the heading of the flag meter. {count} is flags so far, {total} flags that remove."
 
 [group_flags_count_desc]
-text = "{flags} of {total} flags"
-note = "Spoken label of the flag meter. {flags} is flags so far, {total} flags that remove."
+one = "{count} of {total} flags"
+other = "{count} of {total} flags"
+note = "Spoken label of the flag meter. {count} is flags so far, {total} flags that remove."
 
 [group_flags_left]
 one = "One more flag from any admin removes you from the group. Flags can’t be taken back. You can still read and post until then."
-other = "{count} more flags from any admin removes you from the group. Flags can’t be taken back. You can still read and post until then."
+other = "{count} more flags from any admin remove you from the group. Flags can’t be taken back. You can still read and post until then."
 note = "Note under the flag meter. {count} is how many more flags remove the user."
 
 [group_removal_title]
@@ -1196,20 +1182,32 @@ text = "Remove as host"
 note = "Action row title."
 
 [group_member_cancel_callhost]
-text = "Cancel call host request{device}"
-note = "Action row title. {device} is a short device id, empty if the member has one device."
+text = "Cancel call host request"
+note = "Action row title: cancel a pending call host request."
+
+[group_member_cancel_callhost_device]
+text = "Cancel call host request · {device}"
+note = "Action row title when the member has several devices. {device} is a short device id."
 
 [group_member_cancel_callhost_sub]
 text = "Waiting for {name}’s device to accept"
 note = "Sub line. {name} is the member’s first name."
 
 [group_member_remove_callhost]
-text = "Remove as call host{device}"
-note = "Action row title. {device} is a short device id, empty if the member has one device."
+text = "Remove as call host"
+note = "Action row title: stop a device hosting calls."
+
+[group_member_remove_callhost_device]
+text = "Remove as call host · {device}"
+note = "Action row title when the member has several devices. {device} is a short device id."
 
 [group_member_make_callhost]
-text = "Make call host{device}"
-note = "Action row title. {device} is a short device id, empty if the member has one device."
+text = "Make call host"
+note = "Action row title: appoint a device to host calls."
+
+[group_member_make_callhost_device]
+text = "Make call host · {device}"
+note = "Action row title when the member has several devices. {device} is a short device id."
 
 [group_member_make_callhost_sub]
 text = "Asks {name} to carry group calls. They have to accept."
@@ -5961,3 +5959,39 @@ note = "System line in a group chat (the centred grey line). A device of a membe
 [group_sys_host_removed_someone]
 text = "A member’s device stopped hosting the group"
 note = "System line in a group chat (the centred grey line). A device of a member whose name is unknown stopped hosting the group."
+
+[group_member_desc_owner_callhost]
+text = "{name}, owner and call host. Open actions"
+note = "Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is owner and call host."
+
+[group_member_desc_owner_host]
+text = "{name}, owner and host. Open actions"
+note = "Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is owner and host."
+
+[group_member_desc_owner_host_callhost]
+text = "{name}, owner, host and call host. Open actions"
+note = "Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is owner, host and call host."
+
+[group_member_desc_admin_callhost]
+text = "{name}, admin and call host. Open actions"
+note = "Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is admin and call host."
+
+[group_member_desc_admin_host]
+text = "{name}, admin and host. Open actions"
+note = "Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is admin and host."
+
+[group_member_desc_admin_host_callhost]
+text = "{name}, admin, host and call host. Open actions"
+note = "Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is admin, host and call host."
+
+[group_member_desc_member_callhost]
+text = "{name}, member and call host. Open actions"
+note = "Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is member and call host."
+
+[group_member_desc_member_host]
+text = "{name}, member and host. Open actions"
+note = "Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is member and host."
+
+[group_member_desc_member_host_callhost]
+text = "{name}, member, host and call host. Open actions"
+note = "Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is member, host and call host."

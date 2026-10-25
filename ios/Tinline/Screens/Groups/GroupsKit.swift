@@ -598,7 +598,7 @@ struct GroupsFlagMeter: View {
                     .animation(GroupsMotion.enterAnim(reduced), value: filled)
             }
         }
-        .accessibilityElement(children: .ignore).accessibilityLabel(desc ?? tr("group_flags_count_desc", String(filled), String(total)))
+        .accessibilityElement(children: .ignore).accessibilityLabel(desc ?? trn("group_flags_count_desc", filled, String(total)))
     }
     private func color(_ i: Int) -> Color {
         if i < filled { return tin.grpDangerBtn }
