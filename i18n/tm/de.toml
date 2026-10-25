@@ -6932,7 +6932,7 @@ where = [
   "ios link_linking_peer: Heading while linking; {name} is the new device's name.",
   "desktop link_linking: Desktop, linking devices (in link_view.rs, link_screen). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} wird verknüpft"
 
 [t_87c5199eb4]
 en = "Reaching the other device"
@@ -6940,7 +6940,7 @@ where = [
   "android link_reaching: Progress line while connecting.",
   "ios link_reaching: Progress line while connecting.",
 ]
-text = ""
+text = "Erreiche das andere Gerät"
 
 [t_b9e015ff53]
 en = "Sending your account"
@@ -6948,7 +6948,7 @@ where = [
   "android link_sending: Progress line while the account is sent to the new device.",
   "ios link_sending: Progress line while sending.",
 ]
-text = ""
+text = "Sende dein Konto"
 
 [t_2265cfdb46]
 en = "Working"
@@ -6956,7 +6956,7 @@ where = [
   "android link_working: Right-aligned status word on the progress line.",
   "ios link_working: Short status at the end of the progress line.",
 ]
-text = ""
+text = "Läuft"
 
 [t_4c14646bf4]
 en = "Keep both devices open until this finishes."
@@ -6965,7 +6965,7 @@ where = [
   "ios link_keep_open: Hint while linking.",
   "desktop link_keep_both_devices_open: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "Lass beide Geräte offen, bis das fertig ist."
 
 [t_9ccb941078]
 en = "{name} is linked"
@@ -6973,7 +6973,7 @@ where = [
   "android link_done_title: Heading after linking succeeded. {name} is the new device's name.",
   "ios link_done_title: Title when linking finished; {name} is the new device's name.",
 ]
-text = ""
+text = "{name} ist verknüpft"
 
 [t_fe3d1bcb4a]
 en = "It syncs when both devices are online at the same time. Contacts you haven’t blocked get your updated device list when they’re next online."
@@ -6981,7 +6981,7 @@ where = [
   "android link_done_body: Body after linking succeeded.",
   "ios link_done_body: Body when linking finished.",
 ]
-text = ""
+text = "Es gleicht sich ab, wenn beide Geräte gleichzeitig online sind. Kontakte, die du nicht blockiert hast, bekommen deine neue Geräteliste, wenn sie das nächste Mal online sind."
 
 [t_52b9310c11]
 en = "Scan the code on your new device"
@@ -6989,7 +6989,7 @@ where = [
   "android link_scan_h1: Heading on the phone that has the account, before scanning.",
   "ios link_scan_title: Heading of the scan step.",
 ]
-text = ""
+text = "Scanne den Code auf deinem neuen Gerät"
 
 [t_51b97030a7]
 en = "1.  On the new device, open Tinline and choose {action}."
@@ -6997,7 +6997,7 @@ where = [
   "android link_scan_step1: First instruction. {action} is the name of a button on the new device (Link to a device), shown in bold.",
   "ios link_scan_step1: Step 1 on the scan page; {action} is the bold button name Link to a device.",
 ]
-text = ""
+text = "1.  Öffne auf dem neuen Gerät Tinline und wähle {action}."
 
 [t_8980eb9ec6]
 en = "2.  It shows a QR code and a short code. They work for 5 minutes, once."
@@ -7005,7 +7005,7 @@ where = [
   "android link_scan_step2: Second instruction.",
   "ios link_scan_step2: Step 2 on the scan page.",
 ]
-text = ""
+text = "2.  Es zeigt einen QR-Code und einen kurzen Code. Sie funktionieren 5 Minuten lang, einmal."
 
 [t_878564e3c6]
 en = "Scan QR code"
@@ -7013,7 +7013,7 @@ where = [
   "android link_scan_qr: Button that opens the camera.",
   "ios link_scan_qr: Button that opens the camera.",
 ]
-text = ""
+text = "QR-Code scannen"
 
 [t_c6e610bfa2]
 en = "Or type the code"
@@ -7021,7 +7021,7 @@ where = [
   "android link_type_code: Label above the field for typing the other device's code.",
   "ios link_or_type: Label above the field for typing the link code.",
 ]
-text = ""
+text = "Oder tipp den Code ein"
 
 [t_592f2264cd]
 en = "Show a QR code here instead"
@@ -7029,7 +7029,7 @@ where = [
   "android link_show_here: Button that switches from scanning to showing a QR code on this phone.",
   "ios link_show_instead: Button that switches to showing a QR code on this phone.",
 ]
-text = ""
+text = "Lieber hier einen QR-Code zeigen"
 
 [t_a747b9c63e]
 en = "That passphrase isn’t right."
@@ -7037,7 +7037,7 @@ where = [
   "android link_wrong_pass: Error under the passphrase field when approving a new device.",
   "ios link_wrong_pass: Error when approving a link with a wrong passphrase.",
 ]
-text = ""
+text = "Diese Passphrase passt nicht."
 
 [t_f33de65a5a]
 en = "Approve {name}?"
@@ -7045,14 +7045,14 @@ where = [
   "android link_approve_title: Heading of the approval step. {name} is the new device's name.",
   "ios link_approve_title: Heading of the approval step; {name} is the new device's name.",
 ]
-text = ""
+text = "{name} bestätigen?"
 
 [t_a11896633f]
 en = "Approving sends your {bold} to {name}. It becomes a full copy of you: it can read your chats and act as you. Approve only a device you hold."
 where = [
   "android link_approve_warning: Warning on the approval step. {bold} is the words recovery phrase, shown in bold; {name} is the new device's name.",
 ]
-text = ""
+text = "Wenn du bestätigst, gehen deine {bold} an {name}. Es wird eine vollständige Kopie von dir: Es kann deine Chats lesen und als du auftreten. Bestätige nur ein Gerät, das du in der Hand hast."
 
 [t_5362d277d1]
 en = "recovery phrase"
@@ -7060,7 +7060,7 @@ where = [
   "android link_approve_bold: The words that appear in bold in the approval warning. Lowercase, mid-sentence.",
   "ios link_approve_phrase: Bold words inside the approval warning.",
 ]
-text = ""
+text = "Wiederherstellungswörter"
 
 [t_37bba9dbad]
 en = "Don’t link"
@@ -7068,7 +7068,7 @@ where = [
   "android link_dont_link: Button that cancels the approval.",
   "ios link_dont: Button that refuses the link.",
 ]
-text = ""
+text = "Nicht verknüpfen"
 
 [t_7ea8f5de87]
 en = "Approving…"
@@ -7076,7 +7076,7 @@ where = [
   "android link_approving: Button label while approving.",
   "ios link_approving: Approve button while working.",
 ]
-text = ""
+text = "Bestätigen…"
 
 [t_a2baf51d40]
 en = "Approve"
@@ -7084,7 +7084,7 @@ where = [
   "android link_approve: Button that approves the new device.",
   "ios link_approve: Button that approves the link.",
 ]
-text = ""
+text = "Bestätigen"
 
 [t_4106a4c306]
 en = "Scan the code"
@@ -7092,7 +7092,7 @@ where = [
   "android link_scan_title: Title of the camera screen on the phone that has the account.",
   "ios link_scan_code: Title of the camera screen on the existing device.",
 ]
-text = ""
+text = "Code scannen"
 
 [t_6c6ebd8493]
 en = "Torch"
@@ -7100,7 +7100,7 @@ where = [
   "android link_torch: Accessibility label of the torch button on the camera screen.",
   "ios link_torch: Accessibility label of the torch button.",
 ]
-text = ""
+text = "Taschenlampe"
 
 [t_320efe7708]
 en = "Point at the code on your other device"
@@ -7108,7 +7108,7 @@ where = [
   "android link_point_new: Instruction over the camera view on the new phone.",
   "ios link_point_other: Hint on the camera view of the new device.",
 ]
-text = ""
+text = "Richte die Kamera auf den Code auf deinem anderen Gerät"
 
 [t_5117bf8c8f]
 en = "Point the camera at the QR code on your new device"
@@ -7116,7 +7116,7 @@ where = [
   "android link_point_existing: Instruction over the camera view on the phone that has the account.",
   "ios link_point_new: Hint on the camera view of the existing device.",
 ]
-text = ""
+text = "Richte die Kamera auf den QR-Code auf deinem neuen Gerät"
 
 [t_65fa4d35cf]
 en = "Scan again"
@@ -7124,7 +7124,7 @@ where = [
   "android link_scan_again: Button on the camera screen after a bad scan.",
   "ios link_scan_again: Button after a scan failed.",
 ]
-text = ""
+text = "Nochmal scannen"
 
 [t_1effc5a522]
 en = "The code works once and expires in 5 minutes."
@@ -7132,7 +7132,7 @@ where = [
   "android link_scan_foot: Note under the camera view.",
   "ios link_code_once: Hint under the camera view.",
 ]
-text = ""
+text = "Der Code funktioniert einmal und läuft nach 5 Minuten ab."
 
 [t_c2b267633e]
 en = "This phone was unlinked"
@@ -7140,7 +7140,7 @@ where = [
   "android link_unlinked_title: Title of the screen shown when another device removed the account from this phone.",
   "ios link_unlinked_title: Title shown when another device removed the account from this phone.",
 ]
-text = ""
+text = "Dieses Handy wurde getrennt"
 
 [t_b23c6601b5]
 en = "{name} was removed from this phone by one of your other devices. Its contacts, chats and calls are deleted here. Your other devices are not affected."
@@ -7148,7 +7148,7 @@ where = [
   "android link_unlinked_lead: Lead on the unlinked screen. {name} is the account's name.",
   "ios link_unlinked_lead: Explanation; {name} is the account's name or the words Your account.",
 ]
-text = ""
+text = "{name} wurde von einem deiner anderen Geräte von diesem Handy entfernt. Kontakte, Chats und Anrufe des Kontos sind hier gelöscht. Deine anderen Geräte sind nicht betroffen."
 
 [t_ffff8cc6e7]
 en = "OK"
@@ -7159,7 +7159,7 @@ where = [
   "ios call_ok: Button that dismisses a note on the call screen.",
   "desktop common_ok: Shared label, used in several places (gcall, link).",
 ]
-text = ""
+text = "OK"
 
 [t_2ba28c4ed4]
 en = "Link it again"
@@ -7168,7 +7168,7 @@ where = [
   "ios link_again: Button that starts linking again.",
   "desktop link_link_it_again: Desktop, linking devices (in link_view.rs, unlinked_screen).",
 ]
-text = ""
+text = "Wieder verknüpfen"
 
 [t_1c482b7bbb]
 en = "Blocked people"
@@ -7178,7 +7178,7 @@ where = [
   "ios people_blocked_title: Title of the Blocked people screen.",
   "desktop common_blocked_people: Shared label, used in several places (groups, profile).",
 ]
-text = ""
+text = "Blockierte Personen"
 
 [t_2d53447cd6]
 en = "One list across all your devices: a block made on another device shows here too."
@@ -7187,7 +7187,7 @@ where = [
   "ios people_blocked_list_note: Note at the top of the Blocked people screen.",
   "desktop group_one_list_across_all: Desktop, groups (in groups_view.rs, privacy_page).",
 ]
-text = ""
+text = "Eine Liste für all deine Geräte: Eine Blockierung auf einem anderen Gerät erscheint auch hier."
 
 [t_9af1f83c2d]
 en = "Nobody is blocked. To block someone, open their contact page and tap Block."
@@ -7195,7 +7195,7 @@ where = [
   "android blocking_none: Hint on the blocked people page when the list is empty.",
   "ios people_blocked_empty: Blocked people screen when nobody is blocked.",
 ]
-text = ""
+text = "Niemand ist blockiert. Um jemanden zu blockieren, öffne die Kontaktseite der Person und tippe auf Blockieren."
 
 [t_1ecbfe4697]
 en = "Blocked {date}"
@@ -7203,7 +7203,7 @@ where = [
   "android blocking_blocked_on: Small line under a blocked person. {date} is a date and time such as Oct 10, 13:50.",
   "ios people_blocked_since: Line under a blocked person. {date} is when the block was made, like “Oct 19, 14:05”.",
 ]
-text = ""
+text = "Blockiert {date}"
 
 [t_d91bf4b22d]
 en = "Unblock {name}"
@@ -7211,7 +7211,7 @@ where = [
   "android blocking_unblock_name: Accessibility label of the Unblock button. {name} is the person's name.",
   "ios people_unblock_a11y: Accessibility label of the Unblock button. {name} is the blocked person.",
 ]
-text = ""
+text = "{name} nicht mehr blockieren"
 
 [t_9cd03a6e82]
 en = "{name} is told you unblocked them"
@@ -7219,7 +7219,7 @@ where = [
   "android blocking_unblocked_told: Brief message after unblocking. {name} is the person's first name.",
   "ios people_unblock_told: Toast after unblocking. {name} is the person’s first name.",
 ]
-text = ""
+text = "{name} erfährt, dass du die Blockierung aufgehoben hast"
 
 [t_643ddcb6f7]
 en = "Unblock"
@@ -7231,7 +7231,7 @@ where = [
   "ios people_unblock: Button that unblocks a person.",
   "desktop common_unblock: Shared label, used in several places (chat, groups, profile, view).",
 ]
-text = ""
+text = "Freigeben"
 
 [t_4d7e2507b3]
 en = "Unblocking"
@@ -7240,84 +7240,84 @@ where = [
   "ios people_unblocking_title: Heading of the note about what unblocking does.",
   "desktop group_unblocking: Desktop, groups (in groups_view.rs, privacy_page).",
 ]
-text = ""
+text = "Blockierung aufheben"
 
 [t_b74841744f]
 en = "Call listener"
 where = [
   "android notif_ch_service: Name of the always-on notification channel in the Android system settings.",
 ]
-text = ""
+text = "Anruf-Empfang"
 
 [t_ff8964c15b]
 en = "Keeps the app reachable for incoming calls"
 where = [
   "android notif_ch_service_desc: Description of the Call listener notification channel in the Android system settings.",
 ]
-text = ""
+text = "Hält die App für eingehende Anrufe erreichbar"
 
 [t_e3ab2fe4e6]
 en = "Incoming calls"
 where = [
   "android notif_ch_calls: Name of the incoming call notification channel in the Android system settings.",
 ]
-text = ""
+text = "Eingehende Anrufe"
 
 [t_64282d58a1]
 en = "Rings when a contact calls you"
 where = [
   "android notif_ch_calls_desc: Description of the Incoming calls notification channel.",
 ]
-text = ""
+text = "Klingelt, wenn ein Kontakt dich anruft"
 
 [t_fe5de7f9b5]
 en = "Ongoing calls"
 where = [
   "android notif_ch_ongoing: Name of the notification channel for a call in progress.",
 ]
-text = ""
+text = "Laufende Anrufe"
 
 [t_b6a75a2d0b]
 en = "Shows your current call and lets you return to it or hang up"
 where = [
   "android notif_ch_ongoing_desc: Description of the Ongoing calls notification channel.",
 ]
-text = ""
+text = "Zeigt deinen aktuellen Anruf und lässt dich zurückkehren oder auflegen"
 
 [t_2647e83d1b]
 en = "Missed calls"
 where = [
   "android notif_ch_missed: Name of the missed call notification channel.",
 ]
-text = ""
+text = "Verpasste Anrufe"
 
 [t_c8e721f165]
 en = "New messages from your contacts"
 where = [
   "android notif_ch_messages_desc: Description of the Messages notification channel.",
 ]
-text = ""
+text = "Neue Nachrichten von deinen Kontakten"
 
 [t_20b30c022c]
 en = "Posts in your groups and invitations to join one"
 where = [
   "android notif_ch_groups_desc: Description of the Groups notification channel.",
 ]
-text = ""
+text = "Beiträge in deinen Gruppen und Einladungen zu Gruppen"
 
 [t_efdf92af26]
 en = "Contact requests"
 where = [
   "android notif_ch_requests: Name of the contact request notification channel.",
 ]
-text = ""
+text = "Kontaktanfragen"
 
 [t_e14ecc3f5b]
 en = "When someone asks to add you as a contact"
 where = [
   "android notif_ch_requests_desc: Description of the Contact requests notification channel.",
 ]
-text = ""
+text = "Wenn dich jemand als Kontakt hinzufügen möchte"
 
 [t_5f725e5908]
 en = "Locked"
@@ -7325,14 +7325,14 @@ where = [
   "android notif_ch_locked: Name of the notification channel shown while the app is locked by a passphrase.",
   "desktop common_locked: Shared label, used in several places (app, view).",
 ]
-text = ""
+text = "Gesperrt"
 
 [t_aafc4b7879]
 en = "Shown while the app needs your passphrase to receive calls"
 where = [
   "android notif_ch_locked_desc: Description of the Locked notification channel.",
 ]
-text = ""
+text = "Wird gezeigt, solange die App deine Passphrase braucht, um Anrufe zu empfangen"
 
 [t_b246b85fcb]
 en = "Not available"
@@ -7340,14 +7340,14 @@ where = [
   "android notif_idle_unavailable: Title of the always-on notification when I have set myself unavailable.",
   "desktop common_not_available: Shared label, used in several places (app, reason).",
 ]
-text = ""
+text = "Nicht erreichbar"
 
 [t_36ca5e70db]
 en = "Offline — reconnecting"
 where = [
   "android notif_idle_offline: Title of the always-on notification when the phone has no connection.",
 ]
-text = ""
+text = "Offline – verbinde neu"
 
 [t_9259500947]
 en = "Available for calls"
@@ -7356,14 +7356,14 @@ where = [
   "android avail_title: Title of the availability sheet and accessibility label of its switch.",
   "desktop settings_available_for_calls: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "Für Anrufe erreichbar"
 
 [t_ca9c4477e4]
 en = "Calls won’t ring. Tap to change."
 where = [
   "android notif_idle_unavailable_text: Text of the always-on notification when I am unavailable.",
 ]
-text = ""
+text = "Anrufe klingeln nicht. Tippe zum Ändern."
 
 [t_318f27de45]
 en = "Your calls come through again once you’re back online."
@@ -7373,21 +7373,21 @@ where = [
   "ios shell_banner_offline_text: Banner text when offline.",
   "desktop gate_your_calls_come_through: Desktop, sign-in and gate screens (in view.rs, problem).",
 ]
-text = ""
+text = "Deine Anrufe kommen wieder durch, sobald du wieder online bist."
 
 [t_934bb3d62f]
 en = "Your line is open. Tap to change."
 where = [
   "android notif_idle_available_text: Text of the always-on notification when available.",
 ]
-text = ""
+text = "Deine Leitung ist offen. Tippe zum Ändern."
 
 [t_bb5cc13df8]
 en = "Tap to return to the call"
 where = [
   "android notif_return_to_call: Text of the notification shown during a call.",
 ]
-text = ""
+text = "Tippe, um zum Anruf zurückzukehren"
 
 [t_2a6f141e63]
 en = "End call"
@@ -7396,14 +7396,14 @@ where = [
   "android call_end_call: Accessibility label of the red hang-up button on the call screen.",
   "ios call_control_end_label: Accessibility label of the red hang-up button.",
 ]
-text = ""
+text = "Auflegen"
 
 [t_436d29fdc3]
 en = "Unmute"
 where = [
   "android notif_unmute: Notification action: turn the microphone on in a group call.",
 ]
-text = ""
+text = "Mikro an"
 
 [t_f3a8fd3eed]
 en = "Mute"
@@ -7414,7 +7414,7 @@ where = [
   "ios call_control_mute: Label and caption of the mute button.",
   "desktop common_mute: Shared label, used in several places (call_screen, gcall).",
 ]
-text = ""
+text = "Stumm"
 
 [t_5e3d155ca5]
 en = "Incoming video call"
@@ -7424,7 +7424,7 @@ where = [
   "ios shell_ring_incoming_video: Ringing banner subtitle for an incoming video call.",
   "desktop common_incoming_video_call: Shared label, used in several places (call_screen, view).",
 ]
-text = ""
+text = "Eingehender Videoanruf"
 
 [t_247c6a01a8]
 en = "Incoming call"
@@ -7437,7 +7437,7 @@ where = [
   "ios call_mark_incoming: Accessibility label of the animated mark on an incoming call.",
   "desktop common_incoming_call: Shared label, used in several places (call_screen, mark, view).",
 ]
-text = ""
+text = "Eingehender Anruf"
 
 [t_b35ae71c8f]
 en = "{name} is calling the group"
@@ -7446,7 +7446,7 @@ where = [
   "android gcall_is_calling_group: Second line of the group call card while it rings. {name} is the caller's first name.",
   "ios call_group_announce_ringing: Group call announcement. {name} is the member's first name.",
 ]
-text = ""
+text = "{name} ruft die Gruppe an"
 
 [t_157bc965a5]
 en = "{name} is calling"
@@ -7456,14 +7456,14 @@ where = [
   "ios call_waiting_title: Title of the card shown when a second call arrives during a call. {name} is the caller.",
   "desktop common_is_calling: Shared label, used in several places (app, view). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} ruft an"
 
 [t_8aae3ee3e7]
 en = "Your call continues until you choose."
 where = [
   "android notif_waiting_text: Text of the second-call notification.",
 ]
-text = ""
+text = "Dein Anruf läuft weiter, bis du entscheidest."
 
 [t_c2597b3d54]
 en = "End & answer"
@@ -7473,21 +7473,21 @@ where = [
   "ios call_waiting_end_answer: Button on the call-waiting card that ends the current call and answers the new one.",
   "desktop call_end_answer: Desktop, calls (voice and video) (in view.rs, waiting_banner).",
 ]
-text = ""
+text = "Auflegen & annehmen"
 
 [t_fc6653bd25]
 en = "Unlock to receive calls"
 where = [
   "android notif_locked_title: Title of the notification shown while the app is locked.",
 ]
-text = ""
+text = "Entsperren, um Anrufe zu empfangen"
 
 [t_b3ecd22aaf]
 en = "Tap to enter your passphrase"
 where = [
   "android notif_locked_text: Text of the locked notification.",
 ]
-text = ""
+text = "Tippe, um deine Passphrase einzugeben"
 
 [t_bfa2f70ef5]
 en = "Contact request"
@@ -7497,7 +7497,7 @@ where = [
   "ios people_add_title_request: Sheet title when someone wants to add the user.",
   "desktop signup_contact_request: Desktop, sign-up, restore and add contact (in signup.rs, contact_request).",
 ]
-text = ""
+text = "Kontaktanfrage"
 
 [t_a7e9021b5e]
 en = "{name} would like to add you"
@@ -7505,14 +7505,14 @@ where = [
   "android notif_request_text: Text of the contact request notification. {name} is the person's name.",
   "desktop signup_would_like_to_add: Desktop, sign-up, restore and add contact (in signup.rs, contact_request). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} möchte dich hinzufügen"
 
 [t_d2586a0497]
 en = "Your contact"
 where = [
   "android notif_accepted_fallback: Used in place of a name in the notification that a request was accepted when the contact has no name.",
 ]
-text = ""
+text = "Dein Kontakt"
 
 [t_0f29049271]
 en = "Accepted your request. Your line is open."
@@ -7520,14 +7520,14 @@ where = [
   "android notif_accepted_text: Text of the notification when someone accepted my request.",
   "desktop signup_accepted_your_request_your: Desktop, sign-up, restore and add contact (in signup.rs, request_accepted).",
 ]
-text = ""
+text = "Hat deine Anfrage angenommen. Deine Leitung ist offen."
 
 [t_21d8c8de7c]
 en = "Missed call"
 where = [
   "android notif_missed_title: Title of the missed call notification.",
 ]
-text = ""
+text = "Verpasster Anruf"
 
 [t_b888e730cf]
 en = "edited"
@@ -7535,7 +7535,7 @@ where = [
   "android chat_edited: Small label in a message bubble's time line after a message was edited.",
   "ios chat_edited: Small \"edited\" marker beside the time of an edited message.",
 ]
-text = ""
+text = "bearbeitet"
 
 [t_1c651aea2b]
 en = "Jump to message"
@@ -7543,7 +7543,7 @@ where = [
   "android chat_jump_to_message: Screen-reader action on the quoted message inside a reply bubble: taps scroll to the original.",
   "ios chat_jump_hint: Accessibility hint on a quoted message: jumps to the original.",
 ]
-text = ""
+text = "Zur Nachricht springen"
 
 [t_ef14928ac4]
 en = "Attach a file"
@@ -7551,7 +7551,7 @@ where = [
   "android chat_attach_file: Screen-reader label of the paperclip button next to the message field.",
   "ios chat_attach: Accessibility label of the paperclip button next to the message field.",
 ]
-text = ""
+text = "Datei anhängen"
 
 [t_304341c917]
 en = "Save edit"
@@ -7559,7 +7559,7 @@ where = [
   "android chat_save_edit: Screen-reader label of the send button while an edit is in progress.",
   "ios chat_save_edit: Accessibility label of the send button while editing a message.",
 ]
-text = ""
+text = "Änderung speichern"
 
 [t_c7bef86aa9]
 en = "Send"
@@ -7568,7 +7568,7 @@ where = [
   "ios chat_send: Accessibility label of the button that sends the typed message.",
   "ios group_send: Spoken label of the send button.",
 ]
-text = ""
+text = "Senden"
 
 [t_d91d418127]
 en = "Waiting to send"
@@ -7578,7 +7578,7 @@ where = [
   "ios kit_tick_waiting: Screen-reader label of a message tick: not sent yet.",
   "ios shell_tick_slack: Screen reader label. Group row: last message is waiting to send.",
 ]
-text = ""
+text = "Wartet aufs Senden"
 
 [t_aff352add7]
 en = "Sent, waiting for {first}’s device to confirm"
@@ -7586,7 +7586,7 @@ where = [
   "android chat_tick_one: Screen-reader words for the receipt mark. {first} is the contact's first name.",
   "ios kit_tick_sent: Screen-reader label of a message tick: sent, no confirmation yet. {first} is the other person's first name.",
 ]
-text = ""
+text = "Gesendet, wartet auf Bestätigung vom Gerät von {first}"
 
 [t_3fbf0b6f52]
 en = "On {first}’s device"
@@ -7594,7 +7594,7 @@ where = [
   "android chat_tick_two: Screen-reader words for the receipt mark: delivered. {first} is the contact's first name.",
   "ios kit_tick_delivered: Screen-reader label of a message tick: reached the other person's device. {first} is their first name.",
 ]
-text = ""
+text = "Auf dem Gerät von {first}"
 
 [t_67916d528c]
 en = "Read on {first}’s device"
@@ -7602,7 +7602,7 @@ where = [
   "android chat_tick_read: Screen-reader words for the receipt mark: read. {first} is the contact's first name.",
   "ios kit_tick_read: Screen-reader label of a message tick: read. {first} is the other person's first name.",
 ]
-text = ""
+text = "Gelesen auf dem Gerät von {first}"
 
 [t_22050b35af]
 en = "Not delivered"
@@ -7612,7 +7612,7 @@ where = [
   "ios kit_tick_bad: Screen-reader label of a message tick: could not be delivered.",
   "ios shell_tick_bad: Screen reader label. Group row: last message was not delivered.",
 ]
-text = ""
+text = "Nicht zugestellt"
 
 [t_9be5d9ce63]
 en = "Today"
@@ -7622,7 +7622,7 @@ where = [
   "ios group_today: Day label.",
   "desktop common_today: Shared label, used in several places (chat, group_live).",
 ]
-text = ""
+text = "Heute"
 
 [t_84299fd082]
 en = "Yesterday"
@@ -7632,7 +7632,7 @@ where = [
   "ios group_yesterday: Day label.",
   "desktop common_yesterday: Shared label, used in several places (chat, group_live).",
 ]
-text = ""
+text = "Gestern"
 
 [t_ea31e6872d]
 en = "Saved items · only on your devices"
@@ -7641,7 +7641,7 @@ where = [
   "ios chat_self_sub: Subtitle of the \"You\" conversation (saved items) in the chat list and its header.",
   "desktop chat_saved_items_only_on: Subtitle of the saved-items chat with yourself.",
 ]
-text = ""
+text = "Gespeichertes · nur auf deinen Geräten"
 
 [t_51f5f09ec3]
 en = "Waiting to send — {name} isn’t reachable yet"
@@ -7649,7 +7649,7 @@ where = [
   "android chat_waiting_unreachable: Preview line in the chat list when the last message waits to be sent. {name} is the contact's first name.",
   "ios shell_chat_waiting_unreachable: Chat list preview of a message that is waiting to send. {name} is the contact’s first name.",
 ]
-text = ""
+text = "Wartet aufs Senden – {name} ist noch nicht erreichbar"
 
 [t_efc80b09d7]
 en = "Search contacts"
@@ -7658,7 +7658,7 @@ where = [
   "android home_search_contacts: Default placeholder of the search bar.",
   "ios shell_new_chat_search_contacts: Placeholder and label of the contact search on the New chat screen.",
 ]
-text = ""
+text = "Kontakte suchen"
 
 [t_7006d2ffb9]
 en = "New chat"
@@ -7668,7 +7668,7 @@ where = [
   "ios shell_home_new_chat: Label of the add button on the Chats tab dock.",
   "desktop shell_new_chat: Desktop, shell: sidebar, search, contacts (in shell_view.rs, new_chat_overlay).",
 ]
-text = ""
+text = "Neuer Chat"
 
 [t_8d3fbed3a0]
 en = "Add a contact"
@@ -7676,7 +7676,7 @@ where = [
   "android chat_add_contact: Row on the New chat screen that leads to adding a contact.",
   "ios shell_new_chat_add: Row on the New chat screen that opens add contact.",
 ]
-text = ""
+text = "Kontakt hinzufügen"
 
 [t_39613ad35e]
 en = "Scan their code or paste their card"
@@ -7684,7 +7684,7 @@ where = [
   "android chat_add_contact_sub: Second line of the Add a contact row on the New chat screen.",
   "ios shell_new_chat_add_sub: Second line of that row.",
 ]
-text = ""
+text = "Code scannen oder Karte einfügen"
 
 [t_20c0fc5f07]
 en = "CONTACTS · {count}"
@@ -7692,7 +7692,7 @@ where = [
   "android chat_contacts_count: Small uppercase section label on the New chat screen. {count} is the number of contacts.",
   "ios shell_new_chat_contacts_header: Section label above the contact list on New chat. {count} is how many contacts.",
 ]
-text = ""
+text = "KONTAKTE · {count}"
 
 [t_d95af94074]
 en = "Voice message"
@@ -7701,7 +7701,7 @@ where = [
   "ios chat_preview_voice: Preview of a message that is only a voice message (notification, quote, chat list).",
   "desktop chat_voice_message: Desktop, chats (in chat.rs, preview_of).",
 ]
-text = ""
+text = "Sprachnachricht"
 
 [t_99c2265f43]
 en = "A group"
@@ -7709,14 +7709,14 @@ where = [
   "android chat_notif_a_group: Fallback title of a group invitation notification when the group has no name.",
   "desktop app_a_group: Desktop, app-level notices and notifications (in app.rs, on_event).",
 ]
-text = ""
+text = "Eine Gruppe"
 
 [t_66d9e71b13]
 en = "{name} invited you to the group"
 where = [
   "android chat_notif_invited: Text of a group invitation notification. {name} is the inviter's first name.",
 ]
-text = ""
+text = "{name} hat dich in die Gruppe eingeladen"
 
 [t_2ce4042846]
 en_one = "{count} new message"
@@ -7727,6 +7727,8 @@ where = [
   "ios group_unread_divider: Divider before unread posts. {count} is how many.",
   "desktop chat_new_messages: Divider line in a chat above the first unread message. {count} is how many are unread.",
 ]
+one = "{count} neue Nachricht"
+other = "{count} neue Nachrichten"
 
 [t_1a302f502a]
 en = "Couldn’t send that file."
@@ -7734,7 +7736,7 @@ where = [
   "android conv_send_file_failed: Toast when sending a file in a chat failed.",
   "ios chat_err_send_file: Toast when sending a file fails.",
 ]
-text = ""
+text = "Die Datei ließ sich nicht senden."
 
 [t_bed1bc4b5e]
 en = "Couldn’t read that file."
@@ -7742,7 +7744,7 @@ where = [
   "android conv_read_file_failed: Toast when the picked file could not be read.",
   "ios chat_err_read_file: Toast when a picked file cannot be read.",
 ]
-text = ""
+text = "Die Datei ließ sich nicht lesen."
 
 [t_28e3631aad]
 en = "Couldn’t start the download."
@@ -7750,7 +7752,7 @@ where = [
   "android conv_download_failed: Toast when a file download could not be started.",
   "ios chat_err_download: Toast when a file download cannot start.",
 ]
-text = ""
+text = "Der Download ließ sich nicht starten."
 
 [t_10e7696603]
 en = "Saved to your phone"
@@ -7758,7 +7760,7 @@ where = [
   "android conv_saved_to_phone: Toast after a file was saved to the phone's gallery or Downloads.",
   "ios chat_saved: Toast after a file was saved to the phone's photos or files.",
 ]
-text = ""
+text = "Auf deinem Handy gespeichert"
 
 [t_cd1f0dea33]
 en = "Couldn’t save that file."
@@ -7766,14 +7768,14 @@ where = [
   "android conv_save_failed: Toast when saving a file to the phone failed.",
   "ios chat_err_save: Toast when saving a file to the phone fails.",
 ]
-text = ""
+text = "Die Datei ließ sich nicht speichern."
 
 [t_e6ad09f42e]
 en = "No app on this phone opens .{ext} files — Save it instead"
 where = [
   "android conv_no_app_opens: Toast when no installed app can open a file. {ext} is the file extension without the dot.",
 ]
-text = ""
+text = "Keine App auf diesem Handy öffnet .{ext}-Dateien – speichere sie stattdessen"
 
 [t_5daf5e2fcf]
 en = "No camera available."
@@ -7781,14 +7783,14 @@ where = [
   "android conv_no_camera: Toast when the camera app could not be opened.",
   "ios chat_err_no_camera: Toast when the device has no camera.",
 ]
-text = ""
+text = "Keine Kamera verfügbar."
 
 [t_464735847b]
 en = "Allow the camera to take photos."
 where = [
   "android conv_allow_camera: Toast when camera permission was refused.",
 ]
-text = ""
+text = "Erlaube die Kamera, um Fotos zu machen."
 
 [t_dd3296b705]
 en = "Older messages are on {first}’s phone"
@@ -7796,7 +7798,7 @@ where = [
   "android conv_older_title: Heading of the note at the top of a chat when earlier messages live only on the contact's phone. {first} is their first name.",
   "ios chat_older_title: Title of the banner at the top of a chat whose earlier history is on the other phone. {first} is their first name.",
 ]
-text = ""
+text = "Ältere Nachrichten sind auf dem Handy von {first}"
 
 [t_d9b53f3b73]
 en = "This phone keeps them from when you started using it. Earlier days load when you’re both online."
@@ -7804,7 +7806,7 @@ where = [
   "android conv_older_body: Body of the note about older messages at the top of a chat.",
   "ios chat_older_body: Body of the older-messages banner.",
 ]
-text = ""
+text = "Dieses Handy hat sie ab dem Tag, an dem du es zu nutzen begonnen hast. Frühere Tage laden, wenn ihr beide online seid."
 
 [t_6d056581be]
 en = "You’re offline. Messages send when you’re back online."
@@ -7813,7 +7815,7 @@ where = [
   "ios chat_strip_me_offline: Strip above the composer when the user's phone is offline.",
   "desktop chat_youre_offline_messages_send: Desktop, chats (in chat_view.rs, strip_text).",
 ]
-text = ""
+text = "Du bist offline. Nachrichten gehen raus, sobald du wieder online bist."
 
 [t_3970e070d1]
 en = "{first} is offline. Messages send when you’re both online."
@@ -7821,7 +7823,7 @@ where = [
   "android conv_offline_peer: Status strip over a chat when the contact is offline. {first} is their first name.",
   "ios chat_strip_peer_offline: Strip above the composer when the other person is offline. {first} is their first name.",
 ]
-text = ""
+text = "{first} ist offline. Nachrichten gehen raus, sobald ihr beide online seid."
 
 [t_12ba578cd4]
 en = "Replying to {first}"
@@ -7829,7 +7831,7 @@ where = [
   "android conv_replying_to: Title of the banner over the message field while replying. {first} is the contact's first name.",
   "ios chat_composer_reply: Title of the banner above the composer when replying. {first} is the other person's first name.",
 ]
-text = ""
+text = "Antwort an {first}"
 
 [t_0a106892ef]
 en = "Editing message"
@@ -7838,7 +7840,7 @@ where = [
   "ios chat_composer_editing: Title of the banner above the composer while editing a message.",
   "desktop chat_editing_message: Desktop, chats (in chat_view.rs, composer).",
 ]
-text = ""
+text = "Nachricht bearbeiten"
 
 [t_cd2c9b7691]
 en = "Couldn’t send that voice message."
@@ -7846,7 +7848,7 @@ where = [
   "android conv_voice_send_failed: Toast when sending a recorded voice message failed.",
   "ios chat_err_send_voice: Toast when sending a voice message fails.",
 ]
-text = ""
+text = "Die Sprachnachricht ließ sich nicht senden."
 
 [t_a309d6871b]
 en = "Couldn’t delete that message."
@@ -7854,7 +7856,7 @@ where = [
   "android conv_delete_failed: Toast when deleting a message failed.",
   "ios chat_err_delete: Toast when deleting a message fails.",
 ]
-text = ""
+text = "Die Nachricht ließ sich nicht löschen."
 
 [t_0112ff6da5]
 en = "Back to chats"
@@ -7862,7 +7864,7 @@ where = [
   "android conv_back_to_chats: Screen-reader label of the back arrow in a chat's top bar.",
   "ios chat_back: Accessibility label of the back button in a chat header.",
 ]
-text = ""
+text = "Zurück zu den Chats"
 
 [t_2989a32c8a]
 en = "Blocked you"
@@ -7875,7 +7877,7 @@ where = [
   "ios people_blocked_you: Label of a person who has blocked the user.",
   "desktop group_blocked_you: Desktop, groups (in group_live.rs, sent_invitation_line).",
 ]
-text = ""
+text = "Hat dich blockiert"
 
 [t_a1ce28f490]
 en = "Not in your contacts"
@@ -7884,7 +7886,7 @@ where = [
   "ios chat_status_not_contact: Line under the name in a chat header: no longer a contact.",
   "desktop chat_not_in_your_contacts: Desktop, chats (in chat_view.rs, conversation_view).",
 ]
-text = ""
+text = "Nicht in deinen Kontakten"
 
 [t_4742401a49]
 en = "Waiting for connection"
@@ -7893,7 +7895,7 @@ where = [
   "ios chat_status_waiting: Line under the name in a chat header while the phone has no connection.",
   "desktop chat_waiting_for_connection: Desktop, chats (in chat_view.rs, conversation_view).",
 ]
-text = ""
+text = "Wartet auf Verbindung"
 
 [t_f8ab0430dc]
 en = "Online · messages only"
@@ -7902,7 +7904,7 @@ where = [
   "ios chat_status_online_messages: Line under the name in a chat header: online, but this person is not allowed to call.",
   "desktop chat_online_messages_only: Desktop, chats (in chat_view.rs, conversation_view).",
 ]
-text = ""
+text = "Online · nur Nachrichten"
 
 [t_d83899b692]
 en = "{name}. {status}. Chat details"
@@ -7910,7 +7912,7 @@ where = [
   "android conv_header_desc_status: Screen-reader description of the chat header. {name} is the contact, {status} their status line.",
   "ios chat_header_a11y_status: Accessibility label of the chat header. {name} is the contact's name, {status} the line under it (like \"Online\").",
 ]
-text = ""
+text = "{name}. {status}. Chatdetails"
 
 [t_5aac8bef83]
 en = "{name}. Chat details"
@@ -7918,7 +7920,7 @@ where = [
   "android conv_header_desc: Screen-reader description of the chat header when there is no status line. {name} is the contact.",
   "ios chat_header_a11y: Accessibility label of the chat header when there is no status line. {name} is the contact's name.",
 ]
-text = ""
+text = "{name}. Chatdetails"
 
 [t_d43ae1453b]
 en = "Return to call"
@@ -7927,7 +7929,7 @@ where = [
   "ios chat_return_to_call: Accessibility label of the phone button in the chat header while a call is live.",
   "desktop chat_return_to_call: Desktop, chats (in chat_view.rs, conversation_view).",
 ]
-text = ""
+text = "Zurück zum Anruf"
 
 [t_5a8b253e53]
 en = "Can’t call {first}"
@@ -7935,7 +7937,7 @@ where = [
   "android conv_cant_call: Screen-reader label of the dimmed call and video buttons. {first} is the contact's first name.",
   "ios chat_cant_call: Accessibility label of a dimmed call button. {first} is the other person's first name.",
 ]
-text = ""
+text = "{first} kann nicht angerufen werden"
 
 [t_5b028e9be7]
 en = "Video call"
@@ -7944,7 +7946,7 @@ where = [
   "ios chat_video_call: Accessibility label of the video call button in a chat header.",
   "desktop chat_video_call: Desktop, chats (in chat_view.rs, conversation_view).",
 ]
-text = ""
+text = "Videoanruf"
 
 [t_8c9028903c]
 en = "Find in this chat"
@@ -7954,7 +7956,7 @@ where = [
   "ios chat_find_placeholder: Placeholder and accessibility label of the search field inside a chat.",
   "desktop chat_find_in_this_chat: Desktop, chats (in chat_view.rs, find_bar).",
 ]
-text = ""
+text = "In diesem Chat suchen"
 
 [t_00571186d8]
 en = "Chat details"
@@ -7963,7 +7965,7 @@ where = [
   "ios chat_details: Accessibility label of the info button in a chat header.",
   "desktop chat_chat_details: Desktop, chats (in chat_view.rs, conversation_view).",
 ]
-text = ""
+text = "Chatdetails"
 
 [t_2a461b9d71]
 en = "Video call · {duration}"
@@ -7972,7 +7974,7 @@ where = [
   "ios chat_call_video_done: Call pill in a chat for an answered video call. {duration} is minutes:seconds, like 3:07.",
   "desktop chat_call_video_length: Call record pill in a chat for an answered video call. {duration} is minutes:seconds.",
 ]
-text = ""
+text = "Videoanruf · {duration}"
 
 [t_43f4ca0ac6]
 en = "Voice call · {duration}"
@@ -7981,7 +7983,7 @@ where = [
   "ios chat_call_voice_done: Call pill in a chat for an answered voice call. {duration} is minutes:seconds, like 3:07.",
   "desktop chat_call_voice_length: Call record pill in a chat for an answered voice call. {duration} is minutes:seconds.",
 ]
-text = ""
+text = "Sprachanruf · {duration}"
 
 [t_3508689eb0]
 en = "Declined video call"
@@ -7990,7 +7992,7 @@ where = [
   "ios chat_call_video_declined: Call pill in a chat: an incoming video call the user declined.",
   "desktop chat_call_declined_video: Call record pill in a chat: you declined an incoming video call.",
 ]
-text = ""
+text = "Videoanruf abgelehnt"
 
 [t_b3d9c4ad1c]
 en = "Declined voice call"
@@ -7999,7 +8001,7 @@ where = [
   "ios chat_call_voice_declined: Call pill in a chat: an incoming voice call the user declined.",
   "desktop chat_call_declined_voice: Call record pill in a chat: you declined an incoming voice call.",
 ]
-text = ""
+text = "Sprachanruf abgelehnt"
 
 [t_df1206e551]
 en = "Missed video call"
@@ -8008,7 +8010,7 @@ where = [
   "ios chat_call_video_missed: Call pill in a chat: an incoming video call the user did not pick up.",
   "desktop chat_call_missed_video: Call record pill in a chat: an incoming video call you did not answer.",
 ]
-text = ""
+text = "Verpasster Videoanruf"
 
 [t_ad9a1e61c9]
 en = "Missed voice call"
@@ -8017,7 +8019,7 @@ where = [
   "ios chat_call_voice_missed: Call pill in a chat: an incoming voice call the user did not pick up.",
   "desktop chat_call_missed_voice: Call record pill in a chat: an incoming voice call you did not answer.",
 ]
-text = ""
+text = "Verpasster Sprachanruf"
 
 [t_0a2e27ec58]
 en = "No answer"
@@ -8028,7 +8030,7 @@ where = [
   "ios shell_call_what_no_answer: Call list: outgoing call nobody picked up.",
   "desktop common_no_answer: Shared label, used in several places (chat, reason, view).",
 ]
-text = ""
+text = "Keine Antwort"
 
 [t_e3837cdde5]
 en = "Declined"
@@ -8040,7 +8042,7 @@ where = [
   "ios shell_call_what_declined: Call list: call that was declined.",
   "desktop common_declined: Shared label, used in several places (chat, group_live, reason, view).",
 ]
-text = ""
+text = "Abgelehnt"
 
 [t_786abde508]
 en = "Cancelled call"
@@ -8049,7 +8051,7 @@ where = [
   "ios chat_call_cancelled: Call pill in a chat: an outgoing call the user hung up before it was answered.",
   "desktop chat_cancelled_call: Desktop, chats (in chat_view.rs, call_pill).",
 ]
-text = ""
+text = "Anruf abgebrochen"
 
 [t_ea4f088084]
 en = "Call failed"
@@ -8058,7 +8060,7 @@ where = [
   "ios chat_call_failed: Call pill in a chat: a call that failed to connect.",
   "desktop chat_call_failed: Desktop, chats (in chat_view.rs, call_pill).",
 ]
-text = ""
+text = "Anruf kam nicht zustande"
 
 [t_90809b6cf7]
 en = "{text}, {time}. Call back"
@@ -8066,7 +8068,7 @@ where = [
   "android conv_call_pill_desc: Screen-reader description of a call pill. {text} is the pill text, {time} the clock time. Tapping it calls back.",
   "ios chat_call_back_a11y: Accessibility label of a call pill that calls back. {text} is the pill text (like \"Missed voice call\"), {time} the clock time.",
 ]
-text = ""
+text = "{text}, {time}. Zurückrufen"
 
 [t_671218216a]
 en = "Cancel edit"
@@ -8074,7 +8076,7 @@ where = [
   "android conv_cancel_edit: Screen-reader label of the button that closes the edit banner.",
   "ios chat_composer_cancel_edit: Accessibility label of the button that cancels editing.",
 ]
-text = ""
+text = "Bearbeiten abbrechen"
 
 [t_df1b4215d2]
 en = "You deleted this message"
@@ -8083,7 +8085,7 @@ where = [
   "ios chat_deleted_by_me: Placeholder shown where the user deleted a message.",
   "desktop chat_you_deleted_this_message: Desktop, chats (in chat_view.rs, message_row).",
 ]
-text = ""
+text = "Du hast diese Nachricht gelöscht"
 
 [t_5d52afde34]
 en = "{first} deleted this message"
@@ -8091,7 +8093,7 @@ where = [
   "android conv_they_deleted: Italic placeholder where the contact's message was deleted. {first} is their first name.",
   "ios chat_deleted_by_them: Placeholder shown where the other person deleted a message. {first} is their first name.",
 ]
-text = ""
+text = "{first} hat diese Nachricht gelöscht"
 
 [t_17ffe46e80]
 en = "Earlier message"
@@ -8099,7 +8101,7 @@ where = [
   "android conv_earlier_message: Quote heading when the message replied to is not loaded.",
   "ios chat_quote_earlier: Quote header when the quoted message is older than what this phone has.",
 ]
-text = ""
+text = "Frühere Nachricht"
 
 [t_ba70e88e13]
 en = "Message unavailable"
@@ -8107,14 +8109,14 @@ where = [
   "android conv_message_unavailable: Quote text inside a reply bubble when the original is not available.",
   "ios chat_quote_gone: Quote text inside a bubble when the quoted message is not available.",
 ]
-text = ""
+text = "Nachricht nicht verfügbar"
 
 [t_a8d397d00d]
 en = "{status} · {time}"
 where = [
   "android conv_meta_status: Time line of a bubble that has a delivery problem. {status} is the reason, {time} the clock time.",
 ]
-text = ""
+text = "{status} · {time}"
 
 [t_7a2ad862ad]
 en = "Sending {percent}% · {time}"
@@ -8122,7 +8124,7 @@ where = [
   "android conv_meta_sending: Time line of a bubble while a file is being sent. {percent} is a number, {time} the clock time.",
   "ios chat_meta_sending: Time line under a message that is still being sent. {percent} is a whole number, {time} the clock time.",
 ]
-text = ""
+text = "Sende {percent} % · {time}"
 
 [t_9b5fdf0f83]
 en = "Waiting · {time}"
@@ -8130,7 +8132,7 @@ where = [
   "android conv_meta_waiting: Time line of a bubble that waits to be sent. {time} is the clock time.",
   "ios chat_meta_waiting: Time line under a message waiting to be sent. {time} is the clock time.",
 ]
-text = ""
+text = "Wartet · {time}"
 
 [t_5655870496]
 en = "edited · {time}"
@@ -8138,7 +8140,7 @@ where = [
   "android conv_meta_edited: Time line of an edited bubble that has an attachment. {time} is the clock time.",
   "ios chat_meta_edited: Time line under a message that was edited. {time} is the clock time.",
 ]
-text = ""
+text = "bearbeitet · {time}"
 
 [t_b653aab95e]
 en = "Cancel sending"
@@ -8146,7 +8148,7 @@ where = [
   "android conv_cancel_sending: Screen-reader label of the cancel button on a photo that is being sent.",
   "ios chat_cancel_sending: Accessibility label of the cancel button on a photo being sent.",
 ]
-text = ""
+text = "Senden abbrechen"
 
 [t_97590a3009]
 en = "Cancel download"
@@ -8154,7 +8156,7 @@ where = [
   "android conv_cancel_download: Screen-reader label of the cancel button on a photo that is downloading.",
   "ios chat_cancel_download: Accessibility label of the cancel button on a photo being downloaded.",
 ]
-text = ""
+text = "Download abbrechen"
 
 [t_c0b559419f]
 en = "Download"
@@ -8163,7 +8165,7 @@ where = [
   "ios chat_download: Button on a photo that downloads it.",
   "desktop chat_download: Desktop, chats (in chat_view.rs, attachment_view).",
 ]
-text = ""
+text = "Herunterladen"
 
 [t_68faa1516f]
 en = "Retry download"
@@ -8171,7 +8173,7 @@ where = [
   "android conv_retry_download: Screen-reader label of the retry button on a photo whose download failed.",
   "ios chat_retry_download: Accessibility label of the retry button on a photo whose download failed.",
 ]
-text = ""
+text = "Download erneut versuchen"
 
 [t_660dab004e]
 en = "Sends when {first} is online"
@@ -8179,7 +8181,7 @@ where = [
   "android conv_sends_when_online: Chip on a photo that waits to be sent. {first} is the contact's first name.",
   "ios chat_sends_when_online: Chip on a photo waiting to be sent. {first} is the other person's first name.",
 ]
-text = ""
+text = "Geht raus, wenn {first} online ist"
 
 [t_62e2c511f3]
 en = "{size} · {type} · tap to open"
@@ -8187,7 +8189,7 @@ where = [
   "android conv_file_tap_open: Second line of a file in a chat that can be opened. {size} is the file size, {type} the short type such as PDF.",
   "ios chat_file_open: Sub line of a file bubble that can be opened. {size} like 2.4 MB, {type} like PDF.",
 ]
-text = ""
+text = "{size} · {type} · zum Öffnen tippen"
 
 [t_eb0ae0ccd3]
 en = "{size} · {type} · tap to save"
@@ -8195,7 +8197,7 @@ where = [
   "android conv_file_tap_save: Second line of a file in a chat that can only be saved. {size} is the file size, {type} the short type such as PDF.",
   "ios chat_file_save: Sub line of a file bubble that can only be saved. {size} like 2.4 MB, {type} like ZIP.",
 ]
-text = ""
+text = "{size} · {type} · zum Speichern tippen"
 
 [t_f2a6b4281c]
 en = "Downloading · {done} of {size}"
@@ -8203,7 +8205,7 @@ where = [
   "android conv_file_downloading: Second line of a file that is downloading. {done} and {size} are file sizes such as 2.4 MB.",
   "ios chat_file_downloading: Sub line of a file bubble while downloading. {done} is the part received, {size} the whole, like 1.2 MB.",
 ]
-text = ""
+text = "Lädt herunter · {done} von {size}"
 
 [t_4e07aad658]
 en = "{size} · paused — waiting for {first} to come online"
@@ -8211,7 +8213,7 @@ where = [
   "android conv_file_paused: Second line of a file whose download waits for the contact. {size} is the file size, {first} their first name.",
   "ios chat_file_paused: Sub line of a file bubble whose transfer is paused. {size} like 2.4 MB, {first} the other person's first name.",
 ]
-text = ""
+text = "{size} · pausiert – wartet, bis {first} online ist"
 
 [t_bb35886daf]
 en = "{size} · starting…"
@@ -8219,7 +8221,7 @@ where = [
   "android conv_file_starting: Second line of a file whose download was just requested. {size} is the file size.",
   "ios chat_file_starting: Sub line of a file bubble right after tapping download. {size} like 2.4 MB.",
 ]
-text = ""
+text = "{size} · startet…"
 
 [t_2b4dc82020]
 en = "{size} · couldn’t download — tap to retry"
@@ -8227,7 +8229,7 @@ where = [
   "android conv_file_failed: Second line of a file whose download failed. {size} is the file size.",
   "ios chat_file_failed: Sub line of a file bubble whose download failed. {size} like 2.4 MB.",
 ]
-text = ""
+text = "{size} · Download hat nicht geklappt – zum Wiederholen tippen"
 
 [t_744bf11a93]
 en = "{size} · not downloaded"
@@ -8235,7 +8237,7 @@ where = [
   "android conv_file_not_downloaded: Second line of a file that has not been downloaded. {size} is the file size.",
   "ios chat_file_remote: Sub line of a file bubble not downloaded yet. {size} like 2.4 MB.",
 ]
-text = ""
+text = "{size} · nicht heruntergeladen"
 
 [t_e89f516efe]
 en = "Download {name}"
@@ -8243,7 +8245,7 @@ where = [
   "android conv_download_name: Screen-reader label of the download button on a file. {name} is the file name.",
   "ios chat_file_download_a11y: Accessibility label of the download button on a file. {name} is the file name.",
 ]
-text = ""
+text = "{name} herunterladen"
 
 [t_07617323a2]
 en = "Cancel download of {name}"
@@ -8251,7 +8253,7 @@ where = [
   "android conv_cancel_download_name: Screen-reader label of the cancel button on a file download. {name} is the file name.",
   "ios chat_file_cancel_a11y: Accessibility label of the cancel button on a file download. {name} is the file name.",
 ]
-text = ""
+text = "Download von {name} abbrechen"
 
 [t_9da4610fa6]
 en = "Save {name} to phone"
@@ -8259,7 +8261,7 @@ where = [
   "android conv_save_name_to_phone: Screen-reader label of the save button on a file. {name} is the file name.",
   "ios chat_file_save_a11y: Accessibility label of the save button on a file. {name} is the file name.",
 ]
-text = ""
+text = "{name} aufs Handy speichern"
 
 [t_879708511c]
 en = "Saved {time} · on your devices"
@@ -8267,7 +8269,7 @@ where = [
   "android conv_info_saved: Top line of the message sheet in the 'You' chat. {time} is the clock time.",
   "ios chat_head_saved: First line of the message sheet for a saved item. {time} is the clock time.",
 ]
-text = ""
+text = "Gespeichert {time} · auf deinen Geräten"
 
 [t_024fed3498]
 en = "Received {time}"
@@ -8275,7 +8277,7 @@ where = [
   "android conv_info_received: Top line of the message sheet for a message you received. {time} is the clock time.",
   "ios chat_head_received: First line of the message sheet for a received message. {time} is the clock time.",
 ]
-text = ""
+text = "Empfangen {time}"
 
 [t_88da3750d0]
 en = "Sent {time} · read on {first}’s device"
@@ -8283,7 +8285,7 @@ where = [
   "android conv_info_sent_read: Top line of the message sheet for a sent message that was read. {time} is the clock time, {first} the contact's first name.",
   "ios chat_head_read: First line of the message sheet for a read message. {time} clock time, {first} the other person's first name.",
 ]
-text = ""
+text = "Gesendet {time} · gelesen auf dem Gerät von {first}"
 
 [t_a4079ed593]
 en = "Sent {time} · on {first}’s device"
@@ -8291,7 +8293,7 @@ where = [
   "android conv_info_sent_delivered: Top line of the message sheet for a delivered message. {time} is the clock time, {first} the contact's first name.",
   "ios chat_head_delivered: First line of the message sheet for a delivered message. {time} clock time, {first} first name.",
 ]
-text = ""
+text = "Gesendet {time} · auf dem Gerät von {first}"
 
 [t_f03bc2cf6f]
 en = "Sent {time} · only on this phone so far"
@@ -8299,7 +8301,7 @@ where = [
   "android conv_info_sent_only_here: Top line of the message sheet for a message that has only reached this phone. {time} is the clock time.",
   "ios chat_head_only_here: First line of the message sheet for a message only on this phone. {time} clock time.",
 ]
-text = ""
+text = "Gesendet {time} · bisher nur auf diesem Handy"
 
 [t_a0c3acc9a5]
 en = "Sent {time} · waiting for {first}’s device to confirm"
@@ -8307,21 +8309,21 @@ where = [
   "android conv_info_sent_waiting: Top line of the message sheet for a message not yet confirmed. {time} is the clock time, {first} the contact's first name.",
   "ios chat_head_sent: First line of the message sheet for a sent message without confirmation. {time} clock time, {first} first name.",
 ]
-text = ""
+text = "Gesendet {time} · wartet auf Bestätigung vom Gerät von {first}"
 
 [t_914cbd7944]
 en = "Read · signed by {name} · device {device}"
 where = [
   "android conv_proof_read: Line in the message sheet about a signed read receipt. {name} is the contact's first name, {device} a short device id.",
 ]
-text = ""
+text = "Gelesen · signiert von {name} · Gerät {device}"
 
 [t_6a60dbc25c]
 en = "Delivered · signed by {name} · device {device}"
 where = [
   "android conv_proof_delivered: Line in the message sheet about a signed delivery receipt. {name} is the contact's first name, {device} a short device id.",
 ]
-text = ""
+text = "Zugestellt · signiert von {name} · Gerät {device}"
 
 [t_a713a48f0b]
 en = "Copy text"
@@ -8329,7 +8331,7 @@ where = [
   "android conv_copy_text: Action in the message sheet that copies the message text.",
   "ios chat_copy_text: Action in the message sheet that copies the message text.",
 ]
-text = ""
+text = "Text kopieren"
 
 [t_9284e3b1e5]
 en = "Save to phone"
@@ -8338,7 +8340,7 @@ where = [
   "android file_save_to_phone: Button in the document viewer that saves the file to the phone.",
   "ios chat_save_to_phone: Action in the message sheet that saves the file to the phone.",
 ]
-text = ""
+text = "Aufs Handy speichern"
 
 [t_be25d3e36d]
 en = "Delete on all your devices"
@@ -8346,7 +8348,7 @@ where = [
   "android conv_delete_self: Action in the message sheet of the 'You' chat that deletes the note everywhere.",
   "ios chat_delete_self: Action in the message sheet for a saved item: deletes it everywhere.",
 ]
-text = ""
+text = "Auf all deinen Geräten löschen"
 
 [t_123da13187]
 en = "Delete for both of you"
@@ -8354,7 +8356,7 @@ where = [
   "android conv_delete_both: Action in the message sheet that deletes your message for you and the contact.",
   "ios chat_delete_both: Action in the message sheet: deletes the message for both people.",
 ]
-text = ""
+text = "Für euch beide löschen"
 
 [t_15ca626483]
 en = "Edits and deletes reach your other devices when they’re online."
@@ -8362,7 +8364,7 @@ where = [
   "android conv_edits_reach_self: Hint at the bottom of the message sheet in the 'You' chat.",
   "ios chat_sheet_hint_self: Hint at the bottom of the message sheet for a saved item.",
 ]
-text = ""
+text = "Änderungen und Löschungen erreichen deine anderen Geräte, wenn sie online sind."
 
 [t_7c20d84ae7]
 en = "Edits and deletes reach {first}’s phone the next time you’re both online."
@@ -8370,7 +8372,7 @@ where = [
   "android conv_edits_reach_peer: Hint at the bottom of the message sheet. {first} is the contact's first name.",
   "ios chat_sheet_hint: Hint at the bottom of the message sheet. {first} is the other person's first name.",
 ]
-text = ""
+text = "Änderungen und Löschungen erreichen das Handy von {first}, wenn ihr das nächste Mal beide online seid."
 
 [t_6a9b6c8bea]
 en = "Save for yourself"
@@ -8378,7 +8380,7 @@ where = [
   "android conv_attach_title_self: Title of the attach sheet in the 'You' chat.",
   "ios chat_attach_title_self: Title of the attach sheet in the saved-items chat.",
 ]
-text = ""
+text = "Für dich speichern"
 
 [t_2694545b6b]
 en = "Send to {first}"
@@ -8386,7 +8388,7 @@ where = [
   "android conv_attach_title: Title of the attach sheet. {first} is the contact's first name.",
   "ios chat_attach_title: Title of the attach sheet. {first} is the other person's first name.",
 ]
-text = ""
+text = "An {first} senden"
 
 [t_c1f6b1c17b]
 en = "Photos & videos"
@@ -8394,7 +8396,7 @@ where = [
   "android conv_attach_photos: Option in the attach sheet that picks from the gallery.",
   "ios chat_attach_photos: Option in the attach sheet: pick photos and videos.",
 ]
-text = ""
+text = "Fotos & Videos"
 
 [t_50ad995a3d]
 en = "Camera"
@@ -8405,7 +8407,7 @@ where = [
   "ios call_control_camera: Label and caption of the camera button.",
   "desktop common_camera: Shared label, used in several places (call_screen, profile).",
 ]
-text = ""
+text = "Kamera"
 
 [t_0587e6e5d5]
 en = "File"
@@ -8415,7 +8417,7 @@ where = [
   "ios chat_attach_file: Option in the attach sheet: pick a file.",
   "ios chat_viewer_file: Title in the file viewer when the file has no name.",
 ]
-text = ""
+text = "Datei"
 
 [t_d68cce602d]
 en = "Files stay encrypted on your devices and copy to the others when they’re online. Up to 2 GB each."
@@ -8423,7 +8425,7 @@ where = [
   "android conv_attach_hint_self: Hint at the bottom of the attach sheet in the 'You' chat.",
   "ios chat_attach_hint_self: Hint in the attach sheet of the saved-items chat.",
 ]
-text = ""
+text = "Dateien bleiben auf deinen Geräten verschlüsselt und werden auf die anderen kopiert, wenn sie online sind. Bis zu 2 GB pro Datei."
 
 [t_3ed613c33d]
 en = "Files are end-to-end encrypted. Up to 2 GB each. Both of you need to be online while it transfers."
@@ -8431,14 +8433,14 @@ where = [
   "android conv_attach_hint: Hint at the bottom of the attach sheet.",
   "ios chat_attach_hint: Hint in the attach sheet.",
 ]
-text = ""
+text = "Dateien sind Ende-zu-Ende-verschlüsselt. Bis zu 2 GB pro Datei. Ihr müsst beide online sein, solange sie übertragen wird."
 
 [t_93d3c32a03]
 en = "Kept encrypted inside Tinline. “Save to phone” copies it to your gallery, where other apps can see it."
 where = [
   "android conv_viewer_note: Note at the bottom of the full-screen photo viewer. 'Save to phone' refers to the viewer's save button.",
 ]
-text = ""
+text = "Bleibt verschlüsselt in Tinline. „Aufs Handy speichern“ kopiert es in deine Galerie, wo andere Apps es sehen können."
 
 [t_9bfc169a37]
 en = "Download voice message"
@@ -8446,7 +8448,7 @@ where = [
   "android conv_voice_download: Screen-reader label of the download button on a voice message that has not been downloaded.",
   "ios chat_voice_download: Accessibility label of the button on a voice message that is not downloaded.",
 ]
-text = ""
+text = "Sprachnachricht herunterladen"
 
 [t_ed65be7240]
 en = "Voice message loading"
@@ -8454,21 +8456,21 @@ where = [
   "android conv_voice_loading: Screen-reader label of the play button on a voice message that is loading.",
   "ios chat_voice_loading: Accessibility label of a voice message that is loading.",
 ]
-text = ""
+text = "Sprachnachricht lädt"
 
 [t_1591e88140]
 en = "You blocked {name} · {date}"
 where = [
   "android conv_you_blocked_date: Small pill under the last message when you blocked the contact. {name} is their first name, {date} when.",
 ]
-text = ""
+text = "Du hast {name} blockiert · {date}"
 
 [t_e956596e00]
 en = "Signed by {name} · {date}"
 where = [
   "android conv_signed_by: Line in the notice that the contact blocked you. {name} is their first name, {date} when.",
 ]
-text = ""
+text = "Signiert von {name} · {date}"
 
 [t_70af75ba10]
 en = "Send voice message"
@@ -8476,7 +8478,7 @@ where = [
   "android voice_send: Screen-reader label of the mic button once a recording is locked.",
   "ios chat_voice_send: Accessibility label of the mic button once recording is locked: sends the voice message.",
 ]
-text = ""
+text = "Sprachnachricht senden"
 
 [t_1773cfff61]
 en = "Recording, release to send"
@@ -8484,7 +8486,7 @@ where = [
   "android voice_recording: Screen-reader label of the mic button while recording.",
   "ios chat_voice_recording: Accessibility label of the mic button while recording.",
 ]
-text = ""
+text = "Aufnahme läuft, zum Senden loslassen"
 
 [t_0d88cc97a5]
 en = "Hold to record a voice message"
@@ -8492,7 +8494,7 @@ where = [
   "android voice_hold: Screen-reader label of the mic button when idle.",
   "ios chat_voice_hold: Accessibility label of the mic button at rest.",
 ]
-text = ""
+text = "Gedrückt halten für eine Sprachnachricht"
 
 [t_c9b6965045]
 en = "Discard recording"
@@ -8500,7 +8502,7 @@ where = [
   "android voice_discard: Screen-reader label of the trash button on a locked recording.",
   "ios chat_voice_discard: Accessibility label of the trash button while a voice message is being recorded hands-free.",
 ]
-text = ""
+text = "Aufnahme verwerfen"
 
 [t_710621fa84]
 en = "Slide to cancel"
@@ -8508,7 +8510,7 @@ where = [
   "android voice_slide_cancel: Hint in the recording bar while the mic button is held.",
   "ios chat_voice_slide_cancel: Hint beside the recording timer: slide left to cancel the voice message.",
 ]
-text = ""
+text = "Zum Abbrechen wischen"
 
 [t_83f9f53fbf]
 en = "Pause voice message"
@@ -8516,7 +8518,7 @@ where = [
   "android voice_pause: Screen-reader label of the play button while a voice message plays.",
   "ios chat_voice_pause: Accessibility label of the pause button on a voice message bubble.",
 ]
-text = ""
+text = "Sprachnachricht pausieren"
 
 [t_73e9960d09]
 en = "Play voice message"
@@ -8524,7 +8526,7 @@ where = [
   "android voice_play: Screen-reader label of the play button of a voice message.",
   "ios chat_voice_play: Accessibility label of the play button on a voice message bubble.",
 ]
-text = ""
+text = "Sprachnachricht abspielen"
 
 [t_3ecf5b544d]
 en = "Voice message waveform, tap to seek"
@@ -8532,7 +8534,7 @@ where = [
   "android voice_waveform: Screen-reader label of the waveform of a voice message.",
   "ios chat_voice_waveform: Accessibility label of the voice message waveform.",
 ]
-text = ""
+text = "Wellenform der Sprachnachricht, zum Springen tippen"
 
 [t_ca71d58a9e]
 en = "This PDF is password-protected, so Tinline can’t show it. Save it to open it in another app."
@@ -8540,7 +8542,7 @@ where = [
   "android file_pdf_protected: Message in the document viewer for a PDF that needs a password.",
   "ios chat_viewer_pdf_locked: Shown in the file viewer when a PDF needs a password.",
 ]
-text = ""
+text = "Dieses PDF ist passwortgeschützt, deshalb kann Tinline es nicht zeigen. Speichere es, um es in einer anderen App zu öffnen."
 
 [t_c685acd02b]
 en = "Tinline can’t read this PDF. It may be damaged. You can still save it."
@@ -8548,7 +8550,7 @@ where = [
   "android file_pdf_unreadable: Message in the document viewer for a PDF that cannot be read.",
   "ios chat_viewer_pdf_damaged: Shown in the file viewer when a PDF cannot be read.",
 ]
-text = ""
+text = "Tinline kann dieses PDF nicht lesen. Vielleicht ist es beschädigt. Speichern kannst du es trotzdem."
 
 [t_d128ff7b39]
 en = "Couldn’t open that file."
@@ -8556,7 +8558,7 @@ where = [
   "android file_open_failed: Message in the document viewer when a file could not be opened.",
   "ios chat_err_open_file: Toast when a file cannot be opened.",
 ]
-text = ""
+text = "Die Datei ließ sich nicht öffnen."
 
 [t_209f5b2f84]
 en = "Page {page} of {total}"
@@ -8564,14 +8566,14 @@ where = [
   "android file_page_of: Subtitle in the PDF viewer. {page} is the current page, {total} the page count.",
   "ios chat_viewer_page: Subtitle of the PDF viewer. {page} is the current page number, {total} the page count.",
 ]
-text = ""
+text = "Seite {page} von {total}"
 
 [t_3b42eb965f]
 en = "Page {number}"
 where = [
   "android file_page_n: Screen-reader label of one page image in the PDF viewer.",
 ]
-text = ""
+text = "Seite {number}"
 
 [t_40bbed517a]
 en = "This file is too big to show here. Save it to open it in another app."
@@ -8579,7 +8581,7 @@ where = [
   "android file_too_big: Message in the document viewer for a text file that is too large.",
   "ios chat_viewer_too_big: Shown in the file viewer when a text file is too large.",
 ]
-text = ""
+text = "Diese Datei ist zu groß, um sie hier zu zeigen. Speichere sie, um sie in einer anderen App zu öffnen."
 
 [t_08c555cb9b]
 en = "This doesn’t look like a text file. Save it to open it in another app."
