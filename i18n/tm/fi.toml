@@ -11378,7 +11378,7 @@ where = [
   "android contacts_waiting_for_you: Section title for contact requests waiting for my answer.",
   "ios shell_contacts_waiting_you: Section header on the Contacts tab: people who asked to be the user’s contact.",
 ]
-text = "Odottavat sinua"
+text = "Odottavat vastaustasi"
 
 [t_104927efde]
 en = "Wants to add you as a contact"
@@ -11404,7 +11404,7 @@ where = [
   "android contacts_waiting_for_them: Section title for requests I sent that wait for an answer.",
   "ios shell_contacts_waiting_them: Section header on the Contacts tab: requests the user sent.",
 ]
-text = "Odottavat heitä"
+text = "Odottavat heidän vastaustaan"
 
 [t_3b8261f1af]
 en = "No one called “{query}” in your contacts."
@@ -12109,70 +12109,70 @@ en = "Synced {ago}"
 where = [
   "ios devices_row_synced: Device row subtitle; {ago} is a relative time such as 5 min ago.",
 ]
-text = ""
+text = "Synkronoitu {ago}"
 
 [t_bcd7a64a42]
 en = "Welcome back, "
 where = [
   "ios unlock_welcome_prefix: Start of the title when the nickname is a tappable switcher; the nickname button follows directly after it.",
 ]
-text = ""
+text = "Tervetuloa takaisin, "
 
 [t_19852ede17]
 en = "{name}, switch identity"
 where = [
   "ios unlock_switch_identity: Accessibility label of the nickname switcher; {name} is the nickname.",
 ]
-text = ""
+text = "{name}, vaihda identiteettiä"
 
 [t_250f279f76]
 en = "{name} goes offline on this phone. Calls to {name} will ring only on your other linked devices until you switch back."
 where = [
   "ios unlock_switch_body: Body of the switch-account confirmation; {name} is the current account's name.",
 ]
-text = ""
+text = "{name} siirtyy pois verkosta tällä puhelimella. Puhelut tilille {name} soivat vain muilla linkitetyillä laitteillasi, kunnes vaihdat takaisin."
 
 [t_049066acc6]
 en = "{count} of 24"
 where = [
   "ios restore_progress: Counter of recovery words typed so far; {count} is how many are filled.",
 ]
-text = ""
+text = "{count}/24"
 
 [t_d552b6e2ef]
 en = "Word {count}"
 where = [
   "ios restore_word_n: Accessibility label of one recovery word field; {count} is its position, 1 to 24.",
 ]
-text = ""
+text = "Sana {count}"
 
 [t_f6a2aab1ac]
 en = "Expires in {minutes}:{seconds} · works once"
 where = [
   "ios link_expires: Countdown under the QR code; {minutes} and {seconds} are digits, seconds with two digits.",
 ]
-text = ""
+text = "Vanhenee: {minutes}:{seconds} · toimii kerran"
 
 [t_15a6286cb0]
 en = "Link code {digits}"
 where = [
   "ios link_code_label: Accessibility label of the six-digit code; {digits} are the digits separated by spaces.",
 ]
-text = ""
+text = "Linkityskoodi {digits}"
 
 [t_0f674e5ea2]
 en = "{name} wants to join your account. It should be showing the same six digits as below."
 where = [
   "ios link_match_body: Body when comparing codes; {name} is the new device's name, shown in bold.",
 ]
-text = ""
+text = "{name} haluaa liittyä tiliisi. Sen pitäisi näyttää samat kuusi numeroa kuin alla."
 
 [t_d5dd177ee1]
 en = "Approving sends your {phrase} to {name}. It becomes a full copy of you: it can read your chats and act as you. Approve only a device you hold."
 where = [
   "ios link_approve_body: Warning on the approval step; {phrase} is the bold words recovery phrase and {name} is the new device's name.",
 ]
-text = ""
+text = "Hyväksyminen lähettää {phrase} laitteelle {name}. Siitä tulee täysi kopio sinusta: se voi lukea keskustelusi ja toimia sinuna. Hyväksy vain laite, joka on hallussasi."
 
 [t_9fa27bd052]
 en = "Linked to {name}"
@@ -12180,56 +12180,56 @@ where = [
   "ios onboarding_linked_title: Title after linking; {name} is the other device's name or the words your other device.",
   "desktop link_linked_to: Desktop, linking devices (in link_view.rs, link_secure_screen). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Linkitetty: {name}"
 
 [t_c621599db6]
 en = "Your contacts and chats are arriving from {name} and will keep in step on both."
 where = [
   "ios onboarding_linked_lead: Explanation after linking; {name} is the other device's name or the words your other device.",
 ]
-text = ""
+text = "Yhteystietosi ja keskustelusi saapuvat laitteelta {name} ja pysyvät ajan tasalla molemmissa."
 
 [t_9fbe4c80c9]
 en = "By continuing, you agree to the [Terms of Use]({terms_url}) and have read the [Privacy Policy]({privacy_url})."
 where = [
   "ios onboarding_terms_consent: Consent line above the I agree button. Markdown links: keep the [text](url) shape, translate only the link text; {terms_url} and {privacy_url} are web addresses.",
 ]
-text = ""
+text = "Jatkamalla hyväksyt [käyttöehdot]({terms_url}) ja vahvistat lukeneesi [tietosuojakäytännön]({privacy_url})."
 
 [t_3f7e7c2a80]
 en = "{name} allowed"
 where = [
   "ios onboarding_perm_allowed: Accessibility label of the check mark on an allowed permission; {name} is the permission title.",
 ]
-text = ""
+text = "Sallittu: {name}"
 
 [t_d7cc9318c9]
 en = "Allow {name}"
 where = [
   "ios onboarding_allow_a11y: Accessibility label of the Allow button; {name} is the permission title in lower case.",
 ]
-text = ""
+text = "Salli: {name}"
 
 [t_1c63fc0970]
 en = "Hide {name}"
 where = [
   "ios shellkit_hide_field: Accessibility label of the eye button on a secret field; {name} is the field label in lower case.",
 ]
-text = ""
+text = "Piilota {name}"
 
 [t_53251367a9]
 en = "Show {name}"
 where = [
   "ios shellkit_show_field: Accessibility label of the eye button on a secret field; {name} is the field label in lower case.",
 ]
-text = ""
+text = "Näytä {name}"
 
 [t_c54e35554c]
 en = "No account"
 where = [
   "ios shell_flow_no_account: Error shown when an account flow finds no account.",
 ]
-text = ""
+text = "Ei tiliä"
 
 [t_78b34052d8]
 en = "Account changed"
@@ -12237,49 +12237,49 @@ where = [
   "ios shell_flow_account_changed: Error when the selected account changed while a flow was running.",
   "desktop profile_account_changed: Desktop, profile and settings (in profile_ui.rs, read_profile).",
 ]
-text = ""
+text = "Tili vaihtui"
 
 [t_02df4dcde7]
 en = "You were removed after 3 admin flags"
 where = [
   "ios shell_group_sys_removed_you: Group chat system line. The user was removed after being flagged by admins.",
 ]
-text = ""
+text = "Sinut poistettiin 3 ylläpitäjän merkinnän jälkeen"
 
 [t_d6d995c201]
 en = "{name} was removed after 3 admin flags"
 where = [
   "ios shell_group_sys_removed: Group chat system line. {name} is the removed member.",
 ]
-text = ""
+text = "{name} poistettiin 3 ylläpitäjän merkinnän jälkeen"
 
 [t_46bad378f1]
 en = "Word {n} isn’t in the recovery word list. Check the spelling."
 where = [
   "ios shell_restore_bad_one: Restore screen message under the 24 word boxes. {n} is the word’s position (1 to 24).",
 ]
-text = ""
+text = "Sana {n} ei ole palautussanojen listassa. Tarkista kirjoitusasu."
 
 [t_79e3b1b3e9]
 en = "Word {n} and {more} more aren’t in the recovery word list. Check the spelling."
 where = [
   "ios shell_restore_bad_many: Restore screen message. {n} is the first wrong word’s position, {more} how many other words are also wrong.",
 ]
-text = ""
+text = "Sana {n} ja {more} muuta eivät ole palautussanojen listassa. Tarkista kirjoitusasu."
 
 [t_814973bf24]
 en = "{sub} from {name}"
 where = [
   "ios shell_ring_a11y: Screen reader label of the ringing banner. {sub} is “Incoming call” or similar, {name} the caller.",
 ]
-text = ""
+text = "{sub}: {name}"
 
 [t_4ad1077177]
 en = "{count} waiting"
 where = [
   "ios shell_tab_waiting: Screen reader value of the Contacts tab badge. {count} requests are waiting.",
 ]
-text = ""
+text = "{count} odottaa"
 
 [t_cd6ad8304d]
 en = "Then go to Settings › Tinline › Microphone and allow it."
@@ -12287,91 +12287,91 @@ where = [
   "ios shell_mic_hint: Hint with the path to the microphone permission in iOS Settings.",
   "ios call_mic_needed_hint: Hint under the Open settings button on the microphone permission screen.",
 ]
-text = ""
+text = "Siirry sitten kohtaan Asetukset › Tinline › Mikrofoni ja salli se."
 
 [t_746ec1e8e6]
 en = "{what} · {duration}"
 where = [
   "ios shell_calls_what_duration: Call row second line. {what} is the call outcome (Missed, Outgoing…), {duration} the call length.",
 ]
-text = ""
+text = "{what} · {duration}"
 
 [t_eb75921c94]
 en = "{name}, {what} call, {stamp}. {action}"
 where = [
   "ios shell_calls_row_a11y: Screen reader label of a call row. {name} contact, {what} outcome (Missed…), {stamp} time, {action} “Call” or “Can’t call”.",
 ]
-text = ""
+text = "{name}, {what} puhelu, {stamp}. {action}"
 
 [t_bbf9b4c4e0]
 en = "{name}, {what} call, {duration}, {stamp}. {action}"
 where = [
   "ios shell_calls_row_a11y_duration: Screen reader label of an answered call row. {name} contact, {what} outcome, {duration} call length, {stamp} time, {action} “Call” or “Can’t call”.",
 ]
-text = ""
+text = "{name}, {what} puhelu, {duration}, {stamp}. {action}"
 
 [t_6c3d485347]
 en = "{name}, {what}, {stamp}. Start or join a call"
 where = [
   "ios shell_calls_group_row_a11y: Screen reader label of a group call row. {name} group, {what} summary, {stamp} time.",
 ]
-text = ""
+text = "{name}, {what}, {stamp}. Aloita puhelu tai liity siihen"
 
 [t_910b1a6725]
 en = "{name}, {kind}"
 where = [
   "ios shell_search_tile_a11y: Screen reader label of a search result tile. {name} is the person or group, {kind} what it is.",
 ]
-text = ""
+text = "{name}, {kind}"
 
 [t_b48b8048af]
 en = "{name}: "
 where = [
   "ios shell_search_author_prefix: Prefix of a message search hit snippet: who wrote it. {name} is the author’s first name or “You”. Keep the trailing space.",
 ]
-text = ""
+text = "{name}: "
 
 [t_720d4af996]
 en = "WHAT {name} CAN DO"
 where = [
   "ios people_detail_can_do: Contact page section header, upper case. {name} is the contact’s first name in capitals.",
 ]
-text = ""
+text = "MITÄ {name} VOI TEHDÄ"
 
 [t_119b58dbe5]
 en = "CALLS WITH {name}"
 where = [
   "ios people_detail_calls_with: Contact page section header, upper case. {name} is the contact’s name in capitals.",
 ]
-text = ""
+text = "PUHELUT: {name}"
 
 [t_fdce735c0d]
 en = "{step} of {total}"
 where = [
   "ios people_step_of: Sign-up progress text. {step} is the current step, {total} how many steps there are.",
 ]
-text = ""
+text = "{step}/{total}"
 
 [t_5e0ddcdd04]
 en = "Setup progress, step {step} of {total}"
 where = [
   "ios people_step_a11y: Screen reader label of sign-up progress. {step} and {total} as above.",
 ]
-text = ""
+text = "Käyttöönoton edistyminen, vaihe {step}/{total}"
 
 [t_6230218701]
 en = "Setup progress, step {step} of {total}: {label}"
 where = [
   "ios people_step_a11y_label: Screen reader label of sign-up progress with the step’s name. {step}, {total}, and {label} the name of the step.",
 ]
-text = ""
+text = "Käyttöönoton edistyminen, vaihe {step}/{total}: {label}"
 
 [t_884be25149]
 en = "That picture is {w} × {h} pixels. Tinline accepts up to {max} pixels on a side."
 where = [
   "ios people_pic_too_large_px: Picture refused: too many pixels. {w} and {h} are its width and height, {max} the limit per side.",
 ]
-text = ""
+text = "Kuvan koko on {w} × {h} pikseliä. Tinline hyväksyy enintään {max} pikseliä sivua kohden."
 
 [t_77c8c02847]
 en = "Busy is not available yet. Your call settings are unchanged."
@@ -12379,14 +12379,14 @@ where = [
   "ios people_busy_unsupported: Shown when the user picks Busy, which the call path does not support yet.",
   "desktop profile_busy_unsupported: Shown when the Busy availability option is not available.",
 ]
-text = ""
+text = "Varattu-tila ei ole vielä käytettävissä. Puheluasetuksesi ovat ennallaan."
 
 [t_767555f71c]
 en = "Drag to move the picture. Use the slider to zoom."
 where = [
   "ios people_crop_help: Help text under the crop area.",
 ]
-text = ""
+text = "Siirrä kuvaa vetämällä. Zoomaa liukusäätimellä."
 
 [t_32daee4811]
 en = "{bytes} of {limit} bytes"
@@ -12394,49 +12394,49 @@ where = [
   "ios people_ui_bytes: Counter under a profile field. {bytes} is how many bytes are used, {limit} the maximum.",
   "desktop profile_of_bytes: Desktop, profile and settings (in profile_view.rs, field_row_inner). {bytes} is a value filled in by the app. {limit} is a value filled in by the app.",
 ]
-text = ""
+text = "{bytes}/{limit} tavua"
 
 [t_930ce5bfa9]
 en = "Open {label}: {url}"
 where = [
   "ios people_ui_open_a11y: Screen reader label of the button that opens a link field. {label} is the field name, {url} the shortened address.",
 ]
-text = ""
+text = "Avaa {label}: {url}"
 
 [t_10b961c673]
 en = "Microphone permission needed to place a call"
 where = [
   "ios call_mic_permission_needed_place: Error shown when the user tries to place a call without microphone permission.",
 ]
-text = ""
+text = "Soittamiseen tarvitaan mikrofonin lupa"
 
 [t_8b860e25a4]
 en = "About this call. {word} signal, direct."
 where = [
   "ios call_about_signal_direct: Accessibility label of the info button. {word} is a signal strength word such as Weak or Strong.",
 ]
-text = ""
+text = "Tietoja tästä puhelusta. Signaali: {word}, suora."
 
 [t_09db209730]
 en = "About this call. {word} signal, relayed."
 where = [
   "ios call_about_signal_relayed: Accessibility label of the info button. {word} is a signal strength word such as Weak or Strong.",
 ]
-text = ""
+text = "Tietoja tästä puhelusta. Signaali: {word}, välitetty."
 
 [t_410bc502cd]
 en = "{word} signal · Direct"
 where = [
   "ios call_about_headline_direct: Bold headline on the call details card. {word} is a signal strength word such as Weak or Strong.",
 ]
-text = ""
+text = "Signaali: {word} · Suora"
 
 [t_537090564e]
 en = "{word} signal · Relayed"
 where = [
   "ios call_about_headline_relayed: Bold headline on the call details card. {word} is a signal strength word such as Weak or Strong.",
 ]
-text = ""
+text = "Signaali: {word} · Välitetty"
 
 [t_57f425a97e]
 en = "Auto"
@@ -12444,14 +12444,14 @@ where = [
   "ios call_quality_auto: Video quality setting: let Tinline choose.",
   "desktop common_auto: Shared label, used in several places (call_screen, profile).",
 ]
-text = ""
+text = "Automaattinen"
 
 [t_7538517c8f]
 en = "Prefer HD"
 where = [
   "ios call_quality_prefer_hd: Video quality setting: prefer sharper HD video.",
 ]
-text = ""
+text = "Suosi HD-laatua"
 
 [t_aab4f778af]
 en = "HD paused · weak connection"
@@ -12459,7 +12459,7 @@ where = [
   "ios call_hd_paused: Short note when HD is on but paused because the connection is weak.",
   "desktop video_hd_paused_weak_connection: Desktop, video (in camera.rs, hd_line).",
 ]
-text = ""
+text = "HD tauolla · heikko yhteys"
 
 [t_2c18ab3299]
 en = "Sharper video on"
@@ -12467,560 +12467,560 @@ where = [
   "ios call_hd_on: Short note under the call header after turning the HD chip on.",
   "desktop video_sharper_video_on: Desktop, video (in camera.rs, hd_line).",
 ]
-text = ""
+text = "Terävämpi video päällä"
 
 [t_7cb3c69eef]
 en = "On mobile data, HD uses more · tap HD"
 where = [
   "ios call_hd_metered: Note shown once per call when HD is on over mobile data; \"tap HD\" refers to the HD chip.",
 ]
-text = ""
+text = "Mobiilidatalla HD kuluttaa enemmän · napauta HD"
 
 [t_fb52348fb1]
 en = "HD · {size}"
 where = [
   "ios call_resolution_hd: Video size label for HD video. {size} is width×height such as 1280×720.",
 ]
-text = ""
+text = "HD · {size}"
 
 [t_7cda722e2e]
 en = "{name} is calling the group {group}"
 where = [
   "ios call_group_announce_ringing_label: Accessibility label of the group call announcement while ringing. {name} is the member, {group} the group.",
 ]
-text = ""
+text = "{name} soittaa ryhmälle {group}"
 
 [t_31bef3871e]
 en = "{name} started a call in {group}"
 where = [
   "ios call_group_announce_started_label: Accessibility label of the group call announcement. {name} is the member, {group} the group.",
 ]
-text = ""
+text = "{name} aloitti puhelun ryhmässä {group}"
 
 [t_b616d54886]
 en = "Ends your call with {name}"
 where = [
   "ios call_waiting_ends: Small line under the call-waiting buttons. {name} is the person in my current call.",
 ]
-text = ""
+text = "Lopettaa puhelusi: {name}"
 
 [t_2ff42dbfce]
 en = "{word} signal"
 where = [
   "ios call_badge_signal: Badge on the call-ended screen. {word} is a signal strength word such as Weak or Strong.",
 ]
-text = ""
+text = "Signaali: {word}"
 
 [t_272be16cd4]
 en = "Couldn’t reach them"
 where = [
   "ios call_unreachable_title_blank: Title when a call could not connect and the contact has no name.",
 ]
-text = ""
+text = "Häntä ei tavoitettu"
 
 [t_f4619634b2]
 en = "They may be offline, out of signal, or not taking calls right now. Tinline can’t leave messages."
 where = [
   "ios call_unreachable_body_blank: Explanation when a call could not connect and the contact has no name.",
 ]
-text = ""
+text = "Hän voi olla poissa verkosta, kuuluvuusalueen ulkopuolella tai ei juuri nyt ota puheluita vastaan. Tinline ei voi jättää viestejä."
 
 [t_d70797cc69]
 en = "A device name is 1 to 64 characters."
 where = [
   "desktop common_a_device_name_is: Shared label, used in several places (app, link).",
 ]
-text = ""
+text = "Laitteen nimessä on 1–64 merkkiä."
 
 [t_4a7397331d]
 en = "Audio devices"
 where = [
   "desktop common_audio_devices: Shared label, used in several places (profile, view).",
 ]
-text = ""
+text = "Äänilaitteet"
 
 [t_309ecff017]
 en = "Calls & availability"
 where = [
   "desktop common_calls_availability: Shared label, used in several places (profile, view).",
 ]
-text = ""
+text = "Puhelut ja tavoitettavuus"
 
 [t_164b84d7d3]
 en = "Copy recovery phrase"
 where = [
   "desktop common_copy_recovery_phrase: Shared label, used in several places (view).",
 ]
-text = ""
+text = "Kopioi palautussanat"
 
 [t_85338b281d]
 en = "Decoder for their video"
 where = [
   "desktop common_decoder_for_their_video: Shared label, used in several places (call_screen, profile).",
 ]
-text = ""
+text = "Hänen videonsa purkaja"
 
 [t_0216ca7dcd]
 en = "Give this computer a name of 1 to 64 characters."
 where = [
   "desktop common_give_this_computer_a: Shared label, used in several places (app, link).",
 ]
-text = ""
+text = "Anna tälle tietokoneelle 1–64 merkin pituinen nimi."
 
 [t_6d8e87ae5e]
 en = "Hosting"
 where = [
   "desktop common_hosting: Shared label, used in several places (profile, view).",
 ]
-text = ""
+text = "Isännöinti"
 
 [t_0734135924]
 en = "Messages only: calling needs their permission"
 where = [
   "desktop common_messages_only_calling_needs: Shared label, used in several places (chat, view).",
 ]
-text = ""
+text = "Vain viestit: soittaminen vaatii hänen lupansa"
 
 [t_8e994a4caf]
 en = "Name this computer"
 where = [
   "desktop common_name_this_computer: Shared label, used in several places (link, signup, view).",
 ]
-text = ""
+text = "Nimeä tämä tietokone"
 
 [t_447375ef9f]
 en = "Not synced yet"
 where = [
   "desktop common_not_synced_yet: Shared label, used in several places (link, profile).",
 ]
-text = ""
+text = "Ei vielä synkronoitu"
 
 [t_8b10183211]
 en = "Passphrase changed"
 where = [
   "desktop common_passphrase_changed: Shared label, used in several places (app, profile).",
 ]
-text = ""
+text = "Salalause vaihdettu"
 
 [t_1b4b9ba9bf]
 en = "Paste only into a trusted password manager; the clipboard contains your account key."
 where = [
   "desktop common_paste_only_into_a: Shared label, used in several places (view).",
 ]
-text = ""
+text = "Liitä vain luotettuun salasanojen hallintaan; leikepöydällä on tilisi avain."
 
 [t_3c78840fd7]
 en = "Photo · {value}"
 where = [
   "desktop common_photo: Shared label, used in several places (chat, group_live). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "Kuva · {value}"
 
 [t_955e59b5ae]
 en = "Remember on this computer"
 where = [
   "desktop common_remember_on_this_computer: Shared label, used in several places (profile, signup).",
 ]
-text = ""
+text = "Muista tällä tietokoneella"
 
 [t_b9b5554656]
 en = "Saving..."
 where = [
   "desktop common_saving: Shared label, used in several places (link, view).",
 ]
-text = ""
+text = "Tallennetaan..."
 
 [t_67eb8c5ea7]
 en = "Security"
 where = [
   "desktop common_security: Shared label, used in several places (profile, view).",
 ]
-text = ""
+text = "Turvallisuus"
 
 [t_d9cdfd07a7]
 en = "Show"
 where = [
   "desktop common_show: Shared label, used in several places (tray, view).",
 ]
-text = ""
+text = "Näytä"
 
 [t_cda1cdad47]
 en = "{size} GB"
 where = [
   "desktop common_size_gb: Storage size in gigabytes. {size} is a number with one decimal.",
 ]
-text = ""
+text = "{size} Gt"
 
 [t_53cb38ce7d]
 en = "Skips the passphrase when Tinline starts, using this computer’s keyring."
 where = [
   "desktop common_skips_the_passphrase_when: Shared label, used in several places (profile, signup).",
 ]
-text = ""
+text = "Ohittaa salalauseen Tinlinen käynnistyessä tämän tietokoneen avainnipun avulla."
 
 [t_8246939084]
 en = "Starting..."
 where = [
   "desktop common_starting: Shared label, used in several places (app, tray).",
 ]
-text = ""
+text = "Käynnistetään..."
 
 [t_d2081454ab]
 en = "Tinline is still starting. Try again in a moment."
 where = [
   "desktop common_tinline_is_still_starting: Shared label, used in several places (app, link).",
 ]
-text = ""
+text = "Tinline käynnistyy vielä. Yritä hetken kuluttua uudelleen."
 
 [t_820c15c544]
 en = "Work desktop"
 where = [
   "desktop common_work_desktop: Shared label, used in several places (link, view).",
 ]
-text = ""
+text = "Työtietokone"
 
 [t_8ae2b3cd52]
 en = "Working..."
 where = [
   "desktop common_working: Shared label, used in several places (link, view).",
 ]
-text = ""
+text = "Käsitellään..."
 
 [t_3a211114f7]
 en = "Account removed from this computer"
 where = [
   "desktop app_account_removed_from_this: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "Tili poistettu tältä tietokoneelta"
 
 [t_c88517c76f]
 en = "Adding passphrase..."
 where = [
   "desktop app_adding_passphrase: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "Lisätään salalausetta..."
 
 [t_ae294d3d01]
 en = "An identity already exists here."
 where = [
   "desktop app_an_identity_already_exists: Desktop, app-level notices and notifications (in app.rs, friendly).",
 ]
-text = ""
+text = "Täällä on jo identiteetti."
 
 [t_32fb327647]
 en = "Changing passphrase..."
 where = [
   "desktop app_changing_passphrase: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "Vaihdetaan salalausetta..."
 
 [t_694b75b941]
 en = "Could not call: {error}"
 where = [
   "desktop app_could_not_call: Desktop, app-level notices and notifications (in app.rs, update_inner). {error} is the underlying error text, not translated.",
 ]
-text = ""
+text = "Soitto ei onnistunut: {error}"
 
 [t_4ea7b41ec4]
 en = "Could not start: {error}"
 where = [
   "desktop app_could_not_start: Desktop, app-level notices and notifications (in app.rs, update_inner). {error} is the underlying error text, not translated.",
 ]
-text = ""
+text = "Käynnistys ei onnistunut: {error}"
 
 [t_16bc823614]
 en = "Couldn’t accept just now. Try again in a moment."
 where = [
   "desktop app_couldnt_accept_just_now: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "Hyväksyminen ei onnistunut juuri nyt. Yritä hetken kuluttua uudelleen."
 
 [t_35338f8a31]
 en = "Device name saved"
 where = [
   "desktop app_device_name_saved: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "Laitteen nimi tallennettu"
 
 [t_886688601a]
 en = "Enter a name first"
 where = [
   "desktop app_enter_a_name_first: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "Kirjoita ensin nimi"
 
 [t_5f499535ee]
 en = "Enter your name and recovery phrase"
 where = [
   "desktop app_enter_your_name_and: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "Kirjoita nimesi ja palautussanasi"
 
 [t_af263389d6]
 en = "Ev"
 where = [
   "desktop app_ev: Desktop, app-level notices and notifications (in app.rs, fmt).",
 ]
-text = ""
+text = "Ev"
 
 [t_1a92653d7e]
 en = "{value} invited you to the group"
 where = [
   "desktop app_invited_you_to_the: Desktop, app-level notices and notifications (in app.rs, on_event). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "{value} kutsui sinut ryhmään"
 
 [t_86537dcd0a]
 en = "{name} is already in your contacts"
 where = [
   "desktop app_is_already_in_your: Desktop, app-level notices and notifications (in app.rs, update_inner). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} on jo yhteystiedoissasi"
 
 [t_03d397836b]
 en = "{peer_name} is calling"
 where = [
   "desktop app_is_calling: Desktop, app-level notices and notifications (in app.rs, on_event). {peer_name} is a value filled in by the app.",
 ]
-text = ""
+text = "{peer_name} soittaa"
 
 [t_d84b7d3db1]
 en = "Passphrase added. You will need it next time Tinline starts."
 where = [
   "desktop app_passphrase_added_you_will: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "Salalause lisätty. Tarvitset sitä, kun Tinline seuraavan kerran käynnistyy."
 
 [t_27499f4548]
 en = "Pick one that is different from the current one."
 where = [
   "desktop app_pick_one_that_is: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "Valitse salalause, joka eroaa nykyisestä."
 
 [t_d6bdc593f7]
 en = "Restoring..."
 where = [
   "desktop app_restoring: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "Palautetaan..."
 
 [t_5d4c1caca3]
 en = "Still can’t find the key."
 where = [
   "desktop app_still_cant_find_the: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "Avainta ei vieläkään löydy."
 
 [t_33f7d1c80b]
 en = "task failed"
 where = [
   "desktop app_task_failed: Desktop, app-level notices and notifications (in app.rs, blocking).",
 ]
-text = ""
+text = "tehtävä keskeytyi"
 
 [t_ac97ec8ed4]
 en = "{name}: {value}"
 where = [
   "desktop app_text: Desktop, app-level notices and notifications (in app.rs, on_event). {name} is a person's name (usually the first word of their chosen name). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "{name}: {value}"
 
 [t_9b366dca33]
 en = "That account is already on this computer."
 where = [
   "desktop app_that_account_is_already: Desktop, app-level notices and notifications (in app.rs, friendly).",
 ]
-text = ""
+text = "Tili on jo tällä tietokoneella."
 
 [t_82424900f4]
 en = "That isn’t your current passphrase."
 where = [
   "desktop app_that_isnt_your_current: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "Tämä ei ole nykyinen salalauseesi."
 
 [t_d7d34eb82a]
 en = "That phrase isn’t valid. Check each word and their order."
 where = [
   "desktop app_that_phrase_isnt_valid: Desktop, app-level notices and notifications (in app.rs, friendly).",
 ]
-text = ""
+text = "Nämä sanat eivät kelpaa. Tarkista jokainen sana ja niiden järjestys."
 
 [t_2d4587e96b]
 en = "The two passphrases differ."
 where = [
   "desktop app_the_two_passphrases_differ: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "Salalauseet eroavat toisistaan."
 
 [t_e9d46ff847]
 en = "This computer’s keyring wouldn’t keep it, so Tinline will keep asking for your passphrase."
 where = [
   "desktop app_this_computers_keyring_wouldnt: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "Tämän tietokoneen avainnippu ei säilyttänyt sitä, joten Tinline kysyy salalausettasi jatkossakin."
 
 [t_1290ee5e3e]
 en = "Ticket: {error}"
 where = [
   "desktop app_ticket: Desktop, app-level notices and notifications (in app.rs, update_inner). {error} is the underlying error text, not translated.",
 ]
-text = ""
+text = "Lippu: {error}"
 
 [t_1dbf8cee18]
 en = "Type a new passphrase."
 where = [
   "desktop app_type_a_new_passphrase: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "Kirjoita uusi salalause."
 
 [t_2b521c5ae2]
 en = "Type a passphrase first."
 where = [
   "desktop app_type_a_passphrase_first: Desktop, app-level notices and notifications (in app.rs, friendly).",
 ]
-text = ""
+text = "Kirjoita ensin salalause."
 
 [t_870a316625]
 en = "Type your current passphrase."
 where = [
   "desktop app_type_your_current_passphrase: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "Kirjoita nykyinen salalauseesi."
 
 [t_ac46214b53]
 en = "Wait for the profile save to finish."
 where = [
   "desktop app_wait_for_the_profile: Desktop, app-level notices and notifications (in app.rs, update).",
 ]
-text = ""
+text = "Odota, että profiilin tallennus valmistuu."
 
 [t_62bb091458]
 en = "Your key is kept in a plain file in Tinline’s data folder. Anyone who copies that folder can open your account. Add a passphrase to protect it; the file is then deleted."
 where = [
   "desktop app_your_key_is_kept: Desktop, app-level notices and notifications (in app.rs, key_home).",
 ]
-text = ""
+text = "Avaimesi säilytetään tavallisessa tiedostossa Tinlinen datakansiossa. Kuka tahansa, joka kopioi kansion, voi avata tilisi. Lisää salalause suojataksesi sen; tiedosto poistetaan silloin."
 
 [t_532c9419c8]
 en = "Your key is kept in this computer’s keyring, so Tinline opens without asking."
 where = [
   "desktop app_your_key_is_kept_in: Desktop, app-level notices and notifications (in app.rs, key_home).",
 ]
-text = ""
+text = "Avaimesi säilytetään tämän tietokoneen avainnipussa, joten Tinline aukeaa kysymättä."
 
 [t_e6a284f81a]
 en = "Your recovery key is copied."
 where = [
   "desktop app_your_recovery_key_is: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "Palautusavaimesi on kopioitu."
 
 [t_031c6dc10d]
 en = "Your recovery words are copied."
 where = [
   "desktop app_your_recovery_words_are: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "Palautussanasi on kopioitu."
 
 [t_287f831b10]
 en = "You’re on a call. Hang up before switching accounts."
 where = [
   "desktop app_youre_on_a_call: Desktop, app-level notices and notifications (in app.rs, friendly).",
 ]
-text = ""
+text = "Olet puhelussa. Lopeta puhelu ennen tilin vaihtamista."
 
 [t_c060528ae3]
 en = "{label} disconnected, switching to the system default"
 where = [
   "desktop audio_disconnected_switching_to_the: Desktop, audio devices (in audio.rs, maintain). {label} is a value filled in by the app.",
 ]
-text = ""
+text = "{label} irrotettiin, vaihdetaan järjestelmän oletukseen"
 
 [t_a171612b25]
 en = "Echo cancellation is unavailable"
 where = [
   "desktop audio_echo_cancellation_is_unavailable: Desktop, audio devices (in audio.rs, run_call).",
 ]
-text = ""
+text = "Kaiunpoisto ei ole käytettävissä"
 
 [t_5fae266f6d]
 en = "{label} is back"
 where = [
   "desktop audio_is_back: Desktop, audio devices (in audio.rs, maintain). {label} is a value filled in by the app.",
 ]
-text = ""
+text = "{label} on taas käytettävissä"
 
 [t_e476e6d224]
 en = "{label} unavailable: {error}"
 where = [
   "desktop audio_unavailable: Desktop, audio devices (in audio.rs, maintain). {label} is a value filled in by the app. {error} is the underlying error text, not translated.",
 ]
-text = ""
+text = "{label} ei ole käytettävissä: {error}"
 
 [t_9b0bf5bb10]
 en = "About this call. {value} signal, {to_lowercase}."
 where = [
   "desktop call_about_this_call_signal: Desktop, calls (voice and video) (in call_screen.rs, call_view). {value} is a value filled in by the app. {to_lowercase} is a value filled in by the app.",
 ]
-text = ""
+text = "Tietoja tästä puhelusta. Signaali: {value}, {to_lowercase}."
 
 [t_be59de019d]
 en = "Answered on another device"
 where = [
   "desktop call_answered_on_another_device: Desktop, calls (voice and video) (in reason.rs, history).",
 ]
-text = ""
+text = "Vastattu toisella laitteella"
 
 [t_5951b67d4a]
 en = "Calls not allowed"
 where = [
   "desktop call_calls_not_allowed: Desktop, calls (voice and video) (in reason.rs, history).",
 ]
-text = ""
+text = "Puhelut eivät ole sallittuja"
 
 [t_7f6f8a6b79]
 en = "Camera off"
 where = [
   "desktop call_camera_off: Desktop, calls (voice and video) (in view.rs, video_stage).",
 ]
-text = ""
+text = "Kamera pois"
 
 [t_4855360c05]
 en = "Camera on"
 where = [
   "desktop call_camera_on: Desktop, calls (voice and video) (in view.rs, video_call_view).",
 ]
-text = ""
+text = "Kamera päällä"
 
 [t_c9f762351d]
 en = "Ctrl E cancels"
 where = [
   "desktop call_ctrl_e_cancels: Desktop, calls (voice and video) (in view.rs, video_call_view).",
 ]
-text = ""
+text = "Ctrl E peruu"
 
 [t_12e7b54a0e]
 en = "Declined on another device"
 where = [
   "desktop call_declined_on_another_device: Desktop, calls (voice and video) (in reason.rs, history).",
 ]
-text = ""
+text = "Hylätty toisella laitteella"
 
 [t_a0a96166bf]
 en = "Device changes apply from the next call."
 where = [
   "desktop call_device_changes_apply_from: Desktop, calls (voice and video) (in call_screen.rs, call_about).",
 ]
-text = ""
+text = "Laitemuutokset tulevat voimaan seuraavasta puhelusta."
 
 [t_b19e015d90]
 en = "End-to-end encrypted · Ctrl M mute · Ctrl E end · Esc minimizes"
 where = [
   "desktop call_end_to_end_encrypted_ctrl: Desktop, calls (voice and video) (in view.rs, video_call_view).",
 ]
-text = ""
+text = "Salattu päästä päähän · Ctrl M mykistää · Ctrl E lopettaa · Esc pienentää"
 
 [t_4af8cd18a6]
 en = "Enter answers · Esc declines"
