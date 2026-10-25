@@ -39,6 +39,7 @@ enum ShellText {
 
     static func display(_ c: Contact) -> String { displayName(alias: c.alias, name: c.name) }
 
+    static func isBlank(_ s: String) -> Bool { s.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
     static func ifBlank(_ s: String, _ other: String) -> String { s.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? other : s }
 
     /// Chat list time: "12:41", "Yesterday", "Monday", "12 Sep" (`present.listTime`).

@@ -3061,11 +3061,11 @@ note = "Title when the new device is waiting for approval."
 
 [link_same_code_lead]
 text = "Check that {name} shows this code, then approve there."
-note = "Explanation under Same code on both?; {name} is the other device's name or the words your other device."
+note = "Explanation under Same code on both? {name} is the other device's name."
 
-[link_fb_other_device]
-text = "your other device"
-note = "Fallback for an unnamed other device inside a sentence."
+[link_same_code_lead_unnamed]
+text = "Check that your other device shows this code, then approve there."
+note = "Explanation under Same code on both? Used when the other device has no name; says your other device."
 
 [link_diff_code]
 text = "Different code, or you didn’t start this? Cancel. Someone else may have scanned the QR."
@@ -3151,17 +3151,17 @@ note = "Instruction under the QR heading. The quoted names match the buttons on 
 text = "Back"
 note = "Button that goes back while showing the code."
 
-[link_fb_new_device_cap]
-text = "The new device"
-note = "Fallback name for an unnamed new device at the start of a sentence."
-
 [link_match_title]
 text = "Do the codes match?"
 note = "Heading when the user compares codes."
 
 [link_match_body]
-text = "{name} wants to join your account. It should be showing the same six digits as below."
-note = "Body when comparing codes; {name} is the new device's name, shown in bold."
+text = "**{name}** wants to join your account. It should be showing the same six digits as below."
+note = "Body when comparing codes. The new device's name is bold (markdown stars, keep them around the name); {name} is that name."
+
+[link_match_body_unnamed]
+text = "**The new device** wants to join your account. It should be showing the same six digits as below."
+note = "Body when comparing codes and the new device has no name. The words **The new device** are bold (markdown stars, keep them around them)."
 
 [link_match_warn]
 text = "Compare them yourself. If they differ, someone else may have scanned the code first."
@@ -3175,10 +3175,6 @@ note = "Button when the codes differ."
 text = "They match"
 note = "Button when the codes are the same."
 
-[link_fb_new_device]
-text = "the new device"
-note = "Fallback name for an unnamed new device inside a sentence."
-
 [link_connecting]
 text = "Connecting…"
 note = "Heading while connecting to the new device."
@@ -3186,6 +3182,10 @@ note = "Heading while connecting to the new device."
 [link_linking_peer]
 text = "Linking {name}"
 note = "Heading while linking; {name} is the new device's name."
+
+[link_linking_peer_unnamed]
+text = "Linking the new device"
+note = "Heading while linking when the new device has no name."
 
 [link_reaching]
 text = "Reaching the other device"
@@ -3207,6 +3207,10 @@ note = "Hint while linking."
 text = "{name} is linked"
 note = "Title when linking finished; {name} is the new device's name."
 
+[link_done_title_unnamed]
+text = "The new device is linked"
+note = "Title when linking finished and the new device has no name."
+
 [link_done_body]
 text = "It syncs when both devices are online at the same time. Contacts you haven’t blocked get your updated device list when they’re next online."
 note = "Body when linking finished."
@@ -3224,12 +3228,8 @@ text = "Scan the code on your new device"
 note = "Heading of the scan step."
 
 [link_scan_step1]
-text = "1.  On the new device, open Tinline and choose {action}."
-note = "Step 1 on the scan page; {action} is the bold button name Link to a device."
-
-[link_scan_step1_action]
-text = "Link to a device"
-note = "Bold button name inside step 1. Must match the button on the new device."
+text = "1.  On the new device, open Tinline and choose **Link to a device**."
+note = "Step 1 on the scan page. The button name **Link to a device** is bold (markdown stars, keep them around the button name); it must match the button's label on the new device."
 
 [link_scan_step2]
 text = "2.  It shows a QR code and a short code. They work for 5 minutes, once."
@@ -3263,13 +3263,17 @@ note = "Error when the screen lock prompt was cancelled."
 text = "Approve {name}?"
 note = "Heading of the approval step; {name} is the new device's name."
 
-[link_approve_body]
-text = "Approving sends your {phrase} to {name}. It becomes a full copy of you: it can read your chats and act as you. Approve only a device you hold."
-note = "Warning on the approval step; {phrase} is the bold words recovery phrase and {name} is the new device's name."
+[link_approve_title_unnamed]
+text = "Approve the new device?"
+note = "Heading of the approval step when the new device has no name."
 
-[link_approve_phrase]
-text = "recovery phrase"
-note = "Bold words inside the approval warning."
+[link_approve_body]
+text = "Approving sends your **recovery phrase** to {name}. It becomes a full copy of you: it can read your chats and act as you. Approve only a device you hold."
+note = "Warning on the approval step. The words **recovery phrase** are bold (markdown stars, keep them around the same words); {name} is the new device's name."
+
+[link_approve_body_unnamed]
+text = "Approving sends your **recovery phrase** to the new device. It becomes a full copy of you: it can read your chats and act as you. Approve only a device you hold."
+note = "Warning on the approval step when the new device has no name. The words **recovery phrase** are bold (markdown stars, keep them around the same words)."
 
 [link_your_pass]
 text = "Your passphrase"
@@ -3317,11 +3321,11 @@ note = "Title shown when another device removed the account from this phone."
 
 [link_unlinked_lead]
 text = "{name} was removed from this phone by one of your other devices. Its contacts, chats and calls are deleted here. Your other devices are not affected."
-note = "Explanation; {name} is the account's name or the words Your account."
+note = "Explanation after this phone was unlinked by another device; {name} is the account's name."
 
-[link_fb_your_account]
-text = "Your account"
-note = "Fallback for an unnamed account at the start of a sentence."
+[link_unlinked_lead_unnamed]
+text = "Your account was removed from this phone by one of your other devices. Its contacts, chats and calls are deleted here. Your other devices are not affected."
+note = "Explanation after this phone was unlinked by another device, when the account has no name."
 
 [link_ok]
 text = "OK"
