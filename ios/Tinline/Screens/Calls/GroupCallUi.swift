@@ -255,7 +255,7 @@ final class GroupCallUi: ObservableObject {
             state.hosting = false
         case .hostingLimited:
             if mine && s.hosting {
-                state.note = tr("call_group_battery_limited")
+                state.note = tr("call_group_battery_limited", "15")
             }
         case .hostingUnlimited:
             state.note = nil

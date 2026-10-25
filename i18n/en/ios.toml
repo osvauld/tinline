@@ -2577,8 +2577,8 @@ text = "Test tone"
 note = "Diagnostics row and switch label."
 
 [settings_test_tone_sub]
-text = "Send a 440 Hz tone instead of the microphone"
-note = "Subtitle of the Test tone row."
+text = "Send a {hz} Hz tone instead of the microphone"
+note = "Subtitle of the Test tone row. {hz} is the tone’s frequency in hertz."
 
 [security_wrong_pass]
 text = "That didn’t match. Try again."
@@ -2637,12 +2637,13 @@ text = "Key"
 note = "Tab on the recovery backup page: the recovery key."
 
 [security_tab_words]
-text = "24 words"
-note = "Tab on the recovery backup page: the 24 recovery words."
+one = "{count} word"
+other = "{count} words"
+note = "Tab on the recovery backup page: the recovery words. {count} is the number of words (24)."
 
 [security_key_failed]
-text = "Couldn’t prepare the key. Use your 24 words instead."
-note = "Hint when the recovery key could not be made."
+text = "Couldn’t prepare the key. Use your {words} words instead."
+note = "Hint when the recovery key could not be made.  {words} is the number of recovery words (24)."
 
 [security_hide]
 text = "Hide"
@@ -2923,8 +2924,8 @@ text = "This phone no longer has the key that opens your account. That happens a
 note = "Explanation under the lost-key title."
 
 [unlock_lost_notice]
-text = "You didn’t set a passphrase, so the 24-word recovery phrase is the only way back. Your contacts stay."
-note = "Warning on the lost-key screen."
+text = "You didn’t set a passphrase, so the {words}-word recovery phrase is the only way back. Your contacts stay."
+note = "Warning on the lost-key screen.  {words} is the number of recovery words (24)."
 
 [unlock_restore]
 text = "Restore with recovery phrase"
@@ -3069,8 +3070,8 @@ text = "Restore account"
 note = "Title of the restore screen."
 
 [restore_lead_words]
-text = "Type your 24 words in order, or paste them, or your recovery key, into the first box. They stay on this phone."
-note = "Intro on the restore screen before a key is pasted."
+text = "Type your {words} words in order, or paste them, or your recovery key, into the first box. They stay on this phone."
+note = "Intro on the restore screen before a key is pasted.  {words} is the number of recovery words (24)."
 
 [restore_lead_key]
 text = "Your recovery key is in. It stays on this phone."
@@ -3093,8 +3094,8 @@ text = "Couldn’t read the clipboard. Paste into the first box instead."
 note = "Error when the clipboard could not be read."
 
 [restore_progress]
-text = "{count} of 24"
-note = "Counter of recovery words typed so far; {count} is how many are filled."
+text = "{count} of {total}"
+note = "Counter of recovery words typed so far; {count} is how many are filled. {total} is the number of recovery words (24)."
 
 [restore_words_label]
 text = "Recovery phrase words"
@@ -3287,12 +3288,12 @@ text = "Scan the code on your new device"
 note = "Heading of the scan step."
 
 [link_scan_step1]
-text = "1.  On the new device, open Tinline and choose **Link to a device**."
-note = "Step 1 on the scan page. The button name **Link to a device** is bold (markdown stars, keep them around the button name); it must match the button's label on the new device."
+text = "On the new device, open Tinline and choose **Link to a device**."
+note = "Step 1 on the scan page. The button name **Link to a device** is bold (markdown stars, keep them around the button name); it must match the button's label on the new device. Shown as the first of two lines; the number is not part of the text."
 
 [link_scan_step2]
-text = "2.  It shows a QR code and a short code. They work for 5 minutes, once."
-note = "Step 2 on the scan page."
+text = "It shows a QR code and a short code. They work for 5 minutes, once."
+note = "Step 2 on the scan page. Shown as the second of two lines; the number is not part of the text."
 
 [link_scan_qr]
 text = "Scan QR code"
@@ -3469,8 +3470,8 @@ text = "Restore my account"
 note = "Option on the Use your account here screen."
 
 [onboarding_opt_restore_sub]
-text = "Type your 24 recovery words. This phone starts with an empty contact list."
-note = "Description of the restore option."
+text = "Type your {words} recovery words. This phone starts with an empty contact list."
+note = "Description of the restore option.  {words} is the number of recovery words (24)."
 
 [onboarding_done_title]
 text = "Your line is open"
@@ -3585,12 +3586,14 @@ text = "Here are your recovery words"
 note = "Title when showing the recovery words."
 
 [onboarding_rec_lead_key]
-text = "Your recovery key is the same as your 24 words, as one line.\nPaste it somewhere safe. A password manager works great."
-note = "Explanation when showing the recovery key; the line break is intended."
+text = "Your recovery key is the same as your {words} words, as one line.
+Paste it somewhere safe. A password manager works great."
+note = "Explanation when showing the recovery key; the line break is intended.  {words} is the number of recovery words (24)."
 
 [onboarding_rec_lead_words]
-text = "If you ever switch devices, these 24 words bring your account along.\nSave a copy somewhere safe. Paper works great."
-note = "Explanation when showing the recovery words; the line break is intended."
+text = "If you ever switch devices, these {words} words bring your account along.
+Save a copy somewhere safe. Paper works great."
+note = "Explanation when showing the recovery words; the line break is intended.  {words} is the number of recovery words (24)."
 
 [onboarding_fb_your_account]
 text = "Your account"
@@ -4971,12 +4974,12 @@ text = "That name can’t be used. Keep it short, without control characters."
 note = "Profile check: the name of a custom information item is not allowed."
 
 [people_rule_value_long]
-text = "That is too long. Each piece of information can be up to 16 KiB."
-note = "Profile check: a value is too long."
+text = "That is too long. Each piece of information can be up to {limit}."
+note = "Profile check: a value is too long. {limit} is the size limit with its unit, such as 16 KiB."
 
 [people_rule_too_many]
-text = "You’ve reached 64 pieces of information. Remove one to add another."
-note = "Profile check: too many information items."
+text = "You’ve reached {max} pieces of information. Remove one to add another."
+note = "Profile check: too many information items. {max} is the most pieces of information allowed."
 
 [people_rule_full]
 text = "Your profile is full. Remove some information to add more."
@@ -5594,8 +5597,8 @@ text = "Call ended — host lost"
 note = "Reason shown when a group call ends because its call host disappeared."
 
 [call_group_battery_limited]
-text = "Battery under 15 %. Hosting is limited: only one person is heard at a time, and no one new can join."
-note = "Note on the group call screen when this phone is the call host and its battery is low."
+text = "Battery under {percent} %. Hosting is limited: only one person is heard at a time, and no one new can join."
+note = "Note on the group call screen when this phone is the call host and its battery is low. {percent} is the battery level below which hosting is limited."
 
 [call_group_no_host]
 text = "No call host available"
@@ -5743,7 +5746,7 @@ text = "during your call"
 note = "Second line of the call-waiting card."
 
 [call_waiting_end_answer]
-text = "End & answer"
+text = "End and answer"
 note = "Button on the call-waiting card that ends the current call and answers the new one."
 
 [call_waiting_end_answer_desc]

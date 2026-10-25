@@ -52,9 +52,9 @@ enum ProfileRules {
     /// profile.ts checkValue: per value 16 KiB, 64 fields, 64 KiB in all. `json` is the value's JSON text.
     static func checkValue(key: String, json: String, fields obj: PeopleObject) -> String? {
         let size = utf8(json)
-        if size > valueLimit { return tr("people_rule_value_long") }
+        if size > valueLimit { return tr("people_rule_value_long", "\(valueLimit / 1024) KiB") }
         let others = obj.keys.filter { $0 != key }
-        if others.count >= fields && !obj.has(key) { return tr("people_rule_too_many") }
+        if others.count >= fields && !obj.has(key) { return tr("people_rule_too_many", String(fields)) }
         let total = others.reduce(0) { $0 + utf8($1) + utf8((obj[$1] ?? .null).text) } + utf8(key) + size
         if total > allLimit { return tr("people_rule_full") }
         return nil

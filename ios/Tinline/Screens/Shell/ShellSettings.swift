@@ -545,7 +545,7 @@ struct ShellDiagnosticsScreen: View {
             ShellTopBar(tr("settings_diagnostics"), onBack: onBack)
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
-                    ShellListItem(title: tr("settings_test_tone"), sub: tr("settings_test_tone_sub")) {
+                    ShellListItem(title: tr("settings_test_tone"), sub: tr("settings_test_tone_sub", "440")) {
                         ShellSwitch(isOn: tone, label: tr("settings_test_tone")) { on in tone = on; core.node?.setTestTone(hz: on ? 440 : nil) }
                     }
                     ShellHint("p2pcore \(coreVersion())").padding(.horizontal, 20).padding(.vertical, 8)

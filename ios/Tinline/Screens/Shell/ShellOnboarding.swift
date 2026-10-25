@@ -281,7 +281,7 @@ private struct ShellChooseStep: View {
                 ShellChooseOpt(glyph: .qr, title: tr("onboarding_opt_link"),
                                sub: tr("onboarding_opt_link_sub"), action: onLink)
                 ShellChooseOpt(glyph: .key, title: tr("onboarding_opt_restore"),
-                               sub: tr("onboarding_opt_restore_sub"), action: onRestore)
+                               sub: tr("onboarding_opt_restore_sub", "24"), action: onRestore)
             }
             .padding(.bottom, 8)
         }, foot: { EmptyView() })
@@ -537,8 +537,8 @@ private struct ShellPhraseStep: View {
         let key = (try? recoveryKeyFromPhrase(phrase: phrase)) ?? ""
         let copy = { if asKey { ShellClipboard.copySensitive(key) } else { ShellClipboard.copySensitive(phrase) } }
         ShellGateStep(asKey ? tr("onboarding_rec_title_key") : tr("onboarding_rec_title_words"),
-                      lead: asKey ? tr("onboarding_rec_lead_key")
-                        : tr("onboarding_rec_lead_words"),
+                      lead: asKey ? tr("onboarding_rec_lead_key", "24")
+                        : tr("onboarding_rec_lead_words", "24"),
                       content: {
             if let person { ShellAvatar(did: person, name: tr("onboarding_fb_your_account"), size: 80).frame(maxWidth: .infinity) }
             ShellWordsKeySeg(asKey: asKey) { asKey = $0 }

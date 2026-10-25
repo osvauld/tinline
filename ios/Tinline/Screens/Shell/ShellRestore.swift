@@ -48,7 +48,7 @@ struct ShellRestoreStep: View {
                 VStack(alignment: .leading, spacing: 16) {
                     Text(tr("restore_title")).shellStyle(.h1).foregroundStyle(tin.ink).accessibilityAddTraits(.isHeader)
                     Text(model.recKey.isEmpty
-                         ? tr("restore_lead_words")
+                         ? tr("restore_lead_words", "24")
                          : tr("restore_lead_key"))
                         .shellStyle(.lead).foregroundStyle(tin.ink2)
                     ShellNotice(warning, kind: .warn, glyph: .info)
@@ -68,7 +68,7 @@ struct ShellRestoreStep: View {
                             }
                             .offset(x: -20)
                             Spacer(minLength: 0)
-                            Text(tr("restore_progress", model.filled)).shellStyle(.sub).monospacedDigit().foregroundStyle(tin.ink2)
+                            Text(tr("restore_progress", model.filled, "24")).shellStyle(.sub).monospacedDigit().foregroundStyle(tin.ink2)
                         }
                         .offset(y: -4)
                         VStack(spacing: 8) {
