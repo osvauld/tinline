@@ -21,12 +21,12 @@ impl App {
     /// A DID as the user knows it: their contact name, else what the group calls them.
     fn live_name(&self, did: &str, fallback: &str) -> String {
         if self.is_me(did) || did == self.live.me {
-            return "You".into();
+            return crate::i18n::tr_str("common_you").into();
         }
         if let Some(c) = self.contacts.iter().find(|c| c.did == did) {
             return Self::display(c);
         }
-        if fallback.trim().is_empty() { "Someone".into() } else { fallback.to_string() }
+        if fallback.trim().is_empty() { crate::i18n::tr_str("common_someone").into() } else { fallback.to_string() }
     }
 
     // ---- the Groups tab ----
@@ -47,27 +47,27 @@ impl App {
                     .spacing(12).align_y(Alignment::Center).height(48))
                 .padding(8).width(Fill).height(64).style(super::shell_view::wash(t, None, Some(t.surface2), 14.0)).on_press(msg)).padding([0, 8]).into()
         };
-        let mut col = column![act("plus", "New group", "You\u{2019}ll be the owner", l(Lm::NewGroup)),
-            act("userplus", "Join a group", "Paste an invite link", l(Lm::JoinOpen))];
+        let mut col = column![act("plus", crate::i18n::tr_str("common_new_group"), crate::i18n::tr_str("common_youll_be_the_owner"), l(Lm::NewGroup)),
+            act("userplus", crate::i18n::tr_str("group_join_a_group"), crate::i18n::tr_str("group_paste_an_invite_link"), l(Lm::JoinOpen))];
         let ready = self.live.ready;
         // Invitations to you: cards (surface on desktop = --bg, hairline ring, radius --r-ctl, 14 padding).
         let pending: Vec<_> = self.live.pending_invitations().collect();
         if !pending.is_empty() {
-            col = col.push(container(sec("Invitations to you", pending.len())).padding(Padding { top: 18.0, right: 16.0, bottom: 6.0, left: 16.0 }));
+            col = col.push(container(sec(crate::i18n::tr_str("group_invitations_to_you"), pending.len())).padding(Padding { top: 18.0, right: 16.0, bottom: 6.0, left: 16.0 }));
             for i in pending {
                 let who = first_name(&self.live_name(&i.inviter_did, &i.inviter_name)).to_string();
                 let joining = self.live.joining.as_deref() == Some(i.id.as_str());
                 let busy = self.live.joining.is_some();
                 let line = iced::widget::rich_text![
                     iced::widget::span::<(), iced::Font>(who).font(ui::SANS_SEMI).color(t.ink),
-                    iced::widget::span::<(), iced::Font>(" invited you to ").color(t.ink),
+                    iced::widget::span::<(), iced::Font>(crate::i18n::tr_str("group_invited_you_to")).color(t.ink),
                     iced::widget::span::<(), iced::Font>(i.group_name.clone()).font(ui::SANS_SEMI).color(t.ink),
                 ].size(15).line_height(lh(20.0));
                 let card = column![
                     row![self.profile_avatar(t, &i.inviter_name, &i.inviter_did, 40.0), line].spacing(12).align_y(Alignment::Center),
                     row![Space::new().width(Fill),
-                        btn(t, Kind::Quiet, "Decline", (!busy).then(|| l(Lm::DeclineInv(i.id.clone())))),
-                        btn(t, Kind::Primary, if joining { "Joining\u{2026}" } else { "Accept" }, (!busy).then(|| l(Lm::AcceptInv(i.id.clone())))),
+                        btn(t, Kind::Quiet, crate::i18n::tr_str("common_decline"), (!busy).then(|| l(Lm::DeclineInv(i.id.clone())))),
+                        btn(t, Kind::Primary, if joining { crate::i18n::tr_str("group_joining") } else { crate::i18n::tr_str("common_accept") }, (!busy).then(|| l(Lm::AcceptInv(i.id.clone())))),
                     ].spacing(8),
                 ].spacing(10);
                 let style = move |_: &iced::Theme| container::Style {
@@ -81,9 +81,9 @@ impl App {
         let shown = |s: &&p2pcore::GroupSummary| q.is_empty() || s.name.to_lowercase().contains(q);
         let active: Vec<_> = self.live.list.iter().filter(|s| gl::active(s.my_role)).filter(shown).collect();
         let gone: Vec<_> = self.live.list.iter().filter(|s| !gl::active(s.my_role)).filter(shown).collect();
-        col = col.push(container(sec("Your groups", active.len())).padding(Padding { top: 18.0, right: 16.0, bottom: 6.0, left: 16.0 }));
+        col = col.push(container(sec(crate::i18n::tr_str("group_your_groups"), active.len())).padding(Padding { top: 18.0, right: 16.0, bottom: 6.0, left: 16.0 }));
         if active.is_empty() {
-            let msg = if !ready { "Unlock to see your groups." } else if q.is_empty() { "Groups you start or join show up here." } else { "No group matches." };
+            let msg = if !ready { crate::i18n::tr_str("group_unlock_to_see_your") } else if q.is_empty() { crate::i18n::tr_str("group_groups_you_start_or") } else { crate::i18n::tr_str("group_no_group_matches") };
             col = col.push(container(tx(msg, 13.0, t.ink2).line_height(lh(19.0))).padding([8, 20]));
         }
         // The group's own mandala (the left-or-removed rows rely on their dimmed text; the art is not faded).
@@ -95,8 +95,8 @@ impl App {
             let text = gl::preview(s, &self.live.me);
             // GroupsList `.callpv`: a running call takes the preview line (accent ink).
             let in_call = self.gcall.gid.as_deref() == Some(s.id.as_str()) && self.gcall.live();
-            let pv = if in_call { Preview::Plain("You\u{2019}re in the call".into(), Some(t.accent_ink)) }
-                else if self.gcall.live.contains_key(&s.id) { Preview::Plain("Call in progress".into(), Some(t.accent_ink)) }
+            let pv = if in_call { Preview::Plain(crate::i18n::tr_str("common_youre_in_the_call").into(), Some(t.accent_ink)) }
+                else if self.gcall.live.contains_key(&s.id) { Preview::Plain(crate::i18n::tr_str("common_call_in_progress").into(), Some(t.accent_ink)) }
                 else if !s.hosted_here && !s.host_reachable { Preview::Waiting(text) } else { Preview::Plain(text, None) };
             let mark = if matches!(pv, Preview::Plain(_, None)) {
                 self.list_mark(true, &s.id, s.last.as_ref().filter(|m| m.outgoing && m.kind == GroupItemKind::Post).map(|m| m.id.as_str()))
@@ -107,7 +107,7 @@ impl App {
         if !gone.is_empty() {
             let open = self.live.gone_open;
             let chev = container(crate::pg_icons::pgi(if open { "chevup" } else { "chev" }, 18.0, t.ink2));
-            col = col.push(container(button(row![sec("Left or removed", gone.len()), Space::new().width(Fill), chev].align_y(Alignment::Center))
+            col = col.push(container(button(row![sec(crate::i18n::tr_str("group_left_or_removed"), gone.len()), Space::new().width(Fill), chev].align_y(Alignment::Center))
                 .padding([0, 16]).height(44).width(Fill).style(super::shell_view::wash(t, None, None, 0.0)).on_press(l(Lm::GoneFold)))
                 .padding(Padding { top: 6.0, ..Padding::ZERO }));
             if open {
@@ -115,8 +115,8 @@ impl App {
                 for s in gone {
                     let sel = self.live.open.as_deref() == Some(s.id.as_str());
                     let at = s.last.as_ref().map_or(0, |m| m.at);
-                    let what = if s.my_role == GroupRole::Removed { "Removed" } else { "You left" };
-                    let sub = if at > 0 { format!("{what} \u{b7} {}", day_only(at)) } else { what.to_string() };
+                    let what = if s.my_role == GroupRole::Removed { crate::i18n::tr_str("group_removed") } else { crate::i18n::tr_str("group_you_left") };
+                    let sub = if at > 0 { crate::i18n::tr_args("group_text_2", &[("what", &(what).to_string()),("value", &(day_only(at)).to_string())]) } else { what.to_string() };
                     rows = rows.push(button(row![face(&s.id), column![semi(s.name.clone(), 15.0, ui::alpha(t.ink, 0.72)).line_height(lh(21.0)),
                             tx(sub, 13.0, t.ink2).line_height(lh(21.0))].spacing(2).width(Fill)].spacing(12).align_y(Alignment::Center).height(56))
                         .padding(8).width(Fill).style(super::shell_view::wash(t, sel.then_some(t.accent_soft), (!sel).then_some(t.surface2), 14.0))
@@ -150,8 +150,8 @@ impl App {
         let gid = d.id.clone();
         let running = self.gcall.live.contains_key(&gid) || (self.gcall.gid.as_deref() == Some(gid.as_str()) && self.gcall.live());
         let no_host = d.call_hosts.is_empty() && !running;
-        let tip = if self.gcall.gid.as_deref() == Some(gid.as_str()) && self.gcall.live() { "Return to group call" } else if running { "Join group call" }
-            else if no_host { "Group call (needs a call host)" } else { "Start group call" };
+        let tip = if self.gcall.gid.as_deref() == Some(gid.as_str()) && self.gcall.live() { crate::i18n::tr_str("group_return_to_group_call") } else if running { crate::i18n::tr_str("group_join_group_call") }
+            else if no_host { crate::i18n::tr_str("group_group_call_needs_a") } else { crate::i18n::tr_str("group_start_group_call") };
         let press = if no_host { l(Lm::CallNeedsHost(!self.live.call_needs_host)) } else { Msg::GCall(crate::app::gcall::Gm::Call(gid.clone())) };
         let call_btn = button(container(crate::pg_icons::pgi("phone", 24.0, if running { t.accent_ink } else { t.ink })).center_x(44).center_y(44))
             .padding(0).width(44).height(44)
@@ -168,7 +168,7 @@ impl App {
                     .spacing(6).align_y(Alignment::Center)).height(44).center_y(44))
                 .padding([0, 12]).height(44)
                 .style(super::shell_view::wash(t, None, Some(t.surface2), 22.0)).on_press(l(Lm::ShowOnline));
-            head = head.push(iced::widget::tooltip(b, iced::widget::text("Who\u{2019}s online").size(13), iced::widget::tooltip::Position::Bottom));
+            head = head.push(iced::widget::tooltip(b, iced::widget::text(crate::i18n::tr_str("group_whos_online")).size(13), iced::widget::tooltip::Position::Bottom));
         }
         let head = head.push(call_btn).push(info);
         let mut top = column![container(head).padding(8).height(60).width(Fill).style(ui::plain(t.surface, 0.0)), rule(t)];
@@ -182,15 +182,15 @@ impl App {
             let admin = self.live.is_admin();
             let mut acts = row![].spacing(8);
             if admin {
-                acts = acts.push(btn(t, Kind::Primary, "Host calls on this computer", Some(l(Lm::CallsHere(true)))));
+                acts = acts.push(btn(t, Kind::Primary, crate::i18n::tr_str("group_host_calls_on_this"), Some(l(Lm::CallsHere(true)))));
             }
-            acts = acts.push(btn(t, Kind::Ghost, "Not now", Some(l(Lm::CallNeedsHost(false)))));
+            acts = acts.push(btn(t, Kind::Ghost, crate::i18n::tr_str("common_not_now"), Some(l(Lm::CallNeedsHost(false)))));
             top = top.push(
                 container(
                     column![
-                        bold("A call needs a call host", 15.0, t.ink),
-                        tx(if admin { "A call host is a member\u{2019}s computer or phone that carries the call. You can host calls on this computer, or appoint a member in Group info." }
-                            else { "A call host is a member\u{2019}s computer or phone that carries the call. An admin can appoint one in Group info." }, 13.0, t.ink2),
+                        bold(crate::i18n::tr_str("group_a_call_needs_a"), 15.0, t.ink),
+                        tx(if admin { crate::i18n::tr_str("group_a_call_host_is_a") }
+                            else { crate::i18n::tr_str("group_a_call_host_is") }, 13.0, t.ink2),
                         acts,
                     ].spacing(6),
                 ).padding([12, 20]).width(Fill).style(ui::plain(t.surface2, 0.0)),
@@ -201,17 +201,17 @@ impl App {
                 container(
                     container(
                         column![
-                            row![ui::icon(Icon::Server, 18.0, t.on_warn), bold(format!("{} asked this computer to host {}", first_name(&by), d.name), 15.0, t.on_warn)]
+                            row![ui::icon(Icon::Server, 18.0, t.on_warn), bold(crate::i18n::tr_args("group_asked_this_computer_to", &[("value", &(first_name(&by)).to_string()),("name", &(d.name).to_string())]), 15.0, t.on_warn)]
                                 .spacing(8)
                                 .align_y(Alignment::Center),
                             tx(
-                                "A host keeps a full copy of the group, passes messages on while members\u{2019} phones sleep and learns members\u{2019} group addresses. It needs to stay running. Hosting doesn\u{2019}t make you an admin; you can stop any time.",
+                                crate::i18n::tr_str("group_a_host_keeps_a_full"),
                                 13.0,
                                 t.on_warn
                             ),
                             row![
-                                btn(t, Kind::Primary, "Host here", Some(l(Lm::AnswerHost(true)))),
-                                btn(t, Kind::Ghost, "Decline", Some(l(Lm::AnswerHost(false)))),
+                                btn(t, Kind::Primary, crate::i18n::tr_str("group_host_here"), Some(l(Lm::AnswerHost(true)))),
+                                btn(t, Kind::Ghost, crate::i18n::tr_str("common_decline"), Some(l(Lm::AnswerHost(false)))),
                             ]
                             .spacing(8),
                         ]
@@ -231,7 +231,7 @@ impl App {
             let max_bub = ((size.width - 32.0) * 0.78).min(560.0);
             let mut list = column![].spacing(0).padding(Padding { top: 6.0 + if strip { 33.0 } else { 0.0 }, right: 16.0, bottom: 19.0, left: 16.0 });
             if self.live.older.is_some() {
-                list = list.push(container(link_btn(t, "Show earlier messages", t.primary, l(Lm::Older))).center_x(Fill));
+                list = list.push(container(link_btn(t, crate::i18n::tr_str("group_show_earlier_messages"), t.primary, l(Lm::Older))).center_x(Fill));
             }
             let join = |a: &GroupMessage, b: &GroupMessage| {
                 a.kind == GroupItemKind::Post
@@ -283,7 +283,7 @@ impl App {
                 let mut gap = if new_day { 0.0 } else if m.kind != GroupItemKind::Post { 6.0 } else { geom::gap_above(pos) };
                 if divider.as_deref() == Some(m.id.as_str()) {
                     let rule_ = || container(Space::new()).height(1).width(Fill).style(ui::plain(ui::alpha(t.accent_ink, 0.35), 0.0));
-                    list = list.push(container(row![rule_(), bold(format!("{n_unread} new {}", if n_unread == 1 { "message" } else { "messages" }), 11.0, t.accent_ink), rule_()]
+                    list = list.push(container(row![rule_(), bold(crate::i18n::tr_count("chat_new_messages", n_unread as u64, &[]), 11.0, t.accent_ink), rule_()]
                         .spacing(10).align_y(Alignment::Center)).padding(Padding { top: 12.0, bottom: 6.0, ..Default::default() }));
                     gap = 4.0;
                 }
@@ -301,14 +301,14 @@ impl App {
                 ci += 1;
             }
             if self.live.msgs.is_empty() && calls.is_empty() {
-                list = list.push(sys(t, "No messages yet"));
+                list = list.push(sys(t, crate::i18n::tr_str("common_no_messages_yet")));
             }
 
             container(scroll(t, list).anchor_bottom().width(Fill).height(Fill)).width(Fill).height(Fill).style(ui::plain(t.canvas, 0.0)).into()
         }).into();
         // The strip over the top of the list (gold: waiting for a host). It overlays, so nothing moves.
         let msgs: El = if strip {
-            let text = "Waiting for a host. No group host is online; your posts are saved and send when one is.";
+            let text = crate::i18n::tr_str("group_waiting_for_a_host_no");
             let s_ = container(row![crate::pg_icons::pgi("clock", 16.0, t.warn_ink), tx(text, 13.0, t.warn_ink).line_height(lh(18.0))].spacing(8).align_y(Alignment::Center))
                 .padding([7, 16]).width(Fill).style(ui::plain(t.warn, 0.0));
             iced::widget::stack![body, column![s_, container(Space::new()).height(1).width(Fill).style(ui::plain(t.hairline, 0.0))]].into()
@@ -318,14 +318,14 @@ impl App {
             GroupRole::Removed => footer(
                 t,
                 row![
-                    tx("You were removed and can\u{2019}t send messages to this group.", 14.0, t.ink2).width(Fill),
-                    btn(t, Kind::Quiet, "Why?", Some(l(Lm::Removal))),
+                    tx(crate::i18n::tr_str("group_you_were_removed_and"), 14.0, t.ink2).width(Fill),
+                    btn(t, Kind::Quiet, crate::i18n::tr_str("group_why"), Some(l(Lm::Removal))),
                 ]
                 .spacing(12)
                 .align_y(Alignment::Center)
                 .into(),
             ),
-            GroupRole::Left => footer(t, tx("You left this group. Its messages stay here, read-only.", 14.0, t.ink2).into()),
+            GroupRole::Left => footer(t, tx(crate::i18n::tr_str("group_you_left_this_group_its"), 14.0, t.ink2).into()),
             _ if self.live.admins_only_locked() => self.live_admins_only_line(t),
             _ => self.live_composer(t),
         };
@@ -346,19 +346,19 @@ impl App {
             let (who, text_) = match self.live.by_id(id) {
                 Some(m) if m.outgoing => ("yourself".to_string(), gl::post_line(m)),
                 Some(m) => (first_name(&self.live_name(&m.author_did, &m.author_name)).to_string(), gl::post_line(m)),
-                None => ("a message".to_string(), String::new()),
+                None => (crate::i18n::tr_str("group_a_message").to_string(), String::new()),
             };
             let bar = container(Space::new()).width(3).height(Fill).style(ui::plain(t.accent, 0.0));
             let x = button(container(crate::pg_icons::pgi("x", 18.0, t.ink2)).center_x(44).center_y(44)).padding(0).width(44).height(44)
                 .style(super::shell_view::wash(t, None, Some(t.surface3), 22.0)).on_press(l(Lm::Reply(None)));
-            let body = column![semi(format!("Replying to {who}"), 13.0, t.accent_ink).line_height(lh(18.0)),
+            let body = column![semi(crate::i18n::tr_args("group_replying_to", &[("name", &(who).to_string())]), 13.0, t.accent_ink).line_height(lh(18.0)),
                 tx(crate::fit::ellipsize(&text_, ui::SANS, 13.0, 520.0), 13.0, t.ink2).line_height(lh(18.0)).wrapping(iced::widget::text::Wrapping::None)].width(Fill);
             c = c.push(container(row![bar, container(row![body, x].spacing(8).align_y(Alignment::Center)).padding(Padding { top: 0.0, right: 2.0, bottom: 0.0, left: 7.0 }).height(44)].height(44))
                 .width(Fill).clip(true).style(ui::plain(t.surface2, 12.0)));
         }
         let value = &self.live.input;
         let can = !value.trim().is_empty() && !self.live.sending;
-        let field = text_input("Message", value)
+        let field = text_input(crate::i18n::tr_str("common_message"), value)
             .id(COMPOSER)
             .on_input(|v| l(Lm::Input(v)))
             .on_submit(l(Lm::Send))
@@ -387,7 +387,7 @@ impl App {
     /// An admins-only group (a channel), for a member: one calm line in the composer's place, at the
     /// composer's height (8 + 44 + 10), so nothing moves when an admin switches it on or off.
     fn live_admins_only_line(&self, t: Tok) -> El<'_> {
-        let line = container(tx("Only admins post here", 14.0, t.ink2).line_height(lh(20.0))).center_x(Fill).center_y(44);
+        let line = container(tx(crate::i18n::tr_str("group_only_admins_post_here"), 14.0, t.ink2).line_height(lh(20.0))).center_x(Fill).center_y(44);
         container(line).padding(Padding { top: 8.0, right: 10.0, bottom: 10.0, left: 10.0 }).width(Fill).style(ui::plain(t.canvas, 0.0)).into()
     }
 
@@ -416,15 +416,15 @@ impl App {
             return sys(t, &gl::sys_text(m, &self.live.me));
         }
         let quote = m.reply_to.as_ref().map(|id| match self.live.by_id(id) {
-            Some(r) => (if r.outgoing { "You".to_string() } else { first_name(&self.live_name(&r.author_did, &r.author_name)).to_string() }, gl::post_line(r), r.outgoing),
-            None => (String::new(), "Original message unavailable".to_string(), false),
+            Some(r) => (if r.outgoing { crate::i18n::tr_str("common_you").to_string() } else { first_name(&self.live_name(&r.author_did, &r.author_name)).to_string() }, gl::post_line(r), r.outgoing),
+            None => (String::new(), crate::i18n::tr_str("common_original_message_unavailable").to_string(), false),
         });
         let name = self.live_name(&m.author_did, &m.author_name);
         if !m.outgoing && self.blocks.blocked_by_me(&m.author_did) {
             // A personal block never changes the group (U9 is the group's tool); the message is
             // folded, not hidden from the record.
             return row![
-                container(row![ui::icon(Icon::Ban, 14.0, t.ink2), tx(format!("Message from {name}, whom you blocked"), 13.0, t.ink2)].spacing(6).align_y(Alignment::Center))
+                container(row![ui::icon(Icon::Ban, 14.0, t.ink2), tx(crate::i18n::tr_args("group_message_from_whom_you", &[("name", &(name).to_string())]), 13.0, t.ink2)].spacing(6).align_y(Alignment::Center))
                     .padding([6, 12]).style(ui::outlined(t.bg, t.line, 16.0)),
                 Space::new().width(Fill)
             ].into();
@@ -436,7 +436,7 @@ impl App {
         // MessageRow `.who`: the sender's first name in their hue, on the first of their run.
         if !m.outgoing && !matches!(pos, geom::Pos::Mid | geom::Pos::Last) {
             let (_, hue) = ui::avatar_colors(t, &m.author_did);
-            let who = if m.before_removal { format!("{} \u{b7} removed", first_name(&name)) } else { first_name(&name).to_string() };
+            let who = if m.before_removal { crate::i18n::tr_args("group_removed_2", &[("value", &(first_name(&name)).to_string())]) } else { first_name(&name).to_string() };
             c = c.push(container(bold(who, 13.0, if m.before_removal { t.ink2 } else { hue }).line_height(lh(18.0))).padding(Padding { bottom: 1.0, ..Padding::ZERO }));
         }
         if let Some((who, text_, mine)) = quote {
@@ -486,7 +486,7 @@ impl App {
             column![te, container(meta).align_right(Fill)].width(Length::Shrink).into()
         });
         if m.before_removal {
-            c = c.push(tx(format!("written before {} was removed", first_name(&name)), 11.0, t.ink2));
+            c = c.push(tx(crate::i18n::tr_args("group_written_before_was_removed", &[("value", &(first_name(&name)).to_string())]), 11.0, t.ink2));
         }
         let side = if m.outgoing { geom::Side::Right } else { geom::Side::Left };
         let radii = geom::bubble_radii(pos, side, geom::R_BUB, geom::R_BUB_TIGHT);
@@ -502,7 +502,7 @@ impl App {
         let mut col = column![line];
         // MessageRow `.wait`: under my post while no host has it, gold, with a clock.
         if m.outgoing && m.delivery == GroupDelivery::Waiting {
-            col = col.push(container(row![crate::pg_icons::pgi("clock", 12.0, t.gold_ink), semi("Waiting for a host", 12.0, t.gold_ink).line_height(lh(16.0))].spacing(4).align_y(Alignment::Center))
+            col = col.push(container(row![crate::pg_icons::pgi("clock", 12.0, t.gold_ink), semi(crate::i18n::tr_str("group_waiting_for_a_host"), 12.0, t.gold_ink).line_height(lh(16.0))].spacing(4).align_y(Alignment::Center))
                 .align_right(Fill).padding(Padding { top: 3.0, right: 2.0, ..Padding::ZERO }));
         }
         // Failed takes the same slot, in the error ink: the hosts refuse this post and it is not sent.
@@ -544,9 +544,9 @@ impl App {
                 .on_press(msg).into()
         };
         let mid: Option<El> = match img.state {
-            St::Remote => Some(column![chip(format!("Photo \u{b7} {}", present::time::bytes(img.size))), pill("Load photo", l(Lm::LoadImage(m.id.clone())))].spacing(8).align_x(Alignment::Center).into()),
-            St::Loading => Some(chip("Loading\u{2026}".into())),
-            St::Failed => Some(pill("Try again", l(Lm::LoadImage(m.id.clone())))),
+            St::Remote => Some(column![chip(crate::i18n::tr_args("common_photo", &[("value", &(present::time::bytes(img.size)).to_string())])), pill(crate::i18n::tr_str("group_load_photo"), l(Lm::LoadImage(m.id.clone())))].spacing(8).align_x(Alignment::Center).into()),
+            St::Loading => Some(chip(crate::i18n::tr_str("common_loading").into())),
+            St::Failed => Some(pill(crate::i18n::tr_str("common_try_again"), l(Lm::LoadImage(m.id.clone())))),
             St::Ready => None,
         };
         if let Some(e) = mid {
@@ -558,22 +558,19 @@ impl App {
     /// In the removed person's chat: when, why and by whom, plainly.
     fn live_removal_card(&self, t: Tok) -> El<'_> {
         let Some(r) = self.live.detail.as_ref().and_then(|d| d.removal.as_ref()) else {
-            return sys(t, "You were removed from this group");
+            return sys(t, crate::i18n::tr_str("group_you_were_removed_from_this"));
         };
         let names: Vec<String> = r.flags.iter().map(|f| self.live_name(&f.by_did, &f.by_name)).collect();
         container(
             column![
-                semi(format!("You were removed from the group \u{b7} {}", when(r.at)), 14.0, t.on_error_c),
-                bold(format!("Removed after {} admin flags", r.flags.len()), 15.0, t.on_error_c),
+                semi(crate::i18n::tr_args("group_you_were_removed_from", &[("value", &(when(r.at)).to_string())]), 14.0, t.on_error_c),
+                bold(crate::i18n::tr_args("group_removed_after_admin_flags", &[("len", &(r.flags.len()).to_string())]), 15.0, t.on_error_c),
                 tx(
-                    format!(
-                        "Flagged by {}. You can still read what you received before; nothing new will arrive.",
-                        super::groups_view::and_list(&names)
-                    ),
+                    crate::i18n::tr_args("group_flagged_by_you_can", &[("value", &(super::groups_view::and_list(&names)).to_string())]),
                     13.0,
                     t.on_error_c
                 ),
-                link_btn(t, "See details", t.on_error_c, l(Lm::Removal)),
+                link_btn(t, crate::i18n::tr_str("group_see_details"), t.on_error_c, l(Lm::Removal)),
             ]
             .spacing(4),
         )
@@ -594,7 +591,7 @@ impl App {
         let bar = container(row![
             button(container(crate::pg_icons::pgi("back", 24.0, t.ink)).center_x(44).center_y(44)).padding(0).width(44).height(44)
                 .style(super::shell_view::wash(t, None, Some(t.surface2), 22.0)).on_press(l(Lm::ToggleInfo)),
-            semi(if d.my_role == GroupRole::Removed { "Removed" } else { "Group info" }, 17.0, t.ink),
+            semi(if d.my_role == GroupRole::Removed { crate::i18n::tr_str("group_removed") } else { crate::i18n::tr_str("group_group_info") }, 17.0, t.ink),
         ].spacing(4).align_y(Alignment::Center)).padding(Padding { top: 8.0, right: 12.0, bottom: 8.0, left: 8.0 }).height(60).width(Fill).style(ui::plain(t.surface, 0.0));
         let h2 = |s: &str, n: Option<usize>| -> El<'a> {
             let mut r = row![semi(s.to_uppercase(), 12.0, t.ink2).line_height(lh(16.0))].spacing(6);
@@ -637,11 +634,11 @@ impl App {
         };
         let mut col = column![].spacing(0);
         // .hero: avatar 72, name 22/28 650, "9 members · You are an admin".
-        let role_line = match d.my_role { GroupRole::Owner => "You are the owner", GroupRole::Admin => "You are an admin", GroupRole::Member => "You are a member", GroupRole::Removed => "", GroupRole::Left => "" };
+        let role_line = match d.my_role { GroupRole::Owner => crate::i18n::tr_str("group_you_are_the_owner"), GroupRole::Admin => crate::i18n::tr_str("group_you_are_an_admin"), GroupRole::Member => crate::i18n::tr_str("group_you_are_a_member"), GroupRole::Removed => "", GroupRole::Left => "" };
         let hero_sub = match d.my_role {
-            GroupRole::Left => "You left this group".to_string(),
-            GroupRole::Removed => "You\u{2019}re no longer a member".to_string(),
-            _ => format!("{} member{} \u{b7} {role_line}", d.members.len(), if d.members.len() == 1 { "" } else { "s" }),
+            GroupRole::Left => crate::i18n::tr_str("group_you_left_this_group").to_string(),
+            GroupRole::Removed => crate::i18n::tr_str("group_youre_no_longer_a").to_string(),
+            _ => crate::i18n::tr_args("group_members_and_role", &[("members", &crate::i18n::tr_count("group_members_count", d.members.len() as u64, &[])), ("role", role_line)]),
         };
         col = col.push(container(column![
             gav(t, self.live.open.as_deref().unwrap_or_default(), 72.0),
@@ -650,16 +647,16 @@ impl App {
             tx(hero_sub, 13.0, t.ink2).line_height(lh(19.0)),
         ].spacing(2).align_x(Alignment::Center)).padding(Padding { top: 16.0, right: 20.0, bottom: 8.0, left: 20.0 }).center_x(Fill));
         if d.my_role == GroupRole::Removed {
-            col = col.push(sec(column![act("info", "Why was I removed?".into(), None, Some("chevr"), Some(l(Lm::Removal)), false)]));
+            col = col.push(sec(column![act("info", crate::i18n::tr_str("group_why_was_i_removed").into(), None, Some("chevr"), Some(l(Lm::Removal)), false)]));
         } else if d.my_role == GroupRole::Left {
-            col = col.push(container(tx("You can still read the posts on this device. To come back, someone in the group has to invite you again.", 13.0, t.ink2).line_height(lh(19.0))).padding([24, 20]));
+            col = col.push(container(tx(crate::i18n::tr_str("group_you_can_still_read"), 13.0, t.ink2).line_height(lh(19.0))).padding([24, 20]));
         } else {
             // ---- invites (admins)
             if admin {
                 let no_host = d.hosts.is_empty();
-                let mut c = column![h2("Invites", None), card(vec![
-                    act("userplus", "Invite contacts".into(), Some("A private invite to each person".into()), Some("chevr"), Some(l(Lm::AddMembers)), false),
-                    act("link", "Create invite link".into(), Some(if no_host { "Appoint a host first. A link names one host.".into() } else { "Valid for 7 days".into() }), Some("plus"), (!no_host).then_some(l(Lm::Invite)), false),
+                let mut c = column![h2(crate::i18n::tr_str("group_invites"), None), card(vec![
+                    act("userplus", crate::i18n::tr_str("group_invite_contacts").into(), Some(crate::i18n::tr_str("group_a_private_invite_to").into()), Some("chevr"), Some(l(Lm::AddMembers)), false),
+                    act("link", crate::i18n::tr_str("group_create_invite_link").into(), Some(if no_host { crate::i18n::tr_str("group_appoint_a_host_first").into() } else { crate::i18n::tr_str("group_valid_for_7_days").into() }), Some("plus"), (!no_host).then_some(l(Lm::Invite)), false),
                 ])];
                 let sent: Vec<_> = self.live.sent.iter().filter(|i| !d.members.iter().any(|m| m.did == i.invitee_did)).collect();
                 for i in sent {
@@ -679,97 +676,95 @@ impl App {
                             super::profile_view::pg_switch(t, on, m)].spacing(14).align_y(Alignment::Center).height(44))
                         .padding([8, 16]).width(Fill).into()
                 };
-                let copy_sub = if fetching { "Getting the link\u{2026}".to_string() }
+                let copy_sub = if fetching { crate::i18n::tr_str("group_getting_the_link").to_string() }
                     else if let Some(link) = self.live.open_link_of_open() { crate::fit::ellipsize(link, ui::SANS, 13.0, 420.0) }
-                    else if open_on { "A link that doesn\u{2019}t expire".to_string() }
-                    else { "Turn on Open link to share it".to_string() };
-                let c = column![h2("Public group", None), card(vec![
-                    switch_row("link", "Open link", ["Anyone with the link can join", "Only people you invite can join"], open_on, l(Lm::SetOpen(!open_on))),
-                    act("copy", "Copy link".into(), Some(copy_sub), None, (open_on && !fetching).then_some(l(Lm::CopyOpenLink)), false),
-                    switch_row("shield", "Admins only", ["Only admins post; everyone reads", "Everyone in the group can post"], ao_on, l(Lm::SetAdminsOnly(!ao_on))),
-                ]), note("The open link doesn\u{2019}t expire. Closing it stops new joins; everyone already in stays. While the group is open, no read receipts are sent in it and members see who is online.".into())];
+                    else if open_on { crate::i18n::tr_str("group_a_link_that_doesnt").to_string() }
+                    else { crate::i18n::tr_str("group_turn_on_open_link").to_string() };
+                let c = column![h2(crate::i18n::tr_str("group_public_group"), None), card(vec![
+                    switch_row("link", crate::i18n::tr_str("common_open_link"), [crate::i18n::tr_str("group_anyone_with_the_link"), crate::i18n::tr_str("group_only_people_you_invite")], open_on, l(Lm::SetOpen(!open_on))),
+                    act("copy", crate::i18n::tr_str("group_copy_link").into(), Some(copy_sub), None, (open_on && !fetching).then_some(l(Lm::CopyOpenLink)), false),
+                    switch_row("shield", crate::i18n::tr_str("group_admins_only"), [crate::i18n::tr_str("group_only_admins_post_everyone"), crate::i18n::tr_str("group_everyone_in_the_group")], ao_on, l(Lm::SetAdminsOnly(!ao_on))),
+                ]), note(crate::i18n::tr_str("group_the_open_link_doesnt").into())];
                 col = col.push(sec(c));
             }
             // ---- hosts
             let up = d.am_host || d.hosts.iter().any(|h| h.online);
-            let host_line = if d.hosts.is_empty() { "This group has no host. Posts wait until a host is appointed.".to_string() }
+            let host_line = if d.hosts.is_empty() { crate::i18n::tr_str("group_this_group_has_no_host").to_string() }
                 // This computer is said in words, not listed as a row: its "Stop hosting" button below stands for it.
-                else if d.am_host && d.hosts.len() == 1 { "This computer hosts the group. Posts go through right away.".to_string() }
-                else if up { format!("{} host{} online{}. Posts go through right away.", d.hosts.iter().filter(|h| h.online || h.is_me).count().max(1), if d.hosts.len() == 1 { "" } else { "s" }, if d.am_host { ", this computer too" } else { "" }) }
-                else { "No host is online. Your posts are saved and send when one is.".to_string() };
-            let mut c = column![h2("Hosts", None), status(up && !d.hosts.is_empty(), host_line)];
+                else if d.am_host && d.hosts.len() == 1 { crate::i18n::tr_str("group_this_computer_hosts_the").to_string() }
+                else if up { crate::i18n::tr_count("group_hosts_online", d.hosts.iter().filter(|h| h.online || h.is_me).count().max(1) as u64, &[("extra", if d.am_host { crate::i18n::tr_str("group_this_computer_too") } else { "" })]) }
+                else { crate::i18n::tr_str("group_no_host_is_online").to_string() };
+            let mut c = column![h2(crate::i18n::tr_str("group_hosts"), None), status(up && !d.hosts.is_empty(), host_line)];
             for h in d.hosts.iter().filter(|h| !h.is_me) {
                 let name = self.live_name(&h.did, &h.name);
                 let calls = d.call_hosts.iter().any(|x| x.did == h.did && x.device_id == h.device_id);
-                let sub = format!("{}{}", if h.online || h.is_me { "Online" } else { "Offline" }, if calls { " \u{b7} also hosts calls" } else { "" });
-                let end: El = if admin { textbtn("Remove", t.ink, l(Lm::Revoke(h.did.clone(), h.device_id.clone()))) } else { Space::new().into() };
+                let sub = format!("{}{}", if h.online || h.is_me { crate::i18n::tr_str("common_online") } else { crate::i18n::tr_str("common_offline") }, if calls { crate::i18n::tr_str("group_also_hosts_calls") } else { "" });
+                let end: El = if admin { textbtn(crate::i18n::tr_str("common_remove"), t.ink, l(Lm::Revoke(h.did.clone(), h.device_id.clone()))) } else { Space::new().into() };
                 c = c.push(mrow(&h.did, name, sub, end));
             }
             for h in &d.host_requests {
-                let name = if h.is_me { "This device".to_string() } else { self.live_name(&h.did, &h.name) };
-                let end: El = if admin { textbtn("Cancel", t.ink, l(Lm::Revoke(h.did.clone(), h.device_id.clone()))) } else { Space::new().into() };
-                c = c.push(mrow(&h.did, name, "Waiting to accept".into(), end));
+                let name = if h.is_me { crate::i18n::tr_str("common_this_device").to_string() } else { self.live_name(&h.did, &h.name) };
+                let end: El = if admin { textbtn(crate::i18n::tr_str("common_cancel"), t.ink, l(Lm::Revoke(h.did.clone(), h.device_id.clone()))) } else { Space::new().into() };
+                c = c.push(mrow(&h.did, name, crate::i18n::tr_str("group_waiting_to_accept").into(), end));
             }
             if admin {
                 for h in &d.host_offers {
-                    let name = if h.is_me { "This device".to_string() } else { self.live_name(&h.did, &h.name) };
-                    c = c.push(mrow(&h.did, name, "Offered to host".into(), textbtn("Appoint", t.accent_ink, l(Lm::Appoint(h.did.clone(), h.device_id.clone())))));
+                    let name = if h.is_me { crate::i18n::tr_str("common_this_device").to_string() } else { self.live_name(&h.did, &h.name) };
+                    c = c.push(mrow(&h.did, name, crate::i18n::tr_str("group_offered_to_host").into(), textbtn(crate::i18n::tr_str("group_appoint"), t.accent_ink, l(Lm::Appoint(h.did.clone(), h.device_id.clone())))));
                 }
             }
             // Desktop: this computer can offer to host (a host stays on); the playground leaves this to an admin's menu.
             let offered = d.host_offers.iter().any(|h| h.is_me);
             c = c.push(container(card(vec![if d.am_host || offered {
-                act("server", if d.am_host { "Stop hosting on this computer".into() } else { "Withdraw the offer to host".into() }, None, None, Some(l(Lm::AskHost(false))), false)
+                act("server", if d.am_host { crate::i18n::tr_str("group_stop_hosting_on_this").into() } else { crate::i18n::tr_str("group_withdraw_the_offer_to").into() }, None, None, Some(l(Lm::AskHost(false))), false)
             } else {
-                act("server", "Host this group on this computer".into(), Some("A host stays on and passes posts on while others are offline".into()), None, Some(l(Lm::AskHost(true))), false)
+                act("server", crate::i18n::tr_str("group_host_this_group_on").into(), Some(crate::i18n::tr_str("group_a_host_stays_on").into()), None, Some(l(Lm::AskHost(true))), false)
             }])).padding(Padding { top: 8.0, ..Padding::ZERO }));
-            c = c.push(note(format!("Hosts store the group and pass posts on when others are offline. They are members you trust: a host can read everything posted in this group.{}",
-                if admin { " Appoint a host from a member\u{2019}s menu; they have to accept. Removing a host changes the group\u{2019}s address within 2 days, so that device can no longer reach it." } else { "" })));
+            c = c.push(note(crate::i18n::tr_args("group_hosts_store_the_group", &[("value", &(if admin { " Appoint a host from a member\u{2019}s menu; they have to accept. Removing a host changes the group\u{2019}s address within 2 days, so that device can no longer reach it." } else { "" }).to_string())])));
             col = col.push(sec(c));
             // ---- call hosts
             let ready = d.call_hosts.len();
-            let ch_line = if ready == 0 { "This group has no call host. Nobody can start a call until an admin appoints one.".to_string() }
-                else if d.am_call_host && d.call_hosts.len() == 1 { "This computer carries the calls.".to_string() }
-                else { format!("{ready} call host{} ready. Calls start through {}.", if ready == 1 { "" } else { "s" }, if ready == 1 { "it" } else { "them" }) };
-            let mut c = column![h2("Call hosts", None), status(ready > 0, ch_line)];
+            let ch_line = if ready == 0 { crate::i18n::tr_str("group_this_group_has_no").to_string() }
+                else if d.am_call_host && d.call_hosts.len() == 1 { crate::i18n::tr_str("group_this_computer_carries_the").to_string() }
+                else { crate::i18n::tr_count("group_call_hosts_ready", ready as u64, &[]) };
+            let mut c = column![h2(crate::i18n::tr_str("group_call_hosts"), None), status(ready > 0, ch_line)];
             for h in d.call_hosts.iter().filter(|h| !h.is_me) {
                 let name = self.live_name(&h.did, &h.name);
                 // Removes the CALL host (was wired to the chat-host revoke).
-                let end: El = if admin { textbtn("Remove", t.ink, l(Lm::RevokeCall(h.did.clone(), h.device_id.clone()))) } else { Space::new().into() };
-                c = c.push(mrow(&h.did, name, if h.online || h.is_me { "Online".into() } else { "Offline".into() }, end));
+                let end: El = if admin { textbtn(crate::i18n::tr_str("common_remove"), t.ink, l(Lm::RevokeCall(h.did.clone(), h.device_id.clone()))) } else { Space::new().into() };
+                c = c.push(mrow(&h.did, name, if h.online || h.is_me { crate::i18n::tr_str("common_online").into() } else { crate::i18n::tr_str("common_offline").into() }, end));
             }
             for h in &d.call_host_requests {
-                let name = if h.is_me { "This device".to_string() } else { self.live_name(&h.did, &h.name) };
-                c = c.push(mrow(&h.did, name, "Waiting to accept".into(), Space::new().into()));
+                let name = if h.is_me { crate::i18n::tr_str("common_this_device").to_string() } else { self.live_name(&h.did, &h.name) };
+                c = c.push(mrow(&h.did, name, crate::i18n::tr_str("group_waiting_to_accept").into(), Space::new().into()));
             }
             // This computer: carry the calls (an admin can appoint it in one step; a member accepts when asked).
             let here: Option<El> = if d.am_call_host {
-                Some(act("phone", "Stop hosting calls on this computer".into(), None, None, Some(l(Lm::CallsHere(false))), false))
+                Some(act("phone", crate::i18n::tr_str("group_stop_hosting_calls_on").into(), None, None, Some(l(Lm::CallsHere(false))), false))
             } else if d.call_host_requested_here {
-                Some(act("phone", "Host calls on this computer".into(), Some("An admin asked this computer to carry the group\u{2019}s calls".into()), None, Some(l(Lm::CallsHere(true))), false))
+                Some(act("phone", crate::i18n::tr_str("group_host_calls_on_this").into(), Some(crate::i18n::tr_str("group_an_admin_asked_this").into()), None, Some(l(Lm::CallsHere(true))), false))
             } else if admin {
-                Some(act("phone", "Host calls on this computer".into(), Some("Carries the group\u{2019}s calls; a computer that stays on is best".into()), None, Some(l(Lm::CallsHere(true))), false))
+                Some(act("phone", crate::i18n::tr_str("group_host_calls_on_this").into(), Some(crate::i18n::tr_str("group_carries_the_groups_calls").into()), None, Some(l(Lm::CallsHere(true))), false))
             } else {
                 None
             };
             if let Some(h) = here {
                 c = c.push(container(card(vec![h])).padding(Padding { top: 8.0, ..Padding::ZERO }));
             }
-            c = c.push(note(format!("A call host carries the call. Everyone in a call connects to it, and it passes the audio on, so it can hear the call. That is separate from chat hosting: a chat host is not a call host unless you also appoint it as one. Call hosts are members you trust, and each one chooses to accept.{}",
-                if admin { " Appoint one from a member\u{2019}s menu, or host calls on this computer." } else { "" })));
+            c = c.push(note(crate::i18n::tr_args("group_a_call_host_carries", &[("value", &(if admin { " Appoint one from a member\u{2019}s menu, or host calls on this computer." } else { "" }).to_string())])));
             col = col.push(sec(c));
             // ---- members: owner, admins, then members; me first among equals. A row opens its actions.
             let mut members: Vec<&p2pcore::GroupMember> = d.members.iter().collect();
             members.sort_by_key(|m| (if m.is_owner { 0 } else if m.is_admin { 1 } else { 2 }, !m.is_me));
-            let mut c = column![h2("Members", Some(d.members.len()))];
+            let mut c = column![h2(crate::i18n::tr_str("group_members"), Some(d.members.len()))];
             for m in members {
                 let name = self.live_name(&m.did, &m.name);
-                let shown = if m.is_me { format!("{name} (you)") } else { name.clone() };
-                let mut sub = match &m.invited_by { Some(by) => format!("Invited by {}", first_name(&self.live_name(by, ""))), None => format!("Since {}", super::groups_view::day(m.joined_at * 1000)) };
-                if admin && m.flags > 0 && !m.is_owner { sub += &format!(" \u{b7} {} of {} flags", m.flags, gl::FLAGS_TO_REMOVE); }
-                if self.blocks.blocked_by_me(&m.did) { sub += " \u{b7} Blocked"; }
+                let shown = if m.is_me { crate::i18n::tr_args("group_you", &[("name", &(name).to_string())]) } else { name.clone() };
+                let mut sub = match &m.invited_by { Some(by) => crate::i18n::tr_args("group_invited_by_2", &[("value", &(first_name(&self.live_name(by, ""))).to_string())]), None => crate::i18n::tr_args("group_since", &[("value", &(super::groups_view::day(m.joined_at * 1000)).to_string())]) };
+                if admin && m.flags > 0 && !m.is_owner { sub += &crate::i18n::tr_args("group_of_flags_2", &[("flags", &(m.flags).to_string()),("value", &(gl::FLAGS_TO_REMOVE).to_string())]); }
+                if self.blocks.blocked_by_me(&m.did) { sub += crate::i18n::tr_str("group_blocked"); }
                 let mut marks = row![].spacing(4).align_y(Alignment::Center);
-                if m.is_owner { marks = marks.push(tag(t.primary_c, t.on_primary_c, "Owner")); } else if m.is_admin { marks = marks.push(tag(t.relay_c, t.on_relay_c, "Admin")); }
+                if m.is_owner { marks = marks.push(tag(t.primary_c, t.on_primary_c, crate::i18n::tr_str("group_owner"))); } else if m.is_admin { marks = marks.push(tag(t.relay_c, t.on_relay_c, crate::i18n::tr_str("group_admin"))); }
                 if m.is_host { marks = marks.push(container(crate::pg_icons::pgi("server", 14.0, t.warn_ink)).width(22).height(22).center_x(22).center_y(22).style(ui::plain(t.warn, 11.0))); }
                 let acts = self.live.actions(m);
                 let open = self.live.menu.as_deref() == Some(m.did.as_str());
@@ -786,9 +781,9 @@ impl App {
             // ---- leave
             if active {
                 let leave = if d.my_role == GroupRole::Owner {
-                    act("leave", "Leave group".into(), Some("The owner can\u{2019}t leave yet".into()), None, None, false)
+                    act("leave", crate::i18n::tr_str("group_leave_group").into(), Some(crate::i18n::tr_str("group_the_owner_cant_leave").into()), None, None, false)
                 } else {
-                    act("leave", "Leave group".into(), None, None, Some(l(Lm::AskLeave)), true)
+                    act("leave", crate::i18n::tr_str("group_leave_group").into(), None, None, Some(l(Lm::AskLeave)), true)
                 };
                 col = col.push(sec(column![card(vec![leave])]));
             }
@@ -819,12 +814,12 @@ impl App {
             .into()
         };
         let by = m.invited_by.as_deref().map(|d| first_name(&self.live_name(d, "")).to_string());
-        let mut head = format!("Member since {}", when(m.joined_at));
+        let mut head = crate::i18n::tr_args("group_member_since", &[("value", &(when(m.joined_at)).to_string())]);
         if let Some(b) = by {
-            head += &format!(" \u{b7} invited by {b}");
+            head += &crate::i18n::tr_args("group_invited_by", &[("b", &(b).to_string())]);
         }
         if self.live.is_admin() {
-            head += &format!(" \u{b7} {} of {FLAGS_TO_REMOVE} flags", m.flags);
+            head += &crate::i18n::tr_args("group_of_flags", &[("flags", &(m.flags).to_string()),("flags_needed", &(FLAGS_TO_REMOVE).to_string())]);
         }
         let mut c = column![container(tx(head, 12.0, t.ink2)).padding([4, 10])].spacing(2);
         let several = m.device_ids.len() > 1;
@@ -833,47 +828,47 @@ impl App {
                 Action::Message => {
                     let contact = self.contacts.iter().any(|c| c.did == m.did);
                     if contact {
-                        item(Icon::MessageSquare, "Message privately".into(), "Opens your chat".into(), t.ink, Msg::Select(m.did.clone()))
+                        item(Icon::MessageSquare, crate::i18n::tr_str("group_message_privately").into(), crate::i18n::tr_str("group_opens_your_chat").into(), t.ink, Msg::Select(m.did.clone()))
                     } else if self.blocks.blocked_by_me(&m.did) {
-                        item(Icon::Ban, "Message privately".into(), format!("You block {first}; unblock them first"), t.ink2, l(Lm::AskRequest(m.did.clone())))
+                        item(Icon::Ban, crate::i18n::tr_str("group_message_privately").into(), crate::i18n::tr_args("group_you_block_unblock_them", &[("name", &(first).to_string())]), t.ink2, l(Lm::AskRequest(m.did.clone())))
                     } else {
-                        item(Icon::MessageSquare, "Message privately".into(), format!("Sends {first} a chat request through the host"), t.ink, l(Lm::AskRequest(m.did.clone())))
+                        item(Icon::MessageSquare, crate::i18n::tr_str("group_message_privately").into(), crate::i18n::tr_args("group_sends_a_chat_request", &[("name", &(first).to_string())]), t.ink, l(Lm::AskRequest(m.did.clone())))
                     }
                 }
-                Action::MakeAdmin => item(Icon::ShieldCheck, "Make admin".into(), "Can invite, flag members and appoint hosts".into(), t.ink, l(Lm::AskAdmin(m.did.clone(), true))),
-                Action::RevokeAdmin => item(Icon::ShieldCheck, "Remove as admin".into(), format!("{first} stays a member"), t.ink, l(Lm::AskAdmin(m.did.clone(), false))),
+                Action::MakeAdmin => item(Icon::ShieldCheck, crate::i18n::tr_str("group_make_admin").into(), crate::i18n::tr_str("group_can_invite_flag_members").into(), t.ink, l(Lm::AskAdmin(m.did.clone(), true))),
+                Action::RevokeAdmin => item(Icon::ShieldCheck, crate::i18n::tr_str("group_remove_as_admin").into(), crate::i18n::tr_args("group_stays_a_member", &[("name", &(first).to_string())]), t.ink, l(Lm::AskAdmin(m.did.clone(), false))),
                 Action::Appoint(dev) => item(
                     Icon::Server,
-                    if several { format!("Make device {} a host", short_dev(&dev)) } else { "Make host".into() },
-                    format!("Hosts once {first} agrees on that device; a computer that stays on is best"),
+                    if several { crate::i18n::tr_args("group_make_device_a_host", &[("value", &(short_dev(&dev)).to_string())]) } else { crate::i18n::tr_str("group_make_host").into() },
+                    crate::i18n::tr_args("group_hosts_once_agrees_on", &[("name", &(first).to_string())]),
                     t.ink,
                     l(Lm::Appoint(m.did.clone(), dev)),
                 ),
                 Action::Revoke(dev) => item(
                     Icon::Server,
-                    if several { format!("Stop device {} hosting", short_dev(&dev)) } else { "Stop hosting".into() },
-                    "Members stop going through it".into(),
+                    if several { crate::i18n::tr_args("group_stop_device_hosting", &[("value", &(short_dev(&dev)).to_string())]) } else { crate::i18n::tr_str("group_stop_hosting").into() },
+                    crate::i18n::tr_str("group_members_stop_going_through").into(),
                     t.ink,
                     l(Lm::Revoke(m.did.clone(), dev)),
                 ),
                 Action::AppointCall(dev) => item(
                     Icon::Phone,
-                    if several { format!("Make device {} a call host", short_dev(&dev)) } else { "Make call host".into() },
-                    format!("Asks {first} to carry group calls on that device; they have to accept"),
+                    if several { crate::i18n::tr_args("group_make_device_a_call", &[("value", &(short_dev(&dev)).to_string())]) } else { crate::i18n::tr_str("group_make_call_host").into() },
+                    crate::i18n::tr_args("group_asks_to_carry_group", &[("name", &(first).to_string())]),
                     t.ink,
                     l(Lm::AppointCall(m.did.clone(), dev)),
                 ),
                 Action::RevokeCall(dev) => item(
                     Icon::Phone,
-                    if several { format!("Stop device {} carrying calls", short_dev(&dev)) } else { "Stop hosting calls".into() },
-                    "Calls go through the other call hosts".into(),
+                    if several { crate::i18n::tr_args("group_stop_device_carrying_calls", &[("value", &(short_dev(&dev)).to_string())]) } else { crate::i18n::tr_str("group_stop_hosting_calls").into() },
+                    crate::i18n::tr_str("group_calls_go_through_the").into(),
                     t.ink,
                     l(Lm::RevokeCall(m.did.clone(), dev)),
                 ),
                 Action::Flag => item(
                     Icon::Flag,
-                    "Flag to remove".into(),
-                    format!("{FLAGS_TO_REMOVE} flags remove {first} from the group"),
+                    crate::i18n::tr_str("group_flag_to_remove").into(),
+                    crate::i18n::tr_args("group_flags_remove_from_the", &[("flags_needed", &(FLAGS_TO_REMOVE).to_string()),("name", &(first).to_string())]),
                     t.error,
                     l(Lm::AskFlag(m.did.clone())),
                 ),
@@ -895,7 +890,7 @@ impl App {
         let head = |s_: String| container(label(t, &s_)).padding(Padding { top: 8.0, bottom: 4.0, left: 12.0, right: 0.0 });
         let mut col = column![].spacing(6);
         if !incoming.is_empty() {
-            col = col.push(head(format!("Requests \u{b7} {}", incoming.len())));
+            col = col.push(head(crate::i18n::tr_args("group_requests", &[("len", &(incoming.len()).to_string())])));
             for r in incoming {
                 let name = self.live_name(&r.peer_did, &r.peer_name);
                 let first = first_name(&name).to_string();
@@ -904,17 +899,17 @@ impl App {
                         column![
                             row![
                                 avatar(t, &name, &r.peer_did, 36.0),
-                                column![semi(name.clone(), 14.0, t.ink), tx(format!("Member of {}", r.group_name), 12.0, t.ink2)].spacing(1).width(Fill),
+                                column![semi(name.clone(), 14.0, t.ink), tx(crate::i18n::tr_args("group_member_of_2", &[("group_name", &(r.group_name).to_string())]), 12.0, t.ink2)].spacing(1).width(Fill),
                             ]
                             .spacing(10)
                             .align_y(Alignment::Center),
-                            tx(format!("Accepting adds {first} as a contact for messages only. You can allow calls later."), 12.0, t.ink2),
+                            tx(crate::i18n::tr_args("group_accepting_adds_as_a", &[("name", &(first).to_string())]), 12.0, t.ink2),
                             row![
-                                btn(t, Kind::Primary, "Accept", Some(l(Lm::AcceptReq(r.id.clone())))),
-                                btn(t, Kind::Quiet, "Decline", Some(l(Lm::DeclineReq(r.id.clone())))),
+                                btn(t, Kind::Primary, crate::i18n::tr_str("common_accept"), Some(l(Lm::AcceptReq(r.id.clone())))),
+                                btn(t, Kind::Quiet, crate::i18n::tr_str("common_decline"), Some(l(Lm::DeclineReq(r.id.clone())))),
                             ]
                             .spacing(6),
-                            link_btn(t, &format!("Block {first}"), t.error, l(Lm::BlockReq(r.id.clone(), r.peer_did.clone()))),
+                            link_btn(t, &crate::i18n::tr_args("group_block", &[("name", &(first).to_string())]), t.error, l(Lm::BlockReq(r.id.clone(), r.peer_did.clone()))),
                         ]
                         .spacing(8),
                     )
@@ -925,7 +920,7 @@ impl App {
             }
         }
         if !sent.is_empty() {
-            col = col.push(head("Sent requests".into()));
+            col = col.push(head(crate::i18n::tr_str("group_sent_requests").into()));
             for r in sent {
                 let name = self.live_name(&r.peer_did, &r.peer_name);
                 let (line, bad) = gl::sent_line(r);
@@ -941,13 +936,13 @@ impl App {
                 .spacing(10)
                 .align_y(Alignment::Center);
                 if r.contact_added && self.contacts.iter().any(|c| c.did == r.peer_did) {
-                    row_ = row_.push(link_btn(t, "Open chat", t.primary, Msg::Select(r.peer_did.clone())));
+                    row_ = row_.push(link_btn(t, crate::i18n::tr_str("group_open_chat"), t.primary, Msg::Select(r.peer_did.clone())));
                 }
                 col = col.push(container(row_).padding([6, 12]));
             }
-            col = col.push(container(tx("A request waits at the group\u{2019}s hosts for up to 7 days.", 12.0, t.ink2)).padding([0, 12]));
+            col = col.push(container(tx(crate::i18n::tr_str("group_a_request_waits_at"), 12.0, t.ink2)).padding([0, 12]));
         }
-        col = col.push(container(label(t, "Chats")).padding(Padding { top: 8.0, bottom: 4.0, left: 12.0, right: 0.0 }));
+        col = col.push(container(label(t, crate::i18n::tr_str("common_chats"))).padding(Padding { top: 8.0, bottom: 4.0, left: 12.0, right: 0.0 }));
         Some(col.into())
     }
 
@@ -956,7 +951,7 @@ impl App {
     /// Settings › Hosting: the groups this computer hosts.
     pub(super) fn live_hosting_page(&self, t: Tok) -> El<'_> {
         let mut c = column![tx(
-            "A host keeps a full copy of a group and passes messages on while members\u{2019} phones sleep. Members connect to hosts, not to each other; only hosts learn members\u{2019} group addresses. Tinline keeps hosting while the window is closed (it stays in the tray).",
+            crate::i18n::tr_str("group_a_host_keeps_a"),
             14.0,
             t.ink2
         )]
@@ -964,7 +959,7 @@ impl App {
         let hosted: Vec<_> = self.live.list.iter().filter(|s| s.hosted_here).collect();
         if hosted.is_empty() {
             c = c.push(
-                container(tx("This computer doesn\u{2019}t host any groups. To host one, open it and choose Host from this computer in the members pane.", 14.0, t.ink2))
+                container(tx(crate::i18n::tr_str("group_this_computer_doesnt_host"), 14.0, t.ink2))
                     .padding(16)
                     .width(Fill)
                     .style(ui::card(t)),
@@ -977,19 +972,14 @@ impl App {
                 list = list.push(rule(t));
             }
             let only = s.host_count <= 1;
-            let sub = format!(
-                "{} member{} \u{b7} {}",
-                s.member_count,
-                if s.member_count == 1 { "" } else { "s" },
-                if only { "the only host".to_string() } else { format!("{} hosts", s.host_count) }
-            );
+            let sub = crate::i18n::tr_args("group_members_and_hosts", &[("members", &crate::i18n::tr_count("group_members_count", s.member_count as u64, &[])), ("hosts", &if only { crate::i18n::tr_str("group_the_only_host").to_string() } else { crate::i18n::tr_count("group_hosts_count", s.host_count as u64, &[]) })]);
             list = list.push(
                 container(
                     row![
                         gav(t, &s.id, 36.0),
                         column![semi(s.name.clone(), 15.0, t.ink), tx(sub, 13.0, if only { t.thread_text } else { t.ink2 })].spacing(2).width(Fill),
-                        link_btn(t, "Open", t.primary, l(Lm::Open(s.id.clone()))),
-                        link_btn(t, "Stop hosting", t.error, l(Lm::StopHostingOf(s.id.clone()))),
+                        link_btn(t, crate::i18n::tr_str("common_open"), t.primary, l(Lm::Open(s.id.clone()))),
+                        link_btn(t, crate::i18n::tr_str("group_stop_hosting"), t.error, l(Lm::StopHostingOf(s.id.clone()))),
                     ]
                     .spacing(12)
                     .align_y(Alignment::Center),
@@ -1009,7 +999,7 @@ impl App {
             && let Some(q) = &self.live.qr
         {
             let big = container(canvas(super::QrView(q)).width(Length::Fixed(560.0)).height(Length::Fixed(560.0))).padding(24).style(ui::plain(Color::WHITE, 16.0));
-            let layer = container(column![big, tx("Click anywhere to go back", 14.0, Color::WHITE)].spacing(12).align_x(Alignment::Center))
+            let layer = container(column![big, tx(crate::i18n::tr_str("group_click_anywhere_to_go"), 14.0, Color::WHITE)].spacing(12).align_x(Alignment::Center))
                 .center_x(Fill)
                 .center_y(Fill)
                 .width(Fill)
@@ -1023,28 +1013,28 @@ impl App {
         let actions = |cancel: &str, ok: Option<(&str, Kind)>| -> El<'_> {
             let mut r = row![Space::new().width(Fill), btn(t, Kind::Ghost, cancel, (!busy).then(|| l(Lm::Dismiss)))].spacing(8);
             if let Some((label_, kind)) = ok {
-                r = r.push(btn(t, kind, if busy { "Working\u{2026}" } else { label_ }, (!busy).then(|| l(Lm::Confirm))));
+                r = r.push(btn(t, kind, if busy { crate::i18n::tr_str("group_working") } else { label_ }, (!busy).then(|| l(Lm::Confirm))));
             }
             r.into()
         };
         let gname = self.live.detail.as_ref().map(|d| d.name.clone()).unwrap_or_default();
         let mut c: iced::widget::Column<'_, Msg> = match d {
             LDialog::NewGroup { name } => column![
-                title("New group".into()),
-                text_input("Group name", name)
+                title(crate::i18n::tr_str("common_new_group").into()),
+                text_input(crate::i18n::tr_str("group_group_name"), name)
                     .on_input(|v| l(Lm::NameIn(v)))
                     .on_submit(l(Lm::Confirm))
                     .padding(12)
                     .size(14)
                     .style(ui::input_style(t)),
-                para("You\u{2019}ll own the group. This computer hosts it at first: it keeps the group and passes messages on while members\u{2019} phones sleep, so it works best on a computer that stays on.".into()),
-                para("Then invite people from the members pane.".into()),
+                para(crate::i18n::tr_str("group_youll_own_the_group").into()),
+                para(crate::i18n::tr_str("group_then_invite_people_from").into()),
             ]
             .spacing(14),
             LDialog::Join { token, peek, checking } => {
                 let mut c = column![
-                    title("Join a group".into()),
-                    text_input("Paste the invite link (tinline://g/\u{2026}) or code", token)
+                    title(crate::i18n::tr_str("group_join_a_group").into()),
+                    text_input(crate::i18n::tr_str("group_paste_the_invite_link"), token)
                         .on_input(|v| l(Lm::TokenIn(v)))
                         .on_paste(|v| l(Lm::TokenIn(v)))
                         .on_submit(l(Lm::Confirm))
@@ -1057,33 +1047,33 @@ impl App {
                 match peek {
                     Some(p) => {
                         let inviter = match &p.issuer_did {
-                            Some(did) => format!("Invited by {}", self.live_name(did, "someone who isn\u{2019}t in your contacts")),
-                            None => "A link for your own other device".into(),
+                            Some(did) => crate::i18n::tr_args("group_invited_by_2", &[("value", &(self.live_name(did, "someone who isn\u{2019}t in your contacts")).to_string())]),
+                            None => crate::i18n::tr_str("group_a_link_for_your").into(),
                         };
-                        let owner = self.live_name(&p.owner_did, "someone who isn\u{2019}t in your contacts");
+                        let owner = self.live_name(&p.owner_did, crate::i18n::tr_str("group_someone_who_isnt_in"));
                         let mut info = column![
                             row![gav(t, &p.group_id, 36.0), bold(p.name.clone(), 17.0, t.ink)].spacing(10).align_y(Alignment::Center),
-                            tx(format!("{inviter} \u{b7} owner {owner}"), 13.0, t.ink2),
+                            tx(crate::i18n::tr_args("group_owner_2", &[("inviter", &(inviter).to_string()),("owner", &(owner).to_string())]), 13.0, t.ink2),
                         ]
                         .spacing(6);
                         if let Some(exp) = p.expires {
-                            info = info.push(tx(format!("Invite valid until {}", when(exp)), 13.0, t.ink2));
+                            info = info.push(tx(crate::i18n::tr_args("group_invite_valid_until", &[("value", &(when(exp)).to_string())]), 13.0, t.ink2));
                         }
                         c = c.push(container(info).padding(12).width(Fill).style(ui::plain(t.surface2, 12.0))).push(para(
-                            "Joining connects this computer to the group\u{2019}s hosts. Members see your name; only hosts learn how to reach this computer. It can take up to a minute."
+                            crate::i18n::tr_str("group_joining_connects_this_computer")
                                 .into(),
                         ));
                     }
-                    None if *checking => c = c.push(para("Checking with the group\u{2019}s host\u{2026}".into())),
-                    None if !token.is_empty() => c = c.push(tx("That link didn\u{2019}t work: it isn\u{2019}t a group invite, it expired, or its host is offline.", 13.0, t.error)),
-                    None => c = c.push(para("Admins of a group can make an invite. It works for 7 days.".into())),
+                    None if *checking => c = c.push(para(crate::i18n::tr_str("group_checking_with_the_groups").into())),
+                    None if !token.is_empty() => c = c.push(tx(crate::i18n::tr_str("group_that_link_didnt_work"), 13.0, t.error)),
+                    None => c = c.push(para(crate::i18n::tr_str("group_admins_of_a_group").into())),
                 }
                 c
             }
             LDialog::Token { text } => {
                 let mut c = column![
-                    title(format!("Invite link for {gname}")),
-                    para("Anyone with this link or QR can join for 7 days. Share it over an app you trust; you see who joined and can flag them out. To invite your contacts directly, use Add members.".into()),
+                    title(crate::i18n::tr_args("group_invite_link_for", &[("gname", &(gname).to_string())])),
+                    para(crate::i18n::tr_str("group_anyone_with_this_link").into()),
                 ]
                 .spacing(14);
                 match (text, &self.live.qr) {
@@ -1100,18 +1090,18 @@ impl App {
                                 .style(button::text)
                                 .on_press(l(Lm::QrFull(true))),
                             );
-                            c = c.push(tx("Click the code to show it full size.", 12.0, t.ink2));
+                            c = c.push(tx(crate::i18n::tr_str("group_click_the_code_to"), 12.0, t.ink2));
                         }
                         c = c.push(container(mono(tok.clone(), 13.0, t.ink).wrapping(iced::widget::text::Wrapping::Glyph)).padding(10).width(Fill).style(ui::plain(t.surface2, 10.0)));
                         c = c.push(row![
                             Space::new().width(Fill),
-                            btn(t, Kind::Ghost, "Close", Some(l(Lm::Dismiss))),
-                            pill(t, Kind::Primary, Some(Icon::Copy), "Copy link", Some(l(Lm::CopyToken))),
+                            btn(t, Kind::Ghost, crate::i18n::tr_str("common_close"), Some(l(Lm::Dismiss))),
+                            pill(t, Kind::Primary, Some(Icon::Copy), crate::i18n::tr_str("group_copy_link"), Some(l(Lm::CopyToken))),
                         ]
                         .spacing(8));
                     }
-                    (None, _) if self.live.error.is_none() => c = c.push(para("Making it\u{2026}".into())),
-                    (None, _) => c = c.push(row![Space::new().width(Fill), btn(t, Kind::Ghost, "Close", Some(l(Lm::Dismiss)))]),
+                    (None, _) if self.live.error.is_none() => c = c.push(para(crate::i18n::tr_str("group_making_it").into())),
+                    (None, _) => c = c.push(row![Space::new().width(Fill), btn(t, Kind::Ghost, crate::i18n::tr_str("common_close"), Some(l(Lm::Dismiss)))]),
                 }
                 c.align_x(Alignment::Center)
             }
@@ -1121,7 +1111,7 @@ impl App {
                 let rows = gl::pick_rows(&contacts, d, &self.live.sent, |did| self.blocks.blocked_by_me(did) || self.blocks.blocked_me(did).is_some());
                 let mut list = column![].spacing(2);
                 if rows.is_empty() {
-                    list = list.push(para("No contacts to add. People you block, or who block you, aren\u{2019}t listed.".into()));
+                    list = list.push(para(crate::i18n::tr_str("group_no_contacts_to_add").into()));
                 }
                 for r in rows {
                     let on = picked.contains(&r.did);
@@ -1143,14 +1133,14 @@ impl App {
                     );
                 }
                 column![
-                    title(format!("Add to {gname}")),
-                    para("Each person gets the invitation in your 1:1 chat and joins when they accept. It is valid for 7 days.".into()),
+                    title(crate::i18n::tr_args("group_add_to", &[("gname", &(gname).to_string())])),
+                    para(crate::i18n::tr_str("group_each_person_gets_the").into()),
                     scroll(t, list).height(Length::Fixed(320.0)),
                 ]
                 .spacing(14)
             }
             LDialog::Flag { did } => {
-                let name = self.live.member(did).map(|m| self.live_name(&m.did, &m.name)).unwrap_or_else(|| "this member".into());
+                let name = self.live.member(did).map(|m| self.live_name(&m.did, &m.name)).unwrap_or_else(|| crate::i18n::tr_str("group_this_member").into());
                 let first = first_name(&name).to_string();
                 let (yours, removes) = self.live.flag_after(did);
                 let mut meter = row![].spacing(6);
@@ -1160,66 +1150,66 @@ impl App {
                 }
                 column![
                     tx(gname.clone(), 13.0, t.ink2),
-                    title(format!("Flag {first} for removal?")),
+                    title(crate::i18n::tr_args("group_flag_for_removal", &[("name", &(first).to_string())])),
                     meter,
                     para(if removes {
-                        format!("Yours will be flag {yours} of {FLAGS_TO_REMOVE}. {first} is removed right away: hosts refuse their new messages and they see they were removed.")
+                        crate::i18n::tr_args("group_yours_will_be_flag_of", &[("yours", &(yours).to_string()),("flags_needed", &(FLAGS_TO_REMOVE).to_string()),("name", &(first).to_string())])
                     } else {
-                        format!("Yours will be flag {yours} of {FLAGS_TO_REMOVE}. Any admin\u{2019}s flags count, yours again too. At {FLAGS_TO_REMOVE} flags {first} is removed right away and sees they were removed.")
+                        crate::i18n::tr_args("group_yours_will_be_flag", &[("yours", &(yours).to_string()),("flags_needed", &(FLAGS_TO_REMOVE).to_string()),("name", &(first).to_string())])
                     }),
-                    para(format!("A flag is signed by you and can\u{2019}t be taken back. {first} can see who flagged them and when. Messages {first} wrote before the removal still show, marked.")),
+                    para(crate::i18n::tr_args("group_a_flag_is_signed", &[("name", &(first).to_string())])),
                 ]
                 .spacing(14)
             }
             LDialog::Admin { did, admin } => {
-                let name = self.live.member(did).map(|m| self.live_name(&m.did, &m.name)).unwrap_or_else(|| "this member".into());
+                let name = self.live.member(did).map(|m| self.live_name(&m.did, &m.name)).unwrap_or_else(|| crate::i18n::tr_str("group_this_member").into());
                 let first = first_name(&name).to_string();
                 if *admin {
                     column![
-                        title(format!("Make {first} an admin?")),
-                        para(format!("{first} will be able to invite people, flag members (3 flags remove someone) and appoint hosts. Only you, the owner, can make or remove admins.")),
+                        title(crate::i18n::tr_args("group_make_an_admin", &[("name", &(first).to_string())])),
+                        para(crate::i18n::tr_args("group_will_be_able_to", &[("name", &(first).to_string())])),
                     ]
                     .spacing(14)
                 } else {
-                    column![title(format!("Remove {first} as admin?")), para(format!("{first} stays in the group as a member. Flags they already made still count."))].spacing(14)
+                    column![title(crate::i18n::tr_args("group_remove_as_admin_2", &[("name", &(first).to_string())])), para(crate::i18n::tr_args("group_stays_in_the_group", &[("name", &(first).to_string())]))].spacing(14)
                 }
             }
             LDialog::Request { did } => {
-                let name = self.live.member(did).map(|m| self.live_name(&m.did, &m.name)).unwrap_or_else(|| "this member".into());
+                let name = self.live.member(did).map(|m| self.live_name(&m.did, &m.name)).unwrap_or_else(|| crate::i18n::tr_str("group_this_member").into());
                 let first = first_name(&name).to_string();
                 column![
                     row![
                         avatar(t, &name, did, 40.0),
-                        column![title(format!("Ask {first} for a private chat")), tx(format!("Member of {gname}"), 13.0, t.ink2)].spacing(2),
+                        column![title(crate::i18n::tr_args("group_ask_for_a_private", &[("name", &(first).to_string())])), tx(crate::i18n::tr_args("group_member_of", &[("gname", &(gname).to_string())]), 13.0, t.ink2)].spacing(2),
                     ]
                     .spacing(12)
                     .align_y(Alignment::Center),
-                    para(format!("{first} sees your name and the group. The request goes through the group\u{2019}s host sealed, so the host can\u{2019}t read it.")),
-                    para(format!("If {first} accepts, you can message each other directly. Calls stay off until one of you allows them.")),
+                    para(crate::i18n::tr_args("group_sees_your_name_and", &[("name", &(first).to_string())])),
+                    para(crate::i18n::tr_args("group_if_accepts_you_can", &[("name", &(first).to_string())])),
                 ]
                 .spacing(14)
             }
             LDialog::Leave => column![
-                title(format!("Leave {gname}?")),
-                para("Members see that you left. The messages stay on this computer, read-only. To come back, an admin has to invite you again.".into()),
+                title(crate::i18n::tr_args("group_leave", &[("gname", &(gname).to_string())])),
+                para(crate::i18n::tr_str("group_members_see_that_you").into()),
             ]
             .spacing(14),
             LDialog::Host { accept: true } => column![
-                title(format!("Host {gname} on this computer?")),
-                para("As a host this computer will:".into()),
-                para("\u{2022} keep a full copy of the group\n\u{2022} pass messages on for members while their phones sleep\n\u{2022} learn members\u{2019} group addresses (only hosts do)\n\u{2022} need to stay running to be useful".into()),
-                para("It starts hosting once an admin appoints it (if one already did, right away). Hosting doesn\u{2019}t make you an admin; you can stop any time.".into()),
+                title(crate::i18n::tr_args("group_host_on_this_computer", &[("gname", &(gname).to_string())])),
+                para(crate::i18n::tr_str("group_as_a_host_this").into()),
+                para(crate::i18n::tr_str("group_keep_a_full_copy").into()),
+                para(crate::i18n::tr_str("group_it_starts_hosting_once").into()),
             ]
             .spacing(14),
             LDialog::Host { accept: false } => {
                 let only = self.live.detail.as_ref().is_some_and(|d| d.am_host && d.hosts.len() == 1);
                 let mut c = column![
-                    title(format!("Stop hosting {gname} here?")),
-                    para("This computer stops passing the group\u{2019}s messages on. You stay a member.".into()),
+                    title(crate::i18n::tr_args("group_stop_hosting_here", &[("gname", &(gname).to_string())])),
+                    para(crate::i18n::tr_str("group_this_computer_stops_passing").into()),
                 ]
                 .spacing(14);
                 if only {
-                    c = c.push(tx(format!("{gname} has no other host: messages will wait on people\u{2019}s devices until another one hosts it."), 14.0, t.error));
+                    c = c.push(tx(crate::i18n::tr_args("group_has_no_other_host", &[("gname", &(gname).to_string())]), 14.0, t.error));
                 }
                 c
             }
@@ -1228,7 +1218,7 @@ impl App {
                 let n = rows.len();
                 let mut list = column![].spacing(2);
                 if rows.is_empty() {
-                    list = list.push(para("No one is online right now. People show here while they\u{2019}re connected.".into()));
+                    list = list.push(para(crate::i18n::tr_str("group_no_one_is_online").into()));
                 }
                 for m in rows {
                     let name = self.live_name(&m.did, &m.name);
@@ -1236,36 +1226,36 @@ impl App {
                         .spacing(10)
                         .align_y(Alignment::Center);
                     if m.is_admin {
-                        line = line.push(tag(t.relay_c, t.on_relay_c, "Admin"));
+                        line = line.push(tag(t.relay_c, t.on_relay_c, crate::i18n::tr_str("group_admin")));
                     }
                     list = list.push(container(line).padding([6, 10]).width(Fill));
                 }
                 let mut c = column![tx(gname.clone(), 13.0, t.ink2), title(gl::online_label(n)),
-                    para("Members a host has seen in the last minute. It can be a few seconds behind.".into())].spacing(14);
+                    para(crate::i18n::tr_str("group_members_a_host_has").into())].spacing(14);
                 if n >= gl::ONLINE_CAP {
-                    c = c.push(para(format!("A host lists up to {} people at a time, so there may be more.", gl::ONLINE_CAP)));
+                    c = c.push(para(crate::i18n::tr_args("group_a_host_lists_up", &[("value", &(gl::ONLINE_CAP).to_string())])));
                 }
                 if !self.live.presence_visible {
-                    c = c.push(para("You\u{2019}re not shown to others here. You can change that in Settings \u{203a} Privacy.".into()));
+                    c = c.push(para(crate::i18n::tr_str("group_youre_not_shown_to").into()));
                 }
-                c.push(scroll(t, list).height(Length::Fixed(320.0))).push(row![Space::new().width(Fill), btn(t, Kind::Primary, "Close", Some(l(Lm::Dismiss)))])
+                c.push(scroll(t, list).height(Length::Fixed(320.0))).push(row![Space::new().width(Fill), btn(t, Kind::Primary, crate::i18n::tr_str("common_close"), Some(l(Lm::Dismiss)))])
             }
             LDialog::OpenGroup => column![
-                title(format!("Open {gname} to anyone with the link?")),
-                para("Anyone holding the link can join, with no invite and no expiry. Share it where you\u{2019}d like people to find the group.".into()),
-                para("While it\u{2019}s open, no read receipts are sent in this group, and members see who is online. Each person can hide themselves in their settings.".into()),
-                para("You can close the link any time; everyone already in stays.".into()),
+                title(crate::i18n::tr_args("group_open_to_anyone_with", &[("gname", &(gname).to_string())])),
+                para(crate::i18n::tr_str("group_anyone_holding_the_link").into()),
+                para(crate::i18n::tr_str("group_while_its_open_no").into()),
+                para(crate::i18n::tr_str("group_you_can_close_the").into()),
             ]
             .spacing(14),
             LDialog::Removal => {
                 let r = self.live.detail.as_ref().and_then(|d| d.removal.as_ref())?;
-                let mut c = column![title("Why you were removed".into())].spacing(12);
+                let mut c = column![title(crate::i18n::tr_str("group_why_you_were_removed").into())].spacing(12);
                 let n = r.flags.len();
                 for (i, f) in r.flags.iter().enumerate() {
                     let who = self.live_name(&f.by_did, &f.by_name);
-                    let mut sub = format!("Flagged {}", when(f.at));
+                    let mut sub = crate::i18n::tr_args("group_flagged", &[("value", &(when(f.at)).to_string())]);
                     if i + 1 == n {
-                        sub += &format!(" \u{b7} {} flag", ordinal(n));
+                        sub += &crate::i18n::tr_args("group_flag", &[("value", &(ordinal(n)).to_string())]);
                     }
                     c = c.push(
                         row![avatar(t, &who, &f.by_did, 32.0), column![semi(who.clone(), 14.0, t.ink), tx(sub, 12.0, t.ink2)].spacing(1)]
@@ -1273,33 +1263,33 @@ impl App {
                             .align_y(Alignment::Center),
                     );
                 }
-                c.push(tx("Each flag is signed by the admin who made it and was checked on this computer. Nobody else could have added them.", 13.0, t.ink2))
-                    .push(para("You keep the messages already here. The group\u{2019}s hosts refuse your new messages. To rejoin, an admin has to invite you again.".into()))
-                    .push(row![Space::new().width(Fill), btn(t, Kind::Primary, "Close", Some(l(Lm::Dismiss)))])
+                c.push(tx(crate::i18n::tr_str("group_each_flag_is_signed"), 13.0, t.ink2))
+                    .push(para(crate::i18n::tr_str("group_you_keep_the_messages").into()))
+                    .push(row![Space::new().width(Fill), btn(t, Kind::Primary, crate::i18n::tr_str("common_close"), Some(l(Lm::Dismiss)))])
             }
         };
         if let Some(e) = &self.live.error {
             c = c.push(tx(e.clone(), 14.0, t.error));
         }
         c = match d {
-            LDialog::NewGroup { .. } => c.push(actions("Cancel", Some(("Create", Kind::Primary)))),
-            LDialog::Join { peek, .. } => c.push(actions("Cancel", peek.as_ref().map(|_| ("Join", Kind::Primary)))),
+            LDialog::NewGroup { .. } => c.push(actions(crate::i18n::tr_str("common_cancel"), Some((crate::i18n::tr_str("group_create"), Kind::Primary)))),
+            LDialog::Join { peek, .. } => c.push(actions(crate::i18n::tr_str("common_cancel"), peek.as_ref().map(|_| (crate::i18n::tr_str("common_join"), Kind::Primary)))),
             LDialog::AddMembers { picked } => {
-                let label_ = if picked.len() > 1 { format!("Invite {} people", picked.len()) } else { "Invite".to_string() };
+                let label_ = if picked.len() > 1 { crate::i18n::tr_args("group_invite_people", &[("len", &(picked.len()).to_string())]) } else { crate::i18n::tr_str("group_invite").to_string() };
                 let busy = self.live.busy;
                 c.push(row![
                     Space::new().width(Fill),
-                    btn(t, Kind::Ghost, "Cancel", (!busy).then(|| l(Lm::Dismiss))),
-                    btn(t, Kind::Primary, if busy { "Sending\u{2026}" } else { &label_ }, (!busy && !picked.is_empty()).then(|| l(Lm::Confirm))),
+                    btn(t, Kind::Ghost, crate::i18n::tr_str("common_cancel"), (!busy).then(|| l(Lm::Dismiss))),
+                    btn(t, Kind::Primary, if busy { crate::i18n::tr_str("group_sending") } else { &label_ }, (!busy && !picked.is_empty()).then(|| l(Lm::Confirm))),
                 ]
                 .spacing(8))
             }
-            LDialog::Flag { .. } => c.push(actions("Cancel", Some(("Flag", Kind::Danger)))),
-            LDialog::Admin { admin, .. } => c.push(actions("Cancel", Some((if *admin { "Make admin" } else { "Remove as admin" }, Kind::Primary)))),
-            LDialog::Leave => c.push(actions("Cancel", Some(("Leave", Kind::Danger)))),
-            LDialog::Request { .. } => c.push(actions("Cancel", Some(("Send request", Kind::Primary)))),
-            LDialog::Host { accept } => c.push(actions("Cancel", Some(if *accept { ("Host here", Kind::Primary) } else { ("Stop hosting", Kind::Danger) }))),
-            LDialog::OpenGroup => c.push(actions("Cancel", Some(("Open the group", Kind::Primary)))),
+            LDialog::Flag { .. } => c.push(actions(crate::i18n::tr_str("common_cancel"), Some((crate::i18n::tr_str("group_flag_2"), Kind::Danger)))),
+            LDialog::Admin { admin, .. } => c.push(actions(crate::i18n::tr_str("common_cancel"), Some((if *admin { crate::i18n::tr_str("group_make_admin") } else { crate::i18n::tr_str("group_remove_as_admin") }, Kind::Primary)))),
+            LDialog::Leave => c.push(actions(crate::i18n::tr_str("common_cancel"), Some((crate::i18n::tr_str("common_leave"), Kind::Danger)))),
+            LDialog::Request { .. } => c.push(actions(crate::i18n::tr_str("common_cancel"), Some((crate::i18n::tr_str("group_send_request"), Kind::Primary)))),
+            LDialog::Host { accept } => c.push(actions(crate::i18n::tr_str("common_cancel"), Some(if *accept { (crate::i18n::tr_str("group_host_here"), Kind::Primary) } else { (crate::i18n::tr_str("group_stop_hosting"), Kind::Danger) }))),
+            LDialog::OpenGroup => c.push(actions(crate::i18n::tr_str("common_cancel"), Some((crate::i18n::tr_str("group_open_the_group"), Kind::Primary)))),
             LDialog::Token { .. } | LDialog::Removal | LDialog::Online => c,
         };
         let card = ui::raised(container(c).padding(28).width(540), t, ui::Depth::Sheet, ui::sheet_surface(t, 24.0));
@@ -1324,8 +1314,8 @@ fn chip_day(ms: u64) -> String {
     use chrono::{Datelike, Local, TimeZone};
     let (Some(d), now) = (Local.timestamp_millis_opt(ms as i64).single(), Local::now()) else { return String::new() };
     match (now.date_naive() - d.date_naive()).num_days() {
-        0 => "Today".into(),
-        1 => "Yesterday".into(),
+        0 => crate::i18n::tr_str("common_today").into(),
+        1 => crate::i18n::tr_str("common_yesterday").into(),
         _ if d.year() == now.year() => d.format("%A %-d %b").to_string(),
         _ => d.format("%A %-d %b %Y").to_string(),
     }
@@ -1351,18 +1341,18 @@ fn live_wrap(s: &str, max: f32) -> (usize, f32) {
 /// people no longer counted. A statement is a device's signed claim ("on their device").
 pub(super) fn group_receipt_lines(r: &p2pcore::GroupReceiptStatus) -> Vec<String> {
     use p2pcore::ReceiptLevel as L;
-    let who = |m: &p2pcore::GroupMemberReceipts| if m.name.is_empty() { "Someone".to_string() } else { first_name(&m.name).to_string() };
+    let who = |m: &p2pcore::GroupMemberReceipts| if m.name.is_empty() { crate::i18n::tr_str("common_someone").to_string() } else { first_name(&m.name).to_string() };
     let names = |want: L| -> Vec<String> { r.members.iter().filter(|m| m.eligible && m.receipts.level == want).map(who).collect() };
-    let mut out = vec![format!("Delivered {}/{}", r.delivered, r.eligible), format!("Read {}/{}", r.read, r.eligible)];
-    for (label, want) in [("Read", L::Read), ("On their device", L::Delivered), ("Not yet", L::Unconfirmed)] {
+    let mut out = vec![crate::i18n::tr_args("group_delivered", &[("delivered", &(r.delivered).to_string()),("eligible", &(r.eligible).to_string())]), crate::i18n::tr_args("group_read_2", &[("read", &(r.read).to_string()),("eligible", &(r.eligible).to_string())])];
+    for (label, want) in [(crate::i18n::tr_str("group_read"), L::Read), (crate::i18n::tr_str("group_on_their_device"), L::Delivered), (crate::i18n::tr_str("group_not_yet"), L::Unconfirmed)] {
         let n = names(want);
         if !n.is_empty() {
-            out.push(format!("{label}: {}", n.join(", ")));
+            out.push(crate::i18n::tr_args("group_text", &[("label", &(label).to_string()),("value", &(n.join(", ")).to_string())]));
         }
     }
     let gone: Vec<String> = r.members.iter().filter(|m| !m.eligible).map(who).collect();
     if !gone.is_empty() {
-        out.push(format!("Also confirmed: {}", gone.join(", ")));
+        out.push(crate::i18n::tr_args("group_also_confirmed", &[("value", &(gone.join(", ")).to_string())]));
     }
     out
 }

@@ -8,7 +8,7 @@ fn recovery_mutations_exclude_transitions_in_both_directions() {
 }
 #[test]
 fn recovery_busy_is_not_core_unavailability() {
-    assert_eq!(availability_problem(false), Some(BUSY_UNSUPPORTED));
+    assert_eq!(availability_problem(false), Some(busy_unsupported()));
     assert_eq!(availability_problem(true), None);
 }
 #[test]

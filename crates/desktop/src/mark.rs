@@ -107,16 +107,16 @@ pub struct StatusLook {
 pub fn status_look(call: Option<CallPhase>, net: Net) -> StatusLook {
     let ringing = |period, amp, label| StatusLook { state: MarkState::Ringing, sway: Some((period, amp)), dim: false, label };
     match call {
-        Some(CallPhase::Incoming) => return ringing(1.6, 12.0, "Incoming call"),
-        Some(CallPhase::Outgoing) => return ringing(2.0, 9.0, "Calling"),
-        Some(CallPhase::Active) => return StatusLook { state: MarkState::Taut, sway: None, dim: false, label: "In a call" },
-        Some(CallPhase::Reconnecting) => return ringing(2.0, 4.0, "Reconnecting"),
+        Some(CallPhase::Incoming) => return ringing(1.6, 12.0, crate::i18n::tr_str("common_incoming_call")),
+        Some(CallPhase::Outgoing) => return ringing(2.0, 9.0, crate::i18n::tr_str("status_calling")),
+        Some(CallPhase::Active) => return StatusLook { state: MarkState::Taut, sway: None, dim: false, label: crate::i18n::tr_str("status_in_a_call") },
+        Some(CallPhase::Reconnecting) => return ringing(2.0, 4.0, crate::i18n::tr_str("common_reconnecting")),
         None => {}
     }
     match net {
-        Net::Offline => StatusLook { state: MarkState::Slack, sway: None, dim: true, label: "No connection" },
-        Net::Connecting => ringing(3.2, 5.0, "Connecting"),
-        Net::Online => StatusLook { state: MarkState::Taut, sway: None, dim: false, label: "Connected to the network" },
+        Net::Offline => StatusLook { state: MarkState::Slack, sway: None, dim: true, label: crate::i18n::tr_str("status_no_connection") },
+        Net::Connecting => ringing(3.2, 5.0, crate::i18n::tr_str("common_connecting")),
+        Net::Online => StatusLook { state: MarkState::Taut, sway: None, dim: false, label: crate::i18n::tr_str("status_connected_to_the_network") },
     }
 }
 

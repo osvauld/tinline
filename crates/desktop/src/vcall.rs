@@ -137,7 +137,7 @@ impl App {
                 if self.video.negotiated() && self.video.has_camera() {
                     let on = !self.video.local_on();
                     if let Err(e) = self.node.set_camera(on) {
-                        self.notice = Some(format!("Camera: {e}"));
+                        self.notice = Some(crate::i18n::tr_args("video_camera", &[("error", &(e).to_string())]));
                     }
                 }
             }
@@ -173,7 +173,7 @@ impl App {
             Vm::ScanCameras => return blocking(camera::infos, |d| Msg::Video(Vm::Cameras(d))),
             Vm::Cameras(devices) => self.video.devices = devices,
             Vm::SelectCamera(device) => {
-                self.settings.camera_device = (device != super::DEFAULT_LABEL).then_some(device);
+                self.settings.camera_device = (device != super::default_label()).then_some(device);
                 self.save_settings();
                 // Camera selection applies next call; don't interrupt an active capture.
             }
@@ -194,7 +194,7 @@ impl App {
             #[cfg(feature = "video-tuning")]
             Vm::Tuning(tuning) => {
                 if let Err(e) = self.node.set_video_tuning(tuning) {
-                    self.notice = Some(format!("Video tuning: {e}"));
+                    self.notice = Some(crate::i18n::tr_args("video_video_tuning", &[("error", &(e).to_string())]));
                 }
             }
             Vm::PreferHd(on) => {
@@ -210,7 +210,7 @@ impl App {
     /// all, a camera that went on with the call (video call, "Video") goes off again.
     fn found(&mut self, src: Option<Source>) {
         if src.is_none() && self.settings.camera_device.is_some() {
-            self.notice = Some("Your chosen camera isn't connected. Pick one in Settings \u{2192} Video.".into());
+            self.notice = Some(crate::i18n::tr_str("video_your_chosen_camera_isnt").into());
         }
         if src.is_none() && (self.video.early_camera || self.video.local_on()) {
             self.video.early_camera = false;
@@ -328,7 +328,7 @@ impl App {
                 }
                 Err(e) => {
                     let _ = node2.set_camera(false);
-                    let _ = tx.send(Ev::AudioNotice(format!("Camera: {e}")));
+                    let _ = tx.send(Ev::AudioNotice(crate::i18n::tr_args("video_camera", &[("error", &(e).to_string())])));
                 }
             },
             move |pic| {

@@ -32,8 +32,8 @@ fn day_label(ms: u64) -> String {
 fn chip_day(ms: u64) -> String {
     let (Some(d), now) = (local(ms), Local::now()) else { return String::new() };
     match (now.date_naive() - d.date_naive()).num_days() {
-        0 => "Today".into(),
-        1 => "Yesterday".into(),
+        0 => crate::i18n::tr_str("common_today").into(),
+        1 => crate::i18n::tr_str("common_yesterday").into(),
         _ if d.year() == now.year() => d.format("%A %-d %b").to_string(),
         _ => d.format("%A %-d %b %Y").to_string(),
     }
@@ -93,7 +93,7 @@ impl App {
             } else if r.last_outgoing && r.last_delivery == DeliveryState::Pending && !self.status.online {
                 Preview::Waiting(r.preview.clone())
             } else if me && r.preview.is_empty() {
-                Preview::Plain(crate::app::SELF_SUB.to_string(), None)
+                Preview::Plain(crate::app::self_sub().to_string(), None)
             } else {
                 Preview::Plain(r.preview.clone(), None)
             };
@@ -129,7 +129,7 @@ impl App {
         }
         if empty && q.is_empty() {
             // EmptyLine `quiet`: the detail pane has the hero, the column just says where chats go.
-            list = list.push(self.empty_quiet(t, if unread_only { "You\u{2019}re all caught up." } else { "Your chats show up here." }));
+            list = list.push(self.empty_quiet(t, if unread_only { crate::i18n::tr_str("chat_youre_all_caught_up") } else { crate::i18n::tr_str("chat_your_chats_show_up") }));
         }
         container(list).padding([0, 8]).width(Fill).into()
     }
@@ -163,15 +163,15 @@ impl App {
         let line: El = match pv {
             Preview::Plain(s, color) => text(ellipsize(&s, ui::SANS, 13.0, room)).size(13).line_height(lh(21.0)).color(color.unwrap_or(t.ink2)).wrapping(iced::widget::text::Wrapping::None).into(),
             Preview::Draft(s) => {
-                let lead = "Draft: ";
+                let lead = crate::i18n::tr_str("chat_draft");
                 let rest = ellipsize(&s, ui::SANS, 13.0, room - width(lead, ui::SANS_SEMI, 13.0));
                 iced::widget::rich_text![iced::widget::span::<(), iced::Font>(lead).font(ui::SANS_SEMI).color(t.accent_ink), iced::widget::span::<(), iced::Font>(rest).color(t.ink2)]
                     .size(13).line_height(lh(21.0)).wrapping(iced::widget::text::Wrapping::None).into()
             }
             Preview::Waiting(s) => {
-                let lead_w = 13.0 + 3.0 + width("Waiting", ui::SANS_SEMI, 13.0);
+                let lead_w = 13.0 + 3.0 + width(crate::i18n::tr_str("chat_waiting"), ui::SANS_SEMI, 13.0);
                 let rest = ellipsize(&format!(" \u{b7} {s}"), ui::SANS, 13.0, room - lead_w);
-                row![crate::pg_icons::pgi("clock", 13.0, t.gold_ink), Space::new().width(3), semi("Waiting", 13.0, t.gold_ink).line_height(lh(21.0)),
+                row![crate::pg_icons::pgi("clock", 13.0, t.gold_ink), Space::new().width(3), semi(crate::i18n::tr_str("chat_waiting"), 13.0, t.gold_ink).line_height(lh(21.0)),
                     tx(rest, 13.0, t.ink2).line_height(lh(21.0)).wrapping(iced::widget::text::Wrapping::None)].align_y(Alignment::Center).into()
             }
         };
@@ -199,22 +199,22 @@ impl App {
         // 17/22 semibold, status 13/18 muted) opens the details; call, video, find and details are 44 round buttons.
         let online = self.chat.online.contains(&c.did);
         let (sub, sub_color) = if me {
-            (crate::app::SELF_SUB.to_string(), t.ink2)
+            (crate::app::self_sub().to_string(), t.ink2)
         } else if let Some(st) = self.blocks.status(&c.did) {
             (st.to_string(), t.error)
         } else if !contact {
-            ("Not in your contacts".to_string(), t.ink2)
+            (crate::i18n::tr_str("chat_not_in_your_contacts").to_string(), t.ink2)
         } else if self.status.started && !self.status.online {
-            ("Waiting for connection".to_string(), t.ink2)
+            (crate::i18n::tr_str("chat_waiting_for_connection").to_string(), t.ink2)
         } else {
             use crate::blocks::CallGate;
             let only = matches!(self.blocks.call_gate(&c.did, contact), CallGate::NotAllowed);
             // Presence shows only while they're active with me (consent-based, 2026-10-17); otherwise
             // it is unknown: no word rather than a false "Offline" (the line keeps its height).
             let sub = match (online, only) {
-                (true, true) => "Online \u{b7} messages only",
-                (true, false) => "Online",
-                (false, true) => "Messages only",
+                (true, true) => crate::i18n::tr_str("chat_online_messages_only"),
+                (true, false) => crate::i18n::tr_str("common_online"),
+                (false, true) => crate::i18n::tr_str("common_messages_only"),
                 (false, false) => "",
             };
             (sub.to_string(), t.ink2)
@@ -243,21 +243,21 @@ impl App {
             use crate::blocks::CallGate;
             let gate = self.blocks.call_gate(&c.did, contact);
             let ok = matches!(gate, CallGate::Ok);
-            let why = match gate { CallGate::Ok => "Call".to_string(), CallGate::NotAllowed => "Messages only: calling needs their permission".into(), CallGate::Closed(_) => "Blocked".into() };
+            let why = match gate { CallGate::Ok => crate::i18n::tr_str("common_call").to_string(), CallGate::NotAllowed => crate::i18n::tr_str("common_messages_only_calling_needs").into(), CallGate::Closed(_) => crate::i18n::tr_str("common_blocked").into() };
             // My call with them is running (decided 2026-10-14): the phone turns green and returns to it, as a group's does.
             let theirs = self.call.as_ref().is_some_and(|k| k.info.peer_did == c.did && !(k.info.incoming && !k.answered && k.state == p2pcore::CallState::Ringing));
             let phone: El = if theirs {
                 let b = button(container(crate::pg_icons::pgi("phone", 24.0, t.accent_ink)).center_x(44).center_y(44)).padding(0).width(44).height(44)
                     .style(super::shell_view::wash(t, Some(t.accent_soft), Some(t.accent_soft), 22.0)).on_press(Msg::CallUi(crate::call_ui::Action::Restore));
-                iced::widget::tooltip(b, text("Return to call").size(13), iced::widget::tooltip::Position::Bottom).into()
+                iced::widget::tooltip(b, text(crate::i18n::tr_str("chat_return_to_call")).size(13), iced::widget::tooltip::Position::Bottom).into()
             } else { ib("phone", why.clone(), (ok && !calling).then(|| Msg::CallPressed(c.did.clone())), !ok) };
             head_row = head_row
                 .push(phone)
-                .push(ib("video", if ok { "Video call".into() } else { why }, (ok && !calling && !self.settings.no_video).then(|| Msg::DialVideo(c.did.clone())), !ok));
+                .push(ib("video", if ok { crate::i18n::tr_str("chat_video_call").into() } else { why }, (ok && !calling && !self.settings.no_video).then(|| Msg::DialVideo(c.did.clone())), !ok));
         }
-        head_row = head_row.push(ib("search", "Find in this chat (Ctrl+F)".into(), Some(Msg::Chat(Cm::Find(Some(String::new())))), false));
+        head_row = head_row.push(ib("search", crate::i18n::tr_str("chat_find_in_this_chat_ctrl").into(), Some(Msg::Chat(Cm::Find(Some(String::new())))), false));
         if !me && contact {
-            head_row = head_row.push(ib("info", "Chat details".into(), Some(Msg::Chat(Cm::Info(true))), false));
+            head_row = head_row.push(ib("info", crate::i18n::tr_str("chat_chat_details").into(), Some(Msg::Chat(Cm::Info(true))), false));
         }
         // FindBar.svelte covers the header in the same 60 px box, so nothing moves when it opens.
         let head: El = match self.find_bar(t) {
@@ -274,9 +274,9 @@ impl App {
                 container(
                     column![
                         ui::icon(Icon::Download, 32.0, t.primary),
-                        bold(format!("Drop to send to {name}"), 20.0, t.ink),
+                        bold(crate::i18n::tr_args("chat_drop_to_send_to", &[("name", &(name).to_string())]), 20.0, t.ink),
                         tx(
-                            format!("Encrypted on this computer. Up to 2 GB each. {name} gets it the next time you\u{2019}re both online."),
+                            crate::i18n::tr_args("chat_encrypted_on_this_computer", &[("name", &(name).to_string())]),
                             14.0,
                             t.ink2
                         ),
@@ -304,7 +304,7 @@ impl App {
                 t,
                 row![
                     tx(present::block::blocked_by_me_line(name.clone()), 14.0, t.ink2).width(Fill),
-                    pill(t, Kind::Primary, None, "Unblock", Some(Msg::Unblock(c.did.clone()))),
+                    pill(t, Kind::Primary, None, crate::i18n::tr_str("common_unblock"), Some(Msg::Unblock(c.did.clone()))),
                 ]
                 .spacing(12)
                 .align_y(Alignment::Center)
@@ -318,7 +318,7 @@ impl App {
                 t,
                 row![
                     tx(present::block::not_contact_line(name.clone()), 14.0, t.ink2).width(Fill),
-                    pill(t, Kind::Quiet, Some(Icon::UserPlus), "Add contact", Some(Msg::OpenAdd)),
+                    pill(t, Kind::Quiet, Some(Icon::UserPlus), crate::i18n::tr_str("common_add_contact"), Some(Msg::OpenAdd)),
                 ]
                 .spacing(12)
                 .align_y(Alignment::Center)
@@ -340,7 +340,7 @@ impl App {
         if self.blocks.blocked_by_me(peer) {
             let at = self.blocks.list.iter().find(|b| b.did == peer).map(|b| b.blocked_at).unwrap_or(0);
             let when = if at > 0 { format!(" \u{b7} {}", block_when(at)) } else { String::new() };
-            return container(container(tx(format!("You blocked {first}{when}"), 12.0, t.ink2)).padding([4, 12]).style(ui::plain(t.surface2, 999.0)))
+            return container(container(tx(crate::i18n::tr_args("chat_you_blocked", &[("name", &(first).to_string()),("when", &(when).to_string())]), 12.0, t.ink2)).padding([4, 12]).style(ui::plain(t.surface2, 999.0)))
                 .center_x(Fill)
                 .padding([8, 0])
                 .into();
@@ -352,7 +352,7 @@ impl App {
                 column![
                     bold(title, 15.0, t.on_error_c),
                     tx(body, 13.0, t.on_error_c),
-                    tx(format!("Signed by {first} \u{b7} {}", block_when(at)), 12.0, ui::alpha(t.on_error_c, 0.8)),
+                    tx(crate::i18n::tr_args("chat_signed_by", &[("name", &(first).to_string()),("value", &(block_when(at)).to_string())]), 12.0, ui::alpha(t.on_error_c, 0.8)),
                 ]
                 .spacing(4),
             )
@@ -377,9 +377,9 @@ impl App {
                 empty = empty
                     .push(container(crate::pg_icons::pgi("shield", 24.0, t.ink2)).width(52).height(52).center_x(52).center_y(52).style(ui::plain(t.surface2, 26.0)))
                     .push(Space::new().height(14))
-                    .push(semi(format!("Say hello to {first}"), 15.0, t.ink).line_height(lh(21.0)))
+                    .push(semi(crate::i18n::tr_args("chat_say_hello_to", &[("name", &(first).to_string())]), 15.0, t.ink).line_height(lh(21.0)))
                     .push(Space::new().height(4))
-                    .push(tx("Messages go straight to their devices.", 13.0, t.ink2).line_height(lh(19.0)));
+                    .push(tx(crate::i18n::tr_str("chat_messages_go_straight_to"), 13.0, t.ink2).line_height(lh(19.0)));
                 if let Some(peer) = self.chat.peer.as_deref() {
                     empty = empty.push(self.block_note(t, peer, name));
                 }
@@ -436,7 +436,7 @@ impl App {
                 if divider.as_deref() == Some(m.id.as_str()) {
                     let n = n_unread;
                     let rule_ = || container(Space::new()).height(1).width(Fill).style(ui::plain(ui::alpha(t.accent_ink, 0.35), 0.0));
-                    col = col.push(container(row![rule_(), bold(format!("{n} new {}", if n == 1 { "message" } else { "messages" }), 11.0, t.accent_ink), rule_()]
+                    col = col.push(container(row![rule_(), bold(crate::i18n::tr_count("chat_new_messages", n as u64, &[]), 11.0, t.accent_ink), rule_()]
                         .spacing(10).align_y(Alignment::Center)).padding(Padding { top: 12.0, bottom: 6.0, ..Default::default() }));
                     lead_gap = 4.0;
                 }
@@ -471,7 +471,7 @@ impl App {
         let n = self.find_matches().len();
         let idx = if n == 0 { 0 } else { self.chat.find_cur.min(n - 1) };
         let shown = if n == 0 { 0 } else { n - idx };
-        let input = text_input("Find in this chat", q).id(super::super::chat::FIND_ID)
+        let input = text_input(crate::i18n::tr_str("chat_find_in_this_chat"), q).id(super::super::chat::FIND_ID)
             .on_input(|v| Msg::Chat(Cm::Find(Some(v)))).on_submit(Msg::Chat(Cm::FindStep(true)))
             .padding(Padding { top: 11.5, right: 78.0, bottom: 11.5, left: 44.0 }).size(15).line_height(lh(21.0))
             .style(move |_, status| {
@@ -497,7 +497,7 @@ impl App {
     /// Only my own offline state: theirs is unknown unless they're active with me (consent-based
     /// presence, 2026-10-17), so no "they're offline" strip.
     fn strip_text(&self) -> Option<String> {
-        (self.status.started && !self.status.online).then(|| "You\u{2019}re offline. Messages send when you\u{2019}re back online.".to_string())
+        (self.status.started && !self.status.online).then(|| crate::i18n::tr_str("chat_youre_offline_messages_send").to_string())
     }
 
     /// The strip over the top of the list: I'm offline. It overlays, so nothing moves.
@@ -513,10 +513,9 @@ impl App {
     fn call_pill<'a>(&'a self, t: Tok, r: &p2pcore::CallRecord) -> El<'a> {
         let answered = r.duration_secs > 0;
         let d = r.duration_secs;
-        let kind = if r.video { "video" } else { "voice" };
-        let txt = if answered { format!("{} call \u{b7} {}:{:02}", if r.video { "Video" } else { "Voice" }, d / 60, d % 60) }
-            else if r.incoming { if r.reason == "declined_local" { format!("Declined {kind} call") } else { format!("Missed {kind} call") } }
-            else { match r.reason.as_str() { "no_answer" => "No answer", "declined" => "Declined", "cancelled" | "hangup_local" => "Cancelled call", _ => "Call failed" }.into() };
+        let txt = if answered { crate::i18n::tr_args(if r.video { "chat_call_video_length" } else { "chat_call_voice_length" }, &[("duration", &format!("{}:{:02}", d / 60, d % 60))]) }
+            else if r.incoming { crate::i18n::tr_str(match (r.reason == "declined_local", r.video) { (true, true) => "chat_call_declined_video", (true, false) => "chat_call_declined_voice", (false, true) => "chat_call_missed_video", (false, false) => "chat_call_missed_voice" }).to_string() }
+            else { match r.reason.as_str() { "no_answer" => crate::i18n::tr_str("common_no_answer"), "declined" => crate::i18n::tr_str("common_declined"), "cancelled" | "hangup_local" => crate::i18n::tr_str("chat_cancelled_call"), _ => crate::i18n::tr_str("chat_call_failed") }.into() };
         let bad = !answered && r.incoming && r.reason != "declined_local";
         let ink = if bad { t.danger } else { t.ink };
         let pill = button(row![crate::pg_icons::pgi(if r.video { "video" } else { "phone" }, 16.0, if bad { t.danger } else { t.ink2 }), semi(txt, 13.0, ink).line_height(lh(18.0)),
@@ -532,15 +531,13 @@ impl App {
     fn history_note<'a>(&'a self, t: Tok, name: &str) -> El<'a> {
         let busy = self.chat.fetching;
         let (msg, btn): (String, Option<&str>) = if self.chat.older.is_some() {
-            (String::new(), Some("Load earlier messages"))
+            (String::new(), Some(crate::i18n::tr_str("chat_load_earlier_messages")))
         } else if self.chat.no_more {
-            (format!("That is everything {name} has."), None)
+            (crate::i18n::tr_args("chat_that_is_everything_has", &[("name", &(name).to_string())]), None)
         } else {
             (
-                format!(
-                    "Older messages are on {name}\u{2019}s computer. This computer keeps them from when you started using it. Earlier days load when you\u{2019}re both online."
-                ),
-                Some("Ask for earlier messages"),
+                crate::i18n::tr_args("chat_older_messages_are_on", &[("name", &(name).to_string())]),
+                Some(crate::i18n::tr_str("chat_ask_for_earlier_messages")),
             )
         };
         let mut c = column![].spacing(8).align_x(Alignment::Center);
@@ -548,7 +545,7 @@ impl App {
             c = c.push(tx(msg, 13.0, t.ink2));
         }
         if let Some(b) = btn {
-            c = c.push(pill(t, Kind::Quiet, None, if busy { "Loading\u{2026}" } else { b }, (!busy).then_some(Msg::Chat(Cm::Older))));
+            c = c.push(pill(t, Kind::Quiet, None, if busy { crate::i18n::tr_str("common_loading") } else { b }, (!busy).then_some(Msg::Chat(Cm::Older))));
         }
         container(c).center_x(Fill).padding([4, 40]).into()
     }
@@ -593,13 +590,13 @@ impl App {
         }
         let mut body = column![].spacing(0).width(Length::Shrink);
         let text_el: Option<El> = if m.deleted {
-            Some(text(if m.outgoing { "You deleted this message".to_string() } else { format!("{first} deleted this message") })
+            Some(text(if m.outgoing { crate::i18n::tr_str("chat_you_deleted_this_message").to_string() } else { crate::i18n::tr_args("chat_deleted_this_message", &[("name", &(first).to_string())]) })
                 .size(15).line_height(lh(21.0)).color(t.ink2).font(iced::Font { style: iced::font::Style::Italic, ..ui::SANS }).into())
         } else {
             if let Some(rid) = &m.reply_to {
                 let (who, snippet) = match self.chat.find(rid) {
-                    Some(r) => (if r.outgoing { "You".to_string() } else { first.clone() }, preview_of(r)),
-                    None => (String::new(), "Original message unavailable".to_string()),
+                    Some(r) => (if r.outgoing { crate::i18n::tr_str("common_you").to_string() } else { first.clone() }, preview_of(r)),
+                    None => (String::new(), crate::i18n::tr_str("common_original_message_unavailable").to_string()),
                 };
                 let mut q = column![].spacing(0);
                 if !who.is_empty() {
@@ -622,7 +619,7 @@ impl App {
             (!m.text.is_empty()).then(|| message_text(&m.text, fg))
         };
         // Place the time like the CSS float: same line when the last line has room, else under it.
-        let line_text = if m.deleted { if m.outgoing { "You deleted this message".to_string() } else { format!("{first} deleted this message") } } else { m.text.clone() };
+        let line_text = if m.deleted { if m.outgoing { crate::i18n::tr_str("chat_you_deleted_this_message").to_string() } else { crate::i18n::tr_args("chat_deleted_this_message", &[("name", &(first).to_string())]) } } else { m.text.clone() };
         match (text_el, pbox) {
             (Some(te), Some((bw, _))) => {
                 body = body.push(container(te).width(bw).padding(Padding { top: 5.0, right: 9.0, bottom: 0.0, left: 9.0 }));
@@ -708,15 +705,15 @@ impl App {
             c = c.push(container(info).padding(Padding { top: 6.0, right: 14.0, bottom: 8.0, left: 14.0 }).width(Fill));
             c = c.push(container(Space::new().height(1)).width(Fill).style(ui::plain(t.hairline, 0.0)));
         }
-        c = c.push(item("reply", "Reply", false, Msg::Chat(Cm::Reply(m.id.clone()))));
+        c = c.push(item("reply", crate::i18n::tr_str("chat_reply"), false, Msg::Chat(Cm::Reply(m.id.clone()))));
         if !m.text.is_empty() {
-            c = c.push(item("copy", "Copy", false, Msg::Chat(Cm::Copy(preview_of(m)))));
+            c = c.push(item("copy", crate::i18n::tr_str("chat_copy"), false, Msg::Chat(Cm::Copy(preview_of(m)))));
         }
         if m.outgoing && !m.text.is_empty() {
-            c = c.push(item("edit", "Edit", false, Msg::Chat(Cm::StartEdit(m.id.clone()))));
+            c = c.push(item("edit", crate::i18n::tr_str("chat_edit"), false, Msg::Chat(Cm::StartEdit(m.id.clone()))));
         }
         if m.outgoing {
-            c = c.push(item("trash", "Delete", true, Msg::Chat(Cm::Delete(m.id.clone()))));
+            c = c.push(item("trash", crate::i18n::tr_str("chat_delete"), true, Msg::Chat(Cm::Delete(m.id.clone()))));
         }
         ui::raised(container(c).padding([6, 0]).width(220), t, ui::Depth::Pop, ui::pop_surface(t, 14.0))
     }
@@ -731,10 +728,10 @@ impl App {
         let st = self.chat.receipts.get(&m.id)?;
         let first = present::names::first_word(&self.chat_name(&m.peer_did)).to_string();
         let head = match st.tick {
-            ReceiptTick::Read => format!("Read on {first}\u{2019}s device"),
-            ReceiptTick::Delivered => format!("On {first}\u{2019}s device"),
-            ReceiptTick::Waiting => format!("Waiting for {first}\u{2019}s device to confirm"),
-            ReceiptTick::OnlyHere => "Only on this computer so far".to_string(),
+            ReceiptTick::Read => crate::i18n::tr_args("chat_read_on_s_device", &[("name", &(first).to_string())]),
+            ReceiptTick::Delivered => crate::i18n::tr_args("chat_on_s_device", &[("name", &(first).to_string())]),
+            ReceiptTick::Waiting => crate::i18n::tr_args("chat_waiting_for_s_device", &[("name", &(first).to_string())]),
+            ReceiptTick::OnlyHere => crate::i18n::tr_str("chat_only_on_this_computer").to_string(),
             ReceiptTick::None => return None,
         };
         let mut out = vec![head];
@@ -742,7 +739,7 @@ impl App {
             if r.proofs.is_empty() {
                 continue;
             }
-            out.push(format!("Signed by {}", present::names::first_word(&self.chat_name(&r.did))));
+            out.push(crate::i18n::tr_args("chat_signed_by_2", &[("value", &(present::names::first_word(&self.chat_name(&r.did))).to_string())]));
             // One line per signing device: which of their devices said what.
             let mut devices: Vec<(String, Vec<&str>)> = Vec::new();
             for p in &r.proofs {
@@ -755,7 +752,7 @@ impl App {
                 }
             }
             for (dev, what) in devices {
-                out.push(format!("Device {dev} \u{b7} {}", what.join(", ")));
+                out.push(crate::i18n::tr_args("chat_device", &[("device", &(dev).to_string()),("value", &(what.join(", ")).to_string())]));
             }
         }
         Some(out)
@@ -769,31 +766,31 @@ impl App {
         let status: String = match a.state {
             TransferState::Ready if voice => String::new(),
             TransferState::Ready if m.outgoing && m.delivery == DeliveryState::Pending && !self.status.online => {
-                format!("{} \u{b7} {who} gets it when you\u{2019}re both online", size_text(a.size))
+                crate::i18n::tr_args("chat_gets_it_when_youre", &[("value", &(size_text(a.size)).to_string()),("name", &(who).to_string())])
             }
             TransferState::Ready => {
                 let k = kind_label(&a.name);
                 if k.is_empty() { size_text(a.size) } else { format!("{} \u{b7} {k}", size_text(a.size)) }
             }
-            TransferState::Remote if !self.status.online => format!("{} \u{b7} not downloaded", size_text(a.size)),
-            TransferState::Remote => format!("{} \u{b7} not downloaded", size_text(a.size)),
+            TransferState::Remote if !self.status.online => crate::i18n::tr_args("chat_not_downloaded", &[("value", &(size_text(a.size)).to_string())]),
+            TransferState::Remote => crate::i18n::tr_args("chat_not_downloaded", &[("value", &(size_text(a.size)).to_string())]),
             TransferState::Downloading if !self.status.online => {
-                format!("{} \u{b7} paused \u{2014} waiting for {who} to come online", size_text(a.size))
+                crate::i18n::tr_args("chat_paused_waiting_for_to", &[("value", &(size_text(a.size)).to_string()),("name", &(who).to_string())])
             }
-            TransferState::Downloading => format!("Downloading \u{b7} {} of {}", size_text(done), size_text(total.max(a.size))),
-            TransferState::Failed => format!("{} \u{b7} couldn\u{2019}t download \u{2014} tap to retry", size_text(a.size)),
+            TransferState::Downloading => crate::i18n::tr_args("chat_downloading_of", &[("value", &(size_text(done)).to_string()),("value2", &(size_text(total.max(a.size))).to_string())]),
+            TransferState::Failed => crate::i18n::tr_args("chat_couldnt_download_tap_to", &[("value", &(size_text(a.size)).to_string())]),
         };
         let action: Option<El> = match a.state {
-            TransferState::Remote => Some(self.chip_btn(Icon::Download, "Download", fg, Msg::Chat(Cm::Download(m.id.clone())))),
-            TransferState::Failed => Some(self.chip_btn(Icon::RotateCw, "Tap to retry", fg, Msg::Chat(Cm::Download(m.id.clone())))),
+            TransferState::Remote => Some(self.chip_btn(Icon::Download, crate::i18n::tr_str("chat_download"), fg, Msg::Chat(Cm::Download(m.id.clone())))),
+            TransferState::Failed => Some(self.chip_btn(Icon::RotateCw, crate::i18n::tr_str("chat_tap_to_retry"), fg, Msg::Chat(Cm::Download(m.id.clone())))),
             TransferState::Ready => {
                 let mut r = row![].spacing(6);
                 if !voice && class.openable() {
-                    r = r.push(self.chip_btn(Icon::ExternalLink, "Open", fg, Msg::Chat(Cm::Open(m.id.clone()))));
+                    r = r.push(self.chip_btn(Icon::ExternalLink, crate::i18n::tr_str("common_open"), fg, Msg::Chat(Cm::Open(m.id.clone()))));
                 }
-                Some(r.push(self.chip_btn(Icon::Download, "Save", fg, Msg::Chat(Cm::Save(m.id.clone())))).into())
+                Some(r.push(self.chip_btn(Icon::Download, crate::i18n::tr_str("common_save"), fg, Msg::Chat(Cm::Save(m.id.clone())))).into())
             }
-            TransferState::Downloading => Some(self.chip_btn(Icon::X, "Cancel", fg, Msg::Chat(Cm::Cancel(m.id.clone())))),
+            TransferState::Downloading => Some(self.chip_btn(Icon::X, crate::i18n::tr_str("common_cancel"), fg, Msg::Chat(Cm::Cancel(m.id.clone())))),
         };
         let mut c = column![].spacing(6);
         if voice {
@@ -879,13 +876,13 @@ impl App {
                 .on_press(msg).into()
         };
         let mid: Option<El> = match a.state {
-            TransferState::Remote if !m.outgoing => Some(column![chip(format!("Photo \u{b7} {}", size_text(a.size))), pill("Download", Msg::Chat(Cm::Download(m.id.clone())))].spacing(8).align_x(Alignment::Center).into()),
+            TransferState::Remote if !m.outgoing => Some(column![chip(crate::i18n::tr_args("common_photo", &[("value", &(size_text(a.size)).to_string())])), pill(crate::i18n::tr_str("chat_download"), Msg::Chat(Cm::Download(m.id.clone())))].spacing(8).align_x(Alignment::Center).into()),
             TransferState::Downloading => {
                 let (done, total) = self.chat.progress.get(&a.hash).copied().unwrap_or((a.transferred, a.size));
                 let pct = if total > 0 { done * 100 / total } else { 0 };
-                Some(column![chip(format!("{pct}%")), pill("Cancel", Msg::Chat(Cm::Cancel(m.id.clone())))].spacing(8).align_x(Alignment::Center).into())
+                Some(column![chip(format!("{pct}%")), pill(crate::i18n::tr_str("common_cancel"), Msg::Chat(Cm::Cancel(m.id.clone())))].spacing(8).align_x(Alignment::Center).into())
             }
-            TransferState::Failed => Some(pill("Try again", Msg::Chat(Cm::Download(m.id.clone())))),
+            TransferState::Failed => Some(pill(crate::i18n::tr_str("common_try_again"), Msg::Chat(Cm::Download(m.id.clone())))),
             _ => None,
         };
         if let Some(e) = mid {
@@ -893,7 +890,7 @@ impl App {
         }
         if m.outgoing && m.delivery == DeliveryState::Pending && !self.chat.online.contains(&m.peer_did) {
             let first = present::names::first_word(&self.chat_name(&m.peer_did)).to_string();
-            st = st.push(container(chip(format!("Sends when {first} is online"))).width(bw).height(bh).align_bottom(bh).padding(8));
+            st = st.push(container(chip(crate::i18n::tr_args("chat_sends_when_is_online", &[("name", &(first).to_string())]))).width(bw).height(bh).align_bottom(bh).padding(8));
         }
         st.width(bw).height(bh).into()
     }
@@ -906,9 +903,9 @@ impl App {
         let peer = self.chat.peer.as_deref()?;
         let first = present::names::first_word(&self.chat_name(peer)).to_string();
         let delivered = self.chat.find(&id).is_some_and(|m| m.delivery == DeliveryState::Delivered);
-        let body = if !delivered { "It was never delivered, so it\u{2019}s only on this computer.".to_string() }
-            else if self.chat.online.contains(peer) && self.status.online { format!("Delete for everyone asks {first}\u{2019}s devices to remove it too. Copies elsewhere can\u{2019}t be recalled.") }
-            else { format!("{first} is offline. Delete for everyone reaches their devices when you\u{2019}re both online.") };
+        let body = if !delivered { crate::i18n::tr_str("chat_it_was_never_delivered").to_string() }
+            else if self.chat.online.contains(peer) && self.status.online { crate::i18n::tr_args("chat_delete_for_everyone_asks", &[("name", &(first).to_string())]) }
+            else { crate::i18n::tr_args("chat_is_offline_delete_for", &[("name", &(first).to_string())]) };
         let btn_ = |label_: &'static str, danger: bool, msg: Msg| -> El<'a> {
             button(container(semi(label_, 15.0, if danger { t.on_danger_btn } else { t.ink })).center_y(44)).padding([0, 18]).height(44)
                 .style(move |_: &Theme, st| button::Style {
@@ -917,11 +914,11 @@ impl App {
                 .on_press(msg).into()
         };
         let card = column![
-            semi("Delete message?", 17.0, t.ink).line_height(lh(24.0)),
+            semi(crate::i18n::tr_str("chat_delete_message"), 17.0, t.ink).line_height(lh(24.0)),
             Space::new().height(10),
             tx(body, 13.0, t.ink2).line_height(lh(19.0)),
             Space::new().height(18),
-            row![Space::new().width(Fill), btn_("Cancel", false, Msg::Chat(Cm::DeleteCancel)), btn_("Delete for everyone", true, Msg::Chat(Cm::DeleteGo(id)))].spacing(8),
+            row![Space::new().width(Fill), btn_(crate::i18n::tr_str("common_cancel"), false, Msg::Chat(Cm::DeleteCancel)), btn_(crate::i18n::tr_str("chat_delete_for_everyone"), true, Msg::Chat(Cm::DeleteGo(id)))].spacing(8),
         ];
         Some(super::shell_view::pg_dialog(t, 1.0, None, container(card).padding(Padding { top: 20.0, right: 20.0, bottom: 16.0, left: 20.0 }).into(), Msg::Chat(Cm::DeleteCancel)))
     }
@@ -936,11 +933,11 @@ impl App {
             .spacing(8)
             .align_y(Alignment::Center);
         if let Some(i) = pos.filter(|_| ids.len() > 1) {
-            bar = bar.push(tx(format!("{} of {}", i + 1, ids.len()), 13.0, ui::alpha(white, 0.7)));
+            bar = bar.push(tx(crate::i18n::tr_args("chat_of", &[("value", &(i + 1).to_string()),("len", &(ids.len()).to_string())]), 13.0, ui::alpha(white, 0.7)));
         }
         bar = bar
-            .push(self.chip_btn(Icon::ExternalLink, "Open in default app", white, Msg::Chat(Cm::OpenExt(v.id.clone()))))
-            .push(self.chip_btn(Icon::Download, "Save", white, Msg::Chat(Cm::Save(v.id.clone()))))
+            .push(self.chip_btn(Icon::ExternalLink, crate::i18n::tr_str("chat_open_in_default_app"), white, Msg::Chat(Cm::OpenExt(v.id.clone()))))
+            .push(self.chip_btn(Icon::Download, crate::i18n::tr_str("common_save"), white, Msg::Chat(Cm::Save(v.id.clone()))))
             .push(
                 button(container(ui::icon(Icon::X, 20.0, white)).center_x(36).center_y(36))
                     .padding(0)
@@ -963,8 +960,8 @@ impl App {
                 .height(if txt.lines().count() > 30 { Length::Fill } else { Length::Shrink })
                 .style(ui::plain(t.surface, 12.0))
                 .into(),
-            ViewBody::Loading => container(tx("Loading\u{2026}", 15.0, ui::alpha(white, 0.8))).center_x(Fill).center_y(Fill).into(),
-            ViewBody::Failed(e) => container(tx(format!("Could not show this: {e}"), 15.0, ui::alpha(white, 0.8))).center_x(Fill).center_y(Fill).into(),
+            ViewBody::Loading => container(tx(crate::i18n::tr_str("common_loading"), 15.0, ui::alpha(white, 0.8))).center_x(Fill).center_y(Fill).into(),
+            ViewBody::Failed(e) => container(tx(crate::i18n::tr_args("chat_could_not_show_this", &[("error", &(e).to_string())]), 15.0, ui::alpha(white, 0.8))).center_x(Fill).center_y(Fill).into(),
         };
         let nav = |i: Icon, d: i32, on: bool| -> El<'a> {
             let b = button(container(ui::icon(i, 26.0, white)).center_x(44).center_y(44))
@@ -1035,14 +1032,14 @@ impl App {
                 .width(Fill).clip(true).style(ui::plain(t.surface2, 12.0)).into()
         };
         let chip: Option<El> = if let Some(m) = self.chat.reply.as_deref().and_then(|id| self.chat.find(id)) {
-            Some(ctx(format!("Replying to {}", if m.outgoing { "yourself".to_string() } else { first.clone() }), preview_of(m)))
+            Some(ctx(crate::i18n::tr_args("chat_replying_to", &[("value", &(if m.outgoing { "yourself".to_string() } else { first.clone() }).to_string())]), preview_of(m)))
         } else {
-            self.chat.editing.as_deref().and_then(|id| self.chat.find(id)).map(|m| ctx("Editing message".to_string(), preview_of(m)))
+            self.chat.editing.as_deref().and_then(|id| self.chat.find(id)).map(|m| ctx(crate::i18n::tr_str("chat_editing_message").to_string(), preview_of(m)))
         };
         let editing = self.chat.editing.is_some();
         let editor = text_editor(&self.chat.input)
             .id(COMPOSER_ID)
-            .placeholder("Message")
+            .placeholder(crate::i18n::tr_str("common_message"))
             .on_action(|a| Msg::Chat(Cm::Edit(a)))
             .key_binding(|kp| {
                 use iced::keyboard::key::Named;

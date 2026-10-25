@@ -287,7 +287,7 @@ impl App {
             self.device_in = crate::flow::suggest_label();
         }
         if self.device_in.trim().is_empty() {
-            self.device_in = "Home computer".into();
+            self.device_in = crate::i18n::tr_str("signup_home_computer").into();
         }
         self.gate_go(Step::Phrase)
     }
@@ -397,7 +397,7 @@ impl App {
             Gs::WordsPaste => return clipboard::read().map(|t| Msg::Gate(Gs::WordsPasted(t))),
             Gs::WordsPasted(t) => match t {
                 Some(t) => return self.update(Msg::Gate(Gs::Word(0, t))),
-                None => self.notice = Some("Couldn\u{2019}t read the clipboard. Paste into the first box instead.".into()),
+                None => self.notice = Some(crate::i18n::tr_str("signup_couldnt_read_the_clipboard").into()),
             },
             Gs::RestoreGo => {
                 if !self.gate.rec_key.is_empty() {
@@ -408,7 +408,7 @@ impl App {
                             return self.gate_go(Step::Name);
                         }
                         Err(_) => {
-                            self.notice = Some("That key has a typo or is cut short. Paste it again from where you saved it.".into());
+                            self.notice = Some(crate::i18n::tr_str("signup_that_key_has_a").into());
                             return Task::none();
                         }
                     }
@@ -481,7 +481,7 @@ impl App {
                 }
                 if let Err(e) = self.node.reset_ticket() {
                     eprintln!("reset_ticket: {e}");
-                    self.add_ui.hint = "Couldn\u{2019}t make a new code just now. Try again in a moment.".into();
+                    self.add_ui.hint = crate::i18n::tr_str("signup_couldnt_make_a_new").into();
                     return Task::none();
                 }
                 self.ticket = None;
@@ -550,7 +550,7 @@ impl App {
     fn ac_pasted(&mut self, text: String) {
         self.add_phase = super::AddPhase::Idle;
         if text.trim().is_empty() {
-            self.add_ui.hint = "Your clipboard is empty right now. When their code arrives, copy it and paste it here.".into();
+            self.add_ui.hint = crate::i18n::tr_str("signup_your_clipboard_is_empty").into();
             return;
         }
         let text = if text.len() > 64 * 1024 { String::new() } else { text };
@@ -559,11 +559,11 @@ impl App {
                 self.add_ui.found = Some(card);
                 String::new()
             }
-            p2pcore::CodePeek::Own => "That\u{2019}s your own code. Send it to them, and paste theirs here.".into(),
+            p2pcore::CodePeek::Own => crate::i18n::tr_str("signup_thats_your_own_code").into(),
             p2pcore::CodePeek::Expired { name, .. } => {
-                format!("That code from {} has expired. Codes last 7 days, so ask them for a fresh one.", first_name(&name))
+                crate::i18n::tr_args("signup_that_code_from_has", &[("value", &(first_name(&name)).to_string())])
             }
-            p2pcore::CodePeek::NotACode => "That doesn\u{2019}t look like a Tinline code. Could they copy it again for you?".into(),
+            p2pcore::CodePeek::NotACode => crate::i18n::tr_str("signup_that_doesnt_look_like").into(),
         };
     }
 
@@ -597,7 +597,7 @@ impl App {
         self.play_cue(crate::cues::knock());
         // Away (window hidden or not focused): a desktop notification. In front the sheet below says it.
         if !(self.win.is_some() && self.focused) {
-            super::notify("Contact request", &format!("{} would like to add you", r.name), super::Target::Show);
+            super::notify(crate::i18n::tr_str("signup_contact_request"), &crate::i18n::tr_args("signup_would_like_to_add", &[("name", &(r.name).to_string())]), super::Target::Show);
         }
         if self.sheet_free() {
             self.screen = Screen::AddContact;
@@ -612,7 +612,7 @@ impl App {
         self.reload_contacts();
         self.play_line();
         if !(self.win.is_some() && self.focused) {
-            super::notify(&c.name, "Accepted your request. Your line is open.", super::Target::Chat(c.did.clone()));
+            super::notify(&c.name, crate::i18n::tr_str("signup_accepted_your_request_your"), super::Target::Chat(c.did.clone()));
         }
         if self.screen == Screen::AddContact {
             if self.add_ui.found.as_ref().is_some_and(|f| f.did == c.did) {

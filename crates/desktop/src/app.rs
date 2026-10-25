@@ -50,7 +50,7 @@ use crate::tray::TrayCmd;
 use crate::ui;
 use crate::{Ev, INIT};
 
-const DEFAULT_LABEL: &str = "System default";
+fn default_label() -> &'static str { crate::i18n::tr_str("app_system_default") }
 const REVEAL_SECS: u64 = 60;
 /// How long the call-ended screen stays before closing itself.
 const ENDED_SECS: u64 = 4;
@@ -541,7 +541,7 @@ impl Clone for EvBox {
 }
 impl std::fmt::Debug for EvBox {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str("Ev")
+        f.write_str(crate::i18n::tr_str("app_ev"))
     }
 }
 
@@ -562,7 +562,7 @@ fn blocking<T: Send + 'static>(
 ) -> Task<Msg> {
     Task::perform(async move { tokio::task::spawn_blocking(f).await.ok() }, move |r| match r {
         Some(v) => m(v),
-        None => Msg::Done(Err("task failed".into())),
+        None => Msg::Done(Err(crate::i18n::tr_str("app_task_failed").into())),
     })
 }
 
@@ -644,7 +644,7 @@ fn notify(summary: &str, body: &str, target: Target) {
         n.app_id("com.osvauld.tinline");
         #[cfg(all(unix, not(target_os = "macos")))]
         {
-            n.action("default", "Open");
+            n.action("default", crate::i18n::tr_str("common_open"));
             if let Ok(handle) = n.show() {
                 // Blocks until the notification is clicked or closed; this thread is its own.
                 handle.wait_for_action(|action| {
@@ -671,20 +671,20 @@ fn s<E: ToString>(e: E) -> String {
 /// Plain-language text for errors the passphrase screens can hit. Never includes the passphrase.
 fn friendly(e: Error) -> String {
     match e {
-        Error::WrongPassphrase => "That passphrase didn\u{2019}t open the account.".into(),
-        Error::WeakPassphrase => "Type a passphrase first.".into(),
-        Error::BadPhrase => "That phrase isn\u{2019}t valid. Check each word and their order.".into(),
-        Error::Locked => "Unlock first.".into(),
-        Error::NotStarted => "Tinline is still starting. Try again in a moment.".into(),
-        Error::HaveIdentity => "An identity already exists here.".into(),
-        Error::AccountExists(_) => "That account is already on this computer.".into(),
-        Error::InCall => "You\u{2019}re on a call. Hang up before switching accounts.".into(),
+        Error::WrongPassphrase => crate::i18n::tr_str("app_that_passphrase_didnt_open").into(),
+        Error::WeakPassphrase => crate::i18n::tr_str("app_type_a_passphrase_first").into(),
+        Error::BadPhrase => crate::i18n::tr_str("app_that_phrase_isnt_valid").into(),
+        Error::Locked => crate::i18n::tr_str("common_unlock_first").into(),
+        Error::NotStarted => crate::i18n::tr_str("common_tinline_is_still_starting").into(),
+        Error::HaveIdentity => crate::i18n::tr_str("app_an_identity_already_exists").into(),
+        Error::AccountExists(_) => crate::i18n::tr_str("app_that_account_is_already").into(),
+        Error::InCall => crate::i18n::tr_str("app_youre_on_a_call").into(),
         e => e.to_string(),
     }
 }
 
 /// Why a passphrase is required on a computer without a secure keyring.
-const NO_KEYRING: &str = "This computer has no secure keyring, so Tinline needs a passphrase to protect your account.";
+fn no_keyring() -> &'static str { crate::i18n::tr_str("app_no_secure_keyring") }
 
 /// What Settings says about the stored key; empty with a passphrase (nothing is stored then).
 fn key_home(node: &Node, has_pass: bool) -> (&'static str, bool) {
@@ -693,9 +693,9 @@ fn key_home(node: &Node, has_pass: bool) -> (&'static str, bool) {
     }
     let Some(did) = keystore::current_did(node) else { return ("", false) };
     match keystore::location(keystore::system(), &INIT.get().unwrap().data, &did) {
-        Some(keystore::Where::Keyring) => ("Your key is kept in this computer\u{2019}s keyring, so Tinline opens without asking.", false),
+        Some(keystore::Where::Keyring) => (crate::i18n::tr_str("app_your_key_is_kept_in"), false),
         Some(keystore::Where::File) => (
-            "Your key is kept in a plain file in Tinline\u{2019}s data folder. Anyone who copies that folder can open your account. Add a passphrase to protect it; the file is then deleted.",
+            crate::i18n::tr_str("app_your_key_is_kept"),
             true,
         ),
         None => ("", false),
@@ -1266,7 +1266,7 @@ impl App {
         if self.shell_search.bind(account) { self.search.clear(); }
         // Serialise UI account mutations with profile writes; reads still reject late epochs.
         if self.profiles.pending && matches!(msg, Msg::SwitchGo | Msg::SwitchNow(_) | Msg::NewAccount(_) | Msg::NewLink | Msg::GoRestore | Msg::RemoveGo(_)) {
-            self.notice = Some("Wait for the profile save to finish.".into());
+            self.notice = Some(crate::i18n::tr_str("app_wait_for_the_profile").into());
             return Task::none();
         }
         let old_owner = self.profile_owner();
@@ -1322,11 +1322,11 @@ impl App {
                     self.ended = None;
                 }
                 crate::tray::set_status(match self.lock {
-                    LockState::Locked => "Locked",
-                    _ if !self.status.started => "Starting...",
-                    _ if self.status.online && !self.avail.available => "Not available",
-                    _ if self.status.online => "Available",
-                    _ => "Offline",
+                    LockState::Locked => crate::i18n::tr_str("common_locked"),
+                    _ if !self.status.started => crate::i18n::tr_str("common_starting"),
+                    _ if self.status.online && !self.avail.available => crate::i18n::tr_str("common_not_available"),
+                    _ if self.status.online => crate::i18n::tr_str("common_available"),
+                    _ => crate::i18n::tr_str("common_offline"),
                 });
                 let in_call = self.call.as_ref().is_some_and(|c| c.state == CallState::Active);
                 crate::tray::set_state(if in_call {
@@ -1397,14 +1397,14 @@ impl App {
             Msg::Create => {
                 let name = self.name_in.trim().to_string();
                 if name.is_empty() {
-                    self.notice = Some("Enter a name first".into());
+                    self.notice = Some(crate::i18n::tr_str("app_enter_a_name_first").into());
                     return Task::none();
                 }
                 if self.busy {
                     return Task::none();
                 }
                 if self.pass_in.is_empty() && !self.keyring_ok {
-                    self.notice = Some(NO_KEYRING.into());
+                    self.notice = Some(no_keyring().into());
                     return Task::none();
                 }
                 self.busy = true;
@@ -1434,7 +1434,7 @@ impl App {
                     return Task::none();
                 }
                 let Some(label) = flow::valid_label(&self.device_in) else {
-                    self.notice = Some("Give this computer a name of 1 to 64 characters.".into());
+                    self.notice = Some(crate::i18n::tr_str("common_give_this_computer_a").into());
                     return Task::none();
                 };
                 self.busy = true;
@@ -1526,7 +1526,7 @@ impl App {
                 Ok(on) => self.remember = on,
                 Err(_) => {
                     self.remember = false;
-                    self.notice = Some("This computer\u{2019}s keyring wouldn\u{2019}t keep it, so Tinline will keep asking for your passphrase.".into());
+                    self.notice = Some(crate::i18n::tr_str("app_this_computers_keyring_wouldnt").into());
                 }
             },
             Msg::ToggleRestore => {
@@ -1537,19 +1537,19 @@ impl App {
             Msg::Restore => {
                 let name = self.name_in.trim().to_string();
                 if name.is_empty() || self.phrase_in.trim().is_empty() {
-                    self.notice = Some("Enter your name and recovery phrase".into());
+                    self.notice = Some(crate::i18n::tr_str("app_enter_your_name_and").into());
                     return Task::none();
                 }
                 if self.busy {
                     return Task::none();
                 }
                 if self.pass_in.is_empty() && !self.keyring_ok {
-                    self.notice = Some(NO_KEYRING.into());
+                    self.notice = Some(no_keyring().into());
                     return Task::none();
                 }
                 self.busy = true;
                 self.exists_hint = false;
-                self.notice = Some("Restoring...".into());
+                self.notice = Some(crate::i18n::tr_str("app_restoring").into());
                 let pass = take_secret(&mut self.pass_in);
                 // The typed phrase stays until the restore succeeds, so a mistake costs no retyping.
                 let phrase = self.phrase_in.to_string();
@@ -1601,7 +1601,7 @@ impl App {
                 let data = INIT.get().unwrap().data.clone();
                 return blocking(
                     move || {
-                        if keystore::auto_unlock(keystore::system(), &data, &node) { Ok(()) } else { Err("Still can\u{2019}t find the key.".to_string()) }
+                        if keystore::auto_unlock(keystore::system(), &data, &node) { Ok(()) } else { Err(crate::i18n::tr_str("app_still_cant_find_the").to_string()) }
                     },
                     Msg::Unlocked,
                 );
@@ -1739,7 +1739,7 @@ impl App {
                     return Task::none();
                 }
                 self.busy = true;
-                self.notice = Some(if self.has_pass { "Changing passphrase..." } else { "Adding passphrase..." }.into());
+                self.notice = Some(if self.has_pass { crate::i18n::tr_str("app_changing_passphrase") } else { crate::i18n::tr_str("app_adding_passphrase") }.into());
                 let adding = !self.has_pass;
                 let (old, new) = (take_secret(&mut self.old_in), take_secret(&mut self.pass_in));
                 let node = self.node.clone();
@@ -1763,12 +1763,12 @@ impl App {
                         self.refresh_pass();
                         self.hide_phrase();
                         self.change_form = false;
-                        self.notice = Some(if added { "Passphrase added. You will need it next time Tinline starts." } else { "Passphrase changed" }.into());
+                        self.notice = Some(if added { crate::i18n::tr_str("app_passphrase_added_you_will") } else { crate::i18n::tr_str("common_passphrase_changed") }.into());
                         self.pv.done = true;
                     }
                     Err(e) => {
                         // A wrong current passphrase belongs under its field.
-                        if self.profiles.page == Some(profile_ui::Page::Native(24)) { self.pv.errs[0] = "That isn\u{2019}t your current passphrase.".into(); } else { self.notice = Some(e); }
+                        if self.profiles.page == Some(profile_ui::Page::Native(24)) { self.pv.errs[0] = crate::i18n::tr_str("app_that_isnt_your_current").into(); } else { self.notice = Some(e); }
                     }
                 }
             }
@@ -1791,7 +1791,7 @@ impl App {
                         }
                         return Task::batch([self.fetch_ticket(), self.refresh_chats(), self.check_clipboard(false)]);
                     }
-                    Err(e) => self.notice = Some(format!("Could not start: {e}")),
+                    Err(e) => self.notice = Some(crate::i18n::tr_args("app_could_not_start", &[("error", &(e).to_string())])),
                 }
             }
             Msg::Ticket(r) => {
@@ -1803,7 +1803,7 @@ impl App {
                     self.ticket = Some(c.code);
                     self.ticket_exp = Some(c.expires_at);
                 }
-                    Err(e) => self.notice = Some(format!("Ticket: {e}")),
+                    Err(e) => self.notice = Some(crate::i18n::tr_args("app_ticket", &[("error", &(e).to_string())])),
                 }
             }
             Msg::CopyPhrase => {
@@ -1814,7 +1814,7 @@ impl App {
                 };
                 if let Some(phrase) = phrase {
                     let text = phrase.to_string();
-                    self.notice = Some("Your recovery words are copied.".into());
+                    self.notice = Some(crate::i18n::tr_str("app_your_recovery_words_are").into());
                     return clipboard::write(text);
                 }
             }
@@ -1918,7 +1918,7 @@ impl App {
                 };
                 if peek.known {
                     if explicit {
-                        self.notice = Some(format!("{} is already in your contacts", peek.name));
+                        self.notice = Some(crate::i18n::tr_args("app_is_already_in_your", &[("name", &(peek.name).to_string())]));
                     }
                 } else if explicit || !self.dismissed.contains(&peek.ticket) {
                     self.offer = Some(peek);
@@ -1996,7 +1996,7 @@ impl App {
                     }
                     Err(e) => {
                         eprintln!("accept_contact_request: {e}");
-                        self.notice = Some("Couldn\u{2019}t accept just now. Try again in a moment.".into());
+                        self.notice = Some(crate::i18n::tr_str("app_couldnt_accept_just_now").into());
                     }
                 }
             }
@@ -2026,7 +2026,7 @@ impl App {
                 PvMsg::CopyKey => {
                     if let Some(p) = &self.revealed {
                         if let Ok(k) = p2pcore::recovery_key_from_phrase(p.to_string()) {
-                            self.notice = Some("Your recovery key is copied.".into());
+                            self.notice = Some(crate::i18n::tr_str("app_your_recovery_key_is").into());
                             return iced::clipboard::write(k);
                         }
                     }
@@ -2040,10 +2040,10 @@ impl App {
                 PvMsg::Change => {
                     // ChangePass.svelte's checks, with sign-up's rule that any length works.
                     let mut e: [String; 3] = Default::default();
-                    if self.pass_in.is_empty() { e[1] = "Type a new passphrase.".into(); }
-                    else if self.has_pass && *self.pass_in == *self.old_in { e[1] = "Pick one that is different from the current one.".into(); }
-                    if e[1].is_empty() && *self.pv.again != *self.pass_in { e[2] = "The two passphrases differ.".into(); }
-                    if self.has_pass && self.old_in.is_empty() { e[0] = "Type your current passphrase.".into(); }
+                    if self.pass_in.is_empty() { e[1] = crate::i18n::tr_str("app_type_a_new_passphrase").into(); }
+                    else if self.has_pass && *self.pass_in == *self.old_in { e[1] = crate::i18n::tr_str("app_pick_one_that_is").into(); }
+                    if e[1].is_empty() && *self.pv.again != *self.pass_in { e[2] = crate::i18n::tr_str("app_the_two_passphrases_differ").into(); }
+                    if self.has_pass && self.old_in.is_empty() { e[0] = crate::i18n::tr_str("app_type_your_current_passphrase").into(); }
                     let bad = e.iter().any(|x| !x.is_empty());
                     self.pv.errs = e;
                     if bad { return Task::none(); }
@@ -2083,7 +2083,7 @@ impl App {
                     }
                     return Task::batch(tasks);
                 }
-                Err(e) => self.notice = Some(format!("Could not call: {e}")),
+                Err(e) => self.notice = Some(crate::i18n::tr_args("app_could_not_call", &[("error", &(e).to_string())])),
             },
             Msg::Select(did) => {
                 self.live.close();
@@ -2239,12 +2239,12 @@ impl App {
                 return self.profile_write(profile_ui::Save::Field("name".into()), move |node| node.set_name(name).map_err(s));
             }
             Msg::InDev(d) => {
-                self.settings.input = (d != DEFAULT_LABEL).then_some(d);
+                self.settings.input = (d != default_label()).then_some(d);
                 self.ctl.devices.lock().unwrap().0 = self.settings.input.clone();
                 self.save_settings();
             }
             Msg::OutDev(d) => {
-                self.settings.output = (d != DEFAULT_LABEL).then_some(d);
+                self.settings.output = (d != default_label()).then_some(d);
                 self.ctl.devices.lock().unwrap().1 = self.settings.output.clone();
                 self.save_settings();
             }
@@ -2295,7 +2295,7 @@ impl App {
             Msg::DeviceEdit(v) => self.device_edit = v,
             Msg::SaveDevice => {
                 let Some(label) = flow::valid_label(&self.device_edit) else {
-                    self.notice = Some("A device name is 1 to 64 characters.".into());
+                    self.notice = Some(crate::i18n::tr_str("common_a_device_name_is").into());
                     return Task::none();
                 };
                 let node = self.node.clone();
@@ -2308,7 +2308,7 @@ impl App {
                 Ok(l) => {
                     self.device_label = l.clone();
                     self.device_edit = l;
-                    self.notice = Some("Device name saved".into());
+                    self.notice = Some(crate::i18n::tr_str("app_device_name_saved").into());
                 }
                 Err(e) => self.notice = Some(e),
             },
@@ -2320,7 +2320,7 @@ impl App {
                 self.remove_ask = None;
                 let (node, data) = (self.node.clone(), INIT.get().unwrap().data.clone());
                 return blocking(
-                    move || flow::remove(keystore::system(), &data, &node, &did).map(|_| "Account removed from this computer".to_string()).map_err(friendly),
+                    move || flow::remove(keystore::system(), &data, &node, &did).map(|_| crate::i18n::tr_str("app_account_removed_from_this").to_string()).map_err(friendly),
                     Msg::Removed,
                 );
             }
@@ -2443,15 +2443,15 @@ impl App {
                     match &g {
                         crate::GroupEv::Message(m) if !m.outgoing && m.kind == p2pcore::GroupItemKind::Post
                             && !(attended && self.live.open.as_deref() == Some(m.group_id.as_str())) && !self.blocks.blocked_by_me(&m.author_did) => {
-                            let group = self.live.list.iter().find(|s| s.id == m.group_id).map(|s| s.name.clone()).unwrap_or_else(|| "A group".into());
+                            let group = self.live.list.iter().find(|s| s.id == m.group_id).map(|s| s.name.clone()).unwrap_or_else(|| crate::i18n::tr_str("app_a_group").into());
                             let who = m.author_name.split_whitespace().next().unwrap_or(&m.author_name).to_string();
-                            notify(&group, &format!("{who}: {}", crate::app::group_live::post_line(m)), Target::Show);
+                            notify(&group, &crate::i18n::tr_args("app_text", &[("name", &(who).to_string()),("value", &(crate::app::group_live::post_line(m)).to_string())]), Target::Show);
                             self.play_received();
                         }
                         // Away: "Book club · Priya invited you to the group". In front: one knock; the Groups tab counts it.
                         crate::GroupEv::Invitation(i) if !i.outgoing && i.state == p2pcore::GroupInvitationState::Pending => {
                             if attended { self.play_cue(crate::cues::knock()); }
-                            else { notify(&i.group_name, &format!("{} invited you to the group", i.inviter_name.split_whitespace().next().unwrap_or(&i.inviter_name)), Target::Show); }
+                            else { notify(&i.group_name, &crate::i18n::tr_args("app_invited_you_to_the", &[("value", &(i.inviter_name.split_whitespace().next().unwrap_or(&i.inviter_name)).to_string())]), Target::Show); }
                         }
                         _ => {}
                     }
@@ -2473,7 +2473,7 @@ impl App {
             }
             Ev::Link(l) => return self.link_event(l),
             Ev::Incoming(info) if self.call.as_ref().is_some_and(|c| c.state == CallState::Active && c.info.call_id != info.call_id) => {
-                if crate::audio::RING_CALLS.load(Ordering::Relaxed) { notify("Tinline", &format!("{} is calling", info.peer_name), Target::Show); }
+                if crate::audio::RING_CALLS.load(Ordering::Relaxed) { notify("Tinline", &crate::i18n::tr_args("app_is_calling", &[("peer_name", &(info.peer_name).to_string())]), Target::Show); }
                 let mut tasks = vec![self.show_window()];
                 if let Some(act) = INIT.get().unwrap().waiting_action.clone() {
                     let (node, id) = (self.node.clone(), info.call_id.clone());
@@ -2505,7 +2505,7 @@ impl App {
                     stats: None,
                 });
                 self.ended = None;
-                if crate::audio::RING_CALLS.load(Ordering::Relaxed) { notify("Tinline", &format!("{name} is calling"), Target::Show); }
+                if crate::audio::RING_CALLS.load(Ordering::Relaxed) { notify("Tinline", &crate::i18n::tr_args("common_is_calling", &[("name", &(name).to_string())]), Target::Show); }
                 // The camera is looked up while it rings (no streaming, so no camera light): the Camera and
                 // "Video" buttons work the moment they are pressed.
                 let mut tasks = vec![self.show_window(), self.find_camera()];
@@ -2604,8 +2604,8 @@ impl App {
 }
 
 /// Subtitle of the "You" conversation in the list and its header.
-pub(super) const SELF_SUB: &str = "Saved items \u{b7} only on your devices";
+pub(super) fn self_sub() -> &'static str { crate::i18n::tr_str("chat_saved_items_only_on") }
 
 fn self_contact(did: &str) -> Contact {
-    Contact { did: did.to_string(), name: "You".into(), device: String::new(), added_at: 0, alias: None, verified: false, lost_touch: false }
+    Contact { did: did.to_string(), name: crate::i18n::tr_str("common_you").into(), device: String::new(), added_at: 0, alias: None, verified: false, lost_touch: false }
 }

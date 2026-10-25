@@ -34,21 +34,21 @@ pub fn text(reason: &str, name: &str, blocked_by_me: bool) -> Option<String> {
 pub fn history(reason: &str, incoming: bool, missed: bool, secs: u32, name: &str) -> String {
     let dur = |s: u32| present::time::clock(s as i64);
     if missed {
-        return "Missed".into();
+        return crate::i18n::tr_str("common_missed").into();
     }
     match reason {
-        "unreachable" => "Couldn\u{2019}t reach".into(),
-        "declined" => "Declined".into(),
-        "declined_local" => "Declined".into(),
-        "unavailable" => "Not available".into(),
-        "no_answer" => "No answer".into(),
-        "cancelled" => "Cancelled".into(),
-        "answered_elsewhere" => "Answered on another device".into(),
-        "declined_elsewhere" => "Declined on another device".into(),
-        "blocked" => "Blocked".into(),
-        "calls not allowed" => "Calls not allowed".into(),
-        _ if secs > 0 => format!("{} \u{b7} {}", if incoming { "Incoming" } else { "Outgoing" }, dur(secs)),
-        r => text(r, name, false).unwrap_or_else(|| "Call".into()),
+        "unreachable" => crate::i18n::tr_str("call_couldnt_reach").into(),
+        "declined" => crate::i18n::tr_str("common_declined").into(),
+        "declined_local" => crate::i18n::tr_str("common_declined").into(),
+        "unavailable" => crate::i18n::tr_str("common_not_available").into(),
+        "no_answer" => crate::i18n::tr_str("common_no_answer").into(),
+        "cancelled" => crate::i18n::tr_str("common_cancelled").into(),
+        "answered_elsewhere" => crate::i18n::tr_str("call_answered_on_another_device").into(),
+        "declined_elsewhere" => crate::i18n::tr_str("call_declined_on_another_device").into(),
+        "blocked" => crate::i18n::tr_str("common_blocked").into(),
+        "calls not allowed" => crate::i18n::tr_str("call_calls_not_allowed").into(),
+        _ if secs > 0 => format!("{} \u{b7} {}", if incoming { crate::i18n::tr_str("common_incoming") } else { crate::i18n::tr_str("common_outgoing") }, dur(secs)),
+        r => text(r, name, false).unwrap_or_else(|| crate::i18n::tr_str("common_call").into()),
     }
 }
 

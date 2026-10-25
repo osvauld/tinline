@@ -8,12 +8,12 @@ use serde_json::{Map, Value};
 use std::collections::HashMap;
 use std::io::Cursor;
 
-pub const PICTURE_HELP: &str = "Replacing or removing your picture requests deletion of the previous cached copy on your linked devices and contacts when they sync. Screenshots, backups, and copies retained by modified clients cannot be erased by the app.";
-pub const FIELD_HELP: &str = "Your contacts can see your profile. Removing information hides it from your profile; earlier versions can remain in synced history.";
-const SAVE_FAILED: &str = "Couldn\u{2019}t save that. Your profile is unchanged and what you typed is still here.";
-pub const BUSY_UNSUPPORTED: &str = "Busy is not available yet. Your call settings are unchanged.";
+pub fn picture_help() -> &'static str { crate::i18n::tr_str("profile_picture_help") }
+pub fn field_help() -> &'static str { crate::i18n::tr_str("profile_field_help") }
+fn save_failed() -> &'static str { crate::i18n::tr_str("profile_save_failed") }
+pub fn busy_unsupported() -> &'static str { crate::i18n::tr_str("profile_busy_unsupported") }
 fn availability_problem(available: bool) -> Option<&'static str> {
-    if available { None } else { Some(BUSY_UNSUPPORTED) }
+    if available { None } else { Some(busy_unsupported()) }
 }
 fn mutation_allowed(transition_busy: bool, pending: bool) -> bool {
     !transition_busy && !pending
@@ -55,17 +55,22 @@ pub enum Page {
 }
 
 /// Known additional-information keys (info.ts KNOWN): label, link?, hint, AddInfo icon.
-pub const KNOWN: [(&str, &str, bool, &str, &str); 3] = [
-    ("pronouns", "Pronouns", false, "For example, she/her", "users"),
-    ("location", "Location", false, "City or region", "info"),
-    ("website", "Website", true, "https://", "link"),
-];
+pub fn known_fields() -> [(&'static str, &'static str, bool, &'static str, &'static str); 3] {
+    [
+    ("pronouns", crate::i18n::tr_str("profile_pronouns"), false, crate::i18n::tr_str("profile_for_example_she_her"), "users"),
+    ("location", crate::i18n::tr_str("profile_location"), false, crate::i18n::tr_str("profile_city_or_region"), "info"),
+    ("website", crate::i18n::tr_str("profile_website"), true, "https://", "link"),
+    ]
+}
 pub fn known(k: &str) -> Option<(&'static str, bool, &'static str, &'static str)> {
-    KNOWN.iter().find(|x| x.0 == k).map(|x| (x.1, x.2, x.3, x.4))
+    known_fields().iter().find(|x| x.0 == k).map(|x| (x.1, x.2, x.3, x.4))
 }
 
 /// Availability.svelte BUSY_CHOICES: id, label.
-pub const BUSY_CHOICES: [(&str, &str); 5] = [("30m", "30 minutes"), ("1h", "1 hour"), ("4h", "4 hours"), ("tom", "Tomorrow morning"), ("open", "No end time")];
+pub fn busy_choices() -> [(&'static str, &'static str); 5] {
+    let t = crate::i18n::tr_str;
+    [("30m", t("profile_busy_30m")), ("1h", t("profile_busy_1h")), ("4h", t("profile_busy_4h")), ("tom", t("profile_busy_tomorrow")), ("open", t("profile_busy_no_end"))]
+}
 
 #[derive(Debug, Clone)]
 pub enum Action {
@@ -255,7 +260,7 @@ impl p2pcore::ProfileEvents for Bridge {
 pub fn scalar(v: &Value) -> Option<String> {
     match v {
         Value::Null => Some("\u{2014}".into()),
-        Value::Bool(b) => Some(if *b { "Yes" } else { "No" }.into()),
+        Value::Bool(b) => Some(if *b { crate::i18n::tr_str("profile_yes") } else { crate::i18n::tr_str("profile_no") }.into()),
         Value::String(s) => Some(s.clone()),
         Value::Number(n) => Some(n.to_string()),
         _ => None,
@@ -295,7 +300,7 @@ pub fn reserved(k: &str) -> bool {
 }
 /// info.ts extraKeys: known ones first, then the rest in stored order.
 pub fn extra_keys(fields: &Map<String, Value>) -> Vec<String> {
-    let mut out: Vec<String> = KNOWN.iter().map(|k| k.0).filter(|k| fields.contains_key(*k)).map(str::to_string).collect();
+    let mut out: Vec<String> = known_fields().iter().map(|k| k.0).filter(|k| fields.contains_key(*k)).map(str::to_string).collect();
     out.extend(fields.keys().filter(|k| !reserved(k) && known(k).is_none()).cloned());
     out
 }
@@ -329,25 +334,25 @@ fn has_control(s: &str, allow_newline: bool) -> bool {
 pub fn check_name(raw: &str, what: &str) -> Result<(), String> {
     let s = raw.trim();
     if s.is_empty() {
-        return Err(format!("The {what} can\u{2019}t be empty."));
+        return Err(crate::i18n::tr_args("profile_the_cant_be_empty", &[("what", &(what).to_string())]));
     }
     if has_control(s, false) {
-        return Err(format!("The {what} can\u{2019}t contain control or text-direction characters."));
+        return Err(crate::i18n::tr_args("profile_the_cant_contain_control", &[("what", &(what).to_string())]));
     }
     if s.len() > LIMIT_NAME {
-        return Err(format!("That {what} is too long. Up to {LIMIT_NAME} bytes; some characters take more than one."));
+        return Err(crate::i18n::tr_args("profile_that_is_too_long_up", &[("what", &(what).to_string()),("limit", &(LIMIT_NAME).to_string())]));
     }
     Ok(())
 }
 /// profile.ts checkText.
 pub fn check_text(s: &str, what: &str) -> Result<(), String> {
     if s.len() > LIMIT_TEXT {
-        return Err(format!("That is too long for {what}: up to {LIMIT_TEXT} bytes, and some characters take more than one."));
+        return Err(crate::i18n::tr_args("profile_that_is_too_long", &[("what", &(what).to_string()),("limit", &(LIMIT_TEXT).to_string())]));
     }
     if has_control(s, true) {
         let mut c = what.chars();
         let cap = c.next().map(|f| f.to_uppercase().collect::<String>() + c.as_str()).unwrap_or_default();
-        return Err(format!("{cap} can\u{2019}t contain control or text-direction characters."));
+        return Err(crate::i18n::tr_args("profile_cant_contain_control_or", &[("cap", &(cap).to_string())]));
     }
     Ok(())
 }
@@ -361,15 +366,15 @@ pub fn inspect(bytes: &[u8]) -> Result<image::RgbaImage, String> {
         v.trim_end_matches(".0").to_string()
     };
     if bytes.len() > MAX {
-        return Err(format!("That picture is {} MB. Pictures can be up to {} MB.", mb(bytes.len()), mb(MAX)));
+        return Err(crate::i18n::tr_args("profile_that_picture_is_mb", &[("value", &(mb(bytes.len())).to_string()),("value2", &(mb(MAX)).to_string())]));
     }
     let kind = match bytes {
         [0x89, 0x50, 0x4E, 0x47, ..] => ImageFormat::Png,
         [0xFF, 0xD8, 0xFF, ..] => ImageFormat::Jpeg,
         [0x52, 0x49, 0x46, 0x46, _, _, _, _, 0x57, 0x45, 0x42, 0x50, ..] => ImageFormat::WebP,
-        _ => return Err("Tinline can use PNG, JPEG or WebP pictures. That file is a different kind of file.".into()),
+        _ => return Err(crate::i18n::tr_str("profile_tinline_can_use_png").into()),
     };
-    let damaged = || "That file couldn\u{2019}t be read as a picture. It may be damaged.".to_string();
+    let damaged = || crate::i18n::tr_str("profile_that_file_couldnt_be").to_string();
     let mut r = ImageReader::with_format(Cursor::new(bytes), kind);
     let mut limits = image::Limits::default();
     limits.max_alloc = Some(96 * 1024 * 1024);
@@ -377,7 +382,7 @@ pub fn inspect(bytes: &[u8]) -> Result<image::RgbaImage, String> {
     let dec = r.into_decoder().map_err(|_| damaged())?;
     let (w, h) = dec.dimensions();
     if w > 4096 || h > 4096 {
-        return Err(format!("That picture is {w} \u{d7} {h} pixels. Tinline accepts up to 4096 pixels on a side."));
+        return Err(crate::i18n::tr_args("profile_that_picture_is_pixels", &[("status", &(w).to_string()),("host", &(h).to_string())]));
     }
     if w == 0 || h == 0 {
         return Err(damaged());
@@ -452,7 +457,7 @@ pub fn stage(src: &image::RgbaImage, crop: Crop, scale: f32, surface2: [u8; 3]) 
 
 fn read_profile(node: &Node, owner: &str, did: &str, scale: f32, dark: bool) -> Result<Option<Cached>, String> {
     if node.profile().is_none_or(|p| p.did != owner) {
-        return Err("Account changed".into());
+        return Err(crate::i18n::tr_str("profile_account_changed").into());
     }
     let Some(p) = node.account_profile(did.into()).map_err(s)? else { return Ok(None) };
     let fields: Map<String, Value> = serde_json::from_str(&p.fields_json).map_err(s)?;
@@ -469,10 +474,10 @@ fn read_profile(node: &Node, owner: &str, did: &str, scale: f32, dark: bool) -> 
     }
     let current = node.account_profile(did.into()).map_err(s)?;
     if current.as_ref().is_none_or(|latest| latest.picture_hash != p.picture_hash || latest.picture_ready != p.picture_ready) {
-        return Err("Profile picture changed while loading".into());
+        return Err(crate::i18n::tr_str("profile_profile_picture_changed_while").into());
     }
     if node.profile().is_none_or(|p| p.did != owner) {
-        return Err("Account changed".into());
+        return Err(crate::i18n::tr_str("profile_account_changed").into());
     }
     Ok(Some(c))
 }
@@ -509,7 +514,7 @@ impl App {
     /// One write at a time, on a worker, for the account that is selected now.
     pub(super) fn profile_write(&mut self, what: Save, f: impl FnOnce(&Node) -> Result<(), String> + Send + 'static) -> Task<Msg> {
         if !mutation_allowed(self.busy, self.profiles.pending) || self.lock != p2pcore::LockState::Unlocked {
-            self.notice = Some("Wait for the current account operation to finish.".into());
+            self.notice = Some(crate::i18n::tr_str("profile_wait_for_the_current").into());
             return Task::none();
         }
         let Some(owner) = self.profile_owner() else { return Task::none() };
@@ -520,7 +525,7 @@ impl App {
         blocking(
             move || {
                 if node.profile().is_none_or(|p| p.did != o) {
-                    return Err("Account changed".into());
+                    return Err(crate::i18n::tr_str("profile_account_changed").into());
                 }
                 f(&node)
             },
@@ -575,7 +580,7 @@ impl App {
 
     pub(super) fn profile_update(&mut self, action: Action) -> Task<Msg> {
         if self.busy && matches!(action, Action::Save | Action::Remove(_) | Action::Available | Action::Busy | Action::AddSave | Action::UsePhoto | Action::ConfirmRemovePhoto | Action::ConfirmBlock) {
-            self.notice = Some("Wait for the current account operation to finish.".into());
+            self.notice = Some(crate::i18n::tr_str("profile_wait_for_the_current").into());
             return Task::none();
         }
         match action {
@@ -699,10 +704,10 @@ impl App {
                     }
                     "status" | "about" => {
                         let v = raw.trim().to_string();
-                        if v.is_empty() { Ok(None) } else { check_text(&v, if key == "status" { "a status" } else { "about" }).map(|_| Some(v)) }
+                        if v.is_empty() { Ok(None) } else { check_text(&v, if key == "status" { crate::i18n::tr_str("profile_a_status") } else { "about" }).map(|_| Some(v)) }
                     }
                     k if known(k).is_some_and(|k| k.1) => {
-                        if raw.trim().is_empty() { Ok(None) } else { normalise_link(&raw).map(Some).ok_or_else(|| "Enter a web address that starts with http:// or https://.".to_string()) }
+                        if raw.trim().is_empty() { Ok(None) } else { normalise_link(&raw).map(Some).ok_or_else(|| crate::i18n::tr_str("profile_enter_a_web_address").to_string()) }
                     }
                     _ => {
                         let v = raw.trim().to_string();
@@ -779,28 +784,28 @@ impl App {
                 let key = if pick.is_empty() { name.trim().to_lowercase().split_whitespace().collect::<Vec<_>>().join("-") } else { pick.clone() };
                 if pick.is_empty() {
                     if name.trim().is_empty() {
-                        *error = "Give the information a name.".into();
+                        *error = crate::i18n::tr_str("profile_give_the_information_a").into();
                         return Task::none();
                     }
                     if has_control(name, false) || name.len() > 256 {
-                        *error = "That name can\u{2019}t be used. Keep it short, without control characters.".into();
+                        *error = crate::i18n::tr_str("profile_that_name_cant_be").into();
                         return Task::none();
                     }
                     if reserved(&key) || known(&key).is_some() || have.contains(&key) {
-                        *error = "You already have information with that name.".into();
+                        *error = crate::i18n::tr_str("profile_you_already_have_information").into();
                         return Task::none();
                     }
                 }
                 let mut v = value.trim().to_string();
                 if v.is_empty() {
-                    *error = "Add something to save.".into();
+                    *error = crate::i18n::tr_str("profile_add_something_to_save").into();
                     return Task::none();
                 }
                 if known(&key).is_some_and(|k| k.1) {
                     match normalise_link(value) {
                         Some(u) => v = u,
                         None => {
-                            *error = "Enter a web address that starts with http:// or https://.".into();
+                            *error = crate::i18n::tr_str("profile_enter_a_web_address").into();
                             return Task::none();
                         }
                     }
@@ -814,7 +819,7 @@ impl App {
                 self.profiles.pic_error.clear();
                 return blocking(
                     move || {
-                        let Some(path) = rfd::FileDialog::new().add_filter("Pictures", &["png", "jpg", "jpeg", "webp"]).pick_file() else { return Ok(None) };
+                        let Some(path) = rfd::FileDialog::new().add_filter(crate::i18n::tr_str("profile_pictures"), &["png", "jpg", "jpeg", "webp"]).pick_file() else { return Ok(None) };
                         let len = std::fs::metadata(&path).map_err(s)?.len() as usize;
                         if len > 2 * 1024 * 1024 {
                             // Never read a huge file just to refuse it.
@@ -868,10 +873,10 @@ impl App {
                 return self.profile_write(Save::Picture, move |n| {
                     let sq = render_square(&src, crop);
                     let mut bytes = Cursor::new(Vec::new());
-                    image::DynamicImage::ImageRgba8(sq).write_to(&mut bytes, image::ImageFormat::Png).map_err(|_| "Couldn\u{2019}t prepare that picture. Try a different one.".to_string())?;
+                    image::DynamicImage::ImageRgba8(sq).write_to(&mut bytes, image::ImageFormat::Png).map_err(|_| crate::i18n::tr_str("profile_couldnt_prepare_that_picture").to_string())?;
                     let bytes = bytes.into_inner();
                     if bytes.len() > 1024 * 1024 {
-                        return Err("Couldn\u{2019}t prepare that picture. Try a different one.".into());
+                        return Err(crate::i18n::tr_str("profile_couldnt_prepare_that_picture").into());
                     }
                     n.replace_profile_picture(bytes).map_err(s)
                 });
@@ -966,7 +971,7 @@ impl App {
                         return Task::batch(tasks);
                     }
                     Err(e) => {
-                        let msg = if e == "Account changed" { SAVE_FAILED.to_string() } else { format!("{SAVE_FAILED} ({e})") };
+                        let msg = if e == "Account changed" { save_failed().to_string() } else { format!("{} ({e})", save_failed()) };
                         match (&what, self.profiles.layer.as_mut(), self.profiles.edit.as_mut()) {
                             (Save::Availability, ..) => self.profiles.av_error = msg,
                             (Save::Add(_), Some(Layer::Add { error, .. }), _) => *error = msg,
@@ -1004,9 +1009,9 @@ pub fn until_label(until_secs: u64) -> String {
     if a.date_naive() == today {
         hm
     } else if a.date_naive() == today + chrono::Duration::days(1) {
-        format!("tomorrow {hm}")
+        crate::i18n::tr_args("profile_tomorrow", &[("time", &(hm).to_string())])
     } else {
-        format!("{} {hm}", a.format("%A"))
+        crate::i18n::tr_args("profile_text", &[("value", &(a.format("%A")).to_string()),("time", &(hm).to_string())])
     }
 }
 
