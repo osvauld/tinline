@@ -415,7 +415,7 @@ where = [
   "ios group_request_accept_note: Chat request card note. {name} is their first name.",
   "desktop group_accepting_adds_as_a: Desktop, groups (in group_live_view.rs, live_requests). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = "स्वीकार करने पर {name} सिर्फ़ संदेशों के लिए आपके संपर्क बनेंगे। कॉल की अनुमति आप बाद में दे सकते हैं।"
+text = "स्वीकार करने पर {name} को सिर्फ़ संदेशों के लिए संपर्क में जोड़ा जाएगा। कॉल की अनुमति आप बाद में दे सकते हैं।"
 
 [t_6c654c2827]
 en = "Block"
@@ -1496,7 +1496,7 @@ en = "Turn on Open link to share it"
 where = [
   "android groupsb_turn_on_open: Second line of the Copy link row while the group is not open.",
 ]
-text = "शेयर करने के लिए “लिंक खोलें” चालू करें"
+text = "शेयर करने के लिए “पब्लिक लिंक” चालू करें"
 
 [t_a0332695ed]
 en = "Couldn’t get the link"
@@ -3751,7 +3751,7 @@ where = [
   "android profile_err_fields_full: Error when the profile already has the maximum number of extra fields. {max} is the number of pieces of information allowed (64).",
   "ios people_rule_too_many: Profile check: too many information items. {max} is the most pieces of information allowed.",
 ]
-text = "आपकी {max} जानकारियाँ पूरी हो गई हैं। नई जोड़ने के लिए एक हटाएँ।"
+text = "{max} जानकारियों की सीमा पूरी हो गई है। नई जोड़ने के लिए एक हटाएँ।"
 
 [t_4b4e905279]
 en = "Your profile is full. Remove some information to add more."
@@ -11813,7 +11813,7 @@ en = "That picture is too large to post."
 where = [
   "android groupsc_picture_too_large: Error when the picture chosen for a group post is too large.",
 ]
-text = "यह फ़ोटो पोस्ट करने के लिए बहुत बड़ी है।"
+text = "वह फ़ोटो पोस्ट करने के लिए बहुत बड़ी है।"
 
 [t_452484335e]
 en = "Pick someone first."
@@ -12788,7 +12788,7 @@ en = "Accepting adds them as a contact for messages only. You can allow calls la
 where = [
   "ios group_request_accept_note_unnamed: Note on a chat request card when the requester's name is not known.",
 ]
-text = "स्वीकार करने पर वे सिर्फ़ संदेशों के लिए आपके संपर्क बनेंगे। कॉल की अनुमति आप बाद में दे सकते हैं।"
+text = "स्वीकार करने पर उन्हें सिर्फ़ संदेशों के लिए संपर्क में जोड़ा जाएगा। कॉल की अनुमति आप बाद में दे सकते हैं।"
 
 [t_02147a4ac8]
 en = "Diagnostics"
@@ -17484,7 +17484,7 @@ en = "Replying to a message"
 where = [
   "desktop group_replying_to_a_message: Desktop, group composer: shown above the field while I reply to a message whose author I cannot name.",
 ]
-text = "एक संदेश को जवाब"
+text = "एक संदेश का जवाब"
 
 [t_479631b28d]
 en = "Invited by someone"

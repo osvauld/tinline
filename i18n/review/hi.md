@@ -190,3 +190,42 @@ Every item in RESTRUCTURE.md §1–9c affects Hindi too (Hindi got the best avai
 | R3 | `t_d2cd7397c2` group_flagged “Flagged {value}”, `t_c78935c805` group_blocked_2 “Blocked {value}”, and every desktop string fed by `groups_view.rs` `when()`/`day()` | `when()`/`day()` format with chrono `%b %-d` (“Oct 10, 15:20”), so English month names appear inside Hindi sentences. RESTRUCTURE §5 covers view.rs only. | Format dates with the locale’s formatter (ICU/`chrono` with locale), or pass day and month as placeholders the catalog can order. |
 
 Total entries in R1–R3: 9.
+
+## Round 2 (top-up)
+
+Reviewer: `i18n-review2-hi` (2026-10-25), independent of the top-up translator. Scope: the 272 TM entries that have Hindi at HEAD of `i18n/topup-hi` (758d1b00) but were absent or empty at `bb37c83f` (found by id, since the export reordered the file). Same references as round 1, and the round-1 rulings above.
+
+Counts: 272 reviewed · ok 267 · fixed 5 in scope, plus 1 sibling string changed so the named and unnamed forms match · native 2.
+
+Mechanical checks on all 272: placeholders, `**…**` pairs and `[label](terms|privacy)` targets are identical to English. The one exception is `{count}` in the `one` form of `t_fd423f904b`, which is intended (see the rulings below). No कृपया/त्रुटि/विफल/अमान्य/तुम, no `!`, no `आप ने`/`आप को`, no postposition glued to a placeholder, no precomposed nukta letters, and every sentence ends with `।`. After the edits, `python3 scripts/i18n_tm.py apply hi` and `python3 scripts/i18n_gen.py --check` both pass.
+
+What reads well: the you/named/someone variants use agent + ने (आपने {name} को एडमिन बनाया, किसी ने आपको एडमिन से हटाया, {by} ने किसी सदस्य को …), so they carry no gender. The call is a feminine subject throughout (कॉल जुड़ रही है, कॉल फिर से जुड़ रही है, कॉल जुड़ नहीं पाई, किसी ने कॉल शुरू की). The desktop month abbreviations match Hindi CLDR (जन॰ फ़र॰ मार्च अप्रैल मई जून जुल॰ अग॰ सित॰ अक्तू॰ नव॰ दिस॰), and the date patterns are day-first (`{day} {month}`, `{weekday}, {day} {month}`). The `{words}` strings reuse the earlier 24-word wording word for word. The unnamed forms mirror the named ones (आमंत्रण भेज दिया। स्वीकार करते ही वे जुड़ जाएँगे।).
+
+### Translator's notes, ruled
+
+| Note | Ruling |
+|---|---|
+| `{count}` kept in `one` for “One more flag…” (`t_fd423f904b`) | **Keep.** In Hindi CLDR, 0 and 1 both fall under `one`, so “एक और फ़्लैग” would be wrong for 0. “किसी भी एडमिन का {count} और फ़्लैग” reads naturally for 1. |
+| “संपर्क · चुने गए: {count}” (`t_011b42d2cb`) | **Keep.** It follows the round-1 label + number pattern (बिना पढ़े: {count}). चुने गए agrees with संपर्क, not with the user. |
+| “कोई सदस्य: {text}” (`t_24d8164c85`) | **Keep.** A neutral author label for a preview line. A bare “कोई: …” would read as “anyone: …”. |
+| “Public link” = पब्लिक लिंक vs older “लिंक खोलें” | The Android hint `groupsb_turn_on_open` (`t_a861eda638`, “Turn on Open link to share it”) names the same switch, which is now titled `groupsb_public_link` “Public link”. It now quotes “पब्लिक लिंक”. The browser button `t_a33d8822ae` “Open link” stays लिंक खोलें. The descriptive “open link” sentences (`t_17e0e3851c`, `t_d0b680b900`, `t_d7e9b858a1`: खुला/खुले लिंक) describe the link rather than quote the switch, so they stay. **English follow-up:** the English `groupsb_turn_on_open` still says “Open link”, but the desktop version says “Public link”. |
+
+### Changes made (6)
+
+| TM id · key | English | Before | After | Why |
+|---|---|---|---|---|
+| `t_6449e39122` · android profile_err_fields_full, ios people_rule_too_many | You’ve reached {max} pieces of information. Remove one to add another. | आपकी {max} जानकारियाँ पूरी हो गई हैं। … | {max} जानकारियों की सीमा पूरी हो गई है। … | the old wording read as “your 64 pieces of information are finished/complete”. This one says the limit is reached, with no gendered verb |
+| `t_33d5002404` · desktop group_replying_to_a_message | Replying to a message | एक संदेश को जवाब | एक संदेश का जवाब | you reply *to a person* with को but *to a message* with का (संदेश का जवाब) |
+| `t_a861eda638` · android groupsb_turn_on_open | Turn on Open link to share it | शेयर करने के लिए “लिंक खोलें” चालू करें | शेयर करने के लिए “पब्लिक लिंक” चालू करें | it quotes the switch, which is now titled पब्लिक लिंक. It matches desktop `t_6bb1d72052` |
+| `t_14c772ceb8` · ios group_request_accept_note_unnamed | Accepting adds them as a contact for messages only. You can allow calls later. | स्वीकार करने पर वे सिर्फ़ संदेशों के लिए आपके संपर्क बनेंगे। … | स्वीकार करने पर उन्हें सिर्फ़ संदेशों के लिए संपर्क में जोड़ा जाएगा। … | gender policy: बनेंगे shows a masculine future, while the impersonal passive with को is just as short and neutral |
+| `t_a431a91991` · android groups_list_accepting_adds, ios group_request_accept_note, desktop group_accepting_adds_as_a (round-1 string) | Accepting adds {name} as a contact for messages only. You can allow calls later. | स्वीकार करने पर {name} सिर्फ़ संदेशों के लिए आपके संपर्क बनेंगे। … | स्वीकार करने पर {name} को सिर्फ़ संदेशों के लिए संपर्क में जोड़ा जाएगा। … | the named sibling of the line above, changed so the two variants stay the same sentence |
+| `t_f677db182d` · android groupsc_picture_too_large | That picture is too large to post. | यह फ़ोटो … | वह फ़ोटो … | “That picture” is वह in every other picture error (round-1 wording) |
+
+### Needs a native speaker (2)
+
+| # | TM id · key | Current | Concern | Candidate |
+|---|---|---|---|---|
+| 1 | `t_2860c9d0b0` groupsc_flag_final, `t_81b97ce04a` groupsc_flag_more | आपका फ़्लैग {total} में से {n} होगा। | “Yours will be flag 2 of 3” has no exact Hindi equivalent without an ordinal. Gluing वाँ to the placeholder ({n}वाँ) is fragile. The current wording is understandable but flat. | “यह {total} में से फ़्लैग नंबर {n} होगा।”, or keep the current wording. |
+| 2 | `t_6e81650bc7` group_sys_joined_someone | ग्रुप में एक नया सदस्य जुड़ा | The named form is “{name} अब ग्रुप में हैं”. जुड़ा agrees with the grammatically masculine सदस्य, so this is acceptable, but a native ear may prefer the matching pattern. | “एक नया सदस्य अब ग्रुप में है” |
+
+Left as is, deliberately: the unnamed “they” lines that use the masculine honorific plural (वे जुड़ जाएँगे, वे … जोड़े गए हैं … दिखेंगे, वे ब्लॉक हैं और अब और अनुरोध नहीं भेज सकते). They match their named counterparts from round 1, and no equally short neutral form reads naturally. `t_2ea8f25938` ({name} … कर सकेंगे) only replaced the hard-coded 3 with the placeholder, so the round-1 text stands.
