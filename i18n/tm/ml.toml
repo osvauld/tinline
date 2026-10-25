@@ -14535,854 +14535,854 @@ en = "Calls themself “{name}” · {added}"
 where = [
   "desktop contact_calls_themself: Desktop, contact detail (in view.rs, detail_view). {name} is a person's name (usually the first word of their chosen name). {added} is a value filled in by the app.",
 ]
-text = ""
+text = "സ്വയം വിളിക്കുന്ന പേര് “{name}” · {added}"
 
 [t_c40c3cc5e8]
 en = "{name} can ring this computer and your other devices."
 where = [
   "desktop contact_can_ring_this_computer: Desktop, contact detail (in view.rs, detail_view). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} വിളിച്ചാൽ ഈ കമ്പ്യൂട്ടറിലും നിങ്ങളുടെ മറ്റ് ഉപകരണങ്ങളിലും റിംഗ് ചെയ്യും."
 
 [t_42003932c9]
 en = "History stays on this computer only."
 where = [
   "desktop contact_history_stays_on_this: Desktop, contact detail (in view.rs, detail_view).",
 ]
-text = ""
+text = "ചരിത്രം ഈ കമ്പ്യൂട്ടറിൽ മാത്രം നിൽക്കും."
 
 [t_8efe069875]
 en = "Home"
 where = [
   "desktop contact_home: Desktop, contact detail (in view.rs, detail_view).",
 ]
-text = ""
+text = "ഹോം"
 
 [t_573ad42e5f]
 en = "Length"
 where = [
   "desktop contact_length: Desktop, contact detail (in view.rs, detail_view).",
 ]
-text = ""
+text = "ദൈർഘ്യം"
 
 [t_9a368b022b]
 en = "Name on this computer"
 where = [
   "desktop contact_name_on_this_computer: Desktop, contact detail (in view.rs, detail_view).",
 ]
-text = ""
+text = "ഈ കമ്പ്യൂട്ടറിലെ പേര്"
 
 [t_4901b5c982]
 en = "No calls yet."
 where = [
   "desktop contact_no_calls_yet: Desktop, contact detail (in view.rs, detail_view).",
 ]
-text = ""
+text = "ഇതുവരെ കോളുകളൊന്നുമില്ല."
 
 [t_70f49db840]
 en = "Only you see this. {name} still calls themself “{name2}”."
 where = [
   "desktop contact_only_you_see_this: Desktop, contact detail (in view.rs, detail_view). {name} is a person's name (usually the first word of their chosen name). {name2} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "ഇത് നിങ്ങൾക്ക് മാത്രമേ കാണാനാകൂ. {name} സ്വയം വിളിക്കുന്നത് ഇപ്പോഴും “{name2}” എന്നാണ്."
 
 [t_4c6766fea8]
 en = "Path"
 where = [
   "desktop contact_path: Desktop, contact detail (in view.rs, detail_view).",
 ]
-text = ""
+text = "വഴി"
 
 [t_48f2045566]
 en = "When"
 where = [
   "desktop contact_when: Desktop, contact detail (in view.rs, detail_view).",
 ]
-text = ""
+text = "എപ്പോൾ"
 
 [t_b4ee944a9e]
 en = "Anyone who sees these words can become you. Write them down and keep them somewhere safe."
 where = [
   "desktop gate_anyone_who_sees_these: Desktop, sign-in and gate screens (in view.rs, phrase_view).",
 ]
-text = ""
+text = "ഈ വാക്കുകൾ കാണുന്ന ആർക്കും നിങ്ങളായി മാറാം. അവ എഴുതിവച്ച് സുരക്ഷിതമായ ഒരിടത്ത് സൂക്ഷിക്കുക."
 
 [t_83fb73677c]
 en = "I have saved it"
 where = [
   "desktop gate_i_have_saved_it: Desktop, sign-in and gate screens (in view.rs, phrase_view).",
 ]
-text = ""
+text = "ഞാൻ സേവ് ചെയ്തു"
 
 [t_563bcc7b29]
 en = "Or"
 where = [
   "desktop gate_or: Desktop, sign-in and gate screens (in view.rs, key_failed_view).",
 ]
-text = ""
+text = "അല്ലെങ്കിൽ"
 
 [t_50f37c1422]
 en = "Other accounts"
 where = [
   "desktop gate_other_accounts: Desktop, sign-in and gate screens (in view.rs, other_accounts).",
 ]
-text = ""
+text = "മറ്റ് അക്കൗണ്ടുകൾ"
 
 [t_9f0a2108c4]
 en = "Retry"
 where = [
   "desktop gate_retry: Desktop, sign-in and gate screens (in view.rs, key_failed_view).",
 ]
-text = ""
+text = "വീണ്ടും ശ്രമിക്കുക"
 
 [t_25991ff41c]
 en = "The system keyring did not accept the key."
 where = [
   "desktop gate_the_system_keyring_did: Desktop, sign-in and gate screens (in view.rs, key_failed_view).",
 ]
-text = ""
+text = "സിസ്റ്റം കീറിംഗ് കീ സ്വീകരിച്ചില്ല."
 
 [t_20effc2e8e]
 en = "These {words} words are the only way to restore your identity on another device."
 where = [
   "desktop gate_these_24_words_are: Desktop, sign-in and gate screens (in view.rs, phrase_view). {words} is the number of recovery words (24), a number.",
 ]
-text = ""
+text = "മറ്റൊരു ഉപകരണത്തിൽ നിങ്ങളുടെ ഐഡന്റിറ്റി പുനഃസ്ഥാപിക്കാനുള്ള ഒരേയൊരു വഴി ഈ {words} വാക്കുകളാണ്."
 
 [t_4999341dad]
 en = "This computer no longer has the key that opens it, and its keyring entry is missing. Once you restore, your calls come through again."
 where = [
   "desktop gate_this_computer_no_longer: Desktop, sign-in and gate screens (in view.rs, key_lost_view).",
 ]
-text = ""
+text = "ഇത് തുറക്കുന്ന കീ ഇപ്പോൾ ഈ കമ്പ്യൂട്ടറിൽ ഇല്ല, അതിന്റെ കീറിംഗ് എൻട്രിയും കാണുന്നില്ല. അക്കൗണ്ട് പുനഃസ്ഥാപിച്ചുകഴിഞ്ഞാൽ നിങ്ങളുടെ കോളുകൾ വീണ്ടും എത്തും."
 
 [t_46f9d90635]
 en = "Tinline couldn’t store the key that opens your account on this computer, so your account has not been saved yet. Nothing is lost."
 where = [
   "desktop gate_tinline_couldnt_store_the: Desktop, sign-in and gate screens (in view.rs, key_failed_view).",
 ]
-text = ""
+text = "നിങ്ങളുടെ അക്കൗണ്ട് തുറക്കുന്ന കീ ഈ കമ്പ്യൂട്ടറിൽ സൂക്ഷിക്കാൻ Tinline-ന് കഴിഞ്ഞില്ല, അതിനാൽ നിങ്ങളുടെ അക്കൗണ്ട് ഇതുവരെ സേവ് ചെയ്തിട്ടില്ല. ഒന്നും നഷ്ടപ്പെട്ടിട്ടില്ല."
 
 [t_12ec401f93]
 en = "Trying..."
 where = [
   "desktop gate_trying: Desktop, sign-in and gate screens (in view.rs, key_failed_view).",
 ]
-text = ""
+text = "ശ്രമിക്കുന്നു..."
 
 [t_ac7e2468f2]
 en = "Your recovery phrase"
 where = [
   "desktop gate_your_recovery_phrase: Desktop, sign-in and gate screens (in view.rs, phrase_view).",
 ]
-text = ""
+text = "നിങ്ങളുടെ വീണ്ടെടുക്കൽ വാക്കുകൾ"
 
 [t_7a5c764b79]
 en = "Battery is low or the computer is hot. Hosting is limited: only one person is heard at a time, and no one new can join."
 where = [
   "desktop gcall_battery_is_low_or: Desktop, group calls (in gcall.rs, gcall_event).",
 ]
-text = ""
+text = "ബാറ്ററി കുറവാണ്, അല്ലെങ്കിൽ കമ്പ്യൂട്ടർ ചൂടായിരിക്കുന്നു. ഹോസ്റ്റിംഗ് പരിമിതമാണ്: ഒരു സമയം ഒരാളെ മാത്രമേ കേൾക്കൂ, പുതിയ ആർക്കും ചേരാനാകില്ല."
 
 [t_c1b5462e8b]
 en = "{value} is calling the group"
 where = [
   "desktop gcall_is_calling_the_group: Desktop, group calls (in gcall.rs, gcall_event). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "{value} ഗ്രൂപ്പിനെ വിളിക്കുന്നു"
 
 [t_5882776009]
 en = "Started by {value}"
 where = [
   "desktop gcall_started_by: Desktop, group calls (in gcall_view.rs, gcall_banner). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "ആരംഭിച്ചത്: {value}"
 
 [t_c72585d311]
 en = "A call host is a member’s computer or phone that carries the call. An admin can appoint one in Group info."
 where = [
   "desktop group_a_call_host_is: Desktop, groups (in group_live_view.rs, live_pane).",
 ]
-text = ""
+text = "കോൾ നടത്തുന്ന, ഒരു അംഗത്തിന്റെ കമ്പ്യൂട്ടറോ ഫോണോ ആണ് കോൾ ഹോസ്റ്റ്. ഗ്രൂപ്പ് വിവരങ്ങളിൽ ഒരു അഡ്മിന് ഒരെണ്ണം നിയമിക്കാം."
 
 [t_d1b8093efb]
 en = "A call host is a member’s computer or phone that carries the call. You can host calls on this computer, or appoint a member in Group info."
 where = [
   "desktop group_a_call_host_is_a: Desktop, groups (in group_live_view.rs, live_pane).",
 ]
-text = ""
+text = "കോൾ നടത്തുന്ന, ഒരു അംഗത്തിന്റെ കമ്പ്യൂട്ടറോ ഫോണോ ആണ് കോൾ ഹോസ്റ്റ്. നിങ്ങൾക്ക് ഈ കമ്പ്യൂട്ടറിൽ കോളുകൾ ഹോസ്റ്റ് ചെയ്യാം, അല്ലെങ്കിൽ ഗ്രൂപ്പ് വിവരങ്ങളിൽ ഒരു അംഗത്തെ നിയമിക്കാം."
 
 [t_b9b1d3dfa0]
 en = "A call needs a call host"
 where = [
   "desktop group_a_call_needs_a: Desktop, groups (in group_live_view.rs, live_pane).",
 ]
-text = ""
+text = "കോളിന് ഒരു കോൾ ഹോസ്റ്റ് വേണം"
 
 [t_9b6f166f1f]
 en = "A flag is signed by you and can’t be taken back. {name} can see who flagged them and when. Messages {name} wrote before the removal still show, marked."
 where = [
   "desktop group_a_flag_is_signed: Desktop, groups (in group_live_view.rs, live_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "ഫ്ലാഗ് നിങ്ങൾ ഒപ്പിട്ടതാണ്, അത് പിൻവലിക്കാൻ കഴിയില്ല. ആര്, എപ്പോൾ ഫ്ലാഗ് ചെയ്തുവെന്ന് {name} കാണും. നീക്കം ചെയ്യുന്നതിനു മുമ്പ് {name} എഴുതിയ സന്ദേശങ്ങൾ അടയാളപ്പെടുത്തി കാണിക്കും."
 
 [t_ae23a1918a]
 en = "A host keeps a full copy of a group and passes messages on while members’ phones sleep. Members connect to hosts, not to each other; only hosts learn members’ group addresses. Tinline keeps hosting while the window is closed (it stays in the tray)."
 where = [
   "desktop group_a_host_keeps_a: Desktop, groups (in group_live_view.rs, live_hosting_page).",
 ]
-text = ""
+text = "ഹോസ്റ്റ് ഗ്രൂപ്പിന്റെ പൂർണ്ണമായ ഒരു പകർപ്പ് സൂക്ഷിക്കുകയും അംഗങ്ങളുടെ ഫോണുകൾ ഉറങ്ങുമ്പോൾ സന്ദേശങ്ങൾ കൈമാറുകയും ചെയ്യുന്നു. അംഗങ്ങൾ പരസ്പരമല്ല, ഹോസ്റ്റുകളുമായാണ് കണക്റ്റ് ചെയ്യുന്നത്; അംഗങ്ങളുടെ ഗ്രൂപ്പ് വിലാസങ്ങൾ ഹോസ്റ്റുകൾ മാത്രമേ അറിയൂ. വിൻഡോ അടച്ചാലും Tinline ഹോസ്റ്റിംഗ് തുടരും (അത് ട്രേയിൽ ഉണ്ടാകും)."
 
 [t_0803302453]
 en = "A host keeps a full copy of the group, passes messages on while members’ phones sleep and learns members’ group addresses. It needs to stay running. Hosting doesn’t make you an admin; you can stop any time."
 where = [
   "desktop group_a_host_keeps_a_full: Desktop, groups (in group_live_view.rs, live_pane).",
 ]
-text = ""
+text = "ഹോസ്റ്റ് ഗ്രൂപ്പിന്റെ പൂർണ്ണമായ ഒരു പകർപ്പ് സൂക്ഷിക്കുന്നു, അംഗങ്ങളുടെ ഫോണുകൾ ഉറങ്ങുമ്പോൾ സന്ദേശങ്ങൾ കൈമാറുന്നു, അംഗങ്ങളുടെ ഗ്രൂപ്പ് വിലാസങ്ങൾ അറിയുകയും ചെയ്യുന്നു. അത് പ്രവർത്തിച്ചുകൊണ്ടിരിക്കണം. ഹോസ്റ്റ് ചെയ്യുന്നതുകൊണ്ട് നിങ്ങൾ അഡ്മിൻ ആകുന്നില്ല; എപ്പോൾ വേണമെങ്കിലും നിർത്താം."
 
 [t_388413e2e0]
 en = "A host stays on and passes posts on while others are offline"
 where = [
   "desktop group_a_host_stays_on: Desktop, groups (in group_live_view.rs, group_info_page).",
 ]
-text = ""
+text = "മറ്റുള്ളവർ ഓഫ്‌ലൈനായിരിക്കുമ്പോൾ ഹോസ്റ്റ് ഓണായിരുന്ന് പോസ്റ്റുകൾ കൈമാറുന്നു"
 
 [t_e9b63fab04]
 en = "A request waits at the group’s hosts for up to 7 days."
 where = [
   "desktop group_a_request_waits_at: Desktop, groups (in group_live_view.rs, live_requests).",
 ]
-text = ""
+text = "ഒരു അഭ്യർത്ഥന ഗ്രൂപ്പിന്റെ ഹോസ്റ്റുകളിൽ 7 ദിവസം വരെ കാത്തിരിക്കും."
 
 [t_dd48d57724]
 en = "Add to {gname}"
 where = [
   "desktop group_add_to: Desktop, groups (in group_live_view.rs, live_overlay). {gname} is a value filled in by the app.",
 ]
-text = ""
+text = "{gname} ഗ്രൂപ്പിലേക്ക് ചേർക്കുക"
 
 [t_01ef28b1f8]
 en = "Admins of a group can make an invite. It works for 7 days."
 where = [
   "desktop group_admins_of_a_group: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "ഗ്രൂപ്പിലെ അഡ്മിൻമാർക്ക് ക്ഷണം ഉണ്ടാക്കാം. അത് 7 ദിവസം പ്രവർത്തിക്കും."
 
 [t_29bf7a72e5]
 en = "Also confirmed: {value}"
 where = [
   "desktop group_also_confirmed: Desktop, groups (in group_live_view.rs, group_receipt_lines). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "സ്ഥിരീകരിച്ച മറ്റുള്ളവർ: {value}"
 
 [t_67fb34e77d]
 en = "Also hosts calls"
 where = [
   "desktop group_also_hosts_calls: Desktop, group info (in group_live_view.rs), a host device row, joined after Online/Offline with a separator: this device also hosts calls.",
 ]
-text = ""
+text = "കോളുകളും ഹോസ്റ്റ് ചെയ്യുന്നു"
 
 [t_d8f81cb78d]
 en = "An admin asked this computer to carry the group’s calls"
 where = [
   "desktop group_an_admin_asked_this: Desktop, groups (in group_live_view.rs, group_info_page).",
 ]
-text = ""
+text = "ഗ്രൂപ്പിന്റെ കോളുകൾ നടത്താൻ ഒരു അഡ്മിൻ ഈ കമ്പ്യൂട്ടറിനോട് ആവശ്യപ്പെട്ടു"
 
 [t_daab639a96]
 en = "Anyone with this link or QR can join for 7 days. Share it over an app you trust; you see who joined and can flag them out. To invite your contacts directly, use Add members."
 where = [
   "desktop group_anyone_with_this_link: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "ഈ ലിങ്കോ QR-ഓ ഉള്ള ആർക്കും 7 ദിവസത്തേക്ക് ചേരാം. നിങ്ങൾ വിശ്വസിക്കുന്ന ഒരു ആപ്പ് വഴി ഇത് പങ്കിടുക; ആരൊക്കെ ചേർന്നുവെന്ന് നിങ്ങൾക്ക് കാണാം, അവരെ ഫ്ലാഗ് ചെയ്ത് പുറത്താക്കാനും കഴിയും. നിങ്ങളുടെ കോൺടാക്റ്റുകളെ നേരിട്ട് ക്ഷണിക്കാൻ, അംഗങ്ങളെ ചേർക്കുക ഉപയോഗിക്കുക."
 
 [t_4732b3a387]
 en = "Appointed. The device hosts once it agrees (Host from this device)."
 where = [
   "desktop group_appointed_the_device_hosts: Desktop, groups (in group_live.rs, run).",
 ]
-text = ""
+text = "നിയമിച്ചു. ഉപകരണം സമ്മതിക്കുമ്പോൾ അത് ഹോസ്റ്റ് ചെയ്തുതുടങ്ങും (ഈ ഉപകരണത്തിൽ നിന്ന് ഹോസ്റ്റ് ചെയ്യുക)."
 
 [t_856dff95d1]
 en = "As a host this computer will:"
 where = [
   "desktop group_as_a_host_this: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "ഒരു ഹോസ്റ്റ് എന്ന നിലയിൽ ഈ കമ്പ്യൂട്ടർ:"
 
 [t_95be4cc88a]
 en = "{name} asked this computer to host {group}"
 where = [
   "desktop group_asked_this_computer_to: Desktop, group (in group_live_view.rs): banner when an admin asks this computer to host. {name} is the admin's first name, {group} the group name.",
 ]
-text = ""
+text = "{group} ഹോസ്റ്റ് ചെയ്യാൻ {name} ഈ കമ്പ്യൂട്ടറിനോട് ആവശ്യപ്പെട്ടു"
 
 [t_a367083c08]
 en = "Asks {name} to carry group calls on that device; they have to accept"
 where = [
   "desktop group_asks_to_carry_group: Desktop, groups (in group_live_view.rs, live_menu). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "ആ ഉപകരണത്തിൽ ഗ്രൂപ്പ് കോളുകൾ നടത്താൻ {name} എന്നയാളോട് ആവശ്യപ്പെടുന്നു; അവർ സ്വീകരിക്കണം"
 
 [t_858da13864]
 en = "Block {name}"
 where = [
   "desktop group_block: Desktop, groups (in group_live_view.rs, live_requests). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} എന്നയാളെ ബ്ലോക്ക് ചെയ്യുക"
 
 [t_c78935c805]
 en = "Blocked {value}"
 where = [
   "desktop group_blocked_2: Desktop, groups (in groups_view.rs, privacy_page). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "ബ്ലോക്ക് ചെയ്തത്: {value}"
 
 [t_e07ade3895]
 en = "Calls go through the other call hosts"
 where = [
   "desktop group_calls_go_through_the: Desktop, groups (in group_live_view.rs, live_menu).",
 ]
-text = ""
+text = "കോളുകൾ മറ്റ് കോൾ ഹോസ്റ്റുകൾ വഴി പോകും"
 
 [t_a88484de1a]
 en = "Can invite, flag members and appoint hosts"
 where = [
   "desktop group_can_invite_flag_members: Desktop, groups (in group_live_view.rs, live_menu).",
 ]
-text = ""
+text = "ക്ഷണിക്കാനും അംഗങ്ങളെ ഫ്ലാഗ് ചെയ്യാനും ഹോസ്റ്റുകളെ നിയമിക്കാനും കഴിയും"
 
 [t_30fa20a31a]
 en = "Carries the group’s calls; a computer that stays on is best"
 where = [
   "desktop group_carries_the_groups_calls: Desktop, groups (in group_live_view.rs, group_info_page).",
 ]
-text = ""
+text = "ഗ്രൂപ്പിന്റെ കോളുകൾ നടത്തുന്നു; ഓണായിരിക്കുന്ന ഒരു കമ്പ്യൂട്ടറാണ് ഏറ്റവും നല്ലത്"
 
 [t_3c827bcc06]
 en = "Click anywhere to go back"
 where = [
   "desktop group_click_anywhere_to_go: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "തിരികെ പോകാൻ എവിടെയെങ്കിലും ക്ലിക്ക് ചെയ്യുക"
 
 [t_5635ab6b9a]
 en = "Click the code to show it full size."
 where = [
   "desktop group_click_the_code_to: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "പൂർണ്ണ വലുപ്പത്തിൽ കാണാൻ കോഡിൽ ക്ലിക്ക് ചെയ്യുക."
 
 [t_9cc7a8bfcc]
 en = "Delivered {delivered}/{eligible}"
 where = [
   "desktop group_delivered: Desktop, groups (in group_live_view.rs, group_receipt_lines). {delivered} is a value filled in by the app. {eligible} is a value filled in by the app.",
 ]
-text = ""
+text = "എത്തി {delivered}/{eligible}"
 
 [t_82c86fb81b]
 en = "Each flag is signed by the admin who made it and was checked on this computer. Nobody else could have added them."
 where = [
   "desktop group_each_flag_is_signed: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "ഓരോ ഫ്ലാഗും അത് ചെയ്ത അഡ്മിൻ ഒപ്പിട്ടതാണ്, ഈ കമ്പ്യൂട്ടറിൽ പരിശോധിച്ചതുമാണ്. മറ്റാർക്കും അവ ചേർക്കാൻ കഴിയുമായിരുന്നില്ല."
 
 [t_e9ce51f8cc]
 en = "Each person gets the invitation in your 1:1 chat and joins when they accept. It is valid for 7 days."
 where = [
   "desktop group_each_person_gets_the: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "ഓരോരുത്തർക്കും നിങ്ങളുമായുള്ള സ്വകാര്യ ചാറ്റിൽ ക്ഷണം ലഭിക്കും, സ്വീകരിക്കുമ്പോൾ അവർ ചേരും. ക്ഷണത്തിന് 7 ദിവസം സാധുതയുണ്ട്."
 
 [t_4a38792a26]
 en = " · flag {n}"
 where = [
   "desktop group_flag: Desktop, group \"Why you were removed\" dialog (in group_live_view.rs), added after the last flag's date to show it was the one that removed me. {n} is the number of that flag (the number of flags that remove a member).",
 ]
-text = ""
+text = " · ഫ്ലാഗ് {n}"
 
 [t_0dc79d4817]
 en = "Flag to remove"
 where = [
   "desktop group_flag_to_remove: Desktop, groups (in group_live_view.rs, live_menu).",
 ]
-text = ""
+text = "നീക്കം ചെയ്യാൻ ഫ്ലാഗ് ചെയ്യുക"
 
 [t_d2cd7397c2]
 en = "Flagged {value}"
 where = [
   "desktop group_flagged: Desktop, groups (in group_live_view.rs, live_overlay). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "ഫ്ലാഗ് ചെയ്തത്: {value}"
 
 [t_5493d416d9]
 en = "Flagged by {value}. You can still read what you received before; nothing new will arrive."
 where = [
   "desktop group_flagged_by_you_can: Desktop, groups (in group_live_view.rs, live_removal_card). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "ഫ്ലാഗ് ചെയ്തവർ: {value}. മുമ്പ് ലഭിച്ചവ ഇപ്പോഴും വായിക്കാം; പുതിയതൊന്നും വരില്ല."
 
 [t_65486cb826]
 en = "Group call (needs a call host)"
 where = [
   "desktop group_group_call_needs_a: Desktop, groups (in group_live_view.rs, live_pane).",
 ]
-text = ""
+text = "ഗ്രൂപ്പ് കോൾ (കോൾ ഹോസ്റ്റ് വേണം)"
 
 [t_6388be298b]
 en = "Groups you start or join show up here."
 where = [
   "desktop group_groups_you_start_or: Desktop, groups (in group_live_view.rs, live_list).",
 ]
-text = ""
+text = "നിങ്ങൾ തുടങ്ങുന്നതോ ചേരുന്നതോ ആയ ഗ്രൂപ്പുകൾ ഇവിടെ കാണാം."
 
 [t_48f711e2f7]
 en = "{gname} has no other host: messages will wait on people’s devices until another one hosts it."
 where = [
   "desktop group_has_no_other_host: Desktop, groups (in group_live_view.rs, live_overlay). {gname} is a value filled in by the app.",
 ]
-text = ""
+text = "{gname} ഗ്രൂപ്പിന് മറ്റൊരു ഹോസ്റ്റില്ല: മറ്റൊരാൾ ഹോസ്റ്റ് ചെയ്യുന്നതുവരെ സന്ദേശങ്ങൾ ആളുകളുടെ ഉപകരണങ്ങളിൽ കാത്തിരിക്കും."
 
 [t_9cdf625172]
 en = "Host calls on this computer"
 where = [
   "desktop group_host_calls_on_this: Desktop, groups (in group_live_view.rs, live_pane).",
 ]
-text = ""
+text = "ഈ കമ്പ്യൂട്ടറിൽ കോളുകൾ ഹോസ്റ്റ് ചെയ്യുക"
 
 [t_ad252c6fb5]
 en = "Host {gname} on this computer?"
 where = [
   "desktop group_host_on_this_computer: Desktop, groups (in group_live_view.rs, live_overlay). {gname} is a value filled in by the app.",
 ]
-text = ""
+text = "{gname} ഈ കമ്പ്യൂട്ടറിൽ ഹോസ്റ്റ് ചെയ്യണോ?"
 
 [t_094eb441ac]
 en = "Host this group on this computer"
 where = [
   "desktop group_host_this_group_on: Desktop, groups (in group_live_view.rs, group_info_page).",
 ]
-text = ""
+text = "ഈ ഗ്രൂപ്പ് ഈ കമ്പ്യൂട്ടറിൽ ഹോസ്റ്റ് ചെയ്യുക"
 
 [t_9e427f34b0]
 en = "Hosts once {name} agrees on that device; a computer that stays on is best"
 where = [
   "desktop group_hosts_once_agrees_on: Desktop, groups (in group_live_view.rs, live_menu). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "ആ ഉപകരണത്തിൽ {name} സമ്മതിച്ചാൽ ഹോസ്റ്റ് ചെയ്യും; ഓണായിരിക്കുന്ന ഒരു കമ്പ്യൂട്ടറാണ് ഏറ്റവും നല്ലത്"
 
 [t_c6dea6e199]
 en = "If {name} accepts, you can message each other directly. Calls stay off until one of you allows them."
 where = [
   "desktop group_if_accepts_you_can: Desktop, groups (in group_live_view.rs, live_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} സ്വീകരിച്ചാൽ നിങ്ങൾക്ക് പരസ്പരം നേരിട്ട് സന്ദേശം അയയ്ക്കാം. നിങ്ങളിലൊരാൾ അനുവദിക്കുന്നതുവരെ കോളുകൾ ഓഫായിരിക്കും."
 
 [t_76eb534e56]
 en = "Invite link for {gname}"
 where = [
   "desktop group_invite_link_for: Desktop, groups (in group_live_view.rs, live_overlay). {gname} is a value filled in by the app.",
 ]
-text = ""
+text = "{gname} ഗ്രൂപ്പിനുള്ള ക്ഷണ ലിങ്ക്"
 
 [t_4a66fd03ba]
 en = "Invite valid until {value}"
 where = [
   "desktop group_invite_valid_until: Desktop, groups (in group_live_view.rs, live_overlay). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "ക്ഷണം {value} വരെ സാധുവാണ്"
 
 [t_2ac6ac8895]
 en = "It starts hosting once an admin appoints it (if one already did, right away). Hosting doesn’t make you an admin; you can stop any time."
 where = [
   "desktop group_it_starts_hosting_once: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "ഒരു അഡ്മിൻ നിയമിക്കുമ്പോൾ ഇത് ഹോസ്റ്റ് ചെയ്തുതുടങ്ങും (ഇതിനകം നിയമിച്ചിട്ടുണ്ടെങ്കിൽ, ഉടൻ). ഹോസ്റ്റ് ചെയ്യുന്നതുകൊണ്ട് നിങ്ങൾ അഡ്മിൻ ആകുന്നില്ല; എപ്പോൾ വേണമെങ്കിലും നിർത്താം."
 
 [t_ecbb1b9328]
 en = "Joining connects this computer to the group’s hosts. Members see your name; only hosts learn how to reach this computer. It can take up to a minute."
 where = [
   "desktop group_joining_connects_this_computer: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "ചേരുമ്പോൾ ഈ കമ്പ്യൂട്ടർ ഗ്രൂപ്പിന്റെ ഹോസ്റ്റുകളുമായി കണക്റ്റ് ചെയ്യും. അംഗങ്ങൾക്ക് നിങ്ങളുടെ പേര് കാണാം; ഈ കമ്പ്യൂട്ടറിലേക്ക് എങ്ങനെ എത്താമെന്ന് ഹോസ്റ്റുകൾക്ക് മാത്രമേ അറിയൂ. ഇതിന് ഒരു മിനിറ്റ് വരെ എടുത്തേക്കാം."
 
 [t_c3fc51db22]
 en = "• keep a full copy of the group\n• pass messages on for members while their phones sleep\n• learn members’ group addresses (only hosts do)\n• need to stay running to be useful"
 where = [
   "desktop group_keep_a_full_copy: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "• ഗ്രൂപ്പിന്റെ പൂർണ്ണമായ ഒരു പകർപ്പ് സൂക്ഷിക്കും\n• അംഗങ്ങളുടെ ഫോണുകൾ ഉറങ്ങുമ്പോൾ അവർക്കായി സന്ദേശങ്ങൾ കൈമാറും\n• അംഗങ്ങളുടെ ഗ്രൂപ്പ് വിലാസങ്ങൾ അറിയും (ഹോസ്റ്റുകൾ മാത്രം)\n• ഉപകാരപ്പെടാൻ പ്രവർത്തിച്ചുകൊണ്ടിരിക്കണം"
 
 [t_9e0599e783]
 en = "Leave {gname}?"
 where = [
   "desktop group_leave: Desktop, groups (in group_live_view.rs, live_overlay). {gname} is a value filled in by the app.",
 ]
-text = ""
+text = "{gname} ഗ്രൂപ്പിൽ നിന്ന് പുറത്തുകടക്കണോ?"
 
 [t_48df2befc8]
 en = "Make {name} an admin?"
 where = [
   "desktop group_make_an_admin: Desktop, groups (in group_live_view.rs, live_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} എന്നയാളെ അഡ്മിനാക്കണോ?"
 
 [t_a2a3741c1b]
 en = "Make device {value} a call host"
 where = [
   "desktop group_make_device_a_call: Desktop, groups (in group_live_view.rs, live_menu). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "{value} എന്ന ഉപകരണം കോൾ ഹോസ്റ്റാക്കുക"
 
 [t_76ddfb2d19]
 en = "Make device {value} a host"
 where = [
   "desktop group_make_device_a_host: Desktop, groups (in group_live_view.rs, live_menu). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "{value} എന്ന ഉപകരണം ഹോസ്റ്റാക്കുക"
 
 [t_569ddfad75]
 en = "Member of {gname}"
 where = [
   "desktop group_member_of: Desktop, groups (in group_live_view.rs, live_overlay). {gname} is a value filled in by the app.",
 ]
-text = ""
+text = "{gname} ഗ്രൂപ്പിലെ അംഗം"
 
 [t_0bae5b80cc]
 en = "Member of {group_name}"
 where = [
   "desktop group_member_of_2: Desktop, groups (in group_live_view.rs, live_requests). {group_name} is a value filled in by the app.",
 ]
-text = ""
+text = "{group_name} ഗ്രൂപ്പിലെ അംഗം"
 
 [t_b595c9bfb0]
 en = "Member since {value}"
 where = [
   "desktop group_member_since: Desktop, groups (in group_live_view.rs, live_menu). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "{value} മുതൽ അംഗം"
 
 [t_3e3fe2596b]
 en = "{members} · {role}"
 where = [
   "desktop group_members_and_role: Group info header. {members} is e.g. \"3 members\", {role} is \"You are the owner / an admin / a member\".",
 ]
-text = ""
+text = "{members} · {role}"
 
 [t_4f831bb3e8]
 en = "Members see that you left. The messages stay on this computer, read-only. To come back, an admin has to invite you again."
 where = [
   "desktop group_members_see_that_you: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "നിങ്ങൾ പുറത്തുകടന്നത് അംഗങ്ങൾ കാണും. സന്ദേശങ്ങൾ ഈ കമ്പ്യൂട്ടറിൽ വായിക്കാൻ മാത്രമായി നിലനിൽക്കും. തിരികെ വരാൻ, ഒരു അഡ്മിൻ നിങ്ങളെ വീണ്ടും ക്ഷണിക്കണം."
 
 [t_ca2cffd903]
 en = "Members stop going through it"
 where = [
   "desktop group_members_stop_going_through: Desktop, groups (in group_live_view.rs, live_menu).",
 ]
-text = ""
+text = "അംഗങ്ങൾ ഇനി അതുവഴി പോകില്ല"
 
 [t_c68a4d2f95]
 en = "Message from {name}, whom you blocked"
 where = [
   "desktop group_message_from_whom_you: Desktop, groups (in group_live_view.rs, live_item). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "നിങ്ങൾ ബ്ലോക്ക് ചെയ്ത {name} അയച്ച സന്ദേശം"
 
 [t_d2290010b5]
 en = "Message privately"
 where = [
   "desktop group_message_privately: Desktop, groups (in group_live_view.rs, live_menu).",
 ]
-text = ""
+text = "സ്വകാര്യമായി സന്ദേശം അയയ്ക്കുക"
 
 [t_e63bb44c2f]
 en = "No group matches."
 where = [
   "desktop group_no_group_matches: Desktop, groups (in group_live_view.rs, live_list).",
 ]
-text = ""
+text = "പൊരുത്തപ്പെടുന്ന ഗ്രൂപ്പില്ല."
 
 [t_178c11fc23]
 en = "Nobody is blocked. To block someone, open them in Contacts and choose Block."
 where = [
   "desktop group_nobody_is_blocked_to: Desktop, groups (in groups_view.rs, privacy_page).",
 ]
-text = ""
+text = "ആരെയും ബ്ലോക്ക് ചെയ്തിട്ടില്ല. ഒരാളെ ബ്ലോക്ക് ചെയ്യാൻ, കോൺടാക്റ്റുകളിൽ അവരെ തുറന്ന് ബ്ലോക്ക് ചെയ്യുക തിരഞ്ഞെടുക്കുക."
 
 [t_355dca9b97]
 en = "Offered to host"
 where = [
   "desktop group_offered_to_host: Desktop, groups (in group_live_view.rs, group_info_page).",
 ]
-text = ""
+text = "ഹോസ്റ്റ് ചെയ്യാൻ തയ്യാറാണ്"
 
 [t_a5bdc7696e]
 en = "Open chat"
 where = [
   "desktop group_open_chat: Desktop, groups (in group_live_view.rs, live_requests).",
 ]
-text = ""
+text = "ചാറ്റ് തുറക്കുക"
 
 [t_804dcb0928]
 en = "Open {gname} to anyone with the link?"
 where = [
   "desktop group_open_to_anyone_with: Desktop, groups (in group_live_view.rs, live_overlay). {gname} is a value filled in by the app.",
 ]
-text = ""
+text = "ലിങ്കുള്ള ആർക്കും ചേരാനായി {gname} ഗ്രൂപ്പ് തുറക്കണോ?"
 
 [t_297869bd98]
 en = "Opens your chat"
 where = [
   "desktop group_opens_your_chat: Desktop, groups (in group_live_view.rs, live_menu).",
 ]
-text = ""
+text = "നിങ്ങളുടെ ചാറ്റ് തുറക്കുന്നു"
 
 [t_612fb3ff04]
 en = "Paste an invite link"
 where = [
   "desktop group_paste_an_invite_link: Desktop, groups (in group_live_view.rs, live_list).",
 ]
-text = ""
+text = "ഒരു ക്ഷണ ലിങ്ക് പേസ്റ്റ് ചെയ്യുക"
 
 [t_897c2e906d]
 en = "Paste the invite link (tinline://g/…) or code"
 where = [
   "desktop group_paste_the_invite_link: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "ക്ഷണ ലിങ്ക് (tinline://g/…) അല്ലെങ്കിൽ കോഡ് പേസ്റ്റ് ചെയ്യുക"
 
 [t_032d14772e]
 en = "Read {read}/{eligible}"
 where = [
   "desktop group_read_2: Desktop, groups (in group_live_view.rs, group_receipt_lines). {read} is a value filled in by the app. {eligible} is a value filled in by the app.",
 ]
-text = ""
+text = "വായിച്ചു {read}/{eligible}"
 
 [t_8d11c8dbda]
 en = "Remove as admin"
 where = [
   "desktop group_remove_as_admin: Desktop, groups (in group_live_view.rs, live_menu).",
 ]
-text = ""
+text = "അഡ്മിൻ സ്ഥാനത്തുനിന്ന് നീക്കുക"
 
 [t_63c8449e54]
 en = "Remove {name} as admin?"
 where = [
   "desktop group_remove_as_admin_2: Desktop, groups (in group_live_view.rs, live_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} എന്നയാളെ അഡ്മിൻ സ്ഥാനത്തുനിന്ന് നീക്കണോ?"
 
 [t_fce4d0716e]
 en = "{value} · removed"
 where = [
   "desktop group_removed_2: Desktop, groups (in group_live_view.rs, live_item). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "{value} · നീക്കം ചെയ്തു"
 
 [t_995105820a]
 en = "Requests · {len}"
 where = [
   "desktop group_requests: Desktop, groups (in group_live_view.rs, live_requests). {len} is a value filled in by the app.",
 ]
-text = ""
+text = "അഭ്യർത്ഥനകൾ · {len}"
 
 [t_e74c79587a]
 en = "{name} sees your name and the group. The request goes through the group’s host sealed, so the host can’t read it."
 where = [
   "desktop group_sees_your_name_and: Desktop, groups (in group_live_view.rs, live_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} നിങ്ങളുടെ പേരും ഗ്രൂപ്പും കാണും. അഭ്യർത്ഥന ഗ്രൂപ്പിന്റെ ഹോസ്റ്റ് വഴി സീൽ ചെയ്ത് അയയ്ക്കുന്നു, അതിനാൽ ഹോസ്റ്റിന് അത് വായിക്കാൻ കഴിയില്ല."
 
 [t_7e0de03aea]
 en = "Sends {name} a chat request through the host"
 where = [
   "desktop group_sends_a_chat_request: Desktop, groups (in group_live_view.rs, live_menu). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "ഹോസ്റ്റ് വഴി {name} എന്നയാൾക്ക് ചാറ്റ് അഭ്യർത്ഥന അയയ്ക്കുന്നു"
 
 [t_722778e5cb]
 en = "Since {value}"
 where = [
   "desktop group_since: Desktop, groups (in group_live_view.rs, group_info_page). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "{value} മുതൽ"
 
 [t_821f5cc3b9]
 en = "{name} stays a member"
 where = [
   "desktop group_stays_a_member: Desktop, groups (in group_live_view.rs, live_menu). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} അംഗമായി തുടരും"
 
 [t_3131b8e845]
 en = "{name} stays in the group as a member. Flags they already made still count."
 where = [
   "desktop group_stays_in_the_group: Desktop, groups (in group_live_view.rs, live_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} ഗ്രൂപ്പിൽ ഒരു അംഗമായി തുടരും. അവർ ഇതിനകം ചെയ്ത ഫ്ലാഗുകൾ എണ്ണപ്പെടും."
 
 [t_806b19150f]
 en = "Stop device {value} carrying calls"
 where = [
   "desktop group_stop_device_carrying_calls: Desktop, groups (in group_live_view.rs, live_menu). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "{value} എന്ന ഉപകരണം കോളുകൾ നടത്തുന്നത് നിർത്തുക"
 
 [t_e2020c4fb2]
 en = "Stop device {value} hosting"
 where = [
   "desktop group_stop_device_hosting: Desktop, groups (in group_live_view.rs, live_menu). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "{value} എന്ന ഉപകരണത്തിലെ ഹോസ്റ്റിംഗ് നിർത്തുക"
 
 [t_1723561e8c]
 en = "Stop hosting"
 where = [
   "desktop group_stop_hosting: Desktop, groups (in group_live_view.rs, live_menu).",
 ]
-text = ""
+text = "ഹോസ്റ്റിംഗ് നിർത്തുക"
 
 [t_25c1a85271]
 en = "Stop hosting calls"
 where = [
   "desktop group_stop_hosting_calls: Desktop, groups (in group_live_view.rs, live_menu).",
 ]
-text = ""
+text = "കോൾ ഹോസ്റ്റിംഗ് നിർത്തുക"
 
 [t_f9383a2f6a]
 en = "Stop hosting calls on this computer"
 where = [
   "desktop group_stop_hosting_calls_on: Desktop, groups (in group_live_view.rs, group_info_page).",
 ]
-text = ""
+text = "ഈ കമ്പ്യൂട്ടറിൽ കോളുകൾ ഹോസ്റ്റ് ചെയ്യുന്നത് നിർത്തുക"
 
 [t_22b8522a44]
 en = "Stop hosting {gname} here?"
 where = [
   "desktop group_stop_hosting_here: Desktop, groups (in group_live_view.rs, live_overlay). {gname} is a value filled in by the app.",
 ]
-text = ""
+text = "ഇവിടെ {gname} ഹോസ്റ്റ് ചെയ്യുന്നത് നിർത്തണോ?"
 
 [t_543bf3e548]
 en = "Stop hosting on this computer"
 where = [
   "desktop group_stop_hosting_on_this: Desktop, groups (in group_live_view.rs, group_info_page).",
 ]
-text = ""
+text = "ഈ കമ്പ്യൂട്ടറിൽ ഹോസ്റ്റ് ചെയ്യുന്നത് നിർത്തുക"
 
 [t_976140c423]
 en = "{label}: {value}"
 where = [
   "desktop group_text: Desktop, group message receipts (in group_live_view.rs, group_receipt_lines). {label} is a receipt word such as Delivered or Read, {value} is a list of names.",
 ]
-text = ""
+text = "{label}: {value}"
 
 [t_c5e67a6475]
 en = "That device no longer carries this group’s calls."
 where = [
   "desktop group_that_device_no_longer: Desktop, groups (in group_live.rs, run).",
 ]
-text = ""
+text = "ആ ഉപകരണം ഇനി ഈ ഗ്രൂപ്പിന്റെ കോളുകൾ നടത്തുന്നില്ല."
 
 [t_108d11a4e8]
 en = "That group isn’t on this computer."
 where = [
   "desktop group_that_group_isnt_on: Desktop, groups (in group_live.rs, gerr).",
 ]
-text = ""
+text = "ആ ഗ്രൂപ്പ് ഈ കമ്പ്യൂട്ടറിൽ ഇല്ല."
 
 [t_45b0032d7d]
 en = "the only host"
 where = [
   "desktop group_the_only_host: Shown after the member count for a group this computer hosts alone.",
 ]
-text = ""
+text = "ഏക ഹോസ്റ്റ്"
 
 [t_bdd0b2326a]
 en = "Then invite people from the members pane."
 where = [
   "desktop group_then_invite_people_from: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "തുടർന്ന് അംഗങ്ങളുടെ പാനലിൽ നിന്ന് ആളുകളെ ക്ഷണിക്കുക."
 
 [t_672fbdc744]
 en = "This computer carries the calls."
 where = [
   "desktop group_this_computer_carries_the: Desktop, groups (in group_live_view.rs, group_info_page).",
 ]
-text = ""
+text = "ഈ കമ്പ്യൂട്ടറാണ് കോളുകൾ നടത്തുന്നത്."
 
 [t_3bbd7b2774]
 en = "This computer carries this group’s calls now."
 where = [
   "desktop group_this_computer_carries_this: Desktop, groups (in group_live.rs, run).",
 ]
-text = ""
+text = "ഈ കമ്പ്യൂട്ടർ ഇപ്പോൾ ഈ ഗ്രൂപ്പിന്റെ കോളുകൾ നടത്തുന്നു."
 
 [t_1ea2e18441]
 en = "This computer doesn’t host any groups. To host one, open it and choose Host from this computer in the members pane."
 where = [
   "desktop group_this_computer_doesnt_host: Desktop, groups (in group_live_view.rs, live_hosting_page).",
 ]
-text = ""
+text = "ഈ കമ്പ്യൂട്ടർ ഒരു ഗ്രൂപ്പും ഹോസ്റ്റ് ചെയ്യുന്നില്ല. ഒന്ന് ഹോസ്റ്റ് ചെയ്യാൻ, അത് തുറന്ന് അംഗങ്ങളുടെ പാനലിൽ ഈ കമ്പ്യൂട്ടറിൽ നിന്ന് ഹോസ്റ്റ് ചെയ്യുക തിരഞ്ഞെടുക്കുക."
 
 [t_66ba1bfba6]
 en = "This computer hosts the group. Posts go through right away."
 where = [
   "desktop group_this_computer_hosts_the: Desktop, groups (in group_live_view.rs, group_info_page).",
 ]
-text = ""
+text = "ഈ കമ്പ്യൂട്ടർ ഗ്രൂപ്പ് ഹോസ്റ്റ് ചെയ്യുന്നു. പോസ്റ്റുകൾ ഉടൻ എത്തും."
 
 [t_6e1d3b27d7]
 en = "This computer stopped carrying this group’s calls."
 where = [
   "desktop group_this_computer_stopped_carrying: Desktop, groups (in group_live.rs, run).",
 ]
-text = ""
+text = "ഈ കമ്പ്യൂട്ടർ ഈ ഗ്രൂപ്പിന്റെ കോളുകൾ നടത്തുന്നത് നിർത്തി."
 
 [t_fa4003bbee]
 en = "This computer stops passing the group’s messages on. You stay a member."
 where = [
   "desktop group_this_computer_stops_passing: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "ഈ കമ്പ്യൂട്ടർ ഗ്രൂപ്പിന്റെ സന്ദേശങ്ങൾ കൈമാറുന്നത് നിർത്തും. നിങ്ങൾ അംഗമായി തുടരും."
 
 [t_90c7b1d39f]
 en = "This device agreed to host. It hosts as soon as an admin has appointed it."
 where = [
   "desktop group_this_device_agreed_to: Desktop, groups (in group_live.rs, run).",
 ]
-text = ""
+text = "ഹോസ്റ്റ് ചെയ്യാൻ ഈ ഉപകരണം സമ്മതിച്ചു. ഒരു അഡ്മിൻ നിയമിച്ചാലുടൻ ഇത് ഹോസ്റ്റ് ചെയ്തുതുടങ്ങും."
 
 [t_9c2ace7693]
 en = "This device stopped hosting the group."
 where = [
   "desktop group_this_device_stopped_hosting: Desktop, groups (in group_live.rs, run).",
 ]
-text = ""
+text = "ഈ ഉപകരണം ഗ്രൂപ്പ് ഹോസ്റ്റ് ചെയ്യുന്നത് നിർത്തി."
 
 [t_273944879b]
 en = "Unlock to see your groups."
 where = [
   "desktop group_unlock_to_see_your: Desktop, groups (in group_live_view.rs, live_list).",
 ]
-text = ""
+text = "നിങ്ങളുടെ ഗ്രൂപ്പുകൾ കാണാൻ അൺലോക്ക് ചെയ്യുക."
 
 [t_fc7b6359c4]
 en = "Why was I removed?"
 where = [
   "desktop group_why_was_i_removed: Desktop, groups (in group_live_view.rs, group_info_page).",
 ]
-text = ""
+text = "എന്നെ എന്തുകൊണ്ട് നീക്കം ചെയ്തു?"
 
 [t_0eeae9f4ec]
 en = "Why you were removed"
 where = [
   "desktop group_why_you_were_removed: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "നിങ്ങളെ നീക്കം ചെയ്തതിന്റെ കാരണം"
 
 [t_bcca660900]
 en_one = "{name} will be able to invite people, flag members ({count} flag removes someone) and appoint hosts. Only you, the owner, can make or remove admins."
@@ -15390,748 +15390,750 @@ en_other = "{name} will be able to invite people, flag members ({count} flags re
 where = [
   "desktop group_will_be_able_to: Desktop, group admin dialog (in group_live_view.rs, live_overlay). {name} is a person's first name; {count} is how many admin flags remove a member.",
 ]
+one = "{name} എന്നയാൾക്ക് ആളുകളെ ക്ഷണിക്കാനും അംഗങ്ങളെ ഫ്ലാഗ് ചെയ്യാനും ({count} ഫ്ലാഗ് ലഭിച്ചാൽ ഒരാൾ നീക്കം ചെയ്യപ്പെടും) ഹോസ്റ്റുകളെ നിയമിക്കാനും കഴിയും. ഉടമയായ നിങ്ങൾക്ക് മാത്രമേ അഡ്മിൻമാരെ നിയമിക്കാനോ നീക്കാനോ കഴിയൂ."
+other = "{name} എന്നയാൾക്ക് ആളുകളെ ക്ഷണിക്കാനും അംഗങ്ങളെ ഫ്ലാഗ് ചെയ്യാനും ({count} ഫ്ലാഗുകൾ ലഭിച്ചാൽ ഒരാൾ നീക്കം ചെയ്യപ്പെടും) ഹോസ്റ്റുകളെ നിയമിക്കാനും കഴിയും. ഉടമയായ നിങ്ങൾക്ക് മാത്രമേ അഡ്മിൻമാരെ നിയമിക്കാനോ നീക്കാനോ കഴിയൂ."
 
 [t_497c9f2f05]
 en = "Withdraw the offer to host"
 where = [
   "desktop group_withdraw_the_offer_to: Desktop, groups (in group_live_view.rs, group_info_page).",
 ]
-text = ""
+text = "ഹോസ്റ്റ് ചെയ്യാനുള്ള സമ്മതം പിൻവലിക്കുക"
 
 [t_9465546688]
 en = "written before {value} was removed"
 where = [
   "desktop group_written_before_was_removed: Desktop, groups (in group_live_view.rs, live_item). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "{value} നീക്കം ചെയ്യപ്പെടുന്നതിന് മുമ്പ് എഴുതിയത്"
 
 [t_75d438ef41]
 en = "You are a member"
 where = [
   "desktop group_you_are_a_member: Desktop, groups (in group_live_view.rs, group_info_page).",
 ]
-text = ""
+text = "നിങ്ങൾ ഒരു അംഗമാണ്"
 
 [t_09746c824d]
 en = "You are an admin"
 where = [
   "desktop group_you_are_an_admin: Desktop, groups (in group_live_view.rs, group_info_page).",
 ]
-text = ""
+text = "നിങ്ങൾ ഒരു അഡ്മിനാണ്"
 
 [t_2e95eb0424]
 en = "You are the owner"
 where = [
   "desktop group_you_are_the_owner: Desktop, groups (in group_live_view.rs, group_info_page).",
 ]
-text = ""
+text = "നിങ്ങളാണ് ഉടമ"
 
 [t_907733bbb3]
 en = "You block {name}; unblock them first"
 where = [
   "desktop group_you_block_unblock_them: Desktop, groups (in group_live_view.rs, live_menu). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "നിങ്ങൾ {name} എന്നയാളെ ബ്ലോക്ക് ചെയ്തിട്ടുണ്ട്; ആദ്യം അൺബ്ലോക്ക് ചെയ്യുക"
 
 [t_41fbb0d898]
 en = "You keep the messages already here. The group’s hosts refuse your new messages. To rejoin, an admin has to invite you again."
 where = [
   "desktop group_you_keep_the_messages: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "ഇവിടെ ഇതിനകമുള്ള സന്ദേശങ്ങൾ നിങ്ങൾക്കൊപ്പമുണ്ടാകും. ഗ്രൂപ്പിന്റെ ഹോസ്റ്റുകൾ നിങ്ങളുടെ പുതിയ സന്ദേശങ്ങൾ സ്വീകരിക്കില്ല. വീണ്ടും ചേരാൻ, ഒരു അഡ്മിൻ നിങ്ങളെ വീണ്ടും ക്ഷണിക്കണം."
 
 [t_536628e93b]
 en = "You were removed from the group · {value}"
 where = [
   "desktop group_you_were_removed_from: Desktop, groups (in group_live_view.rs, live_removal_card). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "നിങ്ങളെ ഗ്രൂപ്പിൽ നിന്ന് നീക്കം ചെയ്തു · {value}"
 
 [t_6566a09c14]
 en = "You’ll own the group. This computer hosts it at first: it keeps the group and passes messages on while members’ phones sleep, so it works best on a computer that stays on."
 where = [
   "desktop group_youll_own_the_group: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "ഗ്രൂപ്പിന്റെ ഉടമ നിങ്ങളായിരിക്കും. തുടക്കത്തിൽ ഈ കമ്പ്യൂട്ടറാണ് ഇത് ഹോസ്റ്റ് ചെയ്യുന്നത്: ഇത് ഗ്രൂപ്പ് സൂക്ഷിക്കുകയും അംഗങ്ങളുടെ ഫോണുകൾ ഉറങ്ങുമ്പോൾ സന്ദേശങ്ങൾ കൈമാറുകയും ചെയ്യുന്നു, അതിനാൽ ഓണായിരിക്കുന്ന ഒരു കമ്പ്യൂട്ടറിലാണ് ഇത് ഏറ്റവും നന്നായി പ്രവർത്തിക്കുക."
 
 [t_eae8e245fc]
 en = "Yours will be flag {yours} of {flags_needed}. Any admin’s flags count, yours again too. At {flags_needed} flags {name} is removed right away and sees they were removed."
 where = [
   "desktop group_yours_will_be_flag: Desktop, groups (in group_live_view.rs, live_overlay). {yours} is a value filled in by the app. {flags_needed} is a value filled in by the app. {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "നിങ്ങളുടേത് ഫ്ലാഗ് {yours} / {flags_needed} ആയിരിക്കും. ഏത് അഡ്മിന്റെ ഫ്ലാഗും എണ്ണപ്പെടും, നിങ്ങളുടേത് വീണ്ടും ആയാലും. {flags_needed} ഫ്ലാഗുകൾ ആകുമ്പോൾ {name} ഉടൻ നീക്കം ചെയ്യപ്പെടും, അത് അവർ കാണുകയും ചെയ്യും."
 
 [t_a2776c67b5]
 en = "Yours will be flag {yours} of {flags_needed}. {name} is removed right away: hosts refuse their new messages and they see they were removed."
 where = [
   "desktop group_yours_will_be_flag_of: Desktop, groups (in group_live_view.rs, live_overlay). {yours} is a value filled in by the app. {flags_needed} is a value filled in by the app. {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "നിങ്ങളുടേത് ഫ്ലാഗ് {yours} / {flags_needed} ആയിരിക്കും. {name} ഉടൻ നീക്കം ചെയ്യപ്പെടും: ഹോസ്റ്റുകൾ അവരുടെ പുതിയ സന്ദേശങ്ങൾ സ്വീകരിക്കില്ല, തങ്ങളെ നീക്കം ചെയ്തുവെന്ന് അവർ കാണും."
 
 [t_b1f15f6576]
 en = "Contacts · {len}"
 where = [
   "desktop home_contacts: Desktop, home, sidebar and call list (in view.rs, list_pane). {len} is a value filled in by the app.",
 ]
-text = ""
+text = "കോൺടാക്റ്റുകൾ · {len}"
 
 [t_1a850f401a]
 en = "Contacts you add appear here."
 where = [
   "desktop home_contacts_you_add_appear: Desktop, home, sidebar and call list (in view.rs, list_pane).",
 ]
-text = ""
+text = "നിങ്ങൾ ചേർക്കുന്ന കോൺടാക്റ്റുകൾ ഇവിടെ കാണാം."
 
 [t_be49ff2081]
 en = "Last call {value}"
 where = [
   "desktop home_last_call: Desktop, home, sidebar and call list (in view.rs, contact_sub). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "അവസാന കോൾ: {value}"
 
 [t_1bf2596e91]
 en = "Not here? Tinline has no directory — add people with their code."
 where = [
   "desktop home_not_here_tinline_has: Desktop, home, sidebar and call list (in view.rs, list_pane).",
 ]
-text = ""
+text = "ഇവിടെ കാണുന്നില്ലേ? Tinline-ൽ ഡയറക്ടറിയില്ല — അവരുടെ കോഡ് ഉപയോഗിച്ച് ആളുകളെ ചേർക്കുക."
 
 [t_2fa8ae469e]
 en = "Start or join a call"
 where = [
   "desktop home_start_or_join_a: Desktop, home, sidebar and call list (in view.rs, calls_list).",
 ]
-text = ""
+text = "കോൾ ആരംഭിക്കുകയോ ചേരുകയോ ചെയ്യുക"
 
 [t_420265b999]
 en = "{what} · {dur}"
 where = [
   "desktop home_text: Desktop, home, sidebar and call list (in view.rs, calls_list). {what} is a value filled in by the app. {dur} is a duration such as 1:23.",
 ]
-text = ""
+text = "{what} · {dur}"
 
 [t_822e19febe]
 en = "Their card is on your clipboard."
 where = [
   "desktop home_their_card_is_on: Desktop, home, sidebar and call list (in view.rs, offer_bar).",
 ]
-text = ""
+text = "അവരുടെ കാർഡ് നിങ്ങളുടെ ക്ലിപ്പ്ബോർഡിലുണ്ട്."
 
 [t_e3db10694d]
 en = "A linked device becomes you"
 where = [
   "desktop link_a_linked_device_becomes: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "ലിങ്ക് ചെയ്ത ഉപകരണം നിങ്ങളായി മാറുന്നു"
 
 [t_d73b68764a]
 en = "A passphrase encrypts your account on this computer. Optional — leave it empty and Tinline opens straight to your contacts. You can add one later in Settings."
 where = [
   "desktop link_a_passphrase_encrypts_your: Desktop, linking devices (in link_view.rs, link_secure_screen).",
 ]
-text = ""
+text = "ഒരു പാസ്‌ഫ്രേസ് ഈ കമ്പ്യൂട്ടറിൽ നിങ്ങളുടെ അക്കൗണ്ട് എൻക്രിപ്റ്റ് ചെയ്യുന്നു. നിർബന്ധമില്ല — ശൂന്യമായി വിട്ടാൽ Tinline നേരെ നിങ്ങളുടെ കോൺടാക്റ്റുകളിലേക്ക് തുറക്കും. പിന്നീട് ക്രമീകരണത്തിൽ ഒന്ന് ചേർക്കാം."
 
 [t_ca6ecd8e98]
 en = "Back to Settings"
 where = [
   "desktop link_back_to_settings: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "ക്രമീകരണത്തിലേക്ക് മടങ്ങുക"
 
 [t_a975a5773d]
 en = "Bringing your contacts and history over…"
 where = [
   "desktop link_bringing_your_contacts_and: Desktop, linking devices (in link_view.rs, link_sync_screen).",
 ]
-text = ""
+text = "നിങ്ങളുടെ കോൺടാക്റ്റുകളും ചരിത്രവും കൊണ്ടുവരുന്നു…"
 
 [t_fb8243b29d]
 en = "Calls in history"
 where = [
   "desktop link_calls_in_history: Desktop, linking devices (in link_view.rs, link_sync_screen).",
 ]
-text = ""
+text = "ചരിത്രത്തിലെ കോളുകൾ"
 
 [t_475dd4dd45]
 en = "Check the codes match and approve on your phone."
 where = [
   "desktop link_check_the_codes_match: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = ""
+text = "കോഡുകൾ ഒന്നുതന്നെയാണെന്ന് ഉറപ്പാക്കി നിങ്ങളുടെ ഫോണിൽ അംഗീകരിക്കുക."
 
 [t_d801726ed0]
 en = "Check the codes match, then approve here."
 where = [
   "desktop link_check_the_codes_match_then: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = ""
+text = "കോഡുകൾ ഒന്നുതന്നെയാണെന്ന് ഉറപ്പാക്കുക, എന്നിട്ട് ഇവിടെ അംഗീകരിക്കുക."
 
 [t_85d2fc8750]
 en = "Codes match, link it"
 where = [
   "desktop link_codes_match_link_it: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "കോഡുകൾ ഒന്നുതന്നെ, ലിങ്ക് ചെയ്യുക"
 
 [t_48b15af5a6]
 en = "Connect"
 where = [
   "desktop link_connect: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = ""
+text = "കണക്റ്റ് ചെയ്യുക"
 
 [t_2513f84ad2]
 en = "Connecting..."
 where = [
   "desktop link_connecting: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = ""
+text = "കണക്റ്റ് ചെയ്യുന്നു..."
 
 [t_892724d737]
 en = "Connecting to the other device…"
 where = [
   "desktop link_connecting_to_the_other: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "മറ്റേ ഉപകരണവുമായി കണക്റ്റ് ചെയ്യുന്നു…"
 
 [t_46161f68a7]
 en = "Desktop"
 where = [
   "desktop link_desktop: Desktop, linking devices (in link_view.rs, ).",
 ]
-text = ""
+text = "ഡെസ്ക്ടോപ്പ്"
 
 [t_1cc71a82c0]
 en = "Devices sync directly whenever two are online at once. Unlinking stops sync and ringing; it can’t lock a lost device remotely."
 where = [
   "desktop link_devices_sync_directly_whenever: Desktop, linking devices (in link_view.rs, linked_devices_page).",
 ]
-text = ""
+text = "രണ്ട് ഉപകരണങ്ങൾ ഒരേസമയം ഓൺലൈനിലാകുമ്പോഴെല്ലാം അവ നേരിട്ട് സിങ്ക് ചെയ്യും. ലിങ്ക് ഒഴിവാക്കിയാൽ സിങ്കും റിംഗിംഗും നിൽക്കും; നഷ്ടപ്പെട്ട ഉപകരണം ദൂരെ നിന്ന് ലോക്ക് ചെയ്യാൻ അതിന് കഴിയില്ല."
 
 [t_e19f8f0006]
 en = "Different code, or you didn’t start this? Cancel. Someone may be trying to copy your account."
 where = [
   "desktop link_different_code_or_you_didnt: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "കോഡ് വ്യത്യസ്തമാണോ, അല്ലെങ്കിൽ നിങ്ങളല്ലേ ഇത് തുടങ്ങിയത്? റദ്ദാക്കുക. ആരെങ്കിലും നിങ്ങളുടെ അക്കൗണ്ട് പകർത്താൻ ശ്രമിക്കുന്നുണ്ടാകാം."
 
 [t_d6c534ecaa]
 en = "Expires in {value} · works once"
 where = [
   "desktop link_expires_in_works_once: Desktop, linking devices (in link_view.rs, link_qr_screen). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "{value} കഴിഞ്ഞ് കാലാവധി തീരും · ഒരു തവണ മാത്രം"
 
 [t_9dc5adbda5]
 en = "{profile_name} is removed from this computer: its contacts, chats and call history here are deleted. Your other devices are not affected."
 where = [
   "desktop link_is_removed_from_this: Desktop, linking devices (in link_view.rs, unlink_confirm). {profile_name} is a value filled in by the app.",
 ]
-text = ""
+text = "{profile_name} ഈ കമ്പ്യൂട്ടറിൽ നിന്ന് നീക്കം ചെയ്യും: ഇവിടെയുള്ള അതിന്റെ കോൺടാക്റ്റുകളും ചാറ്റുകളും കോൾ ചരിത്രവും ഇല്ലാതാക്കും. നിങ്ങളുടെ മറ്റ് ഉപകരണങ്ങളെ ഇത് ബാധിക്കില്ല."
 
 [t_f5eaafed77]
 en = "It can call, chat and see your recovery phrase. Only link devices you own."
 where = [
   "desktop link_it_can_call_chat: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "അതിന് വിളിക്കാനും ചാറ്റ് ചെയ്യാനും നിങ്ങളുടെ വീണ്ടെടുക്കൽ വാക്കുകൾ കാണാനും കഴിയും. നിങ്ങളുടെ സ്വന്തം ഉപകരണങ്ങൾ മാത്രം ലിങ്ക് ചെയ്യുക."
 
 [t_5052507a1a]
 en = "It rings for your calls now. Contacts and call history sync whenever both devices are online."
 where = [
   "desktop link_it_rings_for_your: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "ഇനി അത് നിങ്ങളുടെ കോളുകൾക്ക് റിംഗ് ചെയ്യും. രണ്ട് ഉപകരണങ്ങളും ഓൺലൈനിലാകുമ്പോഴെല്ലാം കോൺടാക്റ്റുകളും കോൾ ചരിത്രവും സിങ്ക് ചെയ്യും."
 
 [t_16d08f0405]
 en = "It shows a QR code. Tap Scan instead and point it at this screen."
 where = [
   "desktop link_it_shows_a_qr: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = ""
+text = "അത് ഒരു QR കോഡ് കാണിക്കും. പകരം സ്കാൻ ചെയ്യുക ടാപ്പ് ചെയ്ത് ഈ സ്ക്രീനിന് നേരെ പിടിക്കുക."
 
 [t_0dde23f0ec]
 en = "Keep both devices online. If one drops off, it picks up where it left off next time they’re both online."
 where = [
   "desktop link_keep_both_devices_online: Desktop, linking devices (in link_view.rs, link_sync_screen).",
 ]
-text = ""
+text = "രണ്ട് ഉപകരണങ്ങളും ഓൺലൈനിൽ വയ്ക്കുക. ഒന്ന് വിട്ടുപോയാൽ, അടുത്ത തവണ രണ്ടും ഓൺലൈനിലാകുമ്പോൾ നിർത്തിയിടത്തുനിന്ന് തുടരും."
 
 [t_3f8bad0261]
 en = "Link “{name}”?"
 where = [
   "desktop link_link: Desktop, linking devices (in link_view.rs, link_screen). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "“{name}” ലിങ്ക് ചെയ്യണോ?"
 
 [t_38f21d8c2a]
 en = "Link code from the other device"
 where = [
   "desktop link_link_code_from_the: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = ""
+text = "മറ്റേ ഉപകരണത്തിൽ നിന്നുള്ള ലിങ്ക് കോഡ്"
 
 [t_def224ce11]
 en = "Linked {name}"
 where = [
   "desktop link_linked: Desktop, linking devices (in link_view.rs, link_screen). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} ലിങ്ക് ചെയ്തു"
 
 [t_caf3c63402]
 en = "Linking stopped"
 where = [
   "desktop link_linking_stopped: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "ലിങ്ക് ചെയ്യൽ നിർത്തി"
 
 [t_0e8e99aae4]
 en = "Linux"
 where = [
   "desktop link_linux: Desktop, linking devices (in link_view.rs, ).",
 ]
-text = ""
+text = "Linux"
 
 [t_88b66617f5]
 en = "Make a new code"
 where = [
   "desktop link_make_a_new_code: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = ""
+text = "പുതിയൊരു കോഡ് ഉണ്ടാക്കുക"
 
 [t_9c4702c37d]
 en = "Make sure the other device shows this same code."
 where = [
   "desktop link_make_sure_the_other: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "മറ്റേ ഉപകരണം ഇതേ കോഡ് തന്നെയാണ് കാണിക്കുന്നതെന്ന് ഉറപ്പാക്കുക."
 
 [t_e7192b462f]
 en = "Making a code…"
 where = [
   "desktop link_making_a_code: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = ""
+text = "കോഡ് ഉണ്ടാക്കുന്നു…"
 
 [t_5454768277]
 en = "Not linked"
 where = [
   "desktop link_not_linked: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "ലിങ്ക് ചെയ്തില്ല"
 
 [t_96af6bbdbb]
 en = "Nothing was changed on either device."
 where = [
   "desktop link_nothing_was_changed_on: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "രണ്ട് ഉപകരണത്തിലും ഒന്നും മാറ്റിയിട്ടില്ല."
 
 [t_0914fb108e]
 en = "On the new device, install Tinline and choose Link to an existing account."
 where = [
   "desktop link_on_the_new_device: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = ""
+text = "പുതിയ ഉപകരണത്തിൽ Tinline ഇൻസ്റ്റാൾ ചെയ്ത്, നിലവിലുള്ള അക്കൗണ്ടുമായി ലിങ്ക് ചെയ്യുക തിരഞ്ഞെടുക്കുക."
 
 [t_7919900ea0]
 en = "On your phone, open Tinline › Settings › Link a device."
 where = [
   "desktop link_on_your_phone_open: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = ""
+text = "നിങ്ങളുടെ ഫോണിൽ Tinline › ക്രമീകരണം › ഒരു ഉപകരണം ലിങ്ക് ചെയ്യുക തുറക്കുക."
 
 [t_b7eb4c2371]
 en = "Passphrase (optional)"
 where = [
   "desktop link_passphrase_optional: Desktop, linking devices (in link_view.rs, link_secure_screen).",
 ]
-text = ""
+text = "പാസ്‌ഫ്രേസ് (നിർബന്ധമില്ല)"
 
 [t_1eca9f710b]
 en = "Paste a link code instead"
 where = [
   "desktop link_paste_a_link_code: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = ""
+text = "പകരം ഒരു ലിങ്ക് കോഡ് പേസ്റ്റ് ചെയ്യുക"
 
 [t_14d0722730]
 en = "Protect the account on this computer before it is saved."
 where = [
   "desktop link_protect_the_account_on: Desktop, linking devices (in link_view.rs, link_secure_screen).",
 ]
-text = ""
+text = "സേവ് ചെയ്യുന്നതിനു മുമ്പ് ഈ കമ്പ്യൂട്ടറിലെ അക്കൗണ്ട് സംരക്ഷിക്കുക."
 
 [t_368e75b760]
 en = "Restore with recovery phrase instead"
 where = [
   "desktop link_restore_with_recovery_phrase: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "പകരം വീണ്ടെടുക്കൽ വാക്കുകൾ ഉപയോഗിച്ച് പുനഃസ്ഥാപിക്കുക"
 
 [t_43fea4daf5]
 en = "Sending your account over…"
 where = [
   "desktop link_sending_your_account_over: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "നിങ്ങളുടെ അക്കൗണ്ട് അയയ്ക്കുന്നു…"
 
 [t_96c47afa9a]
 en = "Show this to the device you want to add. It becomes you, so only link your own."
 where = [
   "desktop link_show_this_to_the: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = ""
+text = "നിങ്ങൾ ചേർക്കാൻ ആഗ്രഹിക്കുന്ന ഉപകരണത്തിന് ഇത് കാണിക്കുക. അത് നിങ്ങളായി മാറും, അതിനാൽ നിങ്ങളുടേത് മാത്രം ലിങ്ക് ചെയ്യുക."
 
 [t_0826ccb2c7]
 en = "Start using Tinline"
 where = [
   "desktop link_start_using_tinline: Desktop, linking devices (in link_view.rs, link_sync_screen).",
 ]
-text = ""
+text = "Tinline ഉപയോഗിച്ചുതുടങ്ങുക"
 
 [t_bcd18fac96]
 en = "Sync keeps going in the background."
 where = [
   "desktop link_sync_keeps_going_in: Desktop, linking devices (in link_view.rs, link_sync_screen).",
 ]
-text = ""
+text = "സിങ്ക് പശ്ചാത്തലത്തിൽ തുടരും."
 
 [t_e37b0d5fa7]
 en = "Synced {value}"
 where = [
   "desktop link_synced: Desktop, linking devices (in link_view.rs, linked_devices_page). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "സിങ്ക് ചെയ്തത്: {value}"
 
 [t_a4c809843c]
 en = "Tap Scan QR code and point it at this screen."
 where = [
   "desktop link_tap_scan_qr_code: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = ""
+text = "QR കോഡ് സ്കാൻ ചെയ്യുക ടാപ്പ് ചെയ്ത് ഈ സ്ക്രീനിന് നേരെ പിടിക്കുക."
 
 [t_91b511ddf8]
 en = "There is no code yet."
 where = [
   "desktop link_there_is_no_code: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = ""
+text = "ഇതുവരെ കോഡില്ല."
 
 [t_a542a56b19]
 en = "This account has no passphrase, and this computer can’t ask for a screen lock. By continuing you confirm you started this and the codes match."
 where = [
   "desktop link_this_account_has_no: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "ഈ അക്കൗണ്ടിന് പാസ്‌ഫ്രേസ് ഇല്ല, ഈ കമ്പ്യൂട്ടറിന് സ്ക്രീൻ ലോക്ക് ചോദിക്കാനും കഴിയില്ല. തുടരുന്നതിലൂടെ, നിങ്ങളാണ് ഇത് തുടങ്ങിയതെന്നും കോഡുകൾ ഒന്നുതന്നെയാണെന്നും നിങ്ങൾ സ്ഥിരീകരിക്കുന്നു."
 
 [t_eb8c9c2902]
 en = "This account has no passphrase, so confirming here is the only check."
 where = [
   "desktop link_this_account_has_no_passphrase: Desktop, linking devices (in link_view.rs, unlink_confirm).",
 ]
-text = ""
+text = "ഈ അക്കൗണ്ടിന് പാസ്‌ഫ്രേസ് ഇല്ല, അതിനാൽ ഇവിടെ സ്ഥിരീകരിക്കുന്നത് മാത്രമാണ് പരിശോധന."
 
 [t_a273cebb53]
 en = "This code expired."
 where = [
   "desktop link_this_code_expired: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = ""
+text = "ഈ കോഡിന്റെ കാലാവധി കഴിഞ്ഞു."
 
 [t_6c7f421a85]
 en = "This computer · {os}"
 where = [
   "desktop link_this_computer_os: Linked devices list, the row for this computer. {os} is the operating system name (Linux, macOS, Windows).",
 ]
-text = ""
+text = "ഈ കമ്പ്യൂട്ടർ · {os}"
 
 [t_3e7643126b]
 en = "This computer was unlinked"
 where = [
   "desktop link_this_computer_was_unlinked: Desktop, linking devices (in link_view.rs, unlinked_screen).",
 ]
-text = ""
+text = "ഈ കമ്പ്യൂട്ടറിന്റെ ലിങ്ക് ഒഴിവാക്കി"
 
 [t_22a7e5f7ef]
 en = "This takes a few seconds."
 where = [
   "desktop link_this_takes_a_few: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "ഇതിന് കുറച്ച് സെക്കൻഡ് എടുക്കും."
 
 [t_e23c8f931a]
 en = "Unlink this computer?"
 where = [
   "desktop link_unlink_this_computer: Desktop, linking devices (in link_view.rs, unlink_confirm).",
 ]
-text = ""
+text = "ഈ കമ്പ്യൂട്ടറിന്റെ ലിങ്ക് ഒഴിവാക്കണോ?"
 
 [t_8878bbf53e]
 en = "Unlinking..."
 where = [
   "desktop link_unlinking: Desktop, linking devices (in link_view.rs, unlink_confirm).",
 ]
-text = ""
+text = "ലിങ്ക് ഒഴിവാക്കുന്നു..."
 
 [t_14f5ecac2d]
 en = "{name} was removed from this computer by another of your devices. Its contacts, chats and calls are deleted here. Your other devices are not affected."
 where = [
   "desktop link_was_removed_from_this: Desktop, linking devices (in link_view.rs, unlinked_screen). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "നിങ്ങളുടെ മറ്റൊരു ഉപകരണം ഈ കമ്പ്യൂട്ടറിൽ നിന്ന് {name} എന്ന അക്കൗണ്ട് നീക്കം ചെയ്തു. അതിന്റെ കോൺടാക്റ്റുകളും ചാറ്റുകളും കോളുകളും ഇവിടെ നിന്ന് ഇല്ലാതാക്കി. നിങ്ങളുടെ മറ്റ് ഉപകരണങ്ങളെ ഇത് ബാധിക്കില്ല."
 
 [t_1a1688094f]
 en = "{name} was removed from this computer. Its contacts, chats and calls are deleted here. Your other devices are not affected."
 where = [
   "desktop link_was_removed_from_this_computer: Desktop, linking devices (in link_view.rs, unlinked_screen). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "ഈ കമ്പ്യൂട്ടറിൽ നിന്ന് {name} എന്ന അക്കൗണ്ട് നീക്കം ചെയ്തു. അതിന്റെ കോൺടാക്റ്റുകളും ചാറ്റുകളും കോളുകളും ഇവിടെ നിന്ന് ഇല്ലാതാക്കി. നിങ്ങളുടെ മറ്റ് ഉപകരണങ്ങളെ ഇത് ബാധിക്കില്ല."
 
 [t_809c8177da]
 en = "Windows"
 where = [
   "desktop link_windows: Desktop, linking devices (in link_view.rs, ).",
 ]
-text = ""
+text = "Windows"
 
 [t_14bedc27c0]
 en = "You type it each time Tinline starts."
 where = [
   "desktop link_you_type_it_each: Desktop, linking devices (in link_view.rs, link_secure_screen).",
 ]
-text = ""
+text = "Tinline തുടങ്ങുമ്പോഴെല്ലാം നിങ്ങൾ ഇത് ടൈപ്പ് ചെയ്യണം."
 
 [t_ffd65be7e1]
 en = "Your account is on the other device."
 where = [
   "desktop link_your_account_is_on: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "നിങ്ങളുടെ അക്കൗണ്ട് മറ്റേ ഉപകരണത്തിലാണ്."
 
 [t_a3963415c6]
 en = "A new camera is used the next time your camera starts."
 where = [
   "desktop profile_a_new_camera_is: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "അടുത്ത തവണ ക്യാമറ തുടങ്ങുമ്പോൾ പുതിയ ക്യാമറ ഉപയോഗിക്കും."
 
 [t_830cdd8bf7]
 en = "Accounts on this computer"
 where = [
   "desktop profile_accounts_on_this_computer: Desktop, profile and settings (in profile_view.rs, profile_page).",
 ]
-text = ""
+text = "ഈ കമ്പ്യൂട്ടറിലെ അക്കൗണ്ടുകൾ"
 
 [t_8ca5d6cba5]
 en = "Accounts stored on this computer"
 where = [
   "desktop profile_accounts_stored_on_this: Desktop, profile and settings (in profile_view.rs, native_page).",
 ]
-text = ""
+text = "ഈ കമ്പ്യൂട്ടറിൽ സൂക്ഷിച്ചിരിക്കുന്ന അക്കൗണ്ടുകൾ"
 
 [t_dd2dfa0aa3]
 en = "Add a nickname"
 where = [
   "desktop profile_add_a_nickname: Desktop, profile and settings (in profile_view.rs, person_profile).",
 ]
-text = ""
+text = "ഒരു വിളിപ്പേര് ചേർക്കുക"
 
 [t_437baa96ef]
 en = "Any length works. A few words make it stronger."
 where = [
   "desktop profile_any_length_works_a: Desktop, profile and settings (in profile_view.rs, passphrase_page).",
 ]
-text = ""
+text = "എത്ര നീളവുമാകാം. കുറച്ച് വാക്കുകൾ കൂടി ചേർത്താൽ കൂടുതൽ ശക്തമാകും."
 
 [t_a197e8d110]
 en = "Anyone who has it can act as you, just like the words. Tinline never asks for it except to restore your account."
 where = [
   "desktop profile_anyone_who_has_it: Desktop, profile and settings (in profile_view.rs, phrase_page).",
 ]
-text = ""
+text = "ഇത് കൈവശമുള്ള ആർക്കും, വാക്കുകൾ പോലെതന്നെ, നിങ്ങളുടെ പേരിൽ പ്രവർത്തിക്കാം. നിങ്ങളുടെ അക്കൗണ്ട് പുനഃസ്ഥാപിക്കാനല്ലാതെ Tinline ഒരിക്കലും ഇത് ചോദിക്കില്ല."
 
 [t_2c40fa833f]
 en = " Anyone who still has your recovery phrase, or can unlock {name}, can still act as you. If it is lost or stolen, the only full fix is a new account."
 where = [
   "desktop profile_anyone_who_still_has: Desktop, profile and settings (in profile_view.rs, devices_layer). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = " നിങ്ങളുടെ വീണ്ടെടുക്കൽ വാക്കുകൾ ഇപ്പോഴും കൈവശമുള്ള, അല്ലെങ്കിൽ {name} അൺലോക്ക് ചെയ്യാൻ കഴിയുന്ന ആർക്കും ഇപ്പോഴും നിങ്ങളുടെ പേരിൽ പ്രവർത്തിക്കാം. അത് നഷ്ടപ്പെടുകയോ മോഷ്ടിക്കപ്പെടുകയോ ചെയ്താൽ, പൂർണ്ണമായ പരിഹാരം പുതിയൊരു അക്കൗണ്ട് മാത്രമാണ്."
 
 [t_9bb58d6614]
 en = "Audio, security and hosting"
 where = [
   "desktop profile_audio_security_and_hosting: Desktop, profile and settings (in profile_view.rs, settings_landing).",
 ]
-text = ""
+text = "ഓഡിയോ, സുരക്ഷ, ഹോസ്റ്റിംഗ്"
 
 [t_a0f9f18ca6]
 en = "Bitrate cap"
 where = [
   "desktop profile_bitrate_cap: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "ബിറ്റ്‌റേറ്റ് പരിധി"
 
 [t_a2c759c438]
 en = "Block {first2}"
 where = [
   "desktop profile_block: Desktop, profile and settings (in profile_view.rs, person_profile). {first2} is a value filled in by the app.",
 ]
-text = ""
+text = "{first2} എന്നയാളെ ബ്ലോക്ക് ചെയ്യുക"
 
 [t_e3cdf7ca3e]
 en = "Block {name}?"
 where = [
   "desktop profile_block_2: Desktop, profile and settings (in profile_view.rs, profile_layer). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} എന്നയാളെ ബ്ലോക്ക് ചെയ്യണോ?"
 
 [t_0c1589aabf]
 en = "Block someone"
 where = [
   "desktop profile_block_someone: Desktop, profile and settings (in profile_view.rs, blocked_page).",
 ]
-text = ""
+text = "ഒരാളെ ബ്ലോക്ക് ചെയ്യുക"
 
 [t_58a99e3d8f]
 en = "Blocking is not silent. The person is told, their app stops contacting you and removes you from their contacts. Your chat history stays on your devices. Groups you share aren’t affected."
 where = [
   "desktop profile_blocking_is_not_silent: Desktop, profile and settings (in profile_view.rs, blocked_page).",
 ]
-text = ""
+text = "ബ്ലോക്ക് ചെയ്യുന്നത് രഹസ്യമായല്ല. ആ വ്യക്തിയെ അറിയിക്കും, അവരുടെ ആപ്പ് നിങ്ങളെ ബന്ധപ്പെടുന്നത് നിർത്തുകയും അവരുടെ കോൺടാക്റ്റുകളിൽ നിന്ന് നിങ്ങളെ നീക്കുകയും ചെയ്യും. നിങ്ങളുടെ ചാറ്റ് ചരിത്രം നിങ്ങളുടെ ഉപകരണങ്ങളിൽ നിലനിൽക്കും. നിങ്ങൾ ഒരുമിച്ചുള്ള ഗ്രൂപ്പുകളെ ഇത് ബാധിക്കില്ല."
 
 [t_dfe389f837]
 en = "Calls on this computer"
 where = [
   "desktop profile_calls_on_this_computer: Desktop, profile and settings (in profile_view.rs, profile_page).",
 ]
-text = ""
+text = "ഈ കമ്പ്യൂട്ടറിലെ കോളുകൾ"
 
 [t_4c3f0aabaf]
 en = "Checking…"
 where = [
   "desktop profile_checking: Desktop, profile and settings (in profile_view.rs, phrase_page).",
 ]
-text = ""
+text = "പരിശോധിക്കുന്നു…"
 
 [t_b5b9d1f203]
 en = "Contacts you haven’t blocked get your updated device list when they’re next online."
 where = [
   "desktop profile_contacts_you_havent_blocked: Desktop, profile and settings (in profile_view.rs, devices_layer).",
 ]
-text = ""
+text = "നിങ്ങൾ ബ്ലോക്ക് ചെയ്യാത്ത കോൺടാക്റ്റുകൾക്ക് അടുത്ത തവണ ഓൺലൈനിൽ വരുമ്പോൾ നിങ്ങളുടെ പുതുക്കിയ ഉപകരണ ലിസ്റ്റ് ലഭിക്കും."
 
 [t_6e98940bd0]
 en = "Cut"
 where = [
   "desktop profile_cut: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "കട്ട്"
 
 [t_fabff01ef6]
 en = "Cut+probe"
 where = [
   "desktop profile_cut_probe: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "കട്ട്+പ്രോബ്"
 
 [t_d25ee7b4b0]
 en = "Each shows a soft preview until you tap it"
 where = [
   "desktop profile_each_shows_a_soft_preview: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "ടാപ്പ് ചെയ്യുന്നതുവരെ ഓരോന്നും മങ്ങിയ ഒരു പ്രിവ്യൂ കാണിക്കും"
 
 [t_2b81c6b647]
 en = "Enter your passphrase to confirm"
 where = [
   "desktop profile_enter_your_passphrase_to: Desktop, profile and settings (in profile_view.rs, devices_layer).",
 ]
-text = ""
+text = "സ്ഥിരീകരിക്കാൻ നിങ്ങളുടെ പാസ്‌ഫ്രേസ് നൽകുക"
 
 [t_23bc418acf]
 en = "Enter your passphrase to continue"
 where = [
   "desktop profile_enter_your_passphrase_to_continue: Desktop, profile and settings (in profile_view.rs, phrase_page).",
 ]
-text = ""
+text = "തുടരാൻ നിങ്ങളുടെ പാസ്‌ഫ്രേസ് നൽകുക"
 
 [t_2c745833e1]
 en = "Every linked device is a full copy of you: it can read your chats and act as you. Names here are private to your devices; contacts never see them."
 where = [
   "desktop profile_every_linked_device_is: Desktop, profile and settings (in profile_view.rs, devices_page).",
 ]
-text = ""
+text = "ലിങ്ക് ചെയ്ത ഓരോ ഉപകരണവും നിങ്ങളുടെ പൂർണ്ണമായ ഒരു പകർപ്പാണ്: അതിന് നിങ്ങളുടെ ചാറ്റുകൾ വായിക്കാനും നിങ്ങളുടെ പേരിൽ പ്രവർത്തിക്കാനും കഴിയും. ഇവിടെയുള്ള പേരുകൾ നിങ്ങളുടെ ഉപകരണങ്ങൾക്ക് മാത്രമുള്ളതാണ്; കോൺടാക്റ്റുകൾ അവ ഒരിക്കലും കാണില്ല."
 
 [t_87fd46df46]
 en = "Fixed rung"
 where = [
   "desktop profile_fixed_rung: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "നിശ്ചിത നില"
 
 [t_97ecbd9279]
 en = "Groups you share aren’t affected. You can unblock {name} here at any time."
 where = [
   "desktop profile_groups_you_share_arent: Desktop, profile and settings (in profile_view.rs, profile_layer). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "നിങ്ങൾ ഒരുമിച്ചുള്ള ഗ്രൂപ്പുകളെ ഇത് ബാധിക്കില്ല. എപ്പോൾ വേണമെങ്കിലും ഇവിടെ നിന്ന് {name} എന്നയാളെ അൺബ്ലോക്ക് ചെയ്യാം."
 
 [t_48ff9eddd1]
 en = "Hardware"
 where = [
   "desktop profile_hardware: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "ഹാർഡ്‌വെയർ"
 
 [t_80515997ef]
 en = "Hide key"
 where = [
   "desktop profile_hide_key: Desktop, profile and settings (in profile_view.rs, phrase_page).",
 ]
-text = ""
+text = "കീ മറയ്ക്കുക"
 
 [t_e1fa8e6a72]
 en = "Hide words"
 where = [
   "desktop profile_hide_words: Desktop, profile and settings (in profile_view.rs, phrase_page).",
 ]
-text = ""
+text = "വാക്കുകൾ മറയ്ക്കുക"
 
 [t_639081c198]
 en = "Hides in {seconds} s"
 where = [
   "desktop profile_hides_in_s: Desktop, profile and settings (in profile_view.rs, phrase_page). {seconds} is a value filled in by the app.",
 ]
-text = ""
+text = "{seconds} സെ. കഴിഞ്ഞ് മറയും"
 
 [t_bca16c3e78]
 en = "Hosts keep every group picture so members can load them. This applies on this device."
 where = [
   "desktop profile_hosts_keep_every_group: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "അംഗങ്ങൾക്ക് ലോഡ് ചെയ്യാനായി ഹോസ്റ്റുകൾ എല്ലാ ഗ്രൂപ്പ് ഫോട്ടോകളും സൂക്ഷിക്കുന്നു. ഇത് ഈ ഉപകരണത്തിൽ മാത്രം ബാധകമാണ്."
 
 [t_6523fe005e]
 en = "{name} isn’t one of your contacts. You know them through a group. Looking at a profile doesn’t add anyone."
 where = [
   "desktop profile_isnt_one_of_your: Desktop, profile and settings (in profile_view.rs, person_profile). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} നിങ്ങളുടെ കോൺടാക്റ്റുകളിൽ ഒരാളല്ല. ഒരു ഗ്രൂപ്പ് വഴിയാണ് നിങ്ങൾക്ക് അവരെ അറിയുന്നത്. ഒരു പ്രൊഫൈൽ നോക്കുന്നതുകൊണ്ട് ആരും ചേർക്കപ്പെടില്ല."
 
 [t_33776c2f81]
 en = "It is offline, so it finds out the next time it connects."
 where = [
   "desktop profile_it_is_offline_so: Desktop, profile and settings (in profile_view.rs, devices_layer).",
 ]
-text = ""
+text = "അത് ഓഫ്‌ലൈനാണ്, അതിനാൽ അടുത്ത തവണ കണക്റ്റ് ചെയ്യുമ്പോൾ അറിയും."
 
 [t_dfa1efbc07]
 en = "{round} KB"
 where = [
   "desktop profile_kb: Desktop, profile and settings (in profile_view.rs, fmt_bytes). {round} is a value filled in by the app.",
 ]
-text = ""
+text = "{round} KB"
 
 [t_ae83393da3]
 en_one = "Last seen {count} day ago"
@@ -16139,6 +16141,8 @@ en_other = "Last seen {count} days ago"
 where = [
   "desktop profile_last_seen_days: Under a contact profile when they were last online. {count} is the number of days.",
 ]
+one = "{count} ദിവസം മുമ്പ് അവസാനം കണ്ടു"
+other = "{count} ദിവസം മുമ്പ് അവസാനം കണ്ടു"
 
 [t_e11bdbbee3]
 en_one = "Last seen {count} hour ago"
@@ -16146,13 +16150,15 @@ en_other = "Last seen {count} hours ago"
 where = [
   "desktop profile_last_seen_hours: Under a contact profile when they were last online. {count} is the number of hours.",
 ]
+one = "{count} മണിക്കൂർ മുമ്പ് അവസാനം കണ്ടു"
+other = "{count} മണിക്കൂർ മുമ്പ് അവസാനം കണ്ടു"
 
 [t_4385d29350]
 en = "Last seen just now"
 where = [
   "desktop profile_last_seen_just_now: Desktop, profile and settings (in profile_view.rs, last_seen).",
 ]
-text = ""
+text = "ഇപ്പോൾ അവസാനം കണ്ടു"
 
 [t_8f77fe1d28]
 en_one = "Last seen {count} minute ago"
@@ -16160,90 +16166,92 @@ en_other = "Last seen {count} minutes ago"
 where = [
   "desktop profile_last_seen_minutes: Under a contact profile when they were last online. {count} is the number of minutes.",
 ]
+one = "{count} മിനിറ്റ് മുമ്പ് അവസാനം കണ്ടു"
+other = "{count} മിനിറ്റ് മുമ്പ് അവസാനം കണ്ടു"
 
 [t_d1a0dcbb30]
 en = "Light or dark, as this computer is set"
 where = [
   "desktop profile_light_or_dark_as: Desktop, profile and settings (in profile_view.rs, settings_landing).",
 ]
-text = ""
+text = "ഈ കമ്പ്യൂട്ടറിൽ സജ്ജീകരിച്ചതുപോലെ ലൈറ്റ് അല്ലെങ്കിൽ ഡാർക്ക്"
 
 [t_5814a07b57]
 en = "Load group pictures by themselves"
 where = [
   "desktop profile_load_group_pictures_by: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "ഗ്രൂപ്പ് ഫോട്ടോകൾ തനിയെ ലോഡ് ചെയ്യുക"
 
 [t_b711ca0977]
 en = "Match my computer"
 where = [
   "desktop profile_match_my_computer: Desktop, profile and settings (in profile_view.rs, settings_landing).",
 ]
-text = ""
+text = "എന്റെ കമ്പ്യൂട്ടറിനനുസരിച്ച്"
 
 [t_3577d58ddb]
 en = "{round} MB"
 where = [
   "desktop profile_mb: Desktop, profile and settings (in profile_view.rs, fmt_bytes). {round} is a value filled in by the app.",
 ]
-text = ""
+text = "{round} MB"
 
 [t_c1a3ac1d46]
 en = "Messages only: calling needs {name}’s permission"
 where = [
   "desktop profile_messages_only_calling_needs: Desktop, profile and settings (in profile_view.rs, person_profile). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "സന്ദേശങ്ങൾ മാത്രം: വിളിക്കാൻ {name} എന്നയാളുടെ അനുമതി വേണം"
 
 [t_f422fbec3c]
 en = "New passphrase again"
 where = [
   "desktop profile_new_passphrase_again: Desktop, profile and settings (in profile_view.rs, passphrase_page).",
 ]
-text = ""
+text = "പുതിയ പാസ്‌ഫ്രേസ് വീണ്ടും"
 
 [t_2be53fc862]
 en = "Nickname"
 where = [
   "desktop profile_nickname: Desktop, profile and settings (in profile_view.rs, person_profile).",
 ]
-text = ""
+text = "വിളിപ്പേര്"
 
 [t_3ca88f3098]
 en = "No camera found. Plug one in and open this page again."
 where = [
   "desktop profile_no_camera_found_plug: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "ക്യാമറ കണ്ടെത്തിയില്ല. ഒരെണ്ണം കണക്റ്റ് ചെയ്ത് ഈ പേജ് വീണ്ടും തുറക്കുക."
 
 [t_925929dc39]
 en = "No microphone found"
 where = [
   "desktop profile_no_microphone_found: Desktop, profile and settings (in profile_view.rs, notifications_page).",
 ]
-text = ""
+text = "മൈക്രോഫോൺ കണ്ടെത്തിയില്ല"
 
 [t_6682826533]
 en = "No one is blocked."
 where = [
   "desktop profile_no_one_is_blocked: Desktop, profile and settings (in profile_view.rs, blocked_page).",
 ]
-text = ""
+text = "ആരെയും ബ്ലോക്ക് ചെയ്തിട്ടില്ല."
 
 [t_e3c3df9286]
 en = "No one left to block."
 where = [
   "desktop profile_no_one_left_to: Desktop, profile and settings (in profile_view.rs, privacy_layer).",
 ]
-text = ""
+text = "ബ്ലോക്ക് ചെയ്യാൻ ഇനി ആരുമില്ല."
 
 [t_c40e38a466]
 en = "No profile is available."
 where = [
   "desktop profile_no_profile_is_available: Desktop, profile and settings (in profile_view.rs, person_profile).",
 ]
-text = ""
+text = "പ്രൊഫൈൽ ലഭ്യമല്ല."
 
 [t_449d519303]
 en_one = "Not seen for {count} day"
@@ -16251,34 +16259,36 @@ en_other = "Not seen for {count} days"
 where = [
   "desktop profile_not_seen_for_days: Desktop, profile devices list (in profile_view.rs, devices_page). {count} is how many whole days since the device was last seen.",
 ]
+one = "{count} ദിവസമായി കണ്ടിട്ടില്ല"
+other = "{count} ദിവസമായി കണ്ടിട്ടില്ല"
 
 [t_bc6df257c5]
 en = "{value} of pictures and files you’ve opened. They’re prepared again when you open them."
 where = [
   "desktop profile_of_pictures_and_files: Desktop, profile and settings (in profile_view.rs, storage_page). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "നിങ്ങൾ തുറന്ന ഫോട്ടോകളും ഫയലുകളും: {value}. വീണ്ടും തുറക്കുമ്പോൾ അവ വീണ്ടും തയ്യാറാക്കും."
 
 [t_d060fc5ab7]
 en = "Off means messages only"
 where = [
   "desktop profile_off_means_messages_only: Desktop, profile and settings (in profile_view.rs, person_profile).",
 ]
-text = ""
+text = "ഓഫ് എന്നാൽ സന്ദേശങ്ങൾ മാത്രം"
 
 [t_5d478e8506]
 en = "On this computer"
 where = [
   "desktop profile_on_this_computer: Desktop, profile and settings (in profile_view.rs, storage_page).",
 ]
-text = ""
+text = "ഈ കമ്പ്യൂട്ടറിൽ"
 
 [t_cdfa63e232]
 en = "Online now"
 where = [
   "desktop profile_online_now: Desktop, profile and settings (in profile_view.rs, devices_page).",
 ]
-text = ""
+text = "ഇപ്പോൾ ഓൺലൈനാണ്"
 
 [t_11b4ba4260]
 en = "Only the selected account is online on this computer. Switching pauses the other one: it receives no calls until you select it again."
