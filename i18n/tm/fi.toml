@@ -14919,455 +14919,455 @@ en = "Making a code…"
 where = [
   "desktop link_making_a_code: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = ""
+text = "Luodaan koodia…"
 
 [t_5454768277]
 en = "Not linked"
 where = [
   "desktop link_not_linked: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "Ei linkitetty"
 
 [t_96af6bbdbb]
 en = "Nothing was changed on either device."
 where = [
   "desktop link_nothing_was_changed_on: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "Kummallakaan laitteella ei muutettu mitään."
 
 [t_0914fb108e]
 en = "On the new device, install Tinline and choose Link to an existing account."
 where = [
   "desktop link_on_the_new_device: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = ""
+text = "Asenna uudelle laitteelle Tinline ja valitse Linkitä olemassa olevaan tiliin."
 
 [t_7919900ea0]
 en = "On your phone, open Tinline › Settings › Link a device."
 where = [
   "desktop link_on_your_phone_open: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = ""
+text = "Avaa puhelimellasi Tinline › Asetukset › Linkitä laite."
 
 [t_b7eb4c2371]
 en = "Passphrase (optional)"
 where = [
   "desktop link_passphrase_optional: Desktop, linking devices (in link_view.rs, link_secure_screen).",
 ]
-text = ""
+text = "Salalause (valinnainen)"
 
 [t_1eca9f710b]
 en = "Paste a link code instead"
 where = [
   "desktop link_paste_a_link_code: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = ""
+text = "Liitä linkityskoodi sen sijaan"
 
 [t_14d0722730]
 en = "Protect the account on this computer before it is saved."
 where = [
   "desktop link_protect_the_account_on: Desktop, linking devices (in link_view.rs, link_secure_screen).",
 ]
-text = ""
+text = "Suojaa tili tällä tietokoneella ennen kuin se tallennetaan."
 
 [t_368e75b760]
 en = "Restore with recovery phrase instead"
 where = [
   "desktop link_restore_with_recovery_phrase: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "Palauta palautussanoilla sen sijaan"
 
 [t_43fea4daf5]
 en = "Sending your account over…"
 where = [
   "desktop link_sending_your_account_over: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "Lähetetään tiliäsi…"
 
 [t_96c47afa9a]
 en = "Show this to the device you want to add. It becomes you, so only link your own."
 where = [
   "desktop link_show_this_to_the: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = ""
+text = "Näytä tämä laitteelle, jonka haluat lisätä. Siitä tulee sinä, joten linkitä vain omia laitteitasi."
 
 [t_0826ccb2c7]
 en = "Start using Tinline"
 where = [
   "desktop link_start_using_tinline: Desktop, linking devices (in link_view.rs, link_sync_screen).",
 ]
-text = ""
+text = "Aloita Tinlinen käyttö"
 
 [t_bcd18fac96]
 en = "Sync keeps going in the background."
 where = [
   "desktop link_sync_keeps_going_in: Desktop, linking devices (in link_view.rs, link_sync_screen).",
 ]
-text = ""
+text = "Synkronointi jatkuu taustalla."
 
 [t_e37b0d5fa7]
 en = "Synced {value}"
 where = [
   "desktop link_synced: Desktop, linking devices (in link_view.rs, linked_devices_page). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "Synkronoitu {value}"
 
 [t_a4c809843c]
 en = "Tap Scan QR code and point it at this screen."
 where = [
   "desktop link_tap_scan_qr_code: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = ""
+text = "Napauta Skannaa QR-koodi ja osoita sillä tätä näyttöä."
 
 [t_ba1b32b37f]
 en = "the other device"
 where = [
   "desktop link_the_other_device: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "toinen laite"
 
 [t_91b511ddf8]
 en = "There is no code yet."
 where = [
   "desktop link_there_is_no_code: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = ""
+text = "Koodia ei ole vielä."
 
 [t_a542a56b19]
 en = "This account has no passphrase, and this computer can’t ask for a screen lock. By continuing you confirm you started this and the codes match."
 where = [
   "desktop link_this_account_has_no: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "Tällä tilillä ei ole salalausetta, eikä tämä tietokone voi pyytää näytön lukitusta. Jatkamalla vahvistat, että aloitit tämän ja että koodit täsmäävät."
 
 [t_eb8c9c2902]
 en = "This account has no passphrase, so confirming here is the only check."
 where = [
   "desktop link_this_account_has_no_passphrase: Desktop, linking devices (in link_view.rs, unlink_confirm).",
 ]
-text = ""
+text = "Tällä tilillä ei ole salalausetta, joten vahvistus täällä on ainoa tarkistus."
 
 [t_a273cebb53]
 en = "This code expired."
 where = [
   "desktop link_this_code_expired: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = ""
+text = "Koodi on vanhentunut."
 
 [t_6c7f421a85]
 en = "This computer · {os}"
 where = [
   "desktop link_this_computer_os: Linked devices list, the row for this computer. {os} is the operating system name (Linux, macOS, Windows).",
 ]
-text = ""
+text = "Tämä tietokone · {os}"
 
 [t_3e7643126b]
 en = "This computer was unlinked"
 where = [
   "desktop link_this_computer_was_unlinked: Desktop, linking devices (in link_view.rs, unlinked_screen).",
 ]
-text = ""
+text = "Tämän tietokoneen linkitys poistettiin"
 
 [t_22a7e5f7ef]
 en = "This takes a few seconds."
 where = [
   "desktop link_this_takes_a_few: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "Tämä kestää muutaman sekunnin."
 
 [t_e23c8f931a]
 en = "Unlink this computer?"
 where = [
   "desktop link_unlink_this_computer: Desktop, linking devices (in link_view.rs, unlink_confirm).",
 ]
-text = ""
+text = "Poistetaanko tämän tietokoneen linkitys?"
 
 [t_8878bbf53e]
 en = "Unlinking..."
 where = [
   "desktop link_unlinking: Desktop, linking devices (in link_view.rs, unlink_confirm).",
 ]
-text = ""
+text = "Poistetaan linkitystä..."
 
 [t_14f5ecac2d]
 en = "{name} was removed from this computer by another of your devices. Its contacts, chats and calls are deleted here. Your other devices are not affected."
 where = [
   "desktop link_was_removed_from_this: Desktop, linking devices (in link_view.rs, unlinked_screen). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Yksi muista laitteistasi poisti tältä tietokoneelta tilin {name}. Sen yhteystiedot, keskustelut ja puhelut on poistettu täältä. Muihin laitteisiisi tämä ei vaikuta."
 
 [t_1a1688094f]
 en = "{name} was removed from this computer. Its contacts, chats and calls are deleted here. Your other devices are not affected."
 where = [
   "desktop link_was_removed_from_this_computer: Desktop, linking devices (in link_view.rs, unlinked_screen). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Tili {name} poistettiin tältä tietokoneelta. Sen yhteystiedot, keskustelut ja puhelut on poistettu täältä. Muihin laitteisiisi tämä ei vaikuta."
 
 [t_809c8177da]
 en = "Windows"
 where = [
   "desktop link_windows: Desktop, linking devices (in link_view.rs, ).",
 ]
-text = ""
+text = "Windows"
 
 [t_14bedc27c0]
 en = "You type it each time Tinline starts."
 where = [
   "desktop link_you_type_it_each: Desktop, linking devices (in link_view.rs, link_secure_screen).",
 ]
-text = ""
+text = "Kirjoitat sen aina, kun Tinline käynnistyy."
 
 [t_ffd65be7e1]
 en = "Your account is on the other device."
 where = [
   "desktop link_your_account_is_on: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "Tilisi on toisella laitteella."
 
 [t_a3963415c6]
 en = "A new camera is used the next time your camera starts."
 where = [
   "desktop profile_a_new_camera_is: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "Uusi kamera otetaan käyttöön, kun kamerasi seuraavan kerran käynnistyy."
 
 [t_9ae5a12760]
 en = "a status"
 where = [
   "desktop profile_a_status: Desktop, profile and settings (in profile_ui.rs, profile_update).",
 ]
-text = ""
+text = "tila"
 
 [t_830cdd8bf7]
 en = "Accounts on this computer"
 where = [
   "desktop profile_accounts_on_this_computer: Desktop, profile and settings (in profile_view.rs, profile_page).",
 ]
-text = ""
+text = "Tilit tällä tietokoneella"
 
 [t_8ca5d6cba5]
 en = "Accounts stored on this computer"
 where = [
   "desktop profile_accounts_stored_on_this: Desktop, profile and settings (in profile_view.rs, native_page).",
 ]
-text = ""
+text = "Tälle tietokoneelle tallennetut tilit"
 
 [t_dd2dfa0aa3]
 en = "Add a nickname"
 where = [
   "desktop profile_add_a_nickname: Desktop, profile and settings (in profile_view.rs, person_profile).",
 ]
-text = ""
+text = "Lisää lempinimi"
 
 [t_437baa96ef]
 en = "Any length works. A few words make it stronger."
 where = [
   "desktop profile_any_length_works_a: Desktop, profile and settings (in profile_view.rs, passphrase_page).",
 ]
-text = ""
+text = "Mikä tahansa pituus käy. Muutama sana tekee siitä vahvemman."
 
 [t_a197e8d110]
 en = "Anyone who has it can act as you, just like the words. Tinline never asks for it except to restore your account."
 where = [
   "desktop profile_anyone_who_has_it: Desktop, profile and settings (in profile_view.rs, phrase_page).",
 ]
-text = ""
+text = "Kuka tahansa, jolla se on, voi toimia sinuna, aivan kuten sanoilla. Tinline kysyy sitä vain tilisi palauttamiseen."
 
 [t_2c40fa833f]
 en = " Anyone who still has your recovery phrase, or can unlock {name}, can still act as you. If it is lost or stolen, the only full fix is a new account."
 where = [
   "desktop profile_anyone_who_still_has: Desktop, profile and settings (in profile_view.rs, devices_layer). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = " Kuka tahansa, jolla on yhä palautussanasi tai joka saa laitteen {name} auki, voi yhä toimia sinuna. Jos se katoaa tai varastetaan, ainoa täysi korjaus on uusi tili."
 
 [t_9bb58d6614]
 en = "Audio, security and hosting"
 where = [
   "desktop profile_audio_security_and_hosting: Desktop, profile and settings (in profile_view.rs, settings_landing).",
 ]
-text = ""
+text = "Ääni, turvallisuus ja isännöinti"
 
 [t_a0f9f18ca6]
 en = "Bitrate cap"
 where = [
   "desktop profile_bitrate_cap: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "Bittinopeuden yläraja"
 
 [t_a2c759c438]
 en = "Block {first2}"
 where = [
   "desktop profile_block: Desktop, profile and settings (in profile_view.rs, person_profile). {first2} is a value filled in by the app.",
 ]
-text = ""
+text = "Estä {first2}"
 
 [t_e3cdf7ca3e]
 en = "Block {name}?"
 where = [
   "desktop profile_block_2: Desktop, profile and settings (in profile_view.rs, profile_layer). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Estetäänkö {name}?"
 
 [t_0c1589aabf]
 en = "Block someone"
 where = [
   "desktop profile_block_someone: Desktop, profile and settings (in profile_view.rs, blocked_page).",
 ]
-text = ""
+text = "Estä joku"
 
 [t_58a99e3d8f]
 en = "Blocking is not silent. The person is told, their app stops contacting you and removes you from their contacts. Your chat history stays on your devices. Groups you share aren’t affected."
 where = [
   "desktop profile_blocking_is_not_silent: Desktop, profile and settings (in profile_view.rs, blocked_page).",
 ]
-text = ""
+text = "Estäminen ei ole huomaamatonta. Henkilölle kerrotaan, hänen sovelluksensa lakkaa ottamasta sinuun yhteyttä ja poistaa sinut hänen yhteystiedoistaan. Keskusteluhistoriasi pysyy laitteillasi. Yhteisiin ryhmiin tämä ei vaikuta."
 
 [t_bcb476435a]
 en = "Busy until {value}"
 where = [
   "desktop profile_busy_until: Desktop, profile and settings (in profile_view.rs, settings_landing). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "Varattu {value} asti"
 
 [t_dfe389f837]
 en = "Calls on this computer"
 where = [
   "desktop profile_calls_on_this_computer: Desktop, profile and settings (in profile_view.rs, profile_page).",
 ]
-text = ""
+text = "Puhelut tällä tietokoneella"
 
 [t_31f5bad868]
 en = "{cap} can’t contain control or text-direction characters."
 where = [
   "desktop profile_cant_contain_control_or: Desktop, profile and settings (in profile_ui.rs, check_text). {cap} is a value filled in by the app.",
 ]
-text = ""
+text = "{cap} ei voi sisältää ohjaus- tai tekstisuuntamerkkejä."
 
 [t_4c3f0aabaf]
 en = "Checking…"
 where = [
   "desktop profile_checking: Desktop, profile and settings (in profile_view.rs, phrase_page).",
 ]
-text = ""
+text = "Tarkistetaan…"
 
 [t_b5b9d1f203]
 en = "Contacts you haven’t blocked get your updated device list when they’re next online."
 where = [
   "desktop profile_contacts_you_havent_blocked: Desktop, profile and settings (in profile_view.rs, devices_layer).",
 ]
-text = ""
+text = "Yhteystiedot, joita et ole estänyt, saavat päivitetyn laitelistasi, kun ovat seuraavan kerran verkossa."
 
 [t_6e98940bd0]
 en = "Cut"
 where = [
   "desktop profile_cut: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "Cut"
 
 [t_fabff01ef6]
 en = "Cut+probe"
 where = [
   "desktop profile_cut_probe: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "Cut+probe"
 
 [t_d25ee7b4b0]
 en = "Each shows a soft preview until you tap it"
 where = [
   "desktop profile_each_shows_a_soft_preview: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "Kustakin näkyy pehmeä esikatselu, kunnes napautat sitä"
 
 [t_2b81c6b647]
 en = "Enter your passphrase to confirm"
 where = [
   "desktop profile_enter_your_passphrase_to: Desktop, profile and settings (in profile_view.rs, devices_layer).",
 ]
-text = ""
+text = "Vahvista kirjoittamalla salalauseesi"
 
 [t_23bc418acf]
 en = "Enter your passphrase to continue"
 where = [
   "desktop profile_enter_your_passphrase_to_continue: Desktop, profile and settings (in profile_view.rs, phrase_page).",
 ]
-text = ""
+text = "Jatka kirjoittamalla salalauseesi"
 
 [t_2c745833e1]
 en = "Every linked device is a full copy of you: it can read your chats and act as you. Names here are private to your devices; contacts never see them."
 where = [
   "desktop profile_every_linked_device_is: Desktop, profile and settings (in profile_view.rs, devices_page).",
 ]
-text = ""
+text = "Jokainen linkitetty laite on täysi kopio sinusta: se voi lukea keskustelusi ja toimia sinuna. Täällä olevat nimet näkyvät vain laitteillesi; yhteystiedot eivät koskaan näe niitä."
 
 [t_87fd46df46]
 en = "Fixed rung"
 where = [
   "desktop profile_fixed_rung: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "Kiinteä porras"
 
 [t_97ecbd9279]
 en = "Groups you share aren’t affected. You can unblock {name} here at any time."
 where = [
   "desktop profile_groups_you_share_arent: Desktop, profile and settings (in profile_view.rs, profile_layer). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Yhteisiin ryhmiin tämä ei vaikuta. Voit poistaa henkilön {name} eston täällä milloin tahansa."
 
 [t_48ff9eddd1]
 en = "Hardware"
 where = [
   "desktop profile_hardware: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "Laitteisto"
 
 [t_80515997ef]
 en = "Hide key"
 where = [
   "desktop profile_hide_key: Desktop, profile and settings (in profile_view.rs, phrase_page).",
 ]
-text = ""
+text = "Piilota avain"
 
 [t_e1fa8e6a72]
 en = "Hide words"
 where = [
   "desktop profile_hide_words: Desktop, profile and settings (in profile_view.rs, phrase_page).",
 ]
-text = ""
+text = "Piilota sanat"
 
 [t_639081c198]
 en = "Hides in {seconds} s"
 where = [
   "desktop profile_hides_in_s: Desktop, profile and settings (in profile_view.rs, phrase_page). {seconds} is a value filled in by the app.",
 ]
-text = ""
+text = "Piiloutuu {seconds} s kuluttua"
 
 [t_bca16c3e78]
 en = "Hosts keep every group picture so members can load them. This applies on this device."
 where = [
   "desktop profile_hosts_keep_every_group: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "Isäntälaitteet säilyttävät jokaisen ryhmän kuvan, jotta jäsenet voivat ladata ne. Tämä koskee tätä laitetta."
 
 [t_6523fe005e]
 en = "{name} isn’t one of your contacts. You know them through a group. Looking at a profile doesn’t add anyone."
 where = [
   "desktop profile_isnt_one_of_your: Desktop, profile and settings (in profile_view.rs, person_profile). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} ei ole yhteystietosi. Tunnet hänet ryhmän kautta. Profiilin katsominen ei lisää ketään."
 
 [t_33776c2f81]
 en = "It is offline, so it finds out the next time it connects."
 where = [
   "desktop profile_it_is_offline_so: Desktop, profile and settings (in profile_view.rs, devices_layer).",
 ]
-text = ""
+text = "Se ei ole verkossa, joten se saa tiedon, kun se seuraavan kerran yhdistää."
 
 [t_dfa1efbc07]
 en = "{round} KB"
 where = [
   "desktop profile_kb: Desktop, profile and settings (in profile_view.rs, fmt_bytes). {round} is a value filled in by the app.",
 ]
-text = ""
+text = "{round} kt"
 
 [t_ae83393da3]
 en_one = "Last seen {count} day ago"
@@ -15375,6 +15375,8 @@ en_other = "Last seen {count} days ago"
 where = [
   "desktop profile_last_seen_days: Under a contact profile when they were last online. {count} is the number of days.",
 ]
+one = "Nähty viimeksi {count} päivä sitten"
+other = "Nähty viimeksi {count} päivää sitten"
 
 [t_e11bdbbee3]
 en_one = "Last seen {count} hour ago"
@@ -15382,13 +15384,15 @@ en_other = "Last seen {count} hours ago"
 where = [
   "desktop profile_last_seen_hours: Under a contact profile when they were last online. {count} is the number of hours.",
 ]
+one = "Nähty viimeksi {count} tunti sitten"
+other = "Nähty viimeksi {count} tuntia sitten"
 
 [t_4385d29350]
 en = "Last seen just now"
 where = [
   "desktop profile_last_seen_just_now: Desktop, profile and settings (in profile_view.rs, last_seen).",
 ]
-text = ""
+text = "Nähty viimeksi juuri äsken"
 
 [t_8f77fe1d28]
 en_one = "Last seen {count} minute ago"
@@ -15396,433 +15400,435 @@ en_other = "Last seen {count} minutes ago"
 where = [
   "desktop profile_last_seen_minutes: Under a contact profile when they were last online. {count} is the number of minutes.",
 ]
+one = "Nähty viimeksi {count} minuutti sitten"
+other = "Nähty viimeksi {count} minuuttia sitten"
 
 [t_d1a0dcbb30]
 en = "Light or dark, as this computer is set"
 where = [
   "desktop profile_light_or_dark_as: Desktop, profile and settings (in profile_view.rs, settings_landing).",
 ]
-text = ""
+text = "Vaalea tai tumma tietokoneen asetuksen mukaan"
 
 [t_5814a07b57]
 en = "Load group pictures by themselves"
 where = [
   "desktop profile_load_group_pictures_by: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "Lataa ryhmien kuvat automaattisesti"
 
 [t_b711ca0977]
 en = "Match my computer"
 where = [
   "desktop profile_match_my_computer: Desktop, profile and settings (in profile_view.rs, settings_landing).",
 ]
-text = ""
+text = "Sama kuin tietokoneessani"
 
 [t_3577d58ddb]
 en = "{round} MB"
 where = [
   "desktop profile_mb: Desktop, profile and settings (in profile_view.rs, fmt_bytes). {round} is a value filled in by the app.",
 ]
-text = ""
+text = "{round} Mt"
 
 [t_c1a3ac1d46]
 en = "Messages only: calling needs {name}’s permission"
 where = [
   "desktop profile_messages_only_calling_needs: Desktop, profile and settings (in profile_view.rs, person_profile). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Vain viestit: soittaminen vaatii luvan henkilöltä {name}"
 
 [t_f422fbec3c]
 en = "New passphrase again"
 where = [
   "desktop profile_new_passphrase_again: Desktop, profile and settings (in profile_view.rs, passphrase_page).",
 ]
-text = ""
+text = "Uusi salalause uudelleen"
 
 [t_2be53fc862]
 en = "Nickname"
 where = [
   "desktop profile_nickname: Desktop, profile and settings (in profile_view.rs, person_profile).",
 ]
-text = ""
+text = "Lempinimi"
 
 [t_3ca88f3098]
 en = "No camera found. Plug one in and open this page again."
 where = [
   "desktop profile_no_camera_found_plug: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "Kameraa ei löytynyt. Liitä kamera ja avaa tämä sivu uudelleen."
 
 [t_925929dc39]
 en = "No microphone found"
 where = [
   "desktop profile_no_microphone_found: Desktop, profile and settings (in profile_view.rs, notifications_page).",
 ]
-text = ""
+text = "Mikrofonia ei löytynyt"
 
 [t_6682826533]
 en = "No one is blocked."
 where = [
   "desktop profile_no_one_is_blocked: Desktop, profile and settings (in profile_view.rs, blocked_page).",
 ]
-text = ""
+text = "Ketään ei ole estetty."
 
 [t_e3c3df9286]
 en = "No one left to block."
 where = [
   "desktop profile_no_one_left_to: Desktop, profile and settings (in profile_view.rs, privacy_layer).",
 ]
-text = ""
+text = "Ei ketään estettävää."
 
 [t_c40e38a466]
 en = "No profile is available."
 where = [
   "desktop profile_no_profile_is_available: Desktop, profile and settings (in profile_view.rs, person_profile).",
 ]
-text = ""
+text = "Profiilia ei ole saatavilla."
 
 [t_9b84ab3c9a]
 en = "Not seen for {value} days"
 where = [
   "desktop profile_not_seen_for_days: Desktop, profile and settings (in profile_view.rs, devices_page). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "Ei nähty {value} päivään"
 
 [t_bc6df257c5]
 en = "{value} of pictures and files you’ve opened. They’re prepared again when you open them."
 where = [
   "desktop profile_of_pictures_and_files: Desktop, profile and settings (in profile_view.rs, storage_page). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "{value} avaamiasi kuvia ja tiedostoja. Ne valmistellaan uudelleen, kun avaat ne."
 
 [t_d060fc5ab7]
 en = "Off means messages only"
 where = [
   "desktop profile_off_means_messages_only: Desktop, profile and settings (in profile_view.rs, person_profile).",
 ]
-text = ""
+text = "Pois päältä tarkoittaa vain viestejä"
 
 [t_5d478e8506]
 en = "On this computer"
 where = [
   "desktop profile_on_this_computer: Desktop, profile and settings (in profile_view.rs, storage_page).",
 ]
-text = ""
+text = "Tällä tietokoneella"
 
 [t_cdfa63e232]
 en = "Online now"
 where = [
   "desktop profile_online_now: Desktop, profile and settings (in profile_view.rs, devices_page).",
 ]
-text = ""
+text = "Verkossa nyt"
 
 [t_11b4ba4260]
 en = "Only the selected account is online on this computer. Switching pauses the other one: it receives no calls until you select it again."
 where = [
   "desktop profile_only_the_selected_account: Desktop, profile and settings (in profile_view.rs, settings_landing).",
 ]
-text = ""
+text = "Vain valittu tili on verkossa tällä tietokoneella. Vaihtaminen laittaa toisen tauolle: se ei vastaanota puheluita, ennen kuin valitset sen uudelleen."
 
 [t_0ed74faf85]
 en = "Only this device has your account. Link another to keep a second copy of your chats. Your recovery phrase brings back your account, not your messages."
 where = [
   "desktop profile_only_this_device_has: Desktop, profile and settings (in profile_view.rs, devices_page).",
 ]
-text = ""
+text = "Tilisi on vain tällä laitteella. Linkitä toinen laite, niin keskusteluistasi on toinen kopio. Palautussanasi tuovat takaisin tilisi, eivät viestejäsi."
 
 [t_b2c190e6e0]
 en = "Only you see these. A nickname changes what you call {name}, not their profile."
 where = [
   "desktop profile_only_you_see_these: Desktop, profile and settings (in profile_view.rs, person_profile). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Vain sinä näet nämä. Lempinimi muuttaa sen, miksi itse kutsut henkilöä {name}, ei hänen profiiliaan."
 
 [t_1a9e8ecade]
 en = "Only your own devices see this name."
 where = [
   "desktop profile_only_your_own_devices: Desktop, profile and settings (in profile_view.rs, devices_layer).",
 ]
-text = ""
+text = "Vain omat laitteesi näkevät tämän nimen."
 
 [t_e1f70eccfa]
 en = "Person not found."
 where = [
   "desktop profile_person_not_found: Desktop, profile and settings (in profile_view.rs, person_profile).",
 ]
-text = ""
+text = "Henkilöä ei löytynyt."
 
 [t_20137e067f]
 en = "Pick a contact."
 where = [
   "desktop profile_pick_a_contact: Desktop, profile and settings (in profile_view.rs, privacy_layer).",
 ]
-text = ""
+text = "Valitse yhteystieto."
 
 [t_81ee822845]
 en = "Pictures in groups appear as they arrive"
 where = [
   "desktop profile_pictures_in_groups_appear: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "Ryhmien kuvat näkyvät saapuessaan"
 
 [t_6281bd7fc7]
 en = "Plain (old)"
 where = [
   "desktop profile_plain_old: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "Tavallinen (vanha)"
 
 [t_2903aaba1d]
 en = "Profile picture changed while loading"
 where = [
   "desktop profile_profile_picture_changed_while: Desktop, profile and settings (in profile_ui.rs, read_profile).",
 ]
-text = ""
+text = "Profiilikuva vaihtui latauksen aikana"
 
 [t_784f3ae6ac]
 en = "Quit Tinline"
 where = [
   "desktop profile_quit_tinline: Desktop, profile and settings (in profile_view.rs, native_page).",
 ]
-text = ""
+text = "Lopeta Tinline"
 
 [t_2b5999b60c]
 en = "Rate control"
 where = [
   "desktop profile_rate_control: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "Nopeudensäätö"
 
 [t_1712035de1]
 en = "Rate control: probing needs the other side on this build too; set both the same for an A/B call."
 where = [
   "desktop profile_rate_control_probing_needs: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "Nopeudensäätö: luotaus vaatii, että toisella osapuolella on myös tämä versio; aseta molemmat samoin A/B-puhelua varten."
 
 [t_f6b0eb5b3a]
 en = "Remove “{label_}” from your profile?"
 where = [
   "desktop profile_remove_from_your_profile: Desktop, profile and settings (in profile_view.rs, field_row_inner). {label_} is a value filled in by the app.",
 ]
-text = ""
+text = "Poistetaanko ”{label_}” profiilistasi?"
 
 [t_ea0d1f95ed]
 en = "{name}’s app can reach you again. It removed you from their contacts when you blocked them, so you’ll both need to add each other again before you can message or call."
 where = [
   "desktop profile_s_app_can_reach: Desktop, profile and settings (in profile_view.rs, privacy_layer). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Henkilön {name} sovellus voi taas tavoittaa sinut. Se poisti sinut hänen yhteystiedoistaan, kun estit hänet, joten teidän molempien täytyy lisätä toisenne uudelleen, ennen kuin voitte lähettää viestejä tai soittaa."
 
 [t_f10a13dfa8]
 en = "{name}’s profile hasn’t arrived yet. It shows here once it syncs."
 where = [
   "desktop profile_s_profile_hasnt_arrived: Desktop, profile and settings (in profile_view.rs, person_profile). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Henkilön {name} profiili ei ole vielä saapunut. Se näkyy täällä, kun se synkronoituu."
 
 [t_0b53f94a6c]
 en = "Selected · connecting"
 where = [
   "desktop profile_selected_connecting: Desktop, profile and settings (in profile_view.rs, settings_landing).",
 ]
-text = ""
+text = "Valittu · yhdistetään"
 
 [t_c3eb6bca8d]
 en = "Send codec"
 where = [
   "desktop profile_send_codec: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "Lähetyskoodekki"
 
 [t_e7a3ee89e1]
 en = "Session only. Changes apply to the next call (About this call changes the current one). Fixed size disables rate/CPU resolution adaptation; peer and thermal caps still win. Use HD capture and compare actual payload rates and dimensions."
 where = [
   "desktop profile_session_only_changes_apply: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "Vain tämä istunto. Muutokset koskevat seuraavaa puhelua (Tietoja tästä puhelusta muuttaa nykyistä). Kiinteä koko poistaa käytöstä nopeuden/suorittimen mukaisen resoluution sovituksen; vastapuolen ja lämpötilan rajat pätevät silti. Käytä HD-kaappausta ja vertaa todellisia hyötykuorman nopeuksia ja mittoja."
 
 [t_50654bf33c]
 en = "Settings that belong to this computer only"
 where = [
   "desktop profile_settings_that_belong_to: Desktop, profile and settings (in profile_view.rs, settings_landing).",
 ]
-text = ""
+text = "Vain tätä tietokonetta koskevat asetukset"
 
 [t_9c944ff0b2]
 en = "Show a QR code on the new device, then approve it here"
 where = [
   "desktop profile_show_a_qr_code: Desktop, profile and settings (in profile_view.rs, devices_page).",
 ]
-text = ""
+text = "Näytä QR-koodi uudella laitteella ja hyväksy se sitten täällä"
 
 [t_9c40d34486]
 en = "Show key"
 where = [
   "desktop profile_show_key: Desktop, profile and settings (in profile_view.rs, phrase_page).",
 ]
-text = ""
+text = "Näytä avain"
 
 [t_af70bc522d]
 en = "Show words"
 where = [
   "desktop profile_show_words: Desktop, profile and settings (in profile_view.rs, phrase_page).",
 ]
-text = ""
+text = "Näytä sanat"
 
 [t_c0c19a8034]
 en = "Shown after you confirm"
 where = [
   "desktop profile_shown_after_you_confirm: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "Näytetään vahvistuksesi jälkeen"
 
 [t_bd82fe332b]
 en = "Shown to you as {name} · their name is {name2}"
 where = [
   "desktop profile_shown_to_you_as: Desktop, profile and settings (in profile_view.rs, field_row_inner). {name} is a person's name (usually the first word of their chosen name). {name2} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Näkyy sinulle nimellä {name} · hänen nimensä on {name2}"
 
 [t_b8e582229a]
 en = "Software"
 where = [
   "desktop profile_software: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "Ohjelmisto"
 
 [t_3df3d8bc73]
 en = "{value} {time}"
 where = [
   "desktop profile_text: Desktop, profile and settings (in profile_ui.rs, until_label). {value} is a value filled in by the app. {time} is a time.",
 ]
-text = ""
+text = "{value} {time}"
 
 [t_89ddb04770]
 en = "That is too long for {what}: up to {limit} bytes, and some characters take more than one."
 where = [
   "desktop profile_that_is_too_long: Desktop, profile and settings (in profile_ui.rs, check_text). {what} is a value filled in by the app. {limit} is a value filled in by the app.",
 ]
-text = ""
+text = "Tämä on liian pitkä ({what}): enintään {limit} tavua, ja jotkin merkit vievät enemmän kuin yhden."
 
 [t_cb69175dc2]
 en = "That {what} is too long. Up to {limit} bytes; some characters take more than one."
 where = [
   "desktop profile_that_is_too_long_up: Desktop, profile and settings (in profile_ui.rs, check_name). {what} is a value filled in by the app. {limit} is a value filled in by the app.",
 ]
-text = ""
+text = "Tämä on liian pitkä ({what}). Enintään {limit} tavua; jotkin merkit vievät enemmän kuin yhden."
 
 [t_f0ad76df80]
 en = "That picture is {value} MB. Pictures can be up to {value2} MB."
 where = [
   "desktop profile_that_picture_is_mb: Desktop, profile and settings (in profile_ui.rs, inspect). {value} is a value filled in by the app. {value2} is a value filled in by the app.",
 ]
-text = ""
+text = "Kuvan koko on {value} Mt. Kuva voi olla enintään {value2} Mt."
 
 [t_c93b8484c2]
 en = "That picture is {status} × {host} pixels. Tinline accepts up to 4096 pixels on a side."
 where = [
   "desktop profile_that_picture_is_pixels: Desktop, profile and settings (in profile_ui.rs, inspect). {status} is a value filled in by the app. {host} is a value filled in by the app.",
 ]
-text = ""
+text = "Kuvan koko on {status} × {host} pikseliä. Tinline hyväksyy enintään 4096 pikseliä sivua kohden."
 
 [t_5fc61ddfab]
 en = "The {what} can’t be empty."
 where = [
   "desktop profile_the_cant_be_empty: Desktop, profile and settings (in profile_ui.rs, check_name). {what} is a value filled in by the app.",
 ]
-text = ""
+text = "Kenttä {what} ei voi olla tyhjä."
 
 [t_1245e21c0c]
 en = "The {what} can’t contain control or text-direction characters."
 where = [
   "desktop profile_the_cant_contain_control: Desktop, profile and settings (in profile_ui.rs, check_name). {what} is a value filled in by the app.",
 ]
-text = ""
+text = "Kentässä {what} ei voi olla ohjaus- tai tekstisuuntamerkkejä."
 
 [t_30c1c86ee5]
 en = "The passphrase protects Tinline on this device only; your other devices keep their own. Tinline can’t recover a forgotten passphrase. If that happens, your recovery phrase restores your account, though not your messages."
 where = [
   "desktop profile_the_passphrase_protects_tinline: Desktop, profile and settings (in profile_view.rs, passphrase_page).",
 ]
-text = ""
+text = "Salalause suojaa Tinlinen vain tällä laitteella; muilla laitteillasi on omansa. Tinline ei voi palauttaa unohdettua salalausetta. Jos niin käy, palautussanasi palauttavat tilisi, mutta eivät viestejäsi."
 
 [t_ad1986c0d4]
 en = "There is no copy button on purpose: the phrase stays off the clipboard. Tinline never asks for it except to restore your account. The phrase brings back your account, not your messages."
 where = [
   "desktop profile_there_is_no_copy: Desktop, profile and settings (in profile_view.rs, phrase_page).",
 ]
-text = ""
+text = "Kopiointipainiketta ei ole tarkoituksella: sanat pysyvät poissa leikepöydältä. Tinline kysyy niitä vain tilisi palauttamiseen. Sanat tuovat takaisin tilisi, eivät viestejäsi."
 
 [t_057c54d1e7]
 en = "These stay on this computer. They aren’t part of your account."
 where = [
   "desktop profile_these_stay_on_this: Desktop, profile and settings (in profile_view.rs, native_page).",
 ]
-text = ""
+text = "Nämä pysyvät tällä tietokoneella. Ne eivät ole osa tiliäsi."
 
 [t_69f5484518]
 en = "This computer"
 where = [
   "desktop profile_this_computer: Desktop, profile and settings (in profile_view.rs, profile_page).",
 ]
-text = ""
+text = "Tämä tietokone"
 
 [t_c4d705c661]
 en = "This computer decodes AV1 (rav1d) and VP8 (libvpx) in software only. During a call, About this call has the same controls for that call."
 where = [
   "desktop profile_this_computer_decodes_av1: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "Tämä tietokone purkaa AV1:n (rav1d) ja VP8:n (libvpx) vain ohjelmallisesti. Puhelun aikana Tietoja tästä puhelusta -kortissa on samat säätimet kyseiselle puhelulle."
 
 [t_52795ba2e7]
 en = "This computer has no keyring, so Tinline asks for your passphrase each time it starts."
 where = [
   "desktop profile_this_computer_has_no: Desktop, profile and settings (in profile_view.rs, passphrase_page).",
 ]
-text = ""
+text = "Tällä tietokoneella ei ole avainnippua, joten Tinline kysyy salalausettasi joka käynnistyksellä."
 
 [t_86dd1e0638]
 en = "This device · Online"
 where = [
   "desktop profile_this_device_online: Desktop, profile and settings (in profile_view.rs, devices_page).",
 ]
-text = ""
+text = "Tämä laite · Verkossa"
 
 [t_d6a83681ca]
 en = "This is not a lock."
 where = [
   "desktop profile_this_is_not_a: Desktop, profile and settings (in profile_view.rs, devices_layer).",
 ]
-text = ""
+text = "Tämä ei ole lukko."
 
 [t_b62ccd7a6a]
 en = "Tinline tells it now."
 where = [
   "desktop profile_tinline_tells_it_now: Desktop, profile and settings (in profile_view.rs, devices_layer).",
 ]
-text = ""
+text = "Tinline ilmoittaa sille nyt."
 
 [t_85188a2676]
 en = "Told you blocked them"
 where = [
   "desktop profile_told_you_blocked_them: Desktop, profile and settings (in profile_view.rs, blocked_page).",
 ]
-text = ""
+text = "Hänelle kerrottiin, että estit hänet"
 
 [t_645532a521]
 en = "Trend+probe"
 where = [
   "desktop profile_trend_probe: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "Trend+probe"
 
 [t_cdb835ad27]
 en = "Unblock {first2}"
 where = [
   "desktop profile_unblock: Desktop, profile and settings (in profile_view.rs, person_profile). {first2} is a value filled in by the app.",
 ]
-text = ""
+text = "Poista esto: {first2}"
 
 [t_f0fb307e02]
 en = "Unblock {name}?"
