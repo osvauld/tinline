@@ -1,5 +1,6 @@
 package com.osvauld.p2p
 
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import android.view.WindowManager
 import androidx.activity.compose.BackHandler
@@ -221,7 +222,7 @@ fun GBadge(count: Int, muted: Boolean = false) {
     if (count <= 0) return
     val c = Tin.c
     val shape = RoundedCornerShape(9.dp)
-    val unreadDesc = stringResource(R.string.groupsc_unread, count)
+    val unreadDesc = pluralStringResource(R.plurals.groupsc_unread, count, count)
     Box(
         Modifier.heightIn(min = 18.dp).widthIn(min = 18.dp).clip(shape).let { if (muted) it.border(1.dp, c.ln, shape) else it.background(c.accentFill) }
             .padding(horizontal = 5.dp).semantics { contentDescription = unreadDesc },

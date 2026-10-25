@@ -127,9 +127,23 @@ fun callWhat(r: CallRecord): String = when {
         "declined", "busy" -> appString(R.string.calls_what_declined)
         "cancelled" -> appString(R.string.calls_what_cancelled)
         "unreachable" -> appString(R.string.calls_what_unreachable)
-        else -> appString(R.string.common_call)
+        else -> appString(R.string.calls_what_other)
     }
 }
+
+/** [callWhat] as a full phrase for a screen reader ("Missed call"): never an adjective slotted into a sentence. */
+fun callWhatDesc(r: CallRecord): String = appString(when {
+    r.durationSecs > 0u -> if (r.incoming) R.string.calls_desc_incoming else R.string.calls_desc_outgoing
+    r.incoming && r.reason == "unavailable" -> R.string.calls_desc_away
+    r.incoming -> if (r.missed) R.string.calls_desc_missed else R.string.calls_desc_declined
+    else -> when (r.reason) {
+        "no_answer" -> R.string.calls_desc_no_answer
+        "declined", "busy" -> R.string.calls_desc_declined
+        "cancelled" -> R.string.calls_desc_cancelled
+        "unreachable" -> R.string.calls_desc_unreachable
+        else -> R.string.calls_desc_other
+    }
+})
 
 /**
  * Group calls on the Calls tab (CallsList.svelte, 2026-10-14): [log] is the core's group call log, [names] the groups I am
@@ -173,11 +187,12 @@ fun CallsTabBody(
             val bad = r.missed
             val callable = canCall(r.peerDid)
             val what = callWhat(r)
+            val whatDesc = callWhatDesc(r)
             val stamp = listTime(r.startedAt.toLong() * 1000, now)
             val profileDesc = stringResource(R.string.calls_profile_desc, name)
             val action = stringResource(if (callable) R.string.common_call else R.string.calls_cant_call)
-            val rowDesc = if (r.durationSecs > 0u) stringResource(R.string.calls_row_desc_duration, name, what, uniffi.present.clock(r.durationSecs.toLong()), stamp, action)
-                else stringResource(R.string.calls_row_desc, name, what, stamp, action)
+            val rowDesc = if (r.durationSecs > 0u) stringResource(R.string.calls_row_desc_duration, name, whatDesc, uniffi.present.clock(r.durationSecs.toLong()), stamp, action)
+                else stringResource(R.string.calls_row_desc, name, whatDesc, stamp, action)
             Row(Modifier.padding(horizontal = 8.dp).fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
                 Box(Modifier.pressable({ onProfile(r.peerDid) }, RowShape).semantics { contentDescription = profileDesc }.padding(start = 8.dp, top = 8.dp, bottom = 8.dp)) {
                     Avatar(name, r.peerDid, 48.dp)

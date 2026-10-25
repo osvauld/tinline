@@ -98,7 +98,7 @@ fun DeviceDetailScreen(app: P2pApp, device: String, onBack: () -> Unit, onMessag
             r.onSuccess {
                 pass = ""; confirm = false
                 if (d.thisDevice && did != null) withContext(Dispatchers.IO) { app.accountGone(did, notify = false) }
-                else { onMessage(ctx.getString(R.string.devices_unlinked_msg, d.label.ifBlank { ctx.getString(R.string.devices_fallback_device) })); onBack() }
+                else { onMessage(if (d.label.isBlank()) ctx.getString(R.string.devices_unlinked_msg_unnamed) else ctx.getString(R.string.devices_unlinked_msg, d.label)); onBack() }
             }
         }
     }
@@ -116,7 +116,7 @@ fun DeviceDetailScreen(app: P2pApp, device: String, onBack: () -> Unit, onMessag
             ListItem(stringResource(R.string.devices_rings), sub = if (d.removed) stringResource(R.string.devices_rings_no) else stringResource(R.string.devices_rings_yes), icon = PgIcons.Phone, trailing = null)
             if (!d.removed) {
                 Column(Modifier.padding(horizontal = 20.dp, vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    if (!d.thisDevice) TinButton(stringResource(R.string.devices_sync_now), { app.node.networkChanged(); onMessage(ctx.getString(R.string.devices_syncing, d.label.ifBlank { ctx.getString(R.string.devices_fallback_the_device) })) }, style = BtnStyle.Outlined, icon = PgIcons.Retry)
+                    if (!d.thisDevice) TinButton(stringResource(R.string.devices_sync_now), { app.node.networkChanged(); onMessage(if (d.label.isBlank()) ctx.getString(R.string.devices_syncing_unnamed) else ctx.getString(R.string.devices_syncing, d.label)) }, style = BtnStyle.Outlined, icon = PgIcons.Retry)
                     TinButton(if (d.thisDevice) stringResource(R.string.devices_remove_account) else stringResource(R.string.devices_unlink_this), { pass = ""; error = null; confirm = true }, style = BtnStyle.Danger, icon = PgIcons.Off)
                 }
             }
@@ -135,8 +135,7 @@ fun DeviceDetailScreen(app: P2pApp, device: String, onBack: () -> Unit, onMessag
         }, confirmEnabled = text.isNotBlank()) { TinField(text, { text = it }, stringResource(R.string.devices_name_field)) }
     }
     if (confirm) {
-        val name = d.label.ifBlank { stringResource(R.string.devices_fallback_this_device) }
-        TinDialog(if (d.thisDevice) stringResource(R.string.devices_confirm_remove_title) else stringResource(R.string.devices_confirm_unlink_title, name), { if (!busy) confirm = false },
+        TinDialog(if (d.thisDevice) stringResource(R.string.devices_confirm_remove_title) else (if (d.label.isBlank()) stringResource(R.string.devices_confirm_unlink_title_unnamed) else stringResource(R.string.devices_confirm_unlink_title, d.label)), { if (!busy) confirm = false },
             if (busy) stringResource(R.string.devices_working) else if (d.thisDevice) stringResource(R.string.common_remove) else stringResource(R.string.devices_unlink), ::confirmed, destructive = true, icon = PgIcons.Off,
             confirmEnabled = !busy && (!hasPass || pass.isNotEmpty())) {
             if (d.thisDevice) {

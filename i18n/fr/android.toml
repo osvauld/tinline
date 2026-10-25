@@ -126,9 +126,6 @@ text = "Accepter ajoute {name} comme contact pour les messages uniquement. Vous 
 [groups_list_block]
 text = "Bloquer"
 
-[groups_list_sent]
-text = "Envoyé"
-
 [groups_list_yours]
 text = "Vos groupes"
 
@@ -255,9 +252,6 @@ text = "Qui est en ligne dans {group}"
 [groups_online_lag]
 text = "Membres vus par un hôte dans la dernière minute. L’affichage peut avoir quelques secondes de retard."
 
-[groups_online_cap]
-text = "Un hôte affiche jusqu’à {max} personnes à la fois, il peut donc y en avoir d’autres."
-
 [groups_online_hidden]
 text = "Les autres ne vous voient pas ici. Vous pouvez changer cela dans Paramètres › Confidentialité."
 
@@ -277,9 +271,6 @@ other = "Retrait après {count} signalements d’admins"
 
 [groups_msg_removed_by]
 text = "Signalé par {names}. Vous pouvez toujours lire ce que vous avez reçu avant ; rien de nouveau n’arrivera."
-
-[groups_msg_and]
-text = "{list} et {last}"
 
 [groups_msg_see_details]
 text = "Voir les détails"
@@ -431,18 +422,6 @@ text = "admin"
 [groupsb_role_member_lc]
 text = "membre"
 
-[groupsb_desc_host]
-text = ", hôte"
-
-[groupsb_desc_callhost]
-text = ", hôte d’appel"
-
-[groupsb_desc_open]
-text = ". Ouvrir les actions"
-
-[groupsb_flags_of]
-text = "Signalements : {flags} sur {total}"
-
 [groupsb_of_total]
 text = "{n} sur {total}"
 
@@ -509,9 +488,6 @@ text = "Lien du groupe"
 [groupsb_public_sec]
 text = "Groupe public"
 
-[groupsb_open_link]
-text = "Lien ouvert"
-
 [groupsb_open_link_on]
 text = "Toute personne qui a le lien peut rejoindre"
 
@@ -561,12 +537,6 @@ other = "{count} hôtes en ligne. Les publications passent tout de suite."
 
 [groupsb_hosts_offline]
 text = "Aucun hôte n’est en ligne. Vos publications sont gardées et partiront dès qu’il y en aura un."
-
-[groupsb_online]
-text = "En ligne"
-
-[groupsb_offline]
-text = "Hors ligne"
 
 [groupsb_also_hosts_calls]
 text = "héberge aussi les appels"
@@ -836,9 +806,6 @@ text = "Ajouter des membres"
 [groupsb_add_to]
 text = "Ajouter à {name}"
 
-[groupsb_contacts_selected]
-text = "CONTACTS · SÉLECTION : {n}"
-
 [groupsb_no_contacts]
 text = "Aucun contact à ajouter. Les personnes que vous bloquez, ou qui vous bloquent, n’apparaissent pas."
 
@@ -869,9 +836,6 @@ text = "Coller"
 [groupsb_scan]
 text = "Scanner"
 
-[groupsb_not_in_contacts]
-text = "quelqu’un qui n’est pas dans vos contacts"
-
 [groupsb_join_invited_by]
 text = "Invité par {name}"
 
@@ -889,9 +853,6 @@ text = "Rejoindre connecte ce téléphone aux hôtes du groupe. Les membres voie
 
 [groupsb_joining]
 text = "Connexion…"
-
-[groupsb_the_group]
-text = "le groupe"
 
 [groupsb_invite_link_title]
 text = "Lien d’invitation"
@@ -931,9 +892,6 @@ text = "Ce téléphone n’a plus la clé qui ouvre votre compte. Cela arrive ap
 
 [unlock_keylost_restore]
 text = "Restaurer avec mes mots de récupération"
-
-[unlock_keylost_notice]
-text = "Vous n’avez pas défini de phrase secrète, donc les 24 mots de récupération sont le seul moyen de revenir. Vos contacts restent."
 
 [accounts_switch_account]
 text = "Changer de compte"
@@ -1045,9 +1003,6 @@ text = "Vous seul"
 
 [profile_account_recovery]
 text = "Récupération du compte"
-
-[profile_account_recovery_sub]
-text = "Votre clé et vos 24 mots"
 
 [profile_code_title]
 text = "Votre code contact"
@@ -1259,9 +1214,6 @@ text = "Sans heure de fin"
 [profile_until_tomorrow]
 text = "demain à {time}"
 
-[profile_until_weekday]
-text = "{day} à {time}"
-
 [profile_err_name_taken]
 text = "Vous avez déjà une information avec ce nom."
 
@@ -1367,12 +1319,6 @@ text = "Donnez un nom à l’information."
 [profile_err_key_bad]
 text = "Ce nom ne peut pas être utilisé. Gardez-le court, sans caractères de contrôle."
 
-[profile_err_value_long]
-text = "C’est trop long. Chaque information peut faire jusqu’à 16 Kio."
-
-[profile_err_fields_full]
-text = "Vous avez atteint 64 informations. Retirez-en une pour en ajouter une autre."
-
 [profile_err_profile_full]
 text = "Votre profil est plein. Retirez des informations pour en ajouter d’autres."
 
@@ -1423,9 +1369,6 @@ text = "Restaurer le compte"
 
 [onboarding_step_link]
 text = "Associer à votre compte"
-
-[onboarding_other_device]
-text = "votre autre appareil"
 
 [onboarding_device_personal]
 text = "Téléphone perso"
@@ -1479,9 +1422,6 @@ other = "Il manque encore {count} mots."
 [onboarding_restore_lead_key]
 text = "Votre clé de récupération est saisie. Elle reste sur ce téléphone."
 
-[onboarding_restore_lead_words]
-text = "Saisissez vos 24 mots dans l’ordre, ou collez-les, ou votre clé de récupération, dans la première case. Ils restent sur ce téléphone."
-
 [onboarding_restore_key_caption]
 text = "Clé de récupération"
 
@@ -1490,9 +1430,6 @@ text = "Utiliser plutôt mes mots"
 
 [onboarding_restore_paste]
 text = "Coller depuis le presse-papiers"
-
-[onboarding_restore_filled]
-text = "{filled} sur 24"
 
 [onboarding_welcome_title_adding]
 text = "Ajouter un compte"
@@ -1532,9 +1469,6 @@ text = "Scannez un code sur un appareil qui a déjà votre compte. Vos contacts 
 
 [onboarding_choose_restore]
 text = "Restaurer mon compte"
-
-[onboarding_choose_restore_sub]
-text = "Saisissez vos 24 mots de récupération. Ce téléphone démarre avec une liste de contacts vide."
 
 [onboarding_done_title_named]
 text = "Votre ligne est ouverte, {name}"
@@ -1614,12 +1548,6 @@ text = "Voici votre clé de récupération"
 [onboarding_phrase_title_words]
 text = "Voici vos mots de récupération"
 
-[onboarding_phrase_lead_key]
-text = "Votre clé de récupération équivaut à vos 24 mots, en une seule ligne.\nCollez-la dans un endroit sûr. Un gestionnaire de mots de passe convient très bien."
-
-[onboarding_phrase_lead_words]
-text = "Si vous changez un jour d’appareil, ces 24 mots emportent votre compte avec vous.\nGardez-en une copie en lieu sûr. Le papier, c’est très bien."
-
 [onboarding_phrase_saved_key]
 text = "Je l’ai enregistrée"
 
@@ -1668,17 +1596,8 @@ text = "Vous pourrez le renommer plus tard."
 [onboarding_restored_title_adding]
 text = "{name} est maintenant sur ce téléphone"
 
-[onboarding_restored_name_fallback_title]
-text = "votre compte"
-
 [onboarding_restored_lead_adding]
 text = "Seul le compte sélectionné est en ligne à la fois : {name} est donc en ligne et votre autre compte est en pause. Vous pouvez changer dans Paramètres."
-
-[onboarding_restored_name_fallback_lead]
-text = "ce compte"
-
-[onboarding_restored_lead]
-text = "Votre compte est de retour sur ce téléphone. Vos contacts, discussions et historique d’appels sont gardés sur vos autres appareils, pas chez nous. Ce téléphone démarre avec une liste de contacts vide."
 
 [onboarding_open_tinline]
 text = "Ouvrir Tinline"
@@ -1742,15 +1661,6 @@ text = "Votre compte vous appartient."
 
 [onboarding_terms_account_body]
 text = "Il vit sur vos appareils, pas sur un serveur. Vos mots de récupération sont le moyen d’y revenir, alors gardez-les en lieu sûr."
-
-[onboarding_terms_by_continuing]
-text = "En continuant, vous acceptez les {terms} et confirmez avoir lu la {privacy}."
-
-[onboarding_terms_link_terms]
-text = "Conditions d’utilisation"
-
-[onboarding_terms_link_privacy]
-text = "Politique de confidentialité"
 
 [onboarding_perms_title]
 text = "Pour que les appels vous parviennent"
@@ -2248,12 +2158,6 @@ text = "Gardez-la privée. Toute personne qui l’a peut agir en votre nom."
 [settings_backup_key]
 text = "Clé"
 
-[settings_backup_words]
-text = "24 mots"
-
-[settings_backup_key_failed]
-text = "Impossible de préparer la clé. Utilisez plutôt vos 24 mots."
-
 [settings_hide]
 text = "Masquer"
 
@@ -2422,9 +2326,6 @@ text = "Synchroniser"
 [devices_syncing]
 text = "Synchronisation avec {name}…"
 
-[devices_fallback_the_device]
-text = "l’appareil"
-
 [devices_remove_account]
 text = "Retirer le compte de ce téléphone"
 
@@ -2445,12 +2346,6 @@ text = "Enregistrer"
 
 [devices_name_field]
 text = "Nom de l’appareil"
-
-[devices_fallback_this_device]
-text = "cet appareil"
-
-[devices_fallback_device]
-text = "appareil"
 
 [devices_confirm_remove_title]
 text = "Retirer votre compte de ce téléphone ?"
@@ -2554,14 +2449,8 @@ text = "Montrez ce code à votre nouvel appareil"
 [link_show_body]
 text = "Sur le nouvel appareil, choisissez « Associer à un appareil », puis « Scanner plutôt », et visez ce code."
 
-[link_fallback_new_device_cap]
-text = "Le nouvel appareil"
-
 [link_match_title]
 text = "Les codes correspondent-ils ?"
-
-[link_match_body]
-text = "veut rejoindre votre compte. Il devrait afficher les six mêmes chiffres que ci-dessous."
 
 [link_match_note]
 text = "Comparez-les vous-même. S’ils diffèrent, quelqu’un d’autre a peut-être scanné le code avant vous."
@@ -2571,9 +2460,6 @@ text = "Ils ne correspondent pas"
 
 [link_match]
 text = "Ils correspondent"
-
-[link_fallback_new_device]
-text = "le nouvel appareil"
 
 [link_connecting]
 text = "Connexion…"
@@ -2602,12 +2488,6 @@ text = "Il se synchronise quand les deux appareils sont en ligne en même temps.
 [link_scan_h1]
 text = "Scannez le code sur votre nouvel appareil"
 
-[link_scan_step1]
-text = "1.  Sur le nouvel appareil, ouvrez Tinline et choisissez {action}."
-
-[link_scan_step2]
-text = "2.  Il affiche un QR code et un code court. Ils fonctionnent 5 minutes, une seule fois."
-
 [link_scan_qr]
 text = "Scanner le QR code"
 
@@ -2622,12 +2502,6 @@ text = "Ce n’est pas la bonne phrase secrète."
 
 [link_approve_title]
 text = "Valider {name} ?"
-
-[link_approve_warning]
-text = "Valider envoie vos {bold} à {name}. Cet appareil devient une copie complète de votre compte : il peut lire vos discussions et agir en votre nom. Ne validez qu’un appareil que vous avez en main."
-
-[link_approve_bold]
-text = "mots de récupération"
 
 [link_dont_link]
 text = "Ne pas associer"
@@ -2799,12 +2673,6 @@ text = "Demande de contact"
 
 [notif_request_text]
 text = "{name} aimerait vous ajouter"
-
-[notif_accepted_fallback]
-text = "Votre contact"
-
-[notif_accepted_text]
-text = "A accepté votre demande. Votre ligne est ouverte."
 
 [notif_missed_title]
 text = "Appel manqué"
@@ -3339,12 +3207,6 @@ text = "Nouveau code"
 [card_none_found]
 text = "Aucune carte de contact Tinline dans ce message"
 
-[card_them]
-text = "cette personne"
-
-[card_this_contact]
-text = "ce contact"
-
 [card_chat_with]
 text = "Discuter avec {name} ?"
 
@@ -3362,9 +3224,6 @@ text = "Ouvrir"
 
 [card_add]
 text = "Ajouter"
-
-[groupsc_removed_you_flags]
-text = "Vous avez été retiré après {flags} signalements d’admins"
 
 [groupsc_admin_granted_other]
 text = "{by} a nommé {sub} admin"
@@ -3494,14 +3353,10 @@ text = "Tout le monde peut à nouveau publier."
 [groupsc_req_declined]
 text = "Refusé. {name} verra « refusé »."
 
-[groupsc_they]
-text = "Cette personne"
-
 [groupsc_unread]
-text = "Non lus : {count}"
-
-[groupsc_flags_of]
-text = "Signalements : {filled} sur {total}"
+one = "{count} non lu"
+many = "{count} non lus"
+other = "{count} non lus"
 
 [gcall_name]
 text = "Appel de groupe"
@@ -3512,12 +3367,6 @@ text = "Groupe"
 [gcall_finding_host]
 text = "Recherche d’un hôte d’appel…"
 
-[gcall_connecting]
-text = "Connexion…"
-
-[gcall_reconnecting]
-text = "Reconnexion…"
-
 [gcall_already_in_call]
 text = "Vous êtes déjà en appel."
 
@@ -3527,23 +3376,8 @@ text = "Appel terminé"
 [gcall_ended_host_lost]
 text = "Appel terminé — hôte perdu"
 
-[gcall_battery_limited]
-text = "Batterie sous 15 %. L’hébergement est limité : une seule personne est entendue à la fois, et aucun nouveau participant ne peut rejoindre l’appel."
-
 [gcall_no_host]
 text = "Aucun hôte d’appel disponible"
-
-[gcall_cant_connect]
-text = "Connexion impossible"
-
-[gcall_host_this_phone]
-text = "ce téléphone"
-
-[gcall_host_device]
-text = "l’appareil de {name}"
-
-[gcall_the_host]
-text = "l’hôte d’appel"
 
 [gcall_minimize]
 text = "Réduire l’appel"
@@ -3559,17 +3393,11 @@ one = "{count} personne dans l’appel"
 many = "{count} personnes dans l’appel"
 other = "{count} personnes dans l’appel"
 
-[gcall_more]
-text = "+{count}"
-
 [gcall_ok]
 text = "OK"
 
 [gcall_you_host]
 text = "Vous êtes l’hôte d’appel"
-
-[gcall_host_label]
-text = "Hôte d’appel : {host}"
 
 [gcall_muted]
 text = "Micro coupé"
@@ -3579,12 +3407,6 @@ text = "Couper le micro"
 
 [gcall_leave]
 text = "Quitter"
-
-[gcall_about_is_carrying]
-text = "héberge cet appel. Chaque participant s’y connecte ; il transmet l’audio et choisit qui est entendu quand plusieurs personnes parlent."
-
-[gcall_about_carries]
-text = "héberge cet appel. Chaque participant s’y connecte ; il transmet l’audio et choisit qui est entendu quand plusieurs personnes parlent."
 
 [gcall_about_encrypted]
 text = "Votre connexion à l’hôte d’appel est chiffrée, mais l’hôte d’appel lui-même reçoit l’audio, il peut donc entendre cet appel. Vous lui faites confiance pour l’appel comme vous faites confiance à un hôte de groupe pour les publications."
@@ -3925,9 +3747,6 @@ text = "Basculer"
 [call_audio_route]
 text = "Audio : {route}"
 
-[call_reconnecting]
-text = "Reconnexion…"
-
 [call_reconnecting_plain]
 text = "Reconnexion"
 
@@ -3943,14 +3762,11 @@ text = "Sélectionné"
 [call_they]
 text = "Cette personne"
 
-[call_them]
-text = "cette personne"
-
 [call_default_name]
 text = "Appel Tinline"
 
 [call_notif_fallback_title]
-text = "Appeler"
+text = "Appel Tinline"
 
 [call_answer_video_label]
 text = "Vidéo"
@@ -3980,7 +3796,7 @@ text = "Raccrocher et répondre"
 text = "Raccrocher et répondre"
 
 [call_waiting_ends_with]
-text = "Met fin à votre appel avec"
+text = "Met fin à votre appel avec {name}"
 
 [call_on_hold]
 text = "En attente pendant votre autre appel"
@@ -4188,9 +4004,6 @@ text = "Jusqu’à demain matin"
 
 [avail_until_on]
 text = "Jusqu’à ce que je le réactive"
-
-[avail_you]
-text = "vous"
 
 [avail_note]
 text = "Pendant votre absence, les personnes qui appellent voient « Impossible de joindre {name} ». Rien n’est mis en attente et personne n’est informé de la raison."
@@ -4487,20 +4300,11 @@ text = "Pas de réponse"
 [calls_what_cancelled]
 text = "Annulé"
 
-[calls_what_unreachable]
-text = "Connexion impossible"
-
 [calls_profile_desc]
 text = "Profil de {name}"
 
 [calls_cant_call]
 text = "Appel impossible"
-
-[calls_row_desc]
-text = "{name}, appel {what}, {time}. {action}"
-
-[calls_row_desc_duration]
-text = "{name}, appel {what}, {duration}, {time}. {action}"
 
 [calls_group_info_desc]
 text = "{name}, infos du groupe"
@@ -4599,3 +4403,148 @@ text = "Quelque chose n’a pas marché"
 
 [debuglog_send_title]
 text = "Envoyer le journal de débogage"
+
+[groupsc_sys_joined_other]
+text = "{name} a rejoint le groupe"
+
+[groupsc_sys_left_you]
+text = "Vous l’avez quitté"
+
+[groupsc_sys_left_other]
+text = "{name} a quitté le groupe"
+
+[groupsc_admin_granted_you]
+text = "{by} vous a donné le rôle d’admin"
+
+[groupsc_removed_you_group]
+text = "Vous avez été retiré de ce groupe"
+
+[groupsc_preview_you]
+text = "Vous : {text}"
+
+[groupsc_preview_other]
+text = "{name} : {text}"
+
+[groupsc_members]
+one = "{count} membre"
+many = "{count} membres"
+other = "{count} membres"
+
+[groupsc_admins_only_post]
+text = "Seuls les admins publient ici"
+
+[groupsc_admins_only_error]
+text = "Seuls les admins publient ici."
+
+[groupsc_req_pending_named]
+text = "En attente de {name} · via {group}"
+
+[groupsc_req_declined_named]
+text = "{name} a refusé"
+
+[groupsc_req_blocked_named]
+text = "{name} vous a bloqué"
+
+[groupsc_pick_member]
+text = "Déjà membre"
+
+[groupsc_pick_invited_waiting]
+text = "Invité · en attente"
+
+[groupsc_invited_not_delivered]
+text = "Invité · pas encore distribué"
+
+[groupsc_invite_joined]
+text = "A rejoint"
+
+[groupsc_err_removed]
+text = "Vous avez été retiré de ce groupe."
+
+[groupsc_err_already_contact]
+text = "Cette personne est déjà dans vos contacts. Écrivez-lui depuis Discussions."
+
+[groupsc_err_timeout]
+text = "Aucun hôte n’a répondu à temps. Réessayez quand un hôte sera en ligne."
+
+[groupsc_type_first]
+text = "Écrivez d’abord un message."
+
+[groupsc_pick_first]
+text = "Choisissez d’abord quelqu’un."
+
+[groupsc_invited_one_named]
+text = "Invitation envoyée à {name}. Cette personne rejoindra le groupe en acceptant."
+
+[groupsc_invited_many]
+one = "{count} invitation envoyée. Chaque personne rejoint le groupe en acceptant."
+many = "{count} invitations envoyées. Chaque personne rejoint le groupe en acceptant."
+other = "{count} invitations envoyées. Chaque personne rejoint le groupe en acceptant."
+
+[groupsc_decline_inv_named]
+text = "Refusé. {name} voit que vous avez refusé."
+
+[groupsc_link_closed]
+text = "Le lien ouvert est fermé. Les personnes déjà présentes restent ; les nouvelles rejoignent avec une invitation."
+
+[groupsc_request_sent_named]
+text = "Demande envoyée à {name}. Elle attend dans Discussions jusqu’à sa réponse."
+
+[groupsc_req_accept_named]
+text = "Accepté. {name} fait maintenant partie de vos contacts pour les messages uniquement et apparaît dans Discussions dès que son appareil se connecte ; les appels restent désactivés jusqu’à ce que vous les autorisiez."
+
+[groupsc_req_block_named]
+text = "Vous avez bloqué {name}, qui ne peut plus envoyer de demandes."
+
+[groupsc_notice_accepted_named]
+text = "{name} a accepté votre demande. Vous pouvez maintenant vous écrire ; les appels restent désactivés jusqu’à ce que l’un de vous les autorise."
+
+[video_hd_line_on]
+text = "Vidéo plus nette activée"
+
+[video_hd_line_paused]
+text = "HD en pause · connexion faible"
+
+[video_hd_metered]
+text = "En données mobiles, la HD consomme plus · touchez HD"
+
+[profile_busy_unsupported]
+text = "Le statut Occupé n’est pas encore disponible. Vos réglages d’appel n’ont pas changé."
+
+[blocking_row_blocked_you]
+text = "Vous a bloqué"
+
+[devices_unlinked_msg_unnamed]
+text = "Appareil dissocié"
+
+[call_unreachable_title_unnamed]
+text = "Impossible de joindre cette personne"
+
+[calls_desc_incoming]
+text = "Appel entrant"
+
+[calls_desc_missed]
+text = "Appel manqué"
+
+[calls_desc_cancelled]
+text = "Appel annulé"
+
+[calls_desc_other]
+text = "Appel Tinline"
+
+[groups_list_sent_requests]
+text = "Demandes envoyées"
+
+[groupsb_host_online]
+text = "En ligne"
+
+[groupsb_host_offline]
+text = "Hors ligne"
+
+[calls_what_other]
+text = "Appel Tinline"
+
+[groupsb_role_host_lc]
+text = "hôte"
+
+[groupsb_role_callhost_lc]
+text = "hôte d’appel"

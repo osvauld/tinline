@@ -125,19 +125,19 @@ class GroupsCoreTest {
         val rows = GroupText.pickRows(contacts, d, sent, { it == "did:key:priya" }, { it == "did:key:ravi" })
         assertEquals(listOf("did:key:zoe", "did:key:leo", "did:key:sam"), rows.map { it.did })
         assertNull(rows[0].why) // declined before: can be invited again
-        assertEquals("Invited · waiting", rows[1].why)
-        assertEquals("Already a member", rows[2].why)
-        assertEquals("Declined" to true, GroupText.sentInvitationLine(sent[1]))
-        assertEquals("Invited · not delivered yet" to false, GroupText.sentInvitationLine(sent[0].copy(delivered = false)))
-        assertEquals("Joined" to false, GroupText.sentInvitationLine(sent[0].copy(state = GroupInvitationState.JOINED)))
+        assertEquals(appString(R.string.groupsc_pick_invited_waiting), rows[1].why)
+        assertEquals(appString(R.string.groupsc_pick_member), rows[2].why)
+        assertEquals(appString(R.string.groupsc_invite_declined) to true, GroupText.sentInvitationLine(sent[1]))
+        assertEquals(appString(R.string.groupsc_invited_not_delivered) to false, GroupText.sentInvitationLine(sent[0].copy(delivered = false)))
+        assertEquals(appString(R.string.groupsc_invite_joined) to false, GroupText.sentInvitationLine(sent[0].copy(state = GroupInvitationState.JOINED)))
     }
 
     @Test fun invitingContactsAndAnsweringAnInvitation() {
         val api = FakeApi()
         val ctl = GroupsController(api) { me }
-        assertEquals("Pick someone first.", ctl.inviteContacts("g", emptyList()).exceptionOrNull()!!.message)
-        assertEquals("Invitation sent to Leo. They join when they accept.", ctl.inviteContacts("g", listOf("did:key:leo")).getOrThrow())
-        assertEquals("2 invitations sent. Each person joins when they accept.", ctl.inviteContacts("g", listOf("did:key:a", "did:key:b")).getOrThrow())
+        assertEquals(appString(R.string.groupsc_pick_first), ctl.inviteContacts("g", emptyList()).exceptionOrNull()!!.message)
+        assertEquals(appString(R.string.groupsc_invited_one_named), ctl.inviteContacts("g", listOf("did:key:leo")).getOrThrow())
+        assertEquals(appPlural(R.plurals.groupsc_invited_many, 2, 2), ctl.inviteContacts("g", listOf("did:key:a", "did:key:b")).getOrThrow())
         api.blocked += "did:key:x"
         assertTrue(ctl.inviteContacts("g", listOf("did:key:x")).isFailure)
         api.invs += inv("in1", GroupInvitationState.PENDING)
@@ -145,7 +145,7 @@ class GroupsCoreTest {
         ctl.onGroupInvitation(api.invs.last())
         assertEquals(2, GroupText.pendingInvitations(ctl.invitations.value).size)
         assertEquals("g", ctl.acceptInvitation("in1").getOrThrow())
-        assertTrue(ctl.declineInvitation("in2").getOrThrow().startsWith("Declined. Sam sees"))
+        assertEquals(appString(R.string.groupsc_decline_inv_named), ctl.declineInvitation("in2").getOrThrow())
         assertTrue(GroupText.pendingInvitations(ctl.invitations.value).isEmpty())
         assertEquals("Already answered.", ctl.declineInvitation("in2").exceptionOrNull()!!.message)
     }
@@ -162,19 +162,28 @@ class GroupsCoreTest {
         val a = summary("a", CoreRole.MEMBER, 2, msg("1", 1, text = "anyone?"))
         val b = summary("b", CoreRole.REMOVED, 5, msg("2", 2))
         val c = summary("c", CoreRole.ADMIN, 1, msg("3", 3, author = me, text = "on my way"))
-        assertEquals("Sam: anyone?", GroupText.preview(a, me))
-        assertEquals("You were removed from this group", GroupText.preview(b, me))
-        assertEquals("You: on my way", GroupText.preview(c, me))
+        assertEquals(appString(R.string.groupsc_preview_other), GroupText.preview(a, me))
+        assertEquals(appString(R.string.groupsc_removed_you_group), GroupText.preview(b, me))
+        assertEquals(appString(R.string.groupsc_preview_you), GroupText.preview(c, me))
         assertEquals(3, GroupText.badge(listOf(a, b, c)))
         val joined = msg("4", 4, kind = GroupItemKind.JOINED)
-        assertEquals("Sam Rao joined", GroupText.preview(summary("d", CoreRole.MEMBER, 0, joined), me))
+        assertEquals(appString(R.string.groupsc_sys_joined_other), GroupText.preview(summary("d", CoreRole.MEMBER, 0, joined), me))
     }
 
     @Test fun systemLinesSayYouAndNeverShowKeys() {
         val m = GroupMessage("x", "g", GroupItemKind.ADMIN_GRANTED, "did:key:sam", "Sam", me, "Me", 1uL, "", null, false, CoreDelivery.DELIVERED, null, false)
-        assertEquals("Sam made you an admin", GroupText.sysText(m, me))
-        assertEquals("Priya was removed after 3 admin flags", GroupText.sysText(m.copy(kind = GroupItemKind.REMOVED, subjectDid = "did:key:p", subjectName = "Priya"), me))
-        assertEquals("Someone left", GroupText.sysText(m.copy(kind = GroupItemKind.LEFT, subjectDid = "did:key:x", subjectName = ""), me))
+        assertEquals(appString(R.string.groupsc_admin_granted_you), GroupText.sysText(m, me))
+        assertEquals(appString(R.string.groupsc_admin_granted_you_by_someone), GroupText.sysText(m.copy(authorName = ""), me))
+        // The actor decides the sentence: me, a name, or nobody we know.
+        val other = m.copy(subjectDid = "did:key:p", subjectName = "Priya")
+        assertEquals(appString(R.string.groupsc_admin_granted_other), GroupText.sysText(other, me))
+        assertEquals(appString(R.string.groupsc_admin_granted_by_you), GroupText.sysText(other.copy(authorDid = me), me))
+        assertEquals(appString(R.string.groupsc_admin_granted_by_someone), GroupText.sysText(other.copy(authorName = ""), me))
+        assertEquals(appString(R.string.groupsc_admin_granted_by_someone_someone), GroupText.sysText(other.copy(authorName = "", subjectName = ""), me))
+        assertEquals(appString(R.string.groupsc_admin_revoked_by_you), GroupText.sysText(other.copy(kind = GroupItemKind.ADMIN_REVOKED, authorDid = me), me))
+        assertEquals(appString(R.string.groupsc_sys_joined_you), GroupText.sysText(m.copy(kind = GroupItemKind.JOINED), me))
+        assertEquals(appPlural(R.plurals.groupsc_removed_other_flags, 3, 3), GroupText.sysText(m.copy(kind = GroupItemKind.REMOVED, subjectDid = "did:key:p", subjectName = "Priya"), me))
+        assertEquals(appString(R.string.groupsc_sys_left_someone), GroupText.sysText(m.copy(kind = GroupItemKind.LEFT, subjectDid = "did:key:x", subjectName = ""), me))
     }
 
     @Test fun memberActionsFollowRoles() {
@@ -204,28 +213,29 @@ class GroupsCoreTest {
         assertEquals(1, GroupText.flagCopy("Dev Patel", 0).first)
         val (n, text) = GroupText.flagCopy("Dev Patel", 2)
         assertEquals(3, n)
-        assertTrue(text.contains("Dev is removed right away"))
+        assertEquals(appString(R.string.groupsc_flag_final), text)
+        assertEquals(appString(R.string.groupsc_flag_more), GroupText.flagCopy("Dev Patel", 0).second)
     }
 
     @Test fun statusAndWaitingForAHost() {
         val ms = listOf(member("did:key:sam", owner = true), member(me))
-        assertEquals("2 members · no host yet", GroupText.status(detail(CoreRole.MEMBER, ms)))
+        assertEquals(appString(R.string.groupsc_status_join), GroupText.status(detail(CoreRole.MEMBER, ms)))
         val off = GroupHost("did:key:sam", "Sam", "d", null, false, false)
         val d = detail(CoreRole.MEMBER, ms, hosts = listOf(off))
-        assertEquals("2 members · waiting for a host", GroupText.status(d))
+        assertEquals(appString(R.string.groupsc_status_join), GroupText.status(d))
         assertTrue(GroupText.waitingForHost(d))
-        assertEquals("2 members · this device hosts the group", GroupText.status(d.copy(amHost = true)))
+        assertEquals(appString(R.string.groupsc_status_join), GroupText.status(d.copy(amHost = true)))
         val removed = d.copy(myRole = CoreRole.REMOVED, removal = GroupRemoval(5uL, listOf(GroupFlag("did:key:a", "A", 1uL))))
-        assertEquals("You were removed from this group", GroupText.status(removed))
+        assertEquals(appString(R.string.groupsc_removed_you_group), GroupText.status(removed))
         assertFalse(GroupText.waitingForHost(removed))
-        assertEquals("Waiting for a host", GroupText.deliveryWord(msg("x", 1, author = me, delivery = CoreDelivery.WAITING)))
+        assertEquals(appString(R.string.groups_waiting_host), GroupText.deliveryWord(msg("x", 1, author = me, delivery = CoreDelivery.WAITING)))
         assertNull(GroupText.deliveryWord(msg("x", 1, author = me)))
     }
 
     @Test fun errorsReadPlainly() {
-        assertEquals("You were removed from this group.", GroupText.error(uniffi.p2pcore.Exception.Rejected("they refused: removed")))
+        assertEquals(appString(R.string.groupsc_err_removed), GroupText.error(uniffi.p2pcore.Exception.Rejected("they refused: removed")))
         assertEquals("The owner cannot leave.", GroupText.error(uniffi.p2pcore.Exception.Rejected("they refused: the owner cannot leave")))
-        assertEquals("No host answered in time. Try again when a host is online.", GroupText.error(uniffi.p2pcore.Exception.Timeout("timed out")))
+        assertEquals(appString(R.string.groupsc_err_timeout), GroupText.error(uniffi.p2pcore.Exception.Timeout("timed out")))
     }
 
     @Test fun upsertKeepsTimeOrderAndReplacesById() {
@@ -258,9 +268,9 @@ class GroupsCoreTest {
         // Our post shows at once, waiting for a host; a refusal comes back in plain words.
         val r = ctl.post("g", "  on my way ", null)
         assertEquals("on my way", r.getOrThrow().text)
-        assertEquals("Waiting for a host", GroupText.deliveryWord(ctl.open.value!!.messages.last()))
+        assertEquals(appString(R.string.groups_waiting_host), GroupText.deliveryWord(ctl.open.value!!.messages.last()))
         api.postError = uniffi.p2pcore.Exception.Rejected("they refused: removed")
-        assertEquals("You were removed from this group.", ctl.post("g", "still here?", null).exceptionOrNull()!!.message)
+        assertEquals(appString(R.string.groupsc_err_removed), ctl.post("g", "still here?", null).exceptionOrNull()!!.message)
         assertTrue(ctl.post("g", "   ", null).isFailure)
 
         assertEquals("Only admins can do that.", ctl.flag("g", "did:key:sam").exceptionOrNull()!!.message)
@@ -293,16 +303,16 @@ class GroupsCoreTest {
     @Test fun chatRequestsFromAGroupMember() {
         val api = FakeApi()
         val ctl = GroupsController(api) { me }
-        assertEquals("Request sent to Leo. It waits in Chats until they answer.", ctl.request("g", "did:key:leo").getOrThrow())
+        assertEquals(appString(R.string.groupsc_request_sent_named), ctl.request("g", "did:key:leo").getOrThrow())
         assertEquals(1, ctl.outgoing.value.size)
-        assertEquals("Waiting for Leo · via Hike" to false, GroupText.sentLine(ctl.outgoing.value[0]))
-        assertEquals("Leo declined" to true, GroupText.sentLine(ctl.outgoing.value[0].copy(state = ChatRequestState.DECLINED)))
-        assertEquals("Leo blocked you" to true, GroupText.sentLine(ctl.outgoing.value[0].copy(state = ChatRequestState.BLOCKED)))
-        assertEquals("You already have them as a contact. Message them from Chats.", ctl.request("g", "did:key:contact").exceptionOrNull()!!.message)
+        assertEquals(appString(R.string.groupsc_req_pending_named) to false, GroupText.sentLine(ctl.outgoing.value[0]))
+        assertEquals(appString(R.string.groupsc_req_declined_named) to true, GroupText.sentLine(ctl.outgoing.value[0].copy(state = ChatRequestState.DECLINED)))
+        assertEquals(appString(R.string.groupsc_req_blocked_named) to true, GroupText.sentLine(ctl.outgoing.value[0].copy(state = ChatRequestState.BLOCKED)))
+        assertEquals(appString(R.string.groupsc_err_already_contact), ctl.request("g", "did:key:contact").exceptionOrNull()!!.message)
 
         // Their answer arrives as an event: one notice when the contact is in place.
         ctl.onChatRequest(ctl.outgoing.value[0].copy(state = ChatRequestState.ACCEPTED, contactAdded = true))
-        assertTrue(ctl.notice.value!!.startsWith("Leo accepted your request"))
+        assertEquals(appString(R.string.groupsc_notice_accepted_named), ctl.notice.value)
         ctl.clearNotice()
         assertNull(ctl.notice.value)
 
@@ -310,7 +320,7 @@ class GroupsCoreTest {
         api.reqs += GroupChatRequest("in2", "g", "Hike", "did:key:ravi", "Ravi J", false, ChatRequestState.PENDING, 3uL, false)
         ctl.refresh()
         assertEquals(2, ctl.incoming.value.size)
-        assertTrue(ctl.accept("in1").getOrThrow().contains("messages only"))
+        assertEquals(appString(R.string.groupsc_req_accept_named), ctl.accept("in1").getOrThrow())
         assertTrue(ctl.blockRequester("in2", "did:key:ravi").isSuccess)
         assertEquals(listOf("did:key:ravi"), api.blocked)
         assertTrue(ctl.incoming.value.none { it.state == ChatRequestState.PENDING })

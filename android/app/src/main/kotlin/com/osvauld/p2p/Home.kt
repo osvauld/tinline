@@ -140,7 +140,7 @@ fun HomeScreen(
         requestsBlock = { GroupRequestsBlock(app, onChat, say) },
         onSearch = onSearch, history = history, groupCalls = groupCalls,
         canCall = { did -> blocks.callGate(did, byDid.containsKey(did)) == CallGate.Ok && byDid.containsKey(did) },
-        isBlocked = { did -> blocks.of(did).blockedByMe }, onGroup = onGroup, onNewGroup = onNewGroup, callLook = callPhase,
+        isBlocked = { did -> blocks.of(did).blockedByMe }, isBlockedMe = { did -> blocks.blockedMeAt(did) != null }, onGroup = onGroup, onNewGroup = onNewGroup, callLook = callPhase,
         waitingIn = waitingIn.filter { it.did !in hiddenRequests }, waitingOut = waitingOut,
         onAcceptRequest = { did -> app.scope.launch { app.acceptRequest(did) } }, onNotNowRequest = { did -> hiddenRequests = hiddenRequests + did },
     )
@@ -190,6 +190,7 @@ fun HomeContent(
     groupCalls: GroupCallsUi? = null,
     canCall: (String) -> Boolean = { true },
     isBlocked: (String) -> Boolean = { false },
+    isBlockedMe: (String) -> Boolean = { false },
     onGroup: (String) -> Unit = {}, onNewGroup: () -> Unit = {},
     callLook: CallPhase = CallPhase.None,
     /** Contact requests: made with my code (Contacts › "Waiting for you"), and mine waiting for theirs. */
@@ -198,6 +199,7 @@ fun HomeContent(
 ) {
     val c = Tin.c
     val blockedWord = stringResource(R.string.common_blocked)
+    val blockedYouWord = stringResource(R.string.blocking_row_blocked_you)
     val banner: @Composable () -> Unit = { TopBanner(online, connectingGrace, missing, onFix, available, onTurnOn) }
     val byDid = remember(contacts) { contacts.associateBy { it.did } }
     // No contacts yet: Chats and Contacts are the add screen (my code, Copy, Share, Scan, Paste).
@@ -230,7 +232,7 @@ fun HomeContent(
                             empty = if (contacts.isEmpty()) hero else null,
                         )
                         HomeTab.Contacts -> ContactsTabBody(
-                            contacts, blocked = isBlocked, sub = { did -> if (isBlocked(did)) blockedWord else subLines[did]?.takeIf { it.startsWith(blockedWord) }.orEmpty() },
+                            contacts, blocked = isBlocked, sub = { did -> if (isBlocked(did)) blockedWord else if (isBlockedMe(did)) blockedYouWord else "" },
                             state = state, onOpen = onContact, onAdd = { onAdd(false) }, top = { banner() },
                             waitingIn = waitingIn, waitingOut = waitingOut, onAccept = onAcceptRequest, onNotNow = onNotNowRequest,
                         )

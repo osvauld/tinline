@@ -32,20 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.withStyle
 
-/** CallScreen.svelte's copy: never claim encryption while dialling or ringing. i18n-deferred: HostCondTest asserts this English text; the screens use [callStatusText]. */
-internal fun callStatus(active: Boolean, ringing: Boolean, reconnecting: Boolean, secs: Long): String = when {
-    active && reconnecting -> "Reconnecting…"
-    active -> uniffi.present.clock(secs)
-    ringing -> "Ringing…"
-    else -> "Calling…"
-}
-
-/** i18n-deferred: HostCondTest asserts this English text; the screens use [callPrivacyText]. */
-internal fun callPrivacy(active: Boolean, name: String): String = if (active)
-    "End-to-end encrypted. Your voice is encrypted on this device and only decrypted on $name’s."
-else "Connecting to $name. Once the call is connected, it is end-to-end encrypted."
-
-/** [callStatus] in the app's language (same cases; needs the running app). */
+/** CallScreen.svelte's copy: never claim encryption while dialling or ringing. In JVM tests the texts are `string#<id>`. */
 internal fun callStatusText(active: Boolean, ringing: Boolean, reconnecting: Boolean, secs: Long): String = when {
     active && reconnecting -> appString(R.string.call_reconnecting)
     active -> uniffi.present.clock(secs)
@@ -53,7 +40,7 @@ internal fun callStatusText(active: Boolean, ringing: Boolean, reconnecting: Boo
     else -> appString(R.string.call_status_calling)
 }
 
-/** [callPrivacy] in the app's language (needs the running app). */
+/** The privacy line: encrypted only once the call is connected. */
 internal fun callPrivacyText(active: Boolean, name: String): String =
     if (active) appString(R.string.call_privacy_active, name) else appString(R.string.call_privacy_connecting, name)
 

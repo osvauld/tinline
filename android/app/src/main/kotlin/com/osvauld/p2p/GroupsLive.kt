@@ -77,6 +77,13 @@ import uniffi.p2pcore.GroupRole as CoreRole
  */
 
 /** A DID as the user knows it: their contact name, else what the group calls them. */
+/** "Invited by {name}" for a contact, "...by you" for me, a whole-sentence variant for someone outside my contacts. */
+@Composable
+private fun personLine(app: P2pApp, did: String, @androidx.annotation.StringRes named: Int, @androidx.annotation.StringRes you: Int, @androidx.annotation.StringRes unknown: Int): String = when {
+    did == app.groups.myDid -> stringResource(you)
+    else -> app.contacts.value.firstOrNull { it.did == did }?.let { stringResource(named, it.display()) } ?: stringResource(unknown)
+}
+
 private fun nameOf(app: P2pApp, did: String, fallback: String): String {
     // Per row while composing: the cached DID, never a core call on the main thread.
     if (did == app.groups.myDid) return appString(R.string.common_you)
@@ -179,7 +186,7 @@ fun GroupsLiveTab(app: P2pApp, onOpen: (String) -> Unit, onNew: () -> Unit, onJo
                                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                     Avatar(who, inv.inviterDid, 40.dp)
                                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
-                                        Text(boldMarked(stringResource(R.string.groups_list_invited, mark(firstName(who)), mark(inv.groupName))), style = GType.body, color = c.ink)
+                                        Text(boldText(stringResource(R.string.groups_list_invited, mark(firstName(who)), mark(inv.groupName))), style = GType.body, color = c.ink)
                                         Text(stringResource(R.string.groups_list_valid_until, dayOnly(inv.expires.toLong())), style = GType.sub, color = c.ink2)
                                     }
                                 }
@@ -208,7 +215,7 @@ fun GroupsLiveTab(app: P2pApp, onOpen: (String) -> Unit, onNew: () -> Unit, onJo
                                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                     Avatar(name, r.peerDid, 40.dp)
                                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
-                                        Text(boldMarked(stringResource(R.string.groups_list_wants_chat, mark(name))), style = GType.body, color = c.ink)
+                                        Text(boldText(stringResource(R.string.groups_list_wants_chat, mark(name))), style = GType.body, color = c.ink)
                                         Text(stringResource(R.string.groups_list_member_of, r.groupName), style = GType.sub, color = c.ink2)
                                     }
                                 }
@@ -223,7 +230,7 @@ fun GroupsLiveTab(app: P2pApp, onOpen: (String) -> Unit, onNew: () -> Unit, onJo
                     }
                 }
                 if (sent.isNotEmpty()) {
-                    GSub2(stringResource(R.string.groups_list_sent))
+                    GSub2(stringResource(R.string.groups_list_sent_requests))
                     Column(Modifier.padding(horizontal = 8.dp)) {
                         sent.forEach { r ->
                             key(r.id) {
@@ -291,27 +298,6 @@ fun GroupsLiveTab(app: P2pApp, onOpen: (String) -> Unit, onNew: () -> Unit, onJo
         }
     }
     if (creating) NewGroupSheet(app, onDismiss = { creating = false }) { id -> creating = false; onOpen(id) }
-}
-
-/** Wraps [s] so [boldMarked] shows it in bold: used to pass names into a translated template. */
-private fun mark(s: String) = "\u0001$s\u0002"
-
-/** A translated line whose [mark]ed parts are bold (the playground's `<b>` runs inside a line). */
-private fun boldMarked(text: String) = androidx.compose.ui.text.buildAnnotatedString {
-    var bold = false
-    for (ch in text) when (ch) {
-        '\u0001' -> { pushStyle(androidx.compose.ui.text.SpanStyle(fontWeight = FontWeight.SemiBold)); bold = true }
-        '\u0002' -> if (bold) { pop(); bold = false }
-        else -> append(ch)
-    }
-    if (bold) pop()
-}
-
-/** "**a** b **c**": the playground's `<b>` runs inside a line (650 there, 600 here). */
-private fun bold(vararg parts: String) = androidx.compose.ui.text.buildAnnotatedString {
-    parts.forEachIndexed { i, p ->
-        if (i % 2 == 0) { pushStyle(androidx.compose.ui.text.SpanStyle(fontWeight = FontWeight.SemiBold)); append(p); pop() } else append(p)
-    }
 }
 
 /** The tab's top rows (`.wrap > .row`): a 48 dp accent-soft disc with a 22 dp glyph, a title and a sub-line, 64 dp. */
@@ -639,7 +625,7 @@ private fun OnlineSheet(app: P2pApp, d: GroupDetail, online: List<OnlineMember>,
             Text(d.name, style = GType.sub, color = c.ink2, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(GroupText.onlineLabel(rows.size), Modifier.padding(top = 2.dp).semantics { heading() }, style = GType.title, color = c.ink)
             GPara(stringResource(R.string.groups_online_lag))
-            if (rows.size >= GroupText.ONLINE_CAP) GPara(stringResource(R.string.groups_online_cap, GroupText.ONLINE_CAP.toString()))
+            if (rows.size >= GroupText.ONLINE_CAP) GPara(pluralStringResource(R.plurals.groups_online_cap, GroupText.ONLINE_CAP, GroupText.ONLINE_CAP))
             if (hidden) GPara(stringResource(R.string.groups_online_hidden))
             if (rows.isEmpty()) GPara(stringResource(R.string.groups_online_none), top = 14.dp)
             else Column(Modifier.padding(top = 10.dp)) {
@@ -715,7 +701,7 @@ private fun ColumnScope.GroupItemLive(
         val r = d.removal
         if (r == null) SysLine(stringResource(R.string.groups_msg_removed_system))
         else NoticeCard(c.erc, c.onErc, ctx.resources.getQuantityString(R.plurals.groups_msg_removed_title, r.flags.size, r.flags.size),
-            stringResource(R.string.groups_msg_removed_by, r.flags.map { nameOf(app, it.byDid, it.byName) }.distinct().let { if (it.size > 1) ctx.getString(R.string.groups_msg_and, it.dropLast(1).joinToString(", "), it.last()) else it.joinToString() })) {
+            stringResource(R.string.groups_msg_removed_by, r.flags.map { nameOf(app, it.byDid, it.byName) }.distinct().let(::listText))) {
             Text(stringResource(R.string.groups_msg_see_details), Modifier.heightIn(min = 48.dp).clickable(role = Role.Button, onClick = onRemoval).wrapContentHeight(Alignment.CenterVertically),
                 style = TinType.label.copy(fontWeight = FontWeight.Bold, textDecoration = androidx.compose.ui.text.style.TextDecoration.Underline), color = c.onErc)
         }
@@ -964,12 +950,14 @@ fun GroupInfoLive(app: P2pApp, id: String, onBack: () -> Unit, onLink: () -> Uni
                                     else -> null
                                 }
                                 val since = m.invitedBy?.let { stringResource(R.string.groupsb_invited_by, firstName(name(it, "")), dayOnly(m.joinedAt.toLong())) } ?: stringResource(R.string.groupsb_since, dayOnly(m.joinedAt.toLong()))
-                                val flagsTxt = stringResource(R.string.groupsb_flags_of, m.flags.toString(), GroupText.FLAGS_TO_REMOVE.toString())
+                                val flagsTxt = pluralStringResource(R.plurals.groupsb_flags_of, GroupText.FLAGS_TO_REMOVE, m.flags.toInt(), GroupText.FLAGS_TO_REMOVE)
                                 val blockedByYou = stringResource(R.string.groupsb_blocked_by_you)
                                 val showFlags = (admin || m.isMe) && m.flags > 0u && !m.isOwner
                                 val nameYou = if (m.isMe) stringResource(R.string.groupsb_name_you, n) else n
-                                val desc = nameYou + ", " + (if (m.isOwner) stringResource(R.string.groupsb_role_owner_lc) else if (m.isAdmin) stringResource(R.string.groupsb_role_admin_lc) else stringResource(R.string.groupsb_role_member_lc)) +
-                                    (if (m.isHost) stringResource(R.string.groupsb_desc_host) else "") + (if (d.callHosts.any { it.did == m.did }) stringResource(R.string.groupsb_desc_callhost) else "") + stringResource(R.string.groupsb_desc_open)
+                                val desc = stringResource(R.string.groupsb_member_desc, listText(listOfNotNull(nameYou,
+                                    if (m.isOwner) stringResource(R.string.groupsb_role_owner_lc) else if (m.isAdmin) stringResource(R.string.groupsb_role_admin_lc) else stringResource(R.string.groupsb_role_member_lc),
+                                    if (m.isHost) stringResource(R.string.groupsb_role_host_lc) else null,
+                                    if (d.callHosts.any { it.did == m.did }) stringResource(R.string.groupsb_role_callhost_lc) else null)))
                                 MRow(onClick = { sheet = InfoSheet.Member(m.did) }, desc = desc) {
                                     Avatar(n, m.did, 40.dp)
                                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
@@ -1137,7 +1125,7 @@ private fun PublicGroupSection(app: P2pApp, d: GroupDetail, pending: Pair<PubSet
     val copy: (String) -> Unit = { copyToClipboard(ctx, ctx.getString(R.string.groupsb_group_link), it, sensitive = false); say(GroupText.OPEN_LINK_COPIED) }
     InfoSec(stringResource(R.string.groupsb_public_sec)) {
         GCard(Modifier.fillMaxWidth()) {
-            SwitchRow(GIcons.Link, stringResource(R.string.groupsb_open_link), stringResource(R.string.groupsb_open_link_on), stringResource(R.string.groupsb_open_link_off), openOn) { want ->
+            SwitchRow(GIcons.Link, stringResource(R.string.groupsb_public_link), stringResource(R.string.groupsb_open_link_on), stringResource(R.string.groupsb_open_link_off), openOn) { want ->
                 if (pending == null) {
                     if (want) onAskOpen()
                     else { onPending(PubSetting.Open to false); exec({ app.groups.closeLink(d.id) }) { r -> onPending(null); done(r) } }
@@ -1207,7 +1195,7 @@ private fun HostsSection(app: P2pApp, d: GroupDetail, admin: Boolean, name: (Str
                 MRow {
                     Avatar(name(h.did, h.name), h.did, 40.dp)
                     val on = h.isMe || h.online
-                    TwoLine(dev(h), (if (on) stringResource(R.string.groupsb_online) else stringResource(R.string.groupsb_offline)) + if (d.callHosts.any { it.did == h.did && it.deviceId == h.deviceId }) " · " + stringResource(R.string.groupsb_also_hosts_calls) else "", dot = on)
+                    TwoLine(dev(h), (if (on) stringResource(R.string.groupsb_host_online) else stringResource(R.string.groupsb_host_offline)) + if (d.callHosts.any { it.did == h.did && it.deviceId == h.deviceId }) " · " + stringResource(R.string.groupsb_also_hosts_calls) else "", dot = on)
                     if (admin) TrailBtn(stringResource(R.string.common_remove), stringResource(R.string.groupsb_remove_host_desc, dev(h))) { exec({ app.groups.revoke(d.id, h.did, h.deviceId) }, done) }
                 }
             }
@@ -1261,7 +1249,7 @@ private fun CallHostsSection(app: P2pApp, d: GroupDetail, admin: Boolean, name: 
                 MRow {
                     Avatar(name(h.did, h.name), h.did, 40.dp)
                     val on = h.isMe || h.online
-                    TwoLine(dev(h), if (on) stringResource(R.string.groupsb_online) else stringResource(R.string.groupsb_offline), dot = on)
+                    TwoLine(dev(h), if (on) stringResource(R.string.groupsb_host_online) else stringResource(R.string.groupsb_host_offline), dot = on)
                     if (admin) TrailBtn(stringResource(R.string.common_remove), stringResource(R.string.groupsb_remove_callhost_desc, dev(h))) { exec({ app.groups.revokeCall(d.id, h.did, h.deviceId) }, done) }
                 }
             }
@@ -1306,7 +1294,7 @@ private fun FlagsOnMe(n: Int) {
     val total = GroupText.FLAGS_TO_REMOVE
     val left = (total - n).coerceAtLeast(0)
     InfoSec(stringResource(R.string.groupsb_flags_on_you), countText = stringResource(R.string.groupsb_of_total, n.toString(), total.toString()), countColor = Tin.c.er) {
-        Box(Modifier.padding(start = 4.dp, end = 4.dp, bottom = 4.dp, top = 2.dp)) { FlagMeter(n, total, desc = stringResource(R.string.groupsb_flags_of, n.toString(), total.toString())) }
+        Box(Modifier.padding(start = 4.dp, end = 4.dp, bottom = 4.dp, top = 2.dp)) { FlagMeter(n, total, desc = pluralStringResource(R.plurals.groupsb_flags_of, total, n, total)) }
         GNote(pluralStringResource(R.plurals.groupsb_flags_left_note, left, left),
             Modifier.padding(start = 4.dp, end = 4.dp, top = 6.dp))
     }
@@ -1438,7 +1426,7 @@ private fun MemberSheet(app: P2pApp, d: GroupDetail, m: CoreMember, n: String, r
                             if (d.callHosts.any { it.did == m.did }) GPill(stringResource(R.string.groupsb_call_host), GTone.Call)
                         }
                     }
-                    if (admin && !m.isMe && !m.isOwner) Text(stringResource(R.string.groupsb_flags_of, m.flags.toString(), GroupText.FLAGS_TO_REMOVE.toString()), Modifier.padding(start = 20.dp, end = 20.dp, bottom = 4.dp),
+                    if (admin && !m.isMe && !m.isOwner) Text(pluralStringResource(R.plurals.groupsb_flags_of, GroupText.FLAGS_TO_REMOVE, m.flags.toInt(), GroupText.FLAGS_TO_REMOVE), Modifier.padding(start = 20.dp, end = 20.dp, bottom = 4.dp),
                         style = GType.sub.copy(fontFeatureSettings = "tnum"), color = c.ink2)
                     Column(Modifier.padding(start = 8.dp, end = 8.dp, top = 4.dp)) {
                         if (!m.isMe) when {
@@ -1596,7 +1584,7 @@ fun AddMembersLive(app: P2pApp, id: String, onBack: () -> Unit, say: (String) ->
     Page {
         TopBar(stringResource(R.string.groupsb_add_to, d.name), onBack)
         LazyColumn(Modifier.weight(1f), contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            item { SectionLabel(stringResource(R.string.groupsb_contacts_selected, picked.size.toString()), Modifier.padding(start = 0.dp)) }
+            item { SectionLabel(pluralStringResource(R.plurals.groupsb_contacts_selected, picked.size, picked.size), Modifier.padding(start = 0.dp)) }
             if (rows.isEmpty()) item { Hint(stringResource(R.string.groupsb_no_contacts)) }
             items(rows, key = { it.did }) { r ->
                 val on = r.did in picked
@@ -1677,9 +1665,8 @@ fun JoinGroupLive(app: P2pApp, initial: String? = null, onBack: () -> Unit, onJo
                             GroupAvatar(tintOf(p.groupId), 44.dp, radius = 14.dp, gid = p.groupId)
                             Text(p.name, style = TinType.titleM, color = c.ink)
                         }
-                        val notInContacts = stringResource(R.string.groupsb_not_in_contacts)
-                        Text(p.issuerDid?.let { stringResource(R.string.groupsb_join_invited_by, nameOf(app, it, notInContacts)) } ?: stringResource(R.string.groupsb_own_account_link), style = TinType.bodyM, color = c.ink2)
-                        Text(stringResource(R.string.groupsb_join_owner, nameOf(app, p.ownerDid, notInContacts)), style = TinType.bodyM, color = c.ink2)
+                        Text(p.issuerDid?.let { did -> personLine(app, did, R.string.groupsb_join_invited_by, R.string.groupsb_join_invited_by_you, R.string.groupsb_join_invited_by_unknown) } ?: stringResource(R.string.groupsb_own_account_link), style = TinType.bodyM, color = c.ink2)
+                        Text(personLine(app, p.ownerDid, R.string.groupsb_join_owner, R.string.groupsb_join_owner_you, R.string.groupsb_join_owner_unknown), style = TinType.bodyM, color = c.ink2)
                         p.expires?.let { Text(stringResource(R.string.groupsb_valid_until, whenFull(it.toLong())), style = TinType.bodyM, color = c.ink2) }
                     }
                 }
@@ -1706,7 +1693,7 @@ fun JoinGroupLive(app: P2pApp, initial: String? = null, onBack: () -> Unit, onJo
 fun GroupTokenLive(app: P2pApp, id: String, onBack: () -> Unit) {
     val c = Tin.c
     val ctx = LocalContext.current
-    val name = app.groups.open.collectAsState().value?.takeIf { it.id == id }?.detail?.name ?: stringResource(R.string.groupsb_the_group)
+    val name = app.groups.open.collectAsState().value?.takeIf { it.id == id }?.detail?.name
     var token by remember { mutableStateOf<String?>(null) }
     var err by remember { mutableStateOf<String?>(null) }
     var full by remember { mutableStateOf(false) }
@@ -1718,7 +1705,7 @@ fun GroupTokenLive(app: P2pApp, id: String, onBack: () -> Unit) {
     Page {
         TopBar(stringResource(R.string.groupsb_invite_link_title), onBack)
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 20.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            Hint(stringResource(R.string.groupsb_link_note, name))
+            Hint(if (name != null) stringResource(R.string.groupsb_link_note, name) else stringResource(R.string.groupsb_link_note_unnamed))
             val t = token
             // Large, high contrast, the full width: easy to scan from another phone. Tap for full screen.
             Box(Modifier.fillMaxWidth().aspectRatio(1f).clip(SmoothCornerShape(16.dp)).background(Color.White)
@@ -1736,7 +1723,7 @@ fun GroupTokenLive(app: P2pApp, id: String, onBack: () -> Unit) {
             t?.let { Text(it, style = TinType.bodyM.copy(fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace), color = c.ink2, textAlign = TextAlign.Center) }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 TinButton(stringResource(R.string.common_share), {
-                    token?.let { tk -> runCatching { ctx.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, ctx.getString(R.string.groupsb_share_text, name, tk)), ctx.getString(R.string.groupsb_share_title))) } }
+                    token?.let { tk -> runCatching { ctx.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, (if (name != null) ctx.getString(R.string.groupsb_share_text, name, tk) else ctx.getString(R.string.groupsb_share_text_unnamed, tk))), ctx.getString(R.string.groupsb_share_title))) } }
                 }, Modifier.weight(1f), style = BtnStyle.Tonal, icon = PgIcons.Share, enabled = token != null)
                 CopyButton(token, Modifier.weight(1f))
             }

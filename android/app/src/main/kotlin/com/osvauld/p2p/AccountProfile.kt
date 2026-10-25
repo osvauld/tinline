@@ -45,7 +45,7 @@ internal fun AccountProfileScreen(
             PfCard { act { PfAct(stringResource(R.string.profile_share_my_code), onClick = onShare, icon = PgIcons.UserPlus, chevron = true, sub = stringResource(R.string.profile_share_my_code_sub)) } }
         }
         PfSec(stringResource(R.string.profile_only_you)) {
-            PfCard { act { PfAct(stringResource(R.string.profile_account_recovery), onClick = onRecovery, icon = PgIcons.Key, chevron = true, sub = stringResource(R.string.profile_account_recovery_sub)) } }
+            PfCard { act { PfAct(stringResource(R.string.profile_account_recovery), onClick = onRecovery, icon = PgIcons.Key, chevron = true, sub = stringResource(R.string.profile_account_recovery_sub, RECOVERY_WORDS)) } }
         }
     }
 }

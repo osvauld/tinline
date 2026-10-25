@@ -108,7 +108,7 @@ fun KeyLostContent(name: String, busy: Boolean, onRetry: () -> Unit, onRestore: 
                 if (onSwitch != null) GBtn(stringResource(R.string.accounts_switch_account), onSwitch, kind = GKind.Text, enabled = !busy)
             },
         ) {
-            GNotice(stringResource(R.string.unlock_keylost_notice), NKind.Warn, PgIcons.Info)
+            GNotice(stringResource(R.string.unlock_keylost_notice, RECOVERY_WORDS), NKind.Warn, PgIcons.Info)
         }
     }
 }

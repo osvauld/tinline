@@ -32,6 +32,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
@@ -304,6 +305,42 @@ fun InfoCard(text: String, modifier: Modifier = Modifier, icon: ImageVector? = n
         if (icon != null) Icon(icon, null, tint = fg, modifier = Modifier.size(22.dp))
         Text(buildAnnotatedStringBold(bold, text), style = TinType.bodyM, color = fg)
     }
+}
+
+/** Wraps user data (a name) so [boldText] shows it bold when the string has no `**` of its own. */
+fun mark(s: String) = "\u0001$s\u0002"
+
+/**
+ * The one bold convention for a line of text: `**bold**` inside the translated string, or user data wrapped with
+ * [mark] and passed into it. A translation moves the bold run with its words. A stray `**` or marker stays plain.
+ */
+fun boldText(text: String, weight: FontWeight = FontWeight.SemiBold, color: Color = Color.Unspecified) = androidx.compose.ui.text.buildAnnotatedString {
+    var i = 0
+    var open = false
+    fun toggle() { if (open) { pop(); open = false } else { pushStyle(androidx.compose.ui.text.SpanStyle(fontWeight = weight, color = color)); open = true } }
+    while (i < text.length) {
+        when {
+            text.startsWith("**", i) -> { toggle(); i += 2 }
+            text[i] == '\u0001' -> { if (!open) toggle(); i++ }
+            text[i] == '\u0002' -> { if (open) toggle(); i++ }
+            else -> { append(text[i]); i++ }
+        }
+    }
+    if (open) pop()
+}
+
+/** A line whose `[label](key)` parts are links; [urls] maps each key to its address. Unknown keys stay plain text. */
+fun linkedText(text: String, urls: Map<String, String>, styles: androidx.compose.ui.text.TextLinkStyles) = androidx.compose.ui.text.buildAnnotatedString {
+    val re = Regex("""\[([^\]]+)]\(([a-z]+)\)""")
+    var at = 0
+    for (m in re.findAll(text)) {
+        append(text.substring(at, m.range.first))
+        val url = urls[m.groupValues[2]]
+        if (url == null) append(m.value)
+        else withLink(androidx.compose.ui.text.LinkAnnotation.Url(url, styles)) { append(m.groupValues[1]) }
+        at = m.range.last + 1
+    }
+    append(text.substring(at))
 }
 
 fun buildAnnotatedStringBold(bold: String?, rest: String) = androidx.compose.ui.text.buildAnnotatedString {

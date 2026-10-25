@@ -26,7 +26,7 @@ data class RecentCall(
 }
 
 private val HM = DateTimeFormatter.ofPattern("HH:mm")
-private val DM = DateTimeFormatter.ofPattern("d MMM", Locale.getDefault())
+private fun dm() = localFormatter("dMMM", "d MMM")
 
 private fun zone() = ZoneId.systemDefault()
 private fun dayOf(secs: Long) = Instant.ofEpochSecond(secs).atZone(zone()).toLocalDate()
@@ -98,7 +98,7 @@ private fun dayWord(at: Long, now: Long): String {
         days <= 0L -> appString(R.string.history_day_today)
         days == 1L -> appString(R.string.history_day_yesterday)
         days < 7 -> dayOf(at).dayOfWeek.getDisplayName(TextStyle.FULL, Locale.getDefault())
-        else -> dayOf(at).format(DM)
+        else -> dayOf(at).format(dm())
     }
 }
 

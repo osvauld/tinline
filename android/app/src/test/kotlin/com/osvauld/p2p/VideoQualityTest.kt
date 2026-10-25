@@ -16,8 +16,8 @@ class VideoQualityTest {
         assertTrue(hdPaused(true, 640, 360))
         assertTrue(hdPaused(true, 360, 640))
         assertFalse(hdPaused(false, 320, 180))
-        assertEquals("HD paused \u00b7 weak connection", hdLine(true, true))
-        assertEquals("Sharper video off", hdLine(false, true))
+        assertEquals(appString(R.string.video_hd_line_paused), hdLine(true, true))
+        assertEquals(appString(R.string.video_hd_off), hdLine(false, true))
     }
     @Test fun hdIsExplicitAndAutoKeepsBaseline() {
         assertEquals(listOf(CapturePreference.SD), capturePreferences(false))
@@ -122,7 +122,7 @@ class VideoQualityTest {
         assertFalse(hdMeteredNow(hdOn = false, sending = true, metered = true, saidThisCall = false))
         assertFalse(hdMeteredNow(hdOn = true, sending = false, metered = true, saidThisCall = false))
         assertFalse(hdMeteredNow(hdOn = true, sending = true, metered = false, saidThisCall = false))
-        assertEquals("On mobile data, HD uses more \u00b7 tap HD", HD_METERED_LINE)
+        assertEquals(appString(R.string.video_hd_metered), HD_METERED_LINE)
     }
 
     @Test fun hdFollowsChipThenSettingThenCore() {

@@ -312,8 +312,7 @@ fun WaitingCard(w: CallInfo?, currentName: String, onDecline: () -> Unit, onEndA
                 WaitingPill(stringResource(R.string.call_waiting_end_answer), c.callButtonAnswer, c.callButtonAnswer, Color.White, stringResource(R.string.call_waiting_end_answer_desc), onEndAnswer, Modifier.weight(1f))
             }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally)) {
-                Text(stringResource(R.string.call_waiting_ends_with), style = TinFs.meta.copy(fontSize = 12.sp, lineHeight = 16.sp), color = c.ink2, maxLines = 1)
-                Text(first, Modifier.weight(1f, fill = false), style = TinFs.meta.copy(fontSize = 12.sp, lineHeight = 16.sp), color = c.ink2, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(stringResource(R.string.call_waiting_ends_with, first), style = TinFs.meta.copy(fontSize = 12.sp, lineHeight = 16.sp), color = c.ink2, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
     }
@@ -742,7 +741,6 @@ fun EndedContent(
 @Composable
 fun UnreachableContent(name: String, did: String, meName: String, onAgain: () -> Unit, onClose: () -> Unit) {
     val c = Tin.c
-    val who = name.ifBlank { stringResource(R.string.call_them) }
     Page {
         Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 28.dp), horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically)) {
@@ -753,7 +751,7 @@ fun UnreachableContent(name: String, did: String, meName: String, onAgain: () ->
                     Text(uniffi.present.initials(name), style = TinType.titleL.copy(fontSize = 34.sp), color = c.ink2)
                 }
             }
-            H1(stringResource(R.string.call_unreachable_title, who), Modifier.padding(top = 16.dp), align = TextAlign.Center)
+            H1(if (name.isBlank()) stringResource(R.string.call_unreachable_title_unnamed) else stringResource(R.string.call_unreachable_title, name), Modifier.padding(top = 16.dp), align = TextAlign.Center)
             Lead(stringResource(R.string.call_unreachable_body, if (name.isBlank()) stringResource(R.string.call_they) else name), align = TextAlign.Center)
         }
         Column(Modifier.padding(start = 24.dp, end = 24.dp, bottom = 48.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {

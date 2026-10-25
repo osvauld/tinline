@@ -118,7 +118,6 @@ fun OnboardingFlow(
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     val addState = remember { app.adding.value }
-    val otherDevice = stringResource(R.string.onboarding_other_device)
     val adding = addState != null
     var step by rememberSaveable { mutableStateOf(when { forgot -> Step.Restore; adding -> if (addState.link) Step.LinkName else if (addState.restore) Step.Restore else Step.Name; else -> Step.Welcome }) }
     var dir by remember { mutableIntStateOf(1) }
@@ -226,7 +225,7 @@ fun OnboardingFlow(
                 Step.LinkName -> { head { if (adding) cancelAdd() else back(Step.Choose) }
                     DeviceStep(label, { label = it; error = null }, false, null, onNext = { label = label.trim(); go(Step.LinkQr) }) }
                 Step.LinkQr -> LinkSession(app, newDevice = true, label = label.trim(), onClose = { back(Step.LinkName) }, onDone = { d ->
-                    created = true; linkedPeer = d.peer.ifBlank { otherDevice }; linkedName = d.name; go(Step.LinkPass)
+                    created = true; linkedPeer = d.peer; linkedName = d.name; go(Step.LinkPass)
                 }, progress = prog)
                 Step.LinkPass -> { head(null); PassStep(PassKind.Link, pass, { pass = it; error = null }, busy, error,
                     onNext = {
@@ -344,7 +343,7 @@ private fun ChooseStep(onLink: () -> Unit, onRestore: () -> Unit) {
         Spacer(Modifier.weight(1f))
         Column(Modifier.padding(bottom = 8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             ChooseOpt(PgIcons.Qr, stringResource(R.string.onboarding_choose_link), stringResource(R.string.onboarding_choose_link_sub), onLink)
-            ChooseOpt(PgIcons.Key, stringResource(R.string.onboarding_choose_restore), stringResource(R.string.onboarding_choose_restore_sub), onRestore)
+            ChooseOpt(PgIcons.Key, stringResource(R.string.onboarding_choose_restore), stringResource(R.string.onboarding_choose_restore_sub, RECOVERY_WORDS), onRestore)
         }
     }
 }
@@ -535,8 +534,8 @@ internal fun PhraseStep(phrase: String, onNext: () -> Unit, copiedAlready: Boole
     val keyLabel = stringResource(R.string.onboarding_clip_key)
     val wordsLabel = stringResource(R.string.onboarding_clip_words)
     GateStep(if (asKey) stringResource(R.string.onboarding_phrase_title_key) else stringResource(R.string.onboarding_phrase_title_words),
-        lead = if (asKey) stringResource(R.string.onboarding_phrase_lead_key)
-            else stringResource(R.string.onboarding_phrase_lead_words),
+        lead = if (asKey) stringResource(R.string.onboarding_phrase_lead_key, RECOVERY_WORDS)
+            else stringResource(R.string.onboarding_phrase_lead_words, RECOVERY_WORDS),
         foot = {
             if (copied) {
                 GBtn(if (asKey) stringResource(R.string.onboarding_phrase_saved_key) else stringResource(R.string.onboarding_phrase_saved_words), onNext)
@@ -583,9 +582,9 @@ private fun DeviceStep(label: String, onChange: (String) -> Unit, busy: Boolean,
 private fun RestoredStep(name: String, adding: Boolean, onStart: () -> Unit) {
     val first = name.trim().split(Regex("\\s+")).firstOrNull().orEmpty()
     GateStep(
-        title = if (adding) stringResource(R.string.onboarding_restored_title_adding, name.trim().ifBlank { stringResource(R.string.onboarding_restored_name_fallback_title) })
+        title = if (adding) (if (name.isBlank()) stringResource(R.string.onboarding_restored_title_adding_unnamed) else stringResource(R.string.onboarding_restored_title_adding, name.trim()))
             else if (first.isNotBlank()) stringResource(R.string.unlock_welcome_back_named, first) else stringResource(R.string.unlock_welcome_back),
-        lead = if (adding) stringResource(R.string.onboarding_restored_lead_adding, name.trim().ifBlank { stringResource(R.string.onboarding_restored_name_fallback_lead) })
+        lead = if (adding) (if (name.isBlank()) stringResource(R.string.onboarding_restored_lead_adding_unnamed) else stringResource(R.string.onboarding_restored_lead_adding, name.trim()))
         else stringResource(R.string.onboarding_restored_lead),
         center = true, bigTitle = true,
         hero = { Box(Modifier.padding(top = 28.dp, bottom = 4.dp)) { TinMark(96.dp, state = MarkState.Taut, live = true, description = stringResource(R.string.app_name)) } },
@@ -598,10 +597,9 @@ private fun SyncingStep(name: String, peer: String, contacts: Int, calls: Int, o
     val c = Tin.c
     var slow by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { kotlinx.coroutines.delay(45_000); slow = true }
-    val from = peer.ifBlank { stringResource(R.string.onboarding_other_device) }
     GateStep(
-        title = stringResource(R.string.onboarding_linked_title, from), center = true, bigTitle = true,
-        lead = stringResource(R.string.onboarding_linked_lead, from),
+        title = if (peer.isBlank()) stringResource(R.string.onboarding_linked_title_unnamed) else stringResource(R.string.onboarding_linked_title, peer), center = true, bigTitle = true,
+        lead = if (peer.isBlank()) stringResource(R.string.onboarding_linked_lead_unnamed) else stringResource(R.string.onboarding_linked_lead, peer),
         hero = { Box(Modifier.padding(top = 28.dp, bottom = 4.dp)) { TinMark(96.dp, state = MarkState.Taut, live = true, description = stringResource(R.string.app_name)) } },
         foot = { GBtn(stringResource(R.string.onboarding_open_tinline), onStart) },
     ) {
@@ -657,23 +655,9 @@ private fun TermsStep(onAgree: () -> Unit) {
         }
         Spacer(Modifier.weight(1f))
         val link = SpanStyle(color = c.accentInk, textDecoration = TextDecoration.Underline)
-        // The sentence is one string with two placeholders; the markers show where each link label goes (any order).
-        val termsMark = "\uE000"; val privacyMark = "\uE001"
-        val sentence = stringResource(R.string.onboarding_terms_by_continuing, termsMark, privacyMark)
-        val termsLabel = stringResource(R.string.onboarding_terms_link_terms)
-        val privacyLabel = stringResource(R.string.onboarding_terms_link_privacy)
-        Text(buildAnnotatedString {
-            var rest = sentence
-            while (rest.isNotEmpty()) {
-                val t = rest.indexOf(termsMark); val p = rest.indexOf(privacyMark)
-                val at = listOf(t, p).filter { it >= 0 }.minOrNull()
-                if (at == null) { append(rest); break }
-                append(rest.substring(0, at))
-                if (at == t) withLink(LinkAnnotation.Url(URL_TERMS, TextLinkStyles(link))) { append(termsLabel) }
-                else withLink(LinkAnnotation.Url(URL_PRIVACY, TextLinkStyles(link))) { append(privacyLabel) }
-                rest = rest.substring(at + 1)
-            }
-        }, style = PgType.sub19, color = c.ink2)
+        // One string; its [label](terms) and [label](privacy) parts are the links, wherever the language puts them.
+        Text(linkedText(stringResource(R.string.onboarding_terms_by_continuing), mapOf("terms" to URL_TERMS, "privacy" to URL_PRIVACY), TextLinkStyles(link)),
+            style = PgType.sub19, color = c.ink2)
     }
 }
 
@@ -804,7 +788,7 @@ private fun RestoreStep(error: String?, warning: String, onError: (String?) -> U
             verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Text(stringResource(R.string.onboarding_step_restore), style = PgType.h1, color = c.ink)
             Text(if (recKey.isNotEmpty()) stringResource(R.string.onboarding_restore_lead_key)
-                else stringResource(R.string.onboarding_restore_lead_words), style = PgType.lead, color = c.ink2)
+                else stringResource(R.string.onboarding_restore_lead_words, RECOVERY_WORDS), style = PgType.lead, color = c.ink2)
             GNotice(warning, NKind.Warn, PgIcons.Info)
             if (recKey.isNotEmpty()) {
                 Column(Modifier.fillMaxWidth().clip(SmoothCornerShape(10.dp)).background(c.sf).border(1.dp, c.accentSoft, SmoothCornerShape(10.dp))
@@ -819,7 +803,7 @@ private fun RestoreStep(error: String?, warning: String, onError: (String?) -> U
                     if (t == null) onError(clipboardFailMsg) else setWord(0, t)
                 }, kind = GKind.Text, fill = false, modifier = Modifier.offset(x = (-20).dp))
                 Spacer(Modifier.weight(1f))
-                Text(stringResource(R.string.onboarding_restore_filled, filled.toString()), style = PgType.sub.copy(fontFeatureSettings = "tnum"), color = c.ink2)
+                Text(stringResource(R.string.onboarding_restore_filled, filled.toString(), RECOVERY_WORDS), style = PgType.sub.copy(fontFeatureSettings = "tnum"), color = c.ink2)
             }
             if (recKey.isEmpty()) Column(Modifier.semantics { contentDescription = wordsDesc }, verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 for (r in 0 until 12) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

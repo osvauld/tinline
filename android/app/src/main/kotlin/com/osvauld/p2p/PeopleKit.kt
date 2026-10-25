@@ -454,11 +454,6 @@ fun GNotice(text: AnnotatedString, kind: NKind = NKind.Info, icon: ImageVector? 
 @Composable
 fun GNotice(text: String, kind: NKind = NKind.Info, icon: ImageVector? = null, modifier: Modifier = Modifier) = GNotice(AnnotatedString(text), kind, icon, modifier)
 
-fun boldLead(bold: String, rest: String, boldFirst: Boolean = true) = androidx.compose.ui.text.buildAnnotatedString {
-    if (boldFirst) { pushStyle(androidx.compose.ui.text.SpanStyle(fontWeight = FontWeight.Bold)); append(bold); pop(); append(" "); append(rest) }
-    else { append(rest); append(" "); pushStyle(androidx.compose.ui.text.SpanStyle(fontWeight = FontWeight.Bold)); append(bold); pop() }
-}
-
 /** Icon disc (accent-soft / accent-ink), used by Failed, Perms, Terms, Choose. */
 @Composable
 fun IconDisc(icon: ImageVector, size: Dp, iconSize: Dp, danger: Boolean = false) {
