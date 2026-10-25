@@ -102,6 +102,8 @@ class P2pApp : Application(), NodeEvents {
     val availability: StateFlow<Availability> = _availability
     @Volatile private var availJob: Job? = null
 
+    /** In the language picked in Settings › Language (older phones; see AppLanguage). */
+    override fun attachBaseContext(base: android.content.Context) { super.attachBaseContext(AppLanguage.wrap(base)) }
     override fun onCreate() = Startup.trace("P2pApp.onCreate") {
         super.onCreate()
         instance = this

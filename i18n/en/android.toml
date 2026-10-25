@@ -2435,6 +2435,18 @@ note = "Explanation under the account list on the Settings landing."
 text = "Appearance"
 note = "Section heading on Settings for the light/dark choice."
 
+[settings_language]
+text = "Language"
+note = "Settings row and page title: the language the app is shown in."
+
+[settings_language_match]
+text = "Match my phone"
+note = "Language option: show the app in the phone's language."
+
+[settings_language_match_sub]
+text = "Uses the language this phone is set to"
+note = "Small line under the Match my phone language option."
+
 [settings_look_match]
 text = "Match my phone"
 note = "Appearance option: follow the phone's light or dark setting."

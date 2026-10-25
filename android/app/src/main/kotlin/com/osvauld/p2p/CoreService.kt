@@ -18,6 +18,8 @@ import kotlinx.coroutines.launch
 
 /** Always-on foreground service: keeps the process alive, the node started, and holds call locks. */
 class CoreService : Service() {
+    /** In the language picked in Settings › Language (older phones; see AppLanguage). */
+    override fun attachBaseContext(base: android.content.Context) { super.attachBaseContext(AppLanguage.wrap(base)) }
     private lateinit var cm: ConnectivityManager
     private var wake: PowerManager.WakeLock? = null
     private var wifi: WifiManager.WifiLock? = null

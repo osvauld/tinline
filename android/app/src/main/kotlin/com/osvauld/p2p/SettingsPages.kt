@@ -213,6 +213,34 @@ fun NotificationsPage(missing: List<Need>, onBack: () -> Unit, fix: (Need) -> Un
 }
 
 /** Sounds.svelte: Quiet, and the call sound set with previews (the core renders the same cues as the desktop). */
+/**
+ * Settings › Language: follow the phone, or one of the languages this build ships (each named in its own language, with
+ * the name in the current language under it). The choice applies at once.
+ */
+@Composable
+fun LanguagePage(onBack: () -> Unit) {
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    val current = remember { AppLanguage.current(ctx) }
+    val tags = remember { AppLanguage.shipped(ctx) }
+    fun pick(tag: String) { if (tag != current) ctx.findActivity()?.let { AppLanguage.set(it, tag) } }
+    PfPage(stringResource(R.string.settings_language), onBack) {
+        PfSec(first = true) {
+            PfCard {
+                act {
+                    PfAct(stringResource(R.string.settings_language_match), onClick = { pick("") }, sub = stringResource(R.string.settings_language_match_sub),
+                        role = Role.RadioButton, minHeight = 56.dp, leading = { PgRadio(current.isEmpty()) })
+                }
+                tags.forEach { tag ->
+                    act {
+                        PfAct(AppLanguage.nativeName(tag), onClick = { pick(tag) }, sub = AppLanguage.localName(tag),
+                            role = Role.RadioButton, minHeight = 56.dp, leading = { PgRadio(current == tag) })
+                    }
+                }
+            }
+        }
+    }
+}
+
 @Composable
 fun SoundsPage(onBack: () -> Unit) {
     val ctx = androidx.compose.ui.platform.LocalContext.current

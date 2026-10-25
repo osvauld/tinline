@@ -98,6 +98,8 @@ private fun ComponentActivity.registerMicCameraThen(then: () -> Unit): () -> Uni
 const val ENDED_AUTOCLOSE_MS = 4000L
 
 class CallActivity : ComponentActivity() {
+    /** In the language picked in Settings › Language (older phones; see AppLanguage). */
+    override fun attachBaseContext(base: android.content.Context) { super.attachBaseContext(AppLanguage.wrap(base)) }
     private lateinit var answerWithMic: () -> Unit
     private lateinit var answerWithVideo: () -> Unit
     private lateinit var cameraOn: () -> Unit
@@ -210,6 +212,8 @@ class CallActivity : ComponentActivity() {
 }
 
 class IncomingCallActivity : ComponentActivity() {
+    /** In the language picked in Settings › Language (older phones; see AppLanguage). */
+    override fun attachBaseContext(base: android.content.Context) { super.attachBaseContext(AppLanguage.wrap(base)) }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         secureWindow()

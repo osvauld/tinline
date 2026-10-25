@@ -48,6 +48,8 @@ fun androidx.activity.ComponentActivity.secureWindow() {
 }
 
 class MainActivity : ComponentActivity() {
+    /** In the language picked in Settings › Language (older phones; see AppLanguage). */
+    override fun attachBaseContext(base: android.content.Context) { super.attachBaseContext(AppLanguage.wrap(base)) }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         secureWindow()
@@ -112,6 +114,7 @@ private sealed interface Route {
     data class PhraseShown(val phrase: String) : Route
     data object About : Route
     data object Licences : Route
+    data object Language : Route
     data object Diagnostics : Route
     data object MicNeeded : Route
     data class SwitchConfirm(val did: String) : Route
@@ -417,7 +420,7 @@ private fun Root(app: P2pApp) {
                     app, missing, onBack = ::pop, onMe = { stack.add(Route.Me) }, onSwitchPick = { stack.add(Route.SwitchConfirm(it)) },
                     onCreateAccount = { addAccount(false) }, onRestoreAccount = { addAccount(true) }, onLinkAccount = { addAccount(false, link = true) },
                     onDevices = { stack.add(Route.Devices) }, onPrivacy = { stack.add(Route.Privacy) }, onNotifications = { stack.add(Route.Notifications) },
-                    onSounds = { stack.add(Route.Sounds) }, onVideo = { stack.add(Route.Video) }, onStorage = { stack.add(Route.Storage) }, onAbout = { stack.add(Route.About) }, onDiagnostics = { stack.add(Route.Diagnostics) },
+                    onSounds = { stack.add(Route.Sounds) }, onVideo = { stack.add(Route.Video) }, onStorage = { stack.add(Route.Storage) }, onAbout = { stack.add(Route.About) }, onDiagnostics = { stack.add(Route.Diagnostics) }, onLanguage = { stack.add(Route.Language) },
                 )
                 Route.Me -> MyProfileRoute(app, onBack = ::pop, onEdit = { stack.add(Route.EditMe) }, onShare = { stack.add(Route.MyCode) }, onRecovery = { stack.add(Route.PhraseGate) })
                 Route.EditMe -> EditMyProfileRoute(app, onBack = ::pop)
@@ -443,6 +446,7 @@ private fun Root(app: P2pApp) {
                 })
                 Route.About -> AboutScreen(onBack = ::pop, onLicences = { stack.add(Route.Licences) })
                 Route.Licences -> LicencesScreen(::pop)
+                Route.Language -> LanguagePage(onBack = ::pop)
                 Route.Diagnostics -> DiagnosticsScreen(app, ::pop)
                 Route.MicNeeded -> MicNeededScreen(onOpenSettings = { Perms.openSettings(ctx, Perms.appDetails(ctx)) }, onNotNow = ::pop)
             }

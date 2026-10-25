@@ -1803,6 +1803,15 @@ text = "Nur das ausgewählte Konto ist auf diesem Handy online. Ein Wechsel paus
 [settings_appearance]
 text = "Darstellung"
 
+[settings_language]
+text = "Sprache"
+
+[settings_language_match]
+text = "Wie mein Handy"
+
+[settings_language_match_sub]
+text = "Nutzt die Sprache, die auf diesem Handy eingestellt ist"
+
 [settings_look_match]
 text = "Wie mein Handy"
 

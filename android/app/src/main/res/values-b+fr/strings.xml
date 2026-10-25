@@ -657,6 +657,9 @@
     <string name="settings_add_account">Ajouter un autre compte</string>
     <string name="settings_accounts_note">Seul le compte sélectionné est en ligne sur ce téléphone. Changer met l’autre en pause : il ne reçoit aucun appel jusqu’à ce que vous le sélectionniez à nouveau.</string>
     <string name="settings_appearance">Apparence</string>
+    <string name="settings_language">Langue</string>
+    <string name="settings_language_match">Comme mon téléphone</string>
+    <string name="settings_language_match_sub">Utilise la langue de ce téléphone</string>
     <string name="settings_look_match">Comme mon téléphone</string>
     <string name="settings_look_match_sub">Clair ou sombre, selon le réglage de ce téléphone</string>
     <string name="settings_look_light">Clair</string>
