@@ -400,8 +400,8 @@ fn main() -> Result<(), String> {
     node.set_group_call_events(Arc::new(GroupCallBridge { tx: tx.clone(), audio: audio.clone() }));
     hostcond::spawn(&node);
     // No passphrase: the key kept in the keyring opens it, so launch goes straight to Home.
-    keystore::auto_unlock(keystore::system(), &data, &node);
-    startup::mark("auto_unlock");
+    let unlocked = keystore::auto_unlock(keystore::system(), &data, &node);
+    startup::mark(&format!("auto_unlock({unlocked},{:?})", node.lock_state()));
     let notice_tx = tx.clone();
     audio.set_notice(move |m| {
         let _ = notice_tx.send(Ev::AudioNotice(m));
