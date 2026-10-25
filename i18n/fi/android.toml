@@ -148,7 +148,7 @@ text = "Laajennettu"
 text = "Kutistettu"
 
 [groups_list_left_or_removed]
-text = "Poistuttu tai poistettu"
+text = "Entiset ryhmät"
 
 [groups_list_removed]
 text = "Poistettu"
@@ -220,7 +220,7 @@ text = "Näytä aiemmat viestit"
 text = "Ei vielä viestejä"
 
 [groups_chat_waiting_strip]
-text = "Odotetaan isäntälaitetta. Yksikään ryhmän isäntälaite ei ole verkossa; viestisi on tallessa ja lähtee, kun jokin on."
+text = "Odotetaan isäntälaitetta. Yksikään ryhmän isäntälaite ei ole verkossa; viestisi ovat tallessa ja lähtevät, kun jokin tulee verkkoon."
 
 [groups_chat_removed_footer]
 text = "Sinut poistettiin, etkä voi lähettää viestejä tähän ryhmään."
@@ -555,7 +555,7 @@ one = "{count} isäntälaite verkossa. Viestit menevät perille heti."
 other = "{count} isäntälaitetta verkossa. Viestit menevät perille heti."
 
 [groupsb_hosts_offline]
-text = "Yksikään isäntälaite ei ole verkossa. Viestisi on tallessa ja lähtee, kun jokin on."
+text = "Yksikään isäntälaite ei ole verkossa. Viestisi ovat tallessa ja lähtevät, kun jokin tulee verkkoon."
 
 [groupsb_online]
 text = "Paikalla"
@@ -619,7 +619,7 @@ text = "Isännöi puheluita tällä puhelimella"
 text = "Välittää täältä aloittamasi puhelut. Jatkuvasti päällä oleva tietokone voi välittää kaikkien puhelut."
 
 [groupsb_callhosts_note]
-text = "Puheluisäntä välittää puhelun. Kaikki puhelussa olevat yhdistävät siihen, ja se välittää äänen eteenpäin, joten se voi kuulla puhelun. Tämä on erillään keskustelun isännöinnistä: keskustelun isäntälaite ei ole puheluisäntä, ellet nimeä sitä myös sellaiseksi. Puheluisännät ovat jäseniä, joihin luotat, ja jokainen päättää itse hyväksyä tehtävän."
+text = "Puheluisäntä välittää puhelun. Kaikki puhelussa olevat ovat yhteydessä siihen, ja se välittää äänen eteenpäin, joten se voi kuulla puhelun. Tämä on eri asia kuin keskustelun isännöinti: keskustelun isäntälaite ei ole puheluisäntä, ellet nimeä sitä myös sellaiseksi. Puheluisännät ovat jäseniä, joihin luotat, ja jokainen päättää itse, ottaako tehtävän vastaan."
 
 [groupsb_callhosts_note_admin]
 text = "Nimeä sellainen jäsenen valikosta tai isännöi puheluita tällä puhelimella. Puhelin isännöi vain omistajansa aloittamia puheluita."
@@ -697,7 +697,7 @@ text = "Viesti henkilölle {name}"
 text = "Estit henkilön {name}"
 
 [groupsb_blocked_stay]
-text = "Hän pysyy ryhmässä. Poista esto yhteystiedoista keskustellaksesi."
+text = "Hän pysyy ryhmässä. Voit poistaa eston yhteystiedoissa, jos haluat keskustella."
 
 [groupsb_request_sent]
 text = "Pyyntö lähetetty"
@@ -724,7 +724,7 @@ text = "Lähettää keskustelupyynnön ryhmän isäntälaitteen kautta"
 text = "Tee ylläpitäjäksi"
 
 [groupsb_remove_admin]
-text = "Poista ylläpitäjyys"
+text = "Poista ylläpito-oikeudet"
 
 [groupsb_make_device_host]
 text = "Tee laitteesta {device} isäntälaite"
@@ -745,7 +745,7 @@ text = "Poista isäntälaitteista"
 text = "Peru puheluisäntäpyyntö"
 
 [groupsb_waiting_device]
-text = "Odotetaan, että laite hyväksyy: {name}"
+text = "Odotetaan, että henkilön {name} laite hyväksyy"
 
 [groupsb_remove_as_callhost]
 text = "Poista puheluisännistä"
@@ -788,7 +788,7 @@ text = "Merkintä {next}/{total}"
 text = "Merkintöjä ei voi perua, ja poisto on lopullinen. Sama ylläpitäjä voi merkitä useammin kuin kerran; jokainen merkintä lasketaan."
 
 [groupsb_flag_note2]
-text = "Merkitseminen on ryhmän päätös. Se on erillään estämisestä, joka koskee vain sinua. {name} näkee jokaisen merkinnän: kuka sen teki ja milloin."
+text = "Merkitseminen on ryhmän päätös. Se on eri asia kuin estäminen, joka koskee vain sinua. {name} näkee jokaisen merkinnän: kuka sen teki ja milloin."
 
 [groupsb_flag_button]
 text = "Merkitse {name}"
@@ -833,13 +833,13 @@ text = "YHTEYSTIEDOT · {n} VALITTU"
 text = "Ei lisättäviä yhteystietoja. Estämäsi ja sinut estäneet eivät näy listalla."
 
 [groupsb_add_note]
-text = "Jokainen saa kutsun teidän kahdenkeskiseen keskusteluunne ja liittyy hyväksyessään sen. Kutsu on voimassa 7 päivää."
+text = "Jokainen saa kutsun teidän kahdenkeskisessä keskustelussanne ja liittyy, kun hyväksyy sen. Kutsu on voimassa 7 päivää."
 
 [groupsb_scan_invite]
 text = "Skannaa kutsu"
 
 [groupsb_point_invite]
-text = "Osoita ryhmäkutsua"
+text = "Osoita kameralla ryhmäkutsua"
 
 [groupsb_join_group]
 text = "Liity ryhmään"
@@ -887,7 +887,7 @@ text = "ryhmä"
 text = "Kutsulinkki"
 
 [groupsb_link_note]
-text = "Kuka tahansa, jolla on tämä linkki tai QR-koodi, voi liittyä ryhmään {name} 7 päivän ajan. Jaa se sovelluksella, johon luotat; näet, kuka liittyi, ja voit merkitä hänet pois. Jos haluat kutsua yhteystietojasi suoraan, käytä kohtaa Lisää jäseniä."
+text = "Kuka tahansa, jolla on tämä linkki tai QR-koodi, voi liittyä ryhmään {name} 7 päivän ajan. Jaa se sovelluksella, johon luotat; näet, kuka liittyi, ja voit merkitä hänet poistettavaksi. Jos haluat kutsua yhteystietojasi suoraan, käytä kohtaa Lisää jäseniä."
 
 [groupsb_show_full_screen]
 text = "Näytä koko näytöllä"
@@ -3355,10 +3355,10 @@ text = "Sinut poistettiin {flags} ylläpitäjän merkinnän jälkeen"
 text = "{by} nimesi ylläpitäjäksi: {sub}"
 
 [groupsc_admin_revoked_you]
-text = "{by} poisti ylläpitäjyytesi"
+text = "{by} poisti ylläpito-oikeutesi"
 
 [groupsc_admin_revoked_other]
-text = "{by} poisti ylläpitäjyyden: {sub}"
+text = "{by} poisti ylläpito-oikeudet: {sub}"
 
 [groupsc_host_added_you]
 text = "Yksi laitteistasi isännöi nyt ryhmää"
@@ -3431,7 +3431,7 @@ text = "Jokin meni pieleen"
 text = "Anna ryhmälle nimi."
 
 [groupsc_flag_recorded]
-text = "Merkintä tallennettu. Se on allekirjoitettu sinun nimissäsi, ja jäsen näkee sen."
+text = "Merkintä tallennettu. Allekirjoitit sen, ja jäsen näkee sen."
 
 [groupsc_made_admin]
 text = "Nimetty ylläpitäjäksi."
@@ -3509,7 +3509,7 @@ text = "Olet jo puhelussa."
 text = "Puhelu päättyi"
 
 [gcall_ended_host_lost]
-text = "Puhelu päättyi — isäntä katosi"
+text = "Puhelu päättyi — puheluisäntä katosi"
 
 [gcall_battery_limited]
 text = "Akun varaus alle 15 %. Isännöintiä on rajoitettu: vain yksi henkilö kuuluu kerrallaan, eikä kukaan uusi voi liittyä."
@@ -3564,16 +3564,16 @@ text = "Mykistä"
 text = "Poistu"
 
 [gcall_about_is_carrying]
-text = "välittää tätä puhelua. Kaikki puhelussa olevat yhdistävät siihen, ja se välittää äänen eteenpäin ja valitsee, kuka kuuluu, kun useampi puhuu yhtä aikaa."
+text = "välittää tätä puhelua. Kaikki puhelussa olevat ovat yhteydessä siihen, ja se välittää äänen eteenpäin ja valitsee, kuka kuuluu, kun useampi puhuu yhtä aikaa."
 
 [gcall_about_carries]
-text = "välittää tämän puhelun. Kaikki puhelussa olevat yhdistävät siihen, ja se välittää äänen eteenpäin ja valitsee, kuka kuuluu, kun useampi puhuu yhtä aikaa."
+text = "välittää tämän puhelun. Kaikki puhelussa olevat ovat yhteydessä siihen, ja se välittää äänen eteenpäin ja valitsee, kuka kuuluu, kun useampi puhuu yhtä aikaa."
 
 [gcall_about_encrypted]
 text = "Yhteytesi puheluisäntään on salattu, mutta puheluisäntä itse vastaanottaa äänen, joten se voi kuulla tämän puhelun. Luotat siihen puhelussa samalla tavalla kuin keskustelun isäntälaitteeseen viesteissä."
 
 [gcall_about_who]
-text = "Puheluisäntä on laite, jonka ryhmän ylläpitäjä valitsi ja joka suostui siihen. Se on erillään keskustelun isännöinnistä. Ylläpitäjät voivat vaihtaa puheluisäntiä ryhmän tiedoissa."
+text = "Puheluisäntä on laite, jonka ryhmän ylläpitäjä valitsi ja joka suostui siihen. Se on eri asia kuin keskustelun isännöinti. Ylläpitäjät voivat vaihtaa puheluisäntiä ryhmän tiedoissa."
 
 [gcall_got_it]
 text = "Selvä"

@@ -499,7 +499,7 @@ where = [
   "ios group_section_gone: Section heading, and its spoken label, for groups the user left or was removed from.",
   "desktop group_left_or_removed: Desktop, groups (in group_live_view.rs, live_list).",
 ]
-text = "Poistuttu tai poistettu"
+text = "Entiset ryhmät"
 
 [t_e2dde653be]
 en = "Removed"
@@ -723,7 +723,7 @@ where = [
   "ios group_strip_waiting: Strip above the composer when no host is online.",
   "desktop group_waiting_for_a_host_no: Desktop, groups (in group_live_view.rs, live_pane).",
 ]
-text = "Odotetaan isäntälaitetta. Yksikään ryhmän isäntälaite ei ole verkossa; viestisi on tallessa ja lähtee, kun jokin on."
+text = "Odotetaan isäntälaitetta. Yksikään ryhmän isäntälaite ei ole verkossa; viestisi ovat tallessa ja lähtevät, kun jokin tulee verkkoon."
 
 [t_8d9ddd8ec1]
 en = "You were removed and can’t send messages to this group."
@@ -1618,7 +1618,7 @@ where = [
   "ios group_hosts_offline: Status line when no host is online.",
   "desktop group_no_host_is_online: Desktop, groups (in group_live_view.rs, group_info_page).",
 ]
-text = "Yksikään isäntälaite ei ole verkossa. Viestisi on tallessa ja lähtee, kun jokin on."
+text = "Yksikään isäntälaite ei ole verkossa. Viestisi ovat tallessa ja lähtevät, kun jokin tulee verkkoon."
 
 [t_70b94c871c]
 en = "Online"
@@ -1795,7 +1795,7 @@ where = [
   "android groupsb_callhosts_note: Explanation under the Call hosts section.",
   "ios group_callhosts_note_base: Explanation under the call host list.",
 ]
-text = "Puheluisäntä välittää puhelun. Kaikki puhelussa olevat yhdistävät siihen, ja se välittää äänen eteenpäin, joten se voi kuulla puhelun. Tämä on erillään keskustelun isännöinnistä: keskustelun isäntälaite ei ole puheluisäntä, ellet nimeä sitä myös sellaiseksi. Puheluisännät ovat jäseniä, joihin luotat, ja jokainen päättää itse hyväksyä tehtävän."
+text = "Puheluisäntä välittää puhelun. Kaikki puhelussa olevat ovat yhteydessä siihen, ja se välittää äänen eteenpäin, joten se voi kuulla puhelun. Tämä on eri asia kuin keskustelun isännöinti: keskustelun isäntälaite ei ole puheluisäntä, ellet nimeä sitä myös sellaiseksi. Puheluisännät ovat jäseniä, joihin luotat, ja jokainen päättää itse, ottaako tehtävän vastaan."
 
 [t_4e4a80a8ec]
 en = "Appoint one from a member’s menu, or host calls on this phone. A phone only hosts calls that its owner starts."
@@ -1996,7 +1996,7 @@ where = [
   "android groupsb_blocked_stay: Second line under You blocked.",
   "ios group_member_blocked_sub: Sub line under You blocked.",
 ]
-text = "Hän pysyy ryhmässä. Poista esto yhteystiedoista keskustellaksesi."
+text = "Hän pysyy ryhmässä. Voit poistaa eston yhteystiedoissa, jos haluat keskustella."
 
 [t_05ad7b6297]
 en = "Request sent"
@@ -2071,7 +2071,7 @@ where = [
   "android groupsb_remove_admin: Menu item that removes the member's admin role.",
   "ios group_member_remove_admin: Action row title.",
 ]
-text = "Poista ylläpitäjyys"
+text = "Poista ylläpito-oikeudet"
 
 [t_48da53145a]
 en = "Make device {device} a host"
@@ -2127,7 +2127,7 @@ where = [
   "android groupsb_waiting_device: Second line under Cancel call host request. {name} is their first name.",
   "ios group_member_cancel_callhost_sub: Sub line. {name} is the member’s first name.",
 ]
-text = "Odotetaan, että laite hyväksyy: {name}"
+text = "Odotetaan, että henkilön {name} laite hyväksyy"
 
 [t_881017d43e]
 en = "Remove as call host"
@@ -2240,7 +2240,7 @@ where = [
   "android groupsb_flag_note2: Paragraph in the flag confirmation. {name} is the member's first name.",
   "ios group_flag_text2: Second paragraph of the flag confirmation. {name} is the member’s first name.",
 ]
-text = "Merkitseminen on ryhmän päätös. Se on erillään estämisestä, joka koskee vain sinua. {name} näkee jokaisen merkinnän: kuka sen teki ja milloin."
+text = "Merkitseminen on ryhmän päätös. Se on eri asia kuin estäminen, joka koskee vain sinua. {name} näkee jokaisen merkinnän: kuka sen teki ja milloin."
 
 [t_3660dd7b10]
 en = "Flag {name}"
@@ -2344,7 +2344,7 @@ where = [
   "android groupsb_add_note: Hint under the contact list on the add-members page.",
   "ios group_add_hint: Hint under the contact picker.",
 ]
-text = "Jokainen saa kutsun teidän kahdenkeskiseen keskusteluunne ja liittyy hyväksyessään sen. Kutsu on voimassa 7 päivää."
+text = "Jokainen saa kutsun teidän kahdenkeskisessä keskustelussanne ja liittyy, kun hyväksyy sen. Kutsu on voimassa 7 päivää."
 
 [t_414d78896a]
 en = "Scan the invite"
@@ -2360,7 +2360,7 @@ where = [
   "android groupsb_point_invite: Screen-reader label of the camera view that scans a group invite.",
   "ios group_scan_prompt: Prompt on the camera view when scanning a group invite.",
 ]
-text = "Osoita ryhmäkutsua"
+text = "Osoita kameralla ryhmäkutsua"
 
 [t_9924bccd9b]
 en = "Join a group"
@@ -2475,7 +2475,7 @@ en = "Anyone with this link or QR can join {name} for 7 days. Share it over an a
 where = [
   "android groupsb_link_note: Hint on the invite link page. {name} is the group's name. 'Add members' is the title of another page.",
 ]
-text = "Kuka tahansa, jolla on tämä linkki tai QR-koodi, voi liittyä ryhmään {name} 7 päivän ajan. Jaa se sovelluksella, johon luotat; näet, kuka liittyi, ja voit merkitä hänet pois. Jos haluat kutsua yhteystietojasi suoraan, käytä kohtaa Lisää jäseniä."
+text = "Kuka tahansa, jolla on tämä linkki tai QR-koodi, voi liittyä ryhmään {name} 7 päivän ajan. Jaa se sovelluksella, johon luotat; näet, kuka liittyi, ja voit merkitä hänet poistettavaksi. Jos haluat kutsua yhteystietojasi suoraan, käytä kohtaa Lisää jäseniä."
 
 [t_1a8ed8b194]
 en = "Show full screen"
@@ -8877,14 +8877,14 @@ where = [
   "ios group_sys_unadmin_you: System line. {by} is who removed the user as admin.",
   "ios shell_group_sys_admin_revoked_you: Group chat system line. {by} is who removed the user’s admin role.",
 ]
-text = "{by} poisti ylläpitäjyytesi"
+text = "{by} poisti ylläpito-oikeutesi"
 
 [t_ef018e9c70]
 en = "{by} removed {sub} as admin"
 where = [
   "android groupsc_admin_revoked_other: System line in a group's chat. {by} is who took the admin role away, {sub} is who lost it.",
 ]
-text = "{by} poisti ylläpitäjyyden: {sub}"
+text = "{by} poisti ylläpito-oikeudet: {sub}"
 
 [t_660d9ce36e]
 en = "A device of yours now hosts the group"
@@ -9073,7 +9073,7 @@ where = [
   "ios group_done_flag: Confirmation after flagging a member.",
   "desktop group_flag_recorded_it_is: Desktop, groups (in group_live.rs, run).",
 ]
-text = "Merkintä tallennettu. Se on allekirjoitettu sinun nimissäsi, ja jäsen näkee sen."
+text = "Merkintä tallennettu. Allekirjoitit sen, ja jäsen näkee sen."
 
 [t_3a9582fd20]
 en = "Made admin."
@@ -9269,7 +9269,7 @@ where = [
   "ios call_group_ended_host_lost: Reason shown when a group call ends because its call host disappeared.",
   "desktop gcall_call_ended_host_lost: Desktop, group calls (in gcall.rs, gcall_event).",
 ]
-text = "Puhelu päättyi — isäntä katosi"
+text = "Puhelu päättyi — puheluisäntä katosi"
 
 [t_970dcb83b1]
 en = "Battery under 15 %. Hosting is limited: only one person is heard at a time, and no one new can join."
@@ -9403,7 +9403,7 @@ where = [
   "android gcall_about_is_carrying: First paragraph of the group call About sheet, when this phone is the call host. Follows the host name in bold, so it continues that sentence (after a space added by the app).",
   "ios call_group_about_carrying: Continues the bold host name when this phone is the host: \"This phone is carrying this call...\".",
 ]
-text = "välittää tätä puhelua. Kaikki puhelussa olevat yhdistävät siihen, ja se välittää äänen eteenpäin ja valitsee, kuka kuuluu, kun useampi puhuu yhtä aikaa."
+text = "välittää tätä puhelua. Kaikki puhelussa olevat ovat yhteydessä siihen, ja se välittää äänen eteenpäin ja valitsee, kuka kuuluu, kun useampi puhuu yhtä aikaa."
 
 [t_7ad320e095]
 en = "carries this call. Everyone in the call connects to it, and it passes the audio on and chooses who is heard when several people speak."
@@ -9411,7 +9411,7 @@ where = [
   "android gcall_about_carries: First paragraph of the group call About sheet. Follows the host name in bold ('Sam’s device', after a space added by the app), so it continues that sentence.",
   "ios call_group_about_carries: Continues the bold host name on the group call details card, e.g. \"Arjun’s device carries this call...\".",
 ]
-text = "välittää tämän puhelun. Kaikki puhelussa olevat yhdistävät siihen, ja se välittää äänen eteenpäin ja valitsee, kuka kuuluu, kun useampi puhuu yhtä aikaa."
+text = "välittää tämän puhelun. Kaikki puhelussa olevat ovat yhteydessä siihen, ja se välittää äänen eteenpäin ja valitsee, kuka kuuluu, kun useampi puhuu yhtä aikaa."
 
 [t_ef8cfbe08a]
 en = "Your connection to the call host is encrypted, but the call host itself receives the audio, so it can hear this call. You trust it for the call the way you trust a chat host with posts."
@@ -9429,7 +9429,7 @@ where = [
   "ios call_group_about_who: Paragraph on the group call details card about who can be a call host.",
   "desktop gcall_a_call_host_is: Desktop, group calls (in gcall_view.rs, gcall_about).",
 ]
-text = "Puheluisäntä on laite, jonka ryhmän ylläpitäjä valitsi ja joka suostui siihen. Se on erillään keskustelun isännöinnistä. Ylläpitäjät voivat vaihtaa puheluisäntiä ryhmän tiedoissa."
+text = "Puheluisäntä on laite, jonka ryhmän ylläpitäjä valitsi ja joka suostui siihen. Se on eri asia kuin keskustelun isännöinti. Ylläpitäjät voivat vaihtaa puheluisäntiä ryhmän tiedoissa."
 
 [t_c38df51058]
 en = "Got it"
@@ -11646,7 +11646,7 @@ en = "A call host carries the call. Everyone in a call connects to it, and it pa
 where = [
   "ios group_callhosts_note_admin: Explanation under the call host list, for admins.",
 ]
-text = "Puheluisäntä välittää puhelun. Kaikki puhelussa olevat yhdistävät siihen, ja se välittää äänen eteenpäin, joten se voi kuulla puhelun. Tämä on erillään keskustelun isännöinnistä: keskustelun isäntälaite ei ole puheluisäntä, ellet nimeä sitä myös sellaiseksi. Puheluisännät ovat jäseniä, joihin luotat, ja jokainen päättää itse hyväksyä tehtävän. Nimeä sellainen jäsenen valikosta tai isännöi puheluita tällä puhelimella. Puhelin isännöi vain omistajansa aloittamia puheluita."
+text = "Puheluisäntä välittää puhelun. Kaikki puhelussa olevat ovat yhteydessä siihen, ja se välittää äänen eteenpäin, joten se voi kuulla puhelun. Tämä on eri asia kuin keskustelun isännöinti: keskustelun isäntälaite ei ole puheluisäntä, ellet nimeä sitä myös sellaiseksi. Puheluisännät ovat jäseniä, joihin luotat, ja jokainen päättää itse, ottaako tehtävän vastaan. Nimeä sellainen jäsenen valikosta tai isännöi puheluita tällä puhelimella. Puhelin isännöi vain omistajansa aloittamia puheluita."
 
 [t_a2f22a6fc1]
 en = "{flags} of {total}"
@@ -11756,7 +11756,7 @@ where = [
   "ios group_sys_unadmin: System line. {by} removed {name} as admin.",
   "ios shell_group_sys_admin_revoked: Group chat system line. {by} removed {name}’s admin role.",
 ]
-text = "{by} poisti ylläpitäjyyden: {name}"
+text = "{by} poisti ylläpito-oikeudet: {name}"
 
 [t_be5bddaced]
 en = "A device of {name}’s now hosts the group"
@@ -11969,7 +11969,7 @@ en = "Accepted. {name} is added for messages only and shows in Chats once their 
 where = [
   "ios group_done_request_accepted: Confirmation after accepting a chat request. {name} is their first name.",
 ]
-text = "Hyväksytty. {name} lisättiin vain viestejä varten ja näkyy Keskusteluissa, kun hänen laitteensa yhdistää; puhelut pysyvät pois päältä, kunnes sallit ne."
+text = "Hyväksytty. {name} lisättiin vain viestejä varten ja näkyy Keskusteluissa, kun hänen laitteensa saa yhteyden; puhelut pysyvät pois päältä, kunnes sallit ne."
 
 [t_bca80056ba]
 en = "{name} is blocked and can’t send more requests."
@@ -12060,7 +12060,7 @@ en = "Anyone with this link or QR can join {group} for 7 days. Share it over an 
 where = [
   "ios group_link_hint: Hint on the invite link page. {group} is the group’s name.",
 ]
-text = "Kuka tahansa, jolla on tämä linkki tai QR-koodi, voi liittyä ryhmään {group} 7 päivän ajan. Jaa se sovelluksella, johon luotat; näet, kuka liittyi, ja voit merkitä hänet pois. Jos haluat kutsua yhteystietojasi suoraan, käytä kohtaa Lisää jäseniä."
+text = "Kuka tahansa, jolla on tämä linkki tai QR-koodi, voi liittyä ryhmään {group} 7 päivän ajan. Jaa se sovelluksella, johon luotat; näet, kuka liittyi, ja voit merkitä hänet poistettavaksi. Jos haluat kutsua yhteystietojasi suoraan, käytä kohtaa Lisää jäseniä."
 
 [t_5a7b5c3abb]
 en = "Join {group} on Tinline: {link}"
@@ -13720,7 +13720,7 @@ en = " {value} this call. Everyone in the call connects to it, and it passes the
 where = [
   "desktop gcall_this_call_everyone_in: Desktop, group calls (in gcall_view.rs, gcall_about). {value} is a value filled in by the app.",
 ]
-text = " {value} tätä puhelua. Kaikki puhelussa olevat yhdistävät siihen, ja se välittää äänen eteenpäin ja valitsee, kuka kuuluu, kun useampi puhuu yhtä aikaa."
+text = " {value} tätä puhelua. Kaikki puhelussa olevat ovat yhteydessä siihen, ja se välittää äänen eteenpäin ja valitsee, kuka kuuluu, kun useampi puhuu yhtä aikaa."
 
 [t_9982104078]
 en = "this computer"
@@ -13734,7 +13734,7 @@ en = "A call host carries the call. Everyone in a call connects to it, and it pa
 where = [
   "desktop group_a_call_host_carries: Desktop, groups (in group_live_view.rs, group_info_page). {value} is a value filled in by the app.",
 ]
-text = "Puheluisäntä välittää puhelun. Kaikki puhelussa olevat yhdistävät siihen, ja se välittää äänen eteenpäin, joten se voi kuulla puhelun. Tämä on erillään keskustelun isännöinnistä: keskustelun isäntälaite ei ole puheluisäntä, ellet nimeä sitä myös sellaiseksi. Puheluisännät ovat jäseniä, joihin luotat, ja jokainen päättää itse hyväksyä tehtävän.{value}"
+text = "Puheluisäntä välittää puhelun. Kaikki puhelussa olevat ovat yhteydessä siihen, ja se välittää äänen eteenpäin, joten se voi kuulla puhelun. Tämä on eri asia kuin keskustelun isännöinti: keskustelun isäntälaite ei ole puheluisäntä, ellet nimeä sitä myös sellaiseksi. Puheluisännät ovat jäseniä, joihin luotat, ja jokainen päättää itse, ottaako tehtävän vastaan.{value}"
 
 [t_c72585d311]
 en = "A call host is a member’s computer or phone that carries the call. An admin can appoint one in Group info."
@@ -13762,14 +13762,14 @@ en = "A flag is signed by you and can’t be taken back. {name} can see who flag
 where = [
   "desktop group_a_flag_is_signed: Desktop, groups (in group_live_view.rs, live_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = "Merkintä allekirjoitetaan sinun nimissäsi, eikä sitä voi perua. {name} näkee, kuka hänet merkitsi ja milloin. Viestit, jotka {name} kirjoitti ennen poistoa, näkyvät yhä merkittyinä."
+text = "Allekirjoitat merkinnän, eikä sitä voi perua. {name} näkee, kuka hänet merkitsi ja milloin. Viestit, jotka {name} kirjoitti ennen poistoa, näkyvät yhä merkittyinä."
 
 [t_ae23a1918a]
 en = "A host keeps a full copy of a group and passes messages on while members’ phones sleep. Members connect to hosts, not to each other; only hosts learn members’ group addresses. Tinline keeps hosting while the window is closed (it stays in the tray)."
 where = [
   "desktop group_a_host_keeps_a: Desktop, groups (in group_live_view.rs, live_hosting_page).",
 ]
-text = "Isäntälaite pitää täyden kopion ryhmästä ja välittää viestit eteenpäin jäsenten puhelinten nukkuessa. Jäsenet yhdistävät isäntälaitteisiin, eivät toisiinsa; vain isäntälaitteet saavat tietää jäsenten ryhmäosoitteet. Tinline jatkaa isännöintiä, vaikka ikkuna on suljettu (se pysyy ilmaisinalueella)."
+text = "Isäntälaite pitää täyden kopion ryhmästä ja välittää viestit eteenpäin jäsenten puhelinten nukkuessa. Jäsenet ovat yhteydessä isäntälaitteisiin, eivät toisiinsa; vain isäntälaitteet saavat tietää jäsenten ryhmäosoitteet. Tinline jatkaa isännöintiä, vaikka ikkuna on suljettu (se pysyy ilmaisinalueella)."
 
 [t_0803302453]
 en = "A host keeps a full copy of the group, passes messages on while members’ phones sleep and learns members’ group addresses. It needs to stay running. Hosting doesn’t make you an admin; you can stop any time."
@@ -13860,7 +13860,7 @@ en = "Anyone with this link or QR can join for 7 days. Share it over an app you 
 where = [
   "desktop group_anyone_with_this_link: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = "Kuka tahansa, jolla on tämä linkki tai QR-koodi, voi liittyä 7 päivän ajan. Jaa se sovelluksella, johon luotat; näet, kuka liittyi, ja voit merkitä hänet pois. Jos haluat kutsua yhteystietojasi suoraan, käytä kohtaa Lisää jäseniä."
+text = "Kuka tahansa, jolla on tämä linkki tai QR-koodi, voi liittyä 7 päivän ajan. Jaa se sovelluksella, johon luotat; näet, kuka liittyi, ja voit merkitä hänet poistettavaksi. Jos haluat kutsua yhteystietojasi suoraan, käytä kohtaa Lisää jäseniä."
 
 [t_4732b3a387]
 en = "Appointed. The device hosts once it agrees (Host from this device)."
@@ -13965,7 +13965,7 @@ en = "Each person gets the invitation in your 1:1 chat and joins when they accep
 where = [
   "desktop group_each_person_gets_the: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = "Jokainen saa kutsun teidän kahdenkeskiseen keskusteluunne ja liittyy hyväksyessään sen. Kutsu on voimassa 7 päivää."
+text = "Jokainen saa kutsun teidän kahdenkeskisessä keskustelussanne ja liittyy, kun hyväksyy sen. Kutsu on voimassa 7 päivää."
 
 [t_c2fbe1e11e]
 en = " · {value} flag"
@@ -14205,7 +14205,7 @@ en = "Members stop going through it"
 where = [
   "desktop group_members_stop_going_through: Desktop, groups (in group_live_view.rs, live_menu).",
 ]
-text = "Jäsenet lakkaavat kulkemasta sen kautta"
+text = "Jäsenten yhteydet eivät enää kulje sen kautta"
 
 [t_c68a4d2f95]
 en = "Message from {name}, whom you blocked"
@@ -14324,14 +14324,14 @@ en = "Remove as admin"
 where = [
   "desktop group_remove_as_admin: Desktop, groups (in group_live_view.rs, live_menu).",
 ]
-text = "Poista ylläpitäjyys"
+text = "Poista ylläpito-oikeudet"
 
 [t_63c8449e54]
 en = "Remove {name} as admin?"
 where = [
   "desktop group_remove_as_admin_2: Desktop, groups (in group_live_view.rs, live_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = "Poistetaanko ylläpitäjyys: {name}?"
+text = "Poistetaanko ylläpito-oikeudet: {name}?"
 
 [t_fce4d0716e]
 en = "{value} · removed"

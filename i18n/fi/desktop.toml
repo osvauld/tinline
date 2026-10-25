@@ -989,13 +989,13 @@ text = "Et ole tavoitettavissa"
 text = "Et ole verkossa"
 
 [gcall_a_call_host_is]
-text = "Puheluisäntä on laite, jonka ryhmän ylläpitäjä valitsi ja joka suostui siihen. Se on erillään keskustelun isännöinnistä. Ylläpitäjät voivat vaihtaa puheluisäntiä ryhmän tiedoissa."
+text = "Puheluisäntä on laite, jonka ryhmän ylläpitäjä valitsi ja joka suostui siihen. Se on eri asia kuin keskustelun isännöinti. Ylläpitäjät voivat vaihtaa puheluisäntiä ryhmän tiedoissa."
 
 [gcall_battery_is_low_or]
 text = "Akku on vähissä tai tietokone on kuuma. Isännöintiä on rajoitettu: vain yksi henkilö kuuluu kerrallaan, eikä kukaan uusi voi liittyä."
 
 [gcall_call_ended_host_lost]
-text = "Puhelu päättyi — isäntä katosi"
+text = "Puhelu päättyi — puheluisäntä katosi"
 
 [gcall_call_host]
 text = "Puheluisäntä: {host}"
@@ -1040,7 +1040,7 @@ text = "Aloittaja: {value}"
 text = "Puheluisäntä"
 
 [gcall_this_call_everyone_in]
-text = " {value} tätä puhelua. Kaikki puhelussa olevat yhdistävät siihen, ja se välittää äänen eteenpäin ja valitsee, kuka kuuluu, kun useampi puhuu yhtä aikaa."
+text = " {value} tätä puhelua. Kaikki puhelussa olevat ovat yhteydessä siihen, ja se välittää äänen eteenpäin ja valitsee, kuka kuuluu, kun useampi puhuu yhtä aikaa."
 
 [gcall_this_computer]
 text = "tämä tietokone"
@@ -1055,7 +1055,7 @@ text = "Olet jo puhelussa."
 text = "Olet puheluisäntä"
 
 [group_a_call_host_carries]
-text = "Puheluisäntä välittää puhelun. Kaikki puhelussa olevat yhdistävät siihen, ja se välittää äänen eteenpäin, joten se voi kuulla puhelun. Tämä on erillään keskustelun isännöinnistä: keskustelun isäntälaite ei ole puheluisäntä, ellet nimeä sitä myös sellaiseksi. Puheluisännät ovat jäseniä, joihin luotat, ja jokainen päättää itse hyväksyä tehtävän.{value}"
+text = "Puheluisäntä välittää puhelun. Kaikki puhelussa olevat ovat yhteydessä siihen, ja se välittää äänen eteenpäin, joten se voi kuulla puhelun. Tämä on eri asia kuin keskustelun isännöinti: keskustelun isäntälaite ei ole puheluisäntä, ellet nimeä sitä myös sellaiseksi. Puheluisännät ovat jäseniä, joihin luotat, ja jokainen päättää itse, ottaako tehtävän vastaan.{value}"
 
 [group_a_call_host_is]
 text = "Puheluisäntä on jäsenen tietokone tai puhelin, joka välittää puhelun. Ylläpitäjä voi nimetä sellaisen ryhmän tiedoissa."
@@ -1067,10 +1067,10 @@ text = "Puheluisäntä on jäsenen tietokone tai puhelin, joka välittää puhel
 text = "Puhelu tarvitsee puheluisännän"
 
 [group_a_flag_is_signed]
-text = "Merkintä allekirjoitetaan sinun nimissäsi, eikä sitä voi perua. {name} näkee, kuka hänet merkitsi ja milloin. Viestit, jotka {name} kirjoitti ennen poistoa, näkyvät yhä merkittyinä."
+text = "Allekirjoitat merkinnän, eikä sitä voi perua. {name} näkee, kuka hänet merkitsi ja milloin. Viestit, jotka {name} kirjoitti ennen poistoa, näkyvät yhä merkittyinä."
 
 [group_a_host_keeps_a]
-text = "Isäntälaite pitää täyden kopion ryhmästä ja välittää viestit eteenpäin jäsenten puhelinten nukkuessa. Jäsenet yhdistävät isäntälaitteisiin, eivät toisiinsa; vain isäntälaitteet saavat tietää jäsenten ryhmäosoitteet. Tinline jatkaa isännöintiä, vaikka ikkuna on suljettu (se pysyy ilmaisinalueella)."
+text = "Isäntälaite pitää täyden kopion ryhmästä ja välittää viestit eteenpäin jäsenten puhelinten nukkuessa. Jäsenet ovat yhteydessä isäntälaitteisiin, eivät toisiinsa; vain isäntälaitteet saavat tietää jäsenten ryhmäosoitteet. Tinline jatkaa isännöintiä, vaikka ikkuna on suljettu (se pysyy ilmaisinalueella)."
 
 [group_a_host_keeps_a_full]
 text = "Isäntälaite pitää täyden kopion ryhmästä, välittää viestit eteenpäin jäsenten puhelinten nukkuessa ja oppii jäsenten ryhmäosoitteet. Sen täytyy pysyä käynnissä. Isännöinti ei tee sinusta ylläpitäjää; voit lopettaa milloin tahansa."
@@ -1133,7 +1133,7 @@ text = "Kuka tahansa, jolla on linkki, voi liittyä ilman kutsua, eikä linkki v
 text = "Kuka tahansa linkin saanut voi liittyä"
 
 [group_anyone_with_this_link]
-text = "Kuka tahansa, jolla on tämä linkki tai QR-koodi, voi liittyä 7 päivän ajan. Jaa se sovelluksella, johon luotat; näet, kuka liittyi, ja voit merkitä hänet pois. Jos haluat kutsua yhteystietojasi suoraan, käytä kohtaa Lisää jäseniä."
+text = "Kuka tahansa, jolla on tämä linkki tai QR-koodi, voi liittyä 7 päivän ajan. Jaa se sovelluksella, johon luotat; näet, kuka liittyi, ja voit merkitä hänet poistettavaksi. Jos haluat kutsua yhteystietojasi suoraan, käytä kohtaa Lisää jäseniä."
 
 [group_appoint]
 text = "Nimeä"
@@ -1212,7 +1212,7 @@ text = "Toimitettu {delivered}/{eligible}"
 text = "Jokaisen merkinnän on allekirjoittanut sen tehnyt ylläpitäjä, ja ne tarkistettiin tällä tietokoneella. Kukaan muu ei olisi voinut lisätä niitä."
 
 [group_each_person_gets_the]
-text = "Jokainen saa kutsun teidän kahdenkeskiseen keskusteluunne ja liittyy hyväksyessään sen. Kutsu on voimassa 7 päivää."
+text = "Jokainen saa kutsun teidän kahdenkeskisessä keskustelussanne ja liittyy, kun hyväksyy sen. Kutsu on voimassa 7 päivää."
 
 [group_everyone_can_post_again]
 text = "Kaikki voivat taas kirjoittaa."
@@ -1230,7 +1230,7 @@ text = "Merkintä"
 text = "Merkitäänkö {name} poistettavaksi?"
 
 [group_flag_recorded_it_is]
-text = "Merkintä tallennettu. Se on allekirjoitettu sinun nimissäsi, ja jäsen näkee sen."
+text = "Merkintä tallennettu. Allekirjoitit sen, ja jäsen näkee sen."
 
 [group_flag_to_remove]
 text = "Merkitse poistettavaksi"
@@ -1364,7 +1364,7 @@ text = "Poistutko ryhmästä {gname}?"
 text = "Poistu ryhmästä"
 
 [group_left_or_removed]
-text = "Poistuttu tai poistettu"
+text = "Entiset ryhmät"
 
 [group_load_photo]
 text = "Lataa kuva"
@@ -1422,7 +1422,7 @@ other = "{count} jäsentä"
 text = "Jäsenet näkevät, että poistuit. Viestit jäävät tälle tietokoneelle luettaviksi. Palataksesi tarvitset uuden kutsun ylläpitäjältä."
 
 [group_members_stop_going_through]
-text = "Jäsenet lakkaavat kulkemasta sen kautta"
+text = "Jäsenten yhteydet eivät enää kulje sen kautta"
 
 [group_message_from_whom_you]
 text = "Viesti henkilöltä {name}, jonka estit"
@@ -1440,7 +1440,7 @@ text = "Yksikään ryhmä ei vastaa hakua."
 text = "Yksikään isäntälaite ei vastannut ajoissa. Yritä uudelleen, kun jokin isäntälaite on verkossa."
 
 [group_no_host_is_online]
-text = "Yksikään isäntälaite ei ole verkossa. Viestisi on tallessa ja lähtee, kun jokin on."
+text = "Yksikään isäntälaite ei ole verkossa. Viestisi ovat tallessa ja lähtevät, kun jokin tulee verkkoon."
 
 [group_no_longer_an_admin]
 text = "Ei enää ylläpitäjä."
@@ -1521,10 +1521,10 @@ text = "Luettu {read}/{eligible}"
 text = "Ei hyväksytty."
 
 [group_remove_as_admin]
-text = "Poista ylläpitäjyys"
+text = "Poista ylläpito-oikeudet"
 
 [group_remove_as_admin_2]
-text = "Poistetaanko ylläpitäjyys: {name}?"
+text = "Poistetaanko ylläpito-oikeudet: {name}?"
 
 [group_removed]
 text = "Poistettu"
@@ -1692,7 +1692,7 @@ text = "Voimassa 7 päivää"
 text = "Odottaa isäntälaitetta"
 
 [group_waiting_for_a_host_no]
-text = "Odotetaan isäntälaitetta. Yksikään ryhmän isäntälaite ei ole verkossa; viestisi on tallessa ja lähtee, kun jokin on."
+text = "Odotetaan isäntälaitetta. Yksikään ryhmän isäntälaite ei ole verkossa; viestisi ovat tallessa ja lähtevät, kun jokin tulee verkkoon."
 
 [group_waiting_to_accept]
 text = "Odottaa hyväksyntää"
