@@ -158,7 +158,7 @@ object Notifications {
             val hangup = service(c, CoreService.ACTION_HANGUP, 12)
             val call = P2pApp.instance.calls.ui.value
             if (Build.VERSION.SDK_INT >= 31) {
-                val person = Person.Builder().setName(inCall.ifBlank { c.getString(R.string.common_call) }).setImportant(true).build()
+                val person = Person.Builder().setName(inCall.ifBlank { c.getString(R.string.call_notif_fallback_title) }).setImportant(true).build()
                 b.style = Notification.CallStyle.forOngoingCall(person, hangup)
             } else {
                 b.addAction(Notification.Action.Builder(

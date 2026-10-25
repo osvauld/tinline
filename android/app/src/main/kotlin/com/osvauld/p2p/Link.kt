@@ -266,15 +266,6 @@ private fun QrPanel(showing: LinkController.Ui.Showing?) {
     }
 }
 
-private const val LINK_BOLD_MARKER = "\u0001"
-
-/** [text] has [marker] where the bold phrase goes (a placeholder in the string resource, so translations place it themselves). */
-private fun withBold(text: String, marker: String, bold: String, style: SpanStyle): androidx.compose.ui.text.AnnotatedString = buildAnnotatedString {
-    val i = text.indexOf(marker)
-    if (i < 0) { append(text); return@buildAnnotatedString }
-    append(text.substring(0, i)); pushStyle(style); append(bold); pop(); append(text.substring(i + marker.length))
-}
-
 /** Six digits, 44/52 mono, letter-spaced .12em. */
 @Composable
 private fun BigCode(code: String, weight: FontWeight = FontWeight.SemiBold) {
@@ -321,17 +312,20 @@ private fun ExistingDeviceLink(
                         PfActs(top = 6.dp) { PBtn(stringResource(R.string.common_back), onCancel, variant = PVariant.Quiet); PBtn(stringResource(R.string.link_new_code), onNew) }
                     }
                     "verify" -> (ui as? LinkController.Ui.Code)?.let { u ->
-                        val who = u.peer.ifBlank { stringResource(R.string.link_fallback_new_device_cap) }
                         PageH1(stringResource(R.string.link_match_title))
-                        Text(boldLead(who, stringResource(R.string.link_match_body)), style = PgType.body, color = Tin.c.ink)
+                        Text(boldText(if (u.peer.isBlank()) stringResource(R.string.link_match_body_unnamed) else stringResource(R.string.link_match_body, u.peer.replace("**", ""))), style = PgType.body, color = Tin.c.ink)
                         BigCode(u.code, FontWeight.Bold)
                         Text(stringResource(R.string.link_match_note), style = PgType.sub19, color = Tin.c.ink2)
                         PfActs(top = 6.dp) { PBtn(stringResource(R.string.link_no_match), onCancel); PBtn(stringResource(R.string.link_match), { matched = true }, variant = PVariant.Primary) }
                     }
-                    "auth" -> (ui as? LinkController.Ui.Code)?.let { u -> ApproveStep(app, u.peer.ifBlank { stringResource(R.string.link_fallback_new_device) }, onCancel) }
+                    "auth" -> (ui as? LinkController.Ui.Code)?.let { u -> ApproveStep(app, u.peer, onCancel) }
                     "transfer" -> {
-                        val peer = (ui as? LinkController.Ui.Approving)?.peer?.ifBlank { null } ?: stringResource(R.string.link_fallback_new_device)
-                        PageH1(if (ui is LinkController.Ui.Connecting) stringResource(R.string.link_connecting) else stringResource(R.string.link_linking_peer, peer))
+                        val peer = (ui as? LinkController.Ui.Approving)?.peer?.ifBlank { null }
+                        PageH1(when {
+                            ui is LinkController.Ui.Connecting -> stringResource(R.string.link_connecting)
+                            peer != null -> stringResource(R.string.link_linking_peer, peer)
+                            else -> stringResource(R.string.link_linking_unnamed)
+                        })
                         Row(Modifier.heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             Box(Modifier.size(24.dp), contentAlignment = Alignment.Center) { PgSpinner(14.dp, Tin.c.accent) }
                             Text(if (ui is LinkController.Ui.Connecting) stringResource(R.string.link_reaching) else stringResource(R.string.link_sending), Modifier.weight(1f), style = PgType.body, color = Tin.c.ink)
@@ -341,8 +335,8 @@ private fun ExistingDeviceLink(
                         if (ui is LinkController.Ui.Connecting) PfActs(top = 6.dp) { PBtn(stringResource(R.string.common_cancel), onCancel, variant = PVariant.Quiet) }
                     }
                     "done" -> {
-                        val peer = (ui as? LinkController.Ui.Done)?.peer?.ifBlank { null } ?: stringResource(R.string.link_fallback_new_device_cap)
-                        ResultBlock(PgIcons.Check, ok = true, title = stringResource(R.string.link_done_title, peer),
+                        val peer = (ui as? LinkController.Ui.Done)?.peer?.ifBlank { null }
+                        ResultBlock(PgIcons.Check, ok = true, title = if (peer != null) stringResource(R.string.link_done_title, peer) else stringResource(R.string.link_done_title_unnamed),
                             body = stringResource(R.string.link_done_body))
                         PfActs(top = 6.dp) { PBtn(stringResource(R.string.common_done), onClose, variant = PVariant.Primary) }
                     }
@@ -364,7 +358,7 @@ private fun ScanStep(note: String?, onScan: () -> Unit, onShow: () -> Unit, onTy
     val c = Tin.c
     var text by remember { mutableStateOf("") }
     PageH1(stringResource(R.string.link_scan_h1))
-    val step1 = withBold(stringResource(R.string.link_scan_step1, LINK_BOLD_MARKER), LINK_BOLD_MARKER, stringResource(R.string.settings_add_link), SpanStyle(color = c.ink, fontWeight = FontWeight.SemiBold))
+    val step1 = boldText(stringResource(R.string.link_scan_step1, mark(stringResource(R.string.settings_add_link))), color = c.ink)
     Column(Modifier.padding(start = 4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(step1, style = PgType.sub19, color = c.ink2)
         Text(stringResource(R.string.link_scan_step2), style = PgType.sub19, color = c.ink2)
@@ -413,8 +407,8 @@ private fun ApproveStep(app: P2pApp, who: String, onCancel: () -> Unit) {
         if (hasPass || act == null) approve()
         else DeviceAuth.ask(act, ctx.getString(R.string.link_existing_title)) { ok -> if (ok) approve() else error = ctx.getString(R.string.devices_lock_cancelled) }
     }
-    PageH1(stringResource(R.string.link_approve_title, who))
-    val warning = withBold(stringResource(R.string.link_approve_warning, LINK_BOLD_MARKER, who), LINK_BOLD_MARKER, stringResource(R.string.link_approve_bold), SpanStyle(fontWeight = FontWeight.Bold))
+    PageH1(if (who.isBlank()) stringResource(R.string.link_approve_title_unnamed) else stringResource(R.string.link_approve_title, who))
+    val warning = boldText(if (who.isBlank()) stringResource(R.string.link_approve_warning_unnamed) else stringResource(R.string.link_approve_warning, who.replace("**", "")), FontWeight.Bold)
     Row(Modifier.fillMaxWidth().clip(SmoothCornerShape(12.dp)).background(c.warn).padding(12.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         Icon(PgIcons.Warning, null, Modifier.padding(top = 1.dp).size(18.dp), tint = c.onWarn)
         Text(warning, style = PgType.body.copy(lineHeight = 20.sp), color = c.onWarn)

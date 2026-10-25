@@ -306,6 +306,28 @@ fun InfoCard(text: String, modifier: Modifier = Modifier, icon: ImageVector? = n
     }
 }
 
+/** Wraps user data (a name) so [boldText] shows it bold when the string has no `**` of its own. */
+fun mark(s: String) = "\u0001$s\u0002"
+
+/**
+ * The one bold convention for a line of text: `**bold**` inside the translated string, or user data wrapped with
+ * [mark] and passed into it. A translation moves the bold run with its words. A stray `**` or marker stays plain.
+ */
+fun boldText(text: String, weight: FontWeight = FontWeight.SemiBold, color: Color = Color.Unspecified) = androidx.compose.ui.text.buildAnnotatedString {
+    var i = 0
+    var open = false
+    fun toggle() { if (open) { pop(); open = false } else { pushStyle(androidx.compose.ui.text.SpanStyle(fontWeight = weight, color = color)); open = true } }
+    while (i < text.length) {
+        when {
+            text.startsWith("**", i) -> { toggle(); i += 2 }
+            text[i] == '\u0001' -> { if (!open) toggle(); i++ }
+            text[i] == '\u0002' -> { if (open) toggle(); i++ }
+            else -> { append(text[i]); i++ }
+        }
+    }
+    if (open) pop()
+}
+
 fun buildAnnotatedStringBold(bold: String?, rest: String) = androidx.compose.ui.text.buildAnnotatedString {
     if (bold != null) { pushStyle(androidx.compose.ui.text.SpanStyle(fontWeight = FontWeight.Bold)); append(bold); pop(); append(" ") }
     append(rest)

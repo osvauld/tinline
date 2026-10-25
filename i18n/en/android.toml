@@ -169,10 +169,6 @@ note = "Explanation on a chat request card. {name} is the requester's first name
 text = "Block"
 note = "Button on a chat request card that blocks the requester."
 
-[groups_list_sent]
-text = "Sent"
-note = "Small sub-header above chat requests I sent."
-
 [groups_list_yours]
 text = "Your groups"
 note = "Section header above my groups on the Groups tab."
@@ -680,10 +676,6 @@ note = "Label attached to the clipboard entry when the open group link is copied
 text = "Public group"
 note = "Section heading on Group info (admins) for the open link and admins-only switches."
 
-[groupsb_open_link]
-text = "Open link"
-note = "Title of the switch that opens the group to anyone with the link."
-
 [groupsb_open_link_on]
 text = "Anyone with the link can join"
 note = "Second line of the Open link switch while it is on."
@@ -749,14 +741,6 @@ note = "Status line of the Hosts section when a host is reachable. {count} is th
 [groupsb_hosts_offline]
 text = "No host is online. Your posts are saved and send when one is."
 note = "Status line of the Hosts section when hosts exist but none is online."
-
-[groupsb_online]
-text = "Online"
-note = "Second line of a host row when the host is reachable."
-
-[groupsb_offline]
-text = "Offline"
-note = "Second line of a host row when the host is not reachable."
 
 [groupsb_also_hosts_calls]
 text = "also hosts calls"
@@ -1158,10 +1142,6 @@ note = "Button that pastes the invite from the clipboard."
 text = "Scan"
 note = "Button that scans a group invite with the camera."
 
-[groupsb_not_in_contacts]
-text = "someone who isn’t in your contacts"
-note = "Stands in for a name, mid-sentence, when the person is not one of my contacts: 'Invited by someone who isn’t in your contacts'."
-
 [groupsb_join_invited_by]
 text = "Invited by {name}"
 note = "Line on the join preview. {name} is who invited me, or a stand-in."
@@ -1187,10 +1167,6 @@ text = "Joining…"
 note = "Join button while joining."
 
 # ---- invite link page
-[groupsb_the_group]
-text = "the group"
-note = "Stands in for the group's name, mid-sentence, while it has not loaded."
-
 [groupsb_invite_link_title]
 text = "Invite link"
 note = "Title of the page that shows the group invite link and QR code."
@@ -1908,10 +1884,6 @@ note = "Header label and heading of the restore step, and the button on the pass
 text = "Link to your account"
 note = "Header label of the step that links this phone to an account on another device."
 
-[onboarding_other_device]
-text = "your other device"
-note = "Stand-in for the other device's name when it is unknown, used in sentences like 'Linked to your other device'."
-
 [onboarding_device_personal]
 text = "Personal phone"
 note = "Suggested device name (chip and default); the user can edit it."
@@ -2236,17 +2208,9 @@ note = "Hint under the device name field."
 text = "Added {name} to this phone"
 note = "Heading after another account was added. {name} is the account's nickname."
 
-[onboarding_restored_name_fallback_title]
-text = "your account"
-note = "Stand-in for the nickname in 'Added your account to this phone' when the nickname is empty."
-
 [onboarding_restored_lead_adding]
 text = "Only the account you select is online at a time, so {name} is online now and your other account is paused. You can switch in Settings."
 note = "Lead after another account was added. {name} is the account's nickname."
-
-[onboarding_restored_name_fallback_lead]
-text = "this account"
-note = "Stand-in for the nickname in the lead after adding an account when the nickname is empty."
 
 [onboarding_restored_lead]
 text = "Your account is back on this phone. Your contacts, chats and call history are kept on your other devices, not with us. This phone starts with an empty contact list."
@@ -3262,10 +3226,6 @@ note = "Button on another device's page that asks it to sync."
 text = "Syncing with {name}…"
 note = "Brief message after tapping Sync now. {name} is the device's name."
 
-[devices_fallback_the_device]
-text = "the device"
-note = "Used in place of a device name in the Syncing with message when the device has no name. Lowercase, mid-sentence."
-
 [devices_remove_account]
 text = "Remove account from this phone"
 note = "Danger button on this phone's device page, and the title of the screen lock prompt for it."
@@ -3293,14 +3253,6 @@ note = "Confirm button of the device name dialog."
 [devices_name_field]
 text = "Device name"
 note = "Label of the field in the device name dialog."
-
-[devices_fallback_this_device]
-text = "this device"
-note = "Used in place of a device name in the unlink question when the device has no name. Lowercase, mid-sentence."
-
-[devices_fallback_device]
-text = "device"
-note = "Used in place of a device name in the Unlinked message when the device has no name. Lowercase, mid-sentence."
 
 [devices_confirm_remove_title]
 text = "Remove your account from this phone?"
@@ -3440,17 +3392,13 @@ note = "Heading above the QR code on the phone that has the account."
 text = "On the new device choose “Link to a device”, then “Scan instead”, and point it at this code."
 note = "Instructions under the heading. The quoted names are buttons on the new device."
 
-[link_fallback_new_device_cap]
-text = "The new device"
-note = "Used in place of the new device's name at the start of a sentence or title when it has no name."
-
 [link_match_title]
 text = "Do the codes match?"
 note = "Heading on the phone that has the account, when comparing the six-digit codes."
 
 [link_match_body]
-text = "wants to join your account. It should be showing the same six digits as below."
-note = "Sentence that follows the bold device name, such as the new phone's name."
+text = "**{name}** wants to join your account. It should be showing the same six digits as below."
+note = "Sentence under the heading while comparing codes. {name} is the new device's name, shown in bold at the start. The ** marks are the bold; keep them around {name}."
 
 [link_match_note]
 text = "Compare them yourself. If they differ, someone else may have scanned the code first."
@@ -3463,10 +3411,6 @@ note = "Button: the codes are different, cancel linking."
 [link_match]
 text = "They match"
 note = "Button: the codes are the same, continue to approval."
-
-[link_fallback_new_device]
-text = "the new device"
-note = "Used in place of the new device's name in the middle of a sentence when it has no name. Lowercase."
 
 [link_connecting]
 text = "Connecting…"
@@ -3506,7 +3450,7 @@ note = "Heading on the phone that has the account, before scanning."
 
 [link_scan_step1]
 text = "1.  On the new device, open Tinline and choose {action}."
-note = "First instruction. {action} is the name of a button on the new device (Link to a device), shown in bold."
+note = "First instruction. {action} is the name of a button on the new device (Link to a device), shown in bold by the app."
 
 [link_scan_step2]
 text = "2.  It shows a QR code and a short code. They work for 5 minutes, once."
@@ -3533,12 +3477,8 @@ text = "Approve {name}?"
 note = "Heading of the approval step. {name} is the new device's name."
 
 [link_approve_warning]
-text = "Approving sends your {bold} to {name}. It becomes a full copy of you: it can read your chats and act as you. Approve only a device you hold."
-note = "Warning on the approval step. {bold} is the words recovery phrase, shown in bold; {name} is the new device's name."
-
-[link_approve_bold]
-text = "recovery phrase"
-note = "The words that appear in bold in the approval warning. Lowercase, mid-sentence."
+text = "Approving sends your **recovery phrase** to {name}. It becomes a full copy of you: it can read your chats and act as you. Approve only a device you hold."
+note = "Warning on the approval step. {name} is the new device's name. The ** marks make 'recovery phrase' bold; keep them around the same words."
 
 [link_dont_link]
 text = "Don’t link"
@@ -4511,14 +4451,6 @@ note = "Button that replaces your QR code with a new one."
 text = "No Tinline contact card in that message"
 note = "Toast when text shared into the app holds no contact card."
 
-[card_them]
-text = "them"
-note = "Fallback for a contact's name in the question 'Chat with them?' when the card has no name."
-
-[card_this_contact]
-text = "this contact"
-note = "Fallback for the name in the question 'Add this contact?' when the card has no name."
-
 [card_chat_with]
 text = "Chat with {name}?"
 note = "Title of the prompt shown when a card of someone already in your contacts is found. {name} is their name."
@@ -5320,19 +5252,13 @@ note = "Accessibility label of the check mark on the chosen option in the audio 
 text = "They"
 note = "Stands in for a caller's name at the start of a sentence when the contact has no name."
 
-[call_them]
-text = "them"
-note = "Stands in for a caller's name in the middle of a sentence when the contact has no name."
-
 [call_default_name]
 text = "Tinline call"
 note = "Name the system call screen and Bluetooth devices show for a call whose caller has no name."
 
 [call_notif_fallback_title]
-text = "Call"
+text = "Tinline call"
 note = "Title of the ongoing-call notification when the caller has no name."
-
-# ---- incoming
 
 [call_answer_video_label]
 text = "Video"
@@ -5596,7 +5522,7 @@ note = "Hint at the bottom of the Call ended screen."
 
 [call_unreachable_title]
 text = "Couldn’t reach {name}"
-note = "Heading when an outgoing call did not connect. {name} is the contact's name (or 'them')."
+note = "Heading when an outgoing call did not connect. {name} is the contact's name."
 
 [call_unreachable_body]
 text = "{name} may be offline, out of signal, or not taking calls right now. Tinline can’t leave messages."
@@ -6086,12 +6012,12 @@ text = "Can’t call"
 note = "Accessibility action text at the end of a Calls row when I cannot call this person."
 
 [calls_row_desc]
-text = "{name}, {what} call, {time}. {action}"
-note = "Accessibility description of a Calls row. {what} is e.g. Missed, {time} the time of the call, {action} is 'Call' or 'Can’t call'."
+text = "{name}, {what}, {time}. {action}"
+note = "Accessibility description of a Calls row. {what} is a full phrase such as 'Missed call', {time} the time of the call, {action} is 'Call' or 'Can’t call'."
 
 [calls_row_desc_duration]
-text = "{name}, {what} call, {duration}, {time}. {action}"
-note = "Accessibility description of a Calls row with a duration. {duration} is e.g. 2:31; others as in the row description."
+text = "{name}, {what}, {duration}, {time}. {action}"
+note = "Accessibility description of a Calls row with a duration. {what} is a full phrase such as 'Incoming call', {duration} is e.g. 2:31; others as in the row description."
 
 [calls_group_info_desc]
 text = "{name}, group info"
@@ -6538,3 +6464,135 @@ note = "Message when I try to switch to Busy and the core cannot do it yet."
 [blocking_row_blocked_you]
 text = "Blocked you"
 note = "Red line under a contact's name in the chat and contact lists when they have blocked me."
+[link_match_body_unnamed]
+text = "The new device wants to join your account. It should be showing the same six digits as below."
+note = "Sentence under the heading while comparing codes, when the new device has no name."
+
+[link_approve_title_unnamed]
+text = "Approve the new device?"
+note = "Heading of the approval step when the new device has no name."
+
+[link_approve_warning_unnamed]
+text = "Approving sends your **recovery phrase** to the new device. It becomes a full copy of you: it can read your chats and act as you. Approve only a device you hold."
+note = "Warning on the approval step when the new device has no name. The ** marks make 'recovery phrase' bold; keep them around the same words."
+
+[link_linking_unnamed]
+text = "Linking the new device"
+note = "Heading while linking, when the new device has no name."
+
+[link_done_title_unnamed]
+text = "The new device is linked"
+note = "Heading after linking succeeded, when the new device has no name."
+[onboarding_linked_title_unnamed]
+text = "Linked to your other device"
+note = "Heading after linking, when the other device has no name."
+
+[onboarding_restored_title_adding_unnamed]
+text = "Added your account to this phone"
+note = "Heading after another account was added, when its nickname is empty."
+
+[onboarding_restored_lead_adding_unnamed]
+text = "Only the account you select is online at a time, so this account is online now and your other account is paused. You can switch in Settings."
+note = "Lead after another account was added, when its nickname is empty."
+
+[devices_syncing_unnamed]
+text = "Syncing with the device…"
+note = "Brief message after tapping Sync now, when the device has no name."
+
+[devices_confirm_unlink_title_unnamed]
+text = "Unlink this device?"
+note = "Title of the confirmation dialog for unlinking another device, when it has no name."
+
+[devices_unlinked_msg_unnamed]
+text = "Device unlinked"
+note = "Brief message after a device was unlinked, when it had no name."
+
+[groupsb_join_invited_by_you]
+text = "Invited by you"
+note = "Line on the join preview when the invitation came from my own account."
+
+[groupsb_join_invited_by_unknown]
+text = "Invited by someone who isn’t in your contacts"
+note = "Line on the join preview when the person who invited me is not one of my contacts."
+
+[groupsb_join_owner_you]
+text = "Owner: you"
+note = "Line on the join preview when I own the group."
+
+[groupsb_join_owner_unknown]
+text = "Owner: someone who isn’t in your contacts"
+note = "Line on the join preview when the group's owner is not one of my contacts."
+
+[groupsb_link_note_unnamed]
+text = "Anyone with this link or QR can join this group for 7 days. Share it over an app you trust; you see who joined and can flag them out. To invite your contacts directly, use Add members."
+note = "Hint on the invite link page while the group's name has not loaded. 'Add members' is the title of another page."
+
+[groupsb_share_text_unnamed]
+text = "Join my group on Tinline: {link}"
+note = "Text of the shared invite message while the group's name has not loaded. {link} is the invite link."
+
+[card_chat_with_unnamed]
+text = "Chat with them?"
+note = "Title of the prompt shown when a card of someone already in your contacts is found and the card has no name."
+
+[card_add_unnamed]
+text = "Add this contact?"
+note = "Title of the prompt shown when a new contact card is found and the card has no name."
+
+[call_unreachable_title_unnamed]
+text = "Couldn’t reach them"
+note = "Heading when an outgoing call did not connect and the contact has no name."
+[calls_desc_incoming]
+text = "Incoming call"
+note = "Spoken kind of a Calls row: a call I received and answered."
+
+[calls_desc_outgoing]
+text = "Outgoing call"
+note = "Spoken kind of a Calls row: a call I made and was answered."
+
+[calls_desc_away]
+text = "Call while you were not available"
+note = "Spoken kind of a Calls row: a call that came in while I had turned availability off."
+
+[calls_desc_missed]
+text = "Missed call"
+note = "Spoken kind of a Calls row: a call I did not pick up."
+
+[calls_desc_declined]
+text = "Declined call"
+note = "Spoken kind of a Calls row: a call that was declined."
+
+[calls_desc_no_answer]
+text = "Call nobody answered"
+note = "Spoken kind of a Calls row: an outgoing call nobody answered."
+
+[calls_desc_cancelled]
+text = "Cancelled call"
+note = "Spoken kind of a Calls row: a call cancelled before it was answered."
+
+[calls_desc_unreachable]
+text = "Call that couldn’t connect"
+note = "Spoken kind of a Calls row: a call that could not connect."
+
+[calls_desc_other]
+text = "Tinline call"
+note = "Spoken kind of a Calls row when no more detail is known. A noun (a call), not the Call button."
+
+[groupsb_public_link]
+text = "Public link"
+note = "Title of the switch that opens the group to anyone with the link. A name for the link, not an instruction to open anything."
+
+[groups_list_sent_requests]
+text = "Sent requests"
+note = "Small sub-header above the chat requests I sent from groups."
+
+[groupsb_host_online]
+text = "Online"
+note = "Second line of a host row: this host device is reachable right now. Describes a device, not a person."
+
+[groupsb_host_offline]
+text = "Offline"
+note = "Second line of a host row: this host device is not reachable right now. Describes a device, not a person."
+[calls_what_other]
+text = "Tinline call"
+note = "Calls tab row text for a call with no more detail known. A noun (a call), not the Call button."

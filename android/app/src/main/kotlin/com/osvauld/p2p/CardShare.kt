@@ -183,7 +183,7 @@ fun CardPrompts(app: P2pApp, clipboardOk: Boolean, shareOk: Boolean, showOnScree
             ) {
                 Avatar(p.name.ifBlank { "?" }, p.did, 44.dp)
                 Column(Modifier.weight(1f)) {
-                    Text(if (p.known) stringResource(R.string.card_chat_with, p.name.ifBlank { stringResource(R.string.card_them) }) else stringResource(R.string.card_add_name, p.name.ifBlank { stringResource(R.string.card_this_contact) }), style = TinType.bodyL.copy(fontWeight = FontWeight.Bold), color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(if (p.known) (if (p.name.isBlank()) stringResource(R.string.card_chat_with_unnamed) else stringResource(R.string.card_chat_with, p.name)) else (if (p.name.isBlank()) stringResource(R.string.card_add_unnamed) else stringResource(R.string.card_add_name, p.name)), style = TinType.bodyL.copy(fontWeight = FontWeight.Bold), color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(if (p.known) stringResource(R.string.card_already_contact) else stringResource(R.string.card_found), style = TinType.bodyM, color = c.ink2)
                 }
                 TinButton(stringResource(R.string.common_not_now), { dismissed += hashOf(p.ticket); prefs.edit().putString("dismissed", hashOf(p.ticket)).apply(); prompt = null }, style = BtnStyle.Text, fill = false, height = 44.dp, textStyle = TinType.label)
