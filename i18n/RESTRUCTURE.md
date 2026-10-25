@@ -95,6 +95,21 @@ iOS `group_member_*_callhost{device}`, comma-joined role parts
 (`groupsb_role_*_lc`, `groupsb_desc_*`, `group_member_desc_*`), `history_detail_*`.
 Fix: one string with `{name}` (and bold markup) inside.
 
+## 9c. Found in review (fr)
+
+- **Blocking on screen now (desktop):** `{noun}` → "cet computer"; `signup_word_in_the_recovery`
+  English " and N more"/"isn't"; terms line half English; profile `{what}` = "nickname".
+  Fix these first (section 5).
+- "Sent": one entry is both the requests header and a message receipt. Make the
+  header "Sent requests".
+- "Call": verb on buttons, noun on notification/history titles. Use "Tinline call"
+  for titles (same as §9).
+- Count strings without plurals: "Invite {len} people", " · {value} flag",
+  "{filled} words…", "{count} people in the call", "{flags} of {total}", "{count} unread",
+  "{more} more". Make them plural entries.
+- "Declined" for an invitation needs its own entry ("Invitation declined").
+- `calls_row_desc*`: pass a full phrase ("Missed call") as `{what}`, never an adjective.
+
 ## 10. Not translatable
 
 - `app_ev` "Ev" is a Debug format string: remove it from the catalog.
