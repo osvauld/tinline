@@ -129,6 +129,15 @@ Fix: join with the platform list formatter (Android `ListFormatter`, iOS
 - Desktop `check_name`/`check_text` (`profile_ui.rs`): reuse the Android/iOS
   `profile_err_name_*` per-field strings.
 
+## 9f. Found in review (fi)
+
+- Desktop `group_flag`: English ordinal from `ordinal()` (`groups_view.rs:74`)
+  → " · flag {n}" with a plain number.
+- `groupsb_online`/`groupsb_offline` describe host devices but share English with
+  the people labels → separate `groupsb_host_online`/`groupsb_host_offline`.
+- Desktop `profile_text` "{value} {time}", `call_text` "{day} {value}": weekday/date
+  glued to a time (same as §8) → platform date formatter or one string per relative day.
+
 ## 10. Not translatable
 
 - `app_ev` "Ev" is a Debug format string: remove it from the catalog.
