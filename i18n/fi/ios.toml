@@ -114,6 +114,9 @@ text = "Avataanko keskustelu: {name}?"
 [chat_card_add_name]
 text = "Lisätäänkö {name}?"
 
+[chat_card_add_name_unnamed]
+text = "Lisätäänkö tämä yhteystieto?"
+
 [chat_find_placeholder]
 text = "Hae tästä keskustelusta"
 
@@ -458,7 +461,7 @@ text = "Takaisin keskusteluihin"
 text = "Palaa puheluun"
 
 [chat_call]
-text = "Puhelu"
+text = "Soita"
 
 [chat_video_call]
 text = "Videopuhelu"
@@ -946,6 +949,9 @@ text = "Sinä: {text}"
 [group_preview_author]
 text = "{name}: {text}"
 
+[group_preview_someone]
+text = "Joku: {text}"
+
 [group_members_count]
 one = "{count} jäsen"
 other = "{count} jäsentä"
@@ -987,6 +993,9 @@ text = "Hylätty"
 [group_req_blocked]
 text = "{name} esti sinut"
 
+[group_req_blocked_unnamed]
+text = "Hän esti sinut"
+
 [group_pick_already_member]
 text = "Jo jäsen"
 
@@ -1001,6 +1010,9 @@ text = "Kutsuttu · ei vielä toimitettu"
 
 [group_inv_joined]
 text = "Liittyi"
+
+[group_inv_declined]
+text = "Kutsu hylätty"
 
 [group_inv_expired]
 text = "Kutsu vanhentui"
@@ -1059,12 +1071,18 @@ text = "Valitse ensin joku."
 [group_done_invite_one]
 text = "Kutsu lähetetty: {name}. Hän liittyy hyväksyessään."
 
+[group_done_invite_one_unnamed]
+text = "Kutsu lähetetty. Hän liittyy hyväksyessään."
+
 [group_done_invite_many]
 one = "{count} kutsu lähetetty. Jokainen liittyy hyväksyessään."
 other = "{count} kutsua lähetetty. Jokainen liittyy hyväksyessään."
 
 [group_done_decline_invite]
 text = "Hylätty. {name} näkee, että hylkäsit."
+
+[group_done_decline_invite_unnamed]
+text = "Hylätty. Hän näkee, että hylkäsit."
 
 [group_done_flag]
 text = "Merkintä tallennettu. Allekirjoitit sen, ja jäsen näkee sen."
@@ -1108,14 +1126,26 @@ text = "Tämä puhelin välittää nyt itse aloittamansa puhelut tässä ryhmäs
 [group_done_request_sent]
 text = "Pyyntö lähetetty: {name}. Se odottaa Keskusteluissa, kunnes hän vastaa."
 
+[group_done_request_sent_unnamed]
+text = "Pyyntö lähetetty. Se odottaa Keskusteluissa, kunnes hän vastaa."
+
 [group_done_request_accepted]
 text = "Hyväksytty. {name} lisättiin vain viestejä varten ja näkyy Keskusteluissa, kun hänen laitteensa saa yhteyden; puhelut pysyvät pois päältä, kunnes sallit ne."
+
+[group_done_request_accepted_unnamed]
+text = "Hyväksytty. Hänet lisättiin vain viestejä varten, ja hän näkyy Keskusteluissa, kun hänen laitteensa saa yhteyden; puhelut pysyvät pois päältä, kunnes sallit ne."
 
 [group_done_request_declined]
 text = "Hylätty. {name} saa tiedon ”hylätty”."
 
+[group_done_request_declined_unnamed]
+text = "Hylätty. Hän saa tiedon ”hylätty”."
+
 [group_done_request_blocked]
 text = "{name} on estetty eikä voi lähettää enempää pyyntöjä."
+
+[group_done_request_blocked_unnamed]
+text = "Hän on estetty eikä voi lähettää enempää pyyntöjä."
 
 [group_notice_request_accepted]
 text = "{name} hyväksyi pyyntösi. Voitte nyt lähettää viestejä toisillenne; puhelut pysyvät pois päältä, kunnes jompikumpi teistä sallii ne."
@@ -1293,6 +1323,10 @@ text = "Luo ryhmä"
 [group_add_to_title]
 text = "Lisää ryhmään {group}"
 
+[group_contacts_selected]
+one = "YHTEYSTIEDOT · {count} VALITTU"
+other = "YHTEYSTIEDOT · {count} VALITTU"
+
 [group_add_no_contacts]
 text = "Ei lisättäviä yhteystietoja. Estämäsi ja sinut estäneet eivät näy listalla."
 
@@ -1332,11 +1366,17 @@ text = "Liitytään…"
 [group_join_invited_by]
 text = "Kutsuja: {name}"
 
+[group_join_invited_by_you]
+text = "Kutsuja: sinä"
+
 [group_join_own_link]
 text = "Linkki omalle tilillesi"
 
 [group_join_owner]
 text = "Omistaja: {name}"
+
+[group_join_owner_you]
+text = "Omistaja: sinä"
 
 [group_valid_until]
 text = "Voimassa {date} asti"
@@ -1349,6 +1389,9 @@ text = "Kutsulinkki"
 
 [group_link_hint]
 text = "Kuka tahansa, jolla on tämä linkki tai QR-koodi, voi liittyä ryhmään {group} 7 päivän ajan. Jaa se sovelluksella, johon luotat; näet, kuka liittyi, ja voit merkitä hänet poistettavaksi. Jos haluat kutsua yhteystietojasi suoraan, käytä kohtaa Lisää jäseniä."
+
+[group_link_hint_unnamed]
+text = "Kuka tahansa, jolla on tämä linkki tai QR-koodi, voi liittyä tähän ryhmään 7 päivän ajan. Jaa se sovelluksella, johon luotat; näet, kuka liittyi, ja voit merkitä hänet poistettavaksi. Jos haluat kutsua yhteystietojasi suoraan, käytä kohtaa Lisää jäseniä."
 
 [group_link_qr_desc]
 text = "Ryhmän kutsulinkin QR-koodi"
@@ -1857,6 +1900,9 @@ text = "Pidä tämä omana tietonasi. Kuka tahansa, jolla se on, voi toimia sinu
 [security_tab_key]
 text = "Avain"
 
+[security_key_failed]
+text = "Avainta ei voitu valmistella. Käytä sen sijaan {words} sanaasi."
+
 [security_hide]
 text = "Piilota"
 
@@ -2013,6 +2059,9 @@ text = "Poistetaanko tilisi tältä puhelimelta?"
 [devices_unlink_q]
 text = "Poistetaanko linkitys: {name}?"
 
+[devices_unlink_q_unnamed]
+text = "Poistetaanko tämän laitteen linkitys?"
+
 [devices_working]
 text = "Käsitellään…"
 
@@ -2054,6 +2103,9 @@ text = "Tiliä ei voi avata: {name}"
 
 [unlock_lost_lead]
 text = "Tällä puhelimella ei enää ole avainta, joka avaa tilisi. Näin käy näytön lukituksen nollauksen tai varmuuskopion palautuksen jälkeen. Kun palautat tilin, puhelusi tulevat taas perille."
+
+[unlock_lost_notice]
+text = "Et asettanut salalausetta, joten {words} palautussanaa on ainoa tie takaisin. Yhteystietosi säilyvät."
 
 [unlock_restore]
 text = "Palauta palautussanoilla"
@@ -2160,6 +2212,9 @@ text = "Avaimessa on kirjoitusvirhe tai se on katkennut. Liitä se uudelleen sie
 [restore_title]
 text = "Palauta tili"
 
+[restore_lead_words]
+text = "Kirjoita {words} sanaasi järjestyksessä tai liitä ne tai palautusavaimesi ensimmäiseen kenttään. Ne pysyvät tällä puhelimella."
+
 [restore_lead_key]
 text = "Palautusavaimesi on syötetty. Se pysyy tällä puhelimella."
 
@@ -2262,6 +2317,9 @@ text = "Takaisin"
 [link_match_title]
 text = "Täsmäävätkö koodit?"
 
+[link_match_body]
+text = "**{name}** haluaa liittyä tiliisi. Sen pitäisi näyttää samat kuusi numeroa kuin alla."
+
 [link_match_warn]
 text = "Vertaa niitä itse. Jos ne eroavat, joku muu on ehkä skannannut koodin ensin."
 
@@ -2276,6 +2334,9 @@ text = "Yhdistetään…"
 
 [link_linking_peer]
 text = "Linkitetään: {name}"
+
+[link_linking_peer_unnamed]
+text = "Linkitetään uutta laitetta"
 
 [link_reaching]
 text = "Tavoitetaan toista laitetta"
@@ -2292,6 +2353,9 @@ text = "Pidä molemmat laitteet auki, kunnes tämä valmistuu."
 [link_done_title]
 text = "{name} on linkitetty"
 
+[link_done_title_unnamed]
+text = "Uusi laite on linkitetty"
+
 [link_done_body]
 text = "Se synkronoituu, kun molemmat laitteet ovat verkossa yhtä aikaa. Yhteystiedot, joita et ole estänyt, saavat päivitetyn laitelistasi, kun ovat seuraavan kerran verkossa."
 
@@ -2303,6 +2367,9 @@ text = "Sulje"
 
 [link_scan_title]
 text = "Skannaa koodi uudelta laitteeltasi"
+
+[link_scan_step2]
+text = "Se näyttää QR-koodin ja lyhyen koodin. Ne ovat voimassa 5 minuuttia ja toimivat kerran."
 
 [link_scan_qr]
 text = "Skannaa QR-koodi"
@@ -2324,6 +2391,15 @@ text = "Näytön lukituksen tarkistus peruttu"
 
 [link_approve_title]
 text = "Hyväksytäänkö {name}?"
+
+[link_approve_title_unnamed]
+text = "Hyväksytäänkö uusi laite?"
+
+[link_approve_body]
+text = "Hyväksyminen lähettää **palautussanasi** laitteelle {name}. Siitä tulee täysi kopio sinusta: se voi lukea keskustelusi ja toimia sinuna. Hyväksy vain laite, joka on itselläsi."
+
+[link_approve_body_unnamed]
+text = "Hyväksyminen lähettää **palautussanasi** uudelle laitteelle. Siitä tulee täysi kopio sinusta: se voi lukea keskustelusi ja toimia sinuna. Hyväksy vain laite, joka on itselläsi."
 
 [link_your_pass]
 text = "Salalauseesi"
@@ -2421,6 +2497,9 @@ text = "Skannaa koodi laitteella, jolla tilisi jo on. Yhteystietosi ja keskustel
 [onboarding_opt_restore]
 text = "Palauta tilini"
 
+[onboarding_opt_restore_sub]
+text = "Kirjoita {words} palautussanaasi. Tämä puhelin aloittaa tyhjällä yhteystietolistalla."
+
 [onboarding_done_title]
 text = "Linjasi on auki"
 
@@ -2505,6 +2584,12 @@ text = "Tässä on palautusavaimesi"
 [onboarding_rec_title_words]
 text = "Tässä ovat palautussanasi"
 
+[onboarding_rec_lead_key]
+text = "Palautusavaimesi on sama kuin {words} sanaasi, yhtenä rivinä.\nLiitä se johonkin turvalliseen paikkaan. Salasanojen hallintasovellus sopii hyvin."
+
+[onboarding_rec_lead_words]
+text = "Jos joskus vaihdat laitetta, nämä {words} sanaa tuovat tilisi mukaan.\nTallenna kopio turvalliseen paikkaan. Paperi toimii hyvin."
+
 [onboarding_fb_your_account]
 text = "Tilisi"
 
@@ -2550,6 +2635,9 @@ text = "Tabletti"
 [onboarding_back_added]
 text = "Lisätty tälle puhelimelle: {name}"
 
+[onboarding_back_added_unnamed]
+text = "Tilisi lisättiin tälle puhelimelle"
+
 [onboarding_back_title]
 text = "Tervetuloa takaisin"
 
@@ -2559,6 +2647,9 @@ text = "Tervetuloa takaisin, {name}"
 [onboarding_back_added_lead]
 text = "Vain valitsemasi tili on kerrallaan verkossa, joten {name} on nyt verkossa ja toinen tilisi on tauolla. Voit vaihtaa asetuksista."
 
+[onboarding_back_added_lead_unnamed]
+text = "Vain valitsemasi tili on kerrallaan verkossa, joten tämä tili on nyt verkossa ja toinen tilisi on tauolla. Voit vaihtaa asetuksista."
+
 [onboarding_back_lead]
 text = "Tilisi on taas tällä puhelimella. Yhteystietosi, keskustelusi ja puheluhistoriasi säilyvät muilla laitteillasi, eivät meillä. Tämä puhelin aloittaa tyhjällä yhteystietolistalla."
 
@@ -2567,6 +2658,9 @@ text = "Avaa Tinline"
 
 [onboarding_linked_title]
 text = "Linkitetty: {name}"
+
+[onboarding_linked_title_unnamed]
+text = "Linkitetty toiseen laitteeseesi"
 
 [onboarding_linked_lead]
 text = "Yhteystietosi ja keskustelusi saapuvat laitteelta {name} ja pysyvät ajan tasalla molemmissa."
@@ -2751,6 +2845,9 @@ text = "Saapuva puhelu"
 [shell_call_what_outgoing]
 text = "Lähtevä"
 
+[shell_call_desc_outgoing]
+text = "Lähtevä puhelu"
+
 [shell_call_what_unavailable]
 text = "Kun et ollut tavoitettavissa"
 
@@ -2763,6 +2860,9 @@ text = "Vastaamaton puhelu"
 [shell_call_what_declined]
 text = "Hylätty"
 
+[shell_call_desc_declined]
+text = "Hylätty puhelu"
+
 [shell_call_what_no_answer]
 text = "Ei vastausta"
 
@@ -2772,11 +2872,14 @@ text = "Peruttu"
 [shell_call_desc_cancelled]
 text = "Peruttu puhelu"
 
+[shell_call_desc_unreachable]
+text = "Puhelu, joka ei yhdistynyt"
+
 [shell_call_what_other]
 text = "Tinline-puhelu"
 
 [shell_call_desc_other]
-text = "Puhelu"
+text = "Soita"
 
 [shell_you]
 text = "Sinä"
@@ -3025,7 +3128,7 @@ text = "Profiili: {name}"
 text = "{what} · {duration}"
 
 [shell_calls_action_call]
-text = "Puhelu"
+text = "Soita"
 
 [shell_calls_action_cant]
 text = "Ei voi soittaa"
@@ -3182,7 +3285,7 @@ text = "Jaa"
 text = "Kopioitu"
 
 [people_call]
-text = "Puhelu"
+text = "Soita"
 
 [people_add]
 text = "Lisää"
@@ -3502,6 +3605,9 @@ text = "Anna tiedolle nimi."
 [people_rule_key_bad]
 text = "Tätä nimeä ei voi käyttää. Pidä se lyhyenä ja ilman ohjausmerkkejä."
 
+[people_rule_too_many]
+text = "Sinulla on jo {max} tietoa. Poista yksi, jos haluat lisätä uuden."
+
 [people_rule_full]
 text = "Profiilisi on täynnä. Poista tietoja lisätäksesi uusia."
 
@@ -3757,6 +3863,9 @@ text = "Muu"
 [call_mic_permission_needed_place]
 text = "Soittamiseen tarvitaan mikrofonin käyttölupa"
 
+[call_status_reconnecting]
+text = "Puhelua yhdistetään uudelleen…"
+
 [call_status_ringing]
 text = "Soi…"
 
@@ -3946,6 +4055,9 @@ text = "HD · {size}"
 [call_status_finding_host]
 text = "Etsitään puheluisäntää…"
 
+[call_status_connecting]
+text = "Puhelua yhdistetään…"
+
 [call_group_already_in_call]
 text = "Olet jo puhelussa."
 
@@ -3954,6 +4066,9 @@ text = "Puhelu päättyi"
 
 [call_group_ended_host_lost]
 text = "Puhelu päättyi — puheluisäntä katosi"
+
+[call_group_battery_limited]
+text = "Akun varaus on alle {percent} %. Isännöintiä on rajoitettu: vain yksi henkilö kuuluu kerrallaan, eikä kukaan uusi voi liittyä."
 
 [call_group_no_host]
 text = "Puheluisäntää ei ole saatavilla"
@@ -3985,6 +4100,12 @@ text = "OK"
 
 [call_group_you_host]
 text = "Olet puheluisäntä"
+
+[call_group_host_is]
+text = "Puheluisäntä: jäsenen {name} laite"
+
+[call_group_host_is_someone]
+text = "Puheluisäntä: jäsenen laite"
 
 [call_control_leave]
 text = "Poistu"
@@ -4148,8 +4269,14 @@ text = "Siirry sitten kohtaan Asetukset › Tinline › Mikrofoni ja salli se."
 [people_add_or]
 text = "tai"
 
+[group_sys_joined_you]
+text = "Liityit"
+
 [group_sys_joined_named]
 text = "{name} liittyi"
+
+[group_sys_joined_someone]
+text = "Joku liittyi"
 
 [group_sys_left_you]
 text = "Poistuit"
@@ -4157,17 +4284,53 @@ text = "Poistuit"
 [group_sys_left_named]
 text = "{name} poistui"
 
+[group_sys_left_someone]
+text = "Joku poistui"
+
+[group_sys_admin_you_someone]
+text = "Nimesit erään jäsenen ylläpitäjäksi"
+
 [group_sys_admin_named_you]
 text = "{by} nimesi sinut ylläpitäjäksi"
 
 [group_sys_admin_named_named]
 text = "{by} nimesi ylläpitäjäksi: {name}"
 
+[group_sys_admin_named_someone]
+text = "{by} nimesi erään jäsenen ylläpitäjäksi"
+
+[group_sys_admin_someone_you]
+text = "Joku nimesi sinut ylläpitäjäksi"
+
+[group_sys_admin_someone_someone]
+text = "Joku nimesi erään jäsenen ylläpitäjäksi"
+
+[group_sys_unadmin_you_someone]
+text = "Poistit erään jäsenen ylläpito-oikeudet"
+
 [group_sys_unadmin_named_you]
 text = "{by} poisti ylläpito-oikeutesi"
 
 [group_sys_unadmin_named_named]
 text = "{by} poisti ylläpito-oikeudet: {name}"
+
+[group_sys_unadmin_named_someone]
+text = "{by} poisti erään jäsenen ylläpito-oikeudet"
+
+[group_sys_unadmin_someone_you]
+text = "Joku poisti ylläpito-oikeutesi"
+
+[group_sys_unadmin_someone_someone]
+text = "Joku poisti erään jäsenen ylläpito-oikeudet"
+
+[call_group_about_this_phone]
+text = "**Tämä puhelin** välittää tätä puhelua. Kaikki puhelussa olevat ovat yhteydessä siihen, ja se välittää äänen eteenpäin ja valitsee, kuka kuuluu, kun useampi puhuu yhtä aikaa."
+
+[call_group_about_member]
+text = "**Jäsenen {name} laite** välittää tämän puhelun. Kaikki puhelussa olevat ovat yhteydessä siihen, ja se välittää äänen eteenpäin ja valitsee, kuka kuuluu, kun useampi puhuu yhtä aikaa."
+
+[call_group_about_unknown]
+text = "**Puheluisäntä** välittää tämän puhelun. Kaikki puhelussa olevat ovat yhteydessä siihen, ja se välittää äänen eteenpäin ja valitsee, kuka kuuluu, kun useampi puhuu yhtä aikaa."
 
 [people_busy_until_today]
 text = "Varattu {time} asti"

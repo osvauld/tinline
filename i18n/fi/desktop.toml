@@ -43,7 +43,7 @@ text = "Estetty"
 text = "Estetyt henkilöt"
 
 [common_call]
-text = "Puhelu"
+text = "Soita"
 
 [common_call_ended]
 text = "Puhelu päättyi"
@@ -937,6 +937,9 @@ text = "Yritetään..."
 [gate_turn_on]
 text = "Ota käyttöön"
 
+[gate_you_didnt_set_a]
+text = "Et asettanut salalausetta, joten {words} palautussanaa on ainoa tie takaisin. Yhteystietosi säilyvät."
+
 [gate_your_calls_come_through]
 text = "Puhelusi tulevat taas perille, kun olet taas verkossa."
 
@@ -1018,6 +1021,10 @@ text = "Isäntälaite pitää täyden kopion ryhmästä ja välittää viestit e
 
 [group_a_host_keeps_a_full]
 text = "Isäntälaite pitää täyden kopion ryhmästä, välittää viestit eteenpäin jäsenten puhelinten nukkuessa ja oppii jäsenten ryhmäosoitteet. Sen täytyy pysyä käynnissä. Isännöinti ei tee sinusta ylläpitäjää; voit lopettaa milloin tahansa."
+
+[group_a_host_lists_up]
+one = "Isäntälaite näyttää kerrallaan enintään {count} henkilön, joten heitä voi olla enemmänkin."
+other = "Isäntälaite näyttää kerrallaan enintään {count} henkilöä, joten heitä voi olla enemmänkin."
 
 [group_a_host_stays_on]
 text = "Isäntälaite pysyy päällä ja välittää viestit eteenpäin, kun muut eivät ole verkossa"
@@ -3265,8 +3272,23 @@ text = "Tietoja-kentässä ei voi olla ohjaus- tai tekstisuuntamerkkejä."
 [common_list_and]
 text = "{list} ja {last}"
 
+[call_reconnecting_2]
+text = "Puhelua yhdistetään uudelleen…"
+
+[call_couldnt_connect]
+text = "Puhelu ei yhdistynyt"
+
 [call_history_fallback]
 text = "Tinline-puhelu"
+
+[gcall_about_device]
+text = "**Jäsenen {name} laite** välittää tämän puhelun. Kaikki puhelussa olevat ovat yhteydessä siihen, ja se välittää äänen eteenpäin ja valitsee, kuka kuuluu, kun useampi puhuu yhtä aikaa."
+
+[gcall_about_unnamed]
+text = "**Puheluisäntä** välittää tämän puhelun. Kaikki puhelussa olevat ovat yhteydessä siihen, ja se välittää äänen eteenpäin ja valitsee, kuka kuuluu, kun useampi puhuu yhtä aikaa."
+
+[gcall_call_host_device]
+text = "Puheluisäntä: jäsenen {name} laite"
 
 [group_replying_to_yourself]
 text = "Vastaat itsellesi"
@@ -3274,8 +3296,18 @@ text = "Vastaat itsellesi"
 [chat_replying_to_yourself]
 text = "Vastaat itsellesi"
 
+[group_invited_by_you]
+text = "Kutsuja: sinä"
+
+[group_flags_of]
+one = "Merkinnät {flags}/{count}"
+other = "Merkinnät {flags}/{count}"
+
 [group_link_own]
 text = "Linkki omalle toiselle laitteellesi"
+
+[group_owner_by_you_unnamed]
+text = "Kutsuja: sinä"
 
 [group_host_online]
 text = "Paikalla"
@@ -3286,8 +3318,27 @@ text = "Poissa"
 [group_hosts_store_the_group_admin]
 text = "Isäntälaitteet tallentavat ryhmän ja välittävät viestit eteenpäin, kun muut eivät ole verkossa. Ne ovat jäseniä, joihin luotat: isäntälaite voi lukea kaiken tähän ryhmään kirjoitetun. Nimeä isäntälaite jäsenen valikosta; hänen täytyy hyväksyä. Isäntälaitteen poistaminen vaihtaa ryhmän osoitteen 2 päivän kuluessa, joten se laite ei enää tavoita ryhmää."
 
+[group_public_link]
+text = "Julkinen linkki"
+
+[group_status_no_host_yet]
+text = "ei vielä isäntälaitetta"
+
+[group_status_waiting_for_a_host]
+text = "odottaa isäntälaitetta"
+
+[group_online_count]
+one = "{count} paikalla"
+other = "{count} paikalla"
+
+[group_online_capped]
+text = "{count}+ paikalla"
+
 [group_post_photo]
 text = "Kuva"
+
+[group_post_photo_caption]
+text = "Kuva · {caption}"
 
 [group_preview_you]
 text = "Sinä: {text}"
@@ -3295,14 +3346,38 @@ text = "Sinä: {text}"
 [group_preview_author]
 text = "{name}: {text}"
 
+[group_preview_someone]
+text = "Joku: {text}"
+
+[group_sys_joined_you]
+text = "Liityit"
+
 [group_sys_joined]
 text = "{name} liittyi"
+
+[group_sys_joined_someone]
+text = "Joku liittyi"
 
 [group_sys_left_you]
 text = "Poistuit"
 
 [group_sys_left]
 text = "{name} poistui"
+
+[group_sys_left_someone]
+text = "Joku poistui"
+
+[group_sys_removed_you]
+one = "Sinut poistettiin {count} ylläpitäjän merkinnän jälkeen"
+other = "Sinut poistettiin {count} ylläpitäjän merkinnän jälkeen"
+
+[group_sys_removed]
+one = "{name} poistettiin {count} ylläpitäjän merkinnän jälkeen"
+other = "{name} poistettiin {count} ylläpitäjän merkinnän jälkeen"
+
+[group_sys_removed_someone]
+one = "Eräs jäsen poistettiin {count} ylläpitäjän merkinnän jälkeen"
+other = "Eräs jäsen poistettiin {count} ylläpitäjän merkinnän jälkeen"
 
 [group_sys_host_added_you]
 text = "Yksi laitteistasi isännöi nyt ryhmää"
@@ -3316,17 +3391,41 @@ text = "Yksi laitteistasi lopetti ryhmän isännöinnin"
 [group_sys_host_removed]
 text = "Jäsenen {name} laite lopetti ryhmän isännöinnin"
 
+[group_sys_admin_you_someone]
+text = "Nimesit erään jäsenen ylläpitäjäksi"
+
 [group_sys_admin_other_you]
 text = "{by} nimesi sinut ylläpitäjäksi"
 
 [group_sys_admin_other_other]
 text = "{by} nimesi ylläpitäjäksi: {name}"
 
+[group_sys_admin_other_someone]
+text = "{by} nimesi erään jäsenen ylläpitäjäksi"
+
+[group_sys_admin_someone_you]
+text = "Joku nimesi sinut ylläpitäjäksi"
+
+[group_sys_admin_someone_someone]
+text = "Joku nimesi erään jäsenen ylläpitäjäksi"
+
+[group_sys_unadmin_you_someone]
+text = "Poistit erään jäsenen ylläpito-oikeudet"
+
 [group_sys_unadmin_other_you]
 text = "{by} poisti ylläpito-oikeutesi"
 
 [group_sys_unadmin_other_other]
 text = "{by} poisti ylläpito-oikeudet: {name}"
+
+[group_sys_unadmin_other_someone]
+text = "{by} poisti erään jäsenen ylläpito-oikeudet"
+
+[group_sys_unadmin_someone_you]
+text = "Joku poisti ylläpito-oikeutesi"
+
+[group_sys_unadmin_someone_someone]
+text = "Joku poisti erään jäsenen ylläpito-oikeudet"
 
 [group_sent_waiting]
 text = "Odotetaan: {name} · ryhmän {group} kautta"
@@ -3349,6 +3448,9 @@ text = "{name} esti sinut"
 [group_notice_invitation_sent]
 text = "Kutsu lähetetty: {name}. Hän liittyy hyväksyessään."
 
+[group_notice_invitation_sent_unnamed]
+text = "Kutsu lähetetty. Hän liittyy hyväksyessään."
+
 [group_notice_you_joined]
 text = "Liityit ryhmään {group}."
 
@@ -3358,17 +3460,29 @@ text = "Liityit ryhmään."
 [group_notice_declined_inv]
 text = "Hylätty. {name} näkee, että hylkäsit."
 
+[group_notice_declined_inv_unnamed]
+text = "Hylätty. Hän näkee, että hylkäsit."
+
 [group_notice_accepted_yours]
 text = "{name} hyväksyi pyyntösi. Voitte nyt lähettää viestejä toisillenne; puhelut pysyvät pois päältä, kunnes jompikumpi teistä sallii ne."
 
 [group_notice_request_sent]
 text = "Pyyntö lähetetty: {name}. Se odottaa Keskusteluissa, kunnes hän vastaa."
 
+[group_notice_request_sent_unnamed]
+text = "Pyyntö lähetetty. Se odottaa Keskusteluissa, kunnes hän vastaa."
+
 [group_notice_accepted]
 text = "Hyväksytty. {name} lisättiin vain viestejä varten ja näkyy Keskusteluissa, kun hänen laitteensa saa yhteyden; puhelut pysyvät pois päältä, kunnes sallit ne."
 
+[group_notice_accepted_unnamed]
+text = "Hyväksytty. Hänet lisättiin vain viestejä varten, ja hän näkyy Keskusteluissa, kun hänen laitteensa saa yhteyden; puhelut pysyvät pois päältä, kunnes sallit ne."
+
 [group_notice_declined_req]
 text = "Hylätty. {name} saa tiedon ”hylätty”."
+
+[group_notice_declined_req_unnamed]
+text = "Hylätty. Hän saa tiedon ”hylätty”."
 
 [group_notice_link_copied]
 text = "Kopioitu. Kuka tahansa, jolla on linkki, voi liittyä, kun ryhmä on avoin."

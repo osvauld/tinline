@@ -49,7 +49,7 @@ text = "Joku"
 text = "Estetty"
 
 [common_call]
-text = "Puhelu"
+text = "Soita"
 
 [common_decline]
 text = "Hylkää"
@@ -252,6 +252,10 @@ text = "Ketkä ovat paikalla: {group}"
 [groups_online_lag]
 text = "Jäsenet, jotka isäntälaite on nähnyt viimeisen minuutin aikana. Tieto voi olla muutaman sekunnin jäljessä."
 
+[groups_online_cap]
+one = "Isäntälaite näyttää kerrallaan enintään {count} henkilön, joten heitä voi olla enemmänkin."
+other = "Isäntälaite näyttää kerrallaan enintään {count} henkilöä, joten heitä voi olla enemmänkin."
+
 [groups_online_hidden]
 text = "Muut eivät näe sinua täällä. Voit muuttaa tämän kohdassa Asetukset › Yksityisyys."
 
@@ -417,6 +421,10 @@ text = "ylläpitäjä"
 
 [groupsb_role_member_lc]
 text = "jäsen"
+
+[groupsb_flags_of]
+one = "Merkinnät {flags}/{count}"
+other = "Merkinnät {flags}/{count}"
 
 [groupsb_of_total]
 text = "{n}/{total}"
@@ -796,6 +804,10 @@ text = "Lisää jäseniä"
 [groupsb_add_to]
 text = "Lisää ryhmään {name}"
 
+[groupsb_contacts_selected]
+one = "YHTEYSTIEDOT · {count} VALITTU"
+other = "YHTEYSTIEDOT · {count} VALITTU"
+
 [groupsb_no_contacts]
 text = "Ei lisättäviä yhteystietoja. Estämäsi ja sinut estäneet eivät näy listalla."
 
@@ -882,6 +894,9 @@ text = "Tällä puhelimella ei enää ole avainta, joka avaa tilisi. Näin käy 
 
 [unlock_keylost_restore]
 text = "Palauta palautussanoilla"
+
+[unlock_keylost_notice]
+text = "Et asettanut salalausetta, joten {words} palautussanaa on ainoa tie takaisin. Yhteystietosi säilyvät."
 
 [accounts_switch_account]
 text = "Vaihda tiliä"
@@ -993,6 +1008,9 @@ text = "Vain sinulle"
 
 [profile_account_recovery]
 text = "Tilin palautus"
+
+[profile_account_recovery_sub]
+text = "Avaimesi ja {words} sanaa"
 
 [profile_code_title]
 text = "Yhteystietokoodisi"
@@ -1309,6 +1327,12 @@ text = "Anna tiedolle nimi."
 [profile_err_key_bad]
 text = "Tätä nimeä ei voi käyttää. Pidä se lyhyenä ja ilman ohjausmerkkejä."
 
+[profile_err_value_long]
+text = "Tämä on liian pitkä. Kukin tieto voi olla enintään {max} KiB."
+
+[profile_err_fields_full]
+text = "Sinulla on jo {max} tietoa. Poista yksi, jos haluat lisätä uuden."
+
 [profile_err_profile_full]
 text = "Profiilisi on täynnä. Poista tietoja lisätäksesi uusia."
 
@@ -1410,6 +1434,9 @@ other = "{count} sanaa puuttuu vielä."
 [onboarding_restore_lead_key]
 text = "Palautusavaimesi on syötetty. Se pysyy tällä puhelimella."
 
+[onboarding_restore_lead_words]
+text = "Kirjoita {words} sanaasi järjestyksessä tai liitä ne tai palautusavaimesi ensimmäiseen kenttään. Ne pysyvät tällä puhelimella."
+
 [onboarding_restore_key_caption]
 text = "Palautusavain"
 
@@ -1418,6 +1445,9 @@ text = "Käytän mieluummin sanoja"
 
 [onboarding_restore_paste]
 text = "Liitä leikepöydältä"
+
+[onboarding_restore_filled]
+text = "{filled}/{words}"
 
 [onboarding_welcome_title_adding]
 text = "Lisää tili"
@@ -1457,6 +1487,9 @@ text = "Skannaa koodi laitteella, jolla tilisi jo on. Yhteystietosi ja keskustel
 
 [onboarding_choose_restore]
 text = "Palauta tilini"
+
+[onboarding_choose_restore_sub]
+text = "Kirjoita {words} palautussanaasi. Tämä puhelin aloittaa tyhjällä yhteystietolistalla."
 
 [onboarding_done_title_named]
 text = "Linjasi on auki, {name}"
@@ -1536,6 +1569,12 @@ text = "Tässä on palautusavaimesi"
 [onboarding_phrase_title_words]
 text = "Tässä ovat palautussanasi"
 
+[onboarding_phrase_lead_key]
+text = "Palautusavaimesi on sama kuin {words} sanaasi, yhtenä rivinä.\nLiitä se johonkin turvalliseen paikkaan. Salasanojen hallintasovellus sopii hyvin."
+
+[onboarding_phrase_lead_words]
+text = "Jos joskus vaihdat laitetta, nämä {words} sanaa tuovat tilisi mukaan.\nTallenna kopio turvalliseen paikkaan. Paperi toimii hyvin."
+
 [onboarding_phrase_saved_key]
 text = "Tallensin sen"
 
@@ -1586,6 +1625,9 @@ text = "Lisätty tälle puhelimelle: {name}"
 
 [onboarding_restored_lead_adding]
 text = "Vain valitsemasi tili on kerrallaan verkossa, joten {name} on nyt verkossa ja toinen tilisi on tauolla. Voit vaihtaa asetuksista."
+
+[onboarding_restored_lead]
+text = "Tilisi on taas tällä puhelimella. Yhteystietosi, keskustelusi ja puheluhistoriasi säilyvät muilla laitteillasi, eivät palvelimella. Tämä puhelin aloittaa tyhjällä yhteystietolistalla."
 
 [onboarding_open_tinline]
 text = "Avaa Tinline"
@@ -1649,6 +1691,9 @@ text = "Tilisi on sinun."
 
 [onboarding_terms_account_body]
 text = "Se on laitteillasi, ei palvelimella. Palautussanasi ovat tiesi takaisin, joten pidä ne tallessa."
+
+[onboarding_terms_by_continuing]
+text = "Jatkamalla hyväksyt [käyttöehdot](terms) ja olet lukenut [tietosuojakäytännön](privacy)."
 
 [onboarding_perms_title]
 text = "Jotta puhelut tavoittavat sinut"
@@ -2144,6 +2189,12 @@ text = "Pidä tämä omana tietonasi. Kuka tahansa, jolla se on, voi toimia sinu
 [settings_backup_key]
 text = "Avain"
 
+[settings_backup_words]
+text = "{words} sanaa"
+
+[settings_backup_key_failed]
+text = "Avainta ei voitu valmistella. Käytä sen sijaan {words} sanaasi."
+
 [settings_hide]
 text = "Piilota"
 
@@ -2438,6 +2489,9 @@ text = "Valitse uudella laitteella ”Linkitä laitteeseen”, sitten ”Skannaa
 [link_match_title]
 text = "Täsmäävätkö koodit?"
 
+[link_match_body]
+text = "**{name}** haluaa liittyä tiliisi. Sen pitäisi näyttää samat kuusi numeroa kuin alla."
+
 [link_match_note]
 text = "Vertaa niitä itse. Jos ne eroavat, joku muu on ehkä skannannut koodin ensin."
 
@@ -2474,6 +2528,12 @@ text = "Se synkronoituu, kun molemmat laitteet ovat verkossa yhtä aikaa. Yhteys
 [link_scan_h1]
 text = "Skannaa koodi uudelta laitteeltasi"
 
+[link_scan_step1]
+text = "Avaa Tinline uudella laitteella ja valitse {action}."
+
+[link_scan_step2]
+text = "Se näyttää QR-koodin ja lyhyen koodin. Ne ovat voimassa 5 minuuttia ja toimivat kerran."
+
 [link_scan_qr]
 text = "Skannaa QR-koodi"
 
@@ -2488,6 +2548,9 @@ text = "Salalause ei ole oikea."
 
 [link_approve_title]
 text = "Hyväksytäänkö {name}?"
+
+[link_approve_warning]
+text = "Hyväksyminen lähettää **palautussanasi** laitteelle {name}. Siitä tulee täysi kopio sinusta: se voi lukea keskustelusi ja toimia sinuna. Hyväksy vain laite, joka on itselläsi."
 
 [link_dont_link]
 text = "Älä linkitä"
@@ -2659,6 +2722,9 @@ text = "Yhteystietopyyntö"
 
 [notif_request_text]
 text = "{name} haluaisi lisätä sinut"
+
+[notif_accepted_text]
+text = "{name} hyväksyi pyyntösi. Linjasi on auki."
 
 [notif_missed_title]
 text = "Vastaamaton puhelu"
@@ -3210,6 +3276,10 @@ text = "Avaa"
 [card_add]
 text = "Lisää"
 
+[groupsc_removed_you_flags]
+one = "Sinut poistettiin {count} ylläpitäjän merkinnän jälkeen"
+other = "Sinut poistettiin {count} ylläpitäjän merkinnän jälkeen"
+
 [groupsc_admin_granted_other]
 text = "{by} nimesi ylläpitäjäksi: {sub}"
 
@@ -3341,6 +3411,10 @@ text = "Hylätty. {name} saa tiedon ”hylätty”."
 one = "{count} lukematon"
 other = "{count} lukematonta"
 
+[groupsc_flags_of]
+one = "Merkintöjä {filled}, tarvitaan {count}"
+other = "Merkintöjä {filled}, tarvitaan {count}"
+
 [gcall_name]
 text = "Ryhmäpuhelu"
 
@@ -3349,6 +3423,12 @@ text = "Ryhmä"
 
 [gcall_finding_host]
 text = "Etsitään puheluisäntää…"
+
+[gcall_connecting]
+text = "Puhelua yhdistetään…"
+
+[gcall_reconnecting]
+text = "Puhelua yhdistetään uudelleen…"
 
 [gcall_already_in_call]
 text = "Olet jo puhelussa."
@@ -3359,8 +3439,14 @@ text = "Puhelu päättyi"
 [gcall_ended_host_lost]
 text = "Puhelu päättyi — puheluisäntä katosi"
 
+[gcall_battery_limited]
+text = "Akun varaus on alle {percent} %. Isännöintiä on rajoitettu: vain yksi henkilö kuuluu kerrallaan, eikä kukaan uusi voi liittyä."
+
 [gcall_no_host]
 text = "Puheluisäntää ei ole saatavilla"
+
+[gcall_cant_connect]
+text = "Et päässyt puheluun"
 
 [gcall_minimize]
 text = "Pienennä puhelu"
@@ -3374,6 +3460,10 @@ text = "Toistaiseksi vain sinä. Odotetaan muita."
 [gcall_people]
 one = "{count} henkilö puhelussa"
 other = "{count} henkilöä puhelussa"
+
+[gcall_more]
+one = "+{count} muuta"
+other = "+{count} muuta"
 
 [gcall_ok]
 text = "OK"
@@ -3728,6 +3818,9 @@ text = "Käännä"
 
 [call_audio_route]
 text = "Ääni: {route}"
+
+[call_reconnecting]
+text = "Puhelua yhdistetään uudelleen…"
 
 [call_reconnecting_plain]
 text = "Yhdistetään uudelleen"
@@ -4280,11 +4373,20 @@ text = "Ei vastausta"
 [calls_what_cancelled]
 text = "Peruttu"
 
+[calls_what_unreachable]
+text = "Puhelu ei yhdistynyt"
+
 [calls_profile_desc]
 text = "Profiili: {name}"
 
 [calls_cant_call]
 text = "Ei voi soittaa"
+
+[calls_row_desc]
+text = "{name}, {what}, {time}. {action}"
+
+[calls_row_desc_duration]
+text = "{name}, {what}, {duration}, {time}. {action}"
 
 [calls_group_info_desc]
 text = "{name}, ryhmän tiedot"
@@ -4383,8 +4485,14 @@ text = "Jokin meni pieleen"
 [debuglog_send_title]
 text = "Lähetä vianetsintäloki"
 
+[groupsc_sys_joined_you]
+text = "Liityit"
+
 [groupsc_sys_joined_other]
 text = "{name} liittyi"
+
+[groupsc_sys_joined_someone]
+text = "Joku liittyi"
 
 [groupsc_sys_left_you]
 text = "Poistuit"
@@ -4392,8 +4500,61 @@ text = "Poistuit"
 [groupsc_sys_left_other]
 text = "{name} poistui"
 
+[groupsc_sys_left_someone]
+text = "Joku poistui"
+
+[groupsc_removed_other_flags]
+one = "{name} poistettiin {count} ylläpitäjän merkinnän jälkeen"
+other = "{name} poistettiin {count} ylläpitäjän merkinnän jälkeen"
+
+[groupsc_removed_someone_flags]
+one = "Eräs jäsen poistettiin {count} ylläpitäjän merkinnän jälkeen"
+other = "Eräs jäsen poistettiin {count} ylläpitäjän merkinnän jälkeen"
+
 [groupsc_admin_granted_you]
 text = "{by} nimesi sinut ylläpitäjäksi"
+
+[groupsc_admin_granted_you_by_someone]
+text = "Joku nimesi sinut ylläpitäjäksi"
+
+[groupsc_admin_granted_by_you]
+text = "Nimesit henkilön {sub} ylläpitäjäksi"
+
+[groupsc_admin_granted_by_you_someone]
+text = "Nimesit erään jäsenen ylläpitäjäksi"
+
+[groupsc_admin_granted_other_someone]
+text = "{by} nimesi erään jäsenen ylläpitäjäksi"
+
+[groupsc_admin_granted_by_someone]
+text = "Joku nimesi henkilön {sub} ylläpitäjäksi"
+
+[groupsc_admin_granted_by_someone_someone]
+text = "Joku nimesi erään jäsenen ylläpitäjäksi"
+
+[groupsc_admin_revoked_you_by_someone]
+text = "Joku poisti ylläpito-oikeutesi"
+
+[groupsc_admin_revoked_by_you]
+text = "Poistit henkilön {sub} ylläpito-oikeudet"
+
+[groupsc_admin_revoked_by_you_someone]
+text = "Poistit erään jäsenen ylläpito-oikeudet"
+
+[groupsc_admin_revoked_other_someone]
+text = "{by} poisti erään jäsenen ylläpito-oikeudet"
+
+[groupsc_admin_revoked_by_someone]
+text = "Joku poisti henkilön {sub} ylläpito-oikeudet"
+
+[groupsc_admin_revoked_by_someone_someone]
+text = "Joku poisti erään jäsenen ylläpito-oikeudet"
+
+[groupsc_host_added_someone]
+text = "Erään jäsenen laite isännöi nyt ryhmää"
+
+[groupsc_host_removed_someone]
+text = "Erään jäsenen laite lopetti ryhmän isännöinnin"
 
 [groupsc_removed_you_group]
 text = "Sinut poistettiin tästä ryhmästä"
@@ -4404,9 +4565,34 @@ text = "Sinä: {text}"
 [groupsc_preview_other]
 text = "{name}: {text}"
 
+[groupsc_preview_someone]
+text = "Joku: {text}"
+
+[groupsc_photo_caption_line]
+text = "Kuva · {caption}"
+
 [groupsc_members]
 one = "{count} jäsen"
 other = "{count} jäsentä"
+
+[groupsc_status_this_device]
+text = "tämä laite isännöi ryhmää"
+
+[groupsc_status_no_host]
+text = "ei vielä isäntälaitetta"
+
+[groupsc_status_waiting]
+text = "odottaa isäntälaitetta"
+
+[groupsc_status_join]
+text = "{members} · {state}"
+
+[groupsc_online_count]
+one = "{count} paikalla"
+other = "{count} paikalla"
+
+[groupsc_online_cap]
+text = "{count}+ paikalla"
 
 [groupsc_admins_only_post]
 text = "Vain ylläpitäjät kirjoittavat tänne"
@@ -4417,11 +4603,26 @@ text = "Vain ylläpitäjät kirjoittavat tänne."
 [groupsc_req_pending_named]
 text = "Odotetaan: {name} · ryhmän {group} kautta"
 
+[groupsc_req_pending_anon]
+text = "Odotetaan vastausta · ryhmän {group} kautta"
+
+[groupsc_req_accepted_messages_anon]
+text = "Hän hyväksyi · vain viestit"
+
+[groupsc_req_accepted_connecting_anon]
+text = "Hän hyväksyi · yhdistetään"
+
 [groupsc_req_declined_named]
 text = "{name} hylkäsi"
 
+[groupsc_req_declined_anon]
+text = "Hän hylkäsi"
+
 [groupsc_req_blocked_named]
 text = "{name} esti sinut"
+
+[groupsc_req_blocked_anon]
+text = "Hän esti sinut"
 
 [groupsc_pick_member]
 text = "Jo jäsen"
@@ -4435,6 +4636,15 @@ text = "Kutsuttu · ei vielä toimitettu"
 [groupsc_invite_joined]
 text = "Liittyi"
 
+[groupsc_invite_declined]
+text = "Kutsu hylätty"
+
+[groupsc_flag_final]
+text = "Sinun merkintäsi on {n}/{total}. {name} poistetaan heti: isäntälaitteet hylkäävät hänen uudet viestinsä, ja hän näkee tulleensa poistetuksi."
+
+[groupsc_flag_more]
+text = "Sinun merkintäsi on {n}/{total}. Kaikkien ylläpitäjien merkinnät lasketaan, myös sinun uudet merkintäsi. Kun merkintöjä on {total}, {name} poistetaan heti, ja hän näkee tulleensa poistetuksi."
+
 [groupsc_err_removed]
 text = "Sinut poistettiin tästä ryhmästä."
 
@@ -4447,11 +4657,17 @@ text = "Yksikään isäntälaite ei vastannut ajoissa. Yritä uudelleen, kun jok
 [groupsc_type_first]
 text = "Kirjoita ensin viesti."
 
+[groupsc_picture_too_large]
+text = "Kuva on liian suuri julkaistavaksi."
+
 [groupsc_pick_first]
 text = "Valitse ensin joku."
 
 [groupsc_invited_one_named]
 text = "Kutsu lähetetty: {name}. Hän liittyy hyväksyessään."
+
+[groupsc_invited_one_anon]
+text = "Kutsu lähetetty. Hän liittyy hyväksyessään."
 
 [groupsc_invited_many]
 one = "{count} kutsu lähetetty. Jokainen liittyy hyväksyessään."
@@ -4460,20 +4676,38 @@ other = "{count} kutsua lähetetty. Jokainen liittyy hyväksyessään."
 [groupsc_decline_inv_named]
 text = "Hylätty. {name} näkee, että hylkäsit."
 
+[groupsc_decline_inv_anon]
+text = "Hylätty. Hän näkee, että hylkäsit."
+
 [groupsc_link_closed]
 text = "Avoin linkki on suljettu. Jo liittyneet jäävät; uudet liittyvät kutsulla."
 
 [groupsc_request_sent_named]
 text = "Pyyntö lähetetty: {name}. Se odottaa Keskusteluissa, kunnes hän vastaa."
 
+[groupsc_request_sent_anon]
+text = "Pyyntö lähetetty. Se odottaa Keskusteluissa, kunnes hän vastaa."
+
 [groupsc_req_accept_named]
 text = "Hyväksytty. {name} lisättiin vain viestejä varten ja näkyy Keskusteluissa, kun hänen laitteensa saa yhteyden; puhelut pysyvät pois päältä, kunnes sallit ne."
+
+[groupsc_req_accept_anon]
+text = "Hyväksytty. Hänet lisättiin vain viestejä varten, ja hän näkyy Keskusteluissa, kun hänen laitteensa saa yhteyden; puhelut pysyvät pois päältä, kunnes sallit ne."
+
+[groupsc_req_declined_told_anon]
+text = "Hylätty. Hän saa tiedon ”hylätty”."
 
 [groupsc_req_block_named]
 text = "{name} on estetty eikä voi lähettää enempää pyyntöjä."
 
+[groupsc_req_block_anon]
+text = "Hän on estetty eikä voi lähettää enempää pyyntöjä."
+
 [groupsc_notice_accepted_named]
 text = "{name} hyväksyi pyyntösi. Voitte nyt lähettää viestejä toisillenne; puhelut pysyvät pois päältä, kunnes jompikumpi teistä sallii ne."
+
+[groupsc_notice_accepted_anon]
+text = "Hän hyväksyi pyyntösi. Voitte nyt lähettää viestejä toisillenne; puhelut pysyvät pois päältä, kunnes jompikumpi teistä sallii ne."
 
 [video_hd_line_on]
 text = "Terävämpi video päällä"
@@ -4490,8 +4724,62 @@ text = "Varattu-tila ei ole vielä käytettävissä. Puheluasetuksesi ovat ennal
 [blocking_row_blocked_you]
 text = "Esti sinut"
 
+[link_match_body_unnamed]
+text = "Uusi laite haluaa liittyä tiliisi. Sen pitäisi näyttää samat kuusi numeroa kuin alla."
+
+[link_approve_title_unnamed]
+text = "Hyväksytäänkö uusi laite?"
+
+[link_approve_warning_unnamed]
+text = "Hyväksyminen lähettää **palautussanasi** uudelle laitteelle. Siitä tulee täysi kopio sinusta: se voi lukea keskustelusi ja toimia sinuna. Hyväksy vain laite, joka on itselläsi."
+
+[link_linking_unnamed]
+text = "Linkitetään uutta laitetta"
+
+[link_done_title_unnamed]
+text = "Uusi laite on linkitetty"
+
+[onboarding_linked_title_unnamed]
+text = "Linkitetty toiseen laitteeseesi"
+
+[onboarding_restored_title_adding_unnamed]
+text = "Tilisi lisättiin tälle puhelimelle"
+
+[onboarding_restored_lead_adding_unnamed]
+text = "Vain valitsemasi tili on kerrallaan verkossa, joten tämä tili on nyt verkossa ja toinen tilisi on tauolla. Voit vaihtaa asetuksista."
+
+[devices_syncing_unnamed]
+text = "Synkronoidaan laitteen kanssa…"
+
+[devices_confirm_unlink_title_unnamed]
+text = "Poistetaanko tämän laitteen linkitys?"
+
 [devices_unlinked_msg_unnamed]
 text = "Laitteen linkitys poistettu"
+
+[groupsb_join_invited_by_you]
+text = "Kutsuja: sinä"
+
+[groupsb_join_invited_by_unknown]
+text = "Kutsuja ei ole yhteystiedoissasi"
+
+[groupsb_join_owner_you]
+text = "Omistaja: sinä"
+
+[groupsb_join_owner_unknown]
+text = "Omistaja ei ole yhteystiedoissasi"
+
+[groupsb_link_note_unnamed]
+text = "Kuka tahansa, jolla on tämä linkki tai QR-koodi, voi liittyä tähän ryhmään 7 päivän ajan. Jaa se sovelluksella, johon luotat; näet, kuka liittyi, ja voit merkitä hänet poistettavaksi. Jos haluat kutsua yhteystietojasi suoraan, käytä kohtaa Lisää jäseniä."
+
+[groupsb_share_text_unnamed]
+text = "Liity ryhmääni Tinlinessa: {link}"
+
+[card_chat_with_unnamed]
+text = "Avataanko keskustelu hänen kanssaan?"
+
+[card_add_unnamed]
+text = "Lisätäänkö tämä yhteystieto?"
 
 [call_unreachable_title_unnamed]
 text = "Häntä ei tavoitettu"
@@ -4499,14 +4787,32 @@ text = "Häntä ei tavoitettu"
 [calls_desc_incoming]
 text = "Saapuva puhelu"
 
+[calls_desc_outgoing]
+text = "Lähtevä puhelu"
+
+[calls_desc_away]
+text = "Puhelu, kun et ollut tavoitettavissa"
+
 [calls_desc_missed]
 text = "Vastaamaton puhelu"
+
+[calls_desc_declined]
+text = "Hylätty puhelu"
+
+[calls_desc_no_answer]
+text = "Puhelu, johon kukaan ei vastannut"
 
 [calls_desc_cancelled]
 text = "Peruttu puhelu"
 
+[calls_desc_unreachable]
+text = "Puhelu, joka ei yhdistynyt"
+
 [calls_desc_other]
 text = "Tinline-puhelu"
+
+[groupsb_public_link]
+text = "Julkinen linkki"
 
 [groups_list_sent_requests]
 text = "Lähetetyt pyynnöt"
@@ -4520,8 +4826,47 @@ text = "Poissa"
 [calls_what_other]
 text = "Tinline-puhelu"
 
+[notif_request_text_unnamed]
+text = "Joku haluaa lisätä sinut"
+
+[notif_accepted_title]
+text = "Pyyntö hyväksytty"
+
+[notif_accepted_text_unnamed]
+text = "Pyyntösi hyväksyttiin. Linjasi on auki."
+
+[gcall_host_label_device]
+text = "Puheluisäntä: jäsenen {name} laite"
+
+[gcall_host_label_unnamed]
+text = "Puheluisäntä: jäsenen laite"
+
+[gcall_about_this_phone]
+text = "**Tämä puhelin** välittää tätä puhelua. Kaikki puhelussa olevat ovat yhteydessä siihen, ja se välittää äänen eteenpäin ja valitsee, kuka kuuluu, kun useampi puhuu yhtä aikaa."
+
+[gcall_about_device]
+text = "**Jäsenen {name} laite** välittää tämän puhelun. Kaikki puhelussa olevat ovat yhteydessä siihen, ja se välittää äänen eteenpäin ja valitsee, kuka kuuluu, kun useampi puhuu yhtä aikaa."
+
+[gcall_about_unnamed]
+text = "**Puheluisäntä** välittää tämän puhelun. Kaikki puhelussa olevat ovat yhteydessä siihen, ja se välittää äänen eteenpäin ja valitsee, kuka kuuluu, kun useampi puhuu yhtä aikaa."
+
+[gcall_started_by_unnamed]
+text = "Jonkun aloittama"
+
+[gcall_is_calling_group_desc_unnamed]
+text = "Joku soittaa ryhmälle {group}"
+
+[gcall_started_call_desc_unnamed]
+text = "Joku aloitti puhelun ryhmässä {group}"
+
+[notif_group_calling_unnamed]
+text = "Joku soittaa ryhmälle"
+
 [groupsb_role_host_lc]
 text = "isäntälaite"
 
 [groupsb_role_callhost_lc]
 text = "puheluisäntä"
+
+[gcall_is_calling_group_unnamed]
+text = "Joku soittaa ryhmälle"
