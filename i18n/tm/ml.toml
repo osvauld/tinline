@@ -12750,7 +12750,7 @@ en = "Join this group on Tinline: {link}"
 where = [
   "ios group_share_text_unnamed: Text shared with the invite link when the group's name is not known. {link} is the invite link.",
 ]
-text = ""
+text = "Tinline-ൽ ഈ ഗ്രൂപ്പിൽ ചേരൂ: {link}"
 
 [t_5cd5123974]
 en = "**{name}** invited you to **{group}**"
@@ -12758,7 +12758,7 @@ where = [
   "ios group_invited_you: Invitation card. The inviter's name and the group's name are bold (markdown stars, keep them around the same words). {name} is the inviter's first name, {group} the group.",
   "desktop group_invitation_line: Desktop, groups list (in group_live_view.rs): an invitation card. {name} is the first name of who invited me, {group} the group name. **…** is shown bold.",
 ]
-text = ""
+text = "**{name}** നിങ്ങളെ **{group}** ഗ്രൂപ്പിലേക്ക് ക്ഷണിച്ചു"
 
 [t_b187abdb8a]
 en = "Someone invited you to **{group}**"
@@ -12766,56 +12766,56 @@ where = [
   "ios group_invited_you_someone: Invitation card when the inviter's name is not known. The group's name is bold (markdown stars). {group} is the group.",
   "desktop group_invitation_line_unnamed: Desktop, groups list (in group_live_view.rs): an invitation card when I cannot name who invited me. {group} is the group name. **…** is shown bold.",
 ]
-text = ""
+text = "ഒരാൾ നിങ്ങളെ **{group}** ഗ്രൂപ്പിലേക്ക് ക്ഷണിച്ചു"
 
 [t_403876cddd]
 en = "**{name}** wants to chat"
 where = [
   "ios group_wants_to_chat: Chat request card. The requester's name is bold (markdown stars, keep them around the name). {name} is the requester's name.",
 ]
-text = ""
+text = "**{name}** ചാറ്റ് ചെയ്യാൻ ആഗ്രഹിക്കുന്നു"
 
 [t_1dd936cf82]
 en = "**Someone** wants to chat"
 where = [
   "ios group_wants_to_chat_someone: Chat request card when the requester's name is not known. The word Someone is bold (markdown stars).",
 ]
-text = ""
+text = "**ഒരാൾ** ചാറ്റ് ചെയ്യാൻ ആഗ്രഹിക്കുന്നു"
 
 [t_14c772ceb8]
 en = "Accepting adds them as a contact for messages only. You can allow calls later."
 where = [
   "ios group_request_accept_note_unnamed: Note on a chat request card when the requester's name is not known.",
 ]
-text = ""
+text = "സ്വീകരിച്ചാൽ അവർ സന്ദേശങ്ങൾക്ക് മാത്രമുള്ള കോൺടാക്റ്റായി ചേരും. കോളുകൾ പിന്നീട് അനുവദിക്കാം."
 
 [t_02147a4ac8]
 en = "Diagnostics"
 where = [
   "ios settings_diagnostics: Settings row for the diagnostics page.",
 ]
-text = ""
+text = "ഡയഗ്നോസ്റ്റിക്സ്"
 
 [t_c77e79fea8]
 en = "Test tone, core version"
 where = [
   "ios settings_diagnostics_sub: Subtitle of the Diagnostics row.",
 ]
-text = ""
+text = "ടെസ്റ്റ് ടോൺ, കോർ പതിപ്പ്"
 
 [t_49b762fe95]
 en = "Test tone"
 where = [
   "ios settings_test_tone: Diagnostics row and switch label.",
 ]
-text = ""
+text = "ടെസ്റ്റ് ടോൺ"
 
 [t_b25a09fa98]
 en = "Send a {hz} Hz tone instead of the microphone"
 where = [
   "ios settings_test_tone_sub: Subtitle of the Test tone row. {hz} is the tone’s frequency in hertz.",
 ]
-text = ""
+text = "മൈക്രോഫോണിനു പകരം {hz} Hz ടോൺ അയയ്ക്കുക"
 
 [t_0a5f4a65a3]
 en_one = "{count} word"
@@ -12823,104 +12823,106 @@ en_other = "{count} words"
 where = [
   "ios security_tab_words: Tab on the recovery backup page: the recovery words. {count} is the number of words (24).",
 ]
+one = "{count} വാക്ക്"
+other = "{count} വാക്കുകൾ"
 
 [t_aafad48a7f]
 en = "This device · iOS"
 where = [
   "ios devices_row_this_device: Device row subtitle for this device.",
 ]
-text = ""
+text = "ഈ ഉപകരണം · iOS"
 
 [t_a180397df0]
 en = "Synced {ago}"
 where = [
   "ios devices_row_synced: Device row subtitle; {ago} is a relative time such as 5 min ago.",
 ]
-text = ""
+text = "സിങ്ക് ചെയ്തത്: {ago}"
 
 [t_81f91aff8a]
 en = "Unlinked the device"
 where = [
   "ios devices_unlinked_msg_unnamed: Toast after unlinking a device that has no name.",
 ]
-text = ""
+text = "ഉപകരണത്തിന്റെ ലിങ്ക് ഒഴിവാക്കി"
 
 [t_4357f2aa44]
 en = "Syncing…"
 where = [
   "ios devices_syncing_unnamed: Toast when Sync now is pressed for a device that has no name.",
 ]
-text = ""
+text = "സിങ്ക് ചെയ്യുന്നു…"
 
 [t_bcd7a64a42]
 en = "Welcome back, "
 where = [
   "ios unlock_welcome_prefix: Start of the title when the nickname is a tappable switcher; the nickname button follows directly after it.",
 ]
-text = ""
+text = "വീണ്ടും സ്വാഗതം, "
 
 [t_19852ede17]
 en = "{name}, switch identity"
 where = [
   "ios unlock_switch_identity: Accessibility label of the nickname switcher; {name} is the nickname.",
 ]
-text = ""
+text = "{name}, ഐഡന്റിറ്റി മാറുക"
 
 [t_250f279f76]
 en = "{name} goes offline on this phone. Calls to {name} will ring only on your other linked devices until you switch back."
 where = [
   "ios unlock_switch_body: Body of the switch-account confirmation; {name} is the current account's name.",
 ]
-text = ""
+text = "ഈ ഫോണിൽ {name} ഓഫ്‌ലൈനാകും. നിങ്ങൾ ഈ അക്കൗണ്ടിലേക്ക് തിരികെ മാറുന്നതുവരെ, {name} എന്ന അക്കൗണ്ടിലേക്കുള്ള കോളുകൾ നിങ്ങളുടെ ലിങ്ക് ചെയ്ത മറ്റ് ഉപകരണങ്ങളിൽ മാത്രം റിംഗ് ചെയ്യും."
 
 [t_d552b6e2ef]
 en = "Word {count}"
 where = [
   "ios restore_word_n: Accessibility label of one recovery word field; {count} is its position, 1 to 24.",
 ]
-text = ""
+text = "വാക്ക് {count}"
 
 [t_521086b2d1]
 en = "Check that your other device shows this code, then approve there."
 where = [
   "ios link_same_code_lead_unnamed: Explanation under Same code on both? Used when the other device has no name; says your other device.",
 ]
-text = ""
+text = "നിങ്ങളുടെ മറ്റേ ഉപകരണം ഈ കോഡ് തന്നെയാണ് കാണിക്കുന്നതെന്ന് ഉറപ്പാക്കുക, എന്നിട്ട് അവിടെ അംഗീകരിക്കുക."
 
 [t_f6a2aab1ac]
 en = "Expires in {minutes}:{seconds} · works once"
 where = [
   "ios link_expires: Countdown under the QR code; {minutes} and {seconds} are digits, seconds with two digits.",
 ]
-text = ""
+text = "{minutes}:{seconds} കഴിഞ്ഞ് കാലാവധി തീരും · ഒരു തവണ മാത്രം"
 
 [t_15a6286cb0]
 en = "Link code {digits}"
 where = [
   "ios link_code_label: Accessibility label of the six-digit code; {digits} are the digits separated by spaces.",
 ]
-text = ""
+text = "ലിങ്ക് കോഡ് {digits}"
 
 [t_427d1a9662]
 en = "**The new device** wants to join your account. It should be showing the same six digits as below."
 where = [
   "ios link_match_body_unnamed: Body when comparing codes and the new device has no name. The words **The new device** are bold (markdown stars, keep them around them).",
 ]
-text = ""
+text = "**പുതിയ ഉപകരണം** നിങ്ങളുടെ അക്കൗണ്ടിൽ ചേരാൻ ആഗ്രഹിക്കുന്നു. അതിൽ താഴെയുള്ള അതേ ആറ് അക്കങ്ങൾ കാണിക്കുന്നുണ്ടാകണം."
 
 [t_19b46952f6]
 en = "On the new device, open Tinline and choose **Link to a device**."
 where = [
   "ios link_scan_step1: Step 1 on the scan page. The button name **Link to a device** is bold (markdown stars, keep them around the button name); it must match the button's label on the new device. Shown as the first of two lines; the number is not part of the text.",
 ]
-text = ""
+text = "പുതിയ ഉപകരണത്തിൽ Tinline തുറന്ന് **ഒരു ഉപകരണവുമായി ലിങ്ക് ചെയ്യുക** തിരഞ്ഞെടുക്കുക."
 
 [t_039fa6990e]
 en = "Your account was removed from this phone by one of your other devices. Its contacts, chats and calls are deleted here. Your other devices are not affected."
 where = [
   "ios link_unlinked_lead_unnamed: Explanation after this phone was unlinked by another device, when the account has no name.",
 ]
-text = ""
+text = "നിങ്ങളുടെ മറ്റൊരു ഉപകരണം ഈ ഫോണിൽ നിന്ന് നിങ്ങളുടെ അക്കൗണ്ട് നീക്കം ചെയ്തു. അതിന്റെ കോൺടാക്റ്റുകളും ചാറ്റുകളും കോളുകളും ഇവിടെ നിന്ന് ഇല്ലാതാക്കി. നിങ്ങളുടെ മറ്റ് ഉപകരണങ്ങളെ ഇത് ബാധിക്കില്ല."
 
 [t_9fa27bd052]
 en = "Linked to {name}"
@@ -12928,56 +12930,56 @@ where = [
   "ios onboarding_linked_title: Title after linking; {name} is the other device's name.",
   "desktop link_linked_to: Desktop, linking devices (in link_view.rs, link_secure_screen). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} എന്ന ഉപകരണവുമായി ലിങ്ക് ചെയ്തു"
 
 [t_c621599db6]
 en = "Your contacts and chats are arriving from {name} and will keep in step on both."
 where = [
   "ios onboarding_linked_lead: Explanation after linking; {name} is the other device's name.",
 ]
-text = ""
+text = "നിങ്ങളുടെ കോൺടാക്റ്റുകളും ചാറ്റുകളും {name} എന്ന ഉപകരണത്തിൽ നിന്ന് എത്തിക്കൊണ്ടിരിക്കുന്നു, രണ്ടിലും അവ ഒരുപോലെ നിലനിൽക്കും."
 
 [t_9fbe4c80c9]
 en = "By continuing, you agree to the [Terms of Use]({terms_url}) and have read the [Privacy Policy]({privacy_url})."
 where = [
   "ios onboarding_terms_consent: Consent line above the I agree button. Markdown links: keep the [text](url) shape, translate only the link text; {terms_url} and {privacy_url} are web addresses.",
 ]
-text = ""
+text = "തുടരുന്നതിലൂടെ, നിങ്ങൾ [ഉപയോഗ നിബന്ധനകൾ]({terms_url}) അംഗീകരിക്കുകയും [സ്വകാര്യതാ നയം]({privacy_url}) വായിച്ചിട്ടുണ്ടെന്ന് സ്ഥിരീകരിക്കുകയും ചെയ്യുന്നു."
 
 [t_3f7e7c2a80]
 en = "{name} allowed"
 where = [
   "ios onboarding_perm_allowed: Accessibility label of the check mark on an allowed permission; {name} is the permission title.",
 ]
-text = ""
+text = "{name} അനുവദിച്ചു"
 
 [t_d7cc9318c9]
 en = "Allow {name}"
 where = [
   "ios onboarding_allow_a11y: Accessibility label of the Allow button; {name} is the permission title in lower case.",
 ]
-text = ""
+text = "{name} അനുവദിക്കുക"
 
 [t_1c63fc0970]
 en = "Hide {name}"
 where = [
   "ios shellkit_hide_field: Accessibility label of the eye button on a secret field; {name} is the field label in lower case.",
 ]
-text = ""
+text = "{name} മറയ്ക്കുക"
 
 [t_53251367a9]
 en = "Show {name}"
 where = [
   "ios shellkit_show_field: Accessibility label of the eye button on a secret field; {name} is the field label in lower case.",
 ]
-text = ""
+text = "{name} കാണിക്കുക"
 
 [t_c54e35554c]
 en = "No account"
 where = [
   "ios shell_flow_no_account: Error shown when an account flow finds no account.",
 ]
-text = ""
+text = "അക്കൗണ്ടില്ല"
 
 [t_78b34052d8]
 en = "Account changed"
@@ -12985,42 +12987,42 @@ where = [
   "ios shell_flow_account_changed: Error when the selected account changed while a flow was running.",
   "desktop profile_account_changed: Desktop, profile and settings (in profile_ui.rs, read_profile).",
 ]
-text = ""
+text = "അക്കൗണ്ട് മാറി"
 
 [t_93d833ac96]
 en = "Call while not available"
 where = [
   "ios shell_call_desc_unavailable: Screen reader phrase for a call row, a whole phrase used as {what} in the row label: incoming call that came while the user had set themselves unavailable. Reads like “Missed call”.",
 ]
-text = ""
+text = "ലഭ്യമല്ലാതിരുന്നപ്പോൾ വന്ന കോൾ"
 
 [t_7286c55835]
 en = "Call with no answer"
 where = [
   "ios shell_call_desc_no_answer: Screen reader phrase for a call row, a whole phrase used as {what} in the row label: outgoing call nobody picked up. Reads like “Missed call”.",
 ]
-text = ""
+text = "മറുപടി ലഭിക്കാത്ത കോൾ"
 
 [t_b70d3c6bb5]
 en = "Call couldn’t connect"
 where = [
   "ios shell_call_what_unreachable: Call list: call that could not reach the other person.",
 ]
-text = ""
+text = "കോൾ കണക്റ്റ് ആയില്ല"
 
 [t_775f66b114]
 en = "Call"
 where = [
   "ios shell_call_desc_other: Screen reader phrase for a call row, a whole phrase used as {what} in the row label: any other call. Reads like “Missed call”.",
 ]
-text = ""
+text = "കോൾ"
 
 [t_46bad378f1]
 en = "Word {n} isn’t in the recovery word list. Check the spelling."
 where = [
   "ios shell_restore_bad_one: Restore screen message under the 24 word boxes. {n} is the word’s position (1 to 24).",
 ]
-text = ""
+text = "വാക്ക് {n} വീണ്ടെടുക്കൽ വാക്കുകളുടെ പട്ടികയിൽ ഇല്ല. അക്ഷരങ്ങൾ ഒന്നു പരിശോധിക്കുക."
 
 [t_db53e5c15f]
 en_one = "{count} words aren’t in the recovery word list. The first is word {number}. Check the spelling."
@@ -13028,13 +13030,15 @@ en_other = "{count} words aren’t in the recovery word list. The first is word 
 where = [
   "ios shell_restore_bad_many: Restore screen message under the 24 word boxes. {count} is how many typed words are not recovery words (always 2 or more); {number} is the position (1 to 24) of the first one.",
 ]
+one = "{count} വാക്ക് വീണ്ടെടുക്കൽ വാക്കുകളുടെ പട്ടികയിൽ ഇല്ല. ആദ്യത്തേത് വാക്ക് {number} ആണ്. അക്ഷരങ്ങൾ ഒന്നു പരിശോധിക്കുക."
+other = "{count} വാക്കുകൾ വീണ്ടെടുക്കൽ വാക്കുകളുടെ പട്ടികയിൽ ഇല്ല. ആദ്യത്തേത് വാക്ക് {number} ആണ്. അക്ഷരങ്ങൾ ഒന്നു പരിശോധിക്കുക."
 
 [t_814973bf24]
 en = "{sub} from {name}"
 where = [
   "ios shell_ring_a11y: Screen reader label of the ringing banner. {sub} is “Incoming call” or similar, {name} the caller.",
 ]
-text = ""
+text = "{sub}: {name}"
 
 [t_aca5a8736d]
 en = "End and answer"
@@ -13043,7 +13047,7 @@ where = [
   "ios call_waiting_end_answer: Button on the call-waiting card that ends the current call and answers the new one.",
   "ios call_waiting_end_answer_desc: Accessibility description of the End & answer button.",
 ]
-text = ""
+text = "അവസാനിപ്പിച്ച് എടുക്കുക"
 
 [t_cd6ad8304d]
 en = "Then go to Settings › Tinline › Microphone and allow it."
@@ -13051,105 +13055,105 @@ where = [
   "ios shell_mic_hint: Hint with the path to the microphone permission in iOS Settings.",
   "ios call_mic_needed_hint: Hint under the Open settings button on the microphone permission screen.",
 ]
-text = ""
+text = "തുടർന്ന് ക്രമീകരണം › Tinline › മൈക്രോഫോൺ എന്നതിൽ ചെന്ന് അത് അനുവദിക്കുക."
 
 [t_746ec1e8e6]
 en = "{what} · {duration}"
 where = [
   "ios shell_calls_what_duration: Call row second line. {what} is the call outcome (Missed, Outgoing…), {duration} the call length.",
 ]
-text = ""
+text = "{what} · {duration}"
 
 [t_fa6f5bca71]
 en = "{name}, {what}, {stamp}. {action}"
 where = [
   "ios shell_calls_row_a11y: Screen reader label of a call row. {name} is the contact, {what} a whole phrase such as “Missed call”, {stamp} when, {action} what tapping does.",
 ]
-text = ""
+text = "{name}, {what}, {stamp}. {action}"
 
 [t_f443d6d138]
 en = "{name}, {what}, {duration}, {stamp}. {action}"
 where = [
   "ios shell_calls_row_a11y_duration: Screen reader label of an answered call row. {name} is the contact, {what} a whole phrase such as “Incoming call”, {duration} how long, {stamp} when, {action} what tapping does.",
 ]
-text = ""
+text = "{name}, {what}, {duration}, {stamp}. {action}"
 
 [t_6c3d485347]
 en = "{name}, {what}, {stamp}. Start or join a call"
 where = [
   "ios shell_calls_group_row_a11y: Screen reader label of a group call row. {name} group, {what} summary, {stamp} time.",
 ]
-text = ""
+text = "{name}, {what}, {stamp}. കോൾ ആരംഭിക്കുകയോ ചേരുകയോ ചെയ്യുക"
 
 [t_910b1a6725]
 en = "{name}, {kind}"
 where = [
   "ios shell_search_tile_a11y: Screen reader label of a search result tile. {name} is the person or group, {kind} what it is.",
 ]
-text = ""
+text = "{name}, {kind}"
 
 [t_b48b8048af]
 en = "{name}: "
 where = [
   "ios shell_search_author_prefix: Prefix of a message search hit snippet: who wrote it. {name} is the author’s first name or “You”. Keep the trailing space.",
 ]
-text = ""
+text = "{name}: "
 
 [t_720d4af996]
 en = "WHAT {name} CAN DO"
 where = [
   "ios people_detail_can_do: Contact page section header, upper case. {name} is the contact’s first name in capitals.",
 ]
-text = ""
+text = "{name} എന്നയാൾക്ക് ചെയ്യാവുന്നത്"
 
 [t_119b58dbe5]
 en = "CALLS WITH {name}"
 where = [
   "ios people_detail_calls_with: Contact page section header, upper case. {name} is the contact’s name in capitals.",
 ]
-text = ""
+text = "{name} എന്നയാളുമായുള്ള കോളുകൾ"
 
 [t_fdce735c0d]
 en = "{step} of {total}"
 where = [
   "ios people_step_of: Sign-up progress text. {step} is the current step, {total} how many steps there are.",
 ]
-text = ""
+text = "{step} / {total}"
 
 [t_5e0ddcdd04]
 en = "Setup progress, step {step} of {total}"
 where = [
   "ios people_step_a11y: Screen reader label of sign-up progress. {step} and {total} as above.",
 ]
-text = ""
+text = "സജ്ജീകരണ പുരോഗതി, ഘട്ടം {step} / {total}"
 
 [t_6230218701]
 en = "Setup progress, step {step} of {total}: {label}"
 where = [
   "ios people_step_a11y_label: Screen reader label of sign-up progress with the step’s name. {step}, {total}, and {label} the name of the step.",
 ]
-text = ""
+text = "സജ്ജീകരണ പുരോഗതി, ഘട്ടം {step} / {total}: {label}"
 
 [t_884be25149]
 en = "That picture is {w} × {h} pixels. Tinline accepts up to {max} pixels on a side."
 where = [
   "ios people_pic_too_large_px: Picture refused: too many pixels. {w} and {h} are its width and height, {max} the limit per side.",
 ]
-text = ""
+text = "ആ ഫോട്ടോയുടെ വലുപ്പം {w} × {h} പിക്സൽ ആണ്. ഓരോ വശത്തും പരമാവധി {max} പിക്സൽ വരെ Tinline സ്വീകരിക്കും."
 
 [t_c492cfeb46]
 en = "That is too long. Each piece of information can be up to {limit}."
 where = [
   "ios people_rule_value_long: Profile check: a value is too long. {limit} is the size limit with its unit, such as 16 KiB.",
 ]
-text = ""
+text = "ഇത് വളരെ നീളമുള്ളതാണ്. ഓരോ വിവരവും പരമാവധി {limit} വരെയാകാം."
 
 [t_767555f71c]
 en = "Drag to move the picture. Use the slider to zoom."
 where = [
   "ios people_crop_help: Help text under the crop area.",
 ]
-text = ""
+text = "ഫോട്ടോ നീക്കാൻ വലിച്ചിടുക. സൂം ചെയ്യാൻ സ്ലൈഡർ ഉപയോഗിക്കുക."
 
 [t_32daee4811]
 en = "{bytes} of {limit} bytes"
@@ -13157,49 +13161,49 @@ where = [
   "ios people_ui_bytes: Counter under a profile field. {bytes} is how many bytes are used, {limit} the maximum.",
   "desktop profile_of_bytes: Desktop, profile and settings (in profile_view.rs, field_row_inner). {bytes} is a value filled in by the app. {limit} is a value filled in by the app.",
 ]
-text = ""
+text = "{limit} ബൈറ്റിൽ {bytes}"
 
 [t_930ce5bfa9]
 en = "Open {label}: {url}"
 where = [
   "ios people_ui_open_a11y: Screen reader label of the button that opens a link field. {label} is the field name, {url} the shortened address.",
 ]
-text = ""
+text = "{label} തുറക്കുക: {url}"
 
 [t_10b961c673]
 en = "Microphone permission needed to place a call"
 where = [
   "ios call_mic_permission_needed_place: Error shown when the user tries to place a call without microphone permission.",
 ]
-text = ""
+text = "കോൾ ചെയ്യാൻ മൈക്രോഫോൺ അനുമതി വേണം"
 
 [t_8b860e25a4]
 en = "About this call. {word} signal, direct."
 where = [
   "ios call_about_signal_direct: Accessibility label of the info button. {word} is a signal strength word such as Weak or Strong.",
 ]
-text = ""
+text = "ഈ കോളിനെക്കുറിച്ച്. സിഗ്നൽ: {word}, നേരിട്ട്."
 
 [t_09db209730]
 en = "About this call. {word} signal, relayed."
 where = [
   "ios call_about_signal_relayed: Accessibility label of the info button. {word} is a signal strength word such as Weak or Strong.",
 ]
-text = ""
+text = "ഈ കോളിനെക്കുറിച്ച്. സിഗ്നൽ: {word}, റിലേ വഴി."
 
 [t_410bc502cd]
 en = "{word} signal · Direct"
 where = [
   "ios call_about_headline_direct: Bold headline on the call details card. {word} is a signal strength word such as Weak or Strong.",
 ]
-text = ""
+text = "സിഗ്നൽ: {word} · നേരിട്ട്"
 
 [t_537090564e]
 en = "{word} signal · Relayed"
 where = [
   "ios call_about_headline_relayed: Bold headline on the call details card. {word} is a signal strength word such as Weak or Strong.",
 ]
-text = ""
+text = "സിഗ്നൽ: {word} · റിലേ വഴി"
 
 [t_57f425a97e]
 en = "Auto"
@@ -13207,63 +13211,63 @@ where = [
   "ios call_quality_auto: Video quality setting: let Tinline choose.",
   "desktop common_auto: Shared label, used in several places (call_screen, profile).",
 ]
-text = ""
+text = "ഓട്ടോ"
 
 [t_7538517c8f]
 en = "Prefer HD"
 where = [
   "ios call_quality_prefer_hd: Video quality setting: prefer sharper HD video.",
 ]
-text = ""
+text = "HD-ക്ക് മുൻഗണന"
 
 [t_fb52348fb1]
 en = "HD · {size}"
 where = [
   "ios call_resolution_hd: Video size label for HD video. {size} is width×height such as 1280×720.",
 ]
-text = ""
+text = "HD · {size}"
 
 [t_681ed3e097]
 en = "The call couldn’t connect"
 where = [
   "ios call_group_connect_failed: Group call start failure, generic; the call is the subject.",
 ]
-text = ""
+text = "കോൾ കണക്റ്റ് ആയില്ല"
 
 [t_2c96816ba0]
 en = "Call host: your other device"
 where = [
   "ios call_group_host_is_yours: Pill on the group call screen naming the call host. Another device of the user’s.",
 ]
-text = ""
+text = "കോൾ ഹോസ്റ്റ്: നിങ്ങളുടെ മറ്റേ ഉപകരണം"
 
 [t_7cda722e2e]
 en = "{name} is calling the group {group}"
 where = [
   "ios call_group_announce_ringing_label: Accessibility label of the group call announcement while ringing. {name} is the member, {group} the group.",
 ]
-text = ""
+text = "{name} {group} ഗ്രൂപ്പിനെ വിളിക്കുന്നു"
 
 [t_31bef3871e]
 en = "{name} started a call in {group}"
 where = [
   "ios call_group_announce_started_label: Accessibility label of the group call announcement. {name} is the member, {group} the group.",
 ]
-text = ""
+text = "{name} {group} ഗ്രൂപ്പിൽ ഒരു കോൾ ആരംഭിച്ചു"
 
 [t_2ff42dbfce]
 en = "{word} signal"
 where = [
   "ios call_badge_signal: Badge on the call-ended screen. {word} is a signal strength word such as Weak or Strong.",
 ]
-text = ""
+text = "സിഗ്നൽ: {word}"
 
 [t_f4619634b2]
 en = "They may be offline, out of signal, or not taking calls right now. Tinline can’t leave messages."
 where = [
   "ios call_unreachable_body_blank: Explanation when a call could not connect and the contact has no name.",
 ]
-text = ""
+text = "അവർ ഓഫ്‌ലൈനായിരിക്കാം, സിഗ്നൽ ഇല്ലാത്തിടത്തായിരിക്കാം, അല്ലെങ്കിൽ ഇപ്പോൾ കോളുകൾ എടുക്കുന്നില്ലായിരിക്കാം. Tinline-ന് സന്ദേശങ്ങൾ ഇട്ടുവയ്ക്കാൻ കഴിയില്ല."
 
 [t_6663ab075c]
 en = "You made yourself an admin"
@@ -13271,7 +13275,7 @@ where = [
   "ios group_sys_admin_you_you: System line in a group chat (the centred grey line). Admin role given. Actor: the user. Subject: the user.",
   "desktop group_sys_admin_you_you: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Admin role given: I did it, to me.",
 ]
-text = ""
+text = "നിങ്ങൾ സ്വയം അഡ്മിനായി"
 
 [t_49d670362c]
 en = "You made {name} an admin"
@@ -13279,7 +13283,7 @@ where = [
   "ios group_sys_admin_you_named: System line in a group chat (the centred grey line). Admin role given. Actor: the user. Subject: a named member. {name} is the member it was done to.",
   "desktop group_sys_admin_you_other: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Admin role given: I did it, to {name}, a person.",
 ]
-text = ""
+text = "നിങ്ങൾ {name} എന്നയാളെ അഡ്മിനാക്കി"
 
 [t_ea5318e5e0]
 en = "{by} made {name} an admin"
@@ -13287,7 +13291,7 @@ where = [
   "ios group_sys_admin_named_named: System line in a group chat (the centred grey line). Admin role given. Actor: a named member. Subject: a named member. {by} is who did it (their name); {name} is the member it was done to.",
   "desktop group_sys_admin_other_other: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Admin role given: {by} is the first name of the person who did it, to {name}, a person.",
 ]
-text = ""
+text = "{by} {name} എന്നയാളെ അഡ്മിനാക്കി"
 
 [t_fa5133758c]
 en = "Someone made {name} an admin"
@@ -13295,7 +13299,7 @@ where = [
   "ios group_sys_admin_someone_named: System line in a group chat (the centred grey line). Admin role given. Actor: a member whose name is unknown. Subject: a named member. {name} is the member it was done to.",
   "desktop group_sys_admin_someone_other: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Admin role given: someone I cannot name did it, to {name}, a person.",
 ]
-text = ""
+text = "ഒരാൾ {name} എന്നയാളെ അഡ്മിനാക്കി"
 
 [t_5773dfd4ed]
 en = "You removed yourself as admin"
@@ -13303,7 +13307,7 @@ where = [
   "ios group_sys_unadmin_you_you: System line in a group chat (the centred grey line). Admin role taken away. Actor: the user. Subject: the user.",
   "desktop group_sys_unadmin_you_you: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Admin role taken away: I did it, to me.",
 ]
-text = ""
+text = "നിങ്ങൾ സ്വയം അഡ്മിൻ സ്ഥാനം ഒഴിഞ്ഞു"
 
 [t_6e2111b0ea]
 en = "You removed {name} as admin"
@@ -13311,7 +13315,7 @@ where = [
   "ios group_sys_unadmin_you_named: System line in a group chat (the centred grey line). Admin role taken away. Actor: the user. Subject: a named member. {name} is the member it was done to.",
   "desktop group_sys_unadmin_you_other: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Admin role taken away: I did it, to {name}, a person.",
 ]
-text = ""
+text = "നിങ്ങൾ {name} എന്നയാളെ അഡ്മിൻ സ്ഥാനത്തുനിന്ന് നീക്കി"
 
 [t_870567c1f4]
 en = "{by} removed {name} as admin"
@@ -13319,7 +13323,7 @@ where = [
   "ios group_sys_unadmin_named_named: System line in a group chat (the centred grey line). Admin role taken away. Actor: a named member. Subject: a named member. {by} is who did it (their name); {name} is the member it was done to.",
   "desktop group_sys_unadmin_other_other: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Admin role taken away: {by} is the first name of the person who did it, to {name}, a person.",
 ]
-text = ""
+text = "{by} {name} എന്നയാളെ അഡ്മിൻ സ്ഥാനത്തുനിന്ന് നീക്കി"
 
 [t_fb60dc3641]
 en = "Someone removed {name} as admin"
@@ -13327,7 +13331,7 @@ where = [
   "ios group_sys_unadmin_someone_named: System line in a group chat (the centred grey line). Admin role taken away. Actor: a member whose name is unknown. Subject: a named member. {name} is the member it was done to.",
   "desktop group_sys_unadmin_someone_other: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Admin role taken away: someone I cannot name did it, to {name}, a person.",
 ]
-text = ""
+text = "ഒരാൾ {name} എന്നയാളെ അഡ്മിൻ സ്ഥാനത്തുനിന്ന് നീക്കി"
 
 [t_c3c984737b]
 en = "A member’s device now hosts the group"
@@ -13335,7 +13339,7 @@ where = [
   "ios group_sys_host_added_someone: System line in a group chat (the centred grey line). A device of a member whose name is unknown now hosts the group.",
   "desktop group_sys_host_added_someone: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). One device of someone I cannot name became a host.",
 ]
-text = ""
+text = "ഒരു അംഗത്തിന്റെ ഉപകരണം ഇപ്പോൾ ഗ്രൂപ്പ് ഹോസ്റ്റ് ചെയ്യുന്നു"
 
 [t_bf5df7a742]
 en = "A member’s device stopped hosting the group"
@@ -13343,112 +13347,112 @@ where = [
   "ios group_sys_host_removed_someone: System line in a group chat (the centred grey line). A device of a member whose name is unknown stopped hosting the group.",
   "desktop group_sys_host_removed_someone: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). One device of someone I cannot name stopped hosting.",
 ]
-text = ""
+text = "ഒരു അംഗത്തിന്റെ ഉപകരണം ഗ്രൂപ്പ് ഹോസ്റ്റ് ചെയ്യുന്നത് നിർത്തി"
 
 [t_50e0e3a61f]
 en = "{name}, owner and call host. Open actions"
 where = [
   "ios group_member_desc_owner_callhost: Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is owner and call host.",
 ]
-text = ""
+text = "{name}, ഉടമയും കോൾ ഹോസ്റ്റും. പ്രവർത്തനങ്ങൾ തുറക്കുക"
 
 [t_9ecb0422e1]
 en = "{name}, owner and host. Open actions"
 where = [
   "ios group_member_desc_owner_host: Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is owner and host.",
 ]
-text = ""
+text = "{name}, ഉടമയും ഹോസ്റ്റും. പ്രവർത്തനങ്ങൾ തുറക്കുക"
 
 [t_8645192669]
 en = "{name}, owner, host and call host. Open actions"
 where = [
   "ios group_member_desc_owner_host_callhost: Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is owner, host and call host.",
 ]
-text = ""
+text = "{name}, ഉടമ, ഹോസ്റ്റ്, കോൾ ഹോസ്റ്റ്. പ്രവർത്തനങ്ങൾ തുറക്കുക"
 
 [t_c861ad6117]
 en = "{name}, admin and call host. Open actions"
 where = [
   "ios group_member_desc_admin_callhost: Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is admin and call host.",
 ]
-text = ""
+text = "{name}, അഡ്മിനും കോൾ ഹോസ്റ്റും. പ്രവർത്തനങ്ങൾ തുറക്കുക"
 
 [t_9296b31c8f]
 en = "{name}, admin and host. Open actions"
 where = [
   "ios group_member_desc_admin_host: Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is admin and host.",
 ]
-text = ""
+text = "{name}, അഡ്മിനും ഹോസ്റ്റും. പ്രവർത്തനങ്ങൾ തുറക്കുക"
 
 [t_7df5a10cb5]
 en = "{name}, admin, host and call host. Open actions"
 where = [
   "ios group_member_desc_admin_host_callhost: Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is admin, host and call host.",
 ]
-text = ""
+text = "{name}, അഡ്മിൻ, ഹോസ്റ്റ്, കോൾ ഹോസ്റ്റ്. പ്രവർത്തനങ്ങൾ തുറക്കുക"
 
 [t_51c0282c1c]
 en = "{name}, member and call host. Open actions"
 where = [
   "ios group_member_desc_member_callhost: Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is member and call host.",
 ]
-text = ""
+text = "{name}, അംഗവും കോൾ ഹോസ്റ്റും. പ്രവർത്തനങ്ങൾ തുറക്കുക"
 
 [t_e66e085198]
 en = "{name}, member and host. Open actions"
 where = [
   "ios group_member_desc_member_host: Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is member and host.",
 ]
-text = ""
+text = "{name}, അംഗവും ഹോസ്റ്റും. പ്രവർത്തനങ്ങൾ തുറക്കുക"
 
 [t_4ccca82c9f]
 en = "{name}, member, host and call host. Open actions"
 where = [
   "ios group_member_desc_member_host_callhost: Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is member, host and call host.",
 ]
-text = ""
+text = "{name}, അംഗം, ഹോസ്റ്റ്, കോൾ ഹോസ്റ്റ്. പ്രവർത്തനങ്ങൾ തുറക്കുക"
 
 [t_bab452c602]
 en = "Host online"
 where = [
   "ios group_host_online: Presence under a host or call host device in group info: that device is online.",
 ]
-text = ""
+text = "ഹോസ്റ്റ് ഓൺലൈനാണ്"
 
 [t_fca7141b23]
 en = "Host offline"
 where = [
   "ios group_host_offline: Presence under a host or call host device in group info: that device is offline.",
 ]
-text = ""
+text = "ഹോസ്റ്റ് ഓഫ്‌ലൈനാണ്"
 
 [t_c19eb247f5]
 en = "Online · also hosts calls"
 where = [
   "ios group_host_online_calls: Presence under a device that is a chat host and also a call host: online.",
 ]
-text = ""
+text = "ഓൺലൈൻ · കോളുകളും ഹോസ്റ്റ് ചെയ്യുന്നു"
 
 [t_7444310255]
 en = "Offline · also hosts calls"
 where = [
   "ios group_host_offline_calls: Presence under a device that is a chat host and also a call host: offline.",
 ]
-text = ""
+text = "ഓഫ്‌ലൈൻ · കോളുകളും ഹോസ്റ്റ് ചെയ്യുന്നു"
 
 [t_4b3dcfea10]
 en = "**Your other device** carries this call. Everyone in the call connects to it, and it passes the audio on and chooses who is heard when several people speak."
 where = [
   "ios call_group_about_your_other: Group call details card, first sentence. The host’s name at the start is bold (markdown stars, keep them around the same words); the whole sentence is one string so the verb can agree with it. Another device of the user’s is the call host.",
 ]
-text = ""
+text = "**നിങ്ങളുടെ മറ്റേ ഉപകരണം** ആണ് ഈ കോൾ നടത്തുന്നത്. കോളിലുള്ള എല്ലാവരും അതിലേക്ക് കണക്റ്റ് ചെയ്യുന്നു, അത് ഓഡിയോ കൈമാറുകയും ഒരേസമയം പലരും സംസാരിക്കുമ്പോൾ ആരെ കേൾക്കണമെന്ന് തീരുമാനിക്കുകയും ചെയ്യുന്നു."
 
 [t_5431505ef8]
 en = "**A member’s device** carries this call. Everyone in the call connects to it, and it passes the audio on and chooses who is heard when several people speak."
 where = [
   "ios call_group_about_someone: Group call details card, first sentence. The host’s name at the start is bold (markdown stars, keep them around the same words); the whole sentence is one string so the verb can agree with it. A member whose name is not known hosts the call.",
 ]
-text = ""
+text = "**ഒരു അംഗത്തിന്റെ ഉപകരണം** ആണ് ഈ കോൾ നടത്തുന്നത്. കോളിലുള്ള എല്ലാവരും അതിലേക്ക് കണക്റ്റ് ചെയ്യുന്നു, അത് ഓഡിയോ കൈമാറുകയും ഒരേസമയം പലരും സംസാരിക്കുമ്പോൾ ആരെ കേൾക്കണമെന്ന് തീരുമാനിക്കുകയും ചെയ്യുന്നു."
 
 [t_3c5ad294ce]
 en = "Busy until tomorrow {time}"
@@ -13456,7 +13460,7 @@ where = [
   "ios people_busy_until_tomorrow: Availability line while busy until a time. {time} is a clock time formatted for the user’s region, such as 18:30. The time is tomorrow.",
   "desktop profile_busy_until_tomorrow: Desktop, profile availability (in profile_ui.rs, busy_until). Shown while I am marked busy. {time} is a clock time such as 18:00. This one is for a time tomorrow.",
 ]
-text = ""
+text = "നാളെ {time} വരെ തിരക്കിലാണ്"
 
 [t_1b7eba8ee8]
 en = "Busy until Monday {time}"
@@ -13464,7 +13468,7 @@ where = [
   "ios people_busy_until_mon: Availability line while busy until a time. {time} is a clock time formatted for the user’s region, such as 18:30. The time is on a Monday, a later day this week.",
   "desktop profile_busy_until_mon: Desktop, profile availability (in profile_ui.rs, busy_until). Shown while I am marked busy. {time} is a clock time such as 18:00. This one is for a time on Monday (within the next week).",
 ]
-text = ""
+text = "തിങ്കളാഴ്ച {time} വരെ തിരക്കിലാണ്"
 
 [t_a8cafb2a3d]
 en = "Busy until Tuesday {time}"
@@ -13472,7 +13476,7 @@ where = [
   "ios people_busy_until_tue: Availability line while busy until a time. {time} is a clock time formatted for the user’s region, such as 18:30. The time is on a Tuesday, a later day this week.",
   "desktop profile_busy_until_tue: Desktop, profile availability (in profile_ui.rs, busy_until). Shown while I am marked busy. {time} is a clock time such as 18:00. This one is for a time on Tuesday (within the next week).",
 ]
-text = ""
+text = "ചൊവ്വാഴ്ച {time} വരെ തിരക്കിലാണ്"
 
 [t_852e51c301]
 en = "Busy until Wednesday {time}"
@@ -13480,7 +13484,7 @@ where = [
   "ios people_busy_until_wed: Availability line while busy until a time. {time} is a clock time formatted for the user’s region, such as 18:30. The time is on a Wednesday, a later day this week.",
   "desktop profile_busy_until_wed: Desktop, profile availability (in profile_ui.rs, busy_until). Shown while I am marked busy. {time} is a clock time such as 18:00. This one is for a time on Wednesday (within the next week).",
 ]
-text = ""
+text = "ബുധനാഴ്ച {time} വരെ തിരക്കിലാണ്"
 
 [t_8100f9a12f]
 en = "Busy until Thursday {time}"
@@ -13488,7 +13492,7 @@ where = [
   "ios people_busy_until_thu: Availability line while busy until a time. {time} is a clock time formatted for the user’s region, such as 18:30. The time is on a Thursday, a later day this week.",
   "desktop profile_busy_until_thu: Desktop, profile availability (in profile_ui.rs, busy_until). Shown while I am marked busy. {time} is a clock time such as 18:00. This one is for a time on Thursday (within the next week).",
 ]
-text = ""
+text = "വ്യാഴാഴ്ച {time} വരെ തിരക്കിലാണ്"
 
 [t_54ac93afbc]
 en = "Busy until Friday {time}"
@@ -13496,7 +13500,7 @@ where = [
   "ios people_busy_until_fri: Availability line while busy until a time. {time} is a clock time formatted for the user’s region, such as 18:30. The time is on a Friday, a later day this week.",
   "desktop profile_busy_until_fri: Desktop, profile availability (in profile_ui.rs, busy_until). Shown while I am marked busy. {time} is a clock time such as 18:00. This one is for a time on Friday (within the next week).",
 ]
-text = ""
+text = "വെള്ളിയാഴ്ച {time} വരെ തിരക്കിലാണ്"
 
 [t_5641afbd38]
 en = "Busy until Saturday {time}"
@@ -13504,7 +13508,7 @@ where = [
   "ios people_busy_until_sat: Availability line while busy until a time. {time} is a clock time formatted for the user’s region, such as 18:30. The time is on a Saturday, a later day this week.",
   "desktop profile_busy_until_sat: Desktop, profile availability (in profile_ui.rs, busy_until). Shown while I am marked busy. {time} is a clock time such as 18:00. This one is for a time on Saturday (within the next week).",
 ]
-text = ""
+text = "ശനിയാഴ്ച {time} വരെ തിരക്കിലാണ്"
 
 [t_43b0917c92]
 en = "Busy until Sunday {time}"
@@ -13512,7 +13516,7 @@ where = [
   "ios people_busy_until_sun: Availability line while busy until a time. {time} is a clock time formatted for the user’s region, such as 18:30. The time is on a Sunday, a later day this week.",
   "desktop profile_busy_until_sun: Desktop, profile availability (in profile_ui.rs, busy_until). Shown while I am marked busy. {time} is a clock time such as 18:00. This one is for a time on Sunday (within the next week).",
 ]
-text = ""
+text = "ഞായറാഴ്ച {time} വരെ തിരക്കിലാണ്"
 
 [t_493d670f89]
 en = "Today, {time}"
@@ -13520,7 +13524,7 @@ where = [
   "ios chat_when_today: Date and time line in a message detail or the photo viewer title, for today. {time} is a 24-hour clock time such as 16:02.",
   "ios group_when_today: Date and time line in a group message or a sent request, for today. {time} is a 24-hour clock time such as 16:02.",
 ]
-text = ""
+text = "ഇന്ന്, {time}"
 
 [t_507ac7d2de]
 en = "Yesterday, {time}"
@@ -13528,7 +13532,7 @@ where = [
   "ios chat_when_yesterday: Date and time line in a message detail or the photo viewer title, for yesterday. {time} is a 24-hour clock time such as 16:02.",
   "ios group_when_yesterday: Date and time line in a group message or a sent request, for yesterday. {time} is a 24-hour clock time such as 16:02.",
 ]
-text = ""
+text = "ഇന്നലെ, {time}"
 
 [t_8a351f5983]
 en = "{date}, {time}"
@@ -13537,994 +13541,994 @@ where = [
   "ios group_when_date: Date and time line in a group message or a sent request, for an older day. {date} is a day formatted for the user’s region, such as Oct 8, {time} a 24-hour clock time.",
   "ios people_when_date: Date and time of a block, e.g. “You blocked Ana · Oct 10, 13:50”. {date} is a day formatted for the user’s region, {time} a 24-hour clock time.",
 ]
-text = ""
+text = "{date}, {time}"
 
 [t_1406c5139e]
 en = "A device name is {min} to {max} characters."
 where = [
   "desktop common_a_device_name_is: Shared label, used in several places (app, link). {min} and {max} are the shortest and longest allowed length, numbers.",
 ]
-text = ""
+text = "ഉപകരണത്തിന്റെ പേരിന് {min} മുതൽ {max} വരെ അക്ഷരങ്ങൾ വേണം."
 
 [t_4a7397331d]
 en = "Audio devices"
 where = [
   "desktop common_audio_devices: Shared label, used in several places (profile, view).",
 ]
-text = ""
+text = "ഓഡിയോ ഉപകരണങ്ങൾ"
 
 [t_309ecff017]
 en = "Calls & availability"
 where = [
   "desktop common_calls_availability: Shared label, used in several places (profile, view).",
 ]
-text = ""
+text = "കോളുകളും ലഭ്യതയും"
 
 [t_164b84d7d3]
 en = "Copy recovery phrase"
 where = [
   "desktop common_copy_recovery_phrase: Shared label, used in several places (view).",
 ]
-text = ""
+text = "വീണ്ടെടുക്കൽ വാക്കുകൾ പകർത്തുക"
 
 [t_85338b281d]
 en = "Decoder for their video"
 where = [
   "desktop common_decoder_for_their_video: Shared label, used in several places (call_screen, profile).",
 ]
-text = ""
+text = "അവരുടെ വീഡിയോയ്ക്കുള്ള ഡീകോഡർ"
 
 [t_bfbb0a83d7]
 en = "Give this computer a name of {min} to {max} characters."
 where = [
   "desktop common_give_this_computer_a: Shared label, used in several places (app, link). {min} and {max} are the shortest and longest allowed length, numbers.",
 ]
-text = ""
+text = "ഈ കമ്പ്യൂട്ടറിന് {min} മുതൽ {max} വരെ അക്ഷരങ്ങളുള്ള ഒരു പേര് നൽകുക."
 
 [t_6d8e87ae5e]
 en = "Hosting"
 where = [
   "desktop common_hosting: Shared label, used in several places (profile, view).",
 ]
-text = ""
+text = "ഹോസ്റ്റിംഗ്"
 
 [t_0734135924]
 en = "Messages only: calling needs their permission"
 where = [
   "desktop common_messages_only_calling_needs: Shared label, used in several places (chat, view).",
 ]
-text = ""
+text = "സന്ദേശങ്ങൾ മാത്രം: വിളിക്കാൻ അവരുടെ അനുമതി വേണം"
 
 [t_8e994a4caf]
 en = "Name this computer"
 where = [
   "desktop common_name_this_computer: Shared label, used in several places (link, signup, view).",
 ]
-text = ""
+text = "ഈ കമ്പ്യൂട്ടറിന് പേര് നൽകുക"
 
 [t_447375ef9f]
 en = "Not synced yet"
 where = [
   "desktop common_not_synced_yet: Shared label, used in several places (link, profile).",
 ]
-text = ""
+text = "ഇതുവരെ സിങ്ക് ചെയ്തിട്ടില്ല"
 
 [t_8b10183211]
 en = "Passphrase changed"
 where = [
   "desktop common_passphrase_changed: Shared label, used in several places (app, profile).",
 ]
-text = ""
+text = "പാസ്‌ഫ്രേസ് മാറ്റി"
 
 [t_1b4b9ba9bf]
 en = "Paste only into a trusted password manager; the clipboard contains your account key."
 where = [
   "desktop common_paste_only_into_a: Shared label, used in several places (view).",
 ]
-text = ""
+text = "വിശ്വാസമുള്ള ഒരു പാസ്‌വേഡ് മാനേജറിൽ മാത്രം പേസ്റ്റ് ചെയ്യുക; ക്ലിപ്പ്ബോർഡിൽ നിങ്ങളുടെ അക്കൗണ്ട് കീ ഉണ്ട്."
 
 [t_3c78840fd7]
 en = "Photo · {value}"
 where = [
   "desktop common_photo: Shared label, used in several places (chat, group_live). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "ഫോട്ടോ · {value}"
 
 [t_1fdf30c038]
 en = "Recovery phrase"
 where = [
   "desktop common_recovery_phrase: Shared label, used in several places (profile, view).",
 ]
-text = ""
+text = "വീണ്ടെടുക്കൽ വാക്കുകൾ"
 
 [t_955e59b5ae]
 en = "Remember on this computer"
 where = [
   "desktop common_remember_on_this_computer: Shared label, used in several places (profile, signup).",
 ]
-text = ""
+text = "ഈ കമ്പ്യൂട്ടറിൽ ഓർത്തുവയ്ക്കുക"
 
 [t_b9b5554656]
 en = "Saving..."
 where = [
   "desktop common_saving: Shared label, used in several places (link, view).",
 ]
-text = ""
+text = "സേവ് ചെയ്യുന്നു..."
 
 [t_67eb8c5ea7]
 en = "Security"
 where = [
   "desktop common_security: Shared label, used in several places (profile, view).",
 ]
-text = ""
+text = "സുരക്ഷ"
 
 [t_d9cdfd07a7]
 en = "Show"
 where = [
   "desktop common_show: Shared label, used in several places (tray, view).",
 ]
-text = ""
+text = "കാണിക്കുക"
 
 [t_cda1cdad47]
 en = "{size} GB"
 where = [
   "desktop common_size_gb: Storage size in gigabytes. {size} is a number with one decimal.",
 ]
-text = ""
+text = "{size} GB"
 
 [t_53cb38ce7d]
 en = "Skips the passphrase when Tinline starts, using this computer’s keyring."
 where = [
   "desktop common_skips_the_passphrase_when: Shared label, used in several places (profile, signup).",
 ]
-text = ""
+text = "ഈ കമ്പ്യൂട്ടറിന്റെ കീറിംഗ് ഉപയോഗിച്ച്, Tinline തുടങ്ങുമ്പോൾ പാസ്‌ഫ്രേസ് ചോദിക്കില്ല."
 
 [t_8246939084]
 en = "Starting..."
 where = [
   "desktop common_starting: Shared label, used in several places (app, tray).",
 ]
-text = ""
+text = "തുടങ്ങുന്നു..."
 
 [t_d2081454ab]
 en = "Tinline is still starting. Try again in a moment."
 where = [
   "desktop common_tinline_is_still_starting: Shared label, used in several places (app, link).",
 ]
-text = ""
+text = "Tinline ഇപ്പോഴും തുടങ്ങിക്കൊണ്ടിരിക്കുകയാണ്. ഒരു നിമിഷം കഴിഞ്ഞ് വീണ്ടും ശ്രമിക്കുക."
 
 [t_820c15c544]
 en = "Work desktop"
 where = [
   "desktop common_work_desktop: Shared label, used in several places (link, view).",
 ]
-text = ""
+text = "ഓഫീസ് കമ്പ്യൂട്ടർ"
 
 [t_8ae2b3cd52]
 en = "Working..."
 where = [
   "desktop common_working: Shared label, used in several places (link, view).",
 ]
-text = ""
+text = "ചെയ്തുകൊണ്ടിരിക്കുന്നു..."
 
 [t_3a211114f7]
 en = "Account removed from this computer"
 where = [
   "desktop app_account_removed_from_this: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "ഈ കമ്പ്യൂട്ടറിൽ നിന്ന് അക്കൗണ്ട് നീക്കം ചെയ്തു"
 
 [t_c88517c76f]
 en = "Adding passphrase..."
 where = [
   "desktop app_adding_passphrase: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "പാസ്‌ഫ്രേസ് ചേർക്കുന്നു..."
 
 [t_ae294d3d01]
 en = "An identity already exists here."
 where = [
   "desktop app_an_identity_already_exists: Desktop, app-level notices and notifications (in app.rs, friendly).",
 ]
-text = ""
+text = "ഇവിടെ ഇതിനകം ഒരു ഐഡന്റിറ്റി ഉണ്ട്."
 
 [t_32fb327647]
 en = "Changing passphrase..."
 where = [
   "desktop app_changing_passphrase: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "പാസ്‌ഫ്രേസ് മാറ്റുന്നു..."
 
 [t_694b75b941]
 en = "Could not call: {error}"
 where = [
   "desktop app_could_not_call: Desktop, app-level notices and notifications (in app.rs, update_inner). {error} is the underlying error text, not translated.",
 ]
-text = ""
+text = "വിളിക്കാൻ കഴിഞ്ഞില്ല: {error}"
 
 [t_4ea7b41ec4]
 en = "Could not start: {error}"
 where = [
   "desktop app_could_not_start: Desktop, app-level notices and notifications (in app.rs, update_inner). {error} is the underlying error text, not translated.",
 ]
-text = ""
+text = "തുടങ്ങാൻ കഴിഞ്ഞില്ല: {error}"
 
 [t_16bc823614]
 en = "Couldn’t accept just now. Try again in a moment."
 where = [
   "desktop app_couldnt_accept_just_now: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "ഇപ്പോൾ സ്വീകരിക്കാൻ കഴിഞ്ഞില്ല. ഒരു നിമിഷം കഴിഞ്ഞ് വീണ്ടും ശ്രമിക്കുക."
 
 [t_35338f8a31]
 en = "Device name saved"
 where = [
   "desktop app_device_name_saved: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "ഉപകരണത്തിന്റെ പേര് സേവ് ചെയ്തു"
 
 [t_886688601a]
 en = "Enter a name first"
 where = [
   "desktop app_enter_a_name_first: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "ആദ്യം ഒരു പേര് നൽകുക"
 
 [t_5f499535ee]
 en = "Enter your name and recovery phrase"
 where = [
   "desktop app_enter_your_name_and: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "നിങ്ങളുടെ പേരും വീണ്ടെടുക്കൽ വാക്കുകളും നൽകുക"
 
 [t_1a92653d7e]
 en = "{value} invited you to the group"
 where = [
   "desktop app_invited_you_to_the: Desktop, app-level notices and notifications (in app.rs, on_event). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "{value} നിങ്ങളെ ഗ്രൂപ്പിലേക്ക് ക്ഷണിച്ചു"
 
 [t_86537dcd0a]
 en = "{name} is already in your contacts"
 where = [
   "desktop app_is_already_in_your: Desktop, app-level notices and notifications (in app.rs, update_inner). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} ഇതിനകം നിങ്ങളുടെ കോൺടാക്റ്റുകളിലുണ്ട്"
 
 [t_03d397836b]
 en = "{peer_name} is calling"
 where = [
   "desktop app_is_calling: Desktop, app-level notices and notifications (in app.rs, on_event). {peer_name} is a value filled in by the app.",
 ]
-text = ""
+text = "{peer_name} വിളിക്കുന്നു"
 
 [t_d84b7d3db1]
 en = "Passphrase added. You will need it next time Tinline starts."
 where = [
   "desktop app_passphrase_added_you_will: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "പാസ്‌ഫ്രേസ് ചേർത്തു. അടുത്ത തവണ Tinline തുടങ്ങുമ്പോൾ അത് വേണം."
 
 [t_27499f4548]
 en = "Pick one that is different from the current one."
 where = [
   "desktop app_pick_one_that_is: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "നിലവിലുള്ളതിൽ നിന്ന് വ്യത്യസ്തമായ ഒന്ന് തിരഞ്ഞെടുക്കുക."
 
 [t_d6bdc593f7]
 en = "Restoring..."
 where = [
   "desktop app_restoring: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "പുനഃസ്ഥാപിക്കുന്നു..."
 
 [t_5d4c1caca3]
 en = "Still can’t find the key."
 where = [
   "desktop app_still_cant_find_the: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "ഇപ്പോഴും കീ കണ്ടെത്താൻ കഴിയുന്നില്ല."
 
 [t_33f7d1c80b]
 en = "task failed"
 where = [
   "desktop app_task_failed: Desktop, app-level notices and notifications (in app.rs, blocking).",
 ]
-text = ""
+text = "ടാസ്ക് പൂർത്തിയായില്ല"
 
 [t_ac97ec8ed4]
 en = "{name}: {value}"
 where = [
   "desktop app_text: Desktop, app-level notices and notifications (in app.rs, on_event). {name} is a person's name (usually the first word of their chosen name). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "{name}: {value}"
 
 [t_9b366dca33]
 en = "That account is already on this computer."
 where = [
   "desktop app_that_account_is_already: Desktop, app-level notices and notifications (in app.rs, friendly).",
 ]
-text = ""
+text = "ആ അക്കൗണ്ട് ഇതിനകം ഈ കമ്പ്യൂട്ടറിലുണ്ട്."
 
 [t_82424900f4]
 en = "That isn’t your current passphrase."
 where = [
   "desktop app_that_isnt_your_current: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "അത് നിങ്ങളുടെ നിലവിലെ പാസ്‌ഫ്രേസ് അല്ല."
 
 [t_d7d34eb82a]
 en = "That phrase isn’t valid. Check each word and their order."
 where = [
   "desktop app_that_phrase_isnt_valid: Desktop, app-level notices and notifications (in app.rs, friendly).",
 ]
-text = ""
+text = "ആ വാക്കുകൾ ശരിയല്ല. ഓരോ വാക്കും അവയുടെ ക്രമവും പരിശോധിക്കുക."
 
 [t_2d4587e96b]
 en = "The two passphrases differ."
 where = [
   "desktop app_the_two_passphrases_differ: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "രണ്ട് പാസ്‌ഫ്രേസുകളും ഒന്നല്ല."
 
 [t_e9d46ff847]
 en = "This computer’s keyring wouldn’t keep it, so Tinline will keep asking for your passphrase."
 where = [
   "desktop app_this_computers_keyring_wouldnt: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "ഈ കമ്പ്യൂട്ടറിന്റെ കീറിംഗ് അത് സൂക്ഷിച്ചില്ല, അതിനാൽ Tinline നിങ്ങളുടെ പാസ്‌ഫ്രേസ് ചോദിച്ചുകൊണ്ടിരിക്കും."
 
 [t_1290ee5e3e]
 en = "Ticket: {error}"
 where = [
   "desktop app_ticket: Desktop, app-level notices and notifications (in app.rs, update_inner). {error} is the underlying error text, not translated.",
 ]
-text = ""
+text = "ടിക്കറ്റ്: {error}"
 
 [t_1dbf8cee18]
 en = "Type a new passphrase."
 where = [
   "desktop app_type_a_new_passphrase: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "പുതിയൊരു പാസ്‌ഫ്രേസ് ടൈപ്പ് ചെയ്യുക."
 
 [t_2b521c5ae2]
 en = "Type a passphrase first."
 where = [
   "desktop app_type_a_passphrase_first: Desktop, app-level notices and notifications (in app.rs, friendly).",
 ]
-text = ""
+text = "ആദ്യം ഒരു പാസ്‌ഫ്രേസ് ടൈപ്പ് ചെയ്യുക."
 
 [t_870a316625]
 en = "Type your current passphrase."
 where = [
   "desktop app_type_your_current_passphrase: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "നിങ്ങളുടെ നിലവിലെ പാസ്‌ഫ്രേസ് ടൈപ്പ് ചെയ്യുക."
 
 [t_ac46214b53]
 en = "Wait for the profile save to finish."
 where = [
   "desktop app_wait_for_the_profile: Desktop, app-level notices and notifications (in app.rs, update).",
 ]
-text = ""
+text = "പ്രൊഫൈൽ സേവ് ചെയ്യുന്നത് പൂർത്തിയാകാൻ കാത്തിരിക്കുക."
 
 [t_62bb091458]
 en = "Your key is kept in a plain file in Tinline’s data folder. Anyone who copies that folder can open your account. Add a passphrase to protect it; the file is then deleted."
 where = [
   "desktop app_your_key_is_kept: Desktop, app-level notices and notifications (in app.rs, key_home).",
 ]
-text = ""
+text = "നിങ്ങളുടെ കീ Tinline-ന്റെ ഡാറ്റ ഫോൾഡറിൽ ഒരു സാധാരണ ഫയലിലാണ് സൂക്ഷിച്ചിരിക്കുന്നത്. ആ ഫോൾഡർ പകർത്തുന്ന ആർക്കും നിങ്ങളുടെ അക്കൗണ്ട് തുറക്കാം. ഇത് സംരക്ഷിക്കാൻ ഒരു പാസ്‌ഫ്രേസ് ചേർക്കുക; അതോടെ ആ ഫയൽ ഇല്ലാതാക്കും."
 
 [t_532c9419c8]
 en = "Your key is kept in this computer’s keyring, so Tinline opens without asking."
 where = [
   "desktop app_your_key_is_kept_in: Desktop, app-level notices and notifications (in app.rs, key_home).",
 ]
-text = ""
+text = "നിങ്ങളുടെ കീ ഈ കമ്പ്യൂട്ടറിന്റെ കീറിംഗിലാണ് സൂക്ഷിച്ചിരിക്കുന്നത്, അതിനാൽ Tinline ചോദിക്കാതെ തുറക്കും."
 
 [t_e6a284f81a]
 en = "Your recovery key is copied."
 where = [
   "desktop app_your_recovery_key_is: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "നിങ്ങളുടെ വീണ്ടെടുക്കൽ കീ പകർത്തി."
 
 [t_031c6dc10d]
 en = "Your recovery words are copied."
 where = [
   "desktop app_your_recovery_words_are: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "നിങ്ങളുടെ വീണ്ടെടുക്കൽ വാക്കുകൾ പകർത്തി."
 
 [t_287f831b10]
 en = "You’re on a call. Hang up before switching accounts."
 where = [
   "desktop app_youre_on_a_call: Desktop, app-level notices and notifications (in app.rs, friendly).",
 ]
-text = ""
+text = "നിങ്ങൾ ഒരു കോളിലാണ്. അക്കൗണ്ട് മാറുന്നതിനു മുമ്പ് കോൾ അവസാനിപ്പിക്കുക."
 
 [t_c060528ae3]
 en = "{label} disconnected, switching to the system default"
 where = [
   "desktop audio_disconnected_switching_to_the: Desktop, audio devices (in audio.rs, maintain). {label} is a value filled in by the app.",
 ]
-text = ""
+text = "{label} വിച്ഛേദിച്ചു, സിസ്റ്റം ഡിഫോൾട്ടിലേക്ക് മാറുന്നു"
 
 [t_a171612b25]
 en = "Echo cancellation is unavailable"
 where = [
   "desktop audio_echo_cancellation_is_unavailable: Desktop, audio devices (in audio.rs, run_call).",
 ]
-text = ""
+text = "എക്കോ ഒഴിവാക്കൽ ലഭ്യമല്ല"
 
 [t_5fae266f6d]
 en = "{label} is back"
 where = [
   "desktop audio_is_back: Desktop, audio devices (in audio.rs, maintain). {label} is a value filled in by the app.",
 ]
-text = ""
+text = "{label} തിരികെ വന്നു"
 
 [t_e476e6d224]
 en = "{label} unavailable: {error}"
 where = [
   "desktop audio_unavailable: Desktop, audio devices (in audio.rs, maintain). {label} is a value filled in by the app. {error} is the underlying error text, not translated.",
 ]
-text = ""
+text = "{label} ലഭ്യമല്ല: {error}"
 
 [t_9b0bf5bb10]
 en = "About this call. {value} signal, {to_lowercase}."
 where = [
   "desktop call_about_this_call_signal: Desktop, calls (voice and video) (in call_screen.rs, call_view). {value} is a value filled in by the app. {to_lowercase} is a value filled in by the app.",
 ]
-text = ""
+text = "ഈ കോളിനെക്കുറിച്ച്. സിഗ്നൽ: {value}, {to_lowercase}."
 
 [t_be59de019d]
 en = "Answered on another device"
 where = [
   "desktop call_answered_on_another_device: Desktop, calls (voice and video) (in reason.rs, history).",
 ]
-text = ""
+text = "മറ്റൊരു ഉപകരണത്തിൽ എടുത്തു"
 
 [t_5951b67d4a]
 en = "Calls not allowed"
 where = [
   "desktop call_calls_not_allowed: Desktop, calls (voice and video) (in reason.rs, history).",
 ]
-text = ""
+text = "കോളുകൾ അനുവദിച്ചിട്ടില്ല"
 
 [t_7f6f8a6b79]
 en = "Camera off"
 where = [
   "desktop call_camera_off: Desktop, calls (voice and video) (in view.rs, video_stage).",
 ]
-text = ""
+text = "ക്യാമറ ഓഫ്"
 
 [t_4855360c05]
 en = "Camera on"
 where = [
   "desktop call_camera_on: Desktop, calls (voice and video) (in view.rs, video_call_view).",
 ]
-text = ""
+text = "ക്യാമറ ഓൺ"
 
 [t_c9f762351d]
 en = "Ctrl E cancels"
 where = [
   "desktop call_ctrl_e_cancels: Desktop, calls (voice and video) (in view.rs, video_call_view).",
 ]
-text = ""
+text = "Ctrl E റദ്ദാക്കും"
 
 [t_12e7b54a0e]
 en = "Declined on another device"
 where = [
   "desktop call_declined_on_another_device: Desktop, calls (voice and video) (in reason.rs, history).",
 ]
-text = ""
+text = "മറ്റൊരു ഉപകരണത്തിൽ നിരസിച്ചു"
 
 [t_a0a96166bf]
 en = "Device changes apply from the next call."
 where = [
   "desktop call_device_changes_apply_from: Desktop, calls (voice and video) (in call_screen.rs, call_about).",
 ]
-text = ""
+text = "ഉപകരണ മാറ്റങ്ങൾ അടുത്ത കോൾ മുതൽ ബാധകമാകും."
 
 [t_27ca58e333]
 en = "While you’re on this call"
 where = [
   "desktop call_during_your_call: Desktop, call waiting card (in view.rs, waiting_banner), second line under \"{name} is calling\". A complete line saying the other call arrives while I am on this one.",
 ]
-text = ""
+text = "നിങ്ങൾ ഈ കോളിലായിരിക്കുമ്പോൾ"
 
 [t_b19e015d90]
 en = "End-to-end encrypted · Ctrl M mute · Ctrl E end · Esc minimizes"
 where = [
   "desktop call_end_to_end_encrypted_ctrl: Desktop, calls (voice and video) (in view.rs, video_call_view).",
 ]
-text = ""
+text = "എൻഡ്-ടു-എൻഡ് എൻക്രിപ്റ്റ് ചെയ്തത് · Ctrl M മ്യൂട്ട് · Ctrl E അവസാനിപ്പിക്കുക · Esc ചെറുതാക്കും"
 
 [t_793b1f1d6a]
 en = "Answering ends your call with {name}."
 where = [
   "desktop call_ends_your_call_with: Desktop, call waiting card (in view.rs, waiting_banner), small line under the buttons. {name} is the first name of the person I am talking to now.",
 ]
-text = ""
+text = "എടുത്താൽ {name} എന്നയാളുമായുള്ള നിങ്ങളുടെ കോൾ അവസാനിക്കും."
 
 [t_4af8cd18a6]
 en = "Enter answers · Esc declines"
 where = [
   "desktop call_enter_answers_esc_declines: Desktop, calls (voice and video) (in view.rs, video_call_view).",
 ]
-text = ""
+text = "Enter എടുക്കും · Esc നിരസിക്കും"
 
 [t_55195cbec5]
 en = "For testing. Your picture may stutter or your computer may heat up."
 where = [
   "desktop call_for_testing_your_picture: Desktop, calls (voice and video) (in call_screen.rs, call_nerds).",
 ]
-text = ""
+text = "പരിശോധനയ്ക്ക് മാത്രം. നിങ്ങളുടെ വീഡിയോ ഇടയ്ക്ക് നിന്നുപോകുകയോ കമ്പ്യൂട്ടർ ചൂടാകുകയോ ചെയ്തേക്കാം."
 
 [t_1e415b4258]
 en = "Hang up"
 where = [
   "desktop call_hang_up: Desktop, calls (voice and video) (in view.rs, video_call_view).",
 ]
-text = ""
+text = "കോൾ അവസാനിപ്പിക്കുക"
 
 [t_c8637eae36]
 en = "HD"
 where = [
   "desktop call_hd: Desktop, calls (voice and video) (in view.rs, hd_chip).",
 ]
-text = ""
+text = "HD"
 
 [t_30e7914804]
 en = "Ignore limits (heat, their decoder)"
 where = [
   "desktop call_ignore_limits_heat_their: Desktop, calls (voice and video) (in call_screen.rs, call_nerds).",
 ]
-text = ""
+text = "പരിധികൾ അവഗണിക്കുക (ചൂട്, അവരുടെ ഡീകോഡർ)"
 
 [t_b5cd3d149c]
 en = "Calling you…"
 where = [
   "desktop call_is_calling_you: Desktop, incoming call screen (in view.rs, video_call_view), status line under the caller's name, which is shown above it. A complete short line.",
 ]
-text = ""
+text = "നിങ്ങളെ വിളിക്കുന്നു…"
 
 [t_8f764feef1]
 en = "{rtt_ms} ms round trip · {value}% lost"
 where = [
   "desktop call_ms_round_trip_lost: Desktop, calls (voice and video) (in call_screen.rs, call_about). {rtt_ms} is a value filled in by the app. {value} is a value filled in by the app.",
 ]
-text = ""
+text = "{rtt_ms} ms റൗണ്ട് ട്രിപ്പ് · {value}% നഷ്ടം"
 
 [t_f72c120dfc]
 en = "No camera"
 where = [
   "desktop call_no_camera: Desktop, calls (voice and video) (in call_screen.rs, call_view).",
 ]
-text = ""
+text = "ക്യാമറയില്ല"
 
 [t_7fae834341]
 en = "Pin a size first."
 where = [
   "desktop call_pin_a_size_first: Desktop, calls (voice and video) (in call_screen.rs, call_nerds).",
 ]
-text = ""
+text = "ആദ്യം ഒരു വലുപ്പം ഉറപ്പിക്കുക."
 
 [t_8b2833f97e]
 en = "Relayed · encrypted"
 where = [
   "desktop call_relayed_encrypted: Desktop, calls (voice and video) (in view.rs, video_call_view).",
 ]
-text = ""
+text = "റിലേ വഴി · എൻക്രിപ്റ്റ് ചെയ്തത്"
 
 [t_8502df6288]
 en = "Sharper video on, up to 720p"
 where = [
   "desktop call_sharper_video_on_up: Desktop, calls (voice and video) (in view.rs, hd_chip).",
 ]
-text = ""
+text = "വ്യക്തമായ വീഡിയോ ഓൺ, 720p വരെ"
 
 [t_3981b6e3cf]
 en = "{value} signal · {value2}"
 where = [
   "desktop call_signal: Desktop, calls (voice and video) (in call_screen.rs, call_about). {value} is a value filled in by the app. {value2} is a value filled in by the app.",
 ]
-text = ""
+text = "സിഗ്നൽ: {value} · {value2}"
 
 [t_a168cd45ed]
 en = "Stats for nerds"
 where = [
   "desktop call_stats_for_nerds: Desktop, calls (voice and video) (in call_screen.rs, call_nerds).",
 ]
-text = ""
+text = "സാങ്കേതിക വിവരങ്ങൾ"
 
 [t_d5b4307250]
 en = " The line is weak, so {name}’s voice may break up."
 where = [
   "desktop call_the_line_is_weak: Desktop, calls (voice and video) (in call_screen.rs, call_about). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = " ലൈൻ ദുർബലമാണ്, അതിനാൽ {name} എന്നയാളുടെ ശബ്ദം ഇടയ്ക്ക് മുറിഞ്ഞേക്കാം."
 
 [t_e6b445aa1b]
 en = "These apply to this call now. Settings > Video sets the next call."
 where = [
   "desktop call_these_apply_to_this: Desktop, calls (voice and video) (in call_screen.rs, call_nerds).",
 ]
-text = ""
+text = "ഇവ ഇപ്പോൾ ഈ കോളിന് ബാധകമാണ്. അടുത്ത കോളിനുള്ളത് ക്രമീകരണം > വീഡിയോ എന്നതിൽ സജ്ജീകരിക്കാം."
 
 [t_8fa85234ca]
 en = "Video is starting…"
 where = [
   "desktop call_video_is_starting: Desktop, calls (voice and video) (in view.rs, video_stage).",
 ]
-text = ""
+text = "വീഡിയോ തുടങ്ങുന്നു…"
 
 [t_d203b27537]
 en = "Your bitrate cap (not a promised rate)"
 where = [
   "desktop call_your_bitrate_cap_not: Desktop, calls (voice and video) (in call_screen.rs, call_nerds).",
 ]
-text = ""
+text = "നിങ്ങളുടെ ബിറ്റ്‌റേറ്റ് പരിധി (ഉറപ്പുനൽകുന്ന നിരക്കല്ല)"
 
 [t_9742320971]
 en = "Your frame rate"
 where = [
   "desktop call_your_frame_rate: Desktop, calls (voice and video) (in call_screen.rs, call_nerds).",
 ]
-text = ""
+text = "നിങ്ങളുടെ ഫ്രെയിം നിരക്ക്"
 
 [t_2c467dc172]
 en = "Your network changed. Hold on — Tinline is finding the line again."
 where = [
   "desktop call_your_network_changed_hold: Desktop, calls (voice and video) (in view.rs, video_call_view).",
 ]
-text = ""
+text = "നിങ്ങളുടെ നെറ്റ്‌വർക്ക് മാറി. ഒരു നിമിഷം — Tinline വീണ്ടും ലൈൻ കണ്ടെത്തുന്നു."
 
 [t_e80b716ddc]
 en = "Your size"
 where = [
   "desktop call_your_size: Desktop, calls (voice and video) (in call_screen.rs, call_nerds).",
 ]
-text = ""
+text = "നിങ്ങളുടെ വലുപ്പം"
 
 [t_a2ac53fc12]
 en = "Your video codec"
 where = [
   "desktop call_your_video_codec: Desktop, calls (voice and video) (in call_screen.rs, call_nerds).",
 ]
-text = ""
+text = "നിങ്ങളുടെ വീഡിയോ കോഡെക്"
 
 [t_343c975534]
 en = " Your voice is encrypted on this device and only decrypted on {name}’s."
 where = [
   "desktop call_your_voice_is_encrypted: Desktop, calls (voice and video) (in call_screen.rs, call_about). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = " നിങ്ങളുടെ ശബ്ദം ഈ ഉപകരണത്തിൽ എൻക്രിപ്റ്റ് ചെയ്യുന്നു, {name} എന്നയാളുടെ ഉപകരണത്തിൽ മാത്രമേ ഡീക്രിപ്റ്റ് ചെയ്യൂ."
 
 [t_dfe464b10a]
 en = "Ask for earlier messages"
 where = [
   "desktop chat_ask_for_earlier_messages: Desktop, chats (in chat_view.rs, history_note).",
 ]
-text = ""
+text = "പഴയ സന്ദേശങ്ങൾ ആവശ്യപ്പെടുക"
 
 [t_929d8923a5]
 en = "Could not open: {error}"
 where = [
   "desktop chat_could_not_open: Desktop, chats (in chat.rs, update_chat_inner). {error} is the underlying error text, not translated.",
 ]
-text = ""
+text = "തുറക്കാൻ കഴിഞ്ഞില്ല: {error}"
 
 [t_724abcb8df]
 en = "Could not play: {error}"
 where = [
   "desktop chat_could_not_play: Desktop, chats (in chat.rs, update_chat_inner). {error} is the underlying error text, not translated.",
 ]
-text = ""
+text = "പ്ലേ ചെയ്യാൻ കഴിഞ്ഞില്ല: {error}"
 
 [t_f7209a5c78]
 en = "Could not record: {error}"
 where = [
   "desktop chat_could_not_record: Desktop, chats (in chat.rs, update_chat_inner). {error} is the underlying error text, not translated.",
 ]
-text = ""
+text = "റെക്കോർഡ് ചെയ്യാൻ കഴിഞ്ഞില്ല: {error}"
 
 [t_1702498248]
 en = "Could not save: {error}"
 where = [
   "desktop chat_could_not_save: Desktop, chats (in chat.rs, update_chat_inner). {error} is the underlying error text, not translated.",
 ]
-text = ""
+text = "സേവ് ചെയ്യാൻ കഴിഞ്ഞില്ല: {error}"
 
 [t_ca9953df3e]
 en = "Could not send: {error}"
 where = [
   "desktop chat_could_not_send: Desktop, chats (in chat.rs, update_chat_inner). {error} is the underlying error text, not translated.",
 ]
-text = ""
+text = "അയയ്ക്കാൻ കഴിഞ്ഞില്ല: {error}"
 
 [t_622a8606a0]
 en = "Could not show this: {error}"
 where = [
   "desktop chat_could_not_show_this: Desktop, chats (in chat_view.rs, viewer_overlay). {error} is the underlying error text, not translated.",
 ]
-text = ""
+text = "ഇത് കാണിക്കാൻ കഴിഞ്ഞില്ല: {error}"
 
 [t_af4a349292]
 en = "{value} · couldn’t download — tap to retry"
 where = [
   "desktop chat_couldnt_download_tap_to: Desktop, chats (in chat_view.rs, attachment_view). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "{value} · ഡൗൺലോഡ് ചെയ്യാൻ കഴിഞ്ഞില്ല — വീണ്ടും ശ്രമിക്കാൻ ടാപ്പ് ചെയ്യുക"
 
 [t_276ce0135b]
 en = "Delete"
 where = [
   "desktop chat_delete: Desktop, chats (in chat_view.rs, message_menu).",
 ]
-text = ""
+text = "ഇല്ലാതാക്കുക"
 
 [t_9990a7654e]
 en = "Delete for everyone"
 where = [
   "desktop chat_delete_for_everyone: Desktop, chats (in chat_view.rs, delete_overlay).",
 ]
-text = ""
+text = "എല്ലാവർക്കും ഇല്ലാതാക്കുക"
 
 [t_5a4df3a700]
 en = "Delete for everyone asks {name}’s devices to remove it too. Copies elsewhere can’t be recalled."
 where = [
   "desktop chat_delete_for_everyone_asks: Desktop, chats (in chat_view.rs, delete_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "“എല്ലാവർക്കും ഇല്ലാതാക്കുക” അത് നീക്കം ചെയ്യാൻ {name} എന്നയാളുടെ ഉപകരണങ്ങളോടും ആവശ്യപ്പെടും. മറ്റിടങ്ങളിലുള്ള പകർപ്പുകൾ തിരിച്ചെടുക്കാൻ കഴിയില്ല."
 
 [t_a0d1400553]
 en = "Delete message?"
 where = [
   "desktop chat_delete_message: Desktop, chats (in chat_view.rs, delete_overlay).",
 ]
-text = ""
+text = "സന്ദേശം ഇല്ലാതാക്കണോ?"
 
 [t_ff5f9f7f6c]
 en = "{name} deleted this message"
 where = [
   "desktop chat_deleted_this_message: Desktop, chats (in chat_view.rs, message_row). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} ഈ സന്ദേശം ഇല്ലാതാക്കി"
 
 [t_2c08303faf]
 en = "Device {device} · {value}"
 where = [
   "desktop chat_device: Desktop, chats (in chat_view.rs, receipt_lines). {device} is a value filled in by the app. {value} is a value filled in by the app.",
 ]
-text = ""
+text = "ഉപകരണം {device} · {value}"
 
 [t_74fc21c4e4]
 en = "Downloading · {value} of {value2}"
 where = [
   "desktop chat_downloading_of: Desktop, chats (in chat_view.rs, attachment_view). {value} is a value filled in by the app. {value2} is a value filled in by the app.",
 ]
-text = ""
+text = "ഡൗൺലോഡ് ചെയ്യുന്നു · {value} / {value2}"
 
 [t_fc96a86226]
 en = "Draft: "
 where = [
   "desktop chat_draft: Desktop, chats (in chat_view.rs, pg_chat_row).",
 ]
-text = ""
+text = "ഡ്രാഫ്റ്റ്: "
 
 [t_ef98461b5f]
 en = "Drop to send to {name}"
 where = [
   "desktop chat_drop_to_send_to: Desktop, chats (in chat_view.rs, conversation_view). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "അയയ്ക്കാൻ ഇവിടെ ഇടുക: {name}"
 
 [t_02f8ea12ed]
 en = "Encrypted on this computer. Up to 2 GB each. {name} gets it the next time you’re both online."
 where = [
   "desktop chat_encrypted_on_this_computer: Desktop, chats (in chat_view.rs, conversation_view). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "ഈ കമ്പ്യൂട്ടറിൽ എൻക്രിപ്റ്റ് ചെയ്യുന്നു. ഓരോന്നിനും 2 GB വരെ. അടുത്ത തവണ നിങ്ങൾ ഇരുവരും ഓൺലൈനിലാകുമ്പോൾ {name} എന്നയാൾക്ക് അത് ലഭിക്കും."
 
 [t_2ac5e80587]
 en = "Esc to cancel"
 where = [
   "desktop chat_esc_to_cancel: Desktop, chats (in voice.rs, record_bar).",
 ]
-text = ""
+text = "റദ്ദാക്കാൻ Esc"
 
 [t_1cee9b36cc]
 en = "Find in this chat (Ctrl+F)"
 where = [
   "desktop chat_find_in_this_chat_ctrl: Desktop, chats (in chat_view.rs, conversation_view).",
 ]
-text = ""
+text = "ഈ ചാറ്റിൽ തിരയുക (Ctrl+F)"
 
 [t_817beb6d7c]
 en = "{value} · {name} gets it when you’re both online"
 where = [
   "desktop chat_gets_it_when_youre: Desktop, chats (in chat_view.rs, attachment_view). {value} is a value filled in by the app. {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{value} · നിങ്ങൾ ഇരുവരും ഓൺലൈനിലാകുമ്പോൾ {name} എന്നയാൾക്ക് ലഭിക്കും"
 
 [t_35bf97d035]
 en = "{name} is offline. Delete for everyone reaches their devices when you’re both online."
 where = [
   "desktop chat_is_offline_delete_for: Desktop, chats (in chat_view.rs, delete_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} ഓഫ്‌ലൈനാണ്. നിങ്ങൾ ഇരുവരും ഓൺലൈനിലാകുമ്പോൾ “എല്ലാവർക്കും ഇല്ലാതാക്കുക” അവരുടെ ഉപകരണങ്ങളിൽ എത്തും."
 
 [t_d5890c1bc8]
 en = "It was never delivered, so it’s only on this computer."
 where = [
   "desktop chat_it_was_never_delivered: Desktop, chats (in chat_view.rs, delete_overlay).",
 ]
-text = ""
+text = "അത് ഒരിക്കലും എത്തിയില്ല, അതിനാൽ അത് ഈ കമ്പ്യൂട്ടറിൽ മാത്രമേയുള്ളൂ."
 
 [t_f60301b05b]
 en = "Load earlier messages"
 where = [
   "desktop chat_load_earlier_messages: Desktop, chats (in chat_view.rs, history_note).",
 ]
-text = ""
+text = "പഴയ സന്ദേശങ്ങൾ ലോഡ് ചെയ്യുക"
 
 [t_c59d44c923]
 en = "Message deleted"
 where = [
   "desktop chat_message_deleted: Desktop, chats (in chat.rs, preview_of).",
 ]
-text = ""
+text = "സന്ദേശം ഇല്ലാതാക്കി"
 
 [t_ae1837c44b]
 en = "Messages go straight to their devices."
 where = [
   "desktop chat_messages_go_straight_to: Desktop, chats (in chat_view.rs, message_list).",
 ]
-text = ""
+text = "സന്ദേശങ്ങൾ നേരിട്ട് അവരുടെ ഉപകരണങ്ങളിലേക്ക് പോകുന്നു."
 
 [t_64c071fa58]
 en = "{value} · not downloaded"
 where = [
   "desktop chat_not_downloaded: Desktop, chats (in chat_view.rs, attachment_view). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "{value} · ഡൗൺലോഡ് ചെയ്തിട്ടില്ല"
 
 [t_0f05bc7174]
 en = "{value} of {len}"
 where = [
   "desktop chat_of: Desktop, chats (in chat_view.rs, viewer_overlay). {value} is a value filled in by the app. {len} is a value filled in by the app.",
 ]
-text = ""
+text = "{value} / {len}"
 
 [t_15c261a695]
 en = "Older messages are on {name}’s computer. This computer keeps them from when you started using it. Earlier days load when you’re both online."
 where = [
   "desktop chat_older_messages_are_on: Desktop, chats (in chat_view.rs, history_note). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "പഴയ സന്ദേശങ്ങൾ {name} എന്നയാളുടെ കമ്പ്യൂട്ടറിലാണ്. നിങ്ങൾ ഈ കമ്പ്യൂട്ടർ ഉപയോഗിച്ചുതുടങ്ങിയത് മുതലുള്ളവ ഇതിൽ സൂക്ഷിക്കും. നിങ്ങൾ ഇരുവരും ഓൺലൈനിലാകുമ്പോൾ പഴയ ദിവസങ്ങളിലേത് ലോഡ് ആകും."
 
 [t_250a61953d]
 en = "On {name}’s device"
 where = [
   "desktop chat_on_s_device: Desktop, chats (in chat_view.rs, receipt_lines). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} എന്നയാളുടെ ഉപകരണത്തിൽ എത്തി"
 
 [t_bc7ea5e146]
 en = "Only files can be sent, not folders."
 where = [
   "desktop chat_only_files_can_be: Desktop, chats (in chat.rs, update_chat_inner).",
 ]
-text = ""
+text = "ഫയലുകൾ മാത്രമേ അയയ്ക്കാനാകൂ, ഫോൾഡറുകൾ കഴിയില്ല."
 
 [t_3d18972588]
 en = "Only on this computer so far"
 where = [
   "desktop chat_only_on_this_computer: Desktop, chats (in chat_view.rs, receipt_lines).",
 ]
-text = ""
+text = "ഇതുവരെ ഈ കമ്പ്യൂട്ടറിൽ മാത്രം"
 
 [t_1265bdede4]
 en = "Open in default app"
 where = [
   "desktop chat_open_in_default_app: Desktop, chats (in chat_view.rs, viewer_overlay).",
 ]
-text = ""
+text = "ഡിഫോൾട്ട് ആപ്പിൽ തുറക്കുക"
 
 [t_1041f84698]
 en = "{value} · paused — waiting for {name} to come online"
 where = [
   "desktop chat_paused_waiting_for_to: Desktop, chats (in chat_view.rs, attachment_view). {value} is a value filled in by the app. {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{value} · താൽക്കാലികമായി നിർത്തി — {name} ഓൺലൈനിൽ വരാൻ കാത്തിരിക്കുന്നു"
 
 [t_ed90f518b6]
 en = "Read on {name}’s device"
 where = [
   "desktop chat_read_on_s_device: Desktop, chats (in chat_view.rs, receipt_lines). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} എന്നയാളുടെ ഉപകരണത്തിൽ വായിച്ചു"
 
 [t_35f5a8c697]
 en = "Saved to {p}"
 where = [
   "desktop chat_saved_to: Desktop, chats (in chat.rs, update_chat_inner). {p} is a value filled in by the app.",
 ]
-text = ""
+text = "സേവ് ചെയ്ത സ്ഥലം: {p}"
 
 [t_c29e950a10]
 en = "Say hello to {name}"
 where = [
   "desktop chat_say_hello_to: Desktop, chats (in chat_view.rs, message_list). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} എന്നയാളോട് ഒരു ഹലോ പറയൂ"
 
 [t_8870224962]
 en = "Send a file"
 where = [
   "desktop chat_send_a_file: Desktop, chats (in chat.rs, update_chat_inner).",
 ]
-text = ""
+text = "ഒരു ഫയൽ അയയ്ക്കുക"
 
 [t_a53d8bd1db]
 en = "Sends when {name} is online"
 where = [
   "desktop chat_sends_when_is_online: Desktop, chats (in chat_view.rs, image_view). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} ഓൺലൈനിൽ വരുമ്പോൾ അയയ്ക്കും"
 
 [t_647f422a10]
 en = "Signed by {name} · {value}"
 where = [
   "desktop chat_signed_by: Desktop, chats (in chat_view.rs, block_note). {name} is a person's name (usually the first word of their chosen name). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "ഒപ്പിട്ടത് {name} · {value}"
 
 [t_8fe87520fd]
 en = "Signed by {value}"
 where = [
   "desktop chat_signed_by_2: Desktop, chats (in chat_view.rs, receipt_lines). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "ഒപ്പിട്ടത് {value}"
 
 [t_01bc208f24]
 en = "Tap to retry"
 where = [
   "desktop chat_tap_to_retry: Desktop, chats (in chat_view.rs, attachment_view).",
 ]
-text = ""
+text = "വീണ്ടും ശ്രമിക്കാൻ ടാപ്പ് ചെയ്യുക"
 
 [t_75eed69db2]
 en = "That is everything {name} has."
 where = [
   "desktop chat_that_is_everything_has: Desktop, chats (in chat_view.rs, history_note). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} എന്നയാളുടെ പക്കലുള്ളത് ഇത്രയുമാണ്."
 
 [t_3aeb1ed651]
 en = "Too short — hold on a little longer."
 where = [
   "desktop chat_too_short_hold_on: Desktop, chats (in chat.rs, update_chat_inner).",
 ]
-text = ""
+text = "വളരെ ചെറുതാണ് — കുറച്ചുകൂടി നേരം അമർത്തിപ്പിടിക്കുക."
 
 [t_c21fe6504f]
 en = "Waiting for {name}’s device to confirm"
 where = [
   "desktop chat_waiting_for_s_device: Desktop, chats (in chat_view.rs, receipt_lines). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} എന്നയാളുടെ ഉപകരണം സ്ഥിരീകരിക്കാൻ കാത്തിരിക്കുന്നു"
 
 [t_4922fd0b5c]
 en = "Added {value}"
 where = [
   "desktop contact_added: Desktop, contact detail (in view.rs, detail_view). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "ചേർത്തത് {value}"
 
 [t_81af947f5e]
 en = "Calls themself “{name}” · {added}"
