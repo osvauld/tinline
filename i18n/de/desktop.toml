@@ -937,6 +937,9 @@ text = "Neuer Versuch..."
 [gate_turn_on]
 text = "Einschalten"
 
+[gate_you_didnt_set_a]
+text = "Du hast keine Passphrase festgelegt, also sind die {words} Wiederherstellungswörter der einzige Weg zurück. Deine Kontakte bleiben."
+
 [gate_your_calls_come_through]
 text = "Deine Anrufe kommen wieder durch, sobald du wieder online bist."
 
@@ -1018,6 +1021,10 @@ text = "Ein Host hält eine vollständige Kopie einer Gruppe und gibt Nachrichte
 
 [group_a_host_keeps_a_full]
 text = "Ein Host hält eine vollständige Kopie der Gruppe, gibt Nachrichten weiter, während die Handys der Mitglieder schlafen, und kennt die Gruppenadressen der Mitglieder. Er muss laufen bleiben. Hosten macht dich nicht zum Admin; du kannst jederzeit aufhören."
+
+[group_a_host_lists_up]
+one = "Ein Host listet bis zu {count} Person auf einmal, es können also mehr sein."
+other = "Ein Host listet bis zu {count} Personen auf einmal, es können also mehr sein."
 
 [group_a_host_stays_on]
 text = "Ein Host bleibt an und gibt Beiträge weiter, während andere offline sind"
@@ -3262,11 +3269,29 @@ text = "Das ist zu lang für „Über mich“: bis zu {limit} Bytes, und manche 
 [profile_err_about_chars]
 text = "„Über mich“ darf keine Steuer- oder Textrichtungszeichen enthalten."
 
+[common_list_separator]
+text = ", "
+
 [common_list_and]
 text = "{list} und {last}"
 
+[call_reconnecting_2]
+text = "Anruf wird neu verbunden…"
+
+[call_couldnt_connect]
+text = "Der Anruf ließ sich nicht verbinden"
+
 [call_history_fallback]
 text = "Tinline-Anruf"
+
+[gcall_about_device]
+text = "**Das Gerät von {name}** trägt diesen Anruf. Alle im Anruf verbinden sich damit; es gibt den Ton weiter und wählt aus, wer zu hören ist, wenn mehrere sprechen."
+
+[gcall_about_unnamed]
+text = "**Das Host-Gerät** trägt diesen Anruf. Alle im Anruf verbinden sich damit; es gibt den Ton weiter und wählt aus, wer zu hören ist, wenn mehrere sprechen."
+
+[gcall_call_host_device]
+text = "Anruf-Host: Gerät von {name}"
 
 [group_replying_to_yourself]
 text = "Antwort an dich selbst"
@@ -3274,8 +3299,18 @@ text = "Antwort an dich selbst"
 [chat_replying_to_yourself]
 text = "Antwort an dich selbst"
 
+[group_invited_by_you]
+text = "Von dir eingeladen"
+
+[group_flags_of]
+one = "{flags} von {count} Markierung"
+other = "{flags} von {count} Markierungen"
+
 [group_link_own]
 text = "Ein Link für dein eigenes anderes Gerät"
+
+[group_owner_by_you_unnamed]
+text = "Von dir eingeladen"
 
 [group_host_online]
 text = "Online"
@@ -3286,8 +3321,27 @@ text = "Offline"
 [group_hosts_store_the_group_admin]
 text = "Hosts speichern die Gruppe und geben Beiträge weiter, wenn andere offline sind. Es sind Mitglieder, denen du vertraust: Ein Host kann alles lesen, was in dieser Gruppe gepostet wird. Lege einen Host über das Menü eines Mitglieds fest; die Person muss zustimmen. Wenn du einen Host entfernst, ändert sich die Adresse der Gruppe innerhalb von 2 Tagen, sodass dieses Gerät sie nicht mehr erreicht."
 
+[group_public_link]
+text = "Öffentlicher Link"
+
+[group_status_no_host_yet]
+text = "noch kein Host"
+
+[group_status_waiting_for_a_host]
+text = "wartet auf einen Host"
+
+[group_online_count]
+one = "{count} online"
+other = "{count} online"
+
+[group_online_capped]
+text = "{count}+ online"
+
 [group_post_photo]
 text = "Foto"
+
+[group_post_photo_caption]
+text = "Foto · {caption}"
 
 [group_preview_you]
 text = "Du: {text}"
@@ -3295,14 +3349,38 @@ text = "Du: {text}"
 [group_preview_author]
 text = "{name}: {text}"
 
+[group_preview_someone]
+text = "Jemand: {text}"
+
+[group_sys_joined_you]
+text = "Du bist beigetreten"
+
 [group_sys_joined]
 text = "{name} ist beigetreten"
+
+[group_sys_joined_someone]
+text = "Jemand ist beigetreten"
 
 [group_sys_left_you]
 text = "Verlassen"
 
 [group_sys_left]
 text = "{name} hat die Gruppe verlassen"
+
+[group_sys_left_someone]
+text = "Jemand hat die Gruppe verlassen"
+
+[group_sys_removed_you]
+one = "Du wurdest nach {count} Admin-Markierung entfernt"
+other = "Du wurdest nach {count} Admin-Markierungen entfernt"
+
+[group_sys_removed]
+one = "{name} wurde nach {count} Admin-Markierung entfernt"
+other = "{name} wurde nach {count} Admin-Markierungen entfernt"
+
+[group_sys_removed_someone]
+one = "Jemand wurde nach {count} Admin-Markierung entfernt"
+other = "Jemand wurde nach {count} Admin-Markierungen entfernt"
 
 [group_sys_host_added_you]
 text = "Ein Gerät von dir hostet jetzt die Gruppe"
@@ -3316,17 +3394,41 @@ text = "Ein Gerät von dir hostet die Gruppe nicht mehr"
 [group_sys_host_removed]
 text = "Ein Gerät von {name} hostet die Gruppe nicht mehr"
 
+[group_sys_admin_you_someone]
+text = "Du hast jemanden zum Admin gemacht"
+
 [group_sys_admin_other_you]
 text = "{by} hat dich zum Admin gemacht"
 
 [group_sys_admin_other_other]
 text = "{by} hat {name} zum Admin gemacht"
 
+[group_sys_admin_other_someone]
+text = "{by} hat jemanden zum Admin gemacht"
+
+[group_sys_admin_someone_you]
+text = "Jemand hat dich zum Admin gemacht"
+
+[group_sys_admin_someone_someone]
+text = "Jemand hat jemanden zum Admin gemacht"
+
+[group_sys_unadmin_you_someone]
+text = "Du hast jemanden als Admin entfernt"
+
 [group_sys_unadmin_other_you]
 text = "{by} hat dich als Admin entfernt"
 
 [group_sys_unadmin_other_other]
 text = "{by} hat {name} als Admin entfernt"
+
+[group_sys_unadmin_other_someone]
+text = "{by} hat jemanden als Admin entfernt"
+
+[group_sys_unadmin_someone_you]
+text = "Jemand hat dich als Admin entfernt"
+
+[group_sys_unadmin_someone_someone]
+text = "Jemand hat jemanden als Admin entfernt"
 
 [group_sent_waiting]
 text = "Wartet auf {name} · über {group}"
@@ -3349,6 +3451,9 @@ text = "{name} hat dich blockiert"
 [group_notice_invitation_sent]
 text = "Einladung an {name} gesendet. Die Person tritt bei, wenn sie annimmt."
 
+[group_notice_invitation_sent_unnamed]
+text = "Einladung gesendet. Die Person tritt bei, wenn sie annimmt."
+
 [group_notice_you_joined]
 text = "Du bist {group} beigetreten."
 
@@ -3358,17 +3463,29 @@ text = "Du bist der Gruppe beigetreten."
 [group_notice_declined_inv]
 text = "Abgelehnt. {name} sieht, dass du abgelehnt hast."
 
+[group_notice_declined_inv_unnamed]
+text = "Abgelehnt. Die Person sieht, dass du abgelehnt hast."
+
 [group_notice_accepted_yours]
 text = "{name} hat deine Anfrage angenommen. Ihr könnt euch jetzt schreiben; Anrufe bleiben aus, bis einer von euch sie erlaubt."
 
 [group_notice_request_sent]
 text = "Anfrage an {name} gesendet. Sie wartet unter Chats, bis eine Antwort kommt."
 
+[group_notice_request_sent_unnamed]
+text = "Anfrage gesendet. Sie wartet unter Chats, bis eine Antwort kommt."
+
 [group_notice_accepted]
 text = "Angenommen. {name} ist nur für Nachrichten hinzugefügt und erscheint unter Chats, sobald das Gerät verbunden ist; Anrufe bleiben aus, bis du sie erlaubst."
 
+[group_notice_accepted_unnamed]
+text = "Angenommen. Die Person ist nur für Nachrichten hinzugefügt und erscheint unter Chats, sobald ihr Gerät verbunden ist; Anrufe bleiben aus, bis du sie erlaubst."
+
 [group_notice_declined_req]
 text = "Abgelehnt. {name} erfährt „abgelehnt“."
+
+[group_notice_declined_req_unnamed]
+text = "Abgelehnt. Die Person erfährt „abgelehnt“."
 
 [group_notice_link_copied]
 text = "Kopiert. Wer den Link hat, kann beitreten, solange er offen ist."
