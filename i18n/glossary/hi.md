@@ -72,3 +72,15 @@ changes. Check every adjective/verb agrees.
 - कृपया, प्रविष्ट करें, अमान्य, विफल, त्रुटि (stiff/alarming).
 - Gendered first-person verbs on buttons; tum/aap mixing.
 - Urdu-only vocabulary drifting in unevenly (fine in moderation; keep one style).
+
+## Gender policy for "you" and {name} (from the Hindi review, 2026-10-25)
+
+Prefer constructions with no gendered verb: agent + ने perfective, noun or
+possessive phrases ("ग्रुप आपका होगा"), है with a neutral predicate ("सहमत हैं"),
+or the subjunctive ("जब तक आप न चुनें"). Next best: impersonal or passive.
+Use the masculine honorific plural only when nothing else reads naturally.
+Habitual/potential forms with आप ("आप … कर सकते हैं") stay masculine generic;
+rewriting all of them sounds stilted. Never use slashes (गए/गई), and never let a
+past or future verb show the user's gender when a neutral sentence of the same
+length exists. The same policy applies to the other Hindi-belt languages
+(ur, pa, mr, gu, doi, kok, mai) unless their own page says otherwise.

@@ -138,6 +138,17 @@ Fix: join with the platform list formatter (Android `ListFormatter`, iOS
 - Desktop `profile_text` "{value} {time}", `call_text` "{day} {value}": weekday/date
   glued to a time (same as §8) → platform date formatter or one string per relative day.
 
+## 9g. Found in review (hi)
+
+- "Connecting…", "Reconnecting…", "Couldn't connect" share one entry for a device
+  (masc.) and a call (fem.) → separate call-status keys ("Connecting the call…") or a
+  separate key whose note names the call as the subject.
+- English hard-codes numbers that siblings pass as placeholders → "You were removed
+  after {total} admin flags" (`shell_group_sys_removed*`), "({flags_needed} flags
+  remove someone)", "up to {max} pixels on a side" (`profile_that_picture_is_pixels`).
+- Desktop `groups_view.rs` `when()`/`day()` format with `%b` → English month names
+  inside translated strings ("Flagged {value}"). Use the locale date formatter.
+
 ## 10. Not translatable
 
 - `app_ev` "Ev" is a Debug format string: remove it from the catalog.
