@@ -1646,7 +1646,7 @@ text = "Miksi minut poistettiin?"
 text = "Miksi sinut poistettiin"
 
 [group_will_be_able_to]
-text = "{name} voi tämän jälkeen kutsua ihmisiä, merkitä jäseniä ({flags_needed} merkintää poistaa jäsenen) ja nimetä isäntälaitteita. Vain sinä omistajana voit nimetä ja poistaa ylläpitäjiä."
+text = "{name} voi tämän jälkeen kutsua ihmisiä, merkitä jäseniä (jäsen poistetaan {flags_needed} merkinnällä) ja nimetä isäntälaitteita. Vain sinä omistajana voit nimetä ja poistaa ylläpitäjiä."
 
 [group_withdraw_the_offer_to]
 text = "Peru tarjous isännöidä"
@@ -3090,7 +3090,7 @@ text = "Skannaa heidän koodinsa tai jaa omasi, niin voitte soittaa toisillenne.
 text = "Lähetä se kenelle tahansa, jonka kanssa haluat puhua, millä tahansa sovelluksella."
 
 [signup_send_it_to_anyone_youd]
-text = "Lähetä se kenelle tahansa, jonka kanssa haluat puhua, millä tahansa sovelluksella. Se toimii {value} asti."
+text = "Lähetä se kenelle tahansa, jonka kanssa haluat puhua, millä tahansa sovelluksella. Viimeinen voimassaolopäivä on {value}."
 
 [signup_short_a_few_more]
 text = "Lyhyt. Muutama sana lisää tekee siitä vahvemman."
@@ -3407,25 +3407,25 @@ text = "marrask."
 text = "jouluk."
 
 [date_weekday_mon]
-text = "Maanantai"
+text = "maanantai"
 
 [date_weekday_tue]
-text = "Tiistai"
+text = "tiistai"
 
 [date_weekday_wed]
-text = "Keskiviikko"
+text = "keskiviikko"
 
 [date_weekday_thu]
-text = "Torstai"
+text = "torstai"
 
 [date_weekday_fri]
-text = "Perjantai"
+text = "perjantai"
 
 [date_weekday_sat]
-text = "Lauantai"
+text = "lauantai"
 
 [date_weekday_sun]
-text = "Sunnuntai"
+text = "sunnuntai"
 
 [date_month_day]
 text = "{day}. {month}"

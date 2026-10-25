@@ -9212,7 +9212,7 @@ en_other = "+{count} more"
 where = [
   "android gcall_more: Under the participants' faces when there are more than nine. {count} is how many are not shown.",
 ]
-one = "+{count} muuta"
+one = "+{count} muu"
 other = "+{count} muuta"
 
 [t_570080b5f0]
@@ -15409,7 +15409,7 @@ en = "{name} will be able to invite people, flag members ({flags_needed} flags r
 where = [
   "desktop group_will_be_able_to: Desktop, group admin dialog (in group_live_view.rs, live_overlay). {name} is a person's first name; {flags_needed} is how many admin flags remove a member.",
 ]
-text = "{name} voi tämän jälkeen kutsua ihmisiä, merkitä jäseniä ({flags_needed} merkintää poistaa jäsenen) ja nimetä isäntälaitteita. Vain sinä omistajana voit nimetä ja poistaa ylläpitäjiä."
+text = "{name} voi tämän jälkeen kutsua ihmisiä, merkitä jäseniä (jäsen poistetaan {flags_needed} merkinnällä) ja nimetä isäntälaitteita. Vain sinä omistajana voit nimetä ja poistaa ylläpitäjiä."
 
 [t_497c9f2f05]
 en = "Withdraw the offer to host"
@@ -17055,7 +17055,7 @@ en = "Send it to anyone you’d like to talk to, in any app. It works until {val
 where = [
   "desktop signup_send_it_to_anyone_youd: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay). {value} is a value filled in by the app.",
 ]
-text = "Lähetä se kenelle tahansa, jonka kanssa haluat puhua, millä tahansa sovelluksella. Se toimii {value} asti."
+text = "Lähetä se kenelle tahansa, jonka kanssa haluat puhua, millä tahansa sovelluksella. Viimeinen voimassaolopäivä on {value}."
 
 [t_e42886dfd5]
 en = "That code from {value} has expired. Codes last 7 days, so ask them for a fresh one."
@@ -17365,49 +17365,49 @@ en = "Monday"
 where = [
   "desktop date_weekday_mon: Weekday name inside dates such as \"Thursday 8 Oct\". Just the day name.",
 ]
-text = "Maanantai"
+text = "maanantai"
 
 [t_83f75a6a3d]
 en = "Tuesday"
 where = [
   "desktop date_weekday_tue: Weekday name inside dates such as \"Thursday 8 Oct\". Just the day name.",
 ]
-text = "Tiistai"
+text = "tiistai"
 
 [t_38d4808009]
 en = "Wednesday"
 where = [
   "desktop date_weekday_wed: Weekday name inside dates such as \"Thursday 8 Oct\". Just the day name.",
 ]
-text = "Keskiviikko"
+text = "keskiviikko"
 
 [t_21149a2390]
 en = "Thursday"
 where = [
   "desktop date_weekday_thu: Weekday name inside dates such as \"Thursday 8 Oct\". Just the day name.",
 ]
-text = "Torstai"
+text = "torstai"
 
 [t_148abe3f88]
 en = "Friday"
 where = [
   "desktop date_weekday_fri: Weekday name inside dates such as \"Thursday 8 Oct\". Just the day name.",
 ]
-text = "Perjantai"
+text = "perjantai"
 
 [t_0968e86bdc]
 en = "Saturday"
 where = [
   "desktop date_weekday_sat: Weekday name inside dates such as \"Thursday 8 Oct\". Just the day name.",
 ]
-text = "Lauantai"
+text = "lauantai"
 
 [t_cc55d792bc]
 en = "Sunday"
 where = [
   "desktop date_weekday_sun: Weekday name inside dates such as \"Thursday 8 Oct\". Just the day name.",
 ]
-text = "Sunnuntai"
+text = "sunnuntai"
 
 [t_a3673dec81]
 en = "{month} {day}"

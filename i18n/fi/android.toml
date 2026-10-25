@@ -3462,7 +3462,7 @@ one = "{count} henkilö puhelussa"
 other = "{count} henkilöä puhelussa"
 
 [gcall_more]
-one = "+{count} muuta"
+one = "+{count} muu"
 other = "+{count} muuta"
 
 [gcall_ok]
