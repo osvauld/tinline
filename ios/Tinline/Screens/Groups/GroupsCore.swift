@@ -165,21 +165,76 @@ enum GroupText {
     private static func someone(_ name: String) -> String { name.groupsIfBlank(tr("group_someone")) }
     static func shortDev(_ dev: String) -> String { String(dev.prefix(8)) }
 
+    /// Who a system line is about: the user, a named member, or a member whose name is unknown. Each combination has its
+    /// own whole sentence, so no stand-in word is ever slotted into one.
+    private enum Who {
+        case you, named(String), unknown
+        init(_ did: String, _ name: String, me: String) {
+            self = did == me ? .you : (name.groupsIsBlank ? .unknown : .named(name))
+        }
+    }
+
     /// A system line in plain words. `me` is our DID.
     static func sysText(_ m: GroupMessage, me: String) -> String {
-        func who(_ did: String, _ name: String) -> String { did == me ? groupsYou : someone(name) }
-        let by = who(m.authorDid, m.authorName)
-        let sub = who(m.subjectDid, m.subjectName)
-        let you = m.subjectDid == me
+        let by = Who(m.authorDid, m.authorName, me: me)
+        let sub = Who(m.subjectDid, m.subjectName, me: me)
+        let total = String(flagsToRemove)
         switch m.kind {
         case .post: return m.text
-        case .joined: return tr("group_sys_joined", sub)
-        case .left: return tr("group_sys_left", sub)
-        case .removed: return you ? tr("group_sys_removed_you", String(flagsToRemove)) : tr("group_sys_removed", sub, String(flagsToRemove))
-        case .adminGranted: return you ? tr("group_sys_admin_you", by) : tr("group_sys_admin", by, sub)
-        case .adminRevoked: return you ? tr("group_sys_unadmin_you", by) : tr("group_sys_unadmin", by, sub)
-        case .hostAdded: return you ? tr("group_sys_host_added_you") : tr("group_sys_host_added", sub)
-        case .hostRemoved: return you ? tr("group_sys_host_removed_you") : tr("group_sys_host_removed", sub)
+        case .joined:
+            switch sub {
+            case .you: return tr("group_sys_joined_you")
+            case .named(let n): return tr("group_sys_joined_named", n)
+            case .unknown: return tr("group_sys_joined_someone")
+            }
+        case .left:
+            switch sub {
+            case .you: return tr("group_sys_left_you")
+            case .named(let n): return tr("group_sys_left_named", n)
+            case .unknown: return tr("group_sys_left_someone")
+            }
+        case .removed:
+            switch sub {
+            case .you: return tr("group_sys_removed_you", total)
+            case .named(let n): return tr("group_sys_removed", n, total)
+            case .unknown: return tr("group_sys_removed_someone", total)
+            }
+        case .adminGranted:
+            switch (by, sub) {
+            case (.you, .you): return tr("group_sys_admin_you_you")
+            case (.you, .named(let n)): return tr("group_sys_admin_you_named", n)
+            case (.you, .unknown): return tr("group_sys_admin_you_someone")
+            case (.named(let b), .you): return tr("group_sys_admin_named_you", b)
+            case (.named(let b), .named(let n)): return tr("group_sys_admin_named_named", b, n)
+            case (.named(let b), .unknown): return tr("group_sys_admin_named_someone", b)
+            case (.unknown, .you): return tr("group_sys_admin_someone_you")
+            case (.unknown, .named(let n)): return tr("group_sys_admin_someone_named", n)
+            case (.unknown, .unknown): return tr("group_sys_admin_someone_someone")
+            }
+        case .adminRevoked:
+            switch (by, sub) {
+            case (.you, .you): return tr("group_sys_unadmin_you_you")
+            case (.you, .named(let n)): return tr("group_sys_unadmin_you_named", n)
+            case (.you, .unknown): return tr("group_sys_unadmin_you_someone")
+            case (.named(let b), .you): return tr("group_sys_unadmin_named_you", b)
+            case (.named(let b), .named(let n)): return tr("group_sys_unadmin_named_named", b, n)
+            case (.named(let b), .unknown): return tr("group_sys_unadmin_named_someone", b)
+            case (.unknown, .you): return tr("group_sys_unadmin_someone_you")
+            case (.unknown, .named(let n)): return tr("group_sys_unadmin_someone_named", n)
+            case (.unknown, .unknown): return tr("group_sys_unadmin_someone_someone")
+            }
+        case .hostAdded:
+            switch sub {
+            case .you: return tr("group_sys_host_added_you")
+            case .named(let n): return tr("group_sys_host_added", n)
+            case .unknown: return tr("group_sys_host_added_someone")
+            }
+        case .hostRemoved:
+            switch sub {
+            case .you: return tr("group_sys_host_removed_you")
+            case .named(let n): return tr("group_sys_host_removed", n)
+            case .unknown: return tr("group_sys_host_removed_someone")
+            }
         }
     }
 

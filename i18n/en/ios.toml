@@ -1291,37 +1291,13 @@ note = "Fallback for a name inside a sentence (\"Invitation sent to them\"), use
 text = "They"
 note = "Fallback for a name at the start of a sentence (\"They join…\"), used when the person has no name."
 
-[group_sys_joined]
-text = "{name} joined"
-note = "System line in a group chat. {name} is who joined."
-
-[group_sys_left]
-text = "{name} left"
-note = "System line in a group chat. {name} is who left."
-
 [group_sys_removed_you]
 text = "You were removed after {total} admin flags"
 note = "System line: the user was removed. {total} is the number of flags that remove."
 
 [group_sys_removed]
 text = "{name} was removed after {total} admin flags"
-note = "System line: a member was removed. {name} is the member, {total} the number of flags."
-
-[group_sys_admin_you]
-text = "{by} made you an admin"
-note = "System line. {by} is who made the user admin."
-
-[group_sys_admin]
-text = "{by} made {name} an admin"
-note = "System line. {by} made {name} an admin."
-
-[group_sys_unadmin_you]
-text = "{by} removed you as admin"
-note = "System line. {by} is who removed the user as admin."
-
-[group_sys_unadmin]
-text = "{by} removed {name} as admin"
-note = "System line. {by} removed {name} as admin."
+note = "System line in a group chat (the centred grey line). A named member was removed. {name} is the member, {total} the number of admin flags that remove."
 
 [group_sys_host_added_you]
 text = "A device of yours now hosts the group"
@@ -3935,54 +3911,6 @@ note = "Name shown for a group member with no known name."
 text = "Waiting to send — {name} isn’t reachable yet"
 note = "Chat list preview of a message that is waiting to send. {name} is the contact’s first name."
 
-[shell_group_sys_joined]
-text = "{name} joined"
-note = "Group chat system line. {name} is the member who joined."
-
-[shell_group_sys_left]
-text = "{name} left"
-note = "Group chat system line. {name} is the member who left."
-
-[shell_group_sys_removed_you]
-text = "You were removed after 3 admin flags"
-note = "Group chat system line. The user was removed after being flagged by admins."
-
-[shell_group_sys_removed]
-text = "{name} was removed after 3 admin flags"
-note = "Group chat system line. {name} is the removed member."
-
-[shell_group_sys_admin_granted_you]
-text = "{by} made you an admin"
-note = "Group chat system line. {by} is who made the user an admin."
-
-[shell_group_sys_admin_granted]
-text = "{by} made {name} an admin"
-note = "Group chat system line. {by} granted admin to {name}."
-
-[shell_group_sys_admin_revoked_you]
-text = "{by} removed you as admin"
-note = "Group chat system line. {by} is who removed the user’s admin role."
-
-[shell_group_sys_admin_revoked]
-text = "{by} removed {name} as admin"
-note = "Group chat system line. {by} removed {name}’s admin role."
-
-[shell_group_sys_host_added_you]
-text = "A device of yours now hosts the group"
-note = "Group chat system line. The user’s device became a group host."
-
-[shell_group_sys_host_added]
-text = "A device of {name}’s now hosts the group"
-note = "Group chat system line. {name} is the member whose device became a host."
-
-[shell_group_sys_host_removed_you]
-text = "A device of yours stopped hosting the group"
-note = "Group chat system line. The user’s device stopped hosting."
-
-[shell_group_sys_host_removed]
-text = "A device of {name}’s stopped hosting the group"
-note = "Group chat system line. {name} is the member whose device stopped hosting."
-
 [shell_group_preview_removed]
 text = "You were removed from this group"
 note = "Group row second line when the user was removed."
@@ -5861,3 +5789,111 @@ note = "Hint under the Open settings button on the microphone permission screen.
 [people_add_or]
 text = "or"
 note = "Small divider word between the scan option and the paste-a-code option on the add contact sheet."
+
+[group_sys_joined_you]
+text = "You joined"
+note = "System line in a group chat (the centred grey line). The user themself joined."
+
+[group_sys_joined_named]
+text = "{name} joined"
+note = "System line in a group chat (the centred grey line). {name} is the member who joined."
+
+[group_sys_joined_someone]
+text = "Someone joined"
+note = "System line in a group chat (the centred grey line). A member whose name is unknown joined."
+
+[group_sys_left_you]
+text = "You left"
+note = "System line in a group chat (the centred grey line). The user themself left."
+
+[group_sys_left_named]
+text = "{name} left"
+note = "System line in a group chat (the centred grey line). {name} is the member who left."
+
+[group_sys_left_someone]
+text = "Someone left"
+note = "System line in a group chat (the centred grey line). A member whose name is unknown left."
+
+[group_sys_removed_someone]
+text = "Someone was removed after {total} admin flags"
+note = "System line in a group chat (the centred grey line). A member whose name is unknown was removed. {total} is the number of admin flags that remove."
+
+[group_sys_admin_you_you]
+text = "You made yourself an admin"
+note = "System line in a group chat (the centred grey line). Admin role given. Actor: the user. Subject: the user."
+
+[group_sys_admin_you_named]
+text = "You made {name} an admin"
+note = "System line in a group chat (the centred grey line). Admin role given. Actor: the user. Subject: a named member. {name} is the member it was done to."
+
+[group_sys_admin_you_someone]
+text = "You made someone an admin"
+note = "System line in a group chat (the centred grey line). Admin role given. Actor: the user. Subject: a member whose name is unknown."
+
+[group_sys_admin_named_you]
+text = "{by} made you an admin"
+note = "System line in a group chat (the centred grey line). Admin role given. Actor: a named member. Subject: the user. {by} is who did it (their name)."
+
+[group_sys_admin_named_named]
+text = "{by} made {name} an admin"
+note = "System line in a group chat (the centred grey line). Admin role given. Actor: a named member. Subject: a named member. {by} is who did it (their name); {name} is the member it was done to."
+
+[group_sys_admin_named_someone]
+text = "{by} made someone an admin"
+note = "System line in a group chat (the centred grey line). Admin role given. Actor: a named member. Subject: a member whose name is unknown. {by} is who did it (their name)."
+
+[group_sys_admin_someone_you]
+text = "Someone made you an admin"
+note = "System line in a group chat (the centred grey line). Admin role given. Actor: a member whose name is unknown. Subject: the user."
+
+[group_sys_admin_someone_named]
+text = "Someone made {name} an admin"
+note = "System line in a group chat (the centred grey line). Admin role given. Actor: a member whose name is unknown. Subject: a named member. {name} is the member it was done to."
+
+[group_sys_admin_someone_someone]
+text = "Someone made someone an admin"
+note = "System line in a group chat (the centred grey line). Admin role given. Actor: a member whose name is unknown. Subject: a member whose name is unknown."
+
+[group_sys_unadmin_you_you]
+text = "You removed yourself as admin"
+note = "System line in a group chat (the centred grey line). Admin role taken away. Actor: the user. Subject: the user."
+
+[group_sys_unadmin_you_named]
+text = "You removed {name} as admin"
+note = "System line in a group chat (the centred grey line). Admin role taken away. Actor: the user. Subject: a named member. {name} is the member it was done to."
+
+[group_sys_unadmin_you_someone]
+text = "You removed someone as admin"
+note = "System line in a group chat (the centred grey line). Admin role taken away. Actor: the user. Subject: a member whose name is unknown."
+
+[group_sys_unadmin_named_you]
+text = "{by} removed you as admin"
+note = "System line in a group chat (the centred grey line). Admin role taken away. Actor: a named member. Subject: the user. {by} is who did it (their name)."
+
+[group_sys_unadmin_named_named]
+text = "{by} removed {name} as admin"
+note = "System line in a group chat (the centred grey line). Admin role taken away. Actor: a named member. Subject: a named member. {by} is who did it (their name); {name} is the member it was done to."
+
+[group_sys_unadmin_named_someone]
+text = "{by} removed someone as admin"
+note = "System line in a group chat (the centred grey line). Admin role taken away. Actor: a named member. Subject: a member whose name is unknown. {by} is who did it (their name)."
+
+[group_sys_unadmin_someone_you]
+text = "Someone removed you as admin"
+note = "System line in a group chat (the centred grey line). Admin role taken away. Actor: a member whose name is unknown. Subject: the user."
+
+[group_sys_unadmin_someone_named]
+text = "Someone removed {name} as admin"
+note = "System line in a group chat (the centred grey line). Admin role taken away. Actor: a member whose name is unknown. Subject: a named member. {name} is the member it was done to."
+
+[group_sys_unadmin_someone_someone]
+text = "Someone removed someone as admin"
+note = "System line in a group chat (the centred grey line). Admin role taken away. Actor: a member whose name is unknown. Subject: a member whose name is unknown."
+
+[group_sys_host_added_someone]
+text = "A member’s device now hosts the group"
+note = "System line in a group chat (the centred grey line). A device of a member whose name is unknown now hosts the group."
+
+[group_sys_host_removed_someone]
+text = "A member’s device stopped hosting the group"
+note = "System line in a group chat (the centred grey line). A device of a member whose name is unknown stopped hosting the group."
