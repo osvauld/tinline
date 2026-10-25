@@ -195,7 +195,6 @@ en = "Call"
 where = [
   "android common_call: Button or label that starts a call.",
   "ios chat_call: Accessibility label of the voice call button in a chat header.",
-  "ios shell_call_desc_other: Screen reader phrase for a call row, a whole phrase used as {what} in the row label: any other call. Reads like “Missed call”.",
   "ios shell_calls_action_call: Screen reader: tapping a call row calls the contact.",
   "ios people_call: Button that calls the person.",
   "desktop common_call: Shared label: a button that starts a call (a verb, \"Call Ana\"). Not used as a title.",
@@ -1460,7 +1459,7 @@ text = "Groupe public"
 [t_cbd81d50d4]
 en = "Anyone with the link can join"
 where = [
-  "android groupsb_open_link_on: Second line of the Open link switch while it is on.",
+  "android groupsb_open_link_on: Second line of the Public link switch while it is on.",
   "desktop group_anyone_with_the_link: Desktop, groups (in group_live_view.rs, group_info_page).",
 ]
 text = "Toute personne qui a le lien peut rejoindre"
@@ -1468,7 +1467,7 @@ text = "Toute personne qui a le lien peut rejoindre"
 [t_7051c1c89a]
 en = "Only people you invite can join"
 where = [
-  "android groupsb_open_link_off: Second line of the Open link switch while it is off.",
+  "android groupsb_open_link_off: Second line of the Public link switch while it is off.",
   "desktop group_only_people_you_invite: Desktop, groups (in group_live_view.rs, group_info_page).",
 ]
 text = "Seules les personnes que vous invitez peuvent rejoindre"
@@ -1497,12 +1496,13 @@ where = [
 ]
 text = "Un lien qui n’expire pas"
 
-[t_a861eda638]
-en = "Turn on Open link to share it"
+[t_6bb1d72052]
+en = "Turn on Public link to share it"
 where = [
   "android groupsb_turn_on_open: Second line of the Copy link row while the group is not open.",
+  "desktop group_turn_on_open_link: Desktop, group info, under the Public link switch. \"Public link\" is the title of that switch.",
 ]
-text = "Activez Lien ouvert pour le partager"
+text = "Activez Lien public pour le partager"
 
 [t_a0332695ed]
 en = "Couldn’t get the link"
@@ -4607,6 +4607,7 @@ text_ios = "Seul le compte sélectionné est en ligne à la fois : {name} est 
 en = "Your account is back on this phone. Your contacts, chats and call history are kept on your other devices, not on a server. This phone starts with an empty contact list."
 where = [
   "android onboarding_restored_lead: Lead after restoring an account.",
+  "ios onboarding_back_lead: Explanation after restoring an account.",
 ]
 text = "Votre compte est de retour sur ce téléphone. Vos contacts, discussions et historique d’appels sont gardés sur vos autres appareils, pas sur un serveur. Ce téléphone démarre avec une liste de contacts vide."
 
@@ -12966,13 +12967,6 @@ where = [
 ]
 text = "Votre compte a été retiré de ce téléphone par l’un de vos autres appareils. Ses contacts, discussions et appels sont supprimés ici. Vos autres appareils ne sont pas concernés."
 
-[t_e9172d3ef4]
-en = "Your account is back on this phone. Your contacts, chats and call history are kept on your other devices, not with us. This phone starts with an empty contact list."
-where = [
-  "ios onboarding_back_lead: Explanation after restoring an account.",
-]
-text = "Votre compte est de retour sur ce téléphone. Vos contacts, discussions et historique d’appels sont gardés sur vos autres appareils, pas chez nous. Ce téléphone démarre avec une liste de contacts vide."
-
 [t_9fa27bd052]
 en = "Linked to {name}"
 where = [
@@ -13058,6 +13052,13 @@ where = [
   "ios shell_call_what_unreachable: Call list: call that could not reach the other person.",
 ]
 text = "L’appel n’a pas pu aboutir"
+
+[t_775f66b114]
+en = "Call"
+where = [
+  "ios shell_call_desc_other: Screen reader phrase for a call row, a whole phrase used as {what} in the row label: any other call. Reads like “Missed call”.",
+]
+text = "Appel"
 
 [t_46bad378f1]
 en = "Word {n} isn’t in the recovery word list. Check the spelling."
@@ -15416,13 +15417,6 @@ where = [
   "desktop group_this_device_stopped_hosting: Desktop, groups (in group_live.rs, run).",
 ]
 text = "Cet appareil n’héberge plus le groupe."
-
-[t_6bb1d72052]
-en = "Turn on Public link to share it"
-where = [
-  "desktop group_turn_on_open_link: Desktop, group info, under the Public link switch. \"Public link\" is the title of that switch.",
-]
-text = "Activez Lien public pour le partager"
 
 [t_273944879b]
 en = "Unlock to see your groups."

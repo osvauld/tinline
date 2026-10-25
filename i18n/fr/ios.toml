@@ -2774,7 +2774,7 @@ text = "Seul le compte sélectionné est en ligne à la fois : {name} est donc
 text = "Seul le compte sélectionné est en ligne à la fois : ce compte est donc en ligne et votre autre compte est en pause. Vous pouvez changer dans Réglages."
 
 [onboarding_back_lead]
-text = "Votre compte est de retour sur ce téléphone. Vos contacts, discussions et historique d’appels sont gardés sur vos autres appareils, pas chez nous. Ce téléphone démarre avec une liste de contacts vide."
+text = "Votre compte est de retour sur ce téléphone. Vos contacts, discussions et historique d’appels sont gardés sur vos autres appareils, pas sur un serveur. Ce téléphone démarre avec une liste de contacts vide."
 
 [onboarding_open]
 text = "Ouvrir Tinline"
@@ -3014,7 +3014,7 @@ text = "Appel qui n’a pas pu aboutir"
 text = "Appel Tinline"
 
 [shell_call_desc_other]
-text = "Appeler"
+text = "Appel"
 
 [shell_you]
 text = "Vous"

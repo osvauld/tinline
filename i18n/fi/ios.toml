@@ -2754,7 +2754,7 @@ text = "Vain valitsemasi tili on kerrallaan verkossa, joten {name} on nyt verkos
 text = "Vain valitsemasi tili on kerrallaan verkossa, joten tämä tili on nyt verkossa ja toinen tilisi on tauolla. Voit vaihtaa asetuksista."
 
 [onboarding_back_lead]
-text = "Tilisi on taas tällä puhelimella. Yhteystietosi, keskustelusi ja puheluhistoriasi säilyvät muilla laitteillasi, eivät meillä. Tämä puhelin aloittaa tyhjällä yhteystietolistalla."
+text = "Tilisi on taas tällä puhelimella. Yhteystietosi, keskustelusi ja puheluhistoriasi säilyvät muilla laitteillasi, eivät palvelimella. Tämä puhelin aloittaa tyhjällä yhteystietolistalla."
 
 [onboarding_open]
 text = "Avaa Tinline"
@@ -2994,7 +2994,7 @@ text = "Puhelu, joka ei yhdistynyt"
 text = "Tinline-puhelu"
 
 [shell_call_desc_other]
-text = "Soita"
+text = "Puhelu"
 
 [shell_you]
 text = "Sinä"

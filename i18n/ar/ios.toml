@@ -2619,9 +2619,6 @@ text = "أهلًا بعودتك، {name}"
 [onboarding_back_added_lead]
 text = "الحساب المحدد وحده يكون متصلًا في كل مرة، لذا فإن {name} متصل الآن وحسابك الآخر متوقف مؤقتًا. يمكنك التبديل من الإعدادات."
 
-[onboarding_back_lead]
-text = "عاد حسابك إلى هذا الهاتف. جهات اتصالك ودردشاتك وسجل مكالماتك محفوظة على أجهزتك الأخرى، لا لدينا. يبدأ هذا الهاتف بقائمة جهات اتصال فارغة."
-
 [onboarding_open]
 text = "فتح Tinline"
 
@@ -2834,9 +2831,6 @@ text = "مكالمة ملغاة"
 
 [shell_call_what_other]
 text = "مكالمة Tinline"
-
-[shell_call_desc_other]
-text = "اتصال"
 
 [shell_you]
 text = "أنت"

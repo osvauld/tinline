@@ -1589,10 +1589,34 @@
       "comment": "Group call details card, first sentence. The host’s name at the start is bold (markdown stars, keep them around the same words); the whole sentence is one string so the verb can agree with it. A member’s device is the call host. {name} is the member’s first name.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "**Das Gerät von %1$@** trägt diesen Anruf. Alle im Anruf verbinden sich damit; es gibt den Ton weiter und wählt aus, wer zu hören ist, wenn mehrere sprechen."
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "**%1$@’s device** carries this call. Everyone in the call connects to it, and it passes the audio on and chooses who is heard when several people speak."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "**Jäsenen %1$@ laite** välittää tämän puhelun. Kaikki puhelussa olevat ovat yhteydessä siihen, ja se välittää äänen eteenpäin ja valitsee, kuka kuuluu, kun useampi puhuu yhtä aikaa."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "**L’appareil de %1$@** héberge cet appel. Chaque participant s’y connecte ; il transmet l’audio et choisit qui est entendu quand plusieurs personnes parlent."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "**%1$@ का डिवाइस** यह कॉल चलाता है। कॉल में सभी इससे जुड़ते हैं, यह आवाज़ आगे पहुँचाता है और कई लोगों के एक साथ बोलने पर तय करता है कि कौन सुनाई दे।"
           }
         }
       }
@@ -1601,10 +1625,34 @@
       "comment": "Group call details card, first sentence. The host’s name at the start is bold (markdown stars, keep them around the same words); the whole sentence is one string so the verb can agree with it. A member whose name is not known hosts the call.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "**Das Gerät eines Mitglieds** trägt diesen Anruf. Alle im Anruf verbinden sich damit; es gibt den Ton weiter und wählt aus, wer zu hören ist, wenn mehrere sprechen."
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "**A member’s device** carries this call. Everyone in the call connects to it, and it passes the audio on and chooses who is heard when several people speak."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "**Erään jäsenen laite** välittää tämän puhelun. Kaikki puhelussa olevat ovat yhteydessä siihen, ja se välittää äänen eteenpäin ja valitsee, kuka kuuluu, kun useampi puhuu yhtä aikaa."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "**L’appareil d’un membre** héberge cet appel. Chaque participant s’y connecte ; il transmet l’audio et choisit qui est entendu quand plusieurs personnes parlent."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "**किसी सदस्य का डिवाइस** यह कॉल चलाता है। कॉल में सभी इससे जुड़ते हैं, यह आवाज़ आगे पहुँचाता है और कई लोगों के एक साथ बोलने पर तय करता है कि कौन सुनाई दे।"
           }
         }
       }
@@ -1613,10 +1661,34 @@
       "comment": "Group call details card, first sentence. The host’s name at the start is bold (markdown stars, keep them around the same words); the whole sentence is one string so the verb can agree with it. This phone is the call host.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "**Dieses Handy** trägt diesen Anruf. Alle im Anruf verbinden sich damit; es gibt den Ton weiter und wählt aus, wer zu hören ist, wenn mehrere sprechen."
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "**This phone** is carrying this call. Everyone in the call connects to it, and it passes the audio on and chooses who is heard when several people speak."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "**Tämä puhelin** välittää tätä puhelua. Kaikki puhelussa olevat ovat yhteydessä siihen, ja se välittää äänen eteenpäin ja valitsee, kuka kuuluu, kun useampi puhuu yhtä aikaa."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "**Ce téléphone** héberge cet appel. Chaque participant s’y connecte ; il transmet l’audio et choisit qui est entendu quand plusieurs personnes parlent."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "**यह फ़ोन** इस कॉल को चला रहा है। कॉल में सभी इससे जुड़ते हैं, यह आवाज़ आगे पहुँचाता है और कई लोगों के एक साथ बोलने पर तय करता है कि कौन सुनाई दे।"
           }
         }
       }
@@ -1661,10 +1733,34 @@
       "comment": "Group call details card, first sentence. The host’s name at the start is bold (markdown stars, keep them around the same words); the whole sentence is one string so the verb can agree with it. The host is not known yet.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "**Das Host-Gerät** trägt diesen Anruf. Alle im Anruf verbinden sich damit; es gibt den Ton weiter und wählt aus, wer zu hören ist, wenn mehrere sprechen."
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "**The call host** carries this call. Everyone in the call connects to it, and it passes the audio on and chooses who is heard when several people speak."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "**Puheluisäntä** välittää tämän puhelun. Kaikki puhelussa olevat ovat yhteydessä siihen, ja se välittää äänen eteenpäin ja valitsee, kuka kuuluu, kun useampi puhuu yhtä aikaa."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "**L’hôte d’appel** héberge cet appel. Chaque participant s’y connecte ; il transmet l’audio et choisit qui est entendu quand plusieurs personnes parlent."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "**कॉल होस्ट** यह कॉल चलाता है। कॉल में सभी इससे जुड़ते हैं, यह आवाज़ आगे पहुँचाता है और कई लोगों के एक साथ बोलने पर तय करता है कि कौन सुनाई दे।"
           }
         }
       }
@@ -1709,10 +1805,34 @@
       "comment": "Group call details card, first sentence. The host’s name at the start is bold (markdown stars, keep them around the same words); the whole sentence is one string so the verb can agree with it. Another device of the user’s is the call host.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "**Dein anderes Gerät** trägt diesen Anruf. Alle im Anruf verbinden sich damit; es gibt den Ton weiter und wählt aus, wer zu hören ist, wenn mehrere sprechen."
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "**Your other device** carries this call. Everyone in the call connects to it, and it passes the audio on and chooses who is heard when several people speak."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "**Toinen laitteesi** välittää tämän puhelun. Kaikki puhelussa olevat ovat yhteydessä siihen, ja se välittää äänen eteenpäin ja valitsee, kuka kuuluu, kun useampi puhuu yhtä aikaa."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "**Votre autre appareil** héberge cet appel. Chaque participant s’y connecte ; il transmet l’audio et choisit qui est entendu quand plusieurs personnes parlent."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "**आपका दूसरा डिवाइस** यह कॉल चलाता है। कॉल में सभी इससे जुड़ते हैं, यह आवाज़ आगे पहुँचाता है और कई लोगों के एक साथ बोलने पर तय करता है कि कौन सुनाई दे।"
           }
         }
       }
@@ -1901,10 +2021,34 @@
       "comment": "Note on the group call screen when this phone is the call host and its battery is low. {percent} is the battery level below which hosting is limited.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Akku unter %1$@ %%. Das Hosten ist eingeschränkt: Es ist immer nur eine Person zu hören, und niemand Neues kann beitreten."
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Battery under %1$@ %%. Hosting is limited: only one person is heard at a time, and no one new can join."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Akun varaus on alle %1$@ %%. Isännöintiä on rajoitettu: vain yksi henkilö kuuluu kerrallaan, eikä kukaan uusi voi liittyä."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Batterie sous %1$@ %%. L’hébergement est limité : une seule personne est entendue à la fois, et aucun nouveau participant ne peut rejoindre l’appel."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "बैटरी %1$@ %% से कम। होस्टिंग सीमित है: एक समय में एक ही व्यक्ति सुनाई देगा, और कोई नया नहीं जुड़ सकता।"
           }
         }
       }
@@ -1949,10 +2093,34 @@
       "comment": "Group call start failure, generic; the call is the subject.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Der Anruf ließ sich nicht verbinden"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "The call couldn’t connect"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Puhelu ei yhdistynyt"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "L’appel n’a pas pu être établi"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "कॉल जुड़ नहीं पाई"
           }
         }
       }
@@ -2069,10 +2237,34 @@
       "comment": "Pill on the group call screen naming the call host. {name} is the member’s first name.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Anruf-Host: Gerät von %1$@"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Call host: %1$@’s device"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Puheluisäntä: jäsenen %1$@ laite"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Hôte d’appel : appareil de %1$@"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "कॉल होस्ट: %1$@ का डिवाइस"
           }
         }
       }
@@ -2081,10 +2273,34 @@
       "comment": "Pill on the group call screen naming the call host. A member whose name is not known.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Anruf-Host: Gerät eines Mitglieds"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Call host: a member’s device"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Puheluisäntä: jäsenen laite"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Hôte d’appel : appareil d’un membre"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "कॉल होस्ट: किसी सदस्य का डिवाइस"
           }
         }
       }
@@ -2093,10 +2309,34 @@
       "comment": "Pill on the group call screen naming the call host. Another device of the user’s.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Anruf-Host: dein anderes Gerät"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Call host: your other device"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Puheluisäntä: toinen laitteesi"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Hôte d’appel : votre autre appareil"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "कॉल होस्ट: आपका दूसरा डिवाइस"
           }
         }
       }
@@ -4187,10 +4427,34 @@
       "comment": "Status of a call while connecting; the call is the subject, not a device.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Anruf wird verbunden…"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Connecting the call…"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Puhelua yhdistetään…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Connexion de l’appel…"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "कॉल जुड़ रही है…"
           }
         }
       }
@@ -4307,10 +4571,34 @@
       "comment": "Status line under the contact name while the call’s connection is being re-established; the call is the subject.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Anruf wird neu verbunden…"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Reconnecting the call…"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Puhelua yhdistetään uudelleen…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Reconnexion de l’appel…"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "कॉल फिर से जुड़ रही है…"
           }
         }
       }
@@ -5558,7 +5846,7 @@
         "fi": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Puhelu"
+            "value": "Soita"
           }
         },
         "fr": {
@@ -6155,10 +6443,34 @@
       "comment": "Banner on a found contact card whose name is not known, for someone not yet a contact.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Diesen Kontakt hinzufügen?"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Add this contact?"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Lisätäänkö tämä yhteystieto?"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ajouter ce contact ?"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "यह संपर्क जोड़ें?"
           }
         }
       }
@@ -6203,10 +6515,34 @@
       "comment": "Banner on a found contact card whose name is not known, for a contact already in Tinline.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Mit diesem Kontakt chatten?"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Chat with this contact?"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Avataanko keskustelu tämän henkilön kanssa?"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Discuter avec ce contact ?"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "इस संपर्क से चैट करें?"
           }
         }
       }
@@ -10709,9 +11045,33 @@
       "comment": "Date and time line in a message detail or the photo viewer title, for an older day. {date} is a day formatted for the user’s region, such as Oct 8, {time} a 24-hour clock time.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@, %2$@"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
+            "value": "%1$@, %2$@"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@ klo %2$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@ à %2$@"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
             "value": "%1$@, %2$@"
           }
         }
@@ -10721,10 +11081,34 @@
       "comment": "Date and time line in a message detail or the photo viewer title, for today. {time} is a 24-hour clock time such as 16:02.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Heute, %1$@"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Today, %1$@"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Tänään klo %1$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Aujourd’hui à %1$@"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "आज, %1$@"
           }
         }
       }
@@ -10733,10 +11117,34 @@
       "comment": "Date and time line in a message detail or the photo viewer title, for yesterday. {time} is a 24-hour clock time such as 16:02.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Gestern, %1$@"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Yesterday, %1$@"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Eilen klo %1$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Hier à %1$@"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "कल, %1$@"
           }
         }
       }
@@ -11897,10 +12305,34 @@
       "comment": "Toast when Sync now is pressed for a device that has no name.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Abgleich…"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Syncing…"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Synkronoidaan…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Synchronisation…"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "सिंक हो रहा है…"
           }
         }
       }
@@ -12161,10 +12593,34 @@
       "comment": "Dialog title asking to unlink another device that has no name.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Dieses Gerät trennen?"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Unlink this device?"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Poistetaanko tämän laitteen linkitys?"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Dissocier cet appareil ?"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "इस डिवाइस का लिंक हटाएँ?"
           }
         }
       }
@@ -12317,10 +12773,34 @@
       "comment": "Toast after unlinking a device that has no name.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Gerät getrennt"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Unlinked the device"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Laitteen linkitys poistettu"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Appareil dissocié"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "डिवाइस का लिंक हटा दिया गया"
           }
         }
       }
@@ -14159,6 +14639,24 @@
       "comment": "Section label of the contact picker. {count} is how many are selected.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "KONTAKTE · %1$lld AUSGEWÄHLT"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "KONTAKTE · %1$lld AUSGEWÄHLT"
+                }
+              }
+            }
+          }
+        },
         "en": {
           "variations": {
             "plural": {
@@ -14172,6 +14670,66 @@
                 "stringUnit": {
                   "state": "translated",
                   "value": "CONTACTS · %1$lld SELECTED"
+                }
+              }
+            }
+          }
+        },
+        "fi": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "YHTEYSTIEDOT · %1$lld VALITTU"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "YHTEYSTIEDOT · %1$lld VALITTU"
+                }
+              }
+            }
+          }
+        },
+        "fr": {
+          "variations": {
+            "plural": {
+              "many": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "CONTACTS · %1$lld SÉLECTIONNÉS"
+                }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "CONTACTS · %1$lld SÉLECTIONNÉ"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "CONTACTS · %1$lld SÉLECTIONNÉS"
+                }
+              }
+            }
+          }
+        },
+        "hi": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "संपर्क · चुने गए: %1$lld"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "संपर्क · चुने गए: %1$lld"
                 }
               }
             }
@@ -14723,10 +15281,34 @@
       "comment": "Toast after declining an invitation from someone whose name is not known.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Abgelehnt. Die Person sieht, dass du abgelehnt hast."
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Declined. They see that you declined."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Hylätty. Hän näkee, että hylkäsit."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Refusé. Cette personne voit que vous avez refusé."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "अस्वीकार किया। उन्हें दिखेगा कि आपने अस्वीकार किया।"
           }
         }
       }
@@ -15053,10 +15635,34 @@
       "comment": "Toast after inviting one contact whose name is not known.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Einladung gesendet. Die Person tritt bei, wenn sie annimmt."
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Invitation sent. They join when they accept."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Kutsu lähetetty. Hän liittyy hyväksyessään."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Invitation envoyée. Cette personne rejoindra le groupe en acceptant."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "आमंत्रण भेज दिया। स्वीकार करते ही वे जुड़ जाएँगे।"
           }
         }
       }
@@ -15137,10 +15743,34 @@
       "comment": "Toast after accepting a private chat request from someone whose name is not known.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Angenommen. Die Person ist nur für Nachrichten hinzugefügt und erscheint unter Chats, sobald ihr Gerät verbunden ist; Anrufe bleiben aus, bis du sie erlaubst."
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Accepted. They are added for messages only and show in Chats once their device connects; calls stay off until you allow them."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Hyväksytty. Hänet lisättiin vain viestejä varten, ja hän näkyy Keskusteluissa, kun hänen laitteensa saa yhteyden; puhelut pysyvät pois päältä, kunnes sallit ne."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Accepté. Cette personne fait maintenant partie de vos contacts pour les messages uniquement et apparaît dans Discussions dès que son appareil se connecte ; les appels restent désactivés jusqu’à ce que vous les autorisiez."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "स्वीकार किया। वे सिर्फ़ संदेशों के लिए जोड़े गए हैं और उनका डिवाइस जुड़ते ही चैट में दिखेंगे; जब तक आप अनुमति न दें, कॉल बंद रहेंगी।"
           }
         }
       }
@@ -15185,10 +15815,34 @@
       "comment": "Toast after blocking a requester whose name is not known.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Die Person ist blockiert und kann keine weiteren Anfragen senden."
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "They are blocked and can’t send more requests."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Hän on estetty eikä voi lähettää enempää pyyntöjä."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Cette personne est bloquée et ne peut plus envoyer de demandes."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "वे ब्लॉक हैं और अब और अनुरोध नहीं भेज सकते।"
           }
         }
       }
@@ -15233,10 +15887,34 @@
       "comment": "Toast after declining a private chat request from someone whose name is not known.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Abgelehnt. Die Person erfährt „abgelehnt“."
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Declined. They are told “declined”."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Hylätty. Hän saa tiedon ”hylätty”."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Refusé. Cette personne verra « refusé »."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "अस्वीकार कर दिया। उन्हें बताया गया है कि अनुरोध अस्वीकार हुआ।"
           }
         }
       }
@@ -15281,10 +15959,34 @@
       "comment": "Toast after asking a member for a private chat; the member's name is not known.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Anfrage gesendet. Sie wartet unter Chats, bis eine Antwort kommt."
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Request sent. It waits in Chats until they answer."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Pyyntö lähetetty. Se odottaa Keskusteluissa, kunnes hän vastaa."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Demande envoyée. Elle attend dans Discussions jusqu’à la réponse de cette personne."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "अनुरोध भेज दिया। उनके जवाब तक यह चैट में इंतज़ार करेगा।"
           }
         }
       }
@@ -16121,6 +16823,24 @@
       "comment": "Spoken label of the flag meter. {count} is flags so far, {total} flags that remove.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "%1$lld von %2$@ Markierungen"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "%1$lld von %2$@ Markierungen"
+                }
+              }
+            }
+          }
+        },
         "en": {
           "variations": {
             "plural": {
@@ -16138,6 +16858,66 @@
               }
             }
           }
+        },
+        "fi": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Merkinnät %1$lld/%2$@"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Merkinnät %1$lld/%2$@"
+                }
+              }
+            }
+          }
+        },
+        "fr": {
+          "variations": {
+            "plural": {
+              "many": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Signalements : %1$lld sur %2$@"
+                }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Signalements : %1$lld sur %2$@"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Signalements : %1$lld sur %2$@"
+                }
+              }
+            }
+          }
+        },
+        "hi": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "%2$@ में से %1$lld फ़्लैग"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "%2$@ में से %1$lld फ़्लैग"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -16145,6 +16925,24 @@
       "comment": "Note under the flag meter. {count} is how many more flags remove the user.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Noch eine Markierung von einem Admin entfernt dich aus der Gruppe. Markierungen lassen sich nicht zurücknehmen. Bis dahin kannst du weiter lesen und posten."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Noch %1$lld Markierungen von Admins entfernen dich aus der Gruppe. Markierungen lassen sich nicht zurücknehmen. Bis dahin kannst du weiter lesen und posten."
+                }
+              }
+            }
+          }
+        },
         "en": {
           "variations": {
             "plural": {
@@ -16158,6 +16956,66 @@
                 "stringUnit": {
                   "state": "translated",
                   "value": "%1$lld more flags from any admin remove you from the group. Flags can’t be taken back. You can still read and post until then."
+                }
+              }
+            }
+          }
+        },
+        "fi": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Vielä yksi merkintä keneltä tahansa ylläpitäjältä poistaa sinut ryhmästä. Merkintöjä ei voi perua. Voit lukea ja kirjoittaa siihen asti."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Vielä %1$lld merkintää keneltä tahansa ylläpitäjältä poistaa sinut ryhmästä. Merkintöjä ei voi perua. Voit lukea ja kirjoittaa siihen asti."
+                }
+              }
+            }
+          }
+        },
+        "fr": {
+          "variations": {
+            "plural": {
+              "many": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Encore %1$lld signalements de n’importe quel admin et vous serez retiré du groupe. Un signalement ne peut pas être annulé. D’ici là, vous pouvez toujours lire et publier."
+                }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Encore %1$lld signalement de n’importe quel admin et vous serez retiré du groupe. Un signalement ne peut pas être annulé. D’ici là, vous pouvez toujours lire et publier."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Encore %1$lld signalements de n’importe quel admin et vous serez retiré du groupe. Un signalement ne peut pas être annulé. D’ici là, vous pouvez toujours lire et publier."
+                }
+              }
+            }
+          }
+        },
+        "hi": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "किसी भी एडमिन का %1$lld और फ़्लैग आपको ग्रुप से हटा देगा। फ़्लैग वापस नहीं लिए जा सकते। तब तक आप पढ़ और पोस्ट कर सकते हैं।"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "किसी भी एडमिन के %1$lld और फ़्लैग आपको ग्रुप से हटा देंगे। फ़्लैग वापस नहीं लिए जा सकते। तब तक आप पढ़ और पोस्ट कर सकते हैं।"
                 }
               }
             }
@@ -16313,10 +17171,34 @@
       "comment": "Card title: an admin whose name is not known asked this phone to host. {group} is the group.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ein Admin bittet dieses Handy, %1$@ zu hosten"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "An admin asked this phone to host %1$@"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ylläpitäjä pyysi tätä puhelinta isännöimään ryhmää %1$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Un admin demande à ce téléphone d’héberger %1$@"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "एक एडमिन ने इस फ़ोन से %1$@ को होस्ट करने के लिए कहा है"
           }
         }
       }
@@ -16469,10 +17351,34 @@
       "comment": "Presence under a host or call host device in group info: that device is offline.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Host offline"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Host offline"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Isäntälaite poissa verkosta"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Hôte hors ligne"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "होस्ट ऑफ़लाइन"
           }
         }
       }
@@ -16481,10 +17387,34 @@
       "comment": "Presence under a device that is a chat host and also a call host: offline.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Offline · hostet auch Anrufe"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Offline · also hosts calls"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ei verkossa · isännöi myös puheluita"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Hors ligne · héberge aussi les appels"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "ऑफ़लाइन · कॉल भी होस्ट करता है"
           }
         }
       }
@@ -16493,10 +17423,34 @@
       "comment": "Presence under a host or call host device in group info: that device is online.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Host online"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Host online"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Isäntälaite verkossa"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Hôte en ligne"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "होस्ट ऑनलाइन"
           }
         }
       }
@@ -16505,10 +17459,34 @@
       "comment": "Presence under a device that is a chat host and also a call host: online.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Online · hostet auch Anrufe"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Online · also hosts calls"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Verkossa · isännöi myös puheluita"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "En ligne · héberge aussi les appels"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "ऑनलाइन · कॉल भी होस्ट करता है"
           }
         }
       }
@@ -17567,10 +18545,34 @@
       "comment": "State of an invitation the user sent: the invited person said no.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Einladung abgelehnt"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Invitation declined"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Kutsu hylätty"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Invitation refusée"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "आमंत्रण अस्वीकार किया गया"
           }
         }
       }
@@ -18041,10 +19043,34 @@
       "comment": "Invitation card. The inviter's name and the group's name are bold (markdown stars, keep them around the same words). {name} is the inviter's first name, {group} the group.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "**%1$@** hat dich zu **%2$@** eingeladen"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "**%1$@** invited you to **%2$@**"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "**%1$@** kutsui sinut ryhmään **%2$@**"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "**%1$@** vous a invité dans **%2$@**"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "**%1$@** ने आपको **%2$@** में आमंत्रित किया"
           }
         }
       }
@@ -18053,10 +19079,34 @@
       "comment": "Invitation card when the inviter's name is not known. The group's name is bold (markdown stars). {group} is the group.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Jemand hat dich zu **%1$@** eingeladen"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Someone invited you to **%1$@**"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Joku kutsui sinut ryhmään **%1$@**"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Quelqu’un vous a invité dans **%1$@**"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "किसी ने आपको **%1$@** में आमंत्रित किया"
           }
         }
       }
@@ -18497,10 +19547,34 @@
       "comment": "Line on the join preview when the inviter is not in your contacts.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Eingeladen von jemandem außerhalb deiner Kontakte"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Invited by someone outside your contacts"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Kutsuja ei ole yhteystiedoissasi"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Invité par quelqu’un hors de vos contacts"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "आपके संपर्कों से बाहर के किसी व्यक्ति ने आमंत्रित किया"
           }
         }
       }
@@ -18509,10 +19583,34 @@
       "comment": "Line on the join preview when you made the invite link yourself.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Von dir eingeladen"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Invited by you"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Kutsuja: sinä"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Invité par vous"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "आपने आमंत्रित किया"
           }
         }
       }
@@ -18593,10 +19691,34 @@
       "comment": "Line on the join preview when the owner is not in your contacts.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Die Gruppe gehört jemandem außerhalb deiner Kontakte"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Owner isn’t in your contacts"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Omistaja ei ole yhteystiedoissasi"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Le propriétaire n’est pas dans vos contacts"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "मालिक आपके संपर्कों में नहीं हैं"
           }
         }
       }
@@ -18605,10 +19727,34 @@
       "comment": "Line on the join preview when you are the owner.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Die Gruppe gehört dir"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Owner: you"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Omistaja: sinä"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Propriétaire : vous"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "मालिक: आप"
           }
         }
       }
@@ -18941,10 +20087,34 @@
       "comment": "Hint above the group invite link QR when the group's name is not known.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Alle mit diesem Link oder QR-Code können dieser Gruppe 7 Tage lang beitreten. Teile ihn über eine App, der du vertraust; du siehst, wer beigetreten ist, und kannst Leute per Markierung entfernen. Um deine Kontakte direkt einzuladen, nutze „Mitglieder hinzufügen“."
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Anyone with this link or QR can join this group for 7 days. Share it over an app you trust; you see who joined and can flag them out. To invite your contacts directly, use Add members."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Kuka tahansa, jolla on tämä linkki tai QR-koodi, voi liittyä tähän ryhmään 7 päivän ajan. Jaa se sovelluksella, johon luotat; näet, kuka liittyi, ja voit merkitä hänet poistettavaksi. Jos haluat kutsua yhteystietojasi suoraan, käytä kohtaa Lisää jäseniä."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Toute personne qui a ce lien ou ce QR code peut rejoindre ce groupe pendant 7 jours. Partagez-le via une app de confiance ; vous voyez qui a rejoint et pouvez les signaler pour retrait. Pour inviter directement vos contacts, utilisez Ajouter des membres."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "इस लिंक या QR वाला कोई भी 7 दिन तक इस ग्रुप से जुड़ सकता है। इसे किसी भरोसेमंद ऐप से शेयर करें; कौन जुड़ा यह आपको दिखेगा और आप उन्हें फ़्लैग करके हटा सकते हैं। अपने संपर्कों को सीधे आमंत्रित करने के लिए “सदस्य जोड़ें” का इस्तेमाल करें।"
           }
         }
       }
@@ -19637,10 +20807,34 @@
       "comment": "Action row title when the member has several devices. {device} is a short device id.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Anruf-Host-Anfrage zurückziehen · %1$@"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Cancel call host request · %1$@"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Peru puheluisäntäpyyntö · %1$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Annuler la demande d’hôte d’appel · %1$@"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "कॉल होस्ट अनुरोध रद्द करें · %1$@"
           }
         }
       }
@@ -19757,10 +20951,34 @@
       "comment": "Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is admin.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@, Admin. Aktionen öffnen"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "%1$@, admin. Open actions"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@, ylläpitäjä. Avaa toiminnot"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@, admin. Ouvrir les actions"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@, एडमिन। विकल्प खोलें"
           }
         }
       }
@@ -19769,10 +20987,34 @@
       "comment": "Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is admin and call host.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@, Admin und Anruf-Host. Aktionen öffnen"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "%1$@, admin and call host. Open actions"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@, ylläpitäjä ja puheluisäntä. Avaa toiminnot"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@, admin et hôte d’appel. Ouvrir les actions"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@, एडमिन और कॉल होस्ट। विकल्प खोलें"
           }
         }
       }
@@ -19781,10 +21023,34 @@
       "comment": "Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is admin and host.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@, Admin und Host. Aktionen öffnen"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "%1$@, admin and host. Open actions"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@, ylläpitäjä ja isäntälaite. Avaa toiminnot"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@, admin et hôte. Ouvrir les actions"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@, एडमिन और होस्ट। विकल्प खोलें"
           }
         }
       }
@@ -19793,10 +21059,34 @@
       "comment": "Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is admin, host and call host.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@, Admin, Host und Anruf-Host. Aktionen öffnen"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "%1$@, admin, host and call host. Open actions"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@, ylläpitäjä, isäntälaite ja puheluisäntä. Avaa toiminnot"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@, admin, hôte et hôte d’appel. Ouvrir les actions"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@, एडमिन, होस्ट और कॉल होस्ट। विकल्प खोलें"
           }
         }
       }
@@ -19805,10 +21095,34 @@
       "comment": "Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is member.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@, Mitglied. Aktionen öffnen"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "%1$@, member. Open actions"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@, jäsen. Avaa toiminnot"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@, membre. Ouvrir les actions"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@, सदस्य। विकल्प खोलें"
           }
         }
       }
@@ -19817,10 +21131,34 @@
       "comment": "Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is member and call host.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@, Mitglied und Anruf-Host. Aktionen öffnen"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "%1$@, member and call host. Open actions"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@, jäsen ja puheluisäntä. Avaa toiminnot"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@, membre et hôte d’appel. Ouvrir les actions"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@, सदस्य और कॉल होस्ट। विकल्प खोलें"
           }
         }
       }
@@ -19829,10 +21167,34 @@
       "comment": "Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is member and host.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@, Mitglied und Host. Aktionen öffnen"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "%1$@, member and host. Open actions"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@, jäsen ja isäntälaite. Avaa toiminnot"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@, membre et hôte. Ouvrir les actions"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@, सदस्य और होस्ट। विकल्प खोलें"
           }
         }
       }
@@ -19841,10 +21203,34 @@
       "comment": "Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is member, host and call host.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@, Mitglied, Host und Anruf-Host. Aktionen öffnen"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "%1$@, member, host and call host. Open actions"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@, jäsen, isäntälaite ja puheluisäntä. Avaa toiminnot"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@, membre, hôte et hôte d’appel. Ouvrir les actions"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@, सदस्य, होस्ट और कॉल होस्ट। विकल्प खोलें"
           }
         }
       }
@@ -19853,10 +21239,34 @@
       "comment": "Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is owner.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@, Eigentümer. Aktionen öffnen"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "%1$@, owner. Open actions"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@, omistaja. Avaa toiminnot"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@, propriétaire. Ouvrir les actions"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@, मालिक। विकल्प खोलें"
           }
         }
       }
@@ -19865,10 +21275,34 @@
       "comment": "Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is owner and call host.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@, Eigentümer und Anruf-Host. Aktionen öffnen"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "%1$@, owner and call host. Open actions"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@, omistaja ja puheluisäntä. Avaa toiminnot"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@, propriétaire et hôte d’appel. Ouvrir les actions"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@, मालिक और कॉल होस्ट। विकल्प खोलें"
           }
         }
       }
@@ -19877,10 +21311,34 @@
       "comment": "Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is owner and host.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@, Eigentümer und Host. Aktionen öffnen"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "%1$@, owner and host. Open actions"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@, omistaja ja isäntälaite. Avaa toiminnot"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@, propriétaire et hôte. Ouvrir les actions"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@, मालिक और होस्ट। विकल्प खोलें"
           }
         }
       }
@@ -19889,10 +21347,34 @@
       "comment": "Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is owner, host and call host.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@, Eigentümer, Host und Anruf-Host. Aktionen öffnen"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "%1$@, owner, host and call host. Open actions"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@, omistaja, isäntälaite ja puheluisäntä. Avaa toiminnot"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@, propriétaire, hôte et hôte d’appel. Ouvrir les actions"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@, मालिक, होस्ट और कॉल होस्ट। विकल्प खोलें"
           }
         }
       }
@@ -19973,6 +21455,24 @@
       "comment": "Part of a member row sub line. {count} is how many flags the member has, {total} how many remove them.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "%1$lld von %2$@ Markierungen"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "%1$lld von %2$@ Markierungen"
+                }
+              }
+            }
+          }
+        },
         "en": {
           "variations": {
             "plural": {
@@ -19986,6 +21486,66 @@
                 "stringUnit": {
                   "state": "translated",
                   "value": "%1$lld of %2$@ flags"
+                }
+              }
+            }
+          }
+        },
+        "fi": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Merkinnät %1$lld/%2$@"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Merkinnät %1$lld/%2$@"
+                }
+              }
+            }
+          }
+        },
+        "fr": {
+          "variations": {
+            "plural": {
+              "many": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Signalements : %1$lld sur %2$@"
+                }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Signalements : %1$lld sur %2$@"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Signalements : %1$lld sur %2$@"
+                }
+              }
+            }
+          }
+        },
+        "hi": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "%2$@ में से %1$lld फ़्लैग"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "%2$@ में से %1$lld फ़्लैग"
                 }
               }
             }
@@ -20141,10 +21701,34 @@
       "comment": "Action row title when the member has several devices. {device} is a short device id.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Zum Anruf-Host machen · %1$@"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Make call host · %1$@"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Tee puheluisännäksi · %1$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Nommer hôte d’appel · %1$@"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "कॉल होस्ट बनाएँ · %1$@"
           }
         }
       }
@@ -20513,10 +22097,34 @@
       "comment": "Action row title when the member has several devices. {device} is a short device id.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Als Anruf-Host entfernen · %1$@"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Remove as call host · %1$@"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Poista puheluisännistä · %1$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Retirer comme hôte d’appel · %1$@"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "कॉल होस्ट से हटाएँ · %1$@"
           }
         }
       }
@@ -21419,10 +23027,34 @@
       "comment": "Notice when your private chat request was accepted by someone whose name is not known.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Deine Anfrage wurde angenommen. Ihr könnt euch jetzt schreiben; Anrufe bleiben aus, bis einer von euch sie erlaubt."
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Your request was accepted. You can message each other now; calls stay off until one of you allows them."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Pyyntösi hyväksyttiin. Voitte nyt lähettää viestejä toisillenne; puhelut pysyvät pois päältä, kunnes jompikumpi teistä sallii ne."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Votre demande a été acceptée. Vous pouvez maintenant vous écrire ; les appels restent désactivés jusqu’à ce que l’un de vous les autorise."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "आपका अनुरोध स्वीकार कर लिया गया। अब आप एक-दूसरे को संदेश भेज सकते हैं; जब तक आप में से कोई अनुमति न दे, कॉल बंद रहेंगी।"
           }
         }
       }
@@ -21647,10 +23279,34 @@
       "comment": "Group list row preview of the last post by a member whose name is not known. {text} is the post.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Jemand: %1$@"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Someone: %1$@"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Joku: %1$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Quelqu’un : %1$@"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "कोई सदस्य: %1$@"
           }
         }
       }
@@ -22769,10 +24425,34 @@
       "comment": "State line of a chat request you sent, when the person’s name is not known: accepted, connecting.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Angenommen · verbindet"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Accepted · connecting"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Hyväksytty · yhdistetään"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Demande acceptée · connexion"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "स्वीकार किया · जुड़ रहा है"
           }
         }
       }
@@ -22817,10 +24497,34 @@
       "comment": "State line of a chat request you sent, when the person’s name is not known: accepted, messages only.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Angenommen · nur Nachrichten"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Accepted · messages only"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Hyväksytty · vain viestit"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Demande acceptée · messages uniquement"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "स्वीकार किया · सिर्फ़ संदेश"
           }
         }
       }
@@ -22865,10 +24569,34 @@
       "comment": "State line of a chat request you sent, when the person’s name is not known: they blocked you.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Hat dich blockiert"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "They blocked you"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Hän esti sinut"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Cette personne vous a bloqué"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "उन्होंने आपको ब्लॉक किया"
           }
         }
       }
@@ -22985,10 +24713,34 @@
       "comment": "State line of a chat request you sent, when the person’s name is not known. {group} is the group.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Wartet auf Antwort · über %1$@"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Waiting for them · via %1$@"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Odotetaan vastausta · ryhmän %1$@ kautta"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "En attente de réponse · via %1$@"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "उनके जवाब का इंतज़ार · %1$@ के ज़रिए"
           }
         }
       }
@@ -23000,7 +24752,7 @@
         "de": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Wenn du annimmst, wird %1$@ ein Kontakt nur für Nachrichten. Anrufe kannst du später erlauben."
+            "value": "Wenn du annimmst, wird %1$@ als Kontakt nur für Nachrichten hinzugefügt. Anrufe kannst du später erlauben."
           }
         },
         "en": {
@@ -23024,7 +24776,7 @@
         "hi": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "स्वीकार करने पर %1$@ सिर्फ़ संदेशों के लिए आपके संपर्क बनेंगे। कॉल की अनुमति आप बाद में दे सकते हैं।"
+            "value": "स्वीकार करने पर %1$@ को सिर्फ़ संदेशों के लिए संपर्क में जोड़ा जाएगा। कॉल की अनुमति आप बाद में दे सकते हैं।"
           }
         }
       }
@@ -23033,10 +24785,34 @@
       "comment": "Note on a chat request card when the requester's name is not known.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Wenn du annimmst, wird die Person als Kontakt nur für Nachrichten hinzugefügt. Anrufe kannst du später erlauben."
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Accepting adds them as a contact for messages only. You can allow calls later."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Hyväksyminen lisää hänet yhteystiedoksi vain viestejä varten. Voit sallia puhelut myöhemmin."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Accepter ajoute cette personne comme contact pour les messages uniquement. Vous pourrez autoriser les appels plus tard."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "स्वीकार करने पर उन्हें सिर्फ़ संदेशों के लिए संपर्क में जोड़ा जाएगा। कॉल की अनुमति आप बाद में दे सकते हैं।"
           }
         }
       }
@@ -23765,10 +25541,34 @@
       "comment": "Text shared with the invite link when the group's name is not known. {link} is the invite link.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Tritt dieser Gruppe auf Tinline bei: %1$@"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Join this group on Tinline: %1$@"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Liity tähän ryhmään Tinlinessa: %1$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Rejoignez ce groupe sur Tinline : %1$@"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Tinline पर इस ग्रुप से जुड़ें: %1$@"
           }
         }
       }
@@ -24029,10 +25829,34 @@
       "comment": "System line in a group chat (the centred grey line). Admin role given. Actor: a named member. Subject: a member whose name is unknown. {by} is who did it (their name).",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@ hat jemanden zum Admin gemacht"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "%1$@ made someone an admin"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@ nimesi erään jäsenen ylläpitäjäksi"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@ a nommé quelqu’un admin"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@ ने किसी सदस्य को एडमिन बनाया"
           }
         }
       }
@@ -24077,10 +25901,34 @@
       "comment": "System line in a group chat (the centred grey line). Admin role given. Actor: a member whose name is unknown. Subject: a named member. {name} is the member it was done to.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Jemand hat %1$@ zum Admin gemacht"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Someone made %1$@ an admin"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Joku nimesi henkilön %1$@ ylläpitäjäksi"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Quelqu’un a nommé %1$@ admin"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "किसी ने %1$@ को एडमिन बनाया"
           }
         }
       }
@@ -24089,10 +25937,34 @@
       "comment": "System line in a group chat (the centred grey line). Admin role given. Actor: a member whose name is unknown. Subject: a member whose name is unknown.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Jemand hat jemanden zum Admin gemacht"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Someone made someone an admin"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Joku nimesi erään jäsenen ylläpitäjäksi"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Quelqu’un a nommé un membre admin"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "किसी ने एक सदस्य को एडमिन बनाया"
           }
         }
       }
@@ -24101,10 +25973,34 @@
       "comment": "System line in a group chat (the centred grey line). Admin role given. Actor: a member whose name is unknown. Subject: the user.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Jemand hat dich zum Admin gemacht"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Someone made you an admin"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Joku nimesi sinut ylläpitäjäksi"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Quelqu’un vous a donné le rôle d’admin"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "किसी ने आपको एडमिन बनाया"
           }
         }
       }
@@ -24113,10 +26009,34 @@
       "comment": "System line in a group chat (the centred grey line). Admin role given. Actor: the user. Subject: a named member. {name} is the member it was done to.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Du hast %1$@ zum Admin gemacht"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "You made %1$@ an admin"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Nimesit henkilön %1$@ ylläpitäjäksi"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Vous avez nommé %1$@ admin"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "आपने %1$@ को एडमिन बनाया"
           }
         }
       }
@@ -24125,10 +26045,34 @@
       "comment": "System line in a group chat (the centred grey line). Admin role given. Actor: the user. Subject: a member whose name is unknown.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Du hast jemanden zum Admin gemacht"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "You made someone an admin"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Nimesit erään jäsenen ylläpitäjäksi"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Vous avez nommé quelqu’un admin"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "आपने किसी सदस्य को एडमिन बनाया"
           }
         }
       }
@@ -24137,10 +26081,34 @@
       "comment": "System line in a group chat (the centred grey line). Admin role given. Actor: the user. Subject: the user.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Du hast dich selbst zum Admin gemacht"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "You made yourself an admin"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Nimesit itsesi ylläpitäjäksi"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Vous vous êtes donné le rôle d’admin"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "आपने खुद को एडमिन बनाया"
           }
         }
       }
@@ -24185,10 +26153,34 @@
       "comment": "System line in a group chat (the centred grey line). A device of a member whose name is unknown now hosts the group.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ein Gerät eines Mitglieds hostet jetzt die Gruppe"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "A member’s device now hosts the group"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Erään jäsenen laite isännöi nyt ryhmää"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Un appareil d’un membre héberge maintenant le groupe"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "अब किसी सदस्य का एक डिवाइस ग्रुप को होस्ट करता है"
           }
         }
       }
@@ -24269,10 +26261,34 @@
       "comment": "System line in a group chat (the centred grey line). A device of a member whose name is unknown stopped hosting the group.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ein Gerät eines Mitglieds hostet die Gruppe nicht mehr"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "A member’s device stopped hosting the group"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Erään jäsenen laite lopetti ryhmän isännöinnin"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Un appareil d’un membre n’héberge plus le groupe"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "किसी सदस्य के एक डिवाइस ने ग्रुप को होस्ट करना बंद कर दिया"
           }
         }
       }
@@ -24353,10 +26369,34 @@
       "comment": "System line in a group chat (the centred grey line). A member whose name is unknown joined.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Jemand ist beigetreten"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Someone joined"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Joku liittyi"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Quelqu’un a rejoint le groupe"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "ग्रुप में एक नया सदस्य जुड़ा"
           }
         }
       }
@@ -24365,10 +26405,34 @@
       "comment": "System line in a group chat (the centred grey line). The user themself joined.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Du bist beigetreten"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "You joined"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Liityit"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Vous avez rejoint le groupe"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "अब आप ग्रुप में हैं"
           }
         }
       }
@@ -24413,10 +26477,34 @@
       "comment": "System line in a group chat (the centred grey line). A member whose name is unknown left.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Jemand hat die Gruppe verlassen"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Someone left"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Joku poistui"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Quelqu’un a quitté le groupe"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "किसी ने ग्रुप छोड़ दिया"
           }
         }
       }
@@ -24497,10 +26585,34 @@
       "comment": "System line in a group chat (the centred grey line). A member whose name is unknown was removed. {total} is the number of admin flags that remove.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Jemand wurde nach %1$@ Admin-Markierungen entfernt"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Someone was removed after %1$@ admin flags"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Eräs jäsen poistettiin %1$@ ylläpitäjän merkinnän jälkeen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Un membre a été retiré après %1$@ signalements d’admins"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@ एडमिन फ़्लैग के बाद किसी सदस्य को हटा दिया गया"
           }
         }
       }
@@ -24581,10 +26693,34 @@
       "comment": "System line in a group chat (the centred grey line). Admin role taken away. Actor: a named member. Subject: a member whose name is unknown. {by} is who did it (their name).",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@ hat jemanden als Admin entfernt"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "%1$@ removed someone as admin"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@ poisti erään jäsenen ylläpito-oikeudet"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@ a retiré le rôle d’admin à quelqu’un"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@ ने किसी सदस्य को एडमिन से हटाया"
           }
         }
       }
@@ -24629,10 +26765,34 @@
       "comment": "System line in a group chat (the centred grey line). Admin role taken away. Actor: a member whose name is unknown. Subject: a named member. {name} is the member it was done to.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Jemand hat %1$@ als Admin entfernt"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Someone removed %1$@ as admin"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Joku poisti henkilön %1$@ ylläpito-oikeudet"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Quelqu’un a retiré le rôle d’admin à %1$@"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "किसी ने %1$@ को एडमिन से हटाया"
           }
         }
       }
@@ -24641,10 +26801,34 @@
       "comment": "System line in a group chat (the centred grey line). Admin role taken away. Actor: a member whose name is unknown. Subject: a member whose name is unknown.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Jemand hat jemanden als Admin entfernt"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Someone removed someone as admin"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Joku poisti erään jäsenen ylläpito-oikeudet"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Quelqu’un a retiré le rôle d’admin à un membre"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "किसी ने एक सदस्य को एडमिन से हटाया"
           }
         }
       }
@@ -24653,10 +26837,34 @@
       "comment": "System line in a group chat (the centred grey line). Admin role taken away. Actor: a member whose name is unknown. Subject: the user.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Jemand hat dich als Admin entfernt"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Someone removed you as admin"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Joku poisti ylläpito-oikeutesi"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Quelqu’un vous a retiré le rôle d’admin"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "किसी ने आपको एडमिन से हटाया"
           }
         }
       }
@@ -24665,10 +26873,34 @@
       "comment": "System line in a group chat (the centred grey line). Admin role taken away. Actor: the user. Subject: a named member. {name} is the member it was done to.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Du hast %1$@ als Admin entfernt"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "You removed %1$@ as admin"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Poistit henkilön %1$@ ylläpito-oikeudet"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Vous avez retiré le rôle d’admin à %1$@"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "आपने %1$@ को एडमिन से हटाया"
           }
         }
       }
@@ -24677,10 +26909,34 @@
       "comment": "System line in a group chat (the centred grey line). Admin role taken away. Actor: the user. Subject: a member whose name is unknown.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Du hast jemanden als Admin entfernt"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "You removed someone as admin"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Poistit erään jäsenen ylläpito-oikeudet"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Vous avez retiré le rôle d’admin à quelqu’un"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "आपने किसी सदस्य को एडमिन से हटाया"
           }
         }
       }
@@ -24689,10 +26945,34 @@
       "comment": "System line in a group chat (the centred grey line). Admin role taken away. Actor: the user. Subject: the user.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Du hast dich selbst als Admin entfernt"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "You removed yourself as admin"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Poistit omat ylläpito-oikeutesi"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Vous vous êtes retiré le rôle d’admin"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "आपने खुद को एडमिन से हटाया"
           }
         }
       }
@@ -25121,10 +27401,34 @@
       "comment": "Chat request card. The requester's name is bold (markdown stars, keep them around the name). {name} is the requester's name.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "**%1$@** möchte chatten"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "**%1$@** wants to chat"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "**%1$@** haluaa keskustella"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "**%1$@** veut discuter"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "**%1$@** की ओर से चैट अनुरोध"
           }
         }
       }
@@ -25133,10 +27437,34 @@
       "comment": "Chat request card when the requester's name is not known. The word Someone is bold (markdown stars).",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "**Jemand** möchte chatten"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "**Someone** wants to chat"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "**Joku** haluaa keskustella"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "**Quelqu’un** veut discuter"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "**किसी** की ओर से चैट अनुरोध"
           }
         }
       }
@@ -25145,9 +27473,33 @@
       "comment": "Date and time line in a group message or a sent request, for an older day. {date} is a day formatted for the user’s region, such as Oct 8, {time} a 24-hour clock time.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@, %2$@"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
+            "value": "%1$@, %2$@"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@ klo %2$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@ à %2$@"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
             "value": "%1$@, %2$@"
           }
         }
@@ -25157,10 +27509,34 @@
       "comment": "Date and time line in a group message or a sent request, for today. {time} is a 24-hour clock time such as 16:02.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Heute, %1$@"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Today, %1$@"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Tänään klo %1$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Aujourd’hui à %1$@"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "आज, %1$@"
           }
         }
       }
@@ -25169,10 +27545,34 @@
       "comment": "Date and time line in a group message or a sent request, for yesterday. {time} is a 24-hour clock time such as 16:02.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Gestern, %1$@"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Yesterday, %1$@"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Eilen klo %1$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Hier à %1$@"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "कल, %1$@"
           }
         }
       }
@@ -26081,10 +28481,34 @@
       "comment": "Screen-reader label of a message tick: read. Used when the other person's name is not known.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Gelesen auf dem Gerät der Person"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Read on their device"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Luettu hänen laitteellaan"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Lu sur l’appareil de votre contact"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "सामने वाले के डिवाइस पर पढ़ लिया गया"
           }
         }
       }
@@ -26129,10 +28553,34 @@
       "comment": "Screen-reader label of a message tick: sent, no confirmation yet. Used when the other person's name is not known; their means the other person's.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Gesendet, wartet auf Bestätigung vom Gerät der Person"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Sent, waiting for their device to confirm"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Lähetetty, odotetaan vahvistusta hänen laitteeltaan"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Envoyé, en attente de confirmation de l’appareil de votre contact"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "भेजा गया, सामने वाले के डिवाइस की पुष्टि का इंतज़ार"
           }
         }
       }
@@ -26249,10 +28697,34 @@
       "comment": "Warning on the approval step. The words **recovery phrase** are bold (markdown stars, keep them around the same words); {name} is the new device's name.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Wenn du bestätigst, gehen deine **Wiederherstellungswörter** an %1$@. Es wird eine vollständige Kopie von dir: Es kann deine Chats lesen und als du auftreten. Bestätige nur ein Gerät, das du in der Hand hast."
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Approving sends your **recovery phrase** to %1$@. It becomes a full copy of you: it can read your chats and act as you. Approve only a device you hold."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Hyväksyminen lähettää **palautussanasi** laitteelle %1$@. Siitä tulee täysi kopio sinusta: se voi lukea keskustelusi ja toimia sinuna. Hyväksy vain laite, joka on itselläsi."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Valider envoie vos **mots de récupération** à %1$@. Cet appareil devient une copie complète de votre compte : il peut lire vos discussions et agir en votre nom. Ne validez qu’un appareil que vous avez en main."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "मंज़ूरी देने पर आपके **रिकवरी शब्द** %1$@ को भेजे जाएँगे। वह पूरी तरह आपकी कॉपी बन जाता है: वह आपकी चैट पढ़ सकता है और आपके नाम से काम कर सकता है। सिर्फ़ उसी डिवाइस को मंज़ूरी दें जो आपके हाथ में है।"
           }
         }
       }
@@ -26261,10 +28733,34 @@
       "comment": "Warning on the approval step when the new device has no name. The words **recovery phrase** are bold (markdown stars, keep them around the same words).",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Wenn du bestätigst, gehen deine **Wiederherstellungswörter** an das neue Gerät. Es wird eine vollständige Kopie von dir: Es kann deine Chats lesen und als du auftreten. Bestätige nur ein Gerät, das du in der Hand hast."
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Approving sends your **recovery phrase** to the new device. It becomes a full copy of you: it can read your chats and act as you. Approve only a device you hold."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Hyväksyminen lähettää **palautussanasi** uudelle laitteelle. Siitä tulee täysi kopio sinusta: se voi lukea keskustelusi ja toimia sinuna. Hyväksy vain laite, joka on itselläsi."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Valider envoie vos **mots de récupération** au nouvel appareil. Il devient une copie complète de votre compte : il peut lire vos discussions et agir en votre nom. Ne validez qu’un appareil que vous avez en main."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "मंज़ूरी देने पर आपके **रिकवरी शब्द** नए डिवाइस को भेजे जाएँगे। वह पूरी तरह आपकी कॉपी बन जाता है: वह आपकी चैट पढ़ सकता है और आपके नाम से काम कर सकता है। सिर्फ़ उसी डिवाइस को मंज़ूरी दें जो आपके हाथ में है।"
           }
         }
       }
@@ -26309,10 +28805,34 @@
       "comment": "Heading of the approval step when the new device has no name.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Das neue Gerät bestätigen?"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Approve the new device?"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Hyväksytäänkö uusi laite?"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Valider le nouvel appareil ?"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "नए डिवाइस को मंज़ूरी दें?"
           }
         }
       }
@@ -26753,10 +29273,34 @@
       "comment": "Title when linking finished and the new device has no name.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Das neue Gerät ist verknüpft"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "The new device is linked"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Uusi laite on linkitetty"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Le nouvel appareil est associé"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "नया डिवाइस लिंक हो गया"
           }
         }
       }
@@ -27053,10 +29597,34 @@
       "comment": "Heading while linking when the new device has no name.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Das neue Gerät wird verknüpft"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Linking the new device"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Linkitetään uutta laitetta"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Association du nouvel appareil"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "नया डिवाइस लिंक हो रहा है"
           }
         }
       }
@@ -27137,10 +29705,34 @@
       "comment": "Body when comparing codes. The new device's name is bold (markdown stars, keep them around the name); {name} is that name.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "**%1$@** möchte deinem Konto beitreten. Es sollte dieselben sechs Ziffern zeigen wie unten."
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "**%1$@** wants to join your account. It should be showing the same six digits as below."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "**%1$@** haluaa liittyä tiliisi. Sen pitäisi näyttää samat kuusi numeroa kuin alla."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "**%1$@** veut rejoindre votre compte. Cet appareil devrait afficher les six mêmes chiffres que ci-dessous."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "**%1$@** आपके खाते से जुड़ना चाहता है। उस पर नीचे जैसे ही छह अंक दिखने चाहिए।"
           }
         }
       }
@@ -27149,10 +29741,34 @@
       "comment": "Body when comparing codes and the new device has no name. The words **The new device** are bold (markdown stars, keep them around them).",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "**Das neue Gerät** möchte deinem Konto beitreten. Es sollte dieselben sechs Ziffern zeigen wie unten."
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "**The new device** wants to join your account. It should be showing the same six digits as below."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "**Uusi laite** haluaa liittyä tiliisi. Sen pitäisi näyttää samat kuusi numeroa kuin alla."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "**Le nouvel appareil** veut rejoindre votre compte. Il devrait afficher les six mêmes chiffres que ci-dessous."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "**नया डिवाइस** आपके खाते से जुड़ना चाहता है। उस पर नीचे जैसे ही छह अंक दिखने चाहिए।"
           }
         }
       }
@@ -27809,10 +30425,34 @@
       "comment": "Explanation under Same code on both? Used when the other device has no name; says your other device.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Prüfe, ob dein anderes Gerät diesen Code zeigt, und bestätige dann dort."
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Check that your other device shows this code, then approve there."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Tarkista, että toinen laitteesi näyttää tämän koodin, ja hyväksy siellä."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Vérifiez que votre autre appareil affiche ce code, puis validez là-bas."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "देखें कि आपके दूसरे डिवाइस पर यही कोड दिख रहा है, फिर वहाँ मंज़ूरी दें।"
           }
         }
       }
@@ -27965,10 +30605,34 @@
       "comment": "Step 1 on the scan page. The button name **Link to a device** is bold (markdown stars, keep them around the button name); it must match the button's label on the new device. Shown as the first of two lines; the number is not part of the text.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Öffne auf dem neuen Gerät Tinline und wähle **Mit einem Gerät verknüpfen**."
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "On the new device, open Tinline and choose **Link to a device**."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Avaa Tinline uudella laitteella ja valitse **Linkitä laitteeseen**."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Sur le nouvel appareil, ouvrez Tinline et choisissez **Associer à un appareil**."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "नए डिवाइस पर Tinline खोलें और **किसी डिवाइस से लिंक करें** चुनें।"
           }
         }
       }
@@ -27977,10 +30641,34 @@
       "comment": "Step 2 on the scan page. Shown as the second of two lines; the number is not part of the text.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Es zeigt einen QR-Code und einen kurzen Code. Sie gelten 5 Minuten und funktionieren einmal."
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "It shows a QR code and a short code. They work for 5 minutes, once."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Se näyttää QR-koodin ja lyhyen koodin. Ne ovat voimassa 5 minuuttia ja toimivat kerran."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Il affiche un QR code et un code court. Ils fonctionnent une fois et expirent au bout de 5 minutes."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "उस पर एक QR कोड और एक छोटा कोड दिखेगा। ये 5 मिनट तक, एक बार काम करते हैं।"
           }
         }
       }
@@ -28244,7 +30932,7 @@
         "de": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "%1$@ wurde von einem deiner anderen Geräte von diesem Handy entfernt. Kontakte, Chats und Anrufe des Kontos sind hier gelöscht. Deine anderen Geräte sind nicht betroffen."
+            "value": "Eines deiner anderen Geräte hat %1$@ von diesem Handy entfernt. Kontakte, Chats und Anrufe des Kontos wurden hier gelöscht. Deine anderen Geräte sind nicht betroffen."
           }
         },
         "en": {
@@ -28277,10 +30965,34 @@
       "comment": "Explanation after this phone was unlinked by another device, when the account has no name.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Eines deiner anderen Geräte hat dein Konto von diesem Handy entfernt. Kontakte, Chats und Anrufe des Kontos wurden hier gelöscht. Deine anderen Geräte sind nicht betroffen."
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Your account was removed from this phone by one of your other devices. Its contacts, chats and calls are deleted here. Your other devices are not affected."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Yksi muista laitteistasi poisti tilisi tältä puhelimelta. Sen yhteystiedot, keskustelut ja puhelut on poistettu täältä. Muihin laitteisiisi tämä ei vaikuta."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Votre compte a été retiré de ce téléphone par l’un de vos autres appareils. Ses contacts, discussions et appels sont supprimés ici. Vos autres appareils ne sont pas concernés."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "आपके किसी दूसरे डिवाइस ने इस फ़ोन से आपका खाता हटा दिया। इसके संपर्क, चैट और कॉल यहाँ से मिटा दिए गए हैं। आपके दूसरे डिवाइस पर इसका कोई असर नहीं है।"
           }
         }
       }
@@ -28685,10 +31397,34 @@
       "comment": "Explanation after adding another account that has no name.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Es ist immer nur das ausgewählte Konto online, also ist dieses Konto jetzt online und dein anderes Konto pausiert. Wechseln kannst du in den Einstellungen."
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Only the account you select is online at a time, so this account is online now and your other account is paused. You can switch in Settings."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Vain valitsemasi tili on kerrallaan verkossa, joten tämä tili on nyt verkossa ja toinen tilisi on tauolla. Voit vaihtaa asetuksista."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Seul le compte sélectionné est en ligne à la fois : ce compte est donc en ligne et votre autre compte est en pause. Vous pouvez changer dans Réglages."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "एक समय में सिर्फ़ चुना हुआ खाता ऑनलाइन रहता है, इसलिए अभी यह खाता ऑनलाइन है और आपका दूसरा खाता रुका हुआ है। आप सेटिंग में खाता बदल सकते हैं।"
           }
         }
       }
@@ -28697,10 +31433,34 @@
       "comment": "Title after adding another account that has no name.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Dein Konto wurde diesem Handy hinzugefügt"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Added your account to this phone"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Tilisi lisättiin tälle puhelimelle"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Votre compte est maintenant sur ce téléphone"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "आपका खाता इस फ़ोन में जुड़ गया"
           }
         }
       }
@@ -28712,31 +31472,31 @@
         "de": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Dein Konto ist wieder auf diesem Handy. Deine Kontakte, Chats und Anrufliste liegen auf deinen anderen Geräten, nicht bei uns. Dieses Handy startet mit einer leeren Kontaktliste."
+            "value": "Dein Konto ist wieder auf diesem Handy. Deine Kontakte, Chats und Anrufliste liegen auf deinen anderen Geräten, nicht auf einem Server. Dieses Handy startet mit einer leeren Kontaktliste."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Your account is back on this phone. Your contacts, chats and call history are kept on your other devices, not with us. This phone starts with an empty contact list."
+            "value": "Your account is back on this phone. Your contacts, chats and call history are kept on your other devices, not on a server. This phone starts with an empty contact list."
           }
         },
         "fi": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Tilisi on taas tällä puhelimella. Yhteystietosi, keskustelusi ja puheluhistoriasi säilyvät muilla laitteillasi, eivät meillä. Tämä puhelin aloittaa tyhjällä yhteystietolistalla."
+            "value": "Tilisi on taas tällä puhelimella. Yhteystietosi, keskustelusi ja puheluhistoriasi säilyvät muilla laitteillasi, eivät palvelimella. Tämä puhelin aloittaa tyhjällä yhteystietolistalla."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Votre compte est de retour sur ce téléphone. Vos contacts, discussions et historique d’appels sont gardés sur vos autres appareils, pas chez nous. Ce téléphone démarre avec une liste de contacts vide."
+            "value": "Votre compte est de retour sur ce téléphone. Vos contacts, discussions et historique d’appels sont gardés sur vos autres appareils, pas sur un serveur. Ce téléphone démarre avec une liste de contacts vide."
           }
         },
         "hi": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "आपका खाता इस फ़ोन पर वापस आ गया है। आपके संपर्क, चैट और कॉल हिस्ट्री आपके दूसरे डिवाइस पर रहते हैं, हमारे पास नहीं। यह फ़ोन खाली संपर्क सूची से शुरू होगा।"
+            "value": "आपका खाता इस फ़ोन पर वापस आ गया है। आपके संपर्क, चैट और कॉल हिस्ट्री आपके दूसरे डिवाइस पर रहते हैं, किसी सर्वर पर नहीं। यह फ़ोन खाली संपर्क सूची से शुरू होगा।"
           }
         }
       }
@@ -29933,10 +32693,34 @@
       "comment": "Explanation after linking when the other device has no name.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Deine Kontakte und Chats kommen von deinem anderen Gerät und bleiben auf beiden Geräten synchron."
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Your contacts and chats are arriving from your other device and will keep in step on both."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Yhteystietosi ja keskustelusi saapuvat toiselta laitteeltasi ja pysyvät ajan tasalla molemmissa."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Vos contacts et discussions arrivent depuis votre autre appareil et resteront synchronisés sur les deux."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "आपके संपर्क और चैट आपके दूसरे डिवाइस से आ रहे हैं और दोनों पर एक जैसे बने रहेंगे।"
           }
         }
       }
@@ -29981,10 +32765,34 @@
       "comment": "Title after linking when the other device has no name.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Verknüpft mit deinem anderen Gerät"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Linked to your other device"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Linkitetty toiseen laitteeseesi"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Associé à votre autre appareil"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "आपके दूसरे डिवाइस से लिंक हो गया"
           }
         }
       }
@@ -30425,10 +33233,34 @@
       "comment": "Description of the restore option.  {words} is the number of recovery words (24).",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Tipp deine %1$@ Wiederherstellungswörter ein. Dieses Handy startet mit einer leeren Kontaktliste."
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Type your %1$@ recovery words. This phone starts with an empty contact list."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Kirjoita %1$@ palautussanaasi. Tämä puhelin aloittaa tyhjällä yhteystietolistalla."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Saisissez vos %1$@ mots de récupération. Ce téléphone démarre avec une liste de contacts vide."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "अपने %1$@ रिकवरी शब्द टाइप करें। यह फ़ोन खाली संपर्क सूची से शुरू होगा।"
           }
         }
       }
@@ -30941,10 +33773,34 @@
       "comment": "Explanation when showing the recovery key; the line break is intended.  {words} is the number of recovery words (24).",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Dein Wiederherstellungsschlüssel entspricht deinen %1$@ Wörtern, nur in einer Zeile.\nFüg ihn an einem sicheren Ort ein. Ein Passwortmanager eignet sich gut."
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Your recovery key is the same as your %1$@ words, as one line.\nPaste it somewhere safe. A password manager works great."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Palautusavaimesi on sama kuin %1$@ sanaasi, yhtenä rivinä.\nLiitä se johonkin turvalliseen paikkaan. Salasanojen hallintasovellus sopii hyvin."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Votre clé de récupération équivaut à vos %1$@ mots, en une seule ligne.\nCollez-la dans un endroit sûr. Un gestionnaire de mots de passe convient très bien."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "आपकी रिकवरी कुंजी आपके %1$@ शब्द ही हैं, एक लाइन में।\nइसे किसी सुरक्षित जगह पेस्ट करें। पासवर्ड मैनेजर बढ़िया रहता है।"
           }
         }
       }
@@ -30953,10 +33809,34 @@
       "comment": "Explanation when showing the recovery words; the line break is intended.  {words} is the number of recovery words (24).",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Wenn du mal das Gerät wechselst, bringen diese %1$@ Wörter dein Konto mit.\nSpeichere eine Kopie an einem sicheren Ort. Papier eignet sich gut."
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "If you ever switch devices, these %1$@ words bring your account along.\nSave a copy somewhere safe. Paper works great."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Jos joskus vaihdat laitetta, nämä %1$@ sanaa tuovat tilisi mukaan.\nTallenna kopio turvalliseen paikkaan. Paperi toimii hyvin."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Si vous changez un jour d’appareil, ces %1$@ mots emportent votre compte avec vous.\nGardez-en une copie en lieu sûr. Le papier, c’est très bien."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "अगर आप कभी डिवाइस बदलें, तो ये %1$@ शब्द आपका खाता साथ ले आते हैं।\nइनकी एक कॉपी किसी सुरक्षित जगह रखें। कागज़ बढ़िया रहता है।"
           }
         }
       }
@@ -34457,10 +37337,34 @@
       "comment": "Availability line while busy until a time. {time} is a clock time formatted for the user’s region, such as 18:30. The time is on a Friday, a later day this week.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Beschäftigt bis Freitag um %1$@"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Busy until Friday %1$@"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Varattu perjantaina %1$@ asti"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Occupé jusqu’à vendredi à %1$@"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "शुक्रवार %1$@ तक व्यस्त"
           }
         }
       }
@@ -34469,10 +37373,34 @@
       "comment": "Availability line while busy until a time. {time} is a clock time formatted for the user’s region, such as 18:30. The time is on a Monday, a later day this week.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Beschäftigt bis Montag um %1$@"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Busy until Monday %1$@"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Varattu maanantaina %1$@ asti"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Occupé jusqu’à lundi à %1$@"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "सोमवार %1$@ तक व्यस्त"
           }
         }
       }
@@ -34481,10 +37409,34 @@
       "comment": "Availability line while busy until a time. {time} is a clock time formatted for the user’s region, such as 18:30. The time is on a Saturday, a later day this week.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Beschäftigt bis Samstag um %1$@"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Busy until Saturday %1$@"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Varattu lauantaina %1$@ asti"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Occupé jusqu’à samedi à %1$@"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "शनिवार %1$@ तक व्यस्त"
           }
         }
       }
@@ -34493,10 +37445,34 @@
       "comment": "Availability line while busy until a time. {time} is a clock time formatted for the user’s region, such as 18:30. The time is on a Sunday, a later day this week.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Beschäftigt bis Sonntag um %1$@"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Busy until Sunday %1$@"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Varattu sunnuntaina %1$@ asti"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Occupé jusqu’à dimanche à %1$@"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "रविवार %1$@ तक व्यस्त"
           }
         }
       }
@@ -34505,10 +37481,34 @@
       "comment": "Availability line while busy until a time. {time} is a clock time formatted for the user’s region, such as 18:30. The time is on a Thursday, a later day this week.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Beschäftigt bis Donnerstag um %1$@"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Busy until Thursday %1$@"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Varattu torstaina %1$@ asti"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Occupé jusqu’à jeudi à %1$@"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "गुरुवार %1$@ तक व्यस्त"
           }
         }
       }
@@ -34553,10 +37553,34 @@
       "comment": "Availability line while busy until a time. {time} is a clock time formatted for the user’s region, such as 18:30. The time is tomorrow.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Beschäftigt bis morgen um %1$@"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Busy until tomorrow %1$@"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Varattu huomenna %1$@ asti"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Occupé jusqu’à demain à %1$@"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "कल %1$@ तक व्यस्त"
           }
         }
       }
@@ -34565,10 +37589,34 @@
       "comment": "Availability line while busy until a time. {time} is a clock time formatted for the user’s region, such as 18:30. The time is on a Tuesday, a later day this week.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Beschäftigt bis Dienstag um %1$@"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Busy until Tuesday %1$@"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Varattu tiistaina %1$@ asti"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Occupé jusqu’à mardi à %1$@"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "मंगलवार %1$@ तक व्यस्त"
           }
         }
       }
@@ -34577,10 +37625,34 @@
       "comment": "Availability line while busy until a time. {time} is a clock time formatted for the user’s region, such as 18:30. The time is on a Wednesday, a later day this week.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Beschäftigt bis Mittwoch um %1$@"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Busy until Wednesday %1$@"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Varattu keskiviikkona %1$@ asti"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Occupé jusqu’à mercredi à %1$@"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "बुधवार %1$@ तक व्यस्त"
           }
         }
       }
@@ -34604,7 +37676,7 @@
         "fi": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Puhelu"
+            "value": "Soita"
           }
         },
         "fr": {
@@ -38369,10 +41441,34 @@
       "comment": "Profile check: too many information items. {max} is the most pieces of information allowed.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Du hast %1$@ Angaben erreicht. Entferne eine, um eine neue hinzuzufügen."
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "You’ve reached %1$@ pieces of information. Remove one to add another."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Sinulla on jo %1$@ tietoa. Poista yksi, jos haluat lisätä uuden."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Vous avez atteint %1$@ informations. Retirez-en une pour en ajouter une autre."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@ जानकारियों की सीमा पूरी हो गई है। नई जोड़ने के लिए एक हटाएँ।"
           }
         }
       }
@@ -38381,10 +41477,34 @@
       "comment": "Profile check: a value is too long. {limit} is the size limit with its unit, such as 16 KiB.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Das ist zu lang. Jede Angabe darf bis zu %1$@ groß sein."
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "That is too long. Each piece of information can be up to %1$@."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Tämä on liian pitkä. Kukin tieto voi olla enintään %1$@."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "C’est trop long. Chaque information peut faire jusqu’à %1$@."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "यह बहुत लंबा है। हर जानकारी %1$@ तक हो सकती है।"
           }
         }
       }
@@ -39293,9 +42413,33 @@
       "comment": "Date and time of a block, e.g. “You blocked Ana · Oct 10, 13:50”. {date} is a day formatted for the user’s region, {time} a 24-hour clock time.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@, %2$@"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
+            "value": "%1$@, %2$@"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@ klo %2$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@ à %2$@"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
             "value": "%1$@, %2$@"
           }
         }
@@ -39485,10 +42629,34 @@
       "comment": "Intro on the restore screen before a key is pasted.  {words} is the number of recovery words (24).",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Tipp deine %1$@ Wörter der Reihe nach ein, oder füge sie oder deinen Wiederherstellungsschlüssel ins erste Feld ein. Sie bleiben auf diesem Handy."
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Type your %1$@ words in order, or paste them, or your recovery key, into the first box. They stay on this phone."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Kirjoita %1$@ sanaasi järjestyksessä tai liitä ne tai palautusavaimesi ensimmäiseen kenttään. Ne pysyvät tällä puhelimella."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Saisissez vos %1$@ mots dans l’ordre, ou collez-les, ou votre clé de récupération, dans la première case. Ils restent sur ce téléphone."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "अपने %1$@ शब्द क्रम से टाइप करें, या पहले बॉक्स में शब्द या अपनी रिकवरी कुंजी पेस्ट करें। ये इसी फ़ोन पर रहते हैं।"
           }
         }
       }
@@ -40289,10 +43457,34 @@
       "comment": "Hint when the recovery key could not be made.  {words} is the number of recovery words (24).",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Der Schlüssel ließ sich nicht vorbereiten. Nutze stattdessen deine %1$@ Wörter."
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Couldn’t prepare the key. Use your %1$@ words instead."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Avainta ei voitu valmistella. Käytä sen sijaan %1$@ sanaasi."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Impossible de préparer la clé. Utilisez plutôt vos %1$@ mots."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "कुंजी तैयार नहीं हो पाई। इसके बजाय अपने %1$@ शब्द इस्तेमाल करें।"
           }
         }
       }
@@ -40697,6 +43889,24 @@
       "comment": "Tab on the recovery backup page: the recovery words. {count} is the number of words (24).",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "%1$lld Wort"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "%1$lld Wörter"
+                }
+              }
+            }
+          }
+        },
         "en": {
           "variations": {
             "plural": {
@@ -40710,6 +43920,66 @@
                 "stringUnit": {
                   "state": "translated",
                   "value": "%1$lld words"
+                }
+              }
+            }
+          }
+        },
+        "fi": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "%1$lld sana"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "%1$lld sanaa"
+                }
+              }
+            }
+          }
+        },
+        "fr": {
+          "variations": {
+            "plural": {
+              "many": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "%1$lld mots"
+                }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "%1$lld mot"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "%1$lld mots"
+                }
+              }
+            }
+          }
+        },
+        "hi": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "%1$lld शब्द"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "%1$lld शब्द"
                 }
               }
             }
@@ -44921,10 +48191,34 @@
       "comment": "Subtitle of the Test tone row. {hz} is the tone’s frequency in hertz.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Einen %1$@-Hz-Ton statt des Mikrofons senden"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Send a %1$@ Hz tone instead of the microphone"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Lähetä mikrofonin sijaan testiääni (%1$@ Hz)"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Envoyer une tonalité à %1$@ Hz au lieu du micro"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "माइक्रोफ़ोन की जगह %1$@ Hz की टोन भेजें"
           }
         }
       }
@@ -45653,10 +48947,34 @@
       "comment": "Screen reader phrase for a call row, a whole phrase used as {what} in the row label: call that was declined. Reads like “Missed call”.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Abgelehnter Anruf"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Declined call"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Hylätty puhelu"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Appel refusé"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "अस्वीकार की गई कॉल"
           }
         }
       }
@@ -45737,10 +49055,34 @@
       "comment": "Screen reader phrase for a call row, a whole phrase used as {what} in the row label: outgoing call nobody picked up. Reads like “Missed call”.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Anruf ohne Antwort"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Call with no answer"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Puhelu, johon ei vastattu"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Appel sans réponse"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "बिना जवाब की कॉल"
           }
         }
       }
@@ -45752,7 +49094,7 @@
         "de": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Anrufen"
+            "value": "Anruf"
           }
         },
         "en": {
@@ -45770,7 +49112,7 @@
         "fr": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Appeler"
+            "value": "Appel"
           }
         },
         "hi": {
@@ -45785,10 +49127,34 @@
       "comment": "Screen reader phrase for a call row, a whole phrase used as {what} in the row label: answered outgoing call. Reads like “Missed call”.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ausgehender Anruf"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Outgoing call"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Lähtevä puhelu"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Appel sortant"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "जाने वाली कॉल"
           }
         }
       }
@@ -45797,10 +49163,34 @@
       "comment": "Screen reader phrase for a call row, a whole phrase used as {what} in the row label: incoming call that came while the user had set themselves unavailable. Reads like “Missed call”.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Anruf während deiner Pause"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Call while not available"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Puhelu, kun et ollut tavoitettavissa"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Appel pendant votre indisponibilité"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "उपलब्ध न होने के दौरान आई कॉल"
           }
         }
       }
@@ -45809,10 +49199,34 @@
       "comment": "Screen reader phrase for a call row: call that could not reach the other person.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Anruf, der nicht verbunden werden konnte"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Call that couldn’t connect"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Puhelu, joka ei yhdistynyt"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Appel qui n’a pas pu aboutir"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "कॉल जो जुड़ नहीं पाई"
           }
         }
       }
@@ -46109,10 +49523,34 @@
       "comment": "Call list: call that could not reach the other person.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Anruf ließ sich nicht verbinden"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Call couldn’t connect"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Puhelu ei yhdistynyt"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "L’appel n’a pas pu aboutir"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "कॉल जुड़ नहीं पाई"
           }
         }
       }
@@ -46136,7 +49574,7 @@
         "fi": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Puhelu"
+            "value": "Soita"
           }
         },
         "fr": {
@@ -46409,10 +49847,34 @@
       "comment": "Screen reader label of a call row. {name} is the contact, {what} a whole phrase such as “Missed call”, {stamp} when, {action} what tapping does.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@, %2$@, %3$@. %4$@"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "%1$@, %2$@, %3$@. %4$@"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@, %2$@, %3$@. %4$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@, %2$@, %3$@. %4$@"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@, %2$@, %3$@। %4$@"
           }
         }
       }
@@ -46421,10 +49883,34 @@
       "comment": "Screen reader label of an answered call row. {name} is the contact, {what} a whole phrase such as “Incoming call”, {duration} how long, {stamp} when, {action} what tapping does.",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@, %2$@, %3$@, %4$@. %5$@"
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "%1$@, %2$@, %3$@, %4$@. %5$@"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@, %2$@, %3$@, %4$@. %5$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@, %2$@, %3$@, %4$@. %5$@"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@, %2$@, %3$@, %4$@। %5$@"
           }
         }
       }
@@ -51917,10 +55403,34 @@
       "comment": "Warning on the lost-key screen.  {words} is the number of recovery words (24).",
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Du hast keine Passphrase festgelegt, also sind die %1$@ Wiederherstellungswörter der einzige Weg zurück. Deine Kontakte bleiben."
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "You didn’t set a passphrase, so the %1$@-word recovery phrase is the only way back. Your contacts stay."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Et asettanut salalausetta, joten %1$@ palautussanaa on ainoa tie takaisin. Yhteystietosi säilyvät."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Vous n’avez pas défini de phrase secrète, donc vos %1$@ mots de récupération sont le seul moyen de récupérer votre compte. Vos contacts sont conservés."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "आपने पासफ़्रेज़ नहीं रखा था, इसलिए %1$@ रिकवरी शब्द ही वापसी का एकमात्र तरीका हैं। आपके संपर्क बने रहेंगे।"
           }
         }
       }

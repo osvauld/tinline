@@ -2754,7 +2754,7 @@ text = "Es ist immer nur das ausgewählte Konto online, also ist {name} jetzt on
 text = "Es ist immer nur das ausgewählte Konto online, also ist dieses Konto jetzt online und dein anderes Konto pausiert. Wechseln kannst du in den Einstellungen."
 
 [onboarding_back_lead]
-text = "Dein Konto ist wieder auf diesem Handy. Deine Kontakte, Chats und Anrufliste liegen auf deinen anderen Geräten, nicht bei uns. Dieses Handy startet mit einer leeren Kontaktliste."
+text = "Dein Konto ist wieder auf diesem Handy. Deine Kontakte, Chats und Anrufliste liegen auf deinen anderen Geräten, nicht auf einem Server. Dieses Handy startet mit einer leeren Kontaktliste."
 
 [onboarding_open]
 text = "Tinline öffnen"
@@ -2994,7 +2994,7 @@ text = "Anruf, der nicht verbunden werden konnte"
 text = "Tinline-Anruf"
 
 [shell_call_desc_other]
-text = "Anrufen"
+text = "Anruf"
 
 [shell_you]
 text = "Du"

@@ -514,7 +514,7 @@ text = "Récupération du lien…"
 text = "Un lien qui n’expire pas"
 
 [groupsb_turn_on_open]
-text = "Activez Lien ouvert pour le partager"
+text = "Activez Lien public pour le partager"
 
 [groupsb_cant_get_link]
 text = "Impossible de récupérer le lien"

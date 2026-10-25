@@ -508,7 +508,7 @@ text = "Link wird geholt…"
 text = "Ein Link, der nicht abläuft"
 
 [groupsb_turn_on_open]
-text = "Schalte den öffentlichen Link ein, um ihn zu teilen"
+text = "Schalte „Öffentlicher Link“ ein, um ihn zu teilen"
 
 [groupsb_cant_get_link]
 text = "Der Link ließ sich nicht holen"

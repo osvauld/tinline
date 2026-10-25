@@ -17,7 +17,7 @@
     <string name="common_unknown">Tuntematon</string>
     <string name="common_someone">Joku</string>
     <string name="common_blocked">Estetty</string>
-    <string name="common_call">Puhelu</string>
+    <string name="common_call">Soita</string>
     <string name="common_decline">Hylkää</string>
     <string name="common_accept">Hyväksy</string>
     <string name="common_answer">Vastaa</string>
@@ -85,6 +85,10 @@
     <string name="groups_online_pill">Ketkä ovat paikalla</string>
     <string name="groups_online_title">Ketkä ovat paikalla: %1$s</string>
     <string name="groups_online_lag">Jäsenet, jotka isäntälaite on nähnyt viimeisen minuutin aikana. Tieto voi olla muutaman sekunnin jäljessä.</string>
+    <plurals name="groups_online_cap">
+        <item quantity="one">Isäntälaite näyttää kerrallaan enintään %1$d henkilön, joten heitä voi olla enemmänkin.</item>
+        <item quantity="other">Isäntälaite näyttää kerrallaan enintään %1$d henkilöä, joten heitä voi olla enemmänkin.</item>
+    </plurals>
     <string name="groups_online_hidden">Muut eivät näe sinua täällä. Voit muuttaa tämän kohdassa Asetukset › Yksityisyys.</string>
     <string name="groups_online_none">Kukaan ei ole nyt paikalla. Ihmiset näkyvät täällä, kun he ovat yhteydessä.</string>
     <string name="groups_online_admin">Ylläpitäjä</string>
@@ -151,6 +155,10 @@
     <string name="groupsb_role_owner_lc">omistaja</string>
     <string name="groupsb_role_admin_lc">ylläpitäjä</string>
     <string name="groupsb_role_member_lc">jäsen</string>
+    <plurals name="groupsb_flags_of">
+        <item quantity="one">Merkinnät %1$s/%2$d</item>
+        <item quantity="other">Merkinnät %1$s/%2$d</item>
+    </plurals>
     <string name="groupsb_of_total">%1$s/%2$s</string>
     <string name="groupsb_blocked_by_you">Estit hänet</string>
     <string name="groupsb_pill_owner">Omistaja</string>
@@ -178,7 +186,7 @@
     <string name="groupsb_copy_link">Kopioi linkki</string>
     <string name="groupsb_getting_link">Haetaan linkkiä…</string>
     <string name="groupsb_link_never_expires">Linkki, joka ei vanhene</string>
-    <string name="groupsb_turn_on_open">Ota Avoin linkki käyttöön jakaaksesi sen</string>
+    <string name="groupsb_turn_on_open">Ota Julkinen linkki käyttöön, niin voit jakaa sen</string>
     <string name="groupsb_cant_get_link">Linkkiä ei saatu</string>
     <string name="groupsb_admins_only">Vain ylläpitäjät</string>
     <string name="groupsb_admins_only_on">Vain ylläpitäjät kirjoittavat; kaikki lukevat</string>
@@ -293,6 +301,10 @@
     <string name="groupsb_create_group">Luo ryhmä</string>
     <string name="groupsb_add_members">Lisää jäseniä</string>
     <string name="groupsb_add_to">Lisää ryhmään %1$s</string>
+    <plurals name="groupsb_contacts_selected">
+        <item quantity="one">YHTEYSTIEDOT · %1$d VALITTU</item>
+        <item quantity="other">YHTEYSTIEDOT · %1$d VALITTU</item>
+    </plurals>
     <string name="groupsb_no_contacts">Ei lisättäviä yhteystietoja. Estämäsi ja sinut estäneet eivät näy listalla.</string>
     <string name="groupsb_add_note">Jokainen saa kutsun teidän kahdenkeskisessä keskustelussanne ja liittyy, kun hyväksyy sen. Kutsu on voimassa 7 päivää.</string>
     <string name="groupsb_scan_invite">Skannaa kutsu</string>
@@ -322,6 +334,7 @@
     <string name="unlock_keylost_title">Tiliäsi ei voi avata</string>
     <string name="unlock_keylost_lead">Tällä puhelimella ei enää ole avainta, joka avaa tilisi. Näin käy näytön lukituksen nollauksen tai varmuuskopion palautuksen jälkeen. Kun palautat tilin, puhelusi tulevat taas perille.</string>
     <string name="unlock_keylost_restore">Palauta palautussanoilla</string>
+    <string name="unlock_keylost_notice">Et asettanut salalausetta, joten %1$s palautussanaa on ainoa tie takaisin. Yhteystietosi säilyvät.</string>
     <string name="accounts_switch_account">Vaihda tiliä</string>
     <string name="unlock_welcome_back_named">Tervetuloa takaisin, %1$s</string>
     <string name="unlock_welcome_back">Tervetuloa takaisin</string>
@@ -359,6 +372,7 @@
     <string name="profile_share_my_code_sub">Ihmisille, jotka haluat lisätä</string>
     <string name="profile_only_you">Vain sinulle</string>
     <string name="profile_account_recovery">Tilin palautus</string>
+    <string name="profile_account_recovery_sub">Avaimesi ja %1$s sanaa</string>
     <string name="profile_code_title">Yhteystietokoodisi</string>
     <string name="profile_code_lead_qr">Anna heidän skannata tämä Tinlinella.</string>
     <string name="profile_code_lead_text">Lähetä se jollekulle, jonka haluat lisätä.</string>
@@ -464,6 +478,8 @@
     <string name="profile_err_about_chars">Tietoja-kentässä ei voi olla ohjaus- tai tekstisuuntamerkkejä.</string>
     <string name="profile_err_key_blank">Anna tiedolle nimi.</string>
     <string name="profile_err_key_bad">Tätä nimeä ei voi käyttää. Pidä se lyhyenä ja ilman ohjausmerkkejä.</string>
+    <string name="profile_err_value_long">Tämä on liian pitkä. Kukin tieto voi olla enintään %1$s KiB.</string>
+    <string name="profile_err_fields_full">Sinulla on jo %1$s tietoa. Poista yksi, jos haluat lisätä uuden.</string>
     <string name="profile_err_profile_full">Profiilisi on täynnä. Poista tietoja lisätäksesi uusia.</string>
     <string name="profile_err_use_picture_controls">Käytä siihen kuvan säätimiä.</string>
     <string name="profile_err_availability_remove">Tavoitettavuutta voi muuttaa, mutta sitä ei voi poistaa.</string>
@@ -503,9 +519,11 @@
         <item quantity="other">%1$d sanaa puuttuu vielä.</item>
     </plurals>
     <string name="onboarding_restore_lead_key">Palautusavaimesi on syötetty. Se pysyy tällä puhelimella.</string>
+    <string name="onboarding_restore_lead_words">Kirjoita %1$s sanaasi järjestyksessä tai liitä ne tai palautusavaimesi ensimmäiseen kenttään. Ne pysyvät tällä puhelimella.</string>
     <string name="onboarding_restore_key_caption">Palautusavain</string>
     <string name="onboarding_restore_use_words">Käytän mieluummin sanoja</string>
     <string name="onboarding_restore_paste">Liitä leikepöydältä</string>
+    <string name="onboarding_restore_filled">%1$s/%2$s</string>
     <string name="onboarding_welcome_title_adding">Lisää tili</string>
     <string name="onboarding_welcome_title">Suora linja läheisiisi</string>
     <string name="onboarding_welcome_lead_adding">Luo uusi tili tai tuo jo olemassa oleva.\nNykyinen tilisi pysyy tällä puhelimella.</string>
@@ -519,6 +537,7 @@
     <string name="onboarding_choose_link">Linkitä toinen laitteeni</string>
     <string name="onboarding_choose_link_sub">Skannaa koodi laitteella, jolla tilisi jo on. Yhteystietosi ja keskustelusi tulevat mukana.</string>
     <string name="onboarding_choose_restore">Palauta tilini</string>
+    <string name="onboarding_choose_restore_sub">Kirjoita %1$s palautussanaasi. Tämä puhelin aloittaa tyhjällä yhteystietolistalla.</string>
     <string name="onboarding_done_title_named">Linjasi on auki, %1$s</string>
     <string name="onboarding_done_title">Linjasi on auki</string>
     <string name="onboarding_done_lead">Skannaa heidän koodinsa tai jaa omasi, niin voitte soittaa toisillenne.</string>
@@ -545,6 +564,8 @@
     <string name="onboarding_strength_3">Vahva</string>
     <string name="onboarding_phrase_title_key">Tässä on palautusavaimesi</string>
     <string name="onboarding_phrase_title_words">Tässä ovat palautussanasi</string>
+    <string name="onboarding_phrase_lead_key">Palautusavaimesi on sama kuin %1$s sanaasi, yhtenä rivinä.\nLiitä se johonkin turvalliseen paikkaan. Salasanojen hallintasovellus sopii hyvin.</string>
+    <string name="onboarding_phrase_lead_words">Jos joskus vaihdat laitetta, nämä %1$s sanaa tuovat tilisi mukaan.\nTallenna kopio turvalliseen paikkaan. Paperi toimii hyvin.</string>
     <string name="onboarding_phrase_saved_key">Tallensin sen</string>
     <string name="onboarding_phrase_saved_words">Tallensin ne</string>
     <string name="onboarding_phrase_copy_again">Kopioi uudelleen</string>
@@ -562,6 +583,7 @@
     <string name="onboarding_device_hint">Voit nimetä sen myöhemmin uudelleen.</string>
     <string name="onboarding_restored_title_adding">Lisätty tälle puhelimelle: %1$s</string>
     <string name="onboarding_restored_lead_adding">Vain valitsemasi tili on kerrallaan verkossa, joten %1$s on nyt verkossa ja toinen tilisi on tauolla. Voit vaihtaa asetuksista.</string>
+    <string name="onboarding_restored_lead">Tilisi on taas tällä puhelimella. Yhteystietosi, keskustelusi ja puheluhistoriasi säilyvät muilla laitteillasi, eivät palvelimella. Tämä puhelin aloittaa tyhjällä yhteystietolistalla.</string>
     <string name="onboarding_open_tinline">Avaa Tinline</string>
     <string name="onboarding_linked_title">Linkitetty: %1$s</string>
     <string name="onboarding_linked_lead">Yhteystietosi ja keskustelusi saapuvat laitteelta %1$s ja pysyvät ajan tasalla molemmissa.</string>
@@ -583,6 +605,7 @@
     <string name="onboarding_terms_encrypted_body">Kun suora linja ei ole mahdollinen, salattu välityspalvelin välittää puhelun. Se ei voi kuulla sitä.</string>
     <string name="onboarding_terms_account_title">Tilisi on sinun.</string>
     <string name="onboarding_terms_account_body">Se on laitteillasi, ei palvelimella. Palautussanasi ovat tiesi takaisin, joten pidä ne tallessa.</string>
+    <string name="onboarding_terms_by_continuing">Jatkamalla hyväksyt [käyttöehdot](terms) ja olet lukenut [tietosuojakäytännön](privacy).</string>
     <string name="onboarding_perms_title">Jotta puhelut tavoittavat sinut</string>
     <string name="onboarding_perms_lead">Tinline toimii kuin puhelinlinja: se pysyy hiljaa auki taustalla. Jokainen näistä on valinnainen, ja voit muuttaa niitä myöhemmin.</string>
     <string name="onboarding_perm_mic">Mikrofoni</string>
@@ -753,6 +776,8 @@
     <string name="settings_backup_title">Palautusvarmuuskopiosi</string>
     <string name="settings_backup_private">Pidä tämä omana tietonasi. Kuka tahansa, jolla se on, voi toimia sinuna.</string>
     <string name="settings_backup_key">Avain</string>
+    <string name="settings_backup_words">%1$s sanaa</string>
+    <string name="settings_backup_key_failed">Avainta ei voitu valmistella. Käytä sen sijaan %1$s sanaasi.</string>
     <string name="settings_hide">Piilota</string>
     <string name="settings_reveal">Näytä</string>
     <string name="settings_backup_hides">Piiloutuu 30 sekunnin kuluttua. Lukittuu, kun poistut sovelluksesta.</string>
@@ -851,6 +876,7 @@
     <string name="link_show_h1">Näytä tämä koodi uudelle laitteellesi</string>
     <string name="link_show_body">Valitse uudella laitteella ”Linkitä laitteeseen”, sitten ”Skannaa sen sijaan”, ja osoita sillä tätä koodia.</string>
     <string name="link_match_title">Täsmäävätkö koodit?</string>
+    <string name="link_match_body">**%1$s** haluaa liittyä tiliisi. Sen pitäisi näyttää samat kuusi numeroa kuin alla.</string>
     <string name="link_match_note">Vertaa niitä itse. Jos ne eroavat, joku muu on ehkä skannannut koodin ensin.</string>
     <string name="link_no_match">Ne eivät täsmää</string>
     <string name="link_match">Ne täsmäävät</string>
@@ -863,11 +889,14 @@
     <string name="link_done_title">%1$s on linkitetty</string>
     <string name="link_done_body">Se synkronoituu, kun molemmat laitteet ovat verkossa yhtä aikaa. Yhteystiedot, joita et ole estänyt, saavat päivitetyn laitelistasi, kun ovat seuraavan kerran verkossa.</string>
     <string name="link_scan_h1">Skannaa koodi uudelta laitteeltasi</string>
+    <string name="link_scan_step1">Avaa Tinline uudella laitteella ja valitse %1$s.</string>
+    <string name="link_scan_step2">Se näyttää QR-koodin ja lyhyen koodin. Ne ovat voimassa 5 minuuttia ja toimivat kerran.</string>
     <string name="link_scan_qr">Skannaa QR-koodi</string>
     <string name="link_type_code">Tai kirjoita koodi</string>
     <string name="link_show_here">Näytä QR-koodi täällä sen sijaan</string>
     <string name="link_wrong_pass">Salalause ei ole oikea.</string>
     <string name="link_approve_title">Hyväksytäänkö %1$s?</string>
+    <string name="link_approve_warning">Hyväksyminen lähettää **palautussanasi** laitteelle %1$s. Siitä tulee täysi kopio sinusta: se voi lukea keskustelusi ja toimia sinuna. Hyväksy vain laite, joka on itselläsi.</string>
     <string name="link_dont_link">Älä linkitä</string>
     <string name="link_approving">Hyväksytään…</string>
     <string name="link_approve">Hyväksy</string>
@@ -925,6 +954,7 @@
     <string name="notif_locked_text">Kirjoita salalauseesi napauttamalla</string>
     <string name="notif_request_title">Yhteystietopyyntö</string>
     <string name="notif_request_text">%1$s haluaisi lisätä sinut</string>
+    <string name="notif_accepted_text">%1$s hyväksyi pyyntösi. Linjasi on auki.</string>
     <string name="notif_missed_title">Vastaamaton puhelu</string>
     <string name="chat_edited">muokattu</string>
     <string name="chat_jump_to_message">Siirry viestiin</string>
@@ -1111,6 +1141,10 @@
     <string name="card_found">Tinline löysi hänen käyntikorttinsa.</string>
     <string name="card_open">Avaa</string>
     <string name="card_add">Lisää</string>
+    <plurals name="groupsc_removed_you_flags">
+        <item quantity="one">Sinut poistettiin %1$d ylläpitäjän merkinnän jälkeen</item>
+        <item quantity="other">Sinut poistettiin %1$d ylläpitäjän merkinnän jälkeen</item>
+    </plurals>
     <string name="groupsc_admin_granted_other">%1$s nimesi ylläpitäjäksi: %2$s</string>
     <string name="groupsc_admin_revoked_you">%1$s poisti ylläpito-oikeutesi</string>
     <string name="groupsc_admin_revoked_other">%1$s poisti ylläpito-oikeudet: %2$s</string>
@@ -1160,19 +1194,31 @@
         <item quantity="one">%1$d lukematon</item>
         <item quantity="other">%1$d lukematonta</item>
     </plurals>
+    <plurals name="groupsc_flags_of">
+        <item quantity="one">Merkintöjä %1$s, tarvitaan %2$d</item>
+        <item quantity="other">Merkintöjä %1$s, tarvitaan %2$d</item>
+    </plurals>
     <string name="gcall_name">Ryhmäpuhelu</string>
     <string name="gcall_group_fallback">Ryhmä</string>
     <string name="gcall_finding_host">Etsitään puheluisäntää…</string>
+    <string name="gcall_connecting">Puhelua yhdistetään…</string>
+    <string name="gcall_reconnecting">Puhelua yhdistetään uudelleen…</string>
     <string name="gcall_already_in_call">Olet jo puhelussa.</string>
     <string name="gcall_ended">Puhelu päättyi</string>
     <string name="gcall_ended_host_lost">Puhelu päättyi — puheluisäntä katosi</string>
+    <string name="gcall_battery_limited">Akun varaus on alle %1$s %%. Isännöintiä on rajoitettu: vain yksi henkilö kuuluu kerrallaan, eikä kukaan uusi voi liittyä.</string>
     <string name="gcall_no_host">Puheluisäntää ei ole saatavilla</string>
+    <string name="gcall_cant_connect">Et päässyt puheluun</string>
     <string name="gcall_minimize">Pienennä puhelu</string>
     <string name="gcall_about_title">Tietoja tästä puhelusta</string>
     <string name="gcall_only_you">Toistaiseksi vain sinä. Odotetaan muita.</string>
     <plurals name="gcall_people">
         <item quantity="one">%1$d henkilö puhelussa</item>
         <item quantity="other">%1$d henkilöä puhelussa</item>
+    </plurals>
+    <plurals name="gcall_more">
+        <item quantity="one">+%1$d muu</item>
+        <item quantity="other">+%1$d muuta</item>
     </plurals>
     <string name="gcall_ok">OK</string>
     <string name="gcall_you_host">Olet puheluisäntä</string>
@@ -1292,6 +1338,7 @@
     <string name="call_flip_camera">Käännä kamera</string>
     <string name="call_flip">Käännä</string>
     <string name="call_audio_route">Ääni: %1$s</string>
+    <string name="call_reconnecting">Puhelua yhdistetään uudelleen…</string>
     <string name="call_reconnecting_plain">Yhdistetään uudelleen</string>
     <string name="call_back_continues">Takaisin. Puhelu jatkuu</string>
     <string name="call_message_continues">Viesti. Puhelu jatkuu</string>
@@ -1481,8 +1528,11 @@
     <string name="calls_what_declined">Hylätty</string>
     <string name="calls_what_no_answer">Ei vastausta</string>
     <string name="calls_what_cancelled">Peruttu</string>
+    <string name="calls_what_unreachable">Puhelu ei yhdistynyt</string>
     <string name="calls_profile_desc">Profiili: %1$s</string>
     <string name="calls_cant_call">Ei voi soittaa</string>
+    <string name="calls_row_desc">%1$s, %2$s, %3$s. %4$s</string>
+    <string name="calls_row_desc_duration">%1$s, %2$s, %3$s, %4$s. %5$s</string>
     <string name="calls_group_info_desc">%1$s, ryhmän tiedot</string>
     <string name="calls_group_row_desc">%1$s, %2$s, %3$s. Aloita puhelu tai liity siihen</string>
     <string name="contacts_find">Etsi yhteystieto</string>
@@ -1518,57 +1568,151 @@
     <string name="support_err_in_call">Lopeta ensin puhelusi</string>
     <string name="support_err_generic">Jokin meni pieleen</string>
     <string name="debuglog_send_title">Lähetä vianetsintäloki</string>
+    <string name="groupsc_sys_joined_you">Liityit</string>
     <string name="groupsc_sys_joined_other">%1$s liittyi</string>
+    <string name="groupsc_sys_joined_someone">Joku liittyi</string>
     <string name="groupsc_sys_left_you">Poistuit</string>
     <string name="groupsc_sys_left_other">%1$s poistui</string>
+    <string name="groupsc_sys_left_someone">Joku poistui</string>
+    <plurals name="groupsc_removed_other_flags">
+        <item quantity="one">%1$s poistettiin %2$d ylläpitäjän merkinnän jälkeen</item>
+        <item quantity="other">%1$s poistettiin %2$d ylläpitäjän merkinnän jälkeen</item>
+    </plurals>
+    <plurals name="groupsc_removed_someone_flags">
+        <item quantity="one">Eräs jäsen poistettiin %1$d ylläpitäjän merkinnän jälkeen</item>
+        <item quantity="other">Eräs jäsen poistettiin %1$d ylläpitäjän merkinnän jälkeen</item>
+    </plurals>
     <string name="groupsc_admin_granted_you">%1$s nimesi sinut ylläpitäjäksi</string>
+    <string name="groupsc_admin_granted_you_by_someone">Joku nimesi sinut ylläpitäjäksi</string>
+    <string name="groupsc_admin_granted_by_you">Nimesit henkilön %1$s ylläpitäjäksi</string>
+    <string name="groupsc_admin_granted_by_you_someone">Nimesit erään jäsenen ylläpitäjäksi</string>
+    <string name="groupsc_admin_granted_other_someone">%1$s nimesi erään jäsenen ylläpitäjäksi</string>
+    <string name="groupsc_admin_granted_by_someone">Joku nimesi henkilön %1$s ylläpitäjäksi</string>
+    <string name="groupsc_admin_granted_by_someone_someone">Joku nimesi erään jäsenen ylläpitäjäksi</string>
+    <string name="groupsc_admin_revoked_you_by_someone">Joku poisti ylläpito-oikeutesi</string>
+    <string name="groupsc_admin_revoked_by_you">Poistit henkilön %1$s ylläpito-oikeudet</string>
+    <string name="groupsc_admin_revoked_by_you_someone">Poistit erään jäsenen ylläpito-oikeudet</string>
+    <string name="groupsc_admin_revoked_other_someone">%1$s poisti erään jäsenen ylläpito-oikeudet</string>
+    <string name="groupsc_admin_revoked_by_someone">Joku poisti henkilön %1$s ylläpito-oikeudet</string>
+    <string name="groupsc_admin_revoked_by_someone_someone">Joku poisti erään jäsenen ylläpito-oikeudet</string>
+    <string name="groupsc_host_added_someone">Erään jäsenen laite isännöi nyt ryhmää</string>
+    <string name="groupsc_host_removed_someone">Erään jäsenen laite lopetti ryhmän isännöinnin</string>
     <string name="groupsc_removed_you_group">Sinut poistettiin tästä ryhmästä</string>
     <string name="groupsc_preview_you">Sinä: %1$s</string>
     <string name="groupsc_preview_other">%1$s: %2$s</string>
+    <string name="groupsc_preview_someone">Joku: %1$s</string>
+    <string name="groupsc_photo_caption_line">Kuva · %1$s</string>
     <plurals name="groupsc_members">
         <item quantity="one">%1$d jäsen</item>
         <item quantity="other">%1$d jäsentä</item>
     </plurals>
+    <string name="groupsc_status_this_device">tämä laite isännöi ryhmää</string>
+    <string name="groupsc_status_no_host">ei vielä isäntälaitetta</string>
+    <string name="groupsc_status_waiting">odottaa isäntälaitetta</string>
+    <string name="groupsc_status_join">%1$s · %2$s</string>
+    <plurals name="groupsc_online_count">
+        <item quantity="one">%1$d paikalla</item>
+        <item quantity="other">%1$d paikalla</item>
+    </plurals>
+    <string name="groupsc_online_cap">%1$d+ paikalla</string>
     <string name="groupsc_admins_only_post">Vain ylläpitäjät kirjoittavat tänne</string>
     <string name="groupsc_admins_only_error">Vain ylläpitäjät kirjoittavat tänne.</string>
     <string name="groupsc_req_pending_named">Odotetaan: %1$s · ryhmän %2$s kautta</string>
+    <string name="groupsc_req_pending_anon">Odotetaan vastausta · ryhmän %1$s kautta</string>
+    <string name="groupsc_req_accepted_messages_anon">Hän hyväksyi · vain viestit</string>
+    <string name="groupsc_req_accepted_connecting_anon">Hän hyväksyi · yhdistetään</string>
     <string name="groupsc_req_declined_named">%1$s hylkäsi</string>
+    <string name="groupsc_req_declined_anon">Hän hylkäsi</string>
     <string name="groupsc_req_blocked_named">%1$s esti sinut</string>
+    <string name="groupsc_req_blocked_anon">Hän esti sinut</string>
     <string name="groupsc_pick_member">Jo jäsen</string>
     <string name="groupsc_pick_invited_waiting">Kutsuttu · odottaa</string>
     <string name="groupsc_invited_not_delivered">Kutsuttu · ei vielä toimitettu</string>
     <string name="groupsc_invite_joined">Liittyi</string>
+    <string name="groupsc_invite_declined">Kutsu hylätty</string>
+    <string name="groupsc_flag_final">Sinun merkintäsi on %1$s/%2$s. %3$s poistetaan heti: isäntälaitteet hylkäävät hänen uudet viestinsä, ja hän näkee tulleensa poistetuksi.</string>
+    <string name="groupsc_flag_more">Sinun merkintäsi on %1$s/%2$s. Kaikkien ylläpitäjien merkinnät lasketaan, myös sinun uudet merkintäsi. Kun merkintöjä on %2$s, %3$s poistetaan heti, ja hän näkee tulleensa poistetuksi.</string>
     <string name="groupsc_err_removed">Sinut poistettiin tästä ryhmästä.</string>
     <string name="groupsc_err_already_contact">Hän on jo yhteystietosi. Lähetä hänelle viesti Keskustelut-välilehdeltä.</string>
     <string name="groupsc_err_timeout">Yksikään isäntälaite ei vastannut ajoissa. Yritä uudelleen, kun jokin isäntälaite on verkossa.</string>
     <string name="groupsc_type_first">Kirjoita ensin viesti.</string>
+    <string name="groupsc_picture_too_large">Kuva on liian suuri julkaistavaksi.</string>
     <string name="groupsc_pick_first">Valitse ensin joku.</string>
     <string name="groupsc_invited_one_named">Kutsu lähetetty: %1$s. Hän liittyy hyväksyessään.</string>
+    <string name="groupsc_invited_one_anon">Kutsu lähetetty. Hän liittyy hyväksyessään.</string>
     <plurals name="groupsc_invited_many">
         <item quantity="one">%1$d kutsu lähetetty. Jokainen liittyy hyväksyessään.</item>
         <item quantity="other">%1$d kutsua lähetetty. Jokainen liittyy hyväksyessään.</item>
     </plurals>
     <string name="groupsc_decline_inv_named">Hylätty. %1$s näkee, että hylkäsit.</string>
+    <string name="groupsc_decline_inv_anon">Hylätty. Hän näkee, että hylkäsit.</string>
     <string name="groupsc_link_closed">Avoin linkki on suljettu. Jo liittyneet jäävät; uudet liittyvät kutsulla.</string>
     <string name="groupsc_request_sent_named">Pyyntö lähetetty: %1$s. Se odottaa Keskusteluissa, kunnes hän vastaa.</string>
+    <string name="groupsc_request_sent_anon">Pyyntö lähetetty. Se odottaa Keskusteluissa, kunnes hän vastaa.</string>
     <string name="groupsc_req_accept_named">Hyväksytty. %1$s lisättiin vain viestejä varten ja näkyy Keskusteluissa, kun hänen laitteensa saa yhteyden; puhelut pysyvät pois päältä, kunnes sallit ne.</string>
+    <string name="groupsc_req_accept_anon">Hyväksytty. Hänet lisättiin vain viestejä varten, ja hän näkyy Keskusteluissa, kun hänen laitteensa saa yhteyden; puhelut pysyvät pois päältä, kunnes sallit ne.</string>
+    <string name="groupsc_req_declined_told_anon">Hylätty. Hän saa tiedon ”hylätty”.</string>
     <string name="groupsc_req_block_named">%1$s on estetty eikä voi lähettää enempää pyyntöjä.</string>
+    <string name="groupsc_req_block_anon">Hän on estetty eikä voi lähettää enempää pyyntöjä.</string>
     <string name="groupsc_notice_accepted_named">%1$s hyväksyi pyyntösi. Voitte nyt lähettää viestejä toisillenne; puhelut pysyvät pois päältä, kunnes jompikumpi teistä sallii ne.</string>
+    <string name="groupsc_notice_accepted_anon">Hän hyväksyi pyyntösi. Voitte nyt lähettää viestejä toisillenne; puhelut pysyvät pois päältä, kunnes jompikumpi teistä sallii ne.</string>
     <string name="video_hd_line_on">Terävämpi video päällä</string>
     <string name="video_hd_line_paused">HD tauolla · heikko yhteys</string>
     <string name="video_hd_metered">Mobiilidatalla HD kuluttaa enemmän · napauta HD</string>
     <string name="profile_busy_unsupported">Varattu-tila ei ole vielä käytettävissä. Puheluasetuksesi ovat ennallaan.</string>
     <string name="blocking_row_blocked_you">Esti sinut</string>
+    <string name="link_match_body_unnamed">Uusi laite haluaa liittyä tiliisi. Sen pitäisi näyttää samat kuusi numeroa kuin alla.</string>
+    <string name="link_approve_title_unnamed">Hyväksytäänkö uusi laite?</string>
+    <string name="link_approve_warning_unnamed">Hyväksyminen lähettää **palautussanasi** uudelle laitteelle. Siitä tulee täysi kopio sinusta: se voi lukea keskustelusi ja toimia sinuna. Hyväksy vain laite, joka on itselläsi.</string>
+    <string name="link_linking_unnamed">Linkitetään uutta laitetta</string>
+    <string name="link_done_title_unnamed">Uusi laite on linkitetty</string>
+    <string name="onboarding_linked_title_unnamed">Linkitetty toiseen laitteeseesi</string>
+    <string name="onboarding_restored_title_adding_unnamed">Tilisi lisättiin tälle puhelimelle</string>
+    <string name="onboarding_restored_lead_adding_unnamed">Vain valitsemasi tili on kerrallaan verkossa, joten tämä tili on nyt verkossa ja toinen tilisi on tauolla. Voit vaihtaa asetuksista.</string>
+    <string name="devices_syncing_unnamed">Synkronoidaan laitteen kanssa…</string>
+    <string name="devices_confirm_unlink_title_unnamed">Poistetaanko tämän laitteen linkitys?</string>
     <string name="devices_unlinked_msg_unnamed">Laitteen linkitys poistettu</string>
+    <string name="groupsb_join_invited_by_you">Kutsuja: sinä</string>
+    <string name="groupsb_join_invited_by_unknown">Kutsuja ei ole yhteystiedoissasi</string>
+    <string name="groupsb_join_owner_you">Omistaja: sinä</string>
+    <string name="groupsb_join_owner_unknown">Omistaja ei ole yhteystiedoissasi</string>
+    <string name="groupsb_link_note_unnamed">Kuka tahansa, jolla on tämä linkki tai QR-koodi, voi liittyä tähän ryhmään 7 päivän ajan. Jaa se sovelluksella, johon luotat; näet, kuka liittyi, ja voit merkitä hänet poistettavaksi. Jos haluat kutsua yhteystietojasi suoraan, käytä kohtaa Lisää jäseniä.</string>
+    <string name="groupsb_share_text_unnamed">Liity ryhmääni Tinlinessa: %1$s</string>
+    <string name="card_chat_with_unnamed">Avataanko keskustelu hänen kanssaan?</string>
+    <string name="card_add_unnamed">Lisätäänkö tämä yhteystieto?</string>
     <string name="call_unreachable_title_unnamed">Häntä ei tavoitettu</string>
     <string name="calls_desc_incoming">Saapuva puhelu</string>
+    <string name="calls_desc_outgoing">Lähtevä puhelu</string>
+    <string name="calls_desc_away">Puhelu, kun et ollut tavoitettavissa</string>
     <string name="calls_desc_missed">Vastaamaton puhelu</string>
+    <string name="calls_desc_declined">Hylätty puhelu</string>
+    <string name="calls_desc_no_answer">Puhelu, johon kukaan ei vastannut</string>
     <string name="calls_desc_cancelled">Peruttu puhelu</string>
+    <string name="calls_desc_unreachable">Puhelu, joka ei yhdistynyt</string>
     <string name="calls_desc_other">Tinline-puhelu</string>
+    <string name="groupsb_public_link">Julkinen linkki</string>
     <string name="groups_list_sent_requests">Lähetetyt pyynnöt</string>
     <string name="groupsb_host_online">Paikalla</string>
     <string name="groupsb_host_offline">Poissa</string>
     <string name="calls_what_other">Tinline-puhelu</string>
+    <string name="notif_request_text_unnamed">Joku haluaa lisätä sinut</string>
+    <string name="notif_accepted_title">Pyyntö hyväksytty</string>
+    <string name="notif_accepted_text_unnamed">Pyyntösi hyväksyttiin. Linjasi on auki.</string>
+    <string name="gcall_host_label_device">Puheluisäntä: jäsenen %1$s laite</string>
+    <string name="gcall_host_label_unnamed">Puheluisäntä: jäsenen laite</string>
+    <string name="gcall_about_this_phone">**Tämä puhelin** välittää tätä puhelua. Kaikki puhelussa olevat ovat yhteydessä siihen, ja se välittää äänen eteenpäin ja valitsee, kuka kuuluu, kun useampi puhuu yhtä aikaa.</string>
+    <string name="gcall_about_device">**Jäsenen %1$s laite** välittää tämän puhelun. Kaikki puhelussa olevat ovat yhteydessä siihen, ja se välittää äänen eteenpäin ja valitsee, kuka kuuluu, kun useampi puhuu yhtä aikaa.</string>
+    <string name="gcall_about_unnamed">**Puheluisäntä** välittää tämän puhelun. Kaikki puhelussa olevat ovat yhteydessä siihen, ja se välittää äänen eteenpäin ja valitsee, kuka kuuluu, kun useampi puhuu yhtä aikaa.</string>
+    <string name="gcall_started_by_unnamed">Jonkun aloittama</string>
+    <string name="gcall_is_calling_group_desc_unnamed">Joku soittaa ryhmälle %1$s</string>
+    <string name="gcall_started_call_desc_unnamed">Joku aloitti puhelun ryhmässä %1$s</string>
+    <string name="notif_group_calling_unnamed">Joku soittaa ryhmälle</string>
+    <string name="common_list_separator">, </string>
+    <string name="groupsb_member_desc">%1$s. Avaa toiminnot</string>
     <string name="groupsb_role_host_lc">isäntälaite</string>
     <string name="groupsb_role_callhost_lc">puheluisäntä</string>
+    <string name="avail_note_unnamed">Kun olet poissa, soittajat näkevät, ettei sinua tavoitettu. Mitään ei jää jonoon, eikä kenellekään kerrota syytä.</string>
+    <string name="onboarding_linked_lead_unnamed">Yhteystietosi ja keskustelusi saapuvat toiselta laitteeltasi ja pysyvät ajan tasalla molemmissa.</string>
+    <string name="gcall_is_calling_group_unnamed">Joku soittaa ryhmälle</string>
+    <string name="gcall_started_call_unnamed">Joku aloitti puhelun</string>
 </resources>

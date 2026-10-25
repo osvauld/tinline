@@ -195,7 +195,6 @@ en = "Call"
 where = [
   "android common_call: Button or label that starts a call.",
   "ios chat_call: Accessibility label of the voice call button in a chat header.",
-  "ios shell_call_desc_other: Screen reader phrase for a call row, a whole phrase used as {what} in the row label: any other call. Reads like “Missed call”.",
   "ios shell_calls_action_call: Screen reader: tapping a call row calls the contact.",
   "ios people_call: Button that calls the person.",
   "desktop common_call: Shared label: a button that starts a call (a verb, \"Call Ana\"). Not used as a title.",
@@ -1454,7 +1453,7 @@ text = "पब्लिक ग्रुप"
 [t_cbd81d50d4]
 en = "Anyone with the link can join"
 where = [
-  "android groupsb_open_link_on: Second line of the Open link switch while it is on.",
+  "android groupsb_open_link_on: Second line of the Public link switch while it is on.",
   "desktop group_anyone_with_the_link: Desktop, groups (in group_live_view.rs, group_info_page).",
 ]
 text = "लिंक वाला कोई भी जुड़ सकता है"
@@ -1462,7 +1461,7 @@ text = "लिंक वाला कोई भी जुड़ सकता ह
 [t_7051c1c89a]
 en = "Only people you invite can join"
 where = [
-  "android groupsb_open_link_off: Second line of the Open link switch while it is off.",
+  "android groupsb_open_link_off: Second line of the Public link switch while it is off.",
   "desktop group_only_people_you_invite: Desktop, groups (in group_live_view.rs, group_info_page).",
 ]
 text = "सिर्फ़ आपके आमंत्रित लोग जुड़ सकते हैं"
@@ -1491,10 +1490,11 @@ where = [
 ]
 text = "ऐसा लिंक जिसकी समय-सीमा खत्म नहीं होती"
 
-[t_a861eda638]
-en = "Turn on Open link to share it"
+[t_6bb1d72052]
+en = "Turn on Public link to share it"
 where = [
   "android groupsb_turn_on_open: Second line of the Copy link row while the group is not open.",
+  "desktop group_turn_on_open_link: Desktop, group info, under the Public link switch. \"Public link\" is the title of that switch.",
 ]
 text = "शेयर करने के लिए “पब्लिक लिंक” चालू करें"
 
@@ -4591,6 +4591,7 @@ text = "एक समय में सिर्फ़ चुना हुआ ख
 en = "Your account is back on this phone. Your contacts, chats and call history are kept on your other devices, not on a server. This phone starts with an empty contact list."
 where = [
   "android onboarding_restored_lead: Lead after restoring an account.",
+  "ios onboarding_back_lead: Explanation after restoring an account.",
 ]
 text = "आपका खाता इस फ़ोन पर वापस आ गया है। आपके संपर्क, चैट और कॉल हिस्ट्री आपके दूसरे डिवाइस पर रहते हैं, किसी सर्वर पर नहीं। यह फ़ोन खाली संपर्क सूची से शुरू होगा।"
 
@@ -12925,13 +12926,6 @@ where = [
 ]
 text = "आपके किसी दूसरे डिवाइस ने इस फ़ोन से आपका खाता हटा दिया। इसके संपर्क, चैट और कॉल यहाँ से मिटा दिए गए हैं। आपके दूसरे डिवाइस पर इसका कोई असर नहीं है।"
 
-[t_e9172d3ef4]
-en = "Your account is back on this phone. Your contacts, chats and call history are kept on your other devices, not with us. This phone starts with an empty contact list."
-where = [
-  "ios onboarding_back_lead: Explanation after restoring an account.",
-]
-text = "आपका खाता इस फ़ोन पर वापस आ गया है। आपके संपर्क, चैट और कॉल हिस्ट्री आपके दूसरे डिवाइस पर रहते हैं, हमारे पास नहीं। यह फ़ोन खाली संपर्क सूची से शुरू होगा।"
-
 [t_9fa27bd052]
 en = "Linked to {name}"
 where = [
@@ -13017,6 +13011,13 @@ where = [
   "ios shell_call_what_unreachable: Call list: call that could not reach the other person.",
 ]
 text = "कॉल जुड़ नहीं पाई"
+
+[t_775f66b114]
+en = "Call"
+where = [
+  "ios shell_call_desc_other: Screen reader phrase for a call row, a whole phrase used as {what} in the row label: any other call. Reads like “Missed call”.",
+]
+text = "कॉल"
 
 [t_46bad378f1]
 en = "Word {n} isn’t in the recovery word list. Check the spelling."
@@ -15375,13 +15376,6 @@ where = [
   "desktop group_this_device_stopped_hosting: Desktop, groups (in group_live.rs, run).",
 ]
 text = "इस डिवाइस ने ग्रुप को होस्ट करना बंद कर दिया।"
-
-[t_6bb1d72052]
-en = "Turn on Public link to share it"
-where = [
-  "desktop group_turn_on_open_link: Desktop, group info, under the Public link switch. \"Public link\" is the title of that switch.",
-]
-text = "शेयर करने के लिए “पब्लिक लिंक” चालू करें"
 
 [t_273944879b]
 en = "Unlock to see your groups."

@@ -41,7 +41,7 @@
     <string name="groups_list_requests">Chat-Anfragen</string>
     <string name="groups_list_wants_chat">%1$s möchte chatten</string>
     <string name="groups_list_member_of">Mitglied von %1$s</string>
-    <string name="groups_list_accepting_adds">Wenn du annimmst, wird %1$s ein Kontakt nur für Nachrichten. Anrufe kannst du später erlauben.</string>
+    <string name="groups_list_accepting_adds">Wenn du annimmst, wird %1$s als Kontakt nur für Nachrichten hinzugefügt. Anrufe kannst du später erlauben.</string>
     <string name="groups_list_block">Blockieren</string>
     <string name="groups_list_yours">Deine Gruppen</string>
     <string name="groups_list_empty">Noch keine Gruppen. Erstelle eine oder nimm eine Einladung an.</string>
@@ -85,6 +85,10 @@
     <string name="groups_online_pill">Wer ist online</string>
     <string name="groups_online_title">Wer ist online in %1$s</string>
     <string name="groups_online_lag">Mitglieder, die ein Host in der letzten Minute gesehen hat. Das kann ein paar Sekunden hinterherhinken.</string>
+    <plurals name="groups_online_cap">
+        <item quantity="one">Ein Host listet bis zu %1$d Person auf einmal, es können also mehr sein.</item>
+        <item quantity="other">Ein Host listet bis zu %1$d Personen auf einmal, es können also mehr sein.</item>
+    </plurals>
     <string name="groups_online_hidden">Du wirst hier anderen nicht angezeigt. Das kannst du unter Einstellungen › Privatsphäre ändern.</string>
     <string name="groups_online_none">Gerade ist niemand online. Hier erscheinen Leute, solange sie verbunden sind.</string>
     <string name="groups_online_admin">Admin</string>
@@ -151,6 +155,10 @@
     <string name="groupsb_role_owner_lc">Eigentümer</string>
     <string name="groupsb_role_admin_lc">Admin</string>
     <string name="groupsb_role_member_lc">Mitglied</string>
+    <plurals name="groupsb_flags_of">
+        <item quantity="one">%1$s von %2$d Markierung</item>
+        <item quantity="other">%1$s von %2$d Markierungen</item>
+    </plurals>
     <string name="groupsb_of_total">%1$s von %2$s</string>
     <string name="groupsb_blocked_by_you">Von dir blockiert</string>
     <string name="groupsb_pill_owner">Eigentümer</string>
@@ -178,7 +186,7 @@
     <string name="groupsb_copy_link">Link kopieren</string>
     <string name="groupsb_getting_link">Link wird geholt…</string>
     <string name="groupsb_link_never_expires">Ein Link, der nicht abläuft</string>
-    <string name="groupsb_turn_on_open">Schalte den offenen Link ein, um ihn zu teilen</string>
+    <string name="groupsb_turn_on_open">Schalte „Öffentlicher Link“ ein, um ihn zu teilen</string>
     <string name="groupsb_cant_get_link">Der Link ließ sich nicht holen</string>
     <string name="groupsb_admins_only">Nur Admins</string>
     <string name="groupsb_admins_only_on">Nur Admins posten; alle lesen</string>
@@ -293,6 +301,10 @@
     <string name="groupsb_create_group">Gruppe erstellen</string>
     <string name="groupsb_add_members">Mitglieder hinzufügen</string>
     <string name="groupsb_add_to">Zu %1$s hinzufügen</string>
+    <plurals name="groupsb_contacts_selected">
+        <item quantity="one">KONTAKTE · %1$d AUSGEWÄHLT</item>
+        <item quantity="other">KONTAKTE · %1$d AUSGEWÄHLT</item>
+    </plurals>
     <string name="groupsb_no_contacts">Keine Kontakte zum Hinzufügen. Leute, die du blockierst oder die dich blockieren, stehen nicht in der Liste.</string>
     <string name="groupsb_add_note">Jede Person bekommt die Einladung in eurem 1:1-Chat und tritt bei, wenn sie annimmt. Sie gilt 7 Tage.</string>
     <string name="groupsb_scan_invite">Einladung scannen</string>
@@ -322,6 +334,7 @@
     <string name="unlock_keylost_title">Dein Konto lässt sich nicht öffnen</string>
     <string name="unlock_keylost_lead">Dieses Handy hat den Schlüssel nicht mehr, der dein Konto öffnet. Das passiert nach dem Zurücksetzen der Displaysperre oder nach einem wiederhergestellten Backup. Sobald du wiederherstellst, kommen deine Anrufe wieder durch.</string>
     <string name="unlock_keylost_restore">Mit 24 Wörtern wiederherstellen</string>
+    <string name="unlock_keylost_notice">Du hast keine Passphrase festgelegt, also sind die %1$s Wiederherstellungswörter der einzige Weg zurück. Deine Kontakte bleiben.</string>
     <string name="accounts_switch_account">Konto wechseln</string>
     <string name="unlock_welcome_back_named">Willkommen zurück, %1$s</string>
     <string name="unlock_welcome_back">Willkommen zurück</string>
@@ -359,6 +372,7 @@
     <string name="profile_share_my_code_sub">Für Leute, die du hinzufügen möchtest</string>
     <string name="profile_only_you">Nur du</string>
     <string name="profile_account_recovery">Kontowiederherstellung</string>
+    <string name="profile_account_recovery_sub">Dein Schlüssel und deine %1$s Wörter</string>
     <string name="profile_code_title">Dein Kontaktcode</string>
     <string name="profile_code_lead_qr">Lass sie das mit Tinline scannen.</string>
     <string name="profile_code_lead_text">Schick ihn an jemanden, den du hinzufügen möchtest.</string>
@@ -464,6 +478,8 @@
     <string name="profile_err_about_chars">„Über mich“ darf keine Steuer- oder Textrichtungszeichen enthalten.</string>
     <string name="profile_err_key_blank">Gib der Angabe einen Namen.</string>
     <string name="profile_err_key_bad">Dieser Name geht nicht. Halte ihn kurz, ohne Steuerzeichen.</string>
+    <string name="profile_err_value_long">Das ist zu lang. Jede Angabe darf bis zu %1$s KiB groß sein.</string>
+    <string name="profile_err_fields_full">Du hast %1$s Angaben erreicht. Entferne eine, um eine neue hinzuzufügen.</string>
     <string name="profile_err_profile_full">Dein Profil ist voll. Entferne einige Angaben, um mehr hinzuzufügen.</string>
     <string name="profile_err_use_picture_controls">Nutze dafür die Bildsteuerung.</string>
     <string name="profile_err_availability_remove">Die Erreichbarkeit kann geändert, aber nicht entfernt werden.</string>
@@ -503,9 +519,11 @@
         <item quantity="other">%1$d Wörter fehlen noch.</item>
     </plurals>
     <string name="onboarding_restore_lead_key">Dein Wiederherstellungsschlüssel ist drin. Er bleibt auf diesem Handy.</string>
+    <string name="onboarding_restore_lead_words">Tipp deine %1$s Wörter der Reihe nach ein, oder füge sie oder deinen Wiederherstellungsschlüssel ins erste Feld ein. Sie bleiben auf diesem Handy.</string>
     <string name="onboarding_restore_key_caption">Wiederherstellungsschlüssel</string>
     <string name="onboarding_restore_use_words">Lieber meine Wörter nutzen</string>
     <string name="onboarding_restore_paste">Aus Zwischenablage einfügen</string>
+    <string name="onboarding_restore_filled">%1$s von %2$s</string>
     <string name="onboarding_welcome_title_adding">Ein Konto hinzufügen</string>
     <string name="onboarding_welcome_title">Eine direkte Leitung zu deinen Leuten</string>
     <string name="onboarding_welcome_lead_adding">Erstelle ein neues Konto oder bring eins mit, das du schon hast.\nDein aktuelles Konto bleibt auf diesem Handy.</string>
@@ -519,6 +537,7 @@
     <string name="onboarding_choose_link">Mein anderes Gerät verknüpfen</string>
     <string name="onboarding_choose_link_sub">Scanne einen Code auf einem Gerät, das dein Konto schon hat. Deine Kontakte und Chats kommen mit.</string>
     <string name="onboarding_choose_restore">Mein Konto wiederherstellen</string>
+    <string name="onboarding_choose_restore_sub">Tipp deine %1$s Wiederherstellungswörter ein. Dieses Handy startet mit einer leeren Kontaktliste.</string>
     <string name="onboarding_done_title_named">Deine Leitung ist offen, %1$s</string>
     <string name="onboarding_done_title">Deine Leitung ist offen</string>
     <string name="onboarding_done_lead">Scanne ihren Code oder teile deinen, dann könnt ihr euch anrufen.</string>
@@ -545,6 +564,8 @@
     <string name="onboarding_strength_3">Stark</string>
     <string name="onboarding_phrase_title_key">Hier ist dein Wiederherstellungsschlüssel</string>
     <string name="onboarding_phrase_title_words">Hier sind deine Wiederherstellungswörter</string>
+    <string name="onboarding_phrase_lead_key">Dein Wiederherstellungsschlüssel entspricht deinen %1$s Wörtern, nur in einer Zeile.\nFüg ihn an einem sicheren Ort ein. Ein Passwortmanager eignet sich gut.</string>
+    <string name="onboarding_phrase_lead_words">Wenn du mal das Gerät wechselst, bringen diese %1$s Wörter dein Konto mit.\nSpeichere eine Kopie an einem sicheren Ort. Papier eignet sich gut.</string>
     <string name="onboarding_phrase_saved_key">Ich hab ihn gesichert</string>
     <string name="onboarding_phrase_saved_words">Ich hab sie gesichert</string>
     <string name="onboarding_phrase_copy_again">Nochmal kopieren</string>
@@ -562,6 +583,7 @@
     <string name="onboarding_device_hint">Du kannst ihn später umbenennen.</string>
     <string name="onboarding_restored_title_adding">%1$s wurde diesem Handy hinzugefügt</string>
     <string name="onboarding_restored_lead_adding">Es ist immer nur das ausgewählte Konto online, also ist %1$s jetzt online und dein anderes Konto pausiert. Wechseln kannst du in den Einstellungen.</string>
+    <string name="onboarding_restored_lead">Dein Konto ist wieder auf diesem Handy. Deine Kontakte, Chats und Anrufliste liegen auf deinen anderen Geräten, nicht auf einem Server. Dieses Handy startet mit einer leeren Kontaktliste.</string>
     <string name="onboarding_open_tinline">Tinline öffnen</string>
     <string name="onboarding_linked_title">Verknüpft mit %1$s</string>
     <string name="onboarding_linked_lead">Deine Kontakte und Chats kommen von %1$s und bleiben auf beiden Geräten synchron.</string>
@@ -583,6 +605,7 @@
     <string name="onboarding_terms_encrypted_body">Wenn keine direkte Leitung möglich ist, gibt ein verschlüsseltes Relay den Anruf weiter. Es kann ihn nicht hören.</string>
     <string name="onboarding_terms_account_title">Dein Konto gehört dir.</string>
     <string name="onboarding_terms_account_body">Es lebt auf deinen Geräten, nicht auf einem Server. Deine Wiederherstellungswörter sind der Weg zurück, also bewahre sie gut auf.</string>
+    <string name="onboarding_terms_by_continuing">Wenn du weitermachst, stimmst du den [Nutzungsbedingungen](terms) zu und hast die [Datenschutzerklärung](privacy) gelesen.</string>
     <string name="onboarding_perms_title">Damit Anrufe dich erreichen</string>
     <string name="onboarding_perms_lead">Tinline funktioniert wie eine Telefonleitung: Sie bleibt still im Hintergrund offen. Alles hier ist optional, und du kannst es später ändern.</string>
     <string name="onboarding_perm_mic">Mikrofon</string>
@@ -753,6 +776,8 @@
     <string name="settings_backup_title">Dein Wiederherstellungs-Backup</string>
     <string name="settings_backup_private">Halte das privat. Wer es hat, kann als du auftreten.</string>
     <string name="settings_backup_key">Schlüssel</string>
+    <string name="settings_backup_words">%1$s Wörter</string>
+    <string name="settings_backup_key_failed">Der Schlüssel ließ sich nicht vorbereiten. Nutze stattdessen deine %1$s Wörter.</string>
     <string name="settings_hide">Verbergen</string>
     <string name="settings_reveal">Zeigen</string>
     <string name="settings_backup_hides">Verschwindet nach 30 Sekunden. Sperrt sich, wenn du die App verlässt.</string>
@@ -851,6 +876,7 @@
     <string name="link_show_h1">Zeig diesen Code deinem neuen Gerät</string>
     <string name="link_show_body">Wähle auf dem neuen Gerät „Mit einem Gerät verknüpfen“, dann „Lieber scannen“, und richte es auf diesen Code.</string>
     <string name="link_match_title">Stimmen die Codes überein?</string>
+    <string name="link_match_body">**%1$s** möchte deinem Konto beitreten. Es sollte dieselben sechs Ziffern zeigen wie unten.</string>
     <string name="link_match_note">Vergleiche sie selbst. Wenn sie abweichen, hat vielleicht jemand anderes den Code zuerst gescannt.</string>
     <string name="link_no_match">Stimmen nicht überein</string>
     <string name="link_match">Stimmen überein</string>
@@ -863,11 +889,14 @@
     <string name="link_done_title">%1$s ist verknüpft</string>
     <string name="link_done_body">Es gleicht sich ab, wenn beide Geräte gleichzeitig online sind. Kontakte, die du nicht blockiert hast, bekommen deine neue Geräteliste, wenn sie das nächste Mal online sind.</string>
     <string name="link_scan_h1">Scanne den Code auf deinem neuen Gerät</string>
+    <string name="link_scan_step1">Öffne auf dem neuen Gerät Tinline und wähle %1$s.</string>
+    <string name="link_scan_step2">Es zeigt einen QR-Code und einen kurzen Code. Sie gelten 5 Minuten und funktionieren einmal.</string>
     <string name="link_scan_qr">QR-Code scannen</string>
     <string name="link_type_code">Oder tipp den Code ein</string>
     <string name="link_show_here">Lieber hier einen QR-Code zeigen</string>
     <string name="link_wrong_pass">Diese Passphrase passt nicht.</string>
     <string name="link_approve_title">%1$s bestätigen?</string>
+    <string name="link_approve_warning">Wenn du bestätigst, gehen deine **Wiederherstellungswörter** an %1$s. Es wird eine vollständige Kopie von dir: Es kann deine Chats lesen und als du auftreten. Bestätige nur ein Gerät, das du in der Hand hast.</string>
     <string name="link_dont_link">Nicht verknüpfen</string>
     <string name="link_approving">Bestätigen…</string>
     <string name="link_approve">Bestätigen</string>
@@ -878,7 +907,7 @@
     <string name="link_scan_again">Nochmal scannen</string>
     <string name="link_scan_foot">Der Code funktioniert einmal und läuft nach 5 Minuten ab.</string>
     <string name="link_unlinked_title">Dieses Handy wurde getrennt</string>
-    <string name="link_unlinked_lead">%1$s wurde von einem deiner anderen Geräte von diesem Handy entfernt. Kontakte, Chats und Anrufe des Kontos sind hier gelöscht. Deine anderen Geräte sind nicht betroffen.</string>
+    <string name="link_unlinked_lead">Eines deiner anderen Geräte hat %1$s von diesem Handy entfernt. Kontakte, Chats und Anrufe des Kontos wurden hier gelöscht. Deine anderen Geräte sind nicht betroffen.</string>
     <string name="link_your_account">Dein Konto</string>
     <string name="link_ok">OK</string>
     <string name="link_again">Wieder verknüpfen</string>
@@ -925,6 +954,7 @@
     <string name="notif_locked_text">Tippe, um deine Passphrase einzugeben</string>
     <string name="notif_request_title">Kontaktanfrage</string>
     <string name="notif_request_text">%1$s möchte dich hinzufügen</string>
+    <string name="notif_accepted_text">%1$s hat deine Anfrage angenommen. Deine Leitung ist offen.</string>
     <string name="notif_missed_title">Verpasster Anruf</string>
     <string name="chat_edited">bearbeitet</string>
     <string name="chat_jump_to_message">Zur Nachricht springen</string>
@@ -1111,6 +1141,10 @@
     <string name="card_found">Tinline hat die Karte gefunden.</string>
     <string name="card_open">Öffnen</string>
     <string name="card_add">Hinzufügen</string>
+    <plurals name="groupsc_removed_you_flags">
+        <item quantity="one">Du wurdest nach %1$d Admin-Markierung entfernt</item>
+        <item quantity="other">Du wurdest nach %1$d Admin-Markierungen entfernt</item>
+    </plurals>
     <string name="groupsc_admin_granted_other">%1$s hat %2$s zum Admin gemacht</string>
     <string name="groupsc_admin_revoked_you">%1$s hat dich als Admin entfernt</string>
     <string name="groupsc_admin_revoked_other">%1$s hat %2$s als Admin entfernt</string>
@@ -1160,19 +1194,31 @@
         <item quantity="one">%1$d ungelesen</item>
         <item quantity="other">%1$d ungelesen</item>
     </plurals>
+    <plurals name="groupsc_flags_of">
+        <item quantity="one">%1$s von %2$d Markierung</item>
+        <item quantity="other">%1$s von %2$d Markierungen</item>
+    </plurals>
     <string name="gcall_name">Gruppenanruf</string>
     <string name="gcall_group_fallback">Gruppe</string>
     <string name="gcall_finding_host">Anruf-Host wird gesucht…</string>
+    <string name="gcall_connecting">Anruf wird verbunden…</string>
+    <string name="gcall_reconnecting">Anruf wird neu verbunden…</string>
     <string name="gcall_already_in_call">Du bist schon in einem Anruf.</string>
     <string name="gcall_ended">Anruf beendet</string>
     <string name="gcall_ended_host_lost">Anruf beendet – Host weg</string>
+    <string name="gcall_battery_limited">Akku unter %1$s %%. Das Hosten ist eingeschränkt: Es ist immer nur eine Person zu hören, und niemand Neues kann beitreten.</string>
     <string name="gcall_no_host">Kein Anruf-Host verfügbar</string>
+    <string name="gcall_cant_connect">Beitritt zum Anruf hat nicht geklappt</string>
     <string name="gcall_minimize">Anruf verkleinern</string>
     <string name="gcall_about_title">Über diesen Anruf</string>
     <string name="gcall_only_you">Bisher nur du. Wartet auf andere.</string>
     <plurals name="gcall_people">
         <item quantity="one">%1$d Person im Anruf</item>
         <item quantity="other">%1$d Personen im Anruf</item>
+    </plurals>
+    <plurals name="gcall_more">
+        <item quantity="one">+%1$d weitere</item>
+        <item quantity="other">+%1$d weitere</item>
     </plurals>
     <string name="gcall_ok">OK</string>
     <string name="gcall_you_host">Du bist der Anruf-Host</string>
@@ -1292,6 +1338,7 @@
     <string name="call_flip_camera">Kamera wechseln</string>
     <string name="call_flip">Wechseln</string>
     <string name="call_audio_route">Audio: %1$s</string>
+    <string name="call_reconnecting">Anruf wird neu verbunden…</string>
     <string name="call_reconnecting_plain">Neu verbinden</string>
     <string name="call_back_continues">Zurück. Der Anruf läuft weiter</string>
     <string name="call_message_continues">Nachricht. Der Anruf läuft weiter</string>
@@ -1481,8 +1528,11 @@
     <string name="calls_what_declined">Abgelehnt</string>
     <string name="calls_what_no_answer">Keine Antwort</string>
     <string name="calls_what_cancelled">Abgebrochen</string>
+    <string name="calls_what_unreachable">Der Anruf ließ sich nicht verbinden</string>
     <string name="calls_profile_desc">Profil von %1$s</string>
     <string name="calls_cant_call">Anrufen nicht möglich</string>
+    <string name="calls_row_desc">%1$s, %2$s, %3$s. %4$s</string>
+    <string name="calls_row_desc_duration">%1$s, %2$s, %3$s, %4$s. %5$s</string>
     <string name="calls_group_info_desc">%1$s, Gruppeninfo</string>
     <string name="calls_group_row_desc">%1$s, %2$s, %3$s. Anruf starten oder beitreten</string>
     <string name="contacts_find">Kontakt finden</string>
@@ -1518,57 +1568,151 @@
     <string name="support_err_in_call">Beende zuerst deinen Anruf</string>
     <string name="support_err_generic">Da ist etwas schiefgelaufen</string>
     <string name="debuglog_send_title">Debug-Log senden</string>
+    <string name="groupsc_sys_joined_you">Du bist beigetreten</string>
     <string name="groupsc_sys_joined_other">%1$s ist beigetreten</string>
+    <string name="groupsc_sys_joined_someone">Jemand ist beigetreten</string>
     <string name="groupsc_sys_left_you">Verlassen</string>
     <string name="groupsc_sys_left_other">%1$s hat die Gruppe verlassen</string>
+    <string name="groupsc_sys_left_someone">Jemand hat die Gruppe verlassen</string>
+    <plurals name="groupsc_removed_other_flags">
+        <item quantity="one">%1$s wurde nach %2$d Admin-Markierung entfernt</item>
+        <item quantity="other">%1$s wurde nach %2$d Admin-Markierungen entfernt</item>
+    </plurals>
+    <plurals name="groupsc_removed_someone_flags">
+        <item quantity="one">Jemand wurde nach %1$d Admin-Markierung entfernt</item>
+        <item quantity="other">Jemand wurde nach %1$d Admin-Markierungen entfernt</item>
+    </plurals>
     <string name="groupsc_admin_granted_you">%1$s hat dich zum Admin gemacht</string>
+    <string name="groupsc_admin_granted_you_by_someone">Jemand hat dich zum Admin gemacht</string>
+    <string name="groupsc_admin_granted_by_you">Du hast %1$s zum Admin gemacht</string>
+    <string name="groupsc_admin_granted_by_you_someone">Du hast jemanden zum Admin gemacht</string>
+    <string name="groupsc_admin_granted_other_someone">%1$s hat jemanden zum Admin gemacht</string>
+    <string name="groupsc_admin_granted_by_someone">Jemand hat %1$s zum Admin gemacht</string>
+    <string name="groupsc_admin_granted_by_someone_someone">Jemand hat jemanden zum Admin gemacht</string>
+    <string name="groupsc_admin_revoked_you_by_someone">Jemand hat dich als Admin entfernt</string>
+    <string name="groupsc_admin_revoked_by_you">Du hast %1$s als Admin entfernt</string>
+    <string name="groupsc_admin_revoked_by_you_someone">Du hast jemanden als Admin entfernt</string>
+    <string name="groupsc_admin_revoked_other_someone">%1$s hat jemanden als Admin entfernt</string>
+    <string name="groupsc_admin_revoked_by_someone">Jemand hat %1$s als Admin entfernt</string>
+    <string name="groupsc_admin_revoked_by_someone_someone">Jemand hat jemanden als Admin entfernt</string>
+    <string name="groupsc_host_added_someone">Ein Gerät eines Mitglieds hostet jetzt die Gruppe</string>
+    <string name="groupsc_host_removed_someone">Ein Gerät eines Mitglieds hostet die Gruppe nicht mehr</string>
     <string name="groupsc_removed_you_group">Du wurdest aus dieser Gruppe entfernt</string>
     <string name="groupsc_preview_you">Du: %1$s</string>
     <string name="groupsc_preview_other">%1$s: %2$s</string>
+    <string name="groupsc_preview_someone">Jemand: %1$s</string>
+    <string name="groupsc_photo_caption_line">Foto · %1$s</string>
     <plurals name="groupsc_members">
         <item quantity="one">%1$d Mitglied</item>
         <item quantity="other">%1$d Mitglieder</item>
     </plurals>
+    <string name="groupsc_status_this_device">dieses Gerät hostet die Gruppe</string>
+    <string name="groupsc_status_no_host">noch kein Host</string>
+    <string name="groupsc_status_waiting">wartet auf einen Host</string>
+    <string name="groupsc_status_join">%1$s · %2$s</string>
+    <plurals name="groupsc_online_count">
+        <item quantity="one">%1$d online</item>
+        <item quantity="other">%1$d online</item>
+    </plurals>
+    <string name="groupsc_online_cap">%1$d+ online</string>
     <string name="groupsc_admins_only_post">Hier posten nur Admins</string>
     <string name="groupsc_admins_only_error">Hier posten nur Admins.</string>
     <string name="groupsc_req_pending_named">Wartet auf %1$s · über %2$s</string>
+    <string name="groupsc_req_pending_anon">Wartet auf Antwort · über %1$s</string>
+    <string name="groupsc_req_accepted_messages_anon">Hat angenommen · nur Nachrichten</string>
+    <string name="groupsc_req_accepted_connecting_anon">Hat angenommen · verbindet</string>
     <string name="groupsc_req_declined_named">%1$s hat abgelehnt</string>
+    <string name="groupsc_req_declined_anon">Hat abgelehnt</string>
     <string name="groupsc_req_blocked_named">%1$s hat dich blockiert</string>
+    <string name="groupsc_req_blocked_anon">Hat dich blockiert</string>
     <string name="groupsc_pick_member">Schon Mitglied</string>
     <string name="groupsc_pick_invited_waiting">Eingeladen · wartet</string>
     <string name="groupsc_invited_not_delivered">Eingeladen · noch nicht zugestellt</string>
     <string name="groupsc_invite_joined">Beigetreten</string>
+    <string name="groupsc_invite_declined">Einladung abgelehnt</string>
+    <string name="groupsc_flag_final">Das wird Markierung %1$s von %2$s. %3$s wird sofort entfernt: Hosts nehmen keine neuen Nachrichten mehr an, und die Person sieht, dass sie entfernt wurde.</string>
+    <string name="groupsc_flag_more">Das wird Markierung %1$s von %2$s. Markierungen aller Admins zählen, auch weitere von dir. Bei %2$s Markierungen wird %3$s sofort entfernt und sieht das.</string>
     <string name="groupsc_err_removed">Du wurdest aus dieser Gruppe entfernt.</string>
     <string name="groupsc_err_already_contact">Die Person ist schon dein Kontakt. Schreib ihr unter Chats.</string>
     <string name="groupsc_err_timeout">Kein Host hat rechtzeitig geantwortet. Versuch es nochmal, wenn ein Host online ist.</string>
     <string name="groupsc_type_first">Schreib zuerst eine Nachricht.</string>
+    <string name="groupsc_picture_too_large">Dieses Bild ist zu groß zum Posten.</string>
     <string name="groupsc_pick_first">Wähl zuerst jemanden aus.</string>
     <string name="groupsc_invited_one_named">Einladung an %1$s gesendet. Die Person tritt bei, wenn sie annimmt.</string>
+    <string name="groupsc_invited_one_anon">Einladung gesendet. Die Person tritt bei, wenn sie annimmt.</string>
     <plurals name="groupsc_invited_many">
         <item quantity="one">%1$d Einladung gesendet. Jede Person tritt bei, wenn sie annimmt.</item>
         <item quantity="other">%1$d Einladungen gesendet. Jede Person tritt bei, wenn sie annimmt.</item>
     </plurals>
     <string name="groupsc_decline_inv_named">Abgelehnt. %1$s sieht, dass du abgelehnt hast.</string>
+    <string name="groupsc_decline_inv_anon">Abgelehnt. Die Person sieht, dass du abgelehnt hast.</string>
     <string name="groupsc_link_closed">Der offene Link ist geschlossen. Wer schon drin ist, bleibt; neue Leute treten mit einer Einladung bei.</string>
     <string name="groupsc_request_sent_named">Anfrage an %1$s gesendet. Sie wartet unter Chats, bis eine Antwort kommt.</string>
+    <string name="groupsc_request_sent_anon">Anfrage gesendet. Sie wartet unter Chats, bis eine Antwort kommt.</string>
     <string name="groupsc_req_accept_named">Angenommen. %1$s ist nur für Nachrichten hinzugefügt und erscheint unter Chats, sobald das Gerät verbunden ist; Anrufe bleiben aus, bis du sie erlaubst.</string>
+    <string name="groupsc_req_accept_anon">Angenommen. Die Person ist nur für Nachrichten hinzugefügt und erscheint unter Chats, sobald ihr Gerät verbunden ist; Anrufe bleiben aus, bis du sie erlaubst.</string>
+    <string name="groupsc_req_declined_told_anon">Abgelehnt. Die Person erfährt „abgelehnt“.</string>
     <string name="groupsc_req_block_named">%1$s ist blockiert und kann keine weiteren Anfragen senden.</string>
+    <string name="groupsc_req_block_anon">Die Person ist blockiert und kann keine weiteren Anfragen senden.</string>
     <string name="groupsc_notice_accepted_named">%1$s hat deine Anfrage angenommen. Ihr könnt euch jetzt schreiben; Anrufe bleiben aus, bis einer von euch sie erlaubt.</string>
+    <string name="groupsc_notice_accepted_anon">Die Person hat deine Anfrage angenommen. Ihr könnt euch jetzt schreiben; Anrufe bleiben aus, bis einer von euch sie erlaubt.</string>
     <string name="video_hd_line_on">Schärferes Video an</string>
     <string name="video_hd_line_paused">HD pausiert · schwache Verbindung</string>
     <string name="video_hd_metered">Mit mobilen Daten braucht HD mehr · tippe auf HD</string>
     <string name="profile_busy_unsupported">„Beschäftigt“ gibt es noch nicht. Deine Anrufeinstellungen bleiben unverändert.</string>
     <string name="blocking_row_blocked_you">Hat dich blockiert</string>
+    <string name="link_match_body_unnamed">Das neue Gerät möchte deinem Konto beitreten. Es sollte dieselben sechs Ziffern zeigen wie unten.</string>
+    <string name="link_approve_title_unnamed">Das neue Gerät bestätigen?</string>
+    <string name="link_approve_warning_unnamed">Wenn du bestätigst, gehen deine **Wiederherstellungswörter** an das neue Gerät. Es wird eine vollständige Kopie von dir: Es kann deine Chats lesen und als du auftreten. Bestätige nur ein Gerät, das du in der Hand hast.</string>
+    <string name="link_linking_unnamed">Das neue Gerät wird verknüpft</string>
+    <string name="link_done_title_unnamed">Das neue Gerät ist verknüpft</string>
+    <string name="onboarding_linked_title_unnamed">Verknüpft mit deinem anderen Gerät</string>
+    <string name="onboarding_restored_title_adding_unnamed">Dein Konto wurde diesem Handy hinzugefügt</string>
+    <string name="onboarding_restored_lead_adding_unnamed">Es ist immer nur das ausgewählte Konto online, also ist dieses Konto jetzt online und dein anderes Konto pausiert. Wechseln kannst du in den Einstellungen.</string>
+    <string name="devices_syncing_unnamed">Abgleich mit dem Gerät…</string>
+    <string name="devices_confirm_unlink_title_unnamed">Dieses Gerät trennen?</string>
     <string name="devices_unlinked_msg_unnamed">Gerät getrennt</string>
+    <string name="groupsb_join_invited_by_you">Von dir eingeladen</string>
+    <string name="groupsb_join_invited_by_unknown">Eingeladen von jemandem, der nicht in deinen Kontakten ist</string>
+    <string name="groupsb_join_owner_you">Die Gruppe gehört dir</string>
+    <string name="groupsb_join_owner_unknown">Die Gruppe gehört jemandem, der nicht in deinen Kontakten ist</string>
+    <string name="groupsb_link_note_unnamed">Alle mit diesem Link oder QR-Code können dieser Gruppe 7 Tage lang beitreten. Teile ihn über eine App, der du vertraust; du siehst, wer beigetreten ist, und kannst Leute per Markierung entfernen. Um deine Kontakte direkt einzuladen, nutze „Mitglieder hinzufügen“.</string>
+    <string name="groupsb_share_text_unnamed">Tritt meiner Gruppe auf Tinline bei: %1$s</string>
+    <string name="card_chat_with_unnamed">Mit der Person chatten?</string>
+    <string name="card_add_unnamed">Diesen Kontakt hinzufügen?</string>
     <string name="call_unreachable_title_unnamed">Nicht erreichbar</string>
     <string name="calls_desc_incoming">Eingehender Anruf</string>
+    <string name="calls_desc_outgoing">Ausgehender Anruf</string>
+    <string name="calls_desc_away">Anruf während deiner Pause</string>
     <string name="calls_desc_missed">Verpasster Anruf</string>
+    <string name="calls_desc_declined">Abgelehnter Anruf</string>
+    <string name="calls_desc_no_answer">Anruf ohne Antwort</string>
     <string name="calls_desc_cancelled">Anruf abgebrochen</string>
+    <string name="calls_desc_unreachable">Anruf, der nicht verbunden werden konnte</string>
     <string name="calls_desc_other">Tinline-Anruf</string>
+    <string name="groupsb_public_link">Öffentlicher Link</string>
     <string name="groups_list_sent_requests">Gesendete Anfragen</string>
     <string name="groupsb_host_online">Online</string>
     <string name="groupsb_host_offline">Offline</string>
     <string name="calls_what_other">Tinline-Anruf</string>
+    <string name="notif_request_text_unnamed">Jemand möchte dich hinzufügen</string>
+    <string name="notif_accepted_title">Anfrage angenommen</string>
+    <string name="notif_accepted_text_unnamed">Dein Kontakt hat deine Anfrage angenommen. Deine Leitung ist offen.</string>
+    <string name="gcall_host_label_device">Anruf-Host: Gerät von %1$s</string>
+    <string name="gcall_host_label_unnamed">Anruf-Host: Gerät eines Mitglieds</string>
+    <string name="gcall_about_this_phone">**Dieses Handy** trägt diesen Anruf. Alle im Anruf verbinden sich damit; es gibt den Ton weiter und wählt aus, wer zu hören ist, wenn mehrere sprechen.</string>
+    <string name="gcall_about_device">**Das Gerät von %1$s** trägt diesen Anruf. Alle im Anruf verbinden sich damit; es gibt den Ton weiter und wählt aus, wer zu hören ist, wenn mehrere sprechen.</string>
+    <string name="gcall_about_unnamed">**Das Host-Gerät** trägt diesen Anruf. Alle im Anruf verbinden sich damit; es gibt den Ton weiter und wählt aus, wer zu hören ist, wenn mehrere sprechen.</string>
+    <string name="gcall_started_by_unnamed">Gestartet von jemandem</string>
+    <string name="gcall_is_calling_group_desc_unnamed">Jemand ruft die Gruppe %1$s an</string>
+    <string name="gcall_started_call_desc_unnamed">Jemand hat einen Anruf in %1$s gestartet</string>
+    <string name="notif_group_calling_unnamed">Jemand ruft die Gruppe an</string>
+    <string name="common_list_separator">, </string>
+    <string name="groupsb_member_desc">%1$s. Aktionen öffnen</string>
     <string name="groupsb_role_host_lc">Host</string>
     <string name="groupsb_role_callhost_lc">Anruf-Host</string>
+    <string name="avail_note_unnamed">Solange du weg bist, sehen Leute, die anrufen, dass sie dich nicht erreichen konnten. Nichts wird gesammelt, und niemand erfährt, warum.</string>
+    <string name="onboarding_linked_lead_unnamed">Deine Kontakte und Chats kommen von deinem anderen Gerät und bleiben auf beiden Geräten synchron.</string>
+    <string name="gcall_is_calling_group_unnamed">Jemand ruft die Gruppe an</string>
+    <string name="gcall_started_call_unnamed">Jemand hat einen Anruf gestartet</string>
 </resources>

@@ -515,9 +515,6 @@ text = "جارٍ جلب الرابط…"
 [groupsb_link_never_expires]
 text = "رابط لا تنتهي صلاحيته"
 
-[groupsb_turn_on_open]
-text = "يلزم تشغيل الرابط المفتوح لمشاركته"
-
 [groupsb_cant_get_link]
 text = "تعذّر جلب الرابط"
 

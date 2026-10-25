@@ -343,9 +343,9 @@
     <string name="groupsb_group_link">Group link</string>
     <!-- Section heading on Group info (admins) for the open link and admins-only switches. -->
     <string name="groupsb_public_sec">Public group</string>
-    <!-- Second line of the Open link switch while it is on. -->
+    <!-- Second line of the Public link switch while it is on. -->
     <string name="groupsb_open_link_on">Anyone with the link can join</string>
-    <!-- Second line of the Open link switch while it is off. -->
+    <!-- Second line of the Public link switch while it is off. -->
     <string name="groupsb_open_link_off">Only people you invite can join</string>
     <!-- Row that copies the open group link. -->
     <string name="groupsb_copy_link">Copy link</string>
@@ -354,7 +354,7 @@
     <!-- Second line of the Copy link row when the link is not yet in hand. -->
     <string name="groupsb_link_never_expires">A link that doesn’t expire</string>
     <!-- Second line of the Copy link row while the group is not open. -->
-    <string name="groupsb_turn_on_open">Turn on Open link to share it</string>
+    <string name="groupsb_turn_on_open">Turn on Public link to share it</string>
     <!-- Message shown when the open group link could not be fetched. -->
     <string name="groupsb_cant_get_link">Couldn’t get the link</string>
     <!-- Title of the switch that lets only admins post. -->

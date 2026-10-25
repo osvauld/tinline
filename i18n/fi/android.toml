@@ -508,7 +508,7 @@ text = "Haetaan linkkiä…"
 text = "Linkki, joka ei vanhene"
 
 [groupsb_turn_on_open]
-text = "Ota Avoin linkki käyttöön jakaaksesi sen"
+text = "Ota Julkinen linkki käyttöön, niin voit jakaa sen"
 
 [groupsb_cant_get_link]
 text = "Linkkiä ei saatu"
