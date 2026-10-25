@@ -8747,6 +8747,9 @@ where = [
   "android groupsc_removed_you_flags: System line in a group's chat: I was removed after enough admin flags. {count} is the number of flags needed.",
   "desktop group_sys_removed_you: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). I was removed. {count} is how many admin flags remove a member.",
 ]
+one = "Vous avez été retiré après {count} signalement d’admin"
+many = "Vous avez été retiré après {count} signalements d’admins"
+other = "Vous avez été retiré après {count} signalements d’admins"
 
 [t_b70ffe7657]
 en = "{by} made {sub} an admin"
@@ -9109,6 +9112,9 @@ en_other = "{filled} of {count} flags"
 where = [
   "android groupsc_flags_of: Spoken description of the flag meter: how many of the flags needed to remove a member are filled. {count} is the number needed.",
 ]
+one = "Signalements : {filled} sur {count}"
+many = "Signalements : {filled} sur {count}"
+other = "Signalements : {filled} sur {count}"
 
 [t_9df27ec5da]
 en = "Group call"
@@ -9135,7 +9141,7 @@ where = [
   "android gcall_connecting: Status under the group name while joining a group call.",
   "ios call_status_connecting: Status of a call while connecting; the call is the subject, not a device.",
 ]
-text = ""
+text = "Connexion de l’appel…"
 
 [t_51e2c52c18]
 en = "Reconnecting the call…"
@@ -9145,7 +9151,7 @@ where = [
   "ios call_status_reconnecting: Status line under the contact name while the call’s connection is being re-established; the call is the subject.",
   "desktop call_reconnecting_2: Desktop, call screens (1:1 and group): status line while the CALL is reconnecting (not a device link).",
 ]
-text = ""
+text = "Reconnexion de l’appel…"
 
 [t_e8649a596c]
 en = "You’re already in a call."
@@ -9171,7 +9177,7 @@ where = [
   "android gcall_battery_limited: Notice on the group call screen of the phone that hosts the call, when its battery is low. {percent} is the battery level below which hosting is limited (15).",
   "ios call_group_battery_limited: Note on the group call screen when this phone is the call host and its battery is low. {percent} is the battery level below which hosting is limited.",
 ]
-text = ""
+text = "Batterie sous {percent} %. L’hébergement est limité : une seule personne est entendue à la fois, et aucun nouveau participant ne peut rejoindre l’appel."
 
 [t_30a80bae46]
 en = "No call host available"
@@ -9187,7 +9193,7 @@ en = "Couldn’t join the call"
 where = [
   "android gcall_cant_connect: Group call failed for another reason.",
 ]
-text = ""
+text = "Impossible de rejoindre l’appel"
 
 [t_5f8be8f403]
 en = "Minimize call"
@@ -9235,6 +9241,9 @@ en_other = "+{count} more"
 where = [
   "android gcall_more: Under the participants' faces when there are more than nine. {count} is how many are not shown.",
 ]
+one = "+{count}"
+many = "+{count}"
+other = "+{count}"
 
 [t_570080b5f0]
 en = "You’re the call host"
@@ -11144,7 +11153,7 @@ where = [
   "android calls_what_unreachable: Calls tab row text for a call that could not connect.",
   "desktop call_couldnt_connect: Desktop, call screens and call history: the CALL could not be connected (not a device link).",
 ]
-text = ""
+text = "Impossible de connecter l’appel"
 
 [t_a082e480ac]
 en = "{name}’s profile"
@@ -11382,7 +11391,7 @@ where = [
   "ios group_sys_joined_you: System line in a group chat (the centred grey line). The user themself joined.",
   "desktop group_sys_joined_you: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). I joined.",
 ]
-text = ""
+text = "Vous avez rejoint le groupe"
 
 [t_cf7c3ae83a]
 en = "{name} joined"
@@ -11400,7 +11409,7 @@ where = [
   "ios group_sys_joined_someone: System line in a group chat (the centred grey line). A member whose name is unknown joined.",
   "desktop group_sys_joined_someone: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Someone I cannot name joined.",
 ]
-text = ""
+text = "Quelqu’un a rejoint le groupe"
 
 [t_a7294226a3]
 en = "{name} left"
@@ -11418,7 +11427,7 @@ where = [
   "ios group_sys_left_someone: System line in a group chat (the centred grey line). A member whose name is unknown left.",
   "desktop group_sys_left_someone: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Someone I cannot name left.",
 ]
-text = ""
+text = "Quelqu’un a quitté le groupe"
 
 [t_ebc520d3f7]
 en_one = "{name} was removed after {count} admin flag"
@@ -11427,6 +11436,9 @@ where = [
   "android groupsc_removed_other_flags: System line in a group's chat. {name} is the member who was removed, {count} the number of flags needed.",
   "desktop group_sys_removed: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). {name} was removed. {count} is how many admin flags remove a member.",
 ]
+one = "{name} : retrait après {count} signalement d’admin"
+many = "{name} : retrait après {count} signalements d’admins"
+other = "{name} : retrait après {count} signalements d’admins"
 
 [t_50ad8bf6d9]
 en_one = "Someone was removed after {count} admin flag"
@@ -11435,6 +11447,9 @@ where = [
   "android groupsc_removed_someone_flags: System line in a group's chat when the removed member's name is not known. {count} is the number of flags needed.",
   "desktop group_sys_removed_someone: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Someone I cannot name was removed. {count} is how many admin flags remove a member.",
 ]
+one = "Un membre a été retiré après {count} signalement d’admin"
+many = "Un membre a été retiré après {count} signalements d’admins"
+other = "Un membre a été retiré après {count} signalements d’admins"
 
 [t_3e142c9eb0]
 en = "{by} made you an admin"
@@ -11452,14 +11467,14 @@ where = [
   "ios group_sys_admin_someone_you: System line in a group chat (the centred grey line). Admin role given. Actor: a member whose name is unknown. Subject: the user.",
   "desktop group_sys_admin_someone_you: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Admin role given: someone I cannot name did it, to me.",
 ]
-text = ""
+text = "Quelqu’un vous a donné le rôle d’admin"
 
 [t_fa350c1279]
 en = "You made {sub} an admin"
 where = [
   "android groupsc_admin_granted_by_you: System line in a group's chat: I made a member an admin. {sub} is the new admin.",
 ]
-text = ""
+text = "Vous avez nommé {sub} admin"
 
 [t_418df27dfb]
 en = "You made someone an admin"
@@ -11468,7 +11483,7 @@ where = [
   "ios group_sys_admin_you_someone: System line in a group chat (the centred grey line). Admin role given. Actor: the user. Subject: a member whose name is unknown.",
   "desktop group_sys_admin_you_someone: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Admin role given: I did it, to someone I cannot name.",
 ]
-text = ""
+text = "Vous avez nommé quelqu’un admin"
 
 [t_8c5e48132c]
 en = "{by} made someone an admin"
@@ -11477,14 +11492,14 @@ where = [
   "ios group_sys_admin_named_someone: System line in a group chat (the centred grey line). Admin role given. Actor: a named member. Subject: a member whose name is unknown. {by} is who did it (their name).",
   "desktop group_sys_admin_other_someone: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Admin role given: {by} is the first name of the person who did it, to someone I cannot name.",
 ]
-text = ""
+text = "{by} a nommé quelqu’un admin"
 
 [t_3fe2038516]
 en = "Someone made {sub} an admin"
 where = [
   "android groupsc_admin_granted_by_someone: System line in a group's chat. Who granted it is not known; {sub} is the new admin.",
 ]
-text = ""
+text = "Quelqu’un a nommé {sub} admin"
 
 [t_4cae0bd442]
 en = "Someone made someone an admin"
@@ -11493,7 +11508,7 @@ where = [
   "ios group_sys_admin_someone_someone: System line in a group chat (the centred grey line). Admin role given. Actor: a member whose name is unknown. Subject: a member whose name is unknown.",
   "desktop group_sys_admin_someone_someone: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Admin role given: someone I cannot name did it, to someone I cannot name.",
 ]
-text = ""
+text = "Quelqu’un a nommé un membre admin"
 
 [t_c8fa27c671]
 en = "Someone removed you as admin"
@@ -11502,14 +11517,14 @@ where = [
   "ios group_sys_unadmin_someone_you: System line in a group chat (the centred grey line). Admin role taken away. Actor: a member whose name is unknown. Subject: the user.",
   "desktop group_sys_unadmin_someone_you: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Admin role taken away: someone I cannot name did it, to me.",
 ]
-text = ""
+text = "Quelqu’un vous a retiré le rôle d’admin"
 
 [t_1f9d679b2a]
 en = "You removed {sub} as admin"
 where = [
   "android groupsc_admin_revoked_by_you: System line in a group's chat: I took away a member's admin role. {sub} is who lost it.",
 ]
-text = ""
+text = "Vous avez retiré le rôle d’admin à {sub}"
 
 [t_9dad8cf0d0]
 en = "You removed someone as admin"
@@ -11518,7 +11533,7 @@ where = [
   "ios group_sys_unadmin_you_someone: System line in a group chat (the centred grey line). Admin role taken away. Actor: the user. Subject: a member whose name is unknown.",
   "desktop group_sys_unadmin_you_someone: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Admin role taken away: I did it, to someone I cannot name.",
 ]
-text = ""
+text = "Vous avez retiré le rôle d’admin à quelqu’un"
 
 [t_7cc792c708]
 en = "{by} removed someone as admin"
@@ -11527,14 +11542,14 @@ where = [
   "ios group_sys_unadmin_named_someone: System line in a group chat (the centred grey line). Admin role taken away. Actor: a named member. Subject: a member whose name is unknown. {by} is who did it (their name).",
   "desktop group_sys_unadmin_other_someone: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Admin role taken away: {by} is the first name of the person who did it, to someone I cannot name.",
 ]
-text = ""
+text = "{by} a retiré le rôle d’admin à quelqu’un"
 
 [t_dcc1bbe8c6]
 en = "Someone removed {sub} as admin"
 where = [
   "android groupsc_admin_revoked_by_someone: System line in a group's chat. Who did it is not known; {sub} is who lost the admin role.",
 ]
-text = ""
+text = "Quelqu’un a retiré le rôle d’admin à {sub}"
 
 [t_1721c9ae2b]
 en = "Someone removed someone as admin"
@@ -11543,21 +11558,21 @@ where = [
   "ios group_sys_unadmin_someone_someone: System line in a group chat (the centred grey line). Admin role taken away. Actor: a member whose name is unknown. Subject: a member whose name is unknown.",
   "desktop group_sys_unadmin_someone_someone: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Admin role taken away: someone I cannot name did it, to someone I cannot name.",
 ]
-text = ""
+text = "Quelqu’un a retiré le rôle d’admin à un membre"
 
 [t_1219f457f8]
 en = "A device of someone’s now hosts the group"
 where = [
   "android groupsc_host_added_someone: System line in a group's chat: a device of a member whose name is not known became a host.",
 ]
-text = ""
+text = "Un appareil d’un membre héberge maintenant le groupe"
 
 [t_b0d44ea2e4]
 en = "A device of someone’s stopped hosting the group"
 where = [
   "android groupsc_host_removed_someone: System line in a group's chat: a device of a member whose name is not known stopped hosting.",
 ]
-text = ""
+text = "Un appareil d’un membre n’héberge plus le groupe"
 
 [t_36d94817e7]
 en = "You: {text}"
@@ -11586,7 +11601,7 @@ where = [
   "ios group_preview_someone: Group list row preview of the last post by a member whose name is not known. {text} is the post.",
   "desktop group_preview_someone: Desktop, groups list second line: the last post, author unknown. {text} is its one-line text.",
 ]
-text = ""
+text = "Quelqu’un : {text}"
 
 [t_33a7fac61c]
 en = "Photo · {caption}"
@@ -11594,7 +11609,7 @@ where = [
   "android groupsc_photo_caption_line: One-line summary of a group post that is a picture with a caption. {caption} is the caption.",
   "desktop group_post_photo_caption: Desktop, group: one-line summary of a picture with a caption. {caption} is what I or they typed.",
 ]
-text = ""
+text = "Photo · {caption}"
 
 [t_28c02cfd31]
 en_one = "{count} member"
@@ -11613,7 +11628,7 @@ en = "this device hosts the group"
 where = [
   "android groupsc_status_this_device: Group header sub-line after the member count: this device is a host.",
 ]
-text = ""
+text = "cet appareil héberge le groupe"
 
 [t_a43a3d0493]
 en = "no host yet"
@@ -11621,7 +11636,7 @@ where = [
   "android groupsc_status_no_host: Group header sub-line after the member count: the group has no host.",
   "desktop group_status_no_host_yet: Desktop, group header: after the member count and a separator. The group has no host.",
 ]
-text = ""
+text = "pas encore d’hôte"
 
 [t_b82a06b460]
 en = "waiting for a host"
@@ -11629,14 +11644,14 @@ where = [
   "android groupsc_status_waiting: Group header sub-line after the member count: hosts exist but none is online.",
   "desktop group_status_waiting_for_a_host: Desktop, group header: after the member count and a separator. No host is online.",
 ]
-text = ""
+text = "en attente d’un hôte"
 
 [t_21d5c68cc1]
 en = "{members} · {state}"
 where = [
   "android groupsc_status_join: Group header sub-line. {members} is the member count such as '3 members', {state} the host state such as 'no host yet'.",
 ]
-text = ""
+text = "{members} · {state}"
 
 [t_f0ccd6148b]
 en_one = "{count} online"
@@ -11645,6 +11660,9 @@ where = [
   "android groupsc_online_count: Number of people online in a public group, shown in its top bar.",
   "desktop group_online_count: Desktop, public group (in group_live.rs, online_label). {count} is how many members are online.",
 ]
+one = "{count} en ligne"
+many = "{count} en ligne"
+other = "{count} en ligne"
 
 [t_7ab5e10687]
 en = "{count}+ online"
@@ -11652,7 +11670,7 @@ where = [
   "android groupsc_online_cap: Number of people online in a public group when the list was cut short at the limit, such as 500+.",
   "desktop group_online_capped: Desktop, public group: the count stops at a cap. {count} is the cap (shown with a plus).",
 ]
-text = ""
+text = "{count}+ en ligne"
 
 [t_1e5879f244]
 en = "Only admins post here"
@@ -11684,21 +11702,21 @@ en = "Waiting for an answer · via {group}"
 where = [
   "android groupsc_req_pending_anon: State line of a chat request I sent from a group when the person's name is not known. {group} is the group name.",
 ]
-text = ""
+text = "En attente de réponse · via {group}"
 
 [t_8d60716835]
 en = "They accepted · messages only"
 where = [
   "android groupsc_req_accepted_messages_anon: State line of a chat request I sent from a group: a person with no known name accepted and was added for messages only.",
 ]
-text = ""
+text = "Demande acceptée · messages uniquement"
 
 [t_71ca4e589f]
 en = "They accepted · connecting"
 where = [
   "android groupsc_req_accepted_connecting_anon: State line of a chat request I sent from a group: a person with no known name accepted, the chat is still connecting.",
 ]
-text = ""
+text = "Demande acceptée · connexion"
 
 [t_0a675d84aa]
 en = "{name} declined"
@@ -11714,7 +11732,7 @@ en = "They declined"
 where = [
   "android groupsc_req_declined_anon: State line of a chat request I sent from a group, when the person's name is not known.",
 ]
-text = ""
+text = "Demande refusée"
 
 [t_c0ee57d92f]
 en = "{name} blocked you"
@@ -11731,7 +11749,7 @@ where = [
   "android groupsc_req_blocked_anon: State line of a chat request I sent from a group: the person, whose name is not known, blocked me.",
   "ios group_req_blocked_unnamed: State line of a chat request you sent, when the person’s name is not known: they blocked you.",
 ]
-text = ""
+text = "Cette personne vous a bloqué"
 
 [t_7735823936]
 en = "Already a member"
@@ -11775,21 +11793,21 @@ where = [
   "android groupsc_invite_declined: State of a group invitation I sent: the person declined it.",
   "ios group_inv_declined: State of an invitation the user sent: the invited person said no.",
 ]
-text = ""
+text = "Invitation refusée"
 
 [t_2860c9d0b0]
 en = "Yours will be flag {n} of {total}. {name} is removed right away: hosts refuse their new messages and they see they were removed."
 where = [
   "android groupsc_flag_final: Admin's dialog before flagging a member, when my flag is the one that removes them. {n} is my flag's number, {total} the flags needed (3), {name} the member's first name.",
 ]
-text = ""
+text = "Ce sera le signalement {n} sur {total}. Le retrait de {name} est immédiat : les hôtes refusent ses nouveaux messages et cette personne voit qu’elle a été retirée."
 
 [t_81b97ce04a]
 en = "Yours will be flag {n} of {total}. Any admin’s flags count, yours again too. At {total} flags {name} is removed right away and sees they were removed."
 where = [
   "android groupsc_flag_more: Admin's dialog before flagging a member, when more flags are needed. {n} is my flag's number, {total} the flags needed (3), {name} the member's first name.",
 ]
-text = ""
+text = "Ce sera le signalement {n} sur {total}. Les signalements de tous les admins comptent, y compris un nouveau de votre part. À {total} signalements, le retrait de {name} est immédiat et cette personne voit qu’elle a été retirée."
 
 [t_083606ee59]
 en = "You were removed from this group."
@@ -11831,7 +11849,7 @@ en = "That picture is too large to post."
 where = [
   "android groupsc_picture_too_large: Error when the picture chosen for a group post is too large.",
 ]
-text = ""
+text = "Cette image est trop lourde pour être publiée."
 
 [t_452484335e]
 en = "Pick someone first."
@@ -11858,7 +11876,7 @@ where = [
   "ios group_done_invite_one_unnamed: Toast after inviting one contact whose name is not known.",
   "desktop group_notice_invitation_sent_unnamed: Desktop, group notice line (in group_live.rs). One invitation was sent to someone with no known name.",
 ]
-text = ""
+text = "Invitation envoyée. Cette personne rejoindra le groupe en acceptant."
 
 [t_d47f830012]
 en_one = "{count} invitation sent. Each person joins when they accept."
@@ -11887,7 +11905,7 @@ where = [
   "ios group_done_decline_invite_unnamed: Toast after declining an invitation from someone whose name is not known.",
   "desktop group_notice_declined_inv_unnamed: Desktop, group notice line (in group_live.rs). I declined an invitation from someone with no known name.",
 ]
-text = ""
+text = "Refusé. Cette personne voit que vous avez refusé."
 
 [t_d0b680b900]
 en = "The open link is closed. Everyone already in stays; new people join with an invite."
@@ -11913,7 +11931,7 @@ where = [
   "ios group_done_request_sent_unnamed: Toast after asking a member for a private chat; the member's name is not known.",
   "desktop group_notice_request_sent_unnamed: Desktop, group notice line (in group_live.rs). I asked for a private chat with someone with no known name.",
 ]
-text = ""
+text = "Demande envoyée. Elle attend dans Discussions jusqu’à la réponse de cette personne."
 
 [t_68bf78bb6a]
 en = "Accepted. {name} is added for messages only and shows in Chats once their device connects; calls stay off until you allow them."
@@ -11931,7 +11949,7 @@ where = [
   "ios group_done_request_accepted_unnamed: Toast after accepting a private chat request from someone whose name is not known.",
   "desktop group_notice_accepted_unnamed: Desktop, group notice line (in group_live.rs). I accepted a request from someone with no known name.",
 ]
-text = ""
+text = "Accepté. Cette personne fait maintenant partie de vos contacts pour les messages uniquement et apparaît dans Discussions dès que son appareil se connecte ; les appels restent désactivés jusqu’à ce que vous les autorisiez."
 
 [t_7b63712b94]
 en = "Declined. They are told “declined”."
@@ -11940,7 +11958,7 @@ where = [
   "ios group_done_request_declined_unnamed: Toast after declining a private chat request from someone whose name is not known.",
   "desktop group_notice_declined_req_unnamed: Desktop, group notice line (in group_live.rs). I declined a request from someone with no known name.",
 ]
-text = ""
+text = "Refusé. Cette personne verra « refusé »."
 
 [t_bca80056ba]
 en = "{name} is blocked and can’t send more requests."
@@ -11956,7 +11974,7 @@ where = [
   "android groupsc_req_block_anon: Confirmation after blocking a person, whose name is not known, who asked me for a chat from a group.",
   "ios group_done_request_blocked_unnamed: Toast after blocking a requester whose name is not known.",
 ]
-text = ""
+text = "Cette personne est bloquée et ne peut plus envoyer de demandes."
 
 [t_b0a86cd164]
 en = "{name} accepted your request. You can message each other now; calls stay off until one of you allows them."
@@ -11972,7 +11990,7 @@ en = "They accepted your request. You can message each other now; calls stay off
 where = [
   "android groupsc_notice_accepted_anon: Notice when a person, whose name is not known, accepted my chat request.",
 ]
-text = ""
+text = "Cette personne a accepté votre demande. Vous pouvez maintenant vous écrire ; les appels restent désactivés jusqu’à ce que l’un de vous les autorise."
 
 [t_2c18ab3299]
 en = "Sharper video on"
@@ -12103,14 +12121,14 @@ where = [
   "desktop group_invited_by_you: Desktop, group member row: I invited this member.",
   "desktop group_owner_by_you_unnamed: Desktop, group join dialog (in group_live_view.rs, live_overlay): the line under the group name saying who invited me and who owns the group. I made the link; the owner has no known name.",
 ]
-text = ""
+text = "Invité par vous"
 
 [t_41fd0fe81c]
 en = "Invited by someone who isn’t in your contacts"
 where = [
   "android groupsb_join_invited_by_unknown: Line on the join preview when the person who invited me is not one of my contacts.",
 ]
-text = ""
+text = "Invité par quelqu’un qui n’est pas dans vos contacts"
 
 [t_7888447303]
 en = "Owner: you"
@@ -12118,14 +12136,14 @@ where = [
   "android groupsb_join_owner_you: Line on the join preview when I own the group.",
   "ios group_join_owner_you: Line on the join preview when you are the owner.",
 ]
-text = ""
+text = "Propriétaire : vous"
 
 [t_ed2dece829]
 en = "Owner: someone who isn’t in your contacts"
 where = [
   "android groupsb_join_owner_unknown: Line on the join preview when the group's owner is not one of my contacts.",
 ]
-text = ""
+text = "Propriétaire : quelqu’un qui n’est pas dans vos contacts"
 
 [t_77afb8501a]
 en = "Anyone with this link or QR can join this group for 7 days. Share it over an app you trust; you see who joined and can flag them out. To invite your contacts directly, use Add members."
@@ -12133,14 +12151,14 @@ where = [
   "android groupsb_link_note_unnamed: Hint on the invite link page while the group's name has not loaded. 'Add members' is the title of another page.",
   "ios group_link_hint_unnamed: Hint above the group invite link QR when the group's name is not known.",
 ]
-text = ""
+text = "Toute personne qui a ce lien ou ce QR code peut rejoindre ce groupe pendant 7 jours. Partagez-le via une app de confiance ; vous voyez qui a rejoint et pouvez les signaler pour retrait. Pour inviter directement vos contacts, utilisez Ajouter des membres."
 
 [t_e3943d1191]
 en = "Join my group on Tinline: {link}"
 where = [
   "android groupsb_share_text_unnamed: Text of the shared invite message while the group's name has not loaded. {link} is the invite link.",
 ]
-text = ""
+text = "Rejoignez mon groupe sur Tinline : {link}"
 
 [t_e9a7070779]
 en = "Chat with them?"
@@ -12209,7 +12227,7 @@ where = [
   "android groupsb_public_link: Title of the switch that opens the group to anyone with the link. A name for the link, not an instruction to open anything.",
   "desktop group_public_link: Desktop, group info: title of the switch that turns the group's public (open) invite link on or off. A noun phrase, not a button.",
 ]
-text = ""
+text = "Lien public"
 
 [t_d13099d50e]
 en = "Sent requests"
@@ -12257,7 +12275,7 @@ where = [
   "ios call_group_host_is: Pill on the group call screen naming the call host. {name} is the member’s first name.",
   "desktop gcall_call_host_device: Desktop, group call screen (in gcall_view.rs), small line that opens \"About this call\". {name} is the first name of the person whose device carries the call.",
 ]
-text = ""
+text = "Hôte d’appel : appareil de {name}"
 
 [t_07348c8e25]
 en = "Call host: a member’s device"
@@ -12265,7 +12283,7 @@ where = [
   "android gcall_host_label_unnamed: Pill on the group call screen when another member's device carries the call and the member's name is not known.",
   "ios call_group_host_is_someone: Pill on the group call screen naming the call host. A member whose name is not known.",
 ]
-text = ""
+text = "Hôte d’appel : appareil d’un membre"
 
 [t_4c02b33d24]
 en = "**This phone** is carrying this call. Everyone in the call connects to it, and it passes the audio on and chooses who is heard when several people speak."
@@ -12273,7 +12291,7 @@ where = [
   "android gcall_about_this_phone: First paragraph of the group call About sheet, when this phone is the call host. The ** marks make 'This phone' bold; keep them around the host.",
   "ios call_group_about_this_phone: Group call details card, first sentence. The host’s name at the start is bold (markdown stars, keep them around the same words); the whole sentence is one string so the verb can agree with it. This phone is the call host.",
 ]
-text = ""
+text = "**Ce téléphone** héberge cet appel. Chaque participant s’y connecte ; il transmet l’audio et choisit qui est entendu quand plusieurs personnes parlent."
 
 [t_5ddff93ea5]
 en = "**{name}’s device** carries this call. Everyone in the call connects to it, and it passes the audio on and chooses who is heard when several people speak."
@@ -12282,7 +12300,7 @@ where = [
   "ios call_group_about_member: Group call details card, first sentence. The host’s name at the start is bold (markdown stars, keep them around the same words); the whole sentence is one string so the verb can agree with it. A member’s device is the call host. {name} is the member’s first name.",
   "desktop gcall_about_device: Desktop, group call \"About this call\" sheet (in gcall_view.rs, gcall_about). The call is carried by another person's device. {name} is that person's first name. **…** is shown bold.",
 ]
-text = ""
+text = "**L’appareil de {name}** héberge cet appel. Chaque participant s’y connecte ; il transmet l’audio et choisit qui est entendu quand plusieurs personnes parlent."
 
 [t_5d46353eea]
 en = "**The call host** carries this call. Everyone in the call connects to it, and it passes the audio on and chooses who is heard when several people speak."
@@ -12291,28 +12309,28 @@ where = [
   "ios call_group_about_unknown: Group call details card, first sentence. The host’s name at the start is bold (markdown stars, keep them around the same words); the whole sentence is one string so the verb can agree with it. The host is not known yet.",
   "desktop gcall_about_unnamed: Desktop, group call \"About this call\" sheet (in gcall_view.rs, gcall_about). The call host is another device whose owner has no known name. **…** is shown bold.",
 ]
-text = ""
+text = "**L’hôte d’appel** héberge cet appel. Chaque participant s’y connecte ; il transmet l’audio et choisit qui est entendu quand plusieurs personnes parlent."
 
 [t_c54c6d646f]
 en = "Started by someone"
 where = [
   "android gcall_started_by_unnamed: Second line of the call-in-progress bar when the person who started it is not known.",
 ]
-text = ""
+text = "Lancé par quelqu’un"
 
 [t_7886102212]
 en = "Someone is calling the group {group}"
 where = [
   "android gcall_is_calling_group_desc_unnamed: Screen reader description of the ringing group call card when the caller is not known. {group} is the group's name.",
 ]
-text = ""
+text = "Quelqu’un appelle le groupe {group}"
 
 [t_87c17e37a0]
 en = "Someone started a call in {group}"
 where = [
   "android gcall_started_call_desc_unnamed: Screen reader description of the group call card when the person who started it is not known. {group} is the group's name.",
 ]
-text = ""
+text = "Quelqu’un a lancé un appel dans {group}"
 
 [t_45bcb20cef]
 en = "Someone is calling the group"
@@ -12320,7 +12338,7 @@ where = [
   "android notif_group_calling_unnamed: Text of the notification when someone whose name is not known starts a group call.",
   "android gcall_is_calling_group_unnamed: Second line of the group call card while it rings, when the caller is not known.",
 ]
-text = ""
+text = "Quelqu’un appelle le groupe"
 
 [t_64fc08250f]
 en = ", "
@@ -12335,7 +12353,7 @@ en = "{list}. Open actions"
 where = [
   "android groupsb_member_desc: Screen-reader description of a member row. {list} is the member's name, role and what they host, already joined into a list in the app's language, such as 'Maya, owner, host'.",
 ]
-text = ""
+text = "{list}. Ouvrir les actions"
 
 [t_86f638dc40]
 en = "host"
@@ -12371,7 +12389,7 @@ en = "Someone started a call"
 where = [
   "android gcall_started_call_unnamed: Second line of the group call card, when the person who started the call is not known.",
 ]
-text = ""
+text = "Quelqu’un a lancé un appel"
 
 [t_7db0ce736c]
 en = "Sent, waiting for their device to confirm"
@@ -12464,27 +12482,30 @@ where = [
   "ios group_member_flags: Part of a member row sub line. {count} is how many flags the member has, {total} how many remove them.",
   "ios group_flags_count_desc: Spoken label of the flag meter. {count} is flags so far, {total} flags that remove.",
 ]
+one = "Signalements : {count} sur {total}"
+many = "Signalements : {count} sur {total}"
+other = "Signalements : {count} sur {total}"
 
 [t_579c5fced0]
 en = "{name}, owner. Open actions"
 where = [
   "ios group_member_desc_owner: Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is owner.",
 ]
-text = ""
+text = "{name}, propriétaire. Ouvrir les actions"
 
 [t_3cba27b06c]
 en = "{name}, admin. Open actions"
 where = [
   "ios group_member_desc_admin: Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is admin.",
 ]
-text = ""
+text = "{name}, admin. Ouvrir les actions"
 
 [t_56b783b353]
 en = "{name}, member. Open actions"
 where = [
   "ios group_member_desc_member: Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is member.",
 ]
-text = ""
+text = "{name}, membre. Ouvrir les actions"
 
 [t_f76352b5f0]
 en = "Hosts store the group and pass posts on when others are offline. They are members you trust: a host can read everything posted in this group. Appoint a host from a member’s menu; they have to accept. Removing a host changes the group’s address within 2 days, so that device can no longer reach it."
@@ -12516,6 +12537,9 @@ en_other = "{count} more flags from any admin remove you from the group. Flags c
 where = [
   "ios group_flags_left: Note under the flag meter. {count} is how many more flags remove the user.",
 ]
+one = "Encore {count} signalement de n’importe quel admin et vous serez retiré du groupe. Un signalement ne peut pas être annulé. D’ici là, vous pouvez toujours lire et publier."
+many = "Encore {count} signalements de n’importe quel admin et vous serez retiré du groupe. Un signalement ne peut pas être annulé. D’ici là, vous pouvez toujours lire et publier."
+other = "Encore {count} signalements de n’importe quel admin et vous serez retiré du groupe. Un signalement ne peut pas être annulé. D’ici là, vous pouvez toujours lire et publier."
 
 [t_c23190545c]
 en = "Removed after {total} admin flags"
@@ -12543,21 +12567,21 @@ en = "Cancel call host request · {device}"
 where = [
   "ios group_member_cancel_callhost_device: Action row title when the member has several devices. {device} is a short device id.",
 ]
-text = ""
+text = "Annuler la demande d’hôte d’appel · {device}"
 
 [t_a1cf59a01f]
 en = "Remove as call host · {device}"
 where = [
   "ios group_member_remove_callhost_device: Action row title when the member has several devices. {device} is a short device id.",
 ]
-text = ""
+text = "Retirer comme hôte d’appel · {device}"
 
 [t_634583160a]
 en = "Make call host · {device}"
 where = [
   "ios group_member_make_callhost_device: Action row title when the member has several devices. {device} is a short device id.",
 ]
-text = ""
+text = "Nommer hôte d’appel · {device}"
 
 [t_2c5d81e205]
 en = "{total} flags remove {name} from the group"
@@ -12630,7 +12654,7 @@ en = "Waiting for them · via {group}"
 where = [
   "ios group_req_pending_unnamed: State line of a chat request you sent, when the person’s name is not known. {group} is the group.",
 ]
-text = ""
+text = "En attente de réponse · via {group}"
 
 [t_b5f5c33f07]
 en = "Accepted · messages only"
@@ -12638,7 +12662,7 @@ where = [
   "ios group_req_accepted_msgs_unnamed: State line of a chat request you sent, when the person’s name is not known: accepted, messages only.",
   "desktop group_sent_accepted_messages_unnamed: Desktop, group requests I sent (in group_live.rs, sent_line): the state line of a private-chat request. Someone accepted; messages only for now.",
 ]
-text = ""
+text = "Demande acceptée · messages uniquement"
 
 [t_ab33c3e6a5]
 en = "Accepted · connecting"
@@ -12646,7 +12670,7 @@ where = [
   "ios group_req_accepted_connecting_unnamed: State line of a chat request you sent, when the person’s name is not known: accepted, connecting.",
   "desktop group_sent_accepted_connecting_unnamed: Desktop, group requests I sent (in group_live.rs, sent_line): the state line of a private-chat request. Someone accepted; connecting.",
 ]
-text = ""
+text = "Demande acceptée · connexion"
 
 [t_7df34dff82]
 en = "Yours will be flag {yours} of {total}. {name} is removed right away: hosts refuse their new messages and they see they were removed."
@@ -12668,7 +12692,7 @@ where = [
   "ios group_notice_request_accepted_unnamed: Notice when your private chat request was accepted by someone whose name is not known.",
   "desktop group_notice_accepted_yours_unnamed: Desktop, group notice line (in group_live.rs). Someone with no known name accepted my private-chat request.",
 ]
-text = ""
+text = "Votre demande a été acceptée. Vous pouvez maintenant vous écrire ; les appels restent désactivés jusqu’à ce que l’un de vous les autorise."
 
 [t_a1c457fbac]
 en = "Group calls aren’t available here yet."
@@ -12689,7 +12713,7 @@ en = "An admin asked this phone to host {group}"
 where = [
   "ios group_host_asked_title_admin: Card title: an admin whose name is not known asked this phone to host. {group} is the group.",
 ]
-text = ""
+text = "Un admin demande à ce téléphone d’héberger {group}"
 
 [t_d9be045783]
 en = "Delivered {count}/{total}"
@@ -12738,14 +12762,14 @@ en = "Invited by someone outside your contacts"
 where = [
   "ios group_join_invited_by_unknown: Line on the join preview when the inviter is not in your contacts.",
 ]
-text = ""
+text = "Invité par quelqu’un hors de vos contacts"
 
 [t_0bc2a89e30]
 en = "Owner isn’t in your contacts"
 where = [
   "ios group_join_owner_unknown: Line on the join preview when the owner is not in your contacts.",
 ]
-text = ""
+text = "Le propriétaire n’est pas dans vos contacts"
 
 [t_e2527aaf3f]
 en = "Anyone with this link or QR can join {group} for 7 days. Share it over an app you trust; you see who joined and can flag them out. To invite your contacts directly, use Add members."
@@ -12766,7 +12790,7 @@ en = "Join this group on Tinline: {link}"
 where = [
   "ios group_share_text_unnamed: Text shared with the invite link when the group's name is not known. {link} is the invite link.",
 ]
-text = ""
+text = "Rejoignez ce groupe sur Tinline : {link}"
 
 [t_5cd5123974]
 en = "**{name}** invited you to **{group}**"
@@ -12774,7 +12798,7 @@ where = [
   "ios group_invited_you: Invitation card. The inviter's name and the group's name are bold (markdown stars, keep them around the same words). {name} is the inviter's first name, {group} the group.",
   "desktop group_invitation_line: Desktop, groups list (in group_live_view.rs): an invitation card. {name} is the first name of who invited me, {group} the group name. **…** is shown bold.",
 ]
-text = ""
+text = "**{name}** vous a invité dans **{group}**"
 
 [t_b187abdb8a]
 en = "Someone invited you to **{group}**"
@@ -12782,28 +12806,28 @@ where = [
   "ios group_invited_you_someone: Invitation card when the inviter's name is not known. The group's name is bold (markdown stars). {group} is the group.",
   "desktop group_invitation_line_unnamed: Desktop, groups list (in group_live_view.rs): an invitation card when I cannot name who invited me. {group} is the group name. **…** is shown bold.",
 ]
-text = ""
+text = "Quelqu’un vous a invité dans **{group}**"
 
 [t_403876cddd]
 en = "**{name}** wants to chat"
 where = [
   "ios group_wants_to_chat: Chat request card. The requester's name is bold (markdown stars, keep them around the name). {name} is the requester's name.",
 ]
-text = ""
+text = "**{name}** veut discuter"
 
 [t_1dd936cf82]
 en = "**Someone** wants to chat"
 where = [
   "ios group_wants_to_chat_someone: Chat request card when the requester's name is not known. The word Someone is bold (markdown stars).",
 ]
-text = ""
+text = "**Quelqu’un** veut discuter"
 
 [t_14c772ceb8]
 en = "Accepting adds them as a contact for messages only. You can allow calls later."
 where = [
   "ios group_request_accept_note_unnamed: Note on a chat request card when the requester's name is not known.",
 ]
-text = ""
+text = "Accepter ajoute cette personne comme contact pour les messages uniquement. Vous pourrez autoriser les appels plus tard."
 
 [t_02147a4ac8]
 en = "Diagnostics"
@@ -13247,7 +13271,7 @@ en = "The call couldn’t connect"
 where = [
   "ios call_group_connect_failed: Group call start failure, generic; the call is the subject.",
 ]
-text = ""
+text = "L’appel n’a pas pu être connecté"
 
 [t_dac996d3e9]
 en = "+{count} more"
@@ -13261,7 +13285,7 @@ en = "Call host: your other device"
 where = [
   "ios call_group_host_is_yours: Pill on the group call screen naming the call host. Another device of the user’s.",
 ]
-text = ""
+text = "Hôte d’appel : votre autre appareil"
 
 [t_7cda722e2e]
 en = "{name} is calling the group {group}"
@@ -13296,7 +13320,7 @@ en = "Someone was removed after {total} admin flags"
 where = [
   "ios group_sys_removed_someone: System line in a group chat (the centred grey line). A member whose name is unknown was removed. {total} is the number of admin flags that remove.",
 ]
-text = ""
+text = "Un membre a été retiré après {total} signalements d’admins"
 
 [t_6663ab075c]
 en = "You made yourself an admin"
@@ -13304,7 +13328,7 @@ where = [
   "ios group_sys_admin_you_you: System line in a group chat (the centred grey line). Admin role given. Actor: the user. Subject: the user.",
   "desktop group_sys_admin_you_you: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Admin role given: I did it, to me.",
 ]
-text = ""
+text = "Vous vous êtes donné le rôle d’admin"
 
 [t_49d670362c]
 en = "You made {name} an admin"
@@ -13312,7 +13336,7 @@ where = [
   "ios group_sys_admin_you_named: System line in a group chat (the centred grey line). Admin role given. Actor: the user. Subject: a named member. {name} is the member it was done to.",
   "desktop group_sys_admin_you_other: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Admin role given: I did it, to {name}, a person.",
 ]
-text = ""
+text = "Vous avez nommé {name} admin"
 
 [t_ea5318e5e0]
 en = "{by} made {name} an admin"
@@ -13328,7 +13352,7 @@ where = [
   "ios group_sys_admin_someone_named: System line in a group chat (the centred grey line). Admin role given. Actor: a member whose name is unknown. Subject: a named member. {name} is the member it was done to.",
   "desktop group_sys_admin_someone_other: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Admin role given: someone I cannot name did it, to {name}, a person.",
 ]
-text = ""
+text = "Quelqu’un a nommé {name} admin"
 
 [t_5773dfd4ed]
 en = "You removed yourself as admin"
@@ -13336,7 +13360,7 @@ where = [
   "ios group_sys_unadmin_you_you: System line in a group chat (the centred grey line). Admin role taken away. Actor: the user. Subject: the user.",
   "desktop group_sys_unadmin_you_you: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Admin role taken away: I did it, to me.",
 ]
-text = ""
+text = "Vous vous êtes retiré le rôle d’admin"
 
 [t_6e2111b0ea]
 en = "You removed {name} as admin"
@@ -13344,7 +13368,7 @@ where = [
   "ios group_sys_unadmin_you_named: System line in a group chat (the centred grey line). Admin role taken away. Actor: the user. Subject: a named member. {name} is the member it was done to.",
   "desktop group_sys_unadmin_you_other: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Admin role taken away: I did it, to {name}, a person.",
 ]
-text = ""
+text = "Vous avez retiré le rôle d’admin à {name}"
 
 [t_870567c1f4]
 en = "{by} removed {name} as admin"
@@ -13360,7 +13384,7 @@ where = [
   "ios group_sys_unadmin_someone_named: System line in a group chat (the centred grey line). Admin role taken away. Actor: a member whose name is unknown. Subject: a named member. {name} is the member it was done to.",
   "desktop group_sys_unadmin_someone_other: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Admin role taken away: someone I cannot name did it, to {name}, a person.",
 ]
-text = ""
+text = "Quelqu’un a retiré le rôle d’admin à {name}"
 
 [t_c3c984737b]
 en = "A member’s device now hosts the group"
@@ -13368,7 +13392,7 @@ where = [
   "ios group_sys_host_added_someone: System line in a group chat (the centred grey line). A device of a member whose name is unknown now hosts the group.",
   "desktop group_sys_host_added_someone: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). One device of someone I cannot name became a host.",
 ]
-text = ""
+text = "Un appareil d’un membre héberge maintenant le groupe"
 
 [t_bf5df7a742]
 en = "A member’s device stopped hosting the group"
@@ -13376,112 +13400,112 @@ where = [
   "ios group_sys_host_removed_someone: System line in a group chat (the centred grey line). A device of a member whose name is unknown stopped hosting the group.",
   "desktop group_sys_host_removed_someone: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). One device of someone I cannot name stopped hosting.",
 ]
-text = ""
+text = "Un appareil d’un membre n’héberge plus le groupe"
 
 [t_50e0e3a61f]
 en = "{name}, owner and call host. Open actions"
 where = [
   "ios group_member_desc_owner_callhost: Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is owner and call host.",
 ]
-text = ""
+text = "{name}, propriétaire et hôte d’appel. Ouvrir les actions"
 
 [t_9ecb0422e1]
 en = "{name}, owner and host. Open actions"
 where = [
   "ios group_member_desc_owner_host: Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is owner and host.",
 ]
-text = ""
+text = "{name}, propriétaire et hôte. Ouvrir les actions"
 
 [t_8645192669]
 en = "{name}, owner, host and call host. Open actions"
 where = [
   "ios group_member_desc_owner_host_callhost: Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is owner, host and call host.",
 ]
-text = ""
+text = "{name}, propriétaire, hôte et hôte d’appel. Ouvrir les actions"
 
 [t_c861ad6117]
 en = "{name}, admin and call host. Open actions"
 where = [
   "ios group_member_desc_admin_callhost: Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is admin and call host.",
 ]
-text = ""
+text = "{name}, admin et hôte d’appel. Ouvrir les actions"
 
 [t_9296b31c8f]
 en = "{name}, admin and host. Open actions"
 where = [
   "ios group_member_desc_admin_host: Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is admin and host.",
 ]
-text = ""
+text = "{name}, admin et hôte. Ouvrir les actions"
 
 [t_7df5a10cb5]
 en = "{name}, admin, host and call host. Open actions"
 where = [
   "ios group_member_desc_admin_host_callhost: Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is admin, host and call host.",
 ]
-text = ""
+text = "{name}, admin, hôte et hôte d’appel. Ouvrir les actions"
 
 [t_51c0282c1c]
 en = "{name}, member and call host. Open actions"
 where = [
   "ios group_member_desc_member_callhost: Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is member and call host.",
 ]
-text = ""
+text = "{name}, membre et hôte d’appel. Ouvrir les actions"
 
 [t_e66e085198]
 en = "{name}, member and host. Open actions"
 where = [
   "ios group_member_desc_member_host: Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is member and host.",
 ]
-text = ""
+text = "{name}, membre et hôte. Ouvrir les actions"
 
 [t_4ccca82c9f]
 en = "{name}, member, host and call host. Open actions"
 where = [
   "ios group_member_desc_member_host_callhost: Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is member, host and call host.",
 ]
-text = ""
+text = "{name}, membre, hôte et hôte d’appel. Ouvrir les actions"
 
 [t_bab452c602]
 en = "Host online"
 where = [
   "ios group_host_online: Presence under a host or call host device in group info: that device is online.",
 ]
-text = ""
+text = "Hôte en ligne"
 
 [t_fca7141b23]
 en = "Host offline"
 where = [
   "ios group_host_offline: Presence under a host or call host device in group info: that device is offline.",
 ]
-text = ""
+text = "Hôte hors ligne"
 
 [t_c19eb247f5]
 en = "Online · also hosts calls"
 where = [
   "ios group_host_online_calls: Presence under a device that is a chat host and also a call host: online.",
 ]
-text = ""
+text = "En ligne · héberge aussi les appels"
 
 [t_7444310255]
 en = "Offline · also hosts calls"
 where = [
   "ios group_host_offline_calls: Presence under a device that is a chat host and also a call host: offline.",
 ]
-text = ""
+text = "Hors ligne · héberge aussi les appels"
 
 [t_4b3dcfea10]
 en = "**Your other device** carries this call. Everyone in the call connects to it, and it passes the audio on and chooses who is heard when several people speak."
 where = [
   "ios call_group_about_your_other: Group call details card, first sentence. The host’s name at the start is bold (markdown stars, keep them around the same words); the whole sentence is one string so the verb can agree with it. Another device of the user’s is the call host.",
 ]
-text = ""
+text = "**Votre autre appareil** héberge cet appel. Chaque participant s’y connecte ; il transmet l’audio et choisit qui est entendu quand plusieurs personnes parlent."
 
 [t_5431505ef8]
 en = "**A member’s device** carries this call. Everyone in the call connects to it, and it passes the audio on and chooses who is heard when several people speak."
 where = [
   "ios call_group_about_someone: Group call details card, first sentence. The host’s name at the start is bold (markdown stars, keep them around the same words); the whole sentence is one string so the verb can agree with it. A member whose name is not known hosts the call.",
 ]
-text = ""
+text = "**L’appareil d’un membre** héberge cet appel. Chaque participant s’y connecte ; il transmet l’audio et choisit qui est entendu quand plusieurs personnes parlent."
 
 [t_3c5ad294ce]
 en = "Busy until tomorrow {time}"
@@ -14809,7 +14833,7 @@ en = "Also hosts calls"
 where = [
   "desktop group_also_hosts_calls: Desktop, group info (in group_live_view.rs), a host device row, joined after Online/Offline with a separator: this device also hosts calls.",
 ]
-text = ""
+text = "Héberge aussi les appels"
 
 [t_d8f81cb78d]
 en = "An admin asked this computer to carry the group’s calls"
@@ -14844,7 +14868,7 @@ en = "{name} asked this computer to host {group}"
 where = [
   "desktop group_asked_this_computer_to: Desktop, group (in group_live_view.rs): banner when an admin asks this computer to host. {name} is the admin's first name, {group} the group name.",
 ]
-text = ""
+text = "{name} demande à cet ordinateur d’héberger {group}"
 
 [t_a367083c08]
 en = "Asks {name} to carry group calls on that device; they have to accept"
@@ -14928,7 +14952,7 @@ en = " · flag {n}"
 where = [
   "desktop group_flag: Desktop, group \"Why you were removed\" dialog (in group_live_view.rs), added after the last flag's date to show it was the one that removed me. {n} is the number of that flag (the number of flags that remove a member).",
 ]
-text = ""
+text = " · signalement {n}"
 
 [t_0dc79d4817]
 en = "Flag to remove"
@@ -15397,7 +15421,7 @@ en = "Turn on Public link to share it"
 where = [
   "desktop group_turn_on_open_link: Desktop, group info, under the Public link switch. \"Public link\" is the title of that switch.",
 ]
-text = ""
+text = "Activez Lien public pour le partager"
 
 [t_273944879b]
 en = "Unlock to see your groups."
@@ -15425,7 +15449,7 @@ en = "{name} will be able to invite people, flag members ({flags_needed} flags r
 where = [
   "desktop group_will_be_able_to: Desktop, group admin dialog (in group_live_view.rs, live_overlay). {name} is a person's first name; {flags_needed} is how many admin flags remove a member.",
 ]
-text = ""
+text = "{name} pourra inviter des personnes, signaler des membres ({flags_needed} signalements retirent quelqu’un) et désigner des hôtes. Vous seul, en tant que propriétaire, pouvez nommer ou retirer des admins."
 
 [t_497c9f2f05]
 en = "Withdraw the offer to host"
@@ -17484,28 +17508,28 @@ en = "Reconnecting the call"
 where = [
   "desktop call_reconnecting: Desktop, call screen and mark label: the CALL lost its connection and is trying again (not a device link).",
 ]
-text = ""
+text = "Reconnexion de l’appel"
 
 [t_8927d78059]
 en = "**This computer** is carrying this call. Everyone in the call connects to it, and it passes the audio on and chooses who is heard when several people speak."
 where = [
   "desktop gcall_about_this_computer: Desktop, group call \"About this call\" sheet (in gcall_view.rs, gcall_about). The call is carried by this computer. **…** is shown bold.",
 ]
-text = ""
+text = "**Cet ordinateur** héberge cet appel. Chaque participant s’y connecte ; il transmet l’audio et choisit qui est entendu quand plusieurs personnes parlent."
 
 [t_90a84c0267]
 en = "Call host: another device"
 where = [
   "desktop gcall_call_host_unnamed: Desktop, group call screen (in gcall_view.rs), small line that opens \"About this call\", when the host's owner has no known name.",
 ]
-text = ""
+text = "Hôte d’appel : un autre appareil"
 
 [t_33d5002404]
 en = "Replying to a message"
 where = [
   "desktop group_replying_to_a_message: Desktop, group composer: shown above the field while I reply to a message whose author I cannot name.",
 ]
-text = ""
+text = "Réponse à un message"
 
 [t_479631b28d]
 en = "Invited by someone"
@@ -17513,7 +17537,7 @@ where = [
   "desktop group_invited_by_someone: Desktop, group member row: invited by someone I cannot name.",
   "desktop group_owner_by_unnamed_unnamed: Desktop, group join dialog (in group_live_view.rs, live_overlay): the line under the group name saying who invited me and who owns the group. Someone I cannot name made the link and the owner has no known name.",
 ]
-text = ""
+text = "Invité par quelqu’un"
 
 [t_b1f3953010]
 en = "A link for your own other device"
@@ -17527,35 +17551,35 @@ en = "A link for your own other device · owner {owner}"
 where = [
   "desktop group_link_own_owner: Desktop, group join dialog (in group_live_view.rs, live_overlay): the line under the group name saying who invited me and who owns the group. The link is for my own other device. {owner} is the owner's name.",
 ]
-text = ""
+text = "Un lien pour un autre de vos appareils · propriétaire : {owner}"
 
 [t_fdd5e8b563]
 en = "Invited by you · owner {owner}"
 where = [
   "desktop group_owner_by_you: Desktop, group join dialog (in group_live_view.rs, live_overlay): the line under the group name saying who invited me and who owns the group. I made the link. {owner} is the owner's name.",
 ]
-text = ""
+text = "Invité par vous · propriétaire : {owner}"
 
 [t_44728366f9]
 en = "Invited by {inviter} · owner {owner}"
 where = [
   "desktop group_owner_by_named: Desktop, group join dialog (in group_live_view.rs, live_overlay): the line under the group name saying who invited me and who owns the group. {inviter} is the first name of who made the link, {owner} the owner's name.",
 ]
-text = ""
+text = "Invité par {inviter} · propriétaire : {owner}"
 
 [t_f86f5cbd4e]
 en = "Invited by {inviter}"
 where = [
   "desktop group_owner_by_named_unnamed: Desktop, group join dialog (in group_live_view.rs, live_overlay): the line under the group name saying who invited me and who owns the group. {inviter} made the link; the owner has no known name.",
 ]
-text = ""
+text = "Invité par {inviter}"
 
 [t_25d7a50fc3]
 en = "Invited by someone · owner {owner}"
 where = [
   "desktop group_owner_by_unnamed: Desktop, group join dialog (in group_live_view.rs, live_overlay): the line under the group name saying who invited me and who owns the group. Someone I cannot name made the link. {owner} is the owner's name.",
 ]
-text = ""
+text = "Invité par quelqu’un · propriétaire : {owner}"
 
 [t_5a341ece46]
 en_one = "{count} host online, this computer too. Posts go through right away."
@@ -17563,48 +17587,51 @@ en_other = "{count} hosts online, this computer too. Posts go through right away
 where = [
   "desktop group_hosts_online_here: Desktop, group info, hosts section, when this computer is one of the hosts. {count} is how many hosts are online, including this computer.",
 ]
+one = "{count} hôte en ligne, cet ordinateur compris. Les publications passent tout de suite."
+many = "{count} hôtes en ligne, cet ordinateur compris. Les publications passent tout de suite."
+other = "{count} hôtes en ligne, cet ordinateur compris. Les publications passent tout de suite."
 
 [t_a3446fca89]
 en = "A call host carries the call. Everyone in a call connects to it, and it passes the audio on, so it can hear the call. That is separate from chat hosting: a chat host is not a call host unless you also appoint it as one. Call hosts are members you trust, and each one chooses to accept. Appoint one from a member’s menu, or host calls on this computer."
 where = [
   "desktop group_a_call_host_carries_admin: Desktop, group info, call hosts section note, for admins.",
 ]
-text = ""
+text = "Un hôte d’appel héberge l’appel. Chaque participant s’y connecte et il transmet l’audio, il peut donc entendre l’appel. C’est distinct de l’hébergement du groupe : un hôte de groupe n’est pas hôte d’appel, sauf si vous le désignez aussi comme tel. Les hôtes d’appel sont des membres de confiance, et chacun choisit d’accepter. Désignez-en un depuis le menu d’un membre, ou hébergez les appels sur cet ordinateur."
 
 [t_a84095ecdc]
 en = "An admin asked this computer to host {group}"
 where = [
   "desktop group_asked_this_computer_to_unnamed: Desktop, group banner when an admin I cannot name asks this computer to host. {group} is the group name.",
 ]
-text = ""
+text = "Un admin demande à cet ordinateur d’héberger {group}"
 
 [t_c892a25b97]
 en = "this computer hosts the group"
 where = [
   "desktop group_status_this_computer_hosts: Desktop, group header (in group_live.rs, status_line): after the member count and a separator. This computer hosts the group.",
 ]
-text = ""
+text = "cet ordinateur héberge le groupe"
 
 [t_b30c122b4c]
 en = "Waiting for someone · via {group}"
 where = [
   "desktop group_sent_waiting_unnamed: Desktop, group requests I sent (in group_live.rs, sent_line): the state line of a private-chat request. The person has no known name. {group} is the group name.",
 ]
-text = ""
+text = "En attente de réponse · via {group}"
 
 [t_84ecf54979]
 en = "Blocked by them"
 where = [
   "desktop group_sent_blocked_unnamed: Desktop, group requests I sent (in group_live.rs, sent_line): the state line of a private-chat request. Someone blocked me.",
 ]
-text = ""
+text = "Cette personne vous a bloqué"
 
 [t_85e9c7a5d8]
 en = "You can’t send messages to this group."
 where = [
   "desktop group_notice_cant_send: Desktop, group notice line (in group_live.rs). Shown when I try to post but may not.",
 ]
-text = ""
+text = "Vous ne pouvez pas envoyer de messages dans ce groupe."
 
 [t_4f6585901b]
 en_one = "{count} invitation sent. They join when they accept."
@@ -17612,13 +17639,16 @@ en_other = "{count} invitations sent. Each person joins when they accept."
 where = [
   "desktop group_notice_invitations_sent: Desktop, group notice line (in group_live.rs). Several invitations were sent. {count} is how many (2 or more).",
 ]
+one = "{count} invitation envoyée. Cette personne rejoindra le groupe en acceptant."
+many = "{count} invitations envoyées. Chaque personne rejoindra le groupe en acceptant."
+other = "{count} invitations envoyées. Chaque personne rejoindra le groupe en acceptant."
 
 [t_a353a995d6]
 en = "Group made. This computer hosts it; invite people from the members pane."
 where = [
   "desktop group_notice_group_made: Desktop, group notice line (in group_live.rs). A new group was created on this computer.",
 ]
-text = ""
+text = "Groupe créé. Cet ordinateur l’héberge ; invitez des personnes depuis le panneau des membres."
 
 [t_5459a31053]
 en = "Check that the other device shows this code, then approve there."

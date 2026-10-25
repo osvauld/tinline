@@ -1071,6 +1071,9 @@ text = "Déjà membre"
 [group_also_confirmed]
 text = "Ont aussi confirmé : {value}"
 
+[group_also_hosts_calls]
+text = "Héberge aussi les appels"
+
 [group_an_admin_asked_this]
 text = "Un admin a demandé à cet ordinateur d’héberger les appels du groupe"
 
@@ -1100,6 +1103,9 @@ text = "Proposer une discussion privée à {name}"
 
 [group_asked_the_device_carries]
 text = "Demande envoyée. L’appareil héberge les appels dès qu’il accepte."
+
+[group_asked_this_computer_to]
+text = "{name} demande à cet ordinateur d’héberger {group}"
 
 [group_asks_to_carry_group]
 text = "Demande à {name} d’héberger les appels de groupe sur cet appareil ; il faut son accord"
@@ -1165,6 +1171,9 @@ text = "Tout le monde peut à nouveau publier."
 
 [group_everyone_in_the_group]
 text = "Tout le monde dans le groupe peut publier"
+
+[group_flag]
+text = " · signalement {n}"
 
 [group_flag_2]
 text = "Signalement"
@@ -1601,6 +1610,9 @@ text = "Ce groupe n’a pas d’hôte d’appel. Personne ne peut lancer d’app
 [group_this_group_has_no_host]
 text = "Ce groupe n’a pas d’hôte. Les publications attendent qu’un hôte soit désigné."
 
+[group_turn_on_open_link]
+text = "Activez Lien public pour le partager"
+
 [group_unblocking]
 text = "Déblocage"
 
@@ -1633,6 +1645,9 @@ text = "Pourquoi ce retrait ?"
 
 [group_why_you_were_removed]
 text = "Pourquoi vous avez été retiré"
+
+[group_will_be_able_to]
+text = "{name} pourra inviter des personnes, signaler des membres ({flags_needed} signalements retirent quelqu’un) et désigner des hôtes. Vous seul, en tant que propriétaire, pouvez nommer ou retirer des admins."
 
 [group_withdraw_the_offer_to]
 text = "Retirer la proposition d’hébergement"
@@ -3356,14 +3371,53 @@ text = "Ce champ ne peut pas contenir de caractères de contrôle ou de sens d�
 [common_list_and]
 text = "{list} et {last}"
 
+[call_reconnecting]
+text = "Reconnexion de l’appel"
+
+[call_reconnecting_2]
+text = "Reconnexion de l’appel…"
+
+[call_couldnt_connect]
+text = "Impossible de connecter l’appel"
+
 [call_history_fallback]
 text = "Appel Tinline"
+
+[gcall_about_this_computer]
+text = "**Cet ordinateur** héberge cet appel. Chaque participant s’y connecte ; il transmet l’audio et choisit qui est entendu quand plusieurs personnes parlent."
+
+[gcall_about_device]
+text = "**L’appareil de {name}** héberge cet appel. Chaque participant s’y connecte ; il transmet l’audio et choisit qui est entendu quand plusieurs personnes parlent."
+
+[gcall_about_unnamed]
+text = "**L’hôte d’appel** héberge cet appel. Chaque participant s’y connecte ; il transmet l’audio et choisit qui est entendu quand plusieurs personnes parlent."
+
+[gcall_call_host_device]
+text = "Hôte d’appel : appareil de {name}"
+
+[gcall_call_host_unnamed]
+text = "Hôte d’appel : un autre appareil"
+
+[group_invitation_line]
+text = "**{name}** vous a invité dans **{group}**"
+
+[group_invitation_line_unnamed]
+text = "Quelqu’un vous a invité dans **{group}**"
 
 [group_replying_to_yourself]
 text = "Réponse à vous-même"
 
+[group_replying_to_a_message]
+text = "Réponse à un message"
+
 [chat_replying_to_yourself]
 text = "Réponse à vous-même"
+
+[group_invited_by_you]
+text = "Invité par vous"
+
+[group_invited_by_someone]
+text = "Invité par quelqu’un"
 
 [group_flags_of]
 one = "Signalements : {flags} sur {count}"
@@ -3373,17 +3427,72 @@ other = "Signalements : {flags} sur {count}"
 [group_link_own]
 text = "Un lien pour un autre de vos appareils"
 
+[group_link_own_owner]
+text = "Un lien pour un autre de vos appareils · propriétaire : {owner}"
+
+[group_owner_by_you]
+text = "Invité par vous · propriétaire : {owner}"
+
+[group_owner_by_you_unnamed]
+text = "Invité par vous"
+
+[group_owner_by_named]
+text = "Invité par {inviter} · propriétaire : {owner}"
+
+[group_owner_by_named_unnamed]
+text = "Invité par {inviter}"
+
+[group_owner_by_unnamed]
+text = "Invité par quelqu’un · propriétaire : {owner}"
+
+[group_owner_by_unnamed_unnamed]
+text = "Invité par quelqu’un"
+
 [group_host_online]
 text = "En ligne"
 
 [group_host_offline]
 text = "Hors ligne"
 
+[group_hosts_online_here]
+one = "{count} hôte en ligne, cet ordinateur compris. Les publications passent tout de suite."
+many = "{count} hôtes en ligne, cet ordinateur compris. Les publications passent tout de suite."
+other = "{count} hôtes en ligne, cet ordinateur compris. Les publications passent tout de suite."
+
 [group_hosts_store_the_group_admin]
 text = "Les hôtes conservent le groupe et transmettent les publications quand les autres sont hors ligne. Ce sont des membres de confiance : un hôte peut lire tout ce qui est publié dans ce groupe. Désignez un hôte depuis le menu d’un membre ; il doit accepter. Retirer un hôte change l’adresse du groupe sous 2 jours, pour que cet appareil ne puisse plus le joindre."
 
+[group_a_call_host_carries_admin]
+text = "Un hôte d’appel héberge l’appel. Chaque participant s’y connecte et il transmet l’audio, il peut donc entendre l’appel. C’est distinct de l’hébergement du groupe : un hôte de groupe n’est pas hôte d’appel, sauf si vous le désignez aussi comme tel. Les hôtes d’appel sont des membres de confiance, et chacun choisit d’accepter. Désignez-en un depuis le menu d’un membre, ou hébergez les appels sur cet ordinateur."
+
+[group_asked_this_computer_to_unnamed]
+text = "Un admin demande à cet ordinateur d’héberger {group}"
+
+[group_public_link]
+text = "Lien public"
+
+[group_status_this_computer_hosts]
+text = "cet ordinateur héberge le groupe"
+
+[group_status_no_host_yet]
+text = "pas encore d’hôte"
+
+[group_status_waiting_for_a_host]
+text = "en attente d’un hôte"
+
+[group_online_count]
+one = "{count} en ligne"
+many = "{count} en ligne"
+other = "{count} en ligne"
+
+[group_online_capped]
+text = "{count}+ en ligne"
+
 [group_post_photo]
 text = "Photo"
+
+[group_post_photo_caption]
+text = "Photo · {caption}"
 
 [group_preview_you]
 text = "Vous : {text}"
@@ -3391,8 +3500,17 @@ text = "Vous : {text}"
 [group_preview_author]
 text = "{name} : {text}"
 
+[group_preview_someone]
+text = "Quelqu’un : {text}"
+
+[group_sys_joined_you]
+text = "Vous avez rejoint le groupe"
+
 [group_sys_joined]
 text = "{name} a rejoint le groupe"
+
+[group_sys_joined_someone]
+text = "Quelqu’un a rejoint le groupe"
 
 [group_sys_left_you]
 text = "Vous l’avez quitté"
@@ -3400,11 +3518,32 @@ text = "Vous l’avez quitté"
 [group_sys_left]
 text = "{name} a quitté le groupe"
 
+[group_sys_left_someone]
+text = "Quelqu’un a quitté le groupe"
+
+[group_sys_removed_you]
+one = "Vous avez été retiré après {count} signalement d’admin"
+many = "Vous avez été retiré après {count} signalements d’admins"
+other = "Vous avez été retiré après {count} signalements d’admins"
+
+[group_sys_removed]
+one = "{name} : retrait après {count} signalement d’admin"
+many = "{name} : retrait après {count} signalements d’admins"
+other = "{name} : retrait après {count} signalements d’admins"
+
+[group_sys_removed_someone]
+one = "Un membre a été retiré après {count} signalement d’admin"
+many = "Un membre a été retiré après {count} signalements d’admins"
+other = "Un membre a été retiré après {count} signalements d’admins"
+
 [group_sys_host_added_you]
 text = "Un de vos appareils héberge maintenant le groupe"
 
 [group_sys_host_added]
 text = "Un appareil de {name} héberge maintenant le groupe"
+
+[group_sys_host_added_someone]
+text = "Un appareil d’un membre héberge maintenant le groupe"
 
 [group_sys_host_removed_you]
 text = "Un de vos appareils n’héberge plus le groupe"
@@ -3412,11 +3551,44 @@ text = "Un de vos appareils n’héberge plus le groupe"
 [group_sys_host_removed]
 text = "Un appareil de {name} n’héberge plus le groupe"
 
+[group_sys_host_removed_someone]
+text = "Un appareil d’un membre n’héberge plus le groupe"
+
+[group_sys_admin_you_you]
+text = "Vous vous êtes donné le rôle d’admin"
+
+[group_sys_admin_you_other]
+text = "Vous avez nommé {name} admin"
+
+[group_sys_admin_you_someone]
+text = "Vous avez nommé quelqu’un admin"
+
 [group_sys_admin_other_you]
 text = "{by} vous a donné le rôle d’admin"
 
 [group_sys_admin_other_other]
 text = "{by} a nommé {name} admin"
+
+[group_sys_admin_other_someone]
+text = "{by} a nommé quelqu’un admin"
+
+[group_sys_admin_someone_you]
+text = "Quelqu’un vous a donné le rôle d’admin"
+
+[group_sys_admin_someone_other]
+text = "Quelqu’un a nommé {name} admin"
+
+[group_sys_admin_someone_someone]
+text = "Quelqu’un a nommé un membre admin"
+
+[group_sys_unadmin_you_you]
+text = "Vous vous êtes retiré le rôle d’admin"
+
+[group_sys_unadmin_you_other]
+text = "Vous avez retiré le rôle d’admin à {name}"
+
+[group_sys_unadmin_you_someone]
+text = "Vous avez retiré le rôle d’admin à quelqu’un"
 
 [group_sys_unadmin_other_you]
 text = "{by} vous a retiré le rôle d’admin"
@@ -3424,14 +3596,35 @@ text = "{by} vous a retiré le rôle d’admin"
 [group_sys_unadmin_other_other]
 text = "{by} a retiré le rôle d’admin à {name}"
 
+[group_sys_unadmin_other_someone]
+text = "{by} a retiré le rôle d’admin à quelqu’un"
+
+[group_sys_unadmin_someone_you]
+text = "Quelqu’un vous a retiré le rôle d’admin"
+
+[group_sys_unadmin_someone_other]
+text = "Quelqu’un a retiré le rôle d’admin à {name}"
+
+[group_sys_unadmin_someone_someone]
+text = "Quelqu’un a retiré le rôle d’admin à un membre"
+
 [group_sent_waiting]
 text = "En attente de {name} · via {group}"
+
+[group_sent_waiting_unnamed]
+text = "En attente de réponse · via {group}"
 
 [group_sent_accepted_messages]
 text = "{name} a accepté · messages uniquement"
 
+[group_sent_accepted_messages_unnamed]
+text = "Demande acceptée · messages uniquement"
+
 [group_sent_accepted_connecting]
 text = "{name} a accepté · connexion"
+
+[group_sent_accepted_connecting_unnamed]
+text = "Demande acceptée · connexion"
 
 [group_sent_declined]
 text = "{name} a refusé"
@@ -3442,8 +3635,22 @@ text = "Refusé"
 [group_sent_blocked]
 text = "{name} vous a bloqué"
 
+[group_sent_blocked_unnamed]
+text = "Cette personne vous a bloqué"
+
+[group_notice_cant_send]
+text = "Vous ne pouvez pas envoyer de messages dans ce groupe."
+
 [group_notice_invitation_sent]
 text = "Invitation envoyée à {name}. Cette personne rejoindra le groupe en acceptant."
+
+[group_notice_invitation_sent_unnamed]
+text = "Invitation envoyée. Cette personne rejoindra le groupe en acceptant."
+
+[group_notice_invitations_sent]
+one = "{count} invitation envoyée. Cette personne rejoindra le groupe en acceptant."
+many = "{count} invitations envoyées. Chaque personne rejoindra le groupe en acceptant."
+other = "{count} invitations envoyées. Chaque personne rejoindra le groupe en acceptant."
 
 [group_notice_you_joined]
 text = "Vous avez rejoint {group}."
@@ -3454,23 +3661,41 @@ text = "Vous avez rejoint le groupe."
 [group_notice_declined_inv]
 text = "Refusé. {name} voit que vous avez refusé."
 
+[group_notice_declined_inv_unnamed]
+text = "Refusé. Cette personne voit que vous avez refusé."
+
 [group_notice_accepted_yours]
 text = "{name} a accepté votre demande. Vous pouvez maintenant vous écrire ; les appels restent désactivés jusqu’à ce que l’un de vous les autorise."
+
+[group_notice_accepted_yours_unnamed]
+text = "Votre demande a été acceptée. Vous pouvez maintenant vous écrire ; les appels restent désactivés jusqu’à ce que l’un de vous les autorise."
 
 [group_notice_request_sent]
 text = "Demande envoyée à {name}. Elle attend dans Discussions jusqu’à sa réponse."
 
+[group_notice_request_sent_unnamed]
+text = "Demande envoyée. Elle attend dans Discussions jusqu’à la réponse de cette personne."
+
 [group_notice_accepted]
 text = "Accepté. {name} fait maintenant partie de vos contacts pour les messages uniquement et apparaît dans Discussions dès que son appareil se connecte ; les appels restent désactivés jusqu’à ce que vous les autorisiez."
 
+[group_notice_accepted_unnamed]
+text = "Accepté. Cette personne fait maintenant partie de vos contacts pour les messages uniquement et apparaît dans Discussions dès que son appareil se connecte ; les appels restent désactivés jusqu’à ce que vous les autorisiez."
+
 [group_notice_declined_req]
 text = "Refusé. {name} verra « refusé »."
+
+[group_notice_declined_req_unnamed]
+text = "Refusé. Cette personne verra « refusé »."
 
 [group_notice_link_copied]
 text = "Copié. Toute personne qui a le lien peut rejoindre tant qu’il est ouvert."
 
 [group_notice_group_is_open]
 text = "Votre groupe est ouvert. Copiez le lien pour le partager."
+
+[group_notice_group_made]
+text = "Groupe créé. Cet ordinateur l’héberge ; invitez des personnes depuis le panneau des membres."
 
 [group_give_the_group_a_name]
 text = "Donnez un nom au groupe."

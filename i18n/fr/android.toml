@@ -3294,6 +3294,11 @@ text = "Ouvrir"
 [card_add]
 text = "Ajouter"
 
+[groupsc_removed_you_flags]
+one = "Vous avez été retiré après {count} signalement d’admin"
+many = "Vous avez été retiré après {count} signalements d’admins"
+other = "Vous avez été retiré après {count} signalements d’admins"
+
 [groupsc_admin_granted_other]
 text = "{by} a nommé {sub} admin"
 
@@ -3427,6 +3432,11 @@ one = "{count} non lu"
 many = "{count} non lus"
 other = "{count} non lus"
 
+[groupsc_flags_of]
+one = "Signalements : {filled} sur {count}"
+many = "Signalements : {filled} sur {count}"
+other = "Signalements : {filled} sur {count}"
+
 [gcall_name]
 text = "Appel de groupe"
 
@@ -3435,6 +3445,12 @@ text = "Groupe"
 
 [gcall_finding_host]
 text = "Recherche d’un hôte d’appel…"
+
+[gcall_connecting]
+text = "Connexion de l’appel…"
+
+[gcall_reconnecting]
+text = "Reconnexion de l’appel…"
 
 [gcall_already_in_call]
 text = "Vous êtes déjà en appel."
@@ -3445,8 +3461,14 @@ text = "Appel terminé"
 [gcall_ended_host_lost]
 text = "Appel terminé — hôte perdu"
 
+[gcall_battery_limited]
+text = "Batterie sous {percent} %. L’hébergement est limité : une seule personne est entendue à la fois, et aucun nouveau participant ne peut rejoindre l’appel."
+
 [gcall_no_host]
 text = "Aucun hôte d’appel disponible"
+
+[gcall_cant_connect]
+text = "Impossible de rejoindre l’appel"
 
 [gcall_minimize]
 text = "Réduire l’appel"
@@ -3461,6 +3483,11 @@ text = "Vous seul pour l’instant. En attente des autres."
 one = "{count} personne dans l’appel"
 many = "{count} personnes dans l’appel"
 other = "{count} personnes dans l’appel"
+
+[gcall_more]
+one = "+{count}"
+many = "+{count}"
+other = "+{count}"
 
 [gcall_ok]
 text = "OK"
@@ -3815,6 +3842,9 @@ text = "Basculer"
 
 [call_audio_route]
 text = "Audio : {route}"
+
+[call_reconnecting]
+text = "Reconnexion de l’appel…"
 
 [call_reconnecting_plain]
 text = "Reconnexion"
@@ -4369,6 +4399,9 @@ text = "Pas de réponse"
 [calls_what_cancelled]
 text = "Annulé"
 
+[calls_what_unreachable]
+text = "Impossible de connecter l’appel"
+
 [calls_profile_desc]
 text = "Profil de {name}"
 
@@ -4473,8 +4506,14 @@ text = "Quelque chose n’a pas marché"
 [debuglog_send_title]
 text = "Envoyer le journal de débogage"
 
+[groupsc_sys_joined_you]
+text = "Vous avez rejoint le groupe"
+
 [groupsc_sys_joined_other]
 text = "{name} a rejoint le groupe"
+
+[groupsc_sys_joined_someone]
+text = "Quelqu’un a rejoint le groupe"
 
 [groupsc_sys_left_you]
 text = "Vous l’avez quitté"
@@ -4482,8 +4521,63 @@ text = "Vous l’avez quitté"
 [groupsc_sys_left_other]
 text = "{name} a quitté le groupe"
 
+[groupsc_sys_left_someone]
+text = "Quelqu’un a quitté le groupe"
+
+[groupsc_removed_other_flags]
+one = "{name} : retrait après {count} signalement d’admin"
+many = "{name} : retrait après {count} signalements d’admins"
+other = "{name} : retrait après {count} signalements d’admins"
+
+[groupsc_removed_someone_flags]
+one = "Un membre a été retiré après {count} signalement d’admin"
+many = "Un membre a été retiré après {count} signalements d’admins"
+other = "Un membre a été retiré après {count} signalements d’admins"
+
 [groupsc_admin_granted_you]
 text = "{by} vous a donné le rôle d’admin"
+
+[groupsc_admin_granted_you_by_someone]
+text = "Quelqu’un vous a donné le rôle d’admin"
+
+[groupsc_admin_granted_by_you]
+text = "Vous avez nommé {sub} admin"
+
+[groupsc_admin_granted_by_you_someone]
+text = "Vous avez nommé quelqu’un admin"
+
+[groupsc_admin_granted_other_someone]
+text = "{by} a nommé quelqu’un admin"
+
+[groupsc_admin_granted_by_someone]
+text = "Quelqu’un a nommé {sub} admin"
+
+[groupsc_admin_granted_by_someone_someone]
+text = "Quelqu’un a nommé un membre admin"
+
+[groupsc_admin_revoked_you_by_someone]
+text = "Quelqu’un vous a retiré le rôle d’admin"
+
+[groupsc_admin_revoked_by_you]
+text = "Vous avez retiré le rôle d’admin à {sub}"
+
+[groupsc_admin_revoked_by_you_someone]
+text = "Vous avez retiré le rôle d’admin à quelqu’un"
+
+[groupsc_admin_revoked_other_someone]
+text = "{by} a retiré le rôle d’admin à quelqu’un"
+
+[groupsc_admin_revoked_by_someone]
+text = "Quelqu’un a retiré le rôle d’admin à {sub}"
+
+[groupsc_admin_revoked_by_someone_someone]
+text = "Quelqu’un a retiré le rôle d’admin à un membre"
+
+[groupsc_host_added_someone]
+text = "Un appareil d’un membre héberge maintenant le groupe"
+
+[groupsc_host_removed_someone]
+text = "Un appareil d’un membre n’héberge plus le groupe"
 
 [groupsc_removed_you_group]
 text = "Vous avez été retiré de ce groupe"
@@ -4494,10 +4588,36 @@ text = "Vous : {text}"
 [groupsc_preview_other]
 text = "{name} : {text}"
 
+[groupsc_preview_someone]
+text = "Quelqu’un : {text}"
+
+[groupsc_photo_caption_line]
+text = "Photo · {caption}"
+
 [groupsc_members]
 one = "{count} membre"
 many = "{count} membres"
 other = "{count} membres"
+
+[groupsc_status_this_device]
+text = "cet appareil héberge le groupe"
+
+[groupsc_status_no_host]
+text = "pas encore d’hôte"
+
+[groupsc_status_waiting]
+text = "en attente d’un hôte"
+
+[groupsc_status_join]
+text = "{members} · {state}"
+
+[groupsc_online_count]
+one = "{count} en ligne"
+many = "{count} en ligne"
+other = "{count} en ligne"
+
+[groupsc_online_cap]
+text = "{count}+ en ligne"
 
 [groupsc_admins_only_post]
 text = "Seuls les admins publient ici"
@@ -4508,11 +4628,26 @@ text = "Seuls les admins publient ici."
 [groupsc_req_pending_named]
 text = "En attente de {name} · via {group}"
 
+[groupsc_req_pending_anon]
+text = "En attente de réponse · via {group}"
+
+[groupsc_req_accepted_messages_anon]
+text = "Demande acceptée · messages uniquement"
+
+[groupsc_req_accepted_connecting_anon]
+text = "Demande acceptée · connexion"
+
 [groupsc_req_declined_named]
 text = "{name} a refusé"
 
+[groupsc_req_declined_anon]
+text = "Demande refusée"
+
 [groupsc_req_blocked_named]
 text = "{name} vous a bloqué"
+
+[groupsc_req_blocked_anon]
+text = "Cette personne vous a bloqué"
 
 [groupsc_pick_member]
 text = "Déjà membre"
@@ -4526,6 +4661,15 @@ text = "Invité · pas encore distribué"
 [groupsc_invite_joined]
 text = "A rejoint"
 
+[groupsc_invite_declined]
+text = "Invitation refusée"
+
+[groupsc_flag_final]
+text = "Ce sera le signalement {n} sur {total}. Le retrait de {name} est immédiat : les hôtes refusent ses nouveaux messages et cette personne voit qu’elle a été retirée."
+
+[groupsc_flag_more]
+text = "Ce sera le signalement {n} sur {total}. Les signalements de tous les admins comptent, y compris un nouveau de votre part. À {total} signalements, le retrait de {name} est immédiat et cette personne voit qu’elle a été retirée."
+
 [groupsc_err_removed]
 text = "Vous avez été retiré de ce groupe."
 
@@ -4538,11 +4682,17 @@ text = "Aucun hôte n’a répondu à temps. Réessayez quand un hôte sera en l
 [groupsc_type_first]
 text = "Écrivez d’abord un message."
 
+[groupsc_picture_too_large]
+text = "Cette image est trop lourde pour être publiée."
+
 [groupsc_pick_first]
 text = "Choisissez d’abord quelqu’un."
 
 [groupsc_invited_one_named]
 text = "Invitation envoyée à {name}. Cette personne rejoindra le groupe en acceptant."
+
+[groupsc_invited_one_anon]
+text = "Invitation envoyée. Cette personne rejoindra le groupe en acceptant."
 
 [groupsc_invited_many]
 one = "{count} invitation envoyée. Chaque personne rejoint le groupe en acceptant."
@@ -4552,20 +4702,38 @@ other = "{count} invitations envoyées. Chaque personne rejoint le groupe en acc
 [groupsc_decline_inv_named]
 text = "Refusé. {name} voit que vous avez refusé."
 
+[groupsc_decline_inv_anon]
+text = "Refusé. Cette personne voit que vous avez refusé."
+
 [groupsc_link_closed]
 text = "Le lien ouvert est fermé. Les personnes déjà présentes restent ; les nouvelles rejoignent avec une invitation."
 
 [groupsc_request_sent_named]
 text = "Demande envoyée à {name}. Elle attend dans Discussions jusqu’à sa réponse."
 
+[groupsc_request_sent_anon]
+text = "Demande envoyée. Elle attend dans Discussions jusqu’à la réponse de cette personne."
+
 [groupsc_req_accept_named]
 text = "Accepté. {name} fait maintenant partie de vos contacts pour les messages uniquement et apparaît dans Discussions dès que son appareil se connecte ; les appels restent désactivés jusqu’à ce que vous les autorisiez."
+
+[groupsc_req_accept_anon]
+text = "Accepté. Cette personne fait maintenant partie de vos contacts pour les messages uniquement et apparaît dans Discussions dès que son appareil se connecte ; les appels restent désactivés jusqu’à ce que vous les autorisiez."
+
+[groupsc_req_declined_told_anon]
+text = "Refusé. Cette personne verra « refusé »."
 
 [groupsc_req_block_named]
 text = "Vous avez bloqué {name}, qui ne peut plus envoyer de demandes."
 
+[groupsc_req_block_anon]
+text = "Cette personne est bloquée et ne peut plus envoyer de demandes."
+
 [groupsc_notice_accepted_named]
 text = "{name} a accepté votre demande. Vous pouvez maintenant vous écrire ; les appels restent désactivés jusqu’à ce que l’un de vous les autorise."
+
+[groupsc_notice_accepted_anon]
+text = "Cette personne a accepté votre demande. Vous pouvez maintenant vous écrire ; les appels restent désactivés jusqu’à ce que l’un de vous les autorise."
 
 [video_hd_line_on]
 text = "Vidéo plus nette activée"
@@ -4615,6 +4783,24 @@ text = "Dissocier cet appareil ?"
 [devices_unlinked_msg_unnamed]
 text = "Appareil dissocié"
 
+[groupsb_join_invited_by_you]
+text = "Invité par vous"
+
+[groupsb_join_invited_by_unknown]
+text = "Invité par quelqu’un qui n’est pas dans vos contacts"
+
+[groupsb_join_owner_you]
+text = "Propriétaire : vous"
+
+[groupsb_join_owner_unknown]
+text = "Propriétaire : quelqu’un qui n’est pas dans vos contacts"
+
+[groupsb_link_note_unnamed]
+text = "Toute personne qui a ce lien ou ce QR code peut rejoindre ce groupe pendant 7 jours. Partagez-le via une app de confiance ; vous voyez qui a rejoint et pouvez les signaler pour retrait. Pour inviter directement vos contacts, utilisez Ajouter des membres."
+
+[groupsb_share_text_unnamed]
+text = "Rejoignez mon groupe sur Tinline : {link}"
+
 [call_unreachable_title_unnamed]
 text = "Impossible de joindre cette personne"
 
@@ -4630,6 +4816,9 @@ text = "Appel annulé"
 [calls_desc_other]
 text = "Appel Tinline"
 
+[groupsb_public_link]
+text = "Lien public"
+
 [groups_list_sent_requests]
 text = "Demandes envoyées"
 
@@ -4642,6 +4831,36 @@ text = "Hors ligne"
 [calls_what_other]
 text = "Appel Tinline"
 
+[gcall_host_label_device]
+text = "Hôte d’appel : appareil de {name}"
+
+[gcall_host_label_unnamed]
+text = "Hôte d’appel : appareil d’un membre"
+
+[gcall_about_this_phone]
+text = "**Ce téléphone** héberge cet appel. Chaque participant s’y connecte ; il transmet l’audio et choisit qui est entendu quand plusieurs personnes parlent."
+
+[gcall_about_device]
+text = "**L’appareil de {name}** héberge cet appel. Chaque participant s’y connecte ; il transmet l’audio et choisit qui est entendu quand plusieurs personnes parlent."
+
+[gcall_about_unnamed]
+text = "**L’hôte d’appel** héberge cet appel. Chaque participant s’y connecte ; il transmet l’audio et choisit qui est entendu quand plusieurs personnes parlent."
+
+[gcall_started_by_unnamed]
+text = "Lancé par quelqu’un"
+
+[gcall_is_calling_group_desc_unnamed]
+text = "Quelqu’un appelle le groupe {group}"
+
+[gcall_started_call_desc_unnamed]
+text = "Quelqu’un a lancé un appel dans {group}"
+
+[notif_group_calling_unnamed]
+text = "Quelqu’un appelle le groupe"
+
+[groupsb_member_desc]
+text = "{list}. Ouvrir les actions"
+
 [groupsb_role_host_lc]
 text = "hôte"
 
@@ -4650,3 +4869,9 @@ text = "hôte d’appel"
 
 [onboarding_linked_lead_unnamed]
 text = "Vos contacts et discussions arrivent depuis votre autre appareil et resteront synchronisés sur les deux."
+
+[gcall_is_calling_group_unnamed]
+text = "Quelqu’un appelle le groupe"
+
+[gcall_started_call_unnamed]
+text = "Quelqu’un a lancé un appel"
