@@ -1,0 +1,4467 @@
+# Generated from i18n/tm/ar.toml by scripts/i18n_tm.py apply. Edit the tm file.
+
+[kit_tick_waiting]
+text = "بانتظار الإرسال"
+
+[kit_tick_sent]
+text = "تم الإرسال، بانتظار تأكيد جهاز {first}"
+
+[kit_tick_delivered]
+text = "على جهاز {first}"
+
+[kit_tick_read]
+text = "تمت القراءة على جهاز {first}"
+
+[kit_tick_bad]
+text = "لم تُسلَّم"
+
+[kit_tick_their]
+text = "الطرف الآخر"
+
+[kit_avatar_view_photo]
+text = "عرض الصورة"
+
+[kit_avatar_view_geometry]
+text = "عرض هندسة الهوية"
+
+[kit_avatar_photo_of]
+text = "صورة {name}"
+
+[kit_avatar_close]
+text = "إغلاق"
+
+[kit_mark_incoming]
+text = "مكالمة واردة"
+
+[kit_mark_calling]
+text = "جارٍ الاتصال"
+
+[kit_mark_in_call]
+text = "في مكالمة"
+
+[kit_mark_group_starting]
+text = "جارٍ بدء مكالمة جماعية"
+
+[kit_mark_in_group_call]
+text = "في مكالمة جماعية"
+
+[kit_mark_offline]
+text = "لا اتصال"
+
+[kit_mark_online]
+text = "متصل بالشبكة"
+
+[kit_mark_connecting]
+text = "جارٍ الاتصال"
+
+[kit_mark_reconnecting]
+text = "جارٍ إعادة الاتصال"
+
+[kit_back]
+text = "رجوع"
+
+[kit_passphrase_hide]
+text = "إخفاء عبارة المرور"
+
+[kit_passphrase_show]
+text = "إظهار عبارة المرور"
+
+[kit_cancel]
+text = "إلغاء"
+
+[chat_card_copy]
+text = "نسخ"
+
+[chat_card_copied]
+text = "تم النسخ"
+
+[chat_card_qr_label]
+text = "رمز QR لبطاقة الاتصال الخاصة بك"
+
+[chat_card_preparing]
+text = "جارٍ تجهيز رمزك…"
+
+[chat_card_once]
+text = "يعمل مرة واحدة. إنشاء رمز جديد يلغي هذا الرمز."
+
+[chat_card_share_subject]
+text = "مشاركة بطاقة الاتصال"
+
+[chat_card_share]
+text = "مشاركة"
+
+[chat_card_new_code]
+text = "رمز جديد"
+
+[chat_card_not_now]
+text = "ليس الآن"
+
+[chat_card_known_sub]
+text = "من جهات اتصالك بالفعل."
+
+[chat_card_found_sub]
+text = "عثر Tinline على البطاقة."
+
+[chat_card_open]
+text = "فتح"
+
+[chat_card_add]
+text = "إضافة"
+
+[chat_card_chat_with]
+text = "الدردشة مع {name}؟"
+
+[chat_card_add_name]
+text = "إضافة {name}؟"
+
+[chat_card_them]
+text = "هذا الشخص"
+
+[chat_card_this_contact]
+text = "جهة الاتصال هذه"
+
+[chat_find_placeholder]
+text = "البحث في هذه الدردشة"
+
+[chat_find_match_of]
+text = "النتيجة {index} من {total}"
+
+[chat_find_none]
+text = "لا نتائج"
+
+[chat_find_older]
+text = "النتيجة الأقدم"
+
+[chat_find_newer]
+text = "النتيجة الأحدث"
+
+[chat_find_close]
+text = "إغلاق البحث"
+
+[chat_self_sub]
+text = "العناصر المحفوظة · على أجهزتك فقط"
+
+[chat_day_today]
+text = "اليوم"
+
+[chat_day_yesterday]
+text = "أمس"
+
+[chat_call_video_done]
+text = "مكالمة فيديو · {duration}"
+
+[chat_call_voice_done]
+text = "مكالمة صوتية · {duration}"
+
+[chat_call_video_declined]
+text = "مكالمة فيديو مرفوضة"
+
+[chat_call_voice_declined]
+text = "مكالمة صوتية مرفوضة"
+
+[chat_call_video_missed]
+text = "مكالمة فيديو فائتة"
+
+[chat_call_voice_missed]
+text = "مكالمة صوتية فائتة"
+
+[chat_call_no_answer]
+text = "لا رد"
+
+[chat_call_declined]
+text = "مرفوضة"
+
+[chat_call_cancelled]
+text = "مكالمة ملغاة"
+
+[chat_call_failed]
+text = "تعذّرت المكالمة"
+
+[chat_err_send_file]
+text = "تعذّر إرسال هذا الملف."
+
+[chat_err_read_file]
+text = "تعذّرت قراءة هذا الملف."
+
+[chat_err_send_voice]
+text = "تعذّر إرسال هذه الرسالة الصوتية."
+
+[chat_err_delete]
+text = "تعذّر حذف هذه الرسالة."
+
+[chat_err_download]
+text = "تعذّر بدء التنزيل."
+
+[chat_saved]
+text = "تم الحفظ في هاتفك"
+
+[chat_err_save]
+text = "تعذّر حفظ هذا الملف."
+
+[chat_err_in_call]
+text = "يلزم إنهاء المكالمة أولًا"
+
+[chat_err_locked]
+text = "مقفل — يلزم إدخال عبارة المرور لفتح القفل"
+
+[chat_err_generic]
+text = "لم ينجح ذلك"
+
+[chat_preview_voice]
+text = "رسالة صوتية"
+
+[chat_preview_photo]
+text = "صورة"
+
+[chat_unread_divider]
+zero = "لا رسائل جديدة"
+one = "رسالة جديدة"
+two = "رسالتان جديدتان"
+few = "{count} رسائل جديدة"
+many = "{count} رسالة جديدة"
+other = "{count} رسالة جديدة"
+
+[chat_jump_hint]
+text = "الانتقال إلى الرسالة"
+
+[chat_attach]
+text = "إرفاق ملف"
+
+[chat_save_edit]
+text = "حفظ التعديل"
+
+[chat_send]
+text = "إرسال"
+
+[chat_voice_discard]
+text = "حذف التسجيل"
+
+[chat_voice_slide_cancel]
+text = "السحب للإلغاء"
+
+[chat_voice_waveform]
+text = "الموجة الصوتية للرسالة، النقر للانتقال"
+
+[chat_voice_send]
+text = "إرسال الرسالة الصوتية"
+
+[chat_voice_recording]
+text = "جارٍ التسجيل، يُرسل عند الإفلات"
+
+[chat_voice_hold]
+text = "الضغط مطولًا لتسجيل رسالة صوتية"
+
+[chat_voice_pause]
+text = "إيقاف الرسالة الصوتية مؤقتًا"
+
+[chat_voice_play]
+text = "تشغيل الرسالة الصوتية"
+
+[chat_reply]
+text = "رد"
+
+[chat_you]
+text = "أنت"
+
+[chat_quote_unavailable]
+text = "الرسالة الأصلية غير متاحة"
+
+[chat_message_actions]
+text = "إجراءات الرسالة"
+
+[chat_meta_sending]
+text = "جارٍ الإرسال {percent}٪ · {time}"
+
+[chat_meta_waiting]
+text = "بالانتظار · {time}"
+
+[chat_meta_edited]
+text = "معدَّلة · {time}"
+
+[chat_quote_earlier]
+text = "رسالة سابقة"
+
+[chat_quote_gone]
+text = "الرسالة غير متاحة"
+
+[chat_photo_chip]
+text = "صورة · {size}"
+
+[chat_download]
+text = "تنزيل"
+
+[chat_retry_download]
+text = "إعادة محاولة التنزيل"
+
+[chat_sends_when_online]
+text = "يُرسل عند اتصال {first}"
+
+[chat_file_open]
+text = "{size} · {type} · النقر للفتح"
+
+[chat_file_save]
+text = "{size} · {type} · النقر للحفظ"
+
+[chat_file_downloading]
+text = "جارٍ التنزيل · {done} من {size}"
+
+[chat_file_paused]
+text = "{size} · متوقف مؤقتًا — بانتظار اتصال {first}"
+
+[chat_file_starting]
+text = "{size} · جارٍ البدء…"
+
+[chat_file_failed]
+text = "{size} · تعذّر التنزيل — النقر لإعادة المحاولة"
+
+[chat_file_remote]
+text = "{size} · لم يُنزَّل"
+
+[chat_file_download_a11y]
+text = "تنزيل {name}"
+
+[chat_file_cancel_a11y]
+text = "إلغاء تنزيل {name}"
+
+[chat_file_save_a11y]
+text = "حفظ {name} في الهاتف"
+
+[chat_call_back_a11y]
+text = "{text}، {time}. معاودة الاتصال"
+
+[chat_unblock]
+text = "إلغاء الحظر"
+
+[chat_add_contact]
+text = "إضافة"
+
+[chat_copy_text]
+text = "نسخ النص"
+
+[chat_save_to_phone]
+text = "الحفظ في الهاتف"
+
+[chat_edit]
+text = "تعديل"
+
+[chat_head_saved]
+text = "حُفظت في {time} · على أجهزتك"
+
+[chat_head_received]
+text = "وصلت في {time}"
+
+[chat_head_read]
+text = "أُرسلت في {time} · تمت قراءتها على جهاز {first}"
+
+[chat_head_delivered]
+text = "أُرسلت في {time} · على جهاز {first}"
+
+[chat_head_only_here]
+text = "أُرسلت في {time} · على هذا الهاتف فقط حتى الآن"
+
+[chat_head_sent]
+text = "أُرسلت في {time} · بانتظار تأكيد جهاز {first}"
+
+[chat_deleted_by_me]
+text = "حذفت هذه الرسالة"
+
+[chat_deleted_by_them]
+text = "حُذفت هذه الرسالة بواسطة {first}"
+
+[chat_cancel_sending]
+text = "إلغاء الإرسال"
+
+[chat_cancel_download]
+text = "إلغاء التنزيل"
+
+[chat_voice_download]
+text = "تنزيل الرسالة الصوتية"
+
+[chat_voice_loading]
+text = "جارٍ تحميل الرسالة الصوتية"
+
+[chat_delete_self]
+text = "الحذف من كل أجهزتك"
+
+[chat_delete_both]
+text = "الحذف لدى الطرفين"
+
+[chat_sheet_hint_self]
+text = "تصل التعديلات وعمليات الحذف إلى أجهزتك الأخرى عند اتصالها."
+
+[chat_sheet_hint]
+text = "تصل التعديلات وعمليات الحذف إلى هاتف {first} في المرة القادمة التي يتصل فيها الطرفان."
+
+[chat_attach_title_self]
+text = "حفظ لنفسك"
+
+[chat_attach_title]
+text = "إرسال إلى {first}"
+
+[chat_attach_photos]
+text = "الصور ومقاطع الفيديو"
+
+[chat_attach_camera]
+text = "الكاميرا"
+
+[chat_attach_file]
+text = "ملف"
+
+[chat_attach_hint_self]
+text = "تبقى الملفات مشفّرة على أجهزتك وتُنسخ إلى الأجهزة الأخرى عند اتصالها. حتى غيغابايتين لكل ملف."
+
+[chat_attach_hint]
+text = "الملفات مشفّرة تمامًا بين الطرفين. حتى غيغابايتين لكل ملف. يلزم أن يكون الطرفان متصلين أثناء النقل."
+
+[chat_proof_read]
+text = "تمت القراءة · بتوقيع {first} · الجهاز {device}"
+
+[chat_proof_delivered]
+text = "تم التسليم · بتوقيع {first} · الجهاز {device}"
+
+[chat_blocked_note]
+text = "حظرت {first}"
+
+[chat_blocked_note_date]
+text = "حظرت {first} · {date}"
+
+[chat_blocked_signed]
+text = "بتوقيع {first} · {date}"
+
+[chat_fallback_name]
+text = "دردشة"
+
+[chat_older_title]
+text = "الرسائل الأقدم على هاتف {first}"
+
+[chat_older_body]
+text = "يحتفظ هذا الهاتف بالرسائل منذ بدء استخدامك له. تُحمَّل الأيام السابقة عند اتصال الطرفين."
+
+[chat_composer_placeholder]
+text = "رسالة"
+
+[chat_err_open_file]
+text = "تعذّر فتح هذا الملف."
+
+[chat_err_no_camera]
+text = "لا تتوفر كاميرا."
+
+[chat_status_blocked]
+text = "محظور"
+
+[chat_status_blocked_me]
+text = "تم حظرك"
+
+[chat_status_not_contact]
+text = "ليس من جهات اتصالك"
+
+[chat_status_waiting]
+text = "بانتظار الاتصال"
+
+[chat_status_messages_only]
+text = "الرسائل فقط"
+
+[chat_back]
+text = "العودة إلى الدردشات"
+
+[chat_return_to_call]
+text = "العودة إلى المكالمة"
+
+[chat_call]
+text = "اتصال"
+
+[chat_video_call]
+text = "مكالمة فيديو"
+
+[chat_details]
+text = "تفاصيل الدردشة"
+
+[chat_strip_peer_offline]
+text = "لا اتصال لدى {first} الآن. تُرسل الرسائل عند اتصال الطرفين."
+
+[chat_strip_me_offline]
+text = "لا اتصال لديك. تُرسل الرسائل عند عودة الاتصال."
+
+[chat_composer_editing]
+text = "تعديل الرسالة"
+
+[chat_composer_cancel_edit]
+text = "إلغاء التعديل"
+
+[chat_composer_reply_self]
+text = "رد على نفسك"
+
+[chat_composer_reply]
+text = "رد على {first}"
+
+[chat_composer_cancel_reply]
+text = "إلغاء الرد"
+
+[chat_status_online]
+text = "متصل"
+
+[chat_status_online_messages]
+text = "متصل · الرسائل فقط"
+
+[chat_header_a11y]
+text = "{name}. تفاصيل الدردشة"
+
+[chat_header_a11y_status]
+text = "{name}. {status}. تفاصيل الدردشة"
+
+[chat_cant_call]
+text = "الاتصال غير متاح مع {first}"
+
+[chat_viewer_pdf_damaged]
+text = "لا يستطيع Tinline قراءة ملف PDF هذا. ربما يكون تالفًا. لا يزال بإمكانك حفظه."
+
+[chat_viewer_pdf_locked]
+text = "ملف PDF هذا محمي بكلمة مرور، لذا لا يستطيع Tinline عرضه. يمكنك حفظه لفتحه في تطبيق آخر."
+
+[chat_viewer_too_big]
+text = "هذا الملف أكبر من أن يُعرض هنا. يمكنك حفظه لفتحه في تطبيق آخر."
+
+[chat_viewer_not_text]
+text = "لا يبدو هذا ملفًا نصيًا. يمكنك حفظه لفتحه في تطبيق آخر."
+
+[chat_close]
+text = "إغلاق"
+
+[chat_viewer_file]
+text = "ملف"
+
+[chat_share]
+text = "مشاركة"
+
+[chat_viewer_opening]
+text = "جارٍ الفتح…"
+
+[chat_viewer_photo_hint]
+text = "محفوظ مشفّرًا داخل Tinline. «الحفظ في الهاتف» ينسخه إلى صورك، حيث يمكن للتطبيقات الأخرى رؤيته."
+
+[chat_viewer_page]
+text = "الصفحة {page} من {total}"
+
+[chat_edited]
+text = "معدَّلة"
+
+[group_you]
+text = "أنت"
+
+[group_info_title]
+text = "معلومات المجموعة"
+
+[group_info_removed_title]
+text = "تمت الإزالة"
+
+[group_info_left_note]
+text = "لا يزال بإمكانك قراءة المنشورات على هذا الجهاز. للعودة، يجب أن يدعوك أحد أعضاء المجموعة من جديد."
+
+[group_info_leave]
+text = "مغادرة المجموعة"
+
+[group_info_owner_cant_leave]
+text = "لا يمكن للمالك المغادرة بعد"
+
+[group_info_hero_owner]
+zero = "{count} عضو · دورك: المالك"
+one = "عضو واحد · دورك: المالك"
+two = "عضوان · دورك: المالك"
+few = "{count} أعضاء · دورك: المالك"
+many = "{count} عضوًا · دورك: المالك"
+other = "{count} عضو · دورك: المالك"
+
+[group_info_hero_admin]
+zero = "{count} عضو · دورك: مشرف"
+one = "عضو واحد · دورك: مشرف"
+two = "عضوان · دورك: مشرف"
+few = "{count} أعضاء · دورك: مشرف"
+many = "{count} عضوًا · دورك: مشرف"
+other = "{count} عضو · دورك: مشرف"
+
+[group_info_hero_member]
+zero = "{count} عضو · دورك: عضو"
+one = "عضو واحد · دورك: عضو"
+two = "عضوان · دورك: عضو"
+few = "{count} أعضاء · دورك: عضو"
+many = "{count} عضوًا · دورك: عضو"
+other = "{count} عضو · دورك: عضو"
+
+[group_info_hero_left]
+text = "غادرت هذه المجموعة"
+
+[group_info_hero_removed]
+text = "انتهت عضويتك"
+
+[group_invites_title]
+text = "الدعوات"
+
+[group_invites_contacts]
+text = "دعوة جهات الاتصال"
+
+[group_invites_contacts_sub]
+text = "دعوة خاصة لكل شخص"
+
+[group_invites_link]
+text = "إنشاء رابط دعوة"
+
+[group_invites_link_need_host]
+text = "يلزم تعيين مضيف أولًا. يحدد الرابط مضيفًا واحدًا."
+
+[group_invites_link_valid]
+text = "صالح لمدة سبعة أيام"
+
+[group_member_flags]
+text = "الإبلاغات: {flags} من {total}"
+
+[group_member_blocked_by_you]
+text = "محظور من قِبلك"
+
+[group_members_title]
+text = "الأعضاء"
+
+[group_member_req_pending]
+text = "تم إرسال طلب الدردشة"
+
+[group_member_req_declined]
+text = "تم رفض طلب الدردشة منك"
+
+[group_member_req_blocked]
+text = "محظور"
+
+[group_member_invited_by]
+text = "بدعوة من {name} · {date}"
+
+[group_member_since]
+text = "منذ {date}"
+
+[group_member_since_long]
+text = "في المجموعة منذ {date}"
+
+[group_member_name_you]
+text = "{name} (أنت)"
+
+[group_role_owner]
+text = "المالك"
+
+[group_role_admin]
+text = "مشرف"
+
+[group_role_member]
+text = "عضو"
+
+[group_role_host]
+text = "مضيف"
+
+[group_role_call_host]
+text = "مضيف المكالمات"
+
+[group_member_desc_you]
+text = "{name} (أنت)"
+
+[group_member_desc_owner]
+text = "المالك"
+
+[group_member_desc_admin]
+text = "مشرف"
+
+[group_member_desc_member]
+text = "عضو"
+
+[group_member_desc_host]
+text = "مضيف"
+
+[group_member_desc_call_host]
+text = "مضيف مكالمات"
+
+[group_member_desc]
+text = "{summary}. فتح الإجراءات"
+
+[group_this_device]
+text = "هذا الجهاز"
+
+[group_hosts_title]
+text = "المضيفون"
+
+[group_hosts_none]
+text = "لا يوجد مضيف لهذه المجموعة. تنتظر المنشورات حتى يُعيَّن مضيف."
+
+[group_hosts_online]
+zero = "{count} مضيف متصل. تصل المنشورات فورًا."
+one = "مضيف واحد متصل. تصل المنشورات فورًا."
+two = "مضيفان متصلان. تصل المنشورات فورًا."
+few = "{count} مضيفين متصلين. تصل المنشورات فورًا."
+many = "{count} مضيفًا متصلًا. تصل المنشورات فورًا."
+other = "{count} مضيف متصل. تصل المنشورات فورًا."
+
+[group_hosts_offline]
+text = "لا يوجد مضيف متصل. منشوراتك محفوظة وستُرسل عند اتصال أحدهم."
+
+[group_online]
+text = "متصل"
+
+[group_offline]
+text = "غير متصل"
+
+[group_host_also_calls]
+text = "{status} · يستضيف المكالمات أيضًا"
+
+[group_remove]
+text = "إزالة"
+
+[group_remove_host_desc]
+text = "إزالة {device} من المضيفين"
+
+[group_waiting_accept]
+text = "بانتظار القبول"
+
+[group_decline]
+text = "رفض"
+
+[group_accept]
+text = "قبول"
+
+[group_cancel]
+text = "إلغاء"
+
+[group_cancel_host_request_desc]
+text = "إلغاء طلب الاستضافة إلى {device}"
+
+[group_host_offered]
+text = "عرض الاستضافة · يحتاج إلى مشرف"
+
+[group_appoint]
+text = "تعيين"
+
+[group_hosts_note_base]
+text = "يخزّن المضيفون المجموعة وينقلون المنشورات حين يكون الآخرون غير متصلين. إنهم أعضاء موضع ثقتك: يمكن للمضيف قراءة كل ما يُنشر في هذه المجموعة."
+
+[group_hosts_note_admin]
+text = "يخزّن المضيفون المجموعة وينقلون المنشورات حين يكون الآخرون غير متصلين. إنهم أعضاء موضع ثقتك: يمكن للمضيف قراءة كل ما يُنشر في هذه المجموعة. يمكن تعيين مضيف من قائمة العضو، وعليه أن يقبل. إزالة مضيف تغيّر عنوان المجموعة خلال يومين، فلا يعود ذلك الجهاز قادرًا على الوصول إليها."
+
+[group_callhosts_title]
+text = "مضيفو المكالمات"
+
+[group_callhosts_none]
+text = "لا يوجد مضيف مكالمات لهذه المجموعة. لا يمكن لأحد بدء مكالمة حتى يعيّن أحد المشرفين مضيفًا."
+
+[group_callhosts_ready]
+zero = "{count} مضيف مكالمات جاهز. تبدأ المكالمات عبرهم."
+one = "مضيف مكالمات واحد جاهز. تبدأ المكالمات عبره."
+two = "مضيفا مكالمات جاهزان. تبدأ المكالمات عبرهما."
+few = "{count} مضيفي مكالمات جاهزون. تبدأ المكالمات عبرهم."
+many = "{count} مضيف مكالمات جاهزًا. تبدأ المكالمات عبرهم."
+other = "{count} مضيف مكالمات جاهز. تبدأ المكالمات عبرهم."
+
+[group_callhosts_unavailable]
+text = "لا يتوفر مضيف مكالمات الآن. يمكن بدء المكالمات حين يعود أحدهم."
+
+[group_callhosts_this_phone]
+text = "هذا الهاتف ينقل المكالمات التي تبدأ منك."
+
+[group_remove_callhost_desc]
+text = "إزالة {device} من مضيفي المكالمات"
+
+[group_cancel_callhost_request_desc]
+text = "إلغاء طلب استضافة المكالمات إلى {device}"
+
+[group_callhost_stop_here]
+text = "إيقاف استضافة المكالمات على هذا الهاتف"
+
+[group_callhost_here]
+text = "استضافة المكالمات على هذا الهاتف"
+
+[group_callhost_here_sub]
+text = "ينقل المكالمات التي تبدأ من هنا. الحاسوب الذي يبقى قيد التشغيل يمكنه نقل مكالمات الجميع."
+
+[group_callhosts_note_base]
+text = "مضيف المكالمات ينقل المكالمة. يتصل به كل من في المكالمة، وهو يمرّر الصوت، لذا يمكنه سماع المكالمة. هذا منفصل عن استضافة الدردشة: مضيف الدردشة ليس مضيف مكالمات إلا إذا عيّنته لذلك أيضًا. مضيفو المكالمات أعضاء موضع ثقتك، وكل واحد منهم يختار القبول."
+
+[group_callhosts_note_admin]
+text = "مضيف المكالمات ينقل المكالمة. يتصل به كل من في المكالمة، وهو يمرّر الصوت، لذا يمكنه سماع المكالمة. هذا منفصل عن استضافة الدردشة: مضيف الدردشة ليس مضيف مكالمات إلا إذا عيّنته لذلك أيضًا. مضيفو المكالمات أعضاء موضع ثقتك، وكل واحد منهم يختار القبول. يمكن تعيين واحد من قائمة العضو، أو استضافة المكالمات على هذا الهاتف. لا يستضيف الهاتف إلا المكالمات التي يبدؤها صاحبه."
+
+[group_flags_on_you]
+text = "إبلاغات بحقك"
+
+[group_flags_count]
+text = "{flags} من {total}"
+
+[group_flags_count_desc]
+text = "الإبلاغات: {flags} من {total}"
+
+[group_flags_left]
+zero = "{count} إبلاغ إضافي من أي مشرف يزيلك من المجموعة. لا يمكن سحب الإبلاغات. يمكنك القراءة والنشر حتى ذلك الحين."
+one = "إبلاغ واحد إضافي من أي مشرف يزيلك من المجموعة. لا يمكن سحب الإبلاغات. يمكنك القراءة والنشر حتى ذلك الحين."
+two = "إبلاغان إضافيان من أي مشرف يزيلانك من المجموعة. لا يمكن سحب الإبلاغات. يمكنك القراءة والنشر حتى ذلك الحين."
+few = "{count} إبلاغات إضافية من أي مشرف تزيلك من المجموعة. لا يمكن سحب الإبلاغات. يمكنك القراءة والنشر حتى ذلك الحين."
+many = "{count} إبلاغًا إضافيًا من أي مشرف تزيلك من المجموعة. لا يمكن سحب الإبلاغات. يمكنك القراءة والنشر حتى ذلك الحين."
+other = "{count} إبلاغ إضافي من أي مشرف تزيلك من المجموعة. لا يمكن سحب الإبلاغات. يمكنك القراءة والنشر حتى ذلك الحين."
+
+[group_removal_title]
+text = "تمت إزالتك بعد إبلاغات المشرفين ({total})"
+
+[group_removal_who]
+text = "من أبلغ عنك"
+
+[group_removal_flag_first]
+text = "الإبلاغ الأول"
+
+[group_removal_flag_second]
+text = "الإبلاغ الثاني"
+
+[group_removal_flag_third]
+text = "الإبلاغ الثالث"
+
+[group_removal_flag]
+text = "إبلاغ"
+
+[group_removal_checked]
+text = "كل إبلاغ صادر عن مشرف في المجموعة، وقد تحقق هذا الجهاز منها قبل عرض هذه الصفحة."
+
+[group_removal_means]
+text = "ماذا يعني ذلك"
+
+[group_removal_text]
+text = "تبقى لديك المنشورات الموجودة على هذا الجهاز، ويمكنك قراءتها. لا يمكنك النشر، ولم يعد مضيفو المجموعة يقبلون منك شيئًا. الإزالة نهائية: للعودة، يجب أن يدعوك أحد المشرفين من جديد."
+
+[group_removal_read]
+text = "قراءة المنشورات"
+
+[group_leave_title]
+text = "مغادرة {group}؟"
+
+[group_leave_text]
+text = "لن تصلك المنشورات بعد الآن. ما هو موجود على هذا الجهاز يبقى ويمكنك قراءته. للعودة، يجب أن يدعوك أحد أعضاء المجموعة من جديد."
+
+[group_leave_admin]
+text = "دورك هو الإشراف. يبقى المالك والمشرفون الآخرون."
+
+[group_leave]
+text = "مغادرة"
+
+[group_invite_title]
+text = "دعوة إلى {group}"
+
+[group_invite_text]
+text = "يتلقى كل شخص دعوة خاصة صالحة لمدة سبعة أيام. كل من يتلقى دعوة منك يمكنه قراءة منشورات المجموعة بعد انضمامه."
+
+[group_invite_none]
+text = "كل جهات اتصالك موجودة في هذه المجموعة أو لديها دعوة بانتظارها."
+
+[group_invite_sending]
+text = "جارٍ الإرسال…"
+
+[group_invite_button]
+text = "دعوة"
+
+[group_invite_people]
+zero = "دعوة {count} شخص"
+one = "دعوة شخص واحد"
+two = "دعوة شخصين"
+few = "دعوة {count} أشخاص"
+many = "دعوة {count} شخصًا"
+other = "دعوة {count} شخص"
+
+[group_invite_failed]
+text = "تعذّرت الدعوة"
+
+[group_member_role_desc_you]
+text = "دورك في هذه المجموعة"
+
+[group_member_in_group_desc]
+text = "{name} في {group}"
+
+[group_member_message]
+text = "مراسلة {name}"
+
+[group_member_you_blocked]
+text = "حظرت {name}"
+
+[group_member_blocked_sub]
+text = "يبقى هذا الشخص في المجموعة. يمكنك إلغاء حظره من جهات الاتصال للدردشة."
+
+[group_member_request_sent]
+text = "تم إرسال الطلب"
+
+[group_member_request_waiting]
+text = "بانتظار رد {name}"
+
+[group_member_blocked_title]
+text = "محظور"
+
+[group_member_cant_receive]
+text = "لا يمكن أن تصل طلباتك إلى {name}."
+
+[group_member_ask_again]
+text = "إرسال طلب جديد إلى {name}"
+
+[group_member_ask]
+text = "طلب دردشة خاصة مع {name}"
+
+[group_member_declined_last]
+text = "رُفض طلبك الأخير إلى {name}"
+
+[group_member_ask_sub]
+text = "يرسل طلب دردشة عبر مضيف المجموعة"
+
+[group_member_make_admin]
+text = "تعيينه مشرفًا"
+
+[group_member_remove_admin]
+text = "إزالة الإشراف"
+
+[group_member_make_device_host]
+text = "جعل الجهاز {device} مضيفًا"
+
+[group_member_make_host]
+text = "تعيينه مضيفًا"
+
+[group_member_make_host_sub]
+text = "يطلب من {name} الاستضافة. يلزم قبول الطلب."
+
+[group_member_stop_device_host]
+text = "إيقاف استضافة الجهاز {device}"
+
+[group_member_remove_host]
+text = "إزالة من المضيفين"
+
+[group_member_cancel_callhost]
+text = "إلغاء طلب استضافة المكالمات{device}"
+
+[group_member_cancel_callhost_sub]
+text = "بانتظار قبول جهاز {name}"
+
+[group_member_remove_callhost]
+text = "إزالة من مضيفي المكالمات{device}"
+
+[group_member_make_callhost]
+text = "تعيينه مضيفًا للمكالمات{device}"
+
+[group_member_make_callhost_sub]
+text = "يطلب من {name} نقل المكالمات الجماعية. يلزم قبول الطلب."
+
+[group_host_stop_device]
+text = "إيقاف الاستضافة على هذا الجهاز"
+
+[group_host_device]
+text = "الاستضافة على هذا الجهاز"
+
+[group_host_device_sub]
+text = "يلزم أن يعيّنه أحد المشرفين أيضًا. الحاسوب الذي يبقى قيد التشغيل مضيف أفضل."
+
+[group_callhost_stop_device]
+text = "إيقاف استضافة المكالمات على هذا الجهاز"
+
+[group_member_flag]
+text = "إبلاغ للإزالة"
+
+[group_member_flag_sub]
+text = "عدد الإبلاغات التي تزيل {name} من المجموعة: {total}"
+
+[group_member_owner_no_flag]
+text = "لا يمكن الإبلاغ عن المالك"
+
+[group_close]
+text = "إغلاق"
+
+[group_flag_title]
+text = "الإبلاغ عن {name} للإزالة؟"
+
+[group_flag_meter_desc]
+text = "الإبلاغ {next} من {total}"
+
+[group_flag_text1]
+text = "لا يمكن سحب الإبلاغات، والإزالة نهائية. يمكن للمشرف نفسه الإبلاغ أكثر من مرة؛ وكل إبلاغ يُحتسب."
+
+[group_flag_text2]
+text = "الإبلاغ قرار يخص المجموعة. وهو منفصل عن الحظر الذي يخصك وحدك. يظهر كل إبلاغ عند {name}: من قام به ومتى."
+
+[group_back]
+text = "رجوع"
+
+[group_flag_button]
+text = "الإبلاغ عن {name}"
+
+[group_ask_title]
+text = "طلب دردشة خاصة مع {name}"
+
+[group_ask_text1]
+text = "يظهر اسمك والمجموعة عند {name}. يمر الطلب عبر مضيف المجموعة مختومًا، فلا يستطيع المضيف قراءته."
+
+[group_ask_text2]
+text = "إذا قُبل طلبك إلى {name}، يمكنكما المراسلة مباشرة. تبقى المكالمات متوقفة حتى يسمح بها أحدكما. تنتهي صلاحية الطلب بعد سبعة أيام."
+
+[group_ask_send]
+text = "إرسال الطلب"
+
+[group_someone]
+text = "شخص ما"
+
+[group_fallback_them]
+text = "هذا الشخص"
+
+[group_fallback_they]
+text = "هذا الشخص"
+
+[group_sys_joined]
+text = "انضمام {name} إلى المجموعة"
+
+[group_sys_left]
+text = "مغادرة {name} للمجموعة"
+
+[group_sys_removed_you]
+text = "تمت إزالتك بعد إبلاغات المشرفين ({total})"
+
+[group_sys_removed]
+text = "إزالة {name} بعد إبلاغات المشرفين ({total})"
+
+[group_sys_admin_you]
+text = "تم تعيينك مشرفًا بواسطة {by}"
+
+[group_sys_admin]
+text = "تم تعيين {name} مشرفًا بواسطة {by}"
+
+[group_sys_unadmin_you]
+text = "أُلغي إشرافك بواسطة {by}"
+
+[group_sys_unadmin]
+text = "أُلغي إشراف {name} بواسطة {by}"
+
+[group_sys_host_added_you]
+text = "أحد أجهزتك يستضيف المجموعة الآن"
+
+[group_sys_host_added]
+text = "أحد أجهزة {name} يستضيف المجموعة الآن"
+
+[group_sys_host_removed_you]
+text = "توقف أحد أجهزتك عن استضافة المجموعة"
+
+[group_sys_host_removed]
+text = "توقف أحد أجهزة {name} عن استضافة المجموعة"
+
+[group_preview_removed]
+text = "تمت إزالتك من هذه المجموعة"
+
+[group_preview_you]
+text = "أنت: {text}"
+
+[group_preview_author]
+text = "{name}: {text}"
+
+[group_members_count]
+zero = "لا أعضاء"
+one = "عضو واحد"
+two = "عضوان"
+few = "{count} أعضاء"
+many = "{count} عضوًا"
+other = "{count} عضو"
+
+[group_hosts_count]
+zero = "لا مضيفين"
+one = "مضيف واحد"
+two = "مضيفان"
+few = "{count} مضيفين"
+many = "{count} مضيفًا"
+other = "{count} مضيف"
+
+[group_status_this_device]
+text = "{members} · هذا الجهاز يستضيف المجموعة"
+
+[group_status_no_host]
+text = "{members} · لا مضيف بعد"
+
+[group_status_waiting]
+text = "{members} · بانتظار مضيف"
+
+[group_status_hosts]
+text = "{members} · {hosts}"
+
+[group_waiting_for_host]
+text = "بانتظار مضيف"
+
+[group_req_pending]
+text = "بانتظار {name} · عبر {group}"
+
+[group_req_accepted_msgs]
+text = "تم القبول من {name} · الرسائل فقط"
+
+[group_req_accepted_connecting]
+text = "تم القبول من {name} · جارٍ الاتصال"
+
+[group_req_declined]
+text = "تم الرفض من {name}"
+
+[group_req_blocked]
+text = "تم حظرك من {name}"
+
+[group_an_admin]
+text = "أحد المشرفين"
+
+[group_pick_already_member]
+text = "في المجموعة بالفعل"
+
+[group_pick_invited_waiting]
+text = "تمت الدعوة · بالانتظار"
+
+[group_inv_waiting]
+text = "تمت الدعوة · بانتظار الرد"
+
+[group_inv_undelivered]
+text = "تمت الدعوة · لم تُسلَّم بعد"
+
+[group_inv_joined]
+text = "تم الانضمام"
+
+[group_inv_declined]
+text = "مرفوضة"
+
+[group_inv_expired]
+text = "انتهت صلاحية الدعوة"
+
+[group_inv_blocked]
+text = "تم حظرك"
+
+[group_flag_copy_final]
+text = "سيكون إبلاغك رقم {yours} من {total}. تتم إزالة {name} فورًا: يرفض المضيفون أي رسائل جديدة من {name}، وتظهر الإزالة لدى {name}."
+
+[group_flag_copy]
+text = "سيكون إبلاغك رقم {yours} من {total}. تُحتسب إبلاغات أي مشرف، بما فيها إبلاغاتك التالية. عند اكتمال العدد ({total}) تتم إزالة {name} فورًا وتظهر الإزالة لدى {name}."
+
+[group_error_generic]
+text = "لم ينجح ذلك"
+
+[group_error_removed]
+text = "تمت إزالتك من هذه المجموعة."
+
+[group_error_not_member]
+text = "لست عضوًا في هذه المجموعة."
+
+[group_error_already_contact]
+text = "هذا الشخص من جهات اتصالك بالفعل. يمكنك مراسلته من الدردشات."
+
+[group_error_you_block]
+text = "هذا الشخص محظور لديك. لطلب دردشة، يلزم إلغاء الحظر أولًا."
+
+[group_error_they_block]
+text = "تم حظرك من هذا الشخص، لذا لا يمكن طلب دردشة معه."
+
+[group_error_invite_invalid]
+text = "لم تعد هذه الدعوة صالحة. يمكنك طلب دعوة جديدة."
+
+[group_error_refused]
+text = "تم الرفض."
+
+[group_error_timeout]
+text = "لم يرد أي مضيف في الوقت المناسب. يمكنك المحاولة مرة أخرى عند اتصال مضيف."
+
+[group_error_locked]
+text = "يلزم فتح القفل أولًا."
+
+[group_error_not_found]
+text = "هذه المجموعة ليست على هذا الهاتف."
+
+[group_err_type_message]
+text = "يلزم كتابة رسالة أولًا."
+
+[group_err_name_group]
+text = "يلزم اسم للمجموعة."
+
+[group_err_pick_someone]
+text = "يلزم اختيار شخص أولًا."
+
+[group_done_invite_one]
+text = "تم إرسال الدعوة إلى {name}. يتم الانضمام عند القبول."
+
+[group_done_invite_many]
+zero = "لم تُرسل أي دعوة."
+one = "تم إرسال دعوة واحدة. ينضم كل شخص عند قبوله."
+two = "تم إرسال دعوتين. ينضم كل شخص عند قبوله."
+few = "تم إرسال {count} دعوات. ينضم كل شخص عند قبوله."
+many = "تم إرسال {count} دعوة. ينضم كل شخص عند قبوله."
+other = "تم إرسال {count} دعوة. ينضم كل شخص عند قبوله."
+
+[group_done_decline_invite]
+text = "تم الرفض. سيظهر الرفض لدى {name}."
+
+[group_done_flag]
+text = "تم تسجيل الإبلاغ. إنه موقّع باسمك ويمكن للعضو رؤيته."
+
+[group_done_admin_made]
+text = "تم التعيين مشرفًا."
+
+[group_done_admin_removed]
+text = "تم إلغاء الإشراف."
+
+[group_done_left]
+text = "غادرت المجموعة. تبقى رسائلها هنا."
+
+[group_done_appointed]
+text = "تم التعيين. يبدأ الجهاز الاستضافة بعد موافقته."
+
+[group_done_host_revoked]
+text = "لم يعد ذلك الجهاز يستضيف المجموعة."
+
+[group_done_host_accepted]
+text = "وافق هذا الهاتف على الاستضافة. يبدأ الاستضافة فور تعيينه من أحد المشرفين."
+
+[group_done_host_stopped]
+text = "توقف هذا الهاتف عن استضافة المجموعة."
+
+[group_done_callhost_asked]
+text = "تم الطلب. ينقل الجهاز المكالمات بعد قبوله."
+
+[group_done_callhost_revoked]
+text = "لم يعد ذلك الجهاز يستضيف مكالمات المجموعة."
+
+[group_done_callhost_accepted]
+text = "هذا الجهاز يستضيف مكالمات المجموعة الآن."
+
+[group_done_callhost_stopped]
+text = "لن يستضيف هذا الجهاز مكالمات المجموعة."
+
+[group_done_callhost_here]
+text = "ينقل هذا الهاتف الآن المكالمات التي يبدؤها في هذه المجموعة."
+
+[group_done_request_sent]
+text = "تم إرسال الطلب إلى {name}. ينتظر في الدردشات حتى الرد."
+
+[group_done_request_accepted]
+text = "تم القبول. أُضيف {name} للرسائل فقط، ويظهر في الدردشات عند اتصال جهازه؛ تبقى المكالمات متوقفة حتى السماح بها."
+
+[group_done_request_declined]
+text = "تم الرفض. سيُبلَّغ {name} بالرفض."
+
+[group_done_request_blocked]
+text = "تم حظر {name}، ولن تصل منه طلبات أخرى."
+
+[group_notice_request_accepted]
+text = "تم قبول طلبك من {name}. يمكنكما المراسلة الآن؛ تبقى المكالمات متوقفة حتى يسمح بها أحدكما."
+
+[group_calls_unavailable]
+text = "المكالمات الجماعية غير متاحة هنا بعد."
+
+[group_scan_unavailable]
+text = "المسح غير متاح بعد. يمكنك لصق الرابط بدلًا من ذلك."
+
+[group_cant_do_that]
+text = "تعذّر تنفيذ ذلك"
+
+[group_title]
+text = "مجموعة"
+
+[group_loading]
+text = "جارٍ التحميل…"
+
+[group_older]
+text = "عرض الرسائل السابقة"
+
+[group_no_messages]
+text = "لا رسائل بعد"
+
+[group_strip_waiting]
+text = "بانتظار مضيف. لا يوجد مضيف متصل للمجموعة؛ منشوراتك محفوظة وستُرسل عند اتصال أحدهم."
+
+[group_back_to_groups]
+text = "العودة إلى المجموعات"
+
+[group_chat_header_desc]
+text = "{name}. {status}. معلومات المجموعة"
+
+[group_call_return]
+text = "العودة إلى مكالمة المجموعة"
+
+[group_call_join]
+text = "الانضمام إلى مكالمة المجموعة"
+
+[group_call_start]
+text = "بدء مكالمة جماعية"
+
+[group_call_no_host]
+text = "لا يوجد مضيف مكالمات بعد: يمكن لأحد المشرفين تعيين واحد من معلومات المجموعة"
+
+[group_info_desc]
+text = "معلومات المجموعة"
+
+[group_removed_footer]
+text = "تمت إزالتك ولا يمكنك إرسال رسائل إلى هذه المجموعة."
+
+[group_why]
+text = "لماذا؟"
+
+[group_left_footer]
+text = "غادرت هذه المجموعة. تبقى رسائلها هنا للقراءة فقط."
+
+[group_message_placeholder]
+text = "رسالة"
+
+[group_replying_to]
+text = "رد على {name}"
+
+[group_replying_to_self]
+text = "رد على نفسك"
+
+[group_cant_send]
+text = "تعذّر الإرسال"
+
+[group_unread_divider]
+zero = "لا رسائل جديدة"
+one = "رسالة جديدة"
+two = "رسالتان جديدتان"
+few = "{count} رسائل جديدة"
+many = "{count} رسالة جديدة"
+other = "{count} رسالة جديدة"
+
+[group_call_you_in]
+text = "أنت في المكالمة"
+
+[group_call_in_progress]
+text = "مكالمة جارية"
+
+[group_call_started_by]
+text = "بمبادرة من {name}"
+
+[group_call_open]
+text = "فتح"
+
+[group_join]
+text = "انضمام"
+
+[group_call_line_desc]
+text = "{text}، {time}. بدء مكالمة أو الانضمام إليها"
+
+[group_host_asked_title]
+text = "طلب {name} من هذا الهاتف استضافة {group}"
+
+[group_host_asked_text]
+text = "يحتفظ المضيف بنسخة كاملة من المجموعة، وينقل الرسائل بينما هواتف الأعضاء في وضع السكون، ويعرف عناوين الأعضاء في المجموعة. يحتاج إلى البقاء متصلًا ويستهلك البطارية، لذا فالحاسوب الذي يبقى قيد التشغيل مضيف أفضل. الاستضافة لا تمنحك صلاحيات الإشراف."
+
+[group_host_here]
+text = "الاستضافة هنا"
+
+[group_done_host_declined]
+text = "تم الرفض. لن يرى المشرفون أي رد من هذا الهاتف."
+
+[group_names_and]
+text = "{rest} و {last}"
+
+[group_removed_card_title]
+zero = "تمت إزالتك بعد {count} إبلاغ من المشرفين"
+one = "تمت إزالتك بعد إبلاغ واحد من المشرفين"
+two = "تمت إزالتك بعد إبلاغين من المشرفين"
+few = "تمت إزالتك بعد {count} إبلاغات من المشرفين"
+many = "تمت إزالتك بعد {count} إبلاغًا من المشرفين"
+other = "تمت إزالتك بعد {count} إبلاغ من المشرفين"
+
+[group_removed_card_text]
+text = "أبلغ عنك: {names}. لا يزال بإمكانك قراءة ما وصلك من قبل؛ لن يصل شيء جديد."
+
+[group_see_details]
+text = "عرض التفاصيل"
+
+[group_receipt_sent]
+text = "تم الإرسال"
+
+[group_blocked_message]
+text = "رسالة من {name}، شخص حظرته · عرض"
+
+[group_sender_removed]
+text = "{name} · تمت الإزالة"
+
+[group_quote_unavailable]
+text = "الرسالة الأصلية غير متاحة"
+
+[group_reply]
+text = "رد"
+
+[group_written_before]
+text = "كُتبت قبل إزالة {name}"
+
+[group_receipt_delivered]
+text = "تم التسليم {count}/{total}"
+
+[group_receipt_read]
+text = "تمت القراءة {count}/{total}"
+
+[group_receipt_level_read]
+text = "تمت القراءة: {names}"
+
+[group_receipt_level_delivered]
+text = "على أجهزتهم: {names}"
+
+[group_receipt_level_not_yet]
+text = "ليس بعد: {names}"
+
+[group_receipt_also]
+text = "أكّد أيضًا: {names}"
+
+[group_cancel_reply]
+text = "إلغاء الرد"
+
+[group_send]
+text = "إرسال"
+
+[group_new_title]
+text = "مجموعة جديدة"
+
+[group_name_label]
+text = "اسم المجموعة"
+
+[group_new_info]
+text = "يستضيف هذا الهاتف المجموعة في البداية: فهو يحتفظ بها وينقل الرسائل. الحاسوب الذي يبقى قيد التشغيل مضيف أفضل، ويمكن تعيينه من معلومات المجموعة بعد انضمامه."
+
+[group_new_owner_hint]
+text = "ستكون المجموعة ملكك. يمكنك دعوة الناس من معلومات المجموعة."
+
+[group_making]
+text = "جارٍ الإنشاء…"
+
+[group_create_button]
+text = "إنشاء المجموعة"
+
+[group_add_to_title]
+text = "إضافة إلى {group}"
+
+[group_contacts_selected]
+text = "جهات الاتصال · المحدد: {count}"
+
+[group_add_no_contacts]
+text = "لا جهات اتصال لإضافتها. لا يظهر هنا من حظرتهم أو من حظروك."
+
+[group_add_hint]
+text = "يتلقى كل شخص الدعوة في دردشتكما الثنائية، وينضم عند قبولها. الدعوة صالحة لمدة سبعة أيام."
+
+[group_add_members_title]
+text = "إضافة أعضاء"
+
+[group_scan_title]
+text = "مسح الدعوة"
+
+[group_scan_prompt]
+text = "توجيه الكاميرا نحو دعوة المجموعة"
+
+[group_join_title]
+text = "الانضمام إلى مجموعة"
+
+[group_join_field]
+text = "رابط الدعوة أو رمزها"
+
+[group_join_checking]
+text = "جارٍ التحقق مع مضيف المجموعة…"
+
+[group_join_bad]
+text = "لم ينجح هذا الرابط: إما أنه ليس دعوة مجموعة، أو انتهت صلاحيته، أو أن مضيفه غير متصل."
+
+[group_paste]
+text = "لصق"
+
+[group_scan]
+text = "مسح"
+
+[group_joining]
+text = "جارٍ الانضمام…"
+
+[group_fallback_unknown_contact]
+text = "شخص ليس من جهات اتصالك"
+
+[group_join_invited_by]
+text = "بدعوة من {name}"
+
+[group_join_own_link]
+text = "رابط لحسابك أنت"
+
+[group_join_owner]
+text = "المالك: {name}"
+
+[group_valid_until]
+text = "صالحة حتى {date}"
+
+[group_join_hint]
+text = "الانضمام يوصل هذا الهاتف بمضيفي المجموعة. يرى الأعضاء اسمك؛ والمضيفون وحدهم يعرفون كيفية الوصول إلى هذا الهاتف. قد يستغرق ذلك حتى دقيقة."
+
+[group_fallback_the_group]
+text = "المجموعة"
+
+[group_link_title]
+text = "رابط الدعوة"
+
+[group_link_hint]
+text = "يمكن لأي شخص لديه هذا الرابط أو رمز QR الانضمام إلى {group} لمدة سبعة أيام. يمكنك مشاركته عبر تطبيق موضع ثقتك؛ ستظهر لك أسماء من ينضم ويمكنك الإبلاغ عنهم لإزالتهم. لدعوة جهات اتصالك مباشرة، يمكنك استخدام «إضافة أعضاء»."
+
+[group_link_qr_desc]
+text = "رمز QR لرابط دعوة المجموعة"
+
+[group_link_making]
+text = "جارٍ الإنشاء…"
+
+[group_link_show_full]
+text = "عرض بملء الشاشة"
+
+[group_share_text]
+text = "دعوة للانضمام إلى {group} على Tinline: {link}"
+
+[group_share_subject]
+text = "مشاركة دعوة المجموعة"
+
+[group_share]
+text = "مشاركة"
+
+[group_copy]
+text = "نسخ"
+
+[group_copied]
+text = "تم النسخ"
+
+[group_link_qr_full_desc]
+text = "رمز QR لرابط دعوة المجموعة، بملء الشاشة"
+
+[group_list_new]
+text = "مجموعة جديدة"
+
+[group_list_new_sub]
+text = "ستكون المجموعة ملكك"
+
+[group_list_join]
+text = "الانضمام برابط"
+
+[group_list_join_sub]
+text = "لصق دعوة مجموعة أو مسحها"
+
+[group_section_invitations]
+text = "دعوات إليك"
+
+[group_section_requests]
+text = "طلبات الدردشة"
+
+[group_section_sent]
+text = "تم الإرسال"
+
+[group_section_groups]
+text = "مجموعاتك"
+
+[group_list_empty]
+text = "لا مجموعات بعد. يمكنك إنشاء مجموعة أو قبول دعوة."
+
+[group_invited_you]
+text = "دعوة من {name} للانضمام إلى {group}"
+
+[group_joined_toast]
+text = "تم انضمامك إلى {group}."
+
+[group_cant_join]
+text = "تعذّر الانضمام"
+
+[group_wants_to_chat]
+text = "طلب دردشة من {name}"
+
+[group_member_of]
+text = "من أعضاء {group}"
+
+[group_request_accept_note]
+text = "القبول يضيف {name} جهةَ اتصال للرسائل فقط. يمكنك السماح بالمكالمات لاحقًا."
+
+[group_block]
+text = "حظر"
+
+[group_section_gone]
+text = "غادرتها أو أُزلت منها"
+
+[group_expanded]
+text = "موسَّع"
+
+[group_collapsed]
+text = "مطوي"
+
+[group_gone_left]
+text = "غادرت المجموعة"
+
+[group_no_posts]
+text = "لا منشورات بعد"
+
+[group_name_placeholder]
+text = "الاسم"
+
+[group_new_dialog_text]
+text = "ستكون المجموعة ملكك. هذا الجهاز هو أول مضيف للمجموعة، فهو يخزّنها وينقل المنشورات."
+
+[group_creating]
+text = "جارٍ الإنشاء…"
+
+[group_create]
+text = "إنشاء"
+
+[group_unread_badge_desc]
+zero = "لا شيء غير مقروء"
+one = "واحدة غير مقروءة"
+two = "اثنتان غير مقروءتين"
+few = "{count} غير مقروءة"
+many = "{count} غير مقروءة"
+other = "{count} غير مقروءة"
+
+[group_today]
+text = "اليوم"
+
+[group_yesterday]
+text = "أمس"
+
+[settings_perm_fix]
+text = "فتح الإعدادات"
+
+[settings_perm_notif_title]
+text = "الإشعارات متوقفة"
+
+[settings_perm_notif_body]
+text = "لا يستطيع Tinline تنبيهك إلى الرسائل أو المكالمات. لكنها تصل، وستظهر لك عند فتح التطبيق. يمكنك تشغيل الإشعارات من إعدادات النظام."
+
+[settings_status_available]
+text = "متاح"
+
+[settings_status_busy_until]
+text = "مشغول حتى {time}"
+
+[settings_status_busy]
+text = "مشغول"
+
+[settings_title]
+text = "الإعدادات"
+
+[settings_perm_see_details]
+text = "عرض التفاصيل"
+
+[settings_account_selected]
+text = "محدد · متصل"
+
+[settings_account_paused]
+text = "متوقف مؤقتًا · النقر للتبديل"
+
+[settings_add_account]
+text = "إضافة حساب آخر"
+
+[settings_accounts_note]
+text = "الحساب المحدد وحده يكون متصلًا على هذا الهاتف. التبديل يوقف الآخر مؤقتًا: لا تصله مكالمات حتى تحديده من جديد."
+
+[settings_appearance]
+text = "المظهر"
+
+[settings_appearance_match]
+text = "مطابقة هاتفي"
+
+[settings_appearance_match_sub]
+text = "فاتح أو داكن، حسب إعداد هذا الهاتف"
+
+[settings_appearance_light]
+text = "فاتح"
+
+[settings_appearance_dark]
+text = "داكن"
+
+[settings_row_devices]
+text = "الأجهزة"
+
+[settings_row_privacy]
+text = "الخصوصية"
+
+[settings_row_sounds]
+text = "الأصوات"
+
+[settings_row_video]
+text = "الفيديو"
+
+[settings_row_storage]
+text = "التخزين"
+
+[settings_row_about]
+text = "حول Tinline"
+
+[settings_notifications]
+text = "الإشعارات"
+
+[settings_video_in_calls]
+text = "الفيديو في المكالمات"
+
+[settings_video_in_calls_on]
+text = "يمكنك تشغيل الكاميرا أثناء المكالمة"
+
+[settings_video_in_calls_off]
+text = "المكالمات صوتية فقط"
+
+[settings_diagnostics]
+text = "التشخيص"
+
+[settings_diagnostics_sub]
+text = "نغمة الاختبار، إصدار النواة"
+
+[settings_cancel]
+text = "إلغاء"
+
+[settings_add_create]
+text = "إنشاء حساب جديد"
+
+[settings_add_link]
+text = "الربط بجهاز"
+
+[settings_add_restore]
+text = "الاستعادة من كلمات الاسترداد"
+
+[settings_notif_messages]
+text = "الرسائل"
+
+[settings_notif_messages_sub]
+text = "من الأشخاص، لا من المجموعات"
+
+[settings_notif_messages_label]
+text = "إشعارات الرسائل"
+
+[settings_notif_calls]
+text = "المكالمات"
+
+[settings_notif_calls_sub]
+text = "الرنين عند ورود مكالمة"
+
+[settings_notif_calls_label]
+text = "إشعارات المكالمات"
+
+[settings_notif_groups]
+text = "المجموعات"
+
+[settings_notif_groups_sub]
+text = "المنشورات والدعوات والطلبات"
+
+[settings_notif_groups_label]
+text = "إشعارات المجموعات"
+
+[settings_notif_alert_me]
+text = "التنبيه بشأن"
+
+[settings_notif_note]
+text = "الدردشة المكتومة لا تنبّهك أبدًا، مهما كان المفعّل هنا. المكالمات الفائتة من الشخص نفسه تُجمع في إشعار واحد."
+
+[settings_perms]
+text = "الأذونات"
+
+[settings_perm_off]
+text = "متوقف في إعدادات النظام"
+
+[settings_perm_allowed]
+text = "مسموح"
+
+[settings_perm_fix_btn]
+text = "إصلاح"
+
+[settings_perm_mic]
+text = "الميكروفون"
+
+[settings_perm_mic_ask]
+text = "يُطلب عند الاتصال"
+
+[settings_perms_note]
+text = "يضبط نظامك هذه الأذونات، لا Tinline. لا يطلب Tinline إذنًا إلا عند الحاجة إليه."
+
+[settings_sound_classic]
+text = "رنّة كلاسيكية"
+
+[settings_sound_classic_sub]
+text = "رنّة مشرقة من أربع نغمات."
+
+[settings_sound_slack]
+text = "رخو ← مشدود"
+
+[settings_sound_slack_sub]
+text = "نغمتان متقاربتان تتذبذبان كوتر رخو، ثم تشتد ثالثة."
+
+[settings_sound_triad]
+text = "طرقة ثلاثية"
+
+[settings_sound_triad_sub]
+text = "ثلاث نغمات صاعدة، مثل طرقة على الباب."
+
+[settings_quiet]
+text = "الوضع الهادئ"
+
+[settings_quiet_sub]
+text = "لا أصوات من Tinline: لا رنين ولا نغمات مكالمات ولا أصوات انضمام"
+
+[settings_call_sounds]
+text = "أصوات المكالمات"
+
+[settings_cue_ring]
+text = "نغمة الرنين"
+
+[settings_cue_connected]
+text = "تم الاتصال"
+
+[settings_cue_ended]
+text = "انتهت المكالمة"
+
+[settings_sounds_note_quiet]
+text = "الوضع الهادئ مفعّل، لذا فالمعاينات صامتة."
+
+[settings_sounds_note]
+text = "يمكنك النقر على صوت لسماعه. يُطبَّق الاختيار على المكالمة التالية."
+
+[settings_video_quality]
+text = "جودة الفيديو"
+
+[settings_video_sharper]
+text = "فيديو أوضح"
+
+[settings_video_hd_on]
+text = "يبدأ دائمًا بجودة HD. يستهلك المزيد من البيانات والبطارية."
+
+[settings_video_hd_auto]
+text = "ينتقل إلى HD تلقائيًا عندما يسمح الاتصال."
+
+[settings_video_note]
+text = "تبدأ كل مكالمة فيديو بهذا الشكل. أثناء المكالمة، يمكنك النقر على HD لتغييره لتلك المكالمة."
+
+[settings_storage_pictures]
+text = "الصور"
+
+[settings_storage_files]
+text = "الملفات"
+
+[settings_storage_messages]
+text = "الرسائل"
+
+[settings_storage_cache]
+text = "ذاكرة التخزين المؤقت"
+
+[settings_storage_on_phone]
+text = "على هذا الهاتف"
+
+[settings_storage_download]
+text = "تنزيل الصور"
+
+[settings_dl_always]
+text = "دائمًا"
+
+[settings_dl_always_sub]
+text = "على Wi-Fi وبيانات الجوال"
+
+[settings_dl_wifi]
+text = "على Wi-Fi"
+
+[settings_dl_wifi_sub]
+text = "على بيانات الجوال تنتظر النقر عليها"
+
+[settings_dl_tap]
+text = "عند النقر عليها"
+
+[settings_dl_tap_sub]
+text = "تظهر لكل صورة معاينة باهتة حتى ذلك الحين"
+
+[settings_clear_cache]
+text = "مسح ذاكرة التخزين المؤقت"
+
+[settings_clear_cache_sub]
+text = "{size} من الصور والملفات التي فتحتها. يُعاد تجهيزها عند فتحها."
+
+[settings_cache_cleared]
+text = "تم المسح"
+
+[settings_cache_empty]
+text = "لا شيء لمسحه"
+
+[settings_storage_note]
+text = "لتوفير مساحة أكبر، يمكنك إزالة الصور أو الملفات من دردشاتها."
+
+[settings_reads_on]
+text = "يعرف الآخرون متى قرأت رسائلهم"
+
+[settings_reads_off]
+text = "قراءتك للرسائل تبقى خاصة بك"
+
+[settings_blocked_people]
+text = "الأشخاص المحظورون"
+
+[settings_blocked_count]
+zero = "لا أحد"
+one = "شخص واحد"
+two = "شخصان"
+few = "{count} أشخاص"
+many = "{count} شخصًا"
+other = "{count} شخص"
+
+[settings_blocked_none]
+text = "لا أحد"
+
+[settings_who_can_call]
+text = "من يمكنه الاتصال بي"
+
+[settings_msg_only_count]
+zero = "لا جهات اتصال للرسائل فقط"
+one = "جهة اتصال واحدة للرسائل فقط"
+two = "جهتا اتصال للرسائل فقط"
+few = "{count} جهات اتصال للرسائل فقط"
+many = "{count} جهة اتصال للرسائل فقط"
+other = "{count} جهة اتصال للرسائل فقط"
+
+[settings_all_can_call]
+text = "المكالمات مسموحة لكل جهات الاتصال"
+
+[settings_recovery]
+text = "استرداد الحساب"
+
+[settings_recovery_pass]
+text = "يتطلب عبارة المرور"
+
+[settings_recovery_lock]
+text = "يتطلب قفل الشاشة"
+
+[settings_passphrase]
+text = "عبارة المرور"
+
+[settings_passphrase_sub]
+text = "يحمي Tinline على هذا الجهاز"
+
+[settings_privacy_note]
+text = "ترى جهات اتصالك اسمك وصورتك وملفك الشخصي. لا يخفي Tinline هوية الأشخاص في محادثاتك، وكل جهاز مرتبط بحسابك يمكنه قراءة دردشاتك."
+
+[settings_read_receipts]
+text = "إيصالات القراءة"
+
+[settings_reads_note]
+text = "تُرسل علامات التسليم في الحالتين، ويظهر لك متى يقرأ الآخرون رسائلك. الرسائل التي قرأتها أثناء إيقاف هذا الخيار تبقى دون تأكيد."
+
+[settings_contacts]
+text = "جهات الاتصال"
+
+[settings_can_call_you]
+text = "المكالمات مسموحة"
+
+[settings_messages_only]
+text = "الرسائل فقط"
+
+[settings_allow_calls_from]
+text = "السماح بالمكالمات من {name}"
+
+[settings_calls_note]
+text = "من سمحت له يمكنه الاتصال بك، ومن هو على الرسائل فقط لا يزال بإمكانه الكتابة. أما من حظرتهم فلا يمكنهم هذا ولا ذاك."
+
+[settings_about_version]
+text = "الإصدار {version}"
+
+[settings_about_made_by]
+text = "من صنع Osvauld"
+
+[settings_licences]
+text = "تراخيص المصدر المفتوح"
+
+[settings_licences_sub]
+text = "المكتبات التي بُني عليها Tinline"
+
+[settings_licence_texts]
+text = "النصوص الكاملة للتراخيص"
+
+[settings_source]
+text = "الشيفرة المصدرية"
+
+[settings_source_sub]
+text = "تطبيق Tinline مفتوح المصدر"
+
+[settings_about_note]
+text = "لا إعلانات في Tinline ولا تتبّع. رسائلك ومكالماتك تنتقل بين أجهزتك والأشخاص في محادثاتك."
+
+[settings_terms]
+text = "شروط الاستخدام"
+
+[settings_privacy_policy]
+text = "سياسة الخصوصية"
+
+[settings_not_emergency]
+text = "ليس لمكالمات الطوارئ."
+
+[settings_test_tone]
+text = "نغمة الاختبار"
+
+[settings_test_tone_sub]
+text = "إرسال نغمة 440 هرتز بدلًا من الميكروفون"
+
+[security_wrong_pass]
+text = "لم تتطابق. يمكنك المحاولة مرة أخرى."
+
+[security_open_failed]
+text = "تعذّر فتح نسختك الاحتياطية. يمكنك المحاولة مرة أخرى."
+
+[security_need_lock]
+text = "لفتح نسختك الاحتياطية، يلزم قفل للشاشة أو عبارة مرور للتطبيق."
+
+[security_recovery_title]
+text = "استرداد الحساب"
+
+[security_only_you]
+text = "لك وحدك"
+
+[security_check_you]
+text = "يلزم التأكد من هويتك قبل فتح نسختك الاحتياطية."
+
+[security_your_pass]
+text = "عبارة المرور الخاصة بك"
+
+[security_use_lock_hint]
+text = "للمتابعة، يمكنك استخدام قفل شاشة هاتفك."
+
+[security_use_lock]
+text = "استخدام قفل الشاشة"
+
+[security_continue]
+text = "متابعة"
+
+[security_recovery_failed]
+text = "تعذّر فتح الاسترداد. يمكنك الرجوع والمحاولة مرة أخرى."
+
+[security_backup_title]
+text = "نسختك الاحتياطية للاسترداد"
+
+[security_keep_private]
+text = "يُستحسن إبقاء هذا سرًّا. أي شخص يحصل عليه يمكنه التصرف باسمك."
+
+[security_tab_key]
+text = "المفتاح"
+
+[security_tab_words]
+text = "24 كلمة"
+
+[security_key_failed]
+text = "تعذّر تجهيز المفتاح. يمكنك استخدام كلماتك الأربع والعشرين بدلًا منه."
+
+[security_hide]
+text = "إخفاء"
+
+[security_reveal]
+text = "إظهار"
+
+[security_hint_hides]
+text = "يختفي بعد نصف دقيقة. ويُقفل عند مغادرة التطبيق."
+
+[security_hint_same]
+text = "المفتاح والكلمات يستعيدان الحساب نفسه. يُستحسن حفظ أيٍّ منهما في مكان خاص وآمن."
+
+[security_copied_note]
+text = "تم النسخ. يُستحسن حفظه في مكان خاص."
+
+[security_copied]
+text = "تم النسخ"
+
+[security_copy_key]
+text = "نسخ المفتاح"
+
+[security_done]
+text = "تم"
+
+[security_change_pass]
+text = "تغيير عبارة المرور"
+
+[security_add_pass]
+text = "إضافة عبارة مرور"
+
+[security_current_pass]
+text = "عبارة المرور الحالية"
+
+[security_pass_intro]
+text = "حسابك موجود على هذا الهاتف فقط. عبارة المرور تشفّره، فلا يستطيع من يحمل هاتفك نسخه."
+
+[security_new_pass]
+text = "عبارة المرور الجديدة"
+
+[security_pass]
+text = "عبارة المرور"
+
+[security_pass_notice]
+text = "تشفّر حسابك على هذا الهاتف. يتذكرها هاتفك، فتبقى المكالمات ترن بعد إعادة التشغيل. إذا نسيتها، تتيح لك كلمات الاسترداد تعيين عبارة جديدة."
+
+[security_encrypting]
+text = "جارٍ التشفير…"
+
+[devices_title]
+text = "الأجهزة المرتبطة"
+
+[devices_hint_rings]
+text = "ترن المكالمات على كل هذه الأجهزة. لا تظهر هذه الأسماء أبدًا للأشخاص في مكالماتك."
+
+[devices_link]
+text = "ربط جهاز"
+
+[devices_unlinked_label]
+text = "أجهزة أُلغي ربطها"
+
+[devices_sync_label]
+text = "المزامنة"
+
+[devices_sync_hint]
+text = "تتزامن الأجهزة مباشرة فيما بينها كلما اتصل اثنان منها في الوقت نفسه. لا توجد نسخة على أي خادم."
+
+[devices_row_this_phone]
+text = "هذا الهاتف — {name}"
+
+[devices_unnamed]
+text = "بلا اسم"
+
+[devices_unnamed_device]
+text = "جهاز بلا اسم"
+
+[devices_row_unlinked]
+text = "أُلغي ربطه"
+
+[devices_row_this_device]
+text = "هذا الجهاز · iOS"
+
+[devices_row_synced]
+text = "آخر مزامنة {ago}"
+
+[devices_row_not_seen]
+text = "لم يظهر بعد"
+
+[devices_device]
+text = "الجهاز"
+
+[devices_unlinked_msg]
+text = "تم إلغاء ربط {name}"
+
+[devices_fb_device]
+text = "الجهاز"
+
+[devices_finish_call]
+text = "يلزم إنهاء المكالمة أولًا"
+
+[devices_remove_account]
+text = "إزالة الحساب من هذا الهاتف"
+
+[devices_unlink_device]
+text = "إلغاء ربط الجهاز"
+
+[devices_lock_cancelled]
+text = "أُلغي التحقق بقفل الشاشة"
+
+[devices_this_phone]
+text = "هذا الهاتف"
+
+[devices_prop_name]
+text = "الاسم"
+
+[devices_prop_synced]
+text = "آخر مزامنة"
+
+[devices_this_device]
+text = "هذا الجهاز"
+
+[devices_not_yet]
+text = "ليس بعد"
+
+[devices_prop_rings]
+text = "يرن للمكالمات"
+
+[devices_rings_no]
+text = "لا، أُلغي ربطه"
+
+[devices_rings_yes]
+text = "نعم، عندما يكون قيد التشغيل"
+
+[devices_sync_now]
+text = "المزامنة الآن"
+
+[devices_syncing]
+text = "جارٍ المزامنة مع {name}…"
+
+[devices_fb_the_device]
+text = "الجهاز"
+
+[devices_unlink_this]
+text = "إلغاء ربط هذا الجهاز"
+
+[devices_name_phone]
+text = "تسمية هذا الهاتف"
+
+[devices_rename]
+text = "إعادة تسمية الجهاز"
+
+[devices_save]
+text = "حفظ"
+
+[devices_name_field]
+text = "اسم الجهاز"
+
+[devices_fb_this_device]
+text = "هذا الجهاز"
+
+[devices_remove_q]
+text = "إزالة حسابك من هذا الهاتف؟"
+
+[devices_unlink_q]
+text = "إلغاء ربط {name}؟"
+
+[devices_working]
+text = "جارٍ التنفيذ…"
+
+[devices_remove]
+text = "إزالة"
+
+[devices_unlink]
+text = "إلغاء الربط"
+
+[devices_remove_body]
+text = "يتوقف هذا الهاتف عن المزامنة والرنين، ويُحذف منه حسابك وجهات اتصالك ودردشاتك وسجل مكالماتك."
+
+[devices_only_device]
+text = "هذا هو الجهاز الوحيد الذي يحمل حسابك. دون كلمات الاسترداد لا يمكن استعادته."
+
+[devices_others_keep]
+text = "تحتفظ أجهزتك الأخرى بكل شيء."
+
+[devices_unlink_body]
+text = "يتوقف عن المزامنة وعن الرنين لمكالماتك. إذا كان متصلًا، يزيل حسابك منه بنفسه."
+
+[devices_unlink_warn]
+text = "إلغاء الربط لا يقفله من هنا. أي شخص يستطيع فتح قفله يمكنه استخدام حسابك. الطريقة الوحيدة للقطع التام هي حساب جديد."
+
+[devices_lost]
+text = "فُقد أو سُرق؟"
+
+[devices_your_pass]
+text = "عبارة المرور الخاصة بك"
+
+[unlock_wrong_pass]
+text = "لم تفتح عبارة المرور هذه الحساب."
+
+[unlock_lost_title]
+text = "تعذّر فتح حسابك"
+
+[unlock_lost_title_named]
+text = "تعذّر فتح حساب {name}"
+
+[unlock_lost_lead]
+text = "لم يعد لدى هذا الهاتف المفتاح الذي يفتح حسابك. يحدث ذلك بعد إعادة ضبط قفل الشاشة أو استعادة نسخة احتياطية. بعد الاستعادة، تصلك مكالماتك من جديد."
+
+[unlock_lost_notice]
+text = "لم تُعيَّن عبارة مرور لهذا الحساب، لذا فكلمات الاسترداد الأربع والعشرون هي طريق العودة الوحيد. تبقى جهات اتصالك كما هي."
+
+[unlock_restore]
+text = "الاستعادة بكلمات الاسترداد"
+
+[unlock_try_again]
+text = "إعادة المحاولة"
+
+[unlock_switch]
+text = "تبديل الحساب"
+
+[unlock_welcome]
+text = "أهلًا بعودتك"
+
+[unlock_welcome_named]
+text = "أهلًا بعودتك، {name}"
+
+[unlock_pass]
+text = "عبارة المرور"
+
+[unlock_slow_hint]
+text = "يستغرق التحقق ثانية. إنه بطيء عمدًا لمنع التخمين."
+
+[unlock_unlocking]
+text = "جارٍ فتح القفل…"
+
+[unlock_unlock]
+text = "فتح القفل"
+
+[unlock_forgot]
+text = "نسيتها"
+
+[unlock_welcome_prefix]
+text = "أهلًا بعودتك، "
+
+[unlock_switch_identity]
+text = "{name}، تبديل الهوية"
+
+[unlock_switch_identity_hint]
+text = "الفتح بهوية أخرى"
+
+[unlock_open_as]
+text = "الفتح باسم"
+
+[unlock_accounts]
+text = "الحسابات"
+
+[unlock_opens_now]
+text = "يُفتح فورًا"
+
+[unlock_asks_pass]
+text = "يطلب عبارة المرور"
+
+[unlock_acc_online]
+text = "متصل على هذا الهاتف"
+
+[unlock_acc_here]
+text = "على هذا الهاتف"
+
+[unlock_acc_locked]
+text = "مقفل · لا يرن هنا"
+
+[unlock_current_account]
+text = "الحساب الحالي"
+
+[unlock_create]
+text = "إنشاء حساب جديد"
+
+[unlock_link]
+text = "ربط حساب من جهاز آخر"
+
+[unlock_one_online]
+text = "يكون حساب واحد متصلًا في كل مرة. المكالمات إلى حساب مقفل ترن فقط على أجهزتك الأخرى."
+
+[unlock_finish_call]
+text = "يلزم إنهاء المكالمة أولًا"
+
+[unlock_switch_to]
+text = "التبديل إلى {name}؟"
+
+[unlock_switch_body]
+text = "سيصبح حساب {name} غير متصل على هذا الهاتف. المكالمات إلى {name} سترن فقط على أجهزتك المرتبطة الأخرى حتى العودة إليه."
+
+[unlock_pass_for]
+text = "عبارة مرور حساب {name}"
+
+[unlock_not_in_call]
+text = "لا توجد مكالمة جارية. لو كانت هناك مكالمة لأنهاها التبديل."
+
+[unlock_switching]
+text = "جارٍ التبديل…"
+
+[unlock_unlock_switch]
+text = "فتح القفل والتبديل"
+
+[unlock_switch_btn]
+text = "تبديل"
+
+[unlock_cancel]
+text = "إلغاء"
+
+[restore_key_typo]
+text = "في هذا المفتاح خطأ مطبعي أو أنه ناقص. يمكنك لصقه من جديد من المكان الذي حفظته فيه."
+
+[restore_title]
+text = "استعادة الحساب"
+
+[restore_lead_words]
+text = "يمكنك كتابة كلماتك الأربع والعشرين بالترتيب، أو لصقها أو لصق مفتاح الاسترداد في المربع الأول. تبقى على هذا الهاتف."
+
+[restore_lead_key]
+text = "تم إدخال مفتاح الاسترداد. يبقى على هذا الهاتف."
+
+[restore_key_label]
+text = "مفتاح الاسترداد"
+
+[restore_use_words]
+text = "استخدام كلماتي بدلًا من ذلك"
+
+[restore_paste]
+text = "اللصق من الحافظة"
+
+[restore_paste_failed]
+text = "تعذّرت قراءة الحافظة. يمكنك اللصق في المربع الأول بدلًا من ذلك."
+
+[restore_progress]
+text = "{count} من 24"
+
+[restore_words_label]
+text = "كلمات الاسترداد"
+
+[restore_continue]
+text = "متابعة"
+
+[restore_word_n]
+text = "الكلمة {count}"
+
+[link_gate_label]
+text = "الربط بحسابك"
+
+[link_same_code]
+text = "الرمز نفسه على الجهازين؟"
+
+[link_same_code_lead]
+text = "يمكنك التحقق من ظهور هذا الرمز على {name}، ثم الموافقة هناك."
+
+[link_fb_other_device]
+text = "جهازك الآخر"
+
+[link_diff_code]
+text = "الرمز مختلف، أو العملية ليست من طلبك؟ يُستحسن الإلغاء. ربما مسح شخص آخر رمز QR."
+
+[link_waiting]
+text = "بانتظار الموافقة…"
+
+[link_cancel]
+text = "إلغاء"
+
+[link_linking]
+text = "جارٍ الربط…"
+
+[link_receiving]
+text = "جارٍ استلام حسابك. يُستحسن إبقاء الجهازين مفتوحين."
+
+[link_failed]
+text = "تعذّر الربط"
+
+[link_try_again]
+text = "إعادة المحاولة"
+
+[link_not_now]
+text = "ليس الآن"
+
+[link_qr_lead]
+text = "على جهاز فيه حسابك، يمكنك فتح الإعدادات › ربط جهاز ومسح هذا الرمز."
+
+[link_qr_warn]
+text = "أي شخص يرى هذا الرمز خلال الدقائق القليلة القادمة قد يحاول استخدامه. يُستحسن عرضه على جهازك فقط."
+
+[link_new_code]
+text = "رمز جديد"
+
+[link_scan_instead]
+text = "المسح بدلًا من ذلك"
+
+[link_qr_label]
+text = "رمز QR لربط هذا الجهاز"
+
+[link_preparing]
+text = "جارٍ تجهيز رمزك…"
+
+[link_expired]
+text = "انتهت الصلاحية. يمكنك إنشاء رمز جديد."
+
+[link_expires]
+text = "ينتهي خلال {minutes}:{seconds} · يعمل مرة واحدة"
+
+[link_code_label]
+text = "رمز الربط {digits}"
+
+[link_new_title]
+text = "ربط جهاز جديد"
+
+[link_show_title]
+text = "عرض هذا الرمز على جهازك الجديد"
+
+[link_show_body]
+text = "على الجهاز الجديد، يمكنك اختيار «الربط بجهاز» ثم «المسح بدلًا من ذلك»، وتوجيهه نحو هذا الرمز."
+
+[link_back]
+text = "رجوع"
+
+[link_fb_new_device_cap]
+text = "الجهاز الجديد"
+
+[link_match_title]
+text = "هل الرمزان متطابقان؟"
+
+[link_match_body]
+text = "يريد {name} الانضمام إلى حسابك. يُفترض أن تظهر عليه الأرقام الستة نفسها الظاهرة أدناه."
+
+[link_match_warn]
+text = "يمكنك مقارنتهما بنفسك. إذا اختلفا، فربما مسح شخص آخر الرمز أولًا."
+
+[link_no_match]
+text = "غير متطابقين"
+
+[link_match]
+text = "متطابقان"
+
+[link_fb_new_device]
+text = "الجهاز الجديد"
+
+[link_connecting]
+text = "جارٍ الاتصال…"
+
+[link_linking_peer]
+text = "جارٍ ربط {name}"
+
+[link_reaching]
+text = "جارٍ الوصول إلى الجهاز الآخر"
+
+[link_sending]
+text = "جارٍ إرسال حسابك"
+
+[link_working]
+text = "قيد التنفيذ"
+
+[link_keep_open]
+text = "يُستحسن إبقاء الجهازين مفتوحين حتى انتهاء العملية."
+
+[link_done_title]
+text = "تم ربط {name}"
+
+[link_done_body]
+text = "يتزامن عندما يكون الجهازان متصلين في الوقت نفسه. جهات الاتصال غير المحظورة تتلقى قائمة أجهزتك المحدّثة في المرة القادمة التي تتصل فيها."
+
+[link_done]
+text = "تم"
+
+[link_close]
+text = "إغلاق"
+
+[link_scan_title]
+text = "مسح الرمز على جهازك الجديد"
+
+[link_scan_step1]
+text = "1.  على الجهاز الجديد، يمكنك فتح Tinline واختيار {action}."
+
+[link_scan_step1_action]
+text = "الربط بجهاز"
+
+[link_scan_step2]
+text = "2.  يعرض رمز QR ورمزًا قصيرًا. يعملان مرة واحدة خلال خمس دقائق."
+
+[link_scan_qr]
+text = "مسح رمز QR"
+
+[link_or_type]
+text = "أو كتابة الرمز"
+
+[link_continue]
+text = "متابعة"
+
+[link_show_instead]
+text = "عرض رمز QR هنا بدلًا من ذلك"
+
+[link_wrong_pass]
+text = "عبارة المرور هذه غير مطابقة."
+
+[link_lock_cancelled]
+text = "أُلغي التحقق بقفل الشاشة"
+
+[link_approve_title]
+text = "الموافقة على {name}؟"
+
+[link_approve_body]
+text = "الموافقة ترسل {phrase} الخاصة بك إلى {name}. يصبح نسخة كاملة منك: يمكنه قراءة دردشاتك والتصرف باسمك. الموافقة لجهاز بين يديك فقط."
+
+[link_approve_phrase]
+text = "كلمات الاسترداد"
+
+[link_your_pass]
+text = "عبارة المرور الخاصة بك"
+
+[link_dont]
+text = "عدم الربط"
+
+[link_approving]
+text = "جارٍ الموافقة…"
+
+[link_approve]
+text = "موافقة"
+
+[link_scan_code]
+text = "مسح الرمز"
+
+[link_torch]
+text = "الكشاف"
+
+[link_point_other]
+text = "توجيه الكاميرا نحو الرمز على جهازك الآخر"
+
+[link_point_new]
+text = "توجيه الكاميرا نحو رمز QR على جهازك الجديد"
+
+[link_scan_again]
+text = "المسح مرة أخرى"
+
+[link_code_once]
+text = "يعمل الرمز مرة واحدة وتنتهي صلاحيته خلال خمس دقائق."
+
+[link_unlinked_title]
+text = "أُلغي ربط هذا الهاتف"
+
+[link_unlinked_lead]
+text = "أزال أحد أجهزتك الأخرى {name} من هذا الهاتف. حُذفت هنا جهات اتصاله ودردشاته ومكالماته. لم تتأثر أجهزتك الأخرى."
+
+[link_fb_your_account]
+text = "حسابك"
+
+[link_ok]
+text = "حسنًا"
+
+[link_again]
+text = "الربط من جديد"
+
+[onboarding_dev_personal]
+text = "الهاتف الشخصي"
+
+[onboarding_exists_title]
+text = "موجود على هذا الهاتف"
+
+[onboarding_exists_confirm]
+text = "اختيار الحساب"
+
+[onboarding_not_now]
+text = "ليس الآن"
+
+[onboarding_exists_body]
+text = "كلمات الاسترداد هذه تخص حسابًا موجودًا هنا. يمكنك التبديل إليه بدلًا من إضافته مرة أخرى."
+
+[onboarding_fb_other_device]
+text = "جهازك الآخر"
+
+[onboarding_restore_warn_forgot]
+text = "الاستعادة تحافظ على الهوية نفسها: يلزم استخدام كلمات الاسترداد الخاصة بهذا الحساب. بعدها يمكنك تعيين عبارة مرور جديدة."
+
+[onboarding_restore_warn]
+text = "الخطوة التالية: اختيار عبارة مرور لهذا الحساب."
+
+[onboarding_welcome_title]
+text = "خط مباشر إلى من يهمّك"
+
+[onboarding_welcome_lead]
+text = "يصل Tinline هاتفك بهواتفهم مباشرة.\nكل ما يلزم اسم مستعار. مشفّر تمامًا بين الطرفين."
+
+[onboarding_emergency]
+text = "ليس لمكالمات الطوارئ."
+
+[onboarding_emergency_rest]
+text = "يمكنك استخدام تطبيق الهاتف في جهازك للوصول إلى خدمات الطوارئ."
+
+[onboarding_create]
+text = "إنشاء حسابي"
+
+[onboarding_have]
+text = "لديّ حساب"
+
+[onboarding_choose_title]
+text = "استخدام حسابك هنا"
+
+[onboarding_choose_lead]
+text = "حسابك هو كلمات الاسترداد الخاصة به، لذا يمكنك إحضاره إلى هذا الهاتف بطريقتين."
+
+[onboarding_opt_link]
+text = "ربط جهازي الآخر"
+
+[onboarding_opt_link_sub]
+text = "مسح رمز على جهاز فيه حسابك. تنتقل معه جهات اتصالك ودردشاتك."
+
+[onboarding_opt_restore]
+text = "استعادة حسابي"
+
+[onboarding_opt_restore_sub]
+text = "كتابة كلمات الاسترداد الأربع والعشرين. يبدأ هذا الهاتف بقائمة جهات اتصال فارغة."
+
+[onboarding_done_title]
+text = "خطك مفتوح"
+
+[onboarding_done_title_named]
+text = "خطك مفتوح يا {name}"
+
+[onboarding_done_lead]
+text = "يمكنك مسح رمزهم أو مشاركة رمزك، فتصبح المكالمات بينكم ممكنة."
+
+[onboarding_tip_devices]
+text = "جهازان أفضل من جهاز واحد"
+
+[onboarding_tip_devices_body]
+text = "يمكنك ربط جهاز آخر حين يتاح لك ذلك، حتى لا يمنعك فقدان أحدهما من الوصول إلى حسابك."
+
+[onboarding_tip_groups]
+text = "تُستضاف المجموعات على حاسوب"
+
+[onboarding_tip_groups_body]
+text = "لبدء مجموعة، يمكنك إضافة Tinline على حاسوب يبقى قيد التشغيل."
+
+[onboarding_add_contact]
+text = "إضافة أول جهة اتصال"
+
+[onboarding_name_title]
+text = "بأي اسم يناديك الناس؟"
+
+[onboarding_name_lead]
+text = "لا يراه إلا من تمت إضافتهم إلى جهات اتصالك."
+
+[onboarding_nickname]
+text = "اسمك المستعار"
+
+[onboarding_nickname_hint]
+text = "يمكنك تغييره في أي وقت من الإعدادات."
+
+[onboarding_continue]
+text = "متابعة"
+
+[onboarding_pass_title_forgot]
+text = "اختيار عبارة مرور جديدة"
+
+[onboarding_pass_title_link]
+text = "حماية هذا الهاتف"
+
+[onboarding_pass_title]
+text = "إضافة عبارة مرور"
+
+[onboarding_cta_restore]
+text = "استعادة الحساب"
+
+[onboarding_cta_add]
+text = "إضافة عبارة مرور"
+
+[onboarding_cta_save]
+text = "حفظ الحساب"
+
+[onboarding_pass_lead]
+text = "اختيارية. قفل يجعل فتح Tinline على هذا الهاتف لك وحدك."
+
+[onboarding_pass]
+text = "عبارة المرور"
+
+[onboarding_pass_notice]
+text = "تشفّر حسابك على هذا الهاتف. يتذكرها هاتفك، فتبقى المكالمات ترن بعد إعادة التشغيل. إذا نسيتها، تتيح لك كلمات الاسترداد تعيين عبارة جديدة."
+
+[onboarding_encrypting]
+text = "جارٍ التشفير…"
+
+[onboarding_skip]
+text = "التخطي حاليًا"
+
+[onboarding_seg_key]
+text = "المفتاح"
+
+[onboarding_seg_words]
+text = "الكلمات"
+
+[onboarding_rec_title_key]
+text = "إليك مفتاح الاسترداد"
+
+[onboarding_rec_title_words]
+text = "إليك كلمات الاسترداد"
+
+[onboarding_rec_lead_key]
+text = "مفتاح الاسترداد هو نفسه كلماتك الأربع والعشرون، في سطر واحد.\nيمكنك لصقه في مكان آمن. مدير كلمات المرور خيار رائع."
+
+[onboarding_rec_lead_words]
+text = "إذا انتقلت يومًا إلى جهاز آخر، فهذه الكلمات الأربع والعشرون تُحضر حسابك معك.\nيمكنك حفظ نسخة في مكان آمن. الورق خيار رائع."
+
+[onboarding_fb_your_account]
+text = "حسابك"
+
+[onboarding_saved_key]
+text = "حفظته"
+
+[onboarding_saved_words]
+text = "حفظتها"
+
+[onboarding_copy_again]
+text = "النسخ مرة أخرى"
+
+[onboarding_copy_key]
+text = "نسخ مفتاحي"
+
+[onboarding_copy_words]
+text = "نسخ كلماتي"
+
+[onboarding_elsewhere_key]
+text = "حفظته في مكان آخر"
+
+[onboarding_elsewhere_words]
+text = "كتبتها على ورق"
+
+[onboarding_dev_title]
+text = "تسمية هذا الهاتف"
+
+[onboarding_dev_lead]
+text = "لتمييز أجهزتك في «الأجهزة المرتبطة». لا يرى هذا الاسم إلا أجهزتك، ولا يراه أبدًا من يتلقون مكالماتك."
+
+[onboarding_dev_field]
+text = "اسم الجهاز"
+
+[onboarding_dev_hint]
+text = "يمكنك تغيير الاسم لاحقًا."
+
+[onboarding_dev_work]
+text = "هاتف العمل"
+
+[onboarding_dev_tablet]
+text = "الجهاز اللوحي"
+
+[onboarding_back_added]
+text = "تمت إضافة {name} إلى هذا الهاتف"
+
+[onboarding_fb_your_account_lc]
+text = "حسابك"
+
+[onboarding_back_title]
+text = "أهلًا بعودتك"
+
+[onboarding_back_title_named]
+text = "أهلًا بعودتك، {name}"
+
+[onboarding_back_added_lead]
+text = "الحساب المحدد وحده يكون متصلًا في كل مرة، لذا فإن {name} متصل الآن وحسابك الآخر متوقف مؤقتًا. يمكنك التبديل من الإعدادات."
+
+[onboarding_fb_this_account]
+text = "هذا الحساب"
+
+[onboarding_back_lead]
+text = "عاد حسابك إلى هذا الهاتف. جهات اتصالك ودردشاتك وسجل مكالماتك محفوظة على أجهزتك الأخرى، لا لدينا. يبدأ هذا الهاتف بقائمة جهات اتصال فارغة."
+
+[onboarding_open]
+text = "فتح Tinline"
+
+[onboarding_linked_title]
+text = "تم الربط بـ {name}"
+
+[onboarding_linked_lead]
+text = "تصل جهات اتصالك ودردشاتك من {name} وستبقى متطابقة على الجهازين."
+
+[onboarding_sync_contacts]
+text = "جهات الاتصال"
+
+[onboarding_sync_waiting]
+text = "بالانتظار"
+
+[onboarding_sync_calls]
+text = "سجل المكالمات"
+
+[onboarding_sync_slow]
+text = "لا شيء بعد. ربما يكون الجهاز الآخر غير متصل: ستُستأنف المزامنة من حيث توقفت في المرة القادمة التي يتصل فيها الجهازان."
+
+[onboarding_sync_keep]
+text = "يُفضَّل إبقاء الجهازين متصلين. تستمر المزامنة في الخلفية."
+
+[onboarding_nosave_title]
+text = "تعذّر حفظ حسابك"
+
+[onboarding_nosave_lead]
+text = "تعذّر على Tinline تخزين المفتاح الذي يفتح حسابك على هذا الهاتف، لذا لم يُحفظ حسابك بعد."
+
+[onboarding_nosave_notice]
+text = "لم يُحفظ شيء على هذا الهاتف بعد، لذا لا شيء يمكن خسارته. يمكنك إعادة المحاولة، أو حماية الحساب بعبارة مرور بدلًا من مفتاح الهاتف."
+
+[onboarding_trying]
+text = "جارٍ المحاولة…"
+
+[onboarding_try_again]
+text = "إعادة المحاولة"
+
+[onboarding_pass_instead]
+text = "إضافة عبارة مرور بدلًا من ذلك"
+
+[onboarding_terms_title]
+text = "قبل البدء"
+
+[onboarding_terms1]
+text = "بلا إعلانات ولا تتبّع."
+
+[onboarding_terms1_rest]
+text = "لا يجمع Tinline جهات اتصالك ولا مكالماتك ولا موقعك."
+
+[onboarding_terms2]
+text = "المكالمات مشفّرة تمامًا بين الطرفين."
+
+[onboarding_terms2_rest]
+text = "حين يتعذّر الخط المباشر، ينقل خادم ترحيل مشفّر المكالمة. لا يمكنه سماعها."
+
+[onboarding_terms3]
+text = "حسابك ملكك."
+
+[onboarding_terms3_rest]
+text = "يبقى على أجهزتك، لا على خادم. كلمات الاسترداد هي طريق العودة إليه، لذا يُستحسن حفظها في مكان آمن."
+
+[onboarding_terms_consent]
+text = "المتابعة تعني موافقتك على [شروط الاستخدام]({terms_url}) واطلاعك على [سياسة الخصوصية]({privacy_url})."
+
+[onboarding_agree]
+text = "أوافق"
+
+[onboarding_perm_mic]
+text = "الميكروفون"
+
+[onboarding_perm_mic_why]
+text = "ليسمعك الآخرون. يُستخدم أثناء المكالمة فقط."
+
+[onboarding_perm_notif]
+text = "الإشعارات"
+
+[onboarding_perm_notif_why]
+text = "لتظهر لك المكالمات والرسائل الواردة."
+
+[onboarding_perms_title]
+text = "لتصلك المكالمات"
+
+[onboarding_perms_lead]
+text = "يعمل Tinline مثل خط هاتف: يبقى مفتوحًا بهدوء في الخلفية. كل إذن من هذه اختياري، ويمكنك تغييره لاحقًا."
+
+[onboarding_perm_allowed]
+text = "تم منح إذن {name}"
+
+[onboarding_allow]
+text = "السماح"
+
+[onboarding_allow_a11y]
+text = "منح إذن {name}"
+
+[shellkit_hide_field]
+text = "إخفاء {name}"
+
+[shellkit_show_field]
+text = "إظهار {name}"
+
+[shellkit_passphrase]
+text = "عبارة المرور"
+
+[shellkit_hide_pass]
+text = "إخفاء عبارة المرور"
+
+[shellkit_show_pass]
+text = "إظهار عبارة المرور"
+
+[shellkit_to_light]
+text = "التبديل إلى الوضع الفاتح"
+
+[shellkit_to_dark]
+text = "التبديل إلى الوضع الداكن"
+
+[shellkit_back]
+text = "رجوع"
+
+[shellkit_progress]
+text = "{current} من {total}"
+
+[shellkit_progress_a11y]
+text = "تقدّم الإعداد، الخطوة {current} من {total}"
+
+[shellkit_progress_a11y_label]
+text = "تقدّم الإعداد، الخطوة {current} من {total}: {label}"
+
+[shellkit_on]
+text = "مفعّل"
+
+[shellkit_off]
+text = "متوقف"
+
+[shellkit_selected]
+text = "محدد"
+
+[shellkit_cancel]
+text = "إلغاء"
+
+[shell_ring_incoming]
+text = "مكالمة واردة"
+
+[shell_err_save_account]
+text = "تعذّر حفظ حسابك على هذا الهاتف."
+
+[shell_err_save_account_safely]
+text = "تعذّر حفظ حسابك بأمان على هذا الهاتف."
+
+[shell_flow_no_account]
+text = "لا يوجد حساب"
+
+[shell_flow_different_identity]
+text = "كلمات الاسترداد هذه تخص هوية أخرى"
+
+[shell_flow_account_changed]
+text = "تغيّر الحساب"
+
+[shell_err_wrong_passphrase]
+text = "لم تتطابق. يمكنك التحقق من الإملاء والمسافات."
+
+[shell_err_weak_passphrase]
+text = "يمكنك كتابة عبارة مرور أو تخطيها"
+
+[shell_err_locked]
+text = "مقفل — يلزم إدخال عبارة المرور لفتح القفل"
+
+[shell_err_bad_phrase]
+text = "لم تُقبل كلمات الاسترداد هذه"
+
+[shell_err_account_exists]
+text = "هذا الحساب موجود على هذا الهاتف من قبل"
+
+[shell_err_in_call]
+text = "يلزم إنهاء المكالمة أولًا"
+
+[shell_err_generic]
+text = "لم ينجح ذلك"
+
+[shell_call_what_incoming]
+text = "مكالمة واردة"
+
+[shell_call_what_outgoing]
+text = "مكالمة صادرة"
+
+[shell_call_what_unavailable]
+text = "أثناء عدم التوفر"
+
+[shell_call_what_missed]
+text = "مكالمة فائتة"
+
+[shell_call_what_declined]
+text = "مرفوضة"
+
+[shell_call_what_no_answer]
+text = "لا رد"
+
+[shell_call_what_cancelled]
+text = "ملغاة"
+
+[shell_call_what_unreachable]
+text = "تعذّر الاتصال"
+
+[shell_call_what_other]
+text = "اتصال"
+
+[shell_you]
+text = "أنت"
+
+[shell_unknown]
+text = "غير معروف"
+
+[shell_someone]
+text = "شخص ما"
+
+[shell_chat_waiting_unreachable]
+text = "بانتظار الإرسال — لا يمكن الوصول إلى {name} بعد"
+
+[shell_group_sys_joined]
+text = "انضمام {name} إلى المجموعة"
+
+[shell_group_sys_left]
+text = "مغادرة {name} للمجموعة"
+
+[shell_group_sys_removed_you]
+text = "تمت إزالتك بعد ثلاثة إبلاغات من المشرفين"
+
+[shell_group_sys_removed]
+text = "إزالة {name} بعد ثلاثة إبلاغات من المشرفين"
+
+[shell_group_sys_admin_granted_you]
+text = "تم تعيينك مشرفًا بواسطة {by}"
+
+[shell_group_sys_admin_granted]
+text = "تم تعيين {name} مشرفًا بواسطة {by}"
+
+[shell_group_sys_admin_revoked_you]
+text = "أُلغي إشرافك بواسطة {by}"
+
+[shell_group_sys_admin_revoked]
+text = "أُلغي إشراف {name} بواسطة {by}"
+
+[shell_group_sys_host_added_you]
+text = "أحد أجهزتك يستضيف المجموعة الآن"
+
+[shell_group_sys_host_added]
+text = "أحد أجهزة {name} يستضيف المجموعة الآن"
+
+[shell_group_sys_host_removed_you]
+text = "توقف أحد أجهزتك عن استضافة المجموعة"
+
+[shell_group_sys_host_removed]
+text = "توقف أحد أجهزة {name} عن استضافة المجموعة"
+
+[shell_group_preview_removed]
+text = "تمت إزالتك من هذه المجموعة"
+
+[shell_group_preview_left]
+text = "غادرت هذه المجموعة"
+
+[shell_group_preview_mine]
+text = "أنت: {text}"
+
+[shell_group_preview_other]
+text = "{name}: {text}"
+
+[shell_empty_chats]
+text = "تظهر دردشاتك هنا."
+
+[shell_empty_unread]
+text = "لا جديد لديك."
+
+[shell_empty_calls]
+text = "تظهر هنا المكالمات الصادرة والواردة."
+
+[shell_empty_contacts]
+text = "يظهر هنا من تمت إضافتهم."
+
+[shell_empty_hero_ready]
+text = "خطك جاهز"
+
+[shell_empty_hero_open]
+text = "خطك مفتوح"
+
+[shell_empty_request_waiting]
+text = "طلبك إلى {name} بالانتظار. يُفتح خطك عند القبول."
+
+[shell_empty_add_another]
+text = "إضافة جهة اتصال أخرى"
+
+[shell_empty_add_someone]
+text = "يمكنك إضافة من يهمك التحدث معه، لتتمكنا من المراسلة والاتصال."
+
+[shell_empty_add_first]
+text = "إضافة أول جهة اتصال"
+
+[shell_empty_say_hello]
+text = "يمكنك إلقاء التحية على {name} متى شئت."
+
+[shell_empty_message]
+text = "مراسلة {name}"
+
+[shell_empty_pick]
+text = "يمكنك اختيار شخص وإلقاء التحية متى شئت."
+
+[shell_empty_start_chat]
+text = "بدء دردشة"
+
+[shell_step_name]
+text = "اسمك المستعار"
+
+[shell_step_pass]
+text = "عبارة المرور"
+
+[shell_step_phrase]
+text = "كلمات الاسترداد"
+
+[shell_step_device]
+text = "اسم الجهاز"
+
+[shell_step_terms]
+text = "الشروط"
+
+[shell_step_perms]
+text = "الأذونات"
+
+[shell_step_restore]
+text = "استعادة الحساب"
+
+[shell_step_link_qr]
+text = "الربط بحسابك"
+
+[shell_pass_strength_empty]
+text = "أي طول مقبول. بضع كلمات عشوائية سهلة التذكر."
+
+[shell_pass_strength_short]
+text = "قصيرة. بضع كلمات إضافية تجعلها أقوى."
+
+[shell_pass_strength_fair]
+text = "مقبولة"
+
+[shell_pass_strength_strong]
+text = "قوية"
+
+[shell_restore_bad_one]
+text = "الكلمة {n} ليست في قائمة كلمات الاسترداد. يمكنك التحقق من الإملاء."
+
+[shell_restore_bad_many]
+text = "الكلمة {n} وكلمات أخرى ({more}) ليست في قائمة كلمات الاسترداد. يمكنك التحقق من الإملاء."
+
+[shell_restore_missing]
+zero = "لا كلمات ناقصة."
+one = "لا تزال كلمة واحدة ناقصة."
+two = "لا تزال كلمتان ناقصتين."
+few = "لا تزال {count} كلمات ناقصة."
+many = "لا تزال {count} كلمة ناقصة."
+other = "لا تزال {count} كلمة ناقصة."
+
+[shell_blocked]
+text = "محظور"
+
+[shell_home_new_group]
+text = "مجموعة جديدة"
+
+[shell_home_new_chat]
+text = "دردشة جديدة"
+
+[shell_banner_offline_title]
+text = "لا اتصال لديك"
+
+[shell_banner_offline_text]
+text = "تصلك مكالماتك من جديد عند عودة اتصالك."
+
+[shell_banner_noring_title]
+text = "لن ترن المكالمات"
+
+[shell_banner_noring_text]
+text = "إشعارات Tinline متوقفة."
+
+[shell_banner_turn_on]
+text = "تشغيل"
+
+[shell_banner_unavailable_title]
+text = "وضع عدم التوفر مفعّل"
+
+[shell_banner_unavailable_text]
+text = "لن ترن المكالمات حتى تفعيل التوفر من جديد."
+
+[shell_search]
+text = "بحث"
+
+[shell_settings]
+text = "الإعدادات"
+
+[shell_ring_a11y_waiting]
+text = "مكالمة من {name} أثناء مكالمتك"
+
+[shell_ring_a11y]
+text = "{sub} من {name}"
+
+[shell_ring_a11y_hint]
+text = "فتح المكالمة من {name}"
+
+[shell_ring_decline]
+text = "رفض"
+
+[shell_ring_end_answer]
+text = "إنهاء ثم الرد"
+
+[shell_ring_answer]
+text = "رد"
+
+[shell_tab_waiting]
+text = "{count} بالانتظار"
+
+[shell_tab_unread]
+text = "{count} غير مقروءة"
+
+[shell_tab_chats]
+text = "الدردشات"
+
+[shell_tab_groups]
+text = "المجموعات"
+
+[shell_tab_calls]
+text = "المكالمات"
+
+[shell_tab_contacts]
+text = "جهات الاتصال"
+
+[shell_err_call_start]
+text = "تعذّر بدء المكالمة"
+
+[shell_ring_waiting]
+text = "مكالمة أثناء مكالمتك"
+
+[shell_ring_incoming_video]
+text = "مكالمة فيديو واردة"
+
+[shell_mic_title]
+text = "لا يستطيع Tinline استخدام الميكروفون"
+
+[shell_mic_body]
+text = "دونه، لن يسمعك الطرف الآخر. لا يستمع Tinline إلا أثناء المكالمات، ولا يستمع في الخلفية أبدًا."
+
+[shell_mic_open_settings]
+text = "فتح الإعدادات"
+
+[shell_mic_hint]
+text = "ثم يمكنك الانتقال إلى الإعدادات › Tinline › الميكروفون والسماح به."
+
+[shell_not_now]
+text = "ليس الآن"
+
+[shell_my_profile]
+text = "ملفي الشخصي"
+
+[shell_filter_all]
+text = "الكل"
+
+[shell_filter_unread]
+text = "غير المقروءة"
+
+[shell_chats_draft]
+text = "مسودة:"
+
+[shell_chats_waiting]
+text = "بالانتظار"
+
+[shell_tick_slack]
+text = "بانتظار الإرسال"
+
+[shell_tick_one]
+text = "تم الإرسال"
+
+[shell_tick_two]
+text = "تم التسليم للجميع"
+
+[shell_tick_read]
+text = "قرأها الجميع"
+
+[shell_tick_bad]
+text = "لم تُسلَّم"
+
+[shell_calls_profile_a11y]
+text = "ملف {name} الشخصي"
+
+[shell_calls_what_duration]
+text = "{what} · {duration}"
+
+[shell_calls_row_a11y]
+text = "{name}، {what}، {stamp}. {action}"
+
+[shell_calls_row_a11y_duration]
+text = "{name}، {what}، {duration}، {stamp}. {action}"
+
+[shell_calls_action_call]
+text = "اتصال"
+
+[shell_calls_action_cant]
+text = "الاتصال غير متاح"
+
+[shell_calls_group_info_a11y]
+text = "{name}، معلومات المجموعة"
+
+[shell_calls_group_row_a11y]
+text = "{name}، {what}، {stamp}. بدء مكالمة أو الانضمام إليها"
+
+[shell_contacts_find]
+text = "البحث عن جهة اتصال"
+
+[shell_contacts_add]
+text = "إضافة جهة اتصال"
+
+[shell_contacts_add_sub]
+text = "مشاركة رمزك أو لصق رمزهم"
+
+[shell_contacts_waiting_you]
+text = "بانتظار ردك"
+
+[shell_contacts_waiting_them]
+text = "بانتظار الرد"
+
+[shell_contacts_wants_add]
+text = "طلب إضافتك جهةَ اتصال"
+
+[shell_contacts_accept]
+text = "قبول"
+
+[shell_contacts_accept_hint]
+text = "القبول يتيح لكما المراسلة والاتصال ببعضكما."
+
+[shell_contacts_request_sent]
+text = "تم إرسال الطلب. يُفتح خطك عند قبول {name}."
+
+[shell_contacts_none_match]
+text = "لا أحد باسم «{query}» في جهات اتصالك."
+
+[shell_contacts_count]
+zero = "لا جهات اتصال"
+one = "جهة اتصال واحدة"
+two = "جهتا اتصال"
+few = "{count} جهات اتصال"
+many = "{count} جهة اتصال"
+other = "{count} جهة اتصال"
+
+[shell_new_chat_last_message]
+text = "آخر رسالة {time}"
+
+[shell_new_chat_search_contacts]
+text = "البحث في جهات الاتصال"
+
+[shell_new_chat_add]
+text = "إضافة جهة اتصال"
+
+[shell_new_chat_add_sub]
+text = "مسح رمزهم أو لصق بطاقتهم"
+
+[shell_new_chat_contacts_header]
+text = "جهات الاتصال · {count}"
+
+[shell_new_chat_no_messages]
+text = "لا رسائل بعد"
+
+[shell_close_search]
+text = "إغلاق البحث"
+
+[shell_clear]
+text = "مسح"
+
+[shell_calls_recent]
+text = "المكالمات الأخيرة"
+
+[shell_calls_none]
+text = "لا مكالمات بعد. يبقى السجل على هذا الهاتف فقط."
+
+[shell_calls_history_note]
+text = "يبقى السجل على هذا الهاتف فقط."
+
+[shell_search_min_chars]
+text = "للبحث في الرسائل، يلزم حرفان أو أكثر."
+
+[shell_search_no_messages]
+text = "لا رسائل تطابق «{query}»"
+
+[shell_search_people_groups]
+text = "الأشخاص والمجموعات"
+
+[shell_search_no_names]
+text = "لا أشخاص ولا مجموعات مطابقة"
+
+[shell_search_messages]
+text = "الرسائل"
+
+[shell_back]
+text = "رجوع"
+
+[shell_search_clear]
+text = "مسح البحث"
+
+[shell_search_recent]
+text = "الأخيرة"
+
+[shell_search_empty_title]
+text = "البحث في الرسائل والأشخاص والمجموعات."
+
+[shell_search_empty_sub]
+text = "كل شيء يبقى على هذا الجهاز."
+
+[shell_search_kind_group]
+text = "مجموعة"
+
+[shell_search_kind_me]
+text = "ملفك الشخصي"
+
+[shell_search_kind_contact]
+text = "جهة اتصال"
+
+[shell_search_tile_a11y]
+text = "{name}، {kind}"
+
+[shell_search_author_prefix]
+text = "{name}: "
+
+[people_done]
+text = "تم"
+
+[people_cancel]
+text = "إلغاء"
+
+[people_close]
+text = "إغلاق"
+
+[people_back]
+text = "رجوع"
+
+[people_save]
+text = "حفظ"
+
+[people_remove]
+text = "إزالة"
+
+[people_not_now]
+text = "ليس الآن"
+
+[people_accept]
+text = "قبول"
+
+[people_message]
+text = "رسالة"
+
+[people_share]
+text = "مشاركة"
+
+[people_copied]
+text = "تم النسخ"
+
+[people_call]
+text = "اتصال"
+
+[people_add]
+text = "إضافة"
+
+[people_block]
+text = "حظر"
+
+[people_unblock]
+text = "إلغاء الحظر"
+
+[people_blocked]
+text = "محظور"
+
+[people_blocked_you]
+text = "تم حظرك"
+
+[people_someone]
+text = "شخص ما"
+
+[people_history_note]
+text = "يبقى السجل على هذا الهاتف فقط."
+
+[people_add_title]
+text = "إضافة جهة اتصال"
+
+[people_add_title_new]
+text = "جهة اتصال جديدة"
+
+[people_add_title_request]
+text = "طلب إضافة"
+
+[people_add_tab_code]
+text = "الرمز"
+
+[people_add_tab_qr]
+text = "QR"
+
+[people_add_point_camera]
+text = "توجيه الكاميرا نحو رمز Tinline الخاص بهم."
+
+[people_add_my_qr_a11y]
+text = "رمز QR الخاص بك"
+
+[people_add_preparing]
+text = "جارٍ تجهيز رمزك…"
+
+[people_add_reading_image]
+text = "جارٍ قراءة الصورة…"
+
+[people_add_let_scan]
+text = "يمكنهم مسح هذا الرمز باستخدام Tinline."
+
+[people_add_show_mine]
+text = "عرض رمزي"
+
+[people_add_scan_theirs]
+text = "مسح رمزهم"
+
+[people_add_choose_image]
+text = "اختيار صورة"
+
+[people_add_your_code]
+text = "رمزك"
+
+[people_add_new_code]
+text = "رمز جديد"
+
+[people_add_send_until]
+text = "يمكنك إرساله عبر أي تطبيق إلى من يهمك التحدث معه. يعمل حتى {date}."
+
+[people_add_send]
+text = "يمكنك إرساله عبر أي تطبيق إلى من يهمك التحدث معه."
+
+[people_add_copy_mine]
+text = "نسخ رمزي"
+
+[people_add_their_code]
+text = "رمزهم"
+
+[people_add_paste_theirs]
+text = "لصق رمزهم"
+
+[people_add_open_profile]
+text = "فتح الملف الشخصي"
+
+[people_add_paste_new]
+text = "لصق رمز جديد"
+
+[people_add_adding]
+text = "جارٍ الإضافة…"
+
+[people_add_try_again]
+text = "إعادة المحاولة"
+
+[people_add_hint_empty_clipboard]
+text = "الحافظة فارغة الآن. عندما يصل رمزهم، يمكنك نسخه ولصقه هنا."
+
+[people_add_hint_own_code]
+text = "هذا رمزك أنت. يمكنك إرساله إليهم، ولصق رمزهم هنا."
+
+[people_add_hint_expired]
+text = "انتهت صلاحية هذا الرمز من {name}. يمكنك طلب رمز جديد."
+
+[people_add_hint_not_code]
+text = "لا يبدو هذا رمز Tinline. هل يمكن نسخه لك مرة أخرى؟"
+
+[people_add_hint_no_qr]
+text = "لم يُعثر على رمز QR. يمكنك تجربة صورة أوضح."
+
+[people_add_hint_many_qr]
+text = "أكثر من رمز QR. يمكنك قص الصورة لإبقاء الرمز المطلوب."
+
+[people_add_hint_unreadable]
+text = "تعذّرت قراءة هذه الصورة. يمكنك اختيار صورة أخرى."
+
+[people_line_connected]
+text = "تم الاتصال"
+
+[people_line_connecting]
+text = "جارٍ الاتصال"
+
+[people_line_not_connected]
+text = "غير متصل بعد"
+
+[people_add_why_blocked]
+text = "حظرت {name}. لإعادة الإضافة، يلزم إلغاء الحظر أولًا من الخصوصية."
+
+[people_add_why_known]
+text = "{name} من جهات اتصالك بالفعل."
+
+[people_add_why_added]
+text = "خطك إلى {name} مفتوح. يمكنك إلقاء التحية."
+
+[people_add_why_requested]
+text = "تم إرسال الطلب. يُفتح خطك عند قبول {name}."
+
+[people_add_why_slow]
+text = "لا تزال المحاولة جارية. يجب أن يكون Tinline لدى {name} مفتوحًا ومتصلًا."
+
+[people_add_why_reaching]
+text = "جارٍ الوصول إلى Tinline لدى {name}…"
+
+[people_add_why_timeout]
+text = "تعذّر الوصول إلى Tinline لدى {name}. يجب أن يكون مفتوحًا ومتصلًا، لذا يمكنك المحاولة مرة أخرى عند تواجد {name}."
+
+[people_add_why_refused]
+text = "لم يعد رمز {name} صالحًا. ربما أُنشئ رمز جديد، لذا يمكنك طلب أحدث رمز من {name}."
+
+[people_add_why_blocked_by]
+text = "لا يمكن إضافة {name} الآن؛ فالتواصل هنا غير متاح باختيار الطرف الآخر."
+
+[people_add_why_offline]
+text = "لا اتصال لديك. بعد عودة الاتصال، يمكنك المحاولة مرة أخرى."
+
+[people_add_why_confirm]
+text = "هل يخص هذا الرمز {name}؟ عند الشك، يُستحسن التأكد مع صاحب الرمز أولًا."
+
+[people_add_read_camera]
+text = "قُرئ بالكاميرا"
+
+[people_add_read_image]
+text = "قُرئ من صورة"
+
+[people_add_accepted_you]
+text = "تم قبول طلبك"
+
+[people_add_has_your_code]
+text = "عبر رمزك"
+
+[people_add_inc_wants]
+text = "طلب إضافة من {name}. القبول يتيح لكما المراسلة والاتصال ببعضكما."
+
+[people_add_inc_accepted]
+text = "تم القبول من {name}. خطك إلى {name} مفتوح. يمكنك إلقاء التحية."
+
+[people_add_inc_open]
+text = "خطك إلى {name} مفتوح. يمكنك إلقاء التحية."
+
+[people_blocked_title]
+text = "الأشخاص المحظورون"
+
+[people_blocked_list_note]
+text = "قائمة واحدة على كل أجهزتك: الحظر من جهاز آخر يظهر هنا أيضًا."
+
+[people_blocked_empty]
+text = "لا أحد محظور. لحظر شخص، يمكنك فتح صفحة جهة الاتصال الخاصة به والنقر على «حظر»."
+
+[people_blocked_since]
+text = "تاريخ الحظر: {date}"
+
+[people_unblock_told]
+text = "سيُبلَّغ {name} بإلغاء الحظر"
+
+[people_unblock_a11y]
+text = "إلغاء حظر {name}"
+
+[people_unblocking_title]
+text = "إلغاء الحظر"
+
+[people_detail_calls_themselves]
+text = "الاسم المختار: «{name}»"
+
+[people_detail_rename]
+text = "إعادة التسمية"
+
+[people_detail_can_do]
+text = "صلاحيات {name}"
+
+[people_detail_allow_calls]
+text = "السماح بالمكالمات"
+
+[people_detail_allow_blocked]
+text = "محظور: لا يصل شيء حتى إلغاء الحظر."
+
+[people_detail_allow_on]
+text = "مكالمات {name} ترن على هذا الهاتف وأجهزتك الأخرى."
+
+[people_detail_allow_off]
+text = "متوقف. تصلك رسائل {name}، أما المكالمات فلا ترن."
+
+[people_detail_calls_with]
+text = "المكالمات مع {name}"
+
+[people_detail_call]
+text = "اتصال"
+
+[people_detail_direct]
+text = "مباشرة"
+
+[people_detail_relayed]
+text = "عبر خادم ترحيل"
+
+[people_detail_name_field]
+text = "الاسم على هذا الهاتف"
+
+[people_detail_rename_note]
+text = "هذا الاسم يظهر لك وحدك. يبقى الاسم المختار «{name}»."
+
+[people_detail_use_theirs]
+text = "استخدام الاسم المختار"
+
+[people_switch_on]
+text = "مفعّل"
+
+[people_switch_off]
+text = "متوقف"
+
+[people_chip_selected]
+text = "محدد"
+
+[people_field_hide]
+text = "إخفاء {label}"
+
+[people_field_show]
+text = "إظهار {label}"
+
+[people_passphrase]
+text = "عبارة المرور"
+
+[people_passphrase_hide]
+text = "إخفاء عبارة المرور"
+
+[people_passphrase_show]
+text = "إظهار عبارة المرور"
+
+[people_theme_light]
+text = "التبديل إلى الوضع الفاتح"
+
+[people_theme_dark]
+text = "التبديل إلى الوضع الداكن"
+
+[people_step_of]
+text = "{step} من {total}"
+
+[people_step_a11y]
+text = "تقدّم الإعداد، الخطوة {step} من {total}"
+
+[people_step_a11y_label]
+text = "تقدّم الإعداد، الخطوة {step} من {total}: {label}"
+
+[people_pic_too_big]
+text = "حجم هذه الصورة {size} ميغابايت. الحد الأقصى للصور {max} ميغابايت."
+
+[people_pic_bad_type]
+text = "يستطيع Tinline استخدام صور PNG أو JPEG أو WebP. هذا الملف من نوع آخر."
+
+[people_pic_unreadable]
+text = "تعذّرت قراءة هذا الملف كصورة. ربما يكون تالفًا."
+
+[people_pic_too_large_px]
+text = "أبعاد هذه الصورة {w} × {h} بكسل. يقبل Tinline حتى {max} بكسل لكل جانب."
+
+[people_rule_name_empty]
+text = "لا يمكن أن يكون الاسم فارغًا."
+
+[people_rule_name_control]
+text = "لا يمكن أن يحتوي الاسم على أحرف تحكم أو أحرف اتجاه النص."
+
+[people_rule_name_long]
+text = "هذا الاسم طويل جدًا. الحد {limit} بايت، وبعض الأحرف يشغل أكثر من بايت."
+
+[people_rule_status_long]
+text = "هذا طويل جدًا على الحالة: الحد {limit} بايت، وبعض الأحرف يشغل أكثر من بايت."
+
+[people_rule_about_long]
+text = "هذا طويل جدًا على النبذة: الحد {limit} بايت، وبعض الأحرف يشغل أكثر من بايت."
+
+[people_rule_status_control]
+text = "لا يمكن أن تحتوي الحالة على أحرف تحكم أو أحرف اتجاه النص."
+
+[people_rule_about_control]
+text = "لا يمكن أن تحتوي النبذة على أحرف تحكم أو أحرف اتجاه النص."
+
+[people_rule_key_empty]
+text = "يلزم اسم لهذه المعلومة."
+
+[people_rule_key_bad]
+text = "لا يمكن استخدام هذا الاسم. يُفضَّل اسم قصير بلا أحرف تحكم."
+
+[people_rule_value_long]
+text = "هذا طويل جدًا. الحد الأقصى لكل معلومة 16 كيلوبايت."
+
+[people_rule_too_many]
+text = "وصلت إلى الحد الأقصى وهو 64 معلومة. يمكنك إزالة واحدة لإضافة أخرى."
+
+[people_rule_full]
+text = "ملفك الشخصي ممتلئ. يمكنك إزالة بعض المعلومات لإضافة المزيد."
+
+[people_rule_picture]
+text = "يمكنك استخدام أدوات الصورة لذلك."
+
+[people_rule_availability]
+text = "يمكن تغيير التوفر لكن لا يمكن إزالته."
+
+[people_info_pronouns]
+text = "الضمائر"
+
+[people_info_pronouns_hint]
+text = "مثلًا: هي"
+
+[people_info_location]
+text = "الموقع"
+
+[people_info_location_hint]
+text = "المدينة أو المنطقة"
+
+[people_info_website]
+text = "الموقع الإلكتروني"
+
+[people_until_tomorrow]
+text = "غدًا {time}"
+
+[people_until_day]
+text = "{day} {time}"
+
+[people_busy_30m]
+text = "نصف ساعة"
+
+[people_busy_1h]
+text = "ساعة واحدة"
+
+[people_busy_4h]
+text = "أربع ساعات"
+
+[people_busy_tom]
+text = "صباح الغد"
+
+[people_busy_open]
+text = "دون وقت انتهاء"
+
+[people_picture_help]
+text = "استبدال صورتك أو إزالتها يطلب حذف النسخة المخزنة السابقة على أجهزتك المرتبطة ولدى جهات اتصالك عند المزامنة. لا يستطيع التطبيق محو لقطات الشاشة والنسخ الاحتياطية والنسخ التي تحتفظ بها تطبيقات معدَّلة."
+
+[people_field_help]
+text = "تستطيع جهات اتصالك رؤية ملفك الشخصي. إزالة المعلومات تخفيها من ملفك؛ وقد تبقى نسخ سابقة في السجل المتزامن."
+
+[people_busy_unsupported]
+text = "خيار «مشغول» غير متاح بعد. لم تتغير إعدادات مكالماتك."
+
+[people_save_failed]
+text = "تعذّر حفظ ذلك. ملفك الشخصي لم يتغير، وما كتبته لا يزال هنا."
+
+[people_account_changed]
+text = "تغيّر الحساب المحدد. لم يُحفظ شيء في الحساب الجديد."
+
+[people_save_picture_failed]
+text = "تعذّر حفظ صورتك. صورتك الحالية لم تتغير."
+
+[people_remove_picture_failed]
+text = "تعذّرت إزالة صورتك. لم يتغير شيء."
+
+[people_my_profile]
+text = "ملفي الشخصي"
+
+[people_profile_bad_link]
+text = "يلزم عنوان ويب يبدأ بـ http:// أو https://."
+
+[people_profile_section]
+text = "الملف الشخصي"
+
+[people_profile_name]
+text = "الاسم"
+
+[people_profile_name_placeholder]
+text = "اسمك"
+
+[people_profile_status]
+text = "الحالة"
+
+[people_profile_status_placeholder]
+text = "ما الجديد لديك؟"
+
+[people_profile_status_empty]
+text = "إضافة حالة"
+
+[people_profile_about]
+text = "نبذة"
+
+[people_profile_about_empty]
+text = "إضافة بضع كلمات عنك"
+
+[people_profile_availability]
+text = "التوفر"
+
+[people_profile_availability_note]
+text = "تراه جهات اتصالك، وهو نفسه على كل أجهزتك. يحدد ما إذا كانت المكالمات تصلك، وهو منفصل عن كونك متصلًا أم لا."
+
+[people_profile_additional]
+text = "معلومات إضافية"
+
+[people_profile_add_info]
+text = "إضافة معلومات"
+
+[people_profile_other_note]
+text = "بعض المعلومات جاءت من جهاز آخر أو إصدار آخر من التطبيق. تُعرض كما هي محفوظة، وتبقى عند تعديل أي شيء آخر."
+
+[people_profile_change_photo]
+text = "تغيير الصورة"
+
+[people_profile_add_photo]
+text = "إضافة صورة"
+
+[people_profile_picture]
+text = "الصورة"
+
+[people_profile_dismiss]
+text = "تجاهل"
+
+[people_profile_saved_offline]
+text = "تم الحفظ على هذا الجهاز. ستتم المزامنة عند الاتصال."
+
+[people_profile_too_detailed]
+text = "هذه الصورة كثيرة التفاصيل بحيث يتعذّر حفظها. يمكنك تجربة صورة أخرى."
+
+[people_profile_picture_updated]
+text = "تم تحديث الصورة"
+
+[people_profile_picture_removed]
+text = "تمت إزالة الصورة"
+
+[people_profile_remove_title]
+text = "إزالة صورتك؟"
+
+[people_profile_remove_note]
+text = "ستظهر الأحرف الأولى من اسمك بدلًا منها."
+
+[people_profile_remove_picture]
+text = "إزالة الصورة"
+
+[people_profile_available]
+text = "متاح"
+
+[people_profile_busy]
+text = "مشغول"
+
+[people_profile_busy_until]
+text = "مشغول حتى {time}"
+
+[people_profile_busy_open]
+text = "مشغول حتى التغيير"
+
+[people_profile_for_how_long]
+text = "لأي مدة"
+
+[people_profile_time_passed]
+text = "يلزم اختيار وقت لم يمضِ بعد."
+
+[people_profile_info_dup]
+text = "لديك معلومة بهذا الاسم من قبل."
+
+[people_profile_info_empty]
+text = "يلزم إدخال شيء لحفظه."
+
+[people_profile_something_else]
+text = "شيء آخر"
+
+[people_profile_what_called]
+text = "ما اسمها؟"
+
+[people_profile_called_placeholder]
+text = "مثلًا: الشاي المفضّل"
+
+[people_profile_value]
+text = "القيمة"
+
+[people_profile_name_it]
+text = "اسم من اختيارك"
+
+[people_profile_kinds]
+text = "أنواع المعلومات"
+
+[people_profile_add_note]
+text = "ستراها جهات اتصالك في ملفك الشخصي."
+
+[people_profile_link_title]
+text = "فتح هذا الرابط؟"
+
+[people_profile_link_note]
+text = "يُفتح في متصفحك، خارج Tinline. لا يحمّله Tinline نيابةً عنك، ولا يمكنه ضمان محتواه."
+
+[people_profile_open_link]
+text = "رابط مفتوح"
+
+[people_crop_title]
+text = "ضبط موضع صورتك"
+
+[people_crop_use]
+text = "استخدام الصورة"
+
+[people_crop_failed]
+text = "تعذّر تجهيز هذه الصورة. يمكنك تجربة صورة أخرى."
+
+[people_crop_help]
+text = "يمكن سحب الصورة لتحريكها، واستخدام شريط التمرير للتكبير."
+
+[people_crop_zoom]
+text = "تكبير"
+
+[people_ui_saved_offline]
+text = "تم الحفظ · تتم المزامنة عند الاتصال"
+
+[people_ui_saved]
+text = "تم الحفظ"
+
+[people_ui_not_set]
+text = "غير محدد"
+
+[people_ui_bytes]
+text = "{bytes} من {limit} بايت"
+
+[people_ui_remove_title]
+text = "إزالة «{label}» من ملفك الشخصي؟"
+
+[people_ui_remove_note]
+text = "يختفي من ملفك الشخصي. قد تبقى نسخ سابقة في السجل المتزامن."
+
+[people_ui_row_a11y]
+text = "{label}: {value}. تعديل"
+
+[people_ui_open_a11y]
+text = "فتح {label}: {url}"
+
+[people_ui_remove_a11y]
+text = "إزالة {label}"
+
+[people_yes]
+text = "نعم"
+
+[people_no]
+text = "لا"
+
+[call_route_phone]
+text = "الهاتف"
+
+[call_route_speaker]
+text = "مكبر الصوت"
+
+[call_route_headset]
+text = "سماعة الرأس"
+
+[call_route_bluetooth]
+text = "Bluetooth"
+
+[call_route_other]
+text = "أخرى"
+
+[call_mic_permission_needed_place]
+text = "يلزم إذن الميكروفون لإجراء مكالمة"
+
+[call_status_reconnecting]
+text = "جارٍ إعادة الاتصال…"
+
+[call_status_ringing]
+text = "جارٍ الرنين…"
+
+[call_status_calling]
+text = "جارٍ الاتصال…"
+
+[call_privacy_active]
+text = "مشفّرة تمامًا بين الطرفين. يُشفَّر صوتك على هذا الجهاز ولا يُفك تشفيره إلا على جهاز {name}."
+
+[call_privacy_connecting]
+text = "جارٍ الاتصال بـ {name}. بعد اتصال المكالمة، تكون مشفّرة تمامًا بين الطرفين."
+
+[call_mark_incoming]
+text = "مكالمة واردة"
+
+[call_mark_outgoing]
+text = "جارٍ الاتصال"
+
+[call_mark_connecting]
+text = "جارٍ الاتصال"
+
+[call_mark_active]
+text = "في مكالمة"
+
+[call_mark_reconnecting]
+text = "جارٍ إعادة الاتصال"
+
+[call_unknown_name]
+text = "غير معروف"
+
+[call_system_call_name]
+text = "مكالمة Tinline"
+
+[call_notification_name]
+text = "اتصال"
+
+[call_about_title]
+text = "حول هذه المكالمة"
+
+[call_back_continues]
+text = "رجوع. تستمر المكالمة"
+
+[call_message_continues]
+text = "رسالة. تستمر المكالمة"
+
+[call_about_reconnecting]
+text = "حول هذه المكالمة. جارٍ إعادة الاتصال."
+
+[call_about_signal_direct]
+text = "حول هذه المكالمة. إشارة {word}، مباشرة."
+
+[call_about_signal_relayed]
+text = "حول هذه المكالمة. إشارة {word}، عبر خادم ترحيل."
+
+[call_control_mute]
+text = "كتم الصوت"
+
+[call_control_muted]
+text = "مكتوم"
+
+[call_control_camera]
+text = "الكاميرا"
+
+[call_control_end_label]
+text = "إنهاء المكالمة"
+
+[call_control_end]
+text = "إنهاء"
+
+[call_control_flip_label]
+text = "تبديل الكاميرا"
+
+[call_control_flip]
+text = "تبديل"
+
+[call_control_audio_route]
+text = "الصوت: {route}"
+
+[call_status_incoming_video]
+text = "مكالمة فيديو عبر Tinline"
+
+[call_status_incoming_voice]
+text = "مكالمة صوتية عبر Tinline"
+
+[call_path_encrypted]
+text = "مشفّرة تمامًا بين الطرفين"
+
+[call_path_direct]
+text = "مشفّرة تمامًا بين الطرفين · مباشرة"
+
+[call_path_relayed]
+text = "مشفّرة تمامًا بين الطرفين · عبر خادم ترحيل"
+
+[call_about_encrypted_lead]
+text = "مشفّرة تمامًا بين الطرفين."
+
+[call_about_encrypted_voice]
+text = "يُشفَّر صوتك على هذا الجهاز ولا يُفك تشفيره إلا على جهاز {name}."
+
+[call_about_encrypted_video]
+text = "يُشفَّر صوتك وصورتك على هذا الجهاز ولا يُفك تشفيرهما إلا على جهاز {name}."
+
+[call_about_headline_reconnecting]
+text = "جارٍ إعادة الاتصال"
+
+[call_about_headline_direct]
+text = "إشارة {word} · مباشرة"
+
+[call_about_headline_relayed]
+text = "إشارة {word} · عبر خادم ترحيل"
+
+[call_about_line_reconnecting]
+text = "انقطع الاتصال لحظة. يبحث Tinline عن طريق للعودة إلى {name}."
+
+[call_about_line_direct]
+text = "تنتقل مكالمتك مباشرة بين جهازك وجهاز {name}."
+
+[call_about_line_relayed_voice]
+text = "لا يمكن لجهازيكما الوصول إلى بعضهما مباشرة الآن، لذا ينقل خادم ترحيل المكالمة. لا يمكنه الاستماع."
+
+[call_about_line_relayed_video]
+text = "لا يمكن لجهازيكما الوصول إلى بعضهما مباشرة الآن، لذا ينقل خادم ترحيل المكالمة. لا يمكنه الاستماع ولا المشاهدة."
+
+[call_about_line_weak]
+text = "الخط ضعيف، لذا قد يتقطع صوت {name}."
+
+[call_about_stats]
+text = "ذهاب وإياب {rtt} مللي ثانية · فقدان {loss}٪"
+
+[call_about_your_video]
+text = "الفيديو الخاص بك"
+
+[call_about_their_video]
+text = "فيديو الطرف الآخر"
+
+[call_got_it]
+text = "فهمت"
+
+[call_strip_return]
+text = "العودة إلى المكالمة مع {name}"
+
+[call_strip_return_group]
+text = "العودة إلى المكالمة الجماعية في {name}"
+
+[call_strip_return_video]
+text = "العودة إلى مكالمة الفيديو مع {name}"
+
+[call_strip_label]
+text = "{label}. {status}"
+
+[call_mic_unavailable]
+text = "الميكروفون غير متاح - صوتك لا يصل"
+
+[call_mic_permission_needed]
+text = "يلزم إذن الميكروفون - صوتك لا يصل"
+
+[call_camera_permission_needed]
+text = "يلزم إذن الكاميرا - لا يزال الطرف الآخر يسمعك"
+
+[call_camera_unavailable]
+text = "الكاميرا غير متاحة"
+
+[call_group_call_name]
+text = "مكالمة جماعية"
+
+[call_quality_auto]
+text = "تلقائي"
+
+[call_quality_prefer_hd]
+text = "تفضيل HD"
+
+[call_hd_off]
+text = "الفيديو الأوضح متوقف"
+
+[call_hd_paused]
+text = "HD متوقف مؤقتًا · اتصال ضعيف"
+
+[call_hd_on]
+text = "الفيديو الأوضح مفعّل"
+
+[call_hd_metered]
+text = "على بيانات الجوال يستهلك HD أكثر · النقر على HD"
+
+[call_resolution_hd]
+text = "HD · {size}"
+
+[call_status_finding_host]
+text = "جارٍ إيجاد مضيف للمكالمة…"
+
+[call_status_connecting]
+text = "جارٍ الاتصال…"
+
+[call_group_already_in_call]
+text = "أنت في مكالمة بالفعل."
+
+[call_group_ended]
+text = "انتهت المكالمة"
+
+[call_group_ended_host_lost]
+text = "انتهت المكالمة — فُقد المضيف"
+
+[call_group_battery_limited]
+text = "البطارية أقل من 15٪. الاستضافة محدودة: يُسمع شخص واحد فقط في كل مرة، ولا يمكن لأحد جديد الانضمام."
+
+[call_group_no_host]
+text = "لا يتوفر مضيف للمكالمة"
+
+[call_group_connect_failed]
+text = "تعذّر الاتصال"
+
+[call_person_you]
+text = "أنت"
+
+[call_person_someone]
+text = "شخص ما"
+
+[call_group_fallback]
+text = "مجموعة"
+
+[call_host_this_phone]
+text = "هذا الهاتف"
+
+[call_host_device]
+text = "جهاز {name}"
+
+[call_group_minimize]
+text = "تصغير المكالمة"
+
+[call_group_only_you]
+text = "أنت وحدك حتى الآن. بانتظار الآخرين."
+
+[call_group_people_count]
+zero = "لا أحد في المكالمة"
+one = "شخص واحد في المكالمة"
+two = "شخصان في المكالمة"
+few = "{count} أشخاص في المكالمة"
+many = "{count} شخصًا في المكالمة"
+other = "{count} شخص في المكالمة"
+
+[call_group_more]
+text = "+{count} آخرين"
+
+[call_ok]
+text = "حسنًا"
+
+[call_group_you_host]
+text = "جهازك يستضيف المكالمة"
+
+[call_group_host_is]
+text = "مضيف المكالمة: {host}"
+
+[call_control_leave]
+text = "مغادرة"
+
+[call_host_fallback]
+text = "مضيف المكالمة"
+
+[call_group_about_carries]
+text = "ينقل هذه المكالمة. يتصل به كل من في المكالمة، وهو يمرّر الصوت ويختار من يُسمع عندما يتحدث عدة أشخاص."
+
+[call_group_about_carrying]
+text = "ينقل هذه المكالمة. يتصل به كل من في المكالمة، وهو يمرّر الصوت ويختار من يُسمع عندما يتحدث عدة أشخاص."
+
+[call_group_about_trust]
+text = "اتصالك بمضيف المكالمة مشفّر، لكن مضيف المكالمة نفسه يستقبل الصوت، لذا يمكنه سماع هذه المكالمة. ثقتك به في المكالمة كثقتك بمضيف الدردشة في المنشورات."
+
+[call_group_about_who]
+text = "مضيف المكالمات جهاز اختاره أحد مشرفي المجموعة ووافق على ذلك. وهو منفصل عن استضافة الدردشة. يمكن للمشرفين تغيير مضيفي المكالمات من معلومات المجموعة."
+
+[call_group_in_call]
+text = "أنت في المكالمة"
+
+[call_group_in_progress]
+text = "مكالمة جارية"
+
+[call_group_started_by]
+text = "بمبادرة من {name}"
+
+[call_open]
+text = "فتح"
+
+[call_join]
+text = "انضمام"
+
+[call_group_open_label]
+text = "فتح {group}"
+
+[call_not_now]
+text = "ليس الآن"
+
+[call_dismiss]
+text = "تجاهل"
+
+[call_group_announce_ringing]
+text = "مكالمة جماعية من {name}"
+
+[call_group_announce_started]
+text = "مكالمة جديدة من {name}"
+
+[call_group_announce_ringing_label]
+text = "مكالمة جماعية من {name} إلى {group}"
+
+[call_group_announce_started_label]
+text = "مكالمة جديدة من {name} في {group}"
+
+[call_held]
+text = "قيد الانتظار أثناء مكالمتك الأخرى"
+
+[call_decline]
+text = "رفض"
+
+[call_answer]
+text = "رد"
+
+[call_video_button]
+text = "الفيديو"
+
+[call_answer_with_video]
+text = "الرد بالفيديو"
+
+[call_waiting_title]
+text = "مكالمة من {name}"
+
+[call_waiting_sub]
+text = "أثناء مكالمتك"
+
+[call_waiting_end_answer]
+text = "إنهاء ثم الرد"
+
+[call_waiting_end_answer_desc]
+text = "إنهاء ثم الرد"
+
+[call_waiting_ends]
+text = "تنتهي مكالمتك مع {name}"
+
+[call_waiting_label]
+text = "مكالمة من {name} أثناء مكالمتك"
+
+[call_starting_video]
+text = "جارٍ بدء الفيديو…"
+
+[call_route_sheet_title]
+text = "تشغيل صوت المكالمة عبر"
+
+[call_route_relayed_hint]
+text = "عبر خادم ترحيل: تعذّر الخط المباشر على هذه الشبكة، لذا ينقل خادم ترحيل مشفّر المكالمة. لا يمكنه سماعك."
+
+[call_selected]
+text = "محدد"
+
+[call_camera_off]
+text = "كاميرا {name} متوقفة"
+
+[call_connecting_video]
+text = "جارٍ توصيل الفيديو…"
+
+[call_hd_label_paused]
+text = "الفيديو الأوضح مفعّل، ومتوقف مؤقتًا لضعف الاتصال"
+
+[call_hd_label_on]
+text = "الفيديو الأوضح مفعّل، حتى 540p"
+
+[call_hd_label_off]
+text = "الفيديو الأوضح متوقف"
+
+[call_value_on]
+text = "مفعّل"
+
+[call_value_off]
+text = "متوقف"
+
+[call_ended_title]
+text = "انتهت المكالمة"
+
+[call_badge_direct]
+text = "مباشرة"
+
+[call_badge_relayed]
+text = "عبر خادم ترحيل"
+
+[call_badge_signal]
+text = "إشارة {word}"
+
+[call_call_again]
+text = "الاتصال مرة أخرى"
+
+[call_close]
+text = "إغلاق"
+
+[call_auto_close]
+text = "تُغلق تلقائيًا بعد أربع ثوانٍ."
+
+[call_unreachable_title]
+text = "تعذّر الوصول إلى {name}"
+
+[call_unreachable_title_blank]
+text = "تعذّر الوصول إلى هذا الشخص"
+
+[call_unreachable_body]
+text = "ربما يكون {name} غير متصل، أو خارج نطاق الإشارة، أو لا يستقبل المكالمات الآن. لا يستطيع Tinline ترك رسائل."
+
+[call_unreachable_body_blank]
+text = "ربما يكون هذا الشخص غير متصل، أو خارج نطاق الإشارة، أو لا يستقبل المكالمات الآن. لا يستطيع Tinline ترك رسائل."
+
+[call_try_again]
+text = "إعادة المحاولة"
+
+[call_mic_needed_title]
+text = "لا يستطيع Tinline استخدام الميكروفون"
+
+[call_mic_needed_body]
+text = "دونه، لن يسمعك الطرف الآخر. لا يستمع Tinline إلا أثناء المكالمات، ولا يستمع في الخلفية أبدًا."
+
+[call_open_settings]
+text = "فتح الإعدادات"
+
+[call_mic_needed_hint]
+text = "ثم يمكنك الانتقال إلى الإعدادات › Tinline › الميكروفون والسماح به."
+
+[people_add_or]
+text = "أو"
