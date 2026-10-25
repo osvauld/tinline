@@ -21,6 +21,7 @@ use crate::Error;
 mod api_call;
 mod api_contacts;
 mod api_identity;
+mod api_push;
 mod hooks;
 mod lifecycle;
 mod rotation;
@@ -32,6 +33,7 @@ mod unlock;
 // The runtime (account session, endpoint, 1:1 call, contacts cluster, rotation) is the
 // `node-runtime` crate; its items keep their `crate::node::` paths.
 pub use node_runtime::*;
+pub use self::api_push::{PushTarget, WakeOutcome};
 pub use self::types::*;
 
 /// What the engines share through `Deref<Target = NodeCtx>`: the runtime context plus the

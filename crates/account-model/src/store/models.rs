@@ -268,6 +268,14 @@ pub struct State {
     /// the whole announce window (`node::rotation`). Cleared by any authenticated session with
     /// them or a fresh ticket swap. Local.
     pub lost_touch: BTreeSet<String>,
+    /// Push wake-ups of this device (`docs/push.md`, `wake::WakeState`): the tokens we issued
+    /// and hold, our push target and the revoke outbox. `None` until first needed (then its
+    /// `hint_key` is drawn once). Local: a push token belongs to this device.
+    pub wake: Option<wake::WakeState>,
+    /// Contacts this device still has to hand their current wake token (retried like
+    /// `token_outbox`; the token is read from `wake.issued` on each attempt), with the hex
+    /// device IDs that already took it: every device of a contact needs its own copy. Local.
+    pub wake_outbox: BTreeMap<String, BTreeSet<String>>,
 }
 
 /// See `State::private_ep`. `made == 0`: not scheduled yet (set on the first start).

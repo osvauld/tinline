@@ -68,6 +68,8 @@ class CoreService : Service() {
             ACTION_GCALL_MUTE -> app.groupCallUi.toggleMute()
             ACTION_DECLINE_WAITING -> app.calls.declineWaiting()
             ACTION_END_ANSWER -> app.calls.endAndAnswer()
+            // The wake ring's Decline (WakeRing); ACTION_WAKE only keeps the process up while a wake is handled.
+            ACTION_WAKE_DECLINE -> WakeRing.decline(app)
             // ACTION_IN_CALL / ACTION_IDLE are plain pokes: the state is re-derived below, so
             // their order does not matter, and a 1:1 call ending keeps a group call's call mode.
         }
@@ -75,7 +77,27 @@ class CoreService : Service() {
         enterForeground()
         updateLocks()
         app.startNode()
+        scheduleIdleStop()
         return START_STICKY
+    }
+
+    /**
+     * Wake-by-push mode (docs/push.md): the service is only here for a wake, a ring or a call. Once nothing is going on
+     * for [IDLE_HOLD_MS] it stops itself and the phone sleeps again; the next push starts it. Always-on mode never stops.
+     * Main thread only.
+     */
+    private val idleStop = Runnable {
+        if (!PushMode.pushOn(this)) return@Runnable
+        if (inCall != null) return@Runnable      // [apply] schedules again when the call ends
+        if (WakeRing.active) { scheduleIdleStop(); return@Runnable }
+        CallTrace.add("service idle in push mode: stopping")
+        try { stopForeground(STOP_FOREGROUND_REMOVE) } catch (_: Exception) {}
+        stopSelf()
+    }
+
+    private fun scheduleIdleStop() {
+        main.removeCallbacks(idleStop)
+        if (inCall == null && PushMode.pushOn(this)) main.postDelayed(idleStop, IDLE_HOLD_MS)
     }
 
     /** Main thread only. Derives [inCall] from the call state ([CallNotif]); true when it changed. */
@@ -91,8 +113,8 @@ class CoreService : Service() {
 
     /** Main thread only: re-derive and re-post; a change also redoes the service type and the locks. */
     private fun apply(why: String) {
-        if (reevaluate(why)) { enterForeground(); updateLocks(); return }
-        repost()
+        if (reevaluate(why)) { enterForeground(); updateLocks() } else repost()
+        scheduleIdleStop()
     }
 
     private fun notifId() = if (inCall != null) Notifications.ID_CALL else Notifications.ID_SERVICE
@@ -158,6 +180,7 @@ class CoreService : Service() {
 
     override fun onDestroy() {
         main.removeCallbacks(settle)
+        main.removeCallbacks(idleStop)
         try { cm.unregisterNetworkCallback(netCb) } catch (_: Exception) {}
         watch?.cancel(); watch = null
         inCall = null; updateLocks()
@@ -170,6 +193,8 @@ class CoreService : Service() {
     companion object {
         const val TAG = "CoreService"
         private const val SETTLE_MS = 1500L
+        /** Wake-by-push mode: how long the service stays after the last wake, ring or call (the core's ring cap is 40 s). */
+        private const val IDLE_HOLD_MS = 90_000L
         const val ACTION_DECLINE = "com.osvauld.p2p.DECLINE"
         const val ACTION_HANGUP = "com.osvauld.p2p.HANGUP"
         const val ACTION_DECLINE_WAITING = "com.osvauld.p2p.DECLINE_WAITING"
@@ -178,6 +203,8 @@ class CoreService : Service() {
         const val ACTION_GCALL_MUTE = "com.osvauld.p2p.GCALL_MUTE"
         const val ACTION_IN_CALL = "com.osvauld.p2p.IN_CALL"
         const val ACTION_IDLE = "com.osvauld.p2p.IDLE"
+        const val ACTION_WAKE = "com.osvauld.p2p.WAKE"
+        const val ACTION_WAKE_DECLINE = "com.osvauld.p2p.WAKE_DECLINE"
         @Volatile var running: CoreService? = null
         private val main = android.os.Handler(android.os.Looper.getMainLooper())
 
@@ -187,6 +214,14 @@ class CoreService : Service() {
         /** Re-derives the running service's call state on the main thread (no start command). */
         fun poke(why: String) {
             main.post { running?.apply(why) }
+        }
+
+        /**
+         * Boot, app open, account switch: the always-on service only in always-on mode. In wake-by-push mode the node is
+         * started without it (a push or a call raises the service when needed).
+         */
+        fun ensureAlwaysOn(ctx: Context) {
+            if (PushPolicy.wantsAlwaysOnService(PushMode.mode(ctx))) ensureRunning(ctx) else P2pApp.get(ctx).startNode()
         }
 
         /**

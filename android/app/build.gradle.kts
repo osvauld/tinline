@@ -1,4 +1,5 @@
 import org.gradle.process.ExecOperations
+import java.util.Properties
 import javax.inject.Inject
 
 plugins {
@@ -9,6 +10,20 @@ plugins {
 // Controlled quality experiment. Opt-in debug only; no release/default preference change.
 val videoHdCapture = (findProperty("videoHdCapture") as String? ?: "false").toBooleanStrictOrNull()
     ?: throw GradleException("-PvideoHdCapture must be true or false")
+
+// Firebase settings for the `play` edition only (docs/push.md). Nothing here is a secret that may
+// be committed: values come from -P properties, environment variables or the gitignored
+// android/firebase.properties (see firebase.properties.example). With none set the play build still
+// compiles and runs; push is simply unavailable and the app stays always-on.
+val firebaseFile = rootProject.file("firebase.properties")
+val firebaseProps = Properties().apply {
+    if (firebaseFile.isFile) firebaseFile.inputStream().use { load(it) }
+}
+fun firebaseValue(key: String): String {
+    val v = ((findProperty(key) as String?) ?: System.getenv(key) ?: firebaseProps.getProperty(key) ?: "").trim()
+    require(v.none { it == '"' || it == '\\' || it.isISOControl() }) { "$key contains an unsupported character" }
+    return v
+}
 
 android {
     namespace = "com.osvauld.p2p"
@@ -24,11 +39,30 @@ android {
         // -PvideoTuning=false builds without it.
         buildConfigField("boolean", "VIDEO_TUNING", ((findProperty("videoTuning") as String?) ?: "true").toBoolean().toString())
         // Play needs a higher code on every upload; scripts/build_android.py --bundle passes the commit count.
-        versionCode = (findProperty("versionCode") as String?)?.toInt() ?: 587
-        versionName = (findProperty("versionName") as String?) ?: "0.2.0"
+        versionCode = (findProperty("versionCode") as String?)?.toInt() ?: 588
+        versionName = (findProperty("versionName") as String?) ?: "0.2.1"
         // Only ship ABIs that have libp2pcore: libraries like JNA bring 32-bit/mips copies, which
         // would make Play offer the app to devices where the core can't load.
         ndk { abiFilters += (findProperty("abis") as String? ?: "x86_64,arm64-v8a").split(",").map { it.trim() } }
+    }
+    // Two editions of one codebase (docs/push.md "Editions"). `play`: wakes by FCM (the only Google SDK,
+    // firebase-messaging), always-on is a Settings option. `liberum`: no Google or Firebase code at all,
+    // always-on as before; the PushProvider seam is in src/play and src/liberum.
+    flavorDimensions += "edition"
+    productFlavors {
+        create("play") {
+            dimension = "edition"
+            manifestPlaceholders["appLabel"] = "Tinline"
+            buildConfigField("String", "FIREBASE_PROJECT_ID", "\"${firebaseValue("FIREBASE_PROJECT_ID").ifEmpty { "tinline-3f889" }}\"")
+            buildConfigField("String", "FIREBASE_APP_ID", "\"${firebaseValue("FIREBASE_APP_ID")}\"")
+            buildConfigField("String", "FIREBASE_API_KEY", "\"${firebaseValue("FIREBASE_API_KEY")}\"")
+            buildConfigField("String", "FIREBASE_GCM_SENDER_ID", "\"${firebaseValue("FIREBASE_GCM_SENDER_ID")}\"")
+        }
+        create("liberum") {
+            dimension = "edition"
+            applicationId = "com.osvauld.tinline.liberum"
+            manifestPlaceholders["appLabel"] = "Tinline Liberum"
+        }
     }
     // Release signing: set RELEASE_STORE_FILE / RELEASE_STORE_PASSWORD / RELEASE_KEY_ALIAS /
     // RELEASE_KEY_PASSWORD in ~/.gradle/gradle.properties (or -P). Without them the release build
@@ -75,6 +109,10 @@ android {
 }
 
 dependencies {
+    // The only Google SDK, play edition only: FCM wake-ups (opaque token in, empty data push out; no
+    // analytics, no crashlytics). `check` for the liberum edition: scripts/check_no_google.py.
+    "playImplementation"("com.google.firebase:firebase-messaging:24.1.2")
+    "playImplementation"("com.google.android.gms:play-services-base:18.5.0")
     implementation(platform("androidx.compose:compose-bom:2026.09.00"))
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.ui:ui")

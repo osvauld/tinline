@@ -88,6 +88,8 @@ pub struct CallStats {
     pub rx_rms: f32,
     /// Active, but no media for over 1.5 s and the call has not ended: the path is changing.
     pub reconnecting: bool,
+    /// Still dialling, and the relay took a wake for the callee's phone: "Waking their phone…".
+    pub waking: bool,
 }
 impl Me {
     pub fn load(profile: Profile, epoch: u64) -> Result<Self, Error> {

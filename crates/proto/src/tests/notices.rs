@@ -211,3 +211,28 @@ fn tokens_message_round_trips() {
     assert_eq!(back, m);
     assert_eq!(g.peek().unwrap().claim, Cap::Message);
 }
+
+fn wake_tokens(token: String) -> Msg {
+    Msg::WakeTokens {
+        device: [7; 32],
+        token,
+        exp_ms: M0 + GTTL,
+        kinds: 3,
+    }
+}
+
+#[test]
+fn wake_tokens_messages_round_trip() {
+    for m in [wake_tokens("sealed.token-_".into()), Msg::WakeTokensTaken] {
+        let (back, _) = decode_frame(&encode_frame(&m)).unwrap().unwrap();
+        assert_eq!(back, m);
+    }
+}
+
+#[test]
+fn wake_token_bounded() {
+    let max = wake_tokens("a".repeat(MAX_WAKE_TOKEN_CHARS));
+    assert_eq!(decode_frame(&encode_frame(&max)).unwrap().unwrap().0, max);
+    let big = wake_tokens("a".repeat(MAX_WAKE_TOKEN_CHARS + 1));
+    assert_eq!(decode_frame(&encode_frame(&big)).err(), Some(Error::Decode));
+}

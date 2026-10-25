@@ -122,9 +122,21 @@ class CallController(private val app: P2pApp) {
         CallTrace.add("incoming ${shortId(call.callId)}${if (cur != null) " over ${shortId(cur.info.callId)} ${CallNotif.of(cur)}" else ""}")
         everActive = false; _ended.value = null
         app.video.reset()
-        _ui.value = CallUi(call, CallState.Ringing)
+        // A call wake already rang for this contact (docs/push.md): this call takes the ring over instead of ringing twice.
+        // Answered on the wake screen: in call from now on, the core has accepted it as it arrived.
+        val wake = WakeRing.match(call.peerDid)
+        _ui.value = CallUi(call, CallState.Ringing, answered = wake.answeredEarly)
+        WakeRing.consumed(call.peerDid)
         newSession(call)
         CoreService.ensureRunning(app)
+        if (wake.answeredEarly) {
+            CallTrace.add("wake ring answered early ${shortId(call.callId)}")
+            stopRinging(); Notifications.cancelIncoming(app)
+            inCallService()
+            session?.answering()
+            return
+        }
+        if (wake.matched && AppVisible.resumed && AppVisible.ringHeadUp) Notifications.cancelIncoming(app)
         // The app is open and unlocked on Home: the home header (RingHead) is the incoming call, so the system heads-up stays
         // away. On any other screen there is no RingHead, so the notification is posted as usual.
         // It is posted the moment the app leaves the front while the phone is still ringing ([appLeftFront]).
@@ -239,6 +251,7 @@ class CallController(private val app: P2pApp) {
             early.filter { it.first == info.callId }.also { early.clear() }
         }
         replay.forEach { (id, st) -> onState(id, st) }
+        watchDialing(info.callId)
         val i = Intent(app, CallActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         try { app.startActivity(i) } catch (e: Exception) { Log.w("Call", "cannot open call screen: $e") }
         info
@@ -449,6 +462,19 @@ class CallController(private val app: P2pApp) {
         testLog(if (s == null) "stats none" else statsLine(s))
     }
 
+    /** While our call is still Dialing, reads `waking` (the callee's phone is being woken) twice a second. */
+    private fun watchDialing(callId: String) {
+        app.scope.launch {
+            while (isActive) {
+                val u = _ui.value
+                if (u?.info?.callId != callId || u.state !is CallState.Dialing) break
+                val s = try { app.node.callStats() } catch (_: Exception) { null }
+                if (s != null && s.callId == callId) _ui.update { if (it?.info?.callId == callId && it.state is CallState.Dialing) it.copy(stats = s) else it }
+                delay(500)
+            }
+        }
+    }
+
     private fun startStats() {
         statsJob?.cancel()
         statsJob = app.scope.launch {
@@ -492,6 +518,10 @@ class CallController(private val app: P2pApp) {
             }
         } catch (e: Exception) { Log.w("Call", "vibrate: $e") }
     }
+
+    /** A call wake rings (WakeRing): the same ringtone and vibration as a call; the real call restarts it as its own. */
+    internal fun ringForWake() = startRinging()
+    internal fun stopRingForWake() = stopRinging()
 
     private fun vibrator(): Vibrator =
         if (Build.VERSION.SDK_INT >= 31)
