@@ -110,6 +110,14 @@ Fix: one string with `{name}` (and bold markup) inside.
 - "Declined" for an invitation needs its own entry ("Invitation declined").
 - `calls_row_desc*`: pass a full phrase ("Missed call") as `{what}`, never an adjective.
 
+## 9d. Lists joined in code (ar)
+
+Code joins names/roles with English ", " and " and ": `groupsb_desc_*`,
+`group_member_desc_*`, `groups_msg_and`, `group_names_and`, desktop `group_and`.
+Arabic needs «،», and other scripts have their own separators.
+Fix: join with the platform list formatter (Android `ListFormatter`, iOS
+`ListFormatter`/`formatted(.list)`, desktop: a translated separator key), never a literal.
+
 ## 10. Not translatable
 
 - `app_ev` "Ev" is a Debug format string: remove it from the catalog.
