@@ -1313,6 +1313,10 @@ note = "Group list row preview of the user’s own last post. {text} is the post
 text = "{name}: {text}"
 note = "Group list row preview of someone’s last post. {name} is the author’s first name, {text} the post."
 
+[group_preview_someone]
+text = "Someone: {text}"
+note = "Group list row preview of the last post by a member whose name is not known. {text} is the post."
+
 [group_members_count]
 one = "{count} member"
 other = "{count} members"
@@ -1347,21 +1351,41 @@ note = "Small line under the user’s post that no host has taken yet."
 text = "Waiting for {name} · via {group}"
 note = "Line for a chat request the user sent. {name} is who it went to, {group} the group it goes through."
 
+[group_req_pending_unnamed]
+text = "Waiting for them · via {group}"
+note = "State line of a chat request you sent, when the person’s name is not known. {group} is the group."
+
 [group_req_accepted_msgs]
 text = "{name} accepted · messages only"
 note = "Line for an accepted chat request when the contact was added. {name} is who accepted."
+
+[group_req_accepted_msgs_unnamed]
+text = "Accepted · messages only"
+note = "State line of a chat request you sent, when the person’s name is not known: accepted, messages only."
 
 [group_req_accepted_connecting]
 text = "{name} accepted · connecting"
 note = "Line for an accepted chat request, still connecting. {name} is who accepted."
 
+[group_req_accepted_connecting_unnamed]
+text = "Accepted · connecting"
+note = "State line of a chat request you sent, when the person’s name is not known: accepted, connecting."
+
 [group_req_declined]
 text = "{name} declined"
 note = "Line for a declined chat request. {name} is who declined."
 
+[group_req_declined_unnamed]
+text = "Declined"
+note = "State line of a chat request you sent, when the person’s name is not known: declined."
+
 [group_req_blocked]
 text = "{name} blocked you"
 note = "Line for a chat request that was blocked. {name} is who blocked the user."
+
+[group_req_blocked_unnamed]
+text = "They blocked you"
+note = "State line of a chat request you sent, when the person’s name is not known: they blocked you."
 
 [group_pick_already_member]
 text = "Already a member"
@@ -1807,7 +1831,8 @@ text = "Add to {group}"
 note = "Title of the add-people page. {group} is the group’s name."
 
 [group_contacts_selected]
-text = "CONTACTS · {count} SELECTED"
+one = "CONTACTS · {count} SELECTED"
+other = "CONTACTS · {count} SELECTED"
 note = "Section label of the contact picker. {count} is how many are selected."
 
 [group_add_no_contacts]
@@ -4195,11 +4220,13 @@ text = "Answer"
 note = "Button that answers a ringing call."
 
 [shell_tab_waiting]
-text = "{count} waiting"
+one = "{count} waiting"
+other = "{count} waiting"
 note = "Screen reader value of the Contacts tab badge. {count} requests are waiting."
 
 [shell_tab_unread]
-text = "{count} unread"
+one = "{count} unread"
+other = "{count} unread"
 note = "Screen reader value of a tab badge. {count} unread chats."
 
 [shell_tab_chats]

@@ -270,7 +270,8 @@ enum GroupText {
             guard let m = s.last else { return "" }
             if m.kind != .post { return sysText(m, me: me) }
             if m.outgoing { return tr("group_preview_you", m.text) }
-            return tr("group_preview_author", groupsFirstName(someone(m.authorName)), m.text)
+            if m.authorName.groupsIsBlank { return tr("group_preview_someone", m.text) }
+            return tr("group_preview_author", groupsFirstName(m.authorName), m.text)
         }
     }
 
@@ -298,12 +299,15 @@ enum GroupText {
 
     /// A sent request's state line and whether it is bad news. A block is visible (U5 revised, P5).
     static func sentLine(_ r: GroupChatRequest) -> (String, Bool) {
-        let f = groupsFirstName(someone(r.peerName))
+        let f = groupsFirstName(r.peerName)
+        let named = !r.peerName.groupsIsBlank
         switch r.state {
-        case .pending: return (tr("group_req_pending", f, r.groupName), false)
-        case .accepted: return (r.contactAdded ? tr("group_req_accepted_msgs", f) : tr("group_req_accepted_connecting", f), false)
-        case .declined: return (tr("group_req_declined", f), true)
-        case .blocked: return (tr("group_req_blocked", f), true)
+        case .pending: return (named ? tr("group_req_pending", f, r.groupName) : tr("group_req_pending_unnamed", r.groupName), false)
+        case .accepted:
+            if r.contactAdded { return (named ? tr("group_req_accepted_msgs", f) : tr("group_req_accepted_msgs_unnamed"), false) }
+            return (named ? tr("group_req_accepted_connecting", f) : tr("group_req_accepted_connecting_unnamed"), false)
+        case .declined: return (named ? tr("group_req_declined", f) : tr("group_req_declined_unnamed"), true)
+        case .blocked: return (named ? tr("group_req_blocked", f) : tr("group_req_blocked_unnamed"), true)
         }
     }
 

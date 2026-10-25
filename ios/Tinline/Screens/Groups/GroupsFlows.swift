@@ -74,7 +74,7 @@ private struct AddMembersScreen: View {
             GroupsPage(title: tr("group_add_to_title", d.name)) {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 4) {
-                        GroupsSectionLabel(tr("group_contacts_selected", picked.count))
+                        GroupsSectionLabel(trn("group_contacts_selected", picked.count))
                         if rows.isEmpty { GroupsHint(tr("group_add_no_contacts")) }
                         ForEach(rows, id: \.did) { r in row(r) }
                         GroupsHint(tr("group_add_hint")).padding(.top, 8)

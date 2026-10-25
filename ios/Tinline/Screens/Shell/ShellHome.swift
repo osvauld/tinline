@@ -364,7 +364,7 @@ struct ShellTabBar: View {
                     }
                     .buttonStyle(ShellPressStyle(wash: .clear, radius: 0))
                     .accessibilityLabel(t.title).accessibilityAddTraits(on ? [.isSelected, .isButton] : .isButton)
-                    .accessibilityValue(badge > 0 ? (t == .contacts ? tr("shell_tab_waiting", badge) : tr("shell_tab_unread", badge)) : "")
+                    .accessibilityValue(badge > 0 ? (t == .contacts ? trn("shell_tab_waiting", badge) : trn("shell_tab_unread", badge)) : "")
                     .animation(reduced ? nil : TinMotion.easeOut(TinMotion.indicator), value: on)
                 }
             }
