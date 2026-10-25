@@ -11894,7 +11894,7 @@ en = "Yours will be flag {yours} of {total}. Any admin’s flags count, yours ag
 where = [
   "ios group_flag_copy: Flag dialog sentence for a flag that does not remove yet. {yours} is which flag it is, {total} flags remove, {name} the member’s first name.",
 ]
-text = ""
+text = "Deine wird Markierung {yours} von {total}. Markierungen aller Admins zählen, auch weitere von dir. Bei {total} Markierungen wird {name} sofort entfernt und sieht, dass die Entfernung passiert ist."
 
 [t_083606ee59]
 en = "You were removed from this group."
@@ -11902,7 +11902,7 @@ where = [
   "ios group_error_removed: Error: the host says the user was removed.",
   "desktop group_you_were_removed_from_this_group: Desktop, groups (in group_live.rs, gerr).",
 ]
-text = ""
+text = "Du wurdest aus dieser Gruppe entfernt."
 
 [t_fab9e89a7d]
 en = "You already have them as a contact. Message them from Chats."
@@ -11910,7 +11910,7 @@ where = [
   "ios group_error_already_contact: Error when asking for a chat with someone who is already a contact.",
   "desktop group_you_already_have_them: Desktop, groups (in group_live.rs, gerr).",
 ]
-text = ""
+text = "Die Person ist schon dein Kontakt. Schreib ihr unter Chats."
 
 [t_6b6d82084e]
 en = "No host answered in time. Try again when a host is online."
@@ -11918,28 +11918,28 @@ where = [
   "ios group_error_timeout: Error when no host answered.",
   "desktop group_no_host_answered_in: Desktop, groups (in group_live.rs, gerr).",
 ]
-text = ""
+text = "Kein Host hat rechtzeitig geantwortet. Versuch es nochmal, wenn ein Host online ist."
 
 [t_7f2634cd7f]
 en = "Type a message first."
 where = [
   "ios group_err_type_message: Error when sending an empty post.",
 ]
-text = ""
+text = "Schreib zuerst eine Nachricht."
 
 [t_452484335e]
 en = "Pick someone first."
 where = [
   "ios group_err_pick_someone: Error when inviting nobody.",
 ]
-text = ""
+text = "Wähl zuerst jemanden aus."
 
 [t_c5140aa276]
 en = "Invitation sent to {name}. They join when they accept."
 where = [
   "ios group_done_invite_one: Confirmation after inviting one contact. {name} is their first name.",
 ]
-text = ""
+text = "Einladung an {name} gesendet. Die Person tritt bei, wenn sie annimmt."
 
 [t_d47f830012]
 en_one = "{count} invitation sent. Each person joins when they accept."
@@ -11947,230 +11947,232 @@ en_other = "{count} invitations sent. Each person joins when they accept."
 where = [
   "ios group_done_invite_many: Confirmation after inviting several contacts. {count} is how many.",
 ]
+one = "{count} Einladung gesendet. Jede Person tritt bei, wenn sie annimmt."
+other = "{count} Einladungen gesendet. Jede Person tritt bei, wenn sie annimmt."
 
 [t_c5c52c6f16]
 en = "Declined. {name} sees that you declined."
 where = [
   "ios group_done_decline_invite: Confirmation after declining an invitation. {name} is the inviter’s first name.",
 ]
-text = ""
+text = "Abgelehnt. {name} sieht, dass du abgelehnt hast."
 
 [t_01a6680b03]
 en = "Request sent to {name}. It waits in Chats until they answer."
 where = [
   "ios group_done_request_sent: Confirmation after asking for a private chat. {name} is their first name.",
 ]
-text = ""
+text = "Anfrage an {name} gesendet. Sie wartet unter Chats, bis eine Antwort kommt."
 
 [t_68bf78bb6a]
 en = "Accepted. {name} is added for messages only and shows in Chats once their device connects; calls stay off until you allow them."
 where = [
   "ios group_done_request_accepted: Confirmation after accepting a chat request. {name} is their first name.",
 ]
-text = ""
+text = "Angenommen. {name} ist nur für Nachrichten hinzugefügt und erscheint unter Chats, sobald das Gerät verbunden ist; Anrufe bleiben aus, bis du sie erlaubst."
 
 [t_bca80056ba]
 en = "{name} is blocked and can’t send more requests."
 where = [
   "ios group_done_request_blocked: Confirmation after blocking a requester. {name} is their first name.",
 ]
-text = ""
+text = "{name} ist blockiert und kann keine weiteren Anfragen senden."
 
 [t_b0a86cd164]
 en = "{name} accepted your request. You can message each other now; calls stay off until one of you allows them."
 where = [
   "ios group_notice_request_accepted: Notice when someone accepted the user’s chat request. {name} is their first name.",
 ]
-text = ""
+text = "{name} hat deine Anfrage angenommen. Ihr könnt euch jetzt schreiben; Anrufe bleiben aus, bis einer von euch sie erlaubt."
 
 [t_a1c457fbac]
 en = "Group calls aren’t available here yet."
 where = [
   "ios group_calls_unavailable: Error shown when group calls are not wired in.",
 ]
-text = ""
+text = "Gruppenanrufe gibt es hier noch nicht."
 
 [t_977b43df48]
 en = "Scanning isn’t available yet. Paste the link instead."
 where = [
   "ios group_scan_unavailable: Shown instead of the QR scanner when scanning is not available.",
 ]
-text = ""
+text = "Scannen gibt es noch nicht. Füg stattdessen den Link ein."
 
 [t_504ec79556]
 en = "{rest} and {last}"
 where = [
   "ios group_names_and: Joins a list of names: {rest} is a comma-separated list, {last} the final name.",
 ]
-text = ""
+text = "{rest} und {last}"
 
 [t_d9be045783]
 en = "Delivered {count}/{total}"
 where = [
   "ios group_receipt_delivered: Receipt summary. {count} is how many have it, {total} how many are eligible.",
 ]
-text = ""
+text = "Zugestellt {count}/{total}"
 
 [t_951c9b0f24]
 en = "Read {count}/{total}"
 where = [
   "ios group_receipt_read: Receipt summary. {count} is how many read it, {total} how many are eligible.",
 ]
-text = ""
+text = "Gelesen {count}/{total}"
 
 [t_e765c751bd]
 en = "Read: {names}"
 where = [
   "ios group_receipt_level_read: Receipt line label before the names of members who read the post. {names} is the list.",
 ]
-text = ""
+text = "Gelesen: {names}"
 
 [t_abb0f92df9]
 en = "On their device: {names}"
 where = [
   "ios group_receipt_level_delivered: Receipt line label before the names of members whose device has the post. {names} is the list.",
 ]
-text = ""
+text = "Auf ihrem Gerät: {names}"
 
 [t_ed319ece3f]
 en = "Not yet: {names}"
 where = [
   "ios group_receipt_level_not_yet: Receipt line label before the names of members who have not confirmed. {names} is the list.",
 ]
-text = ""
+text = "Noch nicht: {names}"
 
 [t_41a0f066bc]
 en = "Add to {group}"
 where = [
   "ios group_add_to_title: Title of the add-people page. {group} is the group’s name.",
 ]
-text = ""
+text = "Zu {group} hinzufügen"
 
 [t_f2a523051d]
 en = "CONTACTS · {count} SELECTED"
 where = [
   "ios group_contacts_selected: Section label of the contact picker. {count} is how many are selected.",
 ]
-text = ""
+text = "KONTAKTE · {count} AUSGEWÄHLT"
 
 [t_e2527aaf3f]
 en = "Anyone with this link or QR can join {group} for 7 days. Share it over an app you trust; you see who joined and can flag them out. To invite your contacts directly, use Add members."
 where = [
   "ios group_link_hint: Hint on the invite link page. {group} is the group’s name.",
 ]
-text = ""
+text = "Alle mit diesem Link oder QR-Code können {group} 7 Tage lang beitreten. Teile ihn über eine App, der du vertraust; du siehst, wer beigetreten ist, und kannst Leute per Markierung entfernen. Um deine Kontakte direkt einzuladen, nutze „Mitglieder hinzufügen“."
 
 [t_5a7b5c3abb]
 en = "Join {group} on Tinline: {link}"
 where = [
   "ios group_share_text: Text shared with an invite link. {group} is the group’s name, {link} the link.",
 ]
-text = ""
+text = "Tritt {group} auf Tinline bei: {link}"
 
 [t_02147a4ac8]
 en = "Diagnostics"
 where = [
   "ios settings_diagnostics: Settings row for the diagnostics page.",
 ]
-text = ""
+text = "Diagnose"
 
 [t_c77e79fea8]
 en = "Test tone, core version"
 where = [
   "ios settings_diagnostics_sub: Subtitle of the Diagnostics row.",
 ]
-text = ""
+text = "Testton, Core-Version"
 
 [t_49b762fe95]
 en = "Test tone"
 where = [
   "ios settings_test_tone: Diagnostics row and switch label.",
 ]
-text = ""
+text = "Testton"
 
 [t_433d50e948]
 en = "Send a 440 Hz tone instead of the microphone"
 where = [
   "ios settings_test_tone_sub: Subtitle of the Test tone row.",
 ]
-text = ""
+text = "Einen 440-Hz-Ton statt des Mikrofons senden"
 
 [t_aafad48a7f]
 en = "This device · iOS"
 where = [
   "ios devices_row_this_device: Device row subtitle for this device.",
 ]
-text = ""
+text = "Dieses Gerät · iOS"
 
 [t_a180397df0]
 en = "Synced {ago}"
 where = [
   "ios devices_row_synced: Device row subtitle; {ago} is a relative time such as 5 min ago.",
 ]
-text = ""
+text = "Abgeglichen {ago}"
 
 [t_bcd7a64a42]
 en = "Welcome back, "
 where = [
   "ios unlock_welcome_prefix: Start of the title when the nickname is a tappable switcher; the nickname button follows directly after it.",
 ]
-text = ""
+text = "Willkommen zurück, "
 
 [t_19852ede17]
 en = "{name}, switch identity"
 where = [
   "ios unlock_switch_identity: Accessibility label of the nickname switcher; {name} is the nickname.",
 ]
-text = ""
+text = "{name}, Identität wechseln"
 
 [t_250f279f76]
 en = "{name} goes offline on this phone. Calls to {name} will ring only on your other linked devices until you switch back."
 where = [
   "ios unlock_switch_body: Body of the switch-account confirmation; {name} is the current account's name.",
 ]
-text = ""
+text = "{name} geht auf diesem Handy offline. Anrufe an {name} klingeln nur auf deinen anderen verknüpften Geräten, bis du zurückwechselst."
 
 [t_049066acc6]
 en = "{count} of 24"
 where = [
   "ios restore_progress: Counter of recovery words typed so far; {count} is how many are filled.",
 ]
-text = ""
+text = "{count} von 24"
 
 [t_d552b6e2ef]
 en = "Word {count}"
 where = [
   "ios restore_word_n: Accessibility label of one recovery word field; {count} is its position, 1 to 24.",
 ]
-text = ""
+text = "Wort {count}"
 
 [t_f6a2aab1ac]
 en = "Expires in {minutes}:{seconds} · works once"
 where = [
   "ios link_expires: Countdown under the QR code; {minutes} and {seconds} are digits, seconds with two digits.",
 ]
-text = ""
+text = "Läuft ab in {minutes}:{seconds} · funktioniert einmal"
 
 [t_15a6286cb0]
 en = "Link code {digits}"
 where = [
   "ios link_code_label: Accessibility label of the six-digit code; {digits} are the digits separated by spaces.",
 ]
-text = ""
+text = "Verknüpfungscode {digits}"
 
 [t_0f674e5ea2]
 en = "{name} wants to join your account. It should be showing the same six digits as below."
 where = [
   "ios link_match_body: Body when comparing codes; {name} is the new device's name, shown in bold.",
 ]
-text = ""
+text = "{name} möchte deinem Konto beitreten. Es sollte dieselben sechs Ziffern zeigen wie unten."
 
 [t_d5dd177ee1]
 en = "Approving sends your {phrase} to {name}. It becomes a full copy of you: it can read your chats and act as you. Approve only a device you hold."
 where = [
   "ios link_approve_body: Warning on the approval step; {phrase} is the bold words recovery phrase and {name} is the new device's name.",
 ]
-text = ""
+text = "Wenn du bestätigst, gehen deine {phrase} an {name}. Es wird eine vollständige Kopie von dir: Es kann deine Chats lesen und als du auftreten. Bestätige nur ein Gerät, das du in der Hand hast."
 
 [t_9fa27bd052]
 en = "Linked to {name}"
@@ -12178,56 +12180,56 @@ where = [
   "ios onboarding_linked_title: Title after linking; {name} is the other device's name or the words your other device.",
   "desktop link_linked_to: Desktop, linking devices (in link_view.rs, link_secure_screen). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Verknüpft mit {name}"
 
 [t_c621599db6]
 en = "Your contacts and chats are arriving from {name} and will keep in step on both."
 where = [
   "ios onboarding_linked_lead: Explanation after linking; {name} is the other device's name or the words your other device.",
 ]
-text = ""
+text = "Deine Kontakte und Chats kommen von {name} und bleiben auf beiden im Gleichschritt."
 
 [t_9fbe4c80c9]
 en = "By continuing, you agree to the [Terms of Use]({terms_url}) and have read the [Privacy Policy]({privacy_url})."
 where = [
   "ios onboarding_terms_consent: Consent line above the I agree button. Markdown links: keep the [text](url) shape, translate only the link text; {terms_url} and {privacy_url} are web addresses.",
 ]
-text = ""
+text = "Wenn du weitermachst, stimmst du den [Nutzungsbedingungen]({terms_url}) zu und hast die [Datenschutzerklärung]({privacy_url}) gelesen."
 
 [t_3f7e7c2a80]
 en = "{name} allowed"
 where = [
   "ios onboarding_perm_allowed: Accessibility label of the check mark on an allowed permission; {name} is the permission title.",
 ]
-text = ""
+text = "{name} erlaubt"
 
 [t_d7cc9318c9]
 en = "Allow {name}"
 where = [
   "ios onboarding_allow_a11y: Accessibility label of the Allow button; {name} is the permission title in lower case.",
 ]
-text = ""
+text = "{name} erlauben"
 
 [t_1c63fc0970]
 en = "Hide {name}"
 where = [
   "ios shellkit_hide_field: Accessibility label of the eye button on a secret field; {name} is the field label in lower case.",
 ]
-text = ""
+text = "{name} verbergen"
 
 [t_53251367a9]
 en = "Show {name}"
 where = [
   "ios shellkit_show_field: Accessibility label of the eye button on a secret field; {name} is the field label in lower case.",
 ]
-text = ""
+text = "{name} zeigen"
 
 [t_c54e35554c]
 en = "No account"
 where = [
   "ios shell_flow_no_account: Error shown when an account flow finds no account.",
 ]
-text = ""
+text = "Kein Konto"
 
 [t_78b34052d8]
 en = "Account changed"
@@ -12235,49 +12237,49 @@ where = [
   "ios shell_flow_account_changed: Error when the selected account changed while a flow was running.",
   "desktop profile_account_changed: Desktop, profile and settings (in profile_ui.rs, read_profile).",
 ]
-text = ""
+text = "Konto hat gewechselt"
 
 [t_02df4dcde7]
 en = "You were removed after 3 admin flags"
 where = [
   "ios shell_group_sys_removed_you: Group chat system line. The user was removed after being flagged by admins.",
 ]
-text = ""
+text = "Du wurdest nach 3 Admin-Markierungen entfernt"
 
 [t_d6d995c201]
 en = "{name} was removed after 3 admin flags"
 where = [
   "ios shell_group_sys_removed: Group chat system line. {name} is the removed member.",
 ]
-text = ""
+text = "{name} wurde nach 3 Admin-Markierungen entfernt"
 
 [t_46bad378f1]
 en = "Word {n} isn’t in the recovery word list. Check the spelling."
 where = [
   "ios shell_restore_bad_one: Restore screen message under the 24 word boxes. {n} is the word’s position (1 to 24).",
 ]
-text = ""
+text = "Wort {n} steht nicht in der Liste der Wiederherstellungswörter. Prüf die Schreibweise."
 
 [t_79e3b1b3e9]
 en = "Word {n} and {more} more aren’t in the recovery word list. Check the spelling."
 where = [
   "ios shell_restore_bad_many: Restore screen message. {n} is the first wrong word’s position, {more} how many other words are also wrong.",
 ]
-text = ""
+text = "Wort {n} und {more} weitere stehen nicht in der Liste der Wiederherstellungswörter. Prüf die Schreibweise."
 
 [t_814973bf24]
 en = "{sub} from {name}"
 where = [
   "ios shell_ring_a11y: Screen reader label of the ringing banner. {sub} is “Incoming call” or similar, {name} the caller.",
 ]
-text = ""
+text = "{sub} von {name}"
 
 [t_4ad1077177]
 en = "{count} waiting"
 where = [
   "ios shell_tab_waiting: Screen reader value of the Contacts tab badge. {count} requests are waiting.",
 ]
-text = ""
+text = "{count} warten"
 
 [t_cd6ad8304d]
 en = "Then go to Settings › Tinline › Microphone and allow it."
@@ -12285,91 +12287,91 @@ where = [
   "ios shell_mic_hint: Hint with the path to the microphone permission in iOS Settings.",
   "ios call_mic_needed_hint: Hint under the Open settings button on the microphone permission screen.",
 ]
-text = ""
+text = "Geh dann zu Einstellungen › Tinline › Mikrofon und erlaube es."
 
 [t_746ec1e8e6]
 en = "{what} · {duration}"
 where = [
   "ios shell_calls_what_duration: Call row second line. {what} is the call outcome (Missed, Outgoing…), {duration} the call length.",
 ]
-text = ""
+text = "{what} · {duration}"
 
 [t_eb75921c94]
 en = "{name}, {what} call, {stamp}. {action}"
 where = [
   "ios shell_calls_row_a11y: Screen reader label of a call row. {name} contact, {what} outcome (Missed…), {stamp} time, {action} “Call” or “Can’t call”.",
 ]
-text = ""
+text = "{name}, Anruf: {what}, {stamp}. {action}"
 
 [t_bbf9b4c4e0]
 en = "{name}, {what} call, {duration}, {stamp}. {action}"
 where = [
   "ios shell_calls_row_a11y_duration: Screen reader label of an answered call row. {name} contact, {what} outcome, {duration} call length, {stamp} time, {action} “Call” or “Can’t call”.",
 ]
-text = ""
+text = "{name}, Anruf: {what}, {duration}, {stamp}. {action}"
 
 [t_6c3d485347]
 en = "{name}, {what}, {stamp}. Start or join a call"
 where = [
   "ios shell_calls_group_row_a11y: Screen reader label of a group call row. {name} group, {what} summary, {stamp} time.",
 ]
-text = ""
+text = "{name}, {what}, {stamp}. Anruf starten oder beitreten"
 
 [t_910b1a6725]
 en = "{name}, {kind}"
 where = [
   "ios shell_search_tile_a11y: Screen reader label of a search result tile. {name} is the person or group, {kind} what it is.",
 ]
-text = ""
+text = "{name}, {kind}"
 
 [t_b48b8048af]
 en = "{name}: "
 where = [
   "ios shell_search_author_prefix: Prefix of a message search hit snippet: who wrote it. {name} is the author’s first name or “You”. Keep the trailing space.",
 ]
-text = ""
+text = "{name}: "
 
 [t_720d4af996]
 en = "WHAT {name} CAN DO"
 where = [
   "ios people_detail_can_do: Contact page section header, upper case. {name} is the contact’s first name in capitals.",
 ]
-text = ""
+text = "WAS {name} DARF"
 
 [t_119b58dbe5]
 en = "CALLS WITH {name}"
 where = [
   "ios people_detail_calls_with: Contact page section header, upper case. {name} is the contact’s name in capitals.",
 ]
-text = ""
+text = "ANRUFE MIT {name}"
 
 [t_fdce735c0d]
 en = "{step} of {total}"
 where = [
   "ios people_step_of: Sign-up progress text. {step} is the current step, {total} how many steps there are.",
 ]
-text = ""
+text = "{step} von {total}"
 
 [t_5e0ddcdd04]
 en = "Setup progress, step {step} of {total}"
 where = [
   "ios people_step_a11y: Screen reader label of sign-up progress. {step} and {total} as above.",
 ]
-text = ""
+text = "Einrichtung, Schritt {step} von {total}"
 
 [t_6230218701]
 en = "Setup progress, step {step} of {total}: {label}"
 where = [
   "ios people_step_a11y_label: Screen reader label of sign-up progress with the step’s name. {step}, {total}, and {label} the name of the step.",
 ]
-text = ""
+text = "Einrichtung, Schritt {step} von {total}: {label}"
 
 [t_884be25149]
 en = "That picture is {w} × {h} pixels. Tinline accepts up to {max} pixels on a side."
 where = [
   "ios people_pic_too_large_px: Picture refused: too many pixels. {w} and {h} are its width and height, {max} the limit per side.",
 ]
-text = ""
+text = "Dieses Bild hat {w} × {h} Pixel. Tinline nimmt bis zu {max} Pixel pro Seite."
 
 [t_77c8c02847]
 en = "Busy is not available yet. Your call settings are unchanged."
@@ -12377,14 +12379,14 @@ where = [
   "ios people_busy_unsupported: Shown when the user picks Busy, which the call path does not support yet.",
   "desktop profile_busy_unsupported: Shown when the Busy availability option is not available.",
 ]
-text = ""
+text = "„Beschäftigt“ gibt es noch nicht. Deine Anrufeinstellungen bleiben unverändert."
 
 [t_767555f71c]
 en = "Drag to move the picture. Use the slider to zoom."
 where = [
   "ios people_crop_help: Help text under the crop area.",
 ]
-text = ""
+text = "Zieh das Bild, um es zu verschieben. Zoome mit dem Schieberegler."
 
 [t_32daee4811]
 en = "{bytes} of {limit} bytes"
@@ -12392,49 +12394,49 @@ where = [
   "ios people_ui_bytes: Counter under a profile field. {bytes} is how many bytes are used, {limit} the maximum.",
   "desktop profile_of_bytes: Desktop, profile and settings (in profile_view.rs, field_row_inner). {bytes} is a value filled in by the app. {limit} is a value filled in by the app.",
 ]
-text = ""
+text = "{bytes} von {limit} Bytes"
 
 [t_930ce5bfa9]
 en = "Open {label}: {url}"
 where = [
   "ios people_ui_open_a11y: Screen reader label of the button that opens a link field. {label} is the field name, {url} the shortened address.",
 ]
-text = ""
+text = "{label} öffnen: {url}"
 
 [t_10b961c673]
 en = "Microphone permission needed to place a call"
 where = [
   "ios call_mic_permission_needed_place: Error shown when the user tries to place a call without microphone permission.",
 ]
-text = ""
+text = "Für einen Anruf braucht Tinline die Mikrofon-Berechtigung"
 
 [t_8b860e25a4]
 en = "About this call. {word} signal, direct."
 where = [
   "ios call_about_signal_direct: Accessibility label of the info button. {word} is a signal strength word such as Weak or Strong.",
 ]
-text = ""
+text = "Über diesen Anruf. Signal: {word}, direkt."
 
 [t_09db209730]
 en = "About this call. {word} signal, relayed."
 where = [
   "ios call_about_signal_relayed: Accessibility label of the info button. {word} is a signal strength word such as Weak or Strong.",
 ]
-text = ""
+text = "Über diesen Anruf. Signal: {word}, weitergeleitet."
 
 [t_410bc502cd]
 en = "{word} signal · Direct"
 where = [
   "ios call_about_headline_direct: Bold headline on the call details card. {word} is a signal strength word such as Weak or Strong.",
 ]
-text = ""
+text = "Signal: {word} · Direkt"
 
 [t_537090564e]
 en = "{word} signal · Relayed"
 where = [
   "ios call_about_headline_relayed: Bold headline on the call details card. {word} is a signal strength word such as Weak or Strong.",
 ]
-text = ""
+text = "Signal: {word} · Weitergeleitet"
 
 [t_57f425a97e]
 en = "Auto"
@@ -12442,14 +12444,14 @@ where = [
   "ios call_quality_auto: Video quality setting: let Tinline choose.",
   "desktop common_auto: Shared label, used in several places (call_screen, profile).",
 ]
-text = ""
+text = "Automatisch"
 
 [t_7538517c8f]
 en = "Prefer HD"
 where = [
   "ios call_quality_prefer_hd: Video quality setting: prefer sharper HD video.",
 ]
-text = ""
+text = "HD bevorzugen"
 
 [t_aab4f778af]
 en = "HD paused · weak connection"
@@ -12457,7 +12459,7 @@ where = [
   "ios call_hd_paused: Short note when HD is on but paused because the connection is weak.",
   "desktop video_hd_paused_weak_connection: Desktop, video (in camera.rs, hd_line).",
 ]
-text = ""
+text = "HD pausiert · schwache Verbindung"
 
 [t_2c18ab3299]
 en = "Sharper video on"
@@ -12465,840 +12467,840 @@ where = [
   "ios call_hd_on: Short note under the call header after turning the HD chip on.",
   "desktop video_sharper_video_on: Desktop, video (in camera.rs, hd_line).",
 ]
-text = ""
+text = "Schärferes Video an"
 
 [t_7cb3c69eef]
 en = "On mobile data, HD uses more · tap HD"
 where = [
   "ios call_hd_metered: Note shown once per call when HD is on over mobile data; \"tap HD\" refers to the HD chip.",
 ]
-text = ""
+text = "Mit mobilen Daten braucht HD mehr · tippe auf HD"
 
 [t_fb52348fb1]
 en = "HD · {size}"
 where = [
   "ios call_resolution_hd: Video size label for HD video. {size} is width×height such as 1280×720.",
 ]
-text = ""
+text = "HD · {size}"
 
 [t_7cda722e2e]
 en = "{name} is calling the group {group}"
 where = [
   "ios call_group_announce_ringing_label: Accessibility label of the group call announcement while ringing. {name} is the member, {group} the group.",
 ]
-text = ""
+text = "{name} ruft die Gruppe {group} an"
 
 [t_31bef3871e]
 en = "{name} started a call in {group}"
 where = [
   "ios call_group_announce_started_label: Accessibility label of the group call announcement. {name} is the member, {group} the group.",
 ]
-text = ""
+text = "{name} hat einen Anruf in {group} gestartet"
 
 [t_b616d54886]
 en = "Ends your call with {name}"
 where = [
   "ios call_waiting_ends: Small line under the call-waiting buttons. {name} is the person in my current call.",
 ]
-text = ""
+text = "Beendet deinen Anruf mit {name}"
 
 [t_2ff42dbfce]
 en = "{word} signal"
 where = [
   "ios call_badge_signal: Badge on the call-ended screen. {word} is a signal strength word such as Weak or Strong.",
 ]
-text = ""
+text = "Signal: {word}"
 
 [t_272be16cd4]
 en = "Couldn’t reach them"
 where = [
   "ios call_unreachable_title_blank: Title when a call could not connect and the contact has no name.",
 ]
-text = ""
+text = "Nicht erreichbar"
 
 [t_f4619634b2]
 en = "They may be offline, out of signal, or not taking calls right now. Tinline can’t leave messages."
 where = [
   "ios call_unreachable_body_blank: Explanation when a call could not connect and the contact has no name.",
 ]
-text = ""
+text = "Die Person ist vielleicht offline, ohne Empfang oder nimmt gerade keine Anrufe an. Tinline kann keine Nachrichten hinterlassen."
 
 [t_d70797cc69]
 en = "A device name is 1 to 64 characters."
 where = [
   "desktop common_a_device_name_is: Shared label, used in several places (app, link).",
 ]
-text = ""
+text = "Ein Gerätename hat 1 bis 64 Zeichen."
 
 [t_4a7397331d]
 en = "Audio devices"
 where = [
   "desktop common_audio_devices: Shared label, used in several places (profile, view).",
 ]
-text = ""
+text = "Audiogeräte"
 
 [t_309ecff017]
 en = "Calls & availability"
 where = [
   "desktop common_calls_availability: Shared label, used in several places (profile, view).",
 ]
-text = ""
+text = "Anrufe & Erreichbarkeit"
 
 [t_164b84d7d3]
 en = "Copy recovery phrase"
 where = [
   "desktop common_copy_recovery_phrase: Shared label, used in several places (view).",
 ]
-text = ""
+text = "Wiederherstellungswörter kopieren"
 
 [t_85338b281d]
 en = "Decoder for their video"
 where = [
   "desktop common_decoder_for_their_video: Shared label, used in several places (call_screen, profile).",
 ]
-text = ""
+text = "Decoder für ihr Video"
 
 [t_0216ca7dcd]
 en = "Give this computer a name of 1 to 64 characters."
 where = [
   "desktop common_give_this_computer_a: Shared label, used in several places (app, link).",
 ]
-text = ""
+text = "Gib diesem Computer einen Namen mit 1 bis 64 Zeichen."
 
 [t_6d8e87ae5e]
 en = "Hosting"
 where = [
   "desktop common_hosting: Shared label, used in several places (profile, view).",
 ]
-text = ""
+text = "Hosten"
 
 [t_0734135924]
 en = "Messages only: calling needs their permission"
 where = [
   "desktop common_messages_only_calling_needs: Shared label, used in several places (chat, view).",
 ]
-text = ""
+text = "Nur Nachrichten: Anrufe brauchen ihre Erlaubnis"
 
 [t_8e994a4caf]
 en = "Name this computer"
 where = [
   "desktop common_name_this_computer: Shared label, used in several places (link, signup, view).",
 ]
-text = ""
+text = "Gib diesem Computer einen Namen"
 
 [t_447375ef9f]
 en = "Not synced yet"
 where = [
   "desktop common_not_synced_yet: Shared label, used in several places (link, profile).",
 ]
-text = ""
+text = "Noch nicht abgeglichen"
 
 [t_8b10183211]
 en = "Passphrase changed"
 where = [
   "desktop common_passphrase_changed: Shared label, used in several places (app, profile).",
 ]
-text = ""
+text = "Passphrase geändert"
 
 [t_1b4b9ba9bf]
 en = "Paste only into a trusted password manager; the clipboard contains your account key."
 where = [
   "desktop common_paste_only_into_a: Shared label, used in several places (view).",
 ]
-text = ""
+text = "Füg ihn nur in einen vertrauenswürdigen Passwortmanager ein; in der Zwischenablage liegt dein Kontoschlüssel."
 
 [t_3c78840fd7]
 en = "Photo · {value}"
 where = [
   "desktop common_photo: Shared label, used in several places (chat, group_live). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "Foto · {value}"
 
 [t_955e59b5ae]
 en = "Remember on this computer"
 where = [
   "desktop common_remember_on_this_computer: Shared label, used in several places (profile, signup).",
 ]
-text = ""
+text = "Auf diesem Computer merken"
 
 [t_b9b5554656]
 en = "Saving..."
 where = [
   "desktop common_saving: Shared label, used in several places (link, view).",
 ]
-text = ""
+text = "Speichern..."
 
 [t_67eb8c5ea7]
 en = "Security"
 where = [
   "desktop common_security: Shared label, used in several places (profile, view).",
 ]
-text = ""
+text = "Sicherheit"
 
 [t_d9cdfd07a7]
 en = "Show"
 where = [
   "desktop common_show: Shared label, used in several places (tray, view).",
 ]
-text = ""
+text = "Zeigen"
 
 [t_cda1cdad47]
 en = "{size} GB"
 where = [
   "desktop common_size_gb: Storage size in gigabytes. {size} is a number with one decimal.",
 ]
-text = ""
+text = "{size} GB"
 
 [t_53cb38ce7d]
 en = "Skips the passphrase when Tinline starts, using this computer’s keyring."
 where = [
   "desktop common_skips_the_passphrase_when: Shared label, used in several places (profile, signup).",
 ]
-text = ""
+text = "Überspringt die Passphrase beim Start von Tinline und nutzt dafür den Schlüsselbund dieses Computers."
 
 [t_8246939084]
 en = "Starting..."
 where = [
   "desktop common_starting: Shared label, used in several places (app, tray).",
 ]
-text = ""
+text = "Startet..."
 
 [t_d2081454ab]
 en = "Tinline is still starting. Try again in a moment."
 where = [
   "desktop common_tinline_is_still_starting: Shared label, used in several places (app, link).",
 ]
-text = ""
+text = "Tinline startet noch. Versuch es gleich nochmal."
 
 [t_820c15c544]
 en = "Work desktop"
 where = [
   "desktop common_work_desktop: Shared label, used in several places (link, view).",
 ]
-text = ""
+text = "Arbeitsrechner"
 
 [t_8ae2b3cd52]
 en = "Working..."
 where = [
   "desktop common_working: Shared label, used in several places (link, view).",
 ]
-text = ""
+text = "Moment..."
 
 [t_3a211114f7]
 en = "Account removed from this computer"
 where = [
   "desktop app_account_removed_from_this: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "Konto von diesem Computer entfernt"
 
 [t_c88517c76f]
 en = "Adding passphrase..."
 where = [
   "desktop app_adding_passphrase: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "Passphrase wird festgelegt..."
 
 [t_ae294d3d01]
 en = "An identity already exists here."
 where = [
   "desktop app_an_identity_already_exists: Desktop, app-level notices and notifications (in app.rs, friendly).",
 ]
-text = ""
+text = "Hier gibt es schon eine Identität."
 
 [t_32fb327647]
 en = "Changing passphrase..."
 where = [
   "desktop app_changing_passphrase: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "Passphrase wird geändert..."
 
 [t_694b75b941]
 en = "Could not call: {error}"
 where = [
   "desktop app_could_not_call: Desktop, app-level notices and notifications (in app.rs, update_inner). {error} is the underlying error text, not translated.",
 ]
-text = ""
+text = "Anruf ging nicht: {error}"
 
 [t_4ea7b41ec4]
 en = "Could not start: {error}"
 where = [
   "desktop app_could_not_start: Desktop, app-level notices and notifications (in app.rs, update_inner). {error} is the underlying error text, not translated.",
 ]
-text = ""
+text = "Start ging nicht: {error}"
 
 [t_16bc823614]
 en = "Couldn’t accept just now. Try again in a moment."
 where = [
   "desktop app_couldnt_accept_just_now: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "Annehmen ging gerade nicht. Versuch es gleich nochmal."
 
 [t_35338f8a31]
 en = "Device name saved"
 where = [
   "desktop app_device_name_saved: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "Gerätename gespeichert"
 
 [t_886688601a]
 en = "Enter a name first"
 where = [
   "desktop app_enter_a_name_first: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "Gib zuerst einen Namen ein"
 
 [t_5f499535ee]
 en = "Enter your name and recovery phrase"
 where = [
   "desktop app_enter_your_name_and: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "Gib deinen Namen und deine Wiederherstellungswörter ein"
 
 [t_af263389d6]
 en = "Ev"
 where = [
   "desktop app_ev: Desktop, app-level notices and notifications (in app.rs, fmt).",
 ]
-text = ""
+text = "Ev"
 
 [t_1a92653d7e]
 en = "{value} invited you to the group"
 where = [
   "desktop app_invited_you_to_the: Desktop, app-level notices and notifications (in app.rs, on_event). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "{value} hat dich in die Gruppe eingeladen"
 
 [t_86537dcd0a]
 en = "{name} is already in your contacts"
 where = [
   "desktop app_is_already_in_your: Desktop, app-level notices and notifications (in app.rs, update_inner). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} ist schon in deinen Kontakten"
 
 [t_03d397836b]
 en = "{peer_name} is calling"
 where = [
   "desktop app_is_calling: Desktop, app-level notices and notifications (in app.rs, on_event). {peer_name} is a value filled in by the app.",
 ]
-text = ""
+text = "{peer_name} ruft an"
 
 [t_d84b7d3db1]
 en = "Passphrase added. You will need it next time Tinline starts."
 where = [
   "desktop app_passphrase_added_you_will: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "Passphrase festgelegt. Du brauchst sie beim nächsten Start von Tinline."
 
 [t_27499f4548]
 en = "Pick one that is different from the current one."
 where = [
   "desktop app_pick_one_that_is: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "Wähle eine, die sich von der aktuellen unterscheidet."
 
 [t_d6bdc593f7]
 en = "Restoring..."
 where = [
   "desktop app_restoring: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "Wiederherstellen..."
 
 [t_5d4c1caca3]
 en = "Still can’t find the key."
 where = [
   "desktop app_still_cant_find_the: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "Der Schlüssel ist immer noch nicht zu finden."
 
 [t_33f7d1c80b]
 en = "task failed"
 where = [
   "desktop app_task_failed: Desktop, app-level notices and notifications (in app.rs, blocking).",
 ]
-text = ""
+text = "Aufgabe nicht erledigt"
 
 [t_ac97ec8ed4]
 en = "{name}: {value}"
 where = [
   "desktop app_text: Desktop, app-level notices and notifications (in app.rs, on_event). {name} is a person's name (usually the first word of their chosen name). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "{name}: {value}"
 
 [t_9b366dca33]
 en = "That account is already on this computer."
 where = [
   "desktop app_that_account_is_already: Desktop, app-level notices and notifications (in app.rs, friendly).",
 ]
-text = ""
+text = "Dieses Konto ist schon auf diesem Computer."
 
 [t_82424900f4]
 en = "That isn’t your current passphrase."
 where = [
   "desktop app_that_isnt_your_current: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "Das ist nicht deine aktuelle Passphrase."
 
 [t_d7d34eb82a]
 en = "That phrase isn’t valid. Check each word and their order."
 where = [
   "desktop app_that_phrase_isnt_valid: Desktop, app-level notices and notifications (in app.rs, friendly).",
 ]
-text = ""
+text = "Diese Wörter passen nicht. Prüf jedes Wort und die Reihenfolge."
 
 [t_2d4587e96b]
 en = "The two passphrases differ."
 where = [
   "desktop app_the_two_passphrases_differ: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "Die beiden Passphrasen unterscheiden sich."
 
 [t_e9d46ff847]
 en = "This computer’s keyring wouldn’t keep it, so Tinline will keep asking for your passphrase."
 where = [
   "desktop app_this_computers_keyring_wouldnt: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "Der Schlüsselbund dieses Computers wollte sie nicht behalten, also fragt Tinline weiter nach deiner Passphrase."
 
 [t_1290ee5e3e]
 en = "Ticket: {error}"
 where = [
   "desktop app_ticket: Desktop, app-level notices and notifications (in app.rs, update_inner). {error} is the underlying error text, not translated.",
 ]
-text = ""
+text = "Ticket: {error}"
 
 [t_1dbf8cee18]
 en = "Type a new passphrase."
 where = [
   "desktop app_type_a_new_passphrase: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "Gib eine neue Passphrase ein."
 
 [t_2b521c5ae2]
 en = "Type a passphrase first."
 where = [
   "desktop app_type_a_passphrase_first: Desktop, app-level notices and notifications (in app.rs, friendly).",
 ]
-text = ""
+text = "Gib zuerst eine Passphrase ein."
 
 [t_870a316625]
 en = "Type your current passphrase."
 where = [
   "desktop app_type_your_current_passphrase: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "Gib deine aktuelle Passphrase ein."
 
 [t_ac46214b53]
 en = "Wait for the profile save to finish."
 where = [
   "desktop app_wait_for_the_profile: Desktop, app-level notices and notifications (in app.rs, update).",
 ]
-text = ""
+text = "Warte, bis das Profil gespeichert ist."
 
 [t_62bb091458]
 en = "Your key is kept in a plain file in Tinline’s data folder. Anyone who copies that folder can open your account. Add a passphrase to protect it; the file is then deleted."
 where = [
   "desktop app_your_key_is_kept: Desktop, app-level notices and notifications (in app.rs, key_home).",
 ]
-text = ""
+text = "Dein Schlüssel liegt in einer einfachen Datei im Datenordner von Tinline. Wer diesen Ordner kopiert, kann dein Konto öffnen. Leg eine Passphrase fest, um ihn zu schützen; die Datei wird dann gelöscht."
 
 [t_532c9419c8]
 en = "Your key is kept in this computer’s keyring, so Tinline opens without asking."
 where = [
   "desktop app_your_key_is_kept_in: Desktop, app-level notices and notifications (in app.rs, key_home).",
 ]
-text = ""
+text = "Dein Schlüssel liegt im Schlüsselbund dieses Computers, also öffnet sich Tinline ohne Nachfrage."
 
 [t_e6a284f81a]
 en = "Your recovery key is copied."
 where = [
   "desktop app_your_recovery_key_is: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "Dein Wiederherstellungsschlüssel ist kopiert."
 
 [t_031c6dc10d]
 en = "Your recovery words are copied."
 where = [
   "desktop app_your_recovery_words_are: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "Deine Wiederherstellungswörter sind kopiert."
 
 [t_287f831b10]
 en = "You’re on a call. Hang up before switching accounts."
 where = [
   "desktop app_youre_on_a_call: Desktop, app-level notices and notifications (in app.rs, friendly).",
 ]
-text = ""
+text = "Du bist in einem Anruf. Leg auf, bevor du das Konto wechselst."
 
 [t_c060528ae3]
 en = "{label} disconnected, switching to the system default"
 where = [
   "desktop audio_disconnected_switching_to_the: Desktop, audio devices (in audio.rs, maintain). {label} is a value filled in by the app.",
 ]
-text = ""
+text = "{label} getrennt, wechsle zum Systemstandard"
 
 [t_a171612b25]
 en = "Echo cancellation is unavailable"
 where = [
   "desktop audio_echo_cancellation_is_unavailable: Desktop, audio devices (in audio.rs, run_call).",
 ]
-text = ""
+text = "Echounterdrückung ist nicht verfügbar"
 
 [t_5fae266f6d]
 en = "{label} is back"
 where = [
   "desktop audio_is_back: Desktop, audio devices (in audio.rs, maintain). {label} is a value filled in by the app.",
 ]
-text = ""
+text = "{label} ist wieder da"
 
 [t_e476e6d224]
 en = "{label} unavailable: {error}"
 where = [
   "desktop audio_unavailable: Desktop, audio devices (in audio.rs, maintain). {label} is a value filled in by the app. {error} is the underlying error text, not translated.",
 ]
-text = ""
+text = "{label} nicht verfügbar: {error}"
 
 [t_9b0bf5bb10]
 en = "About this call. {value} signal, {to_lowercase}."
 where = [
   "desktop call_about_this_call_signal: Desktop, calls (voice and video) (in call_screen.rs, call_view). {value} is a value filled in by the app. {to_lowercase} is a value filled in by the app.",
 ]
-text = ""
+text = "Über diesen Anruf. Signal: {value}, {to_lowercase}."
 
 [t_be59de019d]
 en = "Answered on another device"
 where = [
   "desktop call_answered_on_another_device: Desktop, calls (voice and video) (in reason.rs, history).",
 ]
-text = ""
+text = "Auf einem anderen Gerät angenommen"
 
 [t_5951b67d4a]
 en = "Calls not allowed"
 where = [
   "desktop call_calls_not_allowed: Desktop, calls (voice and video) (in reason.rs, history).",
 ]
-text = ""
+text = "Anrufe nicht erlaubt"
 
 [t_7f6f8a6b79]
 en = "Camera off"
 where = [
   "desktop call_camera_off: Desktop, calls (voice and video) (in view.rs, video_stage).",
 ]
-text = ""
+text = "Kamera aus"
 
 [t_4855360c05]
 en = "Camera on"
 where = [
   "desktop call_camera_on: Desktop, calls (voice and video) (in view.rs, video_call_view).",
 ]
-text = ""
+text = "Kamera an"
 
 [t_c9f762351d]
 en = "Ctrl E cancels"
 where = [
   "desktop call_ctrl_e_cancels: Desktop, calls (voice and video) (in view.rs, video_call_view).",
 ]
-text = ""
+text = "Strg E bricht ab"
 
 [t_12e7b54a0e]
 en = "Declined on another device"
 where = [
   "desktop call_declined_on_another_device: Desktop, calls (voice and video) (in reason.rs, history).",
 ]
-text = ""
+text = "Auf einem anderen Gerät abgelehnt"
 
 [t_a0a96166bf]
 en = "Device changes apply from the next call."
 where = [
   "desktop call_device_changes_apply_from: Desktop, calls (voice and video) (in call_screen.rs, call_about).",
 ]
-text = ""
+text = "Geräteänderungen gelten ab dem nächsten Anruf."
 
 [t_b19e015d90]
 en = "End-to-end encrypted · Ctrl M mute · Ctrl E end · Esc minimizes"
 where = [
   "desktop call_end_to_end_encrypted_ctrl: Desktop, calls (voice and video) (in view.rs, video_call_view).",
 ]
-text = ""
+text = "Ende-zu-Ende-verschlüsselt · Strg M stumm · Strg E auflegen · Esc verkleinert"
 
 [t_4af8cd18a6]
 en = "Enter answers · Esc declines"
 where = [
   "desktop call_enter_answers_esc_declines: Desktop, calls (voice and video) (in view.rs, video_call_view).",
 ]
-text = ""
+text = "Enter nimmt an · Esc lehnt ab"
 
 [t_55195cbec5]
 en = "For testing. Your picture may stutter or your computer may heat up."
 where = [
   "desktop call_for_testing_your_picture: Desktop, calls (voice and video) (in call_screen.rs, call_nerds).",
 ]
-text = ""
+text = "Zum Testen. Dein Bild kann ruckeln, oder dein Computer kann heiß werden."
 
 [t_1e415b4258]
 en = "Hang up"
 where = [
   "desktop call_hang_up: Desktop, calls (voice and video) (in view.rs, video_call_view).",
 ]
-text = ""
+text = "Auflegen"
 
 [t_c8637eae36]
 en = "HD"
 where = [
   "desktop call_hd: Desktop, calls (voice and video) (in view.rs, hd_chip).",
 ]
-text = ""
+text = "HD"
 
 [t_30e7914804]
 en = "Ignore limits (heat, their decoder)"
 where = [
   "desktop call_ignore_limits_heat_their: Desktop, calls (voice and video) (in call_screen.rs, call_nerds).",
 ]
-text = ""
+text = "Grenzen ignorieren (Wärme, ihr Decoder)"
 
 [t_75e076dea8]
 en = "is calling you"
 where = [
   "desktop call_is_calling_you: Desktop, calls (voice and video) (in view.rs, video_call_view).",
 ]
-text = ""
+text = "ruft dich an"
 
 [t_8f764feef1]
 en = "{rtt_ms} ms round trip · {value}% lost"
 where = [
   "desktop call_ms_round_trip_lost: Desktop, calls (voice and video) (in call_screen.rs, call_about). {rtt_ms} is a value filled in by the app. {value} is a value filled in by the app.",
 ]
-text = ""
+text = "{rtt_ms} ms Umlaufzeit · {value} % verloren"
 
 [t_f72c120dfc]
 en = "No camera"
 where = [
   "desktop call_no_camera: Desktop, calls (voice and video) (in call_screen.rs, call_view).",
 ]
-text = ""
+text = "Keine Kamera"
 
 [t_7fae834341]
 en = "Pin a size first."
 where = [
   "desktop call_pin_a_size_first: Desktop, calls (voice and video) (in call_screen.rs, call_nerds).",
 ]
-text = ""
+text = "Leg zuerst eine Größe fest."
 
 [t_8b2833f97e]
 en = "Relayed · encrypted"
 where = [
   "desktop call_relayed_encrypted: Desktop, calls (voice and video) (in view.rs, video_call_view).",
 ]
-text = ""
+text = "Weitergeleitet · verschlüsselt"
 
 [t_8502df6288]
 en = "Sharper video on, up to 720p"
 where = [
   "desktop call_sharper_video_on_up: Desktop, calls (voice and video) (in view.rs, hd_chip).",
 ]
-text = ""
+text = "Schärferes Video an, bis 720p"
 
 [t_3981b6e3cf]
 en = "{value} signal · {value2}"
 where = [
   "desktop call_signal: Desktop, calls (voice and video) (in call_screen.rs, call_about). {value} is a value filled in by the app. {value2} is a value filled in by the app.",
 ]
-text = ""
+text = "Signal: {value} · {value2}"
 
 [t_a168cd45ed]
 en = "Stats for nerds"
 where = [
   "desktop call_stats_for_nerds: Desktop, calls (voice and video) (in call_screen.rs, call_nerds).",
 ]
-text = ""
+text = "Werte für Technikfans"
 
 [t_17150a6034]
 en = "{day} {value}"
 where = [
   "desktop call_text: Desktop, calls (voice and video) (in view.rs, utc_date). {day} is a value filled in by the app. {value} is a value filled in by the app.",
 ]
-text = ""
+text = "{day} {value}"
 
 [t_d5b4307250]
 en = " The line is weak, so {name}’s voice may break up."
 where = [
   "desktop call_the_line_is_weak: Desktop, calls (voice and video) (in call_screen.rs, call_about). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = " Die Leitung ist schwach, die Stimme von {name} kann abbrechen."
 
 [t_e6b445aa1b]
 en = "These apply to this call now. Settings > Video sets the next call."
 where = [
   "desktop call_these_apply_to_this: Desktop, calls (voice and video) (in call_screen.rs, call_nerds).",
 ]
-text = ""
+text = "Das gilt jetzt für diesen Anruf. Einstellungen > Video legt den nächsten Anruf fest."
 
 [t_8fa85234ca]
 en = "Video is starting…"
 where = [
   "desktop call_video_is_starting: Desktop, calls (voice and video) (in view.rs, video_stage).",
 ]
-text = ""
+text = "Video startet…"
 
 [t_d203b27537]
 en = "Your bitrate cap (not a promised rate)"
 where = [
   "desktop call_your_bitrate_cap_not: Desktop, calls (voice and video) (in call_screen.rs, call_nerds).",
 ]
-text = ""
+text = "Deine Bitrate-Obergrenze (keine zugesagte Rate)"
 
 [t_9742320971]
 en = "Your frame rate"
 where = [
   "desktop call_your_frame_rate: Desktop, calls (voice and video) (in call_screen.rs, call_nerds).",
 ]
-text = ""
+text = "Deine Bildrate"
 
 [t_2c467dc172]
 en = "Your network changed. Hold on — Tinline is finding the line again."
 where = [
   "desktop call_your_network_changed_hold: Desktop, calls (voice and video) (in view.rs, video_call_view).",
 ]
-text = ""
+text = "Dein Netzwerk hat gewechselt. Einen Moment – Tinline sucht die Leitung wieder."
 
 [t_e80b716ddc]
 en = "Your size"
 where = [
   "desktop call_your_size: Desktop, calls (voice and video) (in call_screen.rs, call_nerds).",
 ]
-text = ""
+text = "Deine Größe"
 
 [t_a2ac53fc12]
 en = "Your video codec"
 where = [
   "desktop call_your_video_codec: Desktop, calls (voice and video) (in call_screen.rs, call_nerds).",
 ]
-text = ""
+text = "Dein Video-Codec"
 
 [t_343c975534]
 en = " Your voice is encrypted on this device and only decrypted on {name}’s."
 where = [
   "desktop call_your_voice_is_encrypted: Desktop, calls (voice and video) (in call_screen.rs, call_about). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = " Deine Stimme wird auf diesem Gerät verschlüsselt und erst auf dem Gerät von {name} entschlüsselt."
 
 [t_dfe464b10a]
 en = "Ask for earlier messages"
 where = [
   "desktop chat_ask_for_earlier_messages: Desktop, chats (in chat_view.rs, history_note).",
 ]
-text = ""
+text = "Nach früheren Nachrichten fragen"
 
 [t_929d8923a5]
 en = "Could not open: {error}"
 where = [
   "desktop chat_could_not_open: Desktop, chats (in chat.rs, update_chat_inner). {error} is the underlying error text, not translated.",
 ]
-text = ""
+text = "Öffnen ging nicht: {error}"
 
 [t_724abcb8df]
 en = "Could not play: {error}"
 where = [
   "desktop chat_could_not_play: Desktop, chats (in chat.rs, update_chat_inner). {error} is the underlying error text, not translated.",
 ]
-text = ""
+text = "Abspielen ging nicht: {error}"
 
 [t_f7209a5c78]
 en = "Could not record: {error}"
 where = [
   "desktop chat_could_not_record: Desktop, chats (in chat.rs, update_chat_inner). {error} is the underlying error text, not translated.",
 ]
-text = ""
+text = "Aufnehmen ging nicht: {error}"
 
 [t_1702498248]
 en = "Could not save: {error}"
 where = [
   "desktop chat_could_not_save: Desktop, chats (in chat.rs, update_chat_inner). {error} is the underlying error text, not translated.",
 ]
-text = ""
+text = "Speichern ging nicht: {error}"
 
 [t_ca9953df3e]
 en = "Could not send: {error}"
 where = [
   "desktop chat_could_not_send: Desktop, chats (in chat.rs, update_chat_inner). {error} is the underlying error text, not translated.",
 ]
-text = ""
+text = "Senden ging nicht: {error}"
 
 [t_622a8606a0]
 en = "Could not show this: {error}"
 where = [
   "desktop chat_could_not_show_this: Desktop, chats (in chat_view.rs, viewer_overlay). {error} is the underlying error text, not translated.",
 ]
-text = ""
+text = "Anzeigen ging nicht: {error}"
 
 [t_af4a349292]
 en = "{value} · couldn’t download — tap to retry"
 where = [
   "desktop chat_couldnt_download_tap_to: Desktop, chats (in chat_view.rs, attachment_view). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "{value} · Download hat nicht geklappt – zum Wiederholen tippen"
 
 [t_276ce0135b]
 en = "Delete"
 where = [
   "desktop chat_delete: Desktop, chats (in chat_view.rs, message_menu).",
 ]
-text = ""
+text = "Löschen"
 
 [t_9990a7654e]
 en = "Delete for everyone"
 where = [
   "desktop chat_delete_for_everyone: Desktop, chats (in chat_view.rs, delete_overlay).",
 ]
-text = ""
+text = "Für alle löschen"
 
 [t_5a4df3a700]
 en = "Delete for everyone asks {name}’s devices to remove it too. Copies elsewhere can’t be recalled."
 where = [
   "desktop chat_delete_for_everyone_asks: Desktop, chats (in chat_view.rs, delete_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "„Für alle löschen“ bittet die Geräte von {name}, sie ebenfalls zu entfernen. Kopien anderswo lassen sich nicht zurückholen."
 
 [t_a0d1400553]
 en = "Delete message?"
 where = [
   "desktop chat_delete_message: Desktop, chats (in chat_view.rs, delete_overlay).",
 ]
-text = ""
+text = "Nachricht löschen?"
 
 [t_ff5f9f7f6c]
 en = "{name} deleted this message"
 where = [
   "desktop chat_deleted_this_message: Desktop, chats (in chat_view.rs, message_row). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} hat diese Nachricht gelöscht"
 
 [t_2c08303faf]
 en = "Device {device} · {value}"
 where = [
   "desktop chat_device: Desktop, chats (in chat_view.rs, receipt_lines). {device} is a value filled in by the app. {value} is a value filled in by the app.",
 ]
-text = ""
+text = "Gerät {device} · {value}"
 
 [t_74fc21c4e4]
 en = "Downloading · {value} of {value2}"
 where = [
   "desktop chat_downloading_of: Desktop, chats (in chat_view.rs, attachment_view). {value} is a value filled in by the app. {value2} is a value filled in by the app.",
 ]
-text = ""
+text = "Lädt herunter · {value} von {value2}"
 
 [t_fc96a86226]
 en = "Draft: "
 where = [
   "desktop chat_draft: Desktop, chats (in chat_view.rs, pg_chat_row).",
 ]
-text = ""
+text = "Entwurf: "
 
 [t_ef98461b5f]
 en = "Drop to send to {name}"
 where = [
   "desktop chat_drop_to_send_to: Desktop, chats (in chat_view.rs, conversation_view). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Loslassen, um an {name} zu senden"
 
 [t_02f8ea12ed]
 en = "Encrypted on this computer. Up to 2 GB each. {name} gets it the next time you’re both online."
