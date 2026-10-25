@@ -39,7 +39,7 @@ use parking_lot::Mutex;
 use proto::Msg;
 use tokio::sync::Notify;
 use wake::{Issued, WakeState};
-pub use wake::WakeAction;
+pub use wake::{WakeAction, hint_opens};
 pub use wake_relay_core::Target;
 pub use ring::{Early, WAKE_RING_CAP_MS, WAKE_RING_WINDOW_MS, wake_call_id};
 use wake_relay_core::api::{RegisterRequest, RegisterResponse, RevokeRequest, WakeRequest};

@@ -112,6 +112,11 @@ pub enum WakeAction {
     Ring { did: String },
 }
 
+/// Whether `hint_key` opens `hint_text` (the account it belongs to is the one this push is for).
+pub fn hint_opens(hint_key: &[u8; 32], hint_text: &str) -> bool {
+    hint::open(hint_key, hint_text).is_ok()
+}
+
 /// `kinds` without `kind`; `None` when nothing is left.
 fn without(kinds: Kinds, kind: Kind) -> Option<Kinds> {
     let msg = kind != Kind::Msg && kinds.allows(Kind::Msg);
@@ -362,6 +367,11 @@ impl WakeState {
     }
 
     // ---- being woken ----
+
+    /// Whether our hint key opens `hint_text`: the push is for this account, whatever it means.
+    pub fn opens(&self, hint_text: &str) -> bool {
+        hint_opens(&self.hint_key, hint_text)
+    }
 
     /// What a push means. The hint names a tag; the tag names the contact we issued that token
     /// to. Undecodable hints and tags we no longer issue (revoked, forgotten) are refused,

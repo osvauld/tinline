@@ -136,6 +136,11 @@ impl NodeVideo {
         *self.sink.lock() = Some(sink);
     }
 
+    /// No sink: a background account's call shows no video events.
+    pub fn clear_sink(&self) {
+        *self.sink.lock() = None;
+    }
+
     /// Tells the sink how `call_id`'s video stands now.
     pub fn emit(&self, call_id: &str, video: &CallVideo) {
         // Never call the app back from inside one of its own calls (`set_camera` lands here):

@@ -248,8 +248,50 @@ pub struct NodeCtx {
     /// Private endpoint rotation (`rotation.rs`).
     pub rotation: RotationRt,
     pub video: call_video::NodeVideo,
+    /// Tells this account's slot apart from the other accounts' on the same device (the call
+    /// floor's holder). Unique in the process.
+    pub slot_id: u64,
+    /// One 1:1 call at a time across every account slot of the device (`docs/multi-online.md`);
+    /// a node of its own unless the slots share one (`with_floor`).
+    pub floor: Arc<CallFloor>,
+    /// How many times `start` bound an endpoint (tests: a switch must not restart one).
+    pub binds: AtomicU32,
     hooks: OnceLock<Weak<dyn NodeHooks>>,
 }
+
+/// Who holds the device's one 1:1 call: the slot whose `Live` has a call (or a ringing one).
+/// Taken under that slot's `live` lock, released when its call and waiting call are both gone.
+#[derive(Default)]
+pub struct CallFloor {
+    holder: Mutex<Option<u64>>,
+}
+
+impl CallFloor {
+    /// Takes the floor for `slot`; false while another slot holds it.
+    pub fn take(&self, slot: u64) -> bool {
+        let mut h = self.holder.lock();
+        match *h {
+            Some(other) if other != slot => false,
+            _ => {
+                *h = Some(slot);
+                true
+            }
+        }
+    }
+
+    pub fn release(&self, slot: u64) {
+        let mut h = self.holder.lock();
+        if *h == Some(slot) {
+            *h = None;
+        }
+    }
+
+    pub fn held_by_other(&self, slot: u64) -> bool {
+        self.holder.lock().is_some_and(|h| h != slot)
+    }
+}
+
+static NEXT_SLOT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
 
 impl NodeCtx {
     pub fn new(handle: tokio::runtime::Handle, accounts: AccountDirs, shared: Shared, sink: Arc<dyn NodeSink>) -> Self {
@@ -274,8 +316,17 @@ impl NodeCtx {
             devlist: Default::default(),
             rotation: Default::default(),
             video: Default::default(),
+            slot_id: NEXT_SLOT.fetch_add(1, Ordering::Relaxed),
+            floor: Default::default(),
+            binds: AtomicU32::new(0),
             hooks: OnceLock::new(),
         }
+    }
+
+    /// Shares `floor` with the other account slots of this device (before the `Arc`).
+    pub fn with_floor(mut self, floor: Arc<CallFloor>) -> Self {
+        self.floor = floor;
+        self
     }
 
     /// Installs the engines' side of the seam (p2pcore does it right after building its `Arc`).

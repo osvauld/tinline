@@ -133,6 +133,7 @@ impl NodeCtx {
             ep.close().await;
             return Ok(());
         }
+        self.binds.fetch_add(1, Ordering::Relaxed);
         self.log(format!("endpoint {} bound", ep.id()));
         self.emit_status();
         // GL: the group runtime may open its store from background tasks again.

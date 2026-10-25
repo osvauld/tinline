@@ -123,6 +123,52 @@ impl NodeCtx {
         Ok(action)
     }
 
+    /// Whether this account's hint key opens `hint`: the wake is for this account (several
+    /// accounts on one device, `docs/multi-online.md`). False while locked.
+    pub fn wake_opens(&self, hint: &str) -> bool {
+        self.shared.lock().state.wake.as_ref().is_some_and(|w| w.opens(hint))
+    }
+
+    /// This account's hint key, while unlocked (kept by the device to route later wakes without
+    /// unlocking every account again).
+    pub fn wake_hint_key(&self) -> Option<[u8; 32]> {
+        self.shared.lock().state.wake.as_ref().map(|w| w.hint_key)
+    }
+
+    /// A wake ring is open or a dial-back waits for the start: the account has a wake in hand.
+    pub fn wake_busy(&self) -> bool {
+        !self.push.rings.map.lock().is_empty() || !self.push.rings.dial_backs.lock().is_empty()
+    }
+
+    /// For tests: the hint a relay would push for a wake of `kind` from contact `did`, under a
+    /// token issued to them here (one is made up if none was, as the relay would have issued).
+    #[cfg(any(test, feature = "testkit"))]
+    pub fn wake_hint_for_test(&self, did: &str, call: bool) -> Result<String, Error> {
+        use wake::{Issued, IssuedEntry, Kind, Kinds};
+        let me = self.me()?;
+        let (key, tag) = {
+            let mut s = self.shared.lock();
+            let w = crate::push::wake_mut(&mut s.state);
+            let tag = match w.issued_for(did) {
+                Some(i) => i.tag,
+                None => {
+                    let mut tag = [0u8; 16];
+                    tag.copy_from_slice(&proto::new_device_secret()[..16]);
+                    let issued = Issued { tag, kinds: Kinds::ALL, token: "test-token".into(), exp_ms: now_ms() + 20 * 86_400_000 };
+                    w.issued.push(IssuedEntry { did: did.to_string(), issued });
+                    tag
+                }
+            };
+            (w.hint_key, tag)
+        };
+        self.persist_for(Some(me.epoch))?;
+        let mut nonce = [0u8; 12];
+        nonce.copy_from_slice(&proto::new_device_secret()[..12]);
+        let kind = if call { Kind::Call } else { Kind::Msg };
+        let hint = wake_relay_core::hint::Hint { tag, kind, sent_at_ms: now_ms() };
+        wake_relay_core::hint::seal(&key, &hint, nonce).map_err(|e| Error::Protocol(e.to_string()))
+    }
+
     /// The name of `did` for the ring: the local alias, else the name they gave; blank when unknown.
     pub fn wake_label(&self, did: &str) -> String {
         self.shared.lock().state.contacts.iter().find(|c| c.did == did).map(crate::display_name).unwrap_or_default()

@@ -57,8 +57,14 @@ impl NodeCtx {
                 if live.call.is_some() {
                     return Err(Error::Busy);
                 }
+                // Another account of this device is in a call (or ringing): one 1:1 call at a
+                // time across them. Incoming calls get Busy, outgoing InCall, as for a group call.
+                if !self.floor.take(self.slot_id) {
+                    return Err(Error::InCall);
+                }
                 // The user is in a group call (G6): incoming 1:1 calls get Busy, outgoing InCall.
                 if self.hooks().is_some_and(|h| h.in_group_call()) {
+                    self.floor.release(self.slot_id);
                     return Err(Error::InCall);
                 }
                 live.call = Some(call.clone());
@@ -112,6 +118,7 @@ impl NodeCtx {
             incoming: false,
             // Only a call that offers video can be one.
             video: video && self.video_enabled(),
+            account: None,
         };
         let contact = match (contact, held_name) {
             (Some(c), None) => c,

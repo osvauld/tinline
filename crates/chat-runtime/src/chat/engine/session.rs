@@ -273,6 +273,12 @@ impl ChatRt {
         core.sessions.lock().values().find(|s| s.did == did).cloned()
     }
 
+    /// Whether any chat session is up or being dialled (a background account stays open while
+    /// one is, `docs/multi-online.md`).
+    pub fn chat_busy(&self) -> bool {
+        self.chat_core().is_ok_and(|core| !core.sessions.lock().is_empty() || !core.dialing.lock().is_empty())
+    }
+
     pub fn chat_sessions_of(&self, core: &ChatCore, did: &str) -> Vec<Arc<Session>> {
         core.sessions.lock().values().filter(|s| s.did == did).cloned().collect()
     }
