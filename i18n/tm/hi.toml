@@ -3493,7 +3493,7 @@ where = [
   "android profile_until_weekday: Clock time for an end time on a later day, as in 'Busy until Friday 08:00'. {day} is the full weekday name, {time} like 08:00.",
   "ios people_until_day: Busy-until label for a later day. {day} is the weekday name, {time} a clock time.",
 ]
-text = ""
+text = "{day} {time}"
 
 [t_92b04f0016]
 en = "You already have information with that name."
@@ -3502,7 +3502,7 @@ where = [
   "ios people_profile_info_dup: Error when adding information with a name already used.",
   "desktop profile_you_already_have_information: Desktop, profile and settings (in profile_ui.rs, profile_update).",
 ]
-text = ""
+text = "इस नाम की जानकारी पहले से है।"
 
 [t_6eb707854a]
 en = "Add something to save."
@@ -3511,7 +3511,7 @@ where = [
   "ios people_profile_info_empty: Error when saving empty information.",
   "desktop profile_add_something_to_save: Desktop, profile and settings (in profile_ui.rs, profile_update).",
 ]
-text = ""
+text = "सहेजने के लिए कुछ लिखें।"
 
 [t_df4765c3ad]
 en = "Your contacts will see it on your profile."
@@ -3520,7 +3520,7 @@ where = [
   "ios people_profile_add_note: Note in the add information dialog.",
   "desktop profile_your_contacts_will_see: Desktop, profile and settings (in profile_view.rs, profile_layer).",
 ]
-text = ""
+text = "यह आपके संपर्कों को आपकी प्रोफ़ाइल पर दिखेगा।"
 
 [t_ec6eb5f1f3]
 en = "Kinds of information"
@@ -3528,7 +3528,7 @@ where = [
   "android profile_add_kinds_desc: Screen-reader label of the list of kinds of information that can be added.",
   "ios people_profile_kinds: Accessibility label of the list of information kinds.",
 ]
-text = ""
+text = "जानकारी के प्रकार"
 
 [t_49cd559100]
 en = "Something else"
@@ -3537,7 +3537,7 @@ where = [
   "ios people_profile_something_else: Choice and title to add information with a name of the user’s own.",
   "desktop profile_something_else: Desktop, profile and settings (in profile_view.rs, profile_layer).",
 ]
-text = ""
+text = "कुछ और"
 
 [t_870585e627]
 en = "Name it yourself"
@@ -3546,7 +3546,7 @@ where = [
   "ios people_profile_name_it: Second line of the Something else choice.",
   "desktop profile_name_it_yourself: Desktop, profile and settings (in profile_view.rs, profile_layer).",
 ]
-text = ""
+text = "नाम खुद रखें"
 
 [t_0e56444786]
 en = "What is it called?"
@@ -3555,7 +3555,7 @@ where = [
   "ios people_profile_what_called: Label of the field for the name of a custom information item.",
   "desktop profile_what_is_it_called: Desktop, profile and settings (in profile_view.rs, profile_layer).",
 ]
-text = ""
+text = "इसे क्या कहते हैं?"
 
 [t_aecf4a8011]
 en = "For example, Favourite tea"
@@ -3564,7 +3564,7 @@ where = [
   "ios people_profile_called_placeholder: Placeholder of that field.",
   "desktop profile_for_example_favourite_tea: Desktop, profile and settings (in profile_view.rs, profile_layer).",
 ]
-text = ""
+text = "जैसे, पसंदीदा चाय"
 
 [t_5e22631db1]
 en = "Value"
@@ -3573,7 +3573,7 @@ where = [
   "ios people_profile_value: Label of the value field of a custom information item.",
   "desktop profile_value: Desktop, profile and settings (in profile_view.rs, profile_layer).",
 ]
-text = ""
+text = "जानकारी"
 
 [t_e8dc46dacb]
 en = "Add"
@@ -3586,7 +3586,7 @@ where = [
   "ios people_add: Button that adds an item.",
   "desktop common_add: Shared label, used in several places (profile, view).",
 ]
-text = ""
+text = "जोड़ें"
 
 [t_3cd1144512]
 en = "Open this link?"
@@ -3595,7 +3595,7 @@ where = [
   "ios people_profile_link_title: Title of the dialog before opening a link.",
   "desktop profile_open_this_link: Desktop, profile and settings (in profile_view.rs, profile_layer).",
 ]
-text = ""
+text = "यह लिंक खोलें?"
 
 [t_33058b8678]
 en = "It opens in your browser, outside Tinline. Tinline doesn’t load it for you, and can’t vouch for what’s there."
@@ -3604,7 +3604,7 @@ where = [
   "ios people_profile_link_note: Note in that dialog.",
   "desktop profile_it_opens_in_your: Desktop, profile and settings (in profile_view.rs, profile_layer).",
 ]
-text = ""
+text = "यह Tinline के बाहर आपके ब्राउज़र में खुलेगा। Tinline इसे आपके लिए लोड नहीं करता, और वहाँ क्या है इसकी गारंटी नहीं दे सकता।"
 
 [t_6fe0368189]
 en = "Position your picture"
@@ -3613,7 +3613,7 @@ where = [
   "ios people_crop_title: Title and accessibility label of the picture crop screen.",
   "desktop profile_position_your_picture: Desktop, profile and settings (in profile_view.rs, profile_layer).",
 ]
-text = ""
+text = "अपनी तस्वीर ठीक से रखें"
 
 [t_5187eb6518]
 en = "Drag to move the picture, or use the arrow keys. Plus and minus zoom."
@@ -3621,7 +3621,7 @@ where = [
   "android profile_crop_hint: Instruction under the picture cropper.",
   "desktop profile_drag_to_move_the: Desktop, profile and settings (in profile_view.rs, profile_layer).",
 ]
-text = ""
+text = "तस्वीर खिसकाने के लिए खींचें या तीर वाली कुंजियाँ इस्तेमाल करें। प्लस और माइनस से ज़ूम करें।"
 
 [t_4b71415535]
 en = "Zoom"
@@ -3629,7 +3629,7 @@ where = [
   "android profile_crop_zoom: Screen-reader label of the zoom slider in the picture cropper.",
   "ios people_crop_zoom: Accessibility label of the zoom slider.",
 ]
-text = ""
+text = "ज़ूम"
 
 [t_d484eba42e]
 en = "Use photo"
@@ -3638,7 +3638,7 @@ where = [
   "ios people_crop_use: Button that uses the cropped picture.",
   "desktop profile_use_photo: Desktop, profile and settings (in profile_view.rs, profile_layer).",
 ]
-text = ""
+text = "फ़ोटो इस्तेमाल करें"
 
 [t_ab628fe2c2]
 en = "Couldn’t prepare that picture. Try a different one."
@@ -3647,7 +3647,7 @@ where = [
   "ios people_crop_failed: Error when the crop could not be made.",
   "desktop profile_couldnt_prepare_that_picture: Desktop, profile and settings (in profile_ui.rs, profile_update).",
 ]
-text = ""
+text = "वह तस्वीर तैयार नहीं हो पाई। कोई दूसरी आज़माएँ।"
 
 [t_6ef71f7234]
 en = "Couldn’t save your picture. Your current picture is unchanged."
@@ -3655,7 +3655,7 @@ where = [
   "android profile_err_picture_save: Error when saving a new profile picture failed.",
   "ios people_save_picture_failed: Profile picture could not be saved.",
 ]
-text = ""
+text = "आपकी तस्वीर सहेजी नहीं जा सकी। आपकी मौजूदा तस्वीर पहले जैसी है।"
 
 [t_2b186de649]
 en = "Couldn’t remove your picture. It is unchanged."
@@ -3663,7 +3663,7 @@ where = [
   "android profile_err_picture_remove: Error when removing the profile picture failed.",
   "ios people_remove_picture_failed: Profile picture could not be removed.",
 ]
-text = ""
+text = "आपकी तस्वीर हटाई नहीं जा सकी। वह पहले जैसी है।"
 
 [t_a087c5a4aa]
 en = "Couldn’t save that. Your profile is unchanged and what you typed is still here."
@@ -3672,7 +3672,7 @@ where = [
   "ios people_save_failed: Profile save failed.",
   "desktop profile_save_failed: Error shown when saving the profile failed.",
 ]
-text = ""
+text = "यह सहेजा नहीं जा सका। आपकी प्रोफ़ाइल पहले जैसी है और आपने जो लिखा था वह यहीं है।"
 
 [t_1248a08c96]
 en = "The selected account changed. Nothing was saved to the new account."
@@ -3680,7 +3680,7 @@ where = [
   "android profile_err_account_changed: Error when the user switched account while a profile change was being saved.",
   "ios people_account_changed: Profile save refused because the selected account changed meanwhile.",
 ]
-text = ""
+text = "चुना हुआ खाता बदल गया। नए खाते में कुछ नहीं सहेजा गया।"
 
 [t_d47674ae7a]
 en = "That picture is {size} MB. Pictures can be up to {max} MB."
@@ -3688,7 +3688,7 @@ where = [
   "android profile_pick_too_big: Error when the picked picture file is too large. {size} and {max} are numbers of megabytes, such as 3.2 and 2.",
   "ios people_pic_too_big: Picture refused: too big. {size} is the file size in MB, {max} the limit in MB.",
 ]
-text = ""
+text = "वह तस्वीर {size} MB की है। तस्वीर {max} MB तक की हो सकती है।"
 
 [t_2133a72bde]
 en = "Tinline can use PNG, JPEG or WebP pictures. That file is a different kind of file."
@@ -3697,7 +3697,7 @@ where = [
   "ios people_pic_bad_type: Picture refused: not PNG, JPEG or WebP.",
   "desktop profile_tinline_can_use_png: Desktop, profile and settings (in profile_ui.rs, inspect).",
 ]
-text = ""
+text = "Tinline में PNG, JPEG या WebP तस्वीरें चलती हैं। वह फ़ाइल किसी और तरह की है।"
 
 [t_27a3a26172]
 en = "That file couldn’t be read as a picture. It may be damaged."
@@ -3706,14 +3706,14 @@ where = [
   "ios people_pic_unreadable: Picture refused: it could not be decoded.",
   "desktop profile_that_file_couldnt_be: Desktop, profile and settings (in profile_ui.rs, inspect).",
 ]
-text = ""
+text = "वह फ़ाइल तस्वीर के रूप में पढ़ी नहीं जा सकी। हो सकता है वह खराब हो।"
 
 [t_eabe302ef0]
 en = "That picture is {width} × {height} pixels. Tinline accepts up to {max} pixels on a side."
 where = [
   "android profile_pick_too_wide: Error when the picked picture has too many pixels. {width} and {height} are the picture's size, {max} the longest side allowed.",
 ]
-text = ""
+text = "वह तस्वीर {width} × {height} पिक्सेल की है। Tinline हर तरफ़ {max} पिक्सेल तक लेता है।"
 
 [t_4b7a9203ca]
 en = "The name can’t be empty."
@@ -3721,7 +3721,7 @@ where = [
   "android profile_err_name_empty: Error when saving an empty name.",
   "ios people_rule_name_empty: Profile check: the name is empty.",
 ]
-text = ""
+text = "नाम खाली नहीं हो सकता।"
 
 [t_a7eb6e3908]
 en = "The name can’t contain control or text-direction characters."
@@ -3729,7 +3729,7 @@ where = [
   "android profile_err_name_chars: Error when the name has invisible control characters.",
   "ios people_rule_name_control: Profile check: the name has control characters.",
 ]
-text = ""
+text = "नाम में कंट्रोल या टेक्स्ट-दिशा वाले वर्ण नहीं हो सकते।"
 
 [t_82ec74f78e]
 en = "That name is too long. Up to {limit} bytes; some characters take more than one."
@@ -3737,7 +3737,7 @@ where = [
   "android profile_err_name_long: Error when the name is too long. {limit} is the maximum size in bytes.",
   "ios people_rule_name_long: Profile check: the name is too long. {limit} is the byte limit.",
 ]
-text = ""
+text = "यह नाम बहुत लंबा है। {limit} बाइट तक; कुछ वर्ण एक से ज़्यादा बाइट लेते हैं।"
 
 [t_aae290ad95]
 en = "That is too long for a status: up to {limit} bytes, and some characters take more than one."
@@ -3745,7 +3745,7 @@ where = [
   "android profile_err_status_long: Error when the status text is too long. {limit} is the maximum size in bytes.",
   "ios people_rule_status_long: Profile check: the status is too long. {limit} is the byte limit.",
 ]
-text = ""
+text = "स्टेटस के लिए यह बहुत लंबा है: {limit} बाइट तक, और कुछ वर्ण एक से ज़्यादा बाइट लेते हैं।"
 
 [t_c78fd246a2]
 en = "That is too long for about: up to {limit} bytes, and some characters take more than one."
@@ -3753,7 +3753,7 @@ where = [
   "android profile_err_about_long: Error when the about text is too long. {limit} is the maximum size in bytes.",
   "ios people_rule_about_long: Profile check: the about text is too long. {limit} is the byte limit.",
 ]
-text = ""
+text = "परिचय के लिए यह बहुत लंबा है: {limit} बाइट तक, और कुछ वर्ण एक से ज़्यादा बाइट लेते हैं।"
 
 [t_3405000279]
 en = "A status can’t contain control or text-direction characters."
@@ -3761,7 +3761,7 @@ where = [
   "android profile_err_status_chars: Error when the status has invisible control characters.",
   "ios people_rule_status_control: Profile check: the status has control characters.",
 ]
-text = ""
+text = "स्टेटस में कंट्रोल या टेक्स्ट-दिशा वाले वर्ण नहीं हो सकते।"
 
 [t_2023402646]
 en = "About can’t contain control or text-direction characters."
@@ -3769,7 +3769,7 @@ where = [
   "android profile_err_about_chars: Error when the about text has invisible control characters.",
   "ios people_rule_about_control: Profile check: the about text has control characters.",
 ]
-text = ""
+text = "परिचय में कंट्रोल या टेक्स्ट-दिशा वाले वर्ण नहीं हो सकते।"
 
 [t_f60a13207e]
 en = "Give the information a name."
@@ -3778,7 +3778,7 @@ where = [
   "ios people_rule_key_empty: Profile check: a custom information item has no name.",
   "desktop profile_give_the_information_a: Desktop, profile and settings (in profile_ui.rs, profile_update).",
 ]
-text = ""
+text = "जानकारी को एक नाम दें।"
 
 [t_c55d93f164]
 en = "That name can’t be used. Keep it short, without control characters."
@@ -3787,7 +3787,7 @@ where = [
   "ios people_rule_key_bad: Profile check: the name of a custom information item is not allowed.",
   "desktop profile_that_name_cant_be: Desktop, profile and settings (in profile_ui.rs, profile_update).",
 ]
-text = ""
+text = "यह नाम नहीं चल सकता। इसे छोटा रखें, बिना कंट्रोल वर्णों के।"
 
 [t_27eded2454]
 en = "That is too long. Each piece of information can be up to 16 KiB."
@@ -3795,7 +3795,7 @@ where = [
   "android profile_err_value_long: Error when one profile field's value is too large.",
   "ios people_rule_value_long: Profile check: a value is too long.",
 ]
-text = ""
+text = "यह बहुत लंबा है। हर जानकारी 16 KiB तक हो सकती है।"
 
 [t_c60d4cb730]
 en = "You’ve reached 64 pieces of information. Remove one to add another."
@@ -3803,7 +3803,7 @@ where = [
   "android profile_err_fields_full: Error when the profile already has the maximum number of extra fields.",
   "ios people_rule_too_many: Profile check: too many information items.",
 ]
-text = ""
+text = "आपकी 64 जानकारियाँ पूरी हो गई हैं। नई जोड़ने के लिए एक हटाएँ।"
 
 [t_4b4e905279]
 en = "Your profile is full. Remove some information to add more."
@@ -3811,7 +3811,7 @@ where = [
   "android profile_err_profile_full: Error when the whole profile is at its size limit.",
   "ios people_rule_full: Profile check: the whole profile is too big.",
 ]
-text = ""
+text = "आपकी प्रोफ़ाइल भर गई है। और जोड़ने के लिए कुछ जानकारी हटाएँ।"
 
 [t_f28a8716e6]
 en = "Use the picture controls for that."
@@ -3819,7 +3819,7 @@ where = [
   "android profile_err_use_picture_controls: Error when someone tries to set the picture as an ordinary field.",
   "ios people_rule_picture: Profile check: the picture cannot be set as plain information.",
 ]
-text = ""
+text = "इसके लिए तस्वीर वाले बटन इस्तेमाल करें।"
 
 [t_3cfbc5f218]
 en = "Availability can be changed but not removed."
@@ -3827,7 +3827,7 @@ where = [
   "android profile_err_availability_remove: Error when someone tries to remove the availability field.",
   "ios people_rule_availability: Profile check: availability cannot be removed.",
 ]
-text = ""
+text = "उपलब्धता बदली जा सकती है, पर हटाई नहीं जा सकती।"
 
 [t_c99f5c88b2]
 en = "Pronouns"
@@ -3836,7 +3836,7 @@ where = [
   "ios people_info_pronouns: Label of a profile information field.",
   "desktop profile_pronouns: Desktop, profile and settings (in profile_ui.rs, mutation_allowed).",
 ]
-text = ""
+text = "सर्वनाम"
 
 [t_031673ee99]
 en = "For example, she/her"
@@ -3845,7 +3845,7 @@ where = [
   "ios people_info_pronouns_hint: Placeholder hint of the pronouns field.",
   "desktop profile_for_example_she_her: Desktop, profile and settings (in profile_ui.rs, mutation_allowed).",
 ]
-text = ""
+text = "जैसे, वह/उनकी"
 
 [t_2c4e3e9327]
 en = "Location"
@@ -3854,7 +3854,7 @@ where = [
   "ios people_info_location: Label of a profile information field.",
   "desktop profile_location: Desktop, profile and settings (in profile_ui.rs, mutation_allowed).",
 ]
-text = ""
+text = "जगह"
 
 [t_8f2a784b6b]
 en = "City or region"
@@ -3863,7 +3863,7 @@ where = [
   "ios people_info_location_hint: Placeholder hint of the location field.",
   "desktop profile_city_or_region: Desktop, profile and settings (in profile_ui.rs, mutation_allowed).",
 ]
-text = ""
+text = "शहर या इलाका"
 
 [t_d5aafda4c7]
 en = "Website"
@@ -3872,14 +3872,14 @@ where = [
   "ios people_info_website: Label of a profile information field.",
   "desktop profile_website: Desktop, profile and settings (in profile_ui.rs, mutation_allowed).",
 ]
-text = ""
+text = "वेबसाइट"
 
 [t_27f37cbb67]
 en = "https://"
 where = [
   "android profile_known_website_hint: Hint in the website field while editing: how a web address starts. Keep as is unless the script needs it changed.",
 ]
-text = ""
+text = "https://"
 
 [t_23c532d490]
 en = "Your nickname"
@@ -3889,7 +3889,7 @@ where = [
   "ios shell_step_name: Onboarding step label read out for the step header (accessibility).",
   "desktop signup_your_nickname: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "आपका निकनेम"
 
 [t_1fdf30c038]
 en = "Recovery phrase"
@@ -3898,7 +3898,7 @@ where = [
   "ios shell_step_phrase: Onboarding step label read out for the step header (accessibility).",
   "desktop common_recovery_phrase: Shared label, used in several places (profile, view).",
 ]
-text = ""
+text = "रिकवरी शब्द"
 
 [t_5f64b48fae]
 en = "Device name"
@@ -3910,7 +3910,7 @@ where = [
   "ios shell_step_device: Onboarding step label read out for the step header (accessibility).",
   "desktop common_device_name: Shared label, used in several places (link, signup, view).",
 ]
-text = ""
+text = "डिवाइस का नाम"
 
 [t_95b45293e6]
 en = "Terms"
@@ -3918,7 +3918,7 @@ where = [
   "android onboarding_step_terms: Header label of the terms step.",
   "ios shell_step_terms: Onboarding step label read out for the step header (accessibility).",
 ]
-text = ""
+text = "शर्तें"
 
 [t_e689e56480]
 en = "Permissions"
@@ -3929,7 +3929,7 @@ where = [
   "ios shell_step_perms: Onboarding step label read out for the step header (accessibility).",
   "desktop profile_permissions: Desktop, profile and settings (in profile_view.rs, notifications_page).",
 ]
-text = ""
+text = "अनुमतियाँ"
 
 [t_b170444708]
 en = "Restore account"
@@ -3940,7 +3940,7 @@ where = [
   "ios shell_step_restore: Onboarding step label read out for the step header (accessibility).",
   "desktop signup_restore_account: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "खाता वापस लाएँ"
 
 [t_244aad3d35]
 en = "Link to your account"
@@ -3951,7 +3951,7 @@ where = [
   "ios shell_step_link_qr: Onboarding step label read out for the step header (accessibility).",
   "desktop link_link_to_your_account: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = ""
+text = "अपने खाते से लिंक करें"
 
 [t_b04ebc52e8]
 en = "your other device"
@@ -3961,7 +3961,7 @@ where = [
   "ios link_fb_other_device: Fallback for an unnamed other device inside a sentence.",
   "ios onboarding_fb_other_device: Fallback name for an unnamed other device inside a sentence.",
 ]
-text = ""
+text = "आपका दूसरा डिवाइस"
 
 [t_aedf592006]
 en = "Personal phone"
@@ -3969,7 +3969,7 @@ where = [
   "android onboarding_device_personal: Suggested device name (chip and default); the user can edit it.",
   "ios onboarding_dev_personal: Suggested device name chip, and the default name of this phone.",
 ]
-text = ""
+text = "निजी फ़ोन"
 
 [t_f9af369d3b]
 en = "Work phone"
@@ -3977,7 +3977,7 @@ where = [
   "android onboarding_device_work: Suggested device name chip.",
   "ios onboarding_dev_work: Suggested device name chip.",
 ]
-text = ""
+text = "काम का फ़ोन"
 
 [t_90d9f368a5]
 en = "Tablet"
@@ -3985,7 +3985,7 @@ where = [
   "android onboarding_device_tablet: Suggested device name chip.",
   "ios onboarding_dev_tablet: Suggested device name chip.",
 ]
-text = ""
+text = "टैबलेट"
 
 [t_bf9ca1f0cb]
 en = "Restoring keeps the same identity: use the recovery phrase of this account. You’ll set a new passphrase."
@@ -3993,7 +3993,7 @@ where = [
   "android onboarding_restore_warning_forgot: Warning on the restore step when the user forgot their passphrase.",
   "ios onboarding_restore_warn_forgot: Notice on the restore screen after I forgot my passphrase.",
 ]
-text = ""
+text = "वापस लाने पर पहचान वही रहती है: इस खाते के रिकवरी शब्द इस्तेमाल करें। आप नया पासफ़्रेज़ रखेंगे।"
 
 [t_8b574f9d94]
 en = "Next, you’ll choose a passphrase for this account."
@@ -4002,7 +4002,7 @@ where = [
   "ios onboarding_restore_warn: Notice on the restore screen during sign-up.",
   "desktop signup_next_youll_choose_a: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "इसके बाद आप इस खाते के लिए पासफ़्रेज़ चुनेंगे।"
 
 [t_4260fa7705]
 en = "Already on this phone"
@@ -4010,7 +4010,7 @@ where = [
   "android onboarding_exists_title: Dialog title when the restored account is already on this phone.",
   "ios onboarding_exists_title: Dialog title when the restored account is already on this phone.",
 ]
-text = ""
+text = "इस फ़ोन पर पहले से है"
 
 [t_f5a1fad78c]
 en = "Choose account"
@@ -4018,7 +4018,7 @@ where = [
   "android onboarding_exists_choose: Dialog button that opens the account list.",
   "ios onboarding_exists_confirm: Dialog button that opens the account picker.",
 ]
-text = ""
+text = "खाता चुनें"
 
 [t_1f84a8d44a]
 en = "That recovery phrase belongs to an account that is already here. Switch to it instead of adding it again."
@@ -4026,7 +4026,7 @@ where = [
   "android onboarding_exists_body: Dialog text when the restored account is already on this phone.",
   "ios onboarding_exists_body: Dialog body when the restored account is already on this phone.",
 ]
-text = ""
+text = "ये रिकवरी शब्द ऐसे खाते के हैं जो पहले से यहाँ है। इसे फिर से जोड़ने के बजाय उस खाते पर जाएँ।"
 
 [t_e4868d01e2]
 en = "That key has a typo or is cut short. Paste it again from where you saved it."
@@ -4035,7 +4035,7 @@ where = [
   "ios restore_key_typo: Error when the pasted recovery key fails its checksum.",
   "desktop signup_that_key_has_a: Desktop, sign-up, restore and add contact (in signup.rs, gate_update).",
 ]
-text = ""
+text = "इस कुंजी में टाइपिंग की गलती है या यह अधूरी है। जहाँ आपने इसे सहेजा था, वहाँ से फिर से पेस्ट करें।"
 
 [t_b9527e2f4a]
 en = "Couldn’t read the clipboard. Paste into the first box instead."
@@ -4044,7 +4044,7 @@ where = [
   "ios restore_paste_failed: Error when the clipboard could not be read.",
   "desktop signup_couldnt_read_the_clipboard: Desktop, sign-up, restore and add contact (in signup.rs, gate_update).",
 ]
-text = ""
+text = "क्लिपबोर्ड पढ़ा नहीं जा सका। इसके बजाय पहले बॉक्स में पेस्ट करें।"
 
 [t_ae367631f0]
 en = "Recovery phrase words"
@@ -4052,21 +4052,21 @@ where = [
   "android onboarding_restore_words_desc: Screen-reader label of the grid of 24 word boxes.",
   "ios restore_words_label: Accessibility label of the group of 24 word fields.",
 ]
-text = ""
+text = "रिकवरी शब्द"
 
 [t_e0bf087eda]
 en = "Word {number}"
 where = [
   "android onboarding_restore_word_desc: Screen-reader label of one word box. {number} is its position, 1 to 24.",
 ]
-text = ""
+text = "शब्द {number}"
 
 [t_7ccb29b826]
 en = "Word {number} isn’t in the recovery word list. Check the spelling."
 where = [
   "android onboarding_restore_bad_word: Error when one typed word is not a recovery word. {number} is its position, 1 to 24.",
 ]
-text = ""
+text = "शब्द {number} रिकवरी शब्दों की सूची में नहीं है। वर्तनी जाँचें।"
 
 [t_42a51efec5]
 en_one = "Word {number} and {count} more aren’t in the recovery word list. Check the spelling."
@@ -4074,6 +4074,8 @@ en_other = "Word {number} and {count} more aren’t in the recovery word list. C
 where = [
   "android onboarding_restore_bad_words_more: Error when several typed words are not recovery words. {number} is the position of the first wrong word, {count} how many others are wrong.",
 ]
+one = "शब्द {number} और {count} और शब्द रिकवरी शब्दों की सूची में नहीं हैं। वर्तनी जाँचें।"
+other = "शब्द {number} और {count} और शब्द रिकवरी शब्दों की सूची में नहीं हैं। वर्तनी जाँचें।"
 
 [t_2de75251a6]
 en_one = "{count} word is still missing."
@@ -4082,6 +4084,8 @@ where = [
   "android onboarding_restore_missing: Error when Continue is pressed with some of the 24 words empty. {count} is how many are missing.",
   "ios shell_restore_missing: Restore screen message: how many of the 24 words are not filled in yet.",
 ]
+one = "{count} शब्द अभी बाकी है।"
+other = "{count} शब्द अभी बाकी हैं।"
 
 [t_dd17db34e4]
 en = "Your recovery key is in. It stays on this phone."
@@ -4089,7 +4093,7 @@ where = [
   "android onboarding_restore_lead_key: Lead on the restore step after a recovery key was pasted.",
   "ios restore_lead_key: Intro on the restore screen once a recovery key was pasted.",
 ]
-text = ""
+text = "आपकी रिकवरी कुंजी आ गई है। यह इसी फ़ोन पर रहती है।"
 
 [t_d584b18ef5]
 en = "Type your 24 words in order, or paste them, or your recovery key, into the first box. They stay on this phone."
@@ -4097,7 +4101,7 @@ where = [
   "android onboarding_restore_lead_words: Lead on the restore step.",
   "ios restore_lead_words: Intro on the restore screen before a key is pasted.",
 ]
-text = ""
+text = "अपने 24 शब्द क्रम से टाइप करें, या उन्हें या अपनी रिकवरी कुंजी पहले बॉक्स में पेस्ट करें। ये इसी फ़ोन पर रहते हैं।"
 
 [t_e91162bfae]
 en = "Recovery key"
@@ -4107,7 +4111,7 @@ where = [
   "ios restore_key_label: Small label above the pasted recovery key.",
   "desktop signup_recovery_key: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "रिकवरी कुंजी"
 
 [t_ec83e75324]
 en = "Use my words instead"
@@ -4116,7 +4120,7 @@ where = [
   "ios restore_use_words: Button that discards the pasted key to type words instead.",
   "desktop signup_use_my_words_instead: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "इसके बजाय मेरे शब्द इस्तेमाल करें"
 
 [t_2d078dee86]
 en = "Paste from clipboard"
@@ -4125,7 +4129,7 @@ where = [
   "ios restore_paste: Button that pastes the words or key from the clipboard.",
   "desktop signup_paste_from_clipboard: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "क्लिपबोर्ड से पेस्ट करें"
 
 [t_18f5681178]
 en = "{filled} of 24"
@@ -4133,7 +4137,7 @@ where = [
   "android onboarding_restore_filled: Counter of recovery words typed so far. {filled} is how many of the 24 are filled in.",
   "desktop signup_of_24: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {filled} is a value filled in by the app.",
 ]
-text = ""
+text = "24 में से {filled}"
 
 [t_943a622429]
 en = "Add an account"
@@ -4141,7 +4145,7 @@ where = [
   "android onboarding_welcome_title_adding: Heading of the welcome step when adding another account.",
   "desktop signup_add_an_account: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "खाता जोड़ें"
 
 [t_8b4b8dfee0]
 en = "A direct line to your people"
@@ -4150,14 +4154,14 @@ where = [
   "ios onboarding_welcome_title: Title of the first screen.",
   "desktop signup_a_direct_line_to: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "आपके अपनों तक सीधी लाइन"
 
 [t_a1676ea1be]
 en = "Create a new account or bring one you already have.\nYour current account stays on this phone."
 where = [
   "android onboarding_welcome_lead_adding: Lead under the heading when adding another account. The line break separates two sentences.",
 ]
-text = ""
+text = "नया खाता बनाएँ या अपना मौजूदा खाता लाएँ।\nआपका अभी का खाता इस फ़ोन पर बना रहेगा।"
 
 [t_b2f1f8e2c0]
 en = "Tinline connects your phone straight to theirs.\nYou just need a nickname. Encrypted end to end."
@@ -4165,7 +4169,7 @@ where = [
   "android onboarding_welcome_lead: Lead on the first screen. The line break separates the two parts.",
   "ios onboarding_welcome_lead: Explanation on the first screen; the line break is intended.",
 ]
-text = ""
+text = "Tinline आपके फ़ोन को सीधे उनके फ़ोन से जोड़ता है।\nबस एक निकनेम चाहिए। एंड-टू-एंड एन्क्रिप्टेड।"
 
 [t_3592449353]
 en = "Create my account"
@@ -4174,7 +4178,7 @@ where = [
   "ios onboarding_create: Button on the first screen.",
   "desktop signup_create_my_account: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "मेरा खाता बनाएँ"
 
 [t_85f7918feb]
 en = "I have an account"
@@ -4183,7 +4187,7 @@ where = [
   "ios onboarding_have: Button on the first screen.",
   "desktop signup_i_have_an_account: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "मेरा खाता पहले से है"
 
 [t_55e7249a5f]
 en = "Not for emergency calls."
@@ -4194,7 +4198,7 @@ where = [
   "ios onboarding_emergency: Bold line on the first screen.",
   "desktop signup_not_for_emergency_calls: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "इमरजेंसी कॉल के लिए नहीं।"
 
 [t_224dd02d53]
 en = "Use your phone’s dialer to reach emergency services."
@@ -4202,7 +4206,7 @@ where = [
   "android onboarding_dialer_note: Second line of the emergency-calls note on the first screen.",
   "ios onboarding_emergency_rest: Second line under Not for emergency calls. on the first screen.",
 ]
-text = ""
+text = "इमरजेंसी सेवाओं तक पहुँचने के लिए अपने फ़ोन का डायलर इस्तेमाल करें।"
 
 [t_1ddc7c9468]
 en = "Use your account here"
@@ -4211,7 +4215,7 @@ where = [
   "ios onboarding_choose_title: Title of the screen that offers to link or restore.",
   "desktop signup_use_your_account_here: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "अपना खाता यहाँ इस्तेमाल करें"
 
 [t_f1fcf3419a]
 en = "Your account is its recovery phrase, so you can bring it to this phone two ways."
@@ -4219,7 +4223,7 @@ where = [
   "android onboarding_choose_lead: Lead under the choose heading.",
   "ios onboarding_choose_lead: Explanation under the Use your account here title.",
 ]
-text = ""
+text = "आपका खाता उसके रिकवरी शब्दों में है, इसलिए आप इसे इस फ़ोन पर दो तरह से ला सकते हैं।"
 
 [t_39cf14ca62]
 en = "Link my other device"
@@ -4228,7 +4232,7 @@ where = [
   "ios onboarding_opt_link: Option on the Use your account here screen.",
   "desktop signup_link_my_other_device: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "मेरा दूसरा डिवाइस लिंक करें"
 
 [t_ffc67693b5]
 en = "Scan a code on a device that already has your account. Your contacts and chats come along."
@@ -4237,7 +4241,7 @@ where = [
   "ios onboarding_opt_link_sub: Description of the link option.",
   "desktop signup_scan_a_code_on: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "जिस डिवाइस पर आपका खाता पहले से है, उस पर दिखा कोड स्कैन करें। आपके संपर्क और चैट साथ आ जाएँगे।"
 
 [t_3950ee3ee9]
 en = "Restore my account"
@@ -4246,7 +4250,7 @@ where = [
   "ios onboarding_opt_restore: Option on the Use your account here screen.",
   "desktop signup_restore_my_account: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "मेरा खाता वापस लाएँ"
 
 [t_149580a68c]
 en = "Type your 24 recovery words. This phone starts with an empty contact list."
@@ -4254,7 +4258,7 @@ where = [
   "android onboarding_choose_restore_sub: Description under the restore option.",
   "ios onboarding_opt_restore_sub: Description of the restore option.",
 ]
-text = ""
+text = "अपने 24 रिकवरी शब्द टाइप करें। यह फ़ोन खाली संपर्क सूची से शुरू होगा।"
 
 [t_6c95ac0891]
 en = "Your line is open, {name}"
@@ -4263,7 +4267,7 @@ where = [
   "ios onboarding_done_title_named: Title when the account is ready; {name} is the first name.",
   "desktop signup_your_line_is_open: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "आपकी लाइन खुली है, {name}"
 
 [t_5bc130796e]
 en = "Your line is open"
@@ -4274,7 +4278,7 @@ where = [
   "ios shell_empty_hero_open: Home hero title when the user has contacts.",
   "desktop common_your_line_is_open: Shared label, used in several places (signup, view).",
 ]
-text = ""
+text = "आपकी लाइन खुली है"
 
 [t_7b526495bb]
 en = "Scan their code or share yours, and you can call each other."
@@ -4283,7 +4287,7 @@ where = [
   "ios onboarding_done_lead: Explanation when the account is ready.",
   "desktop signup_scan_their_code_or: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "उनका कोड स्कैन करें या अपना शेयर करें, फिर आप एक-दूसरे को कॉल कर सकते हैं।"
 
 [t_b73b03ce83]
 en = "Add my first contact"
@@ -4294,7 +4298,7 @@ where = [
   "ios shell_empty_add_first: Home hero button when the user has no contacts.",
   "desktop signup_add_my_first_contact: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "मेरा पहला संपर्क जोड़ें"
 
 [t_6beaad3bcc]
 en = "Two devices are better than one"
@@ -4303,7 +4307,7 @@ where = [
   "ios onboarding_tip_devices: Tip title on the account-ready screen.",
   "desktop signup_two_devices_are_better: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "एक से भले दो डिवाइस"
 
 [t_5cd859f48d]
 en = "Link another device when you can, so losing one never locks you out."
@@ -4312,7 +4316,7 @@ where = [
   "ios onboarding_tip_devices_body: Tip body.",
   "desktop signup_link_another_device_when: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "जब हो सके, एक और डिवाइस लिंक करें, ताकि एक खो जाने पर भी आप अपने खाते से बाहर न हों।"
 
 [t_ad43e78a15]
 en = "Groups are hosted on a computer"
@@ -4320,7 +4324,7 @@ where = [
   "android onboarding_tip_groups_title: Tip title on the final onboarding screen.",
   "ios onboarding_tip_groups: Tip title on the account-ready screen.",
 ]
-text = ""
+text = "ग्रुप कंप्यूटर पर होस्ट होते हैं"
 
 [t_52c2f25c1c]
 en = "To start a group, add Tinline on a computer that can stay on."
@@ -4328,7 +4332,7 @@ where = [
   "android onboarding_tip_groups_body: Tip text about hosting groups on a computer.",
   "ios onboarding_tip_groups_body: Tip body.",
 ]
-text = ""
+text = "ग्रुप शुरू करने के लिए Tinline को ऐसे कंप्यूटर पर जोड़ें जो चालू रह सके।"
 
 [t_0681cf989c]
 en = "What should people call you?"
@@ -4337,7 +4341,7 @@ where = [
   "ios onboarding_name_title: Title of the nickname screen.",
   "desktop signup_what_should_people_call: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "लोग आपको किस नाम से बुलाएँ?"
 
 [t_0a135ac856]
 en = "Only the people you add will see it."
@@ -4346,7 +4350,7 @@ where = [
   "ios onboarding_name_lead: Explanation on the nickname screen.",
   "desktop signup_only_the_people_you: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "यह सिर्फ़ उन्हीं को दिखेगा जिन्हें आप जोड़ेंगे।"
 
 [t_7b62ae8f16]
 en = "You can change it any time in Settings."
@@ -4355,7 +4359,7 @@ where = [
   "ios onboarding_nickname_hint: Hint under the nickname field.",
   "desktop signup_you_can_change_it: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "आप इसे कभी भी सेटिंग में बदल सकते हैं।"
 
 [t_c3ae1bfe8b]
 en = "Choose a new passphrase"
@@ -4363,7 +4367,7 @@ where = [
   "android onboarding_pass_title_forgot: Heading of the passphrase step when the old passphrase was forgotten.",
   "ios onboarding_pass_title_forgot: Title of the passphrase screen after I forgot it.",
 ]
-text = ""
+text = "नया पासफ़्रेज़ चुनें"
 
 [t_3100057bf9]
 en = "Protect this phone"
@@ -4371,7 +4375,7 @@ where = [
   "android onboarding_pass_title_link: Heading of the passphrase step after linking to another device.",
   "ios onboarding_pass_title_link: Title of the passphrase screen after linking.",
 ]
-text = ""
+text = "इस फ़ोन को सुरक्षित करें"
 
 [t_75f11c8398]
 en = "Add a passphrase"
@@ -4380,7 +4384,7 @@ where = [
   "ios onboarding_pass_title: Title of the passphrase screen.",
   "desktop common_add_a_passphrase: Shared label, used in several places (signup, view).",
 ]
-text = ""
+text = "पासफ़्रेज़ जोड़ें"
 
 [t_d0db7f4ccc]
 en = "Add passphrase"
@@ -4391,7 +4395,7 @@ where = [
   "ios onboarding_cta_add: Button on the passphrase screen after linking.",
   "desktop common_add_passphrase: Shared label, used in several places (profile, view).",
 ]
-text = ""
+text = "पासफ़्रेज़ जोड़ें"
 
 [t_a59167be82]
 en = "Save account"
@@ -4399,7 +4403,7 @@ where = [
   "android onboarding_pass_cta_save: Button on the passphrase step when saving the account failed and a passphrase is used instead.",
   "ios onboarding_cta_save: Button on the passphrase screen when saving.",
 ]
-text = ""
+text = "खाता सहेजें"
 
 [t_670f495a48]
 en = "Optional. A lock, so only you can open Tinline on this phone."
@@ -4407,7 +4411,7 @@ where = [
   "android onboarding_pass_lead: Lead on the passphrase step.",
   "ios onboarding_pass_lead: Explanation on the passphrase screen.",
 ]
-text = ""
+text = "ज़रूरी नहीं। एक ताला, ताकि इस फ़ोन पर Tinline सिर्फ़ आप खोल सकें।"
 
 [t_bb52d395ca]
 en = "Skip for now"
@@ -4416,7 +4420,7 @@ where = [
   "ios onboarding_skip: Button that skips the passphrase.",
   "desktop signup_skip_for_now: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "अभी के लिए छोड़ें"
 
 [t_647428ff94]
 en = "Encrypting…"
@@ -4427,7 +4431,7 @@ where = [
   "ios onboarding_encrypting: Button text while the passphrase is applied.",
   "desktop signup_encrypting: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "एन्क्रिप्ट हो रहा है…"
 
 [t_0c3aa921d4]
 en = "Encrypts your account on this phone. Your phone remembers it, so calls still ring after a restart. If you forget it, your recovery words let you set a new one."
@@ -4436,7 +4440,7 @@ where = [
   "ios security_pass_notice: Notice on the add-passphrase page.",
   "ios onboarding_pass_notice: Notice on the passphrase screen.",
 ]
-text = ""
+text = "इस फ़ोन पर आपके खाते को एन्क्रिप्ट करता है। आपका फ़ोन इसे याद रखता है, इसलिए रीस्टार्ट के बाद भी कॉल की घंटी बजती है। अगर आप इसे भूल जाएँ, तो रिकवरी शब्दों से नया रख सकते हैं।"
 
 [t_16239e2343]
 en = "Any length works. A few random words are easy to remember."
@@ -4445,7 +4449,7 @@ where = [
   "ios shell_pass_strength_empty: Passphrase hint while the field is empty.",
   "desktop signup_any_length_works_a: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "कोई भी लंबाई चलेगी। कुछ बेतरतीब शब्द याद रखना आसान होता है।"
 
 [t_d84665bbe7]
 en = "Short. A few more words make it stronger."
@@ -4454,7 +4458,7 @@ where = [
   "ios shell_pass_strength_short: Passphrase strength: short.",
   "desktop signup_short_a_few_more: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "छोटा है। कुछ और शब्द इसे मज़बूत बनाएँगे।"
 
 [t_8ea7d40fcf]
 en = "Fair"
@@ -4463,7 +4467,7 @@ where = [
   "ios shell_pass_strength_fair: Passphrase strength: fair.",
   "desktop signup_fair: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "ठीक-ठाक"
 
 [t_e4adf12a36]
 en = "Strong"
@@ -4472,7 +4476,7 @@ where = [
   "ios shell_pass_strength_strong: Passphrase strength: strong.",
   "desktop signup_strong: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "मज़बूत"
 
 [t_282faff70f]
 en = "Here is your recovery key"
@@ -4481,7 +4485,7 @@ where = [
   "ios onboarding_rec_title_key: Title when showing the recovery key.",
   "desktop signup_here_is_your_recovery: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "यह रही आपकी रिकवरी कुंजी"
 
 [t_41d0ce5f7d]
 en = "Here are your recovery words"
@@ -4490,7 +4494,7 @@ where = [
   "ios onboarding_rec_title_words: Title when showing the recovery words.",
   "desktop signup_here_are_your_recovery: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "ये रहे आपके रिकवरी शब्द"
 
 [t_69e5059a90]
 en = "Your recovery key is the same as your 24 words, as one line.\nPaste it somewhere safe. A password manager works great."
@@ -4498,7 +4502,7 @@ where = [
   "android onboarding_phrase_lead_key: Lead under the recovery key heading. The line break separates two sentences.",
   "ios onboarding_rec_lead_key: Explanation when showing the recovery key; the line break is intended.",
 ]
-text = ""
+text = "आपकी रिकवरी कुंजी आपके 24 शब्द ही हैं, एक लाइन में।\nइसे किसी सुरक्षित जगह पेस्ट करें। पासवर्ड मैनेजर बढ़िया रहता है।"
 
 [t_bb4f15cf75]
 en = "If you ever switch devices, these 24 words bring your account along.\nSave a copy somewhere safe. Paper works great."
@@ -4506,7 +4510,7 @@ where = [
   "android onboarding_phrase_lead_words: Lead under the recovery words heading. The line break separates two sentences.",
   "ios onboarding_rec_lead_words: Explanation when showing the recovery words; the line break is intended.",
 ]
-text = ""
+text = "अगर आप कभी डिवाइस बदलें, तो ये 24 शब्द आपका खाता साथ ले आते हैं।\nइनकी एक कॉपी किसी सुरक्षित जगह रखें। कागज़ बढ़िया रहता है।"
 
 [t_776efe724c]
 en = "I’ve saved it"
@@ -4515,7 +4519,7 @@ where = [
   "ios onboarding_saved_key: Button after copying the recovery key.",
   "desktop signup_ive_saved_it: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "मैंने सहेज ली"
 
 [t_c2188486fc]
 en = "I’ve saved them"
@@ -4524,7 +4528,7 @@ where = [
   "ios onboarding_saved_words: Button after copying the recovery words.",
   "desktop signup_ive_saved_them: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "मैंने सहेज लिए"
 
 [t_a4b3e31ad9]
 en = "Copy again"
@@ -4533,7 +4537,7 @@ where = [
   "ios onboarding_copy_again: Button to copy the recovery key or words again.",
   "desktop signup_copy_again: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "फिर से कॉपी करें"
 
 [t_8c32c0a444]
 en = "Copy my key"
@@ -4542,7 +4546,7 @@ where = [
   "ios onboarding_copy_key: Button that copies the recovery key.",
   "desktop common_copy_my_key: Shared label, used in several places (profile, signup).",
 ]
-text = ""
+text = "मेरी कुंजी कॉपी करें"
 
 [t_2211d13efd]
 en = "Copy my words"
@@ -4551,7 +4555,7 @@ where = [
   "ios onboarding_copy_words: Button that copies the recovery words.",
   "desktop signup_copy_my_words: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "मेरे शब्द कॉपी करें"
 
 [t_7c5ac76f63]
 en = "I saved it elsewhere"
@@ -4560,7 +4564,7 @@ where = [
   "ios onboarding_elsewhere_key: Button for people who saved the key without copying.",
   "desktop signup_i_saved_it_elsewhere: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "मैंने कहीं और सहेज ली"
 
 [t_933ca7fbf2]
 en = "I wrote them down"
@@ -4569,14 +4573,14 @@ where = [
   "ios onboarding_elsewhere_words: Button for people who wrote the words down.",
   "desktop signup_i_wrote_them_down: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "मैंने लिख लिए"
 
 [t_8302bfa652]
 en = "Recovery words"
 where = [
   "android onboarding_clip_words: Name the clipboard gives to the copied recovery words (the system may show it).",
 ]
-text = ""
+text = "रिकवरी शब्द"
 
 [t_68e1e73803]
 en = "Your account"
@@ -4587,7 +4591,7 @@ where = [
   "ios onboarding_fb_your_account: Name used for the account avatar when no name is set.",
   "desktop common_your_account: Shared label, used in several places (link, shell).",
 ]
-text = ""
+text = "आपका खाता"
 
 [t_cc10cd93a6]
 en = "Words"
@@ -4596,7 +4600,7 @@ where = [
   "ios onboarding_seg_words: Segment: show the recovery words.",
   "desktop signup_words: Desktop, sign-up, restore and add contact (in signup_view.rs, words_key_seg).",
 ]
-text = ""
+text = "शब्द"
 
 [t_b4a8a37f34]
 en = "Key"
@@ -4607,7 +4611,7 @@ where = [
   "ios onboarding_seg_key: Segment: show the recovery key.",
   "desktop signup_key: Desktop, sign-up, restore and add contact (in signup_view.rs, words_key_seg).",
 ]
-text = ""
+text = "कुंजी"
 
 [t_2d84bd9d3b]
 en = "Name this phone"
@@ -4617,7 +4621,7 @@ where = [
   "ios devices_name_phone: Dialog title for naming this phone.",
   "ios onboarding_dev_title: Title of the device-name screen.",
 ]
-text = ""
+text = "इस फ़ोन को नाम दें"
 
 [t_4880385a9a]
 en = "So you can tell your devices apart in Linked devices. Only your own devices see this name; people you call never do."
@@ -4626,7 +4630,7 @@ where = [
   "ios onboarding_dev_lead: Explanation on the device-name screen.",
   "desktop common_so_you_can_tell: Shared label, used in several places (link, signup, view).",
 ]
-text = ""
+text = "ताकि लिंक किए गए डिवाइस में आप अपने डिवाइस पहचान सकें। यह नाम सिर्फ़ आपके अपने डिवाइस देखते हैं; जिन्हें आप कॉल करते हैं, वे कभी नहीं।"
 
 [t_2ca3f0287b]
 en = "You can rename it later."
@@ -4635,7 +4639,7 @@ where = [
   "ios onboarding_dev_hint: Hint under the device-name field.",
   "desktop common_you_can_rename_it: Shared label, used in several places (link, signup, view).",
 ]
-text = ""
+text = "आप इसका नाम बाद में बदल सकते हैं।"
 
 [t_39487823d4]
 en = "Added {name} to this phone"
@@ -4643,7 +4647,7 @@ where = [
   "android onboarding_restored_title_adding: Heading after another account was added. {name} is the account's nickname.",
   "ios onboarding_back_added: Title after adding another account; {name} is the account's name or the words your account.",
 ]
-text = ""
+text = "{name} इस फ़ोन में जुड़ गया"
 
 [t_d0c701e6ed]
 en = "your account"
@@ -4652,7 +4656,7 @@ where = [
   "ios onboarding_fb_your_account_lc: Fallback for an unnamed account inside a sentence.",
   "desktop link_your_account: Desktop, linking devices (in link_view.rs, link_secure_screen).",
 ]
-text = ""
+text = "आपका खाता"
 
 [t_be0e29252e]
 en = "Only the account you select is online at a time, so {name} is online now and your other account is paused. You can switch in Settings."
@@ -4660,7 +4664,7 @@ where = [
   "android onboarding_restored_lead_adding: Lead after another account was added. {name} is the account's nickname.",
   "ios onboarding_back_added_lead: Explanation after adding another account; {name} is the account's name or the words this account.",
 ]
-text = ""
+text = "एक समय में सिर्फ़ चुना हुआ खाता ऑनलाइन रहता है, इसलिए अभी {name} ऑनलाइन है और आपका दूसरा खाता रुका हुआ है। आप सेटिंग में खाता बदल सकते हैं।"
 
 [t_19342f6dde]
 en = "this account"
@@ -4668,7 +4672,7 @@ where = [
   "android onboarding_restored_name_fallback_lead: Stand-in for the nickname in the lead after adding an account when the nickname is empty.",
   "ios onboarding_fb_this_account: Fallback for an unnamed account inside a sentence.",
 ]
-text = ""
+text = "यह खाता"
 
 [t_e9172d3ef4]
 en = "Your account is back on this phone. Your contacts, chats and call history are kept on your other devices, not with us. This phone starts with an empty contact list."
@@ -4676,7 +4680,7 @@ where = [
   "android onboarding_restored_lead: Lead after restoring an account.",
   "ios onboarding_back_lead: Explanation after restoring an account.",
 ]
-text = ""
+text = "आपका खाता इस फ़ोन पर वापस आ गया है। आपके संपर्क, चैट और कॉल हिस्ट्री आपके दूसरे डिवाइस पर रहते हैं, हमारे पास नहीं। यह फ़ोन खाली संपर्क सूची से शुरू होगा।"
 
 [t_5cb442a921]
 en = "Open Tinline"
@@ -4684,21 +4688,21 @@ where = [
   "android onboarding_open_tinline: Button that leaves the restored and linked screens and opens the app.",
   "ios onboarding_open: Button after adding another account, and after linking.",
 ]
-text = ""
+text = "Tinline खोलें"
 
 [t_f3ebd14b01]
 en = "Linked to {device}"
 where = [
   "android onboarding_linked_title: Heading after linking. {device} is the other device's name.",
 ]
-text = ""
+text = "{device} से लिंक हो गया"
 
 [t_ba1cd63d8b]
 en = "Your contacts and chats are arriving from {device} and will keep in step on both."
 where = [
   "android onboarding_linked_lead: Lead after linking. {device} is the other device's name.",
 ]
-text = ""
+text = "आपके संपर्क और चैट {device} से आ रहे हैं और दोनों पर एक जैसे बने रहेंगे।"
 
 [t_ad9e1201a5]
 en = "Contacts"
@@ -4711,7 +4715,7 @@ where = [
   "ios shell_tab_contacts: Bottom tab title and screen reader label.",
   "desktop common_contacts: Shared label, used in several places (link, profile, shell, view).",
 ]
-text = ""
+text = "संपर्क"
 
 [t_71c082fb59]
 en = "Call history"
@@ -4719,7 +4723,7 @@ where = [
   "android onboarding_sync_calls: Row on the linked screen showing how many calls arrived.",
   "ios onboarding_sync_calls: Sync progress row label.",
 ]
-text = ""
+text = "कॉल हिस्ट्री"
 
 [t_913ca6be9c]
 en = "Waiting"
@@ -4730,7 +4734,7 @@ where = [
   "ios shell_chats_waiting: Chat list preview prefix for a message that is waiting to send. The preview follows after a dot.",
   "desktop chat_waiting: Desktop, chats (in chat_view.rs, pg_chat_row).",
 ]
-text = ""
+text = "इंतज़ार"
 
 [t_fcaf0c875d]
 en = "Nothing yet. The other device may be offline: it picks up where it left off the next time both are online."
@@ -4738,7 +4742,7 @@ where = [
   "android onboarding_sync_slow: Note on the linked screen after 45 seconds without data.",
   "ios onboarding_sync_slow: Hint when sync is slow to start.",
 ]
-text = ""
+text = "अभी कुछ नहीं आया। हो सकता है दूसरा डिवाइस ऑफ़लाइन हो: अगली बार दोनों के ऑनलाइन होने पर वह वहीं से आगे बढ़ेगा।"
 
 [t_10feb1a6cd]
 en = "Keep both devices online. Sync keeps going in the background."
@@ -4746,7 +4750,7 @@ where = [
   "android onboarding_sync_keep_online: Note on the linked screen while data is arriving.",
   "ios onboarding_sync_keep: Hint while syncing.",
 ]
-text = ""
+text = "दोनों डिवाइस ऑनलाइन रखें। सिंक बैकग्राउंड में चलता रहता है।"
 
 [t_53dc3b834f]
 en = "Couldn’t save your account"
@@ -4755,7 +4759,7 @@ where = [
   "ios onboarding_nosave_title: Title when the phone's key store failed.",
   "desktop gate_couldnt_save_your_account: Desktop, sign-in and gate screens (in view.rs, key_failed_view).",
 ]
-text = ""
+text = "आपका खाता सहेजा नहीं जा सका"
 
 [t_835a913e6a]
 en = "Tinline couldn’t store the key that opens your account on this phone, so your account has not been saved yet."
@@ -4763,7 +4767,7 @@ where = [
   "android onboarding_savefail_lead: Lead under the save-failed heading.",
   "ios onboarding_nosave_lead: Explanation when the phone's key store failed.",
 ]
-text = ""
+text = "Tinline इस फ़ोन पर वह कुंजी नहीं रख पाया जिससे आपका खाता खुलता है, इसलिए आपका खाता अभी सहेजा नहीं गया है।"
 
 [t_1fec3e9598]
 en = "Trying…"
@@ -4771,7 +4775,7 @@ where = [
   "android onboarding_savefail_trying: Label of the Try again button while retrying.",
   "ios onboarding_trying: Button text while retrying.",
 ]
-text = ""
+text = "कोशिश जारी है…"
 
 [t_f587adb4ae]
 en = "Add a passphrase instead"
@@ -4780,7 +4784,7 @@ where = [
   "ios onboarding_pass_instead: Button that protects the account with a passphrase instead.",
   "desktop gate_add_a_passphrase_instead: Desktop, sign-in and gate screens (in view.rs, key_failed_view).",
 ]
-text = ""
+text = "इसके बजाय पासफ़्रेज़ जोड़ें"
 
 [t_b049cff8f6]
 en = "Nothing was kept on this phone yet, so there is nothing to lose. Try again, or protect the account with a passphrase instead of the phone’s own key."
@@ -4788,7 +4792,7 @@ where = [
   "android onboarding_savefail_notice: Reassurance box on the save-failed screen.",
   "ios onboarding_nosave_notice: Notice when the phone's key store failed.",
 ]
-text = ""
+text = "इस फ़ोन पर अभी कुछ रखा नहीं गया था, इसलिए कुछ खोने का डर नहीं। फिर से कोशिश करें, या फ़ोन की अपनी कुंजी के बजाय पासफ़्रेज़ से खाते को सुरक्षित करें।"
 
 [t_75433cfcb6]
 en = "Before you start"
@@ -4797,7 +4801,7 @@ where = [
   "ios onboarding_terms_title: Title of the terms screen.",
   "desktop signup_before_you_start: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "शुरू करने से पहले"
 
 [t_62eeadcd02]
 en = "I agree"
@@ -4806,7 +4810,7 @@ where = [
   "ios onboarding_agree: Button that accepts the terms.",
   "desktop signup_i_agree: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "मैं सहमत हूँ"
 
 [t_3886adb527]
 en = "Free of ads and tracking."
@@ -4815,7 +4819,7 @@ where = [
   "ios onboarding_terms1: Bold lead of the first point on the terms screen.",
   "desktop signup_free_of_ads_and: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "विज्ञापन और ट्रैकिंग से मुक्त।"
 
 [t_4e39bb7c5c]
 en = "Tinline doesn’t collect your contacts, calls or location."
@@ -4824,7 +4828,7 @@ where = [
   "ios onboarding_terms1_rest: Rest of the first point on the terms screen.",
   "desktop signup_tinline_doesnt_collect_your: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "Tinline आपके संपर्क, कॉल या लोकेशन इकट्ठा नहीं करता।"
 
 [t_3bcfb865c5]
 en = "Calls are end-to-end encrypted."
@@ -4833,7 +4837,7 @@ where = [
   "ios onboarding_terms2: Bold lead of the second point on the terms screen.",
   "desktop signup_calls_are_end_to: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "कॉल एंड-टू-एंड एन्क्रिप्टेड हैं।"
 
 [t_e3cf72a054]
 en = "When a direct line isn’t possible, an encrypted relay passes the call along. It can’t hear it."
@@ -4842,7 +4846,7 @@ where = [
   "ios onboarding_terms2_rest: Rest of the second point on the terms screen.",
   "desktop signup_when_a_direct_line: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "जब सीधी लाइन मुमकिन न हो, तो एक एन्क्रिप्टेड रिले कॉल को आगे पहुँचाता है। वह उसे सुन नहीं सकता।"
 
 [t_07e63c57a9]
 en = "Your account is yours."
@@ -4851,7 +4855,7 @@ where = [
   "ios onboarding_terms3: Bold lead of the third point on the terms screen.",
   "desktop signup_your_account_is_yours: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "आपका खाता आपका है।"
 
 [t_a67fba4ccf]
 en = "It lives on your devices, not on a server. Your recovery words are the way back in, so keep them safe."
@@ -4860,14 +4864,14 @@ where = [
   "ios onboarding_terms3_rest: Rest of the third point on the terms screen.",
   "desktop signup_it_lives_on_your: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "यह आपके डिवाइस पर रहता है, किसी सर्वर पर नहीं। आपके रिकवरी शब्द ही वापस आने का रास्ता हैं, इसलिए उन्हें संभालकर रखें।"
 
 [t_71508df1e3]
 en = "By continuing, you agree to the {terms} and have read the {privacy}."
 where = [
   "android onboarding_terms_by_continuing: Sentence under the terms points. {terms} and {privacy} are replaced by tappable links labelled with the next two entries; word order may change.",
 ]
-text = ""
+text = "आगे बढ़ने पर आप {terms} से सहमत होते हैं और आपने {privacy} पढ़ ली है।"
 
 [t_f59458f78e]
 en = "Terms of Use"
@@ -4877,7 +4881,7 @@ where = [
   "ios settings_terms: About row that opens the terms website.",
   "desktop signup_terms_of_use: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "इस्तेमाल की शर्तें"
 
 [t_616628b01c]
 en = "Privacy Policy"
@@ -4887,7 +4891,7 @@ where = [
   "ios settings_privacy_policy: About row that opens the privacy policy website.",
   "desktop signup_privacy_policy: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "प्राइवेसी पॉलिसी"
 
 [t_7c4290d283]
 en = "So calls can reach you"
@@ -4895,7 +4899,7 @@ where = [
   "android onboarding_perms_title: Heading of the permissions step.",
   "ios onboarding_perms_title: Title of the permissions screen.",
 ]
-text = ""
+text = "ताकि कॉल आप तक पहुँच सकें"
 
 [t_bd94457f30]
 en = "Tinline works like a phone line: it stays open quietly in the background. Each of these is optional, and you can change them later."
@@ -4903,7 +4907,7 @@ where = [
   "android onboarding_perms_lead: Lead on the permissions step.",
   "ios onboarding_perms_lead: Explanation on the permissions screen.",
 ]
-text = ""
+text = "Tinline एक फ़ोन लाइन की तरह काम करता है: यह बैकग्राउंड में चुपचाप खुला रहता है। इनमें से हर एक ज़रूरी नहीं है, और आप इन्हें बाद में बदल सकते हैं।"
 
 [t_ff3d541d05]
 en = "Microphone"
@@ -4915,7 +4919,7 @@ where = [
   "ios onboarding_perm_mic: Permission row title.",
   "desktop common_microphone: Shared label, used in several places (audio, call_screen, profile, view).",
 ]
-text = ""
+text = "माइक्रोफ़ोन"
 
 [t_a79cfadcde]
 en = "So they can hear you. Used only during a call."
@@ -4923,7 +4927,7 @@ where = [
   "android onboarding_perm_mic_why: Why the microphone permission is asked.",
   "ios onboarding_perm_mic_why: Why Tinline asks for the microphone.",
 ]
-text = ""
+text = "ताकि वे आपको सुन सकें। सिर्फ़ कॉल के दौरान इस्तेमाल होता है।"
 
 [t_f553fde14e]
 en = "Notifications"
@@ -4935,7 +4939,7 @@ where = [
   "ios onboarding_perm_notif: Permission row title.",
   "desktop profile_notifications: Desktop, profile and settings (in profile_view.rs, profile_page).",
 ]
-text = ""
+text = "सूचनाएँ"
 
 [t_7674f6ab4f]
 en = "So you see incoming calls and messages."
@@ -4943,7 +4947,7 @@ where = [
   "android onboarding_perm_notifications_why: Why the notifications permission is asked.",
   "ios onboarding_perm_notif_why: Why Tinline asks for notifications.",
 ]
-text = ""
+text = "ताकि आपको आने वाली कॉल और संदेश दिखें।"
 
 [t_c2f6535864]
 en = "Ring over lock screen"
@@ -4951,14 +4955,14 @@ where = [
   "android onboarding_perm_fullscreen: Permission name for showing incoming calls over the lock screen.",
   "android notif_ring_lock: Permission row (Android 14 full-screen notification) on the Notifications page and the battery checklist.",
 ]
-text = ""
+text = "लॉक स्क्रीन पर घंटी"
 
 [t_0918e7bac6]
 en = "Shows incoming calls full screen, like the phone app."
 where = [
   "android onboarding_perm_fullscreen_why: Why the full-screen permission is asked.",
 ]
-text = ""
+text = "फ़ोन ऐप की तरह आने वाली कॉल पूरी स्क्रीन पर दिखाता है।"
 
 [t_8060359eb2]
 en = "Run in background"
@@ -4966,14 +4970,14 @@ where = [
   "android onboarding_perm_background: Permission name for staying alive in the background.",
   "android perms_battery_need_title: Name of the battery-exemption permission (internal label of a permission the app needs).",
 ]
-text = ""
+text = "बैकग्राउंड में चलें"
 
 [t_71c28a78f9]
 en = "Android pauses idle apps to save battery. This keeps your line open, using a little battery."
 where = [
   "android onboarding_perm_background_why: Why the background permission is asked.",
 ]
-text = ""
+text = "बैटरी बचाने के लिए Android खाली बैठे ऐप रोक देता है। इससे आपकी लाइन खुली रहती है, थोड़ी बैटरी खर्च होती है।"
 
 [t_854e55f8c7]
 en = "Allow"
@@ -4982,21 +4986,21 @@ where = [
   "android home_banner_allow: Banner button that opens the full-screen call setting.",
   "ios onboarding_allow: Button that asks for a permission.",
 ]
-text = ""
+text = "अनुमति दें"
 
 [t_dd9c8cc79f]
 en = "Allow {permission}"
 where = [
   "android onboarding_perm_allow_desc: Screen-reader description of the Allow button. {permission} is the permission name in lower case.",
 ]
-text = ""
+text = "{permission} की अनुमति दें"
 
 [t_3a4f0ec59d]
 en = "{permission} allowed"
 where = [
   "android onboarding_perm_allowed_desc: Screen-reader description of the tick shown once a permission is granted. {permission} is the permission name.",
 ]
-text = ""
+text = "{permission} की अनुमति मिल गई"
 
 [t_424c52c0a7]
 en = "Open settings"
@@ -5007,7 +5011,7 @@ where = [
   "ios shell_mic_open_settings: Button that opens the system settings for the microphone permission.",
   "ios call_open_settings: Button that opens the system settings for Tinline.",
 ]
-text = ""
+text = "सेटिंग खोलें"
 
 [t_b3ae182018]
 en = "Notifications are off"
@@ -5015,7 +5019,7 @@ where = [
   "android perms_notifications_off_title: Title of the warning card shown when the phone blocks Tinline's notifications.",
   "ios settings_perm_notif_title: Title of the warning shown when system notifications are off.",
 ]
-text = ""
+text = "सूचनाएँ बंद हैं"
 
 [t_19b434ed57]
 en = "Tinline can’t alert you to messages or calls. They still arrive; you’ll see them when you open the app. Turn notifications on in system settings."
@@ -5023,56 +5027,56 @@ where = [
   "android perms_notifications_off_body: Body of the warning card for switched-off notifications.",
   "ios settings_perm_notif_body: Body of the notifications-off warning.",
 ]
-text = ""
+text = "Tinline आपको संदेशों या कॉल के बारे में नहीं बता सकता। वे फिर भी आते हैं; ऐप खोलने पर आपको दिखेंगे। सिस्टम सेटिंग में सूचनाएँ चालू करें।"
 
 [t_7d228fbd99]
 en = "Battery saving may delay calls"
 where = [
   "android perms_battery_title: Title of the warning card shown when Android restricts Tinline's battery use.",
 ]
-text = ""
+text = "बैटरी सेविंग से कॉल में देर हो सकती है"
 
 [t_770eea319c]
 en = "Android can pause Tinline in the background, so calls and messages can arrive late. Set Tinline’s battery use to Unrestricted."
 where = [
   "android perms_battery_body: Body of the battery warning card. Unrestricted is the name of the Android battery setting.",
 ]
-text = ""
+text = "Android बैकग्राउंड में Tinline को रोक सकता है, जिससे कॉल और संदेश देर से आ सकते हैं। Tinline के बैटरी इस्तेमाल को “प्रतिबंधित नहीं” पर सेट करें।"
 
 [t_86979511dc]
 en = "So the other person can hear you"
 where = [
   "android perms_mic_why: Why Tinline needs the microphone permission.",
 ]
-text = ""
+text = "ताकि दूसरा व्यक्ति आपको सुन सके"
 
 [t_e38c9e3a42]
 en = "To show incoming calls"
 where = [
   "android perms_notifications_why: Why Tinline needs the notifications permission.",
 ]
-text = ""
+text = "आने वाली कॉल दिखाने के लिए"
 
 [t_83653c9226]
 en = "Exempt from battery optimisation so calls arrive when idle"
 where = [
   "android perms_battery_need_why: Why Tinline asks to be exempt from battery optimisation.",
 ]
-text = ""
+text = "बैटरी ऑप्टिमाइज़ेशन से छूट, ताकि खाली बैठे फ़ोन पर भी कॉल आएँ"
 
 [t_e69907b099]
 en = "Full-screen calls"
 where = [
   "android perms_fullscreen_title: Name of the full-screen notification permission (internal label of a permission the app needs).",
 ]
-text = ""
+text = "पूरी स्क्रीन पर कॉल"
 
 [t_47c5032e9f]
 en = "Show incoming calls over the lock screen"
 where = [
   "android perms_fullscreen_why: Why Tinline needs the full-screen notification permission.",
 ]
-text = ""
+text = "आने वाली कॉल लॉक स्क्रीन पर दिखाएँ"
 
 [t_6f11bd5837]
 en = "Settings"
@@ -5083,7 +5087,7 @@ where = [
   "ios shell_settings: Accessibility label of the settings (gear) button on the home header.",
   "desktop profile_settings: Desktop, profile and settings (in profile_view.rs, profile_page).",
 ]
-text = ""
+text = "सेटिंग"
 
 [t_fbad1421e3]
 en = "Selected · online"
@@ -5092,7 +5096,7 @@ where = [
   "ios settings_account_selected: Subtitle of the selected account row.",
   "desktop profile_selected_online: Desktop, profile and settings (in profile_view.rs, settings_landing).",
 ]
-text = ""
+text = "चुना हुआ · ऑनलाइन"
 
 [t_f4166c2daf]
 en = "Paused · tap to switch"
@@ -5101,7 +5105,7 @@ where = [
   "ios settings_account_paused: Subtitle of a non-selected account row.",
   "desktop profile_paused_tap_to_switch: Desktop, profile and settings (in profile_view.rs, settings_landing).",
 ]
-text = ""
+text = "रुका हुआ · बदलने के लिए टैप करें"
 
 [t_97d9b1f459]
 en = "Add another account"
@@ -5110,7 +5114,7 @@ where = [
   "ios settings_add_account: Row that opens the add-account choices.",
   "desktop profile_add_another_account: Desktop, profile and settings (in profile_view.rs, settings_landing).",
 ]
-text = ""
+text = "एक और खाता जोड़ें"
 
 [t_bb4f833bf1]
 en = "Only the selected account is online on this phone. Switching pauses the other one: it receives no calls until you select it again."
@@ -5118,7 +5122,7 @@ where = [
   "android settings_accounts_note: Explanation under the account list on the Settings landing.",
   "ios settings_accounts_note: Explanation under the account list.",
 ]
-text = ""
+text = "इस फ़ोन पर सिर्फ़ चुना हुआ खाता ऑनलाइन रहता है। खाता बदलने पर दूसरा रुक जाता है: जब तक आप उसे फिर से नहीं चुनते, उस पर कॉल नहीं आतीं।"
 
 [t_5cab984542]
 en = "Appearance"
@@ -5127,7 +5131,7 @@ where = [
   "ios settings_appearance: Section heading for the light/dark choice.",
   "desktop profile_appearance: Desktop, profile and settings (in profile_view.rs, settings_landing).",
 ]
-text = ""
+text = "रूप-रंग"
 
 [t_ce3a092efe]
 en = "Match my phone"
@@ -5135,7 +5139,7 @@ where = [
   "android settings_look_match: Appearance option: follow the phone's light or dark setting.",
   "ios settings_appearance_match: Appearance option: follow the phone's light or dark setting.",
 ]
-text = ""
+text = "मेरे फ़ोन जैसा"
 
 [t_7857115a54]
 en = "Light or dark, as this phone is set"
@@ -5143,7 +5147,7 @@ where = [
   "android settings_look_match_sub: Small line under the Match my phone appearance option.",
   "ios settings_appearance_match_sub: Subtitle of the Match my phone option.",
 ]
-text = ""
+text = "लाइट या डार्क, जैसा इस फ़ोन में सेट है"
 
 [t_6c447396fa]
 en = "Light"
@@ -5152,7 +5156,7 @@ where = [
   "ios settings_appearance_light: Appearance option: always light.",
   "desktop profile_light: Desktop, profile and settings (in profile_view.rs, settings_landing).",
 ]
-text = ""
+text = "लाइट"
 
 [t_e474202d31]
 en = "Dark"
@@ -5161,7 +5165,7 @@ where = [
   "ios settings_appearance_dark: Appearance option: always dark.",
   "desktop profile_dark: Desktop, profile and settings (in profile_view.rs, settings_landing).",
 ]
-text = ""
+text = "डार्क"
 
 [t_ed363ef678]
 en = "Devices"
@@ -5170,7 +5174,7 @@ where = [
   "ios settings_row_devices: Settings list row.",
   "desktop profile_devices: Desktop, profile and settings (in profile_view.rs, profile_page).",
 ]
-text = ""
+text = "डिवाइस"
 
 [t_9211d6c9bd]
 en = "Privacy"
@@ -5179,7 +5183,7 @@ where = [
   "ios settings_row_privacy: Settings list row.",
   "desktop common_privacy: Shared label, used in several places (profile, view).",
 ]
-text = ""
+text = "प्राइवेसी"
 
 [t_84e0cb5ef5]
 en = "Sounds"
@@ -5188,7 +5192,7 @@ where = [
   "ios settings_row_sounds: Settings list row.",
   "desktop profile_sounds: Desktop, profile and settings (in profile_view.rs, profile_page).",
 ]
-text = ""
+text = "आवाज़ें"
 
 [t_f3c42ba016]
 en = "Video"
@@ -5199,7 +5203,7 @@ where = [
   "ios call_video_button: Label of the button that answers an incoming video call with my camera on.",
   "desktop common_video: Shared label, used in several places (call_screen, profile).",
 ]
-text = ""
+text = "वीडियो"
 
 [t_77bb787833]
 en = "Storage"
@@ -5208,7 +5212,7 @@ where = [
   "ios settings_row_storage: Settings list row.",
   "desktop profile_storage: Desktop, profile and settings (in profile_view.rs, profile_page).",
 ]
-text = ""
+text = "स्टोरेज"
 
 [t_dd3831dad6]
 en = "About Tinline"
@@ -5217,7 +5221,7 @@ where = [
   "ios settings_row_about: Settings list row for the About page.",
   "desktop profile_about_tinline: Desktop, profile and settings (in profile_view.rs, profile_page).",
 ]
-text = ""
+text = "Tinline के बारे में"
 
 [t_024848ef1f]
 en = "Video in calls"
@@ -5226,7 +5230,7 @@ where = [
   "ios settings_video_in_calls: Settings row and switch label for allowing video in calls.",
   "desktop settings_video_in_calls: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "कॉल में वीडियो"
 
 [t_316a961ccc]
 en = "You can turn your camera on in a call"
