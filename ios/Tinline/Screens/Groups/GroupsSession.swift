@@ -12,6 +12,7 @@ final class GroupsSession: ObservableObject {
     /// The Shell may route messages into its own snackbar instead: set once, then the local toast stays quiet.
     var externalSay: ((String) -> Void)?
     private var bag: AnyCancellable?
+    private var mirrors: AnyCancellable?
     private var toastTask: Task<Void, Never>?
 
     init(ctl: GroupsController, dir: GroupsDirectory) {
@@ -22,10 +23,16 @@ final class GroupsSession: ObservableObject {
     }
 
     private static var byNode: [ObjectIdentifier: GroupsSession] = [:]
-    static func shared(for node: Node) -> GroupsSession {
+    static func shared(for node: Node, app: AppEnv) -> GroupsSession {
         let key = ObjectIdentifier(node)
         if let s = byNode[key] { return s }
-        let s = GroupsSession(ctl: GroupsHub.controller(for: node), dir: NodeGroupsDirectory(node))
+        let dir = LoadedGroupsDirectory(node)
+        let s = GroupsSession(ctl: GroupsHub.controller(for: node), dir: dir)
+        // Rows read the People area's loaded contacts and blocks; a change to either redraws the group screens.
+        s.mirrors = app.$contacts.combineLatest(app.$blocks).sink { [weak s, weak dir] contacts, blocks in
+            dir?.update(contacts: contacts, blocks: blocks)
+            s?.objectWillChange.send()
+        }
         byNode[key] = s
         return s
     }
@@ -94,6 +101,6 @@ struct GroupsSessionGate<Content: View>: View {
     @EnvironmentObject private var app: AppEnv
     @ViewBuilder var content: (GroupsSession) -> Content
     var body: some View {
-        if let node = app.node { content(GroupsSession.shared(for: node)) } else { Color.clear }
+        if let node = app.node { content(GroupsSession.shared(for: node, app: app)) } else { Color.clear }
     }
 }
