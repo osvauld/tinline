@@ -33,7 +33,7 @@ struct TinTopBar<Actions: View>: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            if let onBack { TinIconButton(TinIcons.back, "Back", onBack) } else { Spacer().frame(width: 16) }
+            if let onBack { TinIconButton(TinIcons.back, tr("kit_back"), onBack) } else { Spacer().frame(width: 16) }
             Text(title ?? "").font(figtree(20, .semibold, .title3)).foregroundStyle(tin.ink).lineLimit(1).truncationMode(.tail)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .accessibilityAddTraits(.isHeader)
@@ -226,7 +226,7 @@ struct TinField<Trailing: View>: View {
                     .padding(.horizontal, 16).padding(.vertical, singleLine ? 0 : 12)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 if password {
-                    TinIconButton(shown ? TinIcons.eyeoff : TinIcons.eye, shown ? "Hide passphrase" : "Show passphrase", { shown.toggle() }, tint: tin.ink2)
+                    TinIconButton(shown ? TinIcons.eyeoff : TinIcons.eye, shown ? tr("kit_passphrase_hide") : tr("kit_passphrase_show"), { shown.toggle() }, tint: tin.ink2)
                 } else {
                     trailing()
                 }
@@ -471,7 +471,7 @@ struct TinHint: View {
 /// scrim; a tap on the scrim dismisses. `confirm` stays disabled while `confirmEnabled` is false.
 extension View {
     func tinDialog<Inner: View>(
-        isPresented: Binding<Bool>, title: String, confirm: String, onConfirm: @escaping () -> Void, dismiss: String? = "Cancel",
+        isPresented: Binding<Bool>, title: String, confirm: String, onConfirm: @escaping () -> Void, dismiss: String? = tr("kit_cancel"),
         destructive: Bool = false, icon: TinIconData? = nil, confirmEnabled: Bool = true, @ViewBuilder body: @escaping () -> Inner
     ) -> some View {
         fullScreenCover(isPresented: isPresented) {

@@ -63,11 +63,11 @@ func tickSlotWidth(_ size: CGFloat) -> CGFloat { size * (TinTicks.vbW / TinTicks
 /// Screen-reader words per state (VOICE.md: how things are). `first` is the other person's first name.
 func tickLabel(_ v: TickVis, first: String) -> String {
     switch v {
-    case .slack: return "Waiting to send"
-    case .one: return "Sent, waiting for \(first)’s device to confirm"
-    case .two: return "On \(first)’s device"
-    case .read: return "Read on \(first)’s device"
-    case .bad: return "Not delivered"
+    case .slack: return tr("kit_tick_waiting")
+    case .one: return tr("kit_tick_sent", first)
+    case .two: return tr("kit_tick_delivered", first)
+    case .read: return tr("kit_tick_read", first)
+    case .bad: return tr("kit_tick_bad")
     }
 }
 
@@ -89,7 +89,7 @@ struct ReceiptTickView: View {
     var body: some View {
         if let vis = tickVisOf(tick, notDelivered: notDelivered) {
             ReceiptTickGlyph(key: key, vis: vis, meta: meta ?? tin.ink2, read: TickInk.read(tin), bad: TickInk.bad(tin), bg: bg ?? tin.prc,
-                             label: label ?? tickLabel(vis, first: "their"), size: size)
+                             label: label ?? tickLabel(vis, first: tr("kit_tick_their")), size: size)
         } else {
             Color.clear.frame(width: tickSlotWidth(size), height: size)
         }
