@@ -183,7 +183,7 @@ struct ShellCallsTabBody<Top: View>: View {
                 .padding(.leading, 12).padding(.vertical, 8).frame(minHeight: 68)
             }
             .buttonStyle(ShellPressStyle())
-            .accessibilityLabel(dur.map { tr("shell_calls_row_a11y_duration", name, what, $0, stamp, callable ? tr("shell_calls_action_call") : tr("shell_calls_action_cant")) } ?? tr("shell_calls_row_a11y", name, what, stamp, callable ? tr("shell_calls_action_call") : tr("shell_calls_action_cant")))
+            .accessibilityLabel(dur.map { tr("shell_calls_row_a11y_duration", name, ShellText.callDesc(r), $0, stamp, callable ? tr("shell_calls_action_call") : tr("shell_calls_action_cant")) } ?? tr("shell_calls_row_a11y", name, ShellText.callDesc(r), stamp, callable ? tr("shell_calls_action_call") : tr("shell_calls_action_cant")))
         }
         .padding(.horizontal, 8)
     }

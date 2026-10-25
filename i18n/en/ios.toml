@@ -893,18 +893,6 @@ note = "Status line when hosts are online. {count} is the number of hosts online
 text = "No host is online. Your posts are saved and send when one is."
 note = "Status line when no host is online."
 
-[group_online]
-text = "Online"
-note = "Presence word under a host or call host."
-
-[group_offline]
-text = "Offline"
-note = "Presence word under a host or call host."
-
-[group_host_also_calls]
-text = "{status} · also hosts calls"
-note = "Sub line for a host that is also a call host. {status} is Online or Offline."
-
 [group_remove]
 text = "Remove"
 note = "Small button that removes a host or call host."
@@ -1396,8 +1384,8 @@ text = "Joined"
 note = "State of an invitation the user sent."
 
 [group_inv_declined]
-text = "Declined"
-note = "State of an invitation the user sent."
+text = "Invitation declined"
+note = "State of an invitation the user sent: the invited person said no."
 
 [group_inv_expired]
 text = "Invitation expired"
@@ -1983,8 +1971,8 @@ text = "Chat requests"
 note = "Section heading on the Groups list."
 
 [group_section_sent]
-text = "Sent"
-note = "Sub heading for sent chat requests."
+text = "Sent requests"
+note = "Sub heading above the chat requests the user sent."
 
 [group_section_groups]
 text = "Your groups"
@@ -3921,37 +3909,73 @@ note = "Fallback error text when nothing more specific is known."
 text = "Incoming"
 note = "Call list: answered incoming call."
 
+[shell_call_desc_incoming]
+text = "Incoming call"
+note = "Screen reader phrase for a call row, a whole phrase used as {what} in the row label: answered incoming call. Reads like “Missed call”."
+
 [shell_call_what_outgoing]
 text = "Outgoing"
 note = "Call list: answered outgoing call."
+
+[shell_call_desc_outgoing]
+text = "Outgoing call"
+note = "Screen reader phrase for a call row, a whole phrase used as {what} in the row label: answered outgoing call. Reads like “Missed call”."
 
 [shell_call_what_unavailable]
 text = "While not available"
 note = "Call list: incoming call that came while the user had set themselves unavailable."
 
+[shell_call_desc_unavailable]
+text = "Call while not available"
+note = "Screen reader phrase for a call row, a whole phrase used as {what} in the row label: incoming call that came while the user had set themselves unavailable. Reads like “Missed call”."
+
 [shell_call_what_missed]
 text = "Missed"
 note = "Call list: incoming call the user did not answer."
+
+[shell_call_desc_missed]
+text = "Missed call"
+note = "Screen reader phrase for a call row, a whole phrase used as {what} in the row label: incoming call the user did not answer. Reads like “Missed call”."
 
 [shell_call_what_declined]
 text = "Declined"
 note = "Call list: call that was declined."
 
+[shell_call_desc_declined]
+text = "Declined call"
+note = "Screen reader phrase for a call row, a whole phrase used as {what} in the row label: call that was declined. Reads like “Missed call”."
+
 [shell_call_what_no_answer]
 text = "No answer"
 note = "Call list: outgoing call nobody picked up."
+
+[shell_call_desc_no_answer]
+text = "Call with no answer"
+note = "Screen reader phrase for a call row, a whole phrase used as {what} in the row label: outgoing call nobody picked up. Reads like “Missed call”."
 
 [shell_call_what_cancelled]
 text = "Cancelled"
 note = "Call list: call cancelled before it was answered."
 
+[shell_call_desc_cancelled]
+text = "Cancelled call"
+note = "Screen reader phrase for a call row, a whole phrase used as {what} in the row label: call cancelled before it was answered. Reads like “Missed call”."
+
 [shell_call_what_unreachable]
-text = "Couldn’t connect"
+text = "Call couldn’t connect"
 note = "Call list: call that could not reach the other person."
 
+[shell_call_desc_unreachable]
+text = "Call that couldn’t connect"
+note = "Screen reader phrase for a call row: call that could not reach the other person."
+
 [shell_call_what_other]
+text = "Tinline call"
+note = "Call list: fallback label for a call. Noun, the name of any Tinline call."
+
+[shell_call_desc_other]
 text = "Call"
-note = "Call list: fallback label for a call."
+note = "Screen reader phrase for a call row, a whole phrase used as {what} in the row label: any other call. Reads like “Missed call”."
 
 [shell_you]
 text = "You"
@@ -4050,8 +4074,8 @@ text = "Passphrase"
 note = "Onboarding step label read out for the step header (accessibility)."
 
 [shell_step_phrase]
-text = "Recovery phrase"
-note = "Onboarding step label read out for the step header (accessibility)."
+text = "Recovery words"
+note = "Onboarding step label read out for the step header (accessibility). Same term as the recovery words screen."
 
 [shell_step_device]
 text = "Device name"
@@ -4279,12 +4303,12 @@ text = "{what} · {duration}"
 note = "Call row second line. {what} is the call outcome (Missed, Outgoing…), {duration} the call length."
 
 [shell_calls_row_a11y]
-text = "{name}, {what} call, {stamp}. {action}"
-note = "Screen reader label of a call row. {name} contact, {what} outcome (Missed…), {stamp} time, {action} “Call” or “Can’t call”."
+text = "{name}, {what}, {stamp}. {action}"
+note = "Screen reader label of a call row. {name} is the contact, {what} a whole phrase such as “Missed call”, {stamp} when, {action} what tapping does."
 
 [shell_calls_row_a11y_duration]
-text = "{name}, {what} call, {duration}, {stamp}. {action}"
-note = "Screen reader label of an answered call row. {name} contact, {what} outcome, {duration} call length, {stamp} time, {action} “Call” or “Can’t call”."
+text = "{name}, {what}, {duration}, {stamp}. {action}"
+note = "Screen reader label of an answered call row. {name} is the contact, {what} a whole phrase such as “Incoming call”, {duration} how long, {stamp} when, {action} what tapping does."
 
 [shell_calls_action_call]
 text = "Call"
@@ -4796,8 +4820,8 @@ text = "CALLS WITH {name}"
 note = "Contact page section header, upper case. {name} is the contact’s name in capitals."
 
 [people_detail_call]
-text = "Call"
-note = "Fallback title of a call in the contact’s call history."
+text = "Tinline call"
+note = "Fallback title of a call in the contact’s call history. Noun: the call itself."
 
 [people_detail_direct]
 text = "Direct"
@@ -5287,8 +5311,8 @@ text = "Microphone permission needed to place a call"
 note = "Error shown when the user tries to place a call without microphone permission."
 
 [call_status_reconnecting]
-text = "Reconnecting…"
-note = "Status line under the contact name while the connection is being re-established."
+text = "Reconnecting the call…"
+note = "Status line under the contact name while the call’s connection is being re-established; the call is the subject."
 
 [call_status_ringing]
 text = "Ringing…"
@@ -5335,8 +5359,8 @@ text = "Tinline call"
 note = "Name shown in the system call UI when the contact has no name."
 
 [call_notification_name]
-text = "Call"
-note = "Fallback call name in the ongoing-call notification when the contact has no name."
+text = "Tinline call"
+note = "Fallback call name in the ongoing-call notification when the contact has no name. Noun: the call itself."
 
 [call_about_title]
 text = "About this call"
@@ -5543,8 +5567,8 @@ text = "Finding a call host…"
 note = "Status of a group call while the call host is being chosen."
 
 [call_status_connecting]
-text = "Connecting…"
-note = "Status of a call while connecting."
+text = "Connecting the call…"
+note = "Status of a call while connecting; the call is the subject, not a device."
 
 [call_group_already_in_call]
 text = "You’re already in a call."
@@ -5567,8 +5591,8 @@ text = "No call host available"
 note = "Group call start failure when no device can host the call."
 
 [call_group_connect_failed]
-text = "Couldn’t connect"
-note = "Group call start failure, generic."
+text = "The call couldn’t connect"
+note = "Group call start failure, generic; the call is the subject."
 
 [call_person_you]
 text = "You"
@@ -5991,3 +6015,19 @@ note = "Spoken description of a member row for a screen reader. {name} is the me
 [group_member_desc_member_host_callhost]
 text = "{name}, member, host and call host. Open actions"
 note = "Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is member, host and call host."
+
+[group_host_online]
+text = "Host online"
+note = "Presence under a host or call host device in group info: that device is online."
+
+[group_host_offline]
+text = "Host offline"
+note = "Presence under a host or call host device in group info: that device is offline."
+
+[group_host_online_calls]
+text = "Online · also hosts calls"
+note = "Presence under a device that is a chat host and also a call host: online."
+
+[group_host_offline_calls]
+text = "Offline · also hosts calls"
+note = "Presence under a device that is a chat host and also a call host: offline."

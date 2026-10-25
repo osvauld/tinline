@@ -334,7 +334,7 @@ private struct HostsSection: View {
                 let on = h.isMe || h.online
                 MRow {
                     TinAvatar(did: h.did, size: 40)
-                    TwoLine(title: dev(h), sub: d.callHosts.contains(where: { $0.did == h.did && $0.deviceId == h.deviceId }) ? tr("group_host_also_calls", on ? tr("group_online") : tr("group_offline")) : (on ? tr("group_online") : tr("group_offline")), dot: on)
+                    TwoLine(title: dev(h), sub: d.callHosts.contains(where: { $0.did == h.did && $0.deviceId == h.deviceId }) ? (on ? tr("group_host_online_calls") : tr("group_host_offline_calls")) : (on ? tr("group_host_online") : tr("group_host_offline")), dot: on)
                     if admin { TrailBtn(text: tr("group_remove"), desc: tr("group_remove_host_desc", dev(h))) { session.exec({ session.ctl.revoke(d.id, did: h.did, dev: h.deviceId) }, session.sayDone) } }
                 }
             }
@@ -386,7 +386,7 @@ private struct CallHostsSection: View {
                 let on = h.isMe || h.online
                 MRow {
                     TinAvatar(did: h.did, size: 40)
-                    TwoLine(title: dev(h), sub: on ? tr("group_online") : tr("group_offline"), dot: on)
+                    TwoLine(title: dev(h), sub: on ? tr("group_host_online") : tr("group_host_offline"), dot: on)
                     if admin { TrailBtn(text: tr("group_remove"), desc: tr("group_remove_callhost_desc", dev(h))) { session.exec({ session.ctl.revokeCall(d.id, did: h.did, dev: h.deviceId) }, session.sayDone) } }
                 }
             }

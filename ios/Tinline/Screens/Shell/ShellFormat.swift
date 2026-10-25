@@ -68,6 +68,20 @@ enum ShellText {
         }
     }
 
+    /// The same outcome as a whole phrase for a screen reader ("Missed call"), never an adjective for a slot.
+    static func callDesc(_ r: CallRecord) -> String {
+        if r.durationSecs > 0 { return r.incoming ? tr("shell_call_desc_incoming") : tr("shell_call_desc_outgoing") }
+        if r.incoming && r.reason == "unavailable" { return tr("shell_call_desc_unavailable") }
+        if r.incoming { return r.missed ? tr("shell_call_desc_missed") : tr("shell_call_desc_declined") }
+        switch r.reason {
+        case "no_answer": return tr("shell_call_desc_no_answer")
+        case "declined", "busy": return tr("shell_call_desc_declined")
+        case "cancelled": return tr("shell_call_desc_cancelled")
+        case "unreachable": return tr("shell_call_desc_unreachable")
+        default: return tr("shell_call_desc_other")
+        }
+    }
+
     /// Storage sizes (SettingsPages.kt `fmtBytes`).
     static func bytes(_ n: Int64) -> String {
         if n >= 1_000_000_000 { return String(format: "%.1f GB", Double(n) / 1e9) }
