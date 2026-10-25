@@ -199,6 +199,7 @@ final class CallController: ObservableObject {
         let replay = early.filter { $0.0 == info.callId }
         early.removeAll()
         for (id, st) in replay { onState(id, st) }
+        watchDialing(info.callId)
         openCallScreen()
         return info
     }
@@ -386,6 +387,21 @@ final class CallController: ObservableObject {
         audioStatsLine(s: AudioStats(secs: s.secs, direct: s.direct, rttMs: s.rttMs, sent: s.sent, received: s.received,
                                      lost: s.lost, recovered: s.recovered, concealed: s.concealed, bufferedMs: s.bufferedMs,
                                      rxFreqHz: Double(s.rxFreqHz), rxRms: Double(s.rxRms)))
+    }
+
+    /** While our call is still dialling, reads `waking` (the callee's phone is being woken) twice a second. */
+    private func watchDialing(_ callId: String) {
+        let core = core
+        Task { [weak self] in
+            while !Task.isCancelled {
+                guard let self, let u = self.ui, u.info.callId == callId, case .dialing = u.state else { return }
+                if let s = try? await callOffMain({ core()?.callStats() }), s.callId == callId,
+                   self.ui?.info.callId == callId, case .dialing? = self.ui?.state {
+                    self.ui?.stats = s
+                }
+                try? await Task.sleep(nanoseconds: 500_000_000)
+            }
+        }
     }
 
     private func startStats() {

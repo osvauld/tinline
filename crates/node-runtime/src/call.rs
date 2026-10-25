@@ -49,6 +49,9 @@ pub struct Call {
     /// that is still dialling several devices stops at once.
     pub ended_wake: tokio::sync::Notify,
     pub video: call_video::CallVideo,
+    /// An outgoing call still `Dialing` whose callee phone the relay took a wake for: the UI
+    /// says "Waking their phone…" (`CallStats::waking`).
+    pub waking: AtomicBool,
 }
 
 /// Ends the call when dropped unless it already ended: covers every early return (and panic)
@@ -106,6 +109,8 @@ pub enum LegEvent {
 pub struct Leg {
     /// For a call wake when the callee device cannot be reached (`push.rs`).
     pub ctx: Arc<NodeCtx>,
+    /// The call this leg dials for (its `waking` flag).
+    pub call: Arc<Call>,
     /// The callee's DID.
     pub did: String,
     pub ep: Endpoint,
@@ -128,11 +133,13 @@ impl Leg {
             Err(e) => return fail(&self.events, e.to_string()),
         };
         tracing::debug!("dialing {}", crate::short(&addr.id.to_string()));
-        let conn = match connect_leg(&self.ctx, &self.ep, addr, &self.did, self.device.device, &mut self.cmds).await {
+        let conn = match connect_leg(&self.ctx, &self.call, &self.ep, addr.clone(), &self.did, self.device.device, &mut self.cmds).await {
             Ok(c) => c,
-            Err(Some(why)) => return fail(&self.events, why),
+            Err(NotConnected::Failed(why)) => return fail(&self.events, why),
             // Told to stop before we even connected: nothing was sent, nothing to say.
-            Err(None) => return,
+            Err(NotConnected::Told(None)) => return,
+            // ...but the device was woken and rings from the wake alone: tell it.
+            Err(NotConnected::Told(Some(msg))) => return self.deliver_late(addr, msg).await,
         };
         let (send, recv) = match conn.open_bi().await {
             Ok(s) => s,
@@ -195,30 +202,89 @@ impl Leg {
     }
 }
 
-/// Dials one callee device. With a call token for it (`docs/push.md` "Calls") a first dial that
-/// fails after [`crate::push::CALL_FIRST_DIAL_MS`] sends a `call` wake and the device is redialled
+/// Why [`connect_leg`] returned without a connection.
+enum NotConnected {
+    Failed(String),
+    /// Told to stop; with the message to deliver anyway when the device was already woken.
+    Told(Option<Msg>),
+}
+
+impl Leg {
+    /// We stopped (hung up, or another device answered) after waking this device, which rings
+    /// from the wake alone (`push/ring.rs`) until a call arrives or its window ends. Keeps dialling
+    /// it for up to [`crate::push::CALL_LATE_CANCEL_MS`] and sends the hello and then `msg`: the
+    /// callee takes the call over its wake ring and ends it at once (a missed call).
+    async fn deliver_late(&self, addr: iroh::EndpointAddr, msg: Msg) {
+        use crate::push::{CALL_ATTEMPT_MS, CALL_LATE_CANCEL_MS, CALL_REDIAL_MS};
+        let until = tokio::time::Instant::now() + Duration::from_millis(CALL_LATE_CANCEL_MS);
+        loop {
+            let attempt = tokio::time::Instant::now();
+            if attempt >= until || self.ctx.shared.lock().epoch != self.call.epoch {
+                tracing::info!("call: the end did not reach a woken device of {}", crate::short(&self.did));
+                return;
+            }
+            let limit = Duration::from_millis(CALL_ATTEMPT_MS).min(until - attempt);
+            if let Ok(Ok(conn)) = tokio::time::timeout(limit, crate::version::connect(&self.ep, addr.clone(), &crate::version::CALL)).await {
+                if let Ok((send, recv)) = conn.open_bi().await {
+                    let mut ctrl = Ctrl::new(send, recv);
+                    if ctrl.send(&self.hello).await.is_ok() && ctrl.send(&msg).await.is_ok() {
+                        ctrl.finish();
+                        let _ = tokio::time::timeout(Duration::from_millis(300), conn.closed()).await;
+                        conn.close(0u32.into(), b"bye");
+                        tracing::info!("call: the end reached a woken device of {}", crate::short(&self.did));
+                        return;
+                    }
+                }
+                conn.close(0u32.into(), b"bye");
+            }
+            tokio::time::sleep_until(attempt + Duration::from_millis(CALL_REDIAL_MS)).await;
+        }
+    }
+}
+
+/// Dials one callee device. With a call token for it (`docs/push.md` "Calls") a first dial still
+/// running after [`crate::push::CALL_EARLY_WAKE_MS`] sends a `call` wake; if it fails (after
+/// [`crate::push::CALL_FIRST_DIAL_MS`]) the wake is sent again (throttled) and the device is redialled
 /// every [`crate::push::CALL_REDIAL_MS`] for [`crate::push::CALL_WAKE_DIAL_MS`], while the call
 /// stays `Dialing`; the wake crate's 10 s throttle allows a repeat wake meanwhile. Without a token
-/// it is one dial of [`DIAL_TIMEOUT`], as before. `Err(None)`: told to stop (nothing was sent);
-/// `Err(Some(why))`: could not connect.
+/// it is one dial of [`DIAL_TIMEOUT`], as before. `Told`: told to stop (the message is kept when
+/// a wake went out); `Failed(why)`: could not connect.
 async fn connect_leg(
     ctx: &Arc<NodeCtx>,
+    call: &Arc<Call>,
     ep: &Endpoint,
     addr: iroh::EndpointAddr,
     did: &str,
     device: [u8; 32],
     cmds: &mut mpsc::UnboundedReceiver<Msg>,
-) -> Result<Connection, Option<String>> {
-    use crate::push::{CALL_ATTEMPT_MS, CALL_FIRST_DIAL_MS, CALL_REDIAL_MS, CALL_WAKE_DIAL_MS};
+) -> Result<Connection, NotConnected> {
+    use crate::push::{CALL_ATTEMPT_MS, CALL_EARLY_WAKE_MS, CALL_FIRST_DIAL_MS, CALL_REDIAL_MS, CALL_WAKE_DIAL_MS};
     let wakeable = ctx.can_wake(did, &device, wake::Kind::Call);
     let first = if wakeable { Duration::from_millis(CALL_FIRST_DIAL_MS) } else { DIAL_TIMEOUT };
     let dial = |limit: Duration, addr: iroh::EndpointAddr| {
         let ep = ep.clone();
         async move { tokio::time::timeout(limit, crate::version::connect(&ep, addr, &crate::version::CALL)).await }
     };
-    let first_try = tokio::select! {
-        c = dial(first, addr.clone()) => c,
-        _ = cmds.recv() => return Err(None),
+    let wake = |ctx: Arc<NodeCtx>, call: Arc<Call>, did: String| async move {
+        if ctx.wake_device(&did, device, wake::Kind::Call).await {
+            call.waking.store(true, Ordering::Relaxed);
+        }
+    };
+    let first_dial = dial(first, addr.clone());
+    tokio::pin!(first_dial);
+    let early = tokio::time::sleep(Duration::from_millis(CALL_EARLY_WAKE_MS));
+    tokio::pin!(early);
+    let mut early_sent = !wakeable;
+    let first_try = loop {
+        tokio::select! {
+            c = &mut first_dial => break c,
+            // In its own task: the dial keeps going while the relay answers.
+            _ = &mut early, if !early_sent => {
+                early_sent = true;
+                tokio::spawn(wake(ctx.clone(), call.clone(), did.to_string()));
+            }
+            m = cmds.recv() => return Err(NotConnected::Told(m.filter(|_| wakeable && early_sent))),
+        }
     };
     let mut why = match first_try {
         Ok(Ok(c)) => return Ok(c),
@@ -226,23 +292,23 @@ async fn connect_leg(
         Err(_) => Error::Timeout,
     };
     if !wakeable || !matches!(why, Error::Net(_) | Error::Timeout) {
-        return Err(Some(why.to_string()));
+        return Err(NotConnected::Failed(why.to_string()));
     }
     let until = tokio::time::Instant::now() + Duration::from_millis(CALL_WAKE_DIAL_MS);
     loop {
         // The wake may take a moment (the relay); a hang-up does not wait for it.
         tokio::select! {
-            _ = ctx.wake_device(did, device, wake::Kind::Call) => {}
-            _ = cmds.recv() => return Err(None),
+            _ = wake(ctx.clone(), call.clone(), did.to_string()) => {}
+            m = cmds.recv() => return Err(NotConnected::Told(m)),
         }
         let attempt = tokio::time::Instant::now();
         if attempt >= until {
-            return Err(Some(why.to_string()));
+            return Err(NotConnected::Failed(why.to_string()));
         }
         let limit = Duration::from_millis(CALL_ATTEMPT_MS).min(until - attempt);
         let tried = tokio::select! {
             c = dial(limit, addr.clone()) => c,
-            _ = cmds.recv() => return Err(None),
+            m = cmds.recv() => return Err(NotConnected::Told(m)),
         };
         match tried {
             Ok(Ok(c)) => return Ok(c),
@@ -251,7 +317,7 @@ async fn connect_leg(
         }
         tokio::select! {
             _ = tokio::time::sleep_until(attempt + Duration::from_millis(CALL_REDIAL_MS)) => {}
-            _ = cmds.recv() => return Err(None),
+            m = cmds.recv() => return Err(NotConnected::Told(m)),
         }
     }
 }
@@ -501,6 +567,7 @@ impl NodeCtx {
         Some(CallStats {
             call_id: call.info.call_id.clone(),
             reconnecting: state == CallState::Active && call.last_rx.lock().elapsed() > RECONNECT_AFTER,
+            waking: state == CallState::Dialing && call.waking.load(Ordering::Relaxed),
             state,
             secs: call.started.elapsed().as_secs() as u32,
             direct,

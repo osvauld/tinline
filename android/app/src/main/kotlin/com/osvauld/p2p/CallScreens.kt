@@ -457,6 +457,7 @@ fun InCallScreen(ui: CallUi, meName: String, app: P2pApp, onCameraOn: () -> Unit
         active = active, ringing = ui.state is CallState.Ringing, secs = secs,
         direct = s?.direct, bars = bars,
         muted = ui.muted, speaker = ui.speaker, micProblem = if (ui.held) HELD else ui.micProblem ?: videoProblem, reconnecting = s?.reconnecting == true,
+        waking = s?.waking == true,
         onMute = { calls.toggleMute() }, onSpeaker = { calls.toggleSpeaker() }, onEnd = { calls.hangup() }, onMinimise = onMinimise,
         onCamera = if (v != null) onCamera else null, rttMs = s?.rttMs?.toInt(), lossPct = loss,
         routes = ui.routes, onRoute = { calls.selectRoute(it) }, onAllowBtNames = onAllowBtNames, onMessage = onMessage,
@@ -473,6 +474,8 @@ fun InCallContent(
     muted: Boolean, speaker: Boolean, micProblem: String?,
     onMute: () -> Unit, onSpeaker: () -> Unit, onEnd: () -> Unit, onMinimise: () -> Unit, startWithSheet: Boolean = false,
     reconnecting: Boolean = false,
+    /** Still dialling and the callee's phone is being woken (`CallStats.waking`). */
+    waking: Boolean = false,
     /** Set when the call has video: the camera button (the camera is off on this screen). */
     onCamera: (() -> Unit)? = null,
     /** The live routes; with a headset connected the speaker slot opens the route sheet instead of toggling. */
@@ -496,7 +499,7 @@ fun InCallContent(
     val (caption, icon) = routeSlot(routes)
     Box(Modifier.fillMaxSize()) {
         CallFocus(name.ifBlank { "Unknown" }, did, active, ringing, secs, reconnecting, micProblem,
-            onMinimise = onMinimise, onInfo = { info = true }, signal = bars ?: 0, direct = direct, onMessage = onMessage, waiting = waiting, muted = muted, waitingCard = waitingCard) {
+            onMinimise = onMinimise, onInfo = { info = true }, signal = bars ?: 0, direct = direct, onMessage = onMessage, waiting = waiting, muted = muted, waitingCard = waitingCard, waking = waking) {
             CallControls(muted, speaker, camera = false, onMute, { if (routes?.hasHeadset == true) routeSheet = true else onSpeaker() },
                 onCamera, onFlip = null, onEnd, caption, icon, ending = ending)
         }

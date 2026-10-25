@@ -251,6 +251,7 @@ class CallController(private val app: P2pApp) {
             early.filter { it.first == info.callId }.also { early.clear() }
         }
         replay.forEach { (id, st) -> onState(id, st) }
+        watchDialing(info.callId)
         val i = Intent(app, CallActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         try { app.startActivity(i) } catch (e: Exception) { Log.w("Call", "cannot open call screen: $e") }
         info
@@ -459,6 +460,19 @@ class CallController(private val app: P2pApp) {
     fun logStats() {
         val s = app.node.callStats()
         testLog(if (s == null) "stats none" else statsLine(s))
+    }
+
+    /** While our call is still Dialing, reads `waking` (the callee's phone is being woken) twice a second. */
+    private fun watchDialing(callId: String) {
+        app.scope.launch {
+            while (isActive) {
+                val u = _ui.value
+                if (u?.info?.callId != callId || u.state !is CallState.Dialing) break
+                val s = try { app.node.callStats() } catch (_: Exception) { null }
+                if (s != null && s.callId == callId) _ui.update { if (it?.info?.callId == callId && it.state is CallState.Dialing) it.copy(stats = s) else it }
+                delay(500)
+            }
+        }
     }
 
     private fun startStats() {

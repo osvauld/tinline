@@ -72,9 +72,18 @@ pub const CALL_REDIAL_MS: u64 = 1_000;
 /// How long an outgoing call keeps redialling a woken device, from the wake (PROVISIONAL: about
 /// the time A stays in `Dialing`; `docs/push.md` Calls).
 pub const CALL_WAKE_DIAL_MS: u64 = 30_000;
-/// With a call wake available, the first dial gives up after this (PROVISIONAL), so the wake
-/// goes out in seconds instead of after `DIAL_TIMEOUT`.
+/// With a call wake available, the first dial gives up after this (PROVISIONAL), so the redials
+/// start in seconds instead of after `DIAL_TIMEOUT`.
 pub const CALL_FIRST_DIAL_MS: u64 = 6_000;
+/// A first call dial that has not connected after this long sends the `call` wake while it keeps
+/// running (PROVISIONAL; 2026-10-25 device test: waiting out the 6 s first dial put the ring at
+/// ~8 s). An awake callee usually connects well before it.
+pub const CALL_EARLY_WAKE_MS: u64 = 2_000;
+/// A call ended while dialling a device it had woken: that device rings from the wake alone, so
+/// it is dialled this long more to deliver the end (PROVISIONAL; the wake ring itself ends after
+/// `WAKE_RING_WINDOW_MS`, 15 s from the wake. 2026-10-25 device test: hanging up 3 s after the
+/// wake left the phone ringing ~12 s).
+pub const CALL_LATE_CANCEL_MS: u64 = 10_000;
 /// One redial attempt of a woken call (the next starts at least `CALL_REDIAL_MS` after it began).
 pub const CALL_ATTEMPT_MS: u64 = 3_000;
 

@@ -1188,6 +1188,7 @@ impl App {
         let incoming_ring = c.info.incoming && !c.answered && c.state == CallState::Ringing;
         let active = c.state == CallState::Active;
         let reconnecting = active && c.stats.as_ref().is_some_and(|s| s.reconnecting);
+        let waking = c.stats.as_ref().is_some_and(|s| s.waking);
 
         let top: El = match (&c.state, &c.stats) {
             (CallState::Active, Some(st)) => {
@@ -1228,6 +1229,7 @@ impl App {
 
         let status: El = match (&c.state, incoming_ring) {
             (_, true) => tx("is calling you", 18.0, t.ink2).into(),
+            (CallState::Dialing, _) if waking => tx(call_screen::WAKING, 18.0, t.ink2).into(),
             (CallState::Dialing, _) => tx("Calling\u{2026}", 18.0, t.ink2).into(),
             (CallState::Ringing, _) => tx("Ringing\u{2026}", 18.0, t.ink2).into(),
             (CallState::Active, _) if reconnecting => semi("Reconnecting\u{2026}", 18.0, t.thread_text).into(),

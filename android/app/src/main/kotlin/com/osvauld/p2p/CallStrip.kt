@@ -71,7 +71,7 @@ fun CallStrips(app: P2pApp) {
             val vi by app.video.info.collectAsState()
             val video = vi?.let { it.callId == c.info.callId && (it.localCamera || it.remoteCamera) } == true
             val name = c.info.peerName.ifBlank { "Unknown" }
-            val status = callStatus(c.state is CallState.Active, c.state is CallState.Ringing, c.stats?.reconnecting == true, secs)
+            val status = callStatus(c.state is CallState.Active, c.state is CallState.Ringing, c.stats?.reconnecting == true, secs, c.stats?.waking == true)
             StripRow(if (video) PgIcons.Video else PgIcons.Phone, name, status, slim, "Return to call with $name") {
                 ctx.startActivity(Intent(ctx, CallActivity::class.java))
             }

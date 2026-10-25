@@ -350,12 +350,14 @@ async fn wake_w4b_w4c_a_call_wakes_the_callee_stays_dialing_and_rings_only_when_
     phones_start_on_wake(&a, &lookup, Kind::Call, &[&b], Duration::from_millis(800));
 
     let info = a.ctx.clone().start_call(b.did(), false).unwrap();
-    tokio::time::sleep(Duration::from_secs(2)).await;
-    assert!(a.relay.wakes.lock().is_empty(), "the first dial is still running");
+    tokio::time::sleep(Duration::from_millis(crate::push::CALL_EARLY_WAKE_MS - 800)).await;
+    assert!(a.relay.wakes.lock().is_empty(), "an awake callee gets the first moments of the dial");
+    assert!(!a.ctx.call_stats().unwrap().waking);
     assert_eq!(states(&a), vec![CallState::Dialing]);
 
     eventually("the call wake is sent", || !a.relay.wakes.lock().is_empty()).await;
     assert_eq!(*a.relay.wakes.lock(), vec![(token, Kind::Call)], "one call wake, for the callee's device");
+    eventually("the caller sees Waking", || a.ctx.call_stats().is_some_and(|s| s.waking)).await;
     // The wake is out, the phone is not up yet: still "Calling", nothing rung.
     assert_eq!(states(&a), vec![CallState::Dialing]);
     assert!(b.rec.incoming.lock().is_empty());
@@ -374,7 +376,7 @@ async fn wake_w4b_w4c_a_call_wakes_the_callee_stays_dialing_and_rings_only_when_
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn wake_w4_hanging_up_while_dialing_stops_the_redials() {
+async fn wake_w4_hanging_up_after_the_wake_ends_the_woken_phones_ring() {
     let lookup = MemoryLookup::new();
     let (a, b) = pair_with_token(&lookup).await;
     b.ep.close().await;
@@ -385,11 +387,32 @@ async fn wake_w4_hanging_up_while_dialing_stops_the_redials() {
     a.ctx.command(&info.call_id, Cmd::Hangup).unwrap();
     eventually("the call ends at once", || matches!(states(&a).last(), Some(CallState::Ended { reason }) if reason == "cancelled")).await;
 
-    // The phone comes up afterwards: nobody dials it for this call.
+    // The phone, ringing from the wake, comes up after the hang-up: the caller still reaches it
+    // once, with the hello and the cancel, so its ring ends instead of running out.
+    tokio::time::sleep(Duration::from_secs(2)).await;
+    bring_up(&b.ctx, b.secret, &lookup).await;
+    eventually("the end reaches the woken phone", || b.rec.incoming.lock().len() == 1).await;
+    assert_eq!(b.rec.incoming.lock()[0].call_id, info.call_id);
+    eventually("its call ends", || matches!(b.rec.states.lock().last(), Some(CallState::Ended { .. }))).await;
+    assert!(b.ctx.live.lock().call.is_none());
+    tokio::time::sleep(Duration::from_secs(2)).await;
+    assert_eq!(b.rec.incoming.lock().len(), 1, "delivered once, then nobody dials it again");
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn wake_w4_hanging_up_before_any_wake_sends_nothing_later() {
+    let lookup = MemoryLookup::new();
+    let (a, b) = pair_with_token(&lookup).await;
+    b.ep.close().await;
+    let info = a.ctx.clone().start_call(b.did(), false).unwrap();
+    tokio::time::sleep(Duration::from_millis(500)).await;
+    a.ctx.command(&info.call_id, Cmd::Hangup).unwrap();
+    eventually("the call ends at once", || matches!(states(&a).last(), Some(CallState::Ended { .. }))).await;
+
     bring_up(&b.ctx, b.secret, &lookup).await;
     tokio::time::sleep(Duration::from_secs(4)).await;
-    assert!(b.rec.incoming.lock().is_empty(), "no CallHello ever reaches the callee");
-    assert!(b.ctx.live.lock().call.is_none());
+    assert!(a.relay.wakes.lock().is_empty(), "no wake for a call that ended first");
+    assert!(b.rec.incoming.lock().is_empty(), "an unwoken phone is not dialled after the end");
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]

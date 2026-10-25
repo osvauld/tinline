@@ -374,7 +374,8 @@ the push and call one core entry point (`on_wake(hint) -> WakeAction`).
 6. All PROVISIONAL numbers (token lifetime, rate limits, stale-call window). In code (3b,
    `push.rs`): `MSG_REDIAL_AT_MS` (2, 4, 7, 10, 15, 20, 30 s after a msg wake), `CALL_REDIAL_MS` 1 s,
    `CALL_WAKE_DIAL_MS` 30 s (from the wake), `CALL_FIRST_DIAL_MS` 6 s (first dial of a call that can
-   be woken, instead of 20 s), `CALL_ATTEMPT_MS` 3 s. Slice 5 (`ring.rs`): `WAKE_RING_WINDOW_MS` 15 s from the wake's arrival,
+   be woken, instead of 20 s), `CALL_EARLY_WAKE_MS` 2 s (the `call` wake goes out while that first
+   dial keeps running; the caller then shows "Waking their phone…", `CallStats::waking`), `CALL_ATTEMPT_MS` 3 s. Slice 5 (`ring.rs`): `WAKE_RING_WINDOW_MS` 15 s from the wake's arrival,
    `WAKE_RING_CAP_MS` 40 s in total. Slice 7 (`push.rs`): `MSG_EARLY_WAKE_MS` 3 s: a chat dial with
    something to deliver that has not connected after 3 s sends the `msg` wake in parallel with the
    still-running dial (`NodeCtx::early_wake`, called by `chat_kick`; only for devices we hold a live
@@ -408,7 +409,9 @@ First real run. Passed end to end, with these numbers and findings:
   before `wake_unreached` sent the `msg` wake; FCM delivered 2.2 s later; the phone connected 3 s
   after the wake. Total about 24 s, 20 s of it waiting. Fix: `MSG_EARLY_WAKE_MS` (slice 7, Open 6).
 - **Call to a stopped phone:** the first dial gave up at about 6.8 s (`CALL_FIRST_DIAL_MS`), wake,
-  the phone rang 6.3 s later. Acceptable for now; unchanged.
+  the phone rang 6.3 s later. 2026-10-25 (v0.2.1 build): wake sent 7.5 s after dialing, the phone
+  rang at once, and the caller said "Calling…" for another ~7 s until its redial reached the phone.
+  Fix: `CALL_EARLY_WAKE_MS` 2 s and the caller's "Waking their phone…" state.
 - **The phone failed silently for a long time:** its push errors were `tracing::debug!`, which
   Android does not show, and a successful register / handover / receipt was not logged. Slice 7 logs
   these at info (no tokens, hints, full DIDs or endpoints): `wake register ok/failed`, `wake token

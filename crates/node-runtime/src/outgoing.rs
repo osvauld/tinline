@@ -32,6 +32,7 @@ impl NodeCtx {
             direct: Mutex::new(false),
             waiting: AtomicBool::new(false),
             answer_on_promote: AtomicBool::new(false),
+            waking: AtomicBool::new(false),
             epoch,
             ended_wake: tokio::sync::Notify::new(),
             video: Default::default(),
@@ -323,7 +324,7 @@ impl NodeCtx {
         ep: &Endpoint,
         me: &Me,
         contact: &StoredContact,
-        call: &Call,
+        call: &Arc<Call>,
         offer: Option<proto::VideoOffer>,
     ) -> (Vec<Option<mpsc::UnboundedSender<Msg>>>, mpsc::UnboundedReceiver<(usize, LegEvent)>) {
         let list = self.my_device_list(me);
@@ -334,6 +335,7 @@ impl NodeCtx {
             legs.push(Some(tx));
             let leg = Leg {
                 ctx: self.clone(),
+                call: call.clone(),
                 did: contact.did.clone(),
                 ep: ep.clone(),
                 device: device.clone(),

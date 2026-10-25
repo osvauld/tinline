@@ -3,6 +3,9 @@ use super::*;
 use iced::widget::column;
 use crate::call_ui::{Action, Geometry};
 
+/// While dialling, once the relay took a wake for the callee's phone (`CallStats::waking`).
+pub(super) const WAKING: &str = "Waking their phone…";
+
 fn top_button<'a>(t: Tok, icon: Icon, caption: &'static str, action: Option<Msg>) -> El<'a> {
     let b = button(container(ui::icon(icon, 24.0, t.ink)).center_x(44).center_y(44))
         .padding(0).width(44).height(44).style(ui::button_style(t, Kind::Ghost, 999.0)).on_press_maybe(action);
@@ -24,10 +27,12 @@ impl App {
             let incoming = c.info.incoming && !c.answered && c.state == CallState::Ringing;
             let active = c.state == CallState::Active;
             let reconnecting = active && c.stats.as_ref().is_some_and(|s| s.reconnecting);
+            let waking = c.stats.as_ref().is_some_and(|s| s.waking);
             let secs = c.stats.as_ref().map_or(0, |s| s.secs);
             let status = if incoming { if c.info.video { "Incoming video call" } else { "Incoming call" }.to_string() }
                 else if reconnecting { "Reconnecting…".into() }
                 else { match c.state {
+                    CallState::Dialing if waking => WAKING.into(),
                     CallState::Dialing => "Calling…".into(),
                     CallState::Ringing => "Ringing…".into(),
                     CallState::Active => format!("{:02}:{:02}", secs / 60, secs % 60),
@@ -261,7 +266,9 @@ impl App {
         let c = self.call.as_ref().filter(|_| self.call_ui.minimized)?;
         let secs = c.stats.as_ref().map_or(0, |s| s.secs);
         let status = if c.state == CallState::Active { format!("{:02}:{:02}", secs / 60, secs % 60) }
-            else if c.state == CallState::Dialing { "Calling…".into() } else { "Ringing…".into() };
+            else if c.state == CallState::Dialing {
+                if c.stats.as_ref().is_some_and(|s| s.waking) { WAKING.into() } else { "Calling…".into() }
+            } else { "Ringing…".into() };
         let open = button(row![crate::pg_icons::pgi("phone", 18.0, t.on_accent),
                 container(semi(c.info.peer_name.clone(), 15.0, t.on_accent).wrapping(iced::widget::text::Wrapping::None)).width(Fill).clip(true),
                 container(tx(status, 13.0, t.on_accent)).width(Length::Shrink)].spacing(10).align_y(Alignment::Center).height(44))
