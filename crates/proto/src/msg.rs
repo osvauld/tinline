@@ -130,6 +130,32 @@ pub enum Msg {
     VideoCodec {
         codec: VideoCodec,
     },
+    /// A push wake token from the sender for one of its devices (`docs/push.md` "Wake tokens"):
+    /// `device` is the sender's device the token wakes, `token` the relay's sealed, opaque
+    /// string, `exp_ms` its expiry (unix ms), `kinds` what the relay will wake for (1 message,
+    /// 2 call, 3 both) so the holder never tries a kind the relay refuses. Not DID-signed: the
+    /// token is a capability for the relay only, so the receiver takes it only on a connection
+    /// from a known device of that contact. Answered `WakeTokensTaken`.
+    WakeTokens {
+        device: [u8; 32],
+        #[serde(deserialize_with = "de_wake_token")]
+        token: String,
+        exp_ms: u64,
+        kinds: u8,
+    },
+    WakeTokensTaken,
+}
+
+/// Longest wake token a peer may send, in chars. Keep equal to
+/// `wake_relay_core::token::MAX_TOKEN_CHARS` (proto does not depend on that crate).
+pub const MAX_WAKE_TOKEN_CHARS: usize = 2048;
+
+fn de_wake_token<'de, D: serde::Deserializer<'de>>(d: D) -> std::result::Result<String, D::Error> {
+    let s = String::deserialize(d)?;
+    if s.chars().count() > MAX_WAKE_TOKEN_CHARS {
+        return Err(serde::de::Error::custom("wake token too long"));
+    }
+    Ok(s)
 }
 
 /// A video codec of the call path (`docs/design/video-hw-vp8.md`).

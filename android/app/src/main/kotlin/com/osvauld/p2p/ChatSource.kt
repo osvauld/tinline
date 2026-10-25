@@ -87,7 +87,8 @@ class CoreChatSource(private val app: P2pApp) : ChatSource, ChatEvents {
 
     override fun refresh() {
         app.scope.launch {
-            _chats.value = try { node.chats() } catch (e: Exception) { Log.d(P2pApp.TAG, "chats: $e"); emptyList() }
+            _chats.value = try { Startup.trace("chats") { node.chats() } } catch (e: Exception) { Log.d(P2pApp.TAG, "chats: $e"); emptyList() }
+            Startup.chatsLoaded()
         }
     }
 

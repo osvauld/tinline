@@ -1,0 +1,394 @@
+//! G2: group chat core, second slice, on real nodes over real iroh endpoints (needs network,
+//! like `group_core.rs`; the shared harness is in `support/`). Decisions: `rotation-open-decisions.md`
+//! §0 (U3 chat requests through the host, U16 writer IDs), D11 periodic host rotation
+//! (`docs/rotation.md`) and P10 (writer counters never reused). Protocol: `docs/group-core.md`.
+//!
+//! Every test carries `// KIND: acceptance (G2 stage N)` and the decision it enforces.
+#![allow(dead_code)]
+
+use std::sync::{Arc, mpsc};
+use std::time::Duration;
+
+use p2pcore::{GroupDelivery, GroupItemKind, GroupRole, Node, RotationPolicy};
+
+use crate::support;
+use support::fs::find_files;
+use support::group::*;
+use support::*;
+
+const S: Suite = Suite("g2");
+
+
+
+/// Restarts `p`'s process (a new `Node` over the same directory); with `lose_groups`, the group
+/// store (`group.redb`) is gone when it comes back (lost, deleted, or a backup without it).
+fn restart(p: &mut Peer, lose_groups: bool) {
+    p.node.stop();
+    std::thread::sleep(Duration::from_secs(2));
+    let node = Node::new(p.dir.to_string_lossy().into(), Arc::new(Quiet)).unwrap();
+    node.auto_accept_contacts_for_test(true);
+    let (ltx, lrx) = mpsc::channel();
+    node.set_link_events(Arc::new(LTap::new(ltx)));
+    p.lrx = lrx;
+    let old = std::mem::replace(&mut p.node, node);
+    drop(old);
+    if lose_groups {
+        let files = find_files(&p.dir, "group.redb");
+        assert!(!files.is_empty(), "there was a group store");
+        for f in files {
+            std::fs::remove_file(f).unwrap();
+        }
+    }
+    p.node.unlock(PASS.into()).unwrap();
+    online(&p.node);
+}
+
+fn delivered(p: &Peer, g: &str, text: &str) -> bool {
+    all(p, g).iter().any(|x| x.text == text && x.delivery == GroupDelivery::Delivered)
+}
+
+// ---- stage 1: writer counters after a lost group store (P10) ---------------------------------------
+
+// KIND: acceptance (G2 stage 1) — P10 for groups: a post written offline that never reached a
+// host is lost with the store; after the device rejoins it writes as a fresh writer (new group
+// device ID), so no (writer ID, counter) is reused and its new post arrives everywhere.
+#[test]
+fn a_lost_group_store_gives_a_fresh_writer_and_new_posts_arrive() {
+    let o = S.peer("ls-o");
+    let mut a = S.peer("ls-a");
+    let b = S.peer("ls-b");
+    let g = group_with(&o, &[&a, &b]);
+    a.node.group_post(g.clone(), "before".into(), None).unwrap();
+    eventually(WAIT, "before is delivered", || delivered(&a, &g, "before"));
+    let dev_before = a.node.group_device_id().unwrap();
+    a.node.stop();
+    std::thread::sleep(Duration::from_secs(1));
+    let m = a.node.group_post(g.clone(), "never left this device".into(), None).unwrap();
+    assert_eq!(m.delivery, GroupDelivery::Waiting);
+    restart(&mut a, true);
+    assert!(a.node.groups().unwrap().is_empty(), "the group went with the store");
+    let dev_after = a.node.group_device_id().unwrap();
+    assert_ne!(dev_after, dev_before, "a fresh group store writes under a fresh device ID");
+    // Rejoin (a is still a member: any admin's invite, or a device token, lets it back in).
+    let tok = o.node.group_invite(g.clone()).unwrap();
+    assert_eq!(join(&a, tok), g);
+    eventually(WAIT, "a sees history again", || has_post(&a, &g, &a.did, "before"));
+    a.node.group_post(g.clone(), "after the loss".into(), None).unwrap();
+    for p in [&o, &b] {
+        eventually(WAIT, "the new post arrives", || has_post(p, &g, &a.did, "after the loss"));
+        assert!(has_post(p, &g, &a.did, "before"));
+    }
+    eventually(WAIT, "delivered", || delivered(&a, &g, "after the loss"));
+    let det = o.node.group_detail(g.clone()).unwrap();
+    let ma = det.members.iter().find(|x| x.did == a.did).unwrap();
+    assert!(ma.device_ids.contains(&dev_before) && ma.device_ids.contains(&dev_after));
+}
+
+// KIND: acceptance (G2 stage 1) — P10 for groups, the harmful case: the post reached only a
+// second host that is offline when the device loses its store and rejoins through the first
+// host. Reusing the writer ID would put the new post at the same (writer, counter) as the one
+// held by the offline host, and one of the two would be dropped silently when the hosts meet.
+#[test]
+fn a_lost_group_store_never_reuses_a_counter_held_by_an_offline_host() {
+    let o = S.peer("lh-o");
+    let h = S.peer("lh-h");
+    let mut a = S.peer("lh-a");
+    let b = S.peer("lh-b");
+    let g = group_with(&o, &[&h, &a, &b]);
+    o.node.group_appoint_host(g.clone(), h.did.clone(), h.node.group_device_id().unwrap()).unwrap();
+    eventually(WAIT, "h sees the permit", || all(&h, &g).iter().any(|x| x.kind == GroupItemKind::HostAdded && x.subject_did == h.did));
+    h.node.group_accept_host(g.clone(), true).unwrap();
+    for p in [&o, &h, &a, &b] {
+        eventually(WAIT, "two hosts everywhere", || p.node.group_detail(g.clone()).unwrap().hosts.len() == 2);
+    }
+    eventually(WAIT, "a knows h's group endpoint", || {
+        let he = h.node.group_endpoint_id().unwrap();
+        a.node.group_known_endpoints_for_test(g.clone()).contains(&he)
+    });
+    // Only h is up (b is down too: members relay); a's post reaches h alone.
+    o.node.stop();
+    b.node.stop();
+    std::thread::sleep(Duration::from_secs(2));
+    a.node.group_post(g.clone(), "only h has this".into(), None).unwrap();
+    eventually(WAIT, "h acknowledged it", || delivered(&a, &g, "only h has this"));
+    assert!(has_post(&h, &g, &a.did, "only h has this"));
+    // h goes away holding it; o comes back; a loses its group store and rejoins through o.
+    h.node.stop();
+    online(&o.node);
+    restart(&mut a, true);
+    let tok = o.node.group_invite(g.clone()).unwrap();
+    assert_eq!(join(&a, tok), g);
+    assert!(!has_post(&o, &g, &a.did, "only h has this"), "o never got it");
+    a.node.group_post(g.clone(), "written after the loss".into(), None).unwrap();
+    eventually(WAIT, "o has the new post", || has_post(&o, &g, &a.did, "written after the loss"));
+    // h and b come back; the hosts sync again.
+    online(&h.node);
+    online(&b.node);
+    for p in [&o, &h, &b, &a] {
+        eventually(WAIT, "both posts everywhere", || {
+            has_post(p, &g, &a.did, "only h has this") && has_post(p, &g, &a.did, "written after the loss")
+        });
+    }
+}
+
+// KIND: regression (GF, flake root cause) — a new host's signed address must not be lost when it
+// arrives before the records that make it a host. Here h accepts while the first host o is away,
+// so h's address first reaches o in the Hello of h's next session, before o has h's acceptance;
+// o used to drop it and nobody ever re-sent it, so members never learned h's endpoint (the
+// `a knows h's group endpoint` timeout above, under load, when h's session to o was reconnecting).
+#[test]
+fn a_host_that_accepts_while_the_first_host_is_away_still_reaches_members() {
+    let o = S.peer("ha-o");
+    let h = S.peer("ha-h");
+    let a = S.peer("ha-a");
+    let g = group_with(&o, &[&h, &a]);
+    o.node.group_appoint_host(g.clone(), h.did.clone(), h.node.group_device_id().unwrap()).unwrap();
+    eventually(WAIT, "h is asked to host", || h.node.group_detail(g.clone()).unwrap().host_requested_here);
+    o.node.stop();
+    h.node.group_accept_host(g.clone(), true).unwrap();
+    assert!(h.node.group_detail(g.clone()).unwrap().am_host);
+    online(&o.node);
+    for p in [&o, &a] {
+        eventually(WAIT, "two hosts everywhere", || p.node.group_detail(g.clone()).unwrap().hosts.len() == 2);
+    }
+    let he = h.node.group_endpoint_id().unwrap();
+    eventually(WAIT, "o knows h's group endpoint", || o.node.group_known_endpoints_for_test(g.clone()).contains(&he));
+    eventually(WAIT, "a knows h's group endpoint", || a.node.group_known_endpoints_for_test(g.clone()).contains(&he));
+}
+
+// ---- stage 2: own-device sync of the group list ---------------------------------------------------
+
+fn lists(p: &Peer, g: &str) -> bool {
+    p.node.groups().unwrap().iter().any(|s| s.id == g)
+}
+
+// KIND: acceptance (G2 stage 2) — a linked device learns the account's groups through own-device
+// sync (no `group_device_token`): groups joined before and after linking, and a group created on
+// the new device reaches the old one. Contents come from the hosts (U7), verified (U10).
+#[test]
+fn a_linked_device_learns_the_accounts_groups_without_a_token() {
+    let o = S.peer("os-o");
+    let a = S.peer("os-a");
+    let g = group_with(&o, &[&a]);
+    a.node.group_post(g.clone(), "before linking".into(), None).unwrap();
+    eventually(WAIT, "o has it", || has_post(&o, &g, &a.did, "before linking"));
+
+    let a2 = S.link_desk(&a, "os-a2");
+    eventually(WAIT, "a2 lists the group", || lists(&a2, &g));
+    eventually(WAIT, "a2 sees history", || has_post(&a2, &g, &a.did, "before linking"));
+    assert_eq!(a2.node.group_detail(g.clone()).unwrap().my_role, GroupRole::Member);
+    a2.node.group_post(g.clone(), "from a2".into(), None).unwrap();
+    eventually(WAIT, "o sees a2's post", || has_post(&o, &g, &a.did, "from a2"));
+
+    // A group a joins after linking.
+    let g2 = o.node.group_create("Second".into()).unwrap();
+    join(&a, o.node.group_invite(g2.clone()).unwrap());
+    eventually(WAIT, "a2 lists the second group", || lists(&a2, &g2));
+    eventually(WAIT, "a2 is a member there", || a2.node.group_detail(g2.clone()).map(|d| d.my_role == GroupRole::Member).unwrap_or(false));
+
+    // A group created on a2 (a2 is its host) reaches a.
+    let g3 = a2.node.group_create("Made on a2".into()).unwrap();
+    eventually(WAIT, "a lists a2's group", || lists(&a, &g3));
+    eventually(WAIT, "a is its owner too", || a.node.group_detail(g3.clone()).map(|d| d.my_role == GroupRole::Owner).unwrap_or(false));
+    a.node.group_post(g3.clone(), "hello from a".into(), None).unwrap();
+    eventually(WAIT, "a2 (the host) has it", || has_post(&a2, &g3, &a.did, "hello from a"));
+    // The device token still works.
+    assert!(a.node.group_device_token(g.clone()).is_ok());
+}
+
+
+// ---- stage 3: 1:1 chat requests through the host (U3) ---------------------------------------------
+
+fn incoming(p: &Peer) -> Vec<p2pcore::GroupChatRequest> {
+    p.node.group_chat_requests_incoming().unwrap()
+}
+
+fn outgoing(p: &Peer) -> Vec<p2pcore::GroupChatRequest> {
+    p.node.group_chat_requests_outgoing().unwrap()
+}
+
+fn is_contact(p: &Peer, did: &str) -> bool {
+    p.node.contacts().iter().any(|c| c.did == did)
+}
+
+/// Asks `did` for a chat once the request can be sealed to them: a member's encryption key is a
+/// separate record their app writes after it sees itself as a member, so it can trail the
+/// membership the test waited for (the API refuses with this transient reason until then).
+fn request_chat(p: &Peer, g: &str, did: &str) -> p2pcore::GroupChatRequest {
+    let mut out = None;
+    eventually(WAIT, "their key is published in the group", || match p.node.group_chat_request(g.into(), did.into()) {
+        Ok(r) => {
+            out = Some(r);
+            true
+        }
+        Err(p2pcore::Error::Rejected(why)) if why.contains("not published a key") => false,
+        Err(e) => panic!("chat request: {e:?}"),
+    });
+    out.unwrap()
+}
+
+fn chat_has(p: &Peer, peer_did: &str, text: &str) -> bool {
+    p.node.chat_day(peer_did.into(), None).map(|d| d.messages.iter().any(|m| m.text == text)).unwrap_or(false)
+}
+
+// KIND: acceptance (G2 stage 3) — U3 + P6: a member asks another for a 1:1 chat through the
+// host; the host relays mail it cannot read and never sees the recipient's private endpoint; on
+// accept both become message-only contacts (no calls) and chat directly.
+#[test]
+fn a_chat_request_accepted_makes_message_only_contacts_that_chat_directly() {
+    let o = S.peer("cr-o");
+    let a = S.peer("cr-a");
+    let b = S.peer("cr-b");
+    let g = group_with(&o, &[&a, &b]);
+    let r = request_chat(&a, &g, &b.did);
+    assert!(r.outgoing && r.state == p2pcore::ChatRequestState::Pending && r.peer_did == b.did);
+    // Asking again returns the pending request.
+    assert_eq!(a.node.group_chat_request(g.clone(), b.did.clone()).unwrap().id, r.id);
+    eventually(WAIT, "b sees the request", || incoming(&b).iter().any(|x| x.id == r.id && x.peer_did == a.did));
+    let x = incoming(&b).into_iter().find(|x| x.id == r.id).unwrap();
+    assert_eq!(x.peer_name, "cr-a");
+    assert_eq!(x.group_id, g);
+    assert!(!is_contact(&a, &b.did) && !is_contact(&b, &a.did), "nothing before accepting");
+    b.node.group_chat_accept(r.id.clone()).unwrap();
+    eventually(WAIT, "a's request is accepted and the contact added", || {
+        outgoing(&a).iter().any(|x| x.id == r.id && x.state == p2pcore::ChatRequestState::Accepted && x.contact_added)
+    });
+    eventually(WAIT, "contacts both ways", || is_contact(&a, &b.did) && is_contact(&b, &a.did));
+    assert!(!a.node.calls_allowed(b.did.clone()) && !b.node.calls_allowed(a.did.clone()), "P6: message only");
+    assert!(!a.node.can_call(b.did.clone()) && !b.node.can_call(a.did.clone()));
+    a.node.send_text(b.did.clone(), "hi, directly".into(), None).unwrap();
+    eventually(WAIT, "b gets the direct message", || chat_has(&b, &a.did, "hi, directly"));
+    b.node.send_text(a.did.clone(), "hi back".into(), None).unwrap();
+    eventually(WAIT, "a gets the reply", || chat_has(&a, &b.did, "hi back"));
+    // The host relayed sealed mail and never held b's (or a's) private endpoint.
+    assert!(o.node.group_relayed_mail_count_for_test(g.clone()) >= 2);
+    for p in [&a, &b] {
+        assert!(!o.node.group_relayed_mail_contains_for_test(g.clone(), p.node.status().endpoint_id));
+    }
+    assert!(!is_contact(&o, &a.did) && !is_contact(&o, &b.did));
+}
+
+// KIND: acceptance (G2 stage 3) — a declined request shows "declined" to the requester
+// (PROVISIONAL), and nobody becomes a contact. A request from a DID the recipient blocks is
+// refused with the blocked reason and never shown to the recipient (P5), even from a modified
+// app that skips its own checks.
+#[test]
+fn chat_requests_can_be_declined_and_blocked_senders_are_refused() {
+    let o = S.peer("cd-o");
+    let a = S.peer("cd-a");
+    let b = S.peer("cd-b");
+    let c = S.peer("cd-c");
+    let g = group_with(&o, &[&a, &b, &c]);
+    let r = request_chat(&a, &g, &b.did);
+    eventually(WAIT, "b sees it", || incoming(&b).iter().any(|x| x.id == r.id));
+    b.node.group_chat_decline(r.id.clone()).unwrap();
+    eventually(WAIT, "a sees declined", || outgoing(&a).iter().any(|x| x.id == r.id && x.state == p2pcore::ChatRequestState::Declined));
+    assert!(!is_contact(&a, &b.did) && !is_contact(&b, &a.did));
+    assert!(b.node.group_chat_accept(r.id.clone()).is_err(), "already answered");
+
+    // b knows c from a ticket and blocks c; c's app is modified (ignores the notice, skips checks).
+    c.node.ignore_block_notices_for_test(true);
+    c.node.add_contact(b.node.my_ticket().unwrap()).unwrap();
+    eventually(WAIT, "b has c", || is_contact(&b, &c.did));
+    b.node.block(c.did.clone()).unwrap();
+    c.node.group_skip_request_checks_for_test(true);
+    let rc = request_chat(&c, &g, &b.did);
+    eventually(WAIT, "c sees blocked", || outgoing(&c).iter().any(|x| x.id == rc.id && x.state == p2pcore::ChatRequestState::Blocked));
+    assert!(!incoming(&b).iter().any(|x| x.peer_did == c.did), "never shown to b");
+    // The shipped app refuses locally: we do not ask someone we block.
+    assert!(b.node.group_chat_request(g.clone(), c.did.clone()).is_err());
+}
+
+// ---- stage 4: periodic host endpoint rotation (D11, docs/rotation.md) ----------------------------
+
+// KIND: acceptance (rotation, D11 + G-12) — a host rotates its group endpoint when its interval
+// is up (shortened here); online members follow at once; the host restarts in the middle of the
+// announce window and, after the restart, still tells a member that was offline the whole time
+// where it moved (the window is persisted), without rotating again.
+#[test]
+fn host_rotates_on_interval_and_offline_member_is_reconnected_after_host_restart() {
+    let mut o = S.peer("ri-o");
+    let a = S.peer("ri-a");
+    let c = S.peer("ri-c");
+    let g = group_with(&o, &[&a, &c]);
+    let old = o.node.group_endpoint_id().unwrap();
+    assert!(a.node.group_endpoint_rotation_due().is_none(), "members never rotate");
+    c.node.stop();
+    o.node.group_set_rotation_policy_for_test(Some(RotationPolicy { enabled: true, interval_ms: 15_000, jitter_ms: 0, announce_ms: 600_000 }));
+    let due = o.node.group_endpoint_rotation_due().expect("a host has a deadline");
+    eventually(WAIT + 15, "the host rotated", || o.node.group_endpoint_id().is_some_and(|e| e != old));
+    assert!(now_ms() >= due);
+    // Back to the default days-long interval, on: no second rotation during the test.
+    o.node.group_set_rotation_policy_for_test(Some(RotationPolicy::ON));
+    let new = o.node.group_endpoint_id().unwrap();
+    assert!(o.node.group_endpoint_rotation_due().unwrap() > now_ms() + 24 * 3600 * 1000, "the next one counts from this one");
+    eventually(WAIT, "the online member follows", || a.node.group_known_endpoints_for_test(g.clone()) == vec![new.clone()]);
+
+    restart(&mut o, false);
+    eventually(WAIT, "the host is back on the new endpoint", || o.node.group_endpoint_id().as_ref() == Some(&new));
+    a.node.group_post(g.clone(), "after the rotation".into(), None).unwrap();
+    eventually(WAIT, "the host gets it at the new endpoint", || has_post(&o, &g, &a.did, "after the rotation"));
+    online(&c.node);
+    eventually(WAIT + 15, "the offline member is told after the host's restart", || has_post(&c, &g, &a.did, "after the rotation"));
+    assert_eq!(c.node.group_known_endpoints_for_test(g.clone()), vec![new.clone()]);
+    assert_eq!(o.node.group_endpoint_id().unwrap(), new, "the restart did not rotate again");
+}
+
+// KIND: acceptance (rotation, D11) — a removal by flags and a host revocation do not rotate or
+// reschedule anything: the deadline stays where the interval put it.
+#[test]
+fn a_flag_removal_or_host_revocation_does_not_rotate() {
+    let o = S.peer("nr-o");
+    let h = S.peer("nr-h");
+    let m = S.peer("nr-m");
+    let g = group_with(&o, &[&h, &m]);
+    o.node.group_set_rotation_policy_for_test(Some(RotationPolicy::ON));
+    o.node.group_appoint_host(g.clone(), h.did.clone(), h.node.group_device_id().unwrap()).unwrap();
+    eventually(WAIT, "h is asked to host", || h.node.group_detail(g.clone()).unwrap().host_requested_here);
+    h.node.group_accept_host(g.clone(), true).unwrap();
+    eventually(WAIT, "o sees two hosts", || o.node.group_detail(g.clone()).unwrap().hosts.len() == 2);
+    let old = o.node.group_endpoint_id().unwrap();
+    let due = o.node.group_endpoint_rotation_due().expect("a host has a deadline");
+    o.node.group_revoke_host(g.clone(), h.did.clone(), h.node.group_device_id().unwrap()).unwrap();
+    for _ in 0..3 {
+        o.node.group_flag(g.clone(), m.did.clone()).unwrap();
+    }
+    eventually(WAIT, "m removed at the host", || !members(&o, &g).contains(&m.did));
+    eventually(WAIT, "h no longer hosts", || o.node.group_detail(g.clone()).unwrap().hosts.len() == 1);
+    std::thread::sleep(Duration::from_secs(5));
+    assert_eq!(o.node.group_endpoint_id().unwrap(), old, "no rotation");
+    assert_eq!(o.node.group_endpoint_rotation_due(), Some(due), "no reschedule");
+}
+
+// ---- D12: the removed member's upload window is local ---------------------------------------------
+
+// KIND: acceptance (D12, U11) — a removed member's pre-removal post is refused once the host's
+// local window (from when it learned of the removal; shortened here) has closed, even though the
+// removed DID still reaches the same host's group endpoint through another group they share.
+// (Inside the window it is accepted: `group_core.rs`
+// `an_offline_post_written_before_the_removal_is_delivered`, default window.)
+#[test]
+fn removed_member_upload_refused_after_the_window_even_with_a_shared_group() {
+    let o = S.peer("rw-o");
+    let m = S.peer("rw-m");
+    let b = S.peer("rw-b");
+    let g = group_with(&o, &[&m, &b]);
+    let shared = group_with(&o, &[&m]);
+    o.node.group_set_removed_upload_window_for_test(Some(3_000));
+    m.node.stop();
+    std::thread::sleep(Duration::from_secs(1));
+    m.node.group_post(g.clone(), "written before the removal".into(), None).unwrap();
+    for _ in 0..3 {
+        o.node.group_flag(g.clone(), m.did.clone()).unwrap();
+    }
+    eventually(WAIT, "o applied the removal", || !members(&o, &g).contains(&m.did));
+    std::thread::sleep(Duration::from_secs(5));
+    online(&m.node);
+    eventually(WAIT, "m learns it was removed", || m.node.group_detail(g.clone()).unwrap().my_role == GroupRole::Removed);
+    m.node.group_post(shared.clone(), "still here".into(), None).unwrap();
+    eventually(WAIT, "m still reaches the host through the shared group", || has_post(&o, &shared, &m.did, "still here"));
+    std::thread::sleep(Duration::from_secs(5));
+    for p in [&o, &b] {
+        assert!(!has_post(p, &g, &m.did, "written before the removal"), "refused after the window");
+    }
+}

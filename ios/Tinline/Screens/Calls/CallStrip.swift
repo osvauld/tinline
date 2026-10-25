@@ -43,7 +43,7 @@ struct CallStripView: View {
                     let vi = calls.video.info
                     let video = vi.map { $0.callId == c.info.callId && ($0.localCamera || $0.remoteCamera) } ?? false
                     let name = callOr(c.info.peerName, "Unknown")
-                    let status = callStatus(active: c.isActive, ringing: c.isRinging, reconnecting: c.stats?.reconnecting == true, secs: secs)
+                    let status = callStatus(active: c.isActive, ringing: c.isRinging, reconnecting: c.stats?.reconnecting == true, secs: secs, waking: c.stats?.waking == true)
                     StripRow(icon: video ? .video : .phone, name: name, status: status, slim: keyboard,
                              label: "Return to call with \(name)", action: onOpenCall)
                 }

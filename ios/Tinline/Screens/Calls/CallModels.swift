@@ -172,10 +172,11 @@ func describeCallState(_ s: CallState) -> String {
 // MARK: - copy (CallParts.kt)
 
 /** CallScreen.svelte's copy: never claim encryption while dialling or ringing. */
-func callStatus(active: Bool, ringing: Bool, reconnecting: Bool, secs: Int64) -> String {
+func callStatus(active: Bool, ringing: Bool, reconnecting: Bool, secs: Int64, waking: Bool = false) -> String {
     if active && reconnecting { return "Reconnecting…" }
     if active { return clock(secs: secs) }
     if ringing { return "Ringing…" }
+    if waking { return "Waking their phone…" }
     return "Calling…"
 }
 

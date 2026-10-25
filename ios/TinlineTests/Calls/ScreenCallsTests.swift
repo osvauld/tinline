@@ -6,6 +6,7 @@ final class ScreenCallsTests: XCTestCase {
     func testRealPhaseFlagsChooseStatusWithoutInventingTiming() {
         XCTAssertEqual("Calling…", callStatus(active: false, ringing: false, reconnecting: false, secs: 0))
         XCTAssertEqual("Ringing…", callStatus(active: false, ringing: true, reconnecting: false, secs: 0))
+        XCTAssertEqual("Waking their phone…", callStatus(active: false, ringing: false, reconnecting: false, secs: 0, waking: true))
         XCTAssertEqual("Reconnecting…", callStatus(active: true, ringing: false, reconnecting: true, secs: 65))
     }
 

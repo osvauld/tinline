@@ -103,6 +103,8 @@ impl NodeCtx {
         };
         // From here every exit must free the slot; the guard does it if nothing else did.
         let _slot = SlotGuard { inner: &self, call: call.clone() };
+        // The caller got through: a wake ring for them (docs/push.md Calls) is over, silently.
+        let early = self.take_wake_ring(&caller.did);
         *call.conn.lock() = Some(conn.clone());
         *call.video.peer_offer.lock() = video;
         // Their device list first (it decides whether this device is dialled), then this device.
@@ -116,8 +118,22 @@ impl NodeCtx {
             // Not if the call already ended meanwhile: the UI never heard of it.
             let _order = call.notify.lock();
             if !matches!(call.state(), CallState::Ended { .. }) {
-                self.sink.on_incoming_call(info.clone());
-                self.sink.on_call_state(info.call_id.clone(), CallState::Ringing);
+                // Declined at the wake ring: the UI is never told of it.
+                if early != Some(crate::push::Early::Declined) {
+                    self.sink.on_incoming_call(info.clone());
+                    self.sink.on_call_state(info.call_id.clone(), CallState::Ringing);
+                }
+                // Answered at the wake ring ("Connecting…"): accept now. A call waiting over
+                // another one is not taken without the user.
+                match early {
+                    Some(crate::push::Early::Answered) if !call.waiting.load(Ordering::SeqCst) => {
+                        let _ = call.cmd.send(Cmd::Answer);
+                    }
+                    Some(crate::push::Early::Declined) => {
+                        let _ = call.cmd.send(Cmd::Decline);
+                    }
+                    _ => {}
+                }
             }
         }
         // Authenticated and holding the call slot: no longer one of the unproven connections.

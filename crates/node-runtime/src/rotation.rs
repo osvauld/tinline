@@ -440,6 +440,8 @@ impl NodeCtx {
         drop(_life);
         // 6. Announce.
         self.devices_changed();
+        // Contacts hold our wake tokens under the old device key.
+        self.wake_resend_all();
         self.sync_kick();
         if let Some(h) = self.hooks() {
             h.chat_kick_pending();

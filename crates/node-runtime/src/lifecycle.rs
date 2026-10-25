@@ -151,6 +151,7 @@ impl NodeCtx {
             h.group_started();
         }
         self.tokens_started();
+        self.wake_started();
         // Before the list is signed: a rotation a stop interrupted is completed or dropped here.
         self.private_rotation_started().await;
         // After a restore (new device key) or a change made while we were offline: tell contacts.

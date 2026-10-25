@@ -1,0 +1,18 @@
+[package]
+name = "wake-relay-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+description = "Push wake-up relay logic (docs/push.md): sealed wake tokens and hints, FCM/APNs/UnifiedPush request builders, JWT assembly; no I/O, builds for wasm32 (the Cloudflare Worker) and natively"
+
+[dependencies]
+aes-gcm.workspace = true
+base64.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+postcard = { version = "1.1", default-features = false, features = ["alloc"] }
+
+[dev-dependencies]
+p256 = { version = "0.14", features = ["ecdsa"] }

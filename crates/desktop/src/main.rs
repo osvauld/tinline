@@ -55,6 +55,7 @@ mod frames;
 mod video_surface;
 mod reason;
 mod single;
+mod startup;
 mod tray;
 mod ui;
 mod voice;
@@ -297,6 +298,27 @@ pub fn data_dir() -> PathBuf {
     INIT.get().map(|i| i.data.clone()).unwrap_or_else(std::env::temp_dir)
 }
 
+/// SIGTERM (logout, shutdown, `kill`) quits like the tray's Quit: the node stops and the stores
+/// close cleanly instead of being repaired at the next start.
+fn quit_on_sigterm(tx: mpsc::UnboundedSender<Ev>) {
+    #[cfg(unix)]
+    std::thread::Builder::new()
+        .name("sigterm".into())
+        .spawn(move || {
+            let Ok(rt) = tokio::runtime::Builder::new_current_thread().enable_all().build() else { return };
+            rt.block_on(async {
+                use tokio::signal::unix::{signal, SignalKind};
+                if let Ok(mut term) = signal(SignalKind::terminate()) {
+                    term.recv().await;
+                    let _ = tx.send(Ev::Tray(tray::TrayCmd::Quit));
+                }
+            });
+        })
+        .ok();
+    #[cfg(not(unix))]
+    let _ = tx;
+}
+
 fn default_data_dir() -> PathBuf {
     directories::ProjectDirs::from("com", "osvauld", "Tinline")
         .map(|d| d.data_dir().to_path_buf())
@@ -318,6 +340,7 @@ fn test_env_f(k: &str) -> Option<f64> {
 }
 
 fn main() -> Result<(), String> {
+    startup::begin();
     let mut args: Vec<String> = std::env::args().skip(1).collect();
     let mut data = None;
     if let Some(i) = args.iter().position(|a| a == "--data") {
@@ -365,6 +388,7 @@ fn main() -> Result<(), String> {
     let audio = Arc::new(audio::Ctl::default());
     let node = Node::new(data.to_string_lossy().into(), Arc::new(Events { tx: tx.clone(), audio: audio.clone() }))
         .map_err(|e| e.to_string())?;
+    startup::mark("node");
     audio.attach(&node);
     node.set_chat_events(Arc::new(ChatBridge(tx.clone())));
     node.set_group_events(Arc::new(GroupBridge(tx.clone())));
@@ -376,7 +400,8 @@ fn main() -> Result<(), String> {
     node.set_group_call_events(Arc::new(GroupCallBridge { tx: tx.clone(), audio: audio.clone() }));
     hostcond::spawn(&node);
     // No passphrase: the key kept in the keyring opens it, so launch goes straight to Home.
-    keystore::auto_unlock(keystore::system(), &data, &node);
+    let unlocked = keystore::auto_unlock(keystore::system(), &data, &node);
+    startup::mark(&format!("auto_unlock({unlocked},{:?})", node.lock_state()));
     let notice_tx = tx.clone();
     audio.set_notice(move |m| {
         let _ = notice_tx.send(Ev::AudioNotice(m));
@@ -432,6 +457,7 @@ fn main() -> Result<(), String> {
         return Ok(());
     }
 
+    quit_on_sigterm(tx.clone());
     let show_tx = tx.clone();
     single::listen(&data, move || {
         let _ = show_tx.send(Ev::Tray(tray::TrayCmd::Show));
@@ -455,5 +481,6 @@ fn main() -> Result<(), String> {
         test_pass: test_env("P2P_PASSPHRASE").filter(|p| !p.is_empty()),
         audio,
     });
+    startup::mark("run");
     app::run().map_err(|e| e.to_string())
 }

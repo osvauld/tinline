@@ -27,3 +27,7 @@ __pycache__/
 /docs/design/brand/index.html
 /upload.png
 ios/build/
+
+# Firebase settings for the play edition (values only; see android/firebase.properties.example)
+android/firebase.properties
+android/app/google-services.json

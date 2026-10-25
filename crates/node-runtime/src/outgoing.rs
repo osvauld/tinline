@@ -32,6 +32,7 @@ impl NodeCtx {
             direct: Mutex::new(false),
             waiting: AtomicBool::new(false),
             answer_on_promote: AtomicBool::new(false),
+            waking: AtomicBool::new(false),
             epoch,
             ended_wake: tokio::sync::Notify::new(),
             video: Default::default(),
@@ -186,7 +187,10 @@ impl NodeCtx {
         } else {
             Msg::Hangup
         };
-        let dial_deadline = tokio::time::Instant::now() + DIAL_TOTAL;
+        // Legs that may redial a woken device (`connect_leg`) get the wake window on top.
+        let wakeable = contact.devices.iter().any(|d| self.can_wake(&contact.did, &d.device, wake::Kind::Call));
+        let wake_extra = if wakeable { Duration::from_millis(crate::push::CALL_WAKE_DIAL_MS) } else { Duration::ZERO };
+        let dial_deadline = tokio::time::Instant::now() + DIAL_TOTAL + wake_extra;
         let mut ring_deadline: Option<tokio::time::Instant> = None;
         let reason: String = loop {
             if *call.ended.lock() {
@@ -320,7 +324,7 @@ impl NodeCtx {
         ep: &Endpoint,
         me: &Me,
         contact: &StoredContact,
-        call: &Call,
+        call: &Arc<Call>,
         offer: Option<proto::VideoOffer>,
     ) -> (Vec<Option<mpsc::UnboundedSender<Msg>>>, mpsc::UnboundedReceiver<(usize, LegEvent)>) {
         let list = self.my_device_list(me);
@@ -330,6 +334,9 @@ impl NodeCtx {
             let (tx, rx) = mpsc::unbounded_channel();
             legs.push(Some(tx));
             let leg = Leg {
+                ctx: self.clone(),
+                call: call.clone(),
+                did: contact.did.clone(),
                 ep: ep.clone(),
                 device: device.clone(),
                 hello: {

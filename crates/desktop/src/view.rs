@@ -176,6 +176,8 @@ impl App {
     }
 
     pub(super) fn view(&self, _id: iced::window::Id) -> El<'_> {
+        static SEEN: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+        crate::startup::mark_once(&SEEN, "first view");
         let t = self.t();
         let body: El = if self.call.is_some() && !self.call_ui.minimized && self.incoming_card().is_none() {
             self.call_view(t)
@@ -1186,6 +1188,7 @@ impl App {
         let incoming_ring = c.info.incoming && !c.answered && c.state == CallState::Ringing;
         let active = c.state == CallState::Active;
         let reconnecting = active && c.stats.as_ref().is_some_and(|s| s.reconnecting);
+        let waking = c.stats.as_ref().is_some_and(|s| s.waking);
 
         let top: El = match (&c.state, &c.stats) {
             (CallState::Active, Some(st)) => {
@@ -1226,6 +1229,7 @@ impl App {
 
         let status: El = match (&c.state, incoming_ring) {
             (_, true) => tx("is calling you", 18.0, t.ink2).into(),
+            (CallState::Dialing, _) if waking => tx(call_screen::WAKING, 18.0, t.ink2).into(),
             (CallState::Dialing, _) => tx("Calling\u{2026}", 18.0, t.ink2).into(),
             (CallState::Ringing, _) => tx("Ringing\u{2026}", 18.0, t.ink2).into(),
             (CallState::Active, _) if reconnecting => semi("Reconnecting\u{2026}", 18.0, t.thread_text).into(),

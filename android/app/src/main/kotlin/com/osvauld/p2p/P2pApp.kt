@@ -62,6 +62,12 @@ class P2pApp : Application(), NodeEvents {
     val lockState: StateFlow<LockState> = _lock
     private val _hasIdentity = MutableStateFlow(false)
     val hasIdentity: StateFlow<Boolean> = _hasIdentity
+    private val _ready = MutableStateFlow(false)
+    /**
+     * The first account load (select, auto-unlock, refresh) is done. Until then [lockState] and [hasIdentity] are only
+     * defaults, so MainActivity keeps the window background up rather than show onboarding or the unlock screen.
+     */
+    val ready: StateFlow<Boolean> = _ready
 
     private val _accountDid = MutableStateFlow<String?>(null)
     /** The selected account's DID (changes when the user switches); null with no account. */
@@ -96,9 +102,10 @@ class P2pApp : Application(), NodeEvents {
     val availability: StateFlow<Availability> = _availability
     @Volatile private var availJob: Job? = null
 
-    override fun onCreate() {
+    override fun onCreate() = Startup.trace("P2pApp.onCreate") {
         super.onCreate()
         instance = this
+        PushMode.start(this)
         CallTrace.init(filesDir)
         CallTrace.lastExit(this)
         Notifications.createChannels(this)
@@ -108,7 +115,7 @@ class P2pApp : Application(), NodeEvents {
         ChatMedia.clear(this)
         calls = CallController(this)
         video = CallVideo(this)
-        node = newNode()
+        node = Startup.trace("newNode") { newNode() }
         profiles = ProfilesController(this)
         node.setProfileEvents(profiles)
         node.setVideoEvents(video)
@@ -131,9 +138,15 @@ class P2pApp : Application(), NodeEvents {
                 if (AppVisible.resumed) Cues.knock() else GroupNotifier.invitation(this, i)
             }
         }
-        selectLastAccountIfNone()
-        tryAutoUnlock()
-        refresh()
+        // Keystore unlock and the first state read run on the lifecycle thread (before any queued startNode), so the
+        // first frame never waits for them.
+        lifecycle.execute {
+            try {
+                Startup.trace("selectAccount") { selectLastAccountIfNone() }
+                Startup.trace("tryAutoUnlock") { tryAutoUnlock() }
+                Startup.trace("refresh") { refresh() }
+            } catch (e: Throwable) { Log.e(TAG, "first load", e) } finally { _ready.value = true }
+        }
         // Kept chats of people who are no longer contacts (their block deleted our entry) come only from the chat list.
         scope.launch { realChat.chats.collect { refreshBlocks() } }
         // The always-on notification says "Available for calls" / "Not available" / "Offline".
@@ -141,6 +154,7 @@ class P2pApp : Application(), NodeEvents {
             combine(status, availability) { st, av -> (st?.online == true) to av.available }.distinctUntilChanged()
                 .collect { CoreService.refreshNotification() }
         }
+        Unit
     }
 
     fun refreshHistory() {
@@ -175,6 +189,11 @@ class P2pApp : Application(), NodeEvents {
         refreshAvailability()
     }
 
+    /** [refresh] on the lifecycle thread, after any unlock or account switch already queued there. For UI callers. */
+    fun refreshLater() {
+        lifecycle.execute { try { refresh() } catch (e: Exception) { Log.w(TAG, "refresh: ${e.javaClass.simpleName}") } }
+    }
+
     fun refresh() {
         _lock.value = node.lockState()
         _hasIdentity.value = node.hasIdentity()
@@ -182,11 +201,11 @@ class P2pApp : Application(), NodeEvents {
         profiles.select(_accountDid.value.takeIf { _lock.value == LockState.UNLOCKED })
         rememberName()
         _contacts.value = node.contacts()
-        refreshRequests()
-        refreshBlocks()
+        Startup.trace("requests") { refreshRequests() }
+        Startup.trace("blocks") { refreshBlocks() }
         _status.value = node.status()
         scope.launch { groups.refresh() }
-        if (_lock.value == LockState.UNLOCKED) { refreshHistory(); refreshAvailability(); chat.refresh() }
+        if (_lock.value == LockState.UNLOCKED) { Startup.trace("history") { refreshHistory() }; Startup.trace("availability") { refreshAvailability() }; chat.refresh() }
         else { _history.value = emptyList(); _availability.value = Availability(true, null) }
         // The account to come back to if the app dies while a new one is being added.
         if (_hasIdentity.value && node.identityCommitted()) currentDid()?.let { lastPrefs.edit().putString("did", it).apply() }
@@ -215,7 +234,7 @@ class P2pApp : Application(), NodeEvents {
         if (notify) _unlinked.value = name
         try { lifecycle.submit { selectLastAccountIfNone() }.get() } catch (e: Exception) { Log.w(TAG, "accountGone: ${e.javaClass.simpleName}") }
         refresh()
-        if (node.hasIdentity()) { Notifications.cancelLocked(this); CoreService.ensureRunning(this); startNode() }
+        if (node.hasIdentity()) { Notifications.cancelLocked(this); CoreService.ensureAlwaysOn(this); startNode() }
     }
 
     private val lastPrefs by lazy { getSharedPreferences("accounts", Context.MODE_PRIVATE) }
@@ -259,15 +278,23 @@ class P2pApp : Application(), NodeEvents {
      * and the node stays Locked; on a transient Keystore/IO error unlock.bin is kept and the next
      * startNode retries. Returns true if usable. Blocking (Keystore): not for the main thread.
      */
+    /**
+     * For a wake push (its own thread, short window): after the first account load, which is queued first on the
+     * lifecycle thread and selects the account, so a push that started the process does not find it still unselected.
+     */
+    fun unlockForWake(): Boolean = try {
+        lifecycle.submit<Boolean> { tryAutoUnlock() }.get(5, java.util.concurrent.TimeUnit.SECONDS)
+    } catch (e: Exception) { Log.w(TAG, "unlockForWake: ${e.javaClass.simpleName}"); false }
+
     fun tryAutoUnlock(): Boolean = synchronized(unlockLock) {
         if (node.lockState() != LockState.LOCKED) return node.lockState() != LockState.NO_IDENTITY
         val did = currentDid() ?: return false
         if (!UnlockStore.exists(this, did)) return false
-        when (val l = UnlockStore.load(this, did)) {
+        when (val l = Startup.trace("UnlockStore.load") { UnlockStore.load(this, did) }) {
             UnlockStore.Loaded.Gone -> { UnlockStore.clear(this, did); false }
             UnlockStore.Loaded.Transient -> false
             is UnlockStore.Loaded.Key -> try {
-                node.unlockWithKey(l.bytes); true
+                Startup.trace("unlockWithKey") { node.unlockWithKey(l.bytes) }; true
             } catch (e: uniffi.p2pcore.Exception.WrongPassphrase) {
                 Log.w(TAG, "unlockWithKey: key rejected")
                 UnlockStore.clear(this, did); false
@@ -344,7 +371,7 @@ class P2pApp : Application(), NodeEvents {
         catch (e: java.util.concurrent.ExecutionException) { throw e.cause ?: e }
         refresh()
         Notifications.cancelLocked(this)
-        CoreService.ensureRunning(this)
+        CoreService.ensureAlwaysOn(this)
         startNode()
     }
 
@@ -414,7 +441,7 @@ class P2pApp : Application(), NodeEvents {
     fun startServices() {
         refresh()
         Notifications.cancelLocked(this)
-        CoreService.ensureRunning(this)
+        CoreService.ensureAlwaysOn(this)
         startNode()
     }
 
@@ -443,7 +470,9 @@ class P2pApp : Application(), NodeEvents {
                     return@execute
                 }
                 Notifications.cancelLocked(this)
-                try { node.start() } catch (e: Exception) { Log.e(TAG, "node.start failed", e) }
+                // Wake-by-push: tell the core where this device can be woken (or take the tokens back in always-on mode).
+                WakeHandler.syncTarget(this)
+                try { Startup.trace("node.start") { node.start() } } catch (e: Exception) { Log.e(TAG, "node.start failed", e) }
                 refresh()
             } catch (e: Throwable) { Log.e(TAG, "startNode", e) }
         }
@@ -495,18 +524,18 @@ class P2pApp : Application(), NodeEvents {
         }
     }
 
-    /** Re-reads block states for every contact and conversation, and the blocked list. Cheap core reads. */
+    /** Re-reads block states for every contact and conversation, and the blocked list: two core calls, however many contacts. */
     fun refreshBlocks() {
         try {
             val me = currentDid()
             val dids = (_contacts.value.map { it.did } + realChat.chats.value.map { it.peerDid }).filter { it != me }.toSet()
-            val views = dids.associateWith { did ->
-                val st = node.blockState(did)
-                BlockView(st.blockedByMe, st.blockedAt?.toLong(), st.blockedMe?.signedAt?.toLong())
+            val rows = node.peerBlocks(dids.toList())
+            val views = rows.associate { r ->
+                r.did to BlockView(r.state.blockedByMe, r.state.blockedAt?.toLong(), r.state.blockedMe?.signedAt?.toLong())
             }
             val list = node.blockedContacts().map { BlockedRow(it.did, it.name, it.blockedAt.toLong()) }
-            val allowed = dids.filter { node.callsAllowed(it) }.toSet()
-            val tokens = dids.filter { node.canCall(it) }.toSet()
+            val allowed = rows.filter { it.callsAllowed }.map { it.did }.toSet()
+            val tokens = rows.filter { it.canCall }.map { it.did }.toSet()
             _blocks.value = Blocks.from(views, list, allowed, tokens)
         } catch (e: Exception) { Log.w(TAG, "blocks: $e") }
     }
@@ -537,6 +566,8 @@ class P2pApp : Application(), NodeEvents {
         try { node.notDeliveredReason(peerDid, messageId) } catch (e: Exception) { null }
     override fun onIncomingCall(call: CallInfo) = calls.onIncoming(call)
     override fun onCallState(callId: String, state: CallState) {
+        // A call wake's ring ("wake:<did>") is not a call: only its end matters (WakeRing).
+        if (WakeRingLogic.isWakeCallId(callId)) { if (state is CallState.Ended) WakeRing.onEnded(this, callId); return }
         if (state is CallState.Ended) refreshHistory()
         calls.onState(callId, state)
     }

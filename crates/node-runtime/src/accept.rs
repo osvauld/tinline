@@ -254,6 +254,12 @@ impl NodeCtx {
                 let _ = tokio::time::timeout(LINGER, conn.closed()).await;
                 Ok(())
             }
+            Msg::WakeTokens { device, token, exp_ms, kinds } => {
+                drop(permit);
+                self.wake_tokens_incoming(ctrl, remote, device, token, exp_ms, kinds).await?;
+                let _ = tokio::time::timeout(LINGER, conn.closed()).await;
+                Ok(())
+            }
             other => {
                 tracing::debug!("unexpected first message {}", msg_name(&other));
                 ctrl.send(&Msg::Reject { reason: REFUSED.into() }).await?;

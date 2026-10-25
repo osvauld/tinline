@@ -1,8 +1,11 @@
 # Play Console — what to fill in
 
 App: **Tinline** · package `com.osvauld.tinline` · free · no ads.
-Build: `scripts/build_android.py --bundle` → `~/tinline-builds/tinline-<versionCode>-<commit>.aab`
+Build: `:app:bundlePlayRelease` (the `play` flavour; the `liberum` flavour is the GitHub/site APK and is never uploaded
+here), run under `tasks2`; CI's release workflow produces `tinline-play-v<version>.aab`
 (upload key `~/keys/tinline-upload.jks`, alias `upload`; Play App Signing holds the app key).
+The Firebase settings (`FIREBASE_APP_ID`, `FIREBASE_API_KEY`, `FIREBASE_GCM_SENDER_ID`; see
+`android/firebase.properties.example`) must be set for the upload, or the bundle has no push and is always-on only.
 
 ## Internal testing release
 
@@ -37,12 +40,17 @@ Shares location: No. Digital purchases: No.
 
 ### Data safety
 
-- Does your app collect or share any of the required user data types? **No.**
-  (Everything is stored only on the device; calls are end-to-end encrypted; nothing reaches our
-  servers. Google's definition of "collect" is data transmitted off the device to the developer or a
-  third party. Relays only forward end-to-end encrypted traffic, which Google exempts.)
+- Does your app collect or share any of the required user data types? **Yes**: one type.
+  - **Device or other IDs** (the Firebase push token): collected, transmitted off the device to our wake
+    service (`push.osvauld.com`) inside a sealed wake token. Purpose: **App functionality** (wake the phone
+    for a call or message). **Not shared** (Google's delivery of the push is a service provider acting for
+    us). **Optional:** the user can turn on "Stay connected all the time". Processed ephemerally: **Yes**
+    (the wake service keeps no record of wakes).
+  - Nothing else: messages and calls are end-to-end encrypted and never reach our servers; relays only
+    forward encrypted traffic, which Google exempts.
 - Is all data encrypted in transit? **Yes.**
-- Do you provide a way to request deletion? **Data is never sent to us; uninstalling deletes it.**
+- Do you provide a way to request deletion? **Uninstalling deletes everything; the wake service holds no
+  per-user data to delete.**
 
 ### Foreground service
 
@@ -51,10 +59,12 @@ Types used: `microphone` and `specialUse`. The form asks per permission: FOREGRO
 
 - **microphone** — "Active voice call. The service records the microphone only while a call the
   user started or answered is in progress, with an ongoing call notification."
-- **specialUse** — "Tinline is a peer-to-peer calling app with no push server. To receive incoming
-  calls it keeps one encrypted network connection open in a foreground service, shown by a
-  persistent notification. There is no FCM or server-side wake-up, so without this service calls cannot ring."
-  User impact if deferred: "Incoming calls would be missed."
+- **specialUse** — "Tinline is a peer-to-peer calling and messaging app. By default it rests and is
+  woken by a content-free FCM message; the service then runs briefly to connect to the contact and
+  receive the call or message, shown by a notification, and stops by itself. If the user turns on
+  'Stay connected all the time', the service keeps one encrypted connection open, shown by a
+  persistent notification."
+  User impact if deferred: "Incoming calls and messages would be missed."
   Video: record the phone showing the persistent notification, then a second device calling and the
   locked phone ringing full-screen.
 
@@ -65,10 +75,10 @@ calls."
 
 ### Battery optimisation exemption (`REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`)
 
-Acceptable use: **VoIP / calling app whose core function is broken by Doze, and that cannot use FCM
-high-priority messages**. "Tinline has no server and no push messages; peers connect directly. Doze
-would cut the connection and incoming calls would not ring. The user is asked in onboarding and can
-skip."
+Acceptable use: **VoIP / calling app whose core function is broken by Doze**. "By default Tinline is
+woken by FCM high-priority messages. Users who turn on 'Stay connected all the time' (or whose phone
+has no Google Play services) keep a direct connection instead; Doze would cut it and incoming calls
+would not ring. The user is asked in onboarding and can skip."
 
 ### Camera
 
@@ -80,3 +90,11 @@ Only for scanning contact QR codes (no declaration form; mentioned in the privac
 - Full description: draft from the onboarding copy and `docs/design/Flow.dc.html`.
 - Icon 512×512, feature graphic 1024×500, at least 2 phone screenshots.
 - Category: Communication. Contact email: osvauld@gmail.com. Website: https://tinline.osvauld.com
+
+## Push wake-ups (docs/push.md)
+
+The `play` edition ships `firebase-messaging` only (no analytics or crashlytics, ad id off, token
+auto-init off until the user is in wake-by-push mode). Done on 25 October 2026: foreground service,
+battery exemption, data safety (above) and the privacy policy (`docs/play/privacy.md`) now describe it.
+Still to check when the store listing is written: no line may say "no push", "no servers", "nothing
+leaves your phone" or "no Google services" for `play` (that stays true only for Liberum).

@@ -94,6 +94,8 @@ impl NodeCtx {
 
     /// A contact was just added: with more than one install, send it the whole list now.
     pub fn list_for_new_contact(self: &Arc<Self>, did: &str) {
+        // The new contact gets a wake token from us too (push.rs).
+        self.wake_kick();
         if let Some(h) = self.hooks() {
             h.profile_for_new_contact(did);
         }

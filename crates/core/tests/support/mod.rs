@@ -1,9 +1,5 @@
-//! Shared harness for the core integration tests (`mod support;` in each test file).
-//!
-//! Every file under `tests/` is its own test binary, so each binary compiles the parts of this
-//! module it names and ignores the rest (hence `dead_code` is allowed here). The group call
-//! capacity module in `group_call_capacity.rs` is a test module of `group_call.rs`, not a helper;
-//! it is not part of this module.
+//! Shared helpers, compiled once by the integration harness.
+//! Group-call capacity tests remain nested under `group_call`.
 #![allow(dead_code, unused_imports)]
 
 pub mod calls;
@@ -26,3 +22,30 @@ pub use wait::{eventually, eventually_200ms, now_ms, now_ms_i64, now_secs, onlin
 
 /// The passphrase every test identity uses.
 pub const PASS: &str = "test-passphrase";
+
+/// Run a test with process-local configuration set before any runtime threads exist.
+/// Returns true in the child, false after the parent has checked the child's result.
+/// Using a child of this same executable keeps one link while preserving isolation.
+pub fn with_env(vars: &[(&str, &str)]) -> bool {
+    let thread = std::thread::current();
+    let name = thread.name().expect("libtest names each test thread");
+    const CHILD: &str = "P2PCORE_IT_CHILD";
+    if std::env::var(CHILD).as_deref() == Ok(name) {
+        return true;
+    }
+    let output = std::process::Command::new(std::env::current_exe().unwrap())
+        .args(["--exact", name, "--nocapture", "--test-threads=1"])
+        .env(CHILD, name)
+        .envs(vars.iter().copied())
+        .output()
+        .expect("start isolated integration test");
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(
+        output.status.success() && stdout.contains("test result: ok. 1 passed;"),
+        "isolated test {name} failed: {}\n{}\n{}",
+        output.status,
+        stdout,
+        String::from_utf8_lossy(&output.stderr),
+    );
+    false
+}
