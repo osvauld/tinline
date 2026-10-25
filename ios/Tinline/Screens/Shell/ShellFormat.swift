@@ -336,7 +336,7 @@ struct ShellRestoreWords {
     func message(error: String?) -> String {
         let b = badList
         if let first = b.first {
-            return b.count > 1 ? tr("shell_restore_bad_many", String(first + 1), String(b.count - 1)) : tr("shell_restore_bad_one", String(first + 1))
+            return b.count > 1 ? trn("shell_restore_bad_many", b.count, String(first + 1)) : tr("shell_restore_bad_one", String(first + 1))
         }
         if recKey.isEmpty && tried && filled < 24 { return trn("shell_restore_missing", 24 - filled) }
         return error ?? ""

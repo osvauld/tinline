@@ -80,6 +80,9 @@ def check(langs):
                 errors.append(f"{where}: needs `text` or plural forms with `other`")
             if "text" not in f and COUNT not in placeholders(f.get("other", "")):
                 errors.append(f"{where}: plural needs a {{{COUNT}}} placeholder")
+            if platform == "ios" and "text" not in f and placeholders(f.get("other", ""))[:1] != [COUNT]:
+                # trn() passes the count first and Xcode picks the plural form from argument 1.
+                errors.append(f"{where}: iOS plural must start with {{{COUNT}}} (reword the English)")
             if not entry.get("note"):
                 errors.append(f"{where}: needs a `note` for translators")
         master[platform]["en"] = source

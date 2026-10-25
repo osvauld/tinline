@@ -1646,7 +1646,8 @@ text = "Miksi minut poistettiin?"
 text = "Miksi sinut poistettiin"
 
 [group_will_be_able_to]
-text = "{name} voi tämän jälkeen kutsua ihmisiä, merkitä jäseniä (jäsen poistetaan {flags_needed} merkinnällä) ja nimetä isäntälaitteita. Vain sinä omistajana voit nimetä ja poistaa ylläpitäjiä."
+one = "{name} voi tämän jälkeen kutsua ihmisiä, merkitä jäseniä (jäsen poistetaan {count} merkinnällä) ja nimetä isäntälaitteita. Vain sinä omistajana voit nimetä ja poistaa ylläpitäjiä."
+other = "{name} voi tämän jälkeen kutsua ihmisiä, merkitä jäseniä (jäsen poistetaan {count} merkinnällä) ja nimetä isäntälaitteita. Vain sinä omistajana voit nimetä ja poistaa ylläpitäjiä."
 
 [group_withdraw_the_offer_to]
 text = "Peru tarjous isännöidä"

@@ -58,6 +58,16 @@ pub fn weekday_date(d: &DateTime<Local>, year: bool) -> String {
     tr_args(if year { "date_weekday_date_year" } else { "date_weekday_date" }, &args)
 }
 
+/// A label that stands alone, like the day chip: first letter upper case
+/// (French and Finnish write weekday names in lower case mid-sentence).
+pub fn standalone(s: String) -> String {
+    let mut chars = s.chars();
+    match chars.next() {
+        Some(c) if c.is_lowercase() => c.to_uppercase().chain(chars).collect(),
+        _ => s,
+    }
+}
+
 /// "Sep 12" for a unix time in ms, local time.
 pub fn local_month_day(ms: u64) -> String {
     use chrono::TimeZone;

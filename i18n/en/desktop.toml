@@ -2217,8 +2217,9 @@ text = "Why you were removed"
 note = "Desktop, groups (in group_live_view.rs, live_overlay)."
 
 [group_will_be_able_to]
-text = "{name} will be able to invite people, flag members ({flags_needed} flags remove someone) and appoint hosts. Only you, the owner, can make or remove admins."
-note = "Desktop, group admin dialog (in group_live_view.rs, live_overlay). {name} is a person's first name; {flags_needed} is how many admin flags remove a member."
+one = "{name} will be able to invite people, flag members ({count} flag removes someone) and appoint hosts. Only you, the owner, can make or remove admins."
+other = "{name} will be able to invite people, flag members ({count} flags remove someone) and appoint hosts. Only you, the owner, can make or remove admins."
+note = "Desktop, group admin dialog (in group_live_view.rs, live_overlay). {name} is a person's first name; {count} is how many admin flags remove a member."
 
 [group_withdraw_the_offer_to]
 text = "Withdraw the offer to host"

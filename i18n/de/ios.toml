@@ -962,10 +962,12 @@ text = "Anfrage senden"
 text = "Jemand"
 
 [group_sys_removed_you]
-text = "Du wurdest nach {total} Admin-Markierungen entfernt"
+one = "Du wurdest nach {count} Admin-Markierung entfernt"
+other = "Du wurdest nach {count} Admin-Markierungen entfernt"
 
 [group_sys_removed]
-text = "{name} wurde nach {total} Admin-Markierungen entfernt"
+one = "{name} wurde nach {count} Admin-Markierung entfernt"
+other = "{name} wurde nach {count} Admin-Markierungen entfernt"
 
 [group_sys_host_added_you]
 text = "Ein Gerät von dir hostet jetzt die Gruppe"
@@ -3102,7 +3104,8 @@ text = "Stark"
 text = "Wort {n} steht nicht in der Liste der Wiederherstellungswörter. Prüf die Schreibweise."
 
 [shell_restore_bad_many]
-text = "Wort {n} und {more} weitere stehen nicht in der Liste der Wiederherstellungswörter. Prüf die Schreibweise."
+one = "{count} Wort steht nicht in der Liste der Wiederherstellungswörter, ab Wort {number}. Prüf die Schreibweise."
+other = "{count} Wörter stehen nicht in der Liste der Wiederherstellungswörter, ab Wort {number}. Prüf die Schreibweise."
 
 [shell_restore_missing]
 one = "{count} Wort fehlt noch."
@@ -4220,7 +4223,8 @@ one = "{count} Person im Anruf"
 other = "{count} Personen im Anruf"
 
 [call_group_more]
-text = "+{count} weitere"
+one = "+{count} weitere"
+other = "+{count} weitere"
 
 [call_ok]
 text = "OK"
@@ -4418,7 +4422,8 @@ text = "{name} hat die Gruppe verlassen"
 text = "Jemand hat die Gruppe verlassen"
 
 [group_sys_removed_someone]
-text = "Jemand wurde nach {total} Admin-Markierungen entfernt"
+one = "Jemand wurde nach {count} Admin-Markierung entfernt"
+other = "Jemand wurde nach {count} Admin-Markierungen entfernt"
 
 [group_sys_admin_you_you]
 text = "Du hast dich selbst zum Admin gemacht"

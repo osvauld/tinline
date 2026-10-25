@@ -1231,7 +1231,7 @@ impl App {
                 if *admin {
                     column![
                         title(crate::i18n::tr_args("group_make_an_admin", &[("name", &(first).to_string())])),
-                        para(crate::i18n::tr_args("group_will_be_able_to", &[("name", &first), ("flags_needed", &FLAGS_TO_REMOVE.to_string())])),
+                        para(crate::i18n::tr_count("group_will_be_able_to", FLAGS_TO_REMOVE as u64, &[("name", &first)])),
                     ]
                     .spacing(14)
                 } else {
@@ -1379,8 +1379,8 @@ fn chip_day(ms: u64) -> String {
     match (now.date_naive() - d.date_naive()).num_days() {
         0 => crate::i18n::tr_str("common_today").into(),
         1 => crate::i18n::tr_str("common_yesterday").into(),
-        _ if d.year() == now.year() => crate::i18n::date::weekday_date(&d, false),
-        _ => crate::i18n::date::weekday_date(&d, true),
+        _ if d.year() == now.year() => crate::i18n::date::standalone(crate::i18n::date::weekday_date(&d, false)),
+        _ => crate::i18n::date::standalone(crate::i18n::date::weekday_date(&d, true)),
     }
 }
 

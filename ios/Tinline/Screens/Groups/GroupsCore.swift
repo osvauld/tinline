@@ -182,7 +182,6 @@ enum GroupText {
     static func sysText(_ m: GroupMessage, me: String) -> String {
         let by = Who(m.authorDid, m.authorName, me: me)
         let sub = Who(m.subjectDid, m.subjectName, me: me)
-        let total = String(flagsToRemove)
         switch m.kind {
         case .post: return m.text
         case .joined:
@@ -199,9 +198,9 @@ enum GroupText {
             }
         case .removed:
             switch sub {
-            case .you: return tr("group_sys_removed_you", total)
-            case .named(let n): return tr("group_sys_removed", n, total)
-            case .unknown: return tr("group_sys_removed_someone", total)
+            case .you: return trn("group_sys_removed_you", flagsToRemove)
+            case .named(let n): return trn("group_sys_removed", flagsToRemove, n)
+            case .unknown: return trn("group_sys_removed_someone", flagsToRemove)
             }
         case .adminGranted:
             switch (by, sub) {

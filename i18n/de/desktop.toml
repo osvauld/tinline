@@ -1646,7 +1646,8 @@ text = "Warum wurde ich entfernt?"
 text = "Warum du entfernt wurdest"
 
 [group_will_be_able_to]
-text = "{name} kann dann Leute einladen, Mitglieder markieren ({flags_needed} Markierungen entfernen jemanden) und Hosts festlegen. Nur du als Eigentümer kannst Admins ernennen oder entfernen."
+one = "{name} kann dann Leute einladen, Mitglieder markieren ({count} Markierung entfernt jemanden) und Hosts festlegen. Nur du als Eigentümer kannst Admins ernennen oder entfernen."
+other = "{name} kann dann Leute einladen, Mitglieder markieren ({count} Markierungen entfernen jemanden) und Hosts festlegen. Nur du als Eigentümer kannst Admins ernennen oder entfernen."
 
 [group_withdraw_the_offer_to]
 text = "Angebot zum Hosten zurückziehen"

@@ -32,7 +32,6 @@ fn static_strings_match_owned() {
 fn unknown_language_is_english() {
     set_language("zz");
     assert_eq!(language(), "en");
-    assert!(!is_rtl());
 }
 
 #[test]
@@ -70,4 +69,7 @@ fn month_and_weekday_keys_exist() {
     assert_eq!(date::month_day(9, 12), "Sep 12");
     assert_eq!(date::day_month(12, 9), "12 Sep");
     assert_eq!(date::weekday(chrono::Weekday::Thu), "Thursday");
+    assert_eq!(date::standalone("jeudi 8 oct.".into()), "Jeudi 8 oct.");
+    assert_eq!(date::standalone("गुरुवार".into()), "गुरुवार");
+    assert_eq!(date::standalone(String::new()), "");
 }

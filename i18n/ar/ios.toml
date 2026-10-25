@@ -947,12 +947,6 @@ text = "إرسال الطلب"
 [group_someone]
 text = "شخص ما"
 
-[group_sys_removed_you]
-text = "تمت إزالتك بعد إبلاغات المشرفين ({total})"
-
-[group_sys_removed]
-text = "إزالة {name} بعد إبلاغات المشرفين ({total})"
-
 [group_sys_host_added_you]
 text = "أحد أجهزتك يستضيف المجموعة الآن"
 
@@ -2937,9 +2931,6 @@ text = "قوية"
 [shell_restore_bad_one]
 text = "الكلمة {n} ليست في قائمة كلمات الاسترداد. يمكنك التحقق من الإملاء."
 
-[shell_restore_bad_many]
-text = "الكلمة {n} وكلمات أخرى ({more}) ليست في قائمة كلمات الاسترداد. يمكنك التحقق من الإملاء."
-
 [shell_restore_missing]
 zero = "لا كلمات ناقصة."
 one = "لا تزال كلمة واحدة ناقصة."
@@ -4050,9 +4041,6 @@ two = "شخصان في المكالمة"
 few = "{count} أشخاص في المكالمة"
 many = "{count} شخصًا في المكالمة"
 other = "{count} شخص في المكالمة"
-
-[call_group_more]
-text = "+{count} آخرين"
 
 [call_ok]
 text = "حسنًا"

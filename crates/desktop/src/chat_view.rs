@@ -34,8 +34,8 @@ fn chip_day(ms: u64) -> String {
     match (now.date_naive() - d.date_naive()).num_days() {
         0 => crate::i18n::tr_str("common_today").into(),
         1 => crate::i18n::tr_str("common_yesterday").into(),
-        _ if d.year() == now.year() => crate::i18n::date::weekday_date(&d, false),
-        _ => crate::i18n::date::weekday_date(&d, true),
+        _ if d.year() == now.year() => crate::i18n::date::standalone(crate::i18n::date::weekday_date(&d, false)),
+        _ => crate::i18n::date::standalone(crate::i18n::date::weekday_date(&d, true)),
     }
 }
 

@@ -90,7 +90,7 @@ struct GroupCallLayer: View {
                         }
                     }
                 }
-                if n > 9 { Text(tr("call_group_more", n - 8)).font(CallFont.figtree(13, .semibold)).foregroundStyle(tin.ink) }
+                if n > 9 { Text(trn("call_group_more", n - 8)).font(CallFont.figtree(13, .semibold)).foregroundStyle(tin.ink) }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             if let note = s.note {

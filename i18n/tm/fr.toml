@@ -8746,6 +8746,7 @@ en_one = "You were removed after {count} admin flag"
 en_other = "You were removed after {count} admin flags"
 where = [
   "android groupsc_removed_you_flags: System line in a group's chat: I was removed after enough admin flags. {count} is the number of flags needed.",
+  "ios group_sys_removed_you: System line: the user was removed. {count} is how many admin flags remove a member.",
   "desktop group_sys_removed_you: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). I was removed. {count} is how many admin flags remove a member.",
 ]
 one = "Vous avez été retiré après {count} signalement d’admin"
@@ -9241,6 +9242,7 @@ en_one = "+{count} more"
 en_other = "+{count} more"
 where = [
   "android gcall_more: Under the participants' faces when there are more than nine. {count} is how many are not shown.",
+  "ios call_group_more: Shown when more people are in a group call than fit on screen. {count} is how many are not shown.",
 ]
 one = "+{count}"
 many = "+{count}"
@@ -11446,6 +11448,7 @@ en_one = "Someone was removed after {count} admin flag"
 en_other = "Someone was removed after {count} admin flags"
 where = [
   "android groupsc_removed_someone_flags: System line in a group's chat when the removed member's name is not known. {count} is the number of flags needed.",
+  "ios group_sys_removed_someone: System line in a group chat (the centred grey line). A member whose name is unknown was removed. {count} is how many admin flags remove a member.",
   "desktop group_sys_removed_someone: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Someone I cannot name was removed. {count} is how many admin flags remove a member.",
 ]
 one = "Un membre a été retiré après {count} signalement d’admin"
@@ -12592,19 +12595,15 @@ where = [
 ]
 text = "{total} signalements retirent {name} du groupe"
 
-[t_2d2f46e181]
-en = "You were removed after {total} admin flags"
+[t_45fcf2dff4]
+en_one = "After {count} admin flag, {name} was removed"
+en_other = "After {count} admin flags, {name} was removed"
 where = [
-  "ios group_sys_removed_you: System line: the user was removed. {total} is the number of flags that remove.",
+  "ios group_sys_removed: System line in a group chat (the centred grey line). A named member was removed. {name} is the member, {count} how many admin flags remove a member. Same meaning as desktop \"{name} was removed after {count} admin flags\"; iOS needs {count} first in the English.",
 ]
-text = "Vous avez été retiré après {total} signalements d’admins"
-
-[t_cc4e320bf2]
-en = "{name} was removed after {total} admin flags"
-where = [
-  "ios group_sys_removed: System line in a group chat (the centred grey line). A named member was removed. {name} is the member, {total} the number of admin flags that remove.",
-]
-text = "{name} : retrait après {total} signalements d’admins"
+one = "{name} : retrait après {count} signalement d’admin"
+many = "{name} : retrait après {count} signalements d’admins"
+other = "{name} : retrait après {count} signalements d’admins"
 
 [t_be5bddaced]
 en = "A device of {name}’s now hosts the group"
@@ -13067,12 +13066,15 @@ where = [
 ]
 text = "Le mot {n} n’est pas dans la liste des mots de récupération. Vérifiez l’orthographe."
 
-[t_79e3b1b3e9]
-en = "Word {n} and {more} more aren’t in the recovery word list. Check the spelling."
+[t_348aaf02da]
+en_one = "{count} words aren’t in the recovery word list, starting with word {number}. Check the spelling."
+en_other = "{count} words aren’t in the recovery word list, starting with word {number}. Check the spelling."
 where = [
-  "ios shell_restore_bad_many: Restore screen message. {n} is the first wrong word’s position, {more} how many other words are also wrong.",
+  "ios shell_restore_bad_many: Restore screen message under the 24 word boxes. {count} is how many typed words are not recovery words (always 2 or more); {number} is the position (1 to 24) of the first one.",
 ]
-text = "Le mot {n} et {more} de plus ne sont pas dans la liste des mots de récupération. Vérifiez l’orthographe."
+one = "{count} mot n’est pas dans la liste des mots de récupération, à partir du mot {number}. Vérifiez l’orthographe."
+many = "{count} mots ne sont pas dans la liste des mots de récupération, à partir du mot {number}. Vérifiez l’orthographe."
+other = "{count} mots ne sont pas dans la liste des mots de récupération, à partir du mot {number}. Vérifiez l’orthographe."
 
 [t_814973bf24]
 en = "{sub} from {name}"
@@ -13275,13 +13277,6 @@ where = [
 ]
 text = "L’appel n’a pas pu être établi"
 
-[t_dac996d3e9]
-en = "+{count} more"
-where = [
-  "ios call_group_more: Shown when more people are in a group call than fit on screen. {count} is how many are not shown.",
-]
-text = "+{count}"
-
 [t_2c96816ba0]
 en = "Call host: your other device"
 where = [
@@ -13316,13 +13311,6 @@ where = [
   "ios call_unreachable_body_blank: Explanation when a call could not connect and the contact has no name.",
 ]
 text = "Cette personne est peut-être hors ligne, sans réseau, ou ne prend pas d’appels en ce moment. Tinline ne peut pas laisser de message."
-
-[t_fde9089394]
-en = "Someone was removed after {total} admin flags"
-where = [
-  "ios group_sys_removed_someone: System line in a group chat (the centred grey line). A member whose name is unknown was removed. {total} is the number of admin flags that remove.",
-]
-text = "Un membre a été retiré après {total} signalements d’admins"
 
 [t_6663ab075c]
 en = "You made yourself an admin"
@@ -15439,12 +15427,15 @@ where = [
 ]
 text = "Pourquoi vous avez été retiré"
 
-[t_2ea8f25938]
-en = "{name} will be able to invite people, flag members ({flags_needed} flags remove someone) and appoint hosts. Only you, the owner, can make or remove admins."
+[t_bcca660900]
+en_one = "{name} will be able to invite people, flag members ({count} flag removes someone) and appoint hosts. Only you, the owner, can make or remove admins."
+en_other = "{name} will be able to invite people, flag members ({count} flags remove someone) and appoint hosts. Only you, the owner, can make or remove admins."
 where = [
-  "desktop group_will_be_able_to: Desktop, group admin dialog (in group_live_view.rs, live_overlay). {name} is a person's first name; {flags_needed} is how many admin flags remove a member.",
+  "desktop group_will_be_able_to: Desktop, group admin dialog (in group_live_view.rs, live_overlay). {name} is a person's first name; {count} is how many admin flags remove a member.",
 ]
-text = "{name} pourra inviter des personnes, signaler des membres ({flags_needed} signalements retirent quelqu’un) et désigner des hôtes. Vous seul, en tant que propriétaire, pouvez nommer ou retirer des admins."
+one = "{name} pourra inviter des personnes, signaler des membres ({count} signalement retire quelqu’un) et désigner des hôtes. Vous seul, en tant que propriétaire, pouvez nommer ou retirer des admins."
+many = "{name} pourra inviter des personnes, signaler des membres ({count} signalements retirent quelqu’un) et désigner des hôtes. Vous seul, en tant que propriétaire, pouvez nommer ou retirer des admins."
+other = "{name} pourra inviter des personnes, signaler des membres ({count} signalements retirent quelqu’un) et désigner des hôtes. Vous seul, en tant que propriétaire, pouvez nommer ou retirer des admins."
 
 [t_497c9f2f05]
 en = "Withdraw the offer to host"

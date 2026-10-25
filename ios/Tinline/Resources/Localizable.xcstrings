@@ -2454,33 +2454,99 @@
       "extractionState": "manual",
       "localizations": {
         "de": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "+%1$lld weitere"
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "+%1$lld weitere"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "+%1$lld weitere"
+                }
+              }
+            }
           }
         },
         "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "+%1$lld more"
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "+%1$lld more"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "+%1$lld more"
+                }
+              }
+            }
           }
         },
         "fi": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "+%1$lld muuta"
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "+%1$lld muu"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "+%1$lld muuta"
+                }
+              }
+            }
           }
         },
         "fr": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "+%1$lld"
+          "variations": {
+            "plural": {
+              "many": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "+%1$lld"
+                }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "+%1$lld"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "+%1$lld"
+                }
+              }
+            }
           }
         },
         "hi": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "+%1$lld और"
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "+%1$lld और"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "+%1$lld और"
+                }
+              }
+            }
           }
         }
       }
@@ -26546,109 +26612,307 @@
       }
     },
     "group_sys_removed": {
-      "comment": "System line in a group chat (the centred grey line). A named member was removed. {name} is the member, {total} the number of admin flags that remove.",
+      "comment": "System line in a group chat (the centred grey line). A named member was removed. {name} is the member, {count} how many admin flags remove a member. Same meaning as desktop \"{name} was removed after {count} admin flags\"; iOS needs {count} first in the English.",
       "extractionState": "manual",
       "localizations": {
         "de": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "%1$@ wurde nach %2$@ Admin-Markierungen entfernt"
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "%2$@ wurde nach %1$lld Admin-Markierung entfernt"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "%2$@ wurde nach %1$lld Admin-Markierungen entfernt"
+                }
+              }
+            }
           }
         },
         "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$@ was removed after %2$@ admin flags"
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "After %1$lld admin flag, %2$@ was removed"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "After %1$lld admin flags, %2$@ was removed"
+                }
+              }
+            }
           }
         },
         "fi": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "%1$@ poistettiin %2$@ ylläpitäjän merkinnän jälkeen"
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "%2$@ poistettiin %1$lld ylläpitäjän merkinnän jälkeen"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "%2$@ poistettiin %1$lld ylläpitäjän merkinnän jälkeen"
+                }
+              }
+            }
           }
         },
         "fr": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "%1$@ : retrait après %2$@ signalements d’admins"
+          "variations": {
+            "plural": {
+              "many": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "%2$@ : retrait après %1$lld signalements d’admins"
+                }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "%2$@ : retrait après %1$lld signalement d’admin"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "%2$@ : retrait après %1$lld signalements d’admins"
+                }
+              }
+            }
           }
         },
         "hi": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "%2$@ एडमिन फ़्लैग के बाद %1$@ को हटा दिया गया"
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "%1$lld एडमिन फ़्लैग के बाद %2$@ को हटा दिया गया"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "%1$lld एडमिन फ़्लैग के बाद %2$@ को हटा दिया गया"
+                }
+              }
+            }
           }
         }
       }
     },
     "group_sys_removed_someone": {
-      "comment": "System line in a group chat (the centred grey line). A member whose name is unknown was removed. {total} is the number of admin flags that remove.",
+      "comment": "System line in a group chat (the centred grey line). A member whose name is unknown was removed. {count} is how many admin flags remove a member.",
       "extractionState": "manual",
       "localizations": {
         "de": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Jemand wurde nach %1$@ Admin-Markierungen entfernt"
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Jemand wurde nach %1$lld Admin-Markierung entfernt"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Jemand wurde nach %1$lld Admin-Markierungen entfernt"
+                }
+              }
+            }
           }
         },
         "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Someone was removed after %1$@ admin flags"
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Someone was removed after %1$lld admin flag"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Someone was removed after %1$lld admin flags"
+                }
+              }
+            }
           }
         },
         "fi": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Eräs jäsen poistettiin %1$@ ylläpitäjän merkinnän jälkeen"
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Eräs jäsen poistettiin %1$lld ylläpitäjän merkinnän jälkeen"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Eräs jäsen poistettiin %1$lld ylläpitäjän merkinnän jälkeen"
+                }
+              }
+            }
           }
         },
         "fr": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Un membre a été retiré après %1$@ signalements d’admins"
+          "variations": {
+            "plural": {
+              "many": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Un membre a été retiré après %1$lld signalements d’admins"
+                }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Un membre a été retiré après %1$lld signalement d’admin"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Un membre a été retiré après %1$lld signalements d’admins"
+                }
+              }
+            }
           }
         },
         "hi": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "%1$@ एडमिन फ़्लैग के बाद किसी सदस्य को हटा दिया गया"
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "%1$lld एडमिन फ़्लैग के बाद किसी सदस्य को हटा दिया गया"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "%1$lld एडमिन फ़्लैग के बाद किसी सदस्य को हटा दिया गया"
+                }
+              }
+            }
           }
         }
       }
     },
     "group_sys_removed_you": {
-      "comment": "System line: the user was removed. {total} is the number of flags that remove.",
+      "comment": "System line: the user was removed. {count} is how many admin flags remove a member.",
       "extractionState": "manual",
       "localizations": {
         "de": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Du wurdest nach %1$@ Admin-Markierungen entfernt"
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Du wurdest nach %1$lld Admin-Markierung entfernt"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Du wurdest nach %1$lld Admin-Markierungen entfernt"
+                }
+              }
+            }
           }
         },
         "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "You were removed after %1$@ admin flags"
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "You were removed after %1$lld admin flag"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "You were removed after %1$lld admin flags"
+                }
+              }
+            }
           }
         },
         "fi": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Sinut poistettiin %1$@ ylläpitäjän merkinnän jälkeen"
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Sinut poistettiin %1$lld ylläpitäjän merkinnän jälkeen"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Sinut poistettiin %1$lld ylläpitäjän merkinnän jälkeen"
+                }
+              }
+            }
           }
         },
         "fr": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Vous avez été retiré après %1$@ signalements d’admins"
+          "variations": {
+            "plural": {
+              "many": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Vous avez été retiré après %1$lld signalements d’admins"
+                }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Vous avez été retiré après %1$lld signalement d’admin"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Vous avez été retiré après %1$lld signalements d’admins"
+                }
+              }
+            }
           }
         },
         "hi": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "%1$@ एडमिन फ़्लैग के बाद आपको हटा दिया गया"
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "%1$lld एडमिन फ़्लैग के बाद आपको हटा दिया गया"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "%1$lld एडमिन फ़्लैग के बाद आपको हटा दिया गया"
+                }
+              }
+            }
           }
         }
       }
@@ -52430,37 +52694,103 @@
       }
     },
     "shell_restore_bad_many": {
-      "comment": "Restore screen message. {n} is the first wrong word’s position, {more} how many other words are also wrong.",
+      "comment": "Restore screen message under the 24 word boxes. {count} is how many typed words are not recovery words (always 2 or more); {number} is the position (1 to 24) of the first one.",
       "extractionState": "manual",
       "localizations": {
         "de": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Wort %1$@ und %2$@ weitere stehen nicht in der Liste der Wiederherstellungswörter. Prüf die Schreibweise."
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "%1$lld Wort steht nicht in der Liste der Wiederherstellungswörter, ab Wort %2$@. Prüf die Schreibweise."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "%1$lld Wörter stehen nicht in der Liste der Wiederherstellungswörter, ab Wort %2$@. Prüf die Schreibweise."
+                }
+              }
+            }
           }
         },
         "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Word %1$@ and %2$@ more aren’t in the recovery word list. Check the spelling."
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%1$lld words aren’t in the recovery word list, starting with word %2$@. Check the spelling."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%1$lld words aren’t in the recovery word list, starting with word %2$@. Check the spelling."
+                }
+              }
+            }
           }
         },
         "fi": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Sana %1$@ ja %2$@ muuta eivät ole palautussanojen listassa. Tarkista kirjoitusasu."
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "%1$lld sana ei ole palautussanojen listassa, alkaen sanasta %2$@. Tarkista kirjoitusasu."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "%1$lld sanaa ei ole palautussanojen listassa, alkaen sanasta %2$@. Tarkista kirjoitusasu."
+                }
+              }
+            }
           }
         },
         "fr": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Le mot %1$@ et %2$@ de plus ne sont pas dans la liste des mots de récupération. Vérifiez l’orthographe."
+          "variations": {
+            "plural": {
+              "many": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "%1$lld mots ne sont pas dans la liste des mots de récupération, à partir du mot %2$@. Vérifiez l’orthographe."
+                }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "%1$lld mot n’est pas dans la liste des mots de récupération, à partir du mot %2$@. Vérifiez l’orthographe."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "%1$lld mots ne sont pas dans la liste des mots de récupération, à partir du mot %2$@. Vérifiez l’orthographe."
+                }
+              }
+            }
           }
         },
         "hi": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "शब्द %1$@ और %2$@ दूसरे शब्द रिकवरी शब्दों की सूची में नहीं हैं। वर्तनी जाँचें।"
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "शब्द %2$@ समेत %1$lld शब्द रिकवरी शब्दों की सूची में नहीं है। वर्तनी जाँचें।"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "शब्द %2$@ समेत %1$lld शब्द रिकवरी शब्दों की सूची में नहीं हैं। वर्तनी जाँचें।"
+                }
+              }
+            }
           }
         }
       }

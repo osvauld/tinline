@@ -972,10 +972,14 @@ text = "Envoyer la demande"
 text = "Quelqu’un"
 
 [group_sys_removed_you]
-text = "Vous avez été retiré après {total} signalements d’admins"
+one = "Vous avez été retiré après {count} signalement d’admin"
+many = "Vous avez été retiré après {count} signalements d’admins"
+other = "Vous avez été retiré après {count} signalements d’admins"
 
 [group_sys_removed]
-text = "{name} : retrait après {total} signalements d’admins"
+one = "{name} : retrait après {count} signalement d’admin"
+many = "{name} : retrait après {count} signalements d’admins"
+other = "{name} : retrait après {count} signalements d’admins"
 
 [group_sys_host_added_you]
 text = "Un de vos appareils héberge maintenant le groupe"
@@ -3122,7 +3126,9 @@ text = "Solide"
 text = "Le mot {n} n’est pas dans la liste des mots de récupération. Vérifiez l’orthographe."
 
 [shell_restore_bad_many]
-text = "Le mot {n} et {more} de plus ne sont pas dans la liste des mots de récupération. Vérifiez l’orthographe."
+one = "{count} mot n’est pas dans la liste des mots de récupération, à partir du mot {number}. Vérifiez l’orthographe."
+many = "{count} mots ne sont pas dans la liste des mots de récupération, à partir du mot {number}. Vérifiez l’orthographe."
+other = "{count} mots ne sont pas dans la liste des mots de récupération, à partir du mot {number}. Vérifiez l’orthographe."
 
 [shell_restore_missing]
 one = "Il manque encore {count} mot."
@@ -4245,7 +4251,9 @@ many = "{count} personnes dans l’appel"
 other = "{count} personnes dans l’appel"
 
 [call_group_more]
-text = "+{count}"
+one = "+{count}"
+many = "+{count}"
+other = "+{count}"
 
 [call_ok]
 text = "OK"
@@ -4443,7 +4451,9 @@ text = "{name} a quitté le groupe"
 text = "Quelqu’un a quitté le groupe"
 
 [group_sys_removed_someone]
-text = "Un membre a été retiré après {total} signalements d’admins"
+one = "Un membre a été retiré après {count} signalement d’admin"
+many = "Un membre a été retiré après {count} signalements d’admins"
+other = "Un membre a été retiré après {count} signalements d’admins"
 
 [group_sys_admin_you_you]
 text = "Vous vous êtes donné le rôle d’admin"

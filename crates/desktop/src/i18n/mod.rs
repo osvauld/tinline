@@ -63,11 +63,6 @@ pub fn set_language(tag: &str) {
     }
 }
 
-pub fn is_rtl() -> bool {
-    let lang = language();
-    LANGUAGES.iter().any(|(t, _, rtl)| *t == lang && *rtl)
-}
-
 fn lookup(lang: &str, key: &str) -> Option<Msg> {
     strings::get(lang, key).or_else(|| if lang == SOURCE { None } else { strings::get(SOURCE, key) })
 }

@@ -1656,7 +1656,9 @@ text = "Pourquoi ce retrait ?"
 text = "Pourquoi vous avez été retiré"
 
 [group_will_be_able_to]
-text = "{name} pourra inviter des personnes, signaler des membres ({flags_needed} signalements retirent quelqu’un) et désigner des hôtes. Vous seul, en tant que propriétaire, pouvez nommer ou retirer des admins."
+one = "{name} pourra inviter des personnes, signaler des membres ({count} signalement retire quelqu’un) et désigner des hôtes. Vous seul, en tant que propriétaire, pouvez nommer ou retirer des admins."
+many = "{name} pourra inviter des personnes, signaler des membres ({count} signalements retirent quelqu’un) et désigner des hôtes. Vous seul, en tant que propriétaire, pouvez nommer ou retirer des admins."
+other = "{name} pourra inviter des personnes, signaler des membres ({count} signalements retirent quelqu’un) et désigner des hôtes. Vous seul, en tant que propriétaire, pouvez nommer ou retirer des admins."
 
 [group_withdraw_the_offer_to]
 text = "Retirer la proposition d’hébergement"
