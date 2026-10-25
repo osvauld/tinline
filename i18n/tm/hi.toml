@@ -16115,368 +16115,368 @@ en = "Choose a chat"
 where = [
   "desktop shell_choose_a_chat: Desktop, shell: sidebar, search, contacts (in shell_view.rs, shell_empty_detail).",
 ]
-text = ""
+text = "कोई चैट चुनें"
 
 [t_8456b9462d]
 en = "Messages stay on your devices."
 where = [
   "desktop shell_messages_stay_on_your: Desktop, shell: sidebar, search, contacts (in shell_view.rs, shell_empty_detail).",
 ]
-text = ""
+text = "संदेश आपके डिवाइस पर रहते हैं।"
 
 [t_2511179a74]
 en = "More messages"
 where = [
   "desktop shell_more_messages: Desktop, shell: sidebar, search, contacts (in shell_view.rs, shell_search_results).",
 ]
-text = ""
+text = "और संदेश"
 
 [t_5b37e08e60]
 en = "No contact called “{trim}”."
 where = [
   "desktop shell_no_contact_called: Desktop, shell: sidebar, search, contacts (in shell_view.rs, new_chat_overlay). {trim} is a value filled in by the app.",
 ]
-text = ""
+text = "“{trim}” नाम का कोई संपर्क नहीं है।"
 
 [t_998b1844f6]
 en = "No messages match"
 where = [
   "desktop shell_no_messages_match: Desktop, shell: sidebar, search, contacts (in shell_view.rs, shell_search_results).",
 ]
-text = ""
+text = "कोई संदेश मेल नहीं खाता"
 
 [t_7278323591]
 en = "No one called “{trim}” in your contacts."
 where = [
   "desktop shell_no_one_called_in: Desktop, shell: sidebar, search, contacts (in shell_view.rs, contacts_list). {trim} is a value filled in by the app.",
 ]
-text = ""
+text = "आपके संपर्कों में “{trim}” नाम का कोई नहीं है।"
 
 [t_a878978527]
 en = "Scan a code or paste an invite"
 where = [
   "desktop shell_scan_a_code_or: Desktop, shell: sidebar, search, contacts (in shell_view.rs, new_chat_overlay).",
 ]
-text = ""
+text = "कोड स्कैन करें या आमंत्रण पेस्ट करें"
 
 [t_f4e09c2bbf]
 en = "Search (Ctrl+K)"
 where = [
   "desktop shell_search_ctrl_k: Desktop, shell: sidebar, search, contacts (in shell_view.rs, desktop_search_field).",
 ]
-text = ""
+text = "खोजें (Ctrl+K)"
 
 [t_f7a95b3438]
 en = "Searching…"
 where = [
   "desktop shell_searching: Desktop, shell: sidebar, search, contacts (in shell_view.rs, shell_search_results).",
 ]
-text = ""
+text = "खोज जारी है…"
 
 [t_09334bda23]
 en = "WAITING FOR THEM"
 where = [
   "desktop shell_waiting_for_them: Desktop, shell: sidebar, search, contacts (in shell_view.rs, contacts_list).",
 ]
-text = ""
+text = "उनके जवाब का इंतज़ार"
 
 [t_83e7098628]
 en = "WAITING FOR YOU"
 where = [
   "desktop shell_waiting_for_you: Desktop, shell: sidebar, search, contacts (in shell_view.rs, contacts_list).",
 ]
-text = ""
+text = "आपके जवाब का इंतज़ार"
 
 [t_977fda7ea5]
 en = "A lock, so only you can open Tinline on this computer."
 where = [
   "desktop signup_a_lock_so_only: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "एक ताला, ताकि इस कंप्यूटर पर Tinline सिर्फ़ आप खोल सकें।"
 
 [t_1f0d4d7cb3]
 en = "Add {name}"
 where = [
   "desktop signup_add: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} को जोड़ें"
 
 [t_cbe48ef105]
 en = "Add another name"
 where = [
   "desktop signup_add_another_name: Desktop, sign-up, restore and add contact (in signup_view.rs, open_as_menu).",
 ]
-text = ""
+text = "एक और नाम जोड़ें"
 
 [t_cfe61741af]
 en = " and have read the "
 where = [
   "desktop signup_and_have_read_the: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = " से सहमत होते हैं और आपने यह पढ़ ली है: "
 
 [t_4630a76192]
 en = "Couldn’t make a new code just now. Try again in a moment."
 where = [
   "desktop signup_couldnt_make_a_new: Desktop, sign-up, restore and add contact (in signup.rs, gate_update).",
 ]
-text = ""
+text = "अभी नया कोड नहीं बन पाया। थोड़ी देर में फिर से कोशिश करें।"
 
 [t_5e800d7c99]
 en = "Create a new account or bring one you already have."
 where = [
   "desktop signup_create_a_new_account: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "नया खाता बनाएँ या अपना मौजूदा खाता लाएँ।"
 
 [t_0af5893864]
 en = "Encrypts your account on this computer. You type it each time Tinline starts. If you forget it, your recovery words let you set a new one."
 where = [
   "desktop signup_encrypts_your_account_on: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "इस कंप्यूटर पर आपके खाते को एन्क्रिप्ट करता है। Tinline शुरू होने पर हर बार आप इसे टाइप करेंगे। अगर आप इसे भूल जाएँ, तो रिकवरी शब्दों से नया रख सकते हैं।"
 
 [t_c89a3beeba]
 en = "Groups are hosted on a computer. Keep Tinline open and your groups stay reachable."
 where = [
   "desktop signup_groups_are_hosted_on: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "ग्रुप कंप्यूटर पर होस्ट होते हैं। Tinline खुला रखें, तो आपके ग्रुप पहुँच में रहेंगे।"
 
 [t_51feac3631]
 en = "Home computer"
 where = [
   "desktop signup_home_computer: Desktop, sign-up, restore and add contact (in signup.rs, gate_created).",
 ]
-text = ""
+text = "घर का कंप्यूटर"
 
 [t_a62ba0b2eb]
 en = "If you ever switch devices, these 24 words bring your account along."
 where = [
   "desktop signup_if_you_ever_switch: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "अगर आप कभी डिवाइस बदलें, तो ये 24 शब्द आपका खाता साथ ले आते हैं।"
 
 [t_60e00617a2]
 en = "Is this the {name} you expected? If you’re not sure, check with them first."
 where = [
   "desktop signup_is_this_the_you: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "क्या ये वही {name} हैं जिनकी आपको उम्मीद थी? अगर पक्का नहीं है, तो पहले उनसे पूछ लें।"
 
 [t_01a5bbebc5]
 en = "Laptop"
 where = [
   "desktop signup_laptop: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "लैपटॉप"
 
 [t_118c865bad]
 en = "Message {value}"
 where = [
   "desktop signup_message_2: Desktop, sign-up, restore and add contact (in signup_view.rs, empty_hero). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "{value} को संदेश भेजें"
 
 [t_b265bd4d52]
 en = "{count} of {total}"
 where = [
   "desktop signup_of: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_head). {count} is a number. {total} is a value filled in by the app.",
 ]
-text = ""
+text = "{total} में से {count}"
 
 [t_874cf4e616]
 en = "Optional. A lock, so only you can open Tinline on this computer."
 where = [
   "desktop signup_optional_a_lock_so: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "ज़रूरी नहीं। एक ताला, ताकि इस कंप्यूटर पर Tinline सिर्फ़ आप खोल सकें।"
 
 [t_2f46bf8b88]
 en = "Paste it somewhere safe. A password manager works great."
 where = [
   "desktop signup_paste_it_somewhere_safe: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "इसे किसी सुरक्षित जगह पेस्ट करें। पासवर्ड मैनेजर बढ़िया रहता है।"
 
 [t_73f6fcb372]
 en = "Save a copy somewhere safe. Paper works great."
 where = [
   "desktop signup_save_a_copy_somewhere: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "इनकी एक कॉपी किसी सुरक्षित जगह रखें। कागज़ बढ़िया रहता है।"
 
 [t_90efd61b03]
 en = "Say hello to {value} whenever you like."
 where = [
   "desktop signup_say_hello_to_whenever: Desktop, sign-up, restore and add contact (in signup_view.rs, empty_hero). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "जब मन करे, {value} को नमस्ते कहें।"
 
 [t_7e31fba9bb]
 en = "Send it to anyone you’d like to talk to, in any app. It works until {value}."
 where = [
   "desktop signup_send_it_to_anyone_youd: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "इसे किसी भी ऐप में उस व्यक्ति को भेजें जिससे आप बात करना चाहते हैं। यह {value} तक काम करता है।"
 
 [t_e42886dfd5]
 en = "That code from {value} has expired. Codes last 7 days, so ask them for a fresh one."
 where = [
   "desktop signup_that_code_from_has: Desktop, sign-up, restore and add contact (in signup.rs, ac_pasted). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "{value} के उस कोड की समय-सीमा खत्म हो गई है। कोड 7 दिन चलते हैं, इसलिए उनसे नया कोड माँगें।"
 
 [t_c26085963d]
 en = "This computer can host your groups"
 where = [
   "desktop signup_this_computer_can_host: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "यह कंप्यूटर आपके ग्रुप होस्ट कर सकता है"
 
 [t_a356e70e97]
 en = "Tinline connects your {noun} straight to theirs."
 where = [
   "desktop signup_tinline_connects_your_straight: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {noun} is the word for this device kind (e.g. computer).",
 ]
-text = ""
+text = "Tinline आपके {noun} को सीधे उनके डिवाइस से जोड़ता है।"
 
 [t_11ee2c617b]
 en = "Type your 24 recovery words. This {noun} starts with an empty contact list."
 where = [
   "desktop signup_type_your_24_recovery: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {noun} is the word for this device kind (e.g. computer).",
 ]
-text = ""
+text = "अपने 24 रिकवरी शब्द टाइप करें। यह {noun} खाली संपर्क सूची से शुरू होगा।"
 
 [t_3b93466452]
 en = "Type your 24 words in order, or paste them, or your recovery key, into the first box. They stay on this {noun}."
 where = [
   "desktop signup_type_your_24_words: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {noun} is the word for this device kind (e.g. computer).",
 ]
-text = ""
+text = "अपने 24 शब्द क्रम से टाइप करें, या उन्हें या अपनी रिकवरी कुंजी पहले बॉक्स में पेस्ट करें। ये इसी {noun} पर रहते हैं।"
 
 [t_89cb7b48e0]
 en = "Use your phone to reach emergency services."
 where = [
   "desktop signup_use_your_phone_to: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "इमरजेंसी सेवाओं तक पहुँचने के लिए अपना फ़ोन इस्तेमाल करें।"
 
 [t_636ae913d6]
 en = "Word {value}{value2} {value3} in the recovery word list. Check the spelling."
 where = [
   "desktop signup_word_in_the_recovery: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {value} is a value filled in by the app. {value2} is a value filled in by the app. {value3} is a value filled in by the app.",
 ]
-text = ""
+text = "शब्द {value}{value2} रिकवरी शब्दों की सूची में {value3}। वर्तनी जाँचें।"
 
 [t_a311c6ef10]
 en = "{filled} words are still missing."
 where = [
   "desktop signup_words_are_still_missing: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {filled} is a value filled in by the app.",
 ]
-text = ""
+text = "{filled} शब्द अभी बाकी हैं।"
 
 [t_50284ec479]
 en = "Work computer"
 where = [
   "desktop signup_work_computer: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "काम का कंप्यूटर"
 
 [t_d00ea827d7]
 en = "You just need a nickname. Encrypted end to end."
 where = [
   "desktop signup_you_just_need_a: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "बस एक निकनेम चाहिए। एंड-टू-एंड एन्क्रिप्टेड।"
 
 [t_bfd0aa5282]
 en = "{value} You type it each time Tinline starts. If you forget it, your recovery words let you set a new one."
 where = [
   "desktop signup_you_type_it_each: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "{value} Tinline शुरू होने पर हर बार आप इसे टाइप करेंगे। अगर आप इसे भूल जाएँ, तो रिकवरी शब्दों से नया रख सकते हैं।"
 
 [t_2e013de2a8]
 en = "Your account is its recovery phrase, so you can bring it to this {noun} two ways."
 where = [
   "desktop signup_your_account_is_its: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {noun} is the word for this device kind (e.g. computer).",
 ]
-text = ""
+text = "आपका खाता उसके रिकवरी शब्दों में है, इसलिए आप इसे इस {noun} पर दो तरह से ला सकते हैं।"
 
 [t_50700bde54]
 en = "Your current account stays on this {noun}."
 where = [
   "desktop signup_your_current_account_stays: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {noun} is the word for this device kind (e.g. computer).",
 ]
-text = ""
+text = "आपका अभी का खाता इस {noun} पर बना रहेगा।"
 
 [t_10e5979f60]
 en = "Your recovery key is in. It stays on this {noun}."
 where = [
   "desktop signup_your_recovery_key_is: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {noun} is the word for this device kind (e.g. computer).",
 ]
-text = ""
+text = "आपकी रिकवरी कुंजी आ गई है। यह इसी {noun} पर रहती है।"
 
 [t_75ff90b9e6]
 en = "Your recovery key is the same as your 24 words, as one line."
 where = [
   "desktop signup_your_recovery_key_is_the: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "आपकी रिकवरी कुंजी आपके 24 शब्द ही हैं, एक लाइन में।"
 
 [t_be60e742e9]
 en = "Your request to {value} is waiting. Your line opens when they accept."
 where = [
   "desktop signup_your_request_to_is: Desktop, sign-up, restore and add contact (in signup_view.rs, empty_hero). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "{value} को भेजा आपका अनुरोध इंतज़ार में है। उनके स्वीकार करते ही आपकी लाइन खुल जाएगी।"
 
 [t_23aa6f9dd7]
 en = "Quit"
 where = [
   "desktop tray_quit: Desktop, system tray (in tray.rs, build).",
 ]
-text = ""
+text = "बंद करें"
 
 [t_a8432fcc64]
 en = "Tinline - {status}"
 where = [
   "desktop tray_tinline: Desktop, system tray (in tray.rs, refresh). {status} is a value filled in by the app.",
 ]
-text = ""
+text = "Tinline - {status}"
 
 [t_82d3373306]
 en = "Camera: {error}"
 where = [
   "desktop video_camera: Desktop, video (in vcall.rs, video_update). {error} is the underlying error text, not translated.",
 ]
-text = ""
+text = "कैमरा: {error}"
 
 [t_fe64fb27a3]
 en = "Video tuning: {error}"
 where = [
   "desktop video_video_tuning: Desktop, video (in vcall.rs, video_update). {error} is the underlying error text, not translated.",
 ]
-text = ""
+text = "वीडियो ट्यूनिंग: {error}"
 
 [t_d7ef28d854]
 en = "Your chosen camera isn't connected. Pick one in Settings → Video."
 where = [
   "desktop video_your_chosen_camera_isnt: Desktop, video (in vcall.rs, found).",
 ]
-text = ""
+text = "आपका चुना हुआ कैमरा जुड़ा नहीं है। सेटिंग → वीडियो में कोई कैमरा चुनें।"
 
 [t_4d707b1137]
 en = "System default"
 where = [
   "desktop app_system_default: Entry at the top of the microphone, speaker and camera pick lists: use the system default device.",
 ]
-text = ""
+text = "सिस्टम डिफ़ॉल्ट"
 
 [t_cf682df833]
 en = "This computer has no secure keyring, so Tinline needs a passphrase to protect your account."
 where = [
   "desktop app_no_secure_keyring: Shown when this computer has no secure keyring, so a passphrase is required.",
 ]
-text = ""
+text = "इस कंप्यूटर में सुरक्षित कीरिंग नहीं है, इसलिए आपके खाते को सुरक्षित रखने के लिए Tinline को पासफ़्रेज़ चाहिए।"
