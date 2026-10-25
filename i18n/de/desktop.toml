@@ -93,9 +93,6 @@ text = "Schlüssel kopieren"
 [common_copy_recovery_phrase]
 text = "Wiederherstellungswörter kopieren"
 
-[common_couldnt_connect]
-text = "Keine Verbindung"
-
 [common_current_passphrase]
 text = "Aktuelle Passphrase"
 
@@ -252,12 +249,6 @@ text = "Foto · {value}"
 [common_privacy]
 text = "Privatsphäre"
 
-[common_reconnecting]
-text = "Neu verbinden"
-
-[common_reconnecting_2]
-text = "Neu verbinden…"
-
 [common_recovery_phrase]
 text = "Wiederherstellungswörter"
 
@@ -402,9 +393,6 @@ text = "Gib zuerst einen Namen ein"
 [app_enter_your_name_and]
 text = "Gib deinen Namen und deine Wiederherstellungswörter ein"
 
-[app_ev]
-text = "Ev"
-
 [app_invited_you_to_the]
 text = "{value} hat dich in die Gruppe eingeladen"
 
@@ -534,9 +522,6 @@ text = "Auf einem anderen Gerät abgelehnt"
 [call_device_changes_apply_from]
 text = "Geräteänderungen gelten ab dem nächsten Anruf."
 
-[call_during_your_call]
-text = "während deines Anrufs"
-
 [call_end]
 text = "Auflegen"
 
@@ -552,9 +537,6 @@ text = "Ende-zu-Ende-verschlüsselt."
 [call_end_to_end_encrypted_ctrl]
 text = "Ende-zu-Ende-verschlüsselt · Strg M stumm · Strg E auflegen · Esc verkleinert"
 
-[call_ends_your_call_with]
-text = "Beendet deinen Anruf mit"
-
 [call_enter_answers_esc_declines]
 text = "Enter nimmt an · Esc lehnt ab"
 
@@ -569,9 +551,6 @@ text = "HD"
 
 [call_ignore_limits_heat_their]
 text = "Grenzen ignorieren (Wärme, Decoder der Gegenseite)"
-
-[call_is_calling_you]
-text = "ruft dich an"
 
 [call_minimize_call]
 text = "Anruf verkleinern"
@@ -609,9 +588,6 @@ text = "Video startet…"
 [call_stats_for_nerds]
 text = "Werte für Technikfans"
 
-[call_text]
-text = "{day} {value}"
-
 [call_the_connection_dropped_for]
 text = "Die Verbindung war kurz weg. Tinline sucht einen Weg zurück zu {name}."
 
@@ -623,9 +599,6 @@ text = "Video der Gegenseite"
 
 [call_these_apply_to_this]
 text = "Das gilt jetzt für diesen Anruf. Einstellungen > Video legt den nächsten Anruf fest."
-
-[call_unknown]
-text = "Unbekannt"
 
 [call_video_is_starting]
 text = "Video startet…"
@@ -818,7 +791,7 @@ text = "Gelesen auf dem Gerät von {name}"
 text = "Antworten"
 
 [chat_replying_to]
-text = "Antwort an {value}"
+text = "Antwort an {name}"
 
 [chat_return_to_call]
 text = "Zurück zum Anruf"
@@ -866,7 +839,7 @@ text = "Wartet auf Verbindung"
 text = "Wartet auf Bestätigung vom Gerät von {name}"
 
 [chat_you_blocked]
-text = "Du hast {name} blockiert{when}"
+text = "Du hast {name} blockiert"
 
 [chat_you_deleted_this_message]
 text = "Du hast diese Nachricht gelöscht"
@@ -997,9 +970,6 @@ text = "Der Akku ist schwach oder der Computer heiß. Das Hosten ist eingeschrä
 [gcall_call_ended_host_lost]
 text = "Anruf beendet – Host weg"
 
-[gcall_call_host]
-text = "Anruf-Host: {host}"
-
 [gcall_connecting]
 text = "Verbinden…"
 
@@ -1015,9 +985,6 @@ text = "Gruppenanruf"
 [gcall_is_calling_the_group]
 text = "{value} ruft die Gruppe an"
 
-[gcall_is_carrying]
-text = "trägt"
-
 [gcall_no_call_host_available]
 text = "Kein Anruf-Host verfügbar"
 
@@ -1025,25 +992,14 @@ text = "Kein Anruf-Host verfügbar"
 text = "Bisher nur du. Wartet auf andere."
 
 [gcall_people_in_the_call]
-text = "{count} Personen im Anruf"
-
-[gcall_s_device]
-text = "Gerät von {value}"
+one = "{count} Person im Anruf"
+other = "{count} Personen im Anruf"
 
 [gcall_started_a_call]
 text = "{name} hat einen Anruf gestartet"
 
 [gcall_started_by]
 text = "Gestartet von {value}"
-
-[gcall_the_call_host]
-text = "Das Host-Gerät"
-
-[gcall_this_call_everyone_in]
-text = " {value} diesen Anruf. Alle im Anruf verbinden sich damit; es gibt den Ton weiter und wählt aus, wer zu hören ist, wenn mehrere sprechen."
-
-[gcall_this_computer]
-text = "dieser Computer"
 
 [gcall_your_connection_to_the]
 text = "Deine Verbindung zum Anruf-Host ist verschlüsselt, aber der Anruf-Host selbst bekommt den Ton, kann diesen Anruf also hören. Du vertraust ihm beim Anruf so, wie du einem Chat-Host Beiträge anvertraust."
@@ -1055,7 +1011,7 @@ text = "Du bist schon in einem Anruf."
 text = "Du bist der Anruf-Host"
 
 [group_a_call_host_carries]
-text = "Ein Anruf-Host trägt den Anruf. Alle im Anruf verbinden sich mit ihm, und er gibt den Ton weiter, kann den Anruf also hören. Das ist getrennt vom Chat-Hosten: Ein Chat-Host ist kein Anruf-Host, außer du legst ihn auch als solchen fest. Anruf-Hosts sind Mitglieder, denen du vertraust, und jeder entscheidet selbst, ob er zusagt.{value}"
+text = "Ein Anruf-Host trägt den Anruf. Alle im Anruf verbinden sich mit ihm, und er gibt den Ton weiter, kann den Anruf also hören. Das ist getrennt vom Chat-Hosten: Ein Chat-Host ist kein Anruf-Host, außer du legst ihn auch als solchen fest. Anruf-Hosts sind Mitglieder, denen du vertraust, und jeder entscheidet selbst, ob er zusagt."
 
 [group_a_call_host_is]
 text = "Ein Anruf-Host ist ein Computer oder Handy eines Mitglieds und trägt den Anruf. Ein Admin kann ihn in der Gruppeninfo festlegen."
@@ -1081,14 +1037,8 @@ text = "Ein Host listet bis zu {value} Personen auf einmal, es können also mehr
 [group_a_host_stays_on]
 text = "Ein Host bleibt an und gibt Beiträge weiter, während andere offline sind"
 
-[group_a_link_for_your]
-text = "Ein Link für dein eigenes anderes Gerät"
-
 [group_a_link_that_doesnt]
 text = "Ein Link, der nicht abläuft"
-
-[group_a_message]
-text = "eine Nachricht"
 
 [group_a_private_invite_to]
 text = "Eine private Einladung an jede Person"
@@ -1117,14 +1067,8 @@ text = "Schon Mitglied"
 [group_also_confirmed]
 text = "Auch bestätigt: {value}"
 
-[group_also_hosts_calls]
-text = " · hostet auch Anrufe"
-
 [group_an_admin_asked_this]
 text = "Ein Admin hat diesen Computer gebeten, die Anrufe der Gruppe zu tragen"
-
-[group_and]
-text = "{value} und {last}"
 
 [group_anyone_holding_the_link]
 text = "Wer den Link hat, kann beitreten, ohne Einladung und ohne Ablaufdatum. Teile ihn dort, wo Leute die Gruppe finden sollen."
@@ -1153,9 +1097,6 @@ text = "{name} um einen privaten Chat bitten"
 [group_asked_the_device_carries]
 text = "Gefragt. Das Gerät trägt Anrufe, sobald es zustimmt."
 
-[group_asked_this_computer_to]
-text = "{value} bittet diesen Computer, {name} zu hosten"
-
 [group_asks_to_carry_group]
 text = "Bittet {name}, auf diesem Gerät Gruppenanrufe zu tragen; die Person muss zustimmen"
 
@@ -1163,7 +1104,7 @@ text = "Bittet {name}, auf diesem Gerät Gruppenanrufe zu tragen; die Person mus
 text = "{name} blockieren"
 
 [group_blocked]
-text = " · Blockiert"
+text = "Blockiert"
 
 [group_blocked_2]
 text = "Blockiert {value}"
@@ -1219,9 +1160,6 @@ text = "Alle können wieder posten."
 
 [group_everyone_in_the_group]
 text = "Alle in der Gruppe können posten"
-
-[group_flag]
-text = " · {value} Markierung"
 
 [group_flag_2]
 text = "Markierung"
@@ -1285,11 +1223,11 @@ other = "{count} Hosts"
 text = "Hostet, sobald {name} auf dem Gerät zustimmt; am besten ein Computer, der an bleibt"
 
 [group_hosts_online]
-one = "{count} Host online{extra}. Beiträge gehen sofort raus."
-other = "{count} Hosts online{extra}. Beiträge gehen sofort raus."
+one = "{count} Host online. Beiträge gehen sofort raus."
+other = "{count} Hosts online. Beiträge gehen sofort raus."
 
 [group_hosts_store_the_group]
-text = "Hosts speichern die Gruppe und geben Beiträge weiter, wenn andere offline sind. Es sind Mitglieder, denen du vertraust: Ein Host kann alles lesen, was in dieser Gruppe gepostet wird.{value}"
+text = "Hosts speichern die Gruppe und geben Beiträge weiter, wenn andere offline sind. Es sind Mitglieder, denen du vertraust: Ein Host kann alles lesen, was in dieser Gruppe gepostet wird."
 
 [group_if_accepts_you_can]
 text = "Wenn {name} annimmt, könnt ihr euch direkt schreiben. Anrufe bleiben aus, bis einer von euch sie erlaubt."
@@ -1310,16 +1248,14 @@ text = "Kontakte einladen"
 text = "Einladungslink für {gname}"
 
 [group_invite_people]
-text = "{len} Personen einladen"
+one = "{count} Person einladen"
+other = "{count} Personen einladen"
 
 [group_invite_valid_until]
 text = "Einladung gültig bis {value}"
 
-[group_invited_by]
-text = " · eingeladen von {b}"
-
 [group_invited_by_2]
-text = "Eingeladen von {value}"
+text = "Eingeladen von {name}"
 
 [group_invited_not_delivered_yet]
 text = "Eingeladen · noch nicht zugestellt"
@@ -1329,9 +1265,6 @@ text = "Eingeladen · wartet"
 
 [group_invited_waiting_for_an]
 text = "Eingeladen · wartet auf Antwort"
-
-[group_invited_you_to]
-text = " hat dich eingeladen: "
 
 [group_invites]
 text = "Einladungen"
@@ -1454,12 +1387,6 @@ text = "Niemand ist blockiert. Um jemanden zu blockieren, öffne die Person unte
 [group_not_yet]
 text = "Noch nicht"
 
-[group_of_flags]
-text = " · {flags} von {flags_needed} Markierungen"
-
-[group_of_flags_2]
-text = " · {flags} von {value} Markierungen"
-
 [group_offered_to_host]
 text = "Bietet Hosten an"
 
@@ -1498,9 +1425,6 @@ text = "Öffnet euren Chat"
 
 [group_owner]
 text = "Eigentümer"
-
-[group_owner_2]
-text = "{inviter} · Eigentümer {owner}"
 
 [group_paste_an_invite_link]
 text = "Einladungslink einfügen"
@@ -1568,9 +1492,6 @@ text = "Ältere Nachrichten zeigen"
 [group_since]
 text = "Seit {value}"
 
-[group_someone_who_isnt_in]
-text = "jemandem, der nicht in deinen Kontakten ist"
-
 [group_start_group_call]
 text = "Gruppenanruf starten"
 
@@ -1603,9 +1524,6 @@ text = "Hosten auf diesem Computer beenden"
 
 [group_text]
 text = "{label}: {value}"
-
-[group_text_2]
-text = "{what} · {value}"
 
 [group_that_device_no_longer]
 text = "Dieses Gerät trägt die Anrufe dieser Gruppe nicht mehr."
@@ -1658,9 +1576,6 @@ text = "Dieser Computer trägt die Anrufe dieser Gruppe nicht mehr."
 [group_this_computer_stops_passing]
 text = "Dieser Computer gibt die Nachrichten der Gruppe nicht mehr weiter. Du bleibst Mitglied."
 
-[group_this_computer_too]
-text = ", auch dieser Computer"
-
 [group_this_device_agreed_to]
 text = "Dieses Gerät hat dem Hosten zugestimmt. Es hostet, sobald ein Admin es festgelegt hat."
 
@@ -1672,12 +1587,6 @@ text = "Diese Gruppe hat keinen Anruf-Host. Anrufe starten erst, wenn ein Admin 
 
 [group_this_group_has_no_host]
 text = "Diese Gruppe hat keinen Host. Beiträge warten, bis ein Host festgelegt ist."
-
-[group_this_member]
-text = "dieses Mitglied"
-
-[group_turn_on_open_link]
-text = "Schalte den offenen Link ein, um ihn zu teilen"
 
 [group_unblocking]
 text = "Blockierung aufheben"
@@ -1711,9 +1620,6 @@ text = "Warum wurde ich entfernt?"
 
 [group_why_you_were_removed]
 text = "Warum du entfernt wurdest"
-
-[group_will_be_able_to]
-text = "{name} kann dann Leute einladen, Mitglieder markieren (3 Markierungen entfernen jemanden) und Hosts festlegen. Nur du als Eigentümer kannst Admins ernennen oder entfernen."
 
 [group_withdraw_the_offer_to]
 text = "Angebot zum Hosten zurückziehen"
@@ -2009,9 +1915,6 @@ text = "Abgeglichen {value}"
 [link_tap_scan_qr_code]
 text = "Tippe auf „QR-Code scannen“ und richte es auf diesen Bildschirm."
 
-[link_the_other_device]
-text = "das andere Gerät"
-
 [link_there_is_no_code]
 text = "Es gibt noch keinen Code."
 
@@ -2057,9 +1960,6 @@ text = "Windows"
 [link_you_type_it_each]
 text = "Du gibst sie bei jedem Start von Tinline ein."
 
-[link_your_account]
-text = "Dein Konto"
-
 [link_your_account_is_on]
 text = "Dein Konto ist auf dem anderen Gerät."
 
@@ -2071,9 +1971,6 @@ text = "Ein stummgeschalteter Chat benachrichtigt dich nie, egal was hier einges
 
 [profile_a_new_camera_is]
 text = "Eine neue Kamera wird beim nächsten Start deiner Kamera genutzt."
-
-[profile_a_status]
-text = "einen Status"
 
 [profile_about]
 text = "Über mich"
@@ -2170,7 +2067,7 @@ text = "Blockieren passiert nicht still. Die Person erfährt es, ihre App hört 
 text = "Beschäftigt"
 
 [profile_busy_until]
-text = "Beschäftigt bis {value}"
+text = "Beschäftigt bis {time}"
 
 [profile_busy_until_you_change]
 text = "Beschäftigt, bis du es änderst"
@@ -2186,9 +2083,6 @@ text = "Anrufe auf diesem Computer"
 
 [profile_can_call_you]
 text = "Darf dich anrufen"
-
-[profile_cant_contain_control_or]
-text = "{cap} darf keine Steuer- oder Textrichtungszeichen enthalten."
 
 [profile_change_photo]
 text = "Foto ändern"
@@ -2394,9 +2288,6 @@ text = "Kein Profil verfügbar."
 
 [profile_no_sounds_from_tinline]
 text = "Keine Töne von Tinline: Klingeln, Anruftöne, Beitritte"
-
-[profile_not_seen_for_days]
-text = "Seit {value} Tagen nicht gesehen"
 
 [profile_not_set]
 text = "Nicht festgelegt"
@@ -2605,32 +2496,17 @@ text = "Speicher"
 [profile_tap_a_sound_to]
 text = "Tippe auf einen Ton, um ihn zu hören. Die Wahl gilt ab dem nächsten Anruf."
 
-[profile_text]
-text = "{value} {time}"
-
 [profile_that_file_couldnt_be]
 text = "Diese Datei ließ sich nicht als Bild lesen. Vielleicht ist sie beschädigt."
-
-[profile_that_is_too_long]
-text = "Das ist zu lang für {what}: bis zu {limit} Bytes, und manche Zeichen brauchen mehr als eins."
-
-[profile_that_is_too_long_up]
-text = "{what} ist zu lang. Bis zu {limit} Bytes; manche Zeichen brauchen mehr als eins."
 
 [profile_that_name_cant_be]
 text = "Dieser Name geht nicht. Halte ihn kurz, ohne Steuerzeichen."
 
 [profile_that_picture_is_mb]
-text = "Dieses Bild hat {value} MB. Bilder dürfen bis zu {value2} MB groß sein."
+text = "Dieses Bild hat {size} MB. Bilder dürfen bis zu {max} MB groß sein."
 
 [profile_that_picture_is_pixels]
-text = "Dieses Bild hat {status} × {host} Pixel. Tinline nimmt bis zu 4096 Pixel pro Seite."
-
-[profile_the_cant_be_empty]
-text = "{what} darf nicht leer sein."
-
-[profile_the_cant_contain_control]
-text = "{what} darf keine Steuer- oder Textrichtungszeichen enthalten."
+text = "Dieses Bild hat {width} × {height} Pixel. Tinline nimmt bis zu {max} Pixel pro Seite."
 
 [profile_the_libraries_tinline_is]
 text = "Die Bibliotheken, auf denen Tinline aufbaut"
@@ -2679,9 +2555,6 @@ text = "Um mehr Platz frei zu machen, entferne Bilder oder Dateien aus ihrem Cha
 
 [profile_told_you_blocked_them]
 text = "Weiß von der Blockierung"
-
-[profile_tomorrow]
-text = "morgen {time}"
 
 [profile_trend_probe]
 text = "Trend+Test"
@@ -2972,9 +2845,6 @@ text = "Füge jemanden hinzu, mit dem du reden möchtest, dann könnt ihr euch s
 [signup_adding]
 text = "Hinzufügen…"
 
-[signup_and_have_read_the]
-text = " zu und hast gelesen: "
-
 [signup_any_length_works_a]
 text = "Jede Länge geht. Ein paar zufällige Wörter kann man sich gut merken."
 
@@ -3233,20 +3103,11 @@ text = "Code der Person"
 [signup_this_computer_can_host]
 text = "Dieser Computer kann deine Gruppen hosten"
 
-[signup_tinline_connects_your_straight]
-text = "Tinline verbindet deinen {noun} direkt mit dem der anderen."
-
 [signup_tinline_doesnt_collect_your]
 text = "Tinline sammelt weder deine Kontakte noch deine Anrufe oder deinen Standort."
 
 [signup_two_devices_are_better]
 text = "Zwei Geräte sind besser als eins"
-
-[signup_type_your_24_recovery]
-text = "Tipp deine 24 Wiederherstellungswörter ein. Dein {noun} startet mit einer leeren Kontaktliste."
-
-[signup_type_your_24_words]
-text = "Tipp deine 24 Wörter der Reihe nach ein, oder füge sie oder deinen Wiederherstellungsschlüssel ins erste Feld ein. Sie bleiben auf diesem {noun}."
 
 [signup_unlock]
 text = "Entsperren"
@@ -3278,14 +3139,12 @@ text = "Wie sollen dich die Leute nennen?"
 [signup_when_a_direct_line]
 text = "Wenn keine direkte Leitung möglich ist, gibt ein verschlüsseltes Relay den Anruf weiter. Es kann ihn nicht hören."
 
-[signup_word_in_the_recovery]
-text = "Wort {value}{value2} {value3} in der Liste der Wiederherstellungswörter. Prüf die Schreibweise."
-
 [signup_words]
 text = "Wörter"
 
 [signup_words_are_still_missing]
-text = "{filled} Wörter fehlen noch."
+one = "{count} Wort fehlt noch."
+other = "{count} Wörter fehlen noch."
 
 [signup_work_computer]
 text = "Arbeitscomputer"
@@ -3308,9 +3167,6 @@ text = "Du brauchst nur einen Spitznamen. Ende-zu-Ende-verschlüsselt."
 [signup_you_type_it_each]
 text = "{value} Du gibst sie bei jedem Start von Tinline ein. Wenn du sie vergisst, kannst du mit deinen Wiederherstellungswörtern eine neue festlegen."
 
-[signup_your_account_is_its]
-text = "Dein Konto steckt in seinen Wiederherstellungswörtern, also kannst du es auf zwei Wegen auf deinen {noun} holen."
-
 [signup_your_account_is_yours]
 text = "Dein Konto gehört dir."
 
@@ -3319,9 +3175,6 @@ text = "Deine Zwischenablage ist gerade leer. Wenn ihr Code ankommt, kopiere ihn
 
 [signup_your_code]
 text = "Dein Code"
-
-[signup_your_current_account_stays]
-text = "Dein aktuelles Konto bleibt auf diesem {noun}."
 
 [signup_your_line_is_open]
 text = "Deine Leitung ist offen, {name}"
@@ -3334,9 +3187,6 @@ text = "Deine Leitung zu {name} ist offen. Sag Hallo."
 
 [signup_your_nickname]
 text = "Dein Spitzname"
-
-[signup_your_recovery_key_is]
-text = "Dein Wiederherstellungsschlüssel ist drin. Er bleibt auf diesem {noun}."
 
 [signup_your_recovery_key_is_the]
 text = "Dein Wiederherstellungsschlüssel entspricht deinen 24 Wörtern, nur in einer Zeile."
@@ -3415,3 +3265,147 @@ text = "Morgen früh"
 
 [profile_busy_no_end]
 text = "Bis auf Weiteres"
+
+[signup_by_continuing_you_agree]
+text = "Wenn du weitermachst, stimmst du den {terms} zu und hast die {privacy} gelesen."
+
+[profile_err_name_empty]
+text = "Der Name darf nicht leer sein."
+
+[profile_err_name_chars]
+text = "Der Name darf keine Steuer- oder Textrichtungszeichen enthalten."
+
+[profile_err_name_long]
+text = "Dieser Name ist zu lang. Bis zu {limit} Bytes; manche Zeichen brauchen mehr als eins."
+
+[profile_err_status_long]
+text = "Das ist zu lang für einen Status: bis zu {limit} Bytes, und manche Zeichen brauchen mehr als eins."
+
+[profile_err_status_chars]
+text = "Ein Status darf keine Steuer- oder Textrichtungszeichen enthalten."
+
+[profile_err_about_long]
+text = "Das ist zu lang für „Über mich“: bis zu {limit} Bytes, und manche Zeichen brauchen mehr als eins."
+
+[profile_err_about_chars]
+text = "„Über mich“ darf keine Steuer- oder Textrichtungszeichen enthalten."
+
+[common_list_and]
+text = "{list} und {last}"
+
+[call_history_fallback]
+text = "Tinline-Anruf"
+
+[group_replying_to_yourself]
+text = "Antwort an dich selbst"
+
+[chat_replying_to_yourself]
+text = "Antwort an dich selbst"
+
+[group_link_own]
+text = "Ein Link für dein eigenes anderes Gerät"
+
+[group_host_online]
+text = "Online"
+
+[group_host_offline]
+text = "Offline"
+
+[group_hosts_store_the_group_admin]
+text = "Hosts speichern die Gruppe und geben Beiträge weiter, wenn andere offline sind. Es sind Mitglieder, denen du vertraust: Ein Host kann alles lesen, was in dieser Gruppe gepostet wird. Lege einen Host über das Menü eines Mitglieds fest; die Person muss zustimmen. Wenn du einen Host entfernst, ändert sich die Adresse der Gruppe innerhalb von 2 Tagen, sodass dieses Gerät sie nicht mehr erreicht."
+
+[group_post_photo]
+text = "Foto"
+
+[group_preview_you]
+text = "Du: {text}"
+
+[group_preview_author]
+text = "{name}: {text}"
+
+[group_sys_joined]
+text = "{name} ist beigetreten"
+
+[group_sys_left_you]
+text = "Verlassen"
+
+[group_sys_left]
+text = "{name} hat die Gruppe verlassen"
+
+[group_sys_host_added_you]
+text = "Ein Gerät von dir hostet jetzt die Gruppe"
+
+[group_sys_host_added]
+text = "Ein Gerät von {name} hostet jetzt die Gruppe"
+
+[group_sys_host_removed_you]
+text = "Ein Gerät von dir hostet die Gruppe nicht mehr"
+
+[group_sys_host_removed]
+text = "Ein Gerät von {name} hostet die Gruppe nicht mehr"
+
+[group_sys_admin_other_you]
+text = "{by} hat dich zum Admin gemacht"
+
+[group_sys_admin_other_other]
+text = "{by} hat {name} zum Admin gemacht"
+
+[group_sys_unadmin_other_you]
+text = "{by} hat dich als Admin entfernt"
+
+[group_sys_unadmin_other_other]
+text = "{by} hat {name} als Admin entfernt"
+
+[group_sent_waiting]
+text = "Wartet auf {name} · über {group}"
+
+[group_sent_accepted_messages]
+text = "{name} hat angenommen · nur Nachrichten"
+
+[group_sent_accepted_connecting]
+text = "{name} hat angenommen · verbindet"
+
+[group_sent_declined]
+text = "{name} hat abgelehnt"
+
+[group_sent_declined_unnamed]
+text = "Abgelehnt"
+
+[group_sent_blocked]
+text = "{name} hat dich blockiert"
+
+[group_notice_invitation_sent]
+text = "Einladung an {name} gesendet. Die Person tritt bei, wenn sie annimmt."
+
+[group_notice_you_joined]
+text = "Du bist {group} beigetreten."
+
+[group_notice_you_joined_the_group]
+text = "Du bist der Gruppe beigetreten."
+
+[group_notice_declined_inv]
+text = "Abgelehnt. {name} sieht, dass du abgelehnt hast."
+
+[group_notice_accepted_yours]
+text = "{name} hat deine Anfrage angenommen. Ihr könnt euch jetzt schreiben; Anrufe bleiben aus, bis einer von euch sie erlaubt."
+
+[group_notice_request_sent]
+text = "Anfrage an {name} gesendet. Sie wartet unter Chats, bis eine Antwort kommt."
+
+[group_notice_accepted]
+text = "Angenommen. {name} ist nur für Nachrichten hinzugefügt und erscheint unter Chats, sobald das Gerät verbunden ist; Anrufe bleiben aus, bis du sie erlaubst."
+
+[group_notice_declined_req]
+text = "Abgelehnt. {name} erfährt „abgelehnt“."
+
+[group_notice_link_copied]
+text = "Kopiert. Wer den Link hat, kann beitreten, solange er offen ist."
+
+[group_notice_group_is_open]
+text = "Deine Gruppe ist offen. Kopiere den Link, um sie zu teilen."
+
+[group_give_the_group_a_name]
+text = "Gib der Gruppe einen Namen."
+
+[group_pick_someone_first]
+text = "Wähl zuerst jemanden aus."

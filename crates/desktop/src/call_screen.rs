@@ -26,7 +26,7 @@ impl App {
             let reconnecting = active && c.stats.as_ref().is_some_and(|s| s.reconnecting);
             let secs = c.stats.as_ref().map_or(0, |s| s.secs);
             let status = if incoming { if c.info.video { crate::i18n::tr_str("common_incoming_video_call") } else { crate::i18n::tr_str("common_incoming_call") }.to_string() }
-                else if reconnecting { crate::i18n::tr_str("common_reconnecting_2").into() }
+                else if reconnecting { crate::i18n::tr_str("call_reconnecting_2").into() }
                 else { match c.state {
                     CallState::Dialing => crate::i18n::tr_str("call_calling").into(),
                     CallState::Ringing => crate::i18n::tr_str("call_ringing").into(),
@@ -139,7 +139,7 @@ impl App {
                 iced::widget::span::<(), iced::Font>(crate::i18n::tr_args("call_your_voice_is_encrypted", &[("name", &(name).to_string())])).color(t.ink2),
             ].size(13).line_height(lh(19.0)));
             let (level, wave) = self.signal_now();
-            let title = if wave { crate::i18n::tr_str("common_reconnecting").to_string() }
+            let title = if wave { crate::i18n::tr_str("call_reconnecting").to_string() }
                 else { crate::i18n::tr_args("call_signal", &[("value", &(crate::call_ui::signal_word(level)).to_string()),("value2", &(if st.direct { crate::i18n::tr_str("common_direct") } else { crate::i18n::tr_str("common_relayed") }).to_string())]) };
             let mut line = if wave { crate::i18n::tr_args("call_the_connection_dropped_for", &[("name", &(first).to_string())]) }
                 else if st.direct { crate::i18n::tr_args("call_your_call_goes_straight", &[("name", &(first).to_string())]) }

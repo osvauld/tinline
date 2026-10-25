@@ -16,10 +16,10 @@ use iced::widget::{column, rich_text, span, stack};
 
 const CARD_W: f32 = 600.0;
 
-/// "Mon 19 Oct" (codeUntil in people.svelte.ts), in local time.
+/// "Monday 19 Oct" (codeUntil in people.svelte.ts), in local time.
 pub(super) fn code_until(exp: u64) -> String {
     use chrono::TimeZone;
-    chrono::Local.timestamp_opt(exp as i64, 0).single().map(|d| d.format("%a %-d %b").to_string()).unwrap_or_default()
+    chrono::Local.timestamp_opt(exp as i64, 0).single().map(|d| crate::i18n::date::weekday_date(&d, false)).unwrap_or_default()
 }
 const CARD_H: f32 = 640.0;
 
@@ -163,10 +163,6 @@ fn lead<'a>(t: Tok, lines: &[String], center: bool) -> El<'a> {
 }
 
 impl App {
-    fn gate_noun(&self) -> &'static str {
-        "computer"
-    }
-
     /// The whole sign-up gate: canvas, card, header, the step, its footer.
     pub(super) fn signup_view(&self, t: Tok) -> El<'_> {
         let (body, foot) = self.gate_step(t);
@@ -323,7 +319,6 @@ impl App {
 
     /// Body (title, lead, content) and footer of the current step.
     fn gate_step(&self, t: Tok) -> (El<'_>, El<'_>) {
-        let noun = self.gate_noun();
         let title = |s: &str| bold(s.to_string(), 28.0, t.ink).line_height(lh(34.0));
         let shell = |head: &str, lead_: Vec<String>, content: Vec<El<'static>>| -> iced::widget::Column<'static, Msg> {
             let mut c = column![title(head)].spacing(16).width(Fill);
@@ -349,9 +344,9 @@ impl App {
             Step::Welcome => {
                 let adding = self.return_to.is_some();
                 let (head, l) = if adding {
-                    (crate::i18n::tr_str("signup_add_an_account"), vec![crate::i18n::tr_str("signup_create_a_new_account").to_string(), crate::i18n::tr_args("signup_your_current_account_stays", &[("noun", &(noun).to_string())])])
+                    (crate::i18n::tr_str("signup_add_an_account"), vec![crate::i18n::tr_str("signup_create_a_new_account").to_string(), crate::i18n::tr("signup_your_current_account_stays")])
                 } else {
-                    (crate::i18n::tr_str("signup_a_direct_line_to"), vec![crate::i18n::tr_args("signup_tinline_connects_your_straight", &[("noun", &(noun).to_string())]), crate::i18n::tr_str("signup_you_just_need_a").to_string()])
+                    (crate::i18n::tr_str("signup_a_direct_line_to"), vec![crate::i18n::tr("signup_tinline_connects_your_straight"), crate::i18n::tr_str("signup_you_just_need_a").to_string()])
                 };
                 // The line is slack here; on Done it pulls taut ("Your line is open").
                 let hero = container(ui::line_logo(120.0, t, crate::mark::Look::default(), None::<Msg>)).width(Fill).height(Fill).center_x(Fill).center_y(Fill);
@@ -388,10 +383,10 @@ impl App {
                 };
                 let opts = column![
                     opt("qr", crate::i18n::tr_str("signup_link_my_other_device"), crate::i18n::tr_str("signup_scan_a_code_on").into(), Msg::LinkStartNew),
-                    opt("key", crate::i18n::tr_str("signup_restore_my_account"), crate::i18n::tr_args("signup_type_your_24_recovery", &[("noun", &(noun).to_string())]), Msg::ToggleRestore),
+                    opt("key", crate::i18n::tr_str("signup_restore_my_account"), crate::i18n::tr("signup_type_your_24_recovery"), Msg::ToggleRestore),
                 ]
                 .spacing(12);
-                let body = shell(crate::i18n::tr_str("signup_use_your_account_here"), vec![crate::i18n::tr_args("signup_your_account_is_its", &[("noun", &(noun).to_string())])], vec![opts.into()]);
+                let body = shell(crate::i18n::tr_str("signup_use_your_account_here"), vec![crate::i18n::tr("signup_your_account_is_its")], vec![opts.into()]);
                 (container(body).padding(pad).into(), Space::new().into())
             }
             Step::Restore => {
@@ -426,8 +421,9 @@ impl App {
                 }
                 let bad: Vec<usize> = (0..24).filter(|&i| gs.bad_word(i)).collect();
                 let msg = if let Some(&f) = bad.first() {
-                    crate::i18n::tr_args("signup_word_in_the_recovery", &[("value", &(f + 1).to_string()),("value2", &(if bad.len() > 1 { format!(" and {} more", bad.len() - 1) } else { String::new() }).to_string()),("value3", &(if bad.len() > 1 { "aren\u{2019}t" } else { "isn\u{2019}t" }).to_string())])
-                } else if gs.tried && gs.filled() < 24 { crate::i18n::tr_args("signup_words_are_still_missing", &[("filled", &(24 - gs.filled()).to_string())]) } else { self.notice.clone().unwrap_or_default() };
+                    let n = (f + 1).to_string();
+                    if bad.len() > 1 { crate::i18n::tr_count("signup_word_in_the_recovery_more", (bad.len() - 1) as u64, &[("value", &n)]) } else { crate::i18n::tr_args("signup_word_in_the_recovery", &[("value", &n)]) }
+                } else if gs.tried && gs.filled() < 24 { crate::i18n::tr_count("signup_words_are_still_missing", (24 - gs.filled()) as u64, &[]) } else { self.notice.clone().unwrap_or_default() };
                 let sugg: Vec<&'static str> = gs.active.filter(|&i| !crate::app::signup::is_word(&gs.words[i])).map(|i| crate::app::signup::suggest(&gs.words[i], 4)).unwrap_or_default();
                 let mut chips = row![].spacing(8).height(44).align_y(Alignment::Center);
                 for w in sugg {
@@ -442,10 +438,10 @@ impl App {
                             container(gbtn(t, crate::i18n::tr_str("signup_use_my_words_instead"), B::Text, false, Some(g(Gs::ClearKey))))].spacing(6))
                         .padding([14, 16]).width(Fill).style(ui::outlined(t.surface, t.accent_soft, 10.0));
                     let err = container(semi(self.notice.clone().unwrap_or_default(), 13.0, t.danger).line_height(lh(18.0))).height(18);
-                    let head = column![title(crate::i18n::tr_str("signup_restore_account")), lead(t, &[crate::i18n::tr_args("signup_your_recovery_key_is", &[("noun", &(noun).to_string())])], false), note, card, err].spacing(16).width(Fill);
+                    let head = column![title(crate::i18n::tr_str("signup_restore_account")), lead(t, &[crate::i18n::tr("signup_your_recovery_key_is")], false), note, card, err].spacing(16).width(Fill);
                     return (container(head).padding(pad).height(Fill).into(), foot(vec![gbtn(t, crate::i18n::tr_str("common_continue"), B::Primary, true, Some(g(Gs::RestoreGo)))]));
                 }
-                let head = column![title(crate::i18n::tr_str("signup_restore_account")), lead(t, &[crate::i18n::tr_args("signup_type_your_24_words", &[("noun", &(noun).to_string())])], false), note, tools].spacing(16).width(Fill);
+                let head = column![title(crate::i18n::tr_str("signup_restore_account")), lead(t, &[crate::i18n::tr("signup_type_your_24_words")], false), note, tools].spacing(16).width(Fill);
                 let body = column![head, iced::widget::scrollable(grid).height(Fill).style(ui::scroll_style(t)), dock].spacing(12).width(Fill).height(Fill);
                 (container(body).padding(pad).height(Fill).into(), foot(vec![gbtn(t, crate::i18n::tr_str("common_continue"), B::Primary, true, (gs.filled() > 0).then_some(g(Gs::RestoreGo)))]))
             }
@@ -601,13 +597,15 @@ impl App {
                 }
                 // No checkbox: the next button is the agreement, and this line sits right above it.
                 let link = |s: &'static str, url: &'static str| span::<&'static str, iced::Font>(s).color(t.accent_ink).underline(true).link(url);
-                let agree = rich_text([
-                    span::<&'static str, iced::Font>("By continuing, you agree to the ").color(t.ink2),
-                    link(crate::i18n::tr_str("signup_terms_of_use"), URL_TERMS),
-                    span(crate::i18n::tr_str("signup_and_have_read_the")).color(t.ink2),
-                    link(crate::i18n::tr_str("signup_privacy_policy"), URL_PRIVACY),
-                    span(".").color(t.ink2),
-                ])
+                let agree_spans: Vec<_> = crate::i18n::tr_rich("signup_by_continuing_you_agree", &[])
+                    .into_iter()
+                    .map(|p| match p {
+                        crate::i18n::Piece::Slot(n) if n == "terms" => link(crate::i18n::tr_str("signup_terms_of_use"), URL_TERMS),
+                        crate::i18n::Piece::Slot(n) if n == "privacy" => link(crate::i18n::tr_str("signup_privacy_policy"), URL_PRIVACY),
+                        crate::i18n::Piece::Text(x) | crate::i18n::Piece::Bold(x) | crate::i18n::Piece::Slot(x) => span::<&'static str, iced::Font>(x).color(t.ink2),
+                    })
+                    .collect();
+                let agree = rich_text(agree_spans)
                 .size(13)
                 .line_height(lh(19.0))
                 .on_link_click(|u| g(Gs::Open(u)));

@@ -541,7 +541,7 @@ impl Clone for EvBox {
 }
 impl std::fmt::Debug for EvBox {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(crate::i18n::tr_str("app_ev"))
+        f.write_str("Ev")
     }
 }
 
@@ -2505,7 +2505,7 @@ impl App {
                     stats: None,
                 });
                 self.ended = None;
-                if crate::audio::RING_CALLS.load(Ordering::Relaxed) { notify("Tinline", &crate::i18n::tr_args("common_is_calling", &[("name", &(name).to_string())]), Target::Show); }
+                if crate::audio::RING_CALLS.load(Ordering::Relaxed) { notify("Tinline", &view::is_calling_line(&name), Target::Show); }
                 // The camera is looked up while it rings (no streaming, so no camera light): the Camera and
                 // "Video" buttons work the moment they are pressed.
                 let mut tasks = vec![self.show_window(), self.find_camera()];

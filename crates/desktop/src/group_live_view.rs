@@ -5,7 +5,7 @@
 use iced::widget::{button, column, container, mouse_area, opaque, row, text_input, Space};
 use p2pcore::{GroupDelivery, GroupItemKind, GroupMessage, GroupRole};
 
-use super::groups_view::{btn, footer, gav, hhmm, link_btn, message_body, ordinal, rule, short_time, sys, tag, when};
+use super::groups_view::{btn, footer, gav, hhmm, link_btn, message_body, rule, short_time, sys, tag, when};
 use super::*;
 use crate::geom;
 use crate::shaped::shaped;
@@ -17,6 +17,13 @@ fn l(m: Lm) -> Msg {
 
 const COMPOSER: &str = "group-composer";
 
+/// Who a sentence is about: me, a person I can name, or someone I can't name.
+pub(super) enum Actor {
+    Me,
+    Named(String),
+    Unknown,
+}
+
 impl App {
     /// A DID as the user knows it: their contact name, else what the group calls them.
     fn live_name(&self, did: &str, fallback: &str) -> String {
@@ -27,6 +34,29 @@ impl App {
             return Self::display(c);
         }
         if fallback.trim().is_empty() { crate::i18n::tr_str("common_someone").into() } else { fallback.to_string() }
+    }
+
+    /// Who someone is for a sentence: me, a name I can show, or nobody I can name.
+    /// Sentences get one string per case, never "You"/"Someone" in a name slot.
+    fn live_actor(&self, did: &str, fallback: &str) -> Actor {
+        if self.is_me(did) || did == self.live.me {
+            Actor::Me
+        } else if let Some(c) = self.contacts.iter().find(|c| c.did == did) {
+            Actor::Named(first_name(&Self::display(c)).to_string())
+        } else if fallback.trim().is_empty() {
+            Actor::Unknown
+        } else {
+            Actor::Named(first_name(fallback).to_string())
+        }
+    }
+
+    /// "Invited by Ana" / "Invited by you" / "Invited by someone".
+    fn invited_by_line(&self, did: &str, fallback: &str) -> String {
+        match self.live_actor(did, fallback) {
+            Actor::Me => crate::i18n::tr("group_invited_by_you"),
+            Actor::Named(n) => crate::i18n::tr_args("group_invited_by_2", &[("name", &n)]),
+            Actor::Unknown => crate::i18n::tr("group_invited_by_someone"),
+        }
     }
 
     // ---- the Groups tab ----
@@ -55,14 +85,17 @@ impl App {
         if !pending.is_empty() {
             col = col.push(container(sec(crate::i18n::tr_str("group_invitations_to_you"), pending.len())).padding(Padding { top: 18.0, right: 16.0, bottom: 6.0, left: 16.0 }));
             for i in pending {
-                let who = first_name(&self.live_name(&i.inviter_did, &i.inviter_name)).to_string();
                 let joining = self.live.joining.as_deref() == Some(i.id.as_str());
                 let busy = self.live.joining.is_some();
-                let line = iced::widget::rich_text![
-                    iced::widget::span::<(), iced::Font>(who).font(ui::SANS_SEMI).color(t.ink),
-                    iced::widget::span::<(), iced::Font>(crate::i18n::tr_str("group_invited_you_to")).color(t.ink),
-                    iced::widget::span::<(), iced::Font>(i.group_name.clone()).font(ui::SANS_SEMI).color(t.ink),
-                ].size(15).line_height(lh(20.0));
+                // One sentence with the names in bold: "**Ana** invited you to **Hike**".
+                let (key, who) = match self.live_actor(&i.inviter_did, &i.inviter_name) {
+                    Actor::Named(n) => ("group_invitation_line", n),
+                    _ => ("group_invitation_line_unnamed", String::new()),
+                };
+                let line = iced::widget::rich_text(crate::i18n::tr_rich(key, &[("name", &who), ("group", &i.group_name)]).into_iter().map(|p| match p {
+                    crate::i18n::Piece::Bold(x) => iced::widget::span::<(), iced::Font>(x).font(ui::SANS_SEMI).color(t.ink),
+                    crate::i18n::Piece::Text(x) | crate::i18n::Piece::Slot(x) => iced::widget::span::<(), iced::Font>(x).color(t.ink),
+                }).collect::<Vec<_>>()).size(15).line_height(lh(20.0));
                 let card = column![
                     row![self.profile_avatar(t, &i.inviter_name, &i.inviter_did, 40.0), line].spacing(12).align_y(Alignment::Center),
                     row![Space::new().width(Fill),
@@ -116,7 +149,7 @@ impl App {
                     let sel = self.live.open.as_deref() == Some(s.id.as_str());
                     let at = s.last.as_ref().map_or(0, |m| m.at);
                     let what = if s.my_role == GroupRole::Removed { crate::i18n::tr_str("group_removed") } else { crate::i18n::tr_str("group_you_left") };
-                    let sub = if at > 0 { crate::i18n::tr_args("group_text_2", &[("what", &(what).to_string()),("value", &(day_only(at)).to_string())]) } else { what.to_string() };
+                    let sub = if at > 0 { crate::i18n::tr_dots(&[what, &day_only(at)]) } else { what.to_string() };
                     rows = rows.push(button(row![face(&s.id), column![semi(s.name.clone(), 15.0, ui::alpha(t.ink, 0.72)).line_height(lh(21.0)),
                             tx(sub, 13.0, t.ink2).line_height(lh(21.0))].spacing(2).width(Fill)].spacing(12).align_y(Alignment::Center).height(56))
                         .padding(8).width(Fill).style(super::shell_view::wash(t, sel.then_some(t.accent_soft), (!sel).then_some(t.surface2), 14.0))
@@ -201,7 +234,7 @@ impl App {
                 container(
                     container(
                         column![
-                            row![ui::icon(Icon::Server, 18.0, t.on_warn), bold(crate::i18n::tr_args("group_asked_this_computer_to", &[("value", &(first_name(&by)).to_string()),("name", &(d.name).to_string())]), 15.0, t.on_warn)]
+                            row![ui::icon(Icon::Server, 18.0, t.on_warn), bold(if by.is_empty() { crate::i18n::tr_args("group_asked_this_computer_to_unnamed", &[("group", &d.name)]) } else { crate::i18n::tr_args("group_asked_this_computer_to", &[("name", first_name(&by)), ("group", &d.name)]) }, 15.0, t.on_warn)]
                                 .spacing(8)
                                 .align_y(Alignment::Center),
                             tx(
@@ -344,14 +377,17 @@ impl App {
         let mut c = column![].spacing(6);
         if let Some(id) = &self.live.reply {
             let (who, text_) = match self.live.by_id(id) {
-                Some(m) if m.outgoing => ("yourself".to_string(), gl::post_line(m)),
-                Some(m) => (first_name(&self.live_name(&m.author_did, &m.author_name)).to_string(), gl::post_line(m)),
-                None => (crate::i18n::tr_str("group_a_message").to_string(), String::new()),
+                Some(m) if m.outgoing => (crate::i18n::tr("group_replying_to_yourself"), gl::post_line(m)),
+                Some(m) => match self.live_actor(&m.author_did, &m.author_name) {
+                    Actor::Named(n) => (crate::i18n::tr_args("group_replying_to", &[("name", &n)]), gl::post_line(m)),
+                    _ => (crate::i18n::tr("group_replying_to_a_message"), gl::post_line(m)),
+                },
+                None => (crate::i18n::tr("group_replying_to_a_message"), String::new()),
             };
             let bar = container(Space::new()).width(3).height(Fill).style(ui::plain(t.accent, 0.0));
             let x = button(container(crate::pg_icons::pgi("x", 18.0, t.ink2)).center_x(44).center_y(44)).padding(0).width(44).height(44)
                 .style(super::shell_view::wash(t, None, Some(t.surface3), 22.0)).on_press(l(Lm::Reply(None)));
-            let body = column![semi(crate::i18n::tr_args("group_replying_to", &[("name", &(who).to_string())]), 13.0, t.accent_ink).line_height(lh(18.0)),
+            let body = column![semi(who, 13.0, t.accent_ink).line_height(lh(18.0)),
                 tx(crate::fit::ellipsize(&text_, ui::SANS, 13.0, 520.0), 13.0, t.ink2).line_height(lh(18.0)).wrapping(iced::widget::text::Wrapping::None)].width(Fill);
             c = c.push(container(row![bar, container(row![body, x].spacing(8).align_y(Alignment::Center)).padding(Padding { top: 0.0, right: 2.0, bottom: 0.0, left: 7.0 }).height(44)].height(44))
                 .width(Fill).clip(true).style(ui::plain(t.surface2, 12.0)));
@@ -561,12 +597,13 @@ impl App {
             return sys(t, crate::i18n::tr_str("group_you_were_removed_from_this"));
         };
         let names: Vec<String> = r.flags.iter().map(|f| self.live_name(&f.by_did, &f.by_name)).collect();
+        let names: Vec<&str> = names.iter().map(String::as_str).collect();
         container(
             column![
                 semi(crate::i18n::tr_args("group_you_were_removed_from", &[("value", &(when(r.at)).to_string())]), 14.0, t.on_error_c),
-                bold(crate::i18n::tr_args("group_removed_after_admin_flags", &[("len", &(r.flags.len()).to_string())]), 15.0, t.on_error_c),
+                bold(crate::i18n::tr_count("group_removed_after_admin_flags", r.flags.len() as u64, &[]), 15.0, t.on_error_c),
                 tx(
-                    crate::i18n::tr_args("group_flagged_by_you_can", &[("value", &(super::groups_view::and_list(&names)).to_string())]),
+                    crate::i18n::tr_args("group_flagged_by_you_can", &[("value", &crate::i18n::tr_list(&names))]),
                     13.0,
                     t.on_error_c
                 ),
@@ -681,7 +718,7 @@ impl App {
                     else if open_on { crate::i18n::tr_str("group_a_link_that_doesnt").to_string() }
                     else { crate::i18n::tr_str("group_turn_on_open_link").to_string() };
                 let c = column![h2(crate::i18n::tr_str("group_public_group"), None), card(vec![
-                    switch_row("link", crate::i18n::tr_str("common_open_link"), [crate::i18n::tr_str("group_anyone_with_the_link"), crate::i18n::tr_str("group_only_people_you_invite")], open_on, l(Lm::SetOpen(!open_on))),
+                    switch_row("link", crate::i18n::tr_str("group_public_link"), [crate::i18n::tr_str("group_anyone_with_the_link"), crate::i18n::tr_str("group_only_people_you_invite")], open_on, l(Lm::SetOpen(!open_on))),
                     act("copy", crate::i18n::tr_str("group_copy_link").into(), Some(copy_sub), None, (open_on && !fetching).then_some(l(Lm::CopyOpenLink)), false),
                     switch_row("shield", crate::i18n::tr_str("group_admins_only"), [crate::i18n::tr_str("group_only_admins_post_everyone"), crate::i18n::tr_str("group_everyone_in_the_group")], ao_on, l(Lm::SetAdminsOnly(!ao_on))),
                 ]), note(crate::i18n::tr_str("group_the_open_link_doesnt").into())];
@@ -692,13 +729,14 @@ impl App {
             let host_line = if d.hosts.is_empty() { crate::i18n::tr_str("group_this_group_has_no_host").to_string() }
                 // This computer is said in words, not listed as a row: its "Stop hosting" button below stands for it.
                 else if d.am_host && d.hosts.len() == 1 { crate::i18n::tr_str("group_this_computer_hosts_the").to_string() }
-                else if up { crate::i18n::tr_count("group_hosts_online", d.hosts.iter().filter(|h| h.online || h.is_me).count().max(1) as u64, &[("extra", if d.am_host { crate::i18n::tr_str("group_this_computer_too") } else { "" })]) }
+                else if up { crate::i18n::tr_count(if d.am_host { "group_hosts_online_here" } else { "group_hosts_online" }, d.hosts.iter().filter(|h| h.online || h.is_me).count().max(1) as u64, &[]) }
                 else { crate::i18n::tr_str("group_no_host_is_online").to_string() };
             let mut c = column![h2(crate::i18n::tr_str("group_hosts"), None), status(up && !d.hosts.is_empty(), host_line)];
             for h in d.hosts.iter().filter(|h| !h.is_me) {
                 let name = self.live_name(&h.did, &h.name);
                 let calls = d.call_hosts.iter().any(|x| x.did == h.did && x.device_id == h.device_id);
-                let sub = format!("{}{}", if h.online || h.is_me { crate::i18n::tr_str("common_online") } else { crate::i18n::tr_str("common_offline") }, if calls { crate::i18n::tr_str("group_also_hosts_calls") } else { "" });
+                let state = if h.online || h.is_me { crate::i18n::tr_str("group_host_online") } else { crate::i18n::tr_str("group_host_offline") };
+                let sub = if calls { crate::i18n::tr_dots(&[state, crate::i18n::tr_str("group_also_hosts_calls")]) } else { state.to_string() };
                 let end: El = if admin { textbtn(crate::i18n::tr_str("common_remove"), t.ink, l(Lm::Revoke(h.did.clone(), h.device_id.clone()))) } else { Space::new().into() };
                 c = c.push(mrow(&h.did, name, sub, end));
             }
@@ -720,7 +758,7 @@ impl App {
             } else {
                 act("server", crate::i18n::tr_str("group_host_this_group_on").into(), Some(crate::i18n::tr_str("group_a_host_stays_on").into()), None, Some(l(Lm::AskHost(true))), false)
             }])).padding(Padding { top: 8.0, ..Padding::ZERO }));
-            c = c.push(note(crate::i18n::tr_args("group_hosts_store_the_group", &[("value", &(if admin { " Appoint a host from a member\u{2019}s menu; they have to accept. Removing a host changes the group\u{2019}s address within 2 days, so that device can no longer reach it." } else { "" }).to_string())])));
+            c = c.push(note(crate::i18n::tr(if admin { "group_hosts_store_the_group_admin" } else { "group_hosts_store_the_group" })));
             col = col.push(sec(c));
             // ---- call hosts
             let ready = d.call_hosts.len();
@@ -732,7 +770,7 @@ impl App {
                 let name = self.live_name(&h.did, &h.name);
                 // Removes the CALL host (was wired to the chat-host revoke).
                 let end: El = if admin { textbtn(crate::i18n::tr_str("common_remove"), t.ink, l(Lm::RevokeCall(h.did.clone(), h.device_id.clone()))) } else { Space::new().into() };
-                c = c.push(mrow(&h.did, name, if h.online || h.is_me { crate::i18n::tr_str("common_online").into() } else { crate::i18n::tr_str("common_offline").into() }, end));
+                c = c.push(mrow(&h.did, name, if h.online || h.is_me { crate::i18n::tr_str("group_host_online").into() } else { crate::i18n::tr_str("group_host_offline").into() }, end));
             }
             for h in &d.call_host_requests {
                 let name = if h.is_me { crate::i18n::tr_str("common_this_device").to_string() } else { self.live_name(&h.did, &h.name) };
@@ -751,7 +789,7 @@ impl App {
             if let Some(h) = here {
                 c = c.push(container(card(vec![h])).padding(Padding { top: 8.0, ..Padding::ZERO }));
             }
-            c = c.push(note(crate::i18n::tr_args("group_a_call_host_carries", &[("value", &(if admin { " Appoint one from a member\u{2019}s menu, or host calls on this computer." } else { "" }).to_string())])));
+            c = c.push(note(crate::i18n::tr(if admin { "group_a_call_host_carries_admin" } else { "group_a_call_host_carries" })));
             col = col.push(sec(c));
             // ---- members: owner, admins, then members; me first among equals. A row opens its actions.
             let mut members: Vec<&p2pcore::GroupMember> = d.members.iter().collect();
@@ -759,10 +797,14 @@ impl App {
             let mut c = column![h2(crate::i18n::tr_str("group_members"), Some(d.members.len()))];
             for m in members {
                 let name = self.live_name(&m.did, &m.name);
-                let shown = if m.is_me { crate::i18n::tr_args("group_you", &[("name", &(name).to_string())]) } else { name.clone() };
-                let mut sub = match &m.invited_by { Some(by) => crate::i18n::tr_args("group_invited_by_2", &[("value", &(first_name(&self.live_name(by, ""))).to_string())]), None => crate::i18n::tr_args("group_since", &[("value", &(super::groups_view::day(m.joined_at * 1000)).to_string())]) };
-                if admin && m.flags > 0 && !m.is_owner { sub += &crate::i18n::tr_args("group_of_flags_2", &[("flags", &(m.flags).to_string()),("value", &(gl::FLAGS_TO_REMOVE).to_string())]); }
-                if self.blocks.blocked_by_me(&m.did) { sub += crate::i18n::tr_str("group_blocked"); }
+                let shown = if m.is_me { crate::i18n::tr_args("group_you", &[("name", &(m.name).to_string())]) } else { name.clone() };
+                let mut sub = match &m.invited_by { Some(by) => self.invited_by_line(by, ""), None => crate::i18n::tr_args("group_since", &[("value", &(super::groups_view::day(m.joined_at * 1000)).to_string())]) };
+                {
+                    let mut parts = vec![sub];
+                    if admin && m.flags > 0 && !m.is_owner { parts.push(crate::i18n::tr_count("group_flags_of", gl::FLAGS_TO_REMOVE as u64, &[("flags", &m.flags.to_string())])); }
+                    if self.blocks.blocked_by_me(&m.did) { parts.push(crate::i18n::tr("group_blocked")); }
+                    sub = crate::i18n::tr_dots(&parts.iter().map(String::as_str).collect::<Vec<_>>());
+                }
                 let mut marks = row![].spacing(4).align_y(Alignment::Center);
                 if m.is_owner { marks = marks.push(tag(t.primary_c, t.on_primary_c, crate::i18n::tr_str("group_owner"))); } else if m.is_admin { marks = marks.push(tag(t.relay_c, t.on_relay_c, crate::i18n::tr_str("group_admin"))); }
                 if m.is_host { marks = marks.push(container(crate::pg_icons::pgi("server", 14.0, t.warn_ink)).width(22).height(22).center_x(22).center_y(22).style(ui::plain(t.warn, 11.0))); }
@@ -813,14 +855,15 @@ impl App {
             .on_press(on)
             .into()
         };
-        let by = m.invited_by.as_deref().map(|d| first_name(&self.live_name(d, "")).to_string());
-        let mut head = crate::i18n::tr_args("group_member_since", &[("value", &(when(m.joined_at)).to_string())]);
-        if let Some(b) = by {
-            head += &crate::i18n::tr_args("group_invited_by", &[("b", &(b).to_string())]);
+        // Whole phrases, joined by the language's own separator.
+        let mut parts = vec![crate::i18n::tr_args("group_member_since", &[("value", &when(m.joined_at))])];
+        if let Some(by) = m.invited_by.as_deref() {
+            parts.push(self.invited_by_line(by, ""));
         }
         if self.live.is_admin() {
-            head += &crate::i18n::tr_args("group_of_flags", &[("flags", &(m.flags).to_string()),("flags_needed", &(FLAGS_TO_REMOVE).to_string())]);
+            parts.push(crate::i18n::tr_count("group_flags_of", FLAGS_TO_REMOVE as u64, &[("flags", &m.flags.to_string())]));
         }
+        let head = crate::i18n::tr_dots(&parts.iter().map(String::as_str).collect::<Vec<_>>());
         let mut c = column![container(tx(head, 12.0, t.ink2)).padding([4, 10])].spacing(2);
         let several = m.device_ids.len() > 1;
         for a in acts {
@@ -868,7 +911,7 @@ impl App {
                 Action::Flag => item(
                     Icon::Flag,
                     crate::i18n::tr_str("group_flag_to_remove").into(),
-                    crate::i18n::tr_args("group_flags_remove_from_the", &[("flags_needed", &(FLAGS_TO_REMOVE).to_string()),("name", &(first).to_string())]),
+                    crate::i18n::tr_count("group_flags_remove_from_the", FLAGS_TO_REMOVE as u64, &[("name", &first)]),
                     t.error,
                     l(Lm::AskFlag(m.did.clone())),
                 ),
@@ -1007,6 +1050,10 @@ impl App {
                 .style(ui::plain(Color { r: 0.0, g: 0.0, b: 0.0, a: 0.85 }, 0.0));
             return Some(opaque(mouse_area(layer).on_press(l(Lm::QrFull(false)))));
         }
+        // These three name a member; with no member to name there is nothing to ask.
+        if let LDialog::Flag { did } | LDialog::Admin { did, .. } | LDialog::Request { did } = d {
+            self.live.member(did)?;
+        }
         let title = |x: String| bold(x, 22.0, t.ink);
         let para = |x: String| tx(x, 14.0, t.ink2);
         let busy = self.live.busy;
@@ -1046,14 +1093,31 @@ impl App {
                 .spacing(14);
                 match peek {
                     Some(p) => {
-                        let inviter = match &p.issuer_did {
-                            Some(did) => crate::i18n::tr_args("group_invited_by_2", &[("value", &(self.live_name(did, "someone who isn\u{2019}t in your contacts")).to_string())]),
-                            None => crate::i18n::tr_str("group_a_link_for_your").into(),
+                        // Who invited me and who owns the group, as whole lines per case.
+                        let by = match &p.issuer_did {
+                            Some(did) => Some(self.live_actor(did, "")),
+                            None => None,
                         };
-                        let owner = self.live_name(&p.owner_did, crate::i18n::tr_str("group_someone_who_isnt_in"));
+                        let owner = self.live_actor(&p.owner_did, "");
+                        let owner_line = match (&by, &owner) {
+                            (None, Actor::Named(o)) => crate::i18n::tr_args("group_link_own_owner", &[("owner", o)]),
+                            (None, _) => crate::i18n::tr("group_link_own"),
+                            (Some(b), o) => {
+                                let inviter = match b { Actor::Named(n) => Some(n.as_str()), _ => None };
+                                let owner = match o { Actor::Named(n) => Some(n.as_str()), _ => None };
+                                match (b, inviter, owner) {
+                                    (Actor::Me, _, Some(o)) => crate::i18n::tr_args("group_owner_by_you", &[("owner", o)]),
+                                    (Actor::Me, _, None) => crate::i18n::tr("group_owner_by_you_unnamed"),
+                                    (_, Some(i), Some(o)) => crate::i18n::tr_args("group_owner_by_named", &[("inviter", i), ("owner", o)]),
+                                    (_, Some(i), None) => crate::i18n::tr_args("group_owner_by_named_unnamed", &[("inviter", i)]),
+                                    (_, None, Some(o)) => crate::i18n::tr_args("group_owner_by_unnamed", &[("owner", o)]),
+                                    (_, None, None) => crate::i18n::tr("group_owner_by_unnamed_unnamed"),
+                                }
+                            }
+                        };
                         let mut info = column![
                             row![gav(t, &p.group_id, 36.0), bold(p.name.clone(), 17.0, t.ink)].spacing(10).align_y(Alignment::Center),
-                            tx(crate::i18n::tr_args("group_owner_2", &[("inviter", &(inviter).to_string()),("owner", &(owner).to_string())]), 13.0, t.ink2),
+                            tx(owner_line, 13.0, t.ink2),
                         ]
                         .spacing(6);
                         if let Some(exp) = p.expires {
@@ -1140,7 +1204,7 @@ impl App {
                 .spacing(14)
             }
             LDialog::Flag { did } => {
-                let name = self.live.member(did).map(|m| self.live_name(&m.did, &m.name)).unwrap_or_else(|| crate::i18n::tr_str("group_this_member").into());
+                let name = self.live.member(did).map(|m| self.live_name(&m.did, &m.name)).unwrap_or_default();
                 let first = first_name(&name).to_string();
                 let (yours, removes) = self.live.flag_after(did);
                 let mut meter = row![].spacing(6);
@@ -1162,12 +1226,12 @@ impl App {
                 .spacing(14)
             }
             LDialog::Admin { did, admin } => {
-                let name = self.live.member(did).map(|m| self.live_name(&m.did, &m.name)).unwrap_or_else(|| crate::i18n::tr_str("group_this_member").into());
+                let name = self.live.member(did).map(|m| self.live_name(&m.did, &m.name)).unwrap_or_default();
                 let first = first_name(&name).to_string();
                 if *admin {
                     column![
                         title(crate::i18n::tr_args("group_make_an_admin", &[("name", &(first).to_string())])),
-                        para(crate::i18n::tr_args("group_will_be_able_to", &[("name", &(first).to_string())])),
+                        para(crate::i18n::tr_args("group_will_be_able_to", &[("name", &first), ("flags_needed", &FLAGS_TO_REMOVE.to_string())])),
                     ]
                     .spacing(14)
                 } else {
@@ -1175,7 +1239,7 @@ impl App {
                 }
             }
             LDialog::Request { did } => {
-                let name = self.live.member(did).map(|m| self.live_name(&m.did, &m.name)).unwrap_or_else(|| crate::i18n::tr_str("group_this_member").into());
+                let name = self.live.member(did).map(|m| self.live_name(&m.did, &m.name)).unwrap_or_default();
                 let first = first_name(&name).to_string();
                 column![
                     row![
@@ -1255,7 +1319,7 @@ impl App {
                     let who = self.live_name(&f.by_did, &f.by_name);
                     let mut sub = crate::i18n::tr_args("group_flagged", &[("value", &(when(f.at)).to_string())]);
                     if i + 1 == n {
-                        sub += &crate::i18n::tr_args("group_flag", &[("value", &(ordinal(n)).to_string())]);
+                        sub += &crate::i18n::tr_args("group_flag", &[("n", &n.to_string())]);
                     }
                     c = c.push(
                         row![avatar(t, &who, &f.by_did, 32.0), column![semi(who.clone(), 14.0, t.ink), tx(sub, 12.0, t.ink2)].spacing(1)]
@@ -1275,7 +1339,7 @@ impl App {
             LDialog::NewGroup { .. } => c.push(actions(crate::i18n::tr_str("common_cancel"), Some((crate::i18n::tr_str("group_create"), Kind::Primary)))),
             LDialog::Join { peek, .. } => c.push(actions(crate::i18n::tr_str("common_cancel"), peek.as_ref().map(|_| (crate::i18n::tr_str("common_join"), Kind::Primary)))),
             LDialog::AddMembers { picked } => {
-                let label_ = if picked.len() > 1 { crate::i18n::tr_args("group_invite_people", &[("len", &(picked.len()).to_string())]) } else { crate::i18n::tr_str("group_invite").to_string() };
+                let label_ = if picked.len() > 1 { crate::i18n::tr_count("group_invite_people", picked.len() as u64, &[]) } else { crate::i18n::tr_str("group_invite").to_string() };
                 let busy = self.live.busy;
                 c.push(row![
                     Space::new().width(Fill),
@@ -1305,8 +1369,7 @@ impl App {
 
 /// groups.ts `dayOnly`: "Sep 29".
 fn day_only(ms: u64) -> String {
-    use chrono::{Local, TimeZone};
-    Local.timestamp_millis_opt(ms as i64).single().map(|d| d.format("%b %-d").to_string()).unwrap_or_default()
+    crate::i18n::date::local_month_day(ms)
 }
 
 /// Conversation.svelte day chip: Today, Yesterday, else "Thursday 8 Oct".
@@ -1316,8 +1379,8 @@ fn chip_day(ms: u64) -> String {
     match (now.date_naive() - d.date_naive()).num_days() {
         0 => crate::i18n::tr_str("common_today").into(),
         1 => crate::i18n::tr_str("common_yesterday").into(),
-        _ if d.year() == now.year() => d.format("%A %-d %b").to_string(),
-        _ => d.format("%A %-d %b %Y").to_string(),
+        _ if d.year() == now.year() => crate::i18n::date::weekday_date(&d, false),
+        _ => crate::i18n::date::weekday_date(&d, true),
     }
 }
 
@@ -1347,12 +1410,12 @@ pub(super) fn group_receipt_lines(r: &p2pcore::GroupReceiptStatus) -> Vec<String
     for (label, want) in [(crate::i18n::tr_str("group_read"), L::Read), (crate::i18n::tr_str("group_on_their_device"), L::Delivered), (crate::i18n::tr_str("group_not_yet"), L::Unconfirmed)] {
         let n = names(want);
         if !n.is_empty() {
-            out.push(crate::i18n::tr_args("group_text", &[("label", &(label).to_string()),("value", &(n.join(", ")).to_string())]));
+            out.push(crate::i18n::tr_args("group_text", &[("label", &(label).to_string()),("value", &crate::i18n::tr_list(&n.iter().map(String::as_str).collect::<Vec<_>>()))]));
         }
     }
     let gone: Vec<String> = r.members.iter().filter(|m| !m.eligible).map(who).collect();
     if !gone.is_empty() {
-        out.push(crate::i18n::tr_args("group_also_confirmed", &[("value", &(gone.join(", ")).to_string())]));
+        out.push(crate::i18n::tr_args("group_also_confirmed", &[("value", &crate::i18n::tr_list(&gone.iter().map(String::as_str).collect::<Vec<_>>()))]));
     }
     out
 }

@@ -58,8 +58,8 @@ fn profile_render_square_is_at_most_512() {
 }
 #[test]
 fn profile_name_checks_match_profile_ts() {
-    assert!(check_name("  ", "name").unwrap_err().contains("can\u{2019}t be empty"));
-    assert!(check_name("a\u{202E}b", "name").is_err());
-    assert!(check_name(&"é".repeat(129), "name").unwrap_err().contains("256 bytes"));
-    assert!(check_text("line\nbreak", "about").is_ok());
+    assert!(check_name("  ", Field::Name).unwrap_err().contains("can\u{2019}t be empty"));
+    assert!(check_name("a\u{202E}b", Field::Name).is_err());
+    assert!(check_name(&"é".repeat(129), Field::Name).unwrap_err().contains("256 bytes"));
+    assert!(check_text("line\nbreak", Field::About).is_ok());
 }

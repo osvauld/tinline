@@ -25,14 +25,16 @@ impl App {
         self.live.list.iter().find(|s| s.id == gid).map(|s| s.name.clone()).unwrap_or_else(|| crate::i18n::tr_str("gcall_group_call").into())
     }
 
-    /// gcall.svelte.ts `hostLabel`: "this computer" or "Arjun's device" (the core doesn't say what kind of device).
-    fn gcall_host_label(&self) -> Option<String> {
-        if self.gcall.hosting {
-            return Some(crate::i18n::tr_str("gcall_this_computer").into());
-        }
+    /// The first name of the person whose device carries the call, when it is someone else
+    /// and the app knows a name for them (the core doesn't say what kind of device).
+    fn gcall_host_first(&self) -> Option<String> {
         let did = self.gcall.host.as_ref()?;
-        let n = self.gcall_name(did);
-        Some(crate::i18n::tr_args("gcall_s_device", &[("value", &(n.split_whitespace().next().unwrap_or(&n)).to_string())]))
+        if self.is_me(did) {
+            return None;
+        }
+        let known = self.live.detail.as_ref().and_then(|d| d.members.iter().find(|m| m.did == *did)).map(|m| m.name.clone())
+            .or_else(|| self.contacts.iter().find(|c| c.did == *did).map(Self::display))?;
+        known.split_whitespace().next().map(str::to_string)
     }
 
     /// The full group call screen (not minimised).
@@ -57,7 +59,7 @@ impl App {
         // .head: name 26/32 650, then the status (or the timer), the count and the speaking line, each in a fixed row.
         let n = g.parts.len();
         let count = if connected && n > 0 {
-            if n == 1 { crate::i18n::tr_str("gcall_only_you_so_far").to_string() } else { crate::i18n::tr_args("gcall_people_in_the_call", &[("count", &(n).to_string())]) }
+            if n == 1 { crate::i18n::tr_str("gcall_only_you_so_far").to_string() } else { crate::i18n::tr_count("gcall_people_in_the_call", n as u64, &[]) }
         } else { String::new() };
         let status_cell: El = if connected && g.phase == Phase::Active {
             mono(format!("{:02}:{:02}", g.elapsed() / 60, g.elapsed() % 60), 20.0, t.ink).line_height(lh(30.0)).into()
@@ -106,7 +108,16 @@ impl App {
             stage = stage.push(container(ui::raised(card, t, ui::Depth::Pop, ui::plain(t.warn, 18.0))).width(Fill).height(Fill).align_bottom(Fill).padding(Padding { bottom: 4.0, ..Padding::ZERO }));
         }
         // .host: "Call host: Arjun's device" with the info icon; it opens About this call.
-        let host_text = self.gcall_host_label().map(|h| if g.hosting { crate::i18n::tr_str("gcall_youre_the_call_host").to_string() } else { crate::i18n::tr_args("gcall_call_host", &[("host", &(h).to_string())]) });
+        let host_text = if g.hosting {
+            Some(crate::i18n::tr_str("gcall_youre_the_call_host").to_string())
+        } else if g.host.is_some() {
+            Some(match self.gcall_host_first() {
+                Some(n) => crate::i18n::tr_args("gcall_call_host_device", &[("name", &n)]),
+                None => crate::i18n::tr_str("gcall_call_host_unnamed").to_string(),
+            })
+        } else {
+            None
+        };
         let host: El = match host_text.filter(|_| connected || g.phase == Phase::Connecting) {
             Some(h) => button(row![tx(h, 13.0, t.ink).line_height(lh(20.0)), crate::pg_icons::pgi("info", 16.0, ui::alpha(t.ink, 0.75))].spacing(8).align_y(Alignment::Center))
                 .padding([0, 14]).height(44).style(shell_view::wash(t, None, Some(ui::alpha(t.ink, 0.09)), 22.0)).on_press(gm(Gm::About(true))).into(),
@@ -128,13 +139,14 @@ impl App {
 
     /// About this call (group): who carries the call and what that means; honest about the host hearing it.
     fn gcall_about(&self, t: Tok) -> El<'_> {
-        let host = self.gcall_host_label().unwrap_or_else(|| crate::i18n::tr_str("gcall_the_call_host").into());
-        let cap = { let mut c = host.chars(); c.next().map(|f| f.to_uppercase().collect::<String>() + c.as_str()).unwrap_or_default() };
+        let key = if self.gcall.hosting { "gcall_about_this_computer" } else if self.gcall_host_first().is_some() { "gcall_about_device" } else { "gcall_about_unnamed" };
+        let first = self.gcall_host_first().unwrap_or_default();
         let p = |s: String| -> El<'_> { tx(s, 13.0, t.ink2).line_height(lh(19.0)).into() };
-        let lead = iced::widget::rich_text![
-            iced::widget::span::<(), iced::Font>(cap).font(ui::SANS_SEMI).color(t.ink),
-            iced::widget::span::<(), iced::Font>(crate::i18n::tr_args("gcall_this_call_everyone_in", &[("value", &(if self.gcall.hosting { crate::i18n::tr_str("gcall_is_carrying") } else { "carries" }).to_string())])).color(t.ink2),
-        ].size(13).line_height(lh(19.0));
+        // One sentence per host kind; the host's name is bold inside it (`**..**`).
+        let lead = iced::widget::rich_text(crate::i18n::tr_rich(key, &[("name", &first)]).into_iter().map(|p| match p {
+            crate::i18n::Piece::Bold(x) => iced::widget::span::<(), iced::Font>(x).font(ui::SANS_SEMI).color(t.ink),
+            crate::i18n::Piece::Text(x) | crate::i18n::Piece::Slot(x) => iced::widget::span::<(), iced::Font>(x).color(t.ink2),
+        }).collect::<Vec<_>>()).size(13).line_height(lh(19.0));
         let got = button(container(semi(crate::i18n::tr_str("common_got_it"), 15.0, t.on_primary)).center_x(Fill).center_y(44)).padding(0).width(Fill).height(44)
             .style(ui::button_style(t, Kind::Primary, 22.0)).on_press(gm(Gm::About(false)));
         let content = column![

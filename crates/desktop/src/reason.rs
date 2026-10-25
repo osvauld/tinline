@@ -47,8 +47,8 @@ pub fn history(reason: &str, incoming: bool, missed: bool, secs: u32, name: &str
         "declined_elsewhere" => crate::i18n::tr_str("call_declined_on_another_device").into(),
         "blocked" => crate::i18n::tr_str("common_blocked").into(),
         "calls not allowed" => crate::i18n::tr_str("call_calls_not_allowed").into(),
-        _ if secs > 0 => format!("{} \u{b7} {}", if incoming { crate::i18n::tr_str("common_incoming") } else { crate::i18n::tr_str("common_outgoing") }, dur(secs)),
-        r => text(r, name, false).unwrap_or_else(|| crate::i18n::tr_str("common_call").into()),
+        _ if secs > 0 => crate::i18n::tr_dots(&[if incoming { crate::i18n::tr_str("common_incoming") } else { crate::i18n::tr_str("common_outgoing") }, &dur(secs)]),
+        r => text(r, name, false).unwrap_or_else(|| crate::i18n::tr_str("call_history_fallback").into()),
     }
 }
 

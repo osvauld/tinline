@@ -103,7 +103,7 @@ impl State {
         match self.phase {
             Phase::Starting => crate::i18n::tr_str("gcall_finding_a_call_host").into(),
             Phase::Connecting => crate::i18n::tr_str("gcall_connecting").into(),
-            Phase::Reconnecting => crate::i18n::tr_str("common_reconnecting_2").into(),
+            Phase::Reconnecting => crate::i18n::tr_str("call_reconnecting_2").into(),
             Phase::Ended | Phase::Failed => self.reason.clone(),
             _ => String::new(),
         }
@@ -311,5 +311,5 @@ fn start_failure(detail: &str) -> String {
         return why.to_string();
     }
     let d = detail.to_lowercase();
-    if d.contains("host") { crate::i18n::tr_str("gcall_no_call_host_available").into() } else { crate::i18n::tr_str("common_couldnt_connect").into() }
+    if d.contains("host") { crate::i18n::tr_str("gcall_no_call_host_available").into() } else { crate::i18n::tr_str("call_couldnt_connect").into() }
 }

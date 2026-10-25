@@ -110,7 +110,7 @@ pub fn status_look(call: Option<CallPhase>, net: Net) -> StatusLook {
         Some(CallPhase::Incoming) => return ringing(1.6, 12.0, crate::i18n::tr_str("common_incoming_call")),
         Some(CallPhase::Outgoing) => return ringing(2.0, 9.0, crate::i18n::tr_str("status_calling")),
         Some(CallPhase::Active) => return StatusLook { state: MarkState::Taut, sway: None, dim: false, label: crate::i18n::tr_str("status_in_a_call") },
-        Some(CallPhase::Reconnecting) => return ringing(2.0, 4.0, crate::i18n::tr_str("common_reconnecting")),
+        Some(CallPhase::Reconnecting) => return ringing(2.0, 4.0, crate::i18n::tr_str("call_reconnecting")),
         None => {}
     }
     match net {
