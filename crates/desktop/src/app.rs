@@ -1434,7 +1434,7 @@ impl App {
                     return Task::none();
                 }
                 let Some(label) = flow::valid_label(&self.device_in) else {
-                    self.notice = Some(crate::i18n::tr_str("common_give_this_computer_a").into());
+                    self.notice = Some(crate::i18n::tr_args("common_give_this_computer_a", &[("min", crate::i18n::NAME_MIN), ("max", crate::i18n::NAME_MAX)]).into());
                     return Task::none();
                 };
                 self.busy = true;
@@ -2295,7 +2295,7 @@ impl App {
             Msg::DeviceEdit(v) => self.device_edit = v,
             Msg::SaveDevice => {
                 let Some(label) = flow::valid_label(&self.device_edit) else {
-                    self.notice = Some(crate::i18n::tr_str("common_a_device_name_is").into());
+                    self.notice = Some(crate::i18n::tr_args("common_a_device_name_is", &[("min", crate::i18n::NAME_MIN), ("max", crate::i18n::NAME_MAX)]).into());
                     return Task::none();
                 };
                 let node = self.node.clone();

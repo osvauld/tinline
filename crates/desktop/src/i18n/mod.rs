@@ -17,6 +17,12 @@ mod tests;
 
 const SOURCE: &str = "en";
 
+/// Numbers that appear in sentences, passed as placeholders so the translator can
+/// place (and, in some scripts, write) them: recovery words, device-name length.
+pub const WORDS: &str = "24";
+pub const NAME_MIN: &str = "1";
+pub const NAME_MAX: &str = "64";
+
 static CURRENT: RwLock<Option<String>> = RwLock::new(None);
 
 /// The language tag we ship that best matches the OS locale (exact tag, then its

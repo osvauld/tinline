@@ -1,8 +1,5 @@
 # Generated from i18n/tm/de.toml by scripts/i18n_tm.py apply. Edit the tm file.
 
-[common_a_device_name_is]
-text = "Ein Gerätename hat 1 bis 64 Zeichen."
-
 [common_about_this_call]
 text = "Über diesen Anruf"
 
@@ -113,9 +110,6 @@ text = "Direkt"
 
 [common_done]
 text = "Fertig"
-
-[common_give_this_computer_a]
-text = "Gib diesem Computer einen Namen mit 1 bis 64 Zeichen."
 
 [common_got_it]
 text = "Verstanden"
@@ -931,9 +925,6 @@ text = "Nochmal versuchen"
 [gate_the_system_keyring_did]
 text = "Der Schlüsselbund des Systems hat den Schlüssel nicht angenommen."
 
-[gate_these_24_words_are]
-text = "Diese 24 Wörter sind der einzige Weg, deine Identität auf einem anderen Gerät wiederherzustellen."
-
 [gate_this_computer_no_longer]
 text = "Dieser Computer hat den Schlüssel nicht mehr, der dein Konto öffnet, und sein Eintrag im Schlüsselbund fehlt. Sobald du wiederherstellst, kommen deine Anrufe wieder durch."
 
@@ -945,9 +936,6 @@ text = "Neuer Versuch..."
 
 [gate_turn_on]
 text = "Einschalten"
-
-[gate_you_didnt_set_a]
-text = "Du hast keine Passphrase festgelegt, also sind die 24 Wiederherstellungswörter der einzige Weg zurück. Deine Kontakte bleiben."
 
 [gate_your_calls_come_through]
 text = "Deine Anrufe kommen wieder durch, sobald du wieder online bist."
@@ -1030,9 +1018,6 @@ text = "Ein Host hält eine vollständige Kopie einer Gruppe und gibt Nachrichte
 
 [group_a_host_keeps_a_full]
 text = "Ein Host hält eine vollständige Kopie der Gruppe, gibt Nachrichten weiter, während die Handys der Mitglieder schlafen, und kennt die Gruppenadressen der Mitglieder. Er muss laufen bleiben. Hosten macht dich nicht zum Admin; du kannst jederzeit aufhören."
-
-[group_a_host_lists_up]
-text = "Ein Host listet bis zu {value} Personen auf einmal, es können also mehr sein."
 
 [group_a_host_stays_on]
 text = "Ein Host bleibt an und gibt Beiträge weiter, während andere offline sind"
@@ -1180,7 +1165,8 @@ text = "Markiert {value}"
 text = "Markiert von {value}. Was du vorher bekommen hast, kannst du weiter lesen; Neues kommt nicht mehr an."
 
 [group_flags_remove_from_the]
-text = "{flags_needed} Markierungen entfernen {name} aus der Gruppe"
+one = "{count} Markierung entfernt {name} aus der Gruppe"
+other = "{count} Markierungen entfernen {name} aus der Gruppe"
 
 [group_getting_the_link]
 text = "Link wird geholt…"
@@ -1457,7 +1443,8 @@ text = "Entfernt"
 text = "{value} · entfernt"
 
 [group_removed_after_admin_flags]
-text = "Nach {len} Admin-Markierungen entfernt"
+one = "Nach {count} Admin-Markierung entfernt"
+other = "Nach {count} Admin-Markierungen entfernt"
 
 [group_replying_to]
 text = "Antwort an {name}"
@@ -2607,9 +2594,6 @@ text = "Wer mich anrufen darf"
 [profile_will_stop_syncing_with]
 text = "{name} hört auf, sich mit deinem Konto abzugleichen, und klingelt nicht mehr, wenn du angerufen wirst. {value}"
 
-[profile_write_these_24_words]
-text = "Schreib diese 24 Wörter der Reihe nach auf und bewahre sie an einem privaten Ort auf."
-
 [profile_yes]
 text = "Ja"
 
@@ -2645,9 +2629,6 @@ text = "Stattdessen erscheinen deine Initialen."
 
 [profile_your_reads_stay_with]
 text = "Was du liest, bleibt bei dir"
-
-[profile_your_recovery_key_is]
-text = "Dein Wiederherstellungsschlüssel entspricht deinen 24 Wörtern, nur in einer Zeile. Ein Passwortmanager ist ein guter Ort dafür."
 
 [profile_your_recovery_phrase_is]
 text = "Deine Wiederherstellungswörter sind der einzige Weg, dein Konto zurückzubekommen, wenn du jedes Gerät verlierst. Wer sie hat, kann als du auftreten."
@@ -2935,9 +2916,6 @@ text = "Ich hab ihn woanders gesichert"
 [signup_i_wrote_them_down]
 text = "Ich hab sie aufgeschrieben"
 
-[signup_if_you_ever_switch]
-text = "Wenn du mal das Gerät wechselst, bringen diese 24 Wörter dein Konto mit."
-
 [signup_is_already_in_your]
 text = "{name} ist schon in deinen Kontakten."
 
@@ -2985,9 +2963,6 @@ text = "Nicht für Notrufe."
 
 [signup_of]
 text = "{count} von {total}"
-
-[signup_of_24]
-text = "{filled} von 24"
 
 [signup_only_the_people_you]
 text = "Nur die Leute, die du hinzufügst, sehen ihn."
@@ -3187,9 +3162,6 @@ text = "Deine Leitung zu {name} ist offen. Sag Hallo."
 
 [signup_your_nickname]
 text = "Dein Spitzname"
-
-[signup_your_recovery_key_is_the]
-text = "Dein Wiederherstellungsschlüssel entspricht deinen 24 Wörtern, nur in einer Zeile."
 
 [signup_your_request_to_is]
 text = "Deine Anfrage an {value} wartet. Deine Leitung öffnet sich, wenn die Person annimmt."

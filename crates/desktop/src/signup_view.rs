@@ -383,7 +383,7 @@ impl App {
                 };
                 let opts = column![
                     opt("qr", crate::i18n::tr_str("signup_link_my_other_device"), crate::i18n::tr_str("signup_scan_a_code_on").into(), Msg::LinkStartNew),
-                    opt("key", crate::i18n::tr_str("signup_restore_my_account"), crate::i18n::tr("signup_type_your_24_recovery"), Msg::ToggleRestore),
+                    opt("key", crate::i18n::tr_str("signup_restore_my_account"), crate::i18n::tr_args("signup_type_your_24_recovery", &[("words", crate::i18n::WORDS)]), Msg::ToggleRestore),
                 ]
                 .spacing(12);
                 let body = shell(crate::i18n::tr_str("signup_use_your_account_here"), vec![crate::i18n::tr("signup_your_account_is_its")], vec![opts.into()]);
@@ -396,7 +396,7 @@ impl App {
                         tx(crate::i18n::tr_str("signup_next_youll_choose_a"), 13.0, t.warn_ink).line_height(lh(19.0)).width(Fill)].spacing(12))
                     .padding([12, 14]).width(Fill).style(ui::plain(t.warn, 14.0));
                 let paste = button(semi(crate::i18n::tr_str("signup_paste_from_clipboard"), 15.0, t.accent_ink).line_height(lh(20.0))).padding([6, 12]).style(super::shell_view::wash(t, None, Some(t.surface2), 14.0)).on_press(g(Gs::WordsPaste));
-                let tools = row![paste, Space::new().width(Fill), tx(crate::i18n::tr_args("signup_of_24", &[("filled", &(gs.filled()).to_string())]), 13.0, t.ink2)].align_y(Alignment::Center);
+                let tools = row![paste, Space::new().width(Fill), tx(crate::i18n::tr_args("signup_of_24", &[("filled", &gs.filled().to_string()), ("total", crate::i18n::WORDS)]), 13.0, t.ink2)].align_y(Alignment::Center);
                 // .grid: four columns, 8 apart; a cell is the number (11, muted, 20 wide) and the word (15/20 mono).
                 let mut grid = column![].spacing(8);
                 for r in 0..6 {
@@ -441,7 +441,7 @@ impl App {
                     let head = column![title(crate::i18n::tr_str("signup_restore_account")), lead(t, &[crate::i18n::tr("signup_your_recovery_key_is")], false), note, card, err].spacing(16).width(Fill);
                     return (container(head).padding(pad).height(Fill).into(), foot(vec![gbtn(t, crate::i18n::tr_str("common_continue"), B::Primary, true, Some(g(Gs::RestoreGo)))]));
                 }
-                let head = column![title(crate::i18n::tr_str("signup_restore_account")), lead(t, &[crate::i18n::tr("signup_type_your_24_words")], false), note, tools].spacing(16).width(Fill);
+                let head = column![title(crate::i18n::tr_str("signup_restore_account")), lead(t, &[crate::i18n::tr_args("signup_type_your_24_words", &[("words", crate::i18n::WORDS)])], false), note, tools].spacing(16).width(Fill);
                 let body = column![head, iced::widget::scrollable(grid).height(Fill).style(ui::scroll_style(t)), dock].spacing(12).width(Fill).height(Fill);
                 (container(body).padding(pad).height(Fill).into(), foot(vec![gbtn(t, crate::i18n::tr_str("common_continue"), B::Primary, true, (gs.filled() > 0).then_some(g(Gs::RestoreGo)))]))
             }
@@ -533,9 +533,9 @@ impl App {
                 let body = shell(
                     if as_key { crate::i18n::tr_str("signup_here_is_your_recovery") } else { crate::i18n::tr_str("signup_here_are_your_recovery") },
                     if as_key {
-                        vec![crate::i18n::tr_str("signup_your_recovery_key_is_the").into(), crate::i18n::tr_str("signup_paste_it_somewhere_safe").into()]
+                        vec![crate::i18n::tr_args("signup_your_recovery_key_is_the", &[("words", crate::i18n::WORDS)]).into(), crate::i18n::tr_str("signup_paste_it_somewhere_safe").into()]
                     } else {
-                        vec![crate::i18n::tr_str("signup_if_you_ever_switch").into(), crate::i18n::tr_str("signup_save_a_copy_somewhere").into()]
+                        vec![crate::i18n::tr_args("signup_if_you_ever_switch", &[("words", crate::i18n::WORDS)]).into(), crate::i18n::tr_str("signup_save_a_copy_somewhere").into()]
                     },
                     vec![seg, shown],
                 );

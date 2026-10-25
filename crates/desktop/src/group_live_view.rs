@@ -1297,7 +1297,7 @@ impl App {
                 let mut c = column![tx(gname.clone(), 13.0, t.ink2), title(gl::online_label(n)),
                     para(crate::i18n::tr_str("group_members_a_host_has").into())].spacing(14);
                 if n >= gl::ONLINE_CAP {
-                    c = c.push(para(crate::i18n::tr_args("group_a_host_lists_up", &[("value", &(gl::ONLINE_CAP).to_string())])));
+                    c = c.push(para(crate::i18n::tr_count("group_a_host_lists_up", gl::ONLINE_CAP as u64, &[])));
                 }
                 if !self.live.presence_visible {
                     c = c.push(para(crate::i18n::tr_str("group_youre_not_shown_to").into()));

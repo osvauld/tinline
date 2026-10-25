@@ -232,7 +232,7 @@ impl App {
                     return Task::none();
                 }
                 let Some(label) = flow::valid_label(&self.device_in) else {
-                    self.notice = Some(crate::i18n::tr_str("common_give_this_computer_a").into());
+                    self.notice = Some(crate::i18n::tr_args("common_give_this_computer_a", &[("min", crate::i18n::NAME_MIN), ("max", crate::i18n::NAME_MAX)]).into());
                     return Task::none();
                 };
                 self.device_in = label;
@@ -376,7 +376,7 @@ impl App {
             Msg::DevRenameSave => {
                 let Some((dev, text)) = self.dev_rename.clone() else { return Task::none() };
                 let Some(label) = flow::valid_label(&text) else {
-                    self.notice = Some(crate::i18n::tr_str("common_a_device_name_is").into());
+                    self.notice = Some(crate::i18n::tr_args("common_a_device_name_is", &[("min", crate::i18n::NAME_MIN), ("max", crate::i18n::NAME_MAX)]).into());
                     return Task::none();
                 };
                 self.dev_rename = None;

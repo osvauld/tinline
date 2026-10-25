@@ -670,7 +670,7 @@ impl App {
             let bar = row![pg_btn(t, if shown { Btn::Outline } else { Btn::Primary }, Some(if shown { "eyeoff" } else { "eye" }), if shown { crate::i18n::tr_str("profile_hide_key") } else { crate::i18n::tr_str("profile_show_key") }, Some(Msg::Privacy(crate::app::PvMsg::Words(!shown)))),
                 pg_btn(t, Btn::Outline, Some("copy"), crate::i18n::tr_str("common_copy_my_key"), Some(Msg::Privacy(crate::app::PvMsg::CopyKey))),
                 tx(if shown { crate::i18n::tr_args("profile_hides_in_s", &[("seconds", &(left).to_string())]) } else { String::new() }, 13.0, t.ink2)].spacing(12).align_y(Alignment::Center);
-            let c = column![lead_(crate::i18n::tr_str("profile_your_recovery_key_is")), container(seg).padding(Padding { bottom: 10.0, ..Padding::ZERO }), shown_key,
+            let c = column![lead_(&crate::i18n::tr_args("profile_your_recovery_key_is", &[("words", crate::i18n::WORDS)])), container(seg).padding(Padding { bottom: 10.0, ..Padding::ZERO }), shown_key,
                 container(bar).padding(Padding { top: 12.0, ..Padding::ZERO }),
                 pf_note(t, crate::i18n::tr_str("profile_anyone_who_has_it"))];
             return self.pf_scroll(t, pf_sec(16.0, c.into()), 40.0);
@@ -693,7 +693,7 @@ impl App {
         let left = self.pv.shown_at.map(|a| 30u64.saturating_sub(a.elapsed().as_secs())).unwrap_or(30);
         let bar = row![pg_btn(t, if shown { Btn::Outline } else { Btn::Primary }, Some(if shown { "eyeoff" } else { "eye" }), if shown { crate::i18n::tr_str("profile_hide_words") } else { crate::i18n::tr_str("profile_show_words") }, Some(Msg::Privacy(crate::app::PvMsg::Words(!shown)))),
             tx(if shown { crate::i18n::tr_args("profile_hides_in_s", &[("seconds", &(left).to_string())]) } else { String::new() }, 13.0, t.ink2)].spacing(12).align_y(Alignment::Center);
-        let c = column![lead_(crate::i18n::tr_str("profile_write_these_24_words")), container(seg).padding(Padding { bottom: 10.0, ..Padding::ZERO }), card, container(bar).padding(Padding { top: 12.0, ..Padding::ZERO }),
+        let c = column![lead_(&crate::i18n::tr_args("profile_write_these_24_words", &[("words", crate::i18n::WORDS)])), container(seg).padding(Padding { bottom: 10.0, ..Padding::ZERO }), card, container(bar).padding(Padding { top: 12.0, ..Padding::ZERO }),
             pf_note(t, crate::i18n::tr_str("profile_there_is_no_copy"))];
         self.pf_scroll(t, pf_sec(16.0, c.into()), 40.0)
     }

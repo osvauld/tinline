@@ -347,7 +347,7 @@ impl App {
     /// Locked with no passphrase: the stored key is gone, so only the 24 words bring the account back.
     fn key_lost_view(&self, t: Tok) -> El<'_> {
         let mut col = column![tx(
-            crate::i18n::tr_str("gate_you_didnt_set_a"),
+            crate::i18n::tr_args("gate_you_didnt_set_a", &[("words", crate::i18n::WORDS)]),
             14.0,
             t.ink,
         )]
@@ -435,7 +435,7 @@ impl App {
         self.shell(
             t,
             crate::i18n::tr_str("gate_your_recovery_phrase"),
-            crate::i18n::tr_str("gate_these_24_words_are"),
+            &crate::i18n::tr_args("gate_these_24_words_are", &[("words", crate::i18n::WORDS)]),
             col.into(),
         )
     }

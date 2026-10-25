@@ -1,8 +1,5 @@
 # Generated from i18n/tm/fr.toml by scripts/i18n_tm.py apply. Edit the tm file.
 
-[common_a_device_name_is]
-text = "Un nom d’appareil fait de 1 à 64 caractères."
-
 [common_about_this_call]
 text = "À propos de cet appel"
 
@@ -113,9 +110,6 @@ text = "Direct"
 
 [common_done]
 text = "OK"
-
-[common_give_this_computer_a]
-text = "Donnez à cet ordinateur un nom de 1 à 64 caractères."
 
 [common_got_it]
 text = "Compris"
@@ -932,9 +926,6 @@ text = "Réessayer"
 [gate_the_system_keyring_did]
 text = "Le trousseau du système n’a pas accepté la clé."
 
-[gate_these_24_words_are]
-text = "Ces 24 mots sont le seul moyen de restaurer votre identité sur un autre appareil."
-
 [gate_this_computer_no_longer]
 text = "Cet ordinateur n’a plus la clé qui l’ouvre, et son entrée dans le trousseau a disparu. Dès que vous restaurez, vos appels arrivent à nouveau."
 
@@ -946,9 +937,6 @@ text = "Nouvel essai…"
 
 [gate_turn_on]
 text = "Activer"
-
-[gate_you_didnt_set_a]
-text = "Vous n’avez pas défini de phrase secrète, donc les 24 mots de récupération sont le seul moyen de revenir. Vos contacts restent."
 
 [gate_your_calls_come_through]
 text = "Vos appels arrivent à nouveau dès que vous êtes de retour en ligne."
@@ -1032,9 +1020,6 @@ text = "Un hôte garde une copie complète d’un groupe et transmet les message
 
 [group_a_host_keeps_a_full]
 text = "Un hôte garde une copie complète du groupe, transmet les messages pendant que les téléphones des membres sont en veille et connaît les adresses de groupe des membres. Il doit rester en marche. Héberger ne fait pas de vous un admin ; vous pouvez arrêter à tout moment."
-
-[group_a_host_lists_up]
-text = "Un hôte affiche jusqu’à {value} personnes à la fois, il peut donc y en avoir d’autres."
 
 [group_a_host_stays_on]
 text = "Un hôte reste allumé et transmet les publications quand les autres sont hors ligne"
@@ -1183,7 +1168,9 @@ text = "Signalé {value}"
 text = "Signalé par {value}. Vous pouvez toujours lire ce que vous avez reçu avant ; rien de nouveau n’arrivera."
 
 [group_flags_remove_from_the]
-text = "{flags_needed} signalements retirent {name} du groupe"
+one = "{count} signalement retire {name} du groupe"
+many = "{count} signalements retirent {name} du groupe"
+other = "{count} signalements retirent {name} du groupe"
 
 [group_getting_the_link]
 text = "Récupération du lien…"
@@ -1464,7 +1451,9 @@ text = "Retiré"
 text = "{value} · hors du groupe"
 
 [group_removed_after_admin_flags]
-text = "Retrait après {len} signalements d’admins"
+one = "Retrait après {count} signalement d’admin"
+many = "Retrait après {count} signalements d’admins"
+other = "Retrait après {count} signalements d’admins"
 
 [group_replying_to]
 text = "Réponse à {name}"
@@ -2619,9 +2608,6 @@ text = "Qui peut m’appeler"
 [profile_will_stop_syncing_with]
 text = "{name} cessera de se synchroniser avec votre compte et de sonner quand on vous appelle. {value}"
 
-[profile_write_these_24_words]
-text = "Notez ces 24 mots, dans l’ordre, et gardez-les dans un endroit privé."
-
 [profile_yes]
 text = "Oui"
 
@@ -2657,9 +2643,6 @@ text = "Vos initiales s’afficheront à la place."
 
 [profile_your_reads_stay_with]
 text = "Vos lectures restent privées"
-
-[profile_your_recovery_key_is]
-text = "Votre clé de récupération équivaut à vos 24 mots, en une seule ligne. Un gestionnaire de mots de passe est un bon endroit pour la ranger."
 
 [profile_your_recovery_phrase_is]
 text = "Vos mots de récupération sont le seul moyen de récupérer votre compte si vous perdez tous vos appareils. Toute personne qui les a peut agir en votre nom."
@@ -2948,9 +2931,6 @@ text = "Je l’ai enregistrée ailleurs"
 [signup_i_wrote_them_down]
 text = "Je les ai notés"
 
-[signup_if_you_ever_switch]
-text = "Si vous changez un jour d’appareil, ces 24 mots emportent votre compte avec vous."
-
 [signup_is_already_in_your]
 text = "{name} est déjà dans vos contacts."
 
@@ -2998,9 +2978,6 @@ text = "Pas pour les appels d’urgence."
 
 [signup_of]
 text = "{count} sur {total}"
-
-[signup_of_24]
-text = "{filled} sur 24"
 
 [signup_only_the_people_you]
 text = "Seules les personnes que vous ajoutez le verront."
@@ -3201,9 +3178,6 @@ text = "Votre ligne avec {name} est ouverte. Dites bonjour."
 
 [signup_your_nickname]
 text = "Votre pseudo"
-
-[signup_your_recovery_key_is_the]
-text = "Votre clé de récupération équivaut à vos 24 mots, en une seule ligne."
 
 [signup_your_request_to_is]
 text = "Votre demande à {value} est en attente. Votre ligne s’ouvre quand cette personne accepte."

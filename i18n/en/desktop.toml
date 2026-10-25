@@ -3,8 +3,8 @@
 # ---- Shared labels
 
 [common_a_device_name_is]
-text = "A device name is 1 to 64 characters."
-note = "Shared label, used in several places (app, link)."
+text = "A device name is {min} to {max} characters."
+note = "Shared label, used in several places (app, link). {min} and {max} are the shortest and longest allowed length, numbers."
 
 [common_about_this_call]
 text = "About this call"
@@ -155,8 +155,8 @@ text = "Done"
 note = "Shared label, used in several places (link, signup)."
 
 [common_give_this_computer_a]
-text = "Give this computer a name of 1 to 64 characters."
-note = "Shared label, used in several places (app, link)."
+text = "Give this computer a name of {min} to {max} characters."
+note = "Shared label, used in several places (app, link). {min} and {max} are the shortest and longest allowed length, numbers."
 
 [common_got_it]
 text = "Got it"
@@ -1274,8 +1274,8 @@ text = "The system keyring did not accept the key."
 note = "Desktop, sign-in and gate screens (in view.rs, key_failed_view)."
 
 [gate_these_24_words_are]
-text = "These 24 words are the only way to restore your identity on another device."
-note = "Desktop, sign-in and gate screens (in view.rs, phrase_view)."
+text = "These {words} words are the only way to restore your identity on another device."
+note = "Desktop, sign-in and gate screens (in view.rs, phrase_view). {words} is the number of recovery words (24), a number."
 
 [gate_this_computer_no_longer]
 text = "This computer no longer has the key that opens it, and its keyring entry is missing. Once you restore, your calls come through again."
@@ -1294,8 +1294,8 @@ text = "Turn on"
 note = "Desktop, sign-in and gate screens (in view.rs, problem)."
 
 [gate_you_didnt_set_a]
-text = "You didn’t set a passphrase, so the 24-word recovery phrase is the only way back. Your contacts stay."
-note = "Desktop, sign-in and gate screens (in view.rs, key_lost_view)."
+text = "You didn’t set a passphrase, so the {words}-word recovery phrase is the only way back. Your contacts stay."
+note = "Desktop, sign-in and gate screens (in view.rs, key_lost_view). {words} is the number of recovery words (24), a number."
 
 [gate_your_calls_come_through]
 text = "Your calls come through again once you’re back online."
@@ -1413,8 +1413,9 @@ text = "A host keeps a full copy of the group, passes messages on while members�
 note = "Desktop, groups (in group_live_view.rs, live_pane)."
 
 [group_a_host_lists_up]
-text = "A host lists up to {value} people at a time, so there may be more."
-note = "Desktop, groups (in group_live_view.rs, live_overlay). {value} is a value filled in by the app."
+one = "A host lists up to {count} person at a time, so there may be more."
+other = "A host lists up to {count} people at a time, so there may be more."
+note = "Desktop, group \"Who's online\" dialog (in group_live_view.rs). {count} is the most people a host lists at a time (a number)."
 
 [group_a_host_stays_on]
 text = "A host stays on and passes posts on while others are offline"
@@ -3547,8 +3548,8 @@ text = "{name} will stop syncing with your account and stop ringing when you’r
 note = "Desktop, profile and settings (in profile_view.rs, devices_layer). {name} is a person's name (usually the first word of their chosen name). {value} is a value filled in by the app."
 
 [profile_write_these_24_words]
-text = "Write these 24 words down, in order, and keep them somewhere private."
-note = "Desktop, profile and settings (in profile_view.rs, phrase_page)."
+text = "Write these {words} words down, in order, and keep them somewhere private."
+note = "Desktop, profile and settings (in profile_view.rs, phrase_page). {words} is the number of recovery words (24), a number."
 
 [profile_yes]
 text = "Yes"
@@ -3599,8 +3600,8 @@ text = "Your reads stay with you"
 note = "Desktop, profile and settings (in profile_view.rs, privacy_landing)."
 
 [profile_your_recovery_key_is]
-text = "Your recovery key is the same as your 24 words, as one line. A password manager is a good place for it."
-note = "Desktop, profile and settings (in profile_view.rs, phrase_page)."
+text = "Your recovery key is the same as your {words} words, as one line. A password manager is a good place for it."
+note = "Desktop, profile and settings (in profile_view.rs, phrase_page). {words} is the number of recovery words (24), a number."
 
 [profile_your_recovery_phrase_is]
 text = "Your recovery phrase is the only way to get your account back if you lose every device. Anyone who has it can act as you."
@@ -3993,8 +3994,8 @@ text = "I wrote them down"
 note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
 
 [signup_if_you_ever_switch]
-text = "If you ever switch devices, these 24 words bring your account along."
-note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
+text = "If you ever switch devices, these {words} words bring your account along."
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {words} is the number of recovery words (24), a number."
 
 [signup_is_already_in_your]
 text = "{name} is already in your contacts."
@@ -4061,8 +4062,8 @@ text = "{count} of {total}"
 note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_head). {count} is a number. {total} is a value filled in by the app."
 
 [signup_of_24]
-text = "{filled} of 24"
-note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {filled} is a value filled in by the app."
+text = "{filled} of {total}"
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {filled} is a value filled in by the app. {total} is how many recovery words there are (24), a number."
 
 [signup_only_the_people_you]
 text = "Only the people you add will see it."
@@ -4229,12 +4230,12 @@ text = "Two devices are better than one"
 note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
 
 [signup_type_your_24_recovery]
-text = "Type your 24 recovery words. This computer starts with an empty contact list."
-note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
+text = "Type your {words} recovery words. This computer starts with an empty contact list."
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {words} is the number of recovery words (24), a number."
 
 [signup_type_your_24_words]
-text = "Type your 24 words in order, or paste them, or your recovery key, into the first box. They stay on this computer."
-note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
+text = "Type your {words} words in order, or paste them, or your recovery key, into the first box. They stay on this computer."
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {words} is the number of recovery words (24), a number."
 
 [signup_unlock]
 text = "Unlock"
@@ -4358,8 +4359,8 @@ text = "Your recovery key is in. It stays on this computer."
 note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
 
 [signup_your_recovery_key_is_the]
-text = "Your recovery key is the same as your 24 words, as one line."
-note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step)."
+text = "Your recovery key is the same as your {words} words, as one line."
+note = "Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {words} is the number of recovery words (24), a number."
 
 [signup_your_request_to_is]
 text = "Your request to {value} is waiting. Your line opens when they accept."
