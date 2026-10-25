@@ -4408,6 +4408,12 @@ text = "Profil de {name}"
 [calls_cant_call]
 text = "Appel impossible"
 
+[calls_row_desc]
+text = "{name}, {what}, {time}. {action}"
+
+[calls_row_desc_duration]
+text = "{name}, {what}, {duration}, {time}. {action}"
+
 [calls_group_info_desc]
 text = "{name}, infos du groupe"
 
@@ -4801,17 +4807,38 @@ text = "Toute personne qui a ce lien ou ce QR code peut rejoindre ce groupe pend
 [groupsb_share_text_unnamed]
 text = "Rejoignez mon groupe sur Tinline : {link}"
 
+[card_chat_with_unnamed]
+text = "Discuter avec cette personne ?"
+
+[card_add_unnamed]
+text = "Ajouter ce contact ?"
+
 [call_unreachable_title_unnamed]
 text = "Impossible de joindre cette personne"
 
 [calls_desc_incoming]
 text = "Appel entrant"
 
+[calls_desc_outgoing]
+text = "Appel sortant"
+
+[calls_desc_away]
+text = "Appel pendant votre indisponibilité"
+
 [calls_desc_missed]
 text = "Appel manqué"
 
+[calls_desc_declined]
+text = "Appel refusé"
+
+[calls_desc_no_answer]
+text = "Appel sans réponse"
+
 [calls_desc_cancelled]
 text = "Appel annulé"
+
+[calls_desc_unreachable]
+text = "Appel qui n’a pas pu aboutir"
 
 [calls_desc_other]
 text = "Appel Tinline"
@@ -4830,6 +4857,15 @@ text = "Hors ligne"
 
 [calls_what_other]
 text = "Appel Tinline"
+
+[notif_request_text_unnamed]
+text = "Quelqu’un aimerait vous ajouter"
+
+[notif_accepted_title]
+text = "Demande acceptée"
+
+[notif_accepted_text_unnamed]
+text = "Votre contact a accepté votre demande. Votre ligne est ouverte."
 
 [gcall_host_label_device]
 text = "Hôte d’appel : appareil de {name}"
@@ -4858,6 +4894,9 @@ text = "Quelqu’un a lancé un appel dans {group}"
 [notif_group_calling_unnamed]
 text = "Quelqu’un appelle le groupe"
 
+[common_list_separator]
+text = ", "
+
 [groupsb_member_desc]
 text = "{list}. Ouvrir les actions"
 
@@ -4866,6 +4905,9 @@ text = "hôte"
 
 [groupsb_role_callhost_lc]
 text = "hôte d’appel"
+
+[avail_note_unnamed]
+text = "Pendant votre absence, les personnes qui appellent voient qu’elles n’ont pas pu vous joindre. Rien n’est mis en attente et personne n’est informé de la raison."
 
 [onboarding_linked_lead_unnamed]
 text = "Vos contacts et discussions arrivent depuis votre autre appareil et resteront synchronisés sur les deux."

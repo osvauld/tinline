@@ -522,6 +522,9 @@ text = "Refusé sur un autre appareil"
 [call_device_changes_apply_from]
 text = "Les changements de périphérique s’appliquent à partir du prochain appel."
 
+[call_during_your_call]
+text = "Pendant votre appel en cours"
+
 [call_end]
 text = "Raccrocher"
 
@@ -537,6 +540,9 @@ text = "Chiffré de bout en bout."
 [call_end_to_end_encrypted_ctrl]
 text = "Chiffré de bout en bout · Ctrl M micro · Ctrl E raccrocher · Échap réduire"
 
+[call_ends_your_call_with]
+text = "Répondre met fin à votre appel avec {name}."
+
 [call_enter_answers_esc_declines]
 text = "Entrée pour répondre · Échap pour refuser"
 
@@ -551,6 +557,9 @@ text = "HD"
 
 [call_ignore_limits_heat_their]
 text = "Ignorer les limites (chaleur, son décodeur)"
+
+[call_is_calling_you]
+text = "Vous appelle…"
 
 [call_minimize_call]
 text = "Réduire l’appel"
@@ -3368,8 +3377,119 @@ text = "C’est trop long : {limit} octets au maximum, et certains caractères
 [profile_err_text_chars]
 text = "Ce champ ne peut pas contenir de caractères de contrôle ou de sens d’écriture."
 
+[common_list_separator]
+text = ", "
+
 [common_list_and]
 text = "{list} et {last}"
+
+[common_list_two]
+text = "{first} et {last}"
+
+[common_dot_separator]
+text = " · "
+
+[date_month_1]
+text = "janv."
+
+[date_month_2]
+text = "févr."
+
+[date_month_3]
+text = "mars"
+
+[date_month_4]
+text = "avr."
+
+[date_month_5]
+text = "mai"
+
+[date_month_6]
+text = "juin"
+
+[date_month_7]
+text = "juil."
+
+[date_month_8]
+text = "août"
+
+[date_month_9]
+text = "sept."
+
+[date_month_10]
+text = "oct."
+
+[date_month_11]
+text = "nov."
+
+[date_month_12]
+text = "déc."
+
+[date_weekday_mon]
+text = "lundi"
+
+[date_weekday_tue]
+text = "mardi"
+
+[date_weekday_wed]
+text = "mercredi"
+
+[date_weekday_thu]
+text = "jeudi"
+
+[date_weekday_fri]
+text = "vendredi"
+
+[date_weekday_sat]
+text = "samedi"
+
+[date_weekday_sun]
+text = "dimanche"
+
+[date_month_day]
+text = "{day} {month}"
+
+[date_day_month]
+text = "{day} {month}"
+
+[date_month_day_time]
+text = "{day} {month} à {time}"
+
+[date_weekday_date]
+text = "{weekday} {day} {month}"
+
+[date_weekday_date_year]
+text = "{weekday} {day} {month} {year}"
+
+[profile_busy_until_tomorrow]
+text = "Occupé jusqu’à demain à {time}"
+
+[profile_busy_until_mon]
+text = "Occupé jusqu’à lundi à {time}"
+
+[profile_busy_until_tue]
+text = "Occupé jusqu’à mardi à {time}"
+
+[profile_busy_until_wed]
+text = "Occupé jusqu’à mercredi à {time}"
+
+[profile_busy_until_thu]
+text = "Occupé jusqu’à jeudi à {time}"
+
+[profile_busy_until_fri]
+text = "Occupé jusqu’à vendredi à {time}"
+
+[profile_busy_until_sat]
+text = "Occupé jusqu’à samedi à {time}"
+
+[profile_busy_until_sun]
+text = "Occupé jusqu’à dimanche à {time}"
+
+[call_ends_your_call]
+text = "Répondre met fin à votre appel en cours."
+
+[common_someone_is_calling]
+text = "Quelqu’un vous appelle"
 
 [call_reconnecting]
 text = "Reconnexion de l’appel"
@@ -3717,3 +3837,6 @@ text = "Autre appareil associé"
 
 [link_linked_to_account]
 text = "Associé à votre compte"
+
+[chat_you_blocked_on]
+text = "Vous avez bloqué {name} · {when}"

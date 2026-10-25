@@ -11176,14 +11176,14 @@ en = "{name}, {what}, {time}. {action}"
 where = [
   "android calls_row_desc: Accessibility description of a Calls row. {what} is a full phrase such as 'Missed call', {time} the time of the call, {action} is 'Call' or 'Can’t call'.",
 ]
-text = ""
+text = "{name}, {what}, {time}. {action}"
 
 [t_53231bda5e]
 en = "{name}, {what}, {duration}, {time}. {action}"
 where = [
   "android calls_row_desc_duration: Accessibility description of a Calls row with a duration. {what} is a full phrase such as 'Incoming call', {duration} is e.g. 2:31; others as in the row description.",
 ]
-text = ""
+text = "{name}, {what}, {duration}, {time}. {action}"
 
 [t_e7a879b634]
 en = "{name}, group info"
@@ -12165,7 +12165,7 @@ en = "Chat with them?"
 where = [
   "android card_chat_with_unnamed: Title of the prompt shown when a card of someone already in your contacts is found and the card has no name.",
 ]
-text = ""
+text = "Discuter avec cette personne ?"
 
 [t_b919b75049]
 en = "Add this contact?"
@@ -12173,7 +12173,7 @@ where = [
   "android card_add_unnamed: Title of the prompt shown when a new contact card is found and the card has no name.",
   "ios chat_card_add_name_unnamed: Banner on a found contact card whose name is not known, for someone not yet a contact.",
 ]
-text = ""
+text = "Ajouter ce contact ?"
 
 [t_272be16cd4]
 en = "Couldn’t reach them"
@@ -12189,14 +12189,14 @@ where = [
   "android calls_desc_outgoing: Spoken kind of a Calls row: a call I made and was answered.",
   "ios shell_call_desc_outgoing: Screen reader phrase for a call row, a whole phrase used as {what} in the row label: answered outgoing call. Reads like “Missed call”.",
 ]
-text = ""
+text = "Appel sortant"
 
 [t_3c2da8482e]
 en = "Call while you were not available"
 where = [
   "android calls_desc_away: Spoken kind of a Calls row: a call that came in while I had turned availability off.",
 ]
-text = ""
+text = "Appel pendant votre indisponibilité"
 
 [t_342070990f]
 en = "Declined call"
@@ -12204,14 +12204,14 @@ where = [
   "android calls_desc_declined: Spoken kind of a Calls row: a call that was declined.",
   "ios shell_call_desc_declined: Screen reader phrase for a call row, a whole phrase used as {what} in the row label: call that was declined. Reads like “Missed call”.",
 ]
-text = ""
+text = "Appel refusé"
 
 [t_2a8e1bc41d]
 en = "Call nobody answered"
 where = [
   "android calls_desc_no_answer: Spoken kind of a Calls row: an outgoing call nobody answered.",
 ]
-text = ""
+text = "Appel sans réponse"
 
 [t_f9f088ec90]
 en = "Call that couldn’t connect"
@@ -12219,7 +12219,7 @@ where = [
   "android calls_desc_unreachable: Spoken kind of a Calls row: a call that could not connect.",
   "ios shell_call_desc_unreachable: Screen reader phrase for a call row: call that could not reach the other person.",
 ]
-text = ""
+text = "Appel qui n’a pas pu aboutir"
 
 [t_fb71c5fddb]
 en = "Public link"
@@ -12252,21 +12252,21 @@ en = "Someone would like to add you"
 where = [
   "android notif_request_text_unnamed: Text of the contact request notification when the person has no name.",
 ]
-text = ""
+text = "Quelqu’un aimerait vous ajouter"
 
 [t_0027a2215b]
 en = "Request accepted"
 where = [
   "android notif_accepted_title: Title of the notification when someone accepted my request.",
 ]
-text = ""
+text = "Demande acceptée"
 
 [t_0e41c3df81]
 en = "Your contact accepted your request. Your line is open."
 where = [
   "android notif_accepted_text_unnamed: Text of the notification when someone accepted my request and has no name.",
 ]
-text = ""
+text = "Votre contact a accepté votre demande. Votre ligne est ouverte."
 
 [t_b866c0b674]
 en = "Call host: {name}’s device"
@@ -12346,7 +12346,7 @@ where = [
   "android common_list_separator: Joins items in a list on phones older than Android 10, which cannot format lists by language: 'Ana, Sam'. Use the comma (and any space) your language puts between list items.",
   "desktop common_list_separator: Between items of a list of three or more names (the last two are joined with common_list_and). Keep the trailing space if the language needs one.",
 ]
-text = ""
+text = ", "
 
 [t_821622c40b]
 en = "{list}. Open actions"
@@ -12374,7 +12374,7 @@ en = "While you’re away, people who call see that they couldn’t reach you. N
 where = [
   "android avail_note_unnamed: Hint at the bottom of the availability sheet when my name is empty.",
 ]
-text = ""
+text = "Pendant votre absence, les personnes qui appellent voient qu’elles n’ont pas pu vous joindre. Rien n’est mis en attente et personne n’est informé de la raison."
 
 [t_f0ff6a4c21]
 en = "Your contacts and chats are arriving from your other device and will keep in step on both."
@@ -12396,21 +12396,21 @@ en = "Sent, waiting for their device to confirm"
 where = [
   "ios kit_tick_sent_their: Screen-reader label of a message tick: sent, no confirmation yet. Used when the other person's name is not known; their means the other person's.",
 ]
-text = ""
+text = "Envoyé, en attente de confirmation de l’appareil de votre contact"
 
 [t_affe0a3a21]
 en = "Read on their device"
 where = [
   "ios kit_tick_read_their: Screen-reader label of a message tick: read. Used when the other person's name is not known.",
 ]
-text = ""
+text = "Lu sur l’appareil de votre contact"
 
 [t_944f47e9e0]
 en = "Chat with this contact?"
 where = [
   "ios chat_card_chat_with_unnamed: Banner on a found contact card whose name is not known, for a contact already in Tinline.",
 ]
-text = ""
+text = "Discuter avec ce contact ?"
 
 [t_eb90d80ea2]
 en = "Match {index} of {total}"
@@ -13042,21 +13042,21 @@ en = "Call while not available"
 where = [
   "ios shell_call_desc_unavailable: Screen reader phrase for a call row, a whole phrase used as {what} in the row label: incoming call that came while the user had set themselves unavailable. Reads like “Missed call”.",
 ]
-text = ""
+text = "Appel pendant une indisponibilité"
 
 [t_7286c55835]
 en = "Call with no answer"
 where = [
   "ios shell_call_desc_no_answer: Screen reader phrase for a call row, a whole phrase used as {what} in the row label: outgoing call nobody picked up. Reads like “Missed call”.",
 ]
-text = ""
+text = "Appel sans réponse"
 
 [t_b70d3c6bb5]
 en = "Call couldn’t connect"
 where = [
   "ios shell_call_what_unreachable: Call list: call that could not reach the other person.",
 ]
-text = ""
+text = "L’appel n’a pas pu aboutir"
 
 [t_46bad378f1]
 en = "Word {n} isn’t in the recovery word list. Check the spelling."
@@ -13108,14 +13108,14 @@ en = "{name}, {what}, {stamp}. {action}"
 where = [
   "ios shell_calls_row_a11y: Screen reader label of a call row. {name} is the contact, {what} a whole phrase such as “Missed call”, {stamp} when, {action} what tapping does.",
 ]
-text = ""
+text = "{name}, {what}, {stamp}. {action}"
 
 [t_f443d6d138]
 en = "{name}, {what}, {duration}, {stamp}. {action}"
 where = [
   "ios shell_calls_row_a11y_duration: Screen reader label of an answered call row. {name} is the contact, {what} a whole phrase such as “Incoming call”, {duration} how long, {stamp} when, {action} what tapping does.",
 ]
-text = ""
+text = "{name}, {what}, {duration}, {stamp}. {action}"
 
 [t_6c3d485347]
 en = "{name}, {what}, {stamp}. Start or join a call"
@@ -13513,7 +13513,7 @@ where = [
   "ios people_busy_until_tomorrow: Availability line while busy until a time. {time} is a clock time formatted for the user’s region, such as 18:30. The time is tomorrow.",
   "desktop profile_busy_until_tomorrow: Desktop, profile availability (in profile_ui.rs, busy_until). Shown while I am marked busy. {time} is a clock time such as 18:00. This one is for a time tomorrow.",
 ]
-text = ""
+text = "Occupé jusqu’à demain à {time}"
 
 [t_1b7eba8ee8]
 en = "Busy until Monday {time}"
@@ -13521,7 +13521,7 @@ where = [
   "ios people_busy_until_mon: Availability line while busy until a time. {time} is a clock time formatted for the user’s region, such as 18:30. The time is on a Monday, a later day this week.",
   "desktop profile_busy_until_mon: Desktop, profile availability (in profile_ui.rs, busy_until). Shown while I am marked busy. {time} is a clock time such as 18:00. This one is for a time on Monday (within the next week).",
 ]
-text = ""
+text = "Occupé jusqu’à lundi à {time}"
 
 [t_a8cafb2a3d]
 en = "Busy until Tuesday {time}"
@@ -13529,7 +13529,7 @@ where = [
   "ios people_busy_until_tue: Availability line while busy until a time. {time} is a clock time formatted for the user’s region, such as 18:30. The time is on a Tuesday, a later day this week.",
   "desktop profile_busy_until_tue: Desktop, profile availability (in profile_ui.rs, busy_until). Shown while I am marked busy. {time} is a clock time such as 18:00. This one is for a time on Tuesday (within the next week).",
 ]
-text = ""
+text = "Occupé jusqu’à mardi à {time}"
 
 [t_852e51c301]
 en = "Busy until Wednesday {time}"
@@ -13537,7 +13537,7 @@ where = [
   "ios people_busy_until_wed: Availability line while busy until a time. {time} is a clock time formatted for the user’s region, such as 18:30. The time is on a Wednesday, a later day this week.",
   "desktop profile_busy_until_wed: Desktop, profile availability (in profile_ui.rs, busy_until). Shown while I am marked busy. {time} is a clock time such as 18:00. This one is for a time on Wednesday (within the next week).",
 ]
-text = ""
+text = "Occupé jusqu’à mercredi à {time}"
 
 [t_8100f9a12f]
 en = "Busy until Thursday {time}"
@@ -13545,7 +13545,7 @@ where = [
   "ios people_busy_until_thu: Availability line while busy until a time. {time} is a clock time formatted for the user’s region, such as 18:30. The time is on a Thursday, a later day this week.",
   "desktop profile_busy_until_thu: Desktop, profile availability (in profile_ui.rs, busy_until). Shown while I am marked busy. {time} is a clock time such as 18:00. This one is for a time on Thursday (within the next week).",
 ]
-text = ""
+text = "Occupé jusqu’à jeudi à {time}"
 
 [t_54ac93afbc]
 en = "Busy until Friday {time}"
@@ -13553,7 +13553,7 @@ where = [
   "ios people_busy_until_fri: Availability line while busy until a time. {time} is a clock time formatted for the user’s region, such as 18:30. The time is on a Friday, a later day this week.",
   "desktop profile_busy_until_fri: Desktop, profile availability (in profile_ui.rs, busy_until). Shown while I am marked busy. {time} is a clock time such as 18:00. This one is for a time on Friday (within the next week).",
 ]
-text = ""
+text = "Occupé jusqu’à vendredi à {time}"
 
 [t_5641afbd38]
 en = "Busy until Saturday {time}"
@@ -13561,7 +13561,7 @@ where = [
   "ios people_busy_until_sat: Availability line while busy until a time. {time} is a clock time formatted for the user’s region, such as 18:30. The time is on a Saturday, a later day this week.",
   "desktop profile_busy_until_sat: Desktop, profile availability (in profile_ui.rs, busy_until). Shown while I am marked busy. {time} is a clock time such as 18:00. This one is for a time on Saturday (within the next week).",
 ]
-text = ""
+text = "Occupé jusqu’à samedi à {time}"
 
 [t_43b0917c92]
 en = "Busy until Sunday {time}"
@@ -13569,7 +13569,7 @@ where = [
   "ios people_busy_until_sun: Availability line while busy until a time. {time} is a clock time formatted for the user’s region, such as 18:30. The time is on a Sunday, a later day this week.",
   "desktop profile_busy_until_sun: Desktop, profile availability (in profile_ui.rs, busy_until). Shown while I am marked busy. {time} is a clock time such as 18:00. This one is for a time on Sunday (within the next week).",
 ]
-text = ""
+text = "Occupé jusqu’à dimanche à {time}"
 
 [t_493d670f89]
 en = "Today, {time}"
@@ -13577,7 +13577,7 @@ where = [
   "ios chat_when_today: Date and time line in a message detail or the photo viewer title, for today. {time} is a 24-hour clock time such as 16:02.",
   "ios group_when_today: Date and time line in a group message or a sent request, for today. {time} is a 24-hour clock time such as 16:02.",
 ]
-text = ""
+text = "Aujourd’hui à {time}"
 
 [t_507ac7d2de]
 en = "Yesterday, {time}"
@@ -13585,7 +13585,7 @@ where = [
   "ios chat_when_yesterday: Date and time line in a message detail or the photo viewer title, for yesterday. {time} is a 24-hour clock time such as 16:02.",
   "ios group_when_yesterday: Date and time line in a group message or a sent request, for yesterday. {time} is a 24-hour clock time such as 16:02.",
 ]
-text = ""
+text = "Hier à {time}"
 
 [t_8a351f5983]
 en = "{date}, {time}"
@@ -13594,7 +13594,7 @@ where = [
   "ios group_when_date: Date and time line in a group message or a sent request, for an older day. {date} is a day formatted for the user’s region, such as Oct 8, {time} a 24-hour clock time.",
   "ios people_when_date: Date and time of a block, e.g. “You blocked Ana · Oct 10, 13:50”. {date} is a day formatted for the user’s region, {time} a 24-hour clock time.",
 ]
-text = ""
+text = "{date} à {time}"
 
 [t_1406c5139e]
 en = "A device name is {min} to {max} characters."
@@ -14091,7 +14091,7 @@ en = "While you’re on this call"
 where = [
   "desktop call_during_your_call: Desktop, call waiting card (in view.rs, waiting_banner), second line under \"{name} is calling\". A complete line saying the other call arrives while I am on this one.",
 ]
-text = ""
+text = "Pendant votre appel en cours"
 
 [t_b19e015d90]
 en = "End-to-end encrypted · Ctrl M mute · Ctrl E end · Esc minimizes"
@@ -14105,7 +14105,7 @@ en = "Answering ends your call with {name}."
 where = [
   "desktop call_ends_your_call_with: Desktop, call waiting card (in view.rs, waiting_banner), small line under the buttons. {name} is the first name of the person I am talking to now.",
 ]
-text = ""
+text = "Répondre met fin à votre appel avec {name}."
 
 [t_4af8cd18a6]
 en = "Enter answers · Esc declines"
@@ -14147,7 +14147,7 @@ en = "Calling you…"
 where = [
   "desktop call_is_calling_you: Desktop, incoming call screen (in view.rs, video_call_view), status line under the caller's name, which is shown above it. A complete short line.",
 ]
-text = ""
+text = "Vous appelle…"
 
 [t_8f764feef1]
 en = "{rtt_ms} ms round trip · {value}% lost"
@@ -17312,196 +17312,196 @@ en = "{first} and {last}"
 where = [
   "desktop common_list_two: A list of exactly two names. {first} and {last} are names.",
 ]
-text = ""
+text = "{first} et {last}"
 
 [t_2f27018b89]
 en = " · "
 where = [
   "desktop common_dot_separator: Between short whole phrases on one line, e.g. \"Invited by Ana · 1 of 3 flags\". Keep the spaces.",
 ]
-text = ""
+text = " · "
 
 [t_068c9a83c8]
 en = "Jan"
 where = [
   "desktop date_month_1: Short month name inside dates such as \"Sep 12\" (month 1 of 12). A word or abbreviation, nothing else.",
 ]
-text = ""
+text = "janv."
 
 [t_2fc789c4d5]
 en = "Feb"
 where = [
   "desktop date_month_2: Short month name inside dates such as \"Sep 12\" (month 2 of 12). A word or abbreviation, nothing else.",
 ]
-text = ""
+text = "févr."
 
 [t_b066d8f5ef]
 en = "Mar"
 where = [
   "desktop date_month_3: Short month name inside dates such as \"Sep 12\" (month 3 of 12). A word or abbreviation, nothing else.",
 ]
-text = ""
+text = "mars"
 
 [t_74a7ff087e]
 en = "Apr"
 where = [
   "desktop date_month_4: Short month name inside dates such as \"Sep 12\" (month 4 of 12). A word or abbreviation, nothing else.",
 ]
-text = ""
+text = "avr."
 
 [t_e532d1d3fa]
 en = "May"
 where = [
   "desktop date_month_5: Short month name inside dates such as \"Sep 12\" (month 5 of 12). A word or abbreviation, nothing else.",
 ]
-text = ""
+text = "mai"
 
 [t_1bfac4c565]
 en = "Jun"
 where = [
   "desktop date_month_6: Short month name inside dates such as \"Sep 12\" (month 6 of 12). A word or abbreviation, nothing else.",
 ]
-text = ""
+text = "juin"
 
 [t_b0624225dc]
 en = "Jul"
 where = [
   "desktop date_month_7: Short month name inside dates such as \"Sep 12\" (month 7 of 12). A word or abbreviation, nothing else.",
 ]
-text = ""
+text = "juil."
 
 [t_e7f1e3d854]
 en = "Aug"
 where = [
   "desktop date_month_8: Short month name inside dates such as \"Sep 12\" (month 8 of 12). A word or abbreviation, nothing else.",
 ]
-text = ""
+text = "août"
 
 [t_2cd1a9363c]
 en = "Sep"
 where = [
   "desktop date_month_9: Short month name inside dates such as \"Sep 12\" (month 9 of 12). A word or abbreviation, nothing else.",
 ]
-text = ""
+text = "sept."
 
 [t_9fb8e4095f]
 en = "Oct"
 where = [
   "desktop date_month_10: Short month name inside dates such as \"Sep 12\" (month 10 of 12). A word or abbreviation, nothing else.",
 ]
-text = ""
+text = "oct."
 
 [t_babad4d09a]
 en = "Nov"
 where = [
   "desktop date_month_11: Short month name inside dates such as \"Sep 12\" (month 11 of 12). A word or abbreviation, nothing else.",
 ]
-text = ""
+text = "nov."
 
 [t_71dfdc0e04]
 en = "Dec"
 where = [
   "desktop date_month_12: Short month name inside dates such as \"Sep 12\" (month 12 of 12). A word or abbreviation, nothing else.",
 ]
-text = ""
+text = "déc."
 
 [t_27ab80e757]
 en = "Monday"
 where = [
   "desktop date_weekday_mon: Weekday name inside dates such as \"Thursday 8 Oct\". Just the day name.",
 ]
-text = ""
+text = "lundi"
 
 [t_83f75a6a3d]
 en = "Tuesday"
 where = [
   "desktop date_weekday_tue: Weekday name inside dates such as \"Thursday 8 Oct\". Just the day name.",
 ]
-text = ""
+text = "mardi"
 
 [t_38d4808009]
 en = "Wednesday"
 where = [
   "desktop date_weekday_wed: Weekday name inside dates such as \"Thursday 8 Oct\". Just the day name.",
 ]
-text = ""
+text = "mercredi"
 
 [t_21149a2390]
 en = "Thursday"
 where = [
   "desktop date_weekday_thu: Weekday name inside dates such as \"Thursday 8 Oct\". Just the day name.",
 ]
-text = ""
+text = "jeudi"
 
 [t_148abe3f88]
 en = "Friday"
 where = [
   "desktop date_weekday_fri: Weekday name inside dates such as \"Thursday 8 Oct\". Just the day name.",
 ]
-text = ""
+text = "vendredi"
 
 [t_0968e86bdc]
 en = "Saturday"
 where = [
   "desktop date_weekday_sat: Weekday name inside dates such as \"Thursday 8 Oct\". Just the day name.",
 ]
-text = ""
+text = "samedi"
 
 [t_cc55d792bc]
 en = "Sunday"
 where = [
   "desktop date_weekday_sun: Weekday name inside dates such as \"Thursday 8 Oct\". Just the day name.",
 ]
-text = ""
+text = "dimanche"
 
 [t_a3673dec81]
 en = "{month} {day}"
 where = [
   "desktop date_month_day: A date without a year. {month} is the short month name, {day} the day number. English \"Sep 12\".",
 ]
-text = ""
+text = "{day} {month}"
 
 [t_5fd8e248d3]
 en = "{day} {month}"
 where = [
   "desktop date_day_month: A date without a year, day first. {day} is the day number, {month} the short month name. English \"12 Sep\".",
 ]
-text = ""
+text = "{day} {month}"
 
 [t_7a357641e5]
 en = "{month} {day}, {time}"
 where = [
   "desktop date_month_day_time: A date and the clock time. {month} short month name, {day} day number, {time} the time like 15:20. English \"Oct 10, 15:20\".",
 ]
-text = ""
+text = "{day} {month} à {time}"
 
 [t_f0d5b4190a]
 en = "{weekday} {day} {month}"
 where = [
   "desktop date_weekday_date: A date with its weekday, this year. {weekday} the day name, {day} the day number, {month} the short month name. English \"Thursday 8 Oct\".",
 ]
-text = ""
+text = "{weekday} {day} {month}"
 
 [t_99e3037c80]
 en = "{weekday} {day} {month} {year}"
 where = [
   "desktop date_weekday_date_year: A date with its weekday and year. {weekday} day name, {day} day number, {month} short month name, {year} the year. English \"Thursday 8 Oct 2025\".",
 ]
-text = ""
+text = "{weekday} {day} {month} {year}"
 
 [t_52db4d10a3]
 en = "Answering ends your current call."
 where = [
   "desktop call_ends_your_call: Desktop, call waiting card (in view.rs, waiting_banner), small line under the buttons, when the current caller has no name.",
 ]
-text = ""
+text = "Répondre met fin à votre appel en cours."
 
 [t_b2f4b04b14]
 en = "Someone is calling"
 where = [
   "desktop common_someone_is_calling: Desktop, incoming call: notification and call waiting card title when the caller has no name.",
 ]
-text = ""
+text = "Quelqu’un vous appelle"
 
 [t_705fd514d9]
 en = "Reconnecting the call"
@@ -17690,4 +17690,4 @@ en = "You blocked {name} · {when}"
 where = [
   "desktop chat_you_blocked_on: Desktop, chat (in chat_view.rs, block_note): same line with the date. {name} is the first name, {when} a date and time such as \"Oct 10, 15:20\".",
 ]
-text = ""
+text = "Vous avez bloqué {name} · {when}"

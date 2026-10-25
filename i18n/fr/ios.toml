@@ -6,6 +6,9 @@ text = "En attente d’envoi"
 [kit_tick_sent]
 text = "Envoyé, en attente de confirmation de l’appareil de {first}"
 
+[kit_tick_sent_their]
+text = "Envoyé, en attente de confirmation de l’appareil de votre contact"
+
 [kit_tick_delivered]
 text = "Sur l’appareil de {first}"
 
@@ -14,6 +17,9 @@ text = "Sur leur appareil"
 
 [kit_tick_read]
 text = "Lu sur l’appareil de {first}"
+
+[kit_tick_read_their]
+text = "Lu sur l’appareil de votre contact"
 
 [kit_tick_bad]
 text = "Non distribué"
@@ -111,8 +117,14 @@ text = "Ajouter"
 [chat_card_chat_with]
 text = "Discuter avec {name} ?"
 
+[chat_card_chat_with_unnamed]
+text = "Discuter avec ce contact ?"
+
 [chat_card_add_name]
 text = "Ajouter {name} ?"
+
+[chat_card_add_name_unnamed]
+text = "Ajouter ce contact ?"
 
 [chat_find_placeholder]
 text = "Rechercher dans cette discussion"
@@ -2959,8 +2971,14 @@ text = "Appel entrant"
 [shell_call_what_outgoing]
 text = "Sortant"
 
+[shell_call_desc_outgoing]
+text = "Appel sortant"
+
 [shell_call_what_unavailable]
 text = "Pendant une indisponibilité"
+
+[shell_call_desc_unavailable]
+text = "Appel pendant une indisponibilité"
 
 [shell_call_what_missed]
 text = "Manqué"
@@ -2971,14 +2989,26 @@ text = "Appel manqué"
 [shell_call_what_declined]
 text = "Refusé"
 
+[shell_call_desc_declined]
+text = "Appel refusé"
+
 [shell_call_what_no_answer]
 text = "Pas de réponse"
+
+[shell_call_desc_no_answer]
+text = "Appel sans réponse"
 
 [shell_call_what_cancelled]
 text = "Annulé"
 
 [shell_call_desc_cancelled]
 text = "Appel annulé"
+
+[shell_call_what_unreachable]
+text = "L’appel n’a pas pu aboutir"
+
+[shell_call_desc_unreachable]
+text = "Appel qui n’a pas pu aboutir"
 
 [shell_call_what_other]
 text = "Appel Tinline"
@@ -3234,6 +3264,12 @@ text = "Profil de {name}"
 
 [shell_calls_what_duration]
 text = "{what} · {duration}"
+
+[shell_calls_row_a11y]
+text = "{name}, {what}, {stamp}. {action}"
+
+[shell_calls_row_a11y_duration]
+text = "{name}, {what}, {duration}, {stamp}. {action}"
 
 [shell_calls_action_call]
 text = "Appeler"
@@ -4525,3 +4561,48 @@ text = "**L’hôte d’appel** héberge cet appel. Chaque participant s’y con
 
 [people_busy_until_today]
 text = "Occupé jusqu’à {time}"
+
+[people_busy_until_tomorrow]
+text = "Occupé jusqu’à demain à {time}"
+
+[people_busy_until_mon]
+text = "Occupé jusqu’à lundi à {time}"
+
+[people_busy_until_tue]
+text = "Occupé jusqu’à mardi à {time}"
+
+[people_busy_until_wed]
+text = "Occupé jusqu’à mercredi à {time}"
+
+[people_busy_until_thu]
+text = "Occupé jusqu’à jeudi à {time}"
+
+[people_busy_until_fri]
+text = "Occupé jusqu’à vendredi à {time}"
+
+[people_busy_until_sat]
+text = "Occupé jusqu’à samedi à {time}"
+
+[people_busy_until_sun]
+text = "Occupé jusqu’à dimanche à {time}"
+
+[chat_when_today]
+text = "Aujourd’hui à {time}"
+
+[chat_when_yesterday]
+text = "Hier à {time}"
+
+[chat_when_date]
+text = "{date} à {time}"
+
+[group_when_today]
+text = "Aujourd’hui à {time}"
+
+[group_when_yesterday]
+text = "Hier à {time}"
+
+[group_when_date]
+text = "{date} à {time}"
+
+[people_when_date]
+text = "{date} à {time}"
