@@ -646,7 +646,7 @@ text = "Votre fréquence d’images"
 text = "Votre réseau a changé. Un instant — Tinline cherche à rétablir la ligne."
 
 [call_your_size]
-text = "Votre taille"
+text = "Votre résolution"
 
 [call_your_video]
 text = "Votre vidéo"
@@ -834,7 +834,7 @@ text = "Dites bonjour à {name}"
 text = "Envoyer un fichier"
 
 [chat_sends_when_is_online]
-text = "Part quand {name} est en ligne"
+text = "Envoi dès que {name} est en ligne"
 
 [chat_signed_by]
 text = "Signé par {name} · {value}"
@@ -846,7 +846,7 @@ text = "Signé par {value}"
 text = "Touchez pour réessayer"
 
 [chat_that_is_everything_has]
-text = "C’est tout ce que {name} possède."
+text = "C’est tout l’historique dont dispose {name}."
 
 [chat_too_short_hold_on]
 text = "Trop court — maintenez un peu plus longtemps."
@@ -933,7 +933,7 @@ text = "Ajouter plutôt une phrase secrète"
 text = "Toute personne qui voit ces mots peut se faire passer pour vous. Notez-les et gardez-les en lieu sûr."
 
 [gate_calls_wont_ring_until]
-text = "Les appels ne sonneront pas tant que vous ne réactivez pas."
+text = "Les appels ne sonneront pas tant que vous ne les réactiverez pas."
 
 [gate_cant_open_your_account]
 text = "Impossible d’ouvrir votre compte"
@@ -942,7 +942,7 @@ text = "Impossible d’ouvrir votre compte"
 text = "Impossible d’enregistrer votre compte"
 
 [gate_i_have_saved_it]
-text = "Je l’ai enregistré"
+text = "Je les ai enregistrés"
 
 [gate_or]
 text = "Ou"
@@ -990,10 +990,10 @@ text = "Vous êtes indisponible"
 text = "Vous êtes hors ligne"
 
 [gcall_a_call_host_is]
-text = "Un hôte d’appel est un appareil choisi par un admin du groupe et qui a accepté. C’est distinct de l’hébergement du chat. Les admins peuvent changer d’hôte d’appel dans Infos du groupe."
+text = "Un hôte d’appel est un appareil choisi par un admin du groupe et qui a accepté. C’est distinct de l’hébergement du groupe. Les admins peuvent changer d’hôte d’appel dans Infos du groupe."
 
 [gcall_battery_is_low_or]
-text = "La batterie est faible ou l’ordinateur chauffe. L’hébergement est limité : une seule personne est entendue à la fois, et personne de nouveau ne peut rejoindre."
+text = "La batterie est faible ou l’ordinateur chauffe. L’hébergement est limité : une seule personne est entendue à la fois, et aucun nouveau participant ne peut rejoindre l’appel."
 
 [gcall_call_ended_host_lost]
 text = "Appel terminé — hôte perdu"
@@ -1017,7 +1017,7 @@ text = "Appel de groupe"
 text = "{value} appelle le groupe"
 
 [gcall_is_carrying]
-text = "porte"
+text = "héberge"
 
 [gcall_no_call_host_available]
 text = "Aucun hôte d’appel disponible"
@@ -1047,7 +1047,7 @@ text = " {value} cet appel. Chaque participant s’y connecte ; il transmet l�
 text = "cet ordinateur"
 
 [gcall_your_connection_to_the]
-text = "Votre connexion à l’hôte d’appel est chiffrée, mais l’hôte d’appel lui-même reçoit l’audio, il peut donc entendre cet appel. Vous lui faites confiance pour l’appel comme vous faites confiance à un hôte de chat pour les publications."
+text = "Votre connexion à l’hôte d’appel est chiffrée, mais l’hôte d’appel lui-même reçoit l’audio, il peut donc entendre cet appel. Vous lui faites confiance pour l’appel comme vous faites confiance à un hôte de groupe pour les publications."
 
 [gcall_youre_already_in_a]
 text = "Vous êtes déjà en appel."
@@ -1056,19 +1056,19 @@ text = "Vous êtes déjà en appel."
 text = "Vous êtes l’hôte d’appel"
 
 [group_a_call_host_carries]
-text = "Un hôte d’appel porte l’appel. Chaque participant s’y connecte et il transmet l’audio, il peut donc entendre l’appel. C’est distinct de l’hébergement du chat : un hôte de chat n’est pas hôte d’appel, sauf si vous le désignez aussi comme tel. Les hôtes d’appel sont des membres de confiance, et chacun choisit d’accepter.{value}"
+text = "Un hôte d’appel héberge l’appel. Chaque participant s’y connecte et il transmet l’audio, il peut donc entendre l’appel. C’est distinct de l’hébergement du groupe : un hôte de groupe n’est pas hôte d’appel, sauf si vous le désignez aussi comme tel. Les hôtes d’appel sont des membres de confiance, et chacun choisit d’accepter.{value}"
 
 [group_a_call_host_is]
-text = "Un hôte d’appel est l’ordinateur ou le téléphone d’un membre qui porte l’appel. Un admin peut en désigner un dans Infos du groupe."
+text = "Un hôte d’appel est l’ordinateur ou le téléphone d’un membre qui héberge l’appel. Un admin peut en désigner un dans Infos du groupe."
 
 [group_a_call_host_is_a]
-text = "Un hôte d’appel est l’ordinateur ou le téléphone d’un membre qui porte l’appel. Vous pouvez héberger les appels sur cet ordinateur, ou désigner un membre dans Infos du groupe."
+text = "Un hôte d’appel est l’ordinateur ou le téléphone d’un membre qui héberge l’appel. Vous pouvez héberger les appels sur cet ordinateur, ou désigner un membre dans Infos du groupe."
 
 [group_a_call_needs_a]
 text = "Un appel a besoin d’un hôte d’appel"
 
 [group_a_flag_is_signed]
-text = "Un signalement est signé par vous et ne peut pas être annulé. {name} peut voir qui l’a signalé et quand. Les messages écrits par {name} avant le retrait restent visibles, marqués."
+text = "Un signalement est signé par vous et ne peut pas être annulé. {name} peut voir qui a fait chaque signalement, et quand. Les messages écrits par {name} avant le retrait restent visibles, marqués."
 
 [group_a_host_keeps_a]
 text = "Un hôte garde une copie complète d’un groupe et transmet les messages pendant que les téléphones des membres sont en veille. Les membres se connectent aux hôtes, pas entre eux ; seuls les hôtes connaissent les adresses de groupe des membres. Tinline continue d’héberger quand la fenêtre est fermée (il reste dans la zone de notification)."
@@ -1083,7 +1083,7 @@ text = "Un hôte affiche jusqu’à {value} personnes à la fois, il peut donc y
 text = "Un hôte reste allumé et transmet les publications quand les autres sont hors ligne"
 
 [group_a_link_for_your]
-text = "Un lien pour votre propre autre appareil"
+text = "Un lien pour un autre de vos appareils"
 
 [group_a_link_that_doesnt]
 text = "Un lien qui n’expire pas"
@@ -1122,7 +1122,7 @@ text = "Ont aussi confirmé : {value}"
 text = " · héberge aussi les appels"
 
 [group_an_admin_asked_this]
-text = "Un admin a demandé à cet ordinateur de porter les appels du groupe"
+text = "Un admin a demandé à cet ordinateur d’héberger les appels du groupe"
 
 [group_and]
 text = "{value} et {last}"
@@ -1152,13 +1152,13 @@ text = "En tant qu’hôte, cet ordinateur va :"
 text = "Proposer une discussion privée à {name}"
 
 [group_asked_the_device_carries]
-text = "Demande envoyée. L’appareil porte les appels dès qu’il accepte."
+text = "Demande envoyée. L’appareil héberge les appels dès qu’il accepte."
 
 [group_asked_this_computer_to]
 text = "{value} demande à cet ordinateur d’héberger {name}"
 
 [group_asks_to_carry_group]
-text = "Demande à {name} de porter les appels de groupe sur cet appareil ; il faut son accord"
+text = "Demande à {name} d’héberger les appels de groupe sur cet appareil ; il faut son accord"
 
 [group_block]
 text = "Bloquer {name}"
@@ -1187,7 +1187,7 @@ text = "Les appels passent par les autres hôtes d’appel"
 text = "Peut inviter, signaler des membres et désigner des hôtes"
 
 [group_carries_the_groups_calls]
-text = "Porte les appels du groupe ; un ordinateur qui reste allumé est idéal"
+text = "Héberge les appels du groupe ; un ordinateur qui reste allumé est idéal"
 
 [group_checking_with_the_groups]
 text = "Vérification auprès de l’hôte du groupe…"
@@ -1460,10 +1460,10 @@ text = "Personne n’est bloqué. Pour bloquer quelqu’un, ouvrez sa fiche dans
 text = "Pas encore"
 
 [group_of_flags]
-text = " · {flags} signalements sur {flags_needed}"
+text = " · signalements : {flags} sur {flags_needed}"
 
 [group_of_flags_2]
-text = " · {flags} signalements sur {value}"
+text = " · signalements : {flags} sur {value}"
 
 [group_offered_to_host]
 text = "Propose d’héberger"
@@ -1586,7 +1586,7 @@ text = "{name} reste membre"
 text = "{name} reste dans le groupe en tant que membre. Les signalements déjà faits par cette personne comptent toujours."
 
 [group_stop_device_carrying_calls]
-text = "Arrêter les appels sur l’appareil {value}"
+text = "Arrêter l’hébergement des appels sur l’appareil {value}"
 
 [group_stop_device_hosting]
 text = "Arrêter l’hébergement sur l’appareil {value}"
@@ -1613,7 +1613,7 @@ text = "{label} : {value}"
 text = "{what} · {value}"
 
 [group_that_device_no_longer]
-text = "Cet appareil ne porte plus les appels de ce groupe."
+text = "Cet appareil n’héberge plus les appels de ce groupe."
 
 [group_that_device_no_longer_hosts]
 text = "Cet appareil n’héberge plus le groupe."
@@ -1646,10 +1646,10 @@ text = "Invitez ensuite des personnes depuis le panneau des membres."
 text = "Cette personne vous a bloqué, vous ne pouvez donc pas lui proposer de discussion."
 
 [group_this_computer_carries_the]
-text = "Cet ordinateur porte les appels."
+text = "Cet ordinateur héberge les appels."
 
 [group_this_computer_carries_this]
-text = "Cet ordinateur porte désormais les appels de ce groupe."
+text = "Cet ordinateur héberge désormais les appels de ce groupe."
 
 [group_this_computer_doesnt_host]
 text = "Cet ordinateur n’héberge aucun groupe. Pour en héberger un, ouvrez-le et choisissez Héberger depuis cet ordinateur dans le panneau des membres."
@@ -1658,7 +1658,7 @@ text = "Cet ordinateur n’héberge aucun groupe. Pour en héberger un, ouvrez-l
 text = "Cet ordinateur héberge le groupe. Les publications passent tout de suite."
 
 [group_this_computer_stopped_carrying]
-text = "Cet ordinateur ne porte plus les appels de ce groupe."
+text = "Cet ordinateur n’héberge plus les appels de ce groupe."
 
 [group_this_computer_stops_passing]
 text = "Cet ordinateur cesse de transmettre les messages du groupe. Vous restez membre."
@@ -1685,7 +1685,7 @@ text = "ce membre"
 text = "Activez Lien ouvert pour le partager"
 
 [group_unblocking]
-text = "Débloquer"
+text = "Déblocage"
 
 [group_unlock_to_see_your]
 text = "Déverrouillez pour voir vos groupes."
@@ -1712,7 +1712,7 @@ text = "Qui est en ligne"
 text = "Pourquoi ?"
 
 [group_why_was_i_removed]
-text = "Pourquoi ai-je été retiré ?"
+text = "Pourquoi ce retrait ?"
 
 [group_why_you_were_removed]
 text = "Pourquoi vous avez été retiré"
@@ -1760,7 +1760,7 @@ text = "Vous pouvez toujours lire les publications sur cet appareil. Pour reveni
 text = "Vous gardez les messages déjà présents. Les hôtes du groupe refusent vos nouveaux messages. Pour revenir, un admin doit vous inviter à nouveau."
 
 [group_you_left]
-text = "Vous avez quitté"
+text = "Vous l’avez quitté"
 
 [group_you_left_the_group]
 text = "Vous avez quitté le groupe. Ses messages restent ici."
@@ -2072,7 +2072,7 @@ text = "Votre compte est sur l’autre appareil."
 text = "Votre phrase secrète"
 
 [profile_a_muted_chat_never]
-text = "Une discussion en sourdine ne vous prévient jamais, quoi qu’il soit activé ici. Les appels manqués d’une même personne sont regroupés en une notification."
+text = "Une discussion en sourdine ne vous prévient jamais, quels que soient les réglages ici. Les appels manqués d’une même personne sont regroupés en une notification."
 
 [profile_a_new_camera_is]
 text = "Une nouvelle caméra est utilisée au prochain démarrage de votre caméra."
@@ -2257,7 +2257,7 @@ text = "Saisissez votre phrase secrète pour confirmer"
 text = "Saisissez votre phrase secrète pour continuer"
 
 [profile_every_linked_device_is]
-text = "Chaque appareil associé est une copie complète de vous : il peut lire vos discussions et agir en votre nom. Les noms affichés ici sont privés à vos appareils ; vos contacts ne les voient jamais."
+text = "Chaque appareil associé est une copie complète de votre compte : il peut lire vos discussions et agir en votre nom. Les noms affichés ici sont privés à vos appareils ; vos contacts ne les voient jamais."
 
 [profile_every_video_call_starts]
 text = "Chaque appel vidéo démarre ainsi. Pendant un appel, touchez HD pour changer cela pour cet appel."
@@ -2811,7 +2811,7 @@ text = "Audio"
 text = "Disponible pour les appels"
 
 [settings_calls_wont_ring_until]
-text = "Les appels ne sonneront pas tant que vous ne réactivez pas"
+text = "Les appels ne sonneront pas tant que vous ne les réactiverez pas"
 
 [settings_change]
 text = "Changer"
@@ -3029,7 +3029,7 @@ text = "Impossible de joindre le Tinline de {name}. Il doit être ouvert et en l
 text = "Impossible de lire le presse-papiers. Collez plutôt dans la première case."
 
 [signup_create_a_new_account]
-text = "Créez un nouveau compte ou apportez celui que vous avez déjà."
+text = "Créez un nouveau compte ou ajoutez celui que vous avez déjà."
 
 [signup_create_my_account]
 text = "Créer mon compte"
@@ -3083,7 +3083,7 @@ text = "Si vous changez un jour d’appareil, ces 24 mots emportent votre compte
 text = "{name} est déjà dans vos contacts."
 
 [signup_is_this_the_you]
-text = "Est-ce bien le {name} que vous attendiez ? Si vous avez un doute, vérifiez d’abord auprès de cette personne."
+text = "Est-ce bien {name}, la personne que vous attendiez ? Si vous avez un doute, vérifiez d’abord auprès de cette personne."
 
 [signup_it_lives_on_your]
 text = "Il vit sur vos appareils, pas sur un serveur. Vos mots de récupération sont le moyen d’y revenir, alors gardez-les en lieu sûr."
@@ -3098,13 +3098,13 @@ text = "Je les ai enregistrés"
 text = "Clé"
 
 [signup_laptop]
-text = "Portable"
+text = "Ordinateur portable"
 
 [signup_let_them_scan_this]
-text = "Faites-le scanner avec Tinline."
+text = "Faites scanner ce code avec Tinline."
 
 [signup_link_another_device_when]
-text = "Associez un autre appareil quand vous pouvez : si vous en perdez un, vous ne serez jamais bloqué."
+text = "Associez un autre appareil quand vous pouvez : si vous en perdez un, vous gardez l’accès à votre compte."
 
 [signup_link_my_other_device]
 text = "Associer mon autre appareil"
@@ -3245,7 +3245,7 @@ text = "Son code"
 text = "Cet ordinateur peut héberger vos groupes"
 
 [signup_tinline_connects_your_straight]
-text = "Tinline relie votre {noun} directement au leur."
+text = "Tinline relie votre {noun} directement à celui de vos proches."
 
 [signup_tinline_doesnt_collect_your]
 text = "Tinline ne collecte pas vos contacts, vos appels ni votre position."
@@ -3278,10 +3278,10 @@ text = "Utilisez votre téléphone pour joindre les services d’urgence."
 text = "{name} veut vous ajouter comme contact. Accepter vous permet de vous écrire et de vous appeler."
 
 [signup_welcome_back]
-text = "Bon retour"
+text = "Bienvenue"
 
 [signup_welcome_back_2]
-text = "Bon retour,"
+text = "Bienvenue,"
 
 [signup_what_should_people_call]
 text = "Comment voulez-vous qu’on vous appelle ?"
@@ -3320,7 +3320,7 @@ text = "Il vous suffit d’un pseudo. Chiffré de bout en bout."
 text = "{value} Vous la saisissez à chaque démarrage de Tinline. Si vous l’oubliez, vos mots de récupération vous permettent d’en choisir une nouvelle."
 
 [signup_your_account_is_its]
-text = "Votre compte, ce sont ses mots de récupération : vous pouvez donc l’apporter sur cet {noun} de deux façons."
+text = "Votre compte, ce sont ses mots de récupération : vous pouvez donc le retrouver sur cet {noun} de deux façons."
 
 [signup_your_account_is_yours]
 text = "Votre compte vous appartient."
@@ -3359,7 +3359,7 @@ text = "Votre demande à {value} est en attente. Votre ligne s’ouvre quand cet
 text = "Vous êtes hors ligne. Une fois connecté, réessayez."
 
 [status_calling]
-text = "Appel en cours"
+text = "Appel sortant"
 
 [status_connected_to_the_network]
 text = "Connecté au réseau"
@@ -3389,7 +3389,7 @@ text = "Vidéo plus nette activée"
 text = "Réglage vidéo : {error}"
 
 [video_your_chosen_camera_isnt]
-text = "Votre caméra choisie n’est pas connectée. Choisissez-en une dans Paramètres → Vidéo."
+text = "La caméra choisie n’est pas connectée. Choisissez-en une dans Paramètres → Vidéo."
 
 [app_system_default]
 text = "Par défaut du système"

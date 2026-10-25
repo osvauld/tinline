@@ -34,7 +34,7 @@ text = "Fermer"
 text = "Appel entrant"
 
 [kit_mark_calling]
-text = "Appel en cours"
+text = "Appel sortant"
 
 [kit_mark_in_call]
 text = "En appel"
@@ -237,7 +237,7 @@ text = "Supprimer l’enregistrement"
 text = "Glissez pour annuler"
 
 [chat_voice_waveform]
-text = "Forme d’onde du message vocal, touchez pour avancer"
+text = "Forme d’onde du message vocal, touchez pour vous déplacer"
 
 [chat_voice_send]
 text = "Envoyer le message vocal"
@@ -291,7 +291,7 @@ text = "Télécharger"
 text = "Relancer le téléchargement"
 
 [chat_sends_when_online]
-text = "Part quand {first} est en ligne"
+text = "Envoi dès que {first} est en ligne"
 
 [chat_file_open]
 text = "{size} · {type} · touchez pour ouvrir"
@@ -342,22 +342,22 @@ text = "Enregistrer sur le téléphone"
 text = "Modifier"
 
 [chat_head_saved]
-text = "Enregistré {time} · sur vos appareils"
+text = "Enregistré à {time} · sur vos appareils"
 
 [chat_head_received]
-text = "Reçu {time}"
+text = "Reçu à {time}"
 
 [chat_head_read]
-text = "Envoyé {time} · lu sur l’appareil de {first}"
+text = "Envoyé à {time} · lu sur l’appareil de {first}"
 
 [chat_head_delivered]
-text = "Envoyé {time} · sur l’appareil de {first}"
+text = "Envoyé à {time} · sur l’appareil de {first}"
 
 [chat_head_only_here]
-text = "Envoyé {time} · seulement sur ce téléphone pour l’instant"
+text = "Envoyé à {time} · seulement sur ce téléphone pour l’instant"
 
 [chat_head_sent]
-text = "Envoyé {time} · en attente de confirmation de l’appareil de {first}"
+text = "Envoyé à {time} · en attente de confirmation de l’appareil de {first}"
 
 [chat_deleted_by_me]
 text = "Vous avez supprimé ce message"
@@ -600,7 +600,7 @@ text = "Désignez d’abord un hôte. Un lien indique un seul hôte."
 text = "Valable 7 jours"
 
 [group_member_flags]
-text = "{flags} signalements sur {total}"
+text = "Signalements : {flags} sur {total}"
 
 [group_member_blocked_by_you]
 text = "Bloqué par vous"
@@ -739,7 +739,7 @@ other = "{count} hôtes d’appel prêts. Les appels passent par eux."
 text = "Aucun hôte d’appel n’est disponible pour le moment. Un appel pourra démarrer dès que l’un d’eux sera de retour."
 
 [group_callhosts_this_phone]
-text = "Ce téléphone porte les appels que vous lancez."
+text = "Ce téléphone héberge les appels que vous lancez."
 
 [group_remove_callhost_desc]
 text = "Retirer {device} comme hôte d’appel"
@@ -754,13 +754,13 @@ text = "Ne plus héberger les appels sur ce téléphone"
 text = "Héberger les appels sur ce téléphone"
 
 [group_callhost_here_sub]
-text = "Porte les appels que vous lancez ici. Un ordinateur qui reste allumé peut porter ceux de tout le monde."
+text = "Héberge les appels que vous lancez ici. Un ordinateur qui reste allumé peut héberger ceux de tout le monde."
 
 [group_callhosts_note_base]
-text = "Un hôte d’appel porte l’appel. Chaque participant s’y connecte et il transmet l’audio, il peut donc entendre l’appel. C’est distinct de l’hébergement du chat : un hôte de chat n’est pas hôte d’appel, sauf si vous le désignez aussi comme tel. Les hôtes d’appel sont des membres de confiance, et chacun choisit d’accepter."
+text = "Un hôte d’appel héberge l’appel. Chaque participant s’y connecte et il transmet l’audio, il peut donc entendre l’appel. C’est distinct de l’hébergement du groupe : un hôte de groupe n’est pas hôte d’appel, sauf si vous le désignez aussi comme tel. Les hôtes d’appel sont des membres de confiance, et chacun choisit d’accepter."
 
 [group_callhosts_note_admin]
-text = "Un hôte d’appel porte l’appel. Chaque participant s’y connecte et il transmet l’audio, il peut donc entendre l’appel. C’est distinct de l’hébergement du chat : un hôte de chat n’est pas hôte d’appel, sauf si vous le désignez aussi comme tel. Les hôtes d’appel sont des membres de confiance, et chacun choisit d’accepter. Désignez-en un depuis le menu d’un membre, ou hébergez les appels sur ce téléphone. Un téléphone n’héberge que les appels lancés par son propriétaire."
+text = "Un hôte d’appel héberge l’appel. Chaque participant s’y connecte et il transmet l’audio, il peut donc entendre l’appel. C’est distinct de l’hébergement du groupe : un hôte de groupe n’est pas hôte d’appel, sauf si vous le désignez aussi comme tel. Les hôtes d’appel sont des membres de confiance, et chacun choisit d’accepter. Désignez-en un depuis le menu d’un membre, ou hébergez les appels sur ce téléphone. Un téléphone n’héberge que les appels lancés par son propriétaire."
 
 [group_flags_on_you]
 text = "Signalements vous concernant"
@@ -769,7 +769,7 @@ text = "Signalements vous concernant"
 text = "{flags} sur {total}"
 
 [group_flags_count_desc]
-text = "{flags} signalements sur {total}"
+text = "Signalements : {flags} sur {total}"
 
 [group_flags_left]
 one = "Encore {count} signalement de n’importe quel admin et vous serez retiré du groupe. Un signalement ne peut pas être annulé. D’ici là, vous pouvez toujours lire et publier."
@@ -914,7 +914,7 @@ text = "Retirer comme hôte d’appel{device}"
 text = "Nommer hôte d’appel{device}"
 
 [group_member_make_callhost_sub]
-text = "Demande à {name} de porter les appels de groupe. Il faut son accord."
+text = "Demande à {name} d’héberger les appels de groupe. Il faut son accord."
 
 [group_host_stop_device]
 text = "Arrêter d’héberger sur cet appareil"
@@ -950,7 +950,7 @@ text = "Signalement {next} sur {total}"
 text = "Un signalement ne peut pas être annulé, et le retrait est définitif. Un même admin peut signaler plusieurs fois ; chaque signalement compte."
 
 [group_flag_text2]
-text = "Signaler est une décision pour le groupe. C’est distinct du blocage, qui ne concerne que vous. {name} voit chaque signalement : qui l’a fait et quand."
+text = "Le signalement est une décision collective. Il est distinct du blocage, qui ne concerne que vous. {name} voit chaque signalement : qui l’a fait et quand."
 
 [group_back]
 text = "Retour"
@@ -1175,7 +1175,7 @@ text = "Ce téléphone a accepté d’héberger. Il héberge dès qu’un admin 
 text = "Ce téléphone n’héberge plus le groupe."
 
 [group_done_callhost_asked]
-text = "Demande envoyée. L’appareil porte les appels dès qu’il accepte."
+text = "Demande envoyée. L’appareil héberge les appels dès qu’il accepte."
 
 [group_done_callhost_revoked]
 text = "Cet appareil n’héberge plus les appels du groupe."
@@ -1187,7 +1187,7 @@ text = "Cet appareil héberge maintenant les appels du groupe."
 text = "Cet appareil n’hébergera pas les appels du groupe."
 
 [group_done_callhost_here]
-text = "Ce téléphone porte désormais les appels qu’il lance dans ce groupe."
+text = "Ce téléphone héberge désormais les appels qu’il lance dans ce groupe."
 
 [group_done_request_sent]
 text = "Demande envoyée à {name}. Elle attend dans Discussions jusqu’à sa réponse."
@@ -1320,7 +1320,7 @@ text = "Signalé par {names}. Vous pouvez toujours lire ce que vous avez reçu a
 text = "Voir les détails"
 
 [group_receipt_sent]
-text = "Envoyées"
+text = "Envoyé"
 
 [group_blocked_message]
 text = "Message de {name} (contact bloqué) · Afficher"
@@ -1494,7 +1494,7 @@ text = "Invitations pour vous"
 text = "Demandes de discussion"
 
 [group_section_sent]
-text = "Envoyées"
+text = "Envoyé"
 
 [group_section_groups]
 text = "Vos groupes"
@@ -1533,7 +1533,7 @@ text = "Déplié"
 text = "Replié"
 
 [group_gone_left]
-text = "Vous avez quitté"
+text = "Vous l’avez quitté"
 
 [group_no_posts]
 text = "Pas encore de publication"
@@ -1691,7 +1691,7 @@ text = "Notifications de groupes"
 text = "Me prévenir pour"
 
 [settings_notif_note]
-text = "Une discussion en sourdine ne vous prévient jamais, quoi qu’il soit activé ici. Les appels manqués d’une même personne sont regroupés en une notification."
+text = "Une discussion en sourdine ne vous prévient jamais, quels que soient les réglages ici. Les appels manqués d’une même personne sont regroupés en une notification."
 
 [settings_perms]
 text = "Autorisations"
@@ -1799,7 +1799,7 @@ text = "En Wi-Fi et en données mobiles"
 text = "En Wi-Fi"
 
 [settings_dl_wifi_sub]
-text = "En données mobiles, elles attendent que vous touchiez"
+text = "En données mobiles, elles attendent que vous les touchiez"
 
 [settings_dl_tap]
 text = "Quand je les touche"
@@ -1986,7 +1986,7 @@ text = "Afficher"
 text = "Se masque après 30 secondes. Se verrouille quand vous quittez l’app."
 
 [security_hint_same]
-text = "La clé ou les mots restaurent le même compte. Gardez l’une ou les autres dans un endroit privé et sûr."
+text = "La clé ou les mots restaurent le même compte. Gardez-les dans un endroit privé et sûr."
 
 [security_copied_note]
 text = "Copiée. Gardez-la dans un endroit privé."
@@ -2010,7 +2010,7 @@ text = "Ajouter une phrase secrète"
 text = "Phrase secrète actuelle"
 
 [security_pass_intro]
-text = "Votre compte vit uniquement sur ce téléphone. Une phrase secrète le chiffre, pour que personne qui tient votre téléphone ne puisse le copier."
+text = "Votre compte vit uniquement sur ce téléphone. Une phrase secrète le chiffre, pour que personne ne puisse le copier en ayant votre téléphone en main."
 
 [security_new_pass]
 text = "Nouvelle phrase secrète"
@@ -2196,10 +2196,10 @@ text = "Réessayer"
 text = "Changer de compte"
 
 [unlock_welcome]
-text = "Bon retour"
+text = "Bienvenue"
 
 [unlock_welcome_named]
-text = "Bon retour, {name}"
+text = "Bienvenue, {name}"
 
 [unlock_pass]
 text = "Phrase secrète"
@@ -2217,7 +2217,7 @@ text = "Déverrouiller"
 text = "Je l’ai oubliée"
 
 [unlock_welcome_prefix]
-text = "Bon retour, "
+text = "Bienvenue, "
 
 [unlock_switch_identity]
 text = "{name}, changer d’identité"
@@ -2481,7 +2481,7 @@ text = "Vérification du verrouillage d’écran annulée"
 text = "Valider {name} ?"
 
 [link_approve_body]
-text = "Valider envoie vos {phrase} à {name}. Il devient une copie complète de vous : il peut lire vos discussions et agir en votre nom. Ne validez qu’un appareil que vous avez en main."
+text = "Valider envoie vos {phrase} à {name}. Cet appareil devient une copie complète de votre compte : il peut lire vos discussions et agir en votre nom. Ne validez qu’un appareil que vous avez en main."
 
 [link_approve_phrase]
 text = "mots de récupération"
@@ -2559,7 +2559,7 @@ text = "Ensuite, vous choisirez une phrase secrète pour ce compte."
 text = "Une ligne directe avec vos proches"
 
 [onboarding_welcome_lead]
-text = "Tinline relie votre téléphone directement au leur.\nIl vous suffit d’un pseudo. Chiffré de bout en bout."
+text = "Tinline relie votre téléphone directement à celui de vos proches.\nIl vous suffit d’un pseudo. Chiffré de bout en bout."
 
 [onboarding_emergency]
 text = "Pas pour les appels d’urgence."
@@ -2577,7 +2577,7 @@ text = "J’ai déjà un compte"
 text = "Utiliser votre compte ici"
 
 [onboarding_choose_lead]
-text = "Votre compte, ce sont ses mots de récupération : vous pouvez donc l’apporter sur ce téléphone de deux façons."
+text = "Votre compte, ce sont ses mots de récupération : vous pouvez donc le retrouver sur ce téléphone de deux façons."
 
 [onboarding_opt_link]
 text = "Associer mon autre appareil"
@@ -2604,7 +2604,7 @@ text = "Scannez leur code ou partagez le vôtre, et vous pourrez vous appeler."
 text = "Deux appareils valent mieux qu’un"
 
 [onboarding_tip_devices_body]
-text = "Associez un autre appareil quand vous pouvez : si vous en perdez un, vous ne serez jamais bloqué."
+text = "Associez un autre appareil quand vous pouvez : si vous en perdez un, vous gardez l’accès à votre compte."
 
 [onboarding_tip_groups]
 text = "Les groupes sont hébergés sur un ordinateur"
@@ -2730,10 +2730,10 @@ text = "{name} est maintenant sur ce téléphone"
 text = "votre compte"
 
 [onboarding_back_title]
-text = "Bon retour"
+text = "Bienvenue"
 
 [onboarding_back_title_named]
-text = "Bon retour, {name}"
+text = "Bienvenue, {name}"
 
 [onboarding_back_added_lead]
 text = "Seul le compte sélectionné est en ligne à la fois : {name} est donc en ligne et votre autre compte est en pause. Vous pouvez changer dans Réglages."
@@ -2832,13 +2832,13 @@ text = "Pour que les appels vous parviennent"
 text = "Tinline fonctionne comme une ligne téléphonique : elle reste ouverte discrètement en arrière-plan. Chacune de ces autorisations est facultative, et vous pourrez les changer plus tard."
 
 [onboarding_perm_allowed]
-text = "{name} autorisé"
+text = "Autorisation accordée : {name}"
 
 [onboarding_allow]
 text = "Autoriser"
 
 [onboarding_allow_a11y]
-text = "Autoriser {name}"
+text = "Autoriser l’accès : {name}"
 
 [shellkit_hide_field]
 text = "Masquer {name}"
@@ -3093,7 +3093,7 @@ text = "Solide"
 text = "Le mot {n} n’est pas dans la liste des mots de récupération. Vérifiez l’orthographe."
 
 [shell_restore_bad_many]
-text = "Le mot {n} et {more} autres ne sont pas dans la liste des mots de récupération. Vérifiez l’orthographe."
+text = "Le mot {n} et {more} de plus ne sont pas dans la liste des mots de récupération. Vérifiez l’orthographe."
 
 [shell_restore_missing]
 one = "Il manque encore {count} mot."
@@ -3128,7 +3128,7 @@ text = "Activer"
 text = "Vous êtes indisponible"
 
 [shell_banner_unavailable_text]
-text = "Les appels ne sonneront pas tant que vous ne réactivez pas."
+text = "Les appels ne sonneront pas tant que vous ne les réactiverez pas."
 
 [shell_search]
 text = "Rechercher"
@@ -3158,7 +3158,7 @@ text = "Répondre"
 text = "{count} en attente"
 
 [shell_tab_unread]
-text = "{count} non lus"
+text = "Non lus : {count}"
 
 [shell_tab_chats]
 text = "Discussions"
@@ -3215,7 +3215,7 @@ text = "En attente"
 text = "En attente d’envoi"
 
 [shell_tick_one]
-text = "Envoyées"
+text = "Envoyé"
 
 [shell_tick_two]
 text = "Distribué à tous"
@@ -3448,7 +3448,7 @@ text = "Préparation de votre code…"
 text = "Lecture de l’image…"
 
 [people_add_let_scan]
-text = "Faites-le scanner avec Tinline."
+text = "Faites scanner ce code avec Tinline."
 
 [people_add_show_mine]
 text = "Afficher mon code"
@@ -3589,13 +3589,13 @@ text = "Personne n’est bloqué. Pour bloquer quelqu’un, ouvrez sa page de co
 text = "Bloqué le {date}"
 
 [people_unblock_told]
-text = "Votre déblocage est signalé à {name}"
+text = "Votre déblocage est notifié à {name}"
 
 [people_unblock_a11y]
 text = "Débloquer {name}"
 
 [people_unblocking_title]
-text = "Débloquer"
+text = "Déblocage"
 
 [people_detail_calls_themselves]
 text = "Se fait appeler « {name} »"
@@ -4006,7 +4006,7 @@ text = "Connexion à {name}. Une fois l’appel connecté, il est chiffré de bo
 text = "Appel entrant"
 
 [call_mark_outgoing]
-text = "Appel en cours"
+text = "Appel sortant"
 
 [call_mark_connecting]
 text = "Connexion"
@@ -4063,7 +4063,7 @@ text = "Raccrocher"
 text = "Changer de caméra"
 
 [call_control_flip]
-text = "Pivoter"
+text = "Basculer"
 
 [call_control_audio_route]
 text = "Audio : {route}"
@@ -4141,13 +4141,13 @@ text = "Revenir à l’appel vidéo avec {name}"
 text = "{label}. {status}"
 
 [call_mic_unavailable]
-text = "Micro indisponible - on ne peut pas vous entendre"
+text = "Micro indisponible — on ne peut pas vous entendre"
 
 [call_mic_permission_needed]
-text = "Autorisation du micro nécessaire - on ne peut pas vous entendre"
+text = "Autorisation du micro nécessaire — on ne peut pas vous entendre"
 
 [call_camera_permission_needed]
-text = "Autorisation de la caméra nécessaire - on vous entend toujours"
+text = "Autorisation de la caméra nécessaire — on vous entend toujours"
 
 [call_camera_unavailable]
 text = "Caméra indisponible"
@@ -4192,7 +4192,7 @@ text = "Appel terminé"
 text = "Appel terminé — hôte perdu"
 
 [call_group_battery_limited]
-text = "Batterie sous 15 %. L’hébergement est limité : une seule personne est entendue à la fois, et personne de nouveau ne peut rejoindre."
+text = "Batterie sous 15 %. L’hébergement est limité : une seule personne est entendue à la fois, et aucun nouveau participant ne peut rejoindre l’appel."
 
 [call_group_no_host]
 text = "Aucun hôte d’appel disponible"
@@ -4227,7 +4227,7 @@ many = "{count} personnes dans l’appel"
 other = "{count} personnes dans l’appel"
 
 [call_group_more]
-text = "+{count} de plus"
+text = "+{count}"
 
 [call_ok]
 text = "OK"
@@ -4245,16 +4245,16 @@ text = "Quitter"
 text = "l’hôte d’appel"
 
 [call_group_about_carries]
-text = "porte cet appel. Chaque participant s’y connecte ; il transmet l’audio et choisit qui est entendu quand plusieurs personnes parlent."
+text = "héberge cet appel. Chaque participant s’y connecte ; il transmet l’audio et choisit qui est entendu quand plusieurs personnes parlent."
 
 [call_group_about_carrying]
-text = "porte cet appel. Chaque participant s’y connecte ; il transmet l’audio et choisit qui est entendu quand plusieurs personnes parlent."
+text = "héberge cet appel. Chaque participant s’y connecte ; il transmet l’audio et choisit qui est entendu quand plusieurs personnes parlent."
 
 [call_group_about_trust]
-text = "Votre connexion à l’hôte d’appel est chiffrée, mais l’hôte d’appel lui-même reçoit l’audio, il peut donc entendre cet appel. Vous lui faites confiance pour l’appel comme vous faites confiance à un hôte de chat pour les publications."
+text = "Votre connexion à l’hôte d’appel est chiffrée, mais l’hôte d’appel lui-même reçoit l’audio, il peut donc entendre cet appel. Vous lui faites confiance pour l’appel comme vous faites confiance à un hôte de groupe pour les publications."
 
 [call_group_about_who]
-text = "Un hôte d’appel est un appareil choisi par un admin du groupe et qui a accepté. C’est distinct de l’hébergement du chat. Les admins peuvent changer d’hôte d’appel dans Infos du groupe."
+text = "Un hôte d’appel est un appareil choisi par un admin du groupe et qui a accepté. C’est distinct de l’hébergement du groupe. Les admins peuvent changer d’hôte d’appel dans Infos du groupe."
 
 [call_group_in_call]
 text = "Vous êtes dans l’appel"
