@@ -9544,7 +9544,7 @@ where = [
   "android addcontact_point_camera: Hint under the camera view while scanning someone's QR code; also spoken label of the camera.",
   "ios people_add_point_camera: Camera hint and accessibility label while scanning a contact QR code.",
 ]
-text = "Osoita heidän Tinline-koodiaan."
+text = "Osoita hänen Tinline-koodiaan."
 
 [t_8abf1ecdd3]
 en = "Your QR code"
@@ -9577,7 +9577,7 @@ where = [
   "android home_first_scan: Button on the first-run add-contact screen.",
   "ios people_add_scan_theirs: Button that starts the camera to scan a contact code.",
 ]
-text = "Skannaa heidän koodinsa"
+text = "Skannaa hänen koodinsa"
 
 [t_18bdfc1acf]
 en = "Choose image"
@@ -9628,7 +9628,7 @@ where = [
   "ios people_add_their_code: Heading above the paste area for another person’s code.",
   "desktop signup_their_code: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay).",
 ]
-text = "Heidän koodinsa"
+text = "Hänen koodinsa"
 
 [t_73da04ae6f]
 en = "Paste their code"
@@ -9637,7 +9637,7 @@ where = [
   "ios people_add_paste_theirs: Button that pastes the contact code from the clipboard.",
   "desktop signup_paste_their_code: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay).",
 ]
-text = "Liitä heidän koodinsa"
+text = "Liitä hänen koodinsa"
 
 [t_d2aa3d83d4]
 en = "Open profile"
@@ -9693,7 +9693,7 @@ where = [
   "ios people_add_hint_empty_clipboard: Hint when Paste is pressed with an empty clipboard.",
   "desktop signup_your_clipboard_is_empty: Desktop, sign-up, restore and add contact (in signup.rs, ac_pasted).",
 ]
-text = "Leikepöytäsi on nyt tyhjä. Kun heidän koodinsa saapuu, kopioi se ja liitä tähän."
+text = "Leikepöytäsi on nyt tyhjä. Kun hänen koodinsa saapuu, kopioi se ja liitä tähän."
 
 [t_355541804b]
 en = "That’s your own code. Send it to them, and paste theirs here."
@@ -9702,7 +9702,7 @@ where = [
   "ios people_add_hint_own_code: Hint when the pasted code is the user’s own.",
   "desktop signup_thats_your_own_code: Desktop, sign-up, restore and add contact (in signup.rs, ac_pasted).",
 ]
-text = "Tämä on oma koodisi. Lähetä se heille ja liitä heidän koodinsa tähän."
+text = "Tämä on oma koodisi. Lähetä se hänelle ja liitä hänen koodinsa tähän."
 
 [t_47c69c935c]
 en = "That code from {name} has expired. Ask them for a fresh one."
@@ -10019,7 +10019,7 @@ where = [
   "android contact_rename_hint: Hint under the rename field. {name} is the name they chose.",
   "ios people_detail_rename_note: Rename dialog note. {name} is the contact’s own chosen name.",
 ]
-text = "Vain sinä näet tämän. He kutsuvat itseään yhä nimellä ”{name}”."
+text = "Vain sinä näet tämän. Hän kutsuu itseään yhä nimellä ”{name}”."
 
 [t_3ac2cc1d48]
 en = "Use their name"
@@ -10058,7 +10058,7 @@ where = [
   "android people_hide_field: Screen reader label of the eye button that hides a secret field. {label} is the field's name in lower case.",
   "ios people_field_hide: Accessibility label that hides a secret field’s text. {label} is the field name in lower case, e.g. “passphrase”.",
 ]
-text = ""
+text = "Piilota {label}"
 
 [t_6e52501208]
 en = "Show {label}"
@@ -10066,7 +10066,7 @@ where = [
   "android people_show_field: Screen reader label of the eye button that shows a secret field. {label} is the field's name in lower case.",
   "ios people_field_show: Accessibility label that shows a secret field’s text. {label} is the field name in lower case.",
 ]
-text = ""
+text = "Näytä {label}"
 
 [t_5e858be6fe]
 en = "Hide passphrase"
@@ -10077,7 +10077,7 @@ where = [
   "ios shellkit_hide_pass: Accessibility label of the eye button that hides the passphrase.",
   "ios people_passphrase_hide: Accessibility label of the button that hides the typed passphrase.",
 ]
-text = ""
+text = "Piilota salalause"
 
 [t_8bbd9117be]
 en = "Show passphrase"
@@ -10088,7 +10088,7 @@ where = [
   "ios shellkit_show_pass: Accessibility label of the eye button that shows the passphrase.",
   "ios people_passphrase_show: Accessibility label of the button that shows the typed passphrase.",
 ]
-text = ""
+text = "Näytä salalause"
 
 [t_4c93461e80]
 en = "Switch to light"
@@ -10098,7 +10098,7 @@ where = [
   "ios people_theme_light: Accessibility label of the button that switches to the light theme.",
   "desktop signup_switch_to_light: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_head).",
 ]
-text = ""
+text = "Vaihda vaaleaan"
 
 [t_9781b168bf]
 en = "Switch to dark"
@@ -10108,7 +10108,7 @@ where = [
   "ios people_theme_dark: Accessibility label of the button that switches to the dark theme.",
   "desktop signup_switch_to_dark: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_head).",
 ]
-text = ""
+text = "Vaihda tummaan"
 
 [t_5f493bb88b]
 en = "Setup progress, step {current} of {total}"
@@ -10116,7 +10116,7 @@ where = [
   "android people_setup_progress: Screen reader description of the sign-up progress bar.",
   "ios shellkit_progress_a11y: Accessibility label of the sign-up progress; {current} is the step, {total} the number of steps.",
 ]
-text = ""
+text = "Käyttöönoton edistyminen, vaihe {current}/{total}"
 
 [t_527a6d0959]
 en = "Setup progress, step {current} of {total}: {label}"
@@ -10124,7 +10124,7 @@ where = [
   "android people_setup_progress_label: Screen reader description of the sign-up progress bar with the step's name in {label}.",
   "ios shellkit_progress_a11y_label: Accessibility label of the sign-up progress with the step name; {label} is the name of the step.",
 ]
-text = ""
+text = "Käyttöönoton edistyminen, vaihe {current}/{total}: {label}"
 
 [t_71fd427308]
 en = "{current} of {total}"
@@ -10132,21 +10132,21 @@ where = [
   "android people_n_of_m: Visible step counter at the end of the sign-up progress bar, like '2 of 6'.",
   "ios shellkit_progress: Sign-up progress next to the segments; {current} is the step, {total} the number of steps.",
 ]
-text = ""
+text = "{current}/{total}"
 
 [t_eb4a8e2e28]
 en = "Tinline needs the camera to read the code."
 where = [
   "android qr_camera_needed: Shown in place of the QR camera when the camera permission is missing.",
 ]
-text = ""
+text = "Tinline tarvitsee kameraa koodin lukemiseen."
 
 [t_01e429fdf6]
 en = "Allow camera"
 where = [
   "android qr_allow_camera: Button that asks for the camera permission.",
 ]
-text = ""
+text = "Salli kamera"
 
 [t_1368852bf1]
 en = "Speaker"
@@ -10155,7 +10155,7 @@ where = [
   "ios call_route_speaker: Audio route name for the loudspeaker, on the route button and sheet.",
   "desktop common_speaker: Shared label, used in several places (audio, call_screen, view).",
 ]
-text = ""
+text = "Kaiutin"
 
 [t_3de262218b]
 en = "End"
@@ -10164,7 +10164,7 @@ where = [
   "ios call_control_end: Caption under the hang-up button.",
   "desktop call_end: Desktop, calls (voice and video) (in call_screen.rs, call_view).",
 ]
-text = ""
+text = "Lopeta"
 
 [t_4184dae0cf]
 en = "Flip camera"
@@ -10172,7 +10172,7 @@ where = [
   "android call_flip_camera: Accessibility label of the button that switches between the front and back camera.",
   "ios call_control_flip_label: Accessibility label of the camera flip button.",
 ]
-text = ""
+text = "Käännä kamera"
 
 [t_d7a834e992]
 en = "Flip"
@@ -10180,7 +10180,7 @@ where = [
   "android call_flip: Short caption under the flip-camera button on the call screen.",
   "ios call_control_flip: Caption under the camera flip button.",
 ]
-text = ""
+text = "Käännä"
 
 [t_567a9f0d30]
 en = "Audio: {route}"
@@ -10188,7 +10188,7 @@ where = [
   "android call_audio_route: Accessibility label of the audio route button while a headset is connected. {route} is the route's name, such as a Bluetooth headset's name.",
   "ios call_control_audio_route: Accessibility label of the audio route button when a headset or Bluetooth device is in use. {route} is its name.",
 ]
-text = ""
+text = "Ääni: {route}"
 
 [t_5b4e8de3e1]
 en = "Reconnecting"
@@ -10200,7 +10200,7 @@ where = [
   "ios call_about_headline_reconnecting: Bold headline on the call details card while reconnecting.",
   "desktop common_reconnecting: Shared label, used in several places (call_screen, mark).",
 ]
-text = ""
+text = "Yhdistetään uudelleen"
 
 [t_f72ef90826]
 en = "Back. The call continues"
@@ -10208,7 +10208,7 @@ where = [
   "android call_back_continues: Accessibility label of the back arrow on the call screen: it leaves the call screen, the call goes on.",
   "ios call_back_continues: Accessibility label of the Back button on the call screen.",
 ]
-text = ""
+text = "Takaisin. Puhelu jatkuu"
 
 [t_7e9a0eacdf]
 en = "Message. The call continues"
@@ -10216,7 +10216,7 @@ where = [
   "android call_message_continues: Accessibility label of the chat button on the call screen: it opens the chat with the caller, the call goes on.",
   "ios call_message_continues: Accessibility label of the button that opens the chat during a call.",
 ]
-text = ""
+text = "Viesti. Puhelu jatkuu"
 
 [t_18c4f18bc9]
 en = "Tinline call"
@@ -10224,7 +10224,7 @@ where = [
   "android call_default_name: Name the system call screen and Bluetooth devices show for a call whose caller has no name.",
   "ios call_system_call_name: Name shown in the system call UI when the contact has no name.",
 ]
-text = ""
+text = "Tinline-puhelu"
 
 [t_2aa119ffb1]
 en = "Answer with video"
@@ -10232,7 +10232,7 @@ where = [
   "android call_answer_with_video: Accessibility label of the button that answers a video call with my camera on.",
   "ios call_answer_with_video: Accessibility description of the Video answer button.",
 ]
-text = ""
+text = "Vastaa videolla"
 
 [t_3126ae9386]
 en = "Tinline video call"
@@ -10240,7 +10240,7 @@ where = [
   "android call_incoming_video: Status line on the ringing screen of an incoming video call, under the caller's name.",
   "ios call_status_incoming_video: Status line on an incoming video call.",
 ]
-text = ""
+text = "Tinline-videopuhelu"
 
 [t_4f7c8b0ac6]
 en = "Tinline voice call"
@@ -10248,7 +10248,7 @@ where = [
   "android call_incoming_voice: Status line on the ringing screen of an incoming voice call, under the caller's name.",
   "ios call_status_incoming_voice: Status line on an incoming voice call.",
 ]
-text = ""
+text = "Tinline-äänipuhelu"
 
 [t_dcf4f501e2]
 en = "during your call"
@@ -10257,7 +10257,7 @@ where = [
   "ios call_waiting_sub: Second line of the call-waiting card.",
   "desktop call_during_your_call: Desktop, calls (voice and video) (in view.rs, waiting_banner).",
 ]
-text = ""
+text = "puhelusi aikana"
 
 [t_821290d459]
 en = "{name} is calling during your call"
@@ -10267,7 +10267,7 @@ where = [
   "ios shell_ring_a11y_waiting: Screen reader label of the call-waiting banner. {name} is the second caller.",
   "ios call_waiting_label: Accessibility label of the call-waiting card. {name} is the caller.",
 ]
-text = ""
+text = "{name} soittaa puhelusi aikana"
 
 [t_aca5a8736d]
 en = "End and answer"
@@ -10277,7 +10277,7 @@ where = [
   "ios shell_ring_end_answer: Button that ends the current call and answers the second one.",
   "ios call_waiting_end_answer_desc: Accessibility description of the End & answer button.",
 ]
-text = ""
+text = "Lopeta ja vastaa"
 
 [t_5f843abaf8]
 en = "Ends your call with"
@@ -10285,7 +10285,7 @@ where = [
   "android call_waiting_ends_with: Small line on the call-waiting card, followed by the first name of the person I am currently talking to.",
   "desktop call_ends_your_call_with: Desktop, calls (voice and video) (in view.rs, waiting_banner).",
 ]
-text = ""
+text = "Lopettaa puhelusi:"
 
 [t_6a18a74a67]
 en = "On hold while your other call is on"
@@ -10293,7 +10293,7 @@ where = [
   "android call_on_hold: Problem line on the call screen while the call is held because another phone call is in progress.",
   "ios call_held: Problem line on the call screen while another call (for example a phone call) has taken over.",
 ]
-text = ""
+text = "Pidossa, kun toinen puhelusi on käynnissä"
 
 [t_be3c663555]
 en = "Play call through"
@@ -10301,7 +10301,7 @@ where = [
   "android call_route_title: Title of the sheet where I choose where call audio plays (phone, speaker, headset).",
   "ios call_route_sheet_title: Title of the sheet where I pick where the call audio plays.",
 ]
-text = ""
+text = "Toista puhelu laitteella"
 
 [t_d75a1adddb]
 en = "Phone"
@@ -10309,7 +10309,7 @@ where = [
   "android call_route_phone: Audio route option: the phone's earpiece.",
   "ios call_route_phone: Audio route name for the phone earpiece, on the route button and sheet.",
 ]
-text = ""
+text = "Puhelin"
 
 [t_9ab819b199]
 en = "Headset"
@@ -10317,7 +10317,7 @@ where = [
   "android call_route_headset: Audio route option: a wired headset without a name.",
   "ios call_route_headset: Audio route name for a wired headset with no name of its own.",
 ]
-text = ""
+text = "Kuulokemikrofoni"
 
 [t_86179776e0]
 en = "Bluetooth"
@@ -10325,7 +10325,7 @@ where = [
   "android call_route_bluetooth: Audio route option: a Bluetooth device whose name is not known.",
   "ios call_route_bluetooth: Audio route name for a Bluetooth device with no name of its own.",
 ]
-text = ""
+text = "Bluetooth"
 
 [t_152037e40b]
 en = "Other"
@@ -10333,21 +10333,21 @@ where = [
   "android call_route_other: Audio route option: some other audio device without a name.",
   "ios call_route_other: Audio route name for an unnamed route of another kind.",
 ]
-text = ""
+text = "Muu"
 
 [t_d6326c7800]
 en = "Allow nearby devices and Tinline can show your headset’s name and switch between headsets."
 where = [
   "android call_route_bt_hint: Hint in the audio route sheet when a Bluetooth headset shows without a name because the Nearby devices permission is missing.",
 ]
-text = ""
+text = "Salli lähellä olevat laitteet, niin Tinline voi näyttää kuulokkeidesi nimen ja vaihtaa kuulokkeiden välillä."
 
 [t_8ca683abc4]
 en = "Show my headset names"
 where = [
   "android call_route_bt_button: Button in the audio route sheet that asks for the Nearby devices permission.",
 ]
-text = ""
+text = "Näytä kuulokkeideni nimet"
 
 [t_c639e9d903]
 en = "Relayed: a direct line wasn’t possible on this network, so an encrypted relay is passing the call along. It can’t hear you."
@@ -10356,7 +10356,7 @@ where = [
   "ios call_route_relayed_hint: Hint in the audio route sheet when the call goes through a relay.",
   "desktop call_relayed_a_direct_line: Desktop, calls (voice and video) (in view.rs, video_call_view).",
 ]
-text = ""
+text = "Välitetty: suora linja ei ollut mahdollinen tässä verkossa, joten salattu välityspalvelin välittää puhelun. Se ei voi kuulla sinua."
 
 [t_ada1b5511c]
 en = "{name}’s camera is off"
@@ -10364,7 +10364,7 @@ where = [
   "android video_camera_off: Shown under the avatar on a video call while the other person's camera is off. {name} is their name.",
   "ios call_camera_off: Shown on a video call when the contact's camera is off. {name} is the contact.",
 ]
-text = ""
+text = "Kamera on pois päältä: {name}"
 
 [t_9497c00e69]
 en = "Connecting video…"
@@ -10372,7 +10372,7 @@ where = [
   "android video_connecting: Shown on the video call screen until their first picture arrives.",
   "ios call_connecting_video: Shown on a video call while the picture is being set up.",
 ]
-text = ""
+text = "Yhdistetään videota…"
 
 [t_ae3fd0b7b3]
 en = "Starting video…"
@@ -10381,7 +10381,7 @@ where = [
   "ios call_starting_video: Video quality line while my camera is starting.",
   "desktop call_starting_video: Desktop, calls (voice and video) (in view.rs, video_stage).",
 ]
-text = ""
+text = "Käynnistetään videota…"
 
 [t_2b55b3329e]
 en = "Sharper video on, up to 540p"
@@ -10389,7 +10389,7 @@ where = [
   "android video_hd_on: Accessibility label of the HD chip while sharper video is on.",
   "ios call_hd_label_on: Accessibility label of the HD chip when HD is on.",
 ]
-text = ""
+text = "Terävämpi video päällä, enintään 540p"
 
 [t_94ad82fe0b]
 en = "Sharper video off"
@@ -10399,7 +10399,7 @@ where = [
   "ios call_hd_label_off: Accessibility label of the HD chip when HD is off.",
   "desktop common_sharper_video_off: Shared label, used in several places (camera, view).",
 ]
-text = ""
+text = "Terävämpi video pois päältä"
 
 [t_367cbada8e]
 en = "Sharper video on, paused while the connection is weak"
@@ -10408,7 +10408,7 @@ where = [
   "ios call_hd_label_paused: Accessibility label of the HD chip when HD is paused.",
   "desktop call_sharper_video_on_paused: Desktop, calls (voice and video) (in view.rs, hd_chip).",
 ]
-text = ""
+text = "Terävämpi video päällä, tauolla heikon yhteyden vuoksi"
 
 [t_f13857c248]
 en = "Camera permission needed - they can still hear you"
@@ -10416,7 +10416,7 @@ where = [
   "android video_camera_permission: Problem line on the call screen when I turn the camera on without the camera permission. The call itself carries on.",
   "ios call_camera_permission_needed: Problem line when camera permission is denied.",
 ]
-text = ""
+text = "Kameran lupa tarvitaan - sinut kuullaan silti"
 
 [t_e0dc020054]
 en = "Camera unavailable"
@@ -10424,7 +10424,7 @@ where = [
   "android video_camera_unavailable: Problem line on the call screen when the camera could not be started.",
   "ios call_camera_unavailable: Problem line when the camera could not be started.",
 ]
-text = ""
+text = "Kamera ei ole käytettävissä"
 
 [t_74f59d6988]
 en = "About this call. Reconnecting."
@@ -10433,28 +10433,28 @@ where = [
   "ios call_about_reconnecting: Accessibility label of the info button while reconnecting.",
   "desktop call_about_this_call_reconnecting: Desktop, calls (voice and video) (in call_screen.rs, call_view).",
 ]
-text = ""
+text = "Tietoja tästä puhelusta. Yhdistetään uudelleen."
 
 [t_783fcd0df8]
 en = "About this call. {signal} signal, {path}."
 where = [
   "android call_about_signal: Accessibility label of the signal icon. {signal} is a word like Strong or Weak; {path} is 'direct' or 'relayed'.",
 ]
-text = ""
+text = "Tietoja tästä puhelusta. Signaali: {signal}, {path}."
 
 [t_6253bb32f6]
 en = "direct"
 where = [
   "android call_path_direct: Lowercase word inside an accessibility sentence: the call goes straight between the two phones.",
 ]
-text = ""
+text = "suora"
 
 [t_e04409b0f7]
 en = "relayed"
 where = [
   "android call_path_relayed: Lowercase word inside an accessibility sentence: the call goes through a relay.",
 ]
-text = ""
+text = "välitetty"
 
 [t_b1d17f484d]
 en = "End-to-end encrypted"
@@ -10463,7 +10463,7 @@ where = [
   "ios call_path_encrypted: Line under the call status once connected, before the path is known.",
   "desktop call_end_to_end_encrypted: Desktop, calls (voice and video) (in call_screen.rs, call_view).",
 ]
-text = ""
+text = "Salattu päästä päähän"
 
 [t_cbff617e0e]
 en = "End-to-end encrypted · Direct"
@@ -10471,7 +10471,7 @@ where = [
   "android call_e2ee_direct: Line on the call screen once the call is connected over a direct path.",
   "ios call_path_direct: Line under the call status when the call goes straight between the two phones.",
 ]
-text = ""
+text = "Salattu päästä päähän · Suora"
 
 [t_76d948e78a]
 en = "End-to-end encrypted · Relayed"
@@ -10479,7 +10479,7 @@ where = [
   "android call_e2ee_relayed: Line on the call screen once the call is connected through a relay.",
   "ios call_path_relayed: Line under the call status when a relay passes the call along.",
 ]
-text = ""
+text = "Salattu päästä päähän · Välitetty"
 
 [t_8bd8d5490e]
 en = "End-to-end encrypted."
@@ -10488,7 +10488,7 @@ where = [
   "ios call_about_encrypted_lead: Bold first words of the encryption explanation on the call details card.",
   "desktop call_end_to_end_encrypted_2: Desktop, calls (voice and video) (in call_screen.rs, call_about).",
 ]
-text = ""
+text = "Salattu päästä päähän."
 
 [t_953b0eb2a3]
 en = "Your voice is encrypted on this device and only decrypted on {name}’s."
@@ -10496,7 +10496,7 @@ where = [
   "android call_info_enc_voice: Second sentence of the encryption paragraph for a voice call. {name} is the other person's name.",
   "ios call_about_encrypted_voice: Rest of the encryption explanation on a voice call. {name} is the contact.",
 ]
-text = ""
+text = "Äänesi salataan tällä laitteella ja puretaan vain henkilön {name} laitteella."
 
 [t_5af3be31b9]
 en = "Your voice and picture are encrypted on this device and only decrypted on {name}’s."
@@ -10504,21 +10504,21 @@ where = [
   "android call_info_enc_video: Second sentence of the encryption paragraph for a video call. {name} is the other person's name.",
   "ios call_about_encrypted_video: Rest of the encryption explanation on a video call. {name} is the contact.",
 ]
-text = ""
+text = "Äänesi ja kuvasi salataan tällä laitteella ja puretaan vain henkilön {name} laitteella."
 
 [t_b242e18aa9]
 en = "{signal} signal · Direct"
 where = [
   "android call_info_signal_direct: Bold heading of the connection row in About this call. {signal} is a word like Strong or Weak.",
 ]
-text = ""
+text = "Signaali: {signal} · Suora"
 
 [t_840c286bdc]
 en = "{signal} signal · Relayed"
 where = [
   "android call_info_signal_relayed: Bold heading of the connection row in About this call, when a relay carries the call. {signal} is a word like Strong or Weak.",
 ]
-text = ""
+text = "Signaali: {signal} · Välitetty"
 
 [t_f69ab95059]
 en = "The connection dropped for a moment. Tinline is finding a way back to {name}."
@@ -10527,7 +10527,7 @@ where = [
   "ios call_about_line_reconnecting: Explanation while reconnecting. {name} is the contact's first name.",
   "desktop call_the_connection_dropped_for: Desktop, calls (voice and video) (in call_screen.rs, call_about). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Yhteys katkesi hetkeksi. Tinline etsii tietä takaisin: {name}."
 
 [t_a6ed340bd0]
 en = "Your call goes straight between your device and {name}’s."
@@ -10536,7 +10536,7 @@ where = [
   "ios call_about_line_direct: Explanation for a direct connection. {name} is the contact's first name.",
   "desktop call_your_call_goes_straight: Desktop, calls (voice and video) (in call_screen.rs, call_about). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Puhelusi kulkee suoraan sinun laitteesi ja henkilön {name} laitteen välillä."
 
 [t_266fb7b847]
 en = "Your devices can’t reach each other directly right now, so a relay passes the call along. It can’t listen."
@@ -10545,7 +10545,7 @@ where = [
   "ios call_about_line_relayed_voice: Explanation for a relayed voice call.",
   "desktop call_your_devices_cant_reach: Desktop, calls (voice and video) (in call_screen.rs, call_about).",
 ]
-text = ""
+text = "Laitteesi eivät juuri nyt tavoita toisiaan suoraan, joten välityspalvelin välittää puhelun. Se ei voi kuunnella."
 
 [t_cbf1be729e]
 en = "Your devices can’t reach each other directly right now, so a relay passes the call along. It can’t listen or watch."
@@ -10553,7 +10553,7 @@ where = [
   "android call_info_relay_body_video: Explanation in About this call for a relayed video call.",
   "ios call_about_line_relayed_video: Explanation for a relayed video call.",
 ]
-text = ""
+text = "Laitteesi eivät juuri nyt tavoita toisiaan suoraan, joten välityspalvelin välittää puhelun. Se ei voi kuunnella eikä katsoa."
 
 [t_79f9a8e7fe]
 en = "The line is weak, so {name}’s voice may break up."
@@ -10561,7 +10561,7 @@ where = [
   "android call_info_weak: Extra sentence appended after a space when the signal is the weakest level. {name} is the other person's first name.",
   "ios call_about_line_weak: Extra sentence appended when the signal is weak. {name} is the contact's first name.",
 ]
-text = ""
+text = "Linja on heikko, joten henkilön {name} ääni voi katkeilla."
 
 [t_912d92b0c2]
 en = "{rtt} ms round trip · {loss}% lost"
@@ -10569,7 +10569,7 @@ where = [
   "android call_info_rtt: Numbers line in About this call. {rtt} is milliseconds, {loss} is the recent packet loss percentage.",
   "ios call_about_stats: Network numbers on the call details card. {rtt} is round-trip time in milliseconds, {loss} is the percentage of lost packets.",
 ]
-text = ""
+text = "{rtt} ms edestakaisin · {loss} % kadonnut"
 
 [t_fb730075f0]
 en = "Your video"
@@ -10578,7 +10578,7 @@ where = [
   "ios call_about_your_video: Row label on the call details card for the codec my camera sends.",
   "desktop call_your_video: Desktop, calls (voice and video) (in call_screen.rs, call_about).",
 ]
-text = ""
+text = "Oma videosi"
 
 [t_ad5a1647a6]
 en = "Their video"
@@ -10587,7 +10587,7 @@ where = [
   "ios call_about_their_video: Row label on the call details card for the codec the contact sends.",
   "desktop call_their_video: Desktop, calls (voice and video) (in call_screen.rs, call_about).",
 ]
-text = ""
+text = "Hänen videonsa"
 
 [t_225ce61bf7]
 en = "Return to call with {name}"
@@ -10595,7 +10595,7 @@ where = [
   "android call_strip_return: Accessibility label of the strip at the top of the app during a call. {name} is the other person's name.",
   "ios call_strip_return: Accessibility label of the strip that returns to the running call. {name} is the contact.",
 ]
-text = ""
+text = "Palaa puheluun: {name}"
 
 [t_33bf09e7fd]
 en = "Return to group call in {name}"
@@ -10603,7 +10603,7 @@ where = [
   "android call_strip_return_group: Accessibility label of the strip at the top of the app during a group call. {name} is the group's name.",
   "ios call_strip_return_group: Accessibility label of the strip that returns to the running group call. {name} is the group.",
 ]
-text = ""
+text = "Palaa ryhmäpuheluun: {name}"
 
 [t_9d9f4cfd33]
 en = "{label}. {status}"
@@ -10611,7 +10611,7 @@ where = [
   "android call_strip_desc: Accessibility description of the call strip. {label} is the 'Return to call...' sentence, {status} the timer or status.",
   "ios call_strip_label: Accessibility label of the call strip. {label} is what tapping does, {status} is the clock or status.",
 ]
-text = ""
+text = "{label}. {status}"
 
 [t_ac55752ea2]
 en = "Return to video call with {name}"
@@ -10619,14 +10619,14 @@ where = [
   "android call_strip_return_video: Accessibility label of the small floating video tile shown over the app during a video call. {name} is the other person's name.",
   "ios call_strip_return_video: Accessibility label of the small video window that returns to the call. {name} is the contact.",
 ]
-text = ""
+text = "Palaa videopuheluun: {name}"
 
 [t_4f5ccb5ad9]
 en = "{signal} signal"
 where = [
   "android call_signal_label: Badge on the Call ended screen. {signal} is a word like Strong or Weak.",
 ]
-text = ""
+text = "Signaali: {signal}"
 
 [t_276643a3f8]
 en = "Call again"
@@ -10634,7 +10634,7 @@ where = [
   "android call_again: Button on the Call ended screen that places the call again.",
   "ios call_call_again: Button on the call-ended screen that calls the contact again.",
 ]
-text = ""
+text = "Soita uudelleen"
 
 [t_8e83cc24ed]
 en = "Closes by itself after 4 seconds."
@@ -10642,7 +10642,7 @@ where = [
   "android call_ended_autoclose: Hint at the bottom of the Call ended screen.",
   "ios call_auto_close: Hint on the call-ended screen.",
 ]
-text = ""
+text = "Sulkeutuu itsestään 4 sekunnin kuluttua."
 
 [t_27e8136d8e]
 en = "Couldn’t reach {name}"
@@ -10650,7 +10650,7 @@ where = [
   "android call_unreachable_title: Heading when an outgoing call did not connect. {name} is the contact's name (or 'them').",
   "ios call_unreachable_title: Title when a call was not answered or could not connect. {name} is the contact.",
 ]
-text = ""
+text = "Yhteyttä ei saatu: {name}"
 
 [t_b0d2cf397f]
 en = "{name} may be offline, out of signal, or not taking calls right now. Tinline can’t leave messages."
@@ -10658,7 +10658,7 @@ where = [
   "android call_unreachable_body: Explanation under the Couldn’t reach heading. {name} is the contact's name (or 'They').",
   "ios call_unreachable_body: Explanation when a call could not connect. {name} is the contact.",
 ]
-text = ""
+text = "{name} voi olla poissa verkosta, kuuluvuusalueen ulkopuolella tai ei juuri nyt ota puheluita vastaan. Tinline ei voi jättää viestejä."
 
 [t_4b691ade90]
 en = "Tinline can’t use the microphone"
@@ -10667,7 +10667,7 @@ where = [
   "ios shell_mic_title: Title of the screen shown when microphone access is denied.",
   "ios call_mic_needed_title: Title of the screen shown when the microphone permission is missing.",
 ]
-text = ""
+text = "Tinline ei voi käyttää mikrofonia"
 
 [t_51a190d802]
 en = "Without it, they won’t hear you. Tinline only listens during calls — never in the background."
@@ -10676,84 +10676,84 @@ where = [
   "ios shell_mic_body: Explains microphone permission when denied.",
   "ios call_mic_needed_body: Explanation on the microphone permission screen.",
 ]
-text = ""
+text = "Ilman sitä sinua ei kuulla. Tinline kuuntelee vain puheluiden aikana — ei koskaan taustalla."
 
 [t_6717879327]
 en = "Then go to Permissions › Microphone and allow it."
 where = [
   "android call_mic_needed_hint: Hint under the Open settings button; the names Permissions and Microphone are the system settings labels.",
 ]
-text = ""
+text = "Siirry sitten kohtaan Luvat › Mikrofoni ja salli se."
 
 [t_45e67545ae]
 en = "Your line stays open in the background so calls ring like a normal phone."
 where = [
   "android avail_subtitle: Line under the availability sheet's title.",
 ]
-text = ""
+text = "Linjasi pysyy auki taustalla, jotta puhelut soivat kuin tavallisessa puhelimessa."
 
 [t_c865b5b93b]
 en = "Not available until {time}."
 where = [
   "android avail_until: Shown while I am on a break. {time} is a clock time such as 7:30 AM.",
 ]
-text = ""
+text = "Ei tavoitettavissa {time} asti."
 
 [t_fa3750b6ec]
 en = "Not available until {time} tomorrow."
 where = [
   "android avail_until_tomorrow: Shown while I am on a break that ends more than twelve hours from now. {time} is a clock time such as 7:30 AM.",
 ]
-text = ""
+text = "Ei tavoitettavissa huomenna {time} asti."
 
 [t_a5734b0516]
 en = "Not available until you turn it back on."
 where = [
   "android avail_until_manual: Shown while I am on a break without an end time.",
 ]
-text = ""
+text = "Ei tavoitettavissa, kunnes otat sen taas käyttöön."
 
 [t_3b67f72e64]
 en = "TAKE A BREAK"
 where = [
   "android avail_take_break: Small uppercase section label above the break options in the availability sheet.",
 ]
-text = ""
+text = "PIDÄ TAUKO"
 
 [t_43eb8c32e8]
 en = "For 1 hour"
 where = [
   "android avail_one_hour: Break option in the availability sheet.",
 ]
-text = ""
+text = "1 tunniksi"
 
 [t_4e8ac174be]
 en = "Until tomorrow morning"
 where = [
   "android avail_tomorrow_morning: Break option in the availability sheet.",
 ]
-text = ""
+text = "Huomisaamuun asti"
 
 [t_ffff6bb1ed]
 en = "Until I turn it back on"
 where = [
   "android avail_until_on: Break option in the availability sheet.",
 ]
-text = ""
+text = "Kunnes otan sen taas käyttöön"
 
 [t_04849bbbc7]
 en = "you"
 where = [
   "android avail_you: Lowercase stand-in for my own name inside the availability hint when my name is empty.",
 ]
-text = ""
+text = "sinä"
 
 [t_722d093bd3]
 en = "While you’re away, people who call see “Couldn’t reach {name}”. Nothing is queued and nobody is told why."
 where = [
   "android avail_note: Hint at the bottom of the availability sheet. {name} is my own name (or 'you').",
 ]
-text = ""
+text = "Kun olet poissa, soittajat näkevät ilmoituksen ”Yhteyttä ei saatu: {name}”. Mitään ei jää jonoon, eikä kenellekään kerrota syytä."
 
 [t_390bb7681a]
 en = "Ringing…"
@@ -10762,7 +10762,7 @@ where = [
   "ios call_status_ringing: Status line while the other phone is ringing.",
   "desktop call_ringing: Desktop, calls (voice and video) (in call_screen.rs, call_view).",
 ]
-text = ""
+text = "Soi…"
 
 [t_ccd261a9cc]
 en = "Calling…"
@@ -10771,7 +10771,7 @@ where = [
   "ios call_status_calling: Status line while the call is being set up, before it rings.",
   "desktop call_calling: Desktop, calls (voice and video) (in call_screen.rs, call_view).",
 ]
-text = ""
+text = "Soitetaan…"
 
 [t_44e30f3c68]
 en = "End-to-end encrypted. Your voice is encrypted on this device and only decrypted on {name}’s."
@@ -10779,7 +10779,7 @@ where = [
   "android call_privacy_active: Encryption note once the call is connected. {name} is the other person's name.",
   "ios call_privacy_active: Call card line once the call is connected. {name} is the contact's first or full name.",
 ]
-text = ""
+text = "Salattu päästä päähän. Äänesi salataan tällä laitteella ja puretaan vain henkilön {name} laitteella."
 
 [t_5ef58454ea]
 en = "Connecting to {name}. Once the call is connected, it is end-to-end encrypted."
@@ -10788,7 +10788,7 @@ where = [
   "ios call_privacy_connecting: Call card line while connecting; no encryption claim yet. {name} is the contact's name.",
   "desktop call_connecting_to_once_the: Desktop, calls (voice and video) (in call_screen.rs, call_about). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Yhdistetään: {name}. Kun puhelu on yhdistetty, se on salattu päästä päähän."
 
 [t_8269587304]
 en = "Missed"
@@ -10797,7 +10797,7 @@ where = [
   "ios shell_call_what_missed: Call list: incoming call the user did not answer.",
   "desktop common_missed: Shared label, used in several places (reason, view).",
 ]
-text = ""
+text = "Vastaamaton"
 
 [t_19971946a3]
 en = "Couldn’t reach"
@@ -10805,7 +10805,7 @@ where = [
   "android history_kind_unreached: Call history title for an outgoing call that never reached the other person.",
   "desktop call_couldnt_reach: Desktop, calls (voice and video) (in reason.rs, history).",
 ]
-text = ""
+text = "Ei tavoitettu"
 
 [t_f879bd7cfe]
 en = "While not available"
@@ -10813,7 +10813,7 @@ where = [
   "android history_kind_away: Call history title for a call that came in while I had calls turned off.",
   "ios shell_call_what_unavailable: Call list: incoming call that came while the user had set themselves unavailable.",
 ]
-text = ""
+text = "Kun et ollut tavoitettavissa"
 
 [t_29f6680e08]
 en = "Incoming"
@@ -10822,7 +10822,7 @@ where = [
   "ios shell_call_what_incoming: Call list: answered incoming call.",
   "desktop common_incoming: Shared label, used in several places (reason, view).",
 ]
-text = ""
+text = "Saapuva"
 
 [t_9258e751e3]
 en = "Outgoing"
@@ -10831,63 +10831,63 @@ where = [
   "ios shell_call_what_outgoing: Call list: answered outgoing call.",
   "desktop common_outgoing: Shared label, used in several places (reason, view).",
 ]
-text = ""
+text = "Lähtevä"
 
 [t_8fbe164bcf]
 en = "declined"
 where = [
   "android history_detail_declined: Lowercase detail after the call title, e.g. 'Outgoing · declined'.",
 ]
-text = ""
+text = "hylätty"
 
 [t_3f5e057c74]
 en = "cancelled"
 where = [
   "android history_detail_cancelled: Lowercase detail after the call title, e.g. 'Outgoing · cancelled'.",
 ]
-text = ""
+text = "peruttu"
 
 [t_e43d94eac3]
 en = "no answer"
 where = [
   "android history_detail_no_answer: Lowercase detail after the call title, e.g. 'Outgoing · no answer'.",
 ]
-text = ""
+text = "ei vastausta"
 
 [t_5f9763c953]
 en = "busy"
 where = [
   "android history_detail_busy: Lowercase detail after the call title: the other person was busy.",
 ]
-text = ""
+text = "varattu"
 
 [t_1b35ab069f]
 en = "answered on another device"
 where = [
   "android history_detail_answered_elsewhere: Lowercase detail after the call title: another of my devices answered.",
 ]
-text = ""
+text = "vastattu toisella laitteella"
 
 [t_a97b949a1c]
 en = "declined on another device"
 where = [
   "android history_detail_declined_elsewhere: Lowercase detail after the call title: another of my devices declined.",
 ]
-text = ""
+text = "hylätty toisella laitteella"
 
 [t_ec4ce60a26]
 en = "{label} · {time}"
 where = [
   "android history_label_when: Call history sub-line. {label} is the call kind (e.g. Missed), {time} a short relative time (e.g. 4 min ago).",
 ]
-text = ""
+text = "{label} · {time}"
 
 [t_ceaeb98ec1]
 en = "{label} · {detail}"
 where = [
   "android history_label_detail: Call history title with a detail. {label} is the call kind, {detail} e.g. 'declined' or a duration.",
 ]
-text = ""
+text = "{label} · {detail}"
 
 [t_8d695e8257]
 en = "Not called yet"
@@ -10895,42 +10895,42 @@ where = [
   "android history_not_called: Sub-line under a contact's name on Home when there is no call with them yet.",
   "desktop home_not_called_yet: Desktop, home, sidebar and call list (in view.rs, contact_sub).",
 ]
-text = ""
+text = "Ei vielä puheluita"
 
 [t_929986a69e]
 en = "Last call {day}"
 where = [
   "android history_last_call: Sub-line under a contact's name. {day} is today, yesterday, a weekday name or a date.",
 ]
-text = ""
+text = "Viimeisin puhelu: {day}"
 
 [t_08217d7172]
 en = "Missed call · {time}"
 where = [
   "android history_missed_call_when: Sub-line under a contact's name. {time} is a short relative time.",
 ]
-text = ""
+text = "Vastaamaton puhelu · {time}"
 
 [t_0c9ec95d3a]
 en = "Couldn’t reach · {time}"
 where = [
   "android history_unreached_when: Sub-line under a contact's name. {time} is a short relative time.",
 ]
-text = ""
+text = "Ei tavoitettu · {time}"
 
 [t_ea50b037f8]
 en = "today"
 where = [
   "android history_day_today: Lowercase day word in 'Last call today'.",
 ]
-text = ""
+text = "tänään"
 
 [t_9892b1d19e]
 en = "yesterday"
 where = [
   "android history_day_yesterday: Lowercase day word in 'Last call yesterday'.",
 ]
-text = ""
+text = "eilen"
 
 [t_271a8a2630]
 en = "Your line is ready"
@@ -10939,7 +10939,7 @@ where = [
   "ios shell_empty_hero_ready: Home hero title when the user has no contacts yet.",
   "desktop signup_your_line_is_ready: Desktop, sign-up, restore and add contact (in signup_view.rs, empty_hero).",
 ]
-text = ""
+text = "Linjasi on valmis"
 
 [t_d5f172a19f]
 en = "Your request to {name} is waiting. Your line opens when they accept."
@@ -10947,7 +10947,7 @@ where = [
   "android empty_hero_request_waiting: Empty-state text after I sent a contact request. {name} is the first name of the person I asked.",
   "ios shell_empty_request_waiting: Home hero line after the user sent a contact request. {name} is the first name of the person asked.",
 ]
-text = ""
+text = "Pyyntösi henkilölle {name} odottaa. Linjasi aukeaa, kun hän hyväksyy."
 
 [t_422b46cfc4]
 en = "Add another contact"
@@ -10956,7 +10956,7 @@ where = [
   "ios shell_empty_add_another: Home hero button after a request was sent.",
   "desktop signup_add_another_contact: Desktop, sign-up, restore and add contact (in signup_view.rs, empty_hero).",
 ]
-text = ""
+text = "Lisää toinen yhteystieto"
 
 [t_10e897512d]
 en = "Add someone you’d like to talk to, and you can message and call each other."
@@ -10965,7 +10965,7 @@ where = [
   "ios shell_empty_add_someone: Home hero line when the user has no contacts.",
   "desktop signup_add_someone_youd_like: Desktop, sign-up, restore and add contact (in signup_view.rs, empty_hero).",
 ]
-text = ""
+text = "Lisää joku, jonka kanssa haluat puhua, niin voitte lähettää viestejä ja soittaa toisillenne."
 
 [t_25cea9cf1a]
 en = "Say hello to {name} whenever you like."
@@ -10973,7 +10973,7 @@ where = [
   "android empty_hero_say_hello: Empty-state text with exactly one contact. {name} is their first name.",
   "ios shell_empty_say_hello: Home hero line with one contact. {name} is their first name.",
 ]
-text = ""
+text = "Sano hei henkilölle {name} milloin haluat."
 
 [t_924a60561a]
 en = "Pick someone and say hello whenever you like."
@@ -10982,7 +10982,7 @@ where = [
   "ios shell_empty_pick: Home hero line with several contacts.",
   "desktop signup_pick_someone_and_say: Desktop, sign-up, restore and add contact (in signup_view.rs, empty_hero).",
 ]
-text = ""
+text = "Valitse joku ja sano hei milloin haluat."
 
 [t_dbf04096a9]
 en = "Start a chat"
@@ -10991,7 +10991,7 @@ where = [
   "ios shell_empty_start_chat: Home hero button with several contacts.",
   "desktop signup_start_a_chat: Desktop, sign-up, restore and add contact (in signup_view.rs, empty_hero).",
 ]
-text = ""
+text = "Aloita keskustelu"
 
 [t_6ace595737]
 en = "Your chats show up here."
@@ -11000,7 +11000,7 @@ where = [
   "ios shell_empty_chats: Empty Chats list line.",
   "desktop chat_your_chats_show_up: Desktop, chats (in chat_view.rs, chat_list).",
 ]
-text = ""
+text = "Keskustelusi näkyvät täällä."
 
 [t_4ca7b34626]
 en = "You’re all caught up."
@@ -11009,7 +11009,7 @@ where = [
   "ios shell_empty_unread: Empty Unread filter line.",
   "desktop chat_youre_all_caught_up: Desktop, chats (in chat_view.rs, chat_list).",
 ]
-text = ""
+text = "Olet ajan tasalla."
 
 [t_1586bac225]
 en = "Calls you make and receive show up here."
@@ -11018,7 +11018,7 @@ where = [
   "ios shell_empty_calls: Empty Calls list line.",
   "desktop home_calls_you_make_and: Desktop, home, sidebar and call list (in view.rs, calls_list).",
 ]
-text = ""
+text = "Soittamasi ja vastaanottamasi puhelut näkyvät täällä."
 
 [t_09a39a8351]
 en = "The people you add show up here."
@@ -11027,7 +11027,7 @@ where = [
   "ios shell_empty_contacts: Empty Contacts list line.",
   "desktop shell_the_people_you_add: Desktop, shell: sidebar, search, contacts (in shell_view.rs, contacts_list).",
 ]
-text = ""
+text = "Lisäämäsi ihmiset näkyvät täällä."
 
 [t_3e1ae38304]
 en = "Calling during your call"
@@ -11036,14 +11036,14 @@ where = [
   "ios shell_ring_waiting: Ringing banner subtitle when a second person calls during the user’s call.",
   "desktop call_calling_during_your_call: Desktop, calls (voice and video) (in view.rs, ring_head_waiting).",
 ]
-text = ""
+text = "Soittaa puhelusi aikana"
 
 [t_e000895cf7]
 en = "{call} from {name}"
 where = [
   "android shell_ring_desc: Accessibility description of the ringing header. {call} is 'Incoming call' or 'Incoming video call', {name} the caller.",
 ]
-text = ""
+text = "{call}: {name}"
 
 [t_936ec492f1]
 en = "Open call from {name}"
@@ -11051,7 +11051,7 @@ where = [
   "android shell_ring_open: Accessibility click label on the ringing header. {name} is the caller.",
   "ios shell_ring_a11y_hint: Screen reader hint of the ringing banner. {name} is the caller.",
 ]
-text = ""
+text = "Avaa puhelu: {name}"
 
 [t_43657afcbe]
 en = "Chats"
@@ -11060,7 +11060,7 @@ where = [
   "ios shell_tab_chats: Bottom tab title and screen reader label.",
   "desktop common_chats: Shared label, used in several places (group_live, shell, view).",
 ]
-text = ""
+text = "Keskustelut"
 
 [t_d65062e6dc]
 en_one = "{count} waiting"
@@ -11068,6 +11068,8 @@ en_other = "{count} waiting"
 where = [
   "android shell_badge_waiting: Accessibility state of the Contacts tab: number of contact requests waiting for my answer.",
 ]
+one = "{count} odottaa"
+other = "{count} odottaa"
 
 [t_342e60a5c5]
 en_one = "{count} unread"
@@ -11076,6 +11078,8 @@ where = [
   "android shell_badge_unread: Accessibility state of a tab: number of unread chats or messages.",
   "ios group_unread_badge_desc: Spoken label of the unread badge. {count} is the number of unread posts.",
 ]
+one = "{count} lukematon"
+other = "{count} lukematonta"
 
 [t_d9e4173fb4]
 en = "Calling"
@@ -11085,7 +11089,7 @@ where = [
   "ios call_mark_outgoing: Accessibility label of the animated mark on an outgoing call.",
   "desktop status_calling: Desktop, status line (in mark.rs, status_look).",
 ]
-text = ""
+text = "Soitetaan"
 
 [t_c3606df9c5]
 en = "In a call"
@@ -11095,7 +11099,7 @@ where = [
   "ios call_mark_active: Accessibility label of the animated mark during a call.",
   "desktop status_in_a_call: Desktop, status line (in mark.rs, status_look).",
 ]
-text = ""
+text = "Puhelussa"
 
 [t_da0e66bff9]
 en = "Starting a group call"
@@ -11103,7 +11107,7 @@ where = [
   "android mark_starting_group_call: Spoken description of the mark while a group call starts.",
   "ios kit_mark_group_starting: Screen-reader label of the mark while a group call starts.",
 ]
-text = ""
+text = "Aloitetaan ryhmäpuhelua"
 
 [t_b2a398d7f8]
 en = "In a group call"
@@ -11111,7 +11115,7 @@ where = [
   "android mark_in_group_call: Spoken description of the mark during a group call.",
   "ios kit_mark_in_group_call: Screen-reader label of the mark during a group call.",
 ]
-text = ""
+text = "Ryhmäpuhelussa"
 
 [t_a44284db0a]
 en = "No connection"
