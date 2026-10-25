@@ -13,7 +13,7 @@ enum CapturePreference: CaseIterable {
 /** Device-local choice. Auto preserves the existing SD capture/adaptation policy. */
 enum VideoQualityPreference: String, CaseIterable {
     case auto = "AUTO", preferHd = "PREFER_HD"
-    var label: String { self == .auto ? "Auto" : "Prefer HD" }
+    var label: String { self == .auto ? tr("call_quality_auto") : tr("call_quality_prefer_hd") }
     static func fromStored(_ value: String?) -> VideoQualityPreference { value.flatMap(Self.init(rawValue:)) ?? .auto }
 }
 
@@ -35,9 +35,9 @@ func hdPaused(hdOn: Bool, sendWidth: Int, sendHeight: Int) -> Bool {
 
 /** The HD chip's short line (shown for 2.6 s in the line under the header). */
 func hdLine(on: Bool, paused: Bool) -> String {
-    if !on { return "Sharper video off" }
-    if paused { return "HD paused \u{00b7} weak connection" }
-    return "Sharper video on"
+    if !on { return tr("call_hd_off") }
+    if paused { return tr("call_hd_paused") }
+    return tr("call_hd_on")
 }
 
 /**
@@ -50,7 +50,7 @@ let hdMeteredMs: Int64 = 6000
 let hdNoteMs: Int64 = 2600
 
 /** Sharper video is on while the phone is on mobile data: said once per call, calmly; the chip turns it off. */
-let hdMeteredLine = "On mobile data, HD uses more \u{00b7} tap HD"
+let hdMeteredLine = tr("call_hd_metered")
 
 /**
  * Whether to say [hdMeteredLine] now: HD on, my camera sending, the active network metered, not said yet in this call.
@@ -64,7 +64,7 @@ func hdMeteredNow(hdOn: Bool, sending: Bool, metered: Bool, saidThisCall: Bool) 
 func videoResolutionLabel(width: Int, height: Int) -> String? {
     if width <= 0 || height <= 0 { return nil }
     let hd = max(width, height) >= 1280 && min(width, height) >= 720
-    return "\(hd ? "HD · " : "")\(width)×\(height)"
+    return hd ? tr("call_resolution_hd", "\(width)×\(height)") : "\(width)×\(height)"
 }
 
 /** The capture setup refused this size or use case: the only failure [bindCapture] retries. */

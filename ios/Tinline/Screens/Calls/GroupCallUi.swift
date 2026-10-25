@@ -52,9 +52,9 @@ struct GcState: Equatable {
     /** gcall.svelte.ts `statusText`. */
     var status: String {
         switch phase {
-        case .starting: "Finding a call host…"
-        case .connecting: "Connecting…"
-        case .reconnecting: "Reconnecting…"
+        case .starting: tr("call_status_finding_host")
+        case .connecting: tr("call_status_connecting")
+        case .reconnecting: tr("call_status_reconnecting")
         case .ended, .failed: reason
         default: ""
         }
@@ -111,7 +111,7 @@ final class GroupCallUi: ObservableObject {
         if cur.announce?.gid == gid { stopRing() }
         if state.announce?.gid == gid { state.announce = nil }
         if cur.gid == gid && cur.active { state.minimized = false; return }
-        if cur.active || oneToOneBusy() { onError("You’re already in a call."); return }
+        if cur.active || oneToOneBusy() { onError(tr("call_group_already_in_call")); return }
         let core = core
         Task {
             await refreshLive(gid)
@@ -135,7 +135,7 @@ final class GroupCallUi: ObservableObject {
 
     func leave() {
         audio.leave()
-        end(failed: false, reason: "Call ended", holdMs: 0)
+        end(failed: false, reason: tr("call_group_ended"), holdMs: 0)
     }
 
     func toggleMute() {
@@ -155,7 +155,7 @@ final class GroupCallUi: ObservableObject {
 
     // MARK: the ring of a started group call
 
-    func groupLabel(_ gid: String) -> String { directory.groupName(gid) ?? "Group" }
+    func groupLabel(_ gid: String) -> String { directory.groupName(gid) ?? tr("call_group_fallback") }
 
     private func startRing(_ gid: String, _ callId: String) {
         stopRingSound()
@@ -225,7 +225,7 @@ final class GroupCallUi: ObservableObject {
             if state.announce?.gid == e.groupId { stopRing() }
             state.live.removeValue(forKey: e.groupId)
             if state.announce?.gid == e.groupId { state.announce = nil }
-            if mine && s.callId == e.callId { end(failed: false, reason: "Call ended", holdMs: 900) }
+            if mine && s.callId == e.callId { end(failed: false, reason: tr("call_group_ended"), holdMs: 900) }
         case .startFailed:
             if mine { end(failed: true, reason: startFailure(e.detail), holdMs: 2600) }
         case .joined:
@@ -247,7 +247,7 @@ final class GroupCallUi: ObservableObject {
             // The call may be over for everyone (or still going without me): re-read, so Join never lingers or lies.
             if !e.groupId.isEmpty { Task { await refreshLive(e.groupId) } }
             if mine && s.phase != .ended && s.phase != .failed {
-                end(failed: false, reason: e.detail.contains("Lost") ? "Call ended — host lost" : "Call ended", holdMs: 900)
+                end(failed: false, reason: e.detail.contains("Lost") ? tr("call_group_ended_host_lost") : tr("call_group_ended"), holdMs: 900)
             }
         case .hostingStarted:
             state.hosting = true
@@ -255,7 +255,7 @@ final class GroupCallUi: ObservableObject {
             state.hosting = false
         case .hostingLimited:
             if mine && s.hosting {
-                state.note = "Battery under 15 %. Hosting is limited: only one person is heard at a time, and no one new can join."
+                state.note = tr("call_group_battery_limited")
             }
         case .hostingUnlimited:
             state.note = nil
@@ -268,26 +268,26 @@ final class GroupCallUi: ObservableObject {
     private func startFailure(_ d: String) -> String {
         let marker = "no call host available: "
         if let r = d.range(of: marker) { return String(d[r.upperBound...]) }
-        if d.lowercased().contains("host") { return "No call host available" }
-        return "Couldn’t connect"
+        if d.lowercased().contains("host") { return tr("call_group_no_host") }
+        return tr("call_group_connect_failed")
     }
 
     /** A person in a group call: "You", their name in the open group or contacts, else "Someone". */
     func gcName(_ did: String) -> String {
-        if did == directory.currentDid { return "You" }
-        return directory.personName(did) ?? "Someone"
+        if did == directory.currentDid { return tr("call_person_you") }
+        return directory.personName(did) ?? tr("call_person_someone")
     }
 
     func gcHost(_ s: GcState) -> String? {
-        if s.hosting { return "this phone" }
-        if let h = s.host { return "\(callFirstName(gcName(h)))’s device" }
+        if s.hosting { return tr("call_host_this_phone") }
+        if let h = s.host { return tr("call_host_device", callFirstName(gcName(h))) }
         return nil
     }
 
-    func groupName(_ gid: String?) -> String { gid.flatMap(directory.groupName) ?? "Group call" }
+    func groupName(_ gid: String?) -> String { gid.flatMap(directory.groupName) ?? tr("call_group_call_name") }
 
     func isMe(_ did: String) -> Bool { did == directory.currentDid }
 
     /** My own name for my roster tile. */
-    func myName() -> String { core()?.profile()?.name ?? "You" }
+    func myName() -> String { core()?.profile()?.name ?? tr("call_person_you") }
 }

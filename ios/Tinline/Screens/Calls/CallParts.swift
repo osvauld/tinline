@@ -65,14 +65,14 @@ struct CallTop: View {
             CallLiveMark(look: callMarkLook(phase))
             HStack(spacing: 0) {
                 // Back, like every other screen: to where I was; the call goes on in the strip.
-                if let onMinimise { CallTopButton(icon: .back, label: "Back. The call continues", action: onMinimise) }
+                if let onMinimise { CallTopButton(icon: .back, label: tr("call_back_continues"), action: onMinimise) }
                 Spacer(minLength: 0)
-                if let onMessage { CallTopButton(icon: .chat, label: "Message. The call continues", action: onMessage) }
+                if let onMessage { CallTopButton(icon: .chat, label: tr("call_message_continues"), action: onMessage) }
                 if let onInfo {
                     let up = active && !reconnecting && signal > 0
-                    let label = active && reconnecting ? "About this call. Reconnecting."
-                        : up ? "About this call. \(callSignalWord(signal)) signal, \(direct == true ? "direct" : "relayed")."
-                        : "About this call"
+                    let label = active && reconnecting ? tr("call_about_reconnecting")
+                        : up ? tr(direct == true ? "call_about_signal_direct" : "call_about_signal_relayed", callSignalWord(signal))
+                        : tr("call_about_title")
                     Button(action: onInfo) {
                         CallSignalBars(level: up ? signal : 0, color: tin.ink, wave: active && reconnecting)
                             .frame(width: 44, height: 44).contentShape(Circle())
@@ -133,7 +133,7 @@ struct CallControls: View {
     let onFlip: (() -> Void)?
     let onEnd: () -> Void
     /** With a headset connected the speaker slot becomes the route picker: its name and icon. */
-    var routeCaption = "Speaker"
+    var routeCaption = tr("call_route_speaker")
     var routeIcon: CallIcon = .speaker
     /** I pressed End: its glyph plays the cut string letting go ([CallHangupGlyph]). */
     var ending = false
@@ -141,20 +141,20 @@ struct CallControls: View {
     var body: some View {
         let fill = tin.callControlFill
         HStack(alignment: .top, spacing: 10) {
-            CallControl(label: "Mute", caption: muted ? "Muted" : "Mute", bg: muted ? tin.ink : fill, selected: muted, action: onMute) {
+            CallControl(label: tr("call_control_mute"), caption: muted ? tr("call_control_muted") : tr("call_control_mute"), bg: muted ? tin.ink : fill, selected: muted, action: onMute) {
                 (muted ? CallIcon.micOff : .mic).image.font(.system(size: 22)).foregroundStyle(muted ? tin.bg : tin.ink)
             }
-            CallControl(label: "Camera", caption: "Camera", bg: camera ? tin.ink : fill, enabled: onCamera != nil, selected: camera,
+            CallControl(label: tr("call_control_camera"), caption: tr("call_control_camera"), bg: camera ? tin.ink : fill, enabled: onCamera != nil, selected: camera,
                         action: onCamera ?? {}) {
                 (camera ? CallIcon.video : .videoOff).image.font(.system(size: 22)).foregroundStyle(camera ? tin.bg : tin.ink)
             }
-            CallControl(label: "End call", caption: "End", bg: tin.callButtonEnd, action: onEnd) {
+            CallControl(label: tr("call_control_end_label"), caption: tr("call_control_end"), bg: tin.callButtonEnd, action: onEnd) {
                 CallHangupGlyph(gone: ending, tint: .white).frame(width: 28, height: 28)
             }
-            CallControl(label: "Flip camera", caption: "Flip", bg: fill, enabled: camera && onFlip != nil, action: onFlip ?? {}) {
+            CallControl(label: tr("call_control_flip_label"), caption: tr("call_control_flip"), bg: fill, enabled: camera && onFlip != nil, action: onFlip ?? {}) {
                 CallIcon.flip.image.font(.system(size: 22)).foregroundStyle(tin.ink)
             }
-            CallControl(label: routeCaption == "Speaker" ? "Speaker" : "Audio: \(routeCaption)", caption: routeCaption,
+            CallControl(label: routeCaption == tr("call_route_speaker") ? tr("call_route_speaker") : tr("call_control_audio_route", routeCaption), caption: routeCaption,
                         bg: speaker ? tin.ink : fill, selected: speaker, action: onSpeaker) {
                 routeIcon.image.font(.system(size: 22)).foregroundStyle(speaker ? tin.bg : tin.ink)
             }
@@ -237,13 +237,13 @@ struct CallFocus<Controls: View>: View {
                                 Text(name).font(CallFont.figtree(28, .semibold, .title)).foregroundStyle(tin.ink)
                                     .multilineTextAlignment(.center).lineLimit(1).truncationMode(.tail)
                                     .frame(maxWidth: .infinity, minHeight: 34).padding(.top, 22)
-                                let status = incoming ? (video ? "Tinline video call" : "Tinline voice call")
+                                let status = incoming ? (video ? tr("call_status_incoming_video") : tr("call_status_incoming_voice"))
                                     : callStatus(active: active, ringing: ringing, reconnecting: reconnecting, secs: secs)
                                 Text(status).font(CallFont.figtree(active && !reconnecting ? 20 : 17, .medium).monospacedDigit())
                                     .foregroundStyle(tin.ink).lineLimit(1)
                                     .frame(minHeight: 30).padding(.top, 6)
                                 // The path, on the main screen: honest, and About this call explains it.
-                                Text(active && !reconnecting ? "End-to-end encrypted" + (direct.map { $0 ? " · Direct" : " · Relayed" } ?? "") : " ")
+                                Text(active && !reconnecting ? (direct.map { $0 ? tr("call_path_direct") : tr("call_path_relayed") } ?? tr("call_path_encrypted")) : " ")
                                     .font(CallFont.figtree(13)).foregroundStyle(tin.ink).lineLimit(1)
                                     .frame(minHeight: 18).padding(.top, 10)
                                 // Keep a two-line error cell even when there is no microphone/video problem.
@@ -298,39 +298,40 @@ struct CallInfoCard: View {
         let first = callFirstName(name)
         let p = CallFont.figtree(13)
         CallScrimCard(onDismiss: onDismiss) {
-            Text("About this call").font(CallFont.figtree(17, .semibold)).foregroundStyle(tin.ink)
+            Text(tr("call_about_title")).font(CallFont.figtree(17, .semibold)).foregroundStyle(tin.ink)
             if active {
-                (Text("End-to-end encrypted.").foregroundStyle(tin.ink).fontWeight(.semibold)
-                 + Text(" \(video ? "Your voice and picture are" : "Your voice is") encrypted on this device and only decrypted on \(name)’s.")
+                (Text(tr("call_about_encrypted_lead")).foregroundStyle(tin.ink).fontWeight(.semibold)
+                 + Text(" " + tr(video ? "call_about_encrypted_video" : "call_about_encrypted_voice", name))
                     .foregroundStyle(tin.ink2))
                     .font(p).padding(.top, 10)
                 let up = !reconnecting && signal > 0
                 HStack(alignment: .top, spacing: 12) {
                     CallSignalBars(level: up ? signal : 0, color: tin.ink, wave: reconnecting, size: 22).padding(.top, 1)
-                    let headline = reconnecting ? "Reconnecting" : "\(callSignalWord(signal)) signal · \(direct == true ? "Direct" : "Relayed")"
-                    let line = reconnecting ? "The connection dropped for a moment. Tinline is finding a way back to \(first)."
-                        : direct == true ? "Your call goes straight between your device and \(first)’s."
-                        : "Your devices can’t reach each other directly right now, so a relay passes the call along. It can’t \(video ? "listen or watch" : "listen")."
-                    let weak = up && signal == 1 ? " The line is weak, so \(first)’s voice may break up." : ""
+                    let headline = reconnecting ? tr("call_about_headline_reconnecting")
+                        : tr(direct == true ? "call_about_headline_direct" : "call_about_headline_relayed", callSignalWord(signal))
+                    let line = reconnecting ? tr("call_about_line_reconnecting", first)
+                        : direct == true ? tr("call_about_line_direct", first)
+                        : tr(video ? "call_about_line_relayed_video" : "call_about_line_relayed_voice")
+                    let weak = up && signal == 1 ? " " + tr("call_about_line_weak", first) : ""
                     (Text(headline).foregroundStyle(tin.ink).fontWeight(.semibold) + Text("\n" + line + weak).foregroundStyle(tin.ink2))
                         .font(p)
                         .frame(maxWidth: .infinity, minHeight: 95, alignment: .topLeading)
                 }
                 .padding(.top, 12)
                 if up, let rttMs {
-                    Text("\(rttMs) ms round trip · \(lossText(lossPct ?? 0))% lost").font(CallFont.meta).foregroundStyle(tin.ink2)
+                    Text(tr("call_about_stats", String(rttMs), lossText(lossPct ?? 0))).font(CallFont.meta).foregroundStyle(tin.ink2)
                         .padding(.top, 6).padding(.leading, 34)
                 }
                 // Codec per direction while that camera is on. Both rows are always there on a video call (blank when
                 // off), so the card never changes height.
                 if video {
-                    codecRow("Your video", sendCodec)
-                    codecRow("Their video", recvCodec)
+                    codecRow(tr("call_about_your_video"), sendCodec)
+                    codecRow(tr("call_about_their_video"), recvCodec)
                 }
             } else {
                 Text(callPrivacy(active: false, name: name)).font(p).foregroundStyle(tin.ink2).padding(.top, 10)
             }
-            CallButton("Got it", height: 44, action: onDismiss).padding(.top, 16)
+            CallButton(tr("call_got_it"), height: 44, action: onDismiss).padding(.top, 16)
         }
     }
 
