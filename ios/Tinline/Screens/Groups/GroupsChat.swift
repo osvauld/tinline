@@ -337,7 +337,7 @@ private struct HostAskCard: View {
     let d: GroupDetail
     var body: some View {
         if let by = GroupText.hostAsker(d) {
-            GroupsNoticeCard(bg: tin.warn, fg: tin.onWarn, title: tr("group_host_asked_title", groupsFirstName(by), d.name),
+            GroupsNoticeCard(bg: tin.warn, fg: tin.onWarn, title: by.groupsIsBlank ? tr("group_host_asked_title_admin", d.name) : tr("group_host_asked_title", groupsFirstName(by), d.name),
                 text: tr("group_host_asked_text")) {
                 HStack(spacing: 8) {
                     GroupsFlowButton(text: tr("group_host_here"), style: .filled, height: 44) { session.exec({ session.ctl.acceptHost(d.id, accept: true) }, session.sayDone) }

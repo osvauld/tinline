@@ -6,21 +6,29 @@ note = "Screen-reader label of a message tick: not sent yet."
 text = "Sent, waiting for {first}’s device to confirm"
 note = "Screen-reader label of a message tick: sent, no confirmation yet. {first} is the other person's first name."
 
+[kit_tick_sent_their]
+text = "Sent, waiting for their device to confirm"
+note = "Screen-reader label of a message tick: sent, no confirmation yet. Used when the other person's name is not known; their means the other person's."
+
 [kit_tick_delivered]
 text = "On {first}’s device"
 note = "Screen-reader label of a message tick: reached the other person's device. {first} is their first name."
+
+[kit_tick_delivered_their]
+text = "On their device"
+note = "Screen-reader label of a message tick: reached the other person's device. Used when their name is not known."
 
 [kit_tick_read]
 text = "Read on {first}’s device"
 note = "Screen-reader label of a message tick: read. {first} is the other person's first name."
 
+[kit_tick_read_their]
+text = "Read on their device"
+note = "Screen-reader label of a message tick: read. Used when the other person's name is not known."
+
 [kit_tick_bad]
 text = "Not delivered"
 note = "Screen-reader label of a message tick: could not be delivered."
-
-[kit_tick_their]
-text = "their"
-note = "Stand-in for a first name in the tick labels when no name is known (\"On their device\")."
 
 [kit_avatar_view_photo]
 text = "View photo"
@@ -146,17 +154,17 @@ note = "Button of the clipboard card prompt that adds the new contact."
 text = "Chat with {name}?"
 note = "Title of the clipboard card prompt for a known contact. {name} is the contact's name, or \"them\"."
 
+[chat_card_chat_with_unnamed]
+text = "Chat with this contact?"
+note = "Banner on a found contact card whose name is not known, for a contact already in Tinline."
+
 [chat_card_add_name]
 text = "Add {name}?"
 note = "Title of the clipboard card prompt for a new contact. {name} is the name on the card, or \"this contact\"."
 
-[chat_card_them]
-text = "them"
-note = "Stand-in for a nameless contact in \"Chat with them?\"."
-
-[chat_card_this_contact]
-text = "this contact"
-note = "Stand-in for a nameless card in \"Add this contact?\"."
+[chat_card_add_name_unnamed]
+text = "Add this contact?"
+note = "Banner on a found contact card whose name is not known, for someone not yet a contact."
 
 [chat_find_placeholder]
 text = "Find in this chat"
@@ -1283,14 +1291,6 @@ note = "Button that sends the private-chat request."
 text = "Someone"
 note = "Fallback name for a group member whose name is unknown, e.g. \"Someone joined\"."
 
-[group_fallback_them]
-text = "them"
-note = "Fallback for a name inside a sentence (\"Invitation sent to them\"), used when the person has no name."
-
-[group_fallback_they]
-text = "They"
-note = "Fallback for a name at the start of a sentence (\"They join…\"), used when the person has no name."
-
 [group_sys_removed_you]
 text = "You were removed after {total} admin flags"
 note = "System line: the user was removed. {total} is the number of flags that remove."
@@ -1376,10 +1376,6 @@ note = "Line for a declined chat request. {name} is who declined."
 [group_req_blocked]
 text = "{name} blocked you"
 note = "Line for a chat request that was blocked. {name} is who blocked the user."
-
-[group_an_admin]
-text = "An admin"
-note = "Name used when an unnamed admin asked this device to host."
 
 [group_pick_already_member]
 text = "Already a member"
@@ -1479,7 +1475,11 @@ note = "Error when inviting nobody."
 
 [group_done_invite_one]
 text = "Invitation sent to {name}. They join when they accept."
-note = "Confirmation after inviting one contact. {name} is their first name."
+note = "Toast after inviting one contact. {name} is the invited person's first name."
+
+[group_done_invite_one_unnamed]
+text = "Invitation sent. They join when they accept."
+note = "Toast after inviting one contact whose name is not known."
 
 [group_done_invite_many]
 one = "{count} invitation sent. Each person joins when they accept."
@@ -1488,7 +1488,11 @@ note = "Confirmation after inviting several contacts. {count} is how many."
 
 [group_done_decline_invite]
 text = "Declined. {name} sees that you declined."
-note = "Confirmation after declining an invitation. {name} is the inviter’s first name."
+note = "Toast after declining an invitation. {name} is the person who invited you."
+
+[group_done_decline_invite_unnamed]
+text = "Declined. They see that you declined."
+note = "Toast after declining an invitation from someone whose name is not known."
 
 [group_done_flag]
 text = "Flag recorded. It is signed by you and the member can see it."
@@ -1544,23 +1548,43 @@ note = "Confirmation after this phone started hosting its own calls."
 
 [group_done_request_sent]
 text = "Request sent to {name}. It waits in Chats until they answer."
-note = "Confirmation after asking for a private chat. {name} is their first name."
+note = "Toast after asking a member for a private chat. {name} is that member's first name."
+
+[group_done_request_sent_unnamed]
+text = "Request sent. It waits in Chats until they answer."
+note = "Toast after asking a member for a private chat; the member's name is not known."
 
 [group_done_request_accepted]
 text = "Accepted. {name} is added for messages only and shows in Chats once their device connects; calls stay off until you allow them."
-note = "Confirmation after accepting a chat request. {name} is their first name."
+note = "Toast after accepting a private chat request. {name} is the requester's first name."
+
+[group_done_request_accepted_unnamed]
+text = "Accepted. They are added for messages only and show in Chats once their device connects; calls stay off until you allow them."
+note = "Toast after accepting a private chat request from someone whose name is not known."
 
 [group_done_request_declined]
 text = "Declined. {name} is told “declined”."
-note = "Confirmation after declining a chat request. {name} is their first name."
+note = "Toast after declining a private chat request. {name} is the requester's first name."
+
+[group_done_request_declined_unnamed]
+text = "Declined. They are told “declined”."
+note = "Toast after declining a private chat request from someone whose name is not known."
 
 [group_done_request_blocked]
 text = "{name} is blocked and can’t send more requests."
-note = "Confirmation after blocking a requester. {name} is their first name."
+note = "Toast after blocking a requester. {name} is the requester's first name."
+
+[group_done_request_blocked_unnamed]
+text = "They are blocked and can’t send more requests."
+note = "Toast after blocking a requester whose name is not known."
 
 [group_notice_request_accepted]
 text = "{name} accepted your request. You can message each other now; calls stay off until one of you allows them."
-note = "Notice when someone accepted the user’s chat request. {name} is their first name."
+note = "Notice when your private chat request was accepted. {name} is the other member's first name."
+
+[group_notice_request_accepted_unnamed]
+text = "Your request was accepted. You can message each other now; calls stay off until one of you allows them."
+note = "Notice when your private chat request was accepted by someone whose name is not known."
 
 [group_calls_unavailable]
 text = "Group calls aren’t available here yet."
@@ -1681,7 +1705,11 @@ note = "Spoken label of a call line in the chat. {text} is its text, {time} its 
 
 [group_host_asked_title]
 text = "{name} asked this phone to host {group}"
-note = "Notice title. {name} is who asked, {group} the group."
+note = "Card title: a named admin asked this phone to host. {name} is the admin's first name, {group} the group."
+
+[group_host_asked_title_admin]
+text = "An admin asked this phone to host {group}"
+note = "Card title: an admin whose name is not known asked this phone to host. {group} is the group."
 
 [group_host_asked_text]
 text = "A host keeps a full copy of the group, passes messages on while members’ phones sleep and learns members’ group addresses. It needs to stay online and uses battery: a computer that stays on is a better host. Hosting doesn’t make you an admin."
@@ -1848,13 +1876,17 @@ note = "Button that opens the QR scanner."
 text = "Joining…"
 note = "Label of the join button while working."
 
-[group_fallback_unknown_contact]
-text = "someone who isn’t in your contacts"
-note = "Name used for a person the user does not know, inside a sentence."
-
 [group_join_invited_by]
 text = "Invited by {name}"
-note = "Invite preview line. {name} is who made the link."
+note = "Line on the join preview: who made the invite link. {name} is a contact's name."
+
+[group_join_invited_by_unknown]
+text = "Invited by someone outside your contacts"
+note = "Line on the join preview when the inviter is not in your contacts."
+
+[group_join_invited_by_you]
+text = "Invited by you"
+note = "Line on the join preview when you made the invite link yourself."
 
 [group_join_own_link]
 text = "A link for your own account"
@@ -1862,7 +1894,15 @@ note = "Invite preview line for a link the user made on their own account."
 
 [group_join_owner]
 text = "Owner: {name}"
-note = "Invite preview line. {name} is the group owner."
+note = "Line on the join preview: the group's owner. {name} is a contact's name."
+
+[group_join_owner_unknown]
+text = "Owner isn’t in your contacts"
+note = "Line on the join preview when the owner is not in your contacts."
+
+[group_join_owner_you]
+text = "Owner: you"
+note = "Line on the join preview when you are the owner."
 
 [group_valid_until]
 text = "Valid until {date}"
@@ -1872,17 +1912,17 @@ note = "Line under an invitation or link. {date} is the day it stops working."
 text = "Joining connects this phone to the group’s hosts. Members see your name; only hosts learn how to reach this phone. It can take up to a minute."
 note = "Hint on the join page."
 
-[group_fallback_the_group]
-text = "the group"
-note = "Fallback group name inside a sentence."
-
 [group_link_title]
 text = "Invite link"
 note = "Title of the invite link page."
 
 [group_link_hint]
 text = "Anyone with this link or QR can join {group} for 7 days. Share it over an app you trust; you see who joined and can flag them out. To invite your contacts directly, use Add members."
-note = "Hint on the invite link page. {group} is the group’s name."
+note = "Hint above the group invite link QR. {group} is the group's name."
+
+[group_link_hint_unnamed]
+text = "Anyone with this link or QR can join this group for 7 days. Share it over an app you trust; you see who joined and can flag them out. To invite your contacts directly, use Add members."
+note = "Hint above the group invite link QR when the group's name is not known."
 
 [group_link_qr_desc]
 text = "QR code of the group invite link"
@@ -1898,7 +1938,11 @@ note = "Spoken hint to show the QR full screen."
 
 [group_share_text]
 text = "Join {group} on Tinline: {link}"
-note = "Text shared with an invite link. {group} is the group’s name, {link} the link."
+note = "Text shared with the invite link. {group} is the group's name, {link} the invite link."
+
+[group_share_text_unnamed]
+text = "Join this group on Tinline: {link}"
+note = "Text shared with the invite link when the group's name is not known. {link} is the invite link."
 
 [group_share_subject]
 text = "Share group invite"

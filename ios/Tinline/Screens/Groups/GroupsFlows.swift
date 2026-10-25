@@ -201,8 +201,14 @@ private struct JoinGroupScreen: View {
         }
     }
 
+    /// A line about someone on the join preview: one whole string for me, for a contact and for someone outside my contacts.
+    private func peekLine(_ did: String, named: String, unknown: String, you: String) -> String {
+        if did == session.me { return tr(you) }
+        if let c = session.dir.contacts.first(where: { $0.did == did }), !c.name.groupsIsBlank { return tr(named, c.name) }
+        return tr(unknown)
+    }
+
     private func peekCard(_ p: GroupInvitePeek) -> some View {
-        let unknown = tr("group_fallback_unknown_contact")
         return VStack(spacing: 14) {
             GroupsCardBox(radius: 20) {
                 VStack(alignment: .leading, spacing: 6) {
@@ -210,8 +216,8 @@ private struct JoinGroupScreen: View {
                         GroupsAvatar(size: 44)
                         Text(p.name).font(TinType.titleM).foregroundStyle(tin.ink)
                     }
-                    Text(p.issuerDid.map { tr("group_join_invited_by", session.name($0, unknown)) } ?? tr("group_join_own_link")).font(TinType.bodyM).foregroundStyle(tin.ink2)
-                    Text(tr("group_join_owner", session.name(p.ownerDid, unknown))).font(TinType.bodyM).foregroundStyle(tin.ink2)
+                    Text(p.issuerDid.map { peekLine($0, named: "group_join_invited_by", unknown: "group_join_invited_by_unknown", you: "group_join_invited_by_you") } ?? tr("group_join_own_link")).font(TinType.bodyM).foregroundStyle(tin.ink2)
+                    Text(peekLine(p.ownerDid, named: "group_join_owner", unknown: "group_join_owner_unknown", you: "group_join_owner_you")).font(TinType.bodyM).foregroundStyle(tin.ink2)
                     if let e = p.expires { Text(tr("group_valid_until", GroupsTime.whenFull(e))).font(TinType.bodyM).foregroundStyle(tin.ink2) }
                 }.padding(16)
             }
@@ -248,11 +254,11 @@ private struct GroupTokenScreen: View {
     @State private var copied = false
 
     var body: some View {
-        let name = session.ctl.opened.flatMap { $0.id == id ? $0.detail.name : nil } ?? tr("group_fallback_the_group")
+        let name = session.ctl.opened.flatMap { $0.id == id ? $0.detail.name : nil }
         GroupsPage(title: tr("group_link_title")) {
             ScrollView {
                 VStack(spacing: 14) {
-                    GroupsHint(tr("group_link_hint", name))
+                    GroupsHint(name.map { tr("group_link_hint", $0) } ?? tr("group_link_hint_unnamed"))
                     // Large, high contrast, the full width: easy to scan from another phone. Tap for full screen.
                     ZStack {
                         RoundedRectangle(cornerRadius: 16).fill(Color.white)
@@ -267,7 +273,7 @@ private struct GroupTokenScreen: View {
                     if let t = token { Text(t).font(TinType.bodyM.monospaced()).foregroundStyle(tin.ink2).multilineTextAlignment(.center).textSelection(.enabled) }
                     HStack(spacing: 10) {
                         if let t = token {
-                            ShareLink(item: tr("group_share_text", name, t), subject: Text(tr("group_share_subject"))) {
+                            ShareLink(item: name.map { tr("group_share_text", $0, t) } ?? tr("group_share_text_unnamed", t), subject: Text(tr("group_share_subject"))) {
                                 Text(tr("group_share")).font(TinType.button).foregroundStyle(tin.onPrc).frame(maxWidth: .infinity, minHeight: 52).background(tin.prc, in: Capsule())
                             }
                         } else {

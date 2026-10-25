@@ -163,6 +163,10 @@ enum GroupText {
     static func isAdmin(_ r: GroupRole) -> Bool { r == .owner || r == .admin }
 
     private static func someone(_ name: String) -> String { name.groupsIfBlank(tr("group_someone")) }
+    /// A sentence about a person whose name may be unknown: the named sentence, or its whole-sentence twin.
+    static func named(_ name: String, _ named: String, _ unnamed: String) -> String {
+        name.groupsIsBlank ? tr(unnamed) : tr(named, groupsFirstName(name))
+    }
     static func shortDev(_ dev: String) -> String { String(dev.prefix(8)) }
 
     /// Who a system line is about: the user, a named member, or a member whose name is unknown. Each combination has its
@@ -284,12 +288,12 @@ enum GroupText {
         }
     }
 
-    /// Who asked this device to host `d`, or nil when nobody did.
+    /// Who asked this device to host `d`: nil when nobody did, an empty string when an admin asked whose name is unknown.
     static func hostAsker(_ d: GroupDetail) -> String? {
         if !d.hostRequestedHere || !active(d.myRole) { return nil }
         let by = d.hostRequests.first(where: { $0.isMe })?.appointedBy
         if let b = by, let name = d.members.first(where: { $0.did == b })?.name, !name.groupsIsBlank { return name }
-        return tr("group_an_admin")
+        return ""
     }
 
     /// Unread posts in groups we are still in, plus invitations waiting for an answer: the Groups tab's badge.
@@ -625,7 +629,7 @@ final class GroupsController: ObservableObject, GroupEvents, GroupRequestEvents,
     func inviteContacts(_ id: String, dids: [String]) -> GroupResult<String> {
         if dids.isEmpty { return .failure(GroupFailure(tr("group_err_pick_someone"))) }
         let r = Result { try api.inviteContacts(id, dids: dids) }.map { (made: [GroupInvitation]) -> String in
-            if made.count == 1 { return tr("group_done_invite_one", groupsFirstName(made[0].inviteeName.groupsIfBlank(tr("group_fallback_them")))) }
+            if made.count == 1 { return GroupText.named(made[0].inviteeName, "group_done_invite_one", "group_done_invite_one_unnamed") }
             return trn("group_done_invite_many", made.count)
         }
         locked { reloadInvitations() }
@@ -641,7 +645,7 @@ final class GroupsController: ObservableObject, GroupEvents, GroupRequestEvents,
 
     func declineInvitation(_ invitationId: String) -> GroupResult<String> {
         let r = Result { try api.invitationDecline(invitationId) }
-            .map { tr("group_done_decline_invite", groupsFirstName($0.inviterName.groupsIfBlank(tr("group_fallback_they")))) }
+            .map { GroupText.named($0.inviterName, "group_done_decline_invite", "group_done_decline_invite_unnamed") }
         locked { reloadInvitations() }
         return r.mapError { GroupFailure(GroupText.error($0)) }
     }
@@ -684,21 +688,21 @@ final class GroupsController: ObservableObject, GroupEvents, GroupRequestEvents,
     /// "Message privately" for a member who is not a contact.
     func request(_ groupId: String, did: String) -> GroupResult<String> {
         let r = Result { try api.chatRequest(groupId, did: did) }
-            .map { tr("group_done_request_sent", groupsFirstName($0.peerName.groupsIfBlank(tr("group_fallback_them")))) }
+            .map { GroupText.named($0.peerName, "group_done_request_sent", "group_done_request_sent_unnamed") }
         locked { reloadRequests() }
         return r.mapError { GroupFailure(GroupText.error($0)) }
     }
 
     func accept(_ requestId: String) -> GroupResult<String> {
         let r = Result { try api.chatAccept(requestId) }
-            .map { tr("group_done_request_accepted", groupsFirstName($0.peerName.groupsIfBlank(tr("group_fallback_they")))) }
+            .map { GroupText.named($0.peerName, "group_done_request_accepted", "group_done_request_accepted_unnamed") }
         locked { reloadRequests() }
         return r.mapError { GroupFailure(GroupText.error($0)) }
     }
 
     func decline(_ requestId: String) -> GroupResult<String> {
         let r = Result { try api.chatDecline(requestId) }
-            .map { tr("group_done_request_declined", groupsFirstName($0.peerName.groupsIfBlank(tr("group_fallback_they")))) }
+            .map { GroupText.named($0.peerName, "group_done_request_declined", "group_done_request_declined_unnamed") }
         locked { reloadRequests() }
         return r.mapError { GroupFailure(GroupText.error($0)) }
     }
@@ -706,7 +710,7 @@ final class GroupsController: ObservableObject, GroupEvents, GroupRequestEvents,
     /// Block (P5: they are told) and decline.
     func blockRequester(_ requestId: String, did: String) -> GroupResult<String> {
         let r = Result { () -> GroupChatRequest in try api.block(did); return try api.chatDecline(requestId) }
-            .map { tr("group_done_request_blocked", groupsFirstName($0.peerName.groupsIfBlank(tr("group_fallback_they")))) }
+            .map { GroupText.named($0.peerName, "group_done_request_blocked", "group_done_request_blocked_unnamed") }
         locked { reloadRequests() }
         return r.mapError { GroupFailure(GroupText.error($0)) }
     }
@@ -714,7 +718,7 @@ final class GroupsController: ObservableObject, GroupEvents, GroupRequestEvents,
     func onChatRequest(request: GroupChatRequest) {
         locked { reloadRequests() }
         if request.outgoing && request.state == .accepted && request.contactAdded {
-            write { _notice = tr("group_notice_request_accepted", groupsFirstName(request.peerName.groupsIfBlank(tr("group_fallback_they")))) }
+            write { _notice = GroupText.named(request.peerName, "group_notice_request_accepted", "group_notice_request_accepted_unnamed") }
         }
     }
 
