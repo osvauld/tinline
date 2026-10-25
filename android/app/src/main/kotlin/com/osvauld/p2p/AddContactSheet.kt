@@ -133,7 +133,7 @@ fun AddContactSheet(
             val r = withContext(Dispatchers.IO) { runCatching { app.node.addContactByCode(p.ticket) } }
             timer.cancel(); adding = false; slow = false
             r.onSuccess {
-                app.refresh()
+                app.refreshLater()
                 when (it) {
                     is AddOutcome.Added -> { added = true; Cues.line() }
                     // Delivered: the line keeps its connecting sway while they decide.

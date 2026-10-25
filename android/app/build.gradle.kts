@@ -56,6 +56,14 @@ android {
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             signingConfig = if (relStore != null) signingConfigs.getByName("release") else signingConfigs.getByName("debug")
         }
+        // Startup/perf measurement: release code (R8, no debuggable), profileable from the shell, debug-signed so it
+        // installs over a debug build keeping its data. Build with -PdevTools=false to match the release core.
+        create("benchmark") {
+            initWith(getByName("release"))
+            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += "release"
+            isProfileable = true
+        }
     }
     buildFeatures { compose = true; buildConfig = true }
     compileOptions {
@@ -99,10 +107,10 @@ require(rustAbis.isNotEmpty() && rustAbis.all { it in setOf("x86_64", "arm64-v8a
     "-Pabis must contain only x86_64 and/or arm64-v8a"
 }
 val rustRelease = (findProperty("rustRelease") as String? ?: "true").toBoolean()
-// Debug-only Rust entry points (`dev-tools`: video_bench for DebugReceiver). Off for release/bundle
+// Debug-only Rust entry points (`dev-tools`: video_bench for DebugReceiver). Off for release/bundle/benchmark
 // tasks so the shipped libp2pcore.so does not carry them; -PdevTools=true|false overrides.
 val devTools = (findProperty("devTools") as String?)?.toBoolean()
-    ?: gradle.startParameter.taskNames.none { it.contains("release", ignoreCase = true) || it.contains("bundle", ignoreCase = true) }
+    ?: gradle.startParameter.taskNames.none { listOf("release", "bundle", "benchmark").any { w -> it.contains(w, ignoreCase = true) } }
 val profileDir = if (rustRelease) "release" else "debug"
 val jniOut = layout.buildDirectory.dir("rustJniLibs")
 val uniffiOut = layout.buildDirectory.dir("generated/uniffi/kotlin")

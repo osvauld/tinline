@@ -62,6 +62,12 @@ class P2pApp : Application(), NodeEvents {
     val lockState: StateFlow<LockState> = _lock
     private val _hasIdentity = MutableStateFlow(false)
     val hasIdentity: StateFlow<Boolean> = _hasIdentity
+    private val _ready = MutableStateFlow(false)
+    /**
+     * The first account load (select, auto-unlock, refresh) is done. Until then [lockState] and [hasIdentity] are only
+     * defaults, so MainActivity keeps the window background up rather than show onboarding or the unlock screen.
+     */
+    val ready: StateFlow<Boolean> = _ready
 
     private val _accountDid = MutableStateFlow<String?>(null)
     /** The selected account's DID (changes when the user switches); null with no account. */
@@ -96,7 +102,7 @@ class P2pApp : Application(), NodeEvents {
     val availability: StateFlow<Availability> = _availability
     @Volatile private var availJob: Job? = null
 
-    override fun onCreate() {
+    override fun onCreate() = Startup.trace("P2pApp.onCreate") {
         super.onCreate()
         instance = this
         CallTrace.init(filesDir)
@@ -108,7 +114,7 @@ class P2pApp : Application(), NodeEvents {
         ChatMedia.clear(this)
         calls = CallController(this)
         video = CallVideo(this)
-        node = newNode()
+        node = Startup.trace("newNode") { newNode() }
         profiles = ProfilesController(this)
         node.setProfileEvents(profiles)
         node.setVideoEvents(video)
@@ -131,9 +137,15 @@ class P2pApp : Application(), NodeEvents {
                 if (AppVisible.resumed) Cues.knock() else GroupNotifier.invitation(this, i)
             }
         }
-        selectLastAccountIfNone()
-        tryAutoUnlock()
-        refresh()
+        // Keystore unlock and the first state read run on the lifecycle thread (before any queued startNode), so the
+        // first frame never waits for them.
+        lifecycle.execute {
+            try {
+                Startup.trace("selectAccount") { selectLastAccountIfNone() }
+                Startup.trace("tryAutoUnlock") { tryAutoUnlock() }
+                Startup.trace("refresh") { refresh() }
+            } catch (e: Throwable) { Log.e(TAG, "first load", e) } finally { _ready.value = true }
+        }
         // Kept chats of people who are no longer contacts (their block deleted our entry) come only from the chat list.
         scope.launch { realChat.chats.collect { refreshBlocks() } }
         // The always-on notification says "Available for calls" / "Not available" / "Offline".
@@ -141,6 +153,7 @@ class P2pApp : Application(), NodeEvents {
             combine(status, availability) { st, av -> (st?.online == true) to av.available }.distinctUntilChanged()
                 .collect { CoreService.refreshNotification() }
         }
+        Unit
     }
 
     fun refreshHistory() {
@@ -175,6 +188,11 @@ class P2pApp : Application(), NodeEvents {
         refreshAvailability()
     }
 
+    /** [refresh] on the lifecycle thread, after any unlock or account switch already queued there. For UI callers. */
+    fun refreshLater() {
+        lifecycle.execute { try { refresh() } catch (e: Exception) { Log.w(TAG, "refresh: ${e.javaClass.simpleName}") } }
+    }
+
     fun refresh() {
         _lock.value = node.lockState()
         _hasIdentity.value = node.hasIdentity()
@@ -182,11 +200,11 @@ class P2pApp : Application(), NodeEvents {
         profiles.select(_accountDid.value.takeIf { _lock.value == LockState.UNLOCKED })
         rememberName()
         _contacts.value = node.contacts()
-        refreshRequests()
-        refreshBlocks()
+        Startup.trace("requests") { refreshRequests() }
+        Startup.trace("blocks") { refreshBlocks() }
         _status.value = node.status()
         scope.launch { groups.refresh() }
-        if (_lock.value == LockState.UNLOCKED) { refreshHistory(); refreshAvailability(); chat.refresh() }
+        if (_lock.value == LockState.UNLOCKED) { Startup.trace("history") { refreshHistory() }; Startup.trace("availability") { refreshAvailability() }; chat.refresh() }
         else { _history.value = emptyList(); _availability.value = Availability(true, null) }
         // The account to come back to if the app dies while a new one is being added.
         if (_hasIdentity.value && node.identityCommitted()) currentDid()?.let { lastPrefs.edit().putString("did", it).apply() }
@@ -263,11 +281,11 @@ class P2pApp : Application(), NodeEvents {
         if (node.lockState() != LockState.LOCKED) return node.lockState() != LockState.NO_IDENTITY
         val did = currentDid() ?: return false
         if (!UnlockStore.exists(this, did)) return false
-        when (val l = UnlockStore.load(this, did)) {
+        when (val l = Startup.trace("UnlockStore.load") { UnlockStore.load(this, did) }) {
             UnlockStore.Loaded.Gone -> { UnlockStore.clear(this, did); false }
             UnlockStore.Loaded.Transient -> false
             is UnlockStore.Loaded.Key -> try {
-                node.unlockWithKey(l.bytes); true
+                Startup.trace("unlockWithKey") { node.unlockWithKey(l.bytes) }; true
             } catch (e: uniffi.p2pcore.Exception.WrongPassphrase) {
                 Log.w(TAG, "unlockWithKey: key rejected")
                 UnlockStore.clear(this, did); false
@@ -443,7 +461,7 @@ class P2pApp : Application(), NodeEvents {
                     return@execute
                 }
                 Notifications.cancelLocked(this)
-                try { node.start() } catch (e: Exception) { Log.e(TAG, "node.start failed", e) }
+                try { Startup.trace("node.start") { node.start() } } catch (e: Exception) { Log.e(TAG, "node.start failed", e) }
                 refresh()
             } catch (e: Throwable) { Log.e(TAG, "startNode", e) }
         }

@@ -29,7 +29,9 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import uniffi.p2pcore.LockState
 import androidx.compose.runtime.snapshots.SnapshotStateList
+import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -56,10 +58,15 @@ class MainActivity : ComponentActivity() {
         groupCallFrom(intent)
         if (savedInstanceState == null) { CardInbox.take(intent); GroupLinkInbox.take(intent); requestFrom(intent) }
         Appearance.load(this)
-        setContent {
-            val chosen by Appearance.dark.collectAsState()
-            TinlineTheme(dark = chosen ?: androidx.compose.foundation.isSystemInDarkTheme()) { Root(app) }
-        }
+        // Until the first account load is done (P2pApp.ready) the lock state is only a default: the window background
+        // (tin_bg, the theme's) stays up instead, so the first frame is the right screen and no placeholder frame is drawn.
+        if (app.ready.value) showRoot(app)
+        else lifecycleScope.launch { app.ready.first { it }; showRoot(app) }
+    }
+
+    private fun showRoot(app: P2pApp) = setContent {
+        val chosen by Appearance.dark.collectAsState()
+        TinlineTheme(dark = chosen ?: androidx.compose.foundation.isSystemInDarkTheme()) { Root(app) }
     }
 
     /** A tap on "Maya wants to add you as a contact": open the request sheet for it, if it is still waiting. */
@@ -178,7 +185,7 @@ private fun Root(app: P2pApp) {
     DisposableEffect(owner) {
         val o = LifecycleEventObserver { _, e ->
             if (e == Lifecycle.Event.ON_RESUME) {
-                missing = Perms.missing(ctx); app.refresh()
+                missing = Perms.missing(ctx); app.refreshLater()
                 if (stack.last() == Route.MicNeeded && Perms.granted(ctx, android.Manifest.permission.RECORD_AUDIO)) pop()
             }
         }
