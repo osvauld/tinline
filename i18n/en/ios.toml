@@ -2707,11 +2707,11 @@ note = "Title of the device page while loading, and fallback name."
 
 [devices_unlinked_msg]
 text = "Unlinked {name}"
-note = "Message after a device was unlinked; {name} is its label or the word device."
+note = "Toast after unlinking a device; {name} is the device's name."
 
-[devices_fb_device]
-text = "device"
-note = "Fallback noun for an unnamed device inside the Unlinked message."
+[devices_unlinked_msg_unnamed]
+text = "Unlinked the device"
+note = "Toast after unlinking a device that has no name."
 
 [devices_finish_call]
 text = "Finish your call first"
@@ -2767,11 +2767,11 @@ note = "Button on the device page."
 
 [devices_syncing]
 text = "Syncing with {name}…"
-note = "Message when a sync starts; {name} is the device label or the words the device."
+note = "Toast when Sync now is pressed; {name} is the device's name."
 
-[devices_fb_the_device]
-text = "the device"
-note = "Fallback noun for an unnamed device inside the Syncing message."
+[devices_syncing_unnamed]
+text = "Syncing…"
+note = "Toast when Sync now is pressed for a device that has no name."
 
 [devices_unlink_this]
 text = "Unlink this device"
@@ -2793,17 +2793,17 @@ note = "Save button of the rename dialog."
 text = "Device name"
 note = "Field label in the rename dialog."
 
-[devices_fb_this_device]
-text = "this device"
-note = "Fallback noun for an unnamed device inside the Unlink question."
-
 [devices_remove_q]
 text = "Remove your account from this phone?"
 note = "Dialog title."
 
 [devices_unlink_q]
 text = "Unlink {name}?"
-note = "Dialog title; {name} is the device label or the words this device."
+note = "Dialog title asking to unlink another device; {name} is the device's name."
+
+[devices_unlink_q_unnamed]
+text = "Unlink this device?"
+note = "Dialog title asking to unlink another device that has no name."
 
 [devices_working]
 text = "Working…"
@@ -3357,10 +3357,6 @@ note = "Secondary button on several onboarding screens."
 text = "That recovery phrase belongs to an account that is already here. Switch to it instead of adding it again."
 note = "Dialog body when the restored account is already on this phone."
 
-[onboarding_fb_other_device]
-text = "your other device"
-note = "Fallback name for an unnamed other device inside a sentence."
-
 [onboarding_restore_warn_forgot]
 text = "Restoring keeps the same identity: use the recovery phrase of this account. You’ll set a new passphrase."
 note = "Notice on the restore screen after I forgot my passphrase."
@@ -3595,11 +3591,11 @@ note = "Suggested device name chip."
 
 [onboarding_back_added]
 text = "Added {name} to this phone"
-note = "Title after adding another account; {name} is the account's name or the words your account."
+note = "Title after adding another account; {name} is the account's name."
 
-[onboarding_fb_your_account_lc]
-text = "your account"
-note = "Fallback for an unnamed account inside a sentence."
+[onboarding_back_added_unnamed]
+text = "Added your account to this phone"
+note = "Title after adding another account that has no name."
 
 [onboarding_back_title]
 text = "Welcome back"
@@ -3611,11 +3607,11 @@ note = "Title after restoring an account; {name} is the first name."
 
 [onboarding_back_added_lead]
 text = "Only the account you select is online at a time, so {name} is online now and your other account is paused. You can switch in Settings."
-note = "Explanation after adding another account; {name} is the account's name or the words this account."
+note = "Explanation after adding another account; {name} is the account's name."
 
-[onboarding_fb_this_account]
-text = "this account"
-note = "Fallback for an unnamed account inside a sentence."
+[onboarding_back_added_lead_unnamed]
+text = "Only the account you select is online at a time, so this account is online now and your other account is paused. You can switch in Settings."
+note = "Explanation after adding another account that has no name."
 
 [onboarding_back_lead]
 text = "Your account is back on this phone. Your contacts, chats and call history are kept on your other devices, not with us. This phone starts with an empty contact list."
@@ -3627,11 +3623,19 @@ note = "Button after adding another account, and after linking."
 
 [onboarding_linked_title]
 text = "Linked to {name}"
-note = "Title after linking; {name} is the other device's name or the words your other device."
+note = "Title after linking; {name} is the other device's name."
+
+[onboarding_linked_title_unnamed]
+text = "Linked to your other device"
+note = "Title after linking when the other device has no name."
 
 [onboarding_linked_lead]
 text = "Your contacts and chats are arriving from {name} and will keep in step on both."
-note = "Explanation after linking; {name} is the other device's name or the words your other device."
+note = "Explanation after linking; {name} is the other device's name."
+
+[onboarding_linked_lead_unnamed]
+text = "Your contacts and chats are arriving from your other device and will keep in step on both."
+note = "Explanation after linking when the other device has no name."
 
 [onboarding_sync_contacts]
 text = "Contacts"

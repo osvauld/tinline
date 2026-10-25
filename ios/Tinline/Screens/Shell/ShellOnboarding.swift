@@ -185,7 +185,7 @@ struct ShellOnboardingFlow: View {
             case .linkQr:
                 ShellLinkSession(links: core.links, newDevice: true, label: label.trimmingCharacters(in: .whitespaces), progress: prog,
                                  onClose: { back(.linkName) },
-                                 onDone: { n, peer in created = true; linkedPeer = ShellText.ifBlank(peer, tr("onboarding_fb_other_device")); linkedName = n; go(.linkPass) })
+                                 onDone: { n, peer in created = true; linkedPeer = peer; linkedName = n; go(.linkPass) })
             case .linkPass:
                 head(nil, prog)
                 ShellPassStep(kind: .link, pass: $pass, busy: busy, error: error,
@@ -586,8 +586,8 @@ private struct ShellRestoredStep: View {
     let onStart: () -> Void
     var body: some View {
         let first = ShellGate.first(name), whole = name.trimmingCharacters(in: .whitespaces)
-        ShellGateStep(adding ? tr("onboarding_back_added", whole.isEmpty ? tr("onboarding_fb_your_account_lc") : whole) : first.isEmpty ? tr("onboarding_back_title") : tr("onboarding_back_title_named", first),
-                      lead: adding ? tr("onboarding_back_added_lead", whole.isEmpty ? tr("onboarding_fb_this_account") : whole)
+        ShellGateStep(adding ? (whole.isEmpty ? tr("onboarding_back_added_unnamed") : tr("onboarding_back_added", whole)) : first.isEmpty ? tr("onboarding_back_title") : tr("onboarding_back_title_named", first),
+                      lead: adding ? (whole.isEmpty ? tr("onboarding_back_added_lead_unnamed") : tr("onboarding_back_added_lead", whole))
                         : tr("onboarding_back_lead"),
                       center: true, bigTitle: true,
                       hero: { TinMark(size: 96, state: .taut, live: true, description: "Tinline").padding(.top, 28).padding(.bottom, 4) },
@@ -604,8 +604,9 @@ private struct ShellSyncingStep: View {
     let onStart: () -> Void
     @State private var slow = false
     var body: some View {
-        let from = ShellText.ifBlank(peer, tr("onboarding_fb_other_device"))
-        ShellGateStep(tr("onboarding_linked_title", from), lead: tr("onboarding_linked_lead", from), center: true, bigTitle: true,
+        let named = !ShellText.isBlank(peer)
+        ShellGateStep(named ? tr("onboarding_linked_title", peer) : tr("onboarding_linked_title_unnamed"),
+                      lead: named ? tr("onboarding_linked_lead", peer) : tr("onboarding_linked_lead_unnamed"), center: true, bigTitle: true,
                       hero: { TinMark(size: 96, state: .taut, live: true, description: "Tinline").padding(.top, 28).padding(.bottom, 4) },
                       content: {
             ShellPfCard {
