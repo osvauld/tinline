@@ -1,0 +1,4581 @@
+# Generated from i18n/tm/fi.toml by scripts/i18n_tm.py apply. Edit the tm file.
+
+[app_name]
+text = "Tinline"
+
+[common_cancel]
+text = "Peruuta"
+
+[common_close]
+text = "Sulje"
+
+[common_back]
+text = "Takaisin"
+
+[common_done]
+text = "Valmis"
+
+[common_continue]
+text = "Jatka"
+
+[common_not_now]
+text = "Ei nyt"
+
+[common_try_again]
+text = "Yritä uudelleen"
+
+[common_copied]
+text = "Kopioitu"
+
+[common_share]
+text = "Jaa"
+
+[common_remove]
+text = "Poista"
+
+[common_search]
+text = "Hae"
+
+[common_you]
+text = "Sinä"
+
+[common_unknown]
+text = "Tuntematon"
+
+[common_someone]
+text = "Joku"
+
+[common_blocked]
+text = "Estetty"
+
+[common_call]
+text = "Puhelu"
+
+[common_decline]
+text = "Hylkää"
+
+[common_accept]
+text = "Hyväksy"
+
+[common_answer]
+text = "Vastaa"
+
+[common_join]
+text = "Liity"
+
+[groups_cant_do]
+text = "Se ei onnistunut"
+
+[groups_waiting_host]
+text = "Odottaa isäntälaitetta"
+
+[groups_host_ask_title]
+text = "{name} pyysi tätä puhelinta isännöimään ryhmää {group}"
+
+[groups_host_ask_body]
+text = "Isäntälaite pitää täyden kopion ryhmästä, välittää viestit eteenpäin jäsenten puhelinten nukkuessa ja oppii jäsenten ryhmäosoitteet. Sen pitää pysyä verkossa, ja se kuluttaa akkua: jatkuvasti päällä oleva tietokone on parempi isäntälaite. Isännöinti ei tee sinusta ylläpitäjää."
+
+[groups_host_here]
+text = "Isännöi täällä"
+
+[groups_host_declined]
+text = "Hylätty. Ylläpitäjät eivät näe vastausta tältä puhelimelta."
+
+[groups_list_new_title]
+text = "Uusi ryhmä"
+
+[groups_list_new_sub]
+text = "Sinusta tulee omistaja"
+
+[groups_list_join_title]
+text = "Liity linkillä"
+
+[groups_list_join_sub]
+text = "Liitä tai skannaa ryhmäkutsu"
+
+[groups_list_invitations]
+text = "Kutsut sinulle"
+
+[groups_list_invited]
+text = "{name} kutsui sinut ryhmään {group}"
+
+[groups_list_valid_until]
+text = "Voimassa {date} asti"
+
+[groups_list_joining]
+text = "Liitytään…"
+
+[groups_list_joined]
+text = "Liityit ryhmään {group}."
+
+[groups_list_cant_join]
+text = "Liittyminen ei onnistunut"
+
+[groups_list_requests]
+text = "Keskustelupyynnöt"
+
+[groups_list_wants_chat]
+text = "{name} haluaa keskustella"
+
+[groups_list_member_of]
+text = "Ryhmän {group} jäsen"
+
+[groups_list_accepting_adds]
+text = "Hyväksyminen lisää henkilön {name} yhteystiedoksi vain viestejä varten. Voit sallia puhelut myöhemmin."
+
+[groups_list_block]
+text = "Estä"
+
+[groups_list_sent]
+text = "Lähetetty"
+
+[groups_list_yours]
+text = "Ryhmäsi"
+
+[groups_list_empty]
+text = "Ei vielä ryhmiä. Luo ryhmä tai hyväksy kutsu."
+
+[groups_list_fold]
+text = "Kutista"
+
+[groups_list_unfold]
+text = "Laajenna"
+
+[groups_list_expanded]
+text = "Laajennettu"
+
+[groups_list_collapsed]
+text = "Kutistettu"
+
+[groups_list_left_or_removed]
+text = "Poistuttu tai poistettu"
+
+[groups_list_removed]
+text = "Poistettu"
+
+[groups_list_left]
+text = "Poistuit"
+
+[groups_list_in_call]
+text = "Olet puhelussa"
+
+[groups_list_call_running]
+text = "Puhelu käynnissä"
+
+[groups_list_no_posts]
+text = "Ei vielä viestejä"
+
+[groups_new_field_label]
+text = "Ryhmän nimi"
+
+[groups_new_field_hint]
+text = "Nimi"
+
+[groups_new_note]
+text = "Sinusta tulee omistaja. Tämä laite on ryhmän ensimmäinen isäntälaite, joten se tallentaa ryhmän ja välittää viestit eteenpäin."
+
+[groups_new_creating]
+text = "Luodaan…"
+
+[groups_new_create]
+text = "Luo"
+
+[groups_chat_title]
+text = "Ryhmä"
+
+[groups_chat_loading]
+text = "Ladataan…"
+
+[groups_chat_cant_read_picture]
+text = "Kuvaa ei voitu lukea."
+
+[groups_chat_cant_send]
+text = "Lähetys ei onnistunut"
+
+[groups_chat_back]
+text = "Takaisin ryhmiin"
+
+[groups_chat_head_desc]
+text = "{name}. {status}. Ryhmän tiedot"
+
+[groups_chat_call_return]
+text = "Palaa ryhmäpuheluun"
+
+[groups_chat_call_join]
+text = "Liity ryhmäpuheluun"
+
+[groups_chat_call_start]
+text = "Aloita ryhmäpuhelu"
+
+[groups_chat_no_call_host]
+text = "Puhelulla ei ole vielä isäntälaitetta: ylläpitäjä voi nimetä sellaisen ryhmän tiedoissa"
+
+[groups_chat_info]
+text = "Ryhmän tiedot"
+
+[groups_chat_earlier]
+text = "Näytä aiemmat viestit"
+
+[groups_chat_no_messages]
+text = "Ei vielä viestejä"
+
+[groups_chat_waiting_strip]
+text = "Odotetaan isäntälaitetta. Yksikään ryhmän isäntälaite ei ole verkossa; viestisi on tallessa ja lähtee, kun jokin on."
+
+[groups_chat_removed_footer]
+text = "Sinut poistettiin, etkä voi lähettää viestejä tähän ryhmään."
+
+[groups_chat_why]
+text = "Miksi?"
+
+[groups_chat_left_footer]
+text = "Poistuit tästä ryhmästä. Sen viestit jäävät tänne luettaviksi."
+
+[groups_chat_composer_hint]
+text = "Viesti"
+
+[groups_chat_replying_self]
+text = "Vastaat itsellesi"
+
+[groups_chat_replying]
+text = "Vastaus: {name}"
+
+[groups_chat_cancel_reply]
+text = "Peru vastaus"
+
+[groups_chat_no_picker]
+text = "Tässä puhelimessa ei ole kuvanvalitsinta."
+
+[groups_online_pill]
+text = "Ketkä ovat paikalla"
+
+[groups_online_title]
+text = "Ketkä ovat paikalla: {group}"
+
+[groups_online_lag]
+text = "Jäsenet, jotka isäntälaite on nähnyt viimeisen minuutin aikana. Tieto voi olla muutaman sekunnin jäljessä."
+
+[groups_online_cap]
+text = "Isäntälaite näyttää kerralla enintään {max} henkilöä, joten heitä voi olla enemmän."
+
+[groups_online_hidden]
+text = "Muut eivät näe sinua täällä. Voit muuttaa tämän kohdassa Asetukset › Yksityisyys."
+
+[groups_online_none]
+text = "Kukaan ei ole nyt paikalla. Ihmiset näkyvät täällä, kun he ovat yhteydessä."
+
+[groups_online_admin]
+text = "Ylläpitäjä"
+
+[groups_call_pill_desc]
+text = "{text}, {time}. Aloita puhelu tai liity siihen"
+
+[groups_msg_removed_title]
+one = "Poistettu {count} ylläpitäjän merkinnän jälkeen"
+other = "Poistettu {count} ylläpitäjän merkinnän jälkeen"
+
+[groups_msg_removed_by]
+text = "Merkitsijät: {names}. Voit yhä lukea aiemmin saamasi viestit, mutta uusia ei enää tule."
+
+[groups_msg_and]
+text = "{list} ja {last}"
+
+[groups_msg_see_details]
+text = "Näytä tiedot"
+
+[groups_msg_removed_system]
+text = "Sinut poistettiin tästä ryhmästä"
+
+[groups_msg_show]
+text = "Näytä viesti"
+
+[groups_msg_blocked_folded]
+text = "Viesti henkilöltä {name}, jonka estit · Näytä"
+
+[groups_msg_original_missing]
+text = "Alkuperäinen viesti ei ole saatavilla"
+
+[groups_msg_sent]
+text = "Lähetetty"
+
+[groups_msg_name_removed]
+text = "{name} · poistettu"
+
+[groups_msg_reply]
+text = "Vastaa"
+
+[groups_msg_who_has_it]
+text = "Kenellä se on"
+
+[groups_msg_written_before]
+text = "Kirjoitettu ennen kuin {name} poistettiin"
+
+[groups_photo_cant_load]
+text = "Kuvaa ei voitu ladata"
+
+[groups_photo_load]
+text = "Lataa kuva"
+
+[groups_photo_size]
+text = "Kuva · {size}"
+
+[groups_photo_desc]
+text = "Kuva"
+
+[groups_photo_desc_caption]
+text = "Kuva: {caption}"
+
+[groups_photo_retry]
+text = "Yritä ladata uudelleen"
+
+[groups_receipt_delivered]
+text = "Toimitettu {done}/{total}"
+
+[groups_receipt_read]
+text = "Luettu {done}/{total}"
+
+[groups_receipt_level_read]
+text = "Luettu"
+
+[groups_receipt_level_device]
+text = "Heidän laitteellaan"
+
+[groups_receipt_level_not_yet]
+text = "Ei vielä"
+
+[groups_receipt_who]
+text = "{label}: {names}"
+
+[groups_receipt_also]
+text = "Myös vahvistaneet: {names}"
+
+[groupsb_info_title]
+text = "Ryhmän tiedot"
+
+[groupsb_removed_title]
+text = "Poistettu"
+
+[groupsb_cant_do]
+text = "Se ei onnistunut"
+
+[groupsb_hero_owner]
+one = "{count} jäsen · Olet omistaja"
+other = "{count} jäsentä · Olet omistaja"
+
+[groupsb_hero_admin]
+one = "{count} jäsen · Olet ylläpitäjä"
+other = "{count} jäsentä · Olet ylläpitäjä"
+
+[groupsb_hero_member]
+one = "{count} jäsen · Olet jäsen"
+other = "{count} jäsentä · Olet jäsen"
+
+[groupsb_hero_left]
+text = "Poistuit tästä ryhmästä"
+
+[groupsb_hero_removed]
+text = "Et ole enää jäsen"
+
+[groupsb_left_note]
+text = "Voit yhä lukea viestit tällä laitteella. Palataksesi tarvitset uuden kutsun joltakulta ryhmän jäseneltä."
+
+[groupsb_invites_sec]
+text = "Kutsut"
+
+[groupsb_invite_contacts]
+text = "Kutsu yhteystietoja"
+
+[groupsb_invite_contacts_sub]
+text = "Yksityinen kutsu jokaiselle"
+
+[groupsb_create_link]
+text = "Luo kutsulinkki"
+
+[groupsb_create_link_nohost]
+text = "Nimeä ensin isäntälaite. Linkissä on yksi isäntälaite."
+
+[groupsb_create_link_valid]
+text = "Voimassa 7 päivää"
+
+[groupsb_members_sec]
+text = "Jäsenet"
+
+[groupsb_req_pending]
+text = "Keskustelupyyntö lähetetty"
+
+[groupsb_req_declined]
+text = "Hylkäsi keskustelupyyntösi"
+
+[groupsb_invited_by]
+text = "Kutsuja: {name} · {date}"
+
+[groupsb_since]
+text = "Alkaen {date}"
+
+[groupsb_member_since]
+text = "Jäsen {date} alkaen"
+
+[groupsb_name_you]
+text = "{name} (sinä)"
+
+[groupsb_role_owner_lc]
+text = "omistaja"
+
+[groupsb_role_admin_lc]
+text = "ylläpitäjä"
+
+[groupsb_role_member_lc]
+text = "jäsen"
+
+[groupsb_desc_host]
+text = ", isäntälaite"
+
+[groupsb_desc_callhost]
+text = ", puheluisäntä"
+
+[groupsb_desc_open]
+text = ". Avaa toiminnot"
+
+[groupsb_flags_of]
+text = "{flags}/{total} merkintää"
+
+[groupsb_of_total]
+text = "{n}/{total}"
+
+[groupsb_blocked_by_you]
+text = "Estit hänet"
+
+[groupsb_pill_owner]
+text = "Omistaja"
+
+[groupsb_pill_admin]
+text = "Ylläpitäjä"
+
+[groupsb_pill_member]
+text = "Jäsen"
+
+[groupsb_host]
+text = "Isäntälaite"
+
+[groupsb_call_host]
+text = "Puheluisäntä"
+
+[groupsb_leave_group]
+text = "Poistu ryhmästä"
+
+[groupsb_owner_cant_leave]
+text = "Omistaja ei voi vielä poistua"
+
+[groupsb_leave_title]
+text = "Poistutko ryhmästä {name}?"
+
+[groupsb_leave_body]
+text = "Et saa enää viestejä. Se, mikä on jo tällä laitteella, säilyy, ja voit lukea sitä. Palataksesi tarvitset uuden kutsun joltakulta ryhmän jäseneltä."
+
+[groupsb_leave_admin]
+text = "Olet ylläpitäjä. Omistaja ja muut ylläpitäjät jäävät."
+
+[groupsb_leave]
+text = "Poistu"
+
+[groupsb_open_group]
+text = "Avaa ryhmä"
+
+[groupsb_open_title]
+text = "Avataanko {name} kaikille, joilla on linkki?"
+
+[groupsb_open_body1]
+text = "Kuka tahansa, jolla on linkki, voi liittyä ilman kutsua, eikä linkki vanhene. Jaa se siellä, mistä haluat ihmisten löytävän ryhmän."
+
+[groupsb_open_body2]
+text = "Kun ryhmä on avoin, siinä ei lähetetä lukukuittauksia, ja jäsenet näkevät, kuka on paikalla. Jokainen voi piilottaa itsensä asetuksistaan."
+
+[groupsb_open_body3]
+text = "Voit sulkea linkin milloin tahansa; jo liittyneet jäävät."
+
+[groupsb_opening]
+text = "Avataan…"
+
+[groupsb_opened]
+text = "Ryhmäsi on avoin. Kopioi linkki jakaaksesi sen."
+
+[groupsb_group_link]
+text = "Ryhmän linkki"
+
+[groupsb_public_sec]
+text = "Julkinen ryhmä"
+
+[groupsb_open_link]
+text = "Avoin linkki"
+
+[groupsb_open_link_on]
+text = "Kuka tahansa linkin saanut voi liittyä"
+
+[groupsb_open_link_off]
+text = "Vain kutsumasi voivat liittyä"
+
+[groupsb_copy_link]
+text = "Kopioi linkki"
+
+[groupsb_getting_link]
+text = "Haetaan linkkiä…"
+
+[groupsb_link_never_expires]
+text = "Linkki, joka ei vanhene"
+
+[groupsb_turn_on_open]
+text = "Ota Avoin linkki käyttöön jakaaksesi sen"
+
+[groupsb_cant_get_link]
+text = "Linkkiä ei saatu"
+
+[groupsb_admins_only]
+text = "Vain ylläpitäjät"
+
+[groupsb_admins_only_on]
+text = "Vain ylläpitäjät kirjoittavat; kaikki lukevat"
+
+[groupsb_admins_only_off]
+text = "Kaikki ryhmässä voivat kirjoittaa"
+
+[groupsb_public_note]
+text = "Avoin linkki ei vanhene. Sen sulkeminen estää uudet liittymiset; jo liittyneet jäävät. Kun ryhmä on avoin, siinä ei lähetetä lukukuittauksia, ja jäsenet näkevät, kuka on paikalla."
+
+[groupsb_hosts_sec]
+text = "Isäntälaitteet"
+
+[groupsb_this_device]
+text = "Tämä laite"
+
+[groupsb_hosts_none]
+text = "Tällä ryhmällä ei ole isäntälaitetta. Viestit odottavat, kunnes sellainen nimetään."
+
+[groupsb_hosts_online]
+one = "{count} isäntälaite verkossa. Viestit menevät perille heti."
+other = "{count} isäntälaitetta verkossa. Viestit menevät perille heti."
+
+[groupsb_hosts_offline]
+text = "Yksikään isäntälaite ei ole verkossa. Viestisi on tallessa ja lähtee, kun jokin on."
+
+[groupsb_online]
+text = "Paikalla"
+
+[groupsb_offline]
+text = "Poissa"
+
+[groupsb_also_hosts_calls]
+text = "isännöi myös puheluita"
+
+[groupsb_remove_host_desc]
+text = "Poista {device} isäntälaitteista"
+
+[groupsb_cancel_host_desc]
+text = "Peru isännöintipyyntö laitteelle {device}"
+
+[groupsb_waiting_accept]
+text = "Odottaa hyväksyntää"
+
+[groupsb_offered_host]
+text = "Tarjoutui isännöimään · tarvitsee ylläpitäjän"
+
+[groupsb_appoint]
+text = "Nimeä"
+
+[groupsb_hosts_note]
+text = "Isäntälaitteet tallentavat ryhmän ja välittävät viestit eteenpäin, kun muut eivät ole verkossa. Ne ovat jäseniä, joihin luotat: isäntälaite voi lukea kaiken tähän ryhmään kirjoitetun."
+
+[groupsb_hosts_note_admin]
+text = "Nimeä isäntälaite jäsenen valikosta; hänen täytyy hyväksyä. Isäntälaitteen poistaminen vaihtaa ryhmän osoitteen 2 päivän kuluessa, joten se laite ei enää tavoita ryhmää."
+
+[groupsb_callhosts_sec]
+text = "Puheluisännät"
+
+[groupsb_callhosts_none]
+text = "Tällä ryhmällä ei ole puheluisäntää. Kukaan ei voi aloittaa puhelua, ennen kuin ylläpitäjä nimeää sellaisen."
+
+[groupsb_callhosts_ready]
+one = "{count} puheluisäntä valmiina. Puhelut alkavat sen kautta."
+other = "{count} puheluisäntää valmiina. Puhelut alkavat niiden kautta."
+
+[groupsb_callhosts_offline]
+text = "Yksikään puheluisäntä ei ole juuri nyt saatavilla. Puhelu voi alkaa, kun jokin palaa."
+
+[groupsb_callhosts_me]
+text = "Tämä puhelin välittää aloittamasi puhelut."
+
+[groupsb_remove_callhost_desc]
+text = "Poista {device} puheluisännistä"
+
+[groupsb_cancel_callhost_desc]
+text = "Peru puheluisäntäpyyntö laitteelle {device}"
+
+[groupsb_stop_calls_phone]
+text = "Lopeta puheluiden isännöinti tällä puhelimella"
+
+[groupsb_host_calls_phone]
+text = "Isännöi puheluita tällä puhelimella"
+
+[groupsb_host_calls_phone_sub]
+text = "Välittää täältä aloittamasi puhelut. Jatkuvasti päällä oleva tietokone voi välittää kaikkien puhelut."
+
+[groupsb_callhosts_note]
+text = "Puheluisäntä välittää puhelun. Kaikki puhelussa olevat yhdistävät siihen, ja se välittää äänen eteenpäin, joten se voi kuulla puhelun. Tämä on erillään keskustelun isännöinnistä: keskustelun isäntälaite ei ole puheluisäntä, ellet nimeä sitä myös sellaiseksi. Puheluisännät ovat jäseniä, joihin luotat, ja jokainen päättää itse hyväksyä tehtävän."
+
+[groupsb_callhosts_note_admin]
+text = "Nimeä sellainen jäsenen valikosta tai isännöi puheluita tällä puhelimella. Puhelin isännöi vain omistajansa aloittamia puheluita."
+
+[groupsb_flags_on_you]
+text = "Sinuun kohdistuvat merkinnät"
+
+[groupsb_flags_left_note]
+one = "Vielä yksi merkintä keneltä tahansa ylläpitäjältä poistaa sinut ryhmästä. Merkintöjä ei voi perua. Voit lukea ja kirjoittaa siihen asti."
+other = "Vielä {count} merkintää keneltä tahansa ylläpitäjältä poistaa sinut ryhmästä. Merkintöjä ei voi perua. Voit lukea ja kirjoittaa siihen asti."
+
+[groupsb_flag_first]
+text = "Ensimmäinen merkintä"
+
+[groupsb_flag_second]
+text = "Toinen merkintä"
+
+[groupsb_flag_third]
+text = "Kolmas merkintä"
+
+[groupsb_flag_n]
+text = "Merkintä"
+
+[groupsb_removed_after]
+one = "Poistettu {count} ylläpitäjän merkinnän jälkeen"
+other = "Poistettu {count} ylläpitäjän merkinnän jälkeen"
+
+[groupsb_who_flagged]
+text = "Ketkä merkitsivät sinut"
+
+[groupsb_flags_checked_note]
+text = "Jokaisen merkinnän teki ryhmän ylläpitäjä, ja tämä laite tarkisti ne ennen tämän näyttämistä."
+
+[groupsb_what_means]
+text = "Mitä tämä tarkoittaa"
+
+[groupsb_removal_body]
+text = "Tällä laitteella jo olevat viestit säilyvät, ja voit lukea niitä. Et voi kirjoittaa, eivätkä ryhmän isäntälaitteet enää ota sinulta vastaan mitään. Poisto on lopullinen: palataksesi tarvitset uuden kutsun ylläpitäjältä."
+
+[groupsb_read_posts]
+text = "Lue viestit"
+
+[groupsb_invite_to]
+text = "Kutsu ryhmään {name}"
+
+[groupsb_invite_sheet_note]
+text = "Jokainen saa yksityisen kutsun, joka on voimassa 7 päivää. Kuka tahansa kutsumasi voi lukea ryhmän viestit liityttyään."
+
+[groupsb_invite_none]
+text = "Kaikki yhteystietosi ovat jo tässä ryhmässä tai heillä on odottava kutsu."
+
+[groupsb_sending]
+text = "Lähetetään…"
+
+[groupsb_invite]
+text = "Kutsu"
+
+[groupsb_invite_people]
+one = "Kutsu {count} henkilö"
+other = "Kutsu {count} henkilöä"
+
+[groupsb_cant_invite]
+text = "Kutsuminen ei onnistunut"
+
+[groupsb_member_sheet_me]
+text = "Roolisi tässä ryhmässä"
+
+[groupsb_member_in_group]
+text = "{name}, ryhmä {group}"
+
+[groupsb_message_fn]
+text = "Viesti henkilölle {name}"
+
+[groupsb_you_blocked]
+text = "Estit henkilön {name}"
+
+[groupsb_blocked_stay]
+text = "Hän pysyy ryhmässä. Poista esto yhteystiedoista keskustellaksesi."
+
+[groupsb_request_sent]
+text = "Pyyntö lähetetty"
+
+[groupsb_waiting_answer]
+text = "Odotetaan vastausta: {name}"
+
+[groupsb_cant_receive]
+text = "{name} ei voi vastaanottaa pyyntöjäsi."
+
+[groupsb_ask_again]
+text = "Kysy uudelleen: {name}"
+
+[groupsb_ask_chat]
+text = "Pyydä yksityistä keskustelua: {name}"
+
+[groupsb_declined_last]
+text = "{name} hylkäsi viimeisimmän pyyntösi"
+
+[groupsb_sends_request]
+text = "Lähettää keskustelupyynnön ryhmän isäntälaitteen kautta"
+
+[groupsb_make_admin]
+text = "Tee ylläpitäjäksi"
+
+[groupsb_remove_admin]
+text = "Poista ylläpitäjyys"
+
+[groupsb_make_device_host]
+text = "Tee laitteesta {device} isäntälaite"
+
+[groupsb_make_host]
+text = "Tee isäntälaitteeksi"
+
+[groupsb_asks_host]
+text = "Pyytää henkilöä {name} isännöimään. Hänen täytyy hyväksyä."
+
+[groupsb_stop_device_host]
+text = "Lopeta laitteen {device} isännöinti"
+
+[groupsb_remove_as_host]
+text = "Poista isäntälaitteista"
+
+[groupsb_cancel_callhost_request]
+text = "Peru puheluisäntäpyyntö"
+
+[groupsb_waiting_device]
+text = "Odotetaan, että laite hyväksyy: {name}"
+
+[groupsb_remove_as_callhost]
+text = "Poista puheluisännistä"
+
+[groupsb_make_callhost]
+text = "Tee puheluisännäksi"
+
+[groupsb_asks_callhost]
+text = "Pyytää henkilöä {name} välittämään ryhmäpuhelut. Hänen täytyy hyväksyä."
+
+[groupsb_stop_hosting_device]
+text = "Lopeta isännöinti tällä laitteella"
+
+[groupsb_host_device]
+text = "Isännöi tällä laitteella"
+
+[groupsb_host_device_sub]
+text = "Myös ylläpitäjän täytyy nimetä se. Jatkuvasti päällä oleva tietokone on parempi isäntälaite."
+
+[groupsb_stop_calls_device]
+text = "Lopeta puheluiden isännöinti tällä laitteella"
+
+[groupsb_flag_removal]
+text = "Merkitse poistettavaksi"
+
+[groupsb_flag_removal_sub]
+one = "{count} merkintä poistaa henkilön {name} ryhmästä"
+other = "{count} merkintää poistaa henkilön {name} ryhmästä"
+
+[groupsb_owner_cant_flag]
+text = "Omistajaa ei voi merkitä"
+
+[groupsb_flag_title]
+text = "Merkitäänkö {name} poistettavaksi?"
+
+[groupsb_flag_next_of]
+text = "Merkintä {next}/{total}"
+
+[groupsb_flag_note1]
+text = "Merkintöjä ei voi perua, ja poisto on lopullinen. Sama ylläpitäjä voi merkitä useammin kuin kerran; jokainen merkintä lasketaan."
+
+[groupsb_flag_note2]
+text = "Merkitseminen on ryhmän päätös. Se on erillään estämisestä, joka koskee vain sinua. {name} näkee jokaisen merkinnän: kuka sen teki ja milloin."
+
+[groupsb_flag_button]
+text = "Merkitse {name}"
+
+[groupsb_ask_note1]
+text = "{name} näkee nimesi ja ryhmän. Pyyntö kulkee ryhmän isäntälaitteen kautta sinetöitynä, joten isäntälaite ei voi lukea sitä."
+
+[groupsb_ask_note2]
+text = "Jos {name} hyväksyy, voitte lähettää viestejä suoraan toisillenne. Puhelut pysyvät pois päältä, kunnes jompikumpi teistä sallii ne. Pyyntö vanhenee 7 päivän kuluttua."
+
+[groupsb_send_request]
+text = "Lähetä pyyntö"
+
+[groupsb_new_group]
+text = "Uusi ryhmä"
+
+[groupsb_group_name]
+text = "Ryhmän nimi"
+
+[groupsb_new_group_host_note]
+text = "Tämä puhelin isännöi ryhmää aluksi: se säilyttää ryhmän ja välittää viestit eteenpäin. Jatkuvasti päällä oleva tietokone on parempi isäntälaite — nimeä sellainen ryhmän tiedoista, kun se on liittynyt."
+
+[groupsb_new_group_own]
+text = "Ryhmä on sinun. Kutsu ihmisiä ryhmän tiedoista."
+
+[groupsb_making]
+text = "Luodaan…"
+
+[groupsb_create_group]
+text = "Luo ryhmä"
+
+[groupsb_add_members]
+text = "Lisää jäseniä"
+
+[groupsb_add_to]
+text = "Lisää ryhmään {name}"
+
+[groupsb_contacts_selected]
+text = "YHTEYSTIEDOT · {n} VALITTU"
+
+[groupsb_no_contacts]
+text = "Ei lisättäviä yhteystietoja. Estämäsi ja sinut estäneet eivät näy listalla."
+
+[groupsb_add_note]
+text = "Jokainen saa kutsun teidän kahdenkeskiseen keskusteluunne ja liittyy hyväksyessään sen. Kutsu on voimassa 7 päivää."
+
+[groupsb_scan_invite]
+text = "Skannaa kutsu"
+
+[groupsb_point_invite]
+text = "Osoita ryhmäkutsua"
+
+[groupsb_join_group]
+text = "Liity ryhmään"
+
+[groupsb_invite_field]
+text = "Kutsulinkki tai -koodi"
+
+[groupsb_checking_host]
+text = "Tarkistetaan ryhmän isäntälaitteelta…"
+
+[groupsb_bad_link]
+text = "Linkki ei toiminut: se ei ole ryhmäkutsu, se on vanhentunut tai sen isäntälaite ei ole verkossa."
+
+[groupsb_paste]
+text = "Liitä"
+
+[groupsb_scan]
+text = "Skannaa"
+
+[groupsb_not_in_contacts]
+text = "joku, joka ei ole yhteystiedoissasi"
+
+[groupsb_join_invited_by]
+text = "Kutsuja: {name}"
+
+[groupsb_own_account_link]
+text = "Linkki omalle tilillesi"
+
+[groupsb_join_owner]
+text = "Omistaja: {name}"
+
+[groupsb_valid_until]
+text = "Voimassa {date} asti"
+
+[groupsb_join_note]
+text = "Liittyminen yhdistää tämän puhelimen ryhmän isäntälaitteisiin. Jäsenet näkevät nimesi; vain isäntälaitteet saavat tietää, miten tämän puhelimen tavoittaa. Tämä voi kestää minuutin."
+
+[groupsb_joining]
+text = "Liitytään…"
+
+[groupsb_the_group]
+text = "ryhmä"
+
+[groupsb_invite_link_title]
+text = "Kutsulinkki"
+
+[groupsb_link_note]
+text = "Kuka tahansa, jolla on tämä linkki tai QR-koodi, voi liittyä ryhmään {name} 7 päivän ajan. Jaa se sovelluksella, johon luotat; näet, kuka liittyi, ja voit merkitä hänet pois. Jos haluat kutsua yhteystietojasi suoraan, käytä kohtaa Lisää jäseniä."
+
+[groupsb_show_full_screen]
+text = "Näytä koko näytöllä"
+
+[groupsb_qr_desc]
+text = "Ryhmän kutsulinkin QR-koodi"
+
+[groupsb_qr_desc_full]
+text = "Ryhmän kutsulinkin QR-koodi koko näytöllä"
+
+[groupsb_making_it]
+text = "Luodaan…"
+
+[groupsb_share_text]
+text = "Liity ryhmään {name} Tinlinessa: {link}"
+
+[groupsb_share_title]
+text = "Jaa ryhmäkutsu"
+
+[unlock_wrong_passphrase]
+text = "Tällä salalauseella tili ei auennut."
+
+[unlock_keylost_title_named]
+text = "Tiliä ei voi avata: {name}"
+
+[unlock_keylost_title]
+text = "Tiliäsi ei voi avata"
+
+[unlock_keylost_lead]
+text = "Tällä puhelimella ei enää ole avainta, joka avaa tilisi. Näin käy näytön lukituksen nollauksen tai varmuuskopion palautuksen jälkeen. Kun palautat tilin, puhelusi tulevat taas perille."
+
+[unlock_keylost_restore]
+text = "Palauta palautussanoilla"
+
+[unlock_keylost_notice]
+text = "Et asettanut salalausetta, joten 24 palautussanaa ovat ainoa tie takaisin. Yhteystietosi säilyvät."
+
+[accounts_switch_account]
+text = "Vaihda tiliä"
+
+[unlock_welcome_back_named]
+text = "Tervetuloa takaisin, {name}"
+
+[unlock_welcome_back]
+text = "Tervetuloa takaisin"
+
+[unlock_welcome_back_prefix]
+text = "Tervetuloa takaisin,"
+
+[unlock_unlocking]
+text = "Avataan…"
+
+[unlock_unlock]
+text = "Avaa"
+
+[unlock_forgot]
+text = "Unohdin sen"
+
+[unlock_passphrase_label]
+text = "Salalause"
+
+[unlock_slow_hint]
+text = "Tarkistus kestää hetken. Se on tarkoituksella hidas, jotta arvaaminen olisi vaikeaa."
+
+[unlock_open_as_label]
+text = "Avaa toisena identiteettinä"
+
+[unlock_switch_identity_desc]
+text = "{nick}, vaihda identiteettiä"
+
+[accounts_open_as]
+text = "Avaa tili"
+
+[accounts_title]
+text = "Tilit"
+
+[accounts_opens_right_away]
+text = "Aukeaa heti"
+
+[accounts_asks_passphrase]
+text = "Kysyy salalausettasi"
+
+[accounts_online_here]
+text = "Verkossa tällä puhelimella"
+
+[accounts_on_this_phone]
+text = "Tällä puhelimella"
+
+[accounts_locked_not_ringing]
+text = "Lukittu · ei soi täällä"
+
+[accounts_current_desc]
+text = "Nykyinen tili"
+
+[accounts_create]
+text = "Luo uusi tili"
+
+[accounts_link]
+text = "Linkitä tili toiselta laitteelta"
+
+[accounts_restore]
+text = "Palauta palautussanoilla"
+
+[accounts_one_online_hint]
+text = "Yksi tili on kerrallaan verkossa. Puhelut lukittuun tiliin soivat vain muilla laitteillasi."
+
+[accounts_finish_call_first]
+text = "Lopeta ensin puhelusi"
+
+[accounts_switch_to]
+text = "Vaihdetaanko tiliin {name}?"
+
+[accounts_switch_lead]
+text = "{current} siirtyy pois verkosta tällä puhelimella. Puhelut tilille {current} soivat vain muilla linkitetyillä laitteillasi, kunnes vaihdat takaisin."
+
+[accounts_passphrase_for]
+text = "Salalause: {name}"
+
+[accounts_not_on_call]
+text = "Et ole puhelussa. Jos olisit, vaihto lopettaisi sen."
+
+[accounts_switching]
+text = "Vaihdetaan…"
+
+[accounts_unlock_and_switch]
+text = "Avaa ja vaihda"
+
+[accounts_switch]
+text = "Vaihda"
+
+[profile_my_profile]
+text = "Oma profiili"
+
+[profile_edit_profile]
+text = "Muokkaa profiilia"
+
+[profile_share_my_code]
+text = "Jaa koodini"
+
+[profile_share_my_code_sub]
+text = "Ihmisille, jotka haluat lisätä"
+
+[profile_only_you]
+text = "Vain sinulle"
+
+[profile_account_recovery]
+text = "Tilin palautus"
+
+[profile_account_recovery_sub]
+text = "Avaimesi ja 24 sanaa"
+
+[profile_code_title]
+text = "Yhteystietokoodisi"
+
+[profile_code_lead_qr]
+text = "Anna heidän skannata tämä Tinlinella."
+
+[profile_code_lead_text]
+text = "Lähetä se jollekulle, jonka haluat lisätä."
+
+[profile_code_load_failed]
+text = "Koodiasi ei voitu ladata."
+
+[profile_code_loading]
+text = "Haetaan koodiasi…"
+
+[profile_code_qr_desc]
+text = "Yhteystietosi QR-koodi"
+
+[profile_code_use_code]
+text = "Käytä koodia"
+
+[profile_code_show_qr]
+text = "Näytä QR-koodi"
+
+[profile_code_copy]
+text = "Kopioi koodini"
+
+[profile_code_copy_failed]
+text = "Kopiointi ei onnistunut. Kokeile jakamista."
+
+[profile_code_share_failed]
+text = "Jakaminen ei auennut. Kopioi koodisi sen sijaan."
+
+[profile_code_clip_label]
+text = "Yhteystietokoodi"
+
+[profile_saved]
+text = "Tallennettu"
+
+[profile_saved_offline]
+text = "Tallennettu · synkronoituu yhteyden palattua"
+
+[profile_not_set]
+text = "Ei asetettu"
+
+[profile_field_edit_desc]
+text = "{label}: {value}. Muokkaa"
+
+[profile_edit]
+text = "Muokkaa"
+
+[profile_save]
+text = "Tallenna"
+
+[profile_bytes_of_limit]
+text = "{used}/{limit} tavua"
+
+[profile_remove_field_title]
+text = "Poistetaanko ”{label}” profiilistasi?"
+
+[profile_remove_field_body]
+text = "Se katoaa profiilistasi. Aiemmat versiot voivat jäädä synkronoituun historiaan."
+
+[profile_open_link_desc]
+text = "Avaa {label}: {link}"
+
+[profile_remove_field_desc]
+text = "Poista {label}"
+
+[profile_value_yes]
+text = "Kyllä"
+
+[profile_value_no]
+text = "Ei"
+
+[profile_view_photo]
+text = "Näytä kuva"
+
+[profile_view_geometry]
+text = "Näytä identiteetin geometria"
+
+[profile_photo_desc]
+text = "Kuva: {name}"
+
+[profile_err_bad_link]
+text = "Kirjoita verkko-osoite, joka alkaa http:// tai https://."
+
+[profile_err_too_detailed]
+text = "Kuvassa on liikaa yksityiskohtia tallennettavaksi. Kokeile toista kuvaa."
+
+[profile_announce_updated]
+text = "Kuva päivitetty"
+
+[profile_announce_removed]
+text = "Kuva poistettu"
+
+[profile_picture_desc]
+text = "Kuva"
+
+[profile_saved_pending]
+text = "Tallennettu tälle laitteelle. Synkronoituu, kun olet yhteydessä."
+
+[profile_change_photo]
+text = "Vaihda kuva"
+
+[profile_add_photo]
+text = "Lisää kuva"
+
+[profile_section_profile]
+text = "Profiili"
+
+[profile_field_name]
+text = "Nimi"
+
+[profile_name_placeholder]
+text = "Nimesi"
+
+[profile_field_status]
+text = "Tila"
+
+[profile_status_empty]
+text = "Lisää tila"
+
+[profile_status_placeholder]
+text = "Mitä puuhaat?"
+
+[profile_field_about]
+text = "Tietoja"
+
+[profile_about_empty]
+text = "Kerro muutamalla sanalla itsestäsi"
+
+[profile_section_availability]
+text = "Tavoitettavuus"
+
+[profile_availability_note]
+text = "Yhteystietosi näkevät tämän, ja se on sama kaikilla laitteillasi. Se vaikuttaa siihen, tulevatko puhelut perille, ja on erillään siitä, oletko verkossa."
+
+[profile_section_additional]
+text = "Lisätiedot"
+
+[profile_add_information]
+text = "Lisää tietoja"
+
+[profile_field_help]
+text = "Yhteystietosi näkevät profiilisi. Tiedon poistaminen piilottaa sen profiilistasi; aiemmat versiot voivat jäädä synkronoituun historiaan."
+
+[profile_other_info_note]
+text = "Osa tiedoista tuli toiselta laitteelta tai sovellusversiolta. Ne näytetään tallennettuina ja säilyvät, kun muokkaat muuta."
+
+[profile_layer_choose_picture]
+text = "Valitse kuvasi"
+
+[profile_remove_picture_title]
+text = "Poista kuvasi"
+
+[profile_remove_picture_q]
+text = "Poistetaanko kuvasi?"
+
+[profile_remove_picture_body]
+text = "Sen tilalla näkyvät nimikirjaimesi."
+
+[profile_picture_help]
+text = "Kuvan vaihtaminen tai poistaminen pyytää linkitettyjä laitteitasi ja yhteystietojasi poistamaan aiemman välimuistikopion, kun ne synkronoituvat. Sovellus ei voi poistaa kuvakaappauksia, varmuuskopioita eikä muokattujen sovellusten säilyttämiä kopioita."
+
+[profile_remove_picture_button]
+text = "Poista kuva"
+
+[profile_open_link_layer]
+text = "Avoin linkki"
+
+[profile_dismiss]
+text = "Ohita"
+
+[profile_available]
+text = "Tavoitettavissa"
+
+[profile_busy]
+text = "Varattu"
+
+[profile_busy_until]
+text = "Varattu {time} asti"
+
+[profile_busy_until_open]
+text = "Varattu, kunnes muutat sen"
+
+[profile_err_time_passed]
+text = "Valitse aika, joka ei ole vielä mennyt."
+
+[profile_busy_how_long]
+text = "Kuinka kauan"
+
+[profile_busy_30m]
+text = "30 minuuttia"
+
+[profile_busy_1h]
+text = "1 tunti"
+
+[profile_busy_4h]
+text = "4 tuntia"
+
+[profile_busy_tomorrow]
+text = "Huomisaamuun"
+
+[profile_busy_open]
+text = "Ei päättymisaikaa"
+
+[profile_until_tomorrow]
+text = "huomenna {time}"
+
+[profile_until_weekday]
+text = "{day} {time}"
+
+[profile_err_name_taken]
+text = "Sinulla on jo tieto tällä nimellä."
+
+[profile_err_need_value]
+text = "Kirjoita jotain tallennettavaksi."
+
+[profile_add_info_lead]
+text = "Yhteystietosi näkevät sen profiilissasi."
+
+[profile_add_kinds_desc]
+text = "Tietotyypit"
+
+[profile_something_else]
+text = "Jotain muuta"
+
+[profile_name_it_yourself]
+text = "Nimeä itse"
+
+[profile_what_called]
+text = "Mikä sen nimi on?"
+
+[profile_what_called_placeholder]
+text = "Esimerkiksi Lempitee"
+
+[profile_value]
+text = "Arvo"
+
+[profile_add]
+text = "Lisää"
+
+[profile_open_link_q]
+text = "Avataanko tämä linkki?"
+
+[profile_open_link_body]
+text = "Se avautuu selaimessasi Tinlinen ulkopuolella. Tinline ei lataa sitä puolestasi eikä voi taata, mitä siellä on."
+
+[profile_open_link_button]
+text = "Avoin linkki"
+
+[profile_crop_title]
+text = "Asettele kuvasi"
+
+[profile_crop_hint]
+text = "Siirrä kuvaa vetämällä tai nuolinäppäimillä. Plus ja miinus zoomaavat."
+
+[profile_crop_zoom]
+text = "Zoomaus"
+
+[profile_use_photo]
+text = "Käytä kuvaa"
+
+[profile_err_prepare]
+text = "Kuvaa ei voitu valmistella. Kokeile toista kuvaa."
+
+[profile_err_picture_save]
+text = "Kuvaasi ei voitu tallentaa. Nykyinen kuvasi on ennallaan."
+
+[profile_err_picture_remove]
+text = "Kuvaasi ei voitu poistaa. Se on ennallaan."
+
+[profile_err_save_failed]
+text = "Tallennus ei onnistunut. Profiilisi on ennallaan, ja kirjoittamasi teksti on yhä tässä."
+
+[profile_err_account_changed]
+text = "Valittu tili vaihtui. Uuteen tiliin ei tallennettu mitään."
+
+[profile_pick_too_big]
+text = "Kuvan koko on {size} Mt. Kuva voi olla enintään {max} Mt."
+
+[profile_pick_wrong_type]
+text = "Tinline voi käyttää PNG-, JPEG- tai WebP-kuvia. Tämä tiedosto on eri tyyppiä."
+
+[profile_pick_unreadable]
+text = "Tiedostoa ei voitu lukea kuvana. Se voi olla vioittunut."
+
+[profile_pick_too_wide]
+text = "Kuvan koko on {width} × {height} pikseliä. Tinline hyväksyy enintään {max} pikseliä sivua kohden."
+
+[profile_err_name_empty]
+text = "Nimi ei voi olla tyhjä."
+
+[profile_err_name_chars]
+text = "Nimessä ei voi olla ohjaus- tai tekstisuuntamerkkejä."
+
+[profile_err_name_long]
+text = "Nimi on liian pitkä. Enintään {limit} tavua; jotkin merkit vievät enemmän kuin yhden."
+
+[profile_err_status_long]
+text = "Tämä on liian pitkä tilaksi: enintään {limit} tavua, ja jotkin merkit vievät enemmän kuin yhden."
+
+[profile_err_about_long]
+text = "Tämä on liian pitkä Tietoja-kenttään: enintään {limit} tavua, ja jotkin merkit vievät enemmän kuin yhden."
+
+[profile_err_status_chars]
+text = "Tilassa ei voi olla ohjaus- tai tekstisuuntamerkkejä."
+
+[profile_err_about_chars]
+text = "Tietoja-kentässä ei voi olla ohjaus- tai tekstisuuntamerkkejä."
+
+[profile_err_key_blank]
+text = "Anna tiedolle nimi."
+
+[profile_err_key_bad]
+text = "Tätä nimeä ei voi käyttää. Pidä se lyhyenä ja ilman ohjausmerkkejä."
+
+[profile_err_value_long]
+text = "Tämä on liian pitkä. Kukin tieto voi olla enintään 16 KiB."
+
+[profile_err_fields_full]
+text = "Sinulla on jo 64 tietoa. Poista yksi lisätäksesi uuden."
+
+[profile_err_profile_full]
+text = "Profiilisi on täynnä. Poista tietoja lisätäksesi uusia."
+
+[profile_err_use_picture_controls]
+text = "Käytä siihen kuvan säätimiä."
+
+[profile_err_availability_remove]
+text = "Tavoitettavuutta voi muuttaa, mutta sitä ei voi poistaa."
+
+[profile_known_pronouns]
+text = "Pronominit"
+
+[profile_known_pronouns_hint]
+text = "Esimerkiksi hän"
+
+[profile_known_location]
+text = "Sijainti"
+
+[profile_known_location_hint]
+text = "Kaupunki tai alue"
+
+[profile_known_website]
+text = "Verkkosivusto"
+
+[profile_known_website_hint]
+text = "https://"
+
+[onboarding_step_nickname]
+text = "Kutsumanimesi"
+
+[onboarding_step_passphrase]
+text = "Salalause"
+
+[onboarding_step_phrase]
+text = "Palautussanat"
+
+[onboarding_step_device]
+text = "Laitteen nimi"
+
+[onboarding_step_terms]
+text = "Ehdot"
+
+[onboarding_step_permissions]
+text = "Luvat"
+
+[onboarding_step_restore]
+text = "Palauta tili"
+
+[onboarding_step_link]
+text = "Linkitä tiliisi"
+
+[onboarding_other_device]
+text = "toinen laitteesi"
+
+[onboarding_device_personal]
+text = "Oma puhelin"
+
+[onboarding_device_work]
+text = "Työpuhelin"
+
+[onboarding_device_tablet]
+text = "Tabletti"
+
+[onboarding_restore_warning_forgot]
+text = "Palautus säilyttää saman identiteetin: käytä tämän tilin palautussanoja. Asetat uuden salalauseen."
+
+[onboarding_restore_warning_next]
+text = "Seuraavaksi valitset tälle tilille salalauseen."
+
+[onboarding_exists_title]
+text = "On jo tällä puhelimella"
+
+[onboarding_exists_choose]
+text = "Valitse tili"
+
+[onboarding_exists_body]
+text = "Nämä palautussanat kuuluvat tilille, joka on jo täällä. Vaihda siihen sen sijaan, että lisäisit sen uudelleen."
+
+[onboarding_restore_key_typo]
+text = "Avaimessa on kirjoitusvirhe tai se on katkennut. Liitä se uudelleen sieltä, minne tallensit sen."
+
+[onboarding_restore_clipboard_failed]
+text = "Leikepöytää ei voitu lukea. Liitä ensimmäiseen ruutuun sen sijaan."
+
+[onboarding_restore_words_desc]
+text = "Palautussanat"
+
+[onboarding_restore_word_desc]
+text = "Sana {number}"
+
+[onboarding_restore_bad_word]
+text = "Sana {number} ei ole palautussanojen listassa. Tarkista kirjoitusasu."
+
+[onboarding_restore_bad_words_more]
+one = "Sana {number} ja {count} muu eivät ole palautussanojen listassa. Tarkista kirjoitusasu."
+other = "Sana {number} ja {count} muuta eivät ole palautussanojen listassa. Tarkista kirjoitusasu."
+
+[onboarding_restore_missing]
+one = "{count} sana puuttuu vielä."
+other = "{count} sanaa puuttuu vielä."
+
+[onboarding_restore_lead_key]
+text = "Palautusavaimesi on syötetty. Se pysyy tällä puhelimella."
+
+[onboarding_restore_lead_words]
+text = "Kirjoita 24 sanaasi järjestyksessä tai liitä ne tai palautusavaimesi ensimmäiseen ruutuun. Ne pysyvät tällä puhelimella."
+
+[onboarding_restore_key_caption]
+text = "Palautusavain"
+
+[onboarding_restore_use_words]
+text = "Käytän mieluummin sanoja"
+
+[onboarding_restore_paste]
+text = "Liitä leikepöydältä"
+
+[onboarding_restore_filled]
+text = "{filled}/24"
+
+[onboarding_welcome_title_adding]
+text = "Lisää tili"
+
+[onboarding_welcome_title]
+text = "Suora linja ihmisiisi"
+
+[onboarding_welcome_lead_adding]
+text = "Luo uusi tili tai tuo jo olemassa oleva.\nNykyinen tilisi pysyy tällä puhelimella."
+
+[onboarding_welcome_lead]
+text = "Tinline yhdistää puhelimesi suoraan heidän puhelimeensa.\nTarvitset vain kutsumanimen. Päästä päähän salattu."
+
+[onboarding_create_account]
+text = "Luo tilini"
+
+[onboarding_have_account]
+text = "Minulla on tili"
+
+[onboarding_not_emergency]
+text = "Ei hätäpuheluihin."
+
+[onboarding_dialer_note]
+text = "Soita hätänumeroon puhelimesi omalla puhelusovelluksella."
+
+[onboarding_choose_title]
+text = "Käytä tiliäsi täällä"
+
+[onboarding_choose_lead]
+text = "Tilisi on sen palautussanat, joten voit tuoda sen tälle puhelimelle kahdella tavalla."
+
+[onboarding_choose_link]
+text = "Linkitä toinen laitteeni"
+
+[onboarding_choose_link_sub]
+text = "Skannaa koodi laitteella, jolla tilisi jo on. Yhteystietosi ja keskustelusi tulevat mukana."
+
+[onboarding_choose_restore]
+text = "Palauta tilini"
+
+[onboarding_choose_restore_sub]
+text = "Kirjoita 24 palautussanaasi. Tämä puhelin aloittaa tyhjällä yhteystietolistalla."
+
+[onboarding_done_title_named]
+text = "Linjasi on auki, {name}"
+
+[onboarding_done_title]
+text = "Linjasi on auki"
+
+[onboarding_done_lead]
+text = "Skannaa heidän koodinsa tai jaa omasi, niin voitte soittaa toisillenne."
+
+[onboarding_done_add_contact]
+text = "Lisää ensimmäinen yhteystietoni"
+
+[onboarding_tip_devices_title]
+text = "Kaksi laitetta on parempi kuin yksi"
+
+[onboarding_tip_devices_body]
+text = "Linkitä toinen laite, kun ehdit, niin yhden menettäminen ei koskaan lukitse sinua ulos."
+
+[onboarding_tip_groups_title]
+text = "Ryhmiä isännöidään tietokoneella"
+
+[onboarding_tip_groups_body]
+text = "Aloittaaksesi ryhmän lisää Tinline tietokoneelle, joka voi olla jatkuvasti päällä."
+
+[onboarding_name_title]
+text = "Millä nimellä ihmiset voivat kutsua sinua?"
+
+[onboarding_name_lead]
+text = "Vain lisäämäsi ihmiset näkevät sen."
+
+[onboarding_name_hint]
+text = "Voit muuttaa sen milloin tahansa asetuksista."
+
+[onboarding_pass_title_forgot]
+text = "Valitse uusi salalause"
+
+[onboarding_pass_title_link]
+text = "Suojaa tämä puhelin"
+
+[onboarding_pass_title]
+text = "Lisää salalause"
+
+[onboarding_pass_cta_link]
+text = "Lisää salalause"
+
+[onboarding_pass_cta_save]
+text = "Tallenna tili"
+
+[onboarding_pass_lead]
+text = "Valinnainen. Lukko, jotta vain sinä voit avata Tinlinen tällä puhelimella."
+
+[onboarding_pass_skip]
+text = "Ohita toistaiseksi"
+
+[onboarding_pass_encrypting]
+text = "Salataan…"
+
+[onboarding_pass_why]
+text = "Salaa tilisi tällä puhelimella. Puhelimesi muistaa sen, joten puhelut soivat myös uudelleenkäynnistyksen jälkeen. Jos unohdat sen, palautussanoilla voit asettaa uuden."
+
+[onboarding_strength_0]
+text = "Mikä tahansa pituus käy. Muutama satunnainen sana on helppo muistaa."
+
+[onboarding_strength_1]
+text = "Lyhyt. Muutama sana lisää tekee siitä vahvemman."
+
+[onboarding_strength_2]
+text = "Kohtalainen"
+
+[onboarding_strength_3]
+text = "Vahva"
+
+[onboarding_phrase_title_key]
+text = "Tässä on palautusavaimesi"
+
+[onboarding_phrase_title_words]
+text = "Tässä ovat palautussanasi"
+
+[onboarding_phrase_lead_key]
+text = "Palautusavaimesi on sama kuin 24 sanaasi, yhtenä rivinä.\nLiitä se johonkin turvalliseen paikkaan. Salasanojen hallinta sopii hyvin."
+
+[onboarding_phrase_lead_words]
+text = "Jos joskus vaihdat laitetta, nämä 24 sanaa tuovat tilisi mukanasi.\nTallenna kopio turvalliseen paikkaan. Paperi toimii hyvin."
+
+[onboarding_phrase_saved_key]
+text = "Tallensin sen"
+
+[onboarding_phrase_saved_words]
+text = "Tallensin ne"
+
+[onboarding_phrase_copy_again]
+text = "Kopioi uudelleen"
+
+[onboarding_phrase_copy_key]
+text = "Kopioi avaimeni"
+
+[onboarding_phrase_copy_words]
+text = "Kopioi sanani"
+
+[onboarding_phrase_elsewhere_key]
+text = "Tallensin sen muualle"
+
+[onboarding_phrase_elsewhere_words]
+text = "Kirjoitin ne muistiin"
+
+[onboarding_clip_key]
+text = "Palautusavain"
+
+[onboarding_clip_words]
+text = "Palautussanat"
+
+[onboarding_your_account]
+text = "Tilisi"
+
+[onboarding_seg_words]
+text = "Sanat"
+
+[onboarding_seg_key]
+text = "Avain"
+
+[onboarding_device_title]
+text = "Nimeä tämä puhelin"
+
+[onboarding_device_lead]
+text = "Jotta erotat laitteesi toisistaan kohdassa Linkitetyt laitteet. Vain omat laitteesi näkevät tämän nimen; ne, joille soitat, eivät koskaan."
+
+[onboarding_device_hint]
+text = "Voit nimetä sen myöhemmin uudelleen."
+
+[onboarding_restored_title_adding]
+text = "Lisätty tälle puhelimelle: {name}"
+
+[onboarding_restored_name_fallback_title]
+text = "tilisi"
+
+[onboarding_restored_lead_adding]
+text = "Vain valitsemasi tili on kerrallaan verkossa, joten {name} on nyt verkossa ja toinen tilisi on tauolla. Voit vaihtaa asetuksista."
+
+[onboarding_restored_name_fallback_lead]
+text = "tämä tili"
+
+[onboarding_restored_lead]
+text = "Tilisi on taas tällä puhelimella. Yhteystietosi, keskustelusi ja puheluhistoriasi säilyvät muilla laitteillasi, eivät meillä. Tämä puhelin aloittaa tyhjällä yhteystietolistalla."
+
+[onboarding_open_tinline]
+text = "Avaa Tinline"
+
+[onboarding_linked_title]
+text = "Linkitetty: {device}"
+
+[onboarding_linked_lead]
+text = "Yhteystietosi ja keskustelusi saapuvat laitteelta {device} ja pysyvät ajan tasalla molemmissa."
+
+[onboarding_sync_contacts]
+text = "Yhteystiedot"
+
+[onboarding_sync_calls]
+text = "Puheluhistoria"
+
+[onboarding_sync_waiting]
+text = "Odottaa"
+
+[onboarding_sync_slow]
+text = "Ei vielä mitään. Toinen laite ei ehkä ole verkossa: se jatkaa siitä, mihin jäi, kun molemmat ovat seuraavan kerran verkossa."
+
+[onboarding_sync_keep_online]
+text = "Pidä molemmat laitteet verkossa. Synkronointi jatkuu taustalla."
+
+[onboarding_savefail_title]
+text = "Tiliäsi ei voitu tallentaa"
+
+[onboarding_savefail_lead]
+text = "Tinline ei voinut tallentaa tilisi avaavaa avainta tälle puhelimelle, joten tiliäsi ei ole vielä tallennettu."
+
+[onboarding_savefail_trying]
+text = "Yritetään…"
+
+[onboarding_savefail_add_pass]
+text = "Lisää salalause sen sijaan"
+
+[onboarding_savefail_notice]
+text = "Tälle puhelimelle ei ole vielä tallennettu mitään, joten mitään ei menetetä. Yritä uudelleen tai suojaa tili salalauseella puhelimen oman avaimen sijaan."
+
+[onboarding_terms_title]
+text = "Ennen kuin aloitat"
+
+[onboarding_terms_agree_button]
+text = "Hyväksyn"
+
+[onboarding_terms_ads_title]
+text = "Ei mainoksia eikä seurantaa."
+
+[onboarding_terms_ads_body]
+text = "Tinline ei kerää yhteystietojasi, puheluitasi eikä sijaintiasi."
+
+[onboarding_terms_encrypted_title]
+text = "Puhelut on salattu päästä päähän."
+
+[onboarding_terms_encrypted_body]
+text = "Kun suora linja ei ole mahdollinen, salattu välityspalvelin välittää puhelun. Se ei voi kuulla sitä."
+
+[onboarding_terms_account_title]
+text = "Tilisi on sinun."
+
+[onboarding_terms_account_body]
+text = "Se on laitteillasi, ei palvelimella. Palautussanasi ovat tiesi takaisin, joten pidä ne tallessa."
+
+[onboarding_terms_by_continuing]
+text = "Jatkamalla hyväksyt dokumentin {terms} ja olet lukenut dokumentin {privacy}."
+
+[onboarding_terms_link_terms]
+text = "Käyttöehdot"
+
+[onboarding_terms_link_privacy]
+text = "Tietosuojakäytäntö"
+
+[onboarding_perms_title]
+text = "Jotta puhelut tavoittavat sinut"
+
+[onboarding_perms_lead]
+text = "Tinline toimii kuin puhelinlinja: se pysyy hiljaa auki taustalla. Jokainen näistä on valinnainen, ja voit muuttaa niitä myöhemmin."
+
+[onboarding_perm_mic]
+text = "Mikrofoni"
+
+[onboarding_perm_mic_why]
+text = "Jotta sinut kuullaan. Käytössä vain puhelun aikana."
+
+[onboarding_perm_notifications]
+text = "Ilmoitukset"
+
+[onboarding_perm_notifications_why]
+text = "Jotta näet saapuvat puhelut ja viestit."
+
+[onboarding_perm_fullscreen]
+text = "Soitto lukitusnäytön päällä"
+
+[onboarding_perm_fullscreen_why]
+text = "Näyttää saapuvat puhelut koko näytöllä kuten puhelinsovellus."
+
+[onboarding_perm_background]
+text = "Toiminta taustalla"
+
+[onboarding_perm_background_why]
+text = "Android pysäyttää käyttämättömät sovellukset akun säästämiseksi. Tämä pitää linjasi auki ja kuluttaa hieman akkua."
+
+[onboarding_perm_allow]
+text = "Salli"
+
+[onboarding_perm_allow_desc]
+text = "Salli: {permission}"
+
+[onboarding_perm_allowed_desc]
+text = "Sallittu: {permission}"
+
+[perms_open_settings]
+text = "Avaa asetukset"
+
+[perms_notifications_off_title]
+text = "Ilmoitukset ovat pois päältä"
+
+[perms_notifications_off_body]
+text = "Tinline ei voi ilmoittaa viesteistä tai puheluista. Ne saapuvat silti; näet ne, kun avaat sovelluksen. Ota ilmoitukset käyttöön järjestelmän asetuksista."
+
+[perms_battery_title]
+text = "Virransäästö voi viivästyttää puheluita"
+
+[perms_battery_body]
+text = "Android voi pysäyttää Tinlinen taustalla, joten puhelut ja viestit voivat saapua myöhässä. Aseta Tinlinen akun käytöksi Rajoittamaton."
+
+[perms_mic_title]
+text = "Mikrofoni"
+
+[perms_mic_why]
+text = "Jotta toinen kuulee sinut"
+
+[perms_notifications_title]
+text = "Ilmoitukset"
+
+[perms_notifications_why]
+text = "Saapuvien puheluiden näyttämiseen"
+
+[perms_battery_need_title]
+text = "Toiminta taustalla"
+
+[perms_battery_need_why]
+text = "Vapautus akun optimoinnista, jotta puhelut tulevat perille laitteen ollessa levossa"
+
+[perms_fullscreen_title]
+text = "Koko näytön puhelut"
+
+[perms_fullscreen_why]
+text = "Näytä saapuvat puhelut lukitusnäytön päällä"
+
+[settings_title]
+text = "Asetukset"
+
+[settings_available]
+text = "Tavoitettavissa"
+
+[settings_busy_until]
+text = "Varattu {time} asti"
+
+[settings_busy]
+text = "Varattu"
+
+[settings_see_details]
+text = "Näytä tiedot"
+
+[settings_account_selected]
+text = "Valittu · verkossa"
+
+[settings_account_paused]
+text = "Tauolla · vaihda napauttamalla"
+
+[settings_add_account]
+text = "Lisää toinen tili"
+
+[settings_accounts_note]
+text = "Vain valittu tili on verkossa tällä puhelimella. Vaihtaminen laittaa toisen tauolle: se ei vastaanota puheluita, ennen kuin valitset sen uudelleen."
+
+[settings_appearance]
+text = "Ulkoasu"
+
+[settings_look_match]
+text = "Sama kuin puhelimessani"
+
+[settings_look_match_sub]
+text = "Vaalea tai tumma puhelimen asetuksen mukaan"
+
+[settings_look_light]
+text = "Vaalea"
+
+[settings_look_dark]
+text = "Tumma"
+
+[settings_devices]
+text = "Laitteet"
+
+[settings_privacy]
+text = "Yksityisyys"
+
+[settings_notifications]
+text = "Ilmoitukset"
+
+[settings_sounds]
+text = "Äänet"
+
+[settings_video]
+text = "Video"
+
+[settings_storage]
+text = "Tallennustila"
+
+[settings_about]
+text = "Tietoja Tinlinesta"
+
+[settings_video_in_calls]
+text = "Video puheluissa"
+
+[settings_video_in_calls_on]
+text = "Voit laittaa kameran päälle puhelun aikana"
+
+[settings_video_in_calls_off]
+text = "Puhelut ovat vain äänipuheluita"
+
+[settings_add_create]
+text = "Luo uusi tili"
+
+[settings_add_link]
+text = "Linkitä laitteeseen"
+
+[settings_add_restore]
+text = "Palauta palautussanoilla"
+
+[settings_edit_profile]
+text = "Muokkaa profiilia"
+
+[notif_alert_about]
+text = "Ilmoita minulle"
+
+[notif_messages]
+text = "Viestit"
+
+[notif_messages_sub]
+text = "Ihmisiltä, ei ryhmistä"
+
+[notif_calls]
+text = "Puhelut"
+
+[notif_calls_sub]
+text = "Soi, kun joku soittaa"
+
+[notif_groups]
+text = "Ryhmät"
+
+[notif_groups_sub]
+text = "Viestit, kutsut ja pyynnöt"
+
+[notif_messages_switch]
+text = "Viesti-ilmoitukset"
+
+[notif_calls_switch]
+text = "Puheluilmoitukset"
+
+[notif_groups_switch]
+text = "Ryhmäilmoitukset"
+
+[notif_muted_note]
+text = "Mykistetty keskustelu ei koskaan ilmoita sinulle, vaikka täällä olisi mitä päällä. Saman henkilön vastaamattomat puhelut kootaan yhteen ilmoitukseen."
+
+[notif_permissions]
+text = "Luvat"
+
+[notif_perm_allowed]
+text = "Sallittu"
+
+[notif_perm_off]
+text = "Pois päältä järjestelmän asetuksissa"
+
+[notif_perm_mic]
+text = "Mikrofoni"
+
+[notif_perm_mic_asked]
+text = "Kysytään, kun soitat"
+
+[notif_perm_battery]
+text = "Akun käyttö"
+
+[notif_perm_unrestricted]
+text = "Rajoittamaton"
+
+[notif_perm_restricted]
+text = "Rajoitettu"
+
+[notif_fix]
+text = "Korjaa"
+
+[notif_ring_lock]
+text = "Soitto lukitusnäytön päällä"
+
+[notif_system_note]
+text = "Nämä asettaa järjestelmäsi, ei Tinline. Tinline kysyy vain, kun tarvitsee jotain niistä."
+
+[settings_quiet]
+text = "Hiljainen"
+
+[settings_quiet_sub]
+text = "Ei ääniä Tinlinesta: soittoa, puheluääniä eikä liittymisääniä"
+
+[settings_sound_classic]
+text = "Klassinen kilahdus"
+
+[settings_sound_classic_sub]
+text = "Kirkas neljän sävelen kilahdus."
+
+[settings_sound_slack]
+text = "Löysä → kireä"
+
+[settings_sound_slack_sub]
+text = "Kaksi lähekkäistä säveltä huojuu kuin löysä kieli, sitten yksi kiristyy."
+
+[settings_sound_triad]
+text = "Kolmisointukoputus"
+
+[settings_sound_triad_sub]
+text = "Kolme nousevaa säveltä, kuin koputus."
+
+[settings_call_sounds]
+text = "Puheluäänet"
+
+[settings_cue_ring]
+text = "Soittoääni"
+
+[settings_cue_connected]
+text = "Yhdistetty"
+
+[settings_cue_ended]
+text = "Puhelu päättyi"
+
+[settings_sounds_note_quiet]
+text = "Hiljainen tila on päällä, joten esikuuntelut ovat äänettömiä."
+
+[settings_sounds_note]
+text = "Napauta ääntä kuullaksesi sen. Valinta koskee seuraavaa puhelua."
+
+[settings_video_quality]
+text = "Videon laatu"
+
+[settings_sharper_video]
+text = "Terävämpi video"
+
+[settings_sharper_on]
+text = "Alkaa aina HD-laatuisena. Kuluttaa enemmän dataa ja akkua."
+
+[settings_sharper_off]
+text = "Siirtyy itse HD-laatuun, kun yhteys sallii."
+
+[settings_video_note]
+text = "Jokainen videopuhelu alkaa näin. Puhelun aikana voit muuttaa sitä kyseiselle puhelulle napauttamalla HD."
+
+[settings_size_gb]
+text = "{value} Gt"
+
+[settings_size_mb]
+text = "{value} Mt"
+
+[settings_size_kb]
+text = "{value} kt"
+
+[settings_size_b]
+text = "{value} t"
+
+[settings_storage_on_phone]
+text = "Tällä puhelimella"
+
+[settings_storage_pictures]
+text = "Kuvat"
+
+[settings_storage_files]
+text = "Tiedostot"
+
+[settings_storage_messages]
+text = "Viestit"
+
+[settings_storage_cache]
+text = "Välimuisti"
+
+[settings_download_pictures]
+text = "Lataa kuvat"
+
+[settings_dl_always]
+text = "Aina"
+
+[settings_dl_always_sub]
+text = "Wi-Fi-yhteydellä ja mobiilidatalla"
+
+[settings_dl_wifi]
+text = "Wi-Fi-yhteydellä"
+
+[settings_dl_wifi_sub]
+text = "Mobiilidatalla ne odottavat napautusta"
+
+[settings_dl_tap]
+text = "Kun napautan niitä"
+
+[settings_dl_tap_sub]
+text = "Siihen asti kustakin näkyy pehmeä esikatselu"
+
+[settings_clear_cache]
+text = "Tyhjennä välimuisti"
+
+[settings_clear_cache_sub]
+text = "{size} avaamiasi kuvia ja tiedostoja. Ne valmistellaan uudelleen, kun avaat ne."
+
+[settings_cleared]
+text = "Tyhjennetty"
+
+[settings_nothing_to_clear]
+text = "Ei tyhjennettävää"
+
+[settings_storage_note]
+text = "Vapauttaaksesi lisää tilaa poista kuvia tai tiedostoja niiden keskustelusta."
+
+[settings_blocked_count]
+one = "{count} henkilö"
+other = "{count} henkilöä"
+
+[settings_blocked_none]
+text = "Ei ketään"
+
+[settings_calls_allowed_title]
+text = "Kuka voi soittaa minulle"
+
+[settings_messages_only_count]
+one = "{count} yhteystieto vain viesteille"
+other = "{count} yhteystietoa vain viesteille"
+
+[settings_calls_all]
+text = "Kaikki yhteystiedot voivat soittaa"
+
+[settings_account_recovery]
+text = "Tilin palautus"
+
+[settings_recovery_needs_pass]
+text = "Vaatii salalauseesi"
+
+[settings_recovery_needs_lock]
+text = "Vaatii näytön lukituksen"
+
+[settings_passphrase]
+text = "Salalause"
+
+[settings_passphrase_sub]
+text = "Suojaa Tinlinen tällä laitteella"
+
+[settings_privacy_note]
+text = "Yhteystietosi näkevät nimesi, kuvasi ja profiilisi. Tinline ei piilota, kenen kanssa puhut, ja jokainen tiliisi linkitetty laite voi lukea keskustelusi."
+
+[settings_read_receipts]
+text = "Lukukuittaukset"
+
+[settings_receipts_on]
+text = "Ihmiset näkevät, kun olet lukenut heidän viestinsä"
+
+[settings_receipts_off]
+text = "Lukemisesi pysyvät omana tietonasi"
+
+[settings_receipts_note]
+text = "Toimituskuittaukset lähtevät joka tapauksessa, ja näet yhä, kun muut lukevat viestisi. Viestit, jotka luet tämän ollessa pois päältä, jäävät vahvistamatta."
+
+[settings_presence_title]
+text = "Näytä minut paikalla olevana julkisissa ryhmissä"
+
+[settings_presence_on]
+text = "Jäsenet näkevät, kun olet paikalla"
+
+[settings_presence_off]
+text = "Et näy heidän paikallaololistoissaan"
+
+[settings_presence_note]
+text = "Julkisiin ryhmiin voi liittyä kuka tahansa avoimella linkillä. Tämä koskee tätä laitetta; muut laitteesi pitävät oman valintansa."
+
+[settings_group_pictures]
+text = "Ryhmien kuvat"
+
+[settings_group_pictures_note]
+text = "Ryhmien kuvat tulevat ryhmän isäntälaitteilta. Tämä koskee tätä laitetta."
+
+[settings_contacts]
+text = "Yhteystiedot"
+
+[settings_can_call]
+text = "Voi soittaa sinulle"
+
+[settings_messages_only]
+text = "Vain viestit"
+
+[settings_allow_calls_from]
+text = "Salli puhelut: {name}"
+
+[settings_calls_allowed_note]
+text = "Sallimasi henkilö voi soittaa sinulle; vain viestejä lähettävä voi yhä kirjoittaa. Estämäsi ihmiset eivät voi kumpaakaan."
+
+[settings_battery_title]
+text = "Tausta ja akku"
+
+[settings_battery_keep]
+text = "Pidä linjani auki"
+
+[settings_battery_hint]
+text = "Tinline pysyy yhteydessä taustalla, jotta puhelut soivat kuin tavallisessa puhelimessa. Se kuluttaa hieman akkua. Alla oleva tarkistuslista kertoo, mitä Android tarvitsee sen sallimiseen."
+
+[settings_checklist]
+text = "TARKISTUSLISTA"
+
+[settings_battery_row]
+text = "Akku"
+
+[settings_battery_optimised]
+text = "Optimoitu — Android voi pysäyttää Tinlinen"
+
+[settings_on]
+text = "Päällä"
+
+[settings_battery_missing_bold]
+text = "Jääkö puheluita yhä tulematta?"
+
+[settings_battery_missing]
+text = "Jotkin puhelimet tarvitsevat lisävaiheen pitääkseen sovelluksia käynnissä."
+
+[settings_battery_steps]
+text = "Ohjeet puhelimellesi"
+
+[settings_recovery_open_failed]
+text = "Palautusta ei voitu avata. Palaa takaisin ja yritä uudelleen."
+
+[settings_recovery_wrong]
+text = "Se ei täsmännyt. Yritä uudelleen."
+
+[settings_recovery_backup_failed]
+text = "Varmuuskopiotasi ei voitu avata. Yritä uudelleen."
+
+[settings_recovery_add_lock]
+text = "Lisää näytön lukitus tai sovelluksen salalause avataksesi varmuuskopiosi."
+
+[settings_only_you]
+text = "Vain sinulle"
+
+[settings_recovery_check]
+text = "Varmista, että se olet sinä, ennen kuin avaat varmuuskopiosi."
+
+[settings_your_passphrase]
+text = "Salalauseesi"
+
+[settings_recovery_use_lock]
+text = "Jatka puhelimesi näytön lukituksella."
+
+[settings_use_screen_lock]
+text = "Käytä näytön lukitusta"
+
+[settings_backup_title]
+text = "Palautusvarmuuskopiosi"
+
+[settings_backup_private]
+text = "Pidä tämä omana tietonasi. Kuka tahansa, jolla se on, voi toimia sinuna."
+
+[settings_backup_key]
+text = "Avain"
+
+[settings_backup_words]
+text = "24 sanaa"
+
+[settings_backup_key_failed]
+text = "Avainta ei voitu valmistella. Käytä 24 sanaasi sen sijaan."
+
+[settings_hide]
+text = "Piilota"
+
+[settings_reveal]
+text = "Näytä"
+
+[settings_backup_hides]
+text = "Piiloutuu 30 sekunnin kuluttua. Lukittuu, kun poistut sovelluksesta."
+
+[settings_backup_same]
+text = "Avain ja sanat palauttavat saman tilin. Säilytä kumpi tahansa yksityisessä, turvallisessa paikassa."
+
+[settings_backup_copied]
+text = "Kopioitu. Säilytä se jossain yksityisessä paikassa."
+
+[settings_copy_key]
+text = "Kopioi avain"
+
+[settings_copy_failed]
+text = "Kopiointi ei onnistunut. Yritä uudelleen."
+
+[settings_change_passphrase]
+text = "Vaihda salalause"
+
+[settings_add_passphrase]
+text = "Lisää salalause"
+
+[settings_current_passphrase]
+text = "Nykyinen salalause"
+
+[settings_new_passphrase]
+text = "Uusi salalause"
+
+[settings_passphrase_why]
+text = "Tilisi on vain tällä puhelimella. Salalause salaa sen, joten kukaan puhelimesi haltija ei voi kopioida sitä."
+
+[settings_encrypting]
+text = "Salataan…"
+
+[settings_about_version]
+text = "Versio {version}"
+
+[settings_about_made_by]
+text = "Tekijä: Osvauld"
+
+[settings_licences_title]
+text = "Avoimen lähdekoodin lisenssit"
+
+[settings_licences_sub]
+text = "Kirjastot, joiden varaan Tinline on rakennettu"
+
+[settings_licences_full]
+text = "Lisenssien koko tekstit"
+
+[settings_source]
+text = "Lähdekoodi"
+
+[settings_source_sub]
+text = "Tinline on avointa lähdekoodia"
+
+[settings_about_note]
+text = "Tinlinessa ei ole mainoksia eikä seurantaa. Viestisi ja puhelusi kulkevat laitteidesi ja niiden ihmisten välillä, joiden kanssa puhut."
+
+[settings_terms]
+text = "Käyttöehdot"
+
+[settings_privacy_policy]
+text = "Tietosuojakäytäntö"
+
+[settings_emergency]
+text = "Ei hätäpuheluihin."
+
+[settings_log_copy]
+text = "Kopioi vianetsintäloki"
+
+[settings_log_copy_sub]
+text = "Liitä se sille, joka auttaa sinua korjaamaan ongelman"
+
+[settings_log_send]
+text = "Lähetä vianetsintäloki"
+
+[settings_log_send_sub]
+text = "Koko loki tiedostona"
+
+[settings_log_note]
+text = "Lokissa on se, mitä Tinline teki tällä puhelimella, sekä yhteystietojen ja puheluiden tunnisteet. Siinä ei koskaan ole viestejäsi eikä juurisalaisuuttasi."
+
+[settings_log_collecting]
+text = "Kerätään lokia…"
+
+[settings_log_copied]
+text = "Vianetsintäloki kopioitu. Liitä se viestiin."
+
+[settings_log_failed]
+text = "Lokia ei saatu: {reason}"
+
+[devices_title]
+text = "Linkitetyt laitteet"
+
+[devices_hint]
+text = "Puhelut soivat kaikilla näillä. Ne, joille soitat, eivät koskaan näe näitä nimiä."
+
+[devices_link]
+text = "Linkitä laite"
+
+[devices_unlinked_label]
+text = "LINKITYS POISTETTU"
+
+[devices_sync_label]
+text = "SYNKRONOINTI"
+
+[devices_sync_hint]
+text = "Laitteet synkronoituvat suoraan keskenään aina, kun kaksi on verkossa yhtä aikaa. Millään palvelimella ei ole kopiota."
+
+[devices_this_phone_named]
+text = "Tämä puhelin — {name}"
+
+[devices_unnamed]
+text = "Nimetön"
+
+[devices_unnamed_device]
+text = "Nimetön laite"
+
+[devices_sub_unlinked]
+text = "Linkitys poistettu"
+
+[devices_sub_this]
+text = "Tämä laite · Android"
+
+[devices_sub_synced]
+text = "Synkronoitu {time}"
+
+[devices_sub_not_seen]
+text = "Ei vielä nähty"
+
+[devices_device]
+text = "Laite"
+
+[devices_this_phone]
+text = "Tämä puhelin"
+
+[devices_name]
+text = "Nimi"
+
+[devices_last_synced]
+text = "Viimeksi synkronoitu"
+
+[devices_this_device]
+text = "Tämä laite"
+
+[devices_not_yet]
+text = "Ei vielä"
+
+[devices_rings]
+text = "Soi puheluille"
+
+[devices_rings_no]
+text = "Ei, sen linkitys poistettiin"
+
+[devices_rings_yes]
+text = "Kyllä, kun se on päällä"
+
+[devices_sync_now]
+text = "Synkronoi nyt"
+
+[devices_syncing]
+text = "Synkronoidaan: {name}…"
+
+[devices_fallback_the_device]
+text = "laite"
+
+[devices_remove_account]
+text = "Poista tili tältä puhelimelta"
+
+[devices_unlink_this]
+text = "Poista tämän laitteen linkitys"
+
+[devices_unlink_device]
+text = "Poista laitteen linkitys"
+
+[devices_name_this_phone]
+text = "Nimeä tämä puhelin"
+
+[devices_rename]
+text = "Nimeä laite uudelleen"
+
+[devices_save]
+text = "Tallenna"
+
+[devices_name_field]
+text = "Laitteen nimi"
+
+[devices_fallback_this_device]
+text = "tämä laite"
+
+[devices_fallback_device]
+text = "laite"
+
+[devices_confirm_remove_title]
+text = "Poistetaanko tilisi tältä puhelimelta?"
+
+[devices_confirm_unlink_title]
+text = "Poistetaanko linkitys: {name}?"
+
+[devices_working]
+text = "Käsitellään…"
+
+[devices_unlink]
+text = "Poista linkitys"
+
+[devices_remove_body]
+text = "Tämä puhelin lopettaa synkronoinnin ja soimisen, ja tilisi, yhteystietosi, keskustelusi ja puheluhistoriasi poistetaan siltä."
+
+[devices_remove_only]
+text = "Tämä on ainoa laite, jolla tilisi on. Ilman palautussanojasi mikään ei voi tuoda sitä takaisin."
+
+[devices_remove_others]
+text = "Muut laitteesi säilyttävät kaiken."
+
+[devices_unlink_body]
+text = "Se lopettaa synkronoinnin eikä enää soi puheluillesi. Jos se on verkossa, se poistaa tilisi itseltään."
+
+[devices_unlink_warn]
+text = "Linkityksen poisto ei voi lukita sitä täältä. Kuka tahansa, joka saa sen auki, voi yhä käyttää tiliäsi. Ainoa täysi katkaisu on uusi tili."
+
+[devices_lost_stolen]
+text = "Kadonnut tai varastettu?"
+
+[devices_unlinked_msg]
+text = "Linkitys poistettu: {name}"
+
+[devices_finish_call]
+text = "Lopeta ensin puhelusi"
+
+[devices_lock_cancelled]
+text = "Näytön lukituksen tarkistus peruttu"
+
+[link_title]
+text = "Linkitä tiliisi"
+
+[link_same_code]
+text = "Sama koodi molemmissa?"
+
+[link_same_code_lead]
+text = "Tarkista, että {name} näyttää tämän koodin, ja hyväksy siellä."
+
+[link_fallback_other_device]
+text = "toinen laitteesi"
+
+[link_code_differs]
+text = "Eri koodi, tai et aloittanut tätä? Peruuta. Joku muu on ehkä skannannut QR-koodin."
+
+[link_waiting]
+text = "Odotetaan hyväksyntää…"
+
+[link_linking]
+text = "Linkitetään…"
+
+[link_receiving]
+text = "Tiliäsi vastaanotetaan. Pidä molemmat laitteet auki."
+
+[link_failed_title]
+text = "Linkitys ei onnistunut"
+
+[link_show_lead]
+text = "Avaa laitteella, jolla tilisi jo on, Asetukset › Linkitä laite ja skannaa tämä."
+
+[link_new_code]
+text = "Uusi koodi"
+
+[link_scan_instead]
+text = "Skannaa sen sijaan"
+
+[link_qr_warning]
+text = "Kuka tahansa, joka näkee tämän koodin seuraavien minuuttien aikana, voisi yrittää käyttää sitä. Näytä se vain omalle laitteellesi."
+
+[link_qr_desc]
+text = "QR-koodi tämän laitteen linkittämiseen"
+
+[link_preparing]
+text = "Valmistellaan koodiasi…"
+
+[link_expired]
+text = "Vanhentunut. Luo uusi koodi."
+
+[link_expires]
+text = "Vanhenee: {time} · toimii kerran"
+
+[link_code_desc]
+text = "Linkityskoodi {code}"
+
+[link_existing_title]
+text = "Linkitä uusi laite"
+
+[link_show_h1]
+text = "Näytä tämä koodi uudelle laitteellesi"
+
+[link_show_body]
+text = "Valitse uudella laitteella ”Linkitä laitteeseen”, sitten ”Skannaa sen sijaan” ja osoita tätä koodia."
+
+[link_fallback_new_device_cap]
+text = "Uusi laite"
+
+[link_match_title]
+text = "Täsmäävätkö koodit?"
+
+[link_match_body]
+text = "haluaa liittyä tiliisi. Sen pitäisi näyttää samat kuusi numeroa kuin alla."
+
+[link_match_note]
+text = "Vertaa niitä itse. Jos ne eroavat, joku muu on ehkä skannannut koodin ensin."
+
+[link_no_match]
+text = "Ne eivät täsmää"
+
+[link_match]
+text = "Ne täsmäävät"
+
+[link_fallback_new_device]
+text = "uusi laite"
+
+[link_connecting]
+text = "Yhdistetään…"
+
+[link_linking_peer]
+text = "Linkitetään: {name}"
+
+[link_reaching]
+text = "Tavoitetaan toista laitetta"
+
+[link_sending]
+text = "Lähetetään tiliäsi"
+
+[link_working]
+text = "Käynnissä"
+
+[link_keep_open]
+text = "Pidä molemmat laitteet auki, kunnes tämä valmistuu."
+
+[link_done_title]
+text = "{name} on linkitetty"
+
+[link_done_body]
+text = "Se synkronoituu, kun molemmat laitteet ovat verkossa yhtä aikaa. Yhteystiedot, joita et ole estänyt, saavat päivitetyn laitelistasi, kun ovat seuraavan kerran verkossa."
+
+[link_scan_h1]
+text = "Skannaa koodi uudelta laitteeltasi"
+
+[link_scan_step1]
+text = "1.  Avaa uudella laitteella Tinline ja valitse {action}."
+
+[link_scan_step2]
+text = "2.  Se näyttää QR-koodin ja lyhyen koodin. Ne toimivat 5 minuuttia, kerran."
+
+[link_scan_qr]
+text = "Skannaa QR-koodi"
+
+[link_type_code]
+text = "Tai kirjoita koodi"
+
+[link_show_here]
+text = "Näytä QR-koodi täällä sen sijaan"
+
+[link_wrong_pass]
+text = "Salalause ei ole oikea."
+
+[link_approve_title]
+text = "Hyväksytäänkö {name}?"
+
+[link_approve_warning]
+text = "Hyväksyminen lähettää {bold} laitteelle {name}. Siitä tulee täysi kopio sinusta: se voi lukea keskustelusi ja toimia sinuna. Hyväksy vain laite, joka on hallussasi."
+
+[link_approve_bold]
+text = "palautussanasi"
+
+[link_dont_link]
+text = "Älä linkitä"
+
+[link_approving]
+text = "Hyväksytään…"
+
+[link_approve]
+text = "Hyväksy"
+
+[link_scan_title]
+text = "Skannaa koodi"
+
+[link_torch]
+text = "Taskulamppu"
+
+[link_point_new]
+text = "Osoita toisen laitteesi koodia"
+
+[link_point_existing]
+text = "Osoita kameralla uuden laitteesi QR-koodia"
+
+[link_scan_again]
+text = "Skannaa uudelleen"
+
+[link_scan_foot]
+text = "Koodi toimii kerran ja vanhenee 5 minuutissa."
+
+[link_unlinked_title]
+text = "Tämän puhelimen linkitys poistettiin"
+
+[link_unlinked_lead]
+text = "Yksi muista laitteistasi poisti tältä puhelimelta tilin {name}. Sen yhteystiedot, keskustelut ja puhelut on poistettu täältä. Muihin laitteisiisi tämä ei vaikuta."
+
+[link_your_account]
+text = "Tilisi"
+
+[link_ok]
+text = "OK"
+
+[link_again]
+text = "Linkitä uudelleen"
+
+[blocking_title]
+text = "Estetyt henkilöt"
+
+[blocking_block]
+text = "Estä"
+
+[blocking_hint]
+text = "Yksi lista kaikilla laitteillasi: toisella laitteella tehty esto näkyy myös täällä."
+
+[blocking_none]
+text = "Ketään ei ole estetty. Jos haluat estää jonkun, avaa hänen yhteystietosivunsa ja napauta Estä."
+
+[blocking_blocked_on]
+text = "Estetty {date}"
+
+[blocking_unblock_name]
+text = "Poista esto: {name}"
+
+[blocking_unblocked_told]
+text = "{name} saa tiedon, että poistit eston"
+
+[blocking_unblock]
+text = "Poista esto"
+
+[blocking_unblocking]
+text = "Eston poistaminen"
+
+[notif_ch_service]
+text = "Puhelujen kuuntelu"
+
+[notif_ch_service_desc]
+text = "Pitää sovelluksen tavoitettavissa saapuville puheluille"
+
+[notif_ch_calls]
+text = "Saapuvat puhelut"
+
+[notif_ch_calls_desc]
+text = "Soi, kun yhteystieto soittaa sinulle"
+
+[notif_ch_ongoing]
+text = "Käynnissä olevat puhelut"
+
+[notif_ch_ongoing_desc]
+text = "Näyttää nykyisen puhelusi ja antaa palata siihen tai lopettaa sen"
+
+[notif_ch_missed]
+text = "Vastaamattomat puhelut"
+
+[notif_ch_messages_desc]
+text = "Uudet viestit yhteystiedoiltasi"
+
+[notif_ch_groups_desc]
+text = "Ryhmiesi viestit ja kutsut liittyä ryhmään"
+
+[notif_ch_requests]
+text = "Yhteystietopyynnöt"
+
+[notif_ch_requests_desc]
+text = "Kun joku pyytää lisätä sinut yhteystiedoksi"
+
+[notif_ch_locked]
+text = "Lukittu"
+
+[notif_ch_locked_desc]
+text = "Näytetään, kun sovellus tarvitsee salalauseesi vastaanottaakseen puheluita"
+
+[notif_idle_unavailable]
+text = "Ei tavoitettavissa"
+
+[notif_idle_offline]
+text = "Ei verkossa — yhdistetään uudelleen"
+
+[notif_idle_available]
+text = "Tavoitettavissa puheluille"
+
+[notif_idle_unavailable_text]
+text = "Puhelut eivät soi. Muuta napauttamalla."
+
+[notif_idle_offline_text]
+text = "Puhelusi tulevat taas perille, kun olet taas verkossa."
+
+[notif_idle_available_text]
+text = "Linjasi on auki. Muuta napauttamalla."
+
+[notif_return_to_call]
+text = "Palaa puheluun napauttamalla"
+
+[notif_leave]
+text = "Poistu"
+
+[notif_end_call]
+text = "Lopeta puhelu"
+
+[notif_unmute]
+text = "Poista mykistys"
+
+[notif_mute]
+text = "Mykistä"
+
+[notif_incoming_video]
+text = "Saapuva videopuhelu"
+
+[notif_incoming]
+text = "Saapuva puhelu"
+
+[notif_group_calling]
+text = "{name} soittaa ryhmälle"
+
+[notif_waiting_title]
+text = "{name} soittaa"
+
+[notif_waiting_text]
+text = "Puhelusi jatkuu, kunnes päätät toisin."
+
+[notif_end_answer]
+text = "Lopeta ja vastaa"
+
+[notif_locked_title]
+text = "Avaa lukitus vastaanottaaksesi puheluita"
+
+[notif_locked_text]
+text = "Kirjoita salalauseesi napauttamalla"
+
+[notif_request_title]
+text = "Yhteystietopyyntö"
+
+[notif_request_text]
+text = "{name} haluaisi lisätä sinut"
+
+[notif_accepted_fallback]
+text = "Yhteystietosi"
+
+[notif_accepted_text]
+text = "Hyväksyi pyyntösi. Linjasi on auki."
+
+[notif_missed_title]
+text = "Vastaamaton puhelu"
+
+[chat_edited]
+text = "muokattu"
+
+[chat_jump_to_message]
+text = "Siirry viestiin"
+
+[chat_attach_file]
+text = "Liitä tiedosto"
+
+[chat_save_edit]
+text = "Tallenna muokkaus"
+
+[chat_send]
+text = "Lähetä"
+
+[chat_tick_slack]
+text = "Odottaa lähetystä"
+
+[chat_tick_one]
+text = "Lähetetty, odotetaan vahvistusta henkilön {first} laitteelta"
+
+[chat_tick_two]
+text = "Henkilön {first} laitteella"
+
+[chat_tick_read]
+text = "Luettu henkilön {first} laitteella"
+
+[chat_tick_bad]
+text = "Ei toimitettu"
+
+[chat_day_today]
+text = "Tänään"
+
+[chat_day_yesterday]
+text = "Eilen"
+
+[chat_self_sub]
+text = "Tallennetut · vain laitteillasi"
+
+[chat_waiting_unreachable]
+text = "Odottaa lähetystä — {name} ei ole vielä tavoitettavissa"
+
+[chat_search_contacts]
+text = "Hae yhteystietoja"
+
+[chat_new_chat]
+text = "Uusi keskustelu"
+
+[chat_add_contact]
+text = "Lisää yhteystieto"
+
+[chat_add_contact_sub]
+text = "Skannaa koodi tai liitä käyntikortti"
+
+[chat_contacts_count]
+text = "YHTEYSTIEDOT · {count}"
+
+[chat_no_messages_yet]
+text = "Ei vielä viestejä"
+
+[chat_preview_voice]
+text = "Ääniviesti"
+
+[chat_preview_photo]
+text = "Kuva"
+
+[chat_notif_message]
+text = "Viesti"
+
+[chat_notif_reply]
+text = "Vastaa"
+
+[chat_notif_group]
+text = "Ryhmä"
+
+[chat_notif_a_group]
+text = "Ryhmä"
+
+[chat_notif_invited]
+text = "{name} kutsui sinut ryhmään"
+
+[chat_new_messages]
+one = "{count} uusi viesti"
+other = "{count} uutta viestiä"
+
+[conv_send_file_failed]
+text = "Tiedostoa ei voitu lähettää."
+
+[conv_read_file_failed]
+text = "Tiedostoa ei voitu lukea."
+
+[conv_download_failed]
+text = "Latausta ei voitu aloittaa."
+
+[conv_saved_to_phone]
+text = "Tallennettu puhelimeesi"
+
+[conv_save_failed]
+text = "Tiedostoa ei voitu tallentaa."
+
+[conv_no_app_opens]
+text = "Mikään tämän puhelimen sovellus ei avaa .{ext}-tiedostoja — tallenna se sen sijaan"
+
+[conv_no_camera]
+text = "Kameraa ei ole saatavilla."
+
+[conv_allow_camera]
+text = "Salli kameran käyttö ottaaksesi kuvia."
+
+[conv_older_title]
+text = "Vanhemmat viestit ovat henkilön {first} puhelimella"
+
+[conv_older_body]
+text = "Tämä puhelin säilyttää ne siitä lähtien, kun aloit käyttää sitä. Aiemmat päivät latautuvat, kun olette molemmat verkossa."
+
+[conv_offline_self]
+text = "Et ole verkossa. Viestit lähtevät, kun olet taas verkossa."
+
+[conv_offline_peer]
+text = "{first} ei ole verkossa. Viestit lähtevät, kun olette molemmat verkossa."
+
+[conv_replying_self]
+text = "Vastaat itsellesi"
+
+[conv_replying_to]
+text = "Vastaus: {first}"
+
+[conv_editing]
+text = "Muokataan viestiä"
+
+[conv_voice_send_failed]
+text = "Ääniviestiä ei voitu lähettää."
+
+[conv_delete_failed]
+text = "Viestiä ei voitu poistaa."
+
+[conv_back_to_chats]
+text = "Takaisin keskusteluihin"
+
+[conv_blocked_you]
+text = "Esti sinut"
+
+[conv_not_contact]
+text = "Ei yhteystiedoissasi"
+
+[conv_waiting_connection]
+text = "Odotetaan yhteyttä"
+
+[conv_online]
+text = "Paikalla"
+
+[conv_online_messages_only]
+text = "Paikalla · vain viestit"
+
+[conv_messages_only]
+text = "Vain viestit"
+
+[conv_header_desc_status]
+text = "{name}. {status}. Keskustelun tiedot"
+
+[conv_header_desc]
+text = "{name}. Keskustelun tiedot"
+
+[conv_return_to_call]
+text = "Palaa puheluun"
+
+[conv_cant_call]
+text = "Et voi soittaa: {first}"
+
+[conv_video_call]
+text = "Videopuhelu"
+
+[conv_find_in_chat]
+text = "Hae tästä keskustelusta"
+
+[conv_chat_details]
+text = "Keskustelun tiedot"
+
+[conv_call_video_duration]
+text = "Videopuhelu · {duration}"
+
+[conv_call_voice_duration]
+text = "Äänipuhelu · {duration}"
+
+[conv_call_declined_video]
+text = "Hylätty videopuhelu"
+
+[conv_call_declined_voice]
+text = "Hylätty äänipuhelu"
+
+[conv_call_missed_video]
+text = "Vastaamaton videopuhelu"
+
+[conv_call_missed_voice]
+text = "Vastaamaton äänipuhelu"
+
+[conv_call_no_answer]
+text = "Ei vastausta"
+
+[conv_call_declined]
+text = "Hylätty"
+
+[conv_call_cancelled]
+text = "Peruttu puhelu"
+
+[conv_call_failed]
+text = "Puhelu ei yhdistynyt"
+
+[conv_call_pill_desc]
+text = "{text}, {time}. Soita takaisin"
+
+[conv_message_hint]
+text = "Viesti"
+
+[conv_cancel_edit]
+text = "Peru muokkaus"
+
+[conv_cancel_reply]
+text = "Peru vastaus"
+
+[conv_reply]
+text = "Vastaa"
+
+[conv_you_deleted]
+text = "Poistit tämän viestin"
+
+[conv_they_deleted]
+text = "{first} poisti tämän viestin"
+
+[conv_original_unavailable]
+text = "Alkuperäinen viesti ei ole saatavilla"
+
+[conv_earlier_message]
+text = "Aiempi viesti"
+
+[conv_message_unavailable]
+text = "Viesti ei ole saatavilla"
+
+[conv_meta_status]
+text = "{status} · {time}"
+
+[conv_meta_sending]
+text = "Lähetetään {percent} % · {time}"
+
+[conv_meta_waiting]
+text = "Odottaa · {time}"
+
+[conv_meta_edited]
+text = "muokattu · {time}"
+
+[conv_cancel_sending]
+text = "Peru lähetys"
+
+[conv_cancel_download]
+text = "Peru lataus"
+
+[conv_photo_size]
+text = "Kuva · {size}"
+
+[conv_download]
+text = "Lataa"
+
+[conv_retry_download]
+text = "Yritä latausta uudelleen"
+
+[conv_sends_when_online]
+text = "Lähtee, kun {first} on verkossa"
+
+[conv_file_tap_open]
+text = "{size} · {type} · avaa napauttamalla"
+
+[conv_file_tap_save]
+text = "{size} · {type} · tallenna napauttamalla"
+
+[conv_file_downloading]
+text = "Ladataan · {done}/{size}"
+
+[conv_file_paused]
+text = "{size} · tauolla — odotetaan, että {first} tulee verkkoon"
+
+[conv_file_starting]
+text = "{size} · aloitetaan…"
+
+[conv_file_failed]
+text = "{size} · lataus ei onnistunut — yritä uudelleen napauttamalla"
+
+[conv_file_not_downloaded]
+text = "{size} · ei ladattu"
+
+[conv_download_name]
+text = "Lataa {name}"
+
+[conv_cancel_download_name]
+text = "Peru lataus: {name}"
+
+[conv_save_name_to_phone]
+text = "Tallenna puhelimeen: {name}"
+
+[conv_info_saved]
+text = "Tallennettu {time} · laitteillasi"
+
+[conv_info_received]
+text = "Vastaanotettu {time}"
+
+[conv_info_sent_read]
+text = "Lähetetty {time} · luettu henkilön {first} laitteella"
+
+[conv_info_sent_delivered]
+text = "Lähetetty {time} · henkilön {first} laitteella"
+
+[conv_info_sent_only_here]
+text = "Lähetetty {time} · toistaiseksi vain tällä puhelimella"
+
+[conv_info_sent_waiting]
+text = "Lähetetty {time} · odotetaan vahvistusta henkilön {first} laitteelta"
+
+[conv_proof_read]
+text = "Luettu · allekirjoittaja {name} · laite {device}"
+
+[conv_proof_delivered]
+text = "Toimitettu · allekirjoittaja {name} · laite {device}"
+
+[conv_copy_text]
+text = "Kopioi teksti"
+
+[conv_save_to_phone]
+text = "Tallenna puhelimeen"
+
+[conv_edit]
+text = "Muokkaa"
+
+[conv_delete_self]
+text = "Poista kaikilta laitteiltasi"
+
+[conv_delete_both]
+text = "Poista teiltä molemmilta"
+
+[conv_edits_reach_self]
+text = "Muokkaukset ja poistot välittyvät muille laitteillesi, kun ne ovat verkossa."
+
+[conv_edits_reach_peer]
+text = "Muokkaukset ja poistot välittyvät henkilön {first} puhelimelle, kun olette seuraavan kerran molemmat verkossa."
+
+[conv_attach_title_self]
+text = "Tallenna itsellesi"
+
+[conv_attach_title]
+text = "Lähetä: {first}"
+
+[conv_attach_photos]
+text = "Kuvat ja videot"
+
+[conv_attach_camera]
+text = "Kamera"
+
+[conv_attach_file]
+text = "Tiedosto"
+
+[conv_attach_hint_self]
+text = "Tiedostot pysyvät salattuina laitteillasi ja kopioituvat muille, kun ne ovat verkossa. Enintään 2 Gt kukin."
+
+[conv_attach_hint]
+text = "Tiedostot on salattu päästä päähän. Enintään 2 Gt kukin. Teidän molempien täytyy olla verkossa siirron aikana."
+
+[conv_viewer_note]
+text = "Säilytetään salattuna Tinlinessa. ”Tallenna puhelimeen” kopioi sen galleriaasi, jossa muut sovellukset näkevät sen."
+
+[conv_voice_download]
+text = "Lataa ääniviesti"
+
+[conv_voice_loading]
+text = "Ääniviesti latautuu"
+
+[conv_you_blocked]
+text = "Estit henkilön {name}"
+
+[conv_you_blocked_date]
+text = "Estit henkilön {name} · {date}"
+
+[conv_signed_by]
+text = "Allekirjoittaja {name} · {date}"
+
+[conv_unblock]
+text = "Poista esto"
+
+[conv_add]
+text = "Lisää"
+
+[voice_send]
+text = "Lähetä ääniviesti"
+
+[voice_recording]
+text = "Tallennetaan, lähetä päästämällä irti"
+
+[voice_hold]
+text = "Tallenna ääniviesti pitämällä painettuna"
+
+[voice_discard]
+text = "Hylkää tallenne"
+
+[voice_slide_cancel]
+text = "Peru liu’uttamalla"
+
+[voice_pause]
+text = "Keskeytä ääniviesti"
+
+[voice_play]
+text = "Toista ääniviesti"
+
+[voice_waveform]
+text = "Ääniviestin aaltomuoto, siirry napauttamalla"
+
+[file_pdf_protected]
+text = "Tämä PDF on suojattu salasanalla, joten Tinline ei voi näyttää sitä. Tallenna se avataksesi sen toisella sovelluksella."
+
+[file_pdf_unreadable]
+text = "Tinline ei voi lukea tätä PDF-tiedostoa. Se voi olla vioittunut. Voit silti tallentaa sen."
+
+[file_open_failed]
+text = "Tiedostoa ei voitu avata."
+
+[file_default_name]
+text = "Tiedosto"
+
+[file_page_of]
+text = "Sivu {page}/{total}"
+
+[file_page_n]
+text = "Sivu {number}"
+
+[file_save_to_phone]
+text = "Tallenna puhelimeen"
+
+[file_opening]
+text = "Avataan…"
+
+[file_too_big]
+text = "Tiedosto on liian suuri näytettäväksi täällä. Tallenna se avataksesi sen toisella sovelluksella."
+
+[file_not_text]
+text = "Tämä ei näytä tekstitiedostolta. Tallenna se avataksesi sen toisella sovelluksella."
+
+[find_in_chat]
+text = "Hae tästä keskustelusta"
+
+[find_match_of]
+text = "Osuma {shown}/{total}"
+
+[find_no_matches]
+text = "Ei osumia"
+
+[find_older]
+text = "Vanhempi osuma"
+
+[find_newer]
+text = "Uudempi osuma"
+
+[find_close]
+text = "Sulje haku"
+
+[search_people_groups]
+text = "Ihmiset ja ryhmät"
+
+[search_no_people]
+text = "Yksikään henkilö tai ryhmä ei vastaa hakua"
+
+[search_messages]
+text = "Viestit"
+
+[search_type_more]
+text = "Kirjoita vähintään 2 merkkiä hakeaksesi viestejä."
+
+[search_no_messages]
+text = "Mikään viesti ei vastaa hakua ”{query}”"
+
+[search_clear_field]
+text = "Tyhjennä haku"
+
+[search_recent]
+text = "Viimeaikaiset"
+
+[search_clear]
+text = "Tyhjennä"
+
+[search_blank_1]
+text = "Hae viestejä, ihmisiä ja ryhmiä."
+
+[search_blank_2]
+text = "Kaikki pysyy tällä laitteella."
+
+[search_kind_group]
+text = "ryhmä"
+
+[search_kind_me]
+text = "oma profiilisi"
+
+[search_kind_contact]
+text = "yhteystieto"
+
+[search_tile_desc]
+text = "{name}, {what}"
+
+[search_author_prefix]
+text = "{name}:"
+
+[card_copy]
+text = "Kopioi"
+
+[card_share_chooser]
+text = "Jaa käyntikortti"
+
+[card_nothing_to_share]
+text = "Ei sovellusta, jolla jakaa"
+
+[card_qr_desc]
+text = "Käyntikorttisi QR-koodi"
+
+[card_preparing]
+text = "Valmistellaan koodiasi…"
+
+[card_works_once]
+text = "Toimii kerran. Uuden koodin luominen peruu tämän."
+
+[card_new_code]
+text = "Uusi koodi"
+
+[card_none_found]
+text = "Viestissä ei ole Tinline-käyntikorttia"
+
+[card_them]
+text = "hän"
+
+[card_this_contact]
+text = "tämä yhteystieto"
+
+[card_chat_with]
+text = "Avataanko keskustelu: {name}?"
+
+[card_add_name]
+text = "Lisätäänkö {name}?"
+
+[card_already_contact]
+text = "Hän on jo yhteystiedoissasi."
+
+[card_found]
+text = "Tinline löysi hänen käyntikorttinsa."
+
+[card_open]
+text = "Avaa"
+
+[card_add]
+text = "Lisää"
+
+[groupsc_removed_you_flags]
+text = "Sinut poistettiin {flags} ylläpitäjän merkinnän jälkeen"
+
+[groupsc_admin_granted_other]
+text = "{by} nimesi ylläpitäjäksi: {sub}"
+
+[groupsc_admin_revoked_you]
+text = "{by} poisti ylläpitäjyytesi"
+
+[groupsc_admin_revoked_other]
+text = "{by} poisti ylläpitäjyyden: {sub}"
+
+[groupsc_host_added_you]
+text = "Yksi laitteistasi isännöi nyt ryhmää"
+
+[groupsc_host_added_other]
+text = "Jäsenen {sub} laite isännöi nyt ryhmää"
+
+[groupsc_host_removed_you]
+text = "Yksi laitteistasi lopetti ryhmän isännöinnin"
+
+[groupsc_host_removed_other]
+text = "Jäsenen {sub} laite lopetti ryhmän isännöinnin"
+
+[groupsc_left_you]
+text = "Poistuit tästä ryhmästä"
+
+[groupsc_hosts]
+one = "{count} isäntälaite"
+other = "{count} isäntälaitetta"
+
+[groupsc_open_link_copied]
+text = "Kopioitu. Kuka tahansa, jolla on linkki, voi liittyä, kun ryhmä on avoin."
+
+[groupsc_not_posted]
+text = "Ei julkaistu"
+
+[groupsc_req_accepted_messages]
+text = "{name} hyväksyi · vain viestit"
+
+[groupsc_req_accepted_connecting]
+text = "{name} hyväksyi · yhdistetään"
+
+[groupsc_an_admin]
+text = "Ylläpitäjä"
+
+[groupsc_invited_waiting_answer]
+text = "Kutsuttu · odotetaan vastausta"
+
+[groupsc_invite_expired]
+text = "Kutsu vanhentui"
+
+[groupsc_invite_blocked_you]
+text = "Esti sinut"
+
+[groupsc_err_not_member]
+text = "Et ole tämän ryhmän jäsen."
+
+[groupsc_err_you_block]
+text = "Olet estänyt hänet. Poista esto ensin pyytääksesi keskustelua."
+
+[groupsc_err_they_block]
+text = "Hän on estänyt sinut, joten et voi pyytää häneltä keskustelua."
+
+[groupsc_err_invite_invalid]
+text = "Kutsu ei ole enää voimassa. Pyydä uusi."
+
+[groupsc_err_refused]
+text = "Ei hyväksytty."
+
+[groupsc_err_locked]
+text = "Avaa lukitus ensin."
+
+[groupsc_err_not_found]
+text = "Ryhmää ei ole tällä puhelimella."
+
+[groupsc_err_generic]
+text = "Jokin meni pieleen"
+
+[groupsc_name_required]
+text = "Anna ryhmälle nimi."
+
+[groupsc_flag_recorded]
+text = "Merkintä tallennettu. Se on allekirjoitettu sinun nimissäsi, ja jäsen näkee sen."
+
+[groupsc_made_admin]
+text = "Nimetty ylläpitäjäksi."
+
+[groupsc_no_longer_admin]
+text = "Ei enää ylläpitäjä."
+
+[groupsc_left_group]
+text = "Poistuit ryhmästä. Sen viestit jäävät tänne."
+
+[groupsc_appointed]
+text = "Nimetty. Laite alkaa isännöidä, kun se suostuu."
+
+[groupsc_host_revoked]
+text = "Se laite ei enää isännöi ryhmää."
+
+[groupsc_host_agreed]
+text = "Tämä puhelin suostui isännöimään. Se alkaa isännöidä heti, kun ylläpitäjä on nimennyt sen."
+
+[groupsc_host_stopped]
+text = "Tämä puhelin lopetti ryhmän isännöinnin."
+
+[groupsc_call_host_asked]
+text = "Pyydetty. Laite välittää puhelut, kun se hyväksyy."
+
+[groupsc_call_host_revoked]
+text = "Se laite ei enää isännöi ryhmän puheluita."
+
+[groupsc_call_host_agreed]
+text = "Tämä laite isännöi nyt ryhmän puheluita."
+
+[groupsc_call_host_declined]
+text = "Tämä laite ei isännöi ryhmän puheluita."
+
+[groupsc_calls_here]
+text = "Tämä puhelin välittää nyt itse aloittamansa puhelut tässä ryhmässä."
+
+[groupsc_admins_only_on]
+text = "Nyt vain ylläpitäjät kirjoittavat. Kaikki voivat yhä lukea."
+
+[groupsc_admins_only_off]
+text = "Kaikki voivat taas kirjoittaa."
+
+[groupsc_req_declined]
+text = "Hylätty. {name} saa tiedon ”hylätty”."
+
+[groupsc_they]
+text = "Hän"
+
+[groupsc_unread]
+text = "{count} lukematonta"
+
+[groupsc_flags_of]
+text = "{filled}/{total} merkintää"
+
+[gcall_name]
+text = "Ryhmäpuhelu"
+
+[gcall_group_fallback]
+text = "Ryhmä"
+
+[gcall_finding_host]
+text = "Etsitään puheluisäntää…"
+
+[gcall_connecting]
+text = "Yhdistetään…"
+
+[gcall_reconnecting]
+text = "Yhdistetään uudelleen…"
+
+[gcall_already_in_call]
+text = "Olet jo puhelussa."
+
+[gcall_ended]
+text = "Puhelu päättyi"
+
+[gcall_ended_host_lost]
+text = "Puhelu päättyi — isäntä katosi"
+
+[gcall_battery_limited]
+text = "Akun varaus alle 15 %. Isännöintiä on rajoitettu: vain yksi henkilö kuuluu kerrallaan, eikä kukaan uusi voi liittyä."
+
+[gcall_no_host]
+text = "Puheluisäntää ei ole saatavilla"
+
+[gcall_cant_connect]
+text = "Yhteys ei onnistunut"
+
+[gcall_host_this_phone]
+text = "tämä puhelin"
+
+[gcall_host_device]
+text = "jäsenen {name} laite"
+
+[gcall_the_host]
+text = "puheluisäntä"
+
+[gcall_minimize]
+text = "Pienennä puhelu"
+
+[gcall_about_title]
+text = "Tietoja tästä puhelusta"
+
+[gcall_only_you]
+text = "Toistaiseksi vain sinä. Odotetaan muita."
+
+[gcall_people]
+one = "{count} henkilö puhelussa"
+other = "{count} henkilöä puhelussa"
+
+[gcall_more]
+text = "+{count} muuta"
+
+[gcall_ok]
+text = "OK"
+
+[gcall_you_host]
+text = "Olet puheluisäntä"
+
+[gcall_host_label]
+text = "Puheluisäntä: {host}"
+
+[gcall_muted]
+text = "Mykistetty"
+
+[gcall_mute]
+text = "Mykistä"
+
+[gcall_leave]
+text = "Poistu"
+
+[gcall_about_is_carrying]
+text = "välittää tätä puhelua. Kaikki puhelussa olevat yhdistävät siihen, ja se välittää äänen eteenpäin ja valitsee, kuka kuuluu, kun useampi puhuu yhtä aikaa."
+
+[gcall_about_carries]
+text = "välittää tämän puhelun. Kaikki puhelussa olevat yhdistävät siihen, ja se välittää äänen eteenpäin ja valitsee, kuka kuuluu, kun useampi puhuu yhtä aikaa."
+
+[gcall_about_encrypted]
+text = "Yhteytesi puheluisäntään on salattu, mutta puheluisäntä itse vastaanottaa äänen, joten se voi kuulla tämän puhelun. Luotat siihen puhelussa samalla tavalla kuin keskustelun isäntälaitteeseen viesteissä."
+
+[gcall_about_who]
+text = "Puheluisäntä on laite, jonka ryhmän ylläpitäjä valitsi ja joka suostui siihen. Se on erillään keskustelun isännöinnistä. Ylläpitäjät voivat vaihtaa puheluisäntiä ryhmän tiedoissa."
+
+[gcall_got_it]
+text = "Selvä"
+
+[gcall_in_call]
+text = "Olet puhelussa"
+
+[gcall_in_progress]
+text = "Puhelu käynnissä"
+
+[gcall_started_by]
+text = "Aloittaja: {name}"
+
+[gcall_open]
+text = "Avaa"
+
+[gcall_is_calling_group_desc]
+text = "{by} soittaa ryhmälle {group}"
+
+[gcall_started_call_desc]
+text = "{by} aloitti puhelun ryhmässä {group}"
+
+[gcall_open_group_desc]
+text = "Avaa {group}"
+
+[gcall_is_calling_group]
+text = "{name} soittaa ryhmälle"
+
+[gcall_started_call]
+text = "{name} aloitti puhelun"
+
+[gcall_dismiss]
+text = "Ohita"
+
+[gcall_mic_unavailable]
+text = "Mikrofoni ei ole käytettävissä - sinua ei kuulla"
+
+[gcall_mic_permission]
+text = "Mikrofonin lupa tarvitaan - sinua ei kuulla"
+
+[addcontact_title]
+text = "Lisää yhteystieto"
+
+[addcontact_title_new]
+text = "Uusi yhteystieto"
+
+[addcontact_title_request]
+text = "Yhteystietopyyntö"
+
+[addcontact_tab_code]
+text = "Koodi"
+
+[addcontact_tab_qr]
+text = "QR"
+
+[addcontact_point_camera]
+text = "Osoita hänen Tinline-koodiaan."
+
+[addcontact_my_qr_desc]
+text = "QR-koodisi"
+
+[addcontact_preparing]
+text = "Valmistellaan koodiasi…"
+
+[addcontact_reading_image]
+text = "Luetaan kuvaa…"
+
+[addcontact_let_them_scan]
+text = "Anna heidän skannata tämä Tinlinella."
+
+[addcontact_show_mine]
+text = "Näytä koodini"
+
+[addcontact_scan_theirs]
+text = "Skannaa hänen koodinsa"
+
+[addcontact_choose_image]
+text = "Valitse kuva"
+
+[addcontact_your_code]
+text = "Koodisi"
+
+[addcontact_new_code]
+text = "Uusi koodi"
+
+[addcontact_send_until]
+text = "Lähetä se kenelle tahansa, jonka kanssa haluat puhua, millä tahansa sovelluksella. Se toimii {date} asti."
+
+[addcontact_send]
+text = "Lähetä se kenelle tahansa, jonka kanssa haluat puhua, millä tahansa sovelluksella."
+
+[addcontact_copy_mine]
+text = "Kopioi koodini"
+
+[addcontact_or]
+text = "tai"
+
+[addcontact_their_code]
+text = "Hänen koodinsa"
+
+[addcontact_paste_theirs]
+text = "Liitä hänen koodinsa"
+
+[addcontact_message]
+text = "Viesti"
+
+[addcontact_open_profile]
+text = "Avaa profiili"
+
+[addcontact_paste_new]
+text = "Liitä uusi koodi"
+
+[addcontact_adding]
+text = "Lisätään…"
+
+[addcontact_add]
+text = "Lisää yhteystieto"
+
+[addcontact_line_connected]
+text = "Yhdistetty"
+
+[addcontact_line_connecting]
+text = "Yhdistetään"
+
+[addcontact_line_not_yet]
+text = "Ei vielä yhdistetty"
+
+[addcontact_clipboard_empty]
+text = "Leikepöytäsi on nyt tyhjä. Kun hänen koodinsa saapuu, kopioi se ja liitä tähän."
+
+[addcontact_own_code]
+text = "Tämä on oma koodisi. Lähetä se hänelle ja liitä hänen koodinsa tähän."
+
+[addcontact_code_expired]
+text = "Tämä koodi on vanhentunut (lähettäjä {name}). Pyydä häneltä uusi."
+
+[addcontact_not_a_code]
+text = "Tämä ei näytä Tinline-koodilta. Voisiko hän kopioida sen sinulle uudelleen?"
+
+[addcontact_no_qr]
+text = "QR-koodia ei löytynyt. Kokeile selkeämpää kuvaa."
+
+[addcontact_many_qr]
+text = "Useampi kuin yksi QR-koodi. Rajaa kuva haluamaasi koodiin."
+
+[addcontact_unreadable_image]
+text = "Kuvaa ei voitu lukea. Valitse toinen."
+
+[addcontact_share_failed]
+text = "Jakaminen ei auennut. Voit kopioida koodisi sen sijaan."
+
+[addcontact_why_blocked]
+text = "Estit henkilön {name}. Poista esto Yksityisyys-asetuksista ennen kuin lisäät hänet uudelleen."
+
+[addcontact_why_known]
+text = "{name} on jo yhteystiedoissasi."
+
+[addcontact_why_added]
+text = "Linjasi henkilöön {name} on auki. Sano hei."
+
+[addcontact_why_requested]
+text = "Pyyntö lähetetty. Linjasi aukeaa, kun {name} hyväksyy."
+
+[addcontact_why_slow]
+text = "Yritetään yhä. Henkilön {name} Tinlinen täytyy olla auki ja verkossa tätä varten."
+
+[addcontact_why_reaching]
+text = "Tavoitetaan henkilön {name} Tinlinea…"
+
+[addcontact_why_timeout]
+text = "Henkilön {name} Tinlinea ei tavoitettu. Sen täytyy olla auki ja verkossa, joten yritä uudelleen, kun {name} on paikalla."
+
+[addcontact_why_refused]
+text = "Henkilön {name} koodi ei ole enää voimassa. Hän on ehkä luonut uuden, joten pyydä henkilöltä {name} hänen uusin koodinsa."
+
+[addcontact_why_blocked_them]
+text = "Et voi lisätä henkilöä {name} juuri nyt. Hän on valinnut olla olematta yhteydessä täällä."
+
+[addcontact_why_offline]
+text = "Et ole verkossa. Yritä uudelleen, kun olet yhteydessä."
+
+[addcontact_why_check]
+text = "Onko tämä {name}? Jos et ole varma, tarkista asia häneltä ensin."
+
+[addcontact_read_camera]
+text = "Luettu kameralla"
+
+[addcontact_read_image]
+text = "Luettu kuvasta"
+
+[addcontact_accepted_yours]
+text = "Hyväksyi pyyntösi"
+
+[addcontact_has_your_code]
+text = "Hänellä on koodisi"
+
+[addcontact_inc_wants]
+text = "{name} haluaa lisätä sinut yhteystiedoksi. Hyväksymällä voitte lähettää viestejä ja soittaa toisillenne."
+
+[addcontact_inc_accepted]
+text = "{name} hyväksyi. Linjasi henkilöön {name} on auki. Sano hei."
+
+[addcontact_inc_open]
+text = "Linjasi henkilöön {name} on auki. Sano hei."
+
+[contact_calls_themselves]
+text = "Kutsuu itseään nimellä ”{name}”"
+
+[contact_blocked_you]
+text = "Esti sinut"
+
+[contact_message]
+text = "Viesti"
+
+[contact_rename]
+text = "Nimeä uudelleen"
+
+[contact_unblock]
+text = "Poista esto"
+
+[contact_block]
+text = "Estä"
+
+[contact_what_they_can_do]
+text = "Mitä {name} voi tehdä"
+
+[contact_allow_calls]
+text = "Salli puhelut"
+
+[contact_calls_sub_blocked]
+text = "Estetty: mitään ei tule perille, ennen kuin poistat eston."
+
+[contact_calls_sub_on]
+text = "{name} voi soittaa tähän puhelimeen ja muihin laitteisiisi."
+
+[contact_calls_sub_off]
+text = "Pois päältä. {name} voi lähettää sinulle viestejä; hänen puhelunsa eivät soi."
+
+[contact_calls_with]
+text = "Puhelut: {name}"
+
+[contact_history_local]
+text = "Historia pysyy vain tällä puhelimella."
+
+[contact_direct]
+text = "Suora"
+
+[contact_relayed]
+text = "Välitetty"
+
+[contact_name_here]
+text = "Nimi tällä puhelimella"
+
+[contact_rename_hint]
+text = "Vain sinä näet tämän. Hän kutsuu itseään yhä nimellä ”{name}”."
+
+[contact_use_their_name]
+text = "Käytä hänen nimeään"
+
+[contact_save]
+text = "Tallenna"
+
+[people_on]
+text = "Päällä"
+
+[people_off]
+text = "Pois"
+
+[people_selected]
+text = "Valittu"
+
+[people_hide_field]
+text = "Piilota {label}"
+
+[people_show_field]
+text = "Näytä {label}"
+
+[people_passphrase]
+text = "Salalause"
+
+[people_hide_passphrase]
+text = "Piilota salalause"
+
+[people_show_passphrase]
+text = "Näytä salalause"
+
+[people_switch_light]
+text = "Vaihda vaaleaan"
+
+[people_switch_dark]
+text = "Vaihda tummaan"
+
+[people_setup_progress]
+text = "Käyttöönoton edistyminen, vaihe {current}/{total}"
+
+[people_setup_progress_label]
+text = "Käyttöönoton edistyminen, vaihe {current}/{total}: {label}"
+
+[people_n_of_m]
+text = "{current}/{total}"
+
+[qr_camera_needed]
+text = "Tinline tarvitsee kameraa koodin lukemiseen."
+
+[qr_allow_camera]
+text = "Salli kamera"
+
+[call_speaker]
+text = "Kaiutin"
+
+[call_mute]
+text = "Mykistä"
+
+[call_muted]
+text = "Mykistetty"
+
+[call_camera]
+text = "Kamera"
+
+[call_end_call]
+text = "Lopeta puhelu"
+
+[call_end]
+text = "Lopeta"
+
+[call_flip_camera]
+text = "Käännä kamera"
+
+[call_flip]
+text = "Käännä"
+
+[call_audio_route]
+text = "Ääni: {route}"
+
+[call_reconnecting]
+text = "Yhdistetään uudelleen…"
+
+[call_reconnecting_plain]
+text = "Yhdistetään uudelleen"
+
+[call_back_continues]
+text = "Takaisin. Puhelu jatkuu"
+
+[call_message_continues]
+text = "Viesti. Puhelu jatkuu"
+
+[call_selected]
+text = "Valittu"
+
+[call_they]
+text = "Hän"
+
+[call_them]
+text = "hän"
+
+[call_default_name]
+text = "Tinline-puhelu"
+
+[call_notif_fallback_title]
+text = "Puhelu"
+
+[call_answer_video_label]
+text = "Video"
+
+[call_answer_with_video]
+text = "Vastaa videolla"
+
+[call_incoming_video]
+text = "Tinline-videopuhelu"
+
+[call_incoming_voice]
+text = "Tinline-äänipuhelu"
+
+[call_waiting_title]
+text = "{name} soittaa"
+
+[call_waiting_sub]
+text = "puhelusi aikana"
+
+[call_waiting_desc]
+text = "{name} soittaa puhelusi aikana"
+
+[call_waiting_end_answer]
+text = "Lopeta ja vastaa"
+
+[call_waiting_end_answer_desc]
+text = "Lopeta ja vastaa"
+
+[call_waiting_ends_with]
+text = "Lopettaa puhelusi:"
+
+[call_on_hold]
+text = "Pidossa, kun toinen puhelusi on käynnissä"
+
+[call_route_title]
+text = "Toista puhelu laitteella"
+
+[call_route_phone]
+text = "Puhelin"
+
+[call_route_headset]
+text = "Kuulokemikrofoni"
+
+[call_route_bluetooth]
+text = "Bluetooth"
+
+[call_route_other]
+text = "Muu"
+
+[call_route_bt_hint]
+text = "Salli lähellä olevat laitteet, niin Tinline voi näyttää kuulokkeidesi nimen ja vaihtaa kuulokkeiden välillä."
+
+[call_route_bt_button]
+text = "Näytä kuulokkeideni nimet"
+
+[call_route_relayed_hint]
+text = "Välitetty: suora linja ei ollut mahdollinen tässä verkossa, joten salattu välityspalvelin välittää puhelun. Se ei voi kuulla sinua."
+
+[video_camera_off]
+text = "Kamera on pois päältä: {name}"
+
+[video_connecting]
+text = "Yhdistetään videota…"
+
+[video_starting]
+text = "Käynnistetään videota…"
+
+[video_hd_on]
+text = "Terävämpi video päällä, enintään 540p"
+
+[video_hd_off]
+text = "Terävämpi video pois päältä"
+
+[video_hd_paused]
+text = "Terävämpi video päällä, tauolla heikon yhteyden vuoksi"
+
+[video_state_on]
+text = "Päällä"
+
+[video_state_off]
+text = "Pois"
+
+[video_camera_permission]
+text = "Kameran lupa tarvitaan - sinut kuullaan silti"
+
+[video_camera_unavailable]
+text = "Kamera ei ole käytettävissä"
+
+[call_about]
+text = "Tietoja tästä puhelusta"
+
+[call_about_reconnecting]
+text = "Tietoja tästä puhelusta. Yhdistetään uudelleen."
+
+[call_about_signal]
+text = "Tietoja tästä puhelusta. Signaali: {signal}, {path}."
+
+[call_path_direct]
+text = "suora"
+
+[call_path_relayed]
+text = "välitetty"
+
+[call_e2ee]
+text = "Salattu päästä päähän"
+
+[call_e2ee_direct]
+text = "Salattu päästä päähän · Suora"
+
+[call_e2ee_relayed]
+text = "Salattu päästä päähän · Välitetty"
+
+[call_info_e2ee]
+text = "Salattu päästä päähän."
+
+[call_info_enc_voice]
+text = "Äänesi salataan tällä laitteella ja puretaan vain henkilön {name} laitteella."
+
+[call_info_enc_video]
+text = "Äänesi ja kuvasi salataan tällä laitteella ja puretaan vain henkilön {name} laitteella."
+
+[call_info_signal_direct]
+text = "Signaali: {signal} · Suora"
+
+[call_info_signal_relayed]
+text = "Signaali: {signal} · Välitetty"
+
+[call_info_reconnect_body]
+text = "Yhteys katkesi hetkeksi. Tinline etsii tietä takaisin: {name}."
+
+[call_info_direct_body]
+text = "Puhelusi kulkee suoraan sinun laitteesi ja henkilön {name} laitteen välillä."
+
+[call_info_relay_body_voice]
+text = "Laitteesi eivät juuri nyt tavoita toisiaan suoraan, joten välityspalvelin välittää puhelun. Se ei voi kuunnella."
+
+[call_info_relay_body_video]
+text = "Laitteesi eivät juuri nyt tavoita toisiaan suoraan, joten välityspalvelin välittää puhelun. Se ei voi kuunnella eikä katsoa."
+
+[call_info_weak]
+text = "Linja on heikko, joten henkilön {name} ääni voi katkeilla."
+
+[call_info_rtt]
+text = "{rtt} ms edestakaisin · {loss} % kadonnut"
+
+[call_info_your_video]
+text = "Oma videosi"
+
+[call_info_their_video]
+text = "Hänen videonsa"
+
+[call_got_it]
+text = "Selvä"
+
+[call_strip_return]
+text = "Palaa puheluun: {name}"
+
+[call_strip_return_group]
+text = "Palaa ryhmäpuheluun: {name}"
+
+[call_strip_group_fallback]
+text = "Ryhmäpuhelu"
+
+[call_strip_desc]
+text = "{label}. {status}"
+
+[call_strip_return_video]
+text = "Palaa videopuheluun: {name}"
+
+[call_ended_title]
+text = "Puhelu päättyi"
+
+[call_direct]
+text = "Suora"
+
+[call_relayed]
+text = "Välitetty"
+
+[call_signal_label]
+text = "Signaali: {signal}"
+
+[call_again]
+text = "Soita uudelleen"
+
+[call_ended_autoclose]
+text = "Sulkeutuu itsestään 4 sekunnin kuluttua."
+
+[call_unreachable_title]
+text = "Yhteyttä ei saatu: {name}"
+
+[call_unreachable_body]
+text = "{name} voi olla poissa verkosta, kuuluvuusalueen ulkopuolella tai ei juuri nyt ota puheluita vastaan. Tinline ei voi jättää viestejä."
+
+[call_mic_needed_title]
+text = "Tinline ei voi käyttää mikrofonia"
+
+[call_mic_needed_body]
+text = "Ilman sitä sinua ei kuulla. Tinline kuuntelee vain puheluiden aikana — ei koskaan taustalla."
+
+[call_open_settings]
+text = "Avaa asetukset"
+
+[call_mic_needed_hint]
+text = "Siirry sitten kohtaan Luvat › Mikrofoni ja salli se."
+
+[call_mic_unavailable]
+text = "Mikrofoni ei ole käytettävissä - sinua ei kuulla"
+
+[call_mic_permission]
+text = "Mikrofonin lupa tarvitaan - sinua ei kuulla"
+
+[avail_title]
+text = "Tavoitettavissa puheluille"
+
+[avail_subtitle]
+text = "Linjasi pysyy auki taustalla, jotta puhelut soivat kuin tavallisessa puhelimessa."
+
+[avail_until]
+text = "Ei tavoitettavissa {time} asti."
+
+[avail_until_tomorrow]
+text = "Ei tavoitettavissa huomenna {time} asti."
+
+[avail_until_manual]
+text = "Ei tavoitettavissa, kunnes otat sen taas käyttöön."
+
+[avail_take_break]
+text = "PIDÄ TAUKO"
+
+[avail_one_hour]
+text = "1 tunniksi"
+
+[avail_tomorrow_morning]
+text = "Huomisaamuun asti"
+
+[avail_until_on]
+text = "Kunnes otan sen taas käyttöön"
+
+[avail_you]
+text = "sinä"
+
+[avail_note]
+text = "Kun olet poissa, soittajat näkevät ilmoituksen ”Yhteyttä ei saatu: {name}”. Mitään ei jää jonoon, eikä kenellekään kerrota syytä."
+
+[call_status_ringing]
+text = "Soi…"
+
+[call_status_calling]
+text = "Soitetaan…"
+
+[call_privacy_active]
+text = "Salattu päästä päähän. Äänesi salataan tällä laitteella ja puretaan vain henkilön {name} laitteella."
+
+[call_privacy_connecting]
+text = "Yhdistetään: {name}. Kun puhelu on yhdistetty, se on salattu päästä päähän."
+
+[history_kind_missed]
+text = "Vastaamaton"
+
+[history_kind_unreached]
+text = "Ei tavoitettu"
+
+[history_kind_away]
+text = "Kun et ollut tavoitettavissa"
+
+[history_kind_incoming]
+text = "Saapuva"
+
+[history_kind_outgoing]
+text = "Lähtevä"
+
+[history_detail_declined]
+text = "hylätty"
+
+[history_detail_cancelled]
+text = "peruttu"
+
+[history_detail_no_answer]
+text = "ei vastausta"
+
+[history_detail_busy]
+text = "varattu"
+
+[history_detail_answered_elsewhere]
+text = "vastattu toisella laitteella"
+
+[history_detail_declined_elsewhere]
+text = "hylätty toisella laitteella"
+
+[history_label_when]
+text = "{label} · {time}"
+
+[history_label_detail]
+text = "{label} · {detail}"
+
+[history_not_called]
+text = "Ei vielä puheluita"
+
+[history_last_call]
+text = "Viimeisin puhelu: {day}"
+
+[history_missed_call_when]
+text = "Vastaamaton puhelu · {time}"
+
+[history_unreached_when]
+text = "Ei tavoitettu · {time}"
+
+[history_day_today]
+text = "tänään"
+
+[history_day_yesterday]
+text = "eilen"
+
+[empty_hero_ready]
+text = "Linjasi on valmis"
+
+[empty_hero_open]
+text = "Linjasi on auki"
+
+[empty_hero_request_waiting]
+text = "Pyyntösi henkilölle {name} odottaa. Linjasi aukeaa, kun hän hyväksyy."
+
+[empty_hero_add_another]
+text = "Lisää toinen yhteystieto"
+
+[empty_hero_add_someone]
+text = "Lisää joku, jonka kanssa haluat puhua, niin voitte lähettää viestejä ja soittaa toisillenne."
+
+[empty_hero_add_first]
+text = "Lisää ensimmäinen yhteystietoni"
+
+[empty_hero_say_hello]
+text = "Sano hei henkilölle {name} milloin haluat."
+
+[empty_hero_message]
+text = "Viesti henkilölle {name}"
+
+[empty_hero_pick_someone]
+text = "Valitse joku ja sano hei milloin haluat."
+
+[empty_hero_start_chat]
+text = "Aloita keskustelu"
+
+[empty_quiet_chats]
+text = "Keskustelusi näkyvät täällä."
+
+[empty_quiet_unread]
+text = "Olet ajan tasalla."
+
+[empty_quiet_calls]
+text = "Soittamasi ja vastaanottamasi puhelut näkyvät täällä."
+
+[empty_quiet_contacts]
+text = "Lisäämäsi ihmiset näkyvät täällä."
+
+[components_hide_passphrase]
+text = "Piilota salalause"
+
+[components_show_passphrase]
+text = "Näytä salalause"
+
+[shell_incoming_call]
+text = "Saapuva puhelu"
+
+[shell_incoming_video_call]
+text = "Saapuva videopuhelu"
+
+[shell_calling_during_call]
+text = "Soittaa puhelusi aikana"
+
+[shell_settings]
+text = "Asetukset"
+
+[shell_ring_waiting_desc]
+text = "{name} soittaa puhelusi aikana"
+
+[shell_ring_desc]
+text = "{call}: {name}"
+
+[shell_ring_open]
+text = "Avaa puhelu: {name}"
+
+[shell_end_and_answer]
+text = "Lopeta ja vastaa"
+
+[shell_tab_chats]
+text = "Keskustelut"
+
+[shell_tab_groups]
+text = "Ryhmät"
+
+[shell_tab_calls]
+text = "Puhelut"
+
+[shell_tab_contacts]
+text = "Yhteystiedot"
+
+[shell_badge_waiting]
+one = "{count} odottaa"
+other = "{count} odottaa"
+
+[shell_badge_unread]
+one = "{count} lukematon"
+other = "{count} lukematonta"
+
+[mark_incoming_call]
+text = "Saapuva puhelu"
+
+[mark_calling]
+text = "Soitetaan"
+
+[mark_connecting]
+text = "Yhdistetään"
+
+[mark_in_call]
+text = "Puhelussa"
+
+[mark_reconnecting]
+text = "Yhdistetään uudelleen"
+
+[mark_starting_group_call]
+text = "Aloitetaan ryhmäpuhelua"
+
+[mark_in_group_call]
+text = "Ryhmäpuhelussa"
+
+[mark_no_connection]
+text = "Ei yhteyttä"
+
+[mark_connected]
+text = "Yhdistetty verkkoon"
+
+[home_offline_title]
+text = "Et ole verkossa"
+
+[home_offline_body]
+text = "Puhelusi tulevat taas perille, kun olet taas verkossa."
+
+[home_banner_no_ring_title]
+text = "Puhelut eivät soi"
+
+[home_banner_no_ring_body]
+text = "Tinlinen ilmoitukset ovat pois päältä."
+
+[home_banner_battery_title]
+text = "Puheluita voi jäädä huomaamatta laitteen ollessa levossa"
+
+[home_banner_battery_body]
+text = "Android rajoittaa Tinlinea taustalla."
+
+[home_banner_lock_title]
+text = "Puhelut eivät näy lukitusnäytöllä"
+
+[home_banner_lock_body]
+text = "Salli koko näytön puhelut, niin Tinline soi kuin puhelinsovellus."
+
+[home_banner_unavailable_title]
+text = "Et ole tavoitettavissa"
+
+[home_banner_unavailable_body]
+text = "Puhelut eivät soi, ennen kuin otat sen taas käyttöön."
+
+[home_banner_turn_on]
+text = "Ota käyttöön"
+
+[home_banner_fix]
+text = "Korjaa"
+
+[home_banner_allow]
+text = "Salli"
+
+[home_new_group]
+text = "Uusi ryhmä"
+
+[home_new_chat]
+text = "Uusi keskustelu"
+
+[home_recent_calls]
+text = "Viimeisimmät puhelut"
+
+[home_no_calls]
+text = "Ei vielä puheluita. Historia pysyy vain tällä puhelimella."
+
+[home_history_local]
+text = "Historia pysyy vain tällä puhelimella."
+
+[home_search_contacts]
+text = "Hae yhteystietoja"
+
+[home_close_search]
+text = "Sulje haku"
+
+[home_clear]
+text = "Tyhjennä"
+
+[home_call_name]
+text = "Soita: {name}"
+
+[home_first_title]
+text = "Lisää ensimmäinen yhteystietosi"
+
+[home_first_lead]
+text = "Näytä koodisi ystävälle tai kopioi ja lähetä se. Tai skannaa hänen koodinsa."
+
+[home_first_scan]
+text = "Skannaa hänen koodinsa"
+
+[home_first_paste]
+text = "Liitä hänen käyntikorttinsa"
+
+[home_first_waiting]
+text = "Odotetaan, että hän skannaa — pidä tämä auki."
+
+[chats_filter_all]
+text = "Kaikki"
+
+[chats_filter_unread]
+text = "Lukemattomat"
+
+[chats_draft]
+text = "Luonnos:"
+
+[chats_waiting]
+text = "Odottaa"
+
+[calls_what_declined]
+text = "Hylätty"
+
+[calls_what_no_answer]
+text = "Ei vastausta"
+
+[calls_what_cancelled]
+text = "Peruttu"
+
+[calls_what_unreachable]
+text = "Yhteys ei onnistunut"
+
+[calls_profile_desc]
+text = "Profiili: {name}"
+
+[calls_cant_call]
+text = "Ei voi soittaa"
+
+[calls_row_desc]
+text = "{name}, {what} puhelu, {time}. {action}"
+
+[calls_row_desc_duration]
+text = "{name}, {what} puhelu, {duration}, {time}. {action}"
+
+[calls_group_info_desc]
+text = "{name}, ryhmän tiedot"
+
+[calls_group_row_desc]
+text = "{name}, {what}, {time}. Aloita puhelu tai liity siihen"
+
+[contacts_find]
+text = "Etsi yhteystieto"
+
+[contacts_add]
+text = "Lisää yhteystieto"
+
+[contacts_add_sub]
+text = "Jaa koodisi tai liitä hänen koodinsa"
+
+[contacts_waiting_for_you]
+text = "Odottavat vastaustasi"
+
+[contacts_wants_to_add]
+text = "Haluaa lisätä sinut yhteystiedoksi"
+
+[contacts_accepting]
+text = "Hyväksymällä voitte lähettää viestejä ja soittaa toisillenne."
+
+[contacts_waiting_for_them]
+text = "Odottavat heidän vastaustaan"
+
+[contacts_request_sent]
+text = "Pyyntö lähetetty. Linjasi aukeaa, kun {name} hyväksyy."
+
+[contacts_none_found]
+text = "Yhteystiedoissasi ei ole ketään nimellä ”{query}”."
+
+[contacts_count]
+one = "{count} yhteystieto"
+other = "{count} yhteystietoa"
+
+[list_tick_waiting]
+text = "Odottaa lähetystä"
+
+[list_tick_sent]
+text = "Lähetetty"
+
+[list_tick_delivered]
+text = "Toimitettu kaikille"
+
+[list_tick_read]
+text = "Kaikki lukeneet"
+
+[list_tick_bad]
+text = "Ei toimitettu"
+
+[main_call_start_failed]
+text = "Puhelua ei voitu aloittaa"
+
+[main_joined_group]
+text = "Liityit ryhmään."
+
+[main_last_message]
+text = "Viimeisin viesti {time}"
+
+[main_told_blocked]
+text = "{name} saa tiedon, että estit hänet"
+
+[app_save_unsafe]
+text = "Tiliäsi ei voitu tallentaa turvallisesti tälle puhelimelle."
+
+[app_save_failed]
+text = "Tiliäsi ei voitu tallentaa tälle puhelimelle."
+
+[app_phrase_other_identity]
+text = "Nämä palautussanat kuuluvat toiselle identiteetille"
+
+[support_err_wrong_passphrase]
+text = "Se ei täsmännyt. Tarkista kirjoitusasu ja välilyönnit."
+
+[support_err_weak_passphrase]
+text = "Kirjoita salalause tai ohita se"
+
+[support_err_locked]
+text = "Lukittu — avaa lukitus salalauseellasi"
+
+[support_err_bad_phrase]
+text = "Nämä palautussanat eivät kelpaa"
+
+[support_err_account_exists]
+text = "Tili on jo tällä puhelimella"
+
+[support_err_in_call]
+text = "Lopeta ensin puhelusi"
+
+[support_err_generic]
+text = "Jokin meni pieleen"
+
+[debuglog_send_title]
+text = "Lähetä vianetsintäloki"
