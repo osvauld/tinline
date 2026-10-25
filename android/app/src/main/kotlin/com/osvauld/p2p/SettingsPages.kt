@@ -114,8 +114,9 @@ fun SettingsLanding(
         PfSec(stringResource(R.string.settings_appearance)) {
             val ctx = androidx.compose.ui.platform.LocalContext.current
             val look by Appearance.dark.collectAsState()
+            val cardRows1 = listOf(Triple(null as Boolean?, stringResource(R.string.settings_look_match), stringResource(R.string.settings_look_match_sub)), Triple(false, stringResource(R.string.settings_look_light), null), Triple(true, stringResource(R.string.settings_look_dark), null))
             PfCard {
-                listOf(Triple(null as Boolean?, stringResource(R.string.settings_look_match), stringResource(R.string.settings_look_match_sub)), Triple(false, stringResource(R.string.settings_look_light), null), Triple(true, stringResource(R.string.settings_look_dark), null)).forEach { (v, label, sub) ->
+                cardRows1.forEach { (v, label, sub) ->
                     act {
                         PfAct(label, onClick = { if (v == null) Appearance.follow(ctx) else Appearance.set(ctx, v) }, sub = sub, role = Role.RadioButton, minHeight = 56.dp,
                             leading = { PgRadio(look == v) })
@@ -170,10 +171,11 @@ fun NotificationsPage(missing: List<Need>, onBack: () -> Unit, fix: (Need) -> Un
         if (probs.isNotEmpty()) PfSec(first = true) { probs.forEach { p -> key(p.need) { PermBanner(p, { fix(p.need) }) } } }
         PfSec(stringResource(R.string.notif_alert_about), top = 12.dp) {
             Box(Modifier.alpha(if (off) .55f else 1f)) {
-                PfCard {
-                    listOf(Triple("messages", PgIcons.Chat, stringResource(R.string.notif_messages) to stringResource(R.string.notif_messages_sub)),
+                val cardRows2 = listOf(Triple("messages", PgIcons.Chat, stringResource(R.string.notif_messages) to stringResource(R.string.notif_messages_sub)),
                         Triple("calls", PgIcons.Phone, stringResource(R.string.notif_calls) to stringResource(R.string.notif_calls_sub)),
-                        Triple("groups", PgIcons.Users, stringResource(R.string.notif_groups) to stringResource(R.string.notif_groups_sub))).forEach { (k, icon, t) ->
+                        Triple("groups", PgIcons.Users, stringResource(R.string.notif_groups) to stringResource(R.string.notif_groups_sub)))
+                PfCard {
+                    cardRows2.forEach { (k, icon, t) ->
                         val on = prefs[k] ?: true
                         act {
                             PfAct(t.first, onClick = if (off) null else ({ AlertPrefs.set(ctx, k, !on) }), icon = icon, sub = t.second, role = Role.Switch, plain = true,
@@ -185,12 +187,13 @@ fun NotificationsPage(missing: List<Need>, onBack: () -> Unit, fix: (Need) -> Un
             PfNote(stringResource(R.string.notif_muted_note))
         }
         PfSec(stringResource(R.string.notif_permissions)) {
-            PfCard {
-                listOf(
+            val cardRows3 = listOf(
                     Triple(Need.Notifications, PgIcons.Bell, Triple(stringResource(R.string.settings_notifications), stringResource(R.string.notif_perm_allowed), stringResource(R.string.notif_perm_off))),
                     Triple(Need.Mic, PgIcons.Mic, Triple(stringResource(R.string.notif_perm_mic), stringResource(R.string.notif_perm_allowed), stringResource(R.string.notif_perm_mic_asked))),
                     Triple(Need.Battery, PgIcons.Battery, Triple(stringResource(R.string.notif_perm_battery), stringResource(R.string.notif_perm_unrestricted), stringResource(R.string.notif_perm_restricted))),
-                ).forEach { (need, icon, t) ->
+                )
+            PfCard {
+                cardRows3.forEach { (need, icon, t) ->
                     // The microphone is asked for when a call needs it (also "Ask every time"), so it is never a problem to fix here.
                     val ok = need !in missing || need == Need.Mic
                     act {
@@ -309,10 +312,11 @@ fun StoragePage(pictures: Long, files: Long, messages: Long, cache: Long, downlo
             }
         }
         PfSec(stringResource(R.string.settings_download_pictures)) {
-            PfCard {
-                listOf(Triple(uniffi.p2pcore.PictureDownload.ALWAYS, stringResource(R.string.settings_dl_always), stringResource(R.string.settings_dl_always_sub)),
+            val cardRows4 = listOf(Triple(uniffi.p2pcore.PictureDownload.ALWAYS, stringResource(R.string.settings_dl_always), stringResource(R.string.settings_dl_always_sub)),
                     Triple(uniffi.p2pcore.PictureDownload.WIFI, stringResource(R.string.settings_dl_wifi), stringResource(R.string.settings_dl_wifi_sub)),
-                    Triple(uniffi.p2pcore.PictureDownload.TAP, stringResource(R.string.settings_dl_tap), stringResource(R.string.settings_dl_tap_sub))).forEach { (d, label, sub) ->
+                    Triple(uniffi.p2pcore.PictureDownload.TAP, stringResource(R.string.settings_dl_tap), stringResource(R.string.settings_dl_tap_sub)))
+            PfCard {
+                cardRows4.forEach { (d, label, sub) ->
                     act { PfRadioRow(label, sub, download == d, { onDownload(d) }) }
                 }
             }
@@ -379,10 +383,11 @@ fun PrivacyLanding(blockedN: Int, msgOnly: Int, hasPassphrase: Boolean, onBack: 
         }
         // Public group §5: when group pictures load by themselves on this phone (group core, default Wi-Fi only).
         PfSec(stringResource(R.string.settings_group_pictures)) {
-            PfCard {
-                listOf(Triple(uniffi.p2pcore.PictureDownload.ALWAYS, stringResource(R.string.settings_dl_always), stringResource(R.string.settings_dl_always_sub)),
+            val cardRows5 = listOf(Triple(uniffi.p2pcore.PictureDownload.ALWAYS, stringResource(R.string.settings_dl_always), stringResource(R.string.settings_dl_always_sub)),
                     Triple(uniffi.p2pcore.PictureDownload.WIFI, stringResource(R.string.settings_dl_wifi), stringResource(R.string.settings_dl_wifi_sub)),
-                    Triple(uniffi.p2pcore.PictureDownload.TAP, stringResource(R.string.settings_dl_tap), stringResource(R.string.settings_dl_tap_sub))).forEach { (d, label, sub) ->
+                    Triple(uniffi.p2pcore.PictureDownload.TAP, stringResource(R.string.settings_dl_tap), stringResource(R.string.settings_dl_tap_sub)))
+            PfCard {
+                cardRows5.forEach { (d, label, sub) ->
                     act { PfRadioRow(label, sub, groupPictures == d, { onGroupPictures(d) }) }
                 }
             }
