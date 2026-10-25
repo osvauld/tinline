@@ -76,8 +76,8 @@ private struct GroupChatScreen: View {
 
     private var loading: some View {
         VStack(spacing: 0) {
-            GroupsBar(title: "Group", onBack: { dismiss() }, surface: false)
-            GroupsHint("Loading…").padding(24)
+            GroupsBar(title: tr("group_title"), onBack: { dismiss() }, surface: false)
+            GroupsHint(tr("group_loading")).padding(24)
             Spacer()
         }
     }
@@ -107,9 +107,9 @@ private struct GroupChatScreen: View {
                     ScrollView {
                         LazyVStack(spacing: 0) {
                             if o.older != nil {
-                                GroupsFlowButton(text: "Show earlier messages", style: .text, height: 40, fill: false) { session.background { session.ctl.older() } }
+                                GroupsFlowButton(text: tr("group_older"), style: .text, height: 40, fill: false) { session.background { session.ctl.older() } }
                             }
-                            if rows.isEmpty { GroupsSysLine(text: "No messages yet") }
+                            if rows.isEmpty { GroupsSysLine(text: tr("group_no_messages")) }
                             ForEach(Array(rows.enumerated()), id: \.element.id) { k, row in
                                 let newDay = k == 0 || !GroupsTime.sameDay(rows[k - 1].at, row.at)
                                 VStack(spacing: 0) {
@@ -133,7 +133,7 @@ private struct GroupChatScreen: View {
                     .scrollDismissesKeyboard(.interactively)
                 }
                 // The strip over the top of the list (gold): waiting for a host. It overlays, so nothing moves.
-                if waiting { GroupsStrip(text: "Waiting for a host. No group host is online; your posts are saved and send when one is.", icon: GroupsIcons.clock, warn: true) }
+                if waiting { GroupsStrip(text: tr("group_strip_waiting"), icon: GroupsIcons.clock, warn: true) }
             }
             footer(o)
         }
@@ -145,7 +145,7 @@ private struct GroupChatScreen: View {
         let running = snap.live[d.id] != nil || snap.activeGroupId == d.id
         let noHost = d.callHosts.isEmpty && !running
         return HStack(spacing: 2) {
-            GroupsBarIcon(icon: GroupsIcons.back, label: "Back to groups") { dismiss() }
+            GroupsBarIcon(icon: GroupsIcons.back, label: tr("group_back_to_groups")) { dismiss() }
             NavigationLink(value: GroupsRoute.info(id)) {
                 HStack(spacing: 10) {
                     GroupsAvatar(size: 36, dim: !GroupText.active(d.myRole))
@@ -161,20 +161,20 @@ private struct GroupChatScreen: View {
             }
             .buttonStyle(GroupsPressStyle())
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel("\(d.name). \(GroupText.status(d)). Group info")
+            .accessibilityLabel(tr("group_chat_header_desc", d.name, GroupText.status(d)))
             // The call button: start, join the running call, or return to mine (accent while one runs); dimmed while the
             // group has no call host and no call runs (a tap says why).
             if GroupText.active(d.myRole) {
                 GroupsBarIcon(icon: GroupsIcons.phone,
-                              label: snap.activeGroupId == d.id ? "Return to group call" : (running ? "Join group call" : "Start group call")) {
-                    if noHost { session.say("No call host yet: an admin can appoint one in Group info") }
+                              label: snap.activeGroupId == d.id ? tr("group_call_return") : (running ? tr("group_call_join") : tr("group_call_start"))) {
+                    if noHost { session.say(tr("group_call_no_host")) }
                     else { launcher.startOrJoin(groupId: d.id, onError: { session.say($0) }) }
                 }
                 .background { if running { Circle().fill(tin.grpAccentSoft) } }
                 .opacity(noHost ? 0.45 : 1)
             }
             NavigationLink(value: GroupsRoute.info(id)) { GroupsIconView(icon: GroupsIcons.info, size: 22, color: tin.ink).frame(width: 44, height: 44).contentShape(Circle()) }
-                .buttonStyle(GroupsPressStyle()).accessibilityLabel("Group info")
+                .buttonStyle(GroupsPressStyle()).accessibilityLabel(tr("group_info_desc"))
         }
         .padding(.horizontal, 6).padding(.vertical, 4).frame(height: 56).background(tin.sf)
     }
@@ -183,19 +183,19 @@ private struct GroupChatScreen: View {
         let d = o.detail
         switch d.myRole {
         case .removed:
-            GroupsBlockedFooter(hint: "You were removed and can’t send messages to this group.") {
+            GroupsBlockedFooter(hint: tr("group_removed_footer")) {
                 NavigationLink(value: GroupsRoute.removal(id)) {
-                    Text("Why?").font(TinType.button).foregroundStyle(tin.pr).frame(maxWidth: .infinity, minHeight: 48)
+                    Text(tr("group_why")).font(TinType.button).foregroundStyle(tin.pr).frame(maxWidth: .infinity, minHeight: 48)
                         .overlay { Capsule().strokeBorder(tin.ln2, lineWidth: 1) }.contentShape(Capsule())
                 }.buttonStyle(GroupsPressStyle())
             }
         case .left:
-            GroupsBlockedFooter(hint: "You left this group. Its messages stay here, read-only.") { EmptyView() }
+            GroupsBlockedFooter(hint: tr("group_left_footer")) { EmptyView() }
         default:
             let r = replyTo.flatMap { rid in o.messages.first(where: { $0.id == rid }) }
             GroupsComposer(
-                draft: $draft, placeholder: "Message",
-                ctxTitle: r.map { "Replying to " + ($0.outgoing ? "yourself" : groupsFirstName(session.name($0.authorDid, $0.authorName))) },
+                draft: $draft, placeholder: tr("group_message_placeholder"),
+                ctxTitle: r.map { $0.outgoing ? tr("group_replying_to_self") : tr("group_replying_to", groupsFirstName(session.name($0.authorDid, $0.authorName))) },
                 ctxText: r?.text ?? "", onCancelCtx: { replyTo = nil }
             ) {
                 if sending || draft.groupsIsBlank { return }
@@ -204,7 +204,7 @@ private struct GroupChatScreen: View {
                 let gid = id
                 session.exec({ session.ctl.post(gid, text: text, replyTo: reply) }) { res in
                     sending = false
-                    if case .failure(let e) = res { if draft.isEmpty { draft = text }; session.say(e.message.groupsIfBlank("Couldn’t send")) }
+                    if case .failure(let e) = res { if draft.isEmpty { draft = text }; session.say(e.message.groupsIfBlank(tr("group_cant_send"))) }
                 }
             }
         }
@@ -240,7 +240,7 @@ private struct GroupsUnreadDivider: View {
     let n: Int
     var body: some View {
         let line = tin.grpAccentInk.opacity(0.35)
-        let label = "\(n) new \(n == 1 ? "message" : "messages")"
+        let label = trn("group_unread_divider", n)
         HStack(spacing: 10) {
             Rectangle().fill(line).frame(height: 1)
             Text(label).font(.custom("Figtree", size: 11, relativeTo: .caption2).weight(.bold)).foregroundStyle(tin.grpAccentInk)
@@ -289,7 +289,7 @@ private struct GroupCallPill: View {
                 .overlay { Capsule().strokeBorder(tin.ln, lineWidth: 1) }.contentShape(Capsule())
             }
             .buttonStyle(GroupsPressStyle()).disabled(!enabled)
-            .accessibilityLabel("\(text), \(time). Start or join a call")
+            .accessibilityLabel(tr("group_call_line_desc", text, time))
             if r.missed || r.startedBy != me { Spacer(minLength: 0) }
         }.padding(.top, 10)
     }
@@ -312,13 +312,13 @@ private struct GroupsOngoingCallBanner: View {
             HStack(spacing: 12) {
                 GroupsIconView(icon: GroupsIcons.users, size: 20, color: fg)
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(mine ? "You’re in the call" : "Call in progress").font(.custom("Figtree", size: 15, relativeTo: .body).weight(.semibold)).foregroundStyle(fg).lineLimit(1)
-                    Text(mine ? snapshot.activeLine : "Started by \(groupsFirstName(session.name(call?.starterDid ?? "", "")))")
+                    Text(mine ? tr("group_call_you_in") : tr("group_call_in_progress")).font(.custom("Figtree", size: 15, relativeTo: .body).weight(.semibold)).foregroundStyle(fg).lineLimit(1)
+                    Text(mine ? snapshot.activeLine : tr("group_call_started_by", groupsFirstName(session.name(call?.starterDid ?? "", ""))))
                         .font(.custom("Figtree", size: 13, relativeTo: .footnote).monospacedDigit()).foregroundStyle(fg.opacity(0.85))
                 }
                 Spacer(minLength: 0)
                 Button { if mine { launcher.restore() } else { launcher.startOrJoin(groupId: gid, onError: { session.say($0) }) } } label: {
-                    Text(mine ? "Open" : "Join").font(.custom("Figtree", size: 13, relativeTo: .footnote).weight(.bold))
+                    Text(mine ? tr("group_call_open") : tr("group_join")).font(.custom("Figtree", size: 13, relativeTo: .footnote).weight(.bold))
                         .foregroundStyle(mine ? tin.grpAccentInk : tin.grpOnAccent)
                         .padding(.horizontal, 18).frame(minWidth: 72, minHeight: 36)
                         .background { if mine { Capsule().strokeBorder(tin.grpAccentInk, lineWidth: 1.5) } else { Capsule().fill(tin.grpAccent) } }
@@ -337,13 +337,12 @@ private struct HostAskCard: View {
     let d: GroupDetail
     var body: some View {
         if let by = GroupText.hostAsker(d) {
-            GroupsNoticeCard(bg: tin.warn, fg: tin.onWarn, title: "\(groupsFirstName(by)) asked this phone to host \(d.name)",
-                text: "A host keeps a full copy of the group, passes messages on while members’ phones sleep and learns members’ group addresses. " +
-                    "It needs to stay online and uses battery: a computer that stays on is a better host. Hosting doesn’t make you an admin.") {
+            GroupsNoticeCard(bg: tin.warn, fg: tin.onWarn, title: tr("group_host_asked_title", groupsFirstName(by), d.name),
+                text: tr("group_host_asked_text")) {
                 HStack(spacing: 8) {
-                    GroupsFlowButton(text: "Host here", style: .filled, height: 44) { session.exec({ session.ctl.acceptHost(d.id, accept: true) }, session.sayDone) }
-                    GroupsFlowButton(text: "Decline", style: .outlined, height: 44) {
-                        session.exec({ session.ctl.acceptHost(d.id, accept: false).map { _ in "Declined. The admins see no answer from this phone." } }, session.sayDone)
+                    GroupsFlowButton(text: tr("group_host_here"), style: .filled, height: 44) { session.exec({ session.ctl.acceptHost(d.id, accept: true) }, session.sayDone) }
+                    GroupsFlowButton(text: tr("group_decline"), style: .outlined, height: 44) {
+                        session.exec({ session.ctl.acceptHost(d.id, accept: false).map { _ in tr("group_done_host_declined") } }, session.sayDone)
                     }
                 }
             }
@@ -384,23 +383,23 @@ private struct GroupItem: View {
     @ViewBuilder private var removedItem: some View {
         if let r = d.removal {
             let names = r.flags.map { session.name($0.byDid, $0.byName) }.reduce(into: [String]()) { if !$0.contains($1) { $0.append($1) } }
-            let who = names.count > 1 ? names.dropLast().joined(separator: ", ") + " and " + names.last! : names.joined(separator: ", ")
-            GroupsNoticeCard(bg: tin.erc, fg: tin.onErc, title: "Removed after \(r.flags.count) admin flags",
-                text: "Flagged by \(who). You can still read what you received before; nothing new will arrive.") {
+            let who = names.count > 1 ? tr("group_names_and", names.dropLast().joined(separator: ", "), names.last!) : names.joined(separator: ", ")
+            GroupsNoticeCard(bg: tin.erc, fg: tin.onErc, title: trn("group_removed_card_title", r.flags.count),
+                text: tr("group_removed_card_text", who)) {
                 NavigationLink(value: GroupsRoute.removal(d.id)) {
-                    Text("See details").font(TinType.label.weight(.bold)).underline().foregroundStyle(tin.onErc).frame(minHeight: 48, alignment: .leading)
+                    Text(tr("group_see_details")).font(TinType.label.weight(.bold)).underline().foregroundStyle(tin.onErc).frame(minHeight: 48, alignment: .leading)
                 }.buttonStyle(GroupsPressStyle())
             }
-        } else { GroupsSysLine(text: "You were removed from this group") }
+        } else { GroupsSysLine(text: tr("group_preview_removed")) }
     }
 
     /// The tick and what a screen reader hears: waiting = the slack string; sent = one tick; delivered/read from the member receipts.
     private func tickOf(_ lines: [String]?) -> (ReceiptTick, String)? {
         if !m.outgoing { return nil }
-        if m.delivery == .waiting { return (ReceiptTick.waiting, "Waiting for a host") }
+        if m.delivery == .waiting { return (ReceiptTick.waiting, tr("group_waiting_for_host")) }
         var t = ReceiptTick.onlyHere
         if let r = receipt, r.tick != ReceiptTick.none { t = r.tick }
-        return (t, lines.map { $0.prefix(2).joined(separator: ", ") } ?? "Sent")
+        return (t, lines.map { $0.prefix(2).joined(separator: ", ") } ?? tr("group_receipt_sent"))
     }
 
     /// Runs: same author, same day, within 5 minutes (Conversation.svelte `join`).
@@ -419,7 +418,7 @@ private struct GroupItem: View {
                 Button { shown = true } label: {
                     HStack(spacing: 8) {
                         GroupsIconView(icon: GroupsIcons.off, size: 18, color: tin.ink2)
-                        Text("Message from \(groupsFirstName(name)), who you blocked · Show").font(TinType.bodyM).foregroundStyle(tin.ink2).multilineTextAlignment(.leading)
+                        Text(tr("group_blocked_message", groupsFirstName(name))).font(TinType.bodyM).foregroundStyle(tin.ink2).multilineTextAlignment(.leading)
                     }
                     .padding(.horizontal, 12).frame(minHeight: 48).background(tin.sf2, in: SmoothRoundedRectangle(cornerRadius: 18))
                 }.buttonStyle(GroupsPressStyle())
@@ -429,7 +428,7 @@ private struct GroupItem: View {
             let p = joined(i > 0 ? all[i - 1] : nil, m), n = joined(m, i + 1 < all.count ? all[i + 1] : nil)
             let pos: BubblePos = p && n ? .mid : (p ? .last : (n ? .first : .solo))
             let qr = m.replyTo.flatMap { rid in all.first(where: { $0.id == rid }) }
-            let qWho = qr.map { $0.outgoing ? "You" : groupsFirstName(session.name($0.authorDid, $0.authorName)) }
+            let qWho = qr.map { $0.outgoing ? groupsYou : groupsFirstName(session.name($0.authorDid, $0.authorName)) }
             let qColor = qr?.outgoing == true ? tin.grpAccentInk : (qr.map { groupsAuthorColor($0.authorDid, tin) } ?? tin.grpAccentInk)
             // Waiting for a host = the slack string; sent = one tick; every eligible member signed delivered = two ticks; every
             // one read = the read ink (core's GroupReceiptStatus). Host storage is never members' delivery/read.
@@ -438,20 +437,20 @@ private struct GroupItem: View {
             VStack(alignment: m.outgoing ? .trailing : .leading, spacing: 0) {
                 GroupsFractionWidth(fraction: 0.78, trailing: m.outgoing) {
                     GroupsBubble(text: m.text, pos: pos, mine: m.outgoing, time: GroupsTime.clock(m.at), tick: tick,
-                                 sender: m.outgoing || p ? nil : groupsFirstName(name) + (m.beforeRemoval ? " · removed" : ""),
+                                 sender: m.outgoing || p ? nil : m.beforeRemoval ? tr("group_sender_removed", groupsFirstName(name)) : groupsFirstName(name),
                                  senderColor: m.beforeRemoval ? tin.ink2 : groupsAuthorColor(m.authorDid, tin),
-                                 quote: m.replyTo == nil ? nil : (qWho, qColor, qr?.text ?? "Original message unavailable"))
+                                 quote: m.replyTo == nil ? nil : (qWho, qColor, qr?.text ?? tr("group_quote_unavailable")))
                         .onTapGesture { if lines != nil { info.toggle() } }
-                        .contextMenu { if GroupText.active(d.myRole) { Button("Reply", action: onReply) } }
+                        .contextMenu { if GroupText.active(d.myRole) { Button(tr("group_reply"), action: onReply) } }
                 }
                 if m.outgoing && m.delivery == .waiting {
                     HStack(spacing: 4) {
                         GroupsIconView(icon: GroupsIcons.clock, size: 12, color: tin.grpGoldInk)
-                        Text("Waiting for a host").font(.custom("Figtree", size: 12, relativeTo: .caption).weight(.semibold)).foregroundStyle(tin.grpGoldInk)
+                        Text(tr("group_waiting_for_host")).font(.custom("Figtree", size: 12, relativeTo: .caption).weight(.semibold)).foregroundStyle(tin.grpGoldInk)
                     }.padding(.top, 3).padding(.trailing, 2)
                 }
                 if m.beforeRemoval {
-                    Text("Written before \(groupsFirstName(name)) was removed").font(.custom("Figtree", size: 11, relativeTo: .caption2)).foregroundStyle(tin.ink2).padding(.top, 3)
+                    Text(tr("group_written_before", groupsFirstName(name))).font(.custom("Figtree", size: 11, relativeTo: .caption2)).foregroundStyle(tin.ink2).padding(.top, 3)
                 }
                 if info, let lines {
                     Text(lines.joined(separator: "\n")).font(.custom("Figtree", size: 12, relativeTo: .caption)).foregroundStyle(tin.ink2)
@@ -466,14 +465,14 @@ private struct GroupItem: View {
 
 /// "Delivered n/N", "Read n/N", then who (eligible members by level; kept statements of people no longer counted). Same words as desktop.
 func groupReceiptLines(_ r: GroupReceiptStatus) -> [String] {
-    func who(_ m: GroupMemberReceipts) -> String { m.name.isEmpty ? "Someone" : groupsFirstName(m.name) }
-    var out = ["Delivered \(r.delivered)/\(r.eligible)", "Read \(r.read)/\(r.eligible)"]
-    for (label, want) in [("Read", ReceiptLevel.read), ("On their device", .delivered), ("Not yet", .unconfirmed)] {
+    func who(_ m: GroupMemberReceipts) -> String { m.name.isEmpty ? tr("group_someone") : groupsFirstName(m.name) }
+    var out = [tr("group_receipt_delivered", Int(r.delivered), String(r.eligible)), tr("group_receipt_read", Int(r.read), String(r.eligible))]
+    for (key, want) in [("group_receipt_level_read", ReceiptLevel.read), ("group_receipt_level_delivered", .delivered), ("group_receipt_level_not_yet", .unconfirmed)] {
         let n = r.members.filter { $0.eligible && $0.receipts.level == want }.map(who)
-        if !n.isEmpty { out.append("\(label): \(n.joined(separator: ", "))") }
+        if !n.isEmpty { out.append(tr(key, n.joined(separator: ", "))) }
     }
     let gone = r.members.filter { !$0.eligible }.map(who)
-    if !gone.isEmpty { out.append("Also confirmed: \(gone.joined(separator: ", "))") }
+    if !gone.isEmpty { out.append(tr("group_receipt_also", gone.joined(separator: ", "))) }
     return out
 }
 
@@ -589,7 +588,7 @@ private struct GroupsComposer: View {
                     }
                     Spacer(minLength: 0)
                     Button(action: onCancelCtx) { GroupsIconView(icon: GroupsIcons.x, size: 18, color: tin.ink2).frame(width: 44, height: 44) }
-                        .accessibilityLabel("Cancel reply")
+                        .accessibilityLabel(tr("group_cancel_reply"))
                 }
                 .padding(.leading, 13).frame(minHeight: 44).background(tin.sf2, in: SmoothRoundedRectangle(cornerRadius: 12))
                 .padding(.bottom, 6).padding(.trailing, 50)
@@ -610,7 +609,7 @@ private struct GroupsComposer: View {
                     }
                     .frame(width: 48, height: 48).opacity(empty ? 0.38 : 1).contentShape(Circle())
                 }
-                .buttonStyle(GroupsPressStyle()).disabled(empty).accessibilityLabel("Send")
+                .buttonStyle(GroupsPressStyle()).disabled(empty).accessibilityLabel(tr("group_send"))
             }
         }
         .padding(.init(top: 8, leading: 10, bottom: 10, trailing: 10)).background(tin.bg)

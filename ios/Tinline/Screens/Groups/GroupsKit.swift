@@ -330,7 +330,7 @@ struct GroupsBadge: View {
                 .padding(.horizontal, 5).frame(minWidth: 18, minHeight: 18)
                 .background { if !muted { RoundedRectangle(cornerRadius: 9).fill(tin.grpAccent) } }
                 .overlay { if muted { RoundedRectangle(cornerRadius: 9).strokeBorder(tin.ln, lineWidth: 1) } }
-                .accessibilityLabel("\(count) unread")
+                .accessibilityLabel(trn("group_unread_badge_desc", count))
         }
     }
 }
@@ -559,7 +559,7 @@ struct GroupsCallLine: View {
 struct GroupsJoinChip: View {
     @Environment(\.tin) private var tin
     var body: some View {
-        Text("Join").font(.custom("Figtree", size: 11, relativeTo: .caption2).weight(.bold)).foregroundStyle(tin.grpOnAccent)
+        Text(tr("group_join")).font(.custom("Figtree", size: 11, relativeTo: .caption2).weight(.bold)).foregroundStyle(tin.grpOnAccent)
             .padding(.horizontal, 11).padding(.vertical, 2).background(tin.grpAccent, in: RoundedRectangle(cornerRadius: 12))
             .accessibilityHidden(true)
     }
@@ -598,7 +598,7 @@ struct GroupsFlagMeter: View {
                     .animation(GroupsMotion.enterAnim(reduced), value: filled)
             }
         }
-        .accessibilityElement(children: .ignore).accessibilityLabel(desc ?? "\(filled) of \(total) flags")
+        .accessibilityElement(children: .ignore).accessibilityLabel(desc ?? tr("group_flags_count_desc", String(filled), String(total)))
     }
     private func color(_ i: Int) -> Color {
         if i < filled { return tin.grpDangerBtn }
@@ -696,8 +696,8 @@ enum GroupsTime {
     /// Day pill in a conversation: "Today", "Yesterday", else "Thursday 8 Oct" (with the year when it isn't this year).
     static func dayLabel(_ ms: UInt64, _ nowMs: UInt64) -> String {
         let n = daysAgo(ms, nowMs)
-        if n <= 0 { return "Today" }
-        if n == 1 { return "Yesterday" }
+        if n <= 0 { return tr("group_today") }
+        if n == 1 { return tr("group_yesterday") }
         let sameYear = cal.component(.year, from: date(ms)) == cal.component(.year, from: date(nowMs))
         return format(sameYear ? "EEEE d MMM" : "EEEE d MMM yyyy", ms)
     }
