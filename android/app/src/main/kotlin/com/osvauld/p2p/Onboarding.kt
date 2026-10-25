@@ -33,6 +33,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -95,8 +97,10 @@ private fun progressOf(step: Step, restoring: Boolean, linking: Boolean, forgot:
 }
 
 private val STEP_LABEL = mapOf(
-    Step.Name to "Your nickname", Step.Pass to "Passphrase", Step.Phrase to "Recovery phrase", Step.Device to "Device name", Step.Terms to "Terms",
-    Step.Perms to "Permissions", Step.Restore to "Restore account", Step.LinkName to "Device name", Step.LinkQr to "Link to your account", Step.LinkPass to "Passphrase",
+    Step.Name to R.string.onboarding_step_nickname, Step.Pass to R.string.onboarding_step_passphrase, Step.Phrase to R.string.onboarding_step_phrase,
+    Step.Device to R.string.onboarding_step_device, Step.Terms to R.string.onboarding_step_terms, Step.Perms to R.string.onboarding_step_permissions,
+    Step.Restore to R.string.onboarding_step_restore, Step.LinkName to R.string.onboarding_step_device, Step.LinkQr to R.string.onboarding_step_link,
+    Step.LinkPass to R.string.onboarding_step_passphrase,
 )
 
 /**
@@ -114,6 +118,7 @@ fun OnboardingFlow(
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     val addState = remember { app.adding.value }
+    val otherDevice = stringResource(R.string.onboarding_other_device)
     val adding = addState != null
     var step by rememberSaveable { mutableStateOf(when { forgot -> Step.Restore; adding -> if (addState.link) Step.LinkName else if (addState.restore) Step.Restore else Step.Name; else -> Step.Welcome }) }
     var dir by remember { mutableIntStateOf(1) }
@@ -133,7 +138,7 @@ fun OnboardingFlow(
     // Linking to an existing account: set once the account has arrived (the peer's name, for the Syncing screen).
     var linkedPeer by remember { mutableStateOf<String?>(null) }
     var linkedName by remember { mutableStateOf("") }
-    var label by rememberSaveable { mutableStateOf("Personal phone") }
+    var label by rememberSaveable { mutableStateOf(ctx.getString(R.string.onboarding_device_personal)) }
     // "Copy my words" was pressed: the step keeps "I've saved them" across recomposition (gate.phraseShown).
     var phraseCopied by rememberSaveable { mutableStateOf(false) }
     // The identity appeared some other way (debug hook, a restored process): leave onboarding.
@@ -209,7 +214,7 @@ fun OnboardingFlow(
     val prog = progressOf(step, restoring, linking, forgot, adding)
     GateStage(step, dir) { s ->
         Column(Modifier.fillMaxSize()) {
-            val head: @Composable (onBack: (() -> Unit)?) -> Unit = { b -> GateHead(b, if (s == step) prog else progressOf(s, restoring, linking, forgot, adding), STEP_LABEL[s] ?: "") }
+            val head: @Composable (onBack: (() -> Unit)?) -> Unit = { b -> GateHead(b, if (s == step) prog else progressOf(s, restoring, linking, forgot, adding), STEP_LABEL[s]?.let { stringResource(it) } ?: "") }
             when (s) {
                 Step.Welcome -> { head(null); WelcomeStep(adding = false,
                     onCreate = { restoring = false; linking = false; go(Step.Name) },
@@ -221,7 +226,7 @@ fun OnboardingFlow(
                 Step.LinkName -> { head { if (adding) cancelAdd() else back(Step.Choose) }
                     DeviceStep(label, { label = it; error = null }, false, null, onNext = { label = label.trim(); go(Step.LinkQr) }) }
                 Step.LinkQr -> LinkSession(app, newDevice = true, label = label.trim(), onClose = { back(Step.LinkName) }, onDone = { d ->
-                    created = true; linkedPeer = d.peer.ifBlank { "your other device" }; linkedName = d.name; go(Step.LinkPass)
+                    created = true; linkedPeer = d.peer.ifBlank { otherDevice }; linkedName = d.name; go(Step.LinkPass)
                 }, progress = prog)
                 Step.LinkPass -> { head(null); PassStep(PassKind.Link, pass, { pass = it; error = null }, busy, error,
                     onNext = {
@@ -243,8 +248,8 @@ fun OnboardingFlow(
                 Step.Restore -> { head { if (forgot) onCancelForgot() else if (adding) cancelAdd() else back(Step.Choose) }
                     RestoreStep(
                         error = error,
-                        warning = if (forgot) "Restoring keeps the same identity: use the recovery phrase of this account. You’ll set a new passphrase."
-                        else "Next, you’ll choose a passphrase for this account.",
+                        warning = if (forgot) stringResource(R.string.onboarding_restore_warning_forgot)
+                        else stringResource(R.string.onboarding_restore_warning_next),
                         onError = { error = it },
                         onSubmit = { w -> words = w; error = null; go(if (forgot) Step.Pass else Step.Name) },
                     ) }
@@ -285,9 +290,9 @@ fun OnboardingFlow(
             }
         }
     }
-    if (existsDialog) TinDialog("Already on this phone", { existsDialog = false }, "Choose account", { existsDialog = false; chooseAccount = true },
-        dismiss = "Not now") {
-        DialogText("That recovery phrase belongs to an account that is already here. Switch to it instead of adding it again.")
+    if (existsDialog) TinDialog(stringResource(R.string.onboarding_exists_title), { existsDialog = false }, stringResource(R.string.onboarding_exists_choose), { existsDialog = false; chooseAccount = true },
+        dismiss = stringResource(R.string.common_not_now)) {
+        DialogText(stringResource(R.string.onboarding_exists_body))
     }
     if (chooseAccount) AccountSheet(app, onDismiss = { chooseAccount = false }, onPick = { did ->
         chooseAccount = false; busy = true
@@ -309,21 +314,23 @@ private fun WelcomeStep(adding: Boolean, onCreate: () -> Unit, onHave: () -> Uni
     // the emergency note at the bottom, the two choices stacked full width with "Create my account" on top (thumb reach).
     GateStep(
         fill = true,
-        title = if (adding) "Add an account" else "A direct line to your people",
-        lead = if (adding) "Create a new account or bring one you already have.\nYour current account stays on this phone."
-        else "Tinline connects your phone straight to theirs.\nYou just need a nickname. Encrypted end to end.",
+        title = if (adding) stringResource(R.string.onboarding_welcome_title_adding) else stringResource(R.string.onboarding_welcome_title),
+        lead = if (adding) stringResource(R.string.onboarding_welcome_lead_adding)
+        else stringResource(R.string.onboarding_welcome_lead),
         foot = {
-            GBtn("Create my account", onCreate)
-            GBtn("I have an account", onHave, kind = GKind.Secondary)
-            if (adding) GBtn("Cancel", onCancel, kind = GKind.Text)
+            GBtn(stringResource(R.string.onboarding_create_account), onCreate)
+            GBtn(stringResource(R.string.onboarding_have_account), onHave, kind = GKind.Secondary)
+            if (adding) GBtn(stringResource(R.string.common_cancel), onCancel, kind = GKind.Text)
         },
     ) {
         Box(Modifier.fillMaxWidth().weight(1f).heightIn(min = 120.dp), contentAlignment = Alignment.Center) {
-            TinMark(120.dp, live = true, lineColor = true, description = "Tinline")
+            TinMark(120.dp, live = true, lineColor = true, description = stringResource(R.string.app_name))
         }
+        val noEmergency = stringResource(R.string.onboarding_not_emergency)
+        val dialerNote = stringResource(R.string.onboarding_dialer_note)
         Text(buildAnnotatedString {
-            pushStyle(SpanStyle(fontWeight = FontWeight.Bold)); append("Not for emergency calls."); pop()
-            append("\nUse your phone’s dialer to reach emergency services.")
+            pushStyle(SpanStyle(fontWeight = FontWeight.Bold)); append(noEmergency); pop()
+            append("\n" + dialerNote)
         }, style = PgType.sub, color = c.ink2)
     }
 }
@@ -332,12 +339,12 @@ private fun WelcomeStep(adding: Boolean, onCreate: () -> Unit, onHave: () -> Uni
 
 @Composable
 private fun ChooseStep(onLink: () -> Unit, onRestore: () -> Unit) {
-    GateStep("Use your account here", fill = true, lead = "Your account is its recovery phrase, so you can bring it to this phone two ways.") {
+    GateStep(stringResource(R.string.onboarding_choose_title), fill = true, lead = stringResource(R.string.onboarding_choose_lead)) {
         // Touch: the choices sit at the bottom, in thumb reach, where Welcome's buttons were.
         Spacer(Modifier.weight(1f))
         Column(Modifier.padding(bottom = 8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            ChooseOpt(PgIcons.Qr, "Link my other device", "Scan a code on a device that already has your account. Your contacts and chats come along.", onLink)
-            ChooseOpt(PgIcons.Key, "Restore my account", "Type your 24 recovery words. This phone starts with an empty contact list.", onRestore)
+            ChooseOpt(PgIcons.Qr, stringResource(R.string.onboarding_choose_link), stringResource(R.string.onboarding_choose_link_sub), onLink)
+            ChooseOpt(PgIcons.Key, stringResource(R.string.onboarding_choose_restore), stringResource(R.string.onboarding_choose_restore_sub), onRestore)
         }
     }
 }
@@ -374,23 +381,23 @@ private fun DoneStep(name: String, onAdd: () -> Unit, onNotNow: () -> Unit, pers
         if (person != null) Cues.line()
     }
     GateStep(
-        title = if (first.isNotBlank()) "Your line is open, $first" else "Your line is open",
-        lead = "Scan their code or share yours, and you can call each other.",
+        title = if (first.isNotBlank()) stringResource(R.string.onboarding_done_title_named, first) else stringResource(R.string.onboarding_done_title),
+        lead = stringResource(R.string.onboarding_done_lead),
         center = true,
         hero = { Box(Modifier.padding(top = 28.dp, bottom = 4.dp)) {
             if (person != null) ViewablePgAvatar(name, 0, 96.dp, person)
             else TinMark(96.dp, state = if (taut) MarkState.Taut else MarkState.Slack, live = true, lineColor = true, spring = MarkSpring.Line,
-                onTug = { n -> if (n == 1) Cues.line() }, description = "Tinline")
+                onTug = { n -> if (n == 1) Cues.line() }, description = stringResource(R.string.app_name))
         } },
         foot = {
-            GBtn("Add my first contact", onAdd)
-            GBtn("Not now", onNotNow, kind = GKind.Text)
+            GBtn(stringResource(R.string.onboarding_done_add_contact), onAdd)
+            GBtn(stringResource(R.string.common_not_now), onNotNow, kind = GKind.Text)
         },
     ) {
         // Two gentle "good to know" notes, said as tips at the happy moment, not as warnings.
         Column(Modifier.widthIn(max = 420.dp).padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            DoneTip(PgIcons.Devices, "Two devices are better than one", "Link another device when you can, so losing one never locks you out.")
-            DoneTip(PgIcons.Laptop, "Groups are hosted on a computer", "To start a group, add Tinline on a computer that can stay on.")
+            DoneTip(PgIcons.Devices, stringResource(R.string.onboarding_tip_devices_title), stringResource(R.string.onboarding_tip_devices_body))
+            DoneTip(PgIcons.Laptop, stringResource(R.string.onboarding_tip_groups_title), stringResource(R.string.onboarding_tip_groups_body))
         }
     }
 }
@@ -412,9 +419,9 @@ private fun DoneTip(icon: ImageVector, title: String, body: String) {
 @Composable
 internal fun NameStep(name: String, onChange: (String) -> Unit, onNext: () -> Unit) {
     val next = { if (name.isNotBlank()) onNext() }
-    GateStep("What should people call you?", lead = "Only the people you add will see it.",
-        foot = { GNextRow({ GNext("Continue", next, enabled = name.isNotBlank()) }) }) {
-        GField(name, onChange, "Your nickname", hint = "You can change it any time in Settings.", focus = rememberAutofocus(),
+    GateStep(stringResource(R.string.onboarding_name_title), lead = stringResource(R.string.onboarding_name_lead),
+        foot = { GNextRow({ GNext(stringResource(R.string.common_continue), next, enabled = name.isNotBlank()) }) }) {
+        GField(name, onChange, stringResource(R.string.onboarding_step_nickname), hint = stringResource(R.string.onboarding_name_hint), focus = rememberAutofocus(),
             // ASCII text requests the same number-row layout as the passphrase without masking the nickname.
             keyboard = KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Ascii, imeAction = ImeAction.Done), onDone = next)
     }
@@ -447,20 +454,20 @@ private enum class PassKind { Create, Restore, Forgot, Link, Save }
 @Composable
 private fun PassStep(kind: PassKind, pass: String, onPass: (String) -> Unit, busy: Boolean, error: String?, onNext: () -> Unit, onSkip: () -> Unit) {
     val c = Tin.c
-    val title = when (kind) { PassKind.Forgot -> "Choose a new passphrase"; PassKind.Link -> "Protect this phone"; else -> "Add a passphrase" }
-    val cta = when (kind) { PassKind.Forgot, PassKind.Restore -> "Restore account"; PassKind.Link -> "Add passphrase"; PassKind.Save -> "Save account"; PassKind.Create -> "Continue" }
+    val title = when (kind) { PassKind.Forgot -> stringResource(R.string.onboarding_pass_title_forgot); PassKind.Link -> stringResource(R.string.onboarding_pass_title_link); else -> stringResource(R.string.onboarding_pass_title) }
+    val cta = when (kind) { PassKind.Forgot, PassKind.Restore -> stringResource(R.string.onboarding_step_restore); PassKind.Link -> stringResource(R.string.onboarding_pass_cta_link); PassKind.Save -> stringResource(R.string.onboarding_pass_cta_save); PassKind.Create -> stringResource(R.string.common_continue) }
     val submit = { if (pass.isNotEmpty() && !busy) onNext() }
     // Says what the lock gives you (tone pass 2026-10-13); the way back comes before anything that sounds final.
-    GateStep(title, lead = "Optional. A lock, so only you can open Tinline on this phone.", foot = {
-        val skip: (@Composable () -> Unit)? = if (kind != PassKind.Save) ({ GBtn("Skip for now", onSkip, kind = GKind.Text, enabled = !busy, fill = false) }) else null
-        if (kind == PassKind.Create) GNextRow({ GNext(if (busy) "Encrypting…" else cta, submit, enabled = pass.isNotEmpty(), busy = busy) }, skip)
-        else { GBtn(if (busy) "Encrypting…" else cta, submit, enabled = pass.isNotEmpty(), busy = busy); skip?.invoke() }
+    GateStep(title, lead = stringResource(R.string.onboarding_pass_lead), foot = {
+        val skip: (@Composable () -> Unit)? = if (kind != PassKind.Save) ({ GBtn(stringResource(R.string.onboarding_pass_skip), onSkip, kind = GKind.Text, enabled = !busy, fill = false) }) else null
+        if (kind == PassKind.Create) GNextRow({ GNext(if (busy) stringResource(R.string.onboarding_pass_encrypting) else cta, submit, enabled = pass.isNotEmpty(), busy = busy) }, skip)
+        else { GBtn(if (busy) stringResource(R.string.onboarding_pass_encrypting) else cta, submit, enabled = pass.isNotEmpty(), busy = busy); skip?.invoke() }
     }) {
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            GField(pass, onPass, "Passphrase", secret = true, enabled = !busy, focus = rememberAutofocus(), keyboard = KeyboardOptions(imeAction = ImeAction.Done), onDone = submit)
+            GField(pass, onPass, stringResource(R.string.onboarding_step_passphrase), secret = true, enabled = !busy, focus = rememberAutofocus(), keyboard = KeyboardOptions(imeAction = ImeAction.Done), onDone = submit)
             StrengthMeter(pass)
         }
-        GNotice("Encrypts your account on this phone. Your phone remembers it, so calls still ring after a restart. If you forget it, your recovery words let you set a new one.", icon = PgIcons.Lock)
+        GNotice(stringResource(R.string.onboarding_pass_why), icon = PgIcons.Lock)
         if (error != null) GNotice(error, NKind.Error)
     }
 }
@@ -471,7 +478,7 @@ private fun StrengthMeter(pass: String) {
     val c = Tin.c
     val words = pass.trim().split(Regex("\\s+")).size
     val s = when { pass.isEmpty() -> 0; pass.length >= 16 || words >= 4 -> 3; pass.length >= 8 -> 2; else -> 1 }
-    val says = listOf("Any length works. A few random words are easy to remember.", "Short. A few more words make it stronger.", "Fair", "Strong")
+    val says = listOf(stringResource(R.string.onboarding_strength_0), stringResource(R.string.onboarding_strength_1), stringResource(R.string.onboarding_strength_2), stringResource(R.string.onboarding_strength_3))
     val col = when (s) { 1 -> c.danger; 2 -> c.thread; else -> c.accent }
     Row(Modifier.fillMaxWidth().semantics { liveRegion = androidx.compose.ui.semantics.LiveRegionMode.Polite }, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(Modifier.padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -485,9 +492,9 @@ private fun StrengthMeter(pass: String) {
 
 /** One passphrase field (Settings' add / change and the legacy seal screen). */
 @Composable
-fun NewPassphraseField(pass: String, onPass: (String) -> Unit, enabled: Boolean = true, onDone: () -> Unit = {}, label: String = "Passphrase", why: Boolean = true) {
+fun NewPassphraseField(pass: String, onPass: (String) -> Unit, enabled: Boolean = true, onDone: () -> Unit = {}, label: String = stringResource(R.string.onboarding_step_passphrase), why: Boolean = true) {
     GField(pass, onPass, label, secret = true, enabled = enabled, keyboard = KeyboardOptions(imeAction = ImeAction.Done), onDone = { if (pass.isNotEmpty() && enabled) onDone() })
-    if (why) GNotice("Encrypts your account on this phone. Your phone remembers it, so calls still ring after a restart. If you forget it, your recovery words let you set a new one.", icon = PgIcons.Lock)
+    if (why) GNotice(stringResource(R.string.onboarding_pass_why), icon = PgIcons.Lock)
 }
 
 // ------------------------------------------------------------------ recovery phrase (Phrase.svelte)
@@ -525,26 +532,28 @@ internal fun PhraseStep(phrase: String, onNext: () -> Unit, copiedAlready: Boole
     // the words' own checksum.
     var asKey by remember { mutableStateOf(false) }
     val key = remember(phrase) { runCatching { uniffi.p2pcore.recoveryKeyFromPhrase(phrase) }.getOrDefault("") }
-    GateStep(if (asKey) "Here is your recovery key" else "Here are your recovery words",
-        lead = if (asKey) "Your recovery key is the same as your 24 words, as one line.\nPaste it somewhere safe. A password manager works great."
-            else "If you ever switch devices, these 24 words bring your account along.\nSave a copy somewhere safe. Paper works great.",
+    val keyLabel = stringResource(R.string.onboarding_clip_key)
+    val wordsLabel = stringResource(R.string.onboarding_clip_words)
+    GateStep(if (asKey) stringResource(R.string.onboarding_phrase_title_key) else stringResource(R.string.onboarding_phrase_title_words),
+        lead = if (asKey) stringResource(R.string.onboarding_phrase_lead_key)
+            else stringResource(R.string.onboarding_phrase_lead_words),
         foot = {
             if (copied) {
-                GBtn(if (asKey) "I’ve saved it" else "I’ve saved them", onNext)
+                GBtn(if (asKey) stringResource(R.string.onboarding_phrase_saved_key) else stringResource(R.string.onboarding_phrase_saved_words), onNext)
                 // Keeps the footer two buttons tall in both moments, so nothing moves.
-                GBtn("Copy again", { if (asKey) copyToClipboard(ctx, "Recovery key", key) else copyToClipboard(ctx, "Recovery words", phrase) }, kind = GKind.Text)
+                GBtn(stringResource(R.string.onboarding_phrase_copy_again), { if (asKey) copyToClipboard(ctx, keyLabel, key) else copyToClipboard(ctx, wordsLabel, phrase) }, kind = GKind.Text)
             } else {
                 // flagged sensitive (EXTRA_IS_SENSITIVE), so Android 13+ keeps it out of the clipboard preview
-                GBtn(if (asKey) "Copy my key" else "Copy my words", {
-                    if (asKey) copyToClipboard(ctx, "Recovery key", key) else copyToClipboard(ctx, "Recovery words", phrase)
+                GBtn(if (asKey) stringResource(R.string.onboarding_phrase_copy_key) else stringResource(R.string.onboarding_phrase_copy_words), {
+                    if (asKey) copyToClipboard(ctx, keyLabel, key) else copyToClipboard(ctx, wordsLabel, phrase)
                     copied = true; onCopied()
                 })
-                GBtn(if (asKey) "I saved it elsewhere" else "I wrote them down", onNext, kind = GKind.Text)
+                GBtn(if (asKey) stringResource(R.string.onboarding_phrase_elsewhere_key) else stringResource(R.string.onboarding_phrase_elsewhere_words), onNext, kind = GKind.Text)
             }
         }) {
         if (person != null) {
             Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                ViewablePgAvatar("Your account", 0, 80.dp, person)
+                ViewablePgAvatar(stringResource(R.string.onboarding_your_account), 0, 80.dp, person)
             }
         }
         WordsKeySeg(asKey) { asKey = it }
@@ -557,12 +566,12 @@ internal fun PhraseStep(phrase: String, onNext: () -> Unit, copiedAlready: Boole
 @Composable
 private fun DeviceStep(label: String, onChange: (String) -> Unit, busy: Boolean, error: String?, onNext: () -> Unit) {
     val next = { if (label.isNotBlank() && !busy) onNext() }
-    GateStep("Name this phone", lead = "So you can tell your devices apart in Linked devices. Only your own devices see this name; people you call never do.",
-        foot = { GNextRow({ GNext("Continue", next, enabled = label.isNotBlank(), busy = busy) }) }) {
-        GField(label, onChange, "Device name", hint = "You can rename it later.", enabled = !busy, focus = rememberAutofocus(),
+    GateStep(stringResource(R.string.onboarding_device_title), lead = stringResource(R.string.onboarding_device_lead),
+        foot = { GNextRow({ GNext(stringResource(R.string.common_continue), next, enabled = label.isNotBlank(), busy = busy) }) }) {
+        GField(label, onChange, stringResource(R.string.onboarding_step_device), hint = stringResource(R.string.onboarding_device_hint), enabled = !busy, focus = rememberAutofocus(),
             keyboard = KeyboardOptions(capitalization = KeyboardCapitalization.Words, imeAction = ImeAction.Done), onDone = next)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            listOf("Personal phone", "Work phone", "Tablet").forEach { s -> PgChip(s, label.trim() == s, { onChange(s) }, minHeight = 44.dp, padH = 16.dp) }
+            listOf(stringResource(R.string.onboarding_device_personal), stringResource(R.string.onboarding_device_work), stringResource(R.string.onboarding_device_tablet)).forEach { s -> PgChip(s, label.trim() == s, { onChange(s) }, minHeight = 44.dp, padH = 16.dp) }
         }
         if (error != null) GNotice(error, NKind.Error)
     }
@@ -574,12 +583,13 @@ private fun DeviceStep(label: String, onChange: (String) -> Unit, busy: Boolean,
 private fun RestoredStep(name: String, adding: Boolean, onStart: () -> Unit) {
     val first = name.trim().split(Regex("\\s+")).firstOrNull().orEmpty()
     GateStep(
-        title = if (adding) "Added ${name.trim().ifBlank { "your account" }} to this phone" else if (first.isNotBlank()) "Welcome back, $first" else "Welcome back",
-        lead = if (adding) "Only the account you select is online at a time, so ${name.trim().ifBlank { "this account" }} is online now and your other account is paused. You can switch in Settings."
-        else "Your account is back on this phone. Your contacts, chats and call history are kept on your other devices, not with us. This phone starts with an empty contact list.",
+        title = if (adding) stringResource(R.string.onboarding_restored_title_adding, name.trim().ifBlank { stringResource(R.string.onboarding_restored_name_fallback_title) })
+            else if (first.isNotBlank()) stringResource(R.string.unlock_welcome_back_named, first) else stringResource(R.string.unlock_welcome_back),
+        lead = if (adding) stringResource(R.string.onboarding_restored_lead_adding, name.trim().ifBlank { stringResource(R.string.onboarding_restored_name_fallback_lead) })
+        else stringResource(R.string.onboarding_restored_lead),
         center = true, bigTitle = true,
-        hero = { Box(Modifier.padding(top = 28.dp, bottom = 4.dp)) { TinMark(96.dp, state = MarkState.Taut, live = true, description = "Tinline") } },
-        foot = { GBtn(if (adding) "Open Tinline" else "Continue", onStart) },
+        hero = { Box(Modifier.padding(top = 28.dp, bottom = 4.dp)) { TinMark(96.dp, state = MarkState.Taut, live = true, description = stringResource(R.string.app_name)) } },
+        foot = { GBtn(if (adding) stringResource(R.string.onboarding_open_tinline) else stringResource(R.string.common_continue), onStart) },
     )
 }
 
@@ -588,19 +598,19 @@ private fun SyncingStep(name: String, peer: String, contacts: Int, calls: Int, o
     val c = Tin.c
     var slow by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { kotlinx.coroutines.delay(45_000); slow = true }
-    val from = peer.ifBlank { "your other device" }
+    val from = peer.ifBlank { stringResource(R.string.onboarding_other_device) }
     GateStep(
-        title = "Linked to $from", center = true, bigTitle = true,
-        lead = "Your contacts and chats are arriving from $from and will keep in step on both.",
-        hero = { Box(Modifier.padding(top = 28.dp, bottom = 4.dp)) { TinMark(96.dp, state = MarkState.Taut, live = true, description = "Tinline") } },
-        foot = { GBtn("Open Tinline", onStart) },
+        title = stringResource(R.string.onboarding_linked_title, from), center = true, bigTitle = true,
+        lead = stringResource(R.string.onboarding_linked_lead, from),
+        hero = { Box(Modifier.padding(top = 28.dp, bottom = 4.dp)) { TinMark(96.dp, state = MarkState.Taut, live = true, description = stringResource(R.string.app_name)) } },
+        foot = { GBtn(stringResource(R.string.onboarding_open_tinline), onStart) },
     ) {
         PfCard {
-            row { SyncRow(PgIcons.Users, "Contacts", if (contacts > 0) "$contacts" else "Waiting", contacts > 0) }
-            row { SyncRow(PgIcons.Clock, "Call history", if (calls > 0) "$calls" else "Waiting", calls > 0) }
+            row { SyncRow(PgIcons.Users, stringResource(R.string.onboarding_sync_contacts), if (contacts > 0) "$contacts" else stringResource(R.string.onboarding_sync_waiting), contacts > 0) }
+            row { SyncRow(PgIcons.Clock, stringResource(R.string.onboarding_sync_calls), if (calls > 0) "$calls" else stringResource(R.string.onboarding_sync_waiting), calls > 0) }
         }
-        ReservedLine(if (slow && contacts == 0 && calls == 0) "Nothing yet. The other device may be offline: it picks up where it left off the next time both are online."
-            else "Keep both devices online. Sync keeps going in the background.", style = PgType.sub19, color = c.ink2, align = TextAlign.Center, lines = 2)
+        ReservedLine(if (slow && contacts == 0 && calls == 0) stringResource(R.string.onboarding_sync_slow)
+            else stringResource(R.string.onboarding_sync_keep_online), style = PgType.sub19, color = c.ink2, align = TextAlign.Center, lines = 2)
     }
 }
 
@@ -620,14 +630,14 @@ private fun SyncRow(icon: ImageVector, title: String, value: String, done: Boole
 
 @Composable
 private fun SaveFailedStep(message: String, busy: Boolean, onRetry: () -> Unit, onPassphrase: () -> Unit) {
-    GateStep("Couldn’t save your account", lead = "Tinline couldn’t store the key that opens your account on this phone, so your account has not been saved yet.",
+    GateStep(stringResource(R.string.onboarding_savefail_title), lead = stringResource(R.string.onboarding_savefail_lead),
         center = true, anchor = true,
         hero = { Box(Modifier.padding(top = 12.dp)) { IconDisc(PgIcons.Warning, 72.dp, 32.dp, danger = true) } },
         foot = {
-            GBtn(if (busy) "Trying…" else "Try again", onRetry, busy = busy)
-            GBtn("Add a passphrase instead", onPassphrase, kind = GKind.Text, enabled = !busy)
+            GBtn(if (busy) stringResource(R.string.onboarding_savefail_trying) else stringResource(R.string.common_try_again), onRetry, busy = busy)
+            GBtn(stringResource(R.string.onboarding_savefail_add_pass), onPassphrase, kind = GKind.Text, enabled = !busy)
         }) {
-        GNotice("Nothing was kept on this phone yet, so there is nothing to lose. Try again, or protect the account with a passphrase instead of the phone’s own key.")
+        GNotice(stringResource(R.string.onboarding_savefail_notice))
         if (message.isNotBlank()) GNotice(message, NKind.Error)
     }
 }
@@ -638,21 +648,31 @@ private fun SaveFailedStep(message: String, busy: Boolean, onRetry: () -> Unit, 
 private fun TermsStep(onAgree: () -> Unit) {
     val c = Tin.c
     // No checkbox: the line right above the button is the consent, and the button ("I agree", the arrow) is the agreement.
-    GateStep("Before you start", fill = true, foot = { GNextRow({ GNext("I agree", onAgree) }) }) {
+    GateStep(stringResource(R.string.onboarding_terms_title), fill = true, foot = { GNextRow({ GNext(stringResource(R.string.onboarding_terms_agree_button), onAgree) }) }) {
         Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            TermPoint(PgIcons.Shield, "Free of ads and tracking.", "Tinline doesn’t collect your contacts, calls or location.")
-            TermPoint(PgIcons.Lock, "Calls are end-to-end encrypted.", "When a direct line isn’t possible, an encrypted relay passes the call along. It can’t hear it.")
-            TermPoint(PgIcons.Key, "Your account is yours.", "It lives on your devices, not on a server. Your recovery words are the way back in, so keep them safe.")
-            TermPoint(PgIcons.Warning, "Not for emergency calls.", "")
+            TermPoint(PgIcons.Shield, stringResource(R.string.onboarding_terms_ads_title), stringResource(R.string.onboarding_terms_ads_body))
+            TermPoint(PgIcons.Lock, stringResource(R.string.onboarding_terms_encrypted_title), stringResource(R.string.onboarding_terms_encrypted_body))
+            TermPoint(PgIcons.Key, stringResource(R.string.onboarding_terms_account_title), stringResource(R.string.onboarding_terms_account_body))
+            TermPoint(PgIcons.Warning, stringResource(R.string.onboarding_not_emergency), "")
         }
         Spacer(Modifier.weight(1f))
         val link = SpanStyle(color = c.accentInk, textDecoration = TextDecoration.Underline)
+        // The sentence is one string with two placeholders; the markers show where each link label goes (any order).
+        val termsMark = "\uE000"; val privacyMark = "\uE001"
+        val sentence = stringResource(R.string.onboarding_terms_by_continuing, termsMark, privacyMark)
+        val termsLabel = stringResource(R.string.onboarding_terms_link_terms)
+        val privacyLabel = stringResource(R.string.onboarding_terms_link_privacy)
         Text(buildAnnotatedString {
-            append("By continuing, you agree to the ")
-            withLink(LinkAnnotation.Url(URL_TERMS, TextLinkStyles(link))) { append("Terms of Use") }
-            append(" and have read the ")
-            withLink(LinkAnnotation.Url(URL_PRIVACY, TextLinkStyles(link))) { append("Privacy Policy") }
-            append(".")
+            var rest = sentence
+            while (rest.isNotEmpty()) {
+                val t = rest.indexOf(termsMark); val p = rest.indexOf(privacyMark)
+                val at = listOf(t, p).filter { it >= 0 }.minOrNull()
+                if (at == null) { append(rest); break }
+                append(rest.substring(0, at))
+                if (at == t) withLink(LinkAnnotation.Url(URL_TERMS, TextLinkStyles(link))) { append(termsLabel) }
+                else withLink(LinkAnnotation.Url(URL_PRIVACY, TextLinkStyles(link))) { append(privacyLabel) }
+                rest = rest.substring(at + 1)
+            }
         }, style = PgType.sub19, color = c.ink2)
     }
 }
@@ -678,14 +698,14 @@ fun TermsScreen(progress: Int?, onBack: (() -> Unit)?, onAgree: () -> Unit) = Pa
 @Composable
 private fun PermsStep(missing: List<Need>, onFix: (Need) -> Unit, onDone: () -> Unit) {
     val rows = listOf(
-        Triple(Need.Mic, PgIcons.Mic, "Microphone" to "So they can hear you. Used only during a call."),
-        Triple(Need.Notifications, PgIcons.Bell, "Notifications" to "So you see incoming calls and messages."),
-        Triple(Need.FullScreen, PgIcons.Phone, "Ring over lock screen" to "Shows incoming calls full screen, like the phone app."),
-        Triple(Need.Battery, PgIcons.Battery, "Run in background" to "Android pauses idle apps to save battery. This keeps your line open, using a little battery."),
+        Triple(Need.Mic, PgIcons.Mic, stringResource(R.string.onboarding_perm_mic) to stringResource(R.string.onboarding_perm_mic_why)),
+        Triple(Need.Notifications, PgIcons.Bell, stringResource(R.string.onboarding_perm_notifications) to stringResource(R.string.onboarding_perm_notifications_why)),
+        Triple(Need.FullScreen, PgIcons.Phone, stringResource(R.string.onboarding_perm_fullscreen) to stringResource(R.string.onboarding_perm_fullscreen_why)),
+        Triple(Need.Battery, PgIcons.Battery, stringResource(R.string.onboarding_perm_background) to stringResource(R.string.onboarding_perm_background_why)),
     )
     val touched = rows.any { it.first !in missing }
-    GateStep("So calls can reach you", lead = "Tinline works like a phone line: it stays open quietly in the background. Each of these is optional, and you can change them later.",
-        foot = { GBtn(if (touched) "Continue" else "Not now", onDone, kind = if (touched) GKind.Primary else GKind.Secondary) }) {
+    GateStep(stringResource(R.string.onboarding_perms_title), lead = stringResource(R.string.onboarding_perms_lead),
+        foot = { GBtn(if (touched) stringResource(R.string.common_continue) else stringResource(R.string.common_not_now), onDone, kind = if (touched) GKind.Primary else GKind.Secondary) }) {
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             rows.forEach { (need, icon, t) -> PermRow(icon, t.first, t.second, need !in missing) { onFix(need) } }
         }
@@ -695,6 +715,8 @@ private fun PermsStep(missing: List<Need>, onFix: (Need) -> Unit, onDone: () -> 
 @Composable
 private fun PermRow(icon: ImageVector, title: String, why: String, granted: Boolean, onAllow: () -> Unit) {
     val c = Tin.c
+    val allowedDesc = stringResource(R.string.onboarding_perm_allowed_desc, title)
+    val allowDesc = stringResource(R.string.onboarding_perm_allow_desc, title.lowercase())
     Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
         IconDisc(icon, 40.dp, 20.dp)
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
@@ -702,9 +724,9 @@ private fun PermRow(icon: ImageVector, title: String, why: String, granted: Bool
             Text(why, style = PgType.sub, color = c.ink2)
         }
         Box(Modifier.widthIn(min = 72.dp), contentAlignment = Alignment.Center) {
-            if (granted) Icon(PgIcons.Check, "$title allowed", Modifier.size(22.dp), tint = c.accentInk)
-            else PBtn("Allow", onAllow, variant = PVariant.Quiet, colorOverride = c.accentInk, minWidth = 72.dp, padH = 14.dp,
-                modifier = Modifier.border(1.dp, c.ln, RoundedCornerShape(50)).semantics { contentDescription = "Allow ${title.lowercase()}" })
+            if (granted) Icon(PgIcons.Check, allowedDesc, Modifier.size(22.dp), tint = c.accentInk)
+            else PBtn(stringResource(R.string.onboarding_perm_allow), onAllow, variant = PVariant.Quiet, colorOverride = c.accentInk, minWidth = 72.dp, padH = 14.dp,
+                modifier = Modifier.border(1.dp, c.ln, RoundedCornerShape(50)).semantics { contentDescription = allowDesc })
         }
     }
 }
@@ -729,6 +751,9 @@ private fun RestoreStep(error: String?, warning: String, onError: (String?) -> U
     // A pasted recovery key (one line, `tlkey-…`) replaces the boxes ("" = typing words).
     var recKey by remember { mutableStateOf("") }
     val focus = remember { List(24) { androidx.compose.ui.focus.FocusRequester() } }
+    val wordsDesc = stringResource(R.string.onboarding_restore_words_desc)
+    val keyTypoMsg = stringResource(R.string.onboarding_restore_key_typo)
+    val clipboardFailMsg = stringResource(R.string.onboarding_restore_clipboard_failed)
     GateAutofocus(focus[0])
 
     fun suggest(p: String, n: Int) = if (p.isEmpty()) emptyList() else list.asSequence().filter { it.startsWith(p) }.take(n).toList()
@@ -750,7 +775,7 @@ private fun RestoreStep(error: String?, warning: String, onError: (String?) -> U
             // The core checks the key's checksum: a typo is caught before anything is restored.
             runCatching { uniffi.p2pcore.recoveryPhraseFromInput(recKey) }
                 .onSuccess { onSubmit(it) }
-                .onFailure { onError("That key has a typo or is cut short. Paste it again from where you saved it.") }
+                .onFailure { onError(keyTypoMsg) }
             return
         }
         tried = true
@@ -767,34 +792,36 @@ private fun RestoreStep(error: String?, warning: String, onError: (String?) -> U
         if (i < 23) runCatching { focus[i + 1].requestFocus() } else submit()
     }
     val msg = when {
-        badList.isNotEmpty() -> "Word ${badList[0] + 1}${if (badList.size > 1) " and ${badList.size - 1} more" else ""} ${if (badList.size > 1) "aren’t" else "isn’t"} in the recovery word list. Check the spelling."
-        recKey.isEmpty() && tried && filled < 24 -> "${24 - filled} words are still missing."
+        badList.isNotEmpty() ->
+            if (badList.size > 1) pluralStringResource(R.plurals.onboarding_restore_bad_words_more, badList.size - 1, (badList[0] + 1).toString(), badList.size - 1)
+            else stringResource(R.string.onboarding_restore_bad_word, (badList[0] + 1).toString())
+        recKey.isEmpty() && tried && filled < 24 -> pluralStringResource(R.plurals.onboarding_restore_missing, 24 - filled, 24 - filled)
         else -> error ?: ""
     }
 
     Column(Modifier.fillMaxSize()) {
         Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 8.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Text("Restore account", style = PgType.h1, color = c.ink)
-            Text(if (recKey.isNotEmpty()) "Your recovery key is in. It stays on this phone."
-                else "Type your 24 words in order, or paste them, or your recovery key, into the first box. They stay on this phone.", style = PgType.lead, color = c.ink2)
+            Text(stringResource(R.string.onboarding_step_restore), style = PgType.h1, color = c.ink)
+            Text(if (recKey.isNotEmpty()) stringResource(R.string.onboarding_restore_lead_key)
+                else stringResource(R.string.onboarding_restore_lead_words), style = PgType.lead, color = c.ink2)
             GNotice(warning, NKind.Warn, PgIcons.Info)
             if (recKey.isNotEmpty()) {
                 Column(Modifier.fillMaxWidth().clip(SmoothCornerShape(10.dp)).background(c.sf).border(1.dp, c.accentSoft, SmoothCornerShape(10.dp))
                     .padding(horizontal = 16.dp, vertical = 14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text("Recovery key", style = TinType.caption, color = c.ink2)
+                    Text(stringResource(R.string.onboarding_restore_key_caption), style = TinType.caption, color = c.ink2)
                     Text(recKey, style = TinType.mono.copy(fontSize = 15.sp, lineHeight = 24.sp), color = c.ink)
-                    GBtn("Use my words instead", { recKey = ""; onError(null) }, kind = GKind.Text, fill = false, modifier = Modifier.offset(x = (-20).dp))
+                    GBtn(stringResource(R.string.onboarding_restore_use_words), { recKey = ""; onError(null) }, kind = GKind.Text, fill = false, modifier = Modifier.offset(x = (-20).dp))
                 }
             } else Row(Modifier.fillMaxWidth().padding(top = 0.dp).offset(y = (-4).dp), verticalAlignment = Alignment.CenterVertically) {
-                GBtn("Paste from clipboard", {
+                GBtn(stringResource(R.string.onboarding_restore_paste), {
                     val t = clipboardText(ctx)
-                    if (t == null) onError("Couldn’t read the clipboard. Paste into the first box instead.") else setWord(0, t)
+                    if (t == null) onError(clipboardFailMsg) else setWord(0, t)
                 }, kind = GKind.Text, fill = false, modifier = Modifier.offset(x = (-20).dp))
                 Spacer(Modifier.weight(1f))
-                Text("$filled of 24", style = PgType.sub.copy(fontFeatureSettings = "tnum"), color = c.ink2)
+                Text(stringResource(R.string.onboarding_restore_filled, filled.toString()), style = PgType.sub.copy(fontFeatureSettings = "tnum"), color = c.ink2)
             }
-            if (recKey.isEmpty()) Column(Modifier.semantics { contentDescription = "Recovery phrase words" }, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (recKey.isEmpty()) Column(Modifier.semantics { contentDescription = wordsDesc }, verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 for (r in 0 until 12) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     for (col in 0..1) {
                         val i = r * 2 + col
@@ -821,7 +848,7 @@ private fun RestoreStep(error: String?, warning: String, onError: (String?) -> U
             }
             Text(msg, Modifier.fillMaxWidth().heightIn(min = 18.dp), style = PgType.sub.copy(fontWeight = FontWeight.SemiBold), color = c.er)
         }
-        Column(Modifier.fillMaxWidth().padding(start = 24.dp, end = 24.dp, top = 12.dp, bottom = 24.dp)) { GBtn("Continue", ::submit, enabled = filled > 0 || recKey.isNotEmpty()) }
+        Column(Modifier.fillMaxWidth().padding(start = 24.dp, end = 24.dp, top = 12.dp, bottom = 24.dp)) { GBtn(stringResource(R.string.common_continue), ::submit, enabled = filled > 0 || recKey.isNotEmpty()) }
     }
 }
 
@@ -834,6 +861,7 @@ private fun WordCell(
     val src = remember { MutableInteractionSource() }
     val focused by src.collectIsFocusedAsState()
     val shape = SmoothCornerShape(10.dp)
+    val wordDesc = stringResource(R.string.onboarding_restore_word_desc, (i + 1).toString())
     Row(
         modifier.heightIn(min = 44.dp).focusRing(focused, c.accentInk, 10.dp).clip(shape).background(if (bad) c.erc else c.sf)
             .border(1.dp, when { focused -> androidx.compose.ui.graphics.Color.Transparent; bad -> c.er; ok -> c.accentSoft; else -> c.ln }, shape)
@@ -846,7 +874,7 @@ private fun WordCell(
             Modifier.weight(1f).focusRequester(focus).onFocusChanged { onFocus(it.isFocused) }
                 .onPreviewKeyEvent { e ->
                     if (e.type == androidx.compose.ui.input.key.KeyEventType.KeyDown && e.key == androidx.compose.ui.input.key.Key.Backspace && value.isEmpty()) { onBackEmpty(); true } else false
-                }.semantics { contentDescription = "Word ${i + 1}" },
+                }.semantics { contentDescription = wordDesc },
             singleLine = true, textStyle = PgType.mono.copy(color = c.ink), cursorBrush = androidx.compose.ui.graphics.SolidColor(c.accentInk), interactionSource = src,
             keyboardOptions = KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Password, autoCorrectEnabled = false, imeAction = if (i == 23) ImeAction.Done else ImeAction.Next),
             keyboardActions = androidx.compose.foundation.text.KeyboardActions(onNext = { onNext() }, onDone = { onNext() }),
@@ -862,7 +890,7 @@ private fun WordCell(
 internal fun WordsKeySeg(asKey: Boolean, onChange: (Boolean) -> Unit) {
     val c = Tin.c
     Row(Modifier.clip(SmoothCornerShape(12.dp)).background(c.sf3).padding(3.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-        listOf(false to "Words", true to "Key").forEach { (k, label) ->
+        listOf(false to stringResource(R.string.onboarding_seg_words), true to stringResource(R.string.onboarding_seg_key)).forEach { (k, label) ->
             val on = k == asKey
             Box(
                 Modifier.heightIn(min = 40.dp).clip(SmoothCornerShape(9.dp)).background(if (on) c.sf else androidx.compose.ui.graphics.Color.Transparent)

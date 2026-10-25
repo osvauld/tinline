@@ -169,17 +169,17 @@ class ProfilesController(private val app: P2pApp) : ProfileEvents, ProfileStore 
             null
         }, onFailure = {
             when (op) {
-                is ProfileOp.ReplacePicture -> "Couldn’t save your picture. Your current picture is unchanged."
-                ProfileOp.RemovePicture -> "Couldn’t remove your picture. It is unchanged."
+                is ProfileOp.ReplacePicture -> appString(R.string.profile_err_picture_save)
+                ProfileOp.RemovePicture -> appString(R.string.profile_err_picture_remove)
                 else -> SAVE_FAILED
             }
         })
     }
 
     companion object {
-        /** profile.ts SAVE_FAILED, verbatim. */
-        const val SAVE_FAILED = "Couldn’t save that. Your profile is unchanged and what you typed is still here."
+        /** profile.ts SAVE_FAILED. */
+        val SAVE_FAILED: String get() = appString(R.string.profile_err_save_failed)
         /** Native-only state (the playground has one account in front at a time): a write that raced an account switch. */
-        const val ACCOUNT_CHANGED = "The selected account changed. Nothing was saved to the new account."
+        val ACCOUNT_CHANGED: String get() = appString(R.string.profile_err_account_changed)
     }
 }

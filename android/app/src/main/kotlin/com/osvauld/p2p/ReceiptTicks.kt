@@ -116,9 +116,9 @@ fun ReceiptTickGlyph(key: String, vis: TickVis, meta: Color, read: Color, bad: C
 
 /** Screen-reader words per state (VOICE.md: how things are). */
 fun tickLabel(v: TickVis, first: String): String = when (v) {
-    TickVis.SLACK -> "Waiting to send"
-    TickVis.ONE -> "Sent, waiting for $first’s device to confirm"
-    TickVis.TWO -> "On $first’s device"
-    TickVis.READ -> "Read on $first’s device"
-    TickVis.BAD -> "Not delivered"
+    TickVis.SLACK -> appString(R.string.chat_tick_slack)
+    TickVis.ONE -> appString(R.string.chat_tick_one, first)
+    TickVis.TWO -> appString(R.string.chat_tick_two, first)
+    TickVis.READ -> appString(R.string.chat_tick_read, first)
+    TickVis.BAD -> appString(R.string.chat_tick_bad)
 }

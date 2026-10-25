@@ -1,5 +1,6 @@
 package com.osvauld.p2p
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.RepeatMode
@@ -199,7 +200,7 @@ fun ViewablePgAvatar(name: String, hue: Int, size: Dp, person: String?, modifier
     val viewable = image != null || art != null
     // Keep the action outside PgAvatar's decorative, cleared semantics.
     Box(modifier.then(if (viewable) Modifier.clip(CircleShape).clickable(
-        onClickLabel = if (image != null) "View photo" else "View identity geometry",
+        onClickLabel = if (image != null) stringResource(R.string.profile_view_photo) else stringResource(R.string.profile_view_geometry),
         role = androidx.compose.ui.semantics.Role.Button,
     ) { open = true }.semantics { contentDescription = name } else Modifier)) {
         PgAvatar(name, hue, size, person = person)
@@ -211,8 +212,8 @@ fun ViewablePgAvatar(name: String, hue: Int, size: Dp, person: String?, modifier
 @Composable
 private fun ProfileAvatarViewer(name: String, image: androidx.compose.ui.graphics.ImageBitmap?, person: String?, hue: Int, onClose: () -> Unit) {
     androidx.compose.ui.window.Dialog(onDismissRequest = onClose, properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)) {
-        Box(Modifier.fillMaxSize().background(Color.Black).clickable(onClickLabel = "Close", onClick = onClose)) {
-            if (image != null) Image(image, "$name’s photo", Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
+        Box(Modifier.fillMaxSize().background(Color.Black).clickable(onClickLabel = stringResource(R.string.common_close), onClick = onClose)) {
+            if (image != null) Image(image, stringResource(R.string.profile_photo_desc, name), Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
             else Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 PgAvatar(name, hue, 280.dp, person = person)
             }
@@ -221,8 +222,8 @@ private fun ProfileAvatarViewer(name: String, image: androidx.compose.ui.graphic
             ) {
                 Text(name, Modifier.weight(1f).padding(start = 12.dp, top = 12.dp), color = Color.White, maxLines = 1,
                     style = TextStyle(fontFamily = Figtree, fontSize = 17.sp, fontWeight = FontWeight.SemiBold))
-                Box(Modifier.size(48.dp).clip(CircleShape).clickable(onClickLabel = "Close", onClick = onClose), contentAlignment = Alignment.Center) {
-                    androidx.compose.material3.Icon(Pg.X, "Close", tint = Color.White, modifier = Modifier.size(24.dp))
+                Box(Modifier.size(48.dp).clip(CircleShape).clickable(onClickLabel = stringResource(R.string.common_close), onClick = onClose), contentAlignment = Alignment.Center) {
+                    androidx.compose.material3.Icon(Pg.X, stringResource(R.string.common_close), tint = Color.White, modifier = Modifier.size(24.dp))
                 }
             }
         }

@@ -1,5 +1,6 @@
 package com.osvauld.p2p
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -63,21 +64,21 @@ fun BatteryScreen(missing: List<Need>, onBack: () -> Unit, onFix: (Need) -> Unit
     val c = Tin.c
     val ctx = LocalContext.current
     Page {
-        TopBar("Background & battery", onBack)
+        TopBar(stringResource(R.string.settings_battery_title), onBack)
         Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())) {
             Column(Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
-                Text("Keep my line open", style = TinType.bodyL.copy(fontWeight = FontWeight.SemiBold), color = c.ink)
-                Hint("Tinline stays connected in the background so calls ring like a normal phone. It uses a little battery. The checklist below is what Android needs to allow that.")
+                Text(stringResource(R.string.settings_battery_keep), style = TinType.bodyL.copy(fontWeight = FontWeight.SemiBold), color = c.ink)
+                Hint(stringResource(R.string.settings_battery_hint))
             }
-            SectionLabel("CHECKLIST")
-            CheckRow(PgIcons.Battery, "Battery", if (Need.Battery in missing) "Optimised — Android may pause Tinline" else null, Need.Battery !in missing, "On") { onFix(Need.Battery) }
-            CheckRow(PgIcons.Bell, "Notifications", null, Need.Notifications !in missing, "On") { onFix(Need.Notifications) }
-            CheckRow(PgIcons.Lock, "Ring over lock screen", null, Need.FullScreen !in missing, "On") { onFix(Need.FullScreen) }
+            SectionLabel(stringResource(R.string.settings_checklist))
+            CheckRow(PgIcons.Battery, stringResource(R.string.settings_battery_row), if (Need.Battery in missing) stringResource(R.string.settings_battery_optimised) else null, Need.Battery !in missing, stringResource(R.string.settings_on)) { onFix(Need.Battery) }
+            CheckRow(PgIcons.Bell, stringResource(R.string.settings_notifications), null, Need.Notifications !in missing, stringResource(R.string.settings_on)) { onFix(Need.Notifications) }
+            CheckRow(PgIcons.Lock, stringResource(R.string.notif_ring_lock), null, Need.FullScreen !in missing, stringResource(R.string.settings_on)) { onFix(Need.FullScreen) }
             Column(
                 Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp).fillMaxWidth().clip(SmoothCornerShape(14.dp)).background(c.sf2).padding(14.dp),
             ) {
-                Text(buildAnnotatedStringBold("Still missing calls?", "Some phones need an extra step to keep apps running."), style = TinType.bodyM, color = c.ink2)
-                Text("Steps for your phone", Modifier.clickable(role = androidx.compose.ui.semantics.Role.Button) { openUrl(ctx, "https://dontkillmyapp.com") }.padding(vertical = 8.dp),
+                Text(buildAnnotatedStringBold(stringResource(R.string.settings_battery_missing_bold), stringResource(R.string.settings_battery_missing)), style = TinType.bodyM, color = c.ink2)
+                Text(stringResource(R.string.settings_battery_steps), Modifier.clickable(role = androidx.compose.ui.semantics.Role.Button) { openUrl(ctx, "https://dontkillmyapp.com") }.padding(vertical = 8.dp),
                     style = TinType.label, color = c.pr)
             }
         }
@@ -90,7 +91,7 @@ private fun CheckRow(icon: androidx.compose.ui.graphics.vector.ImageVector, titl
     ListItem(title, icon = icon, sub = sub, trailing = {
         if (ok) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
             Icon(PgIcons.Check, null, tint = c.pr, modifier = Modifier.size(18.dp)); Text(okText, style = TinType.label, color = c.pr)
-        } else TinButton("Fix", onFix, fill = false, height = 40.dp, textStyle = TinType.label)
+        } else TinButton(stringResource(R.string.notif_fix), onFix, fill = false, height = 40.dp, textStyle = TinType.label)
     })
 }
 
@@ -113,7 +114,7 @@ fun PhraseGateScreen(app: P2pApp, onBack: () -> Unit, onPhrase: (String) -> Unit
         val ticket = app.profiles.session.ticket() ?: return@LaunchedEffect
         val result = withContext(Dispatchers.IO) { runCatching { app.profileWork(ticket) { it.hasPassphrase() } }.getOrNull() }
         if (app.profiles.session.accepts(ticket)) hasPass = result
-        if (result == null) error = "Couldn’t open recovery. Go back and try again."
+        if (result == null) error = ctx.getString(R.string.settings_recovery_open_failed)
     }
     DisposableEffect(owner) {
         val observer = LifecycleEventObserver { _, event ->
@@ -136,7 +137,7 @@ fun PhraseGateScreen(app: P2pApp, onBack: () -> Unit, onPhrase: (String) -> Unit
             busy = false; pass = ""
             if (!owner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) return@launch
             result.onSuccess(onPhrase).onFailure {
-                error = if (it is uniffi.p2pcore.Exception.WrongPassphrase) "That didn’t match. Try again." else "Couldn’t open your backup. Try again."
+                error = if (it is uniffi.p2pcore.Exception.WrongPassphrase) ctx.getString(R.string.settings_recovery_wrong) else ctx.getString(R.string.settings_recovery_backup_failed)
             }
         }
     }
@@ -147,12 +148,12 @@ fun PhraseGateScreen(app: P2pApp, onBack: () -> Unit, onPhrase: (String) -> Unit
         val act = ctx.findActivity()
         // DeviceAuth's legacy fallback is permissive. Recovery must not treat no prompt as authentication.
         if (act == null || !DeviceAuth.available(act)) {
-            error = "Add a screen lock or an app passphrase to open your backup."
+            error = ctx.getString(R.string.settings_recovery_add_lock)
             return
         }
         val ticket = app.profiles.session.ticket() ?: return
         busy = true; prompting = true
-        DeviceAuth.ask(act, "Account recovery") { ok ->
+        DeviceAuth.ask(act, ctx.getString(R.string.settings_account_recovery)) { ok ->
             if (alive) {
                 prompting = false; busy = false
                 if (ok && app.profiles.session.accepts(ticket) && owner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) reveal()
@@ -160,17 +161,17 @@ fun PhraseGateScreen(app: P2pApp, onBack: () -> Unit, onPhrase: (String) -> Unit
         }
     }
     Page {
-        TopBar("Account recovery", onBack)
+        TopBar(stringResource(R.string.settings_account_recovery), onBack)
         Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 24.dp, vertical = 24.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
-            Hint("Only you")
-            Lead("Check it’s you before opening your backup.")
-            if (hasPass == true) TinField(pass, { pass = it; error = null }, "Your passphrase", password = true, enabled = !busy,
+            Hint(stringResource(R.string.settings_only_you))
+            Lead(stringResource(R.string.settings_recovery_check))
+            if (hasPass == true) TinField(pass, { pass = it; error = null }, stringResource(R.string.settings_your_passphrase), password = true, enabled = !busy,
                 keyboard = KeyboardOptions(imeAction = ImeAction.Done), actions = KeyboardActions(onDone = { go() }))
-            else if (hasPass == false) Hint("Use your phone’s screen lock to continue.")
+            else if (hasPass == false) Hint(stringResource(R.string.settings_recovery_use_lock))
             Text(error.orEmpty(), Modifier.semantics { liveRegion = LiveRegionMode.Polite }, style = TinType.bodyM, color = Tin.c.er)
         }
         Box(Modifier.padding(start = 24.dp, end = 24.dp, bottom = 24.dp)) {
-            TinButton(if (hasPass == false) "Use screen lock" else "Continue", ::go, enabled = hasPass != null && (hasPass == false || pass.isNotEmpty()) && !busy)
+            TinButton(if (hasPass == false) stringResource(R.string.settings_use_screen_lock) else stringResource(R.string.common_continue), ::go, enabled = hasPass != null && (hasPass == false || pass.isNotEmpty()) && !busy)
         }
     }
 }
@@ -198,12 +199,12 @@ fun PhraseShownScreen(phrase: String, onHide: () -> Unit, onRelock: () -> Unit =
         onDispose { if (observer.isAlive) observer.removeOnWindowFocusChangeListener(listener) }
     }
     Page {
-        TopBar("Your recovery backup", onHide)
+        TopBar(stringResource(R.string.settings_backup_title), onHide)
         Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 24.dp, vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Hint("Only you")
-            Lead("Keep this private. Anyone with it can act as you.")
+            Hint(stringResource(R.string.settings_only_you))
+            Lead(stringResource(R.string.settings_backup_private))
             Row(Modifier.fillMaxWidth().selectableGroup(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                listOf(true to "Key", false to "24 words").forEach { (asKey, label) ->
+                listOf(true to stringResource(R.string.settings_backup_key), false to stringResource(R.string.settings_backup_words)).forEach { (asKey, label) ->
                     Box(Modifier.weight(1f).heightIn(min = 44.dp).clip(RoundedCornerShape(12.dp)).background(if (state.asKey == asKey) Tin.c.prc else Tin.c.sf)
                         .selectable(state.asKey == asKey, role = Role.Tab) { state = state.select(asKey); copied = false; error = "" }.padding(12.dp), contentAlignment = Alignment.Center) {
                         Text(label, style = TinType.label, color = if (state.asKey == asKey) Tin.c.onPrc else Tin.c.ink)
@@ -211,23 +212,23 @@ fun PhraseShownScreen(phrase: String, onHide: () -> Unit, onRelock: () -> Unit =
                 }
             }
             if (state.asKey) KeyCard(if (shown) key else "•••• •••• •••• ••••") else WordGrid(phrase, hidden = !shown)
-            if (state.asKey && key.isEmpty()) Hint("Couldn’t prepare the key. Use your 24 words instead.")
-            TinButton(if (shown) "Hide" else "Reveal", {
+            if (state.asKey && key.isEmpty()) Hint(stringResource(R.string.settings_backup_key_failed))
+            TinButton(if (shown) stringResource(R.string.settings_hide) else stringResource(R.string.settings_reveal), {
                 state = if (shown) state.hide() else state.reveal(SystemClock.elapsedRealtime()); copied = false; error = ""
             }, style = BtnStyle.Outlined, enabled = !state.asKey || key.isNotEmpty())
-            Hint("Hides after 30 seconds. Locks when you leave the app.")
-            Hint("Key or words restore the same account. Keep either in a private, safe place.")
+            Hint(stringResource(R.string.settings_backup_hides))
+            Hint(stringResource(R.string.settings_backup_same))
         }
         Column(Modifier.fillMaxWidth().padding(start = 24.dp, end = 24.dp, bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(error.ifEmpty { if (copied && shown) "Copied. Keep it somewhere private." else "" }, Modifier.semantics { liveRegion = LiveRegionMode.Polite }, style = TinType.bodyM, color = Tin.c.ink2)
-            if (state.asKey) TinButton(if (copied) "Copied" else "Copy key", {
+            Text(error.ifEmpty { if (copied && shown) stringResource(R.string.settings_backup_copied) else "" }, Modifier.semantics { liveRegion = LiveRegionMode.Polite }, style = TinType.bodyM, color = Tin.c.ink2)
+            if (state.asKey) TinButton(if (copied) stringResource(R.string.common_copied) else stringResource(R.string.settings_copy_key), {
                 // Check the monotonic deadline at the gesture, not just at the last composition.
                 if (state.canCopyKey(SystemClock.elapsedRealtime()) && key.isNotEmpty() && view.hasWindowFocus()) {
                     copied = runCatching { copyToClipboard(ctx, "Recovery key", key) }.isSuccess
-                    error = if (copied) "" else "Couldn’t copy. Try again."
+                    error = if (copied) "" else ctx.getString(R.string.settings_copy_failed)
                 }
             }, enabled = shown && key.isNotEmpty())
-            else TinButton("Done", onHide)
+            else TinButton(stringResource(R.string.common_done), onHide)
         }
     }
 }
@@ -243,19 +244,19 @@ fun ChangePassphraseScreen(app: P2pApp, onBack: () -> Unit) {
     var pass by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
-    val title = if (has) "Change passphrase" else "Add passphrase"
+    val title = if (has) stringResource(R.string.settings_change_passphrase) else stringResource(R.string.settings_add_passphrase)
     Page {
         TopBar(title, onBack)
         Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 8.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            if (has) TinField(old, { old = it; error = null }, "Current passphrase", mono = true, password = true, enabled = !busy,
+            if (has) TinField(old, { old = it; error = null }, stringResource(R.string.settings_current_passphrase), mono = true, password = true, enabled = !busy,
                 state = if (error != null) FieldState.Error else FieldState.Normal, hint = error)
-            else Lead("Your account lives only on this phone. A passphrase encrypts it, so nobody holding your phone can copy it.")
-            NewPassphraseField(pass, { pass = it; error = null }, !busy, label = if (has) "New passphrase" else "Passphrase", why = !has)
+            else Lead(stringResource(R.string.settings_passphrase_why))
+            NewPassphraseField(pass, { pass = it; error = null }, !busy, label = if (has) stringResource(R.string.settings_new_passphrase) else stringResource(R.string.settings_passphrase), why = !has)
             if (!has) error?.let { Text(it, style = TinType.bodyM, color = Tin.c.er) }
             if (busy) LinearProgressIndicator(Modifier.fillMaxWidth(), color = Tin.c.pr, trackColor = Tin.c.sf3)
         }
         Box(Modifier.padding(start = 24.dp, end = 24.dp, bottom = 24.dp)) {
-            TinButton(if (busy) "Encrypting…" else title, {
+            TinButton(if (busy) stringResource(R.string.settings_encrypting) else title, {
                 busy = true; error = null
                 scope.launch {
                     val r = withContext(Dispatchers.IO) { runCatching { app.node.setPassphrase(if (has) old else null, pass) } }
@@ -285,24 +286,24 @@ fun AboutScreen(onBack: () -> Unit, onLicences: () -> Unit) {
     val scope = rememberCoroutineScope()
     // Reading logcat takes a moment; off the main thread, then copy or hand the file to the share sheet.
     fun logs(send: Boolean) = scope.launch {
-        logNote = "Collecting the log…"
+        logNote = ctx.getString(R.string.settings_log_collecting)
         val full = withContext(Dispatchers.IO) { DebugLog.collect(ctx) }
         logNote = runCatching {
             if (send) { withContext(Dispatchers.IO) { DebugLog.share(ctx, full) }; null }
-            else { copyToClipboard(ctx, "Tinline debug log", DebugLog.forClipboard(full)); "Debug log copied. Paste it into a message." }
-        }.getOrElse { "Couldn't get the log: ${friendly(it)}" }
+            else { copyToClipboard(ctx, "Tinline debug log", DebugLog.forClipboard(full)); ctx.getString(R.string.settings_log_copied) }
+        }.getOrElse { ctx.getString(R.string.settings_log_failed, friendly(it)) }
     }
-    PfPage("About Tinline", onBack) {
+    PfPage(stringResource(R.string.settings_about), onBack) {
         Column(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 24.dp, bottom = 8.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
             TinMark(56.dp)
-            Text("Tinline", Modifier.padding(top = 8.dp), style = PgType.title, color = c.ink)
-            Text("Version ${BuildConfig.VERSION_NAME}", style = PgType.sub.copy(fontFeatureSettings = "tnum"), color = c.ink2)
-            Text("Made by Osvauld", style = PgType.sub, color = c.ink2)
+            Text(stringResource(R.string.app_name), Modifier.padding(top = 8.dp), style = PgType.title, color = c.ink)
+            Text(stringResource(R.string.settings_about_version, BuildConfig.VERSION_NAME), style = PgType.sub.copy(fontFeatureSettings = "tnum"), color = c.ink2)
+            Text(stringResource(R.string.settings_about_made_by), style = PgType.sub, color = c.ink2)
         }
         PfSec {
             PfCard {
                 act {
-                    PfAct("Open-source licences", onClick = { open = !open }, icon = PgIcons.Licence, sub = "The libraries Tinline is built on", role = androidx.compose.ui.semantics.Role.Button,
+                    PfAct(stringResource(R.string.settings_licences_title), onClick = { open = !open }, icon = PgIcons.Licence, sub = stringResource(R.string.settings_licences_sub), role = androidx.compose.ui.semantics.Role.Button,
                         trailing = { Icon(if (open) PgIcons.Chevup else PgIcons.Chev, null, Modifier.size(18.dp), tint = c.ink2) })
                 }
                 if (open) act {
@@ -315,25 +316,25 @@ fun AboutScreen(onBack: () -> Unit, onLicences: () -> Unit) {
                         }
                     }
                 }
-                if (open) act { PfAct("Full licence texts", onClick = onLicences, icon = PgIcons.File, chevron = true) }
-                act { PfAct("Source code", onClick = { openUrl(ctx, URL_SOURCE) }, icon = PgIcons.Code, sub = "Tinline is open source", chevron = true) }
+                if (open) act { PfAct(stringResource(R.string.settings_licences_full), onClick = onLicences, icon = PgIcons.File, chevron = true) }
+                act { PfAct(stringResource(R.string.settings_source), onClick = { openUrl(ctx, URL_SOURCE) }, icon = PgIcons.Code, sub = stringResource(R.string.settings_source_sub), chevron = true) }
             }
-            PfNote("Tinline has no ads and no tracking. Your messages and calls go between your devices and the people you talk to.")
+            PfNote(stringResource(R.string.settings_about_note))
         }
         PfSec {
             PfCard {
-                act { PfAct("Terms of Use", onClick = { openUrl(ctx, URL_TERMS) }, icon = PgIcons.File, chevron = true) }
-                act { PfAct("Privacy Policy", onClick = { openUrl(ctx, URL_PRIVACY) }, icon = PgIcons.Shield, chevron = true) }
+                act { PfAct(stringResource(R.string.settings_terms), onClick = { openUrl(ctx, URL_TERMS) }, icon = PgIcons.File, chevron = true) }
+                act { PfAct(stringResource(R.string.settings_privacy_policy), onClick = { openUrl(ctx, URL_PRIVACY) }, icon = PgIcons.Shield, chevron = true) }
                 act { PfAct("tinline.osvauld.com", onClick = { openUrl(ctx, URL_SITE) }, icon = PgIcons.Globe, chevron = true) }
             }
-            PfNote("Not for emergency calls.")
+            PfNote(stringResource(R.string.settings_emergency))
         }
         PfSec {
             PfCard {
-                act { PfAct("Copy debug log", onClick = { logs(false) }, icon = PgIcons.Copy, sub = "Paste it to whoever is helping you fix a problem") }
-                act { PfAct("Send debug log", onClick = { logs(true) }, icon = PgIcons.Share, sub = "The full log as a file") }
+                act { PfAct(stringResource(R.string.settings_log_copy), onClick = { logs(false) }, icon = PgIcons.Copy, sub = stringResource(R.string.settings_log_copy_sub)) }
+                act { PfAct(stringResource(R.string.settings_log_send), onClick = { logs(true) }, icon = PgIcons.Share, sub = stringResource(R.string.settings_log_send_sub)) }
             }
-            PfNote(logNote ?: "The log has what Tinline did on this phone, with ids of contacts and calls. It never has your messages or your root secret.")
+            PfNote(logNote ?: stringResource(R.string.settings_log_note))
         }
     }
 }
@@ -363,7 +364,7 @@ fun LicencesScreen(onBack: () -> Unit) {
         "BIP-39 English word list — MIT",
     )
     Page {
-        TopBar("Open-source licences", onBack)
+        TopBar(stringResource(R.string.settings_licences_title), onBack)
         Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             libs.forEach { Text(it, style = TinType.bodyL.copy(fontSize = 15.sp), color = c.ink) }
             texts.forEach { (t, body) ->

@@ -1,5 +1,6 @@
 package com.osvauld.p2p
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -36,10 +37,10 @@ fun chatRows(chats: List<Chat>, contacts: List<Contact>, links: Map<String, Link
     val by = contacts.associateBy { it.did }
     val you = chats.firstOrNull { it.peerDid == myDid }?.let { ch ->
         val at = ch.lastActivity.toLong()
-        ChatRowUi(ch.peerDid, "You", ch.preview.ifBlank { SELF_SUB }, if (at > 0) listTime(at, nowMs) else "", false, Tick.Two, ch.unread.toInt(), atMs = at)
+        ChatRowUi(ch.peerDid, appString(R.string.common_you), ch.preview.ifBlank { selfSub() }, if (at > 0) listTime(at, nowMs) else "", false, Tick.Two, ch.unread.toInt(), atMs = at)
     }
     return listOfNotNull(you) + chats.filter { it.lastActivity > 0UL && it.peerDid != myDid }.map { ch ->
-        val name = by[ch.peerDid]?.display() ?: ch.peerName.ifBlank { "Unknown" }
+        val name = by[ch.peerDid]?.display() ?: ch.peerName.ifBlank { appString(R.string.common_unknown) }
         val at = ch.lastActivity.toLong()
         val pending = ch.lastOutgoing && ch.lastDelivery == uniffi.p2pcore.DeliveryState.PENDING
         val waiting = pending && (links[ch.peerDid] == Link.Offline || (links[ch.peerDid] == null && !online))
@@ -47,7 +48,7 @@ fun chatRows(chats: List<Chat>, contacts: List<Contact>, links: Map<String, Link
         val status = blocks.status(ch.peerDid)
         ChatRowUi(
             ch.peerDid, name,
-            status ?: if (waiting) "Waiting to send — ${firstName(name)} isn’t reachable yet" else ch.preview,
+            status ?: if (waiting) appString(R.string.chat_waiting_unreachable, firstName(name)) else ch.preview,
             listTime(at, nowMs), ch.lastOutgoing,
             // The list only draws the clock; delivered/read marks come from signed receipts in the conversation.
             if (waiting) Tick.Clock else Tick.One,
@@ -81,8 +82,8 @@ fun NewChatScreen(contacts: List<Contact>, lastMessage: Map<String, String>, onB
     val sorted = remember(contacts) { contacts.sortedBy { it.display().lowercase() } }
     val shown = sorted.filter { query.isBlank() || it.display().contains(query.trim(), true) || it.name.contains(query.trim(), true) }
     Page {
-        if (searching) SearchBar(query, { query = it }, onClose = { searching = false; query = "" }, hint = "Search contacts")
-        else TopBar("New chat", onBack)
+        if (searching) SearchBar(query, { query = it }, onClose = { searching = false; query = "" }, hint = stringResource(R.string.chat_search_contacts))
+        else TopBar(stringResource(R.string.chat_new_chat), onBack)
         LazyColumn(Modifier.weight(1f), contentPadding = PaddingValues(bottom = 24.dp)) {
             if (!searching) item {
                 Row(
@@ -91,7 +92,7 @@ fun NewChatScreen(contacts: List<Contact>, lastMessage: Map<String, String>, onB
                     verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     Icon(PgIcons.Search, null, tint = c.ink2)
-                    Text("Search contacts", style = TinType.bodyL, color = c.ink2)
+                    Text(stringResource(R.string.chat_search_contacts), style = TinType.bodyL, color = c.ink2)
                 }
             }
             if (!searching) item {
@@ -101,12 +102,12 @@ fun NewChatScreen(contacts: List<Contact>, lastMessage: Map<String, String>, onB
                 ) {
                     Box(Modifier.size(48.dp).clip(CircleShape).background(c.pr), contentAlignment = Alignment.Center) { Icon(PgIcons.Userplus, null, tint = c.onPr) }
                     Column(Modifier.weight(1f)) {
-                        Text("Add a contact", style = TinType.bodyL.copy(fontWeight = FontWeight.SemiBold, lineHeight = 22.sp), color = c.ink)
-                        Text("Scan their code or paste their card", style = TinType.bodyM, color = c.ink2)
+                        Text(stringResource(R.string.chat_add_contact), style = TinType.bodyL.copy(fontWeight = FontWeight.SemiBold, lineHeight = 22.sp), color = c.ink)
+                        Text(stringResource(R.string.chat_add_contact_sub), style = TinType.bodyM, color = c.ink2)
                     }
                 }
             }
-            if (contacts.isNotEmpty()) item { SectionLabel("CONTACTS · ${contacts.size}") }
+            if (contacts.isNotEmpty()) item { SectionLabel(stringResource(R.string.chat_contacts_count, contacts.size)) }
             items(shown, key = { it.did }) { ct ->
                 Row(
                     Modifier.fillMaxWidth().heightIn(min = 68.dp).clickable(role = Role.Button) { onPick(ct) }.padding(horizontal = 20.dp),
@@ -115,7 +116,7 @@ fun NewChatScreen(contacts: List<Contact>, lastMessage: Map<String, String>, onB
                     Avatar(ct.display(), ct.did, 48.dp)
                     Column(Modifier.weight(1f)) {
                         Text(ct.display(), style = TinType.bodyL.copy(fontWeight = FontWeight.SemiBold, lineHeight = 22.sp), color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        Text(lastMessage[ct.did] ?: "No messages yet", style = TinType.bodyM, color = c.ink2)
+                        Text(lastMessage[ct.did] ?: stringResource(R.string.chat_no_messages_yet), style = TinType.bodyM, color = c.ink2)
                     }
                 }
             }

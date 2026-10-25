@@ -1,5 +1,6 @@
 package com.osvauld.p2p
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -56,7 +57,7 @@ fun TopBar(
     actions: @Composable RowScope.() -> Unit = {},
 ) {
     Row(Modifier.fillMaxWidth().heightIn(min = 64.dp).padding(start = 4.dp, end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-        if (onBack != null) IconBtn(PgIcons.Back, "Back", onBack)
+        if (onBack != null) IconBtn(PgIcons.Back, stringResource(R.string.common_back), onBack)
         else Spacer(Modifier.width(16.dp))
         Text(title.orEmpty(), Modifier.weight(1f), style = TinType.titleM.copy(fontSize = 20.sp, lineHeight = 26.sp), color = Tin.c.ink,
             maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -168,7 +169,7 @@ fun TinField(
                 },
             )
             if (password) IconBtn(if (shown) PgIcons.Eyeoff else PgIcons.Eye,
-                if (shown) "Hide passphrase" else "Show passphrase", { shown = !shown }, tint = c.ink2)
+                if (shown) stringResource(R.string.components_hide_passphrase) else stringResource(R.string.components_show_passphrase), { shown = !shown }, tint = c.ink2)
             else trailing?.invoke()
         }
         if (hint != null) Text(hint, style = TinType.bodyM.copy(fontSize = 13.sp, lineHeight = 18.sp), color = if (err) c.er else c.ink2)
@@ -333,7 +334,7 @@ fun TinSheet(onDismiss: () -> Unit, content: @Composable ColumnScope.() -> Unit)
 /** Dialog: radius 24, optional round icon, title, body, then Cancel / confirm. */
 @Composable
 fun TinDialog(
-    title: String, onDismiss: () -> Unit, confirm: String, onConfirm: () -> Unit, dismiss: String? = "Cancel",
+    title: String, onDismiss: () -> Unit, confirm: String, onConfirm: () -> Unit, dismiss: String? = stringResource(R.string.common_cancel),
     destructive: Boolean = false, icon: ImageVector? = null, confirmEnabled: Boolean = true,
     body: @Composable ColumnScope.() -> Unit,
 ) {
