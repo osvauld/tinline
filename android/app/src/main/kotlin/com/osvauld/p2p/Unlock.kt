@@ -27,6 +27,7 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
@@ -53,6 +54,7 @@ fun UnlockScreen(app: P2pApp, onForgot: () -> Unit) {
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     val name = remember { app.node.profile()?.name ?: "" }
+    val wrongPassphrase = stringResource(R.string.unlock_wrong_passphrase)
     var sheet by remember { mutableStateOf(false) }
     val many = remember { app.node.accounts().size > 1 }
     val onSwitch: (() -> Unit)? = if (many) ({ sheet = true }) else null
@@ -81,7 +83,7 @@ fun UnlockScreen(app: P2pApp, onForgot: () -> Unit) {
                 busy = false
                 r.onFailure {
                     if (it is uniffi.p2pcore.Exception.WrongPassphrase) {
-                        error = "That passphrase didn’t open the account."
+                        error = wrongPassphrase
                     } else error = friendly(it)
                 }
                 r.onSuccess { pass = ""; app.identityReady() }
@@ -96,17 +98,17 @@ fun KeyLostContent(name: String, busy: Boolean, onRetry: () -> Unit, onRestore: 
     Page {
         GateHead(null, null)
         GateStep(
-            title = if (name.isNotBlank()) "Can’t open $name’s account" else "Can’t open your account",
-            lead = "This phone no longer has the key that opens your account. That happens after a screen-lock reset or a restored backup. Once you restore, your calls come through again.",
+            title = if (name.isNotBlank()) stringResource(R.string.unlock_keylost_title_named, name) else stringResource(R.string.unlock_keylost_title),
+            lead = stringResource(R.string.unlock_keylost_lead),
             center = true, anchor = true,
             hero = { Box(Modifier.padding(top = 12.dp)) { IconDisc(PgIcons.Key, 72.dp, 32.dp) } },
             foot = {
-                GBtn("Restore with recovery phrase", onRestore, enabled = !busy)
-                GBtn("Try again", onRetry, kind = GKind.Text, busy = busy)
-                if (onSwitch != null) GBtn("Switch account", onSwitch, kind = GKind.Text, enabled = !busy)
+                GBtn(stringResource(R.string.unlock_keylost_restore), onRestore, enabled = !busy)
+                GBtn(stringResource(R.string.common_try_again), onRetry, kind = GKind.Text, busy = busy)
+                if (onSwitch != null) GBtn(stringResource(R.string.accounts_switch_account), onSwitch, kind = GKind.Text, enabled = !busy)
             },
         ) {
-            GNotice("You didn’t set a passphrase, so the 24-word recovery phrase is the only way back. Your contacts stay.", NKind.Warn, PgIcons.Info)
+            GNotice(stringResource(R.string.unlock_keylost_notice), NKind.Warn, PgIcons.Info)
         }
     }
 }
@@ -125,19 +127,19 @@ fun UnlockContent(name: String, pass: String, onPass: (String) -> Unit, busy: Bo
     Page {
         GateHead(null, null)
         GateStep(
-            title = if (nick.isNotBlank()) "Welcome back, $nick" else "Welcome back",
+            title = if (nick.isNotBlank()) stringResource(R.string.unlock_welcome_back_named, nick) else stringResource(R.string.unlock_welcome_back),
             center = true, anchor = true,
             hero = { Box(Modifier.padding(top = 12.dp)) { SelfAvatar(name.ifBlank { "?" }, 72.dp) } },
             // With other identities here, the nickname in the title is the switcher (lab A, 2026-10-14).
             titleSlot = if (onSwitch != null && nick.isNotBlank()) ({ WelcomeSwitcher(nick, enabled = !busy, onSwitch) }) else null,
             foot = {
-                GBtn(if (busy) "Unlocking…" else "Unlock", submit, enabled = pass.isNotEmpty(), busy = busy)
-                GBtn("I forgot it", onForgot, kind = GKind.Text, enabled = !busy)
+                GBtn(if (busy) stringResource(R.string.unlock_unlocking) else stringResource(R.string.unlock_unlock), submit, enabled = pass.isNotEmpty(), busy = busy)
+                GBtn(stringResource(R.string.unlock_forgot), onForgot, kind = GKind.Text, enabled = !busy)
             },
         ) {
             GField(
-                pass, onPass, "Passphrase", secret = true, enabled = !busy, focus = rememberAutofocus(),
-                error = error, hint = if (error != null) "Checking takes a second. It’s deliberately slow to stop guessing." else null,
+                pass, onPass, stringResource(R.string.unlock_passphrase_label), secret = true, enabled = !busy, focus = rememberAutofocus(),
+                error = error, hint = if (error != null) stringResource(R.string.unlock_slow_hint) else null,
                 reserveLines = 4.25f, keyboard = KeyboardOptions(imeAction = ImeAction.Done), onDone = submit,
             )
         }
@@ -150,15 +152,16 @@ fun UnlockContent(name: String, pass: String, onPass: (String) -> Unit, busy: Bo
 @Composable
 private fun WelcomeSwitcher(nick: String, enabled: Boolean, onSwitch: () -> Unit) {
     val c = Tin.c
+    val switchDesc = stringResource(R.string.unlock_switch_identity_desc, nick)
     FlowRow(
         Modifier.fillMaxWidth().semantics { heading() },
         horizontalArrangement = Arrangement.Center, verticalArrangement = Arrangement.Center,
     ) {
-        Text("Welcome back, ", style = PgType.h1, color = c.ink, modifier = Modifier.align(Alignment.CenterVertically))
+        Text(stringResource(R.string.unlock_welcome_back_prefix) + " ", style = PgType.h1, color = c.ink, modifier = Modifier.align(Alignment.CenterVertically))
         Row(
             Modifier.heightIn(min = 48.dp).clip(SmoothCornerShape(10.dp))
-                .clickable(enabled = enabled, role = Role.Button, onClickLabel = "Open as another identity", onClick = onSwitch)
-                .padding(horizontal = 4.dp).semantics { contentDescription = "$nick, switch identity" },
+                .clickable(enabled = enabled, role = Role.Button, onClickLabel = stringResource(R.string.unlock_open_as_label), onClick = onSwitch)
+                .padding(horizontal = 4.dp).semantics { contentDescription = switchDesc },
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(nick, style = PgType.h1, color = c.ink, maxLines = 1)

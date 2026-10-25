@@ -71,15 +71,15 @@ fun sniff(h: ByteArray): String? {
 
 /** images.ts inspectImage, for bytes already read. Blocking (decode): call on a worker. */
 fun inspectImage(bytes: ByteArray, size: Long = bytes.size.toLong()): PickResult {
-    if (size > ImageLimits.MAX_BYTES) return PickResult.Refused("That picture is ${mb(size)} MB. Pictures can be up to ${mb(ImageLimits.MAX_BYTES.toLong())} MB.")
-    if (sniff(bytes) == null) return PickResult.Refused("Tinline can use PNG, JPEG or WebP pictures. That file is a different kind of file.")
+    if (size > ImageLimits.MAX_BYTES) return PickResult.Refused(appString(R.string.profile_pick_too_big, mb(size), mb(ImageLimits.MAX_BYTES.toLong())))
+    if (sniff(bytes) == null) return PickResult.Refused(appString(R.string.profile_pick_wrong_type))
     val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
     BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
-    if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return PickResult.Refused("That file couldn’t be read as a picture. It may be damaged.")
+    if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return PickResult.Refused(appString(R.string.profile_pick_unreadable))
     if (bounds.outWidth > ImageLimits.MAX_SIDE || bounds.outHeight > ImageLimits.MAX_SIDE)
-        return PickResult.Refused("That picture is ${bounds.outWidth} × ${bounds.outHeight} pixels. Tinline accepts up to ${ImageLimits.MAX_SIDE} pixels on a side.")
+        return PickResult.Refused(appString(R.string.profile_pick_too_wide, bounds.outWidth.toString(), bounds.outHeight.toString(), ImageLimits.MAX_SIDE.toString()))
     val bmp = runCatching { BitmapFactory.decodeByteArray(bytes, 0, bytes.size) }.getOrNull()
-        ?: return PickResult.Refused("That file couldn’t be read as a picture. It may be damaged.")
+        ?: return PickResult.Refused(appString(R.string.profile_pick_unreadable))
     return PickResult.Ok(Picked(bmp))
 }
 
@@ -95,7 +95,7 @@ fun inspectUri(resolver: ContentResolver, uri: Uri): PickResult {
             while (true) { val n = s.read(buf); if (n < 0) break; total += n; out.write(buf, 0, n); if (total > ImageLimits.MAX_BYTES) break }
             out.toByteArray()
         }
-    }.getOrNull() ?: return PickResult.Refused("That file couldn’t be read as a picture. It may be damaged.")
+    }.getOrNull() ?: return PickResult.Refused(appString(R.string.profile_pick_unreadable))
     return inspectImage(bytes, max(bytes.size.toLong(), size ?: 0L))
 }
 
