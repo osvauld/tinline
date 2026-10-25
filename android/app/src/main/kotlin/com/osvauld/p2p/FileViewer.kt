@@ -1,5 +1,6 @@
 package com.osvauld.p2p
 
+import androidx.compose.ui.res.stringResource
 import android.graphics.Bitmap
 import android.graphics.Color as AColor
 import android.graphics.pdf.PdfRenderer
@@ -97,10 +98,10 @@ fun FileViewer(m: Message, plan: OpenPlan, source: ChatSource, onClose: () -> Un
                 val f = ChatMedia.decrypt(ctx, source, m)
                 if (plan.kind == OpenKind.PDF) {
                     try { Loaded.Pdf(PdfDoc.open(f)) }
-                    catch (e: SecurityException) { Loaded.Error("This PDF is password-protected, so Tinline can’t show it. Save it to open it in another app.") }
-                    catch (e: Exception) { Loaded.Error("Tinline can’t read this PDF. It may be damaged. You can still save it.") }
+                    catch (e: SecurityException) { Loaded.Error(ctx.getString(R.string.file_pdf_protected)) }
+                    catch (e: Exception) { Loaded.Error(ctx.getString(R.string.file_pdf_unreadable)) }
                 } else loadText(f)
-            }.getOrElse { Loaded.Error("Couldn’t open that file.") }
+            }.getOrElse { Loaded.Error(ctx.getString(R.string.file_open_failed)) }
         }
     }
     DisposableEffect(state) {
@@ -112,23 +113,23 @@ fun FileViewer(m: Message, plan: OpenPlan, source: ChatSource, onClose: () -> Un
         val s = state
         var page by remember { mutableIntStateOf(1) }
         Row(Modifier.fillMaxWidth().height(64.dp).padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            IconBtn(PgIcons.X, "Close", onClose, tint = Color.White)
+            IconBtn(PgIcons.X, stringResource(R.string.common_close), onClose, tint = Color.White)
             Column(Modifier.weight(1f)) {
-                Text(a?.name ?: "File", style = TinType.bodyL.copy(fontWeight = FontWeight.SemiBold), color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                val sub = if (s is Loaded.Pdf) "Page $page of ${s.doc.pageCount}" else viewerWhen(m.at.toLong(), System.currentTimeMillis())
+                Text(a?.name ?: stringResource(R.string.file_default_name), style = TinType.bodyL.copy(fontWeight = FontWeight.SemiBold), color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                val sub = if (s is Loaded.Pdf) stringResource(R.string.file_page_of, page, s.doc.pageCount) else viewerWhen(m.at.toLong(), System.currentTimeMillis())
                 Text(sub, style = TinType.caption, color = Dim)
             }
-            IconBtn(PgIcons.Share, "Share", onShare, tint = Color.White)
-            IconBtn(PgIcons.Save, "Save to phone", onSave, tint = Color.White)
+            IconBtn(PgIcons.Share, stringResource(R.string.common_share), onShare, tint = Color.White)
+            IconBtn(PgIcons.Save, stringResource(R.string.file_save_to_phone), onSave, tint = Color.White)
         }
         Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
             when (s) {
-                Loaded.Loading -> Text("Opening…", style = TinType.bodyM, color = Dim)
+                Loaded.Loading -> Text(stringResource(R.string.file_opening), style = TinType.bodyM, color = Dim)
                 is Loaded.Error -> Column(Modifier.padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     Icon(PgIcons.Warning, null, tint = Dim)
                     Text(s.msg, style = TinType.bodyL, color = Color.White)
                     Box(Modifier.clip(RoundedCornerShape(50)).background(Color.White).clickable(role = Role.Button, onClick = onSave).padding(horizontal = 24.dp, vertical = 12.dp)) {
-                        Text("Save to phone", style = TinType.bodyL.copy(fontWeight = FontWeight.SemiBold), color = Color.Black)
+                        Text(stringResource(R.string.file_save_to_phone), style = TinType.bodyL.copy(fontWeight = FontWeight.SemiBold), color = Color.Black)
                     }
                 }
                 is Loaded.Pdf -> PdfPages(s.doc) { page = it }
@@ -139,9 +140,9 @@ fun FileViewer(m: Message, plan: OpenPlan, source: ChatSource, onClose: () -> Un
 }
 
 private fun loadText(f: File): Loaded {
-    if (f.length() > FileOpen.TEXT_LIMIT) return Loaded.Error("This file is too big to show here. Save it to open it in another app.")
+    if (f.length() > FileOpen.TEXT_LIMIT) return Loaded.Error(appString(R.string.file_too_big))
     val bytes = f.readBytes()
-    if (bytes.take(4096).any { it.toInt() == 0 }) return Loaded.Error("This doesn’t look like a text file. Save it to open it in another app.")
+    if (bytes.take(4096).any { it.toInt() == 0 }) return Loaded.Error(appString(R.string.file_not_text))
     return Loaded.Text(String(bytes, Charsets.UTF_8).removePrefix("﻿").lines())
 }
 
@@ -160,7 +161,7 @@ private fun PdfPages(doc: PdfDoc, onPage: (Int) -> Unit) {
             val b = bmp
             val h = with(density) { ((b?.let { it.height.toFloat() / it.width } ?: aspect) * widthPx).toDp() }
             Box(Modifier.fillMaxWidth().height(h).background(Color(0xFF1E2522)), contentAlignment = Alignment.Center) {
-                if (b != null && !b.isRecycled) Image(b.asImageBitmap(), "Page ${i + 1}", Modifier.fillMaxSize(), contentScale = ContentScale.FillWidth)
+                if (b != null && !b.isRecycled) Image(b.asImageBitmap(), stringResource(R.string.file_page_n, i + 1), Modifier.fillMaxSize(), contentScale = ContentScale.FillWidth)
             }
         }
     }

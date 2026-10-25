@@ -48,9 +48,9 @@ fun listTime(ms: Long, nowMs: Long): String =
 /** Day pill in a conversation (Conversation.svelte `dayLabel`): "Today", "Yesterday", else "Thursday 8 Oct" (with the year
  *  when it isn't this year). */
 fun dayLabel(ms: Long, nowMs: Long): String = when (daysAgo(ms, nowMs)) {
-    0L -> "Today"
-    1L -> "Yesterday"
-    else -> if (daysAgo(ms, nowMs) < 0) "Today" else dateOf(ms).let { d ->
+    0L -> appString(R.string.chat_day_today)
+    1L -> appString(R.string.chat_day_yesterday)
+    else -> if (daysAgo(ms, nowMs) < 0) appString(R.string.chat_day_today) else dateOf(ms).let { d ->
         d.format(if (d.year == dateOf(nowMs).year) DAY_DM else DAY_DMY)
     }
 }
@@ -77,7 +77,7 @@ fun firstName(name: String) = name.trim().substringBefore(' ').ifBlank { name }
 
 /** One row of the Chats tab, already worded. */
 /** Subtitle of the "You" conversation (saved items) in the list and its header. */
-const val SELF_SUB = "Saved items · only on your devices"
+fun selfSub(): String = appString(R.string.chat_self_sub)
 
 data class ChatRowUi(
     val did: String, val name: String, val preview: String, val time: String,

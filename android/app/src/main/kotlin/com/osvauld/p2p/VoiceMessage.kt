@@ -1,5 +1,6 @@
 package com.osvauld.p2p
 
+import androidx.compose.ui.res.stringResource
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
@@ -221,10 +222,11 @@ fun VoiceMicButton(state: VoiceRecState, modifier: Modifier = Modifier) {
                 Icon(PgIcons.Chevup, null, tint = c.ink2, modifier = Modifier.size(18.dp))
             }
         }
+        val micDesc = stringResource(if (state.locked) R.string.voice_send else if (state.recording) R.string.voice_recording else R.string.voice_hold)
         Box(
             Modifier.size(size).then(if (state.recording && !state.locked) Modifier.background(c.pr.copy(alpha = 0.18f), CircleShape) else Modifier)
                 .clip(CircleShape).background(c.pr)
-                .semantics { contentDescription = if (state.locked) "Send voice message" else if (state.recording) "Recording, release to send" else "Hold to record a voice message" }
+                .semantics { contentDescription = micDesc }
                 .pointerInput(state) {
                     awaitEachGesture {
                         val down = awaitFirstDown()
@@ -281,8 +283,9 @@ fun VoiceRecordingBar(state: VoiceRecState, modifier: Modifier = Modifier) {
         Text(uniffi.present.clockMs(state.elapsedMs.toUInt()), color = c.ink, style = TinType.mono.copy(fontSize = 15.sp))
         if (state.locked) {
             Box(Modifier.weight(1f))
+            val discardDesc = stringResource(R.string.voice_discard)
             Box(
-                Modifier.size(40.dp).clip(CircleShape).semantics { contentDescription = "Discard recording" }
+                Modifier.size(40.dp).clip(CircleShape).semantics { contentDescription = discardDesc }
                     .pointerInput(state) { detectTapGestures { state.cancel() } },
                 contentAlignment = Alignment.Center,
             ) { Icon(PgIcons.Trash, null, tint = c.er) }
@@ -292,7 +295,7 @@ fun VoiceRecordingBar(state: VoiceRecState, modifier: Modifier = Modifier) {
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(PgIcons.Back, null, tint = c.ink2, modifier = Modifier.size(16.dp))
-                Text("Slide to cancel", color = c.ink2, fontSize = 14.sp)
+                Text(stringResource(R.string.voice_slide_cancel), color = c.ink2, fontSize = 14.sp)
             }
         }
     }
@@ -439,10 +442,12 @@ fun VoiceBubbleContent(id: String, path: String, durationMs: Int, waveform: Byte
     val progress = if (mine != null && durationMs > 0) (mine.positionMs.toFloat() / durationMs).coerceIn(0f, 1f) else 0f
     val idle = if (outgoing) c.onPrc.copy(alpha = 0.35f) else c.ln2
     val shown = if (mine != null && (playing || mine.positionMs > 0)) mine.positionMs else durationMs
+    val playDesc = stringResource(if (playing) R.string.voice_pause else R.string.voice_play)
+    val waveDesc = stringResource(R.string.voice_waveform)
     Row(modifier.widthIn(min = 230.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         Box(
             Modifier.size(40.dp).clip(CircleShape).background(c.pr)
-                .semantics { contentDescription = if (playing) "Pause voice message" else "Play voice message" }
+                .semantics { contentDescription = playDesc }
                 .pointerInput(id, path) { detectTapGestures { if (playing) VoicePlayer.pause() else VoicePlayer.play(ctx, id, path) } },
             contentAlignment = Alignment.Center,
         ) { Icon(if (playing) PgIcons.Pause else PgIcons.Play, null, tint = c.onPr, modifier = Modifier.size(22.dp)) }
@@ -450,7 +455,7 @@ fun VoiceBubbleContent(id: String, path: String, durationMs: Int, waveform: Byte
         val gap = with(LocalDensity.current) { 2.dp.toPx() }
         Canvas(
             Modifier.weight(1f).height(28.dp)
-                .semantics { contentDescription = "Voice message waveform, tap to seek" }
+                .semantics { contentDescription = waveDesc }
                 .pointerInput(id, path, durationMs) { detectTapGestures { o -> VoicePlayer.play(ctx, id, path, (o.x / size.width * durationMs).roundToInt().coerceIn(0, durationMs)) } },
         ) {
             val n = maxOf(8, ((size.width + gap) / (barW + gap)).toInt())
