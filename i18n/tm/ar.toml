@@ -499,7 +499,7 @@ where = [
   "ios group_section_gone: Section heading, and its spoken label, for groups the user left or was removed from.",
   "desktop group_left_or_removed: Desktop, groups (in group_live_view.rs, live_list).",
 ]
-text = "مغادَرة أو مُزالة"
+text = "غادرتها أو أُزلت منها"
 
 [t_e2dde653be]
 en = "Removed"
@@ -1204,7 +1204,7 @@ where = [
   "ios group_invites_link_valid: Sub line under Create invite link: how long a link works.",
   "desktop group_valid_for_7_days: Desktop, groups (in group_live_view.rs, group_info_page).",
 ]
-text = "صالح لمدة 7 أيام"
+text = "صالح لمدة سبعة أيام"
 
 [t_77c224dd5b]
 en = "Members"
@@ -1317,7 +1317,7 @@ where = [
   "ios group_member_flags: Part of a member row sub line. {flags} is how many flags the member has, {total} how many remove them.",
   "ios group_flags_count_desc: Spoken label of the flag meter. {flags} is flags so far, {total} flags that remove.",
 ]
-text = "{flags} من {total} إبلاغات"
+text = "الإبلاغات: {flags} من {total}"
 
 [t_37dd4a21e3]
 en = "{n} of {total}"
@@ -1449,7 +1449,7 @@ where = [
   "android groupsb_open_body2: Second paragraph of the open-the-group confirmation.",
   "desktop group_while_its_open_no: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = "ما دامت مفتوحة، لا تُرسل إشعارات القراءة في هذه المجموعة، ويرى الأعضاء من المتصل. يمكن لكل شخص إخفاء نفسه من إعداداته."
+text = "ما دامت مفتوحة، لا تُرسل إيصالات القراءة في هذه المجموعة، ويرى الأعضاء من المتصل. يمكن لكل شخص إخفاء نفسه من إعداداته."
 
 [t_34a20a7bcc]
 en = "You can close the link any time; everyone already in stays."
@@ -1586,7 +1586,7 @@ where = [
   "android groupsb_public_note: Explanation under the Public group section.",
   "desktop group_the_open_link_doesnt: Desktop, groups (in group_live_view.rs, group_info_page).",
 ]
-text = "الرابط المفتوح لا تنتهي صلاحيته. إغلاقه يوقف الانضمامات الجديدة، ويبقى كل من انضم. ما دامت المجموعة مفتوحة، لا تُرسل فيها إشعارات القراءة ويرى الأعضاء من المتصل."
+text = "الرابط المفتوح لا تنتهي صلاحيته. إغلاقه يوقف الانضمامات الجديدة، ويبقى كل من انضم. ما دامت المجموعة مفتوحة، لا تُرسل فيها إيصالات القراءة ويرى الأعضاء من المتصل."
 
 [t_2b15a37cca]
 en = "Hosts"
@@ -1627,7 +1627,7 @@ where = [
 zero = "{count} مضيف متصل. تصل المنشورات فورًا."
 one = "مضيف واحد متصل. تصل المنشورات فورًا."
 two = "مضيفان متصلان. تصل المنشورات فورًا."
-few = "{count} مضيفين متصلون. تصل المنشورات فورًا."
+few = "{count} مضيفين متصلين. تصل المنشورات فورًا."
 many = "{count} مضيفًا متصلًا. تصل المنشورات فورًا."
 other = "{count} مضيف متصل. تصل المنشورات فورًا."
 
@@ -2060,7 +2060,7 @@ where = [
   "android groupsb_ask_again: Menu item to send another chat request. {name} is their first name.",
   "ios group_member_ask_again: Action row title. {name} is the member’s first name.",
 ]
-text = "سؤال {name} مجددًا"
+text = "إرسال طلب جديد إلى {name}"
 
 [t_ce139b4f5a]
 en = "Ask {name} for a private chat"
@@ -2095,7 +2095,7 @@ where = [
   "ios group_member_make_admin: Action row title.",
   "desktop group_make_admin: Desktop, groups (in group_live_view.rs, live_menu).",
 ]
-text = "تعيين مشرفًا"
+text = "تعيينه مشرفًا"
 
 [t_67e0ad762a]
 en = "Remove admin"
@@ -2120,7 +2120,7 @@ where = [
   "ios group_member_make_host: Action row title.",
   "desktop group_make_host: Desktop, groups (in group_live_view.rs, live_menu).",
 ]
-text = "تعيين مضيفًا"
+text = "تعيينه مضيفًا"
 
 [t_935d7fa572]
 en = "Asks {name} to host. They have to accept."
@@ -2174,7 +2174,7 @@ where = [
   "android groupsb_make_callhost: Menu item that asks the member's device to carry calls. A short device id may follow it.",
   "desktop group_make_call_host: Desktop, groups (in group_live_view.rs, live_menu).",
 ]
-text = "تعيين مضيفًا للمكالمات"
+text = "تعيينه مضيفًا للمكالمات"
 
 [t_333b0c3903]
 en = "Asks {name} to carry group calls. They have to accept."
@@ -2488,7 +2488,7 @@ where = [
   "android groupsb_join_note: Hint under the join preview.",
   "ios group_join_hint: Hint on the join page.",
 ]
-text = "الانضمام يوصل هذا الهاتف بمضيفي المجموعة. يرى الأعضاء اسمك؛ والمضيفون وحدهم يعرفون كيفية الوصول إلى هذا الهاتف. قد يستغرق ذلك دقيقة."
+text = "الانضمام يوصل هذا الهاتف بمضيفي المجموعة. يرى الأعضاء اسمك؛ والمضيفون وحدهم يعرفون كيفية الوصول إلى هذا الهاتف. قد يستغرق ذلك حتى دقيقة."
 
 [t_0ac85e397c]
 en = "the group"
@@ -2612,7 +2612,7 @@ where = [
   "ios unlock_lost_notice: Warning on the lost-key screen.",
   "desktop gate_you_didnt_set_a: Desktop, sign-in and gate screens (in view.rs, key_lost_view).",
 ]
-text = "لم يتم تعيين عبارة مرور، لذا فكلمات الاسترداد الأربع والعشرون هي الطريق الوحيد للعودة. تبقى جهات اتصالك كما هي."
+text = "لم تُعيَّن عبارة مرور لهذا الحساب، لذا فكلمات الاسترداد الأربع والعشرون هي طريق العودة الوحيد. تبقى جهات اتصالك كما هي."
 
 [t_612f9aaa42]
 en = "Switch account"
@@ -2839,7 +2839,7 @@ en = "{current} goes offline on this phone. Calls to {current} will ring only on
 where = [
   "android accounts_switch_lead: Explanation on the switch-confirmation screen. {current} is the nickname of the account that is open now (it appears twice but is passed once).",
 ]
-text = "سيصبح {current} غير متصل على هذا الهاتف. المكالمات إلى {current} سترن فقط على أجهزتك المرتبطة الأخرى حتى العودة إليه."
+text = "سيصبح حساب {current} غير متصل على هذا الهاتف. المكالمات إلى {current} سترن فقط على أجهزتك المرتبطة الأخرى حتى العودة إليه."
 
 [t_e96b3bac70]
 en = "Passphrase for {name}"
@@ -2937,7 +2937,7 @@ en = "Your key and 24 words"
 where = [
   "android profile_account_recovery_sub: Line under the Account recovery row.",
 ]
-text = "مفتاحك وكلماتك الـ24"
+text = "مفتاحك وكلماتك الأربع والعشرون"
 
 [t_6f9a91cdc0]
 en = "Your contact code"
@@ -3278,7 +3278,7 @@ where = [
   "ios people_profile_status_placeholder: Placeholder of the status field.",
   "desktop profile_what_are_you_up: Desktop, profile and settings (in profile_view.rs, my_profile).",
 ]
-text = "ما الذي يشغلك الآن؟"
+text = "ما الجديد لديك؟"
 
 [t_a65f16b027]
 en = "About"
@@ -3657,7 +3657,7 @@ where = [
   "android profile_crop_hint: Instruction under the picture cropper.",
   "desktop profile_drag_to_move_the: Desktop, profile and settings (in profile_view.rs, profile_layer).",
 ]
-text = "يمكن سحب الصورة لتحريكها، أو استخدام مفاتيح الأسهم. زر الجمع وزر الطرح للتكبير والتصغير."
+text = "يمكن سحب الصورة لتحريكها، أو استخدام مفاتيح الأسهم. مفتاحا الزائد والناقص للتكبير والتصغير."
 
 [t_4b71415535]
 en = "Zoom"
@@ -3733,7 +3733,7 @@ where = [
   "ios people_pic_bad_type: Picture refused: not PNG, JPEG or WebP.",
   "desktop profile_tinline_can_use_png: Desktop, profile and settings (in profile_ui.rs, inspect).",
 ]
-text = "يمكن لـ Tinline استخدام صور PNG أو JPEG أو WebP. هذا الملف من نوع آخر."
+text = "يستطيع Tinline استخدام صور PNG أو JPEG أو WebP. هذا الملف من نوع آخر."
 
 [t_27a3a26172]
 en = "That file couldn’t be read as a picture. It may be damaged."
@@ -3749,7 +3749,7 @@ en = "That picture is {width} × {height} pixels. Tinline accepts up to {max} pi
 where = [
   "android profile_pick_too_wide: Error when the picked picture has too many pixels. {width} and {height} are the picture's size, {max} the longest side allowed.",
 ]
-text = "أبعاد هذه الصورة {width} × {height} بكسل. يقبل Tinline حتى {max} بكسل لكل ضلع."
+text = "أبعاد هذه الصورة {width} × {height} بكسل. يقبل Tinline حتى {max} بكسل لكل جانب."
 
 [t_4b7a9203ca]
 en = "The name can’t be empty."
@@ -3831,7 +3831,7 @@ where = [
   "android profile_err_value_long: Error when one profile field's value is too large.",
   "ios people_rule_value_long: Profile check: a value is too long.",
 ]
-text = "هذا طويل جدًا. الحد الأقصى لكل معلومة 16 كيبيبايت."
+text = "هذا طويل جدًا. الحد الأقصى لكل معلومة 16 كيلوبايت."
 
 [t_c60d4cb730]
 en = "You’ve reached 64 pieces of information. Remove one to add another."
@@ -3855,7 +3855,7 @@ where = [
   "android profile_err_use_picture_controls: Error when someone tries to set the picture as an ordinary field.",
   "ios people_rule_picture: Profile check: the picture cannot be set as plain information.",
 ]
-text = "لذلك أدوات خاصة بالصورة."
+text = "يمكنك استخدام أدوات الصورة لذلك."
 
 [t_3cfbc5f218]
 en = "Availability can be changed but not removed."
@@ -4464,7 +4464,7 @@ where = [
   "ios onboarding_skip: Button that skips the passphrase.",
   "desktop signup_skip_for_now: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = "التخطي الآن"
+text = "التخطي حاليًا"
 
 [t_647428ff94]
 en = "Encrypting…"
@@ -4908,7 +4908,7 @@ where = [
   "ios onboarding_terms3_rest: Rest of the third point on the terms screen.",
   "desktop signup_it_lives_on_your: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = "يعيش على أجهزتك، لا على خادم. كلمات الاسترداد هي طريق العودة إليه، لذا يُستحسن حفظها في مكان آمن."
+text = "يبقى على أجهزتك، لا على خادم. كلمات الاسترداد هي طريق العودة إليه، لذا يُستحسن حفظها في مكان آمن."
 
 [t_71508df1e3]
 en = "By continuing, you agree to the {terms} and have read the {privacy}."
@@ -5030,7 +5030,7 @@ where = [
   "android home_banner_allow: Banner button that opens the full-screen call setting.",
   "ios onboarding_allow: Button that asks for a permission.",
 ]
-text = "سماح"
+text = "السماح"
 
 [t_dd9c8cc79f]
 en = "Allow {permission}"
@@ -5085,7 +5085,7 @@ en = "Android can pause Tinline in the background, so calls and messages can arr
 where = [
   "android perms_battery_body: Body of the battery warning card. Unrestricted is the name of the Android battery setting.",
 ]
-text = "قد يوقف Android تطبيق Tinline مؤقتًا في الخلفية، فتصل المكالمات والرسائل متأخرة. يمكنك ضبط استخدام البطارية لـ Tinline على «غير مقيَّد»."
+text = "قد يوقف Android تطبيق Tinline مؤقتًا في الخلفية، فتصل المكالمات والرسائل متأخرة. يمكنك ضبط استخدام Tinline للبطارية على «غير مقيَّد»."
 
 [t_86979511dc]
 en = "So the other person can hear you"
@@ -5570,7 +5570,7 @@ where = [
   "ios people_line_connected: Accessibility description of the line between the user and a contact: connected.",
   "desktop profile_connected: Desktop, profile and settings (in profile_view.rs, sounds_page).",
 ]
-text = "متصل"
+text = "تم الاتصال"
 
 [t_2b6544f393]
 en = "Call ended"
@@ -5863,7 +5863,7 @@ where = [
   "ios settings_all_can_call: Subtitle of Who can call me when every contact may call.",
   "desktop profile_all_contacts_can_call: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = "يمكن لكل جهات الاتصال الاتصال بك"
+text = "المكالمات مسموحة لكل جهات الاتصال"
 
 [t_364e4d7be9]
 en = "Needs your passphrase"
@@ -5907,7 +5907,7 @@ where = [
   "ios settings_read_receipts: Privacy row and switch label.",
   "desktop profile_read_receipts: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = "إشعارات القراءة"
+text = "إيصالات القراءة"
 
 [t_e33dd40c71]
 en = "People see when you’ve read their messages"
@@ -6343,7 +6343,7 @@ where = [
   "ios settings_source_sub: Subtitle of the Source code row.",
   "desktop profile_tinline_is_open_source: Desktop, profile and settings (in profile_view.rs, about_page).",
 ]
-text = "Tinline مفتوح المصدر"
+text = "تطبيق Tinline مفتوح المصدر"
 
 [t_64cb92446a]
 en = "Tinline has no ads and no tracking. Your messages and calls go between your devices and the people you talk to."
@@ -7104,7 +7104,7 @@ en = "Approving sends your {bold} to {name}. It becomes a full copy of you: it c
 where = [
   "android link_approve_warning: Warning on the approval step. {bold} is the words recovery phrase, shown in bold; {name} is the new device's name.",
 ]
-text = "الموافقة ترسل {bold} الخاصة بك إلى {name}. يصبح نسخة كاملة منك: يمكنه قراءة دردشاتك والتصرف باسمك. يُستحسن الموافقة فقط على جهاز بين يديك."
+text = "الموافقة ترسل {bold} الخاصة بك إلى {name}. يصبح نسخة كاملة منك: يمكنه قراءة دردشاتك والتصرف باسمك. الموافقة لجهاز بين يديك فقط."
 
 [t_5362d277d1]
 en = "recovery phrase"
@@ -7239,7 +7239,7 @@ where = [
   "ios people_blocked_list_note: Note at the top of the Blocked people screen.",
   "desktop group_one_list_across_all: Desktop, groups (in groups_view.rs, privacy_page).",
 ]
-text = "قائمة واحدة على كل أجهزتك: الحظر الذي يتم على جهاز آخر يظهر هنا أيضًا."
+text = "قائمة واحدة على كل أجهزتك: الحظر من جهاز آخر يظهر هنا أيضًا."
 
 [t_9af1f83c2d]
 en = "Nobody is blocked. To block someone, open their contact page and tap Block."
@@ -7525,7 +7525,7 @@ where = [
   "ios call_waiting_end_answer: Button on the call-waiting card that ends the current call and answers the new one.",
   "desktop call_end_answer: Desktop, calls (voice and video) (in view.rs, waiting_banner).",
 ]
-text = "إنهاء والرد"
+text = "إنهاء ثم الرد"
 
 [t_fc6653bd25]
 en = "Unlock to receive calls"
@@ -7664,7 +7664,7 @@ where = [
   "ios kit_tick_bad: Screen-reader label of a message tick: could not be delivered.",
   "ios shell_tick_bad: Screen reader label. Group row: last message was not delivered.",
 ]
-text = "لم يتم التسليم"
+text = "لم تُسلَّم"
 
 [t_9be5d9ce63]
 en = "Today"
@@ -7831,7 +7831,7 @@ en = "No app on this phone opens .{ext} files — Save it instead"
 where = [
   "android conv_no_app_opens: Toast when no installed app can open a file. {ext} is the file extension without the dot.",
 ]
-text = "لا يوجد تطبيق على هذا الهاتف يفتح ملفات .{ext} — يمكنك حفظه بدلًا من ذلك"
+text = "لا يوجد تطبيق على هذا الهاتف يفتح ملفات {ext} — يمكنك حفظ الملف بدلًا من ذلك"
 
 [t_5daf5e2fcf]
 en = "No camera available."
@@ -7879,7 +7879,7 @@ where = [
   "android conv_offline_peer: Status strip over a chat when the contact is offline. {first} is their first name.",
   "ios chat_strip_peer_offline: Strip above the composer when the other person is offline. {first} is their first name.",
 ]
-text = "{first} غير متصل الآن. تُرسل الرسائل عند اتصال الطرفين."
+text = "لا اتصال لدى {first} الآن. تُرسل الرسائل عند اتصال الطرفين."
 
 [t_12ba578cd4]
 en = "Replying to {first}"
@@ -8325,7 +8325,7 @@ where = [
   "android conv_info_saved: Top line of the message sheet in the 'You' chat. {time} is the clock time.",
   "ios chat_head_saved: First line of the message sheet for a saved item. {time} is the clock time.",
 ]
-text = "حُفظت {time} · على أجهزتك"
+text = "حُفظت في {time} · على أجهزتك"
 
 [t_024fed3498]
 en = "Received {time}"
@@ -8333,7 +8333,7 @@ where = [
   "android conv_info_received: Top line of the message sheet for a message you received. {time} is the clock time.",
   "ios chat_head_received: First line of the message sheet for a received message. {time} is the clock time.",
 ]
-text = "وصلت {time}"
+text = "وصلت في {time}"
 
 [t_88da3750d0]
 en = "Sent {time} · read on {first}’s device"
@@ -8341,7 +8341,7 @@ where = [
   "android conv_info_sent_read: Top line of the message sheet for a sent message that was read. {time} is the clock time, {first} the contact's first name.",
   "ios chat_head_read: First line of the message sheet for a read message. {time} clock time, {first} the other person's first name.",
 ]
-text = "أُرسلت {time} · تمت قراءتها على جهاز {first}"
+text = "أُرسلت في {time} · تمت قراءتها على جهاز {first}"
 
 [t_a4079ed593]
 en = "Sent {time} · on {first}’s device"
@@ -8349,7 +8349,7 @@ where = [
   "android conv_info_sent_delivered: Top line of the message sheet for a delivered message. {time} is the clock time, {first} the contact's first name.",
   "ios chat_head_delivered: First line of the message sheet for a delivered message. {time} clock time, {first} first name.",
 ]
-text = "أُرسلت {time} · على جهاز {first}"
+text = "أُرسلت في {time} · على جهاز {first}"
 
 [t_f03bc2cf6f]
 en = "Sent {time} · only on this phone so far"
@@ -8357,7 +8357,7 @@ where = [
   "android conv_info_sent_only_here: Top line of the message sheet for a message that has only reached this phone. {time} is the clock time.",
   "ios chat_head_only_here: First line of the message sheet for a message only on this phone. {time} clock time.",
 ]
-text = "أُرسلت {time} · على هذا الهاتف فقط حتى الآن"
+text = "أُرسلت في {time} · على هذا الهاتف فقط حتى الآن"
 
 [t_a0c3acc9a5]
 en = "Sent {time} · waiting for {first}’s device to confirm"
@@ -8365,7 +8365,7 @@ where = [
   "android conv_info_sent_waiting: Top line of the message sheet for a message not yet confirmed. {time} is the clock time, {first} the contact's first name.",
   "ios chat_head_sent: First line of the message sheet for a sent message without confirmation. {time} clock time, {first} first name.",
 ]
-text = "أُرسلت {time} · بانتظار تأكيد جهاز {first}"
+text = "أُرسلت في {time} · بانتظار تأكيد جهاز {first}"
 
 [t_914cbd7944]
 en = "Read · signed by {name} · device {device}"
@@ -8452,7 +8452,7 @@ where = [
   "android conv_attach_photos: Option in the attach sheet that picks from the gallery.",
   "ios chat_attach_photos: Option in the attach sheet: pick photos and videos.",
 ]
-text = "الصور والفيديوهات"
+text = "الصور ومقاطع الفيديو"
 
 [t_50ad995a3d]
 en = "Camera"
@@ -8558,7 +8558,7 @@ where = [
   "android voice_discard: Screen-reader label of the trash button on a locked recording.",
   "ios chat_voice_discard: Accessibility label of the trash button while a voice message is being recorded hands-free.",
 ]
-text = "تجاهل التسجيل"
+text = "حذف التسجيل"
 
 [t_710621fa84]
 en = "Slide to cancel"
@@ -8924,7 +8924,7 @@ en = "{by} made {sub} an admin"
 where = [
   "android groupsc_admin_granted_other: System line in a group's chat. {by} is who granted it, {sub} is the new admin (either may be 'You' or a name).",
 ]
-text = "تم تعيين {sub} في الإشراف بواسطة {by}"
+text = "تم تعيين {sub} مشرفًا بواسطة {by}"
 
 [t_81cb36972a]
 en = "{by} removed you as admin"
@@ -9282,7 +9282,7 @@ en = "{filled} of {total} flags"
 where = [
   "android groupsc_flags_of: Spoken description of the flag meter: how many of the flags needed to remove a member are filled.",
 ]
-text = "{filled} من {total} إبلاغات"
+text = "الإبلاغات: {filled} من {total}"
 
 [t_9df27ec5da]
 en = "Group call"
@@ -9440,7 +9440,7 @@ where = [
   "ios call_group_you_host: Pill on the group call screen when this phone carries the call.",
   "desktop gcall_youre_the_call_host: Desktop, group calls (in gcall_view.rs, gcall_view).",
 ]
-text = "هاتفك يستضيف المكالمة"
+text = "جهازك يستضيف المكالمة"
 
 [t_253e46de4f]
 en = "Call host: {host}"
@@ -10341,7 +10341,7 @@ where = [
   "ios shell_ring_end_answer: Button that ends the current call and answers the second one.",
   "ios call_waiting_end_answer_desc: Accessibility description of the End & answer button.",
 ]
-text = "إنهاء والرد"
+text = "إنهاء ثم الرد"
 
 [t_5f843abaf8]
 en = "Ends your call with"
@@ -10633,7 +10633,7 @@ where = [
   "android call_info_rtt: Numbers line in About this call. {rtt} is milliseconds, {loss} is the recent packet loss percentage.",
   "ios call_about_stats: Network numbers on the call details card. {rtt} is round-trip time in milliseconds, {loss} is the percentage of lost packets.",
 ]
-text = "ذهاب وإياب {rtt} ملي ثانية · فقد {loss}٪"
+text = "ذهاب وإياب {rtt} مللي ثانية · فقدان {loss}٪"
 
 [t_fb730075f0]
 en = "Your video"
@@ -10740,7 +10740,7 @@ where = [
   "ios shell_mic_body: Explains microphone permission when denied.",
   "ios call_mic_needed_body: Explanation on the microphone permission screen.",
 ]
-text = "دونه، لن يسمعك الطرف الآخر. لا يستمع Tinline إلا أثناء المكالمات — أبدًا في الخلفية."
+text = "دونه، لن يسمعك الطرف الآخر. لا يستمع Tinline إلا أثناء المكالمات، ولا يستمع في الخلفية أبدًا."
 
 [t_6717879327]
 en = "Then go to Permissions › Microphone and allow it."
@@ -10775,7 +10775,7 @@ en = "Not available until you turn it back on."
 where = [
   "android avail_until_manual: Shown while I am on a break without an end time.",
 ]
-text = "غير متاح حتى إعادة التشغيل."
+text = "غير متاح حتى تفعيل التوفر من جديد."
 
 [t_3b67f72e64]
 en = "TAKE A BREAK"
@@ -10803,7 +10803,7 @@ en = "Until I turn it back on"
 where = [
   "android avail_until_on: Break option in the availability sheet.",
 ]
-text = "حتى أعيد تشغيله"
+text = "حتى أعيد تفعيل التوفر"
 
 [t_04849bbbc7]
 en = "you"
@@ -11771,7 +11771,7 @@ en = "Make call host{device}"
 where = [
   "ios group_member_make_callhost: Action row title. {device} is a short device id, empty if the member has one device.",
 ]
-text = "تعيين مضيفًا للمكالمات{device}"
+text = "تعيينه مضيفًا للمكالمات{device}"
 
 [t_2c5d81e205]
 en = "{total} flags remove {name} from the group"
@@ -11816,7 +11816,7 @@ where = [
   "ios group_sys_admin_you: System line. {by} is who made the user admin.",
   "ios shell_group_sys_admin_granted_you: Group chat system line. {by} is who made the user an admin.",
 ]
-text = "تم تعيينك في الإشراف بواسطة {by}"
+text = "تم تعيينك مشرفًا بواسطة {by}"
 
 [t_ea5318e5e0]
 en = "{by} made {name} an admin"
@@ -11824,7 +11824,7 @@ where = [
   "ios group_sys_admin: System line. {by} made {name} an admin.",
   "ios shell_group_sys_admin_granted: Group chat system line. {by} granted admin to {name}.",
 ]
-text = "تم تعيين {name} في الإشراف بواسطة {by}"
+text = "تم تعيين {name} مشرفًا بواسطة {by}"
 
 [t_870567c1f4]
 en = "{by} removed {name} as admin"
@@ -12214,7 +12214,7 @@ en = "{name} goes offline on this phone. Calls to {name} will ring only on your 
 where = [
   "ios unlock_switch_body: Body of the switch-account confirmation; {name} is the current account's name.",
 ]
-text = "سيصبح {name} غير متصل على هذا الهاتف. المكالمات إلى {name} سترن فقط على أجهزتك المرتبطة الأخرى حتى العودة إليه."
+text = "سيصبح حساب {name} غير متصل على هذا الهاتف. المكالمات إلى {name} سترن فقط على أجهزتك المرتبطة الأخرى حتى العودة إليه."
 
 [t_049066acc6]
 en = "{count} of 24"
@@ -12249,14 +12249,14 @@ en = "{name} wants to join your account. It should be showing the same six digit
 where = [
   "ios link_match_body: Body when comparing codes; {name} is the new device's name, shown in bold.",
 ]
-text = "{name} يريد الانضمام إلى حسابك. يُفترض أن تظهر عليه الأرقام الستة نفسها الظاهرة أدناه."
+text = "يريد {name} الانضمام إلى حسابك. يُفترض أن تظهر عليه الأرقام الستة نفسها الظاهرة أدناه."
 
 [t_d5dd177ee1]
 en = "Approving sends your {phrase} to {name}. It becomes a full copy of you: it can read your chats and act as you. Approve only a device you hold."
 where = [
   "ios link_approve_body: Warning on the approval step; {phrase} is the bold words recovery phrase and {name} is the new device's name.",
 ]
-text = "الموافقة ترسل {phrase} الخاصة بك إلى {name}. يصبح نسخة كاملة منك: يمكنه قراءة دردشاتك والتصرف باسمك. يُستحسن الموافقة فقط على جهاز بين يديك."
+text = "الموافقة ترسل {phrase} الخاصة بك إلى {name}. يصبح نسخة كاملة منك: يمكنه قراءة دردشاتك والتصرف باسمك. الموافقة لجهاز بين يديك فقط."
 
 [t_9fa27bd052]
 en = "Linked to {name}"
@@ -12349,7 +12349,7 @@ en = "Word {n} and {more} more aren’t in the recovery word list. Check the spe
 where = [
   "ios shell_restore_bad_many: Restore screen message. {n} is the first wrong word’s position, {more} how many other words are also wrong.",
 ]
-text = "الكلمة {n} و{more} كلمات أخرى ليست في قائمة كلمات الاسترداد. يمكنك التحقق من الإملاء."
+text = "الكلمة {n} وكلمات أخرى ({more}) ليست في قائمة كلمات الاسترداد. يمكنك التحقق من الإملاء."
 
 [t_814973bf24]
 en = "{sub} from {name}"
@@ -12455,7 +12455,7 @@ en = "That picture is {w} × {h} pixels. Tinline accepts up to {max} pixels on a
 where = [
   "ios people_pic_too_large_px: Picture refused: too many pixels. {w} and {h} are its width and height, {max} the limit per side.",
 ]
-text = "أبعاد هذه الصورة {w} × {h} بكسل. يقبل Tinline حتى {max} بكسل لكل ضلع."
+text = "أبعاد هذه الصورة {w} × {h} بكسل. يقبل Tinline حتى {max} بكسل لكل جانب."
 
 [t_77c8c02847]
 en = "Busy is not available yet. Your call settings are unchanged."
@@ -12985,7 +12985,7 @@ en = "Your key is kept in a plain file in Tinline’s data folder. Anyone who co
 where = [
   "desktop app_your_key_is_kept: Desktop, app-level notices and notifications (in app.rs, key_home).",
 ]
-text = "مفتاحك محفوظ في ملف غير محمي داخل مجلد بيانات Tinline. أي شخص ينسخ ذلك المجلد يمكنه فتح حسابك. يمكنك إضافة عبارة مرور لحمايته؛ وعندها يُحذف الملف."
+text = "مفتاحك محفوظ في ملف عادي غير مشفّر داخل مجلد بيانات Tinline. أي شخص ينسخ ذلك المجلد يمكنه فتح حسابك. يمكنك إضافة عبارة مرور لحمايته؛ وعندها يُحذف الملف."
 
 [t_532c9419c8]
 en = "Your key is kept in this computer’s keyring, so Tinline opens without asking."
@@ -13083,7 +13083,7 @@ en = "Ctrl E cancels"
 where = [
   "desktop call_ctrl_e_cancels: Desktop, calls (voice and video) (in view.rs, video_call_view).",
 ]
-text = "Ctrl E للإلغاء"
+text = "للإلغاء: Ctrl E"
 
 [t_12e7b54a0e]
 en = "Declined on another device"
@@ -13111,7 +13111,7 @@ en = "Enter answers · Esc declines"
 where = [
   "desktop call_enter_answers_esc_declines: Desktop, calls (voice and video) (in view.rs, video_call_view).",
 ]
-text = "Enter للرد · Esc للرفض"
+text = "للرد: Enter · للرفض: Esc"
 
 [t_55195cbec5]
 en = "For testing. Your picture may stutter or your computer may heat up."
@@ -13153,7 +13153,7 @@ en = "{rtt_ms} ms round trip · {value}% lost"
 where = [
   "desktop call_ms_round_trip_lost: Desktop, calls (voice and video) (in call_screen.rs, call_about). {rtt_ms} is a value filled in by the app. {value} is a value filled in by the app.",
 ]
-text = "ذهاب وإياب {rtt_ms} ملي ثانية · فقد {value}٪"
+text = "ذهاب وإياب {rtt_ms} مللي ثانية · فقدان {value}٪"
 
 [t_f72c120dfc]
 en = "No camera"
@@ -13398,7 +13398,7 @@ en = "Esc to cancel"
 where = [
   "desktop chat_esc_to_cancel: Desktop, chats (in voice.rs, record_bar).",
 ]
-text = "Esc للإلغاء"
+text = "للإلغاء: Esc"
 
 [t_1cee9b36cc]
 en = "Find in this chat (Ctrl+F)"
@@ -13419,7 +13419,7 @@ en = "{name} is offline. Delete for everyone reaches their devices when you’re
 where = [
   "desktop chat_is_offline_delete_for: Desktop, chats (in chat_view.rs, delete_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = "{name} غير متصل الآن. يصل «الحذف لدى الجميع» إلى أجهزة {name} عند اتصال الطرفين."
+text = "لا اتصال لدى {name} الآن. يصل «الحذف لدى الجميع» إلى أجهزة {name} عند اتصال الطرفين."
 
 [t_d5890c1bc8]
 en = "It was never delivered, so it’s only on this computer."
@@ -13447,7 +13447,7 @@ en = "Messages go straight to their devices."
 where = [
   "desktop chat_messages_go_straight_to: Desktop, chats (in chat_view.rs, message_list).",
 ]
-text = "تصل الرسائل مباشرة إلى أجهزتهم."
+text = "تصل الرسائل مباشرة إلى أجهزة الطرف الآخر."
 
 [t_64c071fa58]
 en = "{value} · not downloaded"
@@ -13601,7 +13601,7 @@ en = "Added {value}"
 where = [
   "desktop contact_added: Desktop, contact detail (in view.rs, detail_view). {value} is a value filled in by the app.",
 ]
-text = "تمت الإضافة {value}"
+text = "تاريخ الإضافة: {value}"
 
 [t_81af947f5e]
 en = "Calls themself “{name}” · {added}"
@@ -13678,7 +13678,7 @@ en = "Anyone who sees these words can become you. Write them down and keep them 
 where = [
   "desktop gate_anyone_who_sees_these: Desktop, sign-in and gate screens (in view.rs, phrase_view).",
 ]
-text = "أي شخص يرى هذه الكلمات يمكنه انتحال هويتك. يُستحسن كتابتها وحفظها في مكان آمن."
+text = "أي شخص يرى هذه الكلمات يمكنه التصرف باسمك. يُستحسن كتابتها وحفظها في مكان آمن."
 
 [t_83fb73677c]
 en = "I have saved it"
@@ -13727,7 +13727,7 @@ en = "This computer no longer has the key that opens it, and its keyring entry i
 where = [
   "desktop gate_this_computer_no_longer: Desktop, sign-in and gate screens (in view.rs, key_lost_view).",
 ]
-text = "لم يعد لدى هذا الحاسوب المفتاح الذي يفتح الحساب، وإدخاله في سلسلة المفاتيح مفقود. بعد الاستعادة، تصلك مكالماتك من جديد."
+text = "لم يعد لدى هذا الحاسوب المفتاح الذي يفتح الحساب، ولم يعد قيده موجودًا في سلسلة المفاتيح. بعد الاستعادة، تصلك مكالماتك من جديد."
 
 [t_46f9d90635]
 en = "Tinline couldn’t store the key that opens your account on this computer, so your account has not been saved yet. Nothing is lost."
@@ -14144,7 +14144,7 @@ where = [
 zero = "{count} مضيف متصل{extra}. تصل المنشورات فورًا."
 one = "مضيف واحد متصل{extra}. تصل المنشورات فورًا."
 two = "مضيفان متصلان{extra}. تصل المنشورات فورًا."
-few = "{count} مضيفين متصلون{extra}. تصل المنشورات فورًا."
+few = "{count} مضيفين متصلين{extra}. تصل المنشورات فورًا."
 many = "{count} مضيفًا متصلًا{extra}. تصل المنشورات فورًا."
 other = "{count} مضيف متصل{extra}. تصل المنشورات فورًا."
 
@@ -14216,7 +14216,7 @@ en = "Joining connects this computer to the group’s hosts. Members see your na
 where = [
   "desktop group_joining_connects_this_computer: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = "الانضمام يوصل هذا الحاسوب بمضيفي المجموعة. يرى الأعضاء اسمك؛ والمضيفون وحدهم يعرفون كيفية الوصول إلى هذا الحاسوب. قد يستغرق ذلك دقيقة."
+text = "الانضمام يوصل هذا الحاسوب بمضيفي المجموعة. يرى الأعضاء اسمك؛ والمضيفون وحدهم يعرفون كيفية الوصول إلى هذا الحاسوب. قد يستغرق ذلك حتى دقيقة."
 
 [t_c3fc51db22]
 en = "• keep a full copy of the group\n• pass messages on for members while their phones sleep\n• learn members’ group addresses (only hosts do)\n• need to stay running to be useful"
@@ -14328,14 +14328,14 @@ en = " · {flags} of {flags_needed} flags"
 where = [
   "desktop group_of_flags: Desktop, groups (in group_live_view.rs, live_menu). {flags} is a value filled in by the app. {flags_needed} is a value filled in by the app.",
 ]
-text = " · {flags} من {flags_needed} إبلاغات"
+text = " · الإبلاغات: {flags} من {flags_needed}"
 
 [t_43b101be74]
 en = " · {flags} of {value} flags"
 where = [
   "desktop group_of_flags_2: Desktop, groups (in group_live_view.rs, group_info_page). {flags} is a value filled in by the app. {value} is a value filled in by the app.",
 ]
-text = " · {flags} من {value} إبلاغات"
+text = " · الإبلاغات: {flags} من {value}"
 
 [t_355dca9b97]
 en = "Offered to host"
@@ -14811,7 +14811,7 @@ en = "A linked device becomes you"
 where = [
   "desktop link_a_linked_device_becomes: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = "الجهاز المرتبط يصبح أنت"
+text = "الجهاز المرتبط يصبح نسخة منك"
 
 [t_d73b68764a]
 en = "A passphrase encrypts your account on this computer. Optional — leave it empty and Tinline opens straight to your contacts. You can add one later in Settings."
@@ -15077,7 +15077,7 @@ en = "Show this to the device you want to add. It becomes you, so only link your
 where = [
   "desktop link_show_this_to_the: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = "يمكنك عرض هذا على الجهاز المراد إضافته. سيصبح أنت، لذا يُستحسن ربط أجهزتك أنت فقط."
+text = "يمكنك عرض هذا على الجهاز المراد إضافته. سيصبح نسخة منك، لذا يُستحسن ربط أجهزتك أنت فقط."
 
 [t_0826ccb2c7]
 en = "Start using Tinline"
@@ -15392,7 +15392,7 @@ en = "Fixed rung"
 where = [
   "desktop profile_fixed_rung: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = "درجة ثابتة"
+text = "مستوى ثابت"
 
 [t_97ecbd9279]
 en = "Groups you share aren’t affected. You can unblock {name} here at any time."
@@ -15441,7 +15441,7 @@ en = "{name} isn’t one of your contacts. You know them through a group. Lookin
 where = [
   "desktop profile_isnt_one_of_your: Desktop, profile and settings (in profile_view.rs, person_profile). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = "{name} خارج جهات اتصالك. تعرّفتما عبر مجموعة. عرض الملف الشخصي لا يضيف أحدًا."
+text = "ليس {name} من جهات اتصالك. تعرّفتما عبر مجموعة. عرض الملف الشخصي لا يضيف أحدًا."
 
 [t_33776c2f81]
 en = "It is offline, so it finds out the next time it connects."
@@ -15690,7 +15690,7 @@ en = "Quit Tinline"
 where = [
   "desktop profile_quit_tinline: Desktop, profile and settings (in profile_view.rs, native_page).",
 ]
-text = "إنهاء Tinline"
+text = "الخروج من Tinline"
 
 [t_2b5999b60c]
 en = "Rate control"
@@ -15830,7 +15830,7 @@ en = "That picture is {status} × {host} pixels. Tinline accepts up to 4096 pixe
 where = [
   "desktop profile_that_picture_is_pixels: Desktop, profile and settings (in profile_ui.rs, inspect). {status} is a value filled in by the app. {host} is a value filled in by the app.",
 ]
-text = "أبعاد هذه الصورة {status} × {host} بكسل. يقبل Tinline حتى 4096 بكسل لكل ضلع."
+text = "أبعاد هذه الصورة {status} × {host} بكسل. يقبل Tinline حتى 4096 بكسل لكل جانب."
 
 [t_5fc61ddfab]
 en = "The {what} can’t be empty."
@@ -16033,7 +16033,7 @@ en = "Your settings for {name}"
 where = [
   "desktop profile_your_settings_for: Desktop, profile and settings (in profile_view.rs, person_profile). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = "إعداداتك: {name}"
+text = "إعداداتك الخاصة بـ {name}"
 
 [t_1a0a38d265]
 en = "Account"
@@ -16047,14 +16047,14 @@ en = "Anyone who sees these words can become you. Check nobody is looking, then 
 where = [
   "desktop settings_anyone_who_sees_these: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = "أي شخص يرى هذه الكلمات يمكنه انتحال هويتك. يُستحسن التأكد من أن لا أحد ينظر قبل إظهارها."
+text = "أي شخص يرى هذه الكلمات يمكنه التصرف باسمك. يُستحسن التأكد من أن لا أحد ينظر قبل إظهارها."
 
 [t_b943e62fec]
 en = "Anyone who sees these words can become you. Check nobody is looking."
 where = [
   "desktop settings_anyone_who_sees_these_words: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = "أي شخص يرى هذه الكلمات يمكنه انتحال هويتك. يُستحسن التأكد من أن لا أحد ينظر."
+text = "أي شخص يرى هذه الكلمات يمكنه التصرف باسمك. يُستحسن التأكد من أن لا أحد ينظر."
 
 [t_007f441e85]
 en = "Asks you to confirm first"
@@ -16075,7 +16075,7 @@ en = "Calls won’t ring until you turn it back on"
 where = [
   "desktop settings_calls_wont_ring_until: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = "لن ترن المكالمات حتى إعادة التشغيل"
+text = "لن ترن المكالمات حتى تفعيل التوفر من جديد"
 
 [t_3261bdf0e1]
 en = "Change"
@@ -16152,7 +16152,7 @@ en = "Recommended — your key is in a plain file"
 where = [
   "desktop settings_recommended_your_key_is: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = "موصى به — مفتاحك في ملف غير محمي"
+text = "موصى به — مفتاحك في ملف عادي غير مشفّر"
 
 [t_99d98f7cf9]
 en = "Remove {name} from this computer? Its contacts, chats and call history here are deleted. Your recovery phrase brings back the identity, not those."
@@ -16537,7 +16537,7 @@ en = "Quit"
 where = [
   "desktop tray_quit: Desktop, system tray (in tray.rs, build).",
 ]
-text = "إنهاء"
+text = "خروج"
 
 [t_a8432fcc64]
 en = "Tinline - {status}"
