@@ -937,6 +937,9 @@ text = "कोशिश जारी है..."
 [gate_turn_on]
 text = "चालू करें"
 
+[gate_you_didnt_set_a]
+text = "आपने पासफ़्रेज़ नहीं रखा था, इसलिए {words} रिकवरी शब्द ही वापसी का एकमात्र तरीका हैं। आपके संपर्क बने रहेंगे।"
+
 [gate_your_calls_come_through]
 text = "आपके वापस ऑनलाइन आते ही आपकी कॉल फिर से आने लगेंगी।"
 
@@ -1018,6 +1021,10 @@ text = "होस्ट ग्रुप की पूरी कॉपी रख�
 
 [group_a_host_keeps_a_full]
 text = "होस्ट ग्रुप की पूरी कॉपी रखता है, सदस्यों के फ़ोन सोते समय संदेश आगे पहुँचाता है और सदस्यों के ग्रुप पते जान लेता है। इसे चालू रहना होता है। होस्ट करने से आप एडमिन नहीं बन जाते; आप कभी भी रोक सकते हैं।"
+
+[group_a_host_lists_up]
+one = "होस्ट एक बार में ज़्यादा से ज़्यादा {count} व्यक्ति दिखाता है, इसलिए और लोग भी हो सकते हैं।"
+other = "होस्ट एक बार में {count} लोगों तक दिखाता है, इसलिए और लोग भी हो सकते हैं।"
 
 [group_a_host_stays_on]
 text = "होस्ट चालू रहता है और दूसरों के ऑफ़लाइन होने पर पोस्ट आगे पहुँचाता है"
@@ -3265,6 +3272,12 @@ text = "परिचय में कंट्रोल या टेक्स�
 [common_list_and]
 text = "{list} और {last}"
 
+[call_reconnecting_2]
+text = "कॉल फिर से जुड़ रही है…"
+
+[call_couldnt_connect]
+text = "कॉल जुड़ नहीं पाई"
+
 [call_history_fallback]
 text = "Tinline कॉल"
 
@@ -3274,8 +3287,18 @@ text = "खुद को जवाब"
 [chat_replying_to_yourself]
 text = "खुद को जवाब"
 
+[group_invited_by_you]
+text = "आपने आमंत्रित किया"
+
+[group_flags_of]
+one = "{count} में से {flags} फ़्लैग"
+other = "{count} में से {flags} फ़्लैग"
+
 [group_link_own]
 text = "आपके अपने दूसरे डिवाइस के लिए लिंक"
+
+[group_owner_by_you_unnamed]
+text = "आपने आमंत्रित किया"
 
 [group_host_online]
 text = "ऑनलाइन"
@@ -3286,8 +3309,24 @@ text = "ऑफ़लाइन"
 [group_hosts_store_the_group_admin]
 text = "होस्ट ग्रुप को सहेजते हैं और दूसरों के ऑफ़लाइन होने पर पोस्ट आगे पहुँचाते हैं। ये वे सदस्य हैं जिन पर आप भरोसा करते हैं: होस्ट इस ग्रुप में पोस्ट की गई हर चीज़ पढ़ सकता है। किसी सदस्य के मेनू से होस्ट नियुक्त करें; उन्हें स्वीकार करना होगा। होस्ट हटाने पर 2 दिन के अंदर ग्रुप का पता बदल जाता है, ताकि वह डिवाइस फिर उस तक न पहुँच सके।"
 
+[group_status_no_host_yet]
+text = "अभी कोई होस्ट नहीं"
+
+[group_status_waiting_for_a_host]
+text = "होस्ट का इंतज़ार"
+
+[group_online_count]
+one = "{count} ऑनलाइन"
+other = "{count} ऑनलाइन"
+
+[group_online_capped]
+text = "{count}+ ऑनलाइन"
+
 [group_post_photo]
 text = "फ़ोटो"
+
+[group_post_photo_caption]
+text = "फ़ोटो · {caption}"
 
 [group_preview_you]
 text = "आप: {text}"
@@ -3295,14 +3334,38 @@ text = "आप: {text}"
 [group_preview_author]
 text = "{name}: {text}"
 
+[group_preview_someone]
+text = "कोई सदस्य: {text}"
+
+[group_sys_joined_you]
+text = "अब आप ग्रुप में हैं"
+
 [group_sys_joined]
 text = "{name} अब ग्रुप में हैं"
+
+[group_sys_joined_someone]
+text = "ग्रुप में एक नया सदस्य जुड़ा"
 
 [group_sys_left_you]
 text = "आपने छोड़ दिया"
 
 [group_sys_left]
 text = "{name} ने ग्रुप छोड़ दिया"
+
+[group_sys_left_someone]
+text = "किसी ने ग्रुप छोड़ दिया"
+
+[group_sys_removed_you]
+one = "{count} एडमिन फ़्लैग के बाद आपको हटा दिया गया"
+other = "{count} एडमिन फ़्लैग के बाद आपको हटा दिया गया"
+
+[group_sys_removed]
+one = "{count} एडमिन फ़्लैग के बाद {name} को हटा दिया गया"
+other = "{count} एडमिन फ़्लैग के बाद {name} को हटा दिया गया"
+
+[group_sys_removed_someone]
+one = "{count} एडमिन फ़्लैग के बाद किसी सदस्य को हटा दिया गया"
+other = "{count} एडमिन फ़्लैग के बाद किसी सदस्य को हटा दिया गया"
 
 [group_sys_host_added_you]
 text = "अब आपका एक डिवाइस ग्रुप को होस्ट करता है"
@@ -3316,17 +3379,41 @@ text = "आपके एक डिवाइस ने ग्रुप को ह
 [group_sys_host_removed]
 text = "{name} के एक डिवाइस ने ग्रुप को होस्ट करना बंद कर दिया"
 
+[group_sys_admin_you_someone]
+text = "आपने किसी सदस्य को एडमिन बनाया"
+
 [group_sys_admin_other_you]
 text = "{by} ने आपको एडमिन बनाया"
 
 [group_sys_admin_other_other]
 text = "{by} ने {name} को एडमिन बनाया"
 
+[group_sys_admin_other_someone]
+text = "{by} ने किसी सदस्य को एडमिन बनाया"
+
+[group_sys_admin_someone_you]
+text = "किसी ने आपको एडमिन बनाया"
+
+[group_sys_admin_someone_someone]
+text = "किसी ने एक सदस्य को एडमिन बनाया"
+
+[group_sys_unadmin_you_someone]
+text = "आपने किसी सदस्य को एडमिन से हटाया"
+
 [group_sys_unadmin_other_you]
 text = "{by} ने आपको एडमिन से हटाया"
 
 [group_sys_unadmin_other_other]
 text = "{by} ने {name} को एडमिन से हटाया"
+
+[group_sys_unadmin_other_someone]
+text = "{by} ने किसी सदस्य को एडमिन से हटाया"
+
+[group_sys_unadmin_someone_you]
+text = "किसी ने आपको एडमिन से हटाया"
+
+[group_sys_unadmin_someone_someone]
+text = "किसी ने एक सदस्य को एडमिन से हटाया"
 
 [group_sent_waiting]
 text = "{name} का इंतज़ार · {group} के ज़रिए"
@@ -3349,6 +3436,9 @@ text = "{name} ने आपको ब्लॉक किया"
 [group_notice_invitation_sent]
 text = "{name} को आमंत्रण भेज दिया। स्वीकार करते ही वे जुड़ जाएँगे।"
 
+[group_notice_invitation_sent_unnamed]
+text = "आमंत्रण भेज दिया। स्वीकार करते ही वे जुड़ जाएँगे।"
+
 [group_notice_you_joined]
 text = "अब आप {group} के सदस्य हैं।"
 
@@ -3358,17 +3448,29 @@ text = "अब आप ग्रुप के सदस्य हैं।"
 [group_notice_declined_inv]
 text = "अस्वीकार किया। {name} को दिखेगा कि आपने अस्वीकार किया।"
 
+[group_notice_declined_inv_unnamed]
+text = "अस्वीकार किया। उन्हें दिखेगा कि आपने अस्वीकार किया।"
+
 [group_notice_accepted_yours]
 text = "{name} ने आपका अनुरोध स्वीकार कर लिया। अब आप एक-दूसरे को संदेश भेज सकते हैं; जब तक आप में से कोई अनुमति न दे, कॉल बंद रहेंगी।"
 
 [group_notice_request_sent]
 text = "{name} को अनुरोध भेज दिया। उनके जवाब तक यह चैट में इंतज़ार करेगा।"
 
+[group_notice_request_sent_unnamed]
+text = "अनुरोध भेज दिया। उनके जवाब तक यह चैट में इंतज़ार करेगा।"
+
 [group_notice_accepted]
 text = "स्वीकार किया। {name} सिर्फ़ संदेशों के लिए जोड़े गए हैं और उनका डिवाइस जुड़ते ही चैट में दिखेंगे; जब तक आप अनुमति न दें, कॉल बंद रहेंगी।"
 
+[group_notice_accepted_unnamed]
+text = "स्वीकार किया। वे सिर्फ़ संदेशों के लिए जोड़े गए हैं और उनका डिवाइस जुड़ते ही चैट में दिखेंगे; जब तक आप अनुमति न दें, कॉल बंद रहेंगी।"
+
 [group_notice_declined_req]
 text = "अस्वीकार कर दिया। {name} को बताया गया है कि अनुरोध अस्वीकार हुआ।"
+
+[group_notice_declined_req_unnamed]
+text = "अस्वीकार कर दिया। उन्हें बताया गया है कि अनुरोध अस्वीकार हुआ।"
 
 [group_notice_link_copied]
 text = "कॉपी हो गया। लिंक खुला रहने तक जिसके पास भी यह है, वह जुड़ सकता है।"
