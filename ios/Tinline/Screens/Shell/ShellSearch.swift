@@ -90,8 +90,8 @@ struct ShellSearchScreen: View {
         let hint: String = {
             if let error { return error }
             if t.isEmpty { return "" }
-            if !msgsOk { return "Type 2 or more characters to search messages." }
-            if doneFor == t && msgs.isEmpty { return "No messages match \u{201C}\(t)\u{201D}" }
+            if !msgsOk { return tr("shell_search_min_chars") }
+            if doneFor == t && msgs.isEmpty { return tr("shell_search_no_messages", t) }
             return ""
         }()
         let noNames = error == nil && doneFor == t && !t.isEmpty && names.isEmpty
@@ -101,7 +101,7 @@ struct ShellSearchScreen: View {
                     ShellRecentResults(recents: recents, onPick: { q = $0; applied = $0 }, onClear: { recents = [] })
                 } else {
                     VStack(spacing: 0) {
-                        ShellResultsHeader(title: "People & groups")
+                        ShellResultsHeader(title: tr("shell_search_people_groups"))
                         ZStack {
                             ScrollView(.horizontal, showsIndicators: false) {
                                 LazyHStack(spacing: 2) {
@@ -109,10 +109,10 @@ struct ShellSearchScreen: View {
                                 }
                                 .padding(.horizontal, 8).padding(.bottom, 8)
                             }
-                            Text("No people or groups match").shellStyle(.sub).foregroundStyle(tin.ink2).opacity(noNames ? 1 : 0)
+                            Text(tr("shell_search_no_names")).shellStyle(.sub).foregroundStyle(tin.ink2).opacity(noNames ? 1 : 0)
                         }
                         .frame(height: 100)
-                        ShellResultsHeader(title: "Messages")
+                        ShellResultsHeader(title: tr("shell_search_messages"))
                         ZStack {
                             ScrollViewReader { proxy in
                                 ScrollView {
@@ -138,7 +138,7 @@ struct ShellSearchScreen: View {
             VStack(spacing: 0) {
                 ShellPalette(tin).hairline.frame(height: 1)
                 HStack(spacing: 4) {
-                    ShellIconButton(glyph: .back, label: "Back") { focused = false; onBack() }
+                    ShellIconButton(glyph: .back, label: tr("shell_back")) { focused = false; onBack() }
                     ShellSearchField(value: $q, focused: $focused, onSubmit: {
                         if let n = names.first { openName(n) } else if let m = msgs.first { openHit(m) } else { keepRecent() }
                     })
@@ -172,11 +172,11 @@ struct ShellSearchField: View {
         let p = ShellPalette(tin), on = focused.wrappedValue
         HStack(spacing: 0) {
             ShellIcon(glyph: .search, size: 20, color: tin.ink2).frame(width: 44)
-            TextField("", text: $value, prompt: Text("Search").foregroundColor(tin.ink2))
+            TextField("", text: $value, prompt: Text(tr("shell_search")).foregroundColor(tin.ink2))
                 .font(ShellFont.of(.body)).foregroundStyle(tin.ink).tint(p.accentInk)
                 .textInputAutocapitalization(.never).autocorrectionDisabled(true).submitLabel(.search).onSubmit(onSubmit)
-                .focused(focused).accessibilityLabel("Search")
-            ShellIconButton(glyph: .x, label: "Clear search", tint: tin.ink2, iconSize: 18) { value = ""; focused.wrappedValue = true }
+                .focused(focused).accessibilityLabel(tr("shell_search"))
+            ShellIconButton(glyph: .x, label: tr("shell_search_clear"), tint: tin.ink2, iconSize: 18) { value = ""; focused.wrappedValue = true }
                 .opacity(value.isEmpty ? 0 : 1).disabled(value.isEmpty).padding(.leading, 2).padding(.trailing, 4)
         }
         .frame(height: height)
@@ -208,10 +208,10 @@ private struct ShellRecentResults: View {
         let p = ShellPalette(tin)
         ZStack {
             VStack(spacing: 0) {
-                ShellResultsHeader(title: "Recent") {
+                ShellResultsHeader(title: tr("shell_search_recent")) {
                     if !recents.isEmpty {
                         Button(action: onClear) {
-                            Text("Clear").shellStyle(.sub, weight: .semibold).foregroundStyle(p.accentInk).padding(.horizontal, 10).padding(.vertical, 12)
+                            Text(tr("shell_clear")).shellStyle(.sub, weight: .semibold).foregroundStyle(p.accentInk).padding(.horizontal, 10).padding(.vertical, 12)
                         }
                         .buttonStyle(ShellPressStyle(wash: .clear, radius: 8))
                     }
@@ -232,8 +232,8 @@ private struct ShellRecentResults: View {
                 Spacer(minLength: 0)
             }
             VStack(spacing: 4) {
-                Text("Search messages, people and groups.").shellStyle(.sub19).foregroundStyle(tin.ink2)
-                Text("Everything stays on this device.").shellStyle(.sub19).foregroundStyle(tin.ink2)
+                Text(tr("shell_search_empty_title")).shellStyle(.sub19).foregroundStyle(tin.ink2)
+                Text(tr("shell_search_empty_sub")).shellStyle(.sub19).foregroundStyle(tin.ink2)
             }
             .multilineTextAlignment(.center).padding(.horizontal, 32).opacity(recents.isEmpty ? 1 : 0)
         }
@@ -252,7 +252,7 @@ private struct ShellNameTile: View {
     let action: () -> Void
     @Environment(\.tin) private var tin
     var body: some View {
-        let what: String = { switch n.kind { case .group: "group"; case .me: "your profile"; case .contact: "contact" } }()
+        let what: String = { switch n.kind { case .group: tr("shell_search_kind_group"); case .me: tr("shell_search_kind_me"); case .contact: tr("shell_search_kind_contact") } }()
         Button(action: action) {
             VStack(spacing: 6) {
                 if n.kind == .group { TinGroupAvatar(groupID: n.id, size: 48) } else { ShellAvatar(did: n.id, name: n.name, size: 48) }
@@ -261,7 +261,7 @@ private struct ShellNameTile: View {
             }
             .padding(.horizontal, 4).padding(.top, 6).frame(width: 78, height: 92, alignment: .top)
         }
-        .buttonStyle(ShellPressStyle()).accessibilityLabel("\(n.name), \(what)")
+        .buttonStyle(ShellPressStyle()).accessibilityLabel(tr("shell_search_tile_a11y", n.name, what))
     }
 }
 
@@ -273,7 +273,7 @@ private struct ShellMessageRow: View {
     @Environment(\.tin) private var tin
     var body: some View {
         let mine = h.author == me
-        let by = h.kind == .group ? (mine ? "You" : ShellText.firstName(ShellText.ifBlank(h.authorName, "Someone"))) + ": " : (mine ? "You: " : "")
+        let by = h.kind == .group ? tr("shell_search_author_prefix", mine ? tr("shell_you") : ShellText.firstName(ShellText.ifBlank(h.authorName, tr("shell_someone")))) : (mine ? tr("shell_search_author_prefix", tr("shell_you")) : "")
         let snip = h.snippet.replacingOccurrences(of: "\n", with: " ")
         Button(action: action) {
             HStack(alignment: .top, spacing: 12) {

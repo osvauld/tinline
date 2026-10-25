@@ -294,23 +294,23 @@ enum MarkConn { case offline, connecting, online }
 /// Sway periods are locked to the cue patterns: ringtone every 3.2 s (two swings per ring), ringback every 4 s.
 func statusLook(call: MarkCallPhase = .none, gcall: MarkGroupCallPhase = .none, conn: MarkConn) -> MarkLook {
     switch call {
-    case .incoming: return MarkLook(state: .ringing, sway: Sway(period: 1.6, amp: 12), label: "Incoming call")
-    case .outgoing: return MarkLook(state: .ringing, sway: Sway(period: 2.0, amp: 9), label: "Calling")
-    case .connecting: return MarkLook(state: .ringing, sway: Sway(period: 1.2, amp: 6), label: "Connecting")
-    case .active: return MarkLook(state: .taut, label: "In a call")
-    case .reconnecting: return MarkLook(state: .ringing, sway: Sway(period: 2.0, amp: 4), label: "Reconnecting")
+    case .incoming: return MarkLook(state: .ringing, sway: Sway(period: 1.6, amp: 12), label: tr("kit_mark_incoming"))
+    case .outgoing: return MarkLook(state: .ringing, sway: Sway(period: 2.0, amp: 9), label: tr("kit_mark_calling"))
+    case .connecting: return MarkLook(state: .ringing, sway: Sway(period: 1.2, amp: 6), label: tr("kit_mark_connecting"))
+    case .active: return MarkLook(state: .taut, label: tr("kit_mark_in_call"))
+    case .reconnecting: return MarkLook(state: .ringing, sway: Sway(period: 2.0, amp: 4), label: tr("kit_mark_reconnecting"))
     case .none: break
     }
     switch gcall {
-    case .starting: return MarkLook(state: .ringing, sway: Sway(period: 2.0, amp: 9), label: "Starting a group call")
-    case .connecting: return MarkLook(state: .ringing, sway: Sway(period: 1.2, amp: 6), label: "Connecting")
-    case .active: return MarkLook(state: .taut, label: "In a group call")
-    case .reconnecting: return MarkLook(state: .ringing, sway: Sway(period: 2.0, amp: 4), label: "Reconnecting")
+    case .starting: return MarkLook(state: .ringing, sway: Sway(period: 2.0, amp: 9), label: tr("kit_mark_group_starting"))
+    case .connecting: return MarkLook(state: .ringing, sway: Sway(period: 1.2, amp: 6), label: tr("kit_mark_connecting"))
+    case .active: return MarkLook(state: .taut, label: tr("kit_mark_in_group_call"))
+    case .reconnecting: return MarkLook(state: .ringing, sway: Sway(period: 2.0, amp: 4), label: tr("kit_mark_reconnecting"))
     case .none: break
     }
     switch conn {
-    case .offline: return MarkLook(state: .slack, dim: true, label: "No connection")
-    case .connecting: return MarkLook(state: .ringing, sway: Sway(period: 3.2, amp: 5), label: "Connecting")
-    case .online: return MarkLook(state: .taut, label: "Connected to the network")
+    case .offline: return MarkLook(state: .slack, dim: true, label: tr("kit_mark_offline"))
+    case .connecting: return MarkLook(state: .ringing, sway: Sway(period: 3.2, amp: 5), label: tr("kit_mark_connecting"))
+    case .online: return MarkLook(state: .taut, label: tr("kit_mark_online"))
     }
 }

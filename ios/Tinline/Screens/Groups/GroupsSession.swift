@@ -62,7 +62,7 @@ final class GroupsSession: ObservableObject {
         { [weak self] r in
             switch r {
             case .success(let s): if !s.isEmpty { self?.say(s) }
-            case .failure(let e): self?.say(e.message.groupsIfBlank("Couldn’t do that"))
+            case .failure(let e): self?.say(e.message.groupsIfBlank(tr("group_cant_do_that")))
             }
         }
     }

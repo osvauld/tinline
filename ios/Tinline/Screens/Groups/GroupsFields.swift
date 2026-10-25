@@ -76,7 +76,7 @@ struct GroupsBar: View {
         HStack(spacing: 4) {
             if let onBack {
                 Button(action: onBack) { GroupsIconView(icon: GroupsIcons.back, size: 22, color: tin.ink).frame(width: 44, height: 44).contentShape(Circle()) }
-                    .buttonStyle(GroupsPressStyle()).accessibilityLabel("Back")
+                    .buttonStyle(GroupsPressStyle()).accessibilityLabel(tr("group_back"))
             } else { Spacer().frame(width: 12) }
             Text(title).font(surface ? GroupsType.title : TinType.titleM).foregroundStyle(tin.ink).lineLimit(1).accessibilityAddTraits(.isHeader)
             Spacer(minLength: 0)

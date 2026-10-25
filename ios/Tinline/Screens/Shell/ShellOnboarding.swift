@@ -49,7 +49,7 @@ struct ShellOnboardingFlow: View {
     // Linking to an existing account: set once the account has arrived (the peer's name, for the Syncing screen).
     @State private var linkedPeer: String?
     @State private var linkedName = ""
-    @State private var label = "Personal phone"
+    @State private var label = tr("onboarding_dev_personal")
     // "Copy my words" was pressed: the step keeps "I've saved them" (gate.phraseShown).
     @State private var phraseCopied = false
 
@@ -145,9 +145,9 @@ struct ShellOnboardingFlow: View {
         }
         .overlay {
             if existsDialog {
-                ShellDialog(title: "Already on this phone", confirm: "Choose account", dismiss: "Not now",
+                ShellDialog(title: tr("onboarding_exists_title"), confirm: tr("onboarding_exists_confirm"), dismiss: tr("onboarding_not_now"),
                             onDismiss: { existsDialog = false }, onConfirm: { existsDialog = false; chooseAccount = true }) {
-                    ShellDialogText("That recovery phrase belongs to an account that is already here. Switch to it instead of adding it again.")
+                    ShellDialogText(tr("onboarding_exists_body"))
                 }
             }
         }
@@ -185,7 +185,7 @@ struct ShellOnboardingFlow: View {
             case .linkQr:
                 ShellLinkSession(links: core.links, newDevice: true, label: label.trimmingCharacters(in: .whitespaces), progress: prog,
                                  onClose: { back(.linkName) },
-                                 onDone: { n, peer in created = true; linkedPeer = ShellText.ifBlank(peer, "your other device"); linkedName = n; go(.linkPass) })
+                                 onDone: { n, peer in created = true; linkedPeer = ShellText.ifBlank(peer, tr("onboarding_fb_other_device")); linkedName = n; go(.linkPass) })
             case .linkPass:
                 head(nil, prog)
                 ShellPassStep(kind: .link, pass: $pass, busy: busy, error: error,
@@ -199,8 +199,8 @@ struct ShellOnboardingFlow: View {
                 head({ if forgot { onCancelForgot() } else if adding { cancelAdd() } else { back(.choose) } }, prog)
                 ShellRestoreStep(
                     error: $error,
-                    warning: forgot ? "Restoring keeps the same identity: use the recovery phrase of this account. You\u{2019}ll set a new passphrase."
-                        : "Next, you\u{2019}ll choose a passphrase for this account.",
+                    warning: forgot ? tr("onboarding_restore_warn_forgot")
+                        : tr("onboarding_restore_warn"),
                     onSubmit: { w in words = w; error = nil; go(forgot ? .pass : .name) })
             case .name:
                 head({ if restoring { back(.restore) } else if adding { cancelAdd() } else { back(.welcome) } }, prog)
@@ -256,14 +256,14 @@ private struct ShellWelcomeStep: View {
     var body: some View {
         // Laid out like every step: title and lead top-start, the mark (slack: nobody on the line yet) filling the free space, the
         // emergency note at the bottom, the two choices stacked full width with "Create my account" on top (thumb reach).
-        ShellGateStep("A direct line to your people",
-                      lead: "Tinline connects your phone straight to theirs.\nYou just need a nickname. Encrypted end to end.", fill: true, content: {
+        ShellGateStep(tr("onboarding_welcome_title"),
+                      lead: tr("onboarding_welcome_lead"), fill: true, content: {
             TinMark(size: 120, live: true, description: "Tinline", lineColor: true).frame(maxWidth: .infinity, minHeight: 120, maxHeight: .infinity)
-            (Text("Not for emergency calls.").bold() + Text("\nUse your phone\u{2019}s dialer to reach emergency services."))
+            (Text(tr("onboarding_emergency")).bold() + Text("\n" + tr("onboarding_emergency_rest")))
                 .shellStyle(.sub).foregroundStyle(tin.ink2)
         }, foot: {
-            ShellGBtn(text: "Create my account", action: onCreate)
-            ShellGBtn(text: "I have an account", kind: .secondary, action: onHave)
+            ShellGBtn(text: tr("onboarding_create"), action: onCreate)
+            ShellGBtn(text: tr("onboarding_have"), kind: .secondary, action: onHave)
         })
     }
 }
@@ -274,14 +274,14 @@ private struct ShellChooseStep: View {
     let onLink: () -> Void
     let onRestore: () -> Void
     var body: some View {
-        ShellGateStep("Use your account here", lead: "Your account is its recovery phrase, so you can bring it to this phone two ways.", fill: true, content: {
+        ShellGateStep(tr("onboarding_choose_title"), lead: tr("onboarding_choose_lead"), fill: true, content: {
             // Touch: the choices sit at the bottom, in thumb reach, where Welcome's buttons were.
             Spacer(minLength: 0)
             VStack(spacing: 12) {
-                ShellChooseOpt(glyph: .qr, title: "Link my other device",
-                               sub: "Scan a code on a device that already has your account. Your contacts and chats come along.", action: onLink)
-                ShellChooseOpt(glyph: .key, title: "Restore my account",
-                               sub: "Type your 24 recovery words. This phone starts with an empty contact list.", action: onRestore)
+                ShellChooseOpt(glyph: .qr, title: tr("onboarding_opt_link"),
+                               sub: tr("onboarding_opt_link_sub"), action: onLink)
+                ShellChooseOpt(glyph: .key, title: tr("onboarding_opt_restore"),
+                               sub: tr("onboarding_opt_restore_sub"), action: onRestore)
             }
             .padding(.bottom, 8)
         }, foot: { EmptyView() })
@@ -327,8 +327,8 @@ private struct ShellDoneStep: View {
 
     var body: some View {
         let first = ShellGate.first(name)
-        ShellGateStep(first.isEmpty ? "Your line is open" : "Your line is open, \(first)",
-                      lead: "Scan their code or share yours, and you can call each other.", center: true, hero: {
+        ShellGateStep(first.isEmpty ? tr("onboarding_done_title") : tr("onboarding_done_title_named", first),
+                      lead: tr("onboarding_done_lead"), center: true, hero: {
             Group {
                 if let person { ShellAvatar(did: person, name: name, size: 96) }
                 else {
@@ -340,13 +340,13 @@ private struct ShellDoneStep: View {
         }, content: {
             // Two gentle "good to know" notes, said as tips at the happy moment, not as warnings.
             VStack(alignment: .leading, spacing: 12) {
-                ShellDoneTip(glyph: .devices, title: "Two devices are better than one", text: "Link another device when you can, so losing one never locks you out.")
-                ShellDoneTip(glyph: .laptop, title: "Groups are hosted on a computer", text: "To start a group, add Tinline on a computer that can stay on.")
+                ShellDoneTip(glyph: .devices, title: tr("onboarding_tip_devices"), text: tr("onboarding_tip_devices_body"))
+                ShellDoneTip(glyph: .laptop, title: tr("onboarding_tip_groups"), text: tr("onboarding_tip_groups_body"))
             }
             .frame(maxWidth: 420).padding(.top, 8)
         }, foot: {
-            ShellGBtn(text: "Add my first contact", action: onAdd)
-            ShellGBtn(text: "Not now", kind: .text, action: onNotNow)
+            ShellGBtn(text: tr("onboarding_add_contact"), action: onAdd)
+            ShellGBtn(text: tr("onboarding_not_now"), kind: .text, action: onNotNow)
         })
         .task {
             try? await Task.sleep(nanoseconds: 450_000_000)
@@ -380,10 +380,10 @@ private struct ShellNameStep: View {
     var body: some View {
         let ok = !name.trimmingCharacters(in: .whitespaces).isEmpty
         let next = { if ok { onNext() } }
-        ShellGateStep("What should people call you?", lead: "Only the people you add will see it.", content: {
-            ShellGField(label: "Your nickname", text: $name, hint: "You can change it any time in Settings.", capitalization: .words,
+        ShellGateStep(tr("onboarding_name_title"), lead: tr("onboarding_name_lead"), content: {
+            ShellGField(label: tr("onboarding_nickname"), text: $name, hint: tr("onboarding_nickname_hint"), capitalization: .words,
                         autofocus: true, onDone: next)
-        }, foot: { ShellGNextRow(next: ShellGNext(label: "Continue", enabled: ok, action: next)) })
+        }, foot: { ShellGNextRow(next: ShellGNext(label: tr("onboarding_continue"), enabled: ok, action: next)) })
     }
 }
 
@@ -400,25 +400,25 @@ struct ShellPassStep: View {
     let onSkip: () -> Void
 
     var body: some View {
-        let title: String = { switch kind { case .forgot: "Choose a new passphrase"; case .link: "Protect this phone"; default: "Add a passphrase" } }()
-        let cta: String = { switch kind { case .forgot, .restore: "Restore account"; case .link: "Add passphrase"; case .save: "Save account"; case .create: "Continue" } }()
+        let title: String = { switch kind { case .forgot: tr("onboarding_pass_title_forgot"); case .link: tr("onboarding_pass_title_link"); default: tr("onboarding_pass_title") } }()
+        let cta: String = { switch kind { case .forgot, .restore: tr("onboarding_cta_restore"); case .link: tr("onboarding_cta_add"); case .save: tr("onboarding_cta_save"); case .create: tr("onboarding_continue") } }()
         let submit = { if !pass.isEmpty && !busy { onNext() } }
         // Says what the lock gives you (tone pass 2026-10-13); the way back comes before anything that sounds final.
-        ShellGateStep(title, lead: "Optional. A lock, so only you can open Tinline on this phone.", content: {
+        ShellGateStep(title, lead: tr("onboarding_pass_lead"), content: {
             VStack(alignment: .leading, spacing: 6) {
-                ShellGField(label: "Passphrase", text: $pass, secret: true, enabled: !busy, autofocus: true, onDone: submit)
+                ShellGField(label: tr("onboarding_pass"), text: $pass, secret: true, enabled: !busy, autofocus: true, onDone: submit)
                 ShellStrengthMeter(pass: pass)
             }
-            ShellNotice("Encrypts your account on this phone. Your phone remembers it, so calls still ring after a restart. If you forget it, your recovery words let you set a new one.", glyph: .lock)
+            ShellNotice(tr("onboarding_pass_notice"), glyph: .lock)
             if let error { ShellNotice(error, kind: .error) }
         }, foot: {
             if kind == .create {
-                ShellGNextRow(next: ShellGNext(label: busy ? "Encrypting\u{2026}" : cta, enabled: !pass.isEmpty, busy: busy, action: submit)) {
-                    ShellGBtn(text: "Skip for now", kind: .text, enabled: !busy, fill: false, action: onSkip)
+                ShellGNextRow(next: ShellGNext(label: busy ? tr("onboarding_encrypting") : cta, enabled: !pass.isEmpty, busy: busy, action: submit)) {
+                    ShellGBtn(text: tr("onboarding_skip"), kind: .text, enabled: !busy, fill: false, action: onSkip)
                 }
             } else {
-                ShellGBtn(text: busy ? "Encrypting\u{2026}" : cta, enabled: !pass.isEmpty, busy: busy, action: submit)
-                if kind != .save { ShellGBtn(text: "Skip for now", kind: .text, enabled: !busy, fill: false, action: onSkip) }
+                ShellGBtn(text: busy ? tr("onboarding_encrypting") : cta, enabled: !pass.isEmpty, busy: busy, action: submit)
+                if kind != .save { ShellGBtn(text: tr("onboarding_skip"), kind: .text, enabled: !busy, fill: false, action: onSkip) }
             }
         })
     }
@@ -495,7 +495,7 @@ struct ShellWordsKeySeg: View {
             ForEach([false, true], id: \.self) { k in
                 let on = k == asKey
                 Button { onChange(k) } label: {
-                    Text(k ? "Key" : "Words").font(TinType.bodyM.weight(on ? .semibold : .regular)).foregroundStyle(tin.ink)
+                    Text(k ? tr("onboarding_seg_key") : tr("onboarding_seg_words")).font(TinType.bodyM.weight(on ? .semibold : .regular)).foregroundStyle(tin.ink)
                         .padding(.horizontal, 14).frame(minHeight: 40)
                         .background(SmoothRoundedRectangle(cornerRadius: 9).fill(on ? tin.sf : .clear))
                 }
@@ -536,21 +536,21 @@ private struct ShellPhraseStep: View {
     var body: some View {
         let key = (try? recoveryKeyFromPhrase(phrase: phrase)) ?? ""
         let copy = { if asKey { ShellClipboard.copySensitive(key) } else { ShellClipboard.copySensitive(phrase) } }
-        ShellGateStep(asKey ? "Here is your recovery key" : "Here are your recovery words",
-                      lead: asKey ? "Your recovery key is the same as your 24 words, as one line.\nPaste it somewhere safe. A password manager works great."
-                        : "If you ever switch devices, these 24 words bring your account along.\nSave a copy somewhere safe. Paper works great.",
+        ShellGateStep(asKey ? tr("onboarding_rec_title_key") : tr("onboarding_rec_title_words"),
+                      lead: asKey ? tr("onboarding_rec_lead_key")
+                        : tr("onboarding_rec_lead_words"),
                       content: {
-            if let person { ShellAvatar(did: person, name: "Your account", size: 80).frame(maxWidth: .infinity) }
+            if let person { ShellAvatar(did: person, name: tr("onboarding_fb_your_account"), size: 80).frame(maxWidth: .infinity) }
             ShellWordsKeySeg(asKey: asKey) { asKey = $0 }
             if asKey { ShellKeyCard(key: key) } else { ShellWordGrid(phrase: phrase) }
         }, foot: {
             if copied || copiedAlready {
-                ShellGBtn(text: asKey ? "I\u{2019}ve saved it" : "I\u{2019}ve saved them", action: onNext)
+                ShellGBtn(text: asKey ? tr("onboarding_saved_key") : tr("onboarding_saved_words"), action: onNext)
                 // Keeps the footer two buttons tall in both moments, so nothing moves.
-                ShellGBtn(text: "Copy again", kind: .text, action: copy)
+                ShellGBtn(text: tr("onboarding_copy_again"), kind: .text, action: copy)
             } else {
-                ShellGBtn(text: asKey ? "Copy my key" : "Copy my words") { copy(); copied = true; onCopied() }
-                ShellGBtn(text: asKey ? "I saved it elsewhere" : "I wrote them down", kind: .text, action: onNext)
+                ShellGBtn(text: asKey ? tr("onboarding_copy_key") : tr("onboarding_copy_words")) { copy(); copied = true; onCopied() }
+                ShellGBtn(text: asKey ? tr("onboarding_elsewhere_key") : tr("onboarding_elsewhere_words"), kind: .text, action: onNext)
             }
         })
     }
@@ -566,15 +566,15 @@ private struct ShellDeviceStep: View {
     var body: some View {
         let ok = !label.trimmingCharacters(in: .whitespaces).isEmpty
         let next = { if ok && !busy { onNext() } }
-        ShellGateStep("Name this phone", lead: "So you can tell your devices apart in Linked devices. Only your own devices see this name; people you call never do.", content: {
-            ShellGField(label: "Device name", text: $label, hint: "You can rename it later.", enabled: !busy, capitalization: .words, autofocus: true, onDone: next)
+        ShellGateStep(tr("onboarding_dev_title"), lead: tr("onboarding_dev_lead"), content: {
+            ShellGField(label: tr("onboarding_dev_field"), text: $label, hint: tr("onboarding_dev_hint"), enabled: !busy, capitalization: .words, autofocus: true, onDone: next)
             HStack(spacing: 8) {
-                ForEach(["Personal phone", "Work phone", "Tablet"], id: \.self) { s in
+                ForEach([tr("onboarding_dev_personal"), tr("onboarding_dev_work"), tr("onboarding_dev_tablet")], id: \.self) { s in
                     ShellChip(text: s, pressed: label.trimmingCharacters(in: .whitespaces) == s, minHeight: 44, padH: 16) { label = s }
                 }
             }
             if let error { ShellNotice(error, kind: .error) }
-        }, foot: { ShellGNextRow(next: ShellGNext(label: "Continue", enabled: ok, busy: busy, action: next)) })
+        }, foot: { ShellGNextRow(next: ShellGNext(label: tr("onboarding_continue"), enabled: ok, busy: busy, action: next)) })
     }
 }
 
@@ -586,13 +586,13 @@ private struct ShellRestoredStep: View {
     let onStart: () -> Void
     var body: some View {
         let first = ShellGate.first(name), whole = name.trimmingCharacters(in: .whitespaces)
-        ShellGateStep(adding ? "Added \(whole.isEmpty ? "your account" : whole) to this phone" : first.isEmpty ? "Welcome back" : "Welcome back, \(first)",
-                      lead: adding ? "Only the account you select is online at a time, so \(whole.isEmpty ? "this account" : whole) is online now and your other account is paused. You can switch in Settings."
-                        : "Your account is back on this phone. Your contacts, chats and call history are kept on your other devices, not with us. This phone starts with an empty contact list.",
+        ShellGateStep(adding ? tr("onboarding_back_added", whole.isEmpty ? tr("onboarding_fb_your_account_lc") : whole) : first.isEmpty ? tr("onboarding_back_title") : tr("onboarding_back_title_named", first),
+                      lead: adding ? tr("onboarding_back_added_lead", whole.isEmpty ? tr("onboarding_fb_this_account") : whole)
+                        : tr("onboarding_back_lead"),
                       center: true, bigTitle: true,
                       hero: { TinMark(size: 96, state: .taut, live: true, description: "Tinline").padding(.top, 28).padding(.bottom, 4) },
                       content: { EmptyView() },
-                      foot: { ShellGBtn(text: adding ? "Open Tinline" : "Continue", action: onStart) })
+                      foot: { ShellGBtn(text: adding ? tr("onboarding_open") : tr("onboarding_continue"), action: onStart) })
     }
 }
 
@@ -604,19 +604,19 @@ private struct ShellSyncingStep: View {
     let onStart: () -> Void
     @State private var slow = false
     var body: some View {
-        let from = ShellText.ifBlank(peer, "your other device")
-        ShellGateStep("Linked to \(from)", lead: "Your contacts and chats are arriving from \(from) and will keep in step on both.", center: true, bigTitle: true,
+        let from = ShellText.ifBlank(peer, tr("onboarding_fb_other_device"))
+        ShellGateStep(tr("onboarding_linked_title", from), lead: tr("onboarding_linked_lead", from), center: true, bigTitle: true,
                       hero: { TinMark(size: 96, state: .taut, live: true, description: "Tinline").padding(.top, 28).padding(.bottom, 4) },
                       content: {
             ShellPfCard {
-                ShellSyncRow(glyph: .users, title: "Contacts", value: contacts > 0 ? "\(contacts)" : "Waiting", done: contacts > 0)
+                ShellSyncRow(glyph: .users, title: tr("onboarding_sync_contacts"), value: contacts > 0 ? "\(contacts)" : tr("onboarding_sync_waiting"), done: contacts > 0)
                 ShellPfHairline()
-                ShellSyncRow(glyph: .clock, title: "Call history", value: calls > 0 ? "\(calls)" : "Waiting", done: calls > 0)
+                ShellSyncRow(glyph: .clock, title: tr("onboarding_sync_calls"), value: calls > 0 ? "\(calls)" : tr("onboarding_sync_waiting"), done: calls > 0)
             }
             ShellReservedLine(text: slow && contacts == 0 && calls == 0
-                              ? "Nothing yet. The other device may be offline: it picks up where it left off the next time both are online."
-                              : "Keep both devices online. Sync keeps going in the background.", alignment: .center, lines: 2)
-        }, foot: { ShellGBtn(text: "Open Tinline", action: onStart) })
+                              ? tr("onboarding_sync_slow")
+                              : tr("onboarding_sync_keep"), alignment: .center, lines: 2)
+        }, foot: { ShellGBtn(text: tr("onboarding_open"), action: onStart) })
         .task { try? await Task.sleep(nanoseconds: 45_000_000_000); slow = true }
     }
 }
@@ -647,15 +647,15 @@ private struct ShellSaveFailedStep: View {
     let onRetry: () -> Void
     let onPassphrase: () -> Void
     var body: some View {
-        ShellGateStep("Couldn\u{2019}t save your account", lead: "Tinline couldn\u{2019}t store the key that opens your account on this phone, so your account has not been saved yet.",
+        ShellGateStep(tr("onboarding_nosave_title"), lead: tr("onboarding_nosave_lead"),
                       center: true, anchor: true,
                       hero: { ShellIconDisc(glyph: .warning, size: 72, iconSize: 32, danger: true).padding(.top, 12) },
                       content: {
-            ShellNotice("Nothing was kept on this phone yet, so there is nothing to lose. Try again, or protect the account with a passphrase instead of the phone\u{2019}s own key.")
+            ShellNotice(tr("onboarding_nosave_notice"))
             if !message.trimmingCharacters(in: .whitespaces).isEmpty { ShellNotice(message, kind: .error) }
         }, foot: {
-            ShellGBtn(text: busy ? "Trying\u{2026}" : "Try again", busy: busy, action: onRetry)
-            ShellGBtn(text: "Add a passphrase instead", kind: .text, enabled: !busy, action: onPassphrase)
+            ShellGBtn(text: busy ? tr("onboarding_trying") : tr("onboarding_try_again"), busy: busy, action: onRetry)
+            ShellGBtn(text: tr("onboarding_pass_instead"), kind: .text, enabled: !busy, action: onPassphrase)
         })
     }
 }
@@ -668,17 +668,17 @@ private struct ShellTermsStep: View {
     var body: some View {
         let p = ShellPalette(tin)
         // No checkbox: the line right above the button is the consent, and the button ("I agree", the arrow) is the agreement.
-        ShellGateStep("Before you start", fill: true, content: {
+        ShellGateStep(tr("onboarding_terms_title"), fill: true, content: {
             VStack(alignment: .leading, spacing: 14) {
-                ShellTermPoint(glyph: .shield, bold: "Free of ads and tracking.", rest: "Tinline doesn\u{2019}t collect your contacts, calls or location.")
-                ShellTermPoint(glyph: .lock, bold: "Calls are end-to-end encrypted.", rest: "When a direct line isn\u{2019}t possible, an encrypted relay passes the call along. It can\u{2019}t hear it.")
-                ShellTermPoint(glyph: .key, bold: "Your account is yours.", rest: "It lives on your devices, not on a server. Your recovery words are the way back in, so keep them safe.")
-                ShellTermPoint(glyph: .warning, bold: "Not for emergency calls.", rest: "")
+                ShellTermPoint(glyph: .shield, bold: tr("onboarding_terms1"), rest: tr("onboarding_terms1_rest"))
+                ShellTermPoint(glyph: .lock, bold: tr("onboarding_terms2"), rest: tr("onboarding_terms2_rest"))
+                ShellTermPoint(glyph: .key, bold: tr("onboarding_terms3"), rest: tr("onboarding_terms3_rest"))
+                ShellTermPoint(glyph: .warning, bold: tr("onboarding_emergency"), rest: "")
             }
             Spacer(minLength: 0)
-            Text(LocalizedStringKey("By continuing, you agree to the [Terms of Use](\(ShellURL.terms)) and have read the [Privacy Policy](\(ShellURL.privacy))."))
+            Text(LocalizedStringKey(tr("onboarding_terms_consent", "\(ShellURL.terms)", "\(ShellURL.privacy)")))
                 .shellStyle(.sub19).foregroundStyle(tin.ink2).tint(p.accentInk)
-        }, foot: { ShellGNextRow(next: ShellGNext(label: "I agree", action: onAgree)) })
+        }, foot: { ShellGNextRow(next: ShellGNext(label: tr("onboarding_agree"), action: onAgree)) })
     }
 }
 
@@ -711,17 +711,17 @@ private struct ShellPermsStep: View {
     let onDone: () -> Void
     var body: some View {
         let rows: [(ShellNeed, ShellGlyph, String, String)] = [
-            (.mic, .mic, "Microphone", "So they can hear you. Used only during a call."),
-            (.notifications, .bell, "Notifications", "So you see incoming calls and messages."),
+            (.mic, .mic, tr("onboarding_perm_mic"), tr("onboarding_perm_mic_why")),
+            (.notifications, .bell, tr("onboarding_perm_notif"), tr("onboarding_perm_notif_why")),
         ]
         let touched = rows.contains { !missing.contains($0.0) }
-        ShellGateStep("So calls can reach you",
-                      lead: "Tinline works like a phone line: it stays open quietly in the background. Each of these is optional, and you can change them later.",
+        ShellGateStep(tr("onboarding_perms_title"),
+                      lead: tr("onboarding_perms_lead"),
                       content: {
             VStack(spacing: 4) {
                 ForEach(rows, id: \.2) { r in ShellPermRow(glyph: r.1, title: r.2, why: r.3, granted: !missing.contains(r.0)) { onFix(r.0) } }
             }
-        }, foot: { ShellGBtn(text: touched ? "Continue" : "Not now", kind: touched ? .primary : .secondary, action: onDone) })
+        }, foot: { ShellGBtn(text: touched ? tr("onboarding_continue") : tr("onboarding_not_now"), kind: touched ? .primary : .secondary, action: onDone) })
     }
 }
 
@@ -742,10 +742,10 @@ private struct ShellPermRow: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             ZStack {
-                if granted { TinIcon(TinIcons.check, size: 22, tint: p.accentInk, label: "\(title) allowed") }
+                if granted { TinIcon(TinIcons.check, size: 22, tint: p.accentInk, label: tr("onboarding_perm_allowed", title)) }
                 else {
-                    ShellPBtn(text: "Allow", variant: .outline, padH: 14, colorOverride: p.accentInk, minWidth: 72, action: onAllow)
-                        .accessibilityLabel("Allow \(title.lowercased())")
+                    ShellPBtn(text: tr("onboarding_allow"), variant: .outline, padH: 14, colorOverride: p.accentInk, minWidth: 72, action: onAllow)
+                        .accessibilityLabel(tr("onboarding_allow_a11y", title.lowercased()))
                 }
             }
             .frame(minWidth: 72)

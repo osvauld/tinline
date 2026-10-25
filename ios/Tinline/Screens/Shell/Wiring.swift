@@ -80,7 +80,7 @@ enum ShellWiring {
         let c = people.contacts.first { $0.did == chatId }
         let me = app.accountDid
         let isSelf = chatId == me
-        let name = isSelf ? "You" : c.map(ShellText.display) ?? app.chats.first { $0.peerDid == chatId }.map { ShellText.ifBlank($0.peerName, "Unknown") } ?? "Unknown"
+        let name = isSelf ? tr("shell_you") : c.map(ShellText.display) ?? app.chats.first { $0.peerDid == chatId }.map { ShellText.ifBlank($0.peerName, tr("shell_unknown")) } ?? tr("shell_unknown")
         let node = app.node
         let ctl = calls.controller
         let callLive = ctl.ui.map { $0.info.peerDid == chatId && !$0.isEnded } ?? false
@@ -116,7 +116,7 @@ enum ShellWiring {
             .onDisappear { people.addSheetOpen = false }
     }
 
-    @ViewBuilder static func profile(fallbackName: String, title: String = "My profile", onBack: @escaping () -> Void) -> some View {
+    @ViewBuilder static func profile(fallbackName: String, title: String = tr("shell_my_profile"), onBack: @escaping () -> Void) -> some View {
         ProfileScreen(fallbackName: fallbackName, title: title, onBack: onBack)
     }
 

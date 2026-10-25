@@ -29,7 +29,7 @@ private enum ProfileLayer: Identifiable {
 struct ProfileScreen: View {
     @EnvironmentObject private var people: PeopleModel
     var fallbackName = ""
-    var title = "My profile"
+    var title = tr("people_my_profile")
     let onBack: () -> Void
     var body: some View {
         ProfileScreenContent(store: people.profiles, fallbackName: fallbackName, title: title, onBack: onBack)
@@ -84,7 +84,7 @@ private struct ProfileScreenContent: View {
     private func saveLink(_ key: String) -> (String) async -> String? {
         { v in
             if v.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return await setField(key, nil) }
-            guard let n = PeopleProfileInfo.normaliseLink(v) else { return "Enter a web address that starts with http:// or https://." }
+            guard let n = PeopleProfileInfo.normaliseLink(v) else { return tr("people_profile_bad_link") }
             return await setField(key, n)
         }
     }
@@ -94,7 +94,7 @@ private struct ProfileScreenContent: View {
         picError = ""
         Task {
             guard let data = try? await item.loadTransferable(type: Data.self) else {
-                picError = "That file couldn\u{2019}t be read as a picture. It may be damaged."; return
+                picError = tr("people_pic_unreadable"); return
             }
             let r = await Task.detached { inspectImage(data) }.value
             switch r { case .refused(let m): picError = m; case .ok(let p): layer = .picture(p) }
@@ -108,25 +108,25 @@ private struct ProfileScreenContent: View {
         PeopleProfilePage(title: title, onBack: onBack, bottomPad: 96, overlay: { floating }) {
             hero(hasPic: hasPic)
 
-            PeopleSection(title: "Profile") {
+            PeopleSection(title: tr("people_profile_section")) {
                 PeopleCard {
-                    PeopleFieldRow(label: "Name", value: .string(name), placeholder: "Your name", limit: ProfileRules.nameLimit, offline: offline,
+                    PeopleFieldRow(label: tr("people_profile_name"), value: .string(name), placeholder: tr("people_profile_name_placeholder"), limit: ProfileRules.nameLimit, offline: offline,
                                    onSave: saveName)
                     PeopleHairline()
-                    PeopleFieldRow(label: "Status", value: fields["status"], placeholder: "What are you up to?", optional: true, limit: ProfileRules.textLimit,
-                                   offline: offline, empty: "Add a status", onSave: optionalText("status"), onRemove: drop("status"))
+                    PeopleFieldRow(label: tr("people_profile_status"), value: fields["status"], placeholder: tr("people_profile_status_placeholder"), optional: true, limit: ProfileRules.textLimit,
+                                   offline: offline, empty: tr("people_profile_status_empty"), onSave: optionalText("status"), onRemove: drop("status"))
                     PeopleHairline()
-                    PeopleFieldRow(label: "About", value: fields["about"], kind: .multiline, optional: true, limit: ProfileRules.textLimit, offline: offline,
-                                   empty: "Add a few words about you", onSave: optionalText("about"), onRemove: drop("about"))
+                    PeopleFieldRow(label: tr("people_profile_about"), value: fields["about"], kind: .multiline, optional: true, limit: ProfileRules.textLimit, offline: offline,
+                                   empty: tr("people_profile_about_empty"), onSave: optionalText("about"), onRemove: drop("about"))
                 }
             }
 
-            PeopleSection(title: "Availability") {
+            PeopleSection(title: tr("people_profile_availability")) {
                 PeopleCard { PeopleAvailabilityCard(fields: fields, offline: offline) { a, until in await op(.setAvailable(a, untilSecs: until)) } }
-                PeopleNote("Your contacts can see this, and it\u{2019}s the same on all your devices. It affects whether calls reach you, and it\u{2019}s separate from whether you\u{2019}re online.")
+                PeopleNote(tr("people_profile_availability_note"))
             }
 
-            PeopleSection(title: "Additional information") {
+            PeopleSection(title: tr("people_profile_additional")) {
                 PeopleCard {
                     ForEach(extras, id: \.self) { k in
                         let known = PeopleProfileInfo.known[k]
@@ -137,10 +137,10 @@ private struct ProfileScreenContent: View {
                         PeopleHairline()
                     }
                     // `.pf-act { border: 0 }`: the action row runs on from the card's rows.
-                    PeopleAct(title: "Add information", action: { layer = .add(nil) }, icon: .plus)
+                    PeopleAct(title: tr("people_profile_add_info"), action: { layer = .add(nil) }, icon: .plus)
                 }
                 PeopleNote(fieldHelp)
-                if hasOther { PeopleNote("Some information came from another device or app version. It\u{2019}s shown as stored and kept when you edit anything else.") }
+                if hasOther { PeopleNote(tr("people_profile_other_note")) }
             }
         }
         .onChange(of: store.online) { _, on in if on { pending = 0 } }
@@ -157,16 +157,16 @@ private struct ProfileScreenContent: View {
             TinAvatar(did: me ?? "", size: 112)
             HStack(spacing: 8) {
                 if hasPic {
-                    PeopleButton("Change photo", icon: .camera, minWidth: 140) { pickerOpen = true }
-                    PeopleButton("Remove", minWidth: 140) { removeError = ""; layer = .remove }
+                    PeopleButton(tr("people_profile_change_photo"), icon: .camera, minWidth: 140) { pickerOpen = true }
+                    PeopleButton(tr("people_remove"), minWidth: 140) { removeError = ""; layer = .remove }
                 } else {
-                    PeopleButton("Add photo", icon: .camera, minWidth: 140) { pickerOpen = true }
+                    PeopleButton(tr("people_profile_add_photo"), icon: .camera, minWidth: 140) { pickerOpen = true }
                 }
             }
             .padding(.top, 18)
         }
         .padding(.horizontal, 20).padding(.top, 24).padding(.bottom, 4).frame(maxWidth: .infinity)
-        .accessibilityElement(children: .contain).accessibilityLabel("Picture")
+        .accessibilityElement(children: .contain).accessibilityLabel(tr("people_profile_picture"))
     }
 
     /// Floating, not in the page flow: these appear on their own and must not move the page.
@@ -176,13 +176,13 @@ private struct ProfileScreenContent: View {
             if !picError.isEmpty {
                 HStack(spacing: 8) {
                     Text(picError).peopleStyle(.sub19).foregroundStyle(c.peopleDanger).frame(maxWidth: .infinity, alignment: .leading)
-                    PeopleIconButton(icon: .x, label: "Dismiss", tint: c.peopleDanger, iconSize: 18) { picError = "" }
+                    PeopleIconButton(icon: .x, label: tr("people_profile_dismiss"), tint: c.peopleDanger, iconSize: 18) { picError = "" }
                 }
                 .padding(.leading, 12).padding(.trailing, 4).padding(.vertical, 4)
                 .background(RoundedRectangle(cornerRadius: 12, style: .circular).fill(c.erc)).peopleDepth(.pop)
                 .frame(maxWidth: 520).accessibilityAddTraits(.updatesFrequently).transition(.opacity)
             } else if pending > 0 {
-                PeopleStrip(text: "Saved on this device. Will sync when you\u{2019}re connected.", icon: .clock, floating: true)
+                PeopleStrip(text: tr("people_profile_saved_offline"), icon: .clock, floating: true)
                     .frame(maxWidth: 520).transition(.opacity)
             }
         }
@@ -197,22 +197,22 @@ private struct ProfileScreenContent: View {
         switch l {
         case .picture(let picked):
             PeoplePictureFlow(picked: picked, replacing: hasPic, onClose: { layer = nil }) { png in
-                if png.count > ImageLimits.outMaxBytes { return "That picture is too detailed to save. Try a different one." }
+                if png.count > ImageLimits.outMaxBytes { return tr("people_profile_too_detailed") }
                 let r = await op(.replacePicture(png))
-                if r == nil { layer = nil; announce("Picture updated") }
+                if r == nil { layer = nil; announce(tr("people_profile_picture_updated")) }
                 return r
             }
         case .remove:
-            PeopleDialogBody(title: "Remove your picture?") {
-                PeopleDialogText("Your initials will show instead.", lead: true)
+            PeopleDialogBody(title: tr("people_profile_remove_title")) {
+                PeopleDialogText(tr("people_profile_remove_note"), lead: true)
                 PeopleDialogText(pictureHelp)
                 if !removeError.isEmpty { PeopleErr(text: removeError) }
                 PeopleActs {
-                    PeopleButton("Cancel", variant: .quiet) { layer = nil }
-                    PeopleButton("Remove picture", variant: .danger) {
+                    PeopleButton(tr("people_cancel"), variant: .quiet) { layer = nil }
+                    PeopleButton(tr("people_profile_remove_picture"), variant: .danger) {
                         Task {
                             let r = await op(.removePicture)
-                            if r == nil { layer = nil; removeError = ""; announce("Picture removed") } else { removeError = r! }
+                            if r == nil { layer = nil; removeError = ""; announce(tr("people_profile_picture_removed")) } else { removeError = r! }
                         }
                     }
                 }
@@ -244,9 +244,9 @@ struct PeopleAvailabilityCard: View {
     var body: some View {
         let av = effectiveAvailability(fields, nowMs: now)
         let active: String? = av.available ? nil : av.untilMs == nil ? "open" : choice
-        let line = av.available ? "Available" : av.untilMs.map { "Busy until \(PeopleProfileInfo.untilLabel(atMs: $0))" } ?? "Busy until you change it"
+        let line = av.available ? tr("people_profile_available") : av.untilMs.map { tr("people_profile_busy_until", PeopleProfileInfo.untilLabel(atMs: $0)) } ?? tr("people_profile_busy_open")
         VStack(alignment: .leading, spacing: 10) {
-            PeopleSegmented(options: ["Available", "Busy"], selected: av.available ? 0 : 1, label: "Availability") { i in
+            PeopleSegmented(options: [tr("people_profile_available"), tr("people_profile_busy")], selected: av.available ? 0 : 1, label: tr("people_profile_availability")) { i in
                 if i == 0 { apply(true, nil) } else if av.available { setBusy(choice) }
             }
             HStack(spacing: 10) {
@@ -263,7 +263,7 @@ struct PeopleAvailabilityCard: View {
                 PeopleFlow(spacing: 8) {
                     ForEach(busyChoices, id: \.id) { b in PeopleChip(text: b.label, pressed: active == b.id, minHeight: 36) { setBusy(b.id) } }
                 }
-                .accessibilityLabel("For how long")
+                .accessibilityLabel(tr("people_profile_for_how_long"))
             }
         }
         .padding(16).padding(.vertical, -2)
@@ -278,7 +278,7 @@ struct PeopleAvailabilityCard: View {
     }
 
     private func apply(_ available: Bool, _ untilMs: Int64?) {
-        if !available, let untilMs, untilMs <= PeopleProfileInfo.nowMillis() { error = "Choose a time that hasn\u{2019}t passed yet."; return }
+        if !available, let untilMs, untilMs <= PeopleProfileInfo.nowMillis() { error = tr("people_profile_time_passed"); return }
         Task {
             let r = await save(available, untilMs.map { $0 / 1000 })
             if let r { error = r } else { error = ""; saved += 1; now = PeopleProfileInfo.nowMillis() }
@@ -344,13 +344,13 @@ private struct PeopleAddInfo: View {
     private func submit() {
         if pick == "" {
             if let m = ProfileRules.checkKey(name) { error = m; return }
-            if ProfileRules.reserved.contains(key) || PeopleProfileInfo.known[key] != nil || have.contains(key) { error = "You already have information with that name."; return }
+            if ProfileRules.reserved.contains(key) || PeopleProfileInfo.known[key] != nil || have.contains(key) { error = tr("people_profile_info_dup"); return }
         }
         var value: String? = v.trimmingCharacters(in: .whitespacesAndNewlines)
-        if value?.isEmpty != false { error = "Add something to save."; return }
+        if value?.isEmpty != false { error = tr("people_profile_info_empty"); return }
         if link {
             value = PeopleProfileInfo.normaliseLink(v)
-            if value == nil { error = "Enter a web address that starts with http:// or https://."; return }
+            if value == nil { error = tr("people_profile_bad_link"); return }
         }
         let k = key, val = value!
         Task { let r = await save(k, val); if r == nil { onClose() } else { error = r! } }
@@ -359,33 +359,33 @@ private struct PeopleAddInfo: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             if let p = pick {
-                PeopleDialogTitle(p.isEmpty ? "Something else" : PeopleProfileInfo.labelOf(p))
+                PeopleDialogTitle(p.isEmpty ? tr("people_profile_something_else") : PeopleProfileInfo.labelOf(p))
                 VStack(alignment: .leading, spacing: 6) {
                     if p.isEmpty {
-                        Text("What is it called?").peopleStyle(.sub, weight: .semibold).foregroundStyle(c.ink2).padding(.top, 6)
-                        PeopleInput(text: $name, label: "What is it called?", placeholder: "For example, Favourite tea", focus: true, onSubmit: submit)
+                        Text(tr("people_profile_what_called")).peopleStyle(.sub, weight: .semibold).foregroundStyle(c.ink2).padding(.top, 6)
+                        PeopleInput(text: $name, label: tr("people_profile_what_called"), placeholder: tr("people_profile_called_placeholder"), focus: true, onSubmit: submit)
                     }
-                    Text(p.isEmpty ? "Value" : PeopleProfileInfo.labelOf(p)).peopleStyle(.sub, weight: .semibold).foregroundStyle(c.ink2).padding(.top, 6)
-                    PeopleInput(text: $v, label: p.isEmpty ? "Value" : PeopleProfileInfo.labelOf(p), placeholder: PeopleProfileInfo.known[p]?.hint ?? "",
+                    Text(p.isEmpty ? tr("people_profile_value") : PeopleProfileInfo.labelOf(p)).peopleStyle(.sub, weight: .semibold).foregroundStyle(c.ink2).padding(.top, 6)
+                    PeopleInput(text: $v, label: p.isEmpty ? tr("people_profile_value") : PeopleProfileInfo.labelOf(p), placeholder: PeopleProfileInfo.known[p]?.hint ?? "",
                                 link: link, focus: !p.isEmpty, plain: true, onSubmit: submit)
                     if !error.isEmpty { PeopleErr(text: error).padding(.top, -10) }
                 }
                 .padding(.top, 12)
                 PeopleActs {
-                    PeopleButton("Back", variant: .quiet) { pick = nil; error = "" }
-                    PeopleButton("Add", variant: .primary, action: submit)
+                    PeopleButton(tr("people_back"), variant: .quiet) { pick = nil; error = "" }
+                    PeopleButton(tr("people_add"), variant: .primary, action: submit)
                 }
             } else {
-                PeopleDialogTitle("Add information")
-                PeopleDialogText("Your contacts will see it on your profile.")
+                PeopleDialogTitle(tr("people_profile_add_info"))
+                PeopleDialogText(tr("people_profile_add_note"))
                 VStack(spacing: 0) {
                     ForEach(PeopleProfileInfo.knownKeys.filter { !have.contains($0) }, id: \.self) { k in
                         PeopleAct(title: PeopleProfileInfo.labelOf(k), action: { pick = k }, icon: icons[k] ?? .info, padH: 12)
                     }
-                    PeopleAct(title: "Something else", action: { pick = "" }, icon: .plus, sub: "Name it yourself", padH: 12)
+                    PeopleAct(title: tr("people_profile_something_else"), action: { pick = "" }, icon: .plus, sub: tr("people_profile_name_it"), padH: 12)
                 }
-                .padding(.top, 10).padding(.horizontal, -12).accessibilityLabel("Kinds of information")
-                PeopleActs { PeopleButton("Cancel", variant: .quiet, action: onClose) }
+                .padding(.top, 10).padding(.horizontal, -12).accessibilityLabel(tr("people_profile_kinds"))
+                PeopleActs { PeopleButton(tr("people_cancel"), variant: .quiet, action: onClose) }
             }
         }
         .padding(.horizontal, 20).padding(.top, 20).padding(.bottom, 16)
@@ -401,13 +401,13 @@ private struct PeopleOpenLink: View {
     let onClose: () -> Void
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            PeopleDialogTitle("Open this link?")
+            PeopleDialogTitle(tr("people_profile_link_title"))
             Text(url).font(.system(size: 13, design: .monospaced)).foregroundStyle(c.ink)
                 .environment(\.layoutDirection, .leftToRight).frame(maxWidth: .infinity, alignment: .leading).padding(.top, 8)
-            PeopleDialogText("It opens in your browser, outside Tinline. Tinline doesn\u{2019}t load it for you, and can\u{2019}t vouch for what\u{2019}s there.")
+            PeopleDialogText(tr("people_profile_link_note"))
             PeopleActs {
-                PeopleButton("Cancel", variant: .quiet, action: onClose)
-                PeopleButton("Open link", variant: .primary) { if let u = URL(string: url) { openURL(u) }; onClose() }
+                PeopleButton(tr("people_cancel"), variant: .quiet, action: onClose)
+                PeopleButton(tr("people_profile_open_link"), variant: .primary) { if let u = URL(string: url) { openURL(u) }; onClose() }
             }
         }
         .padding(.horizontal, 20).padding(.top, 20).padding(.bottom, 16)
@@ -437,7 +437,7 @@ private struct PeoplePictureFlow: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Text("Position your picture").peopleStyle(.title).foregroundStyle(c.ink).accessibilityAddTraits(.isHeader)
+            Text(tr("people_crop_title")).peopleStyle(.title).foregroundStyle(c.ink).accessibilityAddTraits(.isHeader)
                 .frame(maxWidth: .infinity, alignment: .leading).padding(.bottom, 14)
             PeopleCropper(picked: picked, crop: $crop)
             HStack(alignment: .bottom, spacing: 14) {
@@ -447,14 +447,14 @@ private struct PeoplePictureFlow: View {
             if replacing { Text(pictureHelp).peopleStyle(.sub19).foregroundStyle(c.ink2).frame(maxWidth: .infinity, alignment: .leading).padding(.top, 14) }
             if !error.isEmpty { PeopleErr(text: error) }
             PeopleActs {
-                PeopleButton("Cancel", variant: .quiet, action: onClose)
-                PeopleButton("Use photo", variant: .primary, enabled: !busy) {
+                PeopleButton(tr("people_cancel"), variant: .quiet, action: onClose)
+                PeopleButton(tr("people_crop_use"), variant: .primary, enabled: !busy) {
                     guard !busy else { return }
                     busy = true; error = ""
                     let p = picked, cr = crop
                     Task {
                         let png = await Task.detached { renderSquare(p, cr, view: cropView) }.value
-                        if let png { error = await use(png) ?? "" } else { error = "Couldn\u{2019}t prepare that picture. Try a different one." }
+                        if let png { error = await use(png) ?? "" } else { error = tr("people_crop_failed") }
                         busy = false
                     }
                 }
@@ -494,12 +494,12 @@ private struct PeopleCropper: View {
             .gesture(DragGesture(minimumDistance: 0)
                 .onChanged { v in move(v.translation.width - last.width, v.translation.height - last.height); last = v.translation }
                 .onEnded { _ in last = .zero })
-            .accessibilityElement(children: .ignore).accessibilityLabel("Position your picture")
+            .accessibilityElement(children: .ignore).accessibilityLabel(tr("people_crop_title"))
             .accessibilityAdjustableAction { dir in zoomTo(crop.zoom + (dir == .increment ? 0.1 : -0.1)) }
-            Text("Drag to move the picture. Use the slider to zoom.").peopleStyle(.sub19).foregroundStyle(c.ink2).multilineTextAlignment(.center)
+            Text(tr("people_crop_help")).peopleStyle(.sub19).foregroundStyle(c.ink2).multilineTextAlignment(.center)
             HStack(spacing: 10) {
                 PeopleZoomGlyph(px: 16)
-                Slider(value: Binding(get: { Double(crop.zoom) }, set: { zoomTo(CGFloat($0)) }), in: 1...4).tint(c.peopleAccent).accessibilityLabel("Zoom")
+                Slider(value: Binding(get: { Double(crop.zoom) }, set: { zoomTo(CGFloat($0)) }), in: 1...4).tint(c.peopleAccent).accessibilityLabel(tr("people_crop_zoom"))
                 PeopleZoomGlyph(px: 22)
             }
             .frame(maxWidth: 260)

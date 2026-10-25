@@ -49,7 +49,7 @@ final class NoGroupCallLauncher: GroupCallLauncher {
     let snapshot = GroupCallSnapshot()
     var snapshots: AnyPublisher<GroupCallSnapshot, Never> { Empty().eraseToAnyPublisher() }
     func refreshLive(groupId: String) {}
-    func startOrJoin(groupId: String, onError: @escaping (String) -> Void) { onError("Group calls aren’t available here yet.") }
+    func startOrJoin(groupId: String, onError: @escaping (String) -> Void) { onError(tr("group_calls_unavailable")) }
     func restore() {}
 }
 
@@ -104,12 +104,15 @@ final class NodeGroupsDirectory: GroupsDirectory {
     var myName: String? { node.profile()?.name }
 }
 
+/// The word for the user in group lines; some code compares against it, so always read it from here.
+var groupsYou: String { tr("group_you") }
+
 extension GroupsDirectory {
     /// A DID as the user knows it: their contact name, else what the group calls them (android `nameOf`).
     func name(of did: String, fallback: String, me: String) -> String {
-        if did == me { return "You" }
+        if did == me { return groupsYou }
         if let c = contacts.first(where: { $0.did == did }) { return c.name }
-        return fallback.groupsIfBlank("Someone")
+        return fallback.groupsIfBlank(tr("group_someone"))
     }
 }
 
@@ -124,7 +127,7 @@ protocol GroupsQRScanner {
 // TODO(ios-device): AVCaptureSession + AVCaptureMetadataOutput (.qr) behind this protocol; needs NSCameraUsageDescription.
 struct UnavailableGroupsQRScanner: GroupsQRScanner {
     func scannerView(prompt: String, onCode: @escaping (String) -> Void) -> AnyView {
-        AnyView(Text("Scanning isn’t available yet. Paste the link instead.").multilineTextAlignment(.center).padding(24))
+        AnyView(Text(tr("group_scan_unavailable")).multilineTextAlignment(.center).padding(24))
     }
 }
 

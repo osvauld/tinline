@@ -73,9 +73,9 @@ final class ProfilesController: ObservableObject, ProfileEvents, @unchecked Send
     @Published var online = false
 
     /// profile.ts SAVE_FAILED, verbatim.
-    static let saveFailed = "Couldn\u{2019}t save that. Your profile is unchanged and what you typed is still here."
+    static var saveFailed: String { tr("people_save_failed") }
     /// Native-only state (the playground has one account in front at a time): a write that raced an account switch.
-    static let accountChanged = "The selected account changed. Nothing was saved to the new account."
+    static var accountChanged: String { tr("people_account_changed") }
 
     init(host: ProfileHost? = nil) { self.host = host }
 
@@ -164,8 +164,8 @@ final class ProfilesController: ObservableObject, ProfileEvents, @unchecked Send
             return nil
         case .failure:
             switch op {
-            case .replacePicture: return "Couldn\u{2019}t save your picture. Your current picture is unchanged."
-            case .removePicture: return "Couldn\u{2019}t remove your picture. It is unchanged."
+            case .replacePicture: return tr("people_save_picture_failed")
+            case .removePicture: return tr("people_remove_picture_failed")
             default: return Self.saveFailed
             }
         }

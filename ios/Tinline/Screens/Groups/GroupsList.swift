@@ -94,22 +94,22 @@ private struct GroupsTab: View {
         let contacts = session.dir.contacts
         ScrollView {
             LazyVStack(spacing: 0) {
-                topRow(GroupsIcons.plus, "New group", "You’ll be the owner") { creating = true }
-                NavigationLink(value: GroupsRoute.join(nil)) { TopRowLabel(icon: GroupsIcons.link, title: "Join with a link", sub: "Paste or scan a group invite") }
+                topRow(GroupsIcons.plus, tr("group_list_new"), tr("group_list_new_sub")) { creating = true }
+                NavigationLink(value: GroupsRoute.join(nil)) { TopRowLabel(icon: GroupsIcons.link, title: tr("group_list_join"), sub: tr("group_list_join_sub")) }
                     .buttonStyle(GroupsPressStyle())
                 // ---- invitations to me
                 GroupsFold(visible: !pendingInv.isEmpty) {
-                    GroupsSection("Invitations to you", count: pendingInv.count)
+                    GroupsSection(tr("group_section_invitations"), count: pendingInv.count)
                     VStack(spacing: 0) {
                         ForEach(pendingInv, id: \.id) { inv in invitationCard(inv) }
                     }.padding(.horizontal, 8)
                 }
                 // ---- chat requests, incoming then sent
                 GroupsFold(visible: !requestsIn.isEmpty || !sent.isEmpty) {
-                    GroupsSection("Chat requests", count: requestsIn.isEmpty ? nil : requestsIn.count)
+                    GroupsSection(tr("group_section_requests"), count: requestsIn.isEmpty ? nil : requestsIn.count)
                     VStack(spacing: 0) { ForEach(requestsIn, id: \.id) { r in requestCard(r) } }.padding(.horizontal, 8)
                     if !sent.isEmpty {
-                        GroupsSub2("Sent")
+                        GroupsSub2(tr("group_section_sent"))
                         VStack(spacing: 0) {
                             ForEach(sent, id: \.id) { r in
                                 let open = r.contactAdded && contacts.contains(where: { $0.did == r.peerDid })
@@ -119,9 +119,9 @@ private struct GroupsTab: View {
                     }
                 }
                 // ---- my groups
-                GroupsSection("Your groups", count: active.count)
+                GroupsSection(tr("group_section_groups"), count: active.count)
                 GroupsFold(visible: active.isEmpty) {
-                    Text("No groups yet. Create one, or accept an invitation.").font(GroupsType.note).foregroundStyle(tin.ink2)
+                    Text(tr("group_list_empty")).font(GroupsType.note).foregroundStyle(tin.ink2)
                         .padding(.horizontal, 20).padding(.vertical, 8).frame(maxWidth: .infinity, alignment: .leading)
                 }
                 VStack(spacing: 0) {
@@ -164,22 +164,22 @@ private struct GroupsTab: View {
             HStack(spacing: 12) {
                 TinAvatar(did: inv.inviterDid, size: 40)
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(groupsBold(groupsFirstName(who), " invited you to ", inv.groupName)).font(GroupsType.body).foregroundStyle(tin.ink)
-                    Text("Valid until \(GroupsTime.dayOnly(inv.expires))").font(GroupsType.sub).foregroundStyle(tin.ink2)
+                    Text(groupsBoldIn(tr("group_invited_you", groupsFirstName(who), inv.groupName), groupsFirstName(who), inv.groupName)).font(GroupsType.body).foregroundStyle(tin.ink)
+                    Text(tr("group_valid_until", GroupsTime.dayOnly(inv.expires))).font(GroupsType.sub).foregroundStyle(tin.ink2)
                 }
                 Spacer(minLength: 0)
             }
             GroupsActs(top: 0) {
-                GroupsButton(text: "Decline", kind: .quiet, enabled: !busy) {
+                GroupsButton(text: tr("group_decline"), kind: .quiet, enabled: !busy) {
                     session.exec({ session.ctl.declineInvitation(inv.id) }, session.sayDone)
                 }
-                GroupsButton(text: busy ? "Joining…" : "Accept", kind: .primary, enabled: !busy) {
+                GroupsButton(text: busy ? tr("group_joining") : tr("group_accept"), kind: .primary, enabled: !busy) {
                     joining = inv.id
                     session.exec({ session.ctl.acceptInvitation(inv.id) }) { r in
                         joining = nil
                         switch r {
-                        case .success(let gid): pushed = .group(gid); session.say("You joined \(inv.groupName).")
-                        case .failure(let e): session.say(e.message.groupsIfBlank("Couldn’t join"))
+                        case .success(let gid): pushed = .group(gid); session.say(tr("group_joined_toast", inv.groupName))
+                        case .failure(let e): session.say(e.message.groupsIfBlank(tr("group_cant_join")))
                         }
                     }
                 }
@@ -193,16 +193,16 @@ private struct GroupsTab: View {
             HStack(spacing: 12) {
                 TinAvatar(did: r.peerDid, size: 40)
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(groupsBold(name, " wants to chat")).font(GroupsType.body).foregroundStyle(tin.ink)
-                    Text("Member of \(r.groupName)").font(GroupsType.sub).foregroundStyle(tin.ink2)
+                    Text(groupsBoldIn(tr("group_wants_to_chat", name), name)).font(GroupsType.body).foregroundStyle(tin.ink)
+                    Text(tr("group_member_of", r.groupName)).font(GroupsType.sub).foregroundStyle(tin.ink2)
                 }
                 Spacer(minLength: 0)
             }
-            Text("Accepting adds \(groupsFirstName(name)) as a contact for messages only. You can allow calls later.").font(GroupsType.sub).foregroundStyle(tin.ink2)
+            Text(tr("group_request_accept_note", groupsFirstName(name))).font(GroupsType.sub).foregroundStyle(tin.ink2)
             GroupsActs(top: 0) {
-                GroupsButton(text: "Block", kind: .dangerQuiet) { session.exec({ session.ctl.blockRequester(r.id, did: r.peerDid) }, session.sayDone) }
-                GroupsButton(text: "Decline", kind: .quiet) { session.exec({ session.ctl.decline(r.id) }, session.sayDone) }
-                GroupsButton(text: "Accept", kind: .primary) { session.exec({ session.ctl.accept(r.id) }, session.sayDone) }
+                GroupsButton(text: tr("group_block"), kind: .dangerQuiet) { session.exec({ session.ctl.blockRequester(r.id, did: r.peerDid) }, session.sayDone) }
+                GroupsButton(text: tr("group_decline"), kind: .quiet) { session.exec({ session.ctl.decline(r.id) }, session.sayDone) }
+                GroupsButton(text: tr("group_accept"), kind: .primary) { session.exec({ session.ctl.accept(r.id) }, session.sayDone) }
             }
         }
     }
@@ -226,14 +226,14 @@ private struct GroupsTab: View {
     private func goneSection(_ gone: [GroupSummary]) -> some View {
         VStack(spacing: 0) {
             Button { goneOpen.toggle() } label: {
-                GroupsSection("Left or removed", count: gone.count) {
+                GroupsSection(tr("group_section_gone"), count: gone.count) {
                     GroupsIconView(icon: GroupsIcons.chev, size: 18, color: tin.ink2).rotationEffect(.degrees(goneOpen ? 180 : 0))
                         .animation(GroupsMotion.easeOut(GroupsMotion.enter), value: goneOpen)
                 }
                 .frame(minHeight: 44)
             }
             .buttonStyle(GroupsPressStyle())
-            .accessibilityLabel("Left or removed").accessibilityValue(goneOpen ? "Expanded" : "Collapsed")
+            .accessibilityLabel(tr("group_section_gone")).accessibilityValue(goneOpen ? tr("group_expanded") : tr("group_collapsed"))
             GroupsCollapse(open: goneOpen) {
                 VStack(spacing: 0) {
                     ForEach(gone, id: \.id) { s in
@@ -244,7 +244,7 @@ private struct GroupsTab: View {
                                     VStack(alignment: .leading, spacing: 2) {
                                         Text(s.name).font(GroupsType.bodyStrong).foregroundStyle(tin.ink).opacity(0.72).lineLimit(1)
                                         let at = s.last?.at
-                                        Text((s.myRole == .removed ? "Removed" : "You left") + (at.map { " · " + GroupsTime.dayOnly($0) } ?? ""))
+                                        Text((s.myRole == .removed ? tr("group_info_removed_title") : tr("group_gone_left")) + (at.map { " · " + GroupsTime.dayOnly($0) } ?? ""))
                                             .font(GroupsType.sub).foregroundStyle(tin.ink2).lineLimit(1)
                                     }
                                     Spacer(minLength: 0)
@@ -259,6 +259,15 @@ private struct GroupsTab: View {
 }
 
 /// "**a** b **c**": the playground's `<b>` runs inside a line (650 there, 600 here). Odd parts are plain.
+/// `text` with the first occurrence of each `bold` substring in the body-strong font (the names in "A invited you to B").
+func groupsBoldIn(_ text: String, _ bold: String...) -> AttributedString {
+    var out = AttributedString(text)
+    for b in bold where !b.isEmpty {
+        if let r = out.range(of: b) { out[r].font = GroupsType.bodyStrong }
+    }
+    return out
+}
+
 func groupsBold(_ parts: String...) -> AttributedString {
     var out = AttributedString()
     for (i, p) in parts.enumerated() {
@@ -325,14 +334,14 @@ private struct GroupRow: View {
                     }
                     HStack(spacing: 8) {
                         Group {
-                            if let call { GroupsCallLine(text: call.joined ? "You’re in the call" : "Call in progress") }
+                            if let call { GroupsCallLine(text: call.joined ? tr("group_call_you_in") : tr("group_call_in_progress")) }
                             else if waiting {
                                 HStack(spacing: 3) {
                                     GroupsIconView(icon: GroupsIcons.clock, size: 13, color: tin.grpGoldInk)
-                                    Text("Waiting for a host").font(GroupsType.subStrong).foregroundStyle(tin.grpGoldInk).lineLimit(1)
+                                    Text(tr("group_waiting_for_host")).font(GroupsType.subStrong).foregroundStyle(tin.grpGoldInk).lineLimit(1)
                                 }
                             } else {
-                                Text(GroupText.preview(s, me: me).groupsIfBlank("No posts yet")).font(GroupsType.sub).foregroundStyle(tin.ink2).lineLimit(1)
+                                Text(GroupText.preview(s, me: me).groupsIfBlank(tr("group_no_posts"))).font(GroupsType.sub).foregroundStyle(tin.ink2).lineLimit(1)
                             }
                         }.frame(maxWidth: .infinity, alignment: .leading)
                         if let call, !call.joined { GroupsJoinChip() }
@@ -355,14 +364,14 @@ private struct NewGroupSheet: View {
 
     var body: some View {
         ScrollView {
-            GroupsDialogBody(title: "New group") {
+            GroupsDialogBody(title: tr("group_new_title")) {
                 Spacer().frame(height: 10)
-                GroupsField(label: "Group name", text: $name, placeholder: "Name", error: err, limit: 60)
+                GroupsField(label: tr("group_name_label"), text: $name, placeholder: tr("group_name_placeholder"), error: err, limit: 60)
                     .onChange(of: name) { _, _ in err = nil }
-                GroupsPara("You’ll be the owner. This device is the group’s first host, so it stores the group and passes posts on.", top: 10)
+                GroupsPara(tr("group_new_dialog_text"), top: 10)
                 GroupsActs {
-                    GroupsButton(text: "Cancel", kind: .quiet) { dismiss() }
-                    GroupsButton(text: busy ? "Creating…" : "Create", kind: .primary, enabled: !name.groupsIsBlank && !busy) {
+                    GroupsButton(text: tr("group_cancel"), kind: .quiet) { dismiss() }
+                    GroupsButton(text: busy ? tr("group_creating") : tr("group_create"), kind: .primary, enabled: !name.groupsIsBlank && !busy) {
                         busy = true
                         let n = name
                         session.exec({ session.ctl.create(n) }) { r in

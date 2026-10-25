@@ -26,7 +26,7 @@ struct ShellRing {
     let did: String
     let name: String
     /// "Incoming call", "Incoming video call", or "Calling during your call".
-    var sub = "Incoming call"
+    var sub = tr("shell_ring_incoming")
     /// Call waiting: the buttons are Decline and End & answer.
     var waiting = false
     var onOpen: () -> Void = {}
@@ -297,13 +297,13 @@ final class ShellCore {
     /// identity then stays uncommitted: the caller offers Retry or a passphrase). A passphrase identity is already on disk;
     /// failing to remember its key only means the passphrase is asked after a restart.
     func persistIdentity() async -> String? {
-        let failed = "Couldn\u{2019}t save your account on this phone."
+        let failed = tr("shell_err_save_account")
         guard let node else { NSLog("Tinline: persistIdentity: no node"); return failed }
         let keys = self.keys
         do {
             return try await lifecycle.run { () -> String? in
                 let saved = Self.rememberKey(node, keys: keys)
-                if !saved && !node.hasPassphrase() { return "Couldn\u{2019}t save your account safely on this phone." }
+                if !saved && !node.hasPassphrase() { return tr("shell_err_save_account_safely") }
                 do { try node.commitIdentity(); return nil } catch {
                     NSLog("Tinline: commitIdentity failed: \(error)"); return failed
                 }
@@ -517,9 +517,9 @@ enum ShellFlowError: Swift.Error, LocalizedError {
     case noAccount, differentIdentity, accountChanged
     var errorDescription: String? {
         switch self {
-        case .noAccount: return "No account"
-        case .differentIdentity: return "That recovery phrase belongs to a different identity"
-        case .accountChanged: return "Account changed"
+        case .noAccount: return tr("shell_flow_no_account")
+        case .differentIdentity: return tr("shell_flow_different_identity")
+        case .accountChanged: return tr("shell_flow_account_changed")
         }
     }
 }
