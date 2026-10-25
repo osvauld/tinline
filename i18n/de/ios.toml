@@ -9,14 +9,14 @@ text = "Gesendet, wartet auf Bestätigung vom Gerät von {first}"
 [kit_tick_delivered]
 text = "Auf dem Gerät von {first}"
 
+[kit_tick_delivered_their]
+text = "Auf ihrem Gerät"
+
 [kit_tick_read]
 text = "Gelesen auf dem Gerät von {first}"
 
 [kit_tick_bad]
 text = "Nicht zugestellt"
-
-[kit_tick_their]
-text = "ihrem"
 
 [kit_avatar_view_photo]
 text = "Foto ansehen"
@@ -113,12 +113,6 @@ text = "Mit {name} chatten?"
 
 [chat_card_add_name]
 text = "{name} hinzufügen?"
-
-[chat_card_them]
-text = "der Person"
-
-[chat_card_this_contact]
-text = "diesen Kontakt"
 
 [chat_find_placeholder]
 text = "In diesem Chat suchen"
@@ -595,9 +589,6 @@ text = "Lege zuerst einen Host fest. Ein Link nennt einen Host."
 [group_invites_link_valid]
 text = "7 Tage gültig"
 
-[group_member_flags]
-text = "{flags} von {total} Markierungen"
-
 [group_member_blocked_by_you]
 text = "Von dir blockiert"
 
@@ -640,27 +631,6 @@ text = "Host"
 [group_role_call_host]
 text = "Anruf-Host"
 
-[group_member_desc_you]
-text = "{name} (du)"
-
-[group_member_desc_owner]
-text = "Eigentümer"
-
-[group_member_desc_admin]
-text = "Admin"
-
-[group_member_desc_member]
-text = "Mitglied"
-
-[group_member_desc_host]
-text = "Host"
-
-[group_member_desc_call_host]
-text = "Anruf-Host"
-
-[group_member_desc]
-text = "{summary}. Aktionen öffnen"
-
 [group_this_device]
 text = "Dieses Gerät"
 
@@ -676,15 +646,6 @@ other = "{count} Hosts online. Beiträge gehen sofort raus."
 
 [group_hosts_offline]
 text = "Kein Host ist online. Deine Beiträge sind gespeichert und gehen raus, sobald einer da ist."
-
-[group_online]
-text = "Online"
-
-[group_offline]
-text = "Offline"
-
-[group_host_also_calls]
-text = "{status} · hostet auch Anrufe"
 
 [group_remove]
 text = "Entfernen"
@@ -760,14 +721,7 @@ text = "Ein Anruf-Host trägt den Anruf. Alle im Anruf verbinden sich mit ihm, u
 text = "Markierungen gegen dich"
 
 [group_flags_count]
-text = "{flags} von {total}"
-
-[group_flags_count_desc]
-text = "{flags} von {total} Markierungen"
-
-[group_flags_left]
-one = "Noch eine Markierung von einem Admin entfernt dich aus der Gruppe. Markierungen lassen sich nicht zurücknehmen. Bis dahin kannst du weiter lesen und posten."
-other = "Noch {count} Markierungen von Admins entfernen dich aus der Gruppe. Markierungen lassen sich nicht zurücknehmen. Bis dahin kannst du weiter lesen und posten."
+text = "{count} von {total}"
 
 [group_removal_title]
 text = "Nach {total} Admin-Markierungen entfernt"
@@ -894,16 +848,16 @@ text = "Hosten auf Gerät {device} beenden"
 text = "Als Host entfernen"
 
 [group_member_cancel_callhost]
-text = "Anruf-Host-Anfrage zurückziehen{device}"
+text = "Anruf-Host-Anfrage zurückziehen"
 
 [group_member_cancel_callhost_sub]
 text = "Wartet auf Zusage vom Gerät von {name}"
 
 [group_member_remove_callhost]
-text = "Als Anruf-Host entfernen{device}"
+text = "Als Anruf-Host entfernen"
 
 [group_member_make_callhost]
-text = "Zum Anruf-Host machen{device}"
+text = "Zum Anruf-Host machen"
 
 [group_member_make_callhost_sub]
 text = "Bittet {name}, Gruppenanrufe zu tragen. Die Person muss zustimmen."
@@ -965,35 +919,11 @@ text = "Anfrage senden"
 [group_someone]
 text = "Jemand"
 
-[group_fallback_them]
-text = "der Person"
-
-[group_fallback_they]
-text = "Die Person"
-
-[group_sys_joined]
-text = "{name} ist beigetreten"
-
-[group_sys_left]
-text = "{name} hat die Gruppe verlassen"
-
 [group_sys_removed_you]
 text = "Du wurdest nach {total} Admin-Markierungen entfernt"
 
 [group_sys_removed]
 text = "{name} wurde nach {total} Admin-Markierungen entfernt"
-
-[group_sys_admin_you]
-text = "{by} hat dich zum Admin gemacht"
-
-[group_sys_admin]
-text = "{by} hat {name} zum Admin gemacht"
-
-[group_sys_unadmin_you]
-text = "{by} hat dich als Admin entfernt"
-
-[group_sys_unadmin]
-text = "{by} hat {name} als Admin entfernt"
 
 [group_sys_host_added_you]
 text = "Ein Gerät von dir hostet jetzt die Gruppe"
@@ -1051,11 +981,11 @@ text = "{name} hat angenommen · verbindet"
 [group_req_declined]
 text = "{name} hat abgelehnt"
 
+[group_req_declined_unnamed]
+text = "Abgelehnt"
+
 [group_req_blocked]
 text = "{name} hat dich blockiert"
-
-[group_an_admin]
-text = "Ein Admin"
 
 [group_pick_already_member]
 text = "Schon Mitglied"
@@ -1071,9 +1001,6 @@ text = "Eingeladen · noch nicht zugestellt"
 
 [group_inv_joined]
 text = "Beigetreten"
-
-[group_inv_declined]
-text = "Abgelehnt"
 
 [group_inv_expired]
 text = "Einladung abgelaufen"
@@ -1293,9 +1220,6 @@ text = "Hier hosten"
 [group_done_host_declined]
 text = "Abgelehnt. Die Admins sehen keine Antwort von diesem Handy."
 
-[group_names_and]
-text = "{rest} und {last}"
-
 [group_removed_card_title]
 one = "Nach {count} Admin-Markierung entfernt"
 other = "Nach {count} Admin-Markierungen entfernt"
@@ -1369,9 +1293,6 @@ text = "Gruppe erstellen"
 [group_add_to_title]
 text = "Zu {group} hinzufügen"
 
-[group_contacts_selected]
-text = "KONTAKTE · {count} AUSGEWÄHLT"
-
 [group_add_no_contacts]
 text = "Keine Kontakte zum Hinzufügen. Leute, die du blockierst oder die dich blockieren, stehen nicht in der Liste."
 
@@ -1408,9 +1329,6 @@ text = "Scannen"
 [group_joining]
 text = "Beitreten…"
 
-[group_fallback_unknown_contact]
-text = "jemandem, der nicht in deinen Kontakten ist"
-
 [group_join_invited_by]
 text = "Eingeladen von {name}"
 
@@ -1425,9 +1343,6 @@ text = "Gültig bis {date}"
 
 [group_join_hint]
 text = "Beim Beitreten verbindet sich dieses Handy mit den Hosts der Gruppe. Mitglieder sehen deinen Namen; nur Hosts erfahren, wie sie dieses Handy erreichen. Das kann bis zu einer Minute dauern."
-
-[group_fallback_the_group]
-text = "die Gruppe"
 
 [group_link_title]
 text = "Einladungslink"
@@ -1481,7 +1396,7 @@ text = "Einladungen an dich"
 text = "Chat-Anfragen"
 
 [group_section_sent]
-text = "Gesendet"
+text = "Gesendete Anfragen"
 
 [group_section_groups]
 text = "Deine Gruppen"
@@ -1489,17 +1404,11 @@ text = "Deine Gruppen"
 [group_list_empty]
 text = "Noch keine Gruppen. Erstelle eine oder nimm eine Einladung an."
 
-[group_invited_you]
-text = "{name} hat dich zu {group} eingeladen"
-
 [group_joined_toast]
 text = "Du bist {group} beigetreten."
 
 [group_cant_join]
 text = "Beitreten hat nicht geklappt"
-
-[group_wants_to_chat]
-text = "{name} möchte chatten"
 
 [group_member_of]
 text = "Mitglied von {group}"
@@ -1558,9 +1467,6 @@ text = "Tinline kann dich nicht auf Nachrichten oder Anrufe hinweisen. Sie komme
 
 [settings_status_available]
 text = "Erreichbar"
-
-[settings_status_busy_until]
-text = "Beschäftigt bis {time}"
 
 [settings_status_busy]
 text = "Beschäftigt"
@@ -1909,9 +1815,6 @@ text = "Nicht für Notrufe."
 [settings_test_tone]
 text = "Testton"
 
-[settings_test_tone_sub]
-text = "Einen 440-Hz-Ton statt des Mikrofons senden"
-
 [security_wrong_pass]
 text = "Das hat nicht gepasst. Versuch es nochmal."
 
@@ -1953,12 +1856,6 @@ text = "Halte das privat. Wer es hat, kann als du auftreten."
 
 [security_tab_key]
 text = "Schlüssel"
-
-[security_tab_words]
-text = "24 Wörter"
-
-[security_key_failed]
-text = "Der Schlüssel ließ sich nicht vorbereiten. Nutze stattdessen deine 24 Wörter."
 
 [security_hide]
 text = "Verbergen"
@@ -2053,9 +1950,6 @@ text = "Gerät"
 [devices_unlinked_msg]
 text = "{name} getrennt"
 
-[devices_fb_device]
-text = "Gerät"
-
 [devices_finish_call]
 text = "Beende zuerst deinen Anruf"
 
@@ -2098,9 +1992,6 @@ text = "Jetzt abgleichen"
 [devices_syncing]
 text = "Abgleich mit {name}…"
 
-[devices_fb_the_device]
-text = "dem Gerät"
-
 [devices_unlink_this]
 text = "Dieses Gerät trennen"
 
@@ -2115,9 +2006,6 @@ text = "Speichern"
 
 [devices_name_field]
 text = "Gerätename"
-
-[devices_fb_this_device]
-text = "dieses Gerät"
 
 [devices_remove_q]
 text = "Dein Konto von diesem Handy entfernen?"
@@ -2166,9 +2054,6 @@ text = "Das Konto von {name} lässt sich nicht öffnen"
 
 [unlock_lost_lead]
 text = "Dieses Handy hat den Schlüssel nicht mehr, der dein Konto öffnet. Das passiert nach dem Zurücksetzen der Displaysperre oder nach einem wiederhergestellten Backup. Sobald du wiederherstellst, kommen deine Anrufe wieder durch."
-
-[unlock_lost_notice]
-text = "Du hast keine Passphrase festgelegt, also sind die 24 Wiederherstellungswörter der einzige Weg zurück. Deine Kontakte bleiben."
 
 [unlock_restore]
 text = "Mit 24 Wörtern wiederherstellen"
@@ -2275,9 +2160,6 @@ text = "In diesem Schlüssel steckt ein Tippfehler, oder er ist abgeschnitten. F
 [restore_title]
 text = "Konto wiederherstellen"
 
-[restore_lead_words]
-text = "Tipp deine 24 Wörter der Reihe nach ein, oder füge sie oder deinen Wiederherstellungsschlüssel ins erste Feld ein. Sie bleiben auf diesem Handy."
-
 [restore_lead_key]
 text = "Dein Wiederherstellungsschlüssel ist drin. Er bleibt auf diesem Handy."
 
@@ -2294,7 +2176,7 @@ text = "Aus Zwischenablage einfügen"
 text = "Die Zwischenablage ließ sich nicht lesen. Füg stattdessen ins erste Feld ein."
 
 [restore_progress]
-text = "{count} von 24"
+text = "{count} von {total}"
 
 [restore_words_label]
 text = "Wiederherstellungswörter"
@@ -2313,9 +2195,6 @@ text = "Gleicher Code auf beiden?"
 
 [link_same_code_lead]
 text = "Prüfe, ob {name} diesen Code zeigt, und bestätige dann dort."
-
-[link_fb_other_device]
-text = "deinem anderen Gerät"
 
 [link_diff_code]
 text = "Anderer Code, oder du hast das nicht gestartet? Brich ab. Vielleicht hat jemand anderes den QR-Code gescannt."
@@ -2380,14 +2259,8 @@ text = "Wähle auf dem neuen Gerät „Mit einem Gerät verknüpfen“, dann „
 [link_back]
 text = "Zurück"
 
-[link_fb_new_device_cap]
-text = "Das neue Gerät"
-
 [link_match_title]
 text = "Stimmen die Codes überein?"
-
-[link_match_body]
-text = "{name} möchte deinem Konto beitreten. Es sollte dieselben sechs Ziffern zeigen wie unten."
 
 [link_match_warn]
 text = "Vergleiche sie selbst. Wenn sie abweichen, hat vielleicht jemand anderes den Code zuerst gescannt."
@@ -2397,9 +2270,6 @@ text = "Stimmen nicht überein"
 
 [link_match]
 text = "Stimmen überein"
-
-[link_fb_new_device]
-text = "das neue Gerät"
 
 [link_connecting]
 text = "Verbinden…"
@@ -2434,15 +2304,6 @@ text = "Schließen"
 [link_scan_title]
 text = "Scanne den Code auf deinem neuen Gerät"
 
-[link_scan_step1]
-text = "1.  Öffne auf dem neuen Gerät Tinline und wähle {action}."
-
-[link_scan_step1_action]
-text = "Mit einem Gerät verknüpfen"
-
-[link_scan_step2]
-text = "2.  Es zeigt einen QR-Code und einen kurzen Code. Sie gelten 5 Minuten und funktionieren einmal."
-
 [link_scan_qr]
 text = "QR-Code scannen"
 
@@ -2463,12 +2324,6 @@ text = "Prüfung der Displaysperre abgebrochen"
 
 [link_approve_title]
 text = "{name} bestätigen?"
-
-[link_approve_body]
-text = "Wenn du bestätigst, gehen deine {phrase} an {name}. Es wird eine vollständige Kopie von dir: Es kann deine Chats lesen und als du auftreten. Bestätige nur ein Gerät, das du in der Hand hast."
-
-[link_approve_phrase]
-text = "Wiederherstellungswörter"
 
 [link_your_pass]
 text = "Deine Passphrase"
@@ -2506,9 +2361,6 @@ text = "Dieses Handy wurde getrennt"
 [link_unlinked_lead]
 text = "{name} wurde von einem deiner anderen Geräte von diesem Handy entfernt. Kontakte, Chats und Anrufe des Kontos sind hier gelöscht. Deine anderen Geräte sind nicht betroffen."
 
-[link_fb_your_account]
-text = "Dein Konto"
-
 [link_ok]
 text = "OK"
 
@@ -2529,9 +2381,6 @@ text = "Später"
 
 [onboarding_exists_body]
 text = "Diese Wiederherstellungswörter gehören zu einem Konto, das schon hier ist. Wechsle dorthin, statt es nochmal hinzuzufügen."
-
-[onboarding_fb_other_device]
-text = "deinem anderen Gerät"
 
 [onboarding_restore_warn_forgot]
 text = "Beim Wiederherstellen bleibt die Identität gleich: Nutze die Wiederherstellungswörter dieses Kontos. Du legst eine neue Passphrase fest."
@@ -2571,9 +2420,6 @@ text = "Scanne einen Code auf einem Gerät, das dein Konto schon hat. Deine Kont
 
 [onboarding_opt_restore]
 text = "Mein Konto wiederherstellen"
-
-[onboarding_opt_restore_sub]
-text = "Tipp deine 24 Wiederherstellungswörter ein. Dieses Handy startet mit einer leeren Kontaktliste."
 
 [onboarding_done_title]
 text = "Deine Leitung ist offen"
@@ -2659,12 +2505,6 @@ text = "Hier ist dein Wiederherstellungsschlüssel"
 [onboarding_rec_title_words]
 text = "Hier sind deine Wiederherstellungswörter"
 
-[onboarding_rec_lead_key]
-text = "Dein Wiederherstellungsschlüssel entspricht deinen 24 Wörtern, nur in einer Zeile.\nFüg ihn an einem sicheren Ort ein. Ein Passwortmanager eignet sich gut."
-
-[onboarding_rec_lead_words]
-text = "Wenn du mal das Gerät wechselst, bringen diese 24 Wörter dein Konto mit.\nSpeichere eine Kopie an einem sicheren Ort. Papier eignet sich gut."
-
 [onboarding_fb_your_account]
 text = "Dein Konto"
 
@@ -2710,9 +2550,6 @@ text = "Tablet"
 [onboarding_back_added]
 text = "{name} wurde diesem Handy hinzugefügt"
 
-[onboarding_fb_your_account_lc]
-text = "Dein Konto"
-
 [onboarding_back_title]
 text = "Willkommen zurück"
 
@@ -2721,9 +2558,6 @@ text = "Willkommen zurück, {name}"
 
 [onboarding_back_added_lead]
 text = "Es ist immer nur das ausgewählte Konto online, also ist {name} jetzt online und dein anderes Konto pausiert. Wechseln kannst du in den Einstellungen."
-
-[onboarding_fb_this_account]
-text = "dieses Konto"
 
 [onboarding_back_lead]
 text = "Dein Konto ist wieder auf diesem Handy. Deine Kontakte, Chats und Anrufliste liegen auf deinen anderen Geräten, nicht bei uns. Dieses Handy startet mit einer leeren Kontaktliste."
@@ -2911,6 +2745,9 @@ text = "Da ist etwas schiefgelaufen"
 [shell_call_what_incoming]
 text = "Eingehend"
 
+[shell_call_desc_incoming]
+text = "Eingehender Anruf"
+
 [shell_call_what_outgoing]
 text = "Ausgehend"
 
@@ -2919,6 +2756,9 @@ text = "Während deiner Pause"
 
 [shell_call_what_missed]
 text = "Verpasst"
+
+[shell_call_desc_missed]
+text = "Verpasster Anruf"
 
 [shell_call_what_declined]
 text = "Abgelehnt"
@@ -2929,10 +2769,13 @@ text = "Keine Antwort"
 [shell_call_what_cancelled]
 text = "Abgebrochen"
 
-[shell_call_what_unreachable]
-text = "Keine Verbindung"
+[shell_call_desc_cancelled]
+text = "Anruf abgebrochen"
 
 [shell_call_what_other]
+text = "Tinline-Anruf"
+
+[shell_call_desc_other]
 text = "Anrufen"
 
 [shell_you]
@@ -2946,42 +2789,6 @@ text = "Jemand"
 
 [shell_chat_waiting_unreachable]
 text = "Wartet aufs Senden – {name} ist noch nicht erreichbar"
-
-[shell_group_sys_joined]
-text = "{name} ist beigetreten"
-
-[shell_group_sys_left]
-text = "{name} hat die Gruppe verlassen"
-
-[shell_group_sys_removed_you]
-text = "Du wurdest nach 3 Admin-Markierungen entfernt"
-
-[shell_group_sys_removed]
-text = "{name} wurde nach 3 Admin-Markierungen entfernt"
-
-[shell_group_sys_admin_granted_you]
-text = "{by} hat dich zum Admin gemacht"
-
-[shell_group_sys_admin_granted]
-text = "{by} hat {name} zum Admin gemacht"
-
-[shell_group_sys_admin_revoked_you]
-text = "{by} hat dich als Admin entfernt"
-
-[shell_group_sys_admin_revoked]
-text = "{by} hat {name} als Admin entfernt"
-
-[shell_group_sys_host_added_you]
-text = "Ein Gerät von dir hostet jetzt die Gruppe"
-
-[shell_group_sys_host_added]
-text = "Ein Gerät von {name} hostet jetzt die Gruppe"
-
-[shell_group_sys_host_removed_you]
-text = "Ein Gerät von dir hostet die Gruppe nicht mehr"
-
-[shell_group_sys_host_removed]
-text = "Ein Gerät von {name} hostet die Gruppe nicht mehr"
 
 [shell_group_preview_removed]
 text = "Du wurdest aus dieser Gruppe entfernt"
@@ -3138,10 +2945,12 @@ text = "Auflegen und annehmen"
 text = "Annehmen"
 
 [shell_tab_waiting]
-text = "{count} warten"
+one = "{count} wartet"
+other = "{count} warten"
 
 [shell_tab_unread]
-text = "{count} ungelesen"
+one = "{count} ungelesen"
+other = "{count} ungelesen"
 
 [shell_tab_chats]
 text = "Chats"
@@ -3214,12 +3023,6 @@ text = "Profil von {name}"
 
 [shell_calls_what_duration]
 text = "{what} · {duration}"
-
-[shell_calls_row_a11y]
-text = "{name}, Anruf: {what}, {stamp}. {action}"
-
-[shell_calls_row_a11y_duration]
-text = "{name}, Anruf: {what}, {duration}, {stamp}. {action}"
 
 [shell_calls_action_call]
 text = "Anrufen"
@@ -3604,7 +3407,7 @@ text = "Aus. {name} kann dir schreiben; Anrufe klingeln nicht."
 text = "ANRUFE MIT {name}"
 
 [people_detail_call]
-text = "Anrufen"
+text = "Tinline-Anruf"
 
 [people_detail_direct]
 text = "Direkt"
@@ -3699,12 +3502,6 @@ text = "Gib der Angabe einen Namen."
 [people_rule_key_bad]
 text = "Dieser Name geht nicht. Halte ihn kurz, ohne Steuerzeichen."
 
-[people_rule_value_long]
-text = "Das ist zu lang. Jede Angabe darf bis zu 16 KiB groß sein."
-
-[people_rule_too_many]
-text = "Du hast 64 Angaben erreicht. Entferne eine, um eine neue hinzuzufügen."
-
 [people_rule_full]
 text = "Dein Profil ist voll. Entferne einige Angaben, um mehr hinzuzufügen."
 
@@ -3728,12 +3525,6 @@ text = "Stadt oder Region"
 
 [people_info_website]
 text = "Website"
-
-[people_until_tomorrow]
-text = "morgen {time}"
-
-[people_until_day]
-text = "{day} {time}"
 
 [people_busy_30m]
 text = "30 Minuten"
@@ -3855,9 +3646,6 @@ text = "Erreichbar"
 [people_profile_busy]
 text = "Beschäftigt"
 
-[people_profile_busy_until]
-text = "Beschäftigt bis {time}"
-
 [people_profile_busy_open]
 text = "Beschäftigt, bis du es änderst"
 
@@ -3969,9 +3757,6 @@ text = "Andere"
 [call_mic_permission_needed_place]
 text = "Für einen Anruf braucht Tinline die Mikrofon-Berechtigung"
 
-[call_status_reconnecting]
-text = "Neu verbinden…"
-
 [call_status_ringing]
 text = "Klingelt…"
 
@@ -4006,7 +3791,7 @@ text = "Unbekannt"
 text = "Tinline-Anruf"
 
 [call_notification_name]
-text = "Anrufen"
+text = "Tinline-Anruf"
 
 [call_about_title]
 text = "Über diesen Anruf"
@@ -4161,9 +3946,6 @@ text = "HD · {size}"
 [call_status_finding_host]
 text = "Anruf-Host wird gesucht…"
 
-[call_status_connecting]
-text = "Verbinden…"
-
 [call_group_already_in_call]
 text = "Du bist schon in einem Anruf."
 
@@ -4173,14 +3955,8 @@ text = "Anruf beendet"
 [call_group_ended_host_lost]
 text = "Anruf beendet – Host weg"
 
-[call_group_battery_limited]
-text = "Akku unter 15 %. Das Hosten ist eingeschränkt: Es ist immer nur eine Person zu hören, und niemand Neues kann beitreten."
-
 [call_group_no_host]
 text = "Kein Anruf-Host verfügbar"
-
-[call_group_connect_failed]
-text = "Keine Verbindung"
 
 [call_person_you]
 text = "Du"
@@ -4190,12 +3966,6 @@ text = "Jemand"
 
 [call_group_fallback]
 text = "Gruppe"
-
-[call_host_this_phone]
-text = "dieses Handy"
-
-[call_host_device]
-text = "Gerät von {name}"
 
 [call_group_minimize]
 text = "Anruf verkleinern"
@@ -4216,20 +3986,8 @@ text = "OK"
 [call_group_you_host]
 text = "Du bist der Anruf-Host"
 
-[call_group_host_is]
-text = "Anruf-Host: {host}"
-
 [call_control_leave]
 text = "Verlassen"
-
-[call_host_fallback]
-text = "das Host-Gerät"
-
-[call_group_about_carries]
-text = "trägt diesen Anruf. Alle im Anruf verbinden sich damit; es gibt den Ton weiter und wählt aus, wer zu hören ist, wenn mehrere sprechen."
-
-[call_group_about_carrying]
-text = "trägt diesen Anruf. Alle im Anruf verbinden sich damit; es gibt den Ton weiter und wählt aus, wer zu hören ist, wenn mehrere sprechen."
 
 [call_group_about_trust]
 text = "Deine Verbindung zum Anruf-Host ist verschlüsselt, aber der Anruf-Host selbst bekommt den Ton, kann diesen Anruf also hören. Du vertraust ihm beim Anruf so, wie du einem Chat-Host Beiträge anvertraust."
@@ -4295,7 +4053,7 @@ text = "{name} ruft an"
 text = "während deines Anrufs"
 
 [call_waiting_end_answer]
-text = "Auflegen & annehmen"
+text = "Auflegen und annehmen"
 
 [call_waiting_end_answer_desc]
 text = "Auflegen und annehmen"
@@ -4389,3 +4147,27 @@ text = "Geh dann zu Einstellungen › Tinline › Mikrofon und erlaube es."
 
 [people_add_or]
 text = "oder"
+
+[group_sys_joined_named]
+text = "{name} ist beigetreten"
+
+[group_sys_left_you]
+text = "Verlassen"
+
+[group_sys_left_named]
+text = "{name} hat die Gruppe verlassen"
+
+[group_sys_admin_named_you]
+text = "{by} hat dich zum Admin gemacht"
+
+[group_sys_admin_named_named]
+text = "{by} hat {name} zum Admin gemacht"
+
+[group_sys_unadmin_named_you]
+text = "{by} hat dich als Admin entfernt"
+
+[group_sys_unadmin_named_named]
+text = "{by} hat {name} als Admin entfernt"
+
+[people_busy_until_today]
+text = "Beschäftigt bis {time}"

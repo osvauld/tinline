@@ -3586,13 +3586,11 @@ text = "Here are your recovery words"
 note = "Title when showing the recovery words."
 
 [onboarding_rec_lead_key]
-text = "Your recovery key is the same as your {words} words, as one line.
-Paste it somewhere safe. A password manager works great."
+text = "Your recovery key is the same as your {words} words, as one line.\nPaste it somewhere safe. A password manager works great."
 note = "Explanation when showing the recovery key; the line break is intended.  {words} is the number of recovery words (24)."
 
 [onboarding_rec_lead_words]
-text = "If you ever switch devices, these {words} words bring your account along.
-Save a copy somewhere safe. Paper works great."
+text = "If you ever switch devices, these {words} words bring your account along.\nSave a copy somewhere safe. Paper works great."
 note = "Explanation when showing the recovery words; the line break is intended.  {words} is the number of recovery words (24)."
 
 [onboarding_fb_your_account]
