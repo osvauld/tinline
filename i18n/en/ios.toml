@@ -2001,8 +2001,12 @@ text = "No groups yet. Create one, or accept an invitation."
 note = "Shown when the user has no groups."
 
 [group_invited_you]
-text = "{name} invited you to {group}"
-note = "Invitation card. {name} is who invited, {group} the group (both shown in bold)."
+text = "**{name}** invited you to **{group}**"
+note = "Invitation card. The inviter's name and the group's name are bold (markdown stars, keep them around the same words). {name} is the inviter's first name, {group} the group."
+
+[group_invited_you_someone]
+text = "Someone invited you to **{group}**"
+note = "Invitation card when the inviter's name is not known. The group's name is bold (markdown stars). {group} is the group."
 
 [group_joined_toast]
 text = "You joined {group}."
@@ -2013,8 +2017,12 @@ text = "Couldn’t join"
 note = "Fallback error when joining fails."
 
 [group_wants_to_chat]
-text = "{name} wants to chat"
-note = "Chat request card. {name} is who asks (shown in bold)."
+text = "**{name}** wants to chat"
+note = "Chat request card. The requester's name is bold (markdown stars, keep them around the name). {name} is the requester's name."
+
+[group_wants_to_chat_someone]
+text = "**Someone** wants to chat"
+note = "Chat request card when the requester's name is not known. The word Someone is bold (markdown stars)."
 
 [group_member_of]
 text = "Member of {group}"
@@ -2023,6 +2031,10 @@ note = "Chat request card sub line. {group} is the group."
 [group_request_accept_note]
 text = "Accepting adds {name} as a contact for messages only. You can allow calls later."
 note = "Chat request card note. {name} is their first name."
+
+[group_request_accept_note_unnamed]
+text = "Accepting adds them as a contact for messages only. You can allow calls later."
+note = "Note on a chat request card when the requester's name is not known."
 
 [group_block]
 text = "Block"
