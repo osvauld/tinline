@@ -12313,7 +12313,7 @@ where = [
   "android common_list_separator: Joins items in a list on phones older than Android 10, which cannot format lists by language: 'Ana, Sam'. Use the comma (and any space) your language puts between list items.",
   "desktop common_list_separator: Between items of a list of three or more names (the last two are joined with common_list_and). Keep the trailing space if the language needs one.",
 ]
-text = ","
+text = ", "
 
 [t_821622c40b]
 en = "{list}. Open actions"
@@ -12457,21 +12457,21 @@ en = "{name}, owner. Open actions"
 where = [
   "ios group_member_desc_owner: Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is owner.",
 ]
-text = ""
+text = "{name}, মালিক। অপশনগুলো খুলুন"
 
 [t_3cba27b06c]
 en = "{name}, admin. Open actions"
 where = [
   "ios group_member_desc_admin: Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is admin.",
 ]
-text = ""
+text = "{name}, অ্যাডমিন। অপশনগুলো খুলুন"
 
 [t_56b783b353]
 en = "{name}, member. Open actions"
 where = [
   "ios group_member_desc_member: Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is member.",
 ]
-text = ""
+text = "{name}, সদস্য। অপশনগুলো খুলুন"
 
 [t_f76352b5f0]
 en = "Hosts store the group and pass posts on when others are offline. They are members you trust: a host can read everything posted in this group. Appoint a host from a member’s menu; they have to accept. Removing a host changes the group’s address within 2 days, so that device can no longer reach it."
@@ -12479,14 +12479,14 @@ where = [
   "ios group_hosts_note_admin: Explanation under the host list, for admins (replaces the plain one).",
   "desktop group_hosts_store_the_group_admin: Desktop, group info, hosts section note, for admins.",
 ]
-text = ""
+text = "অন্যরা অফলাইনে থাকলে হোস্টরা গ্রুপটি রাখে আর পোস্ট পৌঁছে দেয়। তাঁরা আপনার ভরসার সদস্য: একজন হোস্ট এই গ্রুপে পোস্ট করা সবকিছু পড়তে পারেন। কোনো সদস্যের মেনু থেকে হোস্ট ঠিক করুন; তাঁকে গ্রহণ করতে হবে। কোনো হোস্টকে সরালে 2 দিনের মধ্যে গ্রুপের ঠিকানা বদলে যায়, তাই সেই ডিভাইস আর গ্রুপে পৌঁছাতে পারে না।"
 
 [t_8bae39c7cf]
 en = "A call host carries the call. Everyone in a call connects to it, and it passes the audio on, so it can hear the call. That is separate from chat hosting: a chat host is not a call host unless you also appoint it as one. Call hosts are members you trust, and each one chooses to accept. Appoint one from a member’s menu, or host calls on this phone. A phone only hosts calls that its owner starts."
 where = [
   "ios group_callhosts_note_admin: Explanation under the call host list, for admins.",
 ]
-text = ""
+text = "কল হোস্ট কলটি চালায়। কলের সবাই এর সঙ্গে কানেক্ট হন, আর এটি অডিও পৌঁছে দেয়, তাই এটি কল শুনতে পারে। এটা চ্যাট হোস্ট করা থেকে আলাদা: চ্যাট হোস্টকে আপনি কল হোস্ট হিসেবেও ঠিক না করলে সেটি কল হোস্ট নয়। কল হোস্টরা আপনার ভরসার সদস্য, আর প্রত্যেকে নিজে গ্রহণ করতে বেছে নেন। কোনো সদস্যের মেনু থেকে একজনকে ঠিক করুন, অথবা এই ফোনে কল হোস্ট করুন। একটি ফোন শুধু তার মালিকের শুরু করা কলই হোস্ট করে।"
 
 [t_b265bd4d52]
 en = "{count} of {total}"
@@ -12495,7 +12495,7 @@ where = [
   "ios restore_progress: Counter of recovery words typed so far; {count} is how many are filled. {total} is the number of recovery words (24).",
   "desktop signup_of: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_head). {count} is a number. {total} is a value filled in by the app.",
 ]
-text = ""
+text = "{total}টির মধ্যে {count}টি"
 
 [t_fd423f904b]
 en_one = "One more flag from any admin removes you from the group. Flags can’t be taken back. You can still read and post until then."
@@ -12503,55 +12503,57 @@ en_other = "{count} more flags from any admin remove you from the group. Flags c
 where = [
   "ios group_flags_left: Note under the flag meter. {count} is how many more flags remove the user.",
 ]
+one = "যেকোনো অ্যাডমিনের আর {count}টি ফ্ল্যাগ পড়লে আপনাকে গ্রুপ থেকে সরানো হবে। ফ্ল্যাগ ফিরিয়ে নেওয়া যায় না। ততক্ষণ পর্যন্ত আপনি পড়তে ও পোস্ট করতে পারবেন।"
+other = "যেকোনো অ্যাডমিনের আর {count}টি ফ্ল্যাগ পড়লে আপনাকে গ্রুপ থেকে সরানো হবে। ফ্ল্যাগ ফিরিয়ে নেওয়া যায় না। ততক্ষণ পর্যন্ত আপনি পড়তে ও পোস্ট করতে পারবেন।"
 
 [t_c23190545c]
 en = "Removed after {total} admin flags"
 where = [
   "ios group_removal_title: Headline of the removal page. {total} is the number of flags that remove.",
 ]
-text = ""
+text = "{total}টি অ্যাডমিন ফ্ল্যাগের পর সরানো হয়েছে"
 
 [t_fd5de9e620]
 en = "Leave {group}?"
 where = [
   "ios group_leave_title: Title of the leave dialog. {group} is the group’s name.",
 ]
-text = ""
+text = "{group} ছেড়ে দেবেন?"
 
 [t_c4c1eba891]
 en = "Invite to {group}"
 where = [
   "ios group_invite_title: Title of the invite sheet. {group} is the group’s name.",
 ]
-text = ""
+text = "{group}-এ আমন্ত্রণ জানান"
 
 [t_1dbeb21046]
 en = "Cancel call host request · {device}"
 where = [
   "ios group_member_cancel_callhost_device: Action row title when the member has several devices. {device} is a short device id.",
 ]
-text = ""
+text = "কল হোস্টের অনুরোধ বাতিল করুন · {device}"
 
 [t_a1cf59a01f]
 en = "Remove as call host · {device}"
 where = [
   "ios group_member_remove_callhost_device: Action row title when the member has several devices. {device} is a short device id.",
 ]
-text = ""
+text = "কল হোস্ট থেকে সরান · {device}"
 
 [t_634583160a]
 en = "Make call host · {device}"
 where = [
   "ios group_member_make_callhost_device: Action row title when the member has several devices. {device} is a short device id.",
 ]
-text = ""
+text = "কল হোস্ট করুন · {device}"
 
 [t_2c5d81e205]
 en = "{total} flags remove {name} from the group"
 where = [
   "ios group_member_flag_sub: Sub line. {total} is the number of flags that remove, {name} the member’s first name.",
 ]
-text = ""
+text = "{total}টি ফ্ল্যাগ পড়লে {name}-কে গ্রুপ থেকে সরানো হবে"
 
 [t_45fcf2dff4]
 en_one = "After {count} admin flag, {name} was removed"
@@ -12559,6 +12561,8 @@ en_other = "After {count} admin flags, {name} was removed"
 where = [
   "ios group_sys_removed: System line in a group chat (the centred grey line). A named member was removed. {name} is the member, {count} how many admin flags remove a member. Same meaning as desktop \"{name} was removed after {count} admin flags\"; iOS needs {count} first in the English.",
 ]
+one = "{count}টি অ্যাডমিন ফ্ল্যাগের পর {name}-কে সরানো হয়েছে"
+other = "{count}টি অ্যাডমিন ফ্ল্যাগের পর {name}-কে সরানো হয়েছে"
 
 [t_be5bddaced]
 en = "A device of {name}’s now hosts the group"
@@ -12566,7 +12570,7 @@ where = [
   "ios group_sys_host_added: System line. {name} is the member whose device now hosts.",
   "desktop group_sys_host_added: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). {name} is a person; one of their devices became a host.",
 ]
-text = ""
+text = "{name}-এর একটি ডিভাইস এখন গ্রুপটি হোস্ট করছে"
 
 [t_058c17b479]
 en = "A device of {name}’s stopped hosting the group"
@@ -12574,28 +12578,28 @@ where = [
   "ios group_sys_host_removed: System line. {name} is the member whose device stopped hosting.",
   "desktop group_sys_host_removed: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). {name} is a person; one of their devices stopped hosting.",
 ]
-text = ""
+text = "{name}-এর একটি ডিভাইস গ্রুপটি হোস্ট করা বন্ধ করেছে"
 
 [t_7213d47f32]
 en = "{members} · this device hosts the group"
 where = [
   "ios group_status_this_device: Group header sub line. {members} is the member count text.",
 ]
-text = ""
+text = "{members} · এই ডিভাইস গ্রুপটি হোস্ট করে"
 
 [t_2279140dcc]
 en = "{members} · no host yet"
 where = [
   "ios group_status_no_host: Group header sub line. {members} is the member count text.",
 ]
-text = ""
+text = "{members} · এখনও হোস্ট নেই"
 
 [t_52534f1261]
 en = "{members} · waiting for a host"
 where = [
   "ios group_status_waiting: Group header sub line. {members} is the member count text.",
 ]
-text = ""
+text = "{members} · হোস্টের অপেক্ষায়"
 
 [t_3831cc5788]
 en = "{members} · {hosts}"
@@ -12603,14 +12607,14 @@ where = [
   "ios group_status_hosts: Group header sub line. {members} is the member count text, {hosts} the host count text.",
   "desktop group_members_and_hosts: Group summary line under its name. {members} is e.g. \"3 members\", {hosts} is e.g. \"2 hosts\".",
 ]
-text = ""
+text = "{members} · {hosts}"
 
 [t_5c5dc151c2]
 en = "Waiting for them · via {group}"
 where = [
   "ios group_req_pending_unnamed: State line of a chat request you sent, when the person’s name is not known. {group} is the group.",
 ]
-text = ""
+text = "ওঁদের অপেক্ষায় · {group}-এর মাধ্যমে"
 
 [t_b5f5c33f07]
 en = "Accepted · messages only"
@@ -12618,7 +12622,7 @@ where = [
   "ios group_req_accepted_msgs_unnamed: State line of a chat request you sent, when the person’s name is not known: accepted, messages only.",
   "desktop group_sent_accepted_messages_unnamed: Desktop, group requests I sent (in group_live.rs, sent_line): the state line of a private-chat request. Someone accepted; messages only for now.",
 ]
-text = ""
+text = "গ্রহণ করেছেন · শুধু মেসেজ"
 
 [t_ab33c3e6a5]
 en = "Accepted · connecting"
@@ -12626,21 +12630,21 @@ where = [
   "ios group_req_accepted_connecting_unnamed: State line of a chat request you sent, when the person’s name is not known: accepted, connecting.",
   "desktop group_sent_accepted_connecting_unnamed: Desktop, group requests I sent (in group_live.rs, sent_line): the state line of a private-chat request. Someone accepted; connecting.",
 ]
-text = ""
+text = "গ্রহণ করেছেন · কানেক্ট হচ্ছে"
 
 [t_7df34dff82]
 en = "Yours will be flag {yours} of {total}. {name} is removed right away: hosts refuse their new messages and they see they were removed."
 where = [
   "ios group_flag_copy_final: Flag dialog sentence for the flag that removes the member. {yours} is which flag it is, {total} flags remove, {name} the member’s first name.",
 ]
-text = ""
+text = "আপনারটি হবে {total}টির মধ্যে {yours} নম্বর ফ্ল্যাগ। {name}-কে সঙ্গে সঙ্গে সরানো হবে: হোস্টরা ওঁর নতুন মেসেজ আর নেবে না, আর উনি দেখতে পাবেন যে ওঁকে সরানো হয়েছে।"
 
 [t_a70b928917]
 en = "Yours will be flag {yours} of {total}. Any admin’s flags count, yours again too. At {total} flags {name} is removed right away and sees they were removed."
 where = [
   "ios group_flag_copy: Flag dialog sentence for a flag that does not remove yet. {yours} is which flag it is, {total} flags remove, {name} the member’s first name.",
 ]
-text = ""
+text = "আপনারটি হবে {total}টির মধ্যে {yours} নম্বর ফ্ল্যাগ। যেকোনো অ্যাডমিনের ফ্ল্যাগ গোনা হয়, আপনার পরের ফ্ল্যাগও। {total}টি ফ্ল্যাগ হলেই {name}-কে সঙ্গে সঙ্গে সরানো হবে, আর উনি দেখতে পাবেন যে ওঁকে সরানো হয়েছে।"
 
 [t_393c39c333]
 en = "Your request was accepted. You can message each other now; calls stay off until one of you allows them."
@@ -12648,105 +12652,105 @@ where = [
   "ios group_notice_request_accepted_unnamed: Notice when your private chat request was accepted by someone whose name is not known.",
   "desktop group_notice_accepted_yours_unnamed: Desktop, group notice line (in group_live.rs). Someone with no known name accepted my private-chat request.",
 ]
-text = ""
+text = "আপনার অনুরোধ গ্রহণ করা হয়েছে। এখন আপনারা একে অপরকে মেসেজ করতে পারবেন; আপনাদের কেউ একজন অনুমতি না দেওয়া পর্যন্ত কল বন্ধ থাকবে।"
 
 [t_a1c457fbac]
 en = "Group calls aren’t available here yet."
 where = [
   "ios group_calls_unavailable: Error shown when group calls are not wired in.",
 ]
-text = ""
+text = "এখানে এখনও গ্রুপ কল চালু হয়নি।"
 
 [t_977b43df48]
 en = "Scanning isn’t available yet. Paste the link instead."
 where = [
   "ios group_scan_unavailable: Shown instead of the QR scanner when scanning is not available.",
 ]
-text = ""
+text = "স্ক্যান করার সুবিধা এখনও নেই। বদলে লিঙ্কটি পেস্ট করুন।"
 
 [t_387c1a55a4]
 en = "An admin asked this phone to host {group}"
 where = [
   "ios group_host_asked_title_admin: Card title: an admin whose name is not known asked this phone to host. {group} is the group.",
 ]
-text = ""
+text = "একজন অ্যাডমিন এই ফোনটিকে {group} হোস্ট করতে বলেছেন"
 
 [t_d9be045783]
 en = "Delivered {count}/{total}"
 where = [
   "ios group_receipt_delivered: Receipt summary. {count} is how many have it, {total} how many are eligible.",
 ]
-text = ""
+text = "পৌঁছেছে {count}/{total}"
 
 [t_951c9b0f24]
 en = "Read {count}/{total}"
 where = [
   "ios group_receipt_read: Receipt summary. {count} is how many read it, {total} how many are eligible.",
 ]
-text = ""
+text = "পড়া হয়েছে {count}/{total}"
 
 [t_e765c751bd]
 en = "Read: {names}"
 where = [
   "ios group_receipt_level_read: Receipt line label before the names of members who read the post. {names} is the list.",
 ]
-text = ""
+text = "পড়েছেন: {names}"
 
 [t_abb0f92df9]
 en = "On their device: {names}"
 where = [
   "ios group_receipt_level_delivered: Receipt line label before the names of members whose device has the post. {names} is the list.",
 ]
-text = ""
+text = "ওঁদের ডিভাইসে আছে: {names}"
 
 [t_ed319ece3f]
 en = "Not yet: {names}"
 where = [
   "ios group_receipt_level_not_yet: Receipt line label before the names of members who have not confirmed. {names} is the list.",
 ]
-text = ""
+text = "এখনও নয়: {names}"
 
 [t_41a0f066bc]
 en = "Add to {group}"
 where = [
   "ios group_add_to_title: Title of the add-people page. {group} is the group’s name.",
 ]
-text = ""
+text = "{group}-এ যোগ করুন"
 
 [t_487ce062f4]
 en = "Invited by someone outside your contacts"
 where = [
   "ios group_join_invited_by_unknown: Line on the join preview when the inviter is not in your contacts.",
 ]
-text = ""
+text = "আমন্ত্রণ জানিয়েছেন আপনার পরিচিতির বাইরের কেউ"
 
 [t_0bc2a89e30]
 en = "Owner isn’t in your contacts"
 where = [
   "ios group_join_owner_unknown: Line on the join preview when the owner is not in your contacts.",
 ]
-text = ""
+text = "মালিক আপনার পরিচিতিতে নেই"
 
 [t_e2527aaf3f]
 en = "Anyone with this link or QR can join {group} for 7 days. Share it over an app you trust; you see who joined and can flag them out. To invite your contacts directly, use Add members."
 where = [
   "ios group_link_hint: Hint above the group invite link QR. {group} is the group's name.",
 ]
-text = ""
+text = "এই লিঙ্ক বা QR যার কাছে আছে, সে 7 দিন ধরে {group}-এ যোগ দিতে পারবে। ভরসার কোনো অ্যাপে শেয়ার করুন; কে যোগ দিল তা আপনি দেখতে পাবেন, আর ফ্ল্যাগ করে সরাতে পারবেন। পরিচিতিদের সরাসরি আমন্ত্রণ জানাতে “সদস্য যোগ করুন” ব্যবহার করুন।"
 
 [t_5a7b5c3abb]
 en = "Join {group} on Tinline: {link}"
 where = [
   "ios group_share_text: Text shared with the invite link. {group} is the group's name, {link} the invite link.",
 ]
-text = ""
+text = "Tinline-এ {group}-এ যোগ দিন: {link}"
 
 [t_031fd35992]
 en = "Join this group on Tinline: {link}"
 where = [
   "ios group_share_text_unnamed: Text shared with the invite link when the group's name is not known. {link} is the invite link.",
 ]
-text = ""
+text = "Tinline-এ এই গ্রুপে যোগ দিন: {link}"
 
 [t_5cd5123974]
 en = "**{name}** invited you to **{group}**"
@@ -12754,7 +12758,7 @@ where = [
   "ios group_invited_you: Invitation card. The inviter's name and the group's name are bold (markdown stars, keep them around the same words). {name} is the inviter's first name, {group} the group.",
   "desktop group_invitation_line: Desktop, groups list (in group_live_view.rs): an invitation card. {name} is the first name of who invited me, {group} the group name. **…** is shown bold.",
 ]
-text = ""
+text = "**{name}** আপনাকে **{group}**-এ আমন্ত্রণ জানিয়েছেন"
 
 [t_b187abdb8a]
 en = "Someone invited you to **{group}**"
@@ -12762,56 +12766,56 @@ where = [
   "ios group_invited_you_someone: Invitation card when the inviter's name is not known. The group's name is bold (markdown stars). {group} is the group.",
   "desktop group_invitation_line_unnamed: Desktop, groups list (in group_live_view.rs): an invitation card when I cannot name who invited me. {group} is the group name. **…** is shown bold.",
 ]
-text = ""
+text = "কেউ একজন আপনাকে **{group}**-এ আমন্ত্রণ জানিয়েছেন"
 
 [t_403876cddd]
 en = "**{name}** wants to chat"
 where = [
   "ios group_wants_to_chat: Chat request card. The requester's name is bold (markdown stars, keep them around the name). {name} is the requester's name.",
 ]
-text = ""
+text = "**{name}** চ্যাট করতে চান"
 
 [t_1dd936cf82]
 en = "**Someone** wants to chat"
 where = [
   "ios group_wants_to_chat_someone: Chat request card when the requester's name is not known. The word Someone is bold (markdown stars).",
 ]
-text = ""
+text = "**কেউ একজন** চ্যাট করতে চান"
 
 [t_14c772ceb8]
 en = "Accepting adds them as a contact for messages only. You can allow calls later."
 where = [
   "ios group_request_accept_note_unnamed: Note on a chat request card when the requester's name is not known.",
 ]
-text = ""
+text = "গ্রহণ করলে ওঁকে শুধু মেসেজের জন্য আপনার পরিচিতিতে যোগ করা হবে। কল পরে চালু করতে পারবেন।"
 
 [t_02147a4ac8]
 en = "Diagnostics"
 where = [
   "ios settings_diagnostics: Settings row for the diagnostics page.",
 ]
-text = ""
+text = "ডায়াগনস্টিকস"
 
 [t_c77e79fea8]
 en = "Test tone, core version"
 where = [
   "ios settings_diagnostics_sub: Subtitle of the Diagnostics row.",
 ]
-text = ""
+text = "টেস্ট টোন, কোর সংস্করণ"
 
 [t_49b762fe95]
 en = "Test tone"
 where = [
   "ios settings_test_tone: Diagnostics row and switch label.",
 ]
-text = ""
+text = "টেস্ট টোন"
 
 [t_b25a09fa98]
 en = "Send a {hz} Hz tone instead of the microphone"
 where = [
   "ios settings_test_tone_sub: Subtitle of the Test tone row. {hz} is the tone’s frequency in hertz.",
 ]
-text = ""
+text = "মাইক্রোফোনের বদলে {hz} Hz টোন পাঠান"
 
 [t_0a5f4a65a3]
 en_one = "{count} word"
@@ -12819,104 +12823,106 @@ en_other = "{count} words"
 where = [
   "ios security_tab_words: Tab on the recovery backup page: the recovery words. {count} is the number of words (24).",
 ]
+one = "{count}টি শব্দ"
+other = "{count}টি শব্দ"
 
 [t_aafad48a7f]
 en = "This device · iOS"
 where = [
   "ios devices_row_this_device: Device row subtitle for this device.",
 ]
-text = ""
+text = "এই ডিভাইস · iOS"
 
 [t_a180397df0]
 en = "Synced {ago}"
 where = [
   "ios devices_row_synced: Device row subtitle; {ago} is a relative time such as 5 min ago.",
 ]
-text = ""
+text = "সিঙ্ক হয়েছে {ago}"
 
 [t_81f91aff8a]
 en = "Unlinked the device"
 where = [
   "ios devices_unlinked_msg_unnamed: Toast after unlinking a device that has no name.",
 ]
-text = ""
+text = "ডিভাইসের লিঙ্ক সরানো হয়েছে"
 
 [t_4357f2aa44]
 en = "Syncing…"
 where = [
   "ios devices_syncing_unnamed: Toast when Sync now is pressed for a device that has no name.",
 ]
-text = ""
+text = "সিঙ্ক হচ্ছে…"
 
 [t_bcd7a64a42]
 en = "Welcome back, "
 where = [
   "ios unlock_welcome_prefix: Start of the title when the nickname is a tappable switcher; the nickname button follows directly after it.",
 ]
-text = ""
+text = "আবার স্বাগত, "
 
 [t_19852ede17]
 en = "{name}, switch identity"
 where = [
   "ios unlock_switch_identity: Accessibility label of the nickname switcher; {name} is the nickname.",
 ]
-text = ""
+text = "{name}, পরিচয় বদলান"
 
 [t_250f279f76]
 en = "{name} goes offline on this phone. Calls to {name} will ring only on your other linked devices until you switch back."
 where = [
   "ios unlock_switch_body: Body of the switch-account confirmation; {name} is the current account's name.",
 ]
-text = ""
+text = "এই ফোনে {name} অফলাইন হয়ে যাবে। আপনি আবার ফিরে না আসা পর্যন্ত {name}-এ কল এলে শুধু আপনার অন্য লিঙ্ক করা ডিভাইসগুলোতে রিং হবে।"
 
 [t_d552b6e2ef]
 en = "Word {count}"
 where = [
   "ios restore_word_n: Accessibility label of one recovery word field; {count} is its position, 1 to 24.",
 ]
-text = ""
+text = "শব্দ {count}"
 
 [t_521086b2d1]
 en = "Check that your other device shows this code, then approve there."
 where = [
   "ios link_same_code_lead_unnamed: Explanation under Same code on both? Used when the other device has no name; says your other device.",
 ]
-text = ""
+text = "আপনার অন্য ডিভাইসে এই কোডটাই দেখাচ্ছে কি না দেখে নিন, তারপর সেখানে অনুমোদন দিন।"
 
 [t_f6a2aab1ac]
 en = "Expires in {minutes}:{seconds} · works once"
 where = [
   "ios link_expires: Countdown under the QR code; {minutes} and {seconds} are digits, seconds with two digits.",
 ]
-text = ""
+text = "{minutes}:{seconds}-এ মেয়াদ শেষ · একবারই কাজ করে"
 
 [t_15a6286cb0]
 en = "Link code {digits}"
 where = [
   "ios link_code_label: Accessibility label of the six-digit code; {digits} are the digits separated by spaces.",
 ]
-text = ""
+text = "লিঙ্ক কোড {digits}"
 
 [t_427d1a9662]
 en = "**The new device** wants to join your account. It should be showing the same six digits as below."
 where = [
   "ios link_match_body_unnamed: Body when comparing codes and the new device has no name. The words **The new device** are bold (markdown stars, keep them around them).",
 ]
-text = ""
+text = "**নতুন ডিভাইসটি** আপনার অ্যাকাউন্টে যোগ দিতে চায়। সেখানে নিচের মতোই ছয়টি সংখ্যা দেখানোর কথা।"
 
 [t_19b46952f6]
 en = "On the new device, open Tinline and choose **Link to a device**."
 where = [
   "ios link_scan_step1: Step 1 on the scan page. The button name **Link to a device** is bold (markdown stars, keep them around the button name); it must match the button's label on the new device. Shown as the first of two lines; the number is not part of the text.",
 ]
-text = ""
+text = "নতুন ডিভাইসে Tinline খুলে **একটি ডিভাইসে লিঙ্ক করুন** বেছে নিন।"
 
 [t_039fa6990e]
 en = "Your account was removed from this phone by one of your other devices. Its contacts, chats and calls are deleted here. Your other devices are not affected."
 where = [
   "ios link_unlinked_lead_unnamed: Explanation after this phone was unlinked by another device, when the account has no name.",
 ]
-text = ""
+text = "আপনার অন্য একটি ডিভাইস এই ফোন থেকে আপনার অ্যাকাউন্ট সরিয়ে দিয়েছে। এর পরিচিতি, চ্যাট আর কল এখান থেকে মুছে গেছে। আপনার অন্য ডিভাইসগুলোতে কোনো প্রভাব পড়েনি।"
 
 [t_9fa27bd052]
 en = "Linked to {name}"
@@ -12924,56 +12930,56 @@ where = [
   "ios onboarding_linked_title: Title after linking; {name} is the other device's name.",
   "desktop link_linked_to: Desktop, linking devices (in link_view.rs, link_secure_screen). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name}-এর সঙ্গে লিঙ্ক হয়েছে"
 
 [t_c621599db6]
 en = "Your contacts and chats are arriving from {name} and will keep in step on both."
 where = [
   "ios onboarding_linked_lead: Explanation after linking; {name} is the other device's name.",
 ]
-text = ""
+text = "আপনার পরিচিতি আর চ্যাট {name} থেকে আসছে, আর দুটিতেই মিলিয়ে রাখা হবে।"
 
 [t_9fbe4c80c9]
 en = "By continuing, you agree to the [Terms of Use]({terms_url}) and have read the [Privacy Policy]({privacy_url})."
 where = [
   "ios onboarding_terms_consent: Consent line above the I agree button. Markdown links: keep the [text](url) shape, translate only the link text; {terms_url} and {privacy_url} are web addresses.",
 ]
-text = ""
+text = "চালিয়ে গেলে আপনি [ব্যবহারের শর্তাবলি]({terms_url})-তে রাজি হচ্ছেন এবং [প্রাইভেসি পলিসি]({privacy_url}) পড়েছেন।"
 
 [t_3f7e7c2a80]
 en = "{name} allowed"
 where = [
   "ios onboarding_perm_allowed: Accessibility label of the check mark on an allowed permission; {name} is the permission title.",
 ]
-text = ""
+text = "{name}-এর অনুমতি দেওয়া হয়েছে"
 
 [t_d7cc9318c9]
 en = "Allow {name}"
 where = [
   "ios onboarding_allow_a11y: Accessibility label of the Allow button; {name} is the permission title in lower case.",
 ]
-text = ""
+text = "{name}-এর অনুমতি দিন"
 
 [t_1c63fc0970]
 en = "Hide {name}"
 where = [
   "ios shellkit_hide_field: Accessibility label of the eye button on a secret field; {name} is the field label in lower case.",
 ]
-text = ""
+text = "{name} লুকান"
 
 [t_53251367a9]
 en = "Show {name}"
 where = [
   "ios shellkit_show_field: Accessibility label of the eye button on a secret field; {name} is the field label in lower case.",
 ]
-text = ""
+text = "{name} দেখান"
 
 [t_c54e35554c]
 en = "No account"
 where = [
   "ios shell_flow_no_account: Error shown when an account flow finds no account.",
 ]
-text = ""
+text = "কোনো অ্যাকাউন্ট নেই"
 
 [t_78b34052d8]
 en = "Account changed"
@@ -12981,42 +12987,42 @@ where = [
   "ios shell_flow_account_changed: Error when the selected account changed while a flow was running.",
   "desktop profile_account_changed: Desktop, profile and settings (in profile_ui.rs, read_profile).",
 ]
-text = ""
+text = "অ্যাকাউন্ট বদলে গেছে"
 
 [t_93d833ac96]
 en = "Call while not available"
 where = [
   "ios shell_call_desc_unavailable: Screen reader phrase for a call row, a whole phrase used as {what} in the row label: incoming call that came while the user had set themselves unavailable. Reads like “Missed call”.",
 ]
-text = ""
+text = "যখন পাওয়া যাচ্ছিল না, তখনকার কল"
 
 [t_7286c55835]
 en = "Call with no answer"
 where = [
   "ios shell_call_desc_no_answer: Screen reader phrase for a call row, a whole phrase used as {what} in the row label: outgoing call nobody picked up. Reads like “Missed call”.",
 ]
-text = ""
+text = "যে কল কেউ ধরেননি"
 
 [t_b70d3c6bb5]
 en = "Call couldn’t connect"
 where = [
   "ios shell_call_what_unreachable: Call list: call that could not reach the other person.",
 ]
-text = ""
+text = "কল কানেক্ট হয়নি"
 
 [t_775f66b114]
 en = "Call"
 where = [
   "ios shell_call_desc_other: Screen reader phrase for a call row, a whole phrase used as {what} in the row label: any other call. Reads like “Missed call”.",
 ]
-text = ""
+text = "কল"
 
 [t_46bad378f1]
 en = "Word {n} isn’t in the recovery word list. Check the spelling."
 where = [
   "ios shell_restore_bad_one: Restore screen message under the 24 word boxes. {n} is the word’s position (1 to 24).",
 ]
-text = ""
+text = "{n} নম্বর শব্দটি রিকভারি শব্দের তালিকায় নেই। বানানটা দেখে নিন।"
 
 [t_db53e5c15f]
 en_one = "{count} words aren’t in the recovery word list. The first is word {number}. Check the spelling."
@@ -13024,13 +13030,15 @@ en_other = "{count} words aren’t in the recovery word list. The first is word 
 where = [
   "ios shell_restore_bad_many: Restore screen message under the 24 word boxes. {count} is how many typed words are not recovery words (always 2 or more); {number} is the position (1 to 24) of the first one.",
 ]
+one = "{count}টি শব্দ রিকভারি শব্দের তালিকায় নেই। প্রথমটি {number} নম্বর শব্দ। বানানটা দেখে নিন।"
+other = "{count}টি শব্দ রিকভারি শব্দের তালিকায় নেই। প্রথমটি {number} নম্বর শব্দ। বানানটা দেখে নিন।"
 
 [t_814973bf24]
 en = "{sub} from {name}"
 where = [
   "ios shell_ring_a11y: Screen reader label of the ringing banner. {sub} is “Incoming call” or similar, {name} the caller.",
 ]
-text = ""
+text = "{name}-এর কাছ থেকে {sub}"
 
 [t_aca5a8736d]
 en = "End and answer"
@@ -13039,7 +13047,7 @@ where = [
   "ios call_waiting_end_answer: Button on the call-waiting card that ends the current call and answers the new one.",
   "ios call_waiting_end_answer_desc: Accessibility description of the End & answer button.",
 ]
-text = ""
+text = "শেষ করে উত্তর দিন"
 
 [t_cd6ad8304d]
 en = "Then go to Settings › Tinline › Microphone and allow it."
@@ -13047,105 +13055,105 @@ where = [
   "ios shell_mic_hint: Hint with the path to the microphone permission in iOS Settings.",
   "ios call_mic_needed_hint: Hint under the Open settings button on the microphone permission screen.",
 ]
-text = ""
+text = "তারপর সেটিংস › Tinline › মাইক্রোফোন-এ গিয়ে অনুমতি দিন।"
 
 [t_746ec1e8e6]
 en = "{what} · {duration}"
 where = [
   "ios shell_calls_what_duration: Call row second line. {what} is the call outcome (Missed, Outgoing…), {duration} the call length.",
 ]
-text = ""
+text = "{what} · {duration}"
 
 [t_fa6f5bca71]
 en = "{name}, {what}, {stamp}. {action}"
 where = [
   "ios shell_calls_row_a11y: Screen reader label of a call row. {name} is the contact, {what} a whole phrase such as “Missed call”, {stamp} when, {action} what tapping does.",
 ]
-text = ""
+text = "{name}, {what}, {stamp}। {action}"
 
 [t_f443d6d138]
 en = "{name}, {what}, {duration}, {stamp}. {action}"
 where = [
   "ios shell_calls_row_a11y_duration: Screen reader label of an answered call row. {name} is the contact, {what} a whole phrase such as “Incoming call”, {duration} how long, {stamp} when, {action} what tapping does.",
 ]
-text = ""
+text = "{name}, {what}, {duration}, {stamp}। {action}"
 
 [t_6c3d485347]
 en = "{name}, {what}, {stamp}. Start or join a call"
 where = [
   "ios shell_calls_group_row_a11y: Screen reader label of a group call row. {name} group, {what} summary, {stamp} time.",
 ]
-text = ""
+text = "{name}, {what}, {stamp}। কল শুরু করুন বা যোগ দিন"
 
 [t_910b1a6725]
 en = "{name}, {kind}"
 where = [
   "ios shell_search_tile_a11y: Screen reader label of a search result tile. {name} is the person or group, {kind} what it is.",
 ]
-text = ""
+text = "{name}, {kind}"
 
 [t_b48b8048af]
 en = "{name}: "
 where = [
   "ios shell_search_author_prefix: Prefix of a message search hit snippet: who wrote it. {name} is the author’s first name or “You”. Keep the trailing space.",
 ]
-text = ""
+text = "{name}: "
 
 [t_720d4af996]
 en = "WHAT {name} CAN DO"
 where = [
   "ios people_detail_can_do: Contact page section header, upper case. {name} is the contact’s first name in capitals.",
 ]
-text = ""
+text = "{name} কী কী করতে পারেন"
 
 [t_119b58dbe5]
 en = "CALLS WITH {name}"
 where = [
   "ios people_detail_calls_with: Contact page section header, upper case. {name} is the contact’s name in capitals.",
 ]
-text = ""
+text = "{name}-এর সঙ্গে কল"
 
 [t_fdce735c0d]
 en = "{step} of {total}"
 where = [
   "ios people_step_of: Sign-up progress text. {step} is the current step, {total} how many steps there are.",
 ]
-text = ""
+text = "{step}/{total}"
 
 [t_5e0ddcdd04]
 en = "Setup progress, step {step} of {total}"
 where = [
   "ios people_step_a11y: Screen reader label of sign-up progress. {step} and {total} as above.",
 ]
-text = ""
+text = "সেটআপের অগ্রগতি, {total}টির মধ্যে {step} নম্বর ধাপ"
 
 [t_6230218701]
 en = "Setup progress, step {step} of {total}: {label}"
 where = [
   "ios people_step_a11y_label: Screen reader label of sign-up progress with the step’s name. {step}, {total}, and {label} the name of the step.",
 ]
-text = ""
+text = "সেটআপের অগ্রগতি, {total}টির মধ্যে {step} নম্বর ধাপ: {label}"
 
 [t_884be25149]
 en = "That picture is {w} × {h} pixels. Tinline accepts up to {max} pixels on a side."
 where = [
   "ios people_pic_too_large_px: Picture refused: too many pixels. {w} and {h} are its width and height, {max} the limit per side.",
 ]
-text = ""
+text = "ছবিটি {w} × {h} পিক্সেল। Tinline প্রতিটি দিকে {max} পিক্সেল পর্যন্ত নেয়।"
 
 [t_c492cfeb46]
 en = "That is too long. Each piece of information can be up to {limit}."
 where = [
   "ios people_rule_value_long: Profile check: a value is too long. {limit} is the size limit with its unit, such as 16 KiB.",
 ]
-text = ""
+text = "এটা খুব লম্বা। প্রতিটি তথ্য {limit} পর্যন্ত হতে পারে।"
 
 [t_767555f71c]
 en = "Drag to move the picture. Use the slider to zoom."
 where = [
   "ios people_crop_help: Help text under the crop area.",
 ]
-text = ""
+text = "ছবি সরাতে টেনে আনুন। জুম করতে স্লাইডার ব্যবহার করুন।"
 
 [t_32daee4811]
 en = "{bytes} of {limit} bytes"
@@ -13153,49 +13161,49 @@ where = [
   "ios people_ui_bytes: Counter under a profile field. {bytes} is how many bytes are used, {limit} the maximum.",
   "desktop profile_of_bytes: Desktop, profile and settings (in profile_view.rs, field_row_inner). {bytes} is a value filled in by the app. {limit} is a value filled in by the app.",
 ]
-text = ""
+text = "{limit} বাইটের মধ্যে {bytes} বাইট"
 
 [t_930ce5bfa9]
 en = "Open {label}: {url}"
 where = [
   "ios people_ui_open_a11y: Screen reader label of the button that opens a link field. {label} is the field name, {url} the shortened address.",
 ]
-text = ""
+text = "{label} খুলুন: {url}"
 
 [t_10b961c673]
 en = "Microphone permission needed to place a call"
 where = [
   "ios call_mic_permission_needed_place: Error shown when the user tries to place a call without microphone permission.",
 ]
-text = ""
+text = "কল করতে মাইক্রোফোনের অনুমতি দরকার"
 
 [t_8b860e25a4]
 en = "About this call. {word} signal, direct."
 where = [
   "ios call_about_signal_direct: Accessibility label of the info button. {word} is a signal strength word such as Weak or Strong.",
 ]
-text = ""
+text = "এই কল সম্পর্কে। {word} সিগন্যাল, সরাসরি।"
 
 [t_09db209730]
 en = "About this call. {word} signal, relayed."
 where = [
   "ios call_about_signal_relayed: Accessibility label of the info button. {word} is a signal strength word such as Weak or Strong.",
 ]
-text = ""
+text = "এই কল সম্পর্কে। {word} সিগন্যাল, রিলে হয়ে।"
 
 [t_410bc502cd]
 en = "{word} signal · Direct"
 where = [
   "ios call_about_headline_direct: Bold headline on the call details card. {word} is a signal strength word such as Weak or Strong.",
 ]
-text = ""
+text = "{word} সিগন্যাল · সরাসরি"
 
 [t_537090564e]
 en = "{word} signal · Relayed"
 where = [
   "ios call_about_headline_relayed: Bold headline on the call details card. {word} is a signal strength word such as Weak or Strong.",
 ]
-text = ""
+text = "{word} সিগন্যাল · রিলে হয়ে"
 
 [t_57f425a97e]
 en = "Auto"
@@ -13203,63 +13211,63 @@ where = [
   "ios call_quality_auto: Video quality setting: let Tinline choose.",
   "desktop common_auto: Shared label, used in several places (call_screen, profile).",
 ]
-text = ""
+text = "অটো"
 
 [t_7538517c8f]
 en = "Prefer HD"
 where = [
   "ios call_quality_prefer_hd: Video quality setting: prefer sharper HD video.",
 ]
-text = ""
+text = "HD পছন্দ"
 
 [t_fb52348fb1]
 en = "HD · {size}"
 where = [
   "ios call_resolution_hd: Video size label for HD video. {size} is width×height such as 1280×720.",
 ]
-text = ""
+text = "HD · {size}"
 
 [t_681ed3e097]
 en = "The call couldn’t connect"
 where = [
   "ios call_group_connect_failed: Group call start failure, generic; the call is the subject.",
 ]
-text = ""
+text = "কল কানেক্ট করা গেল না"
 
 [t_2c96816ba0]
 en = "Call host: your other device"
 where = [
   "ios call_group_host_is_yours: Pill on the group call screen naming the call host. Another device of the user’s.",
 ]
-text = ""
+text = "কল হোস্ট: আপনার অন্য ডিভাইস"
 
 [t_7cda722e2e]
 en = "{name} is calling the group {group}"
 where = [
   "ios call_group_announce_ringing_label: Accessibility label of the group call announcement while ringing. {name} is the member, {group} the group.",
 ]
-text = ""
+text = "{name} {group} গ্রুপে কল করছেন"
 
 [t_31bef3871e]
 en = "{name} started a call in {group}"
 where = [
   "ios call_group_announce_started_label: Accessibility label of the group call announcement. {name} is the member, {group} the group.",
 ]
-text = ""
+text = "{name} {group}-এ একটি কল শুরু করেছেন"
 
 [t_2ff42dbfce]
 en = "{word} signal"
 where = [
   "ios call_badge_signal: Badge on the call-ended screen. {word} is a signal strength word such as Weak or Strong.",
 ]
-text = ""
+text = "{word} সিগন্যাল"
 
 [t_f4619634b2]
 en = "They may be offline, out of signal, or not taking calls right now. Tinline can’t leave messages."
 where = [
   "ios call_unreachable_body_blank: Explanation when a call could not connect and the contact has no name.",
 ]
-text = ""
+text = "উনি হয়তো অফলাইনে, নেটওয়ার্কের বাইরে, বা এখন কল ধরছেন না। Tinline মেসেজ রেখে দিতে পারে না।"
 
 [t_6663ab075c]
 en = "You made yourself an admin"
@@ -13267,7 +13275,7 @@ where = [
   "ios group_sys_admin_you_you: System line in a group chat (the centred grey line). Admin role given. Actor: the user. Subject: the user.",
   "desktop group_sys_admin_you_you: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Admin role given: I did it, to me.",
 ]
-text = ""
+text = "আপনি নিজেকে অ্যাডমিন করেছেন"
 
 [t_49d670362c]
 en = "You made {name} an admin"
@@ -13275,7 +13283,7 @@ where = [
   "ios group_sys_admin_you_named: System line in a group chat (the centred grey line). Admin role given. Actor: the user. Subject: a named member. {name} is the member it was done to.",
   "desktop group_sys_admin_you_other: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Admin role given: I did it, to {name}, a person.",
 ]
-text = ""
+text = "আপনি {name}-কে অ্যাডমিন করেছেন"
 
 [t_ea5318e5e0]
 en = "{by} made {name} an admin"
@@ -13283,7 +13291,7 @@ where = [
   "ios group_sys_admin_named_named: System line in a group chat (the centred grey line). Admin role given. Actor: a named member. Subject: a named member. {by} is who did it (their name); {name} is the member it was done to.",
   "desktop group_sys_admin_other_other: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Admin role given: {by} is the first name of the person who did it, to {name}, a person.",
 ]
-text = ""
+text = "{by} {name}-কে অ্যাডমিন করেছেন"
 
 [t_fa5133758c]
 en = "Someone made {name} an admin"
@@ -13291,7 +13299,7 @@ where = [
   "ios group_sys_admin_someone_named: System line in a group chat (the centred grey line). Admin role given. Actor: a member whose name is unknown. Subject: a named member. {name} is the member it was done to.",
   "desktop group_sys_admin_someone_other: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Admin role given: someone I cannot name did it, to {name}, a person.",
 ]
-text = ""
+text = "কেউ একজন {name}-কে অ্যাডমিন করেছেন"
 
 [t_5773dfd4ed]
 en = "You removed yourself as admin"
@@ -13299,7 +13307,7 @@ where = [
   "ios group_sys_unadmin_you_you: System line in a group chat (the centred grey line). Admin role taken away. Actor: the user. Subject: the user.",
   "desktop group_sys_unadmin_you_you: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Admin role taken away: I did it, to me.",
 ]
-text = ""
+text = "আপনি নিজেকে অ্যাডমিন থেকে সরিয়েছেন"
 
 [t_6e2111b0ea]
 en = "You removed {name} as admin"
@@ -13307,7 +13315,7 @@ where = [
   "ios group_sys_unadmin_you_named: System line in a group chat (the centred grey line). Admin role taken away. Actor: the user. Subject: a named member. {name} is the member it was done to.",
   "desktop group_sys_unadmin_you_other: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Admin role taken away: I did it, to {name}, a person.",
 ]
-text = ""
+text = "আপনি {name}-কে অ্যাডমিন থেকে সরিয়েছেন"
 
 [t_870567c1f4]
 en = "{by} removed {name} as admin"
@@ -13315,7 +13323,7 @@ where = [
   "ios group_sys_unadmin_named_named: System line in a group chat (the centred grey line). Admin role taken away. Actor: a named member. Subject: a named member. {by} is who did it (their name); {name} is the member it was done to.",
   "desktop group_sys_unadmin_other_other: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Admin role taken away: {by} is the first name of the person who did it, to {name}, a person.",
 ]
-text = ""
+text = "{by} {name}-কে অ্যাডমিন থেকে সরিয়েছেন"
 
 [t_fb60dc3641]
 en = "Someone removed {name} as admin"
@@ -13323,7 +13331,7 @@ where = [
   "ios group_sys_unadmin_someone_named: System line in a group chat (the centred grey line). Admin role taken away. Actor: a member whose name is unknown. Subject: a named member. {name} is the member it was done to.",
   "desktop group_sys_unadmin_someone_other: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). Admin role taken away: someone I cannot name did it, to {name}, a person.",
 ]
-text = ""
+text = "কেউ একজন {name}-কে অ্যাডমিন থেকে সরিয়েছেন"
 
 [t_c3c984737b]
 en = "A member’s device now hosts the group"
@@ -13331,7 +13339,7 @@ where = [
   "ios group_sys_host_added_someone: System line in a group chat (the centred grey line). A device of a member whose name is unknown now hosts the group.",
   "desktop group_sys_host_added_someone: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). One device of someone I cannot name became a host.",
 ]
-text = ""
+text = "একজন সদস্যের ডিভাইস এখন গ্রুপটি হোস্ট করছে"
 
 [t_bf5df7a742]
 en = "A member’s device stopped hosting the group"
@@ -13339,112 +13347,112 @@ where = [
   "ios group_sys_host_removed_someone: System line in a group chat (the centred grey line). A device of a member whose name is unknown stopped hosting the group.",
   "desktop group_sys_host_removed_someone: Desktop, group system line in a chat and the groups list (in group_live.rs, sys_text). One device of someone I cannot name stopped hosting.",
 ]
-text = ""
+text = "একজন সদস্যের ডিভাইস গ্রুপটি হোস্ট করা বন্ধ করেছে"
 
 [t_50e0e3a61f]
 en = "{name}, owner and call host. Open actions"
 where = [
   "ios group_member_desc_owner_callhost: Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is owner and call host.",
 ]
-text = ""
+text = "{name}, মালিক ও কল হোস্ট। অপশনগুলো খুলুন"
 
 [t_9ecb0422e1]
 en = "{name}, owner and host. Open actions"
 where = [
   "ios group_member_desc_owner_host: Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is owner and host.",
 ]
-text = ""
+text = "{name}, মালিক ও হোস্ট। অপশনগুলো খুলুন"
 
 [t_8645192669]
 en = "{name}, owner, host and call host. Open actions"
 where = [
   "ios group_member_desc_owner_host_callhost: Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is owner, host and call host.",
 ]
-text = ""
+text = "{name}, মালিক, হোস্ট ও কল হোস্ট। অপশনগুলো খুলুন"
 
 [t_c861ad6117]
 en = "{name}, admin and call host. Open actions"
 where = [
   "ios group_member_desc_admin_callhost: Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is admin and call host.",
 ]
-text = ""
+text = "{name}, অ্যাডমিন ও কল হোস্ট। অপশনগুলো খুলুন"
 
 [t_9296b31c8f]
 en = "{name}, admin and host. Open actions"
 where = [
   "ios group_member_desc_admin_host: Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is admin and host.",
 ]
-text = ""
+text = "{name}, অ্যাডমিন ও হোস্ট। অপশনগুলো খুলুন"
 
 [t_7df5a10cb5]
 en = "{name}, admin, host and call host. Open actions"
 where = [
   "ios group_member_desc_admin_host_callhost: Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is admin, host and call host.",
 ]
-text = ""
+text = "{name}, অ্যাডমিন, হোস্ট ও কল হোস্ট। অপশনগুলো খুলুন"
 
 [t_51c0282c1c]
 en = "{name}, member and call host. Open actions"
 where = [
   "ios group_member_desc_member_callhost: Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is member and call host.",
 ]
-text = ""
+text = "{name}, সদস্য ও কল হোস্ট। অপশনগুলো খুলুন"
 
 [t_e66e085198]
 en = "{name}, member and host. Open actions"
 where = [
   "ios group_member_desc_member_host: Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is member and host.",
 ]
-text = ""
+text = "{name}, সদস্য ও হোস্ট। অপশনগুলো খুলুন"
 
 [t_4ccca82c9f]
 en = "{name}, member, host and call host. Open actions"
 where = [
   "ios group_member_desc_member_host_callhost: Spoken description of a member row for a screen reader. {name} is the member's name (with “(you)” after it when it is the user). The member is member, host and call host.",
 ]
-text = ""
+text = "{name}, সদস্য, হোস্ট ও কল হোস্ট। অপশনগুলো খুলুন"
 
 [t_bab452c602]
 en = "Host online"
 where = [
   "ios group_host_online: Presence under a host or call host device in group info: that device is online.",
 ]
-text = ""
+text = "হোস্ট অনলাইনে"
 
 [t_fca7141b23]
 en = "Host offline"
 where = [
   "ios group_host_offline: Presence under a host or call host device in group info: that device is offline.",
 ]
-text = ""
+text = "হোস্ট অফলাইনে"
 
 [t_c19eb247f5]
 en = "Online · also hosts calls"
 where = [
   "ios group_host_online_calls: Presence under a device that is a chat host and also a call host: online.",
 ]
-text = ""
+text = "অনলাইন · কলও হোস্ট করে"
 
 [t_7444310255]
 en = "Offline · also hosts calls"
 where = [
   "ios group_host_offline_calls: Presence under a device that is a chat host and also a call host: offline.",
 ]
-text = ""
+text = "অফলাইন · কলও হোস্ট করে"
 
 [t_4b3dcfea10]
 en = "**Your other device** carries this call. Everyone in the call connects to it, and it passes the audio on and chooses who is heard when several people speak."
 where = [
   "ios call_group_about_your_other: Group call details card, first sentence. The host’s name at the start is bold (markdown stars, keep them around the same words); the whole sentence is one string so the verb can agree with it. Another device of the user’s is the call host.",
 ]
-text = ""
+text = "**আপনার অন্য ডিভাইস** এই কল চালাচ্ছে। কলের সবাই এর সঙ্গে কানেক্ট হন, আর এটি অডিও পৌঁছে দেয় এবং একসঙ্গে কয়েকজন কথা বললে কার কথা শোনা যাবে তা বেছে নেয়।"
 
 [t_5431505ef8]
 en = "**A member’s device** carries this call. Everyone in the call connects to it, and it passes the audio on and chooses who is heard when several people speak."
 where = [
   "ios call_group_about_someone: Group call details card, first sentence. The host’s name at the start is bold (markdown stars, keep them around the same words); the whole sentence is one string so the verb can agree with it. A member whose name is not known hosts the call.",
 ]
-text = ""
+text = "**একজন সদস্যের ডিভাইস** এই কল চালাচ্ছে। কলের সবাই এর সঙ্গে কানেক্ট হন, আর এটি অডিও পৌঁছে দেয় এবং একসঙ্গে কয়েকজন কথা বললে কার কথা শোনা যাবে তা বেছে নেয়।"
 
 [t_3c5ad294ce]
 en = "Busy until tomorrow {time}"
@@ -13452,7 +13460,7 @@ where = [
   "ios people_busy_until_tomorrow: Availability line while busy until a time. {time} is a clock time formatted for the user’s region, such as 18:30. The time is tomorrow.",
   "desktop profile_busy_until_tomorrow: Desktop, profile availability (in profile_ui.rs, busy_until). Shown while I am marked busy. {time} is a clock time such as 18:00. This one is for a time tomorrow.",
 ]
-text = ""
+text = "কাল {time} পর্যন্ত ব্যস্ত"
 
 [t_1b7eba8ee8]
 en = "Busy until Monday {time}"
@@ -13460,7 +13468,7 @@ where = [
   "ios people_busy_until_mon: Availability line while busy until a time. {time} is a clock time formatted for the user’s region, such as 18:30. The time is on a Monday, a later day this week.",
   "desktop profile_busy_until_mon: Desktop, profile availability (in profile_ui.rs, busy_until). Shown while I am marked busy. {time} is a clock time such as 18:00. This one is for a time on Monday (within the next week).",
 ]
-text = ""
+text = "সোমবার {time} পর্যন্ত ব্যস্ত"
 
 [t_a8cafb2a3d]
 en = "Busy until Tuesday {time}"
@@ -13468,7 +13476,7 @@ where = [
   "ios people_busy_until_tue: Availability line while busy until a time. {time} is a clock time formatted for the user’s region, such as 18:30. The time is on a Tuesday, a later day this week.",
   "desktop profile_busy_until_tue: Desktop, profile availability (in profile_ui.rs, busy_until). Shown while I am marked busy. {time} is a clock time such as 18:00. This one is for a time on Tuesday (within the next week).",
 ]
-text = ""
+text = "মঙ্গলবার {time} পর্যন্ত ব্যস্ত"
 
 [t_852e51c301]
 en = "Busy until Wednesday {time}"
@@ -13476,7 +13484,7 @@ where = [
   "ios people_busy_until_wed: Availability line while busy until a time. {time} is a clock time formatted for the user’s region, such as 18:30. The time is on a Wednesday, a later day this week.",
   "desktop profile_busy_until_wed: Desktop, profile availability (in profile_ui.rs, busy_until). Shown while I am marked busy. {time} is a clock time such as 18:00. This one is for a time on Wednesday (within the next week).",
 ]
-text = ""
+text = "বুধবার {time} পর্যন্ত ব্যস্ত"
 
 [t_8100f9a12f]
 en = "Busy until Thursday {time}"
@@ -13484,7 +13492,7 @@ where = [
   "ios people_busy_until_thu: Availability line while busy until a time. {time} is a clock time formatted for the user’s region, such as 18:30. The time is on a Thursday, a later day this week.",
   "desktop profile_busy_until_thu: Desktop, profile availability (in profile_ui.rs, busy_until). Shown while I am marked busy. {time} is a clock time such as 18:00. This one is for a time on Thursday (within the next week).",
 ]
-text = ""
+text = "বৃহস্পতিবার {time} পর্যন্ত ব্যস্ত"
 
 [t_54ac93afbc]
 en = "Busy until Friday {time}"
@@ -13492,7 +13500,7 @@ where = [
   "ios people_busy_until_fri: Availability line while busy until a time. {time} is a clock time formatted for the user’s region, such as 18:30. The time is on a Friday, a later day this week.",
   "desktop profile_busy_until_fri: Desktop, profile availability (in profile_ui.rs, busy_until). Shown while I am marked busy. {time} is a clock time such as 18:00. This one is for a time on Friday (within the next week).",
 ]
-text = ""
+text = "শুক্রবার {time} পর্যন্ত ব্যস্ত"
 
 [t_5641afbd38]
 en = "Busy until Saturday {time}"
@@ -13500,7 +13508,7 @@ where = [
   "ios people_busy_until_sat: Availability line while busy until a time. {time} is a clock time formatted for the user’s region, such as 18:30. The time is on a Saturday, a later day this week.",
   "desktop profile_busy_until_sat: Desktop, profile availability (in profile_ui.rs, busy_until). Shown while I am marked busy. {time} is a clock time such as 18:00. This one is for a time on Saturday (within the next week).",
 ]
-text = ""
+text = "শনিবার {time} পর্যন্ত ব্যস্ত"
 
 [t_43b0917c92]
 en = "Busy until Sunday {time}"
@@ -13508,7 +13516,7 @@ where = [
   "ios people_busy_until_sun: Availability line while busy until a time. {time} is a clock time formatted for the user’s region, such as 18:30. The time is on a Sunday, a later day this week.",
   "desktop profile_busy_until_sun: Desktop, profile availability (in profile_ui.rs, busy_until). Shown while I am marked busy. {time} is a clock time such as 18:00. This one is for a time on Sunday (within the next week).",
 ]
-text = ""
+text = "রবিবার {time} পর্যন্ত ব্যস্ত"
 
 [t_493d670f89]
 en = "Today, {time}"
@@ -13516,7 +13524,7 @@ where = [
   "ios chat_when_today: Date and time line in a message detail or the photo viewer title, for today. {time} is a 24-hour clock time such as 16:02.",
   "ios group_when_today: Date and time line in a group message or a sent request, for today. {time} is a 24-hour clock time such as 16:02.",
 ]
-text = ""
+text = "আজ, {time}"
 
 [t_507ac7d2de]
 en = "Yesterday, {time}"
@@ -13524,7 +13532,7 @@ where = [
   "ios chat_when_yesterday: Date and time line in a message detail or the photo viewer title, for yesterday. {time} is a 24-hour clock time such as 16:02.",
   "ios group_when_yesterday: Date and time line in a group message or a sent request, for yesterday. {time} is a 24-hour clock time such as 16:02.",
 ]
-text = ""
+text = "গতকাল, {time}"
 
 [t_8a351f5983]
 en = "{date}, {time}"
@@ -13533,644 +13541,644 @@ where = [
   "ios group_when_date: Date and time line in a group message or a sent request, for an older day. {date} is a day formatted for the user’s region, such as Oct 8, {time} a 24-hour clock time.",
   "ios people_when_date: Date and time of a block, e.g. “You blocked Ana · Oct 10, 13:50”. {date} is a day formatted for the user’s region, {time} a 24-hour clock time.",
 ]
-text = ""
+text = "{date}, {time}"
 
 [t_1406c5139e]
 en = "A device name is {min} to {max} characters."
 where = [
   "desktop common_a_device_name_is: Shared label, used in several places (app, link). {min} and {max} are the shortest and longest allowed length, numbers.",
 ]
-text = ""
+text = "ডিভাইসের নাম {min} থেকে {max} অক্ষরের হতে হবে।"
 
 [t_4a7397331d]
 en = "Audio devices"
 where = [
   "desktop common_audio_devices: Shared label, used in several places (profile, view).",
 ]
-text = ""
+text = "অডিও ডিভাইস"
 
 [t_309ecff017]
 en = "Calls & availability"
 where = [
   "desktop common_calls_availability: Shared label, used in several places (profile, view).",
 ]
-text = ""
+text = "কল ও উপস্থিতি"
 
 [t_164b84d7d3]
 en = "Copy recovery phrase"
 where = [
   "desktop common_copy_recovery_phrase: Shared label, used in several places (view).",
 ]
-text = ""
+text = "রিকভারি শব্দ কপি করুন"
 
 [t_85338b281d]
 en = "Decoder for their video"
 where = [
   "desktop common_decoder_for_their_video: Shared label, used in several places (call_screen, profile).",
 ]
-text = ""
+text = "ওঁদের ভিডিওর ডিকোডার"
 
 [t_bfbb0a83d7]
 en = "Give this computer a name of {min} to {max} characters."
 where = [
   "desktop common_give_this_computer_a: Shared label, used in several places (app, link). {min} and {max} are the shortest and longest allowed length, numbers.",
 ]
-text = ""
+text = "এই কম্পিউটারের {min} থেকে {max} অক্ষরের একটি নাম দিন।"
 
 [t_6d8e87ae5e]
 en = "Hosting"
 where = [
   "desktop common_hosting: Shared label, used in several places (profile, view).",
 ]
-text = ""
+text = "হোস্টিং"
 
 [t_0734135924]
 en = "Messages only: calling needs their permission"
 where = [
   "desktop common_messages_only_calling_needs: Shared label, used in several places (chat, view).",
 ]
-text = ""
+text = "শুধু মেসেজ: কল করতে ওঁদের অনুমতি লাগবে"
 
 [t_8e994a4caf]
 en = "Name this computer"
 where = [
   "desktop common_name_this_computer: Shared label, used in several places (link, signup, view).",
 ]
-text = ""
+text = "এই কম্পিউটারের নাম দিন"
 
 [t_447375ef9f]
 en = "Not synced yet"
 where = [
   "desktop common_not_synced_yet: Shared label, used in several places (link, profile).",
 ]
-text = ""
+text = "এখনও সিঙ্ক হয়নি"
 
 [t_8b10183211]
 en = "Passphrase changed"
 where = [
   "desktop common_passphrase_changed: Shared label, used in several places (app, profile).",
 ]
-text = ""
+text = "পাসফ্রেজ বদলানো হয়েছে"
 
 [t_1b4b9ba9bf]
 en = "Paste only into a trusted password manager; the clipboard contains your account key."
 where = [
   "desktop common_paste_only_into_a: Shared label, used in several places (view).",
 ]
-text = ""
+text = "শুধু ভরসার কোনো পাসওয়ার্ড ম্যানেজারে পেস্ট করুন; ক্লিপবোর্ডে আপনার অ্যাকাউন্টের কী আছে।"
 
 [t_3c78840fd7]
 en = "Photo · {value}"
 where = [
   "desktop common_photo: Shared label, used in several places (chat, group_live). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "ছবি · {value}"
 
 [t_1fdf30c038]
 en = "Recovery phrase"
 where = [
   "desktop common_recovery_phrase: Shared label, used in several places (profile, view).",
 ]
-text = ""
+text = "রিকভারি শব্দ"
 
 [t_955e59b5ae]
 en = "Remember on this computer"
 where = [
   "desktop common_remember_on_this_computer: Shared label, used in several places (profile, signup).",
 ]
-text = ""
+text = "এই কম্পিউটারে মনে রাখুন"
 
 [t_b9b5554656]
 en = "Saving..."
 where = [
   "desktop common_saving: Shared label, used in several places (link, view).",
 ]
-text = ""
+text = "সেভ হচ্ছে..."
 
 [t_67eb8c5ea7]
 en = "Security"
 where = [
   "desktop common_security: Shared label, used in several places (profile, view).",
 ]
-text = ""
+text = "নিরাপত্তা"
 
 [t_d9cdfd07a7]
 en = "Show"
 where = [
   "desktop common_show: Shared label, used in several places (tray, view).",
 ]
-text = ""
+text = "দেখান"
 
 [t_cda1cdad47]
 en = "{size} GB"
 where = [
   "desktop common_size_gb: Storage size in gigabytes. {size} is a number with one decimal.",
 ]
-text = ""
+text = "{size} GB"
 
 [t_53cb38ce7d]
 en = "Skips the passphrase when Tinline starts, using this computer’s keyring."
 where = [
   "desktop common_skips_the_passphrase_when: Shared label, used in several places (profile, signup).",
 ]
-text = ""
+text = "এই কম্পিউটারের কি-রিং ব্যবহার করে, Tinline চালু হওয়ার সময় পাসফ্রেজ চায় না।"
 
 [t_8246939084]
 en = "Starting..."
 where = [
   "desktop common_starting: Shared label, used in several places (app, tray).",
 ]
-text = ""
+text = "চালু হচ্ছে..."
 
 [t_d2081454ab]
 en = "Tinline is still starting. Try again in a moment."
 where = [
   "desktop common_tinline_is_still_starting: Shared label, used in several places (app, link).",
 ]
-text = ""
+text = "Tinline এখনও চালু হচ্ছে। একটু পরে আবার চেষ্টা করুন।"
 
 [t_820c15c544]
 en = "Work desktop"
 where = [
   "desktop common_work_desktop: Shared label, used in several places (link, view).",
 ]
-text = ""
+text = "অফিসের ডেস্কটপ"
 
 [t_8ae2b3cd52]
 en = "Working..."
 where = [
   "desktop common_working: Shared label, used in several places (link, view).",
 ]
-text = ""
+text = "কাজ চলছে..."
 
 [t_3a211114f7]
 en = "Account removed from this computer"
 where = [
   "desktop app_account_removed_from_this: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "এই কম্পিউটার থেকে অ্যাকাউন্ট সরানো হয়েছে"
 
 [t_c88517c76f]
 en = "Adding passphrase..."
 where = [
   "desktop app_adding_passphrase: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "পাসফ্রেজ যোগ করা হচ্ছে..."
 
 [t_ae294d3d01]
 en = "An identity already exists here."
 where = [
   "desktop app_an_identity_already_exists: Desktop, app-level notices and notifications (in app.rs, friendly).",
 ]
-text = ""
+text = "এখানে আগে থেকেই একটি পরিচয় আছে।"
 
 [t_32fb327647]
 en = "Changing passphrase..."
 where = [
   "desktop app_changing_passphrase: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "পাসফ্রেজ বদলানো হচ্ছে..."
 
 [t_694b75b941]
 en = "Could not call: {error}"
 where = [
   "desktop app_could_not_call: Desktop, app-level notices and notifications (in app.rs, update_inner). {error} is the underlying error text, not translated.",
 ]
-text = ""
+text = "কল করা গেল না: {error}"
 
 [t_4ea7b41ec4]
 en = "Could not start: {error}"
 where = [
   "desktop app_could_not_start: Desktop, app-level notices and notifications (in app.rs, update_inner). {error} is the underlying error text, not translated.",
 ]
-text = ""
+text = "চালু করা গেল না: {error}"
 
 [t_16bc823614]
 en = "Couldn’t accept just now. Try again in a moment."
 where = [
   "desktop app_couldnt_accept_just_now: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "এই মুহূর্তে গ্রহণ করা গেল না। একটু পরে আবার চেষ্টা করুন।"
 
 [t_35338f8a31]
 en = "Device name saved"
 where = [
   "desktop app_device_name_saved: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "ডিভাইসের নাম সেভ হয়েছে"
 
 [t_886688601a]
 en = "Enter a name first"
 where = [
   "desktop app_enter_a_name_first: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "আগে একটি নাম লিখুন"
 
 [t_5f499535ee]
 en = "Enter your name and recovery phrase"
 where = [
   "desktop app_enter_your_name_and: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "আপনার নাম আর রিকভারি শব্দ লিখুন"
 
 [t_1a92653d7e]
 en = "{value} invited you to the group"
 where = [
   "desktop app_invited_you_to_the: Desktop, app-level notices and notifications (in app.rs, on_event). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "{value} আপনাকে গ্রুপে আমন্ত্রণ জানিয়েছেন"
 
 [t_86537dcd0a]
 en = "{name} is already in your contacts"
 where = [
   "desktop app_is_already_in_your: Desktop, app-level notices and notifications (in app.rs, update_inner). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} আগে থেকেই আপনার পরিচিতিতে আছেন"
 
 [t_03d397836b]
 en = "{peer_name} is calling"
 where = [
   "desktop app_is_calling: Desktop, app-level notices and notifications (in app.rs, on_event). {peer_name} is a value filled in by the app.",
 ]
-text = ""
+text = "{peer_name} কল করছেন"
 
 [t_d84b7d3db1]
 en = "Passphrase added. You will need it next time Tinline starts."
 where = [
   "desktop app_passphrase_added_you_will: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "পাসফ্রেজ যোগ করা হয়েছে। পরের বার Tinline চালু হলে এটা লাগবে।"
 
 [t_27499f4548]
 en = "Pick one that is different from the current one."
 where = [
   "desktop app_pick_one_that_is: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "এখনকারটা থেকে আলাদা একটি বেছে নিন।"
 
 [t_d6bdc593f7]
 en = "Restoring..."
 where = [
   "desktop app_restoring: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "ফিরিয়ে আনা হচ্ছে..."
 
 [t_5d4c1caca3]
 en = "Still can’t find the key."
 where = [
   "desktop app_still_cant_find_the: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "এখনও চাবিটি খুঁজে পাওয়া যাচ্ছে না।"
 
 [t_33f7d1c80b]
 en = "task failed"
 where = [
   "desktop app_task_failed: Desktop, app-level notices and notifications (in app.rs, blocking).",
 ]
-text = ""
+text = "কাজটি শেষ করা যায়নি"
 
 [t_ac97ec8ed4]
 en = "{name}: {value}"
 where = [
   "desktop app_text: Desktop, app-level notices and notifications (in app.rs, on_event). {name} is a person's name (usually the first word of their chosen name). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "{name}: {value}"
 
 [t_9b366dca33]
 en = "That account is already on this computer."
 where = [
   "desktop app_that_account_is_already: Desktop, app-level notices and notifications (in app.rs, friendly).",
 ]
-text = ""
+text = "ওই অ্যাকাউন্ট আগে থেকেই এই কম্পিউটারে আছে।"
 
 [t_82424900f4]
 en = "That isn’t your current passphrase."
 where = [
   "desktop app_that_isnt_your_current: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "এটা আপনার বর্তমান পাসফ্রেজ নয়।"
 
 [t_d7d34eb82a]
 en = "That phrase isn’t valid. Check each word and their order."
 where = [
   "desktop app_that_phrase_isnt_valid: Desktop, app-level notices and notifications (in app.rs, friendly).",
 ]
-text = ""
+text = "শব্দগুলো মিলছে না। প্রতিটি শব্দ আর তাদের ক্রম দেখে নিন।"
 
 [t_2d4587e96b]
 en = "The two passphrases differ."
 where = [
   "desktop app_the_two_passphrases_differ: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "দুটো পাসফ্রেজ আলাদা।"
 
 [t_e9d46ff847]
 en = "This computer’s keyring wouldn’t keep it, so Tinline will keep asking for your passphrase."
 where = [
   "desktop app_this_computers_keyring_wouldnt: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "এই কম্পিউটারের কি-রিং এটা রাখতে পারেনি, তাই Tinline আপনার পাসফ্রেজ চাইতে থাকবে।"
 
 [t_1290ee5e3e]
 en = "Ticket: {error}"
 where = [
   "desktop app_ticket: Desktop, app-level notices and notifications (in app.rs, update_inner). {error} is the underlying error text, not translated.",
 ]
-text = ""
+text = "টিকিট: {error}"
 
 [t_1dbf8cee18]
 en = "Type a new passphrase."
 where = [
   "desktop app_type_a_new_passphrase: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "একটি নতুন পাসফ্রেজ লিখুন।"
 
 [t_2b521c5ae2]
 en = "Type a passphrase first."
 where = [
   "desktop app_type_a_passphrase_first: Desktop, app-level notices and notifications (in app.rs, friendly).",
 ]
-text = ""
+text = "আগে একটি পাসফ্রেজ লিখুন।"
 
 [t_870a316625]
 en = "Type your current passphrase."
 where = [
   "desktop app_type_your_current_passphrase: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "আপনার বর্তমান পাসফ্রেজ লিখুন।"
 
 [t_ac46214b53]
 en = "Wait for the profile save to finish."
 where = [
   "desktop app_wait_for_the_profile: Desktop, app-level notices and notifications (in app.rs, update).",
 ]
-text = ""
+text = "প্রোফাইল সেভ হওয়া শেষ হওয়া পর্যন্ত অপেক্ষা করুন।"
 
 [t_62bb091458]
 en = "Your key is kept in a plain file in Tinline’s data folder. Anyone who copies that folder can open your account. Add a passphrase to protect it; the file is then deleted."
 where = [
   "desktop app_your_key_is_kept: Desktop, app-level notices and notifications (in app.rs, key_home).",
 ]
-text = ""
+text = "আপনার চাবি Tinline-এর ডেটা ফোল্ডারে একটি সাধারণ ফাইলে রাখা আছে। ওই ফোল্ডার যে কপি করবে, সে আপনার অ্যাকাউন্ট খুলতে পারবে। সুরক্ষার জন্য একটি পাসফ্রেজ যোগ করুন; তখন ফাইলটি মুছে ফেলা হবে।"
 
 [t_532c9419c8]
 en = "Your key is kept in this computer’s keyring, so Tinline opens without asking."
 where = [
   "desktop app_your_key_is_kept_in: Desktop, app-level notices and notifications (in app.rs, key_home).",
 ]
-text = ""
+text = "আপনার চাবি এই কম্পিউটারের কি-রিং-এ রাখা আছে, তাই Tinline কিছু না চেয়েই খোলে।"
 
 [t_e6a284f81a]
 en = "Your recovery key is copied."
 where = [
   "desktop app_your_recovery_key_is: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "আপনার রিকভারি কী কপি হয়েছে।"
 
 [t_031c6dc10d]
 en = "Your recovery words are copied."
 where = [
   "desktop app_your_recovery_words_are: Desktop, app-level notices and notifications (in app.rs, update_inner).",
 ]
-text = ""
+text = "আপনার রিকভারি শব্দ কপি হয়েছে।"
 
 [t_287f831b10]
 en = "You’re on a call. Hang up before switching accounts."
 where = [
   "desktop app_youre_on_a_call: Desktop, app-level notices and notifications (in app.rs, friendly).",
 ]
-text = ""
+text = "আপনি একটি কলে আছেন। অ্যাকাউন্ট বদলানোর আগে কল শেষ করুন।"
 
 [t_c060528ae3]
 en = "{label} disconnected, switching to the system default"
 where = [
   "desktop audio_disconnected_switching_to_the: Desktop, audio devices (in audio.rs, maintain). {label} is a value filled in by the app.",
 ]
-text = ""
+text = "{label}-এর সংযোগ কেটে গেছে, সিস্টেমের ডিফল্টে বদলানো হচ্ছে"
 
 [t_a171612b25]
 en = "Echo cancellation is unavailable"
 where = [
   "desktop audio_echo_cancellation_is_unavailable: Desktop, audio devices (in audio.rs, run_call).",
 ]
-text = ""
+text = "ইকো ক্যানসেলেশন পাওয়া যাচ্ছে না"
 
 [t_5fae266f6d]
 en = "{label} is back"
 where = [
   "desktop audio_is_back: Desktop, audio devices (in audio.rs, maintain). {label} is a value filled in by the app.",
 ]
-text = ""
+text = "{label} ফিরে এসেছে"
 
 [t_e476e6d224]
 en = "{label} unavailable: {error}"
 where = [
   "desktop audio_unavailable: Desktop, audio devices (in audio.rs, maintain). {label} is a value filled in by the app. {error} is the underlying error text, not translated.",
 ]
-text = ""
+text = "{label} পাওয়া যাচ্ছে না: {error}"
 
 [t_9b0bf5bb10]
 en = "About this call. {value} signal, {to_lowercase}."
 where = [
   "desktop call_about_this_call_signal: Desktop, calls (voice and video) (in call_screen.rs, call_view). {value} is a value filled in by the app. {to_lowercase} is a value filled in by the app.",
 ]
-text = ""
+text = "এই কল সম্পর্কে। {value} সিগন্যাল, {to_lowercase}।"
 
 [t_be59de019d]
 en = "Answered on another device"
 where = [
   "desktop call_answered_on_another_device: Desktop, calls (voice and video) (in reason.rs, history).",
 ]
-text = ""
+text = "অন্য ডিভাইসে ধরা হয়েছে"
 
 [t_5951b67d4a]
 en = "Calls not allowed"
 where = [
   "desktop call_calls_not_allowed: Desktop, calls (voice and video) (in reason.rs, history).",
 ]
-text = ""
+text = "কলের অনুমতি নেই"
 
 [t_7f6f8a6b79]
 en = "Camera off"
 where = [
   "desktop call_camera_off: Desktop, calls (voice and video) (in view.rs, video_stage).",
 ]
-text = ""
+text = "ক্যামেরা বন্ধ"
 
 [t_4855360c05]
 en = "Camera on"
 where = [
   "desktop call_camera_on: Desktop, calls (voice and video) (in view.rs, video_call_view).",
 ]
-text = ""
+text = "ক্যামেরা চালু"
 
 [t_c9f762351d]
 en = "Ctrl E cancels"
 where = [
   "desktop call_ctrl_e_cancels: Desktop, calls (voice and video) (in view.rs, video_call_view).",
 ]
-text = ""
+text = "Ctrl E দিয়ে বাতিল"
 
 [t_12e7b54a0e]
 en = "Declined on another device"
 where = [
   "desktop call_declined_on_another_device: Desktop, calls (voice and video) (in reason.rs, history).",
 ]
-text = ""
+text = "অন্য ডিভাইসে ফিরিয়ে দেওয়া হয়েছে"
 
 [t_a0a96166bf]
 en = "Device changes apply from the next call."
 where = [
   "desktop call_device_changes_apply_from: Desktop, calls (voice and video) (in call_screen.rs, call_about).",
 ]
-text = ""
+text = "ডিভাইসের পরিবর্তন পরের কল থেকে কাজ করবে।"
 
 [t_27ca58e333]
 en = "While you’re on this call"
 where = [
   "desktop call_during_your_call: Desktop, call waiting card (in view.rs, waiting_banner), second line under \"{name} is calling\". A complete line saying the other call arrives while I am on this one.",
 ]
-text = ""
+text = "আপনি এই কলে থাকার সময়"
 
 [t_b19e015d90]
 en = "End-to-end encrypted · Ctrl M mute · Ctrl E end · Esc minimizes"
 where = [
   "desktop call_end_to_end_encrypted_ctrl: Desktop, calls (voice and video) (in view.rs, video_call_view).",
 ]
-text = ""
+text = "এন্ড-টু-এন্ড এনক্রিপ্টেড · Ctrl M মিউট · Ctrl E শেষ · Esc ছোট করে"
 
 [t_793b1f1d6a]
 en = "Answering ends your call with {name}."
 where = [
   "desktop call_ends_your_call_with: Desktop, call waiting card (in view.rs, waiting_banner), small line under the buttons. {name} is the first name of the person I am talking to now.",
 ]
-text = ""
+text = "উত্তর দিলে {name}-এর সঙ্গে আপনার কল শেষ হবে।"
 
 [t_4af8cd18a6]
 en = "Enter answers · Esc declines"
 where = [
   "desktop call_enter_answers_esc_declines: Desktop, calls (voice and video) (in view.rs, video_call_view).",
 ]
-text = ""
+text = "Enter উত্তর দেয় · Esc ফিরিয়ে দেয়"
 
 [t_55195cbec5]
 en = "For testing. Your picture may stutter or your computer may heat up."
 where = [
   "desktop call_for_testing_your_picture: Desktop, calls (voice and video) (in call_screen.rs, call_nerds).",
 ]
-text = ""
+text = "পরীক্ষার জন্য। আপনার ভিডিও আটকে আটকে চলতে পারে বা কম্পিউটার গরম হতে পারে।"
 
 [t_1e415b4258]
 en = "Hang up"
 where = [
   "desktop call_hang_up: Desktop, calls (voice and video) (in view.rs, video_call_view).",
 ]
-text = ""
+text = "কল শেষ করুন"
 
 [t_c8637eae36]
 en = "HD"
 where = [
   "desktop call_hd: Desktop, calls (voice and video) (in view.rs, hd_chip).",
 ]
-text = ""
+text = "HD"
 
 [t_30e7914804]
 en = "Ignore limits (heat, their decoder)"
 where = [
   "desktop call_ignore_limits_heat_their: Desktop, calls (voice and video) (in call_screen.rs, call_nerds).",
 ]
-text = ""
+text = "সীমা উপেক্ষা করুন (তাপ, ওঁদের ডিকোডার)"
 
 [t_b5cd3d149c]
 en = "Calling you…"
 where = [
   "desktop call_is_calling_you: Desktop, incoming call screen (in view.rs, video_call_view), status line under the caller's name, which is shown above it. A complete short line.",
 ]
-text = ""
+text = "আপনাকে কল করছেন…"
 
 [t_8f764feef1]
 en = "{rtt_ms} ms round trip · {value}% lost"
 where = [
   "desktop call_ms_round_trip_lost: Desktop, calls (voice and video) (in call_screen.rs, call_about). {rtt_ms} is a value filled in by the app. {value} is a value filled in by the app.",
 ]
-text = ""
+text = "{rtt_ms} ms রাউন্ড ট্রিপ · {value}% হারিয়েছে"
 
 [t_f72c120dfc]
 en = "No camera"
 where = [
   "desktop call_no_camera: Desktop, calls (voice and video) (in call_screen.rs, call_view).",
 ]
-text = ""
+text = "ক্যামেরা নেই"
 
 [t_7fae834341]
 en = "Pin a size first."
 where = [
   "desktop call_pin_a_size_first: Desktop, calls (voice and video) (in call_screen.rs, call_nerds).",
 ]
-text = ""
+text = "আগে একটি সাইজ পিন করুন।"
 
 [t_8b2833f97e]
 en = "Relayed · encrypted"
 where = [
   "desktop call_relayed_encrypted: Desktop, calls (voice and video) (in view.rs, video_call_view).",
 ]
-text = ""
+text = "রিলে হয়ে · এনক্রিপ্টেড"
 
 [t_8502df6288]
 en = "Sharper video on, up to 720p"
 where = [
   "desktop call_sharper_video_on_up: Desktop, calls (voice and video) (in view.rs, hd_chip).",
 ]
-text = ""
+text = "ঝকঝকে ভিডিও চালু, 720p পর্যন্ত"
 
 [t_3981b6e3cf]
 en = "{value} signal · {value2}"
 where = [
   "desktop call_signal: Desktop, calls (voice and video) (in call_screen.rs, call_about). {value} is a value filled in by the app. {value2} is a value filled in by the app.",
 ]
-text = ""
+text = "{value} সিগন্যাল · {value2}"
 
 [t_a168cd45ed]
 en = "Stats for nerds"
 where = [
   "desktop call_stats_for_nerds: Desktop, calls (voice and video) (in call_screen.rs, call_nerds).",
 ]
-text = ""
+text = "খুঁটিনাটি পরিসংখ্যান"
 
 [t_d5b4307250]
 en = " The line is weak, so {name}’s voice may break up."
 where = [
   "desktop call_the_line_is_weak: Desktop, calls (voice and video) (in call_screen.rs, call_about). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = " লাইন দুর্বল, তাই {name}-এর কথা কেটে কেটে আসতে পারে।"
 
 [t_e6b445aa1b]
 en = "These apply to this call now. Settings > Video sets the next call."
 where = [
   "desktop call_these_apply_to_this: Desktop, calls (voice and video) (in call_screen.rs, call_nerds).",
 ]
-text = ""
+text = "এগুলো এখন এই কলে কাজ করবে। সেটিংস > ভিডিও থেকে পরের কল ঠিক হয়।"
 
 [t_8fa85234ca]
 en = "Video is starting…"
 where = [
   "desktop call_video_is_starting: Desktop, calls (voice and video) (in view.rs, video_stage).",
 ]
-text = ""
+text = "ভিডিও শুরু হচ্ছে…"
 
 [t_d203b27537]
 en = "Your bitrate cap (not a promised rate)"
 where = [
   "desktop call_your_bitrate_cap_not: Desktop, calls (voice and video) (in call_screen.rs, call_nerds).",
 ]
-text = ""
+text = "আপনার বিটরেটের সর্বোচ্চ সীমা (প্রতিশ্রুত হার নয়)"
 
 [t_9742320971]
 en = "Your frame rate"
 where = [
   "desktop call_your_frame_rate: Desktop, calls (voice and video) (in call_screen.rs, call_nerds).",
 ]
-text = ""
+text = "আপনার ফ্রেম রেট"
 
 [t_2c467dc172]
 en = "Your network changed. Hold on — Tinline is finding the line again."
