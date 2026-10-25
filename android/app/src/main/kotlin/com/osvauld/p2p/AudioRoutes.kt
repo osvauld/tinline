@@ -61,7 +61,7 @@ object Routes {
 
     /**
      * Short label for the route button and sheet, in the app's language (needs the running app).
-     * Same choices as [label], which keeps its English text because the JVM unit tests assert it.
+     * In JVM unit tests the fixed labels are `string#<id>`; device names are shown as they are.
      */
     fun display(r: AudioRoute): String = when (r.kind) {
         AudioRoute.Kind.Earpiece -> appString(R.string.call_route_phone)
@@ -71,12 +71,4 @@ object Routes {
         AudioRoute.Kind.Other -> r.name.ifBlank { appString(R.string.call_route_other) }
     }
 
-    /** English label, asserted by AudioRoutesTest. // i18n-deferred: JVM tests assert the English text; the UI uses [display]. */
-    fun label(r: AudioRoute): String = when (r.kind) {
-        AudioRoute.Kind.Earpiece -> "Phone"
-        AudioRoute.Kind.Speaker -> "Speaker"
-        AudioRoute.Kind.Wired -> r.name.ifBlank { "Headset" }
-        AudioRoute.Kind.Bluetooth -> r.name.takeUnless { it.isBlank() || it == GENERIC_BT } ?: "Bluetooth"
-        AudioRoute.Kind.Other -> r.name.ifBlank { "Other" }
-    }
 }

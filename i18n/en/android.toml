@@ -6519,3 +6519,22 @@ note = "Notice when a group member accepted my chat request. {name} is their fir
 [groupsc_notice_accepted_anon]
 text = "They accepted your request. You can message each other now; calls stay off until one of you allows them."
 note = "Notice when a person, whose name is not known, accepted my chat request."
+[video_hd_line_on]
+text = "Sharper video on"
+note = "Short line under the call header for a moment after I switch Sharper video (HD) on during a call."
+
+[video_hd_line_paused]
+text = "HD paused · weak connection"
+note = "Short line under the call header when Sharper video is on but the picture has dropped below HD because the connection is weak."
+
+[video_hd_metered]
+text = "On mobile data, HD uses more · tap HD"
+note = "Short line under the call header once per call when Sharper video is on over mobile data. 'HD' is the name of a button on the call screen."
+
+[profile_busy_unsupported]
+text = "Busy is not available yet. Your call settings are unchanged."
+note = "Message when I try to switch to Busy and the core cannot do it yet."
+
+[blocking_row_blocked_you]
+text = "Blocked you"
+note = "Red line under a contact's name in the chat and contact lists when they have blocked me."

@@ -88,9 +88,13 @@ data class Blocks(
     fun callsAllowed(did: String) = did in allowed
 
     /** The red line under the name in lists and headers. */
-    fun status(did: String): String? = when (composer(did, true)) {
-        ComposerState.BlockedByMe -> "Blocked" // i18n-deferred: BlockingTest asserts this text and Home.kt matches it with startsWith("Blocked")
-        ComposerState.BlockedMe -> "Blocked you" // i18n-deferred: BlockingTest asserts this text
+    fun status(did: String): String? = statusRes(did)?.let { appString(it) }
+
+    /** The resource of the red line, or null. Compare this (state), never the text. */
+    @androidx.annotation.StringRes
+    fun statusRes(did: String): Int? = when (composer(did, true)) {
+        ComposerState.BlockedByMe -> R.string.common_blocked
+        ComposerState.BlockedMe -> R.string.blocking_row_blocked_you
         else -> null
     }
 
@@ -114,8 +118,10 @@ object BlockCopy {
         ComposerState.NotContact -> uniffi.present.ComposerState.NOT_CONTACT
     })
 
-    fun date(secs: Long, zone: ZoneId = ZoneId.systemDefault()): String =
-        DateTimeFormatter.ofPattern("MMM d, HH:mm", Locale.ENGLISH).format(Instant.ofEpochSecond(secs).atZone(zone))
+    /** The block's date and time in the reader's language and habits (month, order, 12/24 h come from the locale). */
+    fun date(secs: Long, zone: ZoneId = ZoneId.systemDefault(), locale: Locale = Locale.getDefault()): String =
+        DateTimeFormatter.ofLocalizedDateTime(java.time.format.FormatStyle.MEDIUM, java.time.format.FormatStyle.SHORT).withLocale(locale)
+            .format(Instant.ofEpochSecond(secs).atZone(zone))
 }
 
 /** "Block X?" with every consequence listed before the tap. */

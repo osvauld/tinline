@@ -5,18 +5,15 @@ import org.junit.Test
 
 class ScreenCallsTest {
     @Test fun realPhaseFlagsChooseStatusWithoutInventingTiming() {
-        assertEquals("Calling…", callStatus(false, false, false, 0))
-        assertEquals("Ringing…", callStatus(false, true, false, 0))
-        assertEquals("Reconnecting…", callStatus(true, false, true, 65))
+        assertEquals(appString(R.string.call_status_calling), callStatusText(false, false, false, 0))
+        assertEquals(appString(R.string.call_status_ringing), callStatusText(false, true, false, 0))
+        assertEquals(appString(R.string.call_reconnecting), callStatusText(true, false, true, 65))
     }
     @Test fun encryptionClaimIsConditionalOnConnection() {
-        val connecting = callPrivacy(false, "Arjun")
-        assertTrue(connecting.startsWith("Connecting to Arjun"))
-        assertFalse(connecting.startsWith("End-to-end encrypted."))
-        val connected = callPrivacy(true, "Arjun")
-        assertTrue(connected.startsWith("End-to-end encrypted."))
-        // The relay is explained in the card's connection row, only when the call is relayed.
-        assertFalse(connected.contains("relay"))
+        // Resources are `string#<id>` on the JVM: the two states must pick different strings, and only a connected call claims encryption.
+        assertEquals(appString(R.string.call_privacy_connecting), callPrivacyText(false, "Arjun"))
+        assertEquals(appString(R.string.call_privacy_active), callPrivacyText(true, "Arjun"))
+        assertNotEquals(callPrivacyText(false, "Arjun"), callPrivacyText(true, "Arjun"))
     }
     @Test fun signalUsesRecentLossAndSharedThresholds() {
         val l = RecentLoss()

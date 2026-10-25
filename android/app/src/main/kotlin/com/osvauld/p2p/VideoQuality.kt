@@ -33,9 +33,9 @@ internal fun hdPaused(hdOn: Boolean, sendWidth: Int, sendHeight: Int): Boolean =
 
 /** The HD chip's short line (shown for 2.6 s in the line under the header). */
 internal fun hdLine(on: Boolean, paused: Boolean): String = when {
-    !on -> "Sharper video off"
-    paused -> "HD paused \u00b7 weak connection"
-    else -> "Sharper video on"
+    !on -> appString(R.string.video_hd_off)
+    paused -> appString(R.string.video_hd_line_paused)
+    else -> appString(R.string.video_hd_line_on)
 }
 
 /**
@@ -48,7 +48,7 @@ internal const val HD_METERED_MS = 6000L
 internal const val HD_NOTE_MS = 2600L
 
 /** Sharper video is on while the phone is on mobile data: said once per call, calmly; the chip turns it off. */
-internal const val HD_METERED_LINE = "On mobile data, HD uses more \u00b7 tap HD"
+internal val HD_METERED_LINE: String get() = appString(R.string.video_hd_metered)
 
 /**
  * Whether to say [HD_METERED_LINE] now: HD on, my camera sending, the active network metered, not said yet in this

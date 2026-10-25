@@ -31,8 +31,8 @@ class GroupsImagesTest {
             if (outgoing) me else "did:key:sam", "Sam Lee", 1uL, text, null, outgoing, CoreDelivery.DELIVERED, null, false, image)
 
     @Test fun aPictureReadsAsPhotoInOneLine() {
-        assertEquals("Photo", GroupText.postLine(post("a", "", image(GroupImageState.READY))))
-        assertEquals("Photo · the view", GroupText.postLine(post("a", "the view", image(GroupImageState.REMOTE))))
+        assertEquals(appString(R.string.groups_photo_desc), GroupText.postLine(post("a", "", image(GroupImageState.READY))))
+        assertEquals(appString(R.string.groupsc_photo_caption_line), GroupText.postLine(post("a", "the view", image(GroupImageState.REMOTE))))
         assertEquals("hello", GroupText.postLine(post("a", "hello", null)))
     }
 
@@ -80,7 +80,7 @@ class GroupsImagesTest {
         val api = Fake(detail(GroupRole.MEMBER, adminsOnly = true))
         val ctl = GroupsController(api) { me }
         ctl.open("g")
-        assertEquals("Only admins post here.", ctl.postImage("g", ByteArray(10), "").exceptionOrNull()!!.message)
+        assertEquals(GroupText.ADMINS_ONLY_ERROR, ctl.postImage("g", ByteArray(10), "").exceptionOrNull()!!.message)
         assertEquals(null, api.posted)
     }
 
