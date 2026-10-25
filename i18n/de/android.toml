@@ -121,7 +121,7 @@ text = "{name} möchte chatten"
 text = "Mitglied von {group}"
 
 [groups_list_accepting_adds]
-text = "Wenn du annimmst, wird {name} ein Kontakt nur für Nachrichten. Anrufe kannst du später erlauben."
+text = "Wenn du annimmst, wird {name} als Kontakt nur für Nachrichten hinzugefügt. Anrufe kannst du später erlauben."
 
 [groups_list_block]
 text = "Blockieren"
@@ -251,6 +251,10 @@ text = "Wer ist online in {group}"
 
 [groups_online_lag]
 text = "Mitglieder, die ein Host in der letzten Minute gesehen hat. Das kann ein paar Sekunden hinterherhinken."
+
+[groups_online_cap]
+one = "Ein Host listet bis zu {count} Person auf einmal, es können also mehr sein."
+other = "Ein Host listet bis zu {count} Personen auf einmal, es können also mehr sein."
 
 [groups_online_hidden]
 text = "Du wirst hier anderen nicht angezeigt. Das kannst du unter Einstellungen › Privatsphäre ändern."
@@ -418,6 +422,10 @@ text = "Admin"
 [groupsb_role_member_lc]
 text = "Mitglied"
 
+[groupsb_flags_of]
+one = "{flags} von {count} Markierung"
+other = "{flags} von {count} Markierungen"
+
 [groupsb_of_total]
 text = "{n} von {total}"
 
@@ -500,7 +508,7 @@ text = "Link wird geholt…"
 text = "Ein Link, der nicht abläuft"
 
 [groupsb_turn_on_open]
-text = "Schalte den offenen Link ein, um ihn zu teilen"
+text = "Schalte den öffentlichen Link ein, um ihn zu teilen"
 
 [groupsb_cant_get_link]
 text = "Der Link ließ sich nicht holen"
@@ -796,6 +804,10 @@ text = "Mitglieder hinzufügen"
 [groupsb_add_to]
 text = "Zu {name} hinzufügen"
 
+[groupsb_contacts_selected]
+one = "KONTAKTE · {count} AUSGEWÄHLT"
+other = "KONTAKTE · {count} AUSGEWÄHLT"
+
 [groupsb_no_contacts]
 text = "Keine Kontakte zum Hinzufügen. Leute, die du blockierst oder die dich blockieren, stehen nicht in der Liste."
 
@@ -882,6 +894,9 @@ text = "Dieses Handy hat den Schlüssel nicht mehr, der dein Konto öffnet. Das 
 
 [unlock_keylost_restore]
 text = "Mit 24 Wörtern wiederherstellen"
+
+[unlock_keylost_notice]
+text = "Du hast keine Passphrase festgelegt, also sind die {words} Wiederherstellungswörter der einzige Weg zurück. Deine Kontakte bleiben."
 
 [accounts_switch_account]
 text = "Konto wechseln"
@@ -993,6 +1008,9 @@ text = "Nur du"
 
 [profile_account_recovery]
 text = "Kontowiederherstellung"
+
+[profile_account_recovery_sub]
+text = "Dein Schlüssel und deine {words} Wörter"
 
 [profile_code_title]
 text = "Dein Kontaktcode"
@@ -1309,6 +1327,12 @@ text = "Gib der Angabe einen Namen."
 [profile_err_key_bad]
 text = "Dieser Name geht nicht. Halte ihn kurz, ohne Steuerzeichen."
 
+[profile_err_value_long]
+text = "Das ist zu lang. Jede Angabe darf bis zu {max} KiB groß sein."
+
+[profile_err_fields_full]
+text = "Du hast {max} Angaben erreicht. Entferne eine, um eine neue hinzuzufügen."
+
 [profile_err_profile_full]
 text = "Dein Profil ist voll. Entferne einige Angaben, um mehr hinzuzufügen."
 
@@ -1410,6 +1434,9 @@ other = "{count} Wörter fehlen noch."
 [onboarding_restore_lead_key]
 text = "Dein Wiederherstellungsschlüssel ist drin. Er bleibt auf diesem Handy."
 
+[onboarding_restore_lead_words]
+text = "Tipp deine {words} Wörter der Reihe nach ein, oder füge sie oder deinen Wiederherstellungsschlüssel ins erste Feld ein. Sie bleiben auf diesem Handy."
+
 [onboarding_restore_key_caption]
 text = "Wiederherstellungsschlüssel"
 
@@ -1418,6 +1445,9 @@ text = "Lieber meine Wörter nutzen"
 
 [onboarding_restore_paste]
 text = "Aus Zwischenablage einfügen"
+
+[onboarding_restore_filled]
+text = "{filled} von {words}"
 
 [onboarding_welcome_title_adding]
 text = "Ein Konto hinzufügen"
@@ -1457,6 +1487,9 @@ text = "Scanne einen Code auf einem Gerät, das dein Konto schon hat. Deine Kont
 
 [onboarding_choose_restore]
 text = "Mein Konto wiederherstellen"
+
+[onboarding_choose_restore_sub]
+text = "Tipp deine {words} Wiederherstellungswörter ein. Dieses Handy startet mit einer leeren Kontaktliste."
 
 [onboarding_done_title_named]
 text = "Deine Leitung ist offen, {name}"
@@ -1536,6 +1569,12 @@ text = "Hier ist dein Wiederherstellungsschlüssel"
 [onboarding_phrase_title_words]
 text = "Hier sind deine Wiederherstellungswörter"
 
+[onboarding_phrase_lead_key]
+text = "Dein Wiederherstellungsschlüssel entspricht deinen {words} Wörtern, nur in einer Zeile.\nFüg ihn an einem sicheren Ort ein. Ein Passwortmanager eignet sich gut."
+
+[onboarding_phrase_lead_words]
+text = "Wenn du mal das Gerät wechselst, bringen diese {words} Wörter dein Konto mit.\nSpeichere eine Kopie an einem sicheren Ort. Papier eignet sich gut."
+
 [onboarding_phrase_saved_key]
 text = "Ich hab ihn gesichert"
 
@@ -1586,6 +1625,9 @@ text = "{name} wurde diesem Handy hinzugefügt"
 
 [onboarding_restored_lead_adding]
 text = "Es ist immer nur das ausgewählte Konto online, also ist {name} jetzt online und dein anderes Konto pausiert. Wechseln kannst du in den Einstellungen."
+
+[onboarding_restored_lead]
+text = "Dein Konto ist wieder auf diesem Handy. Deine Kontakte, Chats und Anrufliste liegen auf deinen anderen Geräten, nicht auf einem Server. Dieses Handy startet mit einer leeren Kontaktliste."
 
 [onboarding_open_tinline]
 text = "Tinline öffnen"
@@ -1649,6 +1691,9 @@ text = "Dein Konto gehört dir."
 
 [onboarding_terms_account_body]
 text = "Es lebt auf deinen Geräten, nicht auf einem Server. Deine Wiederherstellungswörter sind der Weg zurück, also bewahre sie gut auf."
+
+[onboarding_terms_by_continuing]
+text = "Wenn du weitermachst, stimmst du den [Nutzungsbedingungen](terms) zu und hast die [Datenschutzerklärung](privacy) gelesen."
 
 [onboarding_perms_title]
 text = "Damit Anrufe dich erreichen"
@@ -2144,6 +2189,12 @@ text = "Halte das privat. Wer es hat, kann als du auftreten."
 [settings_backup_key]
 text = "Schlüssel"
 
+[settings_backup_words]
+text = "{words} Wörter"
+
+[settings_backup_key_failed]
+text = "Der Schlüssel ließ sich nicht vorbereiten. Nutze stattdessen deine {words} Wörter."
+
 [settings_hide]
 text = "Verbergen"
 
@@ -2438,6 +2489,9 @@ text = "Wähle auf dem neuen Gerät „Mit einem Gerät verknüpfen“, dann „
 [link_match_title]
 text = "Stimmen die Codes überein?"
 
+[link_match_body]
+text = "**{name}** möchte deinem Konto beitreten. Es sollte dieselben sechs Ziffern zeigen wie unten."
+
 [link_match_note]
 text = "Vergleiche sie selbst. Wenn sie abweichen, hat vielleicht jemand anderes den Code zuerst gescannt."
 
@@ -2474,6 +2528,12 @@ text = "Es gleicht sich ab, wenn beide Geräte gleichzeitig online sind. Kontakt
 [link_scan_h1]
 text = "Scanne den Code auf deinem neuen Gerät"
 
+[link_scan_step1]
+text = "Öffne auf dem neuen Gerät Tinline und wähle {action}."
+
+[link_scan_step2]
+text = "Es zeigt einen QR-Code und einen kurzen Code. Sie gelten 5 Minuten und funktionieren einmal."
+
 [link_scan_qr]
 text = "QR-Code scannen"
 
@@ -2488,6 +2548,9 @@ text = "Diese Passphrase passt nicht."
 
 [link_approve_title]
 text = "{name} bestätigen?"
+
+[link_approve_warning]
+text = "Wenn du bestätigst, gehen deine **Wiederherstellungswörter** an {name}. Es wird eine vollständige Kopie von dir: Es kann deine Chats lesen und als du auftreten. Bestätige nur ein Gerät, das du in der Hand hast."
 
 [link_dont_link]
 text = "Nicht verknüpfen"
@@ -2520,7 +2583,7 @@ text = "Der Code funktioniert einmal und läuft nach 5 Minuten ab."
 text = "Dieses Handy wurde getrennt"
 
 [link_unlinked_lead]
-text = "{name} wurde von einem deiner anderen Geräte von diesem Handy entfernt. Kontakte, Chats und Anrufe des Kontos sind hier gelöscht. Deine anderen Geräte sind nicht betroffen."
+text = "Eines deiner anderen Geräte hat {name} von diesem Handy entfernt. Kontakte, Chats und Anrufe des Kontos wurden hier gelöscht. Deine anderen Geräte sind nicht betroffen."
 
 [link_your_account]
 text = "Dein Konto"
@@ -2659,6 +2722,9 @@ text = "Kontaktanfrage"
 
 [notif_request_text]
 text = "{name} möchte dich hinzufügen"
+
+[notif_accepted_text]
+text = "{name} hat deine Anfrage angenommen. Deine Leitung ist offen."
 
 [notif_missed_title]
 text = "Verpasster Anruf"
@@ -3210,6 +3276,10 @@ text = "Öffnen"
 [card_add]
 text = "Hinzufügen"
 
+[groupsc_removed_you_flags]
+one = "Du wurdest nach {count} Admin-Markierung entfernt"
+other = "Du wurdest nach {count} Admin-Markierungen entfernt"
+
 [groupsc_admin_granted_other]
 text = "{by} hat {sub} zum Admin gemacht"
 
@@ -3341,6 +3411,10 @@ text = "Abgelehnt. {name} erfährt „abgelehnt“."
 one = "{count} ungelesen"
 other = "{count} ungelesen"
 
+[groupsc_flags_of]
+one = "{filled} von {count} Markierung"
+other = "{filled} von {count} Markierungen"
+
 [gcall_name]
 text = "Gruppenanruf"
 
@@ -3349,6 +3423,12 @@ text = "Gruppe"
 
 [gcall_finding_host]
 text = "Anruf-Host wird gesucht…"
+
+[gcall_connecting]
+text = "Anruf wird verbunden…"
+
+[gcall_reconnecting]
+text = "Anruf wird neu verbunden…"
 
 [gcall_already_in_call]
 text = "Du bist schon in einem Anruf."
@@ -3359,8 +3439,14 @@ text = "Anruf beendet"
 [gcall_ended_host_lost]
 text = "Anruf beendet – Host weg"
 
+[gcall_battery_limited]
+text = "Akku unter {percent} %. Das Hosten ist eingeschränkt: Es ist immer nur eine Person zu hören, und niemand Neues kann beitreten."
+
 [gcall_no_host]
 text = "Kein Anruf-Host verfügbar"
+
+[gcall_cant_connect]
+text = "Beitritt zum Anruf hat nicht geklappt"
 
 [gcall_minimize]
 text = "Anruf verkleinern"
@@ -3374,6 +3460,10 @@ text = "Bisher nur du. Wartet auf andere."
 [gcall_people]
 one = "{count} Person im Anruf"
 other = "{count} Personen im Anruf"
+
+[gcall_more]
+one = "+{count} weitere"
+other = "+{count} weitere"
 
 [gcall_ok]
 text = "OK"
@@ -3728,6 +3818,9 @@ text = "Wechseln"
 
 [call_audio_route]
 text = "Audio: {route}"
+
+[call_reconnecting]
+text = "Anruf wird neu verbunden…"
 
 [call_reconnecting_plain]
 text = "Neu verbinden"
@@ -4280,11 +4373,20 @@ text = "Keine Antwort"
 [calls_what_cancelled]
 text = "Abgebrochen"
 
+[calls_what_unreachable]
+text = "Der Anruf ließ sich nicht verbinden"
+
 [calls_profile_desc]
 text = "Profil von {name}"
 
 [calls_cant_call]
 text = "Anrufen nicht möglich"
+
+[calls_row_desc]
+text = "{name}, {what}, {time}. {action}"
+
+[calls_row_desc_duration]
+text = "{name}, {what}, {duration}, {time}. {action}"
 
 [calls_group_info_desc]
 text = "{name}, Gruppeninfo"
@@ -4383,8 +4485,14 @@ text = "Da ist etwas schiefgelaufen"
 [debuglog_send_title]
 text = "Debug-Log senden"
 
+[groupsc_sys_joined_you]
+text = "Du bist beigetreten"
+
 [groupsc_sys_joined_other]
 text = "{name} ist beigetreten"
+
+[groupsc_sys_joined_someone]
+text = "Jemand ist beigetreten"
 
 [groupsc_sys_left_you]
 text = "Verlassen"
@@ -4392,8 +4500,61 @@ text = "Verlassen"
 [groupsc_sys_left_other]
 text = "{name} hat die Gruppe verlassen"
 
+[groupsc_sys_left_someone]
+text = "Jemand hat die Gruppe verlassen"
+
+[groupsc_removed_other_flags]
+one = "{name} wurde nach {count} Admin-Markierung entfernt"
+other = "{name} wurde nach {count} Admin-Markierungen entfernt"
+
+[groupsc_removed_someone_flags]
+one = "Jemand wurde nach {count} Admin-Markierung entfernt"
+other = "Jemand wurde nach {count} Admin-Markierungen entfernt"
+
 [groupsc_admin_granted_you]
 text = "{by} hat dich zum Admin gemacht"
+
+[groupsc_admin_granted_you_by_someone]
+text = "Jemand hat dich zum Admin gemacht"
+
+[groupsc_admin_granted_by_you]
+text = "Du hast {sub} zum Admin gemacht"
+
+[groupsc_admin_granted_by_you_someone]
+text = "Du hast jemanden zum Admin gemacht"
+
+[groupsc_admin_granted_other_someone]
+text = "{by} hat jemanden zum Admin gemacht"
+
+[groupsc_admin_granted_by_someone]
+text = "Jemand hat {sub} zum Admin gemacht"
+
+[groupsc_admin_granted_by_someone_someone]
+text = "Jemand hat jemanden zum Admin gemacht"
+
+[groupsc_admin_revoked_you_by_someone]
+text = "Jemand hat dich als Admin entfernt"
+
+[groupsc_admin_revoked_by_you]
+text = "Du hast {sub} als Admin entfernt"
+
+[groupsc_admin_revoked_by_you_someone]
+text = "Du hast jemanden als Admin entfernt"
+
+[groupsc_admin_revoked_other_someone]
+text = "{by} hat jemanden als Admin entfernt"
+
+[groupsc_admin_revoked_by_someone]
+text = "Jemand hat {sub} als Admin entfernt"
+
+[groupsc_admin_revoked_by_someone_someone]
+text = "Jemand hat jemanden als Admin entfernt"
+
+[groupsc_host_added_someone]
+text = "Ein Gerät eines Mitglieds hostet jetzt die Gruppe"
+
+[groupsc_host_removed_someone]
+text = "Ein Gerät eines Mitglieds hostet die Gruppe nicht mehr"
 
 [groupsc_removed_you_group]
 text = "Du wurdest aus dieser Gruppe entfernt"
@@ -4404,9 +4565,34 @@ text = "Du: {text}"
 [groupsc_preview_other]
 text = "{name}: {text}"
 
+[groupsc_preview_someone]
+text = "Jemand: {text}"
+
+[groupsc_photo_caption_line]
+text = "Foto · {caption}"
+
 [groupsc_members]
 one = "{count} Mitglied"
 other = "{count} Mitglieder"
+
+[groupsc_status_this_device]
+text = "dieses Gerät hostet die Gruppe"
+
+[groupsc_status_no_host]
+text = "noch kein Host"
+
+[groupsc_status_waiting]
+text = "wartet auf einen Host"
+
+[groupsc_status_join]
+text = "{members} · {state}"
+
+[groupsc_online_count]
+one = "{count} online"
+other = "{count} online"
+
+[groupsc_online_cap]
+text = "{count}+ online"
 
 [groupsc_admins_only_post]
 text = "Hier posten nur Admins"
@@ -4417,11 +4603,26 @@ text = "Hier posten nur Admins."
 [groupsc_req_pending_named]
 text = "Wartet auf {name} · über {group}"
 
+[groupsc_req_pending_anon]
+text = "Wartet auf Antwort · über {group}"
+
+[groupsc_req_accepted_messages_anon]
+text = "Hat angenommen · nur Nachrichten"
+
+[groupsc_req_accepted_connecting_anon]
+text = "Hat angenommen · verbindet"
+
 [groupsc_req_declined_named]
 text = "{name} hat abgelehnt"
 
+[groupsc_req_declined_anon]
+text = "Hat abgelehnt"
+
 [groupsc_req_blocked_named]
 text = "{name} hat dich blockiert"
+
+[groupsc_req_blocked_anon]
+text = "Hat dich blockiert"
 
 [groupsc_pick_member]
 text = "Schon Mitglied"
@@ -4435,6 +4636,15 @@ text = "Eingeladen · noch nicht zugestellt"
 [groupsc_invite_joined]
 text = "Beigetreten"
 
+[groupsc_invite_declined]
+text = "Einladung abgelehnt"
+
+[groupsc_flag_final]
+text = "Das wird Markierung {n} von {total}. {name} wird sofort entfernt: Hosts nehmen keine neuen Nachrichten mehr an, und die Person sieht, dass sie entfernt wurde."
+
+[groupsc_flag_more]
+text = "Das wird Markierung {n} von {total}. Markierungen aller Admins zählen, auch weitere von dir. Bei {total} Markierungen wird {name} sofort entfernt und sieht das."
+
 [groupsc_err_removed]
 text = "Du wurdest aus dieser Gruppe entfernt."
 
@@ -4447,11 +4657,17 @@ text = "Kein Host hat rechtzeitig geantwortet. Versuch es nochmal, wenn ein Host
 [groupsc_type_first]
 text = "Schreib zuerst eine Nachricht."
 
+[groupsc_picture_too_large]
+text = "Dieses Bild ist zu groß zum Posten."
+
 [groupsc_pick_first]
 text = "Wähl zuerst jemanden aus."
 
 [groupsc_invited_one_named]
 text = "Einladung an {name} gesendet. Die Person tritt bei, wenn sie annimmt."
+
+[groupsc_invited_one_anon]
+text = "Einladung gesendet. Die Person tritt bei, wenn sie annimmt."
 
 [groupsc_invited_many]
 one = "{count} Einladung gesendet. Jede Person tritt bei, wenn sie annimmt."
@@ -4460,20 +4676,38 @@ other = "{count} Einladungen gesendet. Jede Person tritt bei, wenn sie annimmt."
 [groupsc_decline_inv_named]
 text = "Abgelehnt. {name} sieht, dass du abgelehnt hast."
 
+[groupsc_decline_inv_anon]
+text = "Abgelehnt. Die Person sieht, dass du abgelehnt hast."
+
 [groupsc_link_closed]
 text = "Der offene Link ist geschlossen. Wer schon drin ist, bleibt; neue Leute treten mit einer Einladung bei."
 
 [groupsc_request_sent_named]
 text = "Anfrage an {name} gesendet. Sie wartet unter Chats, bis eine Antwort kommt."
 
+[groupsc_request_sent_anon]
+text = "Anfrage gesendet. Sie wartet unter Chats, bis eine Antwort kommt."
+
 [groupsc_req_accept_named]
 text = "Angenommen. {name} ist nur für Nachrichten hinzugefügt und erscheint unter Chats, sobald das Gerät verbunden ist; Anrufe bleiben aus, bis du sie erlaubst."
+
+[groupsc_req_accept_anon]
+text = "Angenommen. Die Person ist nur für Nachrichten hinzugefügt und erscheint unter Chats, sobald ihr Gerät verbunden ist; Anrufe bleiben aus, bis du sie erlaubst."
+
+[groupsc_req_declined_told_anon]
+text = "Abgelehnt. Die Person erfährt „abgelehnt“."
 
 [groupsc_req_block_named]
 text = "{name} ist blockiert und kann keine weiteren Anfragen senden."
 
+[groupsc_req_block_anon]
+text = "Die Person ist blockiert und kann keine weiteren Anfragen senden."
+
 [groupsc_notice_accepted_named]
 text = "{name} hat deine Anfrage angenommen. Ihr könnt euch jetzt schreiben; Anrufe bleiben aus, bis einer von euch sie erlaubt."
+
+[groupsc_notice_accepted_anon]
+text = "Die Person hat deine Anfrage angenommen. Ihr könnt euch jetzt schreiben; Anrufe bleiben aus, bis einer von euch sie erlaubt."
 
 [video_hd_line_on]
 text = "Schärferes Video an"
@@ -4490,8 +4724,62 @@ text = "„Beschäftigt“ gibt es noch nicht. Deine Anrufeinstellungen bleiben 
 [blocking_row_blocked_you]
 text = "Hat dich blockiert"
 
+[link_match_body_unnamed]
+text = "Das neue Gerät möchte deinem Konto beitreten. Es sollte dieselben sechs Ziffern zeigen wie unten."
+
+[link_approve_title_unnamed]
+text = "Das neue Gerät bestätigen?"
+
+[link_approve_warning_unnamed]
+text = "Wenn du bestätigst, gehen deine **Wiederherstellungswörter** an das neue Gerät. Es wird eine vollständige Kopie von dir: Es kann deine Chats lesen und als du auftreten. Bestätige nur ein Gerät, das du in der Hand hast."
+
+[link_linking_unnamed]
+text = "Das neue Gerät wird verknüpft"
+
+[link_done_title_unnamed]
+text = "Das neue Gerät ist verknüpft"
+
+[onboarding_linked_title_unnamed]
+text = "Verknüpft mit deinem anderen Gerät"
+
+[onboarding_restored_title_adding_unnamed]
+text = "Dein Konto wurde diesem Handy hinzugefügt"
+
+[onboarding_restored_lead_adding_unnamed]
+text = "Es ist immer nur das ausgewählte Konto online, also ist dieses Konto jetzt online und dein anderes Konto pausiert. Wechseln kannst du in den Einstellungen."
+
+[devices_syncing_unnamed]
+text = "Abgleich mit dem Gerät…"
+
+[devices_confirm_unlink_title_unnamed]
+text = "Dieses Gerät trennen?"
+
 [devices_unlinked_msg_unnamed]
 text = "Gerät getrennt"
+
+[groupsb_join_invited_by_you]
+text = "Von dir eingeladen"
+
+[groupsb_join_invited_by_unknown]
+text = "Eingeladen von jemandem, der nicht in deinen Kontakten ist"
+
+[groupsb_join_owner_you]
+text = "Die Gruppe gehört dir"
+
+[groupsb_join_owner_unknown]
+text = "Die Gruppe gehört jemandem, der nicht in deinen Kontakten ist"
+
+[groupsb_link_note_unnamed]
+text = "Alle mit diesem Link oder QR-Code können dieser Gruppe 7 Tage lang beitreten. Teile ihn über eine App, der du vertraust; du siehst, wer beigetreten ist, und kannst Leute per Markierung entfernen. Um deine Kontakte direkt einzuladen, nutze „Mitglieder hinzufügen“."
+
+[groupsb_share_text_unnamed]
+text = "Tritt meiner Gruppe auf Tinline bei: {link}"
+
+[card_chat_with_unnamed]
+text = "Mit der Person chatten?"
+
+[card_add_unnamed]
+text = "Diesen Kontakt hinzufügen?"
 
 [call_unreachable_title_unnamed]
 text = "Nicht erreichbar"
@@ -4499,14 +4787,32 @@ text = "Nicht erreichbar"
 [calls_desc_incoming]
 text = "Eingehender Anruf"
 
+[calls_desc_outgoing]
+text = "Ausgehender Anruf"
+
+[calls_desc_away]
+text = "Anruf während deiner Pause"
+
 [calls_desc_missed]
 text = "Verpasster Anruf"
+
+[calls_desc_declined]
+text = "Abgelehnter Anruf"
+
+[calls_desc_no_answer]
+text = "Anruf ohne Antwort"
 
 [calls_desc_cancelled]
 text = "Anruf abgebrochen"
 
+[calls_desc_unreachable]
+text = "Anruf, der nicht verbunden werden konnte"
+
 [calls_desc_other]
 text = "Tinline-Anruf"
+
+[groupsb_public_link]
+text = "Öffentlicher Link"
 
 [groups_list_sent_requests]
 text = "Gesendete Anfragen"
@@ -4520,8 +4826,62 @@ text = "Offline"
 [calls_what_other]
 text = "Tinline-Anruf"
 
+[notif_request_text_unnamed]
+text = "Jemand möchte dich hinzufügen"
+
+[notif_accepted_title]
+text = "Anfrage angenommen"
+
+[notif_accepted_text_unnamed]
+text = "Dein Kontakt hat deine Anfrage angenommen. Deine Leitung ist offen."
+
+[gcall_host_label_device]
+text = "Anruf-Host: Gerät von {name}"
+
+[gcall_host_label_unnamed]
+text = "Anruf-Host: Gerät eines Mitglieds"
+
+[gcall_about_this_phone]
+text = "**Dieses Handy** trägt diesen Anruf. Alle im Anruf verbinden sich damit; es gibt den Ton weiter und wählt aus, wer zu hören ist, wenn mehrere sprechen."
+
+[gcall_about_device]
+text = "**Das Gerät von {name}** trägt diesen Anruf. Alle im Anruf verbinden sich damit; es gibt den Ton weiter und wählt aus, wer zu hören ist, wenn mehrere sprechen."
+
+[gcall_about_unnamed]
+text = "**Das Host-Gerät** trägt diesen Anruf. Alle im Anruf verbinden sich damit; es gibt den Ton weiter und wählt aus, wer zu hören ist, wenn mehrere sprechen."
+
+[gcall_started_by_unnamed]
+text = "Gestartet von jemandem"
+
+[gcall_is_calling_group_desc_unnamed]
+text = "Jemand ruft die Gruppe {group} an"
+
+[gcall_started_call_desc_unnamed]
+text = "Jemand hat einen Anruf in {group} gestartet"
+
+[notif_group_calling_unnamed]
+text = "Jemand ruft die Gruppe an"
+
+[common_list_separator]
+text = ", "
+
+[groupsb_member_desc]
+text = "{list}. Aktionen öffnen"
+
 [groupsb_role_host_lc]
 text = "Host"
 
 [groupsb_role_callhost_lc]
 text = "Anruf-Host"
+
+[avail_note_unnamed]
+text = "Solange du weg bist, sehen Leute, die anrufen, dass sie dich nicht erreichen konnten. Nichts wird gesammelt, und niemand erfährt, warum."
+
+[onboarding_linked_lead_unnamed]
+text = "Deine Kontakte und Chats kommen von deinem anderen Gerät und bleiben auf beiden Geräten synchron."
+
+[gcall_is_calling_group_unnamed]
+text = "Jemand ruft die Gruppe an"
+
+[gcall_started_call_unnamed]
+text = "Jemand hat einen Anruf gestartet"

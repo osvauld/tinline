@@ -1,5 +1,8 @@
 # Generated from i18n/tm/de.toml by scripts/i18n_tm.py apply. Edit the tm file.
 
+[common_a_device_name_is]
+text = "Ein Gerätename hat {min} bis {max} Zeichen."
+
 [common_about_this_call]
 text = "Über diesen Anruf"
 
@@ -110,6 +113,9 @@ text = "Direkt"
 
 [common_done]
 text = "Fertig"
+
+[common_give_this_computer_a]
+text = "Gib diesem Computer einen Namen mit {min} bis {max} Zeichen."
 
 [common_got_it]
 text = "Verstanden"
@@ -516,6 +522,9 @@ text = "Auf einem anderen Gerät abgelehnt"
 [call_device_changes_apply_from]
 text = "Geräteänderungen gelten ab dem nächsten Anruf."
 
+[call_during_your_call]
+text = "Während deines Anrufs"
+
 [call_end]
 text = "Auflegen"
 
@@ -531,6 +540,9 @@ text = "Ende-zu-Ende-verschlüsselt."
 [call_end_to_end_encrypted_ctrl]
 text = "Ende-zu-Ende-verschlüsselt · Strg M stumm · Strg E auflegen · Esc verkleinert"
 
+[call_ends_your_call_with]
+text = "Wenn du annimmst, endet dein Anruf mit {name}."
+
 [call_enter_answers_esc_declines]
 text = "Enter nimmt an · Esc lehnt ab"
 
@@ -545,6 +557,9 @@ text = "HD"
 
 [call_ignore_limits_heat_their]
 text = "Grenzen ignorieren (Wärme, Decoder der Gegenseite)"
+
+[call_is_calling_you]
+text = "Ruft dich an…"
 
 [call_minimize_call]
 text = "Anruf verkleinern"
@@ -925,6 +940,9 @@ text = "Nochmal versuchen"
 [gate_the_system_keyring_did]
 text = "Der Schlüsselbund des Systems hat den Schlüssel nicht angenommen."
 
+[gate_these_24_words_are]
+text = "Diese {words} Wörter sind der einzige Weg, deine Identität auf einem anderen Gerät wiederherzustellen."
+
 [gate_this_computer_no_longer]
 text = "Dieser Computer hat den Schlüssel nicht mehr, der dein Konto öffnet, und sein Eintrag im Schlüsselbund fehlt. Sobald du wiederherstellst, kommen deine Anrufe wieder durch."
 
@@ -936,6 +954,9 @@ text = "Neuer Versuch..."
 
 [gate_turn_on]
 text = "Einschalten"
+
+[gate_you_didnt_set_a]
+text = "Du hast keine Passphrase festgelegt, also sind die {words} Wiederherstellungswörter der einzige Weg zurück. Deine Kontakte bleiben."
 
 [gate_your_calls_come_through]
 text = "Deine Anrufe kommen wieder durch, sobald du wieder online bist."
@@ -1019,6 +1040,10 @@ text = "Ein Host hält eine vollständige Kopie einer Gruppe und gibt Nachrichte
 [group_a_host_keeps_a_full]
 text = "Ein Host hält eine vollständige Kopie der Gruppe, gibt Nachrichten weiter, während die Handys der Mitglieder schlafen, und kennt die Gruppenadressen der Mitglieder. Er muss laufen bleiben. Hosten macht dich nicht zum Admin; du kannst jederzeit aufhören."
 
+[group_a_host_lists_up]
+one = "Ein Host listet bis zu {count} Person auf einmal, es können also mehr sein."
+other = "Ein Host listet bis zu {count} Personen auf einmal, es können also mehr sein."
+
 [group_a_host_stays_on]
 text = "Ein Host bleibt an und gibt Beiträge weiter, während andere offline sind"
 
@@ -1032,7 +1057,7 @@ text = "Eine private Einladung an jede Person"
 text = "Eine Anfrage wartet bis zu 7 Tage bei den Hosts der Gruppe."
 
 [group_accepting_adds_as_a]
-text = "Wenn du annimmst, wird {name} ein Kontakt nur für Nachrichten. Anrufe kannst du später erlauben."
+text = "Wenn du annimmst, wird {name} als Kontakt nur für Nachrichten hinzugefügt. Anrufe kannst du später erlauben."
 
 [group_add_to]
 text = "Zu {gname} hinzufügen"
@@ -1051,6 +1076,9 @@ text = "Schon Mitglied"
 
 [group_also_confirmed]
 text = "Auch bestätigt: {value}"
+
+[group_also_hosts_calls]
+text = "Hostet auch Anrufe"
 
 [group_an_admin_asked_this]
 text = "Ein Admin hat diesen Computer gebeten, die Anrufe der Gruppe zu tragen"
@@ -1081,6 +1109,9 @@ text = "{name} um einen privaten Chat bitten"
 
 [group_asked_the_device_carries]
 text = "Gefragt. Das Gerät trägt Anrufe, sobald es zustimmt."
+
+[group_asked_this_computer_to]
+text = "{name} bittet diesen Computer, {group} zu hosten"
 
 [group_asks_to_carry_group]
 text = "Bittet {name}, auf diesem Gerät Gruppenanrufe zu tragen; die Person muss zustimmen"
@@ -1145,6 +1176,9 @@ text = "Alle können wieder posten."
 
 [group_everyone_in_the_group]
 text = "Alle in der Gruppe können posten"
+
+[group_flag]
+text = " · Markierung {n}"
 
 [group_flag_2]
 text = "Markierung"
@@ -1575,6 +1609,9 @@ text = "Diese Gruppe hat keinen Anruf-Host. Anrufe starten erst, wenn ein Admin 
 [group_this_group_has_no_host]
 text = "Diese Gruppe hat keinen Host. Beiträge warten, bis ein Host festgelegt ist."
 
+[group_turn_on_open_link]
+text = "Schalte „Öffentlicher Link“ ein, um ihn zu teilen"
+
 [group_unblocking]
 text = "Blockierung aufheben"
 
@@ -1607,6 +1644,9 @@ text = "Warum wurde ich entfernt?"
 
 [group_why_you_were_removed]
 text = "Warum du entfernt wurdest"
+
+[group_will_be_able_to]
+text = "{name} kann dann Leute einladen, Mitglieder markieren ({flags_needed} Markierungen entfernen jemanden) und Hosts festlegen. Nur du als Eigentümer kannst Admins ernennen oder entfernen."
 
 [group_withdraw_the_offer_to]
 text = "Angebot zum Hosten zurückziehen"
@@ -2276,6 +2316,10 @@ text = "Kein Profil verfügbar."
 [profile_no_sounds_from_tinline]
 text = "Keine Töne von Tinline: Klingeln, Anruftöne, Beitritte"
 
+[profile_not_seen_for_days]
+one = "Seit {count} Tag nicht gesehen"
+other = "Seit {count} Tagen nicht gesehen"
+
 [profile_not_set]
 text = "Nicht festgelegt"
 
@@ -2594,6 +2638,9 @@ text = "Wer mich anrufen darf"
 [profile_will_stop_syncing_with]
 text = "{name} hört auf, sich mit deinem Konto abzugleichen, und klingelt nicht mehr, wenn du angerufen wirst. {value}"
 
+[profile_write_these_24_words]
+text = "Schreib diese {words} Wörter der Reihe nach auf und bewahre sie an einem privaten Ort auf."
+
 [profile_yes]
 text = "Ja"
 
@@ -2629,6 +2676,9 @@ text = "Stattdessen erscheinen deine Initialen."
 
 [profile_your_reads_stay_with]
 text = "Was du liest, bleibt bei dir"
+
+[profile_your_recovery_key_is]
+text = "Dein Wiederherstellungsschlüssel entspricht deinen {words} Wörtern, nur in einer Zeile. Ein Passwortmanager ist ein guter Ort dafür."
 
 [profile_your_recovery_phrase_is]
 text = "Deine Wiederherstellungswörter sind der einzige Weg, dein Konto zurückzubekommen, wenn du jedes Gerät verlierst. Wer sie hat, kann als du auftreten."
@@ -2916,6 +2966,9 @@ text = "Ich hab ihn woanders gesichert"
 [signup_i_wrote_them_down]
 text = "Ich hab sie aufgeschrieben"
 
+[signup_if_you_ever_switch]
+text = "Wenn du mal das Gerät wechselst, bringen diese {words} Wörter dein Konto mit."
+
 [signup_is_already_in_your]
 text = "{name} ist schon in deinen Kontakten."
 
@@ -2963,6 +3016,9 @@ text = "Nicht für Notrufe."
 
 [signup_of]
 text = "{count} von {total}"
+
+[signup_of_24]
+text = "{filled} von {total}"
 
 [signup_only_the_people_you]
 text = "Nur die Leute, die du hinzufügst, sehen ihn."
@@ -3078,11 +3134,20 @@ text = "Code der Person"
 [signup_this_computer_can_host]
 text = "Dieser Computer kann deine Gruppen hosten"
 
+[signup_tinline_connects_your_straight]
+text = "Tinline verbindet deinen Computer direkt mit dem der anderen."
+
 [signup_tinline_doesnt_collect_your]
 text = "Tinline sammelt weder deine Kontakte noch deine Anrufe oder deinen Standort."
 
 [signup_two_devices_are_better]
 text = "Zwei Geräte sind besser als eins"
+
+[signup_type_your_24_recovery]
+text = "Tipp deine {words} Wiederherstellungswörter ein. Dieser Computer startet mit einer leeren Kontaktliste."
+
+[signup_type_your_24_words]
+text = "Tipp deine {words} Wörter der Reihe nach ein, oder füge sie oder deinen Wiederherstellungsschlüssel ins erste Feld ein. Sie bleiben auf diesem Computer."
 
 [signup_unlock]
 text = "Entsperren"
@@ -3114,6 +3179,9 @@ text = "Wie sollen dich die Leute nennen?"
 [signup_when_a_direct_line]
 text = "Wenn keine direkte Leitung möglich ist, gibt ein verschlüsseltes Relay den Anruf weiter. Es kann ihn nicht hören."
 
+[signup_word_in_the_recovery]
+text = "Wort {value} steht nicht in der Liste der Wiederherstellungswörter. Prüf die Schreibweise."
+
 [signup_words]
 text = "Wörter"
 
@@ -3142,6 +3210,9 @@ text = "Du brauchst nur einen Spitznamen. Ende-zu-Ende-verschlüsselt."
 [signup_you_type_it_each]
 text = "{value} Du gibst sie bei jedem Start von Tinline ein. Wenn du sie vergisst, kannst du mit deinen Wiederherstellungswörtern eine neue festlegen."
 
+[signup_your_account_is_its]
+text = "Dein Konto steckt in seinen Wiederherstellungswörtern, also kannst du es auf zwei Wegen auf diesen Computer holen."
+
 [signup_your_account_is_yours]
 text = "Dein Konto gehört dir."
 
@@ -3150,6 +3221,9 @@ text = "Deine Zwischenablage ist gerade leer. Wenn ihr Code ankommt, kopiere ihn
 
 [signup_your_code]
 text = "Dein Code"
+
+[signup_your_current_account_stays]
+text = "Dein aktuelles Konto bleibt auf diesem Computer."
 
 [signup_your_line_is_open]
 text = "Deine Leitung ist offen, {name}"
@@ -3162,6 +3236,12 @@ text = "Deine Leitung zu {name} ist offen. Sag Hallo."
 
 [signup_your_nickname]
 text = "Dein Spitzname"
+
+[signup_your_recovery_key_is]
+text = "Dein Wiederherstellungsschlüssel ist drin. Er bleibt auf diesem Computer."
+
+[signup_your_recovery_key_is_the]
+text = "Dein Wiederherstellungsschlüssel entspricht deinen {words} Wörtern, nur in einer Zeile."
 
 [signup_your_request_to_is]
 text = "Deine Anfrage an {value} wartet. Deine Leitung öffnet sich, wenn die Person annimmt."
@@ -3238,6 +3318,10 @@ text = "Morgen früh"
 [profile_busy_no_end]
 text = "Bis auf Weiteres"
 
+[signup_word_in_the_recovery_more]
+one = "Wort {value} und {count} weiteres stehen nicht in der Liste der Wiederherstellungswörter. Prüf die Schreibweise."
+other = "Wort {value} und {count} weitere stehen nicht in der Liste der Wiederherstellungswörter. Prüf die Schreibweise."
+
 [signup_by_continuing_you_agree]
 text = "Wenn du weitermachst, stimmst du den {terms} zu und hast die {privacy} gelesen."
 
@@ -3249,6 +3333,12 @@ text = "Der Name darf keine Steuer- oder Textrichtungszeichen enthalten."
 
 [profile_err_name_long]
 text = "Dieser Name ist zu lang. Bis zu {limit} Bytes; manche Zeichen brauchen mehr als eins."
+
+[profile_err_nickname_chars]
+text = "Ein Spitzname darf keine Steuer- oder Textrichtungszeichen enthalten."
+
+[profile_err_nickname_long]
+text = "Dieser Spitzname ist zu lang. Bis zu {limit} Bytes; manche Zeichen brauchen mehr als eins."
 
 [profile_err_status_long]
 text = "Das ist zu lang für einen Status: bis zu {limit} Bytes, und manche Zeichen brauchen mehr als eins."
@@ -3262,20 +3352,201 @@ text = "Das ist zu lang für „Über mich“: bis zu {limit} Bytes, und manche 
 [profile_err_about_chars]
 text = "„Über mich“ darf keine Steuer- oder Textrichtungszeichen enthalten."
 
+[profile_err_text_long]
+text = "Das ist zu lang: bis zu {limit} Bytes, und manche Zeichen brauchen mehr als eins."
+
+[profile_err_text_chars]
+text = "Das darf keine Steuer- oder Textrichtungszeichen enthalten."
+
+[common_list_separator]
+text = ", "
+
 [common_list_and]
 text = "{list} und {last}"
+
+[common_list_two]
+text = "{first} und {last}"
+
+[common_dot_separator]
+text = " · "
+
+[date_month_1]
+text = "Jan."
+
+[date_month_2]
+text = "Feb."
+
+[date_month_3]
+text = "März"
+
+[date_month_4]
+text = "Apr."
+
+[date_month_5]
+text = "Mai"
+
+[date_month_6]
+text = "Juni"
+
+[date_month_7]
+text = "Juli"
+
+[date_month_8]
+text = "Aug."
+
+[date_month_9]
+text = "Sept."
+
+[date_month_10]
+text = "Okt."
+
+[date_month_11]
+text = "Nov."
+
+[date_month_12]
+text = "Dez."
+
+[date_weekday_mon]
+text = "Montag"
+
+[date_weekday_tue]
+text = "Dienstag"
+
+[date_weekday_wed]
+text = "Mittwoch"
+
+[date_weekday_thu]
+text = "Donnerstag"
+
+[date_weekday_fri]
+text = "Freitag"
+
+[date_weekday_sat]
+text = "Samstag"
+
+[date_weekday_sun]
+text = "Sonntag"
+
+[date_month_day]
+text = "{day}. {month}"
+
+[date_day_month]
+text = "{day}. {month}"
+
+[date_month_day_time]
+text = "{day}. {month}, {time}"
+
+[date_weekday_date]
+text = "{weekday}, {day}. {month}"
+
+[date_weekday_date_year]
+text = "{weekday}, {day}. {month} {year}"
+
+[profile_busy_until_tomorrow]
+text = "Beschäftigt bis morgen um {time}"
+
+[profile_busy_until_mon]
+text = "Beschäftigt bis Montag um {time}"
+
+[profile_busy_until_tue]
+text = "Beschäftigt bis Dienstag um {time}"
+
+[profile_busy_until_wed]
+text = "Beschäftigt bis Mittwoch um {time}"
+
+[profile_busy_until_thu]
+text = "Beschäftigt bis Donnerstag um {time}"
+
+[profile_busy_until_fri]
+text = "Beschäftigt bis Freitag um {time}"
+
+[profile_busy_until_sat]
+text = "Beschäftigt bis Samstag um {time}"
+
+[profile_busy_until_sun]
+text = "Beschäftigt bis Sonntag um {time}"
+
+[call_ends_your_call]
+text = "Wenn du annimmst, endet dein aktueller Anruf."
+
+[common_someone_is_calling]
+text = "Jemand ruft an"
+
+[call_reconnecting]
+text = "Anruf wird neu verbunden"
+
+[call_reconnecting_2]
+text = "Anruf wird neu verbunden…"
+
+[call_couldnt_connect]
+text = "Der Anruf ließ sich nicht verbinden"
 
 [call_history_fallback]
 text = "Tinline-Anruf"
 
+[gcall_about_this_computer]
+text = "**Dieser Computer** trägt diesen Anruf. Alle im Anruf verbinden sich damit; er gibt den Ton weiter und wählt aus, wer zu hören ist, wenn mehrere sprechen."
+
+[gcall_about_device]
+text = "**Das Gerät von {name}** trägt diesen Anruf. Alle im Anruf verbinden sich damit; es gibt den Ton weiter und wählt aus, wer zu hören ist, wenn mehrere sprechen."
+
+[gcall_about_unnamed]
+text = "**Das Host-Gerät** trägt diesen Anruf. Alle im Anruf verbinden sich damit; es gibt den Ton weiter und wählt aus, wer zu hören ist, wenn mehrere sprechen."
+
+[gcall_call_host_device]
+text = "Anruf-Host: Gerät von {name}"
+
+[gcall_call_host_unnamed]
+text = "Anruf-Host: ein anderes Gerät"
+
+[group_invitation_line]
+text = "**{name}** hat dich zu **{group}** eingeladen"
+
+[group_invitation_line_unnamed]
+text = "Jemand hat dich zu **{group}** eingeladen"
+
 [group_replying_to_yourself]
 text = "Antwort an dich selbst"
+
+[group_replying_to_a_message]
+text = "Antwort auf eine Nachricht"
 
 [chat_replying_to_yourself]
 text = "Antwort an dich selbst"
 
+[group_invited_by_you]
+text = "Von dir eingeladen"
+
+[group_invited_by_someone]
+text = "Eingeladen von jemandem"
+
+[group_flags_of]
+one = "{flags} von {count} Markierung"
+other = "{flags} von {count} Markierungen"
+
 [group_link_own]
 text = "Ein Link für dein eigenes anderes Gerät"
+
+[group_link_own_owner]
+text = "Ein Link für dein eigenes anderes Gerät · Eigentümer: {owner}"
+
+[group_owner_by_you]
+text = "Von dir eingeladen · Eigentümer: {owner}"
+
+[group_owner_by_you_unnamed]
+text = "Von dir eingeladen"
+
+[group_owner_by_named]
+text = "Eingeladen von {inviter} · Eigentümer: {owner}"
+
+[group_owner_by_named_unnamed]
+text = "Eingeladen von {inviter}"
+
+[group_owner_by_unnamed]
+text = "Eingeladen von jemandem · Eigentümer: {owner}"
+
+[group_owner_by_unnamed_unnamed]
+text = "Eingeladen von jemandem"
 
 [group_host_online]
 text = "Online"
@@ -3283,11 +3554,43 @@ text = "Online"
 [group_host_offline]
 text = "Offline"
 
+[group_hosts_online_here]
+one = "{count} Host online, auch dieser Computer. Beiträge gehen sofort raus."
+other = "{count} Hosts online, auch dieser Computer. Beiträge gehen sofort raus."
+
 [group_hosts_store_the_group_admin]
 text = "Hosts speichern die Gruppe und geben Beiträge weiter, wenn andere offline sind. Es sind Mitglieder, denen du vertraust: Ein Host kann alles lesen, was in dieser Gruppe gepostet wird. Lege einen Host über das Menü eines Mitglieds fest; die Person muss zustimmen. Wenn du einen Host entfernst, ändert sich die Adresse der Gruppe innerhalb von 2 Tagen, sodass dieses Gerät sie nicht mehr erreicht."
 
+[group_a_call_host_carries_admin]
+text = "Ein Anruf-Host trägt den Anruf. Alle im Anruf verbinden sich mit ihm, und er gibt den Ton weiter, kann den Anruf also hören. Das ist getrennt vom Chat-Hosten: Ein Chat-Host ist kein Anruf-Host, außer du legst ihn auch als solchen fest. Anruf-Hosts sind Mitglieder, denen du vertraust, und jeder entscheidet selbst, ob er zusagt. Lege einen über das Menü eines Mitglieds fest oder hoste Anrufe auf diesem Computer."
+
+[group_asked_this_computer_to_unnamed]
+text = "Ein Admin bittet diesen Computer, {group} zu hosten"
+
+[group_public_link]
+text = "Öffentlicher Link"
+
+[group_status_this_computer_hosts]
+text = "dieser Computer hostet die Gruppe"
+
+[group_status_no_host_yet]
+text = "noch kein Host"
+
+[group_status_waiting_for_a_host]
+text = "wartet auf einen Host"
+
+[group_online_count]
+one = "{count} online"
+other = "{count} online"
+
+[group_online_capped]
+text = "{count}+ online"
+
 [group_post_photo]
 text = "Foto"
+
+[group_post_photo_caption]
+text = "Foto · {caption}"
 
 [group_preview_you]
 text = "Du: {text}"
@@ -3295,8 +3598,17 @@ text = "Du: {text}"
 [group_preview_author]
 text = "{name}: {text}"
 
+[group_preview_someone]
+text = "Jemand: {text}"
+
+[group_sys_joined_you]
+text = "Du bist beigetreten"
+
 [group_sys_joined]
 text = "{name} ist beigetreten"
+
+[group_sys_joined_someone]
+text = "Jemand ist beigetreten"
 
 [group_sys_left_you]
 text = "Verlassen"
@@ -3304,11 +3616,29 @@ text = "Verlassen"
 [group_sys_left]
 text = "{name} hat die Gruppe verlassen"
 
+[group_sys_left_someone]
+text = "Jemand hat die Gruppe verlassen"
+
+[group_sys_removed_you]
+one = "Du wurdest nach {count} Admin-Markierung entfernt"
+other = "Du wurdest nach {count} Admin-Markierungen entfernt"
+
+[group_sys_removed]
+one = "{name} wurde nach {count} Admin-Markierung entfernt"
+other = "{name} wurde nach {count} Admin-Markierungen entfernt"
+
+[group_sys_removed_someone]
+one = "Jemand wurde nach {count} Admin-Markierung entfernt"
+other = "Jemand wurde nach {count} Admin-Markierungen entfernt"
+
 [group_sys_host_added_you]
 text = "Ein Gerät von dir hostet jetzt die Gruppe"
 
 [group_sys_host_added]
 text = "Ein Gerät von {name} hostet jetzt die Gruppe"
+
+[group_sys_host_added_someone]
+text = "Ein Gerät eines Mitglieds hostet jetzt die Gruppe"
 
 [group_sys_host_removed_you]
 text = "Ein Gerät von dir hostet die Gruppe nicht mehr"
@@ -3316,11 +3646,44 @@ text = "Ein Gerät von dir hostet die Gruppe nicht mehr"
 [group_sys_host_removed]
 text = "Ein Gerät von {name} hostet die Gruppe nicht mehr"
 
+[group_sys_host_removed_someone]
+text = "Ein Gerät eines Mitglieds hostet die Gruppe nicht mehr"
+
+[group_sys_admin_you_you]
+text = "Du hast dich selbst zum Admin gemacht"
+
+[group_sys_admin_you_other]
+text = "Du hast {name} zum Admin gemacht"
+
+[group_sys_admin_you_someone]
+text = "Du hast jemanden zum Admin gemacht"
+
 [group_sys_admin_other_you]
 text = "{by} hat dich zum Admin gemacht"
 
 [group_sys_admin_other_other]
 text = "{by} hat {name} zum Admin gemacht"
+
+[group_sys_admin_other_someone]
+text = "{by} hat jemanden zum Admin gemacht"
+
+[group_sys_admin_someone_you]
+text = "Jemand hat dich zum Admin gemacht"
+
+[group_sys_admin_someone_other]
+text = "Jemand hat {name} zum Admin gemacht"
+
+[group_sys_admin_someone_someone]
+text = "Jemand hat jemanden zum Admin gemacht"
+
+[group_sys_unadmin_you_you]
+text = "Du hast dich selbst als Admin entfernt"
+
+[group_sys_unadmin_you_other]
+text = "Du hast {name} als Admin entfernt"
+
+[group_sys_unadmin_you_someone]
+text = "Du hast jemanden als Admin entfernt"
 
 [group_sys_unadmin_other_you]
 text = "{by} hat dich als Admin entfernt"
@@ -3328,14 +3691,35 @@ text = "{by} hat dich als Admin entfernt"
 [group_sys_unadmin_other_other]
 text = "{by} hat {name} als Admin entfernt"
 
+[group_sys_unadmin_other_someone]
+text = "{by} hat jemanden als Admin entfernt"
+
+[group_sys_unadmin_someone_you]
+text = "Jemand hat dich als Admin entfernt"
+
+[group_sys_unadmin_someone_other]
+text = "Jemand hat {name} als Admin entfernt"
+
+[group_sys_unadmin_someone_someone]
+text = "Jemand hat jemanden als Admin entfernt"
+
 [group_sent_waiting]
 text = "Wartet auf {name} · über {group}"
+
+[group_sent_waiting_unnamed]
+text = "Wartet auf Antwort · über {group}"
 
 [group_sent_accepted_messages]
 text = "{name} hat angenommen · nur Nachrichten"
 
+[group_sent_accepted_messages_unnamed]
+text = "Angenommen · nur Nachrichten"
+
 [group_sent_accepted_connecting]
 text = "{name} hat angenommen · verbindet"
+
+[group_sent_accepted_connecting_unnamed]
+text = "Angenommen · verbindet"
 
 [group_sent_declined]
 text = "{name} hat abgelehnt"
@@ -3346,8 +3730,21 @@ text = "Abgelehnt"
 [group_sent_blocked]
 text = "{name} hat dich blockiert"
 
+[group_sent_blocked_unnamed]
+text = "Hat dich blockiert"
+
+[group_notice_cant_send]
+text = "Du kannst dieser Gruppe keine Nachrichten senden."
+
 [group_notice_invitation_sent]
 text = "Einladung an {name} gesendet. Die Person tritt bei, wenn sie annimmt."
+
+[group_notice_invitation_sent_unnamed]
+text = "Einladung gesendet. Die Person tritt bei, wenn sie annimmt."
+
+[group_notice_invitations_sent]
+one = "{count} Einladung gesendet. Die Person tritt bei, wenn sie annimmt."
+other = "{count} Einladungen gesendet. Jede Person tritt bei, wenn sie annimmt."
 
 [group_notice_you_joined]
 text = "Du bist {group} beigetreten."
@@ -3358,17 +3755,32 @@ text = "Du bist der Gruppe beigetreten."
 [group_notice_declined_inv]
 text = "Abgelehnt. {name} sieht, dass du abgelehnt hast."
 
+[group_notice_declined_inv_unnamed]
+text = "Abgelehnt. Die Person sieht, dass du abgelehnt hast."
+
 [group_notice_accepted_yours]
 text = "{name} hat deine Anfrage angenommen. Ihr könnt euch jetzt schreiben; Anrufe bleiben aus, bis einer von euch sie erlaubt."
+
+[group_notice_accepted_yours_unnamed]
+text = "Deine Anfrage wurde angenommen. Ihr könnt euch jetzt schreiben; Anrufe bleiben aus, bis einer von euch sie erlaubt."
 
 [group_notice_request_sent]
 text = "Anfrage an {name} gesendet. Sie wartet unter Chats, bis eine Antwort kommt."
 
+[group_notice_request_sent_unnamed]
+text = "Anfrage gesendet. Sie wartet unter Chats, bis eine Antwort kommt."
+
 [group_notice_accepted]
 text = "Angenommen. {name} ist nur für Nachrichten hinzugefügt und erscheint unter Chats, sobald das Gerät verbunden ist; Anrufe bleiben aus, bis du sie erlaubst."
 
+[group_notice_accepted_unnamed]
+text = "Angenommen. Die Person ist nur für Nachrichten hinzugefügt und erscheint unter Chats, sobald ihr Gerät verbunden ist; Anrufe bleiben aus, bis du sie erlaubst."
+
 [group_notice_declined_req]
 text = "Abgelehnt. {name} erfährt „abgelehnt“."
+
+[group_notice_declined_req_unnamed]
+text = "Abgelehnt. Die Person erfährt „abgelehnt“."
 
 [group_notice_link_copied]
 text = "Kopiert. Wer den Link hat, kann beitreten, solange er offen ist."
@@ -3376,8 +3788,29 @@ text = "Kopiert. Wer den Link hat, kann beitreten, solange er offen ist."
 [group_notice_group_is_open]
 text = "Deine Gruppe ist offen. Kopiere den Link, um sie zu teilen."
 
+[group_notice_group_made]
+text = "Gruppe erstellt. Dieser Computer hostet sie; lade Leute über den Mitgliederbereich ein."
+
 [group_give_the_group_a_name]
 text = "Gib der Gruppe einen Namen."
 
 [group_pick_someone_first]
 text = "Wähl zuerst jemanden aus."
+
+[link_check_that_other_shows_this]
+text = "Prüfe, ob das andere Gerät diesen Code zeigt, und bestätige dann dort."
+
+[link_link_other]
+text = "Das andere Gerät verknüpfen?"
+
+[link_linking_other]
+text = "Das andere Gerät wird verknüpft"
+
+[link_linked_other]
+text = "Anderes Gerät verknüpft"
+
+[link_linked_to_account]
+text = "Mit deinem Konto verknüpft"
+
+[chat_you_blocked_on]
+text = "Du hast {name} blockiert · {when}"
