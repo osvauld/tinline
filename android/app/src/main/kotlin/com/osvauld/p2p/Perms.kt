@@ -33,13 +33,18 @@ object Perms {
     fun missing(c: Context): List<Need> = buildList {
         if (!granted(c, Manifest.permission.RECORD_AUDIO)) add(Need.Mic)
         if (!notificationsOn(c)) add(Need.Notifications)
-        val pm = c.getSystemService(Context.POWER_SERVICE) as PowerManager
-        if (!pm.isIgnoringBatteryOptimizations(c.packageName)) add(Need.Battery)
+        // With wake-ups Tinline rests and a push starts it, so only the always-on line needs the exemption.
+        if (keepsLineOpen(c) && !batteryExempt(c)) add(Need.Battery)
         if (Build.VERSION.SDK_INT >= 34) {
             val nm = c.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             if (!nm.canUseFullScreenIntent()) add(Need.FullScreen)
         }
     }
+
+    /** The always-on service is how this phone stays reachable (Liberum, no Play services, or "Stay connected" on). */
+    fun keepsLineOpen(c: Context) = PushPolicy.wantsAlwaysOnService(PushMode.mode(c))
+
+    fun batteryExempt(c: Context) = (c.getSystemService(Context.POWER_SERVICE) as PowerManager).isIgnoringBatteryOptimizations(c.packageName)
 
     fun settingsIntent(c: Context, need: Need): Intent? = when (need) {
         Need.Battery -> Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, Uri.parse("package:${c.packageName}"))
