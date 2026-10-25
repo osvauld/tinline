@@ -13307,749 +13307,749 @@ en = "Encrypted on this computer. Up to 2 GB each. {name} gets it the next time 
 where = [
   "desktop chat_encrypted_on_this_computer: Desktop, chats (in chat_view.rs, conversation_view). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Verschlüsselt auf diesem Computer. Bis zu 2 GB pro Datei. {name} bekommt sie, wenn ihr das nächste Mal beide online seid."
 
 [t_2ac5e80587]
 en = "Esc to cancel"
 where = [
   "desktop chat_esc_to_cancel: Desktop, chats (in voice.rs, record_bar).",
 ]
-text = ""
+text = "Esc zum Abbrechen"
 
 [t_1cee9b36cc]
 en = "Find in this chat (Ctrl+F)"
 where = [
   "desktop chat_find_in_this_chat_ctrl: Desktop, chats (in chat_view.rs, conversation_view).",
 ]
-text = ""
+text = "In diesem Chat suchen (Strg+F)"
 
 [t_817beb6d7c]
 en = "{value} · {name} gets it when you’re both online"
 where = [
   "desktop chat_gets_it_when_youre: Desktop, chats (in chat_view.rs, attachment_view). {value} is a value filled in by the app. {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{value} · {name} bekommt es, wenn ihr beide online seid"
 
 [t_35bf97d035]
 en = "{name} is offline. Delete for everyone reaches their devices when you’re both online."
 where = [
   "desktop chat_is_offline_delete_for: Desktop, chats (in chat_view.rs, delete_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} ist offline. „Für alle löschen“ erreicht die Geräte, wenn ihr beide online seid."
 
 [t_d5890c1bc8]
 en = "It was never delivered, so it’s only on this computer."
 where = [
   "desktop chat_it_was_never_delivered: Desktop, chats (in chat_view.rs, delete_overlay).",
 ]
-text = ""
+text = "Sie wurde nie zugestellt, ist also nur auf diesem Computer."
 
 [t_f60301b05b]
 en = "Load earlier messages"
 where = [
   "desktop chat_load_earlier_messages: Desktop, chats (in chat_view.rs, history_note).",
 ]
-text = ""
+text = "Frühere Nachrichten laden"
 
 [t_c59d44c923]
 en = "Message deleted"
 where = [
   "desktop chat_message_deleted: Desktop, chats (in chat.rs, preview_of).",
 ]
-text = ""
+text = "Nachricht gelöscht"
 
 [t_ae1837c44b]
 en = "Messages go straight to their devices."
 where = [
   "desktop chat_messages_go_straight_to: Desktop, chats (in chat_view.rs, message_list).",
 ]
-text = ""
+text = "Nachrichten gehen direkt an ihre Geräte."
 
 [t_64c071fa58]
 en = "{value} · not downloaded"
 where = [
   "desktop chat_not_downloaded: Desktop, chats (in chat_view.rs, attachment_view). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "{value} · nicht heruntergeladen"
 
 [t_0f05bc7174]
 en = "{value} of {len}"
 where = [
   "desktop chat_of: Desktop, chats (in chat_view.rs, viewer_overlay). {value} is a value filled in by the app. {len} is a value filled in by the app.",
 ]
-text = ""
+text = "{value} von {len}"
 
 [t_15c261a695]
 en = "Older messages are on {name}’s computer. This computer keeps them from when you started using it. Earlier days load when you’re both online."
 where = [
   "desktop chat_older_messages_are_on: Desktop, chats (in chat_view.rs, history_note). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Ältere Nachrichten sind auf dem Computer von {name}. Dieser Computer hat sie ab dem Tag, an dem du ihn zu nutzen begonnen hast. Frühere Tage laden, wenn ihr beide online seid."
 
 [t_250a61953d]
 en = "On {name}’s device"
 where = [
   "desktop chat_on_s_device: Desktop, chats (in chat_view.rs, receipt_lines). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Auf dem Gerät von {name}"
 
 [t_bc7ea5e146]
 en = "Only files can be sent, not folders."
 where = [
   "desktop chat_only_files_can_be: Desktop, chats (in chat.rs, update_chat_inner).",
 ]
-text = ""
+text = "Senden kannst du nur Dateien, keine Ordner."
 
 [t_3d18972588]
 en = "Only on this computer so far"
 where = [
   "desktop chat_only_on_this_computer: Desktop, chats (in chat_view.rs, receipt_lines).",
 ]
-text = ""
+text = "Bisher nur auf diesem Computer"
 
 [t_1265bdede4]
 en = "Open in default app"
 where = [
   "desktop chat_open_in_default_app: Desktop, chats (in chat_view.rs, viewer_overlay).",
 ]
-text = ""
+text = "In Standard-App öffnen"
 
 [t_1041f84698]
 en = "{value} · paused — waiting for {name} to come online"
 where = [
   "desktop chat_paused_waiting_for_to: Desktop, chats (in chat_view.rs, attachment_view). {value} is a value filled in by the app. {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{value} · pausiert – wartet, bis {name} online ist"
 
 [t_ed90f518b6]
 en = "Read on {name}’s device"
 where = [
   "desktop chat_read_on_s_device: Desktop, chats (in chat_view.rs, receipt_lines). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Gelesen auf dem Gerät von {name}"
 
 [t_f100c495e7]
 en = "Replying to {value}"
 where = [
   "desktop chat_replying_to: Desktop, chats (in chat_view.rs, composer). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "Antwort an {value}"
 
 [t_35f5a8c697]
 en = "Saved to {p}"
 where = [
   "desktop chat_saved_to: Desktop, chats (in chat.rs, update_chat_inner). {p} is a value filled in by the app.",
 ]
-text = ""
+text = "Gespeichert in {p}"
 
 [t_c29e950a10]
 en = "Say hello to {name}"
 where = [
   "desktop chat_say_hello_to: Desktop, chats (in chat_view.rs, message_list). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Sag {name} Hallo"
 
 [t_8870224962]
 en = "Send a file"
 where = [
   "desktop chat_send_a_file: Desktop, chats (in chat.rs, update_chat_inner).",
 ]
-text = ""
+text = "Datei senden"
 
 [t_a53d8bd1db]
 en = "Sends when {name} is online"
 where = [
   "desktop chat_sends_when_is_online: Desktop, chats (in chat_view.rs, image_view). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Geht raus, wenn {name} online ist"
 
 [t_647f422a10]
 en = "Signed by {name} · {value}"
 where = [
   "desktop chat_signed_by: Desktop, chats (in chat_view.rs, block_note). {name} is a person's name (usually the first word of their chosen name). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "Signiert von {name} · {value}"
 
 [t_8fe87520fd]
 en = "Signed by {value}"
 where = [
   "desktop chat_signed_by_2: Desktop, chats (in chat_view.rs, receipt_lines). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "Signiert von {value}"
 
 [t_01bc208f24]
 en = "Tap to retry"
 where = [
   "desktop chat_tap_to_retry: Desktop, chats (in chat_view.rs, attachment_view).",
 ]
-text = ""
+text = "Zum Wiederholen tippen"
 
 [t_75eed69db2]
 en = "That is everything {name} has."
 where = [
   "desktop chat_that_is_everything_has: Desktop, chats (in chat_view.rs, history_note). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Das ist alles, was {name} hat."
 
 [t_3aeb1ed651]
 en = "Too short — hold on a little longer."
 where = [
   "desktop chat_too_short_hold_on: Desktop, chats (in chat.rs, update_chat_inner).",
 ]
-text = ""
+text = "Zu kurz – halte ein bisschen länger."
 
 [t_c21fe6504f]
 en = "Waiting for {name}’s device to confirm"
 where = [
   "desktop chat_waiting_for_s_device: Desktop, chats (in chat_view.rs, receipt_lines). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Wartet auf Bestätigung vom Gerät von {name}"
 
 [t_4928d34862]
 en = "You blocked {name}{when}"
 where = [
   "desktop chat_you_blocked: Desktop, chats (in chat_view.rs, block_note). {name} is a person's name (usually the first word of their chosen name). {when} is a value filled in by the app.",
 ]
-text = ""
+text = "Du hast {name} blockiert{when}"
 
 [t_4922fd0b5c]
 en = "Added {value}"
 where = [
   "desktop contact_added: Desktop, contact detail (in view.rs, detail_view). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "Hinzugefügt {value}"
 
 [t_81af947f5e]
 en = "Calls themself “{name}” · {added}"
 where = [
   "desktop contact_calls_themself: Desktop, contact detail (in view.rs, detail_view). {name} is a person's name (usually the first word of their chosen name). {added} is a value filled in by the app.",
 ]
-text = ""
+text = "Nennt sich selbst „{name}“ · {added}"
 
 [t_c40c3cc5e8]
 en = "{name} can ring this computer and your other devices."
 where = [
   "desktop contact_can_ring_this_computer: Desktop, contact detail (in view.rs, detail_view). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} kann diesen Computer und deine anderen Geräte anrufen."
 
 [t_42003932c9]
 en = "History stays on this computer only."
 where = [
   "desktop contact_history_stays_on_this: Desktop, contact detail (in view.rs, detail_view).",
 ]
-text = ""
+text = "Der Verlauf bleibt nur auf diesem Computer."
 
 [t_8efe069875]
 en = "Home"
 where = [
   "desktop contact_home: Desktop, contact detail (in view.rs, detail_view).",
 ]
-text = ""
+text = "Start"
 
 [t_573ad42e5f]
 en = "Length"
 where = [
   "desktop contact_length: Desktop, contact detail (in view.rs, detail_view).",
 ]
-text = ""
+text = "Dauer"
 
 [t_9a368b022b]
 en = "Name on this computer"
 where = [
   "desktop contact_name_on_this_computer: Desktop, contact detail (in view.rs, detail_view).",
 ]
-text = ""
+text = "Name auf diesem Computer"
 
 [t_4901b5c982]
 en = "No calls yet."
 where = [
   "desktop contact_no_calls_yet: Desktop, contact detail (in view.rs, detail_view).",
 ]
-text = ""
+text = "Noch keine Anrufe."
 
 [t_70f49db840]
 en = "Only you see this. {name} still calls themself “{name2}”."
 where = [
   "desktop contact_only_you_see_this: Desktop, contact detail (in view.rs, detail_view). {name} is a person's name (usually the first word of their chosen name). {name2} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Nur du siehst das. {name} nennt sich weiter „{name2}“."
 
 [t_4c6766fea8]
 en = "Path"
 where = [
   "desktop contact_path: Desktop, contact detail (in view.rs, detail_view).",
 ]
-text = ""
+text = "Weg"
 
 [t_48f2045566]
 en = "When"
 where = [
   "desktop contact_when: Desktop, contact detail (in view.rs, detail_view).",
 ]
-text = ""
+text = "Wann"
 
 [t_b4ee944a9e]
 en = "Anyone who sees these words can become you. Write them down and keep them somewhere safe."
 where = [
   "desktop gate_anyone_who_sees_these: Desktop, sign-in and gate screens (in view.rs, phrase_view).",
 ]
-text = ""
+text = "Wer diese Wörter sieht, kann zu dir werden. Schreib sie auf und bewahre sie an einem sicheren Ort auf."
 
 [t_83fb73677c]
 en = "I have saved it"
 where = [
   "desktop gate_i_have_saved_it: Desktop, sign-in and gate screens (in view.rs, phrase_view).",
 ]
-text = ""
+text = "Hab ich gesichert"
 
 [t_563bcc7b29]
 en = "Or"
 where = [
   "desktop gate_or: Desktop, sign-in and gate screens (in view.rs, key_failed_view).",
 ]
-text = ""
+text = "Oder"
 
 [t_50f37c1422]
 en = "Other accounts"
 where = [
   "desktop gate_other_accounts: Desktop, sign-in and gate screens (in view.rs, other_accounts).",
 ]
-text = ""
+text = "Andere Konten"
 
 [t_9f0a2108c4]
 en = "Retry"
 where = [
   "desktop gate_retry: Desktop, sign-in and gate screens (in view.rs, key_failed_view).",
 ]
-text = ""
+text = "Nochmal"
 
 [t_25991ff41c]
 en = "The system keyring did not accept the key."
 where = [
   "desktop gate_the_system_keyring_did: Desktop, sign-in and gate screens (in view.rs, key_failed_view).",
 ]
-text = ""
+text = "Der Schlüsselbund des Systems hat den Schlüssel nicht angenommen."
 
 [t_28118ea860]
 en = "These 24 words are the only way to restore your identity on another device."
 where = [
   "desktop gate_these_24_words_are: Desktop, sign-in and gate screens (in view.rs, phrase_view).",
 ]
-text = ""
+text = "Diese 24 Wörter sind der einzige Weg, deine Identität auf einem anderen Gerät wiederherzustellen."
 
 [t_4999341dad]
 en = "This computer no longer has the key that opens it, and its keyring entry is missing. Once you restore, your calls come through again."
 where = [
   "desktop gate_this_computer_no_longer: Desktop, sign-in and gate screens (in view.rs, key_lost_view).",
 ]
-text = ""
+text = "Dieser Computer hat den Schlüssel nicht mehr, der es öffnet, und sein Eintrag im Schlüsselbund fehlt. Sobald du wiederherstellst, kommen deine Anrufe wieder durch."
 
 [t_46f9d90635]
 en = "Tinline couldn’t store the key that opens your account on this computer, so your account has not been saved yet. Nothing is lost."
 where = [
   "desktop gate_tinline_couldnt_store_the: Desktop, sign-in and gate screens (in view.rs, key_failed_view).",
 ]
-text = ""
+text = "Tinline konnte den Schlüssel, der dein Konto öffnet, auf diesem Computer nicht ablegen, also ist dein Konto noch nicht gespeichert. Nichts ist verloren."
 
 [t_12ec401f93]
 en = "Trying..."
 where = [
   "desktop gate_trying: Desktop, sign-in and gate screens (in view.rs, key_failed_view).",
 ]
-text = ""
+text = "Versuche..."
 
 [t_ac7e2468f2]
 en = "Your recovery phrase"
 where = [
   "desktop gate_your_recovery_phrase: Desktop, sign-in and gate screens (in view.rs, phrase_view).",
 ]
-text = ""
+text = "Deine Wiederherstellungswörter"
 
 [t_7a5c764b79]
 en = "Battery is low or the computer is hot. Hosting is limited: only one person is heard at a time, and no one new can join."
 where = [
   "desktop gcall_battery_is_low_or: Desktop, group calls (in gcall.rs, gcall_event).",
 ]
-text = ""
+text = "Der Akku ist schwach oder der Computer heiß. Das Hosten ist eingeschränkt: Es ist immer nur eine Person zu hören, und niemand Neues kann beitreten."
 
 [t_c1b5462e8b]
 en = "{value} is calling the group"
 where = [
   "desktop gcall_is_calling_the_group: Desktop, group calls (in gcall.rs, gcall_event). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "{value} ruft die Gruppe an"
 
 [t_e31bac2f34]
 en = "is carrying"
 where = [
   "desktop gcall_is_carrying: Desktop, group calls (in gcall_view.rs, gcall_about).",
 ]
-text = ""
+text = "trägt"
 
 [t_4d1b70ca13]
 en = "{count} people in the call"
 where = [
   "desktop gcall_people_in_the_call: Desktop, group calls (in gcall_view.rs, gcall_view). {count} is a number.",
 ]
-text = ""
+text = "{count} Personen im Anruf"
 
 [t_06c8053807]
 en = "{value}’s device"
 where = [
   "desktop gcall_s_device: Desktop, group calls (in gcall_view.rs, gcall_host_label). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "Gerät von {value}"
 
 [t_5882776009]
 en = "Started by {value}"
 where = [
   "desktop gcall_started_by: Desktop, group calls (in gcall_view.rs, gcall_banner). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "Gestartet von {value}"
 
 [t_d3c223d024]
 en = "The call host"
 where = [
   "desktop gcall_the_call_host: Desktop, group calls (in gcall_view.rs, gcall_about).",
 ]
-text = ""
+text = "Der Anruf-Host"
 
 [t_dc989edf18]
 en = " {value} this call. Everyone in the call connects to it, and it passes the audio on and chooses who is heard when several people speak."
 where = [
   "desktop gcall_this_call_everyone_in: Desktop, group calls (in gcall_view.rs, gcall_about). {value} is a value filled in by the app.",
 ]
-text = ""
+text = " {value} diesen Anruf. Alle im Anruf verbinden sich damit; es gibt den Ton weiter und wählt aus, wer zu hören ist, wenn mehrere sprechen."
 
 [t_9982104078]
 en = "this computer"
 where = [
   "desktop gcall_this_computer: Desktop, group calls (in gcall_view.rs, gcall_host_label).",
 ]
-text = ""
+text = "dieser Computer"
 
 [t_fdc94cdb2b]
 en = "A call host carries the call. Everyone in a call connects to it, and it passes the audio on, so it can hear the call. That is separate from chat hosting: a chat host is not a call host unless you also appoint it as one. Call hosts are members you trust, and each one chooses to accept.{value}"
 where = [
   "desktop group_a_call_host_carries: Desktop, groups (in group_live_view.rs, group_info_page). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "Ein Anruf-Host trägt den Anruf. Alle im Anruf verbinden sich mit ihm, und er gibt den Ton weiter, kann den Anruf also hören. Das ist getrennt vom Chat-Hosten: Ein Chat-Host ist kein Anruf-Host, außer du legst ihn auch als solchen fest. Anruf-Hosts sind Mitglieder, denen du vertraust, und jeder entscheidet selbst, ob er zusagt.{value}"
 
 [t_c72585d311]
 en = "A call host is a member’s computer or phone that carries the call. An admin can appoint one in Group info."
 where = [
   "desktop group_a_call_host_is: Desktop, groups (in group_live_view.rs, live_pane).",
 ]
-text = ""
+text = "Ein Anruf-Host ist der Computer oder das Handy eines Mitglieds, der oder das den Anruf trägt. Ein Admin kann ihn in der Gruppeninfo festlegen."
 
 [t_d1b8093efb]
 en = "A call host is a member’s computer or phone that carries the call. You can host calls on this computer, or appoint a member in Group info."
 where = [
   "desktop group_a_call_host_is_a: Desktop, groups (in group_live_view.rs, live_pane).",
 ]
-text = ""
+text = "Ein Anruf-Host ist der Computer oder das Handy eines Mitglieds, der oder das den Anruf trägt. Du kannst Anrufe auf diesem Computer hosten oder in der Gruppeninfo ein Mitglied festlegen."
 
 [t_b9b1d3dfa0]
 en = "A call needs a call host"
 where = [
   "desktop group_a_call_needs_a: Desktop, groups (in group_live_view.rs, live_pane).",
 ]
-text = ""
+text = "Ein Anruf braucht einen Anruf-Host"
 
 [t_9b6f166f1f]
 en = "A flag is signed by you and can’t be taken back. {name} can see who flagged them and when. Messages {name} wrote before the removal still show, marked."
 where = [
   "desktop group_a_flag_is_signed: Desktop, groups (in group_live_view.rs, live_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Eine Markierung ist von dir signiert und lässt sich nicht zurücknehmen. {name} kann sehen, wer markiert hat und wann. Nachrichten, die {name} vor der Entfernung geschrieben hat, bleiben sichtbar, mit Kennzeichnung."
 
 [t_ae23a1918a]
 en = "A host keeps a full copy of a group and passes messages on while members’ phones sleep. Members connect to hosts, not to each other; only hosts learn members’ group addresses. Tinline keeps hosting while the window is closed (it stays in the tray)."
 where = [
   "desktop group_a_host_keeps_a: Desktop, groups (in group_live_view.rs, live_hosting_page).",
 ]
-text = ""
+text = "Ein Host hält eine vollständige Kopie einer Gruppe und gibt Nachrichten weiter, während die Handys der Mitglieder schlafen. Mitglieder verbinden sich mit Hosts, nicht miteinander; nur Hosts kennen die Gruppenadressen der Mitglieder. Tinline hostet weiter, wenn das Fenster geschlossen ist (es bleibt im Infobereich)."
 
 [t_0803302453]
 en = "A host keeps a full copy of the group, passes messages on while members’ phones sleep and learns members’ group addresses. It needs to stay running. Hosting doesn’t make you an admin; you can stop any time."
 where = [
   "desktop group_a_host_keeps_a_full: Desktop, groups (in group_live_view.rs, live_pane).",
 ]
-text = ""
+text = "Ein Host hält eine vollständige Kopie der Gruppe, gibt Nachrichten weiter, während die Handys der Mitglieder schlafen, und kennt die Gruppenadressen der Mitglieder. Er muss laufen bleiben. Hosten macht dich nicht zum Admin; du kannst jederzeit aufhören."
 
 [t_6adb8d332d]
 en = "A host lists up to {value} people at a time, so there may be more."
 where = [
   "desktop group_a_host_lists_up: Desktop, groups (in group_live_view.rs, live_overlay). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "Ein Host listet bis zu {value} Personen auf einmal, es können also mehr sein."
 
 [t_388413e2e0]
 en = "A host stays on and passes posts on while others are offline"
 where = [
   "desktop group_a_host_stays_on: Desktop, groups (in group_live_view.rs, group_info_page).",
 ]
-text = ""
+text = "Ein Host bleibt an und gibt Beiträge weiter, während andere offline sind"
 
 [t_b1f3953010]
 en = "A link for your own other device"
 where = [
   "desktop group_a_link_for_your: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "Ein Link für dein eigenes anderes Gerät"
 
 [t_6cbccca6c7]
 en = "a message"
 where = [
   "desktop group_a_message: Desktop, groups (in group_live_view.rs, live_composer).",
 ]
-text = ""
+text = "eine Nachricht"
 
 [t_e9b63fab04]
 en = "A request waits at the group’s hosts for up to 7 days."
 where = [
   "desktop group_a_request_waits_at: Desktop, groups (in group_live_view.rs, live_requests).",
 ]
-text = ""
+text = "Eine Anfrage wartet bis zu 7 Tage bei den Hosts der Gruppe."
 
 [t_dd48d57724]
 en = "Add to {gname}"
 where = [
   "desktop group_add_to: Desktop, groups (in group_live_view.rs, live_overlay). {gname} is a value filled in by the app.",
 ]
-text = ""
+text = "Zu {gname} hinzufügen"
 
 [t_01ef28b1f8]
 en = "Admins of a group can make an invite. It works for 7 days."
 where = [
   "desktop group_admins_of_a_group: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "Admins einer Gruppe können eine Einladung erstellen. Sie gilt 7 Tage."
 
 [t_29bf7a72e5]
 en = "Also confirmed: {value}"
 where = [
   "desktop group_also_confirmed: Desktop, groups (in group_live_view.rs, group_receipt_lines). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "Auch bestätigt: {value}"
 
 [t_9ad14e4ac3]
 en = " · also hosts calls"
 where = [
   "desktop group_also_hosts_calls: Desktop, groups (in group_live_view.rs, group_info_page).",
 ]
-text = ""
+text = " · hostet auch Anrufe"
 
 [t_d8f81cb78d]
 en = "An admin asked this computer to carry the group’s calls"
 where = [
   "desktop group_an_admin_asked_this: Desktop, groups (in group_live_view.rs, group_info_page).",
 ]
-text = ""
+text = "Ein Admin hat diesen Computer gebeten, die Anrufe der Gruppe zu tragen"
 
 [t_8f8adf5a2c]
 en = "{value} and {last}"
 where = [
   "desktop group_and: Desktop, groups (in groups_view.rs, and_list). {value} is a value filled in by the app. {last} is a value filled in by the app.",
 ]
-text = ""
+text = "{value} und {last}"
 
 [t_daab639a96]
 en = "Anyone with this link or QR can join for 7 days. Share it over an app you trust; you see who joined and can flag them out. To invite your contacts directly, use Add members."
 where = [
   "desktop group_anyone_with_this_link: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "Alle mit diesem Link oder QR-Code können 7 Tage lang beitreten. Teile ihn über eine App, der du vertraust; du siehst, wer beigetreten ist, und kannst Leute per Markierung entfernen. Um deine Kontakte direkt einzuladen, nutze „Mitglieder hinzufügen“."
 
 [t_4732b3a387]
 en = "Appointed. The device hosts once it agrees (Host from this device)."
 where = [
   "desktop group_appointed_the_device_hosts: Desktop, groups (in group_live.rs, run).",
 ]
-text = ""
+text = "Festgelegt. Das Gerät hostet, sobald es zustimmt (Auf diesem Gerät hosten)."
 
 [t_856dff95d1]
 en = "As a host this computer will:"
 where = [
   "desktop group_as_a_host_this: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "Als Host wird dieser Computer:"
 
 [t_fa48b44c60]
 en = "{value} asked this computer to host {name}"
 where = [
   "desktop group_asked_this_computer_to: Desktop, groups (in group_live_view.rs, live_pane). {value} is a value filled in by the app. {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{value} bittet diesen Computer, {name} zu hosten"
 
 [t_a367083c08]
 en = "Asks {name} to carry group calls on that device; they have to accept"
 where = [
   "desktop group_asks_to_carry_group: Desktop, groups (in group_live_view.rs, live_menu). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Bittet {name}, auf diesem Gerät Gruppenanrufe zu tragen; die Person muss zustimmen"
 
 [t_858da13864]
 en = "Block {name}"
 where = [
   "desktop group_block: Desktop, groups (in group_live_view.rs, live_requests). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} blockieren"
 
 [t_9c0c00e458]
 en = " · Blocked"
 where = [
   "desktop group_blocked: Desktop, groups (in group_live_view.rs, group_info_page).",
 ]
-text = ""
+text = " · Blockiert"
 
 [t_c78935c805]
 en = "Blocked {value}"
 where = [
   "desktop group_blocked_2: Desktop, groups (in groups_view.rs, privacy_page). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "Blockiert {value}"
 
 [t_e07ade3895]
 en = "Calls go through the other call hosts"
 where = [
   "desktop group_calls_go_through_the: Desktop, groups (in group_live_view.rs, live_menu).",
 ]
-text = ""
+text = "Anrufe laufen über die anderen Anruf-Hosts"
 
 [t_a88484de1a]
 en = "Can invite, flag members and appoint hosts"
 where = [
   "desktop group_can_invite_flag_members: Desktop, groups (in group_live_view.rs, live_menu).",
 ]
-text = ""
+text = "Kann einladen, Mitglieder markieren und Hosts festlegen"
 
 [t_30fa20a31a]
 en = "Carries the group’s calls; a computer that stays on is best"
 where = [
   "desktop group_carries_the_groups_calls: Desktop, groups (in group_live_view.rs, group_info_page).",
 ]
-text = ""
+text = "Trägt die Anrufe der Gruppe; am besten ein Computer, der an bleibt"
 
 [t_3c827bcc06]
 en = "Click anywhere to go back"
 where = [
   "desktop group_click_anywhere_to_go: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "Irgendwo klicken, um zurückzugehen"
 
 [t_5635ab6b9a]
 en = "Click the code to show it full size."
 where = [
   "desktop group_click_the_code_to: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "Klick auf den Code, um ihn in voller Größe zu zeigen."
 
 [t_9cc7a8bfcc]
 en = "Delivered {delivered}/{eligible}"
 where = [
   "desktop group_delivered: Desktop, groups (in group_live_view.rs, group_receipt_lines). {delivered} is a value filled in by the app. {eligible} is a value filled in by the app.",
 ]
-text = ""
+text = "Zugestellt {delivered}/{eligible}"
 
 [t_82c86fb81b]
 en = "Each flag is signed by the admin who made it and was checked on this computer. Nobody else could have added them."
 where = [
   "desktop group_each_flag_is_signed: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "Jede Markierung ist von dem Admin signiert, der sie gesetzt hat, und wurde auf diesem Computer geprüft. Niemand sonst hätte sie hinzufügen können."
 
 [t_e9ce51f8cc]
 en = "Each person gets the invitation in your 1:1 chat and joins when they accept. It is valid for 7 days."
 where = [
   "desktop group_each_person_gets_the: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "Jede Person bekommt die Einladung in eurem 1:1-Chat und tritt bei, wenn sie annimmt. Sie gilt 7 Tage."
 
 [t_c2fbe1e11e]
 en = " · {value} flag"
 where = [
   "desktop group_flag: Desktop, groups (in group_live_view.rs, live_overlay). {value} is a value filled in by the app.",
 ]
-text = ""
+text = " · {value} Markierung"
 
 [t_0dc79d4817]
 en = "Flag to remove"
 where = [
   "desktop group_flag_to_remove: Desktop, groups (in group_live_view.rs, live_menu).",
 ]
-text = ""
+text = "Zur Entfernung markieren"
 
 [t_d2cd7397c2]
 en = "Flagged {value}"
 where = [
   "desktop group_flagged: Desktop, groups (in group_live_view.rs, live_overlay). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "Markiert {value}"
 
 [t_5493d416d9]
 en = "Flagged by {value}. You can still read what you received before; nothing new will arrive."
 where = [
   "desktop group_flagged_by_you_can: Desktop, groups (in group_live_view.rs, live_removal_card). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "Markiert von {value}. Was du vorher bekommen hast, kannst du weiter lesen; Neues kommt nicht mehr an."
 
 [t_4b1364beef]
 en = "{flags_needed} flags remove {name} from the group"
 where = [
   "desktop group_flags_remove_from_the: Desktop, groups (in group_live_view.rs, live_menu). {flags_needed} is a value filled in by the app. {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{flags_needed} Markierungen entfernen {name} aus der Gruppe"
 
 [t_65486cb826]
 en = "Group call (needs a call host)"
 where = [
   "desktop group_group_call_needs_a: Desktop, groups (in group_live_view.rs, live_pane).",
 ]
-text = ""
+text = "Gruppenanruf (braucht einen Anruf-Host)"
 
 [t_6388be298b]
 en = "Groups you start or join show up here."
 where = [
   "desktop group_groups_you_start_or: Desktop, groups (in group_live_view.rs, live_list).",
 ]
-text = ""
+text = "Hier erscheinen Gruppen, die du startest oder denen du beitrittst."
 
 [t_48f711e2f7]
 en = "{gname} has no other host: messages will wait on people’s devices until another one hosts it."
 where = [
   "desktop group_has_no_other_host: Desktop, groups (in group_live_view.rs, live_overlay). {gname} is a value filled in by the app.",
 ]
-text = ""
+text = "{gname} hat keinen anderen Host: Nachrichten warten auf den Geräten der Leute, bis ein anderer sie hostet."
 
 [t_9cdf625172]
 en = "Host calls on this computer"
 where = [
   "desktop group_host_calls_on_this: Desktop, groups (in group_live_view.rs, live_pane).",
 ]
-text = ""
+text = "Anrufe auf diesem Computer hosten"
 
 [t_ad252c6fb5]
 en = "Host {gname} on this computer?"
 where = [
   "desktop group_host_on_this_computer: Desktop, groups (in group_live_view.rs, live_overlay). {gname} is a value filled in by the app.",
 ]
-text = ""
+text = "{gname} auf diesem Computer hosten?"
 
 [t_094eb441ac]
 en = "Host this group on this computer"
 where = [
   "desktop group_host_this_group_on: Desktop, groups (in group_live_view.rs, group_info_page).",
 ]
-text = ""
+text = "Diese Gruppe auf diesem Computer hosten"
 
 [t_9e427f34b0]
 en = "Hosts once {name} agrees on that device; a computer that stays on is best"
 where = [
   "desktop group_hosts_once_agrees_on: Desktop, groups (in group_live_view.rs, live_menu). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Hostet, sobald {name} auf dem Gerät zustimmt; am besten ein Computer, der an bleibt"
 
 [t_fb1d388f85]
 en_one = "{count} host online{extra}. Posts go through right away."
@@ -14057,370 +14057,372 @@ en_other = "{count} hosts online{extra}. Posts go through right away."
 where = [
   "desktop group_hosts_online: Group info, hosts section. {count} is how many hosts are online; {extra} is empty or the text \"this computer too\".",
 ]
+one = "{count} Host online{extra}. Beiträge gehen sofort raus."
+other = "{count} Hosts online{extra}. Beiträge gehen sofort raus."
 
 [t_672061e2ff]
 en = "Hosts store the group and pass posts on when others are offline. They are members you trust: a host can read everything posted in this group.{value}"
 where = [
   "desktop group_hosts_store_the_group: Desktop, groups (in group_live_view.rs, group_info_page). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "Hosts speichern die Gruppe und geben Beiträge weiter, wenn andere offline sind. Es sind Mitglieder, denen du vertraust: Ein Host kann alles lesen, was in dieser Gruppe gepostet wird.{value}"
 
 [t_c6dea6e199]
 en = "If {name} accepts, you can message each other directly. Calls stay off until one of you allows them."
 where = [
   "desktop group_if_accepts_you_can: Desktop, groups (in group_live_view.rs, live_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Wenn {name} annimmt, könnt ihr euch direkt schreiben. Anrufe bleiben aus, bis einer von euch sie erlaubt."
 
 [t_76eb534e56]
 en = "Invite link for {gname}"
 where = [
   "desktop group_invite_link_for: Desktop, groups (in group_live_view.rs, live_overlay). {gname} is a value filled in by the app.",
 ]
-text = ""
+text = "Einladungslink für {gname}"
 
 [t_03c8de8b33]
 en = "Invite {len} people"
 where = [
   "desktop group_invite_people: Desktop, groups (in group_live_view.rs, live_overlay). {len} is a value filled in by the app.",
 ]
-text = ""
+text = "{len} Personen einladen"
 
 [t_4a66fd03ba]
 en = "Invite valid until {value}"
 where = [
   "desktop group_invite_valid_until: Desktop, groups (in group_live_view.rs, live_overlay). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "Einladung gültig bis {value}"
 
 [t_73662b883a]
 en = " · invited by {b}"
 where = [
   "desktop group_invited_by: Desktop, groups (in group_live_view.rs, live_menu). {b} is a value filled in by the app.",
 ]
-text = ""
+text = " · eingeladen von {b}"
 
 [t_768e15d939]
 en = "Invited by {value}"
 where = [
   "desktop group_invited_by_2: Desktop, groups (in group_live_view.rs, group_info_page). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "Eingeladen von {value}"
 
 [t_e970ed7e5a]
 en = " invited you to "
 where = [
   "desktop group_invited_you_to: Desktop, groups (in group_live_view.rs, live_list).",
 ]
-text = ""
+text = " hat dich eingeladen: "
 
 [t_2ac6ac8895]
 en = "It starts hosting once an admin appoints it (if one already did, right away). Hosting doesn’t make you an admin; you can stop any time."
 where = [
   "desktop group_it_starts_hosting_once: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "Es beginnt zu hosten, sobald ein Admin es festlegt (wenn das schon passiert ist, sofort). Hosten macht dich nicht zum Admin; du kannst jederzeit aufhören."
 
 [t_ecbb1b9328]
 en = "Joining connects this computer to the group’s hosts. Members see your name; only hosts learn how to reach this computer. It can take up to a minute."
 where = [
   "desktop group_joining_connects_this_computer: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "Beim Beitreten verbindet sich dieser Computer mit den Hosts der Gruppe. Mitglieder sehen deinen Namen; nur Hosts erfahren, wie sie diesen Computer erreichen. Das kann bis zu einer Minute dauern."
 
 [t_c3fc51db22]
 en = "• keep a full copy of the group\n• pass messages on for members while their phones sleep\n• learn members’ group addresses (only hosts do)\n• need to stay running to be useful"
 where = [
   "desktop group_keep_a_full_copy: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "• eine vollständige Kopie der Gruppe halten\n• Nachrichten für Mitglieder weitergeben, während ihre Handys schlafen\n• die Gruppenadressen der Mitglieder kennen (nur Hosts tun das)\n• laufen bleiben müssen, um nützlich zu sein"
 
 [t_9e0599e783]
 en = "Leave {gname}?"
 where = [
   "desktop group_leave: Desktop, groups (in group_live_view.rs, live_overlay). {gname} is a value filled in by the app.",
 ]
-text = ""
+text = "{gname} verlassen?"
 
 [t_48df2befc8]
 en = "Make {name} an admin?"
 where = [
   "desktop group_make_an_admin: Desktop, groups (in group_live_view.rs, live_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} zum Admin machen?"
 
 [t_a2a3741c1b]
 en = "Make device {value} a call host"
 where = [
   "desktop group_make_device_a_call: Desktop, groups (in group_live_view.rs, live_menu). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "Gerät {value} zum Anruf-Host machen"
 
 [t_76ddfb2d19]
 en = "Make device {value} a host"
 where = [
   "desktop group_make_device_a_host: Desktop, groups (in group_live_view.rs, live_menu). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "Gerät {value} zum Host machen"
 
 [t_569ddfad75]
 en = "Member of {gname}"
 where = [
   "desktop group_member_of: Desktop, groups (in group_live_view.rs, live_overlay). {gname} is a value filled in by the app.",
 ]
-text = ""
+text = "Mitglied von {gname}"
 
 [t_0bae5b80cc]
 en = "Member of {group_name}"
 where = [
   "desktop group_member_of_2: Desktop, groups (in group_live_view.rs, live_requests). {group_name} is a value filled in by the app.",
 ]
-text = ""
+text = "Mitglied von {group_name}"
 
 [t_b595c9bfb0]
 en = "Member since {value}"
 where = [
   "desktop group_member_since: Desktop, groups (in group_live_view.rs, live_menu). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "Mitglied seit {value}"
 
 [t_3e3fe2596b]
 en = "{members} · {role}"
 where = [
   "desktop group_members_and_role: Group info header. {members} is e.g. \"3 members\", {role} is \"You are the owner / an admin / a member\".",
 ]
-text = ""
+text = "{members} · {role}"
 
 [t_4f831bb3e8]
 en = "Members see that you left. The messages stay on this computer, read-only. To come back, an admin has to invite you again."
 where = [
   "desktop group_members_see_that_you: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "Mitglieder sehen, dass du gegangen bist. Die Nachrichten bleiben auf diesem Computer, nur zum Lesen. Um zurückzukommen, muss dich ein Admin neu einladen."
 
 [t_ca2cffd903]
 en = "Members stop going through it"
 where = [
   "desktop group_members_stop_going_through: Desktop, groups (in group_live_view.rs, live_menu).",
 ]
-text = ""
+text = "Mitglieder gehen nicht mehr darüber"
 
 [t_c68a4d2f95]
 en = "Message from {name}, whom you blocked"
 where = [
   "desktop group_message_from_whom_you: Desktop, groups (in group_live_view.rs, live_item). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Nachricht von {name} (von dir blockiert)"
 
 [t_d2290010b5]
 en = "Message privately"
 where = [
   "desktop group_message_privately: Desktop, groups (in group_live_view.rs, live_menu).",
 ]
-text = ""
+text = "Privat schreiben"
 
 [t_e63bb44c2f]
 en = "No group matches."
 where = [
   "desktop group_no_group_matches: Desktop, groups (in group_live_view.rs, live_list).",
 ]
-text = ""
+text = "Keine passende Gruppe."
 
 [t_178c11fc23]
 en = "Nobody is blocked. To block someone, open them in Contacts and choose Block."
 where = [
   "desktop group_nobody_is_blocked_to: Desktop, groups (in groups_view.rs, privacy_page).",
 ]
-text = ""
+text = "Niemand ist blockiert. Um jemanden zu blockieren, öffne die Person unter Kontakte und wähle Blockieren."
 
 [t_d8e67bbd2d]
 en = " · {flags} of {flags_needed} flags"
 where = [
   "desktop group_of_flags: Desktop, groups (in group_live_view.rs, live_menu). {flags} is a value filled in by the app. {flags_needed} is a value filled in by the app.",
 ]
-text = ""
+text = " · {flags} von {flags_needed} Markierungen"
 
 [t_43b101be74]
 en = " · {flags} of {value} flags"
 where = [
   "desktop group_of_flags_2: Desktop, groups (in group_live_view.rs, group_info_page). {flags} is a value filled in by the app. {value} is a value filled in by the app.",
 ]
-text = ""
+text = " · {flags} von {value} Markierungen"
 
 [t_355dca9b97]
 en = "Offered to host"
 where = [
   "desktop group_offered_to_host: Desktop, groups (in group_live_view.rs, group_info_page).",
 ]
-text = ""
+text = "Bietet Hosten an"
 
 [t_1e5879f244]
 en = "Only admins post here"
 where = [
   "desktop group_only_admins_post_here: Desktop, groups (in group_live_view.rs, live_admins_only_line).",
 ]
-text = ""
+text = "Hier posten nur Admins"
 
 [t_1570b9e8c5]
 en = "Only admins post here."
 where = [
   "desktop group_only_admins_post_here_2: Desktop, groups (in group_live.rs, gerr).",
 ]
-text = ""
+text = "Hier posten nur Admins."
 
 [t_a5bdc7696e]
 en = "Open chat"
 where = [
   "desktop group_open_chat: Desktop, groups (in group_live_view.rs, live_requests).",
 ]
-text = ""
+text = "Chat öffnen"
 
 [t_804dcb0928]
 en = "Open {gname} to anyone with the link?"
 where = [
   "desktop group_open_to_anyone_with: Desktop, groups (in group_live_view.rs, live_overlay). {gname} is a value filled in by the app.",
 ]
-text = ""
+text = "{gname} für alle mit dem Link öffnen?"
 
 [t_297869bd98]
 en = "Opens your chat"
 where = [
   "desktop group_opens_your_chat: Desktop, groups (in group_live_view.rs, live_menu).",
 ]
-text = ""
+text = "Öffnet euren Chat"
 
 [t_b0bfef99a3]
 en = "{inviter} · owner {owner}"
 where = [
   "desktop group_owner_2: Desktop, groups (in group_live_view.rs, live_overlay). {inviter} is a value filled in by the app. {owner} is a value filled in by the app.",
 ]
-text = ""
+text = "{inviter} · Eigentümer {owner}"
 
 [t_612fb3ff04]
 en = "Paste an invite link"
 where = [
   "desktop group_paste_an_invite_link: Desktop, groups (in group_live_view.rs, live_list).",
 ]
-text = ""
+text = "Einladungslink einfügen"
 
 [t_897c2e906d]
 en = "Paste the invite link (tinline://g/…) or code"
 where = [
   "desktop group_paste_the_invite_link: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = ""
+text = "Füg den Einladungslink (tinline://g/…) oder Code ein"
 
 [t_032d14772e]
 en = "Read {read}/{eligible}"
 where = [
   "desktop group_read_2: Desktop, groups (in group_live_view.rs, group_receipt_lines). {read} is a value filled in by the app. {eligible} is a value filled in by the app.",
 ]
-text = ""
+text = "Gelesen {read}/{eligible}"
 
 [t_8d11c8dbda]
 en = "Remove as admin"
 where = [
   "desktop group_remove_as_admin: Desktop, groups (in group_live_view.rs, live_menu).",
 ]
-text = ""
+text = "Admin-Rolle entziehen"
 
 [t_63c8449e54]
 en = "Remove {name} as admin?"
 where = [
   "desktop group_remove_as_admin_2: Desktop, groups (in group_live_view.rs, live_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} die Admin-Rolle entziehen?"
 
 [t_fce4d0716e]
 en = "{value} · removed"
 where = [
   "desktop group_removed_2: Desktop, groups (in group_live_view.rs, live_item). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "{value} · entfernt"
 
 [t_c3e27c1c1d]
 en = "Removed after {len} admin flags"
 where = [
   "desktop group_removed_after_admin_flags: Desktop, groups (in group_live_view.rs, live_removal_card). {len} is a value filled in by the app.",
 ]
-text = ""
+text = "Nach {len} Admin-Markierungen entfernt"
 
 [t_995105820a]
 en = "Requests · {len}"
 where = [
   "desktop group_requests: Desktop, groups (in group_live_view.rs, live_requests). {len} is a value filled in by the app.",
 ]
-text = ""
+text = "Anfragen · {len}"
 
 [t_e74c79587a]
 en = "{name} sees your name and the group. The request goes through the group’s host sealed, so the host can’t read it."
 where = [
   "desktop group_sees_your_name_and: Desktop, groups (in group_live_view.rs, live_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} sieht deinen Namen und die Gruppe. Die Anfrage geht versiegelt über den Host der Gruppe, sodass der Host sie nicht lesen kann."
 
 [t_7e0de03aea]
 en = "Sends {name} a chat request through the host"
 where = [
   "desktop group_sends_a_chat_request: Desktop, groups (in group_live_view.rs, live_menu). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "Sendet {name} eine Chat-Anfrage über den Host"
 
 [t_d13099d50e]
 en = "Sent requests"
 where = [
   "desktop group_sent_requests: Desktop, groups (in group_live_view.rs, live_requests).",
 ]
-text = ""
+text = "Gesendete Anfragen"
 
 [t_722778e5cb]
 en = "Since {value}"
 where = [
   "desktop group_since: Desktop, groups (in group_live_view.rs, group_info_page). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "Seit {value}"
 
 [t_821f5cc3b9]
 en = "{name} stays a member"
 where = [
   "desktop group_stays_a_member: Desktop, groups (in group_live_view.rs, live_menu). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} bleibt Mitglied"
 
 [t_3131b8e845]
 en = "{name} stays in the group as a member. Flags they already made still count."
 where = [
   "desktop group_stays_in_the_group: Desktop, groups (in group_live_view.rs, live_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} bleibt als Mitglied in der Gruppe. Markierungen, die {name} schon gesetzt hat, zählen weiter."
 
 [t_806b19150f]
 en = "Stop device {value} carrying calls"
 where = [
   "desktop group_stop_device_carrying_calls: Desktop, groups (in group_live_view.rs, live_menu). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "Anrufe auf Gerät {value} beenden"
 
 [t_e2020c4fb2]
 en = "Stop device {value} hosting"
 where = [
   "desktop group_stop_device_hosting: Desktop, groups (in group_live_view.rs, live_menu). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "Hosten auf Gerät {value} beenden"
 
 [t_1723561e8c]
 en = "Stop hosting"
 where = [
   "desktop group_stop_hosting: Desktop, groups (in group_live_view.rs, live_menu).",
 ]
-text = ""
+text = "Hosten beenden"
 
 [t_25c1a85271]
 en = "Stop hosting calls"
 where = [
   "desktop group_stop_hosting_calls: Desktop, groups (in group_live_view.rs, live_menu).",
 ]
-text = ""
+text = "Anruf-Hosten beenden"
 
 [t_f9383a2f6a]
 en = "Stop hosting calls on this computer"
