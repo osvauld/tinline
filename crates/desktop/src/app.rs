@@ -785,6 +785,7 @@ impl App {
     }
 
     fn boot() -> (App, Task<Msg>) {
+        crate::startup::mark("boot");
         let init = INIT.get().expect("init");
         let node = init.node.clone();
         let settings: Settings = std::fs::read(settings_path())
@@ -933,6 +934,7 @@ impl App {
             tasks.push(app.start_node());
         }
         tasks.push(app.refresh_profiles());
+        crate::startup::mark("boot done");
         (app, Task::batch(tasks))
     }
 
@@ -1342,7 +1344,11 @@ impl App {
                 let auto = self.auto_call();
                 return Task::batch([self.link_drive(), auto]);
             }
-            Msg::WindowOpened(id) => return window::scale_factor(id).map(Msg::Scale),
+            Msg::WindowOpened(id) => {
+                static SEEN: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+                crate::startup::mark_once(&SEEN, "window opened");
+                return window::scale_factor(id).map(Msg::Scale);
+            }
             Msg::Scale(f) => ui::set_scale(f),
             Msg::CloseReq(id) => {
                 if Some(id) == self.win {
