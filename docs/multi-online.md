@@ -1,6 +1,8 @@
 # Several accounts reachable on one device
 
-Status: design, 2026-10-25. Not built. Branch `feature/multi-online`.
+Status: core built 2026-10-25 (`crates/core/src/node/slots.rs`, tests
+`crates/core/tests/it/multi_online.rs`); Android, iOS and desktop not wired yet. Branch
+`feature/multi-online`. See "Changed while building" at the end.
 
 ## Model (decided with the user, 2026-10-25)
 
@@ -143,3 +145,63 @@ when a woken slot opens, to it too (same device token for every account).
 2. Group posts to a sleeping account: no wake for groups yet.
 3. Battery: a burst of wakes to several accounts runs several endpoints at once briefly; cap at 2 woken
    slots? (default: no cap, they idle out in 60 s)
+
+## Changed while building (2026-10-25)
+
+- **`account_key` is on `AccountEvents`, not `NodeEvents`.** A new method on the `NodeEvents`
+  foreign trait would break every platform's implementation at once (UniFFI foreign traits have no
+  default methods). `AccountEvents` is the new trait anyway; a platform that never calls
+  `set_account_events` gets no background accounts (it behaves as `OpenOnly`).
+- **Unread is the account's own conversations' unread total**, not a separate counter: a woken slot
+  reports the sum of `Chat.unread`; when a slot closes (and when an `OpenOnly` switch leaves an
+  account) that sum is written to `accounts/<id>/unread` (a clear number; removed at 0). Opening the
+  account removes the file. This also gives Liberum its switcher dot, and the count never drifts from
+  what the conversations show. `on_background_message` still fires once per arriving message.
+- **Hint routing needs no unlock to rule an account out**: `WakeState::opens(hint)` /
+  `hint_opens(key, hint)` (pure; no wire change). An account whose hint key is cached and does not
+  open the hint is skipped without asking for its key; `lock` clears the cache.
+- **A call wake for a background account while another account holds the call floor** returns
+  `EndCall` (the ring is declined silently): the caller will get `Busy` anyway, so nothing rings.
+- **`decline` / `hangup` / `decline_wake_ring`** reach a background account's call without switching;
+  only `answer` / `answer_wake_ring` switch first.
+- **The previous open slot keeps running only if it is unlocked and on disk**; a locked or
+  never-committed one closes on the switch. Its group call is left on the switch, as today.
+- **`OpenOnly` keeps today's in-place switch** (`replace_account` in the same slot), so Liberum's
+  behaviour is unchanged; switching to the account that is already open also stays as today (it locks).
+- `create_identity` / `restore_identity` of an account that runs in the background: `AccountExists`
+  (switch to it instead), as for the unlocked open account.
+- `network_changed` and `stop` act on every running slot; `start` starts the background ones in the
+  background (the open one as before, blocking).
+
+### API as built
+
+```
+Node::set_background_mode(mode: BackgroundMode)      // OpenOnly (default) | OnWake | KeepAll
+Node::background_mode() -> BackgroundMode
+Node::set_account_events(events: AccountEvents)
+trait AccountEvents {
+    fn account_key(did) -> Option<Vec<u8>>            // asked on the caller's thread of on_wake/start
+    fn on_background_message(account: AccountRef, from_did, from_name)
+    fn on_accounts_changed()
+}
+record AccountRef { did, name }
+CallInfo.account: Option<AccountRef>                  // None = the open account
+WakeOutcome::Ring { did, name, account: Option<AccountRef> }
+AccountSummary.unread: u32
+const WOKEN_IDLE_MS = 60_000 (test knob: Node::set_background_idle_ms_for_test)
+```
+
+Test hooks (`dev-tools`): `background_accounts_for_test`, `account_endpoint_for_test`,
+`wake_hint_for_test`, `hint_keys_for_test`, `set_background_idle_ms_for_test`.
+
+### Known risks for the platform waves
+
+- `WakeOutcome.Ring` gained a field and `AccountSummary`/`CallInfo` gained fields: regenerated
+  Kotlin/Swift bindings need the call sites updated (Kotlin `when` on `Ring`, Swift pattern matches).
+- `account_key` is called synchronously from `on_wake` (and `start` under `KeepAll`); on iOS it runs
+  inside the PushKit handler's time budget.
+- A background slot's leftover tasks end by the usual "endpoint gone / epoch changed" checks, as after
+  a switch today; a slot closed by idle and reopened by a wake at once may briefly wait for its store
+  files.
+- Each running account is a full endpoint plus group endpoint: `KeepAll` with many accounts costs
+  that many endpoints (Open item 3).

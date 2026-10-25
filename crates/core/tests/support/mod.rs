@@ -7,6 +7,7 @@ pub mod chat;
 pub mod codec;
 pub mod events;
 pub mod fs;
+pub mod multi;
 pub mod group;
 pub mod peer;
 pub mod tempdir;

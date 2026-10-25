@@ -30,6 +30,7 @@ mod lifecycle;
 mod link;
 mod link_expiry;
 mod message_receipts;
+mod multi_online;
 mod old_writer_delivery;
 mod private_rotation;
 mod profile_sync;
