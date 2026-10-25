@@ -15007,455 +15007,455 @@ en = "Making a code…"
 where = [
   "desktop link_making_a_code: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = ""
+text = "جارٍ إنشاء رمز…"
 
 [t_5454768277]
 en = "Not linked"
 where = [
   "desktop link_not_linked: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "غير مرتبط"
 
 [t_96af6bbdbb]
 en = "Nothing was changed on either device."
 where = [
   "desktop link_nothing_was_changed_on: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "لم يتغير شيء على أي من الجهازين."
 
 [t_0914fb108e]
 en = "On the new device, install Tinline and choose Link to an existing account."
 where = [
   "desktop link_on_the_new_device: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = ""
+text = "على الجهاز الجديد، يمكنك تثبيت Tinline واختيار «الربط بحساب موجود»."
 
 [t_7919900ea0]
 en = "On your phone, open Tinline › Settings › Link a device."
 where = [
   "desktop link_on_your_phone_open: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = ""
+text = "على هاتفك، يمكنك فتح Tinline › الإعدادات › ربط جهاز."
 
 [t_b7eb4c2371]
 en = "Passphrase (optional)"
 where = [
   "desktop link_passphrase_optional: Desktop, linking devices (in link_view.rs, link_secure_screen).",
 ]
-text = ""
+text = "عبارة المرور (اختيارية)"
 
 [t_1eca9f710b]
 en = "Paste a link code instead"
 where = [
   "desktop link_paste_a_link_code: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = ""
+text = "لصق رمز ربط بدلًا من ذلك"
 
 [t_14d0722730]
 en = "Protect the account on this computer before it is saved."
 where = [
   "desktop link_protect_the_account_on: Desktop, linking devices (in link_view.rs, link_secure_screen).",
 ]
-text = ""
+text = "حماية الحساب على هذا الحاسوب قبل حفظه."
 
 [t_368e75b760]
 en = "Restore with recovery phrase instead"
 where = [
   "desktop link_restore_with_recovery_phrase: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "الاستعادة بكلمات الاسترداد بدلًا من ذلك"
 
 [t_43fea4daf5]
 en = "Sending your account over…"
 where = [
   "desktop link_sending_your_account_over: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "جارٍ إرسال حسابك…"
 
 [t_96c47afa9a]
 en = "Show this to the device you want to add. It becomes you, so only link your own."
 where = [
   "desktop link_show_this_to_the: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = ""
+text = "يمكنك عرض هذا على الجهاز المراد إضافته. سيصبح أنت، لذا يُستحسن ربط أجهزتك أنت فقط."
 
 [t_0826ccb2c7]
 en = "Start using Tinline"
 where = [
   "desktop link_start_using_tinline: Desktop, linking devices (in link_view.rs, link_sync_screen).",
 ]
-text = ""
+text = "بدء استخدام Tinline"
 
 [t_bcd18fac96]
 en = "Sync keeps going in the background."
 where = [
   "desktop link_sync_keeps_going_in: Desktop, linking devices (in link_view.rs, link_sync_screen).",
 ]
-text = ""
+text = "تستمر المزامنة في الخلفية."
 
 [t_e37b0d5fa7]
 en = "Synced {value}"
 where = [
   "desktop link_synced: Desktop, linking devices (in link_view.rs, linked_devices_page). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "آخر مزامنة {value}"
 
 [t_a4c809843c]
 en = "Tap Scan QR code and point it at this screen."
 where = [
   "desktop link_tap_scan_qr_code: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = ""
+text = "يمكنك النقر على «مسح رمز QR» وتوجيهه نحو هذه الشاشة."
 
 [t_ba1b32b37f]
 en = "the other device"
 where = [
   "desktop link_the_other_device: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "الجهاز الآخر"
 
 [t_91b511ddf8]
 en = "There is no code yet."
 where = [
   "desktop link_there_is_no_code: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = ""
+text = "لا يوجد رمز بعد."
 
 [t_a542a56b19]
 en = "This account has no passphrase, and this computer can’t ask for a screen lock. By continuing you confirm you started this and the codes match."
 where = [
   "desktop link_this_account_has_no: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "ليس لهذا الحساب عبارة مرور، ولا يستطيع هذا الحاسوب طلب قفل الشاشة. المتابعة تعني تأكيدك أنك بدأت هذه العملية وأن الرمزين متطابقان."
 
 [t_eb8c9c2902]
 en = "This account has no passphrase, so confirming here is the only check."
 where = [
   "desktop link_this_account_has_no_passphrase: Desktop, linking devices (in link_view.rs, unlink_confirm).",
 ]
-text = ""
+text = "ليس لهذا الحساب عبارة مرور، لذا فالتأكيد هنا هو التحقق الوحيد."
 
 [t_a273cebb53]
 en = "This code expired."
 where = [
   "desktop link_this_code_expired: Desktop, linking devices (in link_view.rs, link_qr_screen).",
 ]
-text = ""
+text = "انتهت صلاحية هذا الرمز."
 
 [t_6c7f421a85]
 en = "This computer · {os}"
 where = [
   "desktop link_this_computer_os: Linked devices list, the row for this computer. {os} is the operating system name (Linux, macOS, Windows).",
 ]
-text = ""
+text = "هذا الحاسوب · {os}"
 
 [t_3e7643126b]
 en = "This computer was unlinked"
 where = [
   "desktop link_this_computer_was_unlinked: Desktop, linking devices (in link_view.rs, unlinked_screen).",
 ]
-text = ""
+text = "أُلغي ربط هذا الحاسوب"
 
 [t_22a7e5f7ef]
 en = "This takes a few seconds."
 where = [
   "desktop link_this_takes_a_few: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "يستغرق هذا بضع ثوانٍ."
 
 [t_e23c8f931a]
 en = "Unlink this computer?"
 where = [
   "desktop link_unlink_this_computer: Desktop, linking devices (in link_view.rs, unlink_confirm).",
 ]
-text = ""
+text = "إلغاء ربط هذا الحاسوب؟"
 
 [t_8878bbf53e]
 en = "Unlinking..."
 where = [
   "desktop link_unlinking: Desktop, linking devices (in link_view.rs, unlink_confirm).",
 ]
-text = ""
+text = "جارٍ إلغاء الربط…"
 
 [t_14f5ecac2d]
 en = "{name} was removed from this computer by another of your devices. Its contacts, chats and calls are deleted here. Your other devices are not affected."
 where = [
   "desktop link_was_removed_from_this: Desktop, linking devices (in link_view.rs, unlinked_screen). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "أزال أحد أجهزتك الأخرى {name} من هذا الحاسوب. حُذفت هنا جهات اتصاله ودردشاته ومكالماته. لم تتأثر أجهزتك الأخرى."
 
 [t_1a1688094f]
 en = "{name} was removed from this computer. Its contacts, chats and calls are deleted here. Your other devices are not affected."
 where = [
   "desktop link_was_removed_from_this_computer: Desktop, linking devices (in link_view.rs, unlinked_screen). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "أُزيل {name} من هذا الحاسوب. حُذفت هنا جهات اتصاله ودردشاته ومكالماته. لم تتأثر أجهزتك الأخرى."
 
 [t_809c8177da]
 en = "Windows"
 where = [
   "desktop link_windows: Desktop, linking devices (in link_view.rs, ).",
 ]
-text = ""
+text = "Windows"
 
 [t_14bedc27c0]
 en = "You type it each time Tinline starts."
 where = [
   "desktop link_you_type_it_each: Desktop, linking devices (in link_view.rs, link_secure_screen).",
 ]
-text = ""
+text = "تُكتب في كل مرة يبدأ فيها Tinline."
 
 [t_ffd65be7e1]
 en = "Your account is on the other device."
 where = [
   "desktop link_your_account_is_on: Desktop, linking devices (in link_view.rs, link_screen).",
 ]
-text = ""
+text = "حسابك على الجهاز الآخر."
 
 [t_a3963415c6]
 en = "A new camera is used the next time your camera starts."
 where = [
   "desktop profile_a_new_camera_is: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "تُستخدم الكاميرا الجديدة في المرة القادمة التي تبدأ فيها الكاميرا."
 
 [t_9ae5a12760]
 en = "a status"
 where = [
   "desktop profile_a_status: Desktop, profile and settings (in profile_ui.rs, profile_update).",
 ]
-text = ""
+text = "حالة"
 
 [t_830cdd8bf7]
 en = "Accounts on this computer"
 where = [
   "desktop profile_accounts_on_this_computer: Desktop, profile and settings (in profile_view.rs, profile_page).",
 ]
-text = ""
+text = "الحسابات على هذا الحاسوب"
 
 [t_8ca5d6cba5]
 en = "Accounts stored on this computer"
 where = [
   "desktop profile_accounts_stored_on_this: Desktop, profile and settings (in profile_view.rs, native_page).",
 ]
-text = ""
+text = "الحسابات المخزنة على هذا الحاسوب"
 
 [t_dd2dfa0aa3]
 en = "Add a nickname"
 where = [
   "desktop profile_add_a_nickname: Desktop, profile and settings (in profile_view.rs, person_profile).",
 ]
-text = ""
+text = "إضافة اسم مستعار"
 
 [t_437baa96ef]
 en = "Any length works. A few words make it stronger."
 where = [
   "desktop profile_any_length_works_a: Desktop, profile and settings (in profile_view.rs, passphrase_page).",
 ]
-text = ""
+text = "أي طول مقبول. بضع كلمات تجعلها أقوى."
 
 [t_a197e8d110]
 en = "Anyone who has it can act as you, just like the words. Tinline never asks for it except to restore your account."
 where = [
   "desktop profile_anyone_who_has_it: Desktop, profile and settings (in profile_view.rs, phrase_page).",
 ]
-text = ""
+text = "أي شخص يحصل عليه يمكنه التصرف باسمك، تمامًا كالكلمات. لا يطلبه Tinline أبدًا إلا لاستعادة حسابك."
 
 [t_2c40fa833f]
 en = " Anyone who still has your recovery phrase, or can unlock {name}, can still act as you. If it is lost or stolen, the only full fix is a new account."
 where = [
   "desktop profile_anyone_who_still_has: Desktop, profile and settings (in profile_view.rs, devices_layer). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = " أي شخص لديه كلمات الاسترداد أو يستطيع فتح قفل {name} يمكنه التصرف باسمك. إذا فُقد أو سُرق، فالحل الكامل الوحيد هو حساب جديد."
 
 [t_9bb58d6614]
 en = "Audio, security and hosting"
 where = [
   "desktop profile_audio_security_and_hosting: Desktop, profile and settings (in profile_view.rs, settings_landing).",
 ]
-text = ""
+text = "الصوت والأمان والاستضافة"
 
 [t_a0f9f18ca6]
 en = "Bitrate cap"
 where = [
   "desktop profile_bitrate_cap: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "حد معدل البت"
 
 [t_a2c759c438]
 en = "Block {first2}"
 where = [
   "desktop profile_block: Desktop, profile and settings (in profile_view.rs, person_profile). {first2} is a value filled in by the app.",
 ]
-text = ""
+text = "حظر {first2}"
 
 [t_e3cdf7ca3e]
 en = "Block {name}?"
 where = [
   "desktop profile_block_2: Desktop, profile and settings (in profile_view.rs, profile_layer). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "حظر {name}؟"
 
 [t_0c1589aabf]
 en = "Block someone"
 where = [
   "desktop profile_block_someone: Desktop, profile and settings (in profile_view.rs, blocked_page).",
 ]
-text = ""
+text = "حظر شخص"
 
 [t_58a99e3d8f]
 en = "Blocking is not silent. The person is told, their app stops contacting you and removes you from their contacts. Your chat history stays on your devices. Groups you share aren’t affected."
 where = [
   "desktop profile_blocking_is_not_silent: Desktop, profile and settings (in profile_view.rs, blocked_page).",
 ]
-text = ""
+text = "الحظر ليس صامتًا. يُبلَّغ الشخص، ويتوقف تطبيقه عن التواصل معك ويزيلك من جهات اتصاله. يبقى سجل دردشتك على أجهزتك. لا تتأثر المجموعات المشتركة بينكما."
 
 [t_bcb476435a]
 en = "Busy until {value}"
 where = [
   "desktop profile_busy_until: Desktop, profile and settings (in profile_view.rs, settings_landing). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "مشغول حتى {value}"
 
 [t_dfe389f837]
 en = "Calls on this computer"
 where = [
   "desktop profile_calls_on_this_computer: Desktop, profile and settings (in profile_view.rs, profile_page).",
 ]
-text = ""
+text = "المكالمات على هذا الحاسوب"
 
 [t_31f5bad868]
 en = "{cap} can’t contain control or text-direction characters."
 where = [
   "desktop profile_cant_contain_control_or: Desktop, profile and settings (in profile_ui.rs, check_text). {cap} is a value filled in by the app.",
 ]
-text = ""
+text = "لا يمكن أن يحتوي {cap} على أحرف تحكم أو أحرف اتجاه النص."
 
 [t_4c3f0aabaf]
 en = "Checking…"
 where = [
   "desktop profile_checking: Desktop, profile and settings (in profile_view.rs, phrase_page).",
 ]
-text = ""
+text = "جارٍ التحقق…"
 
 [t_b5b9d1f203]
 en = "Contacts you haven’t blocked get your updated device list when they’re next online."
 where = [
   "desktop profile_contacts_you_havent_blocked: Desktop, profile and settings (in profile_view.rs, devices_layer).",
 ]
-text = ""
+text = "جهات الاتصال غير المحظورة تتلقى قائمة أجهزتك المحدّثة في المرة القادمة التي تتصل فيها."
 
 [t_6e98940bd0]
 en = "Cut"
 where = [
   "desktop profile_cut: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "قطع"
 
 [t_fabff01ef6]
 en = "Cut+probe"
 where = [
   "desktop profile_cut_probe: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "قطع+استكشاف"
 
 [t_d25ee7b4b0]
 en = "Each shows a soft preview until you tap it"
 where = [
   "desktop profile_each_shows_a_soft_preview: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "تظهر لكل صورة معاينة باهتة حتى النقر عليها"
 
 [t_2b81c6b647]
 en = "Enter your passphrase to confirm"
 where = [
   "desktop profile_enter_your_passphrase_to: Desktop, profile and settings (in profile_view.rs, devices_layer).",
 ]
-text = ""
+text = "إدخال عبارة المرور للتأكيد"
 
 [t_23bc418acf]
 en = "Enter your passphrase to continue"
 where = [
   "desktop profile_enter_your_passphrase_to_continue: Desktop, profile and settings (in profile_view.rs, phrase_page).",
 ]
-text = ""
+text = "إدخال عبارة المرور للمتابعة"
 
 [t_2c745833e1]
 en = "Every linked device is a full copy of you: it can read your chats and act as you. Names here are private to your devices; contacts never see them."
 where = [
   "desktop profile_every_linked_device_is: Desktop, profile and settings (in profile_view.rs, devices_page).",
 ]
-text = ""
+text = "كل جهاز مرتبط نسخة كاملة منك: يمكنه قراءة دردشاتك والتصرف باسمك. الأسماء هنا خاصة بأجهزتك؛ لا تراها جهات الاتصال أبدًا."
 
 [t_87fd46df46]
 en = "Fixed rung"
 where = [
   "desktop profile_fixed_rung: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "درجة ثابتة"
 
 [t_97ecbd9279]
 en = "Groups you share aren’t affected. You can unblock {name} here at any time."
 where = [
   "desktop profile_groups_you_share_arent: Desktop, profile and settings (in profile_view.rs, profile_layer). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "لا تتأثر المجموعات المشتركة بينكما. يمكنك إلغاء حظر {name} من هنا في أي وقت."
 
 [t_48ff9eddd1]
 en = "Hardware"
 where = [
   "desktop profile_hardware: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "العتاد"
 
 [t_80515997ef]
 en = "Hide key"
 where = [
   "desktop profile_hide_key: Desktop, profile and settings (in profile_view.rs, phrase_page).",
 ]
-text = ""
+text = "إخفاء المفتاح"
 
 [t_e1fa8e6a72]
 en = "Hide words"
 where = [
   "desktop profile_hide_words: Desktop, profile and settings (in profile_view.rs, phrase_page).",
 ]
-text = ""
+text = "إخفاء الكلمات"
 
 [t_639081c198]
 en = "Hides in {seconds} s"
 where = [
   "desktop profile_hides_in_s: Desktop, profile and settings (in profile_view.rs, phrase_page). {seconds} is a value filled in by the app.",
 ]
-text = ""
+text = "يختفي خلال {seconds} ث"
 
 [t_bca16c3e78]
 en = "Hosts keep every group picture so members can load them. This applies on this device."
 where = [
   "desktop profile_hosts_keep_every_group: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "يحتفظ المضيفون بكل صور المجموعة ليتمكن الأعضاء من تحميلها. يُطبَّق هذا على هذا الجهاز."
 
 [t_6523fe005e]
 en = "{name} isn’t one of your contacts. You know them through a group. Looking at a profile doesn’t add anyone."
 where = [
   "desktop profile_isnt_one_of_your: Desktop, profile and settings (in profile_view.rs, person_profile). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "{name} خارج جهات اتصالك. تعرّفتما عبر مجموعة. عرض الملف الشخصي لا يضيف أحدًا."
 
 [t_33776c2f81]
 en = "It is offline, so it finds out the next time it connects."
 where = [
   "desktop profile_it_is_offline_so: Desktop, profile and settings (in profile_view.rs, devices_layer).",
 ]
-text = ""
+text = "إنه غير متصل، لذا سيعلم بذلك عند اتصاله في المرة القادمة."
 
 [t_dfa1efbc07]
 en = "{round} KB"
 where = [
   "desktop profile_kb: Desktop, profile and settings (in profile_view.rs, fmt_bytes). {round} is a value filled in by the app.",
 ]
-text = ""
+text = "{round} كيلوبايت"
 
 [t_ae83393da3]
 en_one = "Last seen {count} day ago"
@@ -15463,6 +15463,12 @@ en_other = "Last seen {count} days ago"
 where = [
   "desktop profile_last_seen_days: Under a contact profile when they were last online. {count} is the number of days.",
 ]
+zero = "آخر ظهور قبل {count} يوم"
+one = "آخر ظهور قبل يوم"
+two = "آخر ظهور قبل يومين"
+few = "آخر ظهور قبل {count} أيام"
+many = "آخر ظهور قبل {count} يومًا"
+other = "آخر ظهور قبل {count} يوم"
 
 [t_e11bdbbee3]
 en_one = "Last seen {count} hour ago"
@@ -15470,13 +15476,19 @@ en_other = "Last seen {count} hours ago"
 where = [
   "desktop profile_last_seen_hours: Under a contact profile when they were last online. {count} is the number of hours.",
 ]
+zero = "آخر ظهور قبل {count} ساعة"
+one = "آخر ظهور قبل ساعة"
+two = "آخر ظهور قبل ساعتين"
+few = "آخر ظهور قبل {count} ساعات"
+many = "آخر ظهور قبل {count} ساعة"
+other = "آخر ظهور قبل {count} ساعة"
 
 [t_4385d29350]
 en = "Last seen just now"
 where = [
   "desktop profile_last_seen_just_now: Desktop, profile and settings (in profile_view.rs, last_seen).",
 ]
-text = ""
+text = "آخر ظهور قبل لحظات"
 
 [t_8f77fe1d28]
 en_one = "Last seen {count} minute ago"
@@ -15484,1081 +15496,1087 @@ en_other = "Last seen {count} minutes ago"
 where = [
   "desktop profile_last_seen_minutes: Under a contact profile when they were last online. {count} is the number of minutes.",
 ]
+zero = "آخر ظهور قبل {count} دقيقة"
+one = "آخر ظهور قبل دقيقة"
+two = "آخر ظهور قبل دقيقتين"
+few = "آخر ظهور قبل {count} دقائق"
+many = "آخر ظهور قبل {count} دقيقة"
+other = "آخر ظهور قبل {count} دقيقة"
 
 [t_d1a0dcbb30]
 en = "Light or dark, as this computer is set"
 where = [
   "desktop profile_light_or_dark_as: Desktop, profile and settings (in profile_view.rs, settings_landing).",
 ]
-text = ""
+text = "فاتح أو داكن، حسب إعداد هذا الحاسوب"
 
 [t_5814a07b57]
 en = "Load group pictures by themselves"
 where = [
   "desktop profile_load_group_pictures_by: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "تحميل صور المجموعات تلقائيًا"
 
 [t_b711ca0977]
 en = "Match my computer"
 where = [
   "desktop profile_match_my_computer: Desktop, profile and settings (in profile_view.rs, settings_landing).",
 ]
-text = ""
+text = "مطابقة حاسوبي"
 
 [t_3577d58ddb]
 en = "{round} MB"
 where = [
   "desktop profile_mb: Desktop, profile and settings (in profile_view.rs, fmt_bytes). {round} is a value filled in by the app.",
 ]
-text = ""
+text = "{round} ميغابايت"
 
 [t_c1a3ac1d46]
 en = "Messages only: calling needs {name}’s permission"
 where = [
   "desktop profile_messages_only_calling_needs: Desktop, profile and settings (in profile_view.rs, person_profile). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "الرسائل فقط: الاتصال يتطلب إذن {name}"
 
 [t_f422fbec3c]
 en = "New passphrase again"
 where = [
   "desktop profile_new_passphrase_again: Desktop, profile and settings (in profile_view.rs, passphrase_page).",
 ]
-text = ""
+text = "عبارة المرور الجديدة مرة أخرى"
 
 [t_2be53fc862]
 en = "Nickname"
 where = [
   "desktop profile_nickname: Desktop, profile and settings (in profile_view.rs, person_profile).",
 ]
-text = ""
+text = "الاسم المستعار"
 
 [t_3ca88f3098]
 en = "No camera found. Plug one in and open this page again."
 where = [
   "desktop profile_no_camera_found_plug: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "لم يُعثر على كاميرا. يمكنك توصيل كاميرا وفتح هذه الصفحة مرة أخرى."
 
 [t_925929dc39]
 en = "No microphone found"
 where = [
   "desktop profile_no_microphone_found: Desktop, profile and settings (in profile_view.rs, notifications_page).",
 ]
-text = ""
+text = "لم يُعثر على ميكروفون"
 
 [t_6682826533]
 en = "No one is blocked."
 where = [
   "desktop profile_no_one_is_blocked: Desktop, profile and settings (in profile_view.rs, blocked_page).",
 ]
-text = ""
+text = "لا أحد محظور."
 
 [t_e3c3df9286]
 en = "No one left to block."
 where = [
   "desktop profile_no_one_left_to: Desktop, profile and settings (in profile_view.rs, privacy_layer).",
 ]
-text = ""
+text = "لا أحد آخر لحظره."
 
 [t_c40e38a466]
 en = "No profile is available."
 where = [
   "desktop profile_no_profile_is_available: Desktop, profile and settings (in profile_view.rs, person_profile).",
 ]
-text = ""
+text = "لا يتوفر ملف شخصي."
 
 [t_9b84ab3c9a]
 en = "Not seen for {value} days"
 where = [
   "desktop profile_not_seen_for_days: Desktop, profile and settings (in profile_view.rs, devices_page). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "عدد أيام الغياب: {value}"
 
 [t_bc6df257c5]
 en = "{value} of pictures and files you’ve opened. They’re prepared again when you open them."
 where = [
   "desktop profile_of_pictures_and_files: Desktop, profile and settings (in profile_view.rs, storage_page). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "{value} من الصور والملفات التي فتحتها. يُعاد تجهيزها عند فتحها."
 
 [t_d060fc5ab7]
 en = "Off means messages only"
 where = [
   "desktop profile_off_means_messages_only: Desktop, profile and settings (in profile_view.rs, person_profile).",
 ]
-text = ""
+text = "الإيقاف يعني الرسائل فقط"
 
 [t_5d478e8506]
 en = "On this computer"
 where = [
   "desktop profile_on_this_computer: Desktop, profile and settings (in profile_view.rs, storage_page).",
 ]
-text = ""
+text = "على هذا الحاسوب"
 
 [t_cdfa63e232]
 en = "Online now"
 where = [
   "desktop profile_online_now: Desktop, profile and settings (in profile_view.rs, devices_page).",
 ]
-text = ""
+text = "متصل الآن"
 
 [t_11b4ba4260]
 en = "Only the selected account is online on this computer. Switching pauses the other one: it receives no calls until you select it again."
 where = [
   "desktop profile_only_the_selected_account: Desktop, profile and settings (in profile_view.rs, settings_landing).",
 ]
-text = ""
+text = "الحساب المحدد وحده يكون متصلًا على هذا الحاسوب. التبديل يوقف الآخر مؤقتًا: لا تصله مكالمات حتى تحديده من جديد."
 
 [t_0ed74faf85]
 en = "Only this device has your account. Link another to keep a second copy of your chats. Your recovery phrase brings back your account, not your messages."
 where = [
   "desktop profile_only_this_device_has: Desktop, profile and settings (in profile_view.rs, devices_page).",
 ]
-text = ""
+text = "هذا الجهاز وحده يحمل حسابك. يمكنك ربط جهاز آخر للاحتفاظ بنسخة ثانية من دردشاتك. كلمات الاسترداد تستعيد حسابك، لا رسائلك."
 
 [t_b2c190e6e0]
 en = "Only you see these. A nickname changes what you call {name}, not their profile."
 where = [
   "desktop profile_only_you_see_these: Desktop, profile and settings (in profile_view.rs, person_profile). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "يظهر هذا لك وحدك. الاسم المستعار يغيّر طريقة ظهور {name} لديك، لا الملف الشخصي."
 
 [t_1a9e8ecade]
 en = "Only your own devices see this name."
 where = [
   "desktop profile_only_your_own_devices: Desktop, profile and settings (in profile_view.rs, devices_layer).",
 ]
-text = ""
+text = "لا يرى هذا الاسم إلا أجهزتك."
 
 [t_e1f70eccfa]
 en = "Person not found."
 where = [
   "desktop profile_person_not_found: Desktop, profile and settings (in profile_view.rs, person_profile).",
 ]
-text = ""
+text = "لم يُعثر على الشخص."
 
 [t_20137e067f]
 en = "Pick a contact."
 where = [
   "desktop profile_pick_a_contact: Desktop, profile and settings (in profile_view.rs, privacy_layer).",
 ]
-text = ""
+text = "يلزم اختيار جهة اتصال."
 
 [t_81ee822845]
 en = "Pictures in groups appear as they arrive"
 where = [
   "desktop profile_pictures_in_groups_appear: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "تظهر صور المجموعات فور وصولها"
 
 [t_6281bd7fc7]
 en = "Plain (old)"
 where = [
   "desktop profile_plain_old: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "عادي (قديم)"
 
 [t_2903aaba1d]
 en = "Profile picture changed while loading"
 where = [
   "desktop profile_profile_picture_changed_while: Desktop, profile and settings (in profile_ui.rs, read_profile).",
 ]
-text = ""
+text = "تغيّرت صورة الملف الشخصي أثناء التحميل"
 
 [t_784f3ae6ac]
 en = "Quit Tinline"
 where = [
   "desktop profile_quit_tinline: Desktop, profile and settings (in profile_view.rs, native_page).",
 ]
-text = ""
+text = "إنهاء Tinline"
 
 [t_2b5999b60c]
 en = "Rate control"
 where = [
   "desktop profile_rate_control: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "التحكم في المعدل"
 
 [t_1712035de1]
 en = "Rate control: probing needs the other side on this build too; set both the same for an A/B call."
 where = [
   "desktop profile_rate_control_probing_needs: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "التحكم في المعدل: يتطلب الاستكشاف أن يكون الطرف الآخر على هذا الإصدار أيضًا؛ يلزم ضبط الطرفين بالقيمة نفسها لمكالمة A/B."
 
 [t_f6b0eb5b3a]
 en = "Remove “{label_}” from your profile?"
 where = [
   "desktop profile_remove_from_your_profile: Desktop, profile and settings (in profile_view.rs, field_row_inner). {label_} is a value filled in by the app.",
 ]
-text = ""
+text = "إزالة «{label_}» من ملفك الشخصي؟"
 
 [t_ea0d1f95ed]
 en = "{name}’s app can reach you again. It removed you from their contacts when you blocked them, so you’ll both need to add each other again before you can message or call."
 where = [
   "desktop profile_s_app_can_reach: Desktop, profile and settings (in profile_view.rs, privacy_layer). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "يمكن لتطبيق {name} الوصول إليك من جديد. أزالك من جهات اتصاله عند الحظر، لذا يلزم أن يضيف كل منكما الآخر من جديد قبل المراسلة أو الاتصال."
 
 [t_f10a13dfa8]
 en = "{name}’s profile hasn’t arrived yet. It shows here once it syncs."
 where = [
   "desktop profile_s_profile_hasnt_arrived: Desktop, profile and settings (in profile_view.rs, person_profile). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "لم يصل ملف {name} الشخصي بعد. يظهر هنا بعد المزامنة."
 
 [t_0b53f94a6c]
 en = "Selected · connecting"
 where = [
   "desktop profile_selected_connecting: Desktop, profile and settings (in profile_view.rs, settings_landing).",
 ]
-text = ""
+text = "محدد · جارٍ الاتصال"
 
 [t_c3eb6bca8d]
 en = "Send codec"
 where = [
   "desktop profile_send_codec: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "ترميز الإرسال"
 
 [t_e7a3ee89e1]
 en = "Session only. Changes apply to the next call (About this call changes the current one). Fixed size disables rate/CPU resolution adaptation; peer and thermal caps still win. Use HD capture and compare actual payload rates and dimensions."
 where = [
   "desktop profile_session_only_changes_apply: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "لهذه الجلسة فقط. تُطبَّق التغييرات على المكالمة التالية («حول هذه المكالمة» يغيّر المكالمة الحالية). الحجم الثابت يعطّل تكييف الدقة حسب المعدل والمعالج؛ وتبقى الأولوية لحدود الطرف الآخر والحرارة. يمكنك استخدام الالتقاط بجودة HD ومقارنة معدلات الحمولة والأبعاد الفعلية."
 
 [t_50654bf33c]
 en = "Settings that belong to this computer only"
 where = [
   "desktop profile_settings_that_belong_to: Desktop, profile and settings (in profile_view.rs, settings_landing).",
 ]
-text = ""
+text = "إعدادات خاصة بهذا الحاسوب فقط"
 
 [t_9c944ff0b2]
 en = "Show a QR code on the new device, then approve it here"
 where = [
   "desktop profile_show_a_qr_code: Desktop, profile and settings (in profile_view.rs, devices_page).",
 ]
-text = ""
+text = "عرض رمز QR على الجهاز الجديد، ثم الموافقة عليه هنا"
 
 [t_9c40d34486]
 en = "Show key"
 where = [
   "desktop profile_show_key: Desktop, profile and settings (in profile_view.rs, phrase_page).",
 ]
-text = ""
+text = "إظهار المفتاح"
 
 [t_af70bc522d]
 en = "Show words"
 where = [
   "desktop profile_show_words: Desktop, profile and settings (in profile_view.rs, phrase_page).",
 ]
-text = ""
+text = "إظهار الكلمات"
 
 [t_c0c19a8034]
 en = "Shown after you confirm"
 where = [
   "desktop profile_shown_after_you_confirm: Desktop, profile and settings (in profile_view.rs, privacy_landing).",
 ]
-text = ""
+text = "يظهر بعد التأكيد"
 
 [t_bd82fe332b]
 en = "Shown to you as {name} · their name is {name2}"
 where = [
   "desktop profile_shown_to_you_as: Desktop, profile and settings (in profile_view.rs, field_row_inner). {name} is a person's name (usually the first word of their chosen name). {name2} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "يظهر لك باسم {name} · الاسم المختار {name2}"
 
 [t_b8e582229a]
 en = "Software"
 where = [
   "desktop profile_software: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "البرمجيات"
 
 [t_3df3d8bc73]
 en = "{value} {time}"
 where = [
   "desktop profile_text: Desktop, profile and settings (in profile_ui.rs, until_label). {value} is a value filled in by the app. {time} is a time.",
 ]
-text = ""
+text = "{value} {time}"
 
 [t_89ddb04770]
 en = "That is too long for {what}: up to {limit} bytes, and some characters take more than one."
 where = [
   "desktop profile_that_is_too_long: Desktop, profile and settings (in profile_ui.rs, check_text). {what} is a value filled in by the app. {limit} is a value filled in by the app.",
 ]
-text = ""
+text = "هذا طويل جدًا على {what}: الحد {limit} بايت، وبعض الأحرف يشغل أكثر من بايت."
 
 [t_cb69175dc2]
 en = "That {what} is too long. Up to {limit} bytes; some characters take more than one."
 where = [
   "desktop profile_that_is_too_long_up: Desktop, profile and settings (in profile_ui.rs, check_name). {what} is a value filled in by the app. {limit} is a value filled in by the app.",
 ]
-text = ""
+text = "{what} طويل جدًا. الحد {limit} بايت؛ وبعض الأحرف يشغل أكثر من بايت."
 
 [t_f0ad76df80]
 en = "That picture is {value} MB. Pictures can be up to {value2} MB."
 where = [
   "desktop profile_that_picture_is_mb: Desktop, profile and settings (in profile_ui.rs, inspect). {value} is a value filled in by the app. {value2} is a value filled in by the app.",
 ]
-text = ""
+text = "حجم هذه الصورة {value} ميغابايت. الحد الأقصى للصور {value2} ميغابايت."
 
 [t_c93b8484c2]
 en = "That picture is {status} × {host} pixels. Tinline accepts up to 4096 pixels on a side."
 where = [
   "desktop profile_that_picture_is_pixels: Desktop, profile and settings (in profile_ui.rs, inspect). {status} is a value filled in by the app. {host} is a value filled in by the app.",
 ]
-text = ""
+text = "أبعاد هذه الصورة {status} × {host} بكسل. يقبل Tinline حتى 4096 بكسل لكل ضلع."
 
 [t_5fc61ddfab]
 en = "The {what} can’t be empty."
 where = [
   "desktop profile_the_cant_be_empty: Desktop, profile and settings (in profile_ui.rs, check_name). {what} is a value filled in by the app.",
 ]
-text = ""
+text = "لا يمكن أن يكون {what} فارغًا."
 
 [t_1245e21c0c]
 en = "The {what} can’t contain control or text-direction characters."
 where = [
   "desktop profile_the_cant_contain_control: Desktop, profile and settings (in profile_ui.rs, check_name). {what} is a value filled in by the app.",
 ]
-text = ""
+text = "لا يمكن أن يحتوي {what} على أحرف تحكم أو أحرف اتجاه النص."
 
 [t_30c1c86ee5]
 en = "The passphrase protects Tinline on this device only; your other devices keep their own. Tinline can’t recover a forgotten passphrase. If that happens, your recovery phrase restores your account, though not your messages."
 where = [
   "desktop profile_the_passphrase_protects_tinline: Desktop, profile and settings (in profile_view.rs, passphrase_page).",
 ]
-text = ""
+text = "تحمي عبارة المرور Tinline على هذا الجهاز فقط؛ ولأجهزتك الأخرى عباراتها الخاصة. لا يستطيع Tinline استعادة عبارة مرور منسية. إن حدث ذلك، تستعيد كلمات الاسترداد حسابك، لكن ليس رسائلك."
 
 [t_ad1986c0d4]
 en = "There is no copy button on purpose: the phrase stays off the clipboard. Tinline never asks for it except to restore your account. The phrase brings back your account, not your messages."
 where = [
   "desktop profile_there_is_no_copy: Desktop, profile and settings (in profile_view.rs, phrase_page).",
 ]
-text = ""
+text = "لا يوجد زر نسخ عمدًا: تبقى الكلمات خارج الحافظة. لا يطلبها Tinline أبدًا إلا لاستعادة حسابك. الكلمات تستعيد حسابك، لا رسائلك."
 
 [t_057c54d1e7]
 en = "These stay on this computer. They aren’t part of your account."
 where = [
   "desktop profile_these_stay_on_this: Desktop, profile and settings (in profile_view.rs, native_page).",
 ]
-text = ""
+text = "تبقى هذه على هذا الحاسوب. ليست جزءًا من حسابك."
 
 [t_69f5484518]
 en = "This computer"
 where = [
   "desktop profile_this_computer: Desktop, profile and settings (in profile_view.rs, profile_page).",
 ]
-text = ""
+text = "هذا الحاسوب"
 
 [t_c4d705c661]
 en = "This computer decodes AV1 (rav1d) and VP8 (libvpx) in software only. During a call, About this call has the same controls for that call."
 where = [
   "desktop profile_this_computer_decodes_av1: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "يفك هذا الحاسوب ترميز AV1 (rav1d) و VP8 (libvpx) برمجيًا فقط. أثناء المكالمة، تتضمن «حول هذه المكالمة» عناصر التحكم نفسها لتلك المكالمة."
 
 [t_52795ba2e7]
 en = "This computer has no keyring, so Tinline asks for your passphrase each time it starts."
 where = [
   "desktop profile_this_computer_has_no: Desktop, profile and settings (in profile_view.rs, passphrase_page).",
 ]
-text = ""
+text = "لا توجد سلسلة مفاتيح على هذا الحاسوب، لذا يطلب Tinline عبارة المرور في كل مرة يبدأ فيها."
 
 [t_86dd1e0638]
 en = "This device · Online"
 where = [
   "desktop profile_this_device_online: Desktop, profile and settings (in profile_view.rs, devices_page).",
 ]
-text = ""
+text = "هذا الجهاز · متصل"
 
 [t_d6a83681ca]
 en = "This is not a lock."
 where = [
   "desktop profile_this_is_not_a: Desktop, profile and settings (in profile_view.rs, devices_layer).",
 ]
-text = ""
+text = "هذا ليس قفلًا."
 
 [t_b62ccd7a6a]
 en = "Tinline tells it now."
 where = [
   "desktop profile_tinline_tells_it_now: Desktop, profile and settings (in profile_view.rs, devices_layer).",
 ]
-text = ""
+text = "يبلغه Tinline الآن."
 
 [t_85188a2676]
 en = "Told you blocked them"
 where = [
   "desktop profile_told_you_blocked_them: Desktop, profile and settings (in profile_view.rs, blocked_page).",
 ]
-text = ""
+text = "تم الإبلاغ بالحظر"
 
 [t_645532a521]
 en = "Trend+probe"
 where = [
   "desktop profile_trend_probe: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "اتجاه+استكشاف"
 
 [t_cdb835ad27]
 en = "Unblock {first2}"
 where = [
   "desktop profile_unblock: Desktop, profile and settings (in profile_view.rs, person_profile). {first2} is a value filled in by the app.",
 ]
-text = ""
+text = "إلغاء حظر {first2}"
 
 [t_f0fb307e02]
 en = "Unblock {name}?"
 where = [
   "desktop profile_unblock_2: Desktop, profile and settings (in profile_view.rs, privacy_layer). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "إلغاء حظر {name}؟"
 
 [t_69ca4cd424]
 en = "Unlinking…"
 where = [
   "desktop profile_unlinking: Desktop, profile and settings (in profile_view.rs, devices_layer).",
 ]
-text = ""
+text = "جارٍ إلغاء الربط…"
 
 [t_62b2918318]
 en = "Version {value}"
 where = [
   "desktop profile_version: Desktop, profile and settings (in profile_view.rs, about_page). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "الإصدار {value}"
 
 [t_9e49a9bbf2]
 en = "Video tuning"
 where = [
   "desktop profile_video_tuning: Desktop, profile and settings (in profile_view.rs, video_page).",
 ]
-text = ""
+text = "ضبط الفيديو"
 
 [t_40f558f53e]
 en = "Wait for the current account operation to finish."
 where = [
   "desktop profile_wait_for_the_current: Desktop, profile and settings (in profile_ui.rs, profile_write).",
 ]
-text = ""
+text = "يلزم انتظار انتهاء عملية الحساب الحالية."
 
 [t_ce72295675]
 en = "WebRTC audio processing"
 where = [
   "desktop profile_webrtc_audio_processing: Desktop, profile and settings (in profile_view.rs, about_page).",
 ]
-text = ""
+text = "معالجة الصوت WebRTC"
 
 [t_4d02b4bdcd]
 en = "{name} will stop syncing with your account and stop ringing when you’re called. {value}"
 where = [
   "desktop profile_will_stop_syncing_with: Desktop, profile and settings (in profile_view.rs, devices_layer). {name} is a person's name (usually the first word of their chosen name). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "سيتوقف {name} عن المزامنة مع حسابك وعن الرنين عند ورود مكالمات لك. {value}"
 
 [t_d7dd1efe73]
 en = "Write these 24 words down, in order, and keep them somewhere private."
 where = [
   "desktop profile_write_these_24_words: Desktop, profile and settings (in profile_view.rs, phrase_page).",
 ]
-text = ""
+text = "يُستحسن كتابة هذه الكلمات الأربع والعشرين بالترتيب وحفظها في مكان خاص."
 
 [t_af2d0dcbe5]
 en = "You blocked {name}. Their profile no longer updates."
 where = [
   "desktop profile_you_blocked_their_profile: Desktop, profile and settings (in profile_view.rs, person_profile). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "حظرت {name}. لم يعد الملف الشخصي يُحدَّث."
 
 [t_c071e74cd1]
 en = "You blocked them"
 where = [
   "desktop profile_you_blocked_them: Desktop, profile and settings (in profile_view.rs, person_profile).",
 ]
-text = ""
+text = "حظرت هذا الشخص"
 
 [t_0810d6d484]
 en = "You won’t get calls or messages from {name}, and their profile updates stop."
 where = [
   "desktop profile_you_wont_get_calls: Desktop, profile and settings (in profile_view.rs, profile_layer). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "لن تصلك مكالمات أو رسائل من {name}، وستتوقف تحديثات الملف الشخصي."
 
 [t_9f41b4f49e]
 en = "Your chat history is still here."
 where = [
   "desktop profile_your_chat_history_is: Desktop, profile and settings (in profile_view.rs, privacy_layer).",
 ]
-text = ""
+text = "لا يزال سجل دردشتك هنا."
 
 [t_94fb56f848]
 en = "Your recovery key is the same as your 24 words, as one line. A password manager is a good place for it."
 where = [
   "desktop profile_your_recovery_key_is: Desktop, profile and settings (in profile_view.rs, phrase_page).",
 ]
-text = ""
+text = "مفتاح الاسترداد هو نفسه كلماتك الأربع والعشرون، في سطر واحد. مدير كلمات المرور مكان مناسب له."
 
 [t_044cdbfc11]
 en = "Your recovery phrase is the only way to get your account back if you lose every device. Anyone who has it can act as you."
 where = [
   "desktop profile_your_recovery_phrase_is: Desktop, profile and settings (in profile_view.rs, phrase_page).",
 ]
-text = ""
+text = "كلمات الاسترداد هي الطريقة الوحيدة لاستعادة حسابك إذا فقدت كل أجهزتك. أي شخص يحصل عليها يمكنه التصرف باسمك."
 
 [t_25988f1d9a]
 en = "Your settings for {name}"
 where = [
   "desktop profile_your_settings_for: Desktop, profile and settings (in profile_view.rs, person_profile). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "إعداداتك: {name}"
 
 [t_1a0a38d265]
 en = "Account"
 where = [
   "desktop settings_account: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "الحساب"
 
 [t_96c9d2bee5]
 en = "Anyone who sees these words can become you. Check nobody is looking, then show them."
 where = [
   "desktop settings_anyone_who_sees_these: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "أي شخص يرى هذه الكلمات يمكنه انتحال هويتك. يُستحسن التأكد من أن لا أحد ينظر قبل إظهارها."
 
 [t_b943e62fec]
 en = "Anyone who sees these words can become you. Check nobody is looking."
 where = [
   "desktop settings_anyone_who_sees_these_words: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "أي شخص يرى هذه الكلمات يمكنه انتحال هويتك. يُستحسن التأكد من أن لا أحد ينظر."
 
 [t_007f441e85]
 en = "Asks you to confirm first"
 where = [
   "desktop settings_asks_you_to_confirm: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "يطلب التأكيد أولًا"
 
 [t_811da6b443]
 en = "Audio"
 where = [
   "desktop settings_audio: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "الصوت"
 
 [t_9fb4995484]
 en = "Calls won’t ring until you turn it back on"
 where = [
   "desktop settings_calls_wont_ring_until: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "لن ترن المكالمات حتى إعادة التشغيل"
 
 [t_3261bdf0e1]
 en = "Change"
 where = [
   "desktop settings_change: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "تغيير"
 
 [t_90ebfd544e]
 en = "Checking..."
 where = [
   "desktop settings_checking: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "جارٍ التحقق…"
 
 [t_458b341145]
 en = "Device changes apply from the next call"
 where = [
   "desktop settings_device_changes_apply_from: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "تُطبَّق تغييرات الأجهزة بدءًا من المكالمة التالية"
 
 [t_a7394c8f06]
 en = "Enter your passphrase"
 where = [
   "desktop settings_enter_your_passphrase: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "إدخال عبارة المرور"
 
 [t_bb48a50610]
 en = "Instead of the microphone, to check the connection"
 where = [
   "desktop settings_instead_of_the_microphone: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "بدلًا من الميكروفون، للتحقق من الاتصال"
 
 [t_6cde4fb02a]
 en = "Keep"
 where = [
   "desktop settings_keep: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "إبقاء"
 
 [t_8494e68bf4]
 en = "Locked · needs its passphrase"
 where = [
   "desktop settings_locked_needs_its_passphrase: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "مقفل · يحتاج إلى عبارة المرور"
 
 [t_d87befa574]
 en = "Only your own devices see it"
 where = [
   "desktop settings_only_your_own_devices: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "لا تراه إلا أجهزتك"
 
 [t_5910a9281c]
 en = "Optional — encrypts your account on this computer"
 where = [
   "desktop settings_optional_encrypts_your_account: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "اختيارية — تشفّر حسابك على هذا الحاسوب"
 
 [t_50b9a9cd8e]
 en = "Other accounts on this computer"
 where = [
   "desktop settings_other_accounts_on_this: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "حسابات أخرى على هذا الحاسوب"
 
 [t_040256ef93]
 en = "Recommended — your key is in a plain file"
 where = [
   "desktop settings_recommended_your_key_is: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "موصى به — مفتاحك في ملف غير محمي"
 
 [t_99d98f7cf9]
 en = "Remove {name} from this computer? Its contacts, chats and call history here are deleted. Your recovery phrase brings back the identity, not those."
 where = [
   "desktop settings_remove_from_this_computer: Desktop, settings (older page) (in view.rs, native_settings_view). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "إزالة {name} من هذا الحاسوب؟ تُحذف هنا جهات اتصاله ودردشاته وسجل مكالماته. كلمات الاسترداد تستعيد الهوية، لا هذه البيانات."
 
 [t_5cd6c5f390]
 en = "Send a test tone"
 where = [
   "desktop settings_send_a_test_tone: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "إرسال نغمة اختبار"
 
 [t_b9cce40003]
 en = "Show recovery phrase"
 where = [
   "desktop settings_show_recovery_phrase: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "إظهار كلمات الاسترداد"
 
 [t_0c6d910d36]
 en = "Shown to the people you add"
 where = [
   "desktop settings_shown_to_the_people: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "يظهر لمن تمت إضافتهم"
 
 [t_c26dcc4ffd]
 en = "This computer’s name"
 where = [
   "desktop settings_this_computers_name: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "اسم هذا الحاسوب"
 
 [t_fedfb70e58]
 en = "Unlocks Tinline when it starts"
 where = [
   "desktop settings_unlocks_tinline_when_it: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "يفتح قفل Tinline عند بدئه"
 
 [t_cdcc50b2f7]
 en = "Your camera stays off until you turn it on in the call"
 where = [
   "desktop settings_your_camera_stays_off: Desktop, settings (older page) (in view.rs, native_settings_view).",
 ]
-text = ""
+text = "تبقى الكاميرا متوقفة حتى تشغيلها أثناء المكالمة"
 
 [t_90bdebb782]
 en = "BLOCKED"
 where = [
   "desktop shell_blocked: Desktop, shell: sidebar, search, contacts (in shell_view.rs, contacts_list).",
 ]
-text = ""
+text = "المحظورون"
 
 [t_c2c5a73746]
 en = "Choose a chat"
 where = [
   "desktop shell_choose_a_chat: Desktop, shell: sidebar, search, contacts (in shell_view.rs, shell_empty_detail).",
 ]
-text = ""
+text = "اختيار دردشة"
 
 [t_8456b9462d]
 en = "Messages stay on your devices."
 where = [
   "desktop shell_messages_stay_on_your: Desktop, shell: sidebar, search, contacts (in shell_view.rs, shell_empty_detail).",
 ]
-text = ""
+text = "تبقى الرسائل على أجهزتك."
 
 [t_2511179a74]
 en = "More messages"
 where = [
   "desktop shell_more_messages: Desktop, shell: sidebar, search, contacts (in shell_view.rs, shell_search_results).",
 ]
-text = ""
+text = "المزيد من الرسائل"
 
 [t_5b37e08e60]
 en = "No contact called “{trim}”."
 where = [
   "desktop shell_no_contact_called: Desktop, shell: sidebar, search, contacts (in shell_view.rs, new_chat_overlay). {trim} is a value filled in by the app.",
 ]
-text = ""
+text = "لا جهة اتصال باسم «{trim}»."
 
 [t_998b1844f6]
 en = "No messages match"
 where = [
   "desktop shell_no_messages_match: Desktop, shell: sidebar, search, contacts (in shell_view.rs, shell_search_results).",
 ]
-text = ""
+text = "لا رسائل مطابقة"
 
 [t_7278323591]
 en = "No one called “{trim}” in your contacts."
 where = [
   "desktop shell_no_one_called_in: Desktop, shell: sidebar, search, contacts (in shell_view.rs, contacts_list). {trim} is a value filled in by the app.",
 ]
-text = ""
+text = "لا أحد باسم «{trim}» في جهات اتصالك."
 
 [t_a878978527]
 en = "Scan a code or paste an invite"
 where = [
   "desktop shell_scan_a_code_or: Desktop, shell: sidebar, search, contacts (in shell_view.rs, new_chat_overlay).",
 ]
-text = ""
+text = "مسح رمز أو لصق دعوة"
 
 [t_f4e09c2bbf]
 en = "Search (Ctrl+K)"
 where = [
   "desktop shell_search_ctrl_k: Desktop, shell: sidebar, search, contacts (in shell_view.rs, desktop_search_field).",
 ]
-text = ""
+text = "بحث (Ctrl+K)"
 
 [t_f7a95b3438]
 en = "Searching…"
 where = [
   "desktop shell_searching: Desktop, shell: sidebar, search, contacts (in shell_view.rs, shell_search_results).",
 ]
-text = ""
+text = "جارٍ البحث…"
 
 [t_09334bda23]
 en = "WAITING FOR THEM"
 where = [
   "desktop shell_waiting_for_them: Desktop, shell: sidebar, search, contacts (in shell_view.rs, contacts_list).",
 ]
-text = ""
+text = "بانتظار الرد"
 
 [t_83e7098628]
 en = "WAITING FOR YOU"
 where = [
   "desktop shell_waiting_for_you: Desktop, shell: sidebar, search, contacts (in shell_view.rs, contacts_list).",
 ]
-text = ""
+text = "بانتظار ردك"
 
 [t_977fda7ea5]
 en = "A lock, so only you can open Tinline on this computer."
 where = [
   "desktop signup_a_lock_so_only: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "قفل يجعل فتح Tinline على هذا الحاسوب لك وحدك."
 
 [t_1f0d4d7cb3]
 en = "Add {name}"
 where = [
   "desktop signup_add: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "إضافة {name}"
 
 [t_cbe48ef105]
 en = "Add another name"
 where = [
   "desktop signup_add_another_name: Desktop, sign-up, restore and add contact (in signup_view.rs, open_as_menu).",
 ]
-text = ""
+text = "إضافة اسم آخر"
 
 [t_cfe61741af]
 en = " and have read the "
 where = [
   "desktop signup_and_have_read_the: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = " واطلاعك على "
 
 [t_4630a76192]
 en = "Couldn’t make a new code just now. Try again in a moment."
 where = [
   "desktop signup_couldnt_make_a_new: Desktop, sign-up, restore and add contact (in signup.rs, gate_update).",
 ]
-text = ""
+text = "تعذّر إنشاء رمز جديد الآن. يمكنك المحاولة بعد لحظة."
 
 [t_5e800d7c99]
 en = "Create a new account or bring one you already have."
 where = [
   "desktop signup_create_a_new_account: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "يمكنك إنشاء حساب جديد أو إحضار حساب لديك."
 
 [t_0af5893864]
 en = "Encrypts your account on this computer. You type it each time Tinline starts. If you forget it, your recovery words let you set a new one."
 where = [
   "desktop signup_encrypts_your_account_on: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "تشفّر حسابك على هذا الحاسوب. تُكتب في كل مرة يبدأ فيها Tinline. إذا نسيتها، تتيح لك كلمات الاسترداد تعيين عبارة جديدة."
 
 [t_c89a3beeba]
 en = "Groups are hosted on a computer. Keep Tinline open and your groups stay reachable."
 where = [
   "desktop signup_groups_are_hosted_on: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "تُستضاف المجموعات على حاسوب. ما دام Tinline مفتوحًا، تبقى مجموعاتك متاحة."
 
 [t_51feac3631]
 en = "Home computer"
 where = [
   "desktop signup_home_computer: Desktop, sign-up, restore and add contact (in signup.rs, gate_created).",
 ]
-text = ""
+text = "حاسوب المنزل"
 
 [t_a62ba0b2eb]
 en = "If you ever switch devices, these 24 words bring your account along."
 where = [
   "desktop signup_if_you_ever_switch: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "إذا انتقلت يومًا إلى جهاز آخر، فهذه الكلمات الأربع والعشرون تُحضر حسابك معك."
 
 [t_60e00617a2]
 en = "Is this the {name} you expected? If you’re not sure, check with them first."
 where = [
   "desktop signup_is_this_the_you: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = ""
+text = "هل يخص هذا الرمز {name} المتوقع؟ عند الشك، يُستحسن التأكد مع صاحب الرمز أولًا."
 
 [t_01a5bbebc5]
 en = "Laptop"
 where = [
   "desktop signup_laptop: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "حاسوب محمول"
 
 [t_118c865bad]
 en = "Message {value}"
 where = [
   "desktop signup_message_2: Desktop, sign-up, restore and add contact (in signup_view.rs, empty_hero). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "مراسلة {value}"
 
 [t_b265bd4d52]
 en = "{count} of {total}"
 where = [
   "desktop signup_of: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_head). {count} is a number. {total} is a value filled in by the app.",
 ]
-text = ""
+text = "{count} من {total}"
 
 [t_874cf4e616]
 en = "Optional. A lock, so only you can open Tinline on this computer."
 where = [
   "desktop signup_optional_a_lock_so: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "اختيارية. قفل يجعل فتح Tinline على هذا الحاسوب لك وحدك."
 
 [t_2f46bf8b88]
 en = "Paste it somewhere safe. A password manager works great."
 where = [
   "desktop signup_paste_it_somewhere_safe: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "يمكنك لصقه في مكان آمن. مدير كلمات المرور خيار رائع."
 
 [t_73f6fcb372]
 en = "Save a copy somewhere safe. Paper works great."
 where = [
   "desktop signup_save_a_copy_somewhere: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "يمكنك حفظ نسخة في مكان آمن. الورق خيار رائع."
 
 [t_90efd61b03]
 en = "Say hello to {value} whenever you like."
 where = [
   "desktop signup_say_hello_to_whenever: Desktop, sign-up, restore and add contact (in signup_view.rs, empty_hero). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "يمكنك إلقاء التحية على {value} متى شئت."
 
 [t_7e31fba9bb]
 en = "Send it to anyone you’d like to talk to, in any app. It works until {value}."
 where = [
   "desktop signup_send_it_to_anyone_youd: Desktop, sign-up, restore and add contact (in signup_view.rs, add_overlay). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "يمكنك إرساله عبر أي تطبيق إلى من يهمك التحدث معه. يعمل حتى {value}."
 
 [t_e42886dfd5]
 en = "That code from {value} has expired. Codes last 7 days, so ask them for a fresh one."
 where = [
   "desktop signup_that_code_from_has: Desktop, sign-up, restore and add contact (in signup.rs, ac_pasted). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "انتهت صلاحية هذا الرمز من {value}. تعمل الرموز سبعة أيام، لذا يمكنك طلب رمز جديد."
 
 [t_c26085963d]
 en = "This computer can host your groups"
 where = [
   "desktop signup_this_computer_can_host: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "يمكن لهذا الحاسوب استضافة مجموعاتك"
 
 [t_a356e70e97]
 en = "Tinline connects your {noun} straight to theirs."
 where = [
   "desktop signup_tinline_connects_your_straight: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {noun} is the word for this device kind (e.g. computer).",
 ]
-text = ""
+text = "يصل Tinline {noun} الخاص بك بأجهزتهم مباشرة."
 
 [t_11ee2c617b]
 en = "Type your 24 recovery words. This {noun} starts with an empty contact list."
 where = [
   "desktop signup_type_your_24_recovery: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {noun} is the word for this device kind (e.g. computer).",
 ]
-text = ""
+text = "كتابة كلمات الاسترداد الأربع والعشرين. يبدأ هذا {noun} بقائمة جهات اتصال فارغة."
 
 [t_3b93466452]
 en = "Type your 24 words in order, or paste them, or your recovery key, into the first box. They stay on this {noun}."
 where = [
   "desktop signup_type_your_24_words: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {noun} is the word for this device kind (e.g. computer).",
 ]
-text = ""
+text = "يمكنك كتابة كلماتك الأربع والعشرين بالترتيب، أو لصقها أو لصق مفتاح الاسترداد في المربع الأول. تبقى على هذا {noun}."
 
 [t_89cb7b48e0]
 en = "Use your phone to reach emergency services."
 where = [
   "desktop signup_use_your_phone_to: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "يمكنك استخدام هاتفك للوصول إلى خدمات الطوارئ."
 
 [t_636ae913d6]
 en = "Word {value}{value2} {value3} in the recovery word list. Check the spelling."
 where = [
   "desktop signup_word_in_the_recovery: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {value} is a value filled in by the app. {value2} is a value filled in by the app. {value3} is a value filled in by the app.",
 ]
-text = ""
+text = "الكلمة {value}{value2} {value3} في قائمة كلمات الاسترداد. يمكنك التحقق من الإملاء."
 
 [t_a311c6ef10]
 en = "{filled} words are still missing."
 where = [
   "desktop signup_words_are_still_missing: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {filled} is a value filled in by the app.",
 ]
-text = ""
+text = "عدد الكلمات الناقصة: {filled}."
 
 [t_50284ec479]
 en = "Work computer"
 where = [
   "desktop signup_work_computer: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "حاسوب العمل"
 
 [t_d00ea827d7]
 en = "You just need a nickname. Encrypted end to end."
 where = [
   "desktop signup_you_just_need_a: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "كل ما يلزم اسم مستعار. مشفّر تمامًا بين الطرفين."
 
 [t_bfd0aa5282]
 en = "{value} You type it each time Tinline starts. If you forget it, your recovery words let you set a new one."
 where = [
   "desktop signup_you_type_it_each: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "{value} تُكتب في كل مرة يبدأ فيها Tinline. إذا نسيتها، تتيح لك كلمات الاسترداد تعيين عبارة جديدة."
 
 [t_2e013de2a8]
 en = "Your account is its recovery phrase, so you can bring it to this {noun} two ways."
 where = [
   "desktop signup_your_account_is_its: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {noun} is the word for this device kind (e.g. computer).",
 ]
-text = ""
+text = "حسابك هو كلمات الاسترداد الخاصة به، لذا يمكنك إحضاره إلى هذا {noun} بطريقتين."
 
 [t_50700bde54]
 en = "Your current account stays on this {noun}."
 where = [
   "desktop signup_your_current_account_stays: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {noun} is the word for this device kind (e.g. computer).",
 ]
-text = ""
+text = "يبقى حسابك الحالي على هذا {noun}."
 
 [t_10e5979f60]
 en = "Your recovery key is in. It stays on this {noun}."
 where = [
   "desktop signup_your_recovery_key_is: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step). {noun} is the word for this device kind (e.g. computer).",
 ]
-text = ""
+text = "تم إدخال مفتاح الاسترداد. يبقى على هذا {noun}."
 
 [t_75ff90b9e6]
 en = "Your recovery key is the same as your 24 words, as one line."
 where = [
   "desktop signup_your_recovery_key_is_the: Desktop, sign-up, restore and add contact (in signup_view.rs, gate_step).",
 ]
-text = ""
+text = "مفتاح الاسترداد هو نفسه كلماتك الأربع والعشرون، في سطر واحد."
 
 [t_be60e742e9]
 en = "Your request to {value} is waiting. Your line opens when they accept."
 where = [
   "desktop signup_your_request_to_is: Desktop, sign-up, restore and add contact (in signup_view.rs, empty_hero). {value} is a value filled in by the app.",
 ]
-text = ""
+text = "طلبك إلى {value} بالانتظار. يُفتح خطك عند القبول."
 
 [t_23aa6f9dd7]
 en = "Quit"
 where = [
   "desktop tray_quit: Desktop, system tray (in tray.rs, build).",
 ]
-text = ""
+text = "إنهاء"
 
 [t_a8432fcc64]
 en = "Tinline - {status}"
 where = [
   "desktop tray_tinline: Desktop, system tray (in tray.rs, refresh). {status} is a value filled in by the app.",
 ]
-text = ""
+text = "Tinline - {status}"
 
 [t_82d3373306]
 en = "Camera: {error}"
 where = [
   "desktop video_camera: Desktop, video (in vcall.rs, video_update). {error} is the underlying error text, not translated.",
 ]
-text = ""
+text = "الكاميرا: {error}"
 
 [t_fe64fb27a3]
 en = "Video tuning: {error}"
 where = [
   "desktop video_video_tuning: Desktop, video (in vcall.rs, video_update). {error} is the underlying error text, not translated.",
 ]
-text = ""
+text = "ضبط الفيديو: {error}"
 
 [t_d7ef28d854]
 en = "Your chosen camera isn't connected. Pick one in Settings → Video."
 where = [
   "desktop video_your_chosen_camera_isnt: Desktop, video (in vcall.rs, found).",
 ]
-text = ""
+text = "الكاميرا التي اخترتها غير متصلة. يمكنك اختيار كاميرا من الإعدادات ← الفيديو."
 
 [t_4d707b1137]
 en = "System default"
 where = [
   "desktop app_system_default: Entry at the top of the microphone, speaker and camera pick lists: use the system default device.",
 ]
-text = ""
+text = "الافتراضي للنظام"
 
 [t_cf682df833]
 en = "This computer has no secure keyring, so Tinline needs a passphrase to protect your account."
 where = [
   "desktop app_no_secure_keyring: Shown when this computer has no secure keyring, so a passphrase is required.",
 ]
-text = ""
+text = "لا توجد سلسلة مفاتيح آمنة على هذا الحاسوب، لذا يحتاج Tinline إلى عبارة مرور لحماية حسابك."
