@@ -1,5 +1,6 @@
 package com.osvauld.p2p
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -88,8 +89,8 @@ data class Blocks(
 
     /** The red line under the name in lists and headers. */
     fun status(did: String): String? = when (composer(did, true)) {
-        ComposerState.BlockedByMe -> "Blocked"
-        ComposerState.BlockedMe -> "Blocked you"
+        ComposerState.BlockedByMe -> "Blocked" // i18n-deferred: BlockingTest asserts this text and Home.kt matches it with startsWith("Blocked")
+        ComposerState.BlockedMe -> "Blocked you" // i18n-deferred: BlockingTest asserts this text
         else -> null
     }
 
@@ -120,7 +121,7 @@ object BlockCopy {
 /** "Block X?" with every consequence listed before the tap. */
 @Composable
 fun BlockDialog(name: String, onDismiss: () -> Unit, onBlock: () -> Unit) {
-    TinDialog(uniffi.present.blockDialogTitle(name), onDismiss, "Block", { onDismiss(); onBlock() }, destructive = true, icon = PgIcons.Off) {
+    TinDialog(uniffi.present.blockDialogTitle(name), onDismiss, stringResource(R.string.blocking_block), { onDismiss(); onBlock() }, destructive = true, icon = PgIcons.Off) {
         uniffi.present.blockDialogLines(name).forEach { DialogText("• $it") }
     }
 }
@@ -131,27 +132,28 @@ fun BlockedPeopleScreen(app: P2pApp, onBack: () -> Unit, say: (String) -> Unit) 
     val c = Tin.c
     val blocks by app.blocks.collectAsState()
     Page {
-        TopBar("Blocked people", onBack)
+        TopBar(stringResource(R.string.blocking_title), onBack)
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
-            Hint("One list across all your devices: a block made on another device shows here too.", Modifier.padding(horizontal = 20.dp, vertical = 8.dp))
-            if (blocks.list.isEmpty()) Hint("Nobody is blocked. To block someone, open their contact page and tap Block.", Modifier.padding(horizontal = 20.dp, vertical = 12.dp))
+            Hint(stringResource(R.string.blocking_hint), Modifier.padding(horizontal = 20.dp, vertical = 8.dp))
+            if (blocks.list.isEmpty()) Hint(stringResource(R.string.blocking_none), Modifier.padding(horizontal = 20.dp, vertical = 12.dp))
             blocks.list.forEach { b ->
-                val name = b.name.ifBlank { "Someone" }
+                val name = b.name.ifBlank { stringResource(R.string.common_someone) }
+                val told = stringResource(R.string.blocking_unblocked_told, firstName(name))
                 Row(Modifier.fillMaxWidth().heightIn(min = 72.dp).padding(start = 20.dp, end = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                     Avatar(name, b.did, 44.dp)
                     Column(Modifier.weight(1f)) {
                         Text(name, style = TinType.bodyL.copy(fontWeight = FontWeight.SemiBold), color = c.ink)
-                        Hint("Blocked ${BlockCopy.date(b.blockedAtSecs)}")
+                        Hint(stringResource(R.string.blocking_blocked_on, BlockCopy.date(b.blockedAtSecs)))
                     }
-                    Box(Modifier.heightIn(min = 48.dp).clip(RoundedCornerShape(50)).clickable(role = Role.Button, onClickLabel = "Unblock $name") {
-                        app.unblock(b.did); say("${firstName(name)} is told you unblocked them")
+                    Box(Modifier.heightIn(min = 48.dp).clip(RoundedCornerShape(50)).clickable(role = Role.Button, onClickLabel = stringResource(R.string.blocking_unblock_name, name)) {
+                        app.unblock(b.did); say(told)
                     }.padding(horizontal = 12.dp), contentAlignment = Alignment.Center) {
-                        Text("Unblock", style = TinType.button.copy(fontSize = 15.sp), color = c.pr)
+                        Text(stringResource(R.string.blocking_unblock), style = TinType.button.copy(fontSize = 15.sp), color = c.pr)
                     }
                 }
             }
             Column(Modifier.padding(20.dp).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Unblocking", style = TinType.bodyL.copy(fontSize = 15.sp, fontWeight = FontWeight.Bold), color = c.ink)
+                Text(stringResource(R.string.blocking_unblocking), style = TinType.bodyL.copy(fontSize = 15.sp, fontWeight = FontWeight.Bold), color = c.ink)
                 Text(uniffi.present.unblockNote(), style = TinType.bodyM, color = c.ink2)
             }
         }

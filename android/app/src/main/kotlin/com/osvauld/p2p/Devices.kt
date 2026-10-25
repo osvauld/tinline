@@ -1,5 +1,6 @@
 package com.osvauld.p2p
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
@@ -37,30 +38,30 @@ fun LinkedDevicesScreen(app: P2pApp, onBack: () -> Unit, onLink: () -> Unit, onD
     val active = list.filter { !it.removed }
     val removed = list.filter { it.removed }
     Page {
-        TopBar("Linked devices", onBack)
+        TopBar(stringResource(R.string.devices_title), onBack)
         Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())) {
-            Hint("Calls ring on all of these. People you call never see these names.", Modifier.padding(horizontal = 20.dp, vertical = 8.dp))
+            Hint(stringResource(R.string.devices_hint), Modifier.padding(horizontal = 20.dp, vertical = 8.dp))
             active.forEach { d -> DeviceRow(d, onClick = { onDetail(d.device) }) }
-            Box(Modifier.padding(horizontal = 20.dp, vertical = 16.dp)) { TinButton("Link a device", onLink, icon = PgIcons.Plus) }
+            Box(Modifier.padding(horizontal = 20.dp, vertical = 16.dp)) { TinButton(stringResource(R.string.devices_link), onLink, icon = PgIcons.Plus) }
             if (removed.isNotEmpty()) {
-                SectionLabel("UNLINKED")
+                SectionLabel(stringResource(R.string.devices_unlinked_label))
                 removed.forEach { d -> DeviceRow(d, onClick = { onDetail(d.device) }) }
             }
-            SectionLabel("SYNC")
-            Hint("Devices sync directly with each other whenever two are online at once. There is no copy on any server.", Modifier.padding(horizontal = 20.dp))
+            SectionLabel(stringResource(R.string.devices_sync_label))
+            Hint(stringResource(R.string.devices_sync_hint), Modifier.padding(horizontal = 20.dp))
         }
     }
 }
 
 @Composable
 private fun DeviceRow(d: LinkedDevice, onClick: () -> Unit) {
-    val title = if (d.thisDevice) "This phone — ${d.label.ifBlank { "Unnamed" }}" else d.label.ifBlank { "Unnamed device" }
+    val title = if (d.thisDevice) stringResource(R.string.devices_this_phone_named, d.label.ifBlank { stringResource(R.string.devices_unnamed) }) else d.label.ifBlank { stringResource(R.string.devices_unnamed_device) }
     val seen = d.lastSeen
     val sub = when {
-        d.removed -> "Unlinked"
-        d.thisDevice -> "This device · Android"
-        seen != null -> "Synced ${agoText(seen.toLong())}"
-        else -> "Not seen yet"
+        d.removed -> stringResource(R.string.devices_sub_unlinked)
+        d.thisDevice -> stringResource(R.string.devices_sub_this)
+        seen != null -> stringResource(R.string.devices_sub_synced, agoText(seen.toLong()))
+        else -> stringResource(R.string.devices_sub_not_seen)
     }
     ListItem(title, onClick = onClick, sub = sub, icon = if (d.thisDevice) PgIcons.Smartphone else PgIcons.Devices,
         titleColor = if (d.removed) Tin.c.ink2 else Tin.c.ink)
@@ -81,7 +82,7 @@ fun DeviceDetailScreen(app: P2pApp, device: String, onBack: () -> Unit, onMessag
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     if (devices != null && d == null) { LaunchedEffect(Unit) { onBack() }; return }
-    if (d == null) { Page { TopBar("Device", onBack) }; return }
+    if (d == null) { Page { TopBar(stringResource(R.string.devices_device), onBack) }; return }
     val others = devices.orEmpty().count { !it.removed && !it.thisDevice }
 
     fun unlink() {
@@ -91,39 +92,39 @@ fun DeviceDetailScreen(app: P2pApp, device: String, onBack: () -> Unit, onMessag
             val r = withContext(Dispatchers.IO) { runCatching { app.node.unlinkDevice(d.device, if (hasPass) pass else null) } }
             busy = false
             r.onFailure {
-                error = if (it is uniffi.p2pcore.Exception.InCall) "Finish your call first" else friendly(it)
+                error = if (it is uniffi.p2pcore.Exception.InCall) ctx.getString(R.string.devices_finish_call) else friendly(it)
                 if (it !is uniffi.p2pcore.Exception.WrongPassphrase) { confirm = false; onMessage(error!!) }
             }
             r.onSuccess {
                 pass = ""; confirm = false
                 if (d.thisDevice && did != null) withContext(Dispatchers.IO) { app.accountGone(did, notify = false) }
-                else { onMessage("Unlinked ${d.label.ifBlank { "device" }}"); onBack() }
+                else { onMessage(ctx.getString(R.string.devices_unlinked_msg, d.label.ifBlank { ctx.getString(R.string.devices_fallback_device) })); onBack() }
             }
         }
     }
     fun confirmed() {
         val act = ctx.findActivity()
         if (hasPass || act == null) unlink()
-        else DeviceAuth.ask(act, if (d.thisDevice) "Remove account from this phone" else "Unlink device") { ok -> if (ok) unlink() else error = "Screen lock check cancelled" }
+        else DeviceAuth.ask(act, if (d.thisDevice) ctx.getString(R.string.devices_remove_account) else ctx.getString(R.string.devices_unlink_device)) { ok -> if (ok) unlink() else error = ctx.getString(R.string.devices_lock_cancelled) }
     }
 
     Page {
-        TopBar(if (d.thisDevice) "This phone" else d.label.ifBlank { "Device" }, onBack)
+        TopBar(if (d.thisDevice) stringResource(R.string.devices_this_phone) else d.label.ifBlank { stringResource(R.string.devices_device) }, onBack)
         Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())) {
-            ListItem("Name", onClick = if (d.removed) null else ({ renaming = true }), sub = d.label.ifBlank { "Unnamed" }, icon = PgIcons.Edit, trailing = null)
-            ListItem("Last synced", sub = if (d.thisDevice) "This device" else d.lastSeen?.let { agoText(it.toLong()) } ?: "Not yet", icon = PgIcons.Retry, trailing = null)
-            ListItem("Rings for calls", sub = if (d.removed) "No, it was unlinked" else "Yes, when it’s on", icon = PgIcons.Phone, trailing = null)
+            ListItem(stringResource(R.string.devices_name), onClick = if (d.removed) null else ({ renaming = true }), sub = d.label.ifBlank { stringResource(R.string.devices_unnamed) }, icon = PgIcons.Edit, trailing = null)
+            ListItem(stringResource(R.string.devices_last_synced), sub = if (d.thisDevice) stringResource(R.string.devices_this_device) else d.lastSeen?.let { agoText(it.toLong()) } ?: stringResource(R.string.devices_not_yet), icon = PgIcons.Retry, trailing = null)
+            ListItem(stringResource(R.string.devices_rings), sub = if (d.removed) stringResource(R.string.devices_rings_no) else stringResource(R.string.devices_rings_yes), icon = PgIcons.Phone, trailing = null)
             if (!d.removed) {
                 Column(Modifier.padding(horizontal = 20.dp, vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    if (!d.thisDevice) TinButton("Sync now", { app.node.networkChanged(); onMessage("Syncing with ${d.label.ifBlank { "the device" }}…") }, style = BtnStyle.Outlined, icon = PgIcons.Retry)
-                    TinButton(if (d.thisDevice) "Remove account from this phone" else "Unlink this device", { pass = ""; error = null; confirm = true }, style = BtnStyle.Danger, icon = PgIcons.Off)
+                    if (!d.thisDevice) TinButton(stringResource(R.string.devices_sync_now), { app.node.networkChanged(); onMessage(ctx.getString(R.string.devices_syncing, d.label.ifBlank { ctx.getString(R.string.devices_fallback_the_device) })) }, style = BtnStyle.Outlined, icon = PgIcons.Retry)
+                    TinButton(if (d.thisDevice) stringResource(R.string.devices_remove_account) else stringResource(R.string.devices_unlink_this), { pass = ""; error = null; confirm = true }, style = BtnStyle.Danger, icon = PgIcons.Off)
                 }
             }
         }
     }
     if (renaming) {
         var text by remember { mutableStateOf(d.label) }
-        TinDialog(if (d.thisDevice) "Name this phone" else "Rename device", { renaming = false }, "Save", {
+        TinDialog(if (d.thisDevice) stringResource(R.string.devices_name_this_phone) else stringResource(R.string.devices_rename), { renaming = false }, stringResource(R.string.devices_save), {
             val n = text.trim()
             renaming = false
             scope.launch {
@@ -131,23 +132,23 @@ fun DeviceDetailScreen(app: P2pApp, device: String, onBack: () -> Unit, onMessag
                 r.onFailure { onMessage(friendly(it)) }
                 r.onSuccess { app.links.onDevicesChanged() }
             }
-        }, confirmEnabled = text.isNotBlank()) { TinField(text, { text = it }, "Device name") }
+        }, confirmEnabled = text.isNotBlank()) { TinField(text, { text = it }, stringResource(R.string.devices_name_field)) }
     }
     if (confirm) {
-        val name = d.label.ifBlank { "this device" }
-        TinDialog(if (d.thisDevice) "Remove your account from this phone?" else "Unlink $name?", { if (!busy) confirm = false },
-            if (busy) "Working…" else if (d.thisDevice) "Remove" else "Unlink", ::confirmed, destructive = true, icon = PgIcons.Off,
+        val name = d.label.ifBlank { stringResource(R.string.devices_fallback_this_device) }
+        TinDialog(if (d.thisDevice) stringResource(R.string.devices_confirm_remove_title) else stringResource(R.string.devices_confirm_unlink_title, name), { if (!busy) confirm = false },
+            if (busy) stringResource(R.string.devices_working) else if (d.thisDevice) stringResource(R.string.common_remove) else stringResource(R.string.devices_unlink), ::confirmed, destructive = true, icon = PgIcons.Off,
             confirmEnabled = !busy && (!hasPass || pass.isNotEmpty())) {
             if (d.thisDevice) {
-                DialogText("This phone stops syncing and ringing, and your account, contacts, chats and call history are deleted from it.")
-                if (others == 0) InfoCard("This is the only device with your account. Without your recovery phrase nothing can bring it back.", icon = PgIcons.Warning, kind = BannerKind.Error)
-                else DialogText("Your other devices keep everything.")
+                DialogText(stringResource(R.string.devices_remove_body))
+                if (others == 0) InfoCard(stringResource(R.string.devices_remove_only), icon = PgIcons.Warning, kind = BannerKind.Error)
+                else DialogText(stringResource(R.string.devices_remove_others))
             } else {
-                DialogText("It stops syncing and stops ringing for your calls. If it’s online, it removes your account from itself.")
-                InfoCard("Unlinking can’t lock it from here. Anyone who can unlock it can still use your account. The only full cut-off is a new account.",
-                    icon = PgIcons.Warning, kind = BannerKind.Warn, bold = "Lost or stolen?")
+                DialogText(stringResource(R.string.devices_unlink_body))
+                InfoCard(stringResource(R.string.devices_unlink_warn),
+                    icon = PgIcons.Warning, kind = BannerKind.Warn, bold = stringResource(R.string.devices_lost_stolen))
             }
-            if (hasPass) TinField(pass, { pass = it; error = null }, "Your passphrase", mono = true, password = true, enabled = !busy,
+            if (hasPass) TinField(pass, { pass = it; error = null }, stringResource(R.string.settings_your_passphrase), mono = true, password = true, enabled = !busy,
                 state = if (error != null) FieldState.Error else FieldState.Normal, hint = error,
                 keyboard = KeyboardOptions(imeAction = ImeAction.Done), actions = KeyboardActions(onDone = { if (pass.isNotEmpty() && !busy) confirmed() }))
             else error?.let { Text(it, style = TinType.bodyM, color = c.er) }

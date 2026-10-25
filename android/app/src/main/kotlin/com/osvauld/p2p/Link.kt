@@ -1,5 +1,6 @@
 package com.osvauld.p2p
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.Image
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.RepeatMode
@@ -211,31 +212,31 @@ fun LinkSession(app: P2pApp, newDevice: Boolean, label: String, onClose: () -> U
 private fun NewDeviceLink(ui: LinkController.Ui, progress: Pair<Int, Int>?, onBack: () -> Unit, onNew: () -> Unit, onScanInstead: () -> Unit, onCancel: () -> Unit, onRetry: () -> Unit) {
     val c = Tin.c
     Column(Modifier.fillMaxSize()) {
-        GateHead(if (ui is LinkController.Ui.Idle || ui is LinkController.Ui.Showing || ui is LinkController.Ui.Failed) onBack else null, progress, "Link to your account")
+        GateHead(if (ui is LinkController.Ui.Idle || ui is LinkController.Ui.Showing || ui is LinkController.Ui.Failed) onBack else null, progress, stringResource(R.string.link_title))
         when (ui) {
-            is LinkController.Ui.Code -> GateStep("Same code on both?", lead = "Check that ${ui.peer.ifBlank { "your other device" }} shows this code, then approve there.",
-                center = true, anchor = true, foot = { GBtn("Cancel", onCancel, kind = GKind.Secondary) }) {
+            is LinkController.Ui.Code -> GateStep(stringResource(R.string.link_same_code), lead = stringResource(R.string.link_same_code_lead, ui.peer.ifBlank { stringResource(R.string.link_fallback_other_device) }),
+                center = true, anchor = true, foot = { GBtn(stringResource(R.string.common_cancel), onCancel, kind = GKind.Secondary) }) {
                 BigCode(ui.code)
-                GNotice("Different code, or you didn’t start this? Cancel. Someone else may have scanned the QR.", NKind.Warn)
-                WaitingLine("Waiting for approval…")
+                GNotice(stringResource(R.string.link_code_differs), NKind.Warn)
+                WaitingLine(stringResource(R.string.link_waiting))
             }
             is LinkController.Ui.Approving, is LinkController.Ui.Connecting, is LinkController.Ui.Done ->
-                GateStep("Linking…", lead = "Receiving your account. Keep both devices open.", center = true, anchor = true) {
+                GateStep(stringResource(R.string.link_linking), lead = stringResource(R.string.link_receiving), center = true, anchor = true) {
                     Box(Modifier.padding(vertical = 40.dp)) { PgSpinner(40.dp, c.accent, 4.dp) }
                 }
-            is LinkController.Ui.Failed -> GateStep("Couldn’t link", center = true, anchor = true, foot = {
-                GBtn("Try again", onRetry)
-                GBtn("Not now", onBack, kind = GKind.Text)
+            is LinkController.Ui.Failed -> GateStep(stringResource(R.string.link_failed_title), center = true, anchor = true, foot = {
+                GBtn(stringResource(R.string.common_try_again), onRetry)
+                GBtn(stringResource(R.string.common_not_now), onBack, kind = GKind.Text)
             }) { GNotice(linkFailText(ui.reason, ui.detail), NKind.Error) }
             is LinkController.Ui.Showing, LinkController.Ui.Idle -> {
                 val showing = ui as? LinkController.Ui.Showing
-                GateStep("Link to your account", lead = "On a device that already has your account, open Settings › Link a device and scan this.",
+                GateStep(stringResource(R.string.link_title), lead = stringResource(R.string.link_show_lead),
                     center = true, anchor = true, foot = {
-                        GBtn("New code", onNew, kind = GKind.Text, enabled = showing != null)
-                        GBtn("Scan instead", onScanInstead, kind = GKind.Text)
+                        GBtn(stringResource(R.string.link_new_code), onNew, kind = GKind.Text, enabled = showing != null)
+                        GBtn(stringResource(R.string.link_scan_instead), onScanInstead, kind = GKind.Text)
                     }) {
                     QrPanel(showing)
-                    Text("Anyone who can see this code in the next few minutes could try to use it. Show it only to your own device.",
+                    Text(stringResource(R.string.link_qr_warning),
                         Modifier.widthIn(max = 300.dp), style = PgType.sub, color = c.ink2, textAlign = TextAlign.Center)
                 }
             }
@@ -256,19 +257,29 @@ private fun QrPanel(showing: LinkController.Ui.Showing?) {
             Box(Modifier.size(208.dp), contentAlignment = Alignment.Center) {
                 if (qr != null) {
                     val bmp = remember(qr) { qrBitmap(qr, 624, fg = 0xFF17201D.toInt()) }
-                    Image(bmp.asImageBitmap(), "QR code to link this device", Modifier.fillMaxSize().clip(SmoothCornerShape(12.dp)), alpha = if (expired) 0.18f else 1f)
+                    Image(bmp.asImageBitmap(), stringResource(R.string.link_qr_desc), Modifier.fillMaxSize().clip(SmoothCornerShape(12.dp)), alpha = if (expired) 0.18f else 1f)
                 } else PgSpinner(28.dp, Color(0xFF0B6B5B), 3.dp)
             }
         }
-        Text(when { qr == null -> "Preparing your code…"; expired -> "Expired. Make a new code."; else -> "Expires in ${left / 60000}:${"%02d".format(left / 1000 % 60)} · works once" },
+        Text(when { qr == null -> stringResource(R.string.link_preparing); expired -> stringResource(R.string.link_expired); else -> stringResource(R.string.link_expires, "${left / 60000}:${"%02d".format(left / 1000 % 60)}") },
             style = PgType.sub.copy(fontFeatureSettings = "tnum"), color = if (expired) c.er else c.ink2)
     }
+}
+
+private const val LINK_BOLD_MARKER = "\u0001"
+
+/** [text] has [marker] where the bold phrase goes (a placeholder in the string resource, so translations place it themselves). */
+private fun withBold(text: String, marker: String, bold: String, style: SpanStyle): androidx.compose.ui.text.AnnotatedString = buildAnnotatedString {
+    val i = text.indexOf(marker)
+    if (i < 0) { append(text); return@buildAnnotatedString }
+    append(text.substring(0, i)); pushStyle(style); append(bold); pop(); append(text.substring(i + marker.length))
 }
 
 /** Six digits, 44/52 mono, letter-spaced .12em. */
 @Composable
 private fun BigCode(code: String, weight: FontWeight = FontWeight.SemiBold) {
-    Text(code, Modifier.fillMaxWidth().padding(vertical = 8.dp).semantics { contentDescription = "Link code ${code.toList().joinToString(" ")}" },
+    val desc = stringResource(R.string.link_code_desc, code.toList().joinToString(" "))
+    Text(code, Modifier.fillMaxWidth().padding(vertical = 8.dp).semantics { contentDescription = desc },
         style = PgType.mono.copy(fontSize = 44.sp, lineHeight = 52.sp, fontWeight = weight, letterSpacing = 0.12.em, fontFeatureSettings = "tnum"),
         color = Tin.c.ink, textAlign = TextAlign.Center)
 }
@@ -298,46 +309,46 @@ private fun ExistingDeviceLink(
     val key = when (ui) { is LinkController.Ui.Code -> if (matched) "auth" else "verify"; is LinkController.Ui.Approving, LinkController.Ui.Connecting -> "transfer"
         is LinkController.Ui.Done -> "done"; is LinkController.Ui.Failed -> "failed"; else -> if (stage == LinkStage.Show) "show" else "scan" }
     val reduced = rememberReducedMotion()
-    PfPage("Link a new device", onBack = { onCancel(); onClose() }) {
+    PfPage(stringResource(R.string.link_existing_title), onBack = { onCancel(); onClose() }) {
         AnimatedContent(key, transitionSpec = { fadeIn(tween(if (reduced) 0 else PgMotion.CROSSFADE)) togetherWith fadeOut(tween(0)) }, label = "link") { k ->
             Column(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 when (k) {
                     "scan" -> ScanStep(note, onScan, onShow, onTyped, onClearNote)
                     "show" -> {
-                        PageH1("Show this code to your new device")
-                        Text("On the new device choose “Link to a device”, then “Scan instead”, and point it at this code.", style = PgType.sub19, color = Tin.c.ink2)
+                        PageH1(stringResource(R.string.link_show_h1))
+                        Text(stringResource(R.string.link_show_body), style = PgType.sub19, color = Tin.c.ink2)
                         Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { QrPanel(ui as? LinkController.Ui.Showing) }
-                        PfActs(top = 6.dp) { PBtn("Back", onCancel, variant = PVariant.Quiet); PBtn("New code", onNew) }
+                        PfActs(top = 6.dp) { PBtn(stringResource(R.string.common_back), onCancel, variant = PVariant.Quiet); PBtn(stringResource(R.string.link_new_code), onNew) }
                     }
                     "verify" -> (ui as? LinkController.Ui.Code)?.let { u ->
-                        val who = u.peer.ifBlank { "The new device" }
-                        PageH1("Do the codes match?")
-                        Text(boldLead(who, "wants to join your account. It should be showing the same six digits as below."), style = PgType.body, color = Tin.c.ink)
+                        val who = u.peer.ifBlank { stringResource(R.string.link_fallback_new_device_cap) }
+                        PageH1(stringResource(R.string.link_match_title))
+                        Text(boldLead(who, stringResource(R.string.link_match_body)), style = PgType.body, color = Tin.c.ink)
                         BigCode(u.code, FontWeight.Bold)
-                        Text("Compare them yourself. If they differ, someone else may have scanned the code first.", style = PgType.sub19, color = Tin.c.ink2)
-                        PfActs(top = 6.dp) { PBtn("They don’t match", onCancel); PBtn("They match", { matched = true }, variant = PVariant.Primary) }
+                        Text(stringResource(R.string.link_match_note), style = PgType.sub19, color = Tin.c.ink2)
+                        PfActs(top = 6.dp) { PBtn(stringResource(R.string.link_no_match), onCancel); PBtn(stringResource(R.string.link_match), { matched = true }, variant = PVariant.Primary) }
                     }
-                    "auth" -> (ui as? LinkController.Ui.Code)?.let { u -> ApproveStep(app, u.peer.ifBlank { "the new device" }, onCancel) }
+                    "auth" -> (ui as? LinkController.Ui.Code)?.let { u -> ApproveStep(app, u.peer.ifBlank { stringResource(R.string.link_fallback_new_device) }, onCancel) }
                     "transfer" -> {
-                        val peer = (ui as? LinkController.Ui.Approving)?.peer?.ifBlank { null } ?: "the new device"
-                        PageH1(if (ui is LinkController.Ui.Connecting) "Connecting…" else "Linking $peer")
+                        val peer = (ui as? LinkController.Ui.Approving)?.peer?.ifBlank { null } ?: stringResource(R.string.link_fallback_new_device)
+                        PageH1(if (ui is LinkController.Ui.Connecting) stringResource(R.string.link_connecting) else stringResource(R.string.link_linking_peer, peer))
                         Row(Modifier.heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             Box(Modifier.size(24.dp), contentAlignment = Alignment.Center) { PgSpinner(14.dp, Tin.c.accent) }
-                            Text(if (ui is LinkController.Ui.Connecting) "Reaching the other device" else "Sending your account", Modifier.weight(1f), style = PgType.body, color = Tin.c.ink)
-                            Text("Working", style = PgType.sub, color = Tin.c.ink2)
+                            Text(if (ui is LinkController.Ui.Connecting) stringResource(R.string.link_reaching) else stringResource(R.string.link_sending), Modifier.weight(1f), style = PgType.body, color = Tin.c.ink)
+                            Text(stringResource(R.string.link_working), style = PgType.sub, color = Tin.c.ink2)
                         }
-                        Text("Keep both devices open until this finishes.", style = PgType.sub19, color = Tin.c.ink2)
-                        if (ui is LinkController.Ui.Connecting) PfActs(top = 6.dp) { PBtn("Cancel", onCancel, variant = PVariant.Quiet) }
+                        Text(stringResource(R.string.link_keep_open), style = PgType.sub19, color = Tin.c.ink2)
+                        if (ui is LinkController.Ui.Connecting) PfActs(top = 6.dp) { PBtn(stringResource(R.string.common_cancel), onCancel, variant = PVariant.Quiet) }
                     }
                     "done" -> {
-                        val peer = (ui as? LinkController.Ui.Done)?.peer?.ifBlank { null } ?: "The new device"
-                        ResultBlock(PgIcons.Check, ok = true, title = "$peer is linked",
-                            body = "It syncs when both devices are online at the same time. Contacts you haven’t blocked get your updated device list when they’re next online.")
-                        PfActs(top = 6.dp) { PBtn("Done", onClose, variant = PVariant.Primary) }
+                        val peer = (ui as? LinkController.Ui.Done)?.peer?.ifBlank { null } ?: stringResource(R.string.link_fallback_new_device_cap)
+                        ResultBlock(PgIcons.Check, ok = true, title = stringResource(R.string.link_done_title, peer),
+                            body = stringResource(R.string.link_done_body))
+                        PfActs(top = 6.dp) { PBtn(stringResource(R.string.common_done), onClose, variant = PVariant.Primary) }
                     }
                     else -> (ui as? LinkController.Ui.Failed)?.let { u ->
-                        ResultBlock(PgIcons.Info, ok = false, title = "Couldn’t link", body = linkFailText(u.reason, u.detail))
-                        PfActs(top = 6.dp) { PBtn("Close", onClose, variant = PVariant.Quiet); PBtn("Try again", onRetry, variant = PVariant.Primary) }
+                        ResultBlock(PgIcons.Info, ok = false, title = stringResource(R.string.link_failed_title), body = linkFailText(u.reason, u.detail))
+                        PfActs(top = 6.dp) { PBtn(stringResource(R.string.common_close), onClose, variant = PVariant.Quiet); PBtn(stringResource(R.string.common_try_again), onRetry, variant = PVariant.Primary) }
                     }
                 }
             }
@@ -352,31 +363,31 @@ private fun PageH1(text: String) = Text(text, Modifier.fillMaxWidth().semantics 
 private fun ScanStep(note: String?, onScan: () -> Unit, onShow: () -> Unit, onTyped: (String) -> Unit, onClearNote: () -> Unit) {
     val c = Tin.c
     var text by remember { mutableStateOf("") }
-    PageH1("Scan the code on your new device")
+    PageH1(stringResource(R.string.link_scan_h1))
+    val step1 = withBold(stringResource(R.string.link_scan_step1, LINK_BOLD_MARKER), LINK_BOLD_MARKER, stringResource(R.string.settings_add_link), SpanStyle(color = c.ink, fontWeight = FontWeight.SemiBold))
     Column(Modifier.padding(start = 4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(buildAnnotatedString { append("1.  On the new device, open Tinline and choose "); pushStyle(SpanStyle(color = c.ink, fontWeight = FontWeight.SemiBold)); append("Link to a device"); pop(); append(".") },
-            style = PgType.sub19, color = c.ink2)
-        Text("2.  It shows a QR code and a short code. They work for 5 minutes, once.", style = PgType.sub19, color = c.ink2)
+        Text(step1, style = PgType.sub19, color = c.ink2)
+        Text(stringResource(R.string.link_scan_step2), style = PgType.sub19, color = c.ink2)
     }
     Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
         Column(Modifier.size(220.dp).clip(SmoothCornerShape(20.dp)).background(Color(0xFF0E1513)), horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(14.dp, Alignment.CenterVertically)) {
             Icon(PgIcons.Camera, null, Modifier.size(30.dp), tint = Color(0xFF9DB0AA))
-            PBtn("Scan QR code", onScan, variant = PVariant.Primary)
+            PBtn(stringResource(R.string.link_scan_qr), onScan, variant = PVariant.Primary)
         }
     }
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text("Or type the code", style = PgType.sub.copy(fontWeight = FontWeight.SemiBold), color = c.ink)
+        Text(stringResource(R.string.link_type_code), style = PgType.sub.copy(fontWeight = FontWeight.SemiBold), color = c.ink)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.weight(1f)) {
                 PassField(text, { text = it; onClearNote() }, label = "", error = "", secret = false, mono = true, placeholder = "OSVL1:…",
                     keyboard = KeyboardOptions(imeAction = ImeAction.Go, autoCorrectEnabled = false), onDone = { if (text.isNotBlank()) onTyped(text) }, msgLines = 0)
             }
-            PBtn("Continue", { onTyped(text) }, enabled = text.isNotBlank())
+            PBtn(stringResource(R.string.common_continue), { onTyped(text) }, enabled = text.isNotBlank())
         }
         Text(note.orEmpty(), Modifier.fillMaxWidth().heightIn(min = 38.dp), style = PgType.sub19, color = c.er)
     }
-    PBtn("Show a QR code here instead", onShow, variant = PVariant.Quiet, colorOverride = c.accentInk)
+    PBtn(stringResource(R.string.link_show_here), onShow, variant = PVariant.Quiet, colorOverride = c.accentInk)
 }
 
 @Composable
@@ -393,28 +404,26 @@ private fun ApproveStep(app: P2pApp, who: String, onCancel: () -> Unit) {
         scope.launch {
             val r = withContext(Dispatchers.IO) { runCatching { app.links.approve(if (hasPass) pass else null) } }
             busy = false
-            r.onFailure { error = if (it is uniffi.p2pcore.Exception.WrongPassphrase) "That passphrase isn’t right." else friendly(it) }
+            r.onFailure { error = if (it is uniffi.p2pcore.Exception.WrongPassphrase) ctx.getString(R.string.link_wrong_pass) else friendly(it) }
             r.onSuccess { pass = "" }
         }
     }
     fun go() {
         val act = ctx.findActivity()
         if (hasPass || act == null) approve()
-        else DeviceAuth.ask(act, "Link a new device") { ok -> if (ok) approve() else error = "Screen lock check cancelled" }
+        else DeviceAuth.ask(act, ctx.getString(R.string.link_existing_title)) { ok -> if (ok) approve() else error = ctx.getString(R.string.devices_lock_cancelled) }
     }
-    PageH1("Approve $who?")
+    PageH1(stringResource(R.string.link_approve_title, who))
+    val warning = withBold(stringResource(R.string.link_approve_warning, LINK_BOLD_MARKER, who), LINK_BOLD_MARKER, stringResource(R.string.link_approve_bold), SpanStyle(fontWeight = FontWeight.Bold))
     Row(Modifier.fillMaxWidth().clip(SmoothCornerShape(12.dp)).background(c.warn).padding(12.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         Icon(PgIcons.Warning, null, Modifier.padding(top = 1.dp).size(18.dp), tint = c.onWarn)
-        Text(buildAnnotatedString {
-            append("Approving sends your "); pushStyle(SpanStyle(fontWeight = FontWeight.Bold)); append("recovery phrase"); pop()
-            append(" to $who. It becomes a full copy of you: it can read your chats and act as you. Approve only a device you hold.")
-        }, style = PgType.body.copy(lineHeight = 20.sp), color = c.onWarn)
+        Text(warning, style = PgType.body.copy(lineHeight = 20.sp), color = c.onWarn)
     }
-    if (hasPass) PassField(pass, { pass = it; error = "" }, label = "Your passphrase", error = error, enabled = !busy, focus = rememberAutofocus(), onDone = { if (pass.isNotEmpty() && !busy) go() })
+    if (hasPass) PassField(pass, { pass = it; error = "" }, label = stringResource(R.string.settings_your_passphrase), error = error, enabled = !busy, focus = rememberAutofocus(), onDone = { if (pass.isNotEmpty() && !busy) go() })
     else if (error.isNotEmpty()) Text(error, style = PgType.sub19, color = c.er)
     PfActs(top = 6.dp) {
-        PBtn("Don’t link", onCancel, variant = PVariant.Quiet, enabled = !busy)
-        PBtn(if (busy) "Approving…" else "Approve", ::go, variant = PVariant.Primary, enabled = !busy && (!hasPass || pass.isNotEmpty()))
+        PBtn(stringResource(R.string.link_dont_link), onCancel, variant = PVariant.Quiet, enabled = !busy)
+        PBtn(if (busy) stringResource(R.string.link_approving) else stringResource(R.string.link_approve), ::go, variant = PVariant.Primary, enabled = !busy && (!hasPass || pass.isNotEmpty()))
     }
 }
 
@@ -441,23 +450,23 @@ private fun LinkScanScreen(newDevice: Boolean, note: String?, nonce: Int, onBack
     var torch by remember { mutableStateOf(false) }
     TinlineTheme(dark = true) {
         Page(Modifier.background(Color(0xFF050807))) {
-            TopBar(if (newDevice) "Scan instead" else "Scan the code", onBack) {
-                if (granted) IconBtn(if (torch) PgIcons.Torch else PgIcons.Torchoff, "Torch", { torch = !torch })
+            TopBar(if (newDevice) stringResource(R.string.link_scan_instead) else stringResource(R.string.link_scan_title), onBack) {
+                if (granted) IconBtn(if (torch) PgIcons.Torch else PgIcons.Torchoff, stringResource(R.string.link_torch), { torch = !torch })
             }
             Box(Modifier.weight(1f).fillMaxWidth().padding(top = 8.dp)) {
-                key(nonce) { QrCameraBox(Modifier.fillMaxSize(), if (newDevice) "Point at the code on your other device" else "Point the camera at the QR code on your new device", torch, { granted = it }, onText) }
+                key(nonce) { QrCameraBox(Modifier.fillMaxSize(), if (newDevice) stringResource(R.string.link_point_new) else stringResource(R.string.link_point_existing), torch, { granted = it }, onText) }
                 if (note != null) Column(
                     Modifier.align(Alignment.Center).padding(24.dp).clip(SmoothCornerShape(20.dp)).background(Color(0xE6101614)).padding(20.dp),
                     horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     Icon(PgIcons.Warning, null, tint = Color(0xFFF2B8B5), modifier = Modifier.size(32.dp))
                     Text(note, style = PgType.body, color = Color.White, textAlign = TextAlign.Center)
-                    PBtn("Scan again", onRetry, variant = PVariant.Primary)
+                    PBtn(stringResource(R.string.link_scan_again), onRetry, variant = PVariant.Primary)
                 }
             }
             Column(Modifier.padding(start = 24.dp, end = 24.dp, top = 16.dp, bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("The code works once and expires in 5 minutes.", Modifier.fillMaxWidth(), style = PgType.sub, color = Tin.c.ink2, textAlign = TextAlign.Center)
-                if (!newDevice) GBtn("Show a QR code here instead", onShow, kind = GKind.Text)
+                Text(stringResource(R.string.link_scan_foot), Modifier.fillMaxWidth(), style = PgType.sub, color = Tin.c.ink2, textAlign = TextAlign.Center)
+                if (!newDevice) GBtn(stringResource(R.string.link_show_here), onShow, kind = GKind.Text)
             }
         }
     }
@@ -470,12 +479,12 @@ private fun LinkScanScreen(newDevice: Boolean, note: String?, nonce: Int, onBack
 fun UnlinkedScreen(name: String, onOk: () -> Unit, onLinkAgain: () -> Unit) {
     Page {
         GateHead(null, null)
-        GateStep("This phone was unlinked", center = true, anchor = true,
-            lead = "${name.ifBlank { "Your account" }} was removed from this phone by one of your other devices. Its contacts, chats and calls are deleted here. Your other devices are not affected.",
+        GateStep(stringResource(R.string.link_unlinked_title), center = true, anchor = true,
+            lead = stringResource(R.string.link_unlinked_lead, name.ifBlank { stringResource(R.string.link_your_account) }),
             hero = { Box(Modifier.padding(top = 12.dp)) { IconDisc(PgIcons.Off, 72.dp, 32.dp, danger = true) } },
             foot = {
-                GBtn("OK", onOk)
-                GBtn("Link it again", onLinkAgain, kind = GKind.Text)
+                GBtn(stringResource(R.string.link_ok), onOk)
+                GBtn(stringResource(R.string.link_again), onLinkAgain, kind = GKind.Text)
             })
     }
 }

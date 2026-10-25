@@ -1,5 +1,6 @@
 package com.osvauld.p2p
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -38,24 +39,24 @@ fun SettingsRoute(
         var video by remember { mutableStateOf(app.videoEnabled) }
         PfSec {
             PfCard {
-                act { PfAct("Video in calls", onClick = { video = !video; app.videoEnabled = video }, icon = Pg.Video, plain = true, role = androidx.compose.ui.semantics.Role.Switch,
-                    sub = if (video) "You can turn your camera on in a call" else "Calls are voice only",
-                    trailing = { PgSwitch(video, { video = it; app.videoEnabled = it }, "Video in calls") }) }
+                act { PfAct(stringResource(R.string.settings_video_in_calls), onClick = { video = !video; app.videoEnabled = video }, icon = Pg.Video, plain = true, role = androidx.compose.ui.semantics.Role.Switch,
+                    sub = if (video) stringResource(R.string.settings_video_in_calls_on) else stringResource(R.string.settings_video_in_calls_off),
+                    trailing = { PgSwitch(video, { video = it; app.videoEnabled = it }, stringResource(R.string.settings_video_in_calls)) }) }
                 if (BuildConfig.DEBUG || BuildConfig.VIDEO_TUNING) act { PfAct("Diagnostics", onClick = onDiagnostics, chevron = true, sub = "Test tone, video tuning, core version") }
             }
         }
     }
     // gate.beginAdd(): the playground's Choose step. The app picks the path before it begins adding.
-    PgLayer(adding, { adding = false }, "Add another account") {
+    PgLayer(adding, { adding = false }, stringResource(R.string.settings_add_account)) {
         Column(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 16.dp)) {
-            DlgTitle("Add another account")
+            DlgTitle(stringResource(R.string.settings_add_account))
             Column(Modifier.fillMaxWidth().padding(top = 10.dp).bleedX(12.dp)) {
                 val shape = androidx.compose.foundation.shape.RoundedCornerShape(14.dp)
-                PfAct("Create a new account", onClick = { adding = false; onCreateAccount() }, icon = PgIcons.Plus, padH = 12.dp, shape = shape)
-                PfAct("Link to a device", onClick = { adding = false; onLinkAccount() }, icon = PgIcons.Devices, padH = 12.dp, shape = shape)
-                PfAct("Restore from recovery phrase", onClick = { adding = false; onRestoreAccount() }, icon = PgIcons.Key, padH = 12.dp, shape = shape)
+                PfAct(stringResource(R.string.settings_add_create), onClick = { adding = false; onCreateAccount() }, icon = PgIcons.Plus, padH = 12.dp, shape = shape)
+                PfAct(stringResource(R.string.settings_add_link), onClick = { adding = false; onLinkAccount() }, icon = PgIcons.Devices, padH = 12.dp, shape = shape)
+                PfAct(stringResource(R.string.settings_add_restore), onClick = { adding = false; onRestoreAccount() }, icon = PgIcons.Key, padH = 12.dp, shape = shape)
             }
-            PfActs { PBtn("Cancel", { adding = false }, variant = PVariant.Quiet) }
+            PfActs { PBtn(stringResource(R.string.common_cancel), { adding = false }, variant = PVariant.Quiet) }
         }
     }
 }
@@ -95,7 +96,7 @@ fun MyProfileRoute(app: P2pApp, onBack: () -> Unit, onEdit: () -> Unit, onShare:
 @Composable
 fun EditMyProfileRoute(app: P2pApp, onBack: () -> Unit) {
     val acct by app.accountDid.collectAsState()
-    key(acct) { MyProfileScreen(remember(app) { ProfileBackend.of(app) }, profileFallbackName(app, acct), onBack, title = "Edit profile") }
+    key(acct) { MyProfileScreen(remember(app) { ProfileBackend.of(app) }, profileFallbackName(app, acct), onBack, title = stringResource(R.string.settings_edit_profile)) }
 }
 
 @Composable
