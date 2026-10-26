@@ -1821,6 +1821,15 @@ text = "Seul le compte sélectionné est en ligne sur ce téléphone. Changer me
 [settings_appearance]
 text = "Apparence"
 
+[settings_language]
+text = "Langue"
+
+[settings_language_match]
+text = "Comme mon téléphone"
+
+[settings_language_match_sub]
+text = "Utilise la langue de ce téléphone"
+
 [settings_look_match]
 text = "Comme mon téléphone"
 

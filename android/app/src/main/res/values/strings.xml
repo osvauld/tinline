@@ -1240,6 +1240,12 @@
     <string name="settings_accounts_note">Only the selected account is online on this phone. Switching pauses the other one: it receives no calls until you select it again.</string>
     <!-- Section heading on Settings for the light/dark choice. -->
     <string name="settings_appearance">Appearance</string>
+    <!-- Settings row and page title: the language the app is shown in. -->
+    <string name="settings_language">Language</string>
+    <!-- Language option: show the app in the phone's language. -->
+    <string name="settings_language_match">Match my phone</string>
+    <!-- Small line under the Match my phone language option. -->
+    <string name="settings_language_match_sub">Uses the language this phone is set to</string>
     <!-- Appearance option: follow the phone's light or dark setting. -->
     <string name="settings_look_match">Match my phone</string>
     <!-- Small line under the Match my phone appearance option. -->

@@ -1806,6 +1806,15 @@ text = "Vain valittu tili on verkossa tällä puhelimella. Vaihtaminen laittaa t
 [settings_appearance]
 text = "Ulkoasu"
 
+[settings_language]
+text = "Kieli"
+
+[settings_language_match]
+text = "Sama kuin puhelimessani"
+
+[settings_language_match_sub]
+text = "Käyttää puhelimeen asetettua kieltä"
+
 [settings_look_match]
 text = "Sama kuin puhelimessani"
 

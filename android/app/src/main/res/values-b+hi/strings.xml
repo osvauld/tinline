@@ -643,6 +643,9 @@
     <string name="settings_add_account">एक और खाता जोड़ें</string>
     <string name="settings_accounts_note">इस फ़ोन पर सिर्फ़ चुना हुआ खाता ऑनलाइन रहता है। खाता बदलने पर दूसरा रुक जाता है: जब तक आप उसे फिर से न चुनें, उस पर कॉल नहीं आतीं।</string>
     <string name="settings_appearance">रूप-रंग</string>
+    <string name="settings_language">भाषा</string>
+    <string name="settings_language_match">मेरे फ़ोन जैसा</string>
+    <string name="settings_language_match_sub">इस फ़ोन में सेट भाषा इस्तेमाल होती है</string>
     <string name="settings_look_match">मेरे फ़ोन जैसा</string>
     <string name="settings_look_match_sub">लाइट या डार्क, जैसा इस फ़ोन में सेट है</string>
     <string name="settings_look_light">लाइट</string>

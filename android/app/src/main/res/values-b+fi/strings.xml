@@ -643,6 +643,9 @@
     <string name="settings_add_account">Lisää toinen tili</string>
     <string name="settings_accounts_note">Vain valittu tili on verkossa tällä puhelimella. Vaihtaminen laittaa toisen tauolle: se ei vastaanota puheluita, ennen kuin valitset sen uudelleen.</string>
     <string name="settings_appearance">Ulkoasu</string>
+    <string name="settings_language">Kieli</string>
+    <string name="settings_language_match">Sama kuin puhelimessani</string>
+    <string name="settings_language_match_sub">Käyttää puhelimeen asetettua kieltä</string>
     <string name="settings_look_match">Sama kuin puhelimessani</string>
     <string name="settings_look_match_sub">Vaalea tai tumma puhelimen asetuksen mukaan</string>
     <string name="settings_look_light">Vaalea</string>

@@ -1806,6 +1806,15 @@ text = "इस फ़ोन पर सिर्फ़ चुना हुआ ख
 [settings_appearance]
 text = "रूप-रंग"
 
+[settings_language]
+text = "भाषा"
+
+[settings_language_match]
+text = "मेरे फ़ोन जैसा"
+
+[settings_language_match_sub]
+text = "इस फ़ोन में सेट भाषा इस्तेमाल होती है"
+
 [settings_look_match]
 text = "मेरे फ़ोन जैसा"
 

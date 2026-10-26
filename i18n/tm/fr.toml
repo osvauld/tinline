@@ -5052,13 +5052,28 @@ where = [
 ]
 text = "Apparence"
 
+[t_1fb45821b6]
+en = "Language"
+where = [
+  "android settings_language: Settings row and page title: the language the app is shown in.",
+]
+text = "Langue"
+
 [t_ce3a092efe]
 en = "Match my phone"
 where = [
+  "android settings_language_match: Language option: show the app in the phone's language.",
   "android settings_look_match: Appearance option: follow the phone's light or dark setting.",
   "ios settings_appearance_match: Appearance option: follow the phone's light or dark setting.",
 ]
 text = "Comme mon téléphone"
+
+[t_7c0be85713]
+en = "Uses the language this phone is set to"
+where = [
+  "android settings_language_match_sub: Small line under the Match my phone language option.",
+]
+text = "Utilise la langue de ce téléphone"
 
 [t_7857115a54]
 en = "Light or dark, as this phone is set"

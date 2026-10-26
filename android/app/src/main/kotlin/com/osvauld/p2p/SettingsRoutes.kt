@@ -21,7 +21,7 @@ fun SettingsRoute(
     app: P2pApp, missing: List<Need>, onBack: () -> Unit, onMe: () -> Unit, onSwitchPick: (String) -> Unit,
     onCreateAccount: () -> Unit, onRestoreAccount: () -> Unit, onLinkAccount: () -> Unit,
     onDevices: () -> Unit, onPrivacy: () -> Unit, onNotifications: () -> Unit, onSounds: () -> Unit,
-    onVideo: () -> Unit, onStorage: () -> Unit, onAbout: () -> Unit, onDiagnostics: () -> Unit,
+    onVideo: () -> Unit, onStorage: () -> Unit, onAbout: () -> Unit, onDiagnostics: () -> Unit, onLanguage: () -> Unit,
 ) {
     val ctx = LocalContext.current
     val store = remember(app) { ProfileBackend.of(app) }
@@ -35,6 +35,14 @@ fun SettingsRoute(
     var adding by remember { mutableStateOf(false) }
     SettingsLanding(store, fallback, list, permProblems(missing), onBack, onMe, onSwitchPick, { adding = true },
         onDevices, onPrivacy, onNotifications, onSounds, onVideo, onStorage, onAbout) {
+        // Not in the playground: the app's language (older phones have no per-app language page in the system).
+        PfSec {
+            PfCard {
+                val tag = remember { AppLanguage.current(ctx) }
+                act { PfAct(stringResource(R.string.settings_language), onClick = onLanguage, icon = PgIcons.Globe, chevron = true,
+                    sub = if (tag.isEmpty()) stringResource(R.string.settings_language_match) else AppLanguage.nativeName(tag)) }
+            }
+        }
         // Not in the playground: the app's "Video in calls" offer, and developer tools.
         var video by remember { mutableStateOf(app.videoEnabled) }
         PfSec {
