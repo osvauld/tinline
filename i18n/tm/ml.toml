@@ -5907,7 +5907,7 @@ en = "Tinline rests until someone reaches you, then a small nudge wakes it, so i
 where = [
   "android settings_battery_hint_push: Explanation at the top of the background and battery page when Tinline wakes by push instead of staying connected. A nudge is a content-free wake-up push.",
 ]
-text = "ആരെങ്കിലും നിങ്ങളെ ബന്ധപ്പെടുന്നതുവരെ Tinline വിശ്രമിക്കും, പിന്നെ ഒരു ചെറിയ തട്ട് അതിനെ ഉണർത്തും, അതിനാൽ ബാറ്ററി ഇളവ് വേണ്ട. കോൾ റിങ് ചെയ്യാൻ Android-ന് വേണ്ടത് താഴെയുള്ള പട്ടികയിലുണ്ട്."
+text = "ആരെങ്കിലും നിങ്ങളെ ബന്ധപ്പെടുന്നതുവരെ Tinline വിശ്രമിക്കും, പിന്നെ ഒരു ചെറിയ തട്ട് അതിനെ ഉണർത്തും, അതിനാൽ ബാറ്ററി ഇളവ് വേണ്ട. കോൾ റിംഗ് ചെയ്യാൻ Android-ന് വേണ്ടത് താഴെയുള്ള പട്ടികയിലുണ്ട്."
 
 [t_f9d8fe5ee3]
 en = "Stay connected all the time"
@@ -5928,7 +5928,7 @@ en = "Tinline rests until someone reaches you, then wakes up. The wake-up carrie
 where = [
   "android settings_stay_connected_off: Line under the Stay connected all the time switch when it is off. A nudge is a content-free wake-up push.",
 ]
-text = "ആരെങ്കിലും നിങ്ങളെ ബന്ധപ്പെടുന്നതുവരെ Tinline വിശ്രമിക്കും, പിന്നെ ഉണരും. ഉണർത്തുന്ന തട്ടിൽ സന്ദേശമൊന്നുമില്ല, ഒരു ചെറിയ തട്ട് മാത്രം."
+text = "ആരെങ്കിലും നിങ്ങളെ ബന്ധപ്പെടുന്നതുവരെ Tinline വിശ്രമിക്കും, പിന്നെ ഒരു ചെറിയ തട്ടിൽ ഉണരും. ആ തട്ടിൽ സന്ദേശമൊന്നുമില്ല."
 
 [t_3a5e4ab9a1]
 en = "CHECKLIST"
@@ -10595,7 +10595,7 @@ en = "When this is on, calls ring like a normal phone."
 where = [
   "android avail_subtitle: Line under the availability sheet's title.",
 ]
-text = "ഇത് ഓണായിരിക്കുമ്പോൾ, കോളുകൾ സാധാരണ ഫോണിലെന്നപോലെ റിങ് ചെയ്യും."
+text = "ഇത് ഓണായിരിക്കുമ്പോൾ, കോളുകൾ സാധാരണ ഫോണിലെന്നപോലെ റിംഗ് ചെയ്യും."
 
 [t_c865b5b93b]
 en = "Not available until {time}."

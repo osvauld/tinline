@@ -36,9 +36,9 @@ fun SettingsRoute(
     SettingsLanding(store, fallback, list, permProblems(missing), onBack, onMe, onSwitchPick, { adding = true },
         onDevices, onPrivacy, onNotifications, onSounds, onVideo, onStorage, onAbout) {
         // Not in the playground: the app's language (older phones have no per-app language page in the system).
+        val tag = remember { AppLanguage.current(ctx) }
         PfSec {
             PfCard {
-                val tag = remember { AppLanguage.current(ctx) }
                 act { PfAct(stringResource(R.string.settings_language), onClick = onLanguage, icon = PgIcons.Globe, chevron = true,
                     sub = if (tag.isEmpty()) stringResource(R.string.settings_language_match) else AppLanguage.nativeName(tag)) }
             }

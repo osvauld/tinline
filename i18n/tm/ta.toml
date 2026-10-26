@@ -5928,7 +5928,7 @@ en = "Tinline rests until someone reaches you, then wakes up. The wake-up carrie
 where = [
   "android settings_stay_connected_off: Line under the Stay connected all the time switch when it is off. A nudge is a content-free wake-up push.",
 ]
-text = "யாராவது உங்களைத் தொடர்புகொள்ளும் வரை Tinline ஓய்வில் இருக்கும், பிறகு விழித்துக்கொள்ளும். எழுப்பும் தட்டலில் எந்தச் செய்தியும் இருக்காது, ஒரு சிறிய தட்டல் மட்டுமே."
+text = "யாராவது உங்களைத் தொடர்புகொள்ளும் வரை Tinline ஓய்வில் இருக்கும், பிறகு ஒரு சிறிய தட்டலில் விழித்துக்கொள்ளும். அந்தத் தட்டலில் எந்தச் செய்தியும் இருக்காது."
 
 [t_3a5e4ab9a1]
 en = "CHECKLIST"
@@ -7326,7 +7326,7 @@ en = "Open Tinline and unlock to catch up."
 where = [
   "android notif_wake_notice_text: Text of the notification after a wake-up while Tinline is locked: open the app and unlock it to see what arrived.",
 ]
-text = "விடுபட்டவற்றைப் பார்க்க Tinline-ஐத் திறந்து அன்லாக் செய்யுங்கள்."
+text = "என்ன வந்திருக்கிறது என்று பார்க்க, Tinline-ஐத் திறங்கள்."
 
 [t_bb5cc13df8]
 en = "Tap to return to the call"
@@ -10595,7 +10595,7 @@ en = "When this is on, calls ring like a normal phone."
 where = [
   "android avail_subtitle: Line under the availability sheet's title.",
 ]
-text = "இது இயக்கத்தில் இருக்கும்போது, அழைப்புகள் சாதாரண ஃபோனைப் போலவே ஒலிக்கும்."
+text = "இது ஆன் செய்யப்பட்டிருக்கும்போது, அழைப்புகள் சாதாரண ஃபோனைப் போலவே ஒலிக்கும்."
 
 [t_c865b5b93b]
 en = "Not available until {time}."

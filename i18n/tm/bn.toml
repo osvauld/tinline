@@ -5907,14 +5907,14 @@ en = "Tinline rests until someone reaches you, then a small nudge wakes it, so i
 where = [
   "android settings_battery_hint_push: Explanation at the top of the background and battery page when Tinline wakes by push instead of staying connected. A nudge is a content-free wake-up push.",
 ]
-text = "কেউ আপনার সঙ্গে যোগাযোগ না করা পর্যন্ত Tinline বিশ্রামে থাকে, তারপর একটা ছোট্ট সংকেত ওকে জাগিয়ে দেয়, তাই ব্যাটারির কোনো ছাড় লাগে না। রিং করার জন্য Android-এর যা দরকার, তা নিচের তালিকায় আছে।"
+text = "কেউ আপনার সঙ্গে যোগাযোগ না করা পর্যন্ত Tinline বিশ্রামে থাকে, তারপর একটা ছোট্ট সংকেত ওকে জাগিয়ে দেয়, তাই ব্যাটারির কোনো ছাড় লাগে না। কলে রিং হওয়ার জন্য Android-এর যা দরকার, তা নিচের চেকলিস্টে আছে।"
 
 [t_f9d8fe5ee3]
 en = "Stay connected all the time"
 where = [
   "android settings_stay_connected: Switch row on the background and battery page (also its screen-reader label). On: Tinline keeps its line open; off: it rests and a push wakes it.",
 ]
-text = "সব সময় কানেক্টেড থাকুন"
+text = "সব সময় কানেক্টেড থাকা"
 
 [t_2659692d22]
 en = "Tinline keeps your line open, so calls and messages arrive straight away. It uses a little more battery."
@@ -5928,7 +5928,7 @@ en = "Tinline rests until someone reaches you, then wakes up. The wake-up carrie
 where = [
   "android settings_stay_connected_off: Line under the Stay connected all the time switch when it is off. A nudge is a content-free wake-up push.",
 ]
-text = "কেউ আপনার সঙ্গে যোগাযোগ না করা পর্যন্ত Tinline বিশ্রামে থাকে, তারপর জেগে ওঠে। জাগানোর সংকেতে কোনো মেসেজ থাকে না, শুধু একটা ছোট্ট সংকেত।"
+text = "কেউ আপনার সঙ্গে যোগাযোগ না করা পর্যন্ত Tinline বিশ্রামে থাকে, তারপর একটা ছোট্ট সংকেতে জেগে ওঠে। সেই সংকেতে কোনো মেসেজ থাকে না।"
 
 [t_3a5e4ab9a1]
 en = "CHECKLIST"
@@ -7319,7 +7319,7 @@ en = "You may have a new message"
 where = [
   "android notif_wake_notice_title: Title of a notification after a wake-up while Tinline is still locked. It names nobody and shows no message text.",
 ]
-text = "আপনার একটা নতুন মেসেজ আসতে পারে"
+text = "আপনার একটা নতুন মেসেজ এসে থাকতে পারে"
 
 [t_e9548850fb]
 en = "Open Tinline and unlock to catch up."
