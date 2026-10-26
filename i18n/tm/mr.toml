@@ -188,7 +188,7 @@ where = [
   "desktop common_blocked: Shared label, used in several places (chat, profile, reason, shell, view).",
   "desktop group_blocked: Desktop, group member row (in group_live_view.rs), joined after other facts with a separator: I blocked this member.",
 ]
-text = "ब्लॉक केले"
+text = "ब्लॉक केलेले"
 
 [t_a9bbb0f89b]
 en = "Call"
@@ -275,7 +275,7 @@ where = [
   "android groups_host_ask_body: Explanation under the host request card in a group chat.",
   "ios group_host_asked_text: Notice text explaining what hosting means.",
 ]
-text = "होस्ट ग्रुपची पूर्ण प्रत ठेवतो, सदस्यांचे फोन स्लीपमध्ये असताना संदेश पुढे पाठवतो आणि सदस्यांचे ग्रुप पत्ते जाणतो. त्याला ऑनलाइन राहावे लागते आणि त्यात बॅटरी खर्च होते: सतत चालू राहणारा कॉम्प्युटर अधिक चांगला होस्ट असतो. होस्ट केल्याने तुम्ही ॲडमिन होत नाही."
+text = "होस्ट ग्रुपची पूर्ण प्रत ठेवतो, सदस्यांचे फोन स्लीपमध्ये असताना संदेश पुढे पाठवतो आणि त्याला सदस्यांचे ग्रुप पत्ते कळतात. त्याला ऑनलाइन राहावे लागते आणि त्यात बॅटरी खर्च होते: सतत चालू राहणारा कॉम्प्युटर अधिक चांगला होस्ट असतो. होस्ट केल्याने तुम्ही ॲडमिन होत नाही."
 
 [t_c7fad49670]
 en = "Host here"
@@ -414,7 +414,7 @@ where = [
   "ios group_request_accept_note: Chat request card note. {name} is their first name.",
   "desktop group_accepting_adds_as_a: Desktop, groups (in group_live_view.rs, live_requests). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = "स्वीकारल्यावर {name} फक्त संदेशांसाठी संपर्क म्हणून जोडले जाईल. कॉलची परवानगी तुम्ही नंतर देऊ शकता."
+text = "स्वीकारल्यावर {name} ला फक्त संदेशांसाठी संपर्क म्हणून जोडले जाईल. कॉलची परवानगी तुम्ही नंतर देऊ शकता."
 
 [t_6c654c2827]
 en = "Block"
@@ -450,14 +450,14 @@ en = "Fold"
 where = [
   "android groups_list_fold: Accessibility click label on the Left or removed header while it is open.",
 ]
-text = "मिटवा"
+text = "लपवा"
 
 [t_5a41ace4dc]
 en = "Unfold"
 where = [
   "android groups_list_unfold: Accessibility click label on the Left or removed header while it is closed.",
 ]
-text = "उघडा"
+text = "दाखवा"
 
 [t_acaea3ccbc]
 en = "Expanded"
@@ -2185,7 +2185,7 @@ where = [
   "android groupsb_flag_note1: Paragraph in the flag confirmation.",
   "ios group_flag_text1: First paragraph of the flag confirmation.",
 ]
-text = "फ्लॅग मागे घेता येत नाहीत, आणि ग्रुपमधून काढणे कायमचे असते. एकाच ॲडमिनला एकापेक्षा जास्त वेळा फ्लॅग करता येते; प्रत्येक फ्लॅग मोजला जातो."
+text = "फ्लॅग मागे घेता येत नाहीत, आणि ग्रुपमधून काढणे कायमचे असते. एकाच ॲडमिनने एकापेक्षा जास्त वेळा फ्लॅग केले तरी प्रत्येक फ्लॅग मोजला जातो."
 
 [t_8e44c0f4ea]
 en = "Flagging is a decision for the group. It is separate from blocking, which only affects you. {name} sees each flag: who made it and when."
@@ -2193,7 +2193,7 @@ where = [
   "android groupsb_flag_note2: Paragraph in the flag confirmation. {name} is the member's first name.",
   "ios group_flag_text2: Second paragraph of the flag confirmation. {name} is the member’s first name.",
 ]
-text = "फ्लॅग करणे हा ग्रुपचा निर्णय असतो. तो ब्लॉक करण्यापेक्षा वेगळा आहे, कारण ब्लॉक करणे फक्त तुमच्यापुरते असते. {name} ला प्रत्येक फ्लॅग दिसतो: तो कोणी आणि केव्हा केला."
+text = "फ्लॅग करणे हा ग्रुपचा निर्णय असतो. तो ब्लॉक करण्यापेक्षा वेगळा आहे; ब्लॉक करणे फक्त तुमच्यापुरते असते. {name} ला प्रत्येक फ्लॅग दिसतो: तो कोणी आणि केव्हा केला."
 
 [t_3660dd7b10]
 en = "Flag {name}"
@@ -2351,7 +2351,7 @@ where = [
   "ios group_join_bad: Hint when the invite link did not work.",
   "desktop group_that_link_didnt_work: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = "त्या लिंकने काम केले नाही: ती ग्रुप आमंत्रण नाही, तिची मुदत संपली आहे, किंवा तिचा होस्ट ऑफलाइन आहे."
+text = "ती लिंक चालली नाही: ती ग्रुप आमंत्रण नाही, तिची मुदत संपली आहे, किंवा तिचा होस्ट ऑफलाइन आहे."
 
 [t_07152d37e7]
 en = "Paste"
@@ -4800,7 +4800,7 @@ where = [
   "android onboarding_perms_lead: Lead on the permissions step.",
   "ios onboarding_perms_lead: Explanation on the permissions screen.",
 ]
-text = "Tinline फोन लाइनसारखे काम करते: ते बॅकग्राउंडमध्ये शांतपणे खुले राहते. यापैकी कोणतीही परवानगी ऐच्छिक आहे, आणि तुम्ही ती नंतर बदलू शकता."
+text = "Tinline फोन लाइनसारखे काम करते: ते बॅकग्राउंडमध्ये शांतपणे खुले राहते. यापैकी प्रत्येक परवानगी ऐच्छिक आहे, आणि तुम्ही त्या नंतर बदलू शकता."
 
 [t_ff3d541d05]
 en = "Microphone"
@@ -5627,7 +5627,7 @@ where = [
   "android settings_clear_cache_sub: Small line under Clear cache. {size} is a formatted size such as 12 MB.",
   "ios settings_clear_cache_sub: Subtitle of Clear cache; {size} is a size such as 12 MB.",
 ]
-text = "तुम्ही उघडलेले {size} फोटो आणि फाइल. पुन्हा उघडल्यावर त्या परत तयार होतात."
+text = "तुम्ही उघडलेले फोटो आणि फाइल: {size}. पुन्हा उघडल्यावर त्या परत तयार होतात."
 
 [t_1a905db57c]
 en = "Cleared"
@@ -8475,7 +8475,7 @@ en = "Match {shown} of {total}"
 where = [
   "android find_match_of: Screen-reader description of the match counter. {shown} is the current match, {total} how many.",
 ]
-text = "{total} पैकी जुळणारे {shown}"
+text = "जुळणारे: {total} पैकी {shown}"
 
 [t_ec4cc94892]
 en = "No matches"
@@ -10484,7 +10484,7 @@ where = [
   "android call_unreachable_body: Explanation under the Couldn’t reach heading. {name} is the contact's name (or 'They').",
   "ios call_unreachable_body: Explanation when a call could not connect. {name} is the contact.",
 ]
-text = "कदाचित {name} ऑफलाइन आहे, नेटवर्कच्या बाहेर आहे, किंवा आत्ता कॉल घेत नाही. Tinline संदेश ठेवून घेऊ शकत नाही."
+text = "कदाचित {name} ऑफलाइन आहे, नेटवर्कच्या बाहेर आहे, किंवा आत्ता कॉल घेत नाही. Tinline वर निरोप ठेवता येत नाही."
 
 [t_4b691ade90]
 en = "Tinline can’t use the microphone"
@@ -12384,7 +12384,7 @@ en = "Match {index} of {total}"
 where = [
   "ios chat_find_match_of: Accessibility label of the match counter. {index} is the current match number, {total} how many matches.",
 ]
-text = "{total} पैकी जुळणारे {index}"
+text = "जुळणारे: {total} पैकी {index}"
 
 [t_d30c4d9fbd]
 en = "Message actions"
@@ -13267,7 +13267,7 @@ en = "They may be offline, out of signal, or not taking calls right now. Tinline
 where = [
   "ios call_unreachable_body_blank: Explanation when a call could not connect and the contact has no name.",
 ]
-text = "कदाचित ते ऑफलाइन आहेत, नेटवर्कच्या बाहेर आहेत, किंवा आत्ता कॉल घेत नाहीत. Tinline संदेश ठेवून घेऊ शकत नाही."
+text = "कदाचित ते ऑफलाइन आहेत, नेटवर्कच्या बाहेर आहेत, किंवा आत्ता कॉल घेत नाहीत. Tinline वर निरोप ठेवता येत नाही."
 
 [t_6663ab075c]
 en = "You made yourself an admin"
@@ -14724,7 +14724,7 @@ en = "A flag is signed by you and can’t be taken back. {name} can see who flag
 where = [
   "desktop group_a_flag_is_signed: Desktop, groups (in group_live_view.rs, live_overlay). {name} is a person's name (usually the first word of their chosen name).",
 ]
-text = "फ्लॅगवर तुमची स्वाक्षरी असते आणि तो मागे घेता येत नाही. {name} ला त्यांना कोणी आणि केव्हा फ्लॅग केले ते दिसते. काढण्यापूर्वी {name} ने लिहिलेले संदेश खूण करून दिसत राहतात."
+text = "फ्लॅगवर तुमची स्वाक्षरी असते आणि तो मागे घेता येत नाही. त्यांना कोणी आणि केव्हा फ्लॅग केले ते {name} ला दिसते. काढण्यापूर्वी {name} ने लिहिलेले संदेश खूण करून दिसत राहतात."
 
 [t_ae23a1918a]
 en = "A host keeps a full copy of a group and passes messages on while members’ phones sleep. Members connect to hosts, not to each other; only hosts learn members’ group addresses. Tinline keeps hosting while the window is closed (it stays in the tray)."
@@ -14738,7 +14738,7 @@ en = "A host keeps a full copy of the group, passes messages on while members’
 where = [
   "desktop group_a_host_keeps_a_full: Desktop, groups (in group_live_view.rs, live_pane).",
 ]
-text = "होस्ट ग्रुपची पूर्ण प्रत ठेवतो, सदस्यांचे फोन स्लीपमध्ये असताना संदेश पुढे पाठवतो आणि सदस्यांचे ग्रुप पत्ते जाणतो. त्याला चालू राहावे लागते. होस्ट केल्याने तुम्ही ॲडमिन होत नाही; तुम्ही कधीही थांबवू शकता."
+text = "होस्ट ग्रुपची पूर्ण प्रत ठेवतो, सदस्यांचे फोन स्लीपमध्ये असताना संदेश पुढे पाठवतो आणि त्याला सदस्यांचे ग्रुप पत्ते कळतात. त्याला चालू राहावे लागते. होस्ट केल्याने तुम्ही ॲडमिन होत नाही; तुम्ही कधीही थांबवू शकता."
 
 [t_388413e2e0]
 en = "A host stays on and passes posts on while others are offline"
@@ -15011,7 +15011,7 @@ en = "• keep a full copy of the group\n• pass messages on for members while 
 where = [
   "desktop group_keep_a_full_copy: Desktop, groups (in group_live_view.rs, live_overlay).",
 ]
-text = "• ग्रुपची पूर्ण प्रत ठेवेल\n• सदस्यांचे फोन स्लीपमध्ये असताना त्यांच्यासाठी संदेश पुढे पाठवेल\n• सदस्यांचे ग्रुप पत्ते जाणेल (हे फक्त होस्टना कळतात)\n• उपयोगी पडण्यासाठी त्याला चालू राहावे लागेल"
+text = "• ग्रुपची पूर्ण प्रत ठेवेल\n• सदस्यांचे फोन स्लीपमध्ये असताना त्यांच्यासाठी संदेश पुढे पाठवेल\n• सदस्यांचे ग्रुप पत्ते जाणून घेईल (हे फक्त होस्टना कळतात)\n• उपयोगी पडण्यासाठी त्याला चालू राहावे लागेल"
 
 [t_9e0599e783]
 en = "Leave {gname}?"
@@ -16267,7 +16267,7 @@ en = "{value} of pictures and files you’ve opened. They’re prepared again wh
 where = [
   "desktop profile_of_pictures_and_files: Desktop, profile and settings (in profile_view.rs, storage_page). {value} is a value filled in by the app.",
 ]
-text = "तुम्ही उघडलेले {value} फोटो आणि फाइल. पुन्हा उघडल्यावर त्या परत तयार होतात."
+text = "तुम्ही उघडलेले फोटो आणि फाइल: {value}. पुन्हा उघडल्यावर त्या परत तयार होतात."
 
 [t_d060fc5ab7]
 en = "Off means messages only"
