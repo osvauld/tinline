@@ -19,13 +19,15 @@ impl NodeCtx {
     /// Redeems a ticket, giving them the tokens `origin` decides (P6: a group chat request gives
     /// message only). Their device either adds us at once (`Added`) or holds our hello as a
     /// request for its user (`Requested`): our half is kept in `sent_requests`, and their
-    /// Welcome arrives later on a connection they dial (`welcome_incoming`).
+    /// Welcome arrives later on a connection they dial (`welcome_incoming`). A code request
+    /// (`ContactOrigin::Ticket`) whose owner cannot be reached is queued and is `Requested` too:
+    /// `request_out.rs` keeps redialling (waking their phone when the code carries a wake token)
+    /// until it is delivered or the code expires.
     pub async fn add_contact_outcome(
         self: Arc<Self>,
         text: String,
         origin: crate::caps::ContactOrigin,
     ) -> Result<crate::contact_req::AddOutcome, Error> {
-        use crate::contact_req::AddOutcome;
         let me = self.me()?;
         let ticket = ContactTicket::from_text(&text)?;
         let claim = ticket.verify(now())?;
@@ -38,7 +40,8 @@ impl NodeCtx {
         if claim.relay.is_some() && relay.is_none() {
             return Err(Error::Protocol("that ticket names a relay we won't use".into()));
         }
-        let ep = self.endpoint()?;
+        // Offline: nothing to queue on (`AddError::Offline`).
+        self.endpoint()?;
         // We scanned their ticket ourselves: that is a way back from our block (unblock first, so
         // they are told).
         if self.unblock_inner(&claim.iss)? {
@@ -48,18 +51,8 @@ impl NodeCtx {
             self.wake_kick();
         }
         let policy = crate::caps::policy_for(&self.shared.lock().state, &claim.iss, origin);
-        let (mut hello, pending) = proto::contact_hello_with(
-            &me.id,
-            me.device,
-            &ticket,
-            &me.profile.name,
-            now_ms(),
-            GRANT_TTL,
-            policy,
-        )?;
-        if let Msg::ContactHello { relay, .. } = &mut hello {
-            *relay = relay_of(&ep);
-        }
+        // Only to read our half (deterministic for this code); every delivery makes a fresh hello.
+        let (_, pending) = proto::contact_hello_with(&me.id, me.device, &ticket, &me.profile.name, now_ms(), GRANT_TTL, policy)?;
         // Our half is kept before the hello leaves: their user's Accept can dial back any time
         // after. A request already delivered with an earlier hello stays delivered.
         let prior = {
@@ -77,79 +70,24 @@ impl NodeCtx {
                     exp: claim.exp,
                     at: prior.as_ref().map_or_else(now_ms, |p| p.at),
                     delivered: prior.as_ref().is_some_and(|p| p.delivered),
+                    ticket: Some(ticket.to_text()),
+                    last_wake_ms: prior.as_ref().and_then(|p| p.last_wake_ms),
+                    wake_dead: false,
                 },
             );
             prior
         };
         self.persist_async(me.epoch).await?;
-        let addr = addr_for(&claim.device, relay.as_deref())?;
-        self.log(format!(
-            "adding contact {}: dialing {}",
-            claim.name, addr.id
-        ));
-        // Not reached: they never saw this hello, so what we held before stands.
-        let undo = |this: &Arc<Self>| {
-            let mut s = this.shared.lock();
-            match &prior {
-                Some(p) => s.state.sent_requests.insert(claim.iss.clone(), p.clone()),
-                None => s.state.sent_requests.remove(&claim.iss),
-            };
-        };
-        let conn = match tokio::time::timeout(DIAL_TIMEOUT, crate::version::connect(&ep, addr, &crate::version::CALL)).await {
-            Ok(Ok(c)) => c,
-            Ok(Err(e)) => {
-                undo(&self);
-                self.persist_logged(me.epoch).await;
-                return Err(e);
-            }
-            Err(_) => {
-                undo(&self);
-                self.persist_logged(me.epoch).await;
-                return Err(Error::Timeout);
-            }
-        };
-        let remote = *conn.remote_id().as_bytes();
-        let (send, recv) = conn.open_bi().await.map_err(Error::net)?;
-        let mut ctrl = Ctrl::new(send, recv);
-        ctrl.send(&hello).await?;
-        // From here the hello may have reached them: on a timeout our half stays (unlisted) so
-        // a late Accept still lands.
-        let reply = tokio::time::timeout(HELLO_TIMEOUT, ctrl.recv())
-            .await
-            .map_err(|_| Error::Timeout)??
-            .ok_or_else(|| Error::eof("peer closed"))?;
-        let new = match reply {
-            Msg::Reject { reason } => {
-                undo(&self);
-                self.persist_logged(me.epoch).await;
-                return Err(Error::Rejected(clip_reason(&reason)));
-            }
-            // They block us: their app's notice is the answer (and is taken here).
-            Msg::Notice { notice } if self.is_block_from(&claim.iss, &notice) => {
-                self.shared.lock().state.sent_requests.remove(&claim.iss);
-                let _ = self.take_notice(&notice);
-                return Err(Error::Rejected(crate::block::BLOCKED.into()));
-            }
-            Msg::ContactPending => {
-                ctrl.finish();
-                conn.close(0u32.into(), b"pending");
-                if let Some(r) = self.shared.lock().state.sent_requests.get_mut(&claim.iss) {
-                    r.delivered = true;
-                }
-                self.persist_async(me.epoch).await?;
-                self.log(format!("contact request to {} delivered", claim.name));
-                return Ok(AddOutcome::Requested { did: claim.iss.clone(), name: pending.name.clone() });
-            }
-            other => proto::accept_contact_welcome(&me.id, &pending, &other, remote, now_ms())?,
-        };
-        ctrl.finish();
-        conn.close(0u32.into(), b"added");
-        self.shared.lock().state.sent_requests.remove(&claim.iss);
-        // We scanned their ticket ourselves: that is the one way back from a block.
-        let contact = self.save_contact(me.epoch, new, relay, true, policy.call).await?;
-        self.log(format!("contact {} added", contact.name));
-        self.list_for_new_contact(&contact.did);
-        Ok(AddOutcome::Added { contact })
+        // With push on, our hello carries a wake token for them: the wake task registers one for
+        // an open request (`push.rs` `wanted`).
+        if self.push_target().is_some() {
+            self.wake_kick();
+        }
+        self.log(format!("adding contact {}: dialing {}", claim.name, crate::short(&hex::encode(claim.device))));
+        // A request by code is queued when their device cannot be reached (and their phone is
+        // woken when the code carries a wake token); a group chat request ticket is not.
+        let queue = origin == crate::caps::ContactOrigin::Ticket;
+        self.first_request(&me, &claim.iss, queue, prior).await
     }
 
     /// `lift_block`: only when the user scanned this contact's ticket; a contact who arrives on

@@ -11,7 +11,7 @@ import uniffi.p2pcore.WakeOutcome
 sealed interface WakePlan {
     /** Not for us, refused, or nothing to show (Ignore, EndCall). */
     data object Nothing : WakePlan
-    /** A message wake: make sure the node runs so the dial-back and the sync happen; the usual notifications follow. */
+    /** A message wake (or a code wake, from someone with our code): make sure the node runs so the dial-back, the sync or their contact request happen; the usual notifications follow. */
     data object StartNode : WakePlan
     /** A call wake: ring now with the user's own name for the contact, and keep the node up for the caller's dial. */
     data class Ring(val did: String, val name: String) : WakePlan
@@ -19,7 +19,7 @@ sealed interface WakePlan {
     companion object {
         fun of(o: WakeOutcome): WakePlan = when (o) {
             is WakeOutcome.Ignore, is WakeOutcome.EndCall -> Nothing
-            is WakeOutcome.DialedBack -> StartNode
+            is WakeOutcome.DialedBack, is WakeOutcome.CodeWake -> StartNode
             is WakeOutcome.Ring -> Ring(o.did, o.name)
         }
     }

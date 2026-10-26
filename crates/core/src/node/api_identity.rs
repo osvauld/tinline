@@ -348,6 +348,9 @@ impl Node {
     pub fn reset_ticket(&self) -> Result<(), Error> {
         self.inner.me()?;
         retire_ticket(&mut self.inner.shared.lock().state, false);
-        self.inner.persist().map_err(Error::from)
+        let saved = self.inner.persist().map_err(Error::from);
+        // Their code wake tokens are taken back at the relay (`docs/push.md` "Code wake tokens").
+        self.inner.ctx.wake_kick();
+        saved
     }
 }

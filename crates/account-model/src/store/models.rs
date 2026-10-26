@@ -351,9 +351,21 @@ pub struct SentRequest {
     pub exp: u64,
     /// When we sent it (unix ms).
     pub at: u64,
-    /// They answered `ContactPending`. False while dialling, or when the dial failed after the
-    /// hello may have reached them: kept (not listed) so a late Accept still lands.
+    /// They answered `ContactPending`. False while dialling, or while queued (below).
     pub delivered: bool,
+    /// Their code (`OSVC2:` text), kept while the request is queued: their device could not be
+    /// reached, so the request outbox (`node_runtime` `request_out`) keeps redialling it (and
+    /// waking it, when the code carries a wake token) until it answers or the code expires.
+    /// `None` once delivered, and for a request that is not queued.
+    #[serde(default)]
+    pub ticket: Option<String>,
+    /// When we last asked the relay to wake them with the code's token (unix ms): one wake per
+    /// `wake::MSG_WAKE_EVERY_MS` at most.
+    #[serde(default)]
+    pub last_wake_ms: Option<u64>,
+    /// The relay answered 410 for the code's token: it is dead, wake no more.
+    #[serde(default)]
+    pub wake_dead: bool,
 }
 
 /// See `State::welcome_outbox`.

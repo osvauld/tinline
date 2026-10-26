@@ -29,6 +29,10 @@
 //!
 //! Slice 5, the receiving side (`ring.rs`): [`NodeCtx::on_wake`], the wake ring, `answer_wake_ring`
 //! and `decline_wake_ring`.
+//!
+//! Code wakes (`code.rs`, `docs/push.md` "Code wake tokens"): a `msg` token in our contact ticket,
+//! so a stranger who scanned it can wake us to deliver a contact request, and the tokens both ways
+//! in `ContactHello` / `ContactWelcome`.
 
 use std::collections::{BTreeSet, HashMap};
 use std::sync::Arc;
@@ -246,6 +250,13 @@ struct Task {
 /// Cancels a pending [`NodeCtx::early_wake`] when dropped (a wake already being sent goes on).
 pub struct EarlyWake(tokio::task::JoinHandle<()>);
 
+impl EarlyWake {
+    /// Runs `task` until the guard is dropped.
+    pub(crate) fn spawn(handle: &tokio::runtime::Handle, task: impl std::future::Future<Output = ()> + Send + 'static) -> Self {
+        Self(handle.spawn(task))
+    }
+}
+
 impl Drop for EarlyWake {
     fn drop(&mut self) {
         self.0.abort();
@@ -275,22 +286,42 @@ fn live_contact(st: &State, did: &str) -> bool {
     st.contacts.iter().any(|c| c.did == did) && !st.blocked.contains(did) && !crate::block::blocked_me(st, did)
 }
 
-/// The kinds each live contact should hold from us: message always, call when allowed.
+/// Whether we owe `did` a wake token of ours: a live contact, or someone we sent a contact
+/// request to that is still open (our hello carries the token, so their Accept can wake us to
+/// deliver the Welcome; `docs/push.md` "Tokens at setup").
+fn token_wanted(st: &State, did: &str) -> bool {
+    live_contact(st, did) || requested(st, did)
+}
+
+/// An open contact request of ours to `did` (not yet their contact, not blocked either way).
+fn requested(st: &State, did: &str) -> bool {
+    let now = crate::now();
+    st.sent_requests.get(did).is_some_and(|r| r.exp + crate::contact_req::WELCOME_GRACE > now)
+        && !st.contacts.iter().any(|c| c.did == did)
+        && !st.blocked.contains(did)
+        && !crate::block::blocked_me(st, did)
+}
+
+/// The kinds each live contact should hold from us: message always, call when allowed. An open
+/// request of ours gets the kinds our hello gave (`SentRequest::calls_allowed`).
 fn wanted(st: &State) -> Vec<(String, Kinds)> {
+    let kinds = |call: bool| if call { Kinds::ALL } else { Kinds::MSG };
     st.contacts
         .iter()
         .filter(|c| live_contact(st, &c.did))
-        .map(|c| (c.did.clone(), if c.calls_allowed { Kinds::ALL } else { Kinds::MSG }))
+        .map(|c| (c.did.clone(), kinds(c.calls_allowed)))
+        .chain(st.sent_requests.iter().filter(|(d, _)| requested(st, d)).map(|(d, r)| (d.clone(), kinds(r.calls_allowed))))
         .collect()
 }
 
-/// Takes back and forgets the tokens of every DID that is no longer a live contact (a block, a
-/// contact deleted by their block notice). Whether anything changed.
+/// Takes back and forgets the tokens of every DID we no longer owe one (a block, a contact
+/// deleted by their block notice, a request that was refused or ran out). Whether anything
+/// changed.
 fn forget_gone(st: &mut State) -> bool {
     let gone: Vec<String> = {
         let Some(w) = &st.wake else { return false };
         let dids: BTreeSet<&String> = w.issued.iter().map(|e| &e.did).chain(w.held.iter().map(|e| &e.did)).collect();
-        dids.into_iter().filter(|d| !live_contact(st, d)).cloned().collect()
+        dids.into_iter().filter(|d| !token_wanted(st, d)).cloned().collect()
     };
     let mut changed = !gone.is_empty();
     for did in &gone {
@@ -563,7 +594,7 @@ impl NodeCtx {
             if st.wake.is_none() {
                 return Round::Done;
             }
-            let dirty = forget_gone(st);
+            let dirty = forget_gone(st) | code::retire_codes(st);
             let want = wanted(st);
             let Some(w) = st.wake.as_ref() else { return Round::Done };
             (w.take_revokes(), w.plan_register(&want, now_ms(), random_tag), dirty)
@@ -767,7 +798,11 @@ impl NodeCtx {
     }
 }
 
+mod code;
 mod ring;
+pub use code::{CODE_REGISTER_TIMEOUT, HANDOVER_WAIT, apply_code_token, handover_in, hold_handover, with_handover};
+#[cfg(test)]
+mod code_tests;
 #[cfg(test)]
 mod dial_tests;
 #[cfg(test)]

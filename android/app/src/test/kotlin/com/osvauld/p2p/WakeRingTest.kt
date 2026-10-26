@@ -52,6 +52,7 @@ class WakeRingTest {
         assertEquals(WakePlan.Nothing, WakePlan.of(WakeOutcome.Ignore))
         assertEquals(WakePlan.Nothing, WakePlan.of(WakeOutcome.EndCall))
         assertEquals(WakePlan.StartNode, WakePlan.of(WakeOutcome.DialedBack(a)))
+        assertEquals(WakePlan.StartNode, WakePlan.of(WakeOutcome.CodeWake))
         assertEquals(WakePlan.Ring(a, "Maya"), WakePlan.of(WakeOutcome.Ring(a, "Maya")))
     }
 }
