@@ -1,5 +1,6 @@
 package com.osvauld.p2p
 
+import androidx.compose.ui.res.stringResource
 import android.content.Context
 import android.content.Intent
 import android.widget.Toast
@@ -55,19 +56,19 @@ fun peekOrNull(app: P2pApp, text: String?): CardPeek? =
 
 /** Copy button that says "Copied" with a check for two seconds. */
 @Composable
-fun CopyButton(text: String?, modifier: Modifier = Modifier, label: String = "Copy", style: BtnStyle = BtnStyle.Outlined) {
+fun CopyButton(text: String?, modifier: Modifier = Modifier, label: String = stringResource(R.string.card_copy), style: BtnStyle = BtnStyle.Outlined) {
     val ctx = LocalContext.current
     var copied by remember { mutableStateOf(false) }
     LaunchedEffect(copied) { if (copied) { delay(2000); copied = false } }
     TinButton(
-        if (copied) "Copied" else label,
+        if (copied) stringResource(R.string.common_copied) else label,
         { text?.let { copyToClipboard(ctx, "ticket", it); copied = true } },
         modifier, style = style, icon = if (copied) PgIcons.Check else PgIcons.Copy, enabled = text != null,
     )
 }
 
 fun shareCard(ctx: Context, ticket: String): Boolean = try {
-    ctx.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, ticket), "Share contact card")); true
+    ctx.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, ticket), ctx.getString(R.string.card_share_chooser))); true
 } catch (_: Exception) { false }
 
 /** My QR code with Copy and Share right under it. Shared by the first-run home and the Add contact screen. */
@@ -81,6 +82,7 @@ fun MyCodeBlock(app: P2pApp, meName: String, qr: Dp = 248.dp, showNewCode: Boole
     var err by remember { mutableStateOf<String?>(null) }
     var version by remember { mutableIntStateOf(0) }
     var share by remember { mutableStateOf<String?>(null) }
+    val nothingToShare = stringResource(R.string.card_nothing_to_share)
     LaunchedEffect(status?.online, version) {
         withContext(Dispatchers.IO) { runCatching { app.node.myTicket() } }
             .onSuccess { ticket = it; err = null }.onFailure { err = it.message }
@@ -93,21 +95,21 @@ fun MyCodeBlock(app: P2pApp, meName: String, qr: Dp = 248.dp, showNewCode: Boole
                 Box(Modifier.size(qr).clip(SmoothCornerShape(14.dp)).background(Color.White), contentAlignment = Alignment.Center) {
                     if (t != null) {
                         val bmp = remember(t) { qrBitmap(t, 720, fg = 0xFF17201D.toInt()) }
-                        Image(bmp.asImageBitmap(), "QR code of your contact card", Modifier.fillMaxSize().padding(10.dp))
+                        Image(bmp.asImageBitmap(), stringResource(R.string.card_qr_desc), Modifier.fillMaxSize().padding(10.dp))
                         Box(Modifier.size(40.dp).clip(SmoothCornerShape(10.dp)).background(Color.White).padding(3.dp).clip(SmoothCornerShape(8.dp)).background(Color(0xFF0B6B5B)), contentAlignment = Alignment.Center) {
                             TinMark(26.dp, can = Color.White, string = Color(0xFFE8B04A), mouth = Color(0xFF0B6B5B))
                         }
-                    } else Text(err ?: "Preparing your code…", Modifier.padding(16.dp), style = TinType.bodyM, color = Color(0xFF4D5853), textAlign = TextAlign.Center)
+                    } else Text(err ?: stringResource(R.string.card_preparing), Modifier.padding(16.dp), style = TinType.bodyM, color = Color(0xFF4D5853), textAlign = TextAlign.Center)
                 }
-                Hint("Works once. Making a new code cancels this one.", Modifier.widthIn(max = 300.dp), align = TextAlign.Center)
+                Hint(stringResource(R.string.card_works_once), Modifier.widthIn(max = 300.dp), align = TextAlign.Center)
             }
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            TinButton("Share", { ticket?.let { t -> if (!shareCard(ctx, t)) share = "Nothing to share with" } }, Modifier.weight(1f), style = BtnStyle.Tonal, icon = PgIcons.Share, enabled = ticket != null)
+            TinButton(stringResource(R.string.common_share), { ticket?.let { t -> if (!shareCard(ctx, t)) share = nothingToShare } }, Modifier.weight(1f), style = BtnStyle.Tonal, icon = PgIcons.Share, enabled = ticket != null)
             CopyButton(ticket, Modifier.weight(1f))
         }
         share?.let { Hint(it, color = c.er) }
-        if (showNewCode) TinButton("New code", {
+        if (showNewCode) TinButton(stringResource(R.string.card_new_code), {
             scope.launch { withContext(Dispatchers.IO) { runCatching { app.node.resetTicket() } }; ticket = null; version++ }
         }, style = BtnStyle.Text, icon = PgIcons.Retry)
     }
@@ -166,7 +168,7 @@ fun CardPrompts(app: P2pApp, clipboardOk: Boolean, shareOk: Boolean, showOnScree
         CardInbox.shared.value = null
         val p = withContext(Dispatchers.IO) { peekOrNull(app, t) }
         when {
-            p == null -> Toast.makeText(ctx, "No Tinline contact card in that message", Toast.LENGTH_LONG).show()
+            p == null -> Toast.makeText(ctx, ctx.getString(R.string.card_none_found), Toast.LENGTH_LONG).show()
             else -> prompt = p
         }
     }
@@ -181,11 +183,11 @@ fun CardPrompts(app: P2pApp, clipboardOk: Boolean, shareOk: Boolean, showOnScree
             ) {
                 Avatar(p.name.ifBlank { "?" }, p.did, 44.dp)
                 Column(Modifier.weight(1f)) {
-                    Text(if (p.known) "Chat with ${p.name.ifBlank { "them" }}?" else "Add ${p.name.ifBlank { "this contact" }}?", style = TinType.bodyL.copy(fontWeight = FontWeight.Bold), color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text(if (p.known) "They are already in your contacts." else "Tinline found their card.", style = TinType.bodyM, color = c.ink2)
+                    Text(if (p.known) (if (p.name.isBlank()) stringResource(R.string.card_chat_with_unnamed) else stringResource(R.string.card_chat_with, p.name)) else (if (p.name.isBlank()) stringResource(R.string.card_add_unnamed) else stringResource(R.string.card_add_name, p.name)), style = TinType.bodyL.copy(fontWeight = FontWeight.Bold), color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(if (p.known) stringResource(R.string.card_already_contact) else stringResource(R.string.card_found), style = TinType.bodyM, color = c.ink2)
                 }
-                TinButton("Not now", { dismissed += hashOf(p.ticket); prefs.edit().putString("dismissed", hashOf(p.ticket)).apply(); prompt = null }, style = BtnStyle.Text, fill = false, height = 44.dp, textStyle = TinType.label)
-                TinButton(if (p.known) "Open" else "Add", { prompt = null; if (p.known) onChat(p) else onAdd(p) }, fill = false, height = 44.dp, textStyle = TinType.label)
+                TinButton(stringResource(R.string.common_not_now), { dismissed += hashOf(p.ticket); prefs.edit().putString("dismissed", hashOf(p.ticket)).apply(); prompt = null }, style = BtnStyle.Text, fill = false, height = 44.dp, textStyle = TinType.label)
+                TinButton(if (p.known) stringResource(R.string.card_open) else stringResource(R.string.card_add), { prompt = null; if (p.known) onChat(p) else onAdd(p) }, fill = false, height = 44.dp, textStyle = TinType.label)
             }
         }
     }

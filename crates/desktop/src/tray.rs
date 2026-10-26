@@ -105,9 +105,9 @@ const START_TIMEOUT: Duration = Duration::from_secs(5);
 #[cfg(any(target_os = "linux", windows))]
 fn build(send: impl Fn(TrayCmd) + Send + Sync + 'static) -> Result<(MenuItem, TrayIcon), String> {
     let menu = Menu::new();
-    let status = MenuItem::new("Starting...", false, None);
-    let show = MenuItem::new("Show", true, None);
-    let quit = MenuItem::new("Quit", true, None);
+    let status = MenuItem::new(crate::i18n::tr_str("common_starting"), false, None);
+    let show = MenuItem::new(crate::i18n::tr_str("common_show"), true, None);
+    let quit = MenuItem::new(crate::i18n::tr_str("tray_quit"), true, None);
     let _ = menu.append(&status);
     let _ = menu.append(&PredefinedMenuItem::separator());
     let _ = menu.append(&show);
@@ -135,7 +135,7 @@ fn refresh(status: &MenuItem, tray: &mut TrayIcon, shown: &mut String, look: &mu
     let want = STATUS.lock().unwrap().clone();
     if let Some(w) = want.filter(|w| w != shown) {
         status.set_text(&w);
-        let _ = tray.set_tooltip(Some(format!("Tinline - {w}")));
+        let _ = tray.set_tooltip(Some(crate::i18n::tr_args("tray_tinline", &[("status", &(w).to_string())])));
         *shown = w;
     }
     let l = *LOOK.lock().unwrap();

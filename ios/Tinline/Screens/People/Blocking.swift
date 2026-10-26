@@ -65,8 +65,8 @@ struct Blocks: Equatable {
     /// The red line under the name in lists and headers.
     func status(_ did: String) -> String? {
         switch composer(did, contact: true) {
-        case .blockedByMe: return "Blocked"
-        case .blockedMe: return "Blocked you"
+        case .blockedByMe: return tr("people_blocked")
+        case .blockedMe: return tr("people_blocked_you")
         default: return nil
         }
     }
@@ -90,12 +90,14 @@ enum BlockCopy {
     /// Why the call button is closed (`ComposerState` mapped to the shared words).
     static func cantCall(name: String, state: ComposerState) -> String { cantCallText(name: name, composer: state) }
 
-    static func date(_ secs: Int64, zone: TimeZone = .current) -> String {
-        let f = DateFormatter()
-        f.locale = Locale(identifier: "en_US_POSIX")
-        f.timeZone = zone
-        f.dateFormat = "MMM d, HH:mm"
-        return f.string(from: Date(timeIntervalSince1970: TimeInterval(secs)))
+    static func date(_ secs: Int64, zone: TimeZone = .current, locale: Locale = .current) -> String {
+        let at = Date(timeIntervalSince1970: TimeInterval(secs))
+        let day = DateFormatter()
+        day.locale = locale; day.timeZone = zone
+        day.setLocalizedDateFormatFromTemplate("MMMd")
+        let clock = DateFormatter()
+        clock.locale = Locale(identifier: "en_US_POSIX"); clock.timeZone = zone; clock.dateFormat = "HH:mm"
+        return tr("people_when_date", day.string(from: at), clock.string(from: at))
     }
 }
 
@@ -112,8 +114,8 @@ struct BlockDialog: View {
                 ForEach(blockDialogLines(name: name), id: \.self) { PeopleDialogText("\u{2022} \($0)") }
             }
             PeopleActs {
-                PeopleButton("Cancel", variant: .quiet, action: onDismiss)
-                PeopleButton("Block", variant: .danger) { onDismiss(); onBlock() }
+                PeopleButton(tr("people_cancel"), variant: .quiet, action: onDismiss)
+                PeopleButton(tr("people_block"), variant: .danger) { onDismiss(); onBlock() }
             }
         }
     }
@@ -128,38 +130,38 @@ struct BlockedPeopleScreen: View {
 
     var body: some View {
         PeoplePage {
-            PeopleTopBar(title: "Blocked people", onBack: onBack)
+            PeopleTopBar(title: tr("people_blocked_title"), onBack: onBack)
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
-                    PeopleHint("One list across all your devices: a block made on another device shows here too.")
+                    PeopleHint(tr("people_blocked_list_note"))
                         .padding(.horizontal, 20).padding(.vertical, 8)
                     if people.blocks.list.isEmpty {
-                        PeopleHint("Nobody is blocked. To block someone, open their contact page and tap Block.")
+                        PeopleHint(tr("people_blocked_empty"))
                             .padding(.horizontal, 20).padding(.vertical, 12)
                     }
                     ForEach(people.blocks.list, id: \.did) { b in
-                        let name = b.name.trimmingCharacters(in: .whitespaces).isEmpty ? "Someone" : b.name
+                        let name = b.name.trimmingCharacters(in: .whitespaces).isEmpty ? tr("people_someone") : b.name
                         HStack(spacing: 14) {
                             TinAvatar(did: b.did, size: 44)
                             VStack(alignment: .leading, spacing: 0) {
                                 Text(name).peopleStyle(.bodyB, lineHeight: 22).foregroundStyle(c.ink).lineLimit(1)
-                                PeopleHint("Blocked \(BlockCopy.date(b.blockedAtSecs))")
+                                PeopleHint(tr("people_blocked_since", BlockCopy.date(b.blockedAtSecs)))
                             }
                             Spacer(minLength: 0)
                             Button {
                                 people.unblock(b.did)
-                                say("\(peopleFirstName(name)) is told you unblocked them")
+                                say(tr("people_unblock_told", peopleFirstName(name)))
                             } label: {
-                                Text("Unblock").peopleStyle(.btn).foregroundStyle(c.pr)
+                                Text(tr("people_unblock")).peopleStyle(.btn).foregroundStyle(c.pr)
                                     .padding(.horizontal, 12).frame(minHeight: 48)
                             }
                             .buttonStyle(PeoplePressStyle())
-                            .accessibilityLabel("Unblock \(name)")
+                            .accessibilityLabel(tr("people_unblock_a11y", name))
                         }
                         .frame(minHeight: 72).padding(.leading, 20).padding(.trailing, 8)
                     }
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Unblocking").peopleStyle(.bodyB).foregroundStyle(c.ink)
+                        Text(tr("people_unblocking_title")).peopleStyle(.bodyB).foregroundStyle(c.ink)
                         Text(unblockNote()).peopleStyle(.sub19).foregroundStyle(c.ink2)
                     }
                     .padding(20).frame(maxWidth: .infinity, alignment: .leading)

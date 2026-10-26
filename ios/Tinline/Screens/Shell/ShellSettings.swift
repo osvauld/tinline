@@ -13,7 +13,7 @@ struct ShellPermProblem: Identifiable {
     let glyph: ShellGlyph
     let title: String
     let body: String
-    var fix = "Open settings"
+    var fix = tr("settings_perm_fix")
     var id: ShellNeed { need }
 }
 
@@ -21,8 +21,8 @@ struct ShellPermProblem: Identifiable {
 func shellPermProblems(_ missing: [ShellNeed]) -> [ShellPermProblem] {
     var out: [ShellPermProblem] = []
     if missing.contains(.notifications) {
-        out.append(ShellPermProblem(need: .notifications, glyph: .bell, title: "Notifications are off",
-            body: "Tinline can\u{2019}t alert you to messages or calls. They still arrive; you\u{2019}ll see them when you open the app. Turn notifications on in system settings."))
+        out.append(ShellPermProblem(need: .notifications, glyph: .bell, title: tr("settings_perm_notif_title"),
+            body: tr("settings_perm_notif_body")))
     }
     return out
 }
@@ -75,11 +75,11 @@ struct ShellSettingsRoute: View {
         let name = me?.text("name").flatMap { $0.isEmpty ? nil : $0 } ?? fallback
         let status = me?.text("status").flatMap { $0.isEmpty ? nil : $0 }
         let av = effectiveAvailability(me?.fields, nowMs: nowMs)
-        let avText = av.available ? "Available" : av.untilMs.map { "Busy until \(ShellWiring.busyUntilLabel($0))" } ?? "Busy"
-        ShellPfPage(title: "Settings", onBack: onBack) {
+        let avText = av.available ? tr("settings_status_available") : av.untilMs.map { PeopleProfileInfo.busyUntil(atMs: $0) } ?? tr("settings_status_busy")
+        ShellPfPage(title: tr("settings_title"), onBack: onBack) {
             // Permission problems: said once here, with the details on the Notifications page.
             if let pr = shellPermProblems(missing).first {
-                ShellPfSec { ShellPermBanner(p: pr, action: "See details") { nav.push(.notifications) } }
+                ShellPfSec { ShellPermBanner(p: pr, action: tr("settings_perm_see_details")) { nav.push(.notifications) } }
             }
             ShellPfSec(first: true) {
                 ShellPfCard {
@@ -93,23 +93,23 @@ struct ShellSettingsRoute: View {
             ShellPfSec {
                 ShellPfCard {
                     ForEach(accounts.filter(\.current), id: \.did) { a in
-                        ShellPfAct(title: a.name, sub: "Selected \u{00B7} online", subColor: p.accentInk, subBold: true,
+                        ShellPfAct(title: a.name, sub: tr("settings_account_selected"), subColor: p.accentInk, subBold: true,
                                    leading: { ShellAvatar(did: a.did, name: a.name, size: 36) },
                                    trailing: { ShellIcon(glyph: .check, size: 18, color: tin.ink2) }, extra: { EmptyView() })
                     }
                     ForEach(accounts.filter { !$0.current }, id: \.did) { a in
-                        ShellPfAct(title: a.name, sub: "Paused \u{00B7} tap to switch", action: { nav.push(.switchConfirm(a.did)) },
+                        ShellPfAct(title: a.name, sub: tr("settings_account_paused"), action: { nav.push(.switchConfirm(a.did)) },
                                    leading: { ShellAvatar(did: a.did, name: a.name, size: 36) }, trailing: { EmptyView() }, extra: { EmptyView() })
                     }
-                    ShellPfAct("Add another account", glyph: .plus, chevron: true) { adding = true }
+                    ShellPfAct(tr("settings_add_account"), glyph: .plus, chevron: true) { adding = true }
                 }
-                Text("Only the selected account is online on this phone. Switching pauses the other one: it receives no calls until you select it again.")
+                Text(tr("settings_accounts_note"))
                     .shellStyle(.sub).foregroundStyle(tin.ink2).padding(.horizontal, 16).padding(.top, 8)
             }
             // Appearance (Settings.svelte LOOKS, 2026-10-14): the same choice the sign-up switch makes; switches at once.
-            ShellPfSec(title: "Appearance") {
+            ShellPfSec(title: tr("settings_appearance")) {
                 ShellPfCard {
-                    ForEach([(nil, "Match my phone", "Light or dark, as this phone is set"), (false, "Light", nil), (true, "Dark", nil)] as [(Bool?, String, String?)],
+                    ForEach([(nil, tr("settings_appearance_match"), tr("settings_appearance_match_sub")), (false, tr("settings_appearance_light"), nil), (true, tr("settings_appearance_dark"), nil)] as [(Bool?, String, String?)],
                             id: \.1) { v, label, sub in
                         ShellPfAct(radio: label, sub: sub, on: appearanceDark == v) { appearanceDark = v }
                     }
@@ -117,24 +117,24 @@ struct ShellSettingsRoute: View {
             }
             ShellPfSec {
                 ShellPfCard {
-                    ShellPfAct("Devices", glyph: .devices, chevron: true) { nav.push(.devices) }
-                    ShellPfAct("Privacy", glyph: .shield, chevron: true) { nav.push(.privacy) }
-                    ShellPfAct("Notifications", glyph: .bell, chevron: true) { nav.push(.notifications) }
-                    ShellPfAct("Sounds", glyph: .vol, chevron: true) { nav.push(.sounds) }
-                    ShellPfAct("Video", glyph: .video, chevron: true) { nav.push(.video) }
-                    ShellPfAct("Storage", glyph: .save, chevron: true) { nav.push(.storage) }
-                    ShellPfAct("About Tinline", glyph: .info, chevron: true) { nav.push(.about) }
+                    ShellPfAct(tr("settings_row_devices"), glyph: .devices, chevron: true) { nav.push(.devices) }
+                    ShellPfAct(tr("settings_row_privacy"), glyph: .shield, chevron: true) { nav.push(.privacy) }
+                    ShellPfAct(tr("settings_notifications"), glyph: .bell, chevron: true) { nav.push(.notifications) }
+                    ShellPfAct(tr("settings_row_sounds"), glyph: .vol, chevron: true) { nav.push(.sounds) }
+                    ShellPfAct(tr("settings_row_video"), glyph: .video, chevron: true) { nav.push(.video) }
+                    ShellPfAct(tr("settings_row_storage"), glyph: .save, chevron: true) { nav.push(.storage) }
+                    ShellPfAct(tr("settings_row_about"), glyph: .info, chevron: true) { nav.push(.about) }
                 }
             }
             // Not in the playground: the app's "Video in calls" offer, and developer tools.
             ShellPfSec {
                 ShellPfCard {
-                    ShellPfAct("Video in calls", glyph: .video, sub: video ? "You can turn your camera on in a call" : "Calls are voice only",
+                    ShellPfAct(tr("settings_video_in_calls"), glyph: .video, sub: video ? tr("settings_video_in_calls_on") : tr("settings_video_in_calls_off"),
                                traits: .isToggle, action: { video.toggle(); core.setVideoEnabled(video) }) {
-                        ShellSwitch(isOn: video, label: "Video in calls") { video = $0; core.setVideoEnabled($0) }
+                        ShellSwitch(isOn: video, label: tr("settings_video_in_calls")) { video = $0; core.setVideoEnabled($0) }
                     }
                     #if DEBUG
-                    ShellPfAct("Diagnostics", sub: "Test tone, core version", chevron: true) { nav.push(.diagnostics) }
+                    ShellPfAct(tr("settings_diagnostics"), sub: tr("settings_diagnostics_sub"), chevron: true) { nav.push(.diagnostics) }
                     #endif
                 }
             }
@@ -142,11 +142,11 @@ struct ShellSettingsRoute: View {
         .overlay {
             // gate.beginAdd(): the playground's Choose step. The app picks the path before it begins adding.
             if adding {
-                ShellDialog(title: "Add another account", confirm: "Cancel", dismiss: nil, onDismiss: { adding = false }, onConfirm: { adding = false }) {
+                ShellDialog(title: tr("settings_add_account"), confirm: tr("settings_cancel"), dismiss: nil, onDismiss: { adding = false }, onConfirm: { adding = false }) {
                     VStack(spacing: 0) {
-                        ShellPfAct("Create a new account", glyph: .plus) { adding = false; onCreate() }
-                        ShellPfAct("Link to a device", glyph: .devices) { adding = false; onLink() }
-                        ShellPfAct("Restore from recovery phrase", glyph: .key) { adding = false; onRestore() }
+                        ShellPfAct(tr("settings_add_create"), glyph: .plus) { adding = false; onCreate() }
+                        ShellPfAct(tr("settings_add_link"), glyph: .devices) { adding = false; onLink() }
+                        ShellPfAct(tr("settings_add_restore"), glyph: .key) { adding = false; onRestore() }
                     }
                     .padding(.horizontal, -12)
                 }
@@ -180,13 +180,13 @@ struct ShellNotificationsPage: View {
         let probs = shellPermProblems(missing)
         let off = missing.contains(.notifications)
         let warnInk = tin.dark ? ShellPalette(tin).goldInk : tin.onWarn
-        ShellPfPage(title: "Notifications", onBack: onBack) {
+        ShellPfPage(title: tr("settings_notifications"), onBack: onBack) {
             if !probs.isEmpty { ShellPfSec(first: true) { ForEach(probs) { p in ShellPermBanner(p: p) { fix(p.need) } } } }
-            ShellPfSec(title: "Alert me about", top: 12) {
+            ShellPfSec(title: tr("settings_notif_alert_me"), top: 12) {
                 ShellPfCard {
-                    ForEach([("messages", ShellGlyph.chat, "Messages", "From people, not groups", "Message notifications"),
-                             ("calls", .phone, "Calls", "Ringing when someone calls", "Call notifications"),
-                             ("groups", .users, "Groups", "Posts, invites and requests", "Group notifications")], id: \.0) { k, g, t, sub, label in
+                    ForEach([("messages", ShellGlyph.chat, tr("settings_notif_messages"), tr("settings_notif_messages_sub"), tr("settings_notif_messages_label")),
+                             ("calls", .phone, tr("settings_notif_calls"), tr("settings_notif_calls_sub"), tr("settings_notif_calls_label")),
+                             ("groups", .users, tr("settings_notif_groups"), tr("settings_notif_groups_sub"), tr("settings_notif_groups_label"))], id: \.0) { k, g, t, sub, label in
                         let on = prefs.alert(k)
                         ShellPfAct(t, glyph: g, sub: sub, traits: .isToggle, action: off ? nil : ({ prefs.setAlert(k, !on); tick += 1 } as () -> Void)) {
                             ShellSwitch(isOn: on, label: label, enabled: !off) { prefs.setAlert(k, $0); tick += 1 }
@@ -194,17 +194,17 @@ struct ShellNotificationsPage: View {
                     }
                 }
                 .opacity(off ? 0.55 : 1).id(tick)
-                ShellPfNote("A muted chat never alerts you, whatever is switched on here. Missed calls from one person fold into one notification.")
+                ShellPfNote(tr("settings_notif_note"))
             }
-            ShellPfSec(title: "Permissions") {
+            ShellPfSec(title: tr("settings_perms")) {
                 ShellPfCard {
-                    ShellPfAct("Notifications", glyph: .bell, sub: off ? "Off in system settings" : "Allowed", subColor: off ? warnInk : nil, subBold: off, action: nil) {
-                        ZStack(alignment: .trailing) { if off { ShellPBtn(text: "Fix", height: 36, padH: 14) { fix(.notifications) } } }.frame(minWidth: 64, alignment: .trailing)
+                    ShellPfAct(tr("settings_notifications"), glyph: .bell, sub: off ? tr("settings_perm_off") : tr("settings_perm_allowed"), subColor: off ? warnInk : nil, subBold: off, action: nil) {
+                        ZStack(alignment: .trailing) { if off { ShellPBtn(text: tr("settings_perm_fix_btn"), height: 36, padH: 14) { fix(.notifications) } } }.frame(minWidth: 64, alignment: .trailing)
                     }
                     // The microphone is asked for when a call needs it, so it is never a problem to fix here.
-                    ShellPfAct("Microphone", glyph: .mic, sub: missing.contains(.mic) ? "Asked when you call" : "Allowed")
+                    ShellPfAct(tr("settings_perm_mic"), glyph: .mic, sub: missing.contains(.mic) ? tr("settings_perm_mic_ask") : tr("settings_perm_allowed"))
                 }
-                ShellPfNote("These are set by your system, not by Tinline. Tinline asks only when it needs one.")
+                ShellPfNote(tr("settings_perms_note"))
             }
         }
     }
@@ -220,31 +220,31 @@ struct ShellSoundsPage: View {
     @State private var palette = ShellPrefs().callPalette
 
     var body: some View {
-        let sets = [("classic", "Classic chime", "A bright four-note chime."),
-                    ("slack", "Slack \u{2192} taut", "Two close notes beat like a loose string, then one pulls tight."),
-                    ("triad", "Triad knock", "Three rising notes, like a knock.")]
-        ShellPfPage(title: "Sounds", onBack: onBack) {
-            ShellPfSec(title: "Quiet", first: true) {
+        let sets = [("classic", tr("settings_sound_classic"), tr("settings_sound_classic_sub")),
+                    ("slack", tr("settings_sound_slack"), tr("settings_sound_slack_sub")),
+                    ("triad", tr("settings_sound_triad"), tr("settings_sound_triad_sub"))]
+        ShellPfPage(title: tr("settings_row_sounds"), onBack: onBack) {
+            ShellPfSec(title: tr("settings_quiet"), first: true) {
                 ShellPfCard {
-                    ShellPfAct("Quiet", glyph: .mute, sub: "No sounds from Tinline: ringing, call tones, joins", traits: .isToggle,
+                    ShellPfAct(tr("settings_quiet"), glyph: .mute, sub: tr("settings_quiet_sub"), traits: .isToggle,
                                action: { quiet.toggle(); prefs.setAlert("quiet", quiet) }) {
-                        ShellSwitch(isOn: quiet, label: "Quiet") { quiet = $0; prefs.setAlert("quiet", $0) }
+                        ShellSwitch(isOn: quiet, label: tr("settings_quiet")) { quiet = $0; prefs.setAlert("quiet", $0) }
                     }
                 }
             }
-            ShellPfSec(title: "Call sounds") {
+            ShellPfSec(title: tr("settings_call_sounds")) {
                 ShellPfCard {
                     ForEach(sets, id: \.0) { k, label, sub in
                         ShellPfAct(radio: label, sub: sub, on: palette == k, minHeight: 64) { palette = k; prefs.callPalette = k; ShellWiring.previewSound("ring") }
                     }
                 }
                 HStack(spacing: 8) {
-                    ForEach([("ring", "Ringtone"), ("connected", "Connected"), ("ended", "Call ended")], id: \.0) { cue, label in
+                    ForEach([("ring", tr("settings_cue_ring")), ("connected", tr("settings_cue_connected")), ("ended", tr("settings_cue_ended"))], id: \.0) { cue, label in
                         ShellChip(text: label, glyph: .vol) { ShellWiring.previewSound(cue) }
                     }
                 }
                 .padding(.horizontal, 4).padding(.top, 12)
-                ShellPfNote(quiet ? "Quiet is on, so previews are silent." : "Tap a sound to hear it. The choice applies to the next call.")
+                ShellPfNote(quiet ? tr("settings_sounds_note_quiet") : tr("settings_sounds_note"))
             }
         }
     }
@@ -260,16 +260,16 @@ struct ShellVideoSettingsPage: View {
     @State private var hd = ShellPrefs().preferHd
     var body: some View {
         let set = { (on: Bool) in hd = on; core.prefs.preferHd = on }
-        ShellPfPage(title: "Video", onBack: onBack) {
-            ShellPfSec(title: "Video quality", first: true) {
+        ShellPfPage(title: tr("settings_row_video"), onBack: onBack) {
+            ShellPfSec(title: tr("settings_video_quality"), first: true) {
                 ShellPfCard {
-                    ShellPfAct("Sharper video", glyph: .video, sub: hd ? "Always starts in HD. Uses more data and battery." : "Goes HD by itself when the connection allows.",
-                               subReserve: ["Always starts in HD. Uses more data and battery.", "Goes HD by itself when the connection allows."],
+                    ShellPfAct(tr("settings_video_sharper"), glyph: .video, sub: hd ? tr("settings_video_hd_on") : tr("settings_video_hd_auto"),
+                               subReserve: [tr("settings_video_hd_on"), tr("settings_video_hd_auto")],
                                traits: .isToggle, action: { set(!hd) }) {
-                        ShellSwitch(isOn: hd, label: "Sharper video", onChange: set)
+                        ShellSwitch(isOn: hd, label: tr("settings_video_sharper"), onChange: set)
                     }
                 }
-                ShellPfNote("Every video call starts this way. During a call, tap HD to change it for that call.")
+                ShellPfNote(tr("settings_video_note"))
             }
         }
     }
@@ -289,10 +289,10 @@ struct ShellStoragePage: View {
 
     var body: some View {
         let p = ShellPalette(tin)
-        let kinds: [(String, Int64, Color)] = [("Pictures", sizes[0], p.accent), ("Files", sizes[1], tin.thread), ("Messages", sizes[2], tin.ink2), ("Cache", sizes[3], tin.ln)]
+        let kinds: [(String, Int64, Color)] = [(tr("settings_storage_pictures"), sizes[0], p.accent), (tr("settings_storage_files"), sizes[1], tin.thread), (tr("settings_storage_messages"), sizes[2], tin.ink2), (tr("settings_storage_cache"), sizes[3], tin.ln)]
         let total = kinds.reduce(0) { $0 + $1.1 }
-        ShellPfPage(title: "Storage", onBack: onBack) {
-            ShellPfSec(title: "On this phone", first: true) {
+        ShellPfPage(title: tr("settings_row_storage"), onBack: onBack) {
+            ShellPfSec(title: tr("settings_storage_on_phone"), first: true) {
                 ShellPfCard {
                     VStack(alignment: .leading, spacing: 12) {
                         Text(ShellText.bytes(total)).shellStyle(.title).foregroundStyle(tin.ink)
@@ -319,22 +319,22 @@ struct ShellStoragePage: View {
                     .padding(16)
                 }
             }
-            ShellPfSec(title: "Download pictures") {
+            ShellPfSec(title: tr("settings_storage_download")) {
                 ShellPfCard {
-                    ForEach([(PictureDownload.always, "Always", "On Wi-Fi and mobile data"), (.wifi, "On Wi-Fi", "On mobile data they wait for a tap"),
-                             (.tap, "When I tap them", "Each shows a soft preview until then")], id: \.1) { d, label, sub in
+                    ForEach([(PictureDownload.always, tr("settings_dl_always"), tr("settings_dl_always_sub")), (.wifi, tr("settings_dl_wifi"), tr("settings_dl_wifi_sub")),
+                             (.tap, tr("settings_dl_tap"), tr("settings_dl_tap_sub"))], id: \.1) { d, label, sub in
                         ShellPfAct(radio: label, sub: sub, on: download == d) { setDownload(d) }
                     }
                 }
             }
             ShellPfSec {
                 ShellPfCard {
-                    ShellPfAct("Clear cache", glyph: .trash,
-                               sub: sizes[3] > 0 ? "\(ShellText.bytes(sizes[3])) of pictures and files you\u{2019}ve opened. They\u{2019}re prepared again when you open them."
-                                : cleared ? "Cleared" : "Nothing to clear",
+                    ShellPfAct(tr("settings_clear_cache"), glyph: .trash,
+                               sub: sizes[3] > 0 ? tr("settings_clear_cache_sub", ShellText.bytes(sizes[3]))
+                                : cleared ? tr("settings_cache_cleared") : tr("settings_cache_empty"),
                                action: sizes[3] > 0 ? ({ ShellMediaCache.clear(); cleared = true; tick += 1 } as () -> Void) : nil)
                 }
-                ShellPfNote("To free more space, remove pictures or files from their chat.")
+                ShellPfNote(tr("settings_storage_note"))
             }
         }
         .task(id: tick) {
@@ -361,8 +361,8 @@ enum ShellMediaCache {
 
 // ------------------------------------------------------------------ Privacy (Privacy.svelte, CallsAllowed.svelte)
 
-private let readReceiptsOn = "People see when you\u{2019}ve read their messages"
-private let readReceiptsOff = "Your reads stay with you"
+private let readReceiptsOn = tr("settings_reads_on")
+private let readReceiptsOff = tr("settings_reads_off")
 
 struct ShellPrivacyPage: View {
     let core: ShellCore
@@ -376,28 +376,28 @@ struct ShellPrivacyPage: View {
     var body: some View {
         let blockedN = people.blocks.list.count
         let msgOnly = people.contacts.filter { !people.blocks.of($0.did).blockedByMe && !people.blocks.callsAllowed($0.did) }.count
-        ShellPfPage(title: "Privacy", onBack: onBack) {
+        ShellPfPage(title: tr("settings_row_privacy"), onBack: onBack) {
             ShellPfSec(first: true) {
                 ShellPfCard {
-                    ShellPfAct("Blocked people", glyph: .off, sub: blockedN > 0 ? "\(blockedN) \(blockedN == 1 ? "person" : "people")" : "No one", chevron: true) { nav.push(.blocked) }
-                    ShellPfAct("Who can call me", glyph: .phone, sub: msgOnly > 0 ? "\(msgOnly) \(msgOnly == 1 ? "contact is" : "contacts are") messages only" : "All contacts can call",
+                    ShellPfAct(tr("settings_blocked_people"), glyph: .off, sub: blockedN > 0 ? trn("settings_blocked_count", blockedN) : tr("settings_blocked_none"), chevron: true) { nav.push(.blocked) }
+                    ShellPfAct(tr("settings_who_can_call"), glyph: .phone, sub: msgOnly > 0 ? trn("settings_msg_only_count", msgOnly) : tr("settings_all_can_call"),
                                chevron: true) { nav.push(.callsAllowed) }
                     // Native: without a passphrase the phrase is behind the phone's screen lock instead.
-                    ShellPfAct("Account recovery", glyph: .key, sub: hasPass ? "Needs your passphrase" : "Needs your screen lock", chevron: true) { nav.push(.phraseGate) }
-                    ShellPfAct("Passphrase", glyph: .lock, sub: "Protects Tinline on this device", chevron: true) { nav.push(.passphrase) }
+                    ShellPfAct(tr("settings_recovery"), glyph: .key, sub: hasPass ? tr("settings_recovery_pass") : tr("settings_recovery_lock"), chevron: true) { nav.push(.phraseGate) }
+                    ShellPfAct(tr("settings_passphrase"), glyph: .lock, sub: tr("settings_passphrase_sub"), chevron: true) { nav.push(.passphrase) }
                 }
-                ShellPfNote("Your contacts see your name, picture and profile. Tinline doesn\u{2019}t hide who you talk to, and every device linked to your account can read your chats.")
+                ShellPfNote(tr("settings_privacy_note"))
             }
             // Core account setting (default on). Same words as desktop.
             ShellPfSec {
                 ShellPfCard {
-                    ShellPfAct("Read receipts", glyph: .check, sub: reads ? readReceiptsOn : readReceiptsOff,
+                    ShellPfAct(tr("settings_read_receipts"), glyph: .check, sub: reads ? readReceiptsOn : readReceiptsOff,
                                subReserve: [readReceiptsOn, readReceiptsOff], // both heights reserved: flipping moves nothing
                                traits: .isToggle, action: { setReads(!reads) }) {
-                        ShellSwitch(isOn: reads, label: "Read receipts", onChange: setReads)
+                        ShellSwitch(isOn: reads, label: tr("settings_read_receipts"), onChange: setReads)
                     }
                 }
-                ShellPfNote("Delivered ticks still go out either way, and you still see when others read yours. Messages you read while this is off stay unconfirmed.")
+                ShellPfNote(tr("settings_reads_note"))
             }
         }
         .task(id: app.accountDid) {
@@ -422,8 +422,8 @@ struct ShellCallsAllowedPage: View {
         let rows = people.contacts.filter { !people.blocks.of($0.did).blockedByMe }
             .map { (did: $0.did, name: ShellText.display($0), allowed: people.blocks.callsAllowed($0.did)) }
             .sorted { $0.name.lowercased() < $1.name.lowercased() }
-        ShellPfPage(title: "Who can call me", onBack: onBack) {
-            ShellPfSec(title: "Contacts", first: true) {
+        ShellPfPage(title: tr("settings_who_can_call"), onBack: onBack) {
+            ShellPfSec(title: tr("settings_contacts"), first: true) {
                 ShellPfCard {
                     ForEach(Array(rows.enumerated()), id: \.element.did) { i, r in
                         if i > 0 { ShellPfHairline() }
@@ -431,15 +431,15 @@ struct ShellCallsAllowedPage: View {
                             ShellAvatar(did: r.did, name: r.name, size: 44)
                             VStack(alignment: .leading, spacing: 1) {
                                 Text(r.name).shellStyle(.body, weight: .semibold).foregroundStyle(tin.ink).lineLimit(1)
-                                Text(r.allowed ? "Can call you" : "Messages only").shellStyle(.sub).foregroundStyle(tin.ink2)
+                                Text(r.allowed ? tr("settings_can_call_you") : tr("settings_messages_only")).shellStyle(.sub).foregroundStyle(tin.ink2)
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            ShellSwitch(isOn: r.allowed, label: "Allow calls from \(r.name)") { people.allowCalls(r.did, $0) }
+                            ShellSwitch(isOn: r.allowed, label: tr("settings_allow_calls_from", r.name)) { people.allowCalls(r.did, $0) }
                         }
                         .padding(.horizontal, 12).frame(minHeight: 64)
                     }
                 }
-                ShellPfNote("Someone you allowed can ring you; someone on messages only can still write. People you blocked can do neither.")
+                ShellPfNote(tr("settings_calls_note"))
             }
         }
     }
@@ -461,17 +461,17 @@ struct ShellAboutScreen: View {
     var body: some View {
         let libs = openSourceLicences().map { ($0.name, $0.licence) } + Self.iosLibs
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? ""
-        ShellPfPage(title: "About Tinline", onBack: onBack) {
+        ShellPfPage(title: tr("settings_row_about"), onBack: onBack) {
             VStack(spacing: 4) {
                 TinMark(size: 56)
                 Text("Tinline").shellStyle(.title).foregroundStyle(tin.ink).padding(.top, 8)
-                Text("Version \(version)").shellStyle(.sub).monospacedDigit().foregroundStyle(tin.ink2)
-                Text("Made by Osvauld").shellStyle(.sub).foregroundStyle(tin.ink2)
+                Text(tr("settings_about_version", version)).shellStyle(.sub).monospacedDigit().foregroundStyle(tin.ink2)
+                Text(tr("settings_about_made_by")).shellStyle(.sub).foregroundStyle(tin.ink2)
             }
             .frame(maxWidth: .infinity).padding(.horizontal, 16).padding(.top, 24).padding(.bottom, 8)
             ShellPfSec {
                 ShellPfCard {
-                    ShellPfAct("Open-source licences", glyph: .licence, sub: "The libraries Tinline is built on", action: { open.toggle() }) {
+                    ShellPfAct(tr("settings_licences"), glyph: .licence, sub: tr("settings_licences_sub"), action: { open.toggle() }) {
                         ShellIcon(glyph: open ? .chevup : .chev, size: 18, color: tin.ink2)
                     }
                     if open {
@@ -484,19 +484,19 @@ struct ShellAboutScreen: View {
                             }
                         }
                         .padding(.leading, 50).padding(.trailing, 16).padding(.top, 4).padding(.bottom, 12)
-                        ShellPfAct("Full licence texts", glyph: .file, chevron: true, action: onLicences)
+                        ShellPfAct(tr("settings_licence_texts"), glyph: .file, chevron: true, action: onLicences)
                     }
-                    ShellPfAct("Source code", glyph: .code, sub: "Tinline is open source", chevron: true) { ShellURL.open(ShellURL.source) }
+                    ShellPfAct(tr("settings_source"), glyph: .code, sub: tr("settings_source_sub"), chevron: true) { ShellURL.open(ShellURL.source) }
                 }
-                ShellPfNote("Tinline has no ads and no tracking. Your messages and calls go between your devices and the people you talk to.")
+                ShellPfNote(tr("settings_about_note"))
             }
             ShellPfSec {
                 ShellPfCard {
-                    ShellPfAct("Terms of Use", glyph: .file, chevron: true) { ShellURL.open(ShellURL.terms) }
-                    ShellPfAct("Privacy Policy", glyph: .shield, chevron: true) { ShellURL.open(ShellURL.privacy) }
+                    ShellPfAct(tr("settings_terms"), glyph: .file, chevron: true) { ShellURL.open(ShellURL.terms) }
+                    ShellPfAct(tr("settings_privacy_policy"), glyph: .shield, chevron: true) { ShellURL.open(ShellURL.privacy) }
                     ShellPfAct("tinline.osvauld.com", glyph: .globe, chevron: true) { ShellURL.open(ShellURL.site) }
                 }
-                ShellPfNote("Not for emergency calls.")
+                ShellPfNote(tr("settings_not_emergency"))
             }
             // TODO(ios-device): "Copy debug log" / "Send debug log" (android DebugLog over logcat) need an OSLogStore reader; left out.
         }
@@ -519,7 +519,7 @@ struct ShellLicencesScreen: View {
     ]
     var body: some View {
         ShellPage {
-            ShellTopBar("Open-source licences", onBack: onBack)
+            ShellTopBar(tr("settings_licences"), onBack: onBack)
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
                     ForEach(Self.libs, id: \.self) { Text($0).font(ShellFont.figtree(15)).foregroundStyle(tin.ink) }
@@ -542,11 +542,11 @@ struct ShellDiagnosticsScreen: View {
     @State private var tone = false
     var body: some View {
         ShellPage {
-            ShellTopBar("Diagnostics", onBack: onBack)
+            ShellTopBar(tr("settings_diagnostics"), onBack: onBack)
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
-                    ShellListItem(title: "Test tone", sub: "Send a 440 Hz tone instead of the microphone") {
-                        ShellSwitch(isOn: tone, label: "Test tone") { on in tone = on; core.node?.setTestTone(hz: on ? 440 : nil) }
+                    ShellListItem(title: tr("settings_test_tone"), sub: tr("settings_test_tone_sub", "440")) {
+                        ShellSwitch(isOn: tone, label: tr("settings_test_tone")) { on in tone = on; core.node?.setTestTone(hz: on ? 440 : nil) }
                     }
                     ShellHint("p2pcore \(coreVersion())").padding(.horizontal, 20).padding(.vertical, 8)
                 }

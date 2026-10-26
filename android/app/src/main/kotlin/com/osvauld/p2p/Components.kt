@@ -1,5 +1,6 @@
 package com.osvauld.p2p
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -31,6 +32,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
@@ -56,7 +58,7 @@ fun TopBar(
     actions: @Composable RowScope.() -> Unit = {},
 ) {
     Row(Modifier.fillMaxWidth().heightIn(min = 64.dp).padding(start = 4.dp, end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-        if (onBack != null) IconBtn(PgIcons.Back, "Back", onBack)
+        if (onBack != null) IconBtn(PgIcons.Back, stringResource(R.string.common_back), onBack)
         else Spacer(Modifier.width(16.dp))
         Text(title.orEmpty(), Modifier.weight(1f), style = TinType.titleM.copy(fontSize = 20.sp, lineHeight = 26.sp), color = Tin.c.ink,
             maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -168,7 +170,7 @@ fun TinField(
                 },
             )
             if (password) IconBtn(if (shown) PgIcons.Eyeoff else PgIcons.Eye,
-                if (shown) "Hide passphrase" else "Show passphrase", { shown = !shown }, tint = c.ink2)
+                if (shown) stringResource(R.string.components_hide_passphrase) else stringResource(R.string.components_show_passphrase), { shown = !shown }, tint = c.ink2)
             else trailing?.invoke()
         }
         if (hint != null) Text(hint, style = TinType.bodyM.copy(fontSize = 13.sp, lineHeight = 18.sp), color = if (err) c.er else c.ink2)
@@ -305,6 +307,42 @@ fun InfoCard(text: String, modifier: Modifier = Modifier, icon: ImageVector? = n
     }
 }
 
+/** Wraps user data (a name) so [boldText] shows it bold when the string has no `**` of its own. */
+fun mark(s: String) = "\u0001$s\u0002"
+
+/**
+ * The one bold convention for a line of text: `**bold**` inside the translated string, or user data wrapped with
+ * [mark] and passed into it. A translation moves the bold run with its words. A stray `**` or marker stays plain.
+ */
+fun boldText(text: String, weight: FontWeight = FontWeight.SemiBold, color: Color = Color.Unspecified) = androidx.compose.ui.text.buildAnnotatedString {
+    var i = 0
+    var open = false
+    fun toggle() { if (open) { pop(); open = false } else { pushStyle(androidx.compose.ui.text.SpanStyle(fontWeight = weight, color = color)); open = true } }
+    while (i < text.length) {
+        when {
+            text.startsWith("**", i) -> { toggle(); i += 2 }
+            text[i] == '\u0001' -> { if (!open) toggle(); i++ }
+            text[i] == '\u0002' -> { if (open) toggle(); i++ }
+            else -> { append(text[i]); i++ }
+        }
+    }
+    if (open) pop()
+}
+
+/** A line whose `[label](key)` parts are links; [urls] maps each key to its address. Unknown keys stay plain text. */
+fun linkedText(text: String, urls: Map<String, String>, styles: androidx.compose.ui.text.TextLinkStyles) = androidx.compose.ui.text.buildAnnotatedString {
+    val re = Regex("""\[([^\]]+)]\(([a-z]+)\)""")
+    var at = 0
+    for (m in re.findAll(text)) {
+        append(text.substring(at, m.range.first))
+        val url = urls[m.groupValues[2]]
+        if (url == null) append(m.value)
+        else withLink(androidx.compose.ui.text.LinkAnnotation.Url(url, styles)) { append(m.groupValues[1]) }
+        at = m.range.last + 1
+    }
+    append(text.substring(at))
+}
+
 fun buildAnnotatedStringBold(bold: String?, rest: String) = androidx.compose.ui.text.buildAnnotatedString {
     if (bold != null) { pushStyle(androidx.compose.ui.text.SpanStyle(fontWeight = FontWeight.Bold)); append(bold); pop(); append(" ") }
     append(rest)
@@ -333,7 +371,7 @@ fun TinSheet(onDismiss: () -> Unit, content: @Composable ColumnScope.() -> Unit)
 /** Dialog: radius 24, optional round icon, title, body, then Cancel / confirm. */
 @Composable
 fun TinDialog(
-    title: String, onDismiss: () -> Unit, confirm: String, onConfirm: () -> Unit, dismiss: String? = "Cancel",
+    title: String, onDismiss: () -> Unit, confirm: String, onConfirm: () -> Unit, dismiss: String? = stringResource(R.string.common_cancel),
     destructive: Boolean = false, icon: ImageVector? = null, confirmEnabled: Boolean = true,
     body: @Composable ColumnScope.() -> Unit,
 ) {

@@ -9,14 +9,18 @@ import android.net.Uri
 import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
+import androidx.annotation.StringRes
 import androidx.core.content.ContextCompat
 
 /** What the app needs to be reachable, and the intents that ask for each. */
-enum class Need(val title: String, val why: String) {
-    Mic("Microphone", "So the other person can hear you"),
-    Notifications("Notifications", "To show incoming calls"),
-    Battery("Run in background", "Exempt from battery optimisation so calls arrive when idle"),
-    FullScreen("Full-screen calls", "Show incoming calls over the lock screen"),
+enum class Need(@StringRes val titleRes: Int, @StringRes val whyRes: Int) {
+    Mic(R.string.perms_mic_title, R.string.perms_mic_why),
+    Notifications(R.string.perms_notifications_title, R.string.perms_notifications_why),
+    Battery(R.string.perms_battery_need_title, R.string.perms_battery_need_why),
+    FullScreen(R.string.perms_fullscreen_title, R.string.perms_fullscreen_why);
+
+    val title: String get() = appString(titleRes)
+    val why: String get() = appString(whyRes)
 }
 
 object Perms {
@@ -33,13 +37,18 @@ object Perms {
     fun missing(c: Context): List<Need> = buildList {
         if (!granted(c, Manifest.permission.RECORD_AUDIO)) add(Need.Mic)
         if (!notificationsOn(c)) add(Need.Notifications)
-        val pm = c.getSystemService(Context.POWER_SERVICE) as PowerManager
-        if (!pm.isIgnoringBatteryOptimizations(c.packageName)) add(Need.Battery)
+        // With wake-ups Tinline rests and a push starts it, so only the always-on line needs the exemption.
+        if (keepsLineOpen(c) && !batteryExempt(c)) add(Need.Battery)
         if (Build.VERSION.SDK_INT >= 34) {
             val nm = c.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             if (!nm.canUseFullScreenIntent()) add(Need.FullScreen)
         }
     }
+
+    /** The always-on service is how this phone stays reachable (Liberum, no Play services, or "Stay connected" on). */
+    fun keepsLineOpen(c: Context) = PushPolicy.wantsAlwaysOnService(PushMode.mode(c))
+
+    fun batteryExempt(c: Context) = (c.getSystemService(Context.POWER_SERVICE) as PowerManager).isIgnoringBatteryOptimizations(c.packageName)
 
     fun settingsIntent(c: Context, need: Need): Intent? = when (need) {
         Need.Battery -> Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, Uri.parse("package:${c.packageName}"))

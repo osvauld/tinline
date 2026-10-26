@@ -6,7 +6,7 @@ import SwiftUI
  * microphone screens.
  */
 
-private let heldLine = "On hold while your other call is on"
+private let heldLine = tr("call_held")
 
 /**
  * The call screen (CallActivity.kt). The Shell presents it full screen while [CallController.ui] is set or an ended
@@ -160,17 +160,17 @@ private struct IncomingCallBody: View {
     let onAnswer: () -> Void
     let onVideo: (() -> Void)?
     var body: some View {
-        CallFocus(name: callOr(name, "Unknown"), did: did, active: false, ringing: true, incoming: true, video: video) {
+        CallFocus(name: callOr(name, tr("call_unknown_name")), did: did, active: false, ringing: true, incoming: true, video: video) {
             HStack(spacing: 36) {
-                CallRoundAction(label: "Decline", desc: "Decline", bg: tin.callButtonEnd, action: onDecline) {
+                CallRoundAction(label: tr("call_decline"), desc: tr("call_decline"), bg: tin.callButtonEnd, action: onDecline) {
                     CallHangupGlyph(gone: false, tint: .white).frame(width: 30, height: 30)
                 }
-                CallRoundAction(label: "Answer", desc: "Answer", bg: tin.callButtonAnswer, action: onAnswer) {
+                CallRoundAction(label: tr("call_answer"), desc: tr("call_answer"), bg: tin.callButtonAnswer, action: onAnswer) {
                     CallIcon.phone.image.font(.system(size: 26)).foregroundStyle(.white)
                 }
                 // A video call can be answered with my camera on; Answer keeps it off.
                 if video, let onVideo {
-                    CallRoundAction(label: "Video", desc: "Answer with video", bg: tin.callButtonAnswer, action: onVideo) {
+                    CallRoundAction(label: tr("call_video_button"), desc: tr("call_answer_with_video"), bg: tin.callButtonAnswer, action: onVideo) {
                         CallIcon.video.image.font(.system(size: 26)).foregroundStyle(.white)
                     }
                 }
@@ -208,25 +208,22 @@ struct WaitingCard: View {
     }
 
     private func card(_ l: CallInfo) -> some View {
-        let who = callOr(l.peerName, "Unknown")
+        let who = callOr(l.peerName, tr("call_unknown_name"))
         let first = callFirstName(currentName)
         return VStack(spacing: 12) {
             HStack(spacing: 12) {
                 TinAvatar(did: l.peerDid, size: 40)
                 VStack(alignment: .leading, spacing: 0) {
-                    Text("\(who) is calling").font(CallFont.figtree(15, .semibold)).foregroundStyle(tin.ink).lineLimit(1)
-                    Text("during your call").font(CallFont.sub).foregroundStyle(tin.ink2)
+                    Text(tr("call_waiting_title", who)).font(CallFont.figtree(15, .semibold)).foregroundStyle(tin.ink).lineLimit(1)
+                    Text(tr("call_waiting_sub")).font(CallFont.sub).foregroundStyle(tin.ink2)
                 }
                 Spacer(minLength: 0)
             }
             HStack(spacing: 8) {
-                pill("Decline", bg: Color.callLerp(tin.sf, tin.ink, 0.09), fg: tin.ink, desc: "Decline", action: onDecline)
-                pill("End & answer", bg: tin.callButtonAnswer, fg: .white, desc: "End and answer", action: onEndAnswer)
+                pill(tr("call_decline"), bg: Color.callLerp(tin.sf, tin.ink, 0.09), fg: tin.ink, desc: tr("call_decline"), action: onDecline)
+                pill(tr("call_waiting_end_answer"), bg: tin.callButtonAnswer, fg: .white, desc: tr("call_waiting_end_answer_desc"), action: onEndAnswer)
             }
-            HStack(spacing: 4) {
-                Text("Ends your call with").lineLimit(1)
-                Text(first).lineLimit(1).truncationMode(.tail)
-            }
+            Text(tr("call_waiting_ends", first)).lineLimit(1).truncationMode(.tail)
             .font(CallFont.figtree(12)).foregroundStyle(tin.ink2)
             .frame(maxWidth: .infinity)
         }
@@ -236,7 +233,7 @@ struct WaitingCard: View {
         .overlay(SmoothRoundedRectangle(cornerRadius: 22).stroke(tin.ln, lineWidth: 1))
         .callDepth(.pop, dark: tin.dark)
         .accessibilityElement(children: .contain)
-        .accessibilityLabel("\(who) is calling during your call")
+        .accessibilityLabel(tr("call_waiting_label", who))
     }
 
     private func pill(_ label: String, bg: Color, fg: Color, desc: String, action: @escaping () -> Void) -> some View {
@@ -279,7 +276,7 @@ struct InCallScreen: View {
         let hdOn = video.hdOn()
         let inVideo = v.map { $0.localCamera || $0.remoteCamera } ?? false
         let hdIsPaused = hdPaused(hdOn: hdOn, sendWidth: sendSize?.0 ?? 0, sendHeight: sendSize?.1 ?? 0)
-        let name = callOr(ui.info.peerName, "Unknown")
+        let name = callOr(ui.info.peerName, tr("call_unknown_name"))
         let bars = s.flatMap { st in loss.map { qualityBars(rttMs: Int(st.rttMs), lossPct: $0) } }
         let onCamera = { if v?.localCamera == true { video.setCamera(false) } else { onCameraOn() } }
         let problem = ui.held ? heldLine : (ui.micProblem ?? video.problem)
@@ -289,7 +286,7 @@ struct InCallScreen: View {
             let now = Int64(tl.date.timeIntervalSince1970 * 1000)
             let secs = max(0, (now - (ui.activeSinceMs ?? now)) / 1000)
             if let v, v.localCamera || v.remoteCamera {
-                let quality = [v.localCamera ? (video.hdNote?.text ?? sendLabel ?? "Starting video…") : nil, recvLabel]
+                let quality = [v.localCamera ? (video.hdNote?.text ?? sendLabel ?? tr("call_starting_video")) : nil, recvLabel]
                     .compactMap { $0 }.joined(separator: "   ")
                 VideoCallContent(
                     name: name, did: ui.info.peerDid, secs: secs, direct: s?.direct, bars: bars, reconnecting: s?.reconnecting == true,
@@ -420,7 +417,7 @@ struct InCallContent: View {
     var body: some View {
         let slot = CallRoutes.slot(routes)
         ZStack {
-            CallFocus(name: callOr(name, "Unknown"), did: did, active: active, ringing: ringing, secs: secs, reconnecting: reconnecting,
+            CallFocus(name: callOr(name, tr("call_unknown_name")), did: did, active: active, ringing: ringing, secs: secs, reconnecting: reconnecting,
                       problem: micProblem, onMinimise: onMinimise, onInfo: { info = true }, signal: bars ?? 0, direct: direct,
                       onMessage: onMessage, waiting: waiting, muted: muted, waitingCard: waitingCard, waking: waking) {
                 CallControls(muted: muted, speaker: speaker, camera: false, onMute: onMute,
@@ -452,7 +449,7 @@ struct AudioRouteSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Play call through").font(CallFont.figtree(20, .bold)).foregroundStyle(tin.ink)
+            Text(tr("call_route_sheet_title")).font(CallFont.figtree(20, .bold)).foregroundStyle(tin.ink)
                 .padding(EdgeInsets(top: 12, leading: 8, bottom: 8, trailing: 0))
             if let routes, !routes.available.isEmpty {
                 // Earpiece first, then speaker, then headsets, as a phone's own call screen orders them.
@@ -460,11 +457,11 @@ struct AudioRouteSheet: View {
                     RouteOption(icon: CallRoutes.icon(r.kind), label: CallRoutes.label(r), on: r.key == routes.current?.key) { onRoute(r) }
                 }
             } else {
-                RouteOption(icon: .phone, label: "Phone", on: !speaker) { onPick(false) }
-                RouteOption(icon: .vol, label: "Speaker", on: speaker) { onPick(true) }
+                RouteOption(icon: .phone, label: tr("call_route_phone"), on: !speaker) { onPick(false) }
+                RouteOption(icon: .vol, label: tr("call_route_speaker"), on: speaker) { onPick(true) }
             }
             if relayed {
-                CallHint(text: "Relayed: a direct line wasn’t possible on this network, so an encrypted relay is passing the call along. It can’t hear you.")
+                CallHint(text: tr("call_route_relayed_hint"))
                     .padding(EdgeInsets(top: 12, leading: 8, bottom: 0, trailing: 8))
             }
         }
@@ -488,7 +485,7 @@ private struct RouteOption: View {
             HStack(spacing: 16) {
                 icon.image.font(.system(size: 20)).foregroundStyle(on ? tin.onPrc : tin.ink).padding(.leading, 8)
                 Text(label).font(TinType.bodyL).foregroundStyle(on ? tin.onPrc : tin.ink).frame(maxWidth: .infinity, alignment: .leading)
-                if on { CallIcon.check.image.foregroundStyle(tin.onPrc).padding(.trailing, 8).accessibilityLabel("Selected") }
+                if on { CallIcon.check.image.foregroundStyle(tin.onPrc).padding(.trailing, 8).accessibilityLabel(tr("call_selected")) }
             }
             .padding(.horizontal, 8)
             .frame(minHeight: 60)
@@ -552,7 +549,7 @@ struct VideoCallContent: View {
             else {
                 VStack(spacing: 12) {
                     TinAvatar(did: did, size: 120)
-                    Text("\(name)’s camera is off").font(CallFont.figtree(17)).foregroundStyle(tin.ink2)
+                    Text(tr("call_camera_off", name)).font(CallFont.figtree(17)).foregroundStyle(tin.ink2)
                 }
             }
             VStack(spacing: 0) {
@@ -603,20 +600,20 @@ struct VideoCallContent: View {
     private var top: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 6) {
-                CallTopButton(icon: .back, label: "Back. The call continues", tint: .white, action: onMinimise)
+                CallTopButton(icon: .back, label: tr("call_back_continues"), tint: .white, action: onMinimise)
                 VStack(alignment: .leading, spacing: 0) {
                     Text(name).font(TinType.titleM).foregroundStyle(.white).lineLimit(1)
-                    Text(reconnecting ? "Reconnecting…" : callClock(secs)).font(CallFont.mono(14)).foregroundStyle(.white.opacity(0.8))
+                    Text(reconnecting ? tr("call_status_reconnecting") : callClock(secs)).font(CallFont.mono(14)).foregroundStyle(.white.opacity(0.8))
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                if let onMessage { CallTopButton(icon: .chat, label: "Message. The call continues", tint: .white, action: onMessage) }
+                if let onMessage { CallTopButton(icon: .chat, label: tr("call_message_continues"), tint: .white, action: onMessage) }
                 Button { info = true } label: {
                     CallSignalBars(level: reconnecting ? 0 : bars ?? 0, color: .white, wave: reconnecting)
                         .frame(width: 44, height: 44).contentShape(Circle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(bars != nil && !reconnecting
-                    ? "About this call. \(callSignalWord(bars!)) signal, \(direct == true ? "direct" : "relayed")." : "About this call")
+                    ? tr(direct == true ? "call_about_signal_direct" : "call_about_signal_relayed", callSignalWord(bars!)) : tr("call_about_title"))
             }
             .padding(EdgeInsets(top: 8, leading: 4, bottom: 0, trailing: 12))
             // One line, always: a longer line (a suggestion) is cut, never wrapped, so nothing below it moves.
@@ -664,7 +661,7 @@ struct RemoteVideoView: View {
                     Image(decorative: frame, scale: 1).resizable().aspectRatio(contentMode: .fill)
                         .frame(width: g.size.width, height: g.size.height).clipped()
                 } else {
-                    Text("Connecting video…").font(TinType.bodyL).foregroundStyle(.white.opacity(0.7))
+                    Text(tr("call_connecting_video")).font(TinType.bodyL).foregroundStyle(.white.opacity(0.7))
                         .frame(width: g.size.width, height: g.size.height)
                 }
             }
@@ -703,7 +700,7 @@ struct HdChip: View {
     let paused: Bool
     let action: () -> Void
     var body: some View {
-        let label = paused ? "Sharper video on, paused while the connection is weak" : on ? "Sharper video on, up to 540p" : "Sharper video off"
+        let label = paused ? tr("call_hd_label_paused") : on ? tr("call_hd_label_on") : tr("call_hd_label_off")
         let a = paused ? 0.55 : 1.0
         Button(action: action) {
             Text("HD").font(CallFont.mono(12, .bold)).kerning(0.5)
@@ -717,7 +714,7 @@ struct HdChip: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(label)
-        .accessibilityValue(on ? "On" : "Off")
+        .accessibilityValue(on ? tr("call_value_on") : tr("call_value_off"))
         .accessibilityAddTraits(.isToggle)
     }
 }
@@ -751,7 +748,7 @@ struct EndedRoute: View {
             UnreachableContent(name: e.peerName, did: e.peerDid, meName: meName, onAgain: onAgain, onClose: onClose)
         } else {
             EndedContent(name: e.peerName, did: e.peerDid, meName: meName,
-                         reasonText: endReasonText(reason: e.reason, name: e.peerName, incoming: e.incoming, blockedByMe: blocked) ?? "Call ended",
+                         reasonText: endReasonText(reason: e.reason, name: e.peerName, incoming: e.incoming, blockedByMe: blocked) ?? tr("call_ended_title"),
                          secs: e.wasActive ? e.secs : nil, direct: e.direct, bars: e.bars, onAgain: onAgain, onClose: onClose)
         }
     }
@@ -793,14 +790,14 @@ struct EndedContent: View {
             CallCentredScroll {
                 VStack(spacing: 10) {
                     CallPairAvatars(meName: callOr(meName, "?"), did: did)
-                    Text("Call ended").font(CallFont.figtree(30, .bold, .title)).foregroundStyle(tin.ink).padding(.top, 16)
+                    Text(tr("call_ended_title")).font(CallFont.figtree(30, .bold, .title)).foregroundStyle(tin.ink).padding(.top, 16)
                     Text(reasonText).font(CallFont.figtree(17)).foregroundStyle(tin.ink2).multilineTextAlignment(.center)
                     if let secs {
                         HStack(spacing: 8) {
                             CallBadge(text: callClock(secs), kind: .mono)
-                            if direct == true { CallBadge(text: "Direct", kind: .direct) }
-                            if direct == false { CallBadge(text: "Relayed", kind: .relayed) }
-                            if let bars { CallBadge(text: "\(callSignalWord(bars)) signal", kind: .neutral) }
+                            if direct == true { CallBadge(text: tr("call_badge_direct"), kind: .direct) }
+                            if direct == false { CallBadge(text: tr("call_badge_relayed"), kind: .relayed) }
+                            if let bars { CallBadge(text: tr("call_badge_signal", callSignalWord(bars)), kind: .neutral) }
                         }
                         .padding(.top, 8)
                     }
@@ -808,9 +805,9 @@ struct EndedContent: View {
                 .padding(.horizontal, 24)
             }
             VStack(spacing: 8) {
-                CallButton("Call again", style: .outlined, action: onAgain)
-                CallButton("Close", style: .text, action: onClose)
-                if autoClose { CallHint(text: "Closes by itself after 4 seconds.", align: .center) }
+                CallButton(tr("call_call_again"), style: .outlined, action: onAgain)
+                CallButton(tr("call_close"), style: .text, action: onClose)
+                if autoClose { CallHint(text: tr("call_auto_close"), align: .center) }
             }
             .padding(EdgeInsets(top: 0, leading: 24, bottom: 48, trailing: 24))
         }
@@ -833,22 +830,22 @@ struct UnreachableContent: View {
 
     var body: some View {
         let blank = name.trimmingCharacters(in: .whitespaces).isEmpty
-        let who = blank ? "them" : name
+        let who = name
         VStack(spacing: 0) {
             CallCentredScroll {
                 VStack(spacing: 12) {
                     CallPairAvatars(meName: callOr(meName, "?"), did: did, lineOpacity: 0.5, theirs: AnyView(
                         Circle().fill(tin.sf3).frame(width: 96, height: 96)
                             .overlay(Text(initials(name: name)).font(CallFont.figtree(34, .bold)).foregroundStyle(tin.ink2))))
-                    Text("Couldn’t reach \(who)").font(TinType.h1).foregroundStyle(tin.ink).multilineTextAlignment(.center).padding(.top, 16)
-                    Text("\(blank ? "They" : name) may be offline, out of signal, or not taking calls right now. Tinline can’t leave messages.")
+                    Text(blank ? tr("call_unreachable_title_blank") : tr("call_unreachable_title", who)).font(TinType.h1).foregroundStyle(tin.ink).multilineTextAlignment(.center).padding(.top, 16)
+                    Text(blank ? tr("call_unreachable_body_blank") : tr("call_unreachable_body", name))
                         .font(TinType.bodyL).foregroundStyle(tin.ink2).multilineTextAlignment(.center)
                 }
                 .padding(.horizontal, 28)
             }
             VStack(spacing: 8) {
-                CallButton("Try again", action: onAgain)
-                CallButton("Close", style: .text, action: onClose)
+                CallButton(tr("call_try_again"), action: onAgain)
+                CallButton(tr("call_close"), style: .text, action: onClose)
             }
             .padding(EdgeInsets(top: 0, leading: 24, bottom: 48, trailing: 24))
         }
@@ -869,16 +866,16 @@ struct MicNeededScreen: View {
                     Circle().fill(tin.erc).frame(width: 96, height: 96)
                         .overlay(CallIcon.micOff.image.font(.system(size: 40)).foregroundStyle(tin.er))
                         .accessibilityHidden(true)
-                    Text("Tinline can’t use the microphone").font(TinType.h1).foregroundStyle(tin.ink).multilineTextAlignment(.center).padding(.top, 12)
-                    Text("Without it, they won’t hear you. Tinline only listens during calls — never in the background.")
+                    Text(tr("call_mic_needed_title")).font(TinType.h1).foregroundStyle(tin.ink).multilineTextAlignment(.center).padding(.top, 12)
+                    Text(tr("call_mic_needed_body"))
                         .font(TinType.bodyL).foregroundStyle(tin.ink2).multilineTextAlignment(.center)
                 }
                 .padding(.horizontal, 28)
             }
             VStack(spacing: 8) {
-                CallButton("Open settings", action: onOpenSettings)
-                CallHint(text: "Then go to Settings › Tinline › Microphone and allow it.", align: .center)
-                CallButton("Not now", style: .text, action: onNotNow)
+                CallButton(tr("call_open_settings"), action: onOpenSettings)
+                CallHint(text: tr("call_mic_needed_hint"), align: .center)
+                CallButton(tr("call_not_now"), style: .text, action: onNotNow)
             }
             .padding(EdgeInsets(top: 0, leading: 24, bottom: 48, trailing: 24))
         }

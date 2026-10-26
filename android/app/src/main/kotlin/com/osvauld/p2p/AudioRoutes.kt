@@ -59,12 +59,16 @@ object Routes {
     fun unnamedBluetooth(st: RouteState): Boolean =
         st.available.any { it.kind == AudioRoute.Kind.Bluetooth && (it.name.isBlank() || it.name == GENERIC_BT) }
 
-    /** Short label for the route button and sheet. */
-    fun label(r: AudioRoute): String = when (r.kind) {
-        AudioRoute.Kind.Earpiece -> "Phone"
-        AudioRoute.Kind.Speaker -> "Speaker"
-        AudioRoute.Kind.Wired -> r.name.ifBlank { "Headset" }
-        AudioRoute.Kind.Bluetooth -> r.name.takeUnless { it.isBlank() || it == GENERIC_BT } ?: "Bluetooth"
-        AudioRoute.Kind.Other -> r.name.ifBlank { "Other" }
+    /**
+     * Short label for the route button and sheet, in the app's language (needs the running app).
+     * In JVM unit tests the fixed labels are `string#<id>`; device names are shown as they are.
+     */
+    fun display(r: AudioRoute): String = when (r.kind) {
+        AudioRoute.Kind.Earpiece -> appString(R.string.call_route_phone)
+        AudioRoute.Kind.Speaker -> appString(R.string.call_speaker)
+        AudioRoute.Kind.Wired -> r.name.ifBlank { appString(R.string.call_route_headset) }
+        AudioRoute.Kind.Bluetooth -> r.name.takeUnless { it.isBlank() || it == GENERIC_BT } ?: appString(R.string.call_route_bluetooth)
+        AudioRoute.Kind.Other -> r.name.ifBlank { appString(R.string.call_route_other) }
     }
+
 }

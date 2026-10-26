@@ -39,7 +39,7 @@ object DebugLog {
         val uri = FileProvider.getUriForFile(c, "${c.packageName}.files", f)
         val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_STREAM, uri)
             .putExtra(Intent.EXTRA_SUBJECT, "Tinline debug log").addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        c.startActivity(Intent.createChooser(send, "Send debug log").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        c.startActivity(Intent.createChooser(send, c.getString(R.string.debuglog_send_title)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
     }
 
     private fun logcat(): String = try {

@@ -60,14 +60,16 @@ private func tickDuration(_ from: TickVis, _ to: TickVis) -> Double {
 /// The slot's width for a glyph `size` tall (two ticks wide, so nothing moves as the state advances).
 func tickSlotWidth(_ size: CGFloat) -> CGFloat { size * (TinTicks.vbW / TinTicks.vbH) }
 
-/// Screen-reader words per state (VOICE.md: how things are). `first` is the other person's first name.
-func tickLabel(_ v: TickVis, first: String) -> String {
+/// Screen-reader words per state (VOICE.md: how things are). `first` is the other person's first name; with none the
+/// whole-sentence "their device" strings are used.
+func tickLabel(_ v: TickVis, first: String?) -> String {
+    let name = first?.trimmingCharacters(in: .whitespacesAndNewlines)
     switch v {
-    case .slack: return "Waiting to send"
-    case .one: return "Sent, waiting for \(first)’s device to confirm"
-    case .two: return "On \(first)’s device"
-    case .read: return "Read on \(first)’s device"
-    case .bad: return "Not delivered"
+    case .slack: return tr("kit_tick_waiting")
+    case .one: return name.map { $0.isEmpty ? tr("kit_tick_sent_their") : tr("kit_tick_sent", $0) } ?? tr("kit_tick_sent_their")
+    case .two: return name.map { $0.isEmpty ? tr("kit_tick_delivered_their") : tr("kit_tick_delivered", $0) } ?? tr("kit_tick_delivered_their")
+    case .read: return name.map { $0.isEmpty ? tr("kit_tick_read_their") : tr("kit_tick_read", $0) } ?? tr("kit_tick_read_their")
+    case .bad: return tr("kit_tick_bad")
     }
 }
 
@@ -89,7 +91,7 @@ struct ReceiptTickView: View {
     var body: some View {
         if let vis = tickVisOf(tick, notDelivered: notDelivered) {
             ReceiptTickGlyph(key: key, vis: vis, meta: meta ?? tin.ink2, read: TickInk.read(tin), bad: TickInk.bad(tin), bg: bg ?? tin.prc,
-                             label: label ?? tickLabel(vis, first: "their"), size: size)
+                             label: label ?? tickLabel(vis, first: nil), size: size)
         } else {
             Color.clear.frame(width: tickSlotWidth(size), height: size)
         }

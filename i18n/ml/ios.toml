@@ -1,0 +1,4591 @@
+# Generated from i18n/tm/ml.toml by scripts/i18n_tm.py apply. Edit the tm file.
+
+[kit_tick_waiting]
+text = "അയയ്ക്കാൻ കാത്തിരിക്കുന്നു"
+
+[kit_tick_sent]
+text = "അയച്ചു, {first} എന്നയാളുടെ ഉപകരണം സ്ഥിരീകരിക്കാൻ കാത്തിരിക്കുന്നു"
+
+[kit_tick_sent_their]
+text = "അയച്ചു, അവരുടെ ഉപകരണം സ്ഥിരീകരിക്കാൻ കാത്തിരിക്കുന്നു"
+
+[kit_tick_delivered]
+text = "{first} എന്നയാളുടെ ഉപകരണത്തിൽ എത്തി"
+
+[kit_tick_delivered_their]
+text = "അവരുടെ ഉപകരണത്തിൽ"
+
+[kit_tick_read]
+text = "{first} എന്നയാളുടെ ഉപകരണത്തിൽ വായിച്ചു"
+
+[kit_tick_read_their]
+text = "അവരുടെ ഉപകരണത്തിൽ വായിച്ചു"
+
+[kit_tick_bad]
+text = "എത്തിയില്ല"
+
+[kit_avatar_view_photo]
+text = "ഫോട്ടോ കാണുക"
+
+[kit_avatar_view_geometry]
+text = "ഐഡന്റിറ്റി ജ്യാമിതി കാണുക"
+
+[kit_avatar_photo_of]
+text = "ഫോട്ടോ: {name}"
+
+[kit_avatar_close]
+text = "അടയ്ക്കുക"
+
+[kit_mark_incoming]
+text = "വരുന്ന കോൾ"
+
+[kit_mark_calling]
+text = "വിളിക്കുന്നു"
+
+[kit_mark_in_call]
+text = "കോളിലാണ്"
+
+[kit_mark_group_starting]
+text = "ഗ്രൂപ്പ് കോൾ ആരംഭിക്കുന്നു"
+
+[kit_mark_in_group_call]
+text = "ഗ്രൂപ്പ് കോളിലാണ്"
+
+[kit_mark_offline]
+text = "കണക്ഷനില്ല"
+
+[kit_mark_online]
+text = "നെറ്റ്‌വർക്കുമായി കണക്റ്റ് ചെയ്തു"
+
+[kit_mark_connecting]
+text = "കണക്റ്റ് ചെയ്യുന്നു"
+
+[kit_mark_reconnecting]
+text = "വീണ്ടും കണക്റ്റ് ചെയ്യുന്നു"
+
+[kit_back]
+text = "തിരികെ"
+
+[kit_passphrase_hide]
+text = "പാസ്‌ഫ്രേസ് മറയ്ക്കുക"
+
+[kit_passphrase_show]
+text = "പാസ്‌ഫ്രേസ് കാണിക്കുക"
+
+[kit_cancel]
+text = "റദ്ദാക്കുക"
+
+[chat_card_copy]
+text = "പകർത്തുക"
+
+[chat_card_copied]
+text = "പകർത്തി"
+
+[chat_card_qr_label]
+text = "നിങ്ങളുടെ കോൺടാക്റ്റ് കാർഡിന്റെ QR കോഡ്"
+
+[chat_card_preparing]
+text = "നിങ്ങളുടെ കോഡ് തയ്യാറാക്കുന്നു…"
+
+[chat_card_once]
+text = "ഒരു തവണ മാത്രം പ്രവർത്തിക്കും. പുതിയ കോഡ് ഉണ്ടാക്കിയാൽ ഇത് റദ്ദാകും."
+
+[chat_card_share_subject]
+text = "കോൺടാക്റ്റ് കാർഡ് പങ്കിടുക"
+
+[chat_card_share]
+text = "പങ്കിടുക"
+
+[chat_card_new_code]
+text = "പുതിയ കോഡ്"
+
+[chat_card_not_now]
+text = "ഇപ്പോൾ വേണ്ട"
+
+[chat_card_known_sub]
+text = "അവർ ഇതിനകം നിങ്ങളുടെ കോൺടാക്റ്റുകളിലുണ്ട്."
+
+[chat_card_found_sub]
+text = "Tinline അവരുടെ കാർഡ് കണ്ടെത്തി."
+
+[chat_card_open]
+text = "തുറക്കുക"
+
+[chat_card_add]
+text = "ചേർക്കുക"
+
+[chat_card_chat_with]
+text = "{name} എന്നയാളുമായി ചാറ്റ് ചെയ്യണോ?"
+
+[chat_card_chat_with_unnamed]
+text = "ഈ കോൺടാക്റ്റുമായി ചാറ്റ് ചെയ്യണോ?"
+
+[chat_card_add_name]
+text = "{name} എന്നയാളെ ചേർക്കണോ?"
+
+[chat_card_add_name_unnamed]
+text = "ഈ കോൺടാക്റ്റിനെ ചേർക്കണോ?"
+
+[chat_find_placeholder]
+text = "ഈ ചാറ്റിൽ തിരയുക"
+
+[chat_find_match_of]
+text = "പൊരുത്തം {index} / {total}"
+
+[chat_find_none]
+text = "പൊരുത്തങ്ങളൊന്നുമില്ല"
+
+[chat_find_older]
+text = "പഴയ പൊരുത്തം"
+
+[chat_find_newer]
+text = "പുതിയ പൊരുത്തം"
+
+[chat_find_close]
+text = "തിരയൽ അടയ്ക്കുക"
+
+[chat_self_sub]
+text = "സേവ് ചെയ്തവ · നിങ്ങളുടെ ഉപകരണങ്ങളിൽ മാത്രം"
+
+[chat_day_today]
+text = "ഇന്ന്"
+
+[chat_day_yesterday]
+text = "ഇന്നലെ"
+
+[chat_call_video_done]
+text = "വീഡിയോ കോൾ · {duration}"
+
+[chat_call_voice_done]
+text = "വോയ്‌സ് കോൾ · {duration}"
+
+[chat_call_video_declined]
+text = "നിരസിച്ച വീഡിയോ കോൾ"
+
+[chat_call_voice_declined]
+text = "നിരസിച്ച വോയ്‌സ് കോൾ"
+
+[chat_call_video_missed]
+text = "മിസ്‌ഡ് വീഡിയോ കോൾ"
+
+[chat_call_voice_missed]
+text = "മിസ്‌ഡ് വോയ്‌സ് കോൾ"
+
+[chat_call_no_answer]
+text = "എടുത്തില്ല"
+
+[chat_call_declined]
+text = "നിരസിച്ചു"
+
+[chat_call_cancelled]
+text = "റദ്ദാക്കിയ കോൾ"
+
+[chat_call_failed]
+text = "കോൾ കണക്റ്റ് ആയില്ല"
+
+[chat_err_send_file]
+text = "ആ ഫയൽ അയയ്ക്കാൻ കഴിഞ്ഞില്ല."
+
+[chat_err_read_file]
+text = "ആ ഫയൽ വായിക്കാൻ കഴിഞ്ഞില്ല."
+
+[chat_err_send_voice]
+text = "ആ വോയ്‌സ് സന്ദേശം അയയ്ക്കാൻ കഴിഞ്ഞില്ല."
+
+[chat_err_delete]
+text = "ആ സന്ദേശം ഇല്ലാതാക്കാൻ കഴിഞ്ഞില്ല."
+
+[chat_err_download]
+text = "ഡൗൺലോഡ് തുടങ്ങാൻ കഴിഞ്ഞില്ല."
+
+[chat_saved]
+text = "നിങ്ങളുടെ ഫോണിൽ സേവ് ചെയ്തു"
+
+[chat_err_save]
+text = "ആ ഫയൽ സേവ് ചെയ്യാൻ കഴിഞ്ഞില്ല."
+
+[chat_err_in_call]
+text = "ആദ്യം നിങ്ങളുടെ കോൾ പൂർത്തിയാക്കുക"
+
+[chat_err_locked]
+text = "ലോക്ക് ചെയ്തിരിക്കുന്നു — അൺലോക്ക് ചെയ്യാൻ പാസ്‌ഫ്രേസ് നൽകുക"
+
+[chat_err_generic]
+text = "എന്തോ പ്രശ്നമുണ്ടായി"
+
+[chat_preview_voice]
+text = "വോയ്‌സ് സന്ദേശം"
+
+[chat_preview_photo]
+text = "ഫോട്ടോ"
+
+[chat_unread_divider]
+one = "{count} പുതിയ സന്ദേശം"
+other = "{count} പുതിയ സന്ദേശങ്ങൾ"
+
+[chat_jump_hint]
+text = "സന്ദേശത്തിലേക്ക് പോകുക"
+
+[chat_attach]
+text = "ഒരു ഫയൽ അറ്റാച്ച് ചെയ്യുക"
+
+[chat_save_edit]
+text = "എഡിറ്റ് സേവ് ചെയ്യുക"
+
+[chat_send]
+text = "അയയ്ക്കുക"
+
+[chat_voice_discard]
+text = "റെക്കോർഡിംഗ് ഉപേക്ഷിക്കുക"
+
+[chat_voice_slide_cancel]
+text = "റദ്ദാക്കാൻ നീക്കുക"
+
+[chat_voice_waveform]
+text = "വോയ്‌സ് സന്ദേശത്തിന്റെ വേവ്ഫോം, ഒരിടത്തേക്ക് പോകാൻ ടാപ്പ് ചെയ്യുക"
+
+[chat_voice_send]
+text = "വോയ്‌സ് സന്ദേശം അയയ്ക്കുക"
+
+[chat_voice_recording]
+text = "റെക്കോർഡ് ചെയ്യുന്നു, അയയ്ക്കാൻ വിടുക"
+
+[chat_voice_hold]
+text = "വോയ്‌സ് സന്ദേശം റെക്കോർഡ് ചെയ്യാൻ അമർത്തിപ്പിടിക്കുക"
+
+[chat_voice_pause]
+text = "വോയ്‌സ് സന്ദേശം താൽക്കാലികമായി നിർത്തുക"
+
+[chat_voice_play]
+text = "വോയ്‌സ് സന്ദേശം പ്ലേ ചെയ്യുക"
+
+[chat_reply]
+text = "മറുപടി നൽകുക"
+
+[chat_you]
+text = "നിങ്ങൾ"
+
+[chat_quote_unavailable]
+text = "യഥാർത്ഥ സന്ദേശം ലഭ്യമല്ല"
+
+[chat_message_actions]
+text = "സന്ദേശ പ്രവർത്തനങ്ങൾ"
+
+[chat_meta_sending]
+text = "അയയ്ക്കുന്നു {percent}% · {time}"
+
+[chat_meta_waiting]
+text = "കാത്തിരിക്കുന്നു · {time}"
+
+[chat_meta_edited]
+text = "എഡിറ്റ് ചെയ്തു · {time}"
+
+[chat_quote_earlier]
+text = "മുമ്പത്തെ സന്ദേശം"
+
+[chat_quote_gone]
+text = "സന്ദേശം ലഭ്യമല്ല"
+
+[chat_photo_chip]
+text = "ഫോട്ടോ · {size}"
+
+[chat_download]
+text = "ഡൗൺലോഡ് ചെയ്യുക"
+
+[chat_retry_download]
+text = "വീണ്ടും ഡൗൺലോഡ് ചെയ്യുക"
+
+[chat_sends_when_online]
+text = "{first} ഓൺലൈനിൽ വരുമ്പോൾ അയയ്ക്കും"
+
+[chat_file_open]
+text = "{size} · {type} · തുറക്കാൻ ടാപ്പ് ചെയ്യുക"
+
+[chat_file_save]
+text = "{size} · {type} · സേവ് ചെയ്യാൻ ടാപ്പ് ചെയ്യുക"
+
+[chat_file_downloading]
+text = "ഡൗൺലോഡ് ചെയ്യുന്നു · {done} / {size}"
+
+[chat_file_paused]
+text = "{size} · താൽക്കാലികമായി നിർത്തി — {first} ഓൺലൈനിൽ വരാൻ കാത്തിരിക്കുന്നു"
+
+[chat_file_starting]
+text = "{size} · തുടങ്ങുന്നു…"
+
+[chat_file_failed]
+text = "{size} · ഡൗൺലോഡ് ചെയ്യാൻ കഴിഞ്ഞില്ല — വീണ്ടും ശ്രമിക്കാൻ ടാപ്പ് ചെയ്യുക"
+
+[chat_file_remote]
+text = "{size} · ഡൗൺലോഡ് ചെയ്തിട്ടില്ല"
+
+[chat_file_download_a11y]
+text = "{name} ഡൗൺലോഡ് ചെയ്യുക"
+
+[chat_file_cancel_a11y]
+text = "{name} ഡൗൺലോഡ് ചെയ്യുന്നത് റദ്ദാക്കുക"
+
+[chat_file_save_a11y]
+text = "{name} ഫോണിൽ സേവ് ചെയ്യുക"
+
+[chat_call_back_a11y]
+text = "{text}, {time}. തിരികെ വിളിക്കുക"
+
+[chat_unblock]
+text = "അൺബ്ലോക്ക് ചെയ്യുക"
+
+[chat_add_contact]
+text = "ചേർക്കുക"
+
+[chat_copy_text]
+text = "ടെക്സ്റ്റ് പകർത്തുക"
+
+[chat_save_to_phone]
+text = "ഫോണിൽ സേവ് ചെയ്യുക"
+
+[chat_edit]
+text = "എഡിറ്റ് ചെയ്യുക"
+
+[chat_head_saved]
+text = "സേവ് ചെയ്തത് {time} · നിങ്ങളുടെ ഉപകരണങ്ങളിൽ"
+
+[chat_head_received]
+text = "ലഭിച്ചത് {time}"
+
+[chat_head_read]
+text = "അയച്ചത് {time} · {first} എന്നയാളുടെ ഉപകരണത്തിൽ വായിച്ചു"
+
+[chat_head_delivered]
+text = "അയച്ചത് {time} · {first} എന്നയാളുടെ ഉപകരണത്തിൽ എത്തി"
+
+[chat_head_only_here]
+text = "അയച്ചത് {time} · ഇതുവരെ ഈ ഫോണിൽ മാത്രം"
+
+[chat_head_sent]
+text = "അയച്ചത് {time} · {first} എന്നയാളുടെ ഉപകരണം സ്ഥിരീകരിക്കാൻ കാത്തിരിക്കുന്നു"
+
+[chat_deleted_by_me]
+text = "നിങ്ങൾ ഈ സന്ദേശം ഇല്ലാതാക്കി"
+
+[chat_deleted_by_them]
+text = "{first} ഈ സന്ദേശം ഇല്ലാതാക്കി"
+
+[chat_cancel_sending]
+text = "അയയ്ക്കുന്നത് റദ്ദാക്കുക"
+
+[chat_cancel_download]
+text = "ഡൗൺലോഡ് റദ്ദാക്കുക"
+
+[chat_voice_download]
+text = "വോയ്‌സ് സന്ദേശം ഡൗൺലോഡ് ചെയ്യുക"
+
+[chat_voice_loading]
+text = "വോയ്‌സ് സന്ദേശം ലോഡ് ചെയ്യുന്നു"
+
+[chat_delete_self]
+text = "നിങ്ങളുടെ എല്ലാ ഉപകരണങ്ങളിൽ നിന്നും ഇല്ലാതാക്കുക"
+
+[chat_delete_both]
+text = "നിങ്ങൾ ഇരുവർക്കും ഇല്ലാതാക്കുക"
+
+[chat_sheet_hint_self]
+text = "നിങ്ങളുടെ മറ്റ് ഉപകരണങ്ങൾ ഓൺലൈനിലാകുമ്പോൾ എഡിറ്റുകളും ഇല്ലാതാക്കലുകളും അവയിൽ എത്തും."
+
+[chat_sheet_hint]
+text = "അടുത്ത തവണ നിങ്ങൾ ഇരുവരും ഓൺലൈനിലാകുമ്പോൾ എഡിറ്റുകളും ഇല്ലാതാക്കലുകളും {first} എന്നയാളുടെ ഫോണിൽ എത്തും."
+
+[chat_attach_title_self]
+text = "നിങ്ങൾക്കായി സേവ് ചെയ്യുക"
+
+[chat_attach_title]
+text = "അയയ്ക്കുക: {first}"
+
+[chat_attach_photos]
+text = "ഫോട്ടോകളും വീഡിയോകളും"
+
+[chat_attach_camera]
+text = "ക്യാമറ"
+
+[chat_attach_file]
+text = "ഫയൽ"
+
+[chat_attach_hint_self]
+text = "ഫയലുകൾ നിങ്ങളുടെ ഉപകരണങ്ങളിൽ എൻക്രിപ്റ്റ് ചെയ്ത നിലയിൽ നിൽക്കും, മറ്റുള്ളവ ഓൺലൈനിലാകുമ്പോൾ അവയിലേക്കും പകർത്തും. ഓരോന്നിനും 2 GB വരെ."
+
+[chat_attach_hint]
+text = "ഫയലുകൾ എൻഡ്-ടു-എൻഡ് എൻക്രിപ്റ്റ് ചെയ്തതാണ്. ഓരോന്നിനും 2 GB വരെ. കൈമാറുന്ന സമയത്ത് നിങ്ങൾ ഇരുവരും ഓൺലൈനിലുണ്ടാകണം."
+
+[chat_proof_read]
+text = "വായിച്ചു · ഒപ്പിട്ടത് {first} · ഉപകരണം {device}"
+
+[chat_proof_delivered]
+text = "എത്തി · ഒപ്പിട്ടത് {first} · ഉപകരണം {device}"
+
+[chat_blocked_note]
+text = "നിങ്ങൾ {first} എന്നയാളെ ബ്ലോക്ക് ചെയ്തു"
+
+[chat_blocked_note_date]
+text = "നിങ്ങൾ {first} എന്നയാളെ ബ്ലോക്ക് ചെയ്തു · {date}"
+
+[chat_blocked_signed]
+text = "ഒപ്പിട്ടത് {first} · {date}"
+
+[chat_fallback_name]
+text = "ചാറ്റ്"
+
+[chat_older_title]
+text = "പഴയ സന്ദേശങ്ങൾ {first} എന്നയാളുടെ ഫോണിലാണ്"
+
+[chat_older_body]
+text = "നിങ്ങൾ ഈ ഫോൺ ഉപയോഗിച്ചുതുടങ്ങിയത് മുതലുള്ളവ ഇതിൽ സൂക്ഷിക്കും. നിങ്ങൾ ഇരുവരും ഓൺലൈനിലാകുമ്പോൾ പഴയ ദിവസങ്ങളിലേത് ലോഡ് ആകും."
+
+[chat_composer_placeholder]
+text = "സന്ദേശം"
+
+[chat_err_open_file]
+text = "ആ ഫയൽ തുറക്കാൻ കഴിഞ്ഞില്ല."
+
+[chat_err_no_camera]
+text = "ക്യാമറ ലഭ്യമല്ല."
+
+[chat_status_blocked]
+text = "ബ്ലോക്ക് ചെയ്തു"
+
+[chat_status_blocked_me]
+text = "നിങ്ങളെ ബ്ലോക്ക് ചെയ്തു"
+
+[chat_status_not_contact]
+text = "നിങ്ങളുടെ കോൺടാക്റ്റുകളിൽ ഇല്ല"
+
+[chat_status_waiting]
+text = "കണക്ഷനായി കാത്തിരിക്കുന്നു"
+
+[chat_status_messages_only]
+text = "സന്ദേശങ്ങൾ മാത്രം"
+
+[chat_back]
+text = "ചാറ്റുകളിലേക്ക് മടങ്ങുക"
+
+[chat_return_to_call]
+text = "കോളിലേക്ക് മടങ്ങുക"
+
+[chat_call]
+text = "കോൾ ചെയ്യുക"
+
+[chat_video_call]
+text = "വീഡിയോ കോൾ"
+
+[chat_details]
+text = "ചാറ്റ് വിശദാംശങ്ങൾ"
+
+[chat_strip_peer_offline]
+text = "{first} ഓഫ്‌ലൈനാണ്. നിങ്ങൾ ഇരുവരും ഓൺലൈനിലാകുമ്പോൾ സന്ദേശങ്ങൾ പോകും."
+
+[chat_strip_me_offline]
+text = "നിങ്ങൾ ഓഫ്‌ലൈനാണ്. വീണ്ടും ഓൺലൈനിൽ വരുമ്പോൾ സന്ദേശങ്ങൾ പോകും."
+
+[chat_composer_editing]
+text = "സന്ദേശം എഡിറ്റ് ചെയ്യുന്നു"
+
+[chat_composer_cancel_edit]
+text = "എഡിറ്റ് റദ്ദാക്കുക"
+
+[chat_composer_reply_self]
+text = "നിങ്ങൾക്കുതന്നെ മറുപടി നൽകുന്നു"
+
+[chat_composer_reply]
+text = "മറുപടി: {first}"
+
+[chat_composer_cancel_reply]
+text = "മറുപടി റദ്ദാക്കുക"
+
+[chat_status_online]
+text = "ഓൺലൈൻ"
+
+[chat_status_online_messages]
+text = "ഓൺലൈൻ · സന്ദേശങ്ങൾ മാത്രം"
+
+[chat_header_a11y]
+text = "{name}. ചാറ്റ് വിശദാംശങ്ങൾ"
+
+[chat_header_a11y_status]
+text = "{name}. {status}. ചാറ്റ് വിശദാംശങ്ങൾ"
+
+[chat_cant_call]
+text = "{first} എന്നയാളെ വിളിക്കാൻ കഴിയില്ല"
+
+[chat_viewer_pdf_damaged]
+text = "Tinline-ന് ഈ PDF വായിക്കാൻ കഴിയുന്നില്ല. ഇത് കേടായിരിക്കാം. എങ്കിലും ഇത് സേവ് ചെയ്യാം."
+
+[chat_viewer_pdf_locked]
+text = "ഈ PDF പാസ്‌വേഡ് ഉപയോഗിച്ച് സംരക്ഷിച്ചതാണ്, അതിനാൽ Tinline-ന് ഇത് കാണിക്കാൻ കഴിയില്ല. മറ്റൊരു ആപ്പിൽ തുറക്കാൻ ഇത് സേവ് ചെയ്യുക."
+
+[chat_viewer_too_big]
+text = "ഈ ഫയൽ ഇവിടെ കാണിക്കാൻ വളരെ വലുതാണ്. മറ്റൊരു ആപ്പിൽ തുറക്കാൻ ഇത് സേവ് ചെയ്യുക."
+
+[chat_viewer_not_text]
+text = "ഇത് ഒരു ടെക്സ്റ്റ് ഫയലായി തോന്നുന്നില്ല. മറ്റൊരു ആപ്പിൽ തുറക്കാൻ ഇത് സേവ് ചെയ്യുക."
+
+[chat_close]
+text = "അടയ്ക്കുക"
+
+[chat_viewer_file]
+text = "ഫയൽ"
+
+[chat_share]
+text = "പങ്കിടുക"
+
+[chat_viewer_opening]
+text = "തുറക്കുന്നു…"
+
+[chat_viewer_photo_hint]
+text = "Tinline-നുള്ളിൽ എൻക്രിപ്റ്റ് ചെയ്ത നിലയിൽ സൂക്ഷിക്കുന്നു. “ഫോണിൽ സേവ് ചെയ്യുക” ഇത് നിങ്ങളുടെ ഫോട്ടോകളിലേക്ക് പകർത്തും, അവിടെ മറ്റ് ആപ്പുകൾക്ക് ഇത് കാണാം."
+
+[chat_viewer_page]
+text = "പേജ് {page} / {total}"
+
+[chat_edited]
+text = "എഡിറ്റ് ചെയ്തു"
+
+[group_you]
+text = "നിങ്ങൾ"
+
+[group_info_title]
+text = "ഗ്രൂപ്പ് വിവരങ്ങൾ"
+
+[group_info_removed_title]
+text = "നീക്കം ചെയ്തു"
+
+[group_info_left_note]
+text = "ഈ ഉപകരണത്തിലുള്ള പോസ്റ്റുകൾ ഇപ്പോഴും വായിക്കാം. തിരികെ വരാൻ, ഗ്രൂപ്പിലെ ആരെങ്കിലും നിങ്ങളെ വീണ്ടും ക്ഷണിക്കണം."
+
+[group_info_leave]
+text = "ഗ്രൂപ്പിൽ നിന്ന് പുറത്തുകടക്കുക"
+
+[group_info_owner_cant_leave]
+text = "ഉടമയ്ക്ക് ഇപ്പോൾ പുറത്തുകടക്കാൻ കഴിയില്ല"
+
+[group_info_hero_owner]
+one = "{count} അംഗം · നിങ്ങളാണ് ഉടമ"
+other = "{count} അംഗങ്ങൾ · നിങ്ങളാണ് ഉടമ"
+
+[group_info_hero_admin]
+one = "{count} അംഗം · നിങ്ങൾ ഒരു അഡ്മിനാണ്"
+other = "{count} അംഗങ്ങൾ · നിങ്ങൾ ഒരു അഡ്മിനാണ്"
+
+[group_info_hero_member]
+one = "{count} അംഗം · നിങ്ങൾ ഒരു അംഗമാണ്"
+other = "{count} അംഗങ്ങൾ · നിങ്ങൾ ഒരു അംഗമാണ്"
+
+[group_info_hero_left]
+text = "നിങ്ങൾ ഈ ഗ്രൂപ്പിൽ നിന്ന് പുറത്തുകടന്നു"
+
+[group_info_hero_removed]
+text = "നിങ്ങൾ ഇപ്പോൾ അംഗമല്ല"
+
+[group_invites_title]
+text = "ക്ഷണങ്ങൾ"
+
+[group_invites_contacts]
+text = "കോൺടാക്റ്റുകളെ ക്ഷണിക്കുക"
+
+[group_invites_contacts_sub]
+text = "ഓരോരുത്തർക്കും ഒരു സ്വകാര്യ ക്ഷണം"
+
+[group_invites_link]
+text = "ക്ഷണ ലിങ്ക് സൃഷ്ടിക്കുക"
+
+[group_invites_link_need_host]
+text = "ആദ്യം ഒരു ഹോസ്റ്റിനെ നിയമിക്കുക. ഓരോ ലിങ്കിലും ഒരു ഹോസ്റ്റിന്റെ പേരുണ്ടാകും."
+
+[group_invites_link_valid]
+text = "7 ദിവസത്തേക്ക് സാധുവാണ്"
+
+[group_member_flags]
+one = "{count} / {total} ഫ്ലാഗുകൾ"
+other = "{count} / {total} ഫ്ലാഗുകൾ"
+
+[group_member_blocked_by_you]
+text = "നിങ്ങൾ ബ്ലോക്ക് ചെയ്തു"
+
+[group_members_title]
+text = "അംഗങ്ങൾ"
+
+[group_member_req_pending]
+text = "ചാറ്റ് അഭ്യർത്ഥന അയച്ചു"
+
+[group_member_req_declined]
+text = "നിങ്ങളുടെ ചാറ്റ് അഭ്യർത്ഥന നിരസിച്ചു"
+
+[group_member_req_blocked]
+text = "ബ്ലോക്ക് ചെയ്തു"
+
+[group_member_invited_by]
+text = "ക്ഷണിച്ചത്: {name} · {date}"
+
+[group_member_since]
+text = "{date} മുതൽ"
+
+[group_member_since_long]
+text = "{date} മുതൽ അംഗം"
+
+[group_member_name_you]
+text = "{name} (നിങ്ങൾ)"
+
+[group_role_owner]
+text = "ഉടമ"
+
+[group_role_admin]
+text = "അഡ്മിൻ"
+
+[group_role_member]
+text = "അംഗം"
+
+[group_role_host]
+text = "ഹോസ്റ്റ്"
+
+[group_role_call_host]
+text = "കോൾ ഹോസ്റ്റ്"
+
+[group_member_desc_owner]
+text = "{name}, ഉടമ. പ്രവർത്തനങ്ങൾ തുറക്കുക"
+
+[group_member_desc_admin]
+text = "{name}, അഡ്മിൻ. പ്രവർത്തനങ്ങൾ തുറക്കുക"
+
+[group_member_desc_member]
+text = "{name}, അംഗം. പ്രവർത്തനങ്ങൾ തുറക്കുക"
+
+[group_this_device]
+text = "ഈ ഉപകരണം"
+
+[group_hosts_title]
+text = "ഹോസ്റ്റുകൾ"
+
+[group_hosts_none]
+text = "ഈ ഗ്രൂപ്പിന് ഹോസ്റ്റ് ഇല്ല. ഒരു ഹോസ്റ്റിനെ നിയമിക്കുന്നതുവരെ പോസ്റ്റുകൾ കാത്തിരിക്കും."
+
+[group_hosts_online]
+one = "{count} ഹോസ്റ്റ് ഓൺലൈനിലുണ്ട്. പോസ്റ്റുകൾ ഉടൻ എത്തും."
+other = "{count} ഹോസ്റ്റുകൾ ഓൺലൈനിലുണ്ട്. പോസ്റ്റുകൾ ഉടൻ എത്തും."
+
+[group_hosts_offline]
+text = "ഹോസ്റ്റുകളൊന്നും ഓൺലൈനിലില്ല. നിങ്ങളുടെ പോസ്റ്റുകൾ സേവ് ചെയ്തിട്ടുണ്ട്, ഒരു ഹോസ്റ്റ് ഓൺലൈനിൽ വരുമ്പോൾ അവ അയയ്ക്കും."
+
+[group_remove]
+text = "നീക്കം ചെയ്യുക"
+
+[group_remove_host_desc]
+text = "ഹോസ്റ്റ് സ്ഥാനത്തുനിന്ന് {device} നീക്കം ചെയ്യുക"
+
+[group_waiting_accept]
+text = "സ്വീകരിക്കാൻ കാത്തിരിക്കുന്നു"
+
+[group_decline]
+text = "നിരസിക്കുക"
+
+[group_accept]
+text = "സ്വീകരിക്കുക"
+
+[group_cancel]
+text = "റദ്ദാക്കുക"
+
+[group_cancel_host_request_desc]
+text = "{device} ഉപകരണത്തിനുള്ള ഹോസ്റ്റ് അഭ്യർത്ഥന റദ്ദാക്കുക"
+
+[group_host_offered]
+text = "ഹോസ്റ്റ് ചെയ്യാൻ തയ്യാറാണ് · ഒരു അഡ്മിൻ നിയമിക്കണം"
+
+[group_appoint]
+text = "നിയമിക്കുക"
+
+[group_hosts_note_base]
+text = "ഹോസ്റ്റുകൾ ഗ്രൂപ്പ് സൂക്ഷിക്കുകയും മറ്റുള്ളവർ ഓഫ്‌ലൈനായിരിക്കുമ്പോൾ പോസ്റ്റുകൾ കൈമാറുകയും ചെയ്യുന്നു. അവർ നിങ്ങൾ വിശ്വസിക്കുന്ന അംഗങ്ങളാണ്: ഈ ഗ്രൂപ്പിൽ പോസ്റ്റ് ചെയ്യുന്നതെല്ലാം ഒരു ഹോസ്റ്റിന് വായിക്കാം."
+
+[group_hosts_note_admin]
+text = "ഹോസ്റ്റുകൾ ഗ്രൂപ്പ് സൂക്ഷിക്കുകയും മറ്റുള്ളവർ ഓഫ്‌ലൈനായിരിക്കുമ്പോൾ പോസ്റ്റുകൾ കൈമാറുകയും ചെയ്യുന്നു. അവർ നിങ്ങൾ വിശ്വസിക്കുന്ന അംഗങ്ങളാണ്: ഈ ഗ്രൂപ്പിൽ പോസ്റ്റ് ചെയ്യുന്നതെല്ലാം ഒരു ഹോസ്റ്റിന് വായിക്കാം. ഒരു അംഗത്തിന്റെ മെനുവിൽ നിന്ന് ഹോസ്റ്റിനെ നിയമിക്കാം; അവർ അത് സ്വീകരിക്കണം. ഒരു ഹോസ്റ്റിനെ നീക്കം ചെയ്താൽ 2 ദിവസത്തിനുള്ളിൽ ഗ്രൂപ്പിന്റെ വിലാസം മാറും, അതോടെ ആ ഉപകരണത്തിന് ഗ്രൂപ്പിലേക്ക് എത്താൻ കഴിയില്ല."
+
+[group_callhosts_title]
+text = "കോൾ ഹോസ്റ്റുകൾ"
+
+[group_callhosts_none]
+text = "ഈ ഗ്രൂപ്പിന് കോൾ ഹോസ്റ്റ് ഇല്ല. കോൾ ആരംഭിക്കാൻ ഒരു അഡ്മിൻ കോൾ ഹോസ്റ്റിനെ നിയമിക്കണം."
+
+[group_callhosts_ready]
+one = "{count} കോൾ ഹോസ്റ്റ് തയ്യാറാണ്. കോളുകൾ അതിലൂടെ ആരംഭിക്കും."
+other = "{count} കോൾ ഹോസ്റ്റുകൾ തയ്യാറാണ്. കോളുകൾ അവയിലൂടെ ആരംഭിക്കും."
+
+[group_callhosts_unavailable]
+text = "ഇപ്പോൾ കോൾ ഹോസ്റ്റുകളൊന്നും ലഭ്യമല്ല. ഒരെണ്ണം തിരികെ വരുമ്പോൾ കോൾ ആരംഭിക്കാം."
+
+[group_callhosts_this_phone]
+text = "നിങ്ങൾ ആരംഭിക്കുന്ന കോളുകൾ ഈ ഫോൺ വഴിയാണ് നടക്കുന്നത്."
+
+[group_remove_callhost_desc]
+text = "കോൾ ഹോസ്റ്റ് സ്ഥാനത്തുനിന്ന് {device} നീക്കം ചെയ്യുക"
+
+[group_cancel_callhost_request_desc]
+text = "{device} ഉപകരണത്തിനുള്ള കോൾ ഹോസ്റ്റ് അഭ്യർത്ഥന റദ്ദാക്കുക"
+
+[group_callhost_stop_here]
+text = "ഈ ഫോണിൽ കോളുകൾ ഹോസ്റ്റ് ചെയ്യുന്നത് നിർത്തുക"
+
+[group_callhost_here]
+text = "ഈ ഫോണിൽ കോളുകൾ ഹോസ്റ്റ് ചെയ്യുക"
+
+[group_callhost_here_sub]
+text = "ഇവിടെ നിങ്ങൾ ആരംഭിക്കുന്ന കോളുകൾ നടത്തും. ഓണായിരിക്കുന്ന ഒരു കമ്പ്യൂട്ടറിന് എല്ലാവരുടെയും കോളുകൾ നടത്താം."
+
+[group_callhosts_note_base]
+text = "കോൾ ഹോസ്റ്റാണ് കോൾ നടത്തുന്നത്. കോളിലുള്ള എല്ലാവരും അതിലേക്ക് കണക്റ്റ് ചെയ്യുന്നു, അത് ഓഡിയോ കൈമാറുന്നു, അതിനാൽ അതിന് കോൾ കേൾക്കാൻ കഴിയും. ഇത് ചാറ്റ് ഹോസ്റ്റിംഗിൽ നിന്ന് വ്യത്യസ്തമാണ്: നിങ്ങൾ കോൾ ഹോസ്റ്റായും നിയമിക്കാത്തിടത്തോളം ഒരു ചാറ്റ് ഹോസ്റ്റ് കോൾ ഹോസ്റ്റല്ല. കോൾ ഹോസ്റ്റുകൾ നിങ്ങൾ വിശ്വസിക്കുന്ന അംഗങ്ങളാണ്, ഓരോരുത്തരും സ്വയം സമ്മതിച്ചാണ് അത് ഏറ്റെടുക്കുന്നത്."
+
+[group_callhosts_note_admin]
+text = "കോൾ ഹോസ്റ്റാണ് കോൾ നടത്തുന്നത്. കോളിലുള്ള എല്ലാവരും അതിലേക്ക് കണക്റ്റ് ചെയ്യുന്നു, അത് ഓഡിയോ കൈമാറുന്നു, അതിനാൽ അതിന് കോൾ കേൾക്കാൻ കഴിയും. ഇത് ചാറ്റ് ഹോസ്റ്റിംഗിൽ നിന്ന് വ്യത്യസ്തമാണ്: നിങ്ങൾ കോൾ ഹോസ്റ്റായും നിയമിക്കാത്തിടത്തോളം ഒരു ചാറ്റ് ഹോസ്റ്റ് കോൾ ഹോസ്റ്റല്ല. കോൾ ഹോസ്റ്റുകൾ നിങ്ങൾ വിശ്വസിക്കുന്ന അംഗങ്ങളാണ്, ഓരോരുത്തരും സ്വയം സമ്മതിച്ചാണ് അത് ഏറ്റെടുക്കുന്നത്. ഒരു അംഗത്തിന്റെ മെനുവിൽ നിന്ന് ഒരാളെ നിയമിക്കാം, അല്ലെങ്കിൽ ഈ ഫോണിൽ കോളുകൾ ഹോസ്റ്റ് ചെയ്യാം. ഒരു ഫോൺ അതിന്റെ ഉടമ ആരംഭിക്കുന്ന കോളുകൾ മാത്രമേ ഹോസ്റ്റ് ചെയ്യൂ."
+
+[group_flags_on_you]
+text = "നിങ്ങൾക്കെതിരെയുള്ള ഫ്ലാഗുകൾ"
+
+[group_flags_count]
+text = "{count} / {total}"
+
+[group_flags_count_desc]
+one = "{count} / {total} ഫ്ലാഗുകൾ"
+other = "{count} / {total} ഫ്ലാഗുകൾ"
+
+[group_flags_left]
+one = "ഏതെങ്കിലും അഡ്മിനിൽ നിന്ന് ഒരു ഫ്ലാഗ് കൂടി വന്നാൽ നിങ്ങളെ ഗ്രൂപ്പിൽ നിന്ന് നീക്കം ചെയ്യും. ഫ്ലാഗുകൾ പിൻവലിക്കാൻ കഴിയില്ല. അതുവരെ നിങ്ങൾക്ക് വായിക്കാനും പോസ്റ്റ് ചെയ്യാനും കഴിയും."
+other = "ഏതെങ്കിലും അഡ്മിനിൽ നിന്ന് {count} ഫ്ലാഗുകൾ കൂടി വന്നാൽ നിങ്ങളെ ഗ്രൂപ്പിൽ നിന്ന് നീക്കം ചെയ്യും. ഫ്ലാഗുകൾ പിൻവലിക്കാൻ കഴിയില്ല. അതുവരെ നിങ്ങൾക്ക് വായിക്കാനും പോസ്റ്റ് ചെയ്യാനും കഴിയും."
+
+[group_removal_title]
+text = "{total} അഡ്മിൻ ഫ്ലാഗുകളെ തുടർന്ന് നീക്കം ചെയ്തു"
+
+[group_removal_who]
+text = "നിങ്ങളെ ഫ്ലാഗ് ചെയ്തവർ"
+
+[group_removal_flag_first]
+text = "ആദ്യ ഫ്ലാഗ്"
+
+[group_removal_flag_second]
+text = "രണ്ടാമത്തെ ഫ്ലാഗ്"
+
+[group_removal_flag_third]
+text = "മൂന്നാമത്തെ ഫ്ലാഗ്"
+
+[group_removal_flag]
+text = "ഫ്ലാഗ്"
+
+[group_removal_checked]
+text = "ഓരോ ഫ്ലാഗും ഗ്രൂപ്പിലെ ഒരു അഡ്മിൻ ചെയ്തതാണ്, ഇത് കാണിക്കുന്നതിന് മുമ്പ് ഈ ഉപകരണം അവ പരിശോധിച്ചു."
+
+[group_removal_means]
+text = "ഇതിന്റെ അർത്ഥം"
+
+[group_removal_text]
+text = "ഈ ഉപകരണത്തിൽ ഇതിനകമുള്ള പോസ്റ്റുകൾ നിങ്ങൾക്കൊപ്പമുണ്ടാകും, അവ വായിക്കാം. നിങ്ങൾക്ക് പോസ്റ്റ് ചെയ്യാൻ കഴിയില്ല, ഗ്രൂപ്പിന്റെ ഹോസ്റ്റുകൾ ഇനി നിങ്ങളിൽ നിന്ന് ഒന്നും സ്വീകരിക്കില്ല. ഈ നീക്കം ചെയ്യൽ സ്ഥിരമാണ്: തിരികെ വരാൻ, ഒരു അഡ്മിൻ നിങ്ങളെ വീണ്ടും ക്ഷണിക്കണം."
+
+[group_removal_read]
+text = "പോസ്റ്റുകൾ വായിക്കുക"
+
+[group_leave_title]
+text = "{group} ഗ്രൂപ്പിൽ നിന്ന് പുറത്തുകടക്കണോ?"
+
+[group_leave_text]
+text = "നിങ്ങൾക്ക് ഇനി പോസ്റ്റുകൾ ലഭിക്കില്ല. ഈ ഉപകരണത്തിൽ ഇപ്പോഴുള്ളവ നിലനിൽക്കും, അവ വായിക്കാം. തിരികെ വരാൻ, ഗ്രൂപ്പിലെ ആരെങ്കിലും നിങ്ങളെ വീണ്ടും ക്ഷണിക്കണം."
+
+[group_leave_admin]
+text = "നിങ്ങൾ ഒരു അഡ്മിനാണ്. ഉടമയും മറ്റ് അഡ്മിൻമാരും തുടരും."
+
+[group_leave]
+text = "പുറത്തുകടക്കുക"
+
+[group_invite_title]
+text = "{group} ഗ്രൂപ്പിലേക്ക് ക്ഷണിക്കുക"
+
+[group_invite_text]
+text = "ഓരോരുത്തർക്കും 7 ദിവസം സാധുതയുള്ള ഒരു സ്വകാര്യ ക്ഷണം ലഭിക്കും. നിങ്ങൾ ക്ഷണിക്കുന്ന ആർക്കും ചേർന്നുകഴിഞ്ഞാൽ ഗ്രൂപ്പിന്റെ പോസ്റ്റുകൾ വായിക്കാം."
+
+[group_invite_none]
+text = "നിങ്ങളുടെ കോൺടാക്റ്റുകളിലെ എല്ലാവരും ഇതിനകം ഈ ഗ്രൂപ്പിലുണ്ട്, അല്ലെങ്കിൽ അവർക്കായി ഒരു ക്ഷണം കാത്തിരിക്കുന്നുണ്ട്."
+
+[group_invite_sending]
+text = "അയയ്ക്കുന്നു…"
+
+[group_invite_button]
+text = "ക്ഷണിക്കുക"
+
+[group_invite_people]
+one = "{count} ആളെ ക്ഷണിക്കുക"
+other = "{count} പേരെ ക്ഷണിക്കുക"
+
+[group_invite_failed]
+text = "ക്ഷണിക്കാൻ കഴിഞ്ഞില്ല"
+
+[group_member_role_desc_you]
+text = "ഈ ഗ്രൂപ്പിൽ നിങ്ങളുടെ റോൾ"
+
+[group_member_in_group_desc]
+text = "{group} ഗ്രൂപ്പിലെ {name}"
+
+[group_member_message]
+text = "{name} എന്നയാൾക്ക് സന്ദേശമയയ്ക്കുക"
+
+[group_member_you_blocked]
+text = "നിങ്ങൾ {name} എന്നയാളെ ബ്ലോക്ക് ചെയ്തു"
+
+[group_member_blocked_sub]
+text = "അവർ ഗ്രൂപ്പിൽ തുടരും. ചാറ്റ് ചെയ്യാൻ കോൺടാക്റ്റുകളിൽ അവരെ അൺബ്ലോക്ക് ചെയ്യുക."
+
+[group_member_request_sent]
+text = "അഭ്യർത്ഥന അയച്ചു"
+
+[group_member_request_waiting]
+text = "{name} മറുപടി നൽകാനായി കാത്തിരിക്കുന്നു"
+
+[group_member_blocked_title]
+text = "ബ്ലോക്ക് ചെയ്തു"
+
+[group_member_cant_receive]
+text = "{name} എന്നയാൾക്ക് നിങ്ങളിൽ നിന്ന് അഭ്യർത്ഥനകൾ ലഭിക്കില്ല."
+
+[group_member_ask_again]
+text = "{name} എന്നയാളോട് വീണ്ടും ചോദിക്കുക"
+
+[group_member_ask]
+text = "{name} എന്നയാളോട് സ്വകാര്യ ചാറ്റ് ആവശ്യപ്പെടുക"
+
+[group_member_declined_last]
+text = "{name} നിങ്ങളുടെ കഴിഞ്ഞ അഭ്യർത്ഥന നിരസിച്ചു"
+
+[group_member_ask_sub]
+text = "ഗ്രൂപ്പിന്റെ ഹോസ്റ്റ് വഴി ചാറ്റ് അഭ്യർത്ഥന അയയ്ക്കുന്നു"
+
+[group_member_make_admin]
+text = "അഡ്മിനാക്കുക"
+
+[group_member_remove_admin]
+text = "അഡ്മിൻ സ്ഥാനം നീക്കുക"
+
+[group_member_make_device_host]
+text = "{device} എന്ന ഉപകരണം ഹോസ്റ്റാക്കുക"
+
+[group_member_make_host]
+text = "ഹോസ്റ്റാക്കുക"
+
+[group_member_make_host_sub]
+text = "ഹോസ്റ്റ് ചെയ്യാൻ {name} എന്നയാളോട് ആവശ്യപ്പെടുന്നു. അവർ സ്വീകരിക്കണം."
+
+[group_member_stop_device_host]
+text = "{device} എന്ന ഉപകരണത്തിലെ ഹോസ്റ്റിംഗ് നിർത്തുക"
+
+[group_member_remove_host]
+text = "ഹോസ്റ്റ് സ്ഥാനത്തുനിന്ന് നീക്കുക"
+
+[group_member_cancel_callhost]
+text = "കോൾ ഹോസ്റ്റ് അഭ്യർത്ഥന റദ്ദാക്കുക"
+
+[group_member_cancel_callhost_device]
+text = "കോൾ ഹോസ്റ്റ് അഭ്യർത്ഥന റദ്ദാക്കുക · {device}"
+
+[group_member_cancel_callhost_sub]
+text = "{name} എന്നയാളുടെ ഉപകരണം സ്വീകരിക്കാനായി കാത്തിരിക്കുന്നു"
+
+[group_member_remove_callhost]
+text = "കോൾ ഹോസ്റ്റ് സ്ഥാനത്തുനിന്ന് നീക്കുക"
+
+[group_member_remove_callhost_device]
+text = "കോൾ ഹോസ്റ്റ് സ്ഥാനത്തുനിന്ന് നീക്കുക · {device}"
+
+[group_member_make_callhost]
+text = "കോൾ ഹോസ്റ്റാക്കുക"
+
+[group_member_make_callhost_device]
+text = "കോൾ ഹോസ്റ്റാക്കുക · {device}"
+
+[group_member_make_callhost_sub]
+text = "ഗ്രൂപ്പ് കോളുകൾ നടത്താൻ {name} എന്നയാളോട് ആവശ്യപ്പെടുന്നു. അവർ സ്വീകരിക്കണം."
+
+[group_host_stop_device]
+text = "ഈ ഉപകരണത്തിൽ ഹോസ്റ്റ് ചെയ്യുന്നത് നിർത്തുക"
+
+[group_host_device]
+text = "ഈ ഉപകരണത്തിൽ ഹോസ്റ്റ് ചെയ്യുക"
+
+[group_host_device_sub]
+text = "ഒരു അഡ്മിനും ഇത് നിയമിക്കണം. ഓണായിരിക്കുന്ന ഒരു കമ്പ്യൂട്ടറാണ് കൂടുതൽ നല്ല ഹോസ്റ്റ്."
+
+[group_callhost_stop_device]
+text = "ഈ ഉപകരണത്തിൽ കോളുകൾ ഹോസ്റ്റ് ചെയ്യുന്നത് നിർത്തുക"
+
+[group_member_flag]
+text = "നീക്കം ചെയ്യാൻ ഫ്ലാഗ് ചെയ്യുക"
+
+[group_member_flag_sub]
+text = "{total} ഫ്ലാഗുകൾ ലഭിച്ചാൽ {name} ഗ്രൂപ്പിൽ നിന്ന് നീക്കം ചെയ്യപ്പെടും"
+
+[group_member_owner_no_flag]
+text = "ഉടമയെ ഫ്ലാഗ് ചെയ്യാൻ കഴിയില്ല"
+
+[group_close]
+text = "അടയ്ക്കുക"
+
+[group_flag_title]
+text = "നീക്കം ചെയ്യാൻ {name} എന്നയാളെ ഫ്ലാഗ് ചെയ്യണോ?"
+
+[group_flag_meter_desc]
+text = "ഫ്ലാഗ് {next} / {total}"
+
+[group_flag_text1]
+text = "ഫ്ലാഗുകൾ പിൻവലിക്കാൻ കഴിയില്ല, ഗ്രൂപ്പിൽ നിന്നുള്ള നീക്കം ചെയ്യൽ സ്ഥിരമാണ്. ഒരേ അഡ്മിന് ഒന്നിലധികം തവണ ഫ്ലാഗ് ചെയ്യാം; ഓരോ ഫ്ലാഗും എണ്ണപ്പെടും."
+
+[group_flag_text2]
+text = "ഫ്ലാഗ് ചെയ്യുന്നത് ഗ്രൂപ്പിന്റെ തീരുമാനമാണ്. ഇത് ബ്ലോക്ക് ചെയ്യുന്നതിൽ നിന്ന് വ്യത്യസ്തമാണ്, അത് നിങ്ങളെ മാത്രമേ ബാധിക്കൂ. ഓരോ ഫ്ലാഗും {name} കാണും: ആര് ചെയ്തു, എപ്പോൾ എന്ന്."
+
+[group_back]
+text = "തിരികെ"
+
+[group_flag_button]
+text = "{name} എന്നയാളെ ഫ്ലാഗ് ചെയ്യുക"
+
+[group_ask_title]
+text = "{name} എന്നയാളോട് സ്വകാര്യ ചാറ്റ് ആവശ്യപ്പെടുക"
+
+[group_ask_text1]
+text = "{name} നിങ്ങളുടെ പേരും ഗ്രൂപ്പും കാണും. അഭ്യർത്ഥന ഗ്രൂപ്പിന്റെ ഹോസ്റ്റ് വഴി സീൽ ചെയ്ത് അയയ്ക്കുന്നു, അതിനാൽ ഹോസ്റ്റിന് അത് വായിക്കാൻ കഴിയില്ല."
+
+[group_ask_text2]
+text = "{name} സ്വീകരിച്ചാൽ നിങ്ങൾക്ക് പരസ്പരം നേരിട്ട് സന്ദേശം അയയ്ക്കാം. നിങ്ങളിലൊരാൾ അനുവദിക്കുന്നതുവരെ കോളുകൾ ഓഫായിരിക്കും. ഒരു അഭ്യർത്ഥനയുടെ കാലാവധി 7 ദിവസമാണ്."
+
+[group_ask_send]
+text = "അഭ്യർത്ഥന അയയ്ക്കുക"
+
+[group_someone]
+text = "ഒരാൾ"
+
+[group_sys_removed_you]
+one = "{count} അഡ്മിൻ ഫ്ലാഗിനെ തുടർന്ന് നിങ്ങളെ നീക്കം ചെയ്തു"
+other = "{count} അഡ്മിൻ ഫ്ലാഗുകളെ തുടർന്ന് നിങ്ങളെ നീക്കം ചെയ്തു"
+
+[group_sys_removed]
+one = "{count} അഡ്മിൻ ഫ്ലാഗിനെ തുടർന്ന് {name} നീക്കം ചെയ്യപ്പെട്ടു"
+other = "{count} അഡ്മിൻ ഫ്ലാഗുകളെ തുടർന്ന് {name} നീക്കം ചെയ്യപ്പെട്ടു"
+
+[group_sys_host_added_you]
+text = "നിങ്ങളുടെ ഒരു ഉപകരണം ഇപ്പോൾ ഗ്രൂപ്പ് ഹോസ്റ്റ് ചെയ്യുന്നു"
+
+[group_sys_host_added]
+text = "{name} എന്ന അംഗത്തിന്റെ ഒരു ഉപകരണം ഇപ്പോൾ ഗ്രൂപ്പ് ഹോസ്റ്റ് ചെയ്യുന്നു"
+
+[group_sys_host_removed_you]
+text = "നിങ്ങളുടെ ഒരു ഉപകരണം ഗ്രൂപ്പ് ഹോസ്റ്റ് ചെയ്യുന്നത് നിർത്തി"
+
+[group_sys_host_removed]
+text = "{name} എന്ന അംഗത്തിന്റെ ഒരു ഉപകരണം ഗ്രൂപ്പ് ഹോസ്റ്റ് ചെയ്യുന്നത് നിർത്തി"
+
+[group_preview_removed]
+text = "നിങ്ങളെ ഈ ഗ്രൂപ്പിൽ നിന്ന് നീക്കം ചെയ്തു"
+
+[group_preview_you]
+text = "നിങ്ങൾ: {text}"
+
+[group_preview_author]
+text = "{name}: {text}"
+
+[group_preview_someone]
+text = "ഒരാൾ: {text}"
+
+[group_members_count]
+one = "{count} അംഗം"
+other = "{count} അംഗങ്ങൾ"
+
+[group_hosts_count]
+one = "{count} ഹോസ്റ്റ്"
+other = "{count} ഹോസ്റ്റുകൾ"
+
+[group_status_this_device]
+text = "{members} · ഈ ഉപകരണം ഗ്രൂപ്പ് ഹോസ്റ്റ് ചെയ്യുന്നു"
+
+[group_status_no_host]
+text = "{members} · ഇതുവരെ ഹോസ്റ്റ് ഇല്ല"
+
+[group_status_waiting]
+text = "{members} · ഹോസ്റ്റിനായി കാത്തിരിക്കുന്നു"
+
+[group_status_hosts]
+text = "{members} · {hosts}"
+
+[group_waiting_for_host]
+text = "ഹോസ്റ്റിനായി കാത്തിരിക്കുന്നു"
+
+[group_req_pending]
+text = "{name} എന്നയാൾക്കായി കാത്തിരിക്കുന്നു · {group} വഴി"
+
+[group_req_pending_unnamed]
+text = "അവർക്കായി കാത്തിരിക്കുന്നു · {group} വഴി"
+
+[group_req_accepted_msgs]
+text = "{name} സ്വീകരിച്ചു · സന്ദേശങ്ങൾ മാത്രം"
+
+[group_req_accepted_msgs_unnamed]
+text = "സ്വീകരിച്ചു · സന്ദേശങ്ങൾ മാത്രം"
+
+[group_req_accepted_connecting]
+text = "{name} സ്വീകരിച്ചു · കണക്റ്റ് ചെയ്യുന്നു"
+
+[group_req_accepted_connecting_unnamed]
+text = "സ്വീകരിച്ചു · കണക്റ്റ് ചെയ്യുന്നു"
+
+[group_req_declined]
+text = "{name} നിരസിച്ചു"
+
+[group_req_declined_unnamed]
+text = "നിരസിച്ചു"
+
+[group_req_blocked]
+text = "{name} നിങ്ങളെ ബ്ലോക്ക് ചെയ്തു"
+
+[group_req_blocked_unnamed]
+text = "അവർ നിങ്ങളെ ബ്ലോക്ക് ചെയ്തു"
+
+[group_pick_already_member]
+text = "ഇതിനകം അംഗമാണ്"
+
+[group_pick_invited_waiting]
+text = "ക്ഷണിച്ചു · കാത്തിരിക്കുന്നു"
+
+[group_inv_waiting]
+text = "ക്ഷണിച്ചു · മറുപടിക്കായി കാത്തിരിക്കുന്നു"
+
+[group_inv_undelivered]
+text = "ക്ഷണിച്ചു · ഇതുവരെ എത്തിയിട്ടില്ല"
+
+[group_inv_joined]
+text = "ചേർന്നു"
+
+[group_inv_declined]
+text = "ക്ഷണം നിരസിച്ചു"
+
+[group_inv_expired]
+text = "ക്ഷണത്തിന്റെ കാലാവധി കഴിഞ്ഞു"
+
+[group_inv_blocked]
+text = "നിങ്ങളെ ബ്ലോക്ക് ചെയ്തു"
+
+[group_flag_copy_final]
+text = "നിങ്ങളുടേത് ഫ്ലാഗ് {yours} / {total} ആയിരിക്കും. {name} ഉടൻ നീക്കം ചെയ്യപ്പെടും: ഹോസ്റ്റുകൾ അവരുടെ പുതിയ സന്ദേശങ്ങൾ സ്വീകരിക്കില്ല, തങ്ങളെ നീക്കം ചെയ്തുവെന്ന് അവർ കാണും."
+
+[group_flag_copy]
+text = "നിങ്ങളുടേത് ഫ്ലാഗ് {yours} / {total} ആയിരിക്കും. ഏത് അഡ്മിന്റെ ഫ്ലാഗും എണ്ണപ്പെടും, നിങ്ങളുടേത് വീണ്ടും ആയാലും. {total} ഫ്ലാഗുകൾ ആകുമ്പോൾ {name} ഉടൻ നീക്കം ചെയ്യപ്പെടും, അത് അവർ കാണുകയും ചെയ്യും."
+
+[group_error_generic]
+text = "എന്തോ പ്രശ്നമുണ്ടായി"
+
+[group_error_removed]
+text = "നിങ്ങളെ ഈ ഗ്രൂപ്പിൽ നിന്ന് നീക്കം ചെയ്തു."
+
+[group_error_not_member]
+text = "നിങ്ങൾ ഈ ഗ്രൂപ്പിലെ അംഗമല്ല."
+
+[group_error_already_contact]
+text = "അവർ ഇതിനകം നിങ്ങളുടെ കോൺടാക്റ്റാണ്. ചാറ്റുകളിൽ നിന്ന് അവർക്ക് സന്ദേശം അയയ്ക്കാം."
+
+[group_error_you_block]
+text = "നിങ്ങൾ അവരെ ബ്ലോക്ക് ചെയ്തിട്ടുണ്ട്. ചാറ്റ് ആവശ്യപ്പെടാൻ ആദ്യം അവരെ അൺബ്ലോക്ക് ചെയ്യുക."
+
+[group_error_they_block]
+text = "അവർ നിങ്ങളെ ബ്ലോക്ക് ചെയ്തതിനാൽ, അവരോട് ചാറ്റ് ആവശ്യപ്പെടാൻ കഴിയില്ല."
+
+[group_error_invite_invalid]
+text = "ആ ക്ഷണം ഇപ്പോൾ സാധുവല്ല. പുതിയൊരെണ്ണം ചോദിക്കുക."
+
+[group_error_refused]
+text = "നിരസിച്ചു."
+
+[group_error_timeout]
+text = "സമയത്തിനുള്ളിൽ ഒരു ഹോസ്റ്റും മറുപടി നൽകിയില്ല. ഒരു ഹോസ്റ്റ് ഓൺലൈനിലാകുമ്പോൾ വീണ്ടും ശ്രമിക്കുക."
+
+[group_error_locked]
+text = "ആദ്യം അൺലോക്ക് ചെയ്യുക."
+
+[group_error_not_found]
+text = "ആ ഗ്രൂപ്പ് ഈ ഫോണിൽ ഇല്ല."
+
+[group_err_type_message]
+text = "ആദ്യം ഒരു സന്ദേശം ടൈപ്പ് ചെയ്യുക."
+
+[group_err_name_group]
+text = "ഗ്രൂപ്പിന് ഒരു പേര് നൽകുക."
+
+[group_err_pick_someone]
+text = "ആദ്യം ഒരാളെ തിരഞ്ഞെടുക്കുക."
+
+[group_done_invite_one]
+text = "{name} എന്നയാൾക്ക് ക്ഷണം അയച്ചു. സ്വീകരിക്കുമ്പോൾ അവർ ചേരും."
+
+[group_done_invite_one_unnamed]
+text = "ക്ഷണം അയച്ചു. സ്വീകരിക്കുമ്പോൾ അവർ ചേരും."
+
+[group_done_invite_many]
+one = "{count} ക്ഷണം അയച്ചു. ഓരോരുത്തരും സ്വീകരിക്കുമ്പോൾ ചേരും."
+other = "{count} ക്ഷണങ്ങൾ അയച്ചു. ഓരോരുത്തരും സ്വീകരിക്കുമ്പോൾ ചേരും."
+
+[group_done_decline_invite]
+text = "നിരസിച്ചു. നിങ്ങൾ നിരസിച്ചുവെന്ന് {name} കാണും."
+
+[group_done_decline_invite_unnamed]
+text = "നിരസിച്ചു. നിങ്ങൾ നിരസിച്ചുവെന്ന് അവർ കാണും."
+
+[group_done_flag]
+text = "ഫ്ലാഗ് രേഖപ്പെടുത്തി. ഇത് നിങ്ങൾ ഒപ്പിട്ടതാണ്, അംഗത്തിന് ഇത് കാണാം."
+
+[group_done_admin_made]
+text = "അഡ്മിനാക്കി."
+
+[group_done_admin_removed]
+text = "ഇനി അഡ്മിനല്ല."
+
+[group_done_left]
+text = "നിങ്ങൾ ഗ്രൂപ്പിൽ നിന്ന് പുറത്തുകടന്നു. ഇതിലെ സന്ദേശങ്ങൾ ഇവിടെത്തന്നെയുണ്ടാകും."
+
+[group_done_appointed]
+text = "നിയമിച്ചു. ഉപകരണം സമ്മതിക്കുമ്പോൾ അത് ഹോസ്റ്റ് ചെയ്തുതുടങ്ങും."
+
+[group_done_host_revoked]
+text = "ആ ഉപകരണം ഇനി ഗ്രൂപ്പ് ഹോസ്റ്റ് ചെയ്യുന്നില്ല."
+
+[group_done_host_accepted]
+text = "ഹോസ്റ്റ് ചെയ്യാൻ ഈ ഫോൺ സമ്മതിച്ചു. ഒരു അഡ്മിൻ നിയമിച്ചാലുടൻ ഇത് ഹോസ്റ്റ് ചെയ്തുതുടങ്ങും."
+
+[group_done_host_stopped]
+text = "ഈ ഫോൺ ഗ്രൂപ്പ് ഹോസ്റ്റ് ചെയ്യുന്നത് നിർത്തി."
+
+[group_done_callhost_asked]
+text = "ആവശ്യപ്പെട്ടു. ഉപകരണം സ്വീകരിക്കുമ്പോൾ അത് കോളുകൾ നടത്തിത്തുടങ്ങും."
+
+[group_done_callhost_revoked]
+text = "ആ ഉപകരണം ഇനി ഗ്രൂപ്പിന്റെ കോളുകൾ ഹോസ്റ്റ് ചെയ്യുന്നില്ല."
+
+[group_done_callhost_accepted]
+text = "ഈ ഉപകരണം ഇപ്പോൾ ഗ്രൂപ്പിന്റെ കോളുകൾ ഹോസ്റ്റ് ചെയ്യുന്നു."
+
+[group_done_callhost_stopped]
+text = "ഈ ഉപകരണം ഗ്രൂപ്പിന്റെ കോളുകൾ ഹോസ്റ്റ് ചെയ്യില്ല."
+
+[group_done_callhost_here]
+text = "ഈ ഗ്രൂപ്പിൽ ഈ ഫോൺ ആരംഭിക്കുന്ന കോളുകൾ ഇനി ഈ ഫോൺ തന്നെ നടത്തും."
+
+[group_done_request_sent]
+text = "{name} എന്നയാൾക്ക് അഭ്യർത്ഥന അയച്ചു. അവർ മറുപടി നൽകുന്നതുവരെ അത് ചാറ്റുകളിൽ കാത്തിരിക്കും."
+
+[group_done_request_sent_unnamed]
+text = "അഭ്യർത്ഥന അയച്ചു. അവർ മറുപടി നൽകുന്നതുവരെ അത് ചാറ്റുകളിൽ കാത്തിരിക്കും."
+
+[group_done_request_accepted]
+text = "സ്വീകരിച്ചു. {name} സന്ദേശങ്ങൾക്ക് മാത്രമായി ചേർക്കപ്പെട്ടു, അവരുടെ ഉപകരണം കണക്റ്റ് ചെയ്യുമ്പോൾ ചാറ്റുകളിൽ കാണാം; നിങ്ങൾ അനുവദിക്കുന്നതുവരെ കോളുകൾ ഓഫായിരിക്കും."
+
+[group_done_request_accepted_unnamed]
+text = "സ്വീകരിച്ചു. അവർ സന്ദേശങ്ങൾക്ക് മാത്രമായി ചേർക്കപ്പെട്ടു, അവരുടെ ഉപകരണം കണക്റ്റ് ചെയ്യുമ്പോൾ ചാറ്റുകളിൽ കാണാം; നിങ്ങൾ അനുവദിക്കുന്നതുവരെ കോളുകൾ ഓഫായിരിക്കും."
+
+[group_done_request_declined]
+text = "നിരസിച്ചു. “നിരസിച്ചു” എന്ന് {name} അറിയും."
+
+[group_done_request_declined_unnamed]
+text = "നിരസിച്ചു. “നിരസിച്ചു” എന്ന് അവർ അറിയും."
+
+[group_done_request_blocked]
+text = "{name} എന്നയാളെ ബ്ലോക്ക് ചെയ്തു, ഇനി അഭ്യർത്ഥനകൾ അയയ്ക്കാൻ കഴിയില്ല."
+
+[group_done_request_blocked_unnamed]
+text = "അവരെ ബ്ലോക്ക് ചെയ്തു, ഇനി അഭ്യർത്ഥനകൾ അയയ്ക്കാൻ കഴിയില്ല."
+
+[group_notice_request_accepted]
+text = "{name} നിങ്ങളുടെ അഭ്യർത്ഥന സ്വീകരിച്ചു. ഇപ്പോൾ നിങ്ങൾക്ക് പരസ്പരം സന്ദേശം അയയ്ക്കാം; നിങ്ങളിലൊരാൾ അനുവദിക്കുന്നതുവരെ കോളുകൾ ഓഫായിരിക്കും."
+
+[group_notice_request_accepted_unnamed]
+text = "നിങ്ങളുടെ അഭ്യർത്ഥന സ്വീകരിച്ചു. ഇപ്പോൾ നിങ്ങൾക്ക് പരസ്പരം സന്ദേശം അയയ്ക്കാം; നിങ്ങളിലൊരാൾ അനുവദിക്കുന്നതുവരെ കോളുകൾ ഓഫായിരിക്കും."
+
+[group_calls_unavailable]
+text = "ഗ്രൂപ്പ് കോളുകൾ ഇവിടെ ഇതുവരെ ലഭ്യമല്ല."
+
+[group_scan_unavailable]
+text = "സ്കാൻ ചെയ്യൽ ഇതുവരെ ലഭ്യമല്ല. പകരം ലിങ്ക് പേസ്റ്റ് ചെയ്യുക."
+
+[group_cant_do_that]
+text = "അത് ചെയ്യാൻ കഴിഞ്ഞില്ല"
+
+[group_title]
+text = "ഗ്രൂപ്പ്"
+
+[group_loading]
+text = "ലോഡ് ചെയ്യുന്നു…"
+
+[group_older]
+text = "പഴയ സന്ദേശങ്ങൾ കാണിക്കുക"
+
+[group_no_messages]
+text = "ഇതുവരെ സന്ദേശങ്ങളൊന്നുമില്ല"
+
+[group_strip_waiting]
+text = "ഹോസ്റ്റിനായി കാത്തിരിക്കുന്നു. ഗ്രൂപ്പ് ഹോസ്റ്റുകളൊന്നും ഓൺലൈനിലില്ല; നിങ്ങളുടെ പോസ്റ്റുകൾ സേവ് ചെയ്തിട്ടുണ്ട്, ഒരു ഹോസ്റ്റ് ഓൺലൈനിൽ വരുമ്പോൾ അവ അയയ്ക്കും."
+
+[group_back_to_groups]
+text = "ഗ്രൂപ്പുകളിലേക്ക് മടങ്ങുക"
+
+[group_chat_header_desc]
+text = "{name}. {status}. ഗ്രൂപ്പ് വിവരങ്ങൾ"
+
+[group_call_return]
+text = "ഗ്രൂപ്പ് കോളിലേക്ക് മടങ്ങുക"
+
+[group_call_join]
+text = "ഗ്രൂപ്പ് കോളിൽ ചേരുക"
+
+[group_call_start]
+text = "ഗ്രൂപ്പ് കോൾ ആരംഭിക്കുക"
+
+[group_call_no_host]
+text = "ഇതുവരെ കോൾ ഹോസ്റ്റ് ഇല്ല: ഗ്രൂപ്പ് വിവരങ്ങളിൽ ഒരു അഡ്മിന് ഒരാളെ നിയമിക്കാം"
+
+[group_info_desc]
+text = "ഗ്രൂപ്പ് വിവരങ്ങൾ"
+
+[group_removed_footer]
+text = "നിങ്ങളെ നീക്കം ചെയ്തതിനാൽ ഈ ഗ്രൂപ്പിലേക്ക് സന്ദേശങ്ങൾ അയയ്ക്കാൻ കഴിയില്ല."
+
+[group_why]
+text = "എന്തുകൊണ്ട്?"
+
+[group_left_footer]
+text = "നിങ്ങൾ ഈ ഗ്രൂപ്പിൽ നിന്ന് പുറത്തുകടന്നു. ഇതിലെ സന്ദേശങ്ങൾ ഇവിടെത്തന്നെയുണ്ടാകും, വായിക്കാൻ മാത്രം."
+
+[group_message_placeholder]
+text = "സന്ദേശം"
+
+[group_replying_to]
+text = "മറുപടി: {name}"
+
+[group_replying_to_self]
+text = "നിങ്ങൾക്കുതന്നെ മറുപടി നൽകുന്നു"
+
+[group_cant_send]
+text = "അയയ്ക്കാൻ കഴിഞ്ഞില്ല"
+
+[group_unread_divider]
+one = "{count} പുതിയ സന്ദേശം"
+other = "{count} പുതിയ സന്ദേശങ്ങൾ"
+
+[group_call_you_in]
+text = "നിങ്ങൾ കോളിലാണ്"
+
+[group_call_in_progress]
+text = "കോൾ നടക്കുന്നു"
+
+[group_call_started_by]
+text = "ആരംഭിച്ചത്: {name}"
+
+[group_call_open]
+text = "തുറക്കുക"
+
+[group_join]
+text = "ചേരുക"
+
+[group_call_line_desc]
+text = "{text}, {time}. കോൾ ആരംഭിക്കുകയോ ചേരുകയോ ചെയ്യുക"
+
+[group_host_asked_title]
+text = "{group} ഹോസ്റ്റ് ചെയ്യാൻ {name} ഈ ഫോണിനോട് ആവശ്യപ്പെട്ടു"
+
+[group_host_asked_title_admin]
+text = "{group} ഹോസ്റ്റ് ചെയ്യാൻ ഒരു അഡ്മിൻ ഈ ഫോണിനോട് ആവശ്യപ്പെട്ടു"
+
+[group_host_asked_text]
+text = "ഹോസ്റ്റ് ഗ്രൂപ്പിന്റെ പൂർണ്ണമായ ഒരു പകർപ്പ് സൂക്ഷിക്കുന്നു, അംഗങ്ങളുടെ ഫോണുകൾ ഉറങ്ങുമ്പോൾ സന്ദേശങ്ങൾ കൈമാറുന്നു, അംഗങ്ങളുടെ ഗ്രൂപ്പ് വിലാസങ്ങൾ അറിയുകയും ചെയ്യുന്നു. അത് ഓൺലൈനിൽ തുടരണം, ബാറ്ററിയും ഉപയോഗിക്കും: ഓണായിരിക്കുന്ന ഒരു കമ്പ്യൂട്ടറാണ് കൂടുതൽ നല്ല ഹോസ്റ്റ്. ഹോസ്റ്റ് ചെയ്യുന്നതുകൊണ്ട് നിങ്ങൾ അഡ്മിൻ ആകുന്നില്ല."
+
+[group_host_here]
+text = "ഇവിടെ ഹോസ്റ്റ് ചെയ്യുക"
+
+[group_done_host_declined]
+text = "നിരസിച്ചു. ഈ ഫോണിൽ നിന്ന് മറുപടിയൊന്നും അഡ്മിൻമാർ കാണില്ല."
+
+[group_removed_card_title]
+one = "{count} അഡ്മിൻ ഫ്ലാഗിനെ തുടർന്ന് നീക്കം ചെയ്തു"
+other = "{count} അഡ്മിൻ ഫ്ലാഗുകളെ തുടർന്ന് നീക്കം ചെയ്തു"
+
+[group_removed_card_text]
+text = "ഫ്ലാഗ് ചെയ്തവർ: {names}. മുമ്പ് ലഭിച്ചവ ഇപ്പോഴും വായിക്കാം; പുതിയതൊന്നും വരില്ല."
+
+[group_see_details]
+text = "വിശദാംശങ്ങൾ കാണുക"
+
+[group_receipt_sent]
+text = "അയച്ചു"
+
+[group_blocked_message]
+text = "നിങ്ങൾ ബ്ലോക്ക് ചെയ്ത {name} അയച്ച സന്ദേശം · കാണിക്കുക"
+
+[group_sender_removed]
+text = "{name} · നീക്കം ചെയ്തു"
+
+[group_quote_unavailable]
+text = "യഥാർത്ഥ സന്ദേശം ലഭ്യമല്ല"
+
+[group_reply]
+text = "മറുപടി നൽകുക"
+
+[group_written_before]
+text = "{name} നീക്കം ചെയ്യപ്പെടുന്നതിന് മുമ്പ് എഴുതിയത്"
+
+[group_receipt_delivered]
+text = "എത്തി {count}/{total}"
+
+[group_receipt_read]
+text = "വായിച്ചു {count}/{total}"
+
+[group_receipt_level_read]
+text = "വായിച്ചവർ: {names}"
+
+[group_receipt_level_delivered]
+text = "അവരുടെ ഉപകരണത്തിൽ: {names}"
+
+[group_receipt_level_not_yet]
+text = "ഇതുവരെ ഇല്ല: {names}"
+
+[group_receipt_also]
+text = "സ്ഥിരീകരിച്ച മറ്റുള്ളവർ: {names}"
+
+[group_cancel_reply]
+text = "മറുപടി റദ്ദാക്കുക"
+
+[group_send]
+text = "അയയ്ക്കുക"
+
+[group_new_title]
+text = "പുതിയ ഗ്രൂപ്പ്"
+
+[group_name_label]
+text = "ഗ്രൂപ്പിന്റെ പേര്"
+
+[group_new_info]
+text = "തുടക്കത്തിൽ ഈ ഫോണാണ് ഗ്രൂപ്പ് ഹോസ്റ്റ് ചെയ്യുന്നത്: ഇത് ഗ്രൂപ്പ് സൂക്ഷിക്കുകയും സന്ദേശങ്ങൾ കൈമാറുകയും ചെയ്യുന്നു. ഓണായിരിക്കുന്ന ഒരു കമ്പ്യൂട്ടറാണ് കൂടുതൽ നല്ല ഹോസ്റ്റ് — അത് ഗ്രൂപ്പിൽ ചേർന്നുകഴിഞ്ഞാൽ ഗ്രൂപ്പ് വിവരങ്ങളിൽ നിന്ന് നിയമിക്കാം."
+
+[group_new_owner_hint]
+text = "ഗ്രൂപ്പിന്റെ ഉടമ നിങ്ങളായിരിക്കും. ഗ്രൂപ്പ് വിവരങ്ങളിൽ നിന്ന് ആളുകളെ ക്ഷണിക്കാം."
+
+[group_making]
+text = "സൃഷ്ടിക്കുന്നു…"
+
+[group_create_button]
+text = "ഗ്രൂപ്പ് സൃഷ്ടിക്കുക"
+
+[group_add_to_title]
+text = "{group} ഗ്രൂപ്പിലേക്ക് ചേർക്കുക"
+
+[group_contacts_selected]
+one = "കോൺടാക്റ്റുകൾ · {count} തിരഞ്ഞെടുത്തു"
+other = "കോൺടാക്റ്റുകൾ · {count} തിരഞ്ഞെടുത്തു"
+
+[group_add_no_contacts]
+text = "ചേർക്കാൻ കോൺടാക്റ്റുകളൊന്നുമില്ല. നിങ്ങൾ ബ്ലോക്ക് ചെയ്തവരെയും നിങ്ങളെ ബ്ലോക്ക് ചെയ്തവരെയും ഇവിടെ കാണിക്കില്ല."
+
+[group_add_hint]
+text = "ഓരോരുത്തർക്കും നിങ്ങളുമായുള്ള സ്വകാര്യ ചാറ്റിൽ ക്ഷണം ലഭിക്കും, സ്വീകരിക്കുമ്പോൾ അവർ ചേരും. ക്ഷണത്തിന് 7 ദിവസം സാധുതയുണ്ട്."
+
+[group_add_members_title]
+text = "അംഗങ്ങളെ ചേർക്കുക"
+
+[group_scan_title]
+text = "ക്ഷണം സ്കാൻ ചെയ്യുക"
+
+[group_scan_prompt]
+text = "ഗ്രൂപ്പ് ക്ഷണത്തിന് നേരെ ക്യാമറ പിടിക്കുക"
+
+[group_join_title]
+text = "ഒരു ഗ്രൂപ്പിൽ ചേരുക"
+
+[group_join_field]
+text = "ക്ഷണ ലിങ്ക് അല്ലെങ്കിൽ കോഡ്"
+
+[group_join_checking]
+text = "ഗ്രൂപ്പിന്റെ ഹോസ്റ്റുമായി പരിശോധിക്കുന്നു…"
+
+[group_join_bad]
+text = "ആ ലിങ്ക് പ്രവർത്തിച്ചില്ല: ഇത് ഗ്രൂപ്പ് ക്ഷണമല്ല, അല്ലെങ്കിൽ കാലാവധി കഴിഞ്ഞു, അല്ലെങ്കിൽ അതിന്റെ ഹോസ്റ്റ് ഓഫ്‌ലൈനാണ്."
+
+[group_paste]
+text = "പേസ്റ്റ് ചെയ്യുക"
+
+[group_scan]
+text = "സ്കാൻ ചെയ്യുക"
+
+[group_joining]
+text = "ചേരുന്നു…"
+
+[group_join_invited_by]
+text = "ക്ഷണിച്ചത്: {name}"
+
+[group_join_invited_by_unknown]
+text = "നിങ്ങളുടെ കോൺടാക്റ്റുകൾക്ക് പുറത്തുള്ള ഒരാൾ ക്ഷണിച്ചത്"
+
+[group_join_invited_by_you]
+text = "നിങ്ങൾ ക്ഷണിച്ചത്"
+
+[group_join_own_link]
+text = "നിങ്ങളുടെ സ്വന്തം അക്കൗണ്ടിനുള്ള ലിങ്ക്"
+
+[group_join_owner]
+text = "ഉടമ: {name}"
+
+[group_join_owner_unknown]
+text = "ഉടമ നിങ്ങളുടെ കോൺടാക്റ്റുകളിൽ ഇല്ല"
+
+[group_join_owner_you]
+text = "ഉടമ: നിങ്ങൾ"
+
+[group_valid_until]
+text = "{date} വരെ സാധുവാണ്"
+
+[group_join_hint]
+text = "ചേരുമ്പോൾ ഈ ഫോൺ ഗ്രൂപ്പിന്റെ ഹോസ്റ്റുകളുമായി കണക്റ്റ് ചെയ്യും. അംഗങ്ങൾക്ക് നിങ്ങളുടെ പേര് കാണാം; ഈ ഫോണിലേക്ക് എങ്ങനെ എത്താമെന്ന് ഹോസ്റ്റുകൾക്ക് മാത്രമേ അറിയൂ. ഇതിന് ഒരു മിനിറ്റ് വരെ എടുത്തേക്കാം."
+
+[group_link_title]
+text = "ക്ഷണ ലിങ്ക്"
+
+[group_link_hint]
+text = "ഈ ലിങ്കോ QR-ഓ ഉള്ള ആർക്കും 7 ദിവസത്തേക്ക് {group} ഗ്രൂപ്പിൽ ചേരാം. നിങ്ങൾ വിശ്വസിക്കുന്ന ഒരു ആപ്പ് വഴി ഇത് പങ്കിടുക; ആരൊക്കെ ചേർന്നുവെന്ന് നിങ്ങൾക്ക് കാണാം, അവരെ ഫ്ലാഗ് ചെയ്ത് പുറത്താക്കാനും കഴിയും. നിങ്ങളുടെ കോൺടാക്റ്റുകളെ നേരിട്ട് ക്ഷണിക്കാൻ, അംഗങ്ങളെ ചേർക്കുക ഉപയോഗിക്കുക."
+
+[group_link_hint_unnamed]
+text = "ഈ ലിങ്കോ QR-ഓ ഉള്ള ആർക്കും 7 ദിവസത്തേക്ക് ഈ ഗ്രൂപ്പിൽ ചേരാം. നിങ്ങൾ വിശ്വസിക്കുന്ന ഒരു ആപ്പ് വഴി ഇത് പങ്കിടുക; ആരൊക്കെ ചേർന്നുവെന്ന് നിങ്ങൾക്ക് കാണാം, അവരെ ഫ്ലാഗ് ചെയ്ത് പുറത്താക്കാനും കഴിയും. നിങ്ങളുടെ കോൺടാക്റ്റുകളെ നേരിട്ട് ക്ഷണിക്കാൻ, അംഗങ്ങളെ ചേർക്കുക ഉപയോഗിക്കുക."
+
+[group_link_qr_desc]
+text = "ഗ്രൂപ്പ് ക്ഷണ ലിങ്കിന്റെ QR കോഡ്"
+
+[group_link_making]
+text = "തയ്യാറാക്കുന്നു…"
+
+[group_link_show_full]
+text = "ഫുൾ സ്ക്രീനിൽ കാണിക്കുക"
+
+[group_share_text]
+text = "Tinline-ൽ {group} ഗ്രൂപ്പിൽ ചേരൂ: {link}"
+
+[group_share_text_unnamed]
+text = "Tinline-ൽ ഈ ഗ്രൂപ്പിൽ ചേരൂ: {link}"
+
+[group_share_subject]
+text = "ഗ്രൂപ്പ് ക്ഷണം പങ്കിടുക"
+
+[group_share]
+text = "പങ്കിടുക"
+
+[group_copy]
+text = "പകർത്തുക"
+
+[group_copied]
+text = "പകർത്തി"
+
+[group_link_qr_full_desc]
+text = "ഗ്രൂപ്പ് ക്ഷണ ലിങ്കിന്റെ QR കോഡ്, ഫുൾ സ്ക്രീൻ"
+
+[group_list_new]
+text = "പുതിയ ഗ്രൂപ്പ്"
+
+[group_list_new_sub]
+text = "നിങ്ങളായിരിക്കും ഉടമ"
+
+[group_list_join]
+text = "ലിങ്ക് വഴി ചേരുക"
+
+[group_list_join_sub]
+text = "ഗ്രൂപ്പ് ക്ഷണം പേസ്റ്റ് ചെയ്യുകയോ സ്കാൻ ചെയ്യുകയോ ചെയ്യുക"
+
+[group_section_invitations]
+text = "നിങ്ങൾക്കുള്ള ക്ഷണങ്ങൾ"
+
+[group_section_requests]
+text = "ചാറ്റ് അഭ്യർത്ഥനകൾ"
+
+[group_section_sent]
+text = "അയച്ച അഭ്യർത്ഥനകൾ"
+
+[group_section_groups]
+text = "നിങ്ങളുടെ ഗ്രൂപ്പുകൾ"
+
+[group_list_empty]
+text = "ഇതുവരെ ഗ്രൂപ്പുകളൊന്നുമില്ല. ഒന്ന് സൃഷ്ടിക്കാം, അല്ലെങ്കിൽ ഒരു ക്ഷണം സ്വീകരിക്കാം."
+
+[group_invited_you]
+text = "**{name}** നിങ്ങളെ **{group}** ഗ്രൂപ്പിലേക്ക് ക്ഷണിച്ചു"
+
+[group_invited_you_someone]
+text = "ഒരാൾ നിങ്ങളെ **{group}** ഗ്രൂപ്പിലേക്ക് ക്ഷണിച്ചു"
+
+[group_joined_toast]
+text = "നിങ്ങൾ ഇപ്പോൾ {group} ഗ്രൂപ്പിലെ അംഗമാണ്."
+
+[group_cant_join]
+text = "ചേരാൻ കഴിഞ്ഞില്ല"
+
+[group_wants_to_chat]
+text = "**{name}** ചാറ്റ് ചെയ്യാൻ ആഗ്രഹിക്കുന്നു"
+
+[group_wants_to_chat_someone]
+text = "**ഒരാൾ** ചാറ്റ് ചെയ്യാൻ ആഗ്രഹിക്കുന്നു"
+
+[group_member_of]
+text = "{group} ഗ്രൂപ്പിലെ അംഗം"
+
+[group_request_accept_note]
+text = "സ്വീകരിച്ചാൽ {name} സന്ദേശങ്ങൾക്ക് മാത്രമുള്ള കോൺടാക്റ്റായി ചേരും. കോളുകൾ പിന്നീട് അനുവദിക്കാം."
+
+[group_request_accept_note_unnamed]
+text = "സ്വീകരിച്ചാൽ അവർ സന്ദേശങ്ങൾക്ക് മാത്രമുള്ള കോൺടാക്റ്റായി ചേരും. കോളുകൾ പിന്നീട് അനുവദിക്കാം."
+
+[group_block]
+text = "ബ്ലോക്ക് ചെയ്യുക"
+
+[group_section_gone]
+text = "പുറത്തുകടന്നതും നീക്കം ചെയ്തതും"
+
+[group_expanded]
+text = "വികസിപ്പിച്ചു"
+
+[group_collapsed]
+text = "ചുരുക്കി"
+
+[group_gone_left]
+text = "നിങ്ങൾ പുറത്തുകടന്നു"
+
+[group_no_posts]
+text = "ഇതുവരെ പോസ്റ്റുകളൊന്നുമില്ല"
+
+[group_name_placeholder]
+text = "പേര്"
+
+[group_new_dialog_text]
+text = "നിങ്ങളായിരിക്കും ഉടമ. ഈ ഉപകരണമാണ് ഗ്രൂപ്പിന്റെ ആദ്യ ഹോസ്റ്റ്, അതിനാൽ ഇത് ഗ്രൂപ്പ് സൂക്ഷിക്കുകയും പോസ്റ്റുകൾ കൈമാറുകയും ചെയ്യും."
+
+[group_creating]
+text = "സൃഷ്ടിക്കുന്നു…"
+
+[group_create]
+text = "സൃഷ്ടിക്കുക"
+
+[group_unread_badge_desc]
+one = "{count} വായിക്കാത്തത്"
+other = "{count} വായിക്കാത്തവ"
+
+[group_today]
+text = "ഇന്ന്"
+
+[group_yesterday]
+text = "ഇന്നലെ"
+
+[settings_perm_fix]
+text = "ക്രമീകരണം തുറക്കുക"
+
+[settings_perm_notif_title]
+text = "അറിയിപ്പുകൾ ഓഫാണ്"
+
+[settings_perm_notif_body]
+text = "സന്ദേശങ്ങളെക്കുറിച്ചോ കോളുകളെക്കുറിച്ചോ Tinline-ന് നിങ്ങളെ അറിയിക്കാൻ കഴിയില്ല. അവ എന്തായാലും എത്തും; ആപ്പ് തുറക്കുമ്പോൾ കാണാം. സിസ്റ്റം ക്രമീകരണത്തിൽ അറിയിപ്പുകൾ ഓണാക്കുക."
+
+[settings_status_available]
+text = "ലഭ്യമാണ്"
+
+[settings_status_busy]
+text = "തിരക്കിലാണ്"
+
+[settings_title]
+text = "ക്രമീകരണം"
+
+[settings_perm_see_details]
+text = "വിശദാംശങ്ങൾ കാണുക"
+
+[settings_account_selected]
+text = "തിരഞ്ഞെടുത്തു · ഓൺലൈൻ"
+
+[settings_account_paused]
+text = "താൽക്കാലികമായി നിർത്തി · മാറാൻ ടാപ്പ് ചെയ്യുക"
+
+[settings_add_account]
+text = "മറ്റൊരു അക്കൗണ്ട് ചേർക്കുക"
+
+[settings_accounts_note]
+text = "തിരഞ്ഞെടുത്ത അക്കൗണ്ട് മാത്രമേ ഈ ഫോണിൽ ഓൺലൈനിലുണ്ടാകൂ. മാറുമ്പോൾ മറ്റേത് താൽക്കാലികമായി നിർത്തും: നിങ്ങൾ വീണ്ടും തിരഞ്ഞെടുക്കുന്നതുവരെ അതിന് കോളുകൾ ലഭിക്കില്ല."
+
+[settings_appearance]
+text = "രൂപഭാവം"
+
+[settings_appearance_match]
+text = "എന്റെ ഫോണിനനുസരിച്ച്"
+
+[settings_appearance_match_sub]
+text = "ഈ ഫോണിൽ സജ്ജീകരിച്ചതുപോലെ ലൈറ്റ് അല്ലെങ്കിൽ ഡാർക്ക്"
+
+[settings_appearance_light]
+text = "ലൈറ്റ്"
+
+[settings_appearance_dark]
+text = "ഡാർക്ക്"
+
+[settings_row_devices]
+text = "ഉപകരണങ്ങൾ"
+
+[settings_row_privacy]
+text = "സ്വകാര്യത"
+
+[settings_row_sounds]
+text = "ശബ്ദങ്ങൾ"
+
+[settings_row_video]
+text = "വീഡിയോ"
+
+[settings_row_storage]
+text = "സ്റ്റോറേജ്"
+
+[settings_row_about]
+text = "Tinline-നെക്കുറിച്ച്"
+
+[settings_notifications]
+text = "അറിയിപ്പുകൾ"
+
+[settings_video_in_calls]
+text = "കോളുകളിൽ വീഡിയോ"
+
+[settings_video_in_calls_on]
+text = "കോളിനിടയിൽ നിങ്ങൾക്ക് ക്യാമറ ഓണാക്കാം"
+
+[settings_video_in_calls_off]
+text = "വോയ്‌സ് കോളുകൾ മാത്രം"
+
+[settings_diagnostics]
+text = "ഡയഗ്നോസ്റ്റിക്സ്"
+
+[settings_diagnostics_sub]
+text = "ടെസ്റ്റ് ടോൺ, കോർ പതിപ്പ്"
+
+[settings_cancel]
+text = "റദ്ദാക്കുക"
+
+[settings_add_create]
+text = "പുതിയ അക്കൗണ്ട് സൃഷ്ടിക്കുക"
+
+[settings_add_link]
+text = "ഒരു ഉപകരണവുമായി ലിങ്ക് ചെയ്യുക"
+
+[settings_add_restore]
+text = "വീണ്ടെടുക്കൽ വാക്കുകളിൽ നിന്ന് പുനഃസ്ഥാപിക്കുക"
+
+[settings_notif_messages]
+text = "സന്ദേശങ്ങൾ"
+
+[settings_notif_messages_sub]
+text = "ആളുകളിൽ നിന്ന്, ഗ്രൂപ്പുകളിൽ നിന്നല്ല"
+
+[settings_notif_messages_label]
+text = "സന്ദേശ അറിയിപ്പുകൾ"
+
+[settings_notif_calls]
+text = "കോളുകൾ"
+
+[settings_notif_calls_sub]
+text = "ആരെങ്കിലും വിളിക്കുമ്പോൾ റിംഗ് ചെയ്യൽ"
+
+[settings_notif_calls_label]
+text = "കോൾ അറിയിപ്പുകൾ"
+
+[settings_notif_groups]
+text = "ഗ്രൂപ്പുകൾ"
+
+[settings_notif_groups_sub]
+text = "പോസ്റ്റുകൾ, ക്ഷണങ്ങൾ, അഭ്യർത്ഥനകൾ"
+
+[settings_notif_groups_label]
+text = "ഗ്രൂപ്പ് അറിയിപ്പുകൾ"
+
+[settings_notif_alert_me]
+text = "എന്നെ അറിയിക്കേണ്ടവ"
+
+[settings_notif_note]
+text = "ഇവിടെ എന്ത് ഓണാക്കിയാലും, മ്യൂട്ട് ചെയ്ത ചാറ്റ് നിങ്ങളെ അറിയിക്കില്ല. ഒരാളിൽ നിന്നുള്ള മിസ്‌ഡ് കോളുകൾ ഒരൊറ്റ അറിയിപ്പായി ചേരും."
+
+[settings_perms]
+text = "അനുമതികൾ"
+
+[settings_perm_off]
+text = "സിസ്റ്റം ക്രമീകരണത്തിൽ ഓഫാണ്"
+
+[settings_perm_allowed]
+text = "അനുവദിച്ചു"
+
+[settings_perm_fix_btn]
+text = "ശരിയാക്കുക"
+
+[settings_perm_mic]
+text = "മൈക്രോഫോൺ"
+
+[settings_perm_mic_ask]
+text = "നിങ്ങൾ വിളിക്കുമ്പോൾ ചോദിക്കും"
+
+[settings_perms_note]
+text = "ഇവ സജ്ജീകരിക്കുന്നത് Tinline അല്ല, നിങ്ങളുടെ സിസ്റ്റമാണ്. ആവശ്യമുള്ളപ്പോൾ മാത്രമേ Tinline ചോദിക്കൂ."
+
+[settings_sound_classic]
+text = "ക്ലാസിക് മണിനാദം"
+
+[settings_sound_classic_sub]
+text = "നാല് സ്വരങ്ങളുള്ള തെളിഞ്ഞ മണിനാദം."
+
+[settings_sound_slack]
+text = "അയഞ്ഞത് → മുറുകിയത്"
+
+[settings_sound_slack_sub]
+text = "അയഞ്ഞ ചരട് പോലെ അടുത്തടുത്ത രണ്ട് സ്വരങ്ങൾ മിടിക്കുന്നു, പിന്നെ ഒന്ന് മുറുകുന്നു."
+
+[settings_sound_triad]
+text = "മൂന്ന് സ്വരത്തിൽ മുട്ട്"
+
+[settings_sound_triad_sub]
+text = "വാതിലിൽ മുട്ടുന്നതുപോലെ ഉയർന്നുപോകുന്ന മൂന്ന് സ്വരങ്ങൾ."
+
+[settings_quiet]
+text = "നിശ്ശബ്ദം"
+
+[settings_quiet_sub]
+text = "Tinline-ൽ നിന്ന് ശബ്ദങ്ങളില്ല: റിംഗിംഗ്, കോൾ ടോണുകൾ, ചേരൽ ശബ്ദങ്ങൾ"
+
+[settings_call_sounds]
+text = "കോൾ ശബ്ദങ്ങൾ"
+
+[settings_cue_ring]
+text = "റിംഗ്ടോൺ"
+
+[settings_cue_connected]
+text = "കണക്റ്റ് ചെയ്തു"
+
+[settings_cue_ended]
+text = "കോൾ അവസാനിച്ചു"
+
+[settings_sounds_note_quiet]
+text = "നിശ്ശബ്ദം ഓണാണ്, അതിനാൽ പ്രിവ്യൂകൾക്ക് ശബ്ദമില്ല."
+
+[settings_sounds_note]
+text = "ഒരു ശബ്ദം കേൾക്കാൻ അതിൽ ടാപ്പ് ചെയ്യുക. തിരഞ്ഞെടുക്കുന്നത് അടുത്ത കോൾ മുതൽ ബാധകമാകും."
+
+[settings_video_quality]
+text = "വീഡിയോ നിലവാരം"
+
+[settings_video_sharper]
+text = "കൂടുതൽ വ്യക്തമായ വീഡിയോ"
+
+[settings_video_hd_on]
+text = "എപ്പോഴും HD-യിൽ തുടങ്ങും. കൂടുതൽ ഡാറ്റയും ബാറ്ററിയും ഉപയോഗിക്കും."
+
+[settings_video_hd_auto]
+text = "കണക്ഷൻ അനുവദിക്കുമ്പോൾ തനിയെ HD ആകും."
+
+[settings_video_note]
+text = "ഓരോ വീഡിയോ കോളും ഇങ്ങനെയാണ് തുടങ്ങുക. കോളിനിടയിൽ ആ കോളിനു മാത്രം മാറ്റാൻ HD ടാപ്പ് ചെയ്യുക."
+
+[settings_storage_pictures]
+text = "ഫോട്ടോകൾ"
+
+[settings_storage_files]
+text = "ഫയലുകൾ"
+
+[settings_storage_messages]
+text = "സന്ദേശങ്ങൾ"
+
+[settings_storage_cache]
+text = "കാഷെ"
+
+[settings_storage_on_phone]
+text = "ഈ ഫോണിൽ"
+
+[settings_storage_download]
+text = "ഫോട്ടോകൾ ഡൗൺലോഡ് ചെയ്യൽ"
+
+[settings_dl_always]
+text = "എപ്പോഴും"
+
+[settings_dl_always_sub]
+text = "Wi-Fi-യിലും മൊബൈൽ ഡാറ്റയിലും"
+
+[settings_dl_wifi]
+text = "Wi-Fi-യിൽ"
+
+[settings_dl_wifi_sub]
+text = "മൊബൈൽ ഡാറ്റയിൽ ടാപ്പ് ചെയ്യുന്നതുവരെ കാത്തിരിക്കും"
+
+[settings_dl_tap]
+text = "ഞാൻ ടാപ്പ് ചെയ്യുമ്പോൾ"
+
+[settings_dl_tap_sub]
+text = "അതുവരെ ഓരോന്നും മങ്ങിയ ഒരു പ്രിവ്യൂ കാണിക്കും"
+
+[settings_clear_cache]
+text = "കാഷെ മായ്ക്കുക"
+
+[settings_clear_cache_sub]
+text = "നിങ്ങൾ തുറന്ന ഫോട്ടോകളും ഫയലുകളും: {size}. വീണ്ടും തുറക്കുമ്പോൾ അവ വീണ്ടും തയ്യാറാക്കും."
+
+[settings_cache_cleared]
+text = "മായ്ച്ചു"
+
+[settings_cache_empty]
+text = "മായ്ക്കാൻ ഒന്നുമില്ല"
+
+[settings_storage_note]
+text = "കൂടുതൽ സ്ഥലം ഒഴിവാക്കാൻ, അതത് ചാറ്റുകളിൽ നിന്ന് ഫോട്ടോകളോ ഫയലുകളോ നീക്കം ചെയ്യുക."
+
+[settings_reads_on]
+text = "നിങ്ങൾ അവരുടെ സന്ദേശങ്ങൾ വായിച്ചോ എന്ന് ആളുകൾക്ക് കാണാം"
+
+[settings_reads_off]
+text = "നിങ്ങൾ വായിച്ചോ എന്നത് നിങ്ങൾക്ക് മാത്രം അറിയാം"
+
+[settings_blocked_people]
+text = "ബ്ലോക്ക് ചെയ്തവർ"
+
+[settings_blocked_count]
+one = "{count} ആൾ"
+other = "{count} പേർ"
+
+[settings_blocked_none]
+text = "ആരുമില്ല"
+
+[settings_who_can_call]
+text = "എന്നെ ആർക്കൊക്കെ വിളിക്കാം"
+
+[settings_msg_only_count]
+one = "{count} കോൺടാക്റ്റിന് സന്ദേശങ്ങൾ മാത്രം"
+other = "{count} കോൺടാക്റ്റുകൾക്ക് സന്ദേശങ്ങൾ മാത്രം"
+
+[settings_all_can_call]
+text = "എല്ലാ കോൺടാക്റ്റുകൾക്കും വിളിക്കാം"
+
+[settings_recovery]
+text = "അക്കൗണ്ട് വീണ്ടെടുക്കൽ"
+
+[settings_recovery_pass]
+text = "നിങ്ങളുടെ പാസ്‌ഫ്രേസ് വേണം"
+
+[settings_recovery_lock]
+text = "നിങ്ങളുടെ സ്ക്രീൻ ലോക്ക് വേണം"
+
+[settings_passphrase]
+text = "പാസ്‌ഫ്രേസ്"
+
+[settings_passphrase_sub]
+text = "ഈ ഉപകരണത്തിൽ Tinline സംരക്ഷിക്കുന്നു"
+
+[settings_privacy_note]
+text = "നിങ്ങളുടെ കോൺടാക്റ്റുകൾക്ക് നിങ്ങളുടെ പേരും ഫോട്ടോയും പ്രൊഫൈലും കാണാം. നിങ്ങൾ ആരോടാണ് സംസാരിക്കുന്നതെന്ന് Tinline മറയ്ക്കുന്നില്ല, നിങ്ങളുടെ അക്കൗണ്ടിലേക്ക് ലിങ്ക് ചെയ്ത ഓരോ ഉപകരണത്തിനും നിങ്ങളുടെ ചാറ്റുകൾ വായിക്കാം."
+
+[settings_read_receipts]
+text = "റീഡ് റെസീപ്റ്റുകൾ"
+
+[settings_reads_note]
+text = "എത്തി എന്ന ടിക്കുകൾ എന്തായാലും അയയ്ക്കും, മറ്റുള്ളവർ നിങ്ങളുടേത് വായിക്കുമ്പോൾ നിങ്ങൾക്ക് കാണാനും കഴിയും. ഇത് ഓഫായിരിക്കുമ്പോൾ നിങ്ങൾ വായിക്കുന്ന സന്ദേശങ്ങൾക്ക് സ്ഥിരീകരണം അയയ്ക്കില്ല."
+
+[settings_contacts]
+text = "കോൺടാക്റ്റുകൾ"
+
+[settings_can_call_you]
+text = "നിങ്ങളെ വിളിക്കാം"
+
+[settings_messages_only]
+text = "സന്ദേശങ്ങൾ മാത്രം"
+
+[settings_allow_calls_from]
+text = "{name} എന്നയാളിൽ നിന്നുള്ള കോളുകൾ അനുവദിക്കുക"
+
+[settings_calls_note]
+text = "നിങ്ങൾ അനുവദിച്ചവർക്ക് നിങ്ങളെ വിളിക്കാം; സന്ദേശങ്ങൾ മാത്രം അനുവദിച്ചവർക്ക് എഴുതാം. നിങ്ങൾ ബ്ലോക്ക് ചെയ്തവർക്ക് ഇവ രണ്ടും കഴിയില്ല."
+
+[settings_about_version]
+text = "പതിപ്പ് {version}"
+
+[settings_about_made_by]
+text = "Osvauld നിർമ്മിച്ചത്"
+
+[settings_licences]
+text = "ഓപ്പൺ സോഴ്സ് ലൈസൻസുകൾ"
+
+[settings_licences_sub]
+text = "Tinline നിർമ്മിച്ചിരിക്കുന്ന ലൈബ്രറികൾ"
+
+[settings_licence_texts]
+text = "ലൈസൻസുകളുടെ പൂർണ്ണരൂപം"
+
+[settings_source]
+text = "സോഴ്സ് കോഡ്"
+
+[settings_source_sub]
+text = "Tinline ഓപ്പൺ സോഴ്സാണ്"
+
+[settings_about_note]
+text = "Tinline-ൽ പരസ്യങ്ങളോ ട്രാക്കിംഗോ ഇല്ല. നിങ്ങളുടെ സന്ദേശങ്ങളും കോളുകളും നിങ്ങളുടെ ഉപകരണങ്ങൾക്കും നിങ്ങൾ സംസാരിക്കുന്നവർക്കും ഇടയിലാണ് പോകുന്നത്."
+
+[settings_terms]
+text = "ഉപയോഗ നിബന്ധനകൾ"
+
+[settings_privacy_policy]
+text = "സ്വകാര്യതാ നയം"
+
+[settings_not_emergency]
+text = "അടിയന്തര കോളുകൾക്കുള്ളതല്ല."
+
+[settings_test_tone]
+text = "ടെസ്റ്റ് ടോൺ"
+
+[settings_test_tone_sub]
+text = "മൈക്രോഫോണിനു പകരം {hz} Hz ടോൺ അയയ്ക്കുക"
+
+[security_wrong_pass]
+text = "അത് പൊരുത്തപ്പെട്ടില്ല. വീണ്ടും ശ്രമിക്കുക."
+
+[security_open_failed]
+text = "നിങ്ങളുടെ ബാക്കപ്പ് തുറക്കാൻ കഴിഞ്ഞില്ല. വീണ്ടും ശ്രമിക്കുക."
+
+[security_need_lock]
+text = "ബാക്കപ്പ് തുറക്കാൻ ഒരു സ്ക്രീൻ ലോക്കോ ആപ്പ് പാസ്‌ഫ്രേസോ ചേർക്കുക."
+
+[security_recovery_title]
+text = "അക്കൗണ്ട് വീണ്ടെടുക്കൽ"
+
+[security_only_you]
+text = "നിങ്ങൾക്ക് മാത്രം"
+
+[security_check_you]
+text = "ബാക്കപ്പ് തുറക്കുന്നതിനു മുമ്പ് ഇത് നിങ്ങൾ തന്നെയാണെന്ന് ഉറപ്പാക്കുക."
+
+[security_your_pass]
+text = "നിങ്ങളുടെ പാസ്‌ഫ്രേസ്"
+
+[security_use_lock_hint]
+text = "തുടരാൻ ഫോണിന്റെ സ്ക്രീൻ ലോക്ക് ഉപയോഗിക്കുക."
+
+[security_use_lock]
+text = "സ്ക്രീൻ ലോക്ക് ഉപയോഗിക്കുക"
+
+[security_continue]
+text = "തുടരുക"
+
+[security_recovery_failed]
+text = "വീണ്ടെടുക്കൽ തുറക്കാൻ കഴിഞ്ഞില്ല. തിരികെ പോയി വീണ്ടും ശ്രമിക്കുക."
+
+[security_backup_title]
+text = "നിങ്ങളുടെ വീണ്ടെടുക്കൽ ബാക്കപ്പ്"
+
+[security_keep_private]
+text = "ഇത് സ്വകാര്യമായി സൂക്ഷിക്കുക. ഇത് കൈവശമുള്ള ആർക്കും നിങ്ങളുടെ പേരിൽ പ്രവർത്തിക്കാം."
+
+[security_tab_key]
+text = "കീ"
+
+[security_tab_words]
+one = "{count} വാക്ക്"
+other = "{count} വാക്കുകൾ"
+
+[security_key_failed]
+text = "കീ തയ്യാറാക്കാൻ കഴിഞ്ഞില്ല. പകരം നിങ്ങളുടെ {words} വാക്കുകൾ ഉപയോഗിക്കുക."
+
+[security_hide]
+text = "മറയ്ക്കുക"
+
+[security_reveal]
+text = "കാണിക്കുക"
+
+[security_hint_hides]
+text = "30 സെക്കൻഡിനു ശേഷം മറയും. ആപ്പിൽ നിന്ന് പുറത്തുപോകുമ്പോൾ ലോക്ക് ആകും."
+
+[security_hint_same]
+text = "കീയും വാക്കുകളും ഒരേ അക്കൗണ്ട് തന്നെയാണ് പുനഃസ്ഥാപിക്കുന്നത്. ഏതെങ്കിലും ഒന്ന് സ്വകാര്യവും സുരക്ഷിതവുമായ ഒരിടത്ത് സൂക്ഷിക്കുക."
+
+[security_copied_note]
+text = "പകർത്തി. സ്വകാര്യമായ ഒരിടത്ത് സൂക്ഷിക്കുക."
+
+[security_copied]
+text = "പകർത്തി"
+
+[security_copy_key]
+text = "കീ പകർത്തുക"
+
+[security_done]
+text = "പൂർത്തിയായി"
+
+[security_change_pass]
+text = "പാസ്‌ഫ്രേസ് മാറ്റുക"
+
+[security_add_pass]
+text = "പാസ്‌ഫ്രേസ് ചേർക്കുക"
+
+[security_current_pass]
+text = "നിലവിലെ പാസ്‌ഫ്രേസ്"
+
+[security_pass_intro]
+text = "നിങ്ങളുടെ അക്കൗണ്ട് ഈ ഫോണിൽ മാത്രമാണുള്ളത്. ഒരു പാസ്‌ഫ്രേസ് അത് എൻക്രിപ്റ്റ് ചെയ്യുന്നു, അതിനാൽ നിങ്ങളുടെ ഫോൺ കൈയിൽ കിട്ടുന്ന ആർക്കും അത് പകർത്താൻ കഴിയില്ല."
+
+[security_new_pass]
+text = "പുതിയ പാസ്‌ഫ്രേസ്"
+
+[security_pass]
+text = "പാസ്‌ഫ്രേസ്"
+
+[security_pass_notice]
+text = "ഈ ഫോണിൽ നിങ്ങളുടെ അക്കൗണ്ട് എൻക്രിപ്റ്റ് ചെയ്യുന്നു. ഫോൺ ഇത് ഓർത്തുവയ്ക്കും, അതിനാൽ റീസ്റ്റാർട്ട് ചെയ്താലും കോളുകൾ റിംഗ് ചെയ്യും. ഇത് മറന്നുപോയാൽ, വീണ്ടെടുക്കൽ വാക്കുകൾ ഉപയോഗിച്ച് പുതിയൊരെണ്ണം സജ്ജീകരിക്കാം."
+
+[security_encrypting]
+text = "എൻക്രിപ്റ്റ് ചെയ്യുന്നു…"
+
+[devices_title]
+text = "ലിങ്ക് ചെയ്ത ഉപകരണങ്ങൾ"
+
+[devices_hint_rings]
+text = "കോളുകൾ ഇവയിലെല്ലാം റിംഗ് ചെയ്യും. നിങ്ങൾ വിളിക്കുന്നവർക്ക് ഈ പേരുകൾ ഒരിക്കലും കാണാനാകില്ല."
+
+[devices_link]
+text = "ഒരു ഉപകരണം ലിങ്ക് ചെയ്യുക"
+
+[devices_unlinked_label]
+text = "ലിങ്ക് ഒഴിവാക്കിയവ"
+
+[devices_sync_label]
+text = "സിങ്ക്"
+
+[devices_sync_hint]
+text = "രണ്ട് ഉപകരണങ്ങൾ ഒരേസമയം ഓൺലൈനിലാകുമ്പോഴെല്ലാം അവ നേരിട്ട് സിങ്ക് ചെയ്യും. ഒരു സെർവറിലും പകർപ്പില്ല."
+
+[devices_row_this_phone]
+text = "ഈ ഫോൺ — {name}"
+
+[devices_unnamed]
+text = "പേരില്ല"
+
+[devices_unnamed_device]
+text = "പേരില്ലാത്ത ഉപകരണം"
+
+[devices_row_unlinked]
+text = "ലിങ്ക് ഒഴിവാക്കി"
+
+[devices_row_this_device]
+text = "ഈ ഉപകരണം · iOS"
+
+[devices_row_synced]
+text = "സിങ്ക് ചെയ്തത്: {ago}"
+
+[devices_row_not_seen]
+text = "ഇതുവരെ കണ്ടിട്ടില്ല"
+
+[devices_device]
+text = "ഉപകരണം"
+
+[devices_unlinked_msg]
+text = "{name} എന്നതിന്റെ ലിങ്ക് ഒഴിവാക്കി"
+
+[devices_unlinked_msg_unnamed]
+text = "ഉപകരണത്തിന്റെ ലിങ്ക് ഒഴിവാക്കി"
+
+[devices_finish_call]
+text = "ആദ്യം നിങ്ങളുടെ കോൾ പൂർത്തിയാക്കുക"
+
+[devices_remove_account]
+text = "ഈ ഫോണിൽ നിന്ന് അക്കൗണ്ട് നീക്കം ചെയ്യുക"
+
+[devices_unlink_device]
+text = "ഉപകരണത്തിന്റെ ലിങ്ക് ഒഴിവാക്കുക"
+
+[devices_lock_cancelled]
+text = "സ്ക്രീൻ ലോക്ക് പരിശോധന റദ്ദാക്കി"
+
+[devices_this_phone]
+text = "ഈ ഫോൺ"
+
+[devices_prop_name]
+text = "പേര്"
+
+[devices_prop_synced]
+text = "അവസാനം സിങ്ക് ചെയ്തത്"
+
+[devices_this_device]
+text = "ഈ ഉപകരണം"
+
+[devices_not_yet]
+text = "ഇതുവരെ ഇല്ല"
+
+[devices_prop_rings]
+text = "കോളുകൾക്ക് റിംഗ് ചെയ്യുമോ"
+
+[devices_rings_no]
+text = "ഇല്ല, അതിന്റെ ലിങ്ക് ഒഴിവാക്കി"
+
+[devices_rings_yes]
+text = "അതെ, ഓണായിരിക്കുമ്പോൾ"
+
+[devices_sync_now]
+text = "ഇപ്പോൾ സിങ്ക് ചെയ്യുക"
+
+[devices_syncing]
+text = "{name} എന്ന ഉപകരണവുമായി സിങ്ക് ചെയ്യുന്നു…"
+
+[devices_syncing_unnamed]
+text = "സിങ്ക് ചെയ്യുന്നു…"
+
+[devices_unlink_this]
+text = "ഈ ഉപകരണത്തിന്റെ ലിങ്ക് ഒഴിവാക്കുക"
+
+[devices_name_phone]
+text = "ഈ ഫോണിന് പേര് നൽകുക"
+
+[devices_rename]
+text = "ഉപകരണത്തിന്റെ പേര് മാറ്റുക"
+
+[devices_save]
+text = "സേവ് ചെയ്യുക"
+
+[devices_name_field]
+text = "ഉപകരണത്തിന്റെ പേര്"
+
+[devices_remove_q]
+text = "ഈ ഫോണിൽ നിന്ന് നിങ്ങളുടെ അക്കൗണ്ട് നീക്കം ചെയ്യണോ?"
+
+[devices_unlink_q]
+text = "{name} എന്നതിന്റെ ലിങ്ക് ഒഴിവാക്കണോ?"
+
+[devices_unlink_q_unnamed]
+text = "ഈ ഉപകരണത്തിന്റെ ലിങ്ക് ഒഴിവാക്കണോ?"
+
+[devices_working]
+text = "നടക്കുന്നു…"
+
+[devices_remove]
+text = "നീക്കം ചെയ്യുക"
+
+[devices_unlink]
+text = "ലിങ്ക് ഒഴിവാക്കുക"
+
+[devices_remove_body]
+text = "ഈ ഫോൺ സിങ്ക് ചെയ്യുന്നതും റിംഗ് ചെയ്യുന്നതും നിർത്തും, നിങ്ങളുടെ അക്കൗണ്ട്, കോൺടാക്റ്റുകൾ, ചാറ്റുകൾ, കോൾ ചരിത്രം എന്നിവ ഇതിൽ നിന്ന് ഇല്ലാതാക്കും."
+
+[devices_only_device]
+text = "നിങ്ങളുടെ അക്കൗണ്ടുള്ള ഒരേയൊരു ഉപകരണം ഇതാണ്. വീണ്ടെടുക്കൽ വാക്കുകളില്ലാതെ അത് തിരികെ കൊണ്ടുവരാൻ ഒരു വഴിയുമില്ല."
+
+[devices_others_keep]
+text = "നിങ്ങളുടെ മറ്റ് ഉപകരണങ്ങളിൽ എല്ലാം അതേപടി ഉണ്ടാകും."
+
+[devices_unlink_body]
+text = "അത് സിങ്ക് ചെയ്യുന്നതും നിങ്ങളുടെ കോളുകൾക്ക് റിംഗ് ചെയ്യുന്നതും നിർത്തും. അത് ഓൺലൈനിലാണെങ്കിൽ, നിങ്ങളുടെ അക്കൗണ്ട് സ്വയം നീക്കം ചെയ്യും."
+
+[devices_unlink_warn]
+text = "ലിങ്ക് ഒഴിവാക്കിയാലും ഇവിടെ നിന്ന് അത് ലോക്ക് ചെയ്യാൻ കഴിയില്ല. അത് അൺലോക്ക് ചെയ്യാൻ കഴിയുന്ന ആർക്കും നിങ്ങളുടെ അക്കൗണ്ട് തുടർന്നും ഉപയോഗിക്കാം. പൂർണ്ണമായി ബന്ധം മുറിക്കാനുള്ള ഒരേയൊരു വഴി പുതിയൊരു അക്കൗണ്ടാണ്."
+
+[devices_lost]
+text = "നഷ്ടപ്പെട്ടോ മോഷ്ടിക്കപ്പെട്ടോ?"
+
+[devices_your_pass]
+text = "നിങ്ങളുടെ പാസ്‌ഫ്രേസ്"
+
+[unlock_wrong_pass]
+text = "ഈ പാസ്‌ഫ്രേസ് കൊണ്ട് അക്കൗണ്ട് തുറന്നില്ല."
+
+[unlock_lost_title]
+text = "നിങ്ങളുടെ അക്കൗണ്ട് തുറക്കാൻ കഴിയുന്നില്ല"
+
+[unlock_lost_title_named]
+text = "{name} എന്ന അക്കൗണ്ട് തുറക്കാൻ കഴിയുന്നില്ല"
+
+[unlock_lost_lead]
+text = "നിങ്ങളുടെ അക്കൗണ്ട് തുറക്കുന്ന കീ ഇപ്പോൾ ഈ ഫോണിൽ ഇല്ല. സ്ക്രീൻ ലോക്ക് റീസെറ്റ് ചെയ്തതിനു ശേഷമോ ഒരു ബാക്കപ്പ് പുനഃസ്ഥാപിച്ചതിനു ശേഷമോ ഇങ്ങനെ സംഭവിക്കാം. അക്കൗണ്ട് പുനഃസ്ഥാപിച്ചുകഴിഞ്ഞാൽ നിങ്ങളുടെ കോളുകൾ വീണ്ടും എത്തും."
+
+[unlock_lost_notice]
+text = "നിങ്ങൾ പാസ്‌ഫ്രേസ് സജ്ജീകരിച്ചിട്ടില്ലാത്തതിനാൽ, {words} വീണ്ടെടുക്കൽ വാക്കുകളാണ് തിരികെ കയറാനുള്ള ഒരേയൊരു വഴി. നിങ്ങളുടെ കോൺടാക്റ്റുകൾ നഷ്ടപ്പെടില്ല."
+
+[unlock_restore]
+text = "വീണ്ടെടുക്കൽ വാക്കുകൾ ഉപയോഗിച്ച് പുനഃസ്ഥാപിക്കുക"
+
+[unlock_try_again]
+text = "വീണ്ടും ശ്രമിക്കുക"
+
+[unlock_switch]
+text = "അക്കൗണ്ട് മാറുക"
+
+[unlock_welcome]
+text = "വീണ്ടും സ്വാഗതം"
+
+[unlock_welcome_named]
+text = "വീണ്ടും സ്വാഗതം, {name}"
+
+[unlock_pass]
+text = "പാസ്‌ഫ്രേസ്"
+
+[unlock_slow_hint]
+text = "പരിശോധിക്കാൻ ഒരു നിമിഷം എടുക്കും. ഊഹിച്ചെടുക്കൽ തടയാൻ മനഃപൂർവം വേഗത കുറച്ചിരിക്കുന്നു."
+
+[unlock_unlocking]
+text = "അൺലോക്ക് ചെയ്യുന്നു…"
+
+[unlock_unlock]
+text = "അൺലോക്ക് ചെയ്യുക"
+
+[unlock_forgot]
+text = "ഞാൻ മറന്നുപോയി"
+
+[unlock_welcome_prefix]
+text = "വീണ്ടും സ്വാഗതം, "
+
+[unlock_switch_identity]
+text = "{name}, ഐഡന്റിറ്റി മാറുക"
+
+[unlock_switch_identity_hint]
+text = "മറ്റൊരു ഐഡന്റിറ്റിയായി തുറക്കുക"
+
+[unlock_open_as]
+text = "ഏത് അക്കൗണ്ട് തുറക്കണം"
+
+[unlock_accounts]
+text = "അക്കൗണ്ടുകൾ"
+
+[unlock_opens_now]
+text = "ഉടൻ തുറക്കും"
+
+[unlock_asks_pass]
+text = "പാസ്‌ഫ്രേസ് ചോദിക്കും"
+
+[unlock_acc_online]
+text = "ഈ ഫോണിൽ ഓൺലൈനാണ്"
+
+[unlock_acc_here]
+text = "ഈ ഫോണിൽ"
+
+[unlock_acc_locked]
+text = "ലോക്ക് ചെയ്തിരിക്കുന്നു · ഇവിടെ റിംഗ് ചെയ്യില്ല"
+
+[unlock_current_account]
+text = "നിലവിലെ അക്കൗണ്ട്"
+
+[unlock_create]
+text = "പുതിയ അക്കൗണ്ട് സൃഷ്ടിക്കുക"
+
+[unlock_link]
+text = "മറ്റൊരു ഉപകരണത്തിൽ നിന്ന് അക്കൗണ്ട് ലിങ്ക് ചെയ്യുക"
+
+[unlock_one_online]
+text = "ഒരു സമയം ഒരു അക്കൗണ്ട് മാത്രമേ ഓൺലൈനിലുണ്ടാകൂ. ലോക്ക് ചെയ്ത അക്കൗണ്ടിലേക്കുള്ള കോളുകൾ നിങ്ങളുടെ മറ്റ് ഉപകരണങ്ങളിൽ മാത്രം റിംഗ് ചെയ്യും."
+
+[unlock_finish_call]
+text = "ആദ്യം നിങ്ങളുടെ കോൾ പൂർത്തിയാക്കുക"
+
+[unlock_switch_to]
+text = "{name} എന്ന അക്കൗണ്ടിലേക്ക് മാറണോ?"
+
+[unlock_switch_body]
+text = "ഈ ഫോണിൽ {name} ഓഫ്‌ലൈനാകും. നിങ്ങൾ ഈ അക്കൗണ്ടിലേക്ക് തിരികെ മാറുന്നതുവരെ, {name} എന്ന അക്കൗണ്ടിലേക്കുള്ള കോളുകൾ നിങ്ങളുടെ ലിങ്ക് ചെയ്ത മറ്റ് ഉപകരണങ്ങളിൽ മാത്രം റിംഗ് ചെയ്യും."
+
+[unlock_pass_for]
+text = "{name} എന്ന അക്കൗണ്ടിന്റെ പാസ്‌ഫ്രേസ്"
+
+[unlock_not_in_call]
+text = "ഇപ്പോൾ കോളൊന്നും നടക്കുന്നില്ല. നടക്കുന്നുണ്ടായിരുന്നെങ്കിൽ, അക്കൗണ്ട് മാറുമ്പോൾ അത് അവസാനിക്കുമായിരുന്നു."
+
+[unlock_switching]
+text = "മാറുന്നു…"
+
+[unlock_unlock_switch]
+text = "അൺലോക്ക് ചെയ്ത് മാറുക"
+
+[unlock_switch_btn]
+text = "മാറുക"
+
+[unlock_cancel]
+text = "റദ്ദാക്കുക"
+
+[restore_key_typo]
+text = "ആ കീയിൽ ഒരു അക്ഷരത്തെറ്റുണ്ട്, അല്ലെങ്കിൽ അത് മുറിഞ്ഞുപോയി. സേവ് ചെയ്ത ഇടത്തുനിന്ന് വീണ്ടും പേസ്റ്റ് ചെയ്യുക."
+
+[restore_title]
+text = "അക്കൗണ്ട് പുനഃസ്ഥാപിക്കുക"
+
+[restore_lead_words]
+text = "നിങ്ങളുടെ {words} വാക്കുകൾ ക്രമത്തിൽ ടൈപ്പ് ചെയ്യുക, അല്ലെങ്കിൽ അവയോ നിങ്ങളുടെ വീണ്ടെടുക്കൽ കീയോ ആദ്യത്തെ ബോക്സിൽ പേസ്റ്റ് ചെയ്യുക. അവ ഈ ഫോണിൽ മാത്രം നിൽക്കും."
+
+[restore_lead_key]
+text = "നിങ്ങളുടെ വീണ്ടെടുക്കൽ കീ ചേർത്തു. അത് ഈ ഫോണിൽ മാത്രം നിൽക്കും."
+
+[restore_key_label]
+text = "വീണ്ടെടുക്കൽ കീ"
+
+[restore_use_words]
+text = "പകരം എന്റെ വാക്കുകൾ ഉപയോഗിക്കുക"
+
+[restore_paste]
+text = "ക്ലിപ്പ്ബോർഡിൽ നിന്ന് പേസ്റ്റ് ചെയ്യുക"
+
+[restore_paste_failed]
+text = "ക്ലിപ്പ്ബോർഡ് വായിക്കാൻ കഴിഞ്ഞില്ല. പകരം ആദ്യത്തെ ബോക്സിൽ പേസ്റ്റ് ചെയ്യുക."
+
+[restore_progress]
+text = "{count} / {total}"
+
+[restore_words_label]
+text = "വീണ്ടെടുക്കൽ വാക്കുകൾ"
+
+[restore_continue]
+text = "തുടരുക"
+
+[restore_word_n]
+text = "വാക്ക് {count}"
+
+[link_gate_label]
+text = "നിങ്ങളുടെ അക്കൗണ്ടുമായി ലിങ്ക് ചെയ്യുക"
+
+[link_same_code]
+text = "രണ്ടിലും ഒരേ കോഡാണോ?"
+
+[link_same_code_lead]
+text = "{name} ഈ കോഡ് തന്നെയാണ് കാണിക്കുന്നതെന്ന് ഉറപ്പാക്കുക, എന്നിട്ട് അവിടെ അംഗീകരിക്കുക."
+
+[link_same_code_lead_unnamed]
+text = "നിങ്ങളുടെ മറ്റേ ഉപകരണം ഈ കോഡ് തന്നെയാണ് കാണിക്കുന്നതെന്ന് ഉറപ്പാക്കുക, എന്നിട്ട് അവിടെ അംഗീകരിക്കുക."
+
+[link_diff_code]
+text = "കോഡ് വ്യത്യസ്തമാണോ, അല്ലെങ്കിൽ നിങ്ങളല്ലേ ഇത് തുടങ്ങിയത്? റദ്ദാക്കുക. മറ്റാരെങ്കിലും QR സ്കാൻ ചെയ്തിരിക്കാം."
+
+[link_waiting]
+text = "അംഗീകാരത്തിനായി കാത്തിരിക്കുന്നു…"
+
+[link_cancel]
+text = "റദ്ദാക്കുക"
+
+[link_linking]
+text = "ലിങ്ക് ചെയ്യുന്നു…"
+
+[link_receiving]
+text = "നിങ്ങളുടെ അക്കൗണ്ട് സ്വീകരിക്കുന്നു. രണ്ട് ഉപകരണങ്ങളും തുറന്നുവയ്ക്കുക."
+
+[link_failed]
+text = "ലിങ്ക് ചെയ്യാൻ കഴിഞ്ഞില്ല"
+
+[link_try_again]
+text = "വീണ്ടും ശ്രമിക്കുക"
+
+[link_not_now]
+text = "ഇപ്പോൾ വേണ്ട"
+
+[link_qr_lead]
+text = "നിങ്ങളുടെ അക്കൗണ്ട് ഇതിനകമുള്ള ഒരു ഉപകരണത്തിൽ ക്രമീകരണം › ഒരു ഉപകരണം ലിങ്ക് ചെയ്യുക തുറന്ന് ഇത് സ്കാൻ ചെയ്യുക."
+
+[link_qr_warn]
+text = "അടുത്ത കുറച്ച് മിനിറ്റുകൾക്കുള്ളിൽ ഈ കോഡ് കാണുന്ന ആർക്കും ഇത് ഉപയോഗിക്കാൻ ശ്രമിക്കാം. നിങ്ങളുടെ സ്വന്തം ഉപകരണത്തിന് മാത്രം കാണിക്കുക."
+
+[link_new_code]
+text = "പുതിയ കോഡ്"
+
+[link_scan_instead]
+text = "പകരം സ്കാൻ ചെയ്യുക"
+
+[link_qr_label]
+text = "ഈ ഉപകരണം ലിങ്ക് ചെയ്യാനുള്ള QR കോഡ്"
+
+[link_preparing]
+text = "നിങ്ങളുടെ കോഡ് തയ്യാറാക്കുന്നു…"
+
+[link_expired]
+text = "കാലാവധി കഴിഞ്ഞു. പുതിയൊരു കോഡ് ഉണ്ടാക്കുക."
+
+[link_expires]
+text = "{minutes}:{seconds} കഴിഞ്ഞ് കാലാവധി തീരും · ഒരു തവണ മാത്രം"
+
+[link_code_label]
+text = "ലിങ്ക് കോഡ് {digits}"
+
+[link_new_title]
+text = "പുതിയൊരു ഉപകരണം ലിങ്ക് ചെയ്യുക"
+
+[link_show_title]
+text = "ഈ കോഡ് നിങ്ങളുടെ പുതിയ ഉപകരണത്തിന് കാണിക്കുക"
+
+[link_show_body]
+text = "പുതിയ ഉപകരണത്തിൽ “ഒരു ഉപകരണവുമായി ലിങ്ക് ചെയ്യുക”, തുടർന്ന് “പകരം സ്കാൻ ചെയ്യുക” തിരഞ്ഞെടുത്ത്, ഈ കോഡിന് നേരെ പിടിക്കുക."
+
+[link_back]
+text = "തിരികെ"
+
+[link_match_title]
+text = "കോഡുകൾ ഒന്നുതന്നെയാണോ?"
+
+[link_match_body]
+text = "**{name}** നിങ്ങളുടെ അക്കൗണ്ടിൽ ചേരാൻ ആഗ്രഹിക്കുന്നു. അതിൽ താഴെയുള്ള അതേ ആറ് അക്കങ്ങൾ കാണിക്കുന്നുണ്ടാകണം."
+
+[link_match_body_unnamed]
+text = "**പുതിയ ഉപകരണം** നിങ്ങളുടെ അക്കൗണ്ടിൽ ചേരാൻ ആഗ്രഹിക്കുന്നു. അതിൽ താഴെയുള്ള അതേ ആറ് അക്കങ്ങൾ കാണിക്കുന്നുണ്ടാകണം."
+
+[link_match_warn]
+text = "അവ നിങ്ങൾ തന്നെ ഒത്തുനോക്കുക. വ്യത്യസ്തമാണെങ്കിൽ, മറ്റാരെങ്കിലും ആദ്യം കോഡ് സ്കാൻ ചെയ്തിരിക്കാം."
+
+[link_no_match]
+text = "വ്യത്യസ്തമാണ്"
+
+[link_match]
+text = "ഒന്നുതന്നെ"
+
+[link_connecting]
+text = "കണക്റ്റ് ചെയ്യുന്നു…"
+
+[link_linking_peer]
+text = "{name} ലിങ്ക് ചെയ്യുന്നു"
+
+[link_linking_peer_unnamed]
+text = "പുതിയ ഉപകരണം ലിങ്ക് ചെയ്യുന്നു"
+
+[link_reaching]
+text = "മറ്റേ ഉപകരണത്തിലേക്ക് എത്തുന്നു"
+
+[link_sending]
+text = "നിങ്ങളുടെ അക്കൗണ്ട് അയയ്ക്കുന്നു"
+
+[link_working]
+text = "നടക്കുന്നു"
+
+[link_keep_open]
+text = "ഇത് പൂർത്തിയാകുന്നതുവരെ രണ്ട് ഉപകരണങ്ങളും തുറന്നുവയ്ക്കുക."
+
+[link_done_title]
+text = "{name} ലിങ്ക് ചെയ്തു"
+
+[link_done_title_unnamed]
+text = "പുതിയ ഉപകരണം ലിങ്ക് ചെയ്തു"
+
+[link_done_body]
+text = "രണ്ട് ഉപകരണങ്ങളും ഒരേസമയം ഓൺലൈനിലാകുമ്പോൾ ഇത് സിങ്ക് ചെയ്യും. നിങ്ങൾ ബ്ലോക്ക് ചെയ്യാത്ത കോൺടാക്റ്റുകൾക്ക് അടുത്ത തവണ ഓൺലൈനിൽ വരുമ്പോൾ നിങ്ങളുടെ പുതുക്കിയ ഉപകരണ ലിസ്റ്റ് ലഭിക്കും."
+
+[link_done]
+text = "പൂർത്തിയായി"
+
+[link_close]
+text = "അടയ്ക്കുക"
+
+[link_scan_title]
+text = "നിങ്ങളുടെ പുതിയ ഉപകരണത്തിലെ കോഡ് സ്കാൻ ചെയ്യുക"
+
+[link_scan_step1]
+text = "പുതിയ ഉപകരണത്തിൽ Tinline തുറന്ന് **ഒരു ഉപകരണവുമായി ലിങ്ക് ചെയ്യുക** തിരഞ്ഞെടുക്കുക."
+
+[link_scan_step2]
+text = "അത് ഒരു QR കോഡും ഒരു ചെറിയ കോഡും കാണിക്കും. അവ 5 മിനിറ്റ് നേരം, ഒരു തവണ മാത്രം പ്രവർത്തിക്കും."
+
+[link_scan_qr]
+text = "QR കോഡ് സ്കാൻ ചെയ്യുക"
+
+[link_or_type]
+text = "അല്ലെങ്കിൽ കോഡ് ടൈപ്പ് ചെയ്യുക"
+
+[link_continue]
+text = "തുടരുക"
+
+[link_show_instead]
+text = "പകരം ഇവിടെ ഒരു QR കോഡ് കാണിക്കുക"
+
+[link_wrong_pass]
+text = "ആ പാസ്‌ഫ്രേസ് ശരിയല്ല."
+
+[link_lock_cancelled]
+text = "സ്ക്രീൻ ലോക്ക് പരിശോധന റദ്ദാക്കി"
+
+[link_approve_title]
+text = "{name} അംഗീകരിക്കണോ?"
+
+[link_approve_title_unnamed]
+text = "പുതിയ ഉപകരണം അംഗീകരിക്കണോ?"
+
+[link_approve_body]
+text = "അംഗീകരിക്കുമ്പോൾ നിങ്ങളുടെ **വീണ്ടെടുക്കൽ വാക്കുകൾ** {name} എന്ന ഉപകരണത്തിലേക്ക് അയയ്ക്കും. അത് നിങ്ങളുടെ പൂർണ്ണമായ ഒരു പകർപ്പാകും: അതിന് നിങ്ങളുടെ ചാറ്റുകൾ വായിക്കാനും നിങ്ങളുടെ പേരിൽ പ്രവർത്തിക്കാനും കഴിയും. നിങ്ങളുടെ കൈയിലുള്ള ഒരു ഉപകരണം മാത്രം അംഗീകരിക്കുക."
+
+[link_approve_body_unnamed]
+text = "അംഗീകരിക്കുമ്പോൾ നിങ്ങളുടെ **വീണ്ടെടുക്കൽ വാക്കുകൾ** പുതിയ ഉപകരണത്തിലേക്ക് അയയ്ക്കും. അത് നിങ്ങളുടെ പൂർണ്ണമായ ഒരു പകർപ്പാകും: അതിന് നിങ്ങളുടെ ചാറ്റുകൾ വായിക്കാനും നിങ്ങളുടെ പേരിൽ പ്രവർത്തിക്കാനും കഴിയും. നിങ്ങളുടെ കൈയിലുള്ള ഒരു ഉപകരണം മാത്രം അംഗീകരിക്കുക."
+
+[link_your_pass]
+text = "നിങ്ങളുടെ പാസ്‌ഫ്രേസ്"
+
+[link_dont]
+text = "ലിങ്ക് ചെയ്യേണ്ട"
+
+[link_approving]
+text = "അംഗീകരിക്കുന്നു…"
+
+[link_approve]
+text = "അംഗീകരിക്കുക"
+
+[link_scan_code]
+text = "കോഡ് സ്കാൻ ചെയ്യുക"
+
+[link_torch]
+text = "ടോർച്ച്"
+
+[link_point_other]
+text = "നിങ്ങളുടെ മറ്റേ ഉപകരണത്തിലെ കോഡിന് നേരെ പിടിക്കുക"
+
+[link_point_new]
+text = "നിങ്ങളുടെ പുതിയ ഉപകരണത്തിലെ QR കോഡിന് നേരെ ക്യാമറ പിടിക്കുക"
+
+[link_scan_again]
+text = "വീണ്ടും സ്കാൻ ചെയ്യുക"
+
+[link_code_once]
+text = "കോഡ് ഒരു തവണ മാത്രം പ്രവർത്തിക്കും, 5 മിനിറ്റിനുള്ളിൽ കാലാവധി തീരും."
+
+[link_unlinked_title]
+text = "ഈ ഫോണിന്റെ ലിങ്ക് ഒഴിവാക്കി"
+
+[link_unlinked_lead]
+text = "നിങ്ങളുടെ മറ്റൊരു ഉപകരണം ഈ ഫോണിൽ നിന്ന് {name} എന്ന അക്കൗണ്ട് നീക്കം ചെയ്തു. അതിന്റെ കോൺടാക്റ്റുകളും ചാറ്റുകളും കോളുകളും ഇവിടെ നിന്ന് ഇല്ലാതാക്കി. നിങ്ങളുടെ മറ്റ് ഉപകരണങ്ങളെ ഇത് ബാധിക്കില്ല."
+
+[link_unlinked_lead_unnamed]
+text = "നിങ്ങളുടെ മറ്റൊരു ഉപകരണം ഈ ഫോണിൽ നിന്ന് നിങ്ങളുടെ അക്കൗണ്ട് നീക്കം ചെയ്തു. അതിന്റെ കോൺടാക്റ്റുകളും ചാറ്റുകളും കോളുകളും ഇവിടെ നിന്ന് ഇല്ലാതാക്കി. നിങ്ങളുടെ മറ്റ് ഉപകരണങ്ങളെ ഇത് ബാധിക്കില്ല."
+
+[link_ok]
+text = "ശരി"
+
+[link_again]
+text = "വീണ്ടും ലിങ്ക് ചെയ്യുക"
+
+[onboarding_dev_personal]
+text = "സ്വകാര്യ ഫോൺ"
+
+[onboarding_exists_title]
+text = "ഇതിനകം ഈ ഫോണിലുണ്ട്"
+
+[onboarding_exists_confirm]
+text = "അക്കൗണ്ട് തിരഞ്ഞെടുക്കുക"
+
+[onboarding_not_now]
+text = "ഇപ്പോൾ വേണ്ട"
+
+[onboarding_exists_body]
+text = "ആ വീണ്ടെടുക്കൽ വാക്കുകൾ ഇവിടെ ഇതിനകമുള്ള ഒരു അക്കൗണ്ടിന്റേതാണ്. വീണ്ടും ചേർക്കുന്നതിനു പകരം അതിലേക്ക് മാറുക."
+
+[onboarding_restore_warn_forgot]
+text = "പുനഃസ്ഥാപിക്കുമ്പോൾ ഐഡന്റിറ്റി അതുതന്നെയായിരിക്കും: ഈ അക്കൗണ്ടിന്റെ വീണ്ടെടുക്കൽ വാക്കുകൾ ഉപയോഗിക്കുക. നിങ്ങൾ പുതിയൊരു പാസ്‌ഫ്രേസ് സജ്ജീകരിക്കും."
+
+[onboarding_restore_warn]
+text = "അടുത്തതായി, ഈ അക്കൗണ്ടിനുള്ള പാസ്‌ഫ്രേസ് നിങ്ങൾ തിരഞ്ഞെടുക്കും."
+
+[onboarding_welcome_title]
+text = "പ്രിയപ്പെട്ടവരിലേക്ക് നേരിട്ടൊരു ലൈൻ"
+
+[onboarding_welcome_lead]
+text = "Tinline നിങ്ങളുടെ ഫോണിനെ അവരുടെ ഫോണുമായി നേരിട്ട് ബന്ധിപ്പിക്കുന്നു.\nഒരു വിളിപ്പേര് മാത്രം മതി. എൻഡ്-ടു-എൻഡ് എൻക്രിപ്റ്റ് ചെയ്തത്."
+
+[onboarding_emergency]
+text = "അടിയന്തര കോളുകൾക്കുള്ളതല്ല."
+
+[onboarding_emergency_rest]
+text = "അടിയന്തര സേവനങ്ങളെ വിളിക്കാൻ നിങ്ങളുടെ ഫോണിന്റെ ഡയലർ ഉപയോഗിക്കുക."
+
+[onboarding_create]
+text = "എന്റെ അക്കൗണ്ട് സൃഷ്ടിക്കുക"
+
+[onboarding_have]
+text = "എനിക്ക് അക്കൗണ്ട് ഉണ്ട്"
+
+[onboarding_choose_title]
+text = "നിങ്ങളുടെ അക്കൗണ്ട് ഇവിടെ ഉപയോഗിക്കുക"
+
+[onboarding_choose_lead]
+text = "നിങ്ങളുടെ അക്കൗണ്ട് എന്നാൽ അതിന്റെ വീണ്ടെടുക്കൽ വാക്കുകളാണ്, അതിനാൽ രണ്ട് വഴികളിൽ ഇത് ഈ ഫോണിലേക്ക് കൊണ്ടുവരാം."
+
+[onboarding_opt_link]
+text = "എന്റെ മറ്റൊരു ഉപകരണം ലിങ്ക് ചെയ്യുക"
+
+[onboarding_opt_link_sub]
+text = "നിങ്ങളുടെ അക്കൗണ്ട് ഇതിനകമുള്ള ഒരു ഉപകരണത്തിലെ കോഡ് സ്കാൻ ചെയ്യുക. നിങ്ങളുടെ കോൺടാക്റ്റുകളും ചാറ്റുകളും ഒപ്പം വരും."
+
+[onboarding_opt_restore]
+text = "എന്റെ അക്കൗണ്ട് പുനഃസ്ഥാപിക്കുക"
+
+[onboarding_opt_restore_sub]
+text = "നിങ്ങളുടെ {words} വീണ്ടെടുക്കൽ വാക്കുകൾ ടൈപ്പ് ചെയ്യുക. ഈ ഫോൺ ഒഴിഞ്ഞ കോൺടാക്റ്റ് ലിസ്റ്റോടെയാണ് തുടങ്ങുക."
+
+[onboarding_done_title]
+text = "നിങ്ങളുടെ ലൈൻ തുറന്നിരിക്കുന്നു"
+
+[onboarding_done_title_named]
+text = "{name}, നിങ്ങളുടെ ലൈൻ തുറന്നിരിക്കുന്നു"
+
+[onboarding_done_lead]
+text = "അവരുടെ കോഡ് സ്കാൻ ചെയ്യുക, അല്ലെങ്കിൽ നിങ്ങളുടേത് പങ്കിടുക, പിന്നെ നിങ്ങൾക്ക് പരസ്പരം വിളിക്കാം."
+
+[onboarding_tip_devices]
+text = "ഒന്നിനേക്കാൾ നല്ലത് രണ്ട് ഉപകരണങ്ങൾ"
+
+[onboarding_tip_devices_body]
+text = "കഴിയുമ്പോൾ മറ്റൊരു ഉപകരണം ലിങ്ക് ചെയ്യുക, ഒന്ന് നഷ്ടപ്പെട്ടാലും നിങ്ങൾ പുറത്താകില്ല."
+
+[onboarding_tip_groups]
+text = "ഗ്രൂപ്പുകൾ ഹോസ്റ്റ് ചെയ്യുന്നത് കമ്പ്യൂട്ടറിലാണ്"
+
+[onboarding_tip_groups_body]
+text = "ഒരു ഗ്രൂപ്പ് തുടങ്ങാൻ, ഓണായിരിക്കാൻ കഴിയുന്ന ഒരു കമ്പ്യൂട്ടറിൽ Tinline ചേർക്കുക."
+
+[onboarding_add_contact]
+text = "എന്റെ ആദ്യ കോൺടാക്റ്റ് ചേർക്കുക"
+
+[onboarding_name_title]
+text = "ആളുകൾ നിങ്ങളെ എന്ത് വിളിക്കണം?"
+
+[onboarding_name_lead]
+text = "നിങ്ങൾ ചേർക്കുന്നവർക്ക് മാത്രമേ ഇത് കാണാനാകൂ."
+
+[onboarding_nickname]
+text = "നിങ്ങളുടെ വിളിപ്പേര്"
+
+[onboarding_nickname_hint]
+text = "ക്രമീകരണത്തിൽ എപ്പോൾ വേണമെങ്കിലും ഇത് മാറ്റാം."
+
+[onboarding_continue]
+text = "തുടരുക"
+
+[onboarding_pass_title_forgot]
+text = "പുതിയൊരു പാസ്‌ഫ്രേസ് തിരഞ്ഞെടുക്കുക"
+
+[onboarding_pass_title_link]
+text = "ഈ ഫോൺ സംരക്ഷിക്കുക"
+
+[onboarding_pass_title]
+text = "ഒരു പാസ്‌ഫ്രേസ് ചേർക്കുക"
+
+[onboarding_cta_restore]
+text = "അക്കൗണ്ട് പുനഃസ്ഥാപിക്കുക"
+
+[onboarding_cta_add]
+text = "പാസ്‌ഫ്രേസ് ചേർക്കുക"
+
+[onboarding_cta_save]
+text = "അക്കൗണ്ട് സേവ് ചെയ്യുക"
+
+[onboarding_pass_lead]
+text = "നിർബന്ധമില്ല. ഈ ഫോണിൽ Tinline നിങ്ങൾക്ക് മാത്രം തുറക്കാനാകുന്ന ഒരു പൂട്ട്."
+
+[onboarding_pass]
+text = "പാസ്‌ഫ്രേസ്"
+
+[onboarding_pass_notice]
+text = "ഈ ഫോണിൽ നിങ്ങളുടെ അക്കൗണ്ട് എൻക്രിപ്റ്റ് ചെയ്യുന്നു. ഫോൺ ഇത് ഓർത്തുവയ്ക്കും, അതിനാൽ റീസ്റ്റാർട്ട് ചെയ്താലും കോളുകൾ റിംഗ് ചെയ്യും. ഇത് മറന്നുപോയാൽ, വീണ്ടെടുക്കൽ വാക്കുകൾ ഉപയോഗിച്ച് പുതിയൊരെണ്ണം സജ്ജീകരിക്കാം."
+
+[onboarding_encrypting]
+text = "എൻക്രിപ്റ്റ് ചെയ്യുന്നു…"
+
+[onboarding_skip]
+text = "ഇപ്പോൾ ഒഴിവാക്കുക"
+
+[onboarding_seg_key]
+text = "കീ"
+
+[onboarding_seg_words]
+text = "വാക്കുകൾ"
+
+[onboarding_rec_title_key]
+text = "ഇതാ നിങ്ങളുടെ വീണ്ടെടുക്കൽ കീ"
+
+[onboarding_rec_title_words]
+text = "ഇതാ നിങ്ങളുടെ വീണ്ടെടുക്കൽ വാക്കുകൾ"
+
+[onboarding_rec_lead_key]
+text = "നിങ്ങളുടെ വീണ്ടെടുക്കൽ കീ എന്നത് നിങ്ങളുടെ {words} വാക്കുകൾ തന്നെയാണ്, ഒറ്റ വരിയായി.\nസുരക്ഷിതമായ ഒരിടത്ത് ഇത് പേസ്റ്റ് ചെയ്ത് വയ്ക്കുക. ഒരു പാസ്‌വേഡ് മാനേജർ നന്നായി ചേരും."
+
+[onboarding_rec_lead_words]
+text = "എപ്പോഴെങ്കിലും ഉപകരണം മാറിയാൽ, ഈ {words} വാക്കുകൾ നിങ്ങളുടെ അക്കൗണ്ട് ഒപ്പം കൊണ്ടുവരും.\nസുരക്ഷിതമായ ഒരിടത്ത് ഒരു പകർപ്പ് സൂക്ഷിക്കുക. കടലാസിൽ എഴുതിവയ്ക്കുന്നത് നല്ലതാണ്."
+
+[onboarding_fb_your_account]
+text = "നിങ്ങളുടെ അക്കൗണ്ട്"
+
+[onboarding_saved_key]
+text = "ഞാൻ സേവ് ചെയ്തു"
+
+[onboarding_saved_words]
+text = "ഞാൻ അവ സേവ് ചെയ്തു"
+
+[onboarding_copy_again]
+text = "വീണ്ടും പകർത്തുക"
+
+[onboarding_copy_key]
+text = "എന്റെ കീ പകർത്തുക"
+
+[onboarding_copy_words]
+text = "എന്റെ വാക്കുകൾ പകർത്തുക"
+
+[onboarding_elsewhere_key]
+text = "ഞാൻ മറ്റൊരിടത്ത് സേവ് ചെയ്തു"
+
+[onboarding_elsewhere_words]
+text = "ഞാൻ അവ എഴുതിവച്ചു"
+
+[onboarding_dev_title]
+text = "ഈ ഫോണിന് പേര് നൽകുക"
+
+[onboarding_dev_lead]
+text = "ലിങ്ക് ചെയ്ത ഉപകരണങ്ങളിൽ നിങ്ങളുടെ ഉപകരണങ്ങൾ തിരിച്ചറിയാൻ. നിങ്ങളുടെ സ്വന്തം ഉപകരണങ്ങൾക്ക് മാത്രമേ ഈ പേര് കാണാനാകൂ; നിങ്ങൾ വിളിക്കുന്നവർക്ക് ഇത് കാണാനാകില്ല."
+
+[onboarding_dev_field]
+text = "ഉപകരണത്തിന്റെ പേര്"
+
+[onboarding_dev_hint]
+text = "പിന്നീട് പേര് മാറ്റാം."
+
+[onboarding_dev_work]
+text = "ഓഫീസ് ഫോൺ"
+
+[onboarding_dev_tablet]
+text = "ടാബ്‌ലെറ്റ്"
+
+[onboarding_back_added]
+text = "{name} എന്ന അക്കൗണ്ട് ഈ ഫോണിൽ ചേർത്തു"
+
+[onboarding_back_added_unnamed]
+text = "നിങ്ങളുടെ അക്കൗണ്ട് ഈ ഫോണിൽ ചേർത്തു"
+
+[onboarding_back_title]
+text = "വീണ്ടും സ്വാഗതം"
+
+[onboarding_back_title_named]
+text = "വീണ്ടും സ്വാഗതം, {name}"
+
+[onboarding_back_added_lead]
+text = "തിരഞ്ഞെടുക്കുന്ന അക്കൗണ്ട് മാത്രമേ ഒരു സമയം ഓൺലൈനിലുണ്ടാകൂ, അതിനാൽ ഇപ്പോൾ {name} ഓൺലൈനിലാണ്, നിങ്ങളുടെ മറ്റേ അക്കൗണ്ട് താൽക്കാലികമായി നിർത്തിയിരിക്കുന്നു. ക്രമീകരണത്തിൽ നിന്ന് മാറാം."
+
+[onboarding_back_added_lead_unnamed]
+text = "തിരഞ്ഞെടുക്കുന്ന അക്കൗണ്ട് മാത്രമേ ഒരു സമയം ഓൺലൈനിലുണ്ടാകൂ, അതിനാൽ ഇപ്പോൾ ഈ അക്കൗണ്ട് ഓൺലൈനിലാണ്, നിങ്ങളുടെ മറ്റേ അക്കൗണ്ട് താൽക്കാലികമായി നിർത്തിയിരിക്കുന്നു. ക്രമീകരണത്തിൽ നിന്ന് മാറാം."
+
+[onboarding_back_lead]
+text = "നിങ്ങളുടെ അക്കൗണ്ട് ഈ ഫോണിൽ തിരിച്ചെത്തി. നിങ്ങളുടെ കോൺടാക്റ്റുകളും ചാറ്റുകളും കോൾ ചരിത്രവും സൂക്ഷിച്ചിരിക്കുന്നത് ഒരു സെർവറിലല്ല, നിങ്ങളുടെ മറ്റ് ഉപകരണങ്ങളിലാണ്. ഈ ഫോൺ ഒഴിഞ്ഞ കോൺടാക്റ്റ് ലിസ്റ്റോടെയാണ് തുടങ്ങുക."
+
+[onboarding_open]
+text = "Tinline തുറക്കുക"
+
+[onboarding_linked_title]
+text = "{name} എന്ന ഉപകരണവുമായി ലിങ്ക് ചെയ്തു"
+
+[onboarding_linked_title_unnamed]
+text = "നിങ്ങളുടെ മറ്റേ ഉപകരണവുമായി ലിങ്ക് ചെയ്തു"
+
+[onboarding_linked_lead]
+text = "നിങ്ങളുടെ കോൺടാക്റ്റുകളും ചാറ്റുകളും {name} എന്ന ഉപകരണത്തിൽ നിന്ന് എത്തിക്കൊണ്ടിരിക്കുന്നു, രണ്ടിലും അവ ഒരുപോലെ നിലനിൽക്കും."
+
+[onboarding_linked_lead_unnamed]
+text = "നിങ്ങളുടെ കോൺടാക്റ്റുകളും ചാറ്റുകളും നിങ്ങളുടെ മറ്റേ ഉപകരണത്തിൽ നിന്ന് എത്തിക്കൊണ്ടിരിക്കുന്നു, രണ്ടിലും അവ ഒരുപോലെ നിലനിൽക്കും."
+
+[onboarding_sync_contacts]
+text = "കോൺടാക്റ്റുകൾ"
+
+[onboarding_sync_waiting]
+text = "കാത്തിരിക്കുന്നു"
+
+[onboarding_sync_calls]
+text = "കോൾ ചരിത്രം"
+
+[onboarding_sync_slow]
+text = "ഇതുവരെ ഒന്നും എത്തിയില്ല. മറ്റേ ഉപകരണം ഓഫ്‌ലൈനായിരിക്കാം: അടുത്ത തവണ രണ്ടും ഓൺലൈനിലാകുമ്പോൾ നിർത്തിയിടത്തുനിന്ന് തുടരും."
+
+[onboarding_sync_keep]
+text = "രണ്ട് ഉപകരണങ്ങളും ഓൺലൈനിൽ വയ്ക്കുക. സിങ്ക് പശ്ചാത്തലത്തിൽ തുടരും."
+
+[onboarding_nosave_title]
+text = "നിങ്ങളുടെ അക്കൗണ്ട് സേവ് ചെയ്യാൻ കഴിഞ്ഞില്ല"
+
+[onboarding_nosave_lead]
+text = "നിങ്ങളുടെ അക്കൗണ്ട് തുറക്കുന്ന കീ ഈ ഫോണിൽ സൂക്ഷിക്കാൻ Tinline-ന് കഴിഞ്ഞില്ല, അതിനാൽ നിങ്ങളുടെ അക്കൗണ്ട് ഇതുവരെ സേവ് ചെയ്തിട്ടില്ല."
+
+[onboarding_nosave_notice]
+text = "ഈ ഫോണിൽ ഇതുവരെ ഒന്നും സൂക്ഷിച്ചിട്ടില്ല, അതിനാൽ ഒന്നും നഷ്ടപ്പെടാനില്ല. വീണ്ടും ശ്രമിക്കുക, അല്ലെങ്കിൽ ഫോണിന്റെ സ്വന്തം കീയ്ക്ക് പകരം ഒരു പാസ്‌ഫ്രേസ് ഉപയോഗിച്ച് അക്കൗണ്ട് സംരക്ഷിക്കുക."
+
+[onboarding_trying]
+text = "ശ്രമിക്കുന്നു…"
+
+[onboarding_try_again]
+text = "വീണ്ടും ശ്രമിക്കുക"
+
+[onboarding_pass_instead]
+text = "പകരം ഒരു പാസ്‌ഫ്രേസ് ചേർക്കുക"
+
+[onboarding_terms_title]
+text = "തുടങ്ങുന്നതിനു മുമ്പ്"
+
+[onboarding_terms1]
+text = "പരസ്യങ്ങളും ട്രാക്കിംഗും ഇല്ല."
+
+[onboarding_terms1_rest]
+text = "Tinline നിങ്ങളുടെ കോൺടാക്റ്റുകളോ കോളുകളോ ലൊക്കേഷനോ ശേഖരിക്കുന്നില്ല."
+
+[onboarding_terms2]
+text = "കോളുകൾ എൻഡ്-ടു-എൻഡ് എൻക്രിപ്റ്റ് ചെയ്തതാണ്."
+
+[onboarding_terms2_rest]
+text = "നേരിട്ടുള്ള ലൈൻ സാധ്യമല്ലാത്തപ്പോൾ, എൻക്രിപ്റ്റ് ചെയ്ത ഒരു റിലേ കോൾ കൈമാറുന്നു. അതിന് കോൾ കേൾക്കാൻ കഴിയില്ല."
+
+[onboarding_terms3]
+text = "നിങ്ങളുടെ അക്കൗണ്ട് നിങ്ങളുടേതാണ്."
+
+[onboarding_terms3_rest]
+text = "അത് ഒരു സെർവറിലല്ല, നിങ്ങളുടെ ഉപകരണങ്ങളിലാണ്. നിങ്ങളുടെ വീണ്ടെടുക്കൽ വാക്കുകളാണ് തിരികെ കയറാനുള്ള വഴി, അതിനാൽ അവ സുരക്ഷിതമായി സൂക്ഷിക്കുക."
+
+[onboarding_terms_consent]
+text = "തുടരുന്നതിലൂടെ, നിങ്ങൾ [ഉപയോഗ നിബന്ധനകൾ]({terms_url}) അംഗീകരിക്കുകയും [സ്വകാര്യതാ നയം]({privacy_url}) വായിച്ചിട്ടുണ്ടെന്ന് സ്ഥിരീകരിക്കുകയും ചെയ്യുന്നു."
+
+[onboarding_agree]
+text = "ഞാൻ സമ്മതിക്കുന്നു"
+
+[onboarding_perm_mic]
+text = "മൈക്രോഫോൺ"
+
+[onboarding_perm_mic_why]
+text = "അവർക്ക് നിങ്ങളെ കേൾക്കാൻ. കോളിനിടയിൽ മാത്രം ഉപയോഗിക്കും."
+
+[onboarding_perm_notif]
+text = "അറിയിപ്പുകൾ"
+
+[onboarding_perm_notif_why]
+text = "വരുന്ന കോളുകളും സന്ദേശങ്ങളും നിങ്ങൾക്ക് കാണാൻ."
+
+[onboarding_perms_title]
+text = "കോളുകൾ നിങ്ങളിലേക്ക് എത്താൻ"
+
+[onboarding_perms_lead]
+text = "Tinline ഒരു ഫോൺ ലൈൻ പോലെയാണ് പ്രവർത്തിക്കുന്നത്: അത് പശ്ചാത്തലത്തിൽ നിശ്ശബ്ദമായി തുറന്നിരിക്കും. ഇവയെല്ലാം നിർബന്ധമില്ലാത്തവയാണ്, പിന്നീട് മാറ്റാനും കഴിയും."
+
+[onboarding_perm_allowed]
+text = "{name} അനുവദിച്ചു"
+
+[onboarding_allow]
+text = "അനുവദിക്കുക"
+
+[onboarding_allow_a11y]
+text = "{name} അനുവദിക്കുക"
+
+[shellkit_hide_field]
+text = "{name} മറയ്ക്കുക"
+
+[shellkit_show_field]
+text = "{name} കാണിക്കുക"
+
+[shellkit_passphrase]
+text = "പാസ്‌ഫ്രേസ്"
+
+[shellkit_hide_pass]
+text = "പാസ്‌ഫ്രേസ് മറയ്ക്കുക"
+
+[shellkit_show_pass]
+text = "പാസ്‌ഫ്രേസ് കാണിക്കുക"
+
+[shellkit_to_light]
+text = "ലൈറ്റിലേക്ക് മാറുക"
+
+[shellkit_to_dark]
+text = "ഡാർക്കിലേക്ക് മാറുക"
+
+[shellkit_back]
+text = "തിരികെ"
+
+[shellkit_progress]
+text = "{current} / {total}"
+
+[shellkit_progress_a11y]
+text = "സജ്ജീകരണ പുരോഗതി, ഘട്ടം {current} / {total}"
+
+[shellkit_progress_a11y_label]
+text = "സജ്ജീകരണ പുരോഗതി, ഘട്ടം {current} / {total}: {label}"
+
+[shellkit_on]
+text = "ഓൺ"
+
+[shellkit_off]
+text = "ഓഫ്"
+
+[shellkit_selected]
+text = "തിരഞ്ഞെടുത്തു"
+
+[shellkit_cancel]
+text = "റദ്ദാക്കുക"
+
+[shell_ring_incoming]
+text = "വരുന്ന കോൾ"
+
+[shell_err_save_account]
+text = "ഈ ഫോണിൽ നിങ്ങളുടെ അക്കൗണ്ട് സേവ് ചെയ്യാൻ കഴിഞ്ഞില്ല."
+
+[shell_err_save_account_safely]
+text = "ഈ ഫോണിൽ നിങ്ങളുടെ അക്കൗണ്ട് സുരക്ഷിതമായി സേവ് ചെയ്യാൻ കഴിഞ്ഞില്ല."
+
+[shell_flow_no_account]
+text = "അക്കൗണ്ടില്ല"
+
+[shell_flow_different_identity]
+text = "ആ വീണ്ടെടുക്കൽ വാക്കുകൾ മറ്റൊരു ഐഡന്റിറ്റിയുടേതാണ്"
+
+[shell_flow_account_changed]
+text = "അക്കൗണ്ട് മാറി"
+
+[shell_err_wrong_passphrase]
+text = "അത് പൊരുത്തപ്പെട്ടില്ല. അക്ഷരങ്ങളും സ്പേസുകളും ഒന്നു പരിശോധിക്കുക."
+
+[shell_err_weak_passphrase]
+text = "ഒരു പാസ്‌ഫ്രേസ് ടൈപ്പ് ചെയ്യുക, അല്ലെങ്കിൽ ഒഴിവാക്കുക"
+
+[shell_err_locked]
+text = "ലോക്ക് ചെയ്തിരിക്കുന്നു — അൺലോക്ക് ചെയ്യാൻ പാസ്‌ഫ്രേസ് നൽകുക"
+
+[shell_err_bad_phrase]
+text = "ആ വീണ്ടെടുക്കൽ വാക്കുകൾ ശരിയല്ല"
+
+[shell_err_account_exists]
+text = "ആ അക്കൗണ്ട് ഇതിനകം ഈ ഫോണിലുണ്ട്"
+
+[shell_err_in_call]
+text = "ആദ്യം നിങ്ങളുടെ കോൾ പൂർത്തിയാക്കുക"
+
+[shell_err_generic]
+text = "എന്തോ പ്രശ്നമുണ്ടായി"
+
+[shell_call_what_incoming]
+text = "വന്ന കോൾ"
+
+[shell_call_desc_incoming]
+text = "വരുന്ന കോൾ"
+
+[shell_call_what_outgoing]
+text = "വിളിച്ച കോൾ"
+
+[shell_call_desc_outgoing]
+text = "വിളിച്ച കോൾ"
+
+[shell_call_what_unavailable]
+text = "ലഭ്യമല്ലാതിരുന്നപ്പോൾ"
+
+[shell_call_desc_unavailable]
+text = "ലഭ്യമല്ലാതിരുന്നപ്പോൾ വന്ന കോൾ"
+
+[shell_call_what_missed]
+text = "മിസ്‌ഡ് കോൾ"
+
+[shell_call_desc_missed]
+text = "മിസ്‌ഡ് കോൾ"
+
+[shell_call_what_declined]
+text = "നിരസിച്ചു"
+
+[shell_call_desc_declined]
+text = "നിരസിച്ച കോൾ"
+
+[shell_call_what_no_answer]
+text = "എടുത്തില്ല"
+
+[shell_call_desc_no_answer]
+text = "ആരും എടുക്കാത്ത കോൾ"
+
+[shell_call_what_cancelled]
+text = "റദ്ദാക്കി"
+
+[shell_call_desc_cancelled]
+text = "റദ്ദാക്കിയ കോൾ"
+
+[shell_call_what_unreachable]
+text = "കോൾ കണക്റ്റ് ആയില്ല"
+
+[shell_call_desc_unreachable]
+text = "കണക്റ്റ് ചെയ്യാൻ കഴിയാതിരുന്ന കോൾ"
+
+[shell_call_what_other]
+text = "Tinline കോൾ"
+
+[shell_call_desc_other]
+text = "കോൾ"
+
+[shell_you]
+text = "നിങ്ങൾ"
+
+[shell_unknown]
+text = "അജ്ഞാതം"
+
+[shell_someone]
+text = "ഒരാൾ"
+
+[shell_chat_waiting_unreachable]
+text = "അയയ്ക്കാൻ കാത്തിരിക്കുന്നു — {name} ഇതുവരെ ലഭ്യമല്ല"
+
+[shell_group_preview_removed]
+text = "നിങ്ങളെ ഈ ഗ്രൂപ്പിൽ നിന്ന് നീക്കം ചെയ്തു"
+
+[shell_group_preview_left]
+text = "നിങ്ങൾ ഈ ഗ്രൂപ്പിൽ നിന്ന് പുറത്തുകടന്നു"
+
+[shell_group_preview_mine]
+text = "നിങ്ങൾ: {text}"
+
+[shell_group_preview_other]
+text = "{name}: {text}"
+
+[shell_empty_chats]
+text = "നിങ്ങളുടെ ചാറ്റുകൾ ഇവിടെ കാണാം."
+
+[shell_empty_unread]
+text = "എല്ലാം വായിച്ചുകഴിഞ്ഞു."
+
+[shell_empty_calls]
+text = "നിങ്ങൾ ചെയ്യുന്നതും വരുന്നതുമായ കോളുകൾ ഇവിടെ കാണാം."
+
+[shell_empty_contacts]
+text = "നിങ്ങൾ ചേർക്കുന്നവർ ഇവിടെ കാണാം."
+
+[shell_empty_hero_ready]
+text = "നിങ്ങളുടെ ലൈൻ തയ്യാറാണ്"
+
+[shell_empty_hero_open]
+text = "നിങ്ങളുടെ ലൈൻ തുറന്നിരിക്കുന്നു"
+
+[shell_empty_request_waiting]
+text = "{name} എന്നയാൾക്കുള്ള നിങ്ങളുടെ അഭ്യർത്ഥന കാത്തിരിക്കുകയാണ്. അവർ സ്വീകരിക്കുമ്പോൾ നിങ്ങളുടെ ലൈൻ തുറക്കും."
+
+[shell_empty_add_another]
+text = "മറ്റൊരു കോൺടാക്റ്റ് ചേർക്കുക"
+
+[shell_empty_add_someone]
+text = "നിങ്ങൾ സംസാരിക്കാൻ ആഗ്രഹിക്കുന്ന ഒരാളെ ചേർക്കുക, പിന്നെ നിങ്ങൾക്ക് പരസ്പരം സന്ദേശം അയയ്ക്കാനും വിളിക്കാനും കഴിയും."
+
+[shell_empty_add_first]
+text = "എന്റെ ആദ്യ കോൺടാക്റ്റ് ചേർക്കുക"
+
+[shell_empty_say_hello]
+text = "എപ്പോൾ വേണമെങ്കിലും {name} എന്നയാളോട് ഒരു ഹലോ പറയാം."
+
+[shell_empty_message]
+text = "{name} എന്നയാൾക്ക് സന്ദേശമയയ്ക്കുക"
+
+[shell_empty_pick]
+text = "ഒരാളെ തിരഞ്ഞെടുത്ത് എപ്പോൾ വേണമെങ്കിലും ഒരു ഹലോ പറയാം."
+
+[shell_empty_start_chat]
+text = "ഒരു ചാറ്റ് തുടങ്ങുക"
+
+[shell_step_name]
+text = "നിങ്ങളുടെ വിളിപ്പേര്"
+
+[shell_step_pass]
+text = "പാസ്‌ഫ്രേസ്"
+
+[shell_step_phrase]
+text = "വീണ്ടെടുക്കൽ വാക്കുകൾ"
+
+[shell_step_device]
+text = "ഉപകരണത്തിന്റെ പേര്"
+
+[shell_step_terms]
+text = "നിബന്ധനകൾ"
+
+[shell_step_perms]
+text = "അനുമതികൾ"
+
+[shell_step_restore]
+text = "അക്കൗണ്ട് പുനഃസ്ഥാപിക്കുക"
+
+[shell_step_link_qr]
+text = "നിങ്ങളുടെ അക്കൗണ്ടുമായി ലിങ്ക് ചെയ്യുക"
+
+[shell_pass_strength_empty]
+text = "എത്ര നീളവുമാകാം. ക്രമമില്ലാത്ത കുറച്ച് വാക്കുകൾ ഓർക്കാൻ എളുപ്പമാണ്."
+
+[shell_pass_strength_short]
+text = "ചെറുതാണ്. കുറച്ച് വാക്കുകൾ കൂടി ചേർത്താൽ കൂടുതൽ ശക്തമാകും."
+
+[shell_pass_strength_fair]
+text = "തരക്കേടില്ല"
+
+[shell_pass_strength_strong]
+text = "ശക്തം"
+
+[shell_restore_bad_one]
+text = "വാക്ക് {n} വീണ്ടെടുക്കൽ വാക്കുകളുടെ പട്ടികയിൽ ഇല്ല. അക്ഷരങ്ങൾ ഒന്നു പരിശോധിക്കുക."
+
+[shell_restore_bad_many]
+one = "{count} വാക്ക് വീണ്ടെടുക്കൽ വാക്കുകളുടെ പട്ടികയിൽ ഇല്ല. ആദ്യത്തേത് വാക്ക് {number} ആണ്. അക്ഷരങ്ങൾ ഒന്നു പരിശോധിക്കുക."
+other = "{count} വാക്കുകൾ വീണ്ടെടുക്കൽ വാക്കുകളുടെ പട്ടികയിൽ ഇല്ല. ആദ്യത്തേത് വാക്ക് {number} ആണ്. അക്ഷരങ്ങൾ ഒന്നു പരിശോധിക്കുക."
+
+[shell_restore_missing]
+one = "ഇനിയും {count} വാക്ക് ചേർക്കാനുണ്ട്."
+other = "ഇനിയും {count} വാക്കുകൾ ചേർക്കാനുണ്ട്."
+
+[shell_blocked]
+text = "ബ്ലോക്ക് ചെയ്തു"
+
+[shell_home_new_group]
+text = "പുതിയ ഗ്രൂപ്പ്"
+
+[shell_home_new_chat]
+text = "പുതിയ ചാറ്റ്"
+
+[shell_banner_offline_title]
+text = "നിങ്ങൾ ഓഫ്‌ലൈനാണ്"
+
+[shell_banner_offline_text]
+text = "നിങ്ങൾ വീണ്ടും ഓൺലൈനിൽ വരുമ്പോൾ നിങ്ങളുടെ കോളുകൾ വീണ്ടും എത്തും."
+
+[shell_banner_noring_title]
+text = "കോളുകൾ റിംഗ് ചെയ്യില്ല"
+
+[shell_banner_noring_text]
+text = "Tinline-നുള്ള അറിയിപ്പുകൾ ഓഫാണ്."
+
+[shell_banner_turn_on]
+text = "ഓണാക്കുക"
+
+[shell_banner_unavailable_title]
+text = "നിങ്ങൾ ലഭ്യമല്ല"
+
+[shell_banner_unavailable_text]
+text = "നിങ്ങൾ വീണ്ടും ഓണാക്കുന്നതുവരെ കോളുകൾ റിംഗ് ചെയ്യില്ല."
+
+[shell_search]
+text = "തിരയുക"
+
+[shell_settings]
+text = "ക്രമീകരണം"
+
+[shell_ring_a11y_waiting]
+text = "നിങ്ങളുടെ കോളിനിടയിൽ {name} വിളിക്കുന്നു"
+
+[shell_ring_a11y]
+text = "{sub}: {name}"
+
+[shell_ring_a11y_hint]
+text = "{name} എന്നയാളിൽ നിന്നുള്ള കോൾ തുറക്കുക"
+
+[shell_ring_decline]
+text = "നിരസിക്കുക"
+
+[shell_ring_end_answer]
+text = "അവസാനിപ്പിച്ച് എടുക്കുക"
+
+[shell_ring_answer]
+text = "എടുക്കുക"
+
+[shell_tab_waiting]
+one = "{count} കാത്തിരിക്കുന്നു"
+other = "{count} കാത്തിരിക്കുന്നു"
+
+[shell_tab_unread]
+one = "{count} വായിക്കാത്തത്"
+other = "{count} വായിക്കാത്തവ"
+
+[shell_tab_chats]
+text = "ചാറ്റുകൾ"
+
+[shell_tab_groups]
+text = "ഗ്രൂപ്പുകൾ"
+
+[shell_tab_calls]
+text = "കോളുകൾ"
+
+[shell_tab_contacts]
+text = "കോൺടാക്റ്റുകൾ"
+
+[shell_err_call_start]
+text = "കോൾ ആരംഭിക്കാൻ കഴിഞ്ഞില്ല"
+
+[shell_ring_waiting]
+text = "നിങ്ങളുടെ കോളിനിടയിൽ വിളിക്കുന്നു"
+
+[shell_ring_incoming_video]
+text = "വരുന്ന വീഡിയോ കോൾ"
+
+[shell_mic_title]
+text = "Tinline-ന് മൈക്രോഫോൺ ഉപയോഗിക്കാൻ കഴിയുന്നില്ല"
+
+[shell_mic_body]
+text = "അതില്ലാതെ അവർക്ക് നിങ്ങളെ കേൾക്കാനാകില്ല. Tinline കോളുകൾക്കിടയിൽ മാത്രമേ കേൾക്കൂ — ഒരിക്കലും പശ്ചാത്തലത്തിൽ കേൾക്കില്ല."
+
+[shell_mic_open_settings]
+text = "ക്രമീകരണം തുറക്കുക"
+
+[shell_mic_hint]
+text = "തുടർന്ന് ക്രമീകരണം › Tinline › മൈക്രോഫോൺ എന്നതിൽ ചെന്ന് അത് അനുവദിക്കുക."
+
+[shell_not_now]
+text = "ഇപ്പോൾ വേണ്ട"
+
+[shell_my_profile]
+text = "എന്റെ പ്രൊഫൈൽ"
+
+[shell_filter_all]
+text = "എല്ലാം"
+
+[shell_filter_unread]
+text = "വായിക്കാത്തവ"
+
+[shell_chats_draft]
+text = "ഡ്രാഫ്റ്റ്:"
+
+[shell_chats_waiting]
+text = "കാത്തിരിക്കുന്നു"
+
+[shell_tick_slack]
+text = "അയയ്ക്കാൻ കാത്തിരിക്കുന്നു"
+
+[shell_tick_one]
+text = "അയച്ചു"
+
+[shell_tick_two]
+text = "എല്ലാവർക്കും എത്തി"
+
+[shell_tick_read]
+text = "എല്ലാവരും വായിച്ചു"
+
+[shell_tick_bad]
+text = "എത്തിയില്ല"
+
+[shell_calls_profile_a11y]
+text = "{name} എന്നയാളുടെ പ്രൊഫൈൽ"
+
+[shell_calls_what_duration]
+text = "{what} · {duration}"
+
+[shell_calls_row_a11y]
+text = "{name}, {what}, {stamp}. {action}"
+
+[shell_calls_row_a11y_duration]
+text = "{name}, {what}, {duration}, {stamp}. {action}"
+
+[shell_calls_action_call]
+text = "കോൾ ചെയ്യുക"
+
+[shell_calls_action_cant]
+text = "വിളിക്കാൻ കഴിയില്ല"
+
+[shell_calls_group_info_a11y]
+text = "{name}, ഗ്രൂപ്പ് വിവരങ്ങൾ"
+
+[shell_calls_group_row_a11y]
+text = "{name}, {what}, {stamp}. കോൾ ആരംഭിക്കുകയോ ചേരുകയോ ചെയ്യുക"
+
+[shell_contacts_find]
+text = "ഒരു കോൺടാക്റ്റിനെ കണ്ടെത്തുക"
+
+[shell_contacts_add]
+text = "കോൺടാക്റ്റ് ചേർക്കുക"
+
+[shell_contacts_add_sub]
+text = "നിങ്ങളുടെ കോഡ് പങ്കിടുക, അല്ലെങ്കിൽ അവരുടേത് പേസ്റ്റ് ചെയ്യുക"
+
+[shell_contacts_waiting_you]
+text = "നിങ്ങളെ കാത്തിരിക്കുന്നവർ"
+
+[shell_contacts_waiting_them]
+text = "അവർക്കായി കാത്തിരിക്കുന്നു"
+
+[shell_contacts_wants_add]
+text = "നിങ്ങളെ കോൺടാക്റ്റായി ചേർക്കാൻ ആഗ്രഹിക്കുന്നു"
+
+[shell_contacts_accept]
+text = "സ്വീകരിക്കുക"
+
+[shell_contacts_accept_hint]
+text = "സ്വീകരിച്ചാൽ നിങ്ങൾക്ക് പരസ്പരം സന്ദേശം അയയ്ക്കാനും വിളിക്കാനും കഴിയും."
+
+[shell_contacts_request_sent]
+text = "അഭ്യർത്ഥന അയച്ചു. {name} സ്വീകരിക്കുമ്പോൾ നിങ്ങളുടെ ലൈൻ തുറക്കും."
+
+[shell_contacts_none_match]
+text = "നിങ്ങളുടെ കോൺടാക്റ്റുകളിൽ “{query}” എന്ന പേരിൽ ആരുമില്ല."
+
+[shell_contacts_count]
+one = "{count} കോൺടാക്റ്റ്"
+other = "{count} കോൺടാക്റ്റുകൾ"
+
+[shell_new_chat_last_message]
+text = "അവസാന സന്ദേശം {time}"
+
+[shell_new_chat_search_contacts]
+text = "കോൺടാക്റ്റുകൾ തിരയുക"
+
+[shell_new_chat_add]
+text = "ഒരു കോൺടാക്റ്റ് ചേർക്കുക"
+
+[shell_new_chat_add_sub]
+text = "അവരുടെ കോഡ് സ്കാൻ ചെയ്യുക, അല്ലെങ്കിൽ കാർഡ് പേസ്റ്റ് ചെയ്യുക"
+
+[shell_new_chat_contacts_header]
+text = "കോൺടാക്റ്റുകൾ · {count}"
+
+[shell_new_chat_no_messages]
+text = "ഇതുവരെ സന്ദേശങ്ങളൊന്നുമില്ല"
+
+[shell_close_search]
+text = "തിരയൽ അടയ്ക്കുക"
+
+[shell_clear]
+text = "മായ്ക്കുക"
+
+[shell_calls_recent]
+text = "സമീപകാല കോളുകൾ"
+
+[shell_calls_none]
+text = "ഇതുവരെ കോളുകളൊന്നുമില്ല. ചരിത്രം ഈ ഫോണിൽ മാത്രം നിൽക്കും."
+
+[shell_calls_history_note]
+text = "ചരിത്രം ഈ ഫോണിൽ മാത്രം നിൽക്കും."
+
+[shell_search_min_chars]
+text = "സന്ദേശങ്ങൾ തിരയാൻ 2-ഓ അതിലധികമോ അക്ഷരങ്ങൾ ടൈപ്പ് ചെയ്യുക."
+
+[shell_search_no_messages]
+text = "“{query}” എന്നതുമായി പൊരുത്തപ്പെടുന്ന സന്ദേശങ്ങളൊന്നുമില്ല"
+
+[shell_search_people_groups]
+text = "ആളുകളും ഗ്രൂപ്പുകളും"
+
+[shell_search_no_names]
+text = "പൊരുത്തപ്പെടുന്ന ആളുകളോ ഗ്രൂപ്പുകളോ ഇല്ല"
+
+[shell_search_messages]
+text = "സന്ദേശങ്ങൾ"
+
+[shell_back]
+text = "തിരികെ"
+
+[shell_search_clear]
+text = "തിരയൽ മായ്ക്കുക"
+
+[shell_search_recent]
+text = "സമീപകാലം"
+
+[shell_search_empty_title]
+text = "സന്ദേശങ്ങളും ആളുകളെയും ഗ്രൂപ്പുകളും തിരയുക."
+
+[shell_search_empty_sub]
+text = "എല്ലാം ഈ ഉപകരണത്തിൽ തന്നെ നിൽക്കും."
+
+[shell_search_kind_group]
+text = "ഗ്രൂപ്പ്"
+
+[shell_search_kind_me]
+text = "നിങ്ങളുടെ പ്രൊഫൈൽ"
+
+[shell_search_kind_contact]
+text = "കോൺടാക്റ്റ്"
+
+[shell_search_tile_a11y]
+text = "{name}, {kind}"
+
+[shell_search_author_prefix]
+text = "{name}: "
+
+[people_done]
+text = "പൂർത്തിയായി"
+
+[people_cancel]
+text = "റദ്ദാക്കുക"
+
+[people_close]
+text = "അടയ്ക്കുക"
+
+[people_back]
+text = "തിരികെ"
+
+[people_save]
+text = "സേവ് ചെയ്യുക"
+
+[people_remove]
+text = "നീക്കം ചെയ്യുക"
+
+[people_not_now]
+text = "ഇപ്പോൾ വേണ്ട"
+
+[people_accept]
+text = "സ്വീകരിക്കുക"
+
+[people_message]
+text = "സന്ദേശം"
+
+[people_share]
+text = "പങ്കിടുക"
+
+[people_copied]
+text = "പകർത്തി"
+
+[people_call]
+text = "കോൾ ചെയ്യുക"
+
+[people_add]
+text = "ചേർക്കുക"
+
+[people_block]
+text = "ബ്ലോക്ക് ചെയ്യുക"
+
+[people_unblock]
+text = "അൺബ്ലോക്ക് ചെയ്യുക"
+
+[people_blocked]
+text = "ബ്ലോക്ക് ചെയ്തു"
+
+[people_blocked_you]
+text = "നിങ്ങളെ ബ്ലോക്ക് ചെയ്തു"
+
+[people_someone]
+text = "ഒരാൾ"
+
+[people_history_note]
+text = "ചരിത്രം ഈ ഫോണിൽ മാത്രം നിൽക്കും."
+
+[people_add_title]
+text = "കോൺടാക്റ്റ് ചേർക്കുക"
+
+[people_add_title_new]
+text = "പുതിയ കോൺടാക്റ്റ്"
+
+[people_add_title_request]
+text = "കോൺടാക്റ്റ് അഭ്യർത്ഥന"
+
+[people_add_tab_code]
+text = "കോഡ്"
+
+[people_add_tab_qr]
+text = "QR"
+
+[people_add_point_camera]
+text = "അവരുടെ Tinline കോഡിന് നേരെ പിടിക്കുക."
+
+[people_add_my_qr_a11y]
+text = "നിങ്ങളുടെ QR കോഡ്"
+
+[people_add_preparing]
+text = "നിങ്ങളുടെ കോഡ് തയ്യാറാക്കുന്നു…"
+
+[people_add_reading_image]
+text = "ചിത്രം വായിക്കുന്നു…"
+
+[people_add_let_scan]
+text = "Tinline ഉപയോഗിച്ച് ഇത് സ്കാൻ ചെയ്യാൻ അവരോട് പറയുക."
+
+[people_add_show_mine]
+text = "എന്റെ കോഡ് കാണിക്കുക"
+
+[people_add_scan_theirs]
+text = "അവരുടെ കോഡ് സ്കാൻ ചെയ്യുക"
+
+[people_add_choose_image]
+text = "ചിത്രം തിരഞ്ഞെടുക്കുക"
+
+[people_add_your_code]
+text = "നിങ്ങളുടെ കോഡ്"
+
+[people_add_new_code]
+text = "പുതിയ കോഡ്"
+
+[people_add_send_until]
+text = "നിങ്ങൾ സംസാരിക്കാൻ ആഗ്രഹിക്കുന്ന ആർക്കും ഏത് ആപ്പിലും ഇത് അയയ്ക്കാം. {date} വരെ ഇത് പ്രവർത്തിക്കും."
+
+[people_add_send]
+text = "നിങ്ങൾ സംസാരിക്കാൻ ആഗ്രഹിക്കുന്ന ആർക്കും ഏത് ആപ്പിലും ഇത് അയയ്ക്കാം."
+
+[people_add_copy_mine]
+text = "എന്റെ കോഡ് പകർത്തുക"
+
+[people_add_their_code]
+text = "അവരുടെ കോഡ്"
+
+[people_add_paste_theirs]
+text = "അവരുടെ കോഡ് പേസ്റ്റ് ചെയ്യുക"
+
+[people_add_open_profile]
+text = "പ്രൊഫൈൽ തുറക്കുക"
+
+[people_add_paste_new]
+text = "പുതിയൊരു കോഡ് പേസ്റ്റ് ചെയ്യുക"
+
+[people_add_adding]
+text = "ചേർക്കുന്നു…"
+
+[people_add_try_again]
+text = "വീണ്ടും ശ്രമിക്കുക"
+
+[people_add_hint_empty_clipboard]
+text = "ഇപ്പോൾ നിങ്ങളുടെ ക്ലിപ്പ്ബോർഡ് ശൂന്യമാണ്. അവരുടെ കോഡ് വരുമ്പോൾ, അത് പകർത്തി ഇവിടെ പേസ്റ്റ് ചെയ്യുക."
+
+[people_add_hint_own_code]
+text = "അത് നിങ്ങളുടെ സ്വന്തം കോഡാണ്. ഇത് അവർക്ക് അയയ്ക്കുക, അവരുടേത് ഇവിടെ പേസ്റ്റ് ചെയ്യുക."
+
+[people_add_hint_expired]
+text = "{name} നൽകിയ ആ കോഡിന്റെ കാലാവധി കഴിഞ്ഞു. പുതിയൊരെണ്ണം അവരോട് ചോദിക്കുക."
+
+[people_add_hint_not_code]
+text = "അതൊരു Tinline കോഡായി തോന്നുന്നില്ല. അവർക്ക് അത് ഒന്നുകൂടി പകർത്തി അയച്ചുതരാമോ?"
+
+[people_add_hint_no_qr]
+text = "QR ഒന്നും കണ്ടെത്തിയില്ല. കൂടുതൽ വ്യക്തമായ ഒരു ചിത്രം ശ്രമിച്ചുനോക്കൂ."
+
+[people_add_hint_many_qr]
+text = "ഒന്നിലധികം QR ഉണ്ട്. വേണ്ടത് മാത്രം വരുന്ന രീതിയിൽ ക്രോപ്പ് ചെയ്യുക."
+
+[people_add_hint_unreadable]
+text = "ആ ചിത്രം വായിക്കാൻ കഴിഞ്ഞില്ല. മറ്റൊന്ന് തിരഞ്ഞെടുക്കുക."
+
+[people_line_connected]
+text = "കണക്റ്റ് ചെയ്തു"
+
+[people_line_connecting]
+text = "കണക്റ്റ് ചെയ്യുന്നു"
+
+[people_line_not_connected]
+text = "ഇതുവരെ കണക്റ്റ് ആയിട്ടില്ല"
+
+[people_add_why_blocked]
+text = "നിങ്ങൾ {name} എന്നയാളെ ബ്ലോക്ക് ചെയ്തിട്ടുണ്ട്. വീണ്ടും ചേർക്കുന്നതിനു മുമ്പ് സ്വകാര്യതയിൽ ചെന്ന് അൺബ്ലോക്ക് ചെയ്യുക."
+
+[people_add_why_known]
+text = "{name} ഇതിനകം നിങ്ങളുടെ കോൺടാക്റ്റുകളിലുണ്ട്."
+
+[people_add_why_added]
+text = "{name} എന്നയാളിലേക്കുള്ള നിങ്ങളുടെ ലൈൻ തുറന്നിരിക്കുന്നു. ഒരു ഹലോ പറയൂ."
+
+[people_add_why_requested]
+text = "അഭ്യർത്ഥന അയച്ചു. {name} സ്വീകരിക്കുമ്പോൾ നിങ്ങളുടെ ലൈൻ തുറക്കും."
+
+[people_add_why_slow]
+text = "ഇപ്പോഴും ശ്രമിക്കുന്നു. ഇതിനായി {name} എന്നയാളുടെ Tinline തുറന്ന് ഓൺലൈനിലായിരിക്കണം."
+
+[people_add_why_reaching]
+text = "{name} എന്നയാളുടെ Tinline-ലേക്ക് എത്തുന്നു…"
+
+[people_add_why_timeout]
+text = "{name} എന്നയാളുടെ Tinline-ലേക്ക് എത്താൻ കഴിഞ്ഞില്ല. അത് തുറന്ന് ഓൺലൈനിലായിരിക്കണം, അതിനാൽ {name} ലഭ്യമാകുമ്പോൾ വീണ്ടും ശ്രമിക്കുക."
+
+[people_add_why_refused]
+text = "{name} എന്നയാളുടെ കോഡ് ഇപ്പോൾ സാധുവല്ല. അവർ പുതിയൊരെണ്ണം ഉണ്ടാക്കിയിരിക്കാം, അതിനാൽ ഏറ്റവും പുതിയ കോഡ് {name} എന്നയാളോട് ചോദിക്കുക."
+
+[people_add_why_blocked_by]
+text = "ഇപ്പോൾ {name} എന്നയാളെ ചേർക്കാൻ കഴിയില്ല. ഇവിടെ ബന്ധപ്പെടേണ്ടതില്ലെന്ന് അവർ തീരുമാനിച്ചിരിക്കുന്നു."
+
+[people_add_why_offline]
+text = "നിങ്ങൾ ഓഫ്‌ലൈനാണ്. കണക്റ്റ് ആയിക്കഴിഞ്ഞാൽ വീണ്ടും ശ്രമിക്കുക."
+
+[people_add_why_confirm]
+text = "ഇത് {name} തന്നെയാണോ? ഉറപ്പില്ലെങ്കിൽ, ആദ്യം അവരോട് ചോദിച്ച് ഉറപ്പാക്കുക."
+
+[people_add_read_camera]
+text = "ക്യാമറ ഉപയോഗിച്ച് വായിച്ചു"
+
+[people_add_read_image]
+text = "ചിത്രത്തിൽ നിന്ന് വായിച്ചു"
+
+[people_add_accepted_you]
+text = "നിങ്ങളുടെ അഭ്യർത്ഥന സ്വീകരിച്ചു"
+
+[people_add_has_your_code]
+text = "നിങ്ങളുടെ കോഡ് കൈവശമുണ്ട്"
+
+[people_add_inc_wants]
+text = "{name} നിങ്ങളെ കോൺടാക്റ്റായി ചേർക്കാൻ ആഗ്രഹിക്കുന്നു. സ്വീകരിച്ചാൽ നിങ്ങൾക്ക് പരസ്പരം സന്ദേശം അയയ്ക്കാനും വിളിക്കാനും കഴിയും."
+
+[people_add_inc_accepted]
+text = "{name} സ്വീകരിച്ചു. {name} എന്നയാളിലേക്കുള്ള നിങ്ങളുടെ ലൈൻ തുറന്നിരിക്കുന്നു. ഒരു ഹലോ പറയൂ."
+
+[people_add_inc_open]
+text = "{name} എന്നയാളിലേക്കുള്ള നിങ്ങളുടെ ലൈൻ തുറന്നിരിക്കുന്നു. ഒരു ഹലോ പറയൂ."
+
+[people_blocked_title]
+text = "ബ്ലോക്ക് ചെയ്തവർ"
+
+[people_blocked_list_note]
+text = "നിങ്ങളുടെ എല്ലാ ഉപകരണങ്ങളിലും ഒരേ ലിസ്റ്റ്: മറ്റൊരു ഉപകരണത്തിൽ ബ്ലോക്ക് ചെയ്തതും ഇവിടെ കാണിക്കും."
+
+[people_blocked_empty]
+text = "ആരെയും ബ്ലോക്ക് ചെയ്തിട്ടില്ല. ഒരാളെ ബ്ലോക്ക് ചെയ്യാൻ, അവരുടെ കോൺടാക്റ്റ് പേജ് തുറന്ന് ബ്ലോക്ക് ചെയ്യുക ടാപ്പ് ചെയ്യുക."
+
+[people_blocked_since]
+text = "ബ്ലോക്ക് ചെയ്തത്: {date}"
+
+[people_unblock_told]
+text = "നിങ്ങൾ അൺബ്ലോക്ക് ചെയ്ത കാര്യം {name} അറിയും"
+
+[people_unblock_a11y]
+text = "{name} എന്നയാളെ അൺബ്ലോക്ക് ചെയ്യുക"
+
+[people_unblocking_title]
+text = "അൺബ്ലോക്ക് ചെയ്യുമ്പോൾ"
+
+[people_detail_calls_themselves]
+text = "സ്വയം വിളിക്കുന്ന പേര് “{name}”"
+
+[people_detail_rename]
+text = "പേര് മാറ്റുക"
+
+[people_detail_can_do]
+text = "{name} എന്നയാൾക്ക് ചെയ്യാവുന്നത്"
+
+[people_detail_allow_calls]
+text = "കോളുകൾ അനുവദിക്കുക"
+
+[people_detail_allow_blocked]
+text = "ബ്ലോക്ക് ചെയ്തു: നിങ്ങൾ അൺബ്ലോക്ക് ചെയ്യുന്നതുവരെ ഒന്നും എത്തില്ല."
+
+[people_detail_allow_on]
+text = "{name} വിളിച്ചാൽ ഈ ഫോണിലും നിങ്ങളുടെ മറ്റ് ഉപകരണങ്ങളിലും റിംഗ് ചെയ്യും."
+
+[people_detail_allow_off]
+text = "ഓഫ്. {name} എന്നയാൾക്ക് നിങ്ങളെ സന്ദേശത്തിലൂടെ ബന്ധപ്പെടാം; അവരുടെ കോളുകൾ റിംഗ് ചെയ്യില്ല."
+
+[people_detail_calls_with]
+text = "{name} എന്നയാളുമായുള്ള കോളുകൾ"
+
+[people_detail_call]
+text = "Tinline കോൾ"
+
+[people_detail_direct]
+text = "നേരിട്ട്"
+
+[people_detail_relayed]
+text = "റിലേ വഴി"
+
+[people_detail_name_field]
+text = "ഈ ഫോണിലെ പേര്"
+
+[people_detail_rename_note]
+text = "ഇത് നിങ്ങൾക്ക് മാത്രമേ കാണാനാകൂ. അവർ സ്വയം വിളിക്കുന്നത് ഇപ്പോഴും “{name}” എന്നാണ്."
+
+[people_detail_use_theirs]
+text = "അവരുടെ പേര് ഉപയോഗിക്കുക"
+
+[people_switch_on]
+text = "ഓൺ"
+
+[people_switch_off]
+text = "ഓഫ്"
+
+[people_chip_selected]
+text = "തിരഞ്ഞെടുത്തു"
+
+[people_field_hide]
+text = "{label} മറയ്ക്കുക"
+
+[people_field_show]
+text = "{label} കാണിക്കുക"
+
+[people_passphrase]
+text = "പാസ്‌ഫ്രേസ്"
+
+[people_passphrase_hide]
+text = "പാസ്‌ഫ്രേസ് മറയ്ക്കുക"
+
+[people_passphrase_show]
+text = "പാസ്‌ഫ്രേസ് കാണിക്കുക"
+
+[people_theme_light]
+text = "ലൈറ്റിലേക്ക് മാറുക"
+
+[people_theme_dark]
+text = "ഡാർക്കിലേക്ക് മാറുക"
+
+[people_step_of]
+text = "{step} / {total}"
+
+[people_step_a11y]
+text = "സജ്ജീകരണ പുരോഗതി, ഘട്ടം {step} / {total}"
+
+[people_step_a11y_label]
+text = "സജ്ജീകരണ പുരോഗതി, ഘട്ടം {step} / {total}: {label}"
+
+[people_pic_too_big]
+text = "ആ ഫോട്ടോയുടെ വലുപ്പം {size} MB ആണ്. ഫോട്ടോകൾക്ക് പരമാവധി {max} MB വരെയാകാം."
+
+[people_pic_bad_type]
+text = "Tinline-ന് PNG, JPEG, WebP ഫോട്ടോകൾ ഉപയോഗിക്കാം. ആ ഫയൽ മറ്റൊരു തരത്തിലുള്ളതാണ്."
+
+[people_pic_unreadable]
+text = "ആ ഫയൽ ഒരു ഫോട്ടോയായി വായിക്കാൻ കഴിഞ്ഞില്ല. അത് കേടായിരിക്കാം."
+
+[people_pic_too_large_px]
+text = "ആ ഫോട്ടോയുടെ വലുപ്പം {w} × {h} പിക്സൽ ആണ്. ഓരോ വശത്തും പരമാവധി {max} പിക്സൽ വരെ Tinline സ്വീകരിക്കും."
+
+[people_rule_name_empty]
+text = "പേര് ശൂന്യമായി വിടാൻ കഴിയില്ല."
+
+[people_rule_name_control]
+text = "പേരിൽ കൺട്രോൾ അക്ഷരങ്ങളോ ടെക്സ്റ്റ് ദിശാ അക്ഷരങ്ങളോ പാടില്ല."
+
+[people_rule_name_long]
+text = "ആ പേര് വളരെ നീളമുള്ളതാണ്. പരമാവധി {limit} ബൈറ്റ്; ചില അക്ഷരങ്ങൾക്ക് ഒന്നിലധികം ബൈറ്റ് വേണം."
+
+[people_rule_status_long]
+text = "സ്റ്റാറ്റസിന് ഇത് വളരെ നീളമുള്ളതാണ്: പരമാവധി {limit} ബൈറ്റ്, ചില അക്ഷരങ്ങൾക്ക് ഒന്നിലധികം ബൈറ്റ് വേണം."
+
+[people_rule_about_long]
+text = "“എന്നെക്കുറിച്ച്” എന്നതിന് ഇത് വളരെ നീളമുള്ളതാണ്: പരമാവധി {limit} ബൈറ്റ്, ചില അക്ഷരങ്ങൾക്ക് ഒന്നിലധികം ബൈറ്റ് വേണം."
+
+[people_rule_status_control]
+text = "സ്റ്റാറ്റസിൽ കൺട്രോൾ അക്ഷരങ്ങളോ ടെക്സ്റ്റ് ദിശാ അക്ഷരങ്ങളോ പാടില്ല."
+
+[people_rule_about_control]
+text = "“എന്നെക്കുറിച്ച്” എന്നതിൽ കൺട്രോൾ അക്ഷരങ്ങളോ ടെക്സ്റ്റ് ദിശാ അക്ഷരങ്ങളോ പാടില്ല."
+
+[people_rule_key_empty]
+text = "ഈ വിവരത്തിന് ഒരു പേര് നൽകുക."
+
+[people_rule_key_bad]
+text = "ആ പേര് ഉപയോഗിക്കാൻ കഴിയില്ല. കൺട്രോൾ അക്ഷരങ്ങളില്ലാതെ ചെറുതായി നൽകുക."
+
+[people_rule_value_long]
+text = "ഇത് വളരെ നീളമുള്ളതാണ്. ഓരോ വിവരവും പരമാവധി {limit} വരെയാകാം."
+
+[people_rule_too_many]
+text = "നിങ്ങൾ {max} വിവരങ്ങൾ എന്ന പരിധിയിലെത്തി. മറ്റൊന്ന് ചേർക്കാൻ ഒരെണ്ണം നീക്കം ചെയ്യുക."
+
+[people_rule_full]
+text = "നിങ്ങളുടെ പ്രൊഫൈൽ നിറഞ്ഞു. കൂടുതൽ ചേർക്കാൻ ചില വിവരങ്ങൾ നീക്കം ചെയ്യുക."
+
+[people_rule_picture]
+text = "അതിന് ഫോട്ടോ ഓപ്ഷനുകൾ ഉപയോഗിക്കുക."
+
+[people_rule_availability]
+text = "ലഭ്യത മാറ്റാം, പക്ഷേ നീക്കം ചെയ്യാൻ കഴിയില്ല."
+
+[people_info_pronouns]
+text = "സർവ്വനാമങ്ങൾ"
+
+[people_info_pronouns_hint]
+text = "ഉദാഹരണത്തിന്, അവൾ"
+
+[people_info_location]
+text = "സ്ഥലം"
+
+[people_info_location_hint]
+text = "നഗരം അല്ലെങ്കിൽ പ്രദേശം"
+
+[people_info_website]
+text = "വെബ്സൈറ്റ്"
+
+[people_busy_30m]
+text = "30 മിനിറ്റ്"
+
+[people_busy_1h]
+text = "1 മണിക്കൂർ"
+
+[people_busy_4h]
+text = "4 മണിക്കൂർ"
+
+[people_busy_tom]
+text = "നാളെ രാവിലെ"
+
+[people_busy_open]
+text = "സമയപരിധിയില്ല"
+
+[people_picture_help]
+text = "നിങ്ങളുടെ ഫോട്ടോ മാറ്റുകയോ നീക്കം ചെയ്യുകയോ ചെയ്യുമ്പോൾ, ലിങ്ക് ചെയ്ത ഉപകരണങ്ങളും കോൺടാക്റ്റുകളും സിങ്ക് ചെയ്യുന്ന സമയത്ത് അവരുടെ പക്കലുള്ള പഴയ പകർപ്പ് ഇല്ലാതാക്കാൻ അഭ്യർത്ഥിക്കും. സ്ക്രീൻഷോട്ടുകൾ, ബാക്കപ്പുകൾ, മാറ്റം വരുത്തിയ ആപ്പുകൾ സൂക്ഷിക്കുന്ന പകർപ്പുകൾ എന്നിവ ഇല്ലാതാക്കാൻ ആപ്പിന് കഴിയില്ല."
+
+[people_field_help]
+text = "നിങ്ങളുടെ കോൺടാക്റ്റുകൾക്ക് നിങ്ങളുടെ പ്രൊഫൈൽ കാണാം. ഒരു വിവരം നീക്കം ചെയ്താൽ അത് പ്രൊഫൈലിൽ നിന്ന് മറയും; മുമ്പത്തെ പതിപ്പുകൾ സിങ്ക് ചെയ്ത ചരിത്രത്തിൽ ശേഷിച്ചേക്കാം."
+
+[people_busy_unsupported]
+text = "“തിരക്കിലാണ്” ഇതുവരെ ലഭ്യമല്ല. നിങ്ങളുടെ കോൾ ക്രമീകരണങ്ങൾക്ക് മാറ്റമില്ല."
+
+[people_save_failed]
+text = "അത് സേവ് ചെയ്യാൻ കഴിഞ്ഞില്ല. നിങ്ങളുടെ പ്രൊഫൈലിന് മാറ്റമില്ല, നിങ്ങൾ ടൈപ്പ് ചെയ്തത് ഇവിടെത്തന്നെയുണ്ട്."
+
+[people_account_changed]
+text = "തിരഞ്ഞെടുത്ത അക്കൗണ്ട് മാറി. പുതിയ അക്കൗണ്ടിൽ ഒന്നും സേവ് ചെയ്തിട്ടില്ല."
+
+[people_save_picture_failed]
+text = "നിങ്ങളുടെ ഫോട്ടോ സേവ് ചെയ്യാൻ കഴിഞ്ഞില്ല. നിലവിലെ ഫോട്ടോയ്ക്ക് മാറ്റമില്ല."
+
+[people_remove_picture_failed]
+text = "നിങ്ങളുടെ ഫോട്ടോ നീക്കം ചെയ്യാൻ കഴിഞ്ഞില്ല. അതിന് മാറ്റമില്ല."
+
+[people_my_profile]
+text = "എന്റെ പ്രൊഫൈൽ"
+
+[people_profile_bad_link]
+text = "http:// അല്ലെങ്കിൽ https:// എന്നതിൽ തുടങ്ങുന്ന ഒരു വെബ് വിലാസം നൽകുക."
+
+[people_profile_section]
+text = "പ്രൊഫൈൽ"
+
+[people_profile_name]
+text = "പേര്"
+
+[people_profile_name_placeholder]
+text = "നിങ്ങളുടെ പേര്"
+
+[people_profile_status]
+text = "സ്റ്റാറ്റസ്"
+
+[people_profile_status_placeholder]
+text = "എന്തൊക്കെയുണ്ട് വിശേഷം?"
+
+[people_profile_status_empty]
+text = "ഒരു സ്റ്റാറ്റസ് ചേർക്കുക"
+
+[people_profile_about]
+text = "എന്നെക്കുറിച്ച്"
+
+[people_profile_about_empty]
+text = "നിങ്ങളെക്കുറിച്ച് കുറച്ച് വാക്കുകൾ ചേർക്കുക"
+
+[people_profile_availability]
+text = "ലഭ്യത"
+
+[people_profile_availability_note]
+text = "നിങ്ങളുടെ കോൺടാക്റ്റുകൾക്ക് ഇത് കാണാം, നിങ്ങളുടെ എല്ലാ ഉപകരണങ്ങളിലും ഇത് ഒന്നുതന്നെയാണ്. കോളുകൾ നിങ്ങളിലേക്ക് എത്തുമോ എന്നതിനെ ഇത് ബാധിക്കും, നിങ്ങൾ ഓൺലൈനിലാണോ എന്നതിൽ നിന്ന് ഇത് വ്യത്യസ്തമാണ്."
+
+[people_profile_additional]
+text = "കൂടുതൽ വിവരങ്ങൾ"
+
+[people_profile_add_info]
+text = "വിവരം ചേർക്കുക"
+
+[people_profile_other_note]
+text = "ചില വിവരങ്ങൾ മറ്റൊരു ഉപകരണത്തിൽ നിന്നോ ആപ്പ് പതിപ്പിൽ നിന്നോ വന്നതാണ്. അവ സൂക്ഷിച്ചിരിക്കുന്നതുപോലെ കാണിക്കും, നിങ്ങൾ മറ്റെന്തെങ്കിലും എഡിറ്റ് ചെയ്യുമ്പോഴും അവ നിലനിൽക്കും."
+
+[people_profile_change_photo]
+text = "ഫോട്ടോ മാറ്റുക"
+
+[people_profile_add_photo]
+text = "ഫോട്ടോ ചേർക്കുക"
+
+[people_profile_picture]
+text = "ഫോട്ടോ"
+
+[people_profile_dismiss]
+text = "ഒഴിവാക്കുക"
+
+[people_profile_saved_offline]
+text = "ഈ ഉപകരണത്തിൽ സേവ് ചെയ്തു. നിങ്ങൾ കണക്റ്റ് ചെയ്യുമ്പോൾ സിങ്ക് ചെയ്യും."
+
+[people_profile_too_detailed]
+text = "ആ ഫോട്ടോയിൽ സേവ് ചെയ്യാനാകാത്തത്ര വിശദാംശങ്ങളുണ്ട്. മറ്റൊന്ന് ശ്രമിച്ചുനോക്കൂ."
+
+[people_profile_picture_updated]
+text = "ഫോട്ടോ അപ്ഡേറ്റ് ചെയ്തു"
+
+[people_profile_picture_removed]
+text = "ഫോട്ടോ നീക്കം ചെയ്തു"
+
+[people_profile_remove_title]
+text = "നിങ്ങളുടെ ഫോട്ടോ നീക്കം ചെയ്യണോ?"
+
+[people_profile_remove_note]
+text = "പകരം നിങ്ങളുടെ പേരിന്റെ ആദ്യാക്ഷരങ്ങൾ കാണിക്കും."
+
+[people_profile_remove_picture]
+text = "ഫോട്ടോ നീക്കം ചെയ്യുക"
+
+[people_profile_available]
+text = "ലഭ്യമാണ്"
+
+[people_profile_busy]
+text = "തിരക്കിലാണ്"
+
+[people_profile_busy_open]
+text = "നിങ്ങൾ മാറ്റുന്നതുവരെ തിരക്കിലാണ്"
+
+[people_profile_for_how_long]
+text = "എത്ര നേരത്തേക്ക്"
+
+[people_profile_time_passed]
+text = "കഴിഞ്ഞുപോകാത്ത ഒരു സമയം തിരഞ്ഞെടുക്കുക."
+
+[people_profile_info_dup]
+text = "ആ പേരിൽ നിങ്ങൾക്ക് ഇതിനകം ഒരു വിവരമുണ്ട്."
+
+[people_profile_info_empty]
+text = "സേവ് ചെയ്യാൻ എന്തെങ്കിലും ചേർക്കുക."
+
+[people_profile_something_else]
+text = "മറ്റെന്തെങ്കിലും"
+
+[people_profile_what_called]
+text = "ഇതിന്റെ പേര് എന്താണ്?"
+
+[people_profile_called_placeholder]
+text = "ഉദാഹരണത്തിന്, ഇഷ്ടപ്പെട്ട ചായ"
+
+[people_profile_value]
+text = "മൂല്യം"
+
+[people_profile_name_it]
+text = "സ്വയം പേര് നൽകുക"
+
+[people_profile_kinds]
+text = "വിവരങ്ങളുടെ തരങ്ങൾ"
+
+[people_profile_add_note]
+text = "നിങ്ങളുടെ കോൺടാക്റ്റുകൾക്ക് ഇത് നിങ്ങളുടെ പ്രൊഫൈലിൽ കാണാം."
+
+[people_profile_link_title]
+text = "ഈ ലിങ്ക് തുറക്കണോ?"
+
+[people_profile_link_note]
+text = "ഇത് Tinline-നു പുറത്ത്, നിങ്ങളുടെ ബ്രൗസറിൽ തുറക്കും. Tinline ഇത് നിങ്ങൾക്കായി ലോഡ് ചെയ്യുന്നില്ല, അവിടെ എന്താണെന്ന് ഉറപ്പുനൽകാനും കഴിയില്ല."
+
+[people_profile_open_link]
+text = "ലിങ്ക് തുറക്കുക"
+
+[people_crop_title]
+text = "നിങ്ങളുടെ ഫോട്ടോ ക്രമീകരിക്കുക"
+
+[people_crop_use]
+text = "ഫോട്ടോ ഉപയോഗിക്കുക"
+
+[people_crop_failed]
+text = "ആ ഫോട്ടോ തയ്യാറാക്കാൻ കഴിഞ്ഞില്ല. മറ്റൊന്ന് ശ്രമിച്ചുനോക്കൂ."
+
+[people_crop_help]
+text = "ഫോട്ടോ നീക്കാൻ വലിച്ചിടുക. സൂം ചെയ്യാൻ സ്ലൈഡർ ഉപയോഗിക്കുക."
+
+[people_crop_zoom]
+text = "സൂം"
+
+[people_ui_saved_offline]
+text = "സേവ് ചെയ്തു · കണക്റ്റ് ചെയ്യുമ്പോൾ സിങ്ക് ചെയ്യും"
+
+[people_ui_saved]
+text = "സേവ് ചെയ്തു"
+
+[people_ui_not_set]
+text = "സജ്ജീകരിച്ചിട്ടില്ല"
+
+[people_ui_bytes]
+text = "{bytes} / {limit} ബൈറ്റ്"
+
+[people_ui_remove_title]
+text = "“{label}” നിങ്ങളുടെ പ്രൊഫൈലിൽ നിന്ന് നീക്കം ചെയ്യണോ?"
+
+[people_ui_remove_note]
+text = "ഇത് നിങ്ങളുടെ പ്രൊഫൈലിൽ നിന്ന് മാറും. മുമ്പത്തെ പതിപ്പുകൾ സിങ്ക് ചെയ്ത ചരിത്രത്തിൽ ശേഷിച്ചേക്കാം."
+
+[people_ui_row_a11y]
+text = "{label}: {value}. എഡിറ്റ് ചെയ്യുക"
+
+[people_ui_open_a11y]
+text = "{label} തുറക്കുക: {url}"
+
+[people_ui_remove_a11y]
+text = "{label} നീക്കം ചെയ്യുക"
+
+[people_yes]
+text = "അതെ"
+
+[people_no]
+text = "ഇല്ല"
+
+[call_route_phone]
+text = "ഫോൺ"
+
+[call_route_speaker]
+text = "സ്പീക്കർ"
+
+[call_route_headset]
+text = "ഹെഡ്സെറ്റ്"
+
+[call_route_bluetooth]
+text = "Bluetooth"
+
+[call_route_other]
+text = "മറ്റുള്ളവ"
+
+[call_mic_permission_needed_place]
+text = "കോൾ ചെയ്യാൻ മൈക്രോഫോൺ അനുമതി വേണം"
+
+[call_status_reconnecting]
+text = "കോൾ വീണ്ടും കണക്റ്റ് ചെയ്യുന്നു…"
+
+[call_status_ringing]
+text = "റിംഗ് ചെയ്യുന്നു…"
+
+[call_status_calling]
+text = "വിളിക്കുന്നു…"
+
+[call_status_waking]
+text = "അവരുടെ ഫോൺ ഉണർത്തുന്നു…"
+
+[call_privacy_active]
+text = "എൻഡ്-ടു-എൻഡ് എൻക്രിപ്റ്റ് ചെയ്തത്. നിങ്ങളുടെ ശബ്ദം ഈ ഉപകരണത്തിൽ എൻക്രിപ്റ്റ് ചെയ്യുന്നു, {name} എന്നയാളുടെ ഉപകരണത്തിൽ മാത്രമേ ഡീക്രിപ്റ്റ് ചെയ്യൂ."
+
+[call_privacy_connecting]
+text = "{name} എന്നയാളുമായി കണക്റ്റ് ചെയ്യുന്നു. കോൾ കണക്റ്റ് ആയിക്കഴിഞ്ഞാൽ അത് എൻഡ്-ടു-എൻഡ് എൻക്രിപ്റ്റ് ചെയ്തതായിരിക്കും."
+
+[call_mark_incoming]
+text = "വരുന്ന കോൾ"
+
+[call_mark_outgoing]
+text = "വിളിക്കുന്നു"
+
+[call_mark_connecting]
+text = "കണക്റ്റ് ചെയ്യുന്നു"
+
+[call_mark_active]
+text = "കോളിലാണ്"
+
+[call_mark_reconnecting]
+text = "വീണ്ടും കണക്റ്റ് ചെയ്യുന്നു"
+
+[call_unknown_name]
+text = "അജ്ഞാതം"
+
+[call_system_call_name]
+text = "Tinline കോൾ"
+
+[call_notification_name]
+text = "Tinline കോൾ"
+
+[call_about_title]
+text = "ഈ കോളിനെക്കുറിച്ച്"
+
+[call_back_continues]
+text = "തിരികെ. കോൾ തുടരും"
+
+[call_message_continues]
+text = "സന്ദേശം. കോൾ തുടരും"
+
+[call_about_reconnecting]
+text = "ഈ കോളിനെക്കുറിച്ച്. വീണ്ടും കണക്റ്റ് ചെയ്യുന്നു."
+
+[call_about_signal_direct]
+text = "ഈ കോളിനെക്കുറിച്ച്. സിഗ്നൽ: {word}, നേരിട്ട്."
+
+[call_about_signal_relayed]
+text = "ഈ കോളിനെക്കുറിച്ച്. സിഗ്നൽ: {word}, റിലേ വഴി."
+
+[call_control_mute]
+text = "മ്യൂട്ട് ചെയ്യുക"
+
+[call_control_muted]
+text = "മ്യൂട്ട് ചെയ്തു"
+
+[call_control_camera]
+text = "ക്യാമറ"
+
+[call_control_end_label]
+text = "കോൾ അവസാനിപ്പിക്കുക"
+
+[call_control_end]
+text = "അവസാനിപ്പിക്കുക"
+
+[call_control_flip_label]
+text = "ക്യാമറ മാറ്റുക"
+
+[call_control_flip]
+text = "മാറ്റുക"
+
+[call_control_audio_route]
+text = "ഓഡിയോ: {route}"
+
+[call_status_incoming_video]
+text = "Tinline വീഡിയോ കോൾ"
+
+[call_status_incoming_voice]
+text = "Tinline വോയ്‌സ് കോൾ"
+
+[call_path_encrypted]
+text = "എൻഡ്-ടു-എൻഡ് എൻക്രിപ്റ്റ് ചെയ്തത്"
+
+[call_path_direct]
+text = "എൻഡ്-ടു-എൻഡ് എൻക്രിപ്റ്റ് ചെയ്തത് · നേരിട്ട്"
+
+[call_path_relayed]
+text = "എൻഡ്-ടു-എൻഡ് എൻക്രിപ്റ്റ് ചെയ്തത് · റിലേ വഴി"
+
+[call_about_encrypted_lead]
+text = "എൻഡ്-ടു-എൻഡ് എൻക്രിപ്റ്റ് ചെയ്തത്."
+
+[call_about_encrypted_voice]
+text = "നിങ്ങളുടെ ശബ്ദം ഈ ഉപകരണത്തിൽ എൻക്രിപ്റ്റ് ചെയ്യുന്നു, {name} എന്നയാളുടെ ഉപകരണത്തിൽ മാത്രമേ ഡീക്രിപ്റ്റ് ചെയ്യൂ."
+
+[call_about_encrypted_video]
+text = "നിങ്ങളുടെ ശബ്ദവും ദൃശ്യവും ഈ ഉപകരണത്തിൽ എൻക്രിപ്റ്റ് ചെയ്യുന്നു, {name} എന്നയാളുടെ ഉപകരണത്തിൽ മാത്രമേ ഡീക്രിപ്റ്റ് ചെയ്യൂ."
+
+[call_about_headline_reconnecting]
+text = "വീണ്ടും കണക്റ്റ് ചെയ്യുന്നു"
+
+[call_about_headline_direct]
+text = "സിഗ്നൽ: {word} · നേരിട്ട്"
+
+[call_about_headline_relayed]
+text = "സിഗ്നൽ: {word} · റിലേ വഴി"
+
+[call_about_line_reconnecting]
+text = "കണക്ഷൻ ഒരു നിമിഷം മുറിഞ്ഞു. {name} എന്നയാളിലേക്ക് തിരികെയെത്താനുള്ള വഴി Tinline കണ്ടെത്തുന്നു."
+
+[call_about_line_direct]
+text = "നിങ്ങളുടെ കോൾ നിങ്ങളുടെ ഉപകരണത്തിനും {name} എന്നയാളുടെ ഉപകരണത്തിനും ഇടയിൽ നേരിട്ടാണ് പോകുന്നത്."
+
+[call_about_line_relayed_voice]
+text = "ഇപ്പോൾ നിങ്ങളുടെ ഉപകരണങ്ങൾക്ക് പരസ്പരം നേരിട്ട് എത്താൻ കഴിയുന്നില്ല, അതിനാൽ ഒരു റിലേ കോൾ കൈമാറുന്നു. അതിന് കേൾക്കാൻ കഴിയില്ല."
+
+[call_about_line_relayed_video]
+text = "ഇപ്പോൾ നിങ്ങളുടെ ഉപകരണങ്ങൾക്ക് പരസ്പരം നേരിട്ട് എത്താൻ കഴിയുന്നില്ല, അതിനാൽ ഒരു റിലേ കോൾ കൈമാറുന്നു. അതിന് കേൾക്കാനോ കാണാനോ കഴിയില്ല."
+
+[call_about_line_weak]
+text = "ലൈൻ ദുർബലമാണ്, അതിനാൽ {name} എന്നയാളുടെ ശബ്ദം ഇടയ്ക്ക് മുറിഞ്ഞേക്കാം."
+
+[call_about_stats]
+text = "{rtt} ms റൗണ്ട് ട്രിപ്പ് · {loss}% നഷ്ടം"
+
+[call_about_your_video]
+text = "നിങ്ങളുടെ വീഡിയോ"
+
+[call_about_their_video]
+text = "അവരുടെ വീഡിയോ"
+
+[call_got_it]
+text = "മനസ്സിലായി"
+
+[call_strip_return]
+text = "{name} എന്നയാളുമായുള്ള കോളിലേക്ക് മടങ്ങുക"
+
+[call_strip_return_group]
+text = "{name} ഗ്രൂപ്പിലെ ഗ്രൂപ്പ് കോളിലേക്ക് മടങ്ങുക"
+
+[call_strip_return_video]
+text = "{name} എന്നയാളുമായുള്ള വീഡിയോ കോളിലേക്ക് മടങ്ങുക"
+
+[call_strip_label]
+text = "{label}. {status}"
+
+[call_mic_unavailable]
+text = "മൈക്രോഫോൺ ലഭ്യമല്ല - നിങ്ങളെ കേൾക്കാനാകില്ല"
+
+[call_mic_permission_needed]
+text = "മൈക്രോഫോൺ അനുമതി വേണം - നിങ്ങളെ കേൾക്കാനാകില്ല"
+
+[call_camera_permission_needed]
+text = "ക്യാമറ അനുമതി വേണം - അവർക്ക് ഇപ്പോഴും നിങ്ങളെ കേൾക്കാം"
+
+[call_camera_unavailable]
+text = "ക്യാമറ ലഭ്യമല്ല"
+
+[call_group_call_name]
+text = "ഗ്രൂപ്പ് കോൾ"
+
+[call_quality_auto]
+text = "ഓട്ടോ"
+
+[call_quality_prefer_hd]
+text = "HD-ക്ക് മുൻഗണന"
+
+[call_hd_off]
+text = "വ്യക്തമായ വീഡിയോ ഓഫ്"
+
+[call_hd_paused]
+text = "HD താൽക്കാലികമായി നിർത്തി · കണക്ഷൻ ദുർബലം"
+
+[call_hd_on]
+text = "വ്യക്തമായ വീഡിയോ ഓൺ"
+
+[call_hd_metered]
+text = "മൊബൈൽ ഡാറ്റയിൽ HD കൂടുതൽ ഉപയോഗിക്കും · HD ടാപ്പ് ചെയ്യുക"
+
+[call_resolution_hd]
+text = "HD · {size}"
+
+[call_status_finding_host]
+text = "കോൾ ഹോസ്റ്റിനെ കണ്ടെത്തുന്നു…"
+
+[call_status_connecting]
+text = "കോൾ കണക്റ്റ് ചെയ്യുന്നു…"
+
+[call_group_already_in_call]
+text = "നിങ്ങൾ ഇതിനകം ഒരു കോളിലാണ്."
+
+[call_group_ended]
+text = "കോൾ അവസാനിച്ചു"
+
+[call_group_ended_host_lost]
+text = "കോൾ അവസാനിച്ചു — ഹോസ്റ്റ് ലഭ്യമല്ലാതായി"
+
+[call_group_battery_limited]
+text = "ബാറ്ററി {percent} %-ൽ താഴെ. ഹോസ്റ്റിംഗ് പരിമിതമാണ്: ഒരു സമയം ഒരാളെ മാത്രമേ കേൾക്കൂ, പുതിയ ആർക്കും ചേരാനാകില്ല."
+
+[call_group_no_host]
+text = "കോൾ ഹോസ്റ്റ് ലഭ്യമല്ല"
+
+[call_group_connect_failed]
+text = "കോൾ കണക്റ്റ് ആയില്ല"
+
+[call_person_you]
+text = "നിങ്ങൾ"
+
+[call_person_someone]
+text = "ഒരാൾ"
+
+[call_group_fallback]
+text = "ഗ്രൂപ്പ്"
+
+[call_group_minimize]
+text = "കോൾ ചെറുതാക്കുക"
+
+[call_group_only_you]
+text = "ഇപ്പോൾ നിങ്ങൾ മാത്രം. മറ്റുള്ളവർക്കായി കാത്തിരിക്കുന്നു."
+
+[call_group_people_count]
+one = "കോളിൽ {count} ആൾ"
+other = "കോളിൽ {count} പേർ"
+
+[call_group_more]
+one = "+{count} ആൾ കൂടി"
+other = "+{count} പേർ കൂടി"
+
+[call_ok]
+text = "ശരി"
+
+[call_group_you_host]
+text = "നിങ്ങളാണ് കോൾ ഹോസ്റ്റ്"
+
+[call_group_host_is]
+text = "കോൾ ഹോസ്റ്റ്: {name} എന്നയാളുടെ ഉപകരണം"
+
+[call_group_host_is_yours]
+text = "കോൾ ഹോസ്റ്റ്: നിങ്ങളുടെ മറ്റേ ഉപകരണം"
+
+[call_group_host_is_someone]
+text = "കോൾ ഹോസ്റ്റ്: ഒരു അംഗത്തിന്റെ ഉപകരണം"
+
+[call_control_leave]
+text = "പുറത്തുകടക്കുക"
+
+[call_group_about_trust]
+text = "കോൾ ഹോസ്റ്റുമായുള്ള നിങ്ങളുടെ കണക്ഷൻ എൻക്രിപ്റ്റ് ചെയ്തതാണ്, പക്ഷേ ഓഡിയോ കോൾ ഹോസ്റ്റിൽ എത്തുന്നുണ്ട്, അതിനാൽ അതിന് ഈ കോൾ കേൾക്കാം. ഒരു ചാറ്റ് ഹോസ്റ്റിനെ പോസ്റ്റുകൾ ഏൽപ്പിക്കുന്നതുപോലെയാണ് ഈ കോളിനായി നിങ്ങൾ അതിനെ വിശ്വസിക്കുന്നത്."
+
+[call_group_about_who]
+text = "ഗ്രൂപ്പ് അഡ്മിൻ തിരഞ്ഞെടുക്കുകയും അത് സമ്മതിക്കുകയും ചെയ്ത ഒരു ഉപകരണമാണ് കോൾ ഹോസ്റ്റ്. ഇത് ചാറ്റ് ഹോസ്റ്റിംഗിൽ നിന്ന് വ്യത്യസ്തമാണ്. ഗ്രൂപ്പ് വിവരങ്ങളിൽ അഡ്മിൻമാർക്ക് കോൾ ഹോസ്റ്റുകളെ മാറ്റാം."
+
+[call_group_in_call]
+text = "നിങ്ങൾ കോളിലാണ്"
+
+[call_group_in_progress]
+text = "കോൾ നടക്കുന്നു"
+
+[call_group_started_by]
+text = "ആരംഭിച്ചത്: {name}"
+
+[call_open]
+text = "തുറക്കുക"
+
+[call_join]
+text = "ചേരുക"
+
+[call_group_open_label]
+text = "{group} തുറക്കുക"
+
+[call_not_now]
+text = "ഇപ്പോൾ വേണ്ട"
+
+[call_dismiss]
+text = "ഒഴിവാക്കുക"
+
+[call_group_announce_ringing]
+text = "{name} ഗ്രൂപ്പിനെ വിളിക്കുന്നു"
+
+[call_group_announce_started]
+text = "{name} ഒരു കോൾ ആരംഭിച്ചു"
+
+[call_group_announce_ringing_label]
+text = "{name} {group} ഗ്രൂപ്പിനെ വിളിക്കുന്നു"
+
+[call_group_announce_started_label]
+text = "{name} {group} ഗ്രൂപ്പിൽ ഒരു കോൾ ആരംഭിച്ചു"
+
+[call_held]
+text = "നിങ്ങളുടെ മറ്റേ കോൾ നടക്കുമ്പോൾ ഹോൾഡിലാണ്"
+
+[call_decline]
+text = "നിരസിക്കുക"
+
+[call_answer]
+text = "എടുക്കുക"
+
+[call_video_button]
+text = "വീഡിയോ"
+
+[call_answer_with_video]
+text = "വീഡിയോയോടെ എടുക്കുക"
+
+[call_waiting_title]
+text = "{name} വിളിക്കുന്നു"
+
+[call_waiting_sub]
+text = "നിങ്ങളുടെ കോളിനിടയിൽ"
+
+[call_waiting_end_answer]
+text = "അവസാനിപ്പിച്ച് എടുക്കുക"
+
+[call_waiting_end_answer_desc]
+text = "അവസാനിപ്പിച്ച് എടുക്കുക"
+
+[call_waiting_ends]
+text = "{name} എന്നയാളുമായുള്ള നിങ്ങളുടെ കോൾ അവസാനിക്കും"
+
+[call_waiting_label]
+text = "നിങ്ങളുടെ കോളിനിടയിൽ {name} വിളിക്കുന്നു"
+
+[call_starting_video]
+text = "വീഡിയോ തുടങ്ങുന്നു…"
+
+[call_route_sheet_title]
+text = "കോൾ കേൾക്കേണ്ടത്"
+
+[call_route_relayed_hint]
+text = "റിലേ വഴി: ഈ നെറ്റ്‌വർക്കിൽ നേരിട്ടുള്ള ലൈൻ സാധ്യമായില്ല, അതിനാൽ എൻക്രിപ്റ്റ് ചെയ്ത ഒരു റിലേ കോൾ കൈമാറുന്നു. അതിന് നിങ്ങളെ കേൾക്കാൻ കഴിയില്ല."
+
+[call_selected]
+text = "തിരഞ്ഞെടുത്തു"
+
+[call_camera_off]
+text = "{name} എന്നയാളുടെ ക്യാമറ ഓഫാണ്"
+
+[call_connecting_video]
+text = "വീഡിയോ കണക്റ്റ് ചെയ്യുന്നു…"
+
+[call_hd_label_paused]
+text = "വ്യക്തമായ വീഡിയോ ഓൺ, കണക്ഷൻ ദുർബലമായതിനാൽ താൽക്കാലികമായി നിർത്തി"
+
+[call_hd_label_on]
+text = "വ്യക്തമായ വീഡിയോ ഓൺ, 540p വരെ"
+
+[call_hd_label_off]
+text = "വ്യക്തമായ വീഡിയോ ഓഫ്"
+
+[call_value_on]
+text = "ഓൺ"
+
+[call_value_off]
+text = "ഓഫ്"
+
+[call_ended_title]
+text = "കോൾ അവസാനിച്ചു"
+
+[call_badge_direct]
+text = "നേരിട്ട്"
+
+[call_badge_relayed]
+text = "റിലേ വഴി"
+
+[call_badge_signal]
+text = "സിഗ്നൽ: {word}"
+
+[call_call_again]
+text = "വീണ്ടും വിളിക്കുക"
+
+[call_close]
+text = "അടയ്ക്കുക"
+
+[call_auto_close]
+text = "4 സെക്കൻഡിനു ശേഷം തനിയെ അടയും."
+
+[call_unreachable_title]
+text = "{name} എന്നയാളെ ബന്ധപ്പെടാൻ കഴിഞ്ഞില്ല"
+
+[call_unreachable_title_blank]
+text = "അവരെ ബന്ധപ്പെടാൻ കഴിഞ്ഞില്ല"
+
+[call_unreachable_body]
+text = "{name} ഓഫ്‌ലൈനായിരിക്കാം, സിഗ്നൽ ഇല്ലാത്തിടത്തായിരിക്കാം, അല്ലെങ്കിൽ ഇപ്പോൾ കോളുകൾ എടുക്കുന്നില്ലായിരിക്കാം. Tinline-ന് സന്ദേശങ്ങൾ ഇട്ടുവയ്ക്കാൻ കഴിയില്ല."
+
+[call_unreachable_body_blank]
+text = "അവർ ഓഫ്‌ലൈനായിരിക്കാം, സിഗ്നൽ ഇല്ലാത്തിടത്തായിരിക്കാം, അല്ലെങ്കിൽ ഇപ്പോൾ കോളുകൾ എടുക്കുന്നില്ലായിരിക്കാം. Tinline-ന് സന്ദേശങ്ങൾ ഇട്ടുവയ്ക്കാൻ കഴിയില്ല."
+
+[call_try_again]
+text = "വീണ്ടും ശ്രമിക്കുക"
+
+[call_mic_needed_title]
+text = "Tinline-ന് മൈക്രോഫോൺ ഉപയോഗിക്കാൻ കഴിയുന്നില്ല"
+
+[call_mic_needed_body]
+text = "അതില്ലാതെ അവർക്ക് നിങ്ങളെ കേൾക്കാനാകില്ല. Tinline കോളുകൾക്കിടയിൽ മാത്രമേ കേൾക്കൂ — ഒരിക്കലും പശ്ചാത്തലത്തിൽ കേൾക്കില്ല."
+
+[call_open_settings]
+text = "ക്രമീകരണം തുറക്കുക"
+
+[call_mic_needed_hint]
+text = "തുടർന്ന് ക്രമീകരണം › Tinline › മൈക്രോഫോൺ എന്നതിൽ ചെന്ന് അത് അനുവദിക്കുക."
+
+[people_add_or]
+text = "അല്ലെങ്കിൽ"
+
+[group_sys_joined_you]
+text = "നിങ്ങൾ ചേർന്നു"
+
+[group_sys_joined_named]
+text = "{name} ചേർന്നു"
+
+[group_sys_joined_someone]
+text = "ഒരാൾ ചേർന്നു"
+
+[group_sys_left_you]
+text = "നിങ്ങൾ പുറത്തുകടന്നു"
+
+[group_sys_left_named]
+text = "{name} പുറത്തുകടന്നു"
+
+[group_sys_left_someone]
+text = "ഒരാൾ പുറത്തുകടന്നു"
+
+[group_sys_removed_someone]
+one = "{count} അഡ്മിൻ ഫ്ലാഗിനെ തുടർന്ന് ഒരാൾ നീക്കം ചെയ്യപ്പെട്ടു"
+other = "{count} അഡ്മിൻ ഫ്ലാഗുകളെ തുടർന്ന് ഒരാൾ നീക്കം ചെയ്യപ്പെട്ടു"
+
+[group_sys_admin_you_you]
+text = "നിങ്ങൾ സ്വയം അഡ്മിനായി"
+
+[group_sys_admin_you_named]
+text = "നിങ്ങൾ {name} എന്നയാളെ അഡ്മിനാക്കി"
+
+[group_sys_admin_you_someone]
+text = "നിങ്ങൾ ഒരാളെ അഡ്മിനാക്കി"
+
+[group_sys_admin_named_you]
+text = "{by} നിങ്ങളെ അഡ്മിനാക്കി"
+
+[group_sys_admin_named_named]
+text = "{by} {name} എന്നയാളെ അഡ്മിനാക്കി"
+
+[group_sys_admin_named_someone]
+text = "{by} ഒരാളെ അഡ്മിനാക്കി"
+
+[group_sys_admin_someone_you]
+text = "ഒരാൾ നിങ്ങളെ അഡ്മിനാക്കി"
+
+[group_sys_admin_someone_named]
+text = "ഒരാൾ {name} എന്നയാളെ അഡ്മിനാക്കി"
+
+[group_sys_admin_someone_someone]
+text = "ഒരാൾ മറ്റൊരാളെ അഡ്മിനാക്കി"
+
+[group_sys_unadmin_you_you]
+text = "നിങ്ങൾ സ്വയം അഡ്മിൻ സ്ഥാനം ഒഴിഞ്ഞു"
+
+[group_sys_unadmin_you_named]
+text = "നിങ്ങൾ {name} എന്നയാളെ അഡ്മിൻ സ്ഥാനത്തുനിന്ന് നീക്കി"
+
+[group_sys_unadmin_you_someone]
+text = "നിങ്ങൾ ഒരാളെ അഡ്മിൻ സ്ഥാനത്തുനിന്ന് നീക്കി"
+
+[group_sys_unadmin_named_you]
+text = "{by} നിങ്ങളെ അഡ്മിൻ സ്ഥാനത്തുനിന്ന് നീക്കി"
+
+[group_sys_unadmin_named_named]
+text = "{by} {name} എന്നയാളെ അഡ്മിൻ സ്ഥാനത്തുനിന്ന് നീക്കി"
+
+[group_sys_unadmin_named_someone]
+text = "{by} ഒരാളെ അഡ്മിൻ സ്ഥാനത്തുനിന്ന് നീക്കി"
+
+[group_sys_unadmin_someone_you]
+text = "ഒരാൾ നിങ്ങളെ അഡ്മിൻ സ്ഥാനത്തുനിന്ന് നീക്കി"
+
+[group_sys_unadmin_someone_named]
+text = "ഒരാൾ {name} എന്നയാളെ അഡ്മിൻ സ്ഥാനത്തുനിന്ന് നീക്കി"
+
+[group_sys_unadmin_someone_someone]
+text = "ഒരാൾ മറ്റൊരാളെ അഡ്മിൻ സ്ഥാനത്തുനിന്ന് നീക്കി"
+
+[group_sys_host_added_someone]
+text = "ഒരു അംഗത്തിന്റെ ഉപകരണം ഇപ്പോൾ ഗ്രൂപ്പ് ഹോസ്റ്റ് ചെയ്യുന്നു"
+
+[group_sys_host_removed_someone]
+text = "ഒരു അംഗത്തിന്റെ ഉപകരണം ഗ്രൂപ്പ് ഹോസ്റ്റ് ചെയ്യുന്നത് നിർത്തി"
+
+[group_member_desc_owner_callhost]
+text = "{name}, ഉടമയും കോൾ ഹോസ്റ്റും. പ്രവർത്തനങ്ങൾ തുറക്കുക"
+
+[group_member_desc_owner_host]
+text = "{name}, ഉടമയും ഹോസ്റ്റും. പ്രവർത്തനങ്ങൾ തുറക്കുക"
+
+[group_member_desc_owner_host_callhost]
+text = "{name}, ഉടമ, ഹോസ്റ്റ്, കോൾ ഹോസ്റ്റ്. പ്രവർത്തനങ്ങൾ തുറക്കുക"
+
+[group_member_desc_admin_callhost]
+text = "{name}, അഡ്മിനും കോൾ ഹോസ്റ്റും. പ്രവർത്തനങ്ങൾ തുറക്കുക"
+
+[group_member_desc_admin_host]
+text = "{name}, അഡ്മിനും ഹോസ്റ്റും. പ്രവർത്തനങ്ങൾ തുറക്കുക"
+
+[group_member_desc_admin_host_callhost]
+text = "{name}, അഡ്മിൻ, ഹോസ്റ്റ്, കോൾ ഹോസ്റ്റ്. പ്രവർത്തനങ്ങൾ തുറക്കുക"
+
+[group_member_desc_member_callhost]
+text = "{name}, അംഗവും കോൾ ഹോസ്റ്റും. പ്രവർത്തനങ്ങൾ തുറക്കുക"
+
+[group_member_desc_member_host]
+text = "{name}, അംഗവും ഹോസ്റ്റും. പ്രവർത്തനങ്ങൾ തുറക്കുക"
+
+[group_member_desc_member_host_callhost]
+text = "{name}, അംഗം, ഹോസ്റ്റ്, കോൾ ഹോസ്റ്റ്. പ്രവർത്തനങ്ങൾ തുറക്കുക"
+
+[group_host_online]
+text = "ഹോസ്റ്റ് ഓൺലൈനാണ്"
+
+[group_host_offline]
+text = "ഹോസ്റ്റ് ഓഫ്‌ലൈനാണ്"
+
+[group_host_online_calls]
+text = "ഓൺലൈൻ · കോളുകളും ഹോസ്റ്റ് ചെയ്യുന്നു"
+
+[group_host_offline_calls]
+text = "ഓഫ്‌ലൈൻ · കോളുകളും ഹോസ്റ്റ് ചെയ്യുന്നു"
+
+[call_group_about_this_phone]
+text = "**ഈ ഫോൺ** ആണ് ഈ കോൾ നടത്തുന്നത്. കോളിലുള്ള എല്ലാവരും ഇതിലേക്ക് കണക്റ്റ് ചെയ്യുന്നു, ഇത് ഓഡിയോ കൈമാറുകയും ഒരേസമയം പലരും സംസാരിക്കുമ്പോൾ ആരെ കേൾക്കണമെന്ന് തീരുമാനിക്കുകയും ചെയ്യുന്നു."
+
+[call_group_about_your_other]
+text = "**നിങ്ങളുടെ മറ്റേ ഉപകരണം** ആണ് ഈ കോൾ നടത്തുന്നത്. കോളിലുള്ള എല്ലാവരും അതിലേക്ക് കണക്റ്റ് ചെയ്യുന്നു, അത് ഓഡിയോ കൈമാറുകയും ഒരേസമയം പലരും സംസാരിക്കുമ്പോൾ ആരെ കേൾക്കണമെന്ന് തീരുമാനിക്കുകയും ചെയ്യുന്നു."
+
+[call_group_about_member]
+text = "**{name} എന്നയാളുടെ ഉപകരണം** ആണ് ഈ കോൾ നടത്തുന്നത്. കോളിലുള്ള എല്ലാവരും അതിലേക്ക് കണക്റ്റ് ചെയ്യുന്നു, അത് ഓഡിയോ കൈമാറുകയും ഒരേസമയം പലരും സംസാരിക്കുമ്പോൾ ആരെ കേൾക്കണമെന്ന് തീരുമാനിക്കുകയും ചെയ്യുന്നു."
+
+[call_group_about_someone]
+text = "**ഒരു അംഗത്തിന്റെ ഉപകരണം** ആണ് ഈ കോൾ നടത്തുന്നത്. കോളിലുള്ള എല്ലാവരും അതിലേക്ക് കണക്റ്റ് ചെയ്യുന്നു, അത് ഓഡിയോ കൈമാറുകയും ഒരേസമയം പലരും സംസാരിക്കുമ്പോൾ ആരെ കേൾക്കണമെന്ന് തീരുമാനിക്കുകയും ചെയ്യുന്നു."
+
+[call_group_about_unknown]
+text = "**കോൾ ഹോസ്റ്റ്** ആണ് ഈ കോൾ നടത്തുന്നത്. കോളിലുള്ള എല്ലാവരും അതിലേക്ക് കണക്റ്റ് ചെയ്യുന്നു, അത് ഓഡിയോ കൈമാറുകയും ഒരേസമയം പലരും സംസാരിക്കുമ്പോൾ ആരെ കേൾക്കണമെന്ന് തീരുമാനിക്കുകയും ചെയ്യുന്നു."
+
+[people_busy_until_today]
+text = "{time} വരെ തിരക്കിലാണ്"
+
+[people_busy_until_tomorrow]
+text = "നാളെ {time} വരെ തിരക്കിലാണ്"
+
+[people_busy_until_mon]
+text = "തിങ്കളാഴ്ച {time} വരെ തിരക്കിലാണ്"
+
+[people_busy_until_tue]
+text = "ചൊവ്വാഴ്ച {time} വരെ തിരക്കിലാണ്"
+
+[people_busy_until_wed]
+text = "ബുധനാഴ്ച {time} വരെ തിരക്കിലാണ്"
+
+[people_busy_until_thu]
+text = "വ്യാഴാഴ്ച {time} വരെ തിരക്കിലാണ്"
+
+[people_busy_until_fri]
+text = "വെള്ളിയാഴ്ച {time} വരെ തിരക്കിലാണ്"
+
+[people_busy_until_sat]
+text = "ശനിയാഴ്ച {time} വരെ തിരക്കിലാണ്"
+
+[people_busy_until_sun]
+text = "ഞായറാഴ്ച {time} വരെ തിരക്കിലാണ്"
+
+[chat_when_today]
+text = "ഇന്ന്, {time}"
+
+[chat_when_yesterday]
+text = "ഇന്നലെ, {time}"
+
+[chat_when_date]
+text = "{date}, {time}"
+
+[group_when_today]
+text = "ഇന്ന്, {time}"
+
+[group_when_yesterday]
+text = "ഇന്നലെ, {time}"
+
+[group_when_date]
+text = "{date}, {time}"
+
+[people_when_date]
+text = "{date}, {time}"

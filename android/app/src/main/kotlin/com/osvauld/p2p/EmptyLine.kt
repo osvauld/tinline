@@ -5,6 +5,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.annotation.StringRes
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -25,17 +27,17 @@ data class EmptyCopy(val title: String, val line: String, val act: String)
 /** The one function that decides the hero's copy from who you have (and the requests you sent, waiting for an answer). */
 fun emptyHeroCopy(contacts: List<Contact>, sent: List<ContactRequest> = emptyList()): EmptyCopy = when {
     contacts.isEmpty() && sent.isNotEmpty() ->
-        EmptyCopy("Your line is ready", "Your request to ${firstName(sent[0].name)} is waiting. Your line opens when they accept.", "Add another contact")
-    contacts.isEmpty() -> EmptyCopy("Your line is ready", "Add someone you’d like to talk to, and you can message and call each other.", "Add my first contact")
-    contacts.size == 1 -> contacts[0].display().trim().split(Regex("\\s+")).first().let { f -> EmptyCopy("Your line is open", "Say hello to $f whenever you like.", "Message $f") }
-    else -> EmptyCopy("Your line is open", "Pick someone and say hello whenever you like.", "Start a chat")
+        EmptyCopy(appString(R.string.empty_hero_ready), appString(R.string.empty_hero_request_waiting, firstName(sent[0].name)), appString(R.string.empty_hero_add_another))
+    contacts.isEmpty() -> EmptyCopy(appString(R.string.empty_hero_ready), appString(R.string.empty_hero_add_someone), appString(R.string.empty_hero_add_first))
+    contacts.size == 1 -> contacts[0].display().trim().split(Regex("\\s+")).first().let { f -> EmptyCopy(appString(R.string.empty_hero_open), appString(R.string.empty_hero_say_hello, f), appString(R.string.empty_hero_message, f)) }
+    else -> EmptyCopy(appString(R.string.empty_hero_open), appString(R.string.empty_hero_pick_someone), appString(R.string.empty_hero_start_chat))
 }
 
 object EmptyQuiet {
-    const val CHATS = "Your chats show up here."
-    const val UNREAD = "You’re all caught up."
-    const val CALLS = "Calls you make and receive show up here."
-    const val CONTACTS = "The people you add show up here."
+    val CHATS = R.string.empty_quiet_chats
+    val UNREAD = R.string.empty_quiet_unread
+    val CALLS = R.string.empty_quiet_calls
+    val CONTACTS = R.string.empty_quiet_contacts
 }
 
 @Composable
@@ -45,7 +47,7 @@ fun EmptyHero(contacts: List<Contact>, onAdd: () -> Unit, onMessage: (String) ->
     val copy = emptyHeroCopy(contacts, sent)
     Column(modifier.fillMaxWidth().heightIn(min = 360.dp).padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
         TinMark(88.dp, state = if (contacts.isEmpty()) MarkState.Slack else MarkState.Taut, live = true, lineColor = true, spring = MarkSpring.Line,
-            description = "Tinline", modifier = Modifier.padding(bottom = 18.dp))
+            description = stringResource(R.string.app_name), modifier = Modifier.padding(bottom = 18.dp))
         Text(copy.title, Modifier.padding(bottom = 6.dp), style = PgType.title.copy(fontSize = 17.sp, lineHeight = 26.sp, fontWeight = FontWeight.SemiBold), color = c.ink, maxLines = 1)
         Text(copy.line, Modifier.widthIn(max = 300.dp).heightIn(min = 38.dp).padding(bottom = 0.dp), style = PgType.sub19, color = c.ink2, textAlign = TextAlign.Center)
         Spacer(Modifier.height(20.dp))
@@ -56,10 +58,10 @@ fun EmptyHero(contacts: List<Contact>, onAdd: () -> Unit, onMessage: (String) ->
 }
 
 @Composable
-fun EmptyQuietLine(text: String, modifier: Modifier = Modifier) {
+fun EmptyQuietLine(@StringRes text: Int, modifier: Modifier = Modifier) {
     val c = Tin.c
     Column(modifier.fillMaxWidth().padding(top = 40.dp, start = 24.dp, end = 24.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
         TinMark(40.dp, dim = true)
-        Text(text, Modifier.widthIn(max = 300.dp), style = PgType.sub19, color = c.ink2, textAlign = TextAlign.Center)
+        Text(stringResource(text), Modifier.widthIn(max = 300.dp), style = PgType.sub19, color = c.ink2, textAlign = TextAlign.Center)
     }
 }

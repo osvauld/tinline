@@ -489,7 +489,7 @@ pub fn record_bar<'a, M: Clone + 'a>(t: Tok, elapsed_ms: u32, on_send: M, on_can
         row![
             dot,
             text(present::time::clock_ms(elapsed_ms)).font(ui::MONO).size(15).color(t.ink),
-            text("Esc to cancel").size(14).color(t.ink2).width(Length::Fill).align_x(Alignment::Center),
+            text(crate::i18n::tr_str("chat_esc_to_cancel")).size(14).color(t.ink2).width(Length::Fill).align_x(Alignment::Center),
             bin,
             send,
         ]

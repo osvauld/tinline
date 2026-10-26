@@ -102,8 +102,7 @@ class CallController(private val app: P2pApp) {
     @Volatile private var placing = false
 
     private fun micUnavailable() {
-        val msg = if (Perms.granted(app, Manifest.permission.RECORD_AUDIO)) "Microphone unavailable - you can't be heard"
-        else "Microphone permission needed - you can't be heard"
+        val msg = appString(if (Perms.granted(app, Manifest.permission.RECORD_AUDIO)) R.string.call_mic_unavailable else R.string.call_mic_permission)
         _ui.update { it?.copy(micProblem = msg) }
     }
 
@@ -371,7 +370,7 @@ class CallController(private val app: P2pApp) {
         val id = info.callId
         videoNow = info.video
         val s = CallSession(
-            app.scope, app, audio, info.peerName.ifBlank { "Tinline call" }, info.incoming,
+            app.scope, app, audio, info.peerName.ifBlank { appString(R.string.call_default_name) }, info.incoming,
             // A video call (either side pressed Video) is a Telecom video call on the loudspeaker; a headset still wins.
             video = info.video, preferSpeaker = info.video,
             onAnswer = { systemAnswer(id) }, onDisconnect = { systemDisconnect(id) }, onSystemMute = { systemMute(id, it) },

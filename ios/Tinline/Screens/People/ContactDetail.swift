@@ -48,18 +48,18 @@ struct ContactDetailView: View {
                         Text(shown).font(TinType.h1).foregroundStyle(c.ink).multilineTextAlignment(.center).padding(.top, 6)
                         if (alias != nil && alias != name) || block.blockedByMe || blockedMe {
                             HStack(spacing: 8) {
-                                if alias != nil && alias != name { Text("Calls themselves \u{201C}\(name)\u{201D}").font(TinType.bodyM).foregroundStyle(c.ink2) }
+                                if alias != nil && alias != name { Text(tr("people_detail_calls_themselves", name)).font(TinType.bodyM).foregroundStyle(c.ink2) }
                                 if block.blockedByMe || blockedMe {
-                                    Text(block.blockedByMe ? "Blocked" : "Blocked you").font(TinType.caption).fontWeight(.semibold).foregroundStyle(c.er)
+                                    Text(block.blockedByMe ? tr("people_blocked") : tr("people_blocked_you")).font(TinType.caption).fontWeight(.semibold).foregroundStyle(c.er)
                                 }
                             }
                         }
-                        PeopleButton("Call", variant: .primary, icon: canCall ? .phone : .callend, enabled: !closed, minWidth: 140, height: 48, action: onCall).padding(.top, 14)
+                        PeopleButton(tr("people_call"), variant: .primary, icon: canCall ? .phone : .callend, enabled: !closed, minWidth: 140, height: 48, action: onCall).padding(.top, 14)
                         HStack(spacing: 12) {
-                            if let onMessage { PeopleActionChip(icon: .chat, label: "Message", tint: c.pr, action: onMessage) }
-                            PeopleActionChip(icon: .edit, label: "Rename", tint: c.pr) { renaming = true }
-                            if block.blockedByMe { PeopleActionChip(icon: .off, label: "Unblock", tint: c.pr) { people.unblock(did) } }
-                            else { PeopleActionChip(icon: .off, label: "Block", tint: c.er) { confirmBlock = true } }
+                            if let onMessage { PeopleActionChip(icon: .chat, label: tr("people_message"), tint: c.pr, action: onMessage) }
+                            PeopleActionChip(icon: .edit, label: tr("people_detail_rename"), tint: c.pr) { renaming = true }
+                            if block.blockedByMe { PeopleActionChip(icon: .off, label: tr("people_unblock"), tint: c.pr) { people.unblock(did) } }
+                            else { PeopleActionChip(icon: .off, label: tr("people_block"), tint: c.er) { confirmBlock = true } }
                         }
                         .padding(.top, 10)
                     }
@@ -67,18 +67,18 @@ struct ContactDetailView: View {
 
                     if let callsAllowed {
                         let f = peopleFirstName(shown)
-                        PeopleSectionLabel("WHAT \(f.uppercased()) CAN DO").padding(.top, 8)
-                        PeopleListItem(title: "Allow calls", icon: .phone,
-                                       sub: block.blockedByMe ? "Blocked: nothing gets through until you unblock."
-                                           : callsAllowed ? "\(f) can ring this phone and your other devices."
-                                           : "Off. \(f) can message you; their calls don\u{2019}t ring.") {
-                            PeopleSwitch(checked: callsAllowed, label: "Allow calls") { on in if !block.blockedByMe { people.allowCalls(did, on) } }
+                        PeopleSectionLabel(tr("people_detail_can_do", f.uppercased())).padding(.top, 8)
+                        PeopleListItem(title: tr("people_detail_allow_calls"), icon: .phone,
+                                       sub: block.blockedByMe ? tr("people_detail_allow_blocked")
+                                           : callsAllowed ? tr("people_detail_allow_on", f)
+                                           : tr("people_detail_allow_off", f)) {
+                            PeopleSwitch(checked: callsAllowed, label: tr("people_detail_allow_calls")) { on in if !block.blockedByMe { people.allowCalls(did, on) } }
                         }
                     }
                     if !history.isEmpty {
-                        PeopleSectionLabel("CALLS WITH \(shown.uppercased())").padding(.top, 8)
+                        PeopleSectionLabel(tr("people_detail_calls_with", shown.uppercased())).padding(.top, 8)
                         ForEach(history) { PeopleHistoryRow(record: $0) }
-                        PeopleHint("History stays on this phone only.").padding(.horizontal, 20).padding(.vertical, 8)
+                        PeopleHint(tr("people_history_note")).padding(.horizontal, 20).padding(.vertical, 8)
                     }
                 }
             }
@@ -150,13 +150,13 @@ private struct PeopleHistoryRow: View {
         HStack(spacing: 14) {
             PeopleIconView(icon: record.kind == .incoming || record.kind == .missed ? .callIn : .callOut, size: 20, color: red ? c.er : c.ink2)
             VStack(alignment: .leading, spacing: 0) {
-                Text(record.title.trimmingCharacters(in: .whitespaces).isEmpty ? "Call" : record.title).peopleStyle(.body).foregroundStyle(red ? c.er : c.ink)
+                Text(record.title.trimmingCharacters(in: .whitespaces).isEmpty ? tr("people_detail_call") : record.title).peopleStyle(.body).foregroundStyle(red ? c.er : c.ink)
                 Text(record.whenLong).peopleStyle(.sub).foregroundStyle(c.ink2)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             switch record.direct {
-            case true?: badge("Direct", bg: c.prc, fg: c.onPrc)
-            case false?: badge("Relayed", bg: c.relayC, fg: c.onRelayC)
+            case true?: badge(tr("people_detail_direct"), bg: c.prc, fg: c.onPrc)
+            case false?: badge(tr("people_detail_relayed"), bg: c.relayC, fg: c.onRelayC)
             case nil: Text("\u{2014}").font(TinType.bodyM).foregroundStyle(c.ink2)
             }
         }
@@ -185,13 +185,13 @@ struct PeopleRenameSheet: View {
     var body: some View {
         let t = text.trimmingCharacters(in: .whitespacesAndNewlines)
         VStack(alignment: .leading, spacing: 0) {
-            Text("Rename").peopleStyle(.title, size: 22, lineHeight: 28).foregroundStyle(c.ink).padding(.top, 6).padding(.bottom, 14)
-            PeopleField(text: $text, label: "Name on this phone", secret: false, msgLines: 0)
-            PeopleHint("Only you see this. They still call themselves \u{201C}\(theirName)\u{201D}.").padding(.top, 14)
+            Text(tr("people_detail_rename")).peopleStyle(.title, size: 22, lineHeight: 28).foregroundStyle(c.ink).padding(.top, 6).padding(.bottom, 14)
+            PeopleField(text: $text, label: tr("people_detail_name_field"), secret: false, msgLines: 0)
+            PeopleHint(tr("people_detail_rename_note", theirName)).padding(.top, 14)
             PeopleActs {
-                if hasAlias { PeopleButton("Use their name", variant: .quiet) { onSave(nil) } }
-                PeopleButton("Cancel", variant: .quiet, action: onDismiss)
-                PeopleButton("Save", variant: .primary, enabled: !t.isEmpty) { onSave(t == theirName ? nil : t) }
+                if hasAlias { PeopleButton(tr("people_detail_use_theirs"), variant: .quiet) { onSave(nil) } }
+                PeopleButton(tr("people_cancel"), variant: .quiet, action: onDismiss)
+                PeopleButton(tr("people_save"), variant: .primary, enabled: !t.isEmpty) { onSave(t == theirName ? nil : t) }
             }
         }
         .padding(.horizontal, 20).padding(.top, 20).padding(.bottom, 16)

@@ -99,13 +99,13 @@ final class CallVideo: ObservableObject, VideoEvents {
 
     func setCamera(_ on: Bool) {
         paused = false
-        if on && !platform.cameraGranted { problem = "Camera permission needed - they can still hear you"; return }
+        if on && !platform.cameraGranted { problem = tr("call_camera_permission_needed"); return }
         problem = nil
         let core = core
         callBackground("setCamera(\(on))") { try core()?.setCamera(on: on) }
     }
 
-    func cameraDenied() { problem = "Camera permission needed - they can still hear you" }
+    func cameraDenied() { problem = tr("call_camera_permission_needed") }
 
     func flip() { front.toggle() }
 
@@ -196,7 +196,7 @@ final class CallVideo: ObservableObject, VideoEvents {
             CallLog.test("camera started front=\(front) preference=\(capturePreference)")
         } catch {
             CallLog.warn("start camera: \(error)")
-            problem = "Camera unavailable"
+            problem = tr("call_camera_unavailable")
         }
     }
 

@@ -18,6 +18,8 @@ macro_rules! tlog {
 pub(crate) use tlog;
 
 mod app;
+/// Every user-visible string: generated table (i18n/en/desktop.toml) + language and placeholders.
+mod i18n;
 mod geom;
 mod shaped;
 mod tallest;

@@ -50,7 +50,7 @@ struct ShellAddArgs: Identifiable, Equatable {
 /// The home tabs. Chats opens by default; Groups is group chat on the core (Groups area).
 enum ShellHomeTab: String, CaseIterable {
     case chats, groups, calls, contacts
-    var title: String { switch self { case .chats: "Chats"; case .groups: "Groups"; case .calls: "Calls"; case .contacts: "Contacts" } }
+    var title: String { switch self { case .chats: tr("shell_tab_chats"); case .groups: tr("shell_tab_groups"); case .calls: tr("shell_tab_calls"); case .contacts: tr("shell_tab_contacts") } }
 }
 
 /// The navigation state every Shell screen reads: the stack, the sheet over Home, and Home's tab (which survives opening a
@@ -236,7 +236,7 @@ private struct ShellMainStack: View {
         }
         Task {
             do { try await ShellWiring.placeCall(core: core, did: did, video: video) }
-            catch { callError = ShellText.isInCall(error) ? ShellText.friendly(error) : (error.localizedDescription.isEmpty ? "Couldn\u{2019}t start the call" : ShellText.friendly(error)) }
+            catch { callError = ShellText.isInCall(error) ? ShellText.friendly(error) : (error.localizedDescription.isEmpty ? tr("shell_err_call_start") : ShellText.friendly(error)) }
         }
     }
 
@@ -245,11 +245,11 @@ private struct ShellMainStack: View {
     private var ring: ShellRing? {
         let ctl = calls.controller
         if let u = ctl.ui, let w = ctl.waiting, u.state == .active {
-            return ShellRing(did: w.peerDid, name: ShellText.ifBlank(w.peerName, "Unknown"), sub: "Calling during your call", waiting: true,
+            return ShellRing(did: w.peerDid, name: ShellText.ifBlank(w.peerName, tr("shell_unknown")), sub: tr("shell_ring_waiting"), waiting: true,
                              onOpen: { ctl.openCallScreen() }, onDecline: { ctl.declineWaiting() }, onAnswer: { ctl.endAndAnswer() })
         }
         if let u = ctl.ui, u.info.incoming, u.state == .ringing {
-            return ShellRing(did: u.info.peerDid, name: ShellText.ifBlank(u.info.peerName, "Unknown"), sub: u.info.video ? "Incoming video call" : "Incoming call",
+            return ShellRing(did: u.info.peerDid, name: ShellText.ifBlank(u.info.peerName, tr("shell_unknown")), sub: u.info.video ? tr("shell_ring_incoming_video") : tr("shell_ring_incoming"),
                              onOpen: { ctl.openCallScreen() }, onDecline: { ctl.decline() }, onAnswer: { ctl.answer(); ctl.openCallScreen() })
         }
         return nil
@@ -369,16 +369,16 @@ struct ShellMicNeededScreen: View {
             VStack(spacing: 12) {
                 Spacer(minLength: 0)
                 ShellIcon(glyph: .micoff, size: 44, color: tin.er).frame(width: 96, height: 96).background(Circle().fill(tin.erc))
-                Text("Tinline can\u{2019}t use the microphone").font(TinType.h1).foregroundStyle(tin.ink).multilineTextAlignment(.center).padding(.top, 12)
-                Text("Without it, they won\u{2019}t hear you. Tinline only listens during calls \u{2014} never in the background.")
+                Text(tr("shell_mic_title")).font(TinType.h1).foregroundStyle(tin.ink).multilineTextAlignment(.center).padding(.top, 12)
+                Text(tr("shell_mic_body"))
                     .font(TinType.bodyL).foregroundStyle(tin.ink2).multilineTextAlignment(.center)
                 Spacer(minLength: 0)
             }
             .padding(.horizontal, 28)
             VStack(spacing: 8) {
-                ShellTinButton(text: "Open settings", action: onOpenSettings)
-                ShellHint("Then go to Settings \u{203A} Tinline \u{203A} Microphone and allow it.", alignment: .center).frame(maxWidth: .infinity)
-                ShellTinButton(text: "Not now", style: .text, action: onNotNow)
+                ShellTinButton(text: tr("shell_mic_open_settings"), action: onOpenSettings)
+                ShellHint(tr("shell_mic_hint"), alignment: .center).frame(maxWidth: .infinity)
+                ShellTinButton(text: tr("shell_not_now"), style: .text, action: onNotNow)
             }
             .padding(.horizontal, 24).padding(.bottom, 48)
         }

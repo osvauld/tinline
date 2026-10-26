@@ -26,12 +26,12 @@ class GroupsPublicTest {
         false, emptyList(), emptyList(), false, open = open, adminsOnly = adminsOnly)
 
     @Test fun theOnlineLabelSaysPlusAtTheCap() {
-        assertEquals("0 online", GroupText.onlineLabel(0))
-        assertEquals("12 online", GroupText.onlineLabel(12))
-        assertEquals("499 online", GroupText.onlineLabel(499))
+        assertEquals(appPlural(R.plurals.groupsc_online_count, 0, 0), GroupText.onlineLabel(0))
+        assertEquals(appPlural(R.plurals.groupsc_online_count, 12, 12), GroupText.onlineLabel(12))
+        assertEquals(appPlural(R.plurals.groupsc_online_count, 499, 499), GroupText.onlineLabel(499))
         // A host frame stops at 500 DIDs, so exactly 500 may already be cut short.
-        assertEquals("500+ online", GroupText.onlineLabel(500))
-        assertEquals("500+ online", GroupText.onlineLabel(731))
+        assertEquals(appString(R.string.groupsc_online_cap), GroupText.onlineLabel(500))
+        assertEquals(appString(R.string.groupsc_online_cap), GroupText.onlineLabel(731))
     }
 
     @Test fun onlyAnOpenGroupImInShowsWhoIsOnline() {
@@ -57,7 +57,7 @@ class GroupsPublicTest {
     }
 
     @Test fun theCoresAdminsOnlyRefusalReadsLikeTheComposerLine() {
-        assertEquals("Only admins post here.", GroupText.error(uniffi.p2pcore.Exception.Rejected("they refused: admins only")))
+        assertEquals(appString(R.string.groupsc_admins_only_error), GroupText.error(uniffi.p2pcore.Exception.Rejected("they refused: admins only")))
     }
 
     /** Only what these tests use; every other call fails loudly. */
@@ -109,7 +109,7 @@ class GroupsPublicTest {
         val api = Fake(detail(GroupRole.MEMBER, adminsOnly = true))
         val ctl = GroupsController(api) { me }
         ctl.open("g")
-        assertEquals("Only admins post here.", ctl.post("g", "hi", null).exceptionOrNull()!!.message)
+        assertEquals(appString(R.string.groupsc_admins_only_error), ctl.post("g", "hi", null).exceptionOrNull()!!.message)
         assertEquals(0, api.posts)
         api.d = api.d.copy(adminsOnly = false)
         ctl.refresh()
@@ -135,7 +135,7 @@ class GroupsPublicTest {
         val failed = post(CoreDelivery.FAILED, "Not posted: only admins post here")
         assertEquals("Not posted: only admins post here", GroupText.deliveryWord(failed))
         assertTrue(GroupText.isFailed(failed))
-        assertEquals("Waiting for a host", GroupText.deliveryWord(post(CoreDelivery.WAITING, null)))
+        assertEquals(appString(R.string.groups_waiting_host), GroupText.deliveryWord(post(CoreDelivery.WAITING, null)))
         assertFalse(GroupText.isFailed(post(CoreDelivery.WAITING, null)))
         assertNull(GroupText.deliveryWord(post(CoreDelivery.DELIVERED, null)))
         assertNull(GroupText.deliveryWord(post(CoreDelivery.FAILED, "x", outgoing = false)))

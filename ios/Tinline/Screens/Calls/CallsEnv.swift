@@ -77,7 +77,7 @@ final class CallsEnv: ObservableObject {
     func inCallState() -> CallNotif.Derived {
         let u = controller.ui
         let here = groupAudio.here
-        return CallNotif.derive(call: CallNotif.of(u), callName: u.map { callOr($0.info.peerName, "Call") } ?? "Call",
+        return CallNotif.derive(call: CallNotif.of(u), callName: u.map { callOr($0.info.peerName, tr("call_notification_name")) } ?? tr("call_notification_name"),
                                 groupInCall: here?.inCall == true, groupHosting: here?.hosting == true,
                                 groupName: groupAudio.callName(), preparedAtMs: groupAudio.preparedAtMs, nowMs: callNowMs())
     }

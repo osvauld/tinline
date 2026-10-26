@@ -17,8 +17,8 @@ enum OpenChat {
 func chatPreviewOf(_ m: Message) -> String {
     if m.deleted { return "" }
     if let a = m.attachment, m.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-        if a.kind == .voice { return "Voice message" }
-        if a.mime.hasPrefix("image/") { return "Photo" }
+        if a.kind == .voice { return tr("chat_preview_voice") }
+        if a.mime.hasPrefix("image/") { return tr("chat_preview_photo") }
         return a.name
     }
     return m.text

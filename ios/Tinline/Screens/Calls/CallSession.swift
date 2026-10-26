@@ -117,7 +117,7 @@ final class CallSession: SystemCallEvents {
             Task { @MainActor in if let self, self.mode == .fallback { self.routes = st } }
         }
         guard let provider else { fallback("call provider unavailable"); return }
-        let display = callOr(name, "Tinline call")
+        let display = callOr(name, tr("call_system_call_name"))
         Task { [weak self] in
             do {
                 guard let self else { return }

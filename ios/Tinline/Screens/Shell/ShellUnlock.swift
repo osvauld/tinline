@@ -62,7 +62,7 @@ struct ShellUnlockScreen: View {
                 core.identityReady()
             } catch {
                 busy = false
-                self.error = ShellText.isWrongPassphrase(error) ? "That passphrase didn\u{2019}t open the account." : ShellText.friendly(error)
+                self.error = ShellText.isWrongPassphrase(error) ? tr("unlock_wrong_pass") : ShellText.friendly(error)
             }
         }
     }
@@ -80,16 +80,16 @@ struct ShellKeyLostContent: View {
         let n = name.trimmingCharacters(in: .whitespaces)
         ShellPage {
             ShellGateHead(onBack: nil, progress: nil)
-            ShellGateStep(n.isEmpty ? "Can\u{2019}t open your account" : "Can\u{2019}t open \(n)\u{2019}s account",
-                          lead: "This phone no longer has the key that opens your account. That happens after a screen-lock reset or a restored backup. Once you restore, your calls come through again.",
+            ShellGateStep(n.isEmpty ? tr("unlock_lost_title") : tr("unlock_lost_title_named", n),
+                          lead: tr("unlock_lost_lead"),
                           center: true, anchor: true,
                           hero: { ShellIconDisc(glyph: .key, size: 72, iconSize: 32).padding(.top, 12) },
                           content: {
-                ShellNotice("You didn\u{2019}t set a passphrase, so the 24-word recovery phrase is the only way back. Your contacts stay.", kind: .warn, glyph: .info)
+                ShellNotice(tr("unlock_lost_notice", "24"), kind: .warn, glyph: .info)
             }, foot: {
-                ShellGBtn(text: "Restore with recovery phrase", enabled: !busy, action: onRestore)
-                ShellGBtn(text: "Try again", kind: .text, busy: busy, action: onRetry)
-                if let onSwitch { ShellGBtn(text: "Switch account", kind: .text, enabled: !busy, action: onSwitch) }
+                ShellGBtn(text: tr("unlock_restore"), enabled: !busy, action: onRestore)
+                ShellGBtn(text: tr("unlock_try_again"), kind: .text, busy: busy, action: onRetry)
+                if let onSwitch { ShellGBtn(text: tr("unlock_switch"), kind: .text, enabled: !busy, action: onSwitch) }
             })
         }
     }
@@ -114,19 +114,19 @@ struct ShellUnlockContent: View {
         ShellPage {
             ShellGateHead(onBack: nil, progress: nil)
             ShellGateStep(
-                title: nick.isEmpty ? "Welcome back" : "Welcome back, \(nick)", center: true, anchor: true,
+                title: nick.isEmpty ? tr("unlock_welcome") : tr("unlock_welcome_named", nick), center: true, anchor: true,
                 hero: { ShellAvatar(did: app.accountDid ?? "", name: ShellText.ifBlank(name, "?"), size: 72).padding(.top, 12) },
                 // With other identities here, the nickname in the title is the switcher (lab A, 2026-10-14).
                 titleSlot: { if let onSwitch { ShellWelcomeSwitcher(nick: nick, enabled: !busy, onSwitch: onSwitch) } },
                 hasTitleSlot: onSwitch != nil && !nick.isEmpty,
                 content: {
-                    ShellGField(label: "Passphrase", text: $pass, secret: true, error: error,
-                                hint: error != nil ? "Checking takes a second. It\u{2019}s deliberately slow to stop guessing." : nil,
+                    ShellGField(label: tr("unlock_pass"), text: $pass, secret: true, error: error,
+                                hint: error != nil ? tr("unlock_slow_hint") : nil,
                                 reserveLines: 4.25, enabled: !busy, autofocus: true, onDone: submit)
                 },
                 foot: {
-                    ShellGBtn(text: busy ? "Unlocking\u{2026}" : "Unlock", enabled: !pass.isEmpty, busy: busy, action: submit)
-                    ShellGBtn(text: "I forgot it", kind: .text, enabled: !busy, action: onForgot)
+                    ShellGBtn(text: busy ? tr("unlock_unlocking") : tr("unlock_unlock"), enabled: !pass.isEmpty, busy: busy, action: submit)
+                    ShellGBtn(text: tr("unlock_forgot"), kind: .text, enabled: !busy, action: onForgot)
                 })
         }
     }
@@ -141,7 +141,7 @@ private struct ShellWelcomeSwitcher: View {
     @Environment(\.tin) private var tin
     var body: some View {
         HStack(spacing: 0) {
-            Text("Welcome back, ").shellStyle(.h1).foregroundStyle(tin.ink)
+            Text(tr("unlock_welcome_prefix")).shellStyle(.h1).foregroundStyle(tin.ink)
             Button(action: onSwitch) {
                 HStack(spacing: 0) {
                     Text(nick).shellStyle(.h1).foregroundStyle(tin.ink).lineLimit(1)
@@ -150,7 +150,7 @@ private struct ShellWelcomeSwitcher: View {
                 .padding(.horizontal, 4).frame(minHeight: 48)
             }
             .buttonStyle(ShellPressStyle(radius: 10)).disabled(!enabled)
-            .accessibilityLabel("\(nick), switch identity").accessibilityHint("Open as another identity")
+            .accessibilityLabel(tr("unlock_switch_identity", nick)).accessibilityHint(tr("unlock_switch_identity_hint"))
         }
         .frame(maxWidth: .infinity).accessibilityAddTraits(.isHeader)
     }
@@ -178,13 +178,13 @@ struct ShellAccountSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(atLogin ? "Open as" : "Accounts").font(TinType.titleL).foregroundStyle(tin.ink).padding(.top, 4).padding(.bottom, 8)
+            Text(atLogin ? tr("unlock_open_as") : tr("unlock_accounts")).font(TinType.titleL).foregroundStyle(tin.ink).padding(.top, 4).padding(.bottom, 8)
             ForEach(list, id: \.did) { a in
                 // At login nothing is open yet: say only whether picking it opens right away (key remembered here, or no
                 // passphrase) or asks for its passphrase.
                 let opensNow = !a.hasPassphrase || core.keys.exists(a.did)
-                let sub = atLogin ? (opensNow ? "Opens right away" : "Asks for your passphrase")
-                    : a.current && app.status?.online == true ? "Online on this phone" : a.current ? "On this phone" : "Locked \u{00B7} not ringing here"
+                let sub = atLogin ? (opensNow ? tr("unlock_opens_now") : tr("unlock_asks_pass"))
+                    : a.current && app.status?.online == true ? tr("unlock_acc_online") : a.current ? tr("unlock_acc_here") : tr("unlock_acc_locked")
                 Button { if a.current { onDismiss() } else { onPick(a.did) } } label: {
                     HStack(spacing: 14) {
                         ShellAvatar(did: a.did, name: ShellText.ifBlank(a.name, "?"), size: 44)
@@ -193,7 +193,7 @@ struct ShellAccountSheet: View {
                             ShellHint(sub)
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        if a.current { TinIcon(TinIcons.check, size: 24, tint: tin.pr, label: "Current account") }
+                        if a.current { TinIcon(TinIcons.check, size: 24, tint: tin.pr, label: tr("unlock_current_account")) }
                     }
                     .frame(minHeight: 64)
                 }
@@ -201,12 +201,12 @@ struct ShellAccountSheet: View {
             }
             if let actions {
                 Spacer().frame(height: 8)
-                ShellSheetRow(glyph: .plus, title: "Create a new account", action: actions.onCreate)
-                ShellSheetRow(glyph: .link, title: "Link an account from another device", action: actions.onLink)
-                ShellSheetRow(glyph: .key, title: "Restore with recovery phrase", action: actions.onRestore)
+                ShellSheetRow(glyph: .plus, title: tr("unlock_create"), action: actions.onCreate)
+                ShellSheetRow(glyph: .link, title: tr("unlock_link"), action: actions.onLink)
+                ShellSheetRow(glyph: .key, title: tr("unlock_restore"), action: actions.onRestore)
             }
             if !atLogin {
-                ShellHint("One account is online at a time. Calls to a locked account ring only on your other devices.").padding(.top, 12)
+                ShellHint(tr("unlock_one_online")).padding(.top, 12)
             }
         }
         .padding(.horizontal, 24).padding(.top, 20).padding(.bottom, 24)
@@ -259,39 +259,39 @@ struct ShellSwitchConfirmScreen: View {
             do { try await core.switchTo(did, passphrase: needsPass ? pass : nil); pass = ""; busy = false; onSwitched() }
             catch {
                 busy = false
-                if ShellText.isInCall(error) { onMessage("Finish your call first"); onBack() } else { self.error = ShellText.friendly(error) }
+                if ShellText.isInCall(error) { onMessage(tr("unlock_finish_call")); onBack() } else { self.error = ShellText.friendly(error) }
             }
         }
     }
 
     var body: some View {
         ShellPage {
-            ShellTopBar("Switch account", onBack: onBack)
+            ShellTopBar(tr("unlock_switch"), onBack: onBack)
             if let target {
                 ScrollView {
                     VStack(spacing: 16) {
                         ShellAvatar(did: target.did, name: ShellText.ifBlank(target.name, "?"), size: 72)
-                        Text("Switch to \(target.name)?").font(TinType.h1).foregroundStyle(tin.ink).multilineTextAlignment(.center)
-                        Text("\(current) goes offline on this phone. Calls to \(current) will ring only on your other linked devices until you switch back.")
+                        Text(tr("unlock_switch_to", target.name)).font(TinType.h1).foregroundStyle(tin.ink).multilineTextAlignment(.center)
+                        Text(tr("unlock_switch_body", current))
                             .font(TinType.bodyL).foregroundStyle(tin.ink2).multilineTextAlignment(.center)
                         if needsPass {
-                            ShellPassField(label: "Passphrase for \(target.name)", text: $pass, error: error ?? "", enabled: !busy, mono: true,
+                            ShellPassField(label: tr("unlock_pass_for", target.name), text: $pass, error: error ?? "", enabled: !busy, mono: true,
                                            onDone: { if !pass.isEmpty && !busy { go() } })
                                 .onChange(of: pass) { _, _ in error = nil }
                         } else if let error {
                             Text(error).font(TinType.bodyM).foregroundStyle(tin.er)
                         }
                         if calls.controller.ui == nil {
-                            ShellHint("You\u{2019}re not on a call. If you were, switching would end it.", alignment: .center)
+                            ShellHint(tr("unlock_not_in_call"), alignment: .center)
                         }
                         if busy { ProgressView().progressViewStyle(.linear).tint(tin.pr) }
                     }
                     .padding(.horizontal, 24).padding(.top, 16).padding(.bottom, 8)
                 }
                 VStack(spacing: 4) {
-                    ShellTinButton(text: busy ? "Switching\u{2026}" : needsPass ? "Unlock and switch" : "Switch",
+                    ShellTinButton(text: busy ? tr("unlock_switching") : needsPass ? tr("unlock_unlock_switch") : tr("unlock_switch_btn"),
                                    enabled: !busy && (!needsPass || !pass.isEmpty), action: go)
-                    ShellTinButton(text: "Cancel", style: .text, enabled: !busy, action: onBack)
+                    ShellTinButton(text: tr("unlock_cancel"), style: .text, enabled: !busy, action: onBack)
                 }
                 .padding(.horizontal, 24).padding(.bottom, 24)
             } else {

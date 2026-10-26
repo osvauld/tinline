@@ -201,7 +201,7 @@ struct TinViewableAvatar: View {
             .buttonStyle(.plain)
             .disabled(!viewable)
             .accessibilityLabel(name)
-            .accessibilityHint(viewable ? (image != nil ? "View photo" : "View identity geometry") : "")
+            .accessibilityHint(viewable ? (image != nil ? tr("kit_avatar_view_photo") : tr("kit_avatar_view_geometry")) : "")
             .fullScreenCover(isPresented: $open) { viewer }
     }
 
@@ -209,7 +209,7 @@ struct TinViewableAvatar: View {
         ZStack(alignment: .topTrailing) {
             Color.black.ignoresSafeArea().onTapGesture { open = false }
             if let image {
-                image.resizable().scaledToFit().accessibilityLabel("\(name)’s photo")
+                image.resizable().scaledToFit().accessibilityLabel(tr("kit_avatar_photo_of", name))
             } else {
                 TinAvatar(did: did, size: 280, name: name)
             }
@@ -220,7 +220,7 @@ struct TinViewableAvatar: View {
                 Button { open = false } label: {
                     TinIcon(TinIcons.x, size: 24, tint: .white).frame(width: 48, height: 48).contentShape(Circle())
                 }
-                .accessibilityLabel("Close")
+                .accessibilityLabel(tr("kit_avatar_close"))
             }
             .padding(.horizontal, 8).padding(.vertical, 12)
         }

@@ -65,6 +65,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.ExperimentalTextApi
@@ -255,10 +256,11 @@ fun PgSwitch(checked: Boolean, onChange: (Boolean) -> Unit, label: String, enabl
     val track by animateColorAsState(if (checked) c.accent else c.ln, tween(d, easing = PgMotion.easeOut), label = "track")
     val x by animateDpAsState(if (checked) 18.dp else 0.dp, tween(d, easing = PgMotion.easeOut), label = "knob")
     val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
+    val stateWord = stringResource(if (checked) R.string.people_on else R.string.people_off)
     // 44 px touch target around the 26 px track.
     Box(
         Modifier.size(44.dp, 44.dp).clickable(enabled = enabled, role = Role.Switch, indication = null, interactionSource = remember { MutableInteractionSource() }) { onChange(!checked) }
-            .semantics { contentDescription = label; stateDescription = if (checked) "On" else "Off" },
+            .semantics { contentDescription = label; stateDescription = stateWord },
         contentAlignment = Alignment.Center,
     ) {
         Box(Modifier.size(44.dp, 26.dp).graphicsLayer { alpha = if (enabled) 1f else 0.55f }.clip(RoundedCornerShape(13.dp)).background(track)) {
@@ -275,11 +277,12 @@ fun PgChip(text: String, pressed: Boolean, onClick: () -> Unit, minHeight: Dp = 
     val reduced = rememberReducedMotion()
     val bg by animateColorAsState(if (pressed) c.accentSoft else Color.Transparent, tween(if (reduced) 0 else PgMotion.SWITCH), label = "chip")
     val shape = RoundedCornerShape(minHeight / 2)
+    val selectedWord = stringResource(R.string.people_selected)
     Row(
         Modifier.heightIn(min = minHeight).press(src).clip(shape).background(bg)
             .border(1.dp, if (pressed) Color.Transparent else c.ln, shape)
             .clickable(src, androidx.compose.material3.ripple(), role = Role.Button, onClick = onClick)
-            .semantics { if (pressed) stateDescription = "Selected" }
+            .semantics { if (pressed) stateDescription = selectedWord }
             .padding(horizontal = padH),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
@@ -307,6 +310,7 @@ fun PgSegmented(options: List<String>, selected: Int, onSelect: (Int) -> Unit, h
                 pad: Dp = 4.dp, gap: Dp = 4.dp, textStyle: TextStyle = PgType.bodyB, label: String = "") {
     val c = Tin.c
     val reduced = rememberReducedMotion()
+    val selectedWord = stringResource(R.string.people_selected)
     Row(
         Modifier.fillMaxWidth().clip(RoundedCornerShape(outerRadius)).background(c.sf2).padding(pad).semantics { if (label.isNotEmpty()) contentDescription = label },
         horizontalArrangement = Arrangement.spacedBy(gap),
@@ -321,7 +325,7 @@ fun PgSegmented(options: List<String>, selected: Int, onSelect: (Int) -> Unit, h
                 Modifier.weight(1f).heightIn(min = height).press(src).then(if (on) Modifier.depth(Depth.Lift, shape) else Modifier)
                     .clip(shape).background(bg).then(if (on) Modifier.border(1.dp, c.hairline, shape) else Modifier)
                     .clickable(src, null, role = Role.Tab) { onSelect(i) }
-                    .semantics { stateDescription = if (on) "Selected" else "" },
+                    .semantics { stateDescription = if (on) selectedWord else "" },
                 contentAlignment = Alignment.Center,
             ) { Text(o, style = textStyle, color = fg) }
         }
@@ -372,7 +376,7 @@ fun GField(
                     },
                 )
                 if (secret) PgIconBtn(if (shown) PgIcons.Eyeoff else PgIcons.Eye,
-                    if (shown) "Hide ${label.lowercase()}" else "Show ${label.lowercase()}", { shown = !shown }, tint = c.ink2, iconSize = 20.dp)
+                    if (shown) stringResource(R.string.people_hide_field, label.lowercase()) else stringResource(R.string.people_show_field, label.lowercase()), { shown = !shown }, tint = c.ink2, iconSize = 20.dp)
             }
         }
         val msg: @Composable () -> Unit = {
@@ -390,7 +394,7 @@ fun GField(
  * 1 px accent ring, and a message line that is always there (19 px), so an error never moves the buttons.
  */
 @Composable
-fun PassField(value: String, onChange: (String) -> Unit, label: String = "Passphrase", error: String = "", hint: String = "", enabled: Boolean = true,
+fun PassField(value: String, onChange: (String) -> Unit, label: String = stringResource(R.string.people_passphrase), error: String = "", hint: String = "", enabled: Boolean = true,
               focus: FocusRequester? = null, onDone: (() -> Unit)? = null, secret: Boolean = true, mono: Boolean = false, placeholder: String = "",
               keyboard: KeyboardOptions = KeyboardOptions.Default, msgLines: Int = 1) {
     val c = Tin.c
@@ -420,7 +424,7 @@ fun PassField(value: String, onChange: (String) -> Unit, label: String = "Passph
                     }
                 },
             )
-            if (secret) PgIconBtn(if (shown) PgIcons.Eyeoff else PgIcons.Eye, if (shown) "Hide passphrase" else "Show passphrase",
+            if (secret) PgIconBtn(if (shown) PgIcons.Eyeoff else PgIcons.Eye, if (shown) stringResource(R.string.people_hide_passphrase) else stringResource(R.string.people_show_passphrase),
                 { shown = !shown }, tint = c.ink2, iconSize = 20.dp)
         }
         Text(error.ifEmpty { hint }, Modifier.fillMaxWidth().heightIn(min = (19 * msgLines).dp).semantics { if (bad) liveRegion = LiveRegionMode.Assertive },
@@ -450,11 +454,6 @@ fun GNotice(text: AnnotatedString, kind: NKind = NKind.Info, icon: ImageVector? 
 @Composable
 fun GNotice(text: String, kind: NKind = NKind.Info, icon: ImageVector? = null, modifier: Modifier = Modifier) = GNotice(AnnotatedString(text), kind, icon, modifier)
 
-fun boldLead(bold: String, rest: String, boldFirst: Boolean = true) = androidx.compose.ui.text.buildAnnotatedString {
-    if (boldFirst) { pushStyle(androidx.compose.ui.text.SpanStyle(fontWeight = FontWeight.Bold)); append(bold); pop(); append(" "); append(rest) }
-    else { append(rest); append(" "); pushStyle(androidx.compose.ui.text.SpanStyle(fontWeight = FontWeight.Bold)); append(bold); pop() }
-}
-
 /** Icon disc (accent-soft / accent-ink), used by Failed, Perms, Terms, Choose. */
 @Composable
 fun IconDisc(icon: ImageVector, size: Dp, iconSize: Dp, danger: Boolean = false) {
@@ -477,7 +476,7 @@ fun GateHead(onBack: (() -> Unit)?, progress: Pair<Int, Int>?, stepLabel: String
     val ctx = androidx.compose.ui.platform.LocalContext.current
     // Light/dark right in sign-up (Gate.svelte): the first screens are where someone decides if this feels like theirs.
     val theme: @Composable () -> Unit = {
-        PgIconBtn(if (c.dark) PgIcons.Sun else PgIcons.Moon, if (c.dark) "Switch to light" else "Switch to dark",
+        PgIconBtn(if (c.dark) PgIcons.Sun else PgIcons.Moon, if (c.dark) stringResource(R.string.people_switch_light) else stringResource(R.string.people_switch_dark),
             { Appearance.set(ctx, !c.dark) }, tint = c.ink2, iconSize = 20.dp, size = 40.dp, modifier = Modifier.offset(x = 10.dp))
     }
     // Android `.head.empty`: no back and no progress; only the theme switch, at the end.
@@ -486,10 +485,15 @@ fun GateHead(onBack: (() -> Unit)?, progress: Pair<Int, Int>?, stepLabel: String
         return
     }
     Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(start = 8.dp, end = 20.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        Box(Modifier.width(44.dp)) { if (onBack != null) PgIconBtn(PgIcons.Back, "Back", onBack) }
+        Box(Modifier.width(44.dp)) { if (onBack != null) PgIconBtn(PgIcons.Back, stringResource(R.string.common_back), onBack) }
         Spacer(Modifier.weight(1f))
+        val progressDesc = when {
+            progress == null -> ""
+            stepLabel.isNotEmpty() -> stringResource(R.string.people_setup_progress_label, progress.first, progress.second, stepLabel)
+            else -> stringResource(R.string.people_setup_progress, progress.first, progress.second)
+        }
         if (progress != null) Row(
-            Modifier.semantics { contentDescription = "Setup progress, step ${progress.first} of ${progress.second}" + if (stepLabel.isNotEmpty()) ": $stepLabel" else "" },
+            Modifier.semantics { contentDescription = progressDesc },
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -499,7 +503,7 @@ fun GateHead(onBack: (() -> Unit)?, progress: Pair<Int, Int>?, stepLabel: String
                 }
             }
             // step 0 (Welcome, Choose): the count keeps its width, hidden, so "1 of 6" appears in place
-            Text("${progress.first} of ${progress.second}", Modifier.widthIn(min = 42.dp).graphicsLayer { alpha = if (progress.first == 0) 0f else 1f },
+            Text(stringResource(R.string.people_n_of_m, progress.first, progress.second), Modifier.widthIn(min = 42.dp).graphicsLayer { alpha = if (progress.first == 0) 0f else 1f },
                 style = PgType.sub.copy(fontFeatureSettings = "tnum"), color = c.ink2)
         }
         theme()
@@ -618,7 +622,7 @@ fun PfBar(title: String, onBack: () -> Unit, actions: @Composable RowScope.() ->
     Column(Modifier.fillMaxWidth().background(c.sf)) {
         Row(Modifier.fillMaxWidth().heightIn(min = 60.dp).padding(start = 8.dp, end = 12.dp, top = 8.dp, bottom = 8.dp),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            PgIconBtn(PgIcons.Back, "Back", onBack, modifier = Modifier.mirrorRtl())
+            PgIconBtn(PgIcons.Back, stringResource(R.string.common_back), onBack, modifier = Modifier.mirrorRtl())
             Text(title, Modifier.weight(1f).semantics { heading() }, style = PgType.barTitle, color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
             actions()
         }

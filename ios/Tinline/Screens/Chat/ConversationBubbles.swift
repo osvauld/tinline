@@ -65,7 +65,7 @@ struct ConversationBubble: View {
         ChatRowLayout(trailing: out) { content }
             .padding(.top, chatGapAbove(pos))
             .overlay(alignment: .leading) {
-                if drag > 0 { ChatIcon(glyph: .reply, size: 24, color: tin.pr).accessibilityLabel("Reply") }
+                if drag > 0 { ChatIcon(glyph: .reply, size: 24, color: tin.pr).accessibilityLabel(tr("chat_reply")) }
             }
             .simultaneousGesture(swipe)
     }
@@ -90,7 +90,7 @@ struct ConversationBubble: View {
         let p = ChatPalette(tin)
         if m.deleted {
             VStack(alignment: .trailing, spacing: 0) {
-                Text(out ? "You deleted this message" : "\(first) deleted this message").font(ChatText.font(15).italic()).foregroundStyle(tin.ink2)
+                Text(out ? tr("chat_deleted_by_me") : tr("chat_deleted_by_them", first)).font(ChatText.font(15).italic()).foregroundStyle(tin.ink2)
                 ChatMetaLine(text: ChatFmt.clock(Int64(m.at)), mark: nil, color: tin.ink2)
             }
             .padding(.leading, 12).padding(.trailing, 12).padding(.top, 8).padding(.bottom, 6)
@@ -110,15 +110,15 @@ struct ConversationBubble: View {
         let shape = chatBubbleShape(pos, mine: out)
         let meta = ChatBubbleMeta(time: ChatFmt.clock(Int64(m.at)), edited: m.editedAt != nil, receipt: receiptMark(false))
         let quote: AnyView? = m.replyTo == nil ? nil : AnyView(ChatQuote(
-            who: env.quoted.map { $0.outgoing ? "You" : first }, whoColor: p.accentInk,
-            text: env.quoted.map(chatPreviewOf) ?? "Original message unavailable", onTap: nil))
+            who: env.quoted.map { $0.outgoing ? tr("chat_you") : first }, whoColor: p.accentInk,
+            text: env.quoted.map(chatPreviewOf) ?? tr("chat_quote_unavailable"), onTap: nil))
         ChatTextBubble(
             text: m.text,
             display: ChatFind.marked(ChatText.styled(m.text), q: env.findQuery, current: env.findCurrent, gold: tin.thread),
             pos: pos, mine: out, meta: meta, emoji: m.replyTo == nil && emojiIsBig(text: m.text), held: env.selected, quote: quote)
             .overlay { if env.selected { shape.strokeBorder(p.accentInk, lineWidth: 2) } }
             .onLongPressGesture(perform: onLong)
-            .accessibilityAction(named: "Message actions", onLong)
+            .accessibilityAction(named: tr("chat_message_actions"), onLong)
     }
 
     private func receiptMark(_ notDelivered: Bool) -> ChatMetaReceipt? {
@@ -141,9 +141,9 @@ struct ConversationBubble: View {
         let sendingPct: Int? = (out && env.progress != nil && env.progress!.total > 0) ? Int(env.progress!.done * 100 / env.progress!.total) : nil
         let label: String = {
             if let nd = env.notDelivered { return "\(nd) · \(at)" }
-            if let s = sendingPct, !photo { return "Sending \(s)% · \(at)" }
-            if tick == .clock { return "Waiting · \(at)" }
-            if m.editedAt != nil { return "edited · \(at)" }
+            if let s = sendingPct, !photo { return tr("chat_meta_sending", String(s), at) }
+            if tick == .clock { return tr("chat_meta_waiting", at) }
+            if m.editedAt != nil { return tr("chat_meta_edited", at) }
             return at
         }()
         let metaColor: Color = env.notDelivered != nil ? p.tickBadText : (tick == .clock ? tin.threadText : (out ? tin.onPrc : tin.ink2))
@@ -152,8 +152,8 @@ struct ConversationBubble: View {
         VStack(alignment: .leading, spacing: 0) {
             if m.replyTo != nil {
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(env.quoted == nil ? "Earlier message" : (env.quoted!.outgoing ? "You" : first)).font(TinType.caption.weight(.bold)).foregroundStyle(tin.pr)
-                    Text(env.quoted.map(chatPreviewOf) ?? "Message unavailable").font(ChatText.font(13)).foregroundStyle(fg.opacity(0.8)).lineLimit(1)
+                    Text(env.quoted == nil ? tr("chat_quote_earlier") : (env.quoted!.outgoing ? tr("chat_you") : first)).font(TinType.caption.weight(.bold)).foregroundStyle(tin.pr)
+                    Text(env.quoted.map(chatPreviewOf) ?? tr("chat_quote_gone")).font(ChatText.font(13)).foregroundStyle(fg.opacity(0.8)).lineLimit(1)
                 }
                 .padding(.leading, 12).padding(.trailing, 10).padding(.vertical, 7).frame(maxWidth: .infinity, alignment: .leading)
                 .background(out ? Color.white.opacity(0.22) : tin.bg)
@@ -270,23 +270,23 @@ struct ChatPhotoBox: View {
                     }.frame(width: 48, height: 48)
                     ChatIcon(glyph: .x, size: 18, color: .white)
                 }
-                .accessibilityLabel(out ? "Cancel sending" : "Cancel download")
+                .accessibilityLabel(out ? tr("chat_cancel_sending") : tr("chat_cancel_download"))
             } else if a.state == .remote && !out {
                 VStack(spacing: 8) {
-                    ChatPhotoChip(text: "Photo · \(ChatFmt.size(Int64(a.size)))")
+                    ChatPhotoChip(text: tr("chat_photo_chip", ChatFmt.size(Int64(a.size))))
                     Button(action: onDownload) {
                         HStack(spacing: 6) {
                             ChatIcon(glyph: .chevRight, size: 16, color: p.onAccentFill)
-                            Text("Download").font(TinType.caption.weight(.semibold)).foregroundStyle(p.onAccentFill)
+                            Text(tr("chat_download")).font(TinType.caption.weight(.semibold)).foregroundStyle(p.onAccentFill)
                         }.padding(.horizontal, 16).padding(.vertical, 7).background(p.accentFill, in: Capsule())
                     }
                 }
             } else if a.state == .failed {
-                ChatRing { ChatIcon(glyph: .retry, size: 24, color: .white) }.accessibilityLabel("Retry download")
+                ChatRing { ChatIcon(glyph: .retry, size: 24, color: .white) }.accessibilityLabel(tr("chat_retry_download"))
             } else if image == nil && ready && pv == nil {
                 ChatIcon(glyph: .image, size: 24, color: tin.ink2)
             }
-            if waiting && !busy { ChatPhotoChip(text: "Sends when \(first) is online").padding(8).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading) }
+            if waiting && !busy { ChatPhotoChip(text: tr("chat_sends_when_online", first)).padding(8).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading) }
         }
         .frame(width: box.width, height: box.height).clipShape(chatBubbleShape(pos, mine: out, inset: 3))
         .contentShape(Rectangle())
@@ -343,13 +343,13 @@ struct ChatFileRow: View {
         let paused = link == .offline
         let canOpen = ChatFileOpen.plan(name: a.name, mime: a.mime).kind != .unsupported
         let sub: String = {
-            if ready && canOpen { return "\(size) · \(ChatFmt.typeLabel(a)) · tap to open" }
-            if ready { return "\(size) · \(ChatFmt.typeLabel(a)) · tap to save" }
-            if a.state == .downloading && !paused { return "Downloading · \(ChatFmt.size(Int64((frac ?? 0) * CGFloat(a.size)))) of \(size)" }
-            if (a.state == .downloading || askedNow) && paused { return "\(size) · paused — waiting for \(first) to come online" }
-            if askedNow { return "\(size) · starting…" }
-            if a.state == .failed { return "\(size) · couldn’t download — tap to retry" }
-            return "\(size) · not downloaded"
+            if ready && canOpen { return tr("chat_file_open", size, ChatFmt.typeLabel(a)) }
+            if ready { return tr("chat_file_save", size, ChatFmt.typeLabel(a)) }
+            if a.state == .downloading && !paused { return tr("chat_file_downloading", ChatFmt.size(Int64((frac ?? 0) * CGFloat(a.size))), size) }
+            if (a.state == .downloading || askedNow) && paused { return tr("chat_file_paused", size, first) }
+            if askedNow { return tr("chat_file_starting", size) }
+            if a.state == .failed { return tr("chat_file_failed", size) }
+            return tr("chat_file_remote", size)
         }()
         let canDownload = !ready && (a.state == .remote || a.state == .failed) && !askedNow
         HStack(spacing: 12) {
@@ -366,9 +366,9 @@ struct ChatFileRow: View {
                 }
             }
             Spacer(minLength: 0)
-            if canDownload && a.state == .remote { ChatIconButton(glyph: .download, label: "Download \(a.name)", tint: tin.pr, action: onDownload) }
-            if !ready && (a.state == .downloading || askedNow) { ChatIconButton(glyph: .x, label: "Cancel download of \(a.name)", tint: tin.ink2, action: onCancel) }
-            if ready && canOpen { ChatIconButton(glyph: .save, label: "Save \(a.name) to phone", tint: out ? tin.onPrc : tin.ink2, action: onSave) }
+            if canDownload && a.state == .remote { ChatIconButton(glyph: .download, label: tr("chat_file_download_a11y", a.name), tint: tin.pr, action: onDownload) }
+            if !ready && (a.state == .downloading || askedNow) { ChatIconButton(glyph: .x, label: tr("chat_file_cancel_a11y", a.name), tint: tin.ink2, action: onCancel) }
+            if ready && canOpen { ChatIconButton(glyph: .save, label: tr("chat_file_save_a11y", a.name), tint: out ? tin.onPrc : tin.ink2, action: onSave) }
         }
         .frame(minWidth: 240).contentShape(Rectangle())
         .onTapGesture { if ready { if canOpen { onOpen() } else { onSave() } } else if canDownload { onDownload() } }
@@ -400,7 +400,7 @@ struct ChatVoiceBubble: View {
                     Button(action: onDownload) {
                         ChatIcon(glyph: remote ? .download : .play, size: 22, color: tin.onPr).frame(width: 40, height: 40).background(tin.pr, in: Circle())
                     }
-                    .disabled(!remote).accessibilityLabel(remote ? "Download voice message" : "Voice message loading")
+                    .disabled(!remote).accessibilityLabel(remote ? tr("chat_voice_download") : tr("chat_voice_loading"))
                     Text(clockMs(ms: a.durationMs)).font(.custom("IBMPlexMono-Medium", size: 12, relativeTo: .caption))
                         .foregroundStyle(out ? tin.onPrc : tin.ink2)
                     Spacer(minLength: 0)
@@ -443,7 +443,7 @@ struct ChatCallPill: View {
                 .background(tin.sf, in: Capsule()).overlay(Capsule().strokeBorder(tin.ln, lineWidth: 1))
             }
             .buttonStyle(ChatPressStyle()).disabled(!enabled)
-            .accessibilityLabel("\(text), \(time). Call back")
+            .accessibilityLabel(tr("chat_call_back_a11y", text, time))
             if r.incoming { Spacer(minLength: 0) }
         }
         .padding(.top, 10)
@@ -458,7 +458,7 @@ struct ChatBlockNote: View {
     var body: some View {
         let f = ChatFmt.firstName(name)
         if view.blockedByMe {
-            Text("You blocked \(f)" + (view.blockedAtSecs.map { " · \(BlockCopy.date($0))" } ?? ""))
+            Text(view.blockedAtSecs.map { tr("chat_blocked_note_date", f, BlockCopy.date($0)) } ?? tr("chat_blocked_note", f))
                 .font(TinType.caption.weight(.semibold)).foregroundStyle(tin.ink2)
                 .padding(.horizontal, 12).padding(.vertical, 4).background(tin.sf2, in: Capsule())
                 .frame(maxWidth: .infinity).padding(.vertical, 8)
@@ -466,7 +466,7 @@ struct ChatBlockNote: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(blockedYouTitle(name: name)).font(TinType.bodyL.weight(.bold)).foregroundStyle(tin.onErc)
                 Text(blockedYouBody(name: name)).font(TinType.bodyM).foregroundStyle(tin.onErc)
-                Text("Signed by \(f) · \(BlockCopy.date(at))").font(TinType.caption).foregroundStyle(tin.onErc.opacity(0.8))
+                Text(tr("chat_blocked_signed", f, BlockCopy.date(at))).font(TinType.caption).foregroundStyle(tin.onErc.opacity(0.8))
             }
             .padding(16).frame(maxWidth: .infinity, alignment: .leading).background(tin.erc, in: SmoothRoundedRectangle(cornerRadius: 16)).padding(.vertical, 8)
         }
@@ -486,8 +486,8 @@ struct ChatBlockedFooter: View {
             HStack(spacing: 12) {
                 Text(line).font(TinType.bodyM).foregroundStyle(tin.ink2).frame(maxWidth: .infinity, alignment: .leading)
                 switch state {
-                case .blockedByMe: ChatCardButton(title: "Unblock", height: 44, fill: false, action: onUnblock)
-                case .notContact: ChatCardButton(title: "Add", style: .tonal, height: 44, fill: false, action: onAddContact)
+                case .blockedByMe: ChatCardButton(title: tr("chat_unblock"), height: 44, fill: false, action: onUnblock)
+                case .notContact: ChatCardButton(title: tr("chat_add_contact"), style: .tonal, height: 44, fill: false, action: onAddContact)
                 default: EmptyView()
                 }
             }
@@ -551,19 +551,19 @@ struct ChatActionsSheet: View {
             if m.outgoing && !isSelf {
                 ForEach(Array((receipt?.recipients ?? []).enumerated()), id: \.offset) { _, r in
                     ForEach(Array(r.proofs.enumerated()), id: \.offset) { _, p in
-                        ChatHint(text: "\(p.kind == .read ? "Read" : "Delivered") · signed by \(ChatFmt.firstName(name)) · device \(p.signerDevice.prefix(8))")
+                        ChatHint(text: tr(p.kind == .read ? "chat_proof_read" : "chat_proof_delivered", ChatFmt.firstName(name), String(p.signerDevice.prefix(8))))
                             .padding(.leading, 8).padding(.bottom, 2)
                     }
                 }
             }
             if proofs { Spacer().frame(height: 6) }
-            ChatSheetAction(glyph: .reply, label: "Reply", action: onReply)
-            if !m.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { ChatSheetAction(glyph: .copy, label: "Copy text", action: onCopy) }
-            if let a = m.attachment, a.state == .ready || m.outgoing { ChatSheetAction(glyph: .save, label: "Save to phone", action: onSave) }
-            if m.outgoing && m.attachment == nil { ChatSheetAction(glyph: .edit, label: "Edit", action: onEdit) }
-            if m.outgoing { ChatSheetAction(glyph: .trash, label: isSelf ? "Delete on all your devices" : "Delete for both of you", color: tin.er, action: onDelete) }
+            ChatSheetAction(glyph: .reply, label: tr("chat_reply"), action: onReply)
+            if !m.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { ChatSheetAction(glyph: .copy, label: tr("chat_copy_text"), action: onCopy) }
+            if let a = m.attachment, a.state == .ready || m.outgoing { ChatSheetAction(glyph: .save, label: tr("chat_save_to_phone"), action: onSave) }
+            if m.outgoing && m.attachment == nil { ChatSheetAction(glyph: .edit, label: tr("chat_edit"), action: onEdit) }
+            if m.outgoing { ChatSheetAction(glyph: .trash, label: isSelf ? tr("chat_delete_self") : tr("chat_delete_both"), color: tin.er, action: onDelete) }
             if m.outgoing {
-                ChatHint(text: isSelf ? "Edits and deletes reach your other devices when they’re online." : "Edits and deletes reach \(first)’s phone the next time you’re both online.")
+                ChatHint(text: isSelf ? tr("chat_sheet_hint_self") : tr("chat_sheet_hint", first))
                     .padding(.leading, 8).padding(.top, 8)
             }
         }
@@ -572,13 +572,13 @@ struct ChatActionsSheet: View {
     }
 
     private func headline(_ at: String) -> String {
-        if isSelf { return "Saved \(at) · on your devices" }
-        if !m.outgoing { return "Received \(at)" }
+        if isSelf { return tr("chat_head_saved", at) }
+        if !m.outgoing { return tr("chat_head_received", at) }
         switch receipt?.tick {
-        case .read: return "Sent \(at) · read on \(first)’s device"
-        case .delivered: return "Sent \(at) · on \(first)’s device"
-        case .onlyHere: return "Sent \(at) · only on this phone so far"
-        default: return "Sent \(at) · waiting for \(first)’s device to confirm"
+        case .read: return tr("chat_head_read", at, first)
+        case .delivered: return tr("chat_head_delivered", at, first)
+        case .onlyHere: return tr("chat_head_only_here", at)
+        default: return tr("chat_head_sent", at, first)
         }
     }
 }
@@ -593,9 +593,9 @@ struct ChatAttachSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(isSelf ? "Save for yourself" : "Send to \(first)").font(TinType.titleM).foregroundStyle(tin.ink).padding(.leading, 4).padding(.bottom, 8)
+            Text(isSelf ? tr("chat_attach_title_self") : tr("chat_attach_title", first)).font(TinType.titleM).foregroundStyle(tin.ink).padding(.leading, 4).padding(.bottom, 8)
             HStack(spacing: 12) {
-                ForEach([(ChatGlyph.image, "Photos & videos", onPhotos), (ChatGlyph.camera, "Camera", onCamera), (ChatGlyph.file, "File", onFile)], id: \.1) { item in
+                ForEach([(ChatGlyph.image, tr("chat_attach_photos"), onPhotos), (ChatGlyph.camera, tr("chat_attach_camera"), onCamera), (ChatGlyph.file, tr("chat_attach_file"), onFile)], id: \.1) { item in
                     Button(action: item.2) {
                         VStack(spacing: 8) {
                             ChatIcon(glyph: item.0, size: 24, color: tin.onPrc).frame(width: 60, height: 60).background(tin.prc, in: SmoothRoundedRectangle(cornerRadius: 18))
@@ -607,8 +607,8 @@ struct ChatAttachSheet: View {
             }
             HStack(alignment: .top, spacing: 8) {
                 ChatIcon(glyph: .lock, size: 18, color: tin.ink2)
-                ChatHint(text: isSelf ? "Files stay encrypted on your devices and copy to the others when they’re online. Up to 2 GB each."
-                                       : "Files are end-to-end encrypted. Up to 2 GB each. Both of you need to be online while it transfers.")
+                ChatHint(text: isSelf ? tr("chat_attach_hint_self")
+                                       : tr("chat_attach_hint"))
             }.padding(.leading, 4).padding(.top, 12)
         }
         .padding(.horizontal, 16).padding(.top, 16).padding(.bottom, 8).frame(maxWidth: .infinity, alignment: .leading)

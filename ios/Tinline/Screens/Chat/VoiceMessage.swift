@@ -295,7 +295,7 @@ struct VoiceMicButton: View {
         .frame(width: 48, height: 48).contentShape(Rectangle())
         .gesture(DragGesture(minimumDistance: 0).onChanged(changed).onEnded(ended))
         .accessibilityElement().accessibilityAddTraits(.isButton)
-        .accessibilityLabel(state.locked ? "Send voice message" : state.recording ? "Recording, release to send" : "Hold to record a voice message")
+        .accessibilityLabel(state.locked ? tr("chat_voice_send") : state.recording ? tr("chat_voice_recording") : tr("chat_voice_hold"))
         .accessibilityAction { if state.locked { state.send() } }
     }
 
@@ -346,11 +346,11 @@ struct VoiceRecordingBar: View {
             if state.locked {
                 Spacer(minLength: 0)
                 Button { state.cancel() } label: { ChatIcon(glyph: .trash, size: 22, color: tin.er).frame(width: 40, height: 40) }
-                    .accessibilityLabel("Discard recording")
+                    .accessibilityLabel(tr("chat_voice_discard"))
             } else {
                 HStack(spacing: 4) {
                     ChatIcon(glyph: .back, size: 16, color: tin.ink2)
-                    Text("Slide to cancel").font(TinType.bodyM).foregroundStyle(tin.ink2)
+                    Text(tr("chat_voice_slide_cancel")).font(TinType.bodyM).foregroundStyle(tin.ink2)
                 }
                 .frame(maxWidth: .infinity).offset(x: -state.cancelPull * 48)
             }
@@ -463,7 +463,7 @@ struct VoiceBubbleContent: View {
             Button { if playing { player.pause() } else { player.play(id: id, path: path) } } label: {
                 ChatIcon(glyph: playing ? .pause : .play, size: 22, color: tin.onPr).frame(width: 40, height: 40).background(tin.pr, in: Circle())
             }
-            .accessibilityLabel(playing ? "Pause voice message" : "Play voice message")
+            .accessibilityLabel(playing ? tr("chat_voice_pause") : tr("chat_voice_play"))
             GeometryReader { geo in
                 Canvas { ctx, size in
                     let barW: CGFloat = 3, gap: CGFloat = 2
@@ -484,7 +484,7 @@ struct VoiceBubbleContent: View {
                     player.play(id: id, path: path, fromMs: min(max(0, ms), durationMs))
                 })
             }
-            .frame(height: 28).accessibilityLabel("Voice message waveform, tap to seek")
+            .frame(height: 28).accessibilityLabel(tr("chat_voice_waveform"))
             Text(clockMs(ms: UInt32(max(0, shown)))).font(.custom("IBMPlexMono-Medium", size: 12, relativeTo: .caption))
                 .foregroundStyle(outgoing ? tin.onPrc : tin.ink2).monospacedDigit()
         }

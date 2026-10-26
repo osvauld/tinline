@@ -389,7 +389,10 @@ fun TinMark(
 data class Sway(val period: Double, val amp: Double)
 
 /** What the app-bar mark shows (status.svelte.ts MarkLook). */
-data class MarkLook(val state: MarkState, val sway: Sway? = null, val dim: Boolean = false, val label: String)
+data class MarkLook(val state: MarkState, val sway: Sway? = null, val dim: Boolean = false, @androidx.annotation.StringRes val labelRes: Int) {
+    /** The spoken description, resolved when read (so JVM tests that only look at [state] never need resources). */
+    val label: String get() = appString(labelRes)
+}
 
 enum class CallPhase { None, Incoming, Outgoing, Connecting, Active, Reconnecting }
 enum class GroupCallPhase { None, Starting, Connecting, Active, Reconnecting }
@@ -401,24 +404,24 @@ enum class ConnState { Offline, Connecting, Online }
  */
 fun statusLook(call: CallPhase = CallPhase.None, gcall: GroupCallPhase = GroupCallPhase.None, conn: ConnState): MarkLook {
     when (call) {
-        CallPhase.Incoming -> return MarkLook(MarkState.Ringing, Sway(1.6, 12.0), label = "Incoming call")
-        CallPhase.Outgoing -> return MarkLook(MarkState.Ringing, Sway(2.0, 9.0), label = "Calling")
-        CallPhase.Connecting -> return MarkLook(MarkState.Ringing, Sway(1.2, 6.0), label = "Connecting")
-        CallPhase.Active -> return MarkLook(MarkState.Taut, label = "In a call")
-        CallPhase.Reconnecting -> return MarkLook(MarkState.Ringing, Sway(2.0, 4.0), label = "Reconnecting")
+        CallPhase.Incoming -> return MarkLook(MarkState.Ringing, Sway(1.6, 12.0), labelRes = R.string.mark_incoming_call)
+        CallPhase.Outgoing -> return MarkLook(MarkState.Ringing, Sway(2.0, 9.0), labelRes = R.string.mark_calling)
+        CallPhase.Connecting -> return MarkLook(MarkState.Ringing, Sway(1.2, 6.0), labelRes = R.string.mark_connecting)
+        CallPhase.Active -> return MarkLook(MarkState.Taut, labelRes = R.string.mark_in_call)
+        CallPhase.Reconnecting -> return MarkLook(MarkState.Ringing, Sway(2.0, 4.0), labelRes = R.string.mark_reconnecting)
         CallPhase.None -> {}
     }
     when (gcall) {
-        GroupCallPhase.Starting -> return MarkLook(MarkState.Ringing, Sway(2.0, 9.0), label = "Starting a group call")
-        GroupCallPhase.Connecting -> return MarkLook(MarkState.Ringing, Sway(1.2, 6.0), label = "Connecting")
-        GroupCallPhase.Active -> return MarkLook(MarkState.Taut, label = "In a group call")
-        GroupCallPhase.Reconnecting -> return MarkLook(MarkState.Ringing, Sway(2.0, 4.0), label = "Reconnecting")
+        GroupCallPhase.Starting -> return MarkLook(MarkState.Ringing, Sway(2.0, 9.0), labelRes = R.string.mark_starting_group_call)
+        GroupCallPhase.Connecting -> return MarkLook(MarkState.Ringing, Sway(1.2, 6.0), labelRes = R.string.mark_connecting)
+        GroupCallPhase.Active -> return MarkLook(MarkState.Taut, labelRes = R.string.mark_in_group_call)
+        GroupCallPhase.Reconnecting -> return MarkLook(MarkState.Ringing, Sway(2.0, 4.0), labelRes = R.string.mark_reconnecting)
         GroupCallPhase.None -> {}
     }
     return when (conn) {
-        ConnState.Offline -> MarkLook(MarkState.Slack, dim = true, label = "No connection")
-        ConnState.Connecting -> MarkLook(MarkState.Ringing, Sway(3.2, 5.0), label = "Connecting")
-        ConnState.Online -> MarkLook(MarkState.Taut, label = "Connected to the network")
+        ConnState.Offline -> MarkLook(MarkState.Slack, dim = true, labelRes = R.string.mark_no_connection)
+        ConnState.Connecting -> MarkLook(MarkState.Ringing, Sway(3.2, 5.0), labelRes = R.string.mark_connecting)
+        ConnState.Online -> MarkLook(MarkState.Taut, labelRes = R.string.mark_connected)
     }
 }
 

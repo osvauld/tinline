@@ -42,10 +42,10 @@ struct CallStripView: View {
                     let secs = max(0, (now - (c.activeSinceMs ?? now)) / 1000)
                     let vi = calls.video.info
                     let video = vi.map { $0.callId == c.info.callId && ($0.localCamera || $0.remoteCamera) } ?? false
-                    let name = callOr(c.info.peerName, "Unknown")
+                    let name = callOr(c.info.peerName, tr("call_unknown_name"))
                     let status = callStatus(active: c.isActive, ringing: c.isRinging, reconnecting: c.stats?.reconnecting == true, secs: secs, waking: c.stats?.waking == true)
                     StripRow(icon: video ? .video : .phone, name: name, status: status, slim: keyboard,
-                             label: "Return to call with \(name)", action: onOpenCall)
+                             label: tr("call_strip_return", name), action: onOpenCall)
                 }
                 .transition(stripTransition)
             }
@@ -55,7 +55,7 @@ struct CallStripView: View {
                     let secs = g.phase == .active ? max(0, (now - (g.sinceMs ?? now)) / 1000) : 0
                     let name = calls.groupUi.groupName(g.gid)
                     StripRow(icon: .users, name: name, status: g.phase == .active ? clockOf(secs) : g.status, slim: keyboard,
-                             label: "Return to group call in \(name)") { calls.groupUi.restore() }
+                             label: tr("call_strip_return_group", name)) { calls.groupUi.restore() }
                 }
                 .transition(stripTransition)
             }
@@ -100,7 +100,7 @@ private struct StripRow: View {
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(label). \(status)")
+        .accessibilityLabel(tr("call_strip_label", label, status))
         .accessibilityAddTraits(.isButton)
     }
 }
@@ -124,7 +124,7 @@ struct CallMiniVideo: View {
         let vi = calls.video.info
         let live = u.flatMap { $0.isActive && $0.info.callId == vi?.callId ? $0 : nil }
         let theirs = vi.map { $0.negotiated && $0.remoteCamera } ?? false
-        let name = live.map { callOr($0.info.peerName, "Unknown") } ?? ""
+        let name = live.map { callOr($0.info.peerName, tr("call_unknown_name")) } ?? ""
         let frozen = live?.stats?.reconnecting == true
         ZStack {
             if live != nil && theirs {
@@ -140,7 +140,7 @@ struct CallMiniVideo: View {
                     .callDepth(.pop, dark: tin.dark)
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Return to video call with \(name)")
+                .accessibilityLabel(tr("call_strip_return_video", name))
                 .transition(.asymmetric(
                     insertion: .opacity.combined(with: .scale(scale: reduce ? 1 : 0.9)).animation(CallMotion.easeOut(200)),
                     removal: .opacity.combined(with: .scale(scale: reduce ? 1 : 0.9)).animation(CallMotion.cubicIn(140))))
