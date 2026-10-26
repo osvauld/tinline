@@ -69,6 +69,9 @@ fn unfamiliar_device_in_a_call_resets_verified_and_notifies() {
     b1.node.add_contact(a.node.my_ticket().unwrap()).unwrap();
     assert_eq!(a.node.contacts()[0].did, b1.did);
     let d1 = a.node.contacts()[0].device.clone();
+    // B1 pushes its profile right after the add, over a chat session that notes its device at
+    // A. Let that land first: arriving after the list below, it would reset `verified` itself.
+    wait("b1's profile session at A", || a.node.chat_sessions_for_test(b1.did.clone()) > 0);
 
     // A learns a signed device list of B that does not include b1 (as if B had unlinked it). Its
     // seq is an hour ahead so that the list b1 signs itself on calling cannot replace it (P4: a

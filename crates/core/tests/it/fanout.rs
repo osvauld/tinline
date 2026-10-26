@@ -210,7 +210,12 @@ fn all_devices_busy_is_busy() {
 fn glare_between_a_and_two_device_b_leaves_one_call() {
     let (a, b1, b2) = trio("glare2");
     let ca = a.node.call(b1.did.clone()).unwrap();
-    let cb = b2.node.call(a.did.clone()).unwrap();
+    // B2's dial can lose the race outright: when A's ring reaches B2 first, B2 is busy ringing.
+    let cb = match b2.node.call(a.did.clone()) {
+        Ok(c) => Some(c.call_id),
+        Err(p2pcore::Error::Busy) => None,
+        Err(e) => panic!("b2's call: {e:?}"),
+    };
     // Everyone answers whatever rings until a call is active on both ends of one call.
     let peers = [&a, &b1, &b2];
     let mut active_ids: [Option<String>; 3] = [None, None, None];
@@ -229,7 +234,7 @@ fn glare_between_a_and_two_device_b_leaves_one_call() {
         }
     }
     let id = active_ids[0].clone().expect("a is in a call");
-    assert!(id == ca.call_id || id == cb.call_id);
+    assert!(id == ca.call_id || cb.as_ref() == Some(&id));
     std::thread::sleep(Duration::from_secs(1));
     let on: Vec<_> = [&b1, &b2].into_iter().filter(|b| b.node.current_call().is_some()).collect();
     assert_eq!(on.len(), 1, "exactly one of B's installs is in the call");

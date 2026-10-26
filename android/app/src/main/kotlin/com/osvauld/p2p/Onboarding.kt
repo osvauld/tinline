@@ -677,14 +677,16 @@ fun TermsScreen(progress: Int?, onBack: (() -> Unit)?, onAgree: () -> Unit) = Pa
 
 @Composable
 private fun PermsStep(missing: List<Need>, onFix: (Need) -> Unit, onDone: () -> Unit) {
-    val rows = listOf(
+    val alwaysOn = Perms.keepsLineOpen(LocalContext.current)
+    val rows = listOfNotNull(
         Triple(Need.Mic, PgIcons.Mic, "Microphone" to "So they can hear you. Used only during a call."),
         Triple(Need.Notifications, PgIcons.Bell, "Notifications" to "So you see incoming calls and messages."),
         Triple(Need.FullScreen, PgIcons.Phone, "Ring over lock screen" to "Shows incoming calls full screen, like the phone app."),
-        Triple(Need.Battery, PgIcons.Battery, "Run in background" to "Android pauses idle apps to save battery. This keeps your line open, using a little battery."),
+        if (alwaysOn) Triple(Need.Battery, PgIcons.Battery, "Run in background" to "Android pauses idle apps to save battery. This keeps your line open, using a little battery.") else null,
     )
     val touched = rows.any { it.first !in missing }
-    GateStep("So calls can reach you", lead = "Tinline works like a phone line: it stays open quietly in the background. Each of these is optional, and you can change them later.",
+    GateStep("So calls can reach you", lead = (if (alwaysOn) "Tinline works like a phone line: it stays open quietly in the background."
+            else "Tinline rests until someone reaches you, then a small nudge wakes it.") + " Each of these is optional, and you can change them later.",
         foot = { GBtn(if (touched) "Continue" else "Not now", onDone, kind = if (touched) GKind.Primary else GKind.Secondary) }) {
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             rows.forEach { (need, icon, t) -> PermRow(icon, t.first, t.second, need !in missing) { onFix(need) } }
